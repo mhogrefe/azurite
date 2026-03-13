@@ -1,10 +1,10 @@
-
 import Azurite
 import Mathlib.Data.Int.Basic
 import Lean
 import Azurite.DensePoly.Basic
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
+import Azurite.DensePoly.ToString
 
 open Lean
 open Azurite
@@ -86,3 +86,55 @@ def pZ_large : DensePoly ℤ := ⟨#[1, -2, 3, 10], by decide⟩
 -- The polynomial ends in 5, which maps to 0 in ZMod 5, so `normalize` strips it.
 def pZMod10 : DensePoly (ZMod 10) := ⟨#[1, 2, 3, 5], by decide⟩
 #eval Azurite.DensePoly.map (ZMod.castHom (by decide) (ZMod 5)) pZMod10
+
+section ToStringEval
+
+#eval (monomialToString 0 (5:ℤ) : String)
+#eval (monomialToString 1 (5:ℤ) : String)
+#eval (monomialToString 2 (5:ℤ) : String)
+
+#eval (monomialToString 0 (1:ℤ) : String)
+#eval (monomialToString 1 (1:ℤ) : String)
+#eval (monomialToString 2 (1:ℤ) : String)
+
+#eval (monomialToString 0 (-1:ℤ) : String)
+#eval (monomialToString 1 (-1:ℤ) : String)
+#eval (monomialToString 2 (-1:ℤ) : String)
+
+#eval (monomialToString 0 (0:ℤ) : String)
+#eval (monomialToString 1 (0:ℤ) : String)
+#eval (monomialToString 2 (0:ℤ) : String)
+
+end ToStringEval
+
+section ParseEval
+
+#eval parseMonomial (R := ℤ) "5"
+#eval parseMonomial (R := ℤ) "5*x"
+#eval parseMonomial (R := ℤ) "5*x^2"
+
+#eval parseMonomial (R := ℤ) "1"
+#eval parseMonomial (R := ℤ) "x"
+#eval parseMonomial (R := ℤ) "x^2"
+
+#eval parseMonomial (R := ℤ) "-1"
+#eval parseMonomial (R := ℤ) "-x"
+#eval parseMonomial (R := ℤ) "-x^2"
+
+#eval parseMonomial (R := ℤ) "0"
+
+#eval parseMonomial (R := ℚ) "22/7"
+#eval parseMonomial (R := ℚ) "22/7*x"
+#eval parseMonomial (R := ℚ) "22/7*x^2"
+
+#eval parseMonomial (R := ℚ) "1"
+#eval parseMonomial (R := ℚ) "x"
+#eval parseMonomial (R := ℚ) "x^2"
+
+#eval parseMonomial (R := ℚ) "-1"
+#eval parseMonomial (R := ℚ) "-x"
+#eval parseMonomial (R := ℚ) "-x^2"
+
+#eval parseMonomial (R := ℚ) "0"
+
+end ParseEval

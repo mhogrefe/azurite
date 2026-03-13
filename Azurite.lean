@@ -6,3 +6,4 @@ import Azurite.DensePoly.Neg
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
 import Azurite.DensePoly.MapEquiv
+import Azurite.DensePoly.ToString
