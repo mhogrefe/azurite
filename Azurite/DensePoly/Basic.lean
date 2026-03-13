@@ -171,4 +171,8 @@ def degree {R : Type _} [Semiring R] (p : DensePoly R) : WithBot ℕ :=
 def coeff {R : Type _} [Semiring R] (p : DensePoly R) (n : ℕ) : R :=
   (p.coeffs[n]?).getD 0
 
+/-- The leading coefficient of the polynomial `p`. -/
+def leadingCoeff {R : Type _} [Semiring R] (p : DensePoly R) : R :=
+  p.coeff p.natDegree
+
 end Azurite.DensePoly

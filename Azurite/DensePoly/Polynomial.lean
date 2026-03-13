@@ -404,3 +404,12 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   have ht : DensePoly.ofPoly (DensePoly.toPoly p) = DensePoly.ofPoly (DensePoly.toPoly q) := by rw [hp]
   rw [ofPoly_toPoly, ofPoly_toPoly] at ht
   exact ht
+
+@[simp] lemma leadingCoeff_toPoly (p : Azurite.DensePoly R) : (DensePoly.toPoly p).leadingCoeff = p.leadingCoeff := by
+  change (DensePoly.toPoly p).coeff (DensePoly.toPoly p).natDegree = p.coeff p.natDegree
+  rw [DensePoly.natDegree_toPoly, coeff_toPoly_eq]
+
+@[simp] lemma leadingCoeff_ofPoly [DecidableEq R] (p : Polynomial R) : (DensePoly.ofPoly p).leadingCoeff = p.leadingCoeff := by
+  have h := leadingCoeff_toPoly (DensePoly.ofPoly p)
+  rw [toPoly_ofPoly] at h
+  exact h.symm
