@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.Algebra.Algebra.Basic
 
 /-!
 # Computational Univariate Polynomials
@@ -205,5 +206,47 @@ theorem Monic.leadingCoeff_eq_one {R : Type _} [Semiring R] {p : DensePoly R} (h
 
 theorem Monic.coeff_natDegree {R : Type _} [Semiring R] {p : DensePoly R} (hp : p.Monic) : p.coeff p.natDegree = 1 :=
   hp
+
+variable {S : Type _} [Semiring S] [DecidableEq S]
+
+/-- `map f p` maps a polynomial `p` across a ring hom `f`. -/
+def map {R : Type _} [Semiring R] (f : R →+* S) (p : DensePoly R) : DensePoly S :=
+  normalize (p.coeffs.map f)
+
+lemma Array_back?_map {α β : Type _} (a : Array α) (f : α → β) :
+  (a.map f).back? = a.back?.map f := by
+  dsimp [Array.back?]
+  by_cases h : a.size = 0
+  · have h1 : (a.map f).size = 0 := by simp [h]
+    simp [h, h1]
+  · have h1 : (a.map f).size = a.size := by simp
+    have h2 : (a.map f).size - 1 = a.size - 1 := by omega
+    rw [h1]
+    rw [Array.getElem?_map]
+
+/-- A powerful general-purpose map that skips normalization if the mapping function preserves zeros strictly (i.e., `f r = 0 ↔ r = 0`). -/
+def mapZeroInjective {α β : Type _} [Semiring α] [Semiring β] (f : α → β) (hfinj : ∀ r, f r = 0 ↔ r = 0) (p : DensePoly α) : DensePoly β :=
+  let arr := p.coeffs.map f
+  ⟨arr, by
+    intro h
+    have h_back : arr.back? = p.coeffs.back?.map f := by
+      exact Array_back?_map p.coeffs f
+    rw [h_back] at h
+    rcases hp : p.coeffs.back? with _ | r
+    · simp [hp] at h
+    · simp [hp] at h
+      have hr0 : r = 0 := (hfinj r).mp (by rw [h])
+      have hp2 : p.coeffs.back? = some 0 := by rw [hp, hr0]
+      exact p.last_ne_zero hp2
+  ⟩
+
+/-- RingHom map skipping normalization. -/
+def mapInjective {R S : Type _} [Semiring R] [Semiring S] (f : R →+* S) (hf : Function.Injective f) (p : DensePoly R) : DensePoly S :=
+  mapZeroInjective f (fun r => ⟨fun hr => hf (by rw [hr, f.map_zero]), fun hr => by rw [hr, f.map_zero]⟩) p
+
+/-- Maps a polynomial across `algebraMap R S`. Skips normalization if the `algebraMap` is injective. -/
+def mapAlgebraMap {R S : Type _} [CommSemiring R] [Semiring S] [Algebra R S]
+  (hf : Function.Injective (algebraMap R S)) (p : DensePoly R) : DensePoly S :=
+  mapInjective (algebraMap R S) hf p
 
 end Azurite.DensePoly
