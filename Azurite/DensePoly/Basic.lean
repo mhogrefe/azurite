@@ -60,4 +60,12 @@ instance {R : Type _} [Semiring R] [DecidableEq R] : One (DensePoly R) := ⟨one
 
 @[simp] lemma coeffs_zero {R : Type _} [Semiring R] : (0 : DensePoly R).coeffs = [] := rfl
 
+/-- The natural degree of a `DensePoly`. Expected behavior: 0 for the zero polynomial. -/
+def natDegree {R : Type _} [Semiring R] (p : DensePoly R) : ℕ :=
+  p.coeffs.length - 1
+
+/-- The degree of a `DensePoly`, returning `WithBot ℕ`. Expected behavior: ⊥ for the zero polynomial. -/
+def degree {R : Type _} [Semiring R] (p : DensePoly R) : WithBot ℕ :=
+  if p.coeffs = [] then ⊥ else ↑p.natDegree
+
 end Azurite.DensePoly

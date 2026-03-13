@@ -204,6 +204,68 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   left_inv := ofPoly_toPoly
   right_inv := toPoly_ofPoly
 
+@[simp] lemma DensePoly.natDegree_toPoly (p : Azurite.DensePoly R) : (toPoly p).natDegree = p.natDegree := by
+  change (toPoly p).natDegree = p.coeffs.length - 1
+  dsimp [toPoly]
+  if h : p.coeffs = [] then
+    rw [h]
+    rfl
+  else
+    exact _root_.natDegree_toPoly p.coeffs h p.last_ne_zero
+
+@[simp] lemma DensePoly.degree_toPoly (p : Azurite.DensePoly R) : (toPoly p).degree = p.degree := by
+  change (toPoly p).degree = if p.coeffs = [] then ⊥ else ↑(p.natDegree)
+  split
+  · next h =>
+    have h_toPoly_zero : toPoly p = 0 := by
+      dsimp [toPoly]
+      rw [h]
+      rfl
+    rw [h_toPoly_zero, Polynomial.degree_zero]
+  · next h =>
+    have hp_nat := DensePoly.natDegree_toPoly p
+    have ht : toPoly p ≠ 0 := by
+      intro hc
+      have hc_deg : (toPoly p).natDegree = 0 := by rw [hc, Polynomial.natDegree_zero]
+      rw [hp_nat] at hc_deg
+      have h_nat : p.natDegree = p.coeffs.length - 1 := rfl
+      have h_calc : p.coeffs.length - 1 = 0 := by rw [← h_nat, hc_deg]
+      have h_len_pos : 0 < p.coeffs.length := List.length_pos_iff_ne_nil.mpr h
+      have h_list_eq : ∃ a, p.coeffs = [a] := by
+        cases h_list : p.coeffs with
+        | nil => contradiction
+        | cons a as =>
+          have h_len2 : (a :: as).length - 1 = 0 := by rw [h_list] at h_calc; exact h_calc
+          have h_as_len : as.length = 0 := by
+            have h_eq : (a :: as).length - 1 = as.length := rfl
+            rw [h_eq] at h_len2
+            exact h_len2
+          have h_as_empty : as = [] := List.length_eq_zero_iff.mp h_as_len
+          exact ⟨a, by rw [h_as_empty]⟩
+      rcases h_list_eq with ⟨a, ha⟩
+      have hc_zero : (toPoly p).coeff 0 = 0 := by rw [hc]; rfl
+      have hc_eq : (toPoly p).coeff 0 = p.coeffs.getCoeff 0 := coeff_toPoly p.coeffs 0
+      rw [hc_zero, ha] at hc_eq
+      have ha_zero : a = 0 := hc_eq.symm
+      have hlast : p.coeffs.getLast? = some 0 := by
+        calc
+          p.coeffs.getLast? = [a].getLast? := by rw [ha]
+          _ = [0].getLast? := by rw [ha_zero]
+          _ = some 0 := rfl
+      exact p.last_ne_zero hlast
+    rw [Polynomial.degree_eq_natDegree ht]
+    rw [hp_nat]
+
+@[simp] lemma DensePoly.natDegree_ofPoly [DecidableEq R] (p : Polynomial R) : (ofPoly p).natDegree = p.natDegree := by
+  have h := DensePoly.natDegree_toPoly (ofPoly p)
+  rw [toPoly_ofPoly p] at h
+  exact h.symm
+
+@[simp] lemma DensePoly.degree_ofPoly [DecidableEq R] (p : Polynomial R) : (ofPoly p).degree = p.degree := by
+  have h := DensePoly.degree_toPoly (ofPoly p)
+  rw [toPoly_ofPoly p] at h
+  exact h.symm
+
 @[simp] lemma toPoly_zero [DecidableEq R] : DensePoly.toPoly (0 : Azurite.DensePoly R) = 0 := by
   have h := ofPoly_toPoly (0 : Azurite.DensePoly R)
   have hz : DensePoly.toPoly (0 : Azurite.DensePoly R) = 0 := rfl

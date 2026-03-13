@@ -25,3 +25,8 @@ def p3 : DensePoly ℚ := ⟨[1/2, 3/4, 5/8], by norm_num⟩
 #eval p3
 
 #eval -p1
+
+#eval p1.natDegree
+#eval p1.degree
+#eval (0 : DensePoly ℤ).natDegree
+#eval (0 : DensePoly ℤ).degree
