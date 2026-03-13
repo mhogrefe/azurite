@@ -1,0 +1,14 @@
+# Lean 4 Cache and Build Output
+/.lake
+*.olean
+*.ilean
+*.c
+
+# OS specific files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor directories
+.vscode/
+.antigravity/
