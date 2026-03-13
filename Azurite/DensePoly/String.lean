@@ -124,19 +124,6 @@ lemma parseNatChars_natToChars (n : ℕ) : parseNatChars (natToChars n) = some n
     rw [h_aux]
     simp [parseNatCharsAux]
 
-@[simp] lemma parse_monomialToChars_zero {R : Type _} [DensePolyParsable R] [DecidableEq R] [Zero R] [DensePolyToChars R] (d : ℕ)
-  (hparse : DensePolyParsable.parse ['0'] = some (0 : R)) :
-  parseMonomial (R := R) (monomialToChars d (0 : R)) = some (d, 0) := by
-  sorry
-
-@[simp] lemma parse_monomialToChars_ne_zero_nat (d : ℕ) (c : ℕ) (hc : c ≠ 0) :
-  parseMonomial (R := ℕ) (monomialToChars d c) = some (d, c) := by
-  sorry
-
-@[simp] lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
-  parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
-  sorry
-
 lemma natToChars_not_dash (n : ℕ) (cs : List Char) : natToChars n = '-' :: cs → False := by
   intro h
   have h_parse := parseNatChars_natToChars n
@@ -348,6 +335,27 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
       congr 1
       exact (rat_ext_eq q).symm
     rw [h_eq_q]
+
+@[simp] lemma parse_monomialToChars_zero {R : Type _} [DensePolyParsable R] [DecidableEq R] [Zero R] [DensePolyToChars R] (d : ℕ)
+  (hparse : DensePolyParsable.parse ['0'] = some (0 : R)) :
+  parseMonomial (R := R) (monomialToChars d (0 : R)) = some (0, 0) := by
+  dsimp [monomialToChars]
+  have h0 : (0 : R) = 0 := rfl
+  rw [if_pos h0]
+  dsimp [parseMonomial]
+  have h_split : ['0'].splitOn 'x' = [['0']] := rfl
+  rw [h_split]
+  dsimp
+  rw [hparse]
+  rfl
+
+@[simp] lemma parse_monomialToChars_ne_zero_nat (d : ℕ) (c : ℕ) (hc : c ≠ 0) :
+  parseMonomial (R := ℕ) (monomialToChars d c) = some (d, c) := by
+  sorry
+
+@[simp] lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
+  parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
+  sorry
 
 lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
   parseMonomial (R := ℚ) (monomialToChars d c) = some (d, c) := by
