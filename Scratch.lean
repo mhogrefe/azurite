@@ -4,6 +4,7 @@ import Mathlib.Data.Rat.Defs
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic.NormNum
 import Lean
+import Azurite.DensePoly.Monomial
 
 open Lean
 open Azurite
@@ -37,3 +38,7 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 #eval (zero : DensePoly ℤ).natDegree
 
 #eval p1a = p1b
+
+#eval DenseC (0: ℤ)
+
+#eval DenseC (5: ℤ)
