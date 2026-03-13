@@ -87,54 +87,54 @@ def pZ_large : DensePoly ℤ := ⟨#[1, -2, 3, 10], by decide⟩
 def pZMod10 : DensePoly (ZMod 10) := ⟨#[1, 2, 3, 5], by decide⟩
 #eval Azurite.DensePoly.map (ZMod.castHom (by decide) (ZMod 5)) pZMod10
 
-section ToStringEval
+section ToCharsEval
 
-#eval (monomialToString 0 (5:ℤ) : String)
-#eval (monomialToString 1 (5:ℤ) : String)
-#eval (monomialToString 2 (5:ℤ) : String)
+#eval (String.ofList (monomialToChars 0 (5:ℤ)))
+#eval (String.ofList (monomialToChars 1 (5:ℤ)))
+#eval (String.ofList (monomialToChars 2 (5:ℤ)))
 
-#eval (monomialToString 0 (1:ℤ) : String)
-#eval (monomialToString 1 (1:ℤ) : String)
-#eval (monomialToString 2 (1:ℤ) : String)
+#eval (String.ofList (monomialToChars 0 (1:ℤ)))
+#eval (String.ofList (monomialToChars 1 (1:ℤ)))
+#eval (String.ofList (monomialToChars 2 (1:ℤ)))
 
-#eval (monomialToString 0 (-1:ℤ) : String)
-#eval (monomialToString 1 (-1:ℤ) : String)
-#eval (monomialToString 2 (-1:ℤ) : String)
+#eval (String.ofList (monomialToChars 0 (-1:ℤ)))
+#eval (String.ofList (monomialToChars 1 (-1:ℤ)))
+#eval (String.ofList (monomialToChars 2 (-1:ℤ)))
 
-#eval (monomialToString 0 (0:ℤ) : String)
-#eval (monomialToString 1 (0:ℤ) : String)
-#eval (monomialToString 2 (0:ℤ) : String)
+#eval (String.ofList (monomialToChars 0 (0:ℤ)))
+#eval (String.ofList (monomialToChars 1 (0:ℤ)))
+#eval (String.ofList (monomialToChars 2 (0:ℤ)))
 
-end ToStringEval
+end ToCharsEval
 
 section ParseEval
 
-#eval parseMonomial (R := ℤ) "5"
-#eval parseMonomial (R := ℤ) "5*x"
-#eval parseMonomial (R := ℤ) "5*x^2"
+#eval parseMonomial (R := ℤ) "5".toList
+#eval parseMonomial (R := ℤ) "5*x".toList
+#eval parseMonomial (R := ℤ) "5*x^2".toList
 
-#eval parseMonomial (R := ℤ) "1"
-#eval parseMonomial (R := ℤ) "x"
-#eval parseMonomial (R := ℤ) "x^2"
+#eval parseMonomial (R := ℤ) "1".toList
+#eval parseMonomial (R := ℤ) "x".toList
+#eval parseMonomial (R := ℤ) "x^2".toList
 
-#eval parseMonomial (R := ℤ) "-1"
-#eval parseMonomial (R := ℤ) "-x"
-#eval parseMonomial (R := ℤ) "-x^2"
+#eval parseMonomial (R := ℤ) "-1".toList
+#eval parseMonomial (R := ℤ) "-x".toList
+#eval parseMonomial (R := ℤ) "-x^2".toList
 
-#eval parseMonomial (R := ℤ) "0"
+#eval parseMonomial (R := ℤ) "0".toList
 
-#eval parseMonomial (R := ℚ) "22/7"
-#eval parseMonomial (R := ℚ) "22/7*x"
-#eval parseMonomial (R := ℚ) "22/7*x^2"
+#eval parseMonomial (R := ℚ) "22/7".toList
+#eval parseMonomial (R := ℚ) "22/7*x".toList
+#eval parseMonomial (R := ℚ) "22/7*x^2".toList
 
-#eval parseMonomial (R := ℚ) "1"
-#eval parseMonomial (R := ℚ) "x"
-#eval parseMonomial (R := ℚ) "x^2"
+#eval parseMonomial (R := ℚ) "1".toList
+#eval parseMonomial (R := ℚ) "x".toList
+#eval parseMonomial (R := ℚ) "x^2".toList
 
-#eval parseMonomial (R := ℚ) "-1"
-#eval parseMonomial (R := ℚ) "-x"
-#eval parseMonomial (R := ℚ) "-x^2"
+#eval parseMonomial (R := ℚ) "-1".toList
+#eval parseMonomial (R := ℚ) "-x".toList
+#eval parseMonomial (R := ℚ) "-x^2".toList
 
-#eval parseMonomial (R := ℚ) "0"
+#eval parseMonomial (R := ℚ) "0".toList
 
 end ParseEval

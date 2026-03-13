@@ -4,24 +4,9 @@ import Mathlib.Data.ZMod.Basic
 
 namespace Azurite.DensePoly
 
-/--
-Formats a monomial with degree `d` and coefficient `c` as a `String`.
-Handles "1" and "-1" intuitively based on `ToString R`.
--/
-def monomialToString {R : Type _} [DecidableEq R] [Zero R] [ToString R] (d : ℕ) (c : R) : String :=
-  if c = 0 then
-    "0"
-  else if d = 0 then
-    toString c
-  else
-    let s := toString c
-    let pfx := if s == "1" then "" else if s == "-1" then "-" else s ++ "*"
-    let sfx := if d = 1 then "x" else s!"x^{d}"
-    pfx ++ sfx
-
 /-- A typeclass for types whose elements can be parsed from a monomial string coefficient. -/
 class DensePolyParsable (R : Type _) where
-  parse : String → Option R
+  parse : List Char → Option R
 
 def parseNatCharsAux (cs : List Char) (acc : ℕ) : Option ℕ :=
   match cs with
@@ -66,10 +51,10 @@ def intToChars (z : ℤ) : List Char :=
     else natToCharsAux n n []
 
 instance : DensePolyParsable ℕ where
-  parse s := parseNatChars s.toList
+  parse cs := parseNatChars cs
 
 instance : DensePolyParsable ℤ where
-  parse s := parseIntChars s.toList
+  parse cs := parseIntChars cs
 
 def parseRatChars (cs : List Char) : Option ℚ :=
   match cs.splitOn '/' with
@@ -88,38 +73,68 @@ def ratToChars (q : ℚ) : List Char :=
   else intToChars q.num ++ ['/'] ++ natToChars q.den
 
 instance : DensePolyParsable ℚ where
-  parse s := parseRatChars s.toList
+  parse cs := parseRatChars cs
 
 instance {n : ℕ} [NeZero n] : DensePolyParsable (ZMod n) where
-  parse s := s.toInt?.map (fun x => (x : ZMod n))
+  parse cs := (String.ofList cs).toInt?.map (fun x => (x : ZMod n))
+
+/-- A typeclass for types whose elements can be formatted as a list of characters for polynomial coefficients. -/
+class DensePolyToChars (R : Type _) where
+  toChars : R → List Char
+
+instance : DensePolyToChars ℕ where
+  toChars := natToChars
+
+instance : DensePolyToChars ℤ where
+  toChars := intToChars
+
+instance : DensePolyToChars ℚ where
+  toChars := ratToChars
+
+instance {n : ℕ} [NeZero n] : DensePolyToChars (ZMod n) where
+  toChars x := (toString x.val).toList
 
 /--
-Parses a monomial string (produced by `monomialToString`) into its degree and coefficient.
+Formats a monomial with degree `d` and coefficient `c` as a `List Char`.
+Handles "1" and "-1" intuitively based on `DensePolyToChars R`.
+-/
+def monomialToChars {R : Type _} [DecidableEq R] [Zero R] [DensePolyToChars R] (d : ℕ) (c : R) : List Char :=
+  if c = 0 then
+    ['0']
+  else if d = 0 then
+    DensePolyToChars.toChars c
+  else
+    let s := DensePolyToChars.toChars c
+    let pfx := if s == ['1'] then [] else if s == ['-', '1'] then ['-'] else s ++ ['*']
+    let sfx := if d = 1 then ['x'] else ['x', '^'] ++ natToChars d
+    pfx ++ sfx
+
+/--
+Parses a monomial list of characters into its degree and coefficient.
 Returns `none` if the string cannot be parsed.
 Supported coefficients: `ℕ`, `ℤ`, `ℚ`, and `ZMod n`.
 -/
-def parseMonomial {R : Type _} [DensePolyParsable R] (s : String) : Option (ℕ × R) :=
-  match s.splitOn "x" with
-  | [c_str] => do
-    let c ← DensePolyParsable.parse c_str
+def parseMonomial {R : Type _} [DensePolyParsable R] (cs : List Char) : Option (ℕ × R) :=
+  match cs.splitOn 'x' with
+  | [c_cs] => do
+    let c ← DensePolyParsable.parse c_cs
     some (0, c)
-  | [prefix_str, suffix_str] => do
-    let d ← match suffix_str with
-      | "" => some 1
+  | [prefix_cs, suffix_cs] => do
+    let d ← match suffix_cs with
+      | [] => some 1
+      | '^' :: rest =>
+        (String.ofList rest).toNat?
+      | _ => none
+    let c_cs := match prefix_cs with
+      | [] => ['1']
+      | ['-'] => ['-', '1']
       | _ =>
-        if suffix_str.front == '^' then
-          (suffix_str.drop 1).toNat?
+        let back := prefix_cs.getLast?
+        if back = some '*' then
+          prefix_cs.dropLast
         else
-          none
-    let c_str := match prefix_str with
-      | "" => "1"
-      | "-" => "-1"
-      | _ =>
-        if prefix_str.back == '*' then
-          (prefix_str.toRawSubstring.dropRight 1).toString
-        else
-          "invalid"
-    let c ← DensePolyParsable.parse c_str
+          ['i', 'n', 'v', 'a', 'l', 'i', 'd']
+    let c ← DensePolyParsable.parse c_cs
     some (d, c)
   | _ => none
 
