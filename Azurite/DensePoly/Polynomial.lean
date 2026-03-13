@@ -12,7 +12,7 @@ noncomputable def List.toPoly : List R → Polynomial R
 
 /-- Converts a `DensePoly` into a mathlib `Polynomial R` -/
 noncomputable def DensePoly.toPoly (p : Azurite.DensePoly R) : Polynomial R :=
-  p.coeffs.toPoly
+  p.coeffs.toList.toPoly
 
 /-- Converts a mathlib `Polynomial R` into a list of coefficients from 0 to natDegree -/
 noncomputable def Polynomial.toDenseList [DecidableEq R] (p : Polynomial R) : List R :=
@@ -48,16 +48,20 @@ lemma length_toDenseList [DecidableEq R] (p : Polynomial R) (hp : p ≠ 0) :
 /-- Converts a mathlib `Polynomial R` to `DensePoly R` -/
 noncomputable def DensePoly.ofPoly [DecidableEq R] (p : Polynomial R) : Azurite.DensePoly R :=
   if hp : p = 0 then 0 else
-  ⟨p.toDenseList, by
+  ⟨p.toDenseList.toArray, by
     intro h
     have h_last := last_toDenseList_ne_zero p hp
     have h_coeff := Polynomial.leadingCoeff_ne_zero.mpr hp
-    have h_opt : p.toDenseList.getLast? = some (p.toDenseList.getLast (by
+    have h_opt : p.toDenseList.toArray.back? = some (p.toDenseList.getLast (by
       intro len_zero
       have h1 : p.toDenseList.length = 0 := List.length_eq_zero_iff.mpr len_zero
       have h2 : p.toDenseList.length = p.natDegree + 1 := length_toDenseList p hp
       omega
-    )) := List.getLast?_eq_some_getLast _
+    )) := by
+      have hw1 : p.toDenseList.toArray.back? = p.toDenseList.toArray.toList.getLast? := by simp
+      have hw2 : p.toDenseList.toArray.toList.getLast? = p.toDenseList.getLast? := by simp
+      rw [hw1, hw2]
+      exact List.getLast?_eq_some_getLast _
     rw [h_last] at h_opt
     rw [h] at h_opt
     injection h_opt with h_eq
@@ -155,47 +159,82 @@ lemma map_getCoeff_range (l : List R) :
     rw [h3]
     rfl
 
+lemma array_eq_of_toList_eq {R : Type _} {a b : Array R} (h : a.toList = b.toList) : a = b := by
+  cases a
+  cases b
+  simp at h
+  congr
+
+lemma eq_empty_of_toList_empty {R : Type _} [Semiring R] (a : Array R) (h : a.toList = []) : a = #[] := by
+  apply array_eq_of_toList_eq
+  exact h
+
+lemma toList_empty_of_eq_empty {R : Type _} [Semiring R] (a : Array R) (h : a = #[]) : a.toList = [] := by
+  rw [h]
+
+lemma isEmpty_iff_toList_empty {R : Type _} [Semiring R] (a : Array R) : a.isEmpty ↔ a.toList = [] := by
+  cases a
+  simp
+
 lemma ofPoly_toPoly [DecidableEq R] (p : Azurite.DensePoly R) : DensePoly.ofPoly (DensePoly.toPoly p) = p := by
   apply Azurite.DensePoly.ext
   dsimp [DensePoly.ofPoly, DensePoly.toPoly]
-  by_cases h : p.coeffs = []
-  · have h_p_zero : p = 0 := by apply Azurite.DensePoly.ext; exact h
+  by_cases h : p.coeffs.toList = []
+  · have h_p_zero : p = 0 := by
+      apply Azurite.DensePoly.ext
+      exact eq_empty_of_toList_empty p.coeffs h
     rw [h_p_zero]
     rfl
-  · have h_poly_ne_zero : List.toPoly p.coeffs ≠ 0 := by
+  · have h_poly_ne_zero : List.toPoly p.coeffs.toList ≠ 0 := by
       intro hc
-      have h4 : (List.toPoly p.coeffs).coeff (p.coeffs.length - 1) = 0 := by rw [hc]; simp
+      have h4 : (List.toPoly p.coeffs.toList).coeff (p.coeffs.size - 1) = 0 := by rw [hc]; simp
       rw [coeff_toPoly] at h4
-      -- Contradiction with p.last_ne_zero
-      have h1 : p.coeffs[p.coeffs.length - 1]? = p.coeffs.getLast? := by
+      have h1 : p.coeffs.toList[p.coeffs.size - 1]? = p.coeffs.toList.getLast? := by
         apply Eq.symm
         apply List.getLast?_eq_getElem?
       dsimp [List.getCoeff] at h4
       rw [h1] at h4
-      have h2 : p.coeffs.getLast?.isSome := List.getLast?_isSome.mpr h
-      have h3 : ∃ c, p.coeffs.getLast? = some c := Option.isSome_iff_exists.mp h2
+      -- Map back?
+      have hw2 : p.coeffs.toList.getLast? = p.coeffs.back? := by simp
+      rw [hw2] at h4
+      have h2 : p.coeffs.back?.isSome := by
+        have ht : p.coeffs.back? = p.coeffs.toList.getLast? := by simp
+        rw [ht]
+        exact List.getLast?_isSome.mpr h
+      have h3 : ∃ c, p.coeffs.back? = some c := Option.isSome_iff_exists.mp h2
       rcases h3 with ⟨c, hc_some⟩
       rw [hc_some] at h4
       simp at h4
-      have hlast : p.coeffs.getLast? ≠ some 0 := p.last_ne_zero
+      have hlast : p.coeffs.back? ≠ some 0 := p.last_ne_zero
       rw [hc_some] at hlast
       rw [h4] at hlast
       exact hlast rfl
     simp [h_poly_ne_zero, Polynomial.toDenseList]
-    have h1 : (List.toPoly p.coeffs).natDegree = p.coeffs.length - 1 := by
+    have h1 : (List.toPoly p.coeffs.toList).natDegree = p.coeffs.size - 1 := by
+      have hw : p.coeffs.size = p.coeffs.toList.length := (by simp)
+      rw [hw]
       apply natDegree_toPoly
-      · exact h
-      · exact p.last_ne_zero
+      · intro hc; exact h hc
+      · have hh : p.coeffs.toList.getLast? = p.coeffs.back? := by simp
+        rw [hh]
+        exact p.last_ne_zero
     rw [h1]
-    have h2 : p.coeffs.length - 1 + 1 = p.coeffs.length := by
-      have hlen : p.coeffs.length > 0 := List.length_pos_iff_ne_nil.mpr h
+    have h2 : p.coeffs.size - 1 + 1 = p.coeffs.size := by
+      have hlen : p.coeffs.toList.length > 0 := List.length_pos_iff_ne_nil.mpr h
+      have hw : p.coeffs.size = p.coeffs.toList.length := by simp
       omega
     rw [h2]
-    have h3 : Polynomial.coeff (List.toPoly p.coeffs) = p.coeffs.getCoeff := by
+    have h3 : Polynomial.coeff (List.toPoly p.coeffs.toList) = p.coeffs.toList.getCoeff := by
       funext i
-      exact coeff_toPoly p.coeffs i
+      exact coeff_toPoly p.coeffs.toList i
     rw [h3]
-    exact map_getCoeff_range p.coeffs
+    have hw3 : (List.range p.coeffs.size).map p.coeffs.toList.getCoeff = p.coeffs.toList := by
+      have hw : p.coeffs.size = p.coeffs.toList.length := (by simp)
+      rw [hw]
+      exact map_getCoeff_range p.coeffs.toList
+    apply array_eq_of_toList_eq
+    have ht : ((List.range p.coeffs.size).map p.coeffs.toList.getCoeff).toArray.toList = (List.range p.coeffs.size).map p.coeffs.toList.getCoeff := by simp
+    rw [ht, hw3]
 
 /-- The equivalence between `DensePoly R` and `Polynomial R`. -/
 noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Polynomial R where
@@ -205,51 +244,64 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   right_inv := toPoly_ofPoly
 
 @[simp] lemma DensePoly.natDegree_toPoly (p : Azurite.DensePoly R) : (toPoly p).natDegree = p.natDegree := by
-  change (toPoly p).natDegree = p.coeffs.length - 1
-  dsimp [toPoly]
-  if h : p.coeffs = [] then
-    rw [h]
+  change (List.toPoly p.coeffs.toList).natDegree = p.coeffs.size - 1
+  if h : p.coeffs.toList = [] then
+    have hz : p.coeffs.size = 0 := by
+      have hw : p.coeffs.size = p.coeffs.toList.length := by simp
+      have hl : p.coeffs.toList.length = 0 := by rw [h]; rfl
+      rw [hw, hl]
+    rw [h, hz]
     rfl
   else
-    exact _root_.natDegree_toPoly p.coeffs h p.last_ne_zero
+    have hw : p.coeffs.size = p.coeffs.toList.length := (by simp)
+    rw [hw]
+    have ht2 : p.coeffs.toList.getLast? ≠ some 0 := by
+      have hh : p.coeffs.toList.getLast? = p.coeffs.back? := by simp
+      rw [hh]
+      exact p.last_ne_zero
+    exact _root_.natDegree_toPoly p.coeffs.toList h ht2
 
 @[simp] lemma DensePoly.degree_toPoly (p : Azurite.DensePoly R) : (toPoly p).degree = p.degree := by
-  change (toPoly p).degree = if p.coeffs = [] then ⊥ else ↑(p.natDegree)
-  split
-  · next h =>
+  change (toPoly p).degree = if p.coeffs = #[] then ⊥ else ↑p.natDegree
+  if h : p.coeffs.toList = [] then
     have h_toPoly_zero : toPoly p = 0 := by
       dsimp [toPoly]
       rw [h]
       rfl
+    have he : p.coeffs = #[] := eq_empty_of_toList_empty p.coeffs h
+    have h_empty : p.coeffs.isEmpty = true := by
+      rw [he]
+      rfl
     rw [h_toPoly_zero, Polynomial.degree_zero]
-  · next h =>
+    rw [if_pos he]
+  else
+    have he : ¬(p.coeffs = #[]) := by
+      intro hc; have hz : p.coeffs.toList = [] := toList_empty_of_eq_empty p.coeffs hc
+      exact h hz
+    rw [if_neg he]
     have hp_nat := DensePoly.natDegree_toPoly p
     have ht : toPoly p ≠ 0 := by
       intro hc
       have hc_deg : (toPoly p).natDegree = 0 := by rw [hc, Polynomial.natDegree_zero]
       rw [hp_nat] at hc_deg
-      have h_nat : p.natDegree = p.coeffs.length - 1 := rfl
-      have h_calc : p.coeffs.length - 1 = 0 := by rw [← h_nat, hc_deg]
-      have h_len_pos : 0 < p.coeffs.length := List.length_pos_iff_ne_nil.mpr h
-      have h_list_eq : ∃ a, p.coeffs = [a] := by
-        cases h_list : p.coeffs with
-        | nil => contradiction
-        | cons a as =>
-          have h_len2 : (a :: as).length - 1 = 0 := by rw [h_list] at h_calc; exact h_calc
-          have h_as_len : as.length = 0 := by
-            have h_eq : (a :: as).length - 1 = as.length := rfl
-            rw [h_eq] at h_len2
-            exact h_len2
-          have h_as_empty : as = [] := List.length_eq_zero_iff.mp h_as_len
-          exact ⟨a, by rw [h_as_empty]⟩
-      rcases h_list_eq with ⟨a, ha⟩
+      have h_nat : p.natDegree = p.coeffs.size - 1 := rfl
+      have h_calc : p.coeffs.size - 1 = 0 := by rw [← h_nat, hc_deg]
+      have h_list : ∃ a, p.coeffs.toList = [a] := by
+        have hw : p.coeffs.toList.length = p.coeffs.size := by simp
+        have hl : p.coeffs.toList.length - 1 = 0 := by rw [hw, h_calc]
+        have h_len_pos : p.coeffs.toList.length > 0 := List.length_pos_iff_ne_nil.mpr h
+        have hp : p.coeffs.toList.length = 1 := by omega
+        exact List.length_eq_one_iff.mp hp
+      rcases h_list with ⟨a, ha⟩
       have hc_zero : (toPoly p).coeff 0 = 0 := by rw [hc]; rfl
-      have hc_eq : (toPoly p).coeff 0 = p.coeffs.getCoeff 0 := coeff_toPoly p.coeffs 0
+      have hc_eq : (toPoly p).coeff 0 = p.coeffs.toList.getCoeff 0 := coeff_toPoly p.coeffs.toList 0
       rw [hc_zero, ha] at hc_eq
       have ha_zero : a = 0 := hc_eq.symm
-      have hlast : p.coeffs.getLast? = some 0 := by
+      have hlast : p.coeffs.back? = some 0 := by
+        have hw : p.coeffs.back? = p.coeffs.toList.getLast? := by simp
+        rw [hw]
         calc
-          p.coeffs.getLast? = [a].getLast? := by rw [ha]
+          p.coeffs.toList.getLast? = [a].getLast? := by rw [ha]
           _ = [0].getLast? := by rw [ha_zero]
           _ = some 0 := rfl
       exact p.last_ne_zero hlast
@@ -307,7 +359,8 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
     · next h_poly =>
       have h_deg : (1 : Polynomial R).natDegree = 0 := Polynomial.natDegree_one
       rw [h_deg]
-      simp
+      have h_list : (List.range (0 + 1)).map (1 : Polynomial R).coeff = [(1 : R)] := by simp
+      rw [h_list]
 
 @[simp] lemma toPoly_one [DecidableEq R] : DensePoly.toPoly (1 : Azurite.DensePoly R) = 1 := by
   have h := ofPoly_toPoly (1 : Azurite.DensePoly R)
