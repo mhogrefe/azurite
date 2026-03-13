@@ -116,10 +116,11 @@ def monomial (n : ℕ) (a : R) : DensePoly R :=
 
 lemma coeff_normalize (a : Array R) (i : ℕ) :
   (normalize a).coeff i = (a[i]?).getD 0 := by
-  dsimp [normalize, coeff, List.getCoeff]
-  have ht_arr : (dropTrailingZeros a.toList).toArray[i]? = (dropTrailingZeros a.toList)[i]? := by
-    exact List.getElem?_toArray
+  have h_pop : (normalize a).coeffs.toList = dropTrailingZeros a.toList := toList_popWhile_eq_dropTrailingZeros a
+  have ht_arr : (normalize a).coeffs[i]? = (normalize a).coeffs.toList[i]? := (Array.getElem?_toList).symm
+  dsimp [coeff, List.getCoeff]
   rw [ht_arr]
+  rw [h_pop]
   have h_get := dropTrailingZeros_get? a.toList i
   rw [h_get]
   split

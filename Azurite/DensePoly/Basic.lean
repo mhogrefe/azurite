@@ -125,15 +125,26 @@ lemma eq_dropTrailingZeros_append_takeWhile (l : List R) :
     exact h3
   exact h1
 
+lemma toList_popWhile_eq_dropTrailingZeros (a : Array R) :
+  (a.popWhile (· = 0)).toList = dropTrailingZeros a.toList := by
+  dsimp [dropTrailingZeros]
+  have h := List.popWhile_toArray (· = 0) a.toList
+  have ht : a.toList.toArray = a := by simp
+  rw [ht] at h
+  rw [h]
+
 /-- Normalizes an array of coefficients by dropping trailing zeros and constructs a DensePoly. -/
 def normalize (a : Array R) : DensePoly R :=
-  let l := dropTrailingZeros a.toList
-  ⟨l.toArray, by
+  let arr := a.popWhile (· = 0)
+  ⟨arr, by
     intro h
-    have h1 : l.toArray.back? = l.getLast? := by simp
+    let orig := dropTrailingZeros a.toList
+    have h1 : arr.toList = orig := toList_popWhile_eq_dropTrailingZeros a
+    have h2 : arr.toList.getLast? = arr.back? := by simp
+    rw [← h2] at h
     rw [h1] at h
     have ht := dropTrailingZeros_last a.toList
-    change l = [] ∨ l.getLast? ≠ some 0 at ht
+    change orig = [] ∨ orig.getLast? ≠ some 0 at ht
     rcases ht with h_empty | h_not_zero
     · rw [h_empty] at h
       simp at h
@@ -174,5 +185,9 @@ def coeff {R : Type _} [Semiring R] (p : DensePoly R) (n : ℕ) : R :=
 /-- The leading coefficient of the polynomial `p`. -/
 def leadingCoeff {R : Type _} [Semiring R] (p : DensePoly R) : R :=
   p.coeff p.natDegree
+
+/-- The second-highest coefficient, or 0 for constants. -/
+def nextCoeff {R : Type _} [Semiring R] (p : DensePoly R) : R :=
+  if p.natDegree = 0 then 0 else p.coeff (p.natDegree - 1)
 
 end Azurite.DensePoly

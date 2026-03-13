@@ -413,3 +413,15 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   have h := leadingCoeff_toPoly (DensePoly.ofPoly p)
   rw [toPoly_ofPoly] at h
   exact h.symm
+
+@[simp] lemma nextCoeff_toPoly (p : Azurite.DensePoly R) : (DensePoly.toPoly p).nextCoeff = p.nextCoeff := by
+  dsimp [Azurite.DensePoly.nextCoeff, Polynomial.nextCoeff]
+  rw [DensePoly.natDegree_toPoly]
+  split_ifs with h
+  · rfl
+  · rw [coeff_toPoly_eq]
+
+@[simp] lemma nextCoeff_ofPoly [DecidableEq R] (p : Polynomial R) : (DensePoly.ofPoly p).nextCoeff = p.nextCoeff := by
+  have h := nextCoeff_toPoly (DensePoly.ofPoly p)
+  rw [toPoly_ofPoly] at h
+  exact h.symm
