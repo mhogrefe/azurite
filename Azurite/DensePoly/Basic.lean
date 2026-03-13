@@ -66,4 +66,8 @@ def natDegree {R : Type _} [Semiring R] (p : DensePoly R) : ℕ :=
 def degree {R : Type _} [Semiring R] (p : DensePoly R) : WithBot ℕ :=
   if p.coeffs = #[] then ⊥ else ↑p.natDegree
 
+/-- The `n`-th coefficient of the polynomial `p`. -/
+def coeff {R : Type _} [Semiring R] (p : DensePoly R) (n : ℕ) : R :=
+  (p.coeffs[n]?).getD 0
+
 end Azurite.DensePoly

@@ -86,6 +86,14 @@ lemma coeff_toPoly (l : List R) (i : ℕ) :
     · simp [List.toPoly, List.getCoeff]
     · simp [List.toPoly, ih, List.getCoeff]
 
+@[simp] lemma coeff_toPoly_eq (p : Azurite.DensePoly R) (i : ℕ) :
+  (DensePoly.toPoly p).coeff i = p.coeff i := by
+  dsimp [DensePoly.toPoly, Azurite.DensePoly.coeff]
+  rw [coeff_toPoly]
+  dsimp [List.getCoeff]
+  have ht : p.coeffs.toList[i]? = p.coeffs[i]? := by simp
+  rw [ht]
+
 lemma getCoeff_map_range_coeff [DecidableEq R] (p : Polynomial R) (i : ℕ) :
   ((List.range (p.natDegree + 1)).map p.coeff).getCoeff i = if i ≤ p.natDegree then p.coeff i else 0 := by
   dsimp [List.getCoeff]
@@ -388,3 +396,11 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   have h2 : DensePoly.toPoly (DensePoly.ofPoly (1 : Polynomial R)) = 1 := toPoly_ofPoly 1
   rw [ofPoly_one] at h2
   exact h2
+
+@[ext] lemma ext [DecidableEq R] {p q : Azurite.DensePoly R} (h : ∀ i, p.coeff i = q.coeff i) : p = q := by
+  have hp : DensePoly.toPoly p = DensePoly.toPoly q := by
+    ext i
+    rw [coeff_toPoly_eq, coeff_toPoly_eq, h i]
+  have ht : DensePoly.ofPoly (DensePoly.toPoly p) = DensePoly.ofPoly (DensePoly.toPoly q) := by rw [hp]
+  rw [ofPoly_toPoly, ofPoly_toPoly] at ht
+  exact ht
