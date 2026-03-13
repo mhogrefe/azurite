@@ -39,6 +39,6 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 
 #eval p1a = p1b
 
-#eval DenseC (0: ℤ)
+#eval C (0: ℤ)
 
-#eval DenseC (5: ℤ)
+#eval C (5: ℤ)
