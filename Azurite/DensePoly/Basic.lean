@@ -39,6 +39,107 @@ namespace Azurite.DensePoly
 def zero {R : Type _} [Semiring R] : DensePoly R :=
   ⟨#[], by simp⟩
 
+variable {R : Type _} [Semiring R] [DecidableEq R]
+
+/-- Removes trailing zeros from a list of coefficients. -/
+def dropTrailingZeros (l : List R) : List R :=
+  (l.reverse.dropWhile (· = 0)).reverse
+
+lemma head?_dropWhile (l : List R) :
+  (l.dropWhile (· = 0)).head? ≠ some 0 := by
+  induction l with
+  | nil => simp
+  | cons a as ih =>
+    by_cases ha : a = 0
+    · simp [ha]
+      exact ih
+    · simp [ha]
+
+lemma dropTrailingZeros_last (l : List R) :
+  let dropped := dropTrailingZeros l
+  dropped = [] ∨ dropped.getLast? ≠ some 0 := by
+  dsimp [dropTrailingZeros]
+  by_cases h : (l.reverse.dropWhile (· = 0)).reverse = []
+  · left
+    exact h
+  · right
+    have h1 : ((l.reverse.dropWhile (· = 0)).reverse).getLast? = (l.reverse.dropWhile (· = 0)).head? := by
+      apply List.getLast?_reverse
+    rw [h1]
+    exact head?_dropWhile (l.reverse)
+
+lemma dropTrailingZeros_prefix (l : List R) :
+  dropTrailingZeros l <+: l := by
+  dsimp [dropTrailingZeros]
+  have h1 : (l.reverse.dropWhile (· = 0)).reverse ++ (l.reverse.takeWhile (· = 0)).reverse = l := by
+    have h2 : l.reverse.takeWhile (· = 0) ++ l.reverse.dropWhile (· = 0) = l.reverse := by
+      exact List.takeWhile_append_dropWhile
+    have h3 : (l.reverse.takeWhile (· = 0) ++ l.reverse.dropWhile (· = 0)).reverse = l.reverse.reverse := by rw [h2]
+    rw [List.reverse_append] at h3
+    rw [List.reverse_reverse] at h3
+    exact h3
+  exact ⟨(l.reverse.takeWhile (· = 0)).reverse, h1⟩
+
+lemma IsPrefix_get? {α : Type _} {l₁ l₂ : List α} (h : l₁ <+: l₂) (i : ℕ) (hi : i < l₁.length) :
+  l₂[i]? = l₁[i]? := by
+  rcases h with ⟨t, ht⟩
+  rw [← ht]
+  rw [List.getElem?_append]
+  rw [if_pos hi]
+
+lemma dropTrailingZeros_get? (l : List R) (i : ℕ) :
+  (dropTrailingZeros l)[i]? = if i < (dropTrailingZeros l).length then l[i]? else none := by
+  have h_pref := dropTrailingZeros_prefix l
+  split
+  · next h_lt =>
+    have ht := IsPrefix_get? h_pref i h_lt
+    exact ht.symm
+  · next h_ge =>
+    exact List.getElem?_eq_none (by omega)
+
+lemma takeWhile_getElem?_eq_some {α : Type _} {p : α → Bool} (l : List α) (j : ℕ) (hj : j < (l.takeWhile p).length) (x : α) (hx : (l.takeWhile p)[j]? = some x) :
+  p x = true := by
+  induction l generalizing j with
+  | nil =>
+    simp at hj
+  | cons a as ih =>
+    by_cases hpa : p a = true
+    · simp [hpa] at hj hx
+      cases j with
+      | zero =>
+        simp at hx
+        rw [← hx]
+        exact hpa
+      | succ j =>
+        exact ih j (by omega) hx
+    · simp [hpa] at hj
+
+lemma eq_dropTrailingZeros_append_takeWhile (l : List R) :
+  dropTrailingZeros l ++ (l.reverse.takeWhile (· = 0)).reverse = l := by
+  have h1 : (l.reverse.dropWhile (· = 0)).reverse ++ (l.reverse.takeWhile (· = 0)).reverse = l := by
+    have h2 : l.reverse.takeWhile (· = 0) ++ l.reverse.dropWhile (· = 0) = l.reverse := by
+      exact List.takeWhile_append_dropWhile
+    have h3 : (l.reverse.takeWhile (· = 0) ++ l.reverse.dropWhile (· = 0)).reverse = l.reverse.reverse := by rw [h2]
+    rw [List.reverse_append] at h3
+    rw [List.reverse_reverse] at h3
+    exact h3
+  exact h1
+
+/-- Normalizes an array of coefficients by dropping trailing zeros and constructs a DensePoly. -/
+def normalize (a : Array R) : DensePoly R :=
+  let l := dropTrailingZeros a.toList
+  ⟨l.toArray, by
+    intro h
+    have h1 : l.toArray.back? = l.getLast? := by simp
+    rw [h1] at h
+    have ht := dropTrailingZeros_last a.toList
+    change l = [] ∨ l.getLast? ≠ some 0 at ht
+    rcases ht with h_empty | h_not_zero
+    · rw [h_empty] at h
+      simp at h
+    · exact h_not_zero h
+  ⟩
+
 /-- 
 The polynomial 1. 
 

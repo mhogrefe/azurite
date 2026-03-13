@@ -114,4 +114,123 @@ def monomial (n : ℕ) (a : R) : DensePoly R :=
   rw [toPoly_ofPoly]
   exact (toPoly_monomial n a).symm
 
+lemma coeff_normalize (a : Array R) (i : ℕ) :
+  (normalize a).coeff i = (a[i]?).getD 0 := by
+  dsimp [normalize, coeff, List.getCoeff]
+  have ht_arr : (dropTrailingZeros a.toList).toArray[i]? = (dropTrailingZeros a.toList)[i]? := by
+    exact List.getElem?_toArray
+  rw [ht_arr]
+  have h_get := dropTrailingZeros_get? a.toList i
+  rw [h_get]
+  split
+  · next h_lt =>
+    have ht_arr_list : a.toList[i]? = a[i]? := Array.getElem?_toList
+    have h_eq : a[i]? = a.toList[i]? := ht_arr_list.symm
+    rw [h_eq]
+  · next h_ge =>
+    by_cases h_bounds : i < a.toList.length
+    · have h_drop : (a.toList)[i]? = some 0 := by
+        have ht : dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse = a.toList := eq_dropTrailingZeros_append_takeWhile a.toList
+        have ht_get : (dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse)[i]? = a.toList[i]? := by rw [ht]
+        rw [List.getElem?_append] at ht_get
+        rw [if_neg (by omega)] at ht_get
+        have ht2 : ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = a.toList[i]? := ht_get
+        
+        have ht3 : a.toList[i]? = ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? := ht2.symm
+        rw [ht3]
+        
+        have h_len_sum : (dropTrailingZeros a.toList).length + (a.toList.reverse.takeWhile (· = 0)).reverse.length = a.toList.length := by
+          have h_len_eq : (dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse).length = a.toList.length := by rw [ht]
+          rw [List.length_append] at h_len_eq
+          exact h_len_eq
+        
+        have h_len_rev : (a.toList.reverse.takeWhile (· = 0)).reverse.length = (a.toList.reverse.takeWhile (·=0)).length := by
+          exact List.length_reverse
+        
+        have h_idx_lt : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).reverse.length := by
+          omega
+        
+        have h_idx_lt2 : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).length := by
+          omega
+          
+        have h_get_rev : ∃ x, ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = some x := by
+          exact ⟨_, List.getElem?_eq_some_iff.mpr ⟨h_idx_lt, rfl⟩⟩
+        
+        rcases h_get_rev with ⟨x, hx⟩
+        rw [hx]
+        
+        have hx_rev : (a.toList.reverse.takeWhile (· = 0))[ (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) ]? = some x := by
+          have h_rev_idx : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).length := by omega
+          have h_rev_get : ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = (a.toList.reverse.takeWhile (· = 0))[ (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) ]? := by
+            exact List.getElem?_reverse h_rev_idx
+          rw [h_rev_get] at hx
+          exact hx
+        
+        have h_idx_lt_3 : (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) < (a.toList.reverse.takeWhile (· = 0)).length := by
+          omega
+          
+        have hp : (fun x : R => decide (x = 0)) x = true := takeWhile_getElem?_eq_some (a.toList.reverse) ((a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length)) h_idx_lt_3 x hx_rev
+        have hp2 : x = 0 := by exact of_decide_eq_true hp
+        rw [hp2]
+      have ht_arr_list : a.toList[i]? = a[i]? := Array.getElem?_toList
+      rw [ht_arr_list] at h_drop
+      rw [h_drop]
+      rfl
+    · have ht_arr_list : a.toList[i]? = a[i]? := Array.getElem?_toList
+      have h_bounds_le : a.toList.length ≤ i := by omega
+      have h_none : a.toList[i]? = none := List.getElem?_eq_none h_bounds_le
+      rw [ht_arr_list] at h_none
+      rw [h_none]
+
+/-- Erases the `n`-th coefficient of a polynomial. -/
+def erase (n : ℕ) (p : DensePoly R) : DensePoly R :=
+  if p.coeffs.size ≤ n then
+    p
+  else
+    normalize (p.coeffs.set! n 0)
+
+@[simp] lemma toPoly_erase (n : ℕ) (p : DensePoly R) :
+  DensePoly.toPoly (erase n p) = Polynomial.erase n (DensePoly.toPoly p) := by
+  ext i
+  rw [coeff_toPoly_eq]
+  rw [Polynomial.coeff_erase]
+  dsimp [erase]
+  split
+  · next h =>
+    by_cases h_eq : i = n
+    · rw [if_pos h_eq]
+      rw [h_eq]
+      dsimp [coeff]
+      have ht : p.coeffs[n]? = none := Array.getElem?_eq_none_iff.mpr h
+      rw [ht]
+      rfl
+    · rw [if_neg h_eq]
+      rw [coeff_toPoly_eq]
+  · next hc =>
+    by_cases h_eq : i = n
+    · rw [if_pos h_eq]
+      rw [h_eq]
+      rw [coeff_normalize]
+      have h_lt : n < p.coeffs.size := by omega
+      have ht : (p.coeffs.setIfInBounds n 0)[n]? = some 0 := by
+        exact Array.getElem?_setIfInBounds_self_of_lt h_lt
+      rw [ht]
+      rfl
+    · rw [if_neg h_eq]
+      rw [coeff_normalize]
+      have h_lt : n < p.coeffs.size := by omega
+      have ht : (p.coeffs.setIfInBounds n 0)[i]? = p.coeffs[i]? := by
+        exact Array.getElem?_setIfInBounds_ne (Ne.symm h_eq)
+      rw [ht]
+      rw [← coeff]
+      rw [coeff_toPoly_eq]
+
+@[simp] lemma ofPoly_erase (n : ℕ) (p : Polynomial R) :
+  DensePoly.ofPoly (Polynomial.erase n p) = erase n (DensePoly.ofPoly p) := by
+  rw [← toPoly_inj]
+  have h := toPoly_erase n (DensePoly.ofPoly p)
+  rw [toPoly_ofPoly p] at h
+  rw [toPoly_ofPoly]
+  exact h.symm
+
 end Azurite.DensePoly

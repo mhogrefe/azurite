@@ -47,5 +47,6 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 
 #eval monomial 10 (5: ℤ)
 
-#eval p1a.coeff 1 -- Should be 2
-#eval p1a.coeff 5 -- Should be 0
+#eval (p1a.erase 1).coeffs
+#eval (p1a.erase 2).coeffs
+#eval ((C 5).erase 0).coeffs
