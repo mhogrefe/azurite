@@ -190,4 +190,20 @@ def leadingCoeff {R : Type _} [Semiring R] (p : DensePoly R) : R :=
 def nextCoeff {R : Type _} [Semiring R] (p : DensePoly R) : R :=
   if p.natDegree = 0 then 0 else p.coeff (p.natDegree - 1)
 
+/-- A polynomial is `Monic` if its leading coefficient is 1. -/
+def Monic {R : Type _} [Semiring R] (p : DensePoly R) :=
+  p.leadingCoeff = (1 : R)
+
+theorem Monic.def {R : Type _} [Semiring R] {p : DensePoly R} : p.Monic ↔ p.leadingCoeff = 1 :=
+  Iff.rfl
+
+instance Monic.decidable {R : Type _} [Semiring R] [DecidableEq R] {p : DensePoly R} : Decidable p.Monic := by unfold Monic; infer_instance
+
+@[simp]
+theorem Monic.leadingCoeff_eq_one {R : Type _} [Semiring R] {p : DensePoly R} (hp : p.Monic) : p.leadingCoeff = 1 :=
+  hp
+
+theorem Monic.coeff_natDegree {R : Type _} [Semiring R] {p : DensePoly R} (hp : p.Monic) : p.coeff p.natDegree = 1 :=
+  hp
+
 end Azurite.DensePoly

@@ -52,3 +52,5 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 #eval (C 5).erase 0
 
 #eval p1a.leadingCoeff
+
+#eval p1a.Monic

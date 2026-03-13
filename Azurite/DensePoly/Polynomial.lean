@@ -425,3 +425,12 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   have h := nextCoeff_toPoly (DensePoly.ofPoly p)
   rw [toPoly_ofPoly] at h
   exact h.symm
+
+@[simp] lemma Monic_toPoly (p : Azurite.DensePoly R) : (DensePoly.toPoly p).Monic ↔ p.Monic := by
+  dsimp [Polynomial.Monic, Azurite.DensePoly.Monic]
+  rw [leadingCoeff_toPoly]
+
+@[simp] lemma Monic_ofPoly [DecidableEq R] (p : Polynomial R) : (DensePoly.ofPoly p).Monic ↔ p.Monic := by
+  have h := Monic_toPoly (DensePoly.ofPoly p)
+  rw [toPoly_ofPoly] at h
+  exact h.symm
