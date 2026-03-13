@@ -4,3 +4,4 @@ import Azurite.DensePoly.Basic
 import Azurite.DensePoly.Polynomial
 import Azurite.DensePoly.Neg
 import Azurite.DensePoly.Monomial
+import Azurite.DensePoly.Cast
