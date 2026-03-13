@@ -34,4 +34,26 @@ def C (c : R) : DensePoly R :=
   rw [toPoly_ofPoly]
   exact (toPoly_C c).symm
 
+/-- Constructs the polynomial `X`. -/
+def X : DensePoly R :=
+  if h : (1 : R) = 0 then
+    0
+  else
+    ⟨#[0, 1], by simp [h]⟩
+
+@[simp] lemma toPoly_X : DensePoly.toPoly (X : DensePoly R) = Polynomial.X := by
+  unfold X
+  split
+  · next h =>
+    ext n
+    simp [h, Polynomial.coeff_X]
+  · next hc =>
+    dsimp [DensePoly.toPoly, List.toPoly]
+    simp
+
+@[simp] lemma ofPoly_X : DensePoly.ofPoly (Polynomial.X : Polynomial R) = X := by
+  rw [← toPoly_inj]
+  rw [toPoly_ofPoly]
+  exact toPoly_X.symm
+
 end Azurite.DensePoly
