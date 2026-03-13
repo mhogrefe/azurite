@@ -44,3 +44,5 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 #eval C (5: ℤ)
 
 #eval (X : DensePoly ℤ)
+
+#eval monomial 10 (5: ℤ)
