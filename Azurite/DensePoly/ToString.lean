@@ -23,24 +23,72 @@ def monomialToString {R : Type _} [DecidableEq R] [Zero R] [ToString R] (d : ℕ
 class DensePolyParsable (R : Type _) where
   parse : String → Option R
 
+def parseNatCharsAux (cs : List Char) (acc : ℕ) : Option ℕ :=
+  match cs with
+  | [] => some acc
+  | c :: cs =>
+    if c.isDigit then
+      parseNatCharsAux cs (acc * 10 + (c.toNat - '0'.toNat))
+    else none
+
+def parseNatChars (cs : List Char) : Option ℕ :=
+  match cs with
+  | [] => none
+  | _ => parseNatCharsAux cs 0
+
+def natToCharsAux (fuel : ℕ) (n : ℕ) (acc : List Char) : List Char :=
+  match fuel with
+  | 0 => acc
+  | f + 1 =>
+    if n = 0 then acc
+    else
+      let digit := Char.ofNat ('0'.toNat + (n % 10))
+      natToCharsAux f (n / 10) (digit :: acc)
+
+def natToChars (n : ℕ) : List Char :=
+  if n = 0 then ['0']
+  else natToCharsAux n n []
+
+def parseIntChars (cs : List Char) : Option ℤ :=
+  match cs with
+  | [] => none
+  | '-' :: cs => (parseNatChars cs).map (fun n => - (n : ℤ))
+  | _ => (parseNatChars cs).map (fun n => (n : ℤ))
+
+def intToChars (z : ℤ) : List Char :=
+  if z < 0 then
+    let n := z.natAbs
+    if n = 0 then ['0']
+    else '-' :: natToCharsAux n n []
+  else
+    let n := z.natAbs
+    if n = 0 then ['0']
+    else natToCharsAux n n []
+
 instance : DensePolyParsable ℕ where
-  parse s := s.toNat?
+  parse s := parseNatChars s.toList
 
 instance : DensePolyParsable ℤ where
-  parse s := s.toInt?
+  parse s := parseIntChars s.toList
 
-def parseRat (s : String) : Option ℚ :=
-  match s.splitOn "/" with
-  | [n] => n.toInt?.map (fun x : ℤ => (x : ℚ))
-  | [n, d] => do
-    let num ← n.toInt?
-    let den ← d.toInt?
-    if den == 0 then none
-    else some ((num : ℚ) / (den : ℚ))
+def parseRatChars (cs : List Char) : Option ℚ :=
+  match cs.splitOn '/' with
+  | [num_cs] =>
+    (parseIntChars num_cs).map (fun n => (n : ℚ))
+  | [num_cs, den_cs] =>
+    match parseIntChars num_cs, parseNatChars den_cs with
+    | some num, some den =>
+      if den = 0 then none
+      else some ((num : ℚ) / (den : ℚ))
+    | _, _ => none
   | _ => none
 
+def ratToChars (q : ℚ) : List Char :=
+  if q.den = 1 then intToChars q.num
+  else intToChars q.num ++ ['/'] ++ natToChars q.den
+
 instance : DensePolyParsable ℚ where
-  parse s := parseRat s
+  parse s := parseRatChars s.toList
 
 instance {n : ℕ} [NeZero n] : DensePolyParsable (ZMod n) where
   parse s := s.toInt?.map (fun x => (x : ZMod n))
@@ -74,5 +122,8 @@ def parseMonomial {R : Type _} [DensePolyParsable R] (s : String) : Option (ℕ 
     let c ← DensePolyParsable.parse c_str
     some (d, c)
   | _ => none
+
+instance {n : ℕ} [NeZero n] : ToString (ZMod n) where
+  toString x := toString x.val
 
 end Azurite.DensePoly
