@@ -1,5 +1,8 @@
 import Azurite.DensePoly.Basic
 import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.Algebra.Polynomial.Degree.Defs
+import Mathlib.Algebra.Polynomial.Degree.Operations
+import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
 open Polynomial
 
@@ -242,6 +245,24 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Poly
   invFun := DensePoly.ofPoly
   left_inv := ofPoly_toPoly
   right_inv := toPoly_ofPoly
+
+@[simp] lemma toPoly_inj [DecidableEq R] {p q : Azurite.DensePoly R} : DensePoly.toPoly p = DensePoly.toPoly q ↔ p = q := by
+  constructor
+  · intro h
+    have h2 : DensePoly.ofPoly (DensePoly.toPoly p) = DensePoly.ofPoly (DensePoly.toPoly q) := by rw [h]
+    rw [ofPoly_toPoly p, ofPoly_toPoly q] at h2
+    exact h2
+  · intro h
+    rw [h]
+
+@[simp] lemma ofPoly_inj [DecidableEq R] {p q : Polynomial R} : DensePoly.ofPoly p = DensePoly.ofPoly q ↔ p = q := by
+  constructor
+  · intro h
+    have h2 : DensePoly.toPoly (DensePoly.ofPoly p) = DensePoly.toPoly (DensePoly.ofPoly q) := by rw [h]
+    rw [toPoly_ofPoly p, toPoly_ofPoly q] at h2
+    exact h2
+  · intro h
+    rw [h]
 
 @[simp] lemma DensePoly.natDegree_toPoly (p : Azurite.DensePoly R) : (toPoly p).natDegree = p.natDegree := by
   change (List.toPoly p.coeffs.toList).natDegree = p.coeffs.size - 1

@@ -1,5 +1,8 @@
 import Azurite
-import Mathlib
+import Mathlib.Data.Int.Basic
+import Mathlib.Data.Rat.Defs
+import Mathlib.Data.ZMod.Basic
+import Mathlib.Tactic.NormNum
 import Lean
 
 open Lean
@@ -7,9 +10,11 @@ open Azurite
 open Azurite.DensePoly
 
 -- Create a concrete `DensePoly` directly: 1 + 2x + 3x^2
-def p1 : DensePoly ℤ := ⟨#[1, 2, 3], by decide⟩
+def p1a : DensePoly ℤ := ⟨#[1, 2, 3], by decide⟩
 
-#eval p1
+def p1b : DensePoly ℤ := ⟨#[10, 11, 12], by decide⟩
+
+#eval p1a
 
 #eval (0 : DensePoly ℤ)
 
@@ -27,4 +32,8 @@ def p3 : DensePoly ℚ := ⟨#[1/2, 3/4, 5/8], by norm_num⟩
 
 #eval -p2
 
-#check (zero : DensePoly ℤ).natDegree
+#eval (zero : DensePoly ℤ).degree
+
+#eval (zero : DensePoly ℤ).natDegree
+
+#eval p1a = p1b

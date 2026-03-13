@@ -1,4 +1,3 @@
-import Mathlib
 import Mathlib.Algebra.Polynomial.Basic
 
 /-!
@@ -25,14 +24,13 @@ structure DensePoly (R : Type _) [Semiring R] where
   coeffs : Array R
   -- If the array is non-empty, the last element is not 0
   last_ne_zero : coeffs.back? ≠ some 0
-deriving Repr
+deriving Repr, DecidableEq
 
 @[ext] lemma DensePoly.ext {R : Type _} [Semiring R] {p q : Azurite.DensePoly R} (h : p.coeffs = q.coeffs) : p = q := by
   cases p
   cases q
   simp at h
   congr
-
 end Azurite
 
 namespace Azurite.DensePoly
