@@ -21,5 +21,13 @@ def mapZModToNat {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) : DensePoly ℕ :
     rw [h2] at h1
     exact h1, fun hr => by rw [hr, ZMod.val_zero]⟩) p
 
+/-- Maps a `DensePoly ℕ` to `DensePoly (ZMod n)`. Performs normalization since elements can vanish modulo `n`. -/
+def mapNatToZMod {n : ℕ} [NeZero n] (p : DensePoly ℕ) : DensePoly (ZMod n) :=
+  map (Nat.castRingHom (ZMod n)) p
+
+/-- Maps a `DensePoly ℤ` to `DensePoly (ZMod n)`. Performs normalization since elements can vanish modulo `n`. -/
+def mapIntToZMod {n : ℕ} [NeZero n] (p : DensePoly ℤ) : DensePoly (ZMod n) :=
+  map (Int.castRingHom (ZMod n)) p
+
 end DensePoly
 end Azurite

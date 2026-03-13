@@ -5,3 +5,4 @@ import Azurite.DensePoly.Polynomial
 import Azurite.DensePoly.Neg
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
+import Azurite.DensePoly.MapEquiv

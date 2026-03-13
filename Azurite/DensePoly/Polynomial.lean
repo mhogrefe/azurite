@@ -71,6 +71,57 @@ noncomputable def DensePoly.ofPoly [DecidableEq R] (p : Polynomial R) : Azurite.
     exact h_coeff h_eq.symm
   ⟩
 
+lemma toPoly_dropTrailingZeros [DecidableEq R] (l : List R) :
+  (Azurite.DensePoly.dropTrailingZeros l).toPoly = l.toPoly := by
+  have hw := Azurite.DensePoly.eq_dropTrailingZeros_append_takeWhile l
+  have h_toPoly (a b : List R) : (a ++ b).toPoly = a.toPoly + X ^ a.length * b.toPoly := by
+    induction a with
+    | nil => simp [List.toPoly]
+    | cons x xs ih =>
+      dsimp [List.toPoly]
+      rw [ih, mul_add, ← mul_assoc, ← pow_succ']
+      have h_assoc : C x + (X * xs.toPoly + X ^ (xs.length + 1) * b.toPoly) = C x + X * xs.toPoly + X ^ (xs.length + 1) * b.toPoly := by exact (add_assoc _ _ _).symm
+      rw [h_assoc]
+  have h1 : (Azurite.DensePoly.dropTrailingZeros l ++ (l.reverse.takeWhile (· = 0)).reverse).toPoly = l.toPoly := by rw [hw]
+  rw [h_toPoly] at h1
+  -- Now we need to show that ((l.reverse.takeWhile (· = 0)).reverse).toPoly = 0
+  have h_zeros_toPoly (z : List R) (hz : ∀ x ∈ z, x = 0) : z.toPoly = 0 := by
+    induction z with
+    | nil => simp [List.toPoly]
+    | cons a as ih =>
+      have ha : a = 0 := hz a (by simp)
+      have has : as.toPoly = 0 := ih (fun x hx => hz x (by simp [hx]))
+      simp [List.toPoly, ha, has]
+  have h_takeWhile_zeros_gen (L : List R) : ∀ x ∈ L.takeWhile (· = 0), x = 0 := by
+    intro x hx
+    induction L with
+    | nil => cases hx
+    | cons a as ih =>
+      simp only [List.takeWhile] at hx
+      split at hx
+      · next h_eq =>
+        cases hx with
+        | head => exact beq_iff_eq.mp h_eq
+        | tail _ h_in => exact ih h_in
+      · next =>
+        cases hx
+  have h_takeWhile_zeros : ∀ x ∈ (l.reverse.takeWhile (· = 0)).reverse, x = 0 := by
+    intro x hx
+    rw [List.mem_reverse] at hx
+    exact h_takeWhile_zeros_gen (l.reverse) x hx
+  have h2 : ((l.reverse.takeWhile (· = 0)).reverse).toPoly = 0 := h_zeros_toPoly _ h_takeWhile_zeros
+  rw [h2] at h1
+  simp at h1
+  exact h1
+
+lemma toPoly_normalize [DecidableEq R] (a : Array R) :
+  DensePoly.toPoly (Azurite.DensePoly.normalize a) = a.toList.toPoly := by
+  have h1 : (a.popWhile (· == 0)).toList = Azurite.DensePoly.dropTrailingZeros a.toList := Azurite.DensePoly.toList_popWhile_eq_dropTrailingZeros a
+  -- We establish `(normalize a).toPoly` converts to `(a.popWhile ...).toList.toPoly`
+  have h2 : DensePoly.toPoly (Azurite.DensePoly.normalize a) = (a.popWhile (· == 0)).toList.toPoly := rfl
+  rw [h2, h1]
+  exact toPoly_dropTrailingZeros a.toList
+
 def List.getCoeff (l : List R) (i : ℕ) : R := (l[i]?).getD 0
 
 @[simp] lemma getCoeff_nil (i : ℕ) : ([] : List R).getCoeff i = 0 := rfl

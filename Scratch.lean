@@ -1,3 +1,4 @@
+
 import Azurite
 import Mathlib.Data.Int.Basic
 import Lean
@@ -73,6 +74,14 @@ lemma f5_10_inj (r : ZMod 5) : f5_10 r = 0 ↔ r = 0 := by
   revert r
   decide
 #eval Azurite.DensePoly.mapZeroInjective f5_10 f5_10_inj pZMod5
+
+-- 5. Mapping a DensePoly N to a DensePoly (ZMod 5) using mapNatToZMod
+def pN_large : DensePoly ℕ := ⟨#[1, 2, 3, 5], by decide⟩
+#eval Azurite.DensePoly.mapNatToZMod (n := 5) pN_large
+
+-- 6. Mapping a DensePoly Z to a DensePoly (ZMod 5) using mapIntToZMod
+def pZ_large : DensePoly ℤ := ⟨#[1, -2, 3, 10], by decide⟩
+#eval Azurite.DensePoly.mapIntToZMod (n := 5) pZ_large
 
 -- The polynomial ends in 5, which maps to 0 in ZMod 5, so `normalize` strips it.
 def pZMod10 : DensePoly (ZMod 10) := ⟨#[1, 2, 3, 5], by decide⟩
