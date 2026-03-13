@@ -1,4 +1,5 @@
 import Mathlib
+import Mathlib.Algebra.Polynomial.Basic
 
 /-!
 # Computational Univariate Polynomials
@@ -25,6 +26,12 @@ structure DensePoly (R : Type _) [Semiring R] where
   -- If the list is non-empty, the last element is not 0
   last_ne_zero : coeffs.getLast? ≠ some 0
 deriving Repr
+
+@[ext] lemma DensePoly.ext {R : Type _} [Semiring R] {p q : Azurite.DensePoly R} (h : p.coeffs = q.coeffs) : p = q := by
+  cases p
+  cases q
+  simp at h
+  congr
 
 end Azurite
 
