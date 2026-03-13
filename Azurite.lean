@@ -2,3 +2,4 @@
 -- Import modules here that should be built as part of the library.
 import Azurite.DensePoly.Basic
 import Azurite.DensePoly.Polynomial
+import Azurite.DensePoly.Neg
