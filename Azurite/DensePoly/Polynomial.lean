@@ -64,7 +64,6 @@ noncomputable def DensePoly.ofPoly [DecidableEq R] (p : Polynomial R) : Azurite.
     exact h_coeff h_eq.symm
   ⟩
 
-
 def List.getCoeff (l : List R) (i : ℕ) : R := (l[i]?).getD 0
 
 @[simp] lemma getCoeff_nil (i : ℕ) : ([] : List R).getCoeff i = 0 := rfl
@@ -197,3 +196,59 @@ lemma ofPoly_toPoly [DecidableEq R] (p : Azurite.DensePoly R) : DensePoly.ofPoly
       exact coeff_toPoly p.coeffs i
     rw [h3]
     exact map_getCoeff_range p.coeffs
+
+/-- The equivalence between `DensePoly R` and `Polynomial R`. -/
+noncomputable def equivPolynomial [DecidableEq R] : Azurite.DensePoly R ≃ Polynomial R where
+  toFun := DensePoly.toPoly
+  invFun := DensePoly.ofPoly
+  left_inv := ofPoly_toPoly
+  right_inv := toPoly_ofPoly
+
+@[simp] lemma toPoly_zero [DecidableEq R] : DensePoly.toPoly (0 : Azurite.DensePoly R) = 0 := by
+  have h := ofPoly_toPoly (0 : Azurite.DensePoly R)
+  have hz : DensePoly.toPoly (0 : Azurite.DensePoly R) = 0 := rfl
+  exact hz
+
+@[simp] lemma ofPoly_zero [DecidableEq R] : DensePoly.ofPoly (0 : Polynomial R) = 0 := by
+  dsimp [DensePoly.ofPoly]
+
+@[simp] lemma ofPoly_one [DecidableEq R] : DensePoly.ofPoly (1 : Polynomial R) = 1 := by
+  have h := toPoly_ofPoly (1 : Polynomial R)
+  -- The simple proof handles the 1=1 native evaluation
+  change DensePoly.ofPoly (1 : Polynomial R) = Azurite.DensePoly.one
+  dsimp [DensePoly.ofPoly]
+  split
+  · next h =>
+    -- 1 = 0 in Polynomial R -> 1 = 0 in R
+    have h1 : (1 : R) = 0 := by
+      have hc : (1 : Polynomial R).coeff 0 = (C (1 : R)).coeff 0 := by rw [Polynomial.C_1.symm]
+      rw [h] at hc
+      simp at hc
+      exact hc.symm
+    dsimp [Azurite.DensePoly.one]
+    rw [dif_pos h1]
+    rfl
+  · next h =>
+    -- 1 ≠ 0 in Polynomial R -> 1 ≠ 0 in R
+    have h1 : (1 : R) ≠ 0 := by
+      intro hc
+      have hc2 : (1 : Polynomial R) = C (1 : R) := Polynomial.C_1.symm
+      rw [hc] at hc2
+      rw [Polynomial.C_0] at hc2
+      exact h hc2
+    dsimp [Azurite.DensePoly.one]
+    rw [dif_neg h1]
+    apply Azurite.DensePoly.ext
+    dsimp [Polynomial.toDenseList]
+    split
+    · next h_poly => contradiction
+    · next h_poly =>
+      have h_deg : (1 : Polynomial R).natDegree = 0 := Polynomial.natDegree_one
+      rw [h_deg]
+      simp
+
+@[simp] lemma toPoly_one [DecidableEq R] : DensePoly.toPoly (1 : Azurite.DensePoly R) = 1 := by
+  have h := ofPoly_toPoly (1 : Azurite.DensePoly R)
+  have h2 : DensePoly.toPoly (DensePoly.ofPoly (1 : Polynomial R)) = 1 := toPoly_ofPoly 1
+  rw [ofPoly_one] at h2
+  exact h2

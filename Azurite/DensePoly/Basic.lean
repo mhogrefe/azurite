@@ -41,8 +41,22 @@ namespace Azurite.DensePoly
 def zero {R : Type _} [Semiring R] : DensePoly R :=
   ⟨[], by simp⟩
 
+/-- 
+The polynomial 1. 
+
+In an arbitrary Semiring, `1` might equal `0` (the trivial ring). 
+If `1 = 0`, then returning `[1]` violates our invariant because the last element is `0`. 
+Therefore, we require `[DecidableEq R]` to return `[]` (the zero polynomial) if `1 = 0`.
+-/
+def one {R : Type _} [Semiring R] [DecidableEq R] : DensePoly R :=
+  if h : (1 : R) = 0 then
+    zero
+  else
+    ⟨[(1 : R)], by simp [h]⟩
+
 instance {R : Type _} [Semiring R] : Inhabited (DensePoly R) := ⟨zero⟩
 instance {R : Type _} [Semiring R] : Zero (DensePoly R) := ⟨zero⟩
+instance {R : Type _} [Semiring R] [DecidableEq R] : One (DensePoly R) := ⟨one⟩
 
 @[simp] lemma coeffs_zero {R : Type _} [Semiring R] : (0 : DensePoly R).coeffs = [] := rfl
 
