@@ -237,6 +237,28 @@ lemma not_mem_intToChars_x (z : ℤ) : 'x' ∉ intToChars z := by
     | inr hr => exact not_mem_natToChars_x _ hr
   · exact not_mem_natToChars_x _
 
+lemma not_mem_ratToChars_x (q : ℚ) : 'x' ∉ ratToChars q := by
+  unfold ratToChars
+  split_ifs
+  · exact not_mem_intToChars_x q.num
+  · intro hc
+    have hc1 : 'x' ∈ intToChars q.num ++ ['/'] ∨ 'x' ∈ natToChars q.den := List.mem_append.mp hc
+    cases hc1 with
+    | inl h1 =>
+      have hc2 : 'x' ∈ intToChars q.num ∨ 'x' ∈ ['/'] := List.mem_append.mp h1
+      cases hc2 with
+      | inl h_int => exact not_mem_intToChars_x q.num h_int
+      | inr h_div =>
+        have h_eq : 'x' = '/' := by
+          simp only [List.mem_singleton] at h_div
+          exact h_div
+        have h_x : 'x'.toNat = 120 := rfl
+        have h_div_char : '/'.toNat = 47 := rfl
+        have h_eq2 : 'x'.toNat = '/'.toNat := congrArg Char.toNat h_eq
+        rw [h_x, h_div_char] at h_eq2
+        contradiction
+    | inr h_nat => exact not_mem_natToChars_x q.den h_nat
+
 lemma not_mem_natToChars_mul (n : ℕ) : '*' ∉ natToChars n := by
   apply not_mem_natToChars_of_not_digit
   have hmul : '*'.toNat = 42 := rfl
@@ -1323,4 +1345,194 @@ lemma parse_monomialToChars_ne_zero_zmod {n : ℕ} [NeZero n] (d : ℕ) (c : ZMo
 
 lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
   parseMonomial (R := ℚ) (monomialToChars d c) = some (d, c) := by
-  sorry
+  dsimp [monomialToChars]
+  split
+  · contradiction
+  · split
+    · rename_i hd0
+      -- d = 0
+      dsimp [parseMonomial]
+      have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
+      rw [h_toChars]
+      have h_split : (ratToChars c).splitOn 'x' = [ratToChars c] := splitOn_not_mem_x _ (not_mem_ratToChars_x c)
+      rw [h_split]
+      simp [DensePolyParsable.parse]
+      have h_parse := parseRatChars_ratToChars c
+      rw [h_parse]
+      dsimp
+      rw [hd0]
+    · rename_i hd0
+      -- d ≠ 0
+      have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
+      by_cases hc1 : c = 1
+      · -- x^d or x
+        by_cases hd1 : d = 1
+        · -- x
+          have hc1_decide : (DensePolyToChars.toChars c == ['1']) = true := by
+            rw [h_toChars, hc1]
+            rfl
+          have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = false := by
+            rw [h_toChars, hc1]
+            rfl
+          simp [hc1_decide, hd1]
+          dsimp [parseMonomial]
+          have h_split : List.splitOn 'x' ['x'] = [[], []] := rfl
+          rw [h_split]
+          dsimp
+          have h_parse : DensePolyParsable.parse (R := ℚ) (parseMonomial_c_opt_prefix []) = some 1 := rfl
+          rw [h_parse]
+          dsimp
+          rw [hc1]
+        · -- x^d
+          have hc1_decide : (DensePolyToChars.toChars c == ['1']) = true := by
+            rw [h_toChars, hc1]
+            rfl
+          have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = false := by
+            rw [h_toChars, hc1]
+            rfl
+          simp [hc1_decide, hd1]
+          dsimp [parseMonomial]
+          have h_split : List.splitOn 'x' ('x' :: '^' :: natToChars d) = [[], '^' :: natToChars d] := splitOn_x_pow _ (not_mem_natToChars_x d)
+          rw [h_split]
+          dsimp
+          have h_parse : DensePolyParsable.parse (R := ℚ) (parseMonomial_c_opt_prefix []) = some 1 := rfl
+          rw [h_parse]
+          simp
+          have h_d : parseNatChars (natToChars d) = some d := parseNatChars_natToChars d
+          rw [h_d]
+          dsimp
+          rw [hc1]
+      · by_cases hcn1 : c = -1
+        · -- -x^d or -x
+          by_cases hd1 : d = 1
+          · -- -x
+            have hc1_decide : (DensePolyToChars.toChars c == ['1']) = false := by
+              rw [h_toChars, hcn1]
+              rfl
+            have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = true := by
+              rw [h_toChars, hcn1]
+              rfl
+            simp [hc1_decide, hc2_decide, hd1]
+            dsimp [parseMonomial]
+            have h_split : List.splitOn 'x' ['-', 'x'] = [['-'], []] := rfl
+            rw [h_split]
+            dsimp
+            have h_parse : DensePolyParsable.parse (R := ℚ) (parseMonomial_c_opt_prefix ['-']) = some (-1) := rfl
+            rw [h_parse]
+            dsimp
+            rw [hcn1]
+          · -- -x^d
+            have hc1_decide : (DensePolyToChars.toChars c == ['1']) = false := by
+              rw [h_toChars, hcn1]
+              rfl
+            have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = true := by
+              rw [h_toChars, hcn1]
+              rfl
+            simp [hc1_decide, hc2_decide, hd1]
+            dsimp [parseMonomial]
+            have h_split : List.splitOn 'x' ('-' :: 'x' :: '^' :: natToChars d) = [['-'], '^' :: natToChars d] := splitOn_neg_x_pow _ (not_mem_natToChars_x d)
+            rw [h_split]
+            dsimp
+            have h_parse : DensePolyParsable.parse (R := ℚ) (parseMonomial_c_opt_prefix ['-']) = some (-1) := rfl
+            rw [h_parse]
+            simp
+            have h_d : parseNatChars (natToChars d) = some d := parseNatChars_natToChars d
+            rw [h_d]
+            dsimp
+            rw [hcn1]
+        · by_cases hd1 : d = 1
+          · -- cx
+            have hc1_decide : (DensePolyToChars.toChars c == ['1']) = false := by
+              cases h : (DensePolyToChars.toChars c == ['1'])
+              · rfl
+              · exfalso
+                have h_eq : DensePolyToChars.toChars c = ['1'] := eq_of_beq h
+                have h_parse : parseRatChars (DensePolyToChars.toChars c) = some c := by rw [h_toChars, parseRatChars_ratToChars]
+                rw [h_eq] at h_parse
+                have h_1 : parseRatChars ['1'] = some 1 := rfl
+                rw [h_1] at h_parse
+                injection h_parse with h_inj
+                exact hc1 h_inj.symm
+            have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = false := by
+              cases h : (DensePolyToChars.toChars c == ['-', '1'])
+              · rfl
+              · exfalso
+                have h_eq : DensePolyToChars.toChars c = ['-', '1'] := eq_of_beq h
+                have h_parse : parseRatChars (DensePolyToChars.toChars c) = some c := by rw [h_toChars, parseRatChars_ratToChars]
+                rw [h_eq] at h_parse
+                have h_1 : parseRatChars ['-', '1'] = some (-1) := rfl
+                rw [h_1] at h_parse
+                injection h_parse with h_inj
+                exact hcn1 h_inj.symm
+            simp [hc1_decide, hc2_decide, hd1]
+            rw [h_toChars]
+            dsimp [parseMonomial]
+            have h_split : List.splitOn 'x' (ratToChars c ++ ['*', 'x']) = [ratToChars c ++ ['*'], []] := splitOn_append_mul_x _ (not_mem_ratToChars_x c)
+            rw [h_split]
+            dsimp
+            unfold parseMonomial_c_opt_prefix
+            split
+            · next h =>
+              have h_len : (ratToChars c ++ ['*']).length = 0 := by rw [h]; rfl
+              simp at h_len
+            · next h =>
+              have h_last : (ratToChars c ++ ['*']).getLast? = some '*' := append_star_getLast? _
+              have hm : (['-'] : List Char).getLast? = some '-' := rfl
+              rw [h, hm] at h_last
+              injection h_last with h_inj
+              have h_false : ('-' : Char) = '*' → False := by decide
+              exact False.elim (h_false h_inj)
+            · have h_get : (ratToChars c ++ ['*']).getLast? = some '*' := append_star_getLast? _
+              have h_drop : (ratToChars c ++ ['*']).dropLast = ratToChars c := append_star_dropLast _
+              simp_rw [if_pos h_get, h_drop]
+              have h_parse : DensePolyParsable.parse (R := ℚ) (ratToChars c) = some c := parseRatChars_ratToChars c
+              rw [h_parse]
+              rfl
+          · -- cx^d
+            have hc1_decide : (DensePolyToChars.toChars c == ['1']) = false := by
+              cases h : (DensePolyToChars.toChars c == ['1'])
+              · rfl
+              · exfalso
+                have h_eq : DensePolyToChars.toChars c = ['1'] := eq_of_beq h
+                have h_parse : parseRatChars (DensePolyToChars.toChars c) = some c := by rw [h_toChars, parseRatChars_ratToChars]
+                rw [h_eq] at h_parse
+                have h_1 : parseRatChars ['1'] = some 1 := rfl
+                rw [h_1] at h_parse
+                injection h_parse with h_inj
+                exact hc1 h_inj.symm
+            have hc2_decide : (DensePolyToChars.toChars c == ['-', '1']) = false := by
+              cases h : (DensePolyToChars.toChars c == ['-', '1'])
+              · rfl
+              · exfalso
+                have h_eq : DensePolyToChars.toChars c = ['-', '1'] := eq_of_beq h
+                have h_parse : parseRatChars (DensePolyToChars.toChars c) = some c := by rw [h_toChars, parseRatChars_ratToChars]
+                rw [h_eq] at h_parse
+                have h_1 : parseRatChars ['-', '1'] = some (-1) := rfl
+                rw [h_1] at h_parse
+                injection h_parse with h_inj
+                exact hcn1 h_inj.symm
+            simp [hc1_decide, hc2_decide, hd1]
+            rw [h_toChars]
+            dsimp [parseMonomial]
+            have h_split : List.splitOn 'x' (ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d) = [ratToChars c ++ ['*'], '^' :: natToChars d] := splitOn_append_mul_x_pow _ _ (not_mem_ratToChars_x c) (not_mem_natToChars_x d)
+            rw [h_split]
+            simp [DensePolyParsable.parse]
+            have h_d : parseNatChars (natToChars d) = some d := parseNatChars_natToChars d
+            rw [h_d]
+            unfold parseMonomial_c_opt_prefix
+            split
+            · next h =>
+              have h_len : (ratToChars c ++ ['*']).length = 0 := by rw [h]; rfl
+              simp at h_len
+            · next h =>
+              have h_last : (ratToChars c ++ ['*']).getLast? = some '*' := append_star_getLast? _
+              have hm : (['-'] : List Char).getLast? = some '-' := rfl
+              rw [h, hm] at h_last
+              injection h_last with h_inj
+              have h_false : ('-' : Char) = '*' → False := by decide
+              exact False.elim (h_false h_inj)
+            · have h_get : (ratToChars c ++ ['*']).getLast? = some '*' := append_star_getLast? _
+              have h_drop : (ratToChars c ++ ['*']).dropLast = ratToChars c := append_star_dropLast _
+              simp_rw [if_pos h_get, h_drop]
+              rw [parseRatChars_ratToChars c]
+              rfl
