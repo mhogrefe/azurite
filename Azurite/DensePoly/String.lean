@@ -1536,3 +1536,22 @@ lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
               simp_rw [if_pos h_get, h_drop]
               rw [parseRatChars_ratToChars c]
               rfl
+
+class DensePolyParsableValid (R : Type _) [DecidableEq R] [Zero R] [DensePolyToChars R] [DensePolyParsable R] : Prop where
+  parse_monomialToChars_ne_zero : ∀ (d : ℕ) (c : R) (_ : c ≠ 0), parseMonomial (monomialToChars d c) = some (d, c)
+
+export DensePolyParsableValid (parse_monomialToChars_ne_zero)
+
+instance : DensePolyParsableValid ℕ where
+  parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_nat
+
+instance : DensePolyParsableValid ℤ where
+  parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_int
+
+instance : DensePolyParsableValid ℚ where
+  parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_rat
+
+instance {n : ℕ} [NeZero n] : DensePolyParsableValid (ZMod n) where
+  parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_zmod
+
+end Azurite.DensePoly
