@@ -1582,4 +1582,43 @@ def toChars {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [Dens
 instance {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R] : ToString (DensePoly R) where
   toString := toChars
 
+def splitPolynomialChars (cs : List Char) : List (List Char) :=
+  let rec aux (acc : List (List Char)) (current : List Char) (rem : List Char) : List (List Char) :=
+    match rem with
+    | [] => (current.reverse) :: acc
+    | '+' :: xs => aux ((current.reverse) :: acc) [] xs
+    | '-' :: xs =>
+      if current = [] then
+        aux acc ['-'] xs
+      else
+        aux ((current.reverse) :: acc) ['-'] xs
+    | x :: xs => aux acc (x :: current) xs
+  if cs = [] then []
+  else (aux [] [] cs).reverse
+
+def listMax (l : List ℕ) : ℕ := 
+  l.foldl (fun maxVal x => if x > maxVal then x else maxVal) 0
+
+def listToPoly {R : Type _} [DecidableEq R] [Semiring R] (l : List (ℕ × R)) : DensePoly R :=
+  let maxDegree := listMax (l.map Prod.fst)
+  let arr := Id.run do
+    let mut a : Array R := Array.empty
+    for d in [0:maxDegree+1] do
+      let coeff := match l.find? (fun (d', _) => d' = d) with
+                   | some (_, c) => c
+                   | none => 0
+      a := a.push coeff
+    a
+  normalize arr
+
+def parseDensePoly {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R] (s : String) : Option (DensePoly R) :=
+  if s = "0" then some 0
+  else
+    let parts := splitPolynomialChars s.toList
+    let parsedParts := parts.map (fun p => parseMonomial (R := R) p)
+    if parsedParts.any (fun x => x.isNone) then none
+    else
+      let unwrapped := parsedParts.filterMap id
+      some (listToPoly unwrapped)
+
 end Azurite.DensePoly

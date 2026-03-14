@@ -5,6 +5,7 @@ import Azurite.DensePoly.Basic
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
 import Azurite.DensePoly.ToString
+import Azurite.DensePoly.String
 
 open Lean
 open Azurite
@@ -142,3 +143,9 @@ end ParseEval
 #eval toString (0 : DensePoly ℤ)
 #eval toString (monomial 2 (5:ℤ))
 #eval toString p1a
+
+#eval parseDensePoly (R := ℤ) "3*x^4-x^2+1"
+#eval parseDensePoly (R := ℤ) "-x^2+1"
+#eval parseDensePoly (R := ℚ) "-2/3*x^2-1/2"
+#eval parseDensePoly (R := ℤ) "-2/3*x^2-1/2"
+#eval parseDensePoly (R := (ZMod 5)) "3*x^2-1"
