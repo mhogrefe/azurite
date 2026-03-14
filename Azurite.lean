@@ -7,6 +7,7 @@ import Azurite.DensePoly.Cast
 import Azurite.DensePoly.ToString
 import Azurite.DensePoly.Parse
 import Azurite.Nat.Compare
+import Azurite.Rat.LogBase2
 
 import Azurite.DensePoly.StringLemmas
 import Azurite.DensePoly.Equiv.Basic
