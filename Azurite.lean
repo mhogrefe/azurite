@@ -6,6 +6,8 @@ import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
 import Azurite.DensePoly.ToString
 import Azurite.DensePoly.Parse
+import Azurite.Nat.Compare
+
 import Azurite.DensePoly.StringLemmas
 import Azurite.DensePoly.Equiv.Basic
 import Azurite.DensePoly.Equiv.Monomial
