@@ -2177,6 +2177,22 @@ lemma append_not_start_char {α : Type _} (l1 l2 : List α) (c : α) (h_nil : l1
     subst h_head
     exact h_start tail rfl
 
+lemma flatten_not_start_char_of_head_not_start_char {α : Type _} (l : List (List α)) (c : α) (h_nil : l ≠ []) (h_not_empty : ∀ m ∈ l, m ≠ []) (h_head : ∀ cs, l.head h_nil ≠ c :: cs) :
+  ∀ cs, l.flatten ≠ c :: cs := by
+  intro cs h
+  cases l
+  · contradiction
+  · rename_i head tail
+    rw [List.flatten_cons] at h
+    have h_head_not_empty : head ≠ [] := h_not_empty head (List.Mem.head _)
+    cases head
+    · contradiction
+    · rename_i h_head_elem h_tail_elem
+      have h_head_eq : h_head_elem = c := by injection h
+      have h_false := h_head h_tail_elem
+      have h_head_val : h_head_elem :: h_tail_elem = c :: h_tail_elem := by rw [h_head_eq]
+      exact h_false h_head_val
+
 lemma monomialToChars_nat_not_start_zero (d : ℕ) (c : ℕ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
   have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
   dsimp [monomialToChars]
@@ -2519,6 +2535,81 @@ lemma toChars_ne_empty {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] [De
 lemma toChars_nat_ne_empty (p : DensePoly ℕ) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_nat_ne_nil
 
+lemma toChars_nat_not_start_zero_of_ne_zero (p : DensePoly ℕ) (hp : p ≠ 0) (cs : List Char) :
+  (toChars p).toList ≠ '0' :: cs := by
+  dsimp [toChars]
+  split_ifs with hp0
+  · contradiction
+  · simp only [String.toList_ofList]
+    let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
+    let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
+    
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly ℕ).coeffs := by
+        have hz : (0 : DensePoly ℕ).coeffs = #[] := rfl
+        rw [hz, hp2]
+      have hp0_eq : p = 0 := DensePoly.ext hpe
+      contradiction
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz
+      rw [hz] at hc_eq
+      exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+
+    let coeffs := p.coeffs.toList
+    have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
+    have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
+    have hL1_not_nil : L1 ≠ [] := reverse_ne_nil_of_ne_nil _ hm
+
+    have hl_iff := listEnum_eq_nil_iff L1
+    have hl : listEnum L1 ≠ [] := mt hl_iff.mp hL1_not_nil
+    have hL2_not_nil : L2 ≠ [] := map_ne_nil_of_ne_nil _ _ hl
+
+    have h_not_empty : ∀ m ∈ L2, m ≠ [] := by
+      intro x hx
+      have hm_mem := withSigns_mem (R := ℕ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hd_c := monomials_mem (R := ℕ) coeffs m hm_in
+      rcases hd_c with ⟨d', c'', h_m_eq⟩
+      have hm_nz : m ≠ [] := by
+        rw [h_m_eq]
+        exact monomialToChars_nat_ne_nil d' c''
+      rcases h_eq with rfl | rfl
+      · exact hm_nz
+      · intro h; contradiction
+
+    have h_no_start_zero : ∀ x ∈ L2, ∀ cs', x ≠ '0' :: cs' := by
+      intro x hx cs' h_eq_zero
+      have hm_mem := withSigns_mem (R := ℕ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hm_map := List.mem_map.mp hm_in
+      rcases hm_map with ⟨⟨d2, c2⟩, h_in2, h_eq2⟩
+      have hd_c : c2 ≠ 0 := by
+        have h_in_filter := List.mem_filter.mp h_in2
+        exact of_decide_eq_true h_in_filter.right
+      have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
+      
+      have h_m_not_zero := monomialToChars_nat_not_start_zero d2 c2 cs' hd_c
+      
+      rcases h_eq with rfl | rfl
+      · rw [hm_val] at h_eq_zero
+        exact h_m_not_zero h_eq_zero
+      · rw [hm_val] at h_eq_zero
+        injection h_eq_zero with h_plus
+        contradiction
+
+    have h_head : ∀ cs', L2.head hL2_not_nil ≠ '0' :: cs' := by
+      intro cs'
+      exact h_no_start_zero (L2.head hL2_not_nil) (List.head_mem hL2_not_nil) cs'
+
+    apply flatten_not_start_char_of_head_not_start_char L2 '0' hL2_not_nil h_not_empty h_head cs
+
 lemma mem_toChars_nat_only_valid (p : DensePoly ℕ) (ch : Char) (h : ch ∈ (toChars p).toList) :
   ch = 'x' ∨ ch = '+' ∨ ch = '*' ∨ ch = '^' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
   dsimp [toChars] at h
@@ -2587,6 +2678,81 @@ lemma mem_toChars_nat_only_valid (p : DensePoly ℕ) (ch : Char) (h : ch ∈ (to
               · rcases hr2 with rfl | hr3
                 · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
                 · exact Or.inr (Or.inr (Or.inr (Or.inr hr3)))
+
+lemma toChars_int_not_start_zero_of_ne_zero (p : DensePoly ℤ) (hp : p ≠ 0) (cs : List Char) :
+  (toChars p).toList ≠ '0' :: cs := by
+  dsimp [toChars]
+  split_ifs with hp0
+  · contradiction
+  · simp only [String.toList_ofList]
+    let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
+    let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
+    
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly ℤ).coeffs := by
+        have hz : (0 : DensePoly ℤ).coeffs = #[] := rfl
+        rw [hz, hp2]
+      have hp0_eq : p = 0 := DensePoly.ext hpe
+      contradiction
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz
+      rw [hz] at hc_eq
+      exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+
+    let coeffs := p.coeffs.toList
+    have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
+    have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
+    have hL1_not_nil : L1 ≠ [] := reverse_ne_nil_of_ne_nil _ hm
+
+    have hl_iff := listEnum_eq_nil_iff L1
+    have hl : listEnum L1 ≠ [] := mt hl_iff.mp hL1_not_nil
+    have hL2_not_nil : L2 ≠ [] := map_ne_nil_of_ne_nil _ _ hl
+
+    have h_not_empty : ∀ m ∈ L2, m ≠ [] := by
+      intro x hx
+      have hm_mem := withSigns_mem (R := ℤ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hd_c := monomials_mem (R := ℤ) coeffs m hm_in
+      rcases hd_c with ⟨d', c'', h_m_eq⟩
+      have hm_nz : m ≠ [] := by
+        rw [h_m_eq]
+        exact monomialToChars_int_ne_nil d' c''
+      rcases h_eq with rfl | rfl
+      · exact hm_nz
+      · intro h; contradiction
+
+    have h_no_start_zero : ∀ x ∈ L2, ∀ cs', x ≠ '0' :: cs' := by
+      intro x hx cs' h_eq_zero
+      have hm_mem := withSigns_mem (R := ℤ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hm_map := List.mem_map.mp hm_in
+      rcases hm_map with ⟨⟨d2, c2⟩, h_in2, h_eq2⟩
+      have hd_c : c2 ≠ 0 := by
+        have h_in_filter := List.mem_filter.mp h_in2
+        exact of_decide_eq_true h_in_filter.right
+      have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
+      
+      have h_m_not_zero := monomialToChars_int_not_start_zero d2 c2 cs' hd_c
+      
+      rcases h_eq with rfl | rfl
+      · rw [hm_val] at h_eq_zero
+        exact h_m_not_zero h_eq_zero
+      · rw [hm_val] at h_eq_zero
+        injection h_eq_zero with h_plus
+        contradiction
+
+    have h_head : ∀ cs', L2.head hL2_not_nil ≠ '0' :: cs' := by
+      intro cs'
+      exact h_no_start_zero (L2.head hL2_not_nil) (List.head_mem hL2_not_nil) cs'
+
+    apply flatten_not_start_char_of_head_not_start_char L2 '0' hL2_not_nil h_not_empty h_head cs
 
 lemma toChars_int_ne_empty (p : DensePoly ℤ) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_int_ne_nil
@@ -2670,6 +2836,81 @@ lemma mem_toChars_int_only_valid (p : DensePoly ℤ) (ch : Char) (h : ch ∈ (to
                 · rcases hr3 with rfl | hr4
                   · exact Or.inr (Or.inr (Or.inl rfl))
                   · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr4))))
+
+lemma toChars_rat_not_start_zero_of_ne_zero (p : DensePoly ℚ) (hp : p ≠ 0) (cs : List Char) :
+  (toChars p).toList ≠ '0' :: cs := by
+  dsimp [toChars]
+  split_ifs with hp0
+  · contradiction
+  · simp only [String.toList_ofList]
+    let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
+    let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
+    
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly ℚ).coeffs := by
+        have hz : (0 : DensePoly ℚ).coeffs = #[] := rfl
+        rw [hz, hp2]
+      have hp0_eq : p = 0 := DensePoly.ext hpe
+      contradiction
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz
+      rw [hz] at hc_eq
+      exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+
+    let coeffs := p.coeffs.toList
+    have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
+    have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
+    have hL1_not_nil : L1 ≠ [] := reverse_ne_nil_of_ne_nil _ hm
+
+    have hl_iff := listEnum_eq_nil_iff L1
+    have hl : listEnum L1 ≠ [] := mt hl_iff.mp hL1_not_nil
+    have hL2_not_nil : L2 ≠ [] := map_ne_nil_of_ne_nil _ _ hl
+
+    have h_not_empty : ∀ m ∈ L2, m ≠ [] := by
+      intro x hx
+      have hm_mem := withSigns_mem (R := ℚ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hd_c := monomials_mem (R := ℚ) coeffs m hm_in
+      rcases hd_c with ⟨d', c'', h_m_eq⟩
+      have hm_nz : m ≠ [] := by
+        rw [h_m_eq]
+        exact monomialToChars_rat_ne_nil d' c''
+      rcases h_eq with rfl | rfl
+      · exact hm_nz
+      · intro h; contradiction
+
+    have h_no_start_zero : ∀ x ∈ L2, ∀ cs', x ≠ '0' :: cs' := by
+      intro x hx cs' h_eq_zero
+      have hm_mem := withSigns_mem (R := ℚ) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hm_map := List.mem_map.mp hm_in
+      rcases hm_map with ⟨⟨d2, c2⟩, h_in2, h_eq2⟩
+      have hd_c : c2 ≠ 0 := by
+        have h_in_filter := List.mem_filter.mp h_in2
+        exact of_decide_eq_true h_in_filter.right
+      have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
+      
+      have h_m_not_zero := monomialToChars_rat_not_start_zero d2 c2 cs' hd_c
+      
+      rcases h_eq with rfl | rfl
+      · rw [hm_val] at h_eq_zero
+        exact h_m_not_zero h_eq_zero
+      · rw [hm_val] at h_eq_zero
+        injection h_eq_zero with h_plus
+        contradiction
+
+    have h_head : ∀ cs', L2.head hL2_not_nil ≠ '0' :: cs' := by
+      intro cs'
+      exact h_no_start_zero (L2.head hL2_not_nil) (List.head_mem hL2_not_nil) cs'
+
+    apply flatten_not_start_char_of_head_not_start_char L2 '0' hL2_not_nil h_not_empty h_head cs
 
 lemma toChars_rat_ne_empty (p : DensePoly ℚ) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_rat_ne_nil
@@ -2759,6 +3000,81 @@ lemma mem_toChars_rat_only_valid (p : DensePoly ℚ) (ch : Char) (h : ch ∈ (to
                   · rcases hr4 with rfl | hr5
                     · exact Or.inr (Or.inr (Or.inl rfl))
                     · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr5)))))
+
+lemma toChars_zmod_not_start_zero_of_ne_zero {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) (hp : p ≠ 0) (cs : List Char) :
+  (toChars p).toList ≠ '0' :: cs := by
+  dsimp [toChars]
+  split_ifs with hp0
+  · contradiction
+  · simp only [String.toList_ofList]
+    let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
+    let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
+    
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly (ZMod n)).coeffs := by
+        have hz : (0 : DensePoly (ZMod n)).coeffs = #[] := rfl
+        rw [hz, hp2]
+      have hp0_eq : p = 0 := DensePoly.ext hpe
+      contradiction
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz
+      rw [hz] at hc_eq
+      exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+
+    let coeffs := p.coeffs.toList
+    have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
+    have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
+    have hL1_not_nil : L1 ≠ [] := reverse_ne_nil_of_ne_nil _ hm
+
+    have hl_iff := listEnum_eq_nil_iff L1
+    have hl : listEnum L1 ≠ [] := mt hl_iff.mp hL1_not_nil
+    have hL2_not_nil : L2 ≠ [] := map_ne_nil_of_ne_nil _ _ hl
+
+    have h_not_empty : ∀ m ∈ L2, m ≠ [] := by
+      intro x hx
+      have hm_mem := withSigns_mem (R := ZMod n) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hd_c := monomials_mem (R := ZMod n) coeffs m hm_in
+      rcases hd_c with ⟨d', c'', h_m_eq⟩
+      have hm_nz : m ≠ [] := by
+        rw [h_m_eq]
+        exact monomialToChars_zmod_ne_nil d' c''
+      rcases h_eq with rfl | rfl
+      · exact hm_nz
+      · intro h; contradiction
+
+    have h_no_start_zero : ∀ x ∈ L2, ∀ cs', x ≠ '0' :: cs' := by
+      intro x hx cs' h_eq_zero
+      have hm_mem := withSigns_mem (R := ZMod n) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hm_map := List.mem_map.mp hm_in
+      rcases hm_map with ⟨⟨d2, c2⟩, h_in2, h_eq2⟩
+      have hd_c : c2 ≠ 0 := by
+        have h_in_filter := List.mem_filter.mp h_in2
+        exact of_decide_eq_true h_in_filter.right
+      have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
+      
+      have h_m_not_zero := monomialToChars_zmod_not_start_zero d2 c2 cs' hd_c
+      
+      rcases h_eq with rfl | rfl
+      · rw [hm_val] at h_eq_zero
+        exact h_m_not_zero h_eq_zero
+      · rw [hm_val] at h_eq_zero
+        injection h_eq_zero with h_plus
+        contradiction
+
+    have h_head : ∀ cs', L2.head hL2_not_nil ≠ '0' :: cs' := by
+      intro cs'
+      exact h_no_start_zero (L2.head hL2_not_nil) (List.head_mem hL2_not_nil) cs'
+
+    apply flatten_not_start_char_of_head_not_start_char L2 '0' hL2_not_nil h_not_empty h_head cs
 
 lemma toChars_zmod_ne_empty {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_zmod_ne_nil
