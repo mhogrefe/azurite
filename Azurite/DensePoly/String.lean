@@ -112,6 +112,8 @@ lemma lt_pow_self (n : ℕ) : n < 10 ^ n := by
     have h1 : 10 ^ n * 1 ≤ 10 ^ n * 10 := Nat.mul_le_mul_left _ (by decide)
     omega
 
+
+
 lemma parseNatChars_natToChars (n : ℕ) : parseNatChars (natToChars n) = some n := by
   unfold natToChars
   split_ifs with hn
@@ -222,6 +224,74 @@ lemma not_mem_natToChars_x (n : ℕ) : 'x' ∉ natToChars n := by
   rw [hx]
   exact Or.inr (by decide)
 
+lemma mem_natToChars_only_digits (n : ℕ) (c : Char) (h : c ∈ natToChars n) : '0'.toNat ≤ c.toNat ∧ c.toNat ≤ '9'.toNat := by
+  by_contra hc
+  rw [not_and_or, not_le, not_le] at hc
+  have h_not_mem := not_mem_natToChars_of_not_digit c hc n
+  contradiction
+
+lemma mem_monomialToChars_nat_only_valid (d : ℕ) (c : ℕ) (ch : Char) (h : ch ∈ monomialToChars d c) :
+  ch = 'x' ∨ ch = '*' ∨ ch = '^' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
+  dsimp [monomialToChars] at h
+  rw [h_toChars] at h
+  split_ifs at h with hc hd hc1 hc2 hd1
+  · simp only [List.mem_singleton] at h
+    subst h
+    exact Or.inr (Or.inr (Or.inr (by decide)))
+  · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h)))
+  · simp only [List.nil_append, List.mem_singleton] at h
+    subst h
+    exact Or.inl rfl
+  · simp only [List.nil_append] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inl rfl
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inr (Or.inr (Or.inl rfl))
+      · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ hh)))
+  · have h_eq := eq_of_beq hd1
+    have h_dash_not_in : '-' ∉ natToChars c := by
+      intro h_in
+      have h_dig := mem_natToChars_only_digits c '-' h_in
+      have ht : '-'.toNat = 45 := rfl
+      have hz : '0'.toNat = 48 := rfl
+      rw [ht, hz] at h_dig
+      omega
+    rw [h_eq] at h_dash_not_in
+    have h_mem : '-' ∈ ['-', '1'] := by decide
+    contradiction
+  · have h_eq := eq_of_beq hd1
+    have h_dash_not_in : '-' ∉ natToChars c := by
+      intro h_in
+      have h_dig := mem_natToChars_only_digits c '-' h_in
+      have ht : '-'.toNat = 45 := rfl
+      have hz : '0'.toNat = 48 := rfl
+      rw [ht, hz] at h_dig
+      omega
+    rw [h_eq] at h_dash_not_in
+    have h_mem : '-' ∈ ['-', '1'] := by decide
+    contradiction
+  · have h_assoc : natToChars c ++ ['*'] ++ ['x'] = natToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_nat | h_rest
+    · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_nat)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · have h_eq_x : ch = 'x' := List.mem_singleton.mp h_rest2
+        exact Or.inl h_eq_x
+  · have h_assoc : natToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_nat | h_rest
+    · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_nat)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · rcases (List.mem_cons.mp h_rest2) with rfl | h_rest3
+        · exact Or.inl rfl
+        · rcases (List.mem_cons.mp h_rest3) with rfl | h_rest4
+          · exact Or.inr (Or.inr (Or.inl rfl))
+          · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_rest4)))
+
+
 lemma not_mem_intToChars_x (z : ℤ) : 'x' ∉ intToChars z := by
   rw [intToChars_natAbs]
   split_ifs with hz
@@ -236,6 +306,218 @@ lemma not_mem_intToChars_x (z : ℤ) : 'x' ∉ intToChars z := by
        contradiction
     | inr hr => exact not_mem_natToChars_x _ hr
   · exact not_mem_natToChars_x _
+
+lemma mem_intToChars_only_digits_or_dash (z : ℤ) (c : Char) (h : c ∈ intToChars z) :
+  c = '-' ∨ ('0'.toNat ≤ c.toNat ∧ c.toNat ≤ '9'.toNat) := by
+  rw [intToChars_natAbs] at h
+  split_ifs at h with hz
+  · rcases (List.mem_cons.mp h) with rfl | h_nat
+    · exact Or.inl rfl
+    · exact Or.inr (mem_natToChars_only_digits _ _ h_nat)
+  · exact Or.inr (mem_natToChars_only_digits _ _ h)
+
+lemma mem_monomialToChars_int_only_valid (d : ℕ) (c : ℤ) (ch : Char) (h : ch ∈ monomialToChars d c) :
+  ch = 'x' ∨ ch = '*' ∨ ch = '^' ∨ ch = '-' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  have h_toChars : DensePolyToChars.toChars c = intToChars c := rfl
+  dsimp [monomialToChars] at h
+  rw [h_toChars] at h
+  split_ifs at h with hc hd hc1 hd1 hd1_ignore
+  · simp only [List.mem_singleton] at h
+    subst h
+    exact Or.inr (Or.inr (Or.inr ( Or.inr (by decide) )))
+  · rcases mem_intToChars_only_digits_or_dash _ _ h with rfl | h_dig
+    · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr h_dig)))
+  · simp only [List.nil_append, List.mem_singleton] at h
+    subst h
+    exact Or.inl rfl
+  · simp only [List.nil_append] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inl rfl
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inr (Or.inr (Or.inl rfl))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ hh))))
+  · have h_assoc : ['-'] ++ ['x'] = ['-', 'x'] := rfl
+    rw [h_assoc] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+    · have h_eq_x : ch = 'x' := List.mem_singleton.mp hk
+      exact Or.inl h_eq_x
+  · have h_assoc : ['-'] ++ 'x' :: '^' :: natToChars d = '-' :: 'x' :: '^' :: natToChars d := rfl
+    rw [h_assoc] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inl rfl
+      · rcases (List.mem_cons.mp hh) with rfl | h3
+        · exact Or.inr (Or.inr (Or.inl rfl))
+        · exact Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h3))))
+  · have h_assoc : intToChars c ++ ['*'] ++ ['x'] = intToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_int | h_rest
+    · rcases mem_intToChars_only_digits_or_dash _ _ h_int with rfl | h_dig
+      · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr h_dig)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · have h_eq_x : ch = 'x' := List.mem_singleton.mp h_rest2
+        exact Or.inl h_eq_x
+  · have h_assoc : intToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = intToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_int | h_rest
+    · rcases mem_intToChars_only_digits_or_dash _ _ h_int with rfl | h_dig
+      · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr h_dig)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · rcases (List.mem_cons.mp h_rest2) with rfl | h_rest3
+        · exact Or.inl rfl
+        · rcases (List.mem_cons.mp h_rest3) with rfl | h_rest4
+          · exact Or.inr (Or.inr (Or.inl rfl))
+          · exact Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_rest4))))
+
+lemma mem_ratToChars_only_digits_or_dash_or_slash (q : ℚ) (c : Char) (h : c ∈ ratToChars q) :
+  c = '/' ∨ c = '-' ∨ ('0'.toNat ≤ c.toNat ∧ c.toNat ≤ '9'.toNat) := by
+  dsimp [ratToChars] at h
+  split_ifs at h with hd
+  · rcases (mem_intToChars_only_digits_or_dash _ _ h) with rfl | h_dig
+    · exact Or.inr (Or.inl rfl)
+    · exact Or.inr (Or.inr h_dig)
+  · have h_assoc : intToChars q.num ++ ['/'] ++ natToChars q.den = (intToChars q.num ++ ['/']) ++ natToChars q.den := rfl
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_int_slash | h_nat
+    · rcases (List.mem_append.mp h_int_slash) with h_int | h_slash
+      · rcases (mem_intToChars_only_digits_or_dash _ _ h_int) with rfl | h_dig
+        · exact Or.inr (Or.inl rfl)
+        · exact Or.inr (Or.inr h_dig)
+      · rcases (List.mem_cons.mp h_slash) with rfl | hk
+        · exact Or.inl rfl
+        · contradiction
+    · exact Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_nat))
+
+lemma mem_monomialToChars_rat_only_valid (d : ℕ) (c : ℚ) (ch : Char) (h : ch ∈ monomialToChars d c) :
+  ch = 'x' ∨ ch = '*' ∨ ch = '^' ∨ ch = '/' ∨ ch = '-' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
+  dsimp [monomialToChars] at h
+  rw [h_toChars] at h
+  split_ifs at h with hc hd hc1 hd1 hd1_ignore
+  · simp only [List.mem_singleton] at h
+    subst h
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (by decide)))))
+  · rcases mem_ratToChars_only_digits_or_dash_or_slash _ _ h with rfl | rfl | h_dig
+    · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h_dig))))
+  · simp only [List.nil_append, List.mem_singleton] at h
+    subst h
+    exact Or.inl rfl
+  · simp only [List.nil_append] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inl rfl
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inr (Or.inr (Or.inl rfl))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ hh)))))
+  · have h_assoc : ['-'] ++ ['x'] = ['-', 'x'] := rfl
+    rw [h_assoc] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+    · have h_eq_x : ch = 'x' := List.mem_singleton.mp hk
+      exact Or.inl h_eq_x
+  · have h_assoc : ['-'] ++ 'x' :: '^' :: natToChars d = '-' :: 'x' :: '^' :: natToChars d := rfl
+    rw [h_assoc] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inl rfl
+      · rcases (List.mem_cons.mp hh) with rfl | h3
+        · exact Or.inr (Or.inr (Or.inl rfl))
+        · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h3)))))
+  · have h_assoc : ratToChars c ++ ['*'] ++ ['x'] = ratToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_rat | h_rest
+    · rcases mem_ratToChars_only_digits_or_dash_or_slash _ _ h_rat with rfl | rfl | h_dig
+      · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h_dig))))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · have h_eq_x : ch = 'x' := List.mem_singleton.mp h_rest2
+        exact Or.inl h_eq_x
+  · have h_assoc : ratToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_rat | h_rest
+    · rcases mem_ratToChars_only_digits_or_dash_or_slash _ _ h_rat with rfl | rfl | h_dig
+      · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h_dig))))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · rcases (List.mem_cons.mp h_rest2) with rfl | h_rest3
+        · exact Or.inl rfl
+        · rcases (List.mem_cons.mp h_rest3) with rfl | h_rest4
+          · exact Or.inr (Or.inr (Or.inl rfl))
+          · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_rest4)))))
+
+lemma mem_monomialToChars_zmod_only_valid {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) (ch : Char) (h : ch ∈ monomialToChars d c) :
+  ch = 'x' ∨ ch = '*' ∨ ch = '^' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
+  dsimp [monomialToChars] at h
+  rw [h_toChars] at h
+  split_ifs at h with hc hd hc1 hd1 hd1_ignore
+  · simp only [List.mem_singleton] at h
+    subst h
+    exact Or.inr (Or.inr (Or.inr (by decide)))
+  · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h)))
+  · simp only [List.nil_append, List.mem_singleton] at h
+    subst h
+    exact Or.inl rfl
+  · simp only [List.nil_append] at h
+    rcases (List.mem_cons.mp h) with rfl | hk
+    · exact Or.inl rfl
+    · rcases (List.mem_cons.mp hk) with rfl | hh
+      · exact Or.inr (Or.inr (Or.inl rfl))
+      · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ hh)))
+  · have h_eq := eq_of_beq hd1_ignore
+    have h_dash_not_in : '-' ∉ natToChars c.val := by
+      intro h_in
+      have h_dig := mem_natToChars_only_digits c.val '-' h_in
+      have ht : '-'.toNat = 45 := rfl
+      have hz : '0'.toNat = 48 := rfl
+      rw [ht, hz] at h_dig
+      omega
+    rw [h_eq] at h_dash_not_in
+    have h_mem : '-' ∈ ['-', '1'] := by decide
+    contradiction
+  · have h_eq := eq_of_beq hd1_ignore
+    have h_dash_not_in : '-' ∉ natToChars c.val := by
+      intro h_in
+      have h_dig := mem_natToChars_only_digits c.val '-' h_in
+      have ht : '-'.toNat = 45 := rfl
+      have hz : '0'.toNat = 48 := rfl
+      rw [ht, hz] at h_dig
+      omega
+    rw [h_eq] at h_dash_not_in
+    have h_mem : '-' ∈ ['-', '1'] := by decide
+    contradiction
+  · have h_assoc : natToChars c.val ++ ['*'] ++ ['x'] = natToChars c.val ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_nat | h_rest
+    · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_nat)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · have h_eq_x : ch = 'x' := List.mem_singleton.mp h_rest2
+        exact Or.inl h_eq_x
+  · have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    rcases (List.mem_append.mp h) with h_nat | h_rest
+    · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_nat)))
+    · rcases (List.mem_cons.mp h_rest) with rfl | h_rest2
+      · exact Or.inr (Or.inl rfl)
+      · rcases (List.mem_cons.mp h_rest2) with rfl | h_rest3
+        · exact Or.inl rfl
+        · rcases (List.mem_cons.mp h_rest3) with rfl | h_rest4
+          · exact Or.inr (Or.inr (Or.inl rfl))
+          · exact Or.inr (Or.inr (Or.inr (mem_natToChars_only_digits _ _ h_rest4)))
 
 lemma not_mem_ratToChars_x (q : ℚ) : 'x' ∉ ratToChars q := by
   unfold ratToChars
