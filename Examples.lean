@@ -149,3 +149,4 @@ end ParseEval
 #eval parseDensePoly (R := ℚ) "-2/3*x^2-1/2"
 #eval parseDensePoly (R := ℤ) "-2/3*x^2-1/2"
 #eval parseDensePoly (R := (ZMod 5)) "3*x^2-1"
+#eval parseDensePoly (R := (ZMod 5)) "3*x^2+x^2-1"

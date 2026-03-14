@@ -1893,6 +1893,10 @@ def listToPoly {R : Type _} [DecidableEq R] [Semiring R] (l : List (ℕ × R)) :
     a
   normalize arr
 
+def hasDuplicateExponents {R} (l : List (ℕ × R)) : Bool :=
+  let exps := l.map Prod.fst
+  exps.eraseDups.length ≠ exps.length
+
 def parseDensePoly {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R] (s : String) : Option (DensePoly R) :=
   if s = "0" then some 0
   else
@@ -1901,7 +1905,9 @@ def parseDensePoly {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R
     if parsedParts.any (fun x => x.isNone) then none
     else
       let unwrapped := parsedParts.filterMap id
-      some (listToPoly unwrapped)
+      if hasDuplicateExponents unwrapped then none
+      else some (listToPoly unwrapped)
+
 
 lemma monomialToChars_nat_ne_nil (d : ℕ) (c : ℕ) : monomialToChars d c ≠ [] := by
   have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
