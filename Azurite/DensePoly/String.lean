@@ -909,7 +909,7 @@ lemma parseMonomial_int_pos_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : par
         · contradiction
       case cons head2 tail2 =>
         rw [h_split] at h
-        sorry
+        contradiction
 
 lemma parseMonomial_int_neg_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : parseMonomial (R := ℕ) cs = some (d, n)) :
   parseMonomial (R := ℤ) ('-' :: cs) = some (d, - (n : ℤ)) := by
