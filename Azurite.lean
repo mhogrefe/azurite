@@ -1,11 +1,13 @@
 -- This module serves as the root of the `Azurite` library.
 -- Import modules here that should be built as part of the library.
 import Azurite.DensePoly.Basic
-import Azurite.DensePoly.Polynomial
 import Azurite.DensePoly.Neg
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
-import Azurite.DensePoly.MapEquiv
 import Azurite.DensePoly.ToString
 import Azurite.DensePoly.Parse
 import Azurite.DensePoly.StringLemmas
+import Azurite.DensePoly.Equiv.Basic
+import Azurite.DensePoly.Equiv.Monomial
+import Azurite.DensePoly.Equiv.Neg
+import Azurite.DensePoly.Equiv.Map

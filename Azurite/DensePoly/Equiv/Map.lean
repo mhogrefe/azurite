@@ -1,5 +1,5 @@
 import Azurite.DensePoly.Basic
-import Azurite.DensePoly.Polynomial
+import Azurite.DensePoly.Equiv.Basic
 import Azurite.DensePoly.Cast
 import Mathlib.Algebra.Polynomial.Basic
 

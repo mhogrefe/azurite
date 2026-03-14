@@ -122,11 +122,6 @@ lemma toPoly_normalize [DecidableEq R] (a : Array R) :
   rw [h2, h1]
   exact toPoly_dropTrailingZeros a.toList
 
-def List.getCoeff (l : List R) (i : ℕ) : R := (l[i]?).getD 0
-
-@[simp] lemma getCoeff_nil (i : ℕ) : ([] : List R).getCoeff i = 0 := rfl
-@[simp] lemma getCoeff_cons_zero (a : R) (as : List R) : (a :: as).getCoeff 0 = a := rfl
-@[simp] lemma getCoeff_cons_succ (a : R) (as : List R) (i : ℕ) : (a :: as).getCoeff (i + 1) = as.getCoeff i := rfl
 
 lemma coeff_toPoly (l : List R) (i : ℕ) :
   (List.toPoly l).coeff i = l.getCoeff i := by
