@@ -138,3 +138,7 @@ section ParseEval
 #eval parseMonomial (R := ℚ) "0".toList
 
 end ParseEval
+
+#eval toString (0 : DensePoly ℤ)
+#eval toString (monomial 2 (5:ℤ))
+#eval toString p1a

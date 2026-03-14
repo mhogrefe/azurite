@@ -1554,4 +1554,32 @@ instance : DensePolyParsableValid ℚ where
 instance {n : ℕ} [NeZero n] : DensePolyParsableValid (ZMod n) where
   parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_zmod
 
+def listEnum {α : Type _} (l : List α) : List (ℕ × α) :=
+  let rec aux (acc : List (ℕ × α)) (n : ℕ) (rem : List α) : List (ℕ × α) :=
+    match rem with
+    | [] => acc.reverse
+    | x :: xs => aux ((n, x) :: acc) (n + 1) xs
+  aux [] 0 l
+
+def toChars {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R] (p : DensePoly R) : String :=
+  if p = 0 then
+    "0"
+  else
+    let coeffs : List R := p.coeffs.toList
+    let indexed : List (ℕ × R) := listEnum coeffs
+    let nonZero : List (ℕ × R) := indexed.filter (fun (_, c) => c ≠ 0)
+    let monomials : List (List Char) := nonZero.map (fun (d, c) => monomialToChars d c)
+    let reversed : List (List Char) := monomials.reverse
+    let withSigns : List (List Char) := (listEnum reversed).map (fun (i, m) =>
+      if i = 0 then m
+      else match m with
+      | '-' :: _ => m
+      | _ => '+' :: m
+    )
+    let flat : List Char := withSigns.flatten
+    String.ofList flat
+
+instance {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R] : ToString (DensePoly R) where
+  toString := toChars
+
 end Azurite.DensePoly
