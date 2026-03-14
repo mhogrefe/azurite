@@ -91,8 +91,10 @@ instance : DensePolyToChars ℤ where
 instance : DensePolyToChars ℚ where
   toChars := ratToChars
 
+def zmodToChars {n : ℕ} [NeZero n] (c : ZMod n) : List Char := natToChars c.val
+
 instance {n : ℕ} [NeZero n] : DensePolyToChars (ZMod n) where
-  toChars x := natToChars x.val
+  toChars := zmodToChars
 
 lemma char_ofNat_ne_dash (n : ℕ) : Char.ofNat ('0'.toNat + n % 10) ≠ '-' := by
   have h_mod : n % 10 < 10 := Nat.mod_lt _ (by decide)
@@ -159,6 +161,19 @@ lemma natToCharsAux_ne_nil_of_ne_zero (f n : ℕ) (h : n ≠ 0) : natToCharsAux 
   · contradiction
   · apply natToCharsAux_ne_nil_of_acc_ne_nil
     intro hc; contradiction
+
+lemma natToChars_ne_nil (n : ℕ) : natToChars n ≠ [] := by
+  dsimp [natToChars]
+  split_ifs with hn
+  · intro hc; contradiction
+  · cases n
+    · contradiction
+    · rename_i k
+      exact natToCharsAux_ne_nil_of_ne_zero k (k+1) (by simp)
+
+lemma zmodToChars_ne_nil {n : ℕ} [NeZero n] (c : ZMod n) : zmodToChars c ≠ [] := by
+  dsimp [zmodToChars]
+  exact natToChars_ne_nil c.val
 
 lemma intToChars_ne_nil (z : ℤ) : intToChars z ≠ [] := by
   dsimp [intToChars]

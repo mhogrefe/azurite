@@ -1903,4 +1903,84 @@ def parseDensePoly {R : Type _} [DecidableEq R] [Semiring R] [DensePolyToChars R
       let unwrapped := parsedParts.filterMap id
       some (listToPoly unwrapped)
 
+lemma monomialToChars_nat_ne_nil (d : ℕ) (c : ℕ) : monomialToChars d c ≠ [] := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact natToChars_ne_nil _
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; contradiction
+  · intro h; contradiction
+  · intro h
+    have h_assoc : natToChars c ++ ['*'] ++ ['x'] = natToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+  · intro h
+    have h_assoc : natToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+
+lemma monomialToChars_int_ne_nil (d : ℕ) (c : ℤ) : monomialToChars d c ≠ [] := by
+  have h_toChars : DensePolyToChars.toChars c = intToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact intToChars_ne_nil _
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; contradiction
+  · intro h; contradiction
+  · intro h
+    have h_assoc : intToChars c ++ ['*'] ++ ['x'] = intToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+  · intro h
+    have h_assoc : intToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = intToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+
+lemma monomialToChars_rat_ne_nil (d : ℕ) (c : ℚ) : monomialToChars d c ≠ [] := by
+  have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact ratToChars_ne_nil _
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; contradiction
+  · intro h; contradiction
+  · intro h
+    have h_assoc : ratToChars c ++ ['*'] ++ ['x'] = ratToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+  · intro h
+    have h_assoc : ratToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+
+lemma monomialToChars_zmod_ne_nil {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) : monomialToChars d c ≠ [] := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact natToChars_ne_nil _
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; contradiction
+  · intro h; contradiction
+  · intro h
+    have h_assoc : natToChars c.val ++ ['*'] ++ ['x'] = natToChars c.val ++ ['*', 'x'] := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+  · intro h
+    have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc] at h
+    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+
 end Azurite.DensePoly
