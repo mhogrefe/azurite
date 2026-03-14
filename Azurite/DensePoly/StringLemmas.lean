@@ -2591,10 +2591,248 @@ lemma mem_toChars_nat_only_valid (p : DensePoly ℕ) (ch : Char) (h : ch ∈ (to
 lemma toChars_int_ne_empty (p : DensePoly ℤ) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_int_ne_nil
 
+lemma mem_toChars_int_only_valid (p : DensePoly ℤ) (ch : Char) (h : ch ∈ (toChars p).toList) :
+  ch = 'x' ∨ ch = '+' ∨ ch = '-' ∨ ch = '*' ∨ ch = '^' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  dsimp [toChars] at h
+  split_ifs at h with hp0
+  · -- p = 0
+    have hz : ("0" : String).toList = ['0'] := rfl
+    rw [hz] at h
+    have heq : ch = '0' := List.mem_singleton.mp h
+    subst heq
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (by decide)))))
+  · -- p ≠ 0
+    simp only [String.toList_ofList] at h
+    have h_flat := h
+    rw [List.mem_flatten] at h_flat
+    rcases h_flat with ⟨l, hl_in, h_ch_in⟩
+    rw [List.mem_map] at hl_in
+    rcases hl_in with ⟨⟨i, m⟩, hm_in, hl_eq⟩
+    dsimp at hl_eq
+    have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
+    rw [List.mem_reverse, List.mem_map] at hm_mem
+    rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
+    
+    have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ch_m = '-' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
+      intro ch_m hch_m
+      rw [←hm_eq] at hch_m
+      exact mem_monomialToChars_int_only_valid d c ch_m hch_m
+
+    split_ifs at hl_eq with hi0
+    · rw [←hl_eq] at h_ch_in
+      have hv := h_mono ch h_ch_in
+      rcases hv with rfl | hr
+      · exact Or.inl rfl
+      · rcases hr with rfl | hr2
+        · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+        · rcases hr2 with rfl | hr3
+          · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+          · rcases hr3 with rfl | hr4
+            · exact Or.inr (Or.inr (Or.inl rfl))
+            · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr4))))
+    · cases h_match : m with
+      | nil =>
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          contradiction
+        · rw [←hl_eq] at h_ch_in
+          have h_ch_eq : ch = '+' := List.mem_singleton.mp h_ch_in
+          subst h_ch_eq
+          exact Or.inr (Or.inl rfl)
+      | cons m_head m_tail =>
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          rw [←hl_eq] at h_ch_in
+          have h_in_m : ch ∈ m := by rw [h_match]; exact h_ch_in
+          have hv := h_mono ch h_in_m
+          rcases hv with rfl | hr
+          · exact Or.inl rfl
+          · rcases hr with rfl | hr2
+            · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+            · rcases hr2 with rfl | hr3
+              · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+              · rcases hr3 with rfl | hr4
+                · exact Or.inr (Or.inr (Or.inl rfl))
+                · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr4))))
+        · rw [←hl_eq] at h_ch_in
+          rcases (List.mem_cons.mp h_ch_in) with rfl | hk
+          · exact Or.inr (Or.inl rfl)
+          · have h_in_m : ch ∈ m := by rw [h_match]; exact hk
+            have hv := h_mono ch h_in_m
+            rcases hv with rfl | hr
+            · exact Or.inl rfl
+            · rcases hr with rfl | hr2
+              · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+              · rcases hr2 with rfl | hr3
+                · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+                · rcases hr3 with rfl | hr4
+                  · exact Or.inr (Or.inr (Or.inl rfl))
+                  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr4))))
+
 lemma toChars_rat_ne_empty (p : DensePoly ℚ) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_rat_ne_nil
 
+lemma mem_toChars_rat_only_valid (p : DensePoly ℚ) (ch : Char) (h : ch ∈ (toChars p).toList) :
+  ch = 'x' ∨ ch = '+' ∨ ch = '-' ∨ ch = '*' ∨ ch = '^' ∨ ch = '/' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  dsimp [toChars] at h
+  split_ifs at h with hp0
+  · -- p = 0
+    have hz : ("0" : String).toList = ['0'] := rfl
+    rw [hz] at h
+    have heq : ch = '0' := List.mem_singleton.mp h
+    subst heq
+    exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (by decide))))))
+  · -- p ≠ 0
+    simp only [String.toList_ofList] at h
+    have h_flat := h
+    rw [List.mem_flatten] at h_flat
+    rcases h_flat with ⟨l, hl_in, h_ch_in⟩
+    rw [List.mem_map] at hl_in
+    rcases hl_in with ⟨⟨i, m⟩, hm_in, hl_eq⟩
+    dsimp at hl_eq
+    have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
+    rw [List.mem_reverse, List.mem_map] at hm_mem
+    rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
+    
+    have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ch_m = '/' ∨ ch_m = '-' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
+      intro ch_m hch_m
+      rw [←hm_eq] at hch_m
+      exact mem_monomialToChars_rat_only_valid d c ch_m hch_m
+
+    split_ifs at hl_eq with hi0
+    · rw [←hl_eq] at h_ch_in
+      have hv := h_mono ch h_ch_in
+      rcases hv with rfl | hr
+      · exact Or.inl rfl
+      · rcases hr with rfl | hr2
+        · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+        · rcases hr2 with rfl | hr3
+          · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+          · rcases hr3 with rfl | hr4
+            · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+            · rcases hr4 with rfl | hr5
+              · exact Or.inr (Or.inr (Or.inl rfl))
+              · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr5)))))
+    · cases h_match : m with
+      | nil =>
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          contradiction
+        · rw [←hl_eq] at h_ch_in
+          have h_ch_eq : ch = '+' := List.mem_singleton.mp h_ch_in
+          subst h_ch_eq
+          exact Or.inr (Or.inl rfl)
+      | cons m_head m_tail =>
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          rw [←hl_eq] at h_ch_in
+          have h_in_m : ch ∈ m := by rw [h_match]; exact h_ch_in
+          have hv := h_mono ch h_in_m
+          rcases hv with rfl | hr
+          · exact Or.inl rfl
+          · rcases hr with rfl | hr2
+            · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+            · rcases hr2 with rfl | hr3
+              · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+              · rcases hr3 with rfl | hr4
+                · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+                · rcases hr4 with rfl | hr5
+                  · exact Or.inr (Or.inr (Or.inl rfl))
+                  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr5)))))
+        · rw [←hl_eq] at h_ch_in
+          rcases (List.mem_cons.mp h_ch_in) with rfl | hk
+          · exact Or.inr (Or.inl rfl)
+          · have h_in_m : ch ∈ m := by rw [h_match]; exact hk
+            have hv := h_mono ch h_in_m
+            rcases hv with rfl | hr
+            · exact Or.inl rfl
+            · rcases hr with rfl | hr2
+              · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+              · rcases hr2 with rfl | hr3
+                · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+                · rcases hr3 with rfl | hr4
+                  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+                  · rcases hr4 with rfl | hr5
+                    · exact Or.inr (Or.inr (Or.inl rfl))
+                    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hr5)))))
+
 lemma toChars_zmod_ne_empty {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) : toChars p ≠ "" :=
   toChars_ne_empty p monomialToChars_zmod_ne_nil
+
+lemma mem_toChars_zmod_only_valid {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) (ch : Char) (h : ch ∈ (toChars p).toList) :
+  ch = 'x' ∨ ch = '+' ∨ ch = '*' ∨ ch = '^' ∨ ('0'.toNat ≤ ch.toNat ∧ ch.toNat ≤ '9'.toNat) := by
+  dsimp [toChars] at h
+  split_ifs at h with hp0
+  · -- p = 0
+    have hz : ("0" : String).toList = ['0'] := rfl
+    rw [hz] at h
+    have heq : ch = '0' := List.mem_singleton.mp h
+    subst heq
+    exact Or.inr (Or.inr (Or.inr (Or.inr (by decide))))
+  · -- p ≠ 0
+    simp only [String.toList_ofList] at h
+    have h_flat := h
+    rw [List.mem_flatten] at h_flat
+    rcases h_flat with ⟨l, hl_in, h_ch_in⟩
+    rw [List.mem_map] at hl_in
+    rcases hl_in with ⟨⟨i, m⟩, hm_in, hl_eq⟩
+    dsimp at hl_eq
+    have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
+    rw [List.mem_reverse, List.mem_map] at hm_mem
+    rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
+    
+    have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
+      intro ch_m hch_m
+      rw [←hm_eq] at hch_m
+      exact mem_monomialToChars_zmod_only_valid d c ch_m hch_m
+
+    split_ifs at hl_eq with hi0
+    · rw [←hl_eq] at h_ch_in
+      have hv := h_mono ch h_ch_in
+      rcases hv with rfl | hr
+      · exact Or.inl rfl
+      · rcases hr with rfl | hr2
+        · exact Or.inr (Or.inr (Or.inl rfl))
+        · rcases hr2 with rfl | hr3
+          · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+          · exact Or.inr (Or.inr (Or.inr (Or.inr hr3)))
+    · cases h_match : m with
+      | nil =>
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          contradiction
+        · rw [←hl_eq] at h_ch_in
+          have h_ch_eq : ch = '+' := List.mem_singleton.mp h_ch_in
+          subst h_ch_eq
+          exact Or.inr (Or.inl rfl)
+      | cons m_head m_tail =>
+        have h_dash : m_head ≠ '-' := by
+          intro hc
+          have h_in : '-' ∈ m := by rw [h_match, hc]; exact List.Mem.head _
+          have h_mono_dash := h_mono '-' h_in
+          revert h_mono_dash
+          decide
+        rw [h_match] at hl_eq
+        split at hl_eq
+        · rename_i _ h_match_dash
+          injection h_match_dash with h_eq
+          exact False.elim (h_dash h_eq)
+        · rw [←hl_eq] at h_ch_in
+          rcases (List.mem_cons.mp h_ch_in) with rfl | hk
+          · exact Or.inr (Or.inl rfl)
+          · have h_in_m : ch ∈ m := by rw [h_match]; exact hk
+            have hv := h_mono ch h_in_m
+            rcases hv with rfl | hr
+            · exact Or.inl rfl
+            · rcases hr with rfl | hr2
+              · exact Or.inr (Or.inr (Or.inl rfl))
+              · rcases hr2 with rfl | hr3
+                · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+                · exact Or.inr (Or.inr (Or.inr (Or.inr hr3)))
 
 end Azurite.DensePoly
