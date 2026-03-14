@@ -76,7 +76,7 @@ instance : DensePolyParsable ℚ where
   parse cs := parseRatChars cs
 
 instance {n : ℕ} [NeZero n] : DensePolyParsable (ZMod n) where
-  parse cs := (String.ofList cs).toInt?.map (fun x => (x : ZMod n))
+  parse cs := (parseIntChars cs).map (fun x => (x : ZMod n))
 
 /-- A typeclass for types whose elements can be formatted as a list of characters for polynomial coefficients. -/
 class DensePolyToChars (R : Type _) where

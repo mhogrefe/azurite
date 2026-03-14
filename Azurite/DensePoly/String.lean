@@ -1223,10 +1223,104 @@ lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
               rw [parseIntChars_intToChars c]
               rfl
 
-lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
-  parseMonomial (R := ℚ) (monomialToChars d c) = some (d, c) := by
-  sorry
+lemma parseZModChars_of_parseNatChars {n : ℕ} [NeZero n] (cs : List Char) (v : ℕ)
+  (h : DensePolyParsable.parse (R := ℕ) cs = some v) :
+  DensePolyParsable.parse (R := ZMod n) cs = some (v : ZMod n) := by
+  dsimp [DensePolyParsable.parse] at h ⊢
+  have ht := parseIntChars_eq_some_of_parseNatChars cs v h
+  rw [ht]
+  dsimp [Option.map, Option.bind]
+  congr 1
+  exact Int.cast_natCast v
+
+lemma parseMonomial_zmod_of_nat {n : ℕ} [NeZero n] (cs : List Char) (d : ℕ) (v : ℕ)
+  (h : parseMonomial (R := ℕ) cs = some (d, v)) :
+  parseMonomial (R := ZMod n) cs = some (d, (v : ZMod n)) := by
+  dsimp [parseMonomial] at h ⊢
+  cases hsplit : cs.splitOn 'x'
+  · rw [hsplit] at h; contradiction
+  · rename_i c_cs tail
+    cases tail
+    · rw [hsplit] at h
+      dsimp at h ⊢
+      cases hparse : DensePolyParsable.parse (R := ℕ) c_cs
+      · rw [hparse] at h; contradiction
+      · rename_i val
+        rw [hparse] at h; dsimp at h
+        injection h with heq
+        injection heq with hd_eq hv_eq
+        subst hd_eq hv_eq
+        have hz := parseZModChars_of_parseNatChars (n := n) c_cs val hparse
+        rw [hz]
+        rfl
+    · rename_i head2 tail2
+      cases tail2
+      · rw [hsplit] at h
+        dsimp at h ⊢
+        split at h
+        · generalize hpfx : parseMonomial_c_opt_prefix c_cs = pfx at h ⊢
+          cases hparse : DensePolyParsable.parse (R := ℕ) pfx
+          · rw [hparse] at h; contradiction
+          · rename_i val
+            rw [hparse] at h; dsimp at h
+            injection h with heq
+            injection heq with hd_eq hv_eq
+            subst hd_eq hv_eq
+            have hz := parseZModChars_of_parseNatChars (n := n) pfx val hparse
+            rw [hz]
+            rfl
+        · rename_i rest
+          generalize hden : parseNatChars rest = val_d at h ⊢
+          cases val_d
+          · contradiction
+          · rename_i val
+            dsimp at h ⊢
+            generalize hpfx : parseMonomial_c_opt_prefix c_cs = pfx at h ⊢
+            cases hparse : DensePolyParsable.parse (R := ℕ) pfx
+            · rw [hparse] at h; contradiction
+            · rename_i val2
+              rw [hparse] at h; dsimp at h
+              injection h with heq
+              injection heq with hd_eq hv_eq
+              subst hd_eq hv_eq
+              have hz := parseZModChars_of_parseNatChars (n := n) pfx val2 hparse
+              rw [hz]
+              rfl
+        · contradiction
+      · rw [hsplit] at h
+        contradiction
+
+lemma monomialToChars_zmod_eq_nat {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) :
+  monomialToChars (R := ZMod n) d c = if c = 0 then ['0'] else monomialToChars (R := ℕ) d c.val := by
+  dsimp [monomialToChars]
+  split
+  · rfl
+  · rename_i hc
+    have hc_val : c.val ≠ 0 := by
+      intro h
+      have hc0 : c = 0 := by
+        calc c = (c.val : ZMod n) := (ZMod.natCast_zmod_val c).symm
+          _ = (0 : ZMod n) := by rw [h]; exact Nat.cast_zero
+      contradiction
+    rw [if_neg hc_val]
+    rfl
 
 lemma parse_monomialToChars_ne_zero_zmod {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) (hc : c ≠ 0) :
   parseMonomial (R := ZMod n) (monomialToChars d c) = some (d, c) := by
+  have hc_val : c.val ≠ 0 := by
+    intro h
+    have hc0 : c = 0 := by
+      calc c = (c.val : ZMod n) := (ZMod.natCast_zmod_val c).symm
+        _ = (0 : ZMod n) := by rw [h]; exact Nat.cast_zero
+    contradiction
+  have h_nat := parse_monomialToChars_ne_zero_nat d c.val hc_val
+  rw [monomialToChars_zmod_eq_nat d c]
+  rw [if_neg hc]
+  have hz := parseMonomial_zmod_of_nat (n := n) _ d c.val h_nat
+  have heq : (c.val : ZMod n) = c := ZMod.natCast_zmod_val c
+  rw [heq] at hz
+  exact hz
+
+lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
+  parseMonomial (R := ℚ) (monomialToChars d c) = some (d, c) := by
   sorry
