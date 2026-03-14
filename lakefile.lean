@@ -15,3 +15,7 @@ require mathlib from git
 @[default_target]
 lean_lib «Azurite» where
   -- add any library configuration options here
+
+@[default_target]
+lean_lib «Examples» where
+  -- add any library configuration options here

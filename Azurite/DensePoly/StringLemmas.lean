@@ -35,10 +35,7 @@ lemma not_mem_natToChars (n : ℕ) : '-' ∉ natToChars n := by
   · apply not_mem_natToCharsAux
     intro hc; nomatch hc
 
-lemma not_mem_drop_of_not_mem {α : Type _} {a : α} {l : List α} (n : ℕ) (h : a ∉ l) :
-  a ∉ l.drop n := by
-  intro hc
-  exact h (List.mem_of_mem_drop hc)
+
 
 lemma not_mem_tail_intToChars (z : ℤ) : '-' ∉ (intToChars z).drop 1 := by
   dsimp [intToChars]
@@ -50,9 +47,8 @@ lemma not_mem_tail_intToChars (z : ℤ) : '-' ∉ (intToChars z).drop 1 := by
       intro hc; nomatch hc
   · split
     · decide
-    · apply not_mem_drop_of_not_mem
-      apply not_mem_natToCharsAux
-      intro hc; nomatch hc
+    · intro hc
+      exact not_mem_natToCharsAux _ _ _ (by intro hc2; nomatch hc2) (List.mem_of_mem_drop hc)
 
 lemma natToCharsAux_ne_nil_of_acc_ne_nil (f n : ℕ) (acc : List Char) (h : acc ≠ []) : natToCharsAux f n acc ≠ [] := by
   induction f generalizing n acc with
@@ -143,7 +139,7 @@ class NoDashInTail (R : Type _) [DensePolyToChars R] : Prop where
   no_dash_in_tail : ∀ (r : R), '-' ∉ (DensePolyToChars.toChars r).drop 1
 
 instance : NoDashInTail ℕ where
-  no_dash_in_tail := fun n => not_mem_drop_of_not_mem 1 (not_mem_natToChars n)
+  no_dash_in_tail := fun n hc => not_mem_natToChars n (List.mem_of_mem_drop hc)
 
 instance : NoDashInTail ℤ where
   no_dash_in_tail := not_mem_tail_intToChars
@@ -177,10 +173,10 @@ lemma not_mem_tail_monomialToChars {R : Type _} [DecidableEq R] [Zero R] [dpc : 
           · exact not_mem_natToChars d h3
       have hsfx_drop : '-' ∉ sfx.drop 1 := by
         intro hc; exact hsfx (List.mem_of_mem_drop hc)
-      
+
       let s := DensePolyToChars.toChars c
       have hs : '-' ∉ s.drop 1 := ndit.no_dash_in_tail c
-      
+
       split
       · -- s == ['1']
         exact hsfx_drop
@@ -2485,7 +2481,7 @@ lemma toChars_ne_empty {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] [De
       rw [hz] at hc_eq
       exact p.last_ne_zero hc_eq
     have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
-    
+
     let coeffs := p.coeffs.toList
     have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
     have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
@@ -2498,7 +2494,7 @@ lemma toChars_ne_empty {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] [De
       | '-' :: _ => m
       | _ => '+' :: m
     ) ≠ [] := map_ne_nil_of_ne_nil _ _ hl
-    
+
     have hall : ∀ x ∈ (listEnum (((((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse))).map (fun (i, m) =>
       if i = 0 then m
       else match m with
@@ -2533,4 +2529,3 @@ lemma toChars_zmod_ne_empty {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) : toCh
   toChars_ne_empty p monomialToChars_zmod_ne_nil
 
 end Azurite.DensePoly
-
