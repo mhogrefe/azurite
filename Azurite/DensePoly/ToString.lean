@@ -92,7 +92,7 @@ instance : DensePolyToChars ℚ where
   toChars := ratToChars
 
 instance {n : ℕ} [NeZero n] : DensePolyToChars (ZMod n) where
-  toChars x := (toString x.val).toList
+  toChars x := natToChars x.val
 
 /--
 Formats a monomial with degree `d` and coefficient `c` as a `List Char`.
@@ -114,29 +114,7 @@ Parses a monomial list of characters into its degree and coefficient.
 Returns `none` if the string cannot be parsed.
 Supported coefficients: `ℕ`, `ℤ`, `ℚ`, and `ZMod n`.
 -/
-def parseMonomial {R : Type _} [DensePolyParsable R] (cs : List Char) : Option (ℕ × R) :=
-  match cs.splitOn 'x' with
-  | [c_cs] => do
-    let c ← DensePolyParsable.parse c_cs
-    some (0, c)
-  | [prefix_cs, suffix_cs] => do
-    let d ← match suffix_cs with
-      | [] => some 1
-      | '^' :: rest =>
-        (String.ofList rest).toNat?
-      | _ => none
-    let c_cs := match prefix_cs with
-      | [] => ['1']
-      | ['-'] => ['-', '1']
-      | _ =>
-        let back := prefix_cs.getLast?
-        if back = some '*' then
-          prefix_cs.dropLast
-        else
-          ['i', 'n', 'v', 'a', 'l', 'i', 'd']
-    let c ← DensePolyParsable.parse c_cs
-    some (d, c)
-  | _ => none
+
 
 instance {n : ℕ} [NeZero n] : ToString (ZMod n) where
   toString x := toString x.val
