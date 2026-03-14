@@ -258,7 +258,7 @@ lemma not_mem_intToChars_mul (z : ℤ) : '*' ∉ intToChars z := by
     | inr hr => exact not_mem_natToChars_mul _ hr
   · exact not_mem_natToChars_mul _
 
-lemma not_mem_natToCharsAux (fuel n : ℕ) (acc : List Char) (h : '/' ∉ acc) :
+lemma not_mem_natToCharsAux_div (fuel n : ℕ) (acc : List Char) (h : '/' ∉ acc) :
   '/' ∉ natToCharsAux fuel n acc := by
   induction fuel generalizing n acc with
   | zero => exact h
@@ -282,11 +282,11 @@ lemma not_mem_natToCharsAux (fuel n : ℕ) (acc : List Char) (h : '/' ∉ acc) :
         decide
       · exact h
 
-lemma not_mem_natToChars (n : ℕ) : '/' ∉ natToChars n := by
+lemma not_mem_natToChars_div (n : ℕ) : '/' ∉ natToChars n := by
   unfold natToChars
   split_ifs with hn
   · intro hc; simp at hc
-  · exact not_mem_natToCharsAux _ _ _ (by simp)
+  · exact not_mem_natToCharsAux_div _ _ _ (by simp)
 
 lemma not_mem_intToChars (z : ℤ) : '/' ∉ intToChars z := by
   rw [intToChars_natAbs]
@@ -300,8 +300,8 @@ lemma not_mem_intToChars (z : ℤ) : '/' ∉ intToChars z := by
        have h45 : '-'.toNat = 45 := rfl
        rw [h47, h45] at h_val
        contradiction
-    | inr hr => exact not_mem_natToChars _ hr
-  · exact not_mem_natToChars _
+    | inr hr => exact not_mem_natToChars_div _ hr
+  · exact not_mem_natToChars_div _
 
 lemma splitOnP_go_cons_false (x : Char) (xs acc : List Char) (h : (x == '/') = false) :
   List.splitOnP.go (fun c => c == '/') (x :: xs) acc = List.splitOnP.go (fun c => c == '/') xs (x :: acc) := by
@@ -539,7 +539,7 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
     rw [h_eq_q]
   · unfold parseRatChars
     have h1 := not_mem_intToChars q.num
-    have h2 := not_mem_natToChars q.den
+    have h2 := not_mem_natToChars_div q.den
     rw [splitOn_append_singleton_append_not_mem (intToChars q.num) (natToChars q.den) h1 h2]
     change (match parseIntChars (intToChars q.num), parseNatChars (natToChars q.den) with
             | some num, some den => if den = 0 then none else some ((num : ℚ) / (den : ℚ))
@@ -567,6 +567,18 @@ lemma append_star_getLast? (l : List Char) : (l ++ ['*']).getLast? = some '*' :=
   | cons hd tl ih =>
     simp [List.getLast?]
 
+/-- Helper for parseMonomial to extract the coefficient string prefix -/
+def parseMonomial_c_opt_prefix (cs : List Char) : List Char :=
+  match cs with
+  | [] => ['1']
+  | ['-'] => ['-', '1']
+  | x => if x.getLast? = some '*' then x.dropLast else []
+
+/--
+Parses a monomial list of characters into its degree and coefficient.
+Returns `none` if the string cannot be parsed.
+Supported coefficients: `ℕ`, `ℤ`, `ℚ`, and `ZMod n`.
+-/
 def parseMonomial {R : Type _} [DensePolyParsable R] (cs : List Char) : Option (ℕ × R) :=
   match cs.splitOn 'x' with
   | [c_cs] => do
@@ -578,15 +590,7 @@ def parseMonomial {R : Type _} [DensePolyParsable R] (cs : List Char) : Option (
       | '^' :: rest =>
         parseNatChars rest
       | _ => none
-    let c_cs := match prefix_cs with
-      | [] => ['1']
-      | ['-'] => ['-', '1']
-      | x =>
-        let back := x.getLast?
-        if back = some '*' then
-          x.dropLast
-        else
-          ['i', 'n', 'v', 'a', 'l', 'i', 'd']
+    let c_cs := parseMonomial_c_opt_prefix prefix_cs
     let c ← DensePolyParsable.parse c_cs
     some (d, c)
   | _ => none
@@ -661,6 +665,7 @@ lemma splitOn_x_pow (d : List Char) (h : 'x' ∉ d) :
         have h_split : List.splitOn 'x' ['x'] = [[], []] := rfl
         rw [h_split]
         simp [DensePolyParsable.parse]
+        unfold parseMonomial_c_opt_prefix
         rw [← hc1]
         rw [parseNatChars_natToChars c]
         rfl
@@ -675,6 +680,7 @@ lemma splitOn_x_pow (d : List Char) (h : 'x' ∉ d) :
         rw [h_split]
         simp [DensePolyParsable.parse]
         have h_d := parseNatChars_natToChars d
+        unfold parseMonomial_c_opt_prefix
         simp_rw [h_d, ← hc1, parseNatChars_natToChars c]
         rfl
     · by_cases hd1 : d = 1
@@ -699,6 +705,7 @@ lemma splitOn_x_pow (d : List Char) (h : 'x' ∉ d) :
         have h_split : (natToChars c ++ ['*', 'x']).splitOn 'x' = [natToChars c ++ ['*'], []] := splitOn_append_mul_x _ hx_not_mem
         rw [h_split]
         dsimp [DensePolyParsable.parse]
+        unfold parseMonomial_c_opt_prefix
         split
         · next h =>
           have h_len : (natToChars c ++ ['*']).length = 0 := by rw [h]; rfl
@@ -737,6 +744,7 @@ lemma splitOn_x_pow (d : List Char) (h : 'x' ∉ d) :
         simp [DensePolyParsable.parse]
         have h_d := parseNatChars_natToChars d
         simp_rw [h_d]
+        unfold parseMonomial_c_opt_prefix
         split
         · next h =>
           have h_len : (natToChars c ++ ['*']).length = 0 := by rw [h]; rfl
@@ -752,6 +760,66 @@ lemma splitOn_x_pow (d : List Char) (h : 'x' ∉ d) :
           simp_rw [if_pos h_get, h_drop]
           simp_rw [parseNatChars_natToChars c]
           rfl
+
+lemma parseIntChars_eq_some_of_parseNatChars (cs : List Char) (n : ℕ) (h : parseNatChars cs = some n) :
+  parseIntChars cs = some (n : ℤ) := by
+  unfold parseIntChars
+  cases cs with
+  | nil => contradiction
+  | cons c cs =>
+    by_cases hc : c = '-'
+    · subst hc
+      have hnone : parseNatChars ('-' :: cs) = none := rfl
+      rw [hnone] at h
+      contradiction
+    · have hc_not_dash : c ≠ '-' := hc
+      have h_int_chars : (match c :: cs with | [] => none | '-' :: cs => (parseNatChars cs).bind fun a => some (-↑a) | _ => (parseNatChars (c :: cs)).bind fun a => some ↑a) = (parseNatChars (c :: cs)).bind fun a => some (a : ℤ) := by
+        split
+        · contradiction
+        · rename_i hc_eq; injection hc_eq with h_c_dash; contradiction
+        · rfl
+      cases heq : parseNatChars (c :: cs)
+      · rw [heq] at h
+        contradiction
+      · rename_i val
+        have h_bind : (Option.bind (some val) fun a => some (a : ℤ)) = some (val : ℤ) := rfl
+        rw [heq] at h
+        injection h with h_eq_n
+        subst h_eq_n
+        dsimp [parseIntChars]
+        split
+        · contradiction
+        · rename_i hc_eq; injection hc_eq with h_c_dash; contradiction
+        · rfl
+
+lemma parseIntChars_eq_neg_of_parseNatChars (cs : List Char) (n : ℕ) (h : parseNatChars cs = some n) :
+  parseIntChars ('-' :: cs) = some (- (n : ℤ)) := by
+  unfold parseIntChars
+  cases heq : parseNatChars cs
+  · rw [heq] at h
+    contradiction
+  · rename_i val
+    have h_bind : (Option.bind (some val) fun a => some (- (a : ℤ))) = some (- (val : ℤ)) := rfl
+    rw [heq] at h
+    injection h with h_eq_n
+    subst h_eq_n
+    dsimp [parseIntChars]
+    split
+    · contradiction
+    · rename_i _ cs2 hc_eq
+      injection hc_eq with hc_dash hc_string
+      subst hc_string
+      rw [heq]
+      rfl
+    · rename_i hc1 hc2;
+      have h_dash : '-' :: cs = '-' :: cs := rfl
+      exact False.elim (hc2 cs h_dash)
+
+lemma parseMonomial_c_opt_int_pos (hd : List Char) (n : ℕ)
+  (h : DensePolyParsable.parse (R := ℕ) (parseMonomial_c_opt_prefix hd) = some n) :
+  DensePolyParsable.parse (R := ℤ) (parseMonomial_c_opt_prefix hd) = some (n : ℤ) := by
+  dsimp [DensePolyParsable.parse] at h ⊢
+  exact parseIntChars_eq_some_of_parseNatChars _ n h
 
 lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
   parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
