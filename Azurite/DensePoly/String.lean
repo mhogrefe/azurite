@@ -433,6 +433,38 @@ lemma splitOnP_go_cons_true_x (xs acc : List Char) :
   List.splitOnP.go (fun ch => ch == 'x') ('x' :: xs) acc = acc.reverse :: List.splitOnP.go (fun ch => ch == 'x') xs [] := by
   rfl
 
+lemma splitOnP_go_accum_gen (cs acc : List Char) :
+  List.splitOnP.go (fun ch => ch == 'x') cs acc =
+  match List.splitOnP.go (fun ch => ch == 'x') cs [] with
+  | [] => []
+  | hd :: tail => (acc.reverse ++ hd) :: tail := by
+  revert acc
+  induction cs with
+  | nil =>
+    intro acc
+    dsimp [List.splitOnP.go]
+    simp
+  | cons x xs ih =>
+    intro acc
+    dsimp [List.splitOnP.go]
+    split
+    · rename_i h_eq
+      simp
+    · rename_i h_neq
+      rw [ih (x::acc), ih [x]]
+      generalize h_go : List.splitOnP.go (fun ch => ch == 'x') xs [] = res
+      cases res with
+      | nil => rfl
+      | cons hd tail =>
+        dsimp
+        simp [List.append_assoc]
+
+lemma splitOnP_go_accum (c : Char) (cs hd : List Char) (tail : List (List Char)) (h : List.splitOnP.go (fun ch => ch == 'x') cs [] = hd :: tail) :
+  List.splitOnP.go (fun ch => ch == 'x') cs [c] = (c :: hd) :: tail := by
+  have h_gen := splitOnP_go_accum_gen cs [c]
+  rw [h] at h_gen
+  exact h_gen
+
 lemma splitOnP_go_append_not_mem_x (l1 l2 acc : List Char) (h : 'x' ∉ l1) :
   List.splitOnP.go (fun c => c == 'x') (l1 ++ l2) acc =
   List.splitOnP.go (fun c => c == 'x') l2 (l1.reverse ++ acc) := by
@@ -918,9 +950,10 @@ lemma parseMonomial_int_neg_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : par
   · rw [h_split] at h; contradiction
   · rename_i hd tail
     have h_split_neg : ('-' :: cs).splitOn 'x' = ('-' :: hd) :: tail := by
-      -- since cs.splitOn 'x' = hd :: tail, and cs starts with hd.
-      -- wait, does cs end with x if hd doesn't contain x?
-      sorry
+      dsimp [List.splitOn, List.splitOnP] at h_split ⊢
+      have h_dash : ('-' == 'x') = false := rfl
+      rw [splitOnP_go_cons_false_x '-' cs [] h_dash]
+      exact splitOnP_go_accum '-' cs hd tail h_split
     rw [h_split_neg]
     cases tail
     · rw [h_split] at h
