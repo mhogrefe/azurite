@@ -850,7 +850,133 @@ lemma parseMonomial_c_opt_int_neg (hd : List Char) (n : ℕ)
         rw [if_neg h_star_dash]
         exact parseIntChars_eq_neg_of_parseNatChars _ n h
 
+lemma parseMonomial_int_pos_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : parseMonomial (R := ℕ) cs = some (d, n)) :
+  parseMonomial (R := ℤ) cs = some (d, (n : ℤ)) := by
+  dsimp [parseMonomial] at h ⊢
+  cases h_split : cs.splitOn 'x'
+  · rw [h_split] at h; contradiction
+  · rename_i hd tail
+    cases tail
+    · rw [h_split] at h
+      dsimp at h ⊢
+      cases hc : DensePolyParsable.parse (R := ℕ) hd
+      · rw [hc] at h; dsimp at h; contradiction
+      · rename_i val_n
+        rw [hc] at h; dsimp at h
+        injection h with heq; injection heq with hd_eq hn_eq
+        subst hd_eq hn_eq
+        have hc_int := parseIntChars_eq_some_of_parseNatChars hd val_n hc
+        change (parseIntChars hd).bind (fun c => some (0, c)) = some (0, (val_n : ℤ))
+        rw [hc_int]
+        rfl
+    · rename_i tail_head tail_tail
+      cases tail_tail
+      · rw [h_split] at h
+        dsimp at h ⊢
+        split at h
+        · generalize h_match : parseMonomial_c_opt_prefix hd = hd_match at h ⊢
+          cases h_parse : DensePolyParsable.parse (R := ℕ) hd_match
+          · rw [h_parse] at h; contradiction
+          · rename_i val_n
+            rw [h_parse] at h; dsimp at h
+            injection h with heq; injection heq with hd_eq hn_eq
+            subst hd_eq hn_eq
+            have hc_input := h_match.symm ▸ h_parse
+            have hc_int := parseMonomial_c_opt_int_pos hd val_n hc_input
+            rw [h_match] at hc_int
+            change (DensePolyParsable.parse (R := ℤ) hd_match).bind (fun c => some (1, c)) = some (1, (val_n : ℤ))
+            rw [hc_int]
+            rfl
+        · rename_i rest
+          generalize hn_chars : parseNatChars rest = res_d at h
+          cases res_d
+          · contradiction
+          · rename_i val_d
+            dsimp at h
+            generalize h_match : parseMonomial_c_opt_prefix hd = hd_match at h ⊢
+            cases h_parse : DensePolyParsable.parse (R := ℕ) hd_match
+            · rw [h_parse] at h; contradiction
+            · rename_i val_n
+              rw [h_parse] at h; dsimp at h
+              injection h with heq; injection heq with hd_eq hn_eq
+              subst hd_eq hn_eq
+              have hc_input := h_match.symm ▸ h_parse
+              have hc_int := parseMonomial_c_opt_int_pos hd val_n hc_input
+              rw [h_match] at hc_int
+              change (Option.bind (some val_d) fun y => (DensePolyParsable.parse (R := ℤ) hd_match).bind fun c => some (y, c)) = some (val_d, (val_n : ℤ))
+              rw [hc_int]
+              rfl
+        · contradiction
+      case cons head2 tail2 =>
+        rw [h_split] at h
+        sorry
 
+lemma parseMonomial_int_neg_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : parseMonomial (R := ℕ) cs = some (d, n)) :
+  parseMonomial (R := ℤ) ('-' :: cs) = some (d, - (n : ℤ)) := by
+  dsimp [parseMonomial] at h ⊢
+  cases h_split : cs.splitOn 'x'
+  · rw [h_split] at h; contradiction
+  · rename_i hd tail
+    have h_split_neg : ('-' :: cs).splitOn 'x' = ('-' :: hd) :: tail := by
+      -- since cs.splitOn 'x' = hd :: tail, and cs starts with hd.
+      -- wait, does cs end with x if hd doesn't contain x?
+      sorry
+    rw [h_split_neg]
+    cases tail
+    · rw [h_split] at h
+      dsimp at h ⊢
+      cases hc : DensePolyParsable.parse (R := ℕ) hd
+      · rw [hc] at h; dsimp at h; contradiction
+      · rename_i val_n
+        rw [hc] at h; dsimp at h
+        injection h with heq; injection heq with hd_eq hn_eq
+        subst hd_eq hn_eq
+        have hc_int := parseIntChars_eq_neg_of_parseNatChars hd val_n hc
+        change (parseIntChars ('-' :: hd)).bind (fun c => some (0, c)) = some (0, -(val_n : ℤ))
+        rw [hc_int]
+        rfl
+    · rename_i tail_head tail_tail
+      cases tail_tail
+      · rw [h_split] at h
+        dsimp at h ⊢
+        split at h
+        · generalize h_match : parseMonomial_c_opt_prefix ('-' :: hd) = hd_match at ⊢
+          generalize h_match_pos : parseMonomial_c_opt_prefix hd = hd_match_pos at h
+          cases h_parse : DensePolyParsable.parse (R := ℕ) hd_match_pos
+          · rw [h_parse] at h; contradiction
+          · rename_i val_n
+            rw [h_parse] at h; dsimp at h
+            injection h with heq; injection heq with hd_eq hn_eq
+            subst hd_eq hn_eq
+            have hc_input := h_match_pos.symm ▸ h_parse
+            have hc_int := parseMonomial_c_opt_int_neg hd val_n hc_input
+            rw [h_match] at hc_int
+            change (DensePolyParsable.parse (R := ℤ) hd_match).bind (fun c => some (1, c)) = some (1, -(val_n : ℤ))
+            rw [hc_int]
+            rfl
+        · rename_i rest
+          generalize hn_chars : parseNatChars rest = res_d at h
+          cases res_d
+          · contradiction
+          · rename_i val_d
+            dsimp at h
+            generalize h_match : parseMonomial_c_opt_prefix ('-' :: hd) = hd_match at ⊢
+            generalize h_match_pos : parseMonomial_c_opt_prefix hd = hd_match_pos at h
+            cases h_parse : DensePolyParsable.parse (R := ℕ) hd_match_pos
+            · rw [h_parse] at h; contradiction
+            · rename_i val_n
+              rw [h_parse] at h; dsimp at h
+              injection h with heq; injection heq with hd_eq hn_eq
+              subst hd_eq hn_eq
+              have hc_input := h_match_pos.symm ▸ h_parse
+              have hc_int := parseMonomial_c_opt_int_neg hd val_n hc_input
+              rw [h_match] at hc_int
+              change (Option.bind (some val_d) fun y => (DensePolyParsable.parse (R := ℤ) hd_match).bind fun c => some (y, c)) = some (val_d, -(val_n : ℤ))
+              rw [hc_int]
+              rfl
+        · contradiction
+      · rw [h_split] at h
+        sorry
 
 lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
   parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
