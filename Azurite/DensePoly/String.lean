@@ -821,6 +821,37 @@ lemma parseMonomial_c_opt_int_pos (hd : List Char) (n : ℕ)
   dsimp [DensePolyParsable.parse] at h ⊢
   exact parseIntChars_eq_some_of_parseNatChars _ n h
 
+lemma parseMonomial_c_opt_int_neg (hd : List Char) (n : ℕ)
+  (h : DensePolyParsable.parse (R := ℕ) (parseMonomial_c_opt_prefix hd) = some n) :
+  DensePolyParsable.parse (R := ℤ) (parseMonomial_c_opt_prefix ('-' :: hd)) = some (- (n : ℤ)) := by
+  dsimp [DensePolyParsable.parse] at h ⊢
+  cases hd with
+  | nil =>
+    dsimp [parseMonomial_c_opt_prefix] at h ⊢
+    exact parseIntChars_eq_neg_of_parseNatChars ['1'] n h
+  | cons c cs =>
+    dsimp [parseMonomial_c_opt_prefix] at h ⊢
+    split at h
+    · contradiction
+    · contradiction
+    · change parseIntChars (if ('-' :: c :: cs).getLast? = some '*' then ('-' :: c :: cs).dropLast else []) = some (- (n : ℤ))
+      by_cases h_star : (c :: cs).getLast? = some '*'
+      · have h_star_dash : ('-' :: c :: cs).getLast? = some '*' := by
+          exact h_star
+        rw [if_pos h_star] at h
+        rw [if_pos h_star_dash]
+        have h_drop : ('-' :: c :: cs).dropLast = '-' :: (c :: cs).dropLast := by
+          exact List.dropLast_cons_of_ne_nil (by intro h_emp; contradiction)
+        rw [h_drop]
+        exact parseIntChars_eq_neg_of_parseNatChars _ n h
+      · have h_star_dash : ('-' :: c :: cs).getLast? ≠ some '*' := by
+          exact h_star
+        rw [if_neg h_star] at h
+        rw [if_neg h_star_dash]
+        exact parseIntChars_eq_neg_of_parseNatChars _ n h
+
+
+
 lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
   parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
   sorry
