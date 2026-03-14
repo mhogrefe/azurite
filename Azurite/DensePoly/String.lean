@@ -134,6 +134,48 @@ lemma natToChars_not_dash (n : ℕ) (cs : List Char) : natToChars n = '-' :: cs 
   rw [h_none] at h_parse
   contradiction
 
+lemma natToCharsAux_eval_zero (f : ℕ) (acc : List Char) :
+  natToCharsAux f 0 acc = acc := by
+  cases f <;> rfl
+
+lemma natToCharsAux_not_start_zero (f n : ℕ) (hf : n < 10^f) (hn : n ≠ 0) (acc : List Char) :
+  ∀ cs, natToCharsAux f n acc ≠ '0' :: cs := by
+  induction f generalizing n acc with
+  | zero =>
+    have : n = 0 := by omega
+    contradiction
+  | succ f ih =>
+    intro cs h
+    dsimp [natToCharsAux] at h
+    split_ifs at h with hn_zero
+    · contradiction
+    · let digit := Char.ofNat (48 + n % 10)
+      by_cases h_div : n / 10 = 0
+      · have h_eval : natToCharsAux f (n / 10) (digit :: acc) = digit :: acc := by
+          rw [h_div]
+          exact natToCharsAux_eval_zero f (digit :: acc)
+        rw [h_eval] at h
+        have h_digit : digit = '0' := by
+          injection h
+        have h_mod : n % 10 ≠ 0 := by
+          intro h_mod_zero
+          have h_eq : n = (n / 10) * 10 + n % 10 := by omega
+          rw [h_div, h_mod_zero] at h_eq
+          omega
+        have h_digit_toNat : digit.toNat - 48 = n % 10 := toNat_digit n
+        rw [h_digit] at h_digit_toNat
+        have h0 : '0'.toNat = 48 := rfl
+        rw [h0] at h_digit_toNat
+        omega
+      · have hf' : n / 10 < 10^f := by omega
+        exact ih (n / 10) hf' h_div (digit :: acc) cs h
+
+lemma natToChars_not_start_zero (n : ℕ) (cs : List Char) (hn : n ≠ 0) : natToChars n ≠ '0' :: cs := by
+  dsimp [natToChars]
+  rw [if_neg hn]
+  have h_fuel := lt_pow_self n
+  exact natToCharsAux_not_start_zero n n h_fuel hn [] cs
+
 lemma intToChars_natAbs (z : ℤ) : intToChars z = if z < 0 then '-' :: natToChars z.natAbs else natToChars z.natAbs := by
   unfold intToChars natToChars
   dsimp only
@@ -176,6 +218,18 @@ lemma parseIntChars_intToChars (z : ℤ) : parseIntChars (intToChars z) = some z
         dsimp
         congr 1
         omega
+
+lemma intToChars_not_start_zero (z : ℤ) (cs : List Char) (hz : z ≠ 0) : intToChars z ≠ '0' :: cs := by
+  dsimp [intToChars]
+  split
+  · split
+    · intro h; omega
+    · intro h; injection h; contradiction
+  · split
+    · intro h; omega
+    · have h_abs : z.natAbs ≠ 0 := by omega
+      have h_fuel := lt_pow_self z.natAbs
+      exact natToCharsAux_not_start_zero z.natAbs z.natAbs h_fuel h_abs [] cs
 
 lemma not_mem_natToCharsAux_of_not_digit (c : Char) (hc : c.toNat < 48 ∨ 57 < c.toNat) (fuel n : ℕ) (acc : List Char) (h : c ∉ acc) :
   c ∉ natToCharsAux fuel n acc := by
@@ -890,6 +944,28 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
       congr 1
       exact (rat_ext_eq q).symm
     rw [h_eq_q]
+
+lemma ratToChars_not_start_zero (q : ℚ) (cs : List Char) (hq : q ≠ 0) : ratToChars q ≠ '0' :: cs := by
+  dsimp [ratToChars]
+  have h_num : q.num ≠ 0 := by
+    intro h_0
+    have hq_eq : q = (q.num : ℚ) / (q.den : ℚ) := rat_ext_eq q
+    rw [h_0] at hq_eq
+    simp at hq_eq
+    exact hq hq_eq
+  split
+  · exact intToChars_not_start_zero q.num cs h_num
+  · intro h
+    have h_int := intToChars_not_start_zero q.num
+    cases h_chars : intToChars q.num
+    · have h_ne_nil := intToChars_ne_nil q.num
+      contradiction
+    · rename_i c rest
+      have h_append : intToChars q.num ++ ['/'] ++ natToChars q.den = (c :: rest) ++ ['/'] ++ natToChars q.den := by rw [h_chars]
+      rw [h_append] at h
+      have h_c : c = '0' := by injection h
+      subst h_c
+      exact h_int rest h_num h_chars
 
 lemma append_star_dropLast (l : List Char) : (l ++ ['*']).dropLast = l := by
   induction l with
@@ -1969,6 +2045,16 @@ lemma monomialToChars_rat_ne_nil (d : ℕ) (c : ℚ) : monomialToChars d c ≠ [
     rw [h_assoc] at h
     exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
 
+lemma zmodToChars_not_start_zero {k : ℕ} [NeZero k] (c : ZMod k) (cs : List Char) (hc : c ≠ 0) : zmodToChars c ≠ '0' :: cs := by
+  dsimp [zmodToChars]
+  have hc_val : c.val ≠ 0 := by
+    intro h_0
+    apply hc
+    have h_c : c.val = (0 : ZMod k).val := by
+      rw [h_0, ZMod.val_zero]
+    exact ZMod.val_injective k h_c
+  exact natToChars_not_start_zero c.val cs hc_val
+
 lemma monomialToChars_zmod_ne_nil {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) : monomialToChars d c ≠ [] := by
   have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
   dsimp [monomialToChars]
@@ -1988,5 +2074,107 @@ lemma monomialToChars_zmod_ne_nil {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) : 
     have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
     rw [h_assoc] at h
     exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+
+lemma append_not_start_char {α : Type _} (l1 l2 : List α) (c : α) (h_nil : l1 ≠ []) (h_start : ∀ cs, l1 ≠ c :: cs) :
+  ∀ cs, l1 ++ l2 ≠ c :: cs := by
+  intro cs h
+  cases l1
+  · contradiction
+  · rename_i head tail
+    have h_eq : (head :: tail) ++ l2 = head :: (tail ++ l2) := rfl
+    rw [h_eq] at h
+    have h_head : head = c := by injection h
+    subst h_head
+    exact h_start tail rfl
+
+lemma monomialToChars_nat_not_start_zero (d : ℕ) (c : ℕ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact natToChars_not_start_zero c cs hc
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · have h_assoc : natToChars c ++ ['*'] ++ ['x'] = natToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc]
+    exact append_not_start_char (natToChars c) ['*', 'x'] '0' (natToChars_ne_nil c) (fun cs => natToChars_not_start_zero c cs hc) cs
+  · have h_assoc : natToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc]
+    exact append_not_start_char (natToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (natToChars_ne_nil c) (fun cs => natToChars_not_start_zero c cs hc) cs
+
+lemma monomialToChars_int_not_start_zero (d : ℕ) (c : ℤ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
+  have h_toChars : DensePolyToChars.toChars c = intToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact intToChars_not_start_zero c cs hc
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · have h_assoc : intToChars c ++ ['*'] ++ ['x'] = intToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc]
+    exact append_not_start_char (intToChars c) ['*', 'x'] '0' (intToChars_ne_nil c) (fun cs => intToChars_not_start_zero c cs hc) cs
+  · have h_assoc : intToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = intToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc]
+    exact append_not_start_char (intToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (intToChars_ne_nil c) (fun cs => intToChars_not_start_zero c cs hc) cs
+
+lemma monomialToChars_rat_not_start_zero (d : ℕ) (c : ℚ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
+  have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · exact ratToChars_not_start_zero c cs hc
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · have h_assoc : ratToChars c ++ ['*'] ++ ['x'] = ratToChars c ++ ['*', 'x'] := by simp
+    rw [h_assoc]
+    exact append_not_start_char (ratToChars c) ['*', 'x'] '0' (ratToChars_ne_nil c) (fun cs => ratToChars_not_start_zero c cs hc) cs
+  · have h_assoc : ratToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc]
+    exact append_not_start_char (ratToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (ratToChars_ne_nil c) (fun cs => ratToChars_not_start_zero c cs hc) cs
+
+lemma monomialToChars_zmod_not_start_zero {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
+  have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
+  dsimp [monomialToChars]
+  rw [h_toChars]
+  split_ifs
+  · intro h; contradiction
+  · have hc_val : c.val ≠ 0 := by
+      intro h_0
+      apply hc
+      have h_c : c.val = (0 : ZMod n).val := by
+        rw [h_0, ZMod.val_zero]
+      exact ZMod.val_injective n h_c
+    exact natToChars_not_start_zero c.val cs hc_val
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · intro h; revert h; simp
+  · have h_assoc : natToChars c.val ++ ['*'] ++ ['x'] = natToChars c.val ++ ['*', 'x'] := by simp
+    rw [h_assoc]
+    have hc_val : c.val ≠ 0 := by
+      intro h_0
+      apply hc
+      have h_c : c.val = (0 : ZMod n).val := by
+        rw [h_0, ZMod.val_zero]
+      exact ZMod.val_injective n h_c
+    exact append_not_start_char (natToChars c.val) ['*', 'x'] '0' (natToChars_ne_nil c.val) (fun cs => natToChars_not_start_zero c.val cs hc_val) cs
+  · have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
+    rw [h_assoc]
+    have hc_val : c.val ≠ 0 := by
+      intro h_0
+      apply hc
+      have h_c : c.val = (0 : ZMod n).val := by
+        rw [h_0, ZMod.val_zero]
+      exact ZMod.val_injective n h_c
+    exact append_not_start_char (natToChars c.val) ('*' :: 'x' :: '^' :: natToChars d) '0' (natToChars_ne_nil c.val) (fun cs => natToChars_not_start_zero c.val cs hc_val) cs
 
 end Azurite.DensePoly
