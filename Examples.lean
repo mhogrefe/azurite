@@ -5,7 +5,8 @@ import Azurite.DensePoly.Basic
 import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Cast
 import Azurite.DensePoly.ToString
-import Azurite.DensePoly.String
+import Azurite.DensePoly.Parse
+import Azurite.DensePoly.StringLemmas
 
 open Lean
 open Azurite
