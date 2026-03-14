@@ -2177,4 +2177,265 @@ lemma monomialToChars_zmod_not_start_zero {n : ℕ} [NeZero n] (d : ℕ) (c : ZM
       exact ZMod.val_injective n h_c
     exact append_not_start_char (natToChars c.val) ('*' :: 'x' :: '^' :: natToChars d) '0' (natToChars_ne_nil c.val) (fun cs => natToChars_not_start_zero c.val cs hc_val) cs
 
+lemma string_ofList_ne_empty_of_ne_nil {l : List Char} (h : l ≠ []) : String.ofList l ≠ "" := by
+  intro contra
+  have h_len : (String.ofList l).length = 0 := by
+    calc (String.ofList l).length
+      _ = ("" : String).length := by rw [contra]
+      _ = 0 := rfl
+  have h2 : (String.ofList l).length = l.length := String.length_ofList
+  rw [h2] at h_len
+  cases l
+  · contradiction
+  · contradiction
+
+lemma listEnum_aux_length {α} (l : List α) (acc : List (ℕ × α)) (n : ℕ) :
+  (listEnum.aux acc n l).length = acc.length + l.length := by
+  induction l generalizing acc n with
+  | nil =>
+    have hl : ([] : List α).length = 0 := rfl
+    rw [hl, add_zero]
+    dsimp [listEnum.aux]
+    rw [List.length_reverse]
+  | cons x xs ih =>
+    dsimp [listEnum.aux]
+    rw [ih]
+    have h_len : ((n, x) :: acc).length = acc.length + 1 := rfl
+    have h_xs : (x :: xs).length = xs.length + 1 := rfl
+    omega
+
+lemma listEnum_length {α} (l : List α) : (listEnum l).length = l.length := by
+  dsimp [listEnum]
+  have h := listEnum_aux_length l [] 0
+  have h_acc : ([] : List (ℕ × α)).length = 0 := rfl
+  rw [h_acc, zero_add] at h
+  exact h
+
+lemma listEnum_eq_nil_iff {α} (l : List α) : listEnum l = [] ↔ l = [] := by
+  have hl : (listEnum l).length = l.length := listEnum_length l
+  constructor
+  · intro h
+    rw [h] at hl
+    change 0 = l.length at hl
+    cases l
+    · rfl
+    · contradiction
+  · intro h
+    rw [h]
+    rfl
+
+lemma listEnum_aux_mem {α} (l : List α) (acc : List (ℕ × α)) (n : ℕ) (y : α) :
+  y ∈ l ∨ (∃ i, (i, y) ∈ acc) → ∃ i, (i, y) ∈ listEnum.aux acc n l := by
+  induction l generalizing acc n with
+  | nil =>
+    intro h
+    cases h with
+    | inl h_not => contradiction
+    | inr h_acc =>
+      dsimp [listEnum.aux]
+      rcases h_acc with ⟨i, hi⟩
+      exact ⟨i, List.mem_reverse.mpr hi⟩
+  | cons x xs ih =>
+    intro h
+    dsimp [listEnum.aux]
+    cases h with
+    | inl h_mem =>
+      match h_mem with
+      | .head _ =>
+        apply ih ((n, y) :: acc) (n + 1)
+        right
+        exact ⟨n, List.Mem.head _⟩
+      | .tail _ ht =>
+        apply ih ((n, x) :: acc) (n + 1)
+        left
+        exact ht
+    | inr h_acc =>
+      apply ih ((n, x) :: acc) (n + 1)
+      right
+      rcases h_acc with ⟨i, hi⟩
+      exact ⟨i, List.Mem.tail _ hi⟩
+
+lemma mem_listEnum {α} (l : List α) (y : α) : y ∈ l → ∃ i, (i, y) ∈ listEnum l := by
+  intro h
+  exact listEnum_aux_mem l [] 0 y (Or.inl h)
+
+lemma filter_nonZero_ne_nil {R} [Zero R] [DecidableEq R] (l : List R) (h_mem : ∃ x ∈ l, x ≠ (0 : R)) :
+  (listEnum l).filter (fun (_, c) => c ≠ 0) ≠ [] := by
+  rcases h_mem with ⟨x, hx_in, hx_nz⟩
+  have h_enum := mem_listEnum l x hx_in
+  rcases h_enum with ⟨i, hi⟩
+  intro contra
+  have h_filter : (i, x) ∉ (listEnum l).filter (fun (_, c) => c ≠ 0) := by
+    rw [contra]
+    intro hc
+    cases hc
+  rw [List.mem_filter] at h_filter
+  push_neg at h_filter
+  have ht := h_filter hi
+  dsimp at ht
+  rw [decide_eq_true_eq] at ht
+  contradiction
+
+lemma map_ne_nil_of_ne_nil {α β} (f : α → β) (l : List α) : l ≠ [] → l.map f ≠ [] := by
+  cases l <;> simp
+
+lemma reverse_ne_nil_of_ne_nil {α} (l : List α) : l ≠ [] → l.reverse ≠ [] := by
+  cases l <;> simp
+
+lemma flatten_ne_nil_of_mem_ne_nil {α} (l : List (List α)) : l ≠ [] → (∀ x ∈ l, x ≠ []) → l.flatten ≠ [] := by
+  induction l with
+  | nil =>
+    intro h _; contradiction
+  | cons x xs ih =>
+    intro _ hall
+    dsimp [List.flatten]
+    have hx : x ≠ [] := hall x (List.Mem.head _)
+    cases x
+    · contradiction
+    · apply List.append_ne_nil_of_left_ne_nil
+      intro h; contradiction
+
+theorem mem_toList_of_getLast?_eq_some {α} : (l : List α) → (x : α) → l.getLast? = some x → x ∈ l
+| [], x, h => by contradiction
+| [a], x, h => by
+  have hx : a = x := by injection h
+  subst hx
+  exact List.Mem.head _
+| a :: b :: as, x, h => by
+  have ht : x ∈ b :: as := mem_toList_of_getLast?_eq_some (b :: as) x h
+  exact List.Mem.tail _ ht
+
+lemma mem_toList_of_back?_eq_some {α} (a : Array α) (x : α) :
+  a.back? = some x → x ∈ a.toList := by
+  intro h
+  have ht : a.toList.getLast? = a.back? := by simp
+  rw [← ht] at h
+  exact mem_toList_of_getLast?_eq_some a.toList x h
+
+lemma mem_of_mem_listEnum_aux {α} (l : List α) (acc : List (ℕ × α)) (n : ℕ) (x : α) (i : ℕ) :
+  (i, x) ∈ listEnum.aux acc n l → x ∈ l ∨ (i, x) ∈ acc := by
+  induction l generalizing acc n with
+  | nil =>
+    intro h
+    dsimp [listEnum.aux] at h
+    exact Or.inr (List.mem_reverse.mp h)
+  | cons c cs ih =>
+    intro h
+    dsimp [listEnum.aux] at h
+    have h_rc := ih ((n, c) :: acc) (n + 1) h
+    rcases h_rc with h_l | h_acc
+    · exact Or.inl (List.Mem.tail _ h_l)
+    · rcases (List.mem_cons.mp h_acc) with h_eq | h_in
+      · injection h_eq with h1 h2
+        subst h2
+        exact Or.inl (List.Mem.head _)
+      · exact Or.inr h_in
+
+lemma mem_of_mem_listEnum {α} (l : List α) (x : α) (i : ℕ) : (i, x) ∈ listEnum l → x ∈ l := by
+  intro h
+  have ht := mem_of_mem_listEnum_aux l [] 0 x i h
+  rcases ht with hl | hr
+  · exact hl
+  · contradiction
+
+lemma monomials_mem {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] (coeffs : List R) (m : List Char) :
+  m ∈ (listEnum coeffs |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars (R := R) d c)) →
+  ∃ d c, m = monomialToChars (R := R) d c := by
+  intro h
+  have h1 := List.mem_map.mp h
+  rcases h1 with ⟨⟨d, c⟩, _, hm⟩
+  exact ⟨d, c, hm.symm⟩
+
+lemma withSigns_mem {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] (monomials : List (List Char)) (x : List Char) :
+  x ∈ (listEnum monomials.reverse).map (fun (i, m) =>
+    if i = 0 then m
+    else match m with
+    | '-' :: _ => m
+    | _ => '+' :: m
+  ) → ∃ m ∈ monomials, x = m ∨ x = '+' :: m := by
+  intro h
+  have h1 := List.mem_map.mp h
+  rcases h1 with ⟨⟨i, m⟩, h_enum, hx⟩
+  have hm_rev : m ∈ monomials.reverse := mem_of_mem_listEnum _ _ _ h_enum
+  have hm : m ∈ monomials := List.mem_reverse.mp hm_rev
+  use m, hm
+  dsimp at hx
+  split_ifs at hx
+  · exact Or.inl hx.symm
+  · split at hx
+    · exact Or.inl hx.symm
+    · exact Or.inr hx.symm
+
+lemma toChars_ne_empty {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R]
+  (p : DensePoly R)
+  (h_mono_ne_nil : ∀ d c, monomialToChars (R := R) d c ≠ []) :
+  toChars p ≠ "" := by
+  dsimp [toChars]
+  split_ifs
+  · intro h; revert h; simp
+  · rename_i h_p_ne_zero
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly R).coeffs := by
+        have hz : (0 : DensePoly R).coeffs = #[] := rfl
+        rw [hz, hp]
+      have hp0 : p = 0 := DensePoly.ext hpe
+      contradiction
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz
+      rw [hz] at hc_eq
+      exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+    
+    let coeffs := p.coeffs.toList
+    have hd_nz : (listEnum coeffs).filter (fun (_, c) => c ≠ 0) ≠ [] := filter_nonZero_ne_nil coeffs ⟨c, hc_in, hc_nz⟩
+    have hm : ((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c) ≠ [] := map_ne_nil_of_ne_nil _ _ hd_nz
+    have hr : (((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse ≠ [] := reverse_ne_nil_of_ne_nil _ hm
+    have hl_iff := listEnum_eq_nil_iff ((((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse)
+    have hl : listEnum ((((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse) ≠ [] := mt hl_iff.mp hr
+    have hw : (listEnum (((((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse))).map (fun (i, m) =>
+      if i = 0 then m
+      else match m with
+      | '-' :: _ => m
+      | _ => '+' :: m
+    ) ≠ [] := map_ne_nil_of_ne_nil _ _ hl
+    
+    have hall : ∀ x ∈ (listEnum (((((listEnum coeffs).filter (fun (_, c) => c ≠ 0)).map (fun (d, c) => monomialToChars (R := R) d c)).reverse))).map (fun (i, m) =>
+      if i = 0 then m
+      else match m with
+      | '-' :: _ => m
+      | _ => '+' :: m
+    ), x ≠ [] := by
+      intro x hx
+      have hm_mem := withSigns_mem (R := R) _ x hx
+      rcases hm_mem with ⟨m, hm_in, h_eq⟩
+      have hd_c := monomials_mem (R := R) coeffs m hm_in
+      rcases hd_c with ⟨d, c', h_m_eq⟩
+      have hm_nz : m ≠ [] := by
+        rw [h_m_eq]
+        exact h_mono_ne_nil d c'
+      rcases h_eq with rfl | rfl
+      · exact hm_nz
+      · intro h; contradiction
+
+    have hf := flatten_ne_nil_of_mem_ne_nil _ hw hall
+    exact string_ofList_ne_empty_of_ne_nil hf
+
+lemma toChars_nat_ne_empty (p : DensePoly ℕ) : toChars p ≠ "" :=
+  toChars_ne_empty p monomialToChars_nat_ne_nil
+
+lemma toChars_int_ne_empty (p : DensePoly ℤ) : toChars p ≠ "" :=
+  toChars_ne_empty p monomialToChars_int_ne_nil
+
+lemma toChars_rat_ne_empty (p : DensePoly ℚ) : toChars p ≠ "" :=
+  toChars_ne_empty p monomialToChars_rat_ne_nil
+
+lemma toChars_zmod_ne_empty {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) : toChars p ≠ "" :=
+  toChars_ne_empty p monomialToChars_zmod_ne_nil
+
 end Azurite.DensePoly
