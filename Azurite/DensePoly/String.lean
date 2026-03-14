@@ -1009,7 +1009,7 @@ lemma parseMonomial_int_neg_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : par
               rfl
         · contradiction
       · rw [h_split] at h
-        sorry
+        contradiction
 
 lemma parse_monomialToChars_ne_zero_int (d : ℕ) (c : ℤ) (hc : c ≠ 0) :
   parseMonomial (R := ℤ) (monomialToChars d c) = some (d, c) := by
