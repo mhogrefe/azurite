@@ -1,4 +1,6 @@
 import Mathlib.Data.Int.GCD
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Rat.Defs
 import Azurite.DensePoly.Basic
 
 /-!
@@ -233,6 +235,38 @@ def normalize (nums : Array ℤ) (d : ℕ) (hd : 0 < d) : DensePolyQ :=
       rw [listIntGcd_map_ediv _ g hg_pos hdvd]
       exact Nat.coprime_div_gcd_div_gcd hg_pos
   ⟩
+
+
+/-! ## normalize_coeff -/
+
+/-- The rational coefficient of `normalize nums d hd` at position `i` equals
+    `(nums.popWhile (\u00b7 = 0))[i]?.getD 0 / d`.
+    That is: normalization preserves rational values (GCD division cancels out). -/
+lemma normalize_coeff (nums : Array ℤ) (d : ℕ) (hd : 0 < d) (i : ℕ) :
+    (normalize nums d hd).coeff i =
+    ((nums.popWhile (fun x => decide (x = 0)))[i]?.getD 0 : ℤ) / d := by
+  simp only [DensePolyQ.normalize, DensePolyQ.coeff, Array.getElem?_map]
+  set nums' := nums.popWhile (fun x => decide (x = 0))
+  set G := listIntGcd nums'.toList
+  set g := Nat.gcd G d
+  have hg_pos : 0 < g := Nat.gcd_pos_of_pos_right G hd
+  have hg_dvd_d : g ∣ d := Nat.gcd_dvd_right G d
+  have hgZ : (g : ℤ) ≠ 0 := by exact_mod_cast hg_pos.ne'
+  have hgQ : (g : ℚ) ≠ 0 := by exact_mod_cast hg_pos.ne'
+  rcases h : nums'[i]? with _ | c
+  · simp
+  · -- simplify (Option.map f (some c)).getD 0 = f c
+    simp only [Option.map_some, Option.getD_some]
+    -- Need: (c / g : ℤ) / (d / g : ℕ) = (c : ℚ) / d
+    have hg_c : (g : ℤ) ∣ c := by
+      rw [← Int.natAbs_dvd_natAbs]
+      simpa using dvd_trans (Nat.gcd_dvd_left G d)
+        (listIntGcd_dvd_of_mem _ c (by rw [Array.mem_toList_iff]; exact Array.mem_of_getElem? h))
+    obtain ⟨k, hk⟩ := hg_c
+    obtain ⟨m, hm⟩ := hg_dvd_d
+    rw [hk, hm, Int.mul_ediv_cancel_left _ hgZ, Nat.mul_div_cancel_left _ hg_pos]
+    push_cast
+    rw [mul_div_mul_left _ _ hgQ]
 
 end DensePolyQ
 end Azurite
