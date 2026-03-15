@@ -243,7 +243,59 @@ lemma eq_of_same_sign_natAbs_den (x y : ℚ)
     (h_num : x.num.natAbs = y.num.natAbs)
     (h_den : x.den = y.den) :
     x = y := by
-  sorry
+  have hnum_eq : x.num = y.num := by
+    have hcast : (x.num.natAbs : ℤ) = y.num.natAbs := by exact_mod_cast h_num
+    rcases lt_trichotomy x.num 0 with hneg | hzero | hpos
+    · have hy_neg : y.num < 0 := by
+        have h := h_sign_eq; rw [compare_lt_iff_lt.mpr hneg] at h
+        exact compare_lt_iff_lt.mp h.symm
+      rw [Int.ofNat_natAbs_of_nonpos hneg.le, Int.ofNat_natAbs_of_nonpos hy_neg.le] at hcast
+      omega
+    · exact absurd hzero h_nz
+    · have hy_pos : 0 < y.num := by
+        have h := h_sign_eq; rw [compare_gt_iff_gt.mpr hpos] at h
+        exact compare_gt_iff_gt.mp h.symm
+      rw [Int.natAbs_of_nonneg hpos.le, Int.natAbs_of_nonneg hy_pos.le] at hcast
+      exact hcast
+  exact Rat.ext hnum_eq h_den
+
+-- Helper: |x| < |y| ↔ x.num.natAbs * y.den < y.num.natAbs * x.den
+lemma abs_lt_abs_iff (x y : ℚ) : |x| < |y| ↔ x.num.natAbs * y.den < y.num.natAbs * x.den := by
+  rw [Rat.lt_iff, rat_abs_num, rat_abs_num, Rat.den_abs_eq_den, Rat.den_abs_eq_den]
+  exact_mod_cast Iff.rfl
+
+-- Helper: when nd_cmp ≠ eq and x.num ≠ 0, nd_cmp encodes compare |x| |y|
+private lemma nd_cmp_of_ne (x y : ℚ) (h_nz : x.num ≠ 0)
+    (h_ne : compare (compare x.num.natAbs y.num.natAbs) (compare x.den y.den) ≠ Ordering.eq) :
+    compare (compare x.num.natAbs y.num.natAbs) (compare x.den y.den) =
+    @compare ℚ Rat.linearOrder.toOrd |x| |y| := by
+  have den_pos : ∀ z : ℚ, 0 < z.den := Rat.pos
+  have natAbs_pos : 0 < x.num.natAbs := Int.natAbs_pos.mpr h_nz
+  rcases Nat.lt_trichotomy x.num.natAbs y.num.natAbs with hn | hn | hn <;>
+  rcases Nat.lt_trichotomy x.den y.den with hd | hd | hd
+  · simp [compare_lt_iff_lt.mpr hn, compare_lt_iff_lt.mpr hd] at h_ne
+  · rw [compare_lt_iff_lt.mpr hn, compare_eq_iff_eq.mpr hd]; simp only [compare_ordering_lt_eq]
+    exact (compare_lt_iff_lt.mpr ((abs_lt_abs_iff x y).mpr (by
+      rw [hd]; exact Nat.mul_lt_mul_of_pos_right hn (den_pos y)))).symm
+  · rw [compare_lt_iff_lt.mpr hn, compare_gt_iff_gt.mpr hd]; simp only [compare_ordering_lt_gt]
+    exact (compare_lt_iff_lt.mpr ((abs_lt_abs_iff x y).mpr
+      (Nat.lt_of_lt_of_le (Nat.mul_lt_mul_of_pos_right hn (den_pos y))
+                           (Nat.mul_le_mul_left _ hd.le)))).symm
+  · rw [compare_eq_iff_eq.mpr hn, compare_lt_iff_lt.mpr hd]; simp only [compare_ordering_eq_lt]
+    refine (compare_gt_iff_gt.mpr ((abs_lt_abs_iff y x).mpr ?_)).symm
+    rw [hn]; exact Nat.mul_lt_mul_of_pos_left hd (hn ▸ natAbs_pos)
+  · simp [compare_eq_iff_eq.mpr hn, compare_eq_iff_eq.mpr hd] at h_ne
+  · rw [compare_eq_iff_eq.mpr hn, compare_gt_iff_gt.mpr hd]; simp only [compare_ordering_eq_gt]
+    refine (compare_lt_iff_lt.mpr ((abs_lt_abs_iff x y).mpr ?_)).symm
+    rw [hn]; exact Nat.mul_lt_mul_of_pos_left hd (hn ▸ natAbs_pos)
+  · rw [compare_gt_iff_gt.mpr hn, compare_lt_iff_lt.mpr hd]; simp only [compare_ordering_gt_lt]
+    exact (compare_gt_iff_gt.mpr ((abs_lt_abs_iff y x).mpr
+      (Nat.lt_of_lt_of_le (Nat.mul_lt_mul_of_pos_right hn (den_pos x))
+                           (Nat.mul_le_mul_left _ hd.le)))).symm
+  · rw [compare_gt_iff_gt.mpr hn, compare_eq_iff_eq.mpr hd]; simp only [compare_ordering_gt_eq]
+    refine (compare_gt_iff_gt.mpr ((abs_lt_abs_iff y x).mpr ?_)).symm
+    rw [hd]; exact Nat.mul_lt_mul_of_pos_right hn (den_pos y)
+  · simp [compare_gt_iff_gt.mpr hn, compare_gt_iff_gt.mpr hd] at h_ne
 
 -- Stage 4: when nd_cmp ≠ eq (numerator comparison and denominator comparison
 -- point in opposite directions), cmp gives the correct answer.
@@ -254,7 +306,46 @@ lemma cmp_nd_cmp_ne_eq (x y : ℚ)
     (h_not_both_eq : ¬(x.num.natAbs = y.num.natAbs ∧ x.den = y.den))
     (h_nd_ne : compare (compare x.num.natAbs y.num.natAbs) (compare x.den y.den) ≠ Ordering.eq) :
     cmp x y = compare x y := by
-  sorry
+  have h_sign_cmp : compare (compare x.num 0) (compare y.num 0) = Ordering.eq := by
+    rw [h_sign_eq]; rcases compare y.num 0 with _ | _ | _ <;> simp
+  -- stage-1 doesn't exit (sign_cmp = eq, x_sign ≠ eq)
+  unfold cmp
+  rw [if_neg (by push_neg; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
+  -- stage-2 doesn't exit (one_cmp = eq, so one_cmp ≠ eq is false)
+  rw [if_neg (by rwa [ne_eq, not_not])]
+  -- stage-3 doesn't exit (not both n_cmp = eq and d_cmp = eq)
+  rw [if_neg (by
+    intro ⟨h1, h2⟩
+    exact h_not_both_eq ⟨compare_eq_iff_eq.mp (beq_iff_eq.mp h1), compare_eq_iff_eq.mp (beq_iff_eq.mp h2)⟩)]
+  -- stage-4 exits (nd_cmp ≠ eq)
+  rw [if_pos h_nd_ne]
+  -- connect nd_cmp to compare |x| |y|
+  have h_nd_eq_abs := nd_cmp_of_ne x y h_nz h_nd_ne
+  -- case split: positive or negative
+  have hx_ne_zero : x ≠ 0 := fun h => by rw [h] at h_nz; simp at h_nz
+  rcases lt_or_gt_of_ne hx_ne_zero with hx | hx
+  · -- x < 0: y < 0 (same sign); is_pos = false; return reverseOrdering nd_cmp
+    have hy : y < 0 := Rat.num_neg.mp (compare_lt_iff_lt.mp
+      (h_sign_eq.symm.trans (compare_num_zero_neg _ hx)))
+    rw [abs_of_neg hx, abs_of_neg hy] at h_nd_eq_abs
+    rw [if_neg (by simp [compare_num_zero_neg _ hx])]
+    rw [show compare x y = @compare ℚ Rat.linearOrder.toOrd x y from ring_ord_eq_linear_ord x y]
+    -- nd_cmp = compare (-x) (-y) = reverseOrdering (compare x y)
+    rw [h_nd_eq_abs]
+    rw [show @compare ℚ Rat.linearOrder.toOrd (-x) (-y) =
+            reverseOrdering (@compare ℚ Rat.linearOrder.toOrd x y) from by
+      rcases lt_trichotomy x y with h | rfl | h
+      · simp [compare_lt_iff_lt.mpr h, compare_gt_iff_gt.mpr (neg_lt_neg h)]
+      · simp
+      · simp [compare_gt_iff_gt.mpr h, compare_lt_iff_lt.mpr (neg_lt_neg h)]]
+    rcases (@compare ℚ Rat.linearOrder.toOrd x y) with _ | _ | _ <;> simp
+  · -- x > 0: y > 0 (same sign); is_pos = true; return nd_cmp
+    have hy : 0 < y := Rat.num_pos.mp (compare_gt_iff_gt.mp
+      (h_sign_eq.symm.trans (compare_num_zero_pos _ hx)))
+    rw [abs_of_pos hx, abs_of_pos hy] at h_nd_eq_abs
+    rw [if_pos (by simp [compare_num_zero_pos _ hx])]
+    rw [show compare x y = @compare ℚ Rat.linearOrder.toOrd x y from ring_ord_eq_linear_ord x y]
+    exact h_nd_eq_abs
 
 -- Stage 5: when log_cmp ≠ eq, cmp gives the correct answer.
 -- (Uses floorLogBase2Abs_lt_imp_abs_lt to convert log order to absolute value order.)
