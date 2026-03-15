@@ -14,7 +14,12 @@ structure SplitMix64 where
 def mkSplitMix64 (seed : UInt64) : SplitMix64 :=
   { state := seed }
 
-
+/-- 
+A generic typeclass for a pseudorandom number generator mapping a Generator state `G` to
+randomness of type `α`.
+-/
+class RandomGen (G : Type u) (α : Type v) where
+  next : G → α × G
 /-- The mixing constant used in SplitMix64 state advancement. -/
 def SplitMix64.gamma : Nat := 0x9e3779b97f4a7c15
 
@@ -39,6 +44,9 @@ def SplitMix64.next (r : SplitMix64) : UInt64 × SplitMix64 :=
   let z3 := (z2 ^^^ (z2 >>> 27)) * 0x94d049bb133111eb
   let z4 := z3 ^^^ (z3 >>> 31)
   (z4, { state := nextState })
+
+instance : RandomGen SplitMix64 UInt64 where
+  next := SplitMix64.next
 
 def mix_nat (state : Nat) : Nat :=
   let z1 := state % (2^64)
