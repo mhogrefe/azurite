@@ -6,6 +6,23 @@ import Mathlib.Tactic.Ring
 
 namespace Azurite.DensePoly
 
+/-!
+# String Lemmas for `DensePoly`
+
+This file proves key lemmas about the string (character-list) representation of
+dense polynomials:
+
+- Properties of the primitive `natToChars`, `intToChars`, `ratToChars`, and
+  `zmodToChars` functions (non-empty, no leading zeros or minus signs).
+- Round-trip lemmas: `parseXChars (xToChars v) = some v`.
+- Generic `splitOn` infrastructure (see `splitOn_append_singleton_append_not_mem`).
+- A `DensePolyToCharsValid` typeclass capturing the invariants, and generic
+  `monomialToChars_ne_nil` / `monomialToChars_not_start_zero` proofs derived from it.
+- High-level `toChars`/`parseChars` round-trip lemmas for each ring type.
+-/
+
+/-! ### Char and digit helpers -/
+
 lemma char_ofNat_ne_dash (n : ℕ) : Char.ofNat ('0'.toNat + n % 10) ≠ '-' := by
   have h_mod : n % 10 < 10 := Nat.mod_lt _ (by decide)
   generalize h : n % 10 = k
@@ -302,6 +319,8 @@ lemma lt_pow_self (n : ℕ) : n < 10 ^ n := by
     omega
 
 
+
+/-! ### Parse round-trip lemmas -/
 
 lemma parseNatChars_natToChars (n : ℕ) : parseNatChars (natToChars n) = some n := by
   unfold natToChars
@@ -850,253 +869,152 @@ lemma not_mem_intToChars (z : ℤ) : '/' ∉ intToChars z := by
     | inr hr => exact not_mem_natToChars_div _ hr
   · exact not_mem_natToChars_div _
 
-lemma splitOnP_go_cons_false (x : Char) (xs acc : List Char) (h : (x == '/') = false) :
-  List.splitOnP.go (fun c => c == '/') (x :: xs) acc = List.splitOnP.go (fun c => c == '/') xs (x :: acc) := by
-  dsimp [List.splitOnP.go]
-  split
-  · rename_i h_eq
-    rw [h] at h_eq
-    contradiction
-  · rfl
+/-! ### Generic `splitOn` infrastructure
 
-lemma splitOnP_go_cons_true (xs acc : List Char) :
-  List.splitOnP.go (fun c => c == '/') ('/' :: xs) acc = acc.reverse :: List.splitOnP.go (fun c => c == '/') xs [] := by
-  rfl
+These lemmas handle splitting on any character separator.
+The `'/'` and `'x'` splitting uses these uniformly.
+-/
 
-lemma splitOnP_go_not_mem (l acc : List Char) (h : '/' ∉ l) :
-  List.splitOnP.go (fun c => c == '/') l acc = [acc.reverse ++ l] := by
+/-- Step past a non-separator character in `splitOnP.go`. -/
+private lemma splitOnP_go_cons_false (sep x : Char) (xs acc : List Char)
+    (h : (x == sep) = false) :
+    List.splitOnP.go (· == sep) (x :: xs) acc =
+    List.splitOnP.go (· == sep) xs (x :: acc) := by
+  simp [List.splitOnP.go, h]
+
+/-- Step past the separator character, resetting the accumulator. -/
+private lemma splitOnP_go_cons_true (sep : Char) (xs acc : List Char) :
+    List.splitOnP.go (· == sep) (sep :: xs) acc =
+    acc.reverse :: List.splitOnP.go (· == sep) xs [] := by
+  simp [List.splitOnP.go]
+
+/-- If `sep ∉ l`, the go passes through, producing `[acc.reverse ++ l]`. -/
+private lemma splitOnP_go_not_mem (sep : Char) (l acc : List Char) (h : sep ∉ l) :
+    List.splitOnP.go (· == sep) l acc = [acc.reverse ++ l] := by
   induction l generalizing acc with
-  | nil =>
-    have h_nil : acc.reverse ++ [] = acc.reverse := List.append_nil _
-    rw [h_nil]
-    rfl
+  | nil => simp [List.splitOnP.go]
   | cons x xs ih =>
-    have hxq : (x == '/') = false := by
-      revert h
-      cases h_eq : (x == '/')
-      · intro _; rfl
-      · intro h
-        have hx : x = '/' := eq_of_beq h_eq
-        subst hx
-        exact False.elim (h (List.Mem.head _))
-    rw [splitOnP_go_cons_false x xs acc hxq]
-    have hxs : '/' ∉ xs := by intro hc; apply h; exact List.Mem.tail _ hc
-    rw [ih (x :: acc) hxs]
-    have h_eq_args : ((x :: acc).reverse ++ xs) = (acc.reverse ++ x :: xs) := by
-      simp only [List.reverse_cons, List.append_assoc, List.singleton_append]
-    rw [h_eq_args]
+    have hxq : (x == sep) = false := by
+      simp only [beq_eq_false_iff_ne]; intro hx; subst hx; exact h (List.Mem.head _)
+    simp only [splitOnP_go_cons_false sep x xs acc hxq]
+    rw [ih (x :: acc) (fun hc => h (List.Mem.tail _ hc))]
+    simp [List.reverse_cons, List.append_assoc]
 
-lemma splitOn_not_mem (l : List Char) (h : '/' ∉ l) : l.splitOn '/' = [l] := by
-  unfold List.splitOn List.splitOnP
-  have hgo := splitOnP_go_not_mem l [] h
-  rw [hgo]
-  rfl
-
-lemma splitOnP_go_not_mem_x (l acc : List Char) (h : 'x' ∉ l) :
-  List.splitOnP.go (fun c => c == 'x') l acc = [acc.reverse ++ l] := by
-  induction l generalizing acc with
-  | nil =>
-    have h_nil : acc.reverse ++ [] = acc.reverse := List.append_nil _
-    rw [h_nil]
-    rfl
-  | cons c cs ih =>
-    have hcq : (c == 'x') = false := by
-      revert h
-      cases h_eq : (c == 'x')
-      · intro _; rfl
-      · intro h
-        have hc : c = 'x' := eq_of_beq h_eq
-        subst hc
-        exact False.elim (h (List.Mem.head _))
-    dsimp [List.splitOnP.go]
-    have h_split_go : (if c == 'x' then acc.reverse :: List.splitOnP.go (fun c => c == 'x') cs [] else List.splitOnP.go (fun c => c == 'x') cs (c :: acc)) = List.splitOnP.go (fun c => c == 'x') cs (c :: acc) := by
-      rw [hcq]
-      rfl
-    rw [h_split_go]
-    have hcs : 'x' ∉ cs := by intro a; apply h; exact List.Mem.tail _ a
-    rw [ih (c :: acc) hcs]
-    have h_eq_args : ((c :: acc).reverse ++ cs) = (acc.reverse ++ c :: cs) := by
-      simp only [List.reverse_cons, List.append_assoc, List.singleton_append]
-    rw [h_eq_args]
-
-lemma splitOn_not_mem_x (l : List Char) (h : 'x' ∉ l) : l.splitOn 'x' = [l] := by
-  unfold List.splitOn List.splitOnP
-  have hgo := splitOnP_go_not_mem_x l [] h
-  rw [hgo]
-  rfl
-
-lemma splitOnP_go_append_not_mem (l1 l2 acc : List Char) (h : '/' ∉ l1) :
-  List.splitOnP.go (fun c => c == '/') (l1 ++ l2) acc =
-  List.splitOnP.go (fun c => c == '/') l2 (l1.reverse ++ acc) := by
+/-- Move a `sep`-free prefix over `splitOnP.go`. -/
+private lemma splitOnP_go_append_not_mem (sep : Char) (l1 l2 acc : List Char) (h : sep ∉ l1) :
+    List.splitOnP.go (· == sep) (l1 ++ l2) acc =
+    List.splitOnP.go (· == sep) l2 (l1.reverse ++ acc) := by
   induction l1 generalizing acc with
-  | nil => rfl
+  | nil => simp
   | cons x xs ih =>
-    have hxq : (x == '/') = false := by
-      revert h
-      cases h_eq : (x == '/')
-      · intro _; rfl
-      · intro h
-        have hx : x = '/' := eq_of_beq h_eq
-        subst hx
-        have h_in : '/' ∈ '/' :: xs := List.Mem.head _
-        exact False.elim (h h_in)
-    have h_app : (x :: xs) ++ l2 = x :: (xs ++ l2) := rfl
-    rw [h_app]
-    rw [splitOnP_go_cons_false x (xs ++ l2) acc hxq]
-    have hxs : '/' ∉ xs := by intro hc; apply h; exact List.Mem.tail _ hc
-    rw [ih (x :: acc) hxs]
-    have h_eq_args : (xs.reverse ++ x :: acc) = ((x :: xs).reverse ++ acc) := by
-      simp only [List.reverse_cons, List.append_assoc, List.singleton_append]
-    rw [h_eq_args]
+    have hxq : (x == sep) = false := by
+      simp only [beq_eq_false_iff_ne]; intro hx; subst hx; exact h (List.Mem.head _)
+    rw [List.cons_append, splitOnP_go_cons_false sep x (xs ++ l2) acc hxq]
+    rw [ih (x :: acc) (fun hc => h (List.Mem.tail _ hc))]
+    simp [List.reverse_cons, List.append_assoc]
 
-lemma splitOn_append_singleton_append_not_mem (l1 l2 : List Char) (h1 : '/' ∉ l1) (h2 : '/' ∉ l2) :
-  (l1 ++ ['/'] ++ l2).splitOn '/' = [l1, l2] := by
-  unfold List.splitOn List.splitOnP
-  have h_app2 : l1 ++ ['/'] ++ l2 = l1 ++ ('/' :: l2) := by simp
-  rw [h_app2]
-  have h_go : List.splitOnP.go (fun c => c == '/') (l1 ++ '/' :: l2) [] =
-              List.splitOnP.go (fun c => c == '/') ('/' :: l2) (l1.reverse ++ []) := splitOnP_go_append_not_mem l1 ('/' :: l2) [] h1
-  rw [h_go]
-  have h_rev_nil : l1.reverse ++ [] = l1.reverse := by simp
-  rw [h_rev_nil]
-  rw [splitOnP_go_cons_true l2 (l1.reverse)]
-  have h_go2 : List.splitOnP.go (fun c => c == '/') l2 [] = [l2] := by
-    have hg := splitOnP_go_not_mem l2 [] h2
-    simp only [List.reverse_nil, List.nil_append] at hg
-    exact hg
-  rw [h_go2]
-  simp only [List.reverse_reverse]
+/-- Splitting a list with exactly one separator gives two parts. -/
+lemma splitOn_not_mem (sep : Char) (l : List Char) (h : sep ∉ l) : l.splitOn sep = [l] := by
+  simp [List.splitOn, List.splitOnP, splitOnP_go_not_mem sep l [] h]
 
-lemma splitOnP_go_cons_false_x (c : Char) (xs acc : List Char) (h : (c == 'x') = false) :
-  List.splitOnP.go (fun ch => ch == 'x') (c :: xs) acc = List.splitOnP.go (fun ch => ch == 'x') xs (c :: acc) := by
-  dsimp [List.splitOnP.go]
-  split
-  · rename_i h_eq
-    rw [h] at h_eq
-    contradiction
-  · rfl
+lemma splitOn_append_singleton_append_not_mem (sep : Char) (l1 l2 : List Char)
+    (h1 : sep ∉ l1) (h2 : sep ∉ l2) :
+    (l1 ++ [sep] ++ l2).splitOn sep = [l1, l2] := by
+  simp only [List.splitOn, List.splitOnP, List.append_assoc, List.singleton_append]
+  rw [splitOnP_go_append_not_mem sep l1 (sep :: l2) [] h1]
+  simp only [List.append_nil]
+  rw [splitOnP_go_cons_true sep l2 l1.reverse]
+  rw [show List.splitOnP.go (· == sep) l2 [] = [l2] by
+    simpa using splitOnP_go_not_mem sep l2 [] h2]
+  simp
 
-lemma splitOnP_go_cons_true_x (xs acc : List Char) :
-  List.splitOnP.go (fun ch => ch == 'x') ('x' :: xs) acc = acc.reverse :: List.splitOnP.go (fun ch => ch == 'x') xs [] := by
-  rfl
+/-! ### Derived `'/'` and `'x'` splitting lemmas -/
 
-lemma splitOnP_go_accum_gen (cs acc : List Char) :
-  List.splitOnP.go (fun ch => ch == 'x') cs acc =
-  match List.splitOnP.go (fun ch => ch == 'x') cs [] with
-  | [] => []
-  | hd :: tail => (acc.reverse ++ hd) :: tail := by
+/-- `splitOn '/'` over a prefix with no `'/'`s. -/
+lemma splitOn_not_mem_slash (l : List Char) (h : '/' ∉ l) : l.splitOn '/' = [l] :=
+  splitOn_not_mem '/' l h
+
+/-- `splitOn 'x'` over a prefix with no `'x'`es. -/
+lemma splitOn_not_mem_x (l : List Char) (h : 'x' ∉ l) : l.splitOn 'x' = [l] :=
+  splitOn_not_mem 'x' l h
+
+/-- `splitOn '/'` splits at exactly one `/` surrounded by `/`-free strings. -/
+lemma splitOn_append_singleton_append_not_mem_slash (l1 l2 : List Char)
+    (h1 : '/' ∉ l1) (h2 : '/' ∉ l2) :
+    (l1 ++ ['/'] ++ l2).splitOn '/' = [l1, l2] :=
+  splitOn_append_singleton_append_not_mem '/' l1 l2 h1 h2
+
+/-- `splitOn 'x'` splits at exactly one `x` surrounded by `x`-free strings. -/
+lemma splitOn_append_singleton_append_not_mem_x (l1 l2 : List Char)
+    (h1 : 'x' ∉ l1) (h2 : 'x' ∉ l2) :
+    (l1 ++ ['x'] ++ l2).splitOn 'x' = [l1, l2] :=
+  splitOn_append_singleton_append_not_mem 'x' l1 l2 h1 h2
+
+/-- `(l ++ ['*', 'x']).splitOn 'x' = [l ++ ['*'], []]` when `'x' ∉ l`. -/
+lemma splitOn_append_mul_x (l : List Char) (h : 'x' ∉ l) :
+    (l ++ ['*', 'x']).splitOn 'x' = [l ++ ['*'], []] := by
+  have : l ++ ['*', 'x'] = (l ++ ['*']) ++ ['x'] ++ [] := by simp
+  rw [this]
+  apply splitOn_append_singleton_append_not_mem_x
+  · intro h_in
+    simp only [List.mem_append, List.mem_singleton] at h_in
+    rcases h_in with h_l | h_mul
+    · exact h h_l
+    · exact (by decide : 'x' ≠ '*') h_mul
+  · simp
+
+/-- `(l ++ '*' :: 'x' :: '^' :: d).splitOn 'x' = [l ++ ['*'], '^' :: d]`
+    when `'x' ∉ l` and `'x' ∉ d`. -/
+lemma splitOn_append_mul_x_pow (l d : List Char) (h : 'x' ∉ l) (hd : 'x' ∉ d) :
+    (l ++ '*' :: 'x' :: '^' :: d).splitOn 'x' = [l ++ ['*'], '^' :: d] := by
+  have : l ++ '*' :: 'x' :: '^' :: d = (l ++ ['*']) ++ ['x'] ++ ('^' :: d) := by simp
+  rw [this]
+  apply splitOn_append_singleton_append_not_mem_x
+  · intro h_in
+    simp only [List.mem_append, List.mem_singleton] at h_in
+    rcases h_in with h_l | h_mul
+    · exact h h_l
+    · exact (by decide : 'x' ≠ '*') h_mul
+  · intro h_in
+    simp only [List.mem_cons] at h_in
+    rcases h_in with h_pow | h_d
+    · exact (by decide : 'x' ≠ '^') h_pow
+    · exact hd h_d
+
+
+/-! ### Accumulator generalization for `'x'`-splitting
+
+These helpers allow rewriting `splitOnP.go · == 'x'` with a non-empty accumulator
+in terms of the zero-accumulator variant.
+-/
+
+private lemma splitOnP_go_accum_gen (cs acc : List Char) :
+    List.splitOnP.go (· == 'x') cs acc =
+    match List.splitOnP.go (· == 'x') cs [] with
+    | [] => []
+    | hd :: tail => (acc.reverse ++ hd) :: tail := by
   revert acc
   induction cs with
-  | nil =>
-    intro acc
-    dsimp [List.splitOnP.go]
-    simp
+  | nil => intro acc; simp [List.splitOnP.go]
   | cons x xs ih =>
     intro acc
-    dsimp [List.splitOnP.go]
+    simp only [List.splitOnP.go]
     split
-    · rename_i h_eq
-      simp
+    · simp
     · rename_i h_neq
-      rw [ih (x::acc), ih [x]]
-      generalize h_go : List.splitOnP.go (fun ch => ch == 'x') xs [] = res
+      rw [ih (x :: acc), ih [x]]
+      generalize List.splitOnP.go (· == 'x') xs [] = res
       cases res with
       | nil => rfl
-      | cons hd tail =>
-        dsimp
-        simp [List.append_assoc]
+      | cons hd tail => simp [List.append_assoc]
 
-lemma splitOnP_go_accum (c : Char) (cs hd : List Char) (tail : List (List Char)) (h : List.splitOnP.go (fun ch => ch == 'x') cs [] = hd :: tail) :
-  List.splitOnP.go (fun ch => ch == 'x') cs [c] = (c :: hd) :: tail := by
+private lemma splitOnP_go_accum (c : Char) (cs hd : List Char) (tail : List (List Char))
+    (h : List.splitOnP.go (· == 'x') cs [] = hd :: tail) :
+    List.splitOnP.go (· == 'x') cs [c] = (c :: hd) :: tail := by
   have h_gen := splitOnP_go_accum_gen cs [c]
   rw [h] at h_gen
   exact h_gen
 
-lemma splitOnP_go_append_not_mem_x (l1 l2 acc : List Char) (h : 'x' ∉ l1) :
-  List.splitOnP.go (fun c => c == 'x') (l1 ++ l2) acc =
-  List.splitOnP.go (fun c => c == 'x') l2 (l1.reverse ++ acc) := by
-  induction l1 generalizing acc with
-  | nil => rfl
-  | cons c cs ih =>
-    have hxq : (c == 'x') = false := by
-      revert h
-      cases h_eq : (c == 'x')
-      · intro _; rfl
-      · intro h
-        have hc : c = 'x' := eq_of_beq h_eq
-        subst hc
-        have h_in : 'x' ∈ 'x' :: cs := List.Mem.head _
-        exact False.elim (h h_in)
-    have h_app : (c :: cs) ++ l2 = c :: (cs ++ l2) := rfl
-    rw [h_app]
-    rw [splitOnP_go_cons_false_x c (cs ++ l2) acc hxq]
-    have hcs : 'x' ∉ cs := by intro hc; apply h; exact List.Mem.tail _ hc
-    rw [ih (c :: acc) hcs]
-    have h_eq_args : (cs.reverse ++ c :: acc) = ((c :: cs).reverse ++ acc) := by
-      simp only [List.reverse_cons, List.append_assoc, List.singleton_append]
-    rw [h_eq_args]
-
-lemma splitOn_append_singleton_append_not_mem_x (l1 l2 : List Char) (h1 : 'x' ∉ l1) (h2 : 'x' ∉ l2) :
-  (l1 ++ ['x'] ++ l2).splitOn 'x' = [l1, l2] := by
-  unfold List.splitOn List.splitOnP
-  have h_app2 : l1 ++ ['x'] ++ l2 = l1 ++ ('x' :: l2) := by simp
-  rw [h_app2]
-  have h_go : List.splitOnP.go (fun c => c == 'x') (l1 ++ 'x' :: l2) [] =
-              List.splitOnP.go (fun c => c == 'x') ('x' :: l2) (l1.reverse ++ []) := splitOnP_go_append_not_mem_x l1 ('x' :: l2) [] h1
-  rw [h_go]
-  have h_rev_nil : l1.reverse ++ [] = l1.reverse := by simp
-  rw [h_rev_nil]
-  rw [splitOnP_go_cons_true_x l2 (l1.reverse)]
-  have h_go2 : List.splitOnP.go (fun c => c == 'x') l2 [] = [l2] := by
-    have hg := splitOnP_go_not_mem_x l2 [] h2
-    simp only [List.reverse_nil, List.nil_append] at hg
-    exact hg
-  rw [h_go2]
-  simp only [List.reverse_reverse]
-
-lemma splitOn_append_mul_x (l : List Char) (h : 'x' ∉ l) :
-  (l ++ ['*', 'x']).splitOn 'x' = [l ++ ['*'], []] := by
-  have h_app : l ++ ['*', 'x'] = (l ++ ['*']) ++ ['x'] ++ [] := by simp
-  rw [h_app]
-  apply splitOn_append_singleton_append_not_mem_x
-  · intro h_in
-    simp only [List.mem_append, List.mem_singleton] at h_in
-    cases h_in with
-    | inl h_l => exact h h_l
-    | inr h_mul =>
-      have hx : 'x'.toNat = 120 := rfl
-      have hm : '*'.toNat = 42 := rfl
-      have h_eq : 'x'.toNat = '*'.toNat := congrArg Char.toNat h_mul
-      rw [hx, hm] at h_eq
-      contradiction
-  · intro h_in
-    cases h_in
-
-lemma splitOn_append_mul_x_pow (l d : List Char) (h : 'x' ∉ l) (hd : 'x' ∉ d) :
-  (l ++ '*' :: 'x' :: '^' :: d).splitOn 'x' = [l ++ ['*'], '^' :: d] := by
-  have h_app : l ++ '*' :: 'x' :: '^' :: d = (l ++ ['*']) ++ ['x'] ++ ('^' :: d) := by simp
-  rw [h_app]
-  apply splitOn_append_singleton_append_not_mem_x
-  · intro h_in
-    simp only [List.mem_append, List.mem_singleton] at h_in
-    cases h_in with
-    | inl h_l => exact h h_l
-    | inr h_mul =>
-      have hx : 'x'.toNat = 120 := rfl
-      have hm : '*'.toNat = 42 := rfl
-      have h_eq : 'x'.toNat = '*'.toNat := congrArg Char.toNat h_mul
-      rw [hx, hm] at h_eq
-      contradiction
-  · intro h_in
-    simp only [List.mem_cons] at h_in
-    cases h_in with
-    | inl h_pow =>
-      have hx : 'x'.toNat = 120 := rfl
-      have hm : '^'.toNat = 94 := rfl
-      have h_eq : 'x'.toNat = '^'.toNat := congrArg Char.toNat h_pow
-      rw [hx, hm] at h_eq
-      contradiction
-    | inr h_d => exact hd h_d
 
 lemma rat_ext_eq (q : ℚ) : q = (q.num : ℚ) / (q.den : ℚ) := by
   exact (Rat.num_div_den q).symm
@@ -1105,7 +1023,7 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
   unfold ratToChars
   split_ifs with hd
   · unfold parseRatChars
-    rw [splitOn_not_mem (intToChars q.num) (not_mem_intToChars q.num)]
+    rw [splitOn_not_mem_slash (intToChars q.num) (not_mem_intToChars q.num)]
     change (parseIntChars (intToChars q.num)).map (fun n => (n : ℚ)) = some q
     have hz_parse := parseIntChars_intToChars q.num
     rw [hz_parse]
@@ -1119,7 +1037,7 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
   · unfold parseRatChars
     have h1 := not_mem_intToChars q.num
     have h2 := not_mem_natToChars_div q.den
-    rw [splitOn_append_singleton_append_not_mem (intToChars q.num) (natToChars q.den) h1 h2]
+    rw [splitOn_append_singleton_append_not_mem_slash (intToChars q.num) (natToChars q.den) h1 h2]
     change (match parseIntChars (intToChars q.num), parseNatChars (natToChars q.den) with
             | some num, some den => if den = 0 then none else some ((num : ℚ) / (den : ℚ))
             | _, _ => none) = some q
@@ -1513,7 +1431,7 @@ lemma parseMonomial_int_neg_helper (cs : List Char) (d : ℕ) (n : ℕ) (h : par
     have h_split_neg : ('-' :: cs).splitOn 'x' = ('-' :: hd) :: tail := by
       dsimp [List.splitOn, List.splitOnP] at h_split ⊢
       have h_dash : ('-' == 'x') = false := rfl
-      rw [splitOnP_go_cons_false_x '-' cs [] h_dash]
+      rw [splitOnP_go_cons_false 'x' '-' cs [] (by decide)]
       exact splitOnP_go_accum '-' cs hd tail h_split
     rw [h_split_neg]
     cases tail
@@ -2058,6 +1976,8 @@ lemma parse_monomialToChars_ne_zero_rat (d : ℕ) (c : ℚ) (hc : c ≠ 0) :
               rw [parseRatChars_ratToChars c]
               rfl
 
+/-! ### `DensePolyParsableValid` typeclass -/
+
 class DensePolyParsableValid (R : Type _) [DecidableEq R] [Zero R] [DensePolyToChars R] [DensePolyParsable R] : Prop where
   parse_monomialToChars_ne_zero : ∀ (d : ℕ) (c : R) (_ : c ≠ 0), parseMonomial (monomialToChars d c) = some (d, c)
 
@@ -2075,225 +1995,142 @@ instance : DensePolyParsableValid ℚ where
 instance {n : ℕ} [NeZero n] : DensePolyParsableValid (ZMod n) where
   parse_monomialToChars_ne_zero := parse_monomialToChars_ne_zero_zmod
 
-lemma monomialToChars_nat_ne_nil (d : ℕ) (c : ℕ) : monomialToChars d c ≠ [] := by
-  have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact natToChars_ne_nil _
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; contradiction
-  · intro h; contradiction
-  · intro h
-    have h_assoc : natToChars c ++ ['*'] ++ ['x'] = natToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
-  · intro h
-    have h_assoc : natToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+/-! ### `DensePolyToCharsValid` typeclass
 
-lemma monomialToChars_int_ne_nil (d : ℕ) (c : ℤ) : monomialToChars d c ≠ [] := by
-  have h_toChars : DensePolyToChars.toChars c = intToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact intToChars_ne_nil _
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; contradiction
-  · intro h; contradiction
-  · intro h
-    have h_assoc : intToChars c ++ ['*'] ++ ['x'] = intToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
-  · intro h
-    have h_assoc : intToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = intToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+This captures the ne-nil and not-start-zero properties of the character representation
+for each coefficient type. It allows the `monomialToChars` correctness lemmas to be
+proved generically once rather than once per ring type.
+-/
 
-lemma monomialToChars_rat_ne_nil (d : ℕ) (c : ℚ) : monomialToChars d c ≠ [] := by
-  have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact ratToChars_ne_nil _
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; contradiction
-  · intro h; contradiction
-  · intro h
-    have h_assoc : ratToChars c ++ ['*'] ++ ['x'] = ratToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
-  · intro h
-    have h_assoc : ratToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+/-- A typeclass asserting that `DensePolyToChars.toChars r` is never empty
+    and never starts with `'0'` unless `r = 0`. -/
+class DensePolyToCharsValid (R : Type*) [DecidableEq R] [Zero R] [DensePolyToChars R] : Prop where
+  /-- The char representation is never the empty list. -/
+  toChars_ne_nil : ∀ (r : R), DensePolyToChars.toChars r ≠ []
+  /-- For nonzero `r`, the char representation does not start with `'0'`. -/
+  toChars_not_start_zero : ∀ (r : R) (cs : List Char), r ≠ 0 → DensePolyToChars.toChars r ≠ '0' :: cs
 
-lemma zmodToChars_not_start_zero {k : ℕ} [NeZero k] (c : ZMod k) (cs : List Char) (hc : c ≠ 0) : zmodToChars c ≠ '0' :: cs := by
-  dsimp [zmodToChars]
-  have hc_val : c.val ≠ 0 := by
-    intro h_0
-    apply hc
-    have h_c : c.val = (0 : ZMod k).val := by
-      rw [h_0, ZMod.val_zero]
-    exact ZMod.val_injective k h_c
-  exact natToChars_not_start_zero c.val cs hc_val
+instance : DensePolyToCharsValid ℕ where
+  toChars_ne_nil c := natToChars_ne_nil c
+  toChars_not_start_zero c cs hc := natToChars_not_start_zero c cs hc
 
-lemma monomialToChars_zmod_ne_nil {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) : monomialToChars d c ≠ [] := by
-  have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact natToChars_ne_nil _
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; contradiction
-  · intro h; contradiction
-  · intro h
-    have h_assoc : natToChars c.val ++ ['*'] ++ ['x'] = natToChars c.val ++ ['*', 'x'] := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
-  · intro h
-    have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc] at h
-    exact List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _) h
+instance : DensePolyToCharsValid ℤ where
+  toChars_ne_nil c := intToChars_ne_nil c
+  toChars_not_start_zero c cs hc := intToChars_not_start_zero c cs hc
 
-lemma append_not_start_char {α : Type _} (l1 l2 : List α) (c : α) (h_nil : l1 ≠ []) (h_start : ∀ cs, l1 ≠ c :: cs) :
-  ∀ cs, l1 ++ l2 ≠ c :: cs := by
+instance : DensePolyToCharsValid ℚ where
+  toChars_ne_nil c := ratToChars_ne_nil c
+  toChars_not_start_zero c cs hc := ratToChars_not_start_zero c cs hc
+
+instance {n : ℕ} [NeZero n] : DensePolyToCharsValid (ZMod n) where
+  toChars_ne_nil c := by
+    show natToChars c.val ≠ []
+    exact natToChars_ne_nil c.val
+  toChars_not_start_zero c cs hc := by
+    show natToChars c.val ≠ '0' :: cs
+    have hc_val : c.val ≠ 0 := by
+      intro h; apply hc
+      exact ZMod.val_injective n (h ▸ ZMod.val_zero.symm)
+    exact natToChars_not_start_zero c.val cs hc_val
+
+/-- If `DensePolyToCharsValid R`, then `monomialToChars d c` is never `[]`. -/
+lemma monomialToChars_ne_nil {R : Type*} [DecidableEq R] [Zero R] [DensePolyToChars R]
+    [DensePolyToCharsValid R] (d : ℕ) (c : R) : monomialToChars d c ≠ [] := by
+  dsimp [monomialToChars]; split_ifs
+  · intro h; contradiction
+  · exact DensePolyToCharsValid.toChars_ne_nil c
+  · simp
+  · simp
+  · intro h; contradiction
+  · intro h; contradiction
+  · intro h; simp [List.append_assoc] at h
+  · intro h; simp [List.append_assoc] at h
+
+/-- If `l1 ≠ []` and `l1` never starts with `c`, then neither does `l1 ++ l2`. -/
+lemma append_not_start_char {α : Type*} (l1 l2 : List α) (c : α) (h_nil : l1 ≠ [])
+    (h_start : ∀ cs, l1 ≠ c :: cs) : ∀ cs, l1 ++ l2 ≠ c :: cs := by
   intro cs h
-  cases l1
-  · contradiction
-  · rename_i head tail
-    have h_eq : (head :: tail) ++ l2 = head :: (tail ++ l2) := rfl
-    rw [h_eq] at h
+  cases l1 with
+  | nil => contradiction
+  | cons head tail =>
     have h_head : head = c := by injection h
     subst h_head
     exact h_start tail rfl
 
-lemma flatten_not_start_char_of_head_not_start_char {α : Type _} (l : List (List α)) (c : α) (h_nil : l ≠ []) (h_not_empty : ∀ m ∈ l, m ≠ []) (h_head : ∀ cs, l.head h_nil ≠ c :: cs) :
-  ∀ cs, l.flatten ≠ c :: cs := by
+/-- If the head of a list of lists does not start with `c`, neither does the flatten. -/
+lemma flatten_not_start_char_of_head_not_start_char {α : Type*} (l : List (List α)) (c : α)
+    (h_nil : l ≠ []) (h_not_empty : ∀ m ∈ l, m ≠ []) (h_head : ∀ cs, l.head h_nil ≠ c :: cs) :
+    ∀ cs, l.flatten ≠ c :: cs := by
   intro cs h
-  cases l
-  · contradiction
-  · rename_i head tail
+  cases l with
+  | nil => contradiction
+  | cons head tail =>
     rw [List.flatten_cons] at h
     have h_head_not_empty : head ≠ [] := h_not_empty head (List.Mem.head _)
-    cases head
-    · contradiction
-    · rename_i h_head_elem h_tail_elem
+    cases head with
+    | nil => contradiction
+    | cons h_head_elem h_tail_elem =>
       have h_head_eq : h_head_elem = c := by injection h
-      have h_false := h_head h_tail_elem
-      have h_head_val : h_head_elem :: h_tail_elem = c :: h_tail_elem := by rw [h_head_eq]
-      exact h_false h_head_val
+      exact h_head h_tail_elem (h_head_eq ▸ rfl)
 
-lemma monomialToChars_nat_not_start_zero (d : ℕ) (c : ℕ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
-  have h_toChars : DensePolyToChars.toChars c = natToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
+/-- If `DensePolyToCharsValid R` and `c ≠ 0`, then `monomialToChars d c` does not start with `'0'`. -/
+lemma monomialToChars_not_start_zero {R : Type*} [DecidableEq R] [Zero R] [DensePolyToChars R]
+    [DensePolyToCharsValid R] (d : ℕ) (c : R) (cs : List Char) (hc : c ≠ 0) :
+    monomialToChars d c ≠ '0' :: cs := by
+  dsimp [monomialToChars]; split_ifs
   · intro h; contradiction
-  · exact natToChars_not_start_zero c cs hc
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · have h_assoc : natToChars c ++ ['*'] ++ ['x'] = natToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc]
-    exact append_not_start_char (natToChars c) ['*', 'x'] '0' (natToChars_ne_nil c) (fun cs => natToChars_not_start_zero c cs hc) cs
-  · have h_assoc : natToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc]
-    exact append_not_start_char (natToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (natToChars_ne_nil c) (fun cs => natToChars_not_start_zero c cs hc) cs
+  · exact DensePolyToCharsValid.toChars_not_start_zero c cs hc
+  · simp
+  · simp
+  · simp
+  · simp
+  · rw [show DensePolyToChars.toChars c ++ ['*'] ++ ['x'] =
+          DensePolyToChars.toChars c ++ ['*', 'x'] by simp]
+    exact append_not_start_char _ _ '0'
+      (DensePolyToCharsValid.toChars_ne_nil c)
+      (fun cs => DensePolyToCharsValid.toChars_not_start_zero c cs hc) cs
+  · rw [show DensePolyToChars.toChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d =
+          DensePolyToChars.toChars c ++ ('*' :: 'x' :: '^' :: natToChars d) by simp]
+    exact append_not_start_char _ _ '0'
+      (DensePolyToCharsValid.toChars_ne_nil c)
+      (fun cs => DensePolyToCharsValid.toChars_not_start_zero c cs hc) cs
 
-lemma monomialToChars_int_not_start_zero (d : ℕ) (c : ℤ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
-  have h_toChars : DensePolyToChars.toChars c = intToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact intToChars_not_start_zero c cs hc
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · have h_assoc : intToChars c ++ ['*'] ++ ['x'] = intToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc]
-    exact append_not_start_char (intToChars c) ['*', 'x'] '0' (intToChars_ne_nil c) (fun cs => intToChars_not_start_zero c cs hc) cs
-  · have h_assoc : intToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = intToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc]
-    exact append_not_start_char (intToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (intToChars_ne_nil c) (fun cs => intToChars_not_start_zero c cs hc) cs
 
-lemma monomialToChars_rat_not_start_zero (d : ℕ) (c : ℚ) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
-  have h_toChars : DensePolyToChars.toChars c = ratToChars c := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · exact ratToChars_not_start_zero c cs hc
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · have h_assoc : ratToChars c ++ ['*'] ++ ['x'] = ratToChars c ++ ['*', 'x'] := by simp
-    rw [h_assoc]
-    exact append_not_start_char (ratToChars c) ['*', 'x'] '0' (ratToChars_ne_nil c) (fun cs => ratToChars_not_start_zero c cs hc) cs
-  · have h_assoc : ratToChars c ++ ['*'] ++ 'x' :: '^' :: natToChars d = ratToChars c ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc]
-    exact append_not_start_char (ratToChars c) ('*' :: 'x' :: '^' :: natToChars d) '0' (ratToChars_ne_nil c) (fun cs => ratToChars_not_start_zero c cs hc) cs
 
-lemma monomialToChars_zmod_not_start_zero {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) (cs : List Char) (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs := by
-  have h_toChars : DensePolyToChars.toChars c = natToChars c.val := rfl
-  dsimp [monomialToChars]
-  rw [h_toChars]
-  split_ifs
-  · intro h; contradiction
-  · have hc_val : c.val ≠ 0 := by
-      intro h_0
-      apply hc
-      have h_c : c.val = (0 : ZMod n).val := by
-        rw [h_0, ZMod.val_zero]
-      exact ZMod.val_injective n h_c
-    exact natToChars_not_start_zero c.val cs hc_val
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · intro h; revert h; simp
-  · have h_assoc : natToChars c.val ++ ['*'] ++ ['x'] = natToChars c.val ++ ['*', 'x'] := by simp
-    rw [h_assoc]
-    have hc_val : c.val ≠ 0 := by
-      intro h_0
-      apply hc
-      have h_c : c.val = (0 : ZMod n).val := by
-        rw [h_0, ZMod.val_zero]
-      exact ZMod.val_injective n h_c
-    exact append_not_start_char (natToChars c.val) ['*', 'x'] '0' (natToChars_ne_nil c.val) (fun cs => natToChars_not_start_zero c.val cs hc_val) cs
-  · have h_assoc : natToChars c.val ++ ['*'] ++ 'x' :: '^' :: natToChars d = natToChars c.val ++ '*' :: 'x' :: '^' :: natToChars d := by simp
-    rw [h_assoc]
-    have hc_val : c.val ≠ 0 := by
-      intro h_0
-      apply hc
-      have h_c : c.val = (0 : ZMod n).val := by
-        rw [h_0, ZMod.val_zero]
-      exact ZMod.val_injective n h_c
-    exact append_not_start_char (natToChars c.val) ('*' :: 'x' :: '^' :: natToChars d) '0' (natToChars_ne_nil c.val) (fun cs => natToChars_not_start_zero c.val cs hc_val) cs
+-- Backward-compatible aliases for downstream callers
+lemma monomialToChars_nat_ne_nil (d : ℕ) (c : ℕ) : monomialToChars d c ≠ [] :=
+  monomialToChars_ne_nil d c
+lemma monomialToChars_int_ne_nil (d : ℕ) (c : ℤ) : monomialToChars d c ≠ [] :=
+  monomialToChars_ne_nil d c
+lemma monomialToChars_rat_ne_nil (d : ℕ) (c : ℚ) : monomialToChars d c ≠ [] :=
+  monomialToChars_ne_nil d c
+lemma monomialToChars_zmod_ne_nil {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) : monomialToChars d c ≠ [] :=
+  monomialToChars_ne_nil d c
+lemma monomialToChars_nat_not_start_zero (d : ℕ) (c : ℕ) (cs : List Char) (hc : c ≠ 0) :
+    monomialToChars d c ≠ '0' :: cs :=
+  monomialToChars_not_start_zero d c cs hc
+lemma monomialToChars_int_not_start_zero (d : ℕ) (c : ℤ) (cs : List Char) (hc : c ≠ 0) :
+    monomialToChars d c ≠ '0' :: cs :=
+  monomialToChars_not_start_zero d c cs hc
+lemma monomialToChars_rat_not_start_zero (d : ℕ) (c : ℚ) (cs : List Char) (hc : c ≠ 0) :
+    monomialToChars d c ≠ '0' :: cs :=
+  monomialToChars_not_start_zero d c cs hc
+lemma monomialToChars_zmod_not_start_zero {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) (cs : List Char)
+    (hc : c ≠ 0) : monomialToChars d c ≠ '0' :: cs :=
+  monomialToChars_not_start_zero d c cs hc
+
+
+
 
 lemma string_ofList_ne_empty_of_ne_nil {l : List Char} (h : l ≠ []) : String.ofList l ≠ "" := by
   intro contra
-  have h_len : (String.ofList l).length = 0 := by
-    calc (String.ofList l).length
-      _ = ("" : String).length := by rw [contra]
-      _ = 0 := rfl
-  have h2 : (String.ofList l).length = l.length := String.length_ofList
-  rw [h2] at h_len
-  cases l
-  · contradiction
-  · contradiction
+  have : l.length = 0 := by
+    have := String.length_ofList (l := l)
+    rw [contra] at this; simp at this; omega
+  exact h (List.length_eq_zero_iff.mp this)
+
+
+
 
 lemma listEnum_aux_length {α} (l : List α) (acc : List (ℕ × α)) (n : ℕ) :
   (listEnum.aux acc n l).length = acc.length + l.length := by
@@ -2382,11 +2219,11 @@ lemma filter_nonZero_ne_nil {R} [Zero R] [DecidableEq R] (l : List R) (h_mem : �
   rw [decide_eq_true_eq] at ht
   contradiction
 
-lemma map_ne_nil_of_ne_nil {α β} (f : α → β) (l : List α) : l ≠ [] → l.map f ≠ [] := by
-  cases l <;> simp
+private lemma map_ne_nil_of_ne_nil {α β} (f : α → β) (l : List α) (h : l ≠ []) : l.map f ≠ [] := by
+  simp [h]
 
-lemma reverse_ne_nil_of_ne_nil {α} (l : List α) : l ≠ [] → l.reverse ≠ [] := by
-  cases l <;> simp
+private lemma reverse_ne_nil_of_ne_nil {α} (l : List α) (h : l ≠ []) : l.reverse ≠ [] :=
+  List.reverse_ne_nil_iff.mpr h
 
 lemma flatten_ne_nil_of_mem_ne_nil {α} (l : List (List α)) : l ≠ [] → (∀ x ∈ l, x ≠ []) → l.flatten ≠ [] := by
   induction l with
@@ -2401,22 +2238,9 @@ lemma flatten_ne_nil_of_mem_ne_nil {α} (l : List (List α)) : l ≠ [] → (∀
     · apply List.append_ne_nil_of_left_ne_nil
       intro h; contradiction
 
-theorem mem_toList_of_getLast?_eq_some {α} : (l : List α) → (x : α) → l.getLast? = some x → x ∈ l
-| [], x, h => by contradiction
-| [a], x, h => by
-  have hx : a = x := by injection h
-  subst hx
-  exact List.Mem.head _
-| a :: b :: as, x, h => by
-  have ht : x ∈ b :: as := mem_toList_of_getLast?_eq_some (b :: as) x h
-  exact List.Mem.tail _ ht
-
 lemma mem_toList_of_back?_eq_some {α} (a : Array α) (x : α) :
-  a.back? = some x → x ∈ a.toList := by
-  intro h
-  have ht : a.toList.getLast? = a.back? := by simp
-  rw [← ht] at h
-  exact mem_toList_of_getLast?_eq_some a.toList x h
+    a.back? = some x → x ∈ a.toList := fun h =>
+  List.mem_of_getLast? (Array.getLast?_toList a ▸ h)
 
 lemma mem_of_mem_listEnum_aux {α} (l : List α) (acc : List (ℕ × α)) (n : ℕ) (x : α) (i : ℕ) :
   (i, x) ∈ listEnum.aux acc n l → x ∈ l ∨ (i, x) ∈ acc := by
