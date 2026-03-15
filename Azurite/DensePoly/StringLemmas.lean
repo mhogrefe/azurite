@@ -3460,11 +3460,27 @@ private lemma listMax_listEnum_filter_eq {R} [Semiring R] [DecidableEq R] (l : L
 /-- Normalizing the coefficient array of an already-valid DensePoly is an identity. -/
 private lemma normalize_idem {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
     normalize p.coeffs = p := by
-  -- Proof sketch: p.coeffs.popWhile (· = 0) = p.coeffs because the last element
-  -- is ≠ 0 (from p.last_ne_zero), so no elements are popped.
-  -- Full API proof requires Array.back?_toList_getLast? and List.dropWhile_nil_iff
-  -- lemmas which are non-trivially named in Lean 4/Mathlib.
-  sorry
+  apply DensePoly.ext
+  simp only [normalize]
+  rw [← Array.toList_inj]
+  rw [toList_popWhile_eq_dropTrailingZeros]
+  simp only [dropTrailingZeros]
+  by_cases hempty : p.coeffs.toList = []
+  · simp [hempty]
+  · obtain ⟨init, last, hrfl⟩ : ∃ xs x, p.coeffs.toList = xs ++ [x] :=
+      ⟨p.coeffs.toList.dropLast, p.coeffs.toList.getLast hempty,
+       (List.dropLast_append_getLast hempty).symm⟩
+    have hlast_ne : last ≠ 0 := by
+      have hback := p.last_ne_zero
+      have hpl : p.coeffs = init.toArray.push last := by
+        apply Array.toList_inj.mp
+        simp [hrfl]
+      rw [hpl, Array.back?_push] at hback
+      intro h; exact hback (congrArg some h)
+    simp only [hrfl, List.reverse_append, List.reverse_singleton]
+    simp only [List.singleton_append]
+    rw [List.dropWhile_cons_of_neg (by simpa)]
+    simp
 
 /-- `listToPoly` of the indexed nonzero coefficients of `p` equals `p` itself. -/
 lemma listToPoly_indexed_nonzero {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
