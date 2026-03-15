@@ -3513,6 +3513,63 @@ lemma listToPoly_indexed_nonzero {R} [Semiring R] [DecidableEq R] (p : DensePoly
     simp only [listToPoly]
     convert normalize_idem p using 2
 
+/-! ### Bridge lemmas for `parseDensePoly_toChars_nat` -/
+
+-- Shorthand: the ordered nonzero (degree, coeff) pairs of p
+private abbrev nzPairs (p : DensePoly ℕ) :=
+  (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))
+
+-- Shorthand: their monomial string representations (low-to-high degree order)
+private abbrev monoStrings (p : DensePoly ℕ) :=
+  (nzPairs p).map (fun dc => monomialToChars dc.1 dc.2)
+
+/-- For a non-zero ℕ-polynomial, `toChars p` equals `joinWithPlus` of the reversed monomial
+strings. Since ℕ coefficients produce no `-` or `+`, the `withSigns` step in `toChars` is
+simply `fun m => '+' :: m` for non-first elements, which is exactly what `joinWithPlus` does. -/
+lemma toChars_toList_nat_ne_zero (p : DensePoly ℕ) (hp : p ≠ 0) :
+    (toChars p).toList = joinWithPlus (monoStrings p).reverse := by
+  sorry
+
+/-- Splitting `(toChars p).toList` on `+`/`-` recovers the reversed monomial strings. -/
+lemma splitPolynomialChars_toChars_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
+    splitPolynomialChars (toChars p).toList = (monoStrings p).reverse := by
+  rw [toChars_toList_nat_ne_zero p hp]
+  apply splitPolynomialChars_flatten_plus
+  -- No `+` in any nat monomial string
+  · intro x hx
+    simp only [monoStrings, nzPairs, List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hx
+    exact not_mem_plus_monomialToChars_nat d c
+  -- No `-` in any nat monomial string
+  · intro x hx
+    simp only [monoStrings, nzPairs, List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hx
+    exact not_mem_minus_monomialToChars_nat d c
+  -- All monomial strings are nonempty
+  · intro x hx
+    simp only [monoStrings, nzPairs, List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hx
+    exact monomialToChars_nat_ne_nil d c
+  -- The list of monomial strings is nonempty (p ≠ 0 means there is at least one nonzero coeff)
+  · sorry
+
+/-- Parsing each monomial string succeeds: the `parsedParts` list has no `none` entries. -/
+lemma parsedParts_allSome_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
+    ((monoStrings p).reverse.map (fun cs => parseMonomial (R := ℕ) cs)).all
+      (fun x => x.isSome) = true := by
+  sorry
+
+/-- `filterMap id` of a list of `some` values recovers those values. -/
+-- (Standard; may follow from List.filterMap_id_map_some or similar.)
+lemma filterMap_id_map_some {α} (l : List α) :
+    (l.map some).filterMap id = l := by
+  simp [List.filterMap_map]
+
+/-- `listToPoly` is invariant under reversing its input (since it uses `find?`). -/
+lemma listToPoly_reverse_eq_nat (l : List (ℕ × ℕ)) :
+    listToPoly l.reverse = listToPoly l := by
+  sorry
+
 /-! ### Main round-trip theorem -/
 
 /-- **Main theorem**: parsing the string form of a ℕ-polynomial gives back the original. -/
