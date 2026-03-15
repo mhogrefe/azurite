@@ -348,4 +348,35 @@ lemma ceilingLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
     · linarith [h_sizeN.1, h_sizeD.2]
     · linarith [h_cmp]
 
+lemma floorLogBase2Abs_lt_imp_abs_lt (x y : ℚ) (hx : x ≠ 0) (hy : y ≠ 0)
+    (h_log_lt : floorLogBase2Abs x < floorLogBase2Abs y) : |x| < |y| := by
+  have h_floor_x := floorLogBase2Abs_eq x hx
+  have h_floor_y := floorLogBase2Abs_eq y hy
+  
+  have h_base : (1 : ℝ) < 2 := by norm_num
+  have h_abs_x_pos : 0 < |(x : ℝ)| := abs_pos.mpr (by exact_mod_cast hx)
+  have h_abs_y_pos : 0 < |(y : ℝ)| := abs_pos.mpr (by exact_mod_cast hy)
+  
+  have h_floor_bound_x : logb 2 |(x : ℝ)| < (floorLogBase2Abs x : ℝ) + 1 := by
+    have h1 := Int.lt_floor_add_one (logb 2 |(x : ℝ)|)
+    rw [← h_floor_x] at h1
+    exact h1
+  
+  have h_floor_bound_y : (floorLogBase2Abs y : ℝ) ≤ logb 2 |(y : ℝ)| := by
+    have h1 := Int.floor_le (logb 2 |(y : ℝ)|)
+    rw [← h_floor_y] at h1
+    exact h1
+  
+  have h_cast_lt : (floorLogBase2Abs x : ℝ) + 1 ≤ (floorLogBase2Abs y : ℝ) := by
+    exact_mod_cast h_log_lt
+  
+  have h_log_trans : logb 2 |(x : ℝ)| < logb 2 |(y : ℝ)| := by calc
+    logb 2 |(x : ℝ)| < (floorLogBase2Abs x : ℝ) + 1 := h_floor_bound_x
+    _ ≤ (floorLogBase2Abs y : ℝ) := h_cast_lt
+    _ ≤ logb 2 |(y : ℝ)| := h_floor_bound_y
+  
+  have h_abs_lt : |(x : ℝ)| < |(y : ℝ)| := (logb_lt_logb_iff h_base h_abs_x_pos h_abs_y_pos).mp h_log_trans
+  
+  exact_mod_cast h_abs_lt
+
 end Azurite.Rat
