@@ -78,19 +78,20 @@ def parseMonomial {R : Type _} [DensePolyParsable R] (cs : List Char) : Option (
     some (d, c)
   | _ => none
 
+def splitPolynomialCharsAux (acc : List (List Char)) (current : List Char) (rem : List Char) : List (List Char) :=
+  match rem with
+  | [] => (current.reverse) :: acc
+  | '+' :: xs => splitPolynomialCharsAux ((current.reverse) :: acc) [] xs
+  | '-' :: xs =>
+    if current = [] then
+      splitPolynomialCharsAux acc ['-'] xs
+    else
+      splitPolynomialCharsAux ((current.reverse) :: acc) ['-'] xs
+  | x :: xs => splitPolynomialCharsAux acc (x :: current) xs
+
 def splitPolynomialChars (cs : List Char) : List (List Char) :=
-  let rec aux (acc : List (List Char)) (current : List Char) (rem : List Char) : List (List Char) :=
-    match rem with
-    | [] => (current.reverse) :: acc
-    | '+' :: xs => aux ((current.reverse) :: acc) [] xs
-    | '-' :: xs =>
-      if current = [] then
-        aux acc ['-'] xs
-      else
-        aux ((current.reverse) :: acc) ['-'] xs
-    | x :: xs => aux acc (x :: current) xs
   if cs = [] then []
-  else (aux [] [] cs).reverse
+  else (splitPolynomialCharsAux [] [] cs).reverse
 
 def listMax (l : List ℕ) : ℕ := 
   l.foldl (fun maxVal x => if x > maxVal then x else maxVal) 0

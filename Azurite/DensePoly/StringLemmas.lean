@@ -2472,6 +2472,133 @@ lemma withSigns_mem {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] (monom
     · exact Or.inl hx.symm
     · exact Or.inr hx.symm
 
+def joinWithPlus : List (List Char) → List Char
+  | [] => []
+  | [x] => x
+  | x :: xs => x ++ '+' :: joinWithPlus xs
+
+lemma joinWithPlus_append (x : List Char) (xs : List (List Char)) (hxs : xs ≠ []) :
+  joinWithPlus (x :: xs) = x ++ '+' :: joinWithPlus xs := by
+  cases xs
+  · contradiction
+  · rfl
+
+lemma splitPolynomialChars_eq (cs : List Char) :
+  splitPolynomialChars cs = if cs = [] then [] else (splitPolynomialCharsAux [] [] cs).reverse := by
+  rfl
+
+lemma splitPolynomialCharsAux_no_plus_minus (cs : List Char) (h_no_plus : '+' ∉ cs) (h_no_minus : '-' ∉ cs) (acc : List (List Char)) (current : List Char) :
+  splitPolynomialCharsAux acc current cs = (current.reverse ++ cs) :: acc := by
+  induction cs generalizing acc current with
+  | nil =>
+    have h : current.reverse ++ [] = current.reverse := by simp
+    rw [h]
+    rfl
+  | cons c cs ih =>
+    have hc_plus : c ≠ '+' := by intro hc; subst hc; apply h_no_plus; exact List.Mem.head cs
+    have hc_minus : c ≠ '-' := by intro hc; subst hc; apply h_no_minus; exact List.Mem.head cs
+    unfold splitPolynomialCharsAux
+    split
+    · contradiction
+    · rename_i hrest; injection hrest with h_c; subst h_c; contradiction
+    · rename_i hrest; injection hrest with h_c; subst h_c; contradiction
+    · rename_i hrest; injection hrest with h_c h_cs; subst h_c h_cs
+      have h_no_plus_tail : '+' ∉ cs := fun h => h_no_plus (List.mem_cons_of_mem c h)
+      have h_no_minus_tail : '-' ∉ cs := fun h => h_no_minus (List.mem_cons_of_mem c h)
+      have h_ih := ih h_no_plus_tail h_no_minus_tail acc (c :: current)
+      rw [h_ih]
+      congr 1
+      simp
+
+lemma splitPolynomialCharsAux_append_plus (cs1 cs2 : List Char) (h_no_plus : '+' ∉ cs1) (h_no_minus : '-' ∉ cs1) (acc : List (List Char)) (current : List Char) :
+  splitPolynomialCharsAux acc current (cs1 ++ '+' :: cs2) = splitPolynomialCharsAux ((current.reverse ++ cs1) :: acc) [] cs2 := by
+  induction cs1 generalizing acc current with
+  | nil =>
+    have h : current.reverse ++ [] = current.reverse := by simp
+    rw [h]
+    rfl
+  | cons c cs1 ih =>
+    have hc_plus : c ≠ '+' := by intro hc; subst hc; apply h_no_plus; exact List.Mem.head cs1
+    have hc_minus : c ≠ '-' := by intro hc; subst hc; apply h_no_minus; exact List.Mem.head cs1
+    have h_cons : (c :: cs1) ++ '+' :: cs2 = c :: (cs1 ++ '+' :: cs2) := rfl
+    rw [h_cons]
+    conv => lhs; unfold splitPolynomialCharsAux
+    split
+    · contradiction
+    · rename_i hrest; injection hrest with h_c; subst h_c; contradiction
+    · rename_i hrest; injection hrest with h_c; subst h_c; contradiction
+    · rename_i hrest; injection hrest with h_c h_cs; subst h_c h_cs
+      have h_no_plus_tail : '+' ∉ cs1 := fun h => h_no_plus (List.mem_cons_of_mem c h)
+      have h_no_minus_tail : '-' ∉ cs1 := fun h => h_no_minus (List.mem_cons_of_mem c h)
+      have h_ih := ih h_no_plus_tail h_no_minus_tail acc (c :: current)
+      rw [h_ih]
+      congr 2
+      simp
+
+lemma splitPolynomialCharsAux_joinWithPlus (L : List (List Char)) (h_no_plus : ∀ x ∈ L, '+' ∉ x) (h_no_minus : ∀ x ∈ L, '-' ∉ x) (h_not_empty : ∀ x ∈ L, x ≠ []) (hL : L ≠ []) (acc : List (List Char)) :
+  splitPolynomialCharsAux acc [] (joinWithPlus L) = L.reverse ++ acc := by
+  induction L generalizing acc with
+  | nil =>
+    contradiction
+  | cons x xs ih =>
+    cases hxs : xs with
+    | nil =>
+      dsimp [joinWithPlus]
+      have hx_no_plus := h_no_plus x (by simp)
+      have hx_no_minus := h_no_minus x (by simp)
+      have h := splitPolynomialCharsAux_no_plus_minus x hx_no_plus hx_no_minus acc []
+      rw [h]
+      simp
+    | cons y ys =>
+      have h_join : joinWithPlus (x :: y :: ys) = x ++ '+' :: joinWithPlus (y :: ys) := rfl
+      rw [h_join]
+      have hx_no_plus := h_no_plus x (by exact List.Mem.head xs)
+      have hx_no_minus := h_no_minus x (by exact List.Mem.head xs)
+      have hxs_no_plus : ∀ z ∈ y :: ys, '+' ∉ z := fun z hz =>
+        h_no_plus z (by rw [hxs]; exact List.mem_cons_of_mem x hz)
+      have hxs_no_minus : ∀ z ∈ y :: ys, '-' ∉ z := fun z hz =>
+        h_no_minus z (by rw [hxs]; exact List.mem_cons_of_mem x hz)
+      have hxs_not_empty : ∀ z ∈ y :: ys, z ≠ [] := fun z hz =>
+        h_not_empty z (by rw [hxs]; exact List.mem_cons_of_mem x hz)
+      have h_append := splitPolynomialCharsAux_append_plus x (joinWithPlus (y :: ys)) hx_no_plus hx_no_minus acc []
+      rw [h_append]
+      have h_simp : ([].reverse ++ x) = x := by simp
+      rw [h_simp]
+      have hxs_not_nil : xs ≠ [] := by rw [hxs]; intro hc; contradiction
+      have h_ih := ih (by rw [hxs]; exact hxs_no_plus) (by rw [hxs]; exact hxs_no_minus) (by rw [hxs]; exact hxs_not_empty) hxs_not_nil (x :: acc)
+      rw [hxs] at h_ih
+      rw [h_ih]
+      simp
+
+lemma joinWithPlus_ne_nil (L : List (List Char)) (h_not_empty : ∀ x ∈ L, x ≠ []) (hL : L ≠ []) : joinWithPlus L ≠ [] := by
+  cases L with
+  | nil => contradiction
+  | cons x xs =>
+    cases xs with
+    | nil =>
+      dsimp [joinWithPlus]
+      apply h_not_empty x
+      exact List.Mem.head []
+    | cons y ys =>
+      have h_join : joinWithPlus (x :: y :: ys) = x ++ '+' :: joinWithPlus (y :: ys) := rfl
+      rw [h_join]
+      intro h
+      have hx := h_not_empty x (by apply List.Mem.head)
+      cases x with
+      | nil => contradiction
+      | cons c cs =>
+        contradiction
+
+lemma splitPolynomialChars_flatten_plus (L : List (List Char)) 
+  (h_no_plus : ∀ x ∈ L, '+' ∉ x) (h_no_minus : ∀ x ∈ L, '-' ∉ x) (h_not_empty : ∀ x ∈ L, x ≠ []) (hL : L ≠ []) : 
+  splitPolynomialChars (joinWithPlus L) = L := by
+  rw [splitPolynomialChars_eq]
+  have hz := splitPolynomialCharsAux_joinWithPlus L h_no_plus h_no_minus h_not_empty hL []
+  have hn := joinWithPlus_ne_nil L h_not_empty hL
+  rw [if_neg hn]
+  rw [hz]
+  simp
+
 lemma toChars_ne_empty {R} [DecidableEq R] [Semiring R] [DensePolyToChars R] [DensePolyParsable R] [DensePolyParsableValid R]
   (p : DensePoly R)
   (h_mono_ne_nil : ∀ d c, monomialToChars (R := R) d c ≠ []) :
