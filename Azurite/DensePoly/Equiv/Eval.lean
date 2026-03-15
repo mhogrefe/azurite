@@ -1,15 +1,16 @@
 import Azurite.DensePoly.Eval
 import Azurite.DensePoly.Equiv.Basic
 import Batteries.Data.Array.Lemmas
+import Mathlib.Algebra.Polynomial.Roots
 
 open Polynomial
 
 namespace Azurite.DensePoly
 
-variable {R : Type _} [CommSemiring R] [DecidableEq R]
+variable {R : Type _} [DecidableEq R]
 
 omit [DecidableEq R] in
-lemma eval_list_toPoly (l : List R) (x : R) :
+lemma eval_list_toPoly [CommSemiring R] (l : List R) (x : R) :
   l.foldr (init := 0) (fun a acc => a + acc * x) = (List.toPoly l).eval x := by
   induction l with
   | nil =>
@@ -20,7 +21,7 @@ lemma eval_list_toPoly (l : List R) (x : R) :
     rw [ht]
 
 omit [DecidableEq R] in
-@[simp] lemma eval_toPoly (p : Azurite.DensePoly R) (x : R) :
+@[simp] lemma eval_toPoly [CommSemiring R] (p : Azurite.DensePoly R) (x : R) :
   (DensePoly.toPoly p).eval x = p.eval x := by
   dsimp [DensePoly.toPoly, Azurite.DensePoly.eval]
   apply Eq.symm
@@ -29,10 +30,15 @@ omit [DecidableEq R] in
   rw [ht]
   exact eval_list_toPoly p.coeffs.toList x
 
-@[simp] lemma eval_ofPoly (p : Polynomial R) (x : R) :
+@[simp] lemma eval_ofPoly [CommSemiring R] (p : Polynomial R) (x : R) :
   (DensePoly.ofPoly p).eval x = p.eval x := by
   have h := eval_toPoly (DensePoly.ofPoly p) x
   rw [toPoly_ofPoly] at h
   exact h.symm
+
+lemma funext [CommRing R] [IsDomain R] [Infinite R] {p q : DensePoly R} (ext : ∀ r : R, p.eval r = q.eval r) : p = q := by
+  have heq : DensePoly.toPoly p = DensePoly.toPoly q := Polynomial.funext (fun r => by
+    rw [eval_toPoly, eval_toPoly, ext r])
+  exact Equiv.injective equivPolynomial heq
 
 end Azurite.DensePoly
