@@ -19,3 +19,7 @@ lean_lib «Azurite» where
 @[default_target]
 lean_lib «Examples» where
   -- add any library configuration options here
+
+@[default_target]
+lean_exe «benchmark» where
+  root := `Azurite.Benchmark.PrintRandom

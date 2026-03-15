@@ -14,3 +14,5 @@ import Azurite.DensePoly.Equiv.Basic
 import Azurite.DensePoly.Equiv.Monomial
 import Azurite.DensePoly.Equiv.Neg
 import Azurite.DensePoly.Equiv.Map
+import Azurite.Random
+import Azurite.Benchmark
