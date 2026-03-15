@@ -3252,7 +3252,7 @@ private lemma range_zip_find_eq_some {α} (n : ℕ) (l : List α) (i : ℕ)
     match l with
     | [] => simp at hil
     | a :: as =>
-      simp only [List.zip_cons_cons, List.find?_cons, List.length_cons] at *
+      simp only [List.zip_cons_cons, List.find?_cons] at *
       cases i with
       | zero => rfl
       | succ j =>
@@ -3333,7 +3333,7 @@ private lemma listEnum_filtered_coeff {R} [Semiring R] [DecidableEq R] (l : List
     have hmem_i_bs : i ∈ bs.map Prod.fst := by
       rw [List.mem_map]; exact ⟨b, hmem_b, hbi⟩
     have hi_notin_bs : i ∉ bs.map Prod.fst := by
-      simp only [List.Nodup, List.pairwise_append, List.pairwise_cons, List.mem_singleton] at hnodup
+      simp only [List.Nodup, List.pairwise_append, List.pairwise_cons] at hnodup
       -- hnodup.2.1.1 : ∀ a' ∈ bs.map fst, i ≠ a'
       intro hmem_i
       exact absurd rfl (hnodup.2.1.1 i hmem_i)
@@ -3485,7 +3485,33 @@ private lemma normalize_idem {R} [Semiring R] [DecidableEq R] (p : DensePoly R) 
 /-- `listToPoly` of the indexed nonzero coefficients of `p` equals `p` itself. -/
 lemma listToPoly_indexed_nonzero {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
     listToPoly ((listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))) = p := by
-  sorry
+  by_cases hzero : p.coeffs = #[]
+  · -- Case p = 0: listEnum [] = [], listToPoly [] = 0 = p
+    have hp : p = 0 := DensePoly.ext (by simpa using hzero)
+    subst hp
+    simp [listToPoly, listEnum, listEnum.aux, DensePoly.ext_iff, normalize]
+  · -- Case p ≠ 0: coeffs nonempty, use listMax_listEnum_filter_eq
+    have hlne := p.last_ne_zero
+    have hne : p.coeffs.toList ≠ [] := by rwa [Ne, Array.toList_eq_nil_iff]
+    have hlast : p.coeffs.toList.getLast? ≠ some 0 := by
+      rw [Array.getLast?_toList]; exact p.last_ne_zero
+    have hsize := listMax_listEnum_filter_eq p.coeffs.toList hne hlast
+    have hlen : p.coeffs.toList.length = p.coeffs.size := Array.length_toList
+    have harr : ((List.range (listMax ((listEnum p.coeffs.toList).filter
+        (fun dc => decide (dc.2 ≠ 0)) |>.map Prod.fst) + 1)).map (fun d =>
+        match ((listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))).find?
+          (fun dc => decide (dc.1 = d)) with
+        | some (_, c) => c | none => (0 : R))).toArray = p.coeffs := by
+      apply Array.ext
+      · have hpos : 0 < p.coeffs.size := by rw [← hlen]; exact List.length_pos_of_ne_nil hne
+        rw [List.size_toArray, List.length_map, List.length_range, hsize, hlen]; omega
+      · intro n hlt1 hlt2
+        rw [List.size_toArray, List.length_map, List.length_range, hsize, hlen] at hlt1
+        have hlt_l : n < p.coeffs.toList.length := by omega
+        rw [List.getElem_toArray, List.getElem_map, List.getElem_range]
+        exact listEnum_filtered_coeff p.coeffs.toList n hlt_l
+    simp only [listToPoly]
+    convert normalize_idem p using 2
 
 /-! ### Main round-trip theorem -/
 

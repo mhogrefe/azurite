@@ -98,14 +98,10 @@ def listMax (l : List ℕ) : ℕ :=
 
 def listToPoly {R : Type _} [DecidableEq R] [Semiring R] (l : List (ℕ × R)) : DensePoly R :=
   let maxDegree := listMax (l.map Prod.fst)
-  let arr := Id.run do
-    let mut a : Array R := Array.empty
-    for d in [0:maxDegree+1] do
-      let coeff := match l.find? (fun (d', _) => d' = d) with
-                   | some (_, c) => c
-                   | none => 0
-      a := a.push coeff
-    a
+  let coeff := fun d => match l.find? (fun (d', _) => d' = d) with
+                        | some (_, c) => c
+                        | none => (0 : R)
+  let arr := ((List.range (maxDegree + 1)).map coeff).toArray
   normalize arr
 
 def hasDuplicateExponents {R} (l : List (ℕ × R)) : Bool :=
