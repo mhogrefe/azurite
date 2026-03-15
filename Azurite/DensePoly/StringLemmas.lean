@@ -3523,12 +3523,93 @@ private abbrev nzPairs (p : DensePoly ℕ) :=
 private abbrev monoStrings (p : DensePoly ℕ) :=
   (nzPairs p).map (fun dc => monomialToChars dc.1 dc.2)
 
-/-- For a non-zero ℕ-polynomial, `toChars p` equals `joinWithPlus` of the reversed monomial
-strings. Since ℕ coefficients produce no `-` or `+`, the `withSigns` step in `toChars` is
-simply `fun m => '+' :: m` for non-first elements, which is exactly what `joinWithPlus` does. -/
+-- Helper: prepending '+' to every element and flattening gives '+' :: joinWithPlus
+private lemma map_prepend_plus_flatten_eq (L : List (List Char)) (hne : L ≠ []) :
+    (L.map ('+' :: ·)).flatten = '+' :: joinWithPlus L := by
+  induction L with
+  | nil => contradiction
+  | cons hd tl ih =>
+    simp only [List.map_cons, List.flatten_cons]
+    cases tl with
+    | nil => simp [joinWithPlus]
+    | cons y ys =>
+      rw [ih (List.cons_ne_nil _ _), joinWithPlus_append hd (y :: ys) (List.cons_ne_nil _ _)]
+      simp
+
+-- Helper: withSigns.flatten = joinWithPlus L when no '-' in elements
+-- Helper: (L.map ('+' :: ·)).flatten = '+' :: joinWithPlus L for nonempty L
+private lemma map_prepend_plus_flatten_eq' (L : List (List Char)) (hne : L ≠ []) :
+    (L.map ('+' :: ·)).flatten = '+' :: joinWithPlus L := by
+  induction L with
+  | nil => contradiction
+  | cons hd tl ih =>
+    simp only [List.map_cons, List.flatten_cons]
+    cases tl with
+    | nil => simp [joinWithPlus]
+    | cons y ys =>
+      rw [ih (List.cons_ne_nil _ _), joinWithPlus_append hd (y :: ys) (List.cons_ne_nil _ _)]
+      simp
+
+-- General indexed auxiliary: withSigns transform with index offset n
+private lemma withSigns_aux (n : ℕ) : ∀ (L : List (List Char)),
+    (∀ m ∈ L, '-' ∉ m) →
+    ((((List.range L.length).map (· + n)).zip L).map (fun (i, m) =>
+        if i = 0 then m
+        else match m with | '-' :: _ => m | _ => '+' :: m)).flatten =
+    if n = 0 then joinWithPlus L else (L.map ('+' :: ·)).flatten := by
+  intro L
+  induction L generalizing n with
+  | nil => simp [joinWithPlus]
+  | cons hd tl ih =>
+    intro hno
+    have hno_hd : '-' ∉ hd := hno hd (List.Mem.head tl)
+    have ih_n1 := ih (n + 1) (fun m hm => hno m (List.Mem.tail hd hm))
+    simp only [Nat.succ_ne_zero, ite_false] at ih_n1
+    simp only [List.length_cons, List.range_succ_eq_map, List.map_map, List.map_cons,
+               List.zip_cons_cons, List.flatten_cons]
+    rw [Nat.zero_add]
+    -- Rewrite the tail using ih_n1
+    rw [show List.map ((fun x => x + n) ∘ Nat.succ) (List.range tl.length) =
+          List.map (fun x => x + (n + 1)) (List.range tl.length) from
+            List.map_congr_left (fun x _ => by simp [Function.comp]; omega)]
+    rw [ih_n1]
+    cases n with
+    | zero =>
+      simp only [ite_true]
+      cases tl with
+      | nil => simp [joinWithPlus]
+      | cons y ys =>
+        rw [map_prepend_plus_flatten_eq' (y :: ys) (List.cons_ne_nil _ _),
+            joinWithPlus_append hd (y :: ys) (List.cons_ne_nil _ _)]
+    | succ n' =>
+      simp only [Nat.succ_ne_zero, ite_false]
+      rcases hd with _ | ⟨c, cs⟩
+      · simp
+      · have hc : c ≠ '-' := fun heq => absurd (heq ▸ List.Mem.head cs) hno_hd
+        simp [hc]
+
+-- Main: withSigns.flatten = joinWithPlus when no '-' in elements
+private lemma withSigns_flatten_eq_joinWithPlus
+    (L : List (List Char)) (hno_minus : ∀ m ∈ L, '-' ∉ m) :
+    ((listEnum L).map (fun (i, m) =>
+        if i = 0 then m
+        else match m with | '-' :: _ => m | _ => '+' :: m)).flatten =
+    joinWithPlus L := by
+  have key := withSigns_aux 0 L hno_minus
+  simp only [ite_true] at key
+  simp only [listEnum, listEnum_aux_eq 0 [] L, List.reverse_nil, List.nil_append] at *
+  exact key
+
+/-- For a non-zero ℕ-polynomial, `(toChars p).toList = joinWithPlus (monoStrings p).reverse`.
+Since ℕ coefficients produce no `-`, the `withSigns` step is exactly `joinWithPlus`. -/
 lemma toChars_toList_nat_ne_zero (p : DensePoly ℕ) (hp : p ≠ 0) :
     (toChars p).toList = joinWithPlus (monoStrings p).reverse := by
-  sorry
+  simp only [toChars, monoStrings, nzPairs, if_neg hp, String.toList_ofList]
+  apply withSigns_flatten_eq_joinWithPlus
+  intro m hm
+  simp only [List.mem_reverse, List.mem_map] at hm
+  obtain ⟨⟨d, c⟩, _, rfl⟩ := hm
+  exact not_mem_minus_monomialToChars_nat d c
 
 /-- Splitting `(toChars p).toList` on `+`/`-` recovers the reversed monomial strings. -/
 lemma splitPolynomialChars_toChars_nat (p : DensePoly ℕ) (hp : p ≠ 0) :

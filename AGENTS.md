@@ -6,9 +6,13 @@ Welcome! When working on the Azurite project, please adhere to the following gui
 
 You are encouraged to make free and extensive use of Mathlib lemmas, definitions, and theorems to prove properties about `Azurite`.
 
+When implementing new functions, keep provability in mind. For example, avoid legacy for loops, since there aren't many available theorems about them.
+
 ### Finding Mathlib Relevant Code
 You can search the Mathlib source code locally in the project workspace at:
 `.lake/packages/mathlib`
+
+or (preferred) by using the lean-lsp MCP server. If the MCP server is not available, ask the user to restart it.
 
 ### ⚠️ IMPORTANT: Avoid Blanket Imports
 **NEVER** do a blanket `import Mathlib` at the top of a file. 
