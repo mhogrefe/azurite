@@ -13,8 +13,8 @@ structure BoolGen (G : Type) [RandomGen G UInt64] where
   deriving Repr
 
 /-- Initialize the efficient `Bool` generator spanning from an underlying `UInt64` PRNG. -/
-def mkBoolGen {G : Type} [RandomGen G UInt64] (g : G) : BoolGen G :=
-  { gen := g, cache := 0, bitsLeft := 0 }
+def mkBoolGen (seed : UInt64) : BoolGen SplitMix64 :=
+  { gen := mkSplitMix64 seed, cache := 0, bitsLeft := 0 }
 
 def BoolGen.next {G : Type} [RandomGen G UInt64] (bg : BoolGen G) : Bool × BoolGen G :=
   if bg.bitsLeft == 0 then

@@ -1,7 +1,7 @@
 import Azurite.Random
 
-partial def printLoop {G : Type} [Azurite.Random.RandomGen G Bool] (prng : G) : IO Unit := do
-  let (val, nextPrng) : Bool × G := Azurite.Random.RandomGen.next prng
+partial def printLoop {G : Type} [Azurite.Random.RandomGen G Nat] (prng : G) : IO Unit := do
+  let (val, nextPrng) : Nat × G := Azurite.Random.RandomGen.next prng
   IO.println val
   printLoop nextPrng
 
@@ -14,8 +14,7 @@ def main (args : List String) : IO Unit := do
     else
       1337
 
-  let mut prng := Azurite.Random.mkSplitMix64 seed
-  let mut boolGen := Azurite.Random.mkBoolGen prng
+  let mut natGen := Azurite.Random.mkNatWithBitsGen 200 seed
 
-  -- Print an endless stream of random Bool
-  printLoop boolGen
+  -- Print an endless stream of random 200-bit Nats
+  printLoop natGen
