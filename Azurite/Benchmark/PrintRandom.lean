@@ -1,8 +1,8 @@
 import Azurite.Random
 
-partial def printLoop {G : Type} [Azurite.Random.RandomGen G Nat] (prng : G) : IO Unit := do
-  let (val, nextPrng) : Nat × G := Azurite.Random.RandomGen.next prng
-  IO.println val
+partial def printLoop {G : Type} [Azurite.Random.RandomGen G Bool] (prng : G) : IO Unit := do
+  let (val, nextPrng) : Bool × G := Azurite.Random.RandomGen.next prng
+  IO.println (if val then "true" else "false")
   printLoop nextPrng
 
 def main (args : List String) : IO Unit := do
@@ -14,8 +14,9 @@ def main (args : List String) : IO Unit := do
     else
       1337
 
-  -- Generate random values strictly less than 1,000,000,000.
-  let mut natGen := Azurite.Random.mkNatLessThanGen 1000000000 seed
+  -- Generate weighted Bool stream where true appears 1/3 of the time
+  let p : Rat := 1 / 3
+  let mut boolGen := Azurite.Random.mkWeightedBoolGen p seed
 
-  -- Print an endless stream of random bounded Nats
-  printLoop natGen
+  -- Print an endless stream of random weighted Bools
+  printLoop boolGen
