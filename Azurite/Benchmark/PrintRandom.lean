@@ -14,7 +14,8 @@ def main (args : List String) : IO Unit := do
     else
       1337
 
-  let mut natGen := Azurite.Random.mkNatWithBitsGen 200 seed
+  -- Generate random values strictly less than 1,000,000,000.
+  let mut natGen := Azurite.Random.mkNatLessThanGen 1000000000 seed
 
-  -- Print an endless stream of random 200-bit Nats
+  -- Print an endless stream of random bounded Nats
   printLoop natGen
