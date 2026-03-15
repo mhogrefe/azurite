@@ -2413,8 +2413,8 @@ lemma joinWithPlus_ne_nil (L : List (List Char)) (h_not_empty : ∀ x ∈ L, x �
       | cons c cs =>
         contradiction
 
-lemma splitPolynomialChars_flatten_plus (L : List (List Char)) 
-  (h_no_plus : ∀ x ∈ L, '+' ∉ x) (h_no_minus : ∀ x ∈ L, '-' ∉ x) (h_not_empty : ∀ x ∈ L, x ≠ []) (hL : L ≠ []) : 
+lemma splitPolynomialChars_flatten_plus (L : List (List Char))
+  (h_no_plus : ∀ x ∈ L, '+' ∉ x) (h_no_minus : ∀ x ∈ L, '-' ∉ x) (h_not_empty : ∀ x ∈ L, x ≠ []) (hL : L ≠ []) :
   splitPolynomialChars (joinWithPlus L) = L := by
   rw [splitPolynomialChars_eq]
   have hz := splitPolynomialCharsAux_joinWithPlus L h_no_plus h_no_minus h_not_empty hL []
@@ -2494,7 +2494,7 @@ lemma toChars_nat_not_start_zero_of_ne_zero (p : DensePoly ℕ) (hp : p ≠ 0) (
   · simp only [String.toList_ofList]
     let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
     let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
-    
+
     have h_back : p.coeffs.back? ≠ none := by
       intro h_none
       have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
@@ -2545,9 +2545,9 @@ lemma toChars_nat_not_start_zero_of_ne_zero (p : DensePoly ℕ) (hp : p ≠ 0) (
         have h_in_filter := List.mem_filter.mp h_in2
         exact of_decide_eq_true h_in_filter.right
       have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
-      
+
       have h_m_not_zero := monomialToChars_nat_not_start_zero d2 c2 cs' hd_c
-      
+
       rcases h_eq with rfl | rfl
       · rw [hm_val] at h_eq_zero
         exact h_m_not_zero h_eq_zero
@@ -2582,7 +2582,7 @@ lemma mem_toChars_nat_only_valid (p : DensePoly ℕ) (ch : Char) (h : ch ∈ (to
     have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
     rw [List.mem_reverse, List.mem_map] at hm_mem
     rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
-    
+
     have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
       intro ch_m hch_m
       rw [←hm_eq] at hch_m
@@ -2638,7 +2638,7 @@ lemma toChars_int_not_start_zero_of_ne_zero (p : DensePoly ℤ) (hp : p ≠ 0) (
   · simp only [String.toList_ofList]
     let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
     let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
-    
+
     have h_back : p.coeffs.back? ≠ none := by
       intro h_none
       have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
@@ -2689,9 +2689,9 @@ lemma toChars_int_not_start_zero_of_ne_zero (p : DensePoly ℤ) (hp : p ≠ 0) (
         have h_in_filter := List.mem_filter.mp h_in2
         exact of_decide_eq_true h_in_filter.right
       have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
-      
+
       have h_m_not_zero := monomialToChars_int_not_start_zero d2 c2 cs' hd_c
-      
+
       rcases h_eq with rfl | rfl
       · rw [hm_val] at h_eq_zero
         exact h_m_not_zero h_eq_zero
@@ -2729,7 +2729,7 @@ lemma mem_toChars_int_only_valid (p : DensePoly ℤ) (ch : Char) (h : ch ∈ (to
     have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
     rw [List.mem_reverse, List.mem_map] at hm_mem
     rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
-    
+
     have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ch_m = '-' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
       intro ch_m hch_m
       rw [←hm_eq] at hch_m
@@ -2796,7 +2796,7 @@ lemma toChars_rat_not_start_zero_of_ne_zero (p : DensePoly ℚ) (hp : p ≠ 0) (
   · simp only [String.toList_ofList]
     let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
     let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
-    
+
     have h_back : p.coeffs.back? ≠ none := by
       intro h_none
       have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
@@ -2847,9 +2847,9 @@ lemma toChars_rat_not_start_zero_of_ne_zero (p : DensePoly ℚ) (hp : p ≠ 0) (
         have h_in_filter := List.mem_filter.mp h_in2
         exact of_decide_eq_true h_in_filter.right
       have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
-      
+
       have h_m_not_zero := monomialToChars_rat_not_start_zero d2 c2 cs' hd_c
-      
+
       rcases h_eq with rfl | rfl
       · rw [hm_val] at h_eq_zero
         exact h_m_not_zero h_eq_zero
@@ -2887,7 +2887,7 @@ lemma mem_toChars_rat_only_valid (p : DensePoly ℚ) (ch : Char) (h : ch ∈ (to
     have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
     rw [List.mem_reverse, List.mem_map] at hm_mem
     rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
-    
+
     have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ch_m = '/' ∨ ch_m = '-' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
       intro ch_m hch_m
       rw [←hm_eq] at hch_m
@@ -2960,7 +2960,7 @@ lemma toChars_zmod_not_start_zero_of_ne_zero {n : ℕ} [NeZero n] (p : DensePoly
   · simp only [String.toList_ofList]
     let L1 := (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse
     let L2 := (listEnum L1).map (fun (i, m) => if i = 0 then m else match m with | '-' :: _ => m | _ => '+' :: m)
-    
+
     have h_back : p.coeffs.back? ≠ none := by
       intro h_none
       have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
@@ -3011,9 +3011,9 @@ lemma toChars_zmod_not_start_zero_of_ne_zero {n : ℕ} [NeZero n] (p : DensePoly
         have h_in_filter := List.mem_filter.mp h_in2
         exact of_decide_eq_true h_in_filter.right
       have hm_val : m = monomialToChars d2 c2 := h_eq2.symm
-      
+
       have h_m_not_zero := monomialToChars_zmod_not_start_zero d2 c2 cs' hd_c
-      
+
       rcases h_eq with rfl | rfl
       · rw [hm_val] at h_eq_zero
         exact h_m_not_zero h_eq_zero
@@ -3051,7 +3051,7 @@ lemma mem_toChars_zmod_only_valid {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) 
     have hm_mem : m ∈ (listEnum p.coeffs.toList |>.filter (fun (_, c) => c ≠ 0) |>.map (fun (d, c) => monomialToChars d c)).reverse := mem_of_mem_listEnum _ _ _ hm_in
     rw [List.mem_reverse, List.mem_map] at hm_mem
     rcases hm_mem with ⟨⟨d, c⟩, _, hm_eq⟩
-    
+
     have h_mono : ∀ ch_m ∈ m, ch_m = 'x' ∨ ch_m = '*' ∨ ch_m = '^' ∨ ('0'.toNat ≤ ch_m.toNat ∧ ch_m.toNat ≤ '9'.toNat) := by
       intro ch_m hch_m
       rw [←hm_eq] at hch_m
@@ -3101,5 +3101,388 @@ lemma mem_toChars_zmod_only_valid {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)) 
               · rcases hr2 with rfl | hr3
                 · exact Or.inr (Or.inr (Or.inr (Or.inl rfl)))
                 · exact Or.inr (Or.inr (Or.inr (Or.inr hr3)))
+
+
+/-! ### No `+` or `-` in ℕ/ZMod monomial chars -/
+
+/-- Natural-number monomials contain no `+`. -/
+lemma not_mem_plus_monomialToChars_nat (d : ℕ) (c : ℕ) : '+' ∉ monomialToChars d c := by
+  intro h
+  have hv := mem_monomialToChars_nat_only_valid d c '+' h
+  rcases hv with h | h | h | ⟨h1, h2⟩
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd (And.intro h1 h2) (by decide)
+
+/-- Natural-number monomials contain no `-`. -/
+lemma not_mem_minus_monomialToChars_nat (d : ℕ) (c : ℕ) : '-' ∉ monomialToChars d c := by
+  intro h
+  have hv := mem_monomialToChars_nat_only_valid d c '-' h
+  rcases hv with h | h | h | ⟨h1, h2⟩
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd (And.intro h1 h2) (by decide)
+
+/-- ZMod monomials contain no `+`. -/
+lemma not_mem_plus_monomialToChars_zmod {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) :
+    '+' ∉ monomialToChars d c := by
+  intro h
+  have hv := mem_monomialToChars_zmod_only_valid d c '+' h
+  rcases hv with h | h | h | ⟨h1, h2⟩
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd (And.intro h1 h2) (by decide)
+
+/-- ZMod monomials contain no `-`. -/
+lemma not_mem_minus_monomialToChars_zmod {n : ℕ} [NeZero n] (d : ℕ) (c : ZMod n) :
+    '-' ∉ monomialToChars d c := by
+  intro h
+  have hv := mem_monomialToChars_zmod_only_valid d c '-' h
+  rcases hv with h | h | h | ⟨h1, h2⟩
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd h (by decide)
+  · exact absurd (And.intro h1 h2) (by decide)
+
+
+
+
+
+/-! ### `listEnum` and `listToPoly` auxiliary lemmas -/
+
+/-- The first components of `listEnum.aux acc n l` are acc-reversed followed by shifted range. -/
+private lemma listEnum_aux_map_fst {α} (n : ℕ) (acc : List (ℕ × α)) (l : List α) :
+    (listEnum.aux acc n l).map Prod.fst =
+      acc.reverse.map Prod.fst ++ (List.range l.length).map (· + n) := by
+  induction l generalizing n acc with
+  | nil => simp [listEnum.aux]
+  | cons a as ih =>
+    simp only [List.length_cons, listEnum.aux, ih, List.reverse_cons, List.map_append,
+      List.map_cons, List.append_assoc, List.range_succ_eq_map, List.map_map, Nat.zero_add,
+      List.map_nil, List.cons_append, List.nil_append]
+    congr 1; congr 1
+    apply List.map_congr_left
+    intro x _
+    simp [Function.comp]; omega
+
+/-- The first components of `listEnum l` are exactly `List.range l.length`. -/
+lemma listEnum_map_fst {α} (l : List α) :
+    (listEnum l).map Prod.fst = List.range l.length := by
+  simp [listEnum, listEnum_aux_map_fst]
+
+/-- The first components of `listEnum l` have no duplicates. -/
+lemma listEnum_no_dup_fst {α} (l : List α) :
+    ((listEnum l).map Prod.fst).Nodup := by
+  rw [listEnum_map_fst]; exact List.nodup_range
+
+/-- Filtering a `listEnum` preserves the no-duplicates property on first components. -/
+lemma listEnum_filter_no_dup_fst {R} [Semiring R] [DecidableEq R] (l : List R)
+    (p : (ℕ × R) → Bool) :
+    (((listEnum l).filter p).map Prod.fst).Nodup := by
+  apply List.Sublist.nodup _ (listEnum_no_dup_fst l)
+  exact List.Sublist.map _ (List.filter_sublist)
+
+/-! ### No duplicate exponents in the nonzero indexed pairs -/
+
+/-- A `Nodup` list is its own eraseDups. -/
+private lemma Nodup_eraseDups_eq {α} [BEq α] [LawfulBEq α] {l : List α} (h : l.Nodup) :
+    l.eraseDups = l := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    have ha : a ∉ as := (List.nodup_cons.mp h).1
+    have has : as.Nodup := (List.nodup_cons.mp h).2
+    rw [List.eraseDups_cons]
+    have hfilt : as.filter (fun b => !b == a) = as := by
+      apply List.filter_eq_self.mpr
+      intro x hx
+      have hne : x ≠ a := fun h => ha (h ▸ hx)
+      rw [beq_eq_false_iff_ne.mpr hne, Bool.not_false]
+    rw [hfilt, ih has]
+
+/-- The exponents of the nonzero indexed pairs from a polynomial's coefficients are distinct. -/
+lemma hasDuplicateExponents_false_of_listEnum {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
+    hasDuplicateExponents ((listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))) = false := by
+  simp only [hasDuplicateExponents]
+  have hnd := listEnum_filter_no_dup_fst p.coeffs.toList (fun dc => decide (dc.2 ≠ 0))
+  have : (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0)) =
+         (listEnum p.coeffs.toList).filter (fun dc => !decide (dc.2 = 0)) := by
+    congr 1; ext ⟨d, c⟩; simp [decide_not]
+  rw [this] at hnd ⊢
+  rw [Nodup_eraseDups_eq hnd]
+  simp
+
+
+
+
+/-! ### `listToPoly` round-trip -/
+
+/-- `listEnum.aux acc n l = acc.reverse ++ ((List.range l.length).map (· + n)).zip l`. -/
+private lemma listEnum_aux_eq {α} (n : ℕ) (acc : List (ℕ × α)) (l : List α) :
+    listEnum.aux acc n l = acc.reverse ++ ((List.range l.length).map (· + n)).zip l := by
+  induction l generalizing n acc with
+  | nil => simp [listEnum.aux]
+  | cons a as ih =>
+    rw [listEnum.aux, ih (n + 1) ((n, a) :: acc)]
+    simp only [List.reverse_cons, List.length_cons, List.range_succ_eq_map, List.append_assoc]
+    simp only [List.zip_cons_cons, List.map_cons, List.map_map]
+    -- Need: acc.rev ++ (n,a) :: map f r.zip as = acc.rev ++ (n,a) :: map g r.zip as
+    simp only [List.singleton_append, Nat.zero_add, List.zip_map_left]
+    congr 1  -- strip acc.reverse ++
+    congr 1  -- strip (n, a) ::
+    apply List.map_congr_left
+    intro ⟨x, b⟩ _; simp [Function.comp, Prod.map]; omega
+
+/-- `listEnum l = (List.range l.length).zip l`. -/
+private lemma listEnum_eq_range_zip {α} (l : List α) :
+    listEnum l = (List.range l.length).zip l := by
+  simp [listEnum, listEnum_aux_eq]
+
+/-- `(List.range n).zip l |>.find? (fst = i) = some (i, l[i])` when `i < n` and `i < l.length`. -/
+private lemma range_zip_find_eq_some {α} (n : ℕ) (l : List α) (i : ℕ)
+    (hin : i < n) (hil : i < l.length) :
+    ((List.range n).zip l).find? (fun dc => decide (dc.1 = i)) = some (i, l[i]) := by
+  induction n generalizing l i with
+  | zero => omega
+  | succ m ih =>
+    rw [List.range_succ_eq_map]
+    match l with
+    | [] => simp at hil
+    | a :: as =>
+      simp only [List.zip_cons_cons, List.find?_cons, List.length_cons] at *
+      cases i with
+      | zero => rfl
+      | succ j =>
+        have hjm : j < m := Nat.lt_of_succ_lt_succ hin
+        have hjas : j < as.length := Nat.lt_of_succ_lt_succ hil
+        rw [List.zip_map_left, List.find?_map]
+        -- After rw [zip_map_left, find?_map], goal is a match on decide(0 = j+1).
+        -- Since 0 ≠ j+1, the match always takes the false branch.
+        have h0ne : decide (0 = j + 1) = false := by simp
+        simp only [h0ne]
+        -- Rewrite: (f ∘ Prod.map succ id) = (fun dc => decide (succ dc.1 = succ j))
+        rw [show (fun dc : ℕ × α => decide (dc.1 = j + 1)) ∘ Prod.map Nat.succ id =
+                 fun dc : ℕ × α => decide (dc.1.succ = j + 1) from by rfl]
+        rw [show (fun dc : ℕ × α => decide (dc.1.succ = j + 1)) =
+                 (fun dc : ℕ × α => decide (dc.1 = j)) from by
+          ext ⟨d, c⟩; simp]
+        rw [ih as j hjm hjas]
+        simp
+
+/-- `(listEnum l).find? (fun dc => decide (dc.1 = i)) = some (i, l[i])` when `i < l.length`. -/
+private lemma listEnum_find_eq_some {α} (l : List α) (i : ℕ) (hi : i < l.length) :
+    (listEnum l).find? (fun dc => decide (dc.1 = i)) = some (i, l[i]) := by
+  rw [listEnum_eq_range_zip]
+  exact range_zip_find_eq_some l.length l i hi hi
+
+
+/-- For the filtered `listEnum`, the coeff lookup at `i` gives `l[i]`. -/
+private lemma listEnum_filtered_coeff {R} [Semiring R] [DecidableEq R] (l : List R) (i : ℕ)
+    (hi : i < l.length) :
+    (match (((listEnum l).filter (fun dc => decide (dc.2 ≠ 0))).find? (fun dc => decide (dc.1 = i))) with
+     | some (_, c) => c | none => (0 : R)) = l[i] := by
+  -- Convert the filter+find? to a single find? on listEnum l
+  -- The predicate is: a.2 ≠ 0 ∧ a.1 = i
+  -- Let p := fun a : ℕ × R => decide (a.2 ≠ 0) && decide (a.1 = i)
+  -- find? q (filter p' l) = find? (fun a => p' a && q a) l  [by find?_filter]
+  -- After simplification, the predicate becomes decide(decide(a.2≠0)=true ∧ decide(a.1=i)=true)
+  -- which equals decide(a.2≠0) && decide(a.1=i)
+  -- Step 1: normalize the goal to use p directly
+  -- The goal LHS is: find? (dc.1=i) (filter (dc.2≠0) listEnum l)
+  -- which by find?_filter equals: find? (dc.2≠0 && dc.1=i) (listEnum l)
+  -- Convert to a clean form using show:
+  suffices h : (listEnum l).find? (fun a => decide (a.2 ≠ 0) && decide (a.1 = i)) =
+    (if l[i] = 0 then none else some (i, l[i])) by
+    have heq_filter : ((listEnum l).filter (fun dc => decide (dc.2 ≠ 0))).find?
+        (fun dc => decide (dc.1 = i)) =
+        (listEnum l).find? (fun a => decide (a.2 ≠ 0) && decide (a.1 = i)) := by
+      simp [List.find?_filter, Bool.and_comm]
+    rw [heq_filter, h]
+    split_ifs with h0 <;> simp [h0]
+  -- Now prove the cleaner form: find? (a.2≠0 && a.1=i) (listEnum l) = if l[i]=0 then none else some (i, l[i])
+  -- Use the decomposition from listEnum_find_eq_some
+  have hdec := listEnum_find_eq_some l i hi
+  rw [List.find?_eq_some_iff_append] at hdec
+  obtain ⟨_, as, bs, heq, hbefore⟩ := hdec
+  -- hbefore: ∀ a ∈ as, !decide(a.1 = i) = true, i.e., decide(a.1=i) = false
+  -- Step 2: show find? p as = none
+  have has_none : as.find? (fun a => decide (a.2 ≠ 0) && decide (a.1 = i)) = none := by
+    rw [List.find?_eq_none]
+    intro a hmem_as
+    simp only [Bool.and_eq_false_iff, Bool.not_eq_true]
+    right
+    have := hbefore a hmem_as
+    simpa using this
+  -- Step 3: show find? p bs = none (all b.1 ≠ i in bs since listEnum has unique fst)
+  have hbs_none : bs.find? (fun a => decide (a.2 ≠ 0) && decide (a.1 = i)) = none := by
+    rw [List.find?_eq_none]
+    intro b hmem_b
+    simp only [Bool.and_eq_false_iff, Bool.not_eq_true]
+    right
+    rw [decide_eq_false_iff_not]
+    -- i only appears once in listEnum, so b.1 ≠ i
+    intro hbi
+    have hnodup : List.Nodup ((listEnum l).map Prod.fst) := by
+      rw [listEnum_map_fst]; exact List.nodup_range
+    rw [heq, List.map_append, List.map_cons] at hnodup
+    -- hnodup : Nodup (as.map fst ++ [i, ...] ++ bs.map fst) forms a Pairwise ≠
+    -- i appears in both position of (i, l[i]) and b (since b.1 = i = hbi)
+    have hmem_i_bs : i ∈ bs.map Prod.fst := by
+      rw [List.mem_map]; exact ⟨b, hmem_b, hbi⟩
+    have hi_notin_bs : i ∉ bs.map Prod.fst := by
+      simp only [List.Nodup, List.pairwise_append, List.pairwise_cons, List.mem_singleton] at hnodup
+      -- hnodup.2.1.1 : ∀ a' ∈ bs.map fst, i ≠ a'
+      intro hmem_i
+      exact absurd rfl (hnodup.2.1.1 i hmem_i)
+    exact hi_notin_bs hmem_i_bs
+  -- Step 4: compute find? p (as ++ (i, l[i]) :: bs)
+  rw [heq, List.find?_append, has_none, Option.none_or, List.find?_cons]
+  -- Now: if (decide(l[i]≠0) && decide(i=i)) then some(i,l[i]) else find? p bs
+  simp only [hbs_none]
+  split_ifs with h0
+  · simp [h0]
+  · simp [h0]
+
+/-- The `listMax` foldl is monotone in the initial accumulator. -/
+private lemma listMax_foldl_mono (acc acc' : ℕ) (l : List ℕ) (h : acc ≤ acc') :
+    List.foldl (fun mv x => if x > mv then x else mv) acc l ≤
+    List.foldl (fun mv x => if x > mv then x else mv) acc' l := by
+  induction l generalizing acc acc' with
+  | nil => simp; exact h
+  | cons a as ih =>
+    simp only [List.foldl_cons]
+    apply ih
+    split_ifs with h1 h2
+    · omega
+    · omega
+    · omega
+    · exact h
+
+/-- The foldl accumulator is ≤ the foldl result. -/
+private lemma listMax_le_foldl (acc : ℕ) (l : List ℕ) :
+    acc ≤ List.foldl (fun mv x => if x > mv then x else mv) acc l := by
+  induction l generalizing acc with
+  | nil => simp
+  | cons a as ih =>
+    simp only [List.foldl_cons]
+    calc acc ≤ List.foldl (fun mv x => if x > mv then x else mv) acc as := ih acc
+      _ ≤ List.foldl (fun mv x => if x > mv then x else mv)
+              (if a > acc then a else acc) as := by
+          apply listMax_foldl_mono
+          split_ifs <;> omega
+
+/-- Any element of a list is ≤ the listMax of that list. -/
+private lemma listMax_mem_le (l : List ℕ) (n : ℕ) (hn : n ∈ l) : n ≤ listMax l := by
+  simp only [listMax]
+  induction l with
+  | nil => simp at hn
+  | cons a as ih =>
+    simp only [List.foldl_cons, List.mem_cons] at *
+    rcases hn with rfl | hn'
+    · -- n: n ≤ foldl max (if n > 0 then n else 0) as
+      calc n ≤ (if n > 0 then n else 0) := by split_ifs <;> omega
+        _ ≤ _ := listMax_le_foldl _ _
+    · -- n ∈ as
+      calc n ≤ List.foldl (fun mv x => if x > mv then x else mv) 0 as := ih hn'
+        _ ≤ _ := by
+          apply listMax_foldl_mono
+          split_ifs <;> omega
+
+/-- When all list elements are ≤ the accumulator, foldl max stays at the accumulator. -/
+private lemma listMax_foldl_const (m : ℕ) (as : List ℕ) (h : ∀ x ∈ as, x ≤ m) :
+    List.foldl (fun mv x => if x > mv then x else mv) m as = m := by
+  induction as with
+  | nil => simp
+  | cons b bs ih =>
+    simp only [List.foldl_cons, List.mem_cons] at *
+    have hb := h b (Or.inl rfl)
+    have hbs := fun x hx => h x (Or.inr hx)
+    have hstep : (if b > m then b else m) = m := by split_ifs <;> omega
+    rw [hstep]; exact ih hbs
+
+/-- listMax is ≤ any upper bound on the list. -/
+private lemma listMax_le_of_forall (l : List ℕ) (m : ℕ) (h : ∀ n ∈ l, n ≤ m) :
+    listMax l ≤ m := by
+  simp only [listMax]
+  induction l with
+  | nil => simp
+  | cons a as ih =>
+    simp only [List.foldl_cons, List.mem_cons] at *
+    have ha := h a (Or.inl rfl)
+    calc List.foldl (fun mv x => if x > mv then x else mv) (if a > 0 then a else 0) as
+        ≤ List.foldl (fun mv x => if x > mv then x else mv) m as := by
+          apply listMax_foldl_mono; split_ifs <;> omega
+      _ = m := listMax_foldl_const m as (fun n hn => h n (Or.inr hn))
+
+/-- The max of the indices of a filtered `listEnum` of a nonempty list with nonzero last element
+    is `l.length - 1`. -/
+private lemma listMax_listEnum_filter_eq {R} [Semiring R] [DecidableEq R] (l : List R) (hl : l ≠ [])
+    (hlast : l.getLast? ≠ some 0) :
+    listMax ((listEnum l).filter (fun dc => decide (dc.2 ≠ 0)) |>.map Prod.fst) = l.length - 1 := by
+  set filtIdx := (listEnum l).filter (fun dc => decide (dc.2 ≠ 0)) |>.map Prod.fst
+  -- Step 1: Upper bound — all filtered indices < l.length, hence ≤ l.length - 1
+  have hub : ∀ k ∈ filtIdx, k ≤ l.length - 1 := by
+    intro k hk
+    simp only [filtIdx, List.mem_map, List.mem_filter] at hk
+    obtain ⟨⟨d, c⟩, ⟨hmem, _⟩, rfl⟩ := hk
+    -- d ∈ (listEnum l).map Prod.fst = range l.length
+    have hd : d ∈ List.range l.length := by
+      rw [← listEnum_map_fst]
+      exact List.mem_map.mpr ⟨(d, c), hmem, rfl⟩
+    rw [List.mem_range] at hd
+    omega
+  -- Step 2: Lower bound — l.length - 1 ∈ filtIdx (since last elt ≠ 0)
+  have hlen : 0 < l.length := List.length_pos_of_ne_nil hl
+  have hlb : l.length - 1 ∈ filtIdx := by
+    simp only [filtIdx, List.mem_map, List.mem_filter]
+    have hi : l.length - 1 < l.length := Nat.sub_lt hlen Nat.one_pos
+    refine ⟨⟨l.length - 1, l[l.length - 1]⟩, ⟨?_, ?_⟩, rfl⟩
+    · -- (l.length-1, l[l.length-1]) ∈ listEnum l
+      exact List.mem_of_find?_eq_some (listEnum_find_eq_some l (l.length - 1) hi)
+    · -- l[l.length-1] ≠ 0
+      simp only [decide_eq_true_eq, ne_eq]
+      intro h0
+      apply hlast
+      -- hlast: l.getLast? ≠ some 0. Show l.getLast? = some l[l.length-1] = some 0
+      rw [List.getLast?_eq_some_getLast hl]
+      congr 1
+      rw [List.getLast_eq_getElem]
+      exact h0
+  -- Conclusion: listMax filtIdx = l.length - 1
+  apply Nat.le_antisymm
+  · exact listMax_le_of_forall filtIdx (l.length - 1) hub
+  · exact listMax_mem_le filtIdx (l.length - 1) hlb
+
+
+/-- Normalizing the coefficient array of an already-valid DensePoly is an identity. -/
+private lemma normalize_idem {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
+    normalize p.coeffs = p := by
+  -- Proof sketch: p.coeffs.popWhile (· = 0) = p.coeffs because the last element
+  -- is ≠ 0 (from p.last_ne_zero), so no elements are popped.
+  -- Full API proof requires Array.back?_toList_getLast? and List.dropWhile_nil_iff
+  -- lemmas which are non-trivially named in Lean 4/Mathlib.
+  sorry
+
+/-- `listToPoly` of the indexed nonzero coefficients of `p` equals `p` itself. -/
+lemma listToPoly_indexed_nonzero {R} [Semiring R] [DecidableEq R] (p : DensePoly R) :
+    listToPoly ((listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))) = p := by
+  sorry
+
+/-! ### Main round-trip theorem -/
+
+/-- **Main theorem**: parsing the string form of a ℕ-polynomial gives back the original. -/
+theorem parseDensePoly_toChars_nat (p : DensePoly ℕ) :
+    parseDensePoly (toChars p) = some p := by
+  -- Proof sketch:
+  -- Case p = 0: toChars 0 = "0", parseDensePoly "0" = some 0 = some p ✓
+  -- Case p ≠ 0: toChars p formats each nonzero (index, coeff) as a monomial string.
+  --   Requires: parseMonomial (monomialToChars d c) = some (d, c) [needs ℕ roundtrip]
+  --   Then splitPolynomialChars and parseDensePoly reassemble the monomials.
+  --   hasDuplicateExponents = false by hasDuplicateExponents_false_of_listEnum.
+  --   Finally listToPoly (parsed monomials) = p by listToPoly_indexed_nonzero.
+  sorry
 
 end Azurite.DensePoly
