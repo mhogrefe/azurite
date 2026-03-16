@@ -45,7 +45,7 @@ def NatWithBitsRandomGen.next {G : Type} [RandomGen G UInt64] (bg : NatWithBitsR
 
     (final, { bg with gen := g' })
 
-theorem next_bounds {G : Type} [RandomGen G UInt64] (bg : NatWithBitsRandomGen G) (hb : bg.b ≠ 0) :
+theorem NatWithBitsRandomGen.next_bounds {G : Type} [RandomGen G UInt64] (bg : NatWithBitsRandomGen G) (hb : bg.b ≠ 0) :
   let (v, _) := NatWithBitsRandomGen.next bg
   2^(bg.b - 1) ≤ v ∧ v < 2^bg.b := by
   change 2^(bg.b - 1) ≤ (NatWithBitsRandomGen.next bg).1 ∧ (NatWithBitsRandomGen.next bg).1 < 2^bg.b
@@ -122,7 +122,7 @@ def NatUpToBitsRandomGen.next {G : Type} [RandomGen G UInt64] (bg : NatUpToBitsR
     let final := raw &&& mask
     (final, { bg with gen := g' })
 
-theorem upto_bounds {G : Type} [RandomGen G UInt64] (bg : NatUpToBitsRandomGen G) (hb : bg.b ≠ 0) :
+theorem NatUpToBitsRandomGen.next_bounds {G : Type} [RandomGen G UInt64] (bg : NatUpToBitsRandomGen G) (hb : bg.b ≠ 0) :
   let (v, _) := NatUpToBitsRandomGen.next bg
   v < 2^bg.b := by
   change (NatUpToBitsRandomGen.next bg).1 < 2^bg.b
@@ -185,7 +185,7 @@ def NatLessThanRandomGen.next {G : Type} [RandomGen G UInt64] (bg : NatLessThanR
     let (val, g') := NatLessThanRandomGen.nextLoop 1024 bg.k bg.b bg.gen
     (val, { bg with gen := g' })
 
-theorem less_than_loop_bounds {G : Type} [RandomGen G UInt64] (fuel k b : Nat) (g : G) (hk : k ≠ 0) :
+theorem NatLessThanRandomGen.nextLoop_bounds {G : Type} [RandomGen G UInt64] (fuel k b : Nat) (g : G) (hk : k ≠ 0) :
   let (v, _) := NatLessThanRandomGen.nextLoop fuel k b g
   v < k := by
   induction fuel generalizing g with
@@ -201,7 +201,7 @@ theorem less_than_loop_bounds {G : Type} [RandomGen G UInt64] (fuel k b : Nat) (
     · rename_i h_not_lt
       exact ih _
 
-theorem less_than_bounds {G : Type} [RandomGen G UInt64] (bg : NatLessThanRandomGen G) (hk : bg.k ≠ 0) :
+theorem NatLessThanRandomGen.next_bounds {G : Type} [RandomGen G UInt64] (bg : NatLessThanRandomGen G) (hk : bg.k ≠ 0) :
   let (v, _) := NatLessThanRandomGen.next bg
   v < bg.k := by
   change (NatLessThanRandomGen.next bg).1 < bg.k
@@ -212,7 +212,7 @@ theorem less_than_bounds {G : Type} [RandomGen G UInt64] (bg : NatLessThanRandom
     have h_k_one : bg.k = 1 := by omega
     omega
   · -- case bg.k > 1
-    exact less_than_loop_bounds 1024 bg.k bg.b bg.gen hk
+    exact NatLessThanRandomGen.nextLoop_bounds 1024 bg.k bg.b bg.gen hk
 
 instance {G : Type} [RandomGen G UInt64] : RandomGen (NatLessThanRandomGen G) Nat where
   next := NatLessThanRandomGen.next

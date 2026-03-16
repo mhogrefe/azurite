@@ -1,8 +1,8 @@
 import Azurite.Random
 
-partial def printLoop {G : Type} [Azurite.Random.RandomGen G (Nat × Nat)] (prng : G) : IO Unit := do
-  let (val, nextPrng) : (Nat × Nat) × G := Azurite.Random.RandomGen.next prng
-  IO.println s!"({val.1}, {val.2})"
+partial def printLoop {G : Type} [Azurite.Random.RandomGen G Nat] (prng : G) : IO Unit := do
+  let (val, nextPrng) : Nat × G := Azurite.Random.RandomGen.next prng
+  IO.println val
   printLoop nextPrng
 
 def main (args : List String) : IO Unit := do
@@ -14,11 +14,6 @@ def main (args : List String) : IO Unit := do
     else
       1337
 
-  -- Generate pairs (Nat, Nat) where first ~ Geometric(mean=10), second ~ Geometric(mean=11).
-  -- Seeds are derived independently to avoid correlations between the two elements.
-  let pairGen := Azurite.Random.mkPairRandomGen (α := Nat) (β := Nat)
-    (Azurite.Random.mkNatGeometricRandomGen 10)
-    (Azurite.Random.mkNatGeometricRandomGen 11)
-    seed
+  let natGen := Azurite.Random.mkNatRandomGen 64 seed
 
-  printLoop pairGen
+  printLoop natGen
