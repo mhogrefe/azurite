@@ -4,3 +4,4 @@ import Azurite.Random.Bool
 import Azurite.Random.Geometric
 import Azurite.Random.Pair
 import Azurite.Random.NatGen
+import Azurite.Random.Int
