@@ -1,7 +1,7 @@
 import Azurite.Random
 
-partial def printLoop {G : Type} [Azurite.Random.RandomGen G Nat] (prng : G) : IO Unit := do
-  let (val, nextPrng) : Nat × G := Azurite.Random.RandomGen.next prng
+partial def printLoop {G : Type} [Azurite.Random.RandomGen G Rat] (prng : G) : IO Unit := do
+  let (val, nextPrng) : Rat × G := Azurite.Random.RandomGen.next prng
   IO.println val
   printLoop nextPrng
 
@@ -14,6 +14,6 @@ def main (args : List String) : IO Unit := do
     else
       1337
 
-  let natGen := Azurite.Random.mkNatRandomGen 64 seed
+  let RatGen := Azurite.Random.mkRatRandomGen 64 seed
 
-  printLoop natGen
+  printLoop RatGen
