@@ -3725,13 +3725,69 @@ lemma listToPoly_reverse_eq_nat (l : List (ℕ × ℕ))
 /-- **Main theorem**: parsing the string form of a ℕ-polynomial gives back the original. -/
 theorem parseDensePoly_toChars_nat (p : DensePoly ℕ) :
     parseDensePoly (toChars p) = some p := by
-  -- Proof sketch:
-  -- Case p = 0: toChars 0 = "0", parseDensePoly "0" = some 0 = some p ✓
-  -- Case p ≠ 0: toChars p formats each nonzero (index, coeff) as a monomial string.
-  --   Requires: parseMonomial (monomialToChars d c) = some (d, c) [needs ℕ roundtrip]
-  --   Then splitPolynomialChars and parseDensePoly reassemble the monomials.
-  --   hasDuplicateExponents = false by hasDuplicateExponents_false_of_listEnum.
-  --   Finally listToPoly (parsed monomials) = p by listToPoly_indexed_nonzero.
-  sorry
+  by_cases hp : p = 0
+  · -- Case p = 0: toChars 0 = "0", parseDensePoly "0" = some 0 ✓
+    subst hp
+    simp [parseDensePoly, toChars]
+  · -- Case p ≠ 0
+    -- Show toChars p ≠ "0" (the string "0" would require toList to start with '0', but it doesn't)
+    have hne : toChars p ≠ "0" := by
+      intro h
+      have hbad := toChars_nat_not_start_zero_of_ne_zero p hp []
+      simp only [h, String.toList] at hbad
+      exact hbad rfl
+    -- Unfold parseDensePoly step by step
+    simp only [parseDensePoly, if_neg hne]
+    -- parts = splitPolynomialChars (toChars p).toList = (monoStrings p).reverse
+    have hparts : splitPolynomialChars (toChars p).toList = (monoStrings p).reverse :=
+      splitPolynomialChars_toChars_nat p hp
+    rw [hparts]
+    -- parsedParts: each monomial string parses to some (d, c)
+    have hparsed_some : (monoStrings p).reverse.map (fun cs => parseMonomial (R := ℕ) cs) =
+        (nzPairs p).reverse.map (fun dc => some dc) := by
+      simp only [monoStrings, List.map_reverse]
+      apply congrArg List.reverse
+      rw [List.map_map]
+      apply List.map_congr_left
+      intro x hmem
+      obtain ⟨d, c⟩ := x
+      simp only [Function.comp]
+      have hc_nz : c ≠ 0 := of_decide_eq_true (List.mem_filter.mp hmem).2
+      exact parse_monomialToChars_ne_zero_nat d c hc_nz
+    rw [hparsed_some]
+    -- No None entries: all parsedParts are some, so any isNone = false
+    have hno_none : ((nzPairs p).reverse.map (fun dc => some dc)).any (fun x => x.isNone) = false := by
+      simp
+    rw [if_neg (by rw [hno_none]; decide)]
+    -- unwrapped = (nzPairs p).reverse
+    rw [filterMap_id_map_some]
+    -- hasDuplicateExponents (nzPairs p).reverse = false
+    have hnodup_fst : ((nzPairs p).map Prod.fst).Nodup := by
+      simp only [nzPairs]
+      apply List.Nodup.sublist (List.Sublist.map Prod.fst List.filter_sublist)
+      have key : ∀ (n : ℕ) (acc : List (ℕ × ℕ)) (l : List ℕ),
+          (listEnum.aux acc n l).map Prod.fst =
+          (acc.map Prod.fst).reverse ++ List.range' n l.length := by
+        intro n acc l
+        induction l generalizing n acc with
+        | nil => simp [listEnum.aux]
+        | cons a as ih =>
+          simp only [listEnum.aux, ih (n+1) ((n, a) :: acc)]
+          simp [List.range'_succ, List.append_assoc]
+      simp only [listEnum]
+      rw [key 0 []]
+      simp
+      exact List.nodup_range'
+    have hnodup_rev : ((nzPairs p).reverse.map Prod.fst).Nodup := by
+      rwa [List.map_reverse, List.nodup_reverse]
+    have hno_dup : hasDuplicateExponents (nzPairs p).reverse = false := by
+      simp only [hasDuplicateExponents, Bool.eq_false_iff, ne_eq, decide_eq_true_eq]
+      intro hlen
+      exact absurd (Nodup_eraseDups_eq hnodup_rev ▸ hlen) (fun h => h rfl)
+    simp only [hno_dup, Bool.false_eq_true, if_false]
+    -- listToPoly (nzPairs p).reverse = p
+    congr 1
+    rw [listToPoly_reverse_eq_nat (nzPairs p) hnodup_fst]
+    exact listToPoly_indexed_nonzero p
 
 end Azurite.DensePoly
