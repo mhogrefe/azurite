@@ -16,7 +16,7 @@ def main (args : List String) : IO Unit := do
 
   -- Generate weighted Bool stream where true appears 1/3 of the time
   let p : Rat := 1 / 3
-  let mut boolGen := Azurite.Random.mkWeightedBoolGen p seed
+  let mut boolGen := Azurite.Random.mkWeightedBoolRandomGen p seed
 
   -- Print an endless stream of random weighted Bools
   printLoop boolGen
