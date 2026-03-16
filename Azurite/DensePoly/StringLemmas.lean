@@ -3651,10 +3651,18 @@ lemma splitPolynomialChars_toChars_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
       (map_ne_nil_of_ne_nil _ _ hd_nz)
 
 /-- Parsing each monomial string succeeds: the `parsedParts` list has no `none` entries. -/
-lemma parsedParts_allSome_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
+lemma parsedParts_allSome_nat (p : DensePoly ℕ) (_ : p ≠ 0) :
     ((monoStrings p).reverse.map (fun cs => parseMonomial (R := ℕ) cs)).all
       (fun x => x.isSome) = true := by
-  sorry
+  simp only [List.all_eq_true, List.mem_map, List.mem_reverse]
+  intro x hx
+  obtain ⟨cs, hcs_mem, rfl⟩ := hx
+  simp only [nzPairs] at hcs_mem
+  obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hcs_mem
+  have hc_nz : c ≠ 0 := by
+    have := List.mem_filter.mp hmem
+    exact of_decide_eq_true this.2
+  simp [parse_monomialToChars_ne_zero_nat d c hc_nz]
 
 /-- `filterMap id` of a list of `some` values recovers those values. -/
 -- (Standard; may follow from List.filterMap_id_map_some or similar.)
@@ -3662,10 +3670,55 @@ lemma filterMap_id_map_some {α} (l : List α) :
     (l.map some).filterMap id = l := by
   simp [List.filterMap_map]
 
-/-- `listToPoly` is invariant under reversing its input (since it uses `find?`). -/
-lemma listToPoly_reverse_eq_nat (l : List (ℕ × ℕ)) :
+/-- `find?` by first component is invariant under reversal when first components are unique. -/
+private lemma find?_reverse_of_nodup_fst (l : List (ℕ × ℕ))
+    (hnd : (l.map Prod.fst).Nodup) (d : ℕ) :
+    l.reverse.find? (fun dc => decide (dc.1 = d)) =
+    l.find? (fun dc => decide (dc.1 = d)) := by
+  induction l with
+  | nil => simp
+  | cons hd tl ih =>
+    simp only [List.map_cons, List.nodup_cons] at hnd
+    obtain ⟨hk_not_mem, hnd_tl⟩ := hnd
+    simp only [List.reverse_cons, List.find?_append, List.find?_cons]
+    rw [ih hnd_tl]
+    by_cases hdk : hd.1 = d
+    · simp only [hdk, decide_true]
+      have hk_none : tl.find? (fun dc => decide (dc.1 = d)) = none := by
+        rw [List.find?_eq_none]
+        intro a hm
+        simp only [decide_eq_true_eq]
+        intro heq
+        apply hk_not_mem
+        exact List.mem_map.mpr ⟨a, hm, heq ▸ hdk ▸ rfl⟩
+      simp [hk_none]
+    · simp [hdk]
+
+/-- `listMax` (as foldl max 0) is invariant under reversal, using antisymmetry. -/
+private lemma listMax_nat_reverse (l : List ℕ) :
+    listMax l.reverse = listMax l := by
+  apply Nat.le_antisymm
+  · apply listMax_le_of_forall
+    intro n hn
+    rw [List.mem_reverse] at hn
+    exact listMax_mem_le l n hn
+  · apply listMax_le_of_forall
+    intro n hn
+    exact listMax_mem_le l.reverse n (List.mem_reverse.mpr hn)
+
+/-- `listToPoly` is invariant under reversing its input when first components are unique. -/
+lemma listToPoly_reverse_eq_nat (l : List (ℕ × ℕ))
+    (hnd : (l.map Prod.fst).Nodup) :
     listToPoly l.reverse = listToPoly l := by
-  sorry
+  simp only [listToPoly]
+  have hmap : l.reverse.map Prod.fst = (l.map Prod.fst).reverse := by simp
+  have hmax : listMax (l.reverse.map Prod.fst) = listMax (l.map Prod.fst) := by
+    rw [hmap, listMax_nat_reverse]
+  simp only [hmap, listMax_nat_reverse]
+  congr 1; congr 1
+  apply List.map_congr_left
+  intro k _
+  rw [find?_reverse_of_nodup_fst l hnd k]
 
 /-! ### Main round-trip theorem -/
 
