@@ -65,3 +65,8 @@ def eventually_constant (seed : Nat) :=
   ∃ c N, ∀ n ≥ N, valSeq seed n = c
 
 lemma mix_not_constant : mix_nat 0 ≠ mix_nat 1 := by decide
+
+/-- Derive a new `UInt64` seed from a base seed and a string tag, by XORing with the tag's hash.
+Useful for deterministically creating independent seeds from a single root seed. -/
+def deriveSeed (seed : UInt64) (tag : String) : UInt64 :=
+  seed ^^^ UInt64.ofNat (hash tag).toNat
