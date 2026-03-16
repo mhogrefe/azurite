@@ -1,1 +1,2 @@
-import Azurite.Benchmark.PrintRandom
+import Azurite.Benchmark.Timer
+import Azurite.Benchmark.Main
