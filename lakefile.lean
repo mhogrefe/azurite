@@ -20,6 +20,16 @@ lean_lib «Azurite» where
 lean_lib «Examples» where
   -- add any library configuration options here
 
+-- Build the nanosecond timer C shim as a static library.
+extern_lib timerLib pkg := do
+  let leanInclude := (← getLeanIncludeDir).toString
+  let cFile  := pkg.dir / "Azurite" / "Benchmark" / "timer.c"
+  let oFile  := pkg.buildDir / "timer.o"
+  let aFile  := pkg.buildDir / "lib" / "libtimer.a"
+  let srcJob ← inputBinFile cFile
+  let oJob   ← buildO oFile srcJob #[s!"-I{leanInclude}"] #["-O2"] "cc"
+  buildStaticLib aFile #[oJob]
+
 @[default_target]
 lean_exe «benchmark» where
-  root := `Azurite.Benchmark.PrintRandom
+  root := `Azurite.Benchmark.Main
