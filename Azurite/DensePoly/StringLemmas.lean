@@ -3932,4 +3932,142 @@ theorem parseDensePoly_toChars_zmod {n : ℕ} [NeZero n] (p : DensePoly (ZMod n)
     rw [listToPoly_reverse_eq (nzPairs_zmod p) hnodup_fst]
     exact listToPoly_indexed_nonzero p
 
+/-! ### Bridge lemmas for `parseDensePoly_toChars_int` -/
+
+-- Shorthand: the ordered nonzero (degree, coeff) pairs of an ℤ polynomial
+private abbrev nzPairs_int (p : DensePoly ℤ) :=
+  (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))
+
+-- Shorthand: their monomial string representations (low-to-high degree order)
+private abbrev monoStrings_int (p : DensePoly ℤ) :=
+  (nzPairs_int p).map (fun dc => monomialToChars dc.1 dc.2)
+
+/-- ℤ monomials contain no `+`. Follows from `mem_monomialToChars_int_only_valid`. -/
+lemma not_mem_plus_monomialToChars_int (d : ℕ) (c : ℤ) : '+' ∉ monomialToChars d c := by
+  sorry
+
+/-- The `-` sign in an ℤ monomial can only appear at position 0, never in the tail.
+    This ensures `splitPolynomialChars` won't accidentally split inside a monomial. -/
+lemma not_mem_tail_monomialToChars_int (d : ℕ) (c : ℤ) : '-' ∉ (monomialToChars d c).drop 1 := by
+  sorry
+
+/-- Core splitting lemma for `toChars` of ℤ-polynomials.
+    Unlike the ℕ/ZMod case, some elements of `L` may start with `-` (negative coefficients).
+    `withSigns` handles these by *not* prepending `+` (the leading `-` itself acts as separator).
+    `splitPolynomialChars` correctly recovers `L` when:
+    - No element contains `+` internally
+    - `-` only appears at position 0 of each element (never in the tail)
+    - All elements are non-empty -/
+private lemma splitPolynomialChars_withSigns (L : List (List Char))
+    (hne : L ≠ [])
+    (hno_plus : ∀ m ∈ L, '+' ∉ m)
+    (hno_tail_minus : ∀ m ∈ L, '-' ∉ m.drop 1)
+    (hne_elem : ∀ m ∈ L, m ≠ []) :
+    splitPolynomialChars
+      (((listEnum L).map (fun (i, m) =>
+          if i = 0 then m
+          else match m with | '-' :: _ => m | _ => '+' :: m)).flatten) = L := by
+  sorry
+
+/-- For a non-zero ℤ-polynomial, `(toChars p).toList` equals the `withSigns` flattening
+    of `(monoStrings_int p).reverse`. -/
+private lemma toChars_toList_int_ne_zero (p : DensePoly ℤ) (hp : p ≠ 0) :
+    (toChars p).toList = ((listEnum (monoStrings_int p).reverse).map (fun (i, m) =>
+        if i = 0 then m
+        else match m with | '-' :: _ => m | _ => '+' :: m)).flatten := by
+  simp only [toChars, monoStrings_int, nzPairs_int, if_neg hp, String.toList_ofList]
+  rfl
+
+/-- Splitting `(toChars p).toList` on `+`/`-` recovers the reversed ℤ monomial strings. -/
+lemma splitPolynomialChars_toChars_int (p : DensePoly ℤ) (hp : p ≠ 0) :
+    splitPolynomialChars (toChars p).toList = (monoStrings_int p).reverse := by
+  rw [toChars_toList_int_ne_zero p hp]
+  apply splitPolynomialChars_withSigns
+  -- (monoStrings_int p).reverse ≠ []
+  · sorry
+  -- No `+` in any ℤ monomial string
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact not_mem_plus_monomialToChars_int d c
+  -- `-` only at position 0 of each ℤ monomial string
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact not_mem_tail_monomialToChars_int d c
+  -- All ℤ monomial strings are nonempty
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact monomialToChars_int_ne_nil d c
+
+/-- Parsing each ℤ monomial string succeeds. -/
+lemma parsedParts_allSome_int (p : DensePoly ℤ) (_ : p ≠ 0) :
+    ((monoStrings_int p).reverse.map (fun cs => parseMonomial (R := ℤ) cs)).all
+      (fun x => x.isSome) = true := by
+  simp only [List.all_eq_true, List.mem_map, List.mem_reverse]
+  intro x hx
+  obtain ⟨cs, hcs_mem, rfl⟩ := hx
+  simp only [nzPairs_int] at hcs_mem
+  obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hcs_mem
+  have hc_nz : c ≠ 0 := of_decide_eq_true (List.mem_filter.mp hmem).2
+  simp [parse_monomialToChars_ne_zero_int d c hc_nz]
+
+/-- **Main theorem**: parsing the string form of an ℤ-polynomial gives back the original. -/
+theorem parseDensePoly_toChars_int (p : DensePoly ℤ) :
+    parseDensePoly (toChars p) = some p := by
+  by_cases hp : p = 0
+  · subst hp; simp [parseDensePoly, toChars]
+  · have hne : toChars p ≠ "0" := by
+      intro h
+      have hbad := toChars_int_not_start_zero_of_ne_zero p hp []
+      simp only [h, String.toList] at hbad
+      exact hbad rfl
+    simp only [parseDensePoly, if_neg hne]
+    have hparts : splitPolynomialChars (toChars p).toList = (monoStrings_int p).reverse :=
+      splitPolynomialChars_toChars_int p hp
+    rw [hparts]
+    have hparsed_some : (monoStrings_int p).reverse.map (fun cs => parseMonomial (R := ℤ) cs) =
+        (nzPairs_int p).reverse.map (fun dc => some dc) := by
+      simp only [monoStrings_int, List.map_reverse]
+      apply congrArg List.reverse
+      rw [List.map_map]
+      apply List.map_congr_left
+      intro x hmem
+      obtain ⟨d, c⟩ := x
+      simp only [Function.comp]
+      have hc_nz : c ≠ 0 := of_decide_eq_true (List.mem_filter.mp hmem).2
+      exact parse_monomialToChars_ne_zero_int d c hc_nz
+    rw [hparsed_some]
+    have hno_none : ((nzPairs_int p).reverse.map (fun dc => some dc)).any (fun x => x.isNone) = false := by
+      simp
+    rw [if_neg (by rw [hno_none]; decide)]
+    rw [filterMap_id_map_some]
+    have hnodup_fst : ((nzPairs_int p).map Prod.fst).Nodup := by
+      simp only [nzPairs_int]
+      apply List.Nodup.sublist (List.Sublist.map Prod.fst List.filter_sublist)
+      have key : ∀ (m : ℕ) (acc : List (ℕ × ℤ)) (l : List ℤ),
+          (listEnum.aux acc m l).map Prod.fst =
+          (acc.map Prod.fst).reverse ++ List.range' m l.length := by
+        intro m acc l
+        induction l generalizing m acc with
+        | nil => simp [listEnum.aux]
+        | cons a as ih =>
+          simp only [listEnum.aux, ih (m+1) ((m, a) :: acc)]
+          simp [List.range'_succ, List.append_assoc]
+      simp only [listEnum]
+      rw [key 0 []]
+      simp
+      exact List.nodup_range'
+    have hnodup_rev : ((nzPairs_int p).reverse.map Prod.fst).Nodup := by
+      rwa [List.map_reverse, List.nodup_reverse]
+    have hno_dup : hasDuplicateExponents (nzPairs_int p).reverse = false := by
+      simp only [hasDuplicateExponents, Bool.eq_false_iff, ne_eq, decide_eq_true_eq]
+      intro hlen
+      exact absurd (Nodup_eraseDups_eq hnodup_rev ▸ hlen) (fun h => h rfl)
+    rw [if_neg (by rw [hno_dup]; decide)]
+    congr 1
+    rw [listToPoly_reverse_eq (nzPairs_int p) hnodup_fst]
+    exact listToPoly_indexed_nonzero p
+
 end Azurite.DensePoly
