@@ -3632,7 +3632,23 @@ lemma splitPolynomialChars_toChars_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
     obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hx
     exact monomialToChars_nat_ne_nil d c
   -- The list of monomial strings is nonempty (p ≠ 0 means there is at least one nonzero coeff)
-  · sorry
+  · -- (monoStrings p).reverse ≠ [] because p ≠ 0 has at least one nonzero coefficient
+    have h_back : p.coeffs.back? ≠ none := by
+      intro h_none
+      have hp2 : p.coeffs = #[] := Array.back?_eq_none_iff.mp h_none
+      have hpe : p.coeffs = (0 : DensePoly ℕ).coeffs := by rw [coeffs_zero, hp2]
+      exact hp (DensePoly.ext hpe)
+    have h_back2 : ∃ c, p.coeffs.back? = some c := by
+      rcases Option.ne_none_iff_exists.mp h_back with ⟨c, hc_eq⟩
+      exact ⟨c, hc_eq.symm⟩
+    rcases h_back2 with ⟨c, hc_eq⟩
+    have hc_nz : c ≠ 0 := by
+      intro hz; rw [hz] at hc_eq; exact p.last_ne_zero hc_eq
+    have hc_in : c ∈ p.coeffs.toList := mem_toList_of_back?_eq_some _ _ hc_eq
+    have hd_nz : (listEnum p.coeffs.toList).filter (fun (_, c) => c ≠ 0) ≠ [] :=
+      filter_nonZero_ne_nil p.coeffs.toList ⟨c, hc_in, hc_nz⟩
+    exact reverse_ne_nil_of_ne_nil _
+      (map_ne_nil_of_ne_nil _ _ hd_nz)
 
 /-- Parsing each monomial string succeeds: the `parsedParts` list has no `none` entries. -/
 lemma parsedParts_allSome_nat (p : DensePoly ℕ) (hp : p ≠ 0) :
