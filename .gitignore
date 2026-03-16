@@ -12,3 +12,10 @@
 # Editor directories
 .vscode/
 .antigravity/
+
+# Rust build output
+benchmark-charts/target/
+
+# Benchmark results and generated charts
+benchmark-results*.txt
+chart*.svg

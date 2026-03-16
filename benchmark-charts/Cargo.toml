@@ -1,0 +1,13 @@
+[package]
+name = "benchmark-charts"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "benchmark-charts"
+path = "src/main.rs"
+
+[dependencies]
+malachite-q = "0.4"
+malachite-base = "0.4"
+plotters = { version = "0.3", default-features = false, features = ["svg_backend", "line_series", "full_palette"] }
