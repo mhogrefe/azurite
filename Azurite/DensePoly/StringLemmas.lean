@@ -4295,4 +4295,151 @@ theorem parseDensePoly_toChars_int (p : DensePoly ℤ) :
     rw [listToPoly_reverse_eq (nzPairs_int p) hnodup_fst]
     exact listToPoly_indexed_nonzero p
 
+/-! ### Bridge lemmas for `parseDensePoly_toChars_rat` -/
+
+/-- ℚ monomials contain no `+`. Follows from `mem_monomialToChars_rat_only_valid`. -/
+lemma not_mem_plus_monomialToChars_rat (d : ℕ) (c : ℚ) : '+' ∉ monomialToChars d c := by
+  intro h
+  have hv := mem_monomialToChars_rat_only_valid d c '+' h
+  rcases hv with h | h | h | h | h | hdig <;> simp_all [Char.toNat]
+
+/-- The `-` sign in a ℚ monomial can only appear at position 0, never in the tail. -/
+lemma not_mem_tail_monomialToChars_rat (d : ℕ) (c : ℚ) : '-' ∉ (monomialToChars d c).drop 1 :=
+  not_mem_tail_monomialToChars d c
+
+-- Shorthand: the ordered nonzero (degree, coeff) pairs of a ℚ polynomial
+private abbrev nzPairs_rat (p : DensePoly ℚ) :=
+  (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0))
+
+-- Shorthand: their monomial string representations (low-to-high degree order)
+private abbrev monoStrings_rat (p : DensePoly ℚ) :=
+  (nzPairs_rat p).map (fun dc => monomialToChars dc.1 dc.2)
+
+/-- For a non-zero ℚ-polynomial, `(toChars p).toList` equals the `withSigns` flattening
+    of `(monoStrings_rat p).reverse`. -/
+private lemma toChars_toList_rat_ne_zero (p : DensePoly ℚ) (hp : p ≠ 0) :
+    (toChars p).toList = ((listEnum (monoStrings_rat p).reverse).map (fun (i, m) =>
+        if i = 0 then m
+        else match m with | '-' :: _ => m | _ => '+' :: m)).flatten := by
+  simp only [toChars, monoStrings_rat, nzPairs_rat, if_neg hp, String.toList_ofList]
+  rfl
+
+/-- Splitting `(toChars p).toList` on `+`/`-` recovers the reversed ℚ monomial strings. -/
+lemma splitPolynomialChars_toChars_rat (p : DensePoly ℚ) (hp : p ≠ 0) :
+    splitPolynomialChars (toChars p).toList = (monoStrings_rat p).reverse := by
+  rw [toChars_toList_rat_ne_zero p hp]
+  apply splitPolynomialChars_withSigns
+  -- (monoStrings_rat p).reverse ≠ []
+  · intro h
+    apply hp; clear hp
+    have h1 : nzPairs_rat p = [] := by
+      have : monoStrings_rat p = [] := by simpa [List.reverse_eq_nil_iff] using h
+      simpa [monoStrings_rat, List.map_eq_nil_iff] using this
+    have hcoeffs : ∀ (i : ℕ) (hi : i < p.coeffs.size), (p.coeffs[i]'hi) = 0 := by
+      intro i hi
+      by_contra hc
+      have hmem : (p.coeffs[i]'hi) ∈ p.coeffs.toList := by apply List.getElem_mem
+      obtain ⟨j, hj⟩ := mem_listEnum p.coeffs.toList (p.coeffs[i]'hi) hmem
+      have hfilt : (j, (p.coeffs[i]'hi)) ∈
+          (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0)) :=
+        List.mem_filter.mpr ⟨hj, by simp [hc]⟩
+      simp only [nzPairs_rat] at h1
+      rw [h1] at hfilt
+      simp at hfilt
+    have hempty : p.coeffs = #[] := by
+      by_contra hne
+      have hsize : 0 < p.coeffs.size := by
+        by_contra hlt; push_neg at hlt
+        exact hne (Array.eq_empty_of_size_eq_zero (by omega))
+      have hlast := hcoeffs (p.coeffs.size - 1) (by omega)
+      have hback : p.coeffs.back? = some 0 := by
+        unfold Array.back?
+        simp [show p.coeffs.size - 1 < p.coeffs.size from by omega, hlast]
+      exact p.last_ne_zero hback
+    exact DensePoly.ext hempty
+  -- No `+` in any ℚ monomial string
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact not_mem_plus_monomialToChars_rat d c
+  -- `-` only at position 0 of each ℚ monomial string
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact not_mem_tail_monomialToChars_rat d c
+  -- All ℚ monomial strings are nonempty
+  · intro x hx
+    simp only [List.mem_reverse, List.mem_map] at hx
+    obtain ⟨⟨d, c⟩, _, rfl⟩ := hx
+    exact monomialToChars_rat_ne_nil d c
+
+/-- Parsing each ℚ monomial string succeeds. -/
+lemma parsedParts_allSome_rat (p : DensePoly ℚ) (_ : p ≠ 0) :
+    ((monoStrings_rat p).reverse.map (fun cs => parseMonomial (R := ℚ) cs)).all
+      (fun x => x.isSome) = true := by
+  simp only [List.all_eq_true, List.mem_map, List.mem_reverse]
+  intro x hx
+  obtain ⟨cs, hcs_mem, rfl⟩ := hx
+  simp only [nzPairs_rat] at hcs_mem
+  obtain ⟨⟨d, c⟩, hmem, rfl⟩ := hcs_mem
+  have hc_nz : c ≠ 0 := of_decide_eq_true (List.mem_filter.mp hmem).2
+  simp [parse_monomialToChars_ne_zero_rat d c hc_nz]
+
+/-- **Main theorem**: parsing the string form of a ℚ-polynomial gives back the original. -/
+theorem parseDensePoly_toChars_rat (p : DensePoly ℚ) :
+    parseDensePoly (toChars p) = some p := by
+  by_cases hp : p = 0
+  · subst hp; simp [parseDensePoly, toChars]
+  · have hne : toChars p ≠ "0" := by
+      intro h
+      have hbad := toChars_rat_not_start_zero_of_ne_zero p hp []
+      simp only [h, String.toList] at hbad
+      exact hbad rfl
+    simp only [parseDensePoly, if_neg hne]
+    have hparts : splitPolynomialChars (toChars p).toList = (monoStrings_rat p).reverse :=
+      splitPolynomialChars_toChars_rat p hp
+    rw [hparts]
+    have hparsed_some : (monoStrings_rat p).reverse.map (fun cs => parseMonomial (R := ℚ) cs) =
+        (nzPairs_rat p).reverse.map (fun dc => some dc) := by
+      simp only [monoStrings_rat, List.map_reverse]
+      apply congrArg List.reverse
+      rw [List.map_map]
+      apply List.map_congr_left
+      intro x hmem
+      obtain ⟨d, c⟩ := x
+      simp only [Function.comp]
+      have hc_nz : c ≠ 0 := of_decide_eq_true (List.mem_filter.mp hmem).2
+      exact parse_monomialToChars_ne_zero_rat d c hc_nz
+    rw [hparsed_some]
+    have hno_none : ((nzPairs_rat p).reverse.map (fun dc => some dc)).any (fun x => x.isNone) = false := by
+      simp
+    rw [if_neg (by rw [hno_none]; decide)]
+    rw [filterMap_id_map_some]
+    have hnodup_fst : ((nzPairs_rat p).map Prod.fst).Nodup := by
+      simp only [nzPairs_rat]
+      apply List.Nodup.sublist (List.Sublist.map Prod.fst List.filter_sublist)
+      have key : ∀ (m : ℕ) (acc : List (ℕ × ℚ)) (l : List ℚ),
+          (listEnum.aux acc m l).map Prod.fst =
+          (acc.map Prod.fst).reverse ++ List.range' m l.length := by
+        intro m acc l
+        induction l generalizing m acc with
+        | nil => simp [listEnum.aux]
+        | cons a as ih =>
+          simp only [listEnum.aux, ih (m+1) ((m, a) :: acc)]
+          simp [List.range'_succ, List.append_assoc]
+      simp only [listEnum]
+      rw [key 0 []]
+      simp
+      exact List.nodup_range'
+    have hnodup_rev : ((nzPairs_rat p).reverse.map Prod.fst).Nodup := by
+      rwa [List.map_reverse, List.nodup_reverse]
+    have hno_dup : hasDuplicateExponents (nzPairs_rat p).reverse = false := by
+      simp only [hasDuplicateExponents, Bool.eq_false_iff, ne_eq, decide_eq_true_eq]
+      intro hlen
+      exact absurd (Nodup_eraseDups_eq hnodup_rev ▸ hlen) (fun h => h rfl)
+    rw [if_neg (by rw [hno_dup]; decide)]
+    congr 1
+    rw [listToPoly_reverse_eq (nzPairs_rat p) hnodup_fst]
+    exact listToPoly_indexed_nonzero p
+
 end Azurite.DensePoly
