@@ -3981,7 +3981,7 @@ private lemma spca_npmtm
 -- Helper: cur non-empty + rest has no '+'/'-' means hitting '-' commits cur.reverse ++ rest
 private lemma spca_asep_minus_aux (cs2 : List Char)
     (rest : List Char) (hp' : '+' ∉ rest) (hm' : '-' ∉ rest) :
-    ∀ (acc : List (List Char)) (cur : List Char) (hcne : cur ≠ []),
+    ∀ (acc : List (List Char)) (cur : List Char) (_hcne : cur ≠ []),
     splitPolynomialCharsAux acc cur (rest ++ '-' :: cs2) =
     splitPolynomialCharsAux ((cur.reverse ++ rest) :: acc) [] ('-' :: cs2) := by
   induction rest with
@@ -4004,7 +4004,7 @@ private lemma spca_asep_minus_head (cs2 : List Char)
     splitPolynomialCharsAux (('-' :: rest) :: acc) [] ('-' :: cs2) :=
   spca_asep_minus_aux cs2 rest hp' hm' acc ['-'] (List.cons_ne_nil '-' [])
 
-private lemma spca_asep_minus_inner (c : Char) (cs2 : List Char) (hcm : c ≠ '-')
+private lemma spca_asep_minus_inner (c : Char) (cs2 : List Char) (_hcm : c ≠ '-')
     (rest : List Char) (hp' : '+' ∉ rest) (hm' : '-' ∉ rest) (acc : List (List Char)) :
     splitPolynomialCharsAux acc [c] (rest ++ '-' :: cs2) =
     splitPolynomialCharsAux ((c :: rest) :: acc) [] ('-' :: cs2) :=
@@ -4063,71 +4063,59 @@ private lemma withSigns_flat_cons_i (x : List Char) (xs : List (List Char)) :
   exact congrArg List.flatten (key xs 0)
 
 -- Helper: process all elements (each gets a separator prepended)
-private lemma spca_wsb
-    (L : List (List Char))
-    (hp : ∀ m ∈ L, '+' ∉ m) (hm : ∀ m ∈ L, '-' ∉ m.drop 1)
-    (hne : ∀ m ∈ L, m ≠ []) (hL : L ≠ []) (acc : List (List Char)) :
+/-- After `spca_asep` strips the separator, the remaining input is
+    `y ++ (ys.map withSigns).flatten` where `y` is raw (no prefix). -/
+private lemma spca_wsb_head
+    (y : List Char) (ys : List (List Char))
+    (hp : ∀ m ∈ y :: ys, '+' ∉ m) (hm : ∀ m ∈ y :: ys, '-' ∉ m.drop 1)
+    (hne : ∀ m ∈ y :: ys, m ≠ [])
+    (acc : List (List Char)) :
     splitPolynomialCharsAux acc []
-      (L.map (fun m => match m with | '-' :: _ => m | _ => '+' :: m)).flatten =
-    L.reverse ++ acc := by
-  induction L generalizing acc with
-  | nil => contradiction
-  | cons y ys ih =>
-    simp only [List.map_cons, List.flatten_cons]
+      (y ++ (ys.map (fun m => match m with | '-' :: _ => m | _ => '+' :: m)).flatten) =
+    (y :: ys).reverse ++ acc := by
+  induction ys generalizing y acc with
+  | nil =>
+    simp only [List.map_nil, List.flatten_nil, List.append_nil]
     have hyp : '+' ∉ y := hp y List.mem_cons_self
     have hym : '-' ∉ y.drop 1 := hm y List.mem_cons_self
-    have hysp : ∀ m ∈ ys, '+' ∉ m := fun m h => hp m (List.mem_cons_of_mem _ h)
-    have hysm : ∀ m ∈ ys, '-' ∉ m.drop 1 := fun m h => hm m (List.mem_cons_of_mem _ h)
-    have hysne : ∀ m ∈ ys, m ≠ [] := fun m h => hne m (List.mem_cons_of_mem _ h)
-    rcases hy : y with _ | ⟨yc, ycs⟩
-    · exact absurd (hne y List.mem_cons_self) (hy ▸ by simp)
-    · by_cases hyc : yc = '-'
-      · subst hyc
-        simp only [reduceCtorEq, ↓reduceIte]
-        cases hys : ys with
-        | nil =>
-          simp only [List.map_nil, List.flatten_nil, List.append_nil]
-          rw [show ('-' : Char) :: ycs = y from hy.symm]
-          rw [spca_npmtm y hyp hym acc]; simp
-        | cons z zs =>
-          rcases hz : z with _ | ⟨zc, zcs⟩
-          · exact absurd (hysne z (hys ▸ List.mem_cons_self)) (hz ▸ by simp)
-          · by_cases hzc : zc = '-'
-            · subst hzc
-              simp only [hys, List.map_cons, hz, reduceCtorEq, ↓reduceIte, List.flatten_cons]
-              rw [show ('-' : Char) :: ycs = y from hy.symm]
-              rw [List.cons_append]
-              rw [spca_asep y _ hyp (by simpa [hy, List.drop] using hym) (hy ▸ List.cons_ne_nil _ _) acc '-' (Or.inr rfl)]
-              simp only [ite_true, List.reverse_nil, List.nil_append]
-              have h_flat : (ys.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten =
-                  '-' :: (zcs ++ (zs.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten) := by
-                simp only [hys, hz, List.map_cons, List.flatten_cons, List.cons_append]
-              rw [← h_flat, ih hysp hysm hysne (hys ▸ List.cons_ne_nil _ _) (y :: acc)]
-              simp [hy, hys, hz]
-            · simp only [hys, List.map_cons, hz,
-                show (match (zc :: zcs : List Char) with | '-' :: _ => zc :: zcs | _ => '+' :: zc :: zcs) = '+' :: zc :: zcs from by simp [hzc],
-                List.flatten_cons]
-              rw [show ('-' : Char) :: ycs = y from hy.symm]
-              have h_flat2 : (ys.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten =
-                  zc :: zcs ++ (zs.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten := by
-                simp only [hys, hz,
-                  show (match (zc :: zcs : List Char) with | '-' :: _ => zc :: zcs | _ => '+' :: zc :: zcs) = '+' :: zc :: zcs from by simp [hzc],
-                  List.map_cons, List.flatten_cons]
-              rw [List.cons_append, ← h_flat2]
-              rw [spca_asep y _ hyp (by simpa [hy, List.drop] using hym) (hy ▸ List.cons_ne_nil _ _) acc '+' (Or.inl rfl)]
-              simp only [show ('+' : Char) ≠ '-' from by decide, if_false, List.reverse_nil, List.nil_append]
-              rw [ih hysp hysm hysne (hys ▸ List.cons_ne_nil _ _) (y :: acc)]
-              simp [hy, hys]
-      · simp only [show (match (yc :: ycs : List Char) with | '-' :: _ => yc :: ycs | _ => '+' :: yc :: ycs) = '+' :: y from by simp [show ¬(yc = '-') from hyc, hy.symm]]
-        cases hys : ys with
-        | nil =>
-          simp only [List.map_nil, List.flatten_nil, List.append_nil]
-          rw [spca_npmtm y hyp hym acc]; simp [hy]
-        | cons z zs =>
-          rw [show (yc :: ycs : List Char) = y from hy.symm, ← List.append_assoc]
-          rw [spca_asep y _ hyp hym (hy ▸ List.cons_ne_nil yc ycs) acc '+' (Or.inl rfl)]
-          simp only [show ('+' : Char) ≠ '-' from by decide, if_false, List.reverse_nil, List.nil_append]
-          rw [ih hysp hysm hysne (hys ▸ List.cons_ne_nil _ _) (y :: acc)]; simp
+    rw [spca_npmtm y hyp hym acc]; simp
+  | cons z zs ih =>
+    have hyp : '+' ∉ y := hp y List.mem_cons_self
+    have hym : '-' ∉ y.drop 1 := hm y List.mem_cons_self
+    have hyne : y ≠ [] := hne y List.mem_cons_self
+    have hzp : ∀ m ∈ z :: zs, '+' ∉ m := fun m h => hp m (List.mem_cons_of_mem _ h)
+    have hzm : ∀ m ∈ z :: zs, '-' ∉ m.drop 1 := fun m h => hm m (List.mem_cons_of_mem _ h)
+    have hzne : ∀ m ∈ z :: zs, m ≠ [] := fun m h => hne m (List.mem_cons_of_mem _ h)
+    rcases hz : z with _ | ⟨zc, zcs⟩
+    · exact absurd (hzne z List.mem_cons_self) (hz ▸ by simp)
+    · by_cases hzc : zc = '-'
+      · -- z starts with '-', match preserves it, separator is '-'
+        subst hzc
+        simp only [List.map_cons, List.flatten_cons,
+                   List.cons_append]
+        rw [spca_asep y _ hyp hym hyne acc '-' (Or.inr rfl)]
+        simp only [ite_true]
+        -- After spca_asep with '-': remaining = '-' :: zcs ++ REST = z ++ REST
+        -- ih z expects: splitPolynomialCharsAux (y :: acc) [] (z ++ (zs.map ...).flatten)
+        -- but goal has '-' :: (zcs ++ ...). Substitute z = '-' :: zcs back.
+        rw [← List.cons_append, show ('-' :: zcs : List Char) = z from hz.symm]
+        rw [ih z hzp hzm hzne (y :: acc)]
+        simp [hz]
+      · -- z doesn't start with '-', match prepends '+', separator is '+'
+        have hmatch_z : (match (zc :: zcs : List Char) with | '-' :: _ => zc :: zcs | _ => '+' :: zc :: zcs) = '+' :: zc :: zcs := by
+          split <;> simp_all
+        simp only [List.map_cons, hmatch_z, List.flatten_cons]
+        -- Reassociate: y ++ ('+' :: zc :: zcs) ++ REST = y ++ '+' :: (zc :: zcs ++ REST)
+        rw [show y ++ ('+' :: zc :: zcs ++ (zs.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten) =
+            y ++ ('+' :: ((zc :: zcs) ++ (zs.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten)) from by
+          simp [List.cons_append]]
+        rw [spca_asep y _ hyp hym hyne acc '+' (Or.inl rfl)]
+        simp only [show ('+' : Char) ≠ '-' from by decide, if_false]
+        -- After spca_asep with '+': remaining = zc :: zcs ++ REST = z ++ REST (no '+')
+        rw [show (zc :: zcs : List Char) = z from hz.symm]
+        rw [ih z hzp hzm hzne (y :: acc)]
+        simp [hz]
+
 
 private lemma splitPolynomialChars_withSigns (L : List (List Char))
     (hne : L ≠ [])
@@ -4162,17 +4150,21 @@ private lemma splitPolynomialChars_withSigns (L : List (List Char))
       · exact absurd (hxsne y (hxs ▸ List.mem_cons_self)) (hy ▸ by simp)
       · by_cases hyc : yc = '-'
         · subst hyc
-          simp only [hxs, List.map_cons, hy, reduceCtorEq, ↓reduceIte, List.flatten_cons,
-                     List.cons_append, ← List.append_assoc]
+          simp only [List.map_cons, List.flatten_cons,
+                     List.cons_append]
           rw [spca_asep x _ hxp hxm hxne [] '-' (Or.inr rfl)]
-          simp only [ite_true, List.reverse_nil, List.nil_append]
-          rw [spca_wsb xs hxsp hxsm hxsne hxs_ne [x]]; simp
-        · simp only [hxs, List.map_cons, hy,
+          simp only [ite_true]
+          rw [← List.cons_append, show ('-' :: ycs : List Char) = y from hy.symm]
+          rw [spca_wsb_head y ys (hxs ▸ hxsp) (hxs ▸ hxsm) (hxs ▸ hxsne) [x]]; simp
+        · simp only [List.map_cons,
                      show (match (yc :: ycs : List Char) with | '-' :: _ => yc :: ycs | _ => '+' :: yc :: ycs) = '+' :: yc :: ycs from by simp [show ¬(yc = '-') from hyc],
-                     List.flatten_cons, ← List.append_assoc]
+                     List.flatten_cons]
+          rw [show x ++ ('+' :: yc :: ycs ++ (ys.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten) =
+              x ++ ('+' :: ((yc :: ycs) ++ (ys.map fun m => match m with | '-' :: _ => m | _ => '+' :: m).flatten)) from by simp [List.cons_append]]
           rw [spca_asep x _ hxp hxm hxne [] '+' (Or.inl rfl)]
-          simp only [show ('+' : Char) ≠ '-' from by decide, if_false, List.reverse_nil, List.nil_append]
-          rw [spca_wsb xs hxsp hxsm hxsne hxs_ne [x]]; simp
+          simp only [show ('+' : Char) ≠ '-' from by decide, if_false]
+          rw [show (yc :: ycs : List Char) = y from hy.symm]
+          rw [spca_wsb_head y ys (hxs ▸ hxsp) (hxs ▸ hxsm) (hxs ▸ hxsne) [x]]; simp
 
 
 /-- For a non-zero ℤ-polynomial, `(toChars p).toList` equals the `withSigns` flattening
@@ -4190,7 +4182,34 @@ lemma splitPolynomialChars_toChars_int (p : DensePoly ℤ) (hp : p ≠ 0) :
   rw [toChars_toList_int_ne_zero p hp]
   apply splitPolynomialChars_withSigns
   -- (monoStrings_int p).reverse ≠ []
-  · sorry
+  · intro h
+    apply hp; clear hp
+    have h1 : nzPairs_int p = [] := by
+      have : monoStrings_int p = [] := by simpa [List.reverse_eq_nil_iff] using h
+      simpa [monoStrings_int, List.map_eq_nil_iff] using this
+    have hcoeffs : ∀ (i : ℕ) (hi : i < p.coeffs.size), (p.coeffs[i]'hi) = 0 := by
+      intro i hi
+      by_contra hc
+      have hmem : (p.coeffs[i]'hi) ∈ p.coeffs.toList := by
+        apply List.getElem_mem
+      obtain ⟨j, hj⟩ := mem_listEnum p.coeffs.toList (p.coeffs[i]'hi) hmem
+      have hfilt : (j, (p.coeffs[i]'hi)) ∈
+          (listEnum p.coeffs.toList).filter (fun dc => decide (dc.2 ≠ 0)) :=
+        List.mem_filter.mpr ⟨hj, by simp [hc]⟩
+      simp only [nzPairs_int] at h1
+      rw [h1] at hfilt
+      simp at hfilt
+    have hempty : p.coeffs = #[] := by
+      by_contra hne
+      have hsize : 0 < p.coeffs.size := by
+        by_contra hlt; push_neg at hlt
+        exact hne (Array.eq_empty_of_size_eq_zero (by omega))
+      have hlast := hcoeffs (p.coeffs.size - 1) (by omega)
+      have hback : p.coeffs.back? = some 0 := by
+        unfold Array.back?
+        simp [show p.coeffs.size - 1 < p.coeffs.size from by omega, hlast]
+      exact p.last_ne_zero hback
+    exact DensePoly.ext hempty
   -- No `+` in any ℤ monomial string
   · intro x hx
     simp only [List.mem_reverse, List.mem_map] at hx
