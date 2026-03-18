@@ -54,6 +54,17 @@ def timeNsIterOrdering (iters : Nat) (f : Unit → Ordering) : IO (Ordering × U
   let t1 ← monoNanos
   return (v, chk, (t1 - t0) / iters.toUInt64)
 
+/-- Return the median of three values. -/
+def median3 (a b c : UInt64) : UInt64 :=
+  if a ≤ b then
+    if b ≤ c then b        -- a ≤ b ≤ c
+    else if a ≤ c then c   -- a ≤ c < b
+    else a                 -- c < a ≤ b
+  else -- b < a
+    if a ≤ c then a        -- b < a ≤ c
+    else if b ≤ c then c   -- b ≤ c < a
+    else b                 -- c < b < a
+
 -- ── Benchmarks ──────────────────────────────────────────────────────────────
 
 def validBenchmarks : List String := ["rat_cmp"]
@@ -70,13 +81,19 @@ where `<chk>` is an XOR checksum of all Ordering results (prevents DCE).
 -/
 def runRatCmp (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
   let meanBitLength := configGetRat cfg "meanBitLength" 64
-  let iters := configGetNat cfg "iters" 100
+  let iters := configGetNat cfg "iters" 1000
   let gen := mkPairRandomGenFromSingle (α := Rat) (mkRatRandomGen meanBitLength seed)
   let mut g := gen
   for _ in List.range limit do
     let ((a, b), g') := PairRandomGenFromSingle.next g
-    let (r1, chk1, ns1) ← timeNsIterOrdering iters (fun _ => compare a b)
-    let (r2, chk2, ns2) ← timeNsIterOrdering iters (fun _ => Azurite.Rat.cmp a b)
+    let (r1, chk1, ns1a) ← timeNsIterOrdering iters (fun _ => compare a b)
+    let (_, _, ns1b) ← timeNsIterOrdering iters (fun _ => compare a b)
+    let (_, _, ns1c) ← timeNsIterOrdering iters (fun _ => compare a b)
+    let ns1 := median3 ns1a ns1b ns1c
+    let (r2, chk2, ns2a) ← timeNsIterOrdering iters (fun _ => Azurite.Rat.cmp a b)
+    let (_, _, ns2b) ← timeNsIterOrdering iters (fun _ => Azurite.Rat.cmp a b)
+    let (_, _, ns2c) ← timeNsIterOrdering iters (fun _ => Azurite.Rat.cmp a b)
+    let ns2 := median3 ns2a ns2b ns2c
     if r1 ≠ r2 then
       let fmt : Ordering → String | .lt => "lt" | .eq => "eq" | .gt => "gt"
       IO.eprintln s!"BUG: compare={fmt r1} cmp={fmt r2} for {formatRat a},{formatRat b}"

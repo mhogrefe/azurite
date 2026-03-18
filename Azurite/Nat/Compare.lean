@@ -31,9 +31,17 @@ def normalizedCompare (x y : ℕ) : Ordering :=
     let lx := Nat.log2 x
     let ly := Nat.log2 y
     if lx ≤ ly then
-      compare (x <<< (ly - lx)) y
+      let shift := ly - lx
+      match compare x (y >>> shift) with
+      | .lt => .lt
+      | .gt => .gt
+      | .eq => if y &&& ((1 <<< shift) - 1) = 0 then .eq else .lt
     else
-      compare x (y <<< (lx - ly))
+      let shift := lx - ly
+      match compare (x >>> shift) y with
+      | .lt => .lt
+      | .gt => .gt
+      | .eq => if x &&& ((1 <<< shift) - 1) = 0 then .eq else .gt
 
 #guard normalizedCompare 0 0 == Ordering.eq
 #guard normalizedCompare 0 1 == Ordering.lt
@@ -45,6 +53,60 @@ def normalizedCompare (x y : ℕ) : Ordering :=
 #guard normalizedCompare 5 10 == Ordering.eq
 #guard normalizedCompare 5 11 == Ordering.lt
 #guard normalizedCompare 5 9 == Ordering.gt
+
+/-- Bridge lemma: comparing x with y>>>shift is equivalent to comparing x<<<shift with y. -/
+private lemma compare_shiftr_eq_compare_shiftl (x y shift : Nat) :
+    (match compare x (y >>> shift) with
+     | .lt => Ordering.lt
+     | .gt => Ordering.gt
+     | .eq => if y &&& ((1 <<< shift) - 1) = 0 then Ordering.eq else Ordering.lt) =
+    compare (x <<< shift) y := by
+  simp only [Nat.shiftLeft_eq, Nat.one_mul, Nat.shiftRight_eq_div_pow,
+             Nat.and_two_pow_sub_one_eq_mod]
+  have h_pos : (0 : Nat) < 2 ^ shift := Nat.pow_pos (by omega)
+  have h_dam := Nat.div_add_mod y (2 ^ shift)
+  have h_comm : 2 ^ shift * (y / 2 ^ shift) = y / 2 ^ shift * 2 ^ shift := Nat.mul_comm _ _
+  rcases lt_trichotomy x (y / 2 ^ shift) with h_lt | h_eq | h_gt
+  · have : x * 2 ^ shift < y :=
+      lt_of_lt_of_le ((Nat.mul_lt_mul_right h_pos).mpr h_lt) (Nat.div_mul_le_self y _)
+    simp [compare_lt_iff_lt.mpr h_lt, compare_lt_iff_lt.mpr this]
+  · simp only [h_eq, compare_eq_iff_eq.mpr rfl]
+    split
+    · rename_i h
+      exact (compare_eq_iff_eq.mpr (Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero h))).symm
+    · rename_i h
+      have : y / 2 ^ shift * 2 ^ shift < y := by omega
+      exact (compare_lt_iff_lt.mpr this).symm
+  · have : y < x * 2 ^ shift := Nat.lt_mul_of_div_lt h_gt h_pos
+    simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
+
+/-- Symmetric bridge lemma: comparing x>>>shift with y is equivalent to comparing x with y<<<shift. -/
+private lemma compare_shiftr_eq_compare_shiftl' (x y shift : Nat) :
+    (match compare (x >>> shift) y with
+     | .lt => Ordering.lt
+     | .gt => Ordering.gt
+     | .eq => if x &&& ((1 <<< shift) - 1) = 0 then Ordering.eq else Ordering.gt) =
+    compare x (y <<< shift) := by
+  simp only [Nat.shiftLeft_eq, Nat.one_mul, Nat.shiftRight_eq_div_pow,
+             Nat.and_two_pow_sub_one_eq_mod]
+  have h_pos : (0 : Nat) < 2 ^ shift := Nat.pow_pos (by omega)
+  have h_dam := Nat.div_add_mod x (2 ^ shift)
+  have h_comm : 2 ^ shift * (x / 2 ^ shift) = x / 2 ^ shift * 2 ^ shift := Nat.mul_comm _ _
+  rcases lt_trichotomy (x / 2 ^ shift) y with h_lt | h_eq | h_gt
+  · have : x < y * 2 ^ shift := Nat.lt_mul_of_div_lt h_lt h_pos
+    simp [compare_lt_iff_lt.mpr h_lt, compare_lt_iff_lt.mpr this]
+  · simp only [h_eq, compare_eq_iff_eq.mpr rfl]
+    split
+    · rename_i h
+      have : x = x / 2 ^ shift * 2 ^ shift := by omega
+      exact (compare_eq_iff_eq.mpr (by rw [this, h_eq])).symm
+    · rename_i h
+      have : x / 2 ^ shift * 2 ^ shift < x := by omega
+      rw [h_eq] at this
+      exact (compare_gt_iff_gt.mpr this).symm
+  · have : y * 2 ^ shift < x :=
+      lt_of_lt_of_le ((Nat.mul_lt_mul_right h_pos).mpr h_gt) (Nat.div_mul_le_self x _)
+    simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
 
 lemma compare_div_eq_compare_mul {a b c d : ℚ} (hb : b > 0) (hd : d > 0) :
     compare (a / b) (c / d) = compare (a * d) (c * b) := by
@@ -145,20 +207,18 @@ lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
   have hx_ne : x ≠ 0 := Nat.pos_iff_ne_zero.mp hx
   have hy_ne : y ≠ 0 := Nat.pos_iff_ne_zero.mp hy
   
-  -- Relate shiftLeft directly to multiplied powers
+  -- Unfold and use bridge lemmas to convert shift-right back to shift-left form
   unfold normalizedCompare
-  rw [if_neg hx_ne, if_neg hy_ne]
+  simp only [hx_ne, hy_ne, ↓reduceIte]
   
-  -- The function now uses log2; convert shift amounts to size via h_sx, h_sy
-  -- Key: log2 x ≤ log2 y ↔ size x ≤ size y, and log2 y - log2 x = size y - size x
   have h_le_iff : Nat.log2 x ≤ Nat.log2 y ↔ Nat.size x ≤ Nat.size y := by omega
   have h_diff_eq : Nat.log2 y - Nat.log2 x = Nat.size y - Nat.size x := by omega
   have h_diff_eq' : Nat.log2 x - Nat.log2 y = Nat.size x - Nat.size y := by omega
   
-  dsimp only
-  split_ifs with h_le
-  · -- log2 x ≤ log2 y, equivalently x.size ≤ y.size
-    rw [h_diff_eq, Nat.shiftLeft_eq]
+  split
+  · -- log2 x ≤ log2 y: use bridge lemma to convert shift-right to shift-left
+    rename_i h_le
+    rw [compare_shiftr_eq_compare_shiftl, h_diff_eq, Nat.shiftLeft_eq]
     have h_le' : Nat.size x ≤ Nat.size y := h_le_iff.mp h_le
     have hm1 : compare (x * 2 ^ (y.size - x.size)) y = compare (x * 2 ^ (y.size - x.size) * 2 ^ x.size) (y * 2 ^ x.size) :=
       compare_mul_pos_right (x * 2 ^ (y.size - x.size)) y (2 ^ x.size) sx_pos
@@ -167,8 +227,9 @@ lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
     have h_mul : x * 2 ^ (y.size - x.size) * 2 ^ x.size = x * 2 ^ y.size := by
       rw [Nat.mul_assoc, ← Nat.pow_add, h_add]
     rw [h_mul]
-  · -- log2 x > log2 y, equivalently y.size < x.size
-    rw [h_diff_eq']
+  · -- log2 x > log2 y: use symmetric bridge lemma
+    rename_i h_not_le
+    rw [compare_shiftr_eq_compare_shiftl', h_diff_eq']
     have h_lt : y.size < x.size := by omega
     have h_le_rev : y.size ≤ x.size := Nat.le_of_lt h_lt
     rw [Nat.shiftLeft_eq]
