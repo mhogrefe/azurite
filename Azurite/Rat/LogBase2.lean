@@ -10,7 +10,7 @@ namespace Azurite.Rat
 /-- Returns the floor of the base-2 logarithm of the absolute value of a rational number.
  -/
 def floorLogBase2Abs (q : ℚ) : ℤ :=
-  let exponent : ℤ := (Nat.size q.num.natAbs : ℤ) - (Nat.size q.den : ℤ)
+  let exponent : ℤ := (Nat.log2 q.num.natAbs : ℤ) - (Nat.log2 q.den : ℤ)
   if Azurite.Nat.normalizedCompare q.num.natAbs q.den == Ordering.lt then
     exponent - 1
   else
@@ -50,7 +50,7 @@ def floorLogBase2Abs (q : ℚ) : ℤ :=
 /-- Returns the ceiling of the base-2 logarithm of the absolute value of a rational number.
  -/
 def ceilingLogBase2Abs (q : ℚ) : ℤ :=
-  let exponent : ℤ := (Nat.size q.num.natAbs : ℤ) - (Nat.size q.den : ℤ)
+  let exponent : ℤ := (Nat.log2 q.num.natAbs : ℤ) - (Nat.log2 q.den : ℤ)
   if Azurite.Nat.normalizedCompare q.num.natAbs q.den == Ordering.gt then
     exponent + 1
   else
@@ -215,10 +215,12 @@ lemma floorLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) - 1
     else
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) := by
+    have hsr_num : (Nat.size q.num.natAbs : ℝ) = (Nat.log2 q.num.natAbs : ℝ) + 1 := by
+      exact_mod_cast Azurite.Nat.size_eq_log2_succ q.num.natAbs hN
+    have hsr_den : (Nat.size q.den : ℝ) = (Nat.log2 q.den : ℝ) + 1 := by
+      exact_mod_cast Azurite.Nat.size_eq_log2_succ q.den hD
     unfold floorLogBase2Abs
-    split_ifs
-    · push_cast; rfl
-    · push_cast; rfl
+    split_ifs <;> push_cast <;> linarith
   
   have h_floor_iff : ⌊logb 2 |(q : ℝ)|⌋ = floorLogBase2Abs q ↔
     (floorLogBase2Abs q : ℝ) ≤ logb 2 |(q : ℝ)| ∧ logb 2 |(q : ℝ)| < (floorLogBase2Abs q : ℝ) + 1 := by
@@ -314,10 +316,12 @@ lemma ceilingLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) + 1
     else
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) := by
+    have hsr_num : (Nat.size q.num.natAbs : ℝ) = (Nat.log2 q.num.natAbs : ℝ) + 1 := by
+      exact_mod_cast Azurite.Nat.size_eq_log2_succ q.num.natAbs hN
+    have hsr_den : (Nat.size q.den : ℝ) = (Nat.log2 q.den : ℝ) + 1 := by
+      exact_mod_cast Azurite.Nat.size_eq_log2_succ q.den hD
     unfold ceilingLogBase2Abs
-    split_ifs
-    · push_cast; rfl
-    · push_cast; rfl
+    split_ifs <;> push_cast <;> linarith
   
   have h_ceil_iff : ⌈logb 2 |(q : ℝ)|⌉ = ceilingLogBase2Abs q ↔
     (ceilingLogBase2Abs q : ℝ) - 1 < logb 2 |(q : ℝ)| ∧ logb 2 |(q : ℝ)| ≤ (ceilingLogBase2Abs q : ℝ) := by
