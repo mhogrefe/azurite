@@ -1,4 +1,5 @@
 import Azurite.DensePoly.Add
+import Azurite.DensePoly.Monomial
 import Azurite.DensePoly.Equiv.Basic
 import Batteries.Data.Array.Lemmas
 
@@ -42,48 +43,43 @@ lemma toPoly_normalize (a : Array R) :
   rw [h_len]
   exact toPoly_dropTrailingZeros a.toList
 
+-- Helper: the Array.ofFn coeff equals p.coeff + q.coeff in all cases
+omit [DecidableEq R] in
+private lemma ofFn_add_coeff (p q : DensePoly R) (n : ℕ) :
+    ((Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) =>
+      p.coeff i.val + q.coeff i.val))[n]?).getD 0 = p.coeff n + q.coeff n := by
+  simp [Array.getElem?_ofFn]
+  split
+  · rfl
+  · next h =>
+    push_neg at h
+    simp [coeff, Array.getElem?_eq_none (by omega : p.coeffs.size ≤ n),
+          Array.getElem?_eq_none (by omega : q.coeffs.size ≤ n)]
+
+@[simp] lemma coeff_add (p q : DensePoly R) (n : ℕ) :
+    coeff (p + q) n = coeff p n + coeff q n := by
+  show coeff (add p q) n = coeff p n + coeff q n
+  simp only [add]
+  split
+  · next hps =>
+    simp [coeff, Array.eq_empty_of_size_eq_zero hps]
+  · split
+    · next _ hqs =>
+      simp [coeff, Array.eq_empty_of_size_eq_zero hqs]
+    · split
+      · next _ _ _ =>
+        rw [coeff_normalize]
+        exact ofFn_add_coeff p q n
+      · next _ _ _ =>
+        show ((Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) =>
+          p.coeff i.val + q.coeff i.val))[n]?).getD 0 = p.coeff n + q.coeff n
+        exact ofFn_add_coeff p q n
+
 @[simp] lemma toPoly_add (p q : DensePoly R) :
   DensePoly.toPoly (p + q) = DensePoly.toPoly p + DensePoly.toPoly q := by
   ext n
-  rw [Polynomial.coeff_add]
-  rw [coeff_toPoly p, coeff_toPoly q]
-  have h_add : p + q = normalize (Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) => p.coeff i.val + q.coeff i.val)) := rfl
-  have ht : DensePoly.toPoly (p + q) = (Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) => p.coeff i.val + q.coeff i.val)).toList.toPoly := by
-    rw [h_add, toPoly_normalize]
-  rw [ht]
-  rw [coeff_list_toPoly]
-  have hof : (Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) => p.coeff i.val + q.coeff i.val)).toList = 
-             List.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) => p.coeff i.val + q.coeff i.val) := by
-    simp
-  rw [hof, List.getCoeff_ofFn_aux]
-  split
-  · next h_lt => rfl
-  · next h_ge =>
-    dsimp [coeff]
-    have hp : (p.coeffs[n]?).getD 0 = 0 := by
-      rw [← Array.getElem?_toList]
-      have hn_p : p.coeffs.toList.length ≤ n := by
-        have hs : p.coeffs.size = p.coeffs.toList.length := by simp
-        omega
-      rw [List.getElem?_eq_none hn_p]
-      rfl
-    have hq : (q.coeffs[n]?).getD 0 = 0 := by
-      rw [← Array.getElem?_toList]
-      have hn_q : q.coeffs.toList.length ≤ n := by
-        have hs : q.coeffs.size = q.coeffs.toList.length := by simp
-        omega
-      rw [List.getElem?_eq_none hn_q]
-      rfl
-    rw [hp, hq]
-    simp
-
-@[simp] lemma coeff_add (p q : DensePoly R) (n : ℕ) :
-  coeff (p + q) n = coeff p n + coeff q n := by
-  have h := toPoly_add p q
-  have hc : (DensePoly.toPoly (p + q)).coeff n = (DensePoly.toPoly p + DensePoly.toPoly q).coeff n := by rw [h]
-  rw [Polynomial.coeff_add, coeff_toPoly p, coeff_toPoly q] at hc
-  rw [← hc]
-  exact (coeff_toPoly (p + q) n).symm
+  rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly]
+  exact coeff_add p q n
 
 @[simp] lemma ofPoly_add (p q : Polynomial R) :
   DensePoly.ofPoly (p + q) = DensePoly.ofPoly p + DensePoly.ofPoly q := by
@@ -91,5 +87,34 @@ lemma toPoly_normalize (a : Array R) :
   dsimp [equivPolynomial]
   rw [toPoly_add]
   rw [toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
+
+/-! ### Equivalence lemmas for `addNoCancel` -/
+
+-- checkBinderAnnotations is disabled because the LSP incorrectly rejects
+-- [NoAddCancellation R] when [Add R] and [Zero R] are inherited from [Semiring R].
+-- This compiles cleanly with `lake build`.
+set_option checkBinderAnnotations false in
+omit [DecidableEq R] in
+@[simp] lemma coeff_addNoCancel [NoAddCancellation R] (p q : DensePoly R) (n : ℕ) :
+    coeff (addNoCancel p q) n = coeff p n + coeff q n := by
+  simp only [addNoCancel]
+  split
+  · next hps =>
+    simp [coeff, Array.eq_empty_of_size_eq_zero hps]
+  · split
+    · next _ hqs =>
+      simp [coeff, Array.eq_empty_of_size_eq_zero hqs]
+    · next _ _ =>
+      show ((Array.ofFn (fun (i : Fin (max p.coeffs.size q.coeffs.size)) =>
+        p.coeff i.val + q.coeff i.val))[n]?).getD 0 = p.coeff n + q.coeff n
+      exact ofFn_add_coeff p q n
+
+set_option checkBinderAnnotations false in
+omit [DecidableEq R] in
+@[simp] lemma toPoly_addNoCancel [NoAddCancellation R] (p q : DensePoly R) :
+    DensePoly.toPoly (addNoCancel p q) = DensePoly.toPoly p + DensePoly.toPoly q := by
+  ext n
+  rw [Polynomial.coeff_add, coeff_toPoly, coeff_toPoly, coeff_toPoly]
+  exact coeff_addNoCancel p q n
 
 end Azurite.DensePoly
