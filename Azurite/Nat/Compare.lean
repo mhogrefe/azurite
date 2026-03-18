@@ -1,10 +1,20 @@
 import Mathlib.Data.Nat.Bits
+import Mathlib.Data.Nat.Size
 import Mathlib.Algebra.Order.Ring.Defs
 import Mathlib.Order.Compare
 import Mathlib.Data.Rat.Defs
 import Mathlib.Algebra.Order.Field.Rat
 
 namespace Azurite.Nat
+
+/-- For positive `n`, `Nat.size n = Nat.log2 n + 1`. -/
+lemma size_eq_log2_succ (n : ℕ) (hn : n > 0) : Nat.size n = Nat.log2 n + 1 := by
+  have hn' : n ≠ 0 := Nat.pos_iff_ne_zero.mp hn
+  apply Nat.le_antisymm
+  · rw [Nat.size_le]
+    exact (Nat.log2_lt hn').mp (Nat.lt_succ_of_le (Nat.le_refl _))
+  · rw [Nat.add_one_le_iff, Nat.lt_size]
+    exact Nat.log2_self_le hn'
 
 /-- `normalizedCompare x y` compares `x` and `y` as if their bit encodings were shifted to have the same length.
 If `x > 0` and `y > 0`, the comparison is equivalent to a comparison between $f(x)$ and $f(y)$, where
@@ -18,12 +28,12 @@ def normalizedCompare (x y : ℕ) : Ordering :=
   else if y = 0 then
     Ordering.gt
   else
-    let sx := Nat.size x
-    let sy := Nat.size y
-    if sx ≤ sy then
-      compare (x <<< (sy - sx)) y
+    let lx := Nat.log2 x
+    let ly := Nat.log2 y
+    if lx ≤ ly then
+      compare (x <<< (ly - lx)) y
     else
-      compare x (y <<< (sx - sy))
+      compare x (y <<< (lx - ly))
 
 #guard normalizedCompare 0 0 == Ordering.eq
 #guard normalizedCompare 0 1 == Ordering.lt
@@ -111,6 +121,9 @@ lemma compare_mul_pos_right (a b c : ℕ) (hc : c > 0) : compare a b = compare (
 
 lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
   normalizedCompare x y = compare ((x : ℚ) / (2 ^ Nat.size x : ℚ)) ((y : ℚ) / (2 ^ Nat.size y : ℚ)) := by
+  -- Relate log2 to size for the proof
+  have h_sx : Nat.log2 x + 1 = Nat.size x := (size_eq_log2_succ x hx).symm
+  have h_sy : Nat.log2 y + 1 = Nat.size y := (size_eq_log2_succ y hy).symm
   have sx_pos : 2 ^ Nat.size x > 0 := Nat.pow_pos (by decide)
   have sy_pos : 2 ^ Nat.size y > 0 := Nat.pow_pos (by decide)
   have qx_pos : (0 : ℚ) < (2 ^ Nat.size x : ℚ) := by exact_mod_cast sx_pos
@@ -136,19 +149,27 @@ lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
   unfold normalizedCompare
   rw [if_neg hx_ne, if_neg hy_ne]
   
+  -- The function now uses log2; convert shift amounts to size via h_sx, h_sy
+  -- Key: log2 x ≤ log2 y ↔ size x ≤ size y, and log2 y - log2 x = size y - size x
+  have h_le_iff : Nat.log2 x ≤ Nat.log2 y ↔ Nat.size x ≤ Nat.size y := by omega
+  have h_diff_eq : Nat.log2 y - Nat.log2 x = Nat.size y - Nat.size x := by omega
+  have h_diff_eq' : Nat.log2 x - Nat.log2 y = Nat.size x - Nat.size y := by omega
+  
   dsimp only
   split_ifs with h_le
-  · -- x.size <= y.size
-    rw [Nat.shiftLeft_eq]
+  · -- log2 x ≤ log2 y, equivalently x.size ≤ y.size
+    rw [h_diff_eq, Nat.shiftLeft_eq]
+    have h_le' : Nat.size x ≤ Nat.size y := h_le_iff.mp h_le
     have hm1 : compare (x * 2 ^ (y.size - x.size)) y = compare (x * 2 ^ (y.size - x.size) * 2 ^ x.size) (y * 2 ^ x.size) :=
       compare_mul_pos_right (x * 2 ^ (y.size - x.size)) y (2 ^ x.size) sx_pos
     rw [hm1]
-    have h_add : y.size - x.size + x.size = y.size := Nat.sub_add_cancel h_le
+    have h_add : y.size - x.size + x.size = y.size := Nat.sub_add_cancel h_le'
     have h_mul : x * 2 ^ (y.size - x.size) * 2 ^ x.size = x * 2 ^ y.size := by
       rw [Nat.mul_assoc, ← Nat.pow_add, h_add]
     rw [h_mul]
-  · -- y.size < x.size (since ¬ x.size <= y.size)
-    have h_lt : y.size < x.size := Nat.lt_of_not_le h_le
+  · -- log2 x > log2 y, equivalently y.size < x.size
+    rw [h_diff_eq']
+    have h_lt : y.size < x.size := by omega
     have h_le_rev : y.size ≤ x.size := Nat.le_of_lt h_lt
     rw [Nat.shiftLeft_eq]
     have hm1 : compare x (y * 2 ^ (x.size - y.size)) = compare (x * 2 ^ y.size) (y * 2 ^ (x.size - y.size) * 2 ^ y.size) :=
