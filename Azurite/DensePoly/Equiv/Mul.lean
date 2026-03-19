@@ -69,7 +69,7 @@ lemma List.sum_map_eq_finset_sum_antidiagonal (n : ℕ) (p q : DensePoly R) :
       exact List.sum_map_eq_finset_sum_antidiagonal n p q
     · exact (coeff_beyond_zero p q n ‹_›).symm
 
-/-! ### Proofs for `mulBasecase` (new optimized implementation) -/
+/-! ### Proofs for `mulBasecase` (Finset.sum-based implementation) -/
 
 @[simp] lemma toPoly_mulBasecase (p q : DensePoly R) :
   DensePoly.toPoly (mulBasecase p q) = DensePoly.toPoly p * DensePoly.toPoly q := by
@@ -91,11 +91,36 @@ lemma List.sum_map_eq_finset_sum_antidiagonal (n : ℕ) (p q : DensePoly R) :
       exact (Finset.Nat.sum_antidiagonal_eq_sum_range_succ (fun i j => p.coeff i * q.coeff j) n).symm
     · exact (coeff_beyond_zero p q n ‹_›).symm
 
+/-! ### Proofs for `mulBasecaseFold` (Fin.foldl-based implementation) -/
+
+/-- `Fin.foldl` of addition equals `Finset.range` sum. -/
+omit [DecidableEq R] in
+private lemma fin_foldl_eq_finset_range_sum (n : ℕ) (f : ℕ → R) :
+    Fin.foldl n (fun acc i => acc + f i.val) 0 = ∑ i ∈ Finset.range n, f i := by
+  induction n with
+  | zero => simp [Fin.foldl_zero]
+  | succ n ih =>
+    rw [Finset.sum_range_succ, Fin.foldl_succ_last]
+    congr 1
+
+/-- `mulBasecaseFold` produces the same result as `mulBasecase`. -/
+lemma mulBasecaseFold_eq_mulBasecase (p q : DensePoly R) :
+    mulBasecaseFold p q = mulBasecase p q := by
+  simp only [mulBasecaseFold, mulBasecase]
+  split
+  · rfl
+  · congr 1; ext n
+    exact fin_foldl_eq_finset_range_sum (n.val + 1) (fun i => p.coeff i * q.coeff (n.val - i))
+
+@[simp] lemma toPoly_mulBasecaseFold (p q : DensePoly R) :
+    DensePoly.toPoly (mulBasecaseFold p q) = DensePoly.toPoly p * DensePoly.toPoly q := by
+  rw [mulBasecaseFold_eq_mulBasecase]; exact toPoly_mulBasecase p q
+
 /-! ### Lift to `mul` -/
 
 @[simp] lemma toPoly_mul (p q : DensePoly R) :
     DensePoly.toPoly (p * q) = DensePoly.toPoly p * DensePoly.toPoly q := by
-  dsimp [HMul.hMul, Mul.mul, mul]; exact toPoly_mulBasecase p q
+  dsimp [HMul.hMul, Mul.mul, mul]; exact toPoly_mulBasecaseFold p q
 
 @[simp] lemma coeff_mul (p q : DensePoly R) (n : ℕ) :
     coeff (p * q) n = ∑ x ∈ Finset.antidiagonal n, coeff p x.1 * coeff q x.2 := by

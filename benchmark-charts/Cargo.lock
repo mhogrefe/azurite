@@ -25,6 +25,7 @@ name = "benchmark-charts"
 version = "0.1.0"
 dependencies = [
  "malachite-base",
+ "malachite-nz",
  "malachite-q",
  "plotters",
 ]

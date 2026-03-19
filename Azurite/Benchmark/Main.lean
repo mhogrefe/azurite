@@ -1,4 +1,5 @@
 import Azurite.Benchmark.RatCmp
+import Azurite.Benchmark.DensePolyMul
 
 -- ── Config parsing ──────────────────────────────────────────────────────────
 
@@ -10,7 +11,7 @@ def parseConfig (s : String) : Std.HashMap String String :=
 
 -- ── Main ────────────────────────────────────────────────────────────────────
 
-def validBenchmarks : List String := ["rat_cmp"]
+def validBenchmarks : List String := ["rat_cmp", "dense_poly_mul"]
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -25,6 +26,7 @@ def main (args : List String) : IO Unit := do
     | some limit =>
       match name with
       | "rat_cmp" => runRatCmp limit cfg seed
+      | "dense_poly_mul" => runDensePolyMul limit cfg seed
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

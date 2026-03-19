@@ -25,9 +25,17 @@ def mulBasecase (p q : DensePoly R) : DensePoly R :=
     ∑ i ∈ Finset.range (n.val + 1), p.coeff i * q.coeff (n.val - i)
   )
 
+/-- O(n^2) multiplication using Fin.foldl — a direct accumulating fold with
+    no intermediate data structures (no List, no Finset/Multiset wrapper). -/
+def mulBasecaseFold (p q : DensePoly R) : DensePoly R :=
+  if p.coeffs.size == 0 || q.coeffs.size == 0 then 0
+  else normalize <| Array.ofFn (fun (n : Fin (p.coeffs.size + q.coeffs.size - 1)) =>
+    Fin.foldl (n.val + 1) (fun acc i => acc + p.coeff i.val * q.coeff (n.val - i.val)) 0
+  )
+
 /-- Multiplies two DensePolynomials, delegating to the optimized O(n^2) basecase. -/
 def mul (p q : DensePoly R) : DensePoly R :=
-  mulBasecase p q
+  mulBasecaseFold p q
 
 instance : Mul (DensePoly R) := ⟨mul⟩
 
@@ -39,5 +47,8 @@ instance : Mul (DensePoly R) := ⟨mul⟩
 
 -- Verify old implementation still works
 #guard mulBasecaseList (parseDensePoly (R := ℤ) "x+1").get! (parseDensePoly (R := ℤ) "x+2").get! == (parseDensePoly (R := ℤ) "x^2+3*x+2").get!
+
+-- Verify fold implementation works
+#guard mulBasecaseFold (parseDensePoly (R := ℤ) "x+1").get! (parseDensePoly (R := ℤ) "x+2").get! == (parseDensePoly (R := ℤ) "x^2+3*x+2").get!
 
 end Azurite.DensePoly

@@ -6,3 +6,4 @@ import Azurite.Random.Pair
 import Azurite.Random.NatGen
 import Azurite.Random.Int
 import Azurite.Random.Rat
+import Azurite.Random.DensePoly
