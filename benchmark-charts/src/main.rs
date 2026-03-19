@@ -334,19 +334,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 series1_label, series2_label,
             )?;
         }
-        "dense_poly_mul" => {
+        "dense_poly_mul" | "dense_poly_karatsuba" => {
             let rows = parse_multi_series_file(&content);
             println!("Parsed {} rows.", rows.len());
             print_summary(&rows);
             plot_n_series(
                 rows, output_path,
-                "dense_poly_mul: median ns/op by input size",
+                &format!("{benchmark}: median ns/op by input size"),
                 "Input size (significant_bits of both polynomials)",
             )?;
         }
         other => {
             eprintln!("Unknown benchmark: {other:?}");
-            eprintln!("Valid benchmarks: rat_cmp, dense_poly_mul");
+            eprintln!("Valid benchmarks: rat_cmp, dense_poly_mul, dense_poly_karatsuba");
             std::process::exit(1);
         }
     }

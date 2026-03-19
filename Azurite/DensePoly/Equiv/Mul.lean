@@ -93,9 +93,9 @@ lemma List.sum_map_eq_finset_sum_antidiagonal (n : ℕ) (p q : DensePoly R) :
 
 /-! ### Proofs for `mulBasecaseFold` (Fin.foldl-based implementation) -/
 
-/-- `Fin.foldl` of addition equals `Finset.range` sum. -/
 omit [DecidableEq R] in
-private lemma fin_foldl_eq_finset_range_sum (n : ℕ) (f : ℕ → R) :
+/-- `Fin.foldl` of addition equals `Finset.range` sum. -/
+lemma fin_foldl_eq_finset_range_sum (n : ℕ) (f : ℕ → R) :
     Fin.foldl n (fun acc i => acc + f i.val) 0 = ∑ i ∈ Finset.range n, f i := by
   induction n with
   | zero => simp [Fin.foldl_zero]
@@ -106,11 +106,12 @@ private lemma fin_foldl_eq_finset_range_sum (n : ℕ) (f : ℕ → R) :
 /-- `mulBasecaseFold` produces the same result as `mulBasecase`. -/
 lemma mulBasecaseFold_eq_mulBasecase (p q : DensePoly R) :
     mulBasecaseFold p q = mulBasecase p q := by
-  simp only [mulBasecaseFold, mulBasecase]
+  simp only [mulBasecaseFold, mulBasecaseCoeffs, mulBasecase]
   split
-  · rfl
-  · congr 1; ext n
-    exact fin_foldl_eq_finset_range_sum (n.val + 1) (fun i => p.coeff i * q.coeff (n.val - i))
+  · apply DensePoly.ext; simp [normalize]
+  · apply congrArg; apply congrArg; funext n
+    exact fin_foldl_eq_finset_range_sum (↑n + 1)
+      (fun j => p.coeff j * q.coeff (↑n - j))
 
 @[simp] lemma toPoly_mulBasecaseFold (p q : DensePoly R) :
     DensePoly.toPoly (mulBasecaseFold p q) = DensePoly.toPoly p * DensePoly.toPoly q := by

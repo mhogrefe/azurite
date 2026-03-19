@@ -25,13 +25,19 @@ def mulBasecase (p q : DensePoly R) : DensePoly R :=
     ∑ i ∈ Finset.range (n.val + 1), p.coeff i * q.coeff (n.val - i)
   )
 
+/-- O(n^2) basecase convolution on raw coefficient arrays using Fin.foldl.
+    Produces an un-normalized array of product coefficients.
+    Shared by `mulBasecaseFold` and `mulKaratsuba`. -/
+def mulBasecaseCoeffs (a b : Array R) : Array R :=
+  if a.size == 0 || b.size == 0 then #[]
+  else Array.ofFn (fun (n : Fin (a.size + b.size - 1)) =>
+    Fin.foldl (n.val + 1) (fun acc i =>
+      acc + ((a[i.val]?).getD 0) * ((b[n.val - i.val]?).getD 0)) 0)
+
 /-- O(n^2) multiplication using Fin.foldl — a direct accumulating fold with
     no intermediate data structures (no List, no Finset/Multiset wrapper). -/
 def mulBasecaseFold (p q : DensePoly R) : DensePoly R :=
-  if p.coeffs.size == 0 || q.coeffs.size == 0 then 0
-  else normalize <| Array.ofFn (fun (n : Fin (p.coeffs.size + q.coeffs.size - 1)) =>
-    Fin.foldl (n.val + 1) (fun acc i => acc + p.coeff i.val * q.coeff (n.val - i.val)) 0
-  )
+  normalize (mulBasecaseCoeffs p.coeffs q.coeffs)
 
 /-- Multiplies two DensePolynomials, delegating to the optimized O(n^2) basecase. -/
 def mul (p q : DensePoly R) : DensePoly R :=
