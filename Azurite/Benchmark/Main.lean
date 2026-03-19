@@ -1,6 +1,7 @@
 import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.DensePolyMul
 import Azurite.Benchmark.DensePolyKaratsuba
+import Azurite.DensePoly.Tune
 
 -- ── Config parsing ──────────────────────────────────────────────────────────
 
@@ -12,7 +13,9 @@ def parseConfig (s : String) : Std.HashMap String String :=
 
 -- ── Main ────────────────────────────────────────────────────────────────────
 
-def validBenchmarks : List String := ["rat_cmp", "dense_poly_mul", "dense_poly_karatsuba"]
+def validBenchmarks : List String :=
+  ["rat_cmp", "dense_poly_mul", "dense_poly_karatsuba",
+   "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all"]
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -29,6 +32,22 @@ def main (args : List String) : IO Unit := do
       | "rat_cmp" => runRatCmp limit cfg seed
       | "dense_poly_mul" => runDensePolyMul limit cfg seed
       | "dense_poly_karatsuba" => runDensePolyKaratsuba limit cfg seed
+      | "tune_karatsuba" =>
+        let meanDegree := configGetRat cfg "meanDegree" 256
+        let nPairs := configGetNat cfg "nPairs" 200
+        let _ ← tuneKaratsuba (nPairs := nPairs) (meanDegree := meanDegree) (seed := seed)
+      | "tune_karatsuba_rat" =>
+        let meanDegree := configGetRat cfg "meanDegree" 256
+        let nPairs := configGetNat cfg "nPairs" 200
+        let _ ← tuneKaratsubaRat (nPairs := nPairs) (meanDegree := meanDegree) (seed := seed)
+      | "tune_karatsuba_zmod" =>
+        let meanDegree := configGetRat cfg "meanDegree" 256
+        let nPairs := configGetNat cfg "nPairs" 200
+        let _ ← tuneKaratsubaZMod (nPairs := nPairs) (meanDegree := meanDegree) (seed := seed)
+      | "tune_karatsuba_all" =>
+        let meanDegree := configGetRat cfg "meanDegree" 256
+        let nPairs := configGetNat cfg "nPairs" 200
+        tuneKaratsubaAll (nPairs := nPairs) (meanDegree := meanDegree) (seed := seed)
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

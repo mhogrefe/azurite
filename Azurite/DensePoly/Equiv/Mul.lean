@@ -121,7 +121,8 @@ lemma mulBasecaseFold_eq_mulBasecase (p q : DensePoly R) :
 
 @[simp] lemma toPoly_mul (p q : DensePoly R) :
     DensePoly.toPoly (p * q) = DensePoly.toPoly p * DensePoly.toPoly q := by
-  dsimp [HMul.hMul, Mul.mul, mul]; exact toPoly_mulBasecaseFold p q
+  show DensePoly.toPoly (DensePolyMulConfig.dmul p q) = _
+  simp [DensePolyMulConfig.dmul, toPoly_mulBasecaseFold]
 
 @[simp] lemma coeff_mul (p q : DensePoly R) (n : ℕ) :
     coeff (p * q) n = ∑ x ∈ Finset.antidiagonal n, coeff p x.1 * coeff q x.2 := by

@@ -109,6 +109,82 @@ where
 def mulKaratsuba (p q : DensePoly R) : DensePoly R :=
   normalize (rawKaratsuba p.coeffs q.coeffs)
 
+-- ── Parameterized version (for threshold tuning) ────────────────────────────
+
+/-- Karatsuba multiplication on raw coefficient arrays with a configurable
+    threshold. Same algorithm as `rawKaratsuba` but the cutoff is a runtime
+    parameter instead of the compile-time `karatsubaThreshold`.
+    Requires `threshold ≥ 2` so that `fuel / 2 < fuel` in recursive calls. -/
+def rawKaratsubaWithThreshold (threshold : Nat) (a b : Array R) : Array R :=
+  go (max a.size b.size) a b (Nat.le_refl _)
+where
+  go (fuel : Nat) (a b : Array R) (hfuel : max a.size b.size ≤ fuel) : Array R :=
+    if a.size == 0 || b.size == 0 then #[]
+    else if fuel < threshold then
+      mulBasecaseCoeffs a b
+    else if _ : fuel < 2 then
+      mulBasecaseCoeffs a b
+    else
+      let m := fuel / 2
+      let a0 := a.take m; let a1 := a.drop m
+      let b0 := b.take m; let b1 := b.drop m
+      have hfuel_pos : 0 < fuel := by omega
+      have hm_lt : m < fuel := Nat.div_lt_self hfuel_pos (by omega)
+      have ha0 : a0.size ≤ m := by simp [a0]
+      have hb0 : b0.size ≤ m := by simp [b0]
+      have ha1 : a1.size ≤ fuel - m := by simp [a1]; omega
+      have hb1 : b1.size ≤ fuel - m := by simp [b1]; omega
+      let z0 := go m a0 b0 (by omega)
+      let z2 := go (fuel - m) a1 b1 (by omega)
+      let sum_a := rawAdd a0 a1
+      let sum_b := rawAdd b0 b1
+      have hsa : sum_a.size ≤ fuel - m := by simp [sum_a, rawAdd]; omega
+      have hsb : sum_b.size ≤ fuel - m := by simp [sum_b, rawAdd]; omega
+      let z1_raw := go (fuel - m) sum_a sum_b (by omega)
+      let z1 := rawSub (rawSub z1_raw z0) z2
+      rawAdd (rawAdd z0 (rawShift z1 m)) (rawShift z2 (2 * m))
+  termination_by fuel
+
+/-- Karatsuba multiplication with a configurable threshold.
+    Use `mulKaratsuba` for the default threshold, or this version
+    to experiment with different cutoffs (e.g. for auto-tuning). -/
+def mulKaratsubaWithThreshold (threshold : Nat) (p q : DensePoly R) : DensePoly R :=
+  normalize (rawKaratsubaWithThreshold threshold p.coeffs q.coeffs)
+
+-- ── Karatsuba-based MulConfig instances ──────────────────────────────────────
+
+/-- Karatsuba multiplication for any `CommRing` with default threshold.
+    Overrides the basecase instance from `Mul.lean`. -/
+instance (priority := 200) instDensePolyMulConfigKaratsuba
+    {R : Type _} [CommRing R] [DecidableEq R] : DensePolyMulConfig R where
+  dmul p q := mulKaratsubaWithThreshold karatsubaThreshold p q
+
+/-- Karatsuba multiplication for `ℤ`, threshold tuned to 29. -/
+instance (priority := 300) : DensePolyMulConfig ℤ where
+  dmul p q := mulKaratsubaWithThreshold 29 p q
+
+/-- Karatsuba multiplication for `ℚ`, threshold tuned to 14. -/
+instance (priority := 300) : DensePolyMulConfig ℚ where
+  dmul p q := mulKaratsubaWithThreshold 14 p q
+
+/-- Karatsuba multiplication for `ZMod n`, threshold tuned to 8. -/
+instance (priority := 300) {n : ℕ} [NeZero n] : DensePolyMulConfig (ZMod n) where
+  dmul p q := mulKaratsubaWithThreshold 8 p q
+
+/-- Karatsuba multiplication for `ℕ` via ℤ lifting.
+    Since ℕ is only a `CommSemiring` (no subtraction), we cannot run
+    Karatsuba directly. Instead we:
+    1. Cast coefficients ℕ → ℤ
+    2. Run Karatsuba over ℤ (threshold 29)
+    3. Cast back ℤ → ℕ via `Int.toNat` (safe: product of ℕ-polynomials has ℕ coefficients)
+    4. Normalize to restore the `DensePoly` invariant -/
+instance (priority := 300) : DensePolyMulConfig ℕ where
+  dmul p q :=
+    let aZ : Array ℤ := p.coeffs.map (fun (c : ℕ) => (c : ℤ))
+    let bZ : Array ℤ := q.coeffs.map (fun (c : ℕ) => (c : ℤ))
+    let resultZ : Array ℤ := @rawKaratsubaWithThreshold ℤ _ 29 aZ bZ
+    normalize (Array.map Int.toNat resultZ)
+
 -- ── Tests ───────────────────────────────────────────────────────────────────
 
 -- Basic correctness tests
@@ -129,5 +205,9 @@ def mulKaratsuba (p q : DensePoly R) : DensePoly R :=
 
 #guard mulKaratsuba (parseDensePoly (R := ℤ) "2*x^2+x").get! (parseDensePoly (R := ℤ) "x-1").get!
     == mulBasecaseFold (parseDensePoly (R := ℤ) "2*x^2+x").get! (parseDensePoly (R := ℤ) "x-1").get!
+
+-- Verify that * uses Karatsuba for ℤ (threshold 29)
+#guard (parseDensePoly (R := ℤ) "x+1").get! * (parseDensePoly (R := ℤ) "x+2").get!
+    == mulKaratsuba (parseDensePoly (R := ℤ) "x+1").get! (parseDensePoly (R := ℤ) "x+2").get!
 
 end Azurite.DensePoly

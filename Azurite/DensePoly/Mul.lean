@@ -39,11 +39,31 @@ def mulBasecaseCoeffs (a b : Array R) : Array R :=
 def mulBasecaseFold (p q : DensePoly R) : DensePoly R :=
   normalize (mulBasecaseCoeffs p.coeffs q.coeffs)
 
-/-- Multiplies two DensePolynomials, delegating to the optimized O(n^2) basecase. -/
-def mul (p q : DensePoly R) : DensePoly R :=
-  mulBasecaseFold p q
+-- ── Multiplication config typeclass ─────────────────────────────────────────
 
-instance : Mul (DensePoly R) := ⟨mul⟩
+/-- Configuration typeclass for `DensePoly` multiplication.
+    Instances select the algorithm and (for Karatsuba) the threshold.
+
+    Priority convention:
+    - 100: basecase O(n²) for any `Semiring` (default)
+    - 200: Karatsuba with default threshold for `CommRing`
+    - 300: type-specific tuned Karatsuba thresholds -/
+class DensePolyMulConfig (R : Type _) [Semiring R] [DecidableEq R] where
+  /-- The multiplication implementation. -/
+  dmul : DensePoly R → DensePoly R → DensePoly R
+
+/-- Default: O(n²) basecase multiplication for any Semiring.
+    Overridden by higher-priority Karatsuba instances when `Karatsuba.lean`
+    is imported. -/
+instance (priority := 100) : DensePolyMulConfig R where
+  dmul := mulBasecaseFold
+
+/-- Multiplies two DensePolynomials using the best available algorithm
+    for the coefficient type `R`, as determined by `DensePolyMulConfig`. -/
+def mul [DensePolyMulConfig R] (p q : DensePoly R) : DensePoly R :=
+  DensePolyMulConfig.dmul p q
+
+instance [DensePolyMulConfig R] : Mul (DensePoly R) := ⟨mul⟩
 
 -- Testing the implementation using Integer polynomials
 #guard (parseDensePoly (R := ℤ) "x+1").get! * (parseDensePoly (R := ℤ) "x+2").get! == (parseDensePoly (R := ℤ) "x^2+3*x+2").get!
