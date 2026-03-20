@@ -328,4 +328,86 @@ theorem exercise_1_3 {V : Set (Fin k → C)}
   | compl _ ih => exact compl_fin_union ih
   | inter _ _ ih₁ ih₂ => exact inter_fin_union ih₁ ih₂
 
+/-!
+### The Language of Fields
+
+Let D be a subring of C. We define first-order formulas in the
+language of fields with coefficients in D.
+
+Atoms are `P = 0` where P ∈ D[X₁, …, Xₖ]. The constructors
+are `eq_zero`, `not`, `and`, `or`, and `exists_`. We derive
+`ne_zero` (= ¬(P = 0)), `forall_` (= ¬∃x, ¬Φ), and `implies`
+(= ¬Φ ∨ Ψ) as abbreviations.
+-/
+
+/-- First-order formulas in the language of fields with
+    coefficients in D. Variables are indexed by type σ. -/
+inductive Formula (D : Type*) [CommRing D]
+    (σ : Type*) where
+  | eq_zero  : MvPolynomial σ D → Formula D σ
+  | not      : Formula D σ → Formula D σ
+  | and      : Formula D σ → Formula D σ → Formula D σ
+  | or       : Formula D σ → Formula D σ → Formula D σ
+  | exists_  : σ → Formula D σ → Formula D σ
+
+namespace Formula
+
+/-- P ≠ 0 as a formula. -/
+def ne_zero (P : MvPolynomial σ D) : Formula D σ :=
+  .not (.eq_zero P)
+
+/-- Universal quantification: ∀x, Φ  :=  ¬∃x, ¬Φ. -/
+def forall_ (x : σ) (Φ : Formula D σ) : Formula D σ :=
+  .not (.exists_ x (.not Φ))
+
+/-- Implication: Φ ⇒ Ψ  :=  ¬Φ ∨ Ψ. -/
+def implies (Φ Ψ : Formula D σ) : Formula D σ :=
+  .or (.not Φ) Ψ
+
+variable {D : Type*} [CommRing D] {σ : Type*}
+
+/-- The free variables of a formula. -/
+def freeVars [DecidableEq σ] :
+    Formula D σ → Finset σ
+  | .eq_zero P   => P.vars
+  | .not Φ       => Φ.freeVars
+  | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .exists_ x Φ => Φ.freeVars \ {x}
+
+/-- A sentence is a formula with no free variables. -/
+def isSentence [DecidableEq σ] (Φ : Formula D σ) :
+    Prop :=
+  Φ.freeVars = ∅
+
+/-- A formula is quantifier-free if no quantifier (∃ or ∀)
+    appears in it. -/
+def IsQuantifierFree : Formula D σ → Prop
+  | .eq_zero _   => True
+  | .not Φ       => Φ.IsQuantifierFree
+  | .and Φ₁ Φ₂   => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
+  | .or Φ₁ Φ₂    => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
+  | .exists_ _ _ => False
+
+/-- A basic formula is a conjunction of atoms
+    (P = 0 or P ≠ 0). -/
+inductive IsBasicFormula : Formula D σ → Prop where
+  | eq_zero (P : MvPolynomial σ D) :
+      IsBasicFormula (.eq_zero P)
+  | ne_zero (P : MvPolynomial σ D) :
+      IsBasicFormula (.not (.eq_zero P))
+  | and {Φ₁ Φ₂} :
+      IsBasicFormula Φ₁ → IsBasicFormula Φ₂ →
+      IsBasicFormula (.and Φ₁ Φ₂)
+
+theorem IsBasicFormula.isQuantifierFree
+    {Φ : Formula D σ} (h : IsBasicFormula Φ) :
+    Φ.IsQuantifierFree := by
+  induction h with
+  | eq_zero _ => trivial
+  | ne_zero _ => trivial
+  | and _ _ ih₁ ih₂ => exact ⟨ih₁, ih₂⟩
+
+end Formula
+
 end Azurite.BPR
