@@ -233,4 +233,99 @@ theorem IsConstructibleSet.union {V W : Set (Fin k → C)}
   rw [Set.union_eq_compl_compl_inter_compl]
   exact .compl (.inter (.compl hV) (.compl hW))
 
+/-!
+### Exercise 1.2
+
+A constructible subset of C is either finite or the complement
+of a finite set.
+-/
+
+/-- Exercise 1.2: A constructible subset of C is either finite
+    or cofinite. -/
+theorem exercise_1_2 (V : Set (Fin 1 → C))
+    (hV : IsConstructibleSet V) :
+    V.Finite ∨ Vᶜ.Finite := by
+  induction hV with
+  | algebraic hA =>
+    rcases exercise_1_1 _ hA with hfin | huniv
+    · exact Or.inl hfin
+    · right; rw [huniv]; simp
+  | compl _ ih =>
+    rcases ih with h | h
+    · exact Or.inr (by rwa [Set.compl_compl])
+    · exact Or.inl h
+  | inter _ _ ihV ihW =>
+    rcases ihV, ihW with ⟨hV | hV, hW | hW⟩
+    · exact Or.inl (hV.subset Set.inter_subset_left)
+    · exact Or.inl (hV.subset Set.inter_subset_left)
+    · exact Or.inl (hW.subset Set.inter_subset_right)
+    · right; rw [Set.compl_inter]; exact hV.union hW
+
+/-!
+### Exercise 1.3
+
+A constructible set in Cᵏ is a finite union of basic
+constructible sets.
+-/
+
+/-- V is a finite union of basic constructible sets. -/
+inductive IsFinUnionBasicConstructible :
+    Set (Fin k → C) → Prop where
+  | basic {V} : IsBasicConstructibleSet V →
+      IsFinUnionBasicConstructible V
+  | union {V W} : IsFinUnionBasicConstructible V →
+      IsFinUnionBasicConstructible W →
+      IsFinUnionBasicConstructible (V ∪ W)
+
+private theorem compl_basic_fin_union
+    {V : Set (Fin k → C)}
+    (hV : IsBasicConstructibleSet V) :
+    IsFinUnionBasicConstructible Vᶜ := by
+  induction hV with
+  | algebraic hA => exact .basic (.compl_algebraic hA)
+  | compl_algebraic hA =>
+    rw [Set.compl_compl]; exact .basic (.algebraic hA)
+  | inter _ _ ih₁ ih₂ =>
+    rw [Set.compl_inter]; exact .union ih₁ ih₂
+
+private theorem basic_inter_fin_union
+    {B W : Set (Fin k → C)}
+    (hB : IsBasicConstructibleSet B)
+    (hW : IsFinUnionBasicConstructible W) :
+    IsFinUnionBasicConstructible (B ∩ W) := by
+  induction hW with
+  | basic hW' => exact .basic (.inter hB hW')
+  | union _ _ ih₁ ih₂ =>
+    rw [Set.inter_union_distrib_left]
+    exact .union ih₁ ih₂
+
+private theorem inter_fin_union
+    {V W : Set (Fin k → C)}
+    (hV : IsFinUnionBasicConstructible V)
+    (hW : IsFinUnionBasicConstructible W) :
+    IsFinUnionBasicConstructible (V ∩ W) := by
+  induction hV with
+  | basic hB => exact basic_inter_fin_union hB hW
+  | union _ _ ih₁ ih₂ =>
+    rw [Set.union_inter_distrib_right]
+    exact .union (ih₁ hW) (ih₂ hW)
+
+private theorem compl_fin_union {V : Set (Fin k → C)}
+    (hV : IsFinUnionBasicConstructible V) :
+    IsFinUnionBasicConstructible Vᶜ := by
+  induction hV with
+  | basic hB => exact compl_basic_fin_union hB
+  | union _ _ ih₁ ih₂ =>
+    rw [Set.compl_union]; exact inter_fin_union ih₁ ih₂
+
+/-- Exercise 1.3: A constructible set is a finite union of
+    basic constructible sets. -/
+theorem exercise_1_3 {V : Set (Fin k → C)}
+    (hV : IsConstructibleSet V) :
+    IsFinUnionBasicConstructible V := by
+  induction hV with
+  | algebraic hA => exact .basic (.algebraic hA)
+  | compl _ ih => exact compl_fin_union ih
+  | inter _ _ ih₁ ih₂ => exact inter_fin_union ih₁ ih₂
+
 end Azurite.BPR
