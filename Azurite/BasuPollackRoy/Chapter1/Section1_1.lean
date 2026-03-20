@@ -78,39 +78,40 @@ it equals Mathlib's `zeroLocus` applied to the spanned ideal.
 /-!
 ### Notation 1.1 (Zero Set)
 
-The set of common zeros of a set of polynomials 𝒫 in Cᵏ.
+The set of common zeros of a finite set of polynomials 𝒫 in Cᵏ.
 BPR notation: Zer(𝒫, Cᵏ).
 -/
-def Zer (𝒫 : Set (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
+def Zer (𝒫 : Finset (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
   { x | ∀ P ∈ 𝒫, MvPolynomial.eval x P = 0 }
 
 /-- `Zer 𝒫` equals Mathlib's `zeroLocus` of the ideal spanned by 𝒫. -/
-theorem zer_eq_zeroLocus (𝒫 : Set (MvPolynomial (Fin k) C)) :
-    Zer 𝒫 = MvPolynomial.zeroLocus C (Ideal.span 𝒫) := by
+theorem zer_eq_zeroLocus (𝒫 : Finset (MvPolynomial (Fin k) C)) :
+    Zer 𝒫 = MvPolynomial.zeroLocus C (Ideal.span (↑𝒫 : Set _)) := by
   ext x
   simp only [Zer, MvPolynomial.zeroLocus, Set.mem_setOf_eq, MvPolynomial.mem_zeroLocus_iff]
   constructor
   · intro h p hp
-    refine Submodule.span_induction hp h ?_ ?_ ?_
+    refine Submodule.span_induction hp
+      (fun q hq => h q (by exact_mod_cast hq)) ?_ ?_ ?_
     · simp
     · intro a b ha hb
       simp [ha, hb]
     · intro a p hp
       simp [hp]
   · intro h p hp
-    exact h p (Ideal.subset_span hp)
+    exact h p (Ideal.subset_span (by exact_mod_cast hp))
 
 /-!
 A subset V of Cᵏ is an **algebraic set** (or **algebraic subset**) if
-V = Zer(𝒫, Cᵏ) for some set of polynomials 𝒫 ⊆ C[X₁, …, Xₖ].
+V = Zer(𝒫, Cᵏ) for some finite set of polynomials 𝒫 ⊆ C[X₁, …, Xₖ].
 
 This does not appear to exist in Mathlib (Mathlib works with `zeroLocus` of ideals
 but does not name the predicate "is an algebraic set" at this level).
 -/
 
-/-- A subset V of Cᵏ is algebraic if it is the zero set of some set of polynomials. -/
+/-- A subset V of Cᵏ is algebraic if it is the zero set of some finite set of polynomials. -/
 def IsAlgebraicSet (V : Set (Fin k → C)) : Prop :=
-  ∃ 𝒫 : Set (MvPolynomial (Fin k) C), V = Zer 𝒫
+  ∃ 𝒫 : Finset (MvPolynomial (Fin k) C), V = Zer 𝒫
 
 /-- Cᵏ is an algebraic set (take 𝒫 = ∅). -/
 theorem isAlgebraicSet_univ : IsAlgebraicSet (Set.univ : Set (Fin k → C)) :=
@@ -409,6 +410,27 @@ theorem IsBasicFormula.isQuantifierFree
   | and _ _ ih₁ ih₂ => exact ⟨ih₁, ih₂⟩
 
 /-!
+### Prenex Normal Form
+
+A formula is in **prenex normal form** if it is a sequence
+of quantifiers (∀ or ∃) applied to a quantifier-free body:
+
+  (Qu₁ X₁) ⋯ (Quₘ Xₘ) 𝓑(X₁, …, Xₘ, Y₁, …, Yₖ)
+
+Since ∀ is encoded as ¬∃¬ in our syntax, the `forall_`
+constructor pattern-matches that encoding.
+-/
+
+/-- A formula in prenex normal form. -/
+inductive IsPrenex : Formula D σ → Prop where
+  | qf {Φ} : Φ.IsQuantifierFree → IsPrenex Φ
+  | exists_ {x : σ} {Φ} :
+      IsPrenex Φ → IsPrenex (.exists_ x Φ)
+  | forall_ {x : σ} {Φ} :
+      IsPrenex Φ →
+      IsPrenex (.not (.exists_ x (.not Φ)))
+
+/-!
 ### Realization
 
 The **C-realization** of a formula Φ with free variables
@@ -433,11 +455,465 @@ def realization [DecidableEq σ] :
   | .exists_ x Φ =>
     { y | ∃ c : C, Function.update y x c ∈ Φ.realization }
 
-/-- Two formulas are **C-equivalent** if they have the same
-    C-realization. -/
 def CEquiv [DecidableEq σ]
     (Φ Ψ : Formula D σ) : Prop :=
   (realization (C := C) Φ) = (realization (C := C) Ψ)
+
+/-!
+### Prenex Normal Form Infrastructure
+
+Variable renaming, realization invariance, and the prenex
+normal form theorem.
+-/
+
+/-- Rename variables in a formula via `f : σ → τ`. -/
+def rename (f : σ → τ) : Formula D σ → Formula D τ
+  | .eq_zero P   => .eq_zero (P.rename f)
+  | .not Φ       => .not (Φ.rename f)
+  | .and Φ₁ Φ₂   => .and (Φ₁.rename f) (Φ₂.rename f)
+  | .or Φ₁ Φ₂    => .or (Φ₁.rename f) (Φ₂.rename f)
+  | .exists_ x Φ => .exists_ (f x) (Φ.rename f)
+
+theorem rename_isQF (f : σ → τ) :
+    ∀ (Φ : Formula D σ), Φ.IsQuantifierFree →
+    (Φ.rename f).IsQuantifierFree
+  | .eq_zero _, _ => trivial
+  | .not Φ, h => rename_isQF f Φ h
+  | .and Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
+    ⟨rename_isQF f Φ₁ h₁, rename_isQF f Φ₂ h₂⟩
+  | .or Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
+    ⟨rename_isQF f Φ₁ h₁, rename_isQF f Φ₂ h₂⟩
+
+theorem rename_isPrenex (f : σ → τ) {Φ : Formula D σ}
+    (h : IsPrenex Φ) : IsPrenex (Φ.rename f) := by
+  induction h with
+  | qf hqf => exact .qf (rename_isQF f _ hqf)
+  | exists_ _ ih => exact .exists_ ih
+  | forall_ _ ih => exact .forall_ ih
+
+/-- Quantifier depth of a formula. -/
+def quantifierDepth : Formula D σ → ℕ
+  | .eq_zero _   => 0
+  | .not Φ       => Φ.quantifierDepth
+  | .and Φ₁ Φ₂   => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .or Φ₁ Φ₂    => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .exists_ _ Φ => Φ.quantifierDepth + 1
+
+theorem rename_quantifierDepth (f : σ → τ)
+    (Φ : Formula D σ) :
+    (Φ.rename f).quantifierDepth = Φ.quantifierDepth := by
+  induction Φ with
+  | eq_zero => simp [rename, quantifierDepth]
+  | not _ ih => simp [rename, quantifierDepth, ih]
+  | and _ _ ih₁ ih₂ =>
+    simp [rename, quantifierDepth, ih₁, ih₂]
+  | or _ _ ih₁ ih₂ =>
+    simp [rename, quantifierDepth, ih₁, ih₂]
+  | exists_ _ _ ih =>
+    simp [rename, quantifierDepth, ih]
+
+theorem rename_realization [DecidableEq σ] [DecidableEq τ]
+    (f : σ → τ) (hf : Function.Injective f)
+    (Φ : Formula D σ) :
+    (Φ.rename f).realization (C := C) =
+      (· ∘ f) ⁻¹' Φ.realization := by
+  induction Φ with
+  | eq_zero P =>
+    ext y; simp [rename, realization, aeval_rename]
+  | not _ ih =>
+    simp [rename, realization, ih, Set.preimage_compl]
+  | and _ _ ih₁ ih₂ =>
+    simp [rename, realization, ih₁, ih₂,
+      Set.preimage_inter]
+  | or _ _ ih₁ ih₂ =>
+    simp [rename, realization, ih₁, ih₂,
+      Set.preimage_union]
+  | exists_ x _ ih =>
+    ext y
+    simp only [rename, realization, Set.mem_setOf_eq,
+      Set.mem_preimage, ih]
+    constructor <;> rintro ⟨c, hc⟩ <;> refine ⟨c, ?_⟩ <;>
+    · convert hc using 1; ext i
+      simp [Function.update, hf.eq_iff]
+
+private theorem aeval_update_of_not_mem_vars
+    [DecidableEq σ] (P : MvPolynomial σ D)
+    (y : σ → C) (x : σ) (c : C) (hx : x ∉ P.vars) :
+    aeval (Function.update y x c) P = aeval y P :=
+  aeval_eq_aeval_of_forall_mem_vars_eq _ _ _
+    (fun v hv => by simp [Function.update_apply,
+      show v ≠ x from fun h => hx (h ▸ hv)])
+
+theorem realization_invariant_update [DecidableEq σ]
+    (Φ : Formula D σ) (x : σ) (hx : x ∉ Φ.freeVars)
+    (y : σ → C) (c : C) :
+    y ∈ Φ.realization (C := C) ↔
+    Function.update y x c ∈ Φ.realization := by
+  induction Φ with
+  | eq_zero P =>
+    simp only [realization, Set.mem_setOf_eq, freeVars] at *
+    rw [aeval_update_of_not_mem_vars P y x c hx]
+  | not _ ih =>
+    simp only [realization, Set.mem_compl_iff, freeVars] at *
+    rw [ih hx]
+  | and _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_inter_iff, freeVars,
+      Finset.mem_union, not_or] at *
+    rw [ih₁ hx.1, ih₂ hx.2]
+  | or _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_union, freeVars,
+      Finset.mem_union, not_or] at *
+    rw [ih₁ hx.1, ih₂ hx.2]
+  | exists_ z _ ih =>
+    simp only [realization, Set.mem_setOf_eq, freeVars,
+      Finset.mem_sdiff, Finset.mem_singleton] at *
+    push_neg at hx
+    constructor <;> rintro ⟨d, hd⟩ <;> refine ⟨d, ?_⟩
+    · rw [Function.update_comm (hx.1 rfl).elim]
+      rwa [← ih (hx.1 rfl).elim]
+    · rw [Function.update_comm (hx.1 rfl).elim] at hd
+      rwa [ih (hx.1 rfl).elim]
+
+/-- (∃x, A) ∧ B ≡ ∃x, (A ∧ B) when x ∉ freeVars B. -/
+theorem exists_and_equiv [DecidableEq σ]
+    (A B : Formula D σ) (x : σ) (hx : x ∉ B.freeVars) :
+    (.exists_ x A).realization (C := C) ∩ B.realization =
+    (.exists_ x (.and A B)).realization := by
+  ext y
+  simp only [realization, Set.mem_inter_iff,
+    Set.mem_setOf_eq]
+  constructor
+  · rintro ⟨⟨c, hc⟩, hB⟩
+    exact ⟨c, hc,
+      (realization_invariant_update B x hx y c).mp hB⟩
+  · rintro ⟨c, hA, hB⟩
+    exact ⟨⟨c, hA⟩,
+      (realization_invariant_update B x hx y c).mpr hB⟩
+
+/-- (∀x, A) ∧ B ≡ ∀x, (A ∧ B) when x ∉ freeVars B. -/
+theorem forall_and_equiv [DecidableEq σ]
+    (A B : Formula D σ) (x : σ) (hx : x ∉ B.freeVars) :
+    (.not (.exists_ x (.not A))).realization (C := C) ∩
+      B.realization =
+    (.not (.exists_ x (.not (.and A B)))).realization := by
+  ext y
+  simp only [realization, Set.mem_inter_iff,
+    Set.mem_compl_iff, Set.mem_setOf_eq, not_exists,
+    not_not]
+  constructor
+  · rintro ⟨hA, hB⟩ c
+    exact ⟨hA c,
+      (realization_invariant_update B x hx y c).mp hB⟩
+  · intro h
+    exact ⟨fun c => (h c).1,
+      by have := (h (y x)).2
+         rwa [Function.update_self] at this⟩
+
+/-- ∃x,A has same realization as ∃z,(A.rename(swap x z)). -/
+theorem exists_rename_swap [DecidableEq σ]
+    (A : Formula D σ) (x z : σ) :
+    (.exists_ x A).realization (C := C) =
+    (.exists_ z (A.rename (Equiv.swap x z))).realization := by
+  ext y; simp only [realization, Set.mem_setOf_eq,
+    rename_realization _ (Equiv.swap x z).injective,
+    Set.mem_preimage]
+  constructor <;> rintro ⟨c, hc⟩ <;> exact ⟨c, by
+    convert hc using 1; ext i
+    simp [Function.update, Equiv.swap_apply_def]
+    split_ifs <;> simp_all⟩
+
+/-- ∀x,A has same realization as ∀z,(A.rename(swap x z)). -/
+theorem forall_rename_swap [DecidableEq σ]
+    (A : Formula D σ) (x z : σ) :
+    (.not (.exists_ x (.not A))).realization (C := C) =
+    (.not (.exists_ z (.not (A.rename
+      (Equiv.swap x z))))).realization := by
+  simp only [realization, Set.compl_setOf, not_exists,
+    not_not, rename_realization _
+      (Equiv.swap x z).injective, Set.mem_preimage]
+  ext y; simp only [Set.mem_setOf_eq]
+  constructor <;> intro h c <;>
+  · have := h c; convert this using 1; ext i
+    simp [Function.update, Equiv.swap_apply_def]
+    split_ifs <;> simp_all
+
+/-- Given a prenex Ψ, produce a prenex formula with
+    realization = Ψ.realizationᶜ. -/
+theorem negatePrenex [DecidableEq σ]
+    {Ψ : Formula D σ} (hΨ : IsPrenex Ψ) :
+    ∃ Ψ', IsPrenex Ψ' ∧
+      Ψ'.realization (C := C) = (Ψ.realization)ᶜ := by
+  induction hΨ with
+  | qf hqf =>
+    exact ⟨.not Ψ,
+      .qf (by cases Ψ <;> simp_all [IsQuantifierFree]),
+      by simp [realization]⟩
+  | @exists_ x Ψ' _ ih =>
+    obtain ⟨N, hN, hNr⟩ := ih
+    exact ⟨.not (.exists_ x (.not N)), .forall_ hN, by
+      ext y; simp [realization, Set.mem_compl_iff,
+        not_exists]
+      constructor
+      · intro h c
+        rw [← Set.mem_compl_iff, ← hNr]; exact h c
+      · intro h c
+        rw [hNr, Set.mem_compl_iff]; exact h c⟩
+  | @forall_ x Ψ' _ ih =>
+    obtain ⟨N, hN, hNr⟩ := ih
+    exact ⟨.exists_ x N, .exists_ hN, by
+      ext y; simp [realization, Set.mem_compl_iff,
+        not_not, not_forall]; push_neg
+      constructor
+      · rintro ⟨c, hc⟩
+        exact ⟨c, by rwa [← Set.mem_compl_iff, ← hNr]⟩
+      · rintro ⟨c, hc⟩
+        exact ⟨c, by rwa [hNr, Set.mem_compl_iff] at hc⟩⟩
+
+private theorem pull_exists [Infinite σ] [DecidableEq σ]
+    (x : σ) (A B : Formula D σ) (hA : IsPrenex A)
+    (hB : IsPrenex B)
+    (ih : ∀ A' B', IsPrenex A' → IsPrenex B' →
+      A'.quantifierDepth + B'.quantifierDepth <
+        A.quantifierDepth + 1 + B.quantifierDepth →
+      ∃ R, IsPrenex R ∧ R.realization (C := C) =
+        A'.realization ∩ B'.realization) :
+    ∃ R, IsPrenex R ∧ R.realization (C := C) =
+      (.exists_ x A).realization (C := C) ∩
+        B.realization := by
+  obtain ⟨z, hz⟩ :=
+    (A.freeVars ∪ B.freeVars).exists_not_mem
+  rw [Finset.mem_union, not_or] at hz
+  rw [exists_rename_swap A x z]
+  obtain ⟨R, hR, hRr⟩ := ih _ _
+    (rename_isPrenex _ hA) hB
+    (by rw [rename_quantifierDepth]; omega)
+  exact ⟨.exists_ z R, .exists_ hR, by
+    ext y; simp [realization, Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨⟨c, hc⟩, h2⟩; exact ⟨c, by
+        rw [hRr, Set.mem_inter_iff]; exact ⟨hc,
+        (realization_invariant_update B z hz.2 y c).mp h2⟩⟩
+    · rintro ⟨c, hc⟩; rw [hRr, Set.mem_inter_iff] at hc
+      exact ⟨⟨c, hc.1⟩,
+        (realization_invariant_update B z hz.2 y c).mpr
+          hc.2⟩⟩
+
+private theorem pull_forall [Infinite σ] [DecidableEq σ]
+    (x : σ) (A B : Formula D σ) (hA : IsPrenex A)
+    (hB : IsPrenex B)
+    (ih : ∀ A' B', IsPrenex A' → IsPrenex B' →
+      A'.quantifierDepth + B'.quantifierDepth <
+        A.quantifierDepth + 1 + B.quantifierDepth →
+      ∃ R, IsPrenex R ∧ R.realization (C := C) =
+        A'.realization ∩ B'.realization) :
+    ∃ R, IsPrenex R ∧ R.realization (C := C) =
+      (.not (.exists_ x (.not A))).realization (C := C) ∩
+        B.realization := by
+  obtain ⟨z, hz⟩ :=
+    (A.freeVars ∪ B.freeVars).exists_not_mem
+  rw [Finset.mem_union, not_or] at hz
+  rw [forall_rename_swap A x z]
+  obtain ⟨R, hR, hRr⟩ := ih _ _
+    (rename_isPrenex _ hA) hB
+    (by rw [rename_quantifierDepth]; omega)
+  exact ⟨.not (.exists_ z (.not R)), .forall_ hR, by
+    ext y; simp [realization, not_exists, not_not]
+    constructor
+    · rintro ⟨hA', h2⟩ c; rw [hRr, Set.mem_inter_iff]
+      exact ⟨hA' c,
+        (realization_invariant_update B z hz.2 y c).mp h2⟩
+    · intro h
+      exact ⟨fun c => (by rw [hRr] at h; exact (h c).1),
+        by have := (h (y z)).2
+           rw [hRr, Set.mem_inter_iff] at this
+           exact (realization_invariant_update B z hz.2
+             y _).mpr this.2⟩⟩
+
+/-- Combine two prenex formulas into a prenex conjunction. -/
+theorem andPrenex [Infinite σ] [DecidableEq σ]
+    (Ψ₁ Ψ₂ : Formula D σ) (hp₁ : IsPrenex Ψ₁)
+    (hp₂ : IsPrenex Ψ₂) :
+    ∃ R, IsPrenex R ∧ R.realization (C := C) =
+      Ψ₁.realization ∩ Ψ₂.realization := by
+  induction hd : Ψ₁.quantifierDepth + Ψ₂.quantifierDepth
+    using Nat.strongRecOn generalizing Ψ₁ Ψ₂ with
+  | _ n ih =>
+  match hp₁, hp₂ with
+  | .qf h₁, .qf h₂ =>
+    exact ⟨.and Ψ₁ Ψ₂, .qf ⟨h₁, h₂⟩, rfl⟩
+  | .qf _, .exists_ (x := x) hB =>
+    rw [Set.inter_comm]; exact pull_exists x _ Ψ₁ ‹_›
+      (.qf ‹_›) fun A' B' hA' hB' hlt =>
+        ih _ (by omega) A' B' hA' hB' rfl
+  | .qf _, .forall_ (x := x) hB =>
+    rw [Set.inter_comm]; exact pull_forall x _ Ψ₁ ‹_›
+      (.qf ‹_›) fun A' B' hA' hB' hlt =>
+        ih _ (by omega) A' B' hA' hB' rfl
+  | .exists_ (x := x) hA, _ =>
+    exact pull_exists x _ Ψ₂ ‹_› hp₂
+      fun A' B' hA' hB' hlt =>
+        ih _ (by omega) A' B' hA' hB' rfl
+  | .forall_ (x := x) hA, _ =>
+    exact pull_forall x _ Ψ₂ ‹_› hp₂
+      fun A' B' hA' hB' hlt =>
+        ih _ (by omega) A' B' hA' hB' rfl
+
+/-- Every formula over an infinite variable type is
+    C-equivalent to a prenex formula. -/
+theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
+    (Φ : Formula D σ) :
+    ∃ Ψ : Formula D σ, IsPrenex Ψ ∧
+      CEquiv (C := C) Φ Ψ := by
+  induction Φ with
+  | eq_zero P => exact ⟨_, .qf trivial, rfl⟩
+  | not Φ ih =>
+    obtain ⟨Ψ, hpre, hequiv⟩ := ih
+    suffices ∃ Ψ', IsPrenex Ψ' ∧
+        Ψ'.realization (C := C) = (Ψ.realization)ᶜ by
+      obtain ⟨Ψ', hp, hr⟩ := this
+      exact ⟨Ψ', hp, show (.not Φ).realization = _ by
+        simp [realization, hequiv, hr]⟩
+    clear hequiv Φ
+    induction hpre with
+    | qf hqf =>
+      exact ⟨.not Ψ,
+        .qf (by cases Ψ <;> simp_all [IsQuantifierFree]),
+        by simp [realization]⟩
+    | @exists_ x Ψ' _ ih' =>
+      obtain ⟨N, hN, hNr⟩ := ih'
+      exact ⟨.not (.exists_ x (.not N)), .forall_ hN, by
+        ext y; simp [realization, Set.mem_compl_iff,
+          not_exists]
+        constructor
+        · intro h c
+          rw [← Set.mem_compl_iff, ← hNr]; exact h c
+        · intro h c
+          rw [hNr, Set.mem_compl_iff]; exact h c⟩
+    | @forall_ x Ψ' _ ih' =>
+      obtain ⟨N, hN, hNr⟩ := ih'
+      exact ⟨.exists_ x N, .exists_ hN, by
+        ext y; simp [realization, Set.mem_compl_iff,
+          not_not, not_forall]; push_neg
+        constructor
+        · rintro ⟨c, hc⟩
+          exact ⟨c, by rwa [← Set.mem_compl_iff, ← hNr]⟩
+        · rintro ⟨c, hc⟩
+          exact ⟨c, by rwa [hNr, Set.mem_compl_iff] at hc⟩⟩
+  | and Φ₁ Φ₂ ih₁ ih₂ =>
+    obtain ⟨Ψ₁, hp₁, he₁⟩ := ih₁
+    obtain ⟨Ψ₂, hp₂, he₂⟩ := ih₂
+    -- Need prenex R with R.real = Ψ₁.real ∩ Ψ₂.real
+    suffices ∃ R, IsPrenex R ∧
+        R.realization (C := C) =
+          Ψ₁.realization ∩ Ψ₂.realization by
+      obtain ⟨R, hR, hRr⟩ := this
+      exact ⟨R, hR, show (.and Φ₁ Φ₂).realization = _ by
+        simp [realization, he₁, he₂, hRr]⟩
+    clear he₁ he₂ Φ₁ Φ₂
+    -- andPrenex by well-founded induction on qdepth
+    induction hd : Ψ₁.quantifierDepth + Ψ₂.quantifierDepth
+      using Nat.strongRecOn generalizing Ψ₁ Ψ₂ with
+    | _ n ih =>
+    match hp₁, hp₂ with
+    | .qf h₁, .qf h₂ =>
+      exact ⟨.and Ψ₁ Ψ₂, .qf ⟨h₁, h₂⟩, rfl⟩
+    | .qf h₁, .exists_ (x := x) (Φ := B) hB =>
+      rw [Set.inter_comm]
+      obtain ⟨z, hz⟩ := (Ψ₁.freeVars ∪ B.freeVars).exists_not_mem
+      rw [Finset.mem_union, not_or] at hz
+      rw [exists_rename_swap B x z]
+      have hlt : (B.rename (Equiv.swap x z)).quantifierDepth +
+          Ψ₁.quantifierDepth < n := by
+        rw [rename_quantifierDepth]; omega
+      obtain ⟨R, hR, hRr⟩ := ih _ hlt _ _
+        (rename_isPrenex _ hB) (.qf h₁) rfl
+      exact ⟨.exists_ z R, .exists_ hR, by
+        ext y; simp [realization, Set.mem_setOf_eq]
+        constructor
+        · rintro ⟨⟨c, hc⟩, h1⟩; exact ⟨c, by
+            rw [hRr, Set.mem_inter_iff]; exact ⟨hc,
+            (realization_invariant_update Ψ₁ z hz.1 y c).mp h1⟩⟩
+        · rintro ⟨c, hc⟩; rw [hRr, Set.mem_inter_iff] at hc
+          exact ⟨⟨c, hc.1⟩,
+            (realization_invariant_update Ψ₁ z hz.1 y c).mpr hc.2⟩⟩
+    | .qf h₁, .forall_ (x := x) (Φ := B) hB =>
+      rw [Set.inter_comm]
+      obtain ⟨z, hz⟩ := (Ψ₁.freeVars ∪ B.freeVars).exists_not_mem
+      rw [Finset.mem_union, not_or] at hz
+      rw [forall_rename_swap B x z]
+      have hlt : (B.rename (Equiv.swap x z)).quantifierDepth +
+          Ψ₁.quantifierDepth < n := by
+        rw [rename_quantifierDepth]; omega
+      obtain ⟨R, hR, hRr⟩ := ih _ hlt _ _
+        (rename_isPrenex _ hB) (.qf h₁) rfl
+      exact ⟨.not (.exists_ z (.not R)), .forall_ hR, by
+        ext y; simp [realization, not_exists, not_not]
+        constructor
+        · rintro ⟨hA, h1⟩ c; rw [hRr, Set.mem_inter_iff]
+          exact ⟨hA c,
+            (realization_invariant_update Ψ₁ z hz.1 y c).mp h1⟩
+        · intro h; exact ⟨fun c => (by rw [hRr] at h; exact (h c).1),
+            by have := (h (y z)).2
+               rw [hRr, Set.mem_inter_iff] at this
+               exact (realization_invariant_update Ψ₁ z hz.1 y _).mpr this.2⟩⟩
+    | .exists_ (x := x) (Φ := A) hA, _ =>
+      obtain ⟨z, hz⟩ := (A.freeVars ∪ Ψ₂.freeVars).exists_not_mem
+      rw [Finset.mem_union, not_or] at hz
+      rw [exists_rename_swap A x z]
+      have hlt : (A.rename (Equiv.swap x z)).quantifierDepth +
+          Ψ₂.quantifierDepth < n := by
+        rw [rename_quantifierDepth]; omega
+      obtain ⟨R, hR, hRr⟩ := ih _ hlt _ _
+        (rename_isPrenex _ hA) hp₂ rfl
+      exact ⟨.exists_ z R, .exists_ hR, by
+        ext y; simp [realization, Set.mem_setOf_eq]
+        constructor
+        · rintro ⟨⟨c, hc⟩, h2⟩; exact ⟨c, by
+            rw [hRr, Set.mem_inter_iff]; exact ⟨hc,
+            (realization_invariant_update Ψ₂ z hz.2 y c).mp h2⟩⟩
+        · rintro ⟨c, hc⟩; rw [hRr, Set.mem_inter_iff] at hc
+          exact ⟨⟨c, hc.1⟩,
+            (realization_invariant_update Ψ₂ z hz.2 y c).mpr hc.2⟩⟩
+    | .forall_ (x := x) (Φ := A) hA, _ =>
+      obtain ⟨z, hz⟩ := (A.freeVars ∪ Ψ₂.freeVars).exists_not_mem
+      rw [Finset.mem_union, not_or] at hz
+      rw [forall_rename_swap A x z]
+      have hlt : (A.rename (Equiv.swap x z)).quantifierDepth +
+          Ψ₂.quantifierDepth < n := by
+        rw [rename_quantifierDepth]; omega
+      obtain ⟨R, hR, hRr⟩ := ih _ hlt _ _
+        (rename_isPrenex _ hA) hp₂ rfl
+      exact ⟨.not (.exists_ z (.not R)), .forall_ hR, by
+        ext y; simp [realization, not_exists, not_not]
+        constructor
+        · rintro ⟨hA', h2⟩ c; rw [hRr, Set.mem_inter_iff]
+          exact ⟨hA' c,
+            (realization_invariant_update Ψ₂ z hz.2 y c).mp h2⟩
+        · intro h; exact ⟨fun c => (by rw [hRr] at h; exact (h c).1),
+            by have := (h (y z)).2
+               rw [hRr, Set.mem_inter_iff] at this
+               exact (realization_invariant_update Ψ₂ z hz.2 y _).mpr this.2⟩⟩
+  | or Φ₁ Φ₂ ih₁ ih₂ =>
+    -- A ∨ B = ¬(¬A ∧ ¬B)
+    obtain ⟨Ψ₁, hp₁, he₁⟩ := ih₁
+    obtain ⟨Ψ₂, hp₂, he₂⟩ := ih₂
+    -- Negate both prenex formulas
+    obtain ⟨N₁, hN₁, hN₁r⟩ := negatePrenex (C := C) hp₁
+    obtain ⟨N₂, hN₂, hN₂r⟩ := negatePrenex (C := C) hp₂
+    -- Combine ¬Ψ₁ ∧ ¬Ψ₂ into prenex
+    obtain ⟨R, hR, hRr⟩ := andPrenex (C := C) N₁ N₂ hN₁ hN₂
+    -- Negate the result to get ¬(¬Ψ₁ ∧ ¬Ψ₂)
+    obtain ⟨S, hS, hSr⟩ := negatePrenex (C := C) hR
+    exact ⟨S, hS, by
+      show (.or Φ₁ Φ₂).realization = S.realization
+      simp only [realization]
+      rw [he₁, he₂, hSr, hRr, hN₁r, hN₂r]
+      simp [Set.compl_inter]⟩
+  | exists_ x Φ ih =>
+    obtain ⟨Ψ, hpre, hequiv⟩ := ih
+    exact ⟨.exists_ x Ψ, .exists_ hpre, by
+      show (.exists_ x Φ).realization = _
+      simp [realization, hequiv]⟩
 
 end Formula
 
@@ -500,5 +976,103 @@ theorem example_1_2 :
       sub_self]
 
 end Example_1_2
+
+/-!
+### Constructible ↔ QF-Realizable
+
+A set is constructible if and only if it is the realization of
+a quantifier-free formula.
+-/
+
+namespace Formula
+
+/-- Conjunction of `eq_zero` atoms from a list. -/
+def conjEqZero : List (MvPolynomial σ D) → Formula D σ
+  | [] => .eq_zero 0
+  | [P] => .eq_zero P
+  | P :: Ps => .and (.eq_zero P) (conjEqZero Ps)
+
+theorem conjEqZero_isQF :
+    ∀ (L : List (MvPolynomial σ D)),
+    (conjEqZero L).IsQuantifierFree
+  | [] => trivial
+  | [_] => trivial
+  | _ :: _ :: Ps =>
+    ⟨trivial, conjEqZero_isQF (_ :: Ps)⟩
+
+theorem conjEqZero_realization [DecidableEq σ]
+    {C : Type*} [Field C] [Algebra D C] :
+    ∀ (L : List (MvPolynomial σ D)),
+    (conjEqZero L).realization (C := C) =
+      { y | ∀ P ∈ L, aeval y P = 0 }
+  | [] => by
+    ext y; simp [conjEqZero, realization, map_zero]
+  | [P] => by
+    ext y; simp [conjEqZero, realization]
+  | P :: Q :: Ps => by
+    ext y
+    simp only [conjEqZero, realization, Set.mem_inter_iff,
+      Set.mem_setOf_eq, List.mem_cons]
+    rw [show (conjEqZero (Q :: Ps)).realization (C := C) =
+      { y | ∀ P ∈ (Q :: Ps), aeval y P = 0 }
+      from conjEqZero_realization (Q :: Ps)]
+    simp only [Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨hP, hrest⟩ R hR
+      rcases hR with rfl | hR
+      · exact hP
+      · exact hrest R hR
+    · intro h
+      exact ⟨h P (Or.inl rfl),
+        fun R hR => h R (Or.inr hR)⟩
+
+end Formula
+
+open Formula in
+/-- Backward: QF-realizable → constructible. -/
+theorem qf_realizable_isConstructible
+    {Φ : Formula C (Fin k)} (hqf : Φ.IsQuantifierFree) :
+    IsConstructibleSet (Φ.realization (C := C)) := by
+  induction Φ with
+  | eq_zero P =>
+    exact .algebraic ⟨{P}, by
+      ext y; simp [Zer, realization, aeval_def]⟩
+  | not Φ ih => exact .compl (ih hqf)
+  | and Φ₁ Φ₂ ih₁ ih₂ =>
+    exact .inter (ih₁ hqf.1) (ih₂ hqf.2)
+  | or Φ₁ Φ₂ ih₁ ih₂ =>
+    exact (ih₁ hqf.1).union (ih₂ hqf.2)
+  | exists_ x Φ _ => exact absurd hqf id
+
+open Formula in
+/-- Forward: constructible → QF-realizable. -/
+theorem constructible_isQFRealizable
+    (V : Set (Fin k → C)) (hV : IsConstructibleSet V) :
+    ∃ Φ : Formula C (Fin k), Φ.IsQuantifierFree ∧
+      V = Φ.realization (C := C) := by
+  induction hV with
+  | algebraic hA =>
+    obtain ⟨𝒫, rfl⟩ := hA
+    exact ⟨conjEqZero 𝒫.toList, conjEqZero_isQF _,
+      by rw [conjEqZero_realization]
+         ext y; simp [Zer, aeval_def]⟩
+  | compl _ ih =>
+    obtain ⟨Φ, hqf, rfl⟩ := ih
+    exact ⟨.not Φ, hqf, by simp [realization]⟩
+  | inter _ _ ih₁ ih₂ =>
+    obtain ⟨Φ₁, hqf₁, rfl⟩ := ih₁
+    obtain ⟨Φ₂, hqf₂, rfl⟩ := ih₂
+    exact ⟨.and Φ₁ Φ₂, ⟨hqf₁, hqf₂⟩,
+      by simp [realization]⟩
+
+/-- A set is constructible iff it is the realization of a
+    quantifier-free formula. -/
+theorem constructible_iff_qfRealizable
+    (V : Set (Fin k → C)) :
+    IsConstructibleSet V ↔
+    ∃ Φ : Formula C (Fin k), Φ.IsQuantifierFree ∧
+      V = Φ.realization (C := C) :=
+  ⟨constructible_isQFRealizable V,
+   fun ⟨Φ, hqf, hV⟩ => hV ▸ qf_realizable_isConstructible hqf⟩
 
 end Azurite.BPR
