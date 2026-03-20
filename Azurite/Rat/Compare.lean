@@ -33,19 +33,11 @@ lemma compare_num_zero_neg (x : ℚ) (h : x < 0) : compare x.num 0 = Ordering.lt
 lemma compare_num_zero_zero : compare (0 : ℚ).num 0 = Ordering.eq := by decide
 lemma compare_num_zero_pos (x : ℚ) (h : 0 < x) : compare x.num 0 = Ordering.gt :=
   compare_gt_iff_gt.mpr (Rat.num_pos.mpr h)
-/-- `Mathlib.Tactic.Ring.instOrdRat_mathlib` (from the Ring tactic) and
-`Rat.linearOrder.toOrd` are both valid `Ord ℚ` instances. They agree everywhere;
-this lemma lets us move between them in proofs. -/
+/-- After `Mathlib.Tactic.Ring.instOrdRat_mathlib` was removed, the default `Ord ℚ`
+and `Rat.linearOrder.toOrd` are the very same instance, so this is `rfl`. -/
 lemma ring_ord_eq_linear_ord (x y : ℚ) :
-    @compare ℚ Mathlib.Tactic.Ring.instOrdRat_mathlib x y =
-    @compare ℚ Rat.linearOrder.toOrd x y := by
-  show (if x ≤ y then if y ≤ x then Ordering.eq else Ordering.lt else Ordering.gt) =
-       compareOfLessAndEq x y
-  unfold compareOfLessAndEq
-  rcases lt_trichotomy x y with h | rfl | h
-  · simp [le_of_lt h, not_le.mpr h]
-  · simp
-  · simp [h.ne', le_of_lt h, not_le.mpr h]
+    compare x y =
+    @compare ℚ Rat.linearOrder.toOrd x y := rfl
 
 /-- Fast computable comparison for rational numbers using bit sizes and logarithmic bounds. -/
 def cmp (x y : ℚ) : Ordering :=
