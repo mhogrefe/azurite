@@ -1,4 +1,4 @@
-mod dense_poly;
+mod az_polynomial;
 
 use std::collections::BTreeMap;
 use std::env;
@@ -302,7 +302,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: {} <benchmark> <input_file> [output_svg]", args[0]);
-        eprintln!("  benchmarks: rat_cmp, dense_poly_mul");
+        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul");
         std::process::exit(1);
     }
     let benchmark = &args[1];
@@ -334,7 +334,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 series1_label, series2_label,
             )?;
         }
-        "dense_poly_mul" | "dense_poly_karatsuba" => {
+        "az_polynomial_mul" | "az_polynomial_karatsuba" => {
             let rows = parse_multi_series_file(&content);
             println!("Parsed {} rows.", rows.len());
             print_summary(&rows);
@@ -346,7 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         other => {
             eprintln!("Unknown benchmark: {other:?}");
-            eprintln!("Valid benchmarks: rat_cmp, dense_poly_mul, dense_poly_karatsuba");
+            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba");
             std::process::exit(1);
         }
     }

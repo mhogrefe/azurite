@@ -381,6 +381,22 @@ def isSentence [DecidableEq σ] (Φ : Formula D σ) :
     Prop :=
   Φ.freeVars = ∅
 
+/-- The formula "True": 0 = 0. -/
+def trueFormula : Formula D σ := .eq_zero 0
+
+/-- The formula "False": 0 ≠ 0. -/
+def falseFormula : Formula D σ := .not (.eq_zero 0)
+
+@[simp] theorem realization_trueFormula [DecidableEq σ] :
+    (trueFormula : Formula D σ).realization (C := C) =
+      Set.univ := by
+  ext y; simp [trueFormula, realization, map_zero]
+
+@[simp] theorem realization_falseFormula [DecidableEq σ] :
+    (falseFormula : Formula D σ).realization (C := C) =
+      ∅ := by
+  ext y; simp [falseFormula, realization, map_zero]
+
 /-- A formula is quantifier-free if no quantifier (∃ or ∀)
     appears in it. -/
 def IsQuantifierFree : Formula D σ → Prop
@@ -914,6 +930,204 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
     exact ⟨.exists_ x Ψ, .exists_ hpre, by
       show (.exists_ x Φ).realization = _
       simp [realization, hequiv]⟩
+
+/-!
+### Sentences
+
+Realization depends only on free variables.
+A sentence (no free variables) is C-equivalent to True or False.
+-/
+
+theorem realization_eq_of_agree_on_freeVars
+    [DecidableEq σ]
+    (Φ : Formula D σ) (y₁ y₂ : σ → C)
+    (h : ∀ x ∈ Φ.freeVars, y₁ x = y₂ x) :
+    y₁ ∈ Φ.realization (C := C) ↔
+    y₂ ∈ Φ.realization := by
+  induction Φ with
+  | eq_zero P =>
+    simp only [realization, Set.mem_setOf_eq] at *
+    congr 1
+    exact aeval_eq_aeval_of_forall_mem_vars_eq _ _ _ h
+  | not _ ih =>
+    simp only [realization, Set.mem_compl_iff] at *
+    rw [ih h]
+  | and _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_inter_iff,
+      freeVars] at *
+    rw [ih₁ (fun x hx =>
+          h x (Finset.mem_union_left _ hx)),
+        ih₂ (fun x hx =>
+          h x (Finset.mem_union_right _ hx))]
+  | or _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_union, freeVars] at *
+    rw [ih₁ (fun x hx =>
+          h x (Finset.mem_union_left _ hx)),
+        ih₂ (fun x hx =>
+          h x (Finset.mem_union_right _ hx))]
+  | exists_ z _ ih =>
+    simp only [realization, Set.mem_setOf_eq] at *
+    constructor <;> rintro ⟨c, hc⟩ <;> exact ⟨c,
+      (ih (fun x hx => by
+        simp [Function.update]
+        intro hne
+        exact h x (by
+          rw [Finset.mem_sdiff, Finset.mem_singleton]
+          exact ⟨hx, hne⟩))).mp hc⟩
+
+theorem sentence_trivial_realization [DecidableEq σ]
+    (Φ : Formula D σ) (hΦ : isSentence Φ) :
+    Φ.realization (C := C) = ∅ ∨
+    Φ.realization (C := C) = Set.univ := by
+  by_cases h : ∃ y, y ∈ Φ.realization (C := C)
+  · right; ext y'
+    obtain ⟨y, hy⟩ := h
+    simp only [Set.mem_univ, iff_true]
+    exact (realization_eq_of_agree_on_freeVars Φ y y'
+      (by simp [isSentence] at hΦ; simp [hΦ])).mp hy
+  · left; push_neg at h
+    exact Set.eq_empty_of_forall_not_mem h
+
+theorem sentence_equiv_true_or_false [DecidableEq σ]
+    (Φ : Formula D σ) (hΦ : isSentence Φ) :
+    CEquiv (C := C) Φ trueFormula ∨
+    CEquiv (C := C) Φ falseFormula := by
+  rcases sentence_trivial_realization Φ hΦ with h | h
+  · right; show Φ.realization = _
+    rw [h, realization_falseFormula]
+  · left; show Φ.realization = _
+    rw [h, realization_trueFormula]
+
+/-!
+### Exercise 1.4: Field Axioms
+
+The field axioms as formulas. The ring axioms
+(commutativity, associativity, distributivity, identities)
+are tautological polynomial identities. The remaining
+non-trivial axioms are:
+-/
+
+/-- ∀X₀ ∃X₁, X₀ + X₁ = 0 (additive inverse). -/
+def additiveInverse : Formula ℤ (Fin 2) :=
+  forall_ 0 (.exists_ 1 (.eq_zero (X 0 + X 1)))
+
+/-- ∀X₀, X₀ = 0 ∨ ∃X₁, X₀X₁ − 1 = 0
+    (multiplicative inverse for nonzero elements). -/
+def multiplicativeInverse : Formula ℤ (Fin 2) :=
+  forall_ 0 (.or (.eq_zero (X 0))
+    (.exists_ 1 (.eq_zero (X 0 * X 1 - 1))))
+
+/-- 1 ≠ 0 (nontriviality). -/
+def fieldNontriviality : Formula ℤ (Fin 2) :=
+  ne_zero 1
+
+theorem additiveInverse_holds :
+    additiveInverse.realization (C := C) =
+      Set.univ := by
+  ext y; simp [additiveInverse, forall_, realization,
+    Set.mem_compl_iff, not_exists, not_not]
+  intro c
+  exact ⟨-c, by simp [Function.update_self,
+    map_add, aeval_X]⟩
+
+theorem multiplicativeInverse_holds :
+    multiplicativeInverse.realization (C := C) =
+      Set.univ := by
+  ext y; simp [multiplicativeInverse, forall_, realization,
+    Set.mem_compl_iff, not_exists, not_not, Set.mem_union]
+  intro c; by_cases hc : c = 0
+  · left; simp [Function.update_self, aeval_X, hc]
+  · right; exact ⟨c⁻¹, by
+      simp [Function.update, aeval_X, map_sub,
+        map_mul, map_one]; ring_nf
+      simp [mul_inv_cancel₀ hc]⟩
+
+theorem fieldNontriviality_holds :
+    fieldNontriviality.realization (C := C) =
+      Set.univ := by
+  ext y; simp [fieldNontriviality, ne_zero, realization,
+    Set.mem_compl_iff, map_one, one_ne_zero]
+
+/-!
+### Algebraic Closure Axiom Φ_d
+
+Φ_d asserts that every monic polynomial of degree d has a
+root: ∀Y₁...∀Y_d ∃X, X^d + Y₁X^(d-1) + ... + Y_d = 0.
+-/
+
+/-- The generic monic polynomial of degree d:
+    X₀^d + X₁ · X₀^(d-1) + X₂ · X₀^(d-2) + ... + X_d.
+    Variable 0 is the root variable, variables 1..d are
+    coefficients. -/
+def monicPoly (d : ℕ) :
+    MvPolynomial (Fin (d + 1)) ℤ :=
+  X 0 ^ d + ∑ i in Finset.range d,
+    X ⟨i + 1, by omega⟩ * X 0 ^ (d - 1 - i)
+
+/-- Φ_d: ∀Y₁ ∀Y₂ ... ∀Y_d ∃X, monicPoly d = 0.
+    Example: Φ₂ = ∀Y₁ ∀Y₂ ∃X, X² + Y₁X + Y₂ = 0. -/
+def phiD (d : ℕ) : Formula ℤ (Fin (d + 1)) :=
+  (List.range d).foldr
+    (fun i acc => forall_ ⟨i + 1, by omega⟩ acc)
+    (.exists_ 0 (.eq_zero (monicPoly d)))
+
+private theorem realization_forall_of_univ [DecidableEq σ]
+    (x : σ) (Φ : Formula D σ)
+    (h : Φ.realization (C := C) = Set.univ) :
+    (forall_ x Φ).realization (C := C) = Set.univ := by
+  ext y; simp [forall_, realization, Set.mem_compl_iff,
+    not_exists, not_not, h]
+
+private theorem realization_foldr_forall_of_univ
+    [DecidableEq σ] (xs : List σ) (body : Formula D σ)
+    (h : body.realization (C := C) = Set.univ) :
+    (xs.foldr (fun x acc => forall_ x acc)
+      body).realization (C := C) = Set.univ := by
+  induction xs with
+  | nil => exact h
+  | cons x xs ih =>
+    simp [List.foldr]
+    exact realization_forall_of_univ x _ ih
+
+/-- Φ_d holds in any algebraically closed field. -/
+theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
+    (phiD d).realization (C := C) = Set.univ := by
+  unfold phiD
+  apply realization_foldr_forall_of_univ
+    ((List.range d).map fun i => ⟨i + 1, by omega⟩)
+  -- Body: ∃X, monicPoly d = 0
+  ext y; simp [realization, Set.mem_setOf_eq]
+  -- Build the univariate polynomial
+  let p : Polynomial C :=
+    Polynomial.X ^ d + ∑ i in Finset.range d,
+      Polynomial.C (y ⟨i + 1, by omega⟩) *
+        Polynomial.X ^ (d - 1 - i)
+  -- p is monic
+  have hp : p.Monic := by
+    apply Polynomial.monic_X_pow_add
+    calc Polynomial.natDegree (∑ i in Finset.range d,
+        Polynomial.C (y ⟨i + 1, _⟩) *
+          Polynomial.X ^ (d - 1 - i))
+      ≤ d - 1 := by
+        apply Polynomial.natDegree_sum_le_of_forall_le
+          _ _ (d - 1)
+        intro i _
+        calc _ ≤ 0 + (d - 1 - i) :=
+              Polynomial.natDegree_C_mul_X_pow_le _ _
+          _ ≤ d - 1 := by omega
+      _ < d := by omega
+  -- Has root by algebraic closure
+  obtain ⟨c, hc⟩ := IsAlgClosed.exists_root p
+    (by rw [hp.degree_eq]; simp [hd])
+  rw [Polynomial.IsRoot] at hc
+  -- Connect to monicPoly aeval
+  refine ⟨c, ?_⟩
+  simp [monicPoly, map_add, map_sum, map_mul, map_pow,
+    aeval_X, Function.update_self]
+  convert hc using 1
+  simp [p, Polynomial.eval_add, Polynomial.eval_pow,
+    Polynomial.eval_X, Polynomial.eval_finset_sum,
+    Polynomial.eval_mul, Polynomial.eval_C]
 
 end Formula
 
