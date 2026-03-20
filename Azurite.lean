@@ -14,7 +14,7 @@ import Azurite.DensePoly.Equiv.Map
 import Azurite.Nat.Compare
 import Azurite.Rat.LogBase2
 import Azurite.Rat.Compare
-import Azurite.RatPoly.Basic
-import Azurite.RatPoly.Equiv
+import Azurite.DensePolyQ.Basic
+import Azurite.DensePolyQ.Equiv.Basic
 import Azurite.Random
 import Azurite.Benchmark

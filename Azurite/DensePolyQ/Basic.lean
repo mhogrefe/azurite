@@ -29,7 +29,7 @@ section IntGCDHelpers
 
 /-- Compute the GCD of all absolute values in a list of integers, as a natural number.
     Returns 0 for the empty list (consistent with `Nat.gcd 0 n = n`). -/
-private abbrev listIntGcd (l : List ℤ) : ℕ :=
+abbrev listIntGcd (l : List ℤ) : ℕ :=
   l.foldl (fun acc n => Nat.gcd acc n.natAbs) 0
 
 /-- The foldl gcd only weakens: its result divides the accumulator. -/
@@ -130,6 +130,12 @@ def zero : DensePolyQ :=
 instance : Zero DensePolyQ := ⟨zero⟩
 instance : Inhabited DensePolyQ := ⟨zero⟩
 
+/-- The constant polynomial 1: numerator `#[1]`, denominator 1. -/
+def one : DensePolyQ :=
+  ⟨#[1], 1, by omega, by simp, by simp [listIntGcd]⟩
+
+instance : One DensePolyQ := ⟨one⟩
+
 @[simp] lemma zero_numerators : (0 : DensePolyQ).numerators = #[] := rfl
 @[simp] lemma zero_denom : (0 : DensePolyQ).denom = 1 := rfl
 
@@ -151,6 +157,10 @@ def degree (p : DensePolyQ) : WithBot ℕ :=
 def leadingCoeff (p : DensePolyQ) : ℚ :=
   p.coeff p.natDegree
 
+/-- The second-highest coefficient, or 0 for constants. -/
+def nextCoeff (p : DensePolyQ) : ℚ :=
+  if p.natDegree = 0 then 0 else p.coeff (p.natDegree - 1)
+
 /-- A polynomial is `Monic` if its leading coefficient is 1. -/
 def Monic (p : DensePolyQ) : Prop :=
   p.leadingCoeff = 1
@@ -159,8 +169,18 @@ instance {p : DensePolyQ} : Decidable p.Monic := by
   unfold Monic leadingCoeff coeff
   infer_instance
 
+@[simp]
+theorem Monic.leadingCoeff_eq_one {p : DensePolyQ} (hp : p.Monic) : p.leadingCoeff = 1 :=
+  hp
+
+theorem Monic.coeff_natDegree {p : DensePolyQ} (hp : p.Monic) : p.coeff p.natDegree = 1 :=
+  hp
+
 @[simp] lemma coeff_zero (i : ℕ) : (0 : DensePolyQ).coeff i = 0 := by
   simp [coeff]
+
+@[simp] lemma one_numerators : (1 : DensePolyQ).numerators = #[1] := rfl
+@[simp] lemma one_denom : (1 : DensePolyQ).denom = 1 := rfl
 
 /-! ## Normalization -/
 
