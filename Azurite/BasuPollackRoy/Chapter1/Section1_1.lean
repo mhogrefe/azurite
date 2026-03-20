@@ -408,6 +408,97 @@ theorem IsBasicFormula.isQuantifierFree
   | ne_zero _ => trivial
   | and _ _ ih₁ ih₂ => exact ⟨ih₁, ih₂⟩
 
+/-!
+### Realization
+
+The **C-realization** of a formula Φ with free variables
+in {Y₁, …, Yₖ}, denoted Reali(Φ, Cᵏ), is the set of
+y ∈ Cᵏ such that Φ(y) is true.
+
+Here D is a subring of C (expressed via `[Algebra D C]`),
+and `aeval` handles the coercion of coefficients from D to C.
+-/
+
+variable {C : Type*} [Field C] [Algebra D C]
+
+/-- The C-realization of a formula: the set of assignments
+    y : σ → C such that Φ(y) is true.
+    BPR notation: Reali(Φ, Cᵏ). -/
+def realization [DecidableEq σ] :
+    Formula D σ → Set (σ → C)
+  | .eq_zero P   => { y | aeval y P = 0 }
+  | .not Φ       => (Φ.realization)ᶜ
+  | .and Φ₁ Φ₂   => Φ₁.realization ∩ Φ₂.realization
+  | .or Φ₁ Φ₂    => Φ₁.realization ∪ Φ₂.realization
+  | .exists_ x Φ =>
+    { y | ∃ c : C, Function.update y x c ∈ Φ.realization }
+
+/-- Two formulas are **C-equivalent** if they have the same
+    C-realization. -/
+def CEquiv [DecidableEq σ]
+    (Φ Ψ : Formula D σ) : Prop :=
+  (realization (C := C) Φ) = (realization (C := C) Ψ)
+
 end Formula
+
+/-!
+### Example 1.2
+
+Φ = (∃Y)(XY − 1 = 0) and Ψ = (X ≠ 0) are formulas over ℤ
+with Free(Φ) = Free(Ψ) = {X}. Ψ is quantifier-free, and
+Φ and Ψ are C-equivalent for any algebraically closed field C.
+-/
+
+section Example_1_2
+
+open Formula
+
+/-- Φ = ∃Y, XY - 1 = 0  (0 = X, 1 = Y). -/
+def Φ_ex : Formula ℤ (Fin 2) :=
+  .exists_ 1 (.eq_zero (X 0 * X 1 - 1))
+
+/-- Ψ = X ≠ 0. -/
+def Ψ_ex : Formula ℤ (Fin 2) :=
+  Formula.ne_zero (X 0)
+
+theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
+  native_decide
+
+theorem freeVars_Ψ : Ψ_ex.freeVars = {0} := by
+  native_decide
+
+theorem freeVars_eq : Φ_ex.freeVars = Ψ_ex.freeVars := by
+  rw [freeVars_Φ, freeVars_Ψ]
+
+theorem Ψ_qf : Ψ_ex.IsQuantifierFree := trivial
+
+variable {C : Type*} [Field C] [IsAlgClosed C]
+
+/-- Example 1.2: Φ and Ψ are C-equivalent. -/
+theorem example_1_2 :
+    Formula.CEquiv (C := C) Φ_ex Ψ_ex := by
+  unfold CEquiv Φ_ex Ψ_ex ne_zero realization
+  ext y
+  simp only [Set.mem_setOf_eq, Set.mem_compl_iff]
+  constructor
+  · rintro ⟨c, hc⟩
+    simp [aeval_def, eval₂_mul, eval₂_sub, eval₂_X,
+      Function.update_self,
+      Function.update_noteq
+        (by decide : (0 : Fin 2) ≠ 1)] at hc
+    intro h0
+    rw [h0, zero_mul, zero_sub] at hc
+    exact one_ne_zero (neg_eq_zero.mp hc)
+  · intro h
+    refine ⟨(y 0)⁻¹, ?_⟩
+    simp [aeval_def, eval₂_mul, eval₂_sub, eval₂_X,
+      Function.update_self,
+      Function.update_noteq
+        (by decide : (0 : Fin 2) ≠ 1)]
+    rw [mul_inv_cancel₀
+      (by simpa [aeval_def, eval₂_X] using h),
+      sub_self]
+
+end Example_1_2
 
 end Azurite.BPR
