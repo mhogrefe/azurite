@@ -28,7 +28,9 @@ import Azurite.AzPolynomial.ToString
 import Azurite.AzPolynomial.Tune
 import Azurite.AzPolynomialQ.Basic
 import Azurite.AzPolynomialQ.Equiv.Basic
+import Azurite.AzPolynomialQ.Equiv.Parse
 import Azurite.AzPolynomialQ.Equiv.ToString
+import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2

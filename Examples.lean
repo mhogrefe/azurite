@@ -7,6 +7,7 @@ import Azurite.AzPolynomial.Cast
 import Azurite.AzPolynomial.ToString
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.StringLemmas
+import Azurite.AzPolynomialQ.Parse
 
 open Lean
 open Azurite
@@ -150,3 +151,14 @@ end ParseEval
 #guard (parseAzPolynomial (R := ℚ) "-2/3*x^2-1/2").map (·.coeffs) == some #[-1/2, 0, -2/3]
 #guard (parseAzPolynomial (R := ℤ) "-2/3*x^2-1/2") == none
 #guard (parseAzPolynomial (R := (ZMod 5)) "3*x^2-1").map (·.coeffs) == some #[4, 0, 3]
+
+open Azurite.AzPolynomialQ in
+#guard (parseAzPolynomialQ "3*x^2+2*x+1").map (·.numerators) == some #[1, 2, 3]
+open Azurite.AzPolynomialQ in
+#guard (parseAzPolynomialQ "3*x^2+2*x+1").map (·.denom) == some 1
+open Azurite.AzPolynomialQ in
+#guard (parseAzPolynomialQ "-2/3*x^2-1/2").map (·.numerators) == some #[-3, 0, -4]
+open Azurite.AzPolynomialQ in
+#guard (parseAzPolynomialQ "-2/3*x^2-1/2").map (·.denom) == some 6
+open Azurite.AzPolynomialQ in
+#guard (parseAzPolynomialQ "0").map (·.numerators) == some #[]
