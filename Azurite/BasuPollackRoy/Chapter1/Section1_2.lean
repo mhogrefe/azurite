@@ -1,6 +1,7 @@
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Div
+import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.RingTheory.Localization.FractionRing
 
 /-!
@@ -99,5 +100,93 @@ theorem zero_divisorOver_iff (P : D[X]) :
     simp only [Polynomial.DivisorOver, Polynomial.map_zero, zero_dvd_iff] at h
     exact Polynomial.map_injective _ (IsFractionRing.injective D K) (by simp [h])
   · rintro rfl; simp [Polynomial.DivisorOver]
+
+/-!
+### Euclidean Division (Proposition 1.5)
+
+If Q ≠ 0, the *remainder* Rem(P, Q) is the unique polynomial R ∈ K[X]
+of degree smaller than deg Q such that P = A Q + R for some A ∈ K[X].
+The *quotient* Quo(P, Q) is A.
+
+In Mathlib, Euclidean division for polynomials over a field is provided by
+the `EuclideanDomain` instance on `Polynomial K` (via `Polynomial.instEuclideanDomain`).
+The operators `/` and `%` give quotient and remainder, with:
+
+- `EuclideanDomain.div_add_mod`: `P = Q * (P / Q) + P % Q`
+- `Polynomial.degree_mod_lt`: `(P % Q).degree < Q.degree` for `Q ≠ 0`
+
+See: `Mathlib.Algebra.Polynomial.FieldDivision`
+
+There is also `Polynomial.divByMonic` (`/ₘ`) and `Polynomial.modByMonic`
+(`%ₘ`) which work over any ring but require the divisor to be monic.
+-/
+
+/-- Quo(P, Q): the quotient in the Euclidean division of P by Q,
+    computed in K[X] after mapping from D[X]. -/
+noncomputable def Quo (K : Type*) [Field K] [Algebra D K] [IsFractionRing D K]
+    (P Q : D[X]) : K[X] :=
+  (P.map (algebraMap D K)) / (Q.map (algebraMap D K))
+
+/-- Rem(P, Q): the remainder in the Euclidean division of P by Q,
+    computed in K[X] after mapping from D[X]. -/
+noncomputable def Rem (K : Type*) [Field K] [Algebra D K] [IsFractionRing D K]
+    (P Q : D[X]) : K[X] :=
+  (P.map (algebraMap D K)) % (Q.map (algebraMap D K))
+
+omit [IsDomain D] in
+/-- Euclidean division equation: P = Q · Quo(P,Q) + Rem(P,Q) in K[X]. -/
+theorem map_eq_mul_quo_add_rem (P Q : D[X]) :
+    P.map (algebraMap D K) =
+    Q.map (algebraMap D K) * Quo K P Q + Rem K P Q :=
+  (EuclideanDomain.div_add_mod _ _).symm
+
+omit [IsDomain D] in
+/-- deg(Rem(P, Q)) < deg(Q) when Q ≠ 0. -/
+theorem degree_rem_lt (P Q : D[X]) (hQ : Q ≠ 0) :
+    (Rem K P Q).degree < (Q.map (algebraMap D K)).degree :=
+  Polynomial.degree_mod_lt _
+    ((Polynomial.map_ne_zero_iff (IsFractionRing.injective D K)).mpr hQ)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Exercise 1.5: If Q ≠ 0, there exists a unique pair (A, R) in K[X]²
+    such that P = AQ + R and deg(R) < deg(Q). -/
+theorem exercise_1_5 (P Q : K[X]) (hQ : Q ≠ 0) :
+    ∃! p : K[X] × K[X],
+      P = p.1 * Q + p.2 ∧ p.2.degree < Q.degree := by
+  -- p.1 = A (quotient), p.2 = R (remainder)
+  have hmod : Q * (P / Q) + P % Q = P := EuclideanDomain.div_add_mod P Q
+  -- Existence
+  refine ⟨(P / Q, P % Q), ⟨?_, Polynomial.degree_mod_lt P hQ⟩, ?_⟩
+  · show P = P / Q * Q + P % Q
+    rw [mul_comm]; exact hmod.symm
+  -- Uniqueness
+  · rintro ⟨A, R⟩ ⟨hAR : P = A * Q + R, hDeg : R.degree < Q.degree⟩
+    have hEq : A * Q + R = P / Q * Q + P % Q :=
+      hAR.symm.trans (by rw [mul_comm]; exact hmod.symm)
+    suffices hA : A = P / Q from
+      Prod.ext hA (add_left_cancel (show P / Q * Q + R = P / Q * Q + P % Q from
+        hA ▸ hEq))
+    by_contra hne
+    have hsub : (A - P / Q) * Q = P % Q - R := by
+      have : A * Q - P / Q * Q = P % Q - R :=
+        calc A * Q - P / Q * Q
+            = (A * Q + R) - R - P / Q * Q := by ring
+          _ = (P / Q * Q + P % Q) - R - P / Q * Q := by rw [hEq]
+          _ = P % Q - R := by ring
+      rwa [← sub_mul] at this
+    have hDegSub : (P % Q - R).degree < Q.degree :=
+      lt_of_le_of_lt (degree_sub_le _ _)
+        (max_lt (Polynomial.degree_mod_lt P hQ) hDeg)
+    rw [← hsub] at hDegSub
+    have hDegProd : Q.degree ≤ ((A - P / Q) * Q).degree := by
+      rw [degree_mul]
+      have h1 := degree_eq_bot.not.mpr (sub_ne_zero.mpr hne)
+      cases hd : (A - P / Q).degree with
+      | bot => exact absurd hd h1
+      | coe n =>
+        cases hq : Q.degree with
+        | bot => exact absurd (degree_eq_bot.mp hq) hQ
+        | coe m => exact_mod_cast Nat.le_add_left m n
+    exact absurd hDegSub (not_lt.mpr hDegProd)
 
 end Azurite.BPR
