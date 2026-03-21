@@ -1129,10 +1129,28 @@ noncomputable def Ψ_ex : Formula ℤ (Fin 2) :=
   Formula.ne_zero (X 0)
 
 theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
-  native_decide
+  simp only [Φ_ex, freeVars]
+  ext x; fin_cases x
+  · -- x = 0
+    simp only [Finset.mem_sdiff, Finset.mem_singleton]
+    exact ⟨fun _ => rfl, fun _ =>
+      ⟨(MvPolynomial.mem_vars _).mpr
+        ⟨Finsupp.single 0 1 + Finsupp.single 1 1,
+          MvPolynomial.mem_support_iff.mpr (by
+            simp only [MvPolynomial.coeff_sub, MvPolynomial.coeff_one]
+            rw [show MvPolynomial.X (0 : Fin 2) * MvPolynomial.X 1 =
+              MvPolynomial.monomial (Finsupp.single 0 1 + Finsupp.single 1 1) (1 : ℤ)
+              from by simp [MvPolynomial.X, MvPolynomial.monomial_mul]]
+            simp only [MvPolynomial.coeff_monomial,
+              if_neg (show (0 : (Fin 2) →₀ ℕ) ≠ Finsupp.single 0 1 + Finsupp.single 1 1
+                from by intro h; have := DFunLike.congr_fun h 0; simp at this)]
+            norm_num),
+          by simp [Finsupp.mem_support_iff]⟩, by decide⟩⟩
+  · -- x = 1
+    simp [Finset.mem_sdiff, Finset.mem_singleton]
 
 theorem freeVars_Ψ : Ψ_ex.freeVars = {0} := by
-  native_decide
+  simp only [Ψ_ex, ne_zero, freeVars, MvPolynomial.vars_X]
 
 theorem freeVars_eq : Φ_ex.freeVars = Ψ_ex.freeVars := by
   rw [freeVars_Φ, freeVars_Ψ]
@@ -1149,22 +1167,20 @@ theorem example_1_2 :
   simp only [Set.mem_setOf_eq, Set.mem_compl_iff]
   constructor
   · rintro ⟨c, hc⟩
-    simp [MvPolynomial.aeval_def, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
-      Function.update_self,
-      Function.update_of_ne
-        (by decide : (0 : Fin 2) ≠ 1)] at hc
+    simp only [realization, Set.mem_setOf_eq] at *
+    simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
+    simp only [Function.update_self,
+      Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)] at hc
     intro h0
     rw [h0, zero_mul, zero_sub] at hc
     exact one_ne_zero (neg_eq_zero.mp hc)
   · intro h
+    simp only [realization, Set.mem_setOf_eq] at *
+    simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
     refine ⟨(y 0)⁻¹, ?_⟩
-    simp [MvPolynomial.aeval_def, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
-      Function.update_self,
-      Function.update_of_ne
-        (by decide : (0 : Fin 2) ≠ 1)]
-    rw [mul_inv_cancel₀
-      (by simpa [MvPolynomial.aeval_def, MvPolynomial.eval₂_X] using h),
-      sub_self]
+    simp only [Function.update_self,
+      Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)]
+    rw [mul_inv_cancel₀ h, sub_self]
 
 end Example_1_2
 
