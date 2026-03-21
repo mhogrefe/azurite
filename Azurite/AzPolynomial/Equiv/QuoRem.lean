@@ -301,4 +301,16 @@ theorem toPoly_rem (P Q : AzPolynomial K) (hQ : AzPolynomial.toPoly Q ≠ 0) :
     rw [mul_comm]; exact h_ml.symm
   exact _root_.add_left_cancel (h_eq.symm.trans h_ml2)
 
+theorem ofPoly_quo (p q : Polynomial K) (hq : q ≠ 0) :
+    AzPolynomial.ofPoly (p / q) = quo (AzPolynomial.ofPoly p) (AzPolynomial.ofPoly q) := by
+  apply equivPolynomial.injective
+  dsimp [equivPolynomial]
+  rw [toPoly_quo _ _ (by rwa [toPoly_ofPoly]), toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
+
+theorem ofPoly_rem (p q : Polynomial K) (hq : q ≠ 0) :
+    AzPolynomial.ofPoly (p % q) = rem (AzPolynomial.ofPoly p) (AzPolynomial.ofPoly q) := by
+  apply equivPolynomial.injective
+  dsimp [equivPolynomial]
+  rw [toPoly_rem _ _ (by rwa [toPoly_ofPoly]), toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
+
 end Azurite.AzPolynomial
