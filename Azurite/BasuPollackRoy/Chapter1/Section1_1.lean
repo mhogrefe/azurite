@@ -84,6 +84,7 @@ BPR notation: Zer(poly_set, Cᵏ).
 def Zer (poly_set : Finset (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
   { x | ∀ P ∈ poly_set, MvPolynomial.eval x P = 0 }
 
+omit [IsAlgClosed C] in
 /-- `Zer poly_set` equals Mathlib's `zeroLocus` of the ideal spanned by poly_set. -/
 theorem zer_eq_zeroLocus (poly_set : Finset (MvPolynomial (Fin k) C)) :
     Zer poly_set = MvPolynomial.zeroLocus C (Ideal.span (↑poly_set : Set (MvPolynomial (Fin k) C))) := by
@@ -116,6 +117,7 @@ but does not name the predicate "is an algebraic set" at this level).
 def IsAlgebraicSet (V : Set (Fin k → C)) : Prop :=
   ∃ poly_set : Finset (MvPolynomial (Fin k) C), V = Zer poly_set
 
+omit [IsAlgClosed C] in
 /-- Cᵏ is an algebraic set (take poly_set = ∅). -/
 theorem isAlgebraicSet_univ : IsAlgebraicSet (Set.univ : Set (Fin k → C)) :=
   ⟨∅, by ext x; simp [Zer]⟩
@@ -132,6 +134,7 @@ noncomputable def mvPolyFinOneEquiv :
   (finSuccEquiv C 0).trans
     (Polynomial.mapAlgEquiv (isEmptyAlgEquiv C (Fin 0)))
 
+omit [IsAlgClosed C] in
 /-- MvPolynomial.eval at a constant function factors through
     the one-variable equivalence. -/
 theorem eval_eq_polynomial_eval
@@ -143,6 +146,7 @@ theorem eval_eq_polynomial_eval
   rw [heq, MvPolynomial.eval_eq_eval_mv_eval']
   congr 1
 
+omit [IsAlgClosed C] in
 /-- Exercise 1.1: An algebraic subset of C is either finite
     or all of C. -/
 theorem exercise_1_1 (V : Set (Fin 1 → C))
@@ -220,6 +224,7 @@ inductive IsConstructibleSet :
       IsConstructibleSet W →
       IsConstructibleSet (V ∩ W)
 
+omit [IsAlgClosed C] in
 /-- Constructible sets are closed under finite union (by De Morgan). -/
 theorem IsConstructibleSet.union {V W : Set (Fin k → C)}
     (hV : IsConstructibleSet V)
@@ -235,6 +240,7 @@ A constructible subset of C is either finite or the complement
 of a finite set.
 -/
 
+omit [IsAlgClosed C] in
 /-- Exercise 1.2: A constructible subset of C is either finite
     or cofinite. -/
 theorem exercise_1_2 (V : Set (Fin 1 → C))
@@ -272,6 +278,7 @@ inductive IsFinUnionBasicConstructible :
       IsFinUnionBasicConstructible W →
       IsFinUnionBasicConstructible (V ∪ W)
 
+omit [IsAlgClosed C] in
 private theorem compl_basic_fin_union
     {V : Set (Fin k → C)}
     (hV : IsBasicConstructibleSet V) :
@@ -283,6 +290,7 @@ private theorem compl_basic_fin_union
   | inter _ _ ih₁ ih₂ =>
     rw [Set.compl_inter]; exact .union ih₁ ih₂
 
+omit [IsAlgClosed C] in
 private theorem basic_inter_fin_union
     {B W : Set (Fin k → C)}
     (hB : IsBasicConstructibleSet B)
@@ -294,6 +302,7 @@ private theorem basic_inter_fin_union
     rw [Set.inter_union_distrib_left]
     exact .union ih₁ ih₂
 
+omit [IsAlgClosed C] in
 private theorem inter_fin_union
     {V W : Set (Fin k → C)}
     (hV : IsFinUnionBasicConstructible V)
@@ -305,6 +314,7 @@ private theorem inter_fin_union
     rw [Set.union_inter_distrib_right]
     exact .union ih₁ ih₂
 
+omit [IsAlgClosed C] in
 private theorem compl_fin_union {V : Set (Fin k → C)}
     (hV : IsFinUnionBasicConstructible V) :
     IsFinUnionBasicConstructible Vᶜ := by
@@ -313,6 +323,7 @@ private theorem compl_fin_union {V : Set (Fin k → C)}
   | union _ _ ih₁ ih₂ =>
     rw [Set.compl_union]; exact inter_fin_union ih₁ ih₂
 
+omit [IsAlgClosed C] in
 /-- Exercise 1.3: A constructible set is a finite union of
     basic constructible sets. -/
 theorem exercise_1_3 {V : Set (Fin k → C)}
@@ -1159,6 +1170,7 @@ theorem Ψ_qf : Ψ_ex.IsQuantifierFree := trivial
 
 variable {C : Type*} [Field C] [IsAlgClosed C]
 
+omit [IsAlgClosed C] in
 /-- Example 1.2: Φ and Ψ are C-equivalent. -/
 theorem example_1_2 :
     Formula.CEquiv (C := C) Φ_ex Ψ_ex := by
@@ -1239,6 +1251,7 @@ theorem conjEqZero_realization [DecidableEq σ]
 end Formula
 
 open Formula in
+omit [IsAlgClosed C] in
 /-- Backward: QF-realizable → constructible. -/
 theorem qf_realizable_isConstructible
     {Φ : Formula C (Fin k)} (hqf : Φ.IsQuantifierFree) :
@@ -1255,6 +1268,7 @@ theorem qf_realizable_isConstructible
   | exists_ x Φ _ => exact absurd hqf id
 
 open Formula in
+omit [IsAlgClosed C] in
 /-- Forward: constructible → QF-realizable. -/
 theorem constructible_isQFRealizable
     (V : Set (Fin k → C)) (hV : IsConstructibleSet V) :
@@ -1275,6 +1289,7 @@ theorem constructible_isQFRealizable
     exact ⟨.and Φ₁ Φ₂, ⟨hqf₁, hqf₂⟩,
       by simp [realization]⟩
 
+omit [IsAlgClosed C] in
 /-- A set is constructible iff it is the realization of a
     quantifier-free formula. -/
 theorem constructible_iff_qfRealizable
@@ -1283,6 +1298,6 @@ theorem constructible_iff_qfRealizable
     ∃ Φ : Formula C (Fin k), Φ.IsQuantifierFree ∧
       V = Φ.realization (C := C) :=
   ⟨constructible_isQFRealizable V,
-   fun ⟨Φ, hqf, hV⟩ => hV ▸ qf_realizable_isConstructible hqf⟩
+   fun ⟨_, hqf, hV⟩ => hV ▸ qf_realizable_isConstructible hqf⟩
 
 end Azurite.BPR
