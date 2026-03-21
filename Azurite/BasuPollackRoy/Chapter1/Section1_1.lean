@@ -1117,6 +1117,84 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
     Polynomial.eval_X, Polynomial.eval_finset_sum,
     Polynomial.eval_mul, Polynomial.eval_C]
 
+private lemma forall_realization_univ_iff
+    {D : Type*} [CommRing D] [Algebra D C]
+    {σ : Type*} [DecidableEq σ]
+    (x : σ) (Φ : Formula D σ) :
+    (forall_ x Φ).realization (C := C) = Set.univ ↔
+    Φ.realization (C := C) = Set.univ := by
+  constructor
+  · intro h; ext z; simp only [Set.mem_univ, iff_true]
+    have hz := (Set.eq_univ_iff_forall.mp h) z
+    simp only [realization, Set.mem_compl_iff, Set.mem_setOf_eq,
+      not_exists, not_not] at hz
+    convert hz (z x); exact (Function.update_eq_self x z).symm
+  · intro h; ext y; simp only [Set.mem_univ, iff_true]
+    simp only [realization, Set.mem_compl_iff, Set.mem_setOf_eq,
+      not_exists, not_not]
+    intro c; exact Set.eq_univ_iff_forall.mp h _
+
+private lemma phiD_univ_iff (d : ℕ) :
+    (phiD d).realization (C := C) = Set.univ ↔
+    (Formula.exists_ (0 : Fin (d + 1))
+      (Formula.eq_zero (monicPoly d))).realization (C := C) = Set.univ := by
+  unfold phiD
+  suffices h : ∀ (xs : List (Fin d)) (body : Formula ℤ (Fin (d + 1))),
+    (xs.foldr (fun i acc => forall_ ⟨i.val + 1, by omega⟩ acc)
+      body).realization (C := C) = Set.univ ↔
+    body.realization (C := C) = Set.univ from h _ _
+  intro xs body; induction xs with
+  | nil => exact Iff.rfl
+  | cons x xs ih =>
+    simp only [List.foldr_cons]
+    exact (forall_realization_univ_iff _ _).trans ih
+
+/-- Converse of `phiD_holds`: if Φ_d holds for all d ≥ 1,
+    then C is algebraically closed. -/
+theorem isAlgClosed_of_phiD_holds
+    (h : ∀ d, 0 < d → (phiD d).realization (C := C) = Set.univ) :
+    IsAlgClosed C := by
+  apply IsAlgClosed.of_exists_root
+  intro p hp hirr
+  have hd : 0 < p.natDegree := by
+    by_contra hle; push_neg at hle
+    exact not_irreducible_one
+      ((Polynomial.eq_one_of_monic_natDegree_zero hp (by omega)) ▸ hirr)
+  set d := p.natDegree with d_def
+  have hphi := (phiD_univ_iff d).mp (h d hd)
+  have hR := Set.eq_univ_iff_forall.mp hphi
+  set y : Fin (d + 1) → C := fun j => p.coeff (d - j.val)
+  have hy := hR y
+  simp only [realization, Set.mem_setOf_eq] at hy
+  obtain ⟨c, hc⟩ := hy
+  refine ⟨c, ?_⟩
+  simp only [monicPoly, map_add, map_sum, map_mul, map_pow,
+    MvPolynomial.aeval_X, Function.update_self] at hc
+  have h_upd : ∀ i : Fin d,
+    Function.update y (0 : Fin (d + 1)) c ⟨↑i + 1, by omega⟩ =
+    p.coeff (d - 1 - (i : ℕ)) := by
+    intro i
+    rw [Function.update_of_ne (show (⟨↑i + 1, by omega⟩ : Fin (d + 1)) ≠ 0
+      from by simp [Fin.ext_iff])]
+    simp only [y]; congr 1; omega
+  simp_rw [h_upd] at hc
+  rw [← hc]
+  conv_lhs => rw [Polynomial.as_sum_range_C_mul_X_pow p]
+  simp only [d_def, Polynomial.eval_finset_sum, Polynomial.eval_mul,
+    Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X]
+  rw [Finset.sum_range_succ,
+    show p.coeff p.natDegree = 1 from hp.coeff_natDegree,
+    one_mul, add_comm]
+  congr 1
+  rw [← Finset.sum_range_reflect (fun j => p.coeff j * c ^ j) d]
+  symm
+  apply Finset.sum_nbij (fun (i : Fin d) => (i : ℕ))
+  · intro i _; exact Finset.mem_range.mpr i.isLt
+  · intro i₁ i₂ _ _ h; exact Fin.val_injective h
+  · intro j hj
+    exact ⟨⟨j, Finset.mem_range.mp hj⟩, Finset.mem_univ _, rfl⟩
+  · intro _ _; rfl
+
 end Formula
 
 /-!
