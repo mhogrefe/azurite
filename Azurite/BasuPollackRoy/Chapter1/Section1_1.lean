@@ -161,32 +161,25 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
     left
     apply Set.Finite.subset (s := { x : Fin 1 → C |
         MvPolynomial.eval x P₀ = 0 })
-    · -- Transfer through (Fin 1 → C) ≃ C
+    · -- {x | eval x P₀ = 0} is finite via transfer to C[X]
       let e : (Fin 1 → C) ≃ C := Equiv.funUnique (Fin 1) C
-      show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0 }.Finite
-      rw [show { x : Fin 1 → C |
-            MvPolynomial.eval x P₀ = 0 } =
-          e.symm '' { c : C |
-            Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0 }
+      have hpne : mvPolyFinOneEquiv P₀ ≠ 0 :=
+        fun h => hP₀ne (mvPolyFinOneEquiv.injective (by rw [h, map_zero]))
+      rw [show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0 } =
+          e.symm '' { c : C | Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0 }
         from by
-        ext x
-        simp only [e, Equiv.funUnique, Set.mem_setOf_eq,
-          Set.mem_image]
+        ext x; simp only [Set.mem_setOf_eq, Set.mem_image, e, Equiv.funUnique]
         constructor
         · intro hx
-          refine ⟨x 0, ?_, by ext ⟨i, hi⟩; simp [show i = 0 by omega]⟩
-          rw [← eval_eq_polynomial_eval]
-          convert hx using 2
-          ext ⟨i, hi⟩; simp [show i = 0 by omega]
+          exact ⟨x 0,
+            by rwa [← eval_eq_polynomial_eval, show (fun (_ : Fin 1) => x 0) = x from
+              _root_.funext fun ⟨i, hi⟩ => by simp [show i = 0 by omega]],
+            _root_.funext fun ⟨i, hi⟩ => by simp [show i = 0 by omega]⟩
         · rintro ⟨c, hc, rfl⟩
-          rw [← eval_eq_polynomial_eval] at hc
-          simpa using hc]
-      apply Set.Finite.image
-      exact Polynomial.finite_setOf_isRoot
-        (by intro h; exact hP₀ne (mvPolyFinOneEquiv.injective
-          (by rw [h, map_zero])))
-    · intro x hx
-      exact hx P₀ hP₀mem
+          show MvPolynomial.eval _ P₀ = 0
+          rw [← eval_eq_polynomial_eval] at hc; simpa using hc]
+      exact (Polynomial.finite_setOf_isRoot hpne).image _
+    · intro x hx; exact hx P₀ hP₀mem
 
 /-!
 A **basic constructible set** over Cᵏ is a member of the smallest
