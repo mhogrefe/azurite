@@ -16,5 +16,6 @@ import Azurite.Rat.LogBase2
 import Azurite.Rat.Compare
 import Azurite.AzPolynomialQ.Basic
 import Azurite.AzPolynomialQ.Equiv.Basic
+import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.Random
 import Azurite.Benchmark

@@ -66,9 +66,9 @@ open MvPolynomial Polynomial
 variable {k : ℕ} {C : Type*} [Field C] [IsAlgClosed C]
 
 /-!
-If 𝒫 is a finite subset of C[X₁, …, Xₖ], the **set of zeros** of 𝒫 in Cᵏ is
+If poly_set is a finite subset of C[X₁, …, Xₖ], the **set of zeros** of poly_set in Cᵏ is
 
-  Zer(𝒫, Cᵏ) = { x ∈ Cᵏ | ∀ P ∈ 𝒫, P(x) = 0 }
+  Zer(poly_set, Cᵏ) = { x ∈ Cᵏ | ∀ P ∈ poly_set, P(x) = 0 }
 
 Mathlib already has `MvPolynomial.zeroLocus`, but it takes an `Ideal` rather than
 a finite set of polynomials. We define `Zer` to match BPR's notation and prove
@@ -78,32 +78,35 @@ it equals Mathlib's `zeroLocus` applied to the spanned ideal.
 /-!
 ### Notation 1.1 (Zero Set)
 
-The set of common zeros of a finite set of polynomials 𝒫 in Cᵏ.
-BPR notation: Zer(𝒫, Cᵏ).
+The set of common zeros of a finite set of polynomials poly_set in Cᵏ.
+BPR notation: Zer(poly_set, Cᵏ).
 -/
-def Zer (𝒫 : Finset (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
-  { x | ∀ P ∈ 𝒫, MvPolynomial.eval x P = 0 }
+def Zer (poly_set : Finset (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
+  { x | ∀ P ∈ poly_set, MvPolynomial.eval x P = 0 }
 
-/-- `Zer 𝒫` equals Mathlib's `zeroLocus` of the ideal spanned by 𝒫. -/
-theorem zer_eq_zeroLocus (𝒫 : Finset (MvPolynomial (Fin k) C)) :
-    Zer 𝒫 = MvPolynomial.zeroLocus C (Ideal.span (↑𝒫 : Set _)) := by
+/-- `Zer poly_set` equals Mathlib's `zeroLocus` of the ideal spanned by poly_set. -/
+theorem zer_eq_zeroLocus (poly_set : Finset (MvPolynomial (Fin k) C)) :
+    Zer poly_set = MvPolynomial.zeroLocus C (Ideal.span (↑poly_set : Set (MvPolynomial (Fin k) C))) := by
   ext x
-  simp only [Zer, MvPolynomial.zeroLocus, Set.mem_setOf_eq, MvPolynomial.mem_zeroLocus_iff]
+  simp only [Zer, Set.mem_setOf_eq, MvPolynomial.mem_zeroLocus_iff]
   constructor
   · intro h p hp
-    refine Submodule.span_induction hp
-      (fun q hq => h q (by exact_mod_cast hq)) ?_ ?_ ?_
-    · simp
-    · intro a b ha hb
-      simp [ha, hb]
-    · intro a p hp
-      simp [hp]
+    have eval_eq : ∀ q : MvPolynomial (Fin k) C,
+        MvPolynomial.eval x q = (MvPolynomial.aeval x) q := by
+      intro q; simp [MvPolynomial.aeval_def]
+    rw [← eval_eq]
+    induction hp using Submodule.span_induction with
+    | mem q hq => exact h q (Finset.mem_coe.mp hq)
+    | zero => simp
+    | add a b _ _ ha hb => rw [map_add, ha, hb, add_zero]
+    | smul a q _ hq => rw [smul_eq_mul, map_mul, hq, mul_zero]
   · intro h p hp
-    exact h p (Ideal.subset_span (by exact_mod_cast hp))
+    have := h p (Ideal.subset_span (Finset.mem_coe.mpr hp))
+    simpa [MvPolynomial.aeval_def] using this
 
 /-!
 A subset V of Cᵏ is an **algebraic set** (or **algebraic subset**) if
-V = Zer(𝒫, Cᵏ) for some finite set of polynomials 𝒫 ⊆ C[X₁, …, Xₖ].
+V = Zer(poly_set, Cᵏ) for some finite set of polynomials poly_set ⊆ C[X₁, …, Xₖ].
 
 This does not appear to exist in Mathlib (Mathlib works with `zeroLocus` of ideals
 but does not name the predicate "is an algebraic set" at this level).
@@ -111,9 +114,9 @@ but does not name the predicate "is an algebraic set" at this level).
 
 /-- A subset V of Cᵏ is algebraic if it is the zero set of some finite set of polynomials. -/
 def IsAlgebraicSet (V : Set (Fin k → C)) : Prop :=
-  ∃ 𝒫 : Finset (MvPolynomial (Fin k) C), V = Zer 𝒫
+  ∃ poly_set : Finset (MvPolynomial (Fin k) C), V = Zer poly_set
 
-/-- Cᵏ is an algebraic set (take 𝒫 = ∅). -/
+/-- Cᵏ is an algebraic set (take poly_set = ∅). -/
 theorem isAlgebraicSet_univ : IsAlgebraicSet (Set.univ : Set (Fin k → C)) :=
   ⟨∅, by ext x; simp [Zer]⟩
 
@@ -135,57 +138,55 @@ theorem eval_eq_polynomial_eval
     (P : MvPolynomial (Fin 1) C) (c : C) :
     MvPolynomial.eval (fun _ => c) P =
       Polynomial.eval c (mvPolyFinOneEquiv P) := by
-  simp only [mvPolyFinOneEquiv]
-  rw [AlgEquiv.trans_apply, Polynomial.mapAlgEquiv_apply]
-  have h := eval_polynomial_eval_finSuccEquiv P
-    (MvPolynomial.C c : MvPolynomial (Fin 0) C)
-  simp [MvPolynomial.eval_C] at h
-  rw [← h]
+  have heq : (fun _ : Fin 1 => c) = Fin.cons c Fin.elim0 :=
+    funext (fun i => by fin_cases i; rfl)
+  rw [heq, MvPolynomial.eval_eq_eval_mv_eval']
   congr 1
-  simp [Polynomial.eval_map]
-  congr 1
-  ext x; exact Fin.elim0 x
 
 /-- Exercise 1.1: An algebraic subset of C is either finite
     or all of C. -/
 theorem exercise_1_1 (V : Set (Fin 1 → C))
     (hV : IsAlgebraicSet V) :
     V.Finite ∨ V = Set.univ := by
-  obtain ⟨𝒫, rfl⟩ := hV
-  by_cases h : ∀ P ∈ 𝒫, P = 0
-  · -- All polynomials are zero ⟹ Zer 𝒫 = Cᵏ
+  obtain ⟨poly_set, rfl⟩ := hV
+  by_cases h : ∀ P ∈ poly_set, P = 0
+  · -- All polynomials are zero ⟹ Zer poly_set = Cᵏ
     right
     ext x
     simp only [Zer, Set.mem_setOf_eq, Set.mem_univ, iff_true]
     intro P hP; rw [h P hP]; simp
-  · -- Some P₀ ∈ 𝒫 is nonzero ⟹ Zer 𝒫 ⊆ roots(P₀)
+  · -- Some P₀ ∈ poly_set is nonzero ⟹ Zer poly_set ⊆ roots(P₀)
     push_neg at h
     obtain ⟨P₀, hP₀mem, hP₀ne⟩ := h
     left
-    apply Set.Finite.subset _ (fun x hx => hx P₀ hP₀mem)
-    -- Transfer through (Fin 1 → C) ≃ C
-    let e : (Fin 1 → C) ≃ C := Equiv.funUnique (Fin 1) C
-    rw [show { x : Fin 1 → C |
-          MvPolynomial.eval x P₀ = 0 } =
-        e.symm '' { c : C |
-          Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0 }
-      from by
-      ext x
-      simp only [e, Equiv.funUnique, Set.mem_setOf_eq,
-        Set.mem_image, Equiv.coe_fn_symm_mk]
-      constructor
-      · intro hx
-        exact ⟨x 0, by
+    apply Set.Finite.subset (s := { x : Fin 1 → C |
+        MvPolynomial.eval x P₀ = 0 })
+    · -- Transfer through (Fin 1 → C) ≃ C
+      let e : (Fin 1 → C) ≃ C := Equiv.funUnique (Fin 1) C
+      show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0 }.Finite
+      rw [show { x : Fin 1 → C |
+            MvPolynomial.eval x P₀ = 0 } =
+          e.symm '' { c : C |
+            Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0 }
+        from by
+        ext x
+        simp only [e, Equiv.funUnique, Set.mem_setOf_eq,
+          Set.mem_image]
+        constructor
+        · intro hx
+          refine ⟨x 0, ?_, by ext ⟨i, hi⟩; simp [show i = 0 by omega]⟩
           rw [← eval_eq_polynomial_eval]
-          convert hx; ext i; exact (Fin.eq_zero i).symm ▸ rfl,
-          by ext i; exact (Fin.eq_zero i).symm ▸ rfl⟩
-      · rintro ⟨c, hc, rfl⟩
-        rw [← eval_eq_polynomial_eval] at hc
-        simpa using hc]
-    apply Set.Finite.image
-    exact Polynomial.finite_setOf_isRoot
-      (by intro h; exact hP₀ne (mvPolyFinOneEquiv.injective
-        (by rw [h, map_zero])))
+          convert hx using 2
+          ext ⟨i, hi⟩; simp [show i = 0 by omega]
+        · rintro ⟨c, hc, rfl⟩
+          rw [← eval_eq_polynomial_eval] at hc
+          simpa using hc]
+      apply Set.Finite.image
+      exact Polynomial.finite_setOf_isRoot
+        (by intro h; exact hP₀ne (mvPolyFinOneEquiv.injective
+          (by rw [h, map_zero])))
+    · intro x hx
+      exact hx P₀ hP₀mem
 
 /-!
 A **basic constructible set** over Cᵏ is a member of the smallest
@@ -253,7 +254,7 @@ theorem exercise_1_2 (V : Set (Fin 1 → C))
     · right; rw [huniv]; simp
   | compl _ ih =>
     rcases ih with h | h
-    · exact Or.inr (by rwa [Set.compl_compl])
+    · exact Or.inr (by rwa [compl_compl])
     · exact Or.inl h
   | inter _ _ ihV ihW =>
     rcases ihV, ihW with ⟨hV | hV, hW | hW⟩
@@ -285,7 +286,7 @@ private theorem compl_basic_fin_union
   induction hV with
   | algebraic hA => exact .basic (.compl_algebraic hA)
   | compl_algebraic hA =>
-    rw [Set.compl_compl]; exact .basic (.algebraic hA)
+    rw [compl_compl]; exact .basic (.algebraic hA)
   | inter _ _ ih₁ ih₂ =>
     rw [Set.compl_inter]; exact .union ih₁ ih₂
 
@@ -309,7 +310,7 @@ private theorem inter_fin_union
   | basic hB => exact basic_inter_fin_union hB hW
   | union _ _ ih₁ ih₂ =>
     rw [Set.union_inter_distrib_right]
-    exact .union (ih₁ hW) (ih₂ hW)
+    exact .union ih₁ ih₂
 
 private theorem compl_fin_union {V : Set (Fin k → C)}
     (hV : IsFinUnionBasicConstructible V) :
@@ -353,22 +354,22 @@ inductive Formula (D : Type*) [CommRing D]
 
 namespace Formula
 
+variable {D : Type*} [CommRing D] {σ : Type*}
+
 /-- P ≠ 0 as a formula. -/
 def ne_zero (P : MvPolynomial σ D) : Formula D σ :=
   .not (.eq_zero P)
 
 /-- Universal quantification: ∀x, Φ  :=  ¬∃x, ¬Φ. -/
-def forall_ (x : σ) (Φ : Formula D σ) : Formula D σ :=
+abbrev forall_ (x : σ) (Φ : Formula D σ) : Formula D σ :=
   .not (.exists_ x (.not Φ))
 
 /-- Implication: Φ ⇒ Ψ  :=  ¬Φ ∨ Ψ. -/
 def implies (Φ Ψ : Formula D σ) : Formula D σ :=
   .or (.not Φ) Ψ
 
-variable {D : Type*} [CommRing D] {σ : Type*}
-
 /-- The free variables of a formula. -/
-def freeVars [DecidableEq σ] :
+noncomputable def freeVars [DecidableEq σ] :
     Formula D σ → Finset σ
   | .eq_zero P   => P.vars
   | .not Φ       => Φ.freeVars
@@ -382,20 +383,10 @@ def isSentence [DecidableEq σ] (Φ : Formula D σ) :
   Φ.freeVars = ∅
 
 /-- The formula "True": 0 = 0. -/
-def trueFormula : Formula D σ := .eq_zero 0
+noncomputable def trueFormula : Formula D σ := .eq_zero 0
 
 /-- The formula "False": 0 ≠ 0. -/
-def falseFormula : Formula D σ := .not (.eq_zero 0)
-
-@[simp] theorem realization_trueFormula [DecidableEq σ] :
-    (trueFormula : Formula D σ).realization (C := C) =
-      Set.univ := by
-  ext y; simp [trueFormula, realization, map_zero]
-
-@[simp] theorem realization_falseFormula [DecidableEq σ] :
-    (falseFormula : Formula D σ).realization (C := C) =
-      ∅ := by
-  ext y; simp [falseFormula, realization, map_zero]
+noncomputable def falseFormula : Formula D σ := .not (.eq_zero 0)
 
 /-- A formula is quantifier-free if no quantifier (∃ or ∀)
     appears in it. -/
@@ -462,7 +453,7 @@ variable {C : Type*} [Field C] [Algebra D C]
 /-- The C-realization of a formula: the set of assignments
     y : σ → C such that Φ(y) is true.
     BPR notation: Reali(Φ, Cᵏ). -/
-def realization [DecidableEq σ] :
+noncomputable def realization [DecidableEq σ] :
     Formula D σ → Set (σ → C)
   | .eq_zero P   => { y | aeval y P = 0 }
   | .not Φ       => (Φ.realization)ᶜ
@@ -475,6 +466,16 @@ def CEquiv [DecidableEq σ]
     (Φ Ψ : Formula D σ) : Prop :=
   (realization (C := C) Φ) = (realization (C := C) Ψ)
 
+@[simp] theorem realization_trueFormula [DecidableEq σ] :
+    (trueFormula : Formula D σ).realization (C := C) =
+      Set.univ := by
+  ext y; simp [trueFormula, realization, map_zero]
+
+@[simp] theorem realization_falseFormula [DecidableEq σ] :
+    (falseFormula : Formula D σ).realization (C := C) =
+      ∅ := by
+  ext y; simp [falseFormula, realization, map_zero]
+
 /-!
 ### Prenex Normal Form Infrastructure
 
@@ -483,7 +484,7 @@ normal form theorem.
 -/
 
 /-- Rename variables in a formula via `f : σ → τ`. -/
-def rename (f : σ → τ) : Formula D σ → Formula D τ
+noncomputable def rename (f : σ → τ) : Formula D σ → Formula D τ
   | .eq_zero P   => .eq_zero (P.rename f)
   | .not Φ       => .not (Φ.rename f)
   | .and Φ₁ Φ₂   => .and (Φ₁.rename f) (Φ₂.rename f)
@@ -555,17 +556,22 @@ theorem rename_realization [DecidableEq σ] [DecidableEq τ]
 private theorem aeval_update_of_not_mem_vars
     [DecidableEq σ] (P : MvPolynomial σ D)
     (y : σ → C) (x : σ) (c : C) (hx : x ∉ P.vars) :
-    aeval (Function.update y x c) P = aeval y P :=
-  aeval_eq_aeval_of_forall_mem_vars_eq _ _ _
-    (fun v hv => by simp [Function.update_apply,
-      show v ≠ x from fun h => hx (h ▸ hv)])
+    aeval (Function.update y x c) P = aeval y P := by
+  simp only [MvPolynomial.aeval_def]
+  apply MvPolynomial.eval₂_congr
+  intro i ci hi hci
+  have : i ≠ x := by
+    intro h; apply hx; subst h
+    rw [MvPolynomial.mem_vars]
+    exact ⟨ci, P.mem_support_iff.mpr hci, hi⟩
+  simp [this]
 
 theorem realization_invariant_update [DecidableEq σ]
     (Φ : Formula D σ) (x : σ) (hx : x ∉ Φ.freeVars)
     (y : σ → C) (c : C) :
     y ∈ Φ.realization (C := C) ↔
     Function.update y x c ∈ Φ.realization := by
-  induction Φ with
+  induction Φ generalizing y with
   | eq_zero P =>
     simp only [realization, Set.mem_setOf_eq, freeVars] at *
     rw [aeval_update_of_not_mem_vars P y x c hx]
@@ -585,16 +591,20 @@ theorem realization_invariant_update [DecidableEq σ]
       Finset.mem_sdiff, Finset.mem_singleton] at *
     push_neg at hx
     constructor <;> rintro ⟨d, hd⟩ <;> refine ⟨d, ?_⟩
-    · rw [Function.update_comm (hx.1 rfl).elim]
-      rwa [← ih (hx.1 rfl).elim]
-    · rw [Function.update_comm (hx.1 rfl).elim] at hd
-      rwa [ih (hx.1 rfl).elim]
+    · by_cases hxz : x = z
+      · subst hxz; rwa [Function.update_idem]
+      · rw [Function.update_comm hxz]
+        rwa [← ih (fun hmem => absurd (hx hmem) hxz)]
+    · by_cases hxz : x = z
+      · subst hxz; rwa [Function.update_idem] at hd
+      · rw [Function.update_comm hxz] at hd
+        rwa [ih (fun hmem => absurd (hx hmem) hxz)]
 
 /-- (∃x, A) ∧ B ≡ ∃x, (A ∧ B) when x ∉ freeVars B. -/
 theorem exists_and_equiv [DecidableEq σ]
     (A B : Formula D σ) (x : σ) (hx : x ∉ B.freeVars) :
-    (.exists_ x A).realization (C := C) ∩ B.realization =
-    (.exists_ x (.and A B)).realization := by
+    (Formula.exists_ x A).realization (C := C) ∩ B.realization =
+    (Formula.exists_ x (Formula.and A B)).realization := by
   ext y
   simp only [realization, Set.mem_inter_iff,
     Set.mem_setOf_eq]
@@ -609,9 +619,9 @@ theorem exists_and_equiv [DecidableEq σ]
 /-- (∀x, A) ∧ B ≡ ∀x, (A ∧ B) when x ∉ freeVars B. -/
 theorem forall_and_equiv [DecidableEq σ]
     (A B : Formula D σ) (x : σ) (hx : x ∉ B.freeVars) :
-    (.not (.exists_ x (.not A))).realization (C := C) ∩
+    (Formula.not (Formula.exists_ x (Formula.not A))).realization (C := C) ∩
       B.realization =
-    (.not (.exists_ x (.not (.and A B)))).realization := by
+    (Formula.not (Formula.exists_ x (Formula.not (Formula.and A B)))).realization := by
   ext y
   simp only [realization, Set.mem_inter_iff,
     Set.mem_compl_iff, Set.mem_setOf_eq, not_exists,
@@ -623,13 +633,13 @@ theorem forall_and_equiv [DecidableEq σ]
   · intro h
     exact ⟨fun c => (h c).1,
       by have := (h (y x)).2
-         rwa [Function.update_self] at this⟩
+         rw [Function.update_eq_self] at this; exact this⟩
 
 /-- ∃x,A has same realization as ∃z,(A.rename(swap x z)). -/
 theorem exists_rename_swap [DecidableEq σ]
     (A : Formula D σ) (x z : σ) :
-    (.exists_ x A).realization (C := C) =
-    (.exists_ z (A.rename (Equiv.swap x z))).realization := by
+    (Formula.exists_ x A).realization (C := C) =
+    (Formula.exists_ z (A.rename (Equiv.swap x z))).realization := by
   ext y; simp only [realization, Set.mem_setOf_eq,
     rename_realization _ (Equiv.swap x z).injective,
     Set.mem_preimage]
@@ -641,8 +651,8 @@ theorem exists_rename_swap [DecidableEq σ]
 /-- ∀x,A has same realization as ∀z,(A.rename(swap x z)). -/
 theorem forall_rename_swap [DecidableEq σ]
     (A : Formula D σ) (x z : σ) :
-    (.not (.exists_ x (.not A))).realization (C := C) =
-    (.not (.exists_ z (.not (A.rename
+    (Formula.not (Formula.exists_ x (Formula.not A))).realization (C := C) =
+    (Formula.not (Formula.exists_ z (Formula.not (A.rename
       (Equiv.swap x z))))).realization := by
   simp only [realization, Set.compl_setOf, not_exists,
     not_not, rename_realization _
@@ -694,10 +704,10 @@ private theorem pull_exists [Infinite σ] [DecidableEq σ]
       ∃ R, IsPrenex R ∧ R.realization (C := C) =
         A'.realization ∩ B'.realization) :
     ∃ R, IsPrenex R ∧ R.realization (C := C) =
-      (.exists_ x A).realization (C := C) ∩
+      (Formula.exists_ x A).realization (C := C) ∩
         B.realization := by
   obtain ⟨z, hz⟩ :=
-    (A.freeVars ∪ B.freeVars).exists_not_mem
+    Infinite.exists_notMem_finset (A.freeVars ∪ B.freeVars)
   rw [Finset.mem_union, not_or] at hz
   rw [exists_rename_swap A x z]
   obtain ⟨R, hR, hRr⟩ := ih _ _
@@ -723,10 +733,10 @@ private theorem pull_forall [Infinite σ] [DecidableEq σ]
       ∃ R, IsPrenex R ∧ R.realization (C := C) =
         A'.realization ∩ B'.realization) :
     ∃ R, IsPrenex R ∧ R.realization (C := C) =
-      (.not (.exists_ x (.not A))).realization (C := C) ∩
+      (Formula.not (Formula.exists_ x (Formula.not A))).realization (C := C) ∩
         B.realization := by
   obtain ⟨z, hz⟩ :=
-    (A.freeVars ∪ B.freeVars).exists_not_mem
+    Infinite.exists_notMem_finset (A.freeVars ∪ B.freeVars)
   rw [Finset.mem_union, not_or] at hz
   rw [forall_rename_swap A x z]
   obtain ⟨R, hR, hRr⟩ := ih _ _
@@ -835,7 +845,7 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
       exact ⟨.and Ψ₁ Ψ₂, .qf ⟨h₁, h₂⟩, rfl⟩
     | .qf h₁, .exists_ (x := x) (Φ := B) hB =>
       rw [Set.inter_comm]
-      obtain ⟨z, hz⟩ := (Ψ₁.freeVars ∪ B.freeVars).exists_not_mem
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (Ψ₁.freeVars ∪ B.freeVars)
       rw [Finset.mem_union, not_or] at hz
       rw [exists_rename_swap B x z]
       have hlt : (B.rename (Equiv.swap x z)).quantifierDepth +
@@ -854,7 +864,7 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
             (realization_invariant_update Ψ₁ z hz.1 y c).mpr hc.2⟩⟩
     | .qf h₁, .forall_ (x := x) (Φ := B) hB =>
       rw [Set.inter_comm]
-      obtain ⟨z, hz⟩ := (Ψ₁.freeVars ∪ B.freeVars).exists_not_mem
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (Ψ₁.freeVars ∪ B.freeVars)
       rw [Finset.mem_union, not_or] at hz
       rw [forall_rename_swap B x z]
       have hlt : (B.rename (Equiv.swap x z)).quantifierDepth +
@@ -873,7 +883,7 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
                rw [hRr, Set.mem_inter_iff] at this
                exact (realization_invariant_update Ψ₁ z hz.1 y _).mpr this.2⟩⟩
     | .exists_ (x := x) (Φ := A) hA, _ =>
-      obtain ⟨z, hz⟩ := (A.freeVars ∪ Ψ₂.freeVars).exists_not_mem
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (A.freeVars ∪ Ψ₂.freeVars)
       rw [Finset.mem_union, not_or] at hz
       rw [exists_rename_swap A x z]
       have hlt : (A.rename (Equiv.swap x z)).quantifierDepth +
@@ -891,7 +901,7 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
           exact ⟨⟨c, hc.1⟩,
             (realization_invariant_update Ψ₂ z hz.2 y c).mpr hc.2⟩⟩
     | .forall_ (x := x) (Φ := A) hA, _ =>
-      obtain ⟨z, hz⟩ := (A.freeVars ∪ Ψ₂.freeVars).exists_not_mem
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (A.freeVars ∪ Ψ₂.freeVars)
       rw [Finset.mem_union, not_or] at hz
       rw [forall_rename_swap A x z]
       have hlt : (A.rename (Equiv.swap x z)).quantifierDepth +
@@ -986,7 +996,7 @@ theorem sentence_trivial_realization [DecidableEq σ]
     exact (realization_eq_of_agree_on_freeVars Φ y y'
       (by simp [isSentence] at hΦ; simp [hΦ])).mp hy
   · left; push_neg at h
-    exact Set.eq_empty_of_forall_not_mem h
+    exact Set.subset_eq_empty h rfl
 
 theorem sentence_equiv_true_or_false [DecidableEq σ]
     (Φ : Formula D σ) (hΦ : isSentence Φ) :
@@ -1036,9 +1046,9 @@ theorem multiplicativeInverse_holds :
   ext y; simp [multiplicativeInverse, forall_, realization,
     Set.mem_compl_iff, not_exists, not_not, Set.mem_union]
   intro c; by_cases hc : c = 0
-  · left; simp [Function.update_self, aeval_X, hc]
+  · left; simp [Function.update_self, MvPolynomial.aeval_X, hc]
   · right; exact ⟨c⁻¹, by
-      simp [Function.update, aeval_X, map_sub,
+      simp [Function.update, MvPolynomial.aeval_X, map_sub,
         map_mul, map_one]; ring_nf
       simp [mul_inv_cancel₀ hc]⟩
 
@@ -1059,14 +1069,14 @@ root: ∀Y₁...∀Y_d ∃X, X^d + Y₁X^(d-1) + ... + Y_d = 0.
     X₀^d + X₁ · X₀^(d-1) + X₂ · X₀^(d-2) + ... + X_d.
     Variable 0 is the root variable, variables 1..d are
     coefficients. -/
-def monicPoly (d : ℕ) :
+noncomputable def monicPoly (d : ℕ) :
     MvPolynomial (Fin (d + 1)) ℤ :=
   X 0 ^ d + ∑ i in Finset.range d,
     X ⟨i + 1, by omega⟩ * X 0 ^ (d - 1 - i)
 
 /-- Φ_d: ∀Y₁ ∀Y₂ ... ∀Y_d ∃X, monicPoly d = 0.
     Example: Φ₂ = ∀Y₁ ∀Y₂ ∃X, X² + Y₁X + Y₂ = 0. -/
-def phiD (d : ℕ) : Formula ℤ (Fin (d + 1)) :=
+noncomputable def phiD (d : ℕ) : Formula ℤ (Fin (d + 1)) :=
   (List.range d).foldr
     (fun i acc => forall_ ⟨i + 1, by omega⟩ acc)
     (.exists_ 0 (.eq_zero (monicPoly d)))
@@ -1123,7 +1133,7 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
   -- Connect to monicPoly aeval
   refine ⟨c, ?_⟩
   simp [monicPoly, map_add, map_sum, map_mul, map_pow,
-    aeval_X, Function.update_self]
+    MvPolynomial.aeval_X, Function.update_self]
   convert hc using 1
   simp [p, Polynomial.eval_add, Polynomial.eval_pow,
     Polynomial.eval_X, Polynomial.eval_finset_sum,
@@ -1172,21 +1182,21 @@ theorem example_1_2 :
   simp only [Set.mem_setOf_eq, Set.mem_compl_iff]
   constructor
   · rintro ⟨c, hc⟩
-    simp [aeval_def, eval₂_mul, eval₂_sub, eval₂_X,
+    simp [MvPolynomial.aeval_def, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
       Function.update_self,
-      Function.update_noteq
+      Function.update_of_ne
         (by decide : (0 : Fin 2) ≠ 1)] at hc
     intro h0
     rw [h0, zero_mul, zero_sub] at hc
     exact one_ne_zero (neg_eq_zero.mp hc)
   · intro h
     refine ⟨(y 0)⁻¹, ?_⟩
-    simp [aeval_def, eval₂_mul, eval₂_sub, eval₂_X,
+    simp [MvPolynomial.aeval_def, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
       Function.update_self,
-      Function.update_noteq
+      Function.update_of_ne
         (by decide : (0 : Fin 2) ≠ 1)]
     rw [mul_inv_cancel₀
-      (by simpa [aeval_def, eval₂_X] using h),
+      (by simpa [MvPolynomial.aeval_def, MvPolynomial.eval₂_X] using h),
       sub_self]
 
 end Example_1_2
@@ -1200,8 +1210,11 @@ a quantifier-free formula.
 
 namespace Formula
 
+variable {D : Type*} [CommRing D] {σ : Type*}
+variable {C : Type*} [Field C] [Algebra D C]
+
 /-- Conjunction of `eq_zero` atoms from a list. -/
-def conjEqZero : List (MvPolynomial σ D) → Formula D σ
+noncomputable def conjEqZero : List (MvPolynomial σ D) → Formula D σ
   | [] => .eq_zero 0
   | [P] => .eq_zero P
   | P :: Ps => .and (.eq_zero P) (conjEqZero Ps)
@@ -1250,7 +1263,7 @@ theorem qf_realizable_isConstructible
   induction Φ with
   | eq_zero P =>
     exact .algebraic ⟨{P}, by
-      ext y; simp [Zer, realization, aeval_def]⟩
+      ext y; simp [Zer, realization, MvPolynomial.aeval_def]⟩
   | not Φ ih => exact .compl (ih hqf)
   | and Φ₁ Φ₂ ih₁ ih₂ =>
     exact .inter (ih₁ hqf.1) (ih₂ hqf.2)
@@ -1266,10 +1279,10 @@ theorem constructible_isQFRealizable
       V = Φ.realization (C := C) := by
   induction hV with
   | algebraic hA =>
-    obtain ⟨𝒫, rfl⟩ := hA
-    exact ⟨conjEqZero 𝒫.toList, conjEqZero_isQF _,
+    obtain ⟨poly_set, rfl⟩ := hA
+    exact ⟨conjEqZero poly_set.toList, conjEqZero_isQF _,
       by rw [conjEqZero_realization]
-         ext y; simp [Zer, aeval_def]⟩
+         ext y; simp [Zer, MvPolynomial.aeval_def]⟩
   | compl _ ih =>
     obtain ⟨Φ, hqf, rfl⟩ := ih
     exact ⟨.not Φ, hqf, by simp [realization]⟩
