@@ -2,6 +2,8 @@ import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.Algebra.Polynomial.Splits
+import Mathlib.RingTheory.EuclideanDomain
 import Mathlib.RingTheory.Localization.FractionRing
 
 /-!
@@ -225,5 +227,85 @@ theorem eval_mod_at_root (P Q : K[X]) (x : K) (hx : Polynomial.eval x Q = 0) :
   have h := EuclideanDomain.div_add_mod P Q
   have : Polynomial.eval x P = Polynomial.eval x (Q * (P / Q) + P % Q) := by rw [h]
   rw [this, eval_add, eval_mul, hx, zero_mul, zero_add]
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Exercise 1.6: x is a root of P iff (X − x) divides P in K[X]. -/
+theorem exercise_1_6 (P : K[X]) (x : K) :
+    Polynomial.eval x P = 0 ↔ (X - Polynomial.C x) ∣ P :=
+  dvd_iff_isRoot.symm
+
+omit [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Exercise 1.7: Over an algebraically closed field, every polynomial factors as
+    P = C(leadingCoeff P) * ∏ (X − C x) for x ∈ P.roots.
+    The multiset `P.roots` records roots with multiplicity, so this encodes the
+    factorization P = a(X−x₁)^μ₁⋯(X−xₖ)^μₖ. Uniqueness is automatic since
+    `P.roots` is uniquely determined by P. -/
+theorem exercise_1_7 (P : C[X]) :
+    P = Polynomial.C P.leadingCoeff *
+      (Multiset.map (fun a => X - Polynomial.C a) P.roots).prod :=
+  (C_leadingCoeff_mul_prod_multiset_X_sub_C
+    (IsAlgClosed.splits P).natDegree_eq_card_roots.symm).symm
+
+/-!
+### Greatest Common Divisor (Definition 1.8)
+
+A *greatest common divisor* of P and Q is a polynomial G ∈ K[X] such that
+G divides both P and Q, and any common divisor of P and Q divides G.
+This is a relation, not a function — GCDs are unique only up to units (nonzero scalars in K[X]).
+
+In Mathlib, `GCDMonoid.gcd` picks a canonical representative via the
+`EuclideanDomain` instance on `K[X]`.
+-/
+
+open Classical in
+noncomputable instance gcdMonoidPolynomial : GCDMonoid K[X] :=
+  EuclideanDomain.gcdMonoid K[X]
+
+/-- BPR Definition 1.8: G is a greatest common divisor of P and Q. -/
+def IsGCD (G P Q : K[X]) : Prop :=
+  G ∣ P ∧ G ∣ Q ∧ ∀ D : K[X], D ∣ P → D ∣ Q → D ∣ G
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Mathlib's `gcd P Q` satisfies the BPR IsGCD relation. -/
+theorem gcd_isGCD (P Q : K[X]) : IsGCD (gcd P Q) P Q :=
+  ⟨gcd_dvd_left P Q, gcd_dvd_right P Q, fun _ hP hQ => dvd_gcd hP hQ⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any two GCDs in the BPR sense are associates (differ by a unit in K[X]). -/
+theorem isGCD_associated {G₁ G₂ P Q : K[X]}
+    (h₁ : IsGCD G₁ P Q) (h₂ : IsGCD G₂ P Q) :
+    Associated G₁ G₂ :=
+  associated_of_dvd_dvd (h₂.2.2 G₁ h₁.1 h₁.2.1) (h₁.2.2 G₂ h₂.1 h₂.2.1)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- P is a GCD of P and 0. -/
+theorem isGCD_self_zero (P : K[X]) : IsGCD P P 0 :=
+  ⟨dvd_refl P, dvd_zero P, fun _ hP _ => hP⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any two GCDs of P and Q divide each other. -/
+theorem isGCD_dvd_dvd {G₁ G₂ P Q : K[X]}
+    (h₁ : IsGCD G₁ P Q) (h₂ : IsGCD G₂ P Q) :
+    G₁ ∣ G₂ ∧ G₂ ∣ G₁ :=
+  ⟨h₂.2.2 G₁ h₁.1 h₁.2.1, h₁.2.2 G₂ h₂.1 h₂.2.1⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any two GCDs of P and Q have the same degree. -/
+theorem isGCD_degree_eq {G₁ G₂ P Q : K[X]}
+    (h₁ : IsGCD G₁ P Q) (h₂ : IsGCD G₂ P Q) :
+    G₁.degree = G₂.degree := by
+  have ⟨h12, h21⟩ := isGCD_dvd_dvd h₁ h₂
+  exact degree_eq_degree_of_associated (associated_of_dvd_dvd h12 h21)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- The degree of the GCD of P and Q. Well-defined since any two GCDs
+    have the same degree (by `isGCD_degree_eq`). -/
+noncomputable def degGcd (P Q : K[X]) : WithBot ℕ := (gcd P Q).degree
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any IsGCD witness has the same degree as `degGcd P Q`. -/
+theorem isGCD_degree_eq_degGcd {G P Q : K[X]} (h : IsGCD G P Q) :
+    G.degree = degGcd P Q :=
+  isGCD_degree_eq h (gcd_isGCD P Q)
 
 end Azurite.BPR
