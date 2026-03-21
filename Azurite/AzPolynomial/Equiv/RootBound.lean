@@ -52,6 +52,7 @@ private lemma one_le_abs_pow {r : ℚ} (hr : 1 ≤ |r|) : ∀ n : ℕ,  1 ≤ |r
 
 -- ── Case 1: small polynomial ────────────────────────────────────────────────
 
+omit [DecidableEq R] in
 /-- A polynomial with `coeffs.size ≤ 1` that is mapped to a nonzero polynomial
     cannot have any roots (it's constant). -/
 private lemma no_root_of_size_le_one
@@ -71,6 +72,7 @@ private lemma no_root_of_size_le_one
 
 -- ── Sub-lemma: coeff of mapped polynomial ───────────────────────────────────
 
+omit [DecidableEq R] in
 /-- Coefficients of the mapped polynomial equal the mapped AzPolynomial coefficients. -/
 private lemma coeff_map_toPoly (f : R →+* ℚ) (p : Azurite.AzPolynomial R) (i : ℕ) :
     (Polynomial.map f (AzPolynomial.toPoly p)).coeff i = f (p.coeff i) := by
@@ -78,6 +80,7 @@ private lemma coeff_map_toPoly (f : R →+* ℚ) (p : Azurite.AzPolynomial R) (i
 
 -- ── Case 2: Cauchy bound via triangle inequality ────────────────────────────
 
+omit [DecidableEq R] in
 /-- Main Cauchy bound lemma over `ℚ`.
 
     Given a nonzero polynomial `q = map f (toPoly p)` of degree ≥ 1 with root `r`:
@@ -247,6 +250,7 @@ private lemma cauchy_bound_case
 
 -- ── Main theorem ────────────────────────────────────────────────────────────
 
+omit [DecidableEq R] in
 /-- **Cauchy Root Bound Theorem.** For any root `r` of the polynomial obtained
     by mapping the coefficients of `p` through a ring homomorphism `f : R →+* ℚ`,
     if the mapped polynomial is nonzero, then `|r| < rootBound f p`. -/

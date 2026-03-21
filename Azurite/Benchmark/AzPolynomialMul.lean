@@ -1,4 +1,4 @@
-import Azurite.Random
+import Azurite.Random.AzPolynomial
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.ToString
 import Azurite.Benchmark.RatCmp  -- reuse timeNsIter, median3, configGetRat, configGetNat

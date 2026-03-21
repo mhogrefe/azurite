@@ -1,4 +1,4 @@
-import Azurite.Random
+import Azurite.Random.Rat
 import Azurite.Rat.Compare
 import Azurite.Benchmark.Timer
 

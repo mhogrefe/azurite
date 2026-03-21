@@ -59,6 +59,7 @@ private lemma le_fin_foldl_max {n : Nat} {g : Fin n → ℚ} (i : Fin n) :
       rw [hik]
       exact le_max_right _ _
 
+omit [DecidableEq R] in
 /-- `maxCoeffRatio` is non-negative. -/
 lemma maxCoeffRatio_nonneg (f : R →+* ℚ) (coeffs : Array R) :
     0 ≤ maxCoeffRatio f coeffs := by
@@ -74,6 +75,7 @@ lemma maxCoeffRatio_nonneg (f : R →+* ℚ) (coeffs : Array R) :
       intro i
       exact Rat.div_nonneg (abs_nonneg _) (abs_nonneg _)
 
+omit [DecidableEq R] in
 /-- Each coefficient ratio is ≤ `maxCoeffRatio`. -/
 lemma le_maxCoeffRatio (f : R →+* ℚ) (coeffs : Array R)
     (hsize : ¬ coeffs.size ≤ 1)
@@ -87,6 +89,7 @@ lemma le_maxCoeffRatio (f : R →+* ℚ) (coeffs : Array R)
     simp [beq_iff_eq]; exact hlead]
   exact le_fin_foldl_max i
 
+omit [DecidableEq R] in
 /-- Cauchy bound on the roots of a `AzPolynomial R`.
 
     Given an embedding `f : R →+* ℚ`, returns a rational `b ≥ 0` such that
@@ -101,6 +104,7 @@ def rootBound (f : R →+* ℚ) (p : AzPolynomial R) : ℚ :=
   if p.coeffs.size ≤ 1 then 0
   else 1 + maxCoeffRatio f p.coeffs
 
+omit [DecidableEq R] in
 /-- Returns the interval `(-rootBound, rootBound)` containing all real roots.
     For zero/constant polynomials, returns `(0, 0)`. -/
 def rootInterval (f : R →+* ℚ) (p : AzPolynomial R) : ℚ × ℚ :=
