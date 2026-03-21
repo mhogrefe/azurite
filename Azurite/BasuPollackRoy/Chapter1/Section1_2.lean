@@ -308,4 +308,104 @@ theorem isGCD_degree_eq_degGcd {G P Q : K[X]} (h : IsGCD G P Q) :
     G.degree = degGcd P Q :=
   isGCD_degree_eq h (gcd_isGCD P Q)
 
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- BPR Definition: P and Q are coprime if their GCD is a nonzero element of K
+    (equivalently, a unit in K[X]). -/
+def AreCoprime (P Q : K[X]) : Prop :=
+  ∀ G : K[X], IsGCD G P Q → IsUnit G
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- `AreCoprime` is equivalent to Mathlib's `IsCoprime`. -/
+theorem areCoprime_iff_isCoprime (P Q : K[X]) :
+    AreCoprime P Q ↔ IsCoprime P Q := by
+  constructor
+  · intro h
+    exact (gcd_isUnit_iff P Q).mp
+      (h (gcd P Q) ⟨gcd_dvd_left P Q, gcd_dvd_right P Q,
+        fun _ h1 h2 => dvd_gcd h1 h2⟩)
+  · intro ⟨u, v, h⟩ G ⟨hGP, hGQ, _⟩
+    rw [isUnit_iff_dvd_one]
+    exact h ▸ dvd_add (dvd_mul_of_dvd_right hGP u) (dvd_mul_of_dvd_right hGQ v)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- BPR: G is a least common multiple of P and Q if
+    G is a multiple of both P and Q, and any common multiple of P and Q
+    is a multiple of G. -/
+def IsLCM (G P Q : K[X]) : Prop :=
+  P ∣ G ∧ Q ∣ G ∧ ∀ M : K[X], P ∣ M → Q ∣ M → G ∣ M
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Mathlib's `lcm P Q` satisfies the BPR IsLCM relation. -/
+theorem lcm_isLCM (P Q : K[X]) : IsLCM (lcm P Q) P Q :=
+  ⟨dvd_lcm_left P Q, dvd_lcm_right P Q, fun _ hP hQ => lcm_dvd hP hQ⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any two LCMs of P and Q are associates (differ by a unit). -/
+theorem isLCM_associated {G₁ G₂ P Q : K[X]}
+    (h₁ : IsLCM G₁ P Q) (h₂ : IsLCM G₂ P Q) :
+    Associated G₁ G₂ :=
+  associated_of_dvd_dvd (h₁.2.2 G₂ h₂.1 h₂.2.1) (h₂.2.2 G₁ h₁.1 h₁.2.1)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- The degree of the LCM of P and Q. Well-defined since any two LCMs
+    have the same degree (by `isLCM_associated`). -/
+noncomputable def degLcm (P Q : K[X]) : WithBot ℕ := (lcm P Q).degree
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Any IsLCM witness has the same degree as `degLcm P Q`. -/
+theorem isLCM_degree_eq_degLcm {G P Q : K[X]} (h : IsLCM G P Q) :
+    G.degree = degLcm P Q :=
+  degree_eq_degree_of_associated
+    (associated_of_dvd_dvd
+      (h.2.2 _ (dvd_lcm_left P Q) (dvd_lcm_right P Q))
+      ((lcm_isLCM P Q).2.2 _ h.1 h.2.1))
+
+/-!
+### Proposition 1.5
+-/
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- `IsLCM` is preserved under `Associated`. -/
+private theorem isLCM_of_associated {L L' P Q : K[X]}
+    (hL : IsLCM L P Q) (h : Associated L L') : IsLCM L' P Q :=
+  ⟨dvd_trans hL.1 h.dvd, dvd_trans hL.2.1 h.dvd,
+   fun M hP hQ => dvd_trans h.symm.dvd (hL.2.2 M hP hQ)⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Dividing by associated nonzero divisors gives associated quotients. -/
+private theorem div_associated {a G₁ G₂ : K[X]}
+    (hG₁ : G₁ ≠ 0) (hG₁_dvd : G₁ ∣ a) (hG₂_dvd : G₂ ∣ a)
+    (hAssoc : Associated G₁ G₂) : Associated (a / G₁) (a / G₂) := by
+  obtain ⟨u, hu⟩ := hAssoc
+  have hG₂0 : G₂ ≠ 0 := fun h =>
+    hG₁ ((mul_eq_zero.mp (hu ▸ h : G₁ * ↑u = 0)).resolve_right (Units.ne_zero u))
+  have h1 := EuclideanDomain.mul_div_cancel' hG₁ hG₁_dvd
+  have h2 := EuclideanDomain.mul_div_cancel' hG₂0 hG₂_dvd
+  have h3 : a / G₁ = ↑u * (a / G₂) :=
+    mul_left_cancel₀ hG₁ (calc G₁ * (a / G₁) = a := h1
+      _ = G₂ * (a / G₂) := h2.symm
+      _ = (G₁ * ↑u) * (a / G₂) := by rw [hu]
+      _ = G₁ * (↑u * (a / G₂)) := mul_assoc _ _ _)
+  exact ⟨u⁻¹, by rw [h3]; calc ↑u * (a / G₂) * ↑u⁻¹
+    = a / G₂ * (↑u * ↑u⁻¹) := by ring
+    _ = a / G₂ := by simp⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- BPR Proposition 1.5 for Mathlib's canonical gcd: P * Q / gcd(P, Q) = lcm(P, Q)
+    definitionally, so this is immediate. -/
+theorem prop_1_5_gcd (P Q : K[X]) : IsLCM (P * Q / gcd P Q) P Q :=
+  ⟨dvd_lcm_left P Q, dvd_lcm_right P Q, fun _ hP hQ => lcm_dvd hP hQ⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- BPR Proposition 1.5: If G is a GCD of P and Q (with G ≠ 0),
+    then P * Q / G is a least common multiple of P and Q. -/
+theorem prop_1_5 {P Q G : K[X]} (hG : IsGCD G P Q) (hG0 : G ≠ 0) :
+    IsLCM (P * Q / G) P Q :=
+  isLCM_of_associated (prop_1_5_gcd P Q)
+    (div_associated hG0 (dvd_mul_of_dvd_left hG.1 Q)
+      (dvd_mul_of_dvd_left (gcd_dvd_left P Q) Q)
+      (associated_of_dvd_dvd
+        ((gcd_isGCD P Q).2.2 G hG.1 hG.2.1)
+        (hG.2.2 (gcd P Q) (gcd_dvd_left P Q) (gcd_dvd_right P Q)))).symm
+
 end Azurite.BPR
