@@ -22,3 +22,7 @@ Instead:
 1. Find the specific file in Mathlib that contains the theorem or definition you need.
 2. Import only that specific module (e.g., `import Mathlib.Algebra.Polynomial.Basic` or `import Mathlib.Data.List.Basic`).
 3. If a theorem is available natively in Lean 4 Core (e.g., in `Init.Data`), you do not need to import anything from Mathlib or Batteries at all! Always check if Core has what you need first.
+
+# Crash guidance
+
+If the user just messages "c", that means "You crashed, probably because you tried to write too much. Try writing to a temp file and using sed to insert the content into its final location."

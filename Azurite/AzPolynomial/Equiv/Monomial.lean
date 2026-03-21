@@ -130,4 +130,12 @@ variable {R : Type _} [Semiring R] [DecidableEq R]
   rw [toPoly_ofPoly]
   exact h.symm
 
+/-! ### Coefficient of monomial -/
+
+@[simp] lemma coeff_monomial' (n : ℕ) (c : R) (k : ℕ) :
+    coeff (monomial n c) k = if k = n then c else 0 := by
+  have h := coeff_toPoly_eq (monomial n c) k
+  rw [toPoly_monomial, Polynomial.coeff_monomial] at h
+  rw [← h]; simp [eq_comm]
+
 end Azurite.AzPolynomial

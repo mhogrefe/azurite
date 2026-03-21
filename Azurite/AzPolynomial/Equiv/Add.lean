@@ -88,6 +88,16 @@ private lemma ofFn_add_coeff (p q : AzPolynomial R) (n : ℕ) :
   rw [toPoly_add]
   rw [toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
 
+/-! ### Algebraic properties of addition -/
+
+theorem add_assoc' (a b c : AzPolynomial R) : a + b + c = a + (b + c) := by
+  apply toPoly_inj.mp
+  simp only [toPoly_add, _root_.add_assoc]
+
+theorem zero_add' (a : AzPolynomial R) : 0 + a = a := by
+  apply toPoly_inj.mp
+  simp [toPoly_add, toPoly_zero]
+
 /-! ### Equivalence lemmas for `addNoCancel` -/
 
 -- checkBinderAnnotations is disabled because the LSP incorrectly rejects

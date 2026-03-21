@@ -138,4 +138,14 @@ lemma mulBasecaseFold_eq_mulBasecase (p q : AzPolynomial R) :
   dsimp [equivPolynomial]
   rw [toPoly_mul, toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
 
+/-! ### Algebraic properties of multiplication -/
+
+theorem add_mul' (a b c : AzPolynomial R) : (a + b) * c = a * c + b * c := by
+  apply toPoly_inj.mp
+  simp only [toPoly_mul, toPoly_add, _root_.add_mul]
+
+theorem zero_mul' (a : AzPolynomial R) : (0 : AzPolynomial R) * a = 0 := by
+  apply toPoly_inj.mp
+  simp [toPoly_mul, toPoly_zero]
+
 end Azurite.AzPolynomial

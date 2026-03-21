@@ -66,4 +66,10 @@ private lemma coeff_zero (n : ℕ) : coeff (0 : AzPolynomial R) n = 0 := by
   dsimp [equivPolynomial]
   rw [toPoly_sub, toPoly_ofPoly, toPoly_ofPoly, toPoly_ofPoly]
 
+/-! ### Algebraic properties of subtraction -/
+
+theorem add_sub_cancel' (a b : AzPolynomial R) : a + b - b = a := by
+  apply toPoly_inj.mp
+  simp [toPoly_add, toPoly_sub]
+
 end Azurite.AzPolynomial
