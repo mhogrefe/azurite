@@ -909,36 +909,41 @@ theorem realization_eq_of_agree_on_freeVars
     (h : ∀ x ∈ Φ.freeVars, y₁ x = y₂ x) :
     y₁ ∈ Φ.realization (C := C) ↔
     y₂ ∈ Φ.realization := by
-  induction Φ with
+  induction Φ generalizing y₁ y₂ with
   | eq_zero P =>
-    simp only [realization, Set.mem_setOf_eq] at *
-    congr 1
-    exact aeval_eq_aeval_of_forall_mem_vars_eq _ _ _ h
+    simp only [realization, Set.mem_setOf_eq]
+    have : (MvPolynomial.aeval y₁) P = (MvPolynomial.aeval y₂) P := by
+      simp only [MvPolynomial.aeval_def]
+      apply MvPolynomial.eval₂_congr
+      · intro i c hi hc
+        apply h; simp [freeVars]
+        rw [MvPolynomial.mem_vars]
+        exact ⟨c, MvPolynomial.mem_support_iff.mpr hc, hi⟩
+    rw [this]
   | not _ ih =>
-    simp only [realization, Set.mem_compl_iff] at *
-    rw [ih h]
+    simp only [realization, Set.mem_compl_iff]
+    rw [ih _ _ h]
   | and _ _ ih₁ ih₂ =>
-    simp only [realization, Set.mem_inter_iff,
-      freeVars] at *
-    rw [ih₁ (fun x hx =>
-          h x (Finset.mem_union_left _ hx)),
-        ih₂ (fun x hx =>
-          h x (Finset.mem_union_right _ hx))]
+    simp only [realization, Set.mem_inter_iff, freeVars] at *
+    rw [ih₁ _ _ (fun x hx => h x (Finset.mem_union_left _ hx)),
+        ih₂ _ _ (fun x hx => h x (Finset.mem_union_right _ hx))]
   | or _ _ ih₁ ih₂ =>
     simp only [realization, Set.mem_union, freeVars] at *
-    rw [ih₁ (fun x hx =>
-          h x (Finset.mem_union_left _ hx)),
-        ih₂ (fun x hx =>
-          h x (Finset.mem_union_right _ hx))]
+    rw [ih₁ _ _ (fun x hx => h x (Finset.mem_union_left _ hx)),
+        ih₂ _ _ (fun x hx => h x (Finset.mem_union_right _ hx))]
   | exists_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq] at *
-    constructor <;> rintro ⟨c, hc⟩ <;> exact ⟨c,
-      (ih (fun x hx => by
-        simp [Function.update]
-        intro hne
-        exact h x (by
-          rw [Finset.mem_sdiff, Finset.mem_singleton]
-          exact ⟨hx, hne⟩))).mp hc⟩
+    simp only [realization, Set.mem_setOf_eq]
+    constructor <;> rintro ⟨c, hc⟩
+    · exact ⟨c, (ih _ _ (fun x hx => by
+        simp only [Function.update]; split
+        · rfl
+        · rename_i hne
+          exact h x (by simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mp hc⟩
+    · exact ⟨c, (ih _ _ (fun x hx => by
+        simp only [Function.update]; split
+        · rfl
+        · rename_i hne
+          exact h x (by simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mpr hc⟩
 
 theorem sentence_trivial_realization [DecidableEq σ]
     (Φ : Formula D σ) (hΦ : isSentence Φ) :
@@ -957,7 +962,7 @@ theorem sentence_equiv_true_or_false [DecidableEq σ]
     (Φ : Formula D σ) (hΦ : isSentence Φ) :
     CEquiv (C := C) Φ trueFormula ∨
     CEquiv (C := C) Φ falseFormula := by
-  rcases sentence_trivial_realization Φ hΦ with h | h
+  rcases sentence_trivial_realization (C := C) Φ hΦ with h | h
   · right; show Φ.realization = _
     rw [h, realization_falseFormula]
   · left; show Φ.realization = _
@@ -1011,7 +1016,7 @@ theorem fieldNontriviality_holds :
     fieldNontriviality.realization (C := C) =
       Set.univ := by
   ext y; simp [fieldNontriviality, ne_zero, realization,
-    Set.mem_compl_iff, map_one, one_ne_zero]
+    map_one, one_ne_zero]
 
 /-!
 ### Algebraic Closure Axiom Φ_d
