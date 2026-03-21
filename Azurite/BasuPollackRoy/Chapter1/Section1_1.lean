@@ -994,29 +994,22 @@ noncomputable def fieldNontriviality : Formula ℤ (Fin 2) :=
 theorem additiveInverse_holds :
     additiveInverse.realization (C := C) =
       Set.univ := by
-  ext y; simp [additiveInverse, forall_, realization,
-    Set.mem_compl_iff, not_exists, not_not]
+  ext y; simp [additiveInverse, forall_, realization]
   intro c
-  exact ⟨-c, by simp [Function.update_self,
-    map_add, aeval_X]⟩
+  exact ⟨-c, by simp⟩
 
 theorem multiplicativeInverse_holds :
     multiplicativeInverse.realization (C := C) =
       Set.univ := by
-  ext y; simp [multiplicativeInverse, forall_, realization,
-    Set.mem_compl_iff, not_exists, not_not, Set.mem_union]
+  ext y; simp [multiplicativeInverse, forall_, realization]
   intro c; by_cases hc : c = 0
-  · left; simp [Function.update_self, MvPolynomial.aeval_X, hc]
-  · right; exact ⟨c⁻¹, by
-      simp [Function.update, MvPolynomial.aeval_X, map_sub,
-        map_mul, map_one]; ring_nf
-      simp [mul_inv_cancel₀ hc]⟩
+  · subst hc; simp
+  · intro _; exact ⟨c⁻¹, by field_simp [hc]; ring⟩
 
 theorem fieldNontriviality_holds :
     fieldNontriviality.realization (C := C) =
       Set.univ := by
-  ext y; simp [fieldNontriviality, ne_zero, realization,
-    map_one, one_ne_zero]
+  ext y; simp [fieldNontriviality, ne_zero, realization]
 
 /-!
 ### Algebraic Closure Axiom Φ_d
@@ -1031,22 +1024,21 @@ root: ∀Y₁...∀Y_d ∃X, X^d + Y₁X^(d-1) + ... + Y_d = 0.
     coefficients. -/
 noncomputable def monicPoly (d : ℕ) :
     MvPolynomial (Fin (d + 1)) ℤ :=
-  X 0 ^ d + ∑ i in Finset.range d,
+  X 0 ^ d + ∑ i : Fin d,
     X ⟨i + 1, by omega⟩ * X 0 ^ (d - 1 - i)
 
 /-- Φ_d: ∀Y₁ ∀Y₂ ... ∀Y_d ∃X, monicPoly d = 0.
     Example: Φ₂ = ∀Y₁ ∀Y₂ ∃X, X² + Y₁X + Y₂ = 0. -/
 noncomputable def phiD (d : ℕ) : Formula ℤ (Fin (d + 1)) :=
-  (List.range d).foldr
-    (fun i acc => forall_ ⟨i + 1, by omega⟩ acc)
+  (List.finRange d).foldr
+    (fun i acc => forall_ ⟨i.val + 1, by omega⟩ acc)
     (.exists_ 0 (.eq_zero (monicPoly d)))
 
 private theorem realization_forall_of_univ [DecidableEq σ]
     (x : σ) (Φ : Formula D σ)
     (h : Φ.realization (C := C) = Set.univ) :
     (forall_ x Φ).realization (C := C) = Set.univ := by
-  ext y; simp [forall_, realization, Set.mem_compl_iff,
-    not_exists, not_not, h]
+  ext y; simp [realization, h]
 
 private theorem realization_foldr_forall_of_univ
     [DecidableEq σ] (xs : List σ) (body : Formula D σ)
@@ -1059,43 +1051,58 @@ private theorem realization_foldr_forall_of_univ
     simp [List.foldr]
     exact realization_forall_of_univ x _ ih
 
+private theorem realization_finRange_forall_of_univ {n : ℕ}
+    (d : ℕ) (g : Fin d → Fin (n + 1)) (body : Formula ℤ (Fin (n + 1)))
+    (h : body.realization (C := C) = Set.univ) :
+    ((List.finRange d).foldr (fun i acc => forall_ (g i) acc)
+      body).realization (C := C) = Set.univ := by
+  induction (List.finRange d) with
+  | nil => exact h
+  | cons x xs ih =>
+    simp only [List.foldr]
+    exact realization_forall_of_univ (g x) _ ih
+
 /-- Φ_d holds in any algebraically closed field. -/
 theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
     (phiD d).realization (C := C) = Set.univ := by
   unfold phiD
-  apply realization_foldr_forall_of_univ
-    ((List.range d).map fun i => ⟨i + 1, by omega⟩)
-  -- Body: ∃X, monicPoly d = 0
-  ext y; simp [realization, Set.mem_setOf_eq]
-  -- Build the univariate polynomial
-  let p : Polynomial C :=
-    Polynomial.X ^ d + ∑ i in Finset.range d,
-      Polynomial.C (y ⟨i + 1, by omega⟩) *
-        Polynomial.X ^ (d - 1 - i)
+  apply realization_finRange_forall_of_univ
+  ext y
+  simp only [realization, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+  let q := ∑ i : Fin d,
+    Polynomial.C (y ⟨↑i + 1, by omega⟩) * Polynomial.X ^ (d - 1 - (i : ℕ))
+  let p : C[X] := Polynomial.X ^ d + q
+  -- natDegree q ≤ d - 1
+  have hnd : q.natDegree ≤ d - 1 := by
+    apply Polynomial.natDegree_sum_le_of_forall_le
+    intro i _
+    exact le_trans (Polynomial.natDegree_C_mul_X_pow_le _ _) (by omega)
+  -- degree q < d
+  have hq : q.degree < (d : WithBot ℕ) := by
+    by_cases hq0 : q = 0
+    · simp [hq0]
+    · rw [← Polynomial.natDegree_lt_iff_degree_lt hq0]; omega
   -- p is monic
-  have hp : p.Monic := by
-    apply Polynomial.monic_X_pow_add
-    calc Polynomial.natDegree (∑ i in Finset.range d,
-        Polynomial.C (y ⟨i + 1, _⟩) *
-          Polynomial.X ^ (d - 1 - i))
-      ≤ d - 1 := by
-        apply Polynomial.natDegree_sum_le_of_forall_le
-          _ _ (d - 1)
-        intro i _
-        calc _ ≤ 0 + (d - 1 - i) :=
-              Polynomial.natDegree_C_mul_X_pow_le _ _
-          _ ≤ d - 1 := by omega
-      _ < d := by omega
-  -- Has root by algebraic closure
-  obtain ⟨c, hc⟩ := IsAlgClosed.exists_root p
-    (by rw [hp.degree_eq]; simp [hd])
+  have hp : p.Monic := Polynomial.monic_X_pow_add hq
+  -- p.natDegree = d
+  have hpnd : p.natDegree = d := by
+    show (Polynomial.X ^ d + q).natDegree = d
+    rw [Polynomial.natDegree_add_eq_left_of_natDegree_lt]
+    · simp
+    · by_cases hq0 : q = 0
+      · simp [hq0, hd]
+      · simp; exact lt_of_le_of_lt hnd (by omega)
+  -- degree p ≠ 0
+  have hdeg : p.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hp.ne_zero, hpnd]
+    exact_mod_cast hd.ne'
+  obtain ⟨c, hc⟩ := IsAlgClosed.exists_root p hdeg
   rw [Polynomial.IsRoot] at hc
-  -- Connect to monicPoly aeval
   refine ⟨c, ?_⟩
-  simp [monicPoly, map_add, map_sum, map_mul, map_pow,
+  simp only [monicPoly, map_add, map_sum, map_mul, map_pow,
     MvPolynomial.aeval_X, Function.update_self]
   convert hc using 1
-  simp [p, Polynomial.eval_add, Polynomial.eval_pow,
+  simp [p, q, Polynomial.eval_add, Polynomial.eval_pow,
     Polynomial.eval_X, Polynomial.eval_finset_sum,
     Polynomial.eval_mul, Polynomial.eval_C]
 
