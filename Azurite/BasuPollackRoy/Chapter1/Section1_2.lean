@@ -189,4 +189,41 @@ theorem exercise_1_5 (P Q : K[X]) (hQ : Q ≠ 0) :
         | coe m => exact_mod_cast Nat.le_add_left m n
     exact absurd hDegSub (not_lt.mpr hDegProd)
 
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Rem(aP, bQ) = a · Rem(P, Q) for a, b ∈ K with b ≠ 0. -/
+theorem rem_C_mul_C_mul (a b : K) (hb : b ≠ 0) (P Q : K[X]) (hQ : Q ≠ 0) :
+    Polynomial.C a * P % (Polynomial.C b * Q) = Polynomial.C a * (P % Q) := by
+  simp only [mod_def, leadingCoeff_mul, leadingCoeff_C]
+  rw [mul_inv, Polynomial.C_mul]
+  have hNorm : Polynomial.C b * Q * (Polynomial.C b⁻¹ * Polynomial.C Q.leadingCoeff⁻¹) =
+      Q * Polynomial.C Q.leadingCoeff⁻¹ := by
+    calc Polynomial.C b * Q * (Polynomial.C b⁻¹ * Polynomial.C Q.leadingCoeff⁻¹)
+        = (Polynomial.C b * Polynomial.C b⁻¹) *
+          (Q * Polynomial.C Q.leadingCoeff⁻¹) := by ring
+      _ = Q * Polynomial.C Q.leadingCoeff⁻¹ := by
+          rw [← Polynomial.C_mul, mul_inv_cancel₀ hb, Polynomial.C_1, one_mul]
+  rw [hNorm]
+  set M := Q * Polynomial.C Q.leadingCoeff⁻¹
+  have hM : M.Monic := monic_mul_leadingCoeff_inv hQ
+  have hdvd : M ∣ (Polynomial.C a * P - Polynomial.C a * (P %ₘ M)) := by
+    rw [← mul_sub]
+    have : P - P %ₘ M = M * (P /ₘ M) := by
+      have h := modByMonic_add_div P M
+      calc P - P %ₘ M = (P %ₘ M + M * (P /ₘ M)) - P %ₘ M := by rw [h]
+        _ = M * (P /ₘ M) := by ring
+    rw [this]; exact ⟨Polynomial.C a * (P /ₘ M), by ring⟩
+  rw [modByMonic_eq_of_dvd_sub hM hdvd, modByMonic_eq_self_iff hM]
+  calc (Polynomial.C a * (P %ₘ M)).degree
+      ≤ (P %ₘ M).degree := by
+        by_cases ha : a = 0 <;> simp_all
+    _ < M.degree := degree_modByMonic_lt P hM
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- At a root x of Q, Rem(P, Q)(x) = P(x). -/
+theorem eval_mod_at_root (P Q : K[X]) (x : K) (hx : Polynomial.eval x Q = 0) :
+    Polynomial.eval x (P % Q) = Polynomial.eval x P := by
+  have h := EuclideanDomain.div_add_mod P Q
+  have : Polynomial.eval x P = Polynomial.eval x (Q * (P / Q) + P % Q) := by rw [h]
+  rw [this, eval_add, eval_mul, hx, zero_mul, zero_add]
+
 end Azurite.BPR
