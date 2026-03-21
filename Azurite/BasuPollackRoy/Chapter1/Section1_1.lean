@@ -1214,7 +1214,7 @@ theorem conjEqZero_realization [DecidableEq σ]
     {C : Type*} [Field C] [Algebra D C] :
     ∀ (L : List (MvPolynomial σ D)),
     (conjEqZero L).realization (C := C) =
-      { y | ∀ P ∈ L, aeval y P = 0 }
+      { y | ∀ P ∈ L, MvPolynomial.aeval y P = 0 }
   | [] => by
     ext y; simp [conjEqZero, realization, map_zero]
   | [P] => by
@@ -1224,17 +1224,17 @@ theorem conjEqZero_realization [DecidableEq σ]
     simp only [conjEqZero, realization, Set.mem_inter_iff,
       Set.mem_setOf_eq, List.mem_cons]
     rw [show (conjEqZero (Q :: Ps)).realization (C := C) =
-      { y | ∀ P ∈ (Q :: Ps), aeval y P = 0 }
+      { y | ∀ P ∈ (Q :: Ps), MvPolynomial.aeval y P = 0 }
       from conjEqZero_realization (Q :: Ps)]
     simp only [Set.mem_setOf_eq]
     constructor
     · rintro ⟨hP, hrest⟩ R hR
       rcases hR with rfl | hR
       · exact hP
-      · exact hrest R hR
+      · exact hrest R (List.mem_cons.mpr hR)
     · intro h
       exact ⟨h P (Or.inl rfl),
-        fun R hR => h R (Or.inr hR)⟩
+        fun R hR => h R (Or.inr (List.mem_cons.mp hR))⟩
 
 end Formula
 
