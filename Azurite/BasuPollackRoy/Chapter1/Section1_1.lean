@@ -693,68 +693,162 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
     {Ψ₁ Ψ₂ : Formula D σ} (h₁ : IsPrenex Ψ₁) (h₂ : IsPrenex Ψ₂) :
     ∃ Ψ : Formula D σ, IsPrenex Ψ ∧
       CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ := by
-  induction h₁ with
-  | qf hqf₁ =>
-    induction h₂ with
-    | qf hqf₂ => exact ⟨.and _ _, .qf ⟨hqf₁, hqf₂⟩, rfl⟩
-    | @exists_ z B _ ih₂ =>
-      -- QF ∧ (∃z, B): use commutativity + exists_and_equiv
-      obtain ⟨Ψ', hP', hE'⟩ := ih₂
-      -- Pick fresh variable
-      let fresh := (Ψ'.freeVars ∪ Finset.empty).choose_fresh
-      sorry
-    | @forall_ z B _ ih₂ =>
-      sorry
-  | @exists_ x A _ ih₁ =>
-    -- (∃x, A) ∧ Ψ₂: pick fresh z ∉ freeVars(A) ∪ freeVars(Ψ₂)
-    -- Rename bound variable x to z, then pull quantifier out
-    let S := A.freeVars ∪ Ψ₂.freeVars
-    obtain ⟨z, hz⟩ := Infinite.exists_not_mem S
-    have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
-    have hzΨ₂ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
-    -- ∃x, A ≡ ∃z, A' where A' = A.rename(swap x z)
-    have hswap := exists_swap_equiv (C := C) A x z hzA
-    -- A' is prenex (rename preserves prenex)
-    have hA'_prenex : IsPrenex (A.rename (Equiv.swap x z)) :=
-      rename_isPrenex _ (by assumption)
-    -- IH: A'.rename(...) ∧ Ψ₂ has prenex equivalent
-    obtain ⟨Ψ_inner, hΨ_inner_prenex, hΨ_inner_equiv⟩ :=
-      ih₁ hA'_prenex h₂
-    -- (∃x, A) ∧ Ψ₂ ≡ (∃z, A') ∧ Ψ₂  (by exists_swap_equiv)
-    --                ≡ ∃z, (A' ∧ Ψ₂)  (by exists_and_equiv, z ∉ freeVars Ψ₂)
-    --                ≡ ∃z, Ψ_inner     (by IH)
-    refine ⟨.exists_ z Ψ_inner, .exists_ hΨ_inner_prenex, ?_⟩
-    unfold CEquiv at hswap hΨ_inner_equiv ⊢
-    simp only [realization] at hswap hΨ_inner_equiv ⊢
-    -- Step 1: use hswap to rewrite ∃x, A to ∃z, A'
-    rw [show {y | ∃ c, Function.update y x c ∈ A.realization (C := C)} =
-            {y | ∃ c, Function.update y z c ∈ (A.rename (Equiv.swap x z)).realization (C := C)}
-      from hswap]
-    -- Step 2: use exists_and_equiv to pull ∃z out
-    rw [show {y | ∃ c, Function.update y z c ∈ (A.rename (Equiv.swap x z)).realization (C := C)} ∩
-            Ψ₂.realization (C := C) =
-            {y | ∃ c, Function.update y z c ∈ (A.rename (Equiv.swap x z)).realization (C := C) ∩
-                      Ψ₂.realization (C := C)}
-      from by rw [← exists_and_equiv (C := C) (A.rename (Equiv.swap x z)) Ψ₂ z hzΨ₂]
-              simp [realization]]
-    -- Step 3: use IH
-    ext y; simp only [Set.mem_setOf_eq]
-    exact exists_congr fun c => by
-      change _ ↔ Function.update y z c ∈ Ψ_inner.realization (C := C)
-      rw [← hΨ_inner_equiv]; simp [realization]
-  | @forall_ x A _ ih₁ =>
-    -- (∀x, A) ∧ Ψ₂: similar to exists case
-    let S := A.freeVars ∪ Ψ₂.freeVars
-    obtain ⟨z, hz⟩ := Infinite.exists_not_mem S
-    have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
-    have hzΨ₂ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
-    -- exists_swap_equiv for A gives ∃x, A ≡ ∃z, A'
-    -- For ∀x, A = ¬∃x¬A, we use:
-    -- ¬∃x, ¬A ≡ ¬∃z, ¬(A.rename(swap x z))  (by exists_swap_equiv on ¬A)
-    have hswap_neg := exists_swap_equiv (C := C) (.not A) x z (by simp [freeVars]; exact hzA)
-    have hA'_prenex : IsPrenex ((.not A).rename (Equiv.swap x z)) :=
-      rename_isPrenex _ (.qf (by assumption : A.IsQuantifierFree) |>.1 |> sorry)
-    sorry
+  have key : ∀ n, (∀ m, m < n → ∀ {Ψ₁ Ψ₂ : Formula D σ},
+      IsPrenex Ψ₁ → IsPrenex Ψ₂ →
+      Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = m →
+      ∃ Ψ : Formula D σ, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ) →
+    ∀ {Ψ₁ Ψ₂ : Formula D σ},
+      IsPrenex Ψ₁ → IsPrenex Ψ₂ →
+      Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = n →
+      ∃ Ψ : Formula D σ, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ := by
+    intro n ih Ψ₁ Ψ₂ h₁ h₂ hn
+    cases h₁ with
+    | qf hqf₁ =>
+      cases h₂ with
+      | qf hqf₂ => exact ⟨.and _ _, .qf ⟨hqf₁, hqf₂⟩, rfl⟩
+      | exists_ hPB =>
+        rename_i z B
+        obtain ⟨w, hw⟩ := Infinite.exists_notMem_finset (B.freeVars ∪ Ψ₁.freeVars)
+        have hwB : w ∉ B.freeVars := fun h => hw (Finset.mem_union_left _ h)
+        have hwΨ₁ : w ∉ Ψ₁.freeVars := fun h => hw (Finset.mem_union_right _ h)
+        have hswap := exists_swap_equiv (C := C) B z w hwB
+        let B' := B.rename (Equiv.swap z w)
+        have hB'_prenex : IsPrenex B' := rename_isPrenex _ hPB
+        have hdepth : Ψ₁.quantifierDepth + B'.quantifierDepth < n := by
+          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w)).quantifierDepth < n
+          rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+        obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth (.qf hqf₁) hB'_prenex rfl
+        refine ⟨.exists_ w Ψ_inner, .exists_ hΨP, ?_⟩
+        unfold CEquiv at hswap hΨE ⊢
+        simp only [realization] at hswap hΨE ⊢
+        rw [hswap]
+        ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+        constructor
+        · rintro ⟨hΨ₁, ⟨c, hc⟩⟩
+          exact ⟨c, hΨE ▸ ⟨(realization_invariant_update Ψ₁ w hwΨ₁ y c).mp hΨ₁, hc⟩⟩
+        · rintro ⟨c, hc⟩
+          rw [← hΨE] at hc; simp only [Set.mem_inter_iff] at hc
+          exact ⟨(realization_invariant_update Ψ₁ w hwΨ₁ y c).mpr hc.1, c, hc.2⟩
+      | forall_ hPB =>
+        rename_i z B
+        obtain ⟨w, hw⟩ := Infinite.exists_notMem_finset (B.freeVars ∪ Ψ₁.freeVars)
+        have hwB : w ∉ B.freeVars := fun h => hw (Finset.mem_union_left _ h)
+        have hwΨ₁ : w ∉ Ψ₁.freeVars := fun h => hw (Finset.mem_union_right _ h)
+        let B' := B.rename (Equiv.swap z w)
+        have hB'_prenex : IsPrenex B' := rename_isPrenex _ hPB
+        have hdepth : Ψ₁.quantifierDepth + B'.quantifierDepth < n := by
+          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w)).quantifierDepth < n
+          rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+        obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth (.qf hqf₁) hB'_prenex rfl
+        refine ⟨.not (.exists_ w (.not Ψ_inner)), .forall_ hΨP, ?_⟩
+        have hnotB_fv : w ∉ (Formula.not B).freeVars := by simp [freeVars]; exact hwB
+        have hswap := exists_swap_equiv (C := C) (.not B) z w hnotB_fv
+        unfold CEquiv at hswap hΨE ⊢
+        simp only [realization] at hΨE
+        ext y
+        simp only [realization, Set.mem_inter_iff, Set.mem_compl_iff, Set.mem_setOf_eq,
+          not_exists, not_not]
+        have hswap_pw : ∀ y : σ → C,
+            (∃ c, ¬ Function.update y z c ∈ B.realization (C := C)) ↔
+            (∃ c, ¬ Function.update y w c ∈ B'.realization (C := C)) := by
+          intro y'
+          have h := congr_arg (y' ∈ ·) hswap
+          simp only [realization, Set.mem_setOf_eq, Set.mem_compl_iff] at h
+          change (∃ c, ¬ Function.update y' z c ∈ B.realization) =
+                 (∃ c, ¬ Function.update y' w c ∈ B'.realization) at h
+          exact h.to_iff
+        constructor
+        · rintro ⟨hΨ₁, hB⟩ c
+          rw [← hΨE]; simp only [Set.mem_inter_iff]
+          refine ⟨(realization_invariant_update Ψ₁ w hwΨ₁ y c).mp hΨ₁, ?_⟩
+          by_contra hc
+          have : ∃ c₀, ¬ Function.update y w c₀ ∈ B'.realization (C := C) := ⟨c, hc⟩
+          rw [← hswap_pw] at this
+          obtain ⟨c₁, hc₁⟩ := this; exact hc₁ (hB c₁)
+        · intro h
+          refine ⟨?_, fun c => ?_⟩
+          · have := h (y w)
+            rw [← hΨE] at this; simp only [Set.mem_inter_iff] at this
+            exact (realization_invariant_update Ψ₁ w hwΨ₁ y (y w)).mpr this.1
+          · by_contra hc
+            have : ∃ c₀, ¬ Function.update y z c₀ ∈ B.realization (C := C) := ⟨c, hc⟩
+            rw [hswap_pw] at this; obtain ⟨c₁, hc₁⟩ := this
+            have := h c₁; rw [← hΨE] at this; simp only [Set.mem_inter_iff] at this
+            exact hc₁ this.2
+    | exists_ hPA =>
+      rename_i x A
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (A.freeVars ∪ Ψ₂.freeVars)
+      have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
+      have hzΨ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
+      have hswap := exists_swap_equiv (C := C) A x z hzA
+      let A' := A.rename (Equiv.swap x z)
+      have hA'_prenex : IsPrenex A' := rename_isPrenex _ hPA
+      have hdepth : A'.quantifierDepth + Ψ₂.quantifierDepth < n := by
+        show (A.rename (Equiv.swap x z)).quantifierDepth + Ψ₂.quantifierDepth < n
+        rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+      obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth hA'_prenex h₂ rfl
+      refine ⟨.exists_ z Ψ_inner, .exists_ hΨP, ?_⟩
+      unfold CEquiv at hswap hΨE ⊢
+      simp only [realization] at hswap hΨE ⊢
+      rw [hswap]
+      ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+      constructor
+      · rintro ⟨⟨c, hc⟩, hΨ₂⟩
+        exact ⟨c, hΨE ▸ ⟨hc, (realization_invariant_update Ψ₂ z hzΨ y c).mp hΨ₂⟩⟩
+      · rintro ⟨c, hc⟩
+        rw [← hΨE] at hc; simp only [Set.mem_inter_iff] at hc
+        exact ⟨⟨c, hc.1⟩, (realization_invariant_update Ψ₂ z hzΨ y c).mpr hc.2⟩
+    | forall_ hPA =>
+      rename_i x A
+      obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (A.freeVars ∪ Ψ₂.freeVars)
+      have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
+      have hzΨ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
+      let A' := A.rename (Equiv.swap x z)
+      have hA'_prenex : IsPrenex A' := rename_isPrenex _ hPA
+      have hdepth : A'.quantifierDepth + Ψ₂.quantifierDepth < n := by
+        show (A.rename (Equiv.swap x z)).quantifierDepth + Ψ₂.quantifierDepth < n
+        rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+      obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth hA'_prenex h₂ rfl
+      refine ⟨.not (.exists_ z (.not Ψ_inner)), .forall_ hΨP, ?_⟩
+      have hnotA_fv : z ∉ (Formula.not A).freeVars := by simp [freeVars]; exact hzA
+      have hswap := exists_swap_equiv (C := C) (.not A) x z hnotA_fv
+      unfold CEquiv at hswap hΨE ⊢
+      simp only [realization] at hΨE
+      ext y
+      simp only [realization, Set.mem_inter_iff, Set.mem_compl_iff, Set.mem_setOf_eq,
+        not_exists, not_not]
+      have hswap_pw : ∀ y : σ → C,
+          (∃ c, ¬ Function.update y x c ∈ A.realization (C := C)) ↔
+          (∃ c, ¬ Function.update y z c ∈ A'.realization (C := C)) := by
+        intro y'
+        have h := congr_arg (y' ∈ ·) hswap
+        simp only [realization, Set.mem_setOf_eq, Set.mem_compl_iff] at h
+        change (∃ c, ¬ Function.update y' x c ∈ A.realization) =
+               (∃ c, ¬ Function.update y' z c ∈ A'.realization) at h
+        exact h.to_iff
+      constructor
+      · rintro ⟨hA, hΨ₂⟩ c
+        rw [← hΨE]; simp only [Set.mem_inter_iff]
+        refine ⟨?_, (realization_invariant_update Ψ₂ z hzΨ y c).mp hΨ₂⟩
+        by_contra hc
+        have : ∃ c₀, ¬ Function.update y z c₀ ∈ A'.realization (C := C) := ⟨c, hc⟩
+        rw [← hswap_pw] at this
+        obtain ⟨c₁, hc₁⟩ := this; exact hc₁ (hA c₁)
+      · intro h
+        refine ⟨fun c => ?_, ?_⟩
+        · by_contra hc
+          have : ∃ c₀, ¬ Function.update y x c₀ ∈ A.realization (C := C) := ⟨c, hc⟩
+          rw [hswap_pw] at this; obtain ⟨c₁, hc₁⟩ := this
+          have := h c₁; rw [← hΨE] at this; simp only [Set.mem_inter_iff] at this
+          exact hc₁ this.1
+        · have := h (y z); rw [← hΨE] at this; simp only [Set.mem_inter_iff] at this
+          exact (realization_invariant_update Ψ₂ z hzΨ y (y z)).mpr this.2
+  exact (@Nat.strongRecOn (fun n => ∀ {Ψ₁ Ψ₂ : Formula D σ},
+      IsPrenex Ψ₁ → IsPrenex Ψ₂ →
+      Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = n →
+      ∃ Ψ : Formula D σ, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ)
+    (Ψ₁.quantifierDepth + Ψ₂.quantifierDepth) key) h₁ h₂ rfl
+
 
 /-- Every formula over an infinite variable type is
     C-equivalent to a prenex formula. -/
@@ -763,16 +857,20 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
     ∃ Ψ : Formula D σ, IsPrenex Ψ ∧
       CEquiv (C := C) Φ Ψ := by
   induction Φ with
-  | eq_zero _ => exact ⟨_, .qf trivial, rfl⟩
+  | eq_zero P => exact ⟨.eq_zero P, .qf True.intro, rfl⟩
   | not Φ ih =>
     obtain ⟨Ψ, hP, hE⟩ := ih
     obtain ⟨Ψ', hP', hE'⟩ := not_prenex (C := C) hP
-    exact ⟨Ψ', hP', by unfold CEquiv at hE hE' ⊢; simp [realization]; rw [hE, hE']⟩
+    exact ⟨Ψ', hP', by
+      unfold CEquiv at hE hE' ⊢
+      simp only [realization] at hE' ⊢; rw [hE]; exact hE'⟩
   | and Φ₁ Φ₂ ih₁ ih₂ =>
     obtain ⟨Ψ₁, hP₁, hE₁⟩ := ih₁
     obtain ⟨Ψ₂, hP₂, hE₂⟩ := ih₂
     obtain ⟨Ψ, hP, hE⟩ := and_prenex (C := C) hP₁ hP₂
-    exact ⟨Ψ, hP, by unfold CEquiv at hE₁ hE₂ hE ⊢; simp [realization]; rw [hE₁, hE₂, hE]⟩
+    exact ⟨Ψ, hP, by
+      unfold CEquiv at hE₁ hE₂ hE ⊢
+      simp only [realization] at hE ⊢; rw [hE₁, hE₂]; exact hE⟩
   | or Φ₁ Φ₂ ih₁ ih₂ =>
     -- A ∨ B = ¬(¬A ∧ ¬B)
     obtain ⟨Ψ₁, hP₁, hE₁⟩ := ih₁
@@ -783,8 +881,11 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
     obtain ⟨Ψ_final, hP_final, hE_final⟩ := not_prenex (C := C) hP_and
     refine ⟨Ψ_final, hP_final, ?_⟩
     unfold CEquiv at hE₁ hE₂ hE₁' hE₂' hE_and hE_final ⊢
-    simp only [realization] at hE₁ hE₂ hE₁' hE₂' hE_and hE_final ⊢
-    rw [hE₁, hE₂, show Ψ₁.realization (C := C) ∪ Ψ₂.realization (C := C) =
+    simp only [realization] at hE₁' hE₂' hE_and hE_final ⊢
+    rw [hE₁, hE₂]
+    -- Goal: Ψ₁.realization ∪ Ψ₂.realization = Ψ_final.realization
+    -- Use De Morgan: A ∪ B = (Aᶜ ∩ Bᶜ)ᶜ
+    rw [show Ψ₁.realization (C := C) ∪ Ψ₂.realization (C := C) =
         ((Ψ₁.realization (C := C))ᶜ ∩ (Ψ₂.realization (C := C))ᶜ)ᶜ from by
           simp [Set.compl_inter, compl_compl]]
     rw [hE₁', hE₂', hE_and, hE_final]
