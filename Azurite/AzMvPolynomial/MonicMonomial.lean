@@ -129,6 +129,52 @@ instance : CommMonoid (MonicMonomial σ n ord) where
   mul_one := mul_one
   mul_comm := mul_comm
 
+/-- Convert a monic monomial to a list of characters.
+    Formats as `x₀*x₁^2*x₂` — variables with exponent 0 are omitted,
+    exponent 1 is implicit, and `^e` is appended for higher exponents.
+    The all-zero monomial (i.e. `1`) produces the empty list. -/
+def toChars [pv : ParseableVar σ n] (m : MonicMonomial σ n ord) : List Char :=
+  let parts : List (List Char) := (List.finRange n).filterMap fun i =>
+    let e := m.exponents[i]
+    if e = 0 then none
+    else
+      let varChars := pv.toChars (pv.ofFin i)
+      if e = 1 then some varChars
+      else some (varChars ++ '^' :: AzPolynomial.natToChars e)
+  List.intercalate ['*'] parts
+
+instance [ParseableVar σ n] : ToString (MonicMonomial σ n ord) where
+  toString m :=
+    let cs := m.toChars
+    if cs.isEmpty then "1" else String.ofList cs
+
+instance [ParseableVar σ n] : Repr (MonicMonomial σ n ord) where
+  reprPrec m _ := toString m
+
+/-- Parse a character list in the format `x₀*x₁^2*x₂` into a monic monomial.
+    Variables may appear in any order and are placed at their correct index
+    via `ParseableVar.toFin`. Duplicate variables are rejected.
+    An empty input produces the identity monomial (`1`). -/
+def parse [pv : ParseableVar σ n] (cs : List Char) : Option (MonicMonomial σ n ord) := do
+  if cs.isEmpty then return ⟨Vector.replicate n 0⟩
+  let factors := cs.splitOn '*'
+  let mut exps := Vector.replicate n 0
+  for factor in factors do
+    if factor.isEmpty then failure
+    let parts := factor.splitOn '^'
+    let (varPart, e) ← match parts with
+      | [vp] => some (vp, 1)
+      | [vp, ep] => do
+        let e ← AzPolynomial.parseNatChars ep
+        if e = 0 then failure
+        pure (vp, e)
+      | _ => failure
+    let v ← pv.parseChars varPart
+    let idx := pv.toFin v
+    if exps.get idx ≠ 0 then failure  -- reject duplicate variables
+    exps := exps.set idx e
+  return ⟨exps⟩
+
 end MonicMonomial
 
 end Azurite
