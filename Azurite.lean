@@ -2,6 +2,7 @@
 -- Import modules here that should be built as part of the library.
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialProofs
+import Azurite.AzMvPolynomial.Monomial
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
