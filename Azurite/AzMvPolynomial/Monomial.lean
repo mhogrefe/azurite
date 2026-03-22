@@ -5,9 +5,13 @@ import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzPolynomial.StringLemmas
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.List.TakeDrop
 
 namespace Azurite
 open AzPolynomial
+
+instance : DecidablePred isLowerAscii := fun c =>
+  if h : c.toNat ≥ 'a'.toNat ∧ c.toNat ≤ 'z'.toNat then isTrue h else isFalse h
 
 /-- A character used in polynomial syntax that must not appear in coefficient
     representations: `+`, `*`, `^`. (Digits and `-` are allowed.) -/
@@ -69,7 +73,7 @@ def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
   match cs with
   | [] => none
   | c :: _ =>
-    if c.isAlpha && c.isLower then
+    if decide (isLowerAscii c) then
       -- Starts with lowercase: parse as monic monomial, coeff = 1
       (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, h1⟩, m⟩)
     else
@@ -131,6 +135,84 @@ theorem minus_notin_tail_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [
       rcases h with h | h
       · exact absurd h (by decide)
       · exact MonicMonomial.minus_notin_toChars m.monic h
+
+private lemma takeWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
+    List.takeWhile (· != '*') l = l := by
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    simp [h a (List.mem_cons_self ..)]
+    exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
+
+private lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
+    List.dropWhile (· != '*') l = [] := by
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    simp [h a (List.mem_cons_self ..)]
+    exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
+
+private lemma coeffChars_bne_star {R : Type _} [ParsableCoeff R] (r : R) :
+    ∀ x ∈ ParsableCoeff.toChars r, (x != '*') = true := by
+  intro x hx; simp [bne_iff_ne]
+  intro heq; exact ParsableCoeff.toChars_no_syntax _ _ (heq ▸ hx) (Or.inr (Or.inl rfl))
+
+/-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
+theorem parse_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+    [pv : ParsableVar σ n] {ord : MonomialOrder}
+    [DecidableEq R] [One R] [ParsableCoeff R]
+    (m : Monomial R σ n ord) (h1 : (1 : R) ≠ 0) :
+    parse m.toChars h1 = some m := by
+  unfold toChars parse
+  simp only [List.span_eq_takeWhile_dropWhile]
+  split_ifs with hmonic hcoeff
+  · -- Case 1: monic = 1
+    have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+    obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
+    rw [hct]
+    have hnotlower : ¬ isLowerAscii c :=
+      ParsableCoeff.toChars_no_lower _ _ (by rw [hct]; exact List.mem_cons_self ..)
+    simp only [decide_eq_false hnotlower, Bool.false_eq_true, ↓reduceIte]
+    have hall : ∀ x ∈ (c :: t), (x != '*') = true :=
+      fun x hx => coeffChars_bne_star m.coeff.val x (by rw [hct]; exact hx)
+    rw [takeWhile_all (c :: t) hall, dropWhile_all (c :: t) hall]
+    simp [← hct, ParsableCoeff.parse_toChars, dif_neg m.coeff.property]
+    show { coeff := m.coeff, monic := 1 } = m
+    cases m; simp_all
+  · -- Case 2: coeff = 1, monic ≠ 1
+    have hne := MonicMonomial.toChars_ne_nil m.monic hmonic
+    obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
+    rw [hct]
+    have hlower : isLowerAscii c := by
+      have h := MonicMonomial.toChars_head_isLowerAscii m.monic hmonic
+      simp only [hct, List.head_cons] at h; exact h
+    simp only [decide_eq_true hlower, ↓reduceIte]
+    rw [← hct, MonicMonomial.parse_toChars]
+    show Option.some { coeff := ⟨1, h1⟩, monic := m.monic } = some m
+    congr 1; cases m; simp only [Monomial.mk.injEq]; exact ⟨Subtype.ext hcoeff.symm, trivial⟩
+  · -- Case 3: coeff ≠ 1, monic ≠ 1
+    have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+    obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
+    have hnotlower : ¬ isLowerAscii c :=
+      ParsableCoeff.toChars_no_lower _ _ (by rw [hct]; exact List.mem_cons_self ..)
+    rw [hct]
+    have hc_bne : (c != '*') = true :=
+      coeffChars_bne_star m.coeff.val c (by rw [hct]; exact List.mem_cons_self ..)
+    have hall : ∀ x ∈ t, (x != '*') = true :=
+      fun x hx => coeffChars_bne_star m.coeff.val x
+        (by rw [hct]; exact List.mem_cons_of_mem _ hx)
+    -- Pre-compute takeWhile/dropWhile on c :: t ++ ['*'] ++ monic.toChars
+    have htw : List.takeWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toChars)) = c :: t := by
+      simp [hc_bne, List.takeWhile_append,
+            takeWhile_all t hall]
+    have hdw : List.dropWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toChars)) =
+        '*' :: m.monic.toChars := by
+      simp [hc_bne, List.dropWhile_append,
+            dropWhile_all t hall]
+    simp only [List.cons_append, decide_eq_false hnotlower, Bool.false_eq_true, ↓reduceIte,
+               htw, hdw]
+    simp [← hct, ParsableCoeff.parse_toChars, dif_neg m.coeff.property,
+          MonicMonomial.parse_toChars]
 
 end Monomial
 
