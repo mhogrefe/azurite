@@ -144,36 +144,46 @@ def toChars [pv : ParseableVar σ n] (m : MonicMonomial σ n ord) : List Char :=
   List.intercalate ['*'] parts
 
 instance [ParseableVar σ n] : ToString (MonicMonomial σ n ord) where
-  toString m :=
-    let cs := m.toChars
-    if cs.isEmpty then "1" else String.ofList cs
+  toString m := String.ofList m.toChars
 
 instance [ParseableVar σ n] : Repr (MonicMonomial σ n ord) where
   reprPrec m _ := toString m
+
+/-- Parse a single factor like `x` or `x^3` into an exponent vector update.
+    Uses explicit pattern matching for proof-friendliness. -/
+def parseFactor [pv : ParseableVar σ n] (factor : List Char) (exps : Vector ℕ n) :
+    Option (Vector ℕ n) :=
+  if factor.isEmpty then none
+  else match factor.splitOn '^' with
+    | [vp] => match pv.parseChars vp with
+      | some v => let idx := pv.toFin v
+        if exps.get idx ≠ 0 then none else some (exps.set idx.val 1 idx.isLt)
+      | none => none
+    | [vp, ep] => match AzPolynomial.parseNatChars ep with
+      | some e => if e = 0 then none else match pv.parseChars vp with
+        | some v => let idx := pv.toFin v
+          if exps.get idx ≠ 0 then none else some (exps.set idx.val e idx.isLt)
+        | none => none
+      | none => none
+    | _ => none
+
+/-- Process a list of factors left-to-right, accumulating into an exponent vector. -/
+def parseFactorList [ParseableVar σ n] :
+    List (List Char) → Vector ℕ n → Option (Vector ℕ n)
+  | [], exps => some exps
+  | f :: fs, exps => match parseFactor (σ := σ) f exps with
+    | some exps' => parseFactorList fs exps'
+    | none => none
 
 /-- Parse a character list in the format `x₀*x₁^2*x₂` into a monic monomial.
     Variables may appear in any order and are placed at their correct index
     via `ParseableVar.toFin`. Duplicate variables are rejected.
     An empty input produces the identity monomial (`1`). -/
-def parse [pv : ParseableVar σ n] (cs : List Char) : Option (MonicMonomial σ n ord) := do
-  if cs.isEmpty then return ⟨Vector.replicate n 0⟩
-  let factors := cs.splitOn '*'
-  let mut exps := Vector.replicate n 0
-  for factor in factors do
-    if factor.isEmpty then failure
-    let parts := factor.splitOn '^'
-    let (varPart, e) ← match parts with
-      | [vp] => some (vp, 1)
-      | [vp, ep] => do
-        let e ← AzPolynomial.parseNatChars ep
-        if e = 0 then failure
-        pure (vp, e)
-      | _ => failure
-    let v ← pv.parseChars varPart
-    let idx := pv.toFin v
-    if exps.get idx ≠ 0 then failure  -- reject duplicate variables
-    exps := exps.set idx e
-  return ⟨exps⟩
+def parse [ParseableVar σ n] (cs : List Char) : Option (MonicMonomial σ n ord) :=
+  if cs.isEmpty then some ⟨Vector.replicate n 0⟩
+  else match parseFactorList (σ := σ) (cs.splitOn '*') (Vector.replicate n 0) with
+    | some exps => some ⟨exps⟩
+    | none => none
 
 end MonicMonomial
 
