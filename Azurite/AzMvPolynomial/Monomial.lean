@@ -14,9 +14,9 @@ def isCoeffSyntaxChar (c : Char) : Prop :=
   c = '+' ∨ c = '*' ∨ c = '^'
 
 /-- Typeclass for coefficient types that can be serialized/deserialized as character
-    sequences. Unlike `ParseableVar`, this does not extend `Var`, and `-` is permitted
+    sequences. Unlike `ParsableVar`, this does not extend `Var`, and `-` is permitted
     as the first character of the representation (to support negative coefficients). -/
-class ParseableCoeff (R : Type _) where
+class ParsableCoeff (R : Type _) where
   toChars : R → List Char
   parseChars : List Char → Option R
   parse_toChars : ∀ r : R, parseChars (toChars r) = some r
@@ -45,9 +45,9 @@ def one [One R] (h : (1 : R) ≠ 0) : Monomial R σ n ord :=
 
 end Monomial
 
-/-! ### ParseableCoeff instances -/
+/-! ### ParsableCoeff instances -/
 
-section ParseableCoeffInstances
+section ParsableCoeffInstances
 
 private lemma tail_mem_of_drop {c : α} {l : List α} (h : c ∈ l.tail) : c ∈ l.drop 1 := by
   cases l <;> simp_all
@@ -82,7 +82,7 @@ private lemma ratToChars_no_coeff_syntax (q : ℚ) (c : Char) (hc : c ∈ ratToC
       rcases h with h | h | h <;> exact absurd h (by decide)
     · exact natToChars_no_coeff_syntax _ c hc
 
-instance : ParseableCoeff ℕ where
+instance : ParsableCoeff ℕ where
   toChars := natToChars
   parseChars := parseNatChars
   parse_toChars := parseNatChars_natToChars
@@ -91,7 +91,7 @@ instance : ParseableCoeff ℕ where
   toChars_no_minus_tail := fun n _ hc heq =>
     not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
 
-instance : ParseableCoeff ℤ where
+instance : ParsableCoeff ℤ where
   toChars := intToChars
   parseChars := parseIntChars
   parse_toChars := parseIntChars_intToChars
@@ -100,7 +100,7 @@ instance : ParseableCoeff ℤ where
   toChars_no_minus_tail := fun z _ hc heq =>
     not_mem_tail_intToChars z (heq ▸ tail_mem_of_drop hc)
 
-instance : ParseableCoeff ℚ where
+instance : ParsableCoeff ℚ where
   toChars := ratToChars
   parseChars := parseRatChars
   parse_toChars := parseRatChars_ratToChars
@@ -120,7 +120,7 @@ private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
   congr 1
   exact ZMod.natCast_zmod_val c
 
-instance {m : ℕ} [NeZero m] : ParseableCoeff (ZMod m) where
+instance {m : ℕ} [NeZero m] : ParsableCoeff (ZMod m) where
   toChars := zmodToChars
   parseChars := parseZmodChars m
   parse_toChars := parseZmodChars_zmodToChars
@@ -129,6 +129,6 @@ instance {m : ℕ} [NeZero m] : ParseableCoeff (ZMod m) where
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
 
-end ParseableCoeffInstances
+end ParsableCoeffInstances
 
 end Azurite

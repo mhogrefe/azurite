@@ -17,7 +17,7 @@ namespace Azurite
 open AzPolynomial
 namespace MonicMonomial
 
-variable {σ : Type _} {n : ℕ} [LinearOrder σ] [pv : ParseableVar σ n] {ord : MonomialOrder}
+variable {σ : Type _} {n : ℕ} [LinearOrder σ] [pv : ParsableVar σ n] {ord : MonomialOrder}
 
 /-! ### Definitions -/
 

@@ -58,7 +58,7 @@ def isPolySyntaxChar (c : Char) : Prop :=
 
 /-- Extension of `Var` for variable types that can be serialized/deserialized
     as character sequences that do not collide with polynomial syntax. -/
-class ParseableVar (α : Type _) (n : ℕ) [LinearOrder α] extends Var α n where
+class ParsableVar (α : Type _) (n : ℕ) [LinearOrder α] extends Var α n where
   toChars : α → List Char
   parseChars : List Char → Option α
   parse_toChars : ∀ v : α, parseChars (toChars v) = some v
@@ -189,7 +189,7 @@ instance {n : ℕ} : Var (IndexedVar n) n where
   ofFin_toFin _ := rfl
   toFin_ofFin _ := rfl
 
-instance {n : ℕ} : ParseableVar (IndexedVar n) n where
+instance {n : ℕ} : ParsableVar (IndexedVar n) n where
   toChars v := ['x'] ++ natToSubscriptChars v.val
   parseChars cs := match cs with
     | 'x' :: rest => do
@@ -295,7 +295,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : Var (AbcVar n) n where
   ofFin_toFin := ofIndex_index (Fact.out)
   toFin_ofFin := index_ofIndex (Fact.out)
 
-instance {n : ℕ} [Fact (n ≤ 26)] : ParseableVar (AbcVar n) n where
+instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcVar n) n where
   toChars v := [v.ch]
   parseChars cs := match cs with
     | [c] => if h : c.toNat ≥ 'a'.toNat ∧ c.toNat ≤ 'z'.toNat ∧ c.toNat - 'a'.toNat < n then
@@ -433,7 +433,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : Var (XyzVar n) n where
   ofFin_toFin := ofIndex_index (Fact.out)
   toFin_ofFin := index_ofIndex (Fact.out)
 
-instance {n : ℕ} [Fact (n ≤ 26)] : ParseableVar (XyzVar n) n where
+instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzVar n) n where
   toChars v := [v.ch]
   parseChars cs := match cs with
     | [c] => if h : c.toNat ≥ 'a'.toNat ∧ c.toNat ≤ 'z'.toNat ∧

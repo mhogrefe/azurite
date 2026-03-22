@@ -161,7 +161,7 @@ def withOrder (m : MonicMonomial σ n ord) (ord' : MonomialOrder) :
     Formats as `x₀*x₁^2*x₂` — variables with exponent 0 are omitted,
     exponent 1 is implicit, and `^e` is appended for higher exponents.
     The all-zero monomial (i.e. `1`) produces the empty list. -/
-def toChars [pv : ParseableVar σ n] (m : MonicMonomial σ n ord) : List Char :=
+def toChars [pv : ParsableVar σ n] (m : MonicMonomial σ n ord) : List Char :=
   let parts : List (List Char) := (List.finRange n).filterMap fun i =>
     let e := m.exponents[i]
     if e = 0 then none
@@ -171,15 +171,15 @@ def toChars [pv : ParseableVar σ n] (m : MonicMonomial σ n ord) : List Char :=
       else some (varChars ++ '^' :: AzPolynomial.natToChars e)
   List.intercalate ['*'] parts
 
-instance [ParseableVar σ n] : ToString (MonicMonomial σ n ord) where
+instance [ParsableVar σ n] : ToString (MonicMonomial σ n ord) where
   toString m := String.ofList m.toChars
 
-instance [ParseableVar σ n] : Repr (MonicMonomial σ n ord) where
+instance [ParsableVar σ n] : Repr (MonicMonomial σ n ord) where
   reprPrec m _ := toString m
 
 /-- Parse a single factor like `x` or `x^3` into an exponent vector update.
     Uses explicit pattern matching for proof-friendliness. -/
-def parseFactor [pv : ParseableVar σ n] (factor : List Char) (exps : Vector ℕ n) :
+def parseFactor [pv : ParsableVar σ n] (factor : List Char) (exps : Vector ℕ n) :
     Option (Vector ℕ n) :=
   if factor.isEmpty then none
   else match factor.splitOn '^' with
@@ -196,7 +196,7 @@ def parseFactor [pv : ParseableVar σ n] (factor : List Char) (exps : Vector ℕ
     | _ => none
 
 /-- Process a list of factors left-to-right, accumulating into an exponent vector. -/
-def parseFactorList [ParseableVar σ n] :
+def parseFactorList [ParsableVar σ n] :
     List (List Char) → Vector ℕ n → Option (Vector ℕ n)
   | [], exps => some exps
   | f :: fs, exps => match parseFactor (σ := σ) f exps with
@@ -205,9 +205,9 @@ def parseFactorList [ParseableVar σ n] :
 
 /-- Parse a character list in the format `x₀*x₁^2*x₂` into a monic monomial.
     Variables may appear in any order and are placed at their correct index
-    via `ParseableVar.toFin`. Duplicate variables are rejected.
+    via `ParsableVar.toFin`. Duplicate variables are rejected.
     An empty input produces the identity monomial (`1`). -/
-def parse [ParseableVar σ n] (cs : List Char) : Option (MonicMonomial σ n ord) :=
+def parse [ParsableVar σ n] (cs : List Char) : Option (MonicMonomial σ n ord) :=
   if cs.isEmpty then some ⟨Vector.replicate n 0⟩
   else match parseFactorList (σ := σ) (cs.splitOn '*') (Vector.replicate n 0) with
     | some exps => some ⟨exps⟩
