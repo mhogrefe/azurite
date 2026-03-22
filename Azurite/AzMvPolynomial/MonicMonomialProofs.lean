@@ -438,6 +438,13 @@ theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Va
   rw [Finset.prod_ite_eq Finset.univ (v₂.toFin (f (Var.ofFin i)))]
   simp [Var.ofFin_toFin]
 
+/-- Evaluating a product of monic monomials equals the product of their evaluations. -/
+theorem eval_mul {R : Type _} [CommMonoid R]
+    (a b : MonicMonomial σ ord) (f : σ → R) :
+    (a * b).eval f = a.eval f * b.eval f := by
+  simp only [eval, mul_exponents, Fin.getElem_fin, Vector.getElem_ofFn, pow_add]
+  exact Finset.prod_mul_distrib
+
 end MonicMonomial
 
 end EvalRename

@@ -86,12 +86,32 @@ theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Va
     (m.rename f ord₂).eval (n := n₂) g = m.eval (g ∘ f) := by
   simp only [eval, rename, MonicMonomial.eval_rename]
 
+/-- Evaluating the negation of a monomial gives the negation of its evaluation. -/
+theorem eval_neg {R : Type _} [CommRing R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
+    {ord : MonomialOrder} (m : Monomial R σ ord) (f : σ → R) :
+    (-m).eval f = -(m.eval f) := by
+  simp only [eval, Neg.neg, neg_mul]
+
+
 /-- Multiply two monomials (multiply coefficients, multiply monic parts). -/
 def mul [NoZeroDivisors R] (a b : Monomial R σ ord) : Monomial R σ ord :=
   ⟨⟨a.coeff.val * b.coeff.val, mul_ne_zero a.coeff.property b.coeff.property⟩,
    a.monic * b.monic⟩
 
 instance [NoZeroDivisors R] : Mul (Monomial R σ ord) := ⟨mul⟩
+
+/-- Evaluating a product of monomials equals the product of their evaluations. -/
+theorem eval_mul {R : Type _} [CommSemiring R] [NoZeroDivisors R]
+    {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
+    (a b : Monomial R σ ord) (f : σ → R) :
+    (a * b).eval f = a.eval f * b.eval f := by
+  simp only [eval]
+  simp only [show (a * b).coeff.val = a.coeff.val * b.coeff.val from rfl,
+             show (a * b).monic = a.monic * b.monic from rfl]
+  simp only [MonicMonomial.eval, MonicMonomial.mul_exponents,
+             Fin.getElem_fin, Vector.getElem_ofFn, pow_add]
+  rw [Finset.prod_mul_distrib]
+  exact mul_mul_mul_comm _ _ _ _
 
 instance [Nontrivial R] : One (Monomial R σ ord) :=
   ⟨⟨⟨1, one_ne_zero⟩, MonicMonomial.one⟩⟩
