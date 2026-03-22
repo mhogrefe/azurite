@@ -25,6 +25,8 @@ class ParsableCoeff (R : Type _) where
   toChars_no_syntax : ∀ r : R, ∀ c ∈ toChars r, ¬ isCoeffSyntaxChar c
   /-- `-` may only occur as the very first character. -/
   toChars_no_minus_tail : ∀ r : R, ∀ c ∈ (toChars r).tail, c ≠ '-'
+  /-- No lowercase ASCII letter appears anywhere. -/
+  toChars_no_lower : ∀ r : R, ∀ c ∈ toChars r, ¬ isLowerAscii c
 
 /-- A monomial: a nonzero coefficient of type `R` paired with a monic monomial.
     The coefficient is stored as a subtype `{c : R // c ≠ 0}` to ensure
@@ -42,6 +44,48 @@ variable {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ 
 /-- The identity monomial with coefficient `1` and all exponents zero. -/
 def one [One R] (h : (1 : R) ≠ 0) : Monomial R σ n ord :=
   ⟨⟨1, h⟩, MonicMonomial.one⟩
+
+/-- Convert a monomial to a list of characters.
+    - If the monic part is `1`, return the coefficient representation.
+    - If the coefficient is `1`, return the monic monomial representation.
+    - Otherwise, join the two with `*`. -/
+def toChars [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
+    (m : Monomial R σ n ord) : List Char :=
+  if m.monic = 1 then
+    ParsableCoeff.toChars m.coeff.val
+  else if m.coeff.val = 1 then
+    m.monic.toChars
+  else
+    ParsableCoeff.toChars m.coeff.val ++ ['*'] ++ m.monic.toChars
+
+/-- Parse a character list into a `Monomial`.
+    Uses the first character to distinguish:
+    - Lowercase letter → starts a monic monomial (coefficient is implicitly `1`).
+    - Otherwise → starts a coefficient. A `*` separator, if present, separates
+      the coefficient from the monic monomial part. -/
+def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
+    (cs : List Char) (h1 : (1 : R) ≠ 0) : Option (Monomial R σ n ord) :=
+  match cs with
+  | [] => none
+  | c :: _ =>
+    if c.isAlpha && c.isLower then
+      -- Starts with lowercase: parse as monic monomial, coeff = 1
+      (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, h1⟩, m⟩)
+    else
+      -- Starts with non-lowercase: find first '*' to split coeff from monic
+      let (coeffPart, rest) := cs.span (· != '*')
+      match rest with
+      | [] =>
+        -- No '*': entire input is a coefficient, monic = 1
+        (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+          if hc : c = 0 then none else some ⟨⟨c, hc⟩, 1⟩)
+      | '*' :: monicPart =>
+        -- Has '*': left is coefficient, right is monic monomial
+        (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+          if hc : c = 0 then none
+          else (MonicMonomial.parse (ord := ord) monicPart).map
+            (fun m => ⟨⟨c, hc⟩, m⟩))
+      | _ => none  -- unreachable: span stops at '*'
 
 end Monomial
 
@@ -82,6 +126,38 @@ private lemma ratToChars_no_coeff_syntax (q : ℚ) (c : Char) (hc : c ∈ ratToC
       rcases h with h | h | h <;> exact absurd h (by decide)
     · exact natToChars_no_coeff_syntax _ c hc
 
+private lemma natToChars_no_lower (n : ℕ) (c : Char) (hc : c ∈ natToChars n) :
+    ¬ isLowerAscii c := by
+  have ⟨hge, hle⟩ := mem_natToChars_only_digits n c hc
+  intro ⟨hlo, _⟩
+  simp only [show ('0' : Char).toNat = 48 from by decide,
+             show ('9' : Char).toNat = 57 from by decide,
+             show ('a' : Char).toNat = 97 from by decide] at *
+  omega
+
+private lemma intToChars_no_lower (z : ℤ) (c : Char) (hc : c ∈ intToChars z) :
+    ¬ isLowerAscii c := by
+  rw [intToChars_natAbs] at hc
+  split at hc
+  · simp only [List.mem_cons] at hc
+    rcases hc with rfl | hc
+    · intro ⟨h, _⟩; simp only [show ('-' : Char).toNat = 45 from by decide,
+                              show ('a' : Char).toNat = 97 from by decide] at h; omega
+    · exact natToChars_no_lower _ c hc
+  · exact natToChars_no_lower _ c hc
+
+private lemma ratToChars_no_lower (q : ℚ) (c : Char) (hc : c ∈ ratToChars q) :
+    ¬ isLowerAscii c := by
+  simp only [ratToChars] at hc
+  split at hc
+  · exact intToChars_no_lower _ c hc
+  · simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hc
+    rcases hc with (hc | rfl) | hc
+    · exact intToChars_no_lower _ c hc
+    · intro ⟨h, _⟩; simp only [show ('/' : Char).toNat = 47 from by decide,
+                              show ('a' : Char).toNat = 97 from by decide] at h; omega
+    · exact natToChars_no_lower _ c hc
+
 instance : ParsableCoeff ℕ where
   toChars := natToChars
   parseChars := parseNatChars
@@ -90,6 +166,7 @@ instance : ParsableCoeff ℕ where
   toChars_no_syntax := natToChars_no_coeff_syntax
   toChars_no_minus_tail := fun n _ hc heq =>
     not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
+  toChars_no_lower := natToChars_no_lower
 
 instance : ParsableCoeff ℤ where
   toChars := intToChars
@@ -99,6 +176,7 @@ instance : ParsableCoeff ℤ where
   toChars_no_syntax := intToChars_no_coeff_syntax
   toChars_no_minus_tail := fun z _ hc heq =>
     not_mem_tail_intToChars z (heq ▸ tail_mem_of_drop hc)
+  toChars_no_lower := intToChars_no_lower
 
 instance : ParsableCoeff ℚ where
   toChars := ratToChars
@@ -108,6 +186,7 @@ instance : ParsableCoeff ℚ where
   toChars_no_syntax := ratToChars_no_coeff_syntax
   toChars_no_minus_tail := fun q _ hc heq =>
     not_mem_tail_ratToChars q (heq ▸ tail_mem_of_drop hc)
+  toChars_no_lower := ratToChars_no_lower
 
 /-- Parse a character list as a `ZMod n` value: parse as ℕ, check `< n`, cast. -/
 def parseZmodChars (m : ℕ) [NeZero m] (cs : List Char) : Option (ZMod m) :=
@@ -128,6 +207,7 @@ instance {m : ℕ} [NeZero m] : ParsableCoeff (ZMod m) where
   toChars_no_syntax := fun c _ch hch => natToChars_no_coeff_syntax c.val _ch hch
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
+  toChars_no_lower := fun c _ch hch => natToChars_no_lower c.val _ch hch
 
 end ParsableCoeffInstances
 
