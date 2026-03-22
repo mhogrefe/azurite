@@ -36,19 +36,28 @@ class ParsableCoeff (R : Type _) where
 /-- A monomial: a nonzero coefficient of type `R` paired with a monic monomial.
     The coefficient is stored as a subtype `{c : R // c ≠ 0}` to ensure
     that zero monomials are unrepresentable. -/
-structure Monomial (R : Type _) [Zero R] (σ : Type _) {n : ℕ} [LinearOrder σ] [Var σ n]
+structure Monomial (R : Type _) [Semiring R] (σ : Type _) {n : ℕ} [LinearOrder σ] [Var σ n]
     (ord : MonomialOrder := .Degrevlex) where
   coeff : {c : R // c ≠ 0}
   monic : MonicMonomial σ ord
 
 namespace Monomial
 
-variable {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
+variable {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
     {ord : MonomialOrder}
 
 /-- The identity monomial with coefficient `1` and all exponents zero. -/
 def one [One R] (h : (1 : R) ≠ 0) : Monomial R σ ord :=
   ⟨⟨1, h⟩, MonicMonomial.one⟩
+
+/-- Negate a monomial by negating its coefficient. -/
+def neg [Neg R] (hne : ∀ c : R, c ≠ 0 → -c ≠ 0) (m : Monomial R σ ord) : Monomial R σ ord :=
+  ⟨⟨-m.coeff.val, hne m.coeff.val m.coeff.property⟩, m.monic⟩
+
+/-- `Neg` instance for `Monomial` when the coefficient type is a `Ring`. -/
+instance {R : Type _} [Ring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
+    {ord : MonomialOrder} : Neg (Monomial R σ ord) where
+  neg m := ⟨⟨-m.coeff.val, neg_ne_zero.mpr m.coeff.property⟩, m.monic⟩
 
 /-- Convert a monomial to a list of characters.
     - If the monic part is `1`, return the coefficient representation.
@@ -92,7 +101,7 @@ def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
             (fun m => ⟨⟨c, hc⟩, m⟩))
       | _ => none  -- unreachable: span stops at '*'
 
-theorem toChars_ne_nil {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [One R] [ParsableCoeff R]
     (m : Monomial R σ ord) : m.toChars ≠ [] := by
@@ -102,7 +111,7 @@ theorem toChars_ne_nil {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrde
   · exact MonicMonomial.toChars_ne_nil m.monic h1
   · intro h; simp at h
 
-theorem plus_notin_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [One R] [ParsableCoeff R]
     (m : Monomial R σ ord) : '+' ∉ m.toChars := by
@@ -117,7 +126,7 @@ theorem plus_notin_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [Linear
     · simp at h
     · exact MonicMonomial.plus_notin_toChars m.monic h
 
-theorem minus_notin_tail_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+theorem minus_notin_tail_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [One R] [ParsableCoeff R]
     (m : Monomial R σ ord) : '-' ∉ m.toChars.tail := by
@@ -158,7 +167,7 @@ private lemma coeffChars_bne_star {R : Type _} [ParsableCoeff R] (r : R) :
   intro heq; exact ParsableCoeff.toChars_no_syntax _ _ (heq ▸ hx) (Or.inr (Or.inl rfl))
 
 /-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
-theorem parse_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [One R] [ParsableCoeff R]
     (m : Monomial R σ ord) (h1 : (1 : R) ≠ 0) :
