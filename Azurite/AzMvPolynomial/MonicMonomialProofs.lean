@@ -22,7 +22,7 @@ variable {σ : Type _} {n : ℕ} [LinearOrder σ] [pv : ParsableVar σ n] {ord :
 /-! ### Definitions -/
 
 /-- Recursive factor-list builder for indices `k, k+1, ..., n-1`. -/
-private def toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) : List (List Char) :=
+private def toCharsAux (m : MonicMonomial σ ord) (k : ℕ) : List (List Char) :=
   if h : k < n then
     if m.exponents[k]'h = 0 then toCharsAux m (k + 1)
     else if m.exponents[k]'h = 1 then
@@ -33,7 +33,7 @@ private def toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) : List (List Char)
 termination_by n - k
 
 /-- The factor function used in `toChars`, extracted for `filterMap` connection. -/
-private def mkFactor (m : MonicMonomial σ n ord) (i : Fin n) : Option (List Char) :=
+private def mkFactor (m : MonicMonomial σ ord) (i : Fin n) : Option (List Char) :=
   if m.exponents[i] = 0 then none
   else if m.exponents[i] = 1 then some (pv.toChars (pv.ofFin i))
   else some (pv.toChars (pv.ofFin i) ++ '^' :: natToChars m.exponents[i])
@@ -83,7 +83,7 @@ private theorem parseFactor_expN (i : Fin n) (e : ℕ) (he : e ≥ 2)
 /-- Processing `toCharsAux m k` through `parseFactorList` reconstructs `m.exponents`,
     given that `exps` already agrees with `m` below index `k` and is zero above. -/
 private theorem parseFactorList_toCharsAux
-    (m : MonicMonomial σ n ord) (k : ℕ) (hk : k ≤ n) (exps : Vector ℕ n)
+    (m : MonicMonomial σ ord) (k : ℕ) (hk : k ≤ n) (exps : Vector ℕ n)
     (hlow : ∀ j, (hj : j < n) → j < k → exps[j]'hj = m.exponents[j]'hj)
     (hhigh : ∀ j, (hj : j < n) → j ≥ k → exps[j]'hj = 0) :
     parseFactorList (σ := σ) (toCharsAux m k) exps = some m.exponents := by
@@ -133,7 +133,7 @@ termination_by n - k
 /-! ### Connection: toCharsAux ↔ toChars -/
 
 /-- `toCharsAux` equals `filterMap mkFactor` on the tail of `finRange n`. -/
-private theorem toCharsAux_eq (m : MonicMonomial σ n ord) (k : ℕ) (hk : k ≤ n) :
+private theorem toCharsAux_eq (m : MonicMonomial σ ord) (k : ℕ) (hk : k ≤ n) :
     toCharsAux m k = ((List.finRange n).drop k).filterMap (mkFactor m) := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn,
@@ -155,13 +155,13 @@ private theorem toCharsAux_eq (m : MonicMonomial σ n ord) (k : ℕ) (hk : k ≤
 termination_by n - k
 
 /-- `toChars` equals `intercalate` of `toCharsAux`. -/
-private theorem toChars_eq_intercalate (m : MonicMonomial σ n ord) :
+private theorem toChars_eq_intercalate (m : MonicMonomial σ ord) :
     m.toChars = List.intercalate ['*'] (toCharsAux m 0) := by
   rw [toCharsAux_eq m 0 (by omega), List.drop_zero]
   simp only [toChars]; congr 1
 
 /-- No factor in `toCharsAux` contains `'*'`. -/
-private theorem star_notin_toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) (_hk : k ≤ n) :
+private theorem star_notin_toCharsAux (m : MonicMonomial σ ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ factor ∈ toCharsAux m k, '*' ∉ factor := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
@@ -183,7 +183,7 @@ private theorem star_notin_toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) (_h
 termination_by n - k
 
 /-- If all exponents ≥ k are zero, `toCharsAux m k = []`. -/
-private theorem toCharsAux_nil_of_zero (m : MonicMonomial σ n ord) (k : ℕ) (_hk : k ≤ n)
+private theorem toCharsAux_nil_of_zero (m : MonicMonomial σ ord) (k : ℕ) (_hk : k ≤ n)
     (hall : ∀ j, (hj : j < n) → j ≥ k → m.exponents[j]'hj = 0) :
     toCharsAux m k = [] := by
   by_cases hkn : k < n
@@ -193,7 +193,7 @@ private theorem toCharsAux_nil_of_zero (m : MonicMonomial σ n ord) (k : ℕ) (_
 termination_by n - k
 
 /-- If `toCharsAux m k = []`, all exponents at index ≥ k are zero. -/
-private theorem toCharsAux_nil_imp (m : MonicMonomial σ n ord) (k : ℕ) (hk : k ≤ n) :
+private theorem toCharsAux_nil_imp (m : MonicMonomial σ ord) (k : ℕ) (hk : k ≤ n) :
     toCharsAux m k = [] → ∀ j, (hj : j < n) → j ≥ k → m.exponents[j]'hj = 0 := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
@@ -209,7 +209,7 @@ private theorem toCharsAux_nil_imp (m : MonicMonomial σ n ord) (k : ℕ) (hk : 
 termination_by n - k
 
 /-- Every factor in `toCharsAux` is nonempty (starts with `pv.toChars`). -/
-private theorem toCharsAux_factors_nonempty (m : MonicMonomial σ n ord) (k : ℕ) (_hk : k ≤ n) :
+private theorem toCharsAux_factors_nonempty (m : MonicMonomial σ ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ f ∈ toCharsAux m k, f ≠ [] := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
@@ -230,7 +230,7 @@ termination_by n - k
 /-! ### Nonemptiness of toChars -/
 
 /-- `toChars` is nonempty when the monomial is not the identity. -/
-theorem toChars_ne_nil (m : MonicMonomial σ n ord) (hm : m ≠ 1) : m.toChars ≠ [] := by
+theorem toChars_ne_nil (m : MonicMonomial σ ord) (hm : m ≠ 1) : m.toChars ≠ [] := by
   have hem : m.exponents ≠ Vector.replicate n 0 := by
     intro he; exact hm (MonicMonomial.ext he)
   have haux_ne : toCharsAux m 0 ≠ [] := by
@@ -249,7 +249,7 @@ theorem toChars_ne_nil (m : MonicMonomial σ n ord) (hm : m ≠ 1) : m.toChars �
     exact hhd (h _ hmem)
 
 /-- `toString` is nonempty when the monomial is not the identity. -/
-theorem toString_ne_empty (m : MonicMonomial σ n ord) (hm : m ≠ 1) : toString m ≠ "" := by
+theorem toString_ne_empty (m : MonicMonomial σ ord) (hm : m ≠ 1) : toString m ≠ "" := by
   show String.ofList m.toChars ≠ ""
   intro h; apply toChars_ne_nil m hm
   have := congr_arg String.toList h
@@ -257,7 +257,7 @@ theorem toString_ne_empty (m : MonicMonomial σ n ord) (hm : m ≠ 1) : toString
   exact this
 
 /-- Every factor in `toCharsAux` starts with a lowercase ASCII letter. -/
-private theorem toCharsAux_factors_head_lower (m : MonicMonomial σ n ord) (k : ℕ) :
+private theorem toCharsAux_factors_head_lower (m : MonicMonomial σ ord) (k : ℕ) :
     ∀ f ∈ toCharsAux m k, ∀ hf : f ≠ [], Azurite.isLowerAscii (f.head hf) := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
@@ -281,7 +281,7 @@ private theorem toCharsAux_factors_head_lower (m : MonicMonomial σ n ord) (k : 
 termination_by n - k
 
 /-- The first character of `toChars` is a lowercase ASCII letter when `m ≠ 1`. -/
-theorem toChars_head_isLowerAscii (m : MonicMonomial σ n ord) (hm : m ≠ 1) :
+theorem toChars_head_isLowerAscii (m : MonicMonomial σ ord) (hm : m ≠ 1) :
     Azurite.isLowerAscii (m.toChars.head (toChars_ne_nil m hm)) := by
   have hem : m.exponents ≠ Vector.replicate n 0 :=
     fun he => hm (MonicMonomial.ext he)
@@ -341,7 +341,7 @@ private lemma not_mem_intercalate {c : α} [BEq α] {sep : List α} {parts : Lis
   · exact hc_sep (h ▸ hcs)
 
 /-- Neither `+` nor `-` appears in any factor of `toCharsAux`. -/
-private theorem plus_minus_notin_toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) (_hk : k ≤ n) :
+private theorem plus_minus_notin_toCharsAux (m : MonicMonomial σ ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ factor ∈ toCharsAux m k, '+' ∉ factor ∧ '-' ∉ factor := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
@@ -369,13 +369,13 @@ private theorem plus_minus_notin_toCharsAux (m : MonicMonomial σ n ord) (k : �
 termination_by n - k
 
 /-- `+` does not appear in any `toChars` output. -/
-theorem plus_notin_toChars (m : MonicMonomial σ n ord) : '+' ∉ m.toChars := by
+theorem plus_notin_toChars (m : MonicMonomial σ ord) : '+' ∉ m.toChars := by
   rw [toChars_eq_intercalate]
   exact not_mem_intercalate (by simp)
     (fun p hp => (plus_minus_notin_toCharsAux m 0 (by omega) p hp).1)
 
 /-- `-` does not appear in any `toChars` output. -/
-theorem minus_notin_toChars (m : MonicMonomial σ n ord) : '-' ∉ m.toChars := by
+theorem minus_notin_toChars (m : MonicMonomial σ ord) : '-' ∉ m.toChars := by
   rw [toChars_eq_intercalate]
   exact not_mem_intercalate (by simp)
     (fun p hp => (plus_minus_notin_toCharsAux m 0 (by omega) p hp).2)
@@ -383,7 +383,7 @@ theorem minus_notin_toChars (m : MonicMonomial σ n ord) : '-' ∉ m.toChars := 
 /-! ### Final round-trip theorem -/
 
 /-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
-theorem parse_toChars (m : MonicMonomial σ n ord) :
+theorem parse_toChars (m : MonicMonomial σ ord) :
     parse (σ := σ) (m.toChars) = some m := by
   unfold parse
   by_cases hem : m.exponents = Vector.replicate n 0
@@ -428,7 +428,7 @@ namespace MonicMonomial
 /-- Evaluating a renamed monomial equals evaluating the original with a composed assignment. -/
 theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
     {R : Type _} [CommMonoid R]
-    (m : MonicMonomial σ n ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
+    (m : MonicMonomial σ ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
     (m.rename f ord₂).eval (n := n₂) g = m.eval (g ∘ f) := by
   simp only [eval, rename, Fin.getElem_fin, Vector.getElem_ofFn, Fin.eta, Function.comp]
   conv_lhs => arg 2; ext j; rw [← Finset.prod_pow_eq_pow_sum]

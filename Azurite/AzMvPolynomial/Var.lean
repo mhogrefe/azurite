@@ -17,7 +17,7 @@ private theorem charOfNat_toNat_small (n : ℕ) (h : n < 55296) :
 
 /-- A typeclass for multivariate polynomial variable types with `n` variables.
     Requires a linear ordering and a bijection to `Fin n`. -/
-class Var (α : Type _) (n : ℕ) [LinearOrder α] where
+class Var (α : Type _) (n : outParam ℕ) [LinearOrder α] where
   /-- Convert a variable to its index in `Fin n`. -/
   toFin : α → Fin n
   /-- Convert an index in `Fin n` to a variable. -/
@@ -61,7 +61,7 @@ def isPolySyntaxChar (c : Char) : Prop :=
 
 /-- Extension of `Var` for variable types that can be serialized/deserialized
     as character sequences that do not collide with polynomial syntax. -/
-class ParsableVar (α : Type _) (n : ℕ) [LinearOrder α] extends Var α n where
+class ParsableVar (α : Type _) (n : outParam ℕ) [LinearOrder α] extends Var α n where
   toChars : α → List Char
   parseChars : List Char → Option α
   parse_toChars : ∀ v : α, parseChars (toChars v) = some v

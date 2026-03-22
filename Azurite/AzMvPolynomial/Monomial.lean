@@ -39,7 +39,7 @@ class ParsableCoeff (R : Type _) where
 structure Monomial (R : Type _) [Zero R] (σ : Type _) (n : ℕ) [LinearOrder σ] [Var σ n]
     (ord : MonomialOrder) where
   coeff : {c : R // c ≠ 0}
-  monic : MonicMonomial σ n ord
+  monic : MonicMonomial σ ord
 
 namespace Monomial
 
