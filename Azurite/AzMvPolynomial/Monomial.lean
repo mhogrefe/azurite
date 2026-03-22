@@ -2,6 +2,7 @@
   Monomials (coefficient × monic monomial) for multivariate polynomials.
 -/
 import Azurite.AzMvPolynomial.MonicMonomial
+import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzPolynomial.StringLemmas
 import Mathlib.Data.ZMod.Basic
 
@@ -86,6 +87,50 @@ def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
           else (MonicMonomial.parse (ord := ord) monicPart).map
             (fun m => ⟨⟨c, hc⟩, m⟩))
       | _ => none  -- unreachable: span stops at '*'
+
+theorem toChars_ne_nil {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+    [pv : ParsableVar σ n] {ord : MonomialOrder}
+    [DecidableEq R] [One R] [ParsableCoeff R]
+    (m : Monomial R σ n ord) : m.toChars ≠ [] := by
+  unfold toChars
+  split_ifs with h1 h2
+  · exact ParsableCoeff.toChars_nonempty _
+  · exact MonicMonomial.toChars_ne_nil m.monic h1
+  · intro h; simp at h
+
+theorem plus_notin_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+    [pv : ParsableVar σ n] {ord : MonomialOrder}
+    [DecidableEq R] [One R] [ParsableCoeff R]
+    (m : Monomial R σ n ord) : '+' ∉ m.toChars := by
+  unfold toChars
+  split_ifs with h1 h2
+  · intro h; exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
+  · exact MonicMonomial.plus_notin_toChars m.monic
+  · intro h
+    rw [List.mem_append, List.mem_append] at h
+    rcases h with (h | h) | h
+    · exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
+    · simp at h
+    · exact MonicMonomial.plus_notin_toChars m.monic h
+
+theorem minus_notin_tail_toChars {R : Type _} [Zero R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+    [pv : ParsableVar σ n] {ord : MonomialOrder}
+    [DecidableEq R] [One R] [ParsableCoeff R]
+    (m : Monomial R σ n ord) : '-' ∉ m.toChars.tail := by
+  unfold toChars
+  split_ifs with h1 h2
+  · exact fun h => ParsableCoeff.toChars_no_minus_tail _ _ h rfl
+  · exact fun h => MonicMonomial.minus_notin_toChars m.monic (List.mem_of_mem_tail h)
+  · have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+    rw [List.append_assoc, List.tail_append_of_ne_nil hne]
+    intro h
+    rw [List.mem_append] at h
+    rcases h with h | h
+    · exact ParsableCoeff.toChars_no_minus_tail _ _ h rfl
+    · simp only [List.singleton_append, List.mem_cons] at h
+      rcases h with h | h
+      · exact absurd h (by decide)
+      · exact MonicMonomial.minus_notin_toChars m.monic h
 
 end Monomial
 
