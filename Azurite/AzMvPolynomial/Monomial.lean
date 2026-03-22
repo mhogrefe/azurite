@@ -59,6 +59,82 @@ instance {R : Type _} [Ring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ 
     {ord : MonomialOrder} : Neg (Monomial R σ ord) where
   neg m := ⟨⟨-m.coeff.val, neg_ne_zero.mpr m.coeff.property⟩, m.monic⟩
 
+/-- Convert a monomial to use a different monomial ordering. -/
+def withOrder (m : Monomial R σ ord) (ord' : MonomialOrder) : Monomial R σ ord' :=
+  ⟨m.coeff, m.monic.withOrder ord'⟩
+
+/-- The total degree of a monomial (sum of all exponents in the monic part). -/
+def totalDegree (m : Monomial R σ ord) : ℕ :=
+  m.monic.totalDegree
+
+/-- Evaluate a monomial at a point given by `f : σ → R`.
+    Computes `coeff * ∏ i, f(var_i) ^ exp_i`. -/
+def eval [CommMonoidWithZero R] (m : Monomial R σ ord) (f : σ → R) : R :=
+  m.coeff.val * m.monic.eval f
+
+/-- Rename variables via a map `f : σ₁ → σ₂`. -/
+def rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
+    (m : Monomial R σ ord) (f : σ → σ₂)
+    (ord₂ : MonomialOrder := ord) : Monomial R σ₂ ord₂ :=
+  ⟨m.coeff, m.monic.rename f ord₂⟩
+
+/-- Multiply two monomials (multiply coefficients, multiply monic parts). -/
+def mul [NoZeroDivisors R] (a b : Monomial R σ ord) : Monomial R σ ord :=
+  ⟨⟨a.coeff.val * b.coeff.val, mul_ne_zero a.coeff.property b.coeff.property⟩,
+   a.monic * b.monic⟩
+
+instance [NoZeroDivisors R] : Mul (Monomial R σ ord) := ⟨mul⟩
+
+instance [Nontrivial R] : One (Monomial R σ ord) :=
+  ⟨⟨⟨1, one_ne_zero⟩, MonicMonomial.one⟩⟩
+
+@[ext] theorem ext' (a b : Monomial R σ ord)
+    (hc : a.coeff.val = b.coeff.val) (hm : a.monic = b.monic) : a = b := by
+  rcases a with ⟨ac, am⟩; rcases b with ⟨bc, bm⟩
+  simp only at hc hm
+  subst hm; congr 1; exact Subtype.ext hc
+
+section CommMonoidInstance
+
+set_option linter.unusedSectionVars false in
+@[simp] theorem mul_coeff_val [NoZeroDivisors R] (a b : Monomial R σ ord) :
+    (a * b).coeff.val = a.coeff.val * b.coeff.val := rfl
+
+set_option linter.unusedSectionVars false in
+@[simp] theorem mul_monic [NoZeroDivisors R] (a b : Monomial R σ ord) :
+    (a * b).monic = a.monic * b.monic := rfl
+
+set_option linter.unusedSectionVars false in
+@[simp] theorem one_coeff_val [Nontrivial R] : (1 : Monomial R σ ord).coeff.val = 1 := rfl
+
+set_option linter.unusedSectionVars false in
+@[simp] theorem one_monic [Nontrivial R] : (1 : Monomial R σ ord).monic = 1 := rfl
+
+variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [Nontrivial R]
+    {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
+
+omit [Nontrivial R] in
+theorem mul_assoc (a b c : Monomial R σ ord) : a * b * c = a * (b * c) := by
+  apply ext' <;> simp [_root_.mul_assoc]
+
+theorem one_mul (a : Monomial R σ ord) : 1 * a = a := by
+  apply ext' <;> simp
+
+theorem mul_one (a : Monomial R σ ord) : a * 1 = a := by
+  apply ext' <;> simp
+
+omit [Nontrivial R] in
+theorem mul_comm (a b : Monomial R σ ord) : a * b = b * a := by
+  apply ext' <;> simp [_root_.mul_comm]
+
+instance : CommMonoid (Monomial R σ ord) where
+  mul_assoc := mul_assoc
+  one_mul := one_mul
+  mul_one := mul_one
+  mul_comm := mul_comm
+
+end CommMonoidInstance
+
 /-- Convert a monomial to a list of characters.
     - If the monic part is `1`, return the coefficient representation.
     - If the coefficient is `1`, return the monic monomial representation.
