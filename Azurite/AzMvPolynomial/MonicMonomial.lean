@@ -1,6 +1,8 @@
 /-
   Monic monomials for multivariate polynomials.
 -/
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Data.Vector.Defs
 import Azurite.AzMvPolynomial.Var
 
 namespace Azurite
@@ -96,6 +98,23 @@ def exponent (m : MonicMonomial σ n ord) (v : σ) : ℕ :=
 def totalDegree (m : MonicMonomial σ n ord) : ℕ :=
   MonomialOrder.totalDeg m.exponents
 
+/-- Evaluate a monic monomial at a point given by `f : σ → R`.
+    Computes the product `∏ i, f(var_i) ^ exp_i`. -/
+def eval [CommMonoid R] [Var σ n] (m : MonicMonomial σ n ord) (f : σ → R) : R :=
+  Finset.univ.prod (fun i : Fin n => f (Var.ofFin i) ^ m.exponents[i])
+
+/-- Rename variables via a map `f : σ₁ → σ₂`.
+    Each exponent at source index `i` is added to the target index
+    `Var.toFin (f (Var.ofFin i))`. Non-injective maps merge exponents:
+    e.g., renaming both `x` and `y` to `z` in `x²y` yields `z³`. -/
+def rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₁ : Var σ n] [v₂ : Var σ₂ n₂]
+    (m : MonicMonomial σ n ord) (f : σ → σ₂) (ord₂ : MonomialOrder := ord) :
+    MonicMonomial σ₂ n₂ ord₂ :=
+  ⟨Vector.ofFn (fun j : Fin n₂ =>
+    Finset.univ.sum (fun i : Fin n =>
+      if v₂.toFin (f (v₁.ofFin i)) = j then m.exponents[i] else 0))⟩
+
+
 /-- Multiply two monic monomials (add exponents pointwise). -/
 def mul (a b : MonicMonomial σ n ord) : MonicMonomial σ n ord :=
   ⟨Vector.ofFn (fun i => a.exponents[i] + b.exponents[i])⟩
@@ -128,6 +147,15 @@ instance : CommMonoid (MonicMonomial σ n ord) where
   one_mul := one_mul
   mul_one := mul_one
   mul_comm := mul_comm
+
+/-- Convert a monic monomial to use a different monomial ordering.
+    The exponent vector is unchanged. -/
+def withOrder (m : MonicMonomial σ n ord) (ord' : MonomialOrder) :
+    MonicMonomial σ n ord' :=
+  ⟨m.exponents⟩
+
+@[simp] theorem withOrder_exponents (m : MonicMonomial σ n ord) (ord' : MonomialOrder) :
+    (m.withOrder ord').exponents = m.exponents := rfl
 
 /-- Convert a monic monomial to a list of characters.
     Formats as `x₀*x₁^2*x₂` — variables with exponent 0 are omitted,

@@ -10,6 +10,7 @@
   6. Assemble the round-trip theorem.
 -/
 import Azurite.AzMvPolynomial.MonicMonomial
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.List.SplitOn
 
 namespace Azurite
@@ -263,7 +264,29 @@ theorem parse_toChars (m : MonicMonomial σ n ord) :
       (star_notin_toCharsAux m 0 (by omega)) haux_ne]
     rw [parseFactorList_toCharsAux m 0 (by omega) _
       (fun _ _ h => by omega) (fun j hj _ => by simp [Vector.getElem_replicate])]
+end MonicMonomial
+
+section EvalRename
+
+variable {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
+
+namespace MonicMonomial
+
+/-- Evaluating a renamed monomial equals evaluating the original with a composed assignment. -/
+theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
+    {R : Type _} [CommMonoid R]
+    (m : MonicMonomial σ n ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
+    (m.rename f ord₂).eval (n := n₂) g = m.eval (g ∘ f) := by
+  simp only [eval, rename, Fin.getElem_fin, Vector.getElem_ofFn, Fin.eta, Function.comp]
+  conv_lhs => arg 2; ext j; rw [← Finset.prod_pow_eq_pow_sum]
+  simp_rw [pow_ite, pow_zero]
+  rw [Finset.prod_comm]
+  congr 1; ext i
+  rw [Finset.prod_ite_eq Finset.univ (v₂.toFin (f (Var.ofFin i)))]
+  simp [Var.ofFin_toFin]
 
 end MonicMonomial
-end Azurite
 
+end EvalRename
+
+end Azurite
