@@ -21,7 +21,8 @@ def isCoeffSyntaxChar (c : Char) : Prop :=
 /-- Typeclass for coefficient types that can be serialized/deserialized as character
     sequences. Unlike `ParsableVar`, this does not extend `Var`, and `-` is permitted
     as the first character of the representation (to support negative coefficients). -/
-class ParsableCoeff (R : Type _) where
+class ParsableCoeff (R : Type _) [Semiring R] where
+  one_ne_zero : (1 : R) ≠ 0
   toChars : R → List Char
   parseChars : List Char → Option R
   parse_toChars : ∀ r : R, parseChars (toChars r) = some r
@@ -77,6 +78,13 @@ def rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n
     (m : Monomial R σ ord) (f : σ → σ₂)
     (ord₂ : MonomialOrder := ord) : Monomial R σ₂ ord₂ :=
   ⟨m.coeff, m.monic.rename f ord₂⟩
+
+/-- Evaluating a renamed monomial equals evaluating the original with a composed assignment. -/
+theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
+    [CommMonoidWithZero R]
+    (m : Monomial R σ ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
+    (m.rename f ord₂).eval (n := n₂) g = m.eval (g ∘ f) := by
+  simp only [eval, rename, MonicMonomial.eval_rename]
 
 /-- Multiply two monomials (multiply coefficients, multiply monic parts). -/
 def mul [NoZeroDivisors R] (a b : Monomial R σ ord) : Monomial R σ ord :=
@@ -139,7 +147,7 @@ end CommMonoidInstance
     - If the monic part is `1`, return the coefficient representation.
     - If the coefficient is `1`, return the monic monomial representation.
     - Otherwise, join the two with `*`. -/
-def toChars [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
+def toChars [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
     (m : Monomial R σ ord) : List Char :=
   if m.monic = 1 then
     ParsableCoeff.toChars m.coeff.val
@@ -153,14 +161,14 @@ def toChars [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
     - Lowercase letter → starts a monic monomial (coefficient is implicitly `1`).
     - Otherwise → starts a coefficient. A `*` separator, if present, separates
       the coefficient from the monic monomial part. -/
-def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
-    (cs : List Char) (h1 : (1 : R) ≠ 0) : Option (Monomial R σ ord) :=
+def parse [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
+    (cs : List Char) : Option (Monomial R σ ord) :=
   match cs with
   | [] => none
   | c :: _ =>
     if decide (isLowerAscii c) then
       -- Starts with lowercase: parse as monic monomial, coeff = 1
-      (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, h1⟩, m⟩)
+      (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, ParsableCoeff.one_ne_zero⟩, m⟩)
     else
       -- Starts with non-lowercase: find first '*' to split coeff from monic
       let (coeffPart, rest) := cs.span (· != '*')
@@ -179,7 +187,7 @@ def parse [DecidableEq R] [One R] [ParsableCoeff R] [pv : ParsableVar σ n]
 
 theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
-    [DecidableEq R] [One R] [ParsableCoeff R]
+    [DecidableEq R] [ParsableCoeff R]
     (m : Monomial R σ ord) : m.toChars ≠ [] := by
   unfold toChars
   split_ifs with h1 h2
@@ -189,7 +197,7 @@ theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Linear
 
 theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
-    [DecidableEq R] [One R] [ParsableCoeff R]
+    [DecidableEq R] [ParsableCoeff R]
     (m : Monomial R σ ord) : '+' ∉ m.toChars := by
   unfold toChars
   split_ifs with h1 h2
@@ -204,7 +212,7 @@ theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Li
 
 theorem minus_notin_tail_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
-    [DecidableEq R] [One R] [ParsableCoeff R]
+    [DecidableEq R] [ParsableCoeff R]
     (m : Monomial R σ ord) : '-' ∉ m.toChars.tail := by
   unfold toChars
   split_ifs with h1 h2
@@ -237,7 +245,7 @@ private lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true)
     simp [h a (List.mem_cons_self ..)]
     exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
-private lemma coeffChars_bne_star {R : Type _} [ParsableCoeff R] (r : R) :
+private lemma coeffChars_bne_star {R : Type _} [Semiring R] [ParsableCoeff R] (r : R) :
     ∀ x ∈ ParsableCoeff.toChars r, (x != '*') = true := by
   intro x hx; simp [bne_iff_ne]
   intro heq; exact ParsableCoeff.toChars_no_syntax _ _ (heq ▸ hx) (Or.inr (Or.inl rfl))
@@ -245,9 +253,9 @@ private lemma coeffChars_bne_star {R : Type _} [ParsableCoeff R] (r : R) :
 /-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
 theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
-    [DecidableEq R] [One R] [ParsableCoeff R]
-    (m : Monomial R σ ord) (h1 : (1 : R) ≠ 0) :
-    parse m.toChars h1 = some m := by
+    [DecidableEq R] [ParsableCoeff R]
+    (m : Monomial R σ ord) :
+    parse m.toChars = some m := by
   unfold toChars parse
   simp only [List.span_eq_takeWhile_dropWhile]
   split_ifs with hmonic hcoeff
@@ -273,7 +281,7 @@ theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearO
       simp only [hct, List.head_cons] at h; exact h
     simp only [decide_eq_true hlower, ↓reduceIte]
     rw [← hct, MonicMonomial.parse_toChars]
-    show Option.some { coeff := ⟨1, h1⟩, monic := m.monic } = some m
+    show Option.some { coeff := ⟨1, ParsableCoeff.one_ne_zero⟩, monic := m.monic } = some m
     congr 1; cases m; simp only [Monomial.mk.injEq]; exact ⟨Subtype.ext hcoeff.symm, trivial⟩
   · -- Case 3: coeff ≠ 1, monic ≠ 1
     have hne := ParsableCoeff.toChars_nonempty m.coeff.val
@@ -371,6 +379,7 @@ private lemma ratToChars_no_lower (q : ℚ) (c : Char) (hc : c ∈ ratToChars q)
     · exact natToChars_no_lower _ c hc
 
 instance : ParsableCoeff ℕ where
+  one_ne_zero := by omega
   toChars := natToChars
   parseChars := parseNatChars
   parse_toChars := parseNatChars_natToChars
@@ -381,6 +390,7 @@ instance : ParsableCoeff ℕ where
   toChars_no_lower := natToChars_no_lower
 
 instance : ParsableCoeff ℤ where
+  one_ne_zero := by omega
   toChars := intToChars
   parseChars := parseIntChars
   parse_toChars := parseIntChars_intToChars
@@ -391,6 +401,7 @@ instance : ParsableCoeff ℤ where
   toChars_no_lower := intToChars_no_lower
 
 instance : ParsableCoeff ℚ where
+  one_ne_zero := by exact one_ne_zero
   toChars := ratToChars
   parseChars := parseRatChars
   parse_toChars := parseRatChars_ratToChars
@@ -411,7 +422,8 @@ private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
   congr 1
   exact ZMod.natCast_zmod_val c
 
-instance {m : ℕ} [NeZero m] : ParsableCoeff (ZMod m) where
+instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
+  one_ne_zero := by exact one_ne_zero
   toChars := zmodToChars
   parseChars := parseZmodChars m
   parse_toChars := parseZmodChars_zmodToChars
@@ -443,21 +455,21 @@ private def mkMon (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial ℤ (Ab
 #guard (mkMon 7 (by omega) (Vector.mk #[0, 0, 3] rfl)).toChars == "7*c^3".toList
 
 -- parse round-trip: parse then toChars should give back the original string
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "5".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "5".toList ).map
   Monomial.toChars == some "5".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a".toList ).map
   Monomial.toChars == some "a".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "3*a".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "3*a".toList ).map
   Monomial.toChars == some "3*a".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "-2*a*b".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "-2*a*b".toList ).map
   Monomial.toChars == some "-2*a*b".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a^2*b".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a^2*b".toList ).map
   Monomial.toChars == some "a^2*b".toList
 
 -- parse rejects invalid input
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "".toList ).map
   Monomial.toChars == (none : Option (List Char))
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "0".toList (by omega)).map
+#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "0".toList ).map
   Monomial.toChars == (none : Option (List Char))
 
 end MonomialGuards
