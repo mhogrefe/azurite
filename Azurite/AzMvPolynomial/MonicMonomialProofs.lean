@@ -227,6 +227,104 @@ private theorem toCharsAux_factors_nonempty (m : MonicMonomial σ n ord) (k : �
   · rw [toCharsAux, dif_neg hkn]; intro _ h; simp at h
 termination_by n - k
 
+/-! ### Nonemptiness of toChars -/
+
+/-- `toChars` is nonempty when the monomial is not the identity. -/
+theorem toChars_ne_nil (m : MonicMonomial σ n ord) (hm : m ≠ 1) : m.toChars ≠ [] := by
+  have hem : m.exponents ≠ Vector.replicate n 0 := by
+    intro he; exact hm (MonicMonomial.ext he)
+  have haux_ne : toCharsAux m 0 ≠ [] := by
+    intro h
+    exact hem (Vector.ext (fun j hj => by
+      rw [toCharsAux_nil_imp m 0 (by omega) h j hj (by omega)]
+      simp [Vector.getElem_replicate]))
+  rw [toChars_eq_intercalate]; intro h
+  cases hL : toCharsAux m 0 with
+  | nil => exact haux_ne hL
+  | cons hd tl =>
+    have hhd : hd ≠ [] := toCharsAux_factors_nonempty m 0 (by omega) hd (by rw [hL]; simp)
+    rw [hL] at h; simp [List.intercalate] at h
+    have hmem : hd ∈ List.intersperse ['*'] (hd :: tl) := by
+      cases tl with | nil => simp [List.intersperse] | cons => simp [List.intersperse]
+    exact hhd (h _ hmem)
+
+/-- `toString` is nonempty when the monomial is not the identity. -/
+theorem toString_ne_empty (m : MonicMonomial σ n ord) (hm : m ≠ 1) : toString m ≠ "" := by
+  show String.ofList m.toChars ≠ ""
+  intro h; apply toChars_ne_nil m hm
+  have := congr_arg String.toList h
+  simp [String.toList_ofList] at this
+  exact this
+
+/-! ### Exclusion of `+` and `-` from toChars -/
+
+private lemma mem_intersperse_of_list {sep : List α} {L : List (List α)} {s : List α}
+    (hs : s ∈ List.intersperse sep L) : s ∈ L ∨ s = sep := by
+  induction L with
+  | nil => simp [List.intersperse] at hs
+  | cons hd tl ih =>
+    match tl with
+    | [] => simp [List.intersperse] at hs; left; simp [hs]
+    | b :: bs =>
+      unfold List.intersperse at hs
+      simp only [List.mem_cons] at hs
+      rcases hs with rfl | rfl | hs
+      · left; simp
+      · right; rfl
+      · rcases ih hs with h | h
+        · left; simp [h]
+        · right; exact h
+
+private lemma not_mem_intercalate {c : α} [BEq α] {sep : List α} {parts : List (List α)}
+    (hc_sep : c ∉ sep) (hc_parts : ∀ p ∈ parts, c ∉ p) :
+    c ∉ List.intercalate sep parts := by
+  simp only [List.intercalate]
+  intro hmem; rw [List.mem_flatten] at hmem
+  obtain ⟨s, hs, hcs⟩ := hmem
+  rcases mem_intersperse_of_list hs with h | h
+  · exact hc_parts s h hcs
+  · exact hc_sep (h ▸ hcs)
+
+/-- Neither `+` nor `-` appears in any factor of `toCharsAux`. -/
+private theorem plus_minus_notin_toCharsAux (m : MonicMonomial σ n ord) (k : ℕ) (_hk : k ≤ n) :
+    ∀ factor ∈ toCharsAux m k, '+' ∉ factor ∧ '-' ∉ factor := by
+  by_cases hkn : k < n
+  · rw [toCharsAux, dif_pos hkn]
+    by_cases he : m.exponents[k]'hkn = 0
+    · rw [if_pos he]; exact plus_minus_notin_toCharsAux m (k + 1) (by omega)
+    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+        · exact ⟨fun h => pv.toChars_no_syntax _ '+' h (Or.inr (Or.inl rfl)),
+                 fun h => pv.toChars_no_syntax _ '-' h (Or.inr (Or.inr (Or.inl rfl)))⟩
+        · exact plus_minus_notin_toCharsAux m (k + 1) (by omega) f hf
+      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+        · constructor
+          · intro h; rcases List.mem_append.mp h with h | h
+            · exact pv.toChars_no_syntax _ '+' h (Or.inr (Or.inl rfl))
+            · cases List.mem_cons.mp h with
+              | inl h => exact absurd h (by decide)
+              | inr h => exact absurd h (not_mem_natToChars_of_not_digit '+' (by decide) _)
+          · intro h; rcases List.mem_append.mp h with h | h
+            · exact pv.toChars_no_syntax _ '-' h (Or.inr (Or.inr (Or.inl rfl)))
+            · cases List.mem_cons.mp h with
+              | inl h => exact absurd h (by decide)
+              | inr h => exact absurd h (not_mem_natToChars_of_not_digit '-' (by decide) _)
+        · exact plus_minus_notin_toCharsAux m (k + 1) (by omega) f hf
+  · rw [toCharsAux, dif_neg hkn]; intro _ h; simp at h
+termination_by n - k
+
+/-- `+` does not appear in any `toChars` output. -/
+theorem plus_notin_toChars (m : MonicMonomial σ n ord) : '+' ∉ m.toChars := by
+  rw [toChars_eq_intercalate]
+  exact not_mem_intercalate (by simp)
+    (fun p hp => (plus_minus_notin_toCharsAux m 0 (by omega) p hp).1)
+
+/-- `-` does not appear in any `toChars` output. -/
+theorem minus_notin_toChars (m : MonicMonomial σ n ord) : '-' ∉ m.toChars := by
+  rw [toChars_eq_intercalate]
+  exact not_mem_intercalate (by simp)
+    (fun p hp => (plus_minus_notin_toCharsAux m 0 (by omega) p hp).2)
+
 /-! ### Final round-trip theorem -/
 
 /-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
