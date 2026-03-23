@@ -309,6 +309,49 @@ theorem ofMvPoly_toMvPoly [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
     AzMvPolynomial.ofMvPoly (AzMvPolynomial.toMvPoly p) = p :=
   toMvPoly_injective (toMvPoly_ofMvPoly p.toMvPoly)
 
+@[simp] theorem toMvPoly_zero :
+    AzMvPolynomial.toMvPoly (0 : AzMvPolynomial σ R ord) = 0 := by
+  simp [AzMvPolynomial.toMvPoly]
+
+@[simp] theorem ofMvPoly_zero [DecidableEq σ] :
+    (AzMvPolynomial.ofMvPoly (ord := ord) (0 : MvPolynomial σ R)) = 0 := by
+  rw [show (0 : MvPolynomial σ R) =
+    AzMvPolynomial.toMvPoly (0 : AzMvPolynomial σ R ord) from toMvPoly_zero.symm]
+  exact ofMvPoly_toMvPoly _
+
+private theorem one_toFinsupp :
+    (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 := by
+  ext v
+  simp only [MonicMonomial.toFinsupp, MonicMonomial.one,
+    Finsupp.onFinset_apply, Finsupp.zero_apply]
+  exact Vector.getElem_replicate ..
+
+@[simp] theorem toMvPoly_one [DecidableEq R] [DecidableEq σ] :
+    AzMvPolynomial.toMvPoly (AzMvPolynomial.one : AzMvPolynomial σ R ord) =
+      (1 : MvPolynomial σ R) := by
+  simp only [AzMvPolynomial.one]
+  split
+  · next h =>
+    simp [AzMvPolynomial.toMvPoly]
+    have : (1 : MvPolynomial σ R) = 0 := by
+      rw [← MvPolynomial.C_1, ← MvPolynomial.C_0, h]
+    exact this.symm
+  · next h =>
+    simp [AzMvPolynomial.toMvPoly, AzMvPolynomial.ofMonomial,
+      Monomial.toMvPoly, Monomial.one]
+    have hf : (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 := by
+      ext v; simp [MonicMonomial.toFinsupp, MonicMonomial.one, Finsupp.onFinset_apply]
+    rw [show (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 from hf]
+    exact MvPolynomial.one_def.symm
+
+@[simp] theorem ofMvPoly_one [DecidableEq R] [DecidableEq σ] :
+    (AzMvPolynomial.ofMvPoly (ord := ord) (1 : MvPolynomial σ R)) =
+    (AzMvPolynomial.one : AzMvPolynomial σ R ord) := by
+  rw [show (1 : MvPolynomial σ R) =
+    AzMvPolynomial.toMvPoly (AzMvPolynomial.one : AzMvPolynomial σ R ord)
+    from toMvPoly_one.symm]
+  exact ofMvPoly_toMvPoly _
+
 /-- The equivalence between `AzMvPolynomial σ R ord` and `MvPolynomial σ R`. -/
 noncomputable def equivMvPolynomial [DecidableEq σ] :
     AzMvPolynomial σ R ord ≃ MvPolynomial σ R where

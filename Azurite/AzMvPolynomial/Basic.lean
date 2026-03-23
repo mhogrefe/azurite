@@ -53,6 +53,14 @@ def leadCoeff (p : AzMvPolynomial σ R ord) : Option {c : R // c ≠ 0} :=
 def ofMonomial (m : Monomial σ R ord) : AzMvPolynomial σ R ord :=
   ⟨#[m], List.pairwise_singleton _ _⟩
 
+/-- The constant polynomial `1`.  Returns `0` when `1 = 0` in the
+    coefficient ring (trivial ring). -/
+def one [DecidableEq R] : AzMvPolynomial σ R ord :=
+  if h : (1 : R) = 0 then 0
+  else ofMonomial (Monomial.one h)
+
+instance [DecidableEq R] : One (AzMvPolynomial σ R ord) := ⟨one⟩
+
 /-- The total degree of the polynomial (maximum total degree among its terms),
     or 0 for the zero polynomial. -/
 def totalDegree (p : AzMvPolynomial σ R ord) : ℕ :=
