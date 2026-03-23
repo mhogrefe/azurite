@@ -4,6 +4,9 @@
 import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Mathlib.Algebra.MvPolynomial.Basic
+import Mathlib.Algebra.MvPolynomial.Degrees
+import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.Finset.Lattice.Fold
 
 namespace Azurite
 
@@ -359,5 +362,67 @@ noncomputable def equivMvPolynomial [DecidableEq σ] :
   invFun := AzMvPolynomial.ofMvPoly
   left_inv := ofMvPoly_toMvPoly
   right_inv := toMvPoly_ofMvPoly
+
+/-- The number of terms equals the cardinality of the MvPolynomial support. -/
+theorem numTerms_eq_support_card [DecidableEq σ]
+    (p : AzMvPolynomial σ R ord) :
+    p.numTerms = p.toMvPoly.support.card := by
+  rw [AzMvPolynomial.numTerms, support_toMvPoly]
+  rw [List.toFinset_card_of_nodup (toFinsupp_nodup p)]
+  simp [Array.length_toList]
+
+noncomputable instance varFintype : Fintype σ :=
+  Fintype.ofBijective Var.ofFin ⟨Var.ofFin_injective, fun v => ⟨Var.toFin v, Var.ofFin_toFin v⟩⟩
+
+private def varEquiv : σ ≃ Fin n where
+  toFun := Var.toFin; invFun := Var.ofFin
+  left_inv := Var.ofFin_toFin; right_inv := Var.toFin_ofFin
+
+private theorem vector_toList_sum_eq (v : Vector ℕ n) :
+    v.toList.sum = ∑ i : Fin n, v[i] := by
+  conv_lhs => rw [show v = Vector.ofFn (fun i => v[i]) from by ext i; simp]
+  rw [Vector.toList_ofFn, List.sum_ofFn]
+
+private theorem totalDegree_eq_toFinsupp_sum [DecidableEq σ]
+    (m : MonicMonomial σ ord) :
+    m.totalDegree = m.toFinsupp.sum fun _ e => e := by
+  simp only [MonicMonomial.totalDegree, MonomialOrder.totalDeg, MonicMonomial.toFinsupp]
+  rw [Finsupp.sum_fintype _ _ (fun _ => rfl)]
+  simp only [Finsupp.onFinset_apply]
+  rw [Fintype.sum_equiv varEquiv _ (fun i => m.exponents[i]) (fun v => by simp [varEquiv])]
+  rw [← Array.foldl_toList, ← List.sum_eq_foldl, Vector.toList_toArray]
+  exact vector_toList_sum_eq m.exponents
+
+/-- The total degree of an AzMvPolynomial equals the total degree of the
+    corresponding MvPolynomial. -/
+theorem totalDegree_toMvPoly [DecidableEq σ] [DecidableEq R]
+    (p : AzMvPolynomial σ R ord) :
+    p.totalDegree = p.toMvPoly.totalDegree := by
+  simp only [AzMvPolynomial.totalDegree, MvPolynomial.totalDegree]
+  rw [support_toMvPoly, ← Array.foldl_toList]
+  rw [show List.foldl (fun acc (m : Monomial σ R ord) => max acc m.totalDegree) 0 p.terms.toList =
+    List.foldl max 0 (p.terms.toList.map (fun m : Monomial σ R ord => m.totalDegree))
+    from by rw [List.foldl_map]]
+  rw [List.foldl_eq_foldr]
+  rw [show (0 : ℕ) = ⊥ from rfl, show (max : ℕ → ℕ → ℕ) = (· ⊔ ·) from rfl]
+  rw [List.foldr_sup_eq_sup_toFinset]
+  apply le_antisymm
+  · apply Finset.sup_le
+    intro x hx
+    rw [List.mem_toFinset, List.mem_map] at hx
+    obtain ⟨m, hm, rfl⟩ := hx
+    simp only [id]
+    show m.monic.totalDegree ≤ _
+    rw [totalDegree_eq_toFinsupp_sum]
+    exact Finset.le_sup (f := fun s => Finsupp.sum s fun _ e => e)
+      (show m.monic.toFinsupp ∈ _ by rw [List.mem_toFinset, List.mem_map]; exact ⟨m, hm, rfl⟩)
+  · apply Finset.sup_le
+    intro s hs
+    rw [List.mem_toFinset, List.mem_map] at hs
+    obtain ⟨m, hm, rfl⟩ := hs
+    show (m.monic.toFinsupp.sum fun _ e => e) ≤ _
+    rw [← totalDegree_eq_toFinsupp_sum]
+    exact Finset.le_sup (f := @id ℕ)
+      (show m.monic.totalDegree ∈ _ by rw [List.mem_toFinset, List.mem_map]; exact ⟨m, hm, rfl⟩)
 
 end Azurite
