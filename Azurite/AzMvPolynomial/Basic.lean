@@ -2,6 +2,7 @@
   Multivariate polynomials represented as sorted arrays of monomials.
 -/
 import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.MonicMonomialOrder
 
 namespace Azurite
 
@@ -17,9 +18,8 @@ structure AzMvPolynomial (σ : Type _)
     (ord : MonomialOrder := .Degrevlex) where
   /-- The array of monomials, sorted so that leading terms come first. -/
   terms : Array (Monomial σ R ord)
-  /-- Adjacent monic parts are strictly decreasing:
-      `compare terms[i].monic terms[i+1].monic = .gt`. -/
-  sorted : terms.toList.IsChain (fun a b => compare a.monic b.monic = .gt)
+  /-- All pairs of monic parts are strictly decreasing (descending order). -/
+  sorted : terms.toList.Pairwise (fun a b => a.monic > b.monic)
 
 namespace AzMvPolynomial
 
@@ -27,7 +27,7 @@ variable {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var
     {ord : MonomialOrder}
 
 /-- The zero polynomial (empty term list). -/
-def zero : AzMvPolynomial σ R ord := ⟨#[], List.isChain_nil⟩
+def zero : AzMvPolynomial σ R ord := ⟨#[], List.Pairwise.nil⟩
 
 instance : Zero (AzMvPolynomial σ R ord) := ⟨zero⟩
 
@@ -51,7 +51,7 @@ def leadCoeff (p : AzMvPolynomial σ R ord) : Option {c : R // c ≠ 0} :=
 
 /-- Construct a polynomial from a single monomial. -/
 def ofMonomial (m : Monomial σ R ord) : AzMvPolynomial σ R ord :=
-  ⟨#[m], List.isChain_singleton _⟩
+  ⟨#[m], List.pairwise_singleton _ _⟩
 
 /-- The total degree of the polynomial (maximum total degree among its terms),
     or 0 for the zero polynomial. -/
