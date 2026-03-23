@@ -143,4 +143,178 @@ theorem toMvPoly_ofMvPoly [DecidableEq σ] (p : MvPolynomial σ R) :
   -- Conclude: ∑ v ∈ p.support, monomial v (coeff v p) = p
   exact MvPolynomial.support_sum_monomial_coeff p
 
+
+/-! ### Reverse round-trip helpers -/
+
+theorem MonicMonomial.ofFinsupp_toFinsupp [DecidableEq σ] (m : MonicMonomial σ ord) :
+    MonicMonomial.ofFinsupp (m.toFinsupp) = m := by
+  ext; simp only [ofFinsupp, toFinsupp, Finsupp.onFinset_apply, Vector.getElem_ofFn,
+    Var.toFin_ofFin]; simp
+
+theorem MonicMonomial.toFinsupp_injective [DecidableEq σ] :
+    Function.Injective (MonicMonomial.toFinsupp (σ := σ) (ord := ord)) := by
+  intro a b h
+  exact (ofFinsupp_toFinsupp a).symm.trans
+    ((congrArg ofFinsupp h).trans (ofFinsupp_toFinsupp b))
+
+private theorem toMvPoly_eq_sum [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
+    p.toMvPoly = (p.terms.toList.map Monomial.toMvPoly).sum := by
+  simp only [AzMvPolynomial.toMvPoly]
+  rw [← Array.foldl_toList, List.sum_eq_foldl, ← List.foldl_map]
+
+private theorem sum_map_eq_zero₂ {α M : Type _} [AddCommMonoid M]
+    (l : List α) (g : α → M) (h : ∀ x ∈ l, g x = 0) :
+    (l.map g).sum = 0 := by
+  induction l with
+  | nil => simp
+  | cons a t ih =>
+    simp [h a (by simp), ih (fun x hx => h x (.tail _ hx))]
+
+private theorem list_sum_ite_eq_of_nodup_map {α β M : Type _} [AddCommMonoid M]
+    [DecidableEq β] (l : List α) (g : α → β) (hnd : (l.map g).Nodup)
+    (t : α) (ht : t ∈ l) (f : α → M) :
+    (l.map (fun x => if g x = g t then f x else 0)).sum = f t := by
+  induction l with
+  | nil => simp at ht
+  | cons b s ih =>
+    rw [List.map_cons, List.nodup_cons] at hnd
+    simp only [List.map_cons, List.sum_cons, List.mem_cons] at ht ⊢
+    obtain rfl | ht := ht
+    · simp only [ite_true]
+      suffices (s.map (fun x => if g x = g t then f x else 0)).sum = 0 by
+        rw [this, add_zero]
+      apply List.sum_eq_zero; intro x hx
+      obtain ⟨y, hy, rfl⟩ := List.mem_map.mp hx
+      rw [if_neg]
+      exact fun heq => hnd.1
+        (show g t ∈ s.map g from heq ▸ List.mem_map.mpr ⟨y, hy, rfl⟩)
+    · rw [if_neg (show g b ≠ g t from fun h => hnd.1
+        (show g b ∈ s.map g from h ▸ List.mem_map.mpr ⟨t, ht, rfl⟩)),
+        zero_add]
+      exact ih hnd.2 ht
+
+private theorem toFinsupp_nodup [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
+    (p.terms.toList.map
+      (fun t : Monomial σ R ord => t.monic.toFinsupp)).Nodup := by
+  show (p.terms.toList.map _).Pairwise (· ≠ ·)
+  rw [List.pairwise_map]
+  exact p.sorted.imp fun h heq =>
+    absurd (MonicMonomial.toFinsupp_injective heq) (ne_of_gt h)
+
+private theorem coeff_toMvPoly [DecidableEq σ]
+    (p : AzMvPolynomial σ R ord) (f : σ →₀ ℕ) :
+    MvPolynomial.coeff f p.toMvPoly =
+    (p.terms.toList.map (fun m : Monomial σ R ord =>
+      if m.monic.toFinsupp = f then m.coeff.val else 0)).sum := by
+  rw [toMvPoly_eq_sum]
+  have h := map_list_sum (MvPolynomial.coeffAddMonoidHom (σ := σ) f)
+    (p.terms.toList.map Monomial.toMvPoly)
+  simp only [MvPolynomial.coeffAddMonoidHom_apply] at h
+  rw [h, List.map_map]; congr 1; ext m
+  simp [Monomial.toMvPoly, MvPolynomial.coeff_monomial]
+
+private theorem support_toMvPoly [DecidableEq σ]
+    (p : AzMvPolynomial σ R ord) :
+    p.toMvPoly.support =
+    (p.terms.toList.map
+      (fun m : Monomial σ R ord => m.monic.toFinsupp)).toFinset := by
+  ext f; rw [MvPolynomial.mem_support_iff, List.mem_toFinset, List.mem_map]
+  constructor
+  · intro hne; by_contra hall; push_neg at hall
+    apply hne; rw [coeff_toMvPoly]
+    exact sum_map_eq_zero₂ _ _ (fun m hm => if_neg (hall m hm))
+  · rintro ⟨m, hm, rfl⟩
+    rw [coeff_toMvPoly,
+      list_sum_ite_eq_of_nodup_map _ _ (toFinsupp_nodup p) m hm]
+    exact m.coeff.property
+
+private theorem image_ofFinsupp_support [DecidableEq σ]
+    (p : AzMvPolynomial σ R ord) :
+    (p.toMvPoly.support.image MonicMonomial.ofFinsupp :
+      Finset (MonicMonomial σ ord)) =
+    (p.terms.toList.map
+      (fun m : Monomial σ R ord => m.monic)).toFinset := by
+  rw [support_toMvPoly]
+  ext m; simp only [Finset.mem_image, List.mem_toFinset, List.mem_map]
+  constructor
+  · rintro ⟨f, ⟨t, ht, rfl⟩, rfl⟩
+    exact ⟨t, ht, (MonicMonomial.ofFinsupp_toFinsupp t.monic).symm⟩
+  · rintro ⟨t, ht, rfl⟩
+    exact ⟨t.monic.toFinsupp, ⟨t, ht, rfl⟩,
+      MonicMonomial.ofFinsupp_toFinsupp t.monic⟩
+
+private theorem sort_eq_of_pairwise_gt [LinearOrder α] [DecidableEq α]
+    (l : List α) (hl : l.Pairwise (· > ·)) :
+    l.toFinset.sort (· ≥ ·) = l := by
+  have hnd : l.Nodup := hl.imp ne_of_gt
+  have hsf : (l.toFinset.sort (· ≥ ·)).toFinset = l.toFinset :=
+    Finset.sort_toFinset l.toFinset (· ≥ ·)
+  have hsnd : (l.toFinset.sort (· ≥ ·)).Nodup :=
+    Finset.sort_nodup l.toFinset (· ≥ ·)
+  have hperm : (l.toFinset.sort (· ≥ ·)).Perm l := by
+    rwa [List.toFinset_eq_iff_perm_dedup,
+      List.Nodup.dedup hsnd, List.Nodup.dedup hnd] at hsf
+  exact hperm.eq_of_pairwise
+    (fun _ _ _ _ h1 h2 => le_antisymm h2 h1)
+    (Finset.pairwise_sort l.toFinset (· ≥ ·))
+    (hl.imp le_of_lt)
+
+/-- `toMvPoly` is injective: the sorted representation uniquely determines
+    the `MvPolynomial`. -/
+theorem toMvPoly_injective [DecidableEq σ] :
+    Function.Injective
+      (AzMvPolynomial.toMvPoly (R := R) (σ := σ) (ord := ord)) := by
+  intro ⟨at_, as_⟩ ⟨bt_, bs_⟩ hab
+  simp only [AzMvPolynomial.mk.injEq]
+  -- Monic lists are equal: both are the sort of the same finset
+  have hmonic_eq : at_.toList.map (fun t : Monomial σ R ord => t.monic) =
+      bt_.toList.map (fun t : Monomial σ R ord => t.monic) := by
+    rw [← sort_eq_of_pairwise_gt _ (List.pairwise_map.mpr as_),
+        ← sort_eq_of_pairwise_gt _ (List.pairwise_map.mpr bs_)]
+    congr 1
+    rw [← image_ofFinsupp_support ⟨at_, as_⟩,
+        ← image_ofFinsupp_support ⟨bt_, bs_⟩]
+    exact congr_arg _ (congr_arg _ hab)
+  have hlen : at_.toList.length = bt_.toList.length := by
+    have := congr_arg List.length hmonic_eq
+    simpa using this
+  ext1
+  · simpa using hlen
+  · rename_i i hi _
+    rw [← Array.getElem_toList, ← Array.getElem_toList]
+    have hi₂ : i < bt_.toList.length := by
+      simp [Array.length_toList] at hlen ⊢; omega
+    have hmi : at_.toList[i].monic = bt_.toList[i].monic := by
+      have h1 : (at_.toList.map (fun t : Monomial σ R ord => t.monic))[i]'(by simp; exact hi) =
+          at_.toList[i].monic := List.getElem_map ..
+      have h2 : (bt_.toList.map (fun t : Monomial σ R ord => t.monic))[i]'(by simp; exact hi₂) =
+          bt_.toList[i].monic := List.getElem_map ..
+      rw [← h1, ← h2]; congr 1
+    have ha : MvPolynomial.coeff at_.toList[i].monic.toFinsupp
+        (⟨at_, as_⟩ : AzMvPolynomial σ R ord).toMvPoly =
+        at_.toList[i].coeff.val := by
+      rw [coeff_toMvPoly]; exact list_sum_ite_eq_of_nodup_map _ _
+        (toFinsupp_nodup ⟨at_, as_⟩) _ (List.getElem_mem ..) _
+    have hb : MvPolynomial.coeff bt_.toList[i].monic.toFinsupp
+        (⟨bt_, bs_⟩ : AzMvPolynomial σ R ord).toMvPoly =
+        bt_.toList[i].coeff.val := by
+      rw [coeff_toMvPoly]; exact list_sum_ite_eq_of_nodup_map _ _
+        (toFinsupp_nodup ⟨bt_, bs_⟩) _ (List.getElem_mem ..) _
+    have hci : at_.toList[i].coeff = bt_.toList[i].coeff :=
+      Subtype.val_injective (ha.symm.trans (by rw [hmi, hab]; exact hb))
+    exact Monomial.mk.injEq .. |>.mpr ⟨hci, hmi⟩
+
+/-- The reverse round-trip: `ofMvPoly (toMvPoly p) = p`. -/
+theorem ofMvPoly_toMvPoly [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
+    AzMvPolynomial.ofMvPoly (AzMvPolynomial.toMvPoly p) = p :=
+  toMvPoly_injective (toMvPoly_ofMvPoly p.toMvPoly)
+
+/-- The equivalence between `AzMvPolynomial σ R ord` and `MvPolynomial σ R`. -/
+noncomputable def equivMvPolynomial [DecidableEq σ] :
+    AzMvPolynomial σ R ord ≃ MvPolynomial σ R where
+  toFun := AzMvPolynomial.toMvPoly
+  invFun := AzMvPolynomial.ofMvPoly
+  left_inv := ofMvPoly_toMvPoly
+  right_inv := toMvPoly_ofMvPoly
+
 end Azurite
