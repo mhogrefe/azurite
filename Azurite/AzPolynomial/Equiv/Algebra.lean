@@ -109,4 +109,13 @@ noncomputable instance {R : Type _} [CommRing R] [DecidableEq R] :
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
     toPoly_nsmulAz toPoly_zsmulAz toPoly_npowAz toPoly_natCastAz toPoly_intCastAz
 
+/-! ### Ring isomorphism -/
+
+/-- The ring isomorphism between `AzPolynomial R` and Mathlib's `Polynomial R`. -/
+noncomputable def ringEquivPolynomial {R : Type _} [Semiring R] [DecidableEq R] :
+    AzPolynomial R ≃+* Polynomial R :=
+  { equivPolynomial with
+    map_mul' := toPoly_mul
+    map_add' := toPoly_add }
+
 end Azurite.AzPolynomial
