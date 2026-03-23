@@ -1,5 +1,6 @@
 -- This module serves as the root of the `Azurite` library.
 -- Import modules here that should be built as part of the library.
+import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
