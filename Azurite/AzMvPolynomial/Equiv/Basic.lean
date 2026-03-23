@@ -53,6 +53,19 @@ noncomputable def Monomial.toMvPoly [DecidableEq σ]
     (m : Monomial σ R ord) : MvPolynomial σ R :=
   MvPolynomial.monomial m.monic.toFinsupp m.coeff.val
 
+/-- The finitely-supported function representation of a `MonicMonomial` is
+    independent of the monomial ordering. -/
+@[simp] theorem MonicMonomial.toFinsupp_withOrder [DecidableEq σ]
+    (m : MonicMonomial σ ord) (ord' : MonomialOrder) :
+    (m.withOrder ord').toFinsupp = m.toFinsupp := by
+  ext v; simp [MonicMonomial.toFinsupp, MonicMonomial.withOrder]
+
+/-- Converting a monomial to `MvPolynomial` is independent of the monomial ordering. -/
+@[simp] theorem Monomial.toMvPoly_withOrder [DecidableEq σ]
+    (m : Monomial σ R ord) (ord' : MonomialOrder) :
+    (m.withOrder ord').toMvPoly = m.toMvPoly := by
+  simp [Monomial.toMvPoly, Monomial.withOrder]
+
 /-- Convert an `AzMvPolynomial` to a Mathlib `MvPolynomial` by summing
     the contributions of each monomial term. -/
 noncomputable def AzMvPolynomial.toMvPoly [DecidableEq σ]
@@ -436,5 +449,27 @@ theorem totalDegree_ofMvPoly [DecidableEq σ] [DecidableEq R]
     (p : MvPolynomial σ R) :
     (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ R ord).totalDegree = p.totalDegree := by
   rw [totalDegree_toMvPoly, toMvPoly_ofMvPoly]
+
+/-! ### withOrder preserves conversion to MvPolynomial -/
+
+/-- Converting to `MvPolynomial` is invariant under monomial order changes:
+    `withOrder` only re-sorts terms, preserving the underlying polynomial. -/
+theorem toMvPoly_withOrder [DecidableEq σ]
+    (p : AzMvPolynomial σ R ord) (ord' : MonomialOrder) :
+    (p.withOrder ord').toMvPoly = p.toMvPoly := by
+  unfold AzMvPolynomial.withOrder
+  split
+  · next h => subst h; rfl
+  · next h =>
+    simp only [AzMvPolynomial.toMvPoly]
+    rw [← Array.foldl_toList, ← Array.foldl_toList, List.toList_toArray]
+    set mapped := p.terms.toList.map (fun m => m.withOrder ord')
+    set sorted := mapped.mergeSort _
+    have hperm : sorted.Perm mapped := List.mergeSort_perm mapped _
+    calc List.foldl (fun x1 x2 => x1 + x2.toMvPoly) 0 sorted
+        = List.foldl (fun x1 x2 => x1 + x2.toMvPoly) 0 mapped :=
+          hperm.foldl_eq (rcomm := ⟨fun b a₁ a₂ => by ring⟩) 0
+      _ = List.foldl (fun x1 x2 => x1 + x2.toMvPoly) 0 p.terms.toList := by
+          simp only [mapped, List.foldl_map, Monomial.toMvPoly_withOrder]
 
 end Azurite

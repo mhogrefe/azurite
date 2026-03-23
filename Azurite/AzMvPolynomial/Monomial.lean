@@ -64,6 +64,9 @@ instance {R : Type _} [Ring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ 
 def withOrder (m : Monomial σ R ord) (ord' : MonomialOrder) : Monomial σ R ord' :=
   ⟨m.coeff, m.monic.withOrder ord'⟩
 
+@[simp] theorem coeff_withOrder (m : Monomial σ R ord) (ord' : MonomialOrder) :
+    (m.withOrder ord').coeff = m.coeff := rfl
+
 /-- The total degree of a monomial (sum of all exponents in the monic part). -/
 def totalDegree (m : Monomial σ R ord) : ℕ :=
   m.monic.totalDegree
