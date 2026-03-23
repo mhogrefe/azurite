@@ -371,6 +371,12 @@ theorem numTerms_eq_support_card [DecidableEq σ]
   rw [List.toFinset_card_of_nodup (toFinsupp_nodup p)]
   simp [Array.length_toList]
 
+/-- The number of terms of `ofMvPoly p` equals the cardinality of `p.support`. -/
+theorem numTerms_ofMvPoly_eq_support_card [DecidableEq σ]
+    (p : MvPolynomial σ R) :
+    (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ R ord).numTerms = p.support.card := by
+  rw [numTerms_eq_support_card, toMvPoly_ofMvPoly]
+
 noncomputable instance varFintype : Fintype σ :=
   Fintype.ofBijective Var.ofFin ⟨Var.ofFin_injective, fun v => ⟨Var.toFin v, Var.ofFin_toFin v⟩⟩
 
@@ -424,5 +430,11 @@ theorem totalDegree_toMvPoly [DecidableEq σ] [DecidableEq R]
     rw [← totalDegree_eq_toFinsupp_sum]
     exact Finset.le_sup (f := @id ℕ)
       (show m.monic.totalDegree ∈ _ by rw [List.mem_toFinset, List.mem_map]; exact ⟨m, hm, rfl⟩)
+
+/-- The total degree of `ofMvPoly p` equals the total degree of `p`. -/
+theorem totalDegree_ofMvPoly [DecidableEq σ] [DecidableEq R]
+    (p : MvPolynomial σ R) :
+    (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ R ord).totalDegree = p.totalDegree := by
+  rw [totalDegree_toMvPoly, toMvPoly_ofMvPoly]
 
 end Azurite

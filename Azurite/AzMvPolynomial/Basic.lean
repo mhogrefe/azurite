@@ -66,6 +66,79 @@ instance [DecidableEq R] : One (AzMvPolynomial σ R ord) := ⟨one⟩
 def totalDegree (p : AzMvPolynomial σ R ord) : ℕ :=
   p.terms.foldl (fun acc m => max acc m.totalDegree) 0
 
+/-! ### withOrder: changing the monomial ordering -/
+
+private theorem pairwise_gt_of_pairwise_ge_nodup
+    {l : List (Monomial σ R ord)}
+    (hp : l.Pairwise (fun a b => a.monic ≥ b.monic))
+    (hnd : l.Pairwise (fun a b => a.monic ≠ b.monic)) :
+    l.Pairwise (fun a b => a.monic > b.monic) := by
+  induction l with
+  | nil => exact List.Pairwise.nil
+  | cons a t ih =>
+    rw [List.pairwise_cons] at hp hnd ⊢
+    exact ⟨fun b hb => lt_of_le_of_ne (hp.1 b hb) (Ne.symm (hnd.1 b hb)),
+           ih hp.2 hnd.2⟩
+
+/-- Comparator for sorting monomials in descending order by monic part
+    (greater or equal). Uses the computable `compareExponents`. -/
+private def monicGeq {ord : MonomialOrder}
+    (a b : Monomial σ R ord) : Bool :=
+  !(MonomialOrder.compareExponents ord a.monic.exponents b.monic.exponents == Ordering.lt)
+
+private theorem monicGeq_iff_ge {ord : MonomialOrder}
+    (a b : Monomial σ R ord) :
+    monicGeq a b = true ↔ a.monic ≥ b.monic := by
+  unfold monicGeq
+  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne, ne_eq, ge_iff_le]
+  constructor
+  · intro h; by_contra hlt; exact h (not_le.mp hlt)
+  · intro h hlt; exact absurd hlt (not_lt.mpr h)
+
+private theorem monicGeq_trans {ord : MonomialOrder}
+    (a b c : Monomial σ R ord) :
+    monicGeq a b = true → monicGeq b c = true → monicGeq a c = true := by
+  rw [monicGeq_iff_ge, monicGeq_iff_ge, monicGeq_iff_ge]
+  exact fun hab hbc => le_trans hbc hab
+
+private theorem monicGeq_total {ord : MonomialOrder}
+    (a b : Monomial σ R ord) :
+    (monicGeq a b || monicGeq b a) = true := by
+  simp only [Bool.or_eq_true, monicGeq_iff_ge]
+  exact le_total b.monic a.monic
+
+private theorem withOrder_monic_ne_of_perm
+    (p : AzMvPolynomial σ R ord) (ord' : MonomialOrder)
+    (l : List (Monomial σ R ord'))
+    (hperm : l.Perm (p.terms.toList.map (fun m => m.withOrder ord'))) :
+    l.Pairwise (fun a b => a.monic ≠ b.monic) := by
+  apply List.Pairwise.perm _ hperm.symm (fun h => Ne.symm h)
+  rw [List.pairwise_map]
+  exact p.sorted.imp (fun {a b} hab heq => by
+    apply ne_of_gt hab
+    simp only [Monomial.withOrder, MonicMonomial.withOrder] at heq
+    exact MonicMonomial.ext (MonicMonomial.mk.inj heq))
+
+/-- Convert a polynomial to use a different monomial ordering.
+    If the order is unchanged, this is the identity.
+    Otherwise, terms are re-sorted in descending order under the new ordering
+    using O(n log n) merge sort. -/
+def withOrder (p : AzMvPolynomial σ R ord) (ord' : MonomialOrder) :
+    AzMvPolynomial σ R ord' :=
+  if h : ord = ord' then
+    h ▸ p
+  else
+    let mapped := p.terms.toList.map (fun m => m.withOrder ord')
+    let sorted := mapped.mergeSort monicGeq
+    ⟨sorted.toArray, by
+      rw [List.toList_toArray]
+      have hperm : sorted.Perm mapped := List.mergeSort_perm mapped monicGeq
+      have hge : sorted.Pairwise (fun a b => a.monic ≥ b.monic) :=
+        (List.pairwise_mergeSort monicGeq_trans monicGeq_total mapped).imp
+          (fun h => (monicGeq_iff_ge _ _).mp h)
+      exact pairwise_gt_of_pairwise_ge_nodup hge
+        (withOrder_monic_ne_of_perm p ord' sorted hperm)⟩
+
 end AzMvPolynomial
 
 end Azurite
