@@ -37,8 +37,8 @@ class ParsableCoeff (R : Type _) [Semiring R] where
 /-- A monomial: a nonzero coefficient of type `R` paired with a monic monomial.
     The coefficient is stored as a subtype `{c : R // c ≠ 0}` to ensure
     that zero monomials are unrepresentable. -/
-structure Monomial (R : Type _) [Semiring R] (σ : Type _) {n : ℕ} [LinearOrder σ] [Var σ n]
-    (ord : MonomialOrder := .Degrevlex) where
+structure Monomial (σ : Type _) {n : ℕ} [LinearOrder σ] [Var σ n]
+    (R : Type _) [Semiring R] (ord : MonomialOrder := .Degrevlex) where
   coeff : {c : R // c ≠ 0}
   monic : MonicMonomial σ ord
 
@@ -48,62 +48,62 @@ variable {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var
     {ord : MonomialOrder}
 
 /-- The identity monomial with coefficient `1` and all exponents zero. -/
-def one [One R] (h : (1 : R) ≠ 0) : Monomial R σ ord :=
+def one [One R] (h : (1 : R) ≠ 0) : Monomial σ R ord :=
   ⟨⟨1, h⟩, MonicMonomial.one⟩
 
 /-- Negate a monomial by negating its coefficient. -/
-def neg [Neg R] (hne : ∀ c : R, c ≠ 0 → -c ≠ 0) (m : Monomial R σ ord) : Monomial R σ ord :=
+def neg [Neg R] (hne : ∀ c : R, c ≠ 0 → -c ≠ 0) (m : Monomial σ R ord) : Monomial σ R ord :=
   ⟨⟨-m.coeff.val, hne m.coeff.val m.coeff.property⟩, m.monic⟩
 
 /-- `Neg` instance for `Monomial` when the coefficient type is a `Ring`. -/
 instance {R : Type _} [Ring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
-    {ord : MonomialOrder} : Neg (Monomial R σ ord) where
+    {ord : MonomialOrder} : Neg (Monomial σ R ord) where
   neg m := ⟨⟨-m.coeff.val, neg_ne_zero.mpr m.coeff.property⟩, m.monic⟩
 
 /-- Convert a monomial to use a different monomial ordering. -/
-def withOrder (m : Monomial R σ ord) (ord' : MonomialOrder) : Monomial R σ ord' :=
+def withOrder (m : Monomial σ R ord) (ord' : MonomialOrder) : Monomial σ R ord' :=
   ⟨m.coeff, m.monic.withOrder ord'⟩
 
 /-- The total degree of a monomial (sum of all exponents in the monic part). -/
-def totalDegree (m : Monomial R σ ord) : ℕ :=
+def totalDegree (m : Monomial σ R ord) : ℕ :=
   m.monic.totalDegree
 
 /-- Evaluate a monomial at a point given by `f : σ → R`.
     Computes `coeff * ∏ i, f(var_i) ^ exp_i`. -/
-def eval [CommMonoidWithZero R] (m : Monomial R σ ord) (f : σ → R) : R :=
+def eval [CommMonoidWithZero R] (m : Monomial σ R ord) (f : σ → R) : R :=
   m.coeff.val * m.monic.eval f
 
 /-- Rename variables via a map `f : σ₁ → σ₂`. -/
 def rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
-    (m : Monomial R σ ord) (f : σ → σ₂)
-    (ord₂ : MonomialOrder := ord) : Monomial R σ₂ ord₂ :=
+    (m : Monomial σ R ord) (f : σ → σ₂)
+    (ord₂ : MonomialOrder := ord) : Monomial σ₂ R ord₂ :=
   ⟨m.coeff, m.monic.rename f ord₂⟩
 
 /-- Evaluating a renamed monomial equals evaluating the original with a composed assignment. -/
 theorem eval_rename {σ₂ : Type _} {n₂ : ℕ} [LinearOrder σ₂] [v₂ : Var σ₂ n₂]
     [CommMonoidWithZero R]
-    (m : Monomial R σ ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
+    (m : Monomial σ R ord) (f : σ → σ₂) (g : σ₂ → R) (ord₂ : MonomialOrder) :
     (m.rename f ord₂).eval (n := n₂) g = m.eval (g ∘ f) := by
   simp only [eval, rename, MonicMonomial.eval_rename]
 
 /-- Evaluating the negation of a monomial gives the negation of its evaluation. -/
 theorem eval_neg {R : Type _} [CommRing R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
-    {ord : MonomialOrder} (m : Monomial R σ ord) (f : σ → R) :
+    {ord : MonomialOrder} (m : Monomial σ R ord) (f : σ → R) :
     (-m).eval f = -(m.eval f) := by
   simp only [eval, Neg.neg, neg_mul]
 
 
 /-- Multiply two monomials (multiply coefficients, multiply monic parts). -/
-def mul [NoZeroDivisors R] (a b : Monomial R σ ord) : Monomial R σ ord :=
+def mul [NoZeroDivisors R] (a b : Monomial σ R ord) : Monomial σ R ord :=
   ⟨⟨a.coeff.val * b.coeff.val, mul_ne_zero a.coeff.property b.coeff.property⟩,
    a.monic * b.monic⟩
 
-instance [NoZeroDivisors R] : Mul (Monomial R σ ord) := ⟨mul⟩
+instance [NoZeroDivisors R] : Mul (Monomial σ R ord) := ⟨mul⟩
 
 /-- Evaluating a product of monomials equals the product of their evaluations. -/
 theorem eval_mul {R : Type _} [CommSemiring R] [NoZeroDivisors R]
     {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
-    (a b : Monomial R σ ord) (f : σ → R) :
+    (a b : Monomial σ R ord) (f : σ → R) :
     (a * b).eval f = a.eval f * b.eval f := by
   simp only [eval]
   simp only [show (a * b).coeff.val = a.coeff.val * b.coeff.val from rfl,
@@ -113,10 +113,10 @@ theorem eval_mul {R : Type _} [CommSemiring R] [NoZeroDivisors R]
   rw [Finset.prod_mul_distrib]
   exact mul_mul_mul_comm _ _ _ _
 
-instance [Nontrivial R] : One (Monomial R σ ord) :=
+instance [Nontrivial R] : One (Monomial σ R ord) :=
   ⟨⟨⟨1, one_ne_zero⟩, MonicMonomial.one⟩⟩
 
-@[ext] theorem ext' (a b : Monomial R σ ord)
+@[ext] theorem ext' (a b : Monomial σ R ord)
     (hc : a.coeff.val = b.coeff.val) (hm : a.monic = b.monic) : a = b := by
   rcases a with ⟨ac, am⟩; rcases b with ⟨bc, bm⟩
   simp only at hc hm
@@ -125,37 +125,37 @@ instance [Nontrivial R] : One (Monomial R σ ord) :=
 section CommMonoidInstance
 
 set_option linter.unusedSectionVars false in
-@[simp] theorem mul_coeff_val [NoZeroDivisors R] (a b : Monomial R σ ord) :
+@[simp] theorem mul_coeff_val [NoZeroDivisors R] (a b : Monomial σ R ord) :
     (a * b).coeff.val = a.coeff.val * b.coeff.val := rfl
 
 set_option linter.unusedSectionVars false in
-@[simp] theorem mul_monic [NoZeroDivisors R] (a b : Monomial R σ ord) :
+@[simp] theorem mul_monic [NoZeroDivisors R] (a b : Monomial σ R ord) :
     (a * b).monic = a.monic * b.monic := rfl
 
 set_option linter.unusedSectionVars false in
-@[simp] theorem one_coeff_val [Nontrivial R] : (1 : Monomial R σ ord).coeff.val = 1 := rfl
+@[simp] theorem one_coeff_val [Nontrivial R] : (1 : Monomial σ R ord).coeff.val = 1 := rfl
 
 set_option linter.unusedSectionVars false in
-@[simp] theorem one_monic [Nontrivial R] : (1 : Monomial R σ ord).monic = 1 := rfl
+@[simp] theorem one_monic [Nontrivial R] : (1 : Monomial σ R ord).monic = 1 := rfl
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [Nontrivial R]
     {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
 
 omit [Nontrivial R] in
-theorem mul_assoc (a b c : Monomial R σ ord) : a * b * c = a * (b * c) := by
+theorem mul_assoc (a b c : Monomial σ R ord) : a * b * c = a * (b * c) := by
   apply ext' <;> simp [_root_.mul_assoc]
 
-theorem one_mul (a : Monomial R σ ord) : 1 * a = a := by
+theorem one_mul (a : Monomial σ R ord) : 1 * a = a := by
   apply ext' <;> simp
 
-theorem mul_one (a : Monomial R σ ord) : a * 1 = a := by
+theorem mul_one (a : Monomial σ R ord) : a * 1 = a := by
   apply ext' <;> simp
 
 omit [Nontrivial R] in
-theorem mul_comm (a b : Monomial R σ ord) : a * b = b * a := by
+theorem mul_comm (a b : Monomial σ R ord) : a * b = b * a := by
   apply ext' <;> simp [_root_.mul_comm]
 
-instance : CommMonoid (Monomial R σ ord) where
+instance : CommMonoid (Monomial σ R ord) where
   mul_assoc := mul_assoc
   one_mul := one_mul
   mul_one := mul_one
@@ -168,7 +168,7 @@ end CommMonoidInstance
     - If the coefficient is `1`, return the monic monomial representation.
     - Otherwise, join the two with `*`. -/
 def toChars [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
-    (m : Monomial R σ ord) : List Char :=
+    (m : Monomial σ R ord) : List Char :=
   if m.monic = 1 then
     ParsableCoeff.toChars m.coeff.val
   else if m.coeff.val = 1 then
@@ -182,7 +182,7 @@ def toChars [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
     - Otherwise → starts a coefficient. A `*` separator, if present, separates
       the coefficient from the monic monomial part. -/
 def parse [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
-    (cs : List Char) : Option (Monomial R σ ord) :=
+    (cs : List Char) : Option (Monomial σ R ord) :=
   match cs with
   | [] => none
   | c :: _ =>
@@ -208,7 +208,7 @@ def parse [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
 theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [ParsableCoeff R]
-    (m : Monomial R σ ord) : m.toChars ≠ [] := by
+    (m : Monomial σ R ord) : m.toChars ≠ [] := by
   unfold toChars
   split_ifs with h1 h2
   · exact ParsableCoeff.toChars_nonempty _
@@ -218,7 +218,7 @@ theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Linear
 theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [ParsableCoeff R]
-    (m : Monomial R σ ord) : '+' ∉ m.toChars := by
+    (m : Monomial σ R ord) : '+' ∉ m.toChars := by
   unfold toChars
   split_ifs with h1 h2
   · intro h; exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
@@ -233,7 +233,7 @@ theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Li
 theorem minus_notin_tail_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [ParsableCoeff R]
-    (m : Monomial R σ ord) : '-' ∉ m.toChars.tail := by
+    (m : Monomial σ R ord) : '-' ∉ m.toChars.tail := by
   unfold toChars
   split_ifs with h1 h2
   · exact fun h => ParsableCoeff.toChars_no_minus_tail _ _ h rfl
@@ -274,7 +274,7 @@ private lemma coeffChars_bne_star {R : Type _} [Semiring R] [ParsableCoeff R] (r
 theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [ParsableCoeff R]
-    (m : Monomial R σ ord) :
+    (m : Monomial σ R ord) :
     parse m.toChars = some m := by
   unfold toChars parse
   simp only [List.span_eq_takeWhile_dropWhile]
@@ -458,7 +458,7 @@ end ParsableCoeffInstances
 section MonomialGuards
 
 -- Use ℤ coefficients with AbcVar 3 variables: a, b, c
-private def mkMon (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial ℤ (AbcVar 3) :=
+private def mkMon (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial (AbcVar 3) ℤ :=
   ⟨⟨c, hc⟩, ⟨v⟩⟩
 
 -- toChars: coefficient only (monic = 1)
@@ -475,21 +475,21 @@ private def mkMon (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial ℤ (Ab
 #guard (mkMon 7 (by omega) (Vector.mk #[0, 0, 3] rfl)).toChars == "7*c^3".toList
 
 -- parse round-trip: parse then toChars should give back the original string
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "5".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "5".toList ).map
   Monomial.toChars == some "5".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "a".toList ).map
   Monomial.toChars == some "a".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "3*a".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "3*a".toList ).map
   Monomial.toChars == some "3*a".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "-2*a*b".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "-2*a*b".toList ).map
   Monomial.toChars == some "-2*a*b".toList
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "a^2*b".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "a^2*b".toList ).map
   Monomial.toChars == some "a^2*b".toList
 
 -- parse rejects invalid input
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "".toList ).map
   Monomial.toChars == (none : Option (List Char))
-#guard (Monomial.parse (R := ℤ) (σ := AbcVar 3) (ord := .Degrevlex) "0".toList ).map
+#guard (Monomial.parse (σ := AbcVar 3) (R := ℤ) (ord := .Degrevlex) "0".toList ).map
   Monomial.toChars == (none : Option (List Char))
 
 end MonomialGuards

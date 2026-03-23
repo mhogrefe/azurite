@@ -24,13 +24,13 @@ noncomputable def MonicMonomial.toFinsupp [DecidableEq σ]
 
 /-- Convert a single monomial to a Mathlib `MvPolynomial`. -/
 noncomputable def Monomial.toMvPoly [DecidableEq σ]
-    (m : Monomial R σ ord) : MvPolynomial σ R :=
+    (m : Monomial σ R ord) : MvPolynomial σ R :=
   MvPolynomial.monomial m.monic.toFinsupp m.coeff.val
 
 /-- Convert an `AzMvPolynomial` to a Mathlib `MvPolynomial` by summing
     the contributions of each monomial term. -/
 noncomputable def AzMvPolynomial.toMvPoly [DecidableEq σ]
-    (p : AzMvPolynomial R σ ord) : MvPolynomial σ R :=
+    (p : AzMvPolynomial σ R ord) : MvPolynomial σ R :=
   p.terms.foldl (· + ·.toMvPoly) 0
 
 end Azurite
