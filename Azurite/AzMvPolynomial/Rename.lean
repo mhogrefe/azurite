@@ -226,8 +226,6 @@ theorem filterMap_sum_eq (l : List (MonicMonomial σ ord × R)) :
     · simp only [dif_neg h, List.map_cons, List.sum_cons, ← ih]
       simp [Monomial.toMvPoly, pairToMvPoly]
 
-
-
 /-! ### The rename function -/
 
 section Rename

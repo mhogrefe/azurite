@@ -10,8 +10,9 @@ import Mathlib.Data.List.TakeDrop
 namespace Azurite
 open AzPolynomial
 
-instance : DecidablePred isLowerAscii := fun c =>
-  if h : c.toNat ≥ 'a'.toNat ∧ c.toNat ≤ 'z'.toNat then isTrue h else isFalse h
+instance : DecidablePred isPolySyntaxChar := fun c =>
+  if h : (c.toNat ≥ '0'.toNat ∧ c.toNat ≤ '9'.toNat) ∨ c = '+' ∨ c = '-' ∨ c = '*' ∨ c = '^'
+  then isTrue h else isFalse h
 
 /-- A character used in polynomial syntax that must not appear in coefficient
     representations: `+`, `*`, `^`. (Digits and `-` are allowed.) -/
@@ -31,8 +32,8 @@ class ParsableCoeff (R : Type _) [Semiring R] where
   toChars_no_syntax : ∀ r : R, ∀ c ∈ toChars r, ¬ isCoeffSyntaxChar c
   /-- `-` may only occur as the very first character. -/
   toChars_no_minus_tail : ∀ r : R, ∀ c ∈ (toChars r).tail, c ≠ '-'
-  /-- No lowercase ASCII letter appears anywhere. -/
-  toChars_no_lower : ∀ r : R, ∀ c ∈ toChars r, ¬ isLowerAscii c
+  /-- The first character is a poly-syntax character (digit or `-`). -/
+  toChars_head_is_syntax : ∀ r : R, ∃ h : toChars r ≠ [], isPolySyntaxChar ((toChars r).head h)
 
 /-- A monomial: a nonzero coefficient of type `R` paired with a monic monomial.
     The coefficient is stored as a subtype `{c : R // c ≠ 0}` to ensure
@@ -189,11 +190,11 @@ def parse [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
   match cs with
   | [] => none
   | c :: _ =>
-    if decide (isLowerAscii c) then
-      -- Starts with lowercase: parse as monic monomial, coeff = 1
+    if decide (¬ isPolySyntaxChar c) then
+      -- Starts with non-syntax char: parse as monic monomial, coeff = 1
       (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, ParsableCoeff.one_ne_zero⟩, m⟩)
     else
-      -- Starts with non-lowercase: find first '*' to split coeff from monic
+      -- Starts with syntax char (digit/minus): find first '*' to split coeff from monic
       let (coeffPart, rest) := cs.span (· != '*')
       match rest with
       | [] =>
@@ -286,9 +287,11 @@ theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearO
     have hne := ParsableCoeff.toChars_nonempty m.coeff.val
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
     rw [hct]
-    have hnotlower : ¬ isLowerAscii c :=
-      ParsableCoeff.toChars_no_lower _ _ (by rw [hct]; exact List.mem_cons_self ..)
-    simp only [decide_eq_false hnotlower, Bool.false_eq_true, ↓reduceIte]
+    have his_syntax : isPolySyntaxChar c := by
+      obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
+      simp only [hct, List.head_cons] at hs; exact hs
+    simp only [show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
+      decide_false, Bool.false_eq_true, ↓reduceIte]
     have hall : ∀ x ∈ (c :: t), (x != '*') = true :=
       fun x hx => coeffChars_bne_star m.coeff.val x (by rw [hct]; exact hx)
     rw [takeWhile_all (c :: t) hall, dropWhile_all (c :: t) hall]
@@ -299,18 +302,19 @@ theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearO
     have hne := MonicMonomial.toChars_ne_nil m.monic hmonic
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
     rw [hct]
-    have hlower : isLowerAscii c := by
-      have h := MonicMonomial.toChars_head_isLowerAscii m.monic hmonic
+    have hnot_syntax : ¬ isPolySyntaxChar c := by
+      have h := MonicMonomial.toChars_head_not_syntax m.monic hmonic
       simp only [hct, List.head_cons] at h; exact h
-    simp only [decide_eq_true hlower, ↓reduceIte]
+    simp only [decide_eq_true hnot_syntax, ↓reduceIte]
     rw [← hct, MonicMonomial.parse_toChars]
     show Option.some { coeff := ⟨1, ParsableCoeff.one_ne_zero⟩, monic := m.monic } = some m
     congr 1; cases m; simp only [Monomial.mk.injEq]; exact ⟨Subtype.ext hcoeff.symm, trivial⟩
   · -- Case 3: coeff ≠ 1, monic ≠ 1
     have hne := ParsableCoeff.toChars_nonempty m.coeff.val
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
-    have hnotlower : ¬ isLowerAscii c :=
-      ParsableCoeff.toChars_no_lower _ _ (by rw [hct]; exact List.mem_cons_self ..)
+    have his_syntax : isPolySyntaxChar c := by
+      obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
+      simp only [hct, List.head_cons] at hs; exact hs
     rw [hct]
     have hc_bne : (c != '*') = true :=
       coeffChars_bne_star m.coeff.val c (by rw [hct]; exact List.mem_cons_self ..)
@@ -325,7 +329,9 @@ theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearO
         '*' :: m.monic.toChars := by
       simp [hc_bne, List.dropWhile_append,
             dropWhile_all t hall]
-    simp only [List.cons_append, decide_eq_false hnotlower, Bool.false_eq_true, ↓reduceIte,
+    simp only [List.cons_append,
+               show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
+               decide_false, Bool.false_eq_true, ↓reduceIte,
                htw, hdw]
     simp [← hct, ParsableCoeff.parse_toChars, dif_neg m.coeff.property,
           MonicMonomial.parse_toChars]
@@ -369,37 +375,42 @@ private lemma ratToChars_no_coeff_syntax (q : ℚ) (c : Char) (hc : c ∈ ratToC
       rcases h with h | h | h <;> exact absurd h (by decide)
     · exact natToChars_no_coeff_syntax _ c hc
 
-private lemma natToChars_no_lower (n : ℕ) (c : Char) (hc : c ∈ natToChars n) :
-    ¬ isLowerAscii c := by
-  have ⟨hge, hle⟩ := mem_natToChars_only_digits n c hc
-  intro ⟨hlo, _⟩
-  simp only [show ('0' : Char).toNat = 48 from by decide,
-             show ('9' : Char).toNat = 57 from by decide,
-             show ('a' : Char).toNat = 97 from by decide] at *
-  omega
+private lemma natToChars_head_is_syntax (n : ℕ) :
+    ∃ h : natToChars n ≠ [], isPolySyntaxChar ((natToChars n).head h) := by
+  have hne := natToChars_ne_nil n
+  refine ⟨hne, ?_⟩
+  have ⟨hge, hle⟩ := mem_natToChars_only_digits n _ (List.head_mem hne)
+  left; exact ⟨hge, hle⟩
 
-private lemma intToChars_no_lower (z : ℤ) (c : Char) (hc : c ∈ intToChars z) :
-    ¬ isLowerAscii c := by
-  rw [intToChars_natAbs] at hc
-  split at hc
-  · simp only [List.mem_cons] at hc
-    rcases hc with rfl | hc
-    · intro ⟨h, _⟩; simp only [show ('-' : Char).toNat = 45 from by decide,
-                              show ('a' : Char).toNat = 97 from by decide] at h; omega
-    · exact natToChars_no_lower _ c hc
-  · exact natToChars_no_lower _ c hc
+private lemma intToChars_head_is_syntax (z : ℤ) :
+    ∃ h : intToChars z ≠ [], isPolySyntaxChar ((intToChars z).head h) := by
+  have hne := intToChars_ne_nil z
+  obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil hne
+  refine ⟨hne, ?_⟩
+  have hhead : (intToChars z).head hne = c := by simp [hcr]
+  rw [hhead]
+  have hc_mem : c ∈ intToChars z := by rw [hcr]; exact List.mem_cons_self ..
+  rcases mem_intToChars_only_digits_or_dash z c hc_mem with hdash | hdig
+  · rw [hdash]; exact Or.inr (Or.inr (Or.inl rfl))
+  · left; exact hdig
 
-private lemma ratToChars_no_lower (q : ℚ) (c : Char) (hc : c ∈ ratToChars q) :
-    ¬ isLowerAscii c := by
-  simp only [ratToChars] at hc
-  split at hc
-  · exact intToChars_no_lower _ c hc
-  · simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false] at hc
-    rcases hc with (hc | rfl) | hc
-    · exact intToChars_no_lower _ c hc
-    · intro ⟨h, _⟩; simp only [show ('/' : Char).toNat = 47 from by decide,
-                              show ('a' : Char).toNat = 97 from by decide] at h; omega
-    · exact natToChars_no_lower _ c hc
+private lemma ratToChars_head_is_syntax (q : ℚ) :
+    ∃ h : ratToChars q ≠ [], isPolySyntaxChar ((ratToChars q).head h) := by
+  have hne := ratToChars_ne_nil q
+  obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil hne
+  refine ⟨hne, ?_⟩
+  have hhead : (ratToChars q).head hne = c := by simp [hcr]
+  rw [hhead]
+  simp only [ratToChars] at hcr
+  split at hcr
+  · have hc_int : c ∈ intToChars q.num := by rw [hcr]; exact List.mem_cons_self ..
+    rcases mem_intToChars_only_digits_or_dash q.num c hc_int with hdash | hdig
+    · rw [hdash]; exact Or.inr (Or.inr (Or.inl rfl))
+    · left; exact hdig
+  · obtain ⟨hne_int, hsyn⟩ := intToChars_head_is_syntax q.num
+    obtain ⟨c', rest', hcr'⟩ := List.exists_cons_of_ne_nil hne_int
+    simp [hcr'] at hcr hsyn
+    rw [← hcr.1]; exact hsyn
 
 instance : ParsableCoeff ℕ where
   one_ne_zero := by omega
@@ -410,7 +421,7 @@ instance : ParsableCoeff ℕ where
   toChars_no_syntax := natToChars_no_coeff_syntax
   toChars_no_minus_tail := fun n _ hc heq =>
     not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
-  toChars_no_lower := natToChars_no_lower
+  toChars_head_is_syntax := natToChars_head_is_syntax
 
 instance : ParsableCoeff ℤ where
   one_ne_zero := by omega
@@ -421,7 +432,7 @@ instance : ParsableCoeff ℤ where
   toChars_no_syntax := intToChars_no_coeff_syntax
   toChars_no_minus_tail := fun z _ hc heq =>
     not_mem_tail_intToChars z (heq ▸ tail_mem_of_drop hc)
-  toChars_no_lower := intToChars_no_lower
+  toChars_head_is_syntax := intToChars_head_is_syntax
 
 instance : ParsableCoeff ℚ where
   one_ne_zero := by exact one_ne_zero
@@ -432,7 +443,7 @@ instance : ParsableCoeff ℚ where
   toChars_no_syntax := ratToChars_no_coeff_syntax
   toChars_no_minus_tail := fun q _ hc heq =>
     not_mem_tail_ratToChars q (heq ▸ tail_mem_of_drop hc)
-  toChars_no_lower := ratToChars_no_lower
+  toChars_head_is_syntax := ratToChars_head_is_syntax
 
 /-- Parse a character list as a `ZMod n` value: parse as ℕ, check `< n`, cast. -/
 def parseZmodChars (m : ℕ) [NeZero m] (cs : List Char) : Option (ZMod m) :=
@@ -454,7 +465,7 @@ instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
   toChars_no_syntax := fun c _ch hch => natToChars_no_coeff_syntax c.val _ch hch
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
-  toChars_no_lower := fun c _ch hch => natToChars_no_lower c.val _ch hch
+  toChars_head_is_syntax := fun c => natToChars_head_is_syntax c.val
 
 end ParsableCoeffInstances
 

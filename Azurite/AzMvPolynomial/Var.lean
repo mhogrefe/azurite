@@ -71,8 +71,6 @@ end Embed
 
 end Var
 
-/-- A lowercase ASCII letter: `a` through `z`. -/
-def isLowerAscii (c : Char) : Prop := c.toNat ≥ 'a'.toNat ∧ c.toNat ≤ 'z'.toNat
 
 /-- A character used in polynomial syntax: ASCII digits, `+`, `-`, `*`, `^`. -/
 def isPolySyntaxChar (c : Char) : Prop :=
@@ -86,8 +84,6 @@ class ParsableVar (α : Type _) (n : outParam ℕ) [LinearOrder α] extends Var 
   parse_toChars : ∀ v : α, parseChars (toChars v) = some v
   toChars_nonempty : ∀ v : α, toChars v ≠ []
   toChars_no_syntax : ∀ v : α, ∀ c ∈ toChars v, ¬ isPolySyntaxChar c
-  /-- The first character of the representation is a lowercase ASCII letter. -/
-  toChars_head_lower : ∀ v : α, ∃ h : toChars v ≠ [], isLowerAscii ((toChars v).head h)
 
 /-- Convert a natural number to a list of Unicode subscript digit characters (₀₁₂...). -/
 def natToSubscriptChars (n : ℕ) : List Char :=
@@ -218,7 +214,6 @@ instance {n : ℕ} : ParsableVar (IndexedVar n) n where
     · exact lowercase_not_syntax 'x' (by decide) (by decide)
     · have ⟨hge, hle⟩ := mem_natToSubscriptChars_range v.val c hc
       exact subscript_not_syntax c hge hle
-  toChars_head_lower v := ⟨by simp, by simp [isLowerAscii]⟩
 
 end IndexedVar
 
@@ -310,7 +305,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcVar n) n where
     simp only [show ('a' : Char).toNat = 97 from by decide,
                show ('z' : Char).toNat = 122 from by decide] at hge hle
     exact lowercase_not_syntax v.ch hge hle
-  toChars_head_lower v := ⟨by simp, v.is_valid.1, v.is_valid.2.1⟩
+
 
 end AbcVar
 
@@ -438,7 +433,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzVar n) n where
     simp only [show ('a' : Char).toNat = 97 from by decide,
                show ('z' : Char).toNat = 122 from by decide] at hge hle
     exact lowercase_not_syntax v.ch hge hle
-  toChars_head_lower v := ⟨by simp, v.is_valid.1, v.is_valid.2.1⟩
+
 
 end XyzVar
 

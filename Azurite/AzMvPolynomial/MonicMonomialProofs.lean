@@ -256,33 +256,32 @@ theorem toString_ne_empty (m : MonicMonomial σ ord) (hm : m ≠ 1) : toString m
   simp [String.toList_ofList] at this
   exact this
 
-/-- Every factor in `toCharsAux` starts with a lowercase ASCII letter. -/
-private theorem toCharsAux_factors_head_lower (m : MonicMonomial σ ord) (k : ℕ) :
-    ∀ f ∈ toCharsAux m k, ∀ hf : f ≠ [], Azurite.isLowerAscii (f.head hf) := by
+/-- Every factor in `toCharsAux` starts with a non-poly-syntax character. -/
+private theorem toCharsAux_factors_head_not_syntax (m : MonicMonomial σ ord) (k : ℕ) :
+    ∀ f ∈ toCharsAux m k, ∀ hf : f ≠ [], ¬ Azurite.isPolySyntaxChar (f.head hf) := by
   by_cases hkn : k < n
   · rw [toCharsAux, dif_pos hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; exact toCharsAux_factors_head_lower m (k + 1)
+    · rw [if_pos he]; exact toCharsAux_factors_head_not_syntax m (k + 1)
     · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
       · rw [if_pos he1]; intro f hf hfne
         simp only [List.mem_cons] at hf
         rcases hf with rfl | hf
-        · obtain ⟨_, hlower⟩ := pv.toChars_head_lower (pv.ofFin ⟨k, hkn⟩)
-          exact hlower
-        · exact toCharsAux_factors_head_lower m (k + 1) f hf hfne
+        · exact pv.toChars_no_syntax _ _ (List.head_mem hfne)
+        · exact toCharsAux_factors_head_not_syntax m (k + 1) f hf hfne
       · rw [if_neg he1]; intro f hf hfne
         simp only [List.mem_cons] at hf
         rcases hf with rfl | hf
-        · obtain ⟨hne', hlower⟩ := pv.toChars_head_lower (pv.ofFin ⟨k, hkn⟩)
+        · have hne' := pv.toChars_nonempty (pv.ofFin ⟨k, hkn⟩)
           rw [List.head_append_of_ne_nil hne']
-          exact hlower
-        · exact toCharsAux_factors_head_lower m (k + 1) f hf hfne
+          exact pv.toChars_no_syntax _ _ (List.head_mem hne')
+        · exact toCharsAux_factors_head_not_syntax m (k + 1) f hf hfne
   · rw [toCharsAux, dif_neg hkn]; intro _ h; simp at h
 termination_by n - k
 
-/-- The first character of `toChars` is a lowercase ASCII letter when `m ≠ 1`. -/
-theorem toChars_head_isLowerAscii (m : MonicMonomial σ ord) (hm : m ≠ 1) :
-    Azurite.isLowerAscii (m.toChars.head (toChars_ne_nil m hm)) := by
+/-- The first character of `toChars` is not a poly-syntax character when `m ≠ 1`. -/
+theorem toChars_head_not_syntax (m : MonicMonomial σ ord) (hm : m ≠ 1) :
+    ¬ Azurite.isPolySyntaxChar (m.toChars.head (toChars_ne_nil m hm)) := by
   have hem : m.exponents ≠ Vector.replicate n 0 :=
     fun he => hm (MonicMonomial.ext he)
   have haux_ne : toCharsAux m 0 ≠ [] := fun h =>
@@ -293,10 +292,7 @@ theorem toChars_head_isLowerAscii (m : MonicMonomial σ ord) (hm : m ≠ 1) :
   obtain ⟨first, rest, hfr⟩ := List.exists_cons_of_ne_nil haux_ne
   have hfne : first ≠ [] :=
     toCharsAux_factors_nonempty m 0 (by omega) first (by rw [hfr]; simp)
-  have hhl := toCharsAux_factors_head_lower m 0 first (by rw [hfr]; simp) hfne
-  -- The first char of m.toChars equals the first char of first
-  -- because intercalate starts with the first factor.
-  -- Strategy: show m.toChars = first ++ suffix, then head = first.head.
+  have hhl := toCharsAux_factors_head_not_syntax m 0 first (by rw [hfr]; simp) hfne
   have h_prefix : ∃ suffix, m.toChars = first ++ suffix := by
     rw [heq, hfr, List.intercalate]
     cases rest with
