@@ -28,7 +28,7 @@ Instead:
 
 # Crash guidance
 
-If the user just messages "c", that means "Continue where you left off." This typically happens after a context truncation or interruption.
+If the user just messages "c", that means "You crashed. Continue where you left off, but work differently to avoid crashing again." This typically happens after a context truncation or interruption.
 
 To reduce the risk of crashes and improve reliability:
 1. **Work incrementally.** Test proof snippets via `lean_run_code` before assembling a full file. Most proof attempts fail on the first try; iterating in small steps avoids wasting large writes.

@@ -7,6 +7,7 @@
   This implementation is fully computable (no noncomputable or sorry).
 -/
 import Azurite.AzMvPolynomial.Basic
+import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Mathlib.Algebra.MvPolynomial.Rename
 
@@ -256,10 +257,91 @@ def AzMvPolynomial.rename [DecidableEq R]
         (fun h => (monicGeq_iff_ge _ _).mp h)
     exact pairwise_filterMap_gt (collapseMonics_pairwise_gt hsorted)⟩
 
+/-- `MonicMonomial.rename` is injective when the variable map `f` is injective.
+    Since `toFin ∘ f ∘ ofFin` is injective, each source exponent maps to a
+    unique target slot, so distinct exponent vectors stay distinct. -/
+theorem MonicMonomial.rename_injective
+    (f : σ₁ → σ₂) (hf : Function.Injective f) (ord₂ : MonomialOrder) :
+    Function.Injective (fun m : MonicMonomial σ₁ ord => m.rename f ord₂) := by
+  intro a b hab
+  have hvec : a.exponents = b.exponents := by
+    apply Vector.ext; intro idx hidx
+    let i : Fin n₁ := ⟨idx, hidx⟩
+    have h := congrArg (fun m : MonicMonomial σ₂ ord₂ =>
+      m.exponents[Var.toFin (f (Var.ofFin i))]) hab
+    simp only [MonicMonomial.rename, Vector.getElem_ofFn, Fin.getElem_fin] at h
+    simp_rw [show ∀ j : Fin n₁,
+      (Var.toFin (f (Var.ofFin j)) = Var.toFin (f (Var.ofFin i))) =
+      (j = i) from fun j => propext ⟨
+        fun h => Var.ofFin_injective (hf (Var.toFin_injective h)),
+        fun h => h ▸ rfl⟩] at h
+    simpa using h
+  exact MonicMonomial.ext hvec
+
+/-- Pairwise ≥ on monic parts + Nodup on monic parts → pairwise > on monic parts. -/
+private theorem pairwise_gt_of_ge_monic_nodup
+    {l : List (Monomial σ₂ R ord₂)}
+    (hge : l.Pairwise (fun a b => a.monic ≥ b.monic))
+    (hnd : (l.map Monomial.monic).Nodup) :
+    l.Pairwise (fun a b => a.monic > b.monic) := by
+  induction l with
+  | nil => exact List.Pairwise.nil
+  | cons a t ih =>
+    rw [List.pairwise_cons] at hge ⊢
+    rw [List.map_cons, List.nodup_cons] at hnd
+    exact ⟨fun b hb => lt_of_le_of_ne (hge.1 b hb) (fun heq =>
+      hnd.1 (List.mem_map.mpr ⟨b, hb, heq⟩)),
+      ih hge.2 hnd.2⟩
+
+/-- Rename variables using an injective map `f : σ₁ → σ₂`.
+
+    Since `f` is injective, no two distinct monic monomials can merge,
+    so the pipeline simplifies to just `map rename → mergeSort`
+    (no collapse or zero-coefficient filter needed).
+
+    This is more efficient than `rename` when the map is known to be injective. -/
+def AzMvPolynomial.renameInjective
+    (p : AzMvPolynomial σ₁ R ord) (f : σ₁ → σ₂) (hf : Function.Injective f)
+    (ord₂ : MonomialOrder := ord) : AzMvPolynomial σ₂ R ord₂ :=
+  let renamed := p.terms.toList.map (fun m => m.rename f ord₂)
+  let sorted := renamed.mergeSort monicGeq
+  ⟨sorted.toArray, by
+    rw [List.toList_toArray]
+    have hge : sorted.Pairwise (fun a b => a.monic ≥ b.monic) :=
+      (List.pairwise_mergeSort monicGeq_trans monicGeq_total renamed).imp
+        (fun h => (monicGeq_iff_ge _ _).mp h)
+    -- Original monics are Nodup (pairwise > → pairwise ≠)
+    have horig_monic_nodup : (p.terms.toList.map Monomial.monic).Nodup :=
+      (List.pairwise_map.mpr (p.sorted.imp (fun h => ne_of_gt h)))
+    -- Renamed monics are Nodup (monic ∘ rename f = rename f ∘ monic, rename f is injective)
+    have hrenamed_monic_nodup : (renamed.map Monomial.monic).Nodup := by
+      simp only [renamed, List.map_map, Function.comp_def, Monomial.rename]
+      rw [show (fun m : Monomial σ₁ R ord => m.monic.rename f ord₂) =
+            ((fun m => m.rename f ord₂) ∘ Monomial.monic) from rfl, ← List.map_map]
+      exact horig_monic_nodup.map (MonicMonomial.rename_injective f hf ord₂)
+    -- mergeSort preserves Nodup (it's a permutation)
+    have hsorted_monic_nodup : (sorted.map Monomial.monic).Nodup :=
+      ((List.mergeSort_perm _ monicGeq).map Monomial.monic).nodup_iff.mpr
+        hrenamed_monic_nodup
+    exact pairwise_gt_of_ge_monic_nodup hge hsorted_monic_nodup⟩
+
+/-- Rename variables using a strictly-monotone map `f : σ₁ → σ₂`
+    (at the `Fin` level: `toFin ∘ f ∘ ofFin` is `StrictMono`).
+
+    Since the map is order-preserving, the renamed monomials are already
+    in the correct order, so no merging, filtering, or sorting is needed.
+    This is the most efficient rename variant. -/
+def AzMvPolynomial.renameMonotone
+    (p : AzMvPolynomial σ₁ R ord) (f : σ₁ → σ₂)
+    (hg : StrictMono (fun i : Fin n₁ => Var.toFin (f (Var.ofFin i)))) :
+    AzMvPolynomial σ₂ R ord :=
+  let renamed := p.terms.toList.map (fun m => m.rename f ord)
+  ⟨renamed.toArray, by
+    rw [List.toList_toArray]
+    exact List.pairwise_map.mpr (p.sorted.imp (fun h =>
+      MonicMonomial.rename_strictMono (ord := ord) f hg h))⟩
+
 end Rename
-
-
-
 
 variable {σ₁ : Type _} {n₁ : ℕ} [DecidableEq σ₁] [LinearOrder σ₁] [Var σ₁ n₁]
     {σ₂ : Type _} {n₂ : ℕ} [DecidableEq σ₂] [LinearOrder σ₂] [Var σ₂ n₂]

@@ -98,4 +98,56 @@ theorem AzMvPolynomial.ofMvPoly_rename [DecidableEq R]
     (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ₁ R ord₁).rename f ord₂ := by
   exact toMvPoly_injective
     (by rw [toMvPoly_ofMvPoly, toMvPoly_rename, toMvPoly_ofMvPoly])
+
+/-! ### renameInjective equivalence -/
+
+/-- `renameInjective` produces the same `MvPolynomial` as `MvPolynomial.rename`.
+    Simpler than `toMvPoly_rename` since the pipeline has no collapse or filter. -/
+theorem AzMvPolynomial.toMvPoly_renameInjective
+    (p : AzMvPolynomial σ₁ R ord) (f : σ₁ → σ₂) (hf : Function.Injective f)
+    (ord₂ : MonomialOrder) :
+    (p.renameInjective f hf ord₂).toMvPoly = MvPolynomial.rename f p.toMvPoly := by
+  simp only [AzMvPolynomial.renameInjective, AzMvPolynomial.toMvPoly]
+  rw [← Array.foldl_toList, List.toList_toArray, foldl_add_map_eq_sum]
+  rw [← Array.foldl_toList, foldl_add_map_eq_sum]
+  rw [(List.mergeSort_perm _ monicGeq).map Monomial.toMvPoly |>.sum_eq]
+  rw [List.map_map, map_list_sum (MvPolynomial.rename f)]
+  simp only [List.map_map, Function.comp_def]
+  simp_rw [Monomial.toMvPoly_rename]
+
+/-- Converting `MvPolynomial.rename f p` to `AzMvPolynomial` gives the same
+    result as converting `p` first and then applying `renameInjective`. -/
+theorem AzMvPolynomial.ofMvPoly_renameInjective [DecidableEq R]
+    (p : MvPolynomial σ₁ R) (f : σ₁ → σ₂) (hf : Function.Injective f)
+    (ord₁ ord₂ : MonomialOrder) :
+    (AzMvPolynomial.ofMvPoly (MvPolynomial.rename f p) : AzMvPolynomial σ₂ R ord₂) =
+    (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ₁ R ord₁).renameInjective f hf ord₂ := by
+  exact toMvPoly_injective
+    (by rw [toMvPoly_ofMvPoly, toMvPoly_renameInjective, toMvPoly_ofMvPoly])
+
+/-! ### renameMonotone equivalence -/
+
+/-- `renameMonotone` produces the same `MvPolynomial` as `MvPolynomial.rename`.
+    The simplest rename equivalence: the pipeline is just `map rename`. -/
+theorem AzMvPolynomial.toMvPoly_renameMonotone
+    (p : AzMvPolynomial σ₁ R ord) (f : σ₁ → σ₂)
+    (hg : StrictMono (fun i : Fin n₁ => Var.toFin (f (Var.ofFin i)))) :
+    (p.renameMonotone f hg).toMvPoly = MvPolynomial.rename f p.toMvPoly := by
+  simp only [AzMvPolynomial.renameMonotone, AzMvPolynomial.toMvPoly]
+  rw [← Array.foldl_toList, List.toList_toArray, foldl_add_map_eq_sum]
+  rw [← Array.foldl_toList, foldl_add_map_eq_sum]
+  rw [List.map_map, map_list_sum (MvPolynomial.rename f)]
+  simp only [List.map_map, Function.comp_def]
+  simp_rw [Monomial.toMvPoly_rename]
+
+/-- Converting `MvPolynomial.rename f p` to `AzMvPolynomial` gives the same
+    result as converting `p` first and then applying `renameMonotone`. -/
+theorem AzMvPolynomial.ofMvPoly_renameMonotone [DecidableEq R]
+    (p : MvPolynomial σ₁ R) (f : σ₁ → σ₂)
+    (hg : StrictMono (fun i : Fin n₁ => Var.toFin (f (Var.ofFin i)))) :
+    (AzMvPolynomial.ofMvPoly (MvPolynomial.rename f p) : AzMvPolynomial σ₂ R ord) =
+    (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ₁ R ord).renameMonotone f hg := by
+  exact toMvPoly_injective
+    (by rw [toMvPoly_ofMvPoly, toMvPoly_renameMonotone, toMvPoly_ofMvPoly])
+
 end Azurite

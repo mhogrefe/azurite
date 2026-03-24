@@ -1,6 +1,7 @@
 -- This module serves as the root of the `Azurite` library.
 -- Import modules here that should be built as part of the library.
 import Azurite.AzMvPolynomial.Basic
+import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Rename
