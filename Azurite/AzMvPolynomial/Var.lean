@@ -76,6 +76,9 @@ end Var
 def isPolySyntaxChar (c : Char) : Prop :=
   (c.toNat ≥ '0'.toNat ∧ c.toNat ≤ '9'.toNat) ∨ c = '+' ∨ c = '-' ∨ c = '*' ∨ c = '^'
 
+instance : DecidablePred isPolySyntaxChar := fun c => by
+  unfold isPolySyntaxChar; infer_instance
+
 /-- Extension of `Var` for variable types that can be serialized/deserialized
     as character sequences that do not collide with polynomial syntax. -/
 class ParsableVar (α : Type _) (n : outParam ℕ) [LinearOrder α] extends Var α n where
@@ -746,7 +749,7 @@ private theorem greekCharOfIndex_greekCharIndex (c : Char)
     exact Char.ofNat_toNat c
 
 private theorem greekCharIndex_bound (c : Char)
-    (hge : c.toNat ≥ 945) (hle : c.toNat ≤ 969) (hne : c.toNat ≠ 962) :
+    (hge : c.toNat ≥ 945) (hle : c.toNat ≤ 969) :
     greekCharIndex c < 24 := by
   simp only [greekCharIndex]; split <;> omega
 
@@ -901,7 +904,7 @@ private theorem greekCapsCharOfIndex_greekCapsCharIndex (c : Char)
     exact Char.ofNat_toNat c
 
 private theorem greekCapsCharIndex_bound (c : Char)
-    (hge : c.toNat ≥ 913) (hle : c.toNat ≤ 937) (hne : c.toNat ≠ 930) :
+    (hge : c.toNat ≥ 913) (hle : c.toNat ≤ 937) :
     greekCapsCharIndex c < 24 := by
   simp only [greekCapsCharIndex]; split <;> omega
 
@@ -1018,5 +1021,124 @@ instance {n : ℕ} [Fact (n ≤ 24)] : ParsableVar (GreekCapsVar n) n where
     exact greekCaps_not_syntax v.ch v.is_valid.1
 
 end GreekCapsVar
+
+/-! ### ListVar: variables defined by an arbitrary list -/
+
+/-- A variable type defined by an arbitrary list of distinct objects.
+    The position in the list determines the ordering: first element = index 0 = smallest.
+    Users must provide `Fact l.Nodup` to ensure the labels are distinct.
+
+    Example usage:
+    ```
+    def myVars : List String := ["x", "y", "z"]
+    instance : Fact myVars.Nodup := ⟨by decide⟩
+    -- Now `ListVar myVars` is a `Var` with 3 variables
+    ``` -/
+@[ext]
+structure ListVar {α : Type} (l : List α) where
+  val : Fin l.length
+  deriving DecidableEq
+
+namespace ListVar
+
+instance {α : Type} {l : List α} : LinearOrder (ListVar l) :=
+  LinearOrder.lift' (fun v => v.val) (fun _ _ h => ListVar.ext h)
+
+instance {α : Type} {l : List α} : Ord (ListVar l) where
+  compare a b := compare a.val b.val
+
+instance {α : Type} [ToString α] {l : List α} : ToString (ListVar l) where
+  toString v := toString (l.get v.val)
+
+instance {α : Type} [Repr α] {l : List α} : Repr (ListVar l) where
+  reprPrec v p := reprPrec (l.get v.val) p
+
+/-- The label (list element) corresponding to this variable. -/
+def label {α : Type} {l : List α} (v : ListVar l) : α := l.get v.val
+
+instance {α : Type} {l : List α} [Fact l.Nodup] : Var (ListVar l) l.length where
+  toFin v := v.val
+  ofFin i := ⟨i⟩
+  ofFin_toFin _ := rfl
+  toFin_ofFin _ := rfl
+
+/-- The conditions under which `ListVar l` supports parsing:
+    1. The `toString` representations (as char lists) are pairwise distinct
+    2. Each representation is nonempty
+    3. No character in any representation is a polynomial syntax character
+
+    This predicate is decidable, so users can write `instance : Fact (ListVarParsable l) := ⟨by decide⟩`. -/
+def ListVarParsable {α : Type} [ToString α] (l : List α) : Prop :=
+  (l.map (fun a => (toString a).toList)).Nodup ∧
+  (∀ a ∈ l, (toString a).toList ≠ []) ∧
+  (∀ a ∈ l, ∀ c ∈ (toString a).toList, ¬ isPolySyntaxChar c)
+
+/-- Search for a char list in the toString representations of a list.
+    Returns the index of the first match, or `none`. -/
+private def findByToString [ToString α] : List α → List Char → Option ℕ
+  | [], _ => none
+  | a :: as, cs =>
+    if (toString a).toList = cs then some 0
+    else (findByToString as cs).map (· + 1)
+
+private theorem findByToString_self [ToString α] :
+    ∀ (l : List α) (i : ℕ) (hi : i < l.length),
+    (l.map (fun a => (toString a).toList)).Nodup →
+    findByToString l ((toString (l.get ⟨i, hi⟩)).toList) = some i := by
+  intro l
+  induction l with
+  | nil => intro i hi; exact absurd hi (Nat.not_lt_zero i)
+  | cons a as ih =>
+    intro i hi hnodup
+    rw [List.map_cons, List.nodup_cons] at hnodup
+    simp only [findByToString]
+    cases i with
+    | zero => simp [List.get]
+    | succ j =>
+      have hj : j < as.length := by simp [List.length_cons] at hi; omega
+      simp only [List.get_cons_succ]
+      have hne : (toString a).toList ≠ (toString (as.get ⟨j, hj⟩)).toList := by
+        intro heq
+        have hmem := @List.mem_map_of_mem _ _ as _ (fun a => (toString a).toList) (List.get_mem as ⟨j, hj⟩)
+        exact hnodup.1 (heq ▸ hmem)
+      rw [if_neg hne, ih j hj hnodup.2]
+      simp [Option.map]
+
+private theorem findByToString_lt [ToString α] :
+    ∀ (l : List α) (cs : List Char) (i : ℕ),
+    findByToString l cs = some i → i < l.length := by
+  intro l
+  induction l with
+  | nil => intro cs i h; simp [findByToString] at h
+  | cons a as ih =>
+    intro cs i h
+    simp only [findByToString] at h
+    split at h
+    · simp at h; subst h; simp [List.length_cons]
+    · rw [Option.map_eq_some_iff] at h
+      obtain ⟨j, hj, rfl⟩ := h
+      have := ih cs j hj
+      simp only [List.length_cons]
+      omega
+
+instance {α : Type} [ToString α] {l : List α}
+    [Fact l.Nodup] [Fact (ListVarParsable l)] :
+    ParsableVar (ListVar l) l.length where
+  toChars v := (toString (l.get v.val)).toList
+  parseChars cs :=
+    let idx := findByToString l cs
+    idx.bind (fun i => if hi : i < l.length then some ⟨⟨i, hi⟩⟩ else none)
+  parse_toChars v := by
+    have hp := (Fact.out : ListVarParsable l)
+    have hrw := findByToString_self l v.val.val v.val.isLt hp.1
+    simp only [Option.bind, hrw, v.val.isLt, dite_true]
+  toChars_nonempty v := by
+    have hp := (Fact.out : ListVarParsable l)
+    exact hp.2.1 (l.get v.val) (List.get_mem l v.val)
+  toChars_no_syntax v c hc := by
+    have hp := (Fact.out : ListVarParsable l)
+    exact hp.2.2 (l.get v.val) (List.get_mem l v.val) c hc
+
+end ListVar
 
 end Azurite
