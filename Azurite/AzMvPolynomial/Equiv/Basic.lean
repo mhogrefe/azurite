@@ -117,10 +117,18 @@ noncomputable def AzMvPolynomial.ofMvPoly [DecidableEq σ]
 
 /-! ### Round-trip: toMvPoly (ofMvPoly p) = p -/
 
-private theorem foldl_add_map_eq_sum {M α : Type _} [AddCommMonoid M]
+theorem foldl_add_map_eq_sum {M α : Type _} [AddCommMonoid M]
     (f : α → M) (l : List α) :
     l.foldl (fun acc x => acc + f x) 0 = (l.map f).sum := by
   rw [List.sum_eq_foldl, ← List.foldl_map]
+
+/-- `toMvPoly` expressed as the sum of `toMvPoly` over the term list.
+    Useful as a bridge between the `Array.foldl` definition and `List.sum`. -/
+theorem AzMvPolynomial.toMvPoly_eq_list_sum
+    (p : AzMvPolynomial σ R ord) :
+    p.toMvPoly = (p.terms.toList.map Monomial.toMvPoly).sum := by
+  simp only [AzMvPolynomial.toMvPoly]
+  rw [← Array.foldl_toList, foldl_add_map_eq_sum]
 
 /-- Summing `f` over `l.attach` is the same as summing `g` over `l`, provided
     `f ⟨x, hx⟩ = g x` for every element. -/

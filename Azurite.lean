@@ -3,11 +3,13 @@
 import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Eval
+import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.Rename
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
