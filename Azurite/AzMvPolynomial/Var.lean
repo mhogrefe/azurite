@@ -217,6 +217,79 @@ instance {n : ℕ} : ParsableVar (IndexedVar n) n where
 
 end IndexedVar
 
+private theorem uppercase_not_syntax (c : Char) (hge : c.toNat ≥ 65) (hle : c.toNat ≤ 90) :
+    ¬ isPolySyntaxChar c := by
+  simp only [isPolySyntaxChar, not_or, not_and,
+    show ('0' : Char).toNat = 48 from by decide,
+    show ('9' : Char).toNat = 57 from by decide]
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge hle)
+
+/-- A variable indexed by `Fin n`, displayed as `X₀`, `X₁`, etc. (capital X). -/
+@[ext]
+structure IndexedCapsVar (n : ℕ) where
+  val : Fin n
+  deriving DecidableEq
+
+namespace IndexedCapsVar
+
+/-- Shorthand constructor: `X 5` creates an `IndexedCapsVar` with index 5. -/
+abbrev X {n : ℕ} (i : Fin n) : IndexedCapsVar n := ⟨i⟩
+
+instance {n : ℕ} : LinearOrder (IndexedCapsVar n) :=
+  LinearOrder.lift' (fun v => v.val) (fun _ _ h => IndexedCapsVar.ext h)
+
+instance {n : ℕ} : Ord (IndexedCapsVar n) where
+  compare a b := compare a.val b.val
+
+instance {n : ℕ} : ToString (IndexedCapsVar n) where
+  toString v := s!"X{natToSubscript v.val}"
+
+instance {n : ℕ} : Repr (IndexedCapsVar n) where
+  reprPrec v _ := s!"X{natToSubscript v.val}"
+
+def toChars {n : ℕ} (v : IndexedCapsVar n) : List Char :=
+  ['X'] ++ natToSubscriptChars v.val
+
+def parse {n : ℕ} (cs : List Char) : Option (IndexedCapsVar n) :=
+  match cs with
+  | 'X' :: rest => do
+    let k ← parseSubscriptChars rest
+    if h : k < n then some ⟨⟨k, h⟩⟩ else none
+  | _ => none
+
+theorem parse_toChars {n : ℕ} (v : IndexedCapsVar n) :
+    IndexedCapsVar.parse (IndexedCapsVar.toChars v) = some v := by
+  simp only [toChars, parse, List.cons_append, List.nil_append]
+  rw [parseSubscriptChars_natToSubscriptChars]
+  simp [v.val.isLt]
+
+instance {n : ℕ} : Var (IndexedCapsVar n) n where
+  toFin v := v.val
+  ofFin i := ⟨i⟩
+  ofFin_toFin _ := rfl
+  toFin_ofFin _ := rfl
+
+instance {n : ℕ} : ParsableVar (IndexedCapsVar n) n where
+  toChars v := ['X'] ++ natToSubscriptChars v.val
+  parseChars cs := match cs with
+    | 'X' :: rest => do
+      let k ← parseSubscriptChars rest
+      if h : k < n then some ⟨⟨k, h⟩⟩ else none
+    | _ => none
+  parse_toChars v := by
+    simp only [List.cons_append, List.nil_append]
+    rw [parseSubscriptChars_natToSubscriptChars]
+    simp [v.val.isLt]
+  toChars_nonempty _ := by simp
+  toChars_no_syntax v c hc := by
+    simp only [List.cons_append, List.nil_append, List.mem_cons] at hc
+    rcases hc with rfl | hc
+    · exact uppercase_not_syntax 'X' (by decide) (by decide)
+    · have ⟨hge, hle⟩ := mem_natToSubscriptChars_range v.val c hc
+      exact subscript_not_syntax c hge hle
+
+end IndexedCapsVar
+
 /-- A variable named by a lowercase letter: `'a'`, `'b'`, `'c'`, ..., `'z'`.
     `n` is the number of variables in scope (at most 26).
     Stores the raw character, so construction is natural: `⟨'a', by omega⟩`. -/
@@ -309,6 +382,97 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcVar n) n where
 
 end AbcVar
 
+/-- A variable named by an uppercase letter: `'A'`, `'B'`, `'C'`, ..., `'Z'`.
+    `n` is the number of variables in scope (at most 26).
+    Stores the raw character, so construction is natural: `⟨'A', by omega⟩`. -/
+structure AbcCapsVar (n : ℕ) where
+  ch : Char
+  is_valid : ch.toNat ≥ 'A'.toNat ∧ ch.toNat ≤ 'Z'.toNat ∧ ch.toNat - 'A'.toNat < n
+  deriving DecidableEq
+
+namespace AbcCapsVar
+
+/-- The zero-based index of this variable (0 for 'A', 1 for 'B', etc.). -/
+def index {n : ℕ} (v : AbcCapsVar n) : Fin n :=
+  ⟨v.ch.toNat - 'A'.toNat, v.is_valid.2.2⟩
+
+private theorem index_injective {n : ℕ} : Function.Injective (index : AbcCapsVar n → Fin n) := by
+  intro ⟨a, ha⟩ ⟨b, hb⟩ h
+  simp only [index, Fin.mk.injEq] at h
+  congr 1; rw [← Char.ofNat_toNat a, ← Char.ofNat_toNat b]; congr 1; omega
+
+instance {n : ℕ} : LinearOrder (AbcCapsVar n) :=
+  LinearOrder.lift' index index_injective
+
+instance {n : ℕ} : Ord (AbcCapsVar n) where
+  compare a b := compare a.index b.index
+
+instance {n : ℕ} : ToString (AbcCapsVar n) where
+  toString v := String.ofList [v.ch]
+
+instance {n : ℕ} : Repr (AbcCapsVar n) where
+  reprPrec v _ := s!"'{v.ch}'"
+
+def toChars {n : ℕ} (v : AbcCapsVar n) : List Char := [v.ch]
+
+def parse {n : ℕ} (c : Char) : Option (AbcCapsVar n) :=
+  if h : c.toNat ≥ 'A'.toNat ∧ c.toNat ≤ 'Z'.toNat ∧ c.toNat - 'A'.toNat < n then
+    some ⟨c, h⟩
+  else none
+
+theorem parse_toChars {n : ℕ} (v : AbcCapsVar n) :
+    AbcCapsVar.parse v.ch = some v := by
+  simp only [parse, dif_pos v.is_valid]
+
+/-- Construct an `AbcCapsVar` from a `Fin n` index (0 → 'A', 1 → 'B', etc.). -/
+def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : AbcCapsVar n :=
+  ⟨Char.ofNat ('A'.toNat + i.val), by
+    simp only [show ('A' : Char).toNat = 65 from by decide,
+               show ('Z' : Char).toNat = 90 from by decide]
+    rw [charOfNat_toNat_small (65 + i.val) (by omega)]
+    omega⟩
+
+theorem ofIndex_index {n : ℕ} (hn : n ≤ 26) (v : AbcCapsVar n) :
+    AbcCapsVar.ofIndex hn (AbcCapsVar.index v) = v := by
+  simp only [ofIndex, index]
+  congr 1
+  have hge := v.is_valid.1
+  simp only [show ('A' : Char).toNat = 65 from by decide] at hge ⊢
+  rw [show 65 + (v.ch.toNat - 65) = v.ch.toNat from by omega]
+  exact Char.ofNat_toNat v.ch
+
+theorem index_ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) :
+    AbcCapsVar.index (AbcCapsVar.ofIndex hn i) = i := by
+  simp only [index, ofIndex]
+  ext
+  simp only [show ('A' : Char).toNat = 65 from by decide]
+  rw [charOfNat_toNat_small (65 + i.val) (by omega)]
+  omega
+
+instance {n : ℕ} [Fact (n ≤ 26)] : Var (AbcCapsVar n) n where
+  toFin := index
+  ofFin := ofIndex (Fact.out)
+  ofFin_toFin := ofIndex_index (Fact.out)
+  toFin_ofFin := index_ofIndex (Fact.out)
+
+instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcCapsVar n) n where
+  toChars v := [v.ch]
+  parseChars cs := match cs with
+    | [c] => if h : c.toNat ≥ 'A'.toNat ∧ c.toNat ≤ 'Z'.toNat ∧ c.toNat - 'A'.toNat < n then
+        some ⟨c, h⟩
+      else none
+    | _ => none
+  parse_toChars v := by simp only [dif_pos v.is_valid]
+  toChars_nonempty _ := by simp
+  toChars_no_syntax v c hc := by
+    simp at hc; subst hc
+    have hge := v.is_valid.1; have hle := v.is_valid.2.1
+    simp only [show ('A' : Char).toNat = 65 from by decide,
+               show ('Z' : Char).toNat = 90 from by decide] at hge hle
+    exact uppercase_not_syntax v.ch hge hle
+
+end AbcCapsVar
+
 /-- Maps an abc-index (0 = 'a', ..., 25 = 'z') to an xyz-rank:
     x(0), y(1), z(2), w(3), v(4), ..., a(25).
     This generalizes the convention where the 4th spatial axis is 'w'. -/
@@ -342,7 +506,7 @@ namespace XyzVar
 def index {n : ℕ} (v : XyzVar n) : Fin n :=
   ⟨xyzRank (v.ch.toNat - 'a'.toNat), v.is_valid.2.2⟩
 
-private theorem xyzRank_injective :
+theorem xyzRank_injective :
     ∀ a b : ℕ, a ≤ 25 → b ≤ 25 → xyzRank a = xyzRank b → a = b := by
   intro a b ha hb h; simp [xyzRank] at h; split at h <;> split at h <;> omega
 
@@ -436,5 +600,423 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzVar n) n where
 
 
 end XyzVar
+
+/-- A variable with ordering X, Y, Z, W, V, U, ..., A (capital letters).
+    Stores the raw character with a validity proof.
+    Construction: `⟨'X', by omega⟩`, `⟨'Y', by omega⟩`, etc. -/
+structure XyzCapsVar (n : ℕ) where
+  ch : Char
+  is_valid : ch.toNat ≥ 'A'.toNat ∧ ch.toNat ≤ 'Z'.toNat ∧
+    xyzRank (ch.toNat - 'A'.toNat) < n
+  deriving DecidableEq
+
+namespace XyzCapsVar
+
+/-- The zero-based xyz-rank of this variable (0 for 'X', 1 for 'Y', 2 for 'Z', 3 for 'W', ...). -/
+def index {n : ℕ} (v : XyzCapsVar n) : Fin n :=
+  ⟨xyzRank (v.ch.toNat - 'A'.toNat), v.is_valid.2.2⟩
+
+private theorem index_injective {n : ℕ} : Function.Injective (index : XyzCapsVar n → Fin n) := by
+  intro ⟨a, ha⟩ ⟨b, hb⟩ h
+  simp only [index, Fin.mk.injEq] at h
+  simp only [show 'A'.toNat = 65 from by decide,
+             show 'Z'.toNat = 90 from by decide] at ha hb h ⊢
+  have hab := XyzVar.xyzRank_injective _ _ (by omega) (by omega) h
+  have : a = b := by rw [← Char.ofNat_toNat a, ← Char.ofNat_toNat b]; congr 1; omega
+  subst this; rfl
+
+instance {n : ℕ} : LinearOrder (XyzCapsVar n) :=
+  LinearOrder.lift' index index_injective
+
+instance {n : ℕ} : Ord (XyzCapsVar n) where
+  compare a b := compare a.index b.index
+
+instance {n : ℕ} : ToString (XyzCapsVar n) where
+  toString v := String.ofList [v.ch]
+
+instance {n : ℕ} : Repr (XyzCapsVar n) where
+  reprPrec v _ := s!"'{v.ch}'"
+
+def toChars {n : ℕ} (v : XyzCapsVar n) : List Char := [v.ch]
+
+def parse {n : ℕ} (c : Char) : Option (XyzCapsVar n) :=
+  if h : c.toNat ≥ 'A'.toNat ∧ c.toNat ≤ 'Z'.toNat ∧
+      xyzRank (c.toNat - 'A'.toNat) < n then
+    some ⟨c, h⟩
+  else none
+
+theorem parse_toChars {n : ℕ} (v : XyzCapsVar n) :
+    XyzCapsVar.parse v.ch = some v := by
+  simp only [parse, dif_pos v.is_valid]
+
+/-- Construct an `XyzCapsVar` from a `Fin n` rank (0 → 'X', 1 → 'Y', 2 → 'Z', 3 → 'W', ...). -/
+def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : XyzCapsVar n :=
+  ⟨Char.ofNat ('A'.toNat + xyzUnrank i.val), by
+    simp only [show ('A' : Char).toNat = 65 from by decide,
+               show ('Z' : Char).toNat = 90 from by decide]
+    have hunrank_le : xyzUnrank i.val ≤ 25 := by simp [xyzUnrank]; split <;> omega
+    rw [charOfNat_toNat_small (65 + xyzUnrank i.val) (by omega)]
+    refine ⟨by omega, by omega, ?_⟩
+    rw [show 65 + xyzUnrank i.val - 65 = xyzUnrank i.val from by omega]
+    rw [xyzRank_xyzUnrank i.val (by omega)]
+    exact i.isLt⟩
+
+theorem ofIndex_index {n : ℕ} (hn : n ≤ 26) (v : XyzCapsVar n) :
+    XyzCapsVar.ofIndex hn (XyzCapsVar.index v) = v := by
+  simp only [ofIndex, index]
+  congr 1
+  have hge := v.is_valid.1; have hle := v.is_valid.2.1
+  simp only [show ('A' : Char).toNat = 65 from by decide,
+             show ('Z' : Char).toNat = 90 from by decide] at hge hle ⊢
+  rw [xyzUnrank_xyzRank (v.ch.toNat - 65) (by omega)]
+  rw [show 65 + (v.ch.toNat - 65) = v.ch.toNat from by omega]
+  exact Char.ofNat_toNat v.ch
+
+theorem index_ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) :
+    XyzCapsVar.index (XyzCapsVar.ofIndex hn i) = i := by
+  simp only [index, ofIndex]
+  ext
+  simp only [show ('A' : Char).toNat = 65 from by decide]
+  have hunrank_le : xyzUnrank i.val ≤ 25 := by simp [xyzUnrank]; split <;> omega
+  rw [charOfNat_toNat_small (65 + xyzUnrank i.val) (by omega)]
+  rw [show 65 + xyzUnrank i.val - 65 = xyzUnrank i.val from by omega]
+  rw [xyzRank_xyzUnrank i.val (by omega)]
+
+instance {n : ℕ} [Fact (n ≤ 26)] : Var (XyzCapsVar n) n where
+  toFin := index
+  ofFin := ofIndex (Fact.out)
+  ofFin_toFin := ofIndex_index (Fact.out)
+  toFin_ofFin := index_ofIndex (Fact.out)
+
+instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzCapsVar n) n where
+  toChars v := [v.ch]
+  parseChars cs := match cs with
+    | [c] => if h : c.toNat ≥ 'A'.toNat ∧ c.toNat ≤ 'Z'.toNat ∧
+        xyzRank (c.toNat - 'A'.toNat) < n then
+        some ⟨c, h⟩
+      else none
+    | _ => none
+  parse_toChars v := by simp only [dif_pos v.is_valid]
+  toChars_nonempty _ := by simp
+  toChars_no_syntax v c hc := by
+    simp at hc; subst hc
+    have hge := v.is_valid.1; have hle := v.is_valid.2.1
+    simp only [show ('A' : Char).toNat = 65 from by decide,
+               show ('Z' : Char).toNat = 90 from by decide] at hge hle
+    exact uppercase_not_syntax v.ch hge hle
+
+end XyzCapsVar
+
+/-! ### Greek letter helpers -/
+
+/-- Map a Greek lowercase char to its 0-based index
+    (0 = α, ..., 16 = ρ, 17 = σ, ..., 23 = ω), skipping ς (U+03C2 = 962). -/
+private def greekCharIndex (c : Char) : ℕ :=
+  if c.toNat ≤ 961 then c.toNat - 945 else c.toNat - 946
+
+/-- Map a 0-based index to a Greek lowercase char. -/
+private def greekCharOfIndex (i : ℕ) : Char :=
+  Char.ofNat (if i ≤ 16 then i + 945 else i + 946)
+
+private theorem greekCharIndex_greekCharOfIndex (i : ℕ) (hi : i < 24) :
+    greekCharIndex (greekCharOfIndex i) = i := by
+  simp only [greekCharIndex, greekCharOfIndex]
+  split
+  · simp only [charOfNat_toNat_small (i + 945) (by omega)]
+    split <;> omega
+  · simp only [charOfNat_toNat_small (i + 946) (by omega)]
+    split <;> omega
+
+private theorem greekCharOfIndex_greekCharIndex (c : Char)
+    (hge : c.toNat ≥ 945) (hle : c.toNat ≤ 969) (hne : c.toNat ≠ 962) :
+    greekCharOfIndex (greekCharIndex c) = c := by
+  simp only [greekCharOfIndex, greekCharIndex]
+  split
+  · -- c.toNat ≤ 961
+    rename_i h
+    have idx_le : c.toNat - 945 ≤ 16 := by omega
+    rw [if_pos idx_le]
+    rw [show c.toNat - 945 + 945 = c.toNat from by omega]
+    exact Char.ofNat_toNat c
+  · -- c.toNat > 961
+    rename_i h; push_neg at h
+    have idx_gt : ¬ (c.toNat - 946 ≤ 16) := by omega
+    rw [if_neg idx_gt]
+    rw [show c.toNat - 946 + 946 = c.toNat from by omega]
+    exact Char.ofNat_toNat c
+
+private theorem greekCharIndex_bound (c : Char)
+    (hge : c.toNat ≥ 945) (hle : c.toNat ≤ 969) (hne : c.toNat ≠ 962) :
+    greekCharIndex c < 24 := by
+  simp only [greekCharIndex]; split <;> omega
+
+private theorem greekCharOfIndex_valid (i : ℕ) (hi : i < 24) :
+    (greekCharOfIndex i).toNat ≥ 945 ∧ (greekCharOfIndex i).toNat ≤ 969 ∧
+    (greekCharOfIndex i).toNat ≠ 962 := by
+  simp only [greekCharOfIndex]
+  split
+  · rw [charOfNat_toNat_small (i + 945) (by omega)]; omega
+  · rw [charOfNat_toNat_small (i + 946) (by omega)]; omega
+
+private theorem greekCharIndex_injective :
+    ∀ a b : Char, a.toNat ≥ 945 → a.toNat ≤ 969 → a.toNat ≠ 962 →
+    b.toNat ≥ 945 → b.toNat ≤ 969 → b.toNat ≠ 962 →
+    greekCharIndex a = greekCharIndex b → a = b := by
+  intro a b ha1 ha2 _ hb1 hb2 _ h
+  simp only [greekCharIndex] at h
+  rw [← Char.ofNat_toNat a, ← Char.ofNat_toNat b]; congr 1
+  split at h <;> split at h <;> omega
+
+private theorem greek_not_syntax (c : Char) (hge : c.toNat ≥ 945) :
+    ¬ isPolySyntaxChar c := by
+  simp only [isPolySyntaxChar, not_or, not_and,
+    show ('0' : Char).toNat = 48 from by decide,
+    show ('9' : Char).toNat = 57 from by decide]
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+
+/-! ### GreekVar -/
+
+/-- A variable named by a lowercase Greek letter: α, β, γ, ..., ρ, σ, ..., ω
+    (24 letters, skipping ς). `n` is the number of variables in scope (at most 24).
+    Stores the raw character with a validity proof. -/
+structure GreekVar (n : ℕ) where
+  ch : Char
+  is_valid : ch.toNat ≥ 945 ∧ ch.toNat ≤ 969 ∧ ch.toNat ≠ 962 ∧
+    greekCharIndex ch < n
+  deriving DecidableEq
+
+namespace GreekVar
+
+/-- The zero-based index of this variable (0 for α, 1 for β, ..., 23 for ω). -/
+def index {n : ℕ} (v : GreekVar n) : Fin n :=
+  ⟨greekCharIndex v.ch, v.is_valid.2.2.2⟩
+
+private theorem index_injective {n : ℕ} : Function.Injective (index : GreekVar n → Fin n) := by
+  intro ⟨a, ha⟩ ⟨b, hb⟩ h
+  simp only [index, Fin.mk.injEq] at h
+  have := greekCharIndex_injective a b ha.1 ha.2.1 ha.2.2.1 hb.1 hb.2.1 hb.2.2.1 h
+  subst this; rfl
+
+instance {n : ℕ} : LinearOrder (GreekVar n) :=
+  LinearOrder.lift' index index_injective
+
+instance {n : ℕ} : Ord (GreekVar n) where
+  compare a b := compare a.index b.index
+
+instance {n : ℕ} : ToString (GreekVar n) where
+  toString v := String.ofList [v.ch]
+
+instance {n : ℕ} : Repr (GreekVar n) where
+  reprPrec v _ := s!"'{v.ch}'"
+
+def toChars {n : ℕ} (v : GreekVar n) : List Char := [v.ch]
+
+def parse {n : ℕ} (c : Char) : Option (GreekVar n) :=
+  if h : c.toNat ≥ 945 ∧ c.toNat ≤ 969 ∧ c.toNat ≠ 962 ∧
+      greekCharIndex c < n then
+    some ⟨c, h⟩
+  else none
+
+theorem parse_toChars {n : ℕ} (v : GreekVar n) :
+    GreekVar.parse v.ch = some v := by
+  simp only [parse, dif_pos v.is_valid]
+
+/-- Construct a `GreekVar` from a `Fin n` index (0 → α, 1 → β, ..., 23 → ω). -/
+def ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) : GreekVar n :=
+  ⟨greekCharOfIndex i.val, by
+    have hv := greekCharOfIndex_valid i.val (by omega)
+    refine ⟨hv.1, hv.2.1, hv.2.2, ?_⟩
+    rw [greekCharIndex_greekCharOfIndex i.val (by omega)]
+    exact i.isLt⟩
+
+theorem ofIndex_index {n : ℕ} (hn : n ≤ 24) (v : GreekVar n) :
+    GreekVar.ofIndex hn (GreekVar.index v) = v := by
+  simp only [ofIndex, index]
+  congr 1
+  exact greekCharOfIndex_greekCharIndex v.ch v.is_valid.1 v.is_valid.2.1 v.is_valid.2.2.1
+
+theorem index_ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) :
+    GreekVar.index (GreekVar.ofIndex hn i) = i := by
+  simp only [index, ofIndex]
+  ext
+  have hv := greekCharOfIndex_valid i.val (by omega)
+  exact greekCharIndex_greekCharOfIndex i.val (by omega)
+
+instance {n : ℕ} [Fact (n ≤ 24)] : Var (GreekVar n) n where
+  toFin := index
+  ofFin := ofIndex (Fact.out)
+  ofFin_toFin := ofIndex_index (Fact.out)
+  toFin_ofFin := index_ofIndex (Fact.out)
+
+instance {n : ℕ} [Fact (n ≤ 24)] : ParsableVar (GreekVar n) n where
+  toChars v := [v.ch]
+  parseChars cs := match cs with
+    | [c] => if h : c.toNat ≥ 945 ∧ c.toNat ≤ 969 ∧ c.toNat ≠ 962 ∧
+          greekCharIndex c < n then
+        some ⟨c, h⟩
+      else none
+    | _ => none
+  parse_toChars v := by simp only [dif_pos v.is_valid]
+  toChars_nonempty _ := by simp
+  toChars_no_syntax v c hc := by
+    simp at hc; subst hc
+    exact greek_not_syntax v.ch v.is_valid.1
+
+end GreekVar
+
+/-! ### Greek capital letter helpers -/
+
+/-- Map a Greek uppercase char to its 0-based index
+    (0 = Α, ..., 16 = Ρ, 17 = Σ, ..., 23 = Ω), skipping unassigned U+03A2 (930). -/
+private def greekCapsCharIndex (c : Char) : ℕ :=
+  if c.toNat ≤ 929 then c.toNat - 913 else c.toNat - 914
+
+/-- Map a 0-based index to a Greek uppercase char. -/
+private def greekCapsCharOfIndex (i : ℕ) : Char :=
+  Char.ofNat (if i ≤ 16 then i + 913 else i + 914)
+
+private theorem greekCapsCharIndex_greekCapsCharOfIndex (i : ℕ) (hi : i < 24) :
+    greekCapsCharIndex (greekCapsCharOfIndex i) = i := by
+  simp only [greekCapsCharIndex, greekCapsCharOfIndex]
+  split
+  · simp only [charOfNat_toNat_small (i + 913) (by omega)]
+    split <;> omega
+  · simp only [charOfNat_toNat_small (i + 914) (by omega)]
+    split <;> omega
+
+private theorem greekCapsCharOfIndex_greekCapsCharIndex (c : Char)
+    (hge : c.toNat ≥ 913) (hle : c.toNat ≤ 937) (hne : c.toNat ≠ 930) :
+    greekCapsCharOfIndex (greekCapsCharIndex c) = c := by
+  simp only [greekCapsCharOfIndex, greekCapsCharIndex]
+  split
+  · rename_i h
+    have idx_le : c.toNat - 913 ≤ 16 := by omega
+    rw [if_pos idx_le]
+    rw [show c.toNat - 913 + 913 = c.toNat from by omega]
+    exact Char.ofNat_toNat c
+  · rename_i h; push_neg at h
+    have idx_gt : ¬ (c.toNat - 914 ≤ 16) := by omega
+    rw [if_neg idx_gt]
+    rw [show c.toNat - 914 + 914 = c.toNat from by omega]
+    exact Char.ofNat_toNat c
+
+private theorem greekCapsCharIndex_bound (c : Char)
+    (hge : c.toNat ≥ 913) (hle : c.toNat ≤ 937) (hne : c.toNat ≠ 930) :
+    greekCapsCharIndex c < 24 := by
+  simp only [greekCapsCharIndex]; split <;> omega
+
+private theorem greekCapsCharOfIndex_valid (i : ℕ) (hi : i < 24) :
+    (greekCapsCharOfIndex i).toNat ≥ 913 ∧ (greekCapsCharOfIndex i).toNat ≤ 937 ∧
+    (greekCapsCharOfIndex i).toNat ≠ 930 := by
+  simp only [greekCapsCharOfIndex]
+  split
+  · rw [charOfNat_toNat_small (i + 913) (by omega)]; omega
+  · rw [charOfNat_toNat_small (i + 914) (by omega)]; omega
+
+private theorem greekCapsCharIndex_injective :
+    ∀ a b : Char, a.toNat ≥ 913 → a.toNat ≤ 937 → a.toNat ≠ 930 →
+    b.toNat ≥ 913 → b.toNat ≤ 937 → b.toNat ≠ 930 →
+    greekCapsCharIndex a = greekCapsCharIndex b → a = b := by
+  intro a b ha1 ha2 _ hb1 hb2 _ h
+  simp only [greekCapsCharIndex] at h
+  rw [← Char.ofNat_toNat a, ← Char.ofNat_toNat b]; congr 1
+  split at h <;> split at h <;> omega
+
+private theorem greekCaps_not_syntax (c : Char) (hge : c.toNat ≥ 913) :
+    ¬ isPolySyntaxChar c := by
+  simp only [isPolySyntaxChar, not_or, not_and,
+    show ('0' : Char).toNat = 48 from by decide,
+    show ('9' : Char).toNat = 57 from by decide]
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+
+/-! ### GreekCapsVar -/
+
+/-- A variable named by an uppercase Greek letter: Α, Β, Γ, ..., Ρ, Σ, ..., Ω
+    (24 letters, skipping unassigned U+03A2). `n` is the number of variables in scope (at most 24).
+    Stores the raw character with a validity proof. -/
+structure GreekCapsVar (n : ℕ) where
+  ch : Char
+  is_valid : ch.toNat ≥ 913 ∧ ch.toNat ≤ 937 ∧ ch.toNat ≠ 930 ∧
+    greekCapsCharIndex ch < n
+  deriving DecidableEq
+
+namespace GreekCapsVar
+
+/-- The zero-based index of this variable (0 for Α, 1 for Β, ..., 23 for Ω). -/
+def index {n : ℕ} (v : GreekCapsVar n) : Fin n :=
+  ⟨greekCapsCharIndex v.ch, v.is_valid.2.2.2⟩
+
+private theorem index_injective {n : ℕ} : Function.Injective (index : GreekCapsVar n → Fin n) := by
+  intro ⟨a, ha⟩ ⟨b, hb⟩ h
+  simp only [index, Fin.mk.injEq] at h
+  have := greekCapsCharIndex_injective a b ha.1 ha.2.1 ha.2.2.1 hb.1 hb.2.1 hb.2.2.1 h
+  subst this; rfl
+
+instance {n : ℕ} : LinearOrder (GreekCapsVar n) :=
+  LinearOrder.lift' index index_injective
+
+instance {n : ℕ} : Ord (GreekCapsVar n) where
+  compare a b := compare a.index b.index
+
+instance {n : ℕ} : ToString (GreekCapsVar n) where
+  toString v := String.ofList [v.ch]
+
+instance {n : ℕ} : Repr (GreekCapsVar n) where
+  reprPrec v _ := s!"'{v.ch}'"
+
+def toChars {n : ℕ} (v : GreekCapsVar n) : List Char := [v.ch]
+
+def parse {n : ℕ} (c : Char) : Option (GreekCapsVar n) :=
+  if h : c.toNat ≥ 913 ∧ c.toNat ≤ 937 ∧ c.toNat ≠ 930 ∧
+      greekCapsCharIndex c < n then
+    some ⟨c, h⟩
+  else none
+
+theorem parse_toChars {n : ℕ} (v : GreekCapsVar n) :
+    GreekCapsVar.parse v.ch = some v := by
+  simp only [parse, dif_pos v.is_valid]
+
+/-- Construct a `GreekCapsVar` from a `Fin n` index (0 → Α, 1 → Β, ..., 23 → Ω). -/
+def ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) : GreekCapsVar n :=
+  ⟨greekCapsCharOfIndex i.val, by
+    have hv := greekCapsCharOfIndex_valid i.val (by omega)
+    refine ⟨hv.1, hv.2.1, hv.2.2, ?_⟩
+    rw [greekCapsCharIndex_greekCapsCharOfIndex i.val (by omega)]
+    exact i.isLt⟩
+
+theorem ofIndex_index {n : ℕ} (hn : n ≤ 24) (v : GreekCapsVar n) :
+    GreekCapsVar.ofIndex hn (GreekCapsVar.index v) = v := by
+  simp only [ofIndex, index]
+  congr 1
+  exact greekCapsCharOfIndex_greekCapsCharIndex v.ch v.is_valid.1 v.is_valid.2.1 v.is_valid.2.2.1
+
+theorem index_ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) :
+    GreekCapsVar.index (GreekCapsVar.ofIndex hn i) = i := by
+  simp only [index, ofIndex]
+  ext
+  have hv := greekCapsCharOfIndex_valid i.val (by omega)
+  exact greekCapsCharIndex_greekCapsCharOfIndex i.val (by omega)
+
+instance {n : ℕ} [Fact (n ≤ 24)] : Var (GreekCapsVar n) n where
+  toFin := index
+  ofFin := ofIndex (Fact.out)
+  ofFin_toFin := ofIndex_index (Fact.out)
+  toFin_ofFin := index_ofIndex (Fact.out)
+
+instance {n : ℕ} [Fact (n ≤ 24)] : ParsableVar (GreekCapsVar n) n where
+  toChars v := [v.ch]
+  parseChars cs := match cs with
+    | [c] => if h : c.toNat ≥ 913 ∧ c.toNat ≤ 937 ∧ c.toNat ≠ 930 ∧
+          greekCapsCharIndex c < n then
+        some ⟨c, h⟩
+      else none
+    | _ => none
+  parse_toChars v := by simp only [dif_pos v.is_valid]
+  toChars_nonempty _ := by simp
+  toChars_no_syntax v c hc := by
+    simp at hc; subst hc
+    exact greekCaps_not_syntax v.ch v.is_valid.1
+
+end GreekCapsVar
 
 end Azurite
