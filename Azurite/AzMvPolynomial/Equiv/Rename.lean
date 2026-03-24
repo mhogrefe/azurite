@@ -150,4 +150,21 @@ theorem AzMvPolynomial.ofMvPoly_renameMonotone [DecidableEq R]
   exact toMvPoly_injective
     (by rw [toMvPoly_ofMvPoly, toMvPoly_renameMonotone, toMvPoly_ofMvPoly])
 
+/-! ### embed equivalence -/
+
+/-- `embed` produces the same `MvPolynomial` as `MvPolynomial.rename (Var.embed h)`. -/
+theorem AzMvPolynomial.toMvPoly_embed
+    (h : n₁ ≤ n₂) (p : AzMvPolynomial σ₁ R ord) :
+    (p.embed h).toMvPoly = MvPolynomial.rename (Var.embed h : σ₁ → σ₂) p.toMvPoly :=
+  toMvPoly_renameMonotone p (Var.embed h) (Var.embed_fin_strictMono h)
+
+/-- Converting `MvPolynomial.rename (Var.embed h) p` to `AzMvPolynomial` gives
+    the same result as converting `p` first and then applying `embed`. -/
+theorem AzMvPolynomial.ofMvPoly_embed [DecidableEq R]
+    (h : n₁ ≤ n₂) (p : MvPolynomial σ₁ R) :
+    (AzMvPolynomial.ofMvPoly (MvPolynomial.rename (Var.embed h : σ₁ → σ₂) p) : AzMvPolynomial σ₂ R ord) =
+    (AzMvPolynomial.ofMvPoly p : AzMvPolynomial σ₁ R ord).embed h := by
+  unfold AzMvPolynomial.embed
+  exact ofMvPoly_renameMonotone p (Var.embed h) (Var.embed_fin_strictMono h)
+
 end Azurite

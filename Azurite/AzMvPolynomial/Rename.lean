@@ -341,6 +341,13 @@ def AzMvPolynomial.renameMonotone
     exact List.pairwise_map.mpr (p.sorted.imp (fun h =>
       MonicMonomial.rename_strictMono (ord := ord) f hg h))⟩
 
+/-- Embed a polynomial from a smaller variable set into a larger one.
+    Uses `Var.embed`, which maps via `Fin.castLE` and is strictly monotone,
+    so no sorting is needed. -/
+def AzMvPolynomial.embed
+    (h : n₁ ≤ n₂) (p : AzMvPolynomial σ₁ R ord) : AzMvPolynomial σ₂ R ord :=
+  p.renameMonotone (Var.embed h) (Var.embed_fin_strictMono h)
+
 end Rename
 
 variable {σ₁ : Type _} {n₁ : ℕ} [DecidableEq σ₁] [LinearOrder σ₁] [Var σ₁ n₁]

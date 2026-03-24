@@ -50,6 +50,25 @@ def equiv : α ≃ Fin n where
   left_inv := inst.ofFin_toFin
   right_inv := inst.toFin_ofFin
 
+section Embed
+
+variable {β : Type _} {m : ℕ} [LinearOrder β] [inst₂ : Var β m]
+
+/-- Embed variables from a smaller set into a larger one via `Fin.castLE`.
+    Works generically for any two `Var` instances. -/
+def embed (h : n ≤ m) (v : α) : β :=
+  inst₂.ofFin (Fin.castLE h (inst.toFin v))
+
+/-- The Fin-level map induced by `embed` is `Fin.castLE`, which is strictly monotone.
+    This is the key fact needed by `AzMvPolynomial.renameMonotone`. -/
+theorem embed_fin_strictMono (h : n ≤ m) :
+    StrictMono (fun i : Fin n => inst₂.toFin (Var.embed h (inst.ofFin i) : β)) := by
+  intro a b hab
+  simp only [embed, inst₂.toFin_ofFin, inst.toFin_ofFin, Fin.castLE_lt_castLE_iff]
+  exact hab
+
+end Embed
+
 end Var
 
 /-- A lowercase ASCII letter: `a` through `z`. -/
@@ -175,19 +194,6 @@ theorem parse_toChars {n : ℕ} (v : IndexedVar n) :
   rw [parseSubscriptChars_natToSubscriptChars]
   simp [v.val.isLt]
 
-/-- Embed `IndexedVar n` into `IndexedVar m` when `n ≤ m`. -/
-def embed {n m : ℕ} (h : n ≤ m) (v : IndexedVar n) : IndexedVar m :=
-  ⟨Fin.castLE h v.val⟩
-
-theorem embed_injective {n m : ℕ} (h : n ≤ m) : Function.Injective (embed h) := by
-  intro a b hab
-  simp only [embed, IndexedVar.mk.injEq] at hab
-  exact IndexedVar.ext (Fin.castLE_injective h hab)
-
-theorem embed_mono {n m : ℕ} (h : n ≤ m) : Monotone (embed h) := by
-  intro a b hab
-  exact hab
-
 instance {n : ℕ} : Var (IndexedVar n) n where
   toFin v := v.val
   ofFin i := ⟨i⟩
@@ -257,18 +263,6 @@ def parse {n : ℕ} (c : Char) : Option (AbcVar n) :=
 theorem parse_toChars {n : ℕ} (v : AbcVar n) :
     AbcVar.parse v.ch = some v := by
   simp only [parse, dif_pos v.is_valid]
-
-/-- Embed `AbcVar n` into `AbcVar m` when `n ≤ m`. -/
-def embed {n m : ℕ} (h : n ≤ m) (v : AbcVar n) : AbcVar m :=
-  ⟨v.ch, ⟨v.is_valid.1, v.is_valid.2.1, Nat.lt_of_lt_of_le v.is_valid.2.2 h⟩⟩
-
-theorem embed_injective {n m : ℕ} (h : n ≤ m) :
-    Function.Injective (embed h : AbcVar n → AbcVar m) := by
-  intro ⟨a, _⟩ ⟨b, _⟩ hab; simp [embed] at hab; congr
-
-theorem embed_mono {n m : ℕ} (h : n ≤ m) :
-    Monotone (embed h : AbcVar n → AbcVar m) := by
-  intro a b hab; exact hab
 
 /-- Construct an `AbcVar` from a `Fin n` index (0 → 'a', 1 → 'b', etc.). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : AbcVar n :=
@@ -388,18 +382,6 @@ def parse {n : ℕ} (c : Char) : Option (XyzVar n) :=
 theorem parse_toChars {n : ℕ} (v : XyzVar n) :
     XyzVar.parse v.ch = some v := by
   simp only [parse, dif_pos v.is_valid]
-
-/-- Embed `XyzVar n` into `XyzVar m` when `n ≤ m`. -/
-def embed {n m : ℕ} (h : n ≤ m) (v : XyzVar n) : XyzVar m :=
-  ⟨v.ch, ⟨v.is_valid.1, v.is_valid.2.1, Nat.lt_of_lt_of_le v.is_valid.2.2 h⟩⟩
-
-theorem embed_injective {n m : ℕ} (h : n ≤ m) :
-    Function.Injective (embed h : XyzVar n → XyzVar m) := by
-  intro ⟨a, _⟩ ⟨b, _⟩ hab; simp [embed] at hab; congr
-
-theorem embed_mono {n m : ℕ} (h : n ≤ m) :
-    Monotone (embed h : XyzVar n → XyzVar m) := by
-  intro a b hab; exact hab
 
 /-- Construct an `XyzVar` from a `Fin n` rank (0 → 'x', 1 → 'y', 2 → 'z', 3 → 'w', ...). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : XyzVar n :=
