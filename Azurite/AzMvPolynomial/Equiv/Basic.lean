@@ -368,6 +368,19 @@ private theorem one_toFinsupp :
     rw [show (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 from hf]
     exact MvPolynomial.one_def.symm
 
+@[simp] theorem toMvPoly_C [DecidableEq R] [DecidableEq σ] (c : R) :
+    AzMvPolynomial.toMvPoly (AzMvPolynomial.C c : AzMvPolynomial σ R ord) =
+      MvPolynomial.C c := by
+  simp only [AzMvPolynomial.C]
+  split
+  · next h => simp [AzMvPolynomial.toMvPoly, h]
+  · next h =>
+    simp [AzMvPolynomial.toMvPoly, AzMvPolynomial.ofMonomial,
+          Monomial.toMvPoly]
+    rw [show (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 from by
+      ext v; simp [MonicMonomial.toFinsupp, MonicMonomial.one, Finsupp.onFinset_apply]]
+    exact MvPolynomial.C_apply.symm
+
 @[simp] theorem ofMvPoly_one [DecidableEq R] [DecidableEq σ] :
     (AzMvPolynomial.ofMvPoly (ord := ord) (1 : MvPolynomial σ R)) =
     (AzMvPolynomial.one : AzMvPolynomial σ R ord) := by

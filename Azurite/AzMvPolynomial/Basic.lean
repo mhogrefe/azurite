@@ -61,6 +61,12 @@ def one [DecidableEq R] : AzMvPolynomial σ R ord :=
 
 instance [DecidableEq R] : One (AzMvPolynomial σ R ord) := ⟨one⟩
 
+/-- Constructs a constant polynomial with value `c`.
+    Returns `0` when `c = 0`. -/
+def C [DecidableEq R] (c : R) : AzMvPolynomial σ R ord :=
+  if h : c = 0 then 0
+  else ofMonomial ⟨⟨c, h⟩, MonicMonomial.one⟩
+
 /-- The total degree of the polynomial (maximum total degree among its terms),
     or 0 for the zero polynomial. -/
 def totalDegree (p : AzMvPolynomial σ R ord) : ℕ :=
