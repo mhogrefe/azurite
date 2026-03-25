@@ -9,6 +9,7 @@ import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.Rename
+import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MonicMonomial
@@ -19,6 +20,7 @@ import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
 import Azurite.AzMvPolynomial.Rename
+import Azurite.AzMvPolynomial.SMul
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
