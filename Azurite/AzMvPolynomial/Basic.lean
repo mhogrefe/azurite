@@ -82,11 +82,11 @@ private theorem pairwise_gt_of_pairwise_ge_nodup
 
 /-- Comparator for sorting monomials in descending order by monic part
     (greater or equal). Uses the computable `compareExponents`. -/
-private def monicGeq {ord : MonomialOrder}
+def monicGeq {ord : MonomialOrder}
     (a b : Monomial σ R ord) : Bool :=
   !(MonomialOrder.compareExponents ord a.monic.exponents b.monic.exponents == Ordering.lt)
 
-private theorem monicGeq_iff_ge {ord : MonomialOrder}
+theorem monicGeq_iff_ge {ord : MonomialOrder}
     (a b : Monomial σ R ord) :
     monicGeq a b = true ↔ a.monic ≥ b.monic := by
   unfold monicGeq
@@ -95,13 +95,13 @@ private theorem monicGeq_iff_ge {ord : MonomialOrder}
   · intro h; by_contra hlt; exact h (not_le.mp hlt)
   · intro h hlt; exact absurd hlt (not_lt.mpr h)
 
-private theorem monicGeq_trans {ord : MonomialOrder}
+theorem monicGeq_trans {ord : MonomialOrder}
     (a b c : Monomial σ R ord) :
     monicGeq a b = true → monicGeq b c = true → monicGeq a c = true := by
   rw [monicGeq_iff_ge, monicGeq_iff_ge, monicGeq_iff_ge]
   exact fun hab hbc => le_trans hbc hab
 
-private theorem monicGeq_total {ord : MonomialOrder}
+theorem monicGeq_total {ord : MonomialOrder}
     (a b : Monomial σ R ord) :
     (monicGeq a b || monicGeq b a) = true := by
   simp only [Bool.or_eq_true, monicGeq_iff_ge]
@@ -157,12 +157,12 @@ def ofMonomials (ms : Array (Monomial σ R ord))
 
 /-- Check that adjacent elements in a sorted list have distinct monic parts.
     This is O(n), vs O(n²) for `Pairwise`. -/
-private def adjacentDistinct : List (Monomial σ R ord) → Bool
+def adjacentDistinct : List (Monomial σ R ord) → Bool
   | [] => true
   | [_] => true
   | a :: b :: rest => a.monic != b.monic && adjacentDistinct (b :: rest)
 
-private theorem pairwise_gt_of_ge_adjacent_ne
+theorem pairwise_gt_of_ge_adjacent_ne
     {l : List (Monomial σ R ord)}
     (hge : l.Pairwise (fun a b => a.monic ≥ b.monic))
     (hadj : adjacentDistinct l = true) :
