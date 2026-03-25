@@ -34,6 +34,14 @@ class ParsableCoeff (R : Type _) [Semiring R] where
   toChars_no_minus_tail : ∀ r : R, ∀ c ∈ (toChars r).tail, c ≠ '-'
   /-- The first character is a poly-syntax character (digit or `-`). -/
   toChars_head_is_syntax : ∀ r : R, ∃ h : toChars r ≠ [], isPolySyntaxChar ((toChars r).head h)
+  /-- An optional representation of `-1`, used for displaying `-x` instead of `-1*x`. -/
+  negOne : Option {c : R // c ≠ 0 ∧ c ≠ 1} := none
+  /-- If `toChars r` starts with `-`, then the tail is nonempty and its head is
+      a poly-syntax character (a digit). This ensures the parser can distinguish
+      `-3*x` (coefficient) from `-x` (negOne). -/
+  toChars_minus_next_syntax : ∀ r : R, ∀ h : toChars r ≠ [],
+    (toChars r).head h = '-' →
+    (toChars r).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((toChars r).tail.head h2)
 
 /-- A monomial: a nonzero coefficient of type `R` paired with a monic monomial.
     The coefficient is stored as a subtype `{c : R // c ≠ 0}` to ensure
@@ -177,8 +185,11 @@ def toChars [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
     ParsableCoeff.toChars m.coeff.val
   else if m.coeff.val = 1 then
     m.monic.toChars
-  else
-    ParsableCoeff.toChars m.coeff.val ++ ['*'] ++ m.monic.toChars
+  else match ParsableCoeff.negOne (R := R) with
+    | some ⟨c, _⟩ =>
+      if m.coeff.val = c then '-' :: m.monic.toChars
+      else ParsableCoeff.toChars m.coeff.val ++ ['*'] ++ m.monic.toChars
+    | none => ParsableCoeff.toChars m.coeff.val ++ ['*'] ++ m.monic.toChars
 
 /-- Parse a character list into a `Monomial`.
     Uses the first character to distinguish:
@@ -189,25 +200,59 @@ def parse [DecidableEq R] [ParsableCoeff R] [pv : ParsableVar σ n]
     (cs : List Char) : Option (Monomial σ R ord) :=
   match cs with
   | [] => none
-  | c :: _ =>
+  | c :: rest =>
     if decide (¬ isPolySyntaxChar c) then
       -- Starts with non-syntax char: parse as monic monomial, coeff = 1
       (MonicMonomial.parse (ord := ord) cs).map (fun m => ⟨⟨1, ParsableCoeff.one_ne_zero⟩, m⟩)
-    else
-      -- Starts with syntax char (digit/minus): find first '*' to split coeff from monic
-      let (coeffPart, rest) := cs.span (· != '*')
+    else if _ : c = '-' then
       match rest with
+      | c' :: _ =>
+        if decide (¬ isPolySyntaxChar c') then
+          -- '-' followed by non-syntax char: coefficient is negOne
+          match ParsableCoeff.negOne (R := R) with
+          | some ⟨negOneVal, hne, _⟩ =>
+            (MonicMonomial.parse (ord := ord) rest).map
+              (fun m => ⟨⟨negOneVal, hne⟩, m⟩)
+          | none => none
+        else
+          -- '-' followed by syntax char: fall through to span-based parsing
+          let (coeffPart, rest') := cs.span (· != '*')
+          match rest' with
+          | [] =>
+            (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+              if hc : c = 0 then none else some ⟨⟨c, hc⟩, 1⟩)
+          | '*' :: monicPart =>
+            (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+              if hc : c = 0 then none
+              else (MonicMonomial.parse (ord := ord) monicPart).map
+                (fun m => ⟨⟨c, hc⟩, m⟩))
+          | _ => none
       | [] =>
-        -- No '*': entire input is a coefficient, monic = 1
+        -- Just '-': try as coefficient
+        let (coeffPart, rest') := cs.span (· != '*')
+        match rest' with
+        | [] =>
+          (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+            if hc : c = 0 then none else some ⟨⟨c, hc⟩, 1⟩)
+        | '*' :: monicPart =>
+          (ParsableCoeff.parseChars coeffPart).bind (fun c =>
+            if hc : c = 0 then none
+            else (MonicMonomial.parse (ord := ord) monicPart).map
+              (fun m => ⟨⟨c, hc⟩, m⟩))
+        | _ => none
+    else
+      -- Starts with non-minus syntax char (digit): span-based parsing
+      let (coeffPart, rest') := cs.span (· != '*')
+      match rest' with
+      | [] =>
         (ParsableCoeff.parseChars coeffPart).bind (fun c =>
           if hc : c = 0 then none else some ⟨⟨c, hc⟩, 1⟩)
       | '*' :: monicPart =>
-        -- Has '*': left is coefficient, right is monic monomial
         (ParsableCoeff.parseChars coeffPart).bind (fun c =>
           if hc : c = 0 then none
           else (MonicMonomial.parse (ord := ord) monicPart).map
             (fun m => ⟨⟨c, hc⟩, m⟩))
-      | _ => none  -- unreachable: span stops at '*'
+      | _ => none
 
 theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
@@ -217,7 +262,9 @@ theorem toChars_ne_nil {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Linear
   split_ifs with h1 h2
   · exact ParsableCoeff.toChars_nonempty _
   · exact MonicMonomial.toChars_ne_nil m.monic h1
-  · intro h; simp at h
+  · cases hn : ParsableCoeff.negOne (R := R) with
+    | none => intro h; simp at h
+    | some c => dsimp only [hn]; split_ifs <;> (intro h; simp at h)
 
 theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
@@ -227,12 +274,22 @@ theorem plus_notin_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [Li
   split_ifs with h1 h2
   · intro h; exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
   · exact MonicMonomial.plus_notin_toChars m.monic
-  · intro h
-    rw [List.mem_append, List.mem_append] at h
-    rcases h with (h | h) | h
-    · exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
-    · simp at h
-    · exact MonicMonomial.plus_notin_toChars m.monic h
+  · cases hn : ParsableCoeff.negOne (R := R) with
+    | none =>
+      intro h; rw [List.mem_append, List.mem_append] at h
+      rcases h with (h | h) | h
+      · exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
+      · simp at h
+      · exact MonicMonomial.plus_notin_toChars m.monic h
+    | some c =>
+      dsimp only [hn]
+      split_ifs with hc
+      · intro h; simp at h; exact MonicMonomial.plus_notin_toChars m.monic h
+      · intro h; rw [List.mem_append, List.mem_append] at h
+        rcases h with (h | h) | h
+        · exact ParsableCoeff.toChars_no_syntax _ _ h (Or.inl rfl)
+        · simp at h
+        · exact MonicMonomial.plus_notin_toChars m.monic h
 
 theorem minus_notin_tail_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
@@ -242,18 +299,32 @@ theorem minus_notin_tail_toChars {R : Type _} [Semiring R] {σ : Type _} {n : �
   split_ifs with h1 h2
   · exact fun h => ParsableCoeff.toChars_no_minus_tail _ _ h rfl
   · exact fun h => MonicMonomial.minus_notin_toChars m.monic (List.mem_of_mem_tail h)
-  · have hne := ParsableCoeff.toChars_nonempty m.coeff.val
-    rw [List.append_assoc, List.tail_append_of_ne_nil hne]
-    intro h
-    rw [List.mem_append] at h
-    rcases h with h | h
-    · exact ParsableCoeff.toChars_no_minus_tail _ _ h rfl
-    · simp only [List.singleton_append, List.mem_cons] at h
+  · cases hn : ParsableCoeff.negOne (R := R) with
+    | none =>
+      have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+      rw [List.append_assoc, List.tail_append_of_ne_nil hne]
+      intro h; rw [List.mem_append] at h
       rcases h with h | h
-      · exact absurd h (by decide)
-      · exact MonicMonomial.minus_notin_toChars m.monic h
+      · exact ParsableCoeff.toChars_no_minus_tail _ _ h rfl
+      · simp only [List.singleton_append, List.mem_cons] at h
+        rcases h with h | h
+        · exact absurd h (by decide)
+        · exact MonicMonomial.minus_notin_toChars m.monic h
+    | some c =>
+      dsimp only [hn]
+      split_ifs with hc
+      · exact fun h => MonicMonomial.minus_notin_toChars m.monic h
+      · have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+        rw [List.append_assoc, List.tail_append_of_ne_nil hne]
+        intro h; rw [List.mem_append] at h
+        rcases h with h | h
+        · exact ParsableCoeff.toChars_no_minus_tail _ _ h rfl
+        · simp only [List.singleton_append, List.mem_cons] at h
+          rcases h with h | h
+          · exact absurd h (by decide)
+          · exact MonicMonomial.minus_notin_toChars m.monic h
 
-private lemma takeWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
+lemma takeWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
     List.takeWhile (· != '*') l = l := by
   induction l with
   | nil => simp
@@ -261,7 +332,7 @@ private lemma takeWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true)
     simp [h a (List.mem_cons_self ..)]
     exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
-private lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
+lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
     List.dropWhile (· != '*') l = [] := by
   induction l with
   | nil => simp
@@ -269,39 +340,60 @@ private lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true)
     simp [h a (List.mem_cons_self ..)]
     exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
-private lemma coeffChars_bne_star {R : Type _} [Semiring R] [ParsableCoeff R] (r : R) :
+lemma coeffChars_bne_star {R : Type _} [Semiring R] [ParsableCoeff R] (r : R) :
     ∀ x ∈ ParsableCoeff.toChars r, (x != '*') = true := by
   intro x hx; simp [bne_iff_ne]
   intro heq; exact ParsableCoeff.toChars_no_syntax _ _ (heq ▸ hx) (Or.inr (Or.inl rfl))
 
+end Monomial
+
 /-- Parse-toChars round-trip: `parse` correctly inverts `toChars`. -/
-theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
+theorem Monomial.parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ]
     [pv : ParsableVar σ n] {ord : MonomialOrder}
     [DecidableEq R] [ParsableCoeff R]
     (m : Monomial σ R ord) :
-    parse m.toChars = some m := by
-  unfold toChars parse
-  simp only [List.span_eq_takeWhile_dropWhile]
+    Monomial.parse m.toChars = some m := by
+  unfold Monomial.toChars
   split_ifs with hmonic hcoeff
   · -- Case 1: monic = 1
     have hne := ParsableCoeff.toChars_nonempty m.coeff.val
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
-    rw [hct]
+    rw [hct]; unfold Monomial.parse
+    simp only [List.span_eq_takeWhile_dropWhile]
     have his_syntax : isPolySyntaxChar c := by
       obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
       simp only [hct, List.head_cons] at hs; exact hs
     simp only [show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
       decide_false, Bool.false_eq_true, ↓reduceIte]
     have hall : ∀ x ∈ (c :: t), (x != '*') = true :=
-      fun x hx => coeffChars_bne_star m.coeff.val x (by rw [hct]; exact hx)
-    rw [takeWhile_all (c :: t) hall, dropWhile_all (c :: t) hall]
-    simp [← hct, ParsableCoeff.parse_toChars, dif_neg m.coeff.property]
-    show { coeff := m.coeff, monic := 1 } = m
-    cases m; simp_all
+      fun x hx => Monomial.coeffChars_bne_star m.coeff.val x (by rw [hct]; exact hx)
+    have hparse := ParsableCoeff.parse_toChars m.coeff.val
+    rw [hct] at hparse
+    by_cases hcm : c = '-'
+    · subst hcm; cases t with
+      | nil =>
+        simp_all [dif_neg m.coeff.property, Option.bind_some]
+        cases m with | mk => simp_all
+      | cons c' t' =>
+        have ⟨_, hsynt⟩ := ParsableCoeff.toChars_minus_next_syntax m.coeff.val hne (by simp [hct])
+        have hcs : isPolySyntaxChar c' := by
+          have h2 : (ParsableCoeff.toChars m.coeff.val).tail ≠ [] := by simp [hct]
+          have := hsynt h2; simp [hct] at this; exact this
+        have hall' : ∀ x ∈ c' :: t', (x != '*') = true :=
+          fun x hx => hall x (List.mem_cons_of_mem _ hx)
+        simp only [dite_true, show ¬ ¬ isPolySyntaxChar c' from not_not.mpr hcs,
+          decide_false, Bool.false_eq_true, ↓reduceIte]
+        rw [Monomial.takeWhile_all ('-' :: c' :: t') hall, Monomial.dropWhile_all ('-' :: c' :: t') hall]
+        simp_all [dif_neg m.coeff.property, Option.bind_some]
+        cases m with | mk => simp_all
+    · rw [Monomial.takeWhile_all (c :: t) hall, Monomial.dropWhile_all (c :: t) hall]
+      simp only [hcm, dite_false]
+      simp_all [dif_neg m.coeff.property, Option.bind_some]
+      cases m with | mk => simp_all
   · -- Case 2: coeff = 1, monic ≠ 1
     have hne := MonicMonomial.toChars_ne_nil m.monic hmonic
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
-    rw [hct]
+    rw [hct]; unfold Monomial.parse
     have hnot_syntax : ¬ isPolySyntaxChar c := by
       have h := MonicMonomial.toChars_head_not_syntax m.monic hmonic
       simp only [hct, List.head_cons] at h; exact h
@@ -310,33 +402,68 @@ theorem parse_toChars {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearO
     show Option.some { coeff := ⟨1, ParsableCoeff.one_ne_zero⟩, monic := m.monic } = some m
     congr 1; cases m; simp only [Monomial.mk.injEq]; exact ⟨Subtype.ext hcoeff.symm, trivial⟩
   · -- Case 3: coeff ≠ 1, monic ≠ 1
-    have hne := ParsableCoeff.toChars_nonempty m.coeff.val
+    suffices hCM : ∀ (hne : ParsableCoeff.toChars m.coeff.val ≠ []),
+      Monomial.parse (ParsableCoeff.toChars m.coeff.val ++ ['*'] ++ m.monic.toChars) = some m by
+      match hn : ParsableCoeff.negOne (R := R) with
+      | some ⟨cneg, hne_neg, hne_one⟩ =>
+        dsimp only; split_ifs with hcoeff_neg
+        · have hne_monic := MonicMonomial.toChars_ne_nil m.monic hmonic
+          obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne_monic
+          rw [hct]; unfold Monomial.parse
+          have hnot_syntax : ¬ isPolySyntaxChar c := by
+            have h := MonicMonomial.toChars_head_not_syntax m.monic hmonic
+            simp only [hct, List.head_cons] at h; exact h
+          simp only [show isPolySyntaxChar '-' from (Or.inr (Or.inr (Or.inl rfl))),
+            ↓reduceIte, decide_eq_true hnot_syntax]
+          rw [hn]; simp only
+          rw [← hct, MonicMonomial.parse_toChars, Option.map_some]
+          simp only [dite_true]
+          cases m
+          simp_all [Monomial.mk.injEq]
+          exact Subtype.ext hcoeff_neg.symm
+        · exact hCM (ParsableCoeff.toChars_nonempty m.coeff.val)
+      | none => exact hCM (ParsableCoeff.toChars_nonempty m.coeff.val)
+    -- Prove the coeff*monic helper
+    intro hne
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
     have his_syntax : isPolySyntaxChar c := by
       obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
       simp only [hct, List.head_cons] at hs; exact hs
-    rw [hct]
+    rw [hct]; unfold Monomial.parse
+    simp only [List.span_eq_takeWhile_dropWhile]
     have hc_bne : (c != '*') = true :=
-      coeffChars_bne_star m.coeff.val c (by rw [hct]; exact List.mem_cons_self ..)
+      Monomial.coeffChars_bne_star m.coeff.val c (by rw [hct]; exact List.mem_cons_self ..)
     have hall : ∀ x ∈ t, (x != '*') = true :=
-      fun x hx => coeffChars_bne_star m.coeff.val x
+      fun x hx => Monomial.coeffChars_bne_star m.coeff.val x
         (by rw [hct]; exact List.mem_cons_of_mem _ hx)
-    -- Pre-compute takeWhile/dropWhile on c :: t ++ ['*'] ++ monic.toChars
     have htw : List.takeWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toChars)) = c :: t := by
-      simp [hc_bne, List.takeWhile_append,
-            takeWhile_all t hall]
+      simp [hc_bne, List.takeWhile_append, Monomial.takeWhile_all t hall]
     have hdw : List.dropWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toChars)) =
         '*' :: m.monic.toChars := by
-      simp [hc_bne, List.dropWhile_append,
-            dropWhile_all t hall]
-    simp only [List.cons_append,
-               show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
-               decide_false, Bool.false_eq_true, ↓reduceIte,
-               htw, hdw]
-    simp [← hct, ParsableCoeff.parse_toChars, dif_neg m.coeff.property,
-          MonicMonomial.parse_toChars]
-
-end Monomial
+      simp [hc_bne, List.dropWhile_append, Monomial.dropWhile_all t hall]
+    simp only [show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
+      decide_false, Bool.false_eq_true, ↓reduceIte,
+      List.cons_append, htw, hdw]
+    have hparse := ParsableCoeff.parse_toChars m.coeff.val
+    rw [hct] at hparse
+    by_cases hcm : c = '-'
+    · subst hcm; cases t with
+      | nil =>
+        simp only [dite_true, List.nil_append, List.singleton_append]
+        simp only [show isPolySyntaxChar '*' from (Or.inr (Or.inr (Or.inr (Or.inl rfl))))]
+        simp_all [dif_neg m.coeff.property, MonicMonomial.parse_toChars, Option.map_some,
+          Option.bind_some]
+      | cons c' t' =>
+        have ⟨_, hsynt⟩ := ParsableCoeff.toChars_minus_next_syntax m.coeff.val hne (by simp [hct])
+        have hcs : isPolySyntaxChar c' := by
+          have h2 : (ParsableCoeff.toChars m.coeff.val).tail ≠ [] := by simp [hct]
+          have := hsynt h2; simp [hct] at this; exact this
+        simp only [dite_true]
+        simp_all [dif_neg m.coeff.property, MonicMonomial.parse_toChars, Option.map_some,
+          Option.bind_some]
+    · simp only [hcm, dite_false]
+      simp_all [dif_neg m.coeff.property, MonicMonomial.parse_toChars, Option.map_some,
+        Option.bind_some]
 
 /-! ### ParsableCoeff instances -/
 
@@ -412,6 +539,53 @@ private lemma ratToChars_head_is_syntax (q : ℚ) :
     simp [hcr'] at hcr hsyn
     rw [← hcr.1]; exact hsyn
 
+private lemma intToChars_minus_next_syntax (z : ℤ) :
+    ∀ h : intToChars z ≠ [],
+    (intToChars z).head h = '-' →
+    (intToChars z).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((intToChars z).tail.head h2) := by
+  rw [intToChars_natAbs]; split_ifs with hz
+  · intro _ _; simp only [List.tail_cons]
+    exact ⟨natToChars_ne_nil _, fun h2 => by
+      have ⟨hge, hle⟩ := mem_natToChars_only_digits z.natAbs _ (List.head_mem h2)
+      exact Or.inl ⟨hge, hle⟩⟩
+  · intro h hhead; exfalso
+    have ⟨hge, _⟩ := mem_natToChars_only_digits z.natAbs _ (List.head_mem h)
+    rw [hhead] at hge; exact absurd hge (by decide)
+
+private lemma ratToChars_minus_next_syntax (q : ℚ) :
+    ∀ h : ratToChars q ≠ [],
+    (ratToChars q).head h = '-' →
+    (ratToChars q).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((ratToChars q).tail.head h2) := by
+  unfold ratToChars; split_ifs with hden
+  · simp only [intToChars_natAbs]; split_ifs with hlt
+    · intro _ _; simp only [List.tail_cons]
+      exact ⟨natToChars_ne_nil _, fun h2 => by
+        have ⟨hge, hle⟩ := mem_natToChars_only_digits q.num.natAbs _ (List.head_mem h2)
+        exact Or.inl ⟨hge, hle⟩⟩
+    · intro h hhead; exfalso
+      have ⟨hge, _⟩ := mem_natToChars_only_digits q.num.natAbs _ (List.head_mem h)
+      rw [hhead] at hge; exact absurd hge (by decide)
+  · intro h hhead
+    obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil (intToChars_ne_nil q.num)
+    simp only [hcr, List.cons_append, List.head_cons, List.tail_cons] at hhead ⊢
+    subst hhead
+    simp only [intToChars_natAbs] at hcr
+    split_ifs at hcr with hlt
+    · cases hcr
+      exact ⟨List.append_ne_nil_of_left_ne_nil
+        (List.append_ne_nil_of_left_ne_nil (natToChars_ne_nil _) _) _,
+        fun h2 => by
+          rw [List.head_append_of_ne_nil
+            (List.append_ne_nil_of_left_ne_nil (natToChars_ne_nil _) _),
+            List.head_append_of_ne_nil (natToChars_ne_nil _)]
+          have ⟨hge, hle⟩ := mem_natToChars_only_digits q.num.natAbs _
+            (List.head_mem (natToChars_ne_nil _))
+          exact Or.inl ⟨hge, hle⟩⟩
+    · exfalso
+      have ⟨hge, _⟩ := mem_natToChars_only_digits q.num.natAbs '-'
+        (by rw [hcr]; exact List.mem_cons_self ..)
+      exact absurd hge (by decide)
+
 instance : ParsableCoeff ℕ where
   one_ne_zero := by omega
   toChars := natToChars
@@ -422,6 +596,10 @@ instance : ParsableCoeff ℕ where
   toChars_no_minus_tail := fun n _ hc heq =>
     not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
   toChars_head_is_syntax := natToChars_head_is_syntax
+  toChars_minus_next_syntax := fun n h hhead => by
+    exfalso
+    have ⟨hge, _⟩ := mem_natToChars_only_digits n _ (List.head_mem h)
+    simp [hhead] at hge
 
 instance : ParsableCoeff ℤ where
   one_ne_zero := by omega
@@ -433,6 +611,8 @@ instance : ParsableCoeff ℤ where
   toChars_no_minus_tail := fun z _ hc heq =>
     not_mem_tail_intToChars z (heq ▸ tail_mem_of_drop hc)
   toChars_head_is_syntax := intToChars_head_is_syntax
+  negOne := some ⟨-1, by omega, by omega⟩
+  toChars_minus_next_syntax := intToChars_minus_next_syntax
 
 instance : ParsableCoeff ℚ where
   one_ne_zero := by exact one_ne_zero
@@ -444,6 +624,8 @@ instance : ParsableCoeff ℚ where
   toChars_no_minus_tail := fun q _ hc heq =>
     not_mem_tail_ratToChars q (heq ▸ tail_mem_of_drop hc)
   toChars_head_is_syntax := ratToChars_head_is_syntax
+  negOne := some ⟨-1, by decide, by decide⟩
+  toChars_minus_next_syntax := ratToChars_minus_next_syntax
 
 /-- Parse a character list as a `ZMod n` value: parse as ℕ, check `< n`, cast. -/
 def parseZmodChars (m : ℕ) [NeZero m] (cs : List Char) : Option (ZMod m) :=
@@ -466,6 +648,10 @@ instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
   toChars_head_is_syntax := fun c => natToChars_head_is_syntax c.val
+  toChars_minus_next_syntax := fun c h hhead => by
+    exfalso
+    have := mem_natToChars_only_digits c.val _ (List.head_mem h)
+    simp [hhead] at this
 
 end ParsableCoeffInstances
 

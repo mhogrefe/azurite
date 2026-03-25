@@ -221,13 +221,39 @@ private theorem toChars_ne_zero_of_nonempty (p : AzMvPolynomial σ R ord)
           congr 1; exact heq.symm
         rw [this] at hhead_is
         exact hhead_not hhead_is
-      · -- coeff ≠ 1, monic ≠ 1: contains '*', which toChars 0 can't have
+      · -- coeff ≠ 1, monic ≠ 1: toChars 0 can't match Monomial.toChars
         simp only [Monomial.toChars, show (m.monic = 1) = False from propext ⟨hmonic, False.elim⟩,
                    ↓reduceIte, show (m.coeff.val = 1) = False from propext ⟨hcoeff, False.elim⟩,
                    ↓reduceIte] at heq
-        have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
-          rw [← heq]; exact List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
-        exact ParsableCoeff.toChars_no_syntax (0 : R) '*' this (Or.inr (Or.inl rfl))
+        -- heq contains `match ParsableCoeff.negOne with | some _ => if ... | none => ...`
+        split at heq
+        · -- negOne = some ⟨cneg, ...⟩: split the if
+          split_ifs at heq with hcoeff_neg
+          · -- negOne case: '-' :: m.monic.toChars = toChars 0
+            have hne_monic := MonicMonomial.toChars_ne_nil m.monic hmonic
+            obtain ⟨c_m, t_m, hctm⟩ := List.exists_cons_of_ne_nil hne_monic
+            rw [hctm] at heq
+            -- c_m is monic.toChars.head, and it's not a poly-syntax char
+            have hmhead : ¬ isPolySyntaxChar c_m := by
+              have h := MonicMonomial.toChars_head_not_syntax m.monic hmonic
+              simp only [hctm, List.head_cons] at h; exact h
+            -- Get toChars_minus_next_syntax BEFORE generalize/subst
+            have hmns := ParsableCoeff.toChars_minus_next_syntax (0 : R)
+            -- Eliminate ParsableCoeff.toChars 0 via generalize + subst
+            generalize hgen : ParsableCoeff.toChars (0 : R) = l0 at heq hmns
+            subst heq
+            -- Now hmns is about ('-' :: c_m :: t_m) directly
+            have ⟨_, htsynt⟩ := hmns (List.cons_ne_nil '-' (c_m :: t_m))
+              (show ('-' :: c_m :: t_m).head (List.cons_ne_nil '-' (c_m :: t_m)) = '-' from rfl)
+            exact hmhead (by simpa using htsynt (by simp))
+          · -- coeff*monic case: contains '*'
+            have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
+              rw [← heq]; exact List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
+            exact ParsableCoeff.toChars_no_syntax (0 : R) '*' this (Or.inr (Or.inl rfl))
+        · -- negOne = none: coeff*monic, contains '*'
+          have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
+            rw [← heq]; exact List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
+          exact ParsableCoeff.toChars_no_syntax (0 : R) '*' this (Or.inr (Or.inl rfl))
   | m₂ :: rest =>
     -- ≥2 monomials: joinMonomialsAux starts with '+' or '-'
     -- Either way, this char appears in the tail of the full result, which is impossible.

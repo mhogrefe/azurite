@@ -13,6 +13,7 @@ open Azurite
 /-! ### Setup: Fact instances for variable bounds -/
 
 instance : Fact (3 ≤ 26) := ⟨by omega⟩
+instance : Fact (2 ≤ 26) := ⟨by omega⟩
 instance : Fact (3 ≤ 24) := ⟨by omega⟩
 instance : Fact (1 < 5) := ⟨by omega⟩
 
@@ -148,6 +149,14 @@ end Dingbats
 /-! ## Zero polynomial -/
 
 #guard toString (0 : AzMvPolynomial (XyzVar 3) ℤ .Degrevlex) == "0"
+
+private def p_neg_1 :=
+  AzMvPolynomial.ofMonomials (σ := XyzVar 2) (R := ℤ) (ord := .Degrevlex) #[
+    mkMono (1 : ℤ) (by decide) ⟨#[1, 0], by decide⟩,   -- x
+    mkMono (-1 : ℤ) (by decide) ⟨#[0, 1], by decide⟩, -- -y
+  ] (by native_decide)
+
+#guard toString p_neg_1 == "x-y"
 
 /-! ## Parse examples -/
 
