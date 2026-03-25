@@ -138,6 +138,22 @@ def withOrder (p : AzMvPolynomial σ R ord) (ord' : MonomialOrder) :
           (fun h => (monicGeq_iff_ge _ _).mp h)
       exact pairwise_gt_of_pairwise_ge_nodup hge
         (withOrder_monic_ne_of_perm p ord' sorted hperm)⟩
+/-- Construct a polynomial from an array of monomials with pairwise-distinct
+    monic parts. The monomials are sorted into descending order automatically.
+    The distinctness proof can typically be discharged with `by native_decide`. -/
+def ofMonomials (ms : Array (Monomial σ R ord))
+    (hdistinct : ms.toList.Pairwise (fun a b => a.monic ≠ b.monic)) :
+    AzMvPolynomial σ R ord :=
+  let sorted := ms.toList.mergeSort monicGeq
+  ⟨sorted.toArray, by
+    rw [List.toList_toArray]
+    have hperm : sorted.Perm ms.toList := List.mergeSort_perm ms.toList monicGeq
+    have hge : sorted.Pairwise (fun a b => a.monic ≥ b.monic) :=
+      (List.pairwise_mergeSort monicGeq_trans monicGeq_total ms.toList).imp
+        (fun h => (monicGeq_iff_ge _ _).mp h)
+    have hne : sorted.Pairwise (fun a b => a.monic ≠ b.monic) :=
+      hdistinct.perm hperm.symm (fun h => Ne.symm h)
+    exact pairwise_gt_of_pairwise_ge_nodup hge hne⟩
 
 end AzMvPolynomial
 

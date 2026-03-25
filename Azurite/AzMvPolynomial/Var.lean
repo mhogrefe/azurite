@@ -1073,6 +1073,10 @@ def ListVarParsable {α : Type} [ToString α] (l : List α) : Prop :=
   (∀ a ∈ l, (toString a).toList ≠ []) ∧
   (∀ a ∈ l, ∀ c ∈ (toString a).toList, ¬ isPolySyntaxChar c)
 
+instance {α : Type} [ToString α] [DecidableEq α] (l : List α) :
+    Decidable (ListVarParsable l) :=
+  inferInstanceAs (Decidable (_ ∧ _ ∧ _))
+
 /-- Search for a char list in the toString representations of a list.
     Returns the index of the first match, or `none`. -/
 private def findByToString [ToString α] : List α → List Char → Option ℕ
