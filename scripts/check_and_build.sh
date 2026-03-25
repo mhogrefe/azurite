@@ -4,9 +4,18 @@
 # Validates that every .lean file under Azurite/ is imported in Azurite.lean,
 # that the imports are alphabetically sorted, and then runs lake build.
 #
-# Usage: ./scripts/check_and_build.sh
+# Usage: ./scripts/check_and_build.sh [--axioms]
+#   --axioms  After building, print all axioms used by Azurite declarations (slow)
 
 set -euo pipefail
+
+CHECK_AXIOMS=false
+for arg in "$@"; do
+  case "$arg" in
+    --axioms) CHECK_AXIOMS=true ;;
+    *) echo "Unknown option: $arg"; exit 1 ;;
+  esac
+done
 
 cd "$(dirname "$0")/.."
 
@@ -83,4 +92,23 @@ echo ""
 
 # ── 8. Build ──
 
-exec lake build
+lake build
+build_status=$?
+
+if [[ $build_status -ne 0 ]]; then
+  echo ""
+  echo "Build failed."
+  exit $build_status
+fi
+
+# ── 9. Print axioms (opt-in) ──
+
+if [[ "$CHECK_AXIOMS" == true ]]; then
+  echo ""
+  echo "Checking axioms..."
+  echo ""
+  lake env lean scripts/print_axioms.lean
+else
+  echo ""
+  echo "Build succeeded. (Run with --axioms to check axioms)"
+fi

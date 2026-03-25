@@ -26,4 +26,13 @@ variable {R : Type _} [CommRing R]
        -Finsupp.single m.monic.toFinsupp m.coeff.val
   exact Finsupp.single_neg m.monic.toFinsupp m.coeff.val
 
+/-- Negation commutes with `ofMvPoly`. -/
+@[simp] theorem ofMvPoly_neg (p : MvPolynomial σ R) :
+    (AzMvPolynomial.ofMvPoly (-p) : AzMvPolynomial σ R ord) =
+      -AzMvPolynomial.ofMvPoly p := by
+  set q := AzMvPolynomial.ofMvPoly (ord := ord) p
+  have hp : q.toMvPoly = p := toMvPoly_ofMvPoly p
+  rw [← hp, ← toMvPoly_neg q]
+  exact ofMvPoly_toMvPoly (-q)
+
 end Azurite
