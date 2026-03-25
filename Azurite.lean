@@ -4,8 +4,10 @@ import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Eval
+import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Eval
+import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Azurite.AzMvPolynomial.MonicMonomialProofs
