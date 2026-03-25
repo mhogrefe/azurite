@@ -155,6 +155,61 @@ def ofMonomials (ms : Array (Monomial σ R ord))
       hdistinct.perm hperm.symm (fun h => Ne.symm h)
     exact pairwise_gt_of_pairwise_ge_nodup hge hne⟩
 
+/-- Check that adjacent elements in a sorted list have distinct monic parts.
+    This is O(n), vs O(n²) for `Pairwise`. -/
+private def adjacentDistinct : List (Monomial σ R ord) → Bool
+  | [] => true
+  | [_] => true
+  | a :: b :: rest => a.monic != b.monic && adjacentDistinct (b :: rest)
+
+private theorem pairwise_gt_of_ge_adjacent_ne
+    {l : List (Monomial σ R ord)}
+    (hge : l.Pairwise (fun a b => a.monic ≥ b.monic))
+    (hadj : adjacentDistinct l = true) :
+    l.Pairwise (fun a b => a.monic > b.monic) := by
+  induction l with
+  | nil => exact List.Pairwise.nil
+  | cons a t ih =>
+    rw [List.pairwise_cons] at hge ⊢
+    have htail_adj : adjacentDistinct t = true := by
+      match t, hadj with
+      | [], _ => rfl
+      | [_], _ => rfl
+      | _ :: _ :: _, hadj' =>
+        simp only [adjacentDistinct, Bool.and_eq_true] at hadj' ⊢
+        exact hadj'.2
+    have htail_gt := ih hge.2 htail_adj
+    constructor
+    · intro b hb
+      match t, hge, hadj, htail_gt with
+      | [], _, _, _ => exact absurd hb (by simp)
+      | c :: rest, ⟨hrel, _⟩, hadj', htail_gt' =>
+        simp only [adjacentDistinct, Bool.and_eq_true, bne_iff_ne, ne_eq] at hadj'
+        have hac_gt : a.monic > c.monic :=
+          lt_of_le_of_ne (hrel c (List.mem_cons_self ..)) (Ne.symm hadj'.1)
+        rcases List.mem_cons.mp hb with rfl | hb'
+        · exact hac_gt
+        · have hcb : c.monic ≥ b.monic := by
+            rw [List.pairwise_cons] at htail_gt'
+            exact le_of_lt (htail_gt'.1 b hb')
+          exact lt_of_le_of_lt hcb hac_gt
+    · exact htail_gt
+
+/-- Construct a polynomial from an array of monomials, sorting and checking
+    for duplicate monic parts in O(n log n) time.
+    Returns `none` if two monomials share the same monic part. -/
+def ofMonomials? (ms : Array (Monomial σ R ord)) :
+    Option (AzMvPolynomial σ R ord) :=
+  let sorted := ms.toList.mergeSort monicGeq
+  if hadj : adjacentDistinct sorted then
+    some ⟨sorted.toArray, by
+      rw [List.toList_toArray]
+      have hge : sorted.Pairwise (fun a b => a.monic ≥ b.monic) :=
+        (List.pairwise_mergeSort monicGeq_trans monicGeq_total ms.toList).imp
+          (fun h => (monicGeq_iff_ge _ _).mp h)
+      exact pairwise_gt_of_ge_adjacent_ne hge hadj⟩
+  else none
+
 end AzMvPolynomial
 
 end Azurite

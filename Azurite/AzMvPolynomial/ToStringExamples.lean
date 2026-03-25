@@ -3,6 +3,7 @@
   a variety of variable types, coefficient rings, and monomial orderings.
 -/
 import Azurite.AzMvPolynomial.ToString
+import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.Monomial
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.ZMod.Basic
@@ -147,3 +148,29 @@ end Dingbats
 /-! ## Zero polynomial -/
 
 #guard toString (0 : AzMvPolynomial (XyzVar 3) ℤ .Degrevlex) == "0"
+
+/-! ## Parse examples -/
+
+section ParseExamples
+
+-- Round-trip: parse ∘ toString = some
+#guard (AzMvPolynomial.parse (σ := XyzVar 3) (R := ℤ) (ord := .Degrevlex)
+    "3*x^2*y-2*x*z+5".toList).map toString == some "3*x^2*y-2*x*z+5"
+
+-- Out-of-order input: accepted and re-sorted
+#guard (AzMvPolynomial.parse (σ := XyzVar 3) (R := ℤ) (ord := .Degrevlex)
+    "5+3*x^2*y-2*x*z".toList).map toString == some "3*x^2*y-2*x*z+5"
+
+-- Duplicate monic monomials: rejected
+#guard (AzMvPolynomial.parse (σ := XyzVar 3) (R := ℤ) (ord := .Degrevlex)
+    "x*y+y*x".toList).isNone
+
+-- Zero polynomial
+#guard (AzMvPolynomial.parse (σ := XyzVar 3) (R := ℤ) (ord := .Degrevlex)
+    "0".toList).map toString == some "0"
+
+-- Parse with ℚ
+#guard (AzMvPolynomial.parse (σ := IndexedCapsVar 3) (R := ℚ) (ord := .Degrevlex)
+    "1/2*X₀^2-3/4*X₁*X₂+7".toList).map toString == some "1/2*X₀^2-3/4*X₁*X₂+7"
+
+end ParseExamples

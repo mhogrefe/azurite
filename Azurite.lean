@@ -10,6 +10,7 @@ import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.Rename
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
