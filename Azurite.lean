@@ -10,6 +10,8 @@ import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MergeSorted
+import Azurite.AzMvPolynomial.Equiv.Mul
+import Azurite.AzMvPolynomial.Equiv.MulNaive
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
