@@ -4,6 +4,7 @@ import Azurite.AzMvPolynomial.Add
 import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.Cast
 import Azurite.AzMvPolynomial.CompareEmbed
+import Azurite.AzMvPolynomial.Equiv.Add
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Eval
