@@ -21,6 +21,7 @@ import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.Mul
 import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
