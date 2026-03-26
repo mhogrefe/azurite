@@ -14,13 +14,13 @@ import Mathlib.Algebra.MvPolynomial.CommRing
 namespace Azurite
 open AzMvPolynomial MvPolynomial
 
-variable {R : Type _} [CommRing R] [NoZeroDivisors R] [DecidableEq R]
+variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
          {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
          {ord : MonomialOrder}
 
 /-! ### Monomial-level multiplication -/
 
-omit [CommRing R] [NoZeroDivisors R] [DecidableEq R] in
+omit [CommSemiring R] [NoZeroDivisors R] [DecidableEq R] in
 /-- `toFinsupp` distributes over monic monomial multiplication. -/
 theorem MonicMonomial.toFinsupp_mul (a b : MonicMonomial σ ord) :
     (a * b).toFinsupp = a.toFinsupp + b.toFinsupp := by
@@ -50,7 +50,7 @@ theorem toMvPoly_combineSorted (l : List (Monomial σ R ord)) :
     have : m₁.toMvPoly + m₂.toMvPoly = 0 := by
       simp only [Monomial.toMvPoly, heq]
       rw [← map_add (monomial m₂.monic.toFinsupp), hcz, monomial_zero]
-    rw [show m₁.toMvPoly = -m₂.toMvPoly from by rwa [add_eq_zero_iff_eq_neg] at this]; ring
+    rw [← add_assoc, this, zero_add]
   | case4 m₁ m₂ rest heq hcnz ih =>
     simp only [combineSorted, if_pos heq, dif_neg hcnz, List.map_cons, List.sum_cons]
     rw [ih, List.map_cons, List.sum_cons]
@@ -58,7 +58,7 @@ theorem toMvPoly_combineSorted (l : List (Monomial σ R ord)) :
         m₁.toMvPoly + m₂.toMvPoly := by
       simp only [Monomial.toMvPoly, heq]
       exact map_add (monomial m₂.monic.toFinsupp) m₁.coeff.val m₂.coeff.val
-    rw [this]; ring
+    rw [this, add_assoc]
   | case5 _ _ _ hneq ih =>
     simp only [combineSorted, if_neg hneq, List.map_cons, List.sum_cons]; congr 1
 

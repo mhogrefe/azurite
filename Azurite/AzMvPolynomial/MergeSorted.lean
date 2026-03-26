@@ -10,7 +10,7 @@ import Azurite.AzMvPolynomial.Basic
 namespace Azurite
 open AzMvPolynomial
 
-variable {R : Type _} [Ring R] [DecidableEq R]
+variable {R : Type _} [Semiring R] [DecidableEq R]
          {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
          {ord : MonomialOrder}
 

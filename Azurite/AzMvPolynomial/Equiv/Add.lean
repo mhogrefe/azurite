@@ -7,7 +7,7 @@ import Azurite.AzMvPolynomial.Equiv.MergeSorted
 namespace Azurite
 open AzMvPolynomial MvPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R]
+variable {R : Type _} [CommSemiring R] [DecidableEq R]
          {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
          {ord : MonomialOrder}
 

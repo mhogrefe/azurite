@@ -13,7 +13,7 @@ import Mathlib.Algebra.MvPolynomial.CommRing
 namespace Azurite
 open AzMvPolynomial MvPolynomial
 
-variable {R : Type _} [CommRing R] [DecidableEq R]
+variable {R : Type _} [CommSemiring R] [DecidableEq R]
          {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]
          {ord : MonomialOrder}
 
@@ -35,17 +35,16 @@ theorem toMvPoly_mergeSorted
   | p :: ps', [] =>
     simp only [mergeSorted, List.map_nil, List.sum_nil, add_zero]
   | p :: ps', q :: qs' =>
-    -- Don't simplify before unfold; handle each case independently
     unfold mergeSorted
     split_ifs with hpq hqp hc
     · -- p > q: emit p
       simp only [List.map_cons, List.sum_cons]
       rw [toMvPoly_mergeSorted f hf ps' (q :: qs')]
-      simp only [List.map_cons, List.sum_cons]; ring
+      simp only [List.map_cons, List.sum_cons]; abel
     · -- q > p: emit f(q)
       simp only [List.map_cons, List.sum_cons]
       rw [toMvPoly_mergeSorted f hf (p :: ps') qs']
-      simp only [List.map_cons, List.sum_cons, Monomial.toMvPoly]; ring
+      simp only [List.map_cons, List.sum_cons, Monomial.toMvPoly]; abel
     · -- equal monics, zero sum: terms cancel
       simp only [List.map_cons, List.sum_cons]
       rw [toMvPoly_mergeSorted f hf ps' qs']
@@ -56,9 +55,15 @@ theorem toMvPoly_mergeSorted
         simp only [Monomial.toMvPoly, heq]
         rw [← map_add (MvPolynomial.monomial q.monic.toFinsupp), hc,
             MvPolynomial.monomial_zero]
-      have hpq_neg : p.toMvPoly = -(monomial q.monic.toFinsupp (f q.coeff.val)) := by
-        rwa [add_eq_zero_iff_eq_neg] at hcancel
-      rw [hpq_neg]; ring
+      have hrearrange :
+          p.toMvPoly + (ps'.map Monomial.toMvPoly).sum +
+          (monomial q.monic.toFinsupp (f q.coeff.val) +
+            (qs'.map (fun q => monomial q.monic.toFinsupp (f q.coeff.val))).sum) =
+          (p.toMvPoly + monomial q.monic.toFinsupp (f q.coeff.val)) +
+          ((ps'.map Monomial.toMvPoly).sum +
+            (qs'.map (fun q => monomial q.monic.toFinsupp (f q.coeff.val))).sum) := by
+        abel
+      rw [hrearrange, hcancel, zero_add]
     · -- equal monics, nonzero sum: emit combined monomial
       simp only [List.map_cons, List.sum_cons]
       rw [toMvPoly_mergeSorted f hf ps' qs']
@@ -69,7 +74,7 @@ theorem toMvPoly_mergeSorted
           p.toMvPoly + monomial q.monic.toFinsupp (f q.coeff.val) := by
         simp only [Monomial.toMvPoly, heq]
         exact map_add (monomial q.monic.toFinsupp) (p.coeff : R) (f q.coeff.val)
-      rw [hcomb]; ring
+      rw [hcomb]; abel
 termination_by ps.length + qs.length
 
 end Azurite
