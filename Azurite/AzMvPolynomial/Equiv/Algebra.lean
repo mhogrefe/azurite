@@ -10,6 +10,7 @@ import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.Sub
 import Mathlib.Algebra.Ring.InjSurj
+import Mathlib.Algebra.Ring.Hom.InjSurj
 
 namespace Azurite
 open AzMvPolynomial
@@ -142,6 +143,24 @@ noncomputable def ringEquivMvPolynomial :
   right_inv := toMvPoly_ofMvPoly
   map_mul' := toMvPoly_mul
   map_add' := toMvPoly_add
+
+/-! ### Ring homomorphism -/
+
+/-- The canonical ring homomorphism from `AzMvPolynomial σ R ord` to `MvPolynomial σ R`. -/
+noncomputable def toMvPolyHom :
+    AzMvPolynomial σ R ord →+* MvPolynomial σ R where
+  toFun := AzMvPolynomial.toMvPoly
+  map_zero' := toMvPoly_zero
+  map_one' := toMvPoly_one
+  map_add' := toMvPoly_add
+  map_mul' := toMvPoly_mul
+
+/-! ### Integral domain -/
+
+/-- `AzMvPolynomial σ R ord` is an integral domain when `R` is. -/
+noncomputable instance [IsDomain R] :
+    IsDomain (AzMvPolynomial σ R ord) :=
+  Function.Injective.isDomain toMvPolyHom (fun _ _ h => toMvPoly_injective h)
 
 end CommRingSection
 

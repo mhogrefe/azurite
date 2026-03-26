@@ -2,6 +2,7 @@ import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Sub
 import Mathlib.Algebra.Ring.InjSurj
+import Mathlib.Algebra.Ring.Hom.InjSurj
 
 /-!
 # Algebraic typeclass instances for AzPolynomial
@@ -117,5 +118,23 @@ noncomputable def ringEquivPolynomial {R : Type _} [Semiring R] [DecidableEq R] 
   { equivPolynomial with
     map_mul' := toPoly_mul
     map_add' := toPoly_add }
+
+/-! ### Ring homomorphism -/
+
+/-- The canonical ring homomorphism from `AzPolynomial R` to `Polynomial R`. -/
+noncomputable def toPolyHom {R : Type _} [CommRing R] [DecidableEq R] :
+    AzPolynomial R →+* Polynomial R where
+  toFun := AzPolynomial.toPoly
+  map_zero' := toPoly_zero
+  map_one' := toPoly_one
+  map_add' := toPoly_add
+  map_mul' := toPoly_mul
+
+/-! ### Integral domain -/
+
+/-- `AzPolynomial R` is an integral domain when `R` is. -/
+noncomputable instance {R : Type _} [CommRing R] [IsDomain R] [DecidableEq R] :
+    IsDomain (AzPolynomial R) :=
+  Function.Injective.isDomain toPolyHom (fun _ _ h => toPoly_inj.mp h)
 
 end Azurite.AzPolynomial
