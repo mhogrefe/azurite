@@ -450,4 +450,69 @@ theorem Int.bitsize_list_sum_le (l : List ℤ) (τ : ℕ)
     rw [← pow_add]; congr 1; omega
   omega
 
+/-!
+### Bitsize of a product of integers
+
+BPR states that multiplying `n ≥ 1` integers of bitsizes bounded by `τ`
+gives an integer of bitsize bounded by `n · τ`.
+
+Proof sketch: `|∏ aᵢ| = ∏ |aᵢ|` (multiplicativity of absolute value).
+Each `|aᵢ| < 2^τ`, so `∏ |aᵢ| < (2^τ)^n = 2^{n·τ}`, whence
+`bitsize(∏ aᵢ) ≤ n · τ`.
+
+Note: this requires `n ≥ 1`, since for `n = 0` the empty product is `1`
+and `bitsize(1) = 1 > 0 = 0 · τ`.
+-/
+
+/-- `|∏ aᵢ| = ∏ |aᵢ|` for integer lists. -/
+theorem Int.natAbs_list_prod (l : List ℤ) :
+    l.prod.natAbs = (l.map Int.natAbs).prod := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    show (a * as.prod).natAbs = a.natAbs * (as.map Int.natAbs).prod
+    rw [Int.natAbs_mul, ih]
+
+private theorem list_prod_le_pow {l : List ℕ} {b : ℕ}
+    (h : ∀ x ∈ l, x ≤ b) : l.prod ≤ b ^ l.length := by
+  induction l with
+  | nil => exact le_refl 1
+  | cons a as ih =>
+    show a * as.prod ≤ b ^ (as.length + 1)
+    rw [pow_succ']
+    exact Nat.mul_le_mul (h a (by simp)) (ih (fun x hx => h x (by simp [hx])))
+
+private theorem list_prod_lt_pow {l : List ℕ} {b : ℕ}
+    (hl : l ≠ []) (hb : 0 < b) (h : ∀ x ∈ l, x < b) :
+    l.prod < b ^ l.length := by
+  induction l with
+  | nil => exact absurd rfl hl
+  | cons a as ih =>
+    have ha : a < b := h a (by simp)
+    show a * as.prod < b ^ (as.length + 1)
+    rw [pow_succ']
+    have hle : as.prod ≤ b ^ as.length :=
+      list_prod_le_pow (fun x hx => Nat.le_of_lt (h x (by simp [hx])))
+    calc a * as.prod
+        ≤ a * b ^ as.length := Nat.mul_le_mul_left a hle
+      _ < b * b ^ as.length := Nat.mul_lt_mul_of_pos_right ha (Nat.pow_pos hb)
+
+/-- Multiplying `n ≥ 1` integers each of bitsize `≤ τ` yields an integer of
+    bitsize `≤ n · τ`. BPR §8.1. -/
+theorem Int.bitsize_list_prod_le (l : List ℤ) (τ : ℕ)
+    (hl : l ≠ [])
+    (hτ : ∀ x ∈ l, Int.bitsize x ≤ τ) :
+    Int.bitsize l.prod ≤ l.length * τ := by
+  show l.prod.natAbs.size ≤ l.length * τ
+  rw [Nat.size_le, natAbs_list_prod]
+  have h_map : ∀ x ∈ l.map Int.natAbs, x < 2 ^ τ := by
+    simp only [List.mem_map]; rintro _ ⟨a, ha, rfl⟩
+    exact Nat.size_le.mp (hτ a ha)
+  have hne : l.map Int.natAbs ≠ [] := by simp [hl]
+  calc (l.map Int.natAbs).prod
+      < (2 ^ τ) ^ (l.map Int.natAbs).length :=
+        list_prod_lt_pow hne (Nat.two_pow_pos τ) h_map
+    _ = 2 ^ (l.length * τ) := by
+        simp only [List.length_map]; rw [← pow_mul, Nat.mul_comm]
+
 end Azurite.BPR
