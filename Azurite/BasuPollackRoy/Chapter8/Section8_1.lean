@@ -3,6 +3,8 @@ import Mathlib.Algebra.CharZero.Defs
 import Mathlib.Algebra.Divisibility.Basic
 import Mathlib.Algebra.Order.Ring.Defs
 import Mathlib.Algebra.Field.Defs
+import Mathlib.Data.Nat.Size
+import Mathlib.Analysis.SpecialFunctions.Log.Base
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -296,5 +298,95 @@ asymptotically-faster O(n^1.585) multiplication algorithm. Its
 equivalence with basecase multiplication (and thus with Mathlib) is
 proved in `Azurite.AzPolynomial.Equiv.Karatsuba`.
 -/
+
+/-!
+## Algorithm 8.3. Euclidean Division
+
+Given polynomials `P = a_p X^p + ⋯ + a_0` and `Q = b_q X^q + ⋯ + b_0`
+over a field `K` with `Q ≠ 0`, compute the unique quotient `Quo(P, Q)`
+and remainder `Rem(P, Q)` such that:
+
+  `P = Quo(P, Q) · Q + Rem(P, Q)` and `deg Rem(P, Q) < deg Q`.
+
+**Algorithm:**
+- Initialize `C := 0`, `R := P`.
+- For `j` from `p` down to `q`:
+  - `C := C + (coeff_j(R) / b_q) · X^{j−q}`
+  - `R := R − (coeff_j(R) / b_q) · X^{j−q} · Q`
+- Output `(C, R)`.
+
+**Complexity (BPR):** `(p − q + 1)(2q + 1)` operations in the field
+(each of the `p − q + 1` steps performs a division, a monomial
+multiplication by `Q` costing `q + 1` multiplications, and a
+subtraction of `q + 1` terms).
+
+**Structure required:** Field (D₅).
+
+**Azurite implementation:** `Azurite.AzPolynomial.quoRem`
+
+See: `Azurite.AzPolynomial.QuoRem`
+
+The equivalence with Mathlib's `Polynomial` division (`/` and `%`) is
+proved in `Azurite.AzPolynomial.Equiv.QuoRem`, including:
+- `toPoly_quo`:  `toPoly (quo P Q) = toPoly P / toPoly Q`
+- `toPoly_rem`:  `toPoly (rem P Q) = toPoly P % toPoly Q`
+- `degree_toPoly_rem_lt`:  `deg(toPoly (rem P Q)) < deg(toPoly Q)`
+-/
+
+/-!
+## Definition 8.4. Bitsize
+
+The **bitsize** of a non-zero integer `N` is the number `bit(N)` of
+bits in its binary representation, characterized by:
+
+  `2^{bit(N)−1} ≤ |N| < 2^{bit(N)}`
+
+**Mathlib note:** `Nat.size : ℕ → ℕ` (from `Mathlib.Data.Nat.Size`)
+computes exactly this for natural numbers, with the key lemmas:
+- `Nat.lt_size : m < n.size ↔ 2 ^ m ≤ n`
+- `Nat.lt_size_self : n < 2 ^ n.size`
+
+There is no `Int.size` in Mathlib, so we define `Int.bitsize` as
+`N.natAbs.size`.
+-/
+
+/-- BPR Definition 8.4. The bitsize of an integer `N`, defined as the
+    number of bits in the binary representation of `|N|`.
+    Returns `0` for `N = 0`. -/
+def Int.bitsize (N : ℤ) : ℕ := N.natAbs.size
+
+/-- For `N ≠ 0`, `2^{bit(N)−1} ≤ |N|`. -/
+theorem Int.two_pow_pred_le_natAbs (N : ℤ) (hN : N ≠ 0) :
+    2 ^ (Int.bitsize N - 1) ≤ N.natAbs := by
+  have hpos : 0 < N.natAbs := Int.natAbs_pos.mpr hN
+  have hsize : 0 < N.natAbs.size := Nat.size_pos.mpr hpos
+  show 2 ^ (N.natAbs.size - 1) ≤ N.natAbs
+  exact Nat.lt_size.mp (Nat.sub_one_lt_of_le hsize le_rfl)
+
+/-- `|N| < 2^{bit(N)}` (holds for all integers, including `0`). -/
+theorem Int.natAbs_lt_two_pow_bitsize (N : ℤ) :
+    N.natAbs < 2 ^ (Int.bitsize N) :=
+  Nat.lt_size_self N.natAbs
+
+/-- The bitsize of a nonzero integer is positive. -/
+theorem Int.bitsize_pos (N : ℤ) (hN : N ≠ 0) : 0 < Int.bitsize N :=
+  Nat.size_pos.mpr (Int.natAbs_pos.mpr hN)
+
+/-- Corollary of Definition 8.4: `bit(N) − 1 ≤ log₂(|N|)`. -/
+theorem Int.bitsize_sub_one_le_logb (N : ℤ) (hN : N ≠ 0) :
+    (Int.bitsize N : ℝ) - 1 ≤ Real.logb 2 (N.natAbs : ℝ) := by
+  have hposR : (0 : ℝ) < ↑N.natAbs := by exact_mod_cast Int.natAbs_pos.mpr hN
+  have hbs := bitsize_pos N hN
+  rw [show (Int.bitsize N : ℝ) - 1 = ((Int.bitsize N - 1 : ℕ) : ℝ) from by
+        rw [Nat.cast_sub hbs]; norm_cast,
+      Real.le_logb_iff_rpow_le (by norm_num) hposR, Real.rpow_natCast]
+  exact_mod_cast two_pow_pred_le_natAbs N hN
+
+/-- Corollary of Definition 8.4: `log₂(|N|) < bit(N)`. -/
+theorem Int.logb_lt_bitsize (N : ℤ) (hN : N ≠ 0) :
+    Real.logb 2 (N.natAbs : ℝ) < (Int.bitsize N : ℝ) := by
+  have hposR : (0 : ℝ) < ↑N.natAbs := by exact_mod_cast Int.natAbs_pos.mpr hN
+  rw [Real.logb_lt_iff_lt_rpow (by norm_num) hposR, Real.rpow_natCast]
+  exact_mod_cast natAbs_lt_two_pow_bitsize N
 
 end Azurite.BPR
