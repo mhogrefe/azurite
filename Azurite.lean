@@ -4,12 +4,14 @@ import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
+import Azurite.AzMatrix.Equiv.MulVec
 import Azurite.AzMatrix.Equiv.Neg
 import Azurite.AzMatrix.Equiv.RowCol
 import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Sub
 import Azurite.AzMatrix.Equiv.Transpose
 import Azurite.AzMatrix.Equiv.Zero
+import Azurite.AzMatrix.MulVec
 import Azurite.AzMatrix.Operations
 import Azurite.AzMatrix.RowCol
 import Azurite.AzMvPolynomial.Add

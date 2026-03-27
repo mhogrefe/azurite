@@ -66,6 +66,13 @@ theorem AzVector.toFn_zip {S T : Type _} (f : R → S → T)
     (v.zip f w).toFn i = f (v.toFn i) (w.toFn i) := by
   simp [zip, AzVector.toFn, Vector.get, Vector.zipWith]
 
+/-! ### ofList -/
+
+/-- Construct a vector from a list with a proof of the correct length.
+    Usage: `AzVector.ofList [1, 2, 3]` -/
+def AzVector.ofList (l : List R) (h : l.length = n := by decide) : AzVector R n :=
+  ⟨⟨l.toArray, by simp [h]⟩⟩
+
 instance : GetElem (AzVector R n) (Fin n) R (fun _ _ => True) where
   getElem v i _ := v.get i
 

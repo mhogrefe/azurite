@@ -71,4 +71,15 @@ theorem AzMatrix.toFn_zip {S T : Type _} (f : R → S → T)
     (M.zip f N).toFn i j = f (M.toFn i j) (N.toFn i j) := by
   simp [zip, AzMatrix.toFn, Vector.get, Vector.zipWith]
 
+/-! ### ofLists -/
+
+/-- Construct a matrix from a list of row lists.
+    Usage: `AzMatrix.ofLists [[1, 2], [3, 4]]` -/
+def AzMatrix.ofLists (rows : List (List R))
+    (hm : rows.length = m := by decide)
+    (hn : ∀ r ∈ rows, r.length = n := by decide) : AzMatrix R m n :=
+  ⟨⟨(rows.attach.map (fun ⟨r, hr⟩ =>
+    (⟨r.toArray, by simp [hn r hr]⟩ : Vector R n))).toArray,
+    by simp [hm]⟩⟩
+
 end Azurite
