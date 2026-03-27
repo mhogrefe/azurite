@@ -53,6 +53,19 @@ theorem AzVector.toFn_map {S : Type _} (f : R → S) (v : AzVector R n) (i : Fin
     (v.map f).toFn i = f (v.toFn i) := by
   simp [map, AzVector.toFn, Vector.get, Vector.map]
 
+/-! ### Zip -/
+
+/-- Combine two vectors entrywise with `f`. -/
+def AzVector.zip {S T : Type _} (f : R → S → T)
+    (v : AzVector R n) (w : AzVector S n) : AzVector T n :=
+  ⟨Vector.zipWith f v.data w.data⟩
+
+@[simp]
+theorem AzVector.toFn_zip {S T : Type _} (f : R → S → T)
+    (v : AzVector R n) (w : AzVector S n) (i : Fin n) :
+    (v.zip f w).toFn i = f (v.toFn i) (w.toFn i) := by
+  simp [zip, AzVector.toFn, Vector.get, Vector.zipWith]
+
 instance : GetElem (AzVector R n) (Fin n) R (fun _ _ => True) where
   getElem v i _ := v.get i
 

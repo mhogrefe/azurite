@@ -58,4 +58,17 @@ theorem AzMatrix.toFn_map {S : Type _} (f : R → S) (M : AzMatrix R m n)
     (M.map f).toFn i j = f (M.toFn i j) := by
   simp [map, AzMatrix.toFn, Vector.get, Vector.map]
 
+/-! ### Zip -/
+
+/-- Combine two matrices entrywise with `f`. -/
+def AzMatrix.zip {S T : Type _} (f : R → S → T)
+    (M : AzMatrix R m n) (N : AzMatrix S m n) : AzMatrix T m n :=
+  ⟨Vector.zipWith (fun r s => Vector.zipWith f r s) M.data N.data⟩
+
+@[simp]
+theorem AzMatrix.toFn_zip {S T : Type _} (f : R → S → T)
+    (M : AzMatrix R m n) (N : AzMatrix S m n) (i : Fin m) (j : Fin n) :
+    (M.zip f N).toFn i j = f (M.toFn i j) (N.toFn i j) := by
+  simp [zip, AzMatrix.toFn, Vector.get, Vector.zipWith]
+
 end Azurite

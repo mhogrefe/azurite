@@ -28,14 +28,14 @@ theorem AzVector.get_zero [Zero R] (i : Fin n) :
 /-! ### Addition -/
 
 instance [Add R] : Add (AzVector R n) :=
-  ⟨fun v w => ⟨Vector.zipWith (· + ·) v.data w.data⟩⟩
+  ⟨fun v w => v.zip (· + ·) w⟩
 
 @[simp]
 theorem AzVector.toFn_add [Add R] (v w : AzVector R n) :
     (v + w).toFn = v.toFn + w.toFn := by
   ext i
-  show (Vector.zipWith (· + ·) v.data w.data).get i = v.toFn i + w.toFn i
-  simp [AzVector.toFn, Vector.get, Vector.zipWith]
+  show (v.zip (· + ·) w).toFn i = v.toFn i + w.toFn i
+  simp
 
 /-! ### Negation -/
 
@@ -52,14 +52,14 @@ theorem AzVector.toFn_neg [Neg R] (v : AzVector R n) :
 /-! ### Subtraction -/
 
 instance [Sub R] : Sub (AzVector R n) :=
-  ⟨fun v w => ⟨Vector.zipWith (· - ·) v.data w.data⟩⟩
+  ⟨fun v w => v.zip (· - ·) w⟩
 
 @[simp]
 theorem AzVector.toFn_sub [Sub R] (v w : AzVector R n) :
     (v - w).toFn = v.toFn - w.toFn := by
   ext i
-  show (Vector.zipWith (· - ·) v.data w.data).get i = v.toFn i - w.toFn i
-  simp [AzVector.toFn, Vector.get, Vector.zipWith]
+  show (v.zip (· - ·) w).toFn i = v.toFn i - w.toFn i
+  simp
 
 /-! ### Scalar multiplication -/
 

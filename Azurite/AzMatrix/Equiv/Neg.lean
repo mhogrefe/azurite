@@ -7,6 +7,12 @@ import Mathlib.Algebra.Group.Pi.Basic
 namespace Azurite
 variable {R : Type _} [Neg R] {m n : Nat}
 
+/-- Negation commutes with `toFn`. -/
+@[simp]
+theorem AzMatrix.toFn_neg (M : AzMatrix R m n) (i : Fin m) (j : Fin n) :
+    (-M).toFn i j = -(M.toFn i j) := by
+  show (M.map (- ·)).toFn i j = -(M.toFn i j); simp
+
 /-- Negation commutes with `ofFn`. -/
 @[simp]
 theorem AzMatrix.ofFn_neg (f : Fin m → Fin n → R) :

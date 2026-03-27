@@ -1,0 +1,22 @@
+/-
+  Equivalence proofs for AzMatrix addition.
+-/
+import Azurite.AzMatrix.Operations
+import Mathlib.Algebra.Group.Pi.Basic
+
+namespace Azurite
+variable {R : Type _} [Add R] {m n : Nat}
+
+/-- Addition commutes with `toFn`. -/
+@[simp]
+theorem AzMatrix.toFn_add (M N : AzMatrix R m n) (i : Fin m) (j : Fin n) :
+    (M + N).toFn i j = M.toFn i j + N.toFn i j := by
+  show (M.zip (· + ·) N).toFn i j = M.toFn i j + N.toFn i j; simp
+
+/-- Addition commutes with `ofFn`. -/
+@[simp]
+theorem AzMatrix.ofFn_add (f g : Fin m → Fin n → R) :
+    AzMatrix.ofFn f + AzMatrix.ofFn g = AzMatrix.ofFn (fun i j => f i j + g i j) := by
+  apply AzMatrix.toFn_injective; ext i j; simp
+
+end Azurite

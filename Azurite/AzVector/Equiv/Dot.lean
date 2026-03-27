@@ -37,7 +37,7 @@ private theorem list_zipWith_ofFn {α β γ : Type _} {m : Nat}
 /-- The computable `dot` equals Mathlib's `dotProduct` (`⬝ᵥ`) via `toFn`. -/
 theorem AzVector.dot_eq_dotProduct (v w : AzVector R n) :
     v.dot w = v.toFn ⬝ᵥ w.toFn := by
-  unfold dot dotProduct
+  unfold dot zip dotProduct
   rw [array_foldl_add_eq_sum, Vector.toList_toArray, Vector.toList_zipWith,
       vector_toList_eq_ofFn v.data, vector_toList_eq_ofFn w.data,
       list_zipWith_ofFn, List.sum_ofFn]
