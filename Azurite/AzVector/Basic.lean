@@ -1,0 +1,48 @@
+/-
+  Core definitions for AzVector: a computable fixed-length vector.
+
+  `AzVector R n` wraps Lean's `Vector R n` (array-backed).
+  Equivalence with Mathlib's `Fin n → R` via `toFn`/`ofFn`.
+-/
+
+namespace Azurite
+
+/-- A computable fixed-length vector backed by `Vector`. -/
+structure AzVector (R : Type _) (n : Nat) where
+  /-- The underlying `Vector`. -/
+  data : Vector R n
+
+variable {R : Type _} {n : Nat}
+
+/-- Convert to Mathlib's function representation `Fin n → R`. -/
+def AzVector.toFn (v : AzVector R n) : Fin n → R := v.data.get
+
+/-- Convert from Mathlib's function representation. -/
+def AzVector.ofFn (f : Fin n → R) : AzVector R n := ⟨Vector.ofFn f⟩
+
+/-- Index into a vector. -/
+def AzVector.get (v : AzVector R n) (i : Fin n) : R := v.data.get i
+
+/-- Extensionality: two `AzVector`s are equal iff they agree at every index. -/
+@[ext]
+theorem AzVector.ext {v w : AzVector R n} (h : ∀ i : Fin n, v.get i = w.get i) : v = w := by
+  cases v; cases w; simp only [AzVector.mk.injEq]
+  exact Vector.ext (fun i hi => h ⟨i, hi⟩)
+
+@[simp]
+theorem AzVector.toFn_ofFn (f : Fin n → R) (i : Fin n) :
+    (AzVector.ofFn f).toFn i = f i := by
+  simp [toFn, ofFn, Vector.get]
+
+@[simp]
+theorem AzVector.ofFn_toFn (v : AzVector R n) : AzVector.ofFn v.toFn = v := by
+  ext i; simp [toFn, ofFn, get, Vector.get]
+
+/-- `toFn` is injective. -/
+theorem AzVector.toFn_injective : Function.Injective (AzVector.toFn (R := R) (n := n)) := by
+  intro a b h; ext i; exact congrFun h i
+
+instance : GetElem (AzVector R n) (Fin n) R (fun _ _ => True) where
+  getElem v i _ := v.get i
+
+end Azurite
