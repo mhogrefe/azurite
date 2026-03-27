@@ -42,6 +42,17 @@ theorem AzVector.ofFn_toFn (v : AzVector R n) : AzVector.ofFn v.toFn = v := by
 theorem AzVector.toFn_injective : Function.Injective (AzVector.toFn (R := R) (n := n)) := by
   intro a b h; ext i; exact congrFun h i
 
+/-! ### Map -/
+
+/-- Apply `f` to every entry of a vector. -/
+def AzVector.map {S : Type _} (f : R → S) (v : AzVector R n) : AzVector S n :=
+  ⟨v.data.map f⟩
+
+@[simp]
+theorem AzVector.toFn_map {S : Type _} (f : R → S) (v : AzVector R n) (i : Fin n) :
+    (v.map f).toFn i = f (v.toFn i) := by
+  simp [map, AzVector.toFn, Vector.get, Vector.map]
+
 instance : GetElem (AzVector R n) (Fin n) R (fun _ _ => True) where
   getElem v i _ := v.get i
 

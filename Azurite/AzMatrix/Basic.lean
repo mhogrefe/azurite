@@ -46,4 +46,16 @@ theorem AzMatrix.toFn_injective :
     Function.Injective (AzMatrix.toFn (R := R) (m := m) (n := n)) := by
   intro a b h; ext i j; exact congr (congrFun h i) rfl
 
+/-! ### Map -/
+
+/-- Apply `f` to every entry of a matrix. -/
+def AzMatrix.map {S : Type _} (f : R → S) (M : AzMatrix R m n) : AzMatrix S m n :=
+  ⟨M.data.map (fun row => row.map f)⟩
+
+@[simp]
+theorem AzMatrix.toFn_map {S : Type _} (f : R → S) (M : AzMatrix R m n)
+    (i : Fin m) (j : Fin n) :
+    (M.map f).toFn i j = f (M.toFn i j) := by
+  simp [map, AzMatrix.toFn, Vector.get, Vector.map]
+
 end Azurite

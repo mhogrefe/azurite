@@ -40,14 +40,14 @@ theorem AzVector.toFn_add [Add R] (v w : AzVector R n) :
 /-! ### Negation -/
 
 instance [Neg R] : Neg (AzVector R n) :=
-  ⟨fun v => ⟨v.data.map (- ·)⟩⟩
+  ⟨fun v => v.map (- ·)⟩
 
 @[simp]
 theorem AzVector.toFn_neg [Neg R] (v : AzVector R n) :
     (-v).toFn = -v.toFn := by
   ext i
-  show (v.data.map (- ·)).get i = -(v.toFn i)
-  simp [AzVector.toFn, Vector.get, Vector.map]
+  show (v.map (- ·)).toFn i = -(v.toFn i)
+  simp
 
 /-! ### Subtraction -/
 
@@ -64,13 +64,13 @@ theorem AzVector.toFn_sub [Sub R] (v w : AzVector R n) :
 /-! ### Scalar multiplication -/
 
 instance [SMul α R] : SMul α (AzVector R n) :=
-  ⟨fun c v => ⟨v.data.map (c • ·)⟩⟩
+  ⟨fun c v => v.map (c • ·)⟩
 
 @[simp]
 theorem AzVector.toFn_smul [SMul α R] (c : α) (v : AzVector R n) :
     (c • v).toFn = c • v.toFn := by
   ext i
-  show (v.data.map (c • ·)).get i = c • v.toFn i
-  simp [AzVector.toFn, Vector.get, Vector.map]
+  show (v.map (c • ·)).toFn i = c • v.toFn i
+  simp
 
 end Azurite

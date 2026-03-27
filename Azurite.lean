@@ -3,7 +3,9 @@
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
+import Azurite.AzMatrix.Equiv.Neg
 import Azurite.AzMatrix.Equiv.RowCol
+import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Transpose
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Operations

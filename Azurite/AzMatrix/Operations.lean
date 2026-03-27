@@ -59,4 +59,26 @@ theorem AzMatrix.toFn_transpose (M : AzMatrix R m n) :
     M.transpose.toFn = fun j i => M.toFn i j := by
   ext j i; simp [transpose, toFn, ofFn, get, Vector.get]
 
+/-! ### Negation -/
+
+instance [Neg R] : Neg (AzMatrix R m n) :=
+  ⟨fun M => M.map (- ·)⟩
+
+@[simp]
+theorem AzMatrix.toFn_neg [Neg R] (M : AzMatrix R m n) (i : Fin m) (j : Fin n) :
+    (-M).toFn i j = -(M.toFn i j) := by
+  show (M.map (- ·)).toFn i j = -(M.toFn i j)
+  simp
+
+/-! ### Scalar multiplication -/
+
+instance [SMul α R] : SMul α (AzMatrix R m n) :=
+  ⟨fun c M => M.map (c • ·)⟩
+
+@[simp]
+theorem AzMatrix.toFn_smul [SMul α R] (c : α) (M : AzMatrix R m n) (i : Fin m) (j : Fin n) :
+    (c • M).toFn i j = c • M.toFn i j := by
+  show (M.map (c • ·)).toFn i j = c • M.toFn i j
+  simp
+
 end Azurite
