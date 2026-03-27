@@ -2,6 +2,7 @@
 -- Import modules here that should be built as part of the library.
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
+import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
 import Azurite.AzMatrix.Equiv.Mul
