@@ -389,4 +389,65 @@ theorem Int.logb_lt_bitsize (N : ℤ) (hN : N ≠ 0) :
   rw [Real.logb_lt_iff_lt_rpow (by norm_num) hposR, Real.rpow_natCast]
   exact_mod_cast natAbs_lt_two_pow_bitsize N
 
+/-!
+### Bitsize of a rational number
+
+BPR defines the bitsize of a rational number `a/b` (in lowest terms) as
+`bit(a/b) = bit(a) + bit(b)`.
+-/
+
+/-- The bitsize of a rational number `a/b` (in lowest terms):
+    `bit(a/b) = bit(a) + bit(b)`.
+    BPR §8.1, unnumbered definition, p. 283. -/
+def Rat.bitsize (q : Rat) : ℕ := Int.bitsize q.num + Nat.size q.den
+
+/-!
+### Bitsize of a sum of integers
+
+BPR states that adding `n` integers of bitsizes bounded by `τ` gives
+an integer of bitsize bounded by `τ + bit(n)`.
+
+Proof sketch: each `|aᵢ| < 2^τ`, so `|aᵢ| ≤ 2^τ`. By the triangle
+inequality `|∑ aᵢ| ≤ ∑ |aᵢ| ≤ n · 2^τ`. Since `n < 2^{bit(n)}`,
+we get `n · 2^τ < 2^{bit(n)} · 2^τ = 2^{τ + bit(n)}`, whence
+`bitsize(∑ aᵢ) ≤ τ + bit(n)`.
+-/
+
+/-- Triangle inequality for integer list sums: `|∑ aᵢ| ≤ ∑ |aᵢ|`. -/
+theorem Int.natAbs_list_sum_le (l : List ℤ) :
+    l.sum.natAbs ≤ (l.map Int.natAbs).sum := by
+  induction l with
+  | nil => simp
+  | cons a as ih =>
+    simp only [List.map_cons, List.sum_cons]
+    exact le_trans (Int.natAbs_add_le a as.sum) (Nat.add_le_add_left ih _)
+
+/-- If every element of a list is `≤ b`, then the sum is `≤ length · b`. -/
+theorem List.sum_le_length_mul {l : List ℕ} {b : ℕ}
+    (h : ∀ x ∈ l, x ≤ b) : l.sum ≤ l.length * b := by
+  induction l with
+  | nil => simp
+  | cons a as ih =>
+    rw [List.sum_cons, List.length_cons, Nat.add_comm as.length 1, Nat.add_mul, Nat.one_mul]
+    exact Nat.add_le_add (h a (by simp)) (ih (fun x hx => h x (by simp [hx])))
+
+/-- Adding `n` integers each of bitsize `≤ τ` yields an integer of bitsize
+    `≤ τ + bit(n)`. BPR §8.1. -/
+theorem Int.bitsize_list_sum_le (l : List ℤ) (τ : ℕ)
+    (hτ : ∀ x ∈ l, Int.bitsize x ≤ τ) :
+    Int.bitsize l.sum ≤ τ + Nat.size l.length := by
+  show l.sum.natAbs.size ≤ τ + l.length.size
+  rw [Nat.size_le]
+  have h_bound : ∀ x ∈ l.map Int.natAbs, x ≤ 2 ^ τ := by
+    simp only [List.mem_map]; rintro _ ⟨a, ha, rfl⟩
+    exact Nat.le_of_lt (Nat.size_le.mp (hτ a ha))
+  have h1 : l.sum.natAbs ≤ (l.map Int.natAbs).sum := natAbs_list_sum_le l
+  have h2 : (l.map Int.natAbs).sum ≤ l.length * 2 ^ τ := by
+    have := List.sum_le_length_mul h_bound; simp at this; exact this
+  have h3 : l.length * 2 ^ τ < 2 ^ l.length.size * 2 ^ τ :=
+    Nat.mul_lt_mul_of_pos_right (Nat.lt_size_self l.length) (Nat.two_pow_pos τ)
+  have h4 : 2 ^ l.length.size * 2 ^ τ = 2 ^ (τ + l.length.size) := by
+    rw [← pow_add]; congr 1; omega
+  omega
+
 end Azurite.BPR
