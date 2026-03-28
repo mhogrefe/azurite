@@ -22,11 +22,13 @@ import Azurite.AzMatrix.Pow
 import Azurite.AzMatrix.RowCol
 import Azurite.AzMvPolynomial.Add
 import Azurite.AzMvPolynomial.Basic
+import Azurite.AzMvPolynomial.Bind
 import Azurite.AzMvPolynomial.Cast
 import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.Add
 import Azurite.AzMvPolynomial.Equiv.Algebra
 import Azurite.AzMvPolynomial.Equiv.Basic
+import Azurite.AzMvPolynomial.Equiv.Bind
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
