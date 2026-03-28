@@ -2,6 +2,16 @@
 
 Welcome! When working on the Azurite project, please adhere to the following guidelines to ensure high-performance compilation and idiomatic Lean 4 code.
 
+## README and Project Orientation
+
+**Always consult `README.md` first** when orienting yourself in the project. It contains:
+- A module map describing every directory and its purpose
+- A table of all equivalence proofs (the `Equiv/` subdirectories)
+- A catalog of implemented algorithms with BPR cross-references
+- The project structure overview
+
+**Keep the README updated.** When you add a new module, algorithm, equivalence proof, or BPR formalization, update the relevant section of `README.md` so that future agents and contributors can discover it.
+
 ## Mathlib Usage
 
 You are encouraged to make free and extensive use of Mathlib lemmas, definitions, and theorems to prove properties about `Azurite`.
