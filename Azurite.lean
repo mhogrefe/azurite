@@ -51,6 +51,7 @@ import Azurite.AzMvPolynomial.Mul
 import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
+import Azurite.AzMvPolynomial.Pow
 import Azurite.AzMvPolynomial.Rename
 import Azurite.AzMvPolynomial.SMul
 import Azurite.AzMvPolynomial.Sub

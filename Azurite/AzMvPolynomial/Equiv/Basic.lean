@@ -349,7 +349,7 @@ theorem ofMvPoly_toMvPoly [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
     AzMvPolynomial.toMvPoly (0 : AzMvPolynomial σ R ord) from toMvPoly_zero.symm]
   exact ofMvPoly_toMvPoly _
 
-private theorem one_toFinsupp :
+theorem one_toFinsupp :
     (MonicMonomial.one : MonicMonomial σ ord).toFinsupp = 0 := by
   ext v
   simp only [MonicMonomial.toFinsupp, MonicMonomial.one,
