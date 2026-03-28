@@ -1,16 +1,16 @@
-import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.Mul
+import Azurite.Algorithm.FastPow
 import Azurite.AzMvPolynomial.Equiv.Basic
 
 /-!
-# Exponentiation for MonicMonomial and Monomial
+# Exponentiation for MonicMonomial, Monomial, and AzMvPolynomial
 
-Computable exponentiation for monic monomials and monomials in multivariate polynomials.
+Computable exponentiation for monic monomials, monomials, and multivariate polynomials.
 
-- **MonicMonomial**: Since monic monomials form a commutative monoid under multiplication
-  (adding exponents), exponentiation is simply scaling each exponent by `k`.
-
-- **Monomial**: Raise the coefficient to the `k`-th power and scale the monic exponents
-  by `k`.
+- **MonicMonomial**: Scale each exponent by `k`. O(n) where n = number of variables.
+- **Monomial**: Raise coefficient to `k`-th power, scale monic exponents by `k`.
+- **AzMvPolynomial**: Single-monomial fast path (direct monomial pow) or
+  `fastPow` for multi-term polynomials.
 
 ## Main Definitions and Theorems
 
@@ -23,6 +23,9 @@ Computable exponentiation for monic monomials and monomials in multivariate poly
 - `Monomial.pow m k`: raises coefficient to `k`-th power, scales exponents by `k`.
 - `pow_eq_npow`: `m.pow k = m ^ k` (agrees with the `CommMonoid`'s `^`).
 - `toMvPoly_pow`: `(m.pow k).toMvPoly = m.toMvPoly ^ k` (Mathlib equivalence).
+
+### AzMvPolynomial
+- `AzMvPolynomial.pow p k`: computable exponentiation with single-monomial fast path.
 -/
 
 -- ═══════════════════════════════════════════════════════════════════
@@ -153,3 +156,26 @@ private def mkMon (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial (AbcVar
 end Tests
 
 end Azurite.Monomial
+
+-- ═══════════════════════════════════════════════════════════════════
+-- AzMvPolynomial
+-- ═══════════════════════════════════════════════════════════════════
+
+namespace Azurite.AzMvPolynomial
+
+variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
+  {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
+
+/-- Computable exponentiation for multivariate polynomials.
+    - **Single-term** (monomial) polynomials: exponentiates the monomial directly
+      (raise coefficient to `k`-th power, scale exponents by `k`). O(n) where `n`
+      is the number of variables.
+    - **Multi-term** polynomials: uses binary exponentiation via `fastPow`, which
+      performs O(log k) polynomial multiplications. -/
+def pow (p : AzMvPolynomial σ R ord) (k : ℕ) : AzMvPolynomial σ R ord :=
+  if h : p.terms.size = 1 then
+    AzMvPolynomial.ofMonomial ((p.terms[0]'(by omega)).pow k)
+  else
+    Azurite.fastPow p k
+
+end Azurite.AzMvPolynomial

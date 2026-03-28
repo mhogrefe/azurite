@@ -4,11 +4,15 @@
   Uses `Function.Injective.commSemiring` and `.commRing` to transfer the
   algebraic structure from `MvPolynomial σ R` to `AzMvPolynomial σ R ord`
   via the injective `toMvPoly` map.
+
+  The `npow` field uses the computable `AzMvPolynomial.pow`, which includes
+  a single-monomial optimization and binary exponentiation fallback.
 -/
 import Azurite.AzMvPolynomial.Equiv.Add
 import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.Sub
+import Azurite.AzMvPolynomial.Equiv.Pow
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
 
@@ -27,10 +31,6 @@ private noncomputable def nsmulAzS
     (n : ℕ) (p : AzMvPolynomial σ R ord) : AzMvPolynomial σ R ord :=
   AzMvPolynomial.ofMvPoly (n • AzMvPolynomial.toMvPoly p)
 
-private noncomputable def npowAzS
-    (p : AzMvPolynomial σ R ord) (n : ℕ) : AzMvPolynomial σ R ord :=
-  AzMvPolynomial.ofMvPoly (AzMvPolynomial.toMvPoly p ^ n)
-
 private noncomputable def natCastAzS
     (n : ℕ) : AzMvPolynomial σ R ord :=
   AzMvPolynomial.ofMvPoly (n : MvPolynomial σ R)
@@ -41,26 +41,22 @@ private theorem toMvPoly_nsmulAzS (n : ℕ) (p : AzMvPolynomial σ R ord) :
   unfold nsmulAzS; exact toMvPoly_ofMvPoly _
 
 omit [NoZeroDivisors R] [DecidableEq R] in
-private theorem toMvPoly_npowAzS (p : AzMvPolynomial σ R ord) (n : ℕ) :
-    AzMvPolynomial.toMvPoly (npowAzS p n) = AzMvPolynomial.toMvPoly p ^ n := by
-  unfold npowAzS; exact toMvPoly_ofMvPoly _
-
-omit [NoZeroDivisors R] [DecidableEq R] in
 private theorem toMvPoly_natCastAzS (n : ℕ) :
     AzMvPolynomial.toMvPoly (natCastAzS n : AzMvPolynomial σ R ord) =
     (n : MvPolynomial σ R) := by
   unfold natCastAzS; exact toMvPoly_ofMvPoly _
 
 /-- `AzMvPolynomial σ R ord` forms a commutative semiring when `R` is a
-    commutative semiring with no zero divisors. -/
+    commutative semiring with no zero divisors. The `npow` field uses the
+    computable `AzMvPolynomial.pow`. -/
 noncomputable instance : CommSemiring (AzMvPolynomial σ R ord) :=
   letI : SMul ℕ (AzMvPolynomial σ R ord) := ⟨nsmulAzS⟩
-  letI : Pow (AzMvPolynomial σ R ord) ℕ := ⟨npowAzS⟩
+  letI : Pow (AzMvPolynomial σ R ord) ℕ := ⟨fun p n => p.pow n⟩
   letI : NatCast (AzMvPolynomial σ R ord) := ⟨natCastAzS⟩
   Function.Injective.commSemiring AzMvPolynomial.toMvPoly
     (fun _ _ h => toMvPoly_injective h)
     toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_mul
-    toMvPoly_nsmulAzS toMvPoly_npowAzS toMvPoly_natCastAzS
+    toMvPoly_nsmulAzS toMvPoly_pow toMvPoly_natCastAzS
 
 end CommSemiringSection
 
@@ -75,10 +71,6 @@ variable {R : Type _} [CommRing R] [NoZeroDivisors R] [DecidableEq R]
 private noncomputable def nsmulAzR
     (n : ℕ) (p : AzMvPolynomial σ R ord) : AzMvPolynomial σ R ord :=
   AzMvPolynomial.ofMvPoly (n • AzMvPolynomial.toMvPoly p)
-
-private noncomputable def npowAzR
-    (p : AzMvPolynomial σ R ord) (n : ℕ) : AzMvPolynomial σ R ord :=
-  AzMvPolynomial.ofMvPoly (AzMvPolynomial.toMvPoly p ^ n)
 
 private noncomputable def natCastAzR
     (n : ℕ) : AzMvPolynomial σ R ord :=
@@ -98,11 +90,6 @@ private theorem toMvPoly_nsmulAzR (n : ℕ) (p : AzMvPolynomial σ R ord) :
   unfold nsmulAzR; exact toMvPoly_ofMvPoly _
 
 omit [NoZeroDivisors R] [DecidableEq R] in
-private theorem toMvPoly_npowAzR (p : AzMvPolynomial σ R ord) (n : ℕ) :
-    AzMvPolynomial.toMvPoly (npowAzR p n) = AzMvPolynomial.toMvPoly p ^ n := by
-  unfold npowAzR; exact toMvPoly_ofMvPoly _
-
-omit [NoZeroDivisors R] [DecidableEq R] in
 private theorem toMvPoly_natCastAzR (n : ℕ) :
     AzMvPolynomial.toMvPoly (natCastAzR n : AzMvPolynomial σ R ord) =
     (n : MvPolynomial σ R) := by
@@ -120,17 +107,18 @@ private theorem toMvPoly_intCastAzR (n : ℤ) :
   unfold intCastAzR; exact toMvPoly_ofMvPoly _
 
 /-- `AzMvPolynomial σ R ord` forms a commutative ring when `R` is a
-    commutative ring with no zero divisors. -/
+    commutative ring with no zero divisors. The `npow` field uses the
+    computable `AzMvPolynomial.pow`. -/
 noncomputable instance : CommRing (AzMvPolynomial σ R ord) :=
   letI : SMul ℕ (AzMvPolynomial σ R ord) := ⟨nsmulAzR⟩
   letI : SMul ℤ (AzMvPolynomial σ R ord) := ⟨zsmulAzR⟩
-  letI : Pow (AzMvPolynomial σ R ord) ℕ := ⟨npowAzR⟩
+  letI : Pow (AzMvPolynomial σ R ord) ℕ := ⟨fun p n => p.pow n⟩
   letI : NatCast (AzMvPolynomial σ R ord) := ⟨natCastAzR⟩
   letI : IntCast (AzMvPolynomial σ R ord) := ⟨intCastAzR⟩
   Function.Injective.commRing AzMvPolynomial.toMvPoly
     (fun _ _ h => toMvPoly_injective h)
     toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_mul toMvPoly_neg toMvPoly_sub
-    toMvPoly_nsmulAzR toMvPoly_zsmulAzR toMvPoly_npowAzR toMvPoly_natCastAzR toMvPoly_intCastAzR
+    toMvPoly_nsmulAzR toMvPoly_zsmulAzR toMvPoly_pow toMvPoly_natCastAzR toMvPoly_intCastAzR
 
 /-! ### Ring isomorphism -/
 

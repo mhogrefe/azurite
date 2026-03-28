@@ -57,7 +57,8 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/ExactDiv` | Exact division correctness |
 | `Equiv/MergeSorted` | Merge-sorted operation correctness |
 | `Equiv/MonomialOrder` | Monomial ordering equivalences |
-| `Equiv/Algebra` | Algebra structure preservation |
+| `Equiv/Pow` | `toMvPoly (p.pow k) = toMvPoly p ^ k` |
+| `Equiv/Algebra` | Algebra structure preservation (CommSemiring, CommRing, IsDomain) |
 
 #### AzVector ↔ (Fin n → R)
 

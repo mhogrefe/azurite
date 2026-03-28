@@ -36,6 +36,7 @@ import Azurite.AzMvPolynomial.Equiv.MonomialOrder
 import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.MulNaive
 import Azurite.AzMvPolynomial.Equiv.Neg
+import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Sub
