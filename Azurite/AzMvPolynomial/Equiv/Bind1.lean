@@ -1,4 +1,4 @@
-import Azurite.AzMvPolynomial.Bind
+import Azurite.AzMvPolynomial.Bind1
 import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Add
