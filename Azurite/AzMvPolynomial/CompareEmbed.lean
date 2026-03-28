@@ -266,4 +266,91 @@ theorem MonicMonomial.rename_strictMono
 
 end RenameStrictMono
 
+/-! ### Monomial ordering is compatible with multiplication
+
+All three orderings (lex, deglex, degrevlex) are translation-invariant:
+adding a fixed exponent vector to both arguments does not change the
+comparison result.  This implies that left-multiplication by a fixed
+monic monomial preserves strict ordering. -/
+
+section TranslationInvariance
+
+variable {n : ℕ}
+
+private theorem Nat.compare_add_left (c a b : ℕ) :
+    compare (c + a) (c + b) = compare a b := by
+  cases hab : compare a b
+  · rw [compare_lt_iff_lt] at hab ⊢; omega
+  · rw [compare_eq_iff_eq] at hab ⊢; omega
+  · rw [compare_gt_iff_gt] at hab ⊢; omega
+
+private theorem lexCompareAux_add_left (c a b : Vector ℕ n) (i : ℕ) :
+    lexCompareAux (Vector.ofFn (fun j => c[j] + a[j]))
+                  (Vector.ofFn (fun j => c[j] + b[j])) i
+    = lexCompareAux a b i := by
+  unfold lexCompareAux; split
+  · next h =>
+    simp only [Vector.getElem_ofFn, Nat.compare_add_left]
+    match compare (a[i]'h) (b[i]'h) with
+    | .lt => rfl
+    | .eq => exact lexCompareAux_add_left c a b (i + 1)
+    | .gt => rfl
+  · rfl
+termination_by n - i
+
+private theorem revlexCompareAux_add_left (c a b : Vector ℕ n) (i : ℕ) :
+    revlexCompareAux (Vector.ofFn (fun j => c[j] + a[j]))
+                     (Vector.ofFn (fun j => c[j] + b[j])) i
+    = revlexCompareAux a b i := by
+  unfold revlexCompareAux; split
+  · next h =>
+    simp only [Vector.getElem_ofFn, Nat.compare_add_left]
+    match compare (a[n - 1 - i]'(by omega)) (b[n - 1 - i]'(by omega)) with
+    | .lt => rfl
+    | .eq => exact revlexCompareAux_add_left c a b (i + 1)
+    | .gt => rfl
+  · rfl
+termination_by n - i
+
+private theorem totalDeg_add (a b : Vector ℕ n) :
+    totalDeg (Vector.ofFn (fun j => a[j] + b[j])) = totalDeg a + totalDeg b := by
+  simp only [totalDeg_eq_finsum, Vector.getElem_ofFn, Fin.getElem_fin]
+  rw [← Finset.sum_add_distrib]
+
+/-- `compareExponents` is invariant under pointwise addition of a fixed vector.
+    This is the fundamental property that makes monomial orderings
+    compatible with multiplication. -/
+theorem MonomialOrder.compareExponents_add_left (ord : MonomialOrder) (c a b : Vector ℕ n) :
+    compareExponents ord (Vector.ofFn (fun j => c[j] + a[j]))
+                         (Vector.ofFn (fun j => c[j] + b[j]))
+    = compareExponents ord a b := by
+  unfold compareExponents; cases ord
+  · exact lexCompareAux_add_left c a b 0
+  · rw [totalDeg_add, totalDeg_add]; simp only [Nat.compare_add_left]
+    cases compare (totalDeg a) (totalDeg b) <;> simp
+    exact lexCompareAux_add_left c a b 0
+  · rw [totalDeg_add, totalDeg_add]; simp only [Nat.compare_add_left]
+    cases compare (totalDeg a) (totalDeg b) <;> simp
+    exact revlexCompareAux_add_left c a b 0
+
+variable {σ : Type _} [LinearOrder σ] [Var σ n] {ord : MonomialOrder}
+
+/-- Left multiplication by a fixed monic monomial preserves strict ordering. -/
+theorem MonicMonomial.mul_lt_mul_left (c a b : MonicMonomial σ ord)
+    (h : a < b) : c * a < c * b := by
+  show compareExponents ord (c * a).exponents (c * b).exponents = .lt
+  simp only [mul_exponents]
+  rw [show (Vector.ofFn fun i => c.exponents[i] + a.exponents[i])
+      = (Vector.ofFn fun i => c.exponents[↑i] + a.exponents[↑i]) from rfl,
+      show (Vector.ofFn fun i => c.exponents[i] + b.exponents[i])
+      = (Vector.ofFn fun i => c.exponents[↑i] + b.exponents[↑i]) from rfl]
+  rw [MonomialOrder.compareExponents_add_left]; exact h
+
+/-- Left multiplication by a fixed monic monomial preserves strict ordering (gt). -/
+theorem MonicMonomial.mul_gt_mul_left (c a b : MonicMonomial σ ord)
+    (h : a > b) : c * a > c * b :=
+  mul_lt_mul_left c b a h
+
+end TranslationInvariance
+
 end Azurite

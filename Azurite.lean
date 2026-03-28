@@ -35,6 +35,7 @@ import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Sub
 import Azurite.AzMvPolynomial.Eval
+import Azurite.AzMvPolynomial.ExactDiv
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MergeSorted
 import Azurite.AzMvPolynomial.MonicMonomial

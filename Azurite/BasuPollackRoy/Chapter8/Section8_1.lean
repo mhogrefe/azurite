@@ -731,6 +731,20 @@ See: `Azurite.AzMvPolynomial.Mul`
 -/
 
 /-!
+### Algorithm 8.6. Exact Division of Multivariate Polynomials
+
+Given multivariate polynomials `P` and `Q` over a field `K` in `k`
+variables, where `Q` divides `P`, compute `C` such that `P = C * Q`.
+
+The algorithm repeatedly subtracts `(leadTerm R / leadTerm Q) * Q`
+from the remainder `R`, accumulating the quotient monomials in `C`.
+
+**Azurite implementation:** `Azurite.AzMvPolynomial.ExactDiv`
+
+See: `Azurite.AzMvPolynomial.exactDiv`
+-/
+
+/-!
 ### Bitsize of multiplying two polynomials
 
 BPR (unnumbered lemma, §8.1): if `P` and `Q` are multivariate polynomials
