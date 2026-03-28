@@ -131,7 +131,7 @@ theorem revlex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vect
         revlexCompareAux, dif_neg hkn]
 termination_by n₁ - k
 
-private theorem totalDeg_eq_finsum {n : ℕ} (v : Vector ℕ n) :
+theorem totalDeg_eq_finsum {n : ℕ} (v : Vector ℕ n) :
     totalDeg v = Finset.univ.sum (fun i : Fin n => v[i]) := by
   simp only [totalDeg, ← Array.foldl_toList, ← List.sum_eq_foldl]
   rw [show v.toArray.toList = v.toList from rfl,
