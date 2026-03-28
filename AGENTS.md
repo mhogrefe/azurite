@@ -28,7 +28,7 @@ Instead:
 
 # Crash guidance
 
-If the user just messages "c", that means "You crashed. Continue where you left off, but work differently to avoid crashing again." This typically happens after a context truncation or interruption.
+If the user just messages "c", that means "You crashed. Try to not write so much text all at once." This typically happens after a context truncation or interruption.
 
 To reduce the risk of crashes and improve reliability:
 1. **Work incrementally.** Test proof snippets via `lean_run_code` before assembling a full file. Most proof attempts fail on the first try; iterating in small steps avoids wasting large writes.
@@ -36,6 +36,12 @@ To reduce the risk of crashes and improve reliability:
 3. **When resuming after "c"**, re-read the relevant files to regain context before continuing.
 
 # Lean 4 Tips
+
+## Visibility: Always Allowed to Make `private` Public
+If you encounter a `private` definition, theorem, or lemma that you need to reference from another file, you are **always allowed** to remove the `private` modifier. Do not ask for permission — just do it.
+
+## Infrastructural Improvements
+When working on a proof or feature, if you identify an opportunity to build reusable infrastructure that would benefit the project long-term (e.g., a bridge between Azurite's data types and Mathlib's abstractions, or shared lemma libraries), **take the time to do it**. Well-designed infrastructure pays for itself many times over. Prefer investing in solid foundations over ad-hoc workarounds.
 
 ## Visibility: Avoid `private` for Provable Functions
 When implementing pipeline internals (e.g., `collapseAux`, `collapseMonics`) that will need equivalence proofs later, do **not** mark them `private`. Private declarations are invisible outside their file, which forces you to put all related proofs in the same file. Instead, leave them as plain namespace-scoped definitions.

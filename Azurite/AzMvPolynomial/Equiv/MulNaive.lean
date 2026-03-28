@@ -20,13 +20,6 @@ variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
 
 /-! ### Monomial-level multiplication -/
 
-omit [CommSemiring R] [NoZeroDivisors R] [DecidableEq R] in
-/-- `toFinsupp` distributes over monic monomial multiplication. -/
-theorem MonicMonomial.toFinsupp_mul (a b : MonicMonomial σ ord) :
-    (a * b).toFinsupp = a.toFinsupp + b.toFinsupp := by
-  ext v; simp only [MonicMonomial.toFinsupp, Finsupp.onFinset_apply, Finsupp.add_apply,
-    MonicMonomial.mul_exponents]; simp
-
 omit [DecidableEq R] in
 /-- `toMvPoly` distributes over monomial multiplication. -/
 theorem Monomial.toMvPoly_mul (a b : Monomial σ R ord) :

@@ -3,8 +3,6 @@
 
   Renaming can merge monomials (when the map is not injective on the
   variables that appear), so the result must be re-sorted and collapsed.
-
-  This implementation is fully computable (no noncomputable or sorry).
 -/
 import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.CompareEmbed

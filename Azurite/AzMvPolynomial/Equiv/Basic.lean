@@ -181,6 +181,12 @@ theorem MonicMonomial.toFinsupp_injective [DecidableEq σ] :
   exact (ofFinsupp_toFinsupp a).symm.trans
     ((congrArg ofFinsupp h).trans (ofFinsupp_toFinsupp b))
 
+/-- `toFinsupp` distributes over monic monomial multiplication. -/
+theorem MonicMonomial.toFinsupp_mul [DecidableEq σ] (a b : MonicMonomial σ ord) :
+    (a * b).toFinsupp = a.toFinsupp + b.toFinsupp := by
+  ext v; simp only [MonicMonomial.toFinsupp, Finsupp.onFinset_apply, Finsupp.add_apply,
+    MonicMonomial.mul_exponents]; simp
+
 private theorem toMvPoly_eq_sum [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
     p.toMvPoly = (p.terms.toList.map Monomial.toMvPoly).sum := by
   simp only [AzMvPolynomial.toMvPoly]
@@ -194,7 +200,7 @@ private theorem sum_map_eq_zero₂ {α M : Type _} [AddCommMonoid M]
   | cons a t ih =>
     simp [h a (by simp), ih (fun x hx => h x (.tail _ hx))]
 
-private theorem list_sum_ite_eq_of_nodup_map {α β M : Type _} [AddCommMonoid M]
+theorem list_sum_ite_eq_of_nodup_map {α β M : Type _} [AddCommMonoid M]
     [DecidableEq β] (l : List α) (g : α → β) (hnd : (l.map g).Nodup)
     (t : α) (ht : t ∈ l) (f : α → M) :
     (l.map (fun x => if g x = g t then f x else 0)).sum = f t := by
@@ -217,7 +223,7 @@ private theorem list_sum_ite_eq_of_nodup_map {α β M : Type _} [AddCommMonoid M
         zero_add]
       exact ih hnd.2 ht
 
-private theorem toFinsupp_nodup [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
+theorem toFinsupp_nodup [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
     (p.terms.toList.map
       (fun t : Monomial σ R ord => t.monic.toFinsupp)).Nodup := by
   show (p.terms.toList.map _).Pairwise (· ≠ ·)
@@ -225,7 +231,7 @@ private theorem toFinsupp_nodup [DecidableEq σ] (p : AzMvPolynomial σ R ord) :
   exact p.sorted.imp fun h heq =>
     absurd (MonicMonomial.toFinsupp_injective heq) (ne_of_gt h)
 
-private theorem coeff_toMvPoly [DecidableEq σ]
+theorem coeff_toMvPoly [DecidableEq σ]
     (p : AzMvPolynomial σ R ord) (f : σ →₀ ℕ) :
     MvPolynomial.coeff f p.toMvPoly =
     (p.terms.toList.map (fun m : Monomial σ R ord =>
@@ -237,7 +243,7 @@ private theorem coeff_toMvPoly [DecidableEq σ]
   rw [h, List.map_map]; congr 1; ext m
   simp [Monomial.toMvPoly, MvPolynomial.coeff_monomial]
 
-private theorem support_toMvPoly [DecidableEq σ]
+theorem support_toMvPoly [DecidableEq σ]
     (p : AzMvPolynomial σ R ord) :
     p.toMvPoly.support =
     (p.terms.toList.map

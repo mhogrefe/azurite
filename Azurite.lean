@@ -26,8 +26,10 @@ import Azurite.AzMvPolynomial.Equiv.Algebra
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Eval
+import Azurite.AzMvPolynomial.Equiv.ExactDiv
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MergeSorted
+import Azurite.AzMvPolynomial.Equiv.MonomialOrder
 import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.MulNaive
 import Azurite.AzMvPolynomial.Equiv.Neg

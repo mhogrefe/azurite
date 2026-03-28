@@ -115,11 +115,13 @@ def AzMvPolynomial.exactDivAux
     Given `P` and nonzero `Q` where `Q ∣ P` in `K[X₁, …, Xₖ]`,
     computes `C` such that `P = C * Q`.
 
-    Uses as fuel `P.numTerms + 1`, since each iteration strictly
-    decreases the leading monomial of the remainder. -/
+    Uses `(totalDegree P + 1)^k` as fuel, which bounds the number of
+    monomials of degree `≤ totalDegree P` in `k` variables. Each
+    iteration strictly decreases the leading monomial of the remainder,
+    and all such monomials have degree `≤ totalDegree P`. -/
 def AzMvPolynomial.exactDiv
     (p q : AzMvPolynomial σ R ord) (hq : q.terms.size > 0) :
     AzMvPolynomial σ R ord :=
-  exactDivAux q hq (p.numTerms + 1) 0 p
+  exactDivAux q hq ((p.totalDegree + 1) ^ n) 0 p
 
 end Azurite

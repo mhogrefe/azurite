@@ -870,4 +870,13 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
           Nat.add_le_add_left (Nat.size_le_size (Finset.antidiag_filter_snd_le l q)) _
       _ = τ + σ + (k + 1) * Nat.size (q + 1) := by ring
 
+
+/-!
+### Algorithm 8.6. [Exact Division of Multivariate Polynomials]
+
+Implemented in `Azurite.AzMvPolynomial.ExactDiv`.
+Correctness proofs (including the MonomialOrder bridge) are in
+`Azurite.AzMvPolynomial.Equiv.ExactDiv`.
+-/
+
 end Azurite.BPR
