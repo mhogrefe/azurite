@@ -12,6 +12,7 @@ import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Equiv.Mul
 import Azurite.AzMatrix.Equiv.Basis
+import Azurite.Algorithm.FastPow
 import Mathlib.Algebra.Module.Pi
 import Mathlib.Algebra.Module.Equiv.Defs
 import Mathlib.Algebra.Ring.InjSurj
@@ -123,7 +124,7 @@ instance : One (AzMatrix R n n) := ⟨AzMatrix.identity⟩
 instance instMulAzMatrixSq : Mul (AzMatrix R n n) := ⟨fun A B => A.mul B⟩
 
 /-- Helper: view `AzMatrix R n n` as `Matrix (Fin n) (Fin n) R`. -/
-@[reducible] private def toMat (M : AzMatrix R n n) : Matrix (Fin n) (Fin n) R := M.toFn
+@[reducible] def toMat (M : AzMatrix R n n) : Matrix (Fin n) (Fin n) R := M.toFn
 
 omit [CommSemiring R] in
 private theorem toMat_injective :
@@ -132,14 +133,14 @@ private theorem toMat_injective :
 private theorem toMat_zero : toMat (0 : AzMatrix R n n) = 0 := by
   ext i j; exact AzMatrix.toFn_zero i j
 
-private theorem toMat_one : toMat (1 : AzMatrix R n n) = 1 := by
+theorem toMat_one : toMat (1 : AzMatrix R n n) = 1 := by
   unfold toMat; ext i j; show AzMatrix.identity.toFn i j = _
   simp [AzMatrix.identity, Matrix.one_apply]
 
 private theorem toMat_add (M N : AzMatrix R n n) :
     toMat (M + N) = toMat M + toMat N := by ext i j; exact AzMatrix.toFn_add M N i j
 
-private theorem toMat_mul (A B : AzMatrix R n n) :
+theorem toMat_mul (A B : AzMatrix R n n) :
     toMat (instMulAzMatrixSq.mul A B) = toMat A * toMat B := by
   ext i k; show (A.mulBasecase B).toFn i k = _
   rw [AzMatrix.toFn_mulBasecase]; exact (Matrix.mul_apply ..).symm
@@ -160,13 +161,38 @@ private theorem toMat_nsmul (k : Nat) (M : AzMatrix R n n) :
     toMat (nsmulSq k M) = k • toMat M := by
   unfold toMat nsmulSq; ext i j; simp
 
--- npow
-private def npowSq (A : AzMatrix R n n) (k : Nat) : AzMatrix R n n :=
-  AzMatrix.ofFn (toMat A ^ k)
+-- npow (computable via exponentiation by squaring)
+def npowSq (A : AzMatrix R n n) (k : Nat) : AzMatrix R n n :=
+  Azurite.fastPow A k
 
-private theorem toMat_npow (A : AzMatrix R n n) (k : Nat) :
+-- Direct induction proof: toMat preserves fastPowAux
+private theorem toMat_fastPowAux (acc base : AzMatrix R n n) (k : ℕ) :
+    toMat (Azurite.fastPowAux acc base k) = toMat acc * toMat base ^ k := by
+  induction k using Nat.strongRecOn generalizing acc base with
+  | _ k ih =>
+    unfold Azurite.fastPowAux
+    split
+    · rename_i h; subst h; simp [pow_zero, mul_one]
+    · rename_i h
+      split
+      · rename_i heven
+        rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        show toMat acc * (toMat (instMulAzMatrixSq.mul base base)) ^ (k / 2) =
+            toMat acc * toMat base ^ k
+        rw [toMat_mul, show toMat base * toMat base = toMat base ^ 2 from (sq _).symm, ← pow_mul]
+        congr 2; omega
+      · rename_i hodd
+        rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        show toMat (instMulAzMatrixSq.mul acc base) *
+            (toMat (instMulAzMatrixSq.mul base base)) ^ (k / 2) =
+            toMat acc * toMat base ^ k
+        rw [toMat_mul, toMat_mul, mul_assoc]; congr 1
+        rw [show toMat base * toMat base = toMat base ^ 2 from (sq _).symm, ← pow_mul, ← pow_succ']
+        congr 1; omega
+
+theorem toMat_npow (A : AzMatrix R n n) (k : Nat) :
     toMat (npowSq A k) = toMat A ^ k := by
-  unfold toMat npowSq; ext i j; simp
+  simp [npowSq, Azurite.fastPow, toMat_fastPowAux, toMat_one, one_mul]
 
 -- natCast
 private def natCastSq (k : Nat) : AzMatrix R n n :=
@@ -232,9 +258,35 @@ private theorem toMatR_zsmul (k : Int) (M : AzMatrix R n n) :
     toMatR (zsmulR k M) = k • toMatR M := by unfold toMatR zsmulR; ext i j; simp
 
 private def npowR (A : AzMatrix R n n) (k : Nat) : AzMatrix R n n :=
-  AzMatrix.ofFn (toMatR A ^ k)
+  Azurite.fastPow A k
+
+private theorem toMatR_fastPowAux (acc base : AzMatrix R n n) (k : ℕ) :
+    toMatR (Azurite.fastPowAux acc base k) = toMatR acc * toMatR base ^ k := by
+  induction k using Nat.strongRecOn generalizing acc base with
+  | _ k ih =>
+    unfold Azurite.fastPowAux
+    split
+    · rename_i h; subst h; simp [pow_zero, mul_one]
+    · rename_i h
+      split
+      · rename_i heven
+        rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        show toMatR acc * (toMatR (instMulAzMatrixSq.mul base base)) ^ (k / 2) =
+            toMatR acc * toMatR base ^ k
+        rw [toMatR_mul, show toMatR base * toMatR base = toMatR base ^ 2 from (sq _).symm, ← pow_mul]
+        congr 2; omega
+      · rename_i hodd
+        rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        show toMatR (instMulAzMatrixSq.mul acc base) *
+            (toMatR (instMulAzMatrixSq.mul base base)) ^ (k / 2) =
+            toMatR acc * toMatR base ^ k
+        rw [toMatR_mul, toMatR_mul, mul_assoc]; congr 1
+        rw [show toMatR base * toMatR base = toMatR base ^ 2 from (sq _).symm, ← pow_mul, ← pow_succ']
+        congr 1; omega
+
 private theorem toMatR_npow (A : AzMatrix R n n) (k : Nat) :
-    toMatR (npowR A k) = toMatR A ^ k := by unfold toMatR npowR; ext i j; simp
+    toMatR (npowR A k) = toMatR A ^ k := by
+  simp [npowR, Azurite.fastPow, toMatR_fastPowAux, toMatR_one, one_mul]
 
 private def natCastR (k : Nat) : AzMatrix R n n :=
   AzMatrix.ofFn ((k : Matrix (Fin n) (Fin n) R))

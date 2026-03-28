@@ -1,5 +1,6 @@
 -- This module serves as the root of the `Azurite` library.
 -- Import modules here that should be built as part of the library.
+import Azurite.Algorithm.FastPow
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
@@ -8,6 +9,7 @@ import Azurite.AzMatrix.Equiv.Basis
 import Azurite.AzMatrix.Equiv.Mul
 import Azurite.AzMatrix.Equiv.MulVec
 import Azurite.AzMatrix.Equiv.Neg
+import Azurite.AzMatrix.Equiv.Pow
 import Azurite.AzMatrix.Equiv.RowCol
 import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Sub
@@ -16,6 +18,7 @@ import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Mul
 import Azurite.AzMatrix.MulVec
 import Azurite.AzMatrix.Operations
+import Azurite.AzMatrix.Pow
 import Azurite.AzMatrix.RowCol
 import Azurite.AzMvPolynomial.Add
 import Azurite.AzMvPolynomial.Basic
@@ -66,6 +69,7 @@ import Azurite.AzPolynomial.Equiv.Map
 import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.RootBound
 import Azurite.AzPolynomial.Equiv.SMul
@@ -76,6 +80,7 @@ import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.Parse
+import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.RootBound
 import Azurite.AzPolynomial.SMul

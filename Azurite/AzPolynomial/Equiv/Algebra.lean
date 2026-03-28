@@ -1,6 +1,7 @@
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Sub
+import Azurite.Algorithm.FastPow
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
 
@@ -9,6 +10,9 @@ import Mathlib.Algebra.Ring.Hom.InjSurj
 
 Uses `Function.Injective.semiring` etc. to transfer the algebraic structure
 from `Polynomial R` to `AzPolynomial R` via the injective `toPoly` map.
+
+The `Pow` field uses computable exponentiation by squaring (`fastPow`)
+rather than the noncomputable round-trip through `ofPoly`/`toPoly`.
 -/
 
 open Polynomial
@@ -19,9 +23,10 @@ private noncomputable def nsmulAz {R : Type _} [Semiring R] [DecidableEq R]
     (n : ℕ) (p : AzPolynomial R) : AzPolynomial R :=
   AzPolynomial.ofPoly (n • AzPolynomial.toPoly p)
 
-private noncomputable def npowAz {R : Type _} [Semiring R] [DecidableEq R]
+/-- Computable exponentiation for AzPolynomial via binary exponentiation. -/
+private def npowAz {R : Type _} [Semiring R] [DecidableEq R]
     (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
-  AzPolynomial.ofPoly (AzPolynomial.toPoly p ^ n)
+  Azurite.fastPow p n
 
 private noncomputable def natCastAz {R : Type _} [Semiring R] [DecidableEq R]
     (n : ℕ) : AzPolynomial R :=
@@ -40,10 +45,36 @@ private theorem toPoly_nsmulAz {R : Type _} [Semiring R] [DecidableEq R]
     AzPolynomial.toPoly (nsmulAz n p) = n • AzPolynomial.toPoly p := by
   unfold nsmulAz; exact toPoly_ofPoly _
 
+-- Direct induction proof: toPoly preserves fastPowAux
+private theorem toPoly_fastPowAux {R : Type _} [Semiring R] [DecidableEq R]
+    (acc base : AzPolynomial R) (n : ℕ) :
+    AzPolynomial.toPoly (Azurite.fastPowAux acc base n) =
+    AzPolynomial.toPoly acc * AzPolynomial.toPoly base ^ n := by
+  induction n using Nat.strongRecOn generalizing acc base with
+  | _ n ih =>
+    unfold Azurite.fastPowAux
+    split
+    · rename_i h; subst h; simp [pow_zero, mul_one]
+    · rename_i h
+      split
+      · rename_i heven
+        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        simp only [toPoly_mul]
+        rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
+            AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul]
+        congr 2; omega
+      · rename_i hodd
+        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        simp only [toPoly_mul]
+        rw [mul_assoc]; congr 1
+        rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
+            AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul, ← pow_succ']
+        congr 1; omega
+
 private theorem toPoly_npowAz {R : Type _} [Semiring R] [DecidableEq R]
     (p : AzPolynomial R) (n : ℕ) :
     AzPolynomial.toPoly (npowAz p n) = AzPolynomial.toPoly p ^ n := by
-  unfold npowAz; exact toPoly_ofPoly _
+  simp [npowAz, Azurite.fastPow, toPoly_fastPowAux, toPoly_one, one_mul]
 
 private theorem toPoly_natCastAz {R : Type _} [Semiring R] [DecidableEq R]
     (n : ℕ) : AzPolynomial.toPoly (natCastAz n : AzPolynomial R) = (n : Polynomial R) := by

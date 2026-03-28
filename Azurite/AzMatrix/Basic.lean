@@ -82,4 +82,11 @@ def AzMatrix.ofLists (rows : List (List R))
     (⟨r.toArray, by simp [hn r hr]⟩ : Vector R n))).toArray,
     by simp [hm]⟩⟩
 
+/-! ### toLists -/
+
+/-- Convert a matrix to a list of row lists.
+    Inverse of `ofLists`. -/
+def AzMatrix.toLists (M : AzMatrix R m n) : List (List R) :=
+  M.data.toList.map (·.toList)
+
 end Azurite

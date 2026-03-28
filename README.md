@@ -37,6 +37,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/QuoRem` | `toPoly (quo P Q) = toPoly P / toPoly Q`, `toPoly (rem P Q) = toPoly P % toPoly Q`, and `degree(rem) < degree(Q)` |
 | `Equiv/RootBound` | Cauchy root bound correctness: all roots lie within `(-rootBound, rootBound)` |
 | `Equiv/Algebra` | Ring homomorphism and algebra structure preservation |
+| `Equiv/Pow` | `toPoly (p.pow n) = toPoly p ^ n` and `(ofPoly p).pow n = ofPoly (p ^ n)` |
 
 #### AzMvPolynomial ↔ MvPolynomial σ R
 
@@ -89,6 +90,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Transpose` | Transpose preservation |
 | `Equiv/Basis` | Standard basis matrix preservation |
 | `Equiv/Algebra` | Algebra structure preservation |
+| `Equiv/Pow` | `toMat (A.pow k) = toMat A ^ k` and `(ofFn f).pow k = ofFn (f ^ k)` |
 
 #### AzPolynomialQ ↔ AzPolynomial ℚ
 
@@ -97,6 +99,12 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Basic` | Bijection `AzPolynomialQ ≃ AzPolynomial ℚ`; coefficient, degree, and normalization preservation |
 | `Equiv/Parse` | Parsing equivalence |
 | `Equiv/ToString` | String conversion equivalence |
+
+### Generic Algorithms
+
+| Module | Description |
+|--------|-------------|
+| `Algorithm/FastPow` | Right-to-left binary exponentiation (exponentiation by squaring) for any `Monoid`. Computes `a ^ n` in O(log n) multiplications. Proven equivalent to `HPow.hPow` (Mathlib's `^`). |
 
 ### Utility Modules
 
@@ -129,6 +137,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | Exact division of multivariate polynomials | BPR Alg. 8.6 | `AzMvPolynomial/ExactDiv` | — |
 | Fast rational comparison | — | `Rat/Compare` | O(1) amortized for many inputs |
 | Cauchy root bound | — | `AzPolynomial/RootBound` | O(n) |
+| Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
 
 ## Building
 
@@ -150,6 +159,7 @@ Azurite.lean          -- Root import file (all library modules)
 Examples.lean         -- Usage examples
 lakefile.lean         -- Lake build configuration
 Azurite/
+  Algorithm/            -- Generic algorithms (e.g., fast exponentiation)
   AzPolynomial/       -- Univariate polynomials
     Equiv/            -- Equivalence proofs with Polynomial R
   AzMvPolynomial/     -- Multivariate polynomials
