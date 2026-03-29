@@ -1,8 +1,8 @@
 /-
-  Computable operations on Formula (AzFieldAtom).
+  Computable operations on Formula with atoms that provide variable information.
 
-  These mirror the noncomputable definitions in BPR §1.1, but are
-  fully computable because AzMvPolynomial operations are computable.
+  Defines the `AtomVars` typeclass, generic `freeVarsOf`, modular simplification
+  passes, and AzFieldAtom-specific constructors.
 -/
 import Azurite.AzFormula.Atom
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
@@ -11,10 +11,87 @@ namespace Azurite
 
 open AzMvPolynomial MonicMonomial Monomial BPR
 
-variable {σ : Type*} {n : ℕ} [LinearOrder σ] [Var σ n]
-    {R : Type*} [Semiring R] {ord : MonomialOrder}
+/-! ### AtomVars typeclass -/
 
-/-! ### Formula constructors -/
+/-- Typeclass for atom types that can report their free variables.
+    This enables generic `freeVarsOf` and simplifications on any `Formula σ α`. -/
+class AtomVars (α : Type*) (σ : outParam Type*) where
+  /-- The variables appearing in an atom. -/
+  vars : α → Finset σ
+
+/-- `AzFieldAtom` instance: computable via `AzMvPolynomial.vars`. -/
+instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
+    {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomVars (AzFieldAtom σ R ord) σ where
+  vars := AzFieldAtom.vars
+
+/-- `FieldAtom` instance: noncomputable (uses `MvPolynomial.vars`). -/
+noncomputable instance {σ : Type*} [DecidableEq σ]
+    {D : Type*} [CommRing D] :
+    AtomVars (FieldAtom σ D) σ where
+  vars := FieldAtom.vars
+
+/-! ### Generic free variables -/
+
+variable {σ : Type*} {α : Type*}
+
+/-- Free variables of a formula, generic over any atom type with `AtomVars`. -/
+def freeVarsOf [AtomVars α σ] [DecidableEq σ] :
+    Formula σ α → Finset σ
+  | .atom a        => AtomVars.vars a
+  | .not Φ         => freeVarsOf Φ
+  | .and Φ₁ Φ₂     => freeVarsOf Φ₁ ∪ freeVarsOf Φ₂
+  | .or Φ₁ Φ₂      => freeVarsOf Φ₁ ∪ freeVarsOf Φ₂
+  | .implies Φ₁ Φ₂ => freeVarsOf Φ₁ ∪ freeVarsOf Φ₂
+  | .exists_ x Φ   => freeVarsOf Φ \ {x}
+  | .forall_ x Φ   => freeVarsOf Φ \ {x}
+
+/-- A formula is a sentence if it has no free variables. -/
+def isSentenceOf [AtomVars α σ] [DecidableEq σ]
+    (Φ : Formula σ α) : Bool :=
+  freeVarsOf Φ = ∅
+
+/-! ### Modular simplification passes -/
+
+/-- Eliminate double negations bottom-up: `¬¬Φ → Φ`.
+    Does not require `AtomVars`. -/
+def elimDoubleNeg : Formula σ α → Formula σ α
+  | .atom a => .atom a
+  | .not Φ =>
+    match elimDoubleNeg Φ with
+    | .not Ψ => Ψ
+    | Φ'     => .not Φ'
+  | .and Φ₁ Φ₂     => .and (elimDoubleNeg Φ₁) (elimDoubleNeg Φ₂)
+  | .or Φ₁ Φ₂      => .or (elimDoubleNeg Φ₁) (elimDoubleNeg Φ₂)
+  | .implies Φ₁ Φ₂ => .implies (elimDoubleNeg Φ₁) (elimDoubleNeg Φ₂)
+  | .exists_ x Φ   => .exists_ x (elimDoubleNeg Φ)
+  | .forall_ x Φ   => .forall_ x (elimDoubleNeg Φ)
+
+/-- Remove vacuous quantifiers bottom-up: `∃x, Φ → Φ` and `∀x, Φ → Φ`
+    when `x ∉ freeVars Φ`. -/
+def elimVacuousQuantifiers [AtomVars α σ] [DecidableEq σ] :
+    Formula σ α → Formula σ α
+  | .atom a => .atom a
+  | .not Φ  => .not (elimVacuousQuantifiers Φ)
+  | .and Φ₁ Φ₂     => .and (elimVacuousQuantifiers Φ₁) (elimVacuousQuantifiers Φ₂)
+  | .or Φ₁ Φ₂      => .or (elimVacuousQuantifiers Φ₁) (elimVacuousQuantifiers Φ₂)
+  | .implies Φ₁ Φ₂ => .implies (elimVacuousQuantifiers Φ₁) (elimVacuousQuantifiers Φ₂)
+  | .exists_ x Φ =>
+    let Φ' := elimVacuousQuantifiers Φ
+    if x ∈ freeVarsOf Φ' then .exists_ x Φ' else Φ'
+  | .forall_ x Φ =>
+    let Φ' := elimVacuousQuantifiers Φ
+    if x ∈ freeVarsOf Φ' then .forall_ x Φ' else Φ'
+
+/-- Apply all simplifications: double negation elimination followed by
+    vacuous quantifier removal. -/
+def simplify [AtomVars α σ] [DecidableEq σ] (Φ : Formula σ α) : Formula σ α :=
+  elimVacuousQuantifiers (elimDoubleNeg Φ)
+
+/-! ### AzFieldAtom-specific constructors -/
+
+variable {n : ℕ} [LinearOrder σ] [Var σ n]
+    {R : Type*} [Semiring R] {ord : MonomialOrder}
 
 /-- P = 0 as a formula. -/
 def azEqZero (P : AzMvPolynomial σ R ord) :
@@ -33,25 +110,6 @@ def azTrueFormula : Formula σ (AzFieldAtom σ R ord) :=
 /-- The false formula: 0 ≠ 0. -/
 def azFalseFormula : Formula σ (AzFieldAtom σ R ord) :=
   azNeZero 0
-
-/-! ### Free variables (computable) -/
-
-/-- Free variables of an `AzFieldAtom` formula.
-    Unlike the BPR `freeVars`, this is fully computable. -/
-def azFreeVars [DecidableEq σ] :
-    Formula σ (AzFieldAtom σ R ord) → Finset σ
-  | .atom a        => a.vars
-  | .not Φ         => azFreeVars Φ
-  | .and Φ₁ Φ₂     => azFreeVars Φ₁ ∪ azFreeVars Φ₂
-  | .or Φ₁ Φ₂      => azFreeVars Φ₁ ∪ azFreeVars Φ₂
-  | .implies Φ₁ Φ₂ => azFreeVars Φ₁ ∪ azFreeVars Φ₂
-  | .exists_ x Φ   => azFreeVars Φ \ {x}
-  | .forall_ x Φ   => azFreeVars Φ \ {x}
-
-/-- A formula is a sentence if it has no free variables. Decidable. -/
-def azIsSentence [DecidableEq σ]
-    (Φ : Formula σ (AzFieldAtom σ R ord)) : Bool :=
-  azFreeVars Φ = ∅
 
 /-! ### Conjunction of equalities -/
 

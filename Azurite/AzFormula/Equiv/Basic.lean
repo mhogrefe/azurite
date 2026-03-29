@@ -1,10 +1,9 @@
 /-
-  Equivalence proofs between computable AzFormula operations and their
-  noncomputable BPR counterparts.
+  Core equivalence proofs: mapAtom functor laws, formula conversion round-trips,
+  and realization equivalence.
 -/
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.Realization
-import Azurite.AzMvPolynomial.Equiv.Vars
 
 namespace Azurite
 
@@ -36,6 +35,22 @@ theorem mapAtom_comp (f : β → γ) (g : α → β) (Φ : Formula σ α) :
   | exists_ _ _ ih => simp [mapAtom, ih]
   | forall_ _ _ ih => simp [mapAtom, ih]
 
+/-! ### freeVarsOf and mapAtom -/
+
+/-- `freeVarsOf` commutes with `mapAtom` when the atom mapping preserves variables. -/
+theorem freeVarsOf_mapAtom [AtomVars α σ] [AtomVars β σ] [DecidableEq σ]
+    (f : α → β) (hf : ∀ a, AtomVars.vars (f a) = AtomVars.vars a)
+    (Φ : Formula σ α) :
+    freeVarsOf (Φ.mapAtom f) = freeVarsOf Φ := by
+  induction Φ with
+  | atom a => simp [freeVarsOf, mapAtom, hf]
+  | not _ ih => simp [freeVarsOf, mapAtom, ih]
+  | and _ _ ih₁ ih₂ => simp [freeVarsOf, mapAtom, ih₁, ih₂]
+  | or _ _ ih₁ ih₂ => simp [freeVarsOf, mapAtom, ih₁, ih₂]
+  | implies _ _ ih₁ ih₂ => simp [freeVarsOf, mapAtom, ih₁, ih₂]
+  | exists_ _ _ ih => simp [freeVarsOf, mapAtom, ih]
+  | forall_ _ _ ih => simp [freeVarsOf, mapAtom, ih]
+
 /-! ### Formula conversion round-trips -/
 
 variable {n : ℕ} [LinearOrder σ] [Var σ n] [DecidableEq σ]
@@ -56,31 +71,6 @@ theorem azFormulaToFieldFormula_fieldFormulaToAzFormula
   show Φ.mapAtom (AzFieldAtom.toFieldAtom ∘ azFieldAtomOfFieldAtom) = Φ
   conv_rhs => rw [← mapAtom_id Φ]
   congr 1; funext a; exact toFieldAtom_azFieldAtomOfFieldAtom a
-
-/-! ### Free variables equivalence -/
-
-/-- The computable `azFreeVars` agrees with the noncomputable `freeVars`
-    after converting via `azFormulaToFieldFormula`. -/
-theorem azFreeVars_eq_freeVars
-    (Φ : Formula σ (AzFieldAtom σ D ord)) :
-    azFreeVars Φ = (azFormulaToFieldFormula Φ).freeVars := by
-  induction Φ with
-  | atom a =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars,
-      AzFieldAtom.vars, FieldAtom.vars, AzFieldAtom.toFieldAtom]
-    convert (toMvPoly_vars a.poly).symm
-  | not _ ih =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih]
-  | and _ _ ih₁ ih₂ =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih₁, ih₂]
-  | or _ _ ih₁ ih₂ =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih₁, ih₂]
-  | implies _ _ ih₁ ih₂ =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih₁, ih₂]
-  | exists_ _ _ ih =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih]
-  | forall_ _ _ ih =>
-    simp only [azFreeVars, azFormulaToFieldFormula, mapAtom, freeVars, ih]
 
 /-! ### Realization -/
 
