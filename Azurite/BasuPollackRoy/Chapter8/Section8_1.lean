@@ -15,6 +15,7 @@ import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.Polynomial.Coeff
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Polynomial.Degree.Support
+import Mathlib.Algebra.Polynomial.Eval.Degree
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -982,3 +983,97 @@ The implementation uses `Array.foldr` with the Horner accumulator
 The equivalence with Mathlib's `Polynomial.eval` is proved in
 `Azurite.AzPolynomial.Equiv.Eval`.
 -/
+
+/-!
+## Algorithm 8.8. Special Evaluation of a Univariate Polynomial
+
+Given `P = aₚ Xᵖ + ⋯ + a₀ ∈ ℤ[X]` and `b/c ∈ ℚ` with `b, c ∈ ℤ`,
+compute `cᵖ P(b/c)` without leaving `ℤ`.
+
+The algorithm is a variant of Horner's method (Algorithm 8.7) that
+keeps track of a running power `d = cⁱ`:
+
+  - Initialize `HorSpecial₀(P, b) := aₚ`,  `d := 1`.
+  - For `i` from `1` to `p`:
+    - `d := c · d`
+    - `HorSpecialᵢ(P, b) := b · HorSpecialᵢ₋₁(P, b) + d · aₚ₋ᵢ`
+  - Output `HorSpecialₚ(P, b) = cᵖ P(b/c)`.
+
+**Complexity:** `2p` multiplications and `p` additions in the ring.
+
+**Structure required:** Ring (D₀).
+
+**Azurite implementation:** `Azurite.AzPolynomial.evalSpecial`
+
+See: `Azurite.AzPolynomial.Eval`
+-/
+
+section HorSpecial
+
+open Polynomial Finset
+
+variable {R : Type*} [CommRing R]
+
+/-- **BPR Algorithm 8.8 (Special Horner evaluation).** Given `P ∈ R[X]`
+    with `p = natDegree P`, and elements `b, c ∈ R`, computes
+    `cᵖ · P(b/c)` without division:
+    - `horSpecial P b c 0 = aₚ`
+    - `horSpecial P b c (i+1) = b · horSpecial P b c i + c^{i+1} · aₚ₋ᵢ₋₁` -/
+noncomputable def Polynomial.horSpecial (P : R[X]) (b c : R) : ℕ → R
+  | 0 => P.coeff P.natDegree
+  | i + 1 => b * P.horSpecial b c i + c ^ (i + 1) * P.coeff (P.natDegree - (i + 1))
+
+/-- The base case: `horSpecial P b c 0 = leadingCoeff P`. -/
+theorem Polynomial.horSpecial_zero (P : R[X]) (b c : R) :
+    P.horSpecial b c 0 = P.leadingCoeff := by
+  unfold Polynomial.horSpecial; rw [leadingCoeff]
+
+/-- The recurrence for `horSpecial`. -/
+theorem Polynomial.horSpecial_succ (P : R[X]) (b c : R) (i : ℕ) :
+    P.horSpecial b c (i + 1) =
+      b * P.horSpecial b c i + c ^ (i + 1) * P.coeff (P.natDegree - (i + 1)) :=
+  rfl
+
+/-- **Closed-form characterization.**
+    `horSpecial P b c i = ∑ j ∈ range (i+1), aₚ₋ⱼ · b^{i−j} · c^j`. -/
+theorem Polynomial.horSpecial_eq_sum (P : R[X]) (b c : R) (i : ℕ) :
+    P.horSpecial b c i = ∑ j ∈ range (i + 1),
+      P.coeff (P.natDegree - j) * b ^ (i - j) * c ^ j := by
+  induction i with
+  | zero => simp [Polynomial.horSpecial]
+  | succ n ih =>
+    rw [Polynomial.horSpecial, ih]
+    conv_rhs => rw [Finset.sum_range_succ]
+    simp only [show n + 1 - (n + 1) = 0 from Nat.sub_self _, pow_zero, mul_one]
+    congr 1
+    · rw [Finset.mul_sum]; apply Finset.sum_congr rfl
+      intro j hj; rw [Finset.mem_range] at hj
+      rw [show n + 1 - j = (n - j) + 1 from by omega, pow_succ]; ring
+    · ring
+
+/-- **Reindexed closed form at `i = natDegree P`.**
+    `horSpecial P b c p = ∑ k ∈ range (p+1), aₖ · bᵏ · c^{p−k}`. -/
+theorem Polynomial.horSpecial_natDegree_eq_sum (P : R[X]) (b c : R) :
+    P.horSpecial b c P.natDegree = ∑ k ∈ range (P.natDegree + 1),
+      P.coeff k * b ^ k * c ^ (P.natDegree - k) := by
+  rw [horSpecial_eq_sum, ← Finset.sum_flip]
+  apply Finset.sum_congr rfl; intro j hj
+  rw [Finset.mem_range] at hj
+  rw [show P.natDegree - (P.natDegree - j) = j from by omega]
+
+/-- **BPR Algorithm 8.8 (main result, over a field).**
+    `horSpecial P b c p = cᵖ · P.eval(b · c⁻¹)` when `c ≠ 0`. -/
+theorem Polynomial.horSpecial_natDegree_eq_eval {K : Type*} [Field K]
+    (P : K[X]) (b c : K) (hc : c ≠ 0) :
+    P.horSpecial b c P.natDegree = c ^ P.natDegree * P.eval (b * c⁻¹) := by
+  rw [horSpecial_natDegree_eq_sum, eval_eq_sum_range, Finset.mul_sum]
+  apply Finset.sum_congr rfl; intro k hk
+  rw [Finset.mem_range] at hk
+  rw [mul_pow, inv_pow]
+  calc P.coeff k * b ^ k * c ^ (P.natDegree - k)
+      = P.coeff k * (b ^ k * c ^ (P.natDegree - k)) := by ring
+    _ = P.coeff k * (c ^ P.natDegree * (b ^ k * (c ^ k)⁻¹)) := by
+        congr 1; rw [pow_sub₀ c hc (by omega : k ≤ P.natDegree)]; ring
+    _ = c ^ P.natDegree * (P.coeff k * (b ^ k * (c ^ k)⁻¹)) := by ring
+
+end HorSpecial
