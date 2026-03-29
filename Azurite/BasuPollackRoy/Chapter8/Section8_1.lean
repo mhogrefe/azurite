@@ -1188,3 +1188,89 @@ The equivalence proofs are in `Azurite.AzPolynomial.Equiv.SpecialTranslate`:
 - `isRoot_specialTranslate_iff` — root iff root of original at shifted point
 - `isRoot_specialTranslate_map_iff` — root translation across a ring hom `f : R →+* K`
 -/
+
+section SpecialTranslation
+
+open Polynomial Finset
+
+variable {R : Type*} [CommRing R]
+
+/-- **BPR Algorithm 8.10 (Special Translation).** Given `P ∈ R[X]`
+    with `p = natDegree P`, and elements `b, c ∈ R`, the `i`-th
+    intermediate polynomial is:
+    - `specialTrans P b c 0 = C(aₚ)`
+    - `specialTrans P b c (i+1) = (C c * X - C b) * specialTrans P b c i
+                                    + C(c^{i+1} * aₚ₋ᵢ₋₁)`
+
+    The output `specialTrans P b c p = cᵖ P((X − b)/c)`. -/
+noncomputable def Polynomial.specialTrans (P : R[X]) (b c : R) : ℕ → R[X]
+  | 0 => C (P.coeff P.natDegree)
+  | i + 1 => (C c * X - C b) * P.specialTrans b c i +
+      C (c ^ (i + 1) * P.coeff (P.natDegree - (i + 1)))
+
+/-- The base case: `specialTrans P b c 0 = C(leadingCoeff P)`. -/
+theorem Polynomial.specialTrans_zero (P : R[X]) (b c : R) :
+    P.specialTrans b c 0 = C P.leadingCoeff := by
+  unfold Polynomial.specialTrans; rw [leadingCoeff]
+
+/-- The recurrence for `specialTrans`. -/
+theorem Polynomial.specialTrans_succ (P : R[X]) (b c : R) (i : ℕ) :
+    P.specialTrans b c (i + 1) =
+      (C c * X - C b) * P.specialTrans b c i +
+      C (c ^ (i + 1) * P.coeff (P.natDegree - (i + 1))) :=
+  rfl
+/-- **Closed-form characterization.**
+    `specialTrans P b c i = ∑ j ∈ range (i+1), C(aₚ₋ⱼ · cʲ) · (cX − b)^{i−j}`. -/
+theorem Polynomial.specialTrans_eq_sum (P : R[X]) (b c : R) (i : ℕ) :
+    P.specialTrans b c i = ∑ j ∈ range (i + 1),
+      C (P.coeff (P.natDegree - j) * c ^ j) * (C c * X - C b) ^ (i - j) := by
+  induction i with
+  | zero => simp [Polynomial.specialTrans]
+  | succ n ih =>
+    rw [Polynomial.specialTrans, ih]
+    conv_rhs => rw [Finset.sum_range_succ]
+    rw [show n + 1 - (n + 1) = 0 from Nat.sub_self _, pow_zero, mul_one,
+        show c ^ (n + 1) * P.coeff (P.natDegree - (n + 1)) =
+          P.coeff (P.natDegree - (n + 1)) * c ^ (n + 1) from by ring]
+    congr 1
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro j hj
+    rw [Finset.mem_range] at hj
+    rw [mul_comm (C c * X - C b), mul_assoc, ← pow_succ,
+        show n - j + 1 = n + 1 - j from by omega]
+
+private theorem cx_sub_b_eq {K : Type*} [Field K] (b c : K) (hc : c ≠ 0) :
+    X - C (b * c⁻¹) = C c⁻¹ * (C c * X - C b) := by
+  have h1 : C c⁻¹ * (C c * X) = X := by
+    rw [← mul_assoc, ← map_mul, inv_mul_cancel₀ hc, map_one, one_mul]
+  have h2 : C c⁻¹ * C b = C (b * c⁻¹) := by
+    rw [← map_mul, mul_comm]
+  rw [mul_sub, h1, h2]
+
+/-- **BPR Algorithm 8.10 (field characterization).**
+    Over a field with `c ≠ 0`:
+
+    `specialTrans P b c i = C(cⁱ) · Horᵢ(P, X − b·c⁻¹)`,
+
+    i.e. `SpecialTransᵢ = cⁱ (aₚ(X − b/c)ⁱ + ⋯ + aₚ₋ᵢ)`. -/
+theorem Polynomial.specialTrans_eq_horner_comp {K : Type*} [Field K]
+    (P : K[X]) (b c : K) (hc : c ≠ 0) (i : ℕ) :
+    P.specialTrans b c i =
+      C (c ^ i) * (P.horner i).comp (X - C (b * c⁻¹)) := by
+  rw [Polynomial.horner_eq_sum, Polynomial.specialTrans_eq_sum]
+  show _ = C (c ^ i) * eval₂ C (X - C (b * c⁻¹)) _
+  rw [eval₂_finset_sum, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j hj; rw [Finset.mem_range] at hj
+  simp only [eval₂_mul, eval₂_C, eval₂_pow, eval₂_X]
+  rw [cx_sub_b_eq b c hc, mul_pow]
+  simp only [← C_pow, ← mul_assoc, ← map_mul]
+  congr 1; congr 1
+  rw [show c⁻¹ ^ (i - j) = (c ^ (i - j))⁻¹ from inv_pow c (i - j)]
+  rw [show c ^ i * P.coeff (P.natDegree - j) * (c ^ (i - j))⁻¹ =
+    P.coeff (P.natDegree - j) * (c ^ i * (c ^ (i - j))⁻¹) from by ring]
+  rw [← pow_sub₀ c hc (by omega : i - j ≤ i),
+      show i - (i - j) = j from by omega]
+
+end SpecialTranslation
