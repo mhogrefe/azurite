@@ -361,6 +361,16 @@ namespace Formula
 
 variable {σ : Type*} {α : Type*}
 
+/-- Map atoms in a formula via `f : α → β`, preserving all logical structure. -/
+def mapAtom (f : α → β) : Formula σ α → Formula σ β
+  | .atom a      => .atom (f a)
+  | .not Φ       => .not (Φ.mapAtom f)
+  | .and Φ₁ Φ₂   => .and (Φ₁.mapAtom f) (Φ₂.mapAtom f)
+  | .or Φ₁ Φ₂    => .or (Φ₁.mapAtom f) (Φ₂.mapAtom f)
+  | .implies Φ₁ Φ₂ => .implies (Φ₁.mapAtom f) (Φ₂.mapAtom f)
+  | .exists_ x Φ => .exists_ x (Φ.mapAtom f)
+  | .forall_ x Φ => .forall_ x (Φ.mapAtom f)
+
 /-- A formula is quantifier-free if no quantifier (∃ or ∀)
     appears in it. -/
 def IsQuantifierFree : Formula σ α → Prop
