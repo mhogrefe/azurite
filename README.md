@@ -63,6 +63,8 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Bind2` | `toMvPoly (p.bind₂ f) = bind₂ f (toMvPoly p)` (coefficient substitution) |
 | `Equiv/Join2` | `toMvPoly (p.join₂) = bind₂ toMvPolyRingHom (toMvPoly p)` (coefficient flattening) |
 | `Equiv/Vars` | `(toMvPoly p).vars = p.vars` (variable set) |
+| `Equiv/ToAzPolynomial` | `toPoly (p.toAzPolynomial) = eval₂ C X (toMvPoly p)` (univariate projection for `[Unique σ]`) |
+| `Equiv/ToAzPolynomialAt` | `toPoly (p.toAzPolynomialAt hv) = eval₂ C X (toMvPoly p)` (univariate projection at variable `v`, for arbitrary `σ` with `p.vars ⊆ {v}`) |
 | `Equiv/Algebra` | Algebra structure preservation (CommSemiring, CommRing, IsDomain) |
 
 #### AzVector ↔ (Fin n → R)
