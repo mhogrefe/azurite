@@ -33,7 +33,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/SMul` | `toPoly (c • p) = c • toPoly p` |
 | `Equiv/Monomial` | `toPoly (monomial n c) = Polynomial.monomial n c` |
 | `Equiv/Map` | `toPoly (map f p) = Polynomial.map f (toPoly p)` |
-| `Equiv/Eval` | `eval x p = Polynomial.eval x (toPoly p)` |
+| `Equiv/Eval` | `eval x p = Polynomial.eval x (toPoly p)` and `evalSpecial p b c = c^natDeg · (toPoly p).eval(b·c⁻¹)` (BPR Algorithm 8.8) |
 | `Equiv/QuoRem` | `toPoly (quo P Q) = toPoly P / toPoly Q`, `toPoly (rem P Q) = toPoly P % toPoly Q`, and `degree(rem) < degree(Q)` |
 | `Equiv/RootBound` | Cauchy root bound correctness: all roots lie within `(-rootBound, rootBound)` |
 | `Equiv/Algebra` | Ring homomorphism and algebra structure preservation |
@@ -107,6 +107,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Basic` | Bijection `AzPolynomialQ ≃ AzPolynomial ℚ`; coefficient, degree, and normalization preservation |
 | `Equiv/Parse` | Parsing equivalence |
 | `Equiv/ToString` | String conversion equivalence |
+| `Equiv/Eval` | `eval p x = Polynomial.eval x (toPoly p)` — BPR special evaluation on integer numerators ↔ Mathlib polynomial evaluation |
 
 ### Generic Algorithms
 
@@ -130,7 +131,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 |--------|---------|
 | `BasuPollackRoy/Chapter1/Section1_1` | Algebraically closed fields, zero sets (`Zer`), algebraic/constructible sets, first-order formulas in the language of fields, quantifier-free and prenex normal forms, realization, prenex normal form theorem. Exercises 1.1–1.3. |
 | `BasuPollackRoy/Chapter1/Section1_2` | Euclidean division, GCD/LCM (definitions and propositions), coprimality, signed remainder sequences. Proposition 1.5, Corollary 1.6, Exercises 1.5–1.7, Proposition 1.8. |
-| `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Cross-references to Azurite implementations of Algorithms 8.1–8.6. |
+| `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Notation 8.7 (Horner polynomials with sum/eval identities), Algorithm 8.7 (polynomial evaluation), Algorithm 8.8 (special evaluation with `horSpecial` sum characterization, field identity, and bitsize bound `τ + iτ' + bit(p+1)`). Cross-references to Azurite implementations of Algorithms 8.1–8.8. |
 
 ## Algorithms Implemented
 

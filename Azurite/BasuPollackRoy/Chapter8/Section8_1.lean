@@ -1077,3 +1077,64 @@ theorem Polynomial.horSpecial_natDegree_eq_eval {K : Type*} [Field K]
     _ = c ^ P.natDegree * (P.coeff k * (b ^ k * (c ^ k)⁻¹)) := by ring
 
 end HorSpecial
+
+/-! ### Bitsize bound on HorSpecial -/
+
+section HorSpecialBitsize
+
+open Polynomial Finset
+
+-- Each summand `a_{p-j} · b^{i-j} · c^j` has bitsize ≤ τ + i · τ'.
+-- This is the product of one coefficient (bitsize ≤ τ) with i factors
+-- (b or c, each of bitsize ≤ τ').
+private theorem bitsize_coeff_mul_pow_le (a b c : ℤ) (i j τ τ' : ℕ)
+    (hj : j ≤ i) (ha : a.natAbs.size ≤ τ)
+    (hb : b.natAbs.size ≤ τ') (hc : c.natAbs.size ≤ τ') :
+    (a * b ^ (i - j) * c ^ j).natAbs.size ≤ τ + i * τ' := by
+  by_cases hi : i = 0
+  · simp [show j = 0 from by omega, hi, ha]
+  · -- The product b^{i-j} * c^j is a product of i integers each of bitsize ≤ τ'
+    set L := List.replicate (i - j) b ++ List.replicate j c with hL_def
+    have hne : L ≠ [] := by simp [hL_def]; omega
+    have hlen : L.length = i := by simp [hL_def]; omega
+    have heq : L.prod = b ^ (i - j) * c ^ j := by simp [hL_def, List.prod_replicate]
+    have hprod : L.prod.natAbs.size ≤ i * τ' := by
+      have := Azurite.BPR.Int.bitsize_list_prod_le L τ' hne
+        (by intro x hx; simp [hL_def, List.mem_append, List.mem_replicate] at hx
+            rcases hx with ⟨-, rfl⟩ | ⟨-, rfl⟩ <;> assumption)
+      simp [hlen, Azurite.BPR.Int.bitsize] at this; exact this
+    rw [mul_assoc, ← heq]
+    exact Azurite.BPR.Int.bitsize_mul_le a _ τ (i * τ') ha hprod
+
+/-- **BPR §8.1 (bitsize of HorSpecial).**
+    Let `P ∈ ℤ[X]` with `p = natDegree P` and coefficient bitsizes bounded by `τ`.
+    Let `b, c ∈ ℤ` with `bitsize(b), bitsize(c) ≤ τ'`. Then for `i ≤ p`:
+
+      `bitsize(horSpecial P b c i) ≤ τ + i · τ' + bitsize(p + 1)`.
+
+    The bound comes from the closed-form sum
+    `horSpecial P b c i = ∑_{j=0}^{i} a_{p-j} · b^{i-j} · c^j`:
+    each summand has bitsize `≤ τ + i · τ'` (product of one coefficient of
+    bitsize `τ` and `i` factors of bitsize `τ'`), and the sum of `i + 1 ≤ p + 1`
+    terms adds `bitsize(p + 1)`. -/
+theorem Polynomial.bitsize_horSpecial_le (P : ℤ[X]) (b c : ℤ) (i τ τ' : ℕ)
+    (hi : i ≤ P.natDegree)
+    (hτ : ∀ k, (P.coeff k).natAbs.size ≤ τ)
+    (hb : b.natAbs.size ≤ τ') (hc : c.natAbs.size ≤ τ') :
+    (P.horSpecial b c i).natAbs.size ≤ τ + i * τ' + Nat.size (P.natDegree + 1) := by
+  -- Unfold horSpecial to the closed-form sum
+  rw [Polynomial.horSpecial_eq_sum]
+  -- Each summand has bitsize ≤ τ + i*τ'
+  have hB : ∀ j ∈ range (i + 1),
+      (P.coeff (P.natDegree - j) * b ^ (i - j) * c ^ j).natAbs.size ≤ τ + i * τ' := by
+    intro j hj
+    rw [Finset.mem_range] at hj
+    exact bitsize_coeff_mul_pow_le _ b c i j τ τ' (by omega) (hτ _) hb hc
+  -- Sum of i+1 terms each of bitsize ≤ B adds Nat.size(i+1)
+  have h1 := Azurite.BPR.Int.bitsize_finset_sum_le hB
+  rw [Finset.card_range] at h1
+  -- Since i ≤ p, Nat.size(i+1) ≤ Nat.size(p+1)
+  exact le_trans h1 (Nat.add_le_add_left (Nat.size_le_size (by omega)) _)
+
+end HorSpecialBitsize
+
