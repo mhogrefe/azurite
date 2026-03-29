@@ -401,7 +401,7 @@ inductive IsPrenex : Formula σ α → Prop where
       IsPrenex Φ → IsPrenex (.forall_ x Φ)
 
 /-- Rename variables in a formula via `f : σ → τ`. -/
-noncomputable def rename (f : σ → τ) (renameAtom : α → β) :
+def rename (f : σ → τ) (renameAtom : α → β) :
     Formula σ α → Formula τ β
   | .atom a      => .atom (renameAtom a)
   | .not Φ       => .not (Φ.rename f renameAtom)

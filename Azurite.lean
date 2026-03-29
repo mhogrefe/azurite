@@ -2,6 +2,8 @@
 -- Import modules here that should be built as part of the library.
 import Azurite.Algorithm.FastPow
 import Azurite.AzFormula.Atom
+import Azurite.AzFormula.Basic
+import Azurite.AzFormula.Equiv
 import Azurite.AzFormula.Realization
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add

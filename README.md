@@ -15,6 +15,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
 | `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, and row/column access. |
+| `AzFormula/` | Computable first-order formulas over `AzFieldAtom` (field atoms using `AzMvPolynomial`). Provides computable free-variable computation, sentence checking, formula constructors, variable renaming, and noncomputable realization. Generic `mapAtom` functor and atom-level conversions to/from BPR's `FieldAtom`. |
 
 ### Equivalence Proofs (`Equiv/` subdirectories)
 
@@ -102,6 +103,12 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Algebra` | Algebra structure preservation |
 | `Equiv/Pow` | `toMat (A.pow k) = toMat A ^ k` and `(ofFn f).pow k = ofFn (f ^ k)` |
 
+#### AzFormula (AzFieldAtom) ↔ Formula (FieldAtom)
+
+| File | What it proves |
+|------|---------------|
+| `Equiv` | `mapAtom` functor laws (`mapAtom_id`, `mapAtom_comp`), formula conversion round-trips (`fieldFormulaToAzFormula ∘ azFormulaToFieldFormula = id` and vice versa), `azFreeVars Φ = freeVars (azFormulaToFieldFormula Φ)` (computable vars agree with noncomputable), `azRealization = realization ∘ azFormulaToFieldFormula`. |
+
 #### AzPolynomialQ ↔ AzPolynomial ℚ
 
 | File | What it proves |
@@ -183,6 +190,8 @@ Azurite/
     Equiv/            -- Equivalence proofs with Fin n → R
   AzMatrix/           -- Fixed-size matrices
     Equiv/            -- Equivalence proofs with Matrix (Fin m) (Fin n) R
+  AzFormula/          -- Computable first-order formulas (AzFieldAtom)
+    Equiv.lean        -- Equivalence proofs with BPR Formula (FieldAtom)
   BasuPollackRoy/     -- Formalized textbook (BPR)
     Chapter1/
     Chapter8/
