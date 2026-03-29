@@ -159,7 +159,8 @@ private def nsmulSq (k : Nat) (M : AzMatrix R n n) : AzMatrix R n n :=
 
 private theorem toMat_nsmul (k : Nat) (M : AzMatrix R n n) :
     toMat (nsmulSq k M) = k • toMat M := by
-  unfold toMat nsmulSq; ext i j; simp
+  unfold toMat nsmulSq; ext i j
+  simp only [AzMatrix.toFn_ofFn]
 
 -- npow (computable via exponentiation by squaring)
 def npowSq (A : AzMatrix R n n) (k : Nat) : AzMatrix R n n :=
@@ -250,12 +251,14 @@ private theorem toMatR_sub (M N : AzMatrix R n n) :
 private def nsmulR (k : Nat) (M : AzMatrix R n n) : AzMatrix R n n :=
   AzMatrix.ofFn (k • toMatR M)
 private theorem toMatR_nsmul (k : Nat) (M : AzMatrix R n n) :
-    toMatR (nsmulR k M) = k • toMatR M := by unfold toMatR nsmulR; ext i j; simp
+    toMatR (nsmulR k M) = k • toMatR M := by
+  unfold toMatR nsmulR; ext i j; simp only [AzMatrix.toFn_ofFn]
 
 private def zsmulR (k : Int) (M : AzMatrix R n n) : AzMatrix R n n :=
   AzMatrix.ofFn (k • toMatR M)
 private theorem toMatR_zsmul (k : Int) (M : AzMatrix R n n) :
-    toMatR (zsmulR k M) = k • toMatR M := by unfold toMatR zsmulR; ext i j; simp
+    toMatR (zsmulR k M) = k • toMatR M := by
+  unfold toMatR zsmulR; ext i j; simp only [AzMatrix.toFn_ofFn]
 
 private def npowR (A : AzMatrix R n n) (k : Nat) : AzMatrix R n n :=
   Azurite.fastPow A k
