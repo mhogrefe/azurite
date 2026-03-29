@@ -1078,6 +1078,28 @@ theorem Polynomial.horSpecial_natDegree_eq_eval {K : Type*} [Field K]
 
 end HorSpecial
 
+/-!
+## Algorithm 8.9. Translation
+
+Given `P = aₚ Xᵖ + ⋯ + a₀ ∈ A[X]` and `c ∈ A`, compute `P(X - c)`.
+
+The algorithm simply composes `P` with the linear polynomial `X - c`
+using Algorithm 8.7 (Horner composition).
+
+**Complexity (BPR):** Dominated by the composition cost.
+
+**Structure required:** Ring (D₀).
+
+**Azurite implementation:** `Azurite.AzPolynomial.translate`
+
+See: `Azurite.AzPolynomial.Translate`
+
+The equivalence `toPoly (translate p c) = (toPoly p).comp (X - C c)`
+is proved in `Azurite.AzPolynomial.Equiv.Translate`, along with the
+root translation theorem: `r` is a root of `P(X-c)` iff `r-c` is a
+root of `P`.
+-/
+
 /-! ### Bitsize bound on HorSpecial -/
 
 section HorSpecialBitsize
