@@ -335,111 +335,190 @@ theorem exercise_1_3 {V : Set (Fin k → C)}
   | inter _ _ ih₁ ih₂ => exact inter_fin_union ih₁ ih₂
 
 /-!
-### The Language of Fields
+### First-Order Formulas (Generic)
 
-Let D be a subring of C. We define first-order formulas in the
-language of fields with coefficients in D.
+We define first-order formulas generically over an **atom type** `α`.
+The connectives are `not`, `and`, `or`, and the quantifier `exists_`.
+We derive `forall_` (= ¬∃x, ¬Φ) and `implies` (= ¬Φ ∨ Ψ).
 
-Atoms are `P = 0` where P ∈ D[X₁, …, Xₖ]. The constructors
-are `eq_zero`, `not`, `and`, `or`, and `exists_`. We derive
-`ne_zero` (= ¬(P = 0)), `forall_` (= ¬∃x, ¬Φ), and `implies`
-(= ¬Φ ∨ Ψ) as abbreviations.
+For algebraically closed fields (Chapter 1), atoms are `FieldAtom σ D`,
+encoding `P = 0` or `P ≠ 0` via a boolean flag.
+For real closed fields (Chapter 2), atoms will encode sign conditions.
 -/
 
-/-- First-order formulas in the language of fields with
-    coefficients in D. Variables are indexed by type σ. -/
-inductive Formula (σ : Type*) (D : Type*) [CommRing D]
-    where
-  | eq_zero  : MvPolynomial σ D → Formula σ D
-  | not      : Formula σ D → Formula σ D
-  | and      : Formula σ D → Formula σ D → Formula σ D
-  | or       : Formula σ D → Formula σ D → Formula σ D
-  | exists_  : σ → Formula σ D → Formula σ D
+/-- First-order formulas over atom type `α`, with variables
+    indexed by type `σ`. -/
+inductive Formula (σ : Type*) (α : Type*) where
+  | atom    : α → Formula σ α
+  | not     : Formula σ α → Formula σ α
+  | and     : Formula σ α → Formula σ α → Formula σ α
+  | or      : Formula σ α → Formula σ α → Formula σ α
+  | exists_ : σ → Formula σ α → Formula σ α
 
 namespace Formula
 
-variable {D : Type*} [CommRing D] {σ : Type*}
-
-/-- P ≠ 0 as a formula. -/
-def ne_zero (P : MvPolynomial σ D) : Formula σ D :=
-  .not (.eq_zero P)
+variable {σ : Type*} {α : Type*}
 
 /-- Universal quantification: ∀x, Φ  :=  ¬∃x, ¬Φ. -/
-abbrev forall_ (x : σ) (Φ : Formula σ D) : Formula σ D :=
+abbrev forall_ (x : σ) (Φ : Formula σ α) : Formula σ α :=
   .not (.exists_ x (.not Φ))
 
 /-- Implication: Φ ⇒ Ψ  :=  ¬Φ ∨ Ψ. -/
-def implies (Φ Ψ : Formula σ D) : Formula σ D :=
+def implies (Φ Ψ : Formula σ α) : Formula σ α :=
   .or (.not Φ) Ψ
-
-/-- The free variables of a formula. -/
-noncomputable def freeVars [DecidableEq σ] :
-    Formula σ D → Finset σ
-  | .eq_zero P   => P.vars
-  | .not Φ       => Φ.freeVars
-  | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
-  | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
-  | .exists_ x Φ => Φ.freeVars \ {x}
-
-/-- A sentence is a formula with no free variables. -/
-def isSentence [DecidableEq σ] (Φ : Formula σ D) :
-    Prop :=
-  Φ.freeVars = ∅
-
-/-- The formula "True": 0 = 0. -/
-noncomputable def trueFormula : Formula σ D := .eq_zero 0
-
-/-- The formula "False": 0 ≠ 0. -/
-noncomputable def falseFormula : Formula σ D := .not (.eq_zero 0)
 
 /-- A formula is quantifier-free if no quantifier (∃ or ∀)
     appears in it. -/
-def IsQuantifierFree : Formula σ D → Prop
-  | .eq_zero _   => True
+def IsQuantifierFree : Formula σ α → Prop
+  | .atom _      => True
   | .not Φ       => Φ.IsQuantifierFree
   | .and Φ₁ Φ₂   => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
   | .or Φ₁ Φ₂    => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
   | .exists_ _ _ => False
 
-/-- A basic formula is a conjunction of atoms
-    (P = 0 or P ≠ 0). -/
-inductive IsBasicFormula : Formula σ D → Prop where
-  | eq_zero (P : MvPolynomial σ D) :
-      IsBasicFormula (.eq_zero P)
-  | ne_zero (P : MvPolynomial σ D) :
-      IsBasicFormula (.not (.eq_zero P))
-  | and {Φ₁ Φ₂} :
-      IsBasicFormula Φ₁ → IsBasicFormula Φ₂ →
-      IsBasicFormula (.and Φ₁ Φ₂)
-
-theorem IsBasicFormula.isQuantifierFree
-    {Φ : Formula σ D} (h : IsBasicFormula Φ) :
-    Φ.IsQuantifierFree := by
-  induction h with
-  | eq_zero _ => trivial
-  | ne_zero _ => trivial
-  | and _ _ ih₁ ih₂ => exact ⟨ih₁, ih₂⟩
-
-/-!
-### Prenex Normal Form
-
-A formula is in **prenex normal form** if it is a sequence
-of quantifiers (∀ or ∃) applied to a quantifier-free body:
-
-  (Qu₁ X₁) ⋯ (Quₘ Xₘ) 𝓑(X₁, …, Xₘ, Y₁, …, Yₖ)
-
-Since ∀ is encoded as ¬∃¬ in our syntax, the `forall_`
-constructor pattern-matches that encoding.
--/
+/-- Quantifier depth of a formula. -/
+def quantifierDepth : Formula σ α → ℕ
+  | .atom _      => 0
+  | .not Φ       => Φ.quantifierDepth
+  | .and Φ₁ Φ₂   => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .or Φ₁ Φ₂    => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .exists_ _ Φ => Φ.quantifierDepth + 1
 
 /-- A formula in prenex normal form. -/
-inductive IsPrenex : Formula σ D → Prop where
+inductive IsPrenex : Formula σ α → Prop where
   | qf {Φ} : Φ.IsQuantifierFree → IsPrenex Φ
   | exists_ {x : σ} {Φ} :
       IsPrenex Φ → IsPrenex (.exists_ x Φ)
   | forall_ {x : σ} {Φ} :
       IsPrenex Φ →
       IsPrenex (.not (.exists_ x (.not Φ)))
+
+/-- Rename variables in a formula via `f : σ → τ`. -/
+noncomputable def rename (f : σ → τ) (renameAtom : α → β) :
+    Formula σ α → Formula τ β
+  | .atom a      => .atom (renameAtom a)
+  | .not Φ       => .not (Φ.rename f renameAtom)
+  | .and Φ₁ Φ₂   => .and (Φ₁.rename f renameAtom) (Φ₂.rename f renameAtom)
+  | .or Φ₁ Φ₂    => .or (Φ₁.rename f renameAtom) (Φ₂.rename f renameAtom)
+  | .exists_ x Φ => .exists_ (f x) (Φ.rename f renameAtom)
+
+theorem rename_isQF (f : σ → τ) (ra : α → β) :
+    ∀ (Φ : Formula σ α), Φ.IsQuantifierFree →
+    (Φ.rename f ra).IsQuantifierFree
+  | .atom _, _ => trivial
+  | .not Φ, h => rename_isQF f ra Φ h
+  | .and Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
+    ⟨rename_isQF f ra Φ₁ h₁, rename_isQF f ra Φ₂ h₂⟩
+  | .or Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
+    ⟨rename_isQF f ra Φ₁ h₁, rename_isQF f ra Φ₂ h₂⟩
+
+theorem rename_isPrenex (f : σ → τ) (ra : α → β)
+    {Φ : Formula σ α}
+    (h : IsPrenex Φ) : IsPrenex (Φ.rename f ra) := by
+  induction h with
+  | qf hqf => exact .qf (rename_isQF f ra _ hqf)
+  | exists_ _ ih => exact .exists_ ih
+  | forall_ _ ih => exact .forall_ ih
+
+theorem rename_quantifierDepth (f : σ → τ) (ra : α → β)
+    (Φ : Formula σ α) :
+    (Φ.rename f ra).quantifierDepth = Φ.quantifierDepth := by
+  induction Φ with
+  | atom => simp [rename, quantifierDepth]
+  | not _ ih => simp [rename, quantifierDepth, ih]
+  | and _ _ ih₁ ih₂ =>
+    simp [rename, quantifierDepth, ih₁, ih₂]
+  | or _ _ ih₁ ih₂ =>
+    simp [rename, quantifierDepth, ih₁, ih₂]
+  | exists_ _ _ ih =>
+    simp [rename, quantifierDepth, ih]
+
+/-!
+### Atoms for the Language of Fields
+
+For algebraically closed fields, atoms are `P = 0` or `P ≠ 0`,
+encoded as a polynomial together with a boolean flag.
+-/
+
+end Formula
+
+/-- An atom in the language of fields: a polynomial `P` together
+    with `isEq = true` for `P = 0` or `isEq = false` for `P ≠ 0`. -/
+structure FieldAtom (σ : Type*) (D : Type*) [CommRing D] where
+  poly : MvPolynomial σ D
+  isEq : Bool
+
+namespace FieldAtom
+
+variable {σ : Type*} {D : Type*} [CommRing D]
+
+/-- The atom `P = 0`. -/
+def eqZero (P : MvPolynomial σ D) : FieldAtom σ D := ⟨P, true⟩
+
+/-- The atom `P ≠ 0`. -/
+def neZero (P : MvPolynomial σ D) : FieldAtom σ D := ⟨P, false⟩
+
+/-- Free variables of a field atom. -/
+noncomputable def vars [DecidableEq σ] (a : FieldAtom σ D) : Finset σ :=
+  a.poly.vars
+
+/-- Rename variables in a field atom. -/
+noncomputable def renameVars (f : σ → τ) (a : FieldAtom σ D) :
+    FieldAtom τ D :=
+  ⟨a.poly.rename f, a.isEq⟩
+
+end FieldAtom
+
+namespace Formula
+
+variable {σ : Type*} {D : Type*} [CommRing D]
+
+/-- P = 0 as a formula. -/
+noncomputable def eq_zero (P : MvPolynomial σ D) :
+    Formula σ (FieldAtom σ D) :=
+  .atom (FieldAtom.eqZero P)
+
+/-- P ≠ 0 as a formula. -/
+noncomputable def ne_zero (P : MvPolynomial σ D) :
+    Formula σ (FieldAtom σ D) :=
+  .atom (FieldAtom.neZero P)
+
+/-- The free variables of a field formula. -/
+noncomputable def freeVars [DecidableEq σ] :
+    Formula σ (FieldAtom σ D) → Finset σ
+  | .atom a      => a.vars
+  | .not Φ       => Φ.freeVars
+  | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .exists_ x Φ => Φ.freeVars \ {x}
+
+/-- A sentence is a formula with no free variables. -/
+def isSentence [DecidableEq σ] (Φ : Formula σ (FieldAtom σ D)) :
+    Prop :=
+  Φ.freeVars = ∅
+
+/-- The formula "True": 0 = 0. -/
+noncomputable def trueFormula : Formula σ (FieldAtom σ D) :=
+  eq_zero 0
+
+/-- The formula "False": 0 ≠ 0. -/
+noncomputable def falseFormula : Formula σ (FieldAtom σ D) :=
+  ne_zero 0
+
+/-- A basic formula is a conjunction of atoms. -/
+inductive IsBasicFormula : Formula σ (FieldAtom σ D) → Prop where
+  | atom (a : FieldAtom σ D) :
+      IsBasicFormula (.atom a)
+  | and {Φ₁ Φ₂} :
+      IsBasicFormula Φ₁ → IsBasicFormula Φ₂ →
+      IsBasicFormula (.and Φ₁ Φ₂)
+
+theorem IsBasicFormula.isQuantifierFree
+    {Φ : Formula σ (FieldAtom σ D)} (h : IsBasicFormula Φ) :
+    Φ.IsQuantifierFree := by
+  induction h with
+  | atom _ => trivial
+  | and _ _ ih₁ ih₂ => exact ⟨ih₁, ih₂⟩
 
 /-!
 ### Realization
@@ -454,12 +533,13 @@ and `aeval` handles the coercion of coefficients from D to C.
 
 variable {C : Type*} [Field C] [Algebra D C]
 
-/-- The C-realization of a formula: the set of assignments
+/-- The C-realization of a field formula: the set of assignments
     y : σ → C such that Φ(y) is true.
     BPR notation: Reali(Φ, Cᵏ). -/
 noncomputable def realization [DecidableEq σ] :
-    Formula σ D → Set (σ → C)
-  | .eq_zero P   => { y | aeval y P = 0 }
+    Formula σ (FieldAtom σ D) → Set (σ → C)
+  | .atom a      => if a.isEq then { y | aeval y a.poly = 0 }
+                     else { y | aeval y a.poly ≠ 0 }
   | .not Φ       => (Φ.realization)ᶜ
   | .and Φ₁ Φ₂   => Φ₁.realization ∩ Φ₂.realization
   | .or Φ₁ Φ₂    => Φ₁.realization ∪ Φ₂.realization
@@ -467,19 +547,30 @@ noncomputable def realization [DecidableEq σ] :
     { y | ∃ c : C, Function.update y x c ∈ Φ.realization }
 
 def CEquiv [DecidableEq σ]
-    (Φ Ψ : Formula σ D) : Prop :=
+    (Φ Ψ : Formula σ (FieldAtom σ D)) : Prop :=
   (realization (C := C) Φ) = (realization (C := C) Ψ)
 
 @[simp] theorem realization_trueFormula [DecidableEq σ] :
-    (trueFormula : Formula σ D).realization (C := C) =
+    (trueFormula : Formula σ (FieldAtom σ D)).realization (C := C) =
       Set.univ := by
-  ext y; simp [trueFormula, realization, map_zero]
+  ext y; simp [trueFormula, eq_zero, realization, FieldAtom.eqZero, map_zero]
 
 @[simp] theorem realization_falseFormula [DecidableEq σ] :
-    (falseFormula : Formula σ D).realization (C := C) =
+    (falseFormula : Formula σ (FieldAtom σ D)).realization (C := C) =
       ∅ := by
-  ext y; simp [falseFormula, realization, map_zero]
+  ext y; simp [falseFormula, ne_zero, realization, FieldAtom.neZero, map_zero]
 
+@[simp] theorem realization_eq_zero [DecidableEq σ]
+    (P : MvPolynomial σ D) :
+    (eq_zero P : Formula σ (FieldAtom σ D)).realization (C := C) =
+      { y | MvPolynomial.aeval y P = 0 } := by
+  simp [eq_zero, realization, FieldAtom.eqZero]
+
+@[simp] theorem realization_ne_zero [DecidableEq σ]
+    (P : MvPolynomial σ D) :
+    (ne_zero P : Formula σ (FieldAtom σ D)).realization (C := C) =
+      { y | MvPolynomial.aeval y P ≠ 0 } := by
+  simp [ne_zero, realization, FieldAtom.neZero]
 /-!
 ### Prenex Normal Form Infrastructure
 
@@ -487,60 +578,17 @@ Variable renaming, realization invariance, and the prenex
 normal form theorem.
 -/
 
-/-- Rename variables in a formula via `f : σ → τ`. -/
-noncomputable def rename (f : σ → τ) : Formula σ D → Formula τ D
-  | .eq_zero P   => .eq_zero (P.rename f)
-  | .not Φ       => .not (Φ.rename f)
-  | .and Φ₁ Φ₂   => .and (Φ₁.rename f) (Φ₂.rename f)
-  | .or Φ₁ Φ₂    => .or (Φ₁.rename f) (Φ₂.rename f)
-  | .exists_ x Φ => .exists_ (f x) (Φ.rename f)
-
-theorem rename_isQF (f : σ → τ) :
-    ∀ (Φ : Formula σ D), Φ.IsQuantifierFree →
-    (Φ.rename f).IsQuantifierFree
-  | .eq_zero _, _ => trivial
-  | .not Φ, h => rename_isQF f Φ h
-  | .and Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
-    ⟨rename_isQF f Φ₁ h₁, rename_isQF f Φ₂ h₂⟩
-  | .or Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
-    ⟨rename_isQF f Φ₁ h₁, rename_isQF f Φ₂ h₂⟩
-
-theorem rename_isPrenex (f : σ → τ) {Φ : Formula σ D}
-    (h : IsPrenex Φ) : IsPrenex (Φ.rename f) := by
-  induction h with
-  | qf hqf => exact .qf (rename_isQF f _ hqf)
-  | exists_ _ ih => exact .exists_ ih
-  | forall_ _ ih => exact .forall_ ih
-
-/-- Quantifier depth of a formula. -/
-def quantifierDepth : Formula σ D → ℕ
-  | .eq_zero _   => 0
-  | .not Φ       => Φ.quantifierDepth
-  | .and Φ₁ Φ₂   => Φ₁.quantifierDepth + Φ₂.quantifierDepth
-  | .or Φ₁ Φ₂    => Φ₁.quantifierDepth + Φ₂.quantifierDepth
-  | .exists_ _ Φ => Φ.quantifierDepth + 1
-
-theorem rename_quantifierDepth (f : σ → τ)
-    (Φ : Formula σ D) :
-    (Φ.rename f).quantifierDepth = Φ.quantifierDepth := by
-  induction Φ with
-  | eq_zero => simp [rename, quantifierDepth]
-  | not _ ih => simp [rename, quantifierDepth, ih]
-  | and _ _ ih₁ ih₂ =>
-    simp [rename, quantifierDepth, ih₁, ih₂]
-  | or _ _ ih₁ ih₂ =>
-    simp [rename, quantifierDepth, ih₁, ih₂]
-  | exists_ _ _ ih =>
-    simp [rename, quantifierDepth, ih]
 
 theorem rename_realization [DecidableEq σ] [DecidableEq τ]
     (f : σ → τ) (hf : Function.Injective f)
-    (Φ : Formula σ D) :
-    (Φ.rename f).realization (C := C) =
+    (Φ : Formula σ (FieldAtom σ D)) :
+    (Φ.rename f (FieldAtom.renameVars f)).realization (C := C) =
       (· ∘ f) ⁻¹' Φ.realization := by
   induction Φ with
-  | eq_zero P =>
-    ext y; simp [rename, realization, aeval_rename]
+  | atom a =>
+    ext y; cases a with | mk P b =>
+    cases b <;> simp [rename, FieldAtom.renameVars,
+      realization, aeval_rename]
   | not _ ih =>
     simp [rename, realization, ih, Set.preimage_compl]
   | and _ _ ih₁ ih₂ =>
@@ -571,14 +619,15 @@ private theorem aeval_update_of_not_mem_vars
   simp [this]
 
 theorem realization_invariant_update [DecidableEq σ]
-    (Φ : Formula σ D) (x : σ) (hx : x ∉ Φ.freeVars)
+    (Φ : Formula σ (FieldAtom σ D)) (x : σ) (hx : x ∉ Φ.freeVars)
     (y : σ → C) (c : C) :
     y ∈ Φ.realization (C := C) ↔
     Function.update y x c ∈ Φ.realization := by
   induction Φ generalizing y with
-  | eq_zero P =>
-    simp only [realization, Set.mem_setOf_eq, freeVars] at *
-    rw [aeval_update_of_not_mem_vars P y x c hx]
+  | atom a =>
+    simp only [realization, freeVars, FieldAtom.vars] at *
+    split <;> simp only [Set.mem_setOf_eq] <;>
+    rw [aeval_update_of_not_mem_vars a.poly y x c hx]
   | not _ ih =>
     simp only [realization, Set.mem_compl_iff, freeVars] at *
     rw [ih hx]
@@ -606,7 +655,7 @@ theorem realization_invariant_update [DecidableEq σ]
 
 /-- (∃x, A) ∧ B ≡ ∃x, (A ∧ B) when x ∉ freeVars B. -/
 theorem exists_and_equiv [DecidableEq σ]
-    (A B : Formula σ D) (x : σ) (hx : x ∉ B.freeVars) :
+    (A B : Formula σ (FieldAtom σ D)) (x : σ) (hx : x ∉ B.freeVars) :
     (Formula.exists_ x A).realization (C := C) ∩ B.realization =
     (Formula.exists_ x (Formula.and A B)).realization := by
   ext y
@@ -622,7 +671,7 @@ theorem exists_and_equiv [DecidableEq σ]
 
 /-- (∀x, A) ∧ B ≡ ∀x, (A ∧ B) when x ∉ freeVars B. -/
 theorem forall_and_equiv [DecidableEq σ]
-    (A B : Formula σ D) (x : σ) (hx : x ∉ B.freeVars) :
+    (A B : Formula σ (FieldAtom σ D)) (x : σ) (hx : x ∉ B.freeVars) :
     (Formula.not (Formula.exists_ x (Formula.not A))).realization (C := C) ∩
       B.realization =
     (Formula.not (Formula.exists_ x (Formula.not (Formula.and A B)))).realization := by
@@ -641,8 +690,8 @@ theorem forall_and_equiv [DecidableEq σ]
 
 /-- Negation of a prenex formula is C-equivalent to a prenex formula. -/
 private theorem not_prenex [DecidableEq σ]
-    {Ψ : Formula σ D} (hΨ : IsPrenex Ψ) :
-    ∃ Ψ' : Formula σ D, IsPrenex Ψ' ∧
+    {Ψ : Formula σ (FieldAtom σ D)} (hΨ : IsPrenex Ψ) :
+    ∃ Ψ' : Formula σ (FieldAtom σ D), IsPrenex Ψ' ∧
       CEquiv (C := C) (.not Ψ) Ψ' := by
   induction hΨ with
   | qf hqf => exact ⟨.not _, .qf hqf, rfl⟩
@@ -669,8 +718,8 @@ private theorem not_prenex [DecidableEq σ]
 
 /-- Renaming the bound variable of ∃x, Φ via a swap preserves realization. -/
 private theorem exists_swap_equiv [DecidableEq σ]
-    (Φ : Formula σ D) (x z : σ) (hz : z ∉ Φ.freeVars) :
-    CEquiv (C := C) (.exists_ x Φ) (.exists_ z (Φ.rename (Equiv.swap x z))) := by
+    (Φ : Formula σ (FieldAtom σ D)) (x z : σ) (hz : z ∉ Φ.freeVars) :
+    CEquiv (C := C) (.exists_ x Φ) (.exists_ z (Φ.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z)))) := by
   unfold CEquiv; simp only [realization]
   ext y; simp only [Set.mem_setOf_eq]
   by_cases hxz : x = z
@@ -701,17 +750,17 @@ private theorem exists_swap_equiv [DecidableEq σ]
 
 /-- Conjunction of two prenex formulas is C-equivalent to a prenex formula. -/
 private theorem and_prenex [Infinite σ] [DecidableEq σ]
-    {Ψ₁ Ψ₂ : Formula σ D} (h₁ : IsPrenex Ψ₁) (h₂ : IsPrenex Ψ₂) :
-    ∃ Ψ : Formula σ D, IsPrenex Ψ ∧
+    {Ψ₁ Ψ₂ : Formula σ (FieldAtom σ D)} (h₁ : IsPrenex Ψ₁) (h₂ : IsPrenex Ψ₂) :
+    ∃ Ψ : Formula σ (FieldAtom σ D), IsPrenex Ψ ∧
       CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ := by
-  have key : ∀ n, (∀ m, m < n → ∀ {Ψ₁ Ψ₂ : Formula σ D},
+  have key : ∀ n, (∀ m, m < n → ∀ {Ψ₁ Ψ₂ : Formula σ (FieldAtom σ D)},
       IsPrenex Ψ₁ → IsPrenex Ψ₂ →
       Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = m →
-      ∃ Ψ : Formula σ D, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ) →
-    ∀ {Ψ₁ Ψ₂ : Formula σ D},
+      ∃ Ψ : Formula σ (FieldAtom σ D), IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ) →
+    ∀ {Ψ₁ Ψ₂ : Formula σ (FieldAtom σ D)},
       IsPrenex Ψ₁ → IsPrenex Ψ₂ →
       Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = n →
-      ∃ Ψ : Formula σ D, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ := by
+      ∃ Ψ : Formula σ (FieldAtom σ D), IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ := by
     intro n ih Ψ₁ Ψ₂ h₁ h₂ hn
     cases h₁ with
     | qf hqf₁ =>
@@ -723,11 +772,11 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
         have hwB : w ∉ B.freeVars := fun h => hw (Finset.mem_union_left _ h)
         have hwΨ₁ : w ∉ Ψ₁.freeVars := fun h => hw (Finset.mem_union_right _ h)
         have hswap := exists_swap_equiv (C := C) B z w hwB
-        let B' := B.rename (Equiv.swap z w)
-        have hB'_prenex : IsPrenex B' := rename_isPrenex _ hPB
+        let B' := B.rename (Equiv.swap z w) (FieldAtom.renameVars (Equiv.swap z w))
+        have hB'_prenex : IsPrenex B' := rename_isPrenex _ _ hPB
         have hdepth : Ψ₁.quantifierDepth + B'.quantifierDepth < n := by
-          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w)).quantifierDepth < n
-          rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w) (FieldAtom.renameVars (Equiv.swap z w))).quantifierDepth < n
+          rw [rename_quantifierDepth _ (FieldAtom.renameVars _)]; simp [quantifierDepth] at hn; omega
         obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth (.qf hqf₁) hB'_prenex rfl
         refine ⟨.exists_ w Ψ_inner, .exists_ hΨP, ?_⟩
         unfold CEquiv at hswap hΨE ⊢
@@ -745,11 +794,11 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
         obtain ⟨w, hw⟩ := Infinite.exists_notMem_finset (B.freeVars ∪ Ψ₁.freeVars)
         have hwB : w ∉ B.freeVars := fun h => hw (Finset.mem_union_left _ h)
         have hwΨ₁ : w ∉ Ψ₁.freeVars := fun h => hw (Finset.mem_union_right _ h)
-        let B' := B.rename (Equiv.swap z w)
-        have hB'_prenex : IsPrenex B' := rename_isPrenex _ hPB
+        let B' := B.rename (Equiv.swap z w) (FieldAtom.renameVars (Equiv.swap z w))
+        have hB'_prenex : IsPrenex B' := rename_isPrenex _ _ hPB
         have hdepth : Ψ₁.quantifierDepth + B'.quantifierDepth < n := by
-          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w)).quantifierDepth < n
-          rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+          show Ψ₁.quantifierDepth + (B.rename (Equiv.swap z w) (FieldAtom.renameVars (Equiv.swap z w))).quantifierDepth < n
+          rw [rename_quantifierDepth _ (FieldAtom.renameVars _)]; simp [quantifierDepth] at hn; omega
         obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth (.qf hqf₁) hB'_prenex rfl
         refine ⟨.not (.exists_ w (.not Ψ_inner)), .forall_ hΨP, ?_⟩
         have hnotB_fv : w ∉ (Formula.not B).freeVars := by simp [freeVars]; exact hwB
@@ -792,11 +841,11 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
       have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
       have hzΨ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
       have hswap := exists_swap_equiv (C := C) A x z hzA
-      let A' := A.rename (Equiv.swap x z)
-      have hA'_prenex : IsPrenex A' := rename_isPrenex _ hPA
+      let A' := A.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z))
+      have hA'_prenex : IsPrenex A' := rename_isPrenex _ _ hPA
       have hdepth : A'.quantifierDepth + Ψ₂.quantifierDepth < n := by
-        show (A.rename (Equiv.swap x z)).quantifierDepth + Ψ₂.quantifierDepth < n
-        rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+        show (A.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z))).quantifierDepth + Ψ₂.quantifierDepth < n
+        rw [rename_quantifierDepth _ (FieldAtom.renameVars _)]; simp [quantifierDepth] at hn; omega
       obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth hA'_prenex h₂ rfl
       refine ⟨.exists_ z Ψ_inner, .exists_ hΨP, ?_⟩
       unfold CEquiv at hswap hΨE ⊢
@@ -814,11 +863,11 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
       obtain ⟨z, hz⟩ := Infinite.exists_notMem_finset (A.freeVars ∪ Ψ₂.freeVars)
       have hzA : z ∉ A.freeVars := fun h => hz (Finset.mem_union_left _ h)
       have hzΨ : z ∉ Ψ₂.freeVars := fun h => hz (Finset.mem_union_right _ h)
-      let A' := A.rename (Equiv.swap x z)
-      have hA'_prenex : IsPrenex A' := rename_isPrenex _ hPA
+      let A' := A.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z))
+      have hA'_prenex : IsPrenex A' := rename_isPrenex _ _ hPA
       have hdepth : A'.quantifierDepth + Ψ₂.quantifierDepth < n := by
-        show (A.rename (Equiv.swap x z)).quantifierDepth + Ψ₂.quantifierDepth < n
-        rw [rename_quantifierDepth]; simp [quantifierDepth] at hn; omega
+        show (A.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z))).quantifierDepth + Ψ₂.quantifierDepth < n
+        rw [rename_quantifierDepth _ (FieldAtom.renameVars _)]; simp [quantifierDepth] at hn; omega
       obtain ⟨Ψ_inner, hΨP, hΨE⟩ := ih _ hdepth hA'_prenex h₂ rfl
       refine ⟨.not (.exists_ z (.not Ψ_inner)), .forall_ hΨP, ?_⟩
       have hnotA_fv : z ∉ (Formula.not A).freeVars := by simp [freeVars]; exact hzA
@@ -854,21 +903,21 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
           exact hc₁ this.1
         · have := h (y z); rw [← hΨE] at this; simp only [Set.mem_inter_iff] at this
           exact (realization_invariant_update Ψ₂ z hzΨ y (y z)).mpr this.2
-  exact (@Nat.strongRecOn (fun n => ∀ {Ψ₁ Ψ₂ : Formula σ D},
+  exact (@Nat.strongRecOn (fun n => ∀ {Ψ₁ Ψ₂ : Formula σ (FieldAtom σ D)},
       IsPrenex Ψ₁ → IsPrenex Ψ₂ →
       Ψ₁.quantifierDepth + Ψ₂.quantifierDepth = n →
-      ∃ Ψ : Formula σ D, IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ)
+      ∃ Ψ : Formula σ (FieldAtom σ D), IsPrenex Ψ ∧ CEquiv (C := C) (.and Ψ₁ Ψ₂) Ψ)
     (Ψ₁.quantifierDepth + Ψ₂.quantifierDepth) key) h₁ h₂ rfl
 
 
 /-- Every formula over an infinite variable type is
     C-equivalent to a prenex formula. -/
 theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
-    (Φ : Formula σ D) :
-    ∃ Ψ : Formula σ D, IsPrenex Ψ ∧
+    (Φ : Formula σ (FieldAtom σ D)) :
+    ∃ Ψ : Formula σ (FieldAtom σ D), IsPrenex Ψ ∧
       CEquiv (C := C) Φ Ψ := by
   induction Φ with
-  | eq_zero P => exact ⟨.eq_zero P, .qf True.intro, rfl⟩
+  | atom a => exact ⟨.atom a, .qf True.intro, rfl⟩
   | not Φ ih =>
     obtain ⟨Ψ, hP, hE⟩ := ih
     obtain ⟨Ψ', hP', hE'⟩ := not_prenex (C := C) hP
@@ -916,21 +965,21 @@ A sentence (no free variables) is C-equivalent to True or False.
 
 theorem realization_eq_of_agree_on_freeVars
     [DecidableEq σ]
-    (Φ : Formula σ D) (y₁ y₂ : σ → C)
+    (Φ : Formula σ (FieldAtom σ D)) (y₁ y₂ : σ → C)
     (h : ∀ x ∈ Φ.freeVars, y₁ x = y₂ x) :
     y₁ ∈ Φ.realization (C := C) ↔
     y₂ ∈ Φ.realization := by
   induction Φ generalizing y₁ y₂ with
-  | eq_zero P =>
-    simp only [realization, Set.mem_setOf_eq]
-    have : (MvPolynomial.aeval y₁) P = (MvPolynomial.aeval y₂) P := by
+  | atom a =>
+    simp only [realization, freeVars, FieldAtom.vars] at *
+    have : (MvPolynomial.aeval y₁) a.poly = (MvPolynomial.aeval y₂) a.poly := by
       simp only [MvPolynomial.aeval_def]
       apply MvPolynomial.eval₂_congr
       · intro i c hi hc
-        apply h; simp [freeVars]
+        apply h
         rw [MvPolynomial.mem_vars]
         exact ⟨c, MvPolynomial.mem_support_iff.mpr hc, hi⟩
-    rw [this]
+    split <;> simp only [Set.mem_setOf_eq] <;> rw [this]
   | not _ ih =>
     simp only [realization, Set.mem_compl_iff]
     rw [ih _ _ h]
@@ -957,7 +1006,7 @@ theorem realization_eq_of_agree_on_freeVars
           exact h x (by simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mpr hc⟩
 
 theorem sentence_trivial_realization [DecidableEq σ]
-    (Φ : Formula σ D) (hΦ : isSentence Φ) :
+    (Φ : Formula σ (FieldAtom σ D)) (hΦ : isSentence Φ) :
     Φ.realization (C := C) = ∅ ∨
     Φ.realization (C := C) = Set.univ := by
   by_cases h : ∃ y, y ∈ Φ.realization (C := C)
@@ -970,7 +1019,7 @@ theorem sentence_trivial_realization [DecidableEq σ]
     exact Set.subset_eq_empty h rfl
 
 theorem sentence_equiv_true_or_false [DecidableEq σ]
-    (Φ : Formula σ D) (hΦ : isSentence Φ) :
+    (Φ : Formula σ (FieldAtom σ D)) (hΦ : isSentence Φ) :
     CEquiv (C := C) Φ trueFormula ∨
     CEquiv (C := C) Φ falseFormula := by
   rcases sentence_trivial_realization (C := C) Φ hΦ with h | h
@@ -989,17 +1038,17 @@ non-trivial axioms are:
 -/
 
 /-- ∀X₀ ∃X₁, X₀ + X₁ = 0 (additive inverse). -/
-noncomputable def additiveInverse : Formula (Fin 2) ℤ :=
-  forall_ 0 (.exists_ 1 (.eq_zero (X 0 + X 1)))
+noncomputable def additiveInverse : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
+  forall_ 0 (.exists_ 1 (eq_zero (X 0 + X 1)))
 
 /-- ∀X₀, X₀ = 0 ∨ ∃X₁, X₀X₁ − 1 = 0
     (multiplicative inverse for nonzero elements). -/
-noncomputable def multiplicativeInverse : Formula (Fin 2) ℤ :=
-  forall_ 0 (.or (.eq_zero (X 0))
-    (.exists_ 1 (.eq_zero (X 0 * X 1 - 1))))
+noncomputable def multiplicativeInverse : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
+  forall_ 0 (.or (eq_zero (X 0))
+    (.exists_ 1 (eq_zero (X 0 * X 1 - 1))))
 
 /-- 1 ≠ 0 (nontriviality). -/
-noncomputable def fieldNontriviality : Formula (Fin 2) ℤ :=
+noncomputable def fieldNontriviality : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
   ne_zero 1
 
 theorem additiveInverse_holds :
@@ -1020,7 +1069,7 @@ theorem multiplicativeInverse_holds :
 theorem fieldNontriviality_holds :
     fieldNontriviality.realization (C := C) =
       Set.univ := by
-  ext y; simp [fieldNontriviality, ne_zero, realization]
+  ext y; simp [fieldNontriviality, ne_zero, realization, FieldAtom.neZero]
 
 /-!
 ### Algebraic Closure Axiom Φ_d
@@ -1040,19 +1089,19 @@ noncomputable def monicPoly (d : ℕ) :
 
 /-- Φ_d: ∀Y₁ ∀Y₂ ... ∀Y_d ∃X, monicPoly d = 0.
     Example: Φ₂ = ∀Y₁ ∀Y₂ ∃X, X² + Y₁X + Y₂ = 0. -/
-noncomputable def phiD (d : ℕ) : Formula (Fin (d + 1)) ℤ :=
+noncomputable def phiD (d : ℕ) : Formula (Fin (d + 1)) (FieldAtom (Fin (d + 1)) ℤ) :=
   (List.finRange d).foldr
     (fun i acc => forall_ ⟨i.val + 1, by omega⟩ acc)
-    (.exists_ 0 (.eq_zero (monicPoly d)))
+    (.exists_ 0 (eq_zero (monicPoly d)))
 
 private theorem realization_forall_of_univ [DecidableEq σ]
-    (x : σ) (Φ : Formula σ D)
+    (x : σ) (Φ : Formula σ (FieldAtom σ D))
     (h : Φ.realization (C := C) = Set.univ) :
     (forall_ x Φ).realization (C := C) = Set.univ := by
   ext y; simp [realization, h]
 
 private theorem realization_foldr_forall_of_univ
-    [DecidableEq σ] (xs : List σ) (body : Formula σ D)
+    [DecidableEq σ] (xs : List σ) (body : Formula σ (FieldAtom σ D))
     (h : body.realization (C := C) = Set.univ) :
     (xs.foldr (fun x acc => forall_ x acc)
       body).realization (C := C) = Set.univ := by
@@ -1063,7 +1112,7 @@ private theorem realization_foldr_forall_of_univ
     exact realization_forall_of_univ x _ ih
 
 private theorem realization_finRange_forall_of_univ {n : ℕ}
-    (d : ℕ) (g : Fin d → Fin (n + 1)) (body : Formula (Fin (n + 1)) ℤ)
+    (d : ℕ) (g : Fin d → Fin (n + 1)) (body : Formula (Fin (n + 1)) (FieldAtom (Fin (n + 1)) ℤ))
     (h : body.realization (C := C) = Set.univ) :
     ((List.finRange d).foldr (fun i acc => forall_ (g i) acc)
       body).realization (C := C) = Set.univ := by
@@ -1110,8 +1159,7 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
   obtain ⟨c, hc⟩ := IsAlgClosed.exists_root p hdeg
   rw [Polynomial.IsRoot] at hc
   refine ⟨c, ?_⟩
-  simp only [monicPoly, map_add, map_sum, map_mul, map_pow,
-    MvPolynomial.aeval_X, Function.update_self]
+  simp only [monicPoly]
   convert hc using 1
   simp [p, q, Polynomial.eval_add, Polynomial.eval_pow,
     Polynomial.eval_X, Polynomial.eval_finset_sum,
@@ -1120,7 +1168,7 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
 private lemma forall_realization_univ_iff
     {D : Type*} [CommRing D] [Algebra D C]
     {σ : Type*} [DecidableEq σ]
-    (x : σ) (Φ : Formula σ D) :
+    (x : σ) (Φ : Formula σ (FieldAtom σ D)) :
     (forall_ x Φ).realization (C := C) = Set.univ ↔
     Φ.realization (C := C) = Set.univ := by
   constructor
@@ -1139,7 +1187,7 @@ private lemma phiD_univ_iff (d : ℕ) :
     (Formula.exists_ (0 : Fin (d + 1))
       (Formula.eq_zero (monicPoly d))).realization (C := C) = Set.univ := by
   unfold phiD
-  suffices h : ∀ (xs : List (Fin d)) (body : Formula (Fin (d + 1)) ℤ),
+  suffices h : ∀ (xs : List (Fin d)) (body : Formula (Fin (d + 1)) (FieldAtom (Fin (d + 1)) ℤ)),
     (xs.foldr (fun i acc => forall_ ⟨i.val + 1, by omega⟩ acc)
       body).realization (C := C) = Set.univ ↔
     body.realization (C := C) = Set.univ from h _ _
@@ -1168,8 +1216,7 @@ theorem isAlgClosed_of_phiD_holds
   simp only [realization, Set.mem_setOf_eq] at hy
   obtain ⟨c, hc⟩ := hy
   refine ⟨c, ?_⟩
-  simp only [monicPoly, map_add, map_sum, map_mul, map_pow,
-    MvPolynomial.aeval_X, Function.update_self] at hc
+  simp only [monicPoly] at hc
   have h_upd : ∀ i : Fin d,
     Function.update y (0 : Fin (d + 1)) c ⟨↑i + 1, by omega⟩ =
     p.coeff (d - 1 - (i : ℕ)) := by
@@ -1177,6 +1224,9 @@ theorem isAlgClosed_of_phiD_holds
     rw [Function.update_of_ne (show (⟨↑i + 1, by omega⟩ : Fin (d + 1)) ≠ 0
       from by simp [Fin.ext_iff])]
     simp only [y]; congr 1; omega
+  simp only [realization_eq_zero, Set.mem_setOf_eq] at hc
+  simp only [map_add, map_pow, MvPolynomial.aeval_X,
+    map_sum, map_mul, Function.update_self] at hc
   simp_rw [h_upd] at hc
   rw [← hc]
   conv_lhs => rw [Polynomial.as_sum_range_C_mul_X_pow p]
@@ -1210,15 +1260,15 @@ section Example_1_2
 open Formula
 
 /-- Φ = ∃Y, XY - 1 = 0  (0 = X, 1 = Y). -/
-noncomputable def Φ_ex : Formula (Fin 2) ℤ :=
-  .exists_ 1 (.eq_zero (X 0 * X 1 - 1))
+noncomputable def Φ_ex : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
+  .exists_ 1 (eq_zero (X 0 * X 1 - 1))
 
 /-- Ψ = X ≠ 0. -/
-noncomputable def Ψ_ex : Formula (Fin 2) ℤ :=
+noncomputable def Ψ_ex : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
   Formula.ne_zero (X 0)
 
 theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
-  simp only [Φ_ex, freeVars]
+  simp only [Φ_ex, freeVars, eq_zero, FieldAtom.eqZero, FieldAtom.vars]
   ext x; fin_cases x
   · -- x = 0
     simp only [Finset.mem_sdiff, Finset.mem_singleton]
@@ -1239,7 +1289,8 @@ theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
     simp [Finset.mem_sdiff, Finset.mem_singleton]
 
 theorem freeVars_Ψ : Ψ_ex.freeVars = {0} := by
-  simp only [Ψ_ex, ne_zero, freeVars, MvPolynomial.vars_X]
+  simp only [Ψ_ex, ne_zero, freeVars, FieldAtom.neZero, FieldAtom.vars,
+    MvPolynomial.vars_X]
 
 theorem freeVars_eq : Φ_ex.freeVars = Ψ_ex.freeVars := by
   rw [freeVars_Φ, freeVars_Ψ]
@@ -1254,22 +1305,24 @@ theorem example_1_2 :
     Formula.CEquiv (C := C) Φ_ex Ψ_ex := by
   unfold CEquiv Φ_ex Ψ_ex ne_zero realization
   ext y
-  simp only [Set.mem_setOf_eq, Set.mem_compl_iff]
+  simp only [Set.mem_setOf_eq]
   constructor
   · rintro ⟨c, hc⟩
-    simp only [realization, Set.mem_setOf_eq] at *
+    simp only [realization_eq_zero, Set.mem_setOf_eq] at *
     simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)] at hc
     intro h0
+    simp only [FieldAtom.neZero, MvPolynomial.aeval_X] at h0
     rw [h0, zero_mul, zero_sub] at hc
     exact one_ne_zero (neg_eq_zero.mp hc)
   · intro h
-    simp only [realization, Set.mem_setOf_eq] at *
+    simp only [realization_eq_zero, Set.mem_setOf_eq] at *
     simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
     refine ⟨(y 0)⁻¹, ?_⟩
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)]
+    simp only [FieldAtom.neZero, MvPolynomial.aeval_X] at h
     rw [mul_inv_cancel₀ h, sub_self]
 
 end Example_1_2
@@ -1287,10 +1340,10 @@ variable {D : Type*} [CommRing D] {σ : Type*}
 variable {C : Type*} [Field C] [Algebra D C]
 
 /-- Conjunction of `eq_zero` atoms from a list. -/
-noncomputable def conjEqZero : List (MvPolynomial σ D) → Formula σ D
-  | [] => .eq_zero 0
-  | [P] => .eq_zero P
-  | P :: Ps => .and (.eq_zero P) (conjEqZero Ps)
+noncomputable def conjEqZero : List (MvPolynomial σ D) → Formula σ (FieldAtom σ D)
+  | [] => eq_zero 0
+  | [P] => eq_zero P
+  | P :: Ps => .and (eq_zero P) (conjEqZero Ps)
 
 theorem conjEqZero_isQF :
     ∀ (L : List (MvPolynomial σ D)),
@@ -1306,9 +1359,9 @@ theorem conjEqZero_realization [DecidableEq σ]
     (conjEqZero L).realization (C := C) =
       { y | ∀ P ∈ L, MvPolynomial.aeval y P = 0 }
   | [] => by
-    ext y; simp [conjEqZero, realization, map_zero]
+    ext y; simp [conjEqZero, map_zero]
   | [P] => by
-    ext y; simp [conjEqZero, realization]
+    ext y; simp [conjEqZero]
   | P :: Q :: Ps => by
     ext y
     simp only [conjEqZero, realization, Set.mem_inter_iff,
@@ -1332,12 +1385,21 @@ open Formula in
 omit [IsAlgClosed C] in
 /-- Backward: QF-realizable → constructible. -/
 theorem qf_realizable_isConstructible
-    {Φ : Formula (Fin k) C} (hqf : Φ.IsQuantifierFree) :
+    {Φ : Formula (Fin k) (FieldAtom (Fin k) C)} (hqf : Φ.IsQuantifierFree) :
     IsConstructibleSet (Φ.realization (C := C)) := by
   induction Φ with
-  | eq_zero P =>
-    exact .algebraic ⟨{P}, by
-      ext y; simp [Zer, realization, MvPolynomial.aeval_def]⟩
+  | atom a =>
+    by_cases h : a.isEq = true
+    · -- P = 0 case: algebraic set
+      exact .algebraic ⟨{a.poly}, by
+        ext y; simp [Zer, realization, h, MvPolynomial.aeval_def]⟩
+    · -- P ≠ 0 case: complement of algebraic set
+      have : (atom a).realization (C := C) =
+          ({y | MvPolynomial.eval y a.poly = 0} : Set (Fin k → C))ᶜ := by
+        ext y; simp [realization, h, Set.mem_compl_iff, Set.mem_setOf_eq]
+      rw [this]
+      exact .compl (.algebraic ⟨{a.poly}, by
+        ext y; simp [Zer]⟩)
   | not Φ ih => exact .compl (ih hqf)
   | and Φ₁ Φ₂ ih₁ ih₂ =>
     exact .inter (ih₁ hqf.1) (ih₂ hqf.2)
@@ -1350,7 +1412,7 @@ omit [IsAlgClosed C] in
 /-- Forward: constructible → QF-realizable. -/
 theorem constructible_isQFRealizable
     (V : Set (Fin k → C)) (hV : IsConstructibleSet V) :
-    ∃ Φ : Formula (Fin k) C, Φ.IsQuantifierFree ∧
+    ∃ Φ : Formula (Fin k) (FieldAtom (Fin k) C), Φ.IsQuantifierFree ∧
       V = Φ.realization (C := C) := by
   induction hV with
   | algebraic hA =>
@@ -1373,7 +1435,7 @@ omit [IsAlgClosed C] in
 theorem constructible_iff_qfRealizable
     (V : Set (Fin k → C)) :
     IsConstructibleSet V ↔
-    ∃ Φ : Formula (Fin k) C, Φ.IsQuantifierFree ∧
+    ∃ Φ : Formula (Fin k) (FieldAtom (Fin k) C), Φ.IsQuantifierFree ∧
       V = Φ.realization (C := C) :=
   ⟨constructible_isQFRealizable V,
    fun ⟨_, hqf, hV⟩ => hV ▸ qf_realizable_isConstructible hqf⟩
