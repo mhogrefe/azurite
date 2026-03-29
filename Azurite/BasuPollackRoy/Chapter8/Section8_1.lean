@@ -1287,21 +1287,8 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
     (hn : 0 < n)
     (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
     Int.bitsize (((C c * X - C b) ^ n).coeff m) ≤ n * (1 + τ') := by
-  -- Induction on n:
-  -- n = 1: coefficients are c and -b, each of bitsize ≤ τ' ≤ 1 + τ'
-  -- n → n+1: coeff m ((cX-b)^{n+1}) = c * coeff(m-1)((cX-b)^n) + (-b) * coeff m ((cX-b)^n)
-  -- Each summand has bitsize ≤ τ' + n*(1+τ'). Sum of 2 adds Nat.size 2 = 2.
-  -- But n*(1+τ') + τ' + 2 = (n+1)*(1+τ') + 1, which won't close.
-  -- Instead we use the polynomial product bound directly:
-  -- (cX-b)^n can be viewed as a product of n univariate polynomials of degree ≤ 1
-  -- with coefficients of bitsize ≤ τ'.
-  -- By MvPolynomial.bitsize_coeff_mul_le (k=0, i.e. univariate), each coefficient
-  -- of the product of P, Q has bitsize ≤ τ_P + τ_Q + 0 * Nat.size(...)
-  -- = τ_P + τ_Q. Iterating: product of n polys → bound is n * τ'.
-  -- But we also pick up log₂ of the number of monomials at each step.
-  -- The tightest approach: use the exact coefficient formula.
-  -- coeff m ((cX-b)^n) = ↑(choose n m) * c^m * (-b)^{n-m}
-  -- This is a single product: bitsize ≤ n + m*τ' + (n-m)*τ' = n + n*τ' = n*(1+τ')
+  -- By the binomial theorem, coeff m ((cX-b)^n) = choose(n,m) · c^m · (-b)^{n-m}.
+  -- bitsize(choose(n,m)) ≤ n and bitsize(c^m · (-b)^{n-m}) ≤ n·τ', giving n·(1+τ').
   by_cases hm : n < m
   · -- m > n: coefficient is 0
     have hdeg : natDegree ((C c * X - C b) ^ n) ≤ n := by
@@ -1313,18 +1300,16 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
     simp [Int.bitsize]
   · push_neg at hm
-    -- Expand via binomial theorem
+    -- m ≤ n: expand via binomial theorem, only the j = m term survives
     rw [sub_eq_add_neg, ← map_neg, Commute.add_pow (Commute.all _ _)]
     simp only [finset_sum_coeff, coeff_mul_natCast, mul_pow, ← C_pow, coeff_mul_C, coeff_C_mul,
                coeff_X_pow]
-    -- Each summand: c^j * if j=m then 1 else 0 * (-b)^{n-j} * ↑(choose n j)
-    -- Only j=m contributes
+
     rw [Finset.sum_eq_single_of_mem m (mem_range.mpr (by omega))]
     · -- j = m term
       simp only [if_true, mul_one]
       unfold Int.bitsize at *
-      -- Goal: (c^m * (-b)^{n-m} * ↑(choose n m)).natAbs.size ≤ n*(1+τ')
-      -- Split: product part ≤ n*τ', choose part ≤ n
+      -- bitsize(c^m · (-b)^{n-m} · choose(n,m)) ≤ n·τ' + n = n·(1+τ')
       have hprod : (c ^ m * (-b) ^ (n - m)).natAbs.size ≤ n * τ' := by
         have hbm : (-b).natAbs.size ≤ τ' := by rwa [Int.natAbs_neg]
         set L := List.replicate m c ++ List.replicate (n - m) (-b)
