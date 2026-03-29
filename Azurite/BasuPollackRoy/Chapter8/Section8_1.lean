@@ -1274,3 +1274,174 @@ theorem Polynomial.specialTrans_eq_horner_comp {K : Type*} [Field K]
       show i - (i - j) = j from by omega]
 
 end SpecialTranslation
+
+/-! ### Bitsize bound on SpecialTrans coefficients -/
+
+section SpecialTransBitsize
+
+open Polynomial Finset Azurite.BPR
+
+/-- The bitsize of a coefficient of `(cX − b)^n` is at most `n(1 + τ')`
+    when `n ≥ 1` and `bitsize(b), bitsize(c) ≤ τ'`. -/
+private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
+    (hn : 0 < n)
+    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
+    Int.bitsize (((C c * X - C b) ^ n).coeff m) ≤ n * (1 + τ') := by
+  -- Induction on n:
+  -- n = 1: coefficients are c and -b, each of bitsize ≤ τ' ≤ 1 + τ'
+  -- n → n+1: coeff m ((cX-b)^{n+1}) = c * coeff(m-1)((cX-b)^n) + (-b) * coeff m ((cX-b)^n)
+  -- Each summand has bitsize ≤ τ' + n*(1+τ'). Sum of 2 adds Nat.size 2 = 2.
+  -- But n*(1+τ') + τ' + 2 = (n+1)*(1+τ') + 1, which won't close.
+  -- Instead we use the polynomial product bound directly:
+  -- (cX-b)^n can be viewed as a product of n univariate polynomials of degree ≤ 1
+  -- with coefficients of bitsize ≤ τ'.
+  -- By MvPolynomial.bitsize_coeff_mul_le (k=0, i.e. univariate), each coefficient
+  -- of the product of P, Q has bitsize ≤ τ_P + τ_Q + 0 * Nat.size(...)
+  -- = τ_P + τ_Q. Iterating: product of n polys → bound is n * τ'.
+  -- But we also pick up log₂ of the number of monomials at each step.
+  -- The tightest approach: use the exact coefficient formula.
+  -- coeff m ((cX-b)^n) = ↑(choose n m) * c^m * (-b)^{n-m}
+  -- This is a single product: bitsize ≤ n + m*τ' + (n-m)*τ' = n + n*τ' = n*(1+τ')
+  by_cases hm : n < m
+  · -- m > n: coefficient is 0
+    have hdeg : natDegree ((C c * X - C b) ^ n) ≤ n := by
+      calc natDegree ((C c * X - C b) ^ n)
+          ≤ n * natDegree (C c * X - C b) := Polynomial.natDegree_pow_le
+        _ ≤ n * 1 := Nat.mul_le_mul_left _ (by
+            rw [sub_eq_add_neg, ← map_neg]; exact Polynomial.natDegree_linear_le)
+        _ = n := Nat.mul_one _
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
+    simp [Int.bitsize]
+  · push_neg at hm
+    -- Expand via binomial theorem
+    rw [sub_eq_add_neg, ← map_neg, Commute.add_pow (Commute.all _ _)]
+    simp only [finset_sum_coeff, coeff_mul_natCast, mul_pow, ← C_pow, coeff_mul_C, coeff_C_mul,
+               coeff_X_pow]
+    -- Each summand: c^j * if j=m then 1 else 0 * (-b)^{n-j} * ↑(choose n j)
+    -- Only j=m contributes
+    rw [Finset.sum_eq_single_of_mem m (mem_range.mpr (by omega))]
+    · -- j = m term
+      simp only [if_true, mul_one]
+      unfold Int.bitsize at *
+      -- Goal: (c^m * (-b)^{n-m} * ↑(choose n m)).natAbs.size ≤ n*(1+τ')
+      -- Split: product part ≤ n*τ', choose part ≤ n
+      have hprod : (c ^ m * (-b) ^ (n - m)).natAbs.size ≤ n * τ' := by
+        have hbm : (-b).natAbs.size ≤ τ' := by rwa [Int.natAbs_neg]
+        set L := List.replicate m c ++ List.replicate (n - m) (-b)
+        have hLne : L ≠ [] := by
+          apply List.ne_nil_of_length_pos
+          simp only [L, List.length_append, List.length_replicate]; omega
+        have hLlen : L.length = n := by
+          simp only [L, List.length_append, List.length_replicate]; omega
+        have hprod_eq : L.prod = c ^ m * (-b) ^ (n - m) := by
+          simp only [L, List.prod_append, List.prod_replicate]
+        rw [← hprod_eq, ← Int.bitsize, ← hLlen]
+        exact Int.bitsize_list_prod_le L τ' hLne (by
+          intro x hx
+          simp only [L, List.mem_append, List.mem_replicate] at hx
+          rcases hx with ⟨-, rfl⟩ | ⟨-, rfl⟩
+          · exact hc
+          · exact hbm)
+      have hchoose : (↑(n.choose m) : ℤ).natAbs.size ≤ n := by
+        simp only [Int.natAbs_natCast, Nat.size_le]
+        exact_mod_cast Nat.choose_lt_two_pow n m hn
+      calc (c ^ m * (-b) ^ (n - m) * ↑(n.choose m)).natAbs.size
+          ≤ (c ^ m * (-b) ^ (n - m)).natAbs.size + (↑(n.choose m) : ℤ).natAbs.size :=
+            Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+        _ ≤ n * τ' + n := Nat.add_le_add hprod hchoose
+        _ = n * (1 + τ') := by ring
+    · intro j _ hjm
+      simp only [if_neg (Ne.symm hjm), mul_zero, zero_mul]
+
+/-- The bitsize of the coefficient of `X^m` in the `k`-th summand
+    `C(aₚ₋ₖ · cᵏ) · (cX − b)^{i−k}` is at most `τ + i(1 + τ')`. -/
+private theorem bitsize_specialTrans_summand (P : ℤ[X]) (b c : ℤ)
+    (i k m τ τ' : ℕ) (hk : k ≤ i)
+    (hτ : ∀ j, Int.bitsize (P.coeff j) ≤ τ)
+    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
+    Int.bitsize ((C (P.coeff (P.natDegree - k) * c ^ k) *
+      (C c * X - C b) ^ (i - k)).coeff m) ≤ τ + i * (1 + τ') := by
+  -- coeff m (C(a_{p-k} * c^k) * (cX-b)^{i-k}) = a_{p-k} * c^k * coeff m ((cX-b)^{i-k})
+  simp only [coeff_C_mul]
+  unfold Int.bitsize at *
+  -- Helper: (c^j).natAbs.size ≤ j * τ'
+  -- Helper: (a * c^j).natAbs.size ≤ a.natAbs.size + j * τ'
+  have hmul_c_pow : ∀ (a : ℤ) (j : ℕ),
+      (a * c ^ j).natAbs.size ≤ a.natAbs.size + j * τ' := by
+    intro a j; rcases Nat.eq_zero_or_pos j with rfl | hj
+    · simp
+    · calc (a * c ^ j).natAbs.size
+          ≤ a.natAbs.size + (c ^ j).natAbs.size :=
+            Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+        _ ≤ a.natAbs.size + j * τ' := by
+            apply Nat.add_le_add_left
+            rw [Int.natAbs_pow, Nat.size_le, show j * τ' = τ' * j from by ring, pow_mul]
+            exact Nat.pow_lt_pow_left (Nat.size_le.mp hc) (Nat.pos_iff_ne_zero.mp hj)
+  by_cases hik : i - k = 0
+  · -- i = k: (cX-b)^0 = 1
+    have hki : k = i := by omega
+    simp only [hik, pow_zero, coeff_one]
+    split
+    · -- m = 0
+      simp only [mul_one]
+      calc (P.coeff (P.natDegree - k) * c ^ k).natAbs.size
+          ≤ (P.coeff (P.natDegree - k)).natAbs.size + k * τ' :=
+            hmul_c_pow _ k
+        _ ≤ τ + k * τ' := Nat.add_le_add (hτ _) (le_refl _)
+        _ ≤ τ + i * (1 + τ') := by nlinarith
+    · -- m ≠ 0
+      simp
+  · -- i - k > 0: use bitsize_coeff_cX_sub_b_pow
+    have hik_pos : 0 < i - k := by omega
+    calc (P.coeff (P.natDegree - k) * c ^ k * ((C c * X - C b) ^ (i - k)).coeff m).natAbs.size
+        ≤ (P.coeff (P.natDegree - k) * c ^ k).natAbs.size +
+          (((C c * X - C b) ^ (i - k)).coeff m).natAbs.size :=
+          Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+      _ ≤ (τ + k * τ') + ((i - k) * (1 + τ')) := by
+          apply Nat.add_le_add
+          · calc (P.coeff (P.natDegree - k) * c ^ k).natAbs.size
+                ≤ (P.coeff (P.natDegree - k)).natAbs.size + k * τ' :=
+                  hmul_c_pow _ k
+              _ ≤ τ + k * τ' := Nat.add_le_add (hτ _) (le_refl _)
+          · exact bitsize_coeff_cX_sub_b_pow b c (i - k) m τ' hik_pos hb hc
+      _ ≤ τ + i * (1 + τ') := by
+          -- k*τ' + (i-k)*(1+τ') ≤ i*(1+τ')
+          suffices h : k * τ' + (i - k) * (1 + τ') ≤ i * (1 + τ') by omega
+          calc k * τ' + (i - k) * (1 + τ')
+              = k * τ' + (i - k) + (i - k) * τ' := by ring
+            _ = (i - k) + (k + (i - k)) * τ' := by ring
+            _ = (i - k) + i * τ' := by rw [Nat.add_sub_cancel' hk]
+            _ ≤ i + i * τ' := by omega
+            _ = i * (1 + τ') := by ring
+
+/-- **BPR §8.1 (bitsize of SpecialTrans coefficients).**
+    Let `P ∈ ℤ[X]` with `p = natDegree P` and coefficient bitsizes bounded by `τ`.
+    Let `b, c ∈ ℤ` with bitsizes bounded by `τ'`. Then for `i ≤ p`:
+
+      `bitsize(coeff m (specialTrans P b c i)) ≤ τ + i(1 + τ') + bitsize(p + 1)`. -/
+theorem Polynomial.bitsize_specialTrans_coeff_le (P : ℤ[X]) (b c : ℤ) (i τ τ' : ℕ)
+    (hi : i ≤ P.natDegree)
+    (hτ : ∀ k, Int.bitsize (P.coeff k) ≤ τ)
+    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
+    ∀ m, Int.bitsize ((P.specialTrans b c i).coeff m) ≤
+      τ + i * (1 + τ') + Nat.size (P.natDegree + 1) := by
+  intro m
+  rw [Polynomial.specialTrans_eq_sum, finset_sum_coeff]
+  unfold Int.bitsize at *
+  -- Each summand has coeff of bitsize ≤ τ + i*(1+τ')
+  have hB : ∀ j ∈ range (i + 1),
+      ((C (P.coeff (P.natDegree - j) * c ^ j) *
+        (C c * X - C b) ^ (i - j)).coeff m).natAbs.size ≤ τ + i * (1 + τ') := by
+    intro j hj
+    have hji : j ≤ i := by simp [Finset.mem_range] at hj; omega
+    exact bitsize_specialTrans_summand P b c i j m τ τ' hji hτ hb hc
+  calc (∑ j ∈ range (i + 1), ((C (P.coeff (P.natDegree - j) * c ^ j) *
+          (C c * X - C b) ^ (i - j)).coeff m)).natAbs.size
+      ≤ (τ + i * (1 + τ')) + Nat.size (range (i + 1)).card :=
+        Int.bitsize_finset_sum_le hB
+    _ = τ + i * (1 + τ') + Nat.size (i + 1) := by simp [Finset.card_range]
+    _ ≤ τ + i * (1 + τ') + Nat.size (P.natDegree + 1) := by
+        apply Nat.add_le_add_left
+        exact Nat.size_le_size (by omega)
+
+end SpecialTransBitsize

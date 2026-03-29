@@ -41,9 +41,22 @@ Instead:
 If the user just messages "c", that means "You crashed. Try to not write so much text all at once." This typically happens after a context truncation or interruption.
 
 To reduce the risk of crashes and improve reliability:
-1. **Work incrementally.** Test proof snippets via `lean_run_code` before assembling a full file. Most proof attempts fail on the first try; iterating in small steps avoids wasting large writes.
-2. **Don't promise to "write everything at once."** Long conversations accumulate context, and a large generation near the end is more likely to hit limits. Break work into pieces.
-3. **When resuming after "c"**, re-read the relevant files to regain context before continuing.
+1. **Don't promise to "write everything at once."** Long conversations accumulate context, and a large generation near the end is more likely to hit limits. Break work into pieces.
+2. **When resuming after "c"**, re-read the relevant files to regain context before continuing.
+
+## Proof Development Workflow
+
+**Work directly in the target file**, not in `lean_run_code` scratch snippets. The scratch approach causes two problems:
+- **Environment mismatch:** `open` declarations, namespaces, and `variable` blocks change name resolution. Proofs that compile in a scratch snippet often fail when copied to the real file (e.g., `C_mul_X_eq_X_mul` resolving differently under `open Polynomial`).
+- **Copy-paste crashes:** Writing or overwriting large file sections in one shot is the #1 crash trigger.
+
+Instead, follow this workflow:
+1. **Add the theorem statement + `sorry`** directly in the target file.
+2. **Use `lean_goal`** at the `sorry` to see the exact proof state in the real environment.
+3. **Use `lean_multi_attempt`** to try multiple tactics without modifying the file.
+4. **Replace the `sorry`** with the working proof via a small edit.
+
+This keeps edits small, uses the real environment, and avoids copy-paste. Don't worry about dirtying the file with `sorry`s — the user commits often and can easily revert.
 
 # Lean 4 Tips
 
