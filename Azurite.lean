@@ -45,6 +45,7 @@ import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Sub
+import Azurite.AzMvPolynomial.Equiv.Vars
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.ExactDiv
 import Azurite.AzMvPolynomial.Join2
@@ -65,6 +66,7 @@ import Azurite.AzMvPolynomial.Sub
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
+import Azurite.AzMvPolynomial.Vars
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
