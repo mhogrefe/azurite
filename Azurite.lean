@@ -41,6 +41,7 @@ import Azurite.AzMvPolynomial.Equiv.MonomialOrder
 import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.MulNaive
 import Azurite.AzMvPolynomial.Equiv.Neg
+import Azurite.AzMvPolynomial.Equiv.OfAzPolynomial
 import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
@@ -57,6 +58,7 @@ import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
 import Azurite.AzMvPolynomial.Mul
 import Azurite.AzMvPolynomial.Neg
+import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
 import Azurite.AzMvPolynomial.Pow
