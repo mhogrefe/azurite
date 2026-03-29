@@ -12,16 +12,19 @@ open BPR Formula
 
 /-! ### Generic formula semantics -/
 
-/-- Typeclass for atom types that can be interpreted as sets of variable assignments. -/
-class AtomRealization (α σ K : Type*) where
+/-- Typeclass for atom types that can be interpreted as sets of variable assignments.
+    Includes a law for `AtomNeg`: negating an atom complements its interpretation. -/
+class AtomRealization (α σ K : Type*) [AtomNeg α] where
   /-- Interpret an atom as a set of variable assignments. -/
   interpret : α → Set (σ → K)
+  /-- Negating an atom complements its interpretation. -/
+  neg_interpret : ∀ a : α, interpret (AtomNeg.neg a) = (interpret a)ᶜ
 
 /-- Generic first-order realization of a formula.
     This is the standard Tarskian semantics: negation is complement,
     conjunction is intersection, etc. -/
 noncomputable def gRealization {σ : Type*} [DecidableEq σ] {α K : Type*}
-    [AtomRealization α σ K] :
+    [AtomNeg α] [AtomRealization α σ K] :
     Formula σ α → Set (σ → K)
   | .atom a        => AtomRealization.interpret a
   | .not Φ         => (gRealization Φ)ᶜ
@@ -31,7 +34,7 @@ noncomputable def gRealization {σ : Type*} [DecidableEq σ] {α K : Type*}
   | .exists_ x Φ   => { y | ∃ c, Function.update y x c ∈ gRealization Φ }
   | .forall_ x Φ   => { y | ∀ c, Function.update y x c ∈ gRealization Φ }
 
-variable {σ : Type*} [DecidableEq σ] {α : Type*}
+variable {σ : Type*} [DecidableEq σ] {α : Type*} [AtomNeg α]
     {K : Type*} [AtomRealization α σ K]
 
 /-! ### eliminateImplies preserves gRealization -/
@@ -51,20 +54,22 @@ theorem eliminateImplies_gRealization
 
 /-! ### toNNF preserves gRealization -/
 
-/-- Both `toNNFPos` and `toNNFNeg` preserve realization (proved together). -/
+/-- Both `toNNFPos` and `toNNFNeg` preserve realization (proved together).
+    Uses `AtomRealization.neg_interpret` for the atom negation case. -/
 private theorem toNNF_gRealization_aux
     (Φ : Formula σ α) :
     gRealization (K := K) (toNNFPos Φ) = gRealization Φ ∧
     gRealization (K := K) (toNNFPos.toNNFNeg Φ) = (gRealization Φ)ᶜ := by
   induction Φ with
-  | atom _ => exact ⟨rfl, rfl⟩
+  | atom a =>
+    refine ⟨rfl, ?_⟩
+    simp only [toNNFPos.toNNFNeg, gRealization]
+    exact AtomRealization.neg_interpret a
   | not Ψ ih =>
     refine ⟨?_, ?_⟩
-    · -- toNNFPos (.not Ψ) = toNNFNeg Ψ, want = (gRealization Ψ)ᶜ = gRealization (.not Ψ)
-      simp only [toNNFPos, gRealization]
+    · simp only [toNNFPos, gRealization]
       exact ih.2
-    · -- toNNFNeg (.not Ψ) = toNNFPos Ψ, want = ((gRealization Ψ)ᶜ)ᶜ = gRealization Ψ
-      simp only [toNNFPos.toNNFNeg, gRealization, compl_compl (α := Set (σ → K))]
+    · simp only [toNNFPos.toNNFNeg, gRealization, compl_compl (α := Set (σ → K))]
       exact ih.1
   | and Φ₁ Φ₂ ih₁ ih₂ =>
     refine ⟨?_, ?_⟩

@@ -10,6 +10,8 @@
   bound variable capture during quantifier pulling.
 -/
 import Azurite.AzFormula.Basic
+import Azurite.AzFormula.ToString
+import Azurite.AzMvPolynomial.Parse
 
 namespace Azurite
 
@@ -116,3 +118,57 @@ def toPrenex {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder}
   (toPrenexNNF embedded freshVarList).1
 
 end Azurite
+
+/-! ### #guard examples -/
+
+open Azurite AzMvPolynomial MonicMonomial Monomial BPR Formula
+
+section PrenexExamples
+
+open Azurite
+
+/-- Parse a polynomial in ℤ[x₀, x₁] as an abbreviation. -/
+private def p₂ (s : String) : AzMvPolynomial (IndexedVar 2) ℤ .Degrevlex :=
+  (AzMvPolynomial.parse s.toList).getD 0
+
+private abbrev F₂ := Formula (IndexedVar 2) (AzFieldAtom (IndexedVar 2) ℤ .Degrevlex)
+
+/-- Variables x₀ and x₁ for quantifying. -/
+private def x₀ : IndexedVar 2 := ⟨⟨0, by omega⟩⟩
+private def x₁ : IndexedVar 2 := ⟨⟨1, by omega⟩⟩
+
+-- Example 1: A simple atom (already prenex, no quantifiers)
+-- toPrenex (x₀ = 0) = (x₀ = 0)
+#guard toString (toPrenex (azEqZero (p₂ "x₀") : F₂)) == "x₀ = 0"
+
+-- Example 2: eliminateImplies on (x₀ = 0) → (x₁ = 0)
+-- becomes ¬(x₀ = 0) ∨ (x₁ = 0)  (eliminateImplies doesn't use AtomNeg)
+private def ex2 : F₂ := .implies (azEqZero (p₂ "x₀")) (azEqZero (p₂ "x₁"))
+#guard toString (ex2.eliminateImplies) == "¬(x₀ = 0) ∨ x₁ = 0"
+
+-- Example 3: toNNF on ¬(A ∧ B) — De Morgan with atom-level negation
+-- ¬(x₀ = 0 ∧ x₁ = 0) becomes (x₀ ≠ 0) ∨ (x₁ ≠ 0)
+private def ex3 : F₂ := .not (.and (azEqZero (p₂ "x₀")) (azEqZero (p₂ "x₁")))
+#guard toString (toNNF ex3) == "x₀ ≠ 0 ∨ x₁ ≠ 0"
+
+-- Example 4: toNNF on ¬∃x₀, (x₀ = 0) — becomes ∀x₀, (x₀ ≠ 0)
+private def ex4 : F₂ := .not (.exists_ x₀ (azEqZero (p₂ "x₀")))
+#guard toString (toNNF ex4) == "∀x₀, x₀ ≠ 0"
+
+-- Example 5: toPrenex on (∃x₀, x₀ = 0) ∧ (x₁ = 0)
+-- Should pull the ∃ out: ∃x₂, (x₂ = 0 ∧ x₁ = 0)  (fresh variable x₂)
+private def ex5 : F₂ := .and (.exists_ x₀ (azEqZero (p₂ "x₀"))) (azEqZero (p₂ "x₁"))
+#guard toString (toPrenex ex5) == "∃x₂, x₂ = 0 ∧ x₁ = 0"
+
+-- Example 6: toPrenex on ∀x₀, ∃x₁, (x₀ + x₁ = 0)
+-- Already prenex, so should stay the same
+private def ex6 : F₂ := .forall_ x₀ (.exists_ x₁ (azEqZero (p₂ "x₀+x₁")))
+#guard toString (toPrenex ex6) == "∀x₀, ∃x₁, x₀+x₁ = 0"
+
+-- Example 7: toPrenex on (∃x₀, x₀ = 0) ∨ (∃x₁, x₁ = 0)
+-- Should produce ∃x₂, ∃x₃, (x₂ = 0 ∨ x₃ = 0) with two fresh vars
+private def ex7 : F₂ := .or (.exists_ x₀ (azEqZero (p₂ "x₀")))
+                             (.exists_ x₁ (azEqZero (p₂ "x₁")))
+#guard toString (toPrenex ex7) == "∃x₂, ∃x₃, x₂ = 0 ∨ x₃ = 0"
+
+end PrenexExamples

@@ -51,6 +51,28 @@ noncomputable instance {σ : Type*} [DecidableEq σ]
     AtomRename (FieldAtom σ D) σ where
   renameEquiv e a := FieldAtom.renameVars e a
 
+/-! ### AtomNeg typeclass -/
+
+/-- Typeclass for atom types that support negation at the atom level.
+    For field atoms, negation flips `= 0` to `≠ 0` and vice versa.
+    This enables `toNNF` to absorb negation into atoms rather than
+    wrapping them in `Formula.not`. -/
+class AtomNeg (α : Type*) where
+  /-- Negate an atom. Must satisfy `interpret (neg a) = (interpret a)ᶜ`
+      when combined with `AtomRealization`. -/
+  neg : α → α
+
+/-- `AzFieldAtom` instance: flips the `isEq` flag. -/
+instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
+    {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomNeg (AzFieldAtom σ R ord) where
+  neg a := ⟨a.poly, !a.isEq⟩
+
+/-- `FieldAtom` instance: flips the `isEq` flag. -/
+instance {σ : Type*} {D : Type*} [CommRing D] :
+    AtomNeg (FieldAtom σ D) where
+  neg a := ⟨a.poly, !a.isEq⟩
+
 /-! ### Generic free variables -/
 
 variable {σ : Type*} {α : Type*}
@@ -111,8 +133,8 @@ def simplify [AtomVars α σ] [DecidableEq σ] (Φ : Formula σ α) : Formula σ
 /-! ### Negation normal form -/
 
 /-- Convert a formula to negation normal form (positive position).
-    Pushes negations down to atoms. Handles `implies` inline. -/
-def toNNFPos : Formula σ α → Formula σ α
+    Pushes negations into atoms using `AtomNeg`. Handles `implies` inline. -/
+def toNNFPos [AtomNeg α] : Formula σ α → Formula σ α
   | .atom a => .atom a
   | .not Φ => toNNFNeg Φ
   | .and Φ₁ Φ₂ => .and (toNNFPos Φ₁) (toNNFPos Φ₂)
@@ -122,9 +144,9 @@ def toNNFPos : Formula σ α → Formula σ α
   | .forall_ x Φ => .forall_ x (toNNFPos Φ)
 where
   /-- Convert a formula to NNF in negative position (under a negation).
-      Applies De Morgan's laws and quantifier duality. -/
+      Absorbs negation into atoms via `AtomNeg.neg`. -/
   toNNFNeg : Formula σ α → Formula σ α
-    | .atom a => .not (.atom a)
+    | .atom a => .atom (AtomNeg.neg a)
     | .not Φ => toNNFPos Φ
     | .and Φ₁ Φ₂ => .or (toNNFNeg Φ₁) (toNNFNeg Φ₂)
     | .or Φ₁ Φ₂ => .and (toNNFNeg Φ₁) (toNNFNeg Φ₂)
@@ -133,8 +155,8 @@ where
     | .forall_ x Φ => .exists_ x (toNNFNeg Φ)
 
 /-- Convert a formula to negation normal form.
-    Pushes all negations to atoms and eliminates `implies`. -/
-def toNNF : Formula σ α → Formula σ α := toNNFPos
+    Pushes all negations into atoms and eliminates `implies`. -/
+def toNNF [AtomNeg α] : Formula σ α → Formula σ α := toNNFPos
 
 /-! ### Formula renaming via AtomRename -/
 

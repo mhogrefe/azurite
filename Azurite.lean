@@ -9,6 +9,7 @@ import Azurite.AzFormula.Equiv.Prenex
 import Azurite.AzFormula.Equiv.Simplify
 import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.Realization
+import Azurite.AzFormula.ToString
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
