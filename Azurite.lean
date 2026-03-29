@@ -90,6 +90,7 @@ import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.RootBound
 import Azurite.AzPolynomial.Equiv.SMul
+import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.Translate
 import Azurite.AzPolynomial.Eval
@@ -102,6 +103,7 @@ import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.RootBound
 import Azurite.AzPolynomial.SMul
+import Azurite.AzPolynomial.SpecialTranslate
 import Azurite.AzPolynomial.StringLemmas
 import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.ToString

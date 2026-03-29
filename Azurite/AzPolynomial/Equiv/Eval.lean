@@ -48,11 +48,11 @@ end Azurite.AzPolynomial
 
 open Finset
 
-private def evalSpecialStep {R : Type _} [Mul R] [Add R] (b c : R) :
+def evalSpecialStep {R : Type _} [Mul R] [Add R] (b c : R) :
     R → R × R → R × R :=
   fun a ⟨acc, d⟩ => (a * d + acc * b, d * c)
 
-private lemma evalSpecialStep_snd {R : Type _} [CommRing R]
+lemma evalSpecialStep_snd {R : Type _} [CommRing R]
     (l : List R) (b c : R) :
     (l.foldr (evalSpecialStep b c) (0, 1)).2 = c ^ l.length := by
   induction l with
@@ -61,7 +61,7 @@ private lemma evalSpecialStep_snd {R : Type _} [CommRing R]
     simp only [List.foldr_cons, evalSpecialStep]
     rw [ih, List.length_cons, pow_succ]
 
-private lemma evalSpecial_list_eq {R : Type _} [CommRing R]
+lemma evalSpecial_list_eq {R : Type _} [CommRing R]
     (l : List R) (b c : R) :
     (l.foldr (evalSpecialStep b c) (0, 1)).1 =
     ∑ k ∈ Finset.range l.length,

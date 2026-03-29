@@ -1078,28 +1078,6 @@ theorem Polynomial.horSpecial_natDegree_eq_eval {K : Type*} [Field K]
 
 end HorSpecial
 
-/-!
-## Algorithm 8.9. Translation
-
-Given `P = aₚ Xᵖ + ⋯ + a₀ ∈ A[X]` and `c ∈ A`, compute `P(X - c)`.
-
-The algorithm simply composes `P` with the linear polynomial `X - c`
-using Algorithm 8.7 (Horner composition).
-
-**Complexity (BPR):** Dominated by the composition cost.
-
-**Structure required:** Ring (D₀).
-
-**Azurite implementation:** `Azurite.AzPolynomial.translate`
-
-See: `Azurite.AzPolynomial.Translate`
-
-The equivalence `toPoly (translate p c) = (toPoly p).comp (X - C c)`
-is proved in `Azurite.AzPolynomial.Equiv.Translate`, along with the
-root translation theorem: `r` is a root of `P(X-c)` iff `r-c` is a
-root of `P`.
--/
-
 /-! ### Bitsize bound on HorSpecial -/
 
 section HorSpecialBitsize
@@ -1158,5 +1136,55 @@ theorem Polynomial.bitsize_horSpecial_le (P : ℤ[X]) (b c : ℤ) (i τ τ' : �
   -- Since i ≤ p, Nat.size(i+1) ≤ Nat.size(p+1)
   exact le_trans h1 (Nat.add_le_add_left (Nat.size_le_size (by omega)) _)
 
+/-!
+## Algorithm 8.9. Translation
+
+Given `P = aₚ Xᵖ + ⋯ + a₀ ∈ A[X]` and `c ∈ A`, compute `P(X - c)`.
+
+The algorithm simply composes `P` with the linear polynomial `X - c`
+using Algorithm 8.7 (Horner composition).
+
+**Complexity (BPR):** Dominated by the composition cost.
+
+**Structure required:** Ring (D₀).
+
+**Azurite implementation:** `Azurite.AzPolynomial.translate`
+
+See: `Azurite.AzPolynomial.Translate`
+
+The equivalence `toPoly (translate p c) = (toPoly p).comp (X - C c)`
+is proved in `Azurite.AzPolynomial.Equiv.Translate`, along with the
+root translation theorem: `r` is a root of `P(X-c)` iff `r-c` is a
+root of `P`.
+-/
+
 end HorSpecialBitsize
 
+/-!
+## Algorithm 8.10. [Special Translation]
+
+Given `P = aₚ Xᵖ + ⋯ + a₀ ∈ A[X]` and `b, c ∈ A`, compute the
+polynomial `Q = cᵖ P((X − b)/c)` without leaving `A`:
+
+  - Initialize `result := aₚ`, `d := 1`.
+  - For `i` from `1` to `p`:
+    - `d := c · d`
+    - `result := result · (cX − b) + (d · aₚ₋ᵢ)`
+  - Output `result = cᵖ P((X − b)/c)`.
+
+**Complexity (BPR):** `O(p)` polynomial multiplications and additions.
+
+**Structure required:** Ring (D₀).
+
+**Azurite implementation:** `Azurite.AzPolynomial.specialTranslate`
+
+See: `Azurite.AzPolynomial.SpecialTranslate`
+
+The equivalence proofs are in `Azurite.AzPolynomial.Equiv.SpecialTranslate`:
+
+- `toPoly_cXSubB` — `toPoly (cXSubB b c) = C c * X - C b`
+- `eval_specialTranslate` — integral evaluation identity
+- `eval_specialTranslate_field` — field identity: `= c^deg · eval(z − b/c) P`
+- `isRoot_specialTranslate_iff` — root iff root of original at shifted point
+- `isRoot_specialTranslate_map_iff` — root translation across a ring hom `f : R →+* K`
+-/

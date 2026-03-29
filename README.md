@@ -40,6 +40,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Comp` | `toPoly (comp p q) = (toPoly p).comp (toPoly q)` |
 | `Equiv/Pow` | `toPoly (p.pow n) = toPoly p ^ n` and `(ofPoly p).pow n = ofPoly (p ^ n)` |
 | `Equiv/Translate` | `toPoly (translate p c) = (toPoly p).comp (X - C c)` and root translation: root at `r` ↔ root of `P` at `r-c` (BPR Algorithm 8.9) |
+| `Equiv/SpecialTranslate` | `eval z (specialTranslate p b c) = evalSpecial p (c·z−b) c`, field identity `= c^deg · eval(z−b/c) P`, root translation (field and via ring hom `f : R →+* K`) (BPR Algorithm 8.10) |
 
 #### AzMvPolynomial ↔ MvPolynomial σ R
 
@@ -132,7 +133,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 |--------|---------|
 | `BasuPollackRoy/Chapter1/Section1_1` | Algebraically closed fields, zero sets (`Zer`), algebraic/constructible sets, first-order formulas in the language of fields, quantifier-free and prenex normal forms, realization, prenex normal form theorem. Exercises 1.1–1.3. |
 | `BasuPollackRoy/Chapter1/Section1_2` | Euclidean division, GCD/LCM (definitions and propositions), coprimality, signed remainder sequences. Proposition 1.5, Corollary 1.6, Exercises 1.5–1.7, Proposition 1.8. |
-| `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Notation 8.7 (Horner polynomials with sum/eval identities), Algorithm 8.7 (polynomial evaluation), Algorithm 8.8 (special evaluation with `horSpecial` sum characterization, field identity, and bitsize bound `τ + iτ' + bit(p+1)`), Algorithm 8.9 (translation). Cross-references to Azurite implementations of Algorithms 8.1–8.9. |
+| `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Notation 8.7 (Horner polynomials with sum/eval identities), Algorithm 8.7 (polynomial evaluation), Algorithm 8.8 (special evaluation with `horSpecial` sum characterization, field identity, and bitsize bound `τ + iτ' + bit(p+1)`), Algorithm 8.9 (translation), Algorithm 8.10 (special translation). Cross-references to Azurite implementations of Algorithms 8.1–8.10. |
 
 ## Algorithms Implemented
 
@@ -148,6 +149,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | Fast rational comparison | — | `Rat/Compare` | O(1) amortized for many inputs |
 | Cauchy root bound | — | `AzPolynomial/RootBound` | O(n) |
 | Translation P(X-c) | BPR Alg. 8.9 | `AzPolynomial/Translate` | O(p²·deg(q)) via comp |
+| Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
 
 ## Building
