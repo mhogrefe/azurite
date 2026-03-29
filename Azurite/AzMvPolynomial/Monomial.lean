@@ -51,6 +51,14 @@ structure Monomial (σ : Type _) {n : ℕ} [LinearOrder σ] [Var σ n]
   coeff : {c : R // c ≠ 0}
   monic : MonicMonomial σ ord
 
+instance {R : Type _} [Semiring R] [DecidableEq R] {σ : Type _} {n : ℕ}
+    [LinearOrder σ] [Var σ n] {ord : MonomialOrder} :
+    DecidableEq (Monomial σ R ord) :=
+  fun a b => by
+    cases a; cases b
+    simp only [Monomial.mk.injEq]
+    exact instDecidableAnd
+
 namespace Monomial
 
 variable {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]

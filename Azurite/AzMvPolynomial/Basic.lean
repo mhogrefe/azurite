@@ -21,6 +21,15 @@ structure AzMvPolynomial (σ : Type _)
   /-- All pairs of monic parts are strictly decreasing (descending order). -/
   sorted : terms.toList.Pairwise (fun a b => a.monic > b.monic)
 
+instance {R : Type _} [Semiring R] [DecidableEq R] {σ : Type _} {n : ℕ}
+    [LinearOrder σ] [Var σ n] {ord : MonomialOrder} :
+    DecidableEq (AzMvPolynomial σ R ord) :=
+  fun a b => by
+    have : DecidableEq (Array (Monomial σ R ord)) := inferInstance
+    cases a; cases b
+    simp only [AzMvPolynomial.mk.injEq]
+    exact this _ _
+
 namespace AzMvPolynomial
 
 variable {R : Type _} [Semiring R] {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n]

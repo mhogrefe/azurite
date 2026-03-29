@@ -34,6 +34,7 @@ import Azurite.AzMvPolynomial.Equiv.Bind2
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
+import Azurite.AzMvPolynomial.Equiv.Join2
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MergeSorted
 import Azurite.AzMvPolynomial.Equiv.MonomialOrder
@@ -46,6 +47,7 @@ import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Sub
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.ExactDiv
+import Azurite.AzMvPolynomial.Join2
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MergeSorted
 import Azurite.AzMvPolynomial.MonicMonomial
