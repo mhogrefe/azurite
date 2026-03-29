@@ -15,7 +15,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
 | `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, and row/column access. |
-| `AzFormula/` | Computable first-order formulas over `AzFieldAtom` (field atoms using `AzMvPolynomial`). Provides computable free-variable computation, sentence checking, formula constructors, variable renaming, and noncomputable realization. Generic `mapAtom` functor and atom-level conversions to/from BPR's `FieldAtom`. |
+| `AzFormula/` | Computable first-order formulas over `AzFieldAtom` (field atoms using `AzMvPolynomial`). Provides computable free-variable computation, sentence checking, formula constructors, variable renaming, negation normal form (`toNNF`), prenex normal form conversion (`toPrenex`), and noncomputable realization. Generic `AtomVars`, `AtomRename`, `AtomRealization` typeclasses. Modular simplification passes (`elimDoubleNeg`, `elimVacuousQuantifiers`). |
 
 ### Equivalence Proofs (`Equiv/` subdirectories)
 
@@ -107,7 +107,11 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 
 | File | What it proves |
 |------|---------------|
-| `Equiv` | `mapAtom` functor laws (`mapAtom_id`, `mapAtom_comp`), formula conversion round-trips (`fieldFormulaToAzFormula ∘ azFormulaToFieldFormula = id` and vice versa), `azFreeVars Φ = freeVars (azFormulaToFieldFormula Φ)` (computable vars agree with noncomputable), `azRealization = realization ∘ azFormulaToFieldFormula`. |
+| `Equiv/Basic` | `mapAtom` functor laws (`mapAtom_id`, `mapAtom_comp`), formula conversion round-trips (`fieldFormulaToAzFormula ∘ azFormulaToFieldFormula = id` and vice versa), `azRealization = realization ∘ azFormulaToFieldFormula`. |
+| `Equiv/FreeVars` | `freeVarsOf Φ = freeVars (Φ.toFieldFormula)` — computable vars agree with noncomputable for both atom types. |
+| `Equiv/Simplify` | `elimDoubleNeg` and `elimVacuousQuantifiers` preserve C-realization. |
+| `Equiv/Prenex` | Generic `AtomRealization` typeclass, `gRealization` semantics. `eliminateImplies` and `toNNF` preserve generic realization. |
+| `Prenex` | Computable prenex conversion: `mergePrenex`, `toPrenexNNF`, `toPrenex` pipeline for `IndexedVar n` formulas. |
 
 #### AzPolynomialQ ↔ AzPolynomial ℚ
 

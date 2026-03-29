@@ -31,6 +31,26 @@ noncomputable instance {σ : Type*} [DecidableEq σ]
     AtomVars (FieldAtom σ D) σ where
   vars := FieldAtom.vars
 
+/-! ### AtomRename typeclass -/
+
+/-- Typeclass for atom types that support variable renaming via an equivalence
+    (permutation). Used by the prenex conversion to rename bound variables. -/
+class AtomRename (α : Type*) (σ : outParam Type*) where
+  /-- Rename variables in an atom using a variable permutation. -/
+  renameEquiv : (σ ≃ σ) → α → α
+
+/-- `AzFieldAtom` instance: computable via `renameVarsInjective`. -/
+instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
+    {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomRename (AzFieldAtom σ R ord) σ where
+  renameEquiv e a := a.renameVarsInjective e e.injective
+
+/-- `FieldAtom` instance: noncomputable (uses `MvPolynomial.rename`). -/
+noncomputable instance {σ : Type*} [DecidableEq σ]
+    {D : Type*} [CommRing D] :
+    AtomRename (FieldAtom σ D) σ where
+  renameEquiv e a := FieldAtom.renameVars e a
+
 /-! ### Generic free variables -/
 
 variable {σ : Type*} {α : Type*}
@@ -87,6 +107,41 @@ def elimVacuousQuantifiers [AtomVars α σ] [DecidableEq σ] :
     vacuous quantifier removal. -/
 def simplify [AtomVars α σ] [DecidableEq σ] (Φ : Formula σ α) : Formula σ α :=
   elimVacuousQuantifiers (elimDoubleNeg Φ)
+
+/-! ### Negation normal form -/
+
+/-- Convert a formula to negation normal form (positive position).
+    Pushes negations down to atoms. Handles `implies` inline. -/
+def toNNFPos : Formula σ α → Formula σ α
+  | .atom a => .atom a
+  | .not Φ => toNNFNeg Φ
+  | .and Φ₁ Φ₂ => .and (toNNFPos Φ₁) (toNNFPos Φ₂)
+  | .or Φ₁ Φ₂ => .or (toNNFPos Φ₁) (toNNFPos Φ₂)
+  | .implies Φ₁ Φ₂ => .or (toNNFNeg Φ₁) (toNNFPos Φ₂)
+  | .exists_ x Φ => .exists_ x (toNNFPos Φ)
+  | .forall_ x Φ => .forall_ x (toNNFPos Φ)
+where
+  /-- Convert a formula to NNF in negative position (under a negation).
+      Applies De Morgan's laws and quantifier duality. -/
+  toNNFNeg : Formula σ α → Formula σ α
+    | .atom a => .not (.atom a)
+    | .not Φ => toNNFPos Φ
+    | .and Φ₁ Φ₂ => .or (toNNFNeg Φ₁) (toNNFNeg Φ₂)
+    | .or Φ₁ Φ₂ => .and (toNNFNeg Φ₁) (toNNFNeg Φ₂)
+    | .implies Φ₁ Φ₂ => .and (toNNFPos Φ₁) (toNNFNeg Φ₂)
+    | .exists_ x Φ => .forall_ x (toNNFNeg Φ)
+    | .forall_ x Φ => .exists_ x (toNNFNeg Φ)
+
+/-- Convert a formula to negation normal form.
+    Pushes all negations to atoms and eliminates `implies`. -/
+def toNNF : Formula σ α → Formula σ α := toNNFPos
+
+/-! ### Formula renaming via AtomRename -/
+
+/-- Rename all variables in a formula (both structural and inside atoms)
+    using an equivalence (permutation). -/
+def renameFormulaEquiv [AtomRename α σ] (e : σ ≃ σ) (Φ : Formula σ α) : Formula σ α :=
+  Φ.rename e (AtomRename.renameEquiv e)
 
 /-! ### AzFieldAtom-specific constructors -/
 

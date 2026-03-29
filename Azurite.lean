@@ -5,7 +5,9 @@ import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.Equiv.Basic
 import Azurite.AzFormula.Equiv.FreeVars
+import Azurite.AzFormula.Equiv.Prenex
 import Azurite.AzFormula.Equiv.Simplify
+import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.Realization
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
