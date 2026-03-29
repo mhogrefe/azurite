@@ -338,8 +338,8 @@ theorem exercise_1_3 {V : Set (Fin k → C)}
 ### First-Order Formulas (Generic)
 
 We define first-order formulas generically over an **atom type** `α`.
-The connectives are `not`, `and`, `or`, and the quantifier `exists_`.
-We derive `forall_` (= ¬∃x, ¬Φ) and `implies` (= ¬Φ ∨ Ψ).
+The connectives are `not`, `and`, `or`, `implies`, and the quantifiers `exists_` and `forall_`.
+The functions `eliminateForall` and `eliminateImplies` convert these to the minimal basis.
 
 For algebraically closed fields (Chapter 1), atoms are `FieldAtom σ D`,
 encoding `P = 0` or `P ≠ 0` via a boolean flag.
@@ -353,6 +353,7 @@ inductive Formula (σ : Type*) (α : Type*) where
   | not     : Formula σ α → Formula σ α
   | and     : Formula σ α → Formula σ α → Formula σ α
   | or      : Formula σ α → Formula σ α → Formula σ α
+  | implies : Formula σ α → Formula σ α → Formula σ α
   | exists_ : σ → Formula σ α → Formula σ α
   | forall_ : σ → Formula σ α → Formula σ α
 
@@ -360,28 +361,26 @@ namespace Formula
 
 variable {σ : Type*} {α : Type*}
 
-/-- Implication: Φ ⇒ Ψ  :=  ¬Φ ∨ Ψ. -/
-def implies (Φ Ψ : Formula σ α) : Formula σ α :=
-  .or (.not Φ) Ψ
-
 /-- A formula is quantifier-free if no quantifier (∃ or ∀)
     appears in it. -/
 def IsQuantifierFree : Formula σ α → Prop
-  | .atom _      => True
-  | .not Φ       => Φ.IsQuantifierFree
-  | .and Φ₁ Φ₂   => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
-  | .or Φ₁ Φ₂    => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
-  | .exists_ _ _ => False
-  | .forall_ _ _ => False
+  | .atom _        => True
+  | .not Φ         => Φ.IsQuantifierFree
+  | .and Φ₁ Φ₂     => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
+  | .or Φ₁ Φ₂      => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
+  | .implies Φ₁ Φ₂ => Φ₁.IsQuantifierFree ∧ Φ₂.IsQuantifierFree
+  | .exists_ _ _   => False
+  | .forall_ _ _   => False
 
 /-- Quantifier depth of a formula. -/
 def quantifierDepth : Formula σ α → ℕ
-  | .atom _      => 0
-  | .not Φ       => Φ.quantifierDepth
-  | .and Φ₁ Φ₂   => Φ₁.quantifierDepth + Φ₂.quantifierDepth
-  | .or Φ₁ Φ₂    => Φ₁.quantifierDepth + Φ₂.quantifierDepth
-  | .exists_ _ Φ => Φ.quantifierDepth + 1
-  | .forall_ _ Φ => Φ.quantifierDepth + 1
+  | .atom _        => 0
+  | .not Φ         => Φ.quantifierDepth
+  | .and Φ₁ Φ₂     => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .or Φ₁ Φ₂      => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .implies Φ₁ Φ₂ => Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .exists_ _ Φ   => Φ.quantifierDepth + 1
+  | .forall_ _ Φ   => Φ.quantifierDepth + 1
 
 /-- A formula in prenex normal form. -/
 inductive IsPrenex : Formula σ α → Prop where
@@ -398,6 +397,7 @@ noncomputable def rename (f : σ → τ) (renameAtom : α → β) :
   | .not Φ       => .not (Φ.rename f renameAtom)
   | .and Φ₁ Φ₂   => .and (Φ₁.rename f renameAtom) (Φ₂.rename f renameAtom)
   | .or Φ₁ Φ₂    => .or (Φ₁.rename f renameAtom) (Φ₂.rename f renameAtom)
+  | .implies Φ₁ Φ₂ => .implies (Φ₁.rename f renameAtom) (Φ₂.rename f renameAtom)
   | .exists_ x Φ => .exists_ (f x) (Φ.rename f renameAtom)
   | .forall_ x Φ => .forall_ (f x) (Φ.rename f renameAtom)
 
@@ -407,8 +407,19 @@ def eliminateForall : Formula σ α → Formula σ α
   | .not Φ       => .not Φ.eliminateForall
   | .and Φ₁ Φ₂   => .and Φ₁.eliminateForall Φ₂.eliminateForall
   | .or Φ₁ Φ₂    => .or Φ₁.eliminateForall Φ₂.eliminateForall
+  | .implies Φ₁ Φ₂ => .implies Φ₁.eliminateForall Φ₂.eliminateForall
   | .exists_ x Φ => .exists_ x Φ.eliminateForall
   | .forall_ x Φ => .not (.exists_ x (.not Φ.eliminateForall))
+
+/-- Eliminate `implies` in favour of `¬Φ ∨ Ψ`. -/
+def eliminateImplies : Formula σ α → Formula σ α
+  | .atom a        => .atom a
+  | .not Φ         => .not Φ.eliminateImplies
+  | .and Φ₁ Φ₂     => .and Φ₁.eliminateImplies Φ₂.eliminateImplies
+  | .or Φ₁ Φ₂      => .or Φ₁.eliminateImplies Φ₂.eliminateImplies
+  | .implies Φ₁ Φ₂ => .or (.not Φ₁.eliminateImplies) Φ₂.eliminateImplies
+  | .exists_ x Φ   => .exists_ x Φ.eliminateImplies
+  | .forall_ x Φ   => .forall_ x Φ.eliminateImplies
 
 theorem rename_isQF (f : σ → τ) (ra : α → β) :
     ∀ (Φ : Formula σ α), Φ.IsQuantifierFree →
@@ -418,6 +429,8 @@ theorem rename_isQF (f : σ → τ) (ra : α → β) :
   | .and Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
     ⟨rename_isQF f ra Φ₁ h₁, rename_isQF f ra Φ₂ h₂⟩
   | .or Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
+    ⟨rename_isQF f ra Φ₁ h₁, rename_isQF f ra Φ₂ h₂⟩
+  | .implies Φ₁ Φ₂, ⟨h₁, h₂⟩ =>
     ⟨rename_isQF f ra Φ₁ h₁, rename_isQF f ra Φ₂ h₂⟩
 
 theorem rename_isPrenex (f : σ → τ) (ra : α → β)
@@ -437,6 +450,8 @@ theorem rename_quantifierDepth (f : σ → τ) (ra : α → β)
   | and _ _ ih₁ ih₂ =>
     simp [rename, quantifierDepth, ih₁, ih₂]
   | or _ _ ih₁ ih₂ =>
+    simp [rename, quantifierDepth, ih₁, ih₂]
+  | implies _ _ ih₁ ih₂ =>
     simp [rename, quantifierDepth, ih₁, ih₂]
   | exists_ _ _ ih =>
     simp [rename, quantifierDepth, ih]
@@ -500,6 +515,7 @@ noncomputable def freeVars [DecidableEq σ] :
   | .not Φ       => Φ.freeVars
   | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
   | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .implies Φ₁ Φ₂ => Φ₁.freeVars ∪ Φ₂.freeVars
   | .exists_ x Φ => Φ.freeVars \ {x}
   | .forall_ x Φ => Φ.freeVars \ {x}
 
@@ -554,6 +570,7 @@ noncomputable def realization [DecidableEq σ] :
   | .not Φ       => (Φ.realization)ᶜ
   | .and Φ₁ Φ₂   => Φ₁.realization ∩ Φ₂.realization
   | .or Φ₁ Φ₂    => Φ₁.realization ∪ Φ₂.realization
+  | .implies Φ₁ Φ₂ => (Φ₁.realization)ᶜ ∪ Φ₂.realization
   | .exists_ x Φ =>
     { y | ∃ c : C, Function.update y x c ∈ Φ.realization }
   | .forall_ x Φ =>
@@ -610,6 +627,9 @@ theorem rename_realization [DecidableEq σ] [DecidableEq τ]
   | or _ _ ih₁ ih₂ =>
     simp [rename, realization, ih₁, ih₂,
       Set.preimage_union]
+  | implies _ _ ih₁ ih₂ =>
+    simp [rename, realization, ih₁, ih₂,
+      Set.preimage_union, Set.preimage_compl]
   | exists_ x _ ih =>
     ext y
     simp only [rename, realization, Set.mem_setOf_eq,
@@ -657,6 +677,10 @@ theorem realization_invariant_update [DecidableEq σ]
     rw [ih₁ hx.1, ih₂ hx.2]
   | or _ _ ih₁ ih₂ =>
     simp only [realization, Set.mem_union, freeVars,
+      Finset.mem_union, not_or] at *
+    rw [ih₁ hx.1, ih₂ hx.2]
+  | implies _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_union, Set.mem_compl_iff, freeVars,
       Finset.mem_union, not_or] at *
     rw [ih₁ hx.1, ih₂ hx.2]
   | exists_ z _ ih =>
@@ -992,6 +1016,24 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
     unfold CEquiv at hE ⊢; simp only [realization]
     ext y; simp only [Set.mem_setOf_eq]
     exact forall_congr' fun c => by rw [← hE]
+  | implies Φ₁ Φ₂ ih₁ ih₂ =>
+    -- Φ₁ → Φ₂ has realization Φ₁ᶜ ∪ Φ₂ = ¬(Φ₁ ∧ ¬Φ₂)
+    obtain ⟨Ψ₁, hP₁, hE₁⟩ := ih₁
+    obtain ⟨Ψ₂, hP₂, hE₂⟩ := ih₂
+    obtain ⟨Ψ₂', hP₂', hE₂'⟩ := not_prenex (C := C) hP₂
+    obtain ⟨Ψ_and, hP_and, hE_and⟩ := and_prenex (C := C) hP₁ hP₂'
+    obtain ⟨Ψ_final, hP_final, hE_final⟩ := not_prenex (C := C) hP_and
+    refine ⟨Ψ_final, hP_final, ?_⟩
+    unfold CEquiv at hE₁ hE₂ hE₂' hE_and hE_final ⊢
+    simp only [realization] at hE₂' hE_and hE_final ⊢
+    rw [hE₁, hE₂]
+    -- Goal: Ψ₁.realization ᶜ ∪ Ψ₂.realization = Ψ_final.realization
+    -- ¬Ψ₂ ≡ Ψ₂' via hE₂', Ψ₁ ∧ Ψ₂' ≡ Ψ_and via hE_and, ¬Ψ_and ≡ Ψ_final via hE_final
+    -- Aᶜ ∪ B = (A ∩ Bᶜ)ᶜ
+    rw [show (Ψ₁.realization (C := C))ᶜ ∪ Ψ₂.realization (C := C) =
+        (Ψ₁.realization (C := C) ∩ (Ψ₂.realization (C := C))ᶜ)ᶜ from by
+      simp [Set.compl_inter, compl_compl]]
+    rw [hE₂', hE_and, hE_final]
 
 /-!
 ### Sentences
@@ -1054,6 +1096,10 @@ theorem realization_eq_of_agree_on_freeVars
         · rfl
         · rename_i hne
           exact h x (by simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mpr (hc c)
+  | implies _ _ ih₁ ih₂ =>
+    simp only [realization, Set.mem_union, Set.mem_compl_iff, freeVars] at *
+    rw [ih₁ _ _ (fun x hx => h x (Finset.mem_union_left _ hx)),
+        ih₂ _ _ (fun x hx => h x (Finset.mem_union_right _ hx))]
 
 theorem sentence_trivial_realization [DecidableEq σ]
     (Φ : Formula σ (FieldAtom σ D)) (hΦ : isSentence Φ) :
@@ -1453,6 +1499,8 @@ theorem qf_realizable_isConstructible
     exact .inter (ih₁ hqf.1) (ih₂ hqf.2)
   | or Φ₁ Φ₂ ih₁ ih₂ =>
     exact (ih₁ hqf.1).union (ih₂ hqf.2)
+  | implies Φ₁ Φ₂ ih₁ ih₂ =>
+    exact (IsConstructibleSet.compl (ih₁ hqf.1)).union (ih₂ hqf.2)
   | exists_ x Φ _ => exact absurd hqf id
   | forall_ x Φ _ => exact absurd hqf id
 
