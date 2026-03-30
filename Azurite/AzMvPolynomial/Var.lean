@@ -67,6 +67,13 @@ theorem embed_fin_strictMono (h : n ≤ m) :
   simp only [embed, inst₂.toFin_ofFin, inst.toFin_ofFin, Fin.castLE_lt_castLE_iff]
   exact hab
 
+/-- `Var.embed` is injective. -/
+theorem embed_injective (h : n ≤ m) : Function.Injective (Var.embed h : α → β) := by
+  intro v₁ v₂ hv
+  have h1 := congr_arg inst₂.toFin hv
+  simp only [embed, inst₂.toFin_ofFin, Fin.castLE_inj] at h1
+  exact inst.toFin_injective h1
+
 end Embed
 
 end Var
@@ -158,7 +165,6 @@ private theorem subscript_not_syntax (c : Char) (hge : c.toNat ≥ 8320) (hle : 
 @[ext]
 structure IndexedVar (n : ℕ) where
   val : Fin n
-  deriving DecidableEq
 
 namespace IndexedVar
 
