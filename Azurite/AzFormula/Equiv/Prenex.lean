@@ -6,7 +6,11 @@
   preserve realization.
 -/
 import Azurite.AzFormula.Prenex
+import Azurite.AzMvPolynomial.Equiv.Vars
+import Azurite.AzMvPolynomial.Equiv.Rename
 import Mathlib.Logic.Equiv.Basic
+import Mathlib.Algebra.MvPolynomial.Variables
+import Azurite.AzFormula.Realization
 
 namespace Azurite
 
@@ -802,5 +806,108 @@ theorem toPrenexNNF_gRealization
             (.inr rfl) h_rename_vars
       _ = gRealization (.or Φ₁ Φ₂) := by simp only [gRealization, h_eq₁, h_eq₂]
   | implies Φ₁ Φ₂ _ _ => simp [toPrenexNNF]
+
+/-! ### Concrete h_rename_vars for AzFieldAtom -/
+
+/-- `MvPolynomial.rename` by an equivalence gives exact equality on `vars`. -/
+private theorem MvPolynomial.vars_rename_equiv {σ' τ : Type*} [DecidableEq σ'] [DecidableEq τ]
+    {R' : Type*} [CommSemiring R']
+    (e : σ' ≃ τ) (φ : MvPolynomial σ' R') :
+    (MvPolynomial.rename e φ).vars = φ.vars.image e := by
+  apply Finset.Subset.antisymm
+  · exact MvPolynomial.vars_rename e φ
+  · intro v hv
+    rw [Finset.mem_image] at hv
+    obtain ⟨w, hw, rfl⟩ := hv
+    have h1 : (MvPolynomial.rename e.symm (MvPolynomial.rename e φ)).vars = φ.vars := by
+      simp [MvPolynomial.rename_rename]
+    have h2 := MvPolynomial.vars_rename e.symm (MvPolynomial.rename e φ)
+    rw [h1] at h2
+    obtain ⟨u, hu, hue⟩ := Finset.mem_image.mp (h2 hw)
+    rw [← hue, Equiv.apply_symm_apply]; exact hu
+
+/-- The `h_rename_vars` hypothesis holds for `AzFieldAtom`. -/
+theorem azFieldAtom_rename_vars {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+    {R' : Type*} [CommSemiring R'] [NoZeroDivisors R'] [DecidableEq R']
+    {ord' : MonomialOrder} (e : σ' ≃ σ') (a : AzFieldAtom σ' R' ord') :
+    AtomVars.vars (AtomRename.renameEquiv e a) = (AtomVars.vars a).image e := by
+  change (a.renameVarsInjective ⇑e e.injective).poly.vars = a.poly.vars.image ⇑e
+  rw [show (a.renameVarsInjective ⇑e e.injective).poly = a.poly.renameInjective ⇑e e.injective
+    from rfl]
+  rw [← toMvPoly_vars, ← toMvPoly_vars, AzMvPolynomial.toMvPoly_renameInjective]
+  exact MvPolynomial.vars_rename_equiv e (AzMvPolynomial.toMvPoly a.poly)
+
+/-! ### AtomRealization instance for AzFieldAtom -/
+
+/-- Noncomputable interpretation for `AzFieldAtom`: maps an atom to the set of
+    variable assignments satisfying `P = 0` (if `isEq`) or `P ≠ 0`. -/
+noncomputable def azFieldAtomInterpret {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+    {R' : Type*} [CommRing R'] {ord' : MonomialOrder}
+    {K : Type*} [Field K] [Algebra R' K]
+    (a : AzFieldAtom σ' R' ord') : Set (σ' → K) :=
+  if a.isEq then { y | MvPolynomial.aeval y a.poly.toMvPoly = 0 }
+  else { y | MvPolynomial.aeval y a.poly.toMvPoly ≠ 0 }
+
+noncomputable instance azFieldAtomRealization
+    {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+    {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
+    {ord' : MonomialOrder}
+    {K : Type*} [Field K] [Algebra R' K] :
+    AtomRealization (AzFieldAtom σ' R' ord') σ' K where
+  interpret := azFieldAtomInterpret
+  neg_interpret := by
+    intro a
+    simp only [AtomNeg.neg, azFieldAtomInterpret]
+    cases a.isEq <;> simp [Set.compl_setOf, ne_eq, not_not]
+  rename_interpret := by
+    intro e a
+    simp only [AtomRename.renameEquiv, azFieldAtomInterpret, AzFieldAtom.renameVarsInjective]
+    ext y
+    simp_rw [AzMvPolynomial.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
+    cases a.isEq <;> simp [Set.mem_setOf_eq]
+  interpret_invariant := by
+    intro a x hx y c
+    simp only [azFieldAtomInterpret]
+    suffices h : MvPolynomial.aeval (Function.update y x c) a.poly.toMvPoly =
+        MvPolynomial.aeval y a.poly.toMvPoly by
+      cases a.isEq <;> simp [Set.mem_setOf_eq, h]
+    simp only [MvPolynomial.aeval_def]
+    apply MvPolynomial.eval₂_congr (algebraMap R' K)
+    intro i ci hi hci
+    have hix : i ≠ x := by
+      intro heq; apply hx; subst heq
+      change i ∈ a.poly.vars
+      have h1 : ci ∈ a.poly.toMvPoly.support := MvPolynomial.mem_support_iff.mpr hci
+      have h2 : i ∈ a.poly.toMvPoly.vars := (MvPolynomial.mem_vars i).mpr ⟨ci, h1, hi⟩
+      convert h2 using 1
+      exact (toMvPoly_vars a.poly).symm
+    simp [hix]
+
+/-! ### freshIndexedVars properties -/
+
+/-- The list `freshIndexedVars m start count h` has no duplicates. -/
+theorem freshIndexedVars_nodup (m start count : ℕ) (h : start + count ≤ m) :
+    (freshIndexedVars m start count h).Nodup := by
+  simp only [freshIndexedVars]
+  apply List.Nodup.map
+  · intro a b hab
+    simp only [IndexedVar.mk.injEq, Fin.mk.injEq] at hab
+    exact Fin.ext (by omega)
+  · exact List.nodup_finRange count
+
+/-- Every variable in the embedded formula has index `< n`, so it is disjoint from
+    fresh variables with index `≥ n`. -/
+theorem freshIndexedVars_fresh {R' : Type*} [Semiring R'] {ord' : MonomialOrder}
+    (m n depth : ℕ) (h : n + depth ≤ m)
+    (embedded : Formula (IndexedVar m) (AzFieldAtom (IndexedVar m) R' ord'))
+    (h_bound : ∀ v ∈ allVarsOf embedded, (v : IndexedVar m).val.val < n) :
+    ∀ v ∈ freshIndexedVars m n depth h, v ∉ allVarsOf embedded := by
+  intro v hv hm
+  simp only [freshIndexedVars, List.mem_map, List.mem_finRange] at hv
+  obtain ⟨i, _, rfl⟩ := hv
+  have := h_bound _ hm
+  show False
+  have : n + i.val < n := this
+  omega
 
 end Azurite

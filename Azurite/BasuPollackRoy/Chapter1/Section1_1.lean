@@ -655,7 +655,7 @@ theorem rename_realization [DecidableEq σ] [DecidableEq τ]
     · have := hc c; convert this using 1; ext i
       simp [Function.update, hf.eq_iff]
 
-private theorem aeval_update_of_not_mem_vars
+theorem aeval_update_of_not_mem_vars
     [DecidableEq σ] (P : MvPolynomial σ D)
     (y : σ → C) (x : σ) (c : C) (hx : x ∉ P.vars) :
     aeval (Function.update y x c) P = aeval y P := by
