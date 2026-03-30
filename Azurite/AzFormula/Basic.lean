@@ -88,6 +88,32 @@ def freeVarsOf [AtomVars α σ] [DecidableEq σ] :
   | .exists_ x Φ   => freeVarsOf Φ \ {x}
   | .forall_ x Φ   => freeVarsOf Φ \ {x}
 
+/-- All variables mentioned in a formula, including bound variables. -/
+def allVarsOf [AtomVars α σ] [DecidableEq σ] :
+    Formula σ α → Finset σ
+  | .atom a        => AtomVars.vars a
+  | .not Φ         => allVarsOf Φ
+  | .and Φ₁ Φ₂     => allVarsOf Φ₁ ∪ allVarsOf Φ₂
+  | .or Φ₁ Φ₂      => allVarsOf Φ₁ ∪ allVarsOf Φ₂
+  | .implies Φ₁ Φ₂ => allVarsOf Φ₁ ∪ allVarsOf Φ₂
+  | .exists_ x Φ   => allVarsOf Φ ∪ {x}
+  | .forall_ x Φ   => allVarsOf Φ ∪ {x}
+
+theorem freeVarsOf_subset_allVarsOf [AtomVars α σ] [DecidableEq σ]
+    (Φ : Formula σ α) : freeVarsOf Φ ⊆ allVarsOf Φ := by
+  induction Φ with
+  | atom a => exact Finset.Subset.refl _
+  | not Φ ih => exact ih
+  | and Φ₁ Φ₂ ih₁ ih₂ => exact Finset.union_subset_union ih₁ ih₂
+  | or Φ₁ Φ₂ ih₁ ih₂ => exact Finset.union_subset_union ih₁ ih₂
+  | implies Φ₁ Φ₂ ih₁ ih₂ => exact Finset.union_subset_union ih₁ ih₂
+  | exists_ x Φ ih =>
+    intro v hv; simp only [freeVarsOf, allVarsOf, Finset.mem_sdiff, Finset.mem_union,
+      Finset.mem_singleton] at hv ⊢; exact .inl (ih hv.1)
+  | forall_ x Φ ih =>
+    intro v hv; simp only [freeVarsOf, allVarsOf, Finset.mem_sdiff, Finset.mem_union,
+      Finset.mem_singleton] at hv ⊢; exact .inl (ih hv.1)
+
 /-- A formula is a sentence if it has no free variables. -/
 def isSentenceOf [AtomVars α σ] [DecidableEq σ]
     (Φ : Formula σ α) : Bool :=
