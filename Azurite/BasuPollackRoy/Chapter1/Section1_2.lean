@@ -522,4 +522,36 @@ theorem prop_1_8 {P Q : K[X]} {k : ℕ}
   | zero => simp [SRemS] at hk; rw [hk]; exact dvd_zero _
   | succ k' => exact SRemS_last_dvd P Q (k' + 1) hk hk_ne 1 (by omega)
 
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+/-- The signed remainder sequence of P and 0 has SRemS(0) = P. -/
+@[simp] theorem SRemS_zero_left (P : K[X]) : SRemS P 0 0 = P := rfl
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+/-- The signed remainder sequence of P and 0 stabilizes at 0 from index 1 onward. -/
+theorem SRemS_zero_right (P : K[X]) (n : ℕ) (hn : n ≥ 1) :
+    SRemS P 0 n = 0 :=
+  SRemS_zero_ge P 0 0 rfl n hn
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+/-- The signed remainder sequence of 0 and Q has SRemS(0) = 0. -/
+@[simp] theorem SRemS_zero_fst (Q : K[X]) : SRemS 0 Q 0 = 0 := rfl
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+/-- The signed remainder sequence of 0 and Q has SRemS(1) = Q. -/
+@[simp] theorem SRemS_zero_snd (Q : K[X]) : SRemS 0 Q 1 = Q := rfl
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+/-- When Q ≠ 0, the signed remainder sequence of 0 and Q stabilizes at 0
+    from index 2 onward: SRemS(0, Q) = [0, Q, 0, 0, …]. -/
+theorem SRemS_zero_left_stabilizes (Q : K[X]) (hQ : Q ≠ 0) (n : ℕ) (hn : n ≥ 2) :
+    SRemS 0 Q n = 0 := by
+  apply SRemS_zero_ge 0 Q 1 _ n (by omega)
+  simp [SRemS, hQ]
+
 end Azurite.BPR
+
