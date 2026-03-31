@@ -4,6 +4,7 @@ import Azurite.Algorithm.FastPow
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.Equiv.Basic
+import Azurite.AzFormula.Equiv.BoundVars
 import Azurite.AzFormula.Equiv.FreeVars
 import Azurite.AzFormula.Equiv.Prenex
 import Azurite.AzFormula.Equiv.Simplify

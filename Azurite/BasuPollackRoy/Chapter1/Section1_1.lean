@@ -529,6 +529,17 @@ noncomputable def freeVars [DecidableEq σ] :
   | .exists_ x Φ => Φ.freeVars \ {x}
   | .forall_ x Φ => Φ.freeVars \ {x}
 
+/-- The bound variables of a field formula: variables attached to a quantifier (∃ or ∀). -/
+noncomputable def boundVars [DecidableEq σ] :
+    Formula σ (FieldAtom σ D) → Finset σ
+  | .atom _        => ∅
+  | .not Φ         => Φ.boundVars
+  | .and Φ₁ Φ₂     => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .or Φ₁ Φ₂      => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .implies Φ₁ Φ₂ => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .exists_ x Φ   => Φ.boundVars ∪ {x}
+  | .forall_ x Φ   => Φ.boundVars ∪ {x}
+
 /-- A sentence is a formula with no free variables. -/
 def isSentence [DecidableEq σ] (Φ : Formula σ (FieldAtom σ D)) :
     Prop :=

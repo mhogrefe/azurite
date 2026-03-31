@@ -114,6 +114,18 @@ theorem freeVarsOf_subset_allVarsOf [AtomVars α σ] [DecidableEq σ]
     intro v hv; simp only [freeVarsOf, allVarsOf, Finset.mem_sdiff, Finset.mem_union,
       Finset.mem_singleton] at hv ⊢; exact .inl (ih hv.1)
 
+/-- Bound variables of a formula: variables attached to a quantifier (∃ or ∀).
+    Generic over any atom type. -/
+def boundVarsOf [AtomVars α σ] [DecidableEq σ] :
+    Formula σ α → Finset σ
+  | .atom _        => ∅
+  | .not Φ         => boundVarsOf Φ
+  | .and Φ₁ Φ₂     => boundVarsOf Φ₁ ∪ boundVarsOf Φ₂
+  | .or Φ₁ Φ₂      => boundVarsOf Φ₁ ∪ boundVarsOf Φ₂
+  | .implies Φ₁ Φ₂ => boundVarsOf Φ₁ ∪ boundVarsOf Φ₂
+  | .exists_ x Φ   => boundVarsOf Φ ∪ {x}
+  | .forall_ x Φ   => boundVarsOf Φ ∪ {x}
+
 /-- A formula is a sentence if it has no free variables. -/
 def isSentenceOf [AtomVars α σ] [DecidableEq σ]
     (Φ : Formula σ α) : Bool :=
