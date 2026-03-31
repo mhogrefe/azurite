@@ -1044,6 +1044,393 @@ theorem azRealization_rename {n m : ℕ}
       (· ∘ f) ⁻¹' azRealization (C := K) Φ := by
   simp only [azRealization, azFormulaToFieldFormula_rename f hg]
   exact rename_realization f hf (azFormulaToFieldFormula Φ)
+/-! ### Syntactic prenex form -/
+
+/-- A formula is in negation normal form: no `implies`, no `not`. -/
+inductive IsNNF : Formula σ α → Prop where
+  | atom (a : α) : IsNNF (.atom a)
+  | and {Φ₁ Φ₂} : IsNNF Φ₁ → IsNNF Φ₂ → IsNNF (.and Φ₁ Φ₂)
+  | or {Φ₁ Φ₂} : IsNNF Φ₁ → IsNNF Φ₂ → IsNNF (.or Φ₁ Φ₂)
+  | exists_ (x : σ) {Φ} : IsNNF Φ → IsNNF (.exists_ x Φ)
+  | forall_ (x : σ) {Φ} : IsNNF Φ → IsNNF (.forall_ x Φ)
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `toNNFPos` and `toNNFNeg` both produce NNF formulas (no implies, no not). -/
+private theorem toNNF_isNNF_aux [AtomNeg α] (Φ : Formula σ α) :
+    IsNNF (toNNFPos Φ) ∧ IsNNF (toNNFPos.toNNFNeg Φ) := by
+  induction Φ with
+  | atom a => exact ⟨.atom a, .atom (AtomNeg.neg a)⟩
+  | not _ ih => exact ⟨ih.2, ih.1⟩
+  | and _ _ ih₁ ih₂ => exact ⟨.and ih₁.1 ih₂.1, .or ih₁.2 ih₂.2⟩
+  | or _ _ ih₁ ih₂ => exact ⟨.or ih₁.1 ih₂.1, .and ih₁.2 ih₂.2⟩
+  | implies _ _ ih₁ ih₂ => exact ⟨.or ih₁.2 ih₂.1, .and ih₁.1 ih₂.2⟩
+  | exists_ x _ ih => exact ⟨.exists_ x ih.1, .forall_ x ih.2⟩
+  | forall_ x _ ih => exact ⟨.forall_ x ih.1, .exists_ x ih.2⟩
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+theorem toNNF_isNNF [AtomNeg α] (Φ : Formula σ α) : IsNNF (toNNF Φ) :=
+  (toNNF_isNNF_aux Φ).1
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- Renaming via an equiv preserves `IsPrenex`. -/
+theorem renameFormulaEquiv_isPrenex [AtomRename α σ] (e : σ ≃ σ)
+    {Φ : Formula σ α} (h : IsPrenex Φ) : IsPrenex (renameFormulaEquiv e Φ) := by
+  exact rename_isPrenex e (AtomRename.renameEquiv e) h
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- Renaming via an equiv preserves `IsNNF`. -/
+theorem renameFormulaEquiv_isNNF [AtomRename α σ] (e : σ ≃ σ)
+    {Φ : Formula σ α} (h : IsNNF Φ) : IsNNF (renameFormulaEquiv e Φ) := by
+  induction h with
+  | atom a => exact .atom _
+  | and _ _ ih₁ ih₂ => exact .and ih₁ ih₂
+  | or _ _ ih₁ ih₂ => exact .or ih₁ ih₂
+  | exists_ x _ ih => exact .exists_ (e x) ih
+  | forall_ x _ ih => exact .forall_ (e x) ih
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- Quantifier-free formulas have quantifier depth 0. -/
+theorem isQF_quantifierDepth_zero {Φ : Formula σ α} (h : Φ.IsQuantifierFree) :
+    Φ.quantifierDepth = 0 := by
+  induction Φ with
+  | atom => rfl
+  | not _ ih => exact ih h
+  | and _ _ ih₁ ih₂ => simp [quantifierDepth, ih₁ h.1, ih₂ h.2]
+  | or _ _ ih₁ ih₂ => simp [quantifierDepth, ih₁ h.1, ih₂ h.2]
+  | implies _ _ ih₁ ih₂ => simp [quantifierDepth, ih₁ h.1, ih₂ h.2]
+  | exists_ => exact absurd h (by simp [IsQuantifierFree])
+  | forall_ => exact absurd h (by simp [IsQuantifierFree])
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `mergePrenex` produces prenex formulas when given prenex inputs and a
+    QF-preserving connective. -/
+theorem mergePrenex_isPrenex [DecidableEq σ] [AtomRename α σ]
+    (op : Formula σ α → Formula σ α → Formula σ α)
+    (hop : ∀ Φ₁ Φ₂, Φ₁.IsQuantifierFree → Φ₂.IsQuantifierFree →
+      (op Φ₁ Φ₂).IsQuantifierFree)
+    (left right : Formula σ α) (fv : List σ)
+    (hl : IsPrenex left) (hr : IsPrenex right)
+    (hlen : left.quantifierDepth + right.quantifierDepth ≤ fv.length) :
+    IsPrenex (mergePrenex op left right fv).1 := by
+  induction left, right, fv using mergePrenex.induct op with
+  | case1 x body right fresh rest =>
+    simp only [mergePrenex]; apply IsPrenex.exists_
+    rename_i body' _ _ _ ih
+    have hbody := by cases hl with
+      | exists_ h => exact h
+      | qf h => exact absurd h (by simp [IsQuantifierFree])
+    refine ih (renameFormulaEquiv_isPrenex _ hbody) hr ?_
+    show (renameFormulaEquiv _ body).quantifierDepth + _ ≤ _
+    rw [renameFormulaEquiv_quantifierDepth]
+    simp [quantifierDepth, List.length_cons] at hlen; omega
+  | case2 x body right fresh rest =>
+    simp only [mergePrenex]; apply IsPrenex.forall_
+    rename_i body' _ _ _ ih
+    have hbody := by cases hl with
+      | forall_ h => exact h
+      | qf h => exact absurd h (by simp [IsQuantifierFree])
+    refine ih (renameFormulaEquiv_isPrenex _ hbody) hr ?_
+    show (renameFormulaEquiv _ body).quantifierDepth + _ ≤ _
+    rw [renameFormulaEquiv_quantifierDepth]
+    simp [quantifierDepth, List.length_cons] at hlen; omega
+  | case3 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte]; apply IsPrenex.exists_
+    rename_i body' _ _ _ ih
+    have hbody := by cases hr with
+      | exists_ h => exact h
+      | qf h => exact absurd h (by simp [IsQuantifierFree])
+    refine ih hl (renameFormulaEquiv_isPrenex _ hbody) ?_
+    show left.quantifierDepth + (renameFormulaEquiv _ body).quantifierDepth ≤ _
+    rw [renameFormulaEquiv_quantifierDepth]
+    simp [quantifierDepth, List.length_cons, h_qd_eq] at hlen; omega
+  | case4 left y body fresh rest h_not_ex h_not_all h_qd =>
+    exfalso; apply h_qd
+    cases hl with
+    | qf h => exact isQF_quantifierDepth_zero h
+    | exists_ h => exact absurd rfl (h_not_ex _ _)
+    | forall_ h => exact absurd rfl (h_not_all _ _)
+  | case5 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte]; apply IsPrenex.forall_
+    rename_i body' _ _ _ ih
+    have hbody := by cases hr with
+      | forall_ h => exact h
+      | qf h => exact absurd h (by simp [IsQuantifierFree])
+    refine ih hl (renameFormulaEquiv_isPrenex _ hbody) ?_
+    show left.quantifierDepth + (renameFormulaEquiv _ body).quantifierDepth ≤ _
+    rw [renameFormulaEquiv_quantifierDepth]
+    simp [quantifierDepth, List.length_cons, h_qd_eq] at hlen; omega
+  | case6 left y body fresh rest h_not_ex h_not_all h_qd =>
+    exfalso; apply h_qd
+    cases hl with
+    | qf h => exact isQF_quantifierDepth_zero h
+    | exists_ h => exact absurd rfl (h_not_ex _ _)
+    | forall_ h => exact absurd rfl (h_not_all _ _)
+  | case7 =>
+    simp only [mergePrenex]
+    apply IsPrenex.qf; apply hop
+    · rename_i fv h_nexl h_nall h_nexr h_nforr
+      cases hl with
+      | qf h => exact h
+      | exists_ h =>
+        exfalso
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact h_nexl _ _ _ _ rfl rfl
+      | forall_ h =>
+        exfalso
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact h_nall _ _ _ _ rfl rfl
+    · rename_i fv h_nexl h_nall h_nexr h_nforr
+      cases hr with
+      | qf h => exact h
+      | exists_ h =>
+        exfalso
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact h_nexr _ _ _ _ rfl rfl
+      | forall_ h =>
+        exfalso
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact h_nforr _ _ _ _ rfl rfl
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `mergePrenex` consumes exactly `left.quantifierDepth + right.quantifierDepth` fresh variables. -/
+theorem mergePrenex_snd_length [DecidableEq σ] [AtomRename α σ]
+    (op : Formula σ α → Formula σ α → Formula σ α)
+    (left right : Formula σ α) (fv : List σ)
+    (hlen : left.quantifierDepth + right.quantifierDepth ≤ fv.length)
+    (hl : left.IsPrenex) (hr : right.IsPrenex) :
+    (mergePrenex op left right fv).2.length +
+      left.quantifierDepth + right.quantifierDepth = fv.length := by
+  induction left, right, fv using mergePrenex.induct (op := op) with
+  | case1 x body right fresh rest =>
+    simp only [mergePrenex, quantifierDepth, List.length_cons] at hlen ⊢
+    rename_i body' _ _ _ ih
+    have hbody : body.IsPrenex := by cases hl with
+      | exists_ h => exact h | qf h => exact absurd h (by simp [IsQuantifierFree])
+    have h_ih := ih (by
+      show (renameFormulaEquiv _ body).quantifierDepth + _ ≤ _
+      rw [renameFormulaEquiv_quantifierDepth]; omega)
+      (renameFormulaEquiv_isPrenex _ hbody) hr
+    rw [show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth] at h_ih
+    omega
+  | case2 x body right fresh rest =>
+    simp only [mergePrenex, quantifierDepth, List.length_cons] at hlen ⊢
+    rename_i body' _ _ _ ih
+    have hbody : body.IsPrenex := by cases hl with
+      | forall_ h => exact h | qf h => exact absurd h (by simp [IsQuantifierFree])
+    have h_ih := ih (by
+      show (renameFormulaEquiv _ body).quantifierDepth + _ ≤ _
+      rw [renameFormulaEquiv_quantifierDepth]; omega)
+      (renameFormulaEquiv_isPrenex _ hbody) hr
+    rw [show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth] at h_ih
+    omega
+  | case3 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte, quantifierDepth, List.length_cons] at hlen ⊢
+    rename_i body' _ _ _ ih
+    have hbody : body.IsPrenex := by cases hr with
+      | exists_ h => exact h | qf h => exact absurd h (by simp [IsQuantifierFree])
+    have h_ih := ih (by
+      show _ + (renameFormulaEquiv _ body).quantifierDepth ≤ _
+      rw [renameFormulaEquiv_quantifierDepth]; omega)
+      hl (renameFormulaEquiv_isPrenex _ hbody)
+    rw [show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth] at h_ih
+    omega
+  | case4 left y body fresh rest h_not_ex h_not_all h_qd =>
+    -- Impossible: left is prenex, not exists/forall, but qd > 0
+    exfalso; apply h_qd
+    cases hl with
+    | qf h => exact isQF_quantifierDepth_zero h
+    | exists_ h => exact absurd rfl (h_not_ex _ _)
+    | forall_ h => exact absurd rfl (h_not_all _ _)
+  | case5 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte, quantifierDepth, List.length_cons] at hlen ⊢
+    rename_i body' _ _ _ ih
+    have hbody : body.IsPrenex := by cases hr with
+      | forall_ h => exact h | qf h => exact absurd h (by simp [IsQuantifierFree])
+    have h_ih := ih (by
+      show _ + (renameFormulaEquiv _ body).quantifierDepth ≤ _
+      rw [renameFormulaEquiv_quantifierDepth]; omega)
+      hl (renameFormulaEquiv_isPrenex _ hbody)
+    rw [show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth] at h_ih
+    omega
+  | case6 left y body fresh rest h_not_ex h_not_all h_qd =>
+    exfalso; apply h_qd
+    cases hl with
+    | qf h => exact isQF_quantifierDepth_zero h
+    | exists_ h => exact absurd rfl (h_not_ex _ _)
+    | forall_ h => exact absurd rfl (h_not_all _ _)
+  | case7 =>
+    simp only [mergePrenex]
+    -- Both QF (from IsPrenex + not matching quantifier patterns)
+    rename_i left right fv h_nexl h_nall h_nexr h_nforr
+    have hql : left.quantifierDepth = 0 := by
+      cases hl with
+      | qf h => exact isQF_quantifierDepth_zero h
+      | exists_ h =>
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact absurd rfl (h_nexl _ _ _ _ rfl)
+      | forall_ h =>
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact absurd rfl (h_nall _ _ _ _ rfl)
+    have hqr : right.quantifierDepth = 0 := by
+      cases hr with
+      | qf h => exact isQF_quantifierDepth_zero h
+      | exists_ h =>
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact absurd rfl (h_nexr _ _ _ _ rfl)
+      | forall_ h =>
+        cases fv with
+        | nil => simp [quantifierDepth] at hlen
+        | cons f r => exact absurd rfl (h_nforr _ _ _ _ rfl)
+    omega
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `mergePrenex` preserves the total quantifier depth. -/
+theorem mergePrenex_fst_quantifierDepth [DecidableEq σ] [AtomRename α σ]
+    (op : Formula σ α → Formula σ α → Formula σ α)
+    (hop : ∀ Φ₁ Φ₂ : Formula σ α, (op Φ₁ Φ₂).quantifierDepth =
+      Φ₁.quantifierDepth + Φ₂.quantifierDepth)
+    (left right : Formula σ α) (fv : List σ) :
+    (mergePrenex op left right fv).1.quantifierDepth =
+      left.quantifierDepth + right.quantifierDepth := by
+  induction left, right, fv using mergePrenex.induct (op := op) with
+  | case1 x body right fresh rest =>
+    simp only [mergePrenex, quantifierDepth]
+    rename_i body' _ _ _ ih
+    rw [ih, show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth]; omega
+  | case2 x body right fresh rest =>
+    simp only [mergePrenex, quantifierDepth]
+    rename_i body' _ _ _ ih
+    rw [ih, show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth]; omega
+  | case3 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte, quantifierDepth]
+    rename_i body' _ _ _ ih
+    rw [ih, show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth]; omega
+  | case4 left y body fresh rest h_not_ex h_not_all h_qd =>
+    simp only [mergePrenex, if_neg h_qd, hop, quantifierDepth]
+  | case5 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
+    simp only [mergePrenex, h_qd_eq, ↓reduceIte, quantifierDepth]
+    rename_i body' _ _ _ ih
+    rw [ih, show body' = renameFormulaEquiv _ body from rfl,
+        renameFormulaEquiv_quantifierDepth]; omega
+  | case6 left y body fresh rest h_not_ex h_not_all h_qd =>
+    simp only [mergePrenex, if_neg h_qd, hop, quantifierDepth]
+  | case7 => simp only [mergePrenex, hop]
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- Combined properties of `toPrenexNNF`:
+    1. Preserves quantifier depth
+    2. Consumes exactly `freshVarsNeeded Φ` fresh variables
+    3. Produces prenex output from NNF input -/
+theorem toPrenexNNF_properties [DecidableEq σ] [AtomRename α σ]
+    (Φ : Formula σ α) (fv : List σ) (hnnf : IsNNF Φ)
+    (hlen : freshVarsNeeded Φ ≤ fv.length) :
+    (toPrenexNNF Φ fv).1.quantifierDepth = Φ.quantifierDepth ∧
+    (toPrenexNNF Φ fv).2.length + freshVarsNeeded Φ = fv.length ∧
+    IsPrenex (toPrenexNNF Φ fv).1 := by
+  induction Φ generalizing fv with
+  | atom _ => exact ⟨rfl, by simp [toPrenexNNF, freshVarsNeeded], .qf trivial⟩
+  | not _ _ => cases hnnf
+  | exists_ x Φ ih =>
+    have hnnf' : IsNNF Φ := by cases hnnf with | exists_ _ h => exact h
+    simp only [toPrenexNNF, freshVarsNeeded] at hlen ⊢
+    have ⟨hqd, hsnd, hpre⟩ := ih fv hnnf' hlen
+    exact ⟨by simp [quantifierDepth, hqd], hsnd, .exists_ hpre⟩
+  | forall_ x Φ ih =>
+    have hnnf' : IsNNF Φ := by cases hnnf with | forall_ _ h => exact h
+    simp only [toPrenexNNF, freshVarsNeeded] at hlen ⊢
+    have ⟨hqd, hsnd, hpre⟩ := ih fv hnnf' hlen
+    exact ⟨by simp [quantifierDepth, hqd], hsnd, .forall_ hpre⟩
+  | and Φ₁ Φ₂ ih₁ ih₂ =>
+    have ⟨hnnf1, hnnf2⟩ : IsNNF Φ₁ ∧ IsNNF Φ₂ := by cases hnnf with | and a b => exact ⟨a, b⟩
+    simp only [toPrenexNNF, freshVarsNeeded] at hlen ⊢
+    have ⟨hqd₁, hl₁, hp₁⟩ := ih₁ fv hnnf1 (by omega)
+    have ⟨hqd₂, hl₂, hp₂⟩ := ih₂ (toPrenexNNF Φ₁ fv).2 hnnf2 (by omega)
+    refine ⟨?_, ?_, ?_⟩
+    · rw [mergePrenex_fst_quantifierDepth _ (by intros; simp [quantifierDepth]),
+          hqd₁, hqd₂]; simp [quantifierDepth]
+    · have h₃ := mergePrenex_snd_length .and (toPrenexNNF Φ₁ fv).1
+        (toPrenexNNF Φ₂ (toPrenexNNF Φ₁ fv).2).1
+        (toPrenexNNF Φ₂ (toPrenexNNF Φ₁ fv).2).2
+        (by rw [hqd₁, hqd₂]; omega) hp₁ hp₂
+      rw [hqd₁, hqd₂] at h₃; omega
+    · exact mergePrenex_isPrenex .and (fun _ _ a b => ⟨a, b⟩) _ _ _
+        hp₁ hp₂ (by rw [hqd₁, hqd₂]; omega)
+  | or Φ₁ Φ₂ ih₁ ih₂ =>
+    have ⟨hnnf1, hnnf2⟩ : IsNNF Φ₁ ∧ IsNNF Φ₂ := by cases hnnf with | or a b => exact ⟨a, b⟩
+    simp only [toPrenexNNF, freshVarsNeeded] at hlen ⊢
+    have ⟨hqd₁, hl₁, hp₁⟩ := ih₁ fv hnnf1 (by omega)
+    have ⟨hqd₂, hl₂, hp₂⟩ := ih₂ (toPrenexNNF Φ₁ fv).2 hnnf2 (by omega)
+    refine ⟨?_, ?_, ?_⟩
+    · rw [mergePrenex_fst_quantifierDepth _ (by intros; simp [quantifierDepth]),
+          hqd₁, hqd₂]; simp [quantifierDepth]
+    · have h₃ := mergePrenex_snd_length .or (toPrenexNNF Φ₁ fv).1
+        (toPrenexNNF Φ₂ (toPrenexNNF Φ₁ fv).2).1
+        (toPrenexNNF Φ₂ (toPrenexNNF Φ₁ fv).2).2
+        (by rw [hqd₁, hqd₂]; omega) hp₁ hp₂
+      rw [hqd₁, hqd₂] at h₃; omega
+    · exact mergePrenex_isPrenex .or (fun _ _ a b => ⟨a, b⟩) _ _ _
+        hp₁ hp₂ (by rw [hqd₁, hqd₂]; omega)
+  | implies _ _ _ _ => cases hnnf
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `toPrenexNNF` produces prenex formulas from NNF inputs. -/
+theorem toPrenexNNF_isPrenex [DecidableEq σ] [AtomRename α σ]
+    (Φ : Formula σ α) (fv : List σ) (hnnf : IsNNF Φ)
+    (hlen : freshVarsNeeded Φ ≤ fv.length) :
+    IsPrenex (toPrenexNNF Φ fv).1 :=
+  (toPrenexNNF_properties Φ fv hnnf hlen).2.2
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `Formula.rename` preserves `IsNNF`. -/
+theorem rename_isNNF {τ : Type*} {β : Type*} (f : σ → τ) (ra : α → β)
+    {Φ : Formula σ α} (h : IsNNF Φ) : IsNNF (Φ.rename f ra) := by
+  induction h with
+  | atom a => exact .atom (ra a)
+  | and _ _ ih₁ ih₂ => exact .and ih₁ ih₂
+  | or _ _ ih₁ ih₂ => exact .or ih₁ ih₂
+  | exists_ x _ ih => exact .exists_ (f x) ih
+  | forall_ x _ ih => exact .forall_ (f x) ih
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `Formula.rename` preserves `freshVarsNeeded`. -/
+theorem rename_freshVarsNeeded {τ : Type*} {β : Type*} (f : σ → τ) (ra : α → β)
+    (Φ : Formula σ α) :
+    freshVarsNeeded (Φ.rename f ra) = freshVarsNeeded Φ := by
+  induction Φ with
+  | atom _ => simp [Formula.rename, freshVarsNeeded]
+  | not _ ih => simp [Formula.rename, freshVarsNeeded, ih]
+  | exists_ _ _ ih => simp [Formula.rename, freshVarsNeeded, ih]
+  | forall_ _ _ ih => simp [Formula.rename, freshVarsNeeded, ih]
+  | and _ _ ih₁ ih₂ => simp [Formula.rename, freshVarsNeeded, ih₁, ih₂,
+    Formula.rename_quantifierDepth]
+  | or _ _ ih₁ ih₂ => simp [Formula.rename, freshVarsNeeded, ih₁, ih₂,
+    Formula.rename_quantifierDepth]
+  | implies _ _ ih₁ ih₂ => simp [Formula.rename, freshVarsNeeded, ih₁, ih₂]
+
+/-- The full `toPrenex` pipeline produces a prenex formula. -/
+theorem toPrenex_isPrenex {n : ℕ} {R' : Type*} [Semiring R']
+    {ord' : MonomialOrder}
+    (Φ : Formula (IndexedVar n) (AzFieldAtom (IndexedVar n) R' ord')) :
+    IsPrenex (toPrenex Φ) := by
+  unfold toPrenex
+  apply (toPrenexNNF_properties _ _ _ _).2.2
+  · exact rename_isNNF _ _ (toNNF_isNNF Φ)
+  · rw [rename_freshVarsNeeded]
+    simp [freshIndexedVars, List.length_map, List.length_finRange]
 
 /-! ### Top-level toPrenex correctness -/
 
@@ -1054,18 +1441,18 @@ theorem toPrenex_azRealization {n : ℕ} {R' : Type*} [CommRing R']
     {K : Type*} [Field K] [Algebra R' K]
     (Φ : Formula (IndexedVar n) (AzFieldAtom (IndexedVar n) R' ord')) :
     azRealization (C := K) (toPrenex Φ) =
-      (· ∘ Var.embed (Nat.le_add_right n Φ.quantifierDepth)) ⁻¹'
+      (· ∘ Var.embed (Nat.le_add_right n (freshVarsNeeded (toNNF Φ)))) ⁻¹'
         azRealization (C := K) Φ := by
   -- Abbreviations
-  set depth := Φ.quantifierDepth
-  set m := n + depth
-  set h_le : n ≤ m := Nat.le_add_right n depth
+  set fvn := freshVarsNeeded (toNNF Φ)
+  set m := n + fvn
+  set h_le : n ≤ m := Nat.le_add_right n fvn
   set nnf := toNNF Φ with hnnf
   set embedded : Formula (IndexedVar m) (AzFieldAtom (IndexedVar m) R' ord') :=
     nnf.rename (Var.embed h_le)
     (AzFieldAtom.renameVarsMonotone (Var.embed h_le)
       (Var.embed_fin_strictMono h_le)) with hemb
-  set fv := freshIndexedVars m n depth (le_refl m) with hfv
+  set fv := freshIndexedVars m n fvn (le_refl m) with hfv
 
   -- Step 1: azRealization(toPrenex Φ) = gRealization(toPrenex Φ)
   rw [show toPrenex Φ = (toPrenexNNF embedded fv).1 from rfl]
@@ -1073,9 +1460,9 @@ theorem toPrenex_azRealization {n : ℕ} {R' : Type*} [CommRing R']
 
   -- Step 2: gRealization((toPrenexNNF embedded fv).1) = gRealization(embedded)
   rw [toPrenexNNF_gRealization embedded fv
-    (freshIndexedVars_fresh m n depth (le_refl m) embedded
+    (freshIndexedVars_fresh m n fvn (le_refl m) embedded
       (allVarsOf_rename_embed_bound h_le nnf))
-    (freshIndexedVars_nodup m n depth (le_refl m))
+    (freshIndexedVars_nodup m n fvn (le_refl m))
     (fun e a => azFieldAtom_rename_vars e a)]
 
   -- Step 3: gRealization(embedded) = azRealization(embedded) = (· ∘ embed) ⁻¹' azRealization(nnf)

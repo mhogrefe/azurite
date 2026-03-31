@@ -26,6 +26,22 @@ theorem renameFormulaEquiv_quantifierDepth [AtomRename α σ]
     (renameFormulaEquiv e Φ).quantifierDepth = Φ.quantifierDepth := by
   simp [renameFormulaEquiv, rename_quantifierDepth]
 
+/-- The number of fresh variables needed by `toPrenexNNF` to fully pull all
+    quantifiers to the front. This is `quantifierDepth` for pure quantifier
+    chains, but larger for formulas with nested `and`/`or` because each binary
+    node's `mergePrenex` call also consumes fresh variables equal to the sum
+    of quantifier depths of its prenex arguments. -/
+def freshVarsNeeded : Formula σ α → ℕ
+  | .atom _ => 0
+  | .not Φ => freshVarsNeeded Φ
+  | .exists_ _ Φ => freshVarsNeeded Φ
+  | .forall_ _ Φ => freshVarsNeeded Φ
+  | .and Φ₁ Φ₂ => freshVarsNeeded Φ₁ + freshVarsNeeded Φ₂ +
+      Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .or Φ₁ Φ₂ => freshVarsNeeded Φ₁ + freshVarsNeeded Φ₂ +
+      Φ₁.quantifierDepth + Φ₂.quantifierDepth
+  | .implies Φ₁ Φ₂ => freshVarsNeeded Φ₁ + freshVarsNeeded Φ₂
+
 /-! ### Merge two prenex formulas under ∧ or ∨ -/
 
 /-- Pull all quantifiers from both sides of a binary connective to the front.
@@ -98,23 +114,23 @@ def freshIndexedVars (m start count : ℕ) (h : start + count ≤ m) :
   (List.finRange count).map fun i => ⟨⟨start + i.val, by omega⟩⟩
 
 /-- Convert a formula over `IndexedVar n` to prenex normal form.
-    Returns a formula over `IndexedVar m` where `m = n + quantifierDepth Φ`.
+    Returns a formula over `IndexedVar m` where `m = n + freshVarsNeeded (toNNF Φ)`.
 
     Pipeline: `toNNF → embed to IndexedVar m → toPrenexNNF` -/
 def toPrenex {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder}
     (Φ : Formula (IndexedVar n) (AzFieldAtom (IndexedVar n) R ord)) :
-    let m := n + Φ.quantifierDepth
+    let m := n + freshVarsNeeded (toNNF Φ)
     Formula (IndexedVar m) (AzFieldAtom (IndexedVar m) R ord) :=
-  let depth := Φ.quantifierDepth
-  let m := n + depth
+  let fvn := freshVarsNeeded (toNNF Φ)
+  let m := n + fvn
   let nnf := toNNF Φ
-  let h_le : n ≤ m := Nat.le_add_right n depth
+  let h_le : n ≤ m := Nat.le_add_right n fvn
   let embedded : Formula (IndexedVar m) (AzFieldAtom (IndexedVar m) R ord) :=
     nnf.rename (Var.embed h_le)
       (AzFieldAtom.renameVarsMonotone (Var.embed h_le)
         (Var.embed_fin_strictMono h_le))
-  have h_bound : n + depth ≤ m := le_refl m
-  let freshVarList := freshIndexedVars m n depth h_bound
+  have h_bound : n + fvn ≤ m := le_refl m
+  let freshVarList := freshIndexedVars m n fvn h_bound
   (toPrenexNNF embedded freshVarList).1
 
 end Azurite

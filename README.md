@@ -110,8 +110,8 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Basic` | `mapAtom` functor laws (`mapAtom_id`, `mapAtom_comp`), formula conversion round-trips (`fieldFormulaToAzFormula ∘ azFormulaToFieldFormula = id` and vice versa), `azRealization = realization ∘ azFormulaToFieldFormula`. |
 | `Equiv/FreeVars` | `freeVarsOf Φ = freeVars (Φ.toFieldFormula)` — computable vars agree with noncomputable for both atom types. |
 | `Equiv/Simplify` | `elimDoubleNeg` and `elimVacuousQuantifiers` preserve C-realization. |
-| `Equiv/Prenex` | Generic `AtomRealization` typeclass, `gRealization` semantics. `eliminateImplies` and `toNNF` preserve generic realization. |
-| `Prenex` | Computable prenex conversion: `mergePrenex`, `toPrenexNNF`, `toPrenex` pipeline for `IndexedVar n` formulas. |
+| `Equiv/Prenex` | Generic `AtomRealization` typeclass and `gRealization` semantics. `eliminateImplies`, `toNNF`, rename-by-equiv, and `toPrenexNNF` all preserve `gRealization`. `AtomRealization` instance for `AzFieldAtom` (interpret, neg, rename, invariance). Bridge `gRealization = azRealization`. Variable freshness (`freshIndexedVars_fresh/nodup`, `allVarsOf_rename_embed_bound`). Commutation of `azFormulaToFieldFormula` with rename. **Syntactic correctness: `IsPrenex (toPrenex Φ)`** — the pipeline always produces a formula in prenex normal form (`toPrenexNNF_properties` combines quantifier depth preservation, fresh variable consumption, and prenex output in one induction). **Semantic correctness: `azRealization (toPrenex Φ) = (· ∘ embed) ⁻¹' azRealization Φ`** — the full pipeline (NNF → embed → prenex) is semantics-preserving. Auxiliary: `rename_isNNF`, `rename_freshVarsNeeded`, `mergePrenex_fst_quantifierDepth`. Zero `sorry`. |
+| `Prenex` | Computable prenex conversion: `mergePrenex`, `toPrenexNNF`, `toPrenex` pipeline for `IndexedVar n` formulas. `freshVarsNeeded` metric for fresh variable allocation. |
 
 #### AzPolynomialQ ↔ AzPolynomial ℚ
 
