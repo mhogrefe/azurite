@@ -86,10 +86,12 @@ import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
 import Azurite.AzPolynomial.Comp
+import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Comp
+import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map

@@ -10,7 +10,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 
 | Module | Description |
 |--------|-------------|
-| `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), root bounds, parsing, and `toString`. |
+| `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), root bounds, parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, evaluation, exact division, monomial exponentiation, rename, map, and merge-sorted operations. |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
@@ -39,6 +39,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/RootBound` | Cauchy root bound correctness: all roots lie within `(-rootBound, rootBound)` |
 | `Equiv/Algebra` | Ring homomorphism and algebra structure preservation |
 | `Equiv/Comp` | `toPoly (comp p q) = (toPoly p).comp (toPoly q)` |
+| `Equiv/Derivative` | `toPoly (derivative p) = Polynomial.derivative (toPoly p)` |
 | `Equiv/Pow` | `toPoly (p.pow n) = toPoly p ^ n` and `(ofPoly p).pow n = ofPoly (p ^ n)` |
 | `Equiv/Translate` | `toPoly (translate p c) = (toPoly p).comp (X - C c)` and root translation: root at `r` ↔ root of `P` at `r-c` (BPR Algorithm 8.9) |
 | `Equiv/SpecialTranslate` | `eval z (specialTranslate p b c) = evalSpecial p (c·z−b) c`, field identity `= c^deg · eval(z−b/c) P`, root translation (field and via ring hom `f : R →+* K`) (BPR Algorithm 8.10) |
@@ -167,6 +168,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Exact division of multivariate polynomials | BPR Alg. 8.6 | `AzMvPolynomial/ExactDiv` | — |
 | Fast rational comparison | — | `Rat/Compare` | O(1) amortized for many inputs |
 | Cauchy root bound | — | `AzPolynomial/RootBound` | O(n) |
+| Formal derivative | — | `AzPolynomial/Derivative` | O(n) |
 | Translation P(X-c) | BPR Alg. 8.9 | `AzPolynomial/Translate` | O(p²·deg(q)) via comp |
 | Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |

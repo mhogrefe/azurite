@@ -62,6 +62,16 @@ theorem Polynomial.derivative_mul {R : Type u} [Semiring R] {f g : R[X]} :
 
 Both properties hold over any `Semiring`; no characteristic-zero assumption
 is needed.
+
+### Azurite Implementation
+
+The derivative is also implemented natively on `AzPolynomial` as
+`Azurite.AzPolynomial.derivative` (see `Azurite.AzPolynomial.Derivative`).
+Its equivalence to `Polynomial.derivative` is proved in
+`Azurite.AzPolynomial.Equiv.Derivative`:
+
+- `toPoly_derivative : toPoly (derivative p) = Polynomial.derivative (toPoly p)`
+- `ofPoly_derivative : ofPoly (Polynomial.derivative p) = derivative (ofPoly p)`
 -/
 
 namespace Azurite.BPR
