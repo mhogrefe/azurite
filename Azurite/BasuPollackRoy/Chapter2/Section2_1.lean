@@ -1,5 +1,7 @@
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Algebra.Polynomial.Taylor
+import Mathlib.Algebra.Polynomial.Div
+import Mathlib.Algebra.Polynomial.FieldDivision
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -171,5 +173,93 @@ theorem prop_2_1 (P : K[X]) (x : K) :
       rw [key i] at this
       simp [this])
   exact h.symm.trans h2
+
+/-!
+### Root Multiplicity
+
+**Definition 2.2** (BPR p.33). Let x ∈ K and P ∈ K[X]. The **multiplicity** of x
+as a root of P is the natural number µ such that there exists Q ∈ K[X] with
+P = (X − x)^µ · Q(X) and Q(x) ≠ 0. Note that if x is not a root of P, the
+multiplicity of x as a root of P is equal to 0.
+
+Mathlib already provides:
+
+```
+def Polynomial.rootMultiplicity (a : R) (p : R[X]) : ℕ
+```
+
+defined via `multiplicity (X - C a) p` (see `Mathlib.Algebra.Polynomial.Div`).
+
+Key Mathlib theorems matching the BPR characterization:
+- `Polynomial.pow_rootMultiplicity_dvd` — `(X - C a)^µ ∣ P`
+- `Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd` —
+    `∃ Q, P = (X - C a)^µ * Q ∧ ¬(X - C a) ∣ Q`
+- `Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero` —
+    `eval a (P /ₘ (X - C a)^µ) ≠ 0`
+-/
+
+/-- **BPR Definition 2.2 (Root Multiplicity).**
+    `IsRootMultiplicity x P μ` holds when there exists Q ∈ K[X] such that
+    P = (X − x)^μ · Q and Q(x) ≠ 0. -/
+def IsRootMultiplicity (x : K) (P : K[X]) (μ : ℕ) : Prop :=
+  ∃ Q : K[X], P = (X - C x) ^ μ * Q ∧ Q.eval x ≠ 0
+
+#check @rootMultiplicity K _
+-- rootMultiplicity : K → K[X] → ℕ
+
+#check @pow_rootMultiplicity_dvd K _
+-- (X - C a) ^ rootMultiplicity a p ∣ p
+
+#check @exists_eq_pow_rootMultiplicity_mul_and_not_dvd K _
+-- ∃ q, p = (X - C a) ^ rootMultiplicity a p * q ∧ ¬(X - C a) ∣ q
+
+#check @eval_divByMonic_pow_rootMultiplicity_ne_zero K _
+-- eval a (p /ₘ (X - C a) ^ rootMultiplicity a p) ≠ 0
+
+/-!
+### Lemma 2.2: Derivative characterization of root multiplicity
+
+**Lemma 2.2** (BPR p.33). Let K be a field of characteristic zero. The element
+x ∈ K is a root of P ∈ K[X] of multiplicity μ if and only if
+P^{(μ)}(x) ≠ 0 and P^{(μ−1)}(x) = ⋯ = P′(x) = P(x) = 0.
+
+This is proved using two Mathlib lemmas from `Mathlib.Algebra.Polynomial.FieldDivision`:
+
+- `Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative` —
+    `n < rootMultiplicity t P ↔ ∀ m ≤ n, (derivative^[m] P).IsRoot t`
+- `Polynomial.eval_iterate_derivative_rootMultiplicity` —
+    `eval t (derivative^[μ] P) = μ! • eval t (P /ₘ (X − C t)^μ)`
+-/
+
+/-- **BPR Lemma 2.2.** x is a root of P of multiplicity μ iff
+    P(x) = P'(x) = ⋯ = P^{(μ−1)}(x) = 0 and P^{(μ)}(x) ≠ 0. -/
+theorem lemma_2_2 (P : K[X]) (t : K) (hP : P ≠ 0) (μ : ℕ) :
+    μ = rootMultiplicity t P ↔
+      (∀ i < μ, (derivative^[i] P).IsRoot t) ∧
+      ¬(derivative^[μ] P).IsRoot t := by
+  constructor
+  · -- forward: μ = rootMultiplicity → derivatives vanish below, nonzero at μ
+    rintro rfl
+    exact ⟨
+      fun i hi => (Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative hP).mp (by omega) i le_rfl,
+      by rw [Polynomial.IsRoot, Polynomial.eval_iterate_derivative_rootMultiplicity]
+         exact smul_ne_zero_iff.mpr
+           ⟨Nat.cast_ne_zero.mpr (rootMultiplicity t P).factorial_ne_zero,
+            eval_divByMonic_pow_rootMultiplicity_ne_zero t hP⟩⟩
+  · -- backward: conditions → μ = rootMultiplicity
+    rintro ⟨hvanish, hnonzero⟩
+    apply le_antisymm
+    · -- μ ≤ rootMultiplicity: if not, derivative^[rootMultiplicity] vanishes, contradiction
+      by_contra h; push_neg at h
+      have hne : ¬(derivative^[rootMultiplicity t P] P).IsRoot t := by
+        rw [Polynomial.IsRoot, Polynomial.eval_iterate_derivative_rootMultiplicity]
+        exact smul_ne_zero_iff.mpr
+          ⟨Nat.cast_ne_zero.mpr (rootMultiplicity t P).factorial_ne_zero,
+           eval_divByMonic_pow_rootMultiplicity_ne_zero t hP⟩
+      exact hne (hvanish _ h)
+    · -- rootMultiplicity ≤ μ: if not, derivative^[μ] vanishes, contradiction
+      by_contra h; push_neg at h
+      exact hnonzero
+        ((Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative hP).mp h μ le_rfl)
 
 end Azurite.BPR
