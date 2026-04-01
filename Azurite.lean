@@ -36,12 +36,14 @@ import Azurite.AzMvPolynomial.Bind1
 import Azurite.AzMvPolynomial.Bind2
 import Azurite.AzMvPolynomial.Cast
 import Azurite.AzMvPolynomial.CompareEmbed
+import Azurite.AzMvPolynomial.Derivative
 import Azurite.AzMvPolynomial.Equiv.Add
 import Azurite.AzMvPolynomial.Equiv.Algebra
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Bind1
 import Azurite.AzMvPolynomial.Equiv.Bind2
 import Azurite.AzMvPolynomial.Equiv.Cast
+import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
 import Azurite.AzMvPolynomial.Equiv.Join2

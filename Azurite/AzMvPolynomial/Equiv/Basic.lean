@@ -498,5 +498,16 @@ theorem toMvPoly_withOrder [DecidableEq σ]
           hperm.foldl_eq (rcomm := ⟨fun b a₁ a₂ => by ring⟩) 0
       _ = List.foldl (fun x1 x2 => x1 + x2.toMvPoly) 0 p.terms.toList := by
           simp only [mapped, List.foldl_map, Monomial.toMvPoly_withOrder]
+/-- `toMvPoly` of `ofMonomials` is just the sum of the individual monomial
+    conversions. Sorting doesn't affect the polynomial-level identity. -/
+theorem toMvPoly_ofMonomials [DecidableEq σ]
+    (ms : Array (Monomial σ R ord))
+    (hdistinct : ms.toList.Pairwise (fun a b => a.monic ≠ b.monic)) :
+    (AzMvPolynomial.ofMonomials ms hdistinct).toMvPoly =
+      (ms.toList.map Monomial.toMvPoly).sum := by
+  simp only [AzMvPolynomial.ofMonomials, AzMvPolynomial.toMvPoly]
+  rw [← Array.foldl_toList, foldl_add_map_eq_sum, List.toList_toArray]
+  have hperm := List.mergeSort_perm ms.toList AzMvPolynomial.monicGeq
+  exact hperm.map Monomial.toMvPoly |>.sum_eq
 
 end Azurite

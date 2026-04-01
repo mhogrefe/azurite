@@ -11,7 +11,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | Module | Description |
 |--------|-------------|
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), root bounds, parsing, and `toString`. |
-| `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, evaluation, exact division, monomial exponentiation, rename, map, and merge-sorted operations. |
+| `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation, exact division, monomial exponentiation, rename, map, and merge-sorted operations. |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
 | `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, and row/column access. |
@@ -59,6 +59,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Map` | Ring homomorphism map preservation |
 | `Equiv/Eval` | Evaluation preservation |
 | `Equiv/Rename` | Variable renaming preservation |
+| `Equiv/Derivative` | `toMvPoly (pderivGeneral v p) = MvPolynomial.pderiv v (toMvPoly p)` |
 | `Equiv/ExactDiv` | Exact division correctness |
 | `Equiv/MergeSorted` | Merge-sorted operation correctness |
 | `Equiv/MonomialOrder` | Monomial ordering equivalences |
@@ -170,6 +171,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Fast rational comparison | — | `Rat/Compare` | O(1) amortized for many inputs |
 | Cauchy root bound | — | `AzPolynomial/RootBound` | O(n) |
 | Formal derivative | — | `AzPolynomial/Derivative` | O(n) |
+| Multivariate partial derivative | — | `AzMvPolynomial/Derivative` | O(n) per variable |
 | Translation P(X-c) | BPR Alg. 8.9 | `AzPolynomial/Translate` | O(p²·deg(q)) via comp |
 | Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
