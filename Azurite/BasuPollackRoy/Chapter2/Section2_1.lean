@@ -2,6 +2,9 @@ import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.FieldTheory.Separable
+import Mathlib.FieldTheory.IsAlgClosed.Basic
+import Mathlib.FieldTheory.Perfect
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -261,5 +264,76 @@ theorem lemma_2_2 (P : K[X]) (t : K) (hP : P ≠ 0) (μ : ℕ) :
       by_contra h; push_neg at h
       exact hnonzero
         ((Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative hP).mp h μ le_rfl)
+
+/-!
+### Separable and Square-free Polynomials
+
+**Definition (BPR p.33).** A polynomial P ∈ K[X] is **separable** if the greatest
+common divisor of P and P' is an element of K \ {0}.
+
+In Mathlib this is `Polynomial.Separable`, defined as `IsCoprime P (derivative P)`
+(see `Mathlib.FieldTheory.Separable`). Over a field, gcd(P, P') ∈ K \ {0} is
+equivalent to coprimality.
+
+**Definition (BPR p.33).** A polynomial P is **square-free** if there is no
+non-constant polynomial A ∈ K[X] such that A² divides P.
+
+In Mathlib this is `Squarefree`, defined as `∀ x, x * x ∣ r → IsUnit x`
+(see `Mathlib.Algebra.Squarefree.Basic`). In K[X], `IsUnit` means constant
+and nonzero, which matches "no non-constant A".
+
+Key Mathlib results:
+- `Polynomial.Separable.squarefree` — separable → square-free
+- `Polynomial.separable_def` — `P.Separable ↔ IsCoprime P (derivative P)`
+-/
+
+-- Separable: IsCoprime P (derivative P)
+#check @Polynomial.Separable K _
+
+-- Unfolded: P.Separable ↔ IsCoprime P (derivative P)
+#check @Polynomial.separable_def K _
+
+-- Square-free: ∀ A, A * A ∣ P → IsUnit A
+#check @Squarefree K[X] _
+
+-- Separable → square-free
+#check @Polynomial.Separable.squarefree K _
+
+/-!
+### Exercise 2.1(a): Separable iff no multiple roots
+
+**Exercise 2.1(a)** (BPR p.34). Prove that P ∈ K[X] is separable if and only if
+P has no multiple root in C, where C is an algebraically closed field
+containing K.
+
+In Mathlib, "no multiple root" is expressed as `(P.aroots C).Nodup`.
+The proof is a direct application of `Polynomial.nodup_aroots_iff_of_splits`,
+using `IsAlgClosed.splits` to show that the mapped polynomial splits in C.
+-/
+
+variable {C : Type*} [Field C] [IsAlgClosed C] [Algebra K C]
+
+omit [CharZero K] in
+/-- **BPR Exercise 2.1(a).** P is separable iff P has no multiple root
+    in an algebraically closed field C containing K. -/
+theorem exercise_2_1a (P : K[X]) (hP : P ≠ 0) :
+    P.Separable ↔ (P.aroots C).Nodup :=
+  (nodup_aroots_iff_of_splits hP (IsAlgClosed.splits (P.map (algebraMap K C)))).symm
+
+/-!
+### Exercise 2.1(b): Separable iff square-free (in characteristic 0)
+
+**Exercise 2.1(b)** (BPR p.34). If the characteristic of K is 0, prove that
+P ∈ K[X] is separable if and only if P is square-free.
+
+This follows from `PerfectField.separable_iff_squarefree`
+(see `Mathlib.FieldTheory.Perfect`), since every field of characteristic 0
+is a perfect field.
+-/
+
+/-- **BPR Exercise 2.1(b).** In characteristic 0, P is separable iff P is square-free. -/
+theorem exercise_2_1b (P : K[X]) :
+    P.Separable ↔ Squarefree P :=
+  PerfectField.separable_iff_squarefree
 
 end Azurite.BPR
