@@ -1201,4 +1201,76 @@ theorem proposition_1_12 {P Q: K[X]} (hP : P ≠ 0) (_hQ : Q ≠ 0) :
             _ = (SRemU P Q (k + 1) * P) * (- B * SRemU P Q k - A * SRemV P Q k) := by ring
         exact ⟨_, H_d⟩
 
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- BPR Definition 1.13: Greatest common divisor of a finite family of polynomials. -/
+def IsListGCD (G : K[X]) (Ps : List K[X]) : Prop :=
+  (∀ P ∈ Ps, G ∣ P) ∧ (∀ D, (∀ P ∈ Ps, D ∣ P) → D ∣ G)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Algorithm to obtain the GCD of a family inductively. -/
+noncomputable def listGcd (Ps : List K[X]) : K[X] :=
+  Ps.foldr gcd 0
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- The algorithm `listGcd` satisfies the `IsListGCD` specification. -/
+theorem listGcd_isListGCD (Ps : List K[X]) : IsListGCD (listGcd Ps) Ps := by
+  induction Ps with
+  | nil =>
+    simp [IsListGCD, listGcd]
+  | cons P Ps ih =>
+    simp [IsListGCD, listGcd] at *
+    constructor
+    · constructor
+      · exact (gcd_isGCD P (Ps.foldr gcd 0)).1
+      · intro P' hP'
+        have hG := (gcd_isGCD P (Ps.foldr gcd 0)).2.1
+        exact dvd_trans hG (ih.1 P' hP')
+    · intro D h1 h2
+      exact (gcd_isGCD P (Ps.foldr gcd 0)).2.2 D h1 (ih.2 D h2)
+
+omit [IsAlgClosed C] in
+/-- Helper lemma: x is a root of gcd A B iff x is a root of A and B. -/
+lemma aeval_gcd_eq_zero_iff [Algebra K C] (A B : K[X]) (x : C) :
+    aeval x (gcd A B) = 0 ↔ (aeval x A = 0 ∧ aeval x B = 0) := by
+  constructor
+  · intro h
+    have ⟨CA, hpA⟩ : gcd A B ∣ A := gcd_dvd_left A B
+    have ⟨CB, hpB⟩ : gcd A B ∣ B := gcd_dvd_right A B
+    have h1 : aeval x A = 0 := by
+      calc
+        aeval x A = aeval x (gcd A B * CA) := congrArg _ hpA
+        _ = aeval x (gcd A B) * aeval x CA := map_mul _ _ _
+        _ = 0 * aeval x CA := by rw [h]
+        _ = 0 := zero_mul _
+    have h2 : aeval x B = 0 := by
+      calc
+        aeval x B = aeval x (gcd A B * CB) := congrArg _ hpB
+        _ = aeval x (gcd A B) * aeval x CB := map_mul _ _ _
+        _ = 0 * aeval x CB := by rw [h]
+        _ = 0 := zero_mul _
+    exact ⟨h1, h2⟩
+  · rintro ⟨hA, hB⟩
+    have hspan : gcd A B ∈ Ideal.span {A, B} :=
+      span_gcd A B ▸ Ideal.mem_span_singleton.mpr (dvd_refl (gcd A B))
+    have ⟨U, V, hUV⟩ := Submodule.mem_span_pair.mp hspan
+    have hUV' : aeval x (U * A + V * B) = aeval x (gcd A B) := congrArg _ hUV
+    calc
+      aeval x (gcd A B) = aeval x (U * A + V * B) := hUV'.symm
+      _ = aeval x U * aeval x A + aeval x V * aeval x B := by simp
+      _ = aeval x U * 0 + aeval x V * 0 := by rw [hA, hB]
+      _ = 0 := by ring
+
+omit [IsAlgClosed C] in
+/-- Unnumbered Theorem (post Prop 1.13): x ∈ C is a root of every polynomial in 𝒫 if and only if it is a root of gcd(𝒫). -/
+theorem isRoot_listGcd_iff_forall_isRoot [Algebra K C] {Ps : List K[X]} {x : C} :
+    aeval x (listGcd Ps) = 0 ↔ ∀ P ∈ Ps, aeval x P = 0 := by
+  induction Ps with
+  | nil =>
+    simp [listGcd]
+  | cons P Ps ih =>
+    simp [listGcd, aeval_gcd_eq_zero_iff]
+    intro _
+    rwa [← listGcd]
+
 end Azurite.BPR
