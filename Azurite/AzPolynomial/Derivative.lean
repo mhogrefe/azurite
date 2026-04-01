@@ -1,4 +1,5 @@
 import Azurite.AzPolynomial.Basic
+import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Parse
 
 /-!
@@ -14,29 +15,17 @@ namespace Azurite.AzPolynomial
 
 variable {R : Type _} [Semiring R] [DecidableEq R]
 
-/-- The formal derivative of a polynomial.
-    Given `p = a₀ + a₁X + a₂X² + ⋯ + aₙXⁿ`, returns
-    `a₁ + 2a₂X + 3a₃X² + ⋯ + naₙXⁿ⁻¹`. -/
-def derivative (p : AzPolynomial R) : AzPolynomial R :=
-  if _ : p.coeffs.size ≤ 1 then
+private abbrev derivArray (p : AzPolynomial R) (_h : ¬p.coeffs.size ≤ 1) :=
+  Array.ofFn (fun (i : Fin (p.coeffs.size - 1)) =>
+    p.coeff (i.val + 1) * (↑(i.val + 1) : R))
+
+/-- The formal derivative, always normalizing the result.
+    Safe for any `Semiring`. -/
+def derivativeNormalize (p : AzPolynomial R) : AzPolynomial R :=
+  if h : p.coeffs.size ≤ 1 then
     zero
   else
-    normalize (Array.ofFn (fun (i : Fin (p.coeffs.size - 1)) =>
-      p.coeff (i.val + 1) * (↑(i.val + 1) : R)))
-
--- Testing the implementation using Integer polynomials
--- derivative of x^3 + x = 3x^2 + 1
-#guard derivative (parseAzPolynomial (R := ℤ) "x^3+x").get! == (parseAzPolynomial (R := ℤ) "3*x^2+1").get!
--- derivative of 2x^2 + 3x + 5 = 4x + 3
-#guard derivative (parseAzPolynomial (R := ℤ) "2*x^2+3*x+5").get! == (parseAzPolynomial (R := ℤ) "4*x+3").get!
--- derivative of constant = 0
-#guard derivative (parseAzPolynomial (R := ℤ) "42").get! == (0 : AzPolynomial ℤ)
--- derivative of 0 = 0
-#guard derivative (0 : AzPolynomial ℤ) == (0 : AzPolynomial ℤ)
--- derivative of x = 1
-#guard derivative (parseAzPolynomial (R := ℤ) "x").get! == (parseAzPolynomial (R := ℤ) "1").get!
--- derivative of x^4 = 4x^3
-#guard derivative (parseAzPolynomial (R := ℤ) "x^4").get! == (parseAzPolynomial (R := ℤ) "4*x^3").get!
+    normalize (derivArray p (by omega))
 
 /-!
 ## No-normalization variant
@@ -47,10 +36,6 @@ The leading term `aₙ * n` satisfies `aₙ ≠ 0` (polynomial invariant)
 and `(n : R) ≠ 0` (`CharZero`), so `aₙ * n ≠ 0` (`NoZeroDivisors`).
 This lets us skip `normalize`.
 -/
-
-private abbrev derivArray (p : AzPolynomial R) (_h : ¬p.coeffs.size ≤ 1) :=
-  Array.ofFn (fun (i : Fin (p.coeffs.size - 1)) =>
-    p.coeff (i.val + 1) * (↑(i.val + 1) : R))
 
 omit [DecidableEq R] in
 private lemma derivArray_back_ne_zero [CharZero R] [NoZeroDivisors R]
@@ -83,7 +68,49 @@ def derivativeNoNormalize [CharZero R] [NoZeroDivisors R]
   if h : p.coeffs.size ≤ 1 then
     zero
   else
-    ⟨derivArray p h, derivArray_back_ne_zero p h⟩
+    ⟨derivArray p (by omega), derivArray_back_ne_zero p (by omega)⟩
+
+/-!
+## Auto-dispatch via typeclass
+
+`derivative` resolves to `derivativeNoNormalize` when both `CharZero R` and
+`NoZeroDivisors R` are available (high priority), and falls back to
+`derivativeNormalize` otherwise — mirroring the `add` / `addNoCancel` pattern.
+-/
+
+/-- Typeclass providing the derivative implementation for `AzPolynomial R`.
+    Implementations must agree with `derivativeNormalize` coefficient-wise. -/
+class PolynomialDerivative (R : Type _) [Semiring R] [DecidableEq R] where
+  derivative : AzPolynomial R → AzPolynomial R
+  coeff_eq : ∀ (p : AzPolynomial R) (n : ℕ),
+    (derivative p).coeff n = (derivativeNormalize p).coeff n
+
+instance (priority := default) : PolynomialDerivative R where
+  derivative := derivativeNormalize
+  coeff_eq := fun _ _ => rfl
+
+instance (priority := high) [CharZero R] [NoZeroDivisors R] : PolynomialDerivative R where
+  derivative := derivativeNoNormalize
+  coeff_eq := fun p n => by
+    simp only [derivativeNoNormalize, derivativeNormalize]
+    split
+    · rfl
+    · next h =>
+      rw [coeff_normalize]
+      simp [coeff, Array.getElem?_ofFn]
+
+/-- The formal derivative of a polynomial.
+    Dispatches to `derivativeNoNormalize` for `CharZero + NoZeroDivisors`
+    rings, and `derivativeNormalize` otherwise. -/
+def derivative [PolynomialDerivative R] (p : AzPolynomial R) : AzPolynomial R :=
+  PolynomialDerivative.derivative p
+
+-- Testing: ℤ is CharZero + NoZeroDivisors, so uses the fast path
+#guard derivative (parseAzPolynomial (R := ℤ) "x^3+x").get! == (parseAzPolynomial (R := ℤ) "3*x^2+1").get!
+#guard derivative (parseAzPolynomial (R := ℤ) "2*x^2+3*x+5").get! == (parseAzPolynomial (R := ℤ) "4*x+3").get!
+#guard derivative (parseAzPolynomial (R := ℤ) "42").get! == (0 : AzPolynomial ℤ)
+#guard derivative (0 : AzPolynomial ℤ) == (0 : AzPolynomial ℤ)
+#guard derivative (parseAzPolynomial (R := ℤ) "x").get! == (parseAzPolynomial (R := ℤ) "1").get!
+#guard derivative (parseAzPolynomial (R := ℤ) "x^4").get! == (parseAzPolynomial (R := ℤ) "4*x^3").get!
 
 end Azurite.AzPolynomial
-
