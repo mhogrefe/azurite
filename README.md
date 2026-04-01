@@ -145,6 +145,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 |--------|---------|
 | `BasuPollackRoy/Chapter1/Section1_1` | Algebraically closed fields, zero sets (`Zer`), algebraic/constructible sets, first-order formulas in the language of fields, quantifier-free and prenex normal forms, realization, prenex normal form theorem. Exercises 1.1–1.3. |
 | `BasuPollackRoy/Chapter1/Section1_2` | Euclidean division, GCD/LCM (definitions and propositions), coprimality, signed remainder sequences. Proposition 1.5, Corollary 1.6, Exercises 1.5–1.7, Proposition 1.8. |
+| `BasuPollackRoy/Chapter2/Section2_1` | Ordered, real, and real closed fields. Mathlib references for polynomial derivatives (`Polynomial.derivative`), iterated derivatives (`derivative^[i]`), sum rule (`derivative_add`), and product rule (`derivative_mul`). |
 | `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Notation 8.7 (Horner polynomials with sum/eval identities), Algorithm 8.7 (polynomial evaluation), Algorithm 8.8 (special evaluation with `horSpecial` sum characterization, field identity, and bitsize bound `τ + iτ' + bit(p+1)`), Algorithm 8.9 (translation), Algorithm 8.10 (special translation). Cross-references to Azurite implementations of Algorithms 8.1–8.10. |
 
 ## Known Textbook Errors (BPR)
@@ -205,6 +206,7 @@ Azurite/
     Equiv.lean        -- Equivalence proofs with BPR Formula (FieldAtom)
   BasuPollackRoy/     -- Formalized textbook (BPR)
     Chapter1/
+    Chapter2/
     Chapter8/
   Nat/                -- Efficient natural number algorithms
   Rat/                -- Efficient rational number algorithms
