@@ -1273,4 +1273,79 @@ theorem isRoot_listGcd_iff_forall_isRoot [Algebra K C] {Ps : List K[X]} {x : C} 
     intro _
     rwa [← listGcd]
 
+omit [IsAlgClosed C] in
+/-- Unnumbered Theorem (post Prop 1.13): x ∈ C is not a root of any polynomial in 𝒬 if and only if it is not a root of ∏ 𝒬. -/
+theorem not_isRoot_listProd_iff_forall_not_isRoot [Algebra K C] {Qs : List K[X]} {x : C} :
+    aeval x (Qs.prod) ≠ 0 ↔ (∀ Q ∈ Qs, aeval x Q ≠ 0) := by
+  induction Qs with
+  | nil =>
+    simp
+  | cons Q Qs ih =>
+    simp [List.prod_cons]
+    intro _
+    exact ih
+
+omit [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Unnumbered Theorem (post Prop 1.13): Every root of P in C is a root of Q if and only if P ∣ Q^(deg P). Explicitly requires P ≠ 0. -/
+theorem isRoot_subset_iff_dvd_pow [Algebra K C] [DecidableEq K] [DecidableEq C] {P Q : K[X]} (hP : P ≠ 0) :
+    (∀ x : C, aeval x P = 0 → aeval x Q = 0) ↔ P ∣ Q ^ P.natDegree := by
+  constructor
+  · intro h
+    by_cases hQ : Q = 0
+    · simp [hQ]
+      by_cases hP0 : P.natDegree = 0
+      · have hDeg : P.degree = 0 := by rw [degree_eq_natDegree hP, hP0, Nat.cast_zero]
+        have hUnit : IsUnit P := isUnit_iff_degree_eq_zero.mpr hDeg
+        exact IsUnit.dvd hUnit
+      · have hPowPos : 0 < P.natDegree := by omega
+        have hPow : (0 : K[X]) ^ P.natDegree = 0 := zero_pow hPowPos.ne'
+        rw [hPow]
+        exact dvd_zero P
+    · have Hdvd : P.map (algebraMap K C) ∣ (Q.map (algebraMap K C)) ^ P.natDegree := by
+        have hP' : P.map (algebraMap K C) ≠ 0 := by
+          intro contra
+          have := Polynomial.map_eq_zero_iff (RingHom.injective (algebraMap K C)) |>.mp contra
+          exact hP this
+        have hQ' : Q.map (algebraMap K C) ≠ 0 := by
+          intro contra
+          have := Polynomial.map_eq_zero_iff (RingHom.injective (algebraMap K C)) |>.mp contra
+          exact hQ this
+        have H : ∀ x : C, x ∈ (P.map (algebraMap K C)).roots → x ∈ (Q.map (algebraMap K C)).roots := by
+          intro x hx
+          have hx' : eval x (P.map (algebraMap K C)) = 0 := (mem_roots hP').mp hx
+          have hx_aeval : aeval x P = 0 := by
+            change eval₂ (algebraMap K C) x P = 0
+            rw [← eval_map]
+            exact hx'
+          have hQx : aeval x Q = 0 := h x hx_aeval
+          have hQx_eval : eval₂ (algebraMap K C) x Q = 0 := hQx
+          exact (mem_roots hQ').mpr (by rwa [← eval_map] at hQx_eval)
+        rw [IsAlgClosed.dvd_iff_roots_le_roots hP' (pow_ne_zero _ hQ')]
+        rw [roots_pow _ P.natDegree]
+        apply Multiset.le_iff_count.mpr
+        intro x
+        rw [Multiset.count_nsmul]
+        by_cases hx : x ∈ (P.map (algebraMap K C)).roots
+        · have hQx := H x hx
+          have h1 : 1 ≤ Multiset.count x (Q.map (algebraMap K C)).roots := Multiset.count_pos.mpr hQx
+          have h3 : Multiset.count x (P.map (algebraMap K C)).roots ≤ (P.map (algebraMap K C)).roots.card := Multiset.count_le_card x _
+          have h4 : (P.map (algebraMap K C)).roots.card ≤ (P.map (algebraMap K C)).natDegree := card_roots' (P.map (algebraMap K C))
+          have h5 : (P.map (algebraMap K C)).natDegree = P.natDegree := natDegree_map_eq_of_injective (RingHom.injective _) P
+          have h6 : Multiset.count x (P.map (algebraMap K C)).roots ≤ P.natDegree := by omega
+          have h7 : P.natDegree ≤ P.natDegree * Multiset.count x (Q.map (algebraMap K C)).roots := Nat.le_mul_of_pos_right _ h1
+          omega
+        · have h0 : Multiset.count x (P.map (algebraMap K C)).roots = 0 := Multiset.count_eq_zero.mpr hx
+          omega
+      have Hpow : (Q.map (algebraMap K C)) ^ P.natDegree = (Q ^ P.natDegree).map (algebraMap K C) := by
+        simp only [Polynomial.map_pow]
+      rw [Hpow] at Hdvd
+      exact (Polynomial.map_dvd_map' (algebraMap K C)).mp Hdvd
+  · intro h x hx
+    have H_dvd : aeval x P ∣ aeval x (Q ^ P.natDegree) := map_dvd (aeval x) h
+    rw [hx] at H_dvd
+    have H_0 : aeval x (Q ^ P.natDegree) = 0 := zero_dvd_iff.mp H_dvd
+    rw [map_pow] at H_0
+    exact eq_zero_of_pow_eq_zero H_0
+
+
 end Azurite.BPR
