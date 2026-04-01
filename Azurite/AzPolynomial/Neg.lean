@@ -11,5 +11,15 @@ instance instNegAzPolynomial : Neg (AzPolynomial R) where
   neg p := mapZeroInjective (fun x => -x) (fun r => ⟨fun hr => neg_eq_zero.mp hr, fun hr => by simp [hr]⟩) p
 
 
+@[simp] lemma coeff_neg (p : AzPolynomial R) (i : ℕ) : (-p).coeff i = - p.coeff i := by
+  dsimp [coeff, Neg.neg, instNegAzPolynomial, mapZeroInjective]
+  rcases hp : p.coeffs[i]? with _ | c
+  · have hw : (p.coeffs.map (fun x => -x))[i]? = none := by rw [Array.getElem?_map, hp]; rfl
+    rw [hw]
+    simp
+  · have hw : (p.coeffs.map (fun x => -x))[i]? = some (-c) := by rw [Array.getElem?_map, hp]; rfl
+    rw [hw]
+    simp
+
 end AzPolynomial
 end Azurite

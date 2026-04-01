@@ -124,9 +124,11 @@ import Azurite.AzPolynomial.Tune
 import Azurite.AzPolynomialQ.Basic
 import Azurite.AzPolynomialQ.Equiv.Basic
 import Azurite.AzPolynomialQ.Equiv.Eval
+import Azurite.AzPolynomialQ.Equiv.Neg
 import Azurite.AzPolynomialQ.Equiv.Parse
 import Azurite.AzPolynomialQ.Equiv.ToString
 import Azurite.AzPolynomialQ.Eval
+import Azurite.AzPolynomialQ.Neg
 import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
 import Azurite.AzVector.Basic

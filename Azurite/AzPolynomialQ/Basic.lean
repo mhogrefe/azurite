@@ -165,9 +165,18 @@ def nextCoeff (p : AzPolynomialQ) : ℚ :=
 def Monic (p : AzPolynomialQ) : Prop :=
   p.leadingCoeff = 1
 
-instance {p : AzPolynomialQ} : Decidable p.Monic := by
+theorem Monic.def {p : AzPolynomialQ} : p.Monic ↔ p.leadingCoeff = 1 :=
+  Iff.rfl
+
+theorem Monic_iff (p : AzPolynomialQ) :
+    p.Monic ↔ (p.numerators[p.natDegree]?.getD 0 : ℤ) = p.denom := by
   unfold Monic leadingCoeff coeff
-  infer_instance
+  have hd : (p.denom : ℚ) ≠ 0 := by exact_mod_cast p.denom_pos.ne'
+  rw [div_eq_one_iff_eq hd]
+  norm_cast
+
+instance {p : AzPolynomialQ} : Decidable p.Monic :=
+  decidable_of_iff ((p.numerators[p.natDegree]?.getD 0 : ℤ) = p.denom) (Monic_iff p).symm
 
 @[simp]
 theorem Monic.leadingCoeff_eq_one {p : AzPolynomialQ} (hp : p.Monic) : p.leadingCoeff = 1 :=
