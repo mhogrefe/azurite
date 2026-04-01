@@ -970,6 +970,35 @@ lemma SRemS_terminates (P Q : K[X]) (hP : P ≠ 0) :
 
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
 open Classical in
+/-- The termination index k where SRemS(k+1) = 0 -/
+noncomputable def sremTermIndex (P Q : K[X]) : ℕ :=
+  if hP : P = 0 then 0 else Classical.choose (SRemS_terminates P Q hP)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+lemma SRemS_sremTermIndex_succ_eq_zero (P Q : K[X]) (hP : P ≠ 0) :
+    SRemS P Q (sremTermIndex P Q + 1) = 0 := by
+  rw [sremTermIndex, dif_neg hP]
+  exact (Classical.choose_spec (SRemS_terminates P Q hP)).1
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+lemma SRemS_sremTermIndex_ne_zero (P Q : K[X]) (hP : P ≠ 0) :
+    SRemS P Q (sremTermIndex P Q) ≠ 0 := by
+  rw [sremTermIndex, dif_neg hP]
+  exact (Classical.choose_spec (SRemS_terminates P Q hP)).2
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
+lemma SRemS_ne_zero_of_le_sremTermIndex (P Q : K[X]) (hP : P ≠ 0) (i : ℕ) (hi : i ≤ sremTermIndex P Q) :
+    SRemS P Q i ≠ 0 := by
+  cases i with
+  | zero => simp [SRemS_fst, hP]
+  | succ p =>
+    exact SRemS_ne_zero_of_le P Q _ _ (SRemS_sremTermIndex_succ_eq_zero P Q hP) (SRemS_sremTermIndex_ne_zero P Q hP) (by omega) hi
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+open Classical in
 /-- BPR Proposition 1.9 (Helper): Assumes deg Q ≤ deg P -/
 theorem proposition_1_9_aux {P Q G : K[X]}
     (hP : P ≠ 0) (hQ : Q ≠ 0)
@@ -980,7 +1009,9 @@ theorem proposition_1_9_aux {P Q G : K[X]}
       U * P + V * Q = G ∧
       U.natDegree < Q.natDegree - G.natDegree ∧
       V.natDegree < P.natDegree - G.natDegree := by
-  obtain ⟨k, hk, hk_ne⟩ := SRemS_terminates P Q hP
+  obtain ⟨k, hk_def⟩ : ∃ k, k = sremTermIndex P Q := ⟨_, rfl⟩
+  have hk : SRemS P Q (k + 1) = 0 := hk_def ▸ SRemS_sremTermIndex_succ_eq_zero P Q hP
+  have hk_ne : SRemS P Q k ≠ 0 := hk_def ▸ SRemS_sremTermIndex_ne_zero P Q hP
   have hGk := prop_1_8 hk hk_ne
   have hassoc := isGCD_associated hG hGk
   obtain ⟨c, hc⟩ := hassoc.symm
@@ -1091,5 +1122,83 @@ theorem proposition_1_9 {P Q G : K[X]}
     obtain ⟨U, V, hbez, hdegU, hdegV⟩ := proposition_1_9_aux hQ hP hle' hG' hnd_gP
     refine ⟨V, U, ?_, hdegV, hdegU⟩
     rw [add_comm, hbez]
+
+/-- BPR Lemma 1.10 (b): U_i V_{i+1} - V_i U_{i+1} = 1.
+    Note: BPR states this is (-1)^i, but this was due to an error in their recursion
+    for U and V which omitted the signed remainder negation. -/
+lemma lemma_1_10_b {P Q : K[X]} (n : ℕ) (hn : ∀ i ≤ n, SRemS P Q i ≠ 0) :
+    SRemU P Q n * SRemV P Q (n + 1) - SRemV P Q n * SRemU P Q (n + 1) = 1 := by
+  induction n generalizing P Q with
+  | zero =>
+    dsimp [SRemU, SRemV]
+    ring
+  | succ n ih =>
+    have hn_ne : SRemS P Q (n + 1) ≠ 0 := hn (n + 1) (by omega)
+    have hn_ne' : ∀ i ≤ n, SRemS P Q i ≠ 0 := fun i hi => hn i (by omega)
+    have ih_app := ih hn_ne'
+    have H_U : SRemU P Q (n + 2) = - SRemU P Q n + (SRemS P Q n / SRemS P Q (n + 1)) * SRemU P Q (n + 1) := by
+      rw [SRemU, if_neg hn_ne]
+    have H_V : SRemV P Q (n + 2) = - SRemV P Q n + (SRemS P Q n / SRemS P Q (n + 1)) * SRemV P Q (n + 1) := by
+      rw [SRemV, if_neg hn_ne]
+    rw [H_U, H_V]
+    calc SRemU P Q (n + 1) * (-SRemV P Q n + SRemS P Q n / SRemS P Q (n + 1) * SRemV P Q (n + 1)) - SRemV P Q (n + 1) * (-SRemU P Q n + SRemS P Q n / SRemS P Q (n + 1) * SRemU P Q (n + 1))
+      _ = SRemU P Q n * SRemV P Q (n + 1) - SRemV P Q n * SRemU P Q (n + 1) := by ring
+      _ = 1 := by rw [ih_app]
+
+theorem proposition_1_12 {P Q: K[X]} (hP : P ≠ 0) (_hQ : Q ≠ 0) :
+    (SRemU P Q (sremTermIndex P Q + 1) * P = - SRemV P Q (sremTermIndex P Q + 1) * Q) ∧
+    IsLCM (SRemU P Q (sremTermIndex P Q + 1) * P) P Q := by
+  obtain ⟨k, hk_def⟩ : ∃ x, x = sremTermIndex P Q := ⟨_, rfl⟩
+  have hk : SRemS P Q (k + 1) = 0 := hk_def ▸ SRemS_sremTermIndex_succ_eq_zero P Q hP
+  have hk_ne : SRemS P Q k ≠ 0 := hk_def ▸ SRemS_sremTermIndex_ne_zero P Q hP
+  have h_le : ∀ i ≤ k, SRemS P Q i ≠ 0 := hk_def ▸ SRemS_ne_zero_of_le_sremTermIndex P Q hP
+  rw [← hk_def]
+  constructor
+  · have hbez : SRemS P Q (k + 1) = SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q :=
+      lemma_1_11_bezout P Q (k + 1)
+    rw [hk] at hbez
+    calc SRemU P Q (k + 1) * P = SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q - SRemV P Q (k + 1) * Q := by ring
+      _ = 0 - SRemV P Q (k + 1) * Q := by rw [← hbez]
+      _ = - SRemV P Q (k + 1) * Q := by ring
+  · constructor
+    · exact dvd_mul_left P (SRemU P Q (k + 1))
+    · constructor
+      · have hbez : SRemS P Q (k + 1) = SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q :=
+          lemma_1_11_bezout P Q (k + 1)
+        rw [hk] at hbez
+        have H1 : SRemU P Q (k + 1) * P = - SRemV P Q (k + 1) * Q := by
+          calc SRemU P Q (k + 1) * P = SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q - SRemV P Q (k + 1) * Q := by ring
+            _ = 0 - SRemV P Q (k + 1) * Q := by rw [← hbez]
+            _ = - SRemV P Q (k + 1) * Q := by ring
+        rw [H1]
+        exact dvd_mul_left Q (- SRemV P Q (k + 1))
+      · intro D hDP hDQ
+        obtain ⟨A, hA⟩ := hDP
+        obtain ⟨B, hB⟩ := hDQ
+        have hbez : SRemS P Q (k + 1) = SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q :=
+          lemma_1_11_bezout P Q (k + 1)
+        rw [hk] at hbez
+        have H1 : SRemV P Q (k + 1) * Q = - SRemU P Q (k + 1) * P := by
+          calc SRemV P Q (k + 1) * Q = SRemV P Q (k + 1) * Q + SRemU P Q (k + 1) * P - SRemU P Q (k + 1) * P := by ring
+            _ = (SRemU P Q (k + 1) * P + SRemV P Q (k + 1) * Q) - SRemU P Q (k + 1) * P := by ring
+            _ = 0 - SRemU P Q (k + 1) * P := by rw [← hbez]
+            _ = - SRemU P Q (k + 1) * P := by ring
+        have H_alg : D = (- B * SRemU P Q k - A * SRemV P Q k) * (SRemU P Q (k + 1) * P) := by
+          calc D = D * 1 := by ring
+            _ = D * (SRemU P Q k * SRemV P Q (k + 1) - SRemV P Q k * SRemU P Q (k + 1)) := by
+                rw [← lemma_1_10_b k h_le]
+            _ = D * SRemU P Q k * SRemV P Q (k + 1) - D * SRemV P Q k * SRemU P Q (k + 1) := by ring
+            _ = (Q * B) * SRemU P Q k * SRemV P Q (k + 1) - (P * A) * SRemV P Q k * SRemU P Q (k + 1) := by
+                have h1 : D * SRemU P Q k * SRemV P Q (k + 1) = (Q * B) * SRemU P Q k * SRemV P Q (k + 1) := by rw [hB]
+                have h2 : D * SRemV P Q k * SRemU P Q (k + 1) = (P * A) * SRemV P Q k * SRemU P Q (k + 1) := by rw [hA]
+                rw [h1, h2]
+            _ = B * SRemU P Q k * (SRemV P Q (k + 1) * Q) - A * SRemV P Q k * (SRemU P Q (k + 1) * P) := by ring
+            _ = B * SRemU P Q k * (- SRemU P Q (k + 1) * P) - A * SRemV P Q k * (SRemU P Q (k + 1) * P) := by
+                rw [H1]
+            _ = (- B * SRemU P Q k - A * SRemV P Q k) * (SRemU P Q (k + 1) * P) := by ring
+        have H_d : D = (SRemU P Q (k + 1) * P) * (- B * SRemU P Q k - A * SRemV P Q k) := by
+          calc D = (- B * SRemU P Q k - A * SRemV P Q k) * (SRemU P Q (k + 1) * P) := H_alg
+            _ = (SRemU P Q (k + 1) * P) * (- B * SRemU P Q k - A * SRemV P Q k) := by ring
+        exact ⟨_, H_d⟩
 
 end Azurite.BPR

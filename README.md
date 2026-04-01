@@ -147,6 +147,12 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `BasuPollackRoy/Chapter1/Section1_2` | Euclidean division, GCD/LCM (definitions and propositions), coprimality, signed remainder sequences. Proposition 1.5, Corollary 1.6, Exercises 1.5–1.7, Proposition 1.8. |
 | `BasuPollackRoy/Chapter8/Section8_1` | Complexity structures (D₀–D₇), bitsize of integers and rationals, bitsize bounds for sums and products, monomial counting (Lemma 8.6 with `MonicMonomial` bridge), bitsize of polynomial addition/multiplication. Notation 8.7 (Horner polynomials with sum/eval identities), Algorithm 8.7 (polynomial evaluation), Algorithm 8.8 (special evaluation with `horSpecial` sum characterization, field identity, and bitsize bound `τ + iτ' + bit(p+1)`), Algorithm 8.9 (translation), Algorithm 8.10 (special translation). Cross-references to Azurite implementations of Algorithms 8.1–8.10. |
 
+## Known Textbook Errors (BPR)
+
+While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), the following mathematical discrepancies were identified and corrected in Azurite:
+
+*   **Lemma 1.10(b) (Signed Remainder Determinant Sequence):** The textbook states the identity $U_i V_{i+1} - V_i U_{i+1} = (-1)^i$. However, the textbook's definition of the cofactor sequence ($U_{i+2} = U_i - Q_{i+1} U_{i+1}$) drops the negation required to compute signed remainders ($P_{i+2} = - P_i + Q_{i+1} P_{i+1}$). When the strictly correct recurrence is used, the sequence determinant evaluates structurally to $1$ unconditionally. Azurite's formalization proves `lemma_1_10_b` equal to `1` and applies the corrected identity in subsequent proofs (e.g., Proposition 1.12).
+
 ## Algorithms Implemented
 
 | Algorithm | Source | Module | Complexity |
