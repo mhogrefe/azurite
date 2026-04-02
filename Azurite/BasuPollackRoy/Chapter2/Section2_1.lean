@@ -628,6 +628,14 @@ The 0₊ order on F(ε) is constructed in
 * Notation `ε` for the indeterminate `X`.
 * A proof that `ε` is infinitesimal over `F` (i.e., `0 < ε < C a`
   for every positive `a ∈ F`).
+* A `LinearOrder` on `RatFunc F` (= F(ε)) where `P/Q > 0 ↔ PQ > 0`,
+  extending the polynomial order to the full rational function field.
+* `rfPos_div`: bridge lemma connecting `rfPos` on canonical `num/denom`
+  to `polyPos` on arbitrary representative pairs.
+* `εR_inv_gt_ιR`: `1/ε` is greater than every element of `F` embedded
+  in `RatFunc F`, i.e., `∀ a : F, ιR a < εR_inv`. This is stronger
+  than BPR's statement and implies that `1/ε` is unbounded over `F`
+  in the sense of `IsUnboundedOver` above.
 -/
 
 end Azurite.BPR

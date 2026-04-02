@@ -6,6 +6,7 @@ Authors: Azurite contributors
 import Mathlib.Algebra.Polynomial.Degree.TrailingDegree
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Order.Ring.Defs
+import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
 # The 0₊ Order on F[ε]
@@ -265,4 +266,235 @@ lemma C_strictMono : StrictMono (C : F → F[X]) := by
   · rw [Polynomial.trailingCoeff, Polynomial.natTrailingDegree_C, Polynomial.coeff_C_zero]
     exact sub_pos.mpr hab
 
+/-! ### Stage 2: The 0₊ order on F(ε) = RatFunc F
+
+BPR defines: P(ε)/Q(ε) > 0 iff P(ε)·Q(ε) > 0 in the polynomial 0₊ order.
+
+We use the canonical `num`/`denom` decomposition from `RatFunc` to define
+positivity, then construct a `LinearOrder`.
+-/
+
+/-- Positivity in the 0₊ order on `RatFunc F`:
+    a rational function is positive iff `num * denom` is positive
+    in the polynomial 0₊ order. -/
+def rfPos (r : RatFunc F) : Prop := polyPos (r.num * r.denom)
+
+/-- `rfPos` characterization: r is positive iff r ≠ 0 and
+    `(r.num * r.denom).trailingCoeff > 0`. -/
+lemma rfPos_def {r : RatFunc F} :
+    rfPos r ↔ r ≠ 0 ∧ 0 < (r.num * r.denom).trailingCoeff := by
+  simp only [rfPos, polyPos]
+  constructor
+  · intro ⟨hne, hpos⟩
+    exact ⟨fun h => by simp [h] at hne, hpos⟩
+  · intro ⟨hne, hpos⟩
+    exact ⟨mul_ne_zero (RatFunc.num_ne_zero hne) (RatFunc.denom_ne_zero r), hpos⟩
+
+/-- A nonzero square is positive in the 0₊ order. -/
+lemma polyPos_sq {b : F[X]} (hb : b ≠ 0) : polyPos (b ^ 2) :=
+  ⟨pow_ne_zero 2 hb, by
+    rw [sq, Polynomial.trailingCoeff]
+    rw [Polynomial.natTrailingDegree_mul hb hb]
+    rw [Polynomial.coeff_mul_natTrailingDegree_add_natTrailingDegree]
+    exact mul_self_pos.mpr (Polynomial.trailingCoeff_nonzero_iff_nonzero.mpr hb)⟩
+
+omit [IsStrictOrderedRing F] in
+/-- `polyPos a` is equivalent to `0 < a` in the custom F[X] order. -/
+lemma polyPos_iff_lt {a : F[X]} : polyPos a ↔ (0 : F[X]) < a :=
+  ⟨fun h => lt_def'.mpr (by rwa [sub_zero]),
+   fun h => by have := lt_def'.mp h; rwa [sub_zero] at this⟩
+
+/-- `polyPos` is invariant under multiplication by a nonzero square.
+    Morally: `a * b² > 0 ↔ a > 0` since `b² > 0`. -/
+lemma polyPos_mul_sq_iff {a b : F[X]} (hb : b ≠ 0) :
+    polyPos (a * b ^ 2) ↔ polyPos a := by
+  rw [polyPos_iff_lt, polyPos_iff_lt]
+  constructor
+  · intro h
+    have hb2 := polyPos_iff_lt.mp (polyPos_sq hb)
+    exact ((pos_iff_pos_of_mul_pos h).mpr hb2)
+  · intro h
+    exact mul_pos h (polyPos_iff_lt.mp (polyPos_sq hb))
+
+/-- Negation flips `rfPos`. Uses `num_denom_neg` and the square trick. -/
+lemma rfPos_neg_iff (r : RatFunc F) (hr : r ≠ 0) :
+    rfPos (-r) ↔ ¬ rfPos r := by
+  have hndm := RatFunc.num_denom_neg r
+  have hd := RatFunc.denom_ne_zero r
+  have hnd := RatFunc.denom_ne_zero (-r)
+  have hmul_ne : r.num * r.denom ≠ 0 :=
+    mul_ne_zero (RatFunc.num_ne_zero hr) hd
+  -- Key algebraic identity: (-r).num * (-r).denom * r.denom² = -(r.num * r.denom) * (-r).denom²
+  have key : (-r).num * (-r).denom * r.denom ^ 2 =
+      -(r.num * r.denom) * (-r).denom ^ 2 := by
+    -- From num_denom_neg: (-r).num * r.denom = -(r.num) * (-r).denom
+    -- Rearranging: both sides = (-r).num * r.denom * (-r).denom * r.denom
+    calc (-r).num * (-r).denom * r.denom ^ 2
+        = (-r).num * r.denom * ((-r).denom * r.denom) := by ring
+      _ = -r.num * (-r).denom * ((-r).denom * r.denom) := by rw [hndm]
+      _ = -(r.num * r.denom) * (-r).denom ^ 2 := by ring
+  rw [rfPos, rfPos, ← polyPos_mul_sq_iff hd, key]
+  rw [polyPos_mul_sq_iff hnd]
+  constructor
+  · intro h hn
+    exact not_polyPos_of_polyPos_neg hn h
+  · intro hn
+    rcases polyPos_trichotomy (r.num * r.denom) with h | h | h
+    · exact absurd h hn
+    · exact absurd h hmul_ne
+    · exact h
+
+/-- Key: a nonzero rational function has `num * denom` nonzero,
+    so exactly one of `rfPos r` or `rfPos (-r)` holds. -/
+lemma rfPos_trichotomy (r : RatFunc F) : rfPos r ∨ r = 0 ∨ rfPos (-r) := by
+  by_cases hr : r = 0
+  · exact Or.inr (Or.inl hr)
+  · rcases polyPos_trichotomy (r.num * r.denom) with h | h | h
+    · exact Or.inl h
+    · exact absurd h (mul_ne_zero (RatFunc.num_ne_zero hr) (RatFunc.denom_ne_zero r))
+    · right; right
+      exact (rfPos_neg_iff r hr).mpr (fun hpos => not_polyPos_of_polyPos_neg hpos h)
+
+/-- If r and -r are both positive, contradiction. -/
+lemma not_rfPos_neg {r : RatFunc F} (hr : rfPos r) : ¬ rfPos (-r) := by
+  by_cases hrz : r = 0
+  · simp [hrz, rfPos, polyPos] at hr
+  · exact (rfPos_neg_iff r hrz).not_left.mpr hr
+
+/-- Bridge lemma: `rfPos` of a quotient `algebraMap p / algebraMap q` is equivalent to
+    `polyPos (p * q)`. This allows working with arbitrary representatives via `induction_on`.
+    Proof: cross-multiply `r.num * q = p * r.denom`, then use the square trick. -/
+lemma rfPos_div {p q : F[X]} (hq : q ≠ 0) :
+    rfPos (algebraMap F[X] (RatFunc F) p / algebraMap F[X] (RatFunc F) q) ↔ polyPos (p * q) := by
+  set r := algebraMap F[X] (RatFunc F) p / algebraMap F[X] (RatFunc F) q with hr_def
+  -- Cross-multiplication: r.num * q = p * r.denom
+  have hmap_q := (map_ne_zero_iff _ (RatFunc.algebraMap_injective F)).mpr hq
+  have hmap_d := (map_ne_zero_iff _ (RatFunc.algebraMap_injective F)).mpr
+    (RatFunc.denom_ne_zero r)
+  have hcross_map := (div_eq_div_iff hmap_d hmap_q).mp (RatFunc.num_div_denom r)
+  rw [← map_mul, ← map_mul] at hcross_map
+  have hcross : r.num * q = p * r.denom := RatFunc.algebraMap_injective F hcross_map
+  -- Key: r.num * r.denom * q² = p * q * r.denom²
+  have key : r.num * r.denom * q ^ 2 = p * q * r.denom ^ 2 := by
+    calc r.num * r.denom * q ^ 2
+        = r.num * q * (r.denom * q) := by ring
+      _ = p * r.denom * (r.denom * q) := by rw [hcross]
+      _ = p * q * r.denom ^ 2 := by ring
+  rw [rfPos, ← polyPos_mul_sq_iff hq, key]
+  exact polyPos_mul_sq_iff (RatFunc.denom_ne_zero r)
+
+/-- rfPos is preserved by addition. Uses `induction_on` to write rational functions as
+    `algebraMap p / algebraMap q`, then reduces to the F[X] ordered ring via `rfPos_div`:
+    `a*b > 0` and `c*d > 0` imply `(a*d + b*c)*(b*d) = a*b*d² + c*d*b² > 0`. -/
+lemma rfPos_add {r s : RatFunc F} (hr : rfPos r) (hs : rfPos s) :
+    rfPos (r + s) := by
+  induction r using RatFunc.induction_on with
+  | f a b hb =>
+  induction s using RatFunc.induction_on with
+  | f c d hd =>
+  rw [rfPos_div hb] at hr
+  rw [rfPos_div hd] at hs
+  have hmap_b := (map_ne_zero_iff _ (RatFunc.algebraMap_injective F)).mpr hb
+  have hmap_d := (map_ne_zero_iff _ (RatFunc.algebraMap_injective F)).mpr hd
+  rw [div_add_div _ _ hmap_b hmap_d, ← map_mul, ← map_mul, ← map_add, ← map_mul]
+  rw [rfPos_div (mul_ne_zero hb hd), polyPos_iff_lt]
+  calc (0 : F[X])
+      < a * b * d ^ 2 + c * d * b ^ 2 :=
+        add_pos (mul_pos (polyPos_iff_lt.mp hr) (polyPos_iff_lt.mp (polyPos_sq hd)))
+                (mul_pos (polyPos_iff_lt.mp hs) (polyPos_iff_lt.mp (polyPos_sq hb)))
+    _ = (a * d + b * c) * (b * d) := by ring
+
+instance instLERatFunc : LE (RatFunc F) where
+  le r s := s = r ∨ rfPos (s - r)
+
+instance instLTRatFunc : LT (RatFunc F) where
+  lt r s := rfPos (s - r)
+
+omit [IsStrictOrderedRing F] in
+lemma rf_le_def {r s : RatFunc F} : r ≤ s ↔ s = r ∨ rfPos (s - r) := Iff.rfl
+omit [IsStrictOrderedRing F] in
+lemma rf_lt_def {r s : RatFunc F} : r < s ↔ rfPos (s - r) := Iff.rfl
+
+noncomputable instance instLinearOrderRatFunc : LinearOrder (RatFunc F) where
+  le := (· ≤ ·)
+  lt := (· < ·)
+  le_refl r := Or.inl rfl
+  le_antisymm r s hrs hsr := by
+    rcases hrs with rfl | hrs
+    · rfl
+    · rcases hsr with rfl | hsr
+      · rfl
+      · exact absurd (show rfPos (-(s - r)) by rwa [neg_sub]) (not_rfPos_neg hrs)
+  le_trans r s t hrs hst := by
+    rcases hrs with rfl | hrs
+    · exact hst
+    · rcases hst with rfl | hst
+      · exact Or.inr hrs
+      · exact Or.inr (by rw [show t - r = (t - s) + (s - r) from by ring]; exact rfPos_add hst hrs)
+  le_total r s := by
+    rcases rfPos_trichotomy (s - r) with h | h | h
+    · exact Or.inl (Or.inr h)
+    · exact Or.inl (Or.inl (sub_eq_zero.mp h))
+    · exact Or.inr (Or.inr (show rfPos (r - s) by rwa [neg_sub] at h))
+  lt_iff_le_not_ge r s := by
+    constructor
+    · intro h
+      refine ⟨Or.inr h, fun hsr => ?_⟩
+      rcases hsr with rfl | hsr
+      · have : (r - r).num * (r - r).denom ≠ 0 := h.1
+        simp at this
+      · exact not_rfPos_neg h (show rfPos (-(s - r)) by rwa [neg_sub])
+    · intro ⟨hle, hge⟩
+      rcases hle with rfl | h
+      · exact absurd (Or.inl rfl) hge
+      · exact h
+  toDecidableLE := fun r s => by
+    change Decidable (s = r ∨ rfPos (s - r))
+    haveI : DecidableEq (RatFunc F) := Classical.decEq _
+    haveI : Decidable (rfPos (s - r)) := Classical.dec _
+    exact instDecidableOr
+
+/-! ### ε in RatFunc F and 1/ε -/
+
+/-- ε as an element of `RatFunc F`. -/
+noncomputable def εR : RatFunc F := algebraMap F[X] (RatFunc F) X
+
+/-- 1/ε in `RatFunc F`. -/
+noncomputable def εR_inv : RatFunc F := εR⁻¹
+
+/-- The embedding of F into `RatFunc F` via `C : F → F[X] → RatFunc F`. -/
+noncomputable def ιR (a : F) : RatFunc F := algebraMap F[X] (RatFunc F) (C a)
+
+/-- 1/ε is greater than every element of F in the 0₊ order.
+    Proof: `1/X - C(a) = (1 - C(a)·X)/X`, so by `rfPos_div` we need
+    `polyPos ((1 - C a * X) * X)`, which holds since `trailingCoeff = 1 > 0`. -/
+lemma εR_inv_gt_ιR (a : F) : ιR a < εR_inv := by
+  rw [rf_lt_def]
+  show rfPos (εR_inv - ιR a)
+  have hX : (algebraMap F[X] (RatFunc F)) X ≠ 0 :=
+    (map_ne_zero_iff _ (RatFunc.algebraMap_injective F)).mpr X_ne_zero
+  have hform : εR_inv - ιR a =
+      algebraMap F[X] (RatFunc F) (1 - C a * X) / algebraMap F[X] (RatFunc F) X := by
+    simp only [εR_inv, εR, ιR]
+    rw [inv_eq_one_div,
+        show algebraMap F[X] (RatFunc F) (C a) = algebraMap F[X] (RatFunc F) (C a) / 1
+          from (div_one _).symm]
+    rw [div_sub_div _ _ hX one_ne_zero, mul_one, mul_one]
+    congr 1
+    rw [← map_mul, mul_comm,
+        show (1 : RatFunc F) = algebraMap F[X] (RatFunc F) 1 from (map_one _).symm,
+        ← map_sub]
+  rw [hform, rfPos_div X_ne_zero]
+  have h1 : (1 - C a * X : F[X]) ≠ 0 := by
+    intro h; have := congr_arg (fun p => p.coeff 0) h; simp at this
+  exact ⟨mul_ne_zero h1 X_ne_zero, by
+    rw [trailingCoeff, natTrailingDegree_mul h1 X_ne_zero,
+        natTrailingDegree_eq_zero_of_constantCoeff_ne_zero (by simp [constantCoeff_apply])]
+    simp [natTrailingDegree_X, coeff_sub, coeff_one, coeff_X]⟩
+
+/-- 1/ε is unbounded over F: for every positive a ∈ F, ι(a) < 1/ε in the 0₊ order. -/
+lemma εR_inv_unbounded {a : F} (_ha : 0 < a) : ιR a < εR_inv :=
+  εR_inv_gt_ιR a
+
 end Azurite.BPR.ZeroPlus
+
