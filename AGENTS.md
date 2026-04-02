@@ -89,3 +89,20 @@ When `rfl` fails on goals like `(f ∘ g) x = f (g x)`, or `map (f ∘ g) l = ma
 simp only [Function.comp_def]
 ```
 This beta-reduces `(f ∘ g)` to `fun x => f (g x)`.
+
+## Avoid `#check` and `#eval` in Committed Code
+`#check` and `#eval` produce info-level output that pollutes the build log. **Do not leave them in committed files.**
+
+- **For tests/assertions:** Use `#guard` (for decidable equalities) or `example` (for proofs).
+  ```lean
+  -- ✅ Silent
+  #guard rootBound p == 5
+  #guard toString poly == "x^2+1"
+  example : 0 ≤ |a| := abs_nonneg a
+
+  -- ❌ Noisy
+  #eval rootBound p          -- prints to build log
+  #check @abs_nonneg         -- prints type to build log
+  ```
+- **For documenting Mathlib API references:** Put the reference in a `/-! ... -/` doc block instead of a `#check`. The doc block is silent and more readable.
+- **During development:** `#check` and `#eval` are fine in scratch work and `lean_run_code` snippets. Just remove them before finalizing.
