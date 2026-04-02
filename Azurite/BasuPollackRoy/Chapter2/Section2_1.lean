@@ -5,6 +5,8 @@ import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.FieldTheory.Separable
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Perfect
+import Mathlib.Algebra.Order.Ring.Defs
+import Mathlib.Algebra.Order.Hom.Ring
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -335,5 +337,92 @@ is a perfect field.
 theorem exercise_2_1b (P : K[X]) :
     P.Separable ↔ Squarefree P :=
   PerfectField.separable_iff_squarefree
+
+/-!
+### Partially Ordered Sets
+
+**Definition (BPR p.34).** A **partially ordered set** (poset) is a set S
+equipped with a binary relation ≤ that is reflexive, antisymmetric, and
+transitive.
+
+In Mathlib this is the typeclass `PartialOrder`:
+
+```
+class PartialOrder (α : Type*) extends Preorder α where
+  le_antisymm : ∀ a b, a ≤ b → b ≤ a → a = b
+```
+
+See: `Mathlib.Order.Basic`
+
+**Example (BPR p.34).** If A is a set, then 2^A = {B | B ⊆ A} is a poset
+under the inclusion relation. In Mathlib, `Set α` already carries a
+`PartialOrder` instance where `≤` is definitionally `⊆`.
+-/
+
+-- PartialOrder: reflexive, antisymmetric, transitive
+#check @PartialOrder
+
+variable {α : Type*}
+
+-- Set α is already a PartialOrder
+#check (inferInstance : PartialOrder (Set α))
+
+/-- The powerset of A, ordered by inclusion, is a partial order.
+    This is automatic in Mathlib: `Set α` has a `PartialOrder` instance
+    where `≤` is `⊆`, so `Set.powerset A = {B | B ⊆ A}` inherits the order. -/
+example (A B : Set α) : A ≤ B ↔ A ⊆ B := Iff.rfl
+
+/-!
+### Totally Ordered Sets and Ordered Rings
+
+**Definition (BPR p.34).** A **totally ordered set** is a partially ordered set
+(A, ≤) where every two elements a, b ∈ A are comparable: a ≤ b or b ≤ a.
+In a totally ordered set, a < b stands for a ≤ b, a ≠ b, and a ≥ b (resp.
+a > b) for b ≤ a (resp. b < a).
+
+In Mathlib this is `LinearOrder` (see `Mathlib.Order.Defs.LinearOrder`).
+
+**Definition (BPR p.34).** An **ordered ring** (A, ≤) is a ring A together with
+a total order ≤ satisfying:
+- x ≤ y ⇒ x + z ≤ y + z
+- 0 ≤ x, 0 ≤ y ⇒ 0 ≤ xy
+
+In Mathlib: `[Ring A] [LinearOrder A] [IsStrictOrderedRing A]`.
+
+**Definition (BPR p.34).** An **ordered field** (F, ≤) is a field F which is an
+ordered ring.
+
+In Mathlib: `[Field F] [LinearOrder F] [IsStrictOrderedRing F]`.
+
+**Definition (BPR p.34).** An ordered ring (A, ≤) is **contained in** an
+ordered field (F, ≤) if A ⊂ F and the inclusion is order preserving.
+
+In Mathlib this is modeled by `OrderRingHom` (notation `A →+*o F`),
+an order-preserving ring homomorphism (see `Mathlib.Algebra.Order.Hom.Ring`).
+-/
+
+-- Totally ordered set = LinearOrder
+#check @LinearOrder
+
+section OrderedStructures
+variable (A : Type*) [Ring A] [LinearOrder A] [IsStrictOrderedRing A]
+
+-- BPR axiom: x ≤ y ⇒ x + z ≤ y + z
+#check @add_le_add_right A _ _ _
+
+-- BPR axiom: 0 ≤ x, 0 ≤ y ⇒ 0 ≤ xy
+example (x y : A) (hx : 0 ≤ x) (hy : 0 ≤ y) : 0 ≤ x * y := mul_nonneg hx hy
+
+-- Ordered field
+variable (F : Type*) [Field F] [inst : LinearOrder F] [IsStrictOrderedRing F]
+
+-- Order-preserving ring homomorphism: A →+*o F
+#check @OrderRingHom A F _ _ _ _
+
+/-- **BPR Proposition (p.34).** An ordered ring is necessarily an integral domain.
+    In Mathlib, `IsDomain` is automatically synthesized from `IsStrictOrderedRing`. -/
+example : IsDomain A := inferInstance
+
+end OrderedStructures
 
 end Azurite.BPR
