@@ -150,6 +150,7 @@ import Azurite.AzVector.Equiv.Zero
 import Azurite.AzVector.Operations
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
+import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzPolynomialKaratsuba

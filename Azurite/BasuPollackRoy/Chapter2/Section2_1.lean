@@ -580,4 +580,54 @@ theorem prop_2_4 (P : F[X]) (hP : P ≠ 0) (x : F)
 
 end Prop_2_4
 
+/-!
+### Infinitesimal and Unbounded Elements
+
+**Definition (BPR p.35).** Let F ⊂ F′ be two ordered fields (with `Algebra F F'`
+providing the canonical embedding `algebraMap F F'`).
+
+- The element x ∈ F′ is *infinitesimal over F* if its absolute value is
+  positive and smaller than any positive element of F.
+- The element x ∈ F′ is *unbounded over F* if its absolute value is
+  greater than any positive element of F.
+
+Mathlib has specific versions of these for the hyperreals (`Hyperreal.Infinitesimal`
+and `Hyperreal.Infinite` in `Mathlib.Analysis.Real.Hyperreal`). The definitions
+below generalize to any ordered field extension.
+-/
+
+section InfinitesimalUnbounded
+
+variable (F : Type*) [Field F] [LinearOrder F] [IsStrictOrderedRing F]
+variable {F' : Type*} [Field F'] [LinearOrder F'] [IsStrictOrderedRing F']
+variable [Algebra F F']
+
+/-- **BPR Definition (Infinitesimal).** An element x ∈ F′ is *infinitesimal
+    over F* if x ≠ 0 and |x| < ι(a) for every positive a ∈ F,
+    where ι = algebraMap F F′. -/
+def IsInfinitesimalOver (x : F') : Prop :=
+  x ≠ 0 ∧ ∀ a : F, 0 < a → |x| < algebraMap F F' a
+
+/-- **BPR Definition (Unbounded).** An element x ∈ F′ is *unbounded
+    over F* if ι(a) < |x| for every positive a ∈ F,
+    where ι = algebraMap F F′. -/
+def IsUnboundedOver (x : F') : Prop :=
+  ∀ a : F, 0 < a → algebraMap F F' a < |x|
+
+end InfinitesimalUnbounded
+
+/-!
+### Notation 2.5: The 0₊ Order
+
+The 0₊ order on F(ε) is constructed in
+`Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus`, which provides:
+
+* A `LinearOrder` on `F[X]` where P > 0 iff the trailing coefficient
+  (lowest nonzero term) is positive.
+* An `IsStrictOrderedRing` instance making `F[X]` an ordered ring.
+* Notation `ε` for the indeterminate `X`.
+* A proof that `ε` is infinitesimal over `F` (i.e., `0 < ε < C a`
+  for every positive `a ∈ F`).
+-/
+
 end Azurite.BPR
