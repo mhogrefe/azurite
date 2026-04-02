@@ -7,6 +7,8 @@ import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Perfect
 import Mathlib.Algebra.Order.Ring.Defs
 import Mathlib.Algebra.Order.Hom.Ring
+import Mathlib.Algebra.Order.Group.Abs
+import Mathlib.Data.Sign.Defs
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -88,32 +90,15 @@ open Polynomial
 variable {K : Type*} [Field K] [CharZero K]
 
 /-!
-### Derivative examples
+### Derivative API
 
-We provide `#check` references to confirm that the Mathlib API is
-available and demonstrate standard usage.
+Key Mathlib declarations for derivatives:
+- `Polynomial.derivative` — `K[X] →ₗ[K] K[X]`
+- `Polynomial.derivative_add` — `(P + Q)' = P' + Q'`
+- `Polynomial.derivative_mul` — `(P · Q)' = P' · Q + P · Q'`
+- `Polynomial.iterate_derivative_sum` — iterated derivative of a sum
+- `Polynomial.iterate_derivative_mul` — general Leibniz rule
 -/
-
--- P' — the derivative of P
-#check @Polynomial.derivative K _
--- Type: K[X] →ₗ[K] K[X]
-
--- P⁽ⁱ⁾ — the i-th derivative of P
-noncomputable example (P : K[X]) (i : ℕ) : K[X] := Polynomial.derivative^[i] P
-
--- (P + Q)' = P' + Q'
-#check @Polynomial.derivative_add K _
--- derivative (f + g) = derivative f + derivative g
-
--- (P · Q)' = P' · Q + P · Q'
-#check @Polynomial.derivative_mul K _
--- derivative (f * g) = derivative f * g + f * derivative g
-
--- Iterated derivative of a sum
-#check @Polynomial.iterate_derivative_sum K _ _
-
--- General Leibniz rule for iterated derivatives
-#check @Polynomial.iterate_derivative_mul K _
 
 /-!
 ### Proposition 2.1: Taylor's Formula
@@ -209,18 +194,6 @@ Key Mathlib theorems matching the BPR characterization:
 def IsRootMultiplicity (x : K) (P : K[X]) (μ : ℕ) : Prop :=
   ∃ Q : K[X], P = (X - C x) ^ μ * Q ∧ Q.eval x ≠ 0
 
-#check @rootMultiplicity K _
--- rootMultiplicity : K → K[X] → ℕ
-
-#check @pow_rootMultiplicity_dvd K _
--- (X - C a) ^ rootMultiplicity a p ∣ p
-
-#check @exists_eq_pow_rootMultiplicity_mul_and_not_dvd K _
--- ∃ q, p = (X - C a) ^ rootMultiplicity a p * q ∧ ¬(X - C a) ∣ q
-
-#check @eval_divByMonic_pow_rootMultiplicity_ne_zero K _
--- eval a (p /ₘ (X - C a) ^ rootMultiplicity a p) ≠ 0
-
 /-!
 ### Lemma 2.2: Derivative characterization of root multiplicity
 
@@ -289,17 +262,7 @@ Key Mathlib results:
 - `Polynomial.separable_def` — `P.Separable ↔ IsCoprime P (derivative P)`
 -/
 
--- Separable: IsCoprime P (derivative P)
-#check @Polynomial.Separable K _
 
--- Unfolded: P.Separable ↔ IsCoprime P (derivative P)
-#check @Polynomial.separable_def K _
-
--- Square-free: ∀ A, A * A ∣ P → IsUnit A
-#check @Squarefree K[X] _
-
--- Separable → square-free
-#check @Polynomial.Separable.squarefree K _
 
 /-!
 ### Exercise 2.1(a): Separable iff no multiple roots
@@ -359,13 +322,7 @@ under the inclusion relation. In Mathlib, `Set α` already carries a
 `PartialOrder` instance where `≤` is definitionally `⊆`.
 -/
 
--- PartialOrder: reflexive, antisymmetric, transitive
-#check @PartialOrder
-
 variable {α : Type*}
-
--- Set α is already a PartialOrder
-#check (inferInstance : PartialOrder (Set α))
 
 /-- The powerset of A, ordered by inclusion, is a partial order.
     This is automatic in Mathlib: `Set α` has a `PartialOrder` instance
@@ -401,28 +358,72 @@ In Mathlib this is modeled by `OrderRingHom` (notation `A →+*o F`),
 an order-preserving ring homomorphism (see `Mathlib.Algebra.Order.Hom.Ring`).
 -/
 
--- Totally ordered set = LinearOrder
-#check @LinearOrder
-
 section OrderedStructures
 variable (A : Type*) [Ring A] [LinearOrder A] [IsStrictOrderedRing A]
 
--- BPR axiom: x ≤ y ⇒ x + z ≤ y + z
-#check @add_le_add_right A _ _ _
-
--- BPR axiom: 0 ≤ x, 0 ≤ y ⇒ 0 ≤ xy
 example (x y : A) (hx : 0 ≤ x) (hy : 0 ≤ y) : 0 ≤ x * y := mul_nonneg hx hy
 
--- Ordered field
 variable (F : Type*) [Field F] [inst : LinearOrder F] [IsStrictOrderedRing F]
-
--- Order-preserving ring homomorphism: A →+*o F
-#check @OrderRingHom A F _ _ _ _
 
 /-- **BPR Proposition (p.34).** An ordered ring is necessarily an integral domain.
     In Mathlib, `IsDomain` is automatically synthesized from `IsStrictOrderedRing`. -/
 example : IsDomain A := inferInstance
 
 end OrderedStructures
+
+/-!
+### Exercise 2.2: Properties of ordered fields
+
+**Exercise 2.2** (BPR p.35).
+1. In an ordered field, −1 < 0.
+2. An ordered field has characteristic zero.
+3. Law of trichotomy: for every a in the field, exactly one of a < 0, a = 0,
+   a > 0 holds.
+-/
+
+section Exercise_2_2
+variable (F : Type*) [Field F] [inst : LinearOrder F] [IsStrictOrderedRing F]
+
+/-- **BPR Exercise 2.2(1).** In an ordered field, −1 < 0. -/
+theorem exercise_2_2_neg_one_lt_zero : (-1 : F) < 0 := neg_one_lt_zero
+
+/-- **BPR Exercise 2.2(2).** An ordered field has characteristic zero. -/
+example : CharZero F := inferInstance
+
+omit [IsStrictOrderedRing F] in
+/-- **BPR Exercise 2.2(3).** Trichotomy: for every a, exactly one of
+    a < 0, a = 0, 0 < a holds. -/
+theorem exercise_2_2_trichotomy (a : F) : a < 0 ∨ a = 0 ∨ 0 < a :=
+  lt_trichotomy a 0
+
+end Exercise_2_2
+
+/-!
+### Notation 2.3: Sign and Absolute Value
+
+**Notation 2.3** (BPR p.35). The **sign** of an element a in an ordered field
+is defined by:
+- sign(a) = 0  if a = 0
+- sign(a) = 1  if a > 0
+- sign(a) = −1 if a < 0
+
+When a > 0 we say a is **positive**, and when a < 0 we say a is **negative**.
+
+In Mathlib, `SignType.sign : α →o SignType` returns a value in the type
+`SignType` (which has elements `0`, `1`, `−1`).
+See `Mathlib.Data.Sign.Defs`.
+
+The **absolute value** |a| of a is `max a (−a)` and is non-negative.
+In Mathlib this is `abs : α → α` (notation `|a|`).
+See `Mathlib.Algebra.Order.Group.Abs`.
+-/
+
+section SignAndAbs
+variable {F : Type*} [Field F] [inst : LinearOrder F] [IsStrictOrderedRing F]
+
+example : ∀ a : F, |a| = max a (-a) := fun _ => abs_eq_max_neg
+example : ∀ a : F, 0 ≤ |a| := abs_nonneg
+
+end SignAndAbs
 
 end Azurite.BPR

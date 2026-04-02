@@ -124,28 +124,24 @@ def rootBoundRat (p : AzPolynomial ℚ) : ℚ :=
 -- ── Tests ──────────────────────────────────────────────────────────────────
 
 -- x^2 - 4 : roots are ±2, bound should be 1 + |(-4)/1| = 5
-#eval rootBoundInt (parseAzPolynomial (R := ℤ) "x^2-4").get!  -- expect 5
 #guard rootBoundInt (parseAzPolynomial (R := ℤ) "x^2-4").get! == 5
 
 -- x^2 + 1 : no real roots, but bound is still 1 + |1/1| = 2
-#eval rootBoundInt (parseAzPolynomial (R := ℤ) "x^2+1").get!  -- expect 2
 #guard rootBoundInt (parseAzPolynomial (R := ℤ) "x^2+1").get! == 2
 
 -- 2x^3 - 3x + 1 : roots are 1, 1/2, -1; bound = 1 + max(|1/2|, |3/2|, |0|) = 5/2
-#eval rootBoundInt (parseAzPolynomial (R := ℤ) "2*x^3-3*x+1").get!  -- expect 5/2
+#guard rootBoundInt (parseAzPolynomial (R := ℤ) "2*x^3-3*x+1").get! == 5/2
 
 -- 3 (constant polynomial) : no roots, bound = 0
-#eval rootBoundInt (parseAzPolynomial (R := ℤ) "3").get!  -- expect 0
 #guard rootBoundInt (parseAzPolynomial (R := ℤ) "3").get! == 0
 
 -- 0 (zero polynomial) : bound = 0
 #guard rootBoundInt (0 : AzPolynomial ℤ) == 0
 
 -- x - 5 : root is 5, bound = 1 + |(-5)/1| = 6
-#eval rootBoundInt (parseAzPolynomial (R := ℤ) "x-5").get!  -- expect 6
 #guard rootBoundInt (parseAzPolynomial (R := ℤ) "x-5").get! == 6
 
 -- rootInterval test: x^2 - 4 should give (-5, 5)
-#eval rootInterval (Int.castRingHom ℚ) (parseAzPolynomial (R := ℤ) "x^2-4").get!
+#guard rootInterval (Int.castRingHom ℚ) (parseAzPolynomial (R := ℤ) "x^2-4").get! == (-5, 5)
 
 end Azurite.AzPolynomial
