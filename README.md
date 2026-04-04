@@ -10,6 +10,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 
 | Module | Description |
 |--------|-------------|
+| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. |
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), root bounds, parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation, exact division, monomial exponentiation, rename, map, and merge-sorted operations. |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
@@ -20,6 +21,12 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 ### Equivalence Proofs (`Equiv/` subdirectories)
 
 Each core data structure has an `Equiv/` subdirectory containing proofs that Azurite's computable operations agree with Mathlib's abstract definitions.
+
+#### AzNat ↔ Nat
+
+| File | What it proves |
+|------|---------------|
+| `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
 
 #### AzPolynomial ↔ Polynomial R
 
@@ -198,6 +205,8 @@ Examples.lean         -- Usage examples
 lakefile.lean         -- Lake build configuration
 Azurite/
   Algorithm/            -- Generic algorithms (e.g., fast exponentiation)
+  AzNat/              -- Computable multi-limb natural numbers
+    Equiv/            -- Equivalence proofs with Nat
   AzPolynomial/       -- Univariate polynomials
     Equiv/            -- Equivalence proofs with Polynomial R
   AzMvPolynomial/     -- Multivariate polynomials
