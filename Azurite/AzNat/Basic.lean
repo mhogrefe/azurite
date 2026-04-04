@@ -13,4 +13,16 @@ instance : One AzNat := ⟨1⟩
 
 instance : Inhabited AzNat := ⟨0⟩
 
+/-- Extremely fast `O(1)` equality check against a UInt64 without requiring allocations. -/
+def AzNat.beqUInt64 (a : AzNat) (u : UInt64) : Bool :=
+  match a.limbs.size with
+  | 0 => u == 0
+  | 1 => a.limbs.back? == some u
+  | _ => false
+
+/-- Extremely fast `O(1)` equality check against an Int64. -/
+def AzNat.beqInt64 (a : AzNat) (i : Int64) : Bool :=
+  if i < 0 then false
+  else a.beqUInt64 i.toUInt64
+
 end Azurite

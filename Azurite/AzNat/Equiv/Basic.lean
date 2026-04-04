@@ -227,4 +227,68 @@ def equivNat : AzNat ≃ Nat where
   apply toNat_injective
   rw [toNat_ofNat, toNat_one]
 
+@[simp] lemma beqUInt64_eq (a : AzNat) (u : UInt64) :
+  a.beqUInt64 u = true ↔ a.toNat = u.toNat := by
+  rcases a with ⟨⟨l⟩, hl⟩
+  have h_size : ({ toList := l } : Array UInt64).size = l.length := rfl
+  unfold beqUInt64 toNat
+  rw [h_size]
+  cases l
+  · unfold toNatLimbsList
+    simp
+    constructor
+    · intro h; rw [h]; rfl
+    · intro h; have h2 : u.toBitVec = (0 : UInt64).toBitVec := BitVec.eq_of_toNat_eq h.symm
+      cases u; simp at h2; subst h2; rfl
+  · rename_i x ys
+    cases ys
+    · have h_back : ({ toList := [x] } : Array UInt64).back? = some x := rfl
+      rw [h_back]
+      unfold toNatLimbsList
+      simp
+      constructor
+      · intro h; rw [h]
+      · intro h; have h2 : x.toBitVec = u.toBitVec := BitVec.eq_of_toNat_eq h
+        cases x; cases u; simp at h2; subst h2; rfl
+    · rename_i y ys
+      have hl_y : (y :: ys).getLast? ≠ some 0 := by
+        have hh : ({ toList := x :: y :: ys } : Array UInt64).back? = (x :: y :: ys).getLast? :=
+          List.back?_toArray (x :: y :: ys)
+        rw [hh] at hl
+        have hh2 : (x :: y :: ys).getLast? = (y :: ys).getLast? := rfl
+        rw [← hh2]
+        exact hl
+      simp
+      intro hc
+      have h_u : u.toNat < 2^64 := UInt64.toNat_lt u
+      have h_toNat_y_ys : toNatLimbsList (y :: ys) ≠ 0 := by
+        intro h_zero
+        have h_nil := toNatLimbsList_eq_zero_of_getLast_ne_zero (y :: ys) hl_y h_zero
+        contradiction
+      have h_toNat_y_ys_pos : toNatLimbsList (y :: ys) > 0 := Nat.pos_of_ne_zero h_toNat_y_ys
+      change toNatLimbsList (y :: ys) * 2^64 + x.toNat = u.toNat at hc
+      have h_x_nonneg : x.toNat ≥ 0 := Nat.zero_le _
+      omega
+
+@[simp] lemma beqInt64_eq (a : AzNat) (i : Int64) :
+  a.beqInt64 i = true ↔ (a.toNat : Int) = i.toInt := by
+  unfold beqInt64
+  split_ifs with h
+  · simp
+    intro hc
+    have h1 : i.toInt < 0 := of_decide_eq_true h
+    have h2 : (a.toNat : Int) ≥ 0 := Int.natCast_nonneg a.toNat
+    omega
+  · simp
+    have hl : (i.toUInt64.toNat : Int) = i.toInt := by
+      change (i.toBitVec.toNat : Int) = i.toBitVec.toInt
+      have hc_false : ¬(i.toBitVec.toInt < 0) := fun hh => h (decide_eq_true hh)
+      unfold BitVec.toInt
+      unfold BitVec.toInt at hc_false
+      split_ifs with h_msb
+      · rfl
+      · have h_lt_2_64 : i.toBitVec.toNat < 2^64 := BitVec.isLt i.toBitVec
+        omega
+    omega
+
 end Azurite.AzNat
