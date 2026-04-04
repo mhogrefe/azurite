@@ -215,4 +215,16 @@ def equivNat : AzNat ≃ Nat where
   left_inv := ofNat_toNat
   right_inv := toNat_ofNat
 
+@[simp] lemma toNat_zero : toNat (0 : AzNat) = 0 := rfl
+
+@[simp] lemma ofNat_zero : ofNat (0 : Nat) = 0 := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_zero]
+
+@[simp] lemma toNat_one : toNat (1 : AzNat) = 1 := rfl
+
+@[simp] lemma ofNat_one : ofNat (1 : Nat) = 1 := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_one]
+
 end Azurite.AzNat
