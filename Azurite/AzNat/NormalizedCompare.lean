@@ -5,7 +5,7 @@ import Mathlib.Order.Compare
 import Mathlib.Data.Rat.Defs
 import Mathlib.Algebra.Order.Field.Rat
 
-namespace Azurite.Nat
+namespace Azurite.AzNat
 
 /-- For positive `n`, `Nat.size n = Nat.log2 n + 1`. -/
 lemma size_eq_log2_succ (n : ℕ) (hn : n > 0) : Nat.size n = Nat.log2 n + 1 := by
@@ -241,4 +241,4 @@ lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
       rw [Nat.mul_assoc, ← Nat.pow_add, h_add]
     rw [h_mul]
 
-end Azurite.Nat
+end Azurite.AzNat

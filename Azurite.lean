@@ -84,6 +84,9 @@ import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
+import Azurite.AzNat.Basic
+import Azurite.AzNat.Equiv.Basic
+import Azurite.AzNat.NormalizedCompare
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
@@ -158,7 +161,6 @@ import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.Main
 import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.Timer
-import Azurite.Nat.Compare
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
