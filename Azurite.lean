@@ -85,7 +85,9 @@ import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
 import Azurite.AzNat.Basic
+import Azurite.AzNat.Conversion
 import Azurite.AzNat.Equiv.Basic
+import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.Parse
 import Azurite.AzNat.ToString
