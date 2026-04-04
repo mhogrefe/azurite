@@ -1,25 +1,13 @@
 import Azurite.AzPolynomial.Basic
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.ZMod.Basic
+import Azurite.AzNat.Parse
 
 namespace Azurite.AzPolynomial
 
 /-- A typeclass for types whose elements can be parsed from a monomial string coefficient. -/
 class AzPolynomialParsable (R : Type _) where
   parse : List Char → Option R
-
-def parseNatCharsAux (cs : List Char) (acc : ℕ) : Option ℕ :=
-  match cs with
-  | [] => some acc
-  | c :: cs =>
-    if c.isDigit then
-      parseNatCharsAux cs (acc * 10 + (c.toNat - '0'.toNat))
-    else none
-
-def parseNatChars (cs : List Char) : Option ℕ :=
-  match cs with
-  | [] => none
-  | _ => parseNatCharsAux cs 0
 
 def parseIntChars (cs : List Char) : Option ℤ :=
   match cs with

@@ -97,11 +97,11 @@ class ParsableVar (α : Type _) (n : outParam ℕ) [LinearOrder α] extends Var 
 
 /-- Convert a natural number to a list of Unicode subscript digit characters (₀₁₂...). -/
 def natToSubscriptChars (n : ℕ) : List Char :=
-  (AzPolynomial.natToChars n).map (fun c => Char.ofNat (c.toNat - '0'.toNat + '₀'.toNat))
+  (natToChars n).map (fun c => Char.ofNat (c.toNat - '0'.toNat + '₀'.toNat))
 
 /-- Parse a list of Unicode subscript digit characters to a natural number. -/
 def parseSubscriptChars (cs : List Char) : Option ℕ :=
-  AzPolynomial.parseNatChars (cs.map (fun c => Char.ofNat (c.toNat - '₀'.toNat + '0'.toNat)))
+  parseNatChars (cs.map (fun c => Char.ofNat (c.toNat - '₀'.toNat + '0'.toNat)))
 
 private theorem subscript_unsubscript_digit (c : Char)
     (hge : 48 ≤ c.toNat) (hle : c.toNat ≤ 57) :

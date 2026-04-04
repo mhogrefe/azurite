@@ -168,7 +168,7 @@ def toChars [pv : ParsableVar σ n] (m : MonicMonomial σ ord) : List Char :=
     else
       let varChars := pv.toChars (pv.ofFin i)
       if e = 1 then some varChars
-      else some (varChars ++ '^' :: AzPolynomial.natToChars e)
+      else some (varChars ++ '^' :: natToChars e)
   List.intercalate ['*'] parts
 
 instance [ParsableVar σ n] : ToString (MonicMonomial σ ord) where
@@ -187,7 +187,7 @@ def parseFactor [pv : ParsableVar σ n] (factor : List Char) (exps : Vector ℕ 
       | some v => let idx := pv.toFin v
         if exps.get idx ≠ 0 then none else some (exps.set idx.val 1 idx.isLt)
       | none => none
-    | [vp, ep] => match AzPolynomial.parseNatChars ep with
+    | [vp, ep] => match parseNatChars ep with
       | some e => if e = 0 then none else match pv.parseChars vp with
         | some v => let idx := pv.toFin v
           if exps.get idx ≠ 0 then none else some (exps.set idx.val e idx.isLt)
