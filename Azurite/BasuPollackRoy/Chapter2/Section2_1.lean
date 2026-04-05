@@ -1380,4 +1380,45 @@ theorem IsRealClosedField.nonneg_iff_isSquare [IsRealClosed R] {x : R} :
 
 end RealClosedField
 
+/-!
+### Uniqueness of the ordering on a real closed field
+-/
+
+section UniqueOrder
+
+/-- In a real closed field with a given compatible ordering, `a ≤ b` iff `b - a` is a square.
+    This is the key lemma: since `IsSquare` is order-independent, any two orderings
+    satisfying this must agree. -/
+private lemma isRealClosed_characterize_le
+    {R : Type*} [Field R] [IsRealClosed R]
+    (lo : LinearOrder R) (hlo : @IsStrictOrderedRing R _ lo.toPartialOrder)
+    {a b : R} :
+    @LE.le R lo.toLE a b ↔ IsSquare (b - a) := by
+  letI : LinearOrder R := lo
+  letI : IsStrictOrderedRing R := hlo
+  exact sub_nonneg.symm.trans IsRealClosed.nonneg_iff_isSquare
+
+/-- **Uniqueness of the order on a real closed field.**
+
+Any two linear orderings making `R` into a strictly ordered ring must agree on every
+comparison `a ≤ b`.
+
+**Proof.** In any ordered field, `a ≤ b ↔ 0 ≤ b - a`, and in a real closed field
+`0 ≤ x ↔ IsSquare x`. Since `IsSquare` is purely algebraic (independent of the ordering),
+both orderings satisfy `a ≤ b ↔ IsSquare (b - a)` and must agree.
+
+Equivalently: the positive cone of any compatible ordering necessarily contains `R^{(2)}`
+(squares are always nonneg in an ordered ring); the real closed condition forces the positive
+cone to be *exactly* `R^{(2)}`, leaving no room for a second ordering. -/
+theorem isRealClosed_le_unique
+    {R : Type*} [Field R] [IsRealClosed R]
+    (lo₁ lo₂ : LinearOrder R)
+    (h₁ : @IsStrictOrderedRing R _ lo₁.toPartialOrder)
+    (h₂ : @IsStrictOrderedRing R _ lo₂.toPartialOrder)
+    {a b : R} :
+    @LE.le R lo₁.toLE a b ↔ @LE.le R lo₂.toLE a b :=
+  (isRealClosed_characterize_le lo₁ h₁).trans (isRealClosed_characterize_le lo₂ h₂).symm
+
+end UniqueOrder
+
 end Azurite.BPR
