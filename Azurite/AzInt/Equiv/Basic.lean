@@ -58,6 +58,28 @@ lemma ofInt_toInt (z : AzInt) : ofInt z.toInt = z := by
       rw [hz]
       exact ⟨h_sign.symm, Azurite.AzNat.ofNat_toNat abs⟩
 
+@[simp] lemma toInt_zero : (0 : AzInt).toInt = 0 := by
+  change (if (0 : AzInt).sign then _ else _) = 0
+  have hs : (0 : AzInt).sign = true := rfl
+  rw [if_pos hs]
+  change ↑(0 : AzNat).toNat = (0 : Int)
+  rfl
+
+@[simp] lemma toInt_one : (1 : AzInt).toInt = 1 := by
+  change (if (1 : AzInt).sign then _ else _) = 1
+  have hs : (1 : AzInt).sign = true := rfl
+  rw [if_pos hs]
+  change ↑(1 : AzNat).toNat = (1 : Int)
+  rfl
+
+@[simp] lemma ofInt_zero : ofInt 0 = 0 := by
+  have hz : (0 : AzInt).toInt = 0 := toInt_zero
+  rw [← hz, ofInt_toInt]
+
+@[simp] lemma ofInt_one : ofInt 1 = 1 := by
+  have h1 : (1 : AzInt).toInt = 1 := toInt_one
+  rw [← h1, ofInt_toInt]
+
 /-- The mathematical equivalence between `AzInt` and the standard Lean 4 `Int`. -/
 def equivInt : AzInt ≃ Int where
   toFun := toInt
