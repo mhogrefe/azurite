@@ -400,6 +400,8 @@ theorem compare_ofNat_eq_compare (a b : Nat) : compare (ofNat a) (ofNat b) = Ord
   rw [compare_eq_compare_toNat]
   rw [toNat_ofNat, toNat_ofNat]
 
+
+
 lemma le_iff_toNat_le (a b : AzNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by
   change compare a b ≠ Ordering.gt ↔ a.toNat ≤ b.toNat
   rw [compare_eq_compare_toNat]
@@ -467,5 +469,10 @@ instance : LinearOrder AzNat where
   max_def := fun _ _ => rfl
   compare := compare
   compare_eq_compareOfLessAndEq := compare_eq_compareOfLessAndEq
+
+instance : WellFoundedLT AzNat where
+  wf := by
+    have h : WellFounded (InvImage (· < ·) toNat) := InvImage.wf toNat wellFounded_lt
+    exact Subrelation.wf (fun {a b : AzNat} (hlt : a < b) => (lt_iff_toNat_lt a b).mp hlt) h
 
 end Azurite.AzNat
