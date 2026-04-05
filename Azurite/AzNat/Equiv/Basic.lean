@@ -273,22 +273,39 @@ def equivNat : AzNat ≃ Nat where
 @[simp] lemma beqInt64_eq (a : AzNat) (i : Int64) :
   a.beqInt64 i = true ↔ (a.toNat : Int) = i.toInt := by
   unfold beqInt64
-  split_ifs with h
-  · simp
-    intro hc
-    have h1 : i.toInt < 0 := of_decide_eq_true h
-    have h2 : (a.toNat : Int) ≥ 0 := Int.natCast_nonneg a.toNat
-    omega
-  · simp
-    have hl : (i.toUInt64.toNat : Int) = i.toInt := by
-      change (i.toBitVec.toNat : Int) = i.toBitVec.toInt
-      have hc_false : ¬(i.toBitVec.toInt < 0) := fun hh => h (decide_eq_true hh)
-      unfold BitVec.toInt
-      unfold BitVec.toInt at hc_false
-      split_ifs with h_msb
-      · rfl
-      · have h_lt_2_64 : i.toBitVec.toNat < 2^64 := BitVec.isLt i.toBitVec
-        omega
-    omega
+  simp only [Bool.and_eq_true, beqUInt64_eq]
+  constructor
+  · rintro ⟨h1, h2⟩
+    change decide (decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) = true at h1
+    have h1_cast : decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true := of_decide_eq_true h1
+    have h0 : (0 : Int64).toBitVec.toInt = 0 := rfl
+    rw [h0] at h1_cast
+    have hh_nonneg : 0 ≤ i.toBitVec.toInt := of_decide_eq_true h1_cast
+    have h_toInt : i.toInt = i.toBitVec.toInt := rfl
+    have h_toNat : (i.toUInt64.toNat : Int) = i.toBitVec.toNat := rfl
+    unfold Int64.toInt BitVec.toInt at *
+    split_ifs at hh_nonneg
+    · omega
+    · omega
+  · intro h_eq
+    have h_toInt : i.toInt = i.toBitVec.toInt := rfl
+    have h_toNat : (i.toUInt64.toNat : Int) = i.toBitVec.toNat := rfl
+    have hh_nonneg : 0 ≤ i.toBitVec.toInt := by
+      rw [← h_toInt, ← h_eq]
+      exact Int.natCast_nonneg a.toNat
+    have h1_cast : decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true := by
+      have h0 : (0 : Int64).toBitVec.toInt = 0 := rfl
+      rw [h0]
+      exact decide_eq_true hh_nonneg
+    have h1_final : decide (decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) = true :=
+      decide_eq_true h1_cast
+    have h1 : decide (i ≥ 0) = true := by
+      change decide (decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) = true
+      exact h1_final
+    refine ⟨h1, ?_⟩
+    unfold Int64.toInt BitVec.toInt at *
+    split_ifs at hh_nonneg
+    · omega
+    · omega
 
 end Azurite.AzNat

@@ -22,7 +22,6 @@ def AzNat.beqUInt64 (a : AzNat) (u : UInt64) : Bool :=
 
 /-- Extremely fast `O(1)` equality check against an Int64. -/
 def AzNat.beqInt64 (a : AzNat) (i : Int64) : Bool :=
-  if i < 0 then false
-  else a.beqUInt64 i.toUInt64
+  (i ≥ 0) && a.beqUInt64 i.toUInt64
 
 end Azurite

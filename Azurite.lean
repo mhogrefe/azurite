@@ -12,6 +12,8 @@ import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
 import Azurite.AzInt.Basic
+import Azurite.AzInt.Equiv.Basic
+import Azurite.AzInt.ToString
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
