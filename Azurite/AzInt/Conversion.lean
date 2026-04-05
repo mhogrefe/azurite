@@ -42,7 +42,12 @@ def Int16.toAzInt (i : Int16) : Azurite.AzInt := i.toInt64.toAzInt
 def Int8.toAzInt (i : Int8) : Azurite.AzInt := i.toInt64.toAzInt
 def ISize.toAzInt (i : ISize) : Azurite.AzInt := i.toInt64.toAzInt
 
+def Azurite.AzNat.toAzInt (n : Azurite.AzNat) : Azurite.AzInt := ⟨true, n, fun _ => rfl⟩
+
 namespace Azurite.AzInt
+
+def natAbs (z : AzInt) : Azurite.AzNat := z.abs
+
 
 def toUInt64 (z : AzInt) : UInt64 :=
   if z.sign then z.abs.toUInt64 else -(z.abs.toUInt64)

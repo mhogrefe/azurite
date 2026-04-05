@@ -87,4 +87,107 @@ def equivInt : AzInt ≃ Int where
   left_inv := ofInt_toInt
   right_inv := toInt_ofInt
 
+lemma Int64.toInt_of_nonneg {i : Int64} (hi : i ≥ 0) : i.toInt = (i.toBitVec.toNat : Int) := by
+  revert hi
+  change (decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) → i.toInt = (i.toBitVec.toNat : Int)
+  intro he
+  have he2 := of_decide_eq_true he
+  have h0 : (0 : Int64).toBitVec.toInt = 0 := rfl
+  rw [h0] at he2
+  have hd : i.toInt = i.toBitVec.toInt := rfl
+  rw [hd]
+  unfold BitVec.toInt at *
+  split_ifs at he2 ⊢
+  · rfl
+  · omega
+
+lemma Int64.toInt_of_neg {i : Int64} (hi : ¬i ≥ 0) : i.toInt = (i.toBitVec.toNat : Int) - 2^64 := by
+  revert hi
+  change ¬(decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) → i.toInt = (i.toBitVec.toNat : Int) - 2^64
+  intro he
+  have h_dec : decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = false := Bool.eq_false_of_not_eq_true he
+  have he2 : ¬((0:Int64).toBitVec.toInt ≤ i.toBitVec.toInt) := of_decide_eq_false h_dec
+  have h0 : (0 : Int64).toBitVec.toInt = 0 := rfl
+  rw [h0] at he2
+  have hd : i.toInt = i.toBitVec.toInt := rfl
+  rw [hd]
+  unfold BitVec.toInt at *
+  split_ifs at he2 ⊢
+  · omega
+  · rfl
+
+@[simp] theorem beqUInt64_eq (z : Azurite.AzInt) (u : UInt64) : z.beqUInt64 u = true ↔ z.toInt = (u.toNat : Int) := by
+  unfold beqUInt64
+  dsimp [toInt]
+  split_ifs with h
+  · simp [h]
+  · rw [Bool.and_eq_true]
+    simp [h]
+    intro hc
+    have ht : (z.abs.toNat : Int) = -(u.toNat : Int) := by omega
+    have hz1 : z.abs.toNat = 0 := by omega
+    have hza : z.abs = 0 := Azurite.AzNat.toNat_injective (by rw [hz1, Azurite.AzNat.toNat_zero])
+    have hzs : z.sign = true := z.zero_sign hza
+    rw [hzs] at h
+    contradiction
+
+@[simp] theorem beqAzNat_eq (z : Azurite.AzInt) (a : Azurite.AzNat) : z.beqAzNat a = true ↔ z.toInt = (a.toNat : Int) := by
+  unfold beqAzNat
+  dsimp [toInt]
+  split_ifs with h
+  · rw [Bool.and_eq_true]
+    simp [h]
+    apply Iff.intro
+    · intro he
+      rw [he]
+    · intro ht
+      exact Azurite.AzNat.toNat_injective ht
+  · rw [Bool.and_eq_true]
+    simp [h]
+    intro hc
+    have ht : (z.abs.toNat : Int) = -(a.toNat : Int) := by omega
+    have hz1 : z.abs.toNat = 0 := by omega
+    have hza : z.abs = 0 := Azurite.AzNat.toNat_injective (by rw [hz1, Azurite.AzNat.toNat_zero])
+    have hzs : z.sign = true := z.zero_sign hza
+    rw [hzs] at h
+    contradiction
+
+@[simp] theorem beqInt64_eq (z : Azurite.AzInt) (i : Int64) : z.beqInt64 i = true ↔ z.toInt = i.toInt := by
+  unfold beqInt64
+  split_ifs with hi
+  · change z.beqUInt64 i.toUInt64 = true ↔ z.toInt = i.toInt
+    rw [beqUInt64_eq]
+    have ht : (i.toUInt64.toNat : Int) = i.toBitVec.toNat := rfl
+    rw [ht, Int64.toInt_of_nonneg hi]
+  · rw [Bool.and_eq_true]
+    dsimp [toInt]
+    have hi_neg : i.toInt = (i.toBitVec.toNat : Int) - 2^64 := Int64.toInt_of_neg hi
+    have h_iLt : i.toBitVec.toNat < 2^64 := i.toBitVec.isLt
+    split_ifs with hz
+    · simp [hz]
+      intro hc
+      omega
+    · simp [hz]
+      have ht_mod : (UInt64.size - i.toUInt64.toNat) % UInt64.size = (2^64 - i.toBitVec.toNat) % 2^64 := rfl
+      rw [ht_mod]
+      have hh_neg_int : ¬0 ≤ i.toBitVec.toInt := by
+        revert hi
+        change ¬(decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = true) → ¬(0 ≤ i.toBitVec.toInt)
+        intro he
+        have h_dec : decide ((0 : Int64).toBitVec.toInt ≤ i.toBitVec.toInt) = false := Bool.eq_false_of_not_eq_true he
+        have he2 := of_decide_eq_false h_dec
+        have h0 : (0 : Int64).toBitVec.toInt = 0 := rfl
+        rw [h0] at he2
+        exact he2
+      unfold BitVec.toInt at hh_neg_int
+      have h_pos : i.toBitVec.toNat > 0 := by
+        split_ifs at hh_neg_int
+        · omega
+        · omega
+      have h_mod : (2^64 - i.toBitVec.toNat) % 2^64 = 2^64 - i.toBitVec.toNat := by
+        apply Nat.mod_eq_of_lt
+        omega
+      rw [h_mod]
+      omega
+
 end Azurite.AzInt

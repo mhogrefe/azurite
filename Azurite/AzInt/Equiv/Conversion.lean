@@ -152,3 +152,23 @@ theorem ISize.ofInt_toInt_eq_toAzInt (i : ISize) : Azurite.AzInt.ofInt i.toInt =
     rw [h1]
   rw [ht, Azurite.AzInt.ofInt_toInt]
 
+theorem Azurite.AzNat.toInt_toAzInt (n : Azurite.AzNat) : n.toAzInt.toInt = (n.toNat : Int) := rfl
+
+theorem Azurite.AzInt.toNat_natAbs (z : Azurite.AzInt) : z.natAbs.toNat = z.toInt.natAbs := by
+  unfold Azurite.AzInt.natAbs
+  dsimp [Azurite.AzInt.toInt]
+  split_ifs with h
+  · rfl
+  · omega
+
+theorem Azurite.AzNat.ofInt_toNat_eq_toAzInt (n : Azurite.AzNat) : Azurite.AzInt.ofInt (n.toNat : Int) = n.toAzInt := by
+  have ht : Azurite.AzInt.ofInt (n.toNat : Int) = Azurite.AzInt.ofInt (n.toAzInt.toInt) := by
+    have h1 : n.toAzInt.toInt = (n.toNat : Int) := Azurite.AzNat.toInt_toAzInt n
+    rw [h1]
+  rw [ht, Azurite.AzInt.ofInt_toInt]
+
+theorem Azurite.AzInt.ofNat_natAbs_eq_natAbs (z : Azurite.AzInt) : Azurite.AzNat.ofNat z.toInt.natAbs = z.natAbs := by
+  have ht : Azurite.AzNat.ofNat z.toInt.natAbs = Azurite.AzNat.ofNat z.natAbs.toNat := by
+    have h1 : z.natAbs.toNat = z.toInt.natAbs := Azurite.AzInt.toNat_natAbs z
+    rw [h1]
+  rw [ht, Azurite.AzNat.ofNat_toNat]
