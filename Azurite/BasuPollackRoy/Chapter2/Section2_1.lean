@@ -1470,6 +1470,27 @@ theorem intCast_mem_realAlgebraicNumbers (n : ℤ) : (n : ℝ) ∈ realAlgebraic
 end RealAlgebraicNumbers
 
 /-!
+### Intermediate Value Property (BPR p.38)
+
+**Definition (BPR p.38).** A field `R` has the *intermediate value property* if `R` is an
+ordered field such that, for any `P ∈ R[X]`, if there exist `a, b ∈ R` with `a < b` and
+`P(a) · P(b) < 0`, then there exists `x ∈ (a, b)` such that `P(x) = 0`.
+-/
+
+section IntermediateValueProperty
+
+/-- **BPR Definition (p.38).** An ordered field `R` has the *intermediate value property*
+    if, for every polynomial `P ∈ R[X]` and every pair `a < b` with `P(a) · P(b) < 0`,
+    there exists `x ∈ (a, b)` such that `P(x) = 0`. -/
+def HasIntermediateValueProperty (R : Type*) [Field R] [LinearOrder R] [IsStrictOrderedRing R] :
+    Prop :=
+  ∀ (P : Polynomial R) (a b : R), a < b →
+    Polynomial.eval a P * Polynomial.eval b P < 0 →
+    ∃ x : R, a < x ∧ x < b ∧ Polynomial.eval x P = 0
+
+end IntermediateValueProperty
+
+/-!
 ### Symmetric Polynomials (BPR p.38)
 
 **Definition (BPR p.38).** Let `K` be a field. A polynomial `Q(X₁, …, Xₖ) ∈ K[X₁, …, Xₖ]`
