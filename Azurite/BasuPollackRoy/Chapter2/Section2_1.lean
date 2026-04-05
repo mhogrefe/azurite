@@ -25,6 +25,7 @@ import Mathlib.RingTheory.MvPolynomial.Symmetric.Defs
 import Mathlib.RingTheory.Polynomial.Vieta
 import Mathlib.Data.DFinsupp.WellFounded
 import Mathlib.Data.Finsupp.MonomialOrder.DegLex
+import Mathlib.RingTheory.MvPolynomial.Symmetric.FundamentalTheorem
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -1742,5 +1743,35 @@ theorem grlex_le_set_finite {k : ℕ} (α : Fin k →₀ ℕ) :
   · simp [heq]
 
 end GrlexProperties
+
+section Proposition_2_13
+
+variable {K : Type*} [CommRing K]
+
+open MvPolynomial in
+/-- **BPR Proposition 2.13** (Fundamental Theorem of Symmetric Polynomials).
+    Let `K` be a field. Every symmetric polynomial `Q(X₁,…,Xₖ) ∈ K[X₁,…,Xₖ]`
+    can be written as `R(E₁,…,Eₖ)` for some polynomial `R(T₁,…,Tₖ) ∈ K[T₁,…,Tₖ]`,
+    where `Eᵢ` is the `i`-th elementary symmetric function.
+
+    **Proof sketch (BPR):** The leading monomial of a symmetric polynomial `Q`
+    in the graded lexicographic ordering satisfies `α₁ ≥ α₂ ≥ ⋯ ≥ αₖ`.
+    Subtracting the matching product `c_α E₁^{α₁−α₂} ⋯ Eₖ^{αₖ}` yields a symmetric
+    polynomial `Q₁` with strictly smaller leading monomial. Iterating and using
+    well-foundedness of the grlex ordering (no infinite descending sequences) gives
+    the result.
+
+    In Mathlib this is `MvPolynomial.esymmAlgHom_surjective`, which states that the
+    `R`-algebra homomorphism sending `Tᵢ ↦ Eᵢ` is surjective onto the symmetric
+    subalgebra. -/
+theorem proposition_2_13 {k : ℕ} (Q : MvPolynomial (Fin k) K)
+    (hQ : Q.IsSymmetric) :
+    ∃ R : MvPolynomial (Fin k) K,
+      MvPolynomial.aeval (fun i : Fin k => MvPolynomial.esymm (Fin k) K (↑i + 1)) R = Q := by
+  have hsurj := MvPolynomial.esymmAlgHom_surjective K (show Fintype.card (Fin k) ≤ k by simp)
+  obtain ⟨R, hR⟩ := hsurj ⟨Q, hQ⟩
+  exact ⟨R, by rw [← MvPolynomial.esymmAlgHom_apply, hR]⟩
+
+end Proposition_2_13
 
 end Azurite.BPR
