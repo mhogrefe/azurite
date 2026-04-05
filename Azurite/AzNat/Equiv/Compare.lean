@@ -400,4 +400,72 @@ theorem compare_ofNat_eq_compare (a b : Nat) : compare (ofNat a) (ofNat b) = Ord
   rw [compare_eq_compare_toNat]
   rw [toNat_ofNat, toNat_ofNat]
 
+lemma le_iff_toNat_le (a b : AzNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by
+  change compare a b ≠ Ordering.gt ↔ a.toNat ≤ b.toNat
+  rw [compare_eq_compare_toNat]
+  exact compare_le_iff_le
+
+lemma lt_iff_toNat_lt (a b : AzNat) : a < b ↔ a.toNat < b.toNat := by
+  change compare a b = Ordering.lt ↔ a.toNat < b.toNat
+  rw [compare_eq_compare_toNat]
+  exact compare_lt_iff_lt
+
+lemma le_refl (a : AzNat) : a ≤ a := by
+  rw [le_iff_toNat_le]
+
+lemma le_trans (a b c : AzNat) (h1 : a ≤ b) (h2 : b ≤ c) : a ≤ c := by
+  rw [le_iff_toNat_le] at *
+  exact Nat.le_trans h1 h2
+
+lemma le_antisymm (a b : AzNat) (h1 : a ≤ b) (h2 : b ≤ a) : a = b := by
+  rw [le_iff_toNat_le] at *
+  exact toNat_injective (Nat.le_antisymm h1 h2)
+
+lemma le_total (a b : AzNat) : a ≤ b ∨ b ≤ a := by
+  rw [le_iff_toNat_le, le_iff_toNat_le]
+  exact Nat.le_total _ _
+
+lemma lt_iff_le_not_ge (a b : AzNat) : a < b ↔ a ≤ b ∧ ¬ b ≤ a := by
+  rw [lt_iff_toNat_lt, le_iff_toNat_le, le_iff_toNat_le]
+  have hz : a.toNat < b.toNat ↔ a.toNat ≤ b.toNat ∧ ¬b.toNat ≤ a.toNat := by omega
+  exact hz
+
+lemma compare_eq_compareOfLessAndEq (a b : AzNat) : compare a b = compareOfLessAndEq a b := by
+  dsimp [compareOfLessAndEq]
+  have hl1 : a < b ↔ compare a b = Ordering.lt := Iff.rfl
+  have h_eq : a = b ↔ compare a b = Ordering.eq := by
+    rw [compare_eq_compare_toNat]
+    have hc : a.toNat = b.toNat ↔ Ord.compare a.toNat b.toNat = Ordering.eq := Iff.symm compare_eq_iff_eq
+    rw [←hc]
+    exact ⟨fun h => by rw [h], toNat_injective⟩
+  rcases hc : compare a b with _ | _ | _
+  · have h_lt : a < b := by rw [hl1]; exact hc
+    have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.lt := by
+      rw [if_pos h_lt]
+    exact h1.symm
+  · have h_eq_b : a = b := by rw [h_eq]; exact hc
+    have hn_lt : ¬ (a < b) := by rw [h_eq_b, lt_iff_toNat_lt]; exact Nat.lt_irrefl _
+    have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.eq := by
+      rw [if_neg hn_lt, if_pos h_eq_b]
+    exact h1.symm
+  · have h_not_lt : ¬ (a < b) := by rw [hl1]; intro h; rw [h] at hc; contradiction
+    have h_not_eq : ¬ (a = b) := by rw [h_eq]; intro h; rw [h] at hc; contradiction
+    have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.gt := by
+      rw [if_neg h_not_lt, if_neg h_not_eq]
+    exact h1.symm
+
+instance : LinearOrder AzNat where
+  le_refl := le_refl
+  le_trans a b c := le_trans a b c
+  lt_iff_le_not_ge := lt_iff_le_not_ge
+  le_antisymm a b := le_antisymm a b
+  le_total := le_total
+  toDecidableLE := inferInstance
+  toDecidableEq := inferInstance
+  toDecidableLT := inferInstance
+  min_def := fun _ _ => rfl
+  max_def := fun _ _ => rfl
+  compare := compare
+  compare_eq_compareOfLessAndEq := compare_eq_compareOfLessAndEq
+
 end Azurite.AzNat

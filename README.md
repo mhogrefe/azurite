@@ -27,7 +27,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | File | What it proves |
 |------|---------------|
 | `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
-| `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, bounding mathematical magnitudes. |
+| `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
 
 #### AzPolynomial ↔ Polynomial R
 
