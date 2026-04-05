@@ -24,6 +24,23 @@ lemma toNatLimbsList_append (l1 l2 : List UInt64) :
     rw [hp, Nat.pow_add, Nat.mul_assoc]
     omega
 
+lemma toNatLimbsList_lt_pow (l : List UInt64) : toNatLimbsList l < 2 ^ (64 * l.length) := by
+  induction l with
+  | nil => decide
+  | cons x xs ih =>
+    rw [toNatLimbsList_cons, List.length_cons]
+    have h1 : 64 * (xs.length + 1) = 64 * xs.length + 64 := by omega
+    rw [h1, Nat.pow_add]
+    have h2 : toNatLimbsList xs * 2^64 + x.toNat < 2^(64 * xs.length) * 2^64 := by
+      have h3 : x.toNat < 2^64 := UInt64.toNat_lt _
+      have hc1 : toNatLimbsList xs + 1 ≤ 2 ^ (64 * xs.length) := ih
+      have hc2 : (toNatLimbsList xs + 1) * 2 ^ 64 ≤ 2 ^ (64 * xs.length) * 2 ^ 64 := Nat.mul_le_mul_right (2 ^ 64) hc1
+      have hc3 : toNatLimbsList xs * 2 ^ 64 + x.toNat < toNatLimbsList xs * 2 ^ 64 + 2 ^ 64 := Nat.add_lt_add_left h3 _
+      have hc4 : toNatLimbsList xs * 2 ^ 64 + 2 ^ 64 = (toNatLimbsList xs + 1) * 2 ^ 64 := by ring
+      rw [hc4] at hc3
+      exact Nat.lt_of_lt_of_le hc3 hc2
+    exact h2
+
 def ofNatAux (n : Nat) (acc : Array UInt64) : Array UInt64 :=
   if _h : n = 0 then acc
   else

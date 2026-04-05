@@ -57,28 +57,6 @@ lemma compare_add_eq (a b c : Nat) : Ord.compare (a + b) (a + c) = Ord.compare b
   · exfalso; omega
   · rfl
 
-lemma toNatLimbsList_lt_pow {l : List UInt64} :
-  toNatLimbsList l < 2 ^ (64 * l.length) := by
-  induction l with
-  | nil =>
-    simp [toNatLimbsList]
-  | cons head tail ih =>
-    have hz1 : (head :: tail).length = tail.length + 1 := rfl
-    have hz : 64 * (tail.length + 1) = 64 * tail.length + 64 := by omega
-    have hz2 : 2 ^ (64 * tail.length + 64) = 2 ^ (64 * tail.length) * 2 ^ 64 := Nat.pow_add _ _ _
-    rw [hz1, hz, hz2]
-    unfold toNatLimbsList
-    dsimp only [List.foldr]
-    have h1 : head.toNat < 2 ^ 64 := head.toNat_lt
-    change toNatLimbsList tail * 2 ^ 64 + head.toNat < _
-    have h2 : toNatLimbsList tail ≤ 2 ^ (64 * tail.length) - 1 := by omega
-    have h_pow_pos : 2 ^ 64 > 0 := by simp
-    have h3 : toNatLimbsList tail * 2 ^ 64 ≤ (2 ^ (64 * tail.length) - 1) * 2 ^ 64 := Nat.mul_le_mul_right _ h2
-    have h4 : 2 ^ (64 * tail.length) ≥ 1 := Nat.one_le_two_pow
-    have h5 : (2 ^ (64 * tail.length) - 1) * 2 ^ 64 = 2 ^ (64 * tail.length) * 2 ^ 64 - 2 ^ 64 := by
-      exact Nat.mul_sub_right_distrib (2 ^ (64 * tail.length)) 1 (2 ^ 64)
-    omega
-
 lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length) (h2 : i < l2.length)
   (h_drop : l1.drop (i + 1) = l2.drop (i + 1)) :
   Ord.compare (toNatLimbsList l1) (toNatLimbsList l2) =
@@ -90,7 +68,7 @@ lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length)
   rw [h_drop] at hd1
   rw [hd1, hd2]
   split_ifs with h_lt h_gt
-  · have hb1 := @toNatLimbsList_lt_pow (l1.take i)
+  · have hb1 := toNatLimbsList_lt_pow (l1.take i)
     have hl1 : (l1.take i).length = i := List.length_take_of_le (by omega)
     rw [hl1] at hb1
     have h_sub := compare_mul_add_lt ((l1.get ⟨i, h1⟩).toNat) ((l2.get ⟨i, h2⟩).toNat) (2 ^ (64 * i)) (toNatLimbsList (List.take i l1)) (toNatLimbsList (List.take i l2)) h_lt hb1
@@ -101,7 +79,7 @@ lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length)
       exact Nat.add_lt_add_left h_sub _
     change (if _ then Ordering.lt else if _ then Ordering.eq else Ordering.gt) = Ordering.lt
     rw [if_pos h_add_C]
-  · have hb2 := @toNatLimbsList_lt_pow (l2.take i)
+  · have hb2 := toNatLimbsList_lt_pow (l2.take i)
     have hl2 : (l2.take i).length = i := List.length_take_of_le (by omega)
     rw [hl2] at hb2
     have h_sub := compare_mul_add_lt ((l2.get ⟨i, h2⟩).toNat) ((l1.get ⟨i, h1⟩).toNat) (2 ^ (64 * i)) (toNatLimbsList (List.take i l2)) (toNatLimbsList (List.take i l1)) h_gt hb2
@@ -317,7 +295,7 @@ theorem compare_eq_compare_toNat (a b : AzNat) : compare a b = Ord.compare a.toN
       exact compare_lt_iff_lt.mp h_cmp
     have h_b_ne : b.limbs.size > 0 := by omega
     have h_a_val_lt : toNatLimbsList a.limbs.toList < 2 ^ (64 * a.limbs.size) := by
-      have ht := @toNatLimbsList_lt_pow a.limbs.toList
+      have ht := toNatLimbsList_lt_pow a.limbs.toList
       rw [h_sizeA] at ht
       exact ht
     have hlB : b.limbs.toList.getLast? ≠ some 0 := by
@@ -385,7 +363,7 @@ theorem compare_eq_compare_toNat (a b : AzNat) : compare a b = Ord.compare a.toN
       rw [h_sizeA] at hp
       exact hp
     have h_b_val_lt : toNatLimbsList b.limbs.toList < 2 ^ (64 * b.limbs.size) := by
-      have ht := @toNatLimbsList_lt_pow b.limbs.toList
+      have ht := toNatLimbsList_lt_pow b.limbs.toList
       rw [h_sizeB] at ht
       exact ht
     have h_a_gt_b : toNatLimbsList a.limbs.toList > toNatLimbsList b.limbs.toList := by
@@ -399,8 +377,6 @@ theorem compare_eq_compare_toNat (a b : AzNat) : compare a b = Ord.compare a.toN
 theorem compare_ofNat_eq_compare (a b : Nat) : compare (ofNat a) (ofNat b) = Ord.compare a b := by
   rw [compare_eq_compare_toNat]
   rw [toNat_ofNat, toNat_ofNat]
-
-
 
 lemma le_iff_toNat_le (a b : AzNat) : a ≤ b ↔ a.toNat ≤ b.toNat := by
   change compare a b ≠ Ordering.gt ↔ a.toNat ≤ b.toNat

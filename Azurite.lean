@@ -100,8 +100,10 @@ import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
+import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.Parse
+import Azurite.AzNat.Size
 import Azurite.AzNat.ToString
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic

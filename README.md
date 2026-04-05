@@ -25,14 +25,14 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzNat ↔ Nat
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
 | `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
 
 #### AzPolynomial ↔ Polynomial R
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Bijection `AzPolynomial R ≃ Polynomial R` via `toPoly`/`ofPoly`; degree, natDegree, coeff, leadingCoeff, nextCoeff, and monic preservation. |
 | `Equiv/Add` | `toPoly (p + q) = toPoly p + toPoly q` |
 | `Equiv/Sub` | `toPoly (p - q) = toPoly p - toPoly q` |
@@ -55,7 +55,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzMvPolynomial ↔ MvPolynomial σ R
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Bijection `AzMvPolynomial σ R ≃ MvPolynomial σ R` via `toMvPoly`/`ofMvPoly` |
 | `Equiv/Add` | `toMvPoly (p + q) = toMvPoly p + toMvPoly q` |
 | `Equiv/Sub` | `toMvPoly (p - q) = toMvPoly p - toMvPoly q` |
@@ -83,7 +83,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzVector ↔ (Fin n → R)
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Bijection via `toFn`/`ofFn` |
 | `Equiv/Add` | `toFn (v + w) i = toFn v i + toFn w i` |
 | `Equiv/Sub` | Subtraction preservation |
@@ -98,7 +98,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzMatrix ↔ Matrix (Fin m) (Fin n) R
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Bijection via `toFn`/`ofFn` |
 | `Equiv/Add` | Entry-wise addition preservation |
 | `Equiv/Sub` | Entry-wise subtraction preservation |
@@ -116,7 +116,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzFormula (AzFieldAtom) ↔ Formula (FieldAtom)
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | `mapAtom` functor laws (`mapAtom_id`, `mapAtom_comp`), formula conversion round-trips (`fieldFormulaToAzFormula ∘ azFormulaToFieldFormula = id` and vice versa), `azRealization = realization ∘ azFormulaToFieldFormula`. |
 | `Equiv/FreeVars` | `freeVarsOf Φ = freeVars (Φ.toFieldFormula)` — computable free vars agree with noncomputable for both atom types. |
 | `Equiv/BoundVars` | `boundVarsOf Φ = boundVars (Φ.toFieldFormula)` — computable bound vars agree with noncomputable for both atom types. |
@@ -127,7 +127,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 #### AzPolynomialQ ↔ AzPolynomial ℚ
 
 | File | What it proves |
-|------|---------------|
+|------|----------------|
 | `Equiv/Basic` | Bijection `AzPolynomialQ ≃ AzPolynomial ℚ`; coefficient, degree, and normalization preservation |
 | `Equiv/Parse` | Parsing equivalence |
 | `Equiv/ToString` | String conversion equivalence |
