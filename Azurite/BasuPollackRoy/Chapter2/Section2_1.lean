@@ -16,6 +16,8 @@ import Mathlib.Analysis.Complex.Basic
 import Mathlib.Algebra.Polynomial.Eval.Degree
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Order.Zorn
+import Mathlib.Algebra.Ring.SumsOfSquares
+import Mathlib.Algebra.Ring.Semireal.Defs
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -943,6 +945,129 @@ theorem IsProperCone.totalOrder {C : Subsemiring F}
   · right; rwa [show -(y - x) = x - y from by ring] at h
 
 end Prop_2_6_Converse
+
+/-!
+### Squares and Sums of Squares (BPR p.37)
+
+**Notation (BPR p.37).** For a field `K`:
+- `K^{(2)}` denotes the set of *squares* of elements of `K`,
+  i.e., `{x² | x ∈ K}`.  In Mathlib this is `{x | IsSquare x}`.
+- `ΣK^{(2)}` denotes the `Subsemiring` of *sums of squares* of elements
+  of `K`.  In Mathlib this is `Subsemiring.sumSq K`, built from the
+  inductive predicate `IsSumSq`.
+
+The set `ΣK^{(2)}` is a cone: it is closed under addition and multiplication,
+contains 0 = 0² and 1 = 1², and every element of `K^{(2)}` belongs to it.
+Moreover it is the *smallest* cone: it is contained in every cone of `K`.
+
+**Definition (BPR p.37).** A field `K` is a *real field* if `−1 ∉ ΣK^{(2)}`.
+In Mathlib's terminology this is `IsSemireal K`.
+-/
+
+section SquaresAndSumOfSquares
+
+variable (F : Type*) [CommRing F]
+
+/-!
+**BPR Notation.** `F^{(2)}` — the set of squares.  In Mathlib, a square
+is expressed by the predicate `IsSquare x` (meaning `∃ y, x = y * y`).
+Using `x ^ 2 = x * x` we can also write `{x | ∃ y, x = y ^ 2}`.
+-/
+
+/-- **BPR Notation.** `ΣF^{(2)}`: the `Subsemiring` of sums of squares in `F`.
+    An element `s : F` belongs to `Subsemiring.sumSq F` iff `IsSumSq s`,
+    i.e., `s` can be written as a finite sum `a₁·a₁ + a₂·a₂ + ⋯ + aₙ·aₙ`. -/
+abbrev sumOfSquares : Subsemiring F := Subsemiring.sumSq F
+
+/-- `ΣF^{(2)}` is a cone: every square `x²` is a sum of squares. -/
+lemma isCone_sumOfSquares : IsCone (sumOfSquares F) :=
+  fun x => Subsemiring.mem_sumSq.mpr (by rw [sq]; exact IsSumSq.mul_self x)
+
+/-- `ΣF^{(2)}` is contained in every cone of `F` —
+    it is the smallest cone. -/
+lemma sumOfSquares_le_cone (C : Subsemiring F) (hC : IsCone C) :
+    sumOfSquares F ≤ C := by
+  intro x hx
+  rw [Subsemiring.mem_sumSq] at hx
+  induction hx with
+  | zero => exact C.zero_mem
+  | sq_add a _ ih => exact C.add_mem (by rw [← sq]; exact hC a) ih
+
+end SquaresAndSumOfSquares
+
+section RealField
+
+variable (F : Type*) [Field F]
+
+/-- **BPR Definition (p.37).** A field `F` is a *real field* if `−1 ∉ ΣF^{(2)}`,
+    i.e., `−1` cannot be expressed as a sum of squares in `F`.
+
+    In Mathlib this is `IsSemireal F` (from `Mathlib.Algebra.Ring.Semireal.Defs`),
+    which is defined by the equivalent condition `∀ s, IsSumSq s → 1 + s ≠ 0`.
+    Every ordered field is semireal. -/
+def IsRealField : Prop := IsSemireal F
+
+/-- A field is real iff `−1 ∉ ΣF^{(2)}`. -/
+lemma isRealField_iff : IsRealField F ↔ ¬ IsSumSq (-1 : F) :=
+  isSemireal_iff_not_isSumSq_neg_one
+
+/-- A field is real iff `−1 ∉ ΣF^{(2)}` (stated using `sumOfSquares`). -/
+lemma isRealField_iff_neg_one_notMem :
+    IsRealField F ↔ (-1 : F) ∉ sumOfSquares F := by
+  rw [isRealField_iff, Subsemiring.mem_sumSq]
+
+/-- A real field has characteristic zero
+    (Mathlib synthesizes `CharZero F` from `IsSemireal F`). -/
+theorem isRealField_charZero (h : IsRealField F) : CharZero F :=
+  haveI : IsSemireal F := h; inferInstance
+
+end RealField
+
+/-!
+### Exercise 2.6
+
+**Exercise 2.6 (BPR p.37).**
+1. A real field has characteristic 0.
+2. The field ℂ of complex numbers is not a real field.
+3. Every ordered field is a real field.
+
+*Proofs.*
+1. In a semireal ring, if `char R = p > 0` then `p = 0` in `R` and `p` is a sum
+   of squares of `1`s, giving `0 = p ∈ ΣR^{(2)}` with `1 + p = 1 ≠ 0` — a
+   contradiction. Mathlib derives `CharZero` from `IsSemireal` automatically.
+2. In ℂ we have `i² = −1`, so `−1 = i·i + 0` is a sum of squares, hence
+   `−1 ∈ Σℂ^{(2)}` and ℂ is not real.
+3. In an ordered field, every sum of squares is non-negative, so `−1 < 0`
+   cannot be a sum of squares. Mathlib provides a `IsSemireal` instance for
+   any `[IsStrictOrderedRing]`.
+-/
+
+section Exercise_2_6
+
+/-- **BPR Exercise 2.6(1).** A real field has characteristic 0.
+    (This is a restatement of `isRealField_charZero`.) -/
+theorem exercise_2_6_charZero {F : Type*} [Field F] (h : IsRealField F) : CharZero F :=
+  haveI : IsSemireal F := h; inferInstance
+
+/-- **BPR Exercise 2.6(2).** The field ℂ of complex numbers is not a real field.
+    *Proof.* `i² = −1` in ℂ, so `−1 = i·i ∈ Σℂ^{(2)}`. -/
+theorem exercise_2_6_complex_not_real : ¬ IsRealField ℂ := by
+  rw [IsRealField, isSemireal_iff_not_isSumSq_neg_one]
+  push_neg
+  have : (-1 : ℂ) = Complex.I * Complex.I := by simp
+  rw [this]
+  exact IsSumSq.mul_self _
+
+/-- **BPR Exercise 2.6(3).** Every ordered field is a real field.
+    *Proof.* Sums of squares are non-negative in an ordered ring, so `−1 < 0`
+    cannot be a sum of squares. Mathlib provides the `IsSemireal` instance
+    for `[IsStrictOrderedRing]`. -/
+theorem exercise_2_6_ordered_is_real
+    {F : Type*} [Field F] [LinearOrder F] [IsStrictOrderedRing F] :
+    IsRealField F :=
+  haveI : IsSemireal F := inferInstance; this
+
+end Exercise_2_6
 
 /-!
 ### Lemma 2.9
