@@ -13,6 +13,7 @@ import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
 import Azurite.AzInt.Basic
 import Azurite.AzInt.Equiv.Basic
+import Azurite.AzInt.Parse
 import Azurite.AzInt.ToString
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
