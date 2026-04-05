@@ -23,6 +23,8 @@ import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.RingTheory.Algebraic.Basic
 import Mathlib.RingTheory.MvPolynomial.Symmetric.Defs
 import Mathlib.RingTheory.Polynomial.Vieta
+import Mathlib.Data.DFinsupp.WellFounded
+import Mathlib.Data.Finsupp.MonomialOrder.DegLex
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -1516,7 +1518,7 @@ variable {K : Type*} [CommRing K]
 theorem lemma_2_12 {k : ℕ} (x : Fin k → K) {i : ℕ} (hi : i ≤ k) :
     (∏ j : Fin k, (X - C (x j))).coeff (k - i) =
     (-1) ^ i * (Finset.univ.val.map x).esymm i := by
-  have hcard : (Finset.univ.val.map x).card = k := by simp [Fintype.card_fin]
+  have hcard : (Finset.univ.val.map x).card = k := by simp
   have hmap : (Finset.univ.val.map (fun j => X - C (x j))) =
       (Finset.univ.val.map x).map (fun t => X - C t) := by
     rw [Multiset.map_map]; rfl
@@ -1675,6 +1677,70 @@ theorem lex_le_set_infinite {k : ℕ} (hk : 2 ≤ k) :
     exact ⟨⟨0, by omega⟩, fun j hj => absurd hj (not_lt.mpr (Fin.mk_le_mk.mpr (Nat.zero_le _))),
       by simp [Fin.ext_iff]⟩
 
+/-- **BPR Exercise 2.8.** A strictly decreasing sequence for the lexicographic
+    ordering on `ℕᵏ` is necessarily finite. Equivalently, the lex ordering on
+    multi-indices is well-founded.
+
+    The classical proof is by induction on `k`: for `k = 0` every sequence is
+    constant; for `k + 1`, the first component must eventually stabilize (by
+    well-foundedness of `ℕ`), after which the problem reduces to `ℕᵏ`.
+
+    In Mathlib this is `Pi.Lex.wellFounded` applied to `Fin k` (finite, linearly
+    ordered) and `ℕ` (well-ordered). -/
+theorem exercise_2_8 (k : ℕ) :
+    WellFounded (fun α β : Fin k →₀ ℕ => LexOrder k ℕ α β) := by
+  unfold LexOrder
+  exact InvImage.wf (fun (x : Fin k →₀ ℕ) => (x : Fin k → ℕ))
+    (Pi.Lex.wellFounded _ (fun _ => Nat.lt_wfRel.wf))
+
 end LexProperties
+
+section Definition_2_15
+
+/-- **BPR Definition 2.15.** The *graded lexicographic ordering* on the set of
+    monomials in `k` variables: `X^α <_grlex X^β` iff either `|α| < |β|`
+    (total degree is smaller) or `|α| = |β|` and `α <_lex β`.
+
+    In Mathlib this is the `<` on `DegLex (Fin k →₀ ℕ)`, accessed via
+    `toDegLex` / `ofDegLex` from `Mathlib.Data.Finsupp.MonomialOrder.DegLex`. -/
+def GrlexOrder (k : ℕ) (α β : Fin k →₀ ℕ) : Prop :=
+  toDegLex α < toDegLex β
+
+end Definition_2_15
+
+section GrlexProperties
+
+open Finsupp.DegLex in
+/-- The zero multi-index (monomial `1`) is the grlex-smallest: for any nonzero `α`,
+    `0 <_grlex α`. -/
+theorem grlex_bot {k : ℕ} {α : Fin k →₀ ℕ} (hα : α ≠ 0) :
+    GrlexOrder k 0 α := by
+  exact bot_lt_iff_ne_bot.mpr (show toDegLex α ≠ ⊥ from fun h => hα (toDegLex_inj.mp h))
+
+open Finsupp.DegLex in
+/-- The grlex ordering on monomials is compatible with multiplication:
+    if `α <_grlex β` then `α + γ <_grlex β + γ`. -/
+theorem grlex_add_right {k : ℕ} {α β γ : Fin k →₀ ℕ}
+    (h : GrlexOrder k α β) :
+    GrlexOrder k (α + γ) (β + γ) := by
+  simp only [GrlexOrder, lt_iff, ofDegLex_toDegLex] at *
+  rcases h with hdeg | ⟨hdeq, hlex⟩
+  · left; simp [map_add]; omega
+  · right
+    exact ⟨by simp [map_add, hdeq], by simpa [toLex_add] using add_lt_add_right hlex (toLex γ)⟩
+
+open Finsupp.DegLex in
+/-- The set of monomials grlex-≤ a given monomial is always finite.
+    This is because grlex-≤ implies bounded total degree, and there
+    are finitely many monomials of bounded total degree in `k` variables. -/
+theorem grlex_le_set_finite {k : ℕ} (α : Fin k →₀ ℕ) :
+    Set.Finite {β : Fin k →₀ ℕ | GrlexOrder k β α ∨ β = α} := by
+  apply Set.Finite.subset (Finsupp.finite_of_degree_le α.degree)
+  intro β hβ
+  rcases hβ with hlt | heq
+  · exact monotone_degree (le_of_lt hlt)
+  · simp [heq]
+
+end GrlexProperties
 
 end Azurite.BPR
