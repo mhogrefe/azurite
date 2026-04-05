@@ -20,6 +20,9 @@ import Mathlib.Tactic.TFAE
 import Mathlib.Algebra.Ring.SumsOfSquares
 import Mathlib.Algebra.Ring.Semireal.Defs
 import Mathlib.FieldTheory.IsRealClosed.Basic
+import Mathlib.RingTheory.Algebraic.Basic
+import Mathlib.RingTheory.MvPolynomial.Symmetric.Defs
+import Mathlib.RingTheory.Polynomial.Vieta
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -1420,5 +1423,187 @@ theorem isRealClosed_le_unique
   (isRealClosed_characterize_le lo₁ h₁).trans (isRealClosed_characterize_le lo₂ h₂).symm
 
 end UniqueOrder
+
+namespace Azurite.BPR
+
+/-!
+### Definition: Real Algebraic Numbers (BPR p.38)
+
+**Definition (BPR p.38).** The *real algebraic numbers* `R_alg` are those real numbers
+that satisfy a nonzero polynomial equation with integer coefficients:
+$$R_{\mathrm{alg}} := \{x \in \mathbb{R} \mid \exists p \in \mathbb{Z}[X],\, p \neq 0,\, p(x) = 0\}.$$
+
+Equivalently (clearing denominators), a real number is algebraic over `ℤ` iff it is algebraic
+over `ℚ`. In Mathlib this is `IsAlgebraic ℤ x` (using the `Algebra ℤ ℝ` instance).
+
+The real algebraic numbers form a subfield of `ℝ` (since algebraic elements over a subfield
+of a field extension are closed under the field operations).
+-/
+
+section RealAlgebraicNumbers
+
+/-- **BPR p.38.** The set of *real algebraic numbers* `R_alg`:
+    those `x : ℝ` satisfying some nonzero polynomial with integer coefficients.
+
+    Formally: `IsAlgebraic ℤ x`, i.e., `∃ p : ℤ[X], p ≠ 0 ∧ aeval x p = 0`. -/
+def realAlgebraicNumbers : Set ℝ :=
+  {x : ℝ | IsAlgebraic ℤ x}
+
+scoped notation "ℝ_alg" => realAlgebraicNumbers
+
+/-- The zero element 0 is real algebraic, witnessed by the polynomial `X`. -/
+theorem zero_mem_realAlgebraicNumbers : (0 : ℝ) ∈ realAlgebraicNumbers :=
+  isAlgebraic_zero
+
+/-- The element 1 is real algebraic, witnessed by the polynomial `X - 1`. -/
+theorem one_mem_realAlgebraicNumbers : (1 : ℝ) ∈ realAlgebraicNumbers :=
+  isAlgebraic_one
+
+/-- Every integer is a real algebraic number. -/
+theorem intCast_mem_realAlgebraicNumbers (n : ℤ) : (n : ℝ) ∈ realAlgebraicNumbers :=
+  isAlgebraic_algebraMap n
+
+end RealAlgebraicNumbers
+
+/-!
+### Symmetric Polynomials (BPR p.38)
+
+**Definition (BPR p.38).** Let `K` be a field. A polynomial `Q(X₁, …, Xₖ) ∈ K[X₁, …, Xₖ]`
+is *symmetric* if for every permutation `σ` of `{1, …, k}`,
+`Q(X_{σ(1)}, …, X_{σ(k)}) = Q(X₁, …, Xₖ)`.
+
+**Mathlib correspondence.** This is exactly `MvPolynomial.IsSymmetric` from
+`Mathlib.RingTheory.MvPolynomial.Symmetric.Defs`, defined as
+`∀ e : Equiv.Perm σ, MvPolynomial.rename e φ = φ`.
+-/
+
+section SymmetricPolynomials
+
+open MvPolynomial
+
+variable {K : Type*} [Field K]
+
+/-- **BPR Definition (p.38).** A polynomial `Q ∈ K[X₁, …, Xₖ]` is *symmetric* if it is
+    invariant under every permutation of its variables.
+
+    This is `MvPolynomial.IsSymmetric` in Mathlib: `∀ e : Perm (Fin k), rename e Q = Q`. -/
+def IsSymmetricPolynomial (k : ℕ) (Q : MvPolynomial (Fin k) K) : Prop :=
+  Q.IsSymmetric
+
+/-- **BPR Definition (p.38).** The `i`-th *elementary symmetric function*
+    `E_i = ∑_{1 ≤ j₁ < ⋯ < jᵢ ≤ k} X_{j₁} ⋯ X_{jᵢ}`,
+    i.e., the sum of all squarefree degree-`i` monomials.
+
+    This is `MvPolynomial.esymm` in Mathlib. -/
+noncomputable def elementarySymmetric (k : ℕ) (i : ℕ) : MvPolynomial (Fin k) K :=
+  esymm (Fin k) K i
+
+end SymmetricPolynomials
+
+section Lemma_2_12
+
+open Polynomial
+
+variable {K : Type*} [CommRing K]
+
+/-- **BPR Lemma 2.12.** Let `x₁, …, xₖ ∈ K` and
+    `P = (X − x₁)⋯(X − xₖ) = Xᵏ + C₁Xᵏ⁻¹ + ⋯ + Cₖ`.
+    Then `Cᵢ = (−1)ⁱ Eᵢ(x₁, …, xₖ)`, i.e., the coefficient of `Xᵏ⁻ⁱ` in `P`
+    equals `(−1)ⁱ` times the `i`-th elementary symmetric function evaluated at
+    the roots.
+
+    This is `Multiset.prod_X_sub_C_coeff` in Mathlib, specialized to `Fin k → K`. -/
+theorem lemma_2_12 {k : ℕ} (x : Fin k → K) {i : ℕ} (hi : i ≤ k) :
+    (∏ j : Fin k, (X - C (x j))).coeff (k - i) =
+    (-1) ^ i * (Finset.univ.val.map x).esymm i := by
+  have hcard : (Finset.univ.val.map x).card = k := by simp [Fintype.card_fin]
+  have hmap : (Finset.univ.val.map (fun j => X - C (x j))) =
+      (Finset.univ.val.map x).map (fun t => X - C t) := by
+    rw [Multiset.map_map]; rfl
+  rw [Finset.prod_eq_multiset_prod, hmap,
+      Multiset.prod_X_sub_C_coeff _ (by omega)]
+  simp only [hcard, Nat.sub_sub_self hi]
+
+end Lemma_2_12
+
+/-!
+### Exercise 2.7: Orbit sums span symmetric polynomials
+
+**Exercise 2.7 (BPR).** For a multi-index `α`, define
+`M_α = ∑_{σ ∈ S_k} X_σ^α`. Prove that every symmetric polynomial can be written
+as a finite sum `∑ c_α M_α`.
+
+The proof uses averaging: since `rename σ Q = Q` for symmetric `Q`,
+`k! • Q = ∑_σ rename σ Q`. Expanding `Q` as a sum of monomials and swapping
+sums gives `k! • Q = ∑_α coeff_α(Q) • M_α`. Dividing by `k!` (nonzero in
+characteristic 0) yields the result.
+
+**Characteristic restriction.** BPR does not mention a characteristic restriction, but
+the `CharZero K` hypothesis is necessary for this formulation. In characteristic `p`,
+`M_α` sums over *all* permutations (including those that fix `α`), so the stabilizer
+multiplicity `|Stab(α)|` appears as a factor. When `p ∣ |Stab(α)|`, `M_α` vanishes.
+For example, `X₁X₂ ∈ F₂[X₁,X₂]` is symmetric but `M_{(1,1)} = 2X₁X₂ = 0`
+in char 2, and no other `M_α` contains the monomial `X₁X₂`.
+
+The statement *does* hold over arbitrary fields if one uses the proper monomial
+symmetric polynomials `m_α = ∑_{β ∈ orbit(α)} X^β` (each distinct monomial counted
+once), which is Mathlib's `MvPolynomial.msymm`. If a future application needs the
+result in positive characteristic, this proof should be refactored to use `msymm`.
+-/
+
+section Exercise_2_7
+
+open MvPolynomial Equiv
+
+variable {K : Type*} [Field K]
+
+/-- **BPR Notation.** `M_α = ∑_{σ ∈ S_k} X_σ^α`: the sum of the monomial `X^α` over
+    all permutations of the variables. `X_σ^α = rename σ (monomial α 1)`. -/
+noncomputable def monomialOrbitSum (k : ℕ) (α : Fin k →₀ ℕ) : MvPolynomial (Fin k) K :=
+  ∑ σ : Perm (Fin k), rename (σ : Fin k → Fin k) (monomial α 1)
+
+/-- **BPR Exercise 2.7.** Every symmetric polynomial can be written as a finite
+    sum `∑ cα • M_α`. -/
+theorem exercise_2_7 [CharZero K] {k : ℕ} {Q : MvPolynomial (Fin k) K}
+    (hQ : Q.IsSymmetric) :
+    ∃ (S : Finset (Fin k →₀ ℕ)) (c : (Fin k →₀ ℕ) → K),
+      Q = ∑ α ∈ S, c α • monomialOrbitSum k α := by
+  refine ⟨Q.support, fun α => Q.coeff α / (k.factorial : K), ?_⟩
+  have hk_ne : (↑k.factorial : K) ≠ 0 := Nat.cast_ne_zero.mpr k.factorial_ne_zero
+  -- Step 1: k! • Q = ∑ σ, rename σ Q
+  have h1 : (↑k.factorial : K) • Q = ∑ σ : Perm (Fin k), rename ↑σ Q := by
+    conv_rhs => arg 2; ext σ; rw [hQ σ]
+    rw [Finset.sum_const, Finset.card_univ, Fintype.card_perm, Fintype.card_fin]
+    norm_cast
+  -- Step 2: ∑ σ, rename σ Q = ∑ α ∈ support, coeff α Q • M_α
+  have h2 : ∑ σ : Perm (Fin k), rename (↑σ) Q =
+      ∑ α ∈ Q.support, Q.coeff α • (monomialOrbitSum k α : MvPolynomial (Fin k) K) := by
+    calc ∑ σ : Perm (Fin k), rename (⇑σ) Q
+        = ∑ σ : Perm (Fin k), ∑ α ∈ Q.support,
+            MvPolynomial.monomial (Finsupp.mapDomain (⇑σ) α) (Q.coeff α) := by
+          refine Finset.sum_congr rfl fun σ _ => ?_
+          conv_lhs => rw [Q.as_sum, map_sum]
+          refine Finset.sum_congr rfl fun α _ => ?_
+          exact rename_monomial _ _ _
+      _ = ∑ α ∈ Q.support, ∑ σ : Perm (Fin k),
+            MvPolynomial.monomial (Finsupp.mapDomain (⇑σ) α) (Q.coeff α) :=
+          Finset.sum_comm
+      _ = ∑ α ∈ Q.support, Q.coeff α • monomialOrbitSum k α := by
+          refine Finset.sum_congr rfl fun α _ => ?_
+          unfold monomialOrbitSum; simp_rw [rename_monomial]
+          have hfactor : ∀ σ : Perm (Fin k),
+            (MvPolynomial.monomial (Finsupp.mapDomain (⇑σ) α)) (Q.coeff α) =
+            Q.coeff α • (MvPolynomial.monomial (Finsupp.mapDomain (⇑σ) α)) (1 : K) :=
+            fun σ => by rw [MvPolynomial.smul_monomial, smul_eq_mul, mul_one]
+          simp_rw [hfactor, ← Finset.smul_sum]
+  -- Combine: Q = (1/k!) • k! • Q = ∑ (coeff/k!) • M_α
+  have hmain := h1.trans h2
+  have hinv : Q = (↑k.factorial : K)⁻¹ • ((↑k.factorial : K) • Q) :=
+    (inv_smul_smul₀ hk_ne Q).symm
+  conv_lhs => rw [hinv, hmain, Finset.smul_sum]
+  refine Finset.sum_congr rfl fun α _ => ?_
+  simp only [smul_comm (↑k.factorial : K)⁻¹, div_eq_mul_inv, mul_smul]
+
+end Exercise_2_7
 
 end Azurite.BPR
