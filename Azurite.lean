@@ -12,7 +12,9 @@ import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
 import Azurite.AzInt.Basic
+import Azurite.AzInt.Conversion
 import Azurite.AzInt.Equiv.Basic
+import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzInt.Parse
 import Azurite.AzInt.ToString
 import Azurite.AzMatrix.Basic
