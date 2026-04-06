@@ -3,6 +3,7 @@ import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Separable
 import Mathlib.Algebra.Polynomial.SpecificDegree
+import Azurite.BasuPollackRoy.Chapter2.Section2_1
 
 /-!
 # BPR Theorem 2.11 a) ⇒ b): Real Closed ⟹ R[i] Algebraically Closed
@@ -181,5 +182,190 @@ theorem conj_eval_eq_eval_conj_map [IsRealClosed R]
     rw [hp, hq]
   | monomial n a =>
     simp only [eval_monomial, map_mul, map_pow, eval₂_monomial, RingHom.coe_coe]
+
+/-- If P ∈ R[i][X] has coefficients in R, then conjPoly(P) = P.
+    (Since conj fixes R.) -/
+theorem conjPoly_eq_self_of_mem_R [IsRealClosed R] (P : R[X]) :
+    conjPoly R (P.map (algebraMap R (Ri R))) = P.map (algebraMap R (Ri R)) := by
+  simp only [conjPoly, Polynomial.map_map]
+  congr 1
+  ext r
+  exact Ri.conj_algebraMap r
+
+/-- conjPoly is an involution: applying conjugation to coefficients twice gives back the original. -/
+theorem conjPoly_conjPoly [IsRealClosed R] (P : (Ri R)[X]) :
+    conjPoly R (conjPoly R P) = P := by
+  simp only [conjPoly, Polynomial.map_map]
+  have h : ((Ri.conj R : Ri R →+* Ri R).comp (Ri.conj R)) = RingHom.id (Ri R) :=
+    RingHom.ext (fun z => Ri.conj_conj z)
+  rw [h, Polynomial.map_id]
+
+/-- P · conjPoly(P) is fixed by conjPoly. -/
+theorem conjPoly_mul_conjPoly_eq [IsRealClosed R] (P : (Ri R)[X]) :
+    conjPoly R (P * conjPoly R P) = conjPoly R P * P := by
+  simp only [conjPoly, Polynomial.map_mul, Polynomial.map_map]
+  congr 1
+  have h : ((Ri.conj R : Ri R →+* Ri R).comp (Ri.conj R)) = RingHom.id (Ri R) :=
+    RingHom.ext (fun z => Ri.conj_conj z)
+  rw [h, Polynomial.map_id]
+
+/-- Each coefficient of P · conjPoly(P) is fixed by conj. -/
+theorem conj_coeff_mul_conjPoly [IsRealClosed R] (P : (Ri R)[X]) (n : ℕ) :
+    (Ri.conj R) ((P * conjPoly R P).coeff n) = (P * conjPoly R P).coeff n := by
+  have key : conjPoly R (P * conjPoly R P) = P * conjPoly R P := by
+    rw [conjPoly_mul_conjPoly_eq, mul_comm]
+  have := congr_arg (fun q => q.coeff n) key
+  simp only [conjPoly, Polynomial.coeff_map] at this
+  exact this
+
+/-! ### Nonzero polynomial evaluation -/
+
+/-- A nonzero polynomial over an infinite integral domain has a non-root.
+    This is used to find z with D(z) ≠ 0. -/
+theorem exists_eval_ne_zero {K : Type*} [CommRing K] [IsDomain K] [Infinite K]
+    (P : K[X]) (hP : P ≠ 0) : ∃ x : K, P.eval x ≠ 0 := by
+  by_contra h
+  push_neg at h
+  exact hP (Polynomial.zero_of_eval_zero P h)
+
+/-! ### Symmetric polynomial membership (Q, G, H ∈ R[Z][Y])
+
+These use `proposition_2_16` from Section2_1: if P ∈ R[X] splits as ∏(X − xᵢ)
+over C, then any symmetric polynomial in the xᵢ with coefficients in R
+evaluates to an element of R.
+
+The γ_{ij}(Z) = xᵢ + xⱼ + Z·xᵢxⱼ are symmetric in the roots; products and
+sums of symmetric expressions remain symmetric. Therefore the coefficients of
+Q, G, H (as polynomials in Y) lie in R[Z]. -/
+
+variable {R : Type*} [Field R] {L : Type*} [Field L] [Algebra R L]
+
+/-- A polynomial f ∈ L[X] lies in the image of R[X] → L[X] if and only if
+    all its coefficients are in the image of algebraMap R L. -/
+theorem poly_in_image_iff_coeffs_in_range
+    (f : L[X]) :
+    (∃ g : R[X], g.map (algebraMap R L) = f) ↔
+    ∀ n : ℕ, f.coeff n ∈ Set.range (algebraMap R L) := by
+  constructor
+  · rintro ⟨g, rfl⟩ n
+    exact ⟨g.coeff n, (Polynomial.coeff_map _ n).symm⟩
+  · intro h
+    choose c hc using h
+    refine ⟨⟨⟨f.support, c, fun n => ?_⟩⟩, ?_⟩
+    · simp only [Polynomial.mem_support_iff]
+      constructor
+      · intro hn
+        rwa [← hc n, ← map_zero (algebraMap R L),
+          (algebraMap R L).injective.ne_iff] at hn
+      · intro hn
+        rwa [← hc n, map_ne_zero_iff _ (algebraMap R L).injective]
+    · ext n; simp [Polynomial.coeff_map, hc n]
+
+-- TODO eval_range_implies_coeff_range
+
+/-- For a product ∏(Y − C(f_i)), each Y-coefficient (an element of L[Z]) has all
+    its Z-coefficients expressible as elementary symmetric polynomials of
+    the f_i's Z-coefficients. When those are symmetric in roots of P ∈ R[X],
+    they lie in R by Prop 2.16.
+
+    This is the core evaluation lemma: for fixed z ∈ R, the n-th Y-coefficient
+    of ∏(Y − γ_{ij}(z)) is a symmetric function of x₁,…,xₚ. -/
+theorem Q_eval_coeff_in_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) (r : R) :
+    Polynomial.eval (algebraMap R L r) ((QPolynomial x).coeff n)
+      ∈ Set.range (algebraMap R L) := by
+  -- Define the MvPolynomial version of γ with z = r baked in as a constant
+  set γMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 + MvPolynomial.X ij.2 +
+      MvPolynomial.C r * MvPolynomial.X ij.1 * MvPolynomial.X ij.2 with γMv_def
+  -- Define QMv: the product over strictPairs in (MvPolynomial R)[Y]
+  set QMv : (MvPolynomial (Fin p) R)[X] :=
+    ∏ ij ∈ strictPairs p,
+      (Polynomial.X - Polynomial.C (γMv ij)) with QMv_def
+  -- Key fact: aeval x ∘ γMv = eval (algebraMap r) ∘ gammaPoly x
+  have hγ : ∀ ij ∈ strictPairs p,
+      (MvPolynomial.aeval x) (γMv ij) =
+        Polynomial.eval (algebraMap R L r) (gammaPoly x ij.1 ij.2) := by
+    intro ij _
+    simp only [γMv_def, gammaPoly, map_add, map_mul, MvPolynomial.aeval_X, MvPolynomial.aeval_C,
+      Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X]
+    ring
+  -- Map (aeval x) QMv = map (eval z) (QPolynomial x) as polynomials in Y over L
+  have hQ : Polynomial.map (MvPolynomial.aeval x).toRingHom QMv =
+      Polynomial.map (Polynomial.evalRingHom (algebraMap R L r)) (QPolynomial x) := by
+    simp only [QMv_def, QPolynomial]
+    rw [Polynomial.map_prod, Polynomial.map_prod]
+    apply Finset.prod_congr rfl; intro ij hij
+    simp only [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+      AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, Polynomial.coe_evalRingHom]
+    rw [hγ ij hij]
+  -- Coefficients agree: eval z (coeff n Q) = aeval x (coeff n QMv)
+  have hcoeff : Polynomial.eval (algebraMap R L r) ((QPolynomial x).coeff n) =
+      (MvPolynomial.aeval x) (QMv.coeff n) := by
+    have := congr_arg (fun q => q.coeff n) hQ
+    simp only [Polynomial.coeff_map, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] at this
+    exact this.symm
+  -- coeff n QMv is a symmetric MvPolynomial
+  have hsymm : (QMv.coeff n).IsSymmetric := by
+    intro σ
+    have hrename_coeff : MvPolynomial.rename σ (QMv.coeff n) =
+        (Polynomial.map (MvPolynomial.rename σ).toRingHom QMv).coeff n :=
+      (Polynomial.coeff_map _ _).symm
+    rw [hrename_coeff]
+    suffices hpoly : Polynomial.map (MvPolynomial.rename σ).toRingHom QMv = QMv by rw [hpoly]
+    simp only [QMv_def]
+    rw [Polynomial.map_prod]
+    simp only [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+      AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom]
+    have hγ_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (γMv ij) = γMv (σ ij.1, σ ij.2) := by
+      intro ij
+      simp only [γMv_def, map_add, map_mul, MvPolynomial.rename_X, MvPolynomial.rename_C]
+    simp_rw [hγ_rename]
+    have hγ_comm : ∀ i j : Fin p, γMv (i, j) = γMv (j, i) := by
+      intro i j; simp only [γMv_def]; ring
+    apply Finset.prod_nbij (fun ij => if σ ij.1 < σ ij.2 then (σ ij.1, σ ij.2) else (σ ij.2, σ ij.1))
+    · -- Maps into strictPairs
+      intro ij hij
+      simp only [strictPairs, Finset.mem_filter, Finset.mem_univ, true_and] at hij ⊢
+      split_ifs with h
+      · exact h
+      · exact lt_of_le_of_ne (not_lt.mp h) (fun heq => hij.ne (σ.injective heq.symm))
+    · -- Injective
+      intro ij₁ hij₁ ij₂ hij₂ heq
+      simp only [strictPairs, Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hij₁ hij₂
+      have heq' : (if σ ij₁.1 < σ ij₁.2 then (σ ij₁.1, σ ij₁.2) else (σ ij₁.2, σ ij₁.1)) =
+                  (if σ ij₂.1 < σ ij₂.2 then (σ ij₂.1, σ ij₂.2) else (σ ij₂.2, σ ij₂.1)) := heq
+      split_ifs at heq' with h₁ h₂ h₂
+      all_goals (obtain ⟨ha, hb⟩ := Prod.mk.inj heq')
+      · exact Prod.ext (σ.injective ha) (σ.injective hb)
+      · exfalso
+        exact absurd (show ij₁.2 < ij₁.1 from σ.injective ha ▸ σ.injective hb ▸ hij₂) (not_lt.mpr hij₁.le)
+      · exfalso
+        exact absurd (show ij₂.2 < ij₂.1 from σ.injective ha ▸ σ.injective hb ▸ hij₁) (not_lt.mpr hij₂.le)
+      · exact Prod.ext (σ.injective hb) (σ.injective ha)
+    · -- Surjective onto strictPairs
+      intro ij hij
+      simp only [strictPairs, Finset.coe_filter, Set.mem_setOf_eq, Set.mem_image,
+        Finset.mem_univ, true_and] at hij ⊢
+      by_cases hord : σ.symm ij.1 < σ.symm ij.2
+      · refine ⟨(σ.symm ij.1, σ.symm ij.2), hord, ?_⟩
+        simp only [Equiv.apply_symm_apply]
+        rw [if_pos hij]
+      · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
+          lt_of_le_of_ne (not_lt.mp hord) (fun h => hij.ne (σ.symm.injective h).symm)
+        refine ⟨(σ.symm ij.2, σ.symm ij.1), hord', ?_⟩
+        simp only [Equiv.apply_symm_apply]
+        rw [if_neg (not_lt.mpr hij.le)]
+    · -- Values agree after sorting
+      intro ij hij
+      split_ifs with h
+      · rfl
+      · simp only [sub_right_inj]; exact congr_arg Polynomial.C (hγ_comm _ _)
+  -- Apply proposition_2_16 from Section2_1
+  rw [hcoeff]
+  exact Azurite.BPR.proposition_2_16 P x hx _ hsymm
 
 end Azurite.BPR.Theorem2_11
