@@ -2,6 +2,7 @@ import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Separable
+import Mathlib.Algebra.Polynomial.SpecificDegree
 
 /-!
 # BPR Theorem 2.11 a) ⇒ b): Real Closed ⟹ R[i] Algebraically Closed
@@ -84,5 +85,101 @@ noncomputable def HPoly (x : Fin p → L) : (L[X])[X] :=
     Polynomial.C (Polynomial.C (x ij.1 * x ij.2)) *
     ∏ kl ∈ (strictPairs p).erase ij,
       (Polynomial.X - Polynomial.C (gammaPoly x kl.1 kl.2))
+
+/-! ### Infrastructure lemmas -/
+
+variable {R : Type*} [Field R]
+
+/-- In a real closed field, −1 is not a square. -/
+theorem not_isSquare_neg_one [IsRealClosed R] : ¬ IsSquare (-1 : R) := by
+  intro h
+  exact IsSemireal.not_isSumSq_neg_one R h.isSumSq
+
+/-- X² + 1 is irreducible over a real closed field R. -/
+theorem irred_X_sq_add_one [IsRealClosed R] :
+    Irreducible (X ^ 2 + 1 : R[X]) := by
+  apply Polynomial.irreducible_of_degree_le_three_of_not_isRoot
+  · have : (X ^ 2 + 1 : R[X]).natDegree = 2 := by
+      rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+    simp [this, Finset.mem_Icc]
+  · intro x
+    simp only [IsRoot, eval_add, eval_pow, eval_X, eval_one]
+    intro h
+    have : (-1 : R) = x * x := by linear_combination -h
+    exact not_isSquare_neg_one ⟨x, this⟩
+
+/-- X² + 1 is irreducible (as a Fact, for AdjoinRoot.instField). -/
+instance [IsRealClosed R] : Fact (Irreducible (X ^ 2 + 1 : R[X])) :=
+  ⟨irred_X_sq_add_one⟩
+
+/-- The defining relation: i² = −1 in R[i]. -/
+theorem Ri.i_sq (R : Type*) [CommRing R] :
+    (Ri.i R) ^ 2 = -(1 : Ri R) := by
+  have h : AdjoinRoot.mk (X ^ 2 + 1 : R[X]) (X ^ 2 + 1 : R[X]) = 0 := AdjoinRoot.mk_self
+  simp only [map_add, map_pow, map_one, AdjoinRoot.mk_X] at h
+  unfold Ri.i
+  linear_combination h
+
+/-- For any a ∈ R, there exists v ∈ R[i] with v² = a. -/
+theorem sqrt_of_R_in_Ri [IsRealClosed R] (a : R) :
+    ∃ v : Ri R, v ^ 2 = algebraMap R (Ri R) a := by
+  rcases IsRealClosed.isSquare_or_isSquare_neg a with ⟨c, hc⟩ | ⟨c, hc⟩
+  · exact ⟨algebraMap R (Ri R) c, by
+      rw [sq]; simp only [← map_mul, hc]⟩
+  · refine ⟨algebraMap R (Ri R) c * Ri.i R, ?_⟩
+    rw [mul_pow, Ri.i_sq]
+    simp only [sq, ← map_mul, mul_neg, mul_one, ← map_neg]
+    have : -(c * c) = a := by rw [← hc, neg_neg]
+    simp only [this]
+
+/-! ### Degree arithmetic -/
+
+/-- If p = 2^m · n with m ≥ 1 and n odd, then p(p−1)/2 = 2^{m−1} · n' with n' odd. -/
+theorem half_degree_odd_factor {m n : ℕ} (hm : 1 ≤ m) (hn : Odd n) (hp : 0 < n) :
+    ∃ n' : ℕ, Odd n' ∧ 2 ^ m * n * (2 ^ m * n - 1) / 2 = 2 ^ (m - 1) * n' := by
+  obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : m ≠ 0)
+  subst hk
+  simp only [Nat.succ_sub_one]
+  refine ⟨n * (2 ^ (k + 1) * n - 1), ?_, ?_⟩
+  · apply Odd.mul hn
+    refine Nat.Even.sub_odd ?_ ?_ odd_one
+    · exact Nat.one_le_iff_ne_zero.mpr (by positivity)
+    · exact Even.mul_right ⟨2 ^ k, by ring⟩ n
+  · rw [show 2 ^ (k + 1) = 2 * 2 ^ k from by ring]
+    rw [show 2 * 2 ^ k * n * (2 * 2 ^ k * n - 1) =
+        2 * (2 ^ k * n * (2 * 2 ^ k * n - 1)) from by ring]
+    rw [Nat.mul_div_cancel_left _ (by norm_num : 0 < 2)]
+    ring
+
+/-! ### Conjugation properties -/
+
+variable {R : Type*} [Field R]
+
+/-- Conjugation is an involution: conj (conj z) = z. -/
+theorem Ri.conj_conj [IsRealClosed R] (z : Ri R) :
+    (Ri.conj R) ((Ri.conj R) z) = z := by
+  have h : (Ri.conj R).comp (Ri.conj R) = AlgHom.id R (Ri R) := by
+    apply AdjoinRoot.algHom_ext
+    simp only [Ri.conj, AlgHom.comp_apply, AlgHom.coe_mk, Ri.i,
+      AdjoinRoot.lift_root, map_neg, neg_neg, AlgHom.id_apply]
+  exact AlgHom.congr_fun h z
+
+/-- Conjugation fixes elements of R: conj (algebraMap R (Ri R) r) = algebraMap R (Ri R) r. -/
+theorem Ri.conj_algebraMap [IsRealClosed R] (r : R) :
+    (Ri.conj R) (algebraMap R (Ri R) r) = algebraMap R (Ri R) r :=
+  (Ri.conj R).commutes r
+
+/-- Polynomial evaluation commutes with conjugation:
+    If P ∈ Ri[X] and z ∈ Ri, then conj(P(z)) = P̄(conj(z)). -/
+theorem conj_eval_eq_eval_conj_map [IsRealClosed R]
+    (P : (Ri R)[X]) (z : Ri R) :
+    (Ri.conj R) (P.eval z) = (conjPoly R P).eval ((Ri.conj R) z) := by
+  simp only [conjPoly, Polynomial.eval_map]
+  induction P using Polynomial.induction_on' with
+  | add p q hp hq =>
+    simp only [eval_add, map_add, eval₂_add]
+    rw [hp, hq]
+  | monomial n a =>
+    simp only [eval_monomial, map_mul, map_pow, eval₂_monomial, RingHom.coe_coe]
 
 end Azurite.BPR.Theorem2_11
