@@ -7,8 +7,6 @@ import Mathlib.Data.Nat.Size
 
 namespace Azurite.AzNat
 
-
-
 lemma size_mul_add (a k b : Nat) (ha : 0 < a) (hb : b < 2^k) : (a * 2^k + b).size = a.size + k := by
   apply le_antisymm
   · rw [Nat.size_le, Nat.pow_add]
@@ -121,7 +119,6 @@ lemma size_toNat (n : AzNat) : n.toNat.size = n.size := by
     have h_size := size_toNatLimbsList n.limbs.toList hl hx
     rw [h_last, hl_len] at h_size
     have h_log2 := uint64_size_eq_log2_add_one (n.limbs[s]) hx2
-    
     unfold AzNat.size
     dsimp only
     rw [dif_pos hsz_pos]
