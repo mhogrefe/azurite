@@ -775,4 +775,75 @@ theorem natDegree_QPolynomial (x : Fin p → L) :
   · simp
   · intro ij _; exact (Polynomial.monic_X_sub_C _).ne_zero
 
+/-! ### Discriminant: D ≠ 0 -/
+
+/-- If x : Fin p → L is injective (all roots distinct), then discPoly x ≠ 0. -/
+theorem discPoly_ne_zero (x : Fin p → L)
+    (hx_inj : Function.Injective x) :
+    discPoly x ≠ 0 := by
+  simp only [discPoly, Finset.prod_ne_zero_iff]
+  intro ⟨a, b⟩ hab
+  simp only [Finset.mem_offDiag] at hab
+  obtain ⟨ha_mem, hb_mem, hab_ne⟩ := hab
+  simp only [strictPairs, Finset.mem_filter, Finset.mem_univ, true_and] at ha_mem hb_mem
+  simp only [gammaPoly]
+  intro heq
+  have hcoeff0 : x a.1 + x a.2 - (x b.1 + x b.2) = 0 := by
+    have := congr_arg (fun p => Polynomial.coeff p 0) heq
+    simp at this; exact this
+  have hcoeff1 : x a.1 * x a.2 - x b.1 * x b.2 = 0 := by
+    have := congr_arg (fun p => Polynomial.coeff p 1) heq
+    simp at this; exact this
+  have hsum : x a.1 + x a.2 = x b.1 + x b.2 := sub_eq_zero.mp hcoeff0
+  have hprod : x a.1 * x a.2 = x b.1 * x b.2 := sub_eq_zero.mp hcoeff1
+  -- x a.1 is a root of (T - x b.1)(T - x b.2)
+  have hroot : (x a.1 - x b.1) * (x a.1 - x b.2) = 0 := by
+    linear_combination x a.1 * hsum - hprod
+  rcases mul_eq_zero.mp hroot with h | h
+  · -- x a.1 = x b.1, so a.1 = b.1
+    have ha1 : x a.1 = x b.1 := sub_eq_zero.mp h
+    have heq1 : a.1 = b.1 := hx_inj ha1
+    -- Then x a.2 = x b.2 from hsum
+    have ha2 : x a.2 = x b.2 := by linear_combination hsum - ha1
+    have heq2 : a.2 = b.2 := hx_inj ha2
+    exact hab_ne (Prod.ext heq1 heq2)
+  · -- x a.1 = x b.2, so a.1 = b.2
+    have ha1 : x a.1 = x b.2 := sub_eq_zero.mp h
+    have heq1 : a.1 = b.2 := hx_inj ha1
+    -- Then x a.2 = x b.1 from hsum
+    have ha2 : x a.2 = x b.1 := by linear_combination hsum - ha1
+    have heq2 : a.2 = b.1 := hx_inj ha2
+    -- But a.1 < a.2 = b.1 < b.2 = a.1, contradiction
+    omega
+
+/-- Since R is infinite and discPoly ≠ 0, there exists z with D(z) ≠ 0. -/
+theorem exists_discPoly_eval_ne_zero [IsRealClosed R]
+    {p : ℕ} (x : Fin p → L)
+    (hx_inj : Function.Injective x) :
+    ∃ z : R, Polynomial.eval (algebraMap R L z) (discPoly x) ≠ 0 := by
+  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have hD : discPoly x ≠ 0 := discPoly_ne_zero x hx_inj
+  by_contra h; push_neg at h
+  classical
+  have hinj := (algebraMap R L).injective
+  set d := (discPoly x).natDegree
+  set emb := Infinite.natEmbedding R
+  -- The d+1 elements emb 0, ..., emb d map to d+1 distinct roots
+  have hcard : Finset.card ((Finset.range (d + 1)).image (fun i => algebraMap R L (emb i))) = d + 1 := by
+    rw [Finset.card_image_of_injective]
+    · exact Finset.card_range (d + 1)
+    · exact hinj.comp emb.injective
+  -- Each of these is a root
+  have hsub : ((Finset.range (d + 1)).image (fun i => algebraMap R L (emb i))).val ⊆
+      (discPoly x).roots := by
+    intro y hy
+    rw [Finset.mem_val, Finset.mem_image] at hy
+    obtain ⟨i, _, rfl⟩ := hy
+    rw [Polynomial.mem_roots hD]
+    exact h (emb i)
+  -- So d + 1 ≤ natDegree = d, contradiction
+  have hle : d + 1 ≤ d :=
+    hcard ▸ Polynomial.card_le_degree_of_subset_roots hsub
+  omega
+
 end Azurite.BPR.Theorem2_11
