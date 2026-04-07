@@ -3,6 +3,7 @@ import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Separable
 import Mathlib.Algebra.Polynomial.SpecificDegree
+import Mathlib.LinearAlgebra.Lagrange
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
 
 /-!
@@ -261,7 +262,61 @@ theorem poly_in_image_iff_coeffs_in_range
         rwa [← hc n, map_ne_zero_iff _ (algebraMap R L).injective]
     · ext n; simp [Polynomial.coeff_map, hc n]
 
--- TODO eval_range_implies_coeff_range
+/-- If a polynomial f ∈ L[X] evaluates into the range of `algebraMap R L` at every
+    R-point, then each coefficient of f lies in the range.
+    Requires R to be an infinite integral domain. -/
+theorem eval_range_implies_coeff_range [Infinite R] [IsDomain R]
+    (f : L[X])
+    (hf : ∀ r : R, f.eval (algebraMap R L r) ∈ Set.range (algebraMap R L))
+    (n : ℕ) : f.coeff n ∈ Set.range (algebraMap R L) := by
+  classical
+  -- Choose preimages: for each r, φ(r) ∈ R with algebraMap(φ(r)) = f.eval(algebraMap r)
+  choose φ hφ using hf
+  set d := f.natDegree
+  -- Pick d+1 distinct R-elements via Infinite.natEmbedding
+  set v : Fin (d + 1) → R := (Infinite.natEmbedding R) ∘ Fin.val
+  have hv_inj : Set.InjOn v ↑(Finset.univ : Finset (Fin (d + 1))) := by
+    intro i _ j _ hij
+    exact Fin.ext ((Infinite.natEmbedding R).injective hij)
+  -- Build Lagrange interpolant h ∈ R[X]
+  set h := (Lagrange.interpolate Finset.univ v) (φ ∘ v)
+  -- h has degree < d+1
+  have hdeg_h : h.degree < ↑(d + 1) := by
+    have := Lagrange.degree_interpolate_lt (φ ∘ v) hv_inj
+    rwa [Finset.card_univ, Fintype.card_fin] at this
+  -- h.eval(vᵢ) = φ(vᵢ)
+  have heval_h : ∀ i : Fin (d + 1), eval (v i) h = φ (v i) :=
+    fun i => Lagrange.eval_interpolate_at_node _ hv_inj (Finset.mem_univ i)
+  -- Injectivity for the image finset
+  have hav_inj : Set.InjOn (algebraMap R L ∘ v) ↑(Finset.univ : Finset (Fin (d + 1))) := by
+    intro i _ j _ hij
+    exact hv_inj (Finset.mem_univ i) (Finset.mem_univ j) ((algebraMap R L).injective hij)
+  have hcard :
+      ((Finset.univ : Finset (Fin (d + 1))).image (algebraMap R L ∘ v)).card = d + 1 := by
+    rw [Finset.card_image_of_injOn hav_inj, Finset.card_univ, Fintype.card_fin]
+  -- Degree bounds
+  have hdf : f.degree < ↑(d + 1) :=
+    lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast Nat.lt_succ_of_le le_rfl)
+  have hdmh : (map (algebraMap R L) h).degree < ↑(d + 1) :=
+    lt_of_le_of_lt degree_map_le hdeg_h
+  -- Show f = h.map(algebraMap) via finite polynomial identity
+  have heq : f = map (algebraMap R L) h := by
+    suffices f - map (algebraMap R L) h = 0 from sub_eq_zero.mp this
+    apply eq_zero_of_degree_lt_of_eval_finset_eq_zero
+      ((Finset.univ : Finset (Fin (d + 1))).image (algebraMap R L ∘ v))
+    · rw [hcard]
+      exact lt_of_le_of_lt (degree_sub_le _ _) (sup_lt_iff.mpr ⟨hdf, hdmh⟩)
+    · intro x hx
+      rw [Finset.mem_image] at hx
+      obtain ⟨i, _, rfl⟩ := hx
+      simp only [Function.comp_apply, eval_sub, eval_map, sub_eq_zero]
+      -- eval₂ (algebraMap R L) (algebraMap R L (v i)) h = algebraMap R L (eval (v i) h)
+      rw [show eval₂ (algebraMap R L) (algebraMap R L (v i)) h =
+        algebraMap R L (eval (v i) h) from by
+          rw [← aeval_algebraMap_apply_eq_algebraMap_eval]; rfl]
+      rw [heval_h i, hφ]
+  -- Conclude: f.coeff n = algebraMap(h.coeff n) ∈ range
+  rw [heq]; exact ⟨h.coeff n, (coeff_map _ n).symm⟩
 
 /-- For a product ∏(Y − C(f_i)), each Y-coefficient (an element of L[Z]) has all
     its Z-coefficients expressible as elementary symmetric polynomials of
@@ -367,5 +422,327 @@ theorem Q_eval_coeff_in_R [IsRealClosed R]
   -- Apply proposition_2_16 from Section2_1
   rw [hcoeff]
   exact Azurite.BPR.proposition_2_16 P x hx _ hsymm
+
+/-- Each coefficient of Q(Z,Y) (viewed as a polynomial in Y whose coefficients
+    are in L[Z]) actually belongs to R[Z], provided the xᵢ are roots of a
+    polynomial P ∈ R[X]. -/
+theorem Q_coeff_mem_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) :
+    ∃ q : R[X], q.map (algebraMap R L) = (QPolynomial x).coeff n := by
+  rw [poly_in_image_iff_coeffs_in_range]
+  intro m
+  -- We need each Z-coefficient of f := (QPolynomial x).coeff n to be in R.
+  -- Q_eval_coeff_in_R shows f.eval(algebraMap r) ∈ range for all r.
+  -- eval_range_implies_coeff_range then gives all f.coeff in range.
+  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  exact eval_range_implies_coeff_range _ (Q_eval_coeff_in_R P x hx n) m
+
+/-- The n-th Y-coefficient of G(Z,Y), evaluated at z = algebraMap r, lies in R.
+    Proof mirrors Q_eval_coeff_in_R: MvPolynomial lifting + symmetry + proposition_2_16. -/
+theorem G_eval_coeff_in_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) (r : R) :
+    Polynomial.eval (algebraMap R L r) ((GPoly x).coeff n)
+      ∈ Set.range (algebraMap R L) := by
+  set γMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 + MvPolynomial.X ij.2 +
+      MvPolynomial.C r * MvPolynomial.X ij.1 * MvPolynomial.X ij.2 with γMv_def
+  set sMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 + MvPolynomial.X ij.2 with sMv_def
+  set GMv : (MvPolynomial (Fin p) R)[X] :=
+    ∑ ij ∈ strictPairs p,
+      Polynomial.C (sMv ij) *
+      ∏ kl ∈ (strictPairs p).erase ij,
+        (Polynomial.X - Polynomial.C (γMv kl)) with GMv_def
+  have hγ : ∀ ij ∈ strictPairs p,
+      (MvPolynomial.aeval x) (γMv ij) =
+        Polynomial.eval (algebraMap R L r) (gammaPoly x ij.1 ij.2) := by
+    intro ij _
+    simp only [γMv_def, gammaPoly, map_add, map_mul, MvPolynomial.aeval_X, MvPolynomial.aeval_C,
+      Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X]
+    ring
+  have hs_aeval : ∀ ij ∈ strictPairs p,
+      (MvPolynomial.aeval x) (sMv ij) = x ij.1 + x ij.2 := by
+    intro ij _; simp only [sMv_def, map_add, MvPolynomial.aeval_X]
+  have hG : Polynomial.map (MvPolynomial.aeval x).toRingHom GMv =
+      Polynomial.map (Polynomial.evalRingHom (algebraMap R L r)) (GPoly x) := by
+    simp only [GMv_def, GPoly]
+    rw [Polynomial.map_sum, Polynomial.map_sum]
+    apply Finset.sum_congr rfl; intro ij hij
+    rw [Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_C, Polynomial.map_C]
+    congr 1
+    · simp only [AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, Polynomial.coe_evalRingHom,
+        Polynomial.eval_C, hs_aeval ij hij]
+    · rw [Polynomial.map_prod, Polynomial.map_prod]
+      apply Finset.prod_congr rfl; intro kl hkl
+      simp only [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+        AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, Polynomial.coe_evalRingHom]
+      rw [hγ kl (Finset.mem_of_mem_erase hkl)]
+  have hcoeff : Polynomial.eval (algebraMap R L r) ((GPoly x).coeff n) =
+      (MvPolynomial.aeval x) (GMv.coeff n) := by
+    have := congr_arg (fun q => q.coeff n) hG
+    simp only [Polynomial.coeff_map, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] at this
+    exact this.symm
+  -- Symmetry: rename σ GMv = GMv. Strategy: show the polynomial (in Y) is invariant.
+  have hsymm : (GMv.coeff n).IsSymmetric := by
+    intro σ
+    rw [show MvPolynomial.rename σ (GMv.coeff n) =
+        (Polynomial.map (MvPolynomial.rename σ).toRingHom GMv).coeff n from
+      (Polynomial.coeff_map _ _).symm]
+    -- Suffices to show rename σ GMv = GMv as polynomials in Y
+    suffices hpoly : Polynomial.map (MvPolynomial.rename σ).toRingHom GMv = GMv by rw [hpoly]
+    -- GMv = Q.derivative * Lagrange_interpolant, but simpler: direct reindexing
+    -- Key: σ acts on strictPairs via the "sort" bijection
+    simp only [GMv_def]
+    rw [Polynomial.map_sum]
+    simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_prod, Polynomial.map_sub,
+      Polynomial.map_X, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom]
+    have hγ_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (γMv ij) = γMv (σ ij.1, σ ij.2) := by
+      intro ij
+      simp only [γMv_def, map_add, map_mul, MvPolynomial.rename_X, MvPolynomial.rename_C]
+    have hs_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (sMv ij) = sMv (σ ij.1, σ ij.2) := by
+      intro ij; simp only [sMv_def, map_add, MvPolynomial.rename_X]
+    simp_rw [hγ_rename, hs_rename]
+    have hγ_comm : ∀ i j : Fin p, γMv (i, j) = γMv (j, i) := by
+      intro i j; simp only [γMv_def]; ring
+    have hs_comm : ∀ i j : Fin p, sMv (i, j) = sMv (j, i) := by
+      intro i j; simp only [sMv_def]; ring
+    -- Sort bijection: map (σ i, σ j) to the strictly-ordered version
+    set φ : Fin p × Fin p → Fin p × Fin p :=
+      fun ij => if σ ij.1 < σ ij.2 then (σ ij.1, σ ij.2) else (σ ij.2, σ ij.1) with φ_def
+    -- φ maps strictPairs to strictPairs
+    have hφ_mem : ∀ ij ∈ strictPairs p, φ ij ∈ strictPairs p := by
+      intro ij hij
+      simp only [strictPairs, Finset.mem_filter, Finset.mem_univ, true_and] at hij ⊢
+      simp only [φ]; split_ifs with h
+      · exact h
+      · exact lt_of_le_of_ne (not_lt.mp h) (fun heq => hij.ne (σ.injective heq.symm))
+    -- φ is injective on strictPairs
+    have hφ_inj : ∀ ij₁ ∈ strictPairs p, ∀ ij₂ ∈ strictPairs p,
+        φ ij₁ = φ ij₂ → ij₁ = ij₂ := by
+      intro ij₁ hij₁ ij₂ hij₂ heq
+      have h₁ : ij₁.1 < ij₁.2 := (Finset.mem_filter.mp hij₁).2
+      have h₂ : ij₂.1 < ij₂.2 := (Finset.mem_filter.mp hij₂).2
+      simp only [φ] at heq
+      split_ifs at heq with ha hb hb
+      all_goals (obtain ⟨hc, hd⟩ := Prod.mk.inj heq)
+      · exact Prod.ext (σ.injective hc) (σ.injective hd)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₂ :
+          ij₁.2 < ij₁.1) (not_lt.mpr h₁.le)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₁ :
+          ij₂.2 < ij₂.1) (not_lt.mpr h₂.le)
+      · exact Prod.ext (σ.injective hd) (σ.injective hc)
+    -- φ is surjective onto strictPairs
+    have hφ_surj : ∀ ij ∈ strictPairs p, ∃ ij' ∈ strictPairs p, φ ij' = ij := by
+      intro ij hij
+      have hij_lt : ij.1 < ij.2 := (Finset.mem_filter.mp hij).2
+      by_cases hord : σ.symm ij.1 < σ.symm ij.2
+      · refine ⟨(σ.symm ij.1, σ.symm ij.2),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+      · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
+          lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
+        refine ⟨(σ.symm ij.2, σ.symm ij.1),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+    -- φ preserves γMv values (up to commutativity)
+    have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
+      intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
+    -- φ preserves sMv values (up to commutativity)
+    have hφ_s : ∀ ij, sMv (σ ij.1, σ ij.2) = sMv (φ ij) := by
+      intro ij; simp only [φ]; split_ifs <;> [rfl; exact hs_comm _ _]
+    -- Reindex the sum
+    apply Finset.sum_nbij φ hφ_mem
+      (fun ij₁ hij₁ ij₂ hij₂ heq => hφ_inj ij₁ hij₁ ij₂ hij₂ heq)
+      (fun ij hij => hφ_surj ij hij)
+    -- Value equality for each summand
+    intro ij hij
+    rw [hφ_s ij]
+    suffices hprod : ∏ kl ∈ (strictPairs p).erase ij, (Polynomial.X - Polynomial.C (γMv (σ kl.1, σ kl.2))) =
+        ∏ kl ∈ (strictPairs p).erase (φ ij), (Polynomial.X - Polynomial.C (γMv kl)) by
+      rw [hprod]
+    -- Product over erase'd set: same reindexing
+    apply Finset.prod_nbij φ
+    · -- Maps into SP.erase (φ ij)
+      intro kl hkl
+      refine Finset.mem_erase.mpr ⟨?_, hφ_mem kl (Finset.mem_of_mem_erase hkl)⟩
+      intro heq
+      exact (Finset.ne_of_mem_erase hkl)
+        (hφ_inj kl (Finset.mem_of_mem_erase hkl) ij hij heq)
+    · -- Injective
+      intro kl₁ hkl₁ kl₂ hkl₂ heq
+      exact hφ_inj kl₁ (Finset.mem_of_mem_erase hkl₁) kl₂ (Finset.mem_of_mem_erase hkl₂) heq
+    · -- Surjective
+      intro kl hkl
+      obtain ⟨kl', hkl'_mem, hkl'_eq⟩ := hφ_surj kl (Finset.mem_of_mem_erase hkl)
+      refine ⟨kl', Finset.mem_erase.mpr ⟨?_, hkl'_mem⟩, hkl'_eq⟩
+      intro heq
+      exact (Finset.ne_of_mem_erase hkl) (hkl'_eq ▸ congr_arg φ heq)
+    · -- Values
+      intro kl _
+      simp only [sub_right_inj]
+      exact congr_arg Polynomial.C (hφ_γ kl)
+  rw [hcoeff]
+  exact Azurite.BPR.proposition_2_16 P x hx _ hsymm
+
+/-- Each coefficient of G(Z,Y) belongs to R[Z]. -/
+theorem G_coeff_mem_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) :
+    ∃ q : R[X], q.map (algebraMap R L) = (GPoly x).coeff n := by
+  rw [poly_in_image_iff_coeffs_in_range]; intro m
+  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  exact eval_range_implies_coeff_range _ (G_eval_coeff_in_R P x hx n) m
+
+/-- The n-th Y-coefficient of H(Z,Y), evaluated at z = algebraMap r, lies in R.
+    Same structure as G: MvPolynomial lifting + symmetry + proposition_2_16. -/
+theorem H_eval_coeff_in_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) (r : R) :
+    Polynomial.eval (algebraMap R L r) ((HPoly x).coeff n)
+      ∈ Set.range (algebraMap R L) := by
+  -- Identical structure to G_eval_coeff_in_R with sMv replaced by pMv (product)
+  set γMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 + MvPolynomial.X ij.2 +
+      MvPolynomial.C r * MvPolynomial.X ij.1 * MvPolynomial.X ij.2 with γMv_def
+  set pMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 * MvPolynomial.X ij.2 with pMv_def
+  set HMv : (MvPolynomial (Fin p) R)[X] :=
+    ∑ ij ∈ strictPairs p,
+      Polynomial.C (pMv ij) *
+      ∏ kl ∈ (strictPairs p).erase ij,
+        (Polynomial.X - Polynomial.C (γMv kl)) with HMv_def
+  have hγ : ∀ ij ∈ strictPairs p,
+      (MvPolynomial.aeval x) (γMv ij) =
+        Polynomial.eval (algebraMap R L r) (gammaPoly x ij.1 ij.2) := by
+    intro ij _
+    simp only [γMv_def, gammaPoly, map_add, map_mul, MvPolynomial.aeval_X, MvPolynomial.aeval_C,
+      Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X]
+    ring
+  have hp_aeval : ∀ ij ∈ strictPairs p,
+      (MvPolynomial.aeval x) (pMv ij) = x ij.1 * x ij.2 := by
+    intro ij _; simp only [pMv_def, map_mul, MvPolynomial.aeval_X]
+  have hH : Polynomial.map (MvPolynomial.aeval x).toRingHom HMv =
+      Polynomial.map (Polynomial.evalRingHom (algebraMap R L r)) (HPoly x) := by
+    simp only [HMv_def, HPoly]
+    rw [Polynomial.map_sum, Polynomial.map_sum]
+    apply Finset.sum_congr rfl; intro ij hij
+    rw [Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_C, Polynomial.map_C]
+    congr 1
+    · simp only [AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, Polynomial.coe_evalRingHom,
+        Polynomial.eval_C, hp_aeval ij hij]
+    · rw [Polynomial.map_prod, Polynomial.map_prod]
+      apply Finset.prod_congr rfl; intro kl hkl
+      simp only [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+        AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, Polynomial.coe_evalRingHom]
+      rw [hγ kl (Finset.mem_of_mem_erase hkl)]
+  have hcoeff : Polynomial.eval (algebraMap R L r) ((HPoly x).coeff n) =
+      (MvPolynomial.aeval x) (HMv.coeff n) := by
+    have := congr_arg (fun q => q.coeff n) hH
+    simp only [Polynomial.coeff_map, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] at this
+    exact this.symm
+  have hsymm : (HMv.coeff n).IsSymmetric := by
+    intro σ
+    rw [show MvPolynomial.rename σ (HMv.coeff n) =
+        (Polynomial.map (MvPolynomial.rename σ).toRingHom HMv).coeff n from
+      (Polynomial.coeff_map _ _).symm]
+    suffices hpoly : Polynomial.map (MvPolynomial.rename σ).toRingHom HMv = HMv by rw [hpoly]
+    simp only [HMv_def]
+    rw [Polynomial.map_sum]
+    simp only [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_prod, Polynomial.map_sub,
+      Polynomial.map_X, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom]
+    have hγ_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (γMv ij) = γMv (σ ij.1, σ ij.2) := by
+      intro ij
+      simp only [γMv_def, map_add, map_mul, MvPolynomial.rename_X, MvPolynomial.rename_C]
+    have hp_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (pMv ij) = pMv (σ ij.1, σ ij.2) := by
+      intro ij; simp only [pMv_def, map_mul, MvPolynomial.rename_X]
+    simp_rw [hγ_rename, hp_rename]
+    have hγ_comm : ∀ i j : Fin p, γMv (i, j) = γMv (j, i) := by
+      intro i j; simp only [γMv_def]; ring
+    have hp_comm : ∀ i j : Fin p, pMv (i, j) = pMv (j, i) := by
+      intro i j; simp only [pMv_def]; ring
+    set φ : Fin p × Fin p → Fin p × Fin p :=
+      fun ij => if σ ij.1 < σ ij.2 then (σ ij.1, σ ij.2) else (σ ij.2, σ ij.1) with φ_def
+    have hφ_mem : ∀ ij ∈ strictPairs p, φ ij ∈ strictPairs p := by
+      intro ij hij
+      simp only [strictPairs, Finset.mem_filter, Finset.mem_univ, true_and] at hij ⊢
+      simp only [φ]; split_ifs with h
+      · exact h
+      · exact lt_of_le_of_ne (not_lt.mp h) (fun heq => hij.ne (σ.injective heq.symm))
+    have hφ_inj : ∀ ij₁ ∈ strictPairs p, ∀ ij₂ ∈ strictPairs p,
+        φ ij₁ = φ ij₂ → ij₁ = ij₂ := by
+      intro ij₁ hij₁ ij₂ hij₂ heq
+      have h₁ : ij₁.1 < ij₁.2 := (Finset.mem_filter.mp hij₁).2
+      have h₂ : ij₂.1 < ij₂.2 := (Finset.mem_filter.mp hij₂).2
+      simp only [φ] at heq
+      split_ifs at heq with ha hb hb
+      all_goals (obtain ⟨hc, hd⟩ := Prod.mk.inj heq)
+      · exact Prod.ext (σ.injective hc) (σ.injective hd)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₂ :
+          ij₁.2 < ij₁.1) (not_lt.mpr h₁.le)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₁ :
+          ij₂.2 < ij₂.1) (not_lt.mpr h₂.le)
+      · exact Prod.ext (σ.injective hd) (σ.injective hc)
+    have hφ_surj : ∀ ij ∈ strictPairs p, ∃ ij' ∈ strictPairs p, φ ij' = ij := by
+      intro ij hij
+      have hij_lt : ij.1 < ij.2 := (Finset.mem_filter.mp hij).2
+      by_cases hord : σ.symm ij.1 < σ.symm ij.2
+      · refine ⟨(σ.symm ij.1, σ.symm ij.2),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+      · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
+          lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
+        refine ⟨(σ.symm ij.2, σ.symm ij.1),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+    have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
+      intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
+    have hφ_p : ∀ ij, pMv (σ ij.1, σ ij.2) = pMv (φ ij) := by
+      intro ij; simp only [φ]; split_ifs <;> [rfl; exact hp_comm _ _]
+    apply Finset.sum_nbij φ hφ_mem
+      (fun ij₁ hij₁ ij₂ hij₂ heq => hφ_inj ij₁ hij₁ ij₂ hij₂ heq)
+      (fun ij hij => hφ_surj ij hij)
+    intro ij hij
+    rw [hφ_p ij]
+    suffices hprod : ∏ kl ∈ (strictPairs p).erase ij, (Polynomial.X - Polynomial.C (γMv (σ kl.1, σ kl.2))) =
+        ∏ kl ∈ (strictPairs p).erase (φ ij), (Polynomial.X - Polynomial.C (γMv kl)) by
+      rw [hprod]
+    apply Finset.prod_nbij φ
+    · intro kl hkl
+      refine Finset.mem_erase.mpr ⟨?_, hφ_mem kl (Finset.mem_of_mem_erase hkl)⟩
+      intro heq
+      exact (Finset.ne_of_mem_erase hkl)
+        (hφ_inj kl (Finset.mem_of_mem_erase hkl) ij hij heq)
+    · intro kl₁ hkl₁ kl₂ hkl₂ heq
+      exact hφ_inj kl₁ (Finset.mem_of_mem_erase hkl₁) kl₂ (Finset.mem_of_mem_erase hkl₂) heq
+    · intro kl hkl
+      obtain ⟨kl', hkl'_mem, hkl'_eq⟩ := hφ_surj kl (Finset.mem_of_mem_erase hkl)
+      refine ⟨kl', Finset.mem_erase.mpr ⟨?_, hkl'_mem⟩, hkl'_eq⟩
+      intro heq
+      exact (Finset.ne_of_mem_erase hkl) (hkl'_eq ▸ congr_arg φ heq)
+    · intro kl _
+      simp only [sub_right_inj]
+      exact congr_arg Polynomial.C (hφ_γ kl)
+  rw [hcoeff]
+  exact Azurite.BPR.proposition_2_16 P x hx _ hsymm
+
+/-- Each coefficient of H(Z,Y) belongs to R[Z]. -/
+theorem H_coeff_mem_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) :
+    ∃ q : R[X], q.map (algebraMap R L) = (HPoly x).coeff n := by
+  rw [poly_in_image_iff_coeffs_in_range]; intro m
+  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  exact eval_range_implies_coeff_range _ (H_eval_coeff_in_R P x hx n) m
 
 end Azurite.BPR.Theorem2_11
