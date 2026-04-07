@@ -939,4 +939,135 @@ theorem exists_discPoly_eval_ne_zero [IsRealClosed R]
     hcard ▸ Polynomial.card_le_degree_of_subset_roots hsub
   omega
 
+/-! ### Separability of Q at a point -/
+
+/-- Q(z, ·) = ∏ (X - C(γ_{ij}(z))) is separable iff all γ_{ij}(z) are distinct,
+    i.e., when D(z) ≠ 0. For a Finset product. -/
+theorem separable_Q_eval (x : Fin p → L) (z : L)
+    (hdist : ∀ a ∈ strictPairs p, ∀ b ∈ strictPairs p,
+      Polynomial.eval z (gammaPoly x a.1 a.2) = Polynomial.eval z (gammaPoly x b.1 b.2) → a = b) :
+    ((QPolynomial x).map (Polynomial.evalRingHom z)).Separable := by
+  simp only [QPolynomial, Polynomial.map_prod, Polynomial.map_sub, Polynomial.map_X,
+    Polynomial.map_C, Polynomial.coe_evalRingHom]
+  exact Polynomial.separable_prod_X_sub_C_iff'.mpr hdist
+
+/-! ### D ∈ R[Z] -/
+
+/-- Evaluating D(Z) at z = algebraMap r gives an R-value.
+    This follows from the MvPolynomial lifting: D is the product of differences γ_a − γ_b
+    over the off-diagonal of strictPairs, which forms a symmetric polynomial in the roots. -/
+theorem D_eval_in_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (r : R) :
+    Polynomial.eval (algebraMap R L r) (discPoly x) ∈ Set.range (algebraMap R L) := by
+  -- Lift to MvPolynomial
+  set γMv : Fin p × Fin p → MvPolynomial (Fin p) R :=
+    fun ij => MvPolynomial.X ij.1 + MvPolynomial.X ij.2 +
+      MvPolynomial.C r * MvPolynomial.X ij.1 * MvPolynomial.X ij.2 with γMv_def
+  -- D = ∏ (γ_a - γ_b) over offDiag. Lift to MvPolynomial
+  set DMv : MvPolynomial (Fin p) R :=
+    ∏ ab ∈ (strictPairs p).offDiag, (γMv ab.1 - γMv ab.2) with DMv_def
+  -- Check that evaluating DMv at the roots gives D evaluated at algebraMap r
+  have hcoeff : Polynomial.eval (algebraMap R L r) (discPoly x) =
+      MvPolynomial.aeval x DMv := by
+    simp only [discPoly, DMv_def, map_prod, map_sub, Polynomial.eval_prod]
+    apply Finset.prod_congr rfl
+    intro ab _
+    simp only [γMv_def, map_add, map_mul, MvPolynomial.aeval_X, MvPolynomial.aeval_C,
+      gammaPoly, Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_C, Polynomial.eval_X]
+    ring
+  -- DMv is symmetric (any permutation σ of roots gives σ · DMv = DMv)
+  have hsymm : ∀ σ : Equiv.Perm (Fin p),
+      MvPolynomial.rename σ DMv = DMv := by
+    intro σ
+    simp only [DMv_def, map_prod, map_sub]
+    -- Under renaming by σ, γMv(i,j) becomes γMv(σi, σj).
+    -- The product ∏ (γMv(a.1) - γMv(a.2)) over offDiag is unchanged because
+    -- σ permutes the off-diagonal pairs.
+    -- The key: γMv is equivariant
+    have hγ_rename : ∀ ij : Fin p × Fin p,
+        MvPolynomial.rename σ (γMv ij) = γMv (σ ij.1, σ ij.2) := by
+      intro ij
+      simp only [γMv_def, map_add, map_mul, MvPolynomial.rename_X, MvPolynomial.rename_C]
+    have hγ_comm : ∀ i j : Fin p, γMv (i, j) = γMv (j, i) := by
+      intro i j; simp only [γMv_def]; ring
+    -- Sort bijection on strictPairs
+    set φ : Fin p × Fin p → Fin p × Fin p :=
+      fun ij => if σ ij.1 < σ ij.2 then (σ ij.1, σ ij.2) else (σ ij.2, σ ij.1) with φ_def
+    have hφ_mem : ∀ ij ∈ strictPairs p, φ ij ∈ strictPairs p := by
+      intro ij hij
+      simp only [strictPairs, Finset.mem_filter, Finset.mem_univ, true_and] at hij ⊢
+      simp only [φ]; split_ifs with h
+      · exact h
+      · exact lt_of_le_of_ne (not_lt.mp h) (fun heq => hij.ne (σ.injective heq.symm))
+    have hφ_inj : ∀ ij₁ ∈ strictPairs p, ∀ ij₂ ∈ strictPairs p,
+        φ ij₁ = φ ij₂ → ij₁ = ij₂ := by
+      intro ij₁ hij₁ ij₂ hij₂ heq
+      have h₁ : ij₁.1 < ij₁.2 := (Finset.mem_filter.mp hij₁).2
+      have h₂ : ij₂.1 < ij₂.2 := (Finset.mem_filter.mp hij₂).2
+      simp only [φ] at heq
+      split_ifs at heq with ha hb hb
+      all_goals (obtain ⟨hc, hd⟩ := Prod.mk.inj heq)
+      · exact Prod.ext (σ.injective hc) (σ.injective hd)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₂ :
+          ij₁.2 < ij₁.1) (not_lt.mpr h₁.le)
+      · exfalso; exact absurd (σ.injective hc ▸ σ.injective hd ▸ h₁ :
+          ij₂.2 < ij₂.1) (not_lt.mpr h₂.le)
+      · exact Prod.ext (σ.injective hd) (σ.injective hc)
+    have hφ_surj : ∀ ij ∈ strictPairs p, ∃ ij' ∈ strictPairs p, φ ij' = ij := by
+      intro ij hij
+      have hij_lt : ij.1 < ij.2 := (Finset.mem_filter.mp hij).2
+      by_cases hord : σ.symm ij.1 < σ.symm ij.2
+      · refine ⟨(σ.symm ij.1, σ.symm ij.2),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+      · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
+          lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
+        refine ⟨(σ.symm ij.2, σ.symm ij.1),
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
+        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+    have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
+      intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
+    -- Now build bijection on offDiag
+    set ψ : (Fin p × Fin p) × (Fin p × Fin p) → (Fin p × Fin p) × (Fin p × Fin p) :=
+      fun ab => (φ ab.1, φ ab.2) with ψ_def
+    apply Finset.prod_nbij ψ
+    · -- ψ maps offDiag to offDiag
+      intro ab hab
+      simp only [Finset.mem_offDiag] at hab ⊢
+      simp only [ψ]
+      exact ⟨hφ_mem ab.1 hab.1, hφ_mem ab.2 hab.2.1,
+        fun heq => hab.2.2 (hφ_inj ab.1 hab.1 ab.2 hab.2.1 heq)⟩
+    · -- ψ injective on offDiag
+      intro ab₁ hab₁ ab₂ hab₂ heq
+      rw [Finset.mem_coe, Finset.mem_offDiag] at hab₁ hab₂
+      simp only [ψ] at heq
+      obtain ⟨h1, h2⟩ := Prod.mk.inj heq
+      exact Prod.ext (hφ_inj _ hab₁.1 _ hab₂.1 h1) (hφ_inj _ hab₁.2.1 _ hab₂.2.1 h2)
+    · -- ψ surjective onto offDiag
+      intro ab hab
+      simp only [Set.mem_image, Finset.mem_coe, Finset.mem_offDiag] at hab ⊢
+      obtain ⟨a', ha'_mem, ha'_eq⟩ := hφ_surj ab.1 hab.1
+      obtain ⟨b', hb'_mem, hb'_eq⟩ := hφ_surj ab.2 hab.2.1
+      exact ⟨(a', b'), ⟨ha'_mem, hb'_mem,
+        fun heq => hab.2.2 (ha'_eq ▸ hb'_eq ▸ congr_arg φ heq)⟩,
+        show ψ (a', b') = ab from Prod.ext ha'_eq hb'_eq⟩
+    · -- Values match
+      intro ab _
+      simp only [ψ]
+      rw [hγ_rename, hγ_rename, hφ_γ, hφ_γ]
+  rw [hcoeff]
+  exact Azurite.BPR.proposition_2_16 P x hx _ hsymm
+
+/-- Each coefficient of D(Z) lies in R. -/
+theorem D_coeff_mem_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) :
+    (discPoly x).coeff n ∈ Set.range (algebraMap R L) := by
+  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  exact eval_range_implies_coeff_range _ (D_eval_in_R P x hx) n
+
 end Azurite.BPR.Theorem2_11
