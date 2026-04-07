@@ -745,4 +745,34 @@ theorem H_coeff_mem_R [IsRealClosed R]
   haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (H_eval_coeff_in_R P x hx n) m
 
+/-! ### F ∈ R[Z][Y] — follows from Q ∈ R[Z][Y] since F = ∂Q/∂Y -/
+
+/-- Each coefficient of F(Z,Y) belongs to R[Z].
+    Since F = derivative Q and Q ∈ R[Z][Y], this is immediate. -/
+theorem F_coeff_mem_R [IsRealClosed R]
+    {p : ℕ} (P : R[X]) (x : Fin p → L)
+    (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
+    (n : ℕ) :
+    ∃ q : R[X], q.map (algebraMap R L) = (FPoly x).coeff n := by
+  -- F = derivative Q. coeff n of p' = (n+1) * coeff (n+1) of p
+  simp only [FPoly, Polynomial.coeff_derivative]
+  obtain ⟨q, hq⟩ := Q_coeff_mem_R P x hx (n + 1)
+  refine ⟨Polynomial.C (↑n + 1 : R) * q, ?_⟩
+  rw [Polynomial.map_mul, Polynomial.map_C, hq]
+  simp [map_add, map_natCast, map_one, mul_comm]
+
+/-! ### Degree and structure of Q -/
+
+/-- Q(Z,Y) is monic as a polynomial in Y — it is a product of monic linear factors. -/
+theorem monic_QPolynomial (x : Fin p → L) :
+    (QPolynomial x).Monic := by
+  exact Polynomial.monic_prod_of_monic _ _ (fun ij _ => Polynomial.monic_X_sub_C _)
+
+/-- The Y-degree of Q equals the number of strict pairs = p(p-1)/2. -/
+theorem natDegree_QPolynomial (x : Fin p → L) :
+    (QPolynomial x).natDegree = (strictPairs p).card := by
+  rw [QPolynomial, Polynomial.natDegree_prod]
+  · simp
+  · intro ij _; exact (Polynomial.monic_X_sub_C _).ne_zero
+
 end Azurite.BPR.Theorem2_11
