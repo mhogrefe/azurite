@@ -745,6 +745,99 @@ theorem H_coeff_mem_R [IsRealClosed R]
   haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (H_eval_coeff_in_R P x hx n) m
 
+/-! ### Evaluation at roots of Q -/
+
+/-- Q vanishes at γ_{ij}: Q(Z, γ_{ij}(Z)) = 0, since γ_{ij} is a factor of Q. -/
+theorem Q_eval_gamma (x : Fin p → L) (ij : Fin p × Fin p) (hij : ij ∈ strictPairs p) :
+    Polynomial.eval (gammaPoly x ij.1 ij.2) (QPolynomial x) = 0 := by
+  simp only [QPolynomial, Polynomial.eval_prod, Finset.prod_eq_zero_iff]
+  exact ⟨ij, hij, by simp⟩
+
+/-- General Lagrange evaluation: evaluating ∑_{i ∈ s} C(c_i) · ∏_{j ∈ s.erase i} (X - C(γ_j))
+    at γ_m (where m ∈ s) gives c_m · ∏_{j ∈ s.erase m} (γ_m - γ_j).
+    This works because for i ≠ m, the product includes j = m, giving factor (γ_m - γ_m) = 0. -/
+theorem eval_lagrange_sum {A : Type*} [CommRing A] [DecidableEq ι]
+    (s : Finset ι) (c : ι → A) (γ : ι → A)
+    (m : ι) (hm : m ∈ s) :
+    Polynomial.eval (γ m)
+      (∑ i ∈ s, Polynomial.C (c i) * ∏ j ∈ s.erase i, (Polynomial.X - Polynomial.C (γ j))) =
+    c m * ∏ j ∈ s.erase m, (γ m - γ j) := by
+  rw [Polynomial.eval_finset_sum]
+  rw [Finset.sum_eq_single m]
+  · -- Main term
+    simp [Polynomial.eval_mul, Polynomial.eval_prod]
+  · -- Other terms vanish
+    intro i hi him
+    simp only [Polynomial.eval_mul]
+    apply mul_eq_zero_of_right
+    rw [Polynomial.eval_prod]
+    apply Finset.prod_eq_zero (Finset.mem_erase.mpr ⟨Ne.symm him, hm⟩)
+    simp
+  · intro hm'; exact absurd hm hm'
+
+/-- G(Z, γ_{ij}(Z)) = (x_i + x_j) · ∏_{(k,l)≠(i,j)} (γ_{ij} - γ_{kl}) in L[Z]. -/
+theorem G_eval_gamma (x : Fin p → L) (ij : Fin p × Fin p) (hij : ij ∈ strictPairs p) :
+    Polynomial.eval (gammaPoly x ij.1 ij.2) (GPoly x) =
+    Polynomial.C (x ij.1 + x ij.2) *
+      ∏ kl ∈ (strictPairs p).erase ij,
+        (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2) := by
+  simp only [GPoly]
+  exact eval_lagrange_sum (strictPairs p)
+    (fun kl => Polynomial.C (x kl.1 + x kl.2))
+    (fun kl => gammaPoly x kl.1 kl.2) ij hij
+
+/-- H(Z, γ_{ij}(Z)) = (x_i · x_j) · ∏_{(k,l)≠(i,j)} (γ_{ij} - γ_{kl}) in L[Z]. -/
+theorem H_eval_gamma (x : Fin p → L) (ij : Fin p × Fin p) (hij : ij ∈ strictPairs p) :
+    Polynomial.eval (gammaPoly x ij.1 ij.2) (HPoly x) =
+    Polynomial.C (x ij.1 * x ij.2) *
+      ∏ kl ∈ (strictPairs p).erase ij,
+        (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2) := by
+  simp only [HPoly]
+  exact eval_lagrange_sum (strictPairs p)
+    (fun kl => Polynomial.C (x kl.1 * x kl.2))
+    (fun kl => gammaPoly x kl.1 kl.2) ij hij
+
+/-- At the root γ_{ij} of Q, x_i is a root of the quadratic P·T²−G·T+H over L[Z],
+    where P = ∏_{(k,l)≠(i,j)} (γ_{ij} − γ_{kl}).
+    Proof: after substituting the Lagrange evaluations G_ij = C(s)·P, H_ij = C(p)·P,
+    we get P·(x_i² − s·x_i + p) = 0, which vanishes because s = x_i+x_j, p = x_i·x_j. -/
+theorem quadratic_root_xi (x : Fin p → L)
+    (ij : Fin p × Fin p) :
+    let P := ∏ kl ∈ (strictPairs p).erase ij,
+          (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2)
+    P * Polynomial.C (x ij.1) ^ 2 -
+      (Polynomial.C (x ij.1 + x ij.2) * P) * Polynomial.C (x ij.1) +
+      (Polynomial.C (x ij.1 * x ij.2) * P) = 0 := by
+  simp only []
+  have : Polynomial.C (x ij.1) ^ 2 - Polynomial.C (x ij.1 + x ij.2) * Polynomial.C (x ij.1) +
+    Polynomial.C (x ij.1 * x ij.2) = 0 := by
+    simp [map_add, map_mul]; ring
+  calc _ = (∏ kl ∈ (strictPairs p).erase ij,
+            (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2)) *
+           (Polynomial.C (x ij.1) ^ 2 - Polynomial.C (x ij.1 + x ij.2) * Polynomial.C (x ij.1) +
+             Polynomial.C (x ij.1 * x ij.2)) := by ring
+       _ = _ * 0 := by rw [this]
+       _ = 0 := by ring
+
+/-- Similarly, x_j is a root of the same quadratic. -/
+theorem quadratic_root_xj (x : Fin p → L)
+    (ij : Fin p × Fin p) :
+    let P := ∏ kl ∈ (strictPairs p).erase ij,
+          (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2)
+    P * Polynomial.C (x ij.2) ^ 2 -
+      (Polynomial.C (x ij.1 + x ij.2) * P) * Polynomial.C (x ij.2) +
+      (Polynomial.C (x ij.1 * x ij.2) * P) = 0 := by
+  simp only []
+  have : Polynomial.C (x ij.2) ^ 2 - Polynomial.C (x ij.1 + x ij.2) * Polynomial.C (x ij.2) +
+    Polynomial.C (x ij.1 * x ij.2) = 0 := by
+    simp [map_add, map_mul]; ring
+  calc _ = (∏ kl ∈ (strictPairs p).erase ij,
+            (gammaPoly x ij.1 ij.2 - gammaPoly x kl.1 kl.2)) *
+           (Polynomial.C (x ij.2) ^ 2 - Polynomial.C (x ij.1 + x ij.2) * Polynomial.C (x ij.2) +
+             Polynomial.C (x ij.1 * x ij.2)) := by ring
+       _ = _ * 0 := by rw [this]
+       _ = 0 := by ring
+
 /-! ### F ∈ R[Z][Y] — follows from Q ∈ R[Z][Y] since F = ∂Q/∂Y -/
 
 /-- Each coefficient of F(Z,Y) belongs to R[Z].
