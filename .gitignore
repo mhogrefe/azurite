@@ -12,6 +12,7 @@
 # Editor directories
 .vscode/
 .antigravity/
+.history/
 
 # Rust build output
 benchmark-charts/target/

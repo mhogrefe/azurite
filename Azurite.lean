@@ -123,7 +123,6 @@ import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
-import Azurite.AzPolynomial.Equiv.RootBound
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.Sub
@@ -136,7 +135,6 @@ import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.QuoRem
-import Azurite.AzPolynomial.RootBound
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SpecialTranslate
 import Azurite.AzPolynomial.StringLemmas

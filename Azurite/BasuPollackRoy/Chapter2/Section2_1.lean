@@ -1388,6 +1388,50 @@ theorem IsRealClosedField.nonneg_iff_isSquare [IsRealClosed R] {x : R} :
 end RealClosedField
 
 /-!
+### IsRealClosed implies a linear order
+
+`IsRealClosed R` (algebraic, no order) implies `R` can be linearly ordered.
+Construction: `sumOfSquares R` is a proper cone (by `IsSemireal`), extended to
+a total cone `T` by `prop_2_8`. We then use `T` to define both `LinearOrder R`
+and `IsOrderedRing R` from the same cone, ensuring compatibility.
+-/
+
+section IsRealClosedOrder
+
+variable {R : Type*} [Field R] [IsRealClosed R]
+
+private lemma isProperCone_sumOfSquares_realClosed :
+    IsProperCone (sumOfSquares R) :=
+  ⟨isCone_sumOfSquares (F := R),
+   (isRealField_iff_neg_one_notMem R).mp (IsRealClosedField.isRealField R)⟩
+
+-- The canonical total cone: the sum-of-squares cone extended to a total cone
+-- via Prop. 2.8. Using `Classical.choose` ensures both instances share the
+-- same cone and hence produce compatible orders.
+private noncomputable def isRealClosed_totalCone : RingCone R :=
+  Classical.choose (prop_2_8 isProperCone_sumOfSquares_realClosed)
+
+private lemma isRealClosed_totalCone_total :
+    HasMemOrNegMem (isRealClosed_totalCone (R := R)) :=
+  (Classical.choose_spec (prop_2_8 isProperCone_sumOfSquares_realClosed)).2
+
+/-- A real closed field carries a noncomputable linear order, with
+    `a ≤ b ↔ b - a` lies in the total cone extending `ΣR^{(2)}`. -/
+noncomputable instance IsRealClosed.toLinearOrder : LinearOrder R :=
+  haveI : DecidablePred (· ∈ (isRealClosed_totalCone (R := R)).toAddGroupCone) :=
+    Classical.decPred _
+  haveI : HasMemOrNegMem (isRealClosed_totalCone (R := R)).toAddGroupCone :=
+    ⟨fun a => (isRealClosed_totalCone_total (R := R)).mem_or_neg_mem a⟩
+  LinearOrder.mkOfAddGroupCone (isRealClosed_totalCone (R := R)).toAddGroupCone
+
+/-- The linear order on a real closed field is compatible with the ring structure. -/
+noncomputable instance IsRealClosed.toIsOrderedRing :
+    @IsOrderedRing R _ IsRealClosed.toLinearOrder.toPartialOrder :=
+  IsOrderedRing.mkOfCone (isRealClosed_totalCone (R := R))
+
+end IsRealClosedOrder
+
+/-!
 ### Uniqueness of the ordering on a real closed field
 -/
 

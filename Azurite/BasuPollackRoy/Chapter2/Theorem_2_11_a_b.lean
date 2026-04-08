@@ -2,6 +2,8 @@ import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.Separable
+import Mathlib.FieldTheory.SplittingField.Construction
+import Mathlib.RingTheory.Polynomial.UniqueFactorization
 import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.LinearAlgebra.Lagrange
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
@@ -63,6 +65,52 @@ theorem Ri.conj_injective (R : Type*) [CommRing R] :
 /-- The set of ordered pairs (i, j) with i < j from Fin p. -/
 def strictPairs (p : ℕ) : Finset (Fin p × Fin p) :=
   Finset.univ.filter (fun ij => ij.1 < ij.2)
+
+private lemma card_strictPairs (p : ℕ) : (strictPairs p).card = p * (p - 1) / 2 := by
+  have hmul : p * (p - 1) = p * p - p := Nat.mul_sub_one p p
+  have hAB : (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 < ij.2)).card =
+      (Finset.univ.filter (fun ij : Fin p × Fin p => ij.2 < ij.1)).card :=
+    Finset.card_bij (fun ij _ => Prod.swap ij)
+      (fun ⟨a, b⟩ h => by simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h ⊢; exact h)
+      (fun ⟨a₁, b₁⟩ _ ⟨a₂, b₂⟩ _ h => by
+        simp only [Prod.swap, Prod.mk.injEq] at h; exact Prod.ext h.2 h.1)
+      (fun ⟨a, b⟩ h => by
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h
+        exact ⟨⟨b, a⟩, by simp only [Finset.mem_filter, Finset.mem_univ, true_and]; exact h, rfl⟩)
+  have hAnotA : (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 < ij.2)).card +
+      (Finset.univ.filter (fun ij : Fin p × Fin p => ¬ij.1 < ij.2)).card = p * p := by
+    have h := Finset.card_filter_add_card_filter_not
+      (s := (Finset.univ : Finset (Fin p × Fin p))) (fun ij : Fin p × Fin p => ij.1 < ij.2)
+    simp only [Finset.card_univ, Fintype.card_prod, Fintype.card_fin] at h
+    exact h
+  have hB' : (Finset.univ.filter (fun ij : Fin p × Fin p => ¬ij.1 < ij.2)).filter
+      (fun ij : Fin p × Fin p => ij.2 < ij.1) =
+      Finset.univ.filter (fun ij : Fin p × Fin p => ij.2 < ij.1) := by
+    ext ⟨a, b⟩; simp only [Finset.mem_filter, Finset.mem_univ, true_and, not_lt]; omega
+  have hD' : (Finset.univ.filter (fun ij : Fin p × Fin p => ¬ij.1 < ij.2)).filter
+      (fun ij : Fin p × Fin p => ¬ij.2 < ij.1) =
+      Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 = ij.2) := by
+    ext ⟨a, b⟩; simp only [Finset.mem_filter, Finset.mem_univ, true_and, not_lt]
+    exact ⟨fun ⟨h1, h2⟩ => le_antisymm h2 h1, fun h => ⟨h ▸ le_refl _, h ▸ le_refl _⟩⟩
+  have hBD : (Finset.univ.filter (fun ij : Fin p × Fin p => ij.2 < ij.1)).card +
+      (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 = ij.2)).card =
+      (Finset.univ.filter (fun ij : Fin p × Fin p => ¬ij.1 < ij.2)).card := by
+    have h := Finset.card_filter_add_card_filter_not
+      (s := Finset.univ.filter (fun ij : Fin p × Fin p => ¬ij.1 < ij.2))
+      (fun ij : Fin p × Fin p => ij.2 < ij.1)
+    rw [hB', hD'] at h; exact h
+  have hDp : (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 = ij.2)).card = p := by
+    have h : (Finset.univ : Finset (Fin p)).card =
+        (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 = ij.2)).card :=
+      Finset.card_bij (fun (i : Fin p) _ => ((i, i) : Fin p × Fin p))
+        (fun i _ => by simp only [Finset.mem_filter, Finset.mem_univ, true_and])
+        (fun a _ b _ h => congr_arg Prod.fst h)
+        (fun ⟨a, b⟩ h => by
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h
+          exact ⟨a, Finset.mem_univ _, Prod.ext rfl h⟩)
+    simp only [Finset.card_univ, Fintype.card_fin] at h; omega
+  show (Finset.univ.filter (fun ij : Fin p × Fin p => ij.1 < ij.2)).card = p * (p - 1) / 2
+  omega
 
 /-! ### The polynomials Q, D, F, G, H -/
 
@@ -1240,5 +1288,538 @@ theorem isSquare_sum_sq [IsRealClosed R] (a b : R) : IsSquare (a ^ 2 + b ^ 2) :=
       rw [show (-1 : R) = (a⁻¹ * b) * (a⁻¹ * b) + (a⁻¹ * c) * (a⁻¹ * c) from
         by linear_combination -key]
       exact IsSumSq.sq_add _ (IsSumSq.mul_self _)
+
+/-- Every element of R[i] has a square root when R is real closed.
+    For w = a + bi:
+    - If b = 0: use isSquare_or_isSquare_neg on a
+    - If b ≠ 0: use the formula with √(a²+b²) -/
+theorem sqrt_exists_Ri [IsRealClosed R] (w : Ri R) : ∃ v : Ri R, v * v = w := by
+  -- Decompose w = algebraMap a + algebraMap b * i (using modByMonic)
+  induction w using AdjoinRoot.induction_on with
+  | ih p =>
+    set f := (X : R[X]) ^ 2 + 1
+    have hfm : f.Monic := monic_X_pow_add_C 1 (by norm_num : (2 : ℕ) ≠ 0)
+    set r := p %ₘ f
+    -- aeval i p = aeval i r
+    have haeval_eq : Polynomial.aeval (Ri.i R) p = Polynomial.aeval (Ri.i R) r := by
+      have : AdjoinRoot.mk ((X : R[X])^2+1) p = AdjoinRoot.mk ((X : R[X])^2+1) r := by
+        rw [AdjoinRoot.mk_eq_mk]
+        exact ⟨p /ₘ f, by have := modByMonic_eq_sub_mul_div p f; linear_combination -this⟩
+      rw [← AdjoinRoot.aeval_eq, ← AdjoinRoot.aeval_eq] at this; exact this
+    rw [show AdjoinRoot.mk _ p = Polynomial.aeval (Ri.i R) p from (AdjoinRoot.aeval_eq p).symm,
+        haeval_eq]
+    -- r has natDegree ≤ 1
+    have hr_deg : r.natDegree ≤ 1 := by
+      have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
+      have hf_deg : f.degree = 2 := by
+        have hnat : f.natDegree = 2 := by
+          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+        rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)), hnat]
+        norm_num
+      rw [hf_deg] at hrd
+      by_cases hr : r = 0
+      · simp [hr]
+      · rw [Polynomial.degree_eq_natDegree hr] at hrd
+        exact Nat.lt_succ_iff.mp (WithBot.coe_lt_coe.mp (by exact_mod_cast hrd))
+    -- r = C(coeff 1) * X + C(coeff 0)
+    have hr_decomp := Polynomial.eq_X_add_C_of_natDegree_le_one hr_deg
+    set a := r.coeff 0
+    set b := r.coeff 1
+    have haeval_r : ∀ x : Ri R,
+        Polynomial.aeval x r = algebraMap R (Ri R) b * x + algebraMap R (Ri R) a := by
+      intro x; conv_lhs => rw [hr_decomp]
+      simp [Polynomial.aeval_def, eval₂_add, eval₂_mul, eval₂_C, eval₂_X]
+    rw [haeval_r]
+    -- Goal: ∃ v, v * v = algebraMap b * i + algebraMap a
+    by_cases hb : b = 0
+    · -- Case b = 0: w = algebraMap a
+      simp only [hb, map_zero, zero_mul, zero_add]
+      obtain ⟨v, hv⟩ := sqrt_of_R_in_Ri (R := R) a
+      exact ⟨v, by rw [← sq]; exact hv⟩
+    · -- Case b ≠ 0: use isSquare_sum_sq
+      obtain ⟨d, hd⟩ := isSquare_sum_sq a b
+      -- hd : a^2 + b^2 = d * d
+      -- Helper: given e with e*e = (a+d')/2 where d'*d' = a²+b² and e ≠ 0,
+      -- construct the square root v = algebraMap e + algebraMap(b/(2e)) * i
+      suffices hsuff : ∀ d' : R, a ^ 2 + b ^ 2 = d' * d' →
+          IsSquare ((a + d') * 2⁻¹) →
+          ∃ v, v * v = (algebraMap R (Ri R)) b * Ri.i R + (algebraMap R (Ri R)) a by
+        -- Apply isSquare_or_isSquare_neg to (a+d)/2 and (a-d)/2
+        rcases IsRealClosed.isSquare_or_isSquare_neg ((a + d) * 2⁻¹) with h₁ | h₁
+        · exact hsuff d hd h₁
+        · rcases IsRealClosed.isSquare_or_isSquare_neg ((a + -d) * 2⁻¹) with h₂ | h₂
+          · exact hsuff (-d) (by rw [neg_mul_neg]; exact hd) h₂
+          · -- Both negatives are squares: derive contradiction
+            -- -(a+d)/2 = e₁² and -(a-d)/2 = e₂²
+            -- Their product: e₁²·e₂² = (a+d)(a-d)/4 · (-1)² = (d²-a²)/4
+            -- But d² = a²+b², so (d²-a²)/4 = b²/4
+            -- So e₁²·e₂² = b²/4, meaning (e₁·e₂)² = (b/2)²
+            -- But -(a+d)/2 · -(a-d)/2 = (a+d)(a-d)/4 = (a²-d²)/4 = -b²/4
+            -- So (e₁·e₂)² = -b²/4 = -(b/2)². This gives -1 is a sum of squares.
+            exfalso
+            obtain ⟨e₁, he₁⟩ := h₁
+            obtain ⟨e₂, he₂⟩ := h₂
+            apply IsSemireal.not_isSumSq_neg_one (R := R)
+            -- -((a+d)/2) * -((a-d)/2) = b²/4
+            -- i.e., e₁*e₁ * e₂*e₂ = -(b*b/4)
+            -- Wait: -((a+d)/2) * -((a-d)/2) = ((a+d)/2)*((a-d)/2)
+            --   = (a²-d²)/4 = (a²-(a²+b²))/4 = -b²/4
+            -- So (e₁*e₂)² = -b²/4 = -(b/2)²
+            -- Hence -(b/2)² = (e₁*e₂)², so -1 = (e₁*e₂)² / (b/2)²
+            --   = (e₁*e₂ * 2/b)² (since b ≠ 0)
+            -- i.e. -1 = (2*e₁*e₂/b)²
+            have hprod : e₁ * e₁ * (e₂ * e₂) = -(b * 2⁻¹) * (b * 2⁻¹) := by
+              have := he₁; have := he₂
+              -- he₁: e₁*e₁ = -((a+d)*2⁻¹), he₂: e₂*e₂ = -((a+(-d))*2⁻¹)
+              have : e₁ * e₁ * (e₂ * e₂) = -((a+d)*2⁻¹) * -((a + -d)*2⁻¹) := by
+                rw [he₁, he₂]
+              rw [this]
+              have : (a + d) * 2⁻¹ * ((a + -d) * 2⁻¹) = (a * a - d * d) * (2⁻¹ * 2⁻¹) := by ring
+              rw [neg_mul_neg, this]
+              have hdd : d * d = a ^ 2 + b ^ 2 := hd.symm
+              have : a * a - d * d = -(b * b) := by linear_combination -hdd
+              rw [this]; ring
+            -- So (e₁*e₂)² = -(b/2)². Get -1 = (2*e₁*e₂*b⁻¹)²
+            have hb2_ne : b * 2⁻¹ ≠ 0 := by
+              intro h; simp [mul_eq_zero, hb] at h
+            rw [show (-1 : R) = (e₁ * e₂ * (b * 2⁻¹)⁻¹) * (e₁ * e₂ * (b * 2⁻¹)⁻¹) from by
+              field_simp
+              have := hprod
+              nlinarith [hprod,
+                          show (b * 2⁻¹) ^ 2 = b ^ 2 * 2⁻¹ ^ 2 from by ring,
+                          show e₁ ^ 2 * e₂ ^ 2 = e₁ * e₁ * (e₂ * e₂) from by ring]]
+            exact IsSumSq.mul_self _
+      -- Prove the sufficiency: given e with e*e = (a+d')/2, construct v
+      intro d' hd' ⟨e, he⟩
+      -- e * e = (a + d') * 2⁻¹
+      by_cases he0 : e = 0
+      · -- e = 0 means (a+d')/2 = 0, so a = -d'. Then d'² = a²+b² = d'²+b² → b²=0 → b=0.
+        exfalso; apply hb
+        have ha : a + d' = 0 := by
+          have h1 : (a + d') * 2⁻¹ = 0 := by rw [he, he0, zero_mul]
+          exact (mul_eq_zero.mp h1).resolve_right (inv_ne_zero two_ne_zero)
+        have hd'a : d' = -a := by linarith
+        rw [hd'a] at hd'
+        have : b ^ 2 = 0 := by linear_combination hd'
+        exact pow_eq_zero_iff (by norm_num : 2 ≠ 0) |>.mp this
+      · -- e ≠ 0: take v = algebraMap e + algebraMap(b/(2*e)) * i
+        refine ⟨algebraMap R (Ri R) e + algebraMap R (Ri R) (b * (2 * e)⁻¹) * Ri.i R, ?_⟩
+        -- v * v = (e + (b/(2e))*i)² = e² - (b/(2e))² + 2*e*(b/(2e))*i
+        --       = e² - b²/(4e²) + b*i
+        -- Need: e² - b²/(4e²) = a and 2*e*(b/(2e)) = b
+        -- e² = (a+d')/2 and b²/(4e²) = b²·2/(4(a+d')) = b²/(2(a+d'))
+        -- e² - b²/(4e²) = (a+d')/2 - b²/(2(a+d'))
+        --   = ((a+d')² - b²) / (2(a+d'))
+        --   = (a²+2ad'+d'²-b²) / (2(a+d'))
+        --   = (a²+2ad'+a²+b²-b²) / (2(a+d'))   [d'²=a²+b²]
+        --   = (2a²+2ad') / (2(a+d'))
+        --   = 2a(a+d') / (2(a+d'))
+        --   = a  ✓
+        -- And 2*e*(b/(2e)) = b  ✓
+        have hi2 := Ri.i_sq R
+        -- Step 1: Consolidate algebraMap terms
+        have hcoeff : algebraMap R (Ri R) e * algebraMap R (Ri R) (b * (2 * e)⁻¹) =
+            algebraMap R (Ri R) (b * 2⁻¹) := by
+          rw [← map_mul]; congr 1; field_simp
+        -- Step 2: The square expands as (e + c*i)² = e² - c² + 2ec*i where c = b/(2e)
+        set c := b * (2 * e)⁻¹
+        -- v * v = (alg e + alg c * i) * (alg e + alg c * i)
+        -- = alg(e²) + alg(e*c)*i + alg(c*e)*i + alg(c²)*i²
+        -- = alg(e²) + 2*alg(e*c)*i - alg(c²)
+        -- = (alg(e²) - alg(c²)) + 2*alg(e*c)*i
+        have hexpand : (algebraMap R (Ri R) e + algebraMap R (Ri R) c * Ri.i R) *
+            (algebraMap R (Ri R) e + algebraMap R (Ri R) c * Ri.i R) =
+            (algebraMap R (Ri R) (e * e) - algebraMap R (Ri R) (c * c)) +
+            algebraMap R (Ri R) (e * c + e * c) * Ri.i R := by
+          simp only [← map_sub]
+          have : Ri.i R * Ri.i R = -(1 : Ri R) := by rw [← sq]; exact hi2
+          ring_nf
+          rw [show Ri.i R ^ 2 = -(1 : Ri R) from hi2]
+          simp only [map_mul, map_sub, map_pow, map_ofNat]; ring
+        rw [hexpand]
+        -- Step 3: Show the imaginary coefficient matches
+        have him : e * c + e * c = b := by
+          simp only [c]; field_simp; ring
+        -- Step 4: Show the real part matches: e*e - c*c = a
+        have hre : e * e - c * c = a := by
+          simp only [c]
+          -- e*e = (a+d')/2.  c*c = b²/(4e²) = b²/(2(a+d'))
+          -- e*e - c*c = (a+d')/2 - b²/(2(a+d'))
+          --   = ((a+d')² - b²) / (2(a+d'))
+          -- d'² = a²+b² → (a+d')² = a²+2ad'+d'² = 2a²+2ad'+b²
+          -- (a+d')² - b² = 2a²+2ad' = 2a(a+d')
+          -- So e*e - c*c = 2a(a+d')/(2(a+d')) = a
+          field_simp at he ⊢
+          have h1 : d' = 2 * e ^ 2 - a := by linarith
+          rw [h1] at hd'
+          linear_combination -hd'
+        simp only [← map_sub, him, hre]; ring
+
+/-- The derivative of QPolynomial is the sum of products (Leibniz rule for linear factors). -/
+private lemma derivative_QPolynomial_eq {L : Type*} [Field L] {p : ℕ} (x : Fin p → L) :
+    (QPolynomial x).derivative = ∑ ij ∈ strictPairs p, ∏ kl ∈ (strictPairs p).erase ij,
+      (Polynomial.X - Polynomial.C (gammaPoly x kl.1 kl.2)) := by
+  simp only [QPolynomial]
+  rw [Polynomial.derivative_prod_finset]
+  congr 1; ext ij
+  simp [Polynomial.derivative_sub, Polynomial.derivative_X, Polynomial.derivative_C]
+
+/-- eval γ_{ij₀} (FPoly x) = ∏_{kl ≠ ij₀} (γ_{ij₀} - γ_{kl}) -/
+private lemma F_eval_gamma {L : Type*} [Field L] {p : ℕ} (x : Fin p → L)
+    (ij₀ : Fin p × Fin p) (hij₀ : ij₀ ∈ strictPairs p) :
+    Polynomial.eval (gammaPoly x ij₀.1 ij₀.2) (FPoly x) =
+    ∏ kl ∈ (strictPairs p).erase ij₀,
+      (gammaPoly x ij₀.1 ij₀.2 - gammaPoly x kl.1 kl.2) := by
+  have h := eval_lagrange_sum (strictPairs p) (fun _ => (1 : L[X]))
+    (fun kl => gammaPoly x kl.1 kl.2) ij₀ hij₀
+  simp only [Polynomial.C_1, one_mul] at h
+  rw [← h]; congr 1
+  exact derivative_QPolynomial_eq x
+
+/-! ### Layer 1: Core induction
+
+Every monic separable P ∈ R[X] of degree 2^m · n (n odd) has a root in R[i],
+proven by strong induction on m. -/
+
+/-- Base case: odd-degree polynomial over R has a root in R (hence in R[i]). -/
+theorem odd_degree_has_root_Ri [IsRealClosed R]
+    (P : R[X]) (hodd : Odd P.natDegree) :
+    ∃ x : Ri R, Polynomial.eval₂ (algebraMap R (Ri R)) x P = 0 := by
+  -- Real closed: odd degree → root in R
+  obtain ⟨r, hr⟩ := IsRealClosed.exists_isRoot_of_odd_natDegree hodd
+  exact ⟨algebraMap R (Ri R) r, by
+    rw [← Polynomial.aeval_def, Polynomial.aeval_algebraMap_apply,
+      show Polynomial.aeval r P = 0 from Polynomial.IsRoot.def.mp hr, map_zero]⟩
+
+/-- Helper: extract roots of a monic separable splitting polynomial as a Fin-indexed
+    injective function, with the product factorization. -/
+private theorem exists_roots_fin {L : Type*} [Field L] (f : L[X]) (d : ℕ)
+    (hsplit : f.Splits) (hmonic : f.Monic) (hsep : f.Separable)
+    (hdeg : f.natDegree = d) :
+    ∃ x : Fin d → L, Function.Injective x ∧
+      f = ∏ j : Fin d, (X - C (x j)) := by
+  subst hdeg
+  set rl := f.roots.toList
+  have hlen : rl.length = f.natDegree := by
+    rw [Multiset.length_toList, hsplit.natDegree_eq_card_roots]
+  have hnd : rl.Nodup := by
+    rw [← Multiset.coe_nodup, Multiset.coe_toList]
+    exact Polynomial.nodup_roots hsep
+  refine ⟨fun i => rl[i.val]'(by omega), ?_, ?_⟩
+  · -- Injective: from Nodup
+    intro i j hij
+    simp only at hij
+    have hi' : i.val < rl.length := by omega
+    have hj' : j.val < rl.length := by omega
+    have : (⟨i.val, hi'⟩ : Fin rl.length) = ⟨j.val, hj'⟩ :=
+      hnd.get_inj_iff.mp (by simpa [List.get_eq_getElem] using hij)
+    exact Fin.ext (Fin.mk.inj this)
+  · -- Product: multiset product → list product → Fin product
+    have hprod := hsplit.eq_prod_roots_of_monic hmonic
+    conv_lhs => rw [hprod]
+    rw [← Multiset.prod_map_toList, ← List.prod_ofFn]
+    congr 1
+    apply List.ext_getElem
+      (by simp [Multiset.length_toList, hsplit.natDegree_eq_card_roots])
+      (fun i h1 h2 => by simp [List.getElem_map]; rfl)
+
+/-- The core induction: every monic separable P ∈ R[X] of degree 2^m · n (n odd)
+    has a root in Ri R, by induction on m.
+
+    When m = 0: odd degree → root in R ⊆ R[i].
+    When m ≥ 1: construct Q(z,·) of degree p(p-1)/2 where p = deg P.
+    Since p = 2^m · n, we have p(p-1)/2 = 2^{m-1} · n' (n' odd).
+    By IH, Q(z,·) has a root γ ∈ R[i]. Then recover roots of P from γ
+    via a quadratic over R[i] using the square root from sqrt_exists_Ri. -/
+theorem core_induction [IsRealClosed R]
+    (m : ℕ) (n : ℕ) (hn : Odd n) (P : R[X])
+    (hmonic : P.Monic) (hdeg : P.natDegree = 2 ^ m * n)
+    (hsep : P.Separable) :
+    ∃ x : Ri R, Polynomial.aeval x P = 0 := by
+  induction m generalizing n P with
+  | zero =>
+    simp at hdeg
+    have hodd : Odd P.natDegree := by rw [hdeg]; exact hn
+    obtain ⟨x, hx⟩ := odd_degree_has_root_Ri P hodd
+    exact ⟨x, by rwa [Polynomial.aeval_def]⟩
+  | succ m' ih =>
+    -- ---- Setup: splitting field where P and X²+1 both split ----
+    set p := P.natDegree with hp_def
+    have hn_pos : 0 < n := Nat.pos_of_ne_zero (Odd.pos hn).ne'
+    have hp_pos : 0 < p := by rw [hdeg]; positivity
+    -- ---- Step 1: Splitting field of P * (X² + 1) ----
+    -- L = splitting field where both P and X²+1 split
+    let L := (P * (X ^ 2 + 1 : R[X])).SplittingField
+    have hPQ_splits : ((P * (X ^ 2 + 1)).map (algebraMap R L)).Splits :=
+      Polynomial.SplittingField.splits (P * (X ^ 2 + 1))
+    have hP_ne : P.map (algebraMap R L) ≠ 0 := Polynomial.map_ne_zero hmonic.ne_zero
+    have hXi_ne : (X ^ 2 + 1 : R[X]).map (algebraMap R L) ≠ 0 :=
+      Polynomial.map_ne_zero (monic_X_pow_add_C 1 (by norm_num : (2 : ℕ) ≠ 0)).ne_zero
+    rw [Polynomial.map_mul] at hPQ_splits
+    have ⟨hP_splits, hXi_splits⟩ :=
+      (Polynomial.splits_mul_iff hP_ne hXi_ne).mp hPQ_splits
+    -- ---- Step 2: Root of X²+1 in L, embedding φ : Ri R → L ----
+    have hXi_deg : ((X ^ 2 + 1 : R[X]).map (algebraMap R L)).degree ≠ 0 := by
+      simp only [Polynomial.degree_map_eq_of_injective (algebraMap R L).injective]
+      have h1 : (X ^ 2 + 1 : R[X]) ≠ 0 := by
+        have : (X ^ 2 + 1 : R[X]).natDegree = 2 := by compute_degree!
+        exact fun h => by simp [h] at this
+      rw [Polynomial.degree_eq_natDegree h1,
+          show Polynomial.natDegree (X ^ 2 + 1 : R[X]) = 2 from by compute_degree!]
+      norm_num
+    obtain ⟨ι, hι_root⟩ := hXi_splits.exists_eval_eq_zero hXi_deg
+    have hι : Polynomial.eval₂ (algebraMap R L) ι (X ^ 2 + 1) = 0 := by
+      rwa [Polynomial.eval_map] at hι_root
+    let φ : Ri R →+* L := AdjoinRoot.lift (algebraMap R L) ι hι
+    have hφ_inj : Function.Injective φ := RingHom.injective _
+    have hφ_alg : ∀ r : R, φ (algebraMap R (Ri R) r) = algebraMap R L r :=
+      fun r => by rw [AdjoinRoot.algebraMap_eq]; exact AdjoinRoot.lift_of hι
+    -- ---- Step 3: Extract roots of P as Fin p → L ----
+    have hPL_monic : (P.map (algebraMap R L)).Monic := hmonic.map _
+    have hPL_sep : (P.map (algebraMap R L)).Separable := hsep.map
+    have hPL_deg : (P.map (algebraMap R L)).natDegree = p :=
+      (hmonic.natDegree_map (algebraMap R L)).trans rfl
+    obtain ⟨x, hx_inj, hx⟩ := exists_roots_fin (P.map (algebraMap R L)) p
+      hP_splits hPL_monic hPL_sep hPL_deg
+    -- ---- Step 4: Choose z₀ with D(z₀) ≠ 0 ----
+    obtain ⟨z₀, hz₀⟩ := exists_discPoly_eval_ne_zero (R := R) x hx_inj
+    -- ---- Step 5: Pull back Q(z₀, ·) to R[X] ----
+    -- Each coeff of QPolynomial x is in R[Z] (as a polynomial in Z)
+    -- Evaluating at algebraMap R L z₀ gives an element of L in range of algebraMap
+    -- So Q(z₀, ·) ∈ R[Y]
+    have hQ_in_R : ∃ Q_R : R[X],
+        Q_R.map (algebraMap R L) =
+          (QPolynomial x).map (Polynomial.evalRingHom (algebraMap R L z₀)) := by
+      rw [poly_in_image_iff_coeffs_in_range]
+      intro k
+      rw [Polynomial.coeff_map]
+      obtain ⟨q_k, hq_k⟩ := Q_coeff_mem_R P x hx k
+      exact ⟨Polynomial.eval z₀ q_k, by
+        rw [← hq_k]; simp [Polynomial.eval_map]⟩
+    obtain ⟨Q_R, hQ_R⟩ := hQ_in_R
+    -- ---- Step 6: Properties of Q_R ----
+    -- Q_R is monic
+    have hQ_R_monic : Q_R.Monic := by
+      have : (Q_R.map (algebraMap R L)).Monic := by
+        rw [hQ_R]; exact (monic_QPolynomial x).map (Polynomial.evalRingHom _)
+      exact Polynomial.monic_of_injective (algebraMap R L).injective this
+    -- natDegree Q_R
+    have hQ_R_ndeg : Q_R.natDegree = (strictPairs p).card := by
+      have h1 := hQ_R_monic.natDegree_map (algebraMap R L)
+      rw [hQ_R] at h1
+      rw [← h1]
+      rw [(monic_QPolynomial x).natDegree_map, natDegree_QPolynomial]
+    -- Degree decomposition: p*(p-1)/2 = 2^{m'} * n' with n' odd
+    have hcard : (strictPairs p).card = p * (p - 1) / 2 := card_strictPairs p
+    obtain ⟨n', hn'_odd, hdeg_eq⟩ := half_degree_odd_factor
+      (show 1 ≤ m' + 1 from by omega) hn hn_pos
+    have hQ_R_deg : Q_R.natDegree = 2 ^ m' * n' := by
+      rw [hQ_R_ndeg, hcard, hdeg]; exact hdeg_eq
+    -- Q_R is separable
+    have hQ_R_sep : Q_R.Separable := by
+      rw [← Polynomial.separable_map (algebraMap R L)]
+      rw [hQ_R]
+      refine separable_Q_eval x ((algebraMap R L) z₀) ?_
+      intro a ha b hb heq
+      by_contra hab
+      apply hz₀
+      simp only [discPoly, Polynomial.eval_prod]
+      have hmem : (a, b) ∈ (strictPairs p).offDiag := by
+        rw [Finset.mem_offDiag]; exact ⟨ha, hb, hab⟩
+      refine Finset.prod_eq_zero hmem ?_
+      simp only [Polynomial.eval_sub, heq, sub_self]
+    -- ---- Step 7: Apply IH to Q_R ----
+    obtain ⟨γ, hγ⟩ := ih n' hn'_odd Q_R hQ_R_monic hQ_R_deg hQ_R_sep
+    -- ---- Step 8: Transfer γ to L, find which root of Q it maps to ----
+    -- φ(γ) is a root of Q(z₀, ·) in L
+    have hcomp : φ.comp (algebraMap R (Ri R)) = algebraMap R L := by
+      ext r; exact hφ_alg r
+    have hγ_L : Polynomial.eval (φ γ) ((QPolynomial x).map
+        (Polynomial.evalRingHom (algebraMap R L z₀))) = 0 := by
+      have h1 : Polynomial.eval (φ γ) (Q_R.map (algebraMap R L)) = 0 := by
+        have : φ (Polynomial.aeval γ Q_R) = 0 := by rw [hγ, map_zero]
+        rw [Polynomial.aeval_def, Polynomial.hom_eval₂, hcomp] at this
+        rwa [Polynomial.eval_map]
+      rwa [hQ_R] at h1
+    -- φ(γ) equals some γ_{ij₀}(z₀) for ij₀ ∈ strictPairs p
+    -- Since Q(z₀, ·) = ∏ ij, (Y - γ_{ij}(z₀)) and all roots are distinct
+    set z₀' := (algebraMap R L) z₀ with hz₀'_def
+    obtain ⟨ij₀, hij₀, hφγ_eq⟩ : ∃ ij₀ ∈ strictPairs p, φ γ = Polynomial.eval z₀' (gammaPoly x ij₀.1 ij₀.2) := by
+      simp only [QPolynomial, Polynomial.map_prod, Polynomial.map_sub, Polynomial.map_X,
+        Polynomial.map_C, Polynomial.coe_evalRingHom] at hγ_L
+      rw [Polynomial.eval_prod] at hγ_L
+      obtain ⟨ij₀, hij₀, heq⟩ := (Finset.prod_eq_zero_iff (M₀ := L)).mp hγ_L
+      simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C] at heq
+      exact ⟨ij₀, hij₀, sub_eq_zero.mp heq⟩
+    have interchange : ∀ (Q' : (L[X])[X]) (f' : L[X]),
+        Polynomial.eval (Polynomial.eval z₀' f') (Q'.map (Polynomial.evalRingHom z₀')) =
+        Polynomial.eval z₀' (Polynomial.eval f' Q') := by
+      intro Q' f'
+      induction Q' using Polynomial.induction_on' with
+      | add p q hp hq => simp only [Polynomial.map_add, Polynomial.eval_add, hp, hq]
+      | monomial n a =>
+        simp only [Polynomial.map_monomial, Polynomial.eval_monomial, Polynomial.coe_evalRingHom]
+        rw [← Polynomial.eval_pow, ← Polynomial.eval_mul]
+    have eval_pullback : ∀ (q_k : R[X]),
+        (algebraMap R L) (Polynomial.eval z₀ q_k) = Polynomial.eval₂ (algebraMap R L) z₀' q_k := by
+      intro q_k; rw [hz₀'_def, ← Polynomial.aeval_algebraMap_apply_eq_algebraMap_eval]; rfl
+    have coeff_pullback : ∀ (Poly_L : (L[X])[X]),
+        (∀ k, ∃ q : R[X], q.map (algebraMap R L) = Poly_L.coeff k) →
+        ∃ Poly_R : R[X], Poly_R.map (algebraMap R L) = Poly_L.map (Polynomial.evalRingHom z₀') := by
+      intro Poly_L hcoeffs
+      rw [poly_in_image_iff_coeffs_in_range]; intro k; rw [Polynomial.coeff_map]
+      simp only [Polynomial.coe_evalRingHom]
+      obtain ⟨q_k, hq_k⟩ := hcoeffs k
+      exact ⟨Polynomial.eval z₀ q_k, by rw [eval_pullback, ← Polynomial.eval_map, hq_k]⟩
+    obtain ⟨G_R, hG_R⟩ := coeff_pullback _ (G_coeff_mem_R P x hx)
+    obtain ⟨H_R, hH_R⟩ := coeff_pullback _ (H_coeff_mem_R P x hx)
+    obtain ⟨F_R, hF_R⟩ := coeff_pullback _ (F_coeff_mem_R P x hx)
+    have φ_aeval : ∀ (w : Ri R) (f : R[X]),
+        φ (Polynomial.aeval w f) = Polynomial.eval (φ w) (f.map (algebraMap R L)) := by
+      intro w f; rw [Polynomial.aeval_def, Polynomial.hom_eval₂, hcomp, Polynomial.eval_map]
+    set γ₀ := Polynomial.eval z₀' (gammaPoly x ij₀.1 ij₀.2) with hγ₀_def
+    have hφG : φ (Polynomial.aeval γ G_R) = (x ij₀.1 + x ij₀.2) * φ (Polynomial.aeval γ F_R) := by
+      rw [φ_aeval γ G_R, hG_R, hφγ_eq, interchange, G_eval_gamma x ij₀ hij₀]
+      rw [φ_aeval γ F_R, hF_R, hφγ_eq, interchange, F_eval_gamma x ij₀ hij₀]
+      simp only [Polynomial.eval_mul, Polynomial.eval_C]
+    have hφH : φ (Polynomial.aeval γ H_R) = (x ij₀.1 * x ij₀.2) * φ (Polynomial.aeval γ F_R) := by
+      rw [φ_aeval γ H_R, hH_R, hφγ_eq, interchange, H_eval_gamma x ij₀ hij₀]
+      rw [φ_aeval γ F_R, hF_R, hφγ_eq, interchange, F_eval_gamma x ij₀ hij₀]
+      simp only [Polynomial.eval_mul, Polynomial.eval_C]
+    have hF_ne : Polynomial.aeval γ F_R ≠ 0 := by
+      intro hF0
+      have h0 : φ (Polynomial.aeval γ F_R) = 0 := by rw [hF0, map_zero]
+      rw [φ_aeval, hF_R, hφγ_eq, interchange, F_eval_gamma x ij₀ hij₀] at h0
+      rw [Polynomial.eval_prod] at h0
+      obtain ⟨kl, hkl_mem, hkl_eq⟩ := (Finset.prod_eq_zero_iff (M₀ := L)).mp h0
+      rw [Polynomial.eval_sub] at hkl_eq
+      have hkl_sp := Finset.mem_erase.mp hkl_mem
+      apply hz₀; simp only [discPoly, Polynomial.eval_prod]
+      exact Finset.prod_eq_zero (i := (ij₀, kl))
+        (by rw [Finset.mem_offDiag]; exact ⟨hij₀, hkl_sp.2, hkl_sp.1.symm⟩)
+        (by simp only [Polynomial.eval_sub, hkl_eq])
+    have hφF_ne : φ (Polynomial.aeval γ F_R) ≠ 0 := (map_ne_zero_iff φ hφ_inj).mpr hF_ne
+    set s := Polynomial.aeval γ G_R * (Polynomial.aeval γ F_R)⁻¹
+    set t := Polynomial.aeval γ H_R * (Polynomial.aeval γ F_R)⁻¹
+    have hφs : φ s = x ij₀.1 + x ij₀.2 := by
+      simp only [s, map_mul, map_inv₀, hφG, mul_assoc, mul_inv_cancel₀ hφF_ne, mul_one]
+    have hφt : φ t = x ij₀.1 * x ij₀.2 := by
+      simp only [t, map_mul, map_inv₀, hφH, mul_assoc, mul_inv_cancel₀ hφF_ne, mul_one]
+    obtain ⟨d, hd⟩ := sqrt_exists_Ri (R := R) (s ^ 2 - 4 * t)
+    have h2_ne : (2 : Ri R) ≠ 0 := by
+      intro h2; apply (two_ne_zero : (2 : R) ≠ 0)
+      exact (algebraMap R (Ri R)).injective
+        (show (algebraMap R (Ri R)) 2 = (algebraMap R (Ri R)) 0 by rw [map_zero]; exact_mod_cast h2)
+    have hφ_2 : φ 2 = (2 : L) := by
+      show φ ((algebraMap R (Ri R)) 2) = (algebraMap R L) 2; rw [hφ_alg]
+    have hφ_4 : φ 4 = (4 : L) := by
+      show φ ((algebraMap R (Ri R)) 4) = (algebraMap R L) 4; rw [hφ_alg]
+    set y := (s + d) * (2 : Ri R)⁻¹
+    have hφd_sq : φ d * φ d = (x ij₀.1 - x ij₀.2) ^ 2 := by
+      have := congr_arg φ hd
+      rw [map_mul, map_sub, map_mul, map_pow, hφs, hφt, hφ_4] at this
+      rw [this]; ring
+    have hφy : φ y = (x ij₀.1 + x ij₀.2 + φ d) * (2 : L)⁻¹ := by
+      simp only [y, map_mul, map_add, hφs, map_inv₀, hφ_2]
+    have hφy_root : (φ y - x ij₀.1) * (φ y - x ij₀.2) = 0 := by
+      rw [hφy]
+      have hlhs : ((x ij₀.1 + x ij₀.2 + φ d) * (2 : L)⁻¹ - x ij₀.1) *
+                  ((x ij₀.1 + x ij₀.2 + φ d) * (2 : L)⁻¹ - x ij₀.2) =
+                  (φ d * φ d - (x ij₀.1 - x ij₀.2) ^ 2) * ((2 : L)⁻¹) ^ 2 := by ring
+      rw [hlhs, hφd_sq, sub_self, zero_mul]
+    have hP_root : ∀ j : Fin p, Polynomial.eval (x j) (P.map (algebraMap R L)) = 0 := by
+      intro j; rw [hx, Polynomial.eval_prod]
+      exact Finset.prod_eq_zero (Finset.mem_univ j)
+        (by simp [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C])
+    have root_from_φ : ∀ (w : Ri R) (j : Fin p), φ w = x j → Polynomial.aeval w P = 0 := by
+      intro w j hwj
+      apply hφ_inj
+      rw [φ_aeval, Polynomial.eval_map, map_zero, (Polynomial.eval_map _ _).symm, hwj]
+      exact hP_root j
+    rcases mul_eq_zero.mp hφy_root with h | h
+    · exact ⟨y, root_from_φ y ij₀.1 (sub_eq_zero.mp h)⟩
+    · exact ⟨y, root_from_φ y ij₀.2 (sub_eq_zero.mp h)⟩
+
+/-! ### Layer 2: Reductions -/
+
+/-- Every monic polynomial over R has a root in R[i].
+    If P is separable, decompose degree and apply core_induction.
+    If not, extract a monic irreducible factor (which is separable in char 0)
+    and apply core_induction to it; any root of the factor is a root of P. -/
+theorem monic_has_root_Ri [IsRealClosed R]
+    (P : R[X]) (hdeg : P.natDegree ≠ 0) :
+    ∃ x : Ri R, Polynomial.aeval x P = 0 := by
+  -- Extract a monic irreducible factor of P
+  have hnu : ¬ IsUnit P := fun h => hdeg (Polynomial.natDegree_eq_zero_of_isUnit h)
+  obtain ⟨q, hq_monic, hq_irr, hq_dvd⟩ := Polynomial.exists_monic_irreducible_factor P hnu
+  -- q is separable (characteristic zero, irreducible)
+  have hq_sep : q.Separable := hq_irr.separable
+  -- q has positive degree (irreducible → not unit → degree ≥ 1)
+  have hq_deg : q.natDegree ≠ 0 :=
+    Nat.pos_of_ne_zero (hq_monic.natDegree_pos_of_not_isUnit hq_irr.1).ne' |>.ne'
+  -- Decompose degree of q as 2^m * n with n odd
+  obtain ⟨m, n', hn', hd⟩ := Nat.exists_eq_two_pow_mul_odd hq_deg
+  -- Apply core_induction to q
+  obtain ⟨x, hx⟩ := core_induction m n' hn' q hq_monic hd hq_sep
+  -- A root of q is a root of P (since q | P)
+  exact ⟨x, by obtain ⟨r, hr⟩ := hq_dvd; rw [hr, map_mul, hx, zero_mul]⟩
+
+/-- Every monic irreducible polynomial over R[i] has a root in R[i].
+    Key idea: P · P̄ ∈ R[X] (product with conjugate has real coefficients).
+    A root of P·P̄ in R[i] is a root of either P or P̄, and roots of P̄
+    are conjugates of roots of P. -/
+theorem Ri_poly_has_root [IsRealClosed R]
+    (P : (Ri R)[X]) (hmonic : P.Monic) (hirr : Irreducible P) :
+    ∃ x : Ri R, Polynomial.eval x P = 0 := by
+  -- Pbar = conjugate of P
+  set Pbar := Polynomial.map (Ri.conj R : Ri R →+* Ri R) P with hPbar_def
+  -- P * Pbar is invariant under conjugation, so it lifts to R[X]
+  have hPP_real : ∃ Q : R[X], Polynomial.map (algebraMap R (Ri R)) Q = P * Pbar := by
+    rw [← Polynomial.mem_lifts]
+    rw [Polynomial.lifts_iff_coeff_lifts]
+    intro n
+    have := conj_coeff_mul_conjPoly P n
+    simp only [conjPoly] at this
+    exact Ri.conj_fixed_mem_range _ this
+  obtain ⟨Q, hQ⟩ := hPP_real
+  -- Q is monic with positive degree
+  have hQ_deg : Q.natDegree ≠ 0 := by
+    intro h0
+    -- If natDegree Q = 0, then map Q has natDegree 0 too (algebraMap injective)
+    have : (P * Pbar).natDegree = 0 := by
+      rw [← hQ, Polynomial.natDegree_map_eq_of_injective (algebraMap R (Ri R)).injective]; exact h0
+    -- But deg(P * Pbar) = deg P + deg Pbar, and deg P ≥ 1 (irreducible → not unit)
+    have hP_deg : P.natDegree ≥ 1 := Irreducible.natDegree_pos hirr
+    have hPbar_deg : Pbar.natDegree = P.natDegree :=
+      Polynomial.natDegree_map_eq_of_injective (Ri.conj_injective R) P
+    have hPbar_monic : Pbar.Monic := Polynomial.Monic.map _ hmonic
+    have hdeg_mul : (P * Pbar).natDegree = P.natDegree + Pbar.natDegree :=
+      Polynomial.Monic.natDegree_mul hmonic hPbar_monic
+    omega
+  -- By monic_has_root_Ri, Q has a root x in R[i]
+  obtain ⟨x, hx⟩ := monic_has_root_Ri Q hQ_deg
+  -- aeval x Q = 0 means eval₂ (algebraMap ...) x Q = 0
+  rw [Polynomial.aeval_def] at hx
+  -- So eval x (P * Pbar) = 0
+  have hPP : Polynomial.eval x (P * Pbar) = 0 := by
+    rw [← hQ, Polynomial.eval_map]; exact hx
+  rw [Polynomial.eval_mul] at hPP
+  -- Either eval x P = 0 or eval x Pbar = 0
+  rcases mul_eq_zero.mp hPP with h | h
+  · exact ⟨x, h⟩
+  · -- eval x Pbar = 0 means eval₂ conj x P = 0
+    -- By eval₂_hom at (conj x): eval₂ conj (conj(conj x)) P = conj(eval (conj x) P)
+    -- Since conj² = id: conj(conj x) = x, so eval₂ conj x P = conj(eval (conj x) P)
+    -- Therefore conj(eval (conj x) P) = 0, so eval (conj x) P = 0
+    rw [Polynomial.eval_map] at h
+    have h_eval : (Ri.conj R : Ri R →+* Ri R) (Polynomial.eval ((Ri.conj R) x) P) = 0 := by
+      have hinv : (Ri.conj R : Ri R →+* Ri R) ((Ri.conj R) x) = x := Ri.conj_conj R x
+      rw [← Polynomial.eval₂_hom, hinv]; exact h
+    have hinj : Function.Injective (Ri.conj R : Ri R →+* Ri R) := Ri.conj_injective R
+    exact ⟨(Ri.conj R) x, hinj (by rw [h_eval, map_zero])⟩
+
+/-- Theorem 2.11 (a) ⇒ (b): If R is real closed, then R[i] is algebraically closed. -/
+theorem isAlgClosed_Ri [IsRealClosed R] : IsAlgClosed (Ri R) :=
+  IsAlgClosed.of_exists_root _ Ri_poly_has_root
 
 end Azurite.BPR.Theorem2_11
