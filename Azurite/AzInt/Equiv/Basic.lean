@@ -40,22 +40,10 @@ lemma ofInt_toInt (z : AzInt) : ofInt z.toInt = z := by
       exact ⟨h_sign, Azurite.AzNat.ofNat_toNat abs⟩
     · simp at h_sign
       simp
-      have h1 : abs ≠ 0 := by
-        intro h_zero
-        have h_true := zero_sign h_zero
-        rw [h_sign] at h_true
-        contradiction
-      have hz : decide (abs.toNat = 0) = false := by
-        have h2 : abs.toNat ≠ 0 := by
-          intro hh
-          have h3 : abs.toNat = (0 : Azurite.AzNat).toNat := by
-            have h_zero : (0 : Azurite.AzNat).toNat = 0 := rfl
-            rw [hh, h_zero]
-          have h4 : Azurite.AzNat.ofNat abs.toNat = Azurite.AzNat.ofNat (0 : Azurite.AzNat).toNat := congrArg Azurite.AzNat.ofNat h3
-          rw [Azurite.AzNat.ofNat_toNat, Azurite.AzNat.ofNat_toNat] at h4
-          exact h1 h4
-        exact decide_eq_false h2
-      rw [hz]
+      have h1 : abs ≠ 0 := fun h => by simp [zero_sign h] at h_sign
+      have h2 : abs.toNat ≠ 0 := fun h =>
+        h1 (Azurite.AzNat.toNat_injective (h.trans Azurite.AzNat.toNat_zero.symm))
+      rw [decide_eq_false h2]
       exact ⟨h_sign.symm, Azurite.AzNat.ofNat_toNat abs⟩
 
 @[simp] lemma toInt_zero : (0 : AzInt).toInt = 0 := by

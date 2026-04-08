@@ -133,15 +133,15 @@ theorem toNat_ofNat (n : Nat) : toNat (ofNat n) = n := by
   rw [ht]
   simp [toNatLimbsList]
 
-private lemma base_2_64_unique (A B x y : Nat) (hx : x < 2^64) (hy : y < 2^64)
+lemma base_2_64_unique (A B x y : Nat) (hx : x < 2^64) (hy : y < 2^64)
   (h : A * 2^64 + x = B * 2^64 + y) : x = y ∧ A = B := by
   omega
 
-private lemma uint64_val_eq (x y : UInt64) (h : x.toNat = y.toNat) : x = y := by
+lemma UInt64.eq_of_toNat_eq {x y : UInt64} (h : x.toNat = y.toNat) : x = y := by
   have h2 : x.toBitVec = y.toBitVec := BitVec.eq_of_toNat_eq h
   cases x; cases y; simp at h2; subst h2; rfl
 
-private lemma toNatLimbsList_eq_zero_of_getLast_ne_zero (l : List UInt64) (hl : l.getLast? ≠ some 0) (h : toNatLimbsList l = 0) : l = [] := by
+lemma toNatLimbsList_eq_zero_of_getLast_ne_zero (l : List UInt64) (hl : l.getLast? ≠ some 0) (h : toNatLimbsList l = 0) : l = [] := by
   induction l with
   | nil => rfl
   | cons x xs ih =>
@@ -151,7 +151,7 @@ private lemma toNatLimbsList_eq_zero_of_getLast_ne_zero (l : List UInt64) (hl : 
       rw [h]; simp
     have hunq := base_2_64_unique 0 (toNatLimbsList xs) 0 x.toNat (by decide) (UInt64.toNat_lt _) hz
     rcases hunq with ⟨hx0, hxs0⟩
-    have hx_eq_0 : x = 0 := uint64_val_eq x 0 hx0.symm
+    have hx_eq_0 : x = 0 := UInt64.eq_of_toNat_eq hx0.symm
     subst hx_eq_0
     have hl_xs : xs.getLast? ≠ some 0 := by
       cases xs
@@ -164,7 +164,7 @@ private lemma toNatLimbsList_eq_zero_of_getLast_ne_zero (l : List UInt64) (hl : 
     have hhx : ([0] : List UInt64).getLast? = some 0 := rfl
     contradiction
 
-private lemma toNatLimbsList_inj (l1 l2 : List UInt64)
+lemma toNatLimbsList_inj (l1 l2 : List UInt64)
   (hl1 : l1.getLast? ≠ some 0) (hl2 : l2.getLast? ≠ some 0)
   (h : toNatLimbsList l1 = toNatLimbsList l2) : l1 = l2 := by
   revert l2
@@ -185,7 +185,7 @@ private lemma toNatLimbsList_inj (l1 l2 : List UInt64)
       rw [hc1, hc2] at h
       have hunq := base_2_64_unique (toNatLimbsList xs) (toNatLimbsList ys) x.toNat y.toNat (UInt64.toNat_lt _) (UInt64.toNat_lt _) h
       rcases hunq with ⟨hx, hxs⟩
-      have eq_x : x = y := uint64_val_eq x y hx
+      have eq_x : x = y := UInt64.eq_of_toNat_eq hx
       subst eq_x
       have hl1_xs : xs.getLast? ≠ some 0 := by
         cases xs

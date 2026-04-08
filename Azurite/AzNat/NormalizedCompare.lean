@@ -55,7 +55,7 @@ def normalizedCompare (x y : ℕ) : Ordering :=
 #guard normalizedCompare 5 9 == Ordering.gt
 
 /-- Bridge lemma: comparing x with y>>>shift is equivalent to comparing x<<<shift with y. -/
-private lemma compare_shiftr_eq_compare_shiftl (x y shift : Nat) :
+lemma compare_shiftr_eq_compare_shiftl (x y shift : Nat) :
     (match compare x (y >>> shift) with
      | .lt => Ordering.lt
      | .gt => Ordering.gt
@@ -81,7 +81,7 @@ private lemma compare_shiftr_eq_compare_shiftl (x y shift : Nat) :
     simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
 
 /-- Symmetric bridge lemma: comparing x>>>shift with y is equivalent to comparing x with y<<<shift. -/
-private lemma compare_shiftr_eq_compare_shiftl' (x y shift : Nat) :
+lemma compare_shiftr_eq_compare_shiftl' (x y shift : Nat) :
     (match compare (x >>> shift) y with
      | .lt => Ordering.lt
      | .gt => Ordering.gt
@@ -108,78 +108,28 @@ private lemma compare_shiftr_eq_compare_shiftl' (x y shift : Nat) :
       lt_of_lt_of_le ((Nat.mul_lt_mul_right h_pos).mpr h_gt) (Nat.div_mul_le_self x _)
     simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
 
+/-- Transfer a `compare` equation via lt and eq iffs. Eliminates the common trichotomy boilerplate. -/
+lemma compare_transfer {α β : Type*} [LinearOrder α] [LinearOrder β]
+    {a b : α} {c d : β} (hl : a < b ↔ c < d) (he : a = b ↔ c = d) :
+    compare a b = compare c d := by
+  rcases lt_trichotomy a b with hab | hab | hab
+  · rw [compare_lt_iff_lt.mpr hab, compare_lt_iff_lt.mpr (hl.mp hab)]
+  · rw [compare_eq_iff_eq.mpr hab, compare_eq_iff_eq.mpr (he.mp hab)]
+  · have h1 : ¬ c < d := fun h => not_lt_of_gt hab (hl.mpr h)
+    have h2 : c ≠ d := fun h => ne_of_gt hab (he.mpr h)
+    rw [compare_gt_iff_gt.mpr hab,
+        compare_gt_iff_gt.mpr (lt_of_le_of_ne (not_lt.mp h1) (Ne.symm h2))]
+
 lemma compare_div_eq_compare_mul {a b c d : ℚ} (hb : b > 0) (hd : d > 0) :
-    compare (a / b) (c / d) = compare (a * d) (c * b) := by
-  have hl : a / b < c / d ↔ a * d < c * b := div_lt_div_iff₀ hb hd
-  have hg : c / d < a / b ↔ c * b < a * d := div_lt_div_iff₀ hd hb
-  have he : a / b = c / d ↔ a * d = c * b := by
-    constructor
-    · intro h
-      rcases lt_trichotomy (a * d) (c * b) with t1 | t2 | t3
-      · exact False.elim (lt_irrefl (a / b) (h ▸ hl.mpr t1))
-      · exact t2
-      · exact False.elim (lt_irrefl (c / d) (h.symm ▸ hg.mpr t3))
-    · intro h
-      rcases lt_trichotomy (a / b) (c / d) with t1 | t2 | t3
-      · exact False.elim (lt_irrefl (a * d) (h ▸ hl.mp t1))
-      · exact t2
-      · exact False.elim (lt_irrefl (c * b) (h.symm ▸ hg.mp t3))
-  
-  -- Use trichotomy to evaluate compare using standard macros
-  rcases lt_trichotomy (a / b) (c / d) with h1 | h2 | h3
-  · have h1' : a * d < c * b := hl.mp h1
-    have c1 : compare (a / b) (c / d) = Ordering.lt := (compare_lt_iff_lt (a := a / b) (b := c / d)).mpr h1
-    have c2 : compare (a * d) (c * b) = Ordering.lt := (compare_lt_iff_lt (a := a * d) (b := c * b)).mpr h1'
-    rw [c1, c2]
-  · have h2' : a * d = c * b := he.mp h2
-    have c1 : compare (a / b) (c / d) = Ordering.eq := (compare_eq_iff_eq (a := a / b) (b := c / d)).mpr h2
-    have c2 : compare (a * d) (c * b) = Ordering.eq := (compare_eq_iff_eq (a := a * d) (b := c * b)).mpr h2'
-    rw [c1, c2]
-  · have h3' : c * b < a * d := hg.mp h3
-    have c1 : compare (a / b) (c / d) = Ordering.gt := (compare_gt_iff_gt (a := a / b) (b := c / d)).mpr h3
-    have c2 : compare (a * d) (c * b) = Ordering.gt := (compare_gt_iff_gt (a := a * d) (b := c * b)).mpr h3'
-    rw [c1, c2]
+    compare (a / b) (c / d) = compare (a * d) (c * b) :=
+  compare_transfer (div_lt_div_iff₀ hb hd) (div_eq_div_iff hb.ne' hd.ne')
 
-lemma compare_nat_cast (x y : ℕ) : compare (x : ℚ) (y : ℚ) = compare x y := by
-  have hl : (x : ℚ) < (y : ℚ) ↔ x < y := Nat.cast_lt
-  have hg : (y : ℚ) < (x : ℚ) ↔ y < x := Nat.cast_lt
-  have he : (x : ℚ) = (y : ℚ) ↔ x = y := Nat.cast_inj
-  
-  rcases lt_trichotomy (x : ℚ) (y : ℚ) with h1 | h2 | h3
-  · have h1' : x < y := hl.mp h1
-    have c1 : compare (x : ℚ) (y : ℚ) = Ordering.lt := (compare_lt_iff_lt (a := (x : ℚ)) (b := (y : ℚ))).mpr h1
-    have c2 : compare x y = Ordering.lt := (compare_lt_iff_lt (a := x) (b := y)).mpr h1'
-    rw [c1, c2]
-  · have h2' : x = y := he.mp h2
-    have c1 : compare (x : ℚ) (y : ℚ) = Ordering.eq := (compare_eq_iff_eq (a := (x : ℚ)) (b := (y : ℚ))).mpr h2
-    have c2 : compare x y = Ordering.eq := (compare_eq_iff_eq (a := x) (b := y)).mpr h2'
-    rw [c1, c2]
-  · have h3' : y < x := hg.mp h3
-    have c1 : compare (x : ℚ) (y : ℚ) = Ordering.gt := (compare_gt_iff_gt (a := (x : ℚ)) (b := (y : ℚ))).mpr h3
-    have c2 : compare x y = Ordering.gt := (compare_gt_iff_gt (a := x) (b := y)).mpr h3'
-    rw [c1, c2]
+lemma compare_nat_cast (x y : ℕ) : compare (x : ℚ) (y : ℚ) = compare x y :=
+  compare_transfer Nat.cast_lt Nat.cast_inj
 
-lemma compare_mul_pos_right (a b c : ℕ) (hc : c > 0) : compare a b = compare (a * c) (b * c) := by
-  have hl : a < b ↔ a * c < b * c := (Nat.mul_lt_mul_right hc).symm
-  have hg : b < a ↔ b * c < a * c := (Nat.mul_lt_mul_right hc).symm
-  have he : a = b ↔ a * c = b * c := by
-    constructor
-    · rintro rfl; rfl
-    · intro h; exact Nat.eq_of_mul_eq_mul_right hc h
-  
-  rcases lt_trichotomy a b with h1 | h2 | h3
-  · have h1' : a * c < b * c := hl.mp h1
-    have c1 : compare a b = Ordering.lt := (compare_lt_iff_lt (a := a) (b := b)).mpr h1
-    have c2 : compare (a * c) (b * c) = Ordering.lt := (compare_lt_iff_lt (a := a * c) (b := b * c)).mpr h1'
-    rw [c1, c2]
-  · have h2' : a * c = b * c := he.mp h2
-    have c1 : compare a b = Ordering.eq := (compare_eq_iff_eq (a := a) (b := b)).mpr h2
-    have c2 : compare (a * c) (b * c) = Ordering.eq := (compare_eq_iff_eq (a := a * c) (b := b * c)).mpr h2'
-    rw [c1, c2]
-  · have h3' : b * c < a * c := hg.mp h3
-    have c1 : compare a b = Ordering.gt := (compare_gt_iff_gt (a := a) (b := b)).mpr h3
-    have c2 : compare (a * c) (b * c) = Ordering.gt := (compare_gt_iff_gt (a := a * c) (b := b * c)).mpr h3'
-    rw [c1, c2]
+lemma compare_mul_pos_right (a b c : ℕ) (hc : c > 0) : compare a b = compare (a * c) (b * c) :=
+  compare_transfer (Nat.mul_lt_mul_right hc).symm
+    ⟨congrArg (· * c), Nat.eq_of_mul_eq_mul_right hc⟩
 
 lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
   normalizedCompare x y = compare ((x : ℚ) / (2 ^ Nat.size x : ℚ)) ((y : ℚ) / (2 ^ Nat.size y : ℚ)) := by

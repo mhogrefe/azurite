@@ -17,9 +17,6 @@ def parseNatChars (cs : List Char) : Option ℕ :=
   | [] => none
   | _ => parseNatCharsAux cs 0
 
-lemma aux_0 (n : ℕ) (h : n < 10^0) : n = 0 := by
-  omega
-
 lemma length_natToCharsAux (fuel n : ℕ) (acc : List Char) :
   (natToCharsAux fuel n acc).length = (natToCharsAux fuel n []).length + acc.length := by
   induction fuel generalizing n acc with

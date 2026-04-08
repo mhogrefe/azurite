@@ -32,6 +32,4 @@ instance : Max AzInt where
 instance : Min AzInt where
   min a b := if a ≤ b then a else b
 
-
-
 end Azurite.AzInt

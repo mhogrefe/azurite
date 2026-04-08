@@ -96,11 +96,6 @@ lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length)
     rw [heq]
     exact compare_add_eq (toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l2.get ⟨i, h2⟩).toNat * 2 ^ (64 * i)) (toNatLimbsList (List.take i l1)) (toNatLimbsList (List.take i l2))
 
-lemma UInt64.eq_of_toNat_eq {a b : UInt64} (h : a.toNat = b.toNat) : a = b := by
-  have h1 : a.toBitVec.toNat = b.toBitVec.toNat := h
-  have h2 : a.toBitVec = b.toBitVec := BitVec.eq_of_toNat_eq h1
-  cases a; cases b; congr
-
 lemma compare_UInt64_eq_compare_toNat (a b : UInt64) :
   Ord.compare a b = Ord.compare a.toNat b.toNat := by
   have hm1 : Ord.compare a b = if a.toNat < b.toNat then Ordering.lt else if a = b then Ordering.eq else Ordering.gt := rfl
