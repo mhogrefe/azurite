@@ -60,6 +60,11 @@ This keeps edits small, uses the real environment, and avoids copy-paste. Don't 
 
 # Lean 4 Tips
 
+## Avoid Panicking (`!`) Functions
+Never use panicking operations like `a[i]!`, `a.get!`, `a.head!`, `a.back!`, etc. in Azurite code. The `!` suffix in Lean 4 denotes functions that call `panic!` when a precondition fails at runtime.
+
+Instead, use proof-bounded variants (e.g., `a[i]` with a proof `h : i < a.size`). Lean's compiler erases `Prop` proofs at runtime, so there is zero performance cost — but the result is a function that is *structurally* panic-free: no `panic!` call site exists in the compiled code. Thread bound proofs through function parameters where needed (see `compareLoop` for an example).
+
 ## Visibility: Always Allowed to Make `private` Public
 If you encounter a `private` definition, theorem, or lemma that you need to reference from another file, you are **always allowed** to remove the `private` modifier. Do not ask for permission — just do it.
 

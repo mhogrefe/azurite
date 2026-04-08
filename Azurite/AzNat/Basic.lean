@@ -22,4 +22,13 @@ def AzNat.beqUInt64 (a : AzNat) (u : UInt64) : Bool :=
 def AzNat.beqInt64 (a : AzNat) (i : Int64) : Bool :=
   (i ≥ 0) && a.beqUInt64 i.toUInt64
 
+def AzNat.compareUInt64 (a : AzNat) (u : UInt64) : Ordering :=
+  match h : a.limbs.size with
+  | 0 => if u == 0 then .eq else .lt
+  | 1 => Ord.compare a.limbs[0] u
+  | _ + 2 => .gt
+
+def AzNat.compareInt64 (a : AzNat) (i : Int64) : Ordering :=
+  if i < 0 then .gt else a.compareUInt64 i.toUInt64
+
 end Azurite
