@@ -58,7 +58,7 @@ lemma natTrailingDegree_eq_of {P : F[X]} {m : ℕ}
     P.natTrailingDegree = m := by
   apply le_antisymm
   · exact natTrailingDegree_le_of_ne_zero hcoeff
-  · by_contra h; push_neg at h
+  · by_contra h; push Not at h
     exact (trailingCoeff_nonzero_iff_nonzero.mpr
       (fun hP => hcoeff (by simp [hP]))) (hbelow _ h)
 
@@ -135,7 +135,7 @@ lemma polyPos_neg_iff {P : F[X]} : polyPos (-P) ↔ P ≠ 0 ∧ P.trailingCoeff 
 
 /-- P and -P cannot both be positive. -/
 lemma not_polyPos_of_polyPos_neg {P : F[X]} (hP : polyPos P) : ¬ polyPos (-P) := by
-  rw [polyPos_neg_iff]; push_neg; intro _; linarith [hP.2]
+  rw [polyPos_neg_iff]; push Not; intro _; linarith [hP.2]
 
 /-! ### LinearOrder construction -/
 

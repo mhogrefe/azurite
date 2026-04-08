@@ -262,7 +262,7 @@ lemma AzPolynomialQ.coeff_ext (p q : AzPolynomialQ)
   have hsize : p.numerators.size = q.numerators.size := by
     by_contra hne
     wlog hgt : p.numerators.size < q.numerators.size with H
-    · push_neg at hgt
+    · push Not at hgt
       exact H q p (fun i => (h i).symm) (fun i => (cross i).symm) (Ne.symm hne) (by omega)
     set j := q.numerators.size - 1
     have hj_lt : j < q.numerators.size := by omega

@@ -246,7 +246,7 @@ theorem lemma_2_2 (P : K[X]) (t : K) (hP : P ≠ 0) (μ : ℕ) :
     rintro ⟨hvanish, hnonzero⟩
     apply le_antisymm
     · -- μ ≤ rootMultiplicity: if not, derivative^[rootMultiplicity] vanishes, contradiction
-      by_contra h; push_neg at h
+      by_contra h; push Not at h
       have hne : ¬(derivative^[rootMultiplicity t P] P).IsRoot t := by
         rw [Polynomial.IsRoot, Polynomial.eval_iterate_derivative_rootMultiplicity]
         exact smul_ne_zero_iff.mpr
@@ -254,7 +254,7 @@ theorem lemma_2_2 (P : K[X]) (t : K) (hP : P ≠ 0) (μ : ℕ) :
            eval_divByMonic_pow_rootMultiplicity_ne_zero t hP⟩
       exact hne (hvanish _ h)
     · -- rootMultiplicity ≤ μ: if not, derivative^[μ] vanishes, contradiction
-      by_contra h; push_neg at h
+      by_contra h; push Not at h
       exact hnonzero
         ((Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative hP).mp h μ le_rfl)
 
@@ -691,7 +691,7 @@ theorem Azurite.BPR.exercise_2_4
   have pos_C_iff : ∀ {a : F}, a ≠ 0 → (pos (C a) ↔ 0 < a) := by
     intro a ha
     exact ⟨fun h => by
-      by_contra hle; push_neg at hle
+      by_contra hle; push Not at hle
       exact pos_antisymm h (by rw [← map_neg]; exact hC (neg_pos.mpr (lt_of_le_of_ne hle ha))),
       fun h => hC h⟩
   -- X^k > 0 for k ≥ 1
@@ -1062,7 +1062,7 @@ theorem exercise_2_6_charZero {F : Type*} [Field F] (h : IsRealField F) : CharZe
     *Proof.* `i² = −1` in ℂ, so `−1 = i·i ∈ Σℂ^{(2)}`. -/
 theorem exercise_2_6_complex_not_real : ¬ IsRealField ℂ := by
   rw [IsRealField, isSemireal_iff_not_isSumSq_neg_one]
-  push_neg
+  push Not
   have : (-1 : ℂ) = Complex.I * Complex.I := by simp
   rw [this]
   exact IsSumSq.mul_self _
@@ -1185,7 +1185,7 @@ theorem prop_2_8 {C : Subsemiring F} (hC : IsProperCone C) :
   refine ⟨hMS.1.toRingCone, fun x hx => hCM hx, ⟨fun a => ?_⟩⟩
   -- Need: a ∈ M ∨ -a ∈ M
   by_contra hboth
-  push_neg at hboth
+  push Not at hboth
   obtain ⟨ha, hna⟩ := hboth
   -- By Lemma 2.9, M[a] is a proper cone extending M
   have hMa : IsProperCone (coneExt M hMS.1.1 a) :=
@@ -1710,7 +1710,7 @@ theorem lex_bot {k : ℕ} {α : Fin k →₀ ℕ} (hα : α ≠ 0) :
   let S := Finset.univ.filter (fun j : Fin k => 0 < α j)
   have hS : S.Nonempty := ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi'⟩⟩
   refine ⟨S.min' hS, fun m hm => ?_, ?_⟩
-  · by_contra h; push_neg at h
+  · by_contra h; push Not at h
     have : 0 < α m := Nat.pos_of_ne_zero (by omega)
     exact absurd (Finset.min'_le S m (Finset.mem_filter.mpr ⟨Finset.mem_univ _, this⟩))
       (not_le.mpr hm)

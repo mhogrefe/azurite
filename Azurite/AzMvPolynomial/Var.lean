@@ -748,7 +748,7 @@ private theorem greekCharOfIndex_greekCharIndex (c : Char)
     rw [show c.toNat - 945 + 945 = c.toNat from by omega]
     exact Char.ofNat_toNat c
   · -- c.toNat > 961
-    rename_i h; push_neg at h
+    rename_i h; push Not at h
     have idx_gt : ¬ (c.toNat - 946 ≤ 16) := by omega
     rw [if_neg idx_gt]
     rw [show c.toNat - 946 + 946 = c.toNat from by omega]
@@ -903,7 +903,7 @@ private theorem greekCapsCharOfIndex_greekCapsCharIndex (c : Char)
     rw [if_pos idx_le]
     rw [show c.toNat - 913 + 913 = c.toNat from by omega]
     exact Char.ofNat_toNat c
-  · rename_i h; push_neg at h
+  · rename_i h; push Not at h
     have idx_gt : ¬ (c.toNat - 914 ≤ 16) := by omega
     rw [if_neg idx_gt]
     rw [show c.toNat - 914 + 914 = c.toNat from by omega]

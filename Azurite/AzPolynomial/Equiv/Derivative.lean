@@ -25,7 +25,7 @@ private lemma derivativeNormalize_coeff_eq (p : AzPolynomial R) (n : ℕ) :
     have : p.coeffs[n + 1]? = none := Array.getElem?_eq_none (by omega)
     simp [this]
   · next h =>
-    push_neg at h
+    push Not at h
     rw [coeff_normalize]
     simp only [Array.getElem?_ofFn]
     split

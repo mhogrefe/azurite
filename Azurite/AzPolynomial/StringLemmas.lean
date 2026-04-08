@@ -756,24 +756,24 @@ These lemmas handle splitting on any character separator.
 The `'/'` and `'x'` splitting uses these uniformly.
 -/
 
-/-- Step past a non-separator character in `splitOnP.go`. -/
+/-- Step past a non-separator character in `splitOnPPrepend`. -/
 private lemma splitOnP_go_cons_false (sep x : Char) (xs acc : List Char)
     (h : (x == sep) = false) :
-    List.splitOnP.go (· == sep) (x :: xs) acc =
-    List.splitOnP.go (· == sep) xs (x :: acc) := by
-  simp [List.splitOnP.go, h]
+    List.splitOnPPrepend (· == sep) (x :: xs) acc =
+    List.splitOnPPrepend (· == sep) xs (x :: acc) := by
+  exact List.splitOnPPrepend_cons_neg h
 
 /-- Step past the separator character, resetting the accumulator. -/
 private lemma splitOnP_go_cons_true (sep : Char) (xs acc : List Char) :
-    List.splitOnP.go (· == sep) (sep :: xs) acc =
-    acc.reverse :: List.splitOnP.go (· == sep) xs [] := by
-  simp [List.splitOnP.go]
+    List.splitOnPPrepend (· == sep) (sep :: xs) acc =
+    acc.reverse :: List.splitOnPPrepend (· == sep) xs [] := by
+  exact List.splitOnPPrepend_cons_pos (beq_self_eq_true sep)
 
 /-- If `sep ∉ l`, the go passes through, producing `[acc.reverse ++ l]`. -/
 private lemma splitOnP_go_not_mem (sep : Char) (l acc : List Char) (h : sep ∉ l) :
-    List.splitOnP.go (· == sep) l acc = [acc.reverse ++ l] := by
+    List.splitOnPPrepend (· == sep) l acc = [acc.reverse ++ l] := by
   induction l generalizing acc with
-  | nil => simp [List.splitOnP.go]
+  | nil => simp [List.splitOnPPrepend]
   | cons x xs ih =>
     have hxq : (x == sep) = false := by
       simp only [beq_eq_false_iff_ne]; intro hx; subst hx; exact h (List.Mem.head _)
@@ -781,10 +781,10 @@ private lemma splitOnP_go_not_mem (sep : Char) (l acc : List Char) (h : sep ∉ 
     rw [ih (x :: acc) (fun hc => h (List.Mem.tail _ hc))]
     simp [List.reverse_cons, List.append_assoc]
 
-/-- Move a `sep`-free prefix over `splitOnP.go`. -/
+/-- Move a `sep`-free prefix over `splitOnPPrepend`. -/
 private lemma splitOnP_go_append_not_mem (sep : Char) (l1 l2 acc : List Char) (h : sep ∉ l1) :
-    List.splitOnP.go (· == sep) (l1 ++ l2) acc =
-    List.splitOnP.go (· == sep) l2 (l1.reverse ++ acc) := by
+    List.splitOnPPrepend (· == sep) (l1 ++ l2) acc =
+    List.splitOnPPrepend (· == sep) l2 (l1.reverse ++ acc) := by
   induction l1 generalizing acc with
   | nil => simp
   | cons x xs ih =>
@@ -805,7 +805,7 @@ lemma splitOn_append_singleton_append_not_mem (sep : Char) (l1 l2 : List Char)
   rw [splitOnP_go_append_not_mem sep l1 (sep :: l2) [] h1]
   simp only [List.append_nil]
   rw [splitOnP_go_cons_true sep l2 l1.reverse]
-  rw [show List.splitOnP.go (· == sep) l2 [] = [l2] by
+  rw [show List.splitOnPPrepend (· == sep) l2 [] = [l2] by
     simpa using splitOnP_go_not_mem sep l2 [] h2]
   simp
 
@@ -865,33 +865,33 @@ lemma splitOn_append_mul_x_pow (l d : List Char) (h : 'x' ∉ l) (hd : 'x' ∉ d
 
 /-! ### Accumulator generalization for `'x'`-splitting
 
-These helpers allow rewriting `splitOnP.go · == 'x'` with a non-empty accumulator
+These helpers allow rewriting `splitOnPPrepend · == 'x'` with a non-empty accumulator
 in terms of the zero-accumulator variant.
 -/
 
 private lemma splitOnP_go_accum_gen (cs acc : List Char) :
-    List.splitOnP.go (· == 'x') cs acc =
-    match List.splitOnP.go (· == 'x') cs [] with
+    List.splitOnPPrepend (· == 'x') cs acc =
+    match List.splitOnPPrepend (· == 'x') cs [] with
     | [] => []
     | hd :: tail => (acc.reverse ++ hd) :: tail := by
   revert acc
   induction cs with
-  | nil => intro acc; simp [List.splitOnP.go]
+  | nil => intro acc; simp [List.splitOnPPrepend]
   | cons x xs ih =>
     intro acc
-    simp only [List.splitOnP.go]
+    simp only [List.splitOnPPrepend]
     split
     · simp
     · rename_i h_neq
       rw [ih (x :: acc), ih [x]]
-      generalize List.splitOnP.go (· == 'x') xs [] = res
+      generalize List.splitOnPPrepend (· == 'x') xs [] = res
       cases res with
       | nil => rfl
       | cons hd tail => simp [List.append_assoc]
 
 private lemma splitOnP_go_accum (c : Char) (cs hd : List Char) (tail : List (List Char))
-    (h : List.splitOnP.go (· == 'x') cs [] = hd :: tail) :
-    List.splitOnP.go (· == 'x') cs [c] = (c :: hd) :: tail := by
+    (h : List.splitOnPPrepend (· == 'x') cs [] = hd :: tail) :
+    List.splitOnPPrepend (· == 'x') cs [c] = (c :: hd) :: tail := by
   have h_gen := splitOnP_go_accum_gen cs [c]
   rw [h] at h_gen
   exact h_gen
@@ -2094,7 +2094,7 @@ lemma filter_nonZero_ne_nil {R} [Zero R] [DecidableEq R] (l : List R) (h_mem : �
     intro hc
     cases hc
   rw [List.mem_filter] at h_filter
-  push_neg at h_filter
+  push Not at h_filter
   have ht := h_filter hi
   dsimp at ht
   rw [decide_eq_true_eq] at ht
@@ -4083,7 +4083,7 @@ lemma splitPolynomialChars_toChars_int (p : AzPolynomial ℤ) (hp : p ≠ 0) :
     have hempty : p.coeffs = #[] := by
       by_contra hne
       have hsize : 0 < p.coeffs.size := by
-        by_contra hlt; push_neg at hlt
+        by_contra hlt; push Not at hlt
         exact hne (Array.eq_empty_of_size_eq_zero (by omega))
       have hlast := hcoeffs (p.coeffs.size - 1) (by omega)
       have hback : p.coeffs.back? = some 0 := by
@@ -4230,7 +4230,7 @@ lemma splitPolynomialChars_toChars_rat (p : AzPolynomial ℚ) (hp : p ≠ 0) :
     have hempty : p.coeffs = #[] := by
       by_contra hne
       have hsize : 0 < p.coeffs.size := by
-        by_contra hlt; push_neg at hlt
+        by_contra hlt; push Not at hlt
         exact hne (Array.eq_empty_of_size_eq_zero (by omega))
       have hlast := hcoeffs (p.coeffs.size - 1) (by omega)
       have hback : p.coeffs.back? = some 0 := by

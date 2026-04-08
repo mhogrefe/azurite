@@ -22,11 +22,11 @@ private lemma coeff_beyond_zero (p q : AzPolynomial R) (n : ℕ)
     by_contra! hc
     have ht1 : x.1 < p.coeffs.size := by
       by_contra h_ge_p
-      push_neg at h_ge_p
+      push Not at h_ge_p
       exact hc.1 (by dsimp [coeff]; rw [Array.getElem?_eq_none (by omega)]; rfl)
     have ht2 : x.2 < q.coeffs.size := by
       by_contra h_ge_q
-      push_neg at h_ge_q
+      push Not at h_ge_q
       exact hc.2 (by dsimp [coeff]; rw [Array.getElem?_eq_none (by omega)]; rfl)
     omega
   rcases hpz with h1 | h2

@@ -7,6 +7,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.Finset.Lattice.Fold
+import Mathlib.Data.List.Fold
 
 namespace Azurite
 
@@ -250,7 +251,7 @@ theorem support_toMvPoly [DecidableEq σ]
       (fun m : Monomial σ R ord => m.monic.toFinsupp)).toFinset := by
   ext f; rw [MvPolynomial.mem_support_iff, List.mem_toFinset, List.mem_map]
   constructor
-  · intro hne; by_contra hall; push_neg at hall
+  · intro hne; by_contra hall; push Not at hall
     apply hne; rw [coeff_toMvPoly]
     exact sum_map_eq_zero₂ _ _ (fun m hm => if_neg (hall m hm))
   · rintro ⟨m, hm, rfl⟩

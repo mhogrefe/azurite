@@ -160,7 +160,7 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
     simp only [Zer, Set.mem_setOf_eq, Set.mem_univ, iff_true]
     intro P hP; rw [h P hP]; simp
   · -- Some P₀ ∈ poly_set is nonzero ⟹ Zer poly_set ⊆ roots(P₀)
-    push_neg at h
+    push Not at h
     obtain ⟨P₀, hP₀mem, hP₀ne⟩ := h
     left
     apply Set.Finite.subset (s := { x : Fin 1 → C |
@@ -707,7 +707,7 @@ theorem realization_invariant_update [DecidableEq σ]
   | exists_ z _ ih =>
     simp only [realization, Set.mem_setOf_eq, freeVars,
       Finset.mem_sdiff, Finset.mem_singleton] at *
-    push_neg at hx
+    push Not at hx
     constructor <;> rintro ⟨d, hd⟩ <;> refine ⟨d, ?_⟩
     · by_cases hxz : x = z
       · subst hxz; rwa [Function.update_idem]
@@ -720,7 +720,7 @@ theorem realization_invariant_update [DecidableEq σ]
   | forall_ z _ ih =>
     simp only [realization, Set.mem_setOf_eq, freeVars,
       Finset.mem_sdiff, Finset.mem_singleton] at *
-    push_neg at hx
+    push Not at hx
     constructor
     · intro hd d
       by_cases hxz : x = z
@@ -1132,7 +1132,7 @@ theorem sentence_trivial_realization [DecidableEq σ]
     simp only [Set.mem_univ, iff_true]
     exact (realization_eq_of_agree_on_freeVars Φ y y'
       (by simp [isSentence] at hΦ; simp [hΦ])).mp hy
-  · left; push_neg at h
+  · left; push Not at h
     exact Set.subset_eq_empty h rfl
 
 theorem sentence_equiv_true_or_false [DecidableEq σ]
@@ -1320,7 +1320,7 @@ theorem isAlgClosed_of_phiD_holds
   apply IsAlgClosed.of_exists_root
   intro p hp hirr
   have hd : 0 < p.natDegree := by
-    by_contra hle; push_neg at hle
+    by_contra hle; push Not at hle
     exact not_irreducible_one
       ((Polynomial.eq_one_of_monic_natDegree_zero hp (by omega)) ▸ hirr)
   set d := p.natDegree with d_def

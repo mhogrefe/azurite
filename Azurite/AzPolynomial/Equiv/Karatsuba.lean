@@ -99,7 +99,7 @@ lemma toPoly_take_drop (a : Array R) (m : Nat) :
   by_cases h : m ≤ a.toList.length
   · congr 2
     rw [List.length_take, Nat.min_eq_left h]
-  · push_neg at h
+  · push Not at h
     have : a.toList.drop m = [] := List.drop_eq_nil_of_le (by omega)
     simp [this, List.toPoly]
 
@@ -135,7 +135,7 @@ lemma toPoly_mulBasecaseCoeffs (a b : Array R) :
       simp only [coeff_list_toPoly, List.getCoeff, Array.getElem?_toList]
       by_cases h1 : i < a.size
       · simp [Array.getElem?_eq_none (show b.size ≤ n - i by omega)]
-      · push_neg at h1; simp [Array.getElem?_eq_none h1]
+      · push Not at h1; simp [Array.getElem?_eq_none h1]
 
 /-! ## Main inductive proof -/
 

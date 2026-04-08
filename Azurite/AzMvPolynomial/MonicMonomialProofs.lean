@@ -11,7 +11,6 @@
 -/
 import Azurite.AzMvPolynomial.MonicMonomial
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.List.SplitOn
 
 namespace Azurite
 open AzPolynomial
@@ -54,7 +53,7 @@ private theorem parseFactor_exp1 (i : Fin n) (exps : Vector ℕ n) (h0 : exps.ge
   rw [show (pv.toChars (pv.ofFin i)).splitOn '^' = [pv.toChars (pv.ofFin i)] from by
     conv_lhs => rw [← show ['^'].intercalate [pv.toChars (pv.ofFin i)] =
         pv.toChars (pv.ofFin i) from by simp [List.intercalate]]
-    exact List.splitOn_intercalate _ _ (by simp [hnc]) (by simp)]
+    exact List.splitOn_intercalate _ (by simp [hnc]) (by simp)]
   simp [pv.parse_toChars, pv.toFin_ofFin, h0]
 
 /-- `parseFactor` correctly handles exp≥2 factors. -/
@@ -71,7 +70,7 @@ private theorem parseFactor_expN (i : Fin n) (e : ℕ) (he : e ≥ 2)
     conv_lhs => rw [← show ['^'].intercalate [pv.toChars (pv.ofFin i), natToChars e] =
         pv.toChars (pv.ofFin i) ++ '^' :: natToChars e from by
       simp [List.intercalate, List.intersperse]]
-    exact List.splitOn_intercalate _ _
+    exact List.splitOn_intercalate _
       (by intro l hl; simp at hl; rcases hl with rfl | rfl
           · exact fun h => pv.toChars_no_syntax _ '^' h (Or.inr (Or.inr (Or.inr (Or.inr rfl))))
           · exact not_mem_natToChars_of_not_digit '^' (by decide) _) (by simp)]
@@ -409,7 +408,7 @@ theorem parse_toChars (m : MonicMonomial σ ord) :
         exact hhd (h _ hmem)
     have hne : ¬(m.toChars).isEmpty := by simp [List.isEmpty_iff]; exact hemp
     simp only [hne, Bool.false_eq_true, ↓reduceIte]
-    rw [toChars_eq_intercalate, List.splitOn_intercalate _ _
+    rw [toChars_eq_intercalate, List.splitOn_intercalate _
       (star_notin_toCharsAux m 0 (by omega)) haux_ne]
     rw [parseFactorList_toCharsAux m 0 (by omega) _
       (fun _ _ h => by omega) (fun j hj _ => by simp [Vector.getElem_replicate])]

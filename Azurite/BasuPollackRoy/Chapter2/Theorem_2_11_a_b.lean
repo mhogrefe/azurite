@@ -406,7 +406,7 @@ theorem conj_coeff_mul_conjPoly [IsRealClosed R] (P : (Ri R)[X]) (n : ℕ) :
 theorem exists_eval_ne_zero {K : Type*} [CommRing K] [IsDomain K] [Infinite K]
     (P : K[X]) (hP : P ≠ 0) : ∃ x : K, P.eval x ≠ 0 := by
   by_contra h
-  push_neg at h
+  push Not at h
   exact hP (Polynomial.zero_of_eval_zero P h)
 
 /-! ### Symmetric polynomial membership (Q, G, H ∈ R[Z][Y])
@@ -1096,7 +1096,7 @@ theorem exists_discPoly_eval_ne_zero [IsRealClosed R]
     ∃ z : R, Polynomial.eval (algebraMap R L z) (discPoly x) ≠ 0 := by
   haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   have hD : discPoly x ≠ 0 := discPoly_ne_zero x hx_inj
-  by_contra h; push_neg at h
+  by_contra h; push Not at h
   classical
   have hinj := (algebraMap R L).injective
   set d := (discPoly x).natDegree

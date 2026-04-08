@@ -190,7 +190,7 @@ lemma cmp_one_cmp_ne_eq (x y : ℚ)
     rw [h_sign_eq]; rcases compare y.num 0 with _ | _ | _ <;> simp
   -- stage-1 doesn't exit (sign_cmp = eq, x_sign ≠ eq)
   unfold cmp
-  rw [if_neg (by push_neg; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
+  rw [if_neg (by push Not; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
   -- rewrite natAbs comparisons as |·| vs 1
   rw [compare_natAbs_den_eq x, compare_natAbs_den_eq y] at h_one_ne ⊢
   rw [if_pos h_one_ne]
@@ -302,7 +302,7 @@ lemma cmp_nd_cmp_ne_eq (x y : ℚ)
     rw [h_sign_eq]; rcases compare y.num 0 with _ | _ | _ <;> simp
   -- stage-1 doesn't exit (sign_cmp = eq, x_sign ≠ eq)
   unfold cmp
-  rw [if_neg (by push_neg; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
+  rw [if_neg (by push Not; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
   -- stage-2 doesn't exit (one_cmp = eq, so one_cmp ≠ eq is false)
   rw [if_neg (by rwa [ne_eq, not_not])]
   -- stage-3 doesn't exit (not both n_cmp = eq and d_cmp = eq)
@@ -365,7 +365,7 @@ lemma cmp_log_cmp_ne_eq (x y : ℚ)
     rw [h_sign_eq]; rcases compare y.num 0 with _ | _ | _ <;> simp
   -- stage-1 doesn't exit (sign_cmp = eq, x_sign ≠ eq)
   unfold cmp
-  rw [if_neg (by push_neg; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
+  rw [if_neg (by push Not; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
   -- stage-2 doesn't exit (one_cmp = eq)
   rw [if_neg (by rwa [ne_eq, not_not])]
   -- stage-3 doesn't exit (not both n_cmp = eq and d_cmp = eq)
@@ -443,7 +443,7 @@ theorem cmp_eq_compare (x y : ℚ) : cmp x y = compare x y := by
           rcases h_cmpy : compare y.num 0 with _ | _ | _ <;> simp_all)]
         exact sign_cmp_correct 0 y (Or.inr rfl)
   -- Both have the same nonzero sign
-  push_neg at h1
+  push Not at h1
   obtain ⟨h_sign_cmp_eq, hx_nz⟩ := h1
   have h_nz : x.num ≠ 0 := by simpa using hx_nz
   -- Derive h_sign_eq: compare x.num 0 = compare y.num 0
@@ -455,7 +455,7 @@ theorem cmp_eq_compare (x y : ℚ) : cmp x y = compare x y := by
   -- Stage 2: if one_cmp ≠ eq, use cmp_one_cmp_ne_eq
   by_cases h2 : compare (compare x.num.natAbs x.den) (compare y.num.natAbs y.den) ≠ Ordering.eq
   · exact cmp_one_cmp_ne_eq x y h_sign_eq h_nz h2
-  push_neg at h2
+  push Not at h2
   -- Stage 3 exit: when natAbs equal AND den equal, x = y
   by_cases h3 : x.num.natAbs = y.num.natAbs ∧ x.den = y.den
   · have hxy : x = y := eq_of_same_sign_natAbs_den x y h_sign_eq h_nz h3.1 h3.2
@@ -466,7 +466,7 @@ theorem cmp_eq_compare (x y : ℚ) : cmp x y = compare x y := by
     -- Unfold cmp x x and navigate stage gates
     unfold cmp
     rw [if_neg (by
-      push_neg; exact ⟨h_sign_cmp_eq, by simpa using h_nz⟩)]
+      push Not; exact ⟨h_sign_cmp_eq, by simpa using h_nz⟩)]
     -- Stage 2: one_cmp = eq → if_neg the ≠eq condition
     rw [if_neg (by rwa [ne_eq, not_not])]
     -- Stage 3: n_cmp == eq ∧ d_cmp == eq → if_pos (both self-compares are eq)
@@ -474,16 +474,16 @@ theorem cmp_eq_compare (x y : ℚ) : cmp x y = compare x y := by
   -- Stage 4: if nd_cmp ≠ eq, use cmp_nd_cmp_ne_eq
   by_cases h4 : compare (compare x.num.natAbs y.num.natAbs) (compare x.den y.den) ≠ Ordering.eq
   · exact cmp_nd_cmp_ne_eq x y h_sign_eq h_nz h2 h3 h4
-  push_neg at h4
+  push Not at h4
   -- Stage 5: if log_cmp ≠ eq, use cmp_log_cmp_ne_eq
   by_cases h5 : compare (floorLogBase2Abs x) (floorLogBase2Abs y) ≠ Ordering.eq
   · exact cmp_log_cmp_ne_eq x y h_sign_eq h_nz h2 h3 h4 h5
-  push_neg at h5
+  push Not at h5
   -- Stage 6: final stage — cross-multiply comparison
   have h_sign_cmp : compare (compare x.num 0) (compare y.num 0) = Ordering.eq := by
     rw [h_sign_eq]; rcases compare y.num 0 with _ | _ | _ <;> simp
   unfold cmp
-  rw [if_neg (by push_neg; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
+  rw [if_neg (by push Not; exact ⟨by rw [h_sign_cmp], by simpa using h_nz⟩)]
   rw [if_neg (by rwa [ne_eq, not_not])]
   rw [if_neg (by
     intro ⟨h1, h2'⟩

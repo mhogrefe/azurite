@@ -846,7 +846,7 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
           MvPolynomial.coeff m' (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
             ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2) from by
       symm; apply Finset.sum_filter_of_ne
-      intro x _ hne; by_contra hgt; push_neg at hgt
+      intro x _ hne; by_contra hgt; push Not at hgt
       have : ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2 = 0 :=
         Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
       exact hne (by simp [this])]
@@ -1299,7 +1299,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
         _ = n := Nat.mul_one _
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
     simp [Int.bitsize]
-  · push_neg at hm
+  · push Not at hm
     -- m ≤ n: expand via binomial theorem, only the j = m term survives
     rw [sub_eq_add_neg, ← map_neg, Commute.add_pow (Commute.all _ _)]
     simp only [finset_sum_coeff, coeff_mul_natCast, mul_pow, ← C_pow, coeff_mul_C, coeff_C_mul,

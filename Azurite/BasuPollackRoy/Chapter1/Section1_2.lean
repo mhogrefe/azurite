@@ -945,7 +945,7 @@ open Classical in
 lemma SRemS_terminates (P Q : K[X]) (hP : P ≠ 0) :
     ∃ k : ℕ, SRemS P Q (k + 1) = 0 ∧ SRemS P Q k ≠ 0 := by
   by_contra h
-  push_neg at h
+  push Not at h
   by_cases hQ : Q = 0
   · have h0 := h 0 (by simp [SRemS_snd, hQ])
     exact absurd h0 (by simp [SRemS_fst, hP])
@@ -1117,7 +1117,7 @@ theorem proposition_1_9 {P Q G : K[X]}
   by_cases hle : Q.degree ≤ P.degree
   · exact proposition_1_9_aux hP hQ hle hG hnd_gQ
   · have hle' : P.degree ≤ Q.degree := by
-      push_neg at hle; exact le_of_lt hle
+      push Not at hle; exact le_of_lt hle
     have hG' : IsGCD G Q P := hG.symm
     obtain ⟨U, V, hbez, hdegU, hdegV⟩ := proposition_1_9_aux hQ hP hle' hG' hnd_gP
     refine ⟨V, U, ?_, hdegV, hdegU⟩

@@ -52,7 +52,7 @@ private lemma ofFn_add_coeff (p q : AzPolynomial R) (n : ℕ) :
   split
   · rfl
   · next h =>
-    push_neg at h
+    push Not at h
     simp [coeff, Array.getElem?_eq_none (by omega : p.coeffs.size ≤ n),
           Array.getElem?_eq_none (by omega : q.coeffs.size ≤ n)]
 

@@ -326,9 +326,9 @@ instance : PartialOrder (MonicMonomial σ ord) where
     change cmpM a b = .lt ↔ cmpM a b ≠ .gt ∧ ¬(cmpM b a ≠ .gt)
     constructor
     · intro h
-      exact ⟨by rw [h]; decide, by push_neg; exact cmpM_gt_of_lt h⟩
+      exact ⟨by rw [h]; decide, by push Not; exact cmpM_gt_of_lt h⟩
     · intro ⟨hab, hba⟩
-      push_neg at hba
+      push Not at hba
       match h : cmpM a b with
       | .lt => rfl
       | .eq =>

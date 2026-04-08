@@ -142,7 +142,7 @@ theorem MonicMonomial.mul_le_mul_left' (c : MonicMonomial σ ord)
 
 theorem MonicMonomial.le_of_mul_le_mul_left (c a b : MonicMonomial σ ord)
     (h : c * a ≤ c * b) : a ≤ b := by
-  by_contra hba; push_neg at hba
+  by_contra hba; push Not at hba
   exact absurd h (not_le_of_gt (MonicMonomial.mul_lt_mul_left c b a hba))
 
 end MonicProps
