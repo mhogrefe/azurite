@@ -442,6 +442,91 @@ instance : LinearOrder AzNat where
   compare := compare
   compare_eq_compareOfLessAndEq := compare_eq_compareOfLessAndEq
 
+theorem compareUInt64_eq (a : AzNat) (u : UInt64) :
+    a.compareUInt64 u = Ord.compare a.toNat u.toNat := by
+  unfold compareUInt64 toNat
+  split
+  · -- size = 0
+    rename_i h
+    have h_empty : a.limbs.toList = [] :=
+      List.length_eq_zero_iff.mp (by simp [h])
+    rw [h_empty]
+    simp only [toNatLimbsList, List.foldr]
+    split_ifs with hu
+    · have hu0 : u = 0 := of_decide_eq_true hu
+      rw [hu0]; rfl
+    · have hu_ne : u ≠ 0 := of_decide_eq_false (Bool.eq_false_of_not_eq_true hu)
+      have hu_pos : 0 < u.toNat := by
+        have : u.toNat ≠ 0 := fun h => hu_ne (UInt64.eq_of_toNat_eq (h.trans rfl))
+        omega
+      exact (compare_Nat_eq_of_lt 0 u.toNat hu_pos).symm
+  · -- size = 1
+    rename_i h
+    have h0 : 0 < a.limbs.toList.length := by simp [h]
+    have h_val : toNatLimbsList a.limbs.toList = a.limbs[0].toNat := by
+      have hl : a.limbs.toList.length = 1 := by simp [h]
+      have h_eq : a.limbs.toList = a.limbs.toList.take 1 := by
+        conv_lhs => rw [show a.limbs.toList = a.limbs.toList.take a.limbs.toList.length from List.take_length.symm]; rw [hl]
+      conv_lhs => rw [h_eq]
+      rw [toNatLimbsList_take_one a.limbs.toList h0]
+      simp
+    rw [compare_UInt64_eq_compare_toNat, h_val]
+  · -- size ≥ 2
+    rename_i n h
+    have h_size : a.limbs.size ≥ 2 := by omega
+    have h_ne : a.limbs.toList ≠ [] := last_ne_zero_to_list (by omega)
+    have hlast : a.limbs.toList.getLast? ≠ some 0 := by
+      rw [← back_eq_getLast]; exact a.last_ne_zero
+    have h_lb : 2 ^ (64 * (a.limbs.size - 1)) ≤ toNatLimbsList a.limbs.toList := by
+      exact pow_le_toNatLimbsList a.limbs.toList h_ne hlast
+    have h_ub : u.toNat < 2 ^ 64 := u.toBitVec.isLt
+    have h_pow : 2 ^ 64 ≤ 2 ^ (64 * (a.limbs.size - 1)) := by
+      apply Nat.pow_le_pow_right (by omega)
+      omega
+    have h_gt : toNatLimbsList a.limbs.toList > u.toNat := by omega
+    exact (compare_Nat_eq_of_gt _ _ h_gt).symm
+
+lemma compare_nat_cast_int (a b : Nat) : Ord.compare a b = Ord.compare (a : Int) (b : Int) := by
+  change (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) =
+         (if (a : Int) < (b : Int) then Ordering.lt else if (a : Int) = (b : Int) then Ordering.eq else Ordering.gt)
+  split_ifs with h1 h2 h3 h4 h5 h6
+  · rfl
+  · exfalso; omega
+  · exfalso; omega
+  · exfalso; omega
+  · rfl
+  · exfalso; omega
+  · exfalso; omega
+  · exfalso; omega
+  · rfl
+
+theorem compareInt64_eq (a : AzNat) (i : Int64) :
+    a.compareInt64 i = Ord.compare (a.toNat : Int) i.toInt := by
+  unfold compareInt64
+  split_ifs with hi
+  · -- i < 0
+    have h_neg : i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
+    have h_pos : (a.toNat : Int) ≥ 0 := Int.natCast_nonneg _
+    symm; exact compare_gt_iff_gt.mpr (by omega)
+  · -- i ≥ 0
+    rw [compareUInt64_eq]
+    have h_eq : (i.toUInt64.toNat : Int) = i.toInt := by
+      have h_nn : ¬i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
+      have h1 : i.toUInt64.toNat = i.toBitVec.toNat := rfl
+      have h2 : i.toInt = i.toBitVec.toInt := rfl
+      rw [h1, h2]
+      rw [h2] at h_nn
+      have h_lt : i.toBitVec.toNat < 2^64 := i.toBitVec.isLt
+      unfold BitVec.toInt at h_nn ⊢
+      split_ifs with h
+      · rfl
+      · exfalso
+        simp only [not_lt] at h
+        split_ifs at h_nn with h2
+        · omega
+        · omega
+    rw [compare_nat_cast_int, h_eq]
+
 instance : WellFoundedLT AzNat where
   wf := by
     have h : WellFounded (InvImage (· < ·) toNat) := InvImage.wf toNat wellFounded_lt
