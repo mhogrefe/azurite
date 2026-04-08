@@ -40,6 +40,24 @@ noncomputable def Ri.conj (R : Type*) [CommRing R] : Ri R →ₐ[R] Ri R :=
 noncomputable def conjPoly (R : Type*) [CommRing R] : (Ri R)[X] → (Ri R)[X] :=
   Polynomial.map (Ri.conj R)
 
+/-- Conjugation sends i to -i. -/
+theorem Ri.conj_i (R : Type*) [CommRing R] : (Ri.conj R) (Ri.i R) = -Ri.i R := by
+  simp [Ri.conj, Ri.i, AdjoinRoot.lift_root]
+
+/-- Conjugation is an involution: conj(conj(x)) = x. -/
+theorem Ri.conj_conj (R : Type*) [CommRing R] (x : Ri R) :
+    (Ri.conj R) ((Ri.conj R) x) = x := by
+  have : (Ri.conj R).comp (Ri.conj R) = AlgHom.id R (Ri R) := by
+    apply AdjoinRoot.algHom_ext
+    simp only [Ri.conj, AlgHom.comp_apply, AlgHom.coe_mk, Ri.i,
+      AdjoinRoot.lift_root, map_neg, neg_neg, AlgHom.id_apply]
+  exact AlgHom.congr_fun this x
+
+/-- Conjugation is injective. -/
+theorem Ri.conj_injective (R : Type*) [CommRing R] :
+    Function.Injective (Ri.conj R : Ri R →+* Ri R) :=
+  Function.HasLeftInverse.injective ⟨Ri.conj R, Ri.conj_conj R⟩
+
 /-! ### Combinatorial indexing -/
 
 /-- The set of ordered pairs (i, j) with i < j from Fin p. -/
@@ -156,15 +174,129 @@ theorem half_degree_odd_factor {m n : ℕ} (hm : 1 ≤ m) (hn : Odd n) (hp : 0 <
 /-! ### Conjugation properties -/
 
 variable {R : Type*} [Field R]
+/-- If conj(c) = c in R[i], then c ∈ range(algebraMap R (Ri R)).
+    Proof: every c = mk(C a + C b * X). conj(c) = mk(C a - C b * X).
+    conj(c) = c ⟹ mk(2 * C b * X) = 0, so (X²+1) ∣ 2bX.
+    Since deg(X²+1) > deg(2bX), we get b = 0, i.e. c = algebraMap a. -/
+theorem Ri.conj_fixed_mem_range [IsRealClosed R] (c : Ri R) (hc : (Ri.conj R) c = c) :
+    c ∈ Set.range (algebraMap R (Ri R)) := by
+  induction c using AdjoinRoot.induction_on with
+  | ih p =>
+    -- conj(mk p) = lift(of, -root, _)(mk p) = eval₂ (of) (-root) p  (by lift_mk)
+    -- mk p = eval₂ (of) (root) p  (by aeval_eq, since mk = aeval root)
+    -- From hc: eval₂ (of) (-root) p = eval₂ (of) root p = mk p
+    -- Rewrite mk using aeval:
+    rw [show AdjoinRoot.mk _ p = Polynomial.aeval (Ri.i R) p from
+      (AdjoinRoot.aeval_eq p).symm]
+    -- conj(aeval i p) = aeval (conj i) p = aeval (-i) p  (AlgHom comp aeval)
+    rw [show AdjoinRoot.mk _ p = Polynomial.aeval (Ri.i R) p from
+      (AdjoinRoot.aeval_eq p).symm] at hc
+    have hconj_aeval : (Ri.conj R) (Polynomial.aeval (Ri.i R) p) =
+        Polynomial.aeval (-Ri.i R) p := by
+      rw [← Polynomial.aeval_algHom_apply]
+      exact congr_arg (fun x => Polynomial.aeval x p) (Ri.conj_i R)
+    rw [hconj_aeval] at hc
+    -- Now hc: aeval (-i) p = aeval i p
+    -- Goal: aeval i p ∈ range(algebraMap)
+    -- Use modByMonic to reduce p to degree < 2
+    set f := (X : R[X]) ^ 2 + 1
+    have hfm : f.Monic := monic_X_pow_add_C 1 (by norm_num : (2 : ℕ) ≠ 0)
+    set r := p %ₘ f
+    -- mk p = mk r, so aeval i p = aeval i r
+    have haeval_eq : Polynomial.aeval (Ri.i R) p = Polynomial.aeval (Ri.i R) r := by
+      have : AdjoinRoot.mk ((X : R[X])^2+1) p = AdjoinRoot.mk ((X : R[X])^2+1) r := by
+        rw [AdjoinRoot.mk_eq_mk]
+        exact ⟨p /ₘ f, by
+          have := modByMonic_eq_sub_mul_div p f
+          linear_combination -this⟩
+      rw [← AdjoinRoot.aeval_eq, ← AdjoinRoot.aeval_eq] at this
+      exact this
+    rw [haeval_eq]
+    -- r has natDegree ≤ 1
+    have hr_deg : r.natDegree ≤ 1 := by
+      have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
+      have hf_deg : f.degree = 2 := by
+        have hnat : f.natDegree = 2 := by
+          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+        rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)), hnat]
+        norm_num
+      rw [hf_deg] at hrd
+      -- hrd: r.degree < 2. Goal: r.natDegree ≤ 1.
+      -- r.degree < ↑2 means r.natDegree < 2 (when r.degree ≠ ⊥)
+      -- If r = 0 then natDegree = 0 ≤ 1. Otherwise degree = ↑natDegree < ↑2.
+      by_cases hr : r = 0
+      · simp [hr]
+      · rw [Polynomial.degree_eq_natDegree hr] at hrd
+        exact Nat.lt_succ_iff.mp (WithBot.coe_lt_coe.mp (by exact_mod_cast hrd))
+    -- Also need: aeval (-i) r = aeval i r (transferred from p)
+    have haeval_neg_eq : Polynomial.aeval (-Ri.i R) r = Polynomial.aeval (Ri.i R) r := by
+      -- aeval(-i) p = aeval(-i) r because p - r = f * q and aeval(-i) f = 0
+      have haeval_neg_f : Polynomial.aeval (-Ri.i R) f = 0 := by
+        simp [f, Polynomial.aeval_def, eval₂_add, eval₂_pow, eval₂_one, eval₂_X]
+        linear_combination Ri.i_sq R
+      have haeval_neg_eq_pr : Polynomial.aeval (-Ri.i R) p = Polynomial.aeval (-Ri.i R) r := by
+        have hpr : p - r = f * (p /ₘ f) := by
+          have := modByMonic_eq_sub_mul_div p f
+          linear_combination -this
+        have := congr_arg (Polynomial.aeval (-Ri.i R)) hpr
+        simp [map_sub, map_mul, haeval_neg_f, zero_mul] at this
+        linear_combination this
+      rw [← haeval_neg_eq_pr, hc]
+      exact haeval_eq
+    -- For r of natDegree ≤ 1: r = C(r.coeff 0) + C(r.coeff 1) * X
+    -- aeval x r = algebraMap(coeff 0) + algebraMap(coeff 1) * x for x = ±i
+    -- From equality: 2 * algebraMap(coeff 1) * i = 0
+    -- i ≠ 0, 2 ≠ 0, domain → coeff 1 = 0
+    -- Hence aeval i r = algebraMap(coeff 0)
+    -- aeval(-i) r = coeff_0 - coeff_1 * i, aeval(i) r = coeff_0 + coeff_1 * i
+    -- Equal ⟹ 2 * coeff_1 * i = 0
+    have hi_ne : Ri.i R ≠ 0 := by
+      intro h
+      have := Ri.i_sq R
+      rw [h, zero_pow (by norm_num : 2 ≠ 0)] at this
+      exact one_ne_zero (neg_eq_zero.mp this.symm)
+    -- The coeff 1 vanishes because domain + i≠0 + 2≠0
+    -- For now we construct the witness directly
+    -- Decompose r = C(coeff 1) * X + C(coeff 0) (natDegree ≤ 1)
+    have hr_decomp := Polynomial.eq_X_add_C_of_natDegree_le_one hr_deg
+    -- Compute aeval i r and aeval (-i) r
+    set a := r.coeff 0
+    set b := r.coeff 1
+    -- aeval x r = algebraMap b * x + algebraMap a
+    have haeval_r : ∀ x : Ri R,
+        Polynomial.aeval x r = algebraMap R (Ri R) b * x + algebraMap R (Ri R) a := by
+      intro x
+      conv_lhs => rw [hr_decomp]
+      simp [Polynomial.aeval_def, eval₂_add, eval₂_mul, eval₂_C, eval₂_X]
+    -- From haeval_neg_eq: b * (-i) + a = b * i + a, i.e., 2 * b * i = 0
+    have h2bi : algebraMap R (Ri R) b * Ri.i R = 0 := by
+      have h1 := haeval_r (Ri.i R)
+      have h2 := haeval_r (-Ri.i R)
+      rw [h1, h2] at haeval_neg_eq
+      -- haeval_neg_eq: b * (-i) + a = b * i + a
+      -- So b * (-i) = b * i, hence b * i + b * i = 0, i.e. 2 * b * i = 0
+      have hsub : algebraMap R (Ri R) b * (-Ri.i R) - algebraMap R (Ri R) b * Ri.i R = 0 := by
+        linear_combination haeval_neg_eq
+      rw [mul_neg, ← neg_add', ← two_mul, neg_eq_zero, mul_eq_zero, mul_eq_zero] at hsub
+      rcases hsub with h | h | h
+      · -- 2 = 0 in Ri R: impossible since IsRealClosed → CharZero
+        exfalso
+        have : (2 : Ri R) ≠ 0 := by
+          intro h2
+          apply (two_ne_zero : (2 : R) ≠ 0)
+          exact (algebraMap R (Ri R)).injective
+            (show (algebraMap R (Ri R)) 2 = (algebraMap R (Ri R)) 0 by
+              rw [map_zero]; exact_mod_cast h2)
+        exact this h
+      · exact mul_eq_zero_of_left h _
+      · exact absurd h hi_ne
+    -- b * i = 0, i ≠ 0, so algebraMap b = 0 (domain), hence b = 0
+    have hb_zero : algebraMap R (Ri R) b = 0 := by
+      exact (mul_eq_zero.mp h2bi).resolve_right hi_ne
+    -- aeval i r = algebraMap a
+    rw [haeval_r (Ri.i R), hb_zero, zero_mul, zero_add]
+    exact ⟨a, rfl⟩
 
-/-- Conjugation is an involution: conj (conj z) = z. -/
-theorem Ri.conj_conj [IsRealClosed R] (z : Ri R) :
-    (Ri.conj R) ((Ri.conj R) z) = z := by
-  have h : (Ri.conj R).comp (Ri.conj R) = AlgHom.id R (Ri R) := by
-    apply AdjoinRoot.algHom_ext
-    simp only [Ri.conj, AlgHom.comp_apply, AlgHom.coe_mk, Ri.i,
-      AdjoinRoot.lift_root, map_neg, neg_neg, AlgHom.id_apply]
-  exact AlgHom.congr_fun h z
 
 /-- Conjugation fixes elements of R: conj (algebraMap R (Ri R) r) = algebraMap R (Ri R) r. -/
 theorem Ri.conj_algebraMap [IsRealClosed R] (r : R) :
@@ -198,7 +330,7 @@ theorem conjPoly_conjPoly [IsRealClosed R] (P : (Ri R)[X]) :
     conjPoly R (conjPoly R P) = P := by
   simp only [conjPoly, Polynomial.map_map]
   have h : ((Ri.conj R : Ri R →+* Ri R).comp (Ri.conj R)) = RingHom.id (Ri R) :=
-    RingHom.ext (fun z => Ri.conj_conj z)
+    RingHom.ext (fun z => Ri.conj_conj R z)
   rw [h, Polynomial.map_id]
 
 /-- P · conjPoly(P) is fixed by conjPoly. -/
@@ -207,7 +339,7 @@ theorem conjPoly_mul_conjPoly_eq [IsRealClosed R] (P : (Ri R)[X]) :
   simp only [conjPoly, Polynomial.map_mul, Polynomial.map_map]
   congr 1
   have h : ((Ri.conj R : Ri R →+* Ri R).comp (Ri.conj R)) = RingHom.id (Ri R) :=
-    RingHom.ext (fun z => Ri.conj_conj z)
+    RingHom.ext (fun z => Ri.conj_conj R z)
   rw [h, Polynomial.map_id]
 
 /-- Each coefficient of P · conjPoly(P) is fixed by conj. -/
@@ -1069,5 +1201,44 @@ theorem D_coeff_mem_R [IsRealClosed R]
     (discPoly x).coeff n ∈ Set.range (algebraMap R L) := by
   haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (D_eval_in_R P x hx) n
+
+/-! ### Square roots in R[i] -/
+
+/-- In a real closed field, a² + b² is always a square.
+    Proof: by isSquare_or_isSquare_neg, either a²+b² is a square (done) or
+    -(a²+b²) is a square, say -(a²+b²) = c². Then a²+b²+c² = 0, but this
+    is a sum of squares in a semireal ring (where -1 is not a sum of squares),
+    so a = b = c = 0. -/
+theorem isSquare_sum_sq [IsRealClosed R] (a b : R) : IsSquare (a ^ 2 + b ^ 2) := by
+  rcases IsRealClosed.isSquare_or_isSquare_neg (a ^ 2 + b ^ 2) with h | h
+  · exact h
+  · obtain ⟨c, hc⟩ := h
+    have h0 : a * a + b * b + c * c = 0 := by
+      have : a ^ 2 + b ^ 2 + c * c = 0 := by linear_combination -hc
+      rwa [sq, sq] at this
+    -- If a = b = 0 then a²+b² = 0 is a square; use IsSquare 0 directly
+    by_cases ha : a = 0
+    · subst ha; simp only [zero_mul, zero_add] at h0 ⊢
+      by_cases hb : b = 0
+      · subst hb; simp
+      · -- b ≠ 0, h0 : b*b + c*c = 0. Show -1 is IsSumSq → contradiction.
+        exfalso; apply IsSemireal.not_isSumSq_neg_one (R := R)
+        have key : (b * b + c * c) * (b⁻¹ * b⁻¹) = 0 := by rw [h0, zero_mul]
+        have expand : (b * b + c * c) * (b⁻¹ * b⁻¹) =
+          b * b⁻¹ * (b * b⁻¹) + (b⁻¹ * c) * (b⁻¹ * c) := by ring
+        rw [expand, mul_inv_cancel₀ hb, one_mul] at key
+        -- key : 1 + (b⁻¹*c)*(b⁻¹*c) = 0
+        rw [show (-1 : R) = (b⁻¹ * c) * (b⁻¹ * c) from by linear_combination -key]
+        exact IsSumSq.mul_self _
+    · -- a ≠ 0
+      exfalso; apply IsSemireal.not_isSumSq_neg_one (R := R)
+      have key : (a * a + b * b + c * c) * (a⁻¹ * a⁻¹) = 0 := by rw [h0, zero_mul]
+      have expand : (a * a + b * b + c * c) * (a⁻¹ * a⁻¹) =
+        a * a⁻¹ * (a * a⁻¹) + (a⁻¹ * b) * (a⁻¹ * b) + (a⁻¹ * c) * (a⁻¹ * c) := by ring
+      rw [expand, mul_inv_cancel₀ ha, one_mul] at key
+      -- key : 1 + (a⁻¹*b)*(a⁻¹*b) + (a⁻¹*c)*(a⁻¹*c) = 0
+      rw [show (-1 : R) = (a⁻¹ * b) * (a⁻¹ * b) + (a⁻¹ * c) * (a⁻¹ * c) from
+        by linear_combination -key]
+      exact IsSumSq.sq_add _ (IsSumSq.mul_self _)
 
 end Azurite.BPR.Theorem2_11
