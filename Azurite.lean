@@ -18,9 +18,11 @@ import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzInt.Equiv.Size
+import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Size
 import Azurite.AzInt.ToString
+import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
@@ -103,10 +105,12 @@ import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Size
+import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.Parse
 import Azurite.AzNat.Size
 import Azurite.AzNat.ToString
+import Azurite.AzNat.TrailingZeros
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
