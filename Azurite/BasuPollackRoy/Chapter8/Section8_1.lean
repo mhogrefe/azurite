@@ -345,9 +345,9 @@ proved in `Azurite.AzPolynomial.Equiv.QuoRem`, including:
 -/
 
 /-!
-## Definition 8.4. Bitsize
+## Definition 8.4. Int size
 
-The **bitsize** of a non-zero integer `N` is the number `bit(N)` of
+The **size** of a non-zero integer `N` is the number `bit(N)` of
 bits in its binary representation, characterized by:
 
   `2^{bit(N)−1} ≤ |N| < 2^{bit(N)}`
@@ -357,18 +357,18 @@ computes exactly this for natural numbers, with the key lemmas:
 - `Nat.lt_size : m < n.size ↔ 2 ^ m ≤ n`
 - `Nat.lt_size_self : n < 2 ^ n.size`
 
-There is no `Int.size` in Mathlib, so we define `Int.bitsize` as
+There is no `Int.size` in Mathlib, so we define `Int.size` as
 `N.natAbs.size`.
 -/
 
 /-- BPR Definition 8.4. The bitsize of an integer `N`, defined as the
     number of bits in the binary representation of `|N|`.
     Returns `0` for `N = 0`. -/
-def Int.bitsize (N : ℤ) : ℕ := N.natAbs.size
+def Int.size (N : ℤ) : ℕ := N.natAbs.size
 
 /-- For `N ≠ 0`, `2^{bit(N)−1} ≤ |N|`. -/
 theorem Int.two_pow_pred_le_natAbs (N : ℤ) (hN : N ≠ 0) :
-    2 ^ (Int.bitsize N - 1) ≤ N.natAbs := by
+    2 ^ (Int.size N - 1) ≤ N.natAbs := by
   have hpos : 0 < N.natAbs := Int.natAbs_pos.mpr hN
   have hsize : 0 < N.natAbs.size := Nat.size_pos.mpr hpos
   show 2 ^ (N.natAbs.size - 1) ≤ N.natAbs
@@ -376,47 +376,47 @@ theorem Int.two_pow_pred_le_natAbs (N : ℤ) (hN : N ≠ 0) :
 
 /-- `|N| < 2^{bit(N)}` (holds for all integers, including `0`). -/
 theorem Int.natAbs_lt_two_pow_bitsize (N : ℤ) :
-    N.natAbs < 2 ^ (Int.bitsize N) :=
+    N.natAbs < 2 ^ (Int.size N) :=
   Nat.lt_size_self N.natAbs
 
 /-- The bitsize of a nonzero integer is positive. -/
-theorem Int.bitsize_pos (N : ℤ) (hN : N ≠ 0) : 0 < Int.bitsize N :=
+theorem Int.size_pos (N : ℤ) (hN : N ≠ 0) : 0 < Int.size N :=
   Nat.size_pos.mpr (Int.natAbs_pos.mpr hN)
 
 /-- Corollary of Definition 8.4: `bit(N) − 1 ≤ log₂(|N|)`. -/
-theorem Int.bitsize_sub_one_le_logb (N : ℤ) (hN : N ≠ 0) :
-    (Int.bitsize N : ℝ) - 1 ≤ Real.logb 2 (N.natAbs : ℝ) := by
+theorem Int.size_sub_one_le_logb (N : ℤ) (hN : N ≠ 0) :
+    (Int.size N : ℝ) - 1 ≤ Real.logb 2 (N.natAbs : ℝ) := by
   have hposR : (0 : ℝ) < ↑N.natAbs := by exact_mod_cast Int.natAbs_pos.mpr hN
-  have hbs := bitsize_pos N hN
-  rw [show (Int.bitsize N : ℝ) - 1 = ((Int.bitsize N - 1 : ℕ) : ℝ) from by
+  have hbs := size_pos N hN
+  rw [show (Int.size N : ℝ) - 1 = ((Int.size N - 1 : ℕ) : ℝ) from by
         rw [Nat.cast_sub hbs]; norm_cast,
       Real.le_logb_iff_rpow_le (by norm_num) hposR, Real.rpow_natCast]
   exact_mod_cast two_pow_pred_le_natAbs N hN
 
 /-- Corollary of Definition 8.4: `log₂(|N|) < bit(N)`. -/
-theorem Int.logb_lt_bitsize (N : ℤ) (hN : N ≠ 0) :
-    Real.logb 2 (N.natAbs : ℝ) < (Int.bitsize N : ℝ) := by
+theorem Int.logb_lt_size (N : ℤ) (hN : N ≠ 0) :
+    Real.logb 2 (N.natAbs : ℝ) < (Int.size N : ℝ) := by
   have hposR : (0 : ℝ) < ↑N.natAbs := by exact_mod_cast Int.natAbs_pos.mpr hN
   rw [Real.logb_lt_iff_lt_rpow (by norm_num) hposR, Real.rpow_natCast]
   exact_mod_cast natAbs_lt_two_pow_bitsize N
 
 /-!
-### Bitsize of a rational number
+### size of a rational number
 
-BPR defines the bitsize of a rational number `a/b` (in lowest terms) as
+BPR defines the size of a rational number `a/b` (in lowest terms) as
 `bit(a/b) = bit(a) + bit(b)`.
 -/
 
-/-- The bitsize of a rational number `a/b` (in lowest terms):
+/-- The size of a rational number `a/b` (in lowest terms):
     `bit(a/b) = bit(a) + bit(b)`.
     BPR §8.1, unnumbered definition, p. 283. -/
-def Rat.bitsize (q : Rat) : ℕ := Int.bitsize q.num + Nat.size q.den
+def Rat.size (q : Rat) : ℕ := Int.size q.num + Nat.size q.den
 
 /-!
 ### Bitsize of a sum of integers
 
-BPR states that adding `n` integers of bitsizes bounded by `τ` gives
-an integer of bitsize bounded by `τ + bit(n)`.
+BPR states that adding `n` integers of sizes bounded by `τ` gives
+an integer of size bounded by `τ + bit(n)`.
 
 Proof sketch: each `|aᵢ| < 2^τ`, so `|aᵢ| ≤ 2^τ`. By the triangle
 inequality `|∑ aᵢ| ≤ ∑ |aᵢ| ≤ n · 2^τ`. Since `n < 2^{bit(n)}`,
@@ -444,9 +444,9 @@ theorem List.sum_le_length_mul {l : List ℕ} {b : ℕ}
 
 /-- Adding `n` integers each of bitsize `≤ τ` yields an integer of bitsize
     `≤ τ + bit(n)`. BPR §8.1. -/
-theorem Int.bitsize_list_sum_le (l : List ℤ) (τ : ℕ)
-    (hτ : ∀ x ∈ l, Int.bitsize x ≤ τ) :
-    Int.bitsize l.sum ≤ τ + Nat.size l.length := by
+theorem Int.size_list_sum_le (l : List ℤ) (τ : ℕ)
+    (hτ : ∀ x ∈ l, Int.size x ≤ τ) :
+    Int.size l.sum ≤ τ + Nat.size l.length := by
   show l.sum.natAbs.size ≤ τ + l.length.size
   rw [Nat.size_le]
   have h_bound : ∀ x ∈ l.map Int.natAbs, x ≤ 2 ^ τ := by
@@ -510,10 +510,10 @@ private theorem list_prod_lt_pow {l : List ℕ} {b : ℕ}
 
 /-- Multiplying `n ≥ 1` integers each of bitsize `≤ τ` yields an integer of
     bitsize `≤ n · τ`. BPR §8.1. -/
-theorem Int.bitsize_list_prod_le (l : List ℤ) (τ : ℕ)
+theorem Int.size_list_prod_le (l : List ℤ) (τ : ℕ)
     (hl : l ≠ [])
-    (hτ : ∀ x ∈ l, Int.bitsize x ≤ τ) :
-    Int.bitsize l.prod ≤ l.length * τ := by
+    (hτ : ∀ x ∈ l, Int.size x ≤ τ) :
+    Int.size l.prod ≤ l.length * τ := by
   show l.prod.natAbs.size ≤ l.length * τ
   rw [Nat.size_le, natAbs_list_prod]
   have h_map : ∀ x ∈ l.map Int.natAbs, x < 2 ^ τ := by
@@ -701,7 +701,7 @@ Since `|a + b| ≤ |a| + |b| < 2^τ + 2^τ = 2^{τ+1}`.
 -/
 
 /-- `bitsize(a + b) ≤ τ + 1` when `bitsize a ≤ τ` and `bitsize b ≤ τ`. -/
-theorem Int.bitsize_add_le (a b : ℤ) (τ : ℕ)
+theorem Int.size_add_le (a b : ℤ) (τ : ℕ)
     (ha : a.natAbs.size ≤ τ) (hb : b.natAbs.size ≤ τ) :
     (a + b).natAbs.size ≤ τ + 1 := by
   rw [Nat.size_le] at ha hb ⊢
@@ -719,7 +719,7 @@ theorem MvPolynomial.bitsize_coeff_add_le {σ : Type _}
     ∀ m, (MvPolynomial.coeff m (P + Q)).natAbs.size ≤ τ + 1 := by
   intro m
   rw [MvPolynomial.coeff_add]
-  exact Int.bitsize_add_le _ _ τ (hP m) (hQ m)
+  exact Int.size_add_le _ _ τ (hP m) (hQ m)
 
 /-!
 ### Algorithm 8.5. Multiplication of Multivariate Polynomials
@@ -758,7 +758,7 @@ Proof by induction on `k` using `MvPolynomial.finSuccEquiv`.
 -/
 
 /-- `bitsize(a * b) ≤ τ + σ` when `bitsize a ≤ τ` and `bitsize b ≤ σ`. -/
-theorem Int.bitsize_mul_le (a b : ℤ) (τ σ : ℕ)
+theorem Int.size_mul_le (a b : ℤ) (τ σ : ℕ)
     (ha : a.natAbs.size ≤ τ) (hb : b.natAbs.size ≤ σ) :
     (a * b).natAbs.size ≤ τ + σ := by
   rw [Nat.size_le] at ha hb ⊢
@@ -775,7 +775,7 @@ theorem Int.natAbs_finset_sum_le {ι : Type _} (s : Finset ι) (f : ι → ℤ) 
     exact le_trans (Int.natAbs_add_le _ _) (Nat.add_le_add_left ihs _)
 
 /-- Bitsize of a `Finset` sum of integers, bounded by element bound + `Nat.size` of card. -/
-theorem Int.bitsize_finset_sum_le {ι : Type _} {s : Finset ι} {f : ι → ℤ} {B : ℕ}
+theorem Int.size_finset_sum_le {ι : Type _} {s : Finset ι} {f : ι → ℤ} {B : ℕ}
     (hB : ∀ i ∈ s, (f i).natAbs.size ≤ B) :
     (∑ i ∈ s, f i).natAbs.size ≤ B + Nat.size s.card := by
   rw [Nat.size_le]
@@ -824,7 +824,7 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
     have : m = 0 := Finsupp.ext (fun i => i.elim0)
     subst this; simp only [Nat.zero_mul, Nat.add_zero]
     rw [MvPolynomial.coeff_mul, Finsupp.antidiag_fin0, Finset.sum_singleton]
-    exact Int.bitsize_mul_le _ _ τ σ (hP 0) (hQ 0)
+    exact Int.size_mul_le _ _ τ σ (hP 0) (hQ 0)
   | succ k ih =>
     intro P Q τ σ q hP hQ hq m
     rw [show m = Finsupp.cons (m 0) (Finsupp.tail m) from by
@@ -867,7 +867,7 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
             (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
              ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2)).natAbs.size
         ≤ (τ + σ + k * Nat.size (q + 1)) + Nat.size s.card :=
-          Int.bitsize_finset_sum_le hB
+          Int.size_finset_sum_le hB
       _ ≤ (τ + σ + k * Nat.size (q + 1)) + Nat.size (q + 1) :=
           Nat.add_le_add_left (Nat.size_le_size (Finset.antidiag_filter_snd_le l q)) _
       _ = τ + σ + (k + 1) * Nat.size (q + 1) := by ring
@@ -1099,12 +1099,12 @@ private theorem bitsize_coeff_mul_pow_le (a b c : ℤ) (i j τ τ' : ℕ)
     have hlen : L.length = i := by simp [hL_def]; omega
     have heq : L.prod = b ^ (i - j) * c ^ j := by simp [hL_def, List.prod_replicate]
     have hprod : L.prod.natAbs.size ≤ i * τ' := by
-      have := Azurite.BPR.Int.bitsize_list_prod_le L τ' hne
+      have := Azurite.BPR.Int.size_list_prod_le L τ' hne
         (by intro x hx; simp [hL_def, List.mem_append, List.mem_replicate] at hx
             rcases hx with ⟨-, rfl⟩ | ⟨-, rfl⟩ <;> assumption)
-      simp [hlen, Azurite.BPR.Int.bitsize] at this; exact this
+      simp [hlen, Azurite.BPR.Int.size] at this; exact this
     rw [mul_assoc, ← heq]
-    exact Azurite.BPR.Int.bitsize_mul_le a _ τ (i * τ') ha hprod
+    exact Azurite.BPR.Int.size_mul_le a _ τ (i * τ') ha hprod
 
 /-- **BPR §8.1 (bitsize of HorSpecial).**
     Let `P ∈ ℤ[X]` with `p = natDegree P` and coefficient bitsizes bounded by `τ`.
@@ -1131,7 +1131,7 @@ theorem Polynomial.bitsize_horSpecial_le (P : ℤ[X]) (b c : ℤ) (i τ τ' : �
     rw [Finset.mem_range] at hj
     exact bitsize_coeff_mul_pow_le _ b c i j τ τ' (by omega) (hτ _) hb hc
   -- Sum of i+1 terms each of bitsize ≤ B adds Nat.size(i+1)
-  have h1 := Azurite.BPR.Int.bitsize_finset_sum_le hB
+  have h1 := Azurite.BPR.Int.size_finset_sum_le hB
   rw [Finset.card_range] at h1
   -- Since i ≤ p, Nat.size(i+1) ≤ Nat.size(p+1)
   exact le_trans h1 (Nat.add_le_add_left (Nat.size_le_size (by omega)) _)
@@ -1285,8 +1285,8 @@ open Polynomial Finset Azurite.BPR
     when `n ≥ 1` and `bitsize(b), bitsize(c) ≤ τ'`. -/
 private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
     (hn : 0 < n)
-    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
-    Int.bitsize (((C c * X - C b) ^ n).coeff m) ≤ n * (1 + τ') := by
+    (hb : Int.size b ≤ τ') (hc : Int.size c ≤ τ') :
+    Int.size (((C c * X - C b) ^ n).coeff m) ≤ n * (1 + τ') := by
   -- By the binomial theorem, coeff m ((cX-b)^n) = choose(n,m) · c^m · (-b)^{n-m}.
   -- bitsize(choose(n,m)) ≤ n and bitsize(c^m · (-b)^{n-m}) ≤ n·τ', giving n·(1+τ').
   by_cases hm : n < m
@@ -1298,7 +1298,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
             rw [sub_eq_add_neg, ← map_neg]; exact Polynomial.natDegree_linear_le)
         _ = n := Nat.mul_one _
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
-    simp [Int.bitsize]
+    simp [Int.size]
   · push Not at hm
     -- m ≤ n: expand via binomial theorem, only the j = m term survives
     rw [sub_eq_add_neg, ← map_neg, Commute.add_pow (Commute.all _ _)]
@@ -1308,7 +1308,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
     rw [Finset.sum_eq_single_of_mem m (mem_range.mpr (by omega))]
     · -- j = m term
       simp only [if_true, mul_one]
-      unfold Int.bitsize at *
+      unfold Int.size at *
       -- bitsize(c^m · (-b)^{n-m} · choose(n,m)) ≤ n·τ' + n = n·(1+τ')
       have hprod : (c ^ m * (-b) ^ (n - m)).natAbs.size ≤ n * τ' := by
         have hbm : (-b).natAbs.size ≤ τ' := by rwa [Int.natAbs_neg]
@@ -1320,8 +1320,8 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
           simp only [L, List.length_append, List.length_replicate]; omega
         have hprod_eq : L.prod = c ^ m * (-b) ^ (n - m) := by
           simp only [L, List.prod_append, List.prod_replicate]
-        rw [← hprod_eq, ← Int.bitsize, ← hLlen]
-        exact Int.bitsize_list_prod_le L τ' hLne (by
+        rw [← hprod_eq, ← Int.size, ← hLlen]
+        exact Int.size_list_prod_le L τ' hLne (by
           intro x hx
           simp only [L, List.mem_append, List.mem_replicate] at hx
           rcases hx with ⟨-, rfl⟩ | ⟨-, rfl⟩
@@ -1332,7 +1332,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
         exact_mod_cast Nat.choose_lt_two_pow n m hn
       calc (c ^ m * (-b) ^ (n - m) * ↑(n.choose m)).natAbs.size
           ≤ (c ^ m * (-b) ^ (n - m)).natAbs.size + (↑(n.choose m) : ℤ).natAbs.size :=
-            Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+            Int.size_mul_le _ _ _ _ (le_refl _) (le_refl _)
         _ ≤ n * τ' + n := Nat.add_le_add hprod hchoose
         _ = n * (1 + τ') := by ring
     · intro j _ hjm
@@ -1342,13 +1342,13 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
     `C(aₚ₋ₖ · cᵏ) · (cX − b)^{i−k}` is at most `τ + i(1 + τ')`. -/
 private theorem bitsize_specialTrans_summand (P : ℤ[X]) (b c : ℤ)
     (i k m τ τ' : ℕ) (hk : k ≤ i)
-    (hτ : ∀ j, Int.bitsize (P.coeff j) ≤ τ)
-    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
-    Int.bitsize ((C (P.coeff (P.natDegree - k) * c ^ k) *
+    (hτ : ∀ j, Int.size (P.coeff j) ≤ τ)
+    (hb : Int.size b ≤ τ') (hc : Int.size c ≤ τ') :
+    Int.size ((C (P.coeff (P.natDegree - k) * c ^ k) *
       (C c * X - C b) ^ (i - k)).coeff m) ≤ τ + i * (1 + τ') := by
   -- coeff m (C(a_{p-k} * c^k) * (cX-b)^{i-k}) = a_{p-k} * c^k * coeff m ((cX-b)^{i-k})
   simp only [coeff_C_mul]
-  unfold Int.bitsize at *
+  unfold Int.size at *
   -- Helper: (c^j).natAbs.size ≤ j * τ'
   -- Helper: (a * c^j).natAbs.size ≤ a.natAbs.size + j * τ'
   have hmul_c_pow : ∀ (a : ℤ) (j : ℕ),
@@ -1357,7 +1357,7 @@ private theorem bitsize_specialTrans_summand (P : ℤ[X]) (b c : ℤ)
     · simp
     · calc (a * c ^ j).natAbs.size
           ≤ a.natAbs.size + (c ^ j).natAbs.size :=
-            Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+            Int.size_mul_le _ _ _ _ (le_refl _) (le_refl _)
         _ ≤ a.natAbs.size + j * τ' := by
             apply Nat.add_le_add_left
             rw [Int.natAbs_pow, Nat.size_le, show j * τ' = τ' * j from by ring, pow_mul]
@@ -1381,7 +1381,7 @@ private theorem bitsize_specialTrans_summand (P : ℤ[X]) (b c : ℤ)
     calc (P.coeff (P.natDegree - k) * c ^ k * ((C c * X - C b) ^ (i - k)).coeff m).natAbs.size
         ≤ (P.coeff (P.natDegree - k) * c ^ k).natAbs.size +
           (((C c * X - C b) ^ (i - k)).coeff m).natAbs.size :=
-          Int.bitsize_mul_le _ _ _ _ (le_refl _) (le_refl _)
+          Int.size_mul_le _ _ _ _ (le_refl _) (le_refl _)
       _ ≤ (τ + k * τ') + ((i - k) * (1 + τ')) := by
           apply Nat.add_le_add
           · calc (P.coeff (P.natDegree - k) * c ^ k).natAbs.size
@@ -1406,13 +1406,13 @@ private theorem bitsize_specialTrans_summand (P : ℤ[X]) (b c : ℤ)
       `bitsize(coeff m (specialTrans P b c i)) ≤ τ + i(1 + τ') + bitsize(p + 1)`. -/
 theorem Polynomial.bitsize_specialTrans_coeff_le (P : ℤ[X]) (b c : ℤ) (i τ τ' : ℕ)
     (hi : i ≤ P.natDegree)
-    (hτ : ∀ k, Int.bitsize (P.coeff k) ≤ τ)
-    (hb : Int.bitsize b ≤ τ') (hc : Int.bitsize c ≤ τ') :
-    ∀ m, Int.bitsize ((P.specialTrans b c i).coeff m) ≤
+    (hτ : ∀ k, Int.size (P.coeff k) ≤ τ)
+    (hb : Int.size b ≤ τ') (hc : Int.size c ≤ τ') :
+    ∀ m, Int.size ((P.specialTrans b c i).coeff m) ≤
       τ + i * (1 + τ') + Nat.size (P.natDegree + 1) := by
   intro m
   rw [Polynomial.specialTrans_eq_sum, finset_sum_coeff]
-  unfold Int.bitsize at *
+  unfold Int.size at *
   -- Each summand has coeff of bitsize ≤ τ + i*(1+τ')
   have hB : ∀ j ∈ range (i + 1),
       ((C (P.coeff (P.natDegree - j) * c ^ j) *
@@ -1423,7 +1423,7 @@ theorem Polynomial.bitsize_specialTrans_coeff_le (P : ℤ[X]) (b c : ℤ) (i τ 
   calc (∑ j ∈ range (i + 1), ((C (P.coeff (P.natDegree - j) * c ^ j) *
           (C c * X - C b) ^ (i - j)).coeff m)).natAbs.size
       ≤ (τ + i * (1 + τ')) + Nat.size (range (i + 1)).card :=
-        Int.bitsize_finset_sum_le hB
+        Int.size_finset_sum_le hB
     _ = τ + i * (1 + τ') + Nat.size (i + 1) := by simp [Finset.card_range]
     _ ≤ τ + i * (1 + τ') + Nat.size (P.natDegree + 1) := by
         apply Nat.add_le_add_left
