@@ -17,8 +17,10 @@ import Azurite.AzInt.Conversion
 import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
+import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.TrailingZeros
+import Azurite.AzInt.Parity
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Size
 import Azurite.AzInt.ToString
@@ -104,9 +106,11 @@ import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
+import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.NormalizedCompare
+import Azurite.AzNat.Parity
 import Azurite.AzNat.Parse
 import Azurite.AzNat.Size
 import Azurite.AzNat.ToString

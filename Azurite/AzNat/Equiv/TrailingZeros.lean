@@ -193,4 +193,14 @@ theorem trailingZeros_eq_padicValNat (n : AzNat) (hn : n ≠ 0) :
   congr 1
   exact trailingZerosAux_eq n 0 (by omega) (fun _ hk => absurd hk (Nat.not_lt_zero _))
 
+theorem trailingZeros_ofNat (n : Nat) (hn : n ≠ 0) :
+    (ofNat n).trailingZeros = some (padicValNat 2 n) := by
+  have h : ofNat n ≠ 0 := by
+    intro h
+    apply hn
+    have := congrArg toNat h
+    rw [toNat_ofNat, toNat_zero] at this
+    exact this
+  rw [trailingZeros_eq_padicValNat _ h, toNat_ofNat]
+
 end Azurite.AzNat

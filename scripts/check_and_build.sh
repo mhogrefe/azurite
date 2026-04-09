@@ -35,59 +35,64 @@ expected=$(find "$SRC_DIR" -name '*.lean' -type f \
 
 actual=$(grep '^import ' "$ROOT_FILE" | sed 's/^import //')
 
-# ── 3. Check that every file is imported ──
+# ── 3. Check for missing imports and stale imports ─���
 
 missing=$(comm -23 <(echo "$expected") <(echo "$actual" | sort))
+extra=$(comm -13 <(echo "$expected") <(echo "$actual" | sort))
+
+# ─��� 4. Check for duplicates ──
+
+dupes=$(echo "$actual" | sort | uniq -d)
+
+# ── 5. Auto-fix: add missing, remove stale/dupes, and sort ──
+
+needs_fix=false
+
 if [[ -n "$missing" ]]; then
-  echo "ERROR: The following modules are missing from $ROOT_FILE:"
+  echo "Adding missing imports:"
   while IFS= read -r m; do
     echo "  import $m"
   done <<< "$missing"
-  errors=1
+  needs_fix=true
 fi
 
-# ── 4. Check for imports that don't correspond to any file ──
-
-extra=$(comm -13 <(echo "$expected") <(echo "$actual" | sort))
 if [[ -n "$extra" ]]; then
-  echo "ERROR: The following imports in $ROOT_FILE have no corresponding file:"
+  echo "Removing stale imports (no corresponding file):"
   while IFS= read -r m; do
     echo "  import $m"
   done <<< "$extra"
-  errors=1
+  needs_fix=true
 fi
 
-# ── 5. Check alphabetical ordering ──
-
-sorted=$(echo "$actual" | sort)
-if [[ "$actual" != "$sorted" ]]; then
-  echo "ERROR: Imports in $ROOT_FILE are not sorted alphabetically."
-  echo ""
-  echo "First out-of-order import:"
-  diff <(echo "$actual") <(echo "$sorted") | head -5
-  errors=1
-fi
-
-# ── 6. Check for duplicates ──
-
-dupes=$(echo "$actual" | sort | uniq -d)
 if [[ -n "$dupes" ]]; then
-  echo "ERROR: Duplicate imports in $ROOT_FILE:"
+  echo "Removing duplicate imports:"
   while IFS= read -r m; do
     echo "  import $m"
   done <<< "$dupes"
-  errors=1
+  needs_fix=true
 fi
 
-# ── 7. Bail if there were errors ──
-
-if [[ $errors -ne 0 ]]; then
-  echo ""
-  echo "Fix the errors above before building."
-  exit 1
+sorted=$(echo "$actual" | sort)
+if [[ "$actual" != "$sorted" ]]; then
+  echo "Reordering imports alphabetically."
+  needs_fix=true
 fi
 
-echo "All imports valid and sorted. Running lake build..."
+if [[ "$needs_fix" == true ]]; then
+  # Preserve the header comment (lines before the first import)
+  header=$(sed '/^import /,$d' "$ROOT_FILE")
+  # Generate the correct sorted import list from the filesystem
+  imports=$(echo "$expected" | sed 's/^/import /')
+  {
+    echo "$header"
+    echo "$imports"
+  } > "$ROOT_FILE"
+  echo "Fixed $ROOT_FILE."
+else
+  echo "All imports valid and sorted."
+fi
+
+echo "Running lake build..."
 echo ""
 
 # ── 8. Build ──

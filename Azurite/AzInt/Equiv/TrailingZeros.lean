@@ -27,4 +27,14 @@ theorem trailingZeros_eq_padicValInt (z : AzInt) (hz : z ≠ 0) :
     unfold padicValInt; rfl
   rw [h1, h2, toNat_natAbs z]
 
+theorem trailingZeros_ofInt (i : Int) (hi : i ≠ 0) :
+    (ofInt i).trailingZeros = some (padicValInt 2 i) := by
+  have h : ofInt i ≠ 0 := by
+    intro h
+    apply hi
+    have := congrArg toInt h
+    rw [toInt_ofInt, toInt_zero] at this
+    exact this
+  rw [trailingZeros_eq_padicValInt _ h, toInt_ofInt]
+
 end Azurite.AzInt
