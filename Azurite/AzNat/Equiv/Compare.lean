@@ -283,7 +283,7 @@ lemma compareLoop_eq_compare_take (a b : AzNat) (i : Nat) (hA : i < a.limbs.size
       exact ih hA_prev h_drop_prev
 
 theorem compare_eq_compare_toNat (a b : AzNat) : compare a b = Ord.compare a.toNat b.toNat := by
-  unfold compare toNat
+  rw [compare_eq_old]; unfold toNat
 
   have h_sizeA : a.limbs.toList.length = a.limbs.size := rfl
   have h_sizeB : b.limbs.toList.length = b.limbs.size := rfl
