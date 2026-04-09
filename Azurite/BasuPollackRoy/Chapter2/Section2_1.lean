@@ -1014,7 +1014,7 @@ variable (F : Type*) [Field F]
     In Mathlib this is `IsSemireal F` (from `Mathlib.Algebra.Ring.Semireal.Defs`),
     which is defined by the equivalent condition `∀ s, IsSumSq s → 1 + s ≠ 0`.
     Every ordered field is semireal. -/
-def IsRealField : Prop := IsSemireal F
+abbrev IsRealField : Prop := IsSemireal F
 
 /-- A field is real iff `−1 ∉ ΣF^{(2)}`. -/
 lemma isRealField_iff : IsRealField F ↔ ¬ IsSumSq (-1 : F) :=
@@ -1234,7 +1234,7 @@ section Theorem_2_7
 variable {F : Type*} [Field F]
 
 /-- Extract a Fin-indexed vector from an `IsSumSq` witness. -/
-private lemma isSumSq_exists_vector {s : F} (h : IsSumSq s) :
+lemma isSumSq_exists_vector {s : F} (h : IsSumSq s) :
     ∃ (n : ℕ) (x : Fin n → F), s = ∑ i, x i * x i := by
   induction h with
   | zero => exact ⟨0, Fin.elim0, by simp⟩
@@ -1536,14 +1536,14 @@ end IntermediateValueProperty
 
 section NoNontrivialRealExtension
 
-variable (F : Type*) [Field F]
+variable {u : _} (F : Type u) [Field F]
 
 /-- **BPR Theorem 2.11 (d).** A field `F` has *no non-trivial real algebraic extension*
     if it is a real field and every algebraic extension of `F` that is also real must
     coincide with `F` (i.e., the algebra map is surjective). -/
 def HasNoNontrivialRealAlgebraicExtension : Prop :=
   IsRealField F ∧
-  ∀ (F₁ : Type*) [Field F₁] [Algebra F F₁],
+  ∀ (F₁ : Type u) [Field F₁] [Algebra F F₁],
     Algebra.IsAlgebraic F F₁ → IsRealField F₁ →
     Function.Surjective (algebraMap F F₁)
 

@@ -181,6 +181,7 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_a_b
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_b_c
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_b_d
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_c_a
+import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_d_a
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
