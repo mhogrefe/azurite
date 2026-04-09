@@ -17,7 +17,9 @@ import Azurite.AzInt.Conversion
 import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
+import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Parse
+import Azurite.AzInt.Size
 import Azurite.AzInt.ToString
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Equiv.Add
