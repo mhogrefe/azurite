@@ -1534,6 +1534,21 @@ def HasIntermediateValueProperty (R : Type*) [Field R] [LinearOrder R] [IsStrict
 
 end IntermediateValueProperty
 
+section NoNontrivialRealExtension
+
+variable (F : Type*) [Field F]
+
+/-- **BPR Theorem 2.11 (d).** A field `F` has *no non-trivial real algebraic extension*
+    if it is a real field and every algebraic extension of `F` that is also real must
+    coincide with `F` (i.e., the algebra map is surjective). -/
+def HasNoNontrivialRealAlgebraicExtension : Prop :=
+  IsRealField F ∧
+  ∀ (F₁ : Type*) [Field F₁] [Algebra F F₁],
+    Algebra.IsAlgebraic F F₁ → IsRealField F₁ →
+    Function.Surjective (algebraMap F F₁)
+
+end NoNontrivialRealExtension
+
 /-!
 ### Symmetric Polynomials (BPR p.38)
 
