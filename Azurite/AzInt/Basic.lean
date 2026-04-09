@@ -1,4 +1,5 @@
 import Azurite.AzNat.Basic
+import Azurite.AzNat.Compare
 
 namespace Azurite
 
@@ -27,5 +28,18 @@ def AzInt.beqInt64 (z : AzInt) (i : Int64) : Bool :=
 
 def AzInt.beqAzNat (z : AzInt) (a : AzNat) : Bool :=
   z.sign && (z.abs == a)
+
+def AzInt.compareUInt64 (z : AzInt) (u : UInt64) : Ordering :=
+  if z.sign then z.abs.compareUInt64 u else .lt
+
+def AzInt.compareInt64 (z : AzInt) (i : Int64) : Ordering :=
+  if z.sign then
+    if i < 0 then .gt else z.abs.compareUInt64 i.toUInt64
+  else
+    if i < 0 then (z.abs.compareUInt64 (-i).toUInt64).swap
+    else .lt
+
+def AzInt.compareAzNat (z : AzInt) (a : AzNat) : Ordering :=
+  if z.sign then Ord.compare z.abs a else .lt
 
 end Azurite

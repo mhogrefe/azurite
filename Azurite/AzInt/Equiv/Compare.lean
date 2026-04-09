@@ -162,6 +162,113 @@ lemma compare_eq_compareOfLessAndEq (a b : AzInt) : compare a b = compareOfLessA
     have h2 : ¬ (a = b) := fun h => h_not_eq (he1.mp h)
     rw [if_neg h1, if_neg h2]
 
+-- Helper: sign=false implies abs is positive
+private lemma neg_sign_abs_pos {z : AzInt} (hs : z.sign = false) : z.abs.toNat > 0 := by
+  by_contra hc
+  have h0 : z.abs.toNat = 0 := by omega
+  have habs : z.abs = 0 := AzNat.toNat_injective (by rw [h0, AzNat.toNat_zero])
+  have := z.zero_sign habs
+  rw [hs] at this; contradiction
+
+-- Helper: sign=false implies toInt < 0
+private lemma neg_sign_toInt_neg {z : AzInt} (hs : z.sign = false) : z.toInt < 0 := by
+  unfold toInt; rw [if_neg (by rw [hs]; decide)]
+  have := neg_sign_abs_pos hs
+  omega
+
+theorem compareUInt64_eq (z : AzInt) (u : UInt64) :
+    z.compareUInt64 u = Ord.compare z.toInt (u.toNat : Int) := by
+  unfold compareUInt64 toInt
+  split_ifs with hs
+  · -- sign = true, z.toInt = z.abs.toNat
+    rw [AzNat.compareUInt64_eq, AzNat.compare_nat_cast_int]
+  · -- sign = false, z.toInt = -z.abs.toNat, result is .lt
+    have h_neg : -(z.abs.toNat : Int) < (u.toNat : Int) := by
+      have := neg_sign_abs_pos (Bool.eq_false_iff.mpr hs)
+      omega
+    symm; exact compare_lt_iff_lt.mpr h_neg
+
+theorem compareAzNat_eq (z : AzInt) (a : AzNat) :
+    z.compareAzNat a = Ord.compare z.toInt (a.toNat : Int) := by
+  unfold compareAzNat toInt
+  split_ifs with hs
+  · -- sign = true
+    have hc : Ord.compare z.abs a = AzNat.compare z.abs a := rfl
+    rw [hc, AzNat.compare_eq_compare_toNat, AzNat.compare_nat_cast_int]
+  · -- sign = false
+    have h_neg : -(z.abs.toNat : Int) < (a.toNat : Int) := by
+      have := neg_sign_abs_pos (Bool.eq_false_iff.mpr hs)
+      omega
+    symm; exact compare_lt_iff_lt.mpr h_neg
+
+private lemma compare_swap_nat (a b : Nat) : (Ord.compare a b).swap = Ord.compare b a := by
+  show (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt).swap =
+       (if b < a then Ordering.lt else if b = a then Ordering.eq else Ordering.gt)
+  split_ifs <;> simp [Ordering.swap] <;> omega
+
+private lemma compare_neg_int (a b : Int) : Ord.compare a b = Ord.compare (-b) (-a) := by
+  rcases h : Ord.compare a b with _ | _ | _
+  · exact (compare_lt_iff_lt.mpr (by have := compare_lt_iff_lt.mp h; omega)).symm
+  · exact (compare_eq_iff_eq.mpr (by have := compare_eq_iff_eq.mp h; omega)).symm
+  · exact (compare_gt_iff_gt.mpr (by have := compare_gt_iff_gt.mp h; omega)).symm
+
+private lemma Int64.neg_toUInt64_toNat_eq {i : Int64} (hi : i < 0) :
+    ((-i).toUInt64.toNat : Int) = -i.toInt := by
+  have h_neg : i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
+  have h1 : (-i).toUInt64.toNat = (-i).toBitVec.toNat := rfl
+  have h2 : i.toInt = i.toBitVec.toInt := rfl
+  have h3 : (-i).toBitVec = -i.toBitVec := rfl
+  rw [h1, h3, h2]
+  rw [h2] at h_neg
+  have h_lt : i.toBitVec.toNat < 2^64 := i.toBitVec.isLt
+  have h_toInt_eq : i.toBitVec.toInt = ↑i.toBitVec.toNat - (2^64 : Int) := by
+    simp only [BitVec.toInt] at h_neg ⊢
+    split_ifs at h_neg ⊢ with hc
+    · omega
+    · rfl
+  have h_pos : i.toBitVec.toNat > 0 := by
+    simp only [BitVec.toInt] at h_neg; split_ifs at h_neg <;> omega
+  have h_neg_nat : (-i.toBitVec).toNat = 2^64 - i.toBitVec.toNat := by
+    have hx := @BitVec.toNat_neg 64 i.toBitVec
+    rw [hx]; exact Nat.mod_eq_of_lt (by omega)
+  rw [h_neg_nat, h_toInt_eq]
+  omega
+
+theorem compareInt64_eq (z : AzInt) (i : Int64) :
+    z.compareInt64 i = Ord.compare z.toInt i.toInt := by
+  unfold compareInt64
+  split_ifs with hs hi hs2
+  · -- sign = true, i < 0
+    have h_neg : i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
+    have h_pos : z.toInt ≥ 0 := by unfold toInt; rw [if_pos hs]; exact Int.natCast_nonneg _
+    symm; exact compare_gt_iff_gt.mpr (by omega)
+  · -- sign = true, i ≥ 0
+    rw [AzNat.compareUInt64_eq]
+    have h_eq : (i.toUInt64.toNat : Int) = i.toInt := by
+      have h_nn : ¬i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
+      have h1 : i.toUInt64.toNat = i.toBitVec.toNat := rfl
+      have h2 : i.toInt = i.toBitVec.toInt := rfl
+      rw [h1, h2]; rw [h2] at h_nn
+      have h_lt : i.toBitVec.toNat < 2^64 := i.toBitVec.isLt
+      unfold BitVec.toInt at h_nn ⊢
+      split_ifs with h
+      · rfl
+      · exfalso; simp only [not_lt] at h
+        split_ifs at h_nn with h2 <;> omega
+    unfold toInt; rw [if_pos hs]
+    rw [AzNat.compare_nat_cast_int, h_eq]
+  · -- sign = false, i < 0: compare two negatives
+    rw [AzNat.compareUInt64_eq, compare_swap_nat, AzNat.compare_nat_cast_int]
+    have h_neg_eq := Int64.neg_toUInt64_toNat_eq hs2
+    unfold toInt; rw [if_neg hs, h_neg_eq, compare_neg_int]
+    congr 1 ; omega
+  · -- sign = false, i ≥ 0
+    have h_neg := neg_sign_toInt_neg (Bool.eq_false_iff.mpr hs)
+    have h_nn : i.toInt ≥ 0 := by
+      have : ¬i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hs2
+      omega
+    symm; exact compare_lt_iff_lt.mpr (by omega)
+
 instance : LinearOrder AzInt where
   le_refl := le_refl
   le_trans a b c := le_trans a b c
