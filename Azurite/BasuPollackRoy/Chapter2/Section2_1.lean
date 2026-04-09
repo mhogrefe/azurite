@@ -1911,4 +1911,23 @@ theorem proposition_2_16 {K C : Type*} [Field K] [Field C] [Algebra K C]
 
 end Proposition_2_16
 
+/-!
+### Theorem 2.11: Characterizations of Real Closed Fields
+
+**Theorem 2.11 (BPR).** If R is an ordered field, the following are equivalent:
+- (a) R is real closed.
+- (b) R[i] = R[X]/(X² + 1) is algebraically closed.
+- (c) R has the intermediate value property.
+- (d) R is a real field with no non-trivial real algebraic extension.
+
+The proof is split across five files, one per implication:
+- `Theorem_2_11_a_b.lean`: (a) ⇒ (b)
+- `Theorem_2_11_b_c.lean`: (b) ⇒ (c)
+- `Theorem_2_11_b_d.lean`: (b) ⇒ (d)
+- `Theorem_2_11_c_a.lean`: (c) ⇒ (a)
+- `Theorem_2_11_d_a.lean`: (d) ⇒ (a)
+
+The combined TFAE statement is in `Theorem_2_11.lean`.
+-/
+
 end Azurite.BPR
