@@ -1,6 +1,4 @@
-import Azurite.AzNat.Basic
-
-namespace Azurite.AzNat
+namespace UInt64
 
 /-- Adds two 64-bit unsigned integers along with a boolean carry, returning the sum and the new carry out. -/
 @[inline]
@@ -12,4 +10,4 @@ def addWithCarry (a b : UInt64) (c : Bool) : UInt64 × Bool :=
   let c2 := sum2 < sum1
   (sum2, c1 || c2)
 
-end Azurite.AzNat
+end UInt64

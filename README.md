@@ -146,6 +146,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 
 | Module | Description |
 |--------|-------------|
+| `UInt64/` | Helpers on Lean's built-in `UInt64` type. `addWithCarry` (64-bit add with carry-in/out) and `isPowerOfTwo` (bit-trick power-of-two test). `Equiv/Basic` provides `UInt64.eq_of_toNat_eq`; `Equiv/AddWithCarry` and `Equiv/Pow2` prove the `toNat` semantics of each helper. |
 | `Nat/NormalizedCompare` | `normalizedCompare`: O(log n) comparison of naturals by their normalized bit representations. Proven equivalent to comparing `x / 2^size(x)` vs `y / 2^size(y)`. |
 | `Rat/LogBase2` | `floorLogBase2Abs` and `ceilingLogBase2Abs` for rationals, proven equal to `⌊log₂ |q|⌋` and `⌈log₂ |q|⌉`. |
 | `Rat/Compare` | `Azurite.Rat.cmp`: a fast multi-stage rational comparison (sign → magnitude bracket → num/den comparison → log₂ comparison → cross-multiply). Proven equivalent to standard `compare` on `ℚ`. |
@@ -231,6 +232,8 @@ Azurite/
     Chapter8/
   Nat/                -- Efficient natural number algorithms
   Rat/                -- Efficient rational number algorithms
+  UInt64/             -- Helpers on Lean's built-in UInt64 type
+    Equiv/            -- toNat-semantics proofs for UInt64 helpers
   Random/             -- Random generation for testing
   Benchmark/          -- Performance benchmarks
 ```

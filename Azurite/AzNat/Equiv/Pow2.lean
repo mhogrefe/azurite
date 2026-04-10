@@ -1,5 +1,6 @@
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.Equiv.Basic
+import Azurite.UInt64.Equiv.Pow2
 
 namespace Azurite.AzNat
 
@@ -79,25 +80,6 @@ private lemma allZeroLoop_eq_true_iff (a : Array UInt64) (k : Nat) (h : k ≤ a.
     · intro hall
       exact ⟨hall k (Nat.lt_succ_self _), fun i hi => hall i (by omega)⟩
 
-private lemma uint64_and_sub_one_eq_zero_iff (u : UInt64) (hu : u ≠ 0) :
-    u &&& (u - 1) = 0 ↔ u.toNat.isPowerOfTwo := by
-  have hu_nat : u.toNat ≠ 0 := by
-    intro h
-    apply hu
-    apply UInt64.eq_of_toNat_eq
-    rw [h]; rfl
-  rw [← Nat.and_sub_one_eq_zero_iff_isPowerOfTwo hu_nat]
-  have huint_iff : u &&& (u - 1) = 0 ↔ (u &&& (u - 1)).toNat = 0 := by
-    constructor
-    · intro h; rw [h]; rfl
-    · intro h; apply UInt64.eq_of_toNat_eq; exact h
-  rw [huint_iff, UInt64.toNat_and, UInt64.toNat_sub,
-      show (UInt64.toNat 1) = 1 from rfl]
-  have hu_lt : u.toNat < 2 ^ 64 := UInt64.toNat_lt _
-  have hu_ge : 1 ≤ u.toNat := Nat.one_le_iff_ne_zero.mpr hu_nat
-  have heq : (2 ^ 64 - 1 + u.toNat) % 2 ^ 64 = u.toNat - 1 := by omega
-  rw [heq]
-
 /-- Decompose `a.toNat` as `last_limb * 2^(64*n) + (lower_limbs as toNatLimbsList)`. -/
 private lemma toNat_decomp (a : AzNat) (n : Nat) (hsize : a.limbs.size = n + 1) :
     a.toNat = (a.limbs[n]'(by omega)).toNat * 2 ^ (64 * n) +
@@ -138,8 +120,8 @@ theorem isPowerOfTwo_iff (a : AzNat) : a.isPowerOfTwo = true ↔ a.toNat.isPower
     omega
   · -- size = n + 1
     rename_i n hsize
-    simp only [Bool.and_eq_true, beq_iff_eq]
-    rw [allZeroLoop_eq_true_iff]
+    simp only [Bool.and_eq_true]
+    rw [allZeroLoop_eq_true_iff, UInt64.isPowerOfTwo_iff]
     have hlen : a.limbs.toList.length = n + 1 := by
       rw [Array.length_toList]; exact hsize
     -- Top limb is non-zero by invariant
@@ -151,7 +133,6 @@ theorem isPowerOfTwo_iff (a : AzNat) : a.isPowerOfTwo = true ↔ a.toNat.isPower
       have : a.limbs[a.limbs.size - 1]'(by omega) = a.limbs[n]'hi := by
         congr 1; omega
       rw [this, hzero]
-    rw [uint64_and_sub_one_eq_zero_iff _ hlast_ne]
     rw [toNat_decomp a n hsize]
     constructor
     · rintro ⟨⟨j, hj⟩, hlow⟩

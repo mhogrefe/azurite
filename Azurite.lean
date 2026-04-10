@@ -102,11 +102,9 @@ import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
-import Azurite.AzNat.Add
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
-import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
@@ -219,3 +217,8 @@ import Azurite.Random.Pair
 import Azurite.Random.Rat
 import Azurite.Rat.Compare
 import Azurite.Rat.LogBase2
+import Azurite.UInt64.AddWithCarry
+import Azurite.UInt64.Equiv.AddWithCarry
+import Azurite.UInt64.Equiv.Basic
+import Azurite.UInt64.Equiv.Pow2
+import Azurite.UInt64.Pow2

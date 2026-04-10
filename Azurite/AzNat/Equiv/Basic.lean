@@ -1,4 +1,5 @@
 import Azurite.AzNat.Basic
+import Azurite.UInt64.Equiv.Basic
 import Mathlib.Tactic.Ring
 import Mathlib.Logic.Equiv.Basic
 
@@ -136,10 +137,6 @@ theorem toNat_ofNat (n : Nat) : toNat (ofNat n) = n := by
 lemma base_2_64_unique (A B x y : Nat) (hx : x < 2^64) (hy : y < 2^64)
   (h : A * 2^64 + x = B * 2^64 + y) : x = y ∧ A = B := by
   omega
-
-lemma UInt64.eq_of_toNat_eq {x y : UInt64} (h : x.toNat = y.toNat) : x = y := by
-  have h2 : x.toBitVec = y.toBitVec := BitVec.eq_of_toNat_eq h
-  cases x; cases y; simp at h2; subst h2; rfl
 
 lemma toNatLimbsList_eq_zero_of_getLast_ne_zero (l : List UInt64) (hl : l.getLast? ≠ some 0) (h : toNatLimbsList l = 0) : l = [] := by
   induction l with

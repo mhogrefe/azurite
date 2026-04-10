@@ -1,4 +1,5 @@
 import Azurite.AzNat.Basic
+import Azurite.UInt64.Pow2
 
 namespace Azurite
 
@@ -31,6 +32,6 @@ def AzNat.isPowerOfTwo (a : AzNat) : Bool :=
   | n + 1 =>
     have hi : n < a.limbs.size := by omega
     let last := a.limbs[n]
-    (last &&& (last - 1) == 0) && AzNat.allZeroLoop a.limbs n (by omega)
+    last.isPowerOfTwo && AzNat.allZeroLoop a.limbs n (by omega)
 
 end Azurite

@@ -1,7 +1,7 @@
 import Mathlib.Data.Nat.Basic
-import Azurite.AzNat.Add
+import Azurite.UInt64.AddWithCarry
 
-namespace Azurite.AzNat
+namespace UInt64
 
 theorem addWithCarry_zero_eq (a b : UInt64) :
   a.toNat + b.toNat + 0 = (if (addWithCarry a b false).2 then 1 else 0) * 2^64 + (addWithCarry a b false).1.toNat := by
@@ -45,4 +45,4 @@ theorem addWithCarry_eq (a b : UInt64) (c : Bool) :
     rw [h1]
     apply addWithCarry_one_eq
 
-end Azurite.AzNat
+end UInt64
