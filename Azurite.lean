@@ -218,7 +218,13 @@ import Azurite.Random.Rat
 import Azurite.Rat.Compare
 import Azurite.Rat.LogBase2
 import Azurite.UInt64.AddWithCarry
+import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Equiv.AddWithCarry
 import Azurite.UInt64.Equiv.Basic
+import Azurite.UInt64.Equiv.ClearBit
 import Azurite.UInt64.Equiv.Pow2
+import Azurite.UInt64.Equiv.SetBit
+import Azurite.UInt64.Equiv.TestBit
 import Azurite.UInt64.Pow2
+import Azurite.UInt64.SetBit
+import Azurite.UInt64.TestBit
