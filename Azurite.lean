@@ -149,6 +149,7 @@ import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
+import Azurite.AzPolynomial.MvCoeffExamples
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.Pow

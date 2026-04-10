@@ -42,7 +42,7 @@ still Azurite polynomials), and `bind₂ toMvPolyRingHom` maps each coefficient 
   rw [show (id : AzMvPolynomial σ R ord → AzMvPolynomial σ R ord) =
     (fun r => ofMvPoly (toMvPolyRingHom r)) from by
     ext r; simp [toMvPolyRingHom, ofMvPoly_toMvPoly]]
-  exact toMvPoly_bind₂ toMvPolyRingHom p
+  exact toMvPoly_bind₂ (R := AzMvPolynomial σ R ord) (S := R) toMvPolyRingHom p
 
 @[simp] theorem ofMvPoly_join₂
     (p : MvPolynomial σ (AzMvPolynomial σ R ord)) :
