@@ -138,8 +138,10 @@ import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
 import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
+import Azurite.AzPolynomial.Equiv.MulXPow
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Pow
+import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
@@ -149,10 +151,12 @@ import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
+import Azurite.AzPolynomial.MulXPow
 import Azurite.AzPolynomial.MvCoeffExamples
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.Pow
+import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SpecialTranslate

@@ -11,7 +11,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | Module | Description |
 |--------|-------------|
 | `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. |
-| `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), root bounds, parsing, and `toString`. |
+| `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, multiplication by `X^n` (`mulXPow`), derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), signed pseudo-remainder (`pRem`, works over any `CommRing`), root bounds, parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation, exact division, monomial exponentiation, rename, map, and merge-sorted operations. |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
@@ -38,12 +38,14 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Sub` | `toPoly (p - q) = toPoly p - toPoly q` |
 | `Equiv/Neg` | `toPoly (-p) = -(toPoly p)` |
 | `Equiv/Mul` | `toPoly (p * q) = toPoly p * toPoly q` (basecase) |
+| `Equiv/MulXPow` | `toPoly (mulXPow n p) = toPoly p * X ^ n` |
 | `Equiv/Karatsuba` | `mulKaratsuba p q = mulBasecase p q` (Karatsuba agrees with basecase, hence with Mathlib) |
 | `Equiv/SMul` | `toPoly (c • p) = c • toPoly p` |
 | `Equiv/Monomial` | `toPoly (monomial n c) = Polynomial.monomial n c` |
 | `Equiv/Map` | `toPoly (map f p) = Polynomial.map f (toPoly p)` |
 | `Equiv/Eval` | `eval x p = Polynomial.eval x (toPoly p)` and `evalSpecial p b c = c^natDeg · (toPoly p).eval(b·c⁻¹)` (BPR Algorithm 8.8) |
 | `Equiv/QuoRem` | `toPoly (quo P Q) = toPoly P / toPoly Q`, `toPoly (rem P Q) = toPoly P % toPoly Q`, and `degree(rem) < degree(Q)` |
+| `Equiv/PRem` | `(toPoly (pRem P Q)).map (algebraMap D K) = BPR.PRem K (toPoly P) (toPoly Q)` for `D` a domain with fraction field `K` (matches BPR §1.3 signed pseudo-remainder) |
 | `Equiv/RootBound` | Cauchy root bound correctness: all roots lie within `(-rootBound, rootBound)` |
 | `Equiv/Algebra` | Ring homomorphism and algebra structure preservation |
 | `Equiv/Comp` | `toPoly (comp p q) = (toPoly p).comp (toPoly q)` |
@@ -175,6 +177,8 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Polynomial multiplication (basecase) | BPR Alg. 8.2 | `AzPolynomial/Mul` | O(p·q) |
 | Karatsuba multiplication | — | `AzPolynomial/Karatsuba` | O(n^1.585) |
 | Euclidean division | BPR Alg. 8.3 | `AzPolynomial/QuoRem` | O((p−q)·q) |
+| Signed pseudo-remainder | BPR §1.3 | `AzPolynomial/PRem` | O((p−q)·q) over any `CommRing` |
+| Shift by `X^n` (mul by monic monomial) | — | `AzPolynomial/MulXPow` | O(n + p) |
 | Multivariate polynomial addition | BPR Alg. 8.4 | `AzMvPolynomial/Add` | O(s+t) merge |
 | Multivariate polynomial multiplication | BPR Alg. 8.5 | `AzMvPolynomial/Mul` | — |
 | Exact division of multivariate polynomials | BPR Alg. 8.6 | `AzMvPolynomial/ExactDiv` | — |

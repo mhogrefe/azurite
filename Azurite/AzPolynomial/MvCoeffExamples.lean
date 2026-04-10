@@ -15,6 +15,7 @@ import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Monomial
+import Azurite.AzPolynomial.PRem
 import Azurite.AzMvPolynomial.Equiv.Algebra
 import Azurite.AzMvPolynomial.Parse
 
@@ -99,5 +100,29 @@ private def p_sq : AzPolynomial MvInt := p_T_plus_x * p_T_plus_x
 #guard p_sq.coeff 0 == mv "x^2"
 #guard p_sq.coeff 1 == mv "2*x"
 #guard p_sq.coeff 2 == mv "1"
+
+/-! ### Pseudo-remainder over `MvInt` -/
+
+-- `(T^2 + y)` pRem `(T + x)`.
+-- d = 2, b = 1.  T^2 + y = (T - x)*(T + x) + (x^2 + y).
+private def p_prem1_P : AzPolynomial MvInt := monomial 2 (mv "1") + C (mv "y")
+private def p_prem1_Q : AzPolynomial MvInt := monomial 1 (mv "1") + C (mv "x")
+#guard pRem p_prem1_P p_prem1_Q == C (mv "x^2+y")
+
+-- `(T^2)` pRem `(x*T + y)`: non-unit leading coefficient.
+-- d = 2, b = x, b^2 * P = x^2 * T^2.
+-- x^2 * T^2 = (x*T - y)*(x*T + y) + y^2, so the pseudo-remainder is y^2.
+private def p_prem2_P : AzPolynomial MvInt := monomial 2 (mv "1")
+private def p_prem2_Q : AzPolynomial MvInt := monomial 1 (mv "x") + C (mv "y")
+#guard pRem p_prem2_P p_prem2_Q == C (mv "y^2")
+
+-- `(x*T^2 + y)` pRem `(T + x)`.
+-- d = 2, b = 1. x*T^2 + y = (x*T - x^2)*(T + x) + (x^3 + y).
+private def p_prem3_P : AzPolynomial MvInt := monomial 2 (mv "x") + C (mv "y")
+private def p_prem3_Q : AzPolynomial MvInt := monomial 1 (mv "1") + C (mv "x")
+#guard pRem p_prem3_P p_prem3_Q == C (mv "x^3+y")
+
+-- deg P < deg Q: the pseudo-remainder is `P`.
+#guard pRem p_prem1_Q (monomial 3 (mv "1") + C (mv "1") : AzPolynomial MvInt) == p_prem1_Q
 
 end Azurite.AzPolynomial.MvCoeffExamples
