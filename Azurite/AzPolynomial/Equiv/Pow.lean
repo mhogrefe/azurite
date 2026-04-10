@@ -25,8 +25,9 @@ variable {R : Type _} [Semiring R] [DecidableEq R]
 
 /-- Forward direction: `toPoly` preserves `pow`. -/
 @[simp] theorem toPoly_pow (p : AzPolynomial R) (n : ℕ) :
-    AzPolynomial.toPoly (p.pow n) = AzPolynomial.toPoly p ^ n :=
-  map_pow ringEquivPolynomial p n
+    AzPolynomial.toPoly (p.pow n) = AzPolynomial.toPoly p ^ n := by
+  show AzPolynomial.toPoly (Azurite.fastPow p n) = _
+  rw [Azurite.fastPow, AzPolynomial.toPoly_fastPowAux, toPoly_one, one_mul]
 
 /-- Backward direction: `ofPoly` preserves `pow`. -/
 @[simp] theorem ofPoly_pow (p : Polynomial R) (n : ℕ) :

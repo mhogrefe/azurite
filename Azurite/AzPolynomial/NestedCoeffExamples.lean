@@ -1,0 +1,225 @@
+/-
+  Examples demonstrating that `AzPolynomial` works over coefficient rings
+  that are themselves built by Azurite: `AzPolynomial ℤ` and `AzMatrix ℤ n n`.
+
+  These tests exercise the typeclass machinery: building an
+  `AzPolynomial` over either coefficient ring requires `Semiring`,
+  `DecidableEq`, and (for arithmetic) the full `Ring`/`CommRing` instance
+  on the coefficient type to be **computable**.
+
+  The companion file `MvCoeffExamples.lean` covers the
+  `AzMvPolynomial` coefficient case.
+-/
+import Azurite.AzPolynomial.Basic
+import Azurite.AzPolynomial.Add
+import Azurite.AzPolynomial.Sub
+import Azurite.AzPolynomial.Mul
+import Azurite.AzPolynomial.Monomial
+import Azurite.AzPolynomial.Parse
+import Azurite.AzPolynomial.Equiv.Algebra
+import Azurite.AzMatrix.Basic
+import Azurite.AzMatrix.Operations
+import Azurite.AzMatrix.Mul
+import Azurite.AzMatrix.Equiv.Algebra
+import Mathlib.Data.ZMod.Basic
+
+namespace Azurite.AzPolynomial.NestedCoeffExamples
+
+open Azurite
+
+/-! ## Part 1: `AzPolynomial (AzPolynomial ℤ)`
+
+The outer indeterminate is written `T`; the inner indeterminate is `x`.
+Inner coefficients are built via `parseAzPolynomial`. -/
+
+/-- Inner coefficient ring: `ℤ[x]`. -/
+abbrev IntPoly := AzPolynomial ℤ
+
+/-- Helper: parse a string as an element of `IntPoly`. -/
+private def i (s : String) : IntPoly :=
+  (AzPolynomial.parseAzPolynomial (R := ℤ) s).getD 0
+
+/-! ### Constructing values -/
+
+/-- The zero polynomial. -/
+private def pz : AzPolynomial IntPoly := 0
+#guard pz.coeffs.size == 0
+
+/-- The one polynomial. -/
+private def po : AzPolynomial IntPoly := 1
+#guard po.coeffs.size == 1
+#guard po.coeff 0 == i "1"
+
+/-- A constant polynomial whose coefficient is `x + 1`. -/
+private def pc : AzPolynomial IntPoly := AzPolynomial.C (i "x+1")
+#guard pc.coeffs.size == 1
+#guard pc.coeff 0 == i "x+1"
+
+/-- The polynomial `x * T + (x + 1)` in `ℤ[x][T]`. -/
+private def pl : AzPolynomial IntPoly :=
+  AzPolynomial.monomial 1 (i "x") + AzPolynomial.C (i "x+1")
+#guard pl.coeffs.size == 2
+#guard pl.coeff 0 == i "x+1"
+#guard pl.coeff 1 == i "x"
+
+/-- The polynomial `x^2 * T^2 + (-x) * T + 1`. -/
+private def pq : AzPolynomial IntPoly :=
+  AzPolynomial.monomial 2 (i "x^2") + AzPolynomial.monomial 1 (i "-x")
+    + AzPolynomial.C (i "1")
+#guard pq.coeffs.size == 3
+#guard pq.coeff 0 == i "1"
+#guard pq.coeff 1 == i "-x"
+#guard pq.coeff 2 == i "x^2"
+
+/-! ### Ring operations -/
+
+-- Addition: `(x*T + (x+1)) + ((-x)*T + 1) = (x+2)`
+#guard
+  (pl + (AzPolynomial.monomial 1 (i "-x") + AzPolynomial.C (i "1"))).coeff 0
+    == i "x+2"
+
+-- Subtraction collapses to zero.
+#guard (pl - pl).coeffs.size == 0
+
+-- Negation through subtraction: `0 - C(x) = C(-x)`.
+#guard ((0 : AzPolynomial IntPoly) - AzPolynomial.C (i "x")).coeff 0 == i "-x"
+
+-- Multiplication: `(T + x) * (T - x) = T^2 - x^2`.
+private def pa : AzPolynomial IntPoly :=
+  AzPolynomial.monomial 1 (i "1") + AzPolynomial.C (i "x")
+private def pb : AzPolynomial IntPoly :=
+  AzPolynomial.monomial 1 (i "1") + AzPolynomial.C (i "-x")
+private def pab : AzPolynomial IntPoly := pa * pb
+
+#guard pab.coeffs.size == 3
+#guard pab.coeff 0 == i "-x^2"
+#guard pab.coeff 1 == i "0"
+#guard pab.coeff 2 == i "1"
+
+-- The leading coefficient of `pq` is `x^2`.
+#guard pq.leadingCoeff == i "x^2"
+
+-- Squaring `(T + (x+1))` gives `T^2 + 2*(x+1)*T + (x+1)^2`,
+-- i.e. `T^2 + (2x+2)*T + (x^2+2x+1)`.
+private def pT_plus : AzPolynomial IntPoly :=
+  AzPolynomial.monomial 1 (i "1") + AzPolynomial.C (i "x+1")
+private def psq : AzPolynomial IntPoly := pT_plus * pT_plus
+
+#guard psq.coeffs.size == 3
+#guard psq.coeff 0 == i "x^2+2*x+1"
+#guard psq.coeff 1 == i "2*x+2"
+#guard psq.coeff 2 == i "1"
+
+-- Power via `^` (exercises the computable `npow`/`Semiring` machinery).
+#guard (pT_plus ^ 2) == psq
+#guard ((pT_plus : AzPolynomial IntPoly) ^ 0) == 1
+#guard ((pT_plus : AzPolynomial IntPoly) ^ 1) == pT_plus
+
+/-! ## Part 2: `AzPolynomial (AzMatrix ℤ 2 2)`
+
+The coefficient ring is the (non-commutative) ring of `2 × 2` integer matrices.
+The outer indeterminate is again written `T`. -/
+
+/-- Coefficient ring: `M₂(ℤ)`. -/
+abbrev Mat22 := AzMatrix ℤ 2 2
+
+/-- The identity `2 × 2` matrix. -/
+private def I2 : Mat22 := 1
+
+/-- A non-trivial integer matrix. -/
+private def A : Mat22 := AzMatrix.ofLists [[1, 2], [3, 4]]
+
+/-- Another non-trivial integer matrix. -/
+private def B : Mat22 := AzMatrix.ofLists [[0, 1], [-1, 0]]
+
+/-! ### Constructing values -/
+
+private def qz : AzPolynomial Mat22 := 0
+#guard qz.coeffs.size == 0
+
+private def qo : AzPolynomial Mat22 := 1
+#guard qo.coeffs.size == 1
+#guard qo.coeff 0 == I2
+
+/-- The polynomial `A * T + B`. -/
+private def ql : AzPolynomial Mat22 :=
+  AzPolynomial.monomial 1 A + AzPolynomial.C B
+#guard ql.coeffs.size == 2
+#guard ql.coeff 0 == B
+#guard ql.coeff 1 == A
+
+/-! ### Ring operations -/
+
+-- Addition: `(A*T + B) + (A*T + B) = 2A*T + 2B`.
+#guard (ql + ql).coeff 0 == B + B
+#guard (ql + ql).coeff 1 == A + A
+
+-- Subtraction collapses to zero.
+#guard (ql - ql).coeffs.size == 0
+
+-- `(I*T + A) * (I*T - A) = T^2 - A*T + A*T - A^2 = T^2 - A^2`,
+-- because `I` commutes with `A` (and the cross terms cancel).
+private def qa : AzPolynomial Mat22 :=
+  AzPolynomial.monomial 1 I2 + AzPolynomial.C A
+private def qb : AzPolynomial Mat22 :=
+  AzPolynomial.monomial 1 I2 + AzPolynomial.C (-A)
+private def qab : AzPolynomial Mat22 := qa * qb
+
+#guard qab.coeffs.size == 3
+#guard qab.coeff 0 == -(A * A)
+#guard qab.coeff 1 == 0
+#guard qab.coeff 2 == I2
+
+-- Squaring `(I*T + A)` gives `I*T^2 + 2A*T + A^2`.
+private def qsq : AzPolynomial Mat22 := qa * qa
+#guard qsq.coeffs.size == 3
+#guard qsq.coeff 0 == A * A
+#guard qsq.coeff 1 == A + A
+#guard qsq.coeff 2 == I2
+
+-- Power via `^`.
+#guard (qa ^ 2) == qsq
+#guard ((qa : AzPolynomial Mat22) ^ 0) == 1
+#guard ((qa : AzPolynomial Mat22) ^ 1) == qa
+
+-- Non-commutativity of the coefficient ring is visible: `A * B ≠ B * A`.
+#guard (A * B) ≠ (B * A)
+
+-- A polynomial built from `B` (a non-symmetric matrix) multiplied by its negation.
+private def qc : AzPolynomial Mat22 :=
+  AzPolynomial.monomial 1 B + AzPolynomial.C I2
+#guard ((qc * qc).coeff 0) == I2
+#guard ((qc * qc).coeff 2) == B * B
+
+/-! ## Part 3: Constant `AzPolynomial (AzMatrix (ZMod p) 2 2)` raised to a huge power
+
+This mirrors the Fibonacci-matrix test in `AzMatrix/Pow.lean`. By wrapping the
+Fibonacci matrix in a *constant* polynomial we keep the outer backing array of
+size 1, while the inner exponentiation still has to perform ~60 matrix
+multiplications mod `10^9 + 7`. This exercises:
+
+  * the computable `npow` on `AzPolynomial`,
+  * the computable `npow` on `AzMatrix (ZMod p) 2 2` — invoked once per outer
+    multiplication via `(C a) * (C b) = C (a * b)`,
+  * the `DecidableEq` instances on both layers.
+
+If the outer or inner `^` were not the binary-exponentiation version, raising
+to `10^18` would not terminate. -/
+
+/-- The Fibonacci matrix `[[1,1],[1,0]]` over `ZMod (10^9 + 7)`. -/
+private def fibMat : AzMatrix (ZMod 1000000007) 2 2 :=
+  AzMatrix.ofLists [[1, 1], [1, 0]]
+
+/-- The constant polynomial whose unique coefficient is `fibMat`. -/
+private def fibMatPoly : AzPolynomial (AzMatrix (ZMod 1000000007) 2 2) :=
+  AzPolynomial.C fibMat
+
+-- Constant polynomial → backing array stays size 1 throughout.
+#guard (fibMatPoly ^ 1000000000000000000).coeffs.size == 1
+
+-- Same Fibonacci-mod result as the bare-matrix test in `AzMatrix/Pow.lean`.
+#guard (fibMatPoly ^ 1000000000000000000).coeff 0 ==
+  (AzMatrix.ofLists [[680057396, 209783453], [209783453, 470273943]] :
+    AzMatrix (ZMod 1000000007) 2 2)
+
+end Azurite.AzPolynomial.NestedCoeffExamples

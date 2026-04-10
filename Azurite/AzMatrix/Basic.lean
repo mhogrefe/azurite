@@ -9,6 +9,7 @@ namespace Azurite
 /-- A computable `m × n` matrix over `R`. -/
 structure AzMatrix (R : Type _) (m n : Nat) where
   data : Vector (Vector R n) m
+deriving DecidableEq
 
 variable {R : Type _} {m n : Nat}
 

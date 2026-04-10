@@ -154,6 +154,7 @@ import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.MulXPow
 import Azurite.AzPolynomial.MvCoeffExamples
 import Azurite.AzPolynomial.Neg
+import Azurite.AzPolynomial.NestedCoeffExamples
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.PRem

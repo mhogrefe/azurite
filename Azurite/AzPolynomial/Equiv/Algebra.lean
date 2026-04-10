@@ -1,9 +1,13 @@
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Sub
+import Azurite.AzPolynomial.Equiv.SMul
+import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.Algorithm.FastPow
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
+import Mathlib.Algebra.Module.NatInt
+import Mathlib.Tactic.FastInstance
 
 /-!
 # Algebraic typeclass instances for AzPolynomial
@@ -11,43 +15,107 @@ import Mathlib.Algebra.Ring.Hom.InjSurj
 Uses `Function.Injective.semiring` etc. to transfer the algebraic structure
 from `Polynomial R` to `AzPolynomial R` via the injective `toPoly` map.
 
-The `Pow` field uses computable exponentiation by squaring (`fastPow`)
-rather than the noncomputable round-trip through `ofPoly`/`toPoly`.
+All instances are computable. The data fields (`nsmul`, `npow`, `natCast`,
+`zsmul`, `intCast`) are defined using the existing computable operations on
+`AzPolynomial` (`smul`, `fastPow`, `C`) rather than via the noncomputable
+round-trip through `ofPoly`/`toPoly`.
+
+Each parent class instance is defined at top level using `fast_instance%`,
+following the pattern used in `AzMvPolynomial.Equiv.Algebra` and Mathlib's
+`MeasureTheory.Function.SimpleFunc`.
 -/
 
 open Polynomial
 
 namespace Azurite.AzPolynomial
 
-private noncomputable def nsmulAz {R : Type _} [Semiring R] [DecidableEq R]
-    (n : ℕ) (p : AzPolynomial R) : AzPolynomial R :=
-  AzPolynomial.ofPoly (n • AzPolynomial.toPoly p)
+/-! ### Computable nat-related data instances -/
 
-/-- Computable exponentiation for AzPolynomial via binary exponentiation. -/
-private def npowAz {R : Type _} [Semiring R] [DecidableEq R]
-    (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
+section NatData
+
+variable {R : Type _} [Semiring R] [DecidableEq R]
+
+/-- Computable `ℕ`-cast: returns the constant polynomial `(k : R)`. O(1). -/
+@[irreducible] def natCastAz (k : ℕ) : AzPolynomial R :=
+  AzPolynomial.C ((k : R))
+
+instance : NatCast (AzPolynomial R) := ⟨natCastAz⟩
+
+/-- Computable `ℕ`-action on `AzPolynomial`: scales every coefficient by
+    `(k : R)` via the existing `AzPolynomial.smul`. O(numCoeffs) (plus the
+    cost of one nat-cast in `R`), instead of the O(k · numCoeffs)
+    repeated-addition version.
+
+    Marked `@[irreducible]` so that `whnf` does not chase the body through
+    typeclass-driven `Nat.cast` and `smul` machinery during unification. -/
+@[irreducible] def nsmulAz (k : ℕ) (p : AzPolynomial R) : AzPolynomial R :=
+  ((k : R)) • p
+
+instance : SMul ℕ (AzPolynomial R) := ⟨nsmulAz⟩
+
+end NatData
+
+/-! ### Computable Pow instance -/
+
+section PowData
+
+variable {R : Type _} [Semiring R] [DecidableEq R]
+
+/-- Computable `npow` for `AzPolynomial` via binary exponentiation.
+    O(log n) polynomial multiplications. -/
+@[irreducible] def npowAz (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
   Azurite.fastPow p n
 
-private noncomputable def natCastAz {R : Type _} [Semiring R] [DecidableEq R]
-    (n : ℕ) : AzPolynomial R :=
-  AzPolynomial.ofPoly (n : Polynomial R)
+instance : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
 
-private noncomputable def zsmulAz {R : Type _} [Ring R] [DecidableEq R]
-    (n : ℤ) (p : AzPolynomial R) : AzPolynomial R :=
-  AzPolynomial.ofPoly (n • AzPolynomial.toPoly p)
+end PowData
 
-private noncomputable def intCastAz {R : Type _} [Ring R] [DecidableEq R]
-    (n : ℤ) : AzPolynomial R :=
-  AzPolynomial.ofPoly (n : Polynomial R)
+/-! ### Computable int-related data instances -/
 
-private theorem toPoly_nsmulAz {R : Type _} [Semiring R] [DecidableEq R]
-    (n : ℕ) (p : AzPolynomial R) :
-    AzPolynomial.toPoly (nsmulAz n p) = n • AzPolynomial.toPoly p := by
-  unfold nsmulAz; exact toPoly_ofPoly _
+section IntData
 
--- Direct induction proof: toPoly preserves fastPowAux
-private theorem toPoly_fastPowAux {R : Type _} [Semiring R] [DecidableEq R]
-    (acc base : AzPolynomial R) (n : ℕ) :
+variable {R : Type _} [Ring R] [DecidableEq R]
+
+/-- Computable `ℤ`-cast: returns the constant polynomial `(k : R)`. O(1). -/
+@[irreducible] def intCastAz (k : ℤ) : AzPolynomial R :=
+  AzPolynomial.C ((k : R))
+
+instance : IntCast (AzPolynomial R) := ⟨intCastAz⟩
+
+/-- Computable `ℤ`-action on `AzPolynomial`: scales every coefficient by
+    `(k : R)` via the existing `AzPolynomial.smul`.
+
+    Marked `@[irreducible]` (see `nsmulAz` for rationale). -/
+@[irreducible] def zsmulAz (k : ℤ) (p : AzPolynomial R) : AzPolynomial R :=
+  ((k : R)) • p
+
+instance : SMul ℤ (AzPolynomial R) := ⟨zsmulAz⟩
+
+end IntData
+
+/-! ### Compatibility lemmas for the data instances -/
+
+section EquivLemmasSemiring
+
+variable {R : Type _} [Semiring R] [DecidableEq R]
+
+theorem toPoly_nsmul (k : ℕ) (p : AzPolynomial R) :
+    AzPolynomial.toPoly (k • p) = k • AzPolynomial.toPoly p := by
+  show AzPolynomial.toPoly (nsmulAz k p) = _
+  unfold nsmulAz
+  show AzPolynomial.toPoly (((k : R)) • p) = _
+  rw [toPoly_smul]
+  exact Nat.cast_smul_eq_nsmul (R := R) _ _
+
+theorem toPoly_natCast (k : ℕ) :
+    AzPolynomial.toPoly ((k : AzPolynomial R)) = (k : Polynomial R) := by
+  show AzPolynomial.toPoly (natCastAz k) = _
+  unfold natCastAz
+  rw [toPoly_C]
+  simp
+
+/-- `toPoly` preserves the tail-recursive `fastPowAux` helper. -/
+theorem toPoly_fastPowAux (acc base : AzPolynomial R) (n : ℕ) :
     AzPolynomial.toPoly (Azurite.fastPowAux acc base n) =
     AzPolynomial.toPoly acc * AzPolynomial.toPoly base ^ n := by
   induction n using Nat.strongRecOn generalizing acc base with
@@ -57,94 +125,201 @@ private theorem toPoly_fastPowAux {R : Type _} [Semiring R] [DecidableEq R]
     · rename_i h; subst h; simp [pow_zero, mul_one]
     · rename_i h
       split
-      · rename_i heven
-        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+      · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
         simp only [toPoly_mul]
         rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
             AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul]
         congr 2; omega
-      · rename_i hodd
-        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+      · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
         simp only [toPoly_mul]
         rw [mul_assoc]; congr 1
         rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
             AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul, ← pow_succ']
         congr 1; omega
 
-private theorem toPoly_npowAz {R : Type _} [Semiring R] [DecidableEq R]
-    (p : AzPolynomial R) (n : ℕ) :
-    AzPolynomial.toPoly (npowAz p n) = AzPolynomial.toPoly p ^ n := by
-  simp [npowAz, Azurite.fastPow, toPoly_fastPowAux, toPoly_one, one_mul]
+theorem toPoly_npow (p : AzPolynomial R) (n : ℕ) :
+    AzPolynomial.toPoly (p ^ n) = AzPolynomial.toPoly p ^ n := by
+  show AzPolynomial.toPoly (npowAz p n) = _
+  unfold npowAz
+  simp [Azurite.fastPow, toPoly_fastPowAux, toPoly_one, one_mul]
 
-private theorem toPoly_natCastAz {R : Type _} [Semiring R] [DecidableEq R]
-    (n : ℕ) : AzPolynomial.toPoly (natCastAz n : AzPolynomial R) = (n : Polynomial R) := by
-  unfold natCastAz; exact toPoly_ofPoly _
+end EquivLemmasSemiring
 
-private theorem toPoly_zsmulAz {R : Type _} [Ring R] [DecidableEq R]
-    (n : ℤ) (p : AzPolynomial R) :
-    AzPolynomial.toPoly (zsmulAz n p) = n • AzPolynomial.toPoly p := by
-  unfold zsmulAz; exact toPoly_ofPoly _
+section EquivLemmasRing
 
-private theorem toPoly_intCastAz {R : Type _} [Ring R] [DecidableEq R]
-    (n : ℤ) : AzPolynomial.toPoly (intCastAz n : AzPolynomial R) = (n : Polynomial R) := by
-  unfold intCastAz; exact toPoly_ofPoly _
+variable {R : Type _} [Ring R] [DecidableEq R]
 
-/-! ### Semiring -/
+theorem toPoly_zsmul (k : ℤ) (p : AzPolynomial R) :
+    AzPolynomial.toPoly (k • p) = k • AzPolynomial.toPoly p := by
+  show AzPolynomial.toPoly (zsmulAz k p) = _
+  unfold zsmulAz
+  show AzPolynomial.toPoly (((k : R)) • p) = _
+  rw [toPoly_smul]
+  exact Int.cast_smul_eq_zsmul (R := R) _ _
 
-noncomputable instance {R : Type _} [Semiring R] [DecidableEq R] :
-    Semiring (AzPolynomial R) :=
-  letI : SMul ℕ (AzPolynomial R) := ⟨nsmulAz⟩
-  letI : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
-  letI : NatCast (AzPolynomial R) := ⟨natCastAz⟩
-  Function.Injective.semiring AzPolynomial.toPoly
+theorem toPoly_intCast (k : ℤ) :
+    AzPolynomial.toPoly ((k : AzPolynomial R)) = (k : Polynomial R) := by
+  show AzPolynomial.toPoly (intCastAz k) = _
+  unfold intCastAz
+  rw [toPoly_C]
+  simp
+
+end EquivLemmasRing
+
+/-! ### Algebraic instances chain (Semiring) -/
+
+section SemiringSection
+
+variable {R : Type _} [Semiring R] [DecidableEq R]
+
+instance : AddMonoid (AzPolynomial R) := fast_instance%
+  Function.Injective.addMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add (fun _ _ => toPoly_nsmul _ _)
+
+instance : AddCommMonoid (AzPolynomial R) := fast_instance%
+  Function.Injective.addCommMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add (fun _ _ => toPoly_nsmul _ _)
+
+instance : Monoid (AzPolynomial R) := fast_instance%
+  Function.Injective.monoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_one toPoly_mul toPoly_npow
+
+instance : NonUnitalNonAssocSemiring (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalNonAssocSemiring AzPolynomial.toPoly
+    (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_mul (fun _ _ => toPoly_nsmul _ _)
+
+instance : NonUnitalSemiring (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalSemiring AzPolynomial.toPoly
+    (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_mul (fun _ _ => toPoly_nsmul _ _)
+
+instance : NonAssocSemiring (AzPolynomial R) := fast_instance%
+  Function.Injective.nonAssocSemiring AzPolynomial.toPoly
     (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul
-    toPoly_nsmulAz toPoly_npowAz toPoly_natCastAz
+    (fun _ _ => toPoly_nsmul _ _) toPoly_natCast
 
-/-! ### CommSemiring -/
+/-- `AzPolynomial R` forms a semiring when `R` is a semiring.
 
-noncomputable instance {R : Type _} [CommSemiring R] [DecidableEq R] :
-    CommSemiring (AzPolynomial R) :=
-  letI : SMul ℕ (AzPolynomial R) := ⟨nsmulAz⟩
-  letI : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
-  letI : NatCast (AzPolynomial R) := ⟨natCastAz⟩
-  Function.Injective.commSemiring AzPolynomial.toPoly
+    Constructed manually rather than via `Function.Injective.semiring` because
+    that abbrev's `npow` field would otherwise pull in
+    `Function.Injective.monoidWithZero` and force the instance to be
+    noncomputable. -/
+instance : Semiring (AzPolynomial R) where
+  __ := (inferInstance : NonUnitalSemiring (AzPolynomial R))
+  one_mul := one_mul
+  mul_one := mul_one
+  npow := fun n p => p ^ n
+  npow_zero := fun _ => pow_zero _
+  npow_succ := fun _ _ => pow_succ _ _
+  natCast_zero := toPoly_inj.mp (by
+    rw [toPoly_natCast,
+        show AzPolynomial.toPoly (0 : AzPolynomial R) = (0 : Polynomial R) from toPoly_zero]
+    simp)
+  natCast_succ := fun n => toPoly_inj.mp (by
+    rw [toPoly_natCast, toPoly_add, toPoly_natCast,
+        show AzPolynomial.toPoly (1 : AzPolynomial R) = (1 : Polynomial R) from toPoly_one]
+    exact Nat.cast_succ n)
+
+end SemiringSection
+
+/-! ### Algebraic instances chain (CommSemiring) -/
+
+section CommSemiringSection
+
+variable {R : Type _} [CommSemiring R] [DecidableEq R]
+
+instance : CommMonoid (AzPolynomial R) := fast_instance%
+  Function.Injective.commMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_one toPoly_mul toPoly_npow
+
+instance : NonUnitalCommSemiring (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalCommSemiring AzPolynomial.toPoly
     (fun _ _ h => toPoly_inj.mp h)
-    toPoly_zero toPoly_one toPoly_add toPoly_mul
-    toPoly_nsmulAz toPoly_npowAz toPoly_natCastAz
+    toPoly_zero toPoly_add toPoly_mul (fun _ _ => toPoly_nsmul _ _)
 
-/-! ### Ring -/
+/-- `AzPolynomial R` forms a commutative semiring when `R` is a commutative
+    semiring. -/
+instance : CommSemiring (AzPolynomial R) where
+  __ := (inferInstance : Semiring (AzPolynomial R))
+  mul_comm := mul_comm
 
-noncomputable instance {R : Type _} [Ring R] [DecidableEq R] :
-    Ring (AzPolynomial R) :=
-  letI : SMul ℕ (AzPolynomial R) := ⟨nsmulAz⟩
-  letI : SMul ℤ (AzPolynomial R) := ⟨zsmulAz⟩
-  letI : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
-  letI : NatCast (AzPolynomial R) := ⟨natCastAz⟩
-  letI : IntCast (AzPolynomial R) := ⟨intCastAz⟩
-  Function.Injective.ring AzPolynomial.toPoly
+end CommSemiringSection
+
+/-! ### Algebraic instances chain (Ring) -/
+
+section RingSection
+
+variable {R : Type _} [Ring R] [DecidableEq R]
+
+instance : AddGroup (AzPolynomial R) := fast_instance%
+  Function.Injective.addGroup AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+
+instance : AddCommGroup (AzPolynomial R) := fast_instance%
+  Function.Injective.addCommGroup AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+
+instance : NonUnitalNonAssocRing (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalNonAssocRing AzPolynomial.toPoly
+    (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_mul toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+
+instance : NonUnitalRing (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalRing AzPolynomial.toPoly
+    (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_mul toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+
+instance : NonAssocRing (AzPolynomial R) := fast_instance%
+  Function.Injective.nonAssocRing AzPolynomial.toPoly
     (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
-    toPoly_nsmulAz toPoly_zsmulAz toPoly_npowAz toPoly_natCastAz toPoly_intCastAz
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+    toPoly_natCast toPoly_intCast
 
-/-! ### CommRing -/
-
-noncomputable instance {R : Type _} [CommRing R] [DecidableEq R] :
-    CommRing (AzPolynomial R) :=
-  letI : SMul ℕ (AzPolynomial R) := ⟨nsmulAz⟩
-  letI : SMul ℤ (AzPolynomial R) := ⟨zsmulAz⟩
-  letI : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
-  letI : NatCast (AzPolynomial R) := ⟨natCastAz⟩
-  letI : IntCast (AzPolynomial R) := ⟨intCastAz⟩
-  Function.Injective.commRing AzPolynomial.toPoly
+instance : AddGroupWithOne (AzPolynomial R) := fast_instance%
+  Function.Injective.addGroupWithOne AzPolynomial.toPoly
     (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_one toPoly_add toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+    toPoly_natCast toPoly_intCast
+
+instance : Ring (AzPolynomial R) := fast_instance%
+  Function.Injective.ring AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
-    toPoly_nsmulAz toPoly_zsmulAz toPoly_npowAz toPoly_natCastAz toPoly_intCastAz
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _) toPoly_npow
+    toPoly_natCast toPoly_intCast
+
+end RingSection
+
+/-! ### Algebraic instances chain (CommRing) -/
+
+section CommRingSection
+
+variable {R : Type _} [CommRing R] [DecidableEq R]
+
+instance : NonUnitalCommRing (AzPolynomial R) := fast_instance%
+  Function.Injective.nonUnitalCommRing AzPolynomial.toPoly
+    (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_add toPoly_mul toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
+
+/-- `AzPolynomial R` forms a commutative ring when `R` is a commutative ring. -/
+instance : CommRing (AzPolynomial R) := fast_instance%
+  Function.Injective.commRing AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
+    toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
+    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _) toPoly_npow
+    toPoly_natCast toPoly_intCast
 
 /-! ### Ring isomorphism -/
 
 /-- The ring isomorphism between `AzPolynomial R` and Mathlib's `Polynomial R`. -/
-noncomputable def ringEquivPolynomial {R : Type _} [Semiring R] [DecidableEq R] :
+noncomputable def ringEquivPolynomial :
     AzPolynomial R ≃+* Polynomial R :=
   { equivPolynomial with
     map_mul' := toPoly_mul
@@ -153,7 +328,7 @@ noncomputable def ringEquivPolynomial {R : Type _} [Semiring R] [DecidableEq R] 
 /-! ### Ring homomorphism -/
 
 /-- The canonical ring homomorphism from `AzPolynomial R` to `Polynomial R`. -/
-noncomputable def toPolyHom {R : Type _} [CommRing R] [DecidableEq R] :
+noncomputable def toPolyHom :
     AzPolynomial R →+* Polynomial R where
   toFun := AzPolynomial.toPoly
   map_zero' := toPoly_zero
@@ -164,8 +339,9 @@ noncomputable def toPolyHom {R : Type _} [CommRing R] [DecidableEq R] :
 /-! ### Integral domain -/
 
 /-- `AzPolynomial R` is an integral domain when `R` is. -/
-noncomputable instance {R : Type _} [CommRing R] [IsDomain R] [DecidableEq R] :
-    IsDomain (AzPolynomial R) :=
+instance [IsDomain R] : IsDomain (AzPolynomial R) :=
   Function.Injective.isDomain toPolyHom (fun _ _ h => toPoly_inj.mp h)
+
+end CommRingSection
 
 end Azurite.AzPolynomial
