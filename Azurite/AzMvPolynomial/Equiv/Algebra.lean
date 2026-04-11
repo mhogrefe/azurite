@@ -231,6 +231,26 @@ noncomputable def AzMvPolynomial.toMvPolyHom :
   map_add' := toMvPoly_add
   map_mul' := toMvPoly_mul
 
+/-- `AzMvPolynomial n R ord` has no zero divisors when `R` doesn't. Proved by
+    transfer along the injective ring hom `toMvPolyHom`. -/
+instance : NoZeroDivisors (AzMvPolynomial n R ord) where
+  eq_zero_or_eq_zero_of_mul_eq_zero {a b} h := by
+    have h' : AzMvPolynomial.toMvPoly a * AzMvPolynomial.toMvPoly b = 0 := by
+      rw [← toMvPoly_mul, h,
+          show (0 : AzMvPolynomial n R ord).toMvPoly = (0 : MvPolynomial (Fin n) R)
+            from toMvPoly_zero]
+    rcases mul_eq_zero.mp h' with hl | hr
+    · left
+      exact toMvPoly_injective (by
+        rw [hl,
+            show (0 : AzMvPolynomial n R ord).toMvPoly = (0 : MvPolynomial (Fin n) R)
+              from toMvPoly_zero])
+    · right
+      exact toMvPoly_injective (by
+        rw [hr,
+            show (0 : AzMvPolynomial n R ord).toMvPoly = (0 : MvPolynomial (Fin n) R)
+              from toMvPoly_zero])
+
 /-- `AzMvPolynomial n R ord` is an `R`-algebra via the constant polynomial
     embedding `C`. -/
 instance : Algebra R (AzMvPolynomial n R ord) where

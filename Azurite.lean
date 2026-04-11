@@ -78,8 +78,10 @@ import Azurite.AzMvPolynomial.Equiv.OfAzPolynomial
 import Azurite.AzMvPolynomial.Equiv.OptionEquivRight
 import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
+import Azurite.AzMvPolynomial.Equiv.RenameHom
 import Azurite.AzMvPolynomial.Equiv.SMul
 import Azurite.AzMvPolynomial.Equiv.Sub
+import Azurite.AzMvPolynomial.Equiv.SumAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.ToAzPolynomial
 import Azurite.AzMvPolynomial.Equiv.ToAzPolynomialAt
 import Azurite.AzMvPolynomial.Equiv.Vars
@@ -107,6 +109,7 @@ import Azurite.AzMvPolynomial.Pow
 import Azurite.AzMvPolynomial.Rename
 import Azurite.AzMvPolynomial.SMul
 import Azurite.AzMvPolynomial.Sub
+import Azurite.AzMvPolynomial.SumAlgEquiv
 import Azurite.AzMvPolynomial.ToAzPolynomial
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples

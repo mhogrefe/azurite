@@ -1,6 +1,7 @@
 import Azurite.AzMvPolynomial.OptionEquivRight
 import Azurite.AzMvPolynomial.Equiv.Eval2
 import Azurite.AzMvPolynomial.Equiv.Algebra
+import Azurite.AzMvPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzPolynomial.Equiv.Algebra
 import Mathlib.Algebra.MvPolynomial.Eval
 
@@ -401,9 +402,29 @@ private lemma map_mul_aux (p q : AzMvPolynomial (n+1) R ord) :
         AzMvPolynomial.toMvPoly_map_optionEquivRight,
         toMvPoly_mul, MvPolynomial.eval₂_mul])
 
-/-- `AzMvPolynomial.optionEquivRight` bundled as a `RingEquiv`. -/
-noncomputable def AzMvPolynomial.optionEquivRightRingEquiv :
-    AzMvPolynomial (n+1) R ord ≃+*
+private lemma commutes_aux (r : R) :
+    optionEquivRight ((algebraMap R (AzMvPolynomial (n+1) R ord)) r) =
+      algebraMap R (AzMvPolynomial n (AzPolynomial R) ord) r :=
+  map_toPoly_bridge_injective (by
+    show MvPolynomial.map
+          (AzPolynomial.toPolyHom : AzPolynomial R →+* Polynomial R)
+          (AzMvPolynomial.optionEquivRight
+            (AzMvPolynomial.C r : AzMvPolynomial (n+1) R ord)).toMvPoly
+        = MvPolynomial.map
+            (AzPolynomial.toPolyHom : AzPolynomial R →+* Polynomial R)
+            (AzMvPolynomial.C
+              (AzPolynomial.C r : AzPolynomial R)
+              : AzMvPolynomial n (AzPolynomial R) ord).toMvPoly
+    rw [AzMvPolynomial.toMvPoly_map_optionEquivRight, toMvPoly_C, toMvPoly_C,
+        MvPolynomial.eval₂_C, RingHom.comp_apply, MvPolynomial.map_C]
+    show MvPolynomial.C (Polynomial.C r) =
+         MvPolynomial.C (AzPolynomial.toPolyHom (AzPolynomial.C r))
+    rw [show AzPolynomial.toPolyHom (AzPolynomial.C r) = Polynomial.C r
+          from toPoly_C r])
+
+/-- `AzMvPolynomial.optionEquivRight` bundled as an `R`-algebra isomorphism. -/
+noncomputable def AzMvPolynomial.optionEquivRightAlgEquiv :
+    AzMvPolynomial (n+1) R ord ≃ₐ[R]
       AzMvPolynomial n (AzPolynomial R) ord where
   toFun := AzMvPolynomial.optionEquivRight
   invFun := AzMvPolynomial.optionEquivRightSymm
@@ -411,6 +432,7 @@ noncomputable def AzMvPolynomial.optionEquivRightRingEquiv :
   right_inv := right_inv_aux
   map_add' := map_add_aux
   map_mul' := map_mul_aux
+  commutes' := commutes_aux
 
 end Bundled
 
