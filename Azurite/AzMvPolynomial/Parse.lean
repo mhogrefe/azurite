@@ -11,7 +11,7 @@ namespace Azurite
 
 open AzMvPolynomial Monomial MonicMonomial
 
-variable {R : Type _} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+variable {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
          {n : ℕ} {ord : MonomialOrder}
 
 /-! ### Splitting polynomial char-lists into monomial char-lists -/

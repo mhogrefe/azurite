@@ -8,7 +8,7 @@ namespace Azurite
 
 open AzMvPolynomial Monomial
 
-variable {R : Type _} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+variable {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
          {n : ℕ} {ord : MonomialOrder}
 
 /-- Join the remaining monomial char-lists (after the first), prepending `+`

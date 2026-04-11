@@ -147,7 +147,7 @@ end CommMonoidInstance
 
 section Display
 variable (F : Type _) [LinearOrder F] [pv : ParsableVar F n]
-variable [DecidableEq R] [ParsableCoeff R]
+variable [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R]
 
 /-- Convert a monomial to a list of characters using the `F`-naming scheme.  -/
 def toCharsWith (m : Monomial n R ord) : List Char :=
@@ -168,7 +168,7 @@ def parseWith (cs : List Char) : Option (Monomial n R ord) :=
   | c :: rest =>
     if decide (¬ isPolySyntaxChar c) then
       (MonicMonomial.parseWith (ord := ord) F cs).map
-        (fun m => ⟨⟨1, ParsableCoeff.one_ne_zero⟩, m⟩)
+        (fun m => ⟨⟨1, one_ne_zero⟩, m⟩)
     else if _ : c = '-' then
       match rest with
       | c' :: _ =>
@@ -283,7 +283,7 @@ end Monomial
 
 /-- Round-trip theorem: `parseWith F (m.toCharsWith F) = some m`. -/
 theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
-    [DecidableEq R] [ParsableCoeff R] {n : ℕ} {ord : MonomialOrder}
+    [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] {n : ℕ} {ord : MonomialOrder}
     (F : Type _) [LinearOrder F] [pv : ParsableVar F n]
     (m : Monomial n R ord) :
     Monomial.parseWith (n := n) (ord := ord) (R := R) F (m.toCharsWith F) = some m := by
@@ -294,9 +294,8 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
     rw [hct]; unfold Monomial.parseWith
     simp only [List.span_eq_takeWhile_dropWhile]
-    have his_syntax : isPolySyntaxChar c := by
-      obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
-      simp only [hct, List.head_cons] at hs; exact hs
+    have his_syntax : isPolySyntaxChar c :=
+      ParsableCoeff.toChars_head_is_syntax m.coeff.val c t hct
     simp only [show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
       decide_false, Bool.false_eq_true, ↓reduceIte]
     have hall : ∀ x ∈ (c :: t), (x != '*') = true :=
@@ -309,20 +308,21 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
         simp_all [dif_neg m.coeff.property, Option.bind_some]
         cases m with | mk => simp_all
       | cons c' t' =>
-        have ⟨_, hsynt⟩ :=
-          ParsableCoeff.toChars_minus_next_syntax m.coeff.val hne (by simp [hct])
         have hcs : isPolySyntaxChar c' := by
-          have h2 : (ParsableCoeff.toChars m.coeff.val).tail ≠ [] := by simp [hct]
-          have := hsynt h2; simp [hct] at this; exact this
+          obtain ⟨_, _, hcons, h⟩ :=
+            ParsableCoeff.toChars_minus_next_syntax m.coeff.val (c' :: t') hct
+          simp only [List.cons.injEq] at hcons
+          obtain ⟨rfl, _⟩ := hcons
+          exact h
         have hall' : ∀ x ∈ c' :: t', (x != '*') = true :=
           fun x hx => hall x (List.mem_cons_of_mem _ hx)
         simp only [dite_true, show ¬ ¬ isPolySyntaxChar c' from not_not.mpr hcs,
           decide_false, Bool.false_eq_true, ↓reduceIte]
-        rw [Monomial.takeWhile_all ('-' :: c' :: t') hall,
-            Monomial.dropWhile_all ('-' :: c' :: t') hall]
+        rw [(List.takeWhile_eq_self_iff).mpr hall,
+            (List.dropWhile_eq_nil_iff).mpr hall]
         simp_all [dif_neg m.coeff.property, Option.bind_some]
         cases m with | mk => simp_all
-    · rw [Monomial.takeWhile_all (c :: t) hall, Monomial.dropWhile_all (c :: t) hall]
+    · rw [(List.takeWhile_eq_self_iff).mpr hall, (List.dropWhile_eq_nil_iff).mpr hall]
       simp only [hcm, dite_false]
       simp_all [dif_neg m.coeff.property, Option.bind_some]
       cases m with | mk => simp_all
@@ -335,7 +335,7 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
       simp only [hct, List.head_cons] at h; exact h
     simp only [decide_eq_true hnot_syntax, ↓reduceIte]
     rw [← hct, MonicMonomial.parseWith_toCharsWith]
-    show Option.some { coeff := ⟨1, ParsableCoeff.one_ne_zero⟩, monic := m.monic} = some m
+    show Option.some { coeff := ⟨1, one_ne_zero⟩, monic := m.monic} = some m
     congr 1; cases m; simp only [Monomial.mk.injEq]
     exact ⟨Subtype.ext hcoeff.symm, trivial⟩
   · -- Case 3: coeff ≠ 1, monic ≠ 1
@@ -364,9 +364,8 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
     -- Prove the coeff*monic helper
     intro hne
     obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil hne
-    have his_syntax : isPolySyntaxChar c := by
-      obtain ⟨_, hs⟩ := ParsableCoeff.toChars_head_is_syntax m.coeff.val
-      simp only [hct, List.head_cons] at hs; exact hs
+    have his_syntax : isPolySyntaxChar c :=
+      ParsableCoeff.toChars_head_is_syntax m.coeff.val c t hct
     rw [hct]; unfold Monomial.parseWith
     simp only [List.span_eq_takeWhile_dropWhile]
     have hc_bne : (c != '*') = true :=
@@ -375,10 +374,10 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
       fun x hx => Monomial.coeffChars_bne_star m.coeff.val x
         (by rw [hct]; exact List.mem_cons_of_mem _ hx)
     have htw : List.takeWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toCharsWith F)) = c :: t := by
-      simp [hc_bne, List.takeWhile_append, Monomial.takeWhile_all t hall]
+      simp [hc_bne, List.takeWhile_append, (List.takeWhile_eq_self_iff).mpr hall]
     have hdw : List.dropWhile (· != '*') (c :: (t ++ ['*'] ++ m.monic.toCharsWith F)) =
         '*' :: m.monic.toCharsWith F := by
-      simp [hc_bne, List.dropWhile_append, Monomial.dropWhile_all t hall]
+      simp [hc_bne, List.dropWhile_append, (List.dropWhile_eq_nil_iff).mpr hall]
     simp only [show ¬ (¬ isPolySyntaxChar c) from not_not.mpr his_syntax,
       decide_false, Bool.false_eq_true, ↓reduceIte,
       List.cons_append, htw, hdw]
@@ -392,11 +391,12 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
         simp_all [dif_neg m.coeff.property, MonicMonomial.parseWith_toCharsWith,
           Option.map_some, Option.bind_some]
       | cons c' t' =>
-        have ⟨_, hsynt⟩ :=
-          ParsableCoeff.toChars_minus_next_syntax m.coeff.val hne (by simp [hct])
         have hcs : isPolySyntaxChar c' := by
-          have h2 : (ParsableCoeff.toChars m.coeff.val).tail ≠ [] := by simp [hct]
-          have := hsynt h2; simp [hct] at this; exact this
+          obtain ⟨_, _, hcons, h⟩ :=
+            ParsableCoeff.toChars_minus_next_syntax m.coeff.val (c' :: t') hct
+          simp only [List.cons.injEq] at hcons
+          obtain ⟨rfl, _⟩ := hcons
+          exact h
         simp only [dite_true]
         simp_all [dif_neg m.coeff.property, MonicMonomial.parseWith_toCharsWith,
           Option.map_some, Option.bind_some]
@@ -408,7 +408,7 @@ namespace Monomial
 
 /-! ### Default display (uses `IndexedVar n`) -/
 
-variable {R : Type _} [Semiring R] {n : ℕ} {ord : MonomialOrder}
+variable {R : Type _} [Semiring R] [NeZero (1 : R)] {n : ℕ} {ord : MonomialOrder}
 
 /-- Default `toChars`: `IndexedVar n` naming (`x₀, x₁, …`). -/
 @[inline] def toChars [DecidableEq R] [ParsableCoeff R]

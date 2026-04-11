@@ -1,11 +1,10 @@
 /-
-  `ParsableCoeff` class + canonical instances (`ℕ`/`ℤ`/`ℚ`/`ZMod`) and
-  generic `takeWhile`/`dropWhile`/coeffChars helper lemmas.
+  `ParsableCoeff` class + canonical instances (`ℕ`/`ℤ`/`ℚ`/`ZMod`).
 -/
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzPolynomial.StringLemmas
 import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.List.TakeDrop
+import Mathlib.Data.List.TakeWhile
 
 namespace Azurite
 open AzPolynomial
@@ -18,8 +17,7 @@ def isCoeffSyntaxChar (c : Char) : Prop :=
 /-- Typeclass for coefficient types that can be serialized/deserialized as character
     sequences. Unlike `ParsableVar`, this does not extend `Var`, and `-` is permitted
     as the first character of the representation (to support negative coefficients). -/
-class ParsableCoeff (R : Type _) [Semiring R] where
-  one_ne_zero : (1 : R) ≠ 0
+class ParsableCoeff (R : Type _) [Semiring R] [NeZero (1 : R)] where
   toChars : R → List Char
   parseChars : List Char → Option R
   parse_toChars : ∀ r : R, parseChars (toChars r) = some r
@@ -29,35 +27,18 @@ class ParsableCoeff (R : Type _) [Semiring R] where
   /-- `-` may only occur as the very first character. -/
   toChars_no_minus_tail : ∀ r : R, ∀ c ∈ (toChars r).tail, c ≠ '-'
   /-- The first character is a poly-syntax character (digit or `-`). -/
-  toChars_head_is_syntax : ∀ r : R, ∃ h : toChars r ≠ [], isPolySyntaxChar ((toChars r).head h)
+  toChars_head_is_syntax : ∀ r : R, ∀ c t, toChars r = c :: t → isPolySyntaxChar c
   /-- An optional representation of `-1`, used for displaying `-x` instead of `-1*x`. -/
   negOne : Option {c : R // c ≠ 0 ∧ c ≠ 1} := none
   /-- If `toChars r` starts with `-`, then the tail is nonempty and its head is
       a poly-syntax character (a digit). This ensures the parser can distinguish
       `-3*x` (coefficient) from `-x` (negOne). -/
-  toChars_minus_next_syntax : ∀ r : R, ∀ h : toChars r ≠ [],
-    (toChars r).head h = '-' →
-    (toChars r).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((toChars r).tail.head h2)
+  toChars_minus_next_syntax : ∀ r : R, ∀ t, toChars r = '-' :: t →
+    ∃ c t', t = c :: t' ∧ isPolySyntaxChar c
 
 namespace Monomial
 
-lemma takeWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
-    List.takeWhile (· != '*') l = l := by
-  induction l with
-  | nil => simp
-  | cons a t ih =>
-    simp [h a (List.mem_cons_self ..)]
-    exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
-
-lemma dropWhile_all (l : List Char) (h : ∀ x ∈ l, (x != '*') = true) :
-    List.dropWhile (· != '*') l = [] := by
-  induction l with
-  | nil => simp
-  | cons a t ih =>
-    simp [h a (List.mem_cons_self ..)]
-    exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
-
-lemma coeffChars_bne_star {R : Type _} [Semiring R] [ParsableCoeff R] (r : R) :
+lemma coeffChars_bne_star {R : Type _} [Semiring R] [NeZero (1 : R)] [ParsableCoeff R] (r : R) :
     ∀ x ∈ ParsableCoeff.toChars r, (x != '*') = true := by
   intro x hx; simp [bne_iff_ne]
   intro heq; exact ParsableCoeff.toChars_no_syntax _ _ (heq ▸ hx) (Or.inr (Or.inl rfl))
@@ -67,9 +48,6 @@ end Monomial
 /-! ### ParsableCoeff instances -/
 
 section ParsableCoeffInstances
-
-private lemma tail_mem_of_drop {c : α} {l : List α} (h : c ∈ l.tail) : c ∈ l.drop 1 := by
-  cases l <;> simp_all
 
 private lemma natToChars_no_coeff_syntax (n : ℕ) (c : Char) (hc : c ∈ natToChars n) :
     ¬ isCoeffSyntaxChar c := by
@@ -102,91 +80,67 @@ private lemma ratToChars_no_coeff_syntax (q : ℚ) (c : Char) (hc : c ∈ ratToC
     · exact natToChars_no_coeff_syntax _ c hc
 
 private lemma natToChars_head_is_syntax (n : ℕ) :
-    ∃ h : natToChars n ≠ [], isPolySyntaxChar ((natToChars n).head h) := by
-  have hne := natToChars_ne_nil n
-  refine ⟨hne, ?_⟩
-  have ⟨hge, hle⟩ := mem_natToChars_only_digits n _ (List.head_mem hne)
+    ∀ c t, natToChars n = c :: t → isPolySyntaxChar c := by
+  intro c t hct
+  have hc_mem : c ∈ natToChars n := hct ▸ List.mem_cons_self ..
+  have ⟨hge, hle⟩ := mem_natToChars_only_digits n c hc_mem
   left; exact ⟨hge, hle⟩
 
 private lemma intToChars_head_is_syntax (z : ℤ) :
-    ∃ h : intToChars z ≠ [], isPolySyntaxChar ((intToChars z).head h) := by
-  have hne := intToChars_ne_nil z
-  obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil hne
-  refine ⟨hne, ?_⟩
-  have hhead : (intToChars z).head hne = c := by simp [hcr]
-  rw [hhead]
-  have hc_mem : c ∈ intToChars z := by rw [hcr]; exact List.mem_cons_self ..
+    ∀ c t, intToChars z = c :: t → isPolySyntaxChar c := by
+  intro c t hct
+  have hc_mem : c ∈ intToChars z := hct ▸ List.mem_cons_self ..
   rcases mem_intToChars_only_digits_or_dash z c hc_mem with hdash | hdig
   · rw [hdash]; exact Or.inr (Or.inr (Or.inl rfl))
   · left; exact hdig
 
 private lemma ratToChars_head_is_syntax (q : ℚ) :
-    ∃ h : ratToChars q ≠ [], isPolySyntaxChar ((ratToChars q).head h) := by
-  have hne := ratToChars_ne_nil q
-  obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil hne
-  refine ⟨hne, ?_⟩
-  have hhead : (ratToChars q).head hne = c := by simp [hcr]
-  rw [hhead]
-  simp only [ratToChars] at hcr
-  split at hcr
-  · have hc_int : c ∈ intToChars q.num := by rw [hcr]; exact List.mem_cons_self ..
-    rcases mem_intToChars_only_digits_or_dash q.num c hc_int with hdash | hdig
-    · rw [hdash]; exact Or.inr (Or.inr (Or.inl rfl))
-    · left; exact hdig
-  · obtain ⟨hne_int, hsyn⟩ := intToChars_head_is_syntax q.num
-    obtain ⟨c', rest', hcr'⟩ := List.exists_cons_of_ne_nil hne_int
-    simp [hcr'] at hcr hsyn
-    rw [← hcr.1]; exact hsyn
+    ∀ c t, ratToChars q = c :: t → isPolySyntaxChar c := by
+  intro c t hct
+  simp only [ratToChars] at hct
+  split at hct
+  · exact intToChars_head_is_syntax q.num c t hct
+  · obtain ⟨c', rest', hcr'⟩ := List.exists_cons_of_ne_nil (intToChars_ne_nil q.num)
+    rw [hcr', List.cons_append, List.cons_append] at hct
+    obtain ⟨rfl, _⟩ := List.cons.inj hct
+    exact intToChars_head_is_syntax q.num c' rest' hcr'
 
 private lemma intToChars_minus_next_syntax (z : ℤ) :
-    ∀ h : intToChars z ≠ [],
-    (intToChars z).head h = '-' →
-    (intToChars z).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((intToChars z).tail.head h2) := by
-  rw [intToChars_natAbs]; split_ifs with hz
-  · intro _ _; simp only [List.tail_cons]
-    exact ⟨natToChars_ne_nil _, fun h2 => by
-      have ⟨hge, hle⟩ := mem_natToChars_only_digits z.natAbs _ (List.head_mem h2)
-      exact Or.inl ⟨hge, hle⟩⟩
-  · intro h hhead; exfalso
-    have ⟨hge, _⟩ := mem_natToChars_only_digits z.natAbs _ (List.head_mem h)
-    rw [hhead] at hge; exact absurd hge (by decide)
+    ∀ t, intToChars z = '-' :: t →
+    ∃ c t', t = c :: t' ∧ isPolySyntaxChar c := by
+  intro t hct
+  have heq := intToChars_natAbs z
+  rw [hct] at heq
+  split_ifs at heq with hz
+  · have ht : t = natToChars z.natAbs := (List.cons.inj heq).2
+    obtain ⟨c, t', hct'⟩ := List.exists_cons_of_ne_nil (natToChars_ne_nil z.natAbs)
+    refine ⟨c, t', ht.trans hct', ?_⟩
+    have hc_mem : c ∈ natToChars z.natAbs := hct' ▸ List.mem_cons_self ..
+    have ⟨hge, hle⟩ := mem_natToChars_only_digits z.natAbs c hc_mem
+    left; exact ⟨hge, hle⟩
+  · exact absurd ((heq ▸ List.mem_cons_self ..) : '-' ∈ natToChars z.natAbs)
+      (not_mem_natToChars _)
 
 private lemma ratToChars_minus_next_syntax (q : ℚ) :
-    ∀ h : ratToChars q ≠ [],
-    (ratToChars q).head h = '-' →
-    (ratToChars q).tail ≠ [] ∧ ∀ h2, isPolySyntaxChar ((ratToChars q).tail.head h2) := by
-  unfold ratToChars; split_ifs with hden
-  · simp only [intToChars_natAbs]; split_ifs with hlt
-    · intro _ _; simp only [List.tail_cons]
-      exact ⟨natToChars_ne_nil _, fun h2 => by
-        have ⟨hge, hle⟩ := mem_natToChars_only_digits q.num.natAbs _ (List.head_mem h2)
-        exact Or.inl ⟨hge, hle⟩⟩
-    · intro h hhead; exfalso
-      have ⟨hge, _⟩ := mem_natToChars_only_digits q.num.natAbs _ (List.head_mem h)
-      rw [hhead] at hge; exact absurd hge (by decide)
-  · intro h hhead
-    obtain ⟨c, rest, hcr⟩ := List.exists_cons_of_ne_nil (intToChars_ne_nil q.num)
-    simp only [hcr, List.cons_append, List.head_cons, List.tail_cons] at hhead ⊢
-    subst hhead
-    simp only [intToChars_natAbs] at hcr
-    split_ifs at hcr with hlt
-    · cases hcr
-      exact ⟨List.append_ne_nil_of_left_ne_nil
-        (List.append_ne_nil_of_left_ne_nil (natToChars_ne_nil _) _) _,
-        fun h2 => by
-          rw [List.head_append_of_ne_nil
-            (List.append_ne_nil_of_left_ne_nil (natToChars_ne_nil _) _),
-            List.head_append_of_ne_nil (natToChars_ne_nil _)]
-          have ⟨hge, hle⟩ := mem_natToChars_only_digits q.num.natAbs _
-            (List.head_mem (natToChars_ne_nil _))
-          exact Or.inl ⟨hge, hle⟩⟩
-    · exfalso
-      have ⟨hge, _⟩ := mem_natToChars_only_digits q.num.natAbs '-'
-        (by rw [hcr]; exact List.mem_cons_self ..)
-      exact absurd hge (by decide)
+    ∀ t, ratToChars q = '-' :: t →
+    ∃ c t', t = c :: t' ∧ isPolySyntaxChar c := by
+  intro t hct
+  simp only [ratToChars] at hct
+  split at hct
+  · exact intToChars_minus_next_syntax q.num t hct
+  · -- ratToChars q = intToChars q.num ++ ['/'] ++ natToChars q.den
+    -- and the whole thing equals '-' :: t
+    obtain ⟨cn, tn, hctn⟩ := List.exists_cons_of_ne_nil (intToChars_ne_nil q.num)
+    rw [hctn, List.cons_append, List.cons_append] at hct
+    obtain ⟨rfl, htail⟩ := List.cons.inj hct
+    -- Now cn = '-', so intToChars q.num = '-' :: tn
+    -- Apply intToChars_minus_next_syntax to q.num
+    obtain ⟨c', tn', hteq, hs⟩ := intToChars_minus_next_syntax q.num tn hctn
+    -- tn = c' :: tn', so t = c' :: tn' ++ ['/'] ++ natToChars q.den
+    refine ⟨c', tn' ++ ['/'] ++ natToChars q.den, ?_, hs⟩
+    rw [← htail, hteq, List.cons_append, List.cons_append]
 
 instance : ParsableCoeff ℕ where
-  one_ne_zero := by omega
   toChars := natToChars
   parseChars := parseNatChars
   parse_toChars := parseNatChars_natToChars
@@ -195,33 +149,34 @@ instance : ParsableCoeff ℕ where
   toChars_no_minus_tail := fun n _ hc heq =>
     not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
   toChars_head_is_syntax := natToChars_head_is_syntax
-  toChars_minus_next_syntax := fun n h hhead => by
-    exfalso
-    have ⟨hge, _⟩ := mem_natToChars_only_digits n _ (List.head_mem h)
-    simp [hhead] at hge
+  toChars_minus_next_syntax := fun n t hct => by
+    exact absurd ((hct ▸ List.mem_cons_self ..) : '-' ∈ natToChars n)
+      (not_mem_natToChars n)
 
 instance : ParsableCoeff ℤ where
-  one_ne_zero := by omega
   toChars := intToChars
   parseChars := parseIntChars
   parse_toChars := parseIntChars_intToChars
   toChars_nonempty := intToChars_ne_nil
   toChars_no_syntax := intToChars_no_coeff_syntax
-  toChars_no_minus_tail := fun z _ hc heq =>
-    not_mem_tail_intToChars z (heq ▸ tail_mem_of_drop hc)
+  toChars_no_minus_tail := fun z _ hc heq => by
+    apply not_mem_tail_intToChars z
+    rw [List.drop_one]
+    exact heq ▸ hc
   toChars_head_is_syntax := intToChars_head_is_syntax
   negOne := some ⟨-1, by omega, by omega⟩
   toChars_minus_next_syntax := intToChars_minus_next_syntax
 
 instance : ParsableCoeff ℚ where
-  one_ne_zero := by exact one_ne_zero
   toChars := ratToChars
   parseChars := parseRatChars
   parse_toChars := parseRatChars_ratToChars
   toChars_nonempty := ratToChars_ne_nil
   toChars_no_syntax := ratToChars_no_coeff_syntax
-  toChars_no_minus_tail := fun q _ hc heq =>
-    not_mem_tail_ratToChars q (heq ▸ tail_mem_of_drop hc)
+  toChars_no_minus_tail := fun q _ hc heq => by
+    apply not_mem_tail_ratToChars q
+    rw [List.drop_one]
+    exact heq ▸ hc
   toChars_head_is_syntax := ratToChars_head_is_syntax
   negOne := some ⟨-1, by decide, by decide⟩
   toChars_minus_next_syntax := ratToChars_minus_next_syntax
@@ -238,7 +193,6 @@ private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
   exact ZMod.natCast_zmod_val c
 
 instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
-  one_ne_zero := by exact one_ne_zero
   toChars := zmodToChars
   parseChars := parseZmodChars m
   parse_toChars := parseZmodChars_zmodToChars
@@ -247,10 +201,10 @@ instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
   toChars_head_is_syntax := fun c => natToChars_head_is_syntax c.val
-  toChars_minus_next_syntax := fun c h hhead => by
-    exfalso
-    have := mem_natToChars_only_digits c.val _ (List.head_mem h)
-    simp [hhead] at this
+  toChars_minus_next_syntax := fun c t hct => by
+    simp only [zmodToChars] at hct
+    exact absurd ((hct ▸ List.mem_cons_self ..) : '-' ∈ natToChars c.val)
+      (not_mem_natToChars _)
 
 end ParsableCoeffInstances
 

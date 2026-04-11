@@ -10,7 +10,7 @@ open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 namespace AzFieldAtom
 
-variable {n : ℕ} {R : Type _} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+variable {n : ℕ} {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
     {ord : MonomialOrder}
 
 section Display
@@ -30,7 +30,7 @@ end Display
 
 end AzFieldAtom
 
-instance {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+instance {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
     {ord : MonomialOrder} :
     ToString (AzFieldAtom n R ord) where
   toString := AzFieldAtom.toStr
@@ -43,7 +43,7 @@ instance {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R] [ParsableCoeff R]
 
 namespace BPR.Formula
 
-variable {n : ℕ} {R : Type _} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+variable {n : ℕ} {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
     {ord : MonomialOrder}
 
 section Display
@@ -90,7 +90,7 @@ end BPR.Formula
 /-- Preferred `ToString` for `Formula (Fin n) (AzFieldAtom n R ord)`, using
     `IndexedVar n` naming for both atoms and quantifier variables. -/
 instance (priority := high) {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R]
-    [ParsableCoeff R] {ord : MonomialOrder} :
+    [NeZero (1 : R)] [ParsableCoeff R] {ord : MonomialOrder} :
     ToString (Formula (Fin n) (AzFieldAtom n R ord)) where
   toString := BPR.Formula.toStr
 

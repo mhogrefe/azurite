@@ -11,7 +11,7 @@ namespace Azurite
 
 open AzPolynomial Monomial MonicMonomial AzMvPolynomial
 
-variable {R : Type _} [DecidableEq R] [Semiring R] [ParsableCoeff R]
+variable {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
          {n : ℕ} {ord : MonomialOrder}
 
 /-! ### Helpers -/
@@ -27,22 +27,6 @@ theorem all_isNotSign_tail {m : List Char}
   exact isNotSign_of_not_plus_not_minus
     (fun h => hno_plus (h ▸ List.mem_of_mem_tail hc))
     (fun h => hno_minus_tail (h ▸ hc))
-
-private theorem takeWhile_eq_of_forall {l : List α} {p : α → Bool}
-    (h : ∀ x ∈ l, p x = true) : l.takeWhile p = l := by
-  induction l with
-  | nil => simp
-  | cons a t ih =>
-    rw [List.takeWhile_cons_of_pos (h a (List.mem_cons_self ..))]
-    exact congrArg _ (ih (fun x hx => h x (List.mem_cons_of_mem _ hx)))
-
-private theorem dropWhile_nil_of_forall {l : List α} {p : α → Bool}
-    (h : ∀ x ∈ l, p x = true) : l.dropWhile p = [] := by
-  induction l with
-  | nil => simp
-  | cons a t ih =>
-    rw [List.dropWhile_cons_of_pos (h a (List.mem_cons_self ..))]
-    exact ih (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
 /-! ### Layer 1: splitting inverts joining -/
 
@@ -71,13 +55,15 @@ private theorem tw_dw_tail
   have ht : ∀ ch ∈ t, isNotSign ch = true := all_isNotSign_tail hm_np hm_nmt
   constructor
   · rw [List.takeWhile_append,
-        show (t.takeWhile isNotSign).length = t.length from by rw [takeWhile_eq_of_forall ht],
+        show (t.takeWhile isNotSign).length = t.length from by
+          rw [(List.takeWhile_eq_self_iff).mpr ht],
         if_pos rfl]
     rcases joinMonomialsAux_head_cond ms hne' with h | ⟨d, ds, h, hd⟩
     · rw [h]; simp
     · rw [h, List.takeWhile_cons_of_neg (Bool.eq_false_iff.mp hd)]; simp
   · rw [List.dropWhile_append,
-        show (t.dropWhile isNotSign).isEmpty = true from by simp [dropWhile_nil_of_forall ht]]
+        show (t.dropWhile isNotSign).isEmpty = true from by
+          simp [(List.dropWhile_eq_nil_iff).mpr ht]]
     rcases joinMonomialsAux_head_cond ms hne' with h | ⟨d, ds, h, hd⟩
     · simp [h]
     · simp [h, List.dropWhile_cons_of_neg (Bool.eq_false_iff.mp hd)]
@@ -137,7 +123,7 @@ theorem splitMonomials_joinMonomials
 
 /-! ### Layer 3: ofMonomials? on already-sorted terms -/
 
-omit [DecidableEq R] [ParsableCoeff R] in
+omit [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] in
 private theorem mergeSort_sorted_eq
     {l : List (Monomial n R ord)}
     (hsorted : l.Pairwise (fun a b => a.monic > b.monic)) :
@@ -155,7 +141,7 @@ private theorem mergeSort_sorted_eq
       List.inj_on_of_nodup_map hmap_nodup (hperm.mem_iff.mp ha) hb (le_antisymm hba hab))
     hge_sorted hge_orig
 
-omit [DecidableEq R] [ParsableCoeff R] in
+omit [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] in
 private theorem adjacentDistinct_of_pairwise_gt
     {l : List (Monomial n R ord)}
     (h : l.Pairwise (fun a b => a.monic > b.monic)) :
@@ -170,7 +156,7 @@ private theorem adjacentDistinct_of_pairwise_gt
       rw [List.pairwise_cons] at h'
       exact ⟨ne_of_gt (h'.1 b (List.mem_cons_self ..)), ih h'.2⟩
 
-omit [DecidableEq R] [ParsableCoeff R] in
+omit [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] in
 theorem ofMonomials?_terms (p : AzMvPolynomial n R ord) :
     ofMonomials? p.terms = some p := by
   unfold ofMonomials?
@@ -217,13 +203,13 @@ private theorem toCharsWith_ne_zero_of_nonempty (p : AzMvPolynomial n R ord)
         simp only [Monomial.toCharsWith,
                    show (m.monic = 1) = False from propext ⟨hmonic, False.elim⟩,
                    ↓reduceIte, hcoeff, ↓reduceIte] at heq
-        have hhead_not := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
-        obtain ⟨hne0, hhead_is⟩ := ParsableCoeff.toChars_head_is_syntax (0 : R)
         have hne_monic := MonicMonomial.toCharsWith_ne_nil F m.monic hmonic
-        have : (ParsableCoeff.toChars (0 : R)).head hne0 =
-            (m.monic.toCharsWith F).head hne_monic := by
-          congr 1; exact heq.symm
-        rw [this] at hhead_is
+        obtain ⟨c_m, t_m, hctm⟩ := List.exists_cons_of_ne_nil hne_monic
+        have hhead_not : ¬ isPolySyntaxChar c_m := by
+          have h := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
+          simp only [hctm, List.head_cons] at h; exact h
+        have hhead_is : isPolySyntaxChar c_m :=
+          ParsableCoeff.toChars_head_is_syntax (0 : R) c_m t_m (heq ▸ hctm)
         exact hhead_not hhead_is
       · -- coeff ≠ 1, monic ≠ 1: toChars 0 can't match m.toCharsWith F
         simp only [Monomial.toCharsWith,
@@ -243,15 +229,11 @@ private theorem toCharsWith_ne_zero_of_nonempty (p : AzMvPolynomial n R ord)
             have hmhead : ¬ isPolySyntaxChar c_m := by
               have h := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
               simp only [hctm, List.head_cons] at h; exact h
-            -- Get toChars_minus_next_syntax BEFORE generalize/subst
-            have hmns := ParsableCoeff.toChars_minus_next_syntax (0 : R)
-            -- Eliminate ParsableCoeff.toChars 0 via generalize + subst
-            generalize hgen : ParsableCoeff.toChars (0 : R) = l0 at heq hmns
-            subst heq
-            -- Now hmns is about ('-' :: c_m :: t_m) directly
-            have ⟨_, htsynt⟩ := hmns (List.cons_ne_nil '-' (c_m :: t_m))
-              (show ('-' :: c_m :: t_m).head (List.cons_ne_nil '-' (c_m :: t_m)) = '-' from rfl)
-            exact hmhead (by simpa using htsynt (by simp))
+            obtain ⟨_, _, hcons, hs⟩ :=
+              ParsableCoeff.toChars_minus_next_syntax (0 : R) (c_m :: t_m) heq.symm
+            simp only [List.cons.injEq] at hcons
+            obtain ⟨rfl, _⟩ := hcons
+            exact hmhead hs
           · -- coeff*monic case: contains '*'
             have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
               rw [← heq]
