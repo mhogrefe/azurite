@@ -8,7 +8,8 @@
 -/
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Vector.Defs
-import Azurite.AzMvPolynomial.MonicMonomial
+import Azurite.AzMvPolynomial.New.Var
+import Azurite.AzMvPolynomial.New.MonomialOrder
 
 namespace Azurite
 

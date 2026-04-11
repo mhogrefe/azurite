@@ -139,9 +139,11 @@ import Azurite.AzMvPolynomial.New.MonicMonomial
 import Azurite.AzMvPolynomial.New.MonicMonomialOrder
 import Azurite.AzMvPolynomial.New.MonicMonomialProofs
 import Azurite.AzMvPolynomial.New.Monomial
+import Azurite.AzMvPolynomial.New.MonomialOrder
 import Azurite.AzMvPolynomial.New.Mul
 import Azurite.AzMvPolynomial.New.Neg
 import Azurite.AzMvPolynomial.New.OfAzPolynomial
+import Azurite.AzMvPolynomial.New.ParsableCoeff
 import Azurite.AzMvPolynomial.New.Parse
 import Azurite.AzMvPolynomial.New.Pow
 import Azurite.AzMvPolynomial.New.Rename
@@ -149,6 +151,7 @@ import Azurite.AzMvPolynomial.New.SMul
 import Azurite.AzMvPolynomial.New.Sub
 import Azurite.AzMvPolynomial.New.ToAzPolynomial
 import Azurite.AzMvPolynomial.New.ToString
+import Azurite.AzMvPolynomial.New.Var
 import Azurite.AzMvPolynomial.New.Vars
 import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.Parse
@@ -160,7 +163,6 @@ import Azurite.AzMvPolynomial.Sub
 import Azurite.AzMvPolynomial.ToAzPolynomial
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
-import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare

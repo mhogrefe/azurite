@@ -1,11 +1,7 @@
 /-
   Monomials (coefficient × monic monomial) for `MonomialNew` — Fin-indexed.
-
-  Imports the old `Azurite.AzMvPolynomial.Monomial` for `ParsableCoeff`
-  (class + `ℕ`/`ℤ`/`ℚ`/`ZMod` instances) and the generic helper lemmas
-  `takeWhile_all`/`dropWhile_all`/`coeffChars_bne_star`.
 -/
-import Azurite.AzMvPolynomial.Monomial
+import Azurite.AzMvPolynomial.New.ParsableCoeff
 import Azurite.AzMvPolynomial.New.MonicMonomial
 import Azurite.AzMvPolynomial.New.MonicMonomialProofs
 
