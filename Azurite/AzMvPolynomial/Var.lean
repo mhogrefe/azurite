@@ -2,8 +2,6 @@
   Variable types for multivariate polynomials.
 -/
 import Mathlib.Order.Fin.Basic
-import Azurite.AzPolynomial.Parse
-import Azurite.AzPolynomial.ToString
 import Azurite.AzPolynomial.StringLemmas
 
 namespace Azurite

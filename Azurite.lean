@@ -145,6 +145,7 @@ import Azurite.AzNat.TrailingZeros
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
+import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Equiv.Add
@@ -176,6 +177,7 @@ import Azurite.AzPolynomial.MvCoeffExamples
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.NestedCoeffExamples
 import Azurite.AzPolynomial.Parse
+import Azurite.AzPolynomial.ParseToString
 import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.QuoRem

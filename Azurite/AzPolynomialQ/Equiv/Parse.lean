@@ -1,7 +1,7 @@
 import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.Equiv.Basic
 import Azurite.AzPolynomialQ.Equiv.ToString
-import Azurite.AzPolynomial.StringLemmas
+import Azurite.AzPolynomial.ParseToString
 
 /-!
 # AzPolynomialQ ↔ AzPolynomial ℚ parse equivalence
@@ -31,7 +31,7 @@ theorem parseAzPolynomialQ_eq (s : String) :
 theorem parseAzPolynomialQ_toChars (p : AzPolynomialQ) :
     parseAzPolynomialQ (toString p) = some p := by
   show (AzPolynomial.parseAzPolynomial (R := ℚ) (toChars p)).map ofAzPolynomial = some p
-  rw [toChars_eq, parseAzPolynomial_toChars_rat, Option.map_some, ofAzPolynomial_toAzPolynomial]
+  rw [toChars_eq, parseAzPolynomial_toChars, Option.map_some, ofAzPolynomial_toAzPolynomial]
 
 end AzPolynomialQ
 

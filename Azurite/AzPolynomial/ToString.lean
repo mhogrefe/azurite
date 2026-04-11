@@ -1,88 +1,34 @@
-import Azurite.AzPolynomial.Basic
-import Mathlib.Data.Rat.Defs
-import Mathlib.Data.ZMod.Basic
-import Azurite.AzPolynomial.Parse
-import Azurite.AzNat.ToString
+/-
+  `AzPolynomial` display as a thin facade over `AzMvPolynomial`.
 
-namespace Azurite.AzPolynomial
-
-def intToChars (z : ℤ) : List Char :=
-  if z < 0 then
-    let n := z.natAbs
-    if n = 0 then ['0']
-    else '-' :: natToCharsAux n n []
-  else
-    let n := z.natAbs
-    if n = 0 then ['0']
-    else natToCharsAux n n []
-
-def ratToChars (q : ℚ) : List Char :=
-  if q.den = 1 then intToChars q.num
-  else intToChars q.num ++ ['/'] ++ natToChars q.den
-
-/-- A typeclass for types whose elements can be formatted as a list of characters for polynomial coefficients. -/
-class AzPolynomialToChars (R : Type _) where
-  toChars : R → List Char
-
-instance : AzPolynomialToChars ℕ where
-  toChars := natToChars
-
-instance : AzPolynomialToChars ℤ where
-  toChars := intToChars
-
-instance : AzPolynomialToChars ℚ where
-  toChars := ratToChars
-
-def zmodToChars {n : ℕ} [NeZero n] (c : ZMod n) : List Char := natToChars c.val
-
-instance {n : ℕ} [NeZero n] : AzPolynomialToChars (ZMod n) where
-  toChars := zmodToChars
-
-/--
-Formats a monomial with degree `d` and coefficient `c` as a `List Char`.
-Handles "1" and "-1" intuitively based on `AzPolynomialToChars R`.
+  A univariate polynomial is reflected as a one-variable `AzMvPolynomial`
+  via `AzPolynomial.toAzMvPolynomial` and rendered using the `XyzVar 1`
+  naming scheme (so the variable is printed as `x`).
 -/
-def monomialToChars {R : Type _} [DecidableEq R] [Zero R] [AzPolynomialToChars R] (d : ℕ) (c : R) : List Char :=
-  if c = 0 then
-    ['0']
-  else if d = 0 then
-    AzPolynomialToChars.toChars c
-  else
-    let s := AzPolynomialToChars.toChars c
-    let pfx := if s == ['1'] then [] else if s == ['-', '1'] then ['-'] else s ++ ['*']
-    let sfx := if d = 1 then ['x'] else ['x', '^'] ++ natToChars d
-    pfx ++ sfx
+import Azurite.AzPolynomial.CoeffChars
+import Azurite.AzMvPolynomial.ToString
+import Azurite.AzMvPolynomial.OfAzPolynomial
 
-instance {n : ℕ} [NeZero n] : ToString (ZMod n) where
-  toString x := toString x.val
+namespace Azurite
 
-def listEnum {α : Type _} (l : List α) : List (ℕ × α) :=
-  let rec aux (acc : List (ℕ × α)) (n : ℕ) (rem : List α) : List (ℕ × α) :=
-    match rem with
-    | [] => acc.reverse
-    | x :: xs => aux ((n, x) :: acc) (n + 1) xs
-  aux [] 0 l
+/-- `1 ≤ 26` lets us reuse `XyzVar 1` (single letter `x`) as the display
+    type for univariate polynomials. -/
+instance : Fact (1 ≤ 26) := ⟨by decide⟩
 
--- Removing AzPolynomialParsableValid constraint for pure toString computation
-def toChars {R : Type _} [DecidableEq R] [Semiring R] [AzPolynomialToChars R] [AzPolynomialParsable R] (p : AzPolynomial R) : String :=
-  if p = 0 then
-    "0"
-  else
-    let coeffs : List R := p.coeffs.toList
-    let indexed : List (ℕ × R) := listEnum coeffs
-    let nonZero : List (ℕ × R) := indexed.filter (fun (_, c) => c ≠ 0)
-    let monomials : List (List Char) := nonZero.map (fun (d, c) => monomialToChars d c)
-    let reversed : List (List Char) := monomials.reverse
-    let withSigns : List (List Char) := (listEnum reversed).map (fun (i, m) =>
-      if i = 0 then m
-      else match m with
-      | '-' :: _ => m
-      | _ => '+' :: m
-    )
-    let flat : List Char := withSigns.flatten
-    String.ofList flat
+namespace AzPolynomial
 
-instance {R : Type _} [DecidableEq R] [Semiring R] [AzPolynomialToChars R] [AzPolynomialParsable R] : ToString (AzPolynomial R) where
-  toString := toChars
+variable {R : Type _} [Semiring R] [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R]
 
-end Azurite.AzPolynomial
+/-- Convert a univariate polynomial to a `String` by reflecting it as a
+    one-variable `AzMvPolynomial` and rendering with `XyzVar 1`. -/
+def toChars (p : AzPolynomial R) : String :=
+  (AzPolynomial.toAzMvPolynomial (⟨0, Nat.zero_lt_one⟩ : Fin 1) .Degrevlex p :
+      AzMvPolynomial 1 R .Degrevlex).toStrWith (XyzVar 1)
+
+end AzPolynomial
+
+instance {R : Type _} [Semiring R] [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] :
+    ToString (AzPolynomial R) where
+  toString := AzPolynomial.toChars
+
+end Azurite

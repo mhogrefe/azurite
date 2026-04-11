@@ -2,6 +2,7 @@
   Generic evaluation (eval₂, aeval) for `AzMvPolynomial`.
 -/
 import Azurite.AzMvPolynomial.Basic
+import Mathlib.Algebra.Algebra.Basic
 
 namespace Azurite
 

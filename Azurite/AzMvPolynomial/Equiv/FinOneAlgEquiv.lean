@@ -33,7 +33,7 @@ variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
     {ord : MonomialOrder}
 
 /-- The unique element of `Fin 1`. -/
-private def finOneZero : Fin 1 := ⟨0, Nat.zero_lt_one⟩
+def finOneZero : Fin 1 := ⟨0, Nat.zero_lt_one⟩
 
 /-! ### Round-trip identities on Mathlib `MvPolynomial (Fin 1)` / `Polynomial` -/
 
@@ -70,7 +70,7 @@ private lemma polynomial_roundtrip (p : Polynomial R) :
 /-! ### Forward and backward bridges through `toMvPoly` / `toPoly` -/
 
 omit [NoZeroDivisors R] in
-private lemma toAzPolynomial_toAzMvPolynomial_roundtrip
+lemma toAzPolynomial_toAzMvPolynomial_roundtrip
     (p : AzMvPolynomial 1 R ord) :
     (p.toAzPolynomial).toAzMvPolynomial finOneZero ord = p :=
   toMvPoly_injective (by
@@ -78,7 +78,7 @@ private lemma toAzPolynomial_toAzMvPolynomial_roundtrip
         mvPolyFinOne_roundtrip])
 
 omit [NoZeroDivisors R] in
-private lemma toAzMvPolynomial_toAzPolynomial_roundtrip (q : AzPolynomial R) :
+lemma toAzMvPolynomial_toAzPolynomial_roundtrip (q : AzPolynomial R) :
     (AzPolynomial.toAzMvPolynomial finOneZero ord q :
         AzMvPolynomial 1 R ord).toAzPolynomial = q := by
   apply toPoly_inj.mp

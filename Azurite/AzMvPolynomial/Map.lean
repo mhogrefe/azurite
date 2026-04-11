@@ -2,6 +2,7 @@
   Map functions for `AzMvPolynomial` (Fin-indexed).
 -/
 import Azurite.AzMvPolynomial.Basic
+import Mathlib.Algebra.Algebra.Basic
 
 namespace Azurite
 open AzMvPolynomial

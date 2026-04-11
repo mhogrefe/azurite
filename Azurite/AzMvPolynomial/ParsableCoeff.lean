@@ -181,16 +181,32 @@ instance : ParsableCoeff ℚ where
   negOne := some ⟨-1, by decide, by decide⟩
   toChars_minus_next_syntax := ratToChars_minus_next_syntax
 
-/-- Parse a character list as a `ZMod n` value: parse as ℕ, check `< n`, cast. -/
+/-- Parse a character list as a `ZMod n` value: parse as ℕ (possibly with a
+    leading `-`), check `< n`, cast (and negate if there was a leading `-`). -/
 def parseZmodChars (m : ℕ) [NeZero m] (cs : List Char) : Option (ZMod m) :=
-  (parseNatChars cs).bind (fun k => if k < m then some (k : ZMod m) else none)
+  match cs with
+  | '-' :: rest =>
+    (parseNatChars rest).bind
+      (fun k => if k < m then some (-(k : ZMod m)) else none)
+  | _ =>
+    (parseNatChars cs).bind
+      (fun k => if k < m then some (k : ZMod m) else none)
 
 private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
     parseZmodChars m (zmodToChars c) = some c := by
-  simp only [parseZmodChars, zmodToChars, parseNatChars_natToChars]
-  simp only [Option.bind, if_pos (ZMod.val_lt c)]
-  congr 1
-  exact ZMod.natCast_zmod_val c
+  have hne : ∀ rest, zmodToChars c ≠ '-' :: rest := by
+    intro rest hr
+    exact not_mem_natToChars c.val
+      ((show zmodToChars c = natToChars c.val from rfl) ▸ hr ▸ List.mem_cons_self ..)
+  unfold parseZmodChars
+  split
+  · rename_i rest heq
+    exact absurd heq (hne rest)
+  · show ((parseNatChars (natToChars c.val)).bind _) = _
+    rw [parseNatChars_natToChars]
+    simp only [Option.bind, if_pos (ZMod.val_lt c)]
+    congr 1
+    exact ZMod.natCast_zmod_val c
 
 instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
   toChars := zmodToChars
@@ -201,6 +217,10 @@ instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
   toChars_no_minus_tail := fun c _ch hch heq =>
     not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
   toChars_head_is_syntax := fun c => natToChars_head_is_syntax c.val
+  negOne :=
+    if h0 : ((-1 : ZMod m) = 0) then none
+    else if h1 : ((-1 : ZMod m) = 1) then none
+    else some ⟨-1, h0, h1⟩
   toChars_minus_next_syntax := fun c t hct => by
     simp only [zmodToChars] at hct
     exact absurd ((hct ▸ List.mem_cons_self ..) : '-' ∈ natToChars c.val)

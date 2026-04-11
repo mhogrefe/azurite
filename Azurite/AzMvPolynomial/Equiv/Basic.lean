@@ -7,6 +7,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.Finset.Lattice.Fold
+import Mathlib.Data.Finset.Sort
 import Mathlib.Data.List.Fold
 
 namespace Azurite

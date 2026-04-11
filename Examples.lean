@@ -13,6 +13,8 @@ open Lean
 open Azurite
 open Azurite.AzPolynomial
 
+instance : Fact (1 < 10) := ⟨by decide⟩
+
 -- Create a concrete `AzPolynomial` directly: 1 + 2x + 3x^2
 def p1a : AzPolynomial ℤ := ⟨#[1, 2, 3], by decide⟩
 
@@ -89,58 +91,6 @@ def pZ_large : AzPolynomial ℤ := ⟨#[1, -2, 3, 10], by decide⟩
 -- The polynomial ends in 5, which maps to 0 in ZMod 5, so `normalize` strips it.
 def pZMod10 : AzPolynomial (ZMod 10) := ⟨#[1, 2, 3, 5], by decide⟩
 #guard toString (Azurite.AzPolynomial.map (ZMod.castHom (by decide) (ZMod 5)) pZMod10) == "3*x^2+2*x+1"
-
-section ToCharsEval
-
-#guard (String.ofList (monomialToChars 0 (5:ℤ))) == "5"
-#guard (String.ofList (monomialToChars 1 (5:ℤ))) == "5*x"
-#guard (String.ofList (monomialToChars 2 (5:ℤ))) == "5*x^2"
-
-#guard (String.ofList (monomialToChars 0 (1:ℤ))) == "1"
-#guard (String.ofList (monomialToChars 1 (1:ℤ))) == "x"
-#guard (String.ofList (monomialToChars 2 (1:ℤ))) == "x^2"
-
-#guard (String.ofList (monomialToChars 0 (-1:ℤ))) == "-1"
-#guard (String.ofList (monomialToChars 1 (-1:ℤ))) == "-x"
-#guard (String.ofList (monomialToChars 2 (-1:ℤ))) == "-x^2"
-
-#guard (String.ofList (monomialToChars 0 (0:ℤ))) == "0"
-#guard (String.ofList (monomialToChars 1 (0:ℤ))) == "0"
-#guard (String.ofList (monomialToChars 2 (0:ℤ))) == "0"
-
-end ToCharsEval
-
-section ParseEval
-
-#guard parseMonomial (R := ℤ) "5".toList == some (0, 5)
-#guard parseMonomial (R := ℤ) "5*x".toList == some (1, 5)
-#guard parseMonomial (R := ℤ) "5*x^2".toList == some (2, 5)
-
-#guard parseMonomial (R := ℤ) "1".toList == some (0, 1)
-#guard parseMonomial (R := ℤ) "x".toList == some (1, 1)
-#guard parseMonomial (R := ℤ) "x^2".toList == some (2, 1)
-
-#guard parseMonomial (R := ℤ) "-1".toList == some (0, -1)
-#guard parseMonomial (R := ℤ) "-x".toList == some (1, -1)
-#guard parseMonomial (R := ℤ) "-x^2".toList == some (2, -1)
-
-#guard parseMonomial (R := ℤ) "0".toList == some (0, 0)
-
-#guard parseMonomial (R := ℚ) "22/7".toList == some (0, 22/7)
-#guard parseMonomial (R := ℚ) "22/7*x".toList == some (1, 22/7)
-#guard parseMonomial (R := ℚ) "22/7*x^2".toList == some (2, 22/7)
-
-#guard parseMonomial (R := ℚ) "1".toList == some (0, 1)
-#guard parseMonomial (R := ℚ) "x".toList == some (1, 1)
-#guard parseMonomial (R := ℚ) "x^2".toList == some (2, 1)
-
-#guard parseMonomial (R := ℚ) "-1".toList == some (0, -1)
-#guard parseMonomial (R := ℚ) "-x".toList == some (1, -1)
-#guard parseMonomial (R := ℚ) "-x^2".toList == some (2, -1)
-
-#guard parseMonomial (R := ℚ) "0".toList == some (0, 0)
-
-end ParseEval
 
 #guard toString (0 : AzPolynomial ℤ) == "0"
 #guard toString (monomial 2 (5:ℤ)) == "5*x^2"
