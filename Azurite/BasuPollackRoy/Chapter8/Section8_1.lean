@@ -7,9 +7,8 @@ import Mathlib.Data.Nat.Size
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Algebra.BigOperators.Fin
-import Azurite.AzMvPolynomial.MonicMonomial
-import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.New.MonicMonomial
+import Azurite.AzMvPolynomial.New.CompareEmbed
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.MvPolynomial.Degrees
