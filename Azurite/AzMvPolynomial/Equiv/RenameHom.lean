@@ -27,7 +27,7 @@ variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
     {n₁ n₂ : ℕ} {ord : MonomialOrder}
 
 /-- Bundled ring-hom form of `renameMonotone`. -/
-noncomputable def AzMvPolynomial.renameMonotoneHom
+def AzMvPolynomial.renameMonotoneHom
     (f : Fin n₁ → Fin n₂) (hg : StrictMono f) :
     AzMvPolynomial n₁ R ord →+* AzMvPolynomial n₂ R ord where
   toFun p := p.renameMonotone f hg
@@ -77,7 +77,7 @@ noncomputable def AzMvPolynomial.renameMonotoneHom
 /-- Bundled ring-hom form of the general `rename` (any `f : Fin n₁ → Fin n₂`).
     Non-injective `f` may merge exponents; ring-hom axioms are still valid
     because `MvPolynomial.rename` is always a ring homomorphism. -/
-noncomputable def AzMvPolynomial.renameHom
+def AzMvPolynomial.renameHom
     (f : Fin n₁ → Fin n₂) :
     AzMvPolynomial n₁ R ord →+* AzMvPolynomial n₂ R ord where
   toFun p := p.rename f ord
@@ -144,7 +144,7 @@ theorem AzMvPolynomial.renameHom_id (p : AzMvPolynomial n₁ R ord) :
 
 /-- Given an equivalence `e : Fin n₁ ≃ Fin n₂`, renaming along `e` is an
     `R`-algebra isomorphism of `AzMvPolynomial`. -/
-noncomputable def AzMvPolynomial.renameAlgEquiv (e : Fin n₁ ≃ Fin n₂) :
+def AzMvPolynomial.renameAlgEquiv (e : Fin n₁ ≃ Fin n₂) :
     AzMvPolynomial n₁ R ord ≃ₐ[R] AzMvPolynomial n₂ R ord where
   toFun p := (AzMvPolynomial.renameHom (ord := ord) e) p
   invFun p := (AzMvPolynomial.renameHom (ord := ord) e.symm) p

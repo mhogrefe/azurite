@@ -67,6 +67,7 @@ import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Eval2
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
+import Azurite.AzMvPolynomial.Equiv.FinOneAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
 import Azurite.AzMvPolynomial.Equiv.Join2
 import Azurite.AzMvPolynomial.Equiv.Map

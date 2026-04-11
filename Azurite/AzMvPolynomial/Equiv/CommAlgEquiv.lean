@@ -42,7 +42,7 @@ variable {m n : ℕ} {ord : MonomialOrder}
 /-- The underlying function of `commAlgEquiv`: send a nested polynomial
     through `sumAlgEquiv.symm`, rename via `finAddSwap`, then through
     `sumAlgEquiv` in the swapped index order. -/
-noncomputable def AzMvPolynomial.commEquivFun
+def AzMvPolynomial.commEquivFun
     (p : AzMvPolynomial m (AzMvPolynomial n R ord) ord) :
     AzMvPolynomial n (AzMvPolynomial m R ord) ord :=
   (AzMvPolynomial.sumAlgEquiv (R := R) (m := n) (n := m) (ord := ord))
@@ -52,7 +52,7 @@ noncomputable def AzMvPolynomial.commEquivFun
         p))
 
 /-- Inverse direction of `commEquivFun`. -/
-noncomputable def AzMvPolynomial.commEquivInv
+def AzMvPolynomial.commEquivInv
     (q : AzMvPolynomial n (AzMvPolynomial m R ord) ord) :
     AzMvPolynomial m (AzMvPolynomial n R ord) ord :=
   (AzMvPolynomial.sumAlgEquiv (R := R) (m := m) (n := n) (ord := ord))
@@ -63,7 +63,7 @@ noncomputable def AzMvPolynomial.commEquivInv
 
 /-- Commutativity `R`-algebra isomorphism between nested `AzMvPolynomial`
     rings: swapping which `m` / `n` variables are outer vs. inner. -/
-noncomputable def AzMvPolynomial.commAlgEquiv :
+def AzMvPolynomial.commAlgEquiv :
     AzMvPolynomial m (AzMvPolynomial n R ord) ord ≃ₐ[R]
       AzMvPolynomial n (AzMvPolynomial m R ord) ord where
   toFun := AzMvPolynomial.commEquivFun

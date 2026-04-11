@@ -60,7 +60,7 @@ def AzMvPolynomial.sumEquiv {m n : ℕ} {ord : MonomialOrder}
     The inner coefficient ring `AzMvPolynomial n R ord` embeds via
     `renameMonotoneHom (Fin.natAdd m)`, and the outer variables `i : Fin m`
     map to `AzMvPolynomial.X (Fin.castAdd n i)`. -/
-noncomputable def AzMvPolynomial.sumEquivSymm {m n : ℕ} {ord : MonomialOrder}
+def AzMvPolynomial.sumEquivSymm {m n : ℕ} {ord : MonomialOrder}
     (q : AzMvPolynomial m (AzMvPolynomial n R ord) ord) :
     AzMvPolynomial (m+n) R ord :=
   q.eval₂

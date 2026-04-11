@@ -482,7 +482,7 @@ private lemma commutes_aux (r : R) :
           = MvPolynomial.C r from toMvPoly_C r])
 
 /-- `AzMvPolynomial.sumEquiv` bundled as an `R`-algebra isomorphism. -/
-noncomputable def AzMvPolynomial.sumAlgEquiv :
+def AzMvPolynomial.sumAlgEquiv :
     AzMvPolynomial (m+n) R ord ≃ₐ[R]
       AzMvPolynomial m (AzMvPolynomial n R ord) ord where
   toFun := AzMvPolynomial.sumEquiv
