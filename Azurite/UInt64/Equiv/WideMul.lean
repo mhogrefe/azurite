@@ -106,7 +106,6 @@ private lemma wideMul_nat_eq
       _ = Xh * Yh * 2^64 + Xl * Yh * 2^32 + Xh * Yl * 2^32 + A := by rw [hA_split]
       _ = Xh * Yh * 2^64 + Xh * Yl * 2^32 + Xl * Yh * 2^32 + A := by ring
 
-set_option maxHeartbeats 400000 in
 theorem toNat_wideMul (x y : UInt64) :
     (wideMul x y).1.toNat * 2^64 + (wideMul x y).2.toNat = x.toNat * y.toNat := by
   -- Bounds
