@@ -62,6 +62,7 @@ import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Bind1
 import Azurite.AzMvPolynomial.Equiv.Bind2
 import Azurite.AzMvPolynomial.Equiv.Cast
+import Azurite.AzMvPolynomial.Equiv.CommAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Eval2
