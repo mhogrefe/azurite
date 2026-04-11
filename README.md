@@ -11,6 +11,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | Module | Description |
 |--------|-------------|
 | `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. |
+| `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, bit-size, trailing-zeros, parsing, and `toString`. |
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, multiplication by `X^n` (`mulXPow`), derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), signed pseudo-remainder (`pRem`, works over any `CommRing`), root bounds, parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation (`eval`, plus generic `eval₂`/`aeval` into any commutative semiring or `R`-algebra), exact division, monomial exponentiation, rename, map, merge-sorted operations, `bind₁`/`bind₂`/`join₂` substitution, and `finSuccEquiv` (forward direction: `AzMvPolynomial (Fin (n+1)) R → AzPolynomial (AzMvPolynomial (Fin n) R)`). |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
@@ -28,6 +29,19 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 |------|----------------|
 | `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
 | `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
+
+#### AzInt ↔ Int
+
+| File | What it proves |
+|------|----------------|
+| `Equiv/Basic` | Bijection `AzInt ≃ Int` via `toInt`/`ofInt`, including the canonical-zero invariant round-trip. |
+| `Equiv/Compare` | `compare_eq_lt_iff_toInt_lt` and friends: custom sign-magnitude `compare` matches `Ord.compare` on `Int`, providing the `LinearOrder AzInt` instance. |
+| `Equiv/Conversion` | `toInt_toAzInt` / `toInt_toAzInt = toNat` for every fixed-width `UInt*`/`Int*`/`USize`/`ISize` and `AzNat`, and the reverse `toInt_toUInt*` / `toInt_toInt*` direction. |
+| `Equiv/Parity` | `isEven_iff`/`isOdd_iff` agree with `Even`/`Odd` on `Int`. |
+| `Equiv/Pow2` | `toInt_pow2 k = 2 ^ k`, `pow2_eq_ofInt`, and `isPowerOfTwo_iff`. |
+| `Equiv/LowMask` | `toInt_lowMask k = 2 ^ k - 1` and `lowMask_eq_ofInt`. |
+| `Equiv/Size` | `z.size = BPR.Int.size z.toInt` (bit-size agrees with the BPR Chapter 8 notion). |
+| `Equiv/TrailingZeros` | `trailingZeros z = some (padicValInt 2 z.toInt)` for nonzero `z`, and `trailingZeros 0 = none`. |
 
 #### AzPolynomial ↔ Polynomial R
 
@@ -229,6 +243,8 @@ Azurite/
   Algorithm/            -- Generic algorithms (e.g., fast exponentiation)
   AzNat/              -- Computable multi-limb natural numbers
     Equiv/            -- Equivalence proofs with Nat
+  AzInt/              -- Computable sign-magnitude integers
+    Equiv/            -- Equivalence proofs with Int
   AzPolynomial/       -- Univariate polynomials
     Equiv/            -- Equivalence proofs with Polynomial R
   AzMvPolynomial/     -- Multivariate polynomials
