@@ -286,6 +286,26 @@ instance : Algebra R (AzPolynomial R) where
     rw [show AzPolynomial.toPoly (CHom r) = Polynomial.C r from toPoly_C r]
     exact Polynomial.smul_eq_C_mul _)
 
+/-- `AzPolynomial R` has no zero divisors when `R` doesn't. Proved by transfer
+    along the injective ring hom `toPoly : AzPolynomial R → Polynomial R`. -/
+instance [NoZeroDivisors R] : NoZeroDivisors (AzPolynomial R) where
+  eq_zero_or_eq_zero_of_mul_eq_zero {a b} h := by
+    have h' : AzPolynomial.toPoly a * AzPolynomial.toPoly b = 0 := by
+      rw [← toPoly_mul, h,
+          show AzPolynomial.toPoly (0 : AzPolynomial R) = (0 : Polynomial R)
+            from toPoly_zero]
+    rcases mul_eq_zero.mp h' with hl | hr
+    · left
+      exact toPoly_inj.mp (by
+        rw [hl,
+            show AzPolynomial.toPoly (0 : AzPolynomial R) = (0 : Polynomial R)
+              from toPoly_zero])
+    · right
+      exact toPoly_inj.mp (by
+        rw [hr,
+            show AzPolynomial.toPoly (0 : AzPolynomial R) = (0 : Polynomial R)
+              from toPoly_zero])
+
 end CommSemiringSection
 
 /-! ### Algebraic instances chain (Ring) -/

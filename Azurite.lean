@@ -57,6 +57,7 @@ import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Derivative
 import Azurite.AzMvPolynomial.Equiv.Add
 import Azurite.AzMvPolynomial.Equiv.Algebra
+import Azurite.AzMvPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.AzMvPolynomial.Equiv.Bind1
 import Azurite.AzMvPolynomial.Equiv.Bind2
@@ -74,6 +75,7 @@ import Azurite.AzMvPolynomial.Equiv.Mul
 import Azurite.AzMvPolynomial.Equiv.MulNaive
 import Azurite.AzMvPolynomial.Equiv.Neg
 import Azurite.AzMvPolynomial.Equiv.OfAzPolynomial
+import Azurite.AzMvPolynomial.Equiv.OptionEquivRight
 import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.SMul
@@ -97,6 +99,7 @@ import Azurite.AzMvPolynomial.Mul
 import Azurite.AzMvPolynomial.NamedDisplay
 import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.OfAzPolynomial
+import Azurite.AzMvPolynomial.OptionEquivRight
 import Azurite.AzMvPolynomial.ParsableCoeff
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
