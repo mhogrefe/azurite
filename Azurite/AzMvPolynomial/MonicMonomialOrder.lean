@@ -1,9 +1,6 @@
 /-
-  LinearOrder instance for `MonicMonomial` (Fin-only).
-
-  This file also contains the vector-level `compareExponents_*` lemmas
-  (`refl`, `swap`, `eq`, `trans_lt`) which are variable-type independent
-  and are shared with the legacy `MonicMonomial σ` wrapper.
+  LinearOrder instance for `MonicMonomial`, plus the vector-level
+  `compareExponents_*` lemmas (`refl`, `swap`, `eq`, `trans_lt`).
 -/
 import Azurite.AzMvPolynomial.MonicMonomial
 

@@ -1,7 +1,6 @@
 /-
-  Multivariate polynomials (Fin-indexed) — parallel-rails replacement for
-  `Azurite.AzMvPolynomial.Basic`.  The math core fixes the variable type to
-  `Fin n`; no `Var` / `LinearOrder σ` typeclass is referenced.
+  Multivariate polynomials (Fin-indexed).  The math core fixes the variable
+  type to `Fin n`; no `Var` / `LinearOrder σ` typeclass is referenced.
 -/
 import Azurite.AzMvPolynomial.Monomial
 import Azurite.AzMvPolynomial.MonicMonomialOrder

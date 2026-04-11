@@ -1,10 +1,9 @@
 /-
-  Monic monomials (Fin-only core) for the Var → Fin migration.
+  Monic monomials — Fin-indexed math core.
 
-  `MonicMonomial n ord` is the Fin-indexed replacement for the
-  `[Var σ n]`-polymorphic `MonicMonomial σ ord`. Display (`toChars`/`parse`)
-  factors through an explicit `[ParsableVar F n]` display type parameter —
-  the math core never references `Var`.
+  `MonicMonomial n ord` carries no `Var` / `LinearOrder` typeclass — the
+  variable type is fixed to `Fin n`.  Display (`toCharsWith`/`parseWith`)
+  factors through an explicit `[ParsableVar F n]` display type parameter.
 -/
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Vector.Defs
@@ -15,9 +14,8 @@ namespace Azurite
 
 /-- Monic monomial in `n` variables — product of variables raised to nonneg
     integer powers, with no coefficient.  Exponents are stored as a
-    `Vector ℕ n` for O(1) access.  Unlike `MonicMonomial σ`, this version
-    has no `Var` / `LinearOrder` typeclass — the variable type is fixed
-    to `Fin n`, and naming is a display-layer concern. -/
+    `Vector ℕ n` for O(1) access.  The variable type is fixed to `Fin n`;
+    naming is a display-layer concern. -/
 @[ext]
 structure MonicMonomial (n : ℕ) (ord : MonomialOrder := .Degrevlex) where
   /-- The exponent of each variable, indexed by position in `Fin n`. -/

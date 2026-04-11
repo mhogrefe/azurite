@@ -2,10 +2,6 @@
   Embedding and translation-invariance lemmas for `lexCompareAux`,
   `revlexCompareAux`, and `totalDeg`, plus `MonicMonomial`-specific
   strict-monotonicity and multiplication-preservation corollaries.
-
-  The vector-level content here is variable-type independent and is the
-  canonical home for these lemmas; the legacy `Azurite.AzMvPolynomial.CompareEmbed`
-  now re-imports this file.
 -/
 import Azurite.AzMvPolynomial.Basic
 import Mathlib.Algebra.BigOperators.Fin

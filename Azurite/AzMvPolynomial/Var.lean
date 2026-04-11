@@ -233,28 +233,6 @@ instance {n : ℕ} : ParsableVar (IndexedVar n) n where
 
 end IndexedVar
 
-/-- A family of variable types, one for each arity `n`. Each `F n` carries
-    `LinearOrder` and `Var` instances, so functions like `toPrenex` that
-    produce formulas over differently-sized variable sets can be written
-    generically over the family rather than committed to a specific type
-    (e.g. `IndexedVar` for pretty-printing vs. `Fin` for alignment with
-    Mathlib's `finSuccEquiv`-based QE). -/
-class VarFamily (F : ℕ → Type*) where
-  /-- The linear order on `F n` (needed by the `Var` field). -/
-  linearOrder : ∀ n, LinearOrder (F n)
-  /-- `F n` is a variable type with `n` variables. -/
-  var : ∀ n, @Var (F n) n (linearOrder n)
-
-attribute [reducible, instance] VarFamily.linearOrder VarFamily.var
-
-instance : VarFamily IndexedVar where
-  linearOrder _ := inferInstance
-  var _ := inferInstance
-
-instance : VarFamily Fin where
-  linearOrder _ := inferInstance
-  var _ := inferInstance
-
 private theorem uppercase_not_syntax (c : Char) (hge : c.toNat ≥ 65) (hle : c.toNat ≤ 90) :
     ¬ isPolySyntaxChar c := by
   simp only [isPolySyntaxChar, not_or, not_and,

@@ -9,8 +9,8 @@ namespace Azurite
 open AzPolynomial
 
 /-- A monomial: a nonzero coefficient of type `R` paired with a
-    Fin-indexed monic monomial.  Unlike `Monomial σ R ord`, this version
-    carries no `Var` typeclass — the variable type is fixed to `Fin n`. -/
+    Fin-indexed monic monomial.  The variable type is fixed to `Fin n`;
+    naming is a display-layer concern. -/
 structure Monomial (n : ℕ) (R : Type _) [Semiring R]
     (ord : MonomialOrder := .Degrevlex) where
   coeff : {c : R // c ≠ 0}

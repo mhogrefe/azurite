@@ -6,9 +6,9 @@ import Azurite.AzPolynomial.Equiv.Algebra
 /-!
 # `finSuccEquiv` for AzMvPolynomial
 
-Fin-only companion to `AzMvPolynomial.FinSuccEquiv`. Converts a polynomial
-in `n + 1` variables (indexed by `Fin (n+1)`) into a univariate polynomial
-whose coefficients are themselves polynomials in the remaining `n` variables:
+Converts a polynomial in `n + 1` variables (indexed by `Fin (n+1)`) into a
+univariate polynomial whose coefficients are themselves polynomials in the
+remaining `n` variables:
 
 ```
 AzMvPolynomial (n+1) R ord →  AzPolynomial (AzMvPolynomial n R ord)

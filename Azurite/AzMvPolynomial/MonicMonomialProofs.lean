@@ -1,10 +1,7 @@
 /-
   Round-trip proof: `parseWith F (toCharsWith F m) = some m`
-  for `MonicMonomial n ord`.
-
-  Mirrors the legacy proof in `MonicMonomialProofs.lean`, but parameterized
-  over the display type `F` (which carries the `[ParsableVar F n]` instance)
-  instead of over the underlying variable type `σ`.
+  for `MonicMonomial n ord`, parameterized over a display type `F`
+  with `[ParsableVar F n]`.
 -/
 import Azurite.AzMvPolynomial.MonicMonomial
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic

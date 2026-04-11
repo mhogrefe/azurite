@@ -4,8 +4,6 @@ import Mathlib.Algebra.MvPolynomial.Eval
 
 /-!
 # Equivalence: `AzMvPolynomial.eval₂` ↔ `MvPolynomial.eval₂`
-
-Fin-only companion to `AzMvPolynomial.Equiv.Eval2`.
 -/
 
 namespace Azurite
