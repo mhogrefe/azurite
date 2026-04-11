@@ -265,6 +265,15 @@ def CHom : R →+* AzPolynomial R where
     rw [toPoly_mul, toPoly_C, toPoly_C, toPoly_C]
     exact Polynomial.C_mul)
 
+/-- The canonical ring homomorphism from `AzPolynomial R` to `Polynomial R`. -/
+noncomputable def toPolyHom :
+    AzPolynomial R →+* Polynomial R where
+  toFun := AzPolynomial.toPoly
+  map_zero' := toPoly_zero
+  map_one' := toPoly_one
+  map_add' := toPoly_add
+  map_mul' := toPoly_mul
+
 /-- `AzPolynomial R` is an `R`-algebra via the constant polynomial embedding `C`.
     The algebra map is `CHom`, and the scalar action reuses the existing
     computable `SMul R (AzPolynomial R)` instance. -/
@@ -356,17 +365,6 @@ noncomputable def ringEquivPolynomial :
   { equivPolynomial with
     map_mul' := toPoly_mul
     map_add' := toPoly_add }
-
-/-! ### Ring homomorphism -/
-
-/-- The canonical ring homomorphism from `AzPolynomial R` to `Polynomial R`. -/
-noncomputable def toPolyHom :
-    AzPolynomial R →+* Polynomial R where
-  toFun := AzPolynomial.toPoly
-  map_zero' := toPoly_zero
-  map_one' := toPoly_one
-  map_add' := toPoly_add
-  map_mul' := toPoly_mul
 
 /-! ### Integral domain -/
 

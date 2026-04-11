@@ -388,6 +388,33 @@ theorem one_toFinsupp :
       ext v; simp [MonicMonomial.toFinsupp, MonicMonomial.one, Finsupp.onFinset_apply]]
     exact MvPolynomial.C_apply.symm
 
+/-- `MonicMonomial.ofVar v` corresponds to the `Finsupp` with a single entry `v ↦ 1`. -/
+theorem MonicMonomial.toFinsupp_ofVar [DecidableEq σ] (v : σ) :
+    (MonicMonomial.ofVar v : MonicMonomial σ ord).toFinsupp = Finsupp.single v 1 := by
+  ext w
+  simp only [MonicMonomial.toFinsupp, MonicMonomial.ofVar, Finsupp.onFinset_apply,
+    Finsupp.single_apply]
+  simp [Vector.getElem_ofFn, Var.toFin_injective.eq_iff]
+
+@[simp] theorem toMvPoly_X [DecidableEq R] [DecidableEq σ] (v : σ) :
+    AzMvPolynomial.toMvPoly (AzMvPolynomial.X v : AzMvPolynomial σ R ord) =
+      MvPolynomial.X v := by
+  simp only [AzMvPolynomial.X]
+  split
+  · next h =>
+    -- When `1 = 0` in `R`, `R` is a subsingleton and so is `MvPolynomial σ R`.
+    have hR : Subsingleton R :=
+      ⟨fun a b => by rw [← one_mul a, ← one_mul b, h, zero_mul, zero_mul]⟩
+    exact Subsingleton.elim _ _
+  · next h =>
+    show (0 : MvPolynomial σ R) +
+        (⟨⟨1, h⟩, MonicMonomial.ofVar v⟩ : Monomial σ R ord).toMvPoly = MvPolynomial.X v
+    rw [zero_add]
+    show MvPolynomial.monomial (MonicMonomial.ofVar v).toFinsupp (1 : R) = MvPolynomial.X v
+    rw [MonicMonomial.toFinsupp_ofVar,
+        show (MvPolynomial.X v : MvPolynomial σ R) = MvPolynomial.X v ^ 1 from (pow_one _).symm]
+    exact MvPolynomial.X_pow_eq_monomial.symm
+
 @[simp] theorem ofMvPoly_one [DecidableEq R] [DecidableEq σ] :
     (AzMvPolynomial.ofMvPoly (ord := ord) (1 : MvPolynomial σ R)) =
     (AzMvPolynomial.one : AzMvPolynomial σ R ord) := by

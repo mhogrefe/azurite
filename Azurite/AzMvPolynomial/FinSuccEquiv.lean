@@ -1,4 +1,5 @@
 import Azurite.AzMvPolynomial.Eval2
+import Azurite.AzMvPolynomial.Rename
 import Azurite.AzPolynomial.Equiv.Algebra
 
 /-!
@@ -39,5 +40,21 @@ def AzMvPolynomial.finSuccEquiv {n : ℕ} {ord : MonomialOrder}
   p.eval₂ (AzPolynomial.CHom.comp (AzMvPolynomial.CHom (σ := Fin n) (ord := ord)))
     (fun i => Fin.cases AzPolynomial.X
       (fun k => AzPolynomial.C (AzMvPolynomial.X (ord := ord) k)) i)
+
+/-- Inverse direction of `finSuccEquiv`: convert a univariate polynomial whose
+    coefficients are multivariate in `Fin n` into a multivariate polynomial in
+    `Fin (n+1)`. The outer variable becomes `X 0`, and each inner variable `k`
+    is shifted up to `Fin.succ k`.
+
+    Implemented via Horner's method: `Σ_i cᵢ (X 0)^i` is computed as
+    `c₀ + (X 0) · (c₁ + (X 0) · (c₂ + …))`, where each `cᵢ` is first renamed
+    via `Fin.succ` into the `Fin (n+1)` variable space. -/
+def AzMvPolynomial.finSuccEquivSymm {n : ℕ} {ord : MonomialOrder}
+    (p : AzPolynomial (AzMvPolynomial (Fin n) R ord)) :
+    AzMvPolynomial (Fin (n+1)) R ord :=
+  p.coeffs.foldr (init := (0 : AzMvPolynomial (Fin (n+1)) R ord))
+    (fun c acc =>
+      AzMvPolynomial.renameInjective c Fin.succ (Fin.succ_injective n) +
+      acc * AzMvPolynomial.X (ord := ord) (0 : Fin (n+1)))
 
 end Azurite

@@ -63,7 +63,9 @@ import Azurite.AzMvPolynomial.Equiv.Bind2
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
+import Azurite.AzMvPolynomial.Equiv.Eval2
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
+import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
 import Azurite.AzMvPolynomial.Equiv.Join2
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MergeSorted
@@ -130,6 +132,7 @@ import Azurite.AzPolynomial.Comp
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
+import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative

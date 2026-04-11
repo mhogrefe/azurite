@@ -241,6 +241,15 @@ def AzMvPolynomial.CHom : R →+* AzMvPolynomial σ R ord where
     rw [toMvPoly_mul, toMvPoly_C, toMvPoly_C, toMvPoly_C]
     simp)
 
+/-- The canonical ring homomorphism from `AzMvPolynomial σ R ord` to `MvPolynomial σ R`. -/
+noncomputable def AzMvPolynomial.toMvPolyHom :
+    AzMvPolynomial σ R ord →+* MvPolynomial σ R where
+  toFun := AzMvPolynomial.toMvPoly
+  map_zero' := toMvPoly_zero
+  map_one' := toMvPoly_one
+  map_add' := toMvPoly_add
+  map_mul' := toMvPoly_mul
+
 /-- `AzMvPolynomial σ R ord` is an `R`-algebra via the constant polynomial
     embedding `C`. The algebra map is `AzMvPolynomial.CHom`, and the scalar
     action reuses the existing computable `SMul R (AzMvPolynomial σ R ord)`
@@ -327,17 +336,6 @@ noncomputable def ringEquivMvPolynomial :
   right_inv := toMvPoly_ofMvPoly
   map_mul' := toMvPoly_mul
   map_add' := toMvPoly_add
-
-/-! ### Ring homomorphism -/
-
-/-- The canonical ring homomorphism from `AzMvPolynomial σ R ord` to `MvPolynomial σ R`. -/
-noncomputable def toMvPolyHom :
-    AzMvPolynomial σ R ord →+* MvPolynomial σ R where
-  toFun := AzMvPolynomial.toMvPoly
-  map_zero' := toMvPoly_zero
-  map_one' := toMvPoly_one
-  map_add' := toMvPoly_add
-  map_mul' := toMvPoly_mul
 
 /-! ### Integral domain -/
 
