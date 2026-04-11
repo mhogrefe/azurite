@@ -68,6 +68,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Cast` | Coefficient casting preservation |
 | `Equiv/Map` | Ring homomorphism map preservation |
 | `Equiv/Eval` | Evaluation preservation |
+| `Equiv/Eval2` | Generic `eval₂`/`aeval` preservation across the bridge |
 | `Equiv/Rename` | Variable renaming preservation |
 | `Equiv/Derivative` | `toMvPoly (pderivGeneral v p) = MvPolynomial.pderiv v (toMvPoly p)` |
 | `Equiv/ExactDiv` | Exact division correctness |
@@ -80,7 +81,21 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Vars` | `(toMvPoly p).vars = p.vars` (variable set) |
 | `Equiv/ToAzPolynomial` | `toPoly (p.toAzPolynomial) = eval₂ C X (toMvPoly p)` (univariate projection for `[Unique σ]`) |
 | `Equiv/ToAzPolynomialAt` | `toPoly (p.toAzPolynomialAt hv) = eval₂ C X (toMvPoly p)` (univariate projection at variable `v`, for arbitrary `σ` with `p.vars ⊆ {v}`) |
+| `Equiv/OfAzPolynomial` | `toMvPoly (ofAzPolynomial p) = (Polynomial.toMvPolynomial) (toPoly p)` (univariate inclusion) |
 | `Equiv/Algebra` | Algebra structure preservation (CommSemiring, CommRing, IsDomain) |
+| `Equiv/AlgebraOfAlgebra` | Iterated-algebra instances: `AzMvPolynomial n A ord` as an `R`-algebra whenever `A` is an `R`-algebra |
+| `Equiv/MapHom` | Bundled forms of `map`: `mapRingHom`, `mapAlgHom`, `mapAlgEquiv` |
+| `Equiv/RenameHom` | Bundled `R`-algebra-hom form of `rename` |
+| `Equiv/Bind1Hom` | Bundled `R`-algebra-hom form of `bind₁` |
+| `Equiv/Bind2Hom` | Bundled ring-hom form of `bind₂` |
+| `Equiv/AevalHom` | Bundled `R`-algebra-hom form of `aeval` (`AzMvPolynomial n R ord →ₐ[R] S`) |
+| `Equiv/ConstantCoeff` | `AzMvPolynomial.constantCoeff : AzMvPolynomial n R ord →+* R` extracting the constant term (computable via `eval₂` on the sparse rep) |
+| `Equiv/FinZeroAlgEquiv` | `AzMvPolynomial 0 R ord ≃ₐ[R] R` (zero-variable elimination) |
+| `Equiv/FinOneAlgEquiv` | `AzMvPolynomial 1 R ord ≃ₐ[R] AzPolynomial R` (one-variable ↔ univariate) |
+| `Equiv/FinSuccEquiv` | `AzMvPolynomial (n+1) R ord ≃ₐ[R] AzPolynomial (AzMvPolynomial n R ord)` (peel off a variable) |
+| `Equiv/OptionEquivRight` | Reindexing equivalence splitting off the last variable |
+| `Equiv/SumAlgEquiv` | `sumRingEquiv`/`sumAlgEquiv`: `AzMvPolynomial (m+n) R ord ≃ AzMvPolynomial m (AzMvPolynomial n R ord) ord` (split variable block) |
+| `Equiv/CommAlgEquiv` | Swap inner/outer coefficient rings: `AzMvPolynomial n (AzMvPolynomial m R ord) ord ≃+* AzMvPolynomial m (AzMvPolynomial n R ord) ord` |
 
 #### AzVector ↔ (Fin n → R)
 

@@ -481,9 +481,12 @@ private lemma commutes_aux (r : R) :
             (AzMvPolynomial.C r : AzMvPolynomial n R ord)
           = MvPolynomial.C r from toMvPoly_C r])
 
-/-- `AzMvPolynomial.sumEquiv` bundled as an `R`-algebra isomorphism. -/
-def AzMvPolynomial.sumAlgEquiv :
-    AzMvPolynomial (m+n) R ord ≃ₐ[R]
+/-- `AzMvPolynomial.sumEquiv` bundled as a ring isomorphism. Useful in
+    contexts where the `R`-algebra structure would force an instance-diamond
+    (see `commAlgEquiv`): a `RingEquiv` only needs the ring structure on the
+    iterated polynomial type, not the algebra structure. -/
+def AzMvPolynomial.sumRingEquiv :
+    AzMvPolynomial (m+n) R ord ≃+*
       AzMvPolynomial m (AzMvPolynomial n R ord) ord where
   toFun := AzMvPolynomial.sumEquiv
   invFun := AzMvPolynomial.sumEquivSymm
@@ -491,6 +494,12 @@ def AzMvPolynomial.sumAlgEquiv :
   right_inv := right_inv_aux
   map_add' := map_add_aux
   map_mul' := map_mul_aux
+
+/-- `AzMvPolynomial.sumEquiv` bundled as an `R`-algebra isomorphism. -/
+def AzMvPolynomial.sumAlgEquiv :
+    AzMvPolynomial (m+n) R ord ≃ₐ[R]
+      AzMvPolynomial m (AzMvPolynomial n R ord) ord where
+  __ := AzMvPolynomial.sumRingEquiv (R := R) (m := m) (n := n) (ord := ord)
   commutes' := commutes_aux
 
 end Bundled
