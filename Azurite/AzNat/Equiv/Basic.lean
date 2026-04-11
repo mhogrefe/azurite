@@ -244,7 +244,7 @@ def equivNat : AzNat ≃ Nat where
 @[simp] lemma beqUInt64_eq (a : AzNat) (u : UInt64) :
   a.beqUInt64 u = true ↔ a.toNat = u.toNat := by
   rcases a with ⟨⟨l⟩, hl⟩
-  have h_size : ({ toList := l } : Array UInt64).size = l.length := rfl
+  have h_size : ({ toList := l} : Array UInt64).size = l.length := rfl
   unfold beqUInt64 toNat
   rw [h_size]
   cases l
@@ -266,7 +266,7 @@ def equivNat : AzNat ≃ Nat where
         cases x; cases u; simp at h2; subst h2; rfl
     · rename_i y ys
       have hl_y : (y :: ys).getLast? ≠ some 0 := by
-        have hh : ({ toList := x :: y :: ys } : Array UInt64).back? = (x :: y :: ys).getLast? :=
+        have hh : ({ toList := x :: y :: ys} : Array UInt64).back? = (x :: y :: ys).getLast? :=
           List.back?_toArray (x :: y :: ys)
         rw [hh] at hl
         have hh2 : (x :: y :: ys).getLast? = (y :: ys).getLast? := rfl

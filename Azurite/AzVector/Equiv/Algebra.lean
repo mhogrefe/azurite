@@ -53,7 +53,7 @@ noncomputable instance [CommSemiring R] : Module R (AzVector R n) :=
   Function.Injective.module R
     { toFun := AzVector.toFn,
       map_zero' := AzVector.toFn_zero,
-      map_add' := AzVector.toFn_add }
+      map_add' := AzVector.toFn_add}
     AzVector.toFn_injective AzVector.toFn_smul
 
 /-! ### Linear map -/

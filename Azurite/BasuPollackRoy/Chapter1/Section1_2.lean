@@ -40,7 +40,7 @@ The **coefficient** of Xⁿ in a polynomial is defined in
 ```
 def Polynomial.coeff : Polynomial R → ℕ → R :=
   fun x ↦ match x with
-  | { toFinsupp := p } => ⇑p
+  | { toFinsupp := p} => ⇑p
 ```
 
 A polynomial is represented as a `Finsupp ℕ R` (a finitely-supported
@@ -77,7 +77,7 @@ via `Polynomial.map (algebraMap D K)`:
 
 ```
 Dvd.dvd : α → α → Prop
-a ∣ b  ↔  ∃ c, b = a * c
+a ∣ b ↔  ∃ c, b = a * c
 ```
 -/
 

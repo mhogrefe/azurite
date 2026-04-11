@@ -437,7 +437,7 @@ theorem cmp_eq_compare (x y : ℚ) : cmp x y = compare x y := by
       intro h; exact h1 (by rw [h]; rcases (compare y.num 0) with _ | _ | _ <;> simp)
     · -- x = 0: split on y = 0
       rcases eq_or_ne y 0 with rfl | hy
-      · rfl  -- cmp 0 0 = compare 0 0 = eq
+      · rfl -- cmp 0 0 = compare 0 0 = eq
       · rw [cmp_sign_cmp_ne_eq 0 y (by
           intro h
           rcases h_cmpy : compare y.num 0 with _ | _ | _ <;> simp_all)]

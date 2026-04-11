@@ -42,7 +42,7 @@ def quoRemStep (q : ℕ) (bq : K) (Q : AzPolynomial K) (j : ℕ)
     (cr : AzPolynomial K × AzPolynomial K) : AzPolynomial K × AzPolynomial K :=
   let (C, R) := cr
   let t := R.coeff j / bq
-  let m := monomial (j - q) t  -- t * X^{j-q}
+  let m := monomial (j - q) t -- t * X^{j-q}
   (C + m, R - mulBasecaseFold m Q)
 
 /-- **Algorithm 8.3** (BPR): Euclidean division of `P` by `Q`.
@@ -60,8 +60,8 @@ def quoRem (P Q : AzPolynomial K) : AzPolynomial K × AzPolynomial K :=
   else if P.coeffs.size = 0 then (0, P)  -- P = 0
   else if P.coeffs.size < Q.coeffs.size then (0, P)  -- deg P < deg Q
   else
-    let p := P.coeffs.size - 1  -- natDegree of P
-    let q := Q.coeffs.size - 1  -- natDegree of Q
+    let p := P.coeffs.size - 1 -- natDegree of P
+    let q := Q.coeffs.size - 1 -- natDegree of Q
     let bq := Q.leadingCoeff    -- leading coefficient of Q (nonzero by invariant)
     let numSteps := P.coeffs.size - Q.coeffs.size + 1
     (List.range numSteps).foldl

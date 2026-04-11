@@ -3,12 +3,12 @@
   Also defines a noncomputable realization for Formula (AzFieldAtom).
 -/
 import Azurite.AzFormula.Atom
-import Azurite.AzMvPolynomial.New.Equiv.Basic
+import Azurite.AzMvPolynomial.Equiv.Basic
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR
+open AzMvPolynomial MonicMonomial Monomial BPR
 
 /-! ### Atom conversions -/
 
@@ -22,17 +22,17 @@ noncomputable def AzFieldAtom.toFieldAtom (a : AzFieldAtom n D ord) :
 /-- Convert `FieldAtom` to `AzFieldAtom` by sending the polynomial through `ofMvPoly`. -/
 noncomputable def azFieldAtomOfFieldAtom (a : FieldAtom (Fin n) D) :
     AzFieldAtom n D ord :=
-  ⟨AzMvPolynomialNew.ofMvPoly a.poly, a.isEq⟩
+  ⟨AzMvPolynomial.ofMvPoly a.poly, a.isEq⟩
 
 /-- Round-trip: converting an `AzFieldAtom` to `FieldAtom` and back is the identity. -/
 theorem azFieldAtomOfFieldAtom_toFieldAtom (a : AzFieldAtom n D ord) :
     azFieldAtomOfFieldAtom (ord := ord) a.toFieldAtom = a := by
-  simp only [AzFieldAtom.toFieldAtom, azFieldAtomOfFieldAtom, ofMvPoly_toMvPoly_new]
+  simp only [AzFieldAtom.toFieldAtom, azFieldAtomOfFieldAtom, ofMvPoly_toMvPoly]
 
 /-- Round-trip: converting a `FieldAtom` to `AzFieldAtom` and back is the identity. -/
 theorem toFieldAtom_azFieldAtomOfFieldAtom (a : FieldAtom (Fin n) D) :
     (azFieldAtomOfFieldAtom (ord := ord) a).toFieldAtom = a := by
-  simp only [azFieldAtomOfFieldAtom, AzFieldAtom.toFieldAtom, toMvPoly_ofMvPoly_new]
+  simp only [azFieldAtomOfFieldAtom, AzFieldAtom.toFieldAtom, toMvPoly_ofMvPoly]
 
 /-! ### Formula conversions -/
 

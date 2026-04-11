@@ -2,11 +2,11 @@
   Equivalence proofs: freeVarsOf agrees with BPR freeVars.
 -/
 import Azurite.AzFormula.Equiv.Basic
-import Azurite.AzMvPolynomial.New.Equiv.Vars
+import Azurite.AzMvPolynomial.Equiv.Vars
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 variable {σ : Type*} [DecidableEq σ]
     {n : ℕ} {D : Type*} [CommRing D] {ord : MonomialOrder}
@@ -34,7 +34,7 @@ theorem freeVarsOf_eq_freeVars_azFieldAtom
   | atom a =>
     show a.poly.vars = (azFormulaToFieldFormula (.atom a)).freeVars
     simp only [azFormulaToFieldFormula, mapAtom, freeVars, FieldAtom.vars, AzFieldAtom.toFieldAtom]
-    convert (toMvPoly_vars_new a.poly).symm
+    convert (toMvPoly_vars a.poly).symm
   | not _ ih =>
     simp only [freeVarsOf, show azFormulaToFieldFormula (.not _) =
       .not (azFormulaToFieldFormula _) from rfl, freeVars]; exact ih

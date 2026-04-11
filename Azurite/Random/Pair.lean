@@ -12,7 +12,7 @@ structure PairRandomGenFromSingle (α : Type) (G : Type) [RandomGen G α] where
 
 /-- Initialize a `PairRandomGenFromSingle` from an existing generator. -/
 def mkPairRandomGenFromSingle {α G : Type} [RandomGen G α] (gen : G) : PairRandomGenFromSingle α G :=
-  { gen := gen }
+  { gen := gen}
 
 def PairRandomGenFromSingle.next {α G : Type} [RandomGen G α]
     (pg : PairRandomGenFromSingle α G) : (α × α) × PairRandomGenFromSingle α G :=

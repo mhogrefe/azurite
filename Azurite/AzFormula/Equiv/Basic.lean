@@ -7,7 +7,7 @@ import Azurite.AzFormula.Realization
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 /-! ### mapAtom functor laws -/
 

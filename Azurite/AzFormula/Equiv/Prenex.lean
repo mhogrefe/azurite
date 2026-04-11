@@ -6,15 +6,15 @@
   preserve realization.
 -/
 import Azurite.AzFormula.Prenex
-import Azurite.AzMvPolynomial.New.Equiv.Vars
-import Azurite.AzMvPolynomial.New.Equiv.Rename
+import Azurite.AzMvPolynomial.Equiv.Vars
+import Azurite.AzMvPolynomial.Equiv.Rename
 import Mathlib.Logic.Equiv.Basic
 import Mathlib.Algebra.MvPolynomial.Variables
 import Azurite.AzFormula.Realization
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 /-! ### Generic formula semantics -/
 
@@ -834,8 +834,8 @@ theorem azFieldAtom_rename_vars {n : ℕ}
   change (a.renameVarsInjective ⇑e e.injective).poly.vars = a.poly.vars.image ⇑e
   rw [show (a.renameVarsInjective ⇑e e.injective).poly = a.poly.renameInjective ⇑e e.injective
     from rfl]
-  rw [← toMvPoly_vars_new, ← toMvPoly_vars_new, AzMvPolynomialNew.toMvPoly_renameInjective]
-  exact MvPolynomial.vars_rename_equiv e (AzMvPolynomialNew.toMvPoly a.poly)
+  rw [← toMvPoly_vars, ← toMvPoly_vars, AzMvPolynomial.toMvPoly_renameInjective]
+  exact MvPolynomial.vars_rename_equiv e (AzMvPolynomial.toMvPoly a.poly)
 
 /-! ### AtomRealization instance for AzFieldAtom -/
 
@@ -845,8 +845,8 @@ noncomputable def azFieldAtomInterpret {n : ℕ}
     {R' : Type*} [CommRing R'] {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K]
     (a : AzFieldAtom n R' ord') : Set (Fin n → K) :=
-  if a.isEq then { y | MvPolynomial.aeval y a.poly.toMvPoly = 0 }
-  else { y | MvPolynomial.aeval y a.poly.toMvPoly ≠ 0 }
+  if a.isEq then { y | MvPolynomial.aeval y a.poly.toMvPoly = 0}
+  else { y | MvPolynomial.aeval y a.poly.toMvPoly ≠ 0}
 
 noncomputable instance azFieldAtomRealization
     {n : ℕ} {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
@@ -862,7 +862,7 @@ noncomputable instance azFieldAtomRealization
     intro e a
     simp only [AtomRename.renameEquiv, azFieldAtomInterpret, AzFieldAtom.renameVarsInjective]
     ext y
-    simp_rw [AzMvPolynomialNew.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
+    simp_rw [AzMvPolynomial.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
     cases a.isEq <;> simp [Set.mem_setOf_eq]
   interpret_invariant := by
     intro a x hx y c
@@ -879,7 +879,7 @@ noncomputable instance azFieldAtomRealization
       have h1 : ci ∈ a.poly.toMvPoly.support := MvPolynomial.mem_support_iff.mpr hci
       have h2 : i ∈ a.poly.toMvPoly.vars := (MvPolynomial.mem_vars i).mpr ⟨ci, h1, hi⟩
       convert h2 using 1
-      exact (toMvPoly_vars_new a.poly).symm
+      exact (toMvPoly_vars a.poly).symm
     simp [hix]
 
 /-! ### freshVars properties -/
@@ -932,12 +932,12 @@ theorem gRealization_eq_azRealization {n : ℕ}
   | implies _ _ ih₁ ih₂ => simp only [gRealization, azRealization, azFormulaToFieldFormula,
       mapAtom, BPR.Formula.realization]; exact congr (congrArg _ (congrArg _ ih₁)) ih₂
   | exists_ x _ ih =>
-    show { y | ∃ c, Function.update y x c ∈ gRealization _ } =
-         { y | ∃ c, Function.update y x c ∈ (mapAtom AzFieldAtom.toFieldAtom _).realization }
+    show { y | ∃ c, Function.update y x c ∈ gRealization _} =
+         { y | ∃ c, Function.update y x c ∈ (mapAtom AzFieldAtom.toFieldAtom _).realization}
     simp_rw [ih]; rfl
   | forall_ x _ ih =>
-    show { y | ∀ c, Function.update y x c ∈ gRealization _ } =
-         { y | ∀ c, Function.update y x c ∈ (mapAtom AzFieldAtom.toFieldAtom _).realization }
+    show { y | ∀ c, Function.update y x c ∈ gRealization _} =
+         { y | ∀ c, Function.update y x c ∈ (mapAtom AzFieldAtom.toFieldAtom _).realization}
     simp_rw [ih]; rfl
 
 /-! ### allVarsOf bound for embedded formulas -/
@@ -956,14 +956,14 @@ theorem allVarsOf_rename_embed_bound
   induction Φ with
   | atom a =>
     intro hv
-    -- Unfold to AzMvPolynomialNew.vars
+    -- Unfold to AzMvPolynomial.vars
     change v ∈ (a.poly.renameMonotone (Fin.castLE h_le)
       (fun _ _ hab => hab)).vars at hv
     -- Bridge to MvPolynomial.vars
     have key : v ∈ (MvPolynomial.rename
         (Fin.castLE h_le : Fin n → Fin m) a.poly.toMvPoly).vars := by
-      rw [← @toMvPoly_vars_new R' _ m ord'] at hv
-      rw [AzMvPolynomialNew.toMvPoly_renameMonotone
+      rw [← @toMvPoly_vars R' _ m ord'] at hv
+      rw [AzMvPolynomial.toMvPoly_renameMonotone
         a.poly (Fin.castLE h_le) (fun _ _ hab => hab)] at hv
       exact hv
     obtain ⟨w, _, rfl⟩ := Finset.mem_image.mp
@@ -1015,7 +1015,7 @@ theorem azFormulaToFieldFormula_rename {n m : ℕ}
     simp only [Formula.rename, azFormulaToFieldFormula, mapAtom, AzFieldAtom.toFieldAtom,
       AzFieldAtom.renameVarsMonotone, FieldAtom.renameVars]
     simp only [Formula.atom.injEq, FieldAtom.mk.injEq]
-    exact ⟨AzMvPolynomialNew.toMvPoly_renameMonotone a.poly f hg, trivial⟩
+    exact ⟨AzMvPolynomial.toMvPoly_renameMonotone a.poly f hg, trivial⟩
   | not _ ih =>
     simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg Formula.not ih

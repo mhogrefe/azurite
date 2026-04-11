@@ -74,8 +74,8 @@ def pRemStep (q : ℕ) (b : R) (Q : AzPolynomial R)
 
     Works over any commutative ring; no divisions are performed. -/
 def pRem (P Q : AzPolynomial R) : AzPolynomial R :=
-  if Q.coeffs.size = 0 then P  -- Q = 0: undefined, return P
-  else if P.coeffs.size < Q.coeffs.size then P  -- deg P < deg Q: d = 0
+  if Q.coeffs.size = 0 then P -- Q = 0: undefined, return P
+  else if P.coeffs.size < Q.coeffs.size then P -- deg P < deg Q: d = 0
   else
     let q := Q.coeffs.size - 1
     let b := Q.leadingCoeff
@@ -122,10 +122,10 @@ def pRem (P Q : AzPolynomial R) : AzPolynomial R :=
 
 -- Exponent computations:
 #guard pRemExp (parseAzPolynomial (R := ℤ) "x^3+1").get!
-               (parseAzPolynomial (R := ℤ) "x+1").get! == 4  -- smallestEvenGe 3 = 4
+               (parseAzPolynomial (R := ℤ) "x+1").get! == 4 -- smallestEvenGe 3 = 4
 #guard pRemExp (parseAzPolynomial (R := ℤ) "x^2+1").get!
-               (parseAzPolynomial (R := ℤ) "x+1").get! == 2  -- smallestEvenGe 2 = 2
+               (parseAzPolynomial (R := ℤ) "x+1").get! == 2 -- smallestEvenGe 2 = 2
 #guard pRemExp (parseAzPolynomial (R := ℤ) "x").get!
-               (parseAzPolynomial (R := ℤ) "x^2+1").get! == 0  -- deg P < deg Q
+               (parseAzPolynomial (R := ℤ) "x^2+1").get! == 0 -- deg P < deg Q
 
 end Azurite.AzPolynomial

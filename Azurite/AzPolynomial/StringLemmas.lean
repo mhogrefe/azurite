@@ -29,7 +29,7 @@ lemma char_ofNat_ne_dash (n : ℕ) : Char.ofNat ('0'.toNat + n % 10) ≠ '-' := 
   generalize h : n % 10 = k
   rw [h] at h_mod
   rcases k with _ | _ | _ | _ | _ | _ | _ | _ | _ | _ | _
-  all_goals { first | decide | contradiction }
+  all_goals { first | decide | contradiction}
 
 lemma not_mem_natToCharsAux (f n : ℕ) (acc : List Char) (h : '-' ∉ acc) :
   '-' ∉ natToCharsAux f n acc := by
@@ -3112,8 +3112,8 @@ private lemma listEnum_aux_eq {α} (n : ℕ) (acc : List (ℕ × α)) (l : List 
     simp only [List.zip_cons_cons, List.map_cons, List.map_map]
     -- Need: acc.rev ++ (n,a) :: map f r.zip as = acc.rev ++ (n,a) :: map g r.zip as
     simp only [List.singleton_append, Nat.zero_add, List.zip_map_left]
-    congr 1  -- strip acc.reverse ++
-    congr 1  -- strip (n, a) ::
+    congr 1 -- strip acc.reverse ++
+    congr 1 -- strip (n, a) ::
     apply List.map_congr_left
     intro ⟨x, b⟩ _; simp [Function.comp, Prod.map]; omega
 
@@ -3168,7 +3168,7 @@ private lemma listEnum_filtered_coeff {R} [Semiring R] [DecidableEq R] (l : List
   -- Convert the filter+find? to a single find? on listEnum l
   -- The predicate is: a.2 ≠ 0 ∧ a.1 = i
   -- Let p := fun a : ℕ × R => decide (a.2 ≠ 0) && decide (a.1 = i)
-  -- find? q (filter p' l) = find? (fun a => p' a && q a) l  [by find?_filter]
+  -- find? q (filter p' l) = find? (fun a => p' a && q a) l [by find?_filter]
   -- After simplification, the predicate becomes decide(decide(a.2≠0)=true ∧ decide(a.1=i)=true)
   -- which equals decide(a.2≠0) && decide(a.1=i)
   -- Step 1: normalize the goal to use p directly

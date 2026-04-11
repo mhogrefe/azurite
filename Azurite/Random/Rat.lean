@@ -19,7 +19,7 @@ def mkRatRandomGen (meanBitLength : Rat) (seed : UInt64) : RatRandomGen :=
   { pairGen := mkPairRandomGen (α := Int) (β := Nat)
       (mkIntRandomGen meanBitLength)
       (mkPositiveNatRandomGen meanBitLength)
-      seed }
+      seed}
 
 def RatRandomGen.next (rg : RatRandomGen) : Rat × RatRandomGen :=
   let ((num, den), pairGen') := PairRandomGen.next rg.pairGen
@@ -43,7 +43,7 @@ def mkNonzeroRatRandomGen (meanBitLength : Rat) (seed : UInt64) : NonzeroRatRand
   { pairGen := mkPairRandomGen (α := Int) (β := Nat)
       (mkNonzeroIntRandomGen meanBitLength)
       (mkPositiveNatRandomGen meanBitLength)
-      seed }
+      seed}
 
 def NonzeroRatRandomGen.next (rg : NonzeroRatRandomGen) : Rat × NonzeroRatRandomGen :=
   let ((num, den), pairGen') := PairRandomGen.next rg.pairGen

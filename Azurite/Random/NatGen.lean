@@ -9,11 +9,11 @@ namespace Azurite.Random
 private def getNatGen (b : Nat) (seed : UInt64)
     (cache : Std.HashMap Nat SplitMix64) : NatWithBitsRandomGen SplitMix64 × Std.HashMap Nat SplitMix64 :=
   match cache[b]? with
-  | some g => ({ gen := g, b := b }, cache)
+  | some g => ({ gen := g, b := b}, cache)
   | none   =>
     let newSeed := deriveSeed seed (toString b)
     let g := mkSplitMix64 newSeed
-    ({ gen := g, b := b }, cache.insert b g)
+    ({ gen := g, b := b}, cache.insert b g)
 
 /-- The `.b` field of the result of `getNatGen` always equals `b`. -/
 private lemma getNatGen_b_eq (b : Nat) (seed : UInt64) (cache : Std.HashMap Nat SplitMix64) :
@@ -35,21 +35,21 @@ structure NatRandomGen (G : Type) [RandomGen G UInt64] where
   bitLenGen : NatGeometricRandomGen G
   -- Stores the raw SplitMix64 state for each bit length seen so far.
   -- Keyed by bit length; NatWithBitsRandomGen is reconstructed on use (with .b = key by construction).
-  genCache  : Std.HashMap Nat SplitMix64
+  genCache : Std.HashMap Nat SplitMix64
   seed      : UInt64
 
 /-- Create a `NatRandomGen` with geometric bit-length distribution with the given mean. -/
 def mkNatRandomGen (meanBitLength : Rat) (seed : UInt64) : NatRandomGen SplitMix64 :=
   { bitLenGen := mkNatGeometricRandomGen meanBitLength (deriveSeed seed "bitLenGen"),
-    genCache  := {},
-    seed      := seed }
+    genCache := {},
+    seed      := seed}
 
 def NatRandomGen.next {G : Type} [RandomGen G UInt64]
     (ng : NatRandomGen G) : Nat × NatRandomGen G :=
   let (b, bitLenGen') := RandomGen.next ng.bitLenGen
   let (natGen, cache') := getNatGen b ng.seed ng.genCache
   let (n, natGen') := NatWithBitsRandomGen.next natGen
-  (n, { bitLenGen := bitLenGen', genCache := cache'.insert b natGen'.gen, seed := ng.seed })
+  (n, { bitLenGen := bitLenGen', genCache := cache'.insert b natGen'.gen, seed := ng.seed})
 
 instance {G : Type} [RandomGen G UInt64] : RandomGen (NatRandomGen G) Nat where
   next := NatRandomGen.next
@@ -61,21 +61,21 @@ sample bit lengths from `{1, 2, 3, ...}`, ensuring `b ≥ 1` and thus the result
 -/
 structure PositiveNatRandomGen (G : Type) [RandomGen G UInt64] where
   bitLenGen : PositiveNatGeometricRandomGen G
-  genCache  : Std.HashMap Nat SplitMix64
+  genCache : Std.HashMap Nat SplitMix64
   seed      : UInt64
 
 /-- Create a `PositiveNatRandomGen` with geometric bit-length distribution with the given mean. -/
 def mkPositiveNatRandomGen (meanBitLength : Rat) (seed : UInt64) : PositiveNatRandomGen SplitMix64 :=
   { bitLenGen := mkPositiveNatGeometricRandomGen meanBitLength (deriveSeed seed "bitLenGen"),
-    genCache  := {},
-    seed      := seed }
+    genCache := {},
+    seed      := seed}
 
 def PositiveNatRandomGen.next {G : Type} [RandomGen G UInt64]
     (ng : PositiveNatRandomGen G) : Nat × PositiveNatRandomGen G :=
   let (b, bitLenGen') := RandomGen.next ng.bitLenGen
   let (natGen, cache') := getNatGen b ng.seed ng.genCache
   let (n, natGen') := NatWithBitsRandomGen.next natGen
-  (n, { bitLenGen := bitLenGen', genCache := cache'.insert b natGen'.gen, seed := ng.seed })
+  (n, { bitLenGen := bitLenGen', genCache := cache'.insert b natGen'.gen, seed := ng.seed})
 
 instance {G : Type} [RandomGen G UInt64] : RandomGen (PositiveNatRandomGen G) Nat where
   next := PositiveNatRandomGen.next

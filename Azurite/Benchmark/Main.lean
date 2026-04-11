@@ -23,7 +23,7 @@ def main (args : List String) : IO Unit := do
   match args with
   | name :: limitStr :: rest =>
     let seed : UInt64 := 1337
-    let cfg  := parseConfig (rest.headD "")
+    let cfg := parseConfig (rest.headD "")
     match limitStr.toNat? with
     | none =>
       IO.eprintln s!"Error: limit must be a natural number, got '{limitStr}'"

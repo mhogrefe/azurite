@@ -11,11 +11,11 @@
 -/
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.ToString
-import Azurite.AzMvPolynomial.New.Parse
+import Azurite.AzMvPolynomial.Parse
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 variable {σ : Type*} {α : Type*}
 
@@ -137,15 +137,15 @@ end Azurite
 
 /-! ### #guard examples -/
 
-open Azurite AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open Azurite AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 section PrenexExamples
 
 open Azurite
 
 /-- Parse a polynomial in ℤ[x₀, x₁] as an abbreviation. -/
-private def p₂ (s : String) : AzMvPolynomialNew 2 ℤ .Degrevlex :=
-  (AzMvPolynomialNew.parse s.toList).getD 0
+private def p₂ (s : String) : AzMvPolynomial 2 ℤ .Degrevlex :=
+  (AzMvPolynomial.parse s.toList).getD 0
 
 private abbrev F₂ := Formula (Fin 2) (AzFieldAtom 2 ℤ .Degrevlex)
 

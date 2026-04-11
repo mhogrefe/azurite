@@ -1,13 +1,13 @@
 /-
-  Examples demonstrating that `AzPolynomial` works over `AzMvPolynomialNew ℤ`
+  Examples demonstrating that `AzPolynomial` works over `AzMvPolynomial ℤ`
   coefficients.
 
   The point of these tests is to exercise the typeclass machinery: building
-  an `AzPolynomial (AzMvPolynomialNew n ℤ ord)` requires `Semiring`, `DecidableEq`,
-  and (for arithmetic) the full `CommRing` instance on `AzMvPolynomialNew n ℤ ord`
+  an `AzPolynomial (AzMvPolynomial n ℤ ord)` requires `Semiring`, `DecidableEq`,
+  and (for arithmetic) the full `CommRing` instance on `AzMvPolynomial n ℤ ord`
   to be **computable**. There is no `parseAzPolynomial` or `toString` for these
   polynomials (the coefficients are themselves multivariate polynomials), so
-  individual coefficients are built via `AzMvPolynomialNew.parseWith` and the
+  individual coefficients are built via `AzMvPolynomial.parseWith` and the
   outer polynomial is assembled with `monomial`, `C`, and ring operations.
 -/
 import Azurite.AzPolynomial.Basic
@@ -16,20 +16,20 @@ import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.PRem
-import Azurite.AzMvPolynomial.New.Equiv.Algebra
-import Azurite.AzMvPolynomial.New.Parse
+import Azurite.AzMvPolynomial.Equiv.Algebra
+import Azurite.AzMvPolynomial.Parse
 
 namespace Azurite.AzPolynomial.MvCoeffExamples
 
 open Azurite
 
 /-- Coefficient ring used by the examples below: `ℤ[x, y, z]` under degrevlex. -/
-abbrev MvInt := AzMvPolynomialNew 3 ℤ .Degrevlex
+abbrev MvInt := AzMvPolynomial 3 ℤ .Degrevlex
 
 /-- Helper: parse a string as an element of `MvInt` using the `XyzVar 3`
     naming scheme (`x, y, z`). -/
 private def mv (s : String) : MvInt :=
-  (AzMvPolynomialNew.parseWith (n := 3) (R := ℤ) (ord := .Degrevlex)
+  (AzMvPolynomial.parseWith (n := 3) (R := ℤ) (ord := .Degrevlex)
     (XyzVar 3) s.toList).getD 0
 
 /-! ### Constructing `AzPolynomial MvInt` values -/

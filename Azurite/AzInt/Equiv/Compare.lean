@@ -261,7 +261,7 @@ theorem compareInt64_eq (z : AzInt) (i : Int64) :
     rw [AzNat.compareUInt64_eq, compare_swap_nat, AzNat.compare_nat_cast_int]
     have h_neg_eq := Int64.neg_toUInt64_toNat_eq hs2
     unfold toInt; rw [if_neg hs, h_neg_eq, compare_neg_int]
-    congr 1 ; omega
+    congr 1; omega
   · -- sign = false, i ≥ 0
     have h_neg := neg_sign_toInt_neg (Bool.eq_false_iff.mpr hs)
     have h_nn : i.toInt ≥ 0 := by

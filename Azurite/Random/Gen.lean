@@ -12,7 +12,7 @@ structure SplitMix64 where
 
 /-- Create a SplitMix64 PRNG instance from a seed. -/
 def mkSplitMix64 (seed : UInt64) : SplitMix64 :=
-  { state := seed }
+  { state := seed}
 
 /-- 
 A generic typeclass for a pseudorandom number generator mapping a Generator state `G` to
@@ -43,7 +43,7 @@ def SplitMix64.next (r : SplitMix64) : UInt64 × SplitMix64 :=
   let z2 := (z1 ^^^ (z1 >>> 30)) * 0xbf58476d1ce4e5b9
   let z3 := (z2 ^^^ (z2 >>> 27)) * 0x94d049bb133111eb
   let z4 := z3 ^^^ (z3 >>> 31)
-  (z4, { state := nextState })
+  (z4, { state := nextState})
 
 instance : RandomGen SplitMix64 UInt64 where
   next := SplitMix64.next

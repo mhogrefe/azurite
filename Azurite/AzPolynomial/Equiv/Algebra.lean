@@ -364,7 +364,7 @@ noncomputable def ringEquivPolynomial :
     AzPolynomial R ≃+* Polynomial R :=
   { equivPolynomial with
     map_mul' := toPoly_mul
-    map_add' := toPoly_add }
+    map_add' := toPoly_add}
 
 /-! ### Integral domain -/
 

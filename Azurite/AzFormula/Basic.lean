@@ -9,7 +9,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR
+open AzMvPolynomial MonicMonomial Monomial BPR
 
 /-! ### AtomVars typeclass -/
 
@@ -19,7 +19,7 @@ class AtomVars (α : Type*) (σ : outParam Type*) where
   /-- The variables appearing in an atom. -/
   vars : α → Finset σ
 
-/-- `AzFieldAtom` instance: computable via `AzMvPolynomialNew.vars`. -/
+/-- `AzFieldAtom` instance: computable via `AzMvPolynomial.vars`. -/
 instance {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder} :
     AtomVars (AzFieldAtom n R ord) (Fin n) where
   vars := AzFieldAtom.vars
@@ -205,12 +205,12 @@ def renameFormulaEquiv [AtomRename α σ] (e : σ ≃ σ) (Φ : Formula σ α) :
 variable {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder}
 
 /-- P = 0 as a formula. -/
-def azEqZero (P : AzMvPolynomialNew n R ord) :
+def azEqZero (P : AzMvPolynomial n R ord) :
     Formula (Fin n) (AzFieldAtom n R ord) :=
   .atom (AzFieldAtom.eqZero P)
 
 /-- P ≠ 0 as a formula. -/
-def azNeZero (P : AzMvPolynomialNew n R ord) :
+def azNeZero (P : AzMvPolynomial n R ord) :
     Formula (Fin n) (AzFieldAtom n R ord) :=
   .atom (AzFieldAtom.neZero P)
 
@@ -226,7 +226,7 @@ def azFalseFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
 
 /-- Conjunction of `P = 0` atoms from a list of polynomials. -/
 def azConjEqZero :
-    List (AzMvPolynomialNew n R ord) → Formula (Fin n) (AzFieldAtom n R ord)
+    List (AzMvPolynomial n R ord) → Formula (Fin n) (AzFieldAtom n R ord)
   | []     => azTrueFormula
   | [P]    => azEqZero P
   | P :: rest => .and (azEqZero P) (azConjEqZero rest)

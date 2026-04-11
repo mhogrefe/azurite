@@ -19,7 +19,7 @@ lemma size_eq_log2_succ (n : ℕ) (hn : n > 0) : Nat.size n = Nat.log2 n + 1 := 
 /-- `normalizedCompare x y` compares `x` and `y` as if their bit encodings were shifted to have the same length.
 If `x > 0` and `y > 0`, the comparison is equivalent to a comparison between $f(x)$ and $f(y)$, where
 $$
-f(n) = n / 2^{\text{size } n}
+f(n) = n / 2^{\text{size} n}
 $$
 -/
 def normalizedCompare (x y : ℕ) : Ordering :=

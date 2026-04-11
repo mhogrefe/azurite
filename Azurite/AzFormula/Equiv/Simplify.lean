@@ -5,7 +5,7 @@ import Azurite.AzFormula.Equiv.FreeVars
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 variable {σ : Type*} [DecidableEq σ] {D : Type*} [CommRing D]
     {C : Type*} [Field C] [Algebra D C]
@@ -33,9 +33,9 @@ theorem elimDoubleNeg_realization
     | .atom _       => simp only [realization]; exact congrArg _ ih'
     | .and _ _      => simp only [realization]; exact congrArg _ ih'
     | .or _ _       => simp only [realization]; exact congrArg _ ih'
-    | .implies _ _  => simp only [realization]; exact congrArg _ ih'
-    | .exists_ _ _  => simp only [realization]; exact congrArg _ ih'
-    | .forall_ _ _  => simp only [realization]; exact congrArg _ ih'
+    | .implies _ _ => simp only [realization]; exact congrArg _ ih'
+    | .exists_ _ _ => simp only [realization]; exact congrArg _ ih'
+    | .forall_ _ _ => simp only [realization]; exact congrArg _ ih'
   | and _ _ ih₁ ih₂ =>
     simp only [elimDoubleNeg, realization, ih₁, ih₂]
   | or _ _ ih₁ ih₂ =>

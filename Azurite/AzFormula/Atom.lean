@@ -1,19 +1,19 @@
 /-
-  Atom types for AzFormula, analogous to FieldAtom but using AzMvPolynomialNew.
+  Atom types for AzFormula, analogous to FieldAtom but using AzMvPolynomial.
 -/
-import Azurite.AzMvPolynomial.New.Vars
-import Azurite.AzMvPolynomial.New.Rename
+import Azurite.AzMvPolynomial.Vars
+import Azurite.AzMvPolynomial.Rename
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew
+open AzMvPolynomial MonicMonomial Monomial
 
-/-- An atom in the language of fields, using `AzMvPolynomialNew`:
+/-- An atom in the language of fields, using `AzMvPolynomial`:
     a polynomial `P` together with `isEq = true` for `P = 0`
     or `isEq = false` for `P ≠ 0`. -/
 structure AzFieldAtom (n : ℕ) (R : Type*) [Semiring R]
     (ord : MonomialOrder := .Degrevlex) where
-  poly : AzMvPolynomialNew n R ord
+  poly : AzMvPolynomial n R ord
   isEq : Bool
 
 namespace AzFieldAtom
@@ -21,10 +21,10 @@ namespace AzFieldAtom
 variable {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder}
 
 /-- The atom `P = 0`. -/
-def eqZero (P : AzMvPolynomialNew n R ord) : AzFieldAtom n R ord := ⟨P, true⟩
+def eqZero (P : AzMvPolynomial n R ord) : AzFieldAtom n R ord := ⟨P, true⟩
 
 /-- The atom `P ≠ 0`. -/
-def neZero (P : AzMvPolynomialNew n R ord) : AzFieldAtom n R ord := ⟨P, false⟩
+def neZero (P : AzMvPolynomial n R ord) : AzFieldAtom n R ord := ⟨P, false⟩
 
 /-- Free variables of an `AzFieldAtom`. Computable. -/
 def vars (a : AzFieldAtom n R ord) : Finset (Fin n) :=

@@ -18,7 +18,7 @@ structure NatGeometricRandomGen (G : Type) [RandomGen G UInt64] where
 /-- Initialize a `NatGeometricRandomGen` with mean `m > 0`. -/
 def mkNatGeometricRandomGen (m : Rat) (seed : UInt64) : NatGeometricRandomGen SplitMix64 :=
   let p := 1 / (m + 1)
-  { boolGen := mkWeightedBoolRandomGen p seed, m := m }
+  { boolGen := mkWeightedBoolRandomGen p seed, m := m}
 
 /-- Internal loop: count `false`s before the first `true`, bounded by `fuel`. -/
 def NatGeometricRandomGen.nextLoop {G : Type} [RandomGen G UInt64] :
@@ -33,7 +33,7 @@ def NatGeometricRandomGen.nextLoop {G : Type} [RandomGen G UInt64] :
 
 def NatGeometricRandomGen.next {G : Type} [RandomGen G UInt64]
     (bg : NatGeometricRandomGen G) : Nat × NatGeometricRandomGen G :=
-  -- ⌈m⌉ for m > 0: (num + den - 1) / den  (ceiling division)
+  -- ⌈m⌉ for m > 0: (num + den - 1) / den (ceiling division)
   let m_ceil := (bg.m.num.toNat + bg.m.den - 1) / bg.m.den
   let L := m_ceil * 1024
   let (val, boolGen') := NatGeometricRandomGen.nextLoop L 0 bg.boolGen
@@ -58,11 +58,11 @@ structure PositiveNatGeometricRandomGen (G : Type) [RandomGen G UInt64] where
 /-- Initialize a `PositiveNatGeometricRandomGen` with mean `m > 0`. -/
 def mkPositiveNatGeometricRandomGen (m : Rat) (seed : UInt64) : PositiveNatGeometricRandomGen SplitMix64 :=
   let p := 1 / m
-  { boolGen := mkWeightedBoolRandomGen p seed, m := m }
+  { boolGen := mkWeightedBoolRandomGen p seed, m := m}
 
 def PositiveNatGeometricRandomGen.next {G : Type} [RandomGen G UInt64]
     (bg : PositiveNatGeometricRandomGen G) : Nat × PositiveNatGeometricRandomGen G :=
-  -- ⌈m⌉ for m > 0: (num + den - 1) / den  (ceiling division)
+  -- ⌈m⌉ for m > 0: (num + den - 1) / den (ceiling division)
   let m_ceil := (bg.m.num.toNat + bg.m.den - 1) / bg.m.den
   let L := m_ceil * 1024
   -- Reuse NatGeometricRandomGen.nextLoop, but start counter at 1

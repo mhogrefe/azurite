@@ -25,7 +25,7 @@ structure NatWithBitsRandomGen (G : Type) [RandomGen G UInt64] where
 
 /-- Create a generic `NatWithBitsRandomGen` from a base generator `G` that outputs `UInt64` chunks. -/
 def mkNatWithBitsRandomGen (b : Nat) (seed : UInt64) : NatWithBitsRandomGen SplitMix64 :=
-  { gen := mkSplitMix64 seed, b := b }
+  { gen := mkSplitMix64 seed, b := b}
 
 def NatWithBitsRandomGen.next {G : Type} [RandomGen G UInt64] (bg : NatWithBitsRandomGen G) : Nat × NatWithBitsRandomGen G :=
   if bg.b == 0 then
@@ -110,7 +110,7 @@ structure NatUpToBitsRandomGen (G : Type) [RandomGen G UInt64] where
 
 /-- Create a generic `NatUpToBitsRandomGen` from a base generator `G` that outputs `UInt64` chunks. -/
 def mkNatUpToBitsRandomGen (b : Nat) (seed : UInt64) : NatUpToBitsRandomGen SplitMix64 :=
-  { gen := mkSplitMix64 seed, b := b }
+  { gen := mkSplitMix64 seed, b := b}
 
 def NatUpToBitsRandomGen.next {G : Type} [RandomGen G UInt64] (bg : NatUpToBitsRandomGen G) : Nat × NatUpToBitsRandomGen G :=
   if bg.b == 0 then
@@ -162,7 +162,7 @@ structure NatLessThanRandomGen (G : Type) [RandomGen G UInt64] where
 /-- Create a generic `NatLessThanRandomGen` with a defined upper bound `k`. -/
 def mkNatLessThanRandomGen (k : Nat) (seed : UInt64) : NatLessThanRandomGen SplitMix64 :=
   let b := if k == 0 then 0 else k.log2 + 1
-  { gen := mkSplitMix64 seed, k := k, b := b }
+  { gen := mkSplitMix64 seed, k := k, b := b}
 
 /-- Internal retry loop mapping out `1024` attempts bounded by `fuel`. -/
 def NatLessThanRandomGen.nextLoop {G : Type} [RandomGen G UInt64] :

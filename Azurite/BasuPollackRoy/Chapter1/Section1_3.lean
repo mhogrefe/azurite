@@ -21,13 +21,13 @@ fields admits quantifier elimination.
 
 A basic constructible set `S ⊂ C^{k+1}` can be described as
 
-  S = { z ∈ C^{k+1} | ⋀_{P ∈ 𝓟} P(z) = 0 ∧ ⋀_{Q ∈ 𝓠} Q(z) ≠ 0 }
+  S = { z ∈ C^{k+1} | ⋀_{P ∈ 𝓟} P(z) = 0 ∧ ⋀_{Q ∈ 𝓠} Q(z) ≠ 0}
 
 with `𝓟, 𝓠` finite subsets of `C[Y₁, …, Y_k, X]`, and its projection
 `π(S)` — obtained by forgetting the last coordinate — is
 
   π(S) = { y ∈ C^k | ∃ x ∈ C, ⋀_{P ∈ 𝓟} P(y, x) = 0 ∧
-                              ⋀_{Q ∈ 𝓠} Q(y, x) ≠ 0 }.
+                              ⋀_{Q ∈ 𝓠} Q(y, x) ≠ 0}.
 
 We consider the polynomials in `𝓟` and `𝓠` as polynomials in the
 single variable `X` with the variables `(Y₁, …, Y_k)` appearing as
@@ -35,7 +35,7 @@ parameters. For a specialization of `Y` to `y = (y₁, …, y_k) ∈ C^k`,
 we write `P_y(X)` for `P(y₁, …, y_k, X)`. Hence,
 
   π(S) = { y ∈ C^k | ∃ x ∈ C, ⋀_{P ∈ 𝓟} P_y(x) = 0 ∧
-                              ⋀_{Q ∈ 𝓠} Q_y(x) ≠ 0 }.
+                              ⋀_{Q ∈ 𝓠} Q_y(x) ≠ 0}.
 
 ### Representation via `Formula`
 
@@ -166,7 +166,7 @@ noncomputable def proj
 When `S ⊂ C^{k+1}` is a basic constructible set described by `(𝓟, 𝓠)`
 and `y ∈ C^k`, BPR introduces the fiber
 
-  S_y := { x ∈ C | ⋀_{P ∈ 𝓟} P_y(x) = 0 ∧ ⋀_{Q ∈ 𝓠} Q_y(x) ≠ 0 } ⊂ C,
+  S_y := { x ∈ C | ⋀_{P ∈ 𝓟} P_y(x) = 0 ∧ ⋀_{Q ∈ 𝓠} Q_y(x) ≠ 0} ⊂ C,
 
 obtained by specializing the parameters `Y` to `y` and then asking
 which `x ∈ C` satisfy the resulting univariate conditions. The

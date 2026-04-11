@@ -13,7 +13,7 @@ def parse (cs : List Char) : Option AzInt :=
     | none => none
   else
     match AzNat.parse cs with
-    | some n => some { sign := true, abs := n, zero_sign := fun _ => rfl }
+    | some n => some { sign := true, abs := n, zero_sign := fun _ => rfl}
     | none => none
 
 lemma azInt_ext (z1 z2 : AzInt) : z1.sign = z2.sign → z1.abs = z2.abs → z1 = z2 := by
@@ -52,7 +52,7 @@ theorem parse_toChars (z : AzInt) : parse (toChars z) = some z := by
     exact False.elim (hnd hh)
   · -- positive
     have hz_abs := AzNat.parse_toChars z.abs
-    change (match AzNat.parse (AzNat.toChars z.abs) with | some n => some { sign := true, abs := n, zero_sign := _ } | none => none) = some z
+    change (match AzNat.parse (AzNat.toChars z.abs) with | some n => some { sign := true, abs := n, zero_sign := _} | none => none) = some z
     rw [hz_abs]
     dsimp
     apply congrArg

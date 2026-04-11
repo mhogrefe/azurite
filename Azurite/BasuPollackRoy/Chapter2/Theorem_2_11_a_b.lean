@@ -230,13 +230,13 @@ theorem Ri.conj_fixed_mem_range [IsRealClosed R] (c : Ri R) (hc : (Ri.conj R) c 
     c ∈ Set.range (algebraMap R (Ri R)) := by
   induction c using AdjoinRoot.induction_on with
   | ih p =>
-    -- conj(mk p) = lift(of, -root, _)(mk p) = eval₂ (of) (-root) p  (by lift_mk)
-    -- mk p = eval₂ (of) (root) p  (by aeval_eq, since mk = aeval root)
+    -- conj(mk p) = lift(of, -root, _)(mk p) = eval₂ (of) (-root) p (by lift_mk)
+    -- mk p = eval₂ (of) (root) p (by aeval_eq, since mk = aeval root)
     -- From hc: eval₂ (of) (-root) p = eval₂ (of) root p = mk p
     -- Rewrite mk using aeval:
     rw [show AdjoinRoot.mk _ p = Polynomial.aeval (Ri.i R) p from
       (AdjoinRoot.aeval_eq p).symm]
-    -- conj(aeval i p) = aeval (conj i) p = aeval (-i) p  (AlgHom comp aeval)
+    -- conj(aeval i p) = aeval (conj i) p = aeval (-i) p (AlgHom comp aeval)
     rw [show AdjoinRoot.mk _ p = Polynomial.aeval (Ri.i R) p from
       (AdjoinRoot.aeval_eq p).symm] at hc
     have hconj_aeval : (Ri.conj R) (Polynomial.aeval (Ri.i R) p) =
@@ -1414,8 +1414,8 @@ theorem sqrt_exists_Ri [IsRealClosed R] (w : Ri R) : ∃ v : Ri R, v * v = w := 
         --   = (a²+2ad'+a²+b²-b²) / (2(a+d'))   [d'²=a²+b²]
         --   = (2a²+2ad') / (2(a+d'))
         --   = 2a(a+d') / (2(a+d'))
-        --   = a  ✓
-        -- And 2*e*(b/(2e)) = b  ✓
+        --   = a ✓
+        -- And 2*e*(b/(2e)) = b ✓
         have hi2 := Ri.i_sq R
         -- Step 1: Consolidate algebraMap terms
         have hcoeff : algebraMap R (Ri R) e * algebraMap R (Ri R) (b * (2 * e)⁻¹) =

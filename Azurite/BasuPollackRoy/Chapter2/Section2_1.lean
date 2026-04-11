@@ -421,8 +421,8 @@ end Exercise_2_2
 
 **Notation 2.3** (BPR p.35). The **sign** of an element a in an ordered field
 is defined by:
-- sign(a) = 0  if a = 0
-- sign(a) = 1  if a > 0
+- sign(a) = 0 if a = 0
+- sign(a) = 1 if a > 0
 - sign(a) = −1 if a < 0
 
 When a > 0 we say a is **positive**, and when a < 0 we say a is **negative**.
@@ -885,7 +885,7 @@ lemma isProperCone_nonneg : IsProperCone (Subsemiring.nonneg F) :=
 ### Proposition 2.6
 
 **Proposition 2.6 (BPR).** Let (F, ≤) be an ordered field. The positive cone
-C = { x ∈ F | x ≥ 0 } is a proper cone satisfying C ∪ (−C) = F. Conversely,
+C = { x ∈ F | x ≥ 0} is a proper cone satisfying C ∪ (−C) = F. Conversely,
 if C is a proper cone of a field F with C ∪ (−C) = F, then F is ordered by
 x ≤ y ⇔ y − x ∈ C.
 
@@ -1082,16 +1082,16 @@ end Exercise_2_6
 ### Lemma 2.9
 
 **Lemma 2.9 (BPR).** Let `C` be a proper cone of `F`. If `−a ∉ C`, then
-`C[a] = { x + a·y | x, y ∈ C }` is a proper cone of `F`.
+`C[a] = { x + a·y | x, y ∈ C}` is a proper cone of `F`.
 -/
 
 section Lemma_2_9
 
 variable {F : Type*} [Field F]
 
-/-- The extension `C[a]`: the set `{ x + a·y | x, y ∈ C }`. -/
+/-- The extension `C[a]`: the set `{ x + a·y | x, y ∈ C}`. -/
 def coneExt (C : Subsemiring F) (hCone : IsCone C) (a : F) : Subsemiring F where
-  carrier := { z | ∃ x ∈ C, ∃ y ∈ C, z = x + a * y }
+  carrier := { z | ∃ x ∈ C, ∃ y ∈ C, z = x + a * y}
   zero_mem' := ⟨0, C.zero_mem, 0, C.zero_mem, by ring⟩
   one_mem' := ⟨1, C.one_mem, 0, C.zero_mem, by ring⟩
   add_mem' := by
@@ -1312,7 +1312,7 @@ theorem theorem_2_7 {F : Type*} [Field F] : List.TFAE
     [ IsRealField F,
       ∃ C : Subsemiring F, IsProperCone C,
       ∃ T : RingCone F, HasMemOrNegMem T,
-      ∀ (n : ℕ) (x : Fin n → F), (∑ i, x i ^ 2 = 0) → ∀ k, x k = 0 ] := by
+      ∀ (n : ℕ) (x : Fin n → F), (∑ i, x i ^ 2 = 0) → ∀ k, x k = 0] := by
   tfae_have 1 → 2 := theorem_2_7_a_of_b
   tfae_have 2 → 3 := theorem_2_7_b_of_c
   tfae_have 3 → 4 := theorem_2_7_c_of_d

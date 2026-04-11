@@ -68,7 +68,7 @@ variable {k : ℕ} {C : Type*} [Field C] [IsAlgClosed C]
 /-!
 If poly_set is a finite subset of C[X₁, …, Xₖ], the **set of zeros** of poly_set in Cᵏ is
 
-  Zer(poly_set, Cᵏ) = { x ∈ Cᵏ | ∀ P ∈ poly_set, P(x) = 0 }
+  Zer(poly_set, Cᵏ) = { x ∈ Cᵏ | ∀ P ∈ poly_set, P(x) = 0}
 
 Mathlib already has `MvPolynomial.zeroLocus`, but it takes an `Ideal` rather than
 a finite set of polynomials. We define `Zer` to match BPR's notation and prove
@@ -82,7 +82,7 @@ The set of common zeros of a finite set of polynomials poly_set in Cᵏ.
 BPR notation: Zer(poly_set, Cᵏ).
 -/
 def Zer (poly_set : Finset (MvPolynomial (Fin k) C)) : Set (Fin k → C) :=
-  { x | ∀ P ∈ poly_set, MvPolynomial.eval x P = 0 }
+  { x | ∀ P ∈ poly_set, MvPolynomial.eval x P = 0}
 
 omit [IsAlgClosed C] in
 /-- `Zer poly_set` equals Mathlib's `zeroLocus` of the ideal spanned by poly_set. -/
@@ -164,13 +164,13 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
     obtain ⟨P₀, hP₀mem, hP₀ne⟩ := h
     left
     apply Set.Finite.subset (s := { x : Fin 1 → C |
-        MvPolynomial.eval x P₀ = 0 })
+        MvPolynomial.eval x P₀ = 0})
     · -- {x | eval x P₀ = 0} is finite via transfer to C[X]
       let e : (Fin 1 → C) ≃ C := Equiv.funUnique (Fin 1) C
       have hpne : mvPolyFinOneEquiv P₀ ≠ 0 :=
         fun h => hP₀ne (mvPolyFinOneEquiv.injective (by rw [h, map_zero]))
-      rw [show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0 } =
-          e.symm '' { c : C | Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0 }
+      rw [show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0} =
+          e.symm '' { c : C | Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0}
         from by
         ext x; simp only [Set.mem_setOf_eq, Set.mem_image, e, Equiv.funUnique]
         constructor
@@ -586,16 +586,16 @@ variable {C : Type*} [Field C] [Algebra D C]
     BPR notation: Reali(Φ, Cᵏ). -/
 noncomputable def realization [DecidableEq σ] :
     Formula σ (FieldAtom σ D) → Set (σ → C)
-  | .atom a      => if a.isEq then { y | aeval y a.poly = 0 }
-                     else { y | aeval y a.poly ≠ 0 }
+  | .atom a      => if a.isEq then { y | aeval y a.poly = 0}
+                     else { y | aeval y a.poly ≠ 0}
   | .not Φ       => (Φ.realization)ᶜ
   | .and Φ₁ Φ₂   => Φ₁.realization ∩ Φ₂.realization
   | .or Φ₁ Φ₂    => Φ₁.realization ∪ Φ₂.realization
   | .implies Φ₁ Φ₂ => (Φ₁.realization)ᶜ ∪ Φ₂.realization
   | .exists_ x Φ =>
-    { y | ∃ c : C, Function.update y x c ∈ Φ.realization }
+    { y | ∃ c : C, Function.update y x c ∈ Φ.realization}
   | .forall_ x Φ =>
-    { y | ∀ c : C, Function.update y x c ∈ Φ.realization }
+    { y | ∀ c : C, Function.update y x c ∈ Φ.realization}
 
 def CEquiv [DecidableEq σ]
     (Φ Ψ : Formula σ (FieldAtom σ D)) : Prop :=
@@ -614,13 +614,13 @@ def CEquiv [DecidableEq σ]
 @[simp] theorem realization_eq_zero [DecidableEq σ]
     (P : MvPolynomial σ D) :
     (eq_zero P : Formula σ (FieldAtom σ D)).realization (C := C) =
-      { y | MvPolynomial.aeval y P = 0 } := by
+      { y | MvPolynomial.aeval y P = 0} := by
   simp [eq_zero, realization, FieldAtom.eqZero]
 
 @[simp] theorem realization_ne_zero [DecidableEq σ]
     (P : MvPolynomial σ D) :
     (ne_zero P : Formula σ (FieldAtom σ D)).realization (C := C) =
-      { y | MvPolynomial.aeval y P ≠ 0 } := by
+      { y | MvPolynomial.aeval y P ≠ 0} := by
   simp [ne_zero, realization, FieldAtom.neZero]
 /-!
 ### Prenex Normal Form Infrastructure
@@ -1374,7 +1374,7 @@ section Example_1_2
 
 open Formula
 
-/-- Φ = ∃Y, XY - 1 = 0  (0 = X, 1 = Y). -/
+/-- Φ = ∃Y, XY - 1 = 0 (0 = X, 1 = Y). -/
 noncomputable def Φ_ex : Formula (Fin 2) (FieldAtom (Fin 2) ℤ) :=
   .exists_ 1 (eq_zero (X 0 * X 1 - 1))
 
@@ -1472,7 +1472,7 @@ theorem conjEqZero_realization [DecidableEq σ]
     {C : Type*} [Field C] [Algebra D C] :
     ∀ (L : List (MvPolynomial σ D)),
     (conjEqZero L).realization (C := C) =
-      { y | ∀ P ∈ L, MvPolynomial.aeval y P = 0 }
+      { y | ∀ P ∈ L, MvPolynomial.aeval y P = 0}
   | [] => by
     ext y; simp [conjEqZero, map_zero]
   | [P] => by
@@ -1482,7 +1482,7 @@ theorem conjEqZero_realization [DecidableEq σ]
     simp only [conjEqZero, realization, Set.mem_inter_iff,
       Set.mem_setOf_eq, List.mem_cons]
     rw [show (conjEqZero (Q :: Ps)).realization (C := C) =
-      { y | ∀ P ∈ (Q :: Ps), MvPolynomial.aeval y P = 0 }
+      { y | ∀ P ∈ (Q :: Ps), MvPolynomial.aeval y P = 0}
       from conjEqZero_realization (Q :: Ps)]
     simp only [Set.mem_setOf_eq]
     constructor

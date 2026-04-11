@@ -2,11 +2,11 @@
   ToString instances for AzFieldAtom and Formula.
 -/
 import Azurite.AzFormula.Basic
-import Azurite.AzMvPolynomial.New.ToString
+import Azurite.AzMvPolynomial.ToString
 
 namespace Azurite
 
-open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
+open AzMvPolynomial MonicMonomial Monomial BPR Formula
 
 namespace AzFieldAtom
 

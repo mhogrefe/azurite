@@ -26,7 +26,7 @@ structure AzPolynomialRandomGen (R : Type) [Semiring R] [DecidableEq R]
     (CG : Type) (NCG : Type) where
   degreeGen        : NatGeometricRandomGen SplitMix64
   coeffGen         : CG
-  nonzeroCoeffGen  : NCG
+  nonzeroCoeffGen : NCG
   /-- Generate one coefficient (may be zero). -/
   nextCoeff        : CG → R × CG
   /-- Generate one nonzero coefficient. -/
@@ -66,9 +66,9 @@ def mkAzPolynomialNatRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (se
     AzPolynomialRandomGen ℕ (NatRandomGen SplitMix64) (PositiveNatRandomGen SplitMix64) :=
   { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
     coeffGen         := mkNatRandomGen meanCoeffBitLength (deriveSeed seed "coeff"),
-    nonzeroCoeffGen  := mkPositiveNatRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
+    nonzeroCoeffGen := mkPositiveNatRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
     nextCoeff        := NatRandomGen.next,
-    nextNonzeroCoeff := PositiveNatRandomGen.next }
+    nextNonzeroCoeff := PositiveNatRandomGen.next}
 
 /-- Create a `AzPolynomialRandomGen` for `AzPolynomial ℤ`.
 - Coefficients are drawn from a signed distribution with geometric bit-length.
@@ -77,9 +77,9 @@ def mkAzPolynomialIntRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (se
     AzPolynomialRandomGen ℤ IntRandomGen NonzeroIntRandomGen :=
   { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
     coeffGen         := mkIntRandomGen meanCoeffBitLength (deriveSeed seed "coeff"),
-    nonzeroCoeffGen  := mkNonzeroIntRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
+    nonzeroCoeffGen := mkNonzeroIntRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
     nextCoeff        := IntRandomGen.next,
-    nextNonzeroCoeff := NonzeroIntRandomGen.next }
+    nextNonzeroCoeff := NonzeroIntRandomGen.next}
 
 /-- Create a `AzPolynomialRandomGen` for `AzPolynomial ℚ`.
 - Coefficients are random rationals with geometric bit-length for numerator and denominator.
@@ -88,9 +88,9 @@ def mkAzPolynomialRatRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (se
     AzPolynomialRandomGen ℚ RatRandomGen NonzeroRatRandomGen :=
   { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
     coeffGen         := mkRatRandomGen meanCoeffBitLength (deriveSeed seed "coeff"),
-    nonzeroCoeffGen  := mkNonzeroRatRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
+    nonzeroCoeffGen := mkNonzeroRatRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
     nextCoeff        := RatRandomGen.next,
-    nextNonzeroCoeff := NonzeroRatRandomGen.next }
+    nextNonzeroCoeff := NonzeroRatRandomGen.next}
 
 /-- Create a `AzPolynomialRandomGen` for `AzPolynomial (ZMod n)`.
 - Coefficients are uniform in `{0, ..., n-1}`.
@@ -102,7 +102,7 @@ def mkAzPolynomialZModRandomGen (n : ℕ) [NeZero n] (meanDegree : Rat) (seed : 
       (NatLessThanRandomGen SplitMix64) :=
   { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
     coeffGen         := mkNatLessThanRandomGen n (deriveSeed seed "coeff"),
-    nonzeroCoeffGen  := mkNatLessThanRandomGen (n - 1) (deriveSeed seed "nzcoeff"),
+    nonzeroCoeffGen := mkNatLessThanRandomGen (n - 1) (deriveSeed seed "nzcoeff"),
     nextCoeff        := fun g =>
       let (v, g') := NatLessThanRandomGen.next g
       ((v : ZMod n), g'),
