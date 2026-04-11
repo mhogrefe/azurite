@@ -205,6 +205,13 @@ instance {n : ℕ} : Var (IndexedVar n) n where
   ofFin_toFin _ := rfl
   toFin_ofFin _ := rfl
 
+/-- Trivial `Var` instance for `Fin n` itself. -/
+instance {n : ℕ} : Var (Fin n) n where
+  toFin i := i
+  ofFin i := i
+  ofFin_toFin _ := rfl
+  toFin_ofFin _ := rfl
+
 instance {n : ℕ} : ParsableVar (IndexedVar n) n where
   toChars v := ['x'] ++ natToSubscriptChars v.val
   parseChars cs := match cs with

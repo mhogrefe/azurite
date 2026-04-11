@@ -7,6 +7,7 @@ import Azurite.Algorithm.FastPow
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
 import Mathlib.Algebra.Module.NatInt
+import Mathlib.Algebra.Algebra.Defs
 import Mathlib.Tactic.FastInstance
 
 /-!
@@ -244,6 +245,37 @@ instance : NonUnitalCommSemiring (AzPolynomial R) := fast_instance%
 instance : CommSemiring (AzPolynomial R) where
   __ := (inferInstance : Semiring (AzPolynomial R))
   mul_comm := mul_comm
+
+/-- The constant polynomial embedding `C : R →+* AzPolynomial R` as a bundled
+    ring homomorphism. Computable: the underlying function is just `C`. -/
+def CHom : R →+* AzPolynomial R where
+  toFun := C
+  map_zero' := toPoly_inj.mp (by
+    rw [toPoly_C,
+      show AzPolynomial.toPoly (0 : AzPolynomial R) = (0 : Polynomial R) from toPoly_zero]
+    exact Polynomial.C_0)
+  map_one' := toPoly_inj.mp (by
+    rw [toPoly_C,
+      show AzPolynomial.toPoly (1 : AzPolynomial R) = (1 : Polynomial R) from toPoly_one]
+    exact Polynomial.C_1)
+  map_add' := fun r s => toPoly_inj.mp (by
+    rw [toPoly_add, toPoly_C, toPoly_C, toPoly_C]
+    exact Polynomial.C_add)
+  map_mul' := fun r s => toPoly_inj.mp (by
+    rw [toPoly_mul, toPoly_C, toPoly_C, toPoly_C]
+    exact Polynomial.C_mul)
+
+/-- `AzPolynomial R` is an `R`-algebra via the constant polynomial embedding `C`.
+    The algebra map is `CHom`, and the scalar action reuses the existing
+    computable `SMul R (AzPolynomial R)` instance. -/
+instance : Algebra R (AzPolynomial R) where
+  algebraMap := CHom
+  commutes' := fun _ _ => mul_comm _ _
+  smul_def' := fun r p => toPoly_inj.mp (by
+    rw [toPoly_smul, toPoly_mul]
+    show _ = AzPolynomial.toPoly (CHom r) * _
+    rw [show AzPolynomial.toPoly (CHom r) = Polynomial.C r from toPoly_C r]
+    exact Polynomial.smul_eq_C_mul _)
 
 end CommSemiringSection
 

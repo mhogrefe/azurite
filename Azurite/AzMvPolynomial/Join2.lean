@@ -27,7 +27,7 @@ variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
 /-- Flatten a polynomial whose coefficients are polynomials.
     Each term `(c, m)` where `c : AzMvPolynomial σ R ord` contributes `c * m`
     to the result. -/
-noncomputable def AzMvPolynomial.join₂
+def AzMvPolynomial.join₂
     (p : AzMvPolynomial σ (AzMvPolynomial σ R ord) ord) :
     AzMvPolynomial σ R ord :=
   p.bind₂ id

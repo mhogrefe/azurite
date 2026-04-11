@@ -80,7 +80,9 @@ import Azurite.AzMvPolynomial.Equiv.ToAzPolynomial
 import Azurite.AzMvPolynomial.Equiv.ToAzPolynomialAt
 import Azurite.AzMvPolynomial.Equiv.Vars
 import Azurite.AzMvPolynomial.Eval
+import Azurite.AzMvPolynomial.Eval2
 import Azurite.AzMvPolynomial.ExactDiv
+import Azurite.AzMvPolynomial.FinSuccEquiv
 import Azurite.AzMvPolynomial.Join2
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MergeSorted

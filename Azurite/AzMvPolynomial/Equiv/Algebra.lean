@@ -21,6 +21,7 @@ import Azurite.AzMvPolynomial.Equiv.SMul
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
 import Mathlib.Algebra.Module.NatInt
+import Mathlib.Algebra.Algebra.Defs
 import Mathlib.Tactic.FastInstance
 
 namespace Azurite
@@ -218,6 +219,41 @@ instance : Semiring (AzMvPolynomial σ R ord) where
 instance : CommSemiring (AzMvPolynomial σ R ord) where
   __ := (inferInstance : Semiring (AzMvPolynomial σ R ord))
   mul_comm := mul_comm
+
+/-- The constant polynomial embedding `C : R →+* AzMvPolynomial σ R ord` as a
+    bundled ring homomorphism. Computable: the underlying function is just `C`. -/
+def AzMvPolynomial.CHom : R →+* AzMvPolynomial σ R ord where
+  toFun := AzMvPolynomial.C
+  map_zero' := toMvPoly_injective (by
+    rw [toMvPoly_C,
+      show AzMvPolynomial.toMvPoly (0 : AzMvPolynomial σ R ord) = (0 : MvPolynomial σ R)
+        from toMvPoly_zero]
+    simp)
+  map_one' := toMvPoly_injective (by
+    rw [toMvPoly_C,
+      show AzMvPolynomial.toMvPoly (1 : AzMvPolynomial σ R ord) = (1 : MvPolynomial σ R)
+        from toMvPoly_one]
+    simp)
+  map_add' := fun r s => toMvPoly_injective (by
+    rw [toMvPoly_add, toMvPoly_C, toMvPoly_C, toMvPoly_C]
+    simp)
+  map_mul' := fun r s => toMvPoly_injective (by
+    rw [toMvPoly_mul, toMvPoly_C, toMvPoly_C, toMvPoly_C]
+    simp)
+
+/-- `AzMvPolynomial σ R ord` is an `R`-algebra via the constant polynomial
+    embedding `C`. The algebra map is `AzMvPolynomial.CHom`, and the scalar
+    action reuses the existing computable `SMul R (AzMvPolynomial σ R ord)`
+    instance. -/
+instance : Algebra R (AzMvPolynomial σ R ord) where
+  algebraMap := AzMvPolynomial.CHom
+  commutes' := fun _ _ => mul_comm _ _
+  smul_def' := fun r p => toMvPoly_injective (by
+    rw [toMvPoly_smul, toMvPoly_mul]
+    show _ = AzMvPolynomial.toMvPoly (AzMvPolynomial.CHom r) * _
+    rw [show AzMvPolynomial.toMvPoly (AzMvPolynomial.CHom r) = MvPolynomial.C r
+        from toMvPoly_C r]
+    exact MvPolynomial.C_mul'.symm)
 
 end CommSemiringSection
 

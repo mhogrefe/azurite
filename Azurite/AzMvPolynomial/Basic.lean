@@ -76,6 +76,12 @@ def C [DecidableEq R] (c : R) : AzMvPolynomial σ R ord :=
   if h : c = 0 then 0
   else ofMonomial ⟨⟨c, h⟩, MonicMonomial.one⟩
 
+/-- The polynomial consisting of a single variable `v`.
+    Returns `0` when `1 = 0` in the trivial ring. -/
+def X [DecidableEq R] (v : σ) : AzMvPolynomial σ R ord :=
+  if h : (1 : R) = 0 then 0
+  else ofMonomial ⟨⟨1, h⟩, MonicMonomial.ofVar v⟩
+
 /-- The total degree of the polynomial (maximum total degree among its terms),
     or 0 for the zero polynomial. -/
 def totalDegree (p : AzMvPolynomial σ R ord) : ℕ :=
