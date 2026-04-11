@@ -94,6 +94,7 @@ import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
 import Azurite.AzMvPolynomial.Mul
 import Azurite.AzMvPolynomial.NamedDisplay
+import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.New.Add
 import Azurite.AzMvPolynomial.New.Basic
 import Azurite.AzMvPolynomial.New.Bind1
@@ -149,7 +150,6 @@ import Azurite.AzMvPolynomial.New.Sub
 import Azurite.AzMvPolynomial.New.ToAzPolynomial
 import Azurite.AzMvPolynomial.New.ToString
 import Azurite.AzMvPolynomial.New.Vars
-import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
