@@ -249,7 +249,7 @@ private theorem bridge_injective
     inverse are both the computable Azurite functions `finSuccEquiv` and
     `finSuccEquivSymm`; the ring-hom laws are discharged by transferring them
     from Mathlib's equivalence across the `toMvPoly` / `toPoly` bridges. -/
-noncomputable def AzMvPolynomial.finSuccAlgEquiv :
+def AzMvPolynomial.finSuccAlgEquiv :
     AzMvPolynomial (Fin (n+1)) R ord ≃ₐ[R]
       AzPolynomial (AzMvPolynomial (Fin n) R ord) where
   toFun := AzMvPolynomial.finSuccEquiv

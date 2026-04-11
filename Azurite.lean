@@ -93,6 +93,7 @@ import Azurite.AzMvPolynomial.MonicMonomialOrder
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 import Azurite.AzMvPolynomial.Monomial
 import Azurite.AzMvPolynomial.Mul
+import Azurite.AzMvPolynomial.NamedDisplay
 import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.Parse
