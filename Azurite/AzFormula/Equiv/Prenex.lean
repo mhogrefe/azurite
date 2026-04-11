@@ -6,15 +6,15 @@
   preserve realization.
 -/
 import Azurite.AzFormula.Prenex
-import Azurite.AzMvPolynomial.Equiv.Vars
-import Azurite.AzMvPolynomial.Equiv.Rename
+import Azurite.AzMvPolynomial.New.Equiv.Vars
+import Azurite.AzMvPolynomial.New.Equiv.Rename
 import Mathlib.Logic.Equiv.Basic
 import Mathlib.Algebra.MvPolynomial.Variables
 import Azurite.AzFormula.Realization
 
 namespace Azurite
 
-open BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
 /-! ### Generic formula semantics -/
 
@@ -827,33 +827,32 @@ private theorem MvPolynomial.vars_rename_equiv {σ' τ : Type*} [DecidableEq σ'
     rw [← hue, Equiv.apply_symm_apply]; exact hu
 
 /-- The `h_rename_vars` hypothesis holds for `AzFieldAtom`. -/
-theorem azFieldAtom_rename_vars {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+theorem azFieldAtom_rename_vars {n : ℕ}
     {R' : Type*} [CommSemiring R'] [NoZeroDivisors R'] [DecidableEq R']
-    {ord' : MonomialOrder} (e : σ' ≃ σ') (a : AzFieldAtom σ' R' ord') :
+    {ord' : MonomialOrder} (e : Fin n ≃ Fin n) (a : AzFieldAtom n R' ord') :
     AtomVars.vars (AtomRename.renameEquiv e a) = (AtomVars.vars a).image e := by
   change (a.renameVarsInjective ⇑e e.injective).poly.vars = a.poly.vars.image ⇑e
   rw [show (a.renameVarsInjective ⇑e e.injective).poly = a.poly.renameInjective ⇑e e.injective
     from rfl]
-  rw [← toMvPoly_vars, ← toMvPoly_vars, AzMvPolynomial.toMvPoly_renameInjective]
-  exact MvPolynomial.vars_rename_equiv e (AzMvPolynomial.toMvPoly a.poly)
+  rw [← toMvPoly_vars_new, ← toMvPoly_vars_new, AzMvPolynomialNew.toMvPoly_renameInjective]
+  exact MvPolynomial.vars_rename_equiv e (AzMvPolynomialNew.toMvPoly a.poly)
 
 /-! ### AtomRealization instance for AzFieldAtom -/
 
 /-- Noncomputable interpretation for `AzFieldAtom`: maps an atom to the set of
     variable assignments satisfying `P = 0` (if `isEq`) or `P ≠ 0`. -/
-noncomputable def azFieldAtomInterpret {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+noncomputable def azFieldAtomInterpret {n : ℕ}
     {R' : Type*} [CommRing R'] {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K]
-    (a : AzFieldAtom σ' R' ord') : Set (σ' → K) :=
+    (a : AzFieldAtom n R' ord') : Set (Fin n → K) :=
   if a.isEq then { y | MvPolynomial.aeval y a.poly.toMvPoly = 0 }
   else { y | MvPolynomial.aeval y a.poly.toMvPoly ≠ 0 }
 
 noncomputable instance azFieldAtomRealization
-    {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
-    {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
+    {n : ℕ} {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
     {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K] :
-    AtomRealization (AzFieldAtom σ' R' ord') σ' K where
+    AtomRealization (AzFieldAtom n R' ord') (Fin n) K where
   interpret := azFieldAtomInterpret
   neg_interpret := by
     intro a
@@ -863,7 +862,7 @@ noncomputable instance azFieldAtomRealization
     intro e a
     simp only [AtomRename.renameEquiv, azFieldAtomInterpret, AzFieldAtom.renameVarsInjective]
     ext y
-    simp_rw [AzMvPolynomial.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
+    simp_rw [AzMvPolynomialNew.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
     cases a.isEq <;> simp [Set.mem_setOf_eq]
   interpret_invariant := by
     intro a x hx y c
@@ -880,47 +879,45 @@ noncomputable instance azFieldAtomRealization
       have h1 : ci ∈ a.poly.toMvPoly.support := MvPolynomial.mem_support_iff.mpr hci
       have h2 : i ∈ a.poly.toMvPoly.vars := (MvPolynomial.mem_vars i).mpr ⟨ci, h1, hi⟩
       convert h2 using 1
-      exact (toMvPoly_vars a.poly).symm
+      exact (toMvPoly_vars_new a.poly).symm
     simp [hix]
 
 /-! ### freshVars properties -/
 
 /-- The list `freshVars m start count h` has no duplicates. -/
-theorem freshVars_nodup {F : ℕ → Type*} [VarFamily F] (m start count : ℕ)
+theorem freshVars_nodup (m start count : ℕ)
     (h : start + count ≤ m) :
-    (freshVars (F := F) m start count h).Nodup := by
+    (freshVars m start count h).Nodup := by
   simp only [freshVars]
   apply List.Nodup.map
   · intro a b hab
-    have h1 := Var.ofFin_injective hab
-    simp only [Fin.mk.injEq] at h1
+    simp only [Fin.mk.injEq] at hab
     exact Fin.ext (by omega)
   · exact List.nodup_finRange count
 
 /-- Every variable in the embedded formula has index `< n`, so it is disjoint from
     fresh variables with index `≥ n`. -/
-theorem freshVars_fresh {F : ℕ → Type*} [VarFamily F]
+theorem freshVars_fresh
     {R' : Type*} [Semiring R'] {ord' : MonomialOrder}
     (m n depth : ℕ) (h : n + depth ≤ m)
-    (embedded : Formula (F m) (AzFieldAtom (F m) R' ord'))
-    (h_bound : ∀ v ∈ allVarsOf embedded, (Var.toFin v).val < n) :
-    ∀ v ∈ freshVars (F := F) m n depth h, v ∉ allVarsOf embedded := by
+    (embedded : Formula (Fin m) (AzFieldAtom m R' ord'))
+    (h_bound : ∀ v ∈ allVarsOf embedded, v.val < n) :
+    ∀ v ∈ freshVars m n depth h, v ∉ allVarsOf embedded := by
   intro v hv hm
   simp only [freshVars, List.mem_map, List.mem_finRange] at hv
   obtain ⟨i, _, rfl⟩ := hv
   have h1 := h_bound _ hm
-  simp only [Var.toFin_ofFin] at h1
-  show False
+  change n + i.val < n at h1
   omega
 
 /-! ### gRealization ↔ azRealization bridge -/
 
 /-- `gRealization` with the `azFieldAtomRealization` instance equals `azRealization`. -/
-theorem gRealization_eq_azRealization {n : ℕ} {σ' : Type*} [LinearOrder σ'] [Var σ' n]
+theorem gRealization_eq_azRealization {n : ℕ}
     {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
     {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K]
-    (Φ : Formula σ' (AzFieldAtom σ' R' ord')) :
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord')) :
     gRealization (K := K) Φ = azRealization (C := K) Φ := by
   induction Φ with
   | atom a =>
@@ -945,108 +942,106 @@ theorem gRealization_eq_azRealization {n : ℕ} {σ' : Type*} [LinearOrder σ'] 
 
 /-! ### allVarsOf bound for embedded formulas -/
 
-/-- All variables in a formula renamed via `Var.embed` have index `< n`. -/
-theorem allVarsOf_rename_embed_bound {F : ℕ → Type*} [VarFamily F]
+/-- All variables in a formula renamed via `Fin.castLE` have index `< n`. -/
+theorem allVarsOf_rename_embed_bound
     {n m : ℕ} {R' : Type*} [CommRing R']
     [NoZeroDivisors R'] [DecidableEq R'] {ord' : MonomialOrder}
     (h_le : n ≤ m)
-    (Φ : Formula (F n) (AzFieldAtom (F n) R' ord'))
-    (v : F m) :
-    v ∈ allVarsOf (Φ.rename (Var.embed h_le)
-      (AzFieldAtom.renameVarsMonotone (Var.embed h_le)
-        (Var.embed_fin_strictMono h_le))) →
-    (Var.toFin v).val < n := by
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord'))
+    (v : Fin m) :
+    v ∈ allVarsOf (Φ.rename (Fin.castLE h_le)
+      (AzFieldAtom.renameVarsMonotone (Fin.castLE h_le)
+        (fun _ _ hab => hab))) →
+    v.val < n := by
   induction Φ with
   | atom a =>
     intro hv
-    -- Unfold to AzMvPolynomial.vars
-    change v ∈ (a.poly.renameMonotone (Var.embed h_le)
-      (Var.embed_fin_strictMono h_le)).vars at hv
+    -- Unfold to AzMvPolynomialNew.vars
+    change v ∈ (a.poly.renameMonotone (Fin.castLE h_le)
+      (fun _ _ hab => hab)).vars at hv
     -- Bridge to MvPolynomial.vars
     have key : v ∈ (MvPolynomial.rename
-        (Var.embed h_le : F n → F m) a.poly.toMvPoly).vars := by
-      rw [← @toMvPoly_vars R' _ (F m) m _ _ ord'] at hv
-      rw [AzMvPolynomial.toMvPoly_renameMonotone
-        a.poly (Var.embed h_le) (Var.embed_fin_strictMono h_le)] at hv
+        (Fin.castLE h_le : Fin n → Fin m) a.poly.toMvPoly).vars := by
+      rw [← @toMvPoly_vars_new R' _ m ord'] at hv
+      rw [AzMvPolynomialNew.toMvPoly_renameMonotone
+        a.poly (Fin.castLE h_le) (fun _ _ hab => hab)] at hv
       exact hv
     obtain ⟨w, _, rfl⟩ := Finset.mem_image.mp
-      (MvPolynomial.vars_rename (Var.embed h_le) a.poly.toMvPoly key)
-    simp only [Var.embed, Var.toFin_ofFin, Fin.val_castLE]
-    exact (Var.toFin w).isLt
+      (MvPolynomial.vars_rename (Fin.castLE h_le) a.poly.toMvPoly key)
+    simp only [Fin.val_castLE]
+    exact w.isLt
   | not _ ih => exact ih
   | and _ _ ih₁ ih₂ =>
-    simp only [rename, allVarsOf, Finset.mem_union]
+    simp only [Formula.rename, allVarsOf, Finset.mem_union]
     rintro (h | h)
     · exact ih₁ h
     · exact ih₂ h
   | or _ _ ih₁ ih₂ =>
-    simp only [rename, allVarsOf, Finset.mem_union]
+    simp only [Formula.rename, allVarsOf, Finset.mem_union]
     rintro (h | h)
     · exact ih₁ h
     · exact ih₂ h
   | implies _ _ ih₁ ih₂ =>
-    simp only [rename, allVarsOf, Finset.mem_union]
+    simp only [Formula.rename, allVarsOf, Finset.mem_union]
     rintro (h | h)
     · exact ih₁ h
     · exact ih₂ h
   | exists_ x _ ih =>
-    simp only [rename, allVarsOf, Finset.mem_union, Finset.mem_singleton]
+    simp only [Formula.rename, allVarsOf, Finset.mem_union, Finset.mem_singleton]
     rintro (h | h)
     · exact ih h
     · subst h
-      simp only [Var.embed, Var.toFin_ofFin, Fin.val_castLE]
-      exact (Var.toFin x).isLt
+      simp only [Fin.val_castLE]
+      exact x.isLt
   | forall_ x _ ih =>
-    simp only [rename, allVarsOf, Finset.mem_union, Finset.mem_singleton]
+    simp only [Formula.rename, allVarsOf, Finset.mem_union, Finset.mem_singleton]
     rintro (h | h)
     · exact ih h
     · subst h
-      simp only [Var.embed, Var.toFin_ofFin, Fin.val_castLE]
-      exact (Var.toFin x).isLt
+      simp only [Fin.val_castLE]
+      exact x.isLt
 /-! ### azRealization and rename -/
 
 /-- Converting to FieldFormula commutes with rename: convert-then-rename = rename-then-convert. -/
-theorem azFormulaToFieldFormula_rename {F : ℕ → Type*} [VarFamily F] {n m : ℕ}
+theorem azFormulaToFieldFormula_rename {n m : ℕ}
     {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
     {ord' : MonomialOrder}
-    (f : F n → F m)
-    (hg : StrictMono (fun i : Fin n => Var.toFin (f (Var.ofFin i))))
-    (Φ : Formula (F n) (AzFieldAtom (F n) R' ord')) :
+    (f : Fin n → Fin m) (hg : StrictMono f)
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord')) :
     azFormulaToFieldFormula (Φ.rename f (AzFieldAtom.renameVarsMonotone f hg)) =
       (azFormulaToFieldFormula Φ).rename f (FieldAtom.renameVars f) := by
   induction Φ with
   | atom a =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom, AzFieldAtom.toFieldAtom,
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom, AzFieldAtom.toFieldAtom,
       AzFieldAtom.renameVarsMonotone, FieldAtom.renameVars]
     simp only [Formula.atom.injEq, FieldAtom.mk.injEq]
-    exact ⟨AzMvPolynomial.toMvPoly_renameMonotone a.poly f hg, trivial⟩
+    exact ⟨AzMvPolynomialNew.toMvPoly_renameMonotone a.poly f hg, trivial⟩
   | not _ ih =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg Formula.not ih
   | and _ _ ih₁ ih₂ =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg₂ Formula.and ih₁ ih₂
   | or _ _ ih₁ ih₂ =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg₂ Formula.or ih₁ ih₂
   | implies _ _ ih₁ ih₂ =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg₂ Formula.implies ih₁ ih₂
   | exists_ x _ ih =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg (Formula.exists_ (f x)) ih
   | forall_ x _ ih =>
-    simp only [rename, azFormulaToFieldFormula, mapAtom]
+    simp only [Formula.rename, azFormulaToFieldFormula, mapAtom]
     exact congrArg (Formula.forall_ (f x)) ih
 
 /-- `azRealization` is preserved under injective rename via preimage. -/
-theorem azRealization_rename {F : ℕ → Type*} [VarFamily F] {n m : ℕ}
+theorem azRealization_rename {n m : ℕ}
     {R' : Type*} [CommRing R'] [NoZeroDivisors R'] [DecidableEq R']
     {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K]
-    (f : F n → F m) (hf : Function.Injective f)
-    (hg : StrictMono (fun i : Fin n => Var.toFin (f (Var.ofFin i))))
-    (Φ : Formula (F n) (AzFieldAtom (F n) R' ord')) :
+    (f : Fin n → Fin m) (hf : Function.Injective f) (hg : StrictMono f)
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord')) :
     azRealization (C := K) (Φ.rename f (AzFieldAtom.renameVarsMonotone f hg)) =
       (· ∘ f) ⁻¹' azRealization (C := K) Φ := by
   simp only [azRealization, azFormulaToFieldFormula_rename f hg]
@@ -1429,10 +1424,10 @@ theorem rename_freshVarsNeeded {τ : Type*} {β : Type*} (f : σ → τ) (ra : �
   | implies _ _ ih₁ ih₂ => simp [Formula.rename, freshVarsNeeded, ih₁, ih₂]
 
 /-- The full `toPrenex` pipeline produces a prenex formula. -/
-theorem toPrenex_isPrenex {F : ℕ → Type*} [VarFamily F]
+theorem toPrenex_isPrenex
     {n : ℕ} {R' : Type*} [Semiring R']
     {ord' : MonomialOrder}
-    (Φ : Formula (F n) (AzFieldAtom (F n) R' ord')) :
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord')) :
     IsPrenex (toPrenex Φ) := by
   unfold toPrenex
   apply (toPrenexNNF_properties _ _ _ _).2.2
@@ -1443,25 +1438,25 @@ theorem toPrenex_isPrenex {F : ℕ → Type*} [VarFamily F]
 /-! ### Top-level toPrenex correctness -/
 
 /-- The prenex conversion preserves `azRealization` up to embedding:
-    `y ∈ azRealization(toPrenex Φ) ↔ (y ∘ embed) ∈ azRealization(Φ)` -/
-theorem toPrenex_azRealization {F : ℕ → Type*} [VarFamily F]
+    `y ∈ azRealization(toPrenex Φ) ↔ (y ∘ castLE) ∈ azRealization(Φ)` -/
+theorem toPrenex_azRealization
     {n : ℕ} {R' : Type*} [CommRing R']
     [NoZeroDivisors R'] [DecidableEq R'] {ord' : MonomialOrder}
     {K : Type*} [Field K] [Algebra R' K]
-    (Φ : Formula (F n) (AzFieldAtom (F n) R' ord')) :
+    (Φ : Formula (Fin n) (AzFieldAtom n R' ord')) :
     azRealization (C := K) (toPrenex Φ) =
-      (· ∘ Var.embed (Nat.le_add_right n (freshVarsNeeded (toNNF Φ)))) ⁻¹'
+      (· ∘ Fin.castLE (Nat.le_add_right n (freshVarsNeeded (toNNF Φ)))) ⁻¹'
         azRealization (C := K) Φ := by
   -- Abbreviations
   set fvn := freshVarsNeeded (toNNF Φ)
   set m := n + fvn
   set h_le : n ≤ m := Nat.le_add_right n fvn
   set nnf := toNNF Φ with hnnf
-  set embedded : Formula (F m) (AzFieldAtom (F m) R' ord') :=
-    nnf.rename (Var.embed h_le)
-    (AzFieldAtom.renameVarsMonotone (Var.embed h_le)
-      (Var.embed_fin_strictMono h_le)) with hemb
-  set fv := freshVars (F := F) m n fvn (le_refl m) with hfv
+  set embedded : Formula (Fin m) (AzFieldAtom m R' ord') :=
+    nnf.rename (Fin.castLE h_le)
+    (AzFieldAtom.renameVarsMonotone (Fin.castLE h_le)
+      (fun _ _ hab => hab)) with hemb
+  set fv := freshVars m n fvn (le_refl m) with hfv
 
   -- Step 1: azRealization(toPrenex Φ) = gRealization(toPrenex Φ)
   rw [show toPrenex Φ = (toPrenexNNF embedded fv).1 from rfl]
@@ -1474,10 +1469,11 @@ theorem toPrenex_azRealization {F : ℕ → Type*} [VarFamily F]
     (freshVars_nodup m n fvn (le_refl m))
     (fun e a => azFieldAtom_rename_vars e a)]
 
-  -- Step 3: gRealization(embedded) = azRealization(embedded) = (· ∘ embed) ⁻¹' azRealization(nnf)
+  -- Step 3: gRealization(embedded) = azRealization(embedded) = (· ∘ castLE) ⁻¹' azRealization(nnf)
   rw [gRealization_eq_azRealization]
-  rw [azRealization_rename (Var.embed h_le) (Var.embed_injective h_le)
-    (Var.embed_fin_strictMono h_le) nnf]
+  rw [azRealization_rename (Fin.castLE h_le)
+    (Fin.castLE_injective h_le)
+    (fun _ _ hab => hab) nnf]
 
   -- Step 4: azRealization(toNNF Φ) = azRealization(Φ)
   rw [hnnf]

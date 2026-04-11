@@ -11,11 +11,11 @@
 -/
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.ToString
-import Azurite.AzMvPolynomial.Parse
+import Azurite.AzMvPolynomial.New.Parse
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
 variable {σ : Type*} {α : Type*}
 
@@ -108,53 +108,50 @@ def toPrenexNNF [DecidableEq σ] [AtomRename α σ] :
 
 /-! ### Full prenex pipeline -/
 
-/-- Generate a list of fresh variables of type `F m`, starting at index
-    `start`. Generic over any `VarFamily F` (e.g. `IndexedVar` or `Fin`). -/
-def freshVars {F : ℕ → Type*} [VarFamily F] (m start count : ℕ)
-    (h : start + count ≤ m) : List (F m) :=
-  (List.finRange count).map fun i => Var.ofFin ⟨start + i.val, by omega⟩
+/-- Generate a list of fresh `Fin m` variables, starting at index `start`. -/
+def freshVars (m start count : ℕ) (h : start + count ≤ m) : List (Fin m) :=
+  (List.finRange count).map fun i => ⟨start + i.val, by omega⟩
 
-/-- Convert a formula over `F n` to prenex normal form, where `F` is any
-    variable type family (`IndexedVar`, `Fin`, …). Returns a formula over
-    `F m` where `m = n + freshVarsNeeded (toNNF Φ)`.
+/-- Convert a formula over `Fin n` to prenex normal form. Returns a formula
+    over `Fin m` where `m = n + freshVarsNeeded (toNNF Φ)`.
 
-    Pipeline: `toNNF → embed to F m → toPrenexNNF` -/
-def toPrenex {F : ℕ → Type*} [VarFamily F] {n : ℕ}
+    Pipeline: `toNNF → embed to Fin m → toPrenexNNF` -/
+def toPrenex {n : ℕ}
     {R : Type*} [Semiring R] {ord : MonomialOrder}
-    (Φ : Formula (F n) (AzFieldAtom (F n) R ord)) :
+    (Φ : Formula (Fin n) (AzFieldAtom n R ord)) :
     let m := n + freshVarsNeeded (toNNF Φ)
-    Formula (F m) (AzFieldAtom (F m) R ord) :=
+    Formula (Fin m) (AzFieldAtom m R ord) :=
   let fvn := freshVarsNeeded (toNNF Φ)
   let m := n + fvn
   let nnf := toNNF Φ
   let h_le : n ≤ m := Nat.le_add_right n fvn
-  let embedded : Formula (F m) (AzFieldAtom (F m) R ord) :=
-    nnf.rename (Var.embed h_le)
-      (AzFieldAtom.renameVarsMonotone (Var.embed h_le)
-        (Var.embed_fin_strictMono h_le))
+  let embedded : Formula (Fin m) (AzFieldAtom m R ord) :=
+    nnf.rename (Fin.castLE h_le)
+      (AzFieldAtom.renameVarsMonotone (Fin.castLE h_le)
+        (fun _ _ hab => hab))
   have h_bound : n + fvn ≤ m := le_refl m
-  let freshVarList := freshVars (F := F) m n fvn h_bound
+  let freshVarList := freshVars m n fvn h_bound
   (toPrenexNNF embedded freshVarList).1
 
 end Azurite
 
 /-! ### #guard examples -/
 
-open Azurite AzMvPolynomial MonicMonomial Monomial BPR Formula
+open Azurite AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
 section PrenexExamples
 
 open Azurite
 
 /-- Parse a polynomial in ℤ[x₀, x₁] as an abbreviation. -/
-private def p₂ (s : String) : AzMvPolynomial (IndexedVar 2) ℤ .Degrevlex :=
-  (AzMvPolynomial.parse s.toList).getD 0
+private def p₂ (s : String) : AzMvPolynomialNew 2 ℤ .Degrevlex :=
+  (AzMvPolynomialNew.parse s.toList).getD 0
 
-private abbrev F₂ := Formula (IndexedVar 2) (AzFieldAtom (IndexedVar 2) ℤ .Degrevlex)
+private abbrev F₂ := Formula (Fin 2) (AzFieldAtom 2 ℤ .Degrevlex)
 
 /-- Variables x₀ and x₁ for quantifying. -/
-private def x₀ : IndexedVar 2 := ⟨⟨0, by omega⟩⟩
-private def x₁ : IndexedVar 2 := ⟨⟨1, by omega⟩⟩
+private def x₀ : Fin 2 := ⟨0, by omega⟩
+private def x₁ : Fin 2 := ⟨1, by omega⟩
 
 -- Example 1: A simple atom (already prenex, no quantifiers)
 -- toPrenex (x₀ = 0) = (x₀ = 0)
@@ -189,15 +186,5 @@ private def ex6 : F₂ := .forall_ x₀ (.exists_ x₁ (azEqZero (p₂ "x₀+x�
 private def ex7 : F₂ := .or (.exists_ x₀ (azEqZero (p₂ "x₀")))
                              (.exists_ x₁ (azEqZero (p₂ "x₁")))
 #guard toString (toPrenex ex7) == "∃x₂, ∃x₃, x₂ = 0 ∨ x₃ = 0"
-
--- Example 8: `toPrenex` is generic over `VarFamily`, so it also works on `Fin n`
--- directly (not just `IndexedVar n`). Without a `ToString` for `Fin`, check
--- `quantifierDepth` instead. `(∃ (0 : Fin 2), X 0 = 0) ∧ (X 1 = 0)` is pulled
--- into a prenex formula of quantifier depth 1.
-private def ex8Fin : Formula (Fin 2) (AzFieldAtom (Fin 2) ℤ .Degrevlex) :=
-  .and (.exists_ (0 : Fin 2)
-          (azEqZero (AzMvPolynomial.X (ord := .Degrevlex) (0 : Fin 2))))
-       (azEqZero (AzMvPolynomial.X (ord := .Degrevlex) (1 : Fin 2)))
-#guard (toPrenex ex8Fin).quantifierDepth == 1
 
 end PrenexExamples

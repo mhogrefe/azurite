@@ -9,7 +9,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR
 
 /-! ### AtomVars typeclass -/
 
@@ -19,10 +19,9 @@ class AtomVars (α : Type*) (σ : outParam Type*) where
   /-- The variables appearing in an atom. -/
   vars : α → Finset σ
 
-/-- `AzFieldAtom` instance: computable via `AzMvPolynomial.vars`. -/
-instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
-    {R : Type*} [Semiring R] {ord : MonomialOrder} :
-    AtomVars (AzFieldAtom σ R ord) σ where
+/-- `AzFieldAtom` instance: computable via `AzMvPolynomialNew.vars`. -/
+instance {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomVars (AzFieldAtom n R ord) (Fin n) where
   vars := AzFieldAtom.vars
 
 /-- `FieldAtom` instance: noncomputable (uses `MvPolynomial.vars`). -/
@@ -40,9 +39,8 @@ class AtomRename (α : Type*) (σ : outParam Type*) where
   renameEquiv : (σ ≃ σ) → α → α
 
 /-- `AzFieldAtom` instance: computable via `renameVarsInjective`. -/
-instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
-    {R : Type*} [Semiring R] {ord : MonomialOrder} :
-    AtomRename (AzFieldAtom σ R ord) σ where
+instance {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomRename (AzFieldAtom n R ord) (Fin n) where
   renameEquiv e a := a.renameVarsInjective e e.injective
 
 /-- `FieldAtom` instance: noncomputable (uses `MvPolynomial.rename`). -/
@@ -63,9 +61,8 @@ class AtomNeg (α : Type*) where
   neg : α → α
 
 /-- `AzFieldAtom` instance: flips the `isEq` flag. -/
-instance {n : ℕ} {σ : Type*} [LinearOrder σ] [Var σ n]
-    {R : Type*} [Semiring R] {ord : MonomialOrder} :
-    AtomNeg (AzFieldAtom σ R ord) where
+instance {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder} :
+    AtomNeg (AzFieldAtom n R ord) where
   neg a := ⟨a.poly, !a.isEq⟩
 
 /-- `FieldAtom` instance: flips the `isEq` flag. -/
@@ -205,32 +202,31 @@ def renameFormulaEquiv [AtomRename α σ] (e : σ ≃ σ) (Φ : Formula σ α) :
 
 /-! ### AzFieldAtom-specific constructors -/
 
-variable {n : ℕ} [LinearOrder σ] [Var σ n]
-    {R : Type*} [Semiring R] {ord : MonomialOrder}
+variable {n : ℕ} {R : Type*} [Semiring R] {ord : MonomialOrder}
 
 /-- P = 0 as a formula. -/
-def azEqZero (P : AzMvPolynomial σ R ord) :
-    Formula σ (AzFieldAtom σ R ord) :=
+def azEqZero (P : AzMvPolynomialNew n R ord) :
+    Formula (Fin n) (AzFieldAtom n R ord) :=
   .atom (AzFieldAtom.eqZero P)
 
 /-- P ≠ 0 as a formula. -/
-def azNeZero (P : AzMvPolynomial σ R ord) :
-    Formula σ (AzFieldAtom σ R ord) :=
+def azNeZero (P : AzMvPolynomialNew n R ord) :
+    Formula (Fin n) (AzFieldAtom n R ord) :=
   .atom (AzFieldAtom.neZero P)
 
 /-- The true formula: 0 = 0. -/
-def azTrueFormula : Formula σ (AzFieldAtom σ R ord) :=
+def azTrueFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
   azEqZero 0
 
 /-- The false formula: 0 ≠ 0. -/
-def azFalseFormula : Formula σ (AzFieldAtom σ R ord) :=
+def azFalseFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
   azNeZero 0
 
 /-! ### Conjunction of equalities -/
 
 /-- Conjunction of `P = 0` atoms from a list of polynomials. -/
 def azConjEqZero :
-    List (AzMvPolynomial σ R ord) → Formula σ (AzFieldAtom σ R ord)
+    List (AzMvPolynomialNew n R ord) → Formula (Fin n) (AzFieldAtom n R ord)
   | []     => azTrueFormula
   | [P]    => azEqZero P
   | P :: rest => .and (azEqZero P) (azConjEqZero rest)

@@ -5,7 +5,7 @@ import Azurite.AzFormula.Equiv.FreeVars
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
 variable {σ : Type*} [DecidableEq σ] {D : Type*} [CommRing D]
     {C : Type*} [Field C] [Algebra D C]

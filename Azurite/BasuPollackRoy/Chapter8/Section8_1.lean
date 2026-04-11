@@ -9,6 +9,7 @@ import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Algebra.BigOperators.Fin
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.CompareEmbed
+import Azurite.AzMvPolynomial.New.MonicMonomial
 import Mathlib.Algebra.MvPolynomial.Basic
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.MvPolynomial.Degrees
@@ -619,40 +620,40 @@ theorem card_monicMonomials (k d : ℕ) :
 #guard (monicMonomials 3 1).card = 4
 #guard (monicMonomials 3 3).card = 20
 
-/-! ### MonicMonomial bridge -/
+/-! ### MonicMonomialNew bridge -/
 
-variable {σ : Type _} {n : ℕ} [LinearOrder σ] [Var σ n] (ord : MonomialOrder)
+variable {n : ℕ} (ord : MonomialOrder)
 
 private theorem ofFn_mk_injective :
-    Function.Injective (fun f : Fin n → ℕ => (⟨Vector.ofFn f⟩ : MonicMonomial σ ord)) := by
+    Function.Injective (fun f : Fin n → ℕ => (⟨Vector.ofFn f⟩ : MonicMonomialNew n ord)) := by
   intro a b h
-  simp only [MonicMonomial.mk.injEq] at h
+  simp only [MonicMonomialNew.mk.injEq] at h
   exact funext (fun i => by
     have : (Vector.ofFn a)[i] = (Vector.ofFn b)[i] := by rw [h]
     simpa using this)
 
-/-- The finite set of `MonicMonomial`s of total degree `≤ d`. -/
-def MonicMonomial.finsetLeD (d : ℕ) : Finset (MonicMonomial σ ord) :=
+/-- The finite set of `MonicMonomialNew`s of total degree `≤ d`. -/
+def MonicMonomialNew.finsetLeD (d : ℕ) : Finset (MonicMonomialNew n ord) :=
   (monicMonomials n d).image (fun f => ⟨Vector.ofFn f⟩)
 
-/-- A `MonicMonomial` belongs to `finsetLeD` iff its total degree is `≤ d`. -/
-theorem MonicMonomial.mem_finsetLeD {d : ℕ} {m : MonicMonomial σ ord} :
-    m ∈ MonicMonomial.finsetLeD ord d ↔ m.totalDegree ≤ d := by
+/-- A `MonicMonomialNew` belongs to `finsetLeD` iff its total degree is `≤ d`. -/
+theorem MonicMonomialNew.mem_finsetLeD {d : ℕ} {m : MonicMonomialNew n ord} :
+    m ∈ MonicMonomialNew.finsetLeD ord d ↔ m.totalDegree ≤ d := by
   simp only [finsetLeD, Finset.mem_image, mem_monicMonomials]
   constructor
   · rintro ⟨f, hf, hm⟩
-    rw [MonicMonomial.totalDegree, ← hm, totalDeg_eq_finsum]
+    rw [MonicMonomialNew.totalDegree, ← hm, totalDeg_eq_finsum]
     simp only [Vector.getElem_ofFn, Fin.getElem_fin]; exact hf
   · intro hle
     refine ⟨fun i => m.exponents[i], ?_, ?_⟩
-    · rw [MonicMonomial.totalDegree, totalDeg_eq_finsum] at hle
+    · rw [MonicMonomialNew.totalDegree, totalDeg_eq_finsum] at hle
       convert hle using 1
     · ext : 1; ext i : 1; simp
 
-/-- **BPR Lemma 8.6 (MonicMonomial form).** The number of monic monomials
+/-- **BPR Lemma 8.6 (MonicMonomialNew form).** The number of monic monomials
     of total degree `≤ d` in `n` variables is `(d + n).choose n`. -/
-theorem MonicMonomial.card_finsetLeD (d : ℕ) :
-    (MonicMonomial.finsetLeD ord d : Finset (MonicMonomial σ ord)).card =
+theorem MonicMonomialNew.card_finsetLeD (d : ℕ) :
+    (MonicMonomialNew.finsetLeD ord d : Finset (MonicMonomialNew n ord)).card =
     (d + n).choose n := by
   rw [finsetLeD, Finset.card_image_of_injective _ (ofFn_mk_injective (ord := ord)),
       card_monicMonomials]
@@ -683,11 +684,12 @@ theorem card_monicMonomials_le_pow (k d : ℕ) :
     (monicMonomials k d).card ≤ (d + 1) ^ k :=
   card_monicMonomials k d ▸ choose_add_le_pow d k
 
-/-- Corollary (MonicMonomial form): the number of monic monomials of total
+/-- Corollary (MonicMonomialNew form): the number of monic monomials of total
     degree `≤ d` in `n` variables is at most `(d + 1) ^ n`. -/
-theorem MonicMonomial.card_finsetLeD_le_pow (d : ℕ) :
-    (MonicMonomial.finsetLeD ord d : Finset (MonicMonomial σ ord)).card ≤ (d + 1) ^ n := by
-  rw [MonicMonomial.card_finsetLeD]; exact choose_add_le_pow d n
+theorem MonicMonomialNew.card_finsetLeD_le_pow (d : ℕ) :
+    (MonicMonomialNew.finsetLeD ord d : Finset (MonicMonomialNew n ord)).card ≤
+      (d + 1) ^ n := by
+  rw [MonicMonomialNew.card_finsetLeD]; exact choose_add_le_pow d n
 
 /-!
 ### Bitsize of summing two polynomials

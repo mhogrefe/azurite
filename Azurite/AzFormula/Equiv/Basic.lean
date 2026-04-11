@@ -7,7 +7,7 @@ import Azurite.AzFormula.Realization
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
 /-! ### mapAtom functor laws -/
 
@@ -53,11 +53,10 @@ theorem freeVarsOf_mapAtom [AtomVars α σ] [AtomVars β σ] [DecidableEq σ]
 
 /-! ### Formula conversion round-trips -/
 
-variable {n : ℕ} [LinearOrder σ] [Var σ n] [DecidableEq σ]
-    {D : Type*} [CommRing D] {ord : MonomialOrder}
+variable {n : ℕ} {D : Type*} [CommRing D] {ord : MonomialOrder}
 
 theorem fieldFormulaToAzFormula_azFormulaToFieldFormula
-    (Φ : Formula σ (AzFieldAtom σ D ord)) :
+    (Φ : Formula (Fin n) (AzFieldAtom n D ord)) :
     fieldFormulaToAzFormula (azFormulaToFieldFormula Φ) = Φ := by
   simp only [fieldFormulaToAzFormula, azFormulaToFieldFormula, mapAtom_comp]
   show Φ.mapAtom (azFieldAtomOfFieldAtom ∘ AzFieldAtom.toFieldAtom) = Φ
@@ -65,7 +64,7 @@ theorem fieldFormulaToAzFormula_azFormulaToFieldFormula
   congr 1; funext a; exact azFieldAtomOfFieldAtom_toFieldAtom a
 
 theorem azFormulaToFieldFormula_fieldFormulaToAzFormula
-    (Φ : Formula σ (FieldAtom σ D)) :
+    (Φ : Formula (Fin n) (FieldAtom (Fin n) D)) :
     azFormulaToFieldFormula (fieldFormulaToAzFormula (ord := ord) Φ) = Φ := by
   simp only [azFormulaToFieldFormula, fieldFormulaToAzFormula, mapAtom_comp]
   show Φ.mapAtom (AzFieldAtom.toFieldAtom ∘ azFieldAtomOfFieldAtom) = Φ
@@ -77,7 +76,7 @@ theorem azFormulaToFieldFormula_fieldFormulaToAzFormula
 /-- The `azRealization` is definitionally equal to the realization of the
     converted formula — this is `rfl` by definition. -/
 theorem azRealization_eq_realization {C : Type*} [Field C] [Algebra D C]
-    (Φ : Formula σ (AzFieldAtom σ D ord)) :
+    (Φ : Formula (Fin n) (AzFieldAtom n D ord)) :
     azRealization (C := C) Φ = (azFormulaToFieldFormula Φ).realization := rfl
 
 end Azurite

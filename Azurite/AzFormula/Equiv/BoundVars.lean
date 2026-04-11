@@ -2,16 +2,14 @@
   Equivalence proofs: boundVarsOf agrees with BPR boundVars.
 -/
 import Azurite.AzFormula.Equiv.Basic
-import Azurite.AzMvPolynomial.Equiv.Vars
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
-variable {σ : Type*} {n : ℕ} [LinearOrder σ] [Var σ n] [DecidableEq σ]
-    {D : Type*} [CommRing D] {ord : MonomialOrder}
+variable {σ : Type*} [DecidableEq σ]
+    {n : ℕ} {D : Type*} [CommRing D] {ord : MonomialOrder}
 
-omit [LinearOrder σ] in
 /-- The generic `boundVarsOf` agrees with the BPR-specialized `boundVars`
     for `FieldAtom`, directly. -/
 theorem boundVarsOf_eq_boundVars_fieldAtom
@@ -29,7 +27,7 @@ theorem boundVarsOf_eq_boundVars_fieldAtom
 /-- The generic `boundVarsOf` on an `AzFieldAtom` formula agrees with the
     BPR `boundVars` after converting via `azFormulaToFieldFormula`. -/
 theorem boundVarsOf_eq_boundVars_azFieldAtom
-    (Φ : Formula σ (AzFieldAtom σ D ord)) :
+    (Φ : Formula (Fin n) (AzFieldAtom n D ord)) :
     boundVarsOf Φ = (azFormulaToFieldFormula Φ).boundVars := by
   induction Φ with
   | atom a =>

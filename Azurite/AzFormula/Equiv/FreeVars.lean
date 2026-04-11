@@ -2,16 +2,15 @@
   Equivalence proofs: freeVarsOf agrees with BPR freeVars.
 -/
 import Azurite.AzFormula.Equiv.Basic
-import Azurite.AzMvPolynomial.Equiv.Vars
+import Azurite.AzMvPolynomial.New.Equiv.Vars
 
 namespace Azurite
 
-open AzMvPolynomial MonicMonomial Monomial BPR Formula
+open AzMvPolynomialNew MonicMonomialNew MonomialNew BPR Formula
 
-variable {σ : Type*} {n : ℕ} [LinearOrder σ] [Var σ n] [DecidableEq σ]
-    {D : Type*} [CommRing D] {ord : MonomialOrder}
+variable {σ : Type*} [DecidableEq σ]
+    {n : ℕ} {D : Type*} [CommRing D] {ord : MonomialOrder}
 
-omit [LinearOrder σ] in
 /-- The generic `freeVarsOf` agrees with the BPR-specialized `freeVars`
     for `FieldAtom`, directly. -/
 theorem freeVarsOf_eq_freeVars_fieldAtom
@@ -29,13 +28,13 @@ theorem freeVarsOf_eq_freeVars_fieldAtom
 /-- The generic `freeVarsOf` on an `AzFieldAtom` formula agrees with the
     BPR `freeVars` after converting via `azFormulaToFieldFormula`. -/
 theorem freeVarsOf_eq_freeVars_azFieldAtom
-    (Φ : Formula σ (AzFieldAtom σ D ord)) :
+    (Φ : Formula (Fin n) (AzFieldAtom n D ord)) :
     freeVarsOf Φ = (azFormulaToFieldFormula Φ).freeVars := by
   induction Φ with
   | atom a =>
     show a.poly.vars = (azFormulaToFieldFormula (.atom a)).freeVars
     simp only [azFormulaToFieldFormula, mapAtom, freeVars, FieldAtom.vars, AzFieldAtom.toFieldAtom]
-    convert (toMvPoly_vars a.poly).symm
+    convert (toMvPoly_vars_new a.poly).symm
   | not _ ih =>
     simp only [freeVarsOf, show azFormulaToFieldFormula (.not _) =
       .not (azFormulaToFieldFormula _) from rfl, freeVars]; exact ih
