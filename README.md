@@ -146,7 +146,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 
 | Module | Description |
 |--------|-------------|
-| `UInt64/` | Helpers on Lean's built-in `UInt64` type. `addWithCarry` (64-bit add with carry-in/out), `isPowerOfTwo` (bit-trick power-of-two test), `testBit` (returns `false` for `i ≥ 64`), `setBit`/`clearBit` (identity for `i ≥ 64`). `Equiv/Basic` provides `UInt64.eq_of_toNat_eq`; `Equiv/AddWithCarry`, `Equiv/Pow2`, `Equiv/TestBit`, `Equiv/SetBit`, and `Equiv/ClearBit` prove the `toNat` semantics of each helper. |
+| `UInt64/` | Helpers on Lean's built-in `UInt64` type. `addWithCarry` (64-bit add with carry-in/out), `isPowerOfTwo` (bit-trick power-of-two test), `testBit` (returns `false` for `i ≥ 64`), `setBit`/`clearBit` (identity for `i ≥ 64`), `splitInHalf`/`joinHalves` (convert between `UInt64` and a pair of `UInt32` halves). `Equiv/Basic` provides `UInt64.eq_of_toNat_eq`; the remaining `Equiv/*` files prove the `toNat` semantics of each helper, including `toNat_joinHalves` and the two-sided inverse properties of `splitInHalf`/`joinHalves`. |
 | `Nat/NormalizedCompare` | `normalizedCompare`: O(log n) comparison of naturals by their normalized bit representations. Proven equivalent to comparing `x / 2^size(x)` vs `y / 2^size(y)`. |
 | `Rat/LogBase2` | `floorLogBase2Abs` and `ceilingLogBase2Abs` for rationals, proven equal to `⌊log₂ |q|⌋` and `⌈log₂ |q|⌉`. |
 | `Rat/Compare` | `Azurite.Rat.cmp`: a fast multi-stage rational comparison (sign → magnitude bracket → num/den comparison → log₂ comparison → cross-multiply). Proven equivalent to standard `compare` on `ℚ`. |

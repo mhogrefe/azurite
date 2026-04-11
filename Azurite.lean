@@ -224,7 +224,9 @@ import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Equiv.ClearBit
 import Azurite.UInt64.Equiv.Pow2
 import Azurite.UInt64.Equiv.SetBit
+import Azurite.UInt64.Equiv.SplitHalves
 import Azurite.UInt64.Equiv.TestBit
 import Azurite.UInt64.Pow2
 import Azurite.UInt64.SetBit
+import Azurite.UInt64.SplitHalves
 import Azurite.UInt64.TestBit
