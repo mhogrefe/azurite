@@ -71,6 +71,6 @@ private def p (s : String) : AzPolynomial MvInt3 :=
   (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
     (ord := .Degrevlex) s).getD 0
 
-#guard toString (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)")) == "((x₀+x₁ = 0 ∧ (-x₂ = 0 ∧ (3*x₀+x₁ = 0 ∧ 0 = 0))) ∧ (x₀*x₁ = 0 ∧ (x₀^2-x₁^2 = 0 ∧ (-x₀*x₁ = 0 ∧ 0 = 0)))) ∨ (((x₀+x₁ ≠ 0 ∧ (-x₂ = 0 ∧ (3*x₀+x₁ = 0 ∧ 0 = 0))) ∧ (x₀*x₁ ≠ 0 ∧ (x₀^2-x₁^2 = 0 ∧ (-x₀*x₁ = 0 ∧ 0 = 0)))) ∨ (((-x₂ ≠ 0 ∧ (3*x₀+x₁ = 0 ∧ 0 = 0)) ∧ (x₀^2-x₁^2 ≠ 0 ∧ (-x₀*x₁ = 0 ∧ 0 = 0))) ∨ (((3*x₀+x₁ ≠ 0 ∧ 0 = 0) ∧ (-x₀*x₁ ≠ 0 ∧ 0 = 0)) ∨ 0 ≠ 0)))"
+#guard toString (elimTrivialAtoms (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)"))) == "((x₀+x₁ = 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ = 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((x₀+x₁ ≠ 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ ≠ 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((-x₂ ≠ 0 ∧ 3*x₀+x₁ = 0) ∧ (x₀^2-x₁^2 ≠ 0 ∧ -x₀*x₁ = 0)) ∨ (3*x₀+x₁ ≠ 0 ∧ -x₀*x₁ ≠ 0)))"
 
 end Azurite

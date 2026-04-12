@@ -222,6 +222,53 @@ def azTrueFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
 def azFalseFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
   azNeZero 0
 
+/-! ### Trivial atom elimination -/
+
+/-- Check whether a formula is a trivially true atom (`P = 0` with `P = 0`). -/
+def isAzTrue [DecidableEq R] (Φ : Formula (Fin n) (AzFieldAtom n R ord)) : Bool :=
+  match Φ with
+  | .atom a => a.isEq && a.poly == 0
+  | _ => false
+
+/-- Check whether a formula is a trivially false atom (`P ≠ 0` with `P = 0`). -/
+def isAzFalse [DecidableEq R] (Φ : Formula (Fin n) (AzFieldAtom n R ord)) : Bool :=
+  match Φ with
+  | .atom a => !a.isEq && a.poly == 0
+  | _ => false
+
+/-- Eliminate trivially true (`0 = 0`) and trivially false (`0 ≠ 0`) atoms
+    using boolean absorption rules. -/
+def elimTrivialAtoms [DecidableEq R] :
+    Formula (Fin n) (AzFieldAtom n R ord) → Formula (Fin n) (AzFieldAtom n R ord)
+  | .atom a => .atom a
+  | .not Φ =>
+    let Φ' := elimTrivialAtoms Φ
+    if isAzTrue Φ' then azFalseFormula
+    else if isAzFalse Φ' then azTrueFormula
+    else .not Φ'
+  | .and Φ₁ Φ₂ =>
+    let Φ₁' := elimTrivialAtoms Φ₁
+    let Φ₂' := elimTrivialAtoms Φ₂
+    if isAzTrue Φ₁' then Φ₂'
+    else if isAzTrue Φ₂' then Φ₁'
+    else if isAzFalse Φ₁' || isAzFalse Φ₂' then azFalseFormula
+    else .and Φ₁' Φ₂'
+  | .or Φ₁ Φ₂ =>
+    let Φ₁' := elimTrivialAtoms Φ₁
+    let Φ₂' := elimTrivialAtoms Φ₂
+    if isAzFalse Φ₁' then Φ₂'
+    else if isAzFalse Φ₂' then Φ₁'
+    else if isAzTrue Φ₁' || isAzTrue Φ₂' then azTrueFormula
+    else .or Φ₁' Φ₂'
+  | .implies Φ₁ Φ₂ =>
+    let Φ₁' := elimTrivialAtoms Φ₁
+    let Φ₂' := elimTrivialAtoms Φ₂
+    if isAzTrue Φ₁' then Φ₂'
+    else if isAzFalse Φ₁' || isAzTrue Φ₂' then azTrueFormula
+    else .implies Φ₁' Φ₂'
+  | .exists_ x Φ => .exists_ x (elimTrivialAtoms Φ)
+  | .forall_ x Φ => .forall_ x (elimTrivialAtoms Φ)
+
 /-! ### Conjunction of equalities -/
 
 /-- Conjunction of `P = 0` atoms from a list of polynomials. -/
