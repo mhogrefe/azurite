@@ -223,7 +223,7 @@ private lemma pRem_fold_coeff_zero (P Q : AzPolynomial D)
 
 /-! ### Degree bound on `toPoly (pRem P Q)` -/
 
-private lemma degree_toPoly_pRem_lt (P Q : AzPolynomial D)
+theorem degree_toPoly_pRem_lt (P Q : AzPolynomial D)
     (hQ : AzPolynomial.toPoly Q ≠ 0) :
     (AzPolynomial.toPoly (pRem P Q)).degree < (AzPolynomial.toPoly Q).degree := by
   rw [AzPolynomial.degree_toPoly Q]
@@ -269,7 +269,7 @@ private lemma degree_toPoly_pRem_lt (P Q : AzPolynomial D)
 
 /-! ### The `D[X]` equation -/
 
-private lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
+lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
     (hQ : AzPolynomial.toPoly Q ≠ 0) :
     ∃ A : Polynomial D,
       Polynomial.C (Q.leadingCoeff ^

@@ -1,0 +1,346 @@
+import Azurite.AzPolynomial.TRems
+import Azurite.AzPolynomial.Equiv.Tru
+import Azurite.AzPolynomial.Equiv.PRem
+import Azurite.AzPolynomial.Equiv.Neg
+
+/-!
+# Equivalence: `AzPolynomial.tremsLeaves` ↔ BPR's `TRems` leaves
+
+Shows that the leaves of the computable `tremsLeaves` on
+`AzPolynomial (AzMvPolynomial k D ord)` correspond exactly to the
+leaves of the noncomputable `BPR.TRems` on
+`Polynomial (MvPolynomial (Fin k) D)` under the `liftPoly` bridge.
+
+The main results are:
+
+* `liftPoly_pRem_eq_pRemMv` — the computable `pRem` matches the
+  noncomputable `pRemMv` under `liftPoly`.
+* `mem_tremsLeaves_iff_mem_TRems_leafSet` — a polynomial belongs to the
+  computable leaf list iff its `liftPoly` image belongs to the leaf set
+  of the noncomputable tree.
+-/
+
+namespace Azurite
+
+open AzMvPolynomial Polynomial
+
+variable {k : ℕ} {D : Type _} [CommRing D] [IsDomain D] [DecidableEq D]
+         {ord : MonomialOrder}
+
+/-! ### Bridge lemma: `liftPoly_neg` -/
+
+@[simp] theorem liftPoly_neg (p : AzPolynomial (AzMvPolynomial k D ord)) :
+    liftPoly (-p) = -(liftPoly p) := by
+  simp only [liftPoly, AzPolynomial.toPoly_neg, Polynomial.map_neg]
+
+/-! ### Bridge lemma: `liftPoly_pRem_eq_pRemMv` -/
+
+private theorem toMvPolyHom_injective' :
+    Function.Injective (AzMvPolynomial.toMvPolyHom (R := D) (n := k) (ord := ord)) :=
+  fun _ _ h => toMvPoly_injective h
+
+/-- `pRemExp` is preserved by `liftPoly` because `natDegree` is
+preserved by injective `Polynomial.map`. -/
+private theorem pRemExp_liftPoly
+    (P Q : AzPolynomial (AzMvPolynomial k D ord)) :
+    BPR.pRemExp (liftPoly P) (liftPoly Q) =
+      BPR.pRemExp (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) := by
+  unfold BPR.pRemExp BPR.smallestEvenGe
+  rw [liftPoly_natDegree, liftPoly_natDegree,
+      AzPolynomial.natDegree_toPoly, AzPolynomial.natDegree_toPoly]
+
+/-- The computational `pRem` matches BPR's `pRemMv` under `liftPoly`:
+for any `P Q : AzPolynomial (AzMvPolynomial k D ord)`,
+`liftPoly (pRem P Q) = pRemMv (liftPoly P) (liftPoly Q)`. -/
+theorem liftPoly_pRem_eq_pRemMv
+    (P Q : AzPolynomial (AzMvPolynomial k D ord))
+    (hQ : Q ≠ 0) :
+    liftPoly (AzPolynomial.pRem P Q) =
+      BPR.pRemMv (liftPoly P) (liftPoly Q) := by
+  -- Both sides map to the same element under algebraMap, so equal by injectivity.
+  set K' := FractionRing (MvPolynomial (Fin k) D)
+  set ι : MvPolynomial (Fin k) D →+* K' := algebraMap _ K'
+  set φ := AzMvPolynomial.toMvPolyHom (R := D) (n := k) (ord := ord)
+  have hφ_inj := toMvPolyHom_injective' (D := D) (k := k) (ord := ord)
+  have hι_inj := IsFractionRing.injective (MvPolynomial (Fin k) D) K'
+  -- liftPoly Q ≠ 0, toPoly Q ≠ 0
+  have hLQ_ne : liftPoly Q ≠ 0 := (liftPoly_eq_zero_iff Q).not.mpr hQ
+  have hTQ_ne : AzPolynomial.toPoly Q ≠ 0 := by
+    intro h; exact hQ (toPoly_inj.mp (by rw [h, toPoly_zero]))
+  -- Step 1: Division equation in AzMvPoly[X]
+  obtain ⟨A, hAR⟩ := AzPolynomial.toPoly_pRem_div_eq P Q hTQ_ne
+  -- Step 2: Map through ι ∘ φ to K'[X]
+  have hmap := congrArg (Polynomial.map (ι.comp φ)) hAR
+  simp only [Polynomial.map_mul, Polynomial.map_add] at hmap
+  -- Simplify coefficient: map (ι∘φ) (C(b^d)) = C(ι(lc(liftPoly Q)^d'))
+  have hC_simp : Polynomial.map (ι.comp φ) (Polynomial.C (Q.leadingCoeff ^
+      BPR.pRemExp (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q))) =
+      Polynomial.C (ι ((liftPoly Q).leadingCoeff ^
+        BPR.pRemExp (liftPoly P) (liftPoly Q))) := by
+    rw [Polynomial.map_C, RingHom.comp_apply, map_pow, pRemExp_liftPoly]
+    congr 3
+    have := Polynomial.leadingCoeff_map_of_injective hφ_inj (AzPolynomial.toPoly Q)
+    rw [leadingCoeff_toPoly] at this
+    exact this.symm
+  -- Convert map (ι∘φ) (toPoly r) to (liftPoly r).map ι
+  have hcomp : ∀ r : AzPolynomial (AzMvPolynomial k D ord),
+      Polynomial.map (ι.comp φ) (AzPolynomial.toPoly r) = (liftPoly r).map ι := by
+    intro r; show _ = Polynomial.map ι (Polynomial.map φ (AzPolynomial.toPoly r))
+    rw [Polynomial.map_map]
+  rw [hC_simp, hcomp P, hcomp Q, hcomp (AzPolynomial.pRem P Q)] at hmap
+  -- Step 3: Degree bound
+  have hdeg : (liftPoly (AzPolynomial.pRem P Q)).degree <
+      (liftPoly Q).degree := by
+    show (Polynomial.map φ (AzPolynomial.toPoly (AzPolynomial.pRem P Q))).degree <
+      (Polynomial.map φ (AzPolynomial.toPoly Q)).degree
+    rw [Polynomial.degree_map_eq_of_injective hφ_inj,
+        Polynomial.degree_map_eq_of_injective hφ_inj]
+    exact AzPolynomial.degree_toPoly_pRem_lt P Q hTQ_ne
+  have hdeg_ι : ((liftPoly (AzPolynomial.pRem P Q)).map ι).degree <
+      ((liftPoly Q).map ι).degree := by
+    rwa [Polynomial.degree_map_eq_of_injective hι_inj,
+         Polynomial.degree_map_eq_of_injective hι_inj]
+  -- Step 4: Uniqueness of Euclidean division in K'[X]
+  have hLQ_map_ne : (liftPoly Q).map ι ≠ 0 :=
+    (Polynomial.map_ne_zero_iff hι_inj).mpr hLQ_ne
+  have hdvd : (liftPoly Q).map ι ∣
+      (Polynomial.C (ι ((liftPoly Q).leadingCoeff ^
+        BPR.pRemExp (liftPoly P) (liftPoly Q))) *
+        (liftPoly P).map ι) -
+      (liftPoly (AzPolynomial.pRem P Q)).map ι :=
+    ⟨Polynomial.map (ι.comp φ) A, by linear_combination hmap⟩
+  have hmod_sub :
+      ((Polynomial.C (ι ((liftPoly Q).leadingCoeff ^
+        BPR.pRemExp (liftPoly P) (liftPoly Q))) *
+        (liftPoly P).map ι) -
+        (liftPoly (AzPolynomial.pRem P Q)).map ι) %
+          (liftPoly Q).map ι = 0 :=
+    EuclideanDomain.mod_eq_zero.mpr hdvd
+  rw [Polynomial.sub_mod, sub_eq_zero] at hmod_sub
+  -- So (liftPoly(pRem P Q)).map ι = PRem K' (liftPoly P) (liftPoly Q)
+  have hlift_spec : (liftPoly (AzPolynomial.pRem P Q)).map ι =
+      BPR.PRem K' (liftPoly P) (liftPoly Q) := by
+    -- Unfold PRem to Rem to explicit mod, then simplify map over product
+    have heq : BPR.PRem K' (liftPoly P) (liftPoly Q) =
+        (Polynomial.C (ι ((liftPoly Q).leadingCoeff ^
+          BPR.pRemExp (liftPoly P) (liftPoly Q))) *
+          (liftPoly P).map ι) % ((liftPoly Q).map ι) := by
+      unfold BPR.PRem BPR.Rem
+      simp only [Polynomial.map_mul, Polynomial.map_C]
+      rfl
+    rw [heq, hmod_sub, (Polynomial.mod_eq_self_iff hLQ_map_ne).mpr hdeg_ι]
+  -- pRemMv satisfies the same spec
+  have hpRemMv_spec := BPR.pRemMv_spec (liftPoly P) (liftPoly Q) hLQ_ne
+  -- By injectivity of Polynomial.map ι
+  exact Polynomial.map_injective ι hι_inj (by rw [hlift_spec, hpRemMv_spec])
+
+/-! ### Helper: `tru` empty iff zero -/
+
+private theorem tru_eq_nil_iff
+    (p : AzPolynomial (AzMvPolynomial k D ord)) :
+    AzPolynomial.tru p = [] ↔ p = 0 := by
+  constructor
+  · intro h; rw [AzPolynomial.tru] at h
+    by_contra hne
+    simp only [beq_iff_eq, hne, ↓reduceIte, Bool.or_eq_true] at h
+    split_ifs at h
+  · intro h; subst h; rw [AzPolynomial.tru]; simp
+
+omit [IsDomain D] in
+private theorem Tru_eq_empty_iff
+    (Q : Polynomial (MvPolynomial (Fin k) D)) :
+    BPR.Tru Q = ∅ ↔ Q = 0 := by
+  constructor
+  · intro h; by_contra hne
+    have : Q ∈ BPR.Tru Q := by
+      rw [BPR.Tru, if_neg hne]
+      split_ifs
+      · exact Set.mem_singleton_iff.mpr rfl
+      · exact Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl)
+    rw [h] at this; exact this
+  · rintro rfl; rw [BPR.Tru, if_pos rfl]
+
+/-! ### Surjectivity: elements of `Tru(liftPoly p)` have preimages -/
+
+private theorem Tru_liftPoly_subset_range
+    (p : AzPolynomial (AzMvPolynomial k D ord)) :
+    BPR.Tru (liftPoly p) ⊆
+      Set.range (liftPoly (k := k) (D := D) (ord := ord)) := by
+  suffices ∀ n, ∀ p : AzPolynomial (AzMvPolynomial k D ord),
+      p.natDegree ≤ n →
+      BPR.Tru (liftPoly p) ⊆ Set.range liftPoly from
+    this p.natDegree p le_rfl
+  intro n
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+  intro p hpn x hx
+  rw [BPR.Tru] at hx
+  by_cases h0 : liftPoly p = 0
+  · rw [if_pos h0] at hx; exact hx.elim
+  · rw [if_neg h0] at hx
+    by_cases hbase : (∃ d, (liftPoly p).leadingCoeff = MvPolynomial.C d) ∨
+        (liftPoly p).natDegree = 0
+    · rw [if_pos hbase, Set.mem_singleton_iff] at hx
+      exact ⟨p, hx.symm⟩
+    · rw [if_neg hbase, Set.mem_union, Set.mem_singleton_iff] at hx
+      rcases hx with rfl | hx
+      · exact ⟨p, rfl⟩
+      · rw [liftPoly_natDegree, ← liftPoly_truncate] at hx
+        push Not at hbase
+        have hpos : 0 < p.natDegree := by
+          rw [← liftPoly_natDegree]; exact Nat.pos_of_ne_zero hbase.2
+        have hle := AzPolynomial.natDegree_truncate_le (p.natDegree - 1) p
+        exact ih _ (by omega) _ le_rfl hx
+
+/-- Every element of `Tru (liftPoly p)` has a preimage in `tru p`. -/
+private theorem exists_tru_preimage
+    (p : AzPolynomial (AzMvPolynomial k D ord))
+    (x : Polynomial (MvPolynomial (Fin k) D))
+    (hx : x ∈ BPR.Tru (liftPoly p)) :
+    ∃ q, q ∈ AzPolynomial.tru p ∧ liftPoly q = x := by
+  obtain ⟨q, rfl⟩ := Tru_liftPoly_subset_range p hx
+  exact ⟨q, (mem_tru_iff_mem_Tru p q).mpr hx, rfl⟩
+
+/-! ### Inductive leaf predicate -/
+
+/-- `IsLeafOfMkTRemsNode P Q q` means `q` is a leaf label of the tree
+`BPR.mkTRemsNode P Q`. Three cases mirror the recursive structure of
+`mkTRemsLeavesAux`: zero, no children, and recursive child. -/
+inductive BPR.IsLeafOfMkTRemsNode {k : ℕ} {D : Type _} [CommRing D]
+    [IsDomain D] :
+    Polynomial (MvPolynomial (Fin k) D) →
+    Polynomial (MvPolynomial (Fin k) D) →
+    Polynomial (MvPolynomial (Fin k) D) → Prop
+  | leaf_zero {P Q} (h : Q = 0) :
+      BPR.IsLeafOfMkTRemsNode P Q Q
+  | leaf_noChildren {P Q} (h : Q ≠ 0)
+      (ht : BPR.Tru (-(BPR.pRemMv P Q)) = ∅) :
+      BPR.IsLeafOfMkTRemsNode P Q Q
+  | leaf_child {P Q c q} (h : Q ≠ 0)
+      (hc : c ∈ BPR.Tru (-(BPR.pRemMv P Q)))
+      (hq : BPR.IsLeafOfMkTRemsNode Q c q) :
+      BPR.IsLeafOfMkTRemsNode P Q q
+
+/-! ### `mkTRemsLeavesAux` ↔ `IsLeafOfMkTRemsNode` -/
+
+/-- Forward: membership in `mkTRemsLeavesAux` implies `IsLeafOfMkTRemsNode`. -/
+private theorem mkTRemsLeavesAux_to_isLeaf
+    (pp cc q : AzPolynomial (AzMvPolynomial k D ord))
+    (hmem : q ∈ AzPolynomial.mkTRemsLeavesAux pp cc) :
+    BPR.IsLeafOfMkTRemsNode (liftPoly pp) (liftPoly cc) (liftPoly q) := by
+  suffices ∀ n, ∀ pp cc q : AzPolynomial (AzMvPolynomial k D ord),
+      cc.natDegree ≤ n →
+      q ∈ AzPolynomial.mkTRemsLeavesAux pp cc →
+      BPR.IsLeafOfMkTRemsNode (liftPoly pp) (liftPoly cc) (liftPoly q) from
+    this cc.natDegree pp cc q le_rfl hmem
+  intro n
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+  intro pp cc q hcn hmem
+  rw [AzPolynomial.mkTRemsLeavesAux] at hmem
+  by_cases h0 : cc = 0
+  · -- cc = 0
+    have : (cc == 0) = true := beq_iff_eq.mpr h0
+    rw [dif_pos this] at hmem
+    rw [List.mem_singleton.mp hmem, h0]
+    exact .leaf_zero (by simp [liftPoly_zero])
+  · -- cc ≠ 0
+    have hbeq : ¬(cc == 0) = true := by simp [beq_iff_eq, h0]
+    rw [dif_neg hbeq] at hmem; dsimp only at hmem
+    by_cases hce : AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) = []
+    · -- tru empty → leaf_noChildren
+      rw [hce] at hmem; simp only [List.mem_singleton] at hmem; rw [hmem]
+      have hNextZero : -(AzPolynomial.pRem pp cc) = 0 := (tru_eq_nil_iff _).mp hce
+      have hlift_ne : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
+      exact .leaf_noChildren hlift_ne (by
+        rw [← liftPoly_pRem_eq_pRemMv _ _ h0, ← liftPoly_neg,
+            hNextZero, liftPoly_zero]; exact (Tru_eq_empty_iff _).mpr rfl)
+    · -- tru non-empty → leaf_child
+      obtain ⟨hd, tl, hcons⟩ := List.exists_cons_of_ne_nil hce
+      rw [hcons] at hmem
+      simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists] at hmem
+      obtain ⟨c, hcmem, hq⟩ := hmem
+      have hc_in_tru : c ∈ AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) := by
+        rw [hcons]; exact hcmem
+      have hlift_ne : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
+      have hc_in_Tru : liftPoly c ∈
+          BPR.Tru (-(BPR.pRemMv (liftPoly pp) (liftPoly cc))) := by
+        rw [← liftPoly_pRem_eq_pRemMv _ _ h0, ← liftPoly_neg]
+        exact (mem_tru_iff_mem_Tru _ c).mp hc_in_tru
+      have hlt : c.natDegree < cc.natDegree :=
+        AzPolynomial.natDegree_child_lt_of_mem_tru_neg_pRem h0 hc_in_tru
+      exact .leaf_child hlift_ne hc_in_Tru (ih _ (by omega) cc c q le_rfl hq)
+
+/-- Backward: `IsLeafOfMkTRemsNode` implies membership in `mkTRemsLeavesAux`.
+Uses `generalize` to abstract `liftPoly` applications before inducting
+on the predicate, avoiding dependent-elimination issues. -/
+private theorem isLeaf_to_mkTRemsLeavesAux
+    (pp cc q : AzPolynomial (AzMvPolynomial k D ord))
+    (hleaf : BPR.IsLeafOfMkTRemsNode (liftPoly pp) (liftPoly cc) (liftPoly q)) :
+    q ∈ AzPolynomial.mkTRemsLeavesAux pp cc := by
+  generalize hP : liftPoly pp = P at hleaf
+  generalize hQ : liftPoly cc = Q at hleaf
+  generalize hR : liftPoly q = R at hleaf
+  induction hleaf generalizing pp cc q with
+  | leaf_zero h =>
+    have hcc0 : cc = 0 := (liftPoly_eq_zero_iff cc).mp (hQ ▸ h)
+    have hqcc : q = cc := liftPoly_injective (by rw [hR, ← hQ])
+    rw [hqcc, hcc0]; rw [AzPolynomial.mkTRemsLeavesAux]; simp
+  | leaf_noChildren h ht =>
+    have hcc_ne : cc ≠ 0 := fun h0 => h (by rw [← hQ, h0, liftPoly_zero])
+    have hqcc : q = cc := liftPoly_injective (by rw [hR, ← hQ])
+    rw [hqcc]
+    rw [← hP, ← hQ] at ht
+    have htru_nil : AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) = [] := by
+      rw [tru_eq_nil_iff]
+      have : liftPoly (-(AzPolynomial.pRem pp cc)) = 0 := by
+        rw [liftPoly_neg, liftPoly_pRem_eq_pRemMv _ _ hcc_ne]
+        exact (Tru_eq_empty_iff _).mp ht
+      exact (liftPoly_eq_zero_iff _).mp this
+    rw [AzPolynomial.mkTRemsLeavesAux]
+    rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
+    dsimp only; rw [htru_nil]; simp
+  | leaf_child h hc hq_inner ih =>
+    have hcc_ne : cc ≠ 0 := fun h0 => h (by rw [← hQ, h0, liftPoly_zero])
+    rw [← hP, ← hQ] at hc
+    rw [← liftPoly_pRem_eq_pRemMv _ _ hcc_ne, ← liftPoly_neg] at hc
+    obtain ⟨c_az, hc_tru, hc_eq⟩ := exists_tru_preimage _ _ hc
+    have hq_mem := ih cc c_az q hQ hc_eq hR
+    rw [AzPolynomial.mkTRemsLeavesAux]
+    rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
+    dsimp only
+    obtain ⟨hd, tl, hcons⟩ :=
+      List.exists_cons_of_ne_nil (List.ne_nil_of_mem hc_tru)
+    rw [hcons]
+    simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists]
+    exact ⟨c_az, hcons ▸ hc_tru, hq_mem⟩
+
+/-! ### Main equivalence: leaves -/
+
+/-- A polynomial belongs to the computable `tremsLeaves P Q` iff
+`liftPoly q` is a leaf of the noncomputable subtree
+`BPR.mkTRemsNode (liftPoly P) c` for some `c ∈ BPR.Tru (liftPoly Q)`.
+
+This is equivalent to saying the leaves of the computable
+`tremsLeaves` correspond exactly to the leaves of the noncomputable
+`BPR.TRems` tree under the `liftPoly` bridge. -/
+theorem mem_tremsLeaves_iff_isLeaf
+    (P Q q : AzPolynomial (AzMvPolynomial k D ord)) :
+    q ∈ AzPolynomial.tremsLeaves P Q ↔
+      ∃ c ∈ BPR.Tru (liftPoly Q),
+        BPR.IsLeafOfMkTRemsNode (liftPoly P) c (liftPoly q) := by
+  -- tremsLeaves P Q = (tru Q).flatMap (mkTRemsLeavesAux P)
+  simp only [AzPolynomial.tremsLeaves, List.mem_flatMap]
+  constructor
+  · -- Forward: q ∈ flatMap → IsLeafOfMkTRemsNode
+    rintro ⟨c, hc_tru, hq_mem⟩
+    exact ⟨liftPoly c,
+      (mem_tru_iff_mem_Tru Q c).mp hc_tru,
+      mkTRemsLeavesAux_to_isLeaf P c q hq_mem⟩
+  · -- Backward: IsLeafOfMkTRemsNode → q ∈ flatMap
+    rintro ⟨c', hc'_Tru, hleaf⟩
+    obtain ⟨c, hc_tru, hc_eq⟩ := exists_tru_preimage Q c' hc'_Tru
+    rw [← hc_eq] at hleaf
+    exact ⟨c, hc_tru, isLeaf_to_mkTRemsLeavesAux P c q hleaf⟩
+
+end Azurite
