@@ -38,6 +38,22 @@ def truncate (i : ℕ) (p : AzPolynomial R) : AzPolynomial R :=
   unfold truncate normalize
   simp
 
+/-- The `natDegree` of a truncation is at most `i`. -/
+theorem natDegree_truncate_le (i : ℕ) (p : AzPolynomial R) :
+    (truncate i p).natDegree ≤ i := by
+  unfold truncate natDegree
+  set a := p.coeffs.extract 0 (i + 1)
+  -- normalize drops trailing zeros via popWhile, which is a suffix of the
+  -- reverse → prefix of the original, so size can only shrink.
+  have h_norm : (normalize a).coeffs.size ≤ a.size := by
+    change (a.popWhile (· = 0)).size ≤ a.size
+    rw [← Array.length_toList, ← Array.length_toList,
+        toList_popWhile_eq_dropTrailingZeros]
+    exact (dropTrailingZeros_prefix _).length_le
+  have h_ext : a.size ≤ i + 1 := by
+    simp [a, Array.size_extract]
+  omega
+
 /-! ### Tests -/
 
 section Tests

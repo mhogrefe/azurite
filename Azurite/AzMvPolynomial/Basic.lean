@@ -84,6 +84,15 @@ def X [DecidableEq R] (i : Fin n) : AzMvPolynomial n R ord :=
 def totalDegree (p : AzMvPolynomial n R ord) : ℕ :=
   p.terms.foldl (fun acc m => max acc m.totalDegree) 0
 
+/-- A multivariate polynomial is *constant* when it is either zero or a
+    single term whose monic monomial is `1` (all exponents zero).
+    Equivalently, it lies in the image of `C : R → AzMvPolynomial n R`. -/
+def isConstant (p : AzMvPolynomial n R ord) : Bool :=
+  match p.terms.toList with
+  | [] => true
+  | [m] => m.monic == MonicMonomial.one
+  | _ :: _ :: _ => false
+
 /-! ### withOrder: changing the monomial ordering -/
 
 private theorem pairwise_gt_of_pairwise_ge_nodup
