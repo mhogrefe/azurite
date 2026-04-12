@@ -90,4 +90,22 @@ def AzMatrix.ofLists (rows : List (List R))
 def AzMatrix.toLists (M : AzMatrix R m n) : List (List R) :=
   M.data.toList.map (·.toList)
 
+@[simp]
+theorem AzMatrix.toLists_length (M : AzMatrix R m n) : M.toLists.length = m := by
+  simp [toLists]
+
+theorem AzMatrix.mem_toLists_length {M : AzMatrix R m n} {row : List R}
+    (h : row ∈ M.toLists) : row.length = n := by
+  simp only [toLists, List.mem_map] at h
+  obtain ⟨v, _, rfl⟩ := h
+  simp
+
+theorem AzMatrix.ofLists_toLists (M : AzMatrix R m n) :
+    AzMatrix.ofLists M.toLists M.toLists_length
+      (fun _ h => AzMatrix.mem_toLists_length h) = M := by
+  ext i j
+  simp only [AzMatrix.ofLists, AzMatrix.toLists, AzMatrix.get, Vector.get,
+    List.getElem_toArray, List.getElem_map, List.getElem_attach]
+  rfl
+
 end Azurite

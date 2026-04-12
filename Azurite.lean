@@ -46,6 +46,7 @@ import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Mul
 import Azurite.AzMatrix.MulVec
 import Azurite.AzMatrix.Operations
+import Azurite.AzMatrix.Parse
 import Azurite.AzMatrix.Pow
 import Azurite.AzMatrix.RowCol
 import Azurite.AzMvPolynomial.Add
@@ -213,6 +214,8 @@ import Azurite.AzVector.Equiv.SMul
 import Azurite.AzVector.Equiv.Sub
 import Azurite.AzVector.Equiv.Zero
 import Azurite.AzVector.Operations
+import Azurite.AzVector.ParsableElement
+import Azurite.AzVector.Parse
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
