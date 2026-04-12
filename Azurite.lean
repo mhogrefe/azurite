@@ -171,6 +171,7 @@ import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.Translate
+import Azurite.AzPolynomial.Equiv.Truncate
 import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
@@ -193,6 +194,7 @@ import Azurite.AzPolynomial.StringLemmas
 import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.ToString
 import Azurite.AzPolynomial.Translate
+import Azurite.AzPolynomial.Truncate
 import Azurite.AzPolynomial.Tune
 import Azurite.AzPolynomialQ.Basic
 import Azurite.AzPolynomialQ.Equiv.Basic
