@@ -28,13 +28,54 @@ class ParsableCoeff (R : Type _) [Semiring R] [NeZero (1 : R)] where
   toChars_no_minus_tail : ∀ r : R, ∀ c ∈ (toChars r).tail, c ≠ '-'
   /-- The first character is a poly-syntax character (digit or `-`). -/
   toChars_head_is_syntax : ∀ r : R, ∀ c t, toChars r = c :: t → isPolySyntaxChar c
-  /-- An optional representation of `-1`, used for displaying `-x` instead of `-1*x`. -/
+  /-- An optional representation of `-1` in `R`, used to pretty-print monomials
+      with coefficient `-1` as `-x` instead of `-1*x`. Set to `some ⟨-1, _, _⟩`
+      for rings like `ℤ` or `ℚ` where `-1 ≠ 0` and `-1 ≠ 1`; leave as `none`
+      for `ℕ` (where no such element exists) or for rings of characteristic 2
+      where `-1 = 1` (rendered directly as `x`). The `c ≠ 0 ∧ c ≠ 1` constraint
+      ensures the parser/printer can unambiguously recognize this special case:
+      if `c = 0`, negation would produce the zero polynomial; if `c = 1`, it
+      would clash with the positive-coefficient path. -/
   negOne : Option {c : R // c ≠ 0 ∧ c ≠ 1} := none
   /-- If `toChars r` starts with `-`, then the tail is nonempty and its head is
       a poly-syntax character (a digit). This ensures the parser can distinguish
       `-3*x` (coefficient) from `-x` (negOne). -/
   toChars_minus_next_syntax : ∀ r : R, ∀ t, toChars r = '-' :: t →
     ∃ c t', t = c :: t' ∧ isPolySyntaxChar c
+  /-- The zero element is represented as the single character `'0'`. -/
+  toChars_zero : toChars (0 : R) = ['0']
+
+/-- Smart constructor for coefficient types whose representation consists
+    entirely of ASCII digits (e.g. `ℕ`, `ZMod`). Automatically discharges all
+    the "no special char" conditions that are vacuous for digit strings. -/
+@[reducible] def ParsableCoeff.mkDigitOnly {R : Type _} [Semiring R] [NeZero (1 : R)]
+    (toChars : R → List Char)
+    (parseChars : List Char → Option R)
+    (parse_toChars : ∀ r : R, parseChars (toChars r) = some r)
+    (toChars_nonempty : ∀ r : R, toChars r ≠ [])
+    (all_digits : ∀ r : R, ∀ c ∈ toChars r,
+      c.toNat ≥ '0'.toNat ∧ c.toNat ≤ '9'.toNat)
+    (toChars_zero : toChars (0 : R) = ['0']) : ParsableCoeff R where
+  toChars := toChars
+  parseChars := parseChars
+  parse_toChars := parse_toChars
+  toChars_nonempty := toChars_nonempty
+  toChars_no_syntax := fun r c hc hsyn => by
+    have ⟨h1, h2⟩ := all_digits r c hc
+    rcases hsyn with rfl | rfl | rfl
+    · exact absurd h1 (by decide)
+    · exact absurd h1 (by decide)
+    · exact absurd h2 (by decide)
+  toChars_no_minus_tail := fun r c hc heq => by
+    have : c.toNat ≥ '0'.toNat := (all_digits r c (List.mem_of_mem_tail hc)).1
+    rw [heq] at this; exact absurd this (by decide)
+  toChars_head_is_syntax := fun r c t hct =>
+    Or.inl (all_digits r c (hct ▸ List.mem_cons_self ..))
+  toChars_minus_next_syntax := fun r t hct => by
+    have : ('-').toNat ≥ '0'.toNat :=
+      (all_digits r '-' ((hct ▸ List.mem_cons_self ..) : '-' ∈ toChars r)).1
+    exact absurd this (by decide)
+  toChars_zero := toChars_zero
 
 namespace Monomial
 
@@ -78,13 +119,6 @@ private lemma ratToChars_no_coeff_syntax (q : ℚ) (c : Char) (hc : c ∈ ratToC
     · intro h
       rcases h with h | h | h <;> exact absurd h (by decide)
     · exact natToChars_no_coeff_syntax _ c hc
-
-private lemma natToChars_head_is_syntax (n : ℕ) :
-    ∀ c t, natToChars n = c :: t → isPolySyntaxChar c := by
-  intro c t hct
-  have hc_mem : c ∈ natToChars n := hct ▸ List.mem_cons_self ..
-  have ⟨hge, hle⟩ := mem_natToChars_only_digits n c hc_mem
-  left; exact ⟨hge, hle⟩
 
 private lemma intToChars_head_is_syntax (z : ℤ) :
     ∀ c t, intToChars z = c :: t → isPolySyntaxChar c := by
@@ -140,18 +174,9 @@ private lemma ratToChars_minus_next_syntax (q : ℚ) :
     refine ⟨c', tn' ++ ['/'] ++ natToChars q.den, ?_, hs⟩
     rw [← htail, hteq, List.cons_append, List.cons_append]
 
-instance : ParsableCoeff ℕ where
-  toChars := natToChars
-  parseChars := parseNatChars
-  parse_toChars := parseNatChars_natToChars
-  toChars_nonempty := natToChars_ne_nil
-  toChars_no_syntax := natToChars_no_coeff_syntax
-  toChars_no_minus_tail := fun n _ hc heq =>
-    not_mem_natToChars n (heq ▸ List.mem_of_mem_tail hc)
-  toChars_head_is_syntax := natToChars_head_is_syntax
-  toChars_minus_next_syntax := fun n t hct => by
-    exact absurd ((hct ▸ List.mem_cons_self ..) : '-' ∈ natToChars n)
-      (not_mem_natToChars n)
+instance : ParsableCoeff ℕ :=
+  ParsableCoeff.mkDigitOnly natToChars parseNatChars parseNatChars_natToChars
+    natToChars_ne_nil mem_natToChars_only_digits rfl
 
 instance : ParsableCoeff ℤ where
   toChars := intToChars
@@ -166,6 +191,7 @@ instance : ParsableCoeff ℤ where
   toChars_head_is_syntax := intToChars_head_is_syntax
   negOne := some ⟨-1, by omega, by omega⟩
   toChars_minus_next_syntax := intToChars_minus_next_syntax
+  toChars_zero := rfl
 
 instance : ParsableCoeff ℚ where
   toChars := ratToChars
@@ -180,6 +206,7 @@ instance : ParsableCoeff ℚ where
   toChars_head_is_syntax := ratToChars_head_is_syntax
   negOne := some ⟨-1, by decide, by decide⟩
   toChars_minus_next_syntax := ratToChars_minus_next_syntax
+  toChars_zero := rfl
 
 /-- Parse a character list as a `ZMod n` value: parse as ℕ (possibly with a
     leading `-`), check `< n`, cast (and negate if there was a leading `-`). -/
@@ -208,23 +235,15 @@ private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
     congr 1
     exact ZMod.natCast_zmod_val c
 
-instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) where
-  toChars := zmodToChars
-  parseChars := parseZmodChars m
-  parse_toChars := parseZmodChars_zmodToChars
-  toChars_nonempty := zmodToChars_ne_nil
-  toChars_no_syntax := fun c _ch hch => natToChars_no_coeff_syntax c.val _ch hch
-  toChars_no_minus_tail := fun c _ch hch heq =>
-    not_mem_natToChars c.val (heq ▸ List.mem_of_mem_tail hch)
-  toChars_head_is_syntax := fun c => natToChars_head_is_syntax c.val
-  negOne :=
-    if h0 : ((-1 : ZMod m) = 0) then none
-    else if h1 : ((-1 : ZMod m) = 1) then none
-    else some ⟨-1, h0, h1⟩
-  toChars_minus_next_syntax := fun c t hct => by
-    simp only [zmodToChars] at hct
-    exact absurd ((hct ▸ List.mem_cons_self ..) : '-' ∈ natToChars c.val)
-      (not_mem_natToChars _)
+instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) :=
+  { ParsableCoeff.mkDigitOnly zmodToChars (parseZmodChars m) parseZmodChars_zmodToChars
+      zmodToChars_ne_nil
+      (fun c _ch hch => mem_natToChars_only_digits c.val _ch hch)
+      (by show natToChars (0 : ZMod m).val = ['0']; rw [ZMod.val_zero]; rfl) with
+    negOne :=
+      if h0 : ((-1 : ZMod m) = 0) then none
+      else if h1 : ((-1 : ZMod m) = 1) then none
+      else some ⟨-1, h0, h1⟩ }
 
 end ParsableCoeffInstances
 

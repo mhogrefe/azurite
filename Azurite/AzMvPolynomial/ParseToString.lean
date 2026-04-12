@@ -118,7 +118,7 @@ theorem splitMonomials_joinMonomials
     subst hm
     have ⟨htw, hdw⟩ := tw_dw_tail hm_np hm_nmt hne'
     simp only [joinMonomials, List.cons_append,
-               splitMonomials.eq_2, takeMonomial.eq_2, htw, hdw]
+               splitMonomials, takeMonomial, htw, hdw]
     exact congrArg ((c :: t) :: ·) (splitMonomialsAux_joinMonomialsAux ms hne' hnp' hnmt')
 
 /-! ### Layer 3: ofMonomials? on already-sorted terms -/
@@ -179,138 +179,84 @@ theorem mapM_parseWith_map_toCharsWith (ms : List (Monomial n R ord)) :
     simp only [List.map_cons, List.mapM_cons, Monomial.parseWith_toCharsWith]
     simp [ih]
 
-private theorem toCharsWith_ne_zero_of_nonempty (p : AzMvPolynomial n R ord)
+/-- A monomial's char-list representation is never just `['0']`, because monomials
+    always have nonzero coefficient. -/
+private theorem Monomial.toCharsWith_ne_zeroChar (m : Monomial n R ord) :
+    m.toCharsWith F ≠ ['0'] := by
+  intro hmtc
+  unfold Monomial.toCharsWith at hmtc
+  split_ifs at hmtc with hmonic hcoeff
+  · -- monic = 1: hmtc : ParsableCoeff.toChars m.coeff.val = ['0']
+    have h1 := ParsableCoeff.parse_toChars (R := R) m.coeff.val
+    have h2 := ParsableCoeff.parse_toChars (R := R) (0 : R)
+    rw [hmtc] at h1
+    rw [ParsableCoeff.toChars_zero] at h2
+    exact m.coeff.property (Option.some.inj (h2.symm.trans h1)).symm
+  · -- coeff = 1, monic ≠ 1: hmtc : m.monic.toCharsWith F = ['0']
+    -- Extract '0' as head of m.monic.toCharsWith F and apply head_not_syntax.
+    obtain ⟨c_m, t_m, hctm⟩ := List.exists_cons_of_ne_nil
+      (MonicMonomial.toCharsWith_ne_nil F m.monic hmonic)
+    have hc_zero : c_m = '0' := by rw [hctm] at hmtc; exact (List.cons.inj hmtc).1
+    have hhead_not : ¬ isPolySyntaxChar c_m := by
+      have h := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
+      simp only [hctm, List.head_cons] at h
+      exact h
+    exact hhead_not (hc_zero ▸ Or.inl ⟨by decide, by decide⟩)
+  · -- Case 3: negOne branch or coeff*monic. Both produce a list containing '*' or
+    -- a leading '-', neither of which matches `['0']`.
+    split at hmtc
+    · split_ifs at hmtc with _
+      · -- '-' :: m.monic.toCharsWith F = ['0']: first char '-' ≠ '0'
+        exact absurd (List.cons.inj hmtc).1 (by decide)
+      · -- coeffChars ++ ['*'] ++ monicChars = ['0']: contains '*', contradiction
+        have : '*' ∈ (['0'] : List Char) := hmtc ▸
+          List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
+        simp at this
+    · -- coeffChars ++ ['*'] ++ monicChars = ['0']: contains '*', contradiction
+      have : '*' ∈ (['0'] : List Char) := hmtc ▸
+        List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
+      simp at this
+
+/-- A nonempty polynomial's char-list representation is never just `['0']`. -/
+private theorem toCharsWith_ne_zeroChar_of_nonempty (p : AzMvPolynomial n R ord)
     (hemp : p.terms.isEmpty = false) :
-    joinMonomials (p.terms.toList.map (fun m => m.toCharsWith F)) ≠
-        ParsableCoeff.toChars (0 : R) := by
+    joinMonomials (p.terms.toList.map (fun m => m.toCharsWith F)) ≠ ['0'] := by
   intro heq
   have hne : p.terms.toList ≠ [] := by simp at hemp; simp [hemp]
   obtain ⟨m, ms, hms⟩ := List.exists_cons_of_ne_nil hne
-  rw [hms, List.map_cons] at heq
-  match ms with
-  | [] =>
-    -- Single monomial: joinMonomials [m.toCharsWith F] = m.toCharsWith F
-    simp only [List.map_nil, joinMonomials, joinMonomialsAux, List.append_nil] at heq
-    -- Case split on monic and coeff
-    by_cases hmonic : m.monic = 1
-    · -- monic = 1: toCharsWith F m = ParsableCoeff.toChars coeff, injectivity gives coeff = 0
-      simp only [Monomial.toCharsWith, hmonic, ↓reduceIte] at heq
-      have h1 := ParsableCoeff.parse_toChars (R := R) m.coeff.val
-      rw [heq, ParsableCoeff.parse_toChars] at h1
-      exact m.coeff.property (Option.some.inj h1.symm)
-    · by_cases hcoeff : m.coeff.val = 1
-      · -- coeff = 1, monic ≠ 1: first char is ¬isPolySyntaxChar vs isPolySyntaxChar
-        simp only [Monomial.toCharsWith,
-                   show (m.monic = 1) = False from propext ⟨hmonic, False.elim⟩,
-                   ↓reduceIte, hcoeff, ↓reduceIte] at heq
-        have hne_monic := MonicMonomial.toCharsWith_ne_nil F m.monic hmonic
-        obtain ⟨c_m, t_m, hctm⟩ := List.exists_cons_of_ne_nil hne_monic
-        have hhead_not : ¬ isPolySyntaxChar c_m := by
-          have h := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
-          simp only [hctm, List.head_cons] at h; exact h
-        have hhead_is : isPolySyntaxChar c_m :=
-          ParsableCoeff.toChars_head_is_syntax (0 : R) c_m t_m (heq ▸ hctm)
-        exact hhead_not hhead_is
-      · -- coeff ≠ 1, monic ≠ 1: toChars 0 can't match m.toCharsWith F
-        simp only [Monomial.toCharsWith,
-                   show (m.monic = 1) = False from propext ⟨hmonic, False.elim⟩,
-                   ↓reduceIte,
-                   show (m.coeff.val = 1) = False from propext ⟨hcoeff, False.elim⟩,
-                   ↓reduceIte] at heq
-        -- heq contains `match ParsableCoeff.negOne with | some _ => if ... | none => ...`
-        split at heq
-        · -- negOne = some ⟨cneg, ...⟩: split the if
-          split_ifs at heq with hcoeff_neg
-          · -- negOne case: '-' :: m.monic.toCharsWith F = toChars 0
-            have hne_monic := MonicMonomial.toCharsWith_ne_nil F m.monic hmonic
-            obtain ⟨c_m, t_m, hctm⟩ := List.exists_cons_of_ne_nil hne_monic
-            rw [hctm] at heq
-            -- c_m is monic.toCharsWith.head, and it's not a poly-syntax char
-            have hmhead : ¬ isPolySyntaxChar c_m := by
-              have h := MonicMonomial.toCharsWith_head_not_syntax F m.monic hmonic
-              simp only [hctm, List.head_cons] at h; exact h
-            obtain ⟨_, _, hcons, hs⟩ :=
-              ParsableCoeff.toChars_minus_next_syntax (0 : R) (c_m :: t_m) heq.symm
-            simp only [List.cons.injEq] at hcons
-            obtain ⟨rfl, _⟩ := hcons
-            exact hmhead hs
-          · -- coeff*monic case: contains '*'
-            have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
-              rw [← heq]
-              exact List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
-            exact ParsableCoeff.toChars_no_syntax (0 : R) '*' this (Or.inr (Or.inl rfl))
-        · -- negOne = none: coeff*monic, contains '*'
-          have : '*' ∈ ParsableCoeff.toChars (0 : R) := by
-            rw [← heq]
-            exact List.mem_append_left _ (List.mem_append_right _ (List.mem_cons_self ..))
-          exact ParsableCoeff.toChars_no_syntax (0 : R) '*' this (Or.inr (Or.inl rfl))
-  | m₂ :: rest =>
-    -- ≥2 monomials: joinMonomialsAux starts with '+' or '-'
-    -- Either way, this char appears in the tail of the full result, which is impossible.
-    simp only [List.map_cons] at heq
-    have hm₂ne := Monomial.toCharsWith_ne_nil F m₂
-    have hne' : ∀ x ∈ (m₂.toCharsWith F :: rest.map (fun m => m.toCharsWith F)), x ≠ [] := by
-      intro x hx; simp at hx
-      rcases hx with rfl | ⟨a, _, rfl⟩
-      · exact hm₂ne
-      · exact Monomial.toCharsWith_ne_nil F a
-    rcases joinMonomialsAux_head_cond _ hne' with h | ⟨c, cs, hjoin, hnsign⟩
-    · -- joinMonomialsAux = []: impossible
-      -- joinMonomialsAux of nonempty list with nonempty head is always nonempty
-      obtain ⟨c₂, t₂, hm₂⟩ := List.exists_cons_of_ne_nil hm₂ne
-      rw [show m₂.toCharsWith F = c₂ :: t₂ from hm₂] at h
-      simp only [joinMonomialsAux] at h; split at h
-      · simp at h
-      · exact List.cons_ne_nil _ _ h
-    · -- joinMonomialsAux starts with c where isNotSign c = false, i.e. c = '+' or c = '-'
-      simp only [isNotSign, bne_iff_ne, Bool.and_eq_true, ne_eq,
-                 Bool.eq_false_iff, not_and, Decidable.not_not] at hnsign
-      -- joinMonomials (m.toCharsWith F :: m₂.toCharsWith F :: ...)
-      --   = m.toCharsWith F ++ joinMonomialsAux (...)
-      rw [joinMonomials] at heq
-      rw [hjoin] at heq
-      -- heq : m.toCharsWith F ++ c :: cs = ParsableCoeff.toChars 0
-      -- c appears at position |m.toCharsWith F| > 0
-      have hm_ne := Monomial.toCharsWith_ne_nil F m
-      by_cases hc_plus : c = '+'
-      · -- c = '+', but '+' ∉ ParsableCoeff.toChars 0
-        have : '+' ∈ ParsableCoeff.toChars (0 : R) := by
-          rw [← heq, hc_plus]
-          exact List.mem_append_right _ (List.mem_cons_self ..)
-        exact ParsableCoeff.toChars_no_syntax (0 : R) '+' this (Or.inl rfl)
-      · -- c = '-' (since isNotSign c = false and c ≠ '+')
-        have hc_minus : c = '-' := hnsign hc_plus
-        -- '-' appears in tail of result
-        have : '-' ∈ (ParsableCoeff.toChars (0 : R)).tail := by
-          rw [← heq, hc_minus]
-          have ⟨a, t, hat⟩ := List.exists_cons_of_ne_nil hm_ne
-          rw [hat, List.cons_append, List.tail_cons]
-          exact List.mem_append_right _ (List.mem_cons_self ..)
-        exact ParsableCoeff.toChars_no_minus_tail (0 : R) '-' this rfl
+  rw [hms, List.map_cons, joinMonomials] at heq
+  obtain ⟨c, t, hct⟩ := List.exists_cons_of_ne_nil (Monomial.toCharsWith_ne_nil F m)
+  rw [hct, List.cons_append] at heq
+  obtain ⟨rfl, htail⟩ := List.cons.inj heq
+  have ⟨ht_nil, _⟩ := List.append_eq_nil_iff.mp htail
+  exact Monomial.toCharsWith_ne_zeroChar F m (by rw [hct, ht_nil])
 
 /-- Round-trip: parsing the string representation recovers the polynomial. -/
 theorem AzMvPolynomial.parseWith_toCharsWith (p : AzMvPolynomial n R ord) :
     AzMvPolynomial.parseWith F (p.toCharsWith F) = some p := by
-  unfold AzMvPolynomial.toCharsWith AzMvPolynomial.parseWith
   by_cases hemp : p.terms.isEmpty
-  · -- Zero case: p is the zero polynomial
+  · -- Zero case: `toCharsWith F p = ['0']` (via `toChars_zero`), so `parseWith` returns `some 0`.
     cases p with | mk terms sorted =>
     simp only [Array.isEmpty_iff] at hemp
     subst hemp
-    simp only [show (#[] : Array (Monomial n R ord)).isEmpty = true from rfl, ↓reduceIte]
-    cases sorted; rfl
-  · simp only [hemp, ↓reduceIte, Bool.false_eq_true]
-    split_ifs with hzero
-    · exact absurd hzero (toCharsWith_ne_zero_of_nonempty F p (by simp [hemp]))
-    · rw [splitMonomials_joinMonomials _
+    unfold AzMvPolynomial.toCharsWith AzMvPolynomial.parseWith
+    simp only [show (#[] : Array (Monomial n R ord)).isEmpty = true from rfl, ↓reduceIte,
+      ParsableCoeff.toChars_zero]
+    rfl
+  · -- Nonempty case: `toCharsWith F p = joinMonomials (...)`, invert via
+    -- `splitMonomials_joinMonomials` then `mapM_parseWith_map_toCharsWith`.
+    unfold AzMvPolynomial.toCharsWith AzMvPolynomial.parseWith
+    simp only [hemp, ↓reduceIte, Bool.false_eq_true]
+    rw [if_neg (toCharsWith_ne_zeroChar_of_nonempty F p (by simp [hemp])),
+      splitMonomials_joinMonomials _
         (by intro m hm; obtain ⟨mono, _, rfl⟩ := List.mem_map.mp hm
             exact Monomial.toCharsWith_ne_nil F _)
         (by intro m hm; obtain ⟨mono, _, rfl⟩ := List.mem_map.mp hm
             exact Monomial.plus_notin_toCharsWith F _)
         (by intro m hm; obtain ⟨mono, _, rfl⟩ := List.mem_map.mp hm
             exact Monomial.minus_notin_tail_toCharsWith F _),
-        mapM_parseWith_map_toCharsWith]
-      simpa using ofMonomials?_terms p
+      mapM_parseWith_map_toCharsWith]
+    simpa using ofMonomials?_terms p
 
 end Display
 

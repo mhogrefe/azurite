@@ -66,10 +66,12 @@ variable (F : Type _) [LinearOrder F] [ParsableVar F n]
 /-- Parse a char list into a multivariate polynomial using naming scheme `F`.
     Splits at `+`/`-` boundaries, parses each piece as a `Monomial`,
     then sorts the result.  Accepts monomials in any order but rejects
-    duplicate monic parts (e.g. `x*y+y*x`).  Returns `none` on parse failure. -/
+    duplicate monic parts (e.g. `x*y+y*x`).  Returns `none` on parse failure.
+    The zero polynomial (represented as `['0']` via `ParsableCoeff.toChars_zero`)
+    is handled as a special case, since a `Monomial` requires nonzero coefficient. -/
 def AzMvPolynomial.parseWith
     (cs : List Char) : Option (AzMvPolynomial n R ord) :=
-  if cs = ParsableCoeff.toChars (0 : R) then some 0
+  if cs = ['0'] then some 0
   else
     let parts := splitMonomials cs
     match parts.mapM (Monomial.parseWith (ord := ord) (n := n) (R := R) F) with
@@ -78,7 +80,7 @@ def AzMvPolynomial.parseWith
       AzMvPolynomial.ofMonomials? monomials.toArray
 
 /-- Parse a string into a multivariate polynomial using naming scheme `F`. -/
-def AzMvPolynomial.parseStrWith
+@[inline] def AzMvPolynomial.parseStrWith
     (s : String) : Option (AzMvPolynomial n R ord) :=
   AzMvPolynomial.parseWith F s.toList
 
