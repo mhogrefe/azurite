@@ -272,6 +272,41 @@ theorem plus_notin_toCharsWith (m : Monomial n R ord) : '+' ∉ m.toCharsWith F 
         · simp at h
         · exact MonicMonomial.plus_notin_toCharsWith F m.monic h
 
+/-- Generic exclusion: a character `c` that is excluded from coefficient
+    representations, variable names, and is neither a digit nor `*`/`^`/`-`,
+    does not occur in `m.toCharsWith F`. -/
+theorem char_notin_toCharsWith (c : Char)
+    (hcoeff : ∀ r : R, c ∉ ParsableCoeff.toChars r)
+    (hvar : ∀ v : F, c ∉ pv.toChars v)
+    (hdig : ∀ k : ℕ, c ∉ natToChars k)
+    (hnot_star : c ≠ '*') (hnot_caret : c ≠ '^') (hnot_minus : c ≠ '-')
+    (m : Monomial n R ord) : c ∉ m.toCharsWith F := by
+  unfold toCharsWith
+  split_ifs with h1 h2
+  · exact hcoeff _
+  · exact MonicMonomial.char_notin_toCharsWith F c hvar hdig hnot_star hnot_caret m.monic
+  · cases hn : ParsableCoeff.negOne (R := R) with
+    | none =>
+      intro h; rw [List.mem_append, List.mem_append] at h
+      rcases h with (h | h) | h
+      · exact hcoeff _ h
+      · simp at h; exact hnot_star h
+      · exact MonicMonomial.char_notin_toCharsWith
+          F c hvar hdig hnot_star hnot_caret m.monic h
+    | some cNeg =>
+      dsimp only [hn]
+      split_ifs with _hc
+      · intro h; simp at h; rcases h with h | h
+        · exact hnot_minus h
+        · exact MonicMonomial.char_notin_toCharsWith
+            F c hvar hdig hnot_star hnot_caret m.monic h
+      · intro h; rw [List.mem_append, List.mem_append] at h
+        rcases h with (h | h) | h
+        · exact hcoeff _ h
+        · simp at h; exact hnot_star h
+        · exact MonicMonomial.char_notin_toCharsWith
+            F c hvar hdig hnot_star hnot_caret m.monic h
+
 theorem minus_notin_tail_toCharsWith (m : Monomial n R ord) :
     '-' ∉ (m.toCharsWith F).tail := by
   unfold toCharsWith

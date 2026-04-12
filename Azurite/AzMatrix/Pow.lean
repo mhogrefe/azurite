@@ -1,5 +1,6 @@
 import Azurite.Algorithm.FastPow
 import Azurite.AzMatrix.Equiv.Algebra
+import Azurite.AzMatrix.Parse
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -40,8 +41,8 @@ private def fibMat : AzMatrix (ZMod 1000000007) 2 2 :=
 
 -- Raise to 10^18 — runs in O(log(10^18)) ≈ 60 matrix multiplications.
 -- Computes F(10^18) mod 10^9+7 instantly.
-#guard (fibMat.pow 1000000000000000000).toLists ==
-  [[680057396, 209783453], [209783453, 470273943]]
+#guard toString (fibMat.pow 1000000000000000000) =
+  "[680057396, 209783453; 209783453, 470273943]"
 
 end Tests
 

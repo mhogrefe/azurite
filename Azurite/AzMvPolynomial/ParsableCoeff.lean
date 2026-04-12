@@ -44,6 +44,12 @@ class ParsableCoeff (R : Type _) [Semiring R] [NeZero (1 : R)] where
     ∃ c t', t = c :: t' ∧ isPolySyntaxChar c
   /-- The zero element is represented as the single character `'0'`. -/
   toChars_zero : toChars (0 : R) = ['0']
+  /-- No `,` occurs in the representation (so coefficients can be used as
+      `AzVector`/`AzMatrix` entries). -/
+  toChars_no_comma : ∀ r : R, ',' ∉ toChars r
+  /-- No `;` occurs in the representation (so coefficients can be used as
+      `AzVector`/`AzMatrix` entries). -/
+  toChars_no_semicolon : ∀ r : R, ';' ∉ toChars r
 
 /-- Smart constructor for coefficient types whose representation consists
     entirely of ASCII digits (e.g. `ℕ`, `ZMod`). Automatically discharges all
@@ -76,6 +82,12 @@ class ParsableCoeff (R : Type _) [Semiring R] [NeZero (1 : R)] where
       (all_digits r '-' ((hct ▸ List.mem_cons_self ..) : '-' ∈ toChars r)).1
     exact absurd this (by decide)
   toChars_zero := toChars_zero
+  toChars_no_comma := fun r hc => by
+    have : (',').toNat ≥ '0'.toNat := (all_digits r ',' hc).1
+    exact absurd this (by decide)
+  toChars_no_semicolon := fun r hc => by
+    have : (';').toNat ≤ '9'.toNat := (all_digits r ';' hc).2
+    exact absurd this (by decide)
 
 namespace Monomial
 
@@ -192,6 +204,14 @@ instance : ParsableCoeff ℤ where
   negOne := some ⟨-1, by omega, by omega⟩
   toChars_minus_next_syntax := intToChars_minus_next_syntax
   toChars_zero := rfl
+  toChars_no_comma z hc := by
+    rcases mem_intToChars_only_digits_or_dash z ',' hc with h | ⟨h1, _⟩
+    · exact absurd h (by decide)
+    · exact absurd h1 (by decide)
+  toChars_no_semicolon z hc := by
+    rcases mem_intToChars_only_digits_or_dash z ';' hc with h | ⟨_, h2⟩
+    · exact absurd h (by decide)
+    · exact absurd h2 (by decide)
 
 instance : ParsableCoeff ℚ where
   toChars := ratToChars
@@ -207,6 +227,16 @@ instance : ParsableCoeff ℚ where
   negOne := some ⟨-1, by decide, by decide⟩
   toChars_minus_next_syntax := ratToChars_minus_next_syntax
   toChars_zero := rfl
+  toChars_no_comma q hc := by
+    rcases mem_ratToChars_only_digits_or_dash_or_slash q ',' hc with h | h | ⟨h1, _⟩
+    · exact absurd h (by decide)
+    · exact absurd h (by decide)
+    · exact absurd h1 (by decide)
+  toChars_no_semicolon q hc := by
+    rcases mem_ratToChars_only_digits_or_dash_or_slash q ';' hc with h | h | ⟨_, h2⟩
+    · exact absurd h (by decide)
+    · exact absurd h (by decide)
+    · exact absurd h2 (by decide)
 
 /-- Parse a character list as a `ZMod n` value: parse as ℕ (possibly with a
     leading `-`), check `< n`, cast (and negate if there was a leading `-`). -/

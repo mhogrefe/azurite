@@ -6,6 +6,7 @@
 -/
 import Azurite.AzMatrix.MulVec
 import Azurite.AzVector.Equiv.Dot
+import Azurite.AzVector.Parse
 import Azurite.AzMatrix.Equiv.RowCol
 import Mathlib.Data.Matrix.Mul
 
@@ -65,10 +66,8 @@ theorem AzMatrix.ofFn_vecMul (g : Fin m → R) (f : Fin m → Fin n → R) :
 private def testM : AzMatrix Int 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
 private def testV : AzVector Int 2 := AzVector.ofList [5, 6]
 
--- [1 2; 3 4] * [5; 6] = [17; 39]
-#guard (testM.mulVec testV).data.toList = [17, 39]
+#guard toString (testM.mulVec testV) = "[17, 39]"
 
--- [5; 6] * [1 2; 3 4] = [23; 34]
-#guard (testM.vecMul testV).data.toList = [23, 34]
+#guard toString (testM.vecMul testV) = "[23, 34]"
 
 end Azurite

@@ -20,6 +20,7 @@ import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Operations
 import Azurite.AzMatrix.Mul
+import Azurite.AzMatrix.Parse
 import Azurite.AzMatrix.Equiv.Algebra
 import Mathlib.Data.ZMod.Basic
 
@@ -139,20 +140,20 @@ private def qz : AzPolynomial Mat22 := 0
 
 private def qo : AzPolynomial Mat22 := 1
 #guard qo.coeffs.size == 1
-#guard qo.coeff 0 == I2
+#guard toString (qo.coeff 0) = "[1, 0; 0, 1]"
 
 /-- The polynomial `A * T + B`. -/
 private def ql : AzPolynomial Mat22 :=
   AzPolynomial.monomial 1 A + AzPolynomial.C B
 #guard ql.coeffs.size == 2
-#guard ql.coeff 0 == B
-#guard ql.coeff 1 == A
+#guard toString (ql.coeff 0) = "[0, 1; -1, 0]"
+#guard toString (ql.coeff 1) = "[1, 2; 3, 4]"
 
 /-! ### Ring operations -/
 
 -- Addition: `(A*T + B) + (A*T + B) = 2A*T + 2B`.
-#guard (ql + ql).coeff 0 == B + B
-#guard (ql + ql).coeff 1 == A + A
+#guard toString ((ql + ql).coeff 0) = "[0, 2; -2, 0]"
+#guard toString ((ql + ql).coeff 1) = "[2, 4; 6, 8]"
 
 -- Subtraction collapses to zero.
 #guard (ql - ql).coeffs.size == 0
@@ -166,16 +167,16 @@ private def qb : AzPolynomial Mat22 :=
 private def qab : AzPolynomial Mat22 := qa * qb
 
 #guard qab.coeffs.size == 3
-#guard qab.coeff 0 == -(A * A)
-#guard qab.coeff 1 == 0
-#guard qab.coeff 2 == I2
+#guard toString (qab.coeff 0) = "[-7, -10; -15, -22]"
+#guard toString (qab.coeff 1) = "[0, 0; 0, 0]"
+#guard toString (qab.coeff 2) = "[1, 0; 0, 1]"
 
 -- Squaring `(I*T + A)` gives `I*T^2 + 2A*T + A^2`.
 private def qsq : AzPolynomial Mat22 := qa * qa
 #guard qsq.coeffs.size == 3
-#guard qsq.coeff 0 == A * A
-#guard qsq.coeff 1 == A + A
-#guard qsq.coeff 2 == I2
+#guard toString (qsq.coeff 0) = "[7, 10; 15, 22]"
+#guard toString (qsq.coeff 1) = "[2, 4; 6, 8]"
+#guard toString (qsq.coeff 2) = "[1, 0; 0, 1]"
 
 -- Power via `^`.
 #guard (qa ^ 2) == qsq
@@ -183,13 +184,13 @@ private def qsq : AzPolynomial Mat22 := qa * qa
 #guard ((qa : AzPolynomial Mat22) ^ 1) == qa
 
 -- Non-commutativity of the coefficient ring is visible: `A * B ≠ B * A`.
-#guard (A * B) ≠ (B * A)
+#guard toString (A * B) ≠ toString (B * A)
 
 -- A polynomial built from `B` (a non-symmetric matrix) multiplied by its negation.
 private def qc : AzPolynomial Mat22 :=
   AzPolynomial.monomial 1 B + AzPolynomial.C I2
-#guard ((qc * qc).coeff 0) == I2
-#guard ((qc * qc).coeff 2) == B * B
+#guard toString ((qc * qc).coeff 0) = "[1, 0; 0, 1]"
+#guard toString ((qc * qc).coeff 2) = "[-1, 0; 0, -1]"
 
 /-! ## Part 3: Constant `AzPolynomial (AzMatrix (ZMod p) 2 2)` raised to a huge power
 
@@ -218,8 +219,7 @@ private def fibMatPoly : AzPolynomial (AzMatrix (ZMod 1000000007) 2 2) :=
 #guard (fibMatPoly ^ 1000000000000000000).coeffs.size == 1
 
 -- Same Fibonacci-mod result as the bare-matrix test in `AzMatrix/Pow.lean`.
-#guard (fibMatPoly ^ 1000000000000000000).coeff 0 ==
-  (AzMatrix.ofLists [[680057396, 209783453], [209783453, 470273943]] :
-    AzMatrix (ZMod 1000000007) 2 2)
+#guard toString ((fibMatPoly ^ 1000000000000000000).coeff 0) =
+  "[680057396, 209783453; 209783453, 470273943]"
 
 end Azurite.AzPolynomial.NestedCoeffExamples

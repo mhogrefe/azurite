@@ -354,6 +354,44 @@ theorem minus_notin_toCharsWith (m : MonicMonomial n ord) : '-' ∉ m.toCharsWit
   exact not_mem_intercalate (by simp)
     (fun p hp => (plus_minus_notin_toCharsAuxWith F m 0 (by omega) p hp).2)
 
+/-! ### Generic character exclusion from `toCharsWith` -/
+
+private theorem char_notin_toCharsAuxWith (c : Char)
+    (hvar : ∀ v : F, c ∉ pv.toChars v)
+    (hdig : ∀ k : ℕ, c ∉ natToChars k)
+    (hnot_caret : c ≠ '^')
+    (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n) :
+    ∀ factor ∈ toCharsAuxWith F m k, c ∉ factor := by
+  by_cases hkn : k < n
+  · rw [toCharsAuxWith, dif_pos hkn]
+    by_cases he : m.exponents[k]'hkn = 0
+    · rw [if_pos he]
+      exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega)
+    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+        · exact hvar _
+        · exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega) f hf
+      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+        · intro h; rcases List.mem_append.mp h with h | h
+          · exact hvar _ h
+          · cases List.mem_cons.mp h with
+            | inl h => exact hnot_caret h
+            | inr h => exact hdig _ h
+        · exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega) f hf
+  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+termination_by n - k
+
+/-- Generic exclusion: a character `c` that doesn't occur in any variable name,
+    isn't a digit, isn't `*`, and isn't `^` does not occur in `toCharsWith`. -/
+theorem char_notin_toCharsWith (c : Char)
+    (hvar : ∀ v : F, c ∉ pv.toChars v)
+    (hdig : ∀ k : ℕ, c ∉ natToChars k)
+    (hnot_star : c ≠ '*') (hnot_caret : c ≠ '^')
+    (m : MonicMonomial n ord) : c ∉ m.toCharsWith F := by
+  rw [toCharsWith_eq_intercalate]
+  exact not_mem_intercalate (by simp [hnot_star])
+    (fun p hp => char_notin_toCharsAuxWith F c hvar hdig hnot_caret m 0 (by omega) p hp)
+
 /-! ### Final round-trip theorem -/
 
 theorem parseWith_toCharsWith (m : MonicMonomial n ord) :
