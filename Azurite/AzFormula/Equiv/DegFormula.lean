@@ -93,7 +93,81 @@ omit [IsDomain D] [DecidableEq D] in
       { y | MvPolynomial.aeval y p.toMvPoly ≠ 0 } := by
   simp [azRealization, Formula.realization_ne_zero]
 
-omit [IsDomain D] [DecidableEq D] in
+/-! ### Trivial atom realization -/
+
+omit [IsDomain D] in
+theorem isAzTrue_azRealization
+    (Φ : Formula (Fin k) (AzFieldAtom k D ord))
+    (h : isAzTrue Φ = true) : azRealization Φ (C := C) = Set.univ := by
+  match Φ with
+  | .atom ⟨_, true⟩ =>
+    simp only [isAzTrue, Bool.true_and, beq_iff_eq] at h; subst h
+    exact azRealization_azTrueFormula
+  | .atom ⟨_, false⟩ | .not _ | .and _ _ | .or _ _ | .implies _ _
+  | .exists_ _ _ | .forall_ _ _ => simp [isAzTrue] at h
+
+omit [IsDomain D] in
+theorem isAzFalse_azRealization
+    (Φ : Formula (Fin k) (AzFieldAtom k D ord))
+    (h : isAzFalse Φ = true) : azRealization Φ (C := C) = ∅ := by
+  match Φ with
+  | .atom ⟨_, false⟩ =>
+    simp only [isAzFalse, Bool.not_false, Bool.true_and, beq_iff_eq] at h; subst h
+    exact azRealization_azFalseFormula
+  | .atom ⟨_, true⟩ | .not _ | .and _ _ | .or _ _ | .implies _ _
+  | .exists_ _ _ | .forall_ _ _ => simp [isAzFalse] at h
+
+/-! ### Smart constructor realization -/
+
+omit [IsDomain D] in
+@[simp] theorem azRealization_azSmartAnd
+    (Φ₁ Φ₂ : Formula (Fin k) (AzFieldAtom k D ord)) :
+    azRealization (azSmartAnd Φ₁ Φ₂) (C := C) =
+      azRealization Φ₁ ∩ azRealization Φ₂ := by
+  simp only [azSmartAnd]
+  split
+  next h =>
+    rw [isAzTrue_azRealization (C := C) _ h, Set.univ_inter]
+  next _ =>
+    split
+    next h =>
+      rw [isAzTrue_azRealization (C := C) _ h, Set.inter_univ]
+    next _ =>
+      split
+      next h =>
+        simp only [Bool.or_eq_true] at h
+        rw [azRealization_azFalseFormula]
+        rcases h with h | h
+        · rw [isAzFalse_azRealization _ h, Set.empty_inter]
+        · rw [isAzFalse_azRealization _ h, Set.inter_empty]
+      next _ =>
+        exact azRealization_and _ _
+
+omit [IsDomain D] in
+@[simp] theorem azRealization_azSmartOr
+    (Φ₁ Φ₂ : Formula (Fin k) (AzFieldAtom k D ord)) :
+    azRealization (azSmartOr Φ₁ Φ₂) (C := C) =
+      azRealization Φ₁ ∪ azRealization Φ₂ := by
+  simp only [azSmartOr]
+  split
+  next h =>
+    rw [isAzFalse_azRealization (C := C) _ h, Set.empty_union]
+  next _ =>
+    split
+    next h =>
+      rw [isAzFalse_azRealization (C := C) _ h, Set.union_empty]
+    next _ =>
+      split
+      next h =>
+        simp only [Bool.or_eq_true] at h
+        rw [azRealization_azTrueFormula]
+        rcases h with h | h
+        · rw [isAzTrue_azRealization _ h, Set.univ_union]
+        · rw [isAzTrue_azRealization _ h, Set.union_univ]
+      next _ =>
+        exact azRealization_or _ _
+
+omit [IsDomain D] in
 @[simp] theorem azRealization_azConjList
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord))) :
     azRealization (azConjList Φs) (C := C) =
@@ -101,10 +175,13 @@ omit [IsDomain D] [DecidableEq D] in
   induction Φs with
   | nil => simp [azConjList]
   | cons Φ Φs ih =>
-    simp only [azConjList, azRealization_and, ih]
-    ext y; simp [Set.mem_inter_iff, List.mem_cons, forall_eq_or_imp]
+    cases Φs with
+    | nil => simp [azConjList]
+    | cons Φ' Φs' =>
+      simp only [azConjList, azRealization_azSmartAnd, ih]
+      ext y; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.forall_mem_cons]
 
-omit [IsDomain D] [DecidableEq D] in
+omit [IsDomain D] in
 @[simp] theorem azRealization_azDisjList
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord))) :
     azRealization (azDisjList Φs) (C := C) =
@@ -112,8 +189,11 @@ omit [IsDomain D] [DecidableEq D] in
   induction Φs with
   | nil => simp [azDisjList]
   | cons Φ Φs ih =>
-    simp only [azDisjList, azRealization_or, ih]
-    ext y; simp [Set.mem_union, List.mem_cons, exists_eq_or_imp]
+    cases Φs with
+    | nil => simp [azDisjList]
+    | cons Φ' Φs' =>
+      simp only [azDisjList, azRealization_azSmartOr, ih]
+      ext y; simp [Set.mem_union, List.mem_cons, exists_eq_or_imp]
 
 /-! ### Main equivalence theorems -/
 
@@ -135,7 +215,7 @@ theorem azRealization_azDegFormula
       liftPoly_coeff, liftPoly_natDegree]
   | some n =>
     ext y
-    simp only [azRealization_and, azRealization_azNeZero,
+    simp only [azRealization_azSmartAnd, azRealization_azNeZero,
       azRealization_azConjList, azRealization_azEqZero,
       Formula.realization_and, Formula.realization_ne_zero,
       Formula.realization_conjList, Formula.realization_eq_zero,
@@ -152,11 +232,11 @@ theorem azRealization_azDegEqFormula
       (BPR.degEqFormula (liftPoly Q₁) (liftPoly Q₂)).realization := by
   -- Key: each disjunct's realization matches across the two sides
   have key : ∀ (i : WithBot ℕ) (y : Fin k → C),
-      y ∈ azRealization (C := C) ((azDegFormula Q₁ i).and (azDegFormula Q₂ i)) ↔
+      y ∈ azRealization (C := C) (azSmartAnd (azDegFormula Q₁ i) (azDegFormula Q₂ i)) ↔
       y ∈ ((BPR.degFormula (liftPoly Q₁) i).and
            (BPR.degFormula (liftPoly Q₂) i)).realization (C := C) := by
     intro i y
-    simp only [azRealization_and, Set.mem_inter_iff,
+    simp only [azRealization_azSmartAnd, Set.mem_inter_iff,
       azRealization_azDegFormula, Formula.realization_and]
   simp only [azDegEqFormula, BPR.degEqFormula, liftPoly_natDegree]
   ext y

@@ -19,19 +19,27 @@ variable {k : ℕ} {D : Type*} [CommRing D] [IsDomain D] [DecidableEq D]
 
 /-! ### List combinators -/
 
-/-- Conjunction of a list of formulas. Empty list gives `azTrueFormula` (0 = 0). -/
+/-- Conjunction of a list of formulas with trivial-atom absorption.
+    Empty list gives `azTrueFormula` (0 = 0). Singleton list returns
+    the element directly. Uses `azSmartAnd` to absorb trivially
+    true/false atoms during construction. -/
 def azConjList :
     List (Formula (Fin k) (AzFieldAtom k D ord)) →
     Formula (Fin k) (AzFieldAtom k D ord)
   | [] => azTrueFormula
-  | Φ :: Φs => .and Φ (azConjList Φs)
+  | [Φ] => Φ
+  | Φ :: Φs => azSmartAnd Φ (azConjList Φs)
 
-/-- Disjunction of a list of formulas. Empty list gives `azFalseFormula` (0 ≠ 0). -/
+/-- Disjunction of a list of formulas with trivial-atom absorption.
+    Empty list gives `azFalseFormula` (0 ≠ 0). Singleton list returns
+    the element directly. Uses `azSmartOr` to absorb trivially
+    true/false atoms during construction. -/
 def azDisjList :
     List (Formula (Fin k) (AzFieldAtom k D ord)) →
     Formula (Fin k) (AzFieldAtom k D ord)
   | [] => azFalseFormula
-  | Φ :: Φs => .or Φ (azDisjList Φs)
+  | [Φ] => Φ
+  | Φ :: Φs => azSmartOr Φ (azDisjList Φs)
 
 /-! ### Degree formulas -/
 
@@ -46,7 +54,7 @@ def azDegFormula
   match i with
   | ⊥ => azConjList ((List.range (Q.natDegree + 1)).map fun j =>
       azEqZero (Q.coeff j))
-  | some n => .and
+  | some n => azSmartAnd
       (azNeZero (Q.coeff n))
       (azConjList ((List.range (Q.natDegree - n)).map fun j =>
         azEqZero (Q.coeff (n + 1 + j))))
@@ -61,9 +69,9 @@ def azDegEqFormula
     Formula (Fin k) (AzFieldAtom k D ord) :=
   let m := max Q₁.natDegree Q₂.natDegree
   azDisjList (
-    ((azDegFormula Q₁ ⊥).and (azDegFormula Q₂ ⊥)) ::
+    (azSmartAnd (azDegFormula Q₁ ⊥) (azDegFormula Q₂ ⊥)) ::
     (List.range (m + 1)).map fun i =>
-      (azDegFormula Q₁ (some i)).and (azDegFormula Q₂ (some i)))
+      azSmartAnd (azDegFormula Q₁ (some i)) (azDegFormula Q₂ (some i)))
 
 private abbrev MvInt3 := AzMvPolynomial 3 ℤ .Degrevlex
 private instance : Fact (3 ≤ 26) := ⟨by omega⟩
@@ -71,6 +79,9 @@ private def p (s : String) : AzPolynomial MvInt3 :=
   (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
     (ord := .Degrevlex) s).getD 0
 
-#guard toString (elimTrivialAtoms (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)"))) == "((x₀+x₁ = 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ = 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((x₀+x₁ ≠ 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ ≠ 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((-x₂ ≠ 0 ∧ 3*x₀+x₁ = 0) ∧ (x₀^2-x₁^2 ≠ 0 ∧ -x₀*x₁ = 0)) ∨ (3*x₀+x₁ ≠ 0 ∧ -x₀*x₁ ≠ 0)))"
+#guard toString (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)")) == "((x₀+x₁ = 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ = 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((x₀+x₁ ≠ 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ ≠ 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((-x₂ ≠ 0 ∧ 3*x₀+x₁ = 0) ∧ (x₀^2-x₁^2 ≠ 0 ∧ -x₀*x₁ = 0)) ∨ (3*x₀+x₁ ≠ 0 ∧ -x₀*x₁ ≠ 0)))"
+
+-- Simplified by construction — no post-processing needed
+#guard isAzSimplified (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)"))
 
 end Azurite

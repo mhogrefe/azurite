@@ -236,6 +236,28 @@ def isAzFalse [DecidableEq R] (Φ : Formula (Fin n) (AzFieldAtom n R ord)) : Boo
   | .atom a => !a.isEq && a.poly == 0
   | _ => false
 
+/-- Smart conjunction: absorbs trivially true/false atoms.
+    Semantically equivalent to `.and Φ₁ Φ₂`, but simplifies when either
+    argument is trivially true or false. -/
+def azSmartAnd [DecidableEq R]
+    (Φ₁ Φ₂ : Formula (Fin n) (AzFieldAtom n R ord)) :
+    Formula (Fin n) (AzFieldAtom n R ord) :=
+  if isAzTrue Φ₁ then Φ₂
+  else if isAzTrue Φ₂ then Φ₁
+  else if isAzFalse Φ₁ || isAzFalse Φ₂ then azFalseFormula
+  else .and Φ₁ Φ₂
+
+/-- Smart disjunction: absorbs trivially true/false atoms.
+    Semantically equivalent to `.or Φ₁ Φ₂`, but simplifies when either
+    argument is trivially true or false. -/
+def azSmartOr [DecidableEq R]
+    (Φ₁ Φ₂ : Formula (Fin n) (AzFieldAtom n R ord)) :
+    Formula (Fin n) (AzFieldAtom n R ord) :=
+  if isAzFalse Φ₁ then Φ₂
+  else if isAzFalse Φ₂ then Φ₁
+  else if isAzTrue Φ₁ || isAzTrue Φ₂ then azTrueFormula
+  else .or Φ₁ Φ₂
+
 /-- Eliminate trivially true (`0 = 0`) and trivially false (`0 ≠ 0`) atoms
     using boolean absorption rules. -/
 def elimTrivialAtoms [DecidableEq R] :
@@ -268,6 +290,75 @@ def elimTrivialAtoms [DecidableEq R] :
     else .implies Φ₁' Φ₂'
   | .exists_ x Φ => .exists_ x (elimTrivialAtoms Φ)
   | .forall_ x Φ => .forall_ x (elimTrivialAtoms Φ)
+
+/-! ### Combined AzFieldAtom simplification -/
+
+/-- Helper for the `.not` case of `azSimplify`: eliminates double negation
+    and absorbs trivially true/false children. -/
+def azSimplifyNot [DecidableEq R]
+    (Φ' : Formula (Fin n) (AzFieldAtom n R ord)) :
+    Formula (Fin n) (AzFieldAtom n R ord) :=
+  match Φ' with
+  | .not Ψ => Ψ
+  | _ =>
+    if isAzTrue Φ' then azFalseFormula
+    else if isAzFalse Φ' then azTrueFormula
+    else .not Φ'
+
+/-- Apply all AzFieldAtom-specific simplifications in a single recursive pass:
+    double negation elimination, trivial atom absorption, and vacuous
+    quantifier removal. A single pass avoids interactions where one
+    transformation undoes another (e.g. `elimTrivialAtoms` can create
+    double negations). -/
+def azSimplify [DecidableEq R] :
+    Formula (Fin n) (AzFieldAtom n R ord) → Formula (Fin n) (AzFieldAtom n R ord)
+  | .atom a => .atom a
+  | .not Φ => azSimplifyNot (azSimplify Φ)
+  | .and Φ₁ Φ₂ =>
+    let Φ₁' := azSimplify Φ₁
+    let Φ₂' := azSimplify Φ₂
+    if isAzTrue Φ₁' then Φ₂'
+    else if isAzTrue Φ₂' then Φ₁'
+    else if isAzFalse Φ₁' || isAzFalse Φ₂' then azFalseFormula
+    else .and Φ₁' Φ₂'
+  | .or Φ₁ Φ₂ =>
+    let Φ₁' := azSimplify Φ₁
+    let Φ₂' := azSimplify Φ₂
+    if isAzFalse Φ₁' then Φ₂'
+    else if isAzFalse Φ₂' then Φ₁'
+    else if isAzTrue Φ₁' || isAzTrue Φ₂' then azTrueFormula
+    else .or Φ₁' Φ₂'
+  | .implies Φ₁ Φ₂ =>
+    let Φ₁' := azSimplify Φ₁
+    let Φ₂' := azSimplify Φ₂
+    if isAzTrue Φ₁' then Φ₂'
+    else if isAzFalse Φ₁' || isAzTrue Φ₂' then azTrueFormula
+    else .implies Φ₁' Φ₂'
+  | .exists_ x Φ =>
+    let Φ' := azSimplify Φ
+    if x ∈ freeVarsOf Φ' then .exists_ x Φ' else Φ'
+  | .forall_ x Φ =>
+    let Φ' := azSimplify Φ
+    if x ∈ freeVarsOf Φ' then .forall_ x Φ' else Φ'
+
+/-- Check whether a formula is fully simplified: no double negations, no trivial
+    atoms under connectives, and no vacuous quantifiers. -/
+def isAzSimplified [DecidableEq R] :
+    Formula (Fin n) (AzFieldAtom n R ord) → Bool
+  | .atom _ => true
+  | .not (.not _) => false
+  | .not Φ => !isAzTrue Φ && !isAzFalse Φ && isAzSimplified Φ
+  | .and Φ₁ Φ₂ =>
+    !isAzTrue Φ₁ && !isAzTrue Φ₂ && !isAzFalse Φ₁ && !isAzFalse Φ₂
+      && isAzSimplified Φ₁ && isAzSimplified Φ₂
+  | .or Φ₁ Φ₂ =>
+    !isAzFalse Φ₁ && !isAzFalse Φ₂ && !isAzTrue Φ₁ && !isAzTrue Φ₂
+      && isAzSimplified Φ₁ && isAzSimplified Φ₂
+  | .implies Φ₁ Φ₂ =>
+    !isAzTrue Φ₁ && !isAzFalse Φ₁ && !isAzTrue Φ₂
+      && isAzSimplified Φ₁ && isAzSimplified Φ₂
+  | .exists_ x Φ => decide (x ∈ freeVarsOf Φ) && isAzSimplified Φ
+  | .forall_ x Φ => decide (x ∈ freeVarsOf Φ) && isAzSimplified Φ
 
 /-! ### Conjunction of equalities -/
 
