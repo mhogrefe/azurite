@@ -111,6 +111,7 @@ import Azurite.AzMvPolynomial.NamedDisplay
 import Azurite.AzMvPolynomial.Neg
 import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.OptionEquivRight
+import Azurite.AzMvPolynomial.ParenFree
 import Azurite.AzMvPolynomial.ParsableCoeff
 import Azurite.AzMvPolynomial.ParsableElement
 import Azurite.AzMvPolynomial.Parse
@@ -176,6 +177,8 @@ import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.MulXPow
 import Azurite.AzPolynomial.MvCoeffExamples
+import Azurite.AzPolynomial.MvCoeffParse
+import Azurite.AzPolynomial.MvCoeffParseToString
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.NestedCoeffExamples
 import Azurite.AzPolynomial.ParsableElement

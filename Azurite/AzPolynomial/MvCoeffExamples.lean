@@ -1,130 +1,88 @@
 /-
   Examples demonstrating that `AzPolynomial` works over `AzMvPolynomial ℤ`
-  coefficients.
+  coefficients, using the dedicated `toStrMvCoeffWith` / `parseStrMvCoeffWith`
+  serializers from `MvCoeffParse`.
 
-  The point of these tests is to exercise the typeclass machinery: building
-  an `AzPolynomial (AzMvPolynomial n ℤ ord)` requires `Semiring`, `DecidableEq`,
-  and (for arithmetic) the full `CommRing` instance on `AzMvPolynomial n ℤ ord`
-  to be **computable**. There is no `parseAzPolynomial` or `toString` for these
-  polynomials (the coefficients are themselves multivariate polynomials), so
-  individual coefficients are built via `AzMvPolynomial.parseWith` and the
-  outer polynomial is assembled with `monomial`, `C`, and ring operations.
+  The inner variable scheme is `AbcVar 3` (`a, b, c`) so there is no collision
+  with the outer variable, which is always rendered as `x`.
 -/
-import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.Mul
-import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.PRem
-import Azurite.AzMvPolynomial.Equiv.Algebra
-import Azurite.AzMvPolynomial.Parse
+import Azurite.AzPolynomial.MvCoeffParse
 
 namespace Azurite.AzPolynomial.MvCoeffExamples
 
 open Azurite
 
-/-- Coefficient ring used by the examples below: `ℤ[x, y, z]` under degrevlex. -/
+/-- Coefficient ring used by the examples below: `ℤ[a, b, c]` under degrevlex. -/
 abbrev MvInt := AzMvPolynomial 3 ℤ .Degrevlex
 
-/-- Helper: parse a string as an element of `MvInt` using the `XyzVar 3`
-    naming scheme (`x, y, z`). -/
-private def mv (s : String) : MvInt :=
-  (AzMvPolynomial.parseWith (n := 3) (R := ℤ) (ord := .Degrevlex)
-    (XyzVar 3) s.toList).getD 0
+private instance : Fact (3 ≤ 26) := ⟨by omega⟩
 
-/-! ### Constructing `AzPolynomial MvInt` values -/
+/-- Parse a string as an `AzPolynomial MvInt` using `AbcVar 3` for the inner
+    variables.  The outer variable is `x`. -/
+private def p (s : String) : AzPolynomial MvInt :=
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+    (ord := .Degrevlex) s).getD 0
 
-/-- The zero polynomial in `AzPolynomial MvInt`. -/
-private def p_zero : AzPolynomial MvInt := 0
+/-- Render an `AzPolynomial MvInt` as a string using `AbcVar 3`. -/
+private def s (q : AzPolynomial MvInt) : String :=
+  q.toStrMvCoeffWith (AbcVar 3)
 
-#guard p_zero.coeffs.size == 0
+/-! ### Constructing `AzPolynomial MvInt` values from strings -/
 
-/-- The one polynomial in `AzPolynomial MvInt`. -/
-private def p_one : AzPolynomial MvInt := 1
+-- The zero polynomial
+#guard s (p "0") == "0"
 
-#guard p_one.coeffs.size == 1
-#guard p_one.coeff 0 == (mv "1")
+-- The one polynomial
+#guard s (p "(1)") == "(1)"
 
-/-- A constant `AzPolynomial` whose coefficient is `2*x + 3*y`. -/
-private def p_const : AzPolynomial MvInt := C (mv "2*x+3*y")
+-- A constant whose coefficient is `2*a + 3*b`
+#guard s (p "(2*a+3*b)") == "(2*a+3*b)"
 
-#guard p_const.coeffs.size == 1
-#guard p_const.coeff 0 == mv "2*x+3*y"
+-- Linear polynomial `a*x + (b+1)`
+#guard s (p "(a)*x+(b+1)") == "(a)*x+(b+1)"
 
-/-- The polynomial `x * T + (y + 1)` in `MvInt[T]` (where `T` is the
-    outer indeterminate of `AzPolynomial`). Built by adding two monomials. -/
-private def p_lin : AzPolynomial MvInt :=
-  monomial 1 (mv "x") + C (mv "y+1")
+-- Quadratic with a `1`-coefficient term:  `x^2 + (-c)*x + (1)`
+#guard s (p "x^2+(-c)*x+(1)") == "x^2+(-c)*x+(1)"
 
-#guard p_lin.coeffs.size == 2
-#guard p_lin.coeff 0 == mv "y+1"
-#guard p_lin.coeff 1 == mv "x"
+-- The flagship example `(3*a+b)*x^2 + (-c)*x + (a+b)`
+#guard s (p "(3*a+b)*x^2+(-c)*x+(a+b)") == "(3*a+b)*x^2+(-c)*x+(a+b)"
 
-/-- The polynomial `(x*y) * T^2 + (-z) * T + 1`. -/
-private def p_quad : AzPolynomial MvInt :=
-  monomial 2 (mv "x*y") + monomial 1 (mv "-z") + C (mv "1")
+/-! ### Ring operations, verified via string round-trips -/
 
-#guard p_quad.coeffs.size == 3
-#guard p_quad.coeff 0 == mv "1"
-#guard p_quad.coeff 1 == mv "-z"
-#guard p_quad.coeff 2 == mv "x*y"
+-- Addition: `(a*x + (b+1)) + (-a*x + c) = (b+c+1)`
+#guard s (p "(a)*x+(b+1)" + p "(-a)*x+(c)") == "(b+c+1)"
 
-/-! ### Ring operations on `AzPolynomial MvInt` -/
+-- Subtraction: `p - p = 0`
+#guard s (p "(a)*x+(b+1)" - p "(a)*x+(b+1)") == "0"
 
--- Addition: `(x*T + (y+1)) + ((-x)*T + z) = (y+1+z)`
-#guard
-  (p_lin + (monomial 1 (mv "-x") + C (mv "z"))).coeff 0 == mv "y+z+1"
+-- Negation through subtraction: `0 - (a) = (-a)`
+#guard s (0 - p "(a)") == "(-a)"
 
--- Subtraction: `p_lin - p_lin = 0`
-#guard (p_lin - p_lin).coeffs.size == 0
+-- Multiplication: `(a*x + b) * (-b*x + a) = (-a*b)*x^2 + (a^2 - b^2)*x + a*b`
+#guard s (p "(a)*x+(b)" * p "(-b)*x+(a)") == "(-a*b)*x^2+(a^2-b^2)*x+(a*b)"
 
--- Negation through subtraction: `0 - C(x) = C(-x)`
-#guard ((0 : AzPolynomial MvInt) - C (mv "x")).coeff 0 == mv "-x"
-
--- Multiplication: `(x*T + y) * ((-y)*T + x) = (-x*y)*T^2 + (x^2 - y^2)*T + x*y`
-private def p_a : AzPolynomial MvInt := monomial 1 (mv "x") + C (mv "y")
-private def p_b : AzPolynomial MvInt := monomial 1 (mv "-y") + C (mv "x")
-private def p_ab : AzPolynomial MvInt := p_a * p_b
-
-#guard p_ab.coeffs.size == 3
-#guard p_ab.coeff 0 == mv "x*y"
-#guard p_ab.coeff 1 == mv "x^2-y^2"
-#guard p_ab.coeff 2 == mv "-x*y"
-
--- The leading coefficient of `p_quad` is `x*y`.
-#guard p_quad.leadingCoeff == mv "x*y"
-
--- Squaring `(T + x)` gives `T^2 + 2x * T + x^2`.
-private def p_T_plus_x : AzPolynomial MvInt := monomial 1 (mv "1") + C (mv "x")
-private def p_sq : AzPolynomial MvInt := p_T_plus_x * p_T_plus_x
-
-#guard p_sq.coeffs.size == 3
-#guard p_sq.coeff 0 == mv "x^2"
-#guard p_sq.coeff 1 == mv "2*x"
-#guard p_sq.coeff 2 == mv "1"
+-- Squaring `(x + a)` gives `x^2 + 2a*x + a^2`.
+#guard s (p "x+(a)" * p "x+(a)") == "x^2+(2*a)*x+(a^2)"
 
 /-! ### Pseudo-remainder over `MvInt` -/
 
--- `(T^2 + y)` pRem `(T + x)`.
--- d = 2, b = 1.  T^2 + y = (T - x)*(T + x) + (x^2 + y).
-private def p_prem1_P : AzPolynomial MvInt := monomial 2 (mv "1") + C (mv "y")
-private def p_prem1_Q : AzPolynomial MvInt := monomial 1 (mv "1") + C (mv "x")
-#guard pRem p_prem1_P p_prem1_Q == C (mv "x^2+y")
+-- `(x^2 + b)` pRem `(x + a)`.
+-- d = 2, b_lc = 1.  x^2 + b = (x - a)*(x + a) + (a^2 + b).
+#guard s (pRem (p "x^2+(b)") (p "x+(a)")) == "(a^2+b)"
 
--- `(T^2)` pRem `(x*T + y)`: non-unit leading coefficient.
--- d = 2, b = x, b^2 * P = x^2 * T^2.
--- x^2 * T^2 = (x*T - y)*(x*T + y) + y^2, so the pseudo-remainder is y^2.
-private def p_prem2_P : AzPolynomial MvInt := monomial 2 (mv "1")
-private def p_prem2_Q : AzPolynomial MvInt := monomial 1 (mv "x") + C (mv "y")
-#guard pRem p_prem2_P p_prem2_Q == C (mv "y^2")
+-- `x^2` pRem `(a*x + b)`: non-unit leading coefficient.
+-- a^2 * x^2 = (a*x - b)*(a*x + b) + b^2.
+#guard s (pRem (p "x^2") (p "(a)*x+(b)")) == "(b^2)"
 
--- `(x*T^2 + y)` pRem `(T + x)`.
--- d = 2, b = 1. x*T^2 + y = (x*T - x^2)*(T + x) + (x^3 + y).
-private def p_prem3_P : AzPolynomial MvInt := monomial 2 (mv "x") + C (mv "y")
-private def p_prem3_Q : AzPolynomial MvInt := monomial 1 (mv "1") + C (mv "x")
-#guard pRem p_prem3_P p_prem3_Q == C (mv "x^3+y")
+-- `(a*x^2 + b)` pRem `(x + a)`.
+-- a*x^2 + b = (a*x - a^2)*(x + a) + (a^3 + b).
+#guard s (pRem (p "(a)*x^2+(b)") (p "x+(a)")) == "(a^3+b)"
 
--- deg P < deg Q: the pseudo-remainder is `P`.
-#guard pRem p_prem1_Q (monomial 3 (mv "1") + C (mv "1") : AzPolynomial MvInt) == p_prem1_Q
+-- deg P < deg Q: pseudo-remainder is P.
+#guard s (pRem (p "x+(a)") (p "x^3+(1)")) == "x+(a)"
 
 end Azurite.AzPolynomial.MvCoeffExamples
