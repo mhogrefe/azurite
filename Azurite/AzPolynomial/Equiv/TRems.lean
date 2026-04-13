@@ -193,7 +193,7 @@ private theorem Tru_liftPoly_subset_range
         exact ih _ (by omega) _ le_rfl hx
 
 /-- Every element of `Tru (liftPoly p)` has a preimage in `tru p`. -/
-private theorem exists_tru_preimage
+theorem exists_tru_preimage
     (p : AzPolynomial (AzMvPolynomial k D ord))
     (x : Polynomial (MvPolynomial (Fin k) D))
     (hx : x ∈ BPR.Tru (liftPoly p)) :
