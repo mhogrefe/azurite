@@ -312,6 +312,45 @@ theorem isGCD_degree_eq_degGcd {G P Q : K[X]} (h : IsGCD G P Q) :
   isGCD_degree_eq h (gcd_isGCD P Q)
 
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- Negating a polynomial doesn't affect GCD. -/
+theorem IsGCD.neg_right {G P Q : K[X]} (h : IsGCD G P Q) : IsGCD G P (-Q) :=
+  ⟨h.1, dvd_neg.mpr h.2.1, fun E hEP hEQ => h.2.2 E hEP (dvd_neg.mp hEQ)⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+theorem IsGCD.of_neg_right {G P Q : K[X]} (h : IsGCD G P (-Q)) : IsGCD G P Q :=
+  neg_neg Q ▸ h.neg_right
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+theorem isGCD_neg_right_iff {G P Q : K[X]} : IsGCD G P (-Q) ↔ IsGCD G P Q :=
+  ⟨IsGCD.of_neg_right, IsGCD.neg_right⟩
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
+/-- GCD is preserved under pseudo-division: if `C(c) * P = A * Q + R`
+with `c ≠ 0` (so `C(c)` is a unit in `K[X]`), then `IsGCD G P Q ↔ IsGCD G Q R`.
+This is the key step that lets GCD be computed by iterated pseudo-remainders. -/
+theorem isGCD_of_pseudo_div {G P Q R A : K[X]} {c : K} (hc : c ≠ 0)
+    (h : Polynomial.C c * P = A * Q + R) :
+    IsGCD G P Q ↔ IsGCD G Q R := by
+  have hunit : IsUnit (Polynomial.C c) :=
+    Polynomial.isUnit_C.mpr (IsUnit.mk0 c hc)
+  have hR : R = Polynomial.C c * P - A * Q := by linear_combination -h
+  constructor
+  · -- Forward: IsGCD G P Q → IsGCD G Q R
+    rintro ⟨hGP, hGQ, hmax⟩
+    refine ⟨hGQ, ?_, fun E hEQ hER => hmax E ?_ hEQ⟩
+    · -- G ∣ R
+      rw [hR]; exact dvd_sub (dvd_mul_of_dvd_right hGP _) (dvd_mul_of_dvd_right hGQ _)
+    · -- E ∣ P
+      exact hunit.dvd_mul_left.mp (h ▸ dvd_add (dvd_mul_of_dvd_right hEQ _) hER)
+  · -- Backward: IsGCD G Q R → IsGCD G P Q
+    rintro ⟨hGQ, hGR, hmax⟩
+    refine ⟨?_, hGQ, fun E hEP hEQ => hmax E hEQ ?_⟩
+    · -- G ∣ P
+      exact hunit.dvd_mul_left.mp (h ▸ dvd_add (dvd_mul_of_dvd_right hGQ _) hGR)
+    · -- E ∣ R
+      rw [hR]; exact dvd_sub (dvd_mul_of_dvd_right hEP _) (dvd_mul_of_dvd_right hEQ _)
+
+omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
 /-- BPR Definition: P and Q are coprime if their GCD is a nonzero element of K
     (equivalently, a unit in K[X]). -/
 def AreCoprime (P Q : K[X]) : Prop :=

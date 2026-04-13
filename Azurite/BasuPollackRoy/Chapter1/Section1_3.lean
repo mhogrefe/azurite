@@ -543,6 +543,15 @@ inductive RoseTree (α : Type*) where
 def RoseTree.root : RoseTree α → α
   | .node a _ => a
 
+/-- All root-to-leaf paths in a `RoseTree`, represented as lists of
+node labels from the root's immediate child down to the leaf.
+A leaf (no children) produces the single empty path `[]`.
+A branching node distributes paths through each child subtree. -/
+def RoseTree.leafPaths : RoseTree α → List (List α)
+  | .node _ [] => [[]]
+  | .node _ cs => cs.flatMap fun c =>
+      c.leafPaths.map (c.root :: ·)
+
 section TRems
 
 open Classical
@@ -622,9 +631,61 @@ theorem degree_pRemMv_lt
   exact @degree_pRem_lt (MvPolynomial (Fin k) D) _
     (FractionRing (MvPolynomial (Fin k) D)) _ _ _ P Q hQ
 
+/-- Pseudo-division identity in `D[Y₁,…,Yₖ][X]`:
+`C(b_q^d) · P = A · Q + pRemMv(P, Q)` for some `A`. -/
+theorem pRemMv_pseudo_div
+    (P Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
+    ∃ A : Polynomial (MvPolynomial (Fin k) D),
+      Polynomial.C (Q.leadingCoeff ^ pRemExp P Q) * P =
+        A * Q + pRemMv P Q := by
+  set K := FractionRing (MvPolynomial (Fin k) D)
+  have hinj := IsFractionRing.injective (MvPolynomial (Fin k) D) K
+  have hbound : (if P.natDegree < Q.natDegree then 0
+                 else P.natDegree - Q.natDegree + 1) ≤ pRemExp P Q := by
+    split_ifs with h
+    · exact Nat.zero_le _
+    · exact pRemExp_ge P Q (Nat.not_lt.mp h)
+  obtain ⟨A, R, hAR, hdR⟩ :=
+    pRem_exists_aux Q hQ (P.natDegree + 1) P (Nat.lt_succ_self _)
+      (pRemExp P Q) hbound
+  -- Show R = pRemMv P Q: both map to PRem K P Q under algebraMap
+  suffices R = pRemMv P Q by rw [← this]; exact ⟨A, hAR⟩
+  apply Polynomial.map_injective (algebraMap (MvPolynomial (Fin k) D) K) hinj
+  rw [pRemMv_spec P Q hQ]
+  -- Show R.map = PRem K P Q by Euclidean division uniqueness
+  have hmap := congrArg (Polynomial.map (algebraMap (MvPolynomial (Fin k) D) K)) hAR
+  simp only [Polynomial.map_mul, Polynomial.map_add, Polynomial.map_C] at hmap
+  unfold PRem Rem
+  simp only [Polynomial.map_mul, Polynomial.map_C]
+  have hQmap_ne : Q.map (algebraMap (MvPolynomial (Fin k) D) K) ≠ 0 :=
+    (Polynomial.map_ne_zero_iff hinj).mpr hQ
+  have hdR_map : (R.map (algebraMap (MvPolynomial (Fin k) D) K)).degree <
+      (Q.map (algebraMap (MvPolynomial (Fin k) D) K)).degree := by
+    rwa [Polynomial.degree_map_eq_of_injective hinj,
+         Polynomial.degree_map_eq_of_injective hinj Q]
+  have hdvd : Q.map (algebraMap (MvPolynomial (Fin k) D) K) ∣
+      (Polynomial.C ((algebraMap (MvPolynomial (Fin k) D) K)
+        (Q.leadingCoeff ^ pRemExp P Q)) *
+        P.map (algebraMap (MvPolynomial (Fin k) D) K)) -
+        R.map (algebraMap (MvPolynomial (Fin k) D) K) :=
+    ⟨A.map (algebraMap (MvPolynomial (Fin k) D) K), by linear_combination hmap⟩
+  have hmod_sub :
+      ((Polynomial.C ((algebraMap (MvPolynomial (Fin k) D) K)
+        (Q.leadingCoeff ^ pRemExp P Q)) *
+        P.map (algebraMap (MvPolynomial (Fin k) D) K)) -
+        R.map (algebraMap (MvPolynomial (Fin k) D) K)) %
+        Q.map (algebraMap (MvPolynomial (Fin k) D) K) = 0 :=
+    EuclideanDomain.mod_eq_zero.mpr hdvd
+  rw [Polynomial.sub_mod, sub_eq_zero] at hmod_sub
+  rw [hmod_sub, (Polynomial.mod_eq_self_iff hQmap_ne).mpr hdR_map]
+
 /-- Build the subtree of `TRems` rooted at `curPol`, whose parent
 holds `parentPol`. Terminates because `natDegree` strictly decreases
-through `PRem` and `Tru`. -/
+through `PRem` and `Tru`.
+
+Every non-zero node has an explicit `0` child (leaf) appended after
+the `Tru` children.  This matches BPR's tree structure where every
+branch eventually ends at a node with `Pol(N) = 0`. -/
 noncomputable def mkTRemsNode
     (parentPol curPol : Polynomial (MvPolynomial (Fin k) D)) :
     RoseTree (Polynomial (MvPolynomial (Fin k) D)) :=
@@ -632,8 +693,8 @@ noncomputable def mkTRemsNode
   else
     let next := -(pRemMv parentPol curPol)
     let children := (Tru_finite next).toFinset.toList
-    .node curPol (children.attach.map fun ⟨child, _hmem⟩ =>
-      mkTRemsNode curPol child)
+    .node curPol (children.attach.map (fun ⟨child, _hmem⟩ =>
+      mkTRemsNode curPol child) ++ [.node 0 []])
 termination_by curPol.natDegree
 decreasing_by
   rename_i h_ne
@@ -653,13 +714,14 @@ decreasing_by
 /-- BPR's **tree of possible signed pseudo-remainder sequences**
 `TRems(P, Q)` for `P, Q ∈ D[Y₁, …, Y_k][X]`.
 
-The root contains `P`; its children are the elements of `Tru(Q)`;
-each deeper level unfolds via `Tru(−PRem(…))`. A node whose
-polynomial is `0` is a leaf. -/
+The root contains `P`; its children are the elements of `Tru(Q)`
+(each expanded into subtrees) followed by an explicit `0` leaf.
+Each deeper level unfolds via `Tru(−PRem(…))`. A node whose
+polynomial is `0` is a leaf (no children). -/
 noncomputable def TRems
     (P Q : Polynomial (MvPolynomial (Fin k) D)) :
     RoseTree (Polynomial (MvPolynomial (Fin k) D)) :=
-  .node P ((Tru_finite Q).toFinset.toList.map (mkTRemsNode P))
+  .node P ((Tru_finite Q).toFinset.toList.map (mkTRemsNode P) ++ [.node 0 []])
 
 end TRems
 
@@ -879,5 +941,452 @@ theorem degFormula_disjoint
   intro h; rw [h]; exact hij
 
 end DegFormula
+
+/-!
+### The leaf formula C_L
+
+Given a leaf `L` of `TRems(P, Q)`, let `B_L` be the unique path from the
+root `R` to `L`. Every path ends with the `0` polynomial (the explicit
+leaf). For each non-leaf node `N` on `B_L`, let `c(N)` be the unique
+child of `N` in `B_L`. The **leaf formula** `C_L` is
+```
+  deg_X(Q) = natDeg(Pol(c(R)))
+  ∧ ⋀_{N ∈ B_L, N ≠ R, c(N) ≠ 0}
+      deg_X(−PRem(Pol(p(N)), Pol(N))) = natDeg(Pol(c(N)))
+  ∧ deg_X(−PRem(Pol(p(L)), Pol(L's parent))) = ⊥
+```
+where the last conjunct says the remainder at the leaf vanishes.
+
+We represent the path as a list of node polynomials (excluding the root `P`),
+so a path `[q₁, q₂, …, qₘ, 0]` encodes:
+- `q₁` is a child of the root (an element of `Tru(Q)` or `0`),
+- `qᵢ₊₁` is a child of `qᵢ` (an element of `Tru(−PRem(p(qᵢ), qᵢ))` or `0`),
+- `0` at the end is the explicit leaf (with `Pol = 0`).
+
+Using `degFormula R (↑n)` (which pins the degree of `R_y` to exactly `n`)
+instead of `degEqFormula R next` ensures disjointness across branches,
+since the `degFormula` family partitions `C^k` by `degFormula_disjoint`.
+-/
+
+section LeafFormula
+
+open Classical
+
+variable {D : Type*} [CommRing D] [IsDomain D]
+
+/-- Auxiliary: conjoin `degFormula` instances along the interior of the path.
+`parent` and `cur` are consecutive nodes; `rest` is the remainder of the path.
+When `next = 0` (the explicit leaf), use `degFormula R ⊥` (remainder vanishes).
+When `next ≠ 0`, use `degFormula R (↑next.natDegree)` and recurse. -/
+private noncomputable def leafFormulaAux
+    (parent cur : Polynomial (MvPolynomial (Fin k) D))
+    (rest : List (Polynomial (MvPolynomial (Fin k) D))) :
+    Formula (Fin k) (FieldAtom (Fin k) D) :=
+  match rest with
+  | [] => degFormula (-(pRemMv parent cur)) ⊥
+  | next :: rest' =>
+    if next = 0 then
+      degFormula (-(pRemMv parent cur)) ⊥
+    else
+      (degFormula (-(pRemMv parent cur)) (↑next.natDegree)).and
+        (leafFormulaAux cur next rest')
+
+/-- BPR's leaf formula `C_L` for a root-to-leaf path in `TRems(P, Q)`.
+
+`path` is the list of node polynomials on the path **after the root**
+(i.e., starting from a child of `P`). With the explicit `0` leaf,
+every valid path is non-empty and ends with `0`. When the first element
+is `0`, the formula is just `degFormula Q ⊥` (i.e. `Q_y = 0`). -/
+noncomputable def leafFormula
+    (P Q : Polynomial (MvPolynomial (Fin k) D))
+    (path : List (Polynomial (MvPolynomial (Fin k) D))) :
+    Formula (Fin k) (FieldAtom (Fin k) D) :=
+  match path with
+  | [] => degFormula Q ⊥
+  | q :: rest =>
+    if q = 0 then degFormula Q ⊥
+    else (degFormula Q (↑q.natDegree)).and (leafFormulaAux P q rest)
+
+end LeafFormula
+
+/-!
+### Lemma 1.19: Partition and GCD properties of leaf formulas
+
+BPR Lemma 1.19 states three things about the leaf formulas `C_L`:
+1. The realizations `Reali(C_L)` partition `C^k`.
+2. For `y ∈ Reali(C_L)`, the signed remainder sequence `SRemS(P_y, Q_y)`
+   is proportional (up to squares) to the specialized node polynomials
+   along the path `B_L`.
+3. In particular, the leaf parent `Pol(p(L))_y` is `gcd(P_y, Q_y)`.
+
+BPR states: "It is clear from the definitions, since the remainder and
+pseudo-remainder of two polynomials in `C[X]` are equal up to a square."
+-/
+
+section Lemma_1_19
+
+variable {D : Type*} [CommRing D] [IsDomain D]
+
+open Classical
+
+/-! #### Helper: Tru specialization -/
+
+omit [IsDomain D] in
+/-- For every `y ∈ C^k`, there exists `q ∈ Tru(Q)` such that `Q_y = q_y`
+(i.e. they map to the same polynomial under specialization at `y`). -/
+private theorem Tru_spec_exists
+    {C : Type*} [Field C] [Algebra D C]
+    (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0)
+    (y : Fin k → C) :
+    ∃ q ∈ Tru Q,
+      Q.map (MvPolynomial.aeval y).toRingHom =
+        q.map (MvPolynomial.aeval y).toRingHom := by
+  set φ := (MvPolynomial.aeval (R := D) y).toRingHom
+  rw [Tru]; split_ifs with h0 hbase
+  · exact absurd h0 hQ
+  · exact ⟨Q, Set.mem_singleton_iff.mpr rfl, rfl⟩
+  · -- Recursive case: Tru(Q) = {Q} ∪ Tru(truncate ...)
+    push Not at hbase
+    obtain ⟨hlc_nc, hnd_pos⟩ := hbase
+    have hnd_pos' : 0 < Q.natDegree := Nat.pos_of_ne_zero hnd_pos
+    by_cases hlc : φ Q.leadingCoeff = 0
+    · -- Leading coeff vanishes at y → Q.map φ = (truncate ...).map φ
+      set T := truncate (Q.natDegree - 1) Q
+      have hmap_eq : Q.map φ = T.map φ := by
+        ext j; simp only [Polynomial.coeff_map,
+          show T = truncate (Q.natDegree - 1) Q from rfl, coeff_truncate]
+        split_ifs with hj
+        · rfl
+        · push Not at hj
+          have hle : Q.natDegree ≤ j := by omega
+          rcases hle.eq_or_lt with rfl | hlt
+          · simp only [Polynomial.leadingCoeff] at hlc; rw [hlc, map_zero]
+          · rw [Polynomial.coeff_eq_zero_of_natDegree_lt hlt, map_zero]
+      by_cases hT : T = 0
+      · exact ⟨Q, Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl), rfl⟩
+      · obtain ⟨q, hq_mem, hq_eq⟩ := Tru_spec_exists T hT y
+        exact ⟨q, Set.mem_union_right _ hq_mem, hmap_eq.trans hq_eq⟩
+    · exact ⟨Q, Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl), rfl⟩
+termination_by Q.natDegree
+decreasing_by
+  show (truncate (Q.natDegree - 1) Q).natDegree < Q.natDegree
+  have := natDegree_truncate_le (Q.natDegree - 1) Q; omega
+
+/-! #### Tru degree-equality implies polynomial equality under specialization -/
+
+omit [IsDomain D] in
+/-- If `q ∈ Tru(R)` and the specialized degrees match, then the
+specialized polynomials are equal: `R_y = q_y`. This is because
+`q` is a truncation of `R` that removes only coefficients which
+vanish at `y` (as forced by the degree equality). -/
+private theorem Tru_degEq_imp_eq
+    {C : Type*} [Field C] [Algebra D C]
+    (R q : Polynomial (MvPolynomial (Fin k) D))
+    (hq : q ∈ Tru R)
+    (y : Fin k → C)
+    (hdeg : (R.map (MvPolynomial.aeval y).toRingHom).degree =
+            (q.map (MvPolynomial.aeval y).toRingHom).degree) :
+    R.map (MvPolynomial.aeval y).toRingHom =
+      q.map (MvPolynomial.aeval y).toRingHom := by
+  set φ := (MvPolynomial.aeval (R := D) y).toRingHom
+  by_cases hR : R = 0
+  · subst hR; rw [Tru, if_pos rfl] at hq; exact hq.elim
+  · rw [Tru, if_neg hR] at hq
+    by_cases hbase : (∃ d : D, R.leadingCoeff = MvPolynomial.C d) ∨ R.natDegree = 0
+    · rw [if_pos hbase, Set.mem_singleton_iff] at hq; subst hq; rfl
+    · rw [if_neg hbase, Set.mem_union, Set.mem_singleton_iff] at hq
+      push Not at hbase
+      obtain ⟨_, hnd_pos⟩ := hbase
+      have hnd_pos' : 0 < R.natDegree := Nat.pos_of_ne_zero hnd_pos
+      rcases hq with rfl | hq_trunc
+      · -- q = R, trivial
+        rfl
+      · -- q ∈ Tru(truncate(R.natDegree - 1, R))
+        set T := truncate (R.natDegree - 1) R
+        -- Derive φ(R.leadingCoeff) = 0 from degree condition
+        have hlc : φ R.leadingCoeff = 0 := by
+          by_contra hlc_ne
+          have hR_nd := Polynomial.natDegree_map_of_leadingCoeff_ne_zero φ hlc_ne
+          have hq_nd : (q.map φ).natDegree ≤ R.natDegree - 1 :=
+            le_trans Polynomial.natDegree_map_le
+              (le_trans (natDegree_mem_Tru_le hq_trunc)
+                (natDegree_truncate_le (R.natDegree - 1) R))
+          have hRne : R.map φ ≠ 0 := by
+            intro h; apply hlc_ne
+            have : (R.map φ).coeff R.natDegree = 0 := by simp [h]
+            rwa [Polynomial.coeff_map] at this
+          have hR_deg : (R.map φ).degree = ↑R.natDegree := by
+            rw [Polynomial.degree_eq_natDegree hRne, hR_nd]
+          have hq_deg := hdeg.symm.trans hR_deg
+          have := Polynomial.natDegree_eq_of_degree_eq_some hq_deg
+          omega
+        -- Show R.map φ = T.map φ
+        have hR_eq_T : R.map φ = T.map φ := by
+          ext j; simp only [Polynomial.coeff_map,
+            show T = truncate (R.natDegree - 1) R from rfl, coeff_truncate]
+          split_ifs with hj
+          · rfl
+          · push Not at hj
+            have hle : R.natDegree ≤ j := by omega
+            rcases hle.eq_or_lt with rfl | hlt
+            · simp only [Polynomial.leadingCoeff] at hlc; rw [hlc, map_zero]
+            · rw [Polynomial.coeff_eq_zero_of_natDegree_lt hlt, map_zero]
+        -- IH: T.map φ = q.map φ
+        have hdeg' : (T.map φ).degree = (q.map φ).degree := by
+          rw [← hR_eq_T]; exact hdeg
+        exact hR_eq_T.trans (Tru_degEq_imp_eq T q hq_trunc y hdeg')
+termination_by R.natDegree
+decreasing_by
+  have := natDegree_truncate_le (R.natDegree - 1) R; omega
+
+/-! #### Helpers for leafPaths membership -/
+
+private theorem mkTRemsNode_root
+    (parent cur : Polynomial (MvPolynomial (Fin k) D)) :
+    (mkTRemsNode parent cur).root = cur := by
+  rw [mkTRemsNode]; split_ifs <;> rfl
+
+omit [IsDomain D] in
+private theorem Tru_nonempty_of_ne_zero
+    (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
+    Q ∈ Tru Q := by
+  rw [Tru, if_neg hQ]
+  split_ifs
+  · exact Set.mem_singleton_iff.mpr rfl
+  · exact Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl)
+
+omit [IsDomain D] in
+private theorem Tru_empty_of_eq_zero :
+    Tru (0 : Polynomial (MvPolynomial (Fin k) D)) = ∅ := by
+  rw [Tru, if_pos rfl]
+
+omit [IsDomain D] in
+private theorem zero_not_mem_Tru
+    (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
+    (0 : Polynomial (MvPolynomial (Fin k) D)) ∉ Tru Q := by
+  rw [Tru, if_neg hQ]; split_ifs with hbase
+  · exact fun h => hQ (Set.mem_singleton_iff.mp h).symm
+  · intro hmem
+    rw [Set.mem_union, Set.mem_singleton_iff] at hmem
+    rcases hmem with h | hmem
+    · exact hQ h.symm
+    · by_cases hT : truncate (Q.natDegree - 1) Q = 0
+      · rw [hT, Tru_empty_of_eq_zero] at hmem; exact hmem.elim
+      · exact absurd hmem (zero_not_mem_Tru _ hT)
+termination_by Q.natDegree
+decreasing_by
+  push Not at hbase; obtain ⟨_, hnd⟩ := hbase
+  have := natDegree_truncate_le (Q.natDegree - 1) Q
+  omega
+
+/-! #### Helper: degree covering by Tru -/
+
+omit [IsDomain D] in
+/-- When `Q_y ≠ 0` and `algebraMap D C` is injective, the degree of `Q_y`
+equals `↑(natDegree q)` for some `q ∈ Tru Q`. This is the key lemma
+enabling the `degFormula`-based covering property. -/
+private theorem Tru_covers_degrees
+    {C : Type*} [Field C] [Algebra D C]
+    (hinj : Function.Injective (algebraMap D C))
+    (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0)
+    (y : Fin k → C)
+    (hQy : Q.map (MvPolynomial.aeval y).toRingHom ≠ 0) :
+    ∃ q ∈ Tru Q,
+      (Q.map (MvPolynomial.aeval y).toRingHom).degree = ↑q.natDegree := by
+  set φ := (MvPolynomial.aeval (R := D) y).toRingHom
+  rw [Tru]; split_ifs with h0 hbase
+  · exact absurd h0 hQ
+  · -- Base case: lc constant or natDeg = 0 → lc doesn't vanish (by injectivity)
+    refine ⟨Q, Set.mem_singleton_iff.mpr rfl, ?_⟩
+    have hlc : φ Q.leadingCoeff ≠ 0 := by
+      rcases hbase with ⟨d, hd⟩ | hnd
+      · -- lc = C(d): φ(C d) = algebraMap D C d ≠ 0 by injectivity
+        rw [hd]; intro hlc_zero
+        have hd_ne : d ≠ 0 := by
+          intro hd0
+          exact (Polynomial.leadingCoeff_ne_zero.mpr hQ) (by rw [hd, hd0, map_zero])
+        apply hd_ne; apply hinj; rw [map_zero]
+        change (MvPolynomial.aeval y) (MvPolynomial.C d) = 0 at hlc_zero
+        rwa [MvPolynomial.aeval_C] at hlc_zero
+      · -- natDeg = 0: Q = C(Q.coeff 0), if φ(lc) = 0 then Q_y = 0
+        intro hlc_zero; apply hQy
+        have hQ_eq := Polynomial.eq_C_of_natDegree_eq_zero hnd
+        have hcoeff : Q.coeff 0 = Q.leadingCoeff := by
+          simp only [Polynomial.leadingCoeff, hnd]
+        rw [hQ_eq, Polynomial.map_C, hcoeff, hlc_zero, Polynomial.C_0]
+    rw [Polynomial.degree_eq_natDegree hQy,
+        Polynomial.natDegree_map_of_leadingCoeff_ne_zero φ hlc]
+  · -- Recursive case: lc non-constant, natDeg > 0
+    push Not at hbase
+    obtain ⟨hlc_nc, hnd_pos⟩ := hbase
+    have hnd_pos' : 0 < Q.natDegree := Nat.pos_of_ne_zero hnd_pos
+    by_cases hlc : φ Q.leadingCoeff = 0
+    · -- lc vanishes at y: Q_y = truncate_y, recurse
+      set T := truncate (Q.natDegree - 1) Q
+      have hmap_eq : Q.map φ = T.map φ := by
+        ext j; simp only [Polynomial.coeff_map,
+          show T = truncate (Q.natDegree - 1) Q from rfl, coeff_truncate]
+        split_ifs with hj
+        · rfl
+        · push Not at hj
+          have hle : Q.natDegree ≤ j := by omega
+          rcases hle.eq_or_lt with rfl | hlt
+          · simp only [Polynomial.leadingCoeff] at hlc; rw [hlc, map_zero]
+          · rw [Polynomial.coeff_eq_zero_of_natDegree_lt hlt, map_zero]
+      have hT : T ≠ 0 := by
+        intro h; exact hQy (by rw [hmap_eq, h, Polynomial.map_zero])
+      have hTy : T.map φ ≠ 0 := by rwa [← hmap_eq]
+      obtain ⟨q, hq_mem, hq_deg⟩ := Tru_covers_degrees hinj T hT y hTy
+      exact ⟨q, Set.mem_union_right _ hq_mem, hmap_eq ▸ hq_deg⟩
+    · -- lc doesn't vanish: deg(Q_y) = natDeg(Q)
+      exact ⟨Q, Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl),
+        by rw [Polynomial.degree_eq_natDegree hQy,
+               Polynomial.natDegree_map_of_leadingCoeff_ne_zero φ hlc]⟩
+termination_by Q.natDegree
+decreasing_by
+  show (truncate (Q.natDegree - 1) Q).natDegree < Q.natDegree
+  have := natDegree_truncate_le (Q.natDegree - 1) Q; omega
+
+/-! #### Helper: leafPaths membership -/
+
+/-- If `child ∈ cs` (non-empty) and `path ∈ child.leafPaths`, then
+`child.root :: path ∈ leafPaths (.node root cs)`. -/
+private theorem mem_leafPaths_of_child (root : α) (cs : List (RoseTree α))
+    (child : RoseTree α) (hchild : child ∈ cs)
+    (path : List α) (hpath : path ∈ child.leafPaths) :
+    (child.root :: path) ∈ (RoseTree.node root cs).leafPaths := by
+  cases cs with
+  | nil => simp at hchild
+  | cons _ _ =>
+    simp only [RoseTree.leafPaths, List.mem_flatMap, List.mem_map]
+    exact ⟨child, hchild, path, hpath, rfl⟩
+
+omit [IsDomain D] in
+/-- A path `[0]` is always in the leafPaths of a node whose children
+include `RoseTree.node 0 []` (which it does after appending). -/
+private theorem mem_leafPaths_zero
+    (root : Polynomial (MvPolynomial (Fin k) D))
+    (cs : List (RoseTree (Polynomial (MvPolynomial (Fin k) D)))) :
+    [0] ∈ (RoseTree.node root (cs ++ [.node 0 []])).leafPaths := by
+  have hmem : RoseTree.node 0 ([] : List (RoseTree _)) ∈ cs ++ [.node 0 []] := by
+    simp [List.mem_append]
+  have h := mem_leafPaths_of_child root (cs ++ [.node 0 []])
+    (.node 0 []) hmem [] (by simp [RoseTree.leafPaths])
+  simpa [RoseTree.root] using h
+
+/-! #### Helper: mkTRemsNode subtree covering -/
+
+/-- The `leafFormulaAux` formulas for subtrees of `mkTRemsNode` cover
+all of `C^k`. Requires `algebraMap D C` injective. -/
+private theorem mkTRemsNode_covering
+    {C : Type*} [Field C] [Algebra D C]
+    (hinj : Function.Injective (algebraMap D C))
+    (parent cur : Polynomial (MvPolynomial (Fin k) D))
+    (y : Fin k → C) :
+    ∃ subpath ∈ (mkTRemsNode parent cur).leafPaths,
+      y ∈ (leafFormulaAux parent cur subpath).realization (C := C) := by
+  set φ := (MvPolynomial.aeval (R := D) y).toRingHom
+  rw [mkTRemsNode]
+  by_cases hcur : cur = 0
+  · -- cur = 0: .node 0 [], leafPaths = [[]]
+    rw [if_pos hcur]
+    exact ⟨[], by simp [RoseTree.leafPaths], by
+      rw [leafFormulaAux, realization_degFormula, Set.mem_setOf_eq,
+          hcur, pRemMv, dif_pos rfl, neg_zero, Polynomial.map_zero, Polynomial.degree_zero]⟩
+  · rw [if_neg hcur]; dsimp only
+    set R := -(pRemMv parent cur) with R_def
+    set children := (Tru_finite R).toFinset.toList with children_def
+    set tru_subtrees := children.attach.map (fun ⟨child, _⟩ => mkTRemsNode cur child)
+      with tru_subtrees_def
+    -- Split on whether R_y = 0
+    by_cases hRy : R.map φ = 0
+    · -- R_y = 0: use the 0 child, path = [0]
+      refine ⟨[0], mem_leafPaths_zero cur tru_subtrees, ?_⟩
+      have : leafFormulaAux parent cur [0] = degFormula (-(pRemMv parent cur)) ⊥ := by
+        unfold leafFormulaAux; exact if_pos rfl
+      rw [this, realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot]
+      exact hRy
+    · -- R_y ≠ 0: find matching Tru element
+      have hR : R ≠ 0 := by intro h; exact hRy (h ▸ Polynomial.map_zero φ)
+      obtain ⟨c, hc_tru, hc_deg⟩ := Tru_covers_degrees hinj R hR y hRy
+      have hc_list : c ∈ children :=
+        Finset.mem_toList.mpr ((Set.Finite.mem_toFinset _).mpr hc_tru)
+      have hc_ne : c ≠ 0 := fun h => absurd (h ▸ hc_tru) (zero_not_mem_Tru R hR)
+      -- c.natDegree < cur.natDegree for termination
+      have hc_nd : c.natDegree < cur.natDegree := by
+        have h1 := natDegree_mem_Tru_le hc_tru
+        have h2 : R.natDegree < cur.natDegree :=
+          Polynomial.natDegree_lt_natDegree hR (by
+            rw [R_def, Polynomial.degree_neg]; exact degree_pRemMv_lt parent cur hcur)
+        omega
+      -- IH: find subpath in mkTRemsNode cur c
+      obtain ⟨subpath, hsp_mem, hsp_real⟩ := mkTRemsNode_covering hinj cur c y
+      -- The full path: c :: subpath
+      refine ⟨c :: subpath, ?_, ?_⟩
+      · -- c :: subpath ∈ leafPaths
+        have hmem_cs : mkTRemsNode cur c ∈ tru_subtrees :=
+          List.mem_map.mpr ⟨⟨c, hc_list⟩, List.mem_attach _ _, rfl⟩
+        have h := mem_leafPaths_of_child cur (tru_subtrees ++ [.node 0 []])
+          (mkTRemsNode cur c) (List.mem_append_left _ hmem_cs)
+          subpath hsp_mem
+        rwa [mkTRemsNode_root] at h
+      · -- y ∈ realization of leafFormulaAux parent cur (c :: subpath)
+        have : leafFormulaAux parent cur (c :: subpath) =
+            (degFormula (-(pRemMv parent cur)) (↑c.natDegree)).and
+              (leafFormulaAux cur c subpath) := by
+          show (if c = 0 then _ else _) = _; exact if_neg hc_ne
+        rw [this, Formula.realization_and, Set.mem_inter_iff]
+        exact ⟨by rw [realization_degFormula, Set.mem_setOf_eq]; exact hc_deg, hsp_real⟩
+termination_by cur.natDegree
+decreasing_by exact hc_nd
+
+/-- BPR Lemma 1.19 (i), covering: for every `y ∈ C^k`, some root-to-leaf
+path in `TRems(P, Q)` has `y ∈ Reali(C_L)`. Requires `algebraMap D C`
+injective. -/
+theorem leafFormula_covering
+    {C : Type*} [Field C] [Algebra D C]
+    (hinj : Function.Injective (algebraMap D C))
+    (P Q : Polynomial (MvPolynomial (Fin k) D))
+    (y : Fin k → C) :
+    ∃ path ∈ (TRems P Q).leafPaths,
+      y ∈ (leafFormula P Q path).realization (C := C) := by
+  set φ := (MvPolynomial.aeval (R := D) y).toRingHom
+  unfold TRems
+  set cs := (Tru_finite Q).toFinset.toList with cs_def
+  -- Split on whether Q_y = 0
+  by_cases hQy : Q.map φ = 0
+  · -- Q_y = 0: use the 0 child, path = [0]
+    refine ⟨[0], mem_leafPaths_zero P (cs.map (mkTRemsNode P)), ?_⟩
+    have : leafFormula P Q [0] = degFormula Q ⊥ := by
+      unfold leafFormula; exact if_pos rfl
+    rw [this, realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot]
+    exact hQy
+  · -- Q_y ≠ 0: find matching Tru element
+    have hQ : Q ≠ 0 := by intro h; exact hQy (h ▸ Polynomial.map_zero φ)
+    obtain ⟨q, hq_tru, hq_deg⟩ := Tru_covers_degrees hinj Q hQ y hQy
+    have hq_list : q ∈ cs :=
+      Finset.mem_toList.mpr ((Set.Finite.mem_toFinset _).mpr hq_tru)
+    have hq_ne : q ≠ 0 := fun h => absurd (h ▸ hq_tru) (zero_not_mem_Tru Q hQ)
+    -- Use mkTRemsNode_covering for the subtree
+    obtain ⟨subpath, hsp_mem, hsp_real⟩ := mkTRemsNode_covering hinj P q y
+    -- Full path: q :: subpath
+    refine ⟨q :: subpath, ?_, ?_⟩
+    · -- q :: subpath ∈ leafPaths
+      have hmem_cs : mkTRemsNode P q ∈ cs.map (mkTRemsNode P) :=
+        List.mem_map.mpr ⟨q, hq_list, rfl⟩
+      have h := mem_leafPaths_of_child P (cs.map (mkTRemsNode P) ++ [.node 0 []])
+        (mkTRemsNode P q) (List.mem_append_left _ hmem_cs)
+        subpath hsp_mem
+      rwa [mkTRemsNode_root] at h
+    · -- y ∈ realization of leafFormula P Q (q :: subpath)
+      have : leafFormula P Q (q :: subpath) =
+          (degFormula Q (↑q.natDegree)).and (leafFormulaAux P q subpath) := by
+        show (if q = 0 then _ else _) = _; exact if_neg hq_ne
+      rw [this, Formula.realization_and, Set.mem_inter_iff]
+      exact ⟨by rw [realization_degFormula, Set.mem_setOf_eq]; exact hq_deg, hsp_real⟩
+
+/-! #### Leaf formula: disjointness and GCD (to be proved) -/
+
+end Lemma_1_19
 
 end Azurite.BPR
