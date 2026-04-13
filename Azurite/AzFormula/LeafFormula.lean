@@ -91,15 +91,15 @@ private def ex117tree := AzPolynomial.tremsTree ex117P ex117Q
 private def ex117paths : List (List (AzPolynomial MvInt3)) :=
   rtLeafPaths ex117tree
 
--- 4 leaf paths (matching the four leaves from TRems tests)
-#guard ex117paths.length == 4
+-- 9 leaf paths (matching the nine 0-sentinel leaves from TRems tests)
+#guard ex117paths.length == 9
 
--- Rightmost leaf: path through (-16c)
-#guard s (ex117paths.getD 3 [] |>.getD 0 0) == "(4)*x^3+(2*a)*x+(b)"
-#guard s (ex117paths.getD 3 [] |>.getD 1 0) == "(-16*c)"
+-- Path [Q, t3, 0]: through (-16c)
+#guard s (ex117paths.getD 6 [] |>.getD 0 0) == "(4)*x^3+(2*a)*x+(b)"
+#guard s (ex117paths.getD 6 [] |>.getD 1 0) == "(-16*c)"
 
--- All four leaf formulas are well-formed
-#guard (ex117paths.map (azLeafFormula ex117P ex117Q)).length == 4
+-- All nine leaf formulas are well-formed
+#guard (ex117paths.map (azLeafFormula ex117P ex117Q)).length == 9
 
 -- Simplified by construction
 #guard (ex117paths.map (azLeafFormula ex117P ex117Q)).all isAzSimplified

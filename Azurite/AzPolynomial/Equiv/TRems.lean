@@ -203,21 +203,18 @@ private theorem exists_tru_preimage
 
 /-! ### Inductive leaf predicate -/
 
-/-- `IsLeafParentOfMkTRemsNode P Q q` means `q` is the last nonzero
-polynomial (leaf parent) in some branch of the tree `BPR.mkTRemsNode P Q`.
-In BPR a leaf has `Pol(N) = 0`; this predicate captures `Pol(p(L))`.
-Three cases mirror the recursive structure of `mkTRemsLeafParentsAux`. -/
+/-- `IsLeafParentOfMkTRemsNode P Q q` means `q` is a nonzero node
+(leaf parent) in some branch of the tree `BPR.mkTRemsNode P Q`.
+Every nonzero node is a leaf parent because it has a `0`-sentinel child.
+Two cases mirror the recursive structure of `mkTRemsLeafParentsAux`. -/
 inductive BPR.IsLeafParentOfMkTRemsNode {k : ℕ} {D : Type _} [CommRing D]
     [IsDomain D] :
     Polynomial (MvPolynomial (Fin k) D) →
     Polynomial (MvPolynomial (Fin k) D) →
     Polynomial (MvPolynomial (Fin k) D) → Prop
-  | leaf_zero {P Q} (h : Q = 0) :
+  | self {P Q} (h : Q ≠ 0) :
       BPR.IsLeafParentOfMkTRemsNode P Q Q
-  | leaf_noChildren {P Q} (h : Q ≠ 0)
-      (ht : BPR.Tru (-(BPR.pRemMv P Q)) = ∅) :
-      BPR.IsLeafParentOfMkTRemsNode P Q Q
-  | leaf_child {P Q c q} (h : Q ≠ 0)
+  | child {P Q c q} (h : Q ≠ 0)
       (hc : c ∈ BPR.Tru (-(BPR.pRemMv P Q)))
       (hq : BPR.IsLeafParentOfMkTRemsNode Q c q) :
       BPR.IsLeafParentOfMkTRemsNode P Q q
@@ -241,37 +238,29 @@ private theorem mkTRemsLeafParentsAux_to_isLeafParent
   intro pp cc q hcn hmem
   rw [AzPolynomial.mkTRemsLeafParentsAux] at hmem
   by_cases h0 : cc = 0
-  · -- cc = 0
+  · -- cc = 0: mkTRemsLeafParentsAux returns [], contradiction
     have : (cc == 0) = true := beq_iff_eq.mpr h0
     rw [dif_pos this] at hmem
-    rw [List.mem_singleton.mp hmem, h0]
-    exact .leaf_zero (by simp [liftPoly_zero])
+    simp at hmem
   · -- cc ≠ 0
     have hbeq : ¬(cc == 0) = true := by simp [beq_iff_eq, h0]
     rw [dif_neg hbeq] at hmem; dsimp only at hmem
-    by_cases hce : AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) = []
-    · -- tru empty → leaf_noChildren
-      rw [hce] at hmem; simp only [List.mem_singleton] at hmem; rw [hmem]
-      have hNextZero : -(AzPolynomial.pRem pp cc) = 0 := (tru_eq_nil_iff _).mp hce
-      have hlift_ne : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
-      exact .leaf_noChildren hlift_ne (by
-        rw [← liftPoly_pRem_eq_pRemMv _ _ h0, ← liftPoly_neg,
-            hNextZero, liftPoly_zero]; exact (Tru_eq_empty_iff _).mpr rfl)
-    · -- tru non-empty → leaf_child
-      obtain ⟨hd, tl, hcons⟩ := List.exists_cons_of_ne_nil hce
-      rw [hcons] at hmem
+    -- hmem : q ∈ cc :: (tru ...).attach.flatMap (...)
+    rw [List.mem_cons] at hmem
+    rcases hmem with rfl | hmem
+    · -- q = cc: use .self
+      exact .self ((liftPoly_eq_zero_iff _).not.mpr h0)
+    · -- q ∈ flatMap: use .child
       simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists] at hmem
       obtain ⟨c, hcmem, hq⟩ := hmem
-      have hc_in_tru : c ∈ AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) := by
-        rw [hcons]; exact hcmem
       have hlift_ne : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
       have hc_in_Tru : liftPoly c ∈
           BPR.Tru (-(BPR.pRemMv (liftPoly pp) (liftPoly cc))) := by
         rw [← liftPoly_pRem_eq_pRemMv _ _ h0, ← liftPoly_neg]
-        exact (mem_tru_iff_mem_Tru _ c).mp hc_in_tru
+        exact (mem_tru_iff_mem_Tru _ c).mp hcmem
       have hlt : c.natDegree < cc.natDegree :=
-        AzPolynomial.natDegree_child_lt_of_mem_tru_neg_pRem h0 hc_in_tru
-      exact .leaf_child hlift_ne hc_in_Tru (ih _ (by omega) cc c q le_rfl hq)
+        AzPolynomial.natDegree_child_lt_of_mem_tru_neg_pRem h0 hcmem
+      exact .child hlift_ne hc_in_Tru (ih _ (by omega) cc c q le_rfl hq)
 
 /-- Backward: `IsLeafParentOfMkTRemsNode` implies membership in
 `mkTRemsLeafParentsAux`. Uses `generalize` to abstract `liftPoly`
@@ -284,25 +273,14 @@ private theorem isLeafParent_to_mkTRemsLeafParentsAux
   generalize hQ : liftPoly cc = Q at hleaf
   generalize hR : liftPoly q = R at hleaf
   induction hleaf generalizing pp cc q with
-  | leaf_zero h =>
-    have hcc0 : cc = 0 := (liftPoly_eq_zero_iff cc).mp (hQ ▸ h)
-    have hqcc : q = cc := liftPoly_injective (by rw [hR, ← hQ])
-    rw [hqcc, hcc0]; rw [AzPolynomial.mkTRemsLeafParentsAux]; simp
-  | leaf_noChildren h ht =>
+  | self h =>
     have hcc_ne : cc ≠ 0 := fun h0 => h (by rw [← hQ, h0, liftPoly_zero])
     have hqcc : q = cc := liftPoly_injective (by rw [hR, ← hQ])
     rw [hqcc]
-    rw [← hP, ← hQ] at ht
-    have htru_nil : AzPolynomial.tru (-(AzPolynomial.pRem pp cc)) = [] := by
-      rw [tru_eq_nil_iff]
-      have : liftPoly (-(AzPolynomial.pRem pp cc)) = 0 := by
-        rw [liftPoly_neg, liftPoly_pRem_eq_pRemMv _ _ hcc_ne]
-        exact (Tru_eq_empty_iff _).mp ht
-      exact (liftPoly_eq_zero_iff _).mp this
     rw [AzPolynomial.mkTRemsLeafParentsAux]
     rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
-    dsimp only; rw [htru_nil]; simp
-  | leaf_child h hc hq_inner ih =>
+    exact List.mem_cons_self ..
+  | child h hc hq_inner ih =>
     have hcc_ne : cc ≠ 0 := fun h0 => h (by rw [← hQ, h0, liftPoly_zero])
     rw [← hP, ← hQ] at hc
     rw [← liftPoly_pRem_eq_pRemMv _ _ hcc_ne, ← liftPoly_neg] at hc
@@ -310,17 +288,15 @@ private theorem isLeafParent_to_mkTRemsLeafParentsAux
     have hq_mem := ih cc c_az q hQ hc_eq hR
     rw [AzPolynomial.mkTRemsLeafParentsAux]
     rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
-    dsimp only
-    obtain ⟨hd, tl, hcons⟩ :=
-      List.exists_cons_of_ne_nil (List.ne_nil_of_mem hc_tru)
-    rw [hcons]
-    simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists]
-    exact ⟨c_az, hcons ▸ hc_tru, hq_mem⟩
+    exact List.mem_cons_of_mem _ (by
+      simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists]
+      exact ⟨c_az, hc_tru, hq_mem⟩)
 
 /-! ### Main equivalence: leaf parents -/
 
 /-- A polynomial belongs to the computable `tremsLeafParents P Q` iff
-`liftPoly q` is a leaf parent of the noncomputable subtree
+it is either `P` itself (from the root-level 0-sentinel) or `liftPoly q`
+is a leaf parent of the noncomputable subtree
 `BPR.mkTRemsNode (liftPoly P) c` for some `c ∈ BPR.Tru (liftPoly Q)`.
 
 This says the leaf parents of the computable `tremsLeafParents`
@@ -329,20 +305,23 @@ under the `liftPoly` bridge. -/
 theorem mem_tremsLeafParents_iff_isLeafParent
     (P Q q : AzPolynomial (AzMvPolynomial k D ord)) :
     q ∈ AzPolynomial.tremsLeafParents P Q ↔
+      q = P ∨
       ∃ c ∈ BPR.Tru (liftPoly Q),
         BPR.IsLeafParentOfMkTRemsNode (liftPoly P) c (liftPoly q) := by
-  -- tremsLeafParents P Q = (tru Q).flatMap (mkTRemsLeafParentsAux P)
-  simp only [AzPolynomial.tremsLeafParents, List.mem_flatMap]
+  -- tremsLeafParents P Q = P :: (tru Q).flatMap (mkTRemsLeafParentsAux P)
+  simp only [AzPolynomial.tremsLeafParents, List.mem_cons, List.mem_flatMap]
   constructor
-  · -- Forward: q ∈ flatMap → isLeafParent
-    rintro ⟨c, hc_tru, hq_mem⟩
-    exact ⟨liftPoly c,
-      (mem_tru_iff_mem_Tru Q c).mp hc_tru,
-      mkTRemsLeafParentsAux_to_isLeafParent P c q hq_mem⟩
-  · -- Backward: isLeafParent → q ∈ flatMap
-    rintro ⟨c', hc'_Tru, hleaf⟩
-    obtain ⟨c, hc_tru, hc_eq⟩ := exists_tru_preimage Q c' hc'_Tru
-    rw [← hc_eq] at hleaf
-    exact ⟨c, hc_tru, isLeafParent_to_mkTRemsLeafParentsAux P c q hleaf⟩
+  · -- Forward
+    rintro (rfl | ⟨c, hc_tru, hq_mem⟩)
+    · exact Or.inl rfl
+    · exact Or.inr ⟨liftPoly c,
+        (mem_tru_iff_mem_Tru Q c).mp hc_tru,
+        mkTRemsLeafParentsAux_to_isLeafParent P c q hq_mem⟩
+  · -- Backward
+    rintro (rfl | ⟨c', hc'_Tru, hleaf⟩)
+    · exact Or.inl rfl
+    · obtain ⟨c, hc_tru, hc_eq⟩ := exists_tru_preimage Q c' hc'_Tru
+      rw [← hc_eq] at hleaf
+      exact Or.inr ⟨c, hc_tru, isLeafParent_to_mkTRemsLeafParentsAux P c q hleaf⟩
 
 end Azurite

@@ -123,8 +123,8 @@ def mkTRemsNode
   else
     let next := -(pRem parentPol curPol)
     let children := tru next
-    .node curPol (children.attach.map fun ⟨child, _hmem⟩ =>
-      mkTRemsNode curPol child)
+    .node curPol ((children.attach.map fun ⟨child, _hmem⟩ =>
+      mkTRemsNode curPol child) ++ [.node 0 []])
 termination_by curPol.natDegree
 decreasing_by
   simp only [beq_iff_eq] at _h
@@ -139,7 +139,7 @@ polynomial is `0` is a leaf. -/
 def tremsTree
     (P Q : AzPolynomial (AzMvPolynomial k D ord)) :
     RoseTree (AzPolynomial (AzMvPolynomial k D ord)) :=
-  .node P ((tru Q).map (mkTRemsNode P))
+  .node P ((tru Q).map (mkTRemsNode P) ++ [.node 0 []])
 
 /-- Collect the **leaf-parent polynomials** of `TRems(P, Q)`:
 the last nonzero polynomial in each branch. In BPR's terminology
@@ -149,13 +149,9 @@ tree when only the leaf parents are needed. -/
 def mkTRemsLeafParentsAux
     (parentPol curPol : AzPolynomial (AzMvPolynomial k D ord)) :
     List (AzPolynomial (AzMvPolynomial k D ord)) :=
-  if _h : curPol == 0 then [curPol]
+  if _h : curPol == 0 then []
   else
-    let next := -(pRem parentPol curPol)
-    let children := tru next
-    match children with
-    | [] => [curPol]
-    | _ => children.attach.flatMap fun ⟨child, _hmem⟩ =>
+    curPol :: (tru (-(pRem parentPol curPol))).attach.flatMap fun ⟨child, _hmem⟩ =>
         mkTRemsLeafParentsAux curPol child
 termination_by curPol.natDegree
 decreasing_by
@@ -168,7 +164,7 @@ returns `Pol(p(L))` for each leaf `L`. -/
 def tremsLeafParents
     (P Q : AzPolynomial (AzMvPolynomial k D ord)) :
     List (AzPolynomial (AzMvPolynomial k D ord)) :=
-  (tru Q).flatMap (mkTRemsLeafParentsAux P)
+  P :: (tru Q).flatMap (mkTRemsLeafParentsAux P)
 
 /-! ### Tests -/
 
@@ -182,21 +178,21 @@ private def p (s : String) : AzPolynomial MvInt3 :=
 private def s (q : AzPolynomial MvInt3) : String :=
   q.toStrMvCoeffWith (AbcVar 3)
 
--- Q = 0: tru(0) = [], so tremsLeafParents has no branches
-#guard tremsLeafParents (p "x+(a)") (p "0") == []
+-- Q = 0: tru(0) = [], so tremsLeafParents = [P] (root 0-sentinel only)
+#guard (tremsLeafParents (p "x+(a)") (p "0")).map s == ["x+(a)"]
 
--- Q = 0: tree root is P with no children
+-- Q = 0: tree root is P with one child (the 0-sentinel)
 #guard (tremsTree (p "x+(a)") (p "0")).root == p "x+(a)"
-#guard (tremsTree (p "x+(a)") (p "0")).children.length == 0
+#guard (tremsTree (p "x+(a)") (p "0")).children.length == 1
 
 -- Q is a nonzero constant: tru(Q) = [Q], pRem(P, Q) = 0,
--- so the Q-node has no further children ⇒ leaf is Q itself.
-#guard (tremsLeafParents (p "x+(a)") (p "(1)")).map s == ["(1)"]
+-- so the Q-node has one child (0-sentinel) ⇒ leaf parents are [P, Q].
+#guard (tremsLeafParents (p "x+(a)") (p "(1)")).map s == ["x+(a)", "(1)"]
 
 -- P = x^2+(b), Q = x+(a): leading coeff of Q is constant (1),
--- so tru(Q) = [Q]. One branch, pRem = (a^2+b), which has degree 0.
--- Then pRem(Q, -(a^2+b)) = 0 ⇒ leaf.
-#guard (tremsLeafParents (p "x^2+(b)") (p "x+(a)")).length == 1
+-- so tru(Q) = [Q]. pRem = (a^2+b), tru(-(a^2+b)) = [-(a^2+b)].
+-- Leaf parents: P, Q, -(a^2+b).
+#guard (tremsLeafParents (p "x^2+(b)") (p "x+(a)")).length == 3
 
 -- Non-constant leading coefficient: tru branches.
 -- tru((a)*x+(b)) = [(a)*x+(b), (b)]  →  two branches
@@ -206,24 +202,29 @@ private def s (q : AzPolynomial MvInt3) : String :=
 #guard (tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).root
   == p "(a)*x^2+(b)*x+(1)"
 
--- Number of children of root = length of tru(Q)
-#guard (tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).children.length == 2
+-- Number of children of root = length of tru(Q) + 1 (0-sentinel)
+#guard (tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).children.length == 3
 
 /-! #### BPR Example 1.17
 
 `P = X⁴ + aX² + bX + c`, `Q = 4X³ + 2aX + b` (the derivative of `P`).
 
-The tree `TRems(P, Q)` has the structure:
+The tree `TRems(P, Q)` has the structure (0 = leaf sentinel):
 ```
-P ─── Q ─┬─ (−8a)X² + (−12b)X + (−16c)
-         │   ├─ (−128a³ − 576b² + 512ac)X + (−64a²b − 768bc)
-         │   │   └─ −65536a⁵b² + 262144a⁶c − … [LEAF]
-         │   └─ (−64a²b − 768bc) [LEAF]
-         ├─ (−12b)X + (−16c)
-         │   └─ −20736b⁵ + 55296ab³c + 196608bc³ [LEAF]
-         └─ (−16c) [LEAF]
+P ─┬─ Q ─┬─ (−8a)X² + (−12b)X + (−16c)
+   │      │   ├─ (−128a³ − 576b² + 512ac)X + (−64a²b − 768bc)
+   │      │   │   ├─ −65536a⁵b² + 262144a⁶c − … ─── 0
+   │      │   │   └─ 0
+   │      │   ├─ (−64a²b − 768bc) ─── 0
+   │      │   └─ 0
+   │      ├─ (−12b)X + (−16c)
+   │      │   ├─ −20736b⁵ + 55296ab³c + 196608bc³ ─── 0
+   │      │   └─ 0
+   │      ├─ (−16c) ─── 0
+   │      └─ 0
+   └─ 0
 ```
-Four leaves correspond to the four possible signed pseudo-remainder
+Nine leaf sentinels correspond to nine possible signed pseudo-remainder
 sequences, branching at each level where the leading coefficient of a
 truncation is non-constant.
 -/
@@ -240,13 +241,14 @@ private def childCount (t : RoseTree (AzPolynomial MvInt3)) : List Nat → Nat
 private def ex117tree :=
   tremsTree (p "x^4+(a)*x^2+(b)*x+(c)") (p "(4)*x^3+(2*a)*x+(b)")
 
--- Root: P
+-- Root: P (2 children: mkTRemsNode P Q + 0-sentinel)
 #guard s (nodeAt ex117tree []) == "x^4+(a)*x^2+(b)*x+(c)"
-#guard childCount ex117tree [] == 1
+#guard childCount ex117tree [] == 2
 
 -- Level 1: Q (leading coeff 4 is constant, so tru(Q) = [Q])
+-- 4 children: 3 tru truncations + 0-sentinel
 #guard s (nodeAt ex117tree [0]) == "(4)*x^3+(2*a)*x+(b)"
-#guard childCount ex117tree [0] == 3
+#guard childCount ex117tree [0] == 4
 
 -- Level 2: tru(−pRem(P, Q)) — leading coeff (−8a) is non-constant,
 -- so tru produces three truncations (degree 2, 1, 0).
@@ -256,9 +258,9 @@ private def ex117tree :=
   "(-12*b)*x+(-16*c)"
 #guard s (nodeAt ex117tree [0, 2]) ==
   "(-16*c)"
-#guard childCount ex117tree [0, 0] == 2
-#guard childCount ex117tree [0, 1] == 1
-#guard childCount ex117tree [0, 2] == 0   -- LEAF
+#guard childCount ex117tree [0, 0] == 3   -- 2 tru + 0-sentinel
+#guard childCount ex117tree [0, 1] == 2   -- 1 tru + 0-sentinel
+#guard childCount ex117tree [0, 2] == 1   -- 0-sentinel only
 
 -- Level 3 from [0,0]: tru(−pRem(Q, (−8a)X²+…)) —
 -- leading coeff (−128a³ − 576b² + 512ac) is non-constant, two truncations.
@@ -266,24 +268,29 @@ private def ex117tree :=
   "(-128*a^3-576*b^2+512*a*c)*x+(-64*a^2*b-768*b*c)"
 #guard s (nodeAt ex117tree [0, 0, 1]) ==
   "(-64*a^2*b-768*b*c)"
-#guard childCount ex117tree [0, 0, 0] == 1
-#guard childCount ex117tree [0, 0, 1] == 0   -- LEAF
+#guard childCount ex117tree [0, 0, 0] == 2   -- 1 tru + 0-sentinel
+#guard childCount ex117tree [0, 0, 1] == 1   -- 0-sentinel only
 
 -- Level 3 from [0,1]: −pRem(Q, (−12b)X+(−16c)) is degree 0 → one truncation.
 #guard s (nodeAt ex117tree [0, 1, 0]) ==
   "(-20736*b^5+55296*a*b^3*c+196608*b*c^3)"
-#guard childCount ex117tree [0, 1, 0] == 0   -- LEAF
+#guard childCount ex117tree [0, 1, 0] == 1   -- 0-sentinel only
 
--- Level 4: the deepest leaf.
+-- Level 4: the deepest non-leaf node.
 #guard s (nodeAt ex117tree [0, 0, 0, 0]) ==
   "(-65536*a^5*b^2+262144*a^6*c-442368*a^2*b^4+2359296*a^3*b^2*c-2097152*a^4*c^2+4194304*a^2*c^3)"
-#guard childCount ex117tree [0, 0, 0, 0] == 0   -- LEAF
+#guard childCount ex117tree [0, 0, 0, 0] == 1   -- 0-sentinel only
 
--- All four leaf parents, collected by tremsLeafParents
+-- All nine leaf parents, collected by tremsLeafParents
 #guard (tremsLeafParents (p "x^4+(a)*x^2+(b)*x+(c)")
     (p "(4)*x^3+(2*a)*x+(b)")).map s ==
-  [ "(-65536*a^5*b^2+262144*a^6*c-442368*a^2*b^4+2359296*a^3*b^2*c-2097152*a^4*c^2+4194304*a^2*c^3)",
+  [ "x^4+(a)*x^2+(b)*x+(c)",
+    "(4)*x^3+(2*a)*x+(b)",
+    "(-8*a)*x^2+(-12*b)*x+(-16*c)",
+    "(-128*a^3-576*b^2+512*a*c)*x+(-64*a^2*b-768*b*c)",
+    "(-65536*a^5*b^2+262144*a^6*c-442368*a^2*b^4+2359296*a^3*b^2*c-2097152*a^4*c^2+4194304*a^2*c^3)",
     "(-64*a^2*b-768*b*c)",
+    "(-12*b)*x+(-16*c)",
     "(-20736*b^5+55296*a*b^3*c+196608*b*c^3)",
     "(-16*c)" ]
 

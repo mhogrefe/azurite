@@ -736,6 +736,20 @@ this example with every node verified by `#guard` tests in
 -/
 
 /-!
+### Example 1.21
+
+For the same polynomials `P` and `P'` as in Example 1.17,
+`Posgcd({P, P'})` has 9 elements `(Gᵢ, Cᵢ)`. The `Gᵢ` are the
+leaf parents of `TRems(P, P')` (i.e. the last nonzero polynomial on
+each root-to-leaf path), and each `Cᵢ` is a conjunction of degree
+formulas specifying when `gcd(P_y, P'_y) = (Gᵢ)_y`.
+
+The computable version `Azurite.azPosgcd` reproduces all 9 elements
+with every `G`-component and formula-simplification property verified
+by `#guard` tests in `Azurite/AzFormula/Posgcd.lean`.
+-/
+
+/-!
 ### Notation 1.18: Degree as a formula
 
 For `Q ∈ D[Y₁, …, Y_k][X]`, the **degree formula** `degFormula Q i`
