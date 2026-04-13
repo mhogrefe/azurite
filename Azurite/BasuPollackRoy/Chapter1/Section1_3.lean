@@ -978,7 +978,7 @@ variable {D : Type*} [CommRing D] [IsDomain D]
 `parent` and `cur` are consecutive nodes; `rest` is the remainder of the path.
 When `next = 0` (the explicit leaf), use `degFormula R ⊥` (remainder vanishes).
 When `next ≠ 0`, use `degFormula R (↑next.natDegree)` and recurse. -/
-private noncomputable def leafFormulaAux
+noncomputable def leafFormulaAux
     (parent cur : Polynomial (MvPolynomial (Fin k) D))
     (rest : List (Polynomial (MvPolynomial (Fin k) D))) :
     Formula (Fin k) (FieldAtom (Fin k) D) :=

@@ -9,8 +9,10 @@ import Azurite.AzFormula.Equiv.BoundVars
 import Azurite.AzFormula.Equiv.DegFormula
 import Azurite.AzFormula.Equiv.ElimTrivialAtoms
 import Azurite.AzFormula.Equiv.FreeVars
+import Azurite.AzFormula.Equiv.LeafFormula
 import Azurite.AzFormula.Equiv.Prenex
 import Azurite.AzFormula.Equiv.Simplify
+import Azurite.AzFormula.LeafFormula
 import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
