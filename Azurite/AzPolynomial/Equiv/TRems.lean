@@ -136,7 +136,7 @@ theorem liftPoly_pRem_eq_pRemMv
 
 /-! ### Helper: `tru` empty iff zero -/
 
-private theorem tru_eq_nil_iff
+theorem tru_eq_nil_iff
     (p : AzPolynomial (AzMvPolynomial k D ord)) :
     AzPolynomial.tru p = [] ↔ p = 0 := by
   constructor

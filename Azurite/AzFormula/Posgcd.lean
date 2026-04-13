@@ -1,0 +1,110 @@
+/-
+  Computable version of BPR's `posgcd` (Definition 1.20).
+
+  The set of possible greatest common divisors of a finite family
+  `𝒫 ⊂ D[Y₁, …, Y_k][X]`: a list of pairs `(G, 𝒞)` where `G` is a
+  polynomial and `𝒞` is a formula such that `y ∈ Reali(𝒞)` implies
+  `gcd(𝒫_y) = G_y`.
+-/
+import Azurite.AzFormula.LeafFormula
+
+namespace Azurite
+
+open AzMvPolynomial BPR
+
+variable {k : ℕ} {D : Type _} [CommRing D] [IsDomain D] [DecidableEq D]
+         {ord : MonomialOrder}
+
+/-- Auxiliary for `azPathLeafParent`: follows a path to find the last
+nonzero polynomial. -/
+def azPathLeafParentAux
+    (cur : AzPolynomial (AzMvPolynomial k D ord)) :
+    List (AzPolynomial (AzMvPolynomial k D ord)) →
+    AzPolynomial (AzMvPolynomial k D ord)
+  | [] => cur
+  | next :: rest =>
+    if next == 0 then cur
+    else azPathLeafParentAux next rest
+
+/-- The leaf parent of a path in `TRems(P, Q)`: the last nonzero
+polynomial before the terminal `0` leaf. Returns `P` when
+`Q_y = 0` (the path is `[0]` or `[]`).
+
+Computable version of BPR's `pathLeafParent`. -/
+def azPathLeafParent
+    (P : AzPolynomial (AzMvPolynomial k D ord)) :
+    List (AzPolynomial (AzMvPolynomial k D ord)) →
+    AzPolynomial (AzMvPolynomial k D ord)
+  | [] => P
+  | q :: rest =>
+    if q == 0 then P
+    else azPathLeafParentAux q rest
+
+/-- BPR Definition 1.20: the set of possible greatest common divisors
+of a finite family `𝒫 ⊂ D[Y₁, …, Yₖ][X]`, computed using smart
+conjunction to absorb trivial atoms.
+
+Each element is a pair `(G, 𝒞)` where `G` is a polynomial and `𝒞`
+is a formula such that `y ∈ Reali(𝒞)` implies `gcd(𝒫_y) = G_y`. -/
+def azPosgcd :
+    List (AzPolynomial (AzMvPolynomial k D ord)) →
+    List (AzPolynomial (AzMvPolynomial k D ord) ×
+      Formula (Fin k) (AzFieldAtom k D ord))
+  | [] => [(0, azTrueFormula)]
+  | P :: rest =>
+    (azPosgcd rest).flatMap fun (Q, C) =>
+      (AzPolynomial.tremsTree P Q).leafPaths.map fun path =>
+        (azPathLeafParent P path,
+         azSmartAnd C (azLeafFormula P Q path))
+
+/-! ### Tests -/
+
+section Tests
+
+private abbrev MvInt3 := AzMvPolynomial 3 ℤ .Degrevlex
+private instance : Fact (3 ≤ 26) := ⟨by omega⟩
+private def p (s : String) : AzPolynomial MvInt3 :=
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+    (ord := .Degrevlex) s).getD 0
+private def s (q : AzPolynomial MvInt3) : String :=
+  q.toStrMvCoeffWith (AbcVar 3)
+
+-- Empty family: one pair (0, True)
+private def emptyResult := azPosgcd (k := 3) (D := ℤ) (ord := .Degrevlex) []
+#guard emptyResult.length == 1
+#guard emptyResult.map (·.1) == [0]
+#guard emptyResult.all (isAzTrue ·.2)
+
+-- Singleton family {P}: gcd is P itself (up to specialization)
+-- posgcd [P] processes TRems(P, 0), which has one leaf path [0]
+-- pathLeafParent P [0] = P, leafFormula P 0 [0] = degFormula 0 ⊥ = trueFormula
+-- azSmartAnd trueFormula trueFormula = trueFormula
+private def singletonResult := azPosgcd [p "x+(a)"]
+#guard singletonResult.length == 1
+#guard singletonResult.map (fun pair => s pair.1) == ["x+(a)"]
+-- The formula should simplify to true (azSmartAnd absorbs trueFormula)
+#guard singletonResult.all (isAzTrue ·.2)
+
+-- Two linear polynomials: P = x+(a), Q = x+(b)
+private def ex_pq := azPosgcd [p "x+(a)", p "x+(b)"]
+#guard ex_pq.length ≥ 1
+-- All formulas are simplified
+#guard ex_pq.all (isAzSimplified ·.2)
+
+-- BPR Example 1.17 polynomials as a singleton
+private def ex117P := p "x^4+(a)*x^2+(b)*x+(c)"
+private def ex117Q := p "(4)*x^3+(2*a)*x+(b)"
+
+-- posgcd of singleton: result is the polynomial itself with true formula
+private def ex117single := azPosgcd [ex117P]
+#guard ex117single.length == 1
+#guard ex117single.map (fun pair => s pair.1) == ["x^4+(a)*x^2+(b)*x+(c)"]
+
+-- posgcd of {P, Q}: 4 leaf paths in TRems(P, Q) → 4 pairs
+#guard (azPosgcd [ex117P, ex117Q]).length == 4
+-- All formulas are simplified
+#guard (azPosgcd [ex117P, ex117Q]).all (isAzSimplified ·.2)
+
+end Tests
+
+end Azurite

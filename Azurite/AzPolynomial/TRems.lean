@@ -43,6 +43,15 @@ def RoseTree.leaves : RoseTree α → List α
   | .node a [] => [a]
   | .node _ cs => cs.flatMap RoseTree.leaves
 
+/-- All root-to-leaf paths, represented as lists of node labels from
+the root's immediate child down to the leaf.
+A leaf (no children) produces the single empty path `[]`.
+A branching node distributes paths through each child subtree. -/
+def RoseTree.leafPaths : RoseTree α → List (List α)
+  | .node _ [] => [[]]
+  | .node _ cs => cs.flatMap fun c =>
+      c.leafPaths.map (c.root :: ·)
+
 /-! ### Supporting lemmas for termination -/
 
 private theorem natDegree_neg (p : AzPolynomial (AzMvPolynomial k D ord)) :
@@ -107,7 +116,7 @@ theorem natDegree_child_lt_of_mem_tru_neg_pRem
 /-- Build the subtree of `TRems` rooted at `curPol`, whose parent
 holds `parentPol`. Terminates because `natDegree` strictly decreases
 through `pRem` and `tru`. -/
-private def mkTRemsNode
+def mkTRemsNode
     (parentPol curPol : AzPolynomial (AzMvPolynomial k D ord)) :
     RoseTree (AzPolynomial (AzMvPolynomial k D ord)) :=
   if _h : curPol == 0 then .node curPol []

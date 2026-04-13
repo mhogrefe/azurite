@@ -1141,7 +1141,7 @@ decreasing_by
 
 /-! #### Helpers for leafPaths membership -/
 
-private theorem mkTRemsNode_root
+theorem mkTRemsNode_root
     (parent cur : Polynomial (MvPolynomial (Fin k) D)) :
     (mkTRemsNode parent cur).root = cur := by
   rw [mkTRemsNode]; split_ifs <;> rfl
@@ -1156,12 +1156,12 @@ private theorem Tru_nonempty_of_ne_zero
   · exact Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl)
 
 omit [IsDomain D] in
-private theorem Tru_empty_of_eq_zero :
+theorem Tru_empty_of_eq_zero :
     Tru (0 : Polynomial (MvPolynomial (Fin k) D)) = ∅ := by
   rw [Tru, if_pos rfl]
 
 omit [IsDomain D] in
-private theorem zero_not_mem_Tru
+theorem zero_not_mem_Tru
     (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
     (0 : Polynomial (MvPolynomial (Fin k) D)) ∉ Tru Q := by
   rw [Tru, if_neg hQ]; split_ifs with hbase
@@ -1279,7 +1279,7 @@ decreasing_by
 
 /-- If `child ∈ cs` (non-empty) and `path ∈ child.leafPaths`, then
 `child.root :: path ∈ leafPaths (.node root cs)`. -/
-private theorem mem_leafPaths_of_child (root : α) (cs : List (RoseTree α))
+theorem mem_leafPaths_of_child (root : α) (cs : List (RoseTree α))
     (child : RoseTree α) (hchild : child ∈ cs)
     (path : List α) (hpath : path ∈ child.leafPaths) :
     (child.root :: path) ∈ (RoseTree.node root cs).leafPaths := by
@@ -1292,7 +1292,7 @@ private theorem mem_leafPaths_of_child (root : α) (cs : List (RoseTree α))
 omit [IsDomain D] in
 /-- A path `[0]` is always in the leafPaths of a node whose children
 include `RoseTree.node 0 []` (which it does after appending). -/
-private theorem mem_leafPaths_zero
+theorem mem_leafPaths_zero
     (root : Polynomial (MvPolynomial (Fin k) D))
     (cs : List (RoseTree (Polynomial (MvPolynomial (Fin k) D)))) :
     [0] ∈ (RoseTree.node root (cs ++ [.node 0 []])).leafPaths := by
@@ -1417,7 +1417,7 @@ theorem leafFormula_covering
 
 /-- For a rose tree node with non-empty children, `leafPaths` equals the
 flatMap form. This lets us extract which child a path came from. -/
-private theorem leafPaths_node_ne_nil
+theorem leafPaths_node_ne_nil
     (root : α) (cs : List (RoseTree α)) (hcs : cs ≠ []) :
     (RoseTree.node root cs).leafPaths =
       cs.flatMap fun c => c.leafPaths.map (c.root :: ·) := by
@@ -1711,7 +1711,7 @@ theorem leafFormula_disjoint
 /-- The leaf parent of a sub-path in `leafFormulaAux`: the last nonzero
 node before the terminal `0`. Returns `cur` when the remainder
 vanishes (base case). -/
-private noncomputable def pathLeafParentAux
+noncomputable def pathLeafParentAux
     (cur : Polynomial (MvPolynomial (Fin k) D)) :
     List (Polynomial (MvPolynomial (Fin k) D)) →
     Polynomial (MvPolynomial (Fin k) D)
@@ -1936,5 +1936,106 @@ theorem leafFormula_gcd
     exact isGCD_self_zero _
 
 end Lemma_1_19
+
+/-! ### Append-0 invariance
+
+BPR's tree `TRems(P, Q)` always appends an explicit `0` leaf, so every
+leaf path ends with `0`.  The computable tree omits this sentinel.  The
+following lemmas show that `pathLeafParent(Aux)` and `leafFormula(Aux)`
+are invariant under appending `0` to a path, bridging the two
+representations. -/
+
+section AppendZero
+
+variable {D : Type*} [CommRing D] [IsDomain D]
+
+omit [IsDomain D] in
+theorem pathLeafParentAux_append_zero
+    (cur : Polynomial (MvPolynomial (Fin k) D))
+    (rest : List (Polynomial (MvPolynomial (Fin k) D))) :
+    pathLeafParentAux cur (rest ++ [0]) = pathLeafParentAux cur rest := by
+  induction rest generalizing cur with
+  | nil => simp [pathLeafParentAux]
+  | cons next rest' ih =>
+    simp only [List.cons_append, pathLeafParentAux]
+    split_ifs with h
+    · rfl
+    · exact ih next
+
+omit [IsDomain D] in
+theorem pathLeafParent_append_zero
+    (P : Polynomial (MvPolynomial (Fin k) D))
+    (path : List (Polynomial (MvPolynomial (Fin k) D))) :
+    pathLeafParent P (path ++ [0]) = pathLeafParent P path := by
+  match path with
+  | [] => simp [pathLeafParent]
+  | q :: rest =>
+    simp only [List.cons_append, pathLeafParent]
+    split_ifs with h
+    · rfl
+    · exact pathLeafParentAux_append_zero q rest
+
+theorem leafFormulaAux_append_zero
+    (parent cur : Polynomial (MvPolynomial (Fin k) D))
+    (rest : List (Polynomial (MvPolynomial (Fin k) D))) :
+    leafFormulaAux parent cur (rest ++ [0]) = leafFormulaAux parent cur rest := by
+  induction rest generalizing parent cur with
+  | nil => simp [leafFormulaAux]
+  | cons next rest' ih =>
+    simp only [List.cons_append, leafFormulaAux]
+    split_ifs with h
+    · rfl
+    · congr 1; exact ih cur next
+
+theorem leafFormula_append_zero
+    (P Q : Polynomial (MvPolynomial (Fin k) D))
+    (path : List (Polynomial (MvPolynomial (Fin k) D))) :
+    leafFormula P Q (path ++ [0]) = leafFormula P Q path := by
+  match path with
+  | [] => simp [leafFormula]
+  | q :: rest =>
+    simp only [List.cons_append, leafFormula]
+    split_ifs with h
+    · rfl
+    · congr 1; exact leafFormulaAux_append_zero P q rest
+
+end AppendZero
+
+/-!
+### Definition 1.20: Set of possible greatest common divisors
+
+The *set of possible greatest common divisors* of a finite family
+`𝒫 ⊂ D[Y₁, …, Y_k][X]` is a finite list of pairs `(G, 𝒞)` where
+`G ∈ D[Y₁, …, Y_k][X]` and `𝒞` is a formula, such that for each pair,
+`y ∈ Reali(𝒞)` implies `gcd(𝒫_y) = G_y`.
+
+Defined recursively:
+- `posgcd(∅) = {(0, True)}`
+- `posgcd(𝒫 ∪ {P}) = {(Pol(p(L)), 𝒞 ∧ 𝒞_L) | (Q, 𝒞) ∈ posgcd(𝒫),
+   L leaf of TRems(P, Q)}`
+-/
+
+section PosGcd
+
+open Classical
+
+variable {D : Type*} [CommRing D] [IsDomain D]
+
+/-- BPR Definition 1.20: the set of possible greatest common divisors
+of a finite family `𝒫 ⊂ D[Y₁, …, Yₖ][X]`.
+
+Each element is a pair `(G, 𝒞)` where `G` is a polynomial and `𝒞`
+is a formula such that `y ∈ Reali(𝒞)` implies `gcd(𝒫_y) = G_y`. -/
+noncomputable def posgcd :
+    List (Polynomial (MvPolynomial (Fin k) D)) →
+    List (Polynomial (MvPolynomial (Fin k) D) ×
+      Formula (Fin k) (FieldAtom (Fin k) D))
+  | [] => [(0, Formula.trueFormula)]
+  | P :: rest =>
+    (posgcd rest).flatMap fun (Q, C) =>
+      (TRems P Q).leafPaths.map fun path =>
+        (pathLeafParent P path, C.and (leafFormula P Q path))
+
+end PosGcd
 
 end Azurite.BPR
