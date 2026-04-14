@@ -16,6 +16,7 @@ import Azurite.AzFormula.Equiv.Simplify
 import Azurite.AzFormula.LeafFormula
 import Azurite.AzFormula.Posgcd
 import Azurite.AzFormula.Prenex
+import Azurite.AzFormula.ProjBasic
 import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
 import Azurite.AzInt.Basic

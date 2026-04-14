@@ -193,6 +193,26 @@ where
     Pushes all negations into atoms and eliminates `implies`. -/
 def toNNF [AtomNeg α] : Formula σ α → Formula σ α := toNNFPos
 
+/-- Disjunctive normal form extraction for a formula in NNF.
+
+    Given a formula whose connectives are `.atom`, `.and`, and `.or`
+    (as produced by `toNNF` on a quantifier-free formula), returns
+    the list of conjunctive clauses, each a list of atoms. Other
+    constructors (`.not`, `.implies`, quantifiers) contribute no
+    clauses — this function is unsound on non-NNF or non-QF input. -/
+def nnfToDNF : Formula σ α → List (List α)
+  | .atom a => [[a]]
+  | .or Φ₁ Φ₂ => nnfToDNF Φ₁ ++ nnfToDNF Φ₂
+  | .and Φ₁ Φ₂ => (nnfToDNF Φ₁).flatMap fun c₁ =>
+      (nnfToDNF Φ₂).map fun c₂ => c₁ ++ c₂
+  | _ => []
+
+/-- DNF extraction for a quantifier-free formula: first converts to NNF,
+    then distributes `and` over `or`. Returns a list of atom conjunctions
+    whose disjunction is equivalent to the input formula. -/
+def toDNF [AtomNeg α] (Φ : Formula σ α) : List (List α) :=
+  nnfToDNF (toNNF Φ)
+
 /-! ### Formula renaming via AtomRename -/
 
 /-- Rename all variables in a formula (both structural and inside atoms)
