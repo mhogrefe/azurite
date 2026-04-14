@@ -42,7 +42,7 @@ omit [IsDomain D] [DecidableEq D] in
 
 omit [IsDomain D] in
 /-- Eliminating trivially true/false atoms preserves the az-realization. -/
-theorem azRealization_elimTrivialAtoms
+theorem azRealization_elimTrivialAtoms [FaithfulSMul D C]
     (Φ : Formula (Fin k) (AzFieldAtom k D ord)) :
     azRealization (elimTrivialAtoms Φ) (C := C) = azRealization Φ := by
   induction Φ with
@@ -196,7 +196,7 @@ theorem azRealization_elimVacuousQuantifiers
 /-! ### azSimplify preserves azRealization -/
 
 omit [IsDomain D] in
-private theorem azRealization_azSimplifyNot
+private theorem azRealization_azSimplifyNot [FaithfulSMul D C]
     (Φ' : Formula (Fin k) (AzFieldAtom k D ord)) :
     azRealization (azSimplifyNot Φ') (C := C) = (azRealization Φ')ᶜ := by
   simp only [azSimplifyNot]
@@ -285,7 +285,7 @@ theorem isAzSimplified_azSimplify
 
 omit [IsDomain D] in
 /-- The combined AzFieldAtom simplification preserves the az-realization. -/
-theorem azRealization_azSimplify
+theorem azRealization_azSimplify [FaithfulSMul D C]
     (Φ : Formula (Fin k) (AzFieldAtom k D ord)) :
     azRealization (azSimplify Φ) (C := C) = azRealization Φ := by
   induction Φ with

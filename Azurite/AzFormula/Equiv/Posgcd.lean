@@ -393,7 +393,7 @@ variable {C : Type*} [Field C] [Algebra D C]
 /-- Each element `(G, 𝒞)` of the computable `azPosgcd` corresponds to
 an element `(G', 𝒞')` of BPR's `posgcd` with the same lifted
 polynomial and the same realization. -/
-theorem azPosgcd_forward
+theorem azPosgcd_forward [FaithfulSMul D C]
     (Ps : List (AzPolynomial (AzMvPolynomial k D ord)))
     (G : AzPolynomial (AzMvPolynomial k D ord))
     (𝒞 : Formula (Fin k) (AzFieldAtom k D ord))
@@ -438,7 +438,7 @@ theorem azPosgcd_forward
 `(G, 𝒞)` of the computable `azPosgcd` with the same lifted polynomial
 and the same realization. Together with `azPosgcd_forward`, this shows
 the two formulations are equivalent (up to realization). -/
-theorem azPosgcd_backward
+theorem azPosgcd_backward [FaithfulSMul D C]
     (Ps : List (AzPolynomial (AzMvPolynomial k D ord)))
     (G' : Polynomial (MvPolynomial (Fin k) D))
     (𝒞' : Formula (Fin k) (FieldAtom (Fin k) D))
@@ -482,7 +482,7 @@ theorem azPosgcd_backward
 /-- Combined equivalence: a polynomial-realization pair `(G', S)` arises
 from the computable `azPosgcd` iff it arises from BPR's `posgcd`. This
 packages `azPosgcd_forward` and `azPosgcd_backward` into a single iff. -/
-theorem mem_azPosgcd_image_iff
+theorem mem_azPosgcd_image_iff [FaithfulSMul D C]
     (Ps : List (AzPolynomial (AzMvPolynomial k D ord)))
     (G' : Polynomial (MvPolynomial (Fin k) D))
     (S : Set (Fin k → C)) :

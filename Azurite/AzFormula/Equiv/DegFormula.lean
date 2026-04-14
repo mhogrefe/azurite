@@ -96,31 +96,61 @@ omit [IsDomain D] [DecidableEq D] in
 /-! ### Trivial atom realization -/
 
 omit [IsDomain D] in
-theorem isAzTrue_azRealization
+theorem isAzTrue_azRealization [FaithfulSMul D C]
     (Φ : Formula (Fin k) (AzFieldAtom k D ord))
     (h : isAzTrue Φ = true) : azRealization Φ (C := C) = Set.univ := by
   match Φ with
-  | .atom ⟨_, true⟩ =>
-    simp only [isAzTrue, Bool.true_and, beq_iff_eq] at h; subst h
+  | .atom ⟨P, true⟩ =>
+    have h' : P == 0 := by simpa [isAzTrue] using h
+    have : P = 0 := by simpa using h'
+    subst this
     exact azRealization_azTrueFormula
-  | .atom ⟨_, false⟩ | .not _ | .and _ _ | .or _ _ | .implies _ _
+  | .atom ⟨P, false⟩ =>
+    have h' : P.isConstant && !(P == 0) := by simpa [isAzTrue] using h
+    rw [Bool.and_eq_true] at h'
+    obtain ⟨hconst, hne⟩ := h'
+    rw [Bool.not_eq_true', beq_eq_false_iff_ne] at hne
+    obtain ⟨c, hc⟩ := (AzMvPolynomial.isConstant_iff P).mp hconst
+    have hc_ne : c ≠ 0 := fun hc0 => hne (toMvPoly_injective
+      (by rw [hc, hc0, toMvPoly_zero, MvPolynomial.C_0]))
+    have hmap : algebraMap D C c ≠ 0 := fun habs =>
+      hc_ne (FaithfulSMul.algebraMap_injective D C (by rw [habs, map_zero]))
+    show azRealization (azNeZero P) (C := C) = Set.univ
+    rw [azRealization_azNeZero]
+    ext y; simp [hc, hmap]
+  | .not _ | .and _ _ | .or _ _ | .implies _ _
   | .exists_ _ _ | .forall_ _ _ => simp [isAzTrue] at h
 
 omit [IsDomain D] in
-theorem isAzFalse_azRealization
+theorem isAzFalse_azRealization [FaithfulSMul D C]
     (Φ : Formula (Fin k) (AzFieldAtom k D ord))
     (h : isAzFalse Φ = true) : azRealization Φ (C := C) = ∅ := by
   match Φ with
-  | .atom ⟨_, false⟩ =>
-    simp only [isAzFalse, Bool.not_false, Bool.true_and, beq_iff_eq] at h; subst h
+  | .atom ⟨P, false⟩ =>
+    have h' : P == 0 := by simpa [isAzFalse] using h
+    have : P = 0 := by simpa using h'
+    subst this
     exact azRealization_azFalseFormula
-  | .atom ⟨_, true⟩ | .not _ | .and _ _ | .or _ _ | .implies _ _
+  | .atom ⟨P, true⟩ =>
+    have h' : P.isConstant && !(P == 0) := by simpa [isAzFalse] using h
+    rw [Bool.and_eq_true] at h'
+    obtain ⟨hconst, hne⟩ := h'
+    rw [Bool.not_eq_true', beq_eq_false_iff_ne] at hne
+    obtain ⟨c, hc⟩ := (AzMvPolynomial.isConstant_iff P).mp hconst
+    have hc_ne : c ≠ 0 := fun hc0 => hne (toMvPoly_injective
+      (by rw [hc, hc0, toMvPoly_zero, MvPolynomial.C_0]))
+    have hmap : algebraMap D C c ≠ 0 := fun habs =>
+      hc_ne (FaithfulSMul.algebraMap_injective D C (by rw [habs, map_zero]))
+    show azRealization (azEqZero P) (C := C) = ∅
+    rw [azRealization_azEqZero]
+    ext y; simp [hc, hmap]
+  | .not _ | .and _ _ | .or _ _ | .implies _ _
   | .exists_ _ _ | .forall_ _ _ => simp [isAzFalse] at h
 
 /-! ### Smart constructor realization -/
 
 omit [IsDomain D] in
-@[simp] theorem azRealization_azSmartAnd
+@[simp] theorem azRealization_azSmartAnd [FaithfulSMul D C]
     (Φ₁ Φ₂ : Formula (Fin k) (AzFieldAtom k D ord)) :
     azRealization (azSmartAnd Φ₁ Φ₂) (C := C) =
       azRealization Φ₁ ∩ azRealization Φ₂ := by
@@ -144,7 +174,7 @@ omit [IsDomain D] in
         exact azRealization_and _ _
 
 omit [IsDomain D] in
-@[simp] theorem azRealization_azSmartOr
+@[simp] theorem azRealization_azSmartOr [FaithfulSMul D C]
     (Φ₁ Φ₂ : Formula (Fin k) (AzFieldAtom k D ord)) :
     azRealization (azSmartOr Φ₁ Φ₂) (C := C) =
       azRealization Φ₁ ∪ azRealization Φ₂ := by
@@ -168,7 +198,7 @@ omit [IsDomain D] in
         exact azRealization_or _ _
 
 omit [IsDomain D] in
-@[simp] theorem azRealization_azConjList
+@[simp] theorem azRealization_azConjList [FaithfulSMul D C]
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord))) :
     azRealization (azConjList Φs) (C := C) =
       { y | ∀ Φ ∈ Φs, y ∈ azRealization Φ } := by
@@ -182,7 +212,7 @@ omit [IsDomain D] in
       ext y; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.forall_mem_cons]
 
 omit [IsDomain D] in
-@[simp] theorem azRealization_azDisjList
+@[simp] theorem azRealization_azDisjList [FaithfulSMul D C]
     (Φs : List (Formula (Fin k) (AzFieldAtom k D ord))) :
     azRealization (azDisjList Φs) (C := C) =
       { y | ∃ Φ ∈ Φs, y ∈ azRealization Φ } := by
@@ -199,7 +229,7 @@ omit [IsDomain D] in
 
 /-- The computable `azDegFormula` has the same realization as BPR's
 noncomputable `degFormula` under the `liftPoly` bridge. -/
-theorem azRealization_azDegFormula
+theorem azRealization_azDegFormula [FaithfulSMul D C]
     (Q : AzPolynomial (AzMvPolynomial k D ord)) (i : WithBot ℕ) :
     azRealization (azDegFormula Q i) (C := C) =
       (BPR.degFormula (liftPoly Q) i).realization := by
@@ -226,7 +256,7 @@ theorem azRealization_azDegFormula
 
 /-- The computable `azDegEqFormula` has the same realization as BPR's
 noncomputable `degEqFormula` under the `liftPoly` bridge. -/
-theorem azRealization_azDegEqFormula
+theorem azRealization_azDegEqFormula [FaithfulSMul D C]
     (Q₁ Q₂ : AzPolynomial (AzMvPolynomial k D ord)) :
     azRealization (azDegEqFormula Q₁ Q₂) (C := C) =
       (BPR.degEqFormula (liftPoly Q₁) (liftPoly Q₂)).realization := by

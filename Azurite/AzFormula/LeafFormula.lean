@@ -77,10 +77,11 @@ private def rtLeafPaths {α : Type*} : AzPolynomial.RoseTree α → List (List �
   toString (azDegFormula (p "x+(b)") (⊥ : WithBot ℕ))
 
 -- Q = (1) (constant), path = [(1)]:
--- degFormula((1), 0) → "1 ≠ 0"
--- pRem(x+(a), (1)) = 0, so azLeafFormulaAux gives degFormula(0, ⊥) = azTrueFormula
--- azSmartAnd absorbs true → just "1 ≠ 0"
-#guard toString (azLeafFormula (p "x+(a)") (p "(1)") [p "(1)"]) == "1 ≠ 0"
+-- degFormula((1), 0): coeff 0 = 1 is a nonzero constant, so azNeZero 1
+-- is trivially true and azSmartAnd absorbs → azTrueFormula.
+-- pRem(x+(a), (1)) = 0, so azLeafFormulaAux gives degFormula(0, ⊥) = azTrueFormula.
+-- azSmartAnd (true) (true) → azTrueFormula.
+#guard toString (azLeafFormula (p "x+(a)") (p "(1)") [p "(1)"]) == "0 = 0"
 
 -- BPR Example 1.17: P = x^4+(a)*x^2+(b)*x+(c), Q = (4)*x^3+(2*a)*x+(b)
 private def ex117P := p "x^4+(a)*x^2+(b)*x+(c)"

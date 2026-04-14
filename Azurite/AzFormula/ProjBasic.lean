@@ -109,19 +109,19 @@ open AzMvPolynomial
 
 -- Projection of the empty system: `Ps = [], Qs = []` ⇒ the basic set
 -- is all of `C^{k+1}`, and its projection over any variable is `C^k`,
--- which is logically true. With smart constructors the formula comes
--- out as the degree-comparison `deg(1) ≠ deg(0)`, serialized as
--- `¬(1 = 0)` — a logical tautology in the ambient field atoms.
+-- which is logically true. With smart constructors absorbing `1 = 0` as
+-- trivially false, the formula comes out as `¬(0 ≠ 0)` — still a
+-- logical tautology in the ambient field atoms.
 #guard toString
     (azProjBasic (k := 2) (D := ℤ) (ord := .Degrevlex) [] []) ==
-  "¬(1 = 0)"
+  "¬(0 ≠ 0)"
 
 -- `Qs ≠ []` with `Ps = []`: same structural result as the empty system,
 -- because posgcd on an empty `Ps` still gives `[(0, true)]` and the
 -- outer posgcd only changes via `extra` which is `1^d`-capped on `Qs.prod`.
 #guard toString
     (azProjBasic (k := 2) (D := ℤ) (ord := .Degrevlex) [] [X 0]) ==
-  "¬(1 = 0)"
+  "¬(0 ≠ 0)"
 
 -- DNF extraction: single atom ⇒ 1 clause with one equality.
 #guard
@@ -174,6 +174,84 @@ open AzMvPolynomial
     (1 : Fin 3) (azEqZero (n := 3) (X 1)) trivial) ==
   toString (azProjectQF (k := 2) (D := ℤ) (ord := .Degrevlex)
     (azEqZero (n := 3) (X 0)) trivial)
+
+-- Projecting `d` from the system `d^4 + a*d^2 + b*d + c = 0 ∧
+-- 4*d^3 + 2*a*d + b = 0` (the polynomial and its derivative).
+-- Variables named via `AbcVar 4`: a, b, c, d ↔ X 0, X 1, X 2, X 3.
+-- The projected formula is displayed with `AbcVar 3` naming (a, b, c),
+-- since `d` has been eliminated.
+local instance : Fact (4 ≤ 26) := ⟨by omega⟩
+local instance : Fact (3 ≤ 26) := ⟨by omega⟩
+
+private def parseAbc4 (s : String) : AzMvPolynomial 4 ℤ .Degrevlex :=
+  (AzMvPolynomial.parseStrWith (AbcVar 4) (n := 4) (R := ℤ)
+    (ord := .Degrevlex) s).getD 0
+
+#guard (BPR.Formula.toStrWith (AbcVar 3) <|
+  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+    (Formula.and
+      (azEqZero (parseAbc4 "d^4+a*d^2+b*d+c"))
+      (azEqZero (parseAbc4 "4*d^3+2*a*d+b")))
+    ⟨trivial, trivial⟩)
+=
+  "((-8*c ≠ 0 ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 ≠ 0)) ∧ (-65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 ≠ 0 ∧ ((-65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 ≠ 0 ∨ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 ≠ 0) ∧ (-65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0 ∨ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0)))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 ≠ 0)) ∧ (-65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0)) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0)) ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ (-64*a*c^2-768*a*b = 0 ∨ -128*c^3-576*a^2+512*b*c ≠ 0))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0)) ∧ ((-64*a*c^2-768*a*b ≠ 0 ∧ -128*c^3-576*a^2+512*b*c = 0) ∧ ((-64*a*c^2-768*a*b ≠ 0 ∨ (-64*a*c^2-768*a*b ≠ 0 ∨ -128*c^3-576*a^2+512*b*c ≠ 0)) ∧ (-64*a*c^2-768*a*b = 0 ∨ (-64*a*c^2-768*a*b = 0 ∨ -128*c^3-576*a^2+512*b*c ≠ 0))))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-128*c^3-576*a^2+512*b*c ≠ 0 ∧ -65536*a^2*c^5+262144*b*c^6-442368*a^4*c^2+2359296*a^2*b*c^3-2097152*b^2*c^4+4194304*b^3*c^2 = 0)) ∧ ((-64*a*c^2-768*a*b = 0 ∧ -128*c^3-576*a^2+512*b*c = 0) ∧ (-64*a*c^2-768*a*b = 0 ∨ -128*c^3-576*a^2+512*b*c ≠ 0))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b ≠ 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ (-64*a*c^2-768*a*b ≠ 0 ∧ ((-64*a*c^2-768*a*b ≠ 0 ∨ -64*a*c^2-768*a*b ≠ 0) ∧ (-64*a*c^2-768*a*b = 0 ∨ -64*a*c^2-768*a*b = 0)))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b ≠ 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ (-64*a*c^2-768*a*b = 0 ∧ -64*a*c^2-768*a*b = 0)) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b = 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ (-8*c ≠ 0 ∧ (-16*b = 0 ∨ (-12*a ≠ 0 ∨ -8*c ≠ 0)))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b = 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ ((-12*a ≠ 0 ∧ -8*c = 0) ∧ (-16*b = 0 ∨ (-12*a ≠ 0 ∨ -8*c ≠ 0)))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b = 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ ((-16*b ≠ 0 ∧ (-12*a = 0 ∧ -8*c = 0)) ∧ ((-16*b ≠ 0 ∨ (-16*b ≠ 0 ∨ (-12*a ≠ 0 ∨ -8*c ≠ 0))) ∧ (-16*b = 0 ∨ (-16*b = 0 ∨ (-12*a ≠ 0 ∨ -8*c ≠ 0)))))) " ++
+  "∨ (((-8*c ≠ 0 ∧ (-64*a*c^2-768*a*b = 0 ∧ -128*c^3-576*a^2+512*b*c = 0)) ∧ ((-16*b = 0 ∧ (-12*a = 0 ∧ -8*c = 0)) ∧ (-16*b = 0 ∨ (-12*a ≠ 0 ∨ -8*c ≠ 0)))) " ++
+  "∨ ((((-12*a ≠ 0 ∧ -8*c = 0) ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 ≠ 0) ∧ (-20736*a^5+55296*a^3*b*c+196608*a*b^3 ≠ 0 ∧ ((-20736*a^5+55296*a^3*b*c+196608*a*b^3 ≠ 0 ∨ -20736*a^5+55296*a^3*b*c+196608*a*b^3 ≠ 0) ∧ (-20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0 ∨ -20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0)))) " ++
+  "∨ ((((-12*a ≠ 0 ∧ -8*c = 0) ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 ≠ 0) ∧ (-20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0 ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0)) " ++
+  "∨ ((((-12*a ≠ 0 ∧ -8*c = 0) ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0) ∧ (-12*a ≠ 0 ∧ (-16*b = 0 ∨ -12*a ≠ 0))) " ++
+  "∨ ((((-12*a ≠ 0 ∧ -8*c = 0) ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0) ∧ ((-16*b ≠ 0 ∧ -12*a = 0) ∧ ((-16*b ≠ 0 ∨ (-16*b ≠ 0 ∨ -12*a ≠ 0)) ∧ (-16*b = 0 ∨ (-16*b = 0 ∨ -12*a ≠ 0))))) " ++
+  "∨ ((((-12*a ≠ 0 ∧ -8*c = 0) ∧ -20736*a^5+55296*a^3*b*c+196608*a*b^3 = 0) ∧ ((-16*b = 0 ∧ -12*a = 0) ∧ (-16*b = 0 ∨ -12*a ≠ 0))) " ++
+  "∨ (((-16*b ≠ 0 ∧ (-12*a = 0 ∧ -8*c = 0)) ∧ (-16*b ≠ 0 ∧ ((-16*b ≠ 0 ∨ -16*b ≠ 0) ∧ (-16*b = 0 ∨ -16*b = 0)))) " ++
+  "∨ (((-16*b ≠ 0 ∧ (-12*a = 0 ∧ -8*c = 0)) ∧ (-16*b = 0 ∧ -16*b = 0)) " ++
+  "∨ (-16*b = 0 ∧ (-12*a = 0 ∧ -8*c = 0)))))))))))))))))))"
+
+-- Exercise 1.9(a): conditions on (a, b, c) for P = a*X^2+b*X+c and its
+-- derivative P' = 2*a*X+b to have a common root.
+#guard (BPR.Formula.toStrWith (AbcVar 3) <|
+  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+    (Formula.and
+      (azEqZero (parseAbc4 "a*d^2+b*d+c"))
+      (azEqZero (parseAbc4 "2*a*d+b")))
+    ⟨trivial, trivial⟩)
+=
+  "((2*c ≠ 0 ∧ a^2*c-4*b*c^2 ≠ 0) ∧ (a^2*c-4*b*c^2 ≠ 0 ∧ ((a^2*c-4*b*c^2 ≠ 0 ∨ a^2*c-4*b*c^2 ≠ 0) ∧ (a^2*c-4*b*c^2 = 0 ∨ a^2*c-4*b*c^2 = 0)))) " ++
+  "∨ (((2*c ≠ 0 ∧ a^2*c-4*b*c^2 ≠ 0) ∧ (a^2*c-4*b*c^2 = 0 ∧ a^2*c-4*b*c^2 = 0)) " ++
+  "∨ (((2*c ≠ 0 ∧ a^2*c-4*b*c^2 = 0) ∧ (2*c ≠ 0 ∧ (a = 0 ∨ 2*c ≠ 0))) " ++
+  "∨ (((2*c ≠ 0 ∧ a^2*c-4*b*c^2 = 0) ∧ ((a ≠ 0 ∧ 2*c = 0) ∧ ((a ≠ 0 ∨ (a ≠ 0 ∨ 2*c ≠ 0)) ∧ (a = 0 ∨ (a = 0 ∨ 2*c ≠ 0))))) " ++
+  "∨ (((2*c ≠ 0 ∧ a^2*c-4*b*c^2 = 0) ∧ ((a = 0 ∧ 2*c = 0) ∧ (a = 0 ∨ 2*c ≠ 0))) " ++
+  "∨ (((a ≠ 0 ∧ 2*c = 0) ∧ (a ≠ 0 ∧ ((a ≠ 0 ∨ a ≠ 0) ∧ (a = 0 ∨ a = 0)))) " ++
+  "∨ (((a ≠ 0 ∧ 2*c = 0) ∧ (a = 0 ∧ a = 0)) " ++
+  "∨ (((a = 0 ∧ 2*c = 0) ∧ (c ≠ 0 ∧ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0)))) " ++
+  "∨ (((a = 0 ∧ 2*c = 0) ∧ ((a ≠ 0 ∧ c = 0) ∧ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0)))) " ++
+  "∨ (((a = 0 ∧ 2*c = 0) ∧ ((b ≠ 0 ∧ (a = 0 ∧ c = 0)) ∧ ((b ≠ 0 ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (b = 0 ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0)))))) " ++
+  "∨ ((a = 0 ∧ 2*c = 0) ∧ ((b = 0 ∧ (a = 0 ∧ c = 0)) ∧ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0)))))))))))))"
+
+-- Exercise 1.9(b): conditions on (a, b, c) for P = a*X^2+b*X+c to have
+-- a root which is not a root of P' = 2*a*X+b.
+#guard (BPR.Formula.toStrWith (AbcVar 3) <|
+  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+    (Formula.and
+      (azEqZero (parseAbc4 "a*d^2+b*d+c"))
+      (azNeZero (parseAbc4 "2*a*d+b")))
+    ⟨trivial, trivial⟩)
+=
+  "((c ≠ 0 ∧ (-2*a^2*c^3+8*b*c^4 ≠ 0 ∧ a^6*c^5-12*a^4*b*c^6+48*a^2*b^2*c^7-64*b^3*c^8 ≠ 0)) ∧ ((a^6*c^5-12*a^4*b*c^6+48*a^2*b^2*c^7-64*b^3*c^8 ≠ 0 ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (a^6*c^5-12*a^4*b*c^6+48*a^2*b^2*c^7-64*b^3*c^8 = 0 ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))))) " ++
+  "∨ (((c ≠ 0 ∧ (-2*a^2*c^3+8*b*c^4 ≠ 0 ∧ a^6*c^5-12*a^4*b*c^6+48*a^2*b^2*c^7-64*b^3*c^8 = 0)) ∧ (((-a^3*c^2+4*a*b*c^3 ≠ 0 ∨ -2*a^2*c^3+8*b*c^4 ≠ 0) ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((-a^3*c^2+4*a*b*c^3 = 0 ∨ -2*a^2*c^3+8*b*c^4 ≠ 0) ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (-2*a^2*c^3+8*b*c^4 = 0 ∨ (a = 0 ∨ c ≠ 0))))) " ++
+  "∨ (((c ≠ 0 ∧ (-a^3*c^2+4*a*b*c^3 ≠ 0 ∧ -2*a^2*c^3+8*b*c^4 = 0)) ∧ ((-a^3*c^2+4*a*b*c^3 ≠ 0 ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (-a^3*c^2+4*a*b*c^3 = 0 ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))))) " ++
+  "∨ (((c ≠ 0 ∧ (-a^3*c^2+4*a*b*c^3 = 0 ∧ -2*a^2*c^3+8*b*c^4 = 0)) ∧ (((b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0)) ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((b = 0 ∨ (a ≠ 0 ∨ c ≠ 0)) ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((a = 0 ∨ c ≠ 0) ∨ (a = 0 ∨ c ≠ 0)) ∧ (c = 0 ∨ c = 0))))) " ++
+  "∨ ((((a ≠ 0 ∧ c = 0) ∧ -a^7+6*a^5*b*c-12*a^3*b^2*c^2+8*a*b^3*c^3 ≠ 0) ∧ ((-a^7+6*a^5*b*c-12*a^3*b^2*c^2+8*a*b^3*c^3 ≠ 0 ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (-a^7+6*a^5*b*c-12*a^3*b^2*c^2+8*a*b^3*c^3 = 0 ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))))) " ++
+  "∨ ((((a ≠ 0 ∧ c = 0) ∧ -a^7+6*a^5*b*c-12*a^3*b^2*c^2+8*a*b^3*c^3 = 0) ∧ (((b ≠ 0 ∨ a ≠ 0) ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((b = 0 ∨ a ≠ 0) ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (a = 0 ∨ (a = 0 ∨ c ≠ 0))))) " ++
+  "∨ (((b ≠ 0 ∧ (a = 0 ∧ c = 0)) ∧ ((b ≠ 0 ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (b = 0 ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))))) " ++
+  "∨ ((b = 0 ∧ (a = 0 ∧ c = 0)) ∧ (((a^3 ≠ 0 ∨ (6*a^2*c ≠ 0 ∨ (12*a*c^2 ≠ 0 ∨ 8*c^3 ≠ 0))) ∨ (b ≠ 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((a^3 = 0 ∨ (6*a^2*c ≠ 0 ∨ (12*a*c^2 ≠ 0 ∨ 8*c^3 ≠ 0))) ∨ (b = 0 ∨ (a ≠ 0 ∨ c ≠ 0))) ∧ (((6*a^2*c = 0 ∨ (12*a*c^2 ≠ 0 ∨ 8*c^3 ≠ 0)) ∨ (a = 0 ∨ c ≠ 0)) ∧ ((12*a*c^2 = 0 ∨ 8*c^3 ≠ 0) ∨ c = 0)))))))))))"
 
 end Tests
 

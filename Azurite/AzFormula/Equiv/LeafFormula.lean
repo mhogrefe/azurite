@@ -19,7 +19,7 @@ variable {k : ℕ} {D : Type*} [CommRing D] [IsDomain D] [DecidableEq D]
 
 /-- The computable `azLeafFormulaAux` has the same realization as BPR's
 noncomputable `leafFormulaAux` under the `liftPoly` bridge. -/
-theorem azRealization_azLeafFormulaAux
+theorem azRealization_azLeafFormulaAux [FaithfulSMul D C]
     (parent cur : AzPolynomial (AzMvPolynomial k D ord))
     (rest : List (AzPolynomial (AzMvPolynomial k D ord)))
     (hcur : cur ≠ 0) :
@@ -48,7 +48,7 @@ theorem azRealization_azLeafFormulaAux
 
 /-- The computable `azLeafFormula` has the same realization as BPR's
 noncomputable `leafFormula` under the `liftPoly` bridge. -/
-theorem azRealization_azLeafFormula
+theorem azRealization_azLeafFormula [FaithfulSMul D C]
     (P Q : AzPolynomial (AzMvPolynomial k D ord))
     (path : List (AzPolynomial (AzMvPolynomial k D ord))) :
     azRealization (azLeafFormula P Q path) (C := C) =

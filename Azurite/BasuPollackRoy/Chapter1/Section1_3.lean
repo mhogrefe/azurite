@@ -2366,7 +2366,7 @@ private theorem IsGCD.associated {G G' P Q : Polynomial C}
 omit [IsAlgClosed C] [IsDomain D] in
 /-- Fold bound: each element of `Ps'` has natDegree strictly less than
 `1 + foldr max 0 (Ps'.map natDegree)`. -/
-private theorem natDegree_lt_foldr_succ
+theorem natDegree_lt_foldr_succ
     (Ps' : List (Polynomial (MvPolynomial (Fin k) D))) :
     ∀ P' ∈ Ps', P'.natDegree < 1 + (Ps'.map Polynomial.natDegree).foldr max 0 := by
   intro P' hP'
@@ -2387,7 +2387,7 @@ gcd of `extra_y = Qs'.prod^d_y` and `G_1_y`, with `d` strictly greater
 than the `X`-degree of every `P ∈ Ps'`, the existence of a common
 root of `Ps'_y` avoiding the zeros of `Qs'_y` is equivalent to
 `deg G_y ≠ deg G_1_y`. -/
-private theorem fibre_iff_degree_ne
+theorem fibre_iff_degree_ne
     [Algebra D C]
     (Ps' Qs' : List (Polynomial (MvPolynomial (Fin k) D)))
     (d : ℕ) (hd : ∀ P' ∈ Ps', P'.natDegree < d) (hd_pos : 0 < d)
@@ -2946,5 +2946,22 @@ theorem theorem_1_22
   | union _ _ ih₁ ih₂ =>
     rw [proj_set_union]
     exact ih₁.union ih₂
+
+/-!
+### Exercise 1.9
+
+Find the conditions on `(a, b, c)` for:
+(a) `P = aX² + bX + c` and `P' = 2aX + b` to have a common root; and
+(b) `P = aX² + bX + c` to have a root which is not a root of `P'`.
+
+Both conditions are computed by the concrete projection algorithm
+`Azurite.azProjectQFAt`, which eliminates the variable `X` (represented
+as `d`) from a quantifier-free formula. The resulting quantifier-free
+formulas in `(a, b, c)` are verified by `#guard` tests in
+`Azurite/AzFormula/ProjBasic.lean`:
+
+- (a) projects `d` from `a*d² + b*d + c = 0 ∧ 2*a*d + b = 0`.
+- (b) projects `d` from `a*d² + b*d + c = 0 ∧ 2*a*d + b ≠ 0`.
+-/
 
 end Azurite.BPR

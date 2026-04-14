@@ -244,16 +244,29 @@ def azFalseFormula : Formula (Fin n) (AzFieldAtom n R ord) :=
 
 /-! ### Trivial atom elimination -/
 
-/-- Check whether a formula is a trivially true atom (`P = 0` with `P = 0`). -/
+/-- Check whether a formula is a trivially true atom. Covers:
+    * `0 = 0` (the polynomial is literally zero, equality), and
+    * `c ≠ 0` where `c : R` is a nonzero constant polynomial.
+    The second case is sound whenever the algebra map `R → C` is injective
+    (i.e. `[FaithfulSMul R C]`), since a nonzero constant in `R` then maps
+    to a nonzero element of the ambient field `C`. -/
 def isAzTrue [DecidableEq R] (Φ : Formula (Fin n) (AzFieldAtom n R ord)) : Bool :=
   match Φ with
-  | .atom a => a.isEq && a.poly == 0
+  | .atom a =>
+    if a.isEq then a.poly == 0
+    else a.poly.isConstant && !(a.poly == 0)
   | _ => false
 
-/-- Check whether a formula is a trivially false atom (`P ≠ 0` with `P = 0`). -/
+/-- Check whether a formula is a trivially false atom. Covers:
+    * `0 ≠ 0` (the polynomial is literally zero, disequality), and
+    * `c = 0` where `c : R` is a nonzero constant polynomial.
+    The second case is sound whenever the algebra map `R → C` is injective
+    (i.e. `[FaithfulSMul R C]`). -/
 def isAzFalse [DecidableEq R] (Φ : Formula (Fin n) (AzFieldAtom n R ord)) : Bool :=
   match Φ with
-  | .atom a => !a.isEq && a.poly == 0
+  | .atom a =>
+    if a.isEq then a.poly.isConstant && !(a.poly == 0)
+    else a.poly == 0
   | _ => false
 
 /-- Smart conjunction: absorbs trivially true/false atoms.

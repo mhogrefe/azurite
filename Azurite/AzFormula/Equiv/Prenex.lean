@@ -1074,6 +1074,102 @@ theorem toNNF_isNNF [AtomNeg α] (Φ : Formula σ α) : IsNNF (toNNF Φ) :=
   (toNNF_isNNF_aux Φ).1
 
 omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- `toNNFPos` and `toNNFPos.toNNFNeg` both preserve quantifier-freeness. -/
+private theorem toNNFPos_and_Neg_isQF [AtomNeg α]
+    (Ψ : Formula σ α) (h : Ψ.IsQuantifierFree) :
+    (toNNFPos Ψ).IsQuantifierFree ∧ (toNNFPos.toNNFNeg Ψ).IsQuantifierFree := by
+  induction Ψ with
+  | atom _ => exact ⟨trivial, trivial⟩
+  | not Ψ ih => exact ⟨(ih h).2, (ih h).1⟩
+  | and Φ₁ Φ₂ ih₁ ih₂ =>
+    obtain ⟨h₁, h₂⟩ := h
+    exact ⟨⟨(ih₁ h₁).1, (ih₂ h₂).1⟩, ⟨(ih₁ h₁).2, (ih₂ h₂).2⟩⟩
+  | or Φ₁ Φ₂ ih₁ ih₂ =>
+    obtain ⟨h₁, h₂⟩ := h
+    exact ⟨⟨(ih₁ h₁).1, (ih₂ h₂).1⟩, ⟨(ih₁ h₁).2, (ih₂ h₂).2⟩⟩
+  | implies Φ₁ Φ₂ ih₁ ih₂ =>
+    obtain ⟨h₁, h₂⟩ := h
+    exact ⟨⟨(ih₁ h₁).2, (ih₂ h₂).1⟩, ⟨(ih₁ h₁).1, (ih₂ h₂).2⟩⟩
+  | exists_ _ _ _ => exact h.elim
+  | forall_ _ _ _ => exact h.elim
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
+/-- NNF conversion preserves quantifier-freeness. -/
+theorem toNNF_isQF [AtomNeg α]
+    (Φ : Formula σ α) (h : Φ.IsQuantifierFree) :
+    (toNNF Φ).IsQuantifierFree :=
+  (toNNFPos_and_Neg_isQF Φ h).1
+
+/-! ### DNF realization
+
+For a formula that is both in negation normal form and quantifier-free,
+its realization equals the union (over DNF clauses) of the intersection
+(over atoms in each clause) of atom realizations. -/
+
+theorem nnfToDNF_gRealization (Φ : Formula σ α) (hnnf : IsNNF Φ)
+    (hqf : Φ.IsQuantifierFree) :
+    gRealization (K := K) Φ =
+      { y | ∃ cl ∈ nnfToDNF Φ, ∀ a ∈ cl, y ∈ AtomRealization.interpret a } := by
+  induction Φ with
+  | atom a =>
+    simp only [nnfToDNF, gRealization]
+    ext y
+    constructor
+    · intro h
+      refine ⟨[a], List.mem_singleton.mpr rfl, ?_⟩
+      intro a' ha'
+      simp only [List.mem_singleton] at ha'
+      exact ha' ▸ h
+    · rintro ⟨cl, hcl, h⟩
+      simp only [List.mem_singleton] at hcl
+      subst hcl
+      exact h a (List.mem_singleton.mpr rfl)
+  | not Φ' _ => cases hnnf
+  | and Φ₁ Φ₂ ih₁ ih₂ =>
+    cases hnnf with
+    | and h₁ h₂ =>
+      obtain ⟨hqf₁, hqf₂⟩ := hqf
+      simp only [nnfToDNF, gRealization, ih₁ h₁ hqf₁, ih₂ h₂ hqf₂]
+      ext y
+      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.mem_flatMap, List.mem_map]
+      constructor
+      · rintro ⟨⟨cl₁, hcl₁, h₁⟩, ⟨cl₂, hcl₂, h₂⟩⟩
+        refine ⟨cl₁ ++ cl₂, ⟨cl₁, hcl₁, cl₂, hcl₂, rfl⟩, ?_⟩
+        intro a ha
+        rcases List.mem_append.mp ha with h | h
+        · exact h₁ a h
+        · exact h₂ a h
+      · rintro ⟨cl, ⟨cl₁, hcl₁, cl₂, hcl₂, rfl⟩, h⟩
+        refine ⟨⟨cl₁, hcl₁, fun a ha => h a (List.mem_append.mpr (.inl ha))⟩,
+                ⟨cl₂, hcl₂, fun a ha => h a (List.mem_append.mpr (.inr ha))⟩⟩
+  | or Φ₁ Φ₂ ih₁ ih₂ =>
+    cases hnnf with
+    | or h₁ h₂ =>
+      obtain ⟨hqf₁, hqf₂⟩ := hqf
+      simp only [nnfToDNF, gRealization, ih₁ h₁ hqf₁, ih₂ h₂ hqf₂]
+      ext y
+      simp only [Set.mem_union, Set.mem_setOf_eq, List.mem_append]
+      constructor
+      · rintro (⟨cl, hcl, h⟩ | ⟨cl, hcl, h⟩)
+        · exact ⟨cl, .inl hcl, h⟩
+        · exact ⟨cl, .inr hcl, h⟩
+      · rintro ⟨cl, (hcl | hcl), h⟩
+        · exact .inl ⟨cl, hcl, h⟩
+        · exact .inr ⟨cl, hcl, h⟩
+  | implies Φ₁ Φ₂ _ _ => cases hnnf
+  | exists_ _ _ _ => exact hqf.elim
+  | forall_ _ _ _ => exact hqf.elim
+
+/-- DNF realization: for any quantifier-free formula `Φ`, `toDNF Φ`
+represents the realization as a union (over clauses) of intersections
+(over atoms). -/
+theorem toDNF_gRealization (Φ : Formula σ α) (hqf : Φ.IsQuantifierFree) :
+    gRealization (K := K) Φ =
+      { y | ∃ cl ∈ toDNF Φ, ∀ a ∈ cl, y ∈ AtomRealization.interpret a } := by
+  rw [← toNNF_gRealization (K := K) Φ]
+  exact nnfToDNF_gRealization (toNNF Φ) (toNNF_isNNF Φ) (toNNF_isQF Φ hqf)
+
+omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in
 /-- Renaming via an equiv preserves `IsPrenex`. -/
 theorem renameFormulaEquiv_isPrenex [AtomRename α σ] (e : σ ≃ σ)
     {Φ : Formula σ α} (h : IsPrenex Φ) : IsPrenex (renameFormulaEquiv e Φ) := by
