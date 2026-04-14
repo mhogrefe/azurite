@@ -110,6 +110,26 @@ smart-constructor / pass / predicate triad starts working against us.
   have one). Idempotence and commutativity fall out of construction
   and need no rules.
 
+- **Use `Ord`, not `LinearOrder`, for the polynomial comparator.**
+  Sorting atom lists requires a total comparator on `AzMvPolynomial`
+  and `AzPolynomial`. The right tool is Lean-core `Ord` — a pure
+  comparator for data structures — not Mathlib's `LinearOrder`. A
+  `LinearOrder` on polynomials has no algebraic meaning: `a ≤ b` on
+  polynomials doesn't express divisibility, ideal containment, or
+  degree. Mathlib deliberately omits `LinearOrder` on `MvPolynomial`
+  and `Polynomial` for this reason; we should follow suit. `Ord`
+  avoids the typeclass pollution (no `Lattice`, `max`, `sup`, …), is
+  cheap to define, and is exactly what sort/dedup data structures
+  consume. For `AzMvPolynomial n R ord`, the comparator is lex over
+  sorted monomial-coefficient pairs, reusing the existing
+  `MonomialOrder ord`. For `AzPolynomial R`, compare by degree, then
+  coefficients from the top. Both require `[Ord R]` on the
+  coefficient ring. A small `LawfulOrd`-style compatibility lemma
+  with `DecidableEq` makes dedup correct. Add these instances
+  alongside the canonicalization work, not speculatively — adding
+  them early invites misuse in places where a total order on
+  polynomials is meaningless.
+
 - **Atom-set simplifier as a separate phase.** Operate on
   `(List eqAtoms, List neqAtoms)` per conjunction — detect
   `P ∈ eqAtoms ∧ P ∈ neqAtoms → ⊥`, detect subsumption across
