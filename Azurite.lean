@@ -20,9 +20,11 @@ import Azurite.AzFormula.Prenex
 import Azurite.AzFormula.ProjBasic
 import Azurite.AzFormula.Realization
 import Azurite.AzFormula.ToString
+import Azurite.AzInt.Add
 import Azurite.AzInt.Basic
 import Azurite.AzInt.Compare
 import Azurite.AzInt.Conversion
+import Azurite.AzInt.Equiv.Add
 import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
@@ -30,12 +32,14 @@ import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Pow2
 import Azurite.AzInt.Equiv.Size
+import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Parity
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Pow2
 import Azurite.AzInt.Size
+import Azurite.AzInt.Sub
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Basic
