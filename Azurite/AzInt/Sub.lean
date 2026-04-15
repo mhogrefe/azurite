@@ -20,4 +20,22 @@ def addInt64 (z : AzInt) (i : Int64) : AzInt :=
 def subInt64 (z : AzInt) (i : Int64) : AzInt :=
   if i ≥ 0 then z.subUInt64 i.toUInt64 else z.addUInt64 (-i).toUInt64
 
+/-- Subtract `b` from `a` in `AzInt`. -/
+def sub (a b : AzInt) : AzInt :=
+  match a.sign, b.sign with
+  | true, true =>
+    match AzNat.compare a.abs b.abs with
+    | .lt => mkNorm false (b.abs - a.abs)
+    | .eq => 0
+    | .gt => mkNorm true (a.abs - b.abs)
+  | false, false =>
+    match AzNat.compare a.abs b.abs with
+    | .lt => mkNorm true (b.abs - a.abs)
+    | .eq => 0
+    | .gt => mkNorm false (a.abs - b.abs)
+  | true, false => mkNorm true (a.abs + b.abs)
+  | false, true => mkNorm false (a.abs + b.abs)
+
+instance : Sub AzInt := ⟨sub⟩
+
 end Azurite.AzInt

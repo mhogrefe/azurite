@@ -2,6 +2,7 @@ import Azurite.AzInt.Basic
 import Azurite.AzInt.Conversion
 import Azurite.AzNat.Add
 import Azurite.AzNat.Sub
+import Azurite.AzNat.Compare
 
 namespace Azurite.AzInt
 
@@ -20,5 +21,23 @@ def addUInt64 (z : AzInt) (u : UInt64) : AzInt :=
     | .lt => mkNorm true (u.toAzNat - z.abs)
     | .eq => 0
     | .gt => mkNorm false (z.abs.subUInt64 u)
+
+/-- Add two `AzInt`s. -/
+def add (a b : AzInt) : AzInt :=
+  match a.sign, b.sign with
+  | true, true => mkNorm true (a.abs + b.abs)
+  | false, false => mkNorm false (a.abs + b.abs)
+  | true, false =>
+    match AzNat.compare a.abs b.abs with
+    | .lt => mkNorm false (b.abs - a.abs)
+    | .eq => 0
+    | .gt => mkNorm true (a.abs - b.abs)
+  | false, true =>
+    match AzNat.compare a.abs b.abs with
+    | .lt => mkNorm true (b.abs - a.abs)
+    | .eq => 0
+    | .gt => mkNorm false (a.abs - b.abs)
+
+instance : Add AzInt := ⟨add⟩
 
 end Azurite.AzInt

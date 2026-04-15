@@ -71,4 +71,84 @@ theorem ofInt_addUInt64 (i : Int) (u : UInt64) :
   have := congrArg ofInt h
   rwa [ofInt_toInt, ofInt_toInt] at this
 
+/-- Helper: relate `AzNat.compare` to `Ord.compare` on `toNat`. -/
+private lemma azNat_compare_eq (a b : AzNat) :
+    AzNat.compare a b = Ord.compare a.toNat b.toNat :=
+  AzNat.compare_eq_compare_toNat a b
+
+/-- Correctness of `AzInt.add`. -/
+theorem toInt_add (a b : AzInt) : (a + b).toInt = a.toInt + b.toInt := by
+  show (add a b).toInt = a.toInt + b.toInt
+  unfold add
+  have h_ta : a.toInt = if a.sign then (a.abs.toNat : Int) else -(a.abs.toNat : Int) := rfl
+  have h_tb : b.toInt = if b.sign then (b.abs.toNat : Int) else -(b.abs.toNat : Int) := rfl
+  rw [h_ta, h_tb]
+  have h_a_ne : a.sign = false → a.abs ≠ 0 := fun hs h0 => by
+    rw [a.zero_sign h0] at hs; contradiction
+  have h_b_ne : b.sign = false → b.abs ≠ 0 := fun hs h0 => by
+    rw [b.zero_sign h0] at hs; contradiction
+  rcases hsa : a.sign with _ | _ <;> rcases hsb : b.sign with _ | _
+  all_goals simp only
+  · -- false, false
+    have hanz : a.abs ≠ 0 := h_a_ne hsa
+    have hbnz : b.abs ≠ 0 := h_b_ne hsb
+    have h_sum_ne : a.abs + b.abs ≠ 0 := by
+      intro hc
+      have : (a.abs + b.abs).toNat = 0 := by rw [hc]; rfl
+      rw [AzNat.toNat_add] at this
+      have : a.abs.toNat = 0 := by omega
+      exact hanz (AzNat.toNat_injective (by rw [this, AzNat.toNat_zero]))
+    rw [toInt_mkNorm_false _ h_sum_ne, AzNat.toNat_add]
+    push_cast; ring
+  · -- false, true: -a.abs + b.abs
+    rw [azNat_compare_eq]
+    rcases h_cmp : Ord.compare a.abs.toNat b.abs.toNat with _ | _ | _
+    · have h_lt : a.abs.toNat < b.abs.toNat := by
+        have := Nat.compare_eq_lt.mp h_cmp; omega
+      have h_sub_ne : b.abs - a.abs ≠ 0 := by
+        intro hc
+        have : (b.abs - a.abs).toNat = 0 := by rw [hc]; rfl
+        rw [AzNat.toNat_sub] at this; omega
+      rw [toInt_mkNorm_true, AzNat.toNat_sub]
+      push_cast; omega
+    · have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp
+      rw [toInt_zero]; push_cast; omega
+    · have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp
+      have h_sub_ne : a.abs - b.abs ≠ 0 := by
+        intro hc
+        have : (a.abs - b.abs).toNat = 0 := by rw [hc]; rfl
+        rw [AzNat.toNat_sub] at this; omega
+      rw [toInt_mkNorm_false _ h_sub_ne, AzNat.toNat_sub]
+      push_cast; omega
+  · -- true, false: a.abs - b.abs
+    rw [azNat_compare_eq]
+    rcases h_cmp : Ord.compare a.abs.toNat b.abs.toNat with _ | _ | _
+    · have h_lt : a.abs.toNat < b.abs.toNat := by
+        have := Nat.compare_eq_lt.mp h_cmp; omega
+      have h_sub_ne : b.abs - a.abs ≠ 0 := by
+        intro hc
+        have : (b.abs - a.abs).toNat = 0 := by rw [hc]; rfl
+        rw [AzNat.toNat_sub] at this; omega
+      rw [toInt_mkNorm_false _ h_sub_ne, AzNat.toNat_sub]
+      push_cast; omega
+    · have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp
+      rw [toInt_zero]; push_cast; omega
+    · have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp
+      have h_sub_ne : a.abs - b.abs ≠ 0 := by
+        intro hc
+        have : (a.abs - b.abs).toNat = 0 := by rw [hc]; rfl
+        rw [AzNat.toNat_sub] at this; omega
+      rw [toInt_mkNorm_true, AzNat.toNat_sub]
+      push_cast; omega
+  · -- true, true
+    rw [toInt_mkNorm_true, AzNat.toNat_add]
+    push_cast; ring
+
+/-- `ofInt`-version of `toInt_add`. -/
+theorem ofInt_add (i j : Int) : ofInt (i + j) = ofInt i + ofInt j := by
+  have h : (ofInt (i + j)).toInt = (ofInt i + ofInt j).toInt := by
+    rw [toInt_ofInt, toInt_add, toInt_ofInt, toInt_ofInt]
+  have := congrArg ofInt h
+  rwa [ofInt_toInt, ofInt_toInt] at this
+
 end Azurite.AzInt
