@@ -221,107 +221,64 @@ lemma match_compare_eq (a b : UInt64) :
   cases Ord.compare a b <;> rfl
 
 
-lemma compareLoop_eq_compare_take (a b : AzNat) (i : Nat) (hA : i < a.limbs.size)
-  (hs : a.limbs.size = b.limbs.size)
-  (h_drop : a.limbs.toList.drop (i + 1) = b.limbs.toList.drop (i + 1)) :
-  compareLoop a b i hA hs = Ord.compare (toNatLimbsList (a.limbs.toList.take (i + 1))) (toNatLimbsList (b.limbs.toList.take (i + 1))) := by
-  induction i with
+/-- `compareLimbs` compares two length-`k` subarrays lexicographically from the high limb down,
+which is equivalent to comparing them as multi-limb naturals (little-endian). -/
+theorem compareLimbs_eq_compare_slice (a b : Array UInt64) (aLo bLo k : Nat)
+    (ha : aLo + k ≤ a.size) (hb : bLo + k ≤ b.size) :
+    compareLimbs a b aLo bLo k ha hb =
+      Ord.compare
+        (toNatLimbsList ((a.toList.drop aLo).take k))
+        (toNatLimbsList ((b.toList.drop bLo).take k)) := by
+  induction k with
   | zero =>
-    unfold compareLoop
-    dsimp
-    have hB : 0 < b.limbs.size := hs ▸ hA
-    have hla : a.limbs[0] = a.limbs.toList.get ⟨0, by simp; exact hA⟩ := by simp
-    have hlb : b.limbs[0] = b.limbs.toList.get ⟨0, by simp; exact hB⟩ := by simp
-    rw [hla, hlb]
-    have hzA : toNatLimbsList (a.limbs.toList.take 1) = (a.limbs.toList.get ⟨0, by simp; exact hA⟩).toNat := toNatLimbsList_take_one _ _
-    have hzB : toNatLimbsList (b.limbs.toList.take 1) = (b.limbs.toList.get ⟨0, by simp; exact hB⟩).toNat := toNatLimbsList_take_one _ _
-    rw [hzA, hzB]
-    have hc := compare_UInt64_eq_compare_toNat (a.limbs.toList.get ⟨0, by simp; exact hA⟩) (b.limbs.toList.get ⟨0, by simp; exact hB⟩)
-    rw [← hc]
-    exact match_compare_eq _ _
-
-  | succ i ih =>
-    unfold compareLoop
-    have hB : i + 1 < b.limbs.size := hs ▸ hA
-    have hA_prev : i < a.limbs.size := by omega
-    have hB_prev : i < b.limbs.size := by omega
-    dsimp
-    have hB : i + 1 < b.limbs.size := hs ▸ hA
-    have hA_prev : i < a.limbs.size := by omega
-    have hB_prev : i < b.limbs.size := by omega
-    have hla : a.limbs[i + 1] = a.limbs.toList.get ⟨i + 1, by simp; exact hA⟩ := by simp
-    have hlb : b.limbs[i + 1] = b.limbs.toList.get ⟨i + 1, by simp; exact hB⟩ := by simp
-    rw [hla, hlb]
-    have ha_z : i + 1 < (a.limbs.toList.take (i + 2)).length := by
-      have h1 : a.limbs.toList.length = a.limbs.size := rfl
-      rw [List.length_take]; omega
-    have hb_z : i + 1 < (b.limbs.toList.take (i + 2)).length := by
-      have h1 : b.limbs.toList.length = b.limbs.size := rfl
-      rw [List.length_take]; omega
-    have h_drop1 : (a.limbs.toList.take (i + 2)).drop (i + 2) = (b.limbs.toList.take (i + 2)).drop (i + 2) := by simp
-    have h_cmp := compare_eq_of_drop_eq (a.limbs.toList.take (i + 2)) (b.limbs.toList.take (i + 2)) (i + 1) ha_z hb_z h_drop1
-    have hga : (a.limbs.toList.take (i + 2)).get ⟨i + 1, ha_z⟩ = a.limbs.toList.get ⟨i + 1, by simp; exact hA⟩ := list_get_take_eq a.limbs.toList (i + 1) (by simp; exact hA)
-    have hgb : (b.limbs.toList.take (i + 2)).get ⟨i + 1, hb_z⟩ = b.limbs.toList.get ⟨i + 1, by simp; exact hB⟩ := list_get_take_eq b.limbs.toList (i + 1) (by simp; exact hB)
+    simp [compareLimbs, toNatLimbsList]
+  | succ k ih =>
+    unfold compareLimbs
+    dsimp only
+    have hA' : aLo + k < a.size := by omega
+    have hB' : bLo + k < b.size := by omega
+    have h_lenA : a.toList.length = a.size := rfl
+    have h_lenB : b.toList.length = b.size := rfl
+    have hla_len : k < ((a.toList.drop aLo).take (k + 1)).length := by
+      rw [List.length_take, List.length_drop]; omega
+    have hlb_len : k < ((b.toList.drop bLo).take (k + 1)).length := by
+      rw [List.length_take, List.length_drop]; omega
+    have h_drop_empty : ((a.toList.drop aLo).take (k + 1)).drop (k + 1)
+        = ((b.toList.drop bLo).take (k + 1)).drop (k + 1) := by simp
+    have h_cmp := compare_eq_of_drop_eq
+      ((a.toList.drop aLo).take (k + 1))
+      ((b.toList.drop bLo).take (k + 1))
+      k hla_len hlb_len h_drop_empty
+    have hga : ((a.toList.drop aLo).take (k + 1)).get ⟨k, hla_len⟩ = a[aLo + k] := by
+      show _ = _; simp
+    have hgb : ((b.toList.drop bLo).take (k + 1)).get ⟨k, hlb_len⟩ = b[bLo + k] := by
+      show _ = _; simp
     rw [hga, hgb] at h_cmp
-    have hta : (a.limbs.toList.take (i + 2)).take (i + 1) = a.limbs.toList.take (i + 1) := by rw [List.take_take, Nat.min_eq_left (by omega)]
-    have htb : (b.limbs.toList.take (i + 2)).take (i + 1) = b.limbs.toList.take (i + 1) := by rw [List.take_take, Nat.min_eq_left (by omega)]
+    have hta : ((a.toList.drop aLo).take (k + 1)).take k = (a.toList.drop aLo).take k := by
+      rw [List.take_take, Nat.min_eq_left (by omega)]
+    have htb : ((b.toList.drop bLo).take (k + 1)).take k = (b.toList.drop bLo).take k := by
+      rw [List.take_take, Nat.min_eq_left (by omega)]
     rw [hta, htb] at h_cmp
     rw [h_cmp]
     split_ifs with h_lt h_gt
-    · have h_ord := compare_UInt64_eq_of_lt _ _ h_lt
-      rw [h_ord]
-    · have h_ord := compare_UInt64_eq_of_gt _ _ h_gt
-      rw [h_ord]
-    · have h_eq_b : (a.limbs.toList.get ⟨i + 1, by simp; exact hA⟩).toNat = (b.limbs.toList.get ⟨i + 1, by simp; exact hB⟩).toNat := by omega
-      have h_eq_u : a.limbs.toList.get ⟨i + 1, by simp; exact hA⟩ = b.limbs.toList.get ⟨i + 1, by simp; exact hB⟩ := UInt64.eq_of_toNat_eq h_eq_b
-      have h_ord := compare_UInt64_eq_of_eq _ _ h_eq_u
-      rw [h_ord]
-      have h_drop_prev : a.limbs.toList.drop (i + 1) = b.limbs.toList.drop (i + 1) := by
-        have ht1 : a.limbs.toList.drop (i + 1) = a.limbs.toList.get ⟨i + 1, by simp; exact hA⟩ :: a.limbs.toList.drop (i + 2) := drop_eq_cons_of_lt _ _ (by simp; exact hA)
-        have ht2 : b.limbs.toList.drop (i + 1) = b.limbs.toList.get ⟨i + 1, by simp; exact hB⟩ :: b.limbs.toList.drop (i + 2) := drop_eq_cons_of_lt _ _ (by simp; exact hB)
-        rw [ht1, ht2, h_eq_u, h_drop]
-      exact ih hA_prev h_drop_prev
+    · rw [compare_UInt64_eq_of_lt _ _ h_lt]
+    · rw [compare_UInt64_eq_of_gt _ _ h_gt]
+    · have h_eq_b : a[aLo + k].toNat = b[bLo + k].toNat := by omega
+      have h_eq_u : a[aLo + k] = b[bLo + k] := UInt64.eq_of_toNat_eq h_eq_b
+      rw [compare_UInt64_eq_of_eq _ _ h_eq_u]
+      exact ih (by omega) (by omega)
 
 theorem compare_eq_compare_toNat (a b : AzNat) : compare a b = Ord.compare a.toNat b.toNat := by
-  rw [compare_eq_old]; unfold toNat
-
+  unfold compare toNat
   have h_sizeA : a.limbs.toList.length = a.limbs.size := rfl
   have h_sizeB : b.limbs.toList.length = b.limbs.size := rfl
   split
   · -- eq case: Ord.compare a.limbs.size b.limbs.size = .eq
     rename_i h_cmp
     have hb_eq : a.limbs.size = b.limbs.size := Nat.compare_eq_eq.mp h_cmp
-    dsimp
-    split
-    · -- a.limbs.size = 0
-      rename_i h_sizeA_0
-      have hz1 : a.limbs.toList.length = 0 := by omega
-      have hz2 : b.limbs.toList.length = 0 := by omega
-      have ha_0 : a.limbs.toList = [] := List.length_eq_zero_iff.mp hz1
-      have hb_0 : b.limbs.toList = [] := List.length_eq_zero_iff.mp hz2
-      have hna : toNatLimbsList a.limbs.toList = 0 := by unfold toNatLimbsList; rw [ha_0, List.foldr]
-      have hnb : toNatLimbsList b.limbs.toList = 0 := by unfold toNatLimbsList; rw [hb_0, List.foldr]
-      rw [hna, hnb]; rfl
-    · -- a.limbs.size = x + 1
-      rename_i x h_sizeA_0
-      have h_bound : x < a.limbs.size := by omega
-      have h_drop : a.limbs.toList.drop (x + 1) = b.limbs.toList.drop (x + 1) := by
-        have hdA : a.limbs.toList.drop (x + 1) = [] := by
-          have hA2 : x + 1 = a.limbs.toList.length := by omega
-          rw [hA2, List.drop_length]
-        have hdB : b.limbs.toList.drop (x + 1) = [] := by
-          have hB2 : x + 1 = b.limbs.toList.length := by omega
-          rw [hB2, List.drop_length]
-        rw [hdA, hdB]
-      have h_loop := compareLoop_eq_compare_take a b x h_bound hb_eq h_drop
-      rw [h_loop]
-      have h_takeA : a.limbs.toList.take (x + 1) = a.limbs.toList := by
-        have hA : x + 1 = a.limbs.size := by omega
-        rw [hA, ← h_sizeA, List.take_length]
-      have h_takeB : b.limbs.toList.take (x + 1) = b.limbs.toList := by
-        have hA : x + 1 = b.limbs.size := by omega
-        rw [hA, ← h_sizeB, List.take_length]
-      rw [h_takeA, h_takeB]
+    rw [compareLimbs_eq_compare_slice a.limbs b.limbs 0 0 a.limbs.size]
+    simp [List.take_of_length_le h_sizeA.le,
+          List.take_of_length_le (h_sizeB.trans hb_eq.symm).le]
   · -- non-eq case (lt or gt)
     rename_i h_ne
     cases h_cmp : Ord.compare a.limbs.size b.limbs.size
