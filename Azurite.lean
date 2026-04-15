@@ -135,9 +135,11 @@ import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
+import Azurite.AzNat.Add
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
+import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
