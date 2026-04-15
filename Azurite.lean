@@ -148,6 +148,7 @@ import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.LowMask
+import Azurite.AzNat.Equiv.Mul
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.ShiftLeft
@@ -156,6 +157,7 @@ import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.LowMask
+import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
@@ -282,12 +284,14 @@ import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Equiv.AddWithCarry
 import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Equiv.ClearBit
+import Azurite.UInt64.Equiv.MulWithCarry
 import Azurite.UInt64.Equiv.Pow2
 import Azurite.UInt64.Equiv.SetBit
 import Azurite.UInt64.Equiv.SplitHalves
 import Azurite.UInt64.Equiv.SubWithBorrow
 import Azurite.UInt64.Equiv.TestBit
 import Azurite.UInt64.Equiv.WideMul
+import Azurite.UInt64.MulWithCarry
 import Azurite.UInt64.Pow2
 import Azurite.UInt64.SetBit
 import Azurite.UInt64.SplitHalves
