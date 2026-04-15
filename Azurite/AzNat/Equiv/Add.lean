@@ -6,7 +6,7 @@ import Azurite.UInt64.Equiv.AddWithCarry
 
 namespace Azurite.AzNat
 
-private lemma toNatLimbsList_take_succ (a : Array UInt64) (i hi : Nat)
+lemma toNatLimbsList_take_succ (a : Array UInt64) (i hi : Nat)
     (h : i < a.size) (hi_lt : i + 1 ≤ hi) :
     toNatLimbsList ((a.toList.drop i).take (hi - i))
       = a[i].toNat + toNatLimbsList ((a.toList.drop (i + 1)).take (hi - (i + 1))) * 2 ^ 64 := by
@@ -759,6 +759,12 @@ theorem toNat_add (a b : AzNat) : (a + b).toNat = a.toNat + b.toNat := by
         rw [hc] at h_main
         change _ + 1 * 2 ^ (64 * lenMax) = _ at h_main
         rw [h_a_eq, h_b_eq]; omega
+
+/-- `ofNat`-version of `toNat_addUInt64`. -/
+theorem ofNat_addUInt64 (n : Nat) (b : UInt64) :
+    ofNat (n + b.toNat) = (ofNat n).addUInt64 b := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_addUInt64, toNat_ofNat]
 
 /-- `ofNat`-version of `toNat_add`. -/
 theorem ofNat_add (m n : Nat) : ofNat (m + n) = ofNat m + ofNat n := by
