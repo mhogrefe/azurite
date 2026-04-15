@@ -145,14 +145,17 @@ import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.ShiftLeft
+import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.NormalizedCompare
+import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
 import Azurite.AzNat.Parse
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.ShiftLeft
+import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Size
 import Azurite.AzNat.ToString
 import Azurite.AzNat.TrailingZeros

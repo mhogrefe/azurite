@@ -6,7 +6,7 @@ namespace Azurite.AzNat
 /-- Computing a single limb of the left-shift: write the input `x` shifted
     left by `sh` bits OR-ed with the incoming carry, and the outgoing carry
     is the top `sh` bits of `x`. -/
-private lemma limb_shift_step (x carry : UInt64) (sh : Nat)
+lemma limb_shift_step (x carry : UInt64) (sh : Nat)
     (hsh_lb : 1 ≤ sh) (hsh_ub : sh ≤ 63) (hcarry : carry.toNat < 2 ^ sh) :
     ((x <<< UInt64.ofNat sh) ||| carry).toNat
         + (x >>> UInt64.ofNat (64 - sh)).toNat * 2 ^ 64
