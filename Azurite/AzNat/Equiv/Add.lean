@@ -484,7 +484,7 @@ theorem addSameLengthLimbs_toNat (a b : Array UInt64) (loA loB len : Nat)
 
 /-- Splitting helper: a slice of length `lenA = lenB + (lenA - lenB)` decomposes
     into a low part of length `lenB` and a high part of length `lenA - lenB`. -/
-private lemma toNatLimbsList_drop_take_split (arr : Array UInt64)
+lemma toNatLimbsList_drop_take_split (arr : Array UInt64)
     (lo lenA lenB : Nat) (h_ge : lenB ≤ lenA) (h_bound : lo + lenA ≤ arr.size) :
     toNatLimbsList ((arr.toList.drop lo).take lenA)
       = toNatLimbsList ((arr.toList.drop lo).take lenB)
