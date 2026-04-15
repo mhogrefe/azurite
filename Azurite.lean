@@ -284,6 +284,7 @@ import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Equiv.AddWithCarry
 import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Equiv.ClearBit
+import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry
 import Azurite.UInt64.Equiv.Pow2
 import Azurite.UInt64.Equiv.SetBit
@@ -291,6 +292,7 @@ import Azurite.UInt64.Equiv.SplitHalves
 import Azurite.UInt64.Equiv.SubWithBorrow
 import Azurite.UInt64.Equiv.TestBit
 import Azurite.UInt64.Equiv.WideMul
+import Azurite.UInt64.MulAddWithCarry
 import Azurite.UInt64.MulWithCarry
 import Azurite.UInt64.Pow2
 import Azurite.UInt64.SetBit
