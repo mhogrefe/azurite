@@ -151,4 +151,29 @@ theorem ofInt_add (i j : Int) : ofInt (i + j) = ofInt i + ofInt j := by
   have := congrArg ofInt h
   rwa [ofInt_toInt, ofInt_toInt] at this
 
+/-- Correctness of `AzInt.neg`. -/
+@[simp] theorem toInt_neg (z : AzInt) : (-z).toInt = -z.toInt := by
+  show (neg z).toInt = -z.toInt
+  unfold neg
+  by_cases h : z.abs = 0
+  · have h_z : z.toInt = 0 := by
+      show (if z.sign then (z.abs.toNat : Int) else -(z.abs.toNat : Int)) = 0
+      rw [h]; simp
+    rw [h_z, neg_zero]
+    unfold mkNorm; simp [h]; rfl
+  · cases hs : z.sign
+    · rw [Bool.not_false, toInt_mkNorm_true]
+      show _ = -(if z.sign then (z.abs.toNat : Int) else -(z.abs.toNat : Int))
+      rw [hs]; simp
+    · rw [Bool.not_true, toInt_mkNorm_false _ h]
+      show _ = -(if z.sign then (z.abs.toNat : Int) else -(z.abs.toNat : Int))
+      rw [hs]; simp
+
+/-- `ofInt`-version of `toInt_neg`. -/
+theorem ofInt_neg (i : Int) : ofInt (-i) = -ofInt i := by
+  have h : (ofInt (-i)).toInt = (-ofInt i).toInt := by
+    rw [toInt_ofInt, toInt_neg, toInt_ofInt]
+  have := congrArg ofInt h
+  rwa [ofInt_toInt, ofInt_toInt] at this
+
 end Azurite.AzInt

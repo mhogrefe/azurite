@@ -40,4 +40,10 @@ def add (a b : AzInt) : AzInt :=
 
 instance : Add AzInt := ⟨add⟩
 
+/-- Negation of an `AzInt`: flip the sign, preserving the `zero_sign`
+    invariant via `mkNorm`. -/
+def neg (z : AzInt) : AzInt := mkNorm (!z.sign) z.abs
+
+instance : Neg AzInt := ⟨neg⟩
+
 end Azurite.AzInt

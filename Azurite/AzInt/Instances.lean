@@ -1,0 +1,40 @@
+import Azurite.AzInt.Equiv.Mul
+import Azurite.AzInt.Equiv.Sub
+
+namespace Azurite.AzInt
+
+private theorem toInt_injective {a b : AzInt} (h : a.toInt = b.toInt) : a = b := by
+  rw [← ofInt_toInt a, ← ofInt_toInt b, h]
+
+instance : CommRing AzInt where
+  add_assoc a b c := toInt_injective (by simp [toInt_add, Int.add_assoc])
+  zero_add a := toInt_injective (by simp [toInt_add])
+  add_zero a := toInt_injective (by simp [toInt_add])
+  add_comm a b := toInt_injective (by simp [toInt_add, Int.add_comm])
+  mul_assoc a b c := toInt_injective (by simp [toInt_mul, Int.mul_assoc])
+  one_mul a := toInt_injective (by simp [toInt_mul])
+  mul_one a := toInt_injective (by simp [toInt_mul])
+  left_distrib a b c := toInt_injective (by simp [toInt_add, toInt_mul]; ring)
+  right_distrib a b c := toInt_injective (by simp [toInt_add, toInt_mul]; ring)
+  zero_mul a := toInt_injective (by simp [toInt_mul])
+  mul_zero a := toInt_injective (by simp [toInt_mul])
+  mul_comm a b := toInt_injective (by simp [toInt_mul, Int.mul_comm])
+  neg_add_cancel a := toInt_injective (by simp [toInt_add, toInt_neg])
+  sub_eq_add_neg a b := toInt_injective (by simp [toInt_sub, toInt_add, toInt_neg]; ring)
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+
+instance : Nontrivial AzInt := ⟨0, 1, fun h => by
+  have : (0 : Int) = 1 := by rw [← toInt_zero, ← toInt_one, h]
+  exact absurd this (by decide)⟩
+
+instance : NoZeroDivisors AzInt where
+  eq_zero_or_eq_zero_of_mul_eq_zero {a b} h := by
+    have h' : a.toInt * b.toInt = 0 := by rw [← toInt_mul, h]; rfl
+    rcases mul_eq_zero.mp h' with ha | hb
+    · left; exact toInt_injective (by rw [ha]; rfl)
+    · right; exact toInt_injective (by rw [hb]; rfl)
+
+instance : IsDomain AzInt := {}
+
+end Azurite.AzInt

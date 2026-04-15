@@ -386,7 +386,7 @@ theorem mulAddLimbs_toNat (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt6
   rw [h0, Nat.add_zero, Nat.add_zero, Nat.sub_zero] at h
   simpa using h
 
-/-! ### Correctness of `mulLimbs` -/
+/-! ### Correctness of `schoolbookMulLimbs` -/
 
 private lemma toNatLimbsList_eq_zero_of_all_zero :
     ∀ (l : List UInt64),
@@ -450,34 +450,34 @@ private lemma mulAddLimbs_getElem_ge (a : Array UInt64) (offA lenA offAcc : Nat)
   rw [h_L, h_R] at h_get
   exact Option.some.inj h_get
 
-/-- Size preservation of `mulLimbs.go`. -/
-theorem mulLimbs.go_size (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
+/-- Size preservation of `schoolbookMulLimbs.go`. -/
+theorem schoolbookMulLimbs.go_size (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
     (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
     (hAcc : lenA + lenB ≤ acc.size) :
-    (mulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).size = acc.size := by
+    (schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).size = acc.size := by
   induction h_sub : lenB - j generalizing acc j with
   | zero =>
     have h_ge : lenB ≤ j := by omega
-    rw [mulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+    rw [schoolbookMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
   | succ n ih =>
     have h_lt : j < lenB := by omega
     have h_rec : lenB - (j + 1) = n := by omega
-    rw [mulLimbs.go]
+    rw [schoolbookMulLimbs.go]
     simp only [h_lt, ↓reduceDIte]
     rw [ih _ _ _ h_rec, Array.size_set, mulAddLimbs_size]
 
-/-- Invariant of `mulLimbs.go`: with the zero-tail invariant on `acc`
+/-- Invariant of `schoolbookMulLimbs.go`: with the zero-tail invariant on `acc`
     (positions `[j+lenA, lenA+lenB)` of `acc` are zero), the low `lenA + lenB`
     limbs of the result equal `acc` plus `a_slice * b[loB+j:loB+lenB] * 2^(64j)`. -/
-private lemma mulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
+private lemma schoolbookMulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
     (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
     (hAcc : lenA + lenB ≤ acc.size) (hj : j ≤ lenB)
     (h_zero : ∀ (i : Nat) (hi : i < acc.size), j + lenA ≤ i → i < lenA + lenB →
         acc[i]'hi = (0 : UInt64)) :
     toNatLimbsList
-        ((mulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).toList.take (lenA + lenB))
+        ((schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).toList.take (lenA + lenB))
       = toNatLimbsList (acc.toList.take (lenA + lenB))
         + toNatLimbsList ((a.toList.drop loA).take lenA)
           * toNatLimbsList ((b.toList.drop (loB + j)).take (lenB - j))
@@ -485,8 +485,8 @@ private lemma mulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) (b : Array
   induction h_sub : lenB - j generalizing acc j with
   | zero =>
     have h_ge : lenB ≤ j := by omega
-    have h_eq : mulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc = acc := by
-      rw [mulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+    have h_eq : schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc = acc := by
+      rw [schoolbookMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
     rw [h_eq]
     simp [toNatLimbsList]
   | succ n ih =>
@@ -500,9 +500,9 @@ private lemma mulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) (b : Array
     set acc' := r.1.set (j + lenA) r.2 with hacc'_def
     have h_acc'_size : acc'.size = acc.size := by rw [hacc'_def, Array.size_set, h_r_size]
     have hAcc' : lenA + lenB ≤ acc'.size := by rw [h_acc'_size]; exact hAcc
-    have h_eq_go : mulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc
-                 = mulLimbs.go a loA lenA b loB lenB acc' (j + 1) hA hB hAcc' := by
-      conv_lhs => rw [mulLimbs.go]
+    have h_eq_go : schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc
+                 = schoolbookMulLimbs.go a loA lenA b loB lenB acc' (j + 1) hA hB hAcc' := by
+      conv_lhs => rw [schoolbookMulLimbs.go]
       simp [h_lt, hr_def, hacc'_def]
     have h_zero' : ∀ (i : Nat) (hi : i < acc'.size), (j + 1) + lenA ≤ i →
         i < lenA + lenB → acc'[i]'hi = (0 : UInt64) := by
@@ -669,13 +669,13 @@ private lemma mulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) (b : Array
     linarith [h_scaled, Nat.add_mul (AS * b[loB + j].toNat)
       (toNatLimbsList (List.take lenA (List.drop j acc.toList))) (2 ^ (64 * j))]
 
-/-- Correctness of `mulLimbs` at the slice level. -/
-theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
+/-- Correctness of `schoolbookMulLimbs` at the slice level. -/
+theorem schoolbookMulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
-    toNatLimbsList (mulLimbs a b loA lenA loB lenB hA hB).toList
+    toNatLimbsList (schoolbookMulLimbs a b loA lenA loB lenB hA hB).toList
       = toNatLimbsList ((a.toList.drop loA).take lenA)
         * toNatLimbsList ((b.toList.drop loB).take lenB) := by
-  unfold mulLimbs
+  unfold schoolbookMulLimbs
   set acc0 : Array UInt64 := Array.replicate (lenA + lenB) 0 with hacc0_def
   have h_acc0_size : acc0.size = lenA + lenB := by rw [hacc0_def, Array.size_replicate]
   have hAcc0 : lenA + lenB ≤ acc0.size := by rw [h_acc0_size]
@@ -683,13 +683,13 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
       acc0[i]'hi = (0 : UInt64) := by
     intro i hi _ _
     simp [hacc0_def, Array.getElem_replicate]
-  have h_go := mulLimbs.go_correct a loA lenA b loB lenB acc0 0 hA hB hAcc0
+  have h_go := schoolbookMulLimbs.go_correct a loA lenA b loB lenB acc0 0 hA hB hAcc0
     (Nat.zero_le _) h_zero
-  have h_go_size : (mulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).size = lenA + lenB := by
-    rw [mulLimbs.go_size, h_acc0_size]
+  have h_go_size : (schoolbookMulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).size = lenA + lenB := by
+    rw [schoolbookMulLimbs.go_size, h_acc0_size]
   have h_take_all :
-      (mulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).toList.take (lenA + lenB)
-        = (mulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).toList := by
+      (schoolbookMulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).toList.take (lenA + lenB)
+        = (schoolbookMulLimbs.go a loA lenA b loB lenB acc0 0 hA hB hAcc0).toList := by
     apply List.take_of_length_le
     rw [Array.length_toList, h_go_size]
   have h_acc0_zero : toNatLimbsList (acc0.toList.take (lenA + lenB)) = 0 := by
@@ -703,18 +703,16 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
   rw [h_go, h_acc0_zero]
   simp
 
-theorem toNat_schoolbookMul (a b : AzNat) : (a.schoolbookMul b).toNat = a.toNat * b.toNat := by
-  unfold schoolbookMul
-  rw [toNat_ofLimbs, mulLimbs_toNat]
+theorem toNat_mul (a b : AzNat) : (a * b).toNat = a.toNat * b.toNat := by
+  show (mul a b).toNat = _
+  unfold mul mulLimbs
+  rw [toNat_ofLimbs, schoolbookMulLimbs_toNat]
   show toNatLimbsList ((a.limbs.toList.drop 0).take a.limbs.size)
         * toNatLimbsList ((b.limbs.toList.drop 0).take b.limbs.size) = a.toNat * b.toNat
   rw [List.drop_zero, List.drop_zero]
   rw [List.take_of_length_le (by rw [Array.length_toList])]
   rw [List.take_of_length_le (by rw [Array.length_toList])]
   rfl
-
-theorem toNat_mul (a b : AzNat) : (a * b).toNat = a.toNat * b.toNat :=
-  toNat_schoolbookMul a b
 
 /-- `ofNat`-version of `toNat_mulUInt64`. -/
 theorem ofNat_mulUInt64 (n : Nat) (b : UInt64) :

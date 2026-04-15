@@ -29,12 +29,15 @@ import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzInt.Equiv.LowMask
+import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Pow2
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
+import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
+import Azurite.AzInt.Mul
 import Azurite.AzInt.Parity
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Pow2
@@ -156,6 +159,7 @@ import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.Instances
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare

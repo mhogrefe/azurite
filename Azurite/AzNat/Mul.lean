@@ -89,7 +89,7 @@ theorem mulAddLimbs_size (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64
     into `acc[j : j + lenA]`, then stores the final carry into `acc[j + lenA]`.
     The accumulator `acc` is written at offset `0..lenA + lenB` (caller supplies
     a fresh buffer). -/
-def mulLimbs.go (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
+def schoolbookMulLimbs.go (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
     (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
     (hAcc : lenA + lenB ≤ acc.size) : Array UInt64 :=
@@ -99,7 +99,7 @@ def mulLimbs.go (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
     let r := mulAddLimbs a loA lenA j b[loB + j] acc hA hAcc_row
     have h_r_size : r.1.size = acc.size := mulAddLimbs_size _ _ _ _ _ _ _ _
     have hCarryIdx : j + lenA < r.1.size := by rw [h_r_size]; omega
-    mulLimbs.go a loA lenA b loB lenB (r.1.set (j + lenA) r.2) (j + 1) hA hB
+    schoolbookMulLimbs.go a loA lenA b loB lenB (r.1.set (j + lenA) r.2) (j + 1) hA hB
       (by rw [Array.size_set, h_r_size]; exact hAcc)
   else
     acc
@@ -107,20 +107,23 @@ def mulLimbs.go (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
 
 /-- Naive `O(lenA · lenB)` schoolbook multiplication of two slices, producing
     a fresh array of size `lenA + lenB`. -/
-def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
+def schoolbookMulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
-  mulLimbs.go a loA lenA b loB lenB
+  schoolbookMulLimbs.go a loA lenA b loB lenB
     (Array.replicate (lenA + lenB) 0) 0 hA hB
     (by rw [Array.size_replicate])
 
-/-- Naive `O(n·m)` schoolbook multiplication of two `AzNat`s. -/
-def schoolbookMul (a b : AzNat) : AzNat :=
+/-- Multiplication of two limb slices, currently delegating to
+    `schoolbookMulLimbs`.  Future sub-quadratic algorithms will dispatch here
+    by size. -/
+def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
+  schoolbookMulLimbs a b loA lenA loB lenB hA hB
+
+/-- Multiplication of two `AzNat`s. -/
+def mul (a b : AzNat) : AzNat :=
   ofLimbs (mulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
     (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
-
-/-- Multiplication of two `AzNat`s, currently delegating to `schoolbookMul`.
-    Future sub-quadratic algorithms will dispatch here by size. -/
-def mul (a b : AzNat) : AzNat := schoolbookMul a b
 
 instance : Mul AzNat := ⟨mul⟩
 
