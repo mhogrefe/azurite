@@ -17,48 +17,18 @@ R[i] := R[X]/(X² + 1) is an algebraically closed field.
 
 namespace Azurite.BPR.Theorem2_11
 
-open Polynomial
+open Polynomial Azurite.BPR
 
-/-! ### R[i] = R[X]/(X² + 1) -/
+/-! ### R[i] — definitions from Notation 2.18 (Section2_1.lean)
 
-/-- R[i] := R[X]/(X² + 1), the "complex numbers" over a real closed field R. -/
-noncomputable abbrev Ri (R : Type*) [CommRing R] :=
-  AdjoinRoot (X ^ 2 + 1 : R[X])
-
-/-- The imaginary unit `i` in R[i], i.e., the image of X in R[X]/(X² + 1). -/
-noncomputable def Ri.i (R : Type*) [CommRing R] : Ri R :=
-  AdjoinRoot.root (X ^ 2 + 1 : R[X])
-
-/-- Conjugation on R[i]: the R-algebra automorphism sending i ↦ −i. -/
-noncomputable def Ri.conj (R : Type*) [CommRing R] : Ri R →ₐ[R] Ri R :=
-  { AdjoinRoot.lift (AdjoinRoot.of (X ^ 2 + 1 : R[X])) (-Ri.i R)
-      (by
-        simp only [Ri.i, eval₂_add, eval₂_pow, eval₂_one, eval₂_X, neg_sq]
-        have h := AdjoinRoot.eval₂_root (X ^ 2 + 1 : R[X])
-        simpa [eval₂_add, eval₂_pow, eval₂_one, eval₂_X] using h) with
-    commutes' := fun r => by simp [AdjoinRoot.lift_of] }
+`Ri`, `Ri.i`, `Ri.conj`, `Ri.conj_i`, `Ri.conj_conj`, `Ri.conj_injective`,
+`Ri.i_sq`, `irred_X_sq_add_one`, and the `Fact Irreducible` instance are
+brought into scope by `open Azurite.BPR` above.
+-/
 
 /-- Apply conjugation to the coefficients of a polynomial over R[i]. -/
 noncomputable def conjPoly (R : Type*) [CommRing R] : (Ri R)[X] → (Ri R)[X] :=
   Polynomial.map (Ri.conj R)
-
-/-- Conjugation sends i to -i. -/
-theorem Ri.conj_i (R : Type*) [CommRing R] : (Ri.conj R) (Ri.i R) = -Ri.i R := by
-  simp [Ri.conj, Ri.i, AdjoinRoot.lift_root]
-
-/-- Conjugation is an involution: conj(conj(x)) = x. -/
-theorem Ri.conj_conj (R : Type*) [CommRing R] (x : Ri R) :
-    (Ri.conj R) ((Ri.conj R) x) = x := by
-  have : (Ri.conj R).comp (Ri.conj R) = AlgHom.id R (Ri R) := by
-    apply AdjoinRoot.algHom_ext
-    simp only [Ri.conj, AlgHom.comp_apply, AlgHom.coe_mk, Ri.i,
-      AdjoinRoot.lift_root, map_neg, neg_neg, AlgHom.id_apply]
-  exact AlgHom.congr_fun this x
-
-/-- Conjugation is injective. -/
-theorem Ri.conj_injective (R : Type*) [CommRing R] :
-    Function.Injective (Ri.conj R : Ri R →+* Ri R) :=
-  Function.HasLeftInverse.injective ⟨Ri.conj R, Ri.conj_conj R⟩
 
 /-! ### Combinatorial indexing -/
 
@@ -157,36 +127,6 @@ noncomputable def HPoly (x : Fin p → L) : (L[X])[X] :=
 /-! ### Infrastructure lemmas -/
 
 variable {R : Type*} [Field R]
-
-/-- In a real closed field, −1 is not a square. -/
-theorem not_isSquare_neg_one [IsRealClosed R] : ¬ IsSquare (-1 : R) := by
-  intro h
-  exact IsSemireal.not_isSumSq_neg_one R h.isSumSq
-
-/-- X² + 1 is irreducible over a real closed field R. -/
-theorem irred_X_sq_add_one [IsRealClosed R] :
-    Irreducible (X ^ 2 + 1 : R[X]) := by
-  apply Polynomial.irreducible_of_degree_le_three_of_not_isRoot
-  · have : (X ^ 2 + 1 : R[X]).natDegree = 2 := by
-      rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
-    simp [this, Finset.mem_Icc]
-  · intro x
-    simp only [IsRoot, eval_add, eval_pow, eval_X, eval_one]
-    intro h
-    have : (-1 : R) = x * x := by linear_combination -h
-    exact not_isSquare_neg_one ⟨x, this⟩
-
-/-- X² + 1 is irreducible (as a Fact, for AdjoinRoot.instField). -/
-instance [IsRealClosed R] : Fact (Irreducible (X ^ 2 + 1 : R[X])) :=
-  ⟨irred_X_sq_add_one⟩
-
-/-- The defining relation: i² = −1 in R[i]. -/
-theorem Ri.i_sq (R : Type*) [CommRing R] :
-    (Ri.i R) ^ 2 = -(1 : Ri R) := by
-  have h : AdjoinRoot.mk (X ^ 2 + 1 : R[X]) (X ^ 2 + 1 : R[X]) = 0 := AdjoinRoot.mk_self
-  simp only [map_add, map_pow, map_one, AdjoinRoot.mk_X] at h
-  unfold Ri.i
-  linear_combination h
 
 /-- For any a ∈ R, there exists v ∈ R[i] with v² = a. -/
 theorem sqrt_of_R_in_Ri [IsRealClosed R] (a : R) :

@@ -21,7 +21,7 @@ The d⇒a direction (`theorem_2_11_d_a`) requires only `[Field R]`.
 
 namespace Azurite.BPR.Theorem2_11
 
-open Polynomial
+open Polynomial Azurite.BPR
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 

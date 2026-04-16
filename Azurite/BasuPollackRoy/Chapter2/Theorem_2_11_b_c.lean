@@ -16,7 +16,7 @@ out the always-positive quadratic (X − c)² + d² and the quotient still chang
 
 namespace Azurite.BPR.Theorem2_11
 
-open Polynomial
+open Polynomial Azurite.BPR
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
