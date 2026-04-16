@@ -2117,4 +2117,16 @@ The proof is split across five files, one per implication:
 The combined TFAE statement is in `Theorem_2_11.lean`.
 -/
 
+/-!
+### Proposition 2.19: Form of Irreducible Factors over a Real Closed Field
+
+**Proposition 2.19 (BPR).** Let R be a real closed field, P ∈ R[X].
+The irreducible factors of P are linear or have the form
+(X − c)² + d² = (X − c − id)(X − c + id), d ≠ 0, with c, d ∈ R.
+
+The proof uses Theorem 2.11 (a ⇒ b) — that R[i] is algebraically closed —
+together with the fact that the conjugate of a root of P is a root of P.
+See `Proposition_2_19.lean` (imports `Theorem_2_11_b_c.lean`).
+-/
+
 end Azurite.BPR

@@ -259,6 +259,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
+import Azurite.BasuPollackRoy.Chapter2.Proposition_2_19
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_a_b
