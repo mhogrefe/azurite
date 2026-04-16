@@ -2288,6 +2288,27 @@ The corresponding predicates `HasSignRight`, `HasSignLeft`,
 theorems and the `Classical.choose`-based functional forms `signRight`,
 `signLeft`, `signAtPosInfty`, `signAtNegInfty` — live in `SignAtPoint.lean`
 (imports `Proposition_2_20.lean`).
+
+Also in `SignAtPoint.lean`: the sign-at-infinity identities via Proposition 2.4:
+`signAtPosInfty P = sign(P.leadingCoeff)` and
+`signAtNegInfty P = (−1)^{deg P} · sign(P.leadingCoeff)`.
+-/
+
+/-!
+### Proposition 2.21: Sign of a Polynomial Near a Root
+
+**Proposition 2.21 (BPR).** If `r` is a root of `P ∈ R[X]` of multiplicity `µ`
+in a real closed field `R`, then
+- the sign of `P` to the right of `r` is the sign of `P^{(µ)}(r)`,
+- the sign of `P` to the left  of `r` is the sign of `(−1)^µ · P^{(µ)}(r)`.
+
+*Proof sketch.* Write `P = (X − r)^µ · Q` with `Q(r) ≠ 0`. Taylor's formula
+gives `P^{(µ)}(r) = µ! · Q(r)`, hence `sign(Q(r)) = sign(P^{(µ)}(r))`. On a
+sufficiently small interval around `r` avoiding all other roots of `Q`,
+Proposition 2.20 yields that `Q` has constant sign there (equal to
+`sign(Q(r))`); for `x` to the right of `r`, `(x − r)^µ > 0` so
+`sign(P(x)) = sign(Q(r))`; to the left, `sign((x − r)^µ) = (−1)^µ`.
+See `Proposition_2_21.lean` (imports `SignAtPoint.lean`).
 -/
 
 end Azurite.BPR
