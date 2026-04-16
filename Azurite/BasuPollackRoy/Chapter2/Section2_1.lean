@@ -467,6 +467,45 @@ noncomputable example : LinearOrder ℝ := inferInstance
 noncomputable example : IsStrictOrderedRing ℝ := inferInstance
 
 /-!
+### Notation: Intervals
+
+**Notation (BPR p.34).** Closed, open and semi-open intervals in an ordered
+field `R` are denoted in the usual way:
+- `(a, b) = {x ∈ R | a < x < b}`
+- `[a, b] = {x ∈ R | a ≤ x ≤ b}`
+- `(a, b] = {x ∈ R | a < x ≤ b}`
+- `[a, b) = {x ∈ R | a ≤ x < b}`
+- `(a, +∞) = {x ∈ R | a < x}`, `[a, +∞) = {x ∈ R | a ≤ x}`
+- `(−∞, a) = {x ∈ R | x < a}`, `(−∞, a] = {x ∈ R | x ≤ a}`
+
+In Mathlib (namespace `Set`, defined in `Mathlib.Order.Interval.Set.Defs`,
+requiring only `[Preorder α]`):
+
+| BPR | Mathlib | Membership |
+|---|---|---|
+| `(a, b)` | `Set.Ioo a b` | `a < x ∧ x < b` |
+| `[a, b]` | `Set.Icc a b` | `a ≤ x ∧ x ≤ b` |
+| `[a, b)` | `Set.Ico a b` | `a ≤ x ∧ x < b` |
+| `(a, b]` | `Set.Ioc a b` | `a < x ∧ x ≤ b` |
+| `(a, +∞)` | `Set.Ioi a` | `a < x` |
+| `[a, +∞)` | `Set.Ici a` | `a ≤ x` |
+| `(−∞, a)` | `Set.Iio a` | `x < a` |
+| `(−∞, a]` | `Set.Iic a` | `x ≤ a` |
+
+Naming mnemonic: `I{left}{right}` where `c` = closed, `o` = open,
+`i` = infinite. Membership lemmas follow the pattern `Set.mem_Ioo` etc.
+-/
+
+example : ∀ a b : ℝ, Set.Ioo a b = {x | a < x ∧ x < b} := fun _ _ => rfl
+example : ∀ a b : ℝ, Set.Icc a b = {x | a ≤ x ∧ x ≤ b} := fun _ _ => rfl
+example : ∀ a b : ℝ, Set.Ioc a b = {x | a < x ∧ x ≤ b} := fun _ _ => rfl
+example : ∀ a b : ℝ, Set.Ico a b = {x | a ≤ x ∧ x < b} := fun _ _ => rfl
+example : ∀ a : ℝ, Set.Ioi a = {x | a < x} := fun _ => rfl
+example : ∀ a : ℝ, Set.Ici a = {x | a ≤ x} := fun _ => rfl
+example : ∀ a : ℝ, Set.Iio a = {x | x < a} := fun _ => rfl
+example : ∀ a : ℝ, Set.Iic a = {x | x ≤ a} := fun _ => rfl
+
+/-!
 ### Exercise 2.3: ℂ cannot be ordered
 
 **Exercise 2.3** (BPR p.35). Show that it is not possible to order the field
@@ -2219,6 +2258,36 @@ The irreducible factors of P are linear or have the form
 The proof uses Theorem 2.11 (a ⇒ b) — that R[i] is algebraically closed —
 together with the fact that the conjugate of a root of P is a root of P.
 See `Proposition_2_19.lean` (imports `Theorem_2_11_b_c.lean`).
+-/
+
+/-!
+### Proposition 2.20: Constant Sign on a Non-Vanishing Interval
+
+**Proposition 2.20 (BPR).** Let R be a real closed field, P ∈ R[X] such that
+P does not vanish in `(a, b)`. Then P has constant sign in the interval `(a, b)`.
+
+The proof uses Theorem 2.11 (b ⇒ c) — that R has the intermediate value
+property — applied to a hypothetical pair of points where P takes values
+of opposite sign.
+See `Proposition_2_20.lean` (imports `Theorem_2_11_b_c.lean`).
+-/
+
+/-!
+### Sign of a Polynomial to the Right / Left of a Point and at ±∞
+
+Proposition 2.20 justifies speaking of the sign of `P ∈ R[X]`:
+- **to the right of `a`** — the sign of `P` in any `(a, b)` on which `P`
+  does not vanish;
+- **to the left of `a`** — likewise on `(b, a)`;
+- **at `+∞`** — the sign of `P(M)` for `M` sufficiently large (greater than
+  any root of `P`);
+- **at `−∞`** — the sign of `P(M)` for `M` sufficiently small.
+
+The corresponding predicates `HasSignRight`, `HasSignLeft`,
+`HasSignAtPosInfty`, `HasSignAtNegInfty` — along with their uniqueness
+theorems and the `Classical.choose`-based functional forms `signRight`,
+`signLeft`, `signAtPosInfty`, `signAtNegInfty` — live in `SignAtPoint.lean`
+(imports `Proposition_2_20.lean`).
 -/
 
 end Azurite.BPR
