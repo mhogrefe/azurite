@@ -1,13 +1,18 @@
 import Mathlib.Data.Sign.Basic
+import Mathlib.Algebra.Polynomial.Derivative
 
 /-!
-# BPR Definition 2.25: Sign Conditions
+# BPR Definition 2.25 & Notation 2.26: Sign Conditions and Derivative Lists
 
 **Definition 2.25 (BPR).** Let `Q` be a finite subset of `R[X₁, …, Xₖ]`.
 A *sign condition* on `Q` is an element of `{0, 1, −1}^Q`, i.e. a mapping
 from `Q` to `{0, 1, −1}`.  A *strict sign condition* on `Q` is an element
 of `{1, −1}^Q`.  We say that `Q` *realizes* the sign condition `σ` at
 `x ∈ Rᵏ` if `sign(Q(x)) = σ(Q)` for every `Q ∈ Q`.
+
+**Notation 2.26 (BPR).** For `P ∈ R[X]` of degree `p`, `Der(P)` denotes the
+list `[P, P', P'', …, P⁽ᵖ⁾]` of `P` and all its successive derivatives up
+to order `p`.
 
 We formalise sign conditions as functions `ι → SignType` indexed by an
 arbitrary type `ι` (typically a `Fintype` indexing a family of polynomials).
@@ -54,5 +59,14 @@ def IsRealizable [Zero R] [Preorder R] [DecidableRel ((· < ·) : R → R → Pr
   (σ.realization Q).Nonempty
 
 end SignCondition
+
+/-! ## Notation 2.26: Derivative list -/
+
+open Polynomial
+
+/-- **BPR Notation 2.26.** `Der(P)` is the list `[P, P', P'', …, P⁽ᵖ⁾]` where
+    `p = natDegree P`. The list has `p + 1` entries. -/
+noncomputable def der {R : Type*} [CommSemiring R] (P : R[X]) : List R[X] :=
+  (List.range (P.natDegree + 1)).map (fun i => (⇑derivative)^[i] P)
 
 end Azurite.BPR
