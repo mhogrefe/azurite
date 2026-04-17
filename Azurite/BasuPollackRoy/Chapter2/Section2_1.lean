@@ -2311,4 +2311,24 @@ Proposition 2.20 yields that `Q` has constant sign there (equal to
 See `Proposition_2_21.lean` (imports `SignAtPoint.lean`).
 -/
 
+/-!
+### Archimedean ordered fields (BPR p.46)
+
+**Definition (BPR p.46).** An ordered field `F` is *archimedean* if, whenever `a, b`
+are positive elements of `F`, there exists a natural number `n ∈ ℕ` so that `n · a > b`.
+
+**Mathlib correspondence.** This is `Archimedean` from
+`Mathlib.Algebra.Order.Archimedean.Defs`, defined as
+`∀ (x : R) {y : R}, 0 < y → ∃ n : ℕ, x ≤ n • y`.
+
+`ℝ` is archimedean via `Real.instArchimedean`.
+-/
+
+/-- Any intermediate field of an archimedean ordered field is archimedean,
+    via `Archimedean.comap` along the subtype inclusion. -/
+theorem IntermediateField.archimedean {F E : Type*} [Field F] [Field E]
+    [Algebra F E] [LinearOrder E] [IsStrictOrderedRing E] [Archimedean E]
+    (S : IntermediateField F E) : Archimedean ↥S :=
+  Archimedean.comap S.subtype.toAddMonoidHom (fun _ _ h => h)
+
 end Azurite.BPR
