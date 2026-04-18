@@ -292,6 +292,13 @@ import Azurite.Random.Pair
 import Azurite.Random.Rat
 import Azurite.Rat.Compare
 import Azurite.Rat.LogBase2
+import Azurite.Rounding.Basic
+import Azurite.Rounding.FixedWidth
+import Azurite.Rounding.Int
+import Azurite.Rounding.IntIcc
+import Azurite.Rounding.Nat
+import Azurite.Rounding.Rat
+import Azurite.Rounding.Real
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Equiv.AddWithCarry
