@@ -154,10 +154,12 @@ import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Mul
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Pow2
+import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
+import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.Instances
 import Azurite.AzNat.LowMask
@@ -167,10 +169,12 @@ import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
 import Azurite.AzNat.Parse
 import Azurite.AzNat.Pow2
+import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Size
 import Azurite.AzNat.Sub
+import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToString
 import Azurite.AzNat.TrailingZeros
 import Azurite.AzPolynomial.Add
