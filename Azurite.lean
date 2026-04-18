@@ -152,6 +152,7 @@ import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
+import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Mul
 import Azurite.AzNat.Equiv.Parity
@@ -164,6 +165,7 @@ import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.Instances
+import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare

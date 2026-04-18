@@ -64,7 +64,7 @@ private lemma toNatLimbsList_eq_zero_iff_all_zero (l : List UInt64) :
       have hxs_zero : toNatLimbsList xs = 0 := ih.mpr hxs
       rw [hx_eq, hxs_zero]; decide
 
-private lemma allZeroLoop_eq_true_iff (a : Array UInt64) (k : Nat) (h : k ≤ a.size) :
+lemma allZeroLoop_eq_true_iff (a : Array UInt64) (k : Nat) (h : k ≤ a.size) :
     AzNat.allZeroLoop a k h = true ↔ ∀ i (_hi : i < k), a[i]'(by omega) = 0 := by
   induction k with
   | zero => simp [AzNat.allZeroLoop]
