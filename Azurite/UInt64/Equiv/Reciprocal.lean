@@ -1107,4 +1107,250 @@ theorem e3_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
   · rw [he3_eq]; exact he3m_pos
   · rw [he3_eq]; show e3m_Z < 2 * (D : ℤ); exact he3m_lt
 
+/-- `computeV4` modular identity: `v_3 ≡ v_4 + d + hi + carry (mod 2^64)`, where
+`(hi, lo) = wideMul v_3 d` and `carry = 1` iff `lo + d` overflows (i.e.
+`lo.toNat + d.toNat ≥ 2^64`). -/
+theorem computeV4_add_mod_eq (v3 d : UInt64) :
+    ((computeV4 v3 d).toNat + d.toNat + (wideMul v3 d).1.toNat
+        + (if 2 ^ 64 ≤ (wideMul v3 d).2.toNat + d.toNat then 1 else 0)) % 2 ^ 64
+      = v3.toNat := by
+  have hLO_lt : (wideMul v3 d).2.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hHI_lt : (wideMul v3 d).1.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hV3_lt : v3.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hD_lt : d.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  -- Express computeV4 with wideMul destructured.
+  have hV4_eq : computeV4 v3 d =
+      v3 - d - (wideMul v3 d).1 -
+        (if (wideMul v3 d).2 + d < d then (1 : UInt64) else 0) := by
+    unfold computeV4; rfl
+  rw [hV4_eq]
+  -- Convert UInt64 carry to Nat carry.
+  have hcarry_eq : (if (wideMul v3 d).2 + d < d then (1 : UInt64) else 0).toNat =
+      (if 2 ^ 64 ≤ (wideMul v3 d).2.toNat + d.toNat then 1 else 0) := by
+    have hLO'_toNat : ((wideMul v3 d).2 + d).toNat
+        = ((wideMul v3 d).2.toNat + d.toNat) % 2 ^ 64 :=
+      _root_.UInt64.toNat_add _ _
+    by_cases h : 2 ^ 64 ≤ (wideMul v3 d).2.toNat + d.toNat
+    · have hlt : (wideMul v3 d).2 + d < d := by
+        rw [_root_.UInt64.lt_iff_toNat_lt, hLO'_toNat]
+        have hmod : ((wideMul v3 d).2.toNat + d.toNat) % 2 ^ 64
+            = (wideMul v3 d).2.toNat + d.toNat - 2 ^ 64 := by omega
+        rw [hmod]; omega
+      rw [if_pos hlt, if_pos h]; rfl
+    · have hsum_lt : (wideMul v3 d).2.toNat + d.toNat < 2 ^ 64 := by
+        push Not at h; exact h
+      have hLO'_eq : ((wideMul v3 d).2 + d).toNat = (wideMul v3 d).2.toNat + d.toNat := by
+        rw [hLO'_toNat, Nat.mod_eq_of_lt hsum_lt]
+      have hnlt : ¬ (wideMul v3 d).2 + d < d := by
+        rw [_root_.UInt64.lt_iff_toNat_lt, hLO'_eq]; omega
+      rw [if_neg hnlt, if_neg h]; rfl
+  rw [_root_.UInt64.toNat_sub, _root_.UInt64.toNat_sub, _root_.UInt64.toNat_sub, hcarry_eq]
+  set V3N : ℕ := v3.toNat
+  set DN : ℕ := d.toNat
+  set HIN : ℕ := (wideMul v3 d).1.toNat
+  set LON : ℕ := (wideMul v3 d).2.toNat
+  set carryN : ℕ := if 2 ^ 64 ≤ LON + DN then 1 else 0 with hcarryN_def
+  have hcarryN_le : carryN ≤ 1 := by rw [hcarryN_def]; split <;> omega
+  show (((2 ^ 64 - carryN + ((2 ^ 64 - HIN + ((2 ^ 64 - DN + V3N) % 2 ^ 64)) % 2 ^ 64)) % 2 ^ 64)
+      + DN + HIN + carryN) % 2 ^ 64 = V3N
+  omega
+
+/-- `e4 = 2^128 − (2^64 + v_4) · d` as an integer. -/
+def e4 (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : ℤ :=
+  let v0 := computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)
+  let v1 := computeV1 v0 (computeD40 d)
+  let v2 := computeV2 v1 (computeD40 d)
+  let e  := computeE v2 (computeD63 d) (computeD0 d)
+  let v3 := computeV3 v2 e
+  let v4 := computeV4 v3 d
+  (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (v4.toNat : ℤ)) * (d.toNat : ℤ)
+
+/-- Pure arithmetic core of Bound 10: given the key identities relating `V4N`, `V3N`,
+`HIN`, `LON`, `carryN` from the algorithm, deduce `0 < e4 ≤ D`. -/
+private lemma e4_core
+    (V3N V4N D HI LON carryN : ℕ)
+    (hD_lt : D < 2 ^ 64) (hD_ge : 2 ^ 63 ≤ D)
+    (hV3N_lt : V3N < 2 ^ 64) (hV4N_lt : V4N < 2 ^ 64)
+    (hHI_lt : HI < 2 ^ 64) (hLON_lt : LON < 2 ^ 64)
+    (hcarryN_def : carryN = if 2 ^ 64 ≤ LON + D then 1 else 0)
+    (hwide : HI * 2 ^ 64 + LON = V3N * D)
+    (hV4mod : (V4N + D + HI + carryN) % 2 ^ 64 = V3N)
+    (he3_pos : 0 < (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + V3N) * D)
+    (he3_lt : (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + V3N) * D < 2 * (D : ℤ)) :
+    0 < (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + V4N) * D ∧
+      (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + V4N) * D ≤ (D : ℤ) := by
+  have hD_pos : 0 < D := by omega
+  have hcarryN_le : carryN ≤ 1 := by rw [hcarryN_def]; split <;> omega
+  -- Nat version of e3 bounds: (2^64 + V3N) * D ≤ 2^128 - 1 and ≥ 2^128 - 2*D + 1.
+  have hV3D_lt_Z : ((2 ^ 64 + V3N : ℕ) : ℤ) * D < 2 ^ 128 := by push_cast; linarith
+  have hV3D_lt_nat : (2 ^ 64 + V3N) * D < 2 ^ 128 := by exact_mod_cast hV3D_lt_Z
+  -- hV4mod as integer identity.
+  have hk_eq_nat : V4N + D + HI + carryN =
+      V3N + ((V4N + D + HI + carryN) / 2 ^ 64) * 2 ^ 64 := by
+    have := Nat.div_add_mod (V4N + D + HI + carryN) (2 ^ 64)
+    omega
+  set kN : ℕ := (V4N + D + HI + carryN) / 2 ^ 64 with hkN_def
+  -- Case split on e3 ≤ D (Case A) vs e3 > D (Case B).
+  by_cases hcase : (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + V3N) * D ≤ D
+  · -- Case A: e3 ≤ D.
+    -- Nat: (2^128 + V3N) * D ≥ 2^128 - D.
+    have hV3D_ge_nat : 2 ^ 128 ≤ (2 ^ 64 + V3N) * D + D := by
+      have h : (2 ^ 128 : ℤ) ≤ ((2 ^ 64 + V3N : ℕ) : ℤ) * D + D := by push_cast; linarith
+      exact_mod_cast h
+    -- (2^64 + V3N)*D = 2^64*D + V3N*D = 2^64*(D + HI) + LON.
+    have hmul_expand : (2 ^ 64 + V3N) * D = 2 ^ 64 * (D + HI) + LON := by
+      have : (2 ^ 64 + V3N) * D = 2 ^ 64 * D + V3N * D := by ring
+      rw [this, ← hwide]; ring
+    -- Thus: 2^128 - D ≤ 2^64*(D+HI) + LON < 2^128, so D + HI = 2^64 - 1.
+    have hDHI : D + HI = 2 ^ 64 - 1 := by
+      rw [hmul_expand] at hV3D_ge_nat hV3D_lt_nat
+      -- 2^128 - D ≤ 2^64*(D+HI) + LON ≤ 2^128 - 1
+      -- Both D + HI = 2^64 - 1 and D + HI = 2^64 need to be considered.
+      -- D + HI = 2^64 would make 2^128 ≤ 2^128 + LON ≤ 2^128 - 1, impossible since LON ≥ 0.
+      -- (Note we need strict < from hV3D_lt_nat.)
+      omega
+    -- LON = 2^64 - e3 (so 0 < LON ≤ 2^64 - 1; specifically LON ≥ 2^64 - D).
+    -- From hmul_expand with D+HI = 2^64 - 1: (2^64+V3N)*D = 2^64*(2^64 - 1) + LON = 2^128 - 2^64 + LON.
+    -- So e3 = 2^128 - (2^128 - 2^64 + LON) = 2^64 - LON.
+    -- Case A: e3 ≤ D so LON ≥ 2^64 - D, so LON + D ≥ 2^64, so carryN = 1.
+    have hLON_ge : 2 ^ 64 ≤ LON + D := by
+      have h1 : (2 ^ 64 + V3N) * D = 2 ^ 128 - 2 ^ 64 + LON := by
+        rw [hmul_expand, hDHI]; ring
+      -- From he3_pos and hcase (e3 ≤ D):
+      -- 0 < 2^128 - (2^128 - 2^64 + LON) = 2^64 - LON, so LON < 2^64 (already known).
+      -- 2^128 - (2^128 - 2^64 + LON) ≤ D, so 2^64 - LON ≤ D, so LON ≥ 2^64 - D.
+      have hLON_ge_Z : (2 ^ 64 : ℤ) - D ≤ LON := by
+        have hh : (2 ^ 128 : ℤ) - ((2 ^ 64 + V3N : ℕ) : ℤ) * D ≤ D := by push_cast; linarith
+        have hh1_Z : ((2 ^ 64 + V3N : ℕ) : ℤ) * D + (2 ^ 64 : ℤ) = 2 ^ 128 + LON := by
+          have h1' : (2 ^ 64 + V3N) * D + 2 ^ 64 = 2 ^ 128 + LON := by
+            have hbig : 2 ^ 128 ≥ 2 ^ 64 := by norm_num
+            omega
+          exact_mod_cast h1'
+        linarith
+      have h_nat : 2 ^ 64 ≤ LON + D := by
+        have : (2 ^ 64 : ℤ) ≤ (LON : ℤ) + D := by linarith
+        have hh : (2 ^ 64 : ℕ) ≤ LON + D := by exact_mod_cast this
+        exact hh
+      exact h_nat
+    have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [if_pos hLON_ge]
+    -- Now V4N + D + HI + 1 = V3N + kN * 2^64.
+    -- D + HI = 2^64 - 1, so V4N + 2^64 = V3N + kN * 2^64.
+    -- With 0 ≤ V4N < 2^64 and 0 ≤ V3N < 2^64, kN = 1 and V4N = V3N.
+    have hV4_eq : V4N = V3N := by
+      rw [hcarryN_val] at hk_eq_nat
+      -- V4N + D + HI + 1 = V3N + kN * 2^64
+      -- D + HI = 2^64 - 1, so V4N + 2^64 = V3N + kN * 2^64
+      have : V4N + 2 ^ 64 = V3N + kN * 2 ^ 64 := by omega
+      -- Hence V4N - V3N = (kN - 1) * 2^64, and |V4N - V3N| < 2^64, so kN = 1, V4N = V3N.
+      omega
+    -- Conclude e4 = e3, and use he3_pos, hcase.
+    rw [hV4_eq]
+    exact ⟨he3_pos, hcase⟩
+  · -- Case B: e3 > D.
+    push Not at hcase
+    -- Nat: (2^64 + V3N) * D ≤ 2^128 - D - 1 and ≥ 2^128 - 2*D + 1.
+    have hV3D_le_nat : (2 ^ 64 + V3N) * D + D + 1 ≤ 2 ^ 128 := by
+      have h : ((2 ^ 64 + V3N : ℕ) : ℤ) * D + D + 1 ≤ 2 ^ 128 := by push_cast; linarith
+      exact_mod_cast h
+    have hV3D_gt_nat : 2 ^ 128 < (2 ^ 64 + V3N) * D + 2 * D := by
+      have h : (2 ^ 128 : ℤ) < ((2 ^ 64 + V3N : ℕ) : ℤ) * D + 2 * D := by push_cast; linarith
+      exact_mod_cast h
+    -- V3N + 1 < 2^64 (from Case B and D ≥ 2^63).
+    have hV3N_succ_lt : V3N + 1 < 2 ^ 64 := by
+      -- (2^65 - 1) * D ≥ 2^128 - D - 1 would require V3N = 2^64 - 1 in Case B, but D ≥ 2^63 gives contradiction.
+      by_contra habs
+      push Not at habs
+      have hV3N_eq : V3N = 2 ^ 64 - 1 := by omega
+      -- (2^64 + V3N) * D = (2^65 - 1) * D = 2^65 * D - D.
+      -- Case B: (2^65 - 1) * D ≤ 2^128 - D - 1, so 2^65 * D ≤ 2^128 - 1, so D ≤ (2^128 - 1)/2^65 < 2^63. Contradicts D ≥ 2^63.
+      have : 2 ^ 65 * D ≤ 2 ^ 128 - 1 := by
+        have := hV3D_le_nat
+        rw [hV3N_eq] at this
+        have h2 : 2 ^ 64 + (2 ^ 64 - 1) = 2 ^ 65 - 1 := by norm_num
+        rw [h2] at this
+        have : (2 ^ 65 - 1) * D + D + 1 ≤ 2 ^ 128 := this
+        have h3 : (2 ^ 65 - 1) * D + D = 2 ^ 65 * D := by ring
+        omega
+      omega
+    -- (2^64 + V3N)*D = 2^64*(D + HI) + LON.
+    have hmul_expand : (2 ^ 64 + V3N) * D = 2 ^ 64 * (D + HI) + LON := by
+      have : (2 ^ 64 + V3N) * D = 2 ^ 64 * D + V3N * D := by ring
+      rw [this, ← hwide]; ring
+    rw [hmul_expand] at hV3D_le_nat hV3D_gt_nat
+    -- 2^128 - 2*D + 1 ≤ 2^64*(D+HI) + LON ≤ 2^128 - D - 1.
+    -- So D + HI ∈ {2^64 - 2, 2^64 - 1}.
+    have hDHI_range : D + HI = 2 ^ 64 - 1 ∨ D + HI = 2 ^ 64 - 2 := by omega
+    -- In either case, HI + D + carryN = 2^64 - 1.
+    have hHDsum : HI + D + carryN = 2 ^ 64 - 1 := by
+      rcases hDHI_range with h | h
+      · -- D + HI = 2^64 - 1: then LON ≤ 2^64 - D - 1 < 2^64 - D, so LON + D < 2^64, carryN = 0.
+        have hLON_bound : LON ≤ 2 ^ 64 - D - 1 := by
+          rw [h] at hV3D_le_nat; omega
+        have hnot : ¬ 2 ^ 64 ≤ LON + D := by omega
+        have hcarryN_val : carryN = 0 := by rw [hcarryN_def]; rw [if_neg hnot]
+        omega
+      · -- D + HI = 2^64 - 2: then LON ≥ 2^64 + ... and LON + D ≥ 2^64, carryN = 1.
+        -- hV3D_gt_nat: 2^128 < 2^64*(D+HI) + LON + 2*D = 2^128 - 2*2^64 + LON + 2*D, so LON > 2*2^64 - 2*D.
+        have hLON_large : 2 * 2 ^ 64 - 2 * D + 1 ≤ LON := by
+          rw [h] at hV3D_gt_nat
+          have : 2 ^ 128 + 1 ≤ 2 ^ 64 * (2 ^ 64 - 2) + LON + 2 * D := by omega
+          have h2 : 2 ^ 64 * (2 ^ 64 - 2) = 2 ^ 128 - 2 * 2 ^ 64 := by ring
+          omega
+        -- D ≥ 2^63, so 2 * 2^64 - 2*D ≤ 2*2^64 - 2*2^63 = 2^64, so LON ≥ 2^64 - something.
+        have hLON_plus_D : 2 ^ 64 ≤ LON + D := by
+          -- LON ≥ 2*2^64 - 2*D + 1, so LON + D ≥ 2*2^64 - D + 1 ≥ 2^64 + 1 (since D ≤ 2^64 - 1).
+          omega
+        have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [if_pos hLON_plus_D]
+        omega
+    -- hk_eq: V4N + D + HI + carryN = V3N + kN * 2^64, with HI + D + carryN = 2^64 - 1.
+    -- So V4N + 2^64 - 1 = V3N + kN * 2^64, V4N = V3N + 1 + (kN - 1)*2^64.
+    -- With V4N, V3N+1 < 2^64 and V4N ≥ 0: kN = 1 and V4N = V3N + 1.
+    have hV4_eq : V4N = V3N + 1 := by
+      have hh : V4N + (HI + D + carryN) = V3N + kN * 2 ^ 64 := by
+        have := hk_eq_nat; omega
+      rw [hHDsum] at hh
+      omega
+    rw [hV4_eq]
+    -- e4 = 2^128 - (2^64 + V3N + 1) * D = e3 - D.
+    have he4_eq_Z : (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (V3N + 1 : ℕ)) * D
+        = (2 ^ 128 - (2 ^ 64 + (V3N : ℤ)) * D) - D := by push_cast; ring
+    rw [he4_eq_Z]
+    refine ⟨?_, ?_⟩
+    · linarith
+    · linarith
+
+/-- Bound 10 from Möller–Granlund: `0 < e4 ≤ d`, assuming `d` is normalized
+(`2^63 ≤ d`). -/
+theorem e4_pos_and_le (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
+    0 < e4 d hd ∧ e4 d hd ≤ d.toNat := by
+  obtain ⟨he3_pos, he3_lt⟩ := e3_pos_and_lt d hd
+  set D : ℕ := d.toNat with hD_def
+  set v2' : UInt64 :=
+    computeV2
+      (computeV1 (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)) (computeD40 d))
+      (computeD40 d) with hv2'_def
+  set e' : UInt64 := computeE v2' (computeD63 d) (computeD0 d) with he'_def
+  set v3' : UInt64 := computeV3 v2' e' with hv3'_def
+  set V3N : ℕ := v3'.toNat with hV3N_def
+  set v4' : UInt64 := computeV4 v3' d with hv4'_def
+  set V4N : ℕ := v4'.toNat with hV4N_def
+  set HIN : ℕ := (wideMul v3' d).1.toNat with hHIN_def
+  set LON : ℕ := (wideMul v3' d).2.toNat with hLON_def
+  have hD_lt : D < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hD_ge : 2 ^ 63 ≤ D := hd
+  have hV3_lt : V3N < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hV4_lt : V4N < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hHI_lt : HIN < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hLO_lt : LON < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  set carryN : ℕ := if 2 ^ 64 ≤ LON + D then 1 else 0 with hcarryN_def
+  have hwide : HIN * 2 ^ 64 + LON = V3N * D := toNat_wideMul v3' d
+  have hV4mod : (V4N + D + HIN + carryN) % 2 ^ 64 = V3N :=
+    computeV4_add_mod_eq v3' d
+  have he3_val : e3 d hd = (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (V3N : ℤ)) * (D : ℤ) := rfl
+  have he4_val : e4 d hd = (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (V4N : ℤ)) * (D : ℤ) := rfl
+  rw [he3_val] at he3_pos he3_lt
+  rw [he4_val]
+  exact e4_core V3N V4N D HIN LON carryN hD_lt hD_ge hV3_lt hV4_lt hHI_lt hLO_lt
+    hcarryN_def hwide hV4mod he3_pos he3_lt
+
 end UInt64
