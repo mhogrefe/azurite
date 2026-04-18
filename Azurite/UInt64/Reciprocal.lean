@@ -41,6 +41,10 @@ theorem reciprocalTable_eq :
 #guard reciprocalTable[0]! = 2045     -- d_9 = 256
 #guard reciprocalTable[255]! = 1024   -- d_9 = 511
 
+/-- The reciprocal lookup table has exactly 256 entries. -/
+theorem reciprocalTable_size : reciprocalTable.size = 256 := by
+  set_option maxRecDepth 2000 in decide
+
 /-- `d_0 = d mod 2` — the least significant bit of `d`. -/
 @[inline]
 def computeD0 (d : UInt64) : UInt64 := d &&& 1
@@ -58,10 +62,12 @@ def computeD40 (d : UInt64) : UInt64 := (d >>> 24) + 1
 @[inline]
 def computeD63 (d : UInt64) : UInt64 := d.shiftRightRound .Ceiling 1
 
-/-- `v_0 = reciprocalTable[d_9 − 256]` — initial 11-bit reciprocal estimate. -/
+/-- `v_0 = reciprocalTable[d_9 − 256]` — initial 11-bit reciprocal estimate.
+The hypothesis `h` witnesses that the index fits: holds whenever `d_9 ∈ [256, 511]`,
+i.e. whenever `d` is normalized (top bit set). -/
 @[inline]
-def computeV0 (d9 : UInt64) : UInt16 :=
-  reciprocalTable[(d9 - 256).toNat]!
+def computeV0 (d9 : UInt64) (h : (d9 - 256).toNat < 256) : UInt16 :=
+  reciprocalTable[(d9 - 256).toNat]'(reciprocalTable_size.symm ▸ h)
 
 /-- `v_1 = 2^{11} v_0 − ⌊2^{−40} v_0^2 d_{40}⌋ − 1` — second reciprocal estimate.
 Uses two 64-bit low multiplications: `v_0 · v_0` (≤ 2^22) and `(v_0^2) · d_{40}`
@@ -114,14 +120,45 @@ def computeV4 (v3 d : UInt64) : UInt64 :=
   let carry : UInt64 := if lo' < d then 1 else 0
   v3 - d - hi - carry
 
+/-- When `d` is normalized (`2^63 ≤ d`), `(computeD9 d - 256).toNat < 256`.
+This is the precondition needed for the `computeV0` lookup. -/
+theorem computeD9_sub_256_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
+    ((computeD9 d) - 256).toNat < 256 := by
+  have h_d9 : (computeD9 d).toNat = d.toNat / 2 ^ 55 := by
+    unfold computeD9
+    rw [_root_.UInt64.toNat_shiftRight]
+    have h55 : ((55 : UInt64).toNat) = 55 := rfl
+    rw [h55, Nat.shiftRight_eq_div_pow]
+  have hd_lt : d.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have h_lo : 256 ≤ (computeD9 d).toNat := by
+    rw [h_d9]
+    calc 256 = 2 ^ 63 / 2 ^ 55 := by norm_num
+      _ ≤ d.toNat / 2 ^ 55 := Nat.div_le_div_right hd
+  have h_hi : (computeD9 d).toNat ≤ 511 := by
+    rw [h_d9]
+    have h1 : d.toNat / 2 ^ 55 * 2 ^ 55 ≤ d.toNat := Nat.div_mul_le_self _ _
+    have h2pow : (2 : ℕ) ^ 64 = 2 ^ 9 * 2 ^ 55 := by norm_num
+    have hlt : d.toNat / 2 ^ 55 * 2 ^ 55 < 2 ^ 64 := lt_of_le_of_lt h1 hd_lt
+    rw [h2pow] at hlt
+    have : d.toNat / 2 ^ 55 < 2 ^ 9 := Nat.lt_of_mul_lt_mul_right hlt
+    omega
+  rw [_root_.UInt64.toNat_sub]
+  show (2 ^ 64 - (256 : UInt64).toNat + (computeD9 d).toNat) % 2 ^ 64 < 256
+  have h256' : ((256 : UInt64).toNat) = 256 := rfl
+  rw [h256']
+  have hstep : 2 ^ 64 - 256 + (computeD9 d).toNat
+      = 2 ^ 64 + ((computeD9 d).toNat - 256) := by omega
+  rw [hstep, Nat.add_mod_left, Nat.mod_eq_of_lt (by omega)]
+  omega
+
 /-- Algorithm 2 (RECIPROCAL_WORD) of Möller–Granlund: given a normalized 64-bit
 divisor `d` (i.e. `2^{63} ≤ d < 2^{64}`), return `v = ⌊(2^{128} − 1) / d⌋ − 2^{64}`. -/
-def reciprocal (d : UInt64) : UInt64 :=
+def reciprocal (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : UInt64 :=
   let d0  := computeD0 d
   let d9  := computeD9 d
   let d40 := computeD40 d
   let d63 := computeD63 d
-  let v0  := computeV0 d9
+  let v0  := computeV0 d9 (computeD9_sub_256_lt d hd)
   let v1  := computeV1 v0 d40
   let v2  := computeV2 v1 d40
   let e   := computeE v2 d63 d0

@@ -1,5 +1,6 @@
 import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Reciprocal
+import Mathlib.Tactic.LinearCombination
 
 namespace UInt64
 
@@ -82,22 +83,21 @@ theorem computeD40_split (d : UInt64) (_hd : 2 ^ 63 ≤ d.toNat) :
   refine ⟨?_, ?_, ?_⟩ <;> omega
 
 set_option maxRecDepth 2000 in
-/-- `(computeV0 d9).toNat = (2^19 − 3·2^8) / d9.toNat` when `d9 ∈ [256, 511]`. -/
-theorem toNat_computeV0 (d9 : UInt64) (h256 : 256 ≤ d9.toNat) (h511 : d9.toNat ≤ 511) :
-    (computeV0 d9).toNat = (2 ^ 19 - 3 * 2 ^ 8) / d9.toNat := by
+/-- `(computeV0 d9 h).toNat = (2^19 − 3·2^8) / d9.toNat` when `d9 ∈ [256, 511]`. -/
+theorem toNat_computeV0 (d9 : UInt64) (h : (d9 - 256).toNat < 256)
+    (h256 : 256 ≤ d9.toNat) (h511 : d9.toNat ≤ 511) :
+    (computeV0 d9 h).toNat = (2 ^ 19 - 3 * 2 ^ 8) / d9.toNat := by
   unfold computeV0
+  have hsize : (d9 - 256).toNat < reciprocalTable.size :=
+    reciprocalTable_size.symm ▸ h
+  -- Convert proof-bounded access to `[...]!` so the rewrite below goes through.
+  rw [show reciprocalTable[(d9 - 256).toNat]'hsize
+        = reciprocalTable[(d9 - 256).toNat]! from
+      (getElem!_pos reciprocalTable (d9 - 256).toNat hsize).symm]
   rw [reciprocalTable_eq]
-  have hidx_lt : (d9 - 256).toNat < 256 := by
-    rw [_root_.UInt64.toNat_sub]
-    show (2 ^ 64 - (256 : UInt64).toNat + d9.toNat) % 2 ^ 64 < 256
-    have h256' : ((256 : UInt64).toNat) = 256 := rfl
-    rw [h256']
-    have : 2 ^ 64 - 256 + d9.toNat = 2 ^ 64 + (d9.toNat - 256) := by omega
-    rw [this, Nat.add_mod_left, Nat.mod_eq_of_lt (by omega)]
-    omega
   have hidx_size : (d9 - 256).toNat < (Array.ofFn (n := 256)
       fun i => ((2 ^ 19 - 3 * 2 ^ 8) / (i.val + 256) : Nat).toUInt16).size := by
-    simpa using hidx_lt
+    simpa using h
   rw [getElem!_pos _ (d9 - 256).toNat hidx_size, Array.getElem_ofFn]
   have hsub_eq : (d9 - 256).toNat + 256 = d9.toNat := by
     rw [_root_.UInt64.toNat_sub]
@@ -119,18 +119,19 @@ theorem toNat_computeV0 (d9 : UInt64) (h256 : 256 ≤ d9.toNat) (h511 : d9.toNat
 /-! ### The error `e0 = 2^50 − v_0 d_{40}` and Bound 6. -/
 
 /-- `e0 = 2^50 − v_0 · d_{40}` as an integer (can be negative). -/
-def e0 (d : UInt64) : ℤ :=
+def e0 (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : ℤ :=
   (2 ^ 50 : ℤ) -
-    ((computeV0 (computeD9 d)).toNat : ℤ) * ((computeD40 d).toNat : ℤ)
+    ((computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)).toNat : ℤ)
+      * ((computeD40 d).toNat : ℤ)
 
 /-- Bound 6 from Möller–Granlund: `|e0| < 5·2^39` (i.e. `(5/8)·2^42`), assuming
 `d` is normalized (`2^63 ≤ d`). -/
 theorem abs_e0_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
-    |e0 d| < 5 * 2 ^ 39 := by
+    |e0 d hd| < 5 * 2 ^ 39 := by
   -- Set up Nat variables for d9, d40, v0.
   set d9 := (computeD9 d).toNat with hd9_def
   set d40 := (computeD40 d).toNat with hd40_def
-  set v0 := (computeV0 (computeD9 d)).toNat with hv0_def
+  set v0 := (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)).toNat with hv0_def
   -- Bounds on d9.
   obtain ⟨hd9_lo, hd9_hi⟩ := computeD9_bounds d hd
   -- Bounds on d40, and the split d40 = 2^31·d9 + d'.
@@ -138,7 +139,8 @@ theorem abs_e0_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
   obtain ⟨hd40_split, hd'_lo, hd'_hi⟩ := computeD40_split d hd
   set d' := d40 - 2 ^ 31 * d9 with hd'_def
   -- v0 = T / d9 where T = 2^19 - 3·2^8.
-  have hv0_eq : v0 = (2 ^ 19 - 3 * 2 ^ 8) / d9 := toNat_computeV0 _ hd9_lo hd9_hi
+  have hv0_eq : v0 = (2 ^ 19 - 3 * 2 ^ 8) / d9 :=
+    toNat_computeV0 _ (computeD9_sub_256_lt d hd) hd9_lo hd9_hi
   set T : ℕ := 2 ^ 19 - 3 * 2 ^ 8 with hT_def
   set r : ℕ := T % d9 with hr_def
   have hT_val : T = 523520 := by norm_num [hT_def]
@@ -269,23 +271,25 @@ theorem toNat_computeV1 (v0 : UInt16) (d40 : UInt64)
   omega
 
 /-- `e1 = 2^60 − v_1 · d_{40}` as an integer. -/
-def e1 (d : UInt64) : ℤ :=
+def e1 (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : ℤ :=
   (2 ^ 60 : ℤ) -
-    ((computeV1 (computeV0 (computeD9 d)) (computeD40 d)).toNat : ℤ) *
+    ((computeV1 (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd))
+        (computeD40 d)).toNat : ℤ) *
     ((computeD40 d).toNat : ℤ)
 
 set_option maxHeartbeats 400000 in
 /-- Bound 7 from Möller–Granlund: `0 < e1 < 29·2^38` (i.e. `(29/32)·2^43`),
 assuming `d` is normalized (`2^63 ≤ d`). -/
 theorem e1_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
-    0 < e1 d ∧ e1 d < 29 * 2 ^ 38 := by
+    0 < e1 d hd ∧ e1 d hd < 29 * 2 ^ 38 := by
   set d9 := (computeD9 d).toNat with hd9_def
   set d40 := (computeD40 d).toNat with hd40_def
-  set v0 := computeV0 (computeD9 d) with hv0_def
+  set v0 := computeV0 (computeD9 d) (computeD9_sub_256_lt d hd) with hv0_def
   set V : ℕ := v0.toNat with hV_def
   obtain ⟨hd9_lo, hd9_hi⟩ := computeD9_bounds d hd
   obtain ⟨hd40_lo, hd40_hi⟩ := computeD40_bounds d hd
-  have hV_eq : V = (2 ^ 19 - 3 * 2 ^ 8) / d9 := toNat_computeV0 _ hd9_lo hd9_hi
+  have hV_eq : V = (2 ^ 19 - 3 * 2 ^ 8) / d9 :=
+    toNat_computeV0 _ (computeD9_sub_256_lt d hd) hd9_lo hd9_hi
   have hV_le : V ≤ 2045 := by
     have h1 : (2 ^ 19 - 3 * 2 ^ 8) / d9 ≤ (2 ^ 19 - 3 * 2 ^ 8) / 256 :=
       Nat.div_le_div_left hd9_lo (by norm_num)
@@ -293,7 +297,7 @@ theorem e1_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
     omega
   -- Bound 6 gives |e0| < 5·2^39.
   have habs := abs_e0_lt d hd
-  have he0_def : e0 d = (2 ^ 50 : ℤ) - (V : ℤ) * (d40 : ℤ) := rfl
+  have he0_def : e0 d hd = (2 ^ 50 : ℤ) - (V : ℤ) * (d40 : ℤ) := rfl
   rw [he0_def, abs_lt] at habs
   obtain ⟨he0_lo, he0_hi⟩ := habs
   -- V · d40 < 2^51.
@@ -394,5 +398,280 @@ theorem e1_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
       linarith [h_sum_lt, hprod_eq]
     exact lt_of_mul_lt_mul_left h_conv (le_of_lt h240_pos)
   exact ⟨hE1_pos, hE1_lt⟩
+
+/-! ### The error `e2 = 2^97 − v_2 d` and Bound 8. -/
+
+/-- `toNat` identity for `computeV2`, assuming no overflow.
+The hypotheses are those satisfied along the Möller–Granlund path:
+`v_1 < 2^{21}`, `d_{40} ≤ 2^{40}`, `v_1 · d_{40} ≤ 2^{60}` (so `e_1 ≥ 0`), and
+`v_1 · (2^{60} − v_1 d_{40}) < 2^{64}` (which follows from Bound 7). -/
+theorem toNat_computeV2 (v1 d40 : UInt64)
+    (hv1 : v1.toNat < 2 ^ 21)
+    (h_vd_le : v1.toNat * d40.toNat ≤ 2 ^ 60)
+    (h_prod_lt : v1.toNat * (2 ^ 60 - v1.toNat * d40.toNat) < 2 ^ 64) :
+    (computeV2 v1 d40).toNat =
+      v1.toNat * 2 ^ 13 +
+      v1.toNat * (2 ^ 60 - v1.toNat * d40.toNat) / 2 ^ 47 := by
+  set V : ℕ := v1.toNat with hV_def
+  set D : ℕ := d40.toNat with hD_def
+  have hform : computeV2 v1 d40 =
+      v1 <<< 13 + (v1 * (((1 : UInt64) <<< 60) - v1 * d40)) >>> 47 := by
+    unfold computeV2; rfl
+  rw [hform]
+  have hVD_lt64 : V * D < 2 ^ 64 := by
+    have h : (2 : ℕ) ^ 60 < 2 ^ 64 := by norm_num
+    omega
+  have hvd : (v1 * d40).toNat = V * D := by
+    rw [_root_.UInt64.toNat_mul]; exact Nat.mod_eq_of_lt hVD_lt64
+  have h_one_shl : ((1 : UInt64) <<< 60).toNat = 2 ^ 60 := by native_decide
+  have h_e : (((1 : UInt64) <<< 60) - v1 * d40).toNat = 2 ^ 60 - V * D := by
+    rw [_root_.UInt64.toNat_sub, hvd, h_one_shl]; omega
+  have hprod : (v1 * (((1 : UInt64) <<< 60) - v1 * d40)).toNat =
+      V * (2 ^ 60 - V * D) := by
+    rw [_root_.UInt64.toNat_mul, h_e]; exact Nat.mod_eq_of_lt h_prod_lt
+  have h47 : ((47 : UInt64).toNat) = 47 := rfl
+  have hshr : ((v1 * (((1 : UInt64) <<< 60) - v1 * d40)) >>> 47).toNat =
+      V * (2 ^ 60 - V * D) / 2 ^ 47 := by
+    rw [_root_.UInt64.toNat_shiftRight, hprod, h47]
+    show (V * (2 ^ 60 - V * D)) >>> ((47 : ℕ) % 64) = _
+    rw [show (47 : ℕ) % 64 = 47 from rfl, Nat.shiftRight_eq_div_pow]
+  have h13 : ((13 : UInt64).toNat) = 13 := rfl
+  have hV_2_13_lt : V * 2 ^ 13 < 2 ^ 64 := by nlinarith [hv1]
+  have hshl : (v1 <<< 13).toNat = V * 2 ^ 13 := by
+    rw [_root_.UInt64.toNat_shiftLeft, h13]
+    show V <<< ((13 : ℕ) % 64) % 2 ^ 64 = V * 2 ^ 13
+    rw [show (13 : ℕ) % 64 = 13 from rfl, Nat.shiftLeft_eq]
+    exact Nat.mod_eq_of_lt hV_2_13_lt
+  have hdiv_lt : V * (2 ^ 60 - V * D) / 2 ^ 47 < 2 ^ 17 := by
+    apply Nat.div_lt_of_lt_mul
+    have h64 : (2 : ℕ) ^ 17 * 2 ^ 47 = 2 ^ 64 := by norm_num
+    omega
+  have hsum_lt : V * 2 ^ 13 + V * (2 ^ 60 - V * D) / 2 ^ 47 < 2 ^ 64 := by
+    nlinarith [hv1, hdiv_lt]
+  rw [_root_.UInt64.toNat_add, hshl, hshr]
+  exact Nat.mod_eq_of_lt hsum_lt
+
+/-- `e2 = 2^97 − v_2 · d` as an integer. -/
+def e2 (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : ℤ :=
+  (2 ^ 97 : ℤ) -
+    ((computeV2
+        (computeV1 (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd))
+                   (computeD40 d))
+        (computeD40 d)).toNat : ℤ) * (d.toNat : ℤ)
+
+set_option maxHeartbeats 800000 in
+/-- Bound 8 from Möller–Granlund: `0 < e2 < (873/1024)·2^63 + d`, i.e.,
+`0 < e2 < 873·2^53 + d`, assuming `d` is normalized (`2^63 ≤ d`). -/
+theorem e2_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
+    0 < e2 d hd ∧ e2 d hd < 873 * 2 ^ 53 + d.toNat := by
+  obtain ⟨hE1_pos, hE1_lt⟩ := e1_pos_and_lt d hd
+  set D : ℕ := d.toNat with hD_def
+  set d40N : ℕ := (computeD40 d).toNat with hd40N_def
+  set v1 : UInt64 := computeV1 (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd))
+    (computeD40 d) with hv1_def
+  set V1N : ℕ := v1.toNat with hV1N_def
+  obtain ⟨hd40N_lo, hd40N_hi⟩ := computeD40_bounds d hd
+  -- Unfold e1 in bounds.
+  have hE1_val : e1 d hd = (2 ^ 60 : ℤ) - (V1N : ℤ) * d40N := rfl
+  rw [hE1_val] at hE1_pos hE1_lt
+  -- V1*d40 bounds (Nat).
+  have hV1d40_lt_int : (V1N : ℤ) * d40N < 2 ^ 60 := by linarith
+  have hV1d40_lt : V1N * d40N < 2 ^ 60 := by exact_mod_cast hV1d40_lt_int
+  have hV1d40_le : V1N * d40N ≤ 2 ^ 60 := le_of_lt hV1d40_lt
+  have he1_nat_lt : 2 ^ 60 - V1N * d40N < 29 * 2 ^ 38 := by
+    have h1 : ((2 ^ 60 - V1N * d40N : ℕ) : ℤ) = (2 ^ 60 : ℤ) - V1N * d40N := by
+      rw [Int.ofNat_sub hV1d40_le]; push_cast; ring
+    have h2 : ((2 ^ 60 - V1N * d40N : ℕ) : ℤ) < 29 * 2 ^ 38 := by rw [h1]; linarith
+    exact_mod_cast h2
+  -- V1 < 2^21.
+  have hV1_lt : V1N < 2 ^ 21 := by
+    by_contra h
+    have h' : 2 ^ 21 ≤ V1N := not_lt.mp h
+    have h1 : 2 ^ 21 * (2 ^ 39 + 1) ≤ V1N * d40N := Nat.mul_le_mul h' hd40N_lo
+    have h2 : (2 : ℕ) ^ 21 * (2 ^ 39 + 1) > 2 ^ 60 := by norm_num
+    omega
+  -- V1 * (2^60 - V1*d40) < 2^64.
+  have hprod_lt : V1N * (2 ^ 60 - V1N * d40N) < 2 ^ 64 := by
+    have hle : (2 ^ 60 - V1N * d40N) ≤ 29 * 2 ^ 38 := by omega
+    have h1 : V1N * (2 ^ 60 - V1N * d40N) ≤ V1N * (29 * 2 ^ 38) :=
+      Nat.mul_le_mul_left _ hle
+    have h2 : V1N * (29 * 2 ^ 38) < 2 ^ 21 * (29 * 2 ^ 38) :=
+      (Nat.mul_lt_mul_right (by norm_num : (0 : ℕ) < 29 * 2 ^ 38)).mpr hV1_lt
+    have h3 : (2 : ℕ) ^ 21 * (29 * 2 ^ 38) < 2 ^ 64 := by norm_num
+    linarith
+  -- V2 Nat form.
+  have hV2_eq : (computeV2 v1 (computeD40 d)).toNat =
+      V1N * 2 ^ 13 + V1N * (2 ^ 60 - V1N * d40N) / 2 ^ 47 :=
+    toNat_computeV2 v1 (computeD40 d) hV1_lt hV1d40_le hprod_lt
+  -- q2, r2 as Nat.
+  set q2N : ℕ := V1N * (2 ^ 60 - V1N * d40N) / 2 ^ 47 with hq2N_def
+  set r2N : ℕ := V1N * (2 ^ 60 - V1N * d40N) % 2 ^ 47 with hr2N_def
+  have hr2N_lt : r2N < 2 ^ 47 := Nat.mod_lt _ (by norm_num)
+  have hVE_nat : V1N * (2 ^ 60 - V1N * d40N) = q2N * 2 ^ 47 + r2N := by
+    have := Nat.div_add_mod (V1N * (2 ^ 60 - V1N * d40N)) (2 ^ 47)
+    omega
+  -- D'N in ℕ: 2^24 * d40 = D + D'N, 1 ≤ D'N ≤ 2^24.
+  have hd40N_eq : d40N = D / 2 ^ 24 + 1 := toNat_computeD40 d
+  set D'N : ℕ := 2 ^ 24 * d40N - D with hD'N_def
+  have hDmod_lt : D % 2 ^ 24 < 2 ^ 24 := Nat.mod_lt _ (by norm_num)
+  have hD_divmod : D = 2 ^ 24 * (D / 2 ^ 24) + D % 2 ^ 24 :=
+    (Nat.div_add_mod D (2 ^ 24)).symm
+  have hD_le : D ≤ 2 ^ 24 * d40N := by rw [hd40N_eq]; linarith
+  have hDD'N : 2 ^ 24 * d40N = D + D'N := by omega
+  have hD'N_pos : 1 ≤ D'N := by
+    have h1 : 2 ^ 24 * d40N = 2 ^ 24 * (D / 2 ^ 24) + 2 ^ 24 := by rw [hd40N_eq]; ring
+    omega
+  have hD'N_hi : D'N ≤ 2 ^ 24 := by
+    have h1 : 2 ^ 24 * d40N = 2 ^ 24 * (D / 2 ^ 24) + 2 ^ 24 := by rw [hd40N_eq]; ring
+    omega
+  -- Change goal to integer form using hV2_eq.
+  show 0 < e2 d hd ∧ e2 d hd < 873 * 2 ^ 53 + (D : ℤ)
+  unfold e2
+  rw [hV2_eq, ← hD_def]
+  -- Integer variables.
+  set V1_Z : ℤ := (V1N : ℤ) with hV1_Z_def
+  set d40_Z : ℤ := (d40N : ℤ) with hd40_Z_def
+  set D_Z : ℤ := (D : ℤ) with hD_Z_def
+  set q2_Z : ℤ := (q2N : ℤ) with hq2_Z_def
+  set r2_Z : ℤ := (r2N : ℤ) with hr2_Z_def
+  set D'_Z : ℤ := 2 ^ 24 * d40_Z - D_Z with hD'_Z_def
+  set E1_Z : ℤ := 2 ^ 60 - V1_Z * d40_Z with hE1_Z_def
+  -- Bounds on integer quantities.
+  have hV1_Z_nn : 0 ≤ V1_Z := Int.natCast_nonneg _
+  have hd40_Z_nn : 0 ≤ d40_Z := Int.natCast_nonneg _
+  have hV1_Z_lt : V1_Z < 2 ^ 21 := by
+    show (V1N : ℤ) < 2 ^ 21; exact_mod_cast hV1_lt
+  have hd40_Z_lo : (2 : ℤ) ^ 39 + 1 ≤ d40_Z := by
+    show (2 : ℤ) ^ 39 + 1 ≤ (d40N : ℤ); exact_mod_cast hd40N_lo
+  have hd40_Z_hi : d40_Z ≤ 2 ^ 40 := by
+    show (d40N : ℤ) ≤ 2 ^ 40; exact_mod_cast hd40N_hi
+  have hD_Z_pos : 0 < D_Z := by
+    have : (2 : ℤ) ^ 63 ≤ D_Z := by
+      show (2 : ℤ) ^ 63 ≤ (D : ℤ); exact_mod_cast hd
+    linarith [show (2 : ℤ) ^ 63 > 0 by norm_num]
+  have hD_Z_nn : 0 ≤ D_Z := le_of_lt hD_Z_pos
+  have hr2_Z_nn : 0 ≤ r2_Z := Int.natCast_nonneg _
+  have hr2_Z_lt : r2_Z < 2 ^ 47 := by
+    show (r2N : ℤ) < 2 ^ 47; exact_mod_cast hr2N_lt
+  have hE1_Z_pos : 0 < E1_Z := hE1_pos
+  have hE1_Z_lt : E1_Z < 29 * 2 ^ 38 := hE1_lt
+  have hE1_Z_le : 1 ≤ E1_Z := hE1_Z_pos
+  -- D' bounds (integer).
+  have hD'_Z_eq_nat : D'_Z = (D'N : ℤ) := by
+    rw [hD'_Z_def]
+    have h_eq : 2 ^ 24 * d40_Z - D_Z = ((2 ^ 24 * d40N - D : ℕ) : ℤ) := by
+      rw [Int.ofNat_sub hD_le]; push_cast; ring
+    rw [h_eq]
+  have hD'_Z_lo : 1 ≤ D'_Z := by rw [hD'_Z_eq_nat]; exact_mod_cast hD'N_pos
+  have hD'_Z_hi : D'_Z ≤ 2 ^ 24 := by rw [hD'_Z_eq_nat]; exact_mod_cast hD'N_hi
+  have hD'_Z_nn : 0 ≤ D'_Z := by linarith
+  -- Integer form of hVE_nat.
+  have hVE_Z : V1_Z * E1_Z = q2_Z * 2 ^ 47 + r2_Z := by
+    have h_cast : ((V1N * (2 ^ 60 - V1N * d40N) : ℕ) : ℤ)
+        = ((q2N * 2 ^ 47 + r2N : ℕ) : ℤ) := by exact_mod_cast hVE_nat
+    have h_LHS : ((V1N * (2 ^ 60 - V1N * d40N) : ℕ) : ℤ) = V1_Z * E1_Z := by
+      rw [Nat.cast_mul, Int.ofNat_sub hV1d40_le]; push_cast; ring
+    have h_RHS : ((q2N * 2 ^ 47 + r2N : ℕ) : ℤ) = q2_Z * 2 ^ 47 + r2_Z := by
+      push_cast; ring
+    rw [h_LHS, h_RHS] at h_cast; exact h_cast
+  -- D relation.
+  have hDZ_eq : D_Z = 2 ^ 24 * d40_Z - D'_Z := by linarith [hD'_Z_def]
+  have hE1_eq : E1_Z = 2 ^ 60 - V1_Z * d40_Z := hE1_Z_def
+  -- Key integer identity.
+  have hKey : (2 ^ 47 : ℤ) * (2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z)
+      = 2 ^ 24 * E1_Z ^ 2 + V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z + r2_Z * D_Z := by
+    have h_cast_V2 : ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) = V1_Z * 2 ^ 13 + q2_Z := by
+      push_cast; ring
+    rw [h_cast_V2]
+    rw [hE1_eq, hDZ_eq]
+    linear_combination (2 ^ 24 * d40_Z - D'_Z) * hVE_Z
+  -- Lower bound: 0 < e2.
+  have hE1_sq_pos : (1 : ℤ) ≤ E1_Z ^ 2 := by
+    have h1 : (1 : ℤ) * 1 ≤ E1_Z * E1_Z :=
+      mul_le_mul hE1_Z_le hE1_Z_le (by norm_num) (by linarith)
+    rw [sq]; linarith
+  have h_term1_pos : (0 : ℤ) < 2 ^ 24 * E1_Z ^ 2 := by
+    have h224 : (0 : ℤ) < 2 ^ 24 := by norm_num
+    have := mul_lt_mul_of_pos_left (by linarith : (0 : ℤ) < E1_Z ^ 2) h224
+    linarith
+  have hV1f_nn : (0 : ℤ) ≤ V1_Z * (2 ^ 61 - V1_Z * d40_Z) := by
+    have hfactor : (0 : ℤ) ≤ 2 ^ 61 - V1_Z * d40_Z := by
+      have : V1_Z * d40_Z < 2 ^ 60 := by linarith
+      linarith
+    exact mul_nonneg hV1_Z_nn hfactor
+  have h_term2_nn : (0 : ℤ) ≤ V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z :=
+    mul_nonneg hV1f_nn hD'_Z_nn
+  have h_term3_nn : (0 : ℤ) ≤ r2_Z * D_Z := mul_nonneg hr2_Z_nn hD_Z_nn
+  have h_2_47_pos : (0 : ℤ) < 2 ^ 47 := by norm_num
+  have hE2_pos_mul : (0 : ℤ) < 2 ^ 47
+      * (2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z) := by
+    rw [hKey]; linarith
+  have hE2_pos : (0 : ℤ) < 2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z := by
+    by_contra h
+    have hle : 2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z ≤ 0 := not_lt.mp h
+    have : 2 ^ 47 * (2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z) ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos (le_of_lt h_2_47_pos) hle
+    linarith
+  -- Upper bound: e2 < 873*2^53 + D.
+  -- (A) 2^24 * E1^2 < 841 * 2^100.
+  have h_term1_lt : 2 ^ 24 * E1_Z ^ 2 < 841 * 2 ^ 100 := by
+    have hE1_nn : 0 ≤ E1_Z := le_of_lt hE1_Z_pos
+    have hE1_sq_lt : E1_Z ^ 2 < (29 * 2 ^ 38) ^ 2 := by
+      rw [sq, sq]
+      exact mul_lt_mul'' hE1_Z_lt hE1_Z_lt hE1_nn hE1_nn
+    have h29_sq : ((29 : ℤ) * 2 ^ 38) ^ 2 = 841 * 2 ^ 76 := by ring
+    have h2_24_pos : (0 : ℤ) < 2 ^ 24 := by norm_num
+    have h_shift : 2 ^ 24 * E1_Z ^ 2 < 2 ^ 24 * (29 * 2 ^ 38) ^ 2 :=
+      mul_lt_mul_of_pos_left hE1_sq_lt h2_24_pos
+    have h_rewrite : (2 : ℤ) ^ 24 * ((29 * 2 ^ 38) ^ 2) = 841 * 2 ^ 100 := by ring
+    linarith
+  -- (B) V1*(2^61 - V1*d40)*D' < 2^105.
+  have h_term2_lt : V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z < 2 ^ 105 := by
+    -- AM-GM: V1*d40 * (2^61 - V1*d40) ≤ 2^120. Via (V1*d40 - 2^60)^2 ≥ 0.
+    have h_amgm : V1_Z * d40_Z * (2 ^ 61 - V1_Z * d40_Z) ≤ 2 ^ 120 := by
+      nlinarith [sq_nonneg (V1_Z * d40_Z - 2 ^ 60)]
+    -- Multiply by D' ≥ 0: V1*d40*(2^61 - V1*d40) * D' ≤ 2^120 * D'.
+    have h_step1 : V1_Z * d40_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z ≤ 2 ^ 120 * D'_Z :=
+      mul_le_mul_of_nonneg_right h_amgm hD'_Z_nn
+    -- D' ≤ 2^24, so 2^120 * D' ≤ 2^144.
+    have h_step2 : (2 : ℤ) ^ 120 * D'_Z ≤ 2 ^ 144 := by
+      have h2120_pos : (0 : ℤ) < 2 ^ 120 := by norm_num
+      have : 2 ^ 120 * D'_Z ≤ 2 ^ 120 * 2 ^ 24 :=
+        mul_le_mul_of_nonneg_left hD'_Z_hi (le_of_lt h2120_pos)
+      have hpow : (2 : ℤ) ^ 120 * 2 ^ 24 = 2 ^ 144 := by norm_num
+      linarith
+    have h_prod_le : V1_Z * d40_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z ≤ 2 ^ 144 := by
+      linarith
+    -- Rearrange: V1*(2^61-V1*d40)*D' * d40 = V1*d40*(2^61-V1*d40)*D'.
+    have h_reorder : V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z * d40_Z
+        = V1_Z * d40_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z := by ring
+    have h_mul_le : V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z * d40_Z ≤ 2 ^ 144 := by
+      rw [h_reorder]; exact h_prod_le
+    -- d40 ≥ 2^39 + 1, so if V1*(2^61-V1*d40)*D' ≥ 2^105, then 2^105*(2^39+1) ≤ 2^144.
+    -- But 2^105*(2^39+1) = 2^144 + 2^105 > 2^144. Contradiction.
+    by_contra h
+    have hge : 2 ^ 105 ≤ V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z := not_lt.mp h
+    have h_105_nn : (0 : ℤ) ≤ 2 ^ 105 := by norm_num
+    have h_mul_lo : (2 : ℤ) ^ 105 * d40_Z ≤ V1_Z * (2 ^ 61 - V1_Z * d40_Z) * D'_Z * d40_Z :=
+      mul_le_mul_of_nonneg_right hge hd40_Z_nn
+    have h_105_d40_lo : (2 : ℤ) ^ 105 * (2 ^ 39 + 1) ≤ 2 ^ 105 * d40_Z :=
+      mul_le_mul_of_nonneg_left hd40_Z_lo h_105_nn
+    have hpow_sum : (2 : ℤ) ^ 105 * (2 ^ 39 + 1) = 2 ^ 144 + 2 ^ 105 := by ring
+    linarith
+  -- (C) r2 * D < 2^47 * D.
+  have h_term3_lt : r2_Z * D_Z < 2 ^ 47 * D_Z :=
+    mul_lt_mul_of_pos_right hr2_Z_lt hD_Z_pos
+  -- Combine: 2^47 * e2 < 873 * 2^100 + 2^47 * D.
+  have hE2_upper_mul : 2 ^ 47 * (2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z)
+      < 873 * 2 ^ 100 + 2 ^ 47 * D_Z := by
+    rw [hKey]
+    have h_sum : (841 : ℤ) * 2 ^ 100 + 2 ^ 105 = 873 * 2 ^ 100 := by norm_num
+    linarith
+  have h_e2_upper : 2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z < 873 * 2 ^ 53 + D_Z := by
+    have h_mul : (2 : ℤ) ^ 47 * (873 * 2 ^ 53 + D_Z) = 873 * 2 ^ 100 + 2 ^ 47 * D_Z := by ring
+    have h_lt : 2 ^ 47 * (2 ^ 97 - ((V1N * 2 ^ 13 + q2N : ℕ) : ℤ) * D_Z)
+        < 2 ^ 47 * (873 * 2 ^ 53 + D_Z) := by rw [h_mul]; exact hE2_upper_mul
+    exact lt_of_mul_lt_mul_left h_lt (le_of_lt h_2_47_pos)
+  exact ⟨hE2_pos, h_e2_upper⟩
 
 end UInt64
