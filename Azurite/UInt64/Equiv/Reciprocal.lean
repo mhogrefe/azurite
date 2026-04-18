@@ -1353,4 +1353,30 @@ theorem e4_pos_and_le (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
   exact e4_core V3N V4N D HIN LON carryN hD_lt hD_ge hV3_lt hV4_lt hHI_lt hLO_lt
     hcarryN_def hwide hV4mod he3_pos he3_lt
 
+/-- Main correctness theorem for `reciprocal` (Möller–Granlund Algorithm 2):
+for a normalized 64-bit divisor `d` (`2^63 ≤ d.toNat`), the returned value equals
+`⌊(2^128 − 1) / d⌋ − 2^64`. -/
+theorem toNat_reciprocal (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
+    (reciprocal d hd).toNat = (2 ^ 128 - 1) / d.toNat - 2 ^ 64 := by
+  obtain ⟨he4_pos, he4_le⟩ := e4_pos_and_le d hd
+  set v4 : ℕ := (reciprocal d hd).toNat with hv4_def
+  have he4_rfl : e4 d hd = (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (v4 : ℤ)) * (d.toNat : ℤ) := rfl
+  rw [he4_rfl] at he4_pos he4_le
+  have hv4_lt : v4 < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hD_lt : d.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hD_pos : 0 < d.toNat := by omega
+  have hv4d_lt : (2 ^ 64 + v4) * d.toNat < 2 ^ 128 := by
+    have : (((2 ^ 64 + v4 : ℕ) : ℤ)) * d.toNat < 2 ^ 128 := by push_cast; linarith
+    exact_mod_cast this
+  have hv4d_ge : 2 ^ 128 ≤ (2 ^ 64 + v4 + 1) * d.toNat := by
+    have : (2 ^ 128 : ℤ) ≤ (((2 ^ 64 + v4 + 1 : ℕ) : ℤ)) * d.toNat := by push_cast; linarith
+    exact_mod_cast this
+  have hdiv_eq : (2 ^ 128 - 1) / d.toNat = 2 ^ 64 + v4 := by
+    apply Nat.div_eq_of_lt_le
+    · show (2 ^ 64 + v4) * d.toNat ≤ 2 ^ 128 - 1
+      omega
+    · show 2 ^ 128 - 1 < (2 ^ 64 + v4 + 1) * d.toNat
+      omega
+  omega
+
 end UInt64
