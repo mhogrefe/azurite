@@ -9,7 +9,7 @@ namespace Azurite.AzNat
 /-- A limb-indexed view of `n.toNat.testBit`, mirroring the structure of
 `AzNat.testBit`: bit `j` of `n.toNat` is bit `j % 64` of limb `j / 64`, or `false`
 if that limb is absent. -/
-private lemma testBit_toNat_limbs (n : AzNat) (j : Nat) :
+lemma testBit_toNat_limbs (n : AzNat) (j : Nat) :
     n.toNat.testBit j =
       if h : j / 64 < n.limbs.toList.length then
         Nat.testBit (n.limbs.toList[j / 64]'h).toNat (j % 64)
@@ -33,7 +33,7 @@ private lemma newLimb_toNat (i : Nat) :
 
 /-- Equality of decidable propositions: when `i / 64 = j / 64`, comparing `i % 64`
 with `j % 64` is the same as comparing `i` with `j`. -/
-private lemma decide_mod_eq_of_div_eq {i j : Nat} (h : i / 64 = j / 64) :
+lemma decide_mod_eq_of_div_eq {i j : Nat} (h : i / 64 = j / 64) :
     decide (i % 64 = j % 64) = decide (i = j) := by
   by_cases h' : i = j
   · simp [h']
