@@ -160,6 +160,7 @@ import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
+import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TestBit
@@ -176,6 +177,7 @@ import Azurite.AzNat.Pow2
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
+import Azurite.AzNat.ShiftRightRound
 import Azurite.AzNat.Size
 import Azurite.AzNat.Sub
 import Azurite.AzNat.TestBit
