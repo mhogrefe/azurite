@@ -1,4 +1,7 @@
 import Azurite.UInt64.Equiv.Basic
+import Azurite.UInt64.Equiv.IsMultipleOfPow2
+import Azurite.UInt64.Equiv.ShiftRightRound
+import Azurite.UInt64.Equiv.WideMul
 import Azurite.UInt64.Reciprocal
 import Mathlib.Tactic.LinearCombination
 
@@ -81,6 +84,25 @@ theorem computeD40_split (d : UInt64) (_hd : 2 ^ 63 ≤ d.toNat) :
     have := Nat.div_add_mod (d.toNat / 2 ^ 24) (2 ^ 31)
     omega
   refine ⟨?_, ?_, ?_⟩ <;> omega
+
+/-- `computeD0 d` reads as `d.toNat % 2` on the Nat side. -/
+theorem toNat_computeD0 (d : UInt64) :
+    (computeD0 d).toNat = d.toNat % 2 := by
+  unfold computeD0
+  rw [_root_.UInt64.toNat_and, show ((1 : UInt64).toNat = 1) from rfl, Nat.and_one_is_mod]
+
+/-- `computeD63 d` reads as `⌈d.toNat / 2⌉ = (d.toNat + 1) / 2` on the Nat side. -/
+theorem toNat_computeD63 (d : UInt64) :
+    (computeD63 d).toNat = (d.toNat + 1) / 2 := by
+  unfold computeD63 shiftRightRound
+  by_cases h : d.isMultipleOfPow2 1 = true
+  · rw [if_pos h, toNat_shiftRightSat]
+    have hdvd : 2 ^ 1 ∣ d.toNat := (isMultipleOfPow2_iff d 1).mp h
+    omega
+  · rw [if_neg h, toNat_shiftRightSat_add_one d 1 (by omega)]
+    have hndvd : ¬ (2 ^ 1 ∣ d.toNat) :=
+      fun hdvd => h ((isMultipleOfPow2_iff d 1).mpr hdvd)
+    omega
 
 set_option maxRecDepth 2000 in
 /-- `(computeV0 d9 h).toNat = (2^19 − 3·2^8) / d9.toNat` when `d9 ∈ [256, 511]`. -/
@@ -673,5 +695,416 @@ theorem e2_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
         < 2 ^ 47 * (873 * 2 ^ 53 + D_Z) := by rw [h_mul]; exact hE2_upper_mul
     exact lt_of_mul_lt_mul_left h_lt (le_of_lt h_2_47_pos)
   exact ⟨hE2_pos, h_e2_upper⟩
+
+/-! ### The error `e3 = 2^128 − (2^64 + v_3) d` and Bound 9. -/
+
+/-- `toNat` identity for `computeE`: extracting `V2/2 * D0 − V2·D63` mod 2^64.
+Requires `d_0 ∈ {0, 1}` (which holds whenever `d_0 = d mod 2`). -/
+theorem toNat_computeE (v2 d63 d0 : UInt64) (hd0 : d0.toNat ≤ 1) :
+    (computeE v2 d63 d0).toNat =
+      (v2.toNat / 2 * d0.toNat + 2 ^ 64 - v2.toNat * d63.toNat % 2 ^ 64) % 2 ^ 64 := by
+  have h_and : ((v2 >>> 1) &&& ((0 : UInt64) - d0)).toNat = v2.toNat / 2 * d0.toNat := by
+    rw [_root_.UInt64.toNat_and, _root_.UInt64.toNat_shiftRight,
+        show ((1 : UInt64).toNat = 1) from rfl,
+        show (1 : ℕ) % 64 = 1 from rfl, Nat.shiftRight_eq_div_pow,
+        _root_.UInt64.toNat_sub, show ((0 : UInt64).toNat = 0) from rfl,
+        Nat.add_zero]
+    have hv_lt : v2.toNat / 2 < 2 ^ 64 := by
+      have : v2.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+      omega
+    rcases (show d0.toNat = 0 ∨ d0.toNat = 1 by omega) with hD0 | hD0
+    · rw [hD0]; simp
+    · rw [hD0]
+      rw [show (2 ^ 64 - 1 : ℕ) % 2 ^ 64 = 2 ^ 64 - 1 from Nat.mod_eq_of_lt (by omega),
+          Nat.and_two_pow_sub_one_eq_mod, Nat.mod_eq_of_lt hv_lt]
+      ring
+  show ((v2 >>> 1 &&& (0 - d0)) - v2 * d63).toNat = _
+  rw [_root_.UInt64.toNat_sub, _root_.UInt64.toNat_mul, h_and]
+  have hmod_le : v2.toNat * d63.toNat % 2 ^ 64 < 2 ^ 64 := Nat.mod_lt _ (by norm_num)
+  congr 1; omega
+
+/-- `toNat` identity for `computeV3`: `(v_2 · 2^31 + ⌊v_2 · e / 2^65⌋) mod 2^64`. -/
+theorem toNat_computeV3 (v2 e : UInt64) :
+    (computeV3 v2 e).toNat =
+      (v2.toNat * 2 ^ 31 + v2.toNat * e.toNat / 2 ^ 65) % 2 ^ 64 := by
+  unfold computeV3
+  set V2 := v2.toNat with hV2_def
+  set E := e.toNat with hE_def
+  have h_wm := toNat_wideMul v2 e
+  have hlo_lt : (wideMul v2 e).2.toNat < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hhi_eq : (wideMul v2 e).1.toNat = V2 * E / 2 ^ 64 := by
+    have h_sum : V2 * E = (wideMul v2 e).2.toNat + (wideMul v2 e).1.toNat * 2 ^ 64 := by
+      rw [← h_wm]; ring
+    rw [h_sum, Nat.add_mul_div_right _ _ (by norm_num : (0 : ℕ) < 2 ^ 64),
+        Nat.div_eq_of_lt hlo_lt, Nat.zero_add]
+  rw [_root_.UInt64.toNat_add, _root_.UInt64.toNat_shiftLeft,
+      show ((31 : UInt64).toNat = 31) from rfl,
+      show (31 : ℕ) % 64 = 31 from rfl,
+      Nat.shiftLeft_eq,
+      _root_.UInt64.toNat_shiftRight, hhi_eq,
+      show ((1 : UInt64).toNat = 1) from rfl,
+      show (1 : ℕ) % 64 = 1 from rfl,
+      Nat.shiftRight_eq_div_pow]
+  have hrewrite : V2 * E / 2 ^ 64 / 2 ^ 1 = V2 * E / 2 ^ 65 := by
+    rw [Nat.div_div_eq_div_mul]; norm_num
+  rw [hrewrite, Nat.add_mod, Nat.mod_mod, ← Nat.add_mod]
+
+/-- `e3 = 2^128 − (2^64 + v_3) · d` as an integer. -/
+def e3 (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) : ℤ :=
+  let v0 := computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)
+  let v1 := computeV1 v0 (computeD40 d)
+  let v2 := computeV2 v1 (computeD40 d)
+  let e  := computeE v2 (computeD63 d) (computeD0 d)
+  let v3 := computeV3 v2 e
+  (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (v3.toNat : ℤ)) * (d.toNat : ℤ)
+
+set_option maxHeartbeats 3200000 in
+/-- Bound 9 from Möller–Granlund: `0 < e3 < 2·d`, assuming `d` is normalized
+(`2^63 ≤ d`). -/
+theorem e3_pos_and_lt (d : UInt64) (hd : 2 ^ 63 ≤ d.toNat) :
+    0 < e3 d hd ∧ e3 d hd < 2 * d.toNat := by
+  obtain ⟨hE2_pos, hE2_lt⟩ := e2_pos_and_lt d hd
+  -- Nat shortcuts.
+  set D : ℕ := d.toNat with hD_def
+  set v2' : UInt64 :=
+    computeV2
+      (computeV1 (computeV0 (computeD9 d) (computeD9_sub_256_lt d hd)) (computeD40 d))
+      (computeD40 d) with hv2'_def
+  set V2N : ℕ := v2'.toNat with hV2N_def
+  set D63N : ℕ := (computeD63 d).toNat with hD63N_def
+  set D0N : ℕ := (computeD0 d).toNat with hD0N_def
+  set e' : UInt64 := computeE v2' (computeD63 d) (computeD0 d) with he'_def
+  set EN : ℕ := e'.toNat with hEN_def
+  set v3' : UInt64 := computeV3 v2' e' with hv3'_def
+  set V3N : ℕ := v3'.toNat with hV3N_def
+  -- D bounds.
+  have hD_lt : D < 2 ^ 64 := _root_.UInt64.toNat_lt _
+  have hD_ge : 2 ^ 63 ≤ D := hd
+  have hD_pos : 0 < D := by omega
+  -- D0 = D mod 2.
+  have hD0N_eq : D0N = D % 2 := toNat_computeD0 d
+  have hD0N_le : D0N ≤ 1 := by rw [hD0N_eq]; omega
+  -- D63 = (D+1)/2.
+  have hD63N_eq : D63N = (D + 1) / 2 := toNat_computeD63 d
+  -- 2·D63 = D + D0.
+  have h2D63 : 2 * D63N = D + D0N := by rw [hD63N_eq, hD0N_eq]; omega
+  -- E2 bounds (cast from e2_pos_and_lt, unfolding e2).
+  have hE2_val : e2 d hd = (2 ^ 97 : ℤ) - (V2N : ℤ) * D := rfl
+  rw [hE2_val] at hE2_pos hE2_lt
+  have hV2D_lt_int : (V2N : ℤ) * D < 2 ^ 97 := by linarith
+  have hV2D_lt_nat : V2N * D < 2 ^ 97 := by exact_mod_cast hV2D_lt_int
+  -- V2 < 2^34.
+  have hV2N_lt : V2N < 2 ^ 34 := by
+    by_contra h
+    have h1 : 2 ^ 34 ≤ V2N := not_lt.mp h
+    have h2 : 2 ^ 34 * 2 ^ 63 ≤ V2N * D := Nat.mul_le_mul h1 hd
+    have h3 : (2 : ℕ) ^ 34 * 2 ^ 63 = 2 ^ 97 := by norm_num
+    omega
+  -- Integer variables.
+  set V2_Z : ℤ := (V2N : ℤ) with hV2_Z_def
+  set D_Z : ℤ := (D : ℤ) with hD_Z_def
+  set D0_Z : ℤ := (D0N : ℤ) with hD0_Z_def
+  set D63_Z : ℤ := (D63N : ℤ) with hD63_Z_def
+  set E2_Z : ℤ := (2 ^ 97 : ℤ) - V2_Z * D_Z with hE2_Z_def
+  set eps_Z : ℤ := D0_Z * (V2_Z - 2 * (V2_Z / 2)) with heps_Z_def
+  have hV2_Z_nn : 0 ≤ V2_Z := Int.natCast_nonneg _
+  have hD_Z_nn : 0 ≤ D_Z := Int.natCast_nonneg _
+  have hD_Z_pos : 0 < D_Z := by
+    show 0 < (D : ℤ); exact_mod_cast hD_pos
+  have hD_Z_lt : D_Z < 2 ^ 64 := by
+    show (D : ℤ) < 2 ^ 64; exact_mod_cast hD_lt
+  have hD_Z_ge : (2 : ℤ) ^ 63 ≤ D_Z := by
+    show (2 : ℤ) ^ 63 ≤ (D : ℤ); exact_mod_cast hD_ge
+  have hV2_Z_lt : V2_Z < 2 ^ 34 := by
+    show (V2N : ℤ) < 2 ^ 34; exact_mod_cast hV2N_lt
+  have hD0_Z_le : D0_Z ≤ 1 := by show (D0N : ℤ) ≤ 1; exact_mod_cast hD0N_le
+  have hD0_Z_nn : 0 ≤ D0_Z := Int.natCast_nonneg _
+  -- eps_Z ∈ {0, 1}.
+  have hV2_mod2 : V2_Z - 2 * (V2_Z / 2) = (V2N % 2 : ℕ) := by
+    have h1 : V2_Z / 2 = (V2N / 2 : ℕ) := by
+      rw [hV2_Z_def]; exact_mod_cast rfl
+    rw [h1]
+    have h2 : (V2N : ℤ) - 2 * (V2N / 2 : ℕ) = (V2N % 2 : ℕ) := by
+      have h3 := Nat.div_add_mod V2N 2
+      have h4 : V2N = 2 * (V2N / 2) + V2N % 2 := by omega
+      have : (V2N : ℤ) = 2 * (V2N / 2 : ℕ) + (V2N % 2 : ℕ) := by exact_mod_cast h4
+      linarith
+    exact h2
+  have hV2_mod2_le : V2_Z - 2 * (V2_Z / 2) ≤ 1 := by
+    rw [hV2_mod2]; exact_mod_cast Nat.lt_succ_iff.mp (Nat.mod_lt _ (by norm_num))
+  have hV2_mod2_nn : 0 ≤ V2_Z - 2 * (V2_Z / 2) := by
+    rw [hV2_mod2]; exact_mod_cast Nat.zero_le _
+  have heps_Z_le : eps_Z ≤ 1 := by
+    rw [heps_Z_def]
+    rcases (show D0N = 0 ∨ D0N = 1 by omega) with h | h
+    · rw [show D0_Z = 0 from by rw [hD0_Z_def]; exact_mod_cast h]; linarith
+    · rw [show D0_Z = 1 from by rw [hD0_Z_def]; exact_mod_cast h]
+      linarith [hV2_mod2_le, hV2_mod2_nn]
+  have heps_Z_nn : 0 ≤ eps_Z := mul_nonneg hD0_Z_nn hV2_mod2_nn
+  -- V2_Z * D_Z = 2^97 - E2_Z.
+  have hH1 : V2_Z * D_Z = 2 ^ 97 - E2_Z := by rw [hE2_Z_def]; ring
+  -- E_math_Z: the integer mathematical E.
+  set E_math_Z : ℤ := 2 ^ 96 - V2_Z * D63_Z + (V2_Z / 2) * D0_Z with hE_math_Z_def
+  -- 2*E_math_Z = E2_Z - eps_Z.
+  have h2D63_Z : 2 * D63_Z = D_Z + D0_Z := by
+    show 2 * (D63N : ℤ) = (D : ℤ) + (D0N : ℤ); exact_mod_cast h2D63
+  have hE_math_eq : 2 * E_math_Z = E2_Z - eps_Z := by
+    rw [hE_math_Z_def, hE2_Z_def, heps_Z_def]
+    have hA : 2 * (V2_Z * D63_Z) = V2_Z * (D_Z + D0_Z) := by
+      rw [← h2D63_Z]; ring
+    linarith [hA]
+  -- E2_Z bounds: 1 ≤ E2_Z < 873*2^53 + D_Z < 2^65.
+  have hE2_Z_ge : 1 ≤ E2_Z := hE2_pos
+  have hE2_Z_lt_nat : E2_Z < 873 * 2 ^ 53 + D_Z := hE2_lt
+  have hE2_Z_lt_2D : E2_Z < 2 * D_Z := by
+    have h1 : (873 : ℤ) * 2 ^ 53 < 2 ^ 63 := by norm_num
+    linarith
+  have hE2_Z_lt_2_65 : E2_Z < 2 ^ 65 := by
+    have : (2 : ℤ) * D_Z < 2 ^ 65 := by linarith
+    linarith
+  -- E_math_Z bounds: 0 ≤ E_math_Z < 2^64.
+  have hE_math_nn : 0 ≤ E_math_Z := by
+    have : 2 * E_math_Z ≥ 0 := by linarith [hE2_Z_ge, heps_Z_le]
+    linarith
+  have hE_math_lt : E_math_Z < 2 ^ 64 := by
+    have : 2 * E_math_Z < 2 ^ 65 := by linarith [heps_Z_nn]
+    linarith
+  -- Show (EN : ℤ) = E_math_Z.
+  have hEN_val : (EN : ℤ) = E_math_Z := by
+    have hraw := toNat_computeE v2' (computeD63 d) (computeD0 d) hD0N_le
+    have hEN_nat : EN = (V2N / 2 * D0N + 2 ^ 64 - V2N * D63N % 2 ^ 64) % 2 ^ 64 := hraw
+    -- Show both sides mod 2^64 are equal, both in [0, 2^64).
+    set A : ℕ := V2N / 2 * D0N with hA_def
+    set M : ℕ := V2N * D63N with hM_def
+    have hMmod_lt : M % 2 ^ 64 < 2 ^ 64 := Nat.mod_lt _ (by norm_num)
+    have hA_lt_2_64 : A < 2 ^ 64 := by
+      rw [hA_def]
+      rcases (show D0N = 0 ∨ D0N = 1 by omega) with h | h
+      · rw [h]; omega
+      · rw [h]
+        have : V2N / 2 ≤ V2N := Nat.div_le_self _ _
+        have : V2N / 2 * 1 = V2N / 2 := by ring
+        omega
+    have hsubok : M % 2 ^ 64 ≤ A + 2 ^ 64 := by omega
+    -- Cast Nat expression to Int.
+    have hEN_int : (EN : ℤ) = ((A + 2 ^ 64 - M % 2 ^ 64 : ℕ) : ℤ) % (2 ^ 64 : ℤ) := by
+      rw [hEN_nat]
+      push_cast
+      rfl
+    rw [hEN_int]
+    have hsubInt : ((A + 2 ^ 64 - M % 2 ^ 64 : ℕ) : ℤ) = (A : ℤ) + 2 ^ 64 - (M % 2 ^ 64 : ℕ) := by
+      rw [Int.ofNat_sub hsubok]; push_cast; ring
+    rw [hsubInt]
+    -- Express (M % 2^64 : ℕ) as Int: M - 2^64 * (M / 2^64 : ℕ).
+    have hMqr : M = 2 ^ 64 * (M / 2 ^ 64) + M % 2 ^ 64 :=
+      (Nat.div_add_mod M (2 ^ 64)).symm
+    have hMmod_int : ((M % 2 ^ 64 : ℕ) : ℤ) = (M : ℤ) - 2 ^ 64 * (M / 2 ^ 64 : ℕ) := by
+      have h_cast : (M : ℤ) = 2 ^ 64 * ((M / 2 ^ 64 : ℕ) : ℤ) + ((M % 2 ^ 64 : ℕ) : ℤ) := by
+        exact_mod_cast hMqr
+      linarith
+    rw [hMmod_int]
+    have hRHS_eq :
+        ((A : ℤ) + 2 ^ 64 - ((M : ℤ) - 2 ^ 64 * (M / 2 ^ 64 : ℕ))) % (2 ^ 64 : ℤ)
+          = E_math_Z := by
+      have hSum : (A : ℤ) + 2 ^ 64 - ((M : ℤ) - 2 ^ 64 * (M / 2 ^ 64 : ℕ))
+          = (E_math_Z) + 2 ^ 64 * ((M / 2 ^ 64 : ℕ) - (2 ^ 32) + 1) := by
+        rw [hE_math_Z_def, hA_def, hM_def]
+        push_cast
+        ring
+      rw [hSum, Int.add_mul_emod_self_left, Int.emod_eq_of_lt hE_math_nn hE_math_lt]
+    exact hRHS_eq
+  -- V2_Z * EN_Z < 2^98.
+  set EN_Z : ℤ := (EN : ℤ) with hEN_Z_def
+  have hEN_Z_nn : 0 ≤ EN_Z := Int.natCast_nonneg _
+  have hEN_Z_lt : EN_Z < 2 ^ 64 := by rw [hEN_val]; exact hE_math_lt
+  have hV2EN_Z_lt : V2_Z * EN_Z < 2 ^ 98 := by
+    have h1 : V2_Z * EN_Z < 2 ^ 34 * 2 ^ 64 := by
+      rcases eq_or_lt_of_le hEN_Z_nn with h | h
+      · rw [← h]; simp
+      · calc V2_Z * EN_Z < 2 ^ 34 * EN_Z := by
+              apply mul_lt_mul_of_pos_right hV2_Z_lt h
+            _ ≤ 2 ^ 34 * 2 ^ 64 := by
+              apply mul_le_mul_of_nonneg_left (le_of_lt hEN_Z_lt) (by norm_num)
+    have h2 : (2 : ℤ) ^ 34 * 2 ^ 64 = 2 ^ 98 := by norm_num
+    linarith
+  have hV2EN_Z_nn : 0 ≤ V2_Z * EN_Z := mul_nonneg hV2_Z_nn hEN_Z_nn
+  have hV2EN_nat_lt : V2N * EN < 2 ^ 98 := by
+    have h : (V2N * EN : ℤ) < (2 ^ 98 : ℤ) := by
+      push_cast; exact hV2EN_Z_lt
+    exact_mod_cast h
+  -- Define q3, r3 (Nat).
+  set q3N : ℕ := V2N * EN / 2 ^ 65 with hq3N_def
+  set r3N : ℕ := V2N * EN % 2 ^ 65 with hr3N_def
+  have hr3N_lt : r3N < 2 ^ 65 := Nat.mod_lt _ (by norm_num)
+  have hVE_divmod : V2N * EN = q3N * 2 ^ 65 + r3N := by
+    have := Nat.div_add_mod (V2N * EN) (2 ^ 65)
+    omega
+  set q3_Z : ℤ := (q3N : ℤ) with hq3_Z_def
+  set r3_Z : ℤ := (r3N : ℤ) with hr3_Z_def
+  have hq3_Z_nn : 0 ≤ q3_Z := Int.natCast_nonneg _
+  have hr3_Z_nn : 0 ≤ r3_Z := Int.natCast_nonneg _
+  have hr3_Z_lt : r3_Z < 2 ^ 65 := by show (r3N : ℤ) < 2 ^ 65; exact_mod_cast hr3N_lt
+  have hH2 : V2_Z * EN_Z = q3_Z * 2 ^ 65 + r3_Z := by
+    have := hVE_divmod
+    rw [hV2_Z_def, hEN_Z_def, hq3_Z_def, hr3_Z_def]
+    exact_mod_cast this
+  -- V3N = (V2*2^31 + q3) mod 2^64.
+  have hV3N_eq : V3N = (V2N * 2 ^ 31 + V2N * EN / 2 ^ 65) % 2 ^ 64 :=
+    toNat_computeV3 v2' e'
+  -- v'_3_Z (Int).
+  set v3m_Z : ℤ := V2_Z * 2 ^ 31 + q3_Z with hv3m_Z_def
+  -- Key identity.
+  have hH3 : 2 * EN_Z = E2_Z - eps_Z := by rw [hEN_val]; exact hE_math_eq
+  have hKey :
+      (2 ^ 66 : ℤ) * (2 ^ 128 - v3m_Z * D_Z)
+        = E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z := by
+    rw [hv3m_Z_def]
+    linear_combination (eps_Z - E2_Z - 2 ^ 97) * hH1 + (2 * D_Z) * hH2 + (-D_Z * V2_Z) * hH3
+  -- e'_3_Z := 2^128 - v3m_Z * D_Z.
+  set e3m_Z : ℤ := 2 ^ 128 - v3m_Z * D_Z with he3m_Z_def
+  have hKey' : (2 ^ 66 : ℤ) * e3m_Z = E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z :=
+    hKey
+  -- RHS > 0.
+  have hE2sq_ge : (1 : ℤ) ≤ E2_Z ^ 2 := by
+    have h1 : (1 : ℤ) * 1 ≤ E2_Z * E2_Z := mul_le_mul hE2_Z_ge hE2_Z_ge (by norm_num) (by linarith)
+    rw [sq]; linarith
+  have h_97_sub_E2_pos : (0 : ℤ) ≤ 2 ^ 97 - E2_Z := by
+    have : E2_Z < 2 ^ 97 := by linarith
+    linarith
+  have heps_mul_nn : 0 ≤ eps_Z * (2 ^ 97 - E2_Z) := mul_nonneg heps_Z_nn h_97_sub_E2_pos
+  have h2r3D_nn : 0 ≤ 2 * r3_Z * D_Z := by
+    have : 0 ≤ 2 * r3_Z := by linarith
+    exact mul_nonneg this hD_Z_nn
+  have hRHS_ge_1 : (1 : ℤ) ≤ E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z := by
+    linarith
+  have h_2_66_pos : (0 : ℤ) < 2 ^ 66 := by norm_num
+  have he3m_pos : 0 < e3m_Z := by
+    by_contra h
+    have hle : e3m_Z ≤ 0 := not_lt.mp h
+    have : (2 : ℤ) ^ 66 * e3m_Z ≤ 0 := mul_nonpos_of_nonneg_of_nonpos (le_of_lt h_2_66_pos) hle
+    linarith
+  -- RHS < 2^67 * D.
+  have hE2sq_lt : E2_Z ^ 2 < (873 * 2 ^ 53 + D_Z) ^ 2 := by
+    have h_E2_pos_l : (0 : ℤ) ≤ E2_Z := by linarith
+    have h_bnd_pos : (0 : ℤ) ≤ 873 * 2 ^ 53 + D_Z := by linarith
+    rw [sq, sq]
+    exact mul_lt_mul'' hE2_Z_lt_nat hE2_Z_lt_nat h_E2_pos_l h_E2_pos_l
+  have heps_mul_le : eps_Z * (2 ^ 97 - E2_Z) ≤ 2 ^ 97 - E2_Z := by
+    have h := mul_le_mul_of_nonneg_right heps_Z_le h_97_sub_E2_pos
+    linarith
+  have h2r3_le : 2 * r3_Z ≤ 2 ^ 66 := by linarith
+  have h2r3D_le : 2 * r3_Z * D_Z ≤ 2 ^ 66 * D_Z :=
+    mul_le_mul_of_nonneg_right h2r3_le hD_Z_nn
+  have hRHS_le :
+      E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z
+        ≤ (873 * 2 ^ 53 + D_Z) ^ 2 + (2 ^ 97 - E2_Z) + 2 ^ 66 * D_Z := by
+    linarith [hE2sq_lt, heps_mul_le, h2r3D_le]
+  have hRHS_lt_2_67_D :
+      E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z < 2 ^ 67 * D_Z := by
+    have hD_sq : D_Z ^ 2 < 2 ^ 64 * D_Z := by
+      have h := mul_lt_mul_of_pos_right hD_Z_lt hD_Z_pos
+      rw [sq]; linarith
+    have hexp1 : (873 * 2 ^ 53 + D_Z) ^ 2
+        = 873 ^ 2 * 2 ^ 106 + 2 * 873 * 2 ^ 53 * D_Z + D_Z ^ 2 := by ring
+    -- 873^2 = 762129 < 2^20, so 873^2 * 2^106 < 2^126.
+    have hconst1 : (873 : ℤ) ^ 2 * 2 ^ 106 < 2 ^ 126 := by norm_num
+    have hconst2 : (2 : ℤ) ^ 126 ≤ 2 ^ 63 * D_Z := by
+      have h1 : (2 : ℤ) ^ 63 * 2 ^ 63 ≤ 2 ^ 63 * D_Z :=
+        mul_le_mul_of_nonneg_left hD_Z_ge (by norm_num)
+      have hp : (2 : ℤ) ^ 63 * 2 ^ 63 = 2 ^ 126 := by norm_num
+      linarith
+    have h97_le : (2 : ℤ) ^ 97 ≤ 2 ^ 34 * D_Z := by
+      have h1 : (2 : ℤ) ^ 34 * 2 ^ 63 ≤ 2 ^ 34 * D_Z :=
+        mul_le_mul_of_nonneg_left hD_Z_ge (by norm_num)
+      have hp : (2 : ℤ) ^ 34 * 2 ^ 63 = 2 ^ 97 := by norm_num
+      linarith
+    -- Step A: bound (873*2^53+D)^2 by 2^126 + 2*873*2^53*D + 2^64*D.
+    have hstepA : (873 * 2 ^ 53 + D_Z) ^ 2 < 2 ^ 126 + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z := by
+      linarith [hexp1, hconst1, hD_sq]
+    -- Step B: total ≤ 2^126 + 2*873*2^53*D + 2^64*D + 2^97 + 2^66*D.
+    have hstepB :
+        E2_Z ^ 2 + eps_Z * (2 ^ 97 - E2_Z) + 2 * r3_Z * D_Z
+          ≤ 2 ^ 126 + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z + 2 ^ 97 + 2 ^ 66 * D_Z := by
+      have he2lt : E2_Z ^ 2 < 2 ^ 126 + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z :=
+        lt_of_lt_of_le hE2sq_lt (le_of_lt hstepA)
+      linarith [heps_mul_le, h2r3D_le, he2lt]
+    -- Step C: 2^126 ≤ 2^63*D and 2^97 ≤ 2^34*D, combine.
+    have hstepC :
+        2 ^ 126 + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z + 2 ^ 97 + 2 ^ 66 * D_Z
+          ≤ 2 ^ 63 * D_Z + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z + 2 ^ 34 * D_Z + 2 ^ 66 * D_Z := by
+      linarith [hconst2, h97_le]
+    -- Step D: combine coefficients and show < 2^67*D.
+    have hstepD :
+        2 ^ 63 * D_Z + 2 * 873 * 2 ^ 53 * D_Z + 2 ^ 64 * D_Z + 2 ^ 34 * D_Z + 2 ^ 66 * D_Z
+          = (2 ^ 63 + 2 * 873 * 2 ^ 53 + 2 ^ 64 + 2 ^ 34 + 2 ^ 66) * D_Z := by ring
+    have hconst3 : (2 : ℤ) ^ 63 + 2 * 873 * 2 ^ 53 + 2 ^ 64 + 2 ^ 34 + 2 ^ 66 < 2 ^ 67 := by norm_num
+    have hstepE :
+        (2 ^ 63 + 2 * 873 * 2 ^ 53 + 2 ^ 64 + 2 ^ 34 + 2 ^ 66) * D_Z < 2 ^ 67 * D_Z :=
+      mul_lt_mul_of_pos_right hconst3 hD_Z_pos
+    linarith [hstepB, hstepC, hstepD, hstepE]
+  have he3m_lt : e3m_Z < 2 * D_Z := by
+    have h1 : (2 ^ 66 : ℤ) * e3m_Z < 2 ^ 67 * D_Z := by rw [hKey']; exact hRHS_lt_2_67_D
+    have h2 : (2 ^ 67 : ℤ) * D_Z = 2 ^ 66 * (2 * D_Z) := by ring
+    rw [h2] at h1
+    exact lt_of_mul_lt_mul_left h1 (le_of_lt h_2_66_pos)
+  -- v3m_Z ∈ [2^64, 2^65).
+  have hv3mD_lt : v3m_Z * D_Z < 2 ^ 128 := by
+    rw [he3m_Z_def] at he3m_pos; linarith
+  have hv3mD_gt : 2 ^ 128 - 2 * D_Z < v3m_Z * D_Z := by
+    rw [he3m_Z_def] at he3m_lt; linarith
+  have hv3m_lt_2_65 : v3m_Z < 2 ^ 65 := by
+    have h_conv : v3m_Z * D_Z < 2 ^ 65 * D_Z := by
+      have : (2 : ℤ) ^ 65 * D_Z ≥ 2 ^ 65 * 2 ^ 63 := mul_le_mul_of_nonneg_left hD_Z_ge (by norm_num)
+      have hp : (2 : ℤ) ^ 65 * 2 ^ 63 = 2 ^ 128 := by norm_num
+      linarith
+    exact lt_of_mul_lt_mul_right h_conv hD_Z_nn
+  have hv3m_ge_2_64 : 2 ^ 64 ≤ v3m_Z := by
+    by_contra h
+    have h1 : v3m_Z ≤ 2 ^ 64 - 1 := by linarith [not_le.mp h]
+    have h2 : v3m_Z * D_Z ≤ (2 ^ 64 - 1) * D_Z := by
+      by_cases hvnn : 0 ≤ v3m_Z
+      · exact mul_le_mul_of_nonneg_right h1 hD_Z_nn
+      · push Not at hvnn
+        have hvD_neg : v3m_Z * D_Z < 0 := mul_neg_of_neg_of_pos hvnn hD_Z_pos
+        have : (0 : ℤ) ≤ (2 ^ 64 - 1) * D_Z :=
+          mul_nonneg (by norm_num) hD_Z_nn
+        linarith
+    have h3 : (2 ^ 64 - 1) * D_Z = 2 ^ 64 * D_Z - D_Z := by ring
+    have h4 : (2 : ℤ) ^ 64 * D_Z ≤ 2 ^ 128 - D_Z := by
+      have h5 : D_Z ≤ 2 ^ 64 - 1 := by linarith
+      have h6 : 2 ^ 64 * D_Z ≤ 2 ^ 64 * (2 ^ 64 - 1) :=
+        mul_le_mul_of_nonneg_left h5 (by norm_num)
+      have h7 : (2 : ℤ) ^ 64 * (2 ^ 64 - 1) = 2 ^ 128 - 2 ^ 64 := by ring
+      linarith
+    -- v3m*D ≤ 2^64*D - D ≤ 2^128 - D - D = 2^128 - 2D.
+    have h8 : v3m_Z * D_Z ≤ 2 ^ 128 - 2 * D_Z := by linarith
+    linarith
+  -- V3N.toNat = v3m_Z - 2^64.
+  have hV3N_val : (V3N : ℤ) = v3m_Z - 2 ^ 64 := by
+    rw [hV3N_eq]
+    -- (V2N * 2^31 + V2N * EN / 2^65) % 2^64 in Nat.
+    set S : ℕ := V2N * 2 ^ 31 + V2N * EN / 2 ^ 65 with hS_def
+    have hS_int : (S : ℤ) = v3m_Z := by
+      rw [hv3m_Z_def, hV2_Z_def, hq3_Z_def, hq3N_def, hS_def]
+      push_cast; ring
+    -- S mod 2^64 = v3m_Z - 2^64 (since S ∈ [2^64, 2^65)).
+    have hS_lt : (S : ℤ) < 2 ^ 65 := by rw [hS_int]; exact hv3m_lt_2_65
+    have hS_ge : (2 : ℤ) ^ 64 ≤ S := by rw [hS_int]; exact hv3m_ge_2_64
+    have hS_ge_nat : 2 ^ 64 ≤ S := by exact_mod_cast hS_ge
+    have hS_lt_nat : S < 2 ^ 65 := by exact_mod_cast hS_lt
+    have hSmod : S % 2 ^ 64 = S - 2 ^ 64 := by omega
+    have hSmod_int : ((S % 2 ^ 64 : ℕ) : ℤ) = (S : ℤ) - 2 ^ 64 := by
+      rw [hSmod]
+      rw [Int.ofNat_sub (by exact_mod_cast hS_ge)]
+      push_cast; ring
+    rw [hSmod_int, hS_int]
+  -- Connect e3 d hd to e3m_Z.
+  have he3_eq : e3 d hd = e3m_Z := by
+    unfold e3
+    show (2 ^ 128 : ℤ) - ((2 ^ 64 : ℤ) + (V3N : ℤ)) * D_Z = e3m_Z
+    rw [hV3N_val, he3m_Z_def]; ring
+  refine ⟨?_, ?_⟩
+  · rw [he3_eq]; exact he3m_pos
+  · rw [he3_eq]; show e3m_Z < 2 * (D : ℤ); exact he3m_lt
 
 end UInt64
