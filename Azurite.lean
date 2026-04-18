@@ -319,6 +319,7 @@ import Azurite.UInt64.Equiv.IsMultipleOfPow2
 import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry
 import Azurite.UInt64.Equiv.Pow2
+import Azurite.UInt64.Equiv.Reciprocal
 import Azurite.UInt64.Equiv.SetBit
 import Azurite.UInt64.Equiv.ShiftRightRound
 import Azurite.UInt64.Equiv.SplitHalves
@@ -329,6 +330,7 @@ import Azurite.UInt64.IsMultipleOfPow2
 import Azurite.UInt64.MulAddWithCarry
 import Azurite.UInt64.MulWithCarry
 import Azurite.UInt64.Pow2
+import Azurite.UInt64.Reciprocal
 import Azurite.UInt64.SetBit
 import Azurite.UInt64.ShiftRightRound
 import Azurite.UInt64.SplitHalves
