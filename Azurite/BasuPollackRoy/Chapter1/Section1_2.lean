@@ -768,7 +768,6 @@ theorem natDegree_SRemS_lt_of_lt (P Q : K[X]) (m n : ℕ)
       exact Polynomial.natDegree_lt_natDegree (hne (m + 1 + 1) (by omega) (by omega))
         (degree_SRemS_lt P Q m (hne (m + 1) (by omega) (by omega)))
 
-set_option maxHeartbeats 800000 in
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
 open Classical in
 /-- BPR Lemma 1.11 (ii): For 1 ≤ i ≤ k, natDeg(SRemU_{i+1}(P,Q)) = natDeg(Q) − natDeg(SRemS_i),
@@ -855,11 +854,10 @@ theorem lemma_1_11_degU (P Q : K[X]) (k : ℕ) (i : ℕ)
                 Nat.sub_lt_sub_left (lt_of_lt_of_le hd_skip hnd_le_q_j) hd_skip
             _ = Polynomial.natDegree (SRemS P Q (j + 1 + 1) / SRemS P Q (j + 1 + 1 + 1) *
                 SRemU P Q (j + 1 + 1 + 1)) := by
-                rw [Polynomial.natDegree_mul hne_div hne_u, hdq, ih_cur]
-                exact (Nat.sub_add_sub_cancel (le_of_lt hnd_le_q) (le_of_lt hnd_dec)).symm ▸
-                  (Nat.add_comm _ _).symm ▸ rfl
+                rw [Polynomial.natDegree_mul hne_div hne_u, hdq, ih_cur,
+                    show j + 1 + 1 + 1 = j + 1 + 2 from rfl]
+                omega
 
-set_option maxHeartbeats 800000 in
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
 open Classical in
 /-- BPR Lemma 1.11 (iii): For 1 ≤ i ≤ k, natDeg(SRemV_{i+1}(P,Q)) = natDeg(P) − natDeg(SRemS_i),
@@ -974,9 +972,9 @@ theorem lemma_1_11_degV (P Q : K[X]) (k : ℕ) (i : ℕ)
                 Nat.sub_lt_sub_left (lt_of_lt_of_le hd_skip hnd_le_p_j) hd_skip
             _ = Polynomial.natDegree (SRemS P Q (j + 1 + 1) / SRemS P Q (j + 1 + 1 + 1) *
                 SRemV P Q (j + 1 + 1 + 1)) := by
-                rw [Polynomial.natDegree_mul hne_div hne_v, hdq, ih_cur]
-                exact (Nat.sub_add_sub_cancel (le_of_lt hnd_le_p) (le_of_lt hnd_dec)).symm ▸
-                  (Nat.add_comm _ _).symm ▸ rfl
+                rw [Polynomial.natDegree_mul hne_div hne_v, hdq, ih_cur,
+                    show j + 1 + 1 + 1 = j + 1 + 2 from rfl]
+                omega
 
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
 open Classical in

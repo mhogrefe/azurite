@@ -205,7 +205,6 @@ private theorem adjoinRoot_sq_sub_isSemireal_of_isSumSq
   have : IsSumSq (-1 : R) := hdecomp ▸ IsSumSq.add h1 h2
   exact (Azurite.BPR.isRealField_iff R).mp hR_real this
 
-set_option maxHeartbeats 800000 in
 /-- Every nonzero SoS is a square. -/
 theorem sum_sq_isSquare (hR : Azurite.BPR.HasNoNontrivialRealAlgebraicExtension R)
     {c : R} (hc : IsSumSq c) (_hc_ne : c ≠ 0) : IsSquare c := by
@@ -220,7 +219,6 @@ theorem sum_sq_isSquare (hR : Azurite.BPR.HasNoNontrivialRealAlgebraicExtension 
     adjoinRoot_sq_sub_isSemireal_of_isSumSq hc hns hR1
   exact hnsurj (hR2 (AdjoinRoot (sqSubC c)) halg hreal)
 
-set_option maxHeartbeats 1600000 in
 /-- Every element or its negation is a square. -/
 theorem isSquare_or_isSquare_neg_of_noext
     (hR : Azurite.BPR.HasNoNontrivialRealAlgebraicExtension R)
@@ -269,7 +267,6 @@ private theorem sq_add_isSumSq_ne_zero [IsSemireal R] {a : R} (ha : a ≠ 0)
     rw [show (-1 : R) = -(a * a) * (a * a)⁻¹ from by field_simp]
     exact IsSumSq.mul hs_neg hinv)
 
-set_option maxHeartbeats 400000 in
 /-- A nonzero sum of squares in R[X] has even degree (when R is semireal). -/
 private theorem even_natDegree_isSumSq [IsSemireal R]
     {S : R[X]} (hS : IsSumSq S) (hne : S ≠ 0) :
@@ -330,7 +327,6 @@ private theorem adjoinRoot_isAlgebraic' {p : R[X]} (hp : p ≠ 0) :
   haveI : Module.Finite R (AdjoinRoot p) := (AdjoinRoot.powerBasis hp).finite
   exact Algebra.IsAlgebraic.of_finite R _
 
-set_option maxHeartbeats 1600000 in
 /-- Every polynomial of odd degree has a root. -/
 theorem exists_isRoot_of_odd_natDegree_of_noext
     (hR : Azurite.BPR.HasNoNontrivialRealAlgebraicExtension R)
