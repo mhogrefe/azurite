@@ -318,6 +318,7 @@ import Azurite.UInt64.Equiv.AddWithCarry
 import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Equiv.ClearBit
 import Azurite.UInt64.Equiv.Div2By1
+import Azurite.UInt64.Equiv.Div3By2
 import Azurite.UInt64.Equiv.IsMultipleOfPow2
 import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry
