@@ -26,11 +26,11 @@ theorem div3By2_rtilde_lower_bound
   -- ℤ-level hypotheses.
   have hD_Z_hi : (D : ℤ) < 2 ^ 128 := by exact_mod_cast hD_hi
   have hq0_Z_lt : (q0 : ℤ) < 2 ^ 64 := by exact_mod_cast hq0
-  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := by positivity
-  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := by positivity
-  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := by positivity
-  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := by positivity
-  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := by positivity
+  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := Int.natCast_nonneg _
+  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := Int.natCast_nonneg _
+  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := Int.natCast_nonneg _
+  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := Int.natCast_nonneg _
+  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := Int.natCast_nonneg _
   have hInv_lo_Z : ((2 ^ 64 : ℤ) + v) * D + 1 ≤ 2 ^ 192 := by
     have h : (2 ^ 64 + v) * D + 1 ≤ 2 ^ 192 := by omega
     exact_mod_cast h
@@ -119,12 +119,12 @@ theorem div3By2_rtilde_upper_case_lt_d1
   have hu1_Z_lt : (u1 : ℤ) < 2 ^ 64 := by exact_mod_cast hu1
   have hu0_Z_lt : (u0 : ℤ) < 2 ^ 64 := by exact_mod_cast hu0
   have hq0_Z_lt : (q0 : ℤ) < 2 ^ 64 := by exact_mod_cast hq0
-  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := by positivity
-  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := by positivity
-  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := by positivity
-  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := by positivity
-  have hd0_nn : (0 : ℤ) ≤ (d0 : ℤ) := by positivity
-  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := by positivity
+  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := Int.natCast_nonneg _
+  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := Int.natCast_nonneg _
+  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := Int.natCast_nonneg _
+  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := Int.natCast_nonneg _
+  have hd0_nn : (0 : ℤ) ≤ (d0 : ℤ) := Int.natCast_nonneg _
+  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := Int.natCast_nonneg _
   have hd0_Z_lt : (d0 : ℤ) < 2 ^ 64 := by exact_mod_cast hd0
   have hu2_lt_d1_Z : (u2 : ℤ) + 1 ≤ d1 := by exact_mod_cast hu2_lt_d1
   have hD_split_Z : (D : ℤ) = (d1 : ℤ) * 2 ^ 64 + d0 := by exact_mod_cast hD_split
@@ -212,12 +212,12 @@ theorem div3By2_rtilde_upper_case_eq_d1
   have hD_Z_hi : (D : ℤ) < 2 ^ 128 := by exact_mod_cast hD_hi
   have hu0_Z_lt : (u0 : ℤ) < 2 ^ 64 := by exact_mod_cast hu0
   have hq0_Z_lt : (q0 : ℤ) < 2 ^ 64 := by exact_mod_cast hq0
-  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := by positivity
-  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := by positivity
-  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := by positivity
-  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := by positivity
-  have hd0_nn : (0 : ℤ) ≤ (d0 : ℤ) := by positivity
-  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := by positivity
+  have hu2_nn : (0 : ℤ) ≤ (u2 : ℤ) := Int.natCast_nonneg _
+  have hu1_nn : (0 : ℤ) ≤ (u1 : ℤ) := Int.natCast_nonneg _
+  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := Int.natCast_nonneg _
+  have hq0_nn : (0 : ℤ) ≤ (q0 : ℤ) := Int.natCast_nonneg _
+  have hd0_nn : (0 : ℤ) ≤ (d0 : ℤ) := Int.natCast_nonneg _
+  have hD_Z_nn : (0 : ℤ) ≤ (D : ℤ) := Int.natCast_nonneg _
   have hd0_Z_lt : (d0 : ℤ) < 2 ^ 64 := by exact_mod_cast hd0
   have hu1_lt_d0_Z : (u1 : ℤ) + 1 ≤ d0 := by exact_mod_cast hu1_lt_d0
   have hu2_eq_d1_Z : (u2 : ℤ) = d1 := by exact_mod_cast hu2_eq_d1
@@ -350,7 +350,7 @@ theorem div3By2_rtilde_upper_case_borderline
     exact_mod_cast this
   have hu1_lt_d0_Z : (u1 : ℤ) + 1 ≤ d0 := by exact_mod_cast hu1_lt_d0
   have hu0_Z_lt : (u0 : ℤ) < 2 ^ 64 := by exact_mod_cast hu0
-  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := by positivity
+  have hu0_nn : (0 : ℤ) ≤ (u0 : ℤ) := Int.natCast_nonneg _
   have hD_Z_hi : (D : ℤ) < 2 ^ 128 := by exact_mod_cast hD_hi
   -- Compute rtilde = (u1 - d0)*2^64 + u0. Uses d1 = u2 = 2^64 - 1.
   have h_rtilde_eq :
@@ -910,6 +910,40 @@ private structure Div3By2Setup (u2 u1 u0 d1 d0 v : UInt64) where
           else
             (qh0 + 1, r1, r0)
 
+/-- Core identity `R_FINAL - Rtilde = (3 + kA - kP - kI - kR - U2) * 2^128`, proved
+from the `Nat.div_add_mod`-style witnesses `hR_rel`/`hI_rel`/`hP_rel`/`hA_rel` and
+the decomposition `B = D0 * Q_HI0`, `D = D1 * 2^64 + D0`.
+
+Extracting this into a standalone lemma shrinks the context seen by `linarith`,
+making the four casting steps dramatically faster than when inlined in the
+`toNat_div3By2_setup` body (which has ~30 `let`-bindings in scope). -/
+private lemma div3By2_R_FINAL_Rtilde_identity
+    {D D1 D0 U0 U1 U2 Q_HI0 A B R1_PRE_N INN R_FINAL kA kP kI kR : ℕ}
+    (hD_def : D = D1 * 2 ^ 64 + D0)
+    (hD_le : D ≤ 2 ^ 128)
+    (hB_le : B ≤ 2 ^ 128)
+    (hA_le : A ≤ 2 ^ 64)
+    (hB_def : B = D0 * Q_HI0)
+    (hR_rel : 2 ^ 128 - D + INN = R_FINAL + kR * 2 ^ 128)
+    (hI_rel : 2 ^ 128 - B + R1_PRE_N * 2 ^ 64 + U0 = INN + kI * 2 ^ 128)
+    (hP_rel : 2 ^ 64 - A + U1 = R1_PRE_N + kP * 2 ^ 64)
+    (hA_rel : Q_HI0 * D1 = A + kA * 2 ^ 64) :
+    (R_FINAL : ℤ) - ((U2 : ℤ) * 2 ^ 128 + U1 * 2 ^ 64 + U0 - ((Q_HI0 : ℤ) + 1) * D)
+      = (3 + (kA : ℤ) - kP - kI - kR - U2) * 2 ^ 128 := by
+  have hR_EQ : (R_FINAL : ℤ) = 2 ^ 128 - (D : ℤ) + INN - (kR : ℤ) * 2 ^ 128 := by
+    have h := hR_rel; zify [hD_le] at h; linarith
+  have hI_EQ : (INN : ℤ)
+      = 2 ^ 128 - (B : ℤ) + (R1_PRE_N : ℤ) * 2 ^ 64 + U0 - (kI : ℤ) * 2 ^ 128 := by
+    have h := hI_rel; zify [hB_le] at h; linarith
+  have hP_EQ : (R1_PRE_N : ℤ) = 2 ^ 64 - (A : ℤ) + U1 - (kP : ℤ) * 2 ^ 64 := by
+    have h := hP_rel; zify [hA_le] at h; linarith
+  have hA_EQ : (A : ℤ) = (Q_HI0 : ℤ) * D1 - (kA : ℤ) * 2 ^ 64 := by
+    have h := hA_rel; zify at h; linarith
+  have hB_Z : (B : ℤ) = D0 * Q_HI0 := by exact_mod_cast hB_def
+  have hD_split_Z : (D : ℤ) = D1 * 2 ^ 64 + D0 := by push_cast [hD_def]; ring
+  rw [hR_EQ, hI_EQ, hP_EQ, hA_EQ, hB_Z, hD_split_Z]
+  ring
+
 set_option maxHeartbeats 800000 in
 /-- Common setup for `toNat_div3By2`: runs the algorithm, destructures the
 intermediate `wideMul`/`wideAdd`/`wideSub` operations, derives all the
@@ -1082,31 +1116,13 @@ private noncomputable def toNat_div3By2_setup {u2 u1 u0 d1 d0 v : UInt64}
     have h := Nat.div_add_mod (2 ^ 128 - D + INN) (2 ^ 128)
     rw [hR_FINAL_val]
     omega
-  -- Cast these equations into ℤ using zify (handles Nat subtraction).
-  have hA_Z : (Q_HI0 : ℤ) * D1 = A + kA * 2 ^ 64 := by exact_mod_cast hA_rel
-  have hP_Z : (2 : ℤ) ^ 64 - A + U1 = R1_PRE_N + kP * 2 ^ 64 := by
-    have h := hP_rel; zify [hA_le] at h; linarith
-  have hI_Z : (2 : ℤ) ^ 128 - B + R1_PRE_N * 2 ^ 64 + U0 = INN + kI * 2 ^ 128 := by
-    have h := hI_rel; zify [hB_le] at h; linarith
-  have hR_Z : (2 : ℤ) ^ 128 - D + INN = R_FINAL + kR * 2 ^ 128 := by
-    have h := hR_rel; zify [hD_le] at h; linarith
-  have hB_Z : (B : ℤ) = D0 * Q_HI0 := by exact_mod_cast hB_def
-  have hD_split_Z : (D : ℤ) = D1 * 2 ^ 64 + D0 := by push_cast [hD_def]; ring
-  -- Isolate each variable as an explicit ℤ expression, so the final identity
-  -- is proven by a single `ring` after substitution (avoids blowing up
-  -- `linear_combination` on the heavily let-bound context).
-  have hR_EQ : (R_FINAL : ℤ) = 2 ^ 128 - (D : ℤ) + INN - (kR : ℤ) * 2 ^ 128 := by
-    linarith
-  have hI_EQ : (INN : ℤ)
-      = 2 ^ 128 - (B : ℤ) + (R1_PRE_N : ℤ) * 2 ^ 64 + U0 - (kI : ℤ) * 2 ^ 128 := by
-    linarith
-  have hP_EQ : (R1_PRE_N : ℤ) = 2 ^ 64 - (A : ℤ) + U1 - (kP : ℤ) * 2 ^ 64 := by
-    linarith
-  have hA_EQ : (A : ℤ) = (Q_HI0 : ℤ) * D1 - (kA : ℤ) * 2 ^ 64 := by linarith
+  -- R_FINAL - Rtilde = (3 + kA - kP - kI - kR - U2) * 2^128, proved via the
+  -- extracted helper lemma (keeps the linarith calls in a tiny context).
   have hEq' : (R_FINAL : ℤ) - Rtilde
       = (3 + (kA : ℤ) - kP - kI - kR - U2) * 2 ^ 128 := by
-    rw [hRtilde_def, hR_EQ, hI_EQ, hP_EQ, hA_EQ, hB_Z, hD_split_Z]
-    ring
+    rw [hRtilde_def]
+    exact div3By2_R_FINAL_Rtilde_identity (U2 := U2) (U1 := U1) (U0 := U0)
+      hD_def hD_le hB_le hA_le hB_def hR_rel hI_rel hP_rel hA_rel
   -- Bounds for Rtilde: -D ≤ Rtilde < 2^128 and specific tight bounds.
   have hQ_LO_Z_lt : (Q_LO : ℤ) < 2 ^ 64 := by exact_mod_cast hQ_LO_lt
   have hD_Z_lt : (D : ℤ) < 2 ^ 128 := by exact_mod_cast hD_hi
