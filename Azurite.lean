@@ -276,6 +276,7 @@ import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_27
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_28
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11
