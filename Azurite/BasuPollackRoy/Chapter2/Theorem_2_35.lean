@@ -1451,4 +1451,328 @@ theorem budan_fourier_negInf_posInf (hIVP : HasIntermediateValueProperty R)
   rw [hvar_eq, ← hnum_eq]
   exact hfin
 
+/-! ### BPR Example 2.37
+
+The polynomial `P = X² − X + 1` has no real root (its discriminant `−3` is
+negative), but `Var(Der(P); 0, 1) = 2`:
+  * `Der(P) = [X² − X + 1, 2X − 1, 2]`.
+  * Evaluating at `0` gives `[1, −1, 2]` with two sign changes.
+  * Evaluating at `1` gives `[1, 1, 2]` with no sign change.
+  * Hence `Var(Der(P); 0, 1) = 2 − 0 = 2`.
+
+It is impossible to refine `(0, 1]` into `(0, a]` and `(a, 1]` with each
+piece contributing one sign variation, since otherwise Budan–Fourier would
+force `P` to have two real roots in `(0, 1]`. Any sub-interval containing
+`1/2` (where `P` attains its minimum) necessarily contributes `2` sign
+variations. This shows that the bound in Budan–Fourier is tight in the
+sense of parity — here both sides have the same parity `2 ≡ 0 (mod 2)` —
+but is not tight as an equality.
+
+We record `Der(P)` as the explicit list `[X² − X + 1, 2X − 1, 2]` (bypassing
+the `der` computation that would require unfolding iterated derivatives). -/
+
+example :
+    varAt ([X ^ 2 - X + 1, 2 * X - 1, C 2] : List ℚ[X]) (.finite 0) = 2 := by
+  simp [varAt_finite, Var]; norm_num [varNonzero]
+
+example :
+    varAt ([X ^ 2 - X + 1, 2 * X - 1, C 2] : List ℚ[X]) (.finite 1) = 0 := by
+  simp [varAt_finite, Var]; norm_num [varNonzero]
+
+example :
+    varBetween ([X ^ 2 - X + 1, 2 * X - 1, C 2] : List ℚ[X])
+      (.finite 0) (.finite 1) = 2 := by
+  have h0 : varAt ([X ^ 2 - X + 1, 2 * X - 1, C 2] : List ℚ[X]) (.finite 0) = 2 := by
+    simp [varAt_finite, Var]; norm_num [varNonzero]
+  have h1 : varAt ([X ^ 2 - X + 1, 2 * X - 1, C 2] : List ℚ[X]) (.finite 1) = 0 := by
+    simp [varAt_finite, Var]; norm_num [varNonzero]
+  unfold varBetween
+  rw [h0, h1]
+  rfl
+
+/-! ### Refinement impossibility
+
+BPR Example 2.37 continues: "It is impossible to find `a ∈ (0, 1]` such
+that `Var(Der(P); 0, a] = 1` and `Var(Der(P); a, 1] = 1`, since otherwise
+`P` would have two real roots." We formalise this as a theorem over any
+real-closed-style field `R` with the intermediate-value property.
+
+The argument is: if both sub-intervals contributed exactly one variation,
+Budan-Fourier would force `numRoots ≥ 1` on each (since `Var − numRoots`
+is even and nonneg). Summed, `numRoots` on `(0, 1]` would be `≥ 2`. But
+`X² − X + 1` has no real root at all: `4 (X² − X + 1) = (2X − 1)² + 3 ≥ 3`. -/
+
+/-- `P := X² − X + 1` is strictly positive on `R` for any
+    `IsStrictOrderedRing R`: `4·P(x) = (2x − 1)² + 3 ≥ 3 > 0`. -/
+private lemma example_2_37_positive (x : R) :
+    0 < ((X : R[X]) ^ 2 - X + 1).eval x := by
+  simp only [eval_add, eval_sub, eval_pow, eval_X, eval_one]
+  nlinarith [sq_nonneg (2 * x - 1)]
+
+/-- `P := X² − X + 1` is nonzero in `R[X]` (evaluation at `0` is `1`). -/
+private lemma example_2_37_ne_zero : ((X : R[X]) ^ 2 - X + 1) ≠ 0 := fun h => by
+  have h0 := example_2_37_positive (0 : R)
+  rw [h] at h0; simp at h0
+
+/-- `P := X² − X + 1` has no real root: `P.roots = 0` as a multiset. -/
+private lemma example_2_37_roots_empty :
+    ((X : R[X]) ^ 2 - X + 1).roots = 0 := by
+  classical
+  rw [Multiset.eq_zero_iff_forall_notMem]
+  intro r hr
+  exact ne_of_gt (example_2_37_positive r)
+    ((Polynomial.mem_roots example_2_37_ne_zero).mp hr)
+
+/-- **BPR Example 2.37 (refinement impossibility).** For `P = X² − X + 1`,
+    there is no `a ∈ (0, 1]` such that each of the sub-intervals `(0, a]`
+    and `(a, 1]` contributes exactly one sign variation to
+    `Var(Der(P); ·, ·)`.
+
+    If both `Var(Der(P); 0, a] = 1` and `Var(Der(P); a, 1] = 1`, then by
+    Budan-Fourier each sub-interval would contain at least one real root of
+    `P`, giving at least two roots in `(0, 1]`.  But `X² − X + 1` has no
+    real root, since `4 (X² − X + 1) = (2X − 1)² + 3 ≥ 3 > 0`. -/
+theorem example_2_37_no_refinement
+    (hIVP : HasIntermediateValueProperty R) {a : R} (ha0 : 0 < a) (ha1 : a ≤ 1) :
+    ¬ (varBetween (der ((X : R[X]) ^ 2 - X + 1)) (.finite 0) (.finite a) = 1 ∧
+       varBetween (der ((X : R[X]) ^ 2 - X + 1)) (.finite a) (.finite 1) = 1) := by
+  rintro ⟨hV0a, hVa1⟩
+  set P : R[X] := X ^ 2 - X + 1
+  have hP_ne : P ≠ 0 := example_2_37_ne_zero
+  have hroots : P.roots = 0 := example_2_37_roots_empty
+  have h_num_zero : ∀ c d : R, numRoots P (.finite c) (.finite d) = 0 := by
+    intro c d
+    rw [numRoots_finite_finite, hroots]
+    simp
+  rcases lt_or_eq_of_le ha1 with ha_lt1 | ha_eq1
+  · -- Case `a < 1`: apply Budan-Fourier on `(0, a]`.
+    have hBF0a := budan_fourier_finite hIVP hP_ne ha0
+    rw [hV0a, h_num_zero 0 a] at hBF0a
+    exact (by decide : ¬ Even (1 - (0 : ℤ))) hBF0a.2
+  · -- Case `a = 1`: `varBetween (.finite 1) (.finite 1) = 0 ≠ 1`.
+    subst ha_eq1
+    unfold varBetween at hVa1
+    simp at hVa1
+
+/-! ## BPR Exercise 2.12
+
+Immediate corollaries of the Budan-Fourier theorem:
+
+- If `Var(Der(P); a, b] = 0`, then `P` has no root in `(a, b]`.
+- If `Var(Der(P); a, b] = 1`, then `P` has exactly one root in `(a, b]`,
+  and that root is simple (multiplicity `1`).
+
+Both follow from the fact that `num(P; (a, b]) ≤ Var(Der(P); a, b]` with
+the difference even and non-negative. -/
+
+/-- **BPR Exercise 2.12 (first part, root-count form).** If
+    `Var(Der(P); a, b] = 0`, then `num(P; (a, b]) = 0`. -/
+theorem numRoots_eq_zero_of_var_eq_zero
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0) {a b : R}
+    (hab : a < b) (hV : varBetween (der P) (.finite a) (.finite b) = 0) :
+    numRoots P (.finite a) (.finite b) = 0 := by
+  have hBF := budan_fourier_finite hIVP hP hab
+  rw [hV] at hBF
+  have hle : (numRoots P (.finite a) (.finite b) : ℤ) ≤ 0 := hBF.1
+  exact_mod_cast le_antisymm hle (Int.natCast_nonneg _)
+
+/-- **BPR Exercise 2.12 (second part, root-count form).** If
+    `Var(Der(P); a, b] = 1`, then `num(P; (a, b]) = 1`. -/
+theorem numRoots_eq_one_of_var_eq_one
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0) {a b : R}
+    (hab : a < b) (hV : varBetween (der P) (.finite a) (.finite b) = 1) :
+    numRoots P (.finite a) (.finite b) = 1 := by
+  have hBF := budan_fourier_finite hIVP hP hab
+  rw [hV] at hBF
+  obtain ⟨hle, heven⟩ := hBF
+  set n : ℕ := numRoots P (.finite a) (.finite b)
+  have hle_n : n ≤ 1 := by exact_mod_cast hle
+  interval_cases n
+  · exact absurd heven (by decide)
+  · rfl
+
+/-- **BPR Exercise 2.12 (first part).** If `Var(Der(P); a, b] = 0`, then
+    `P` has no root in `(a, b]`. -/
+theorem no_root_of_var_eq_zero
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0) {a b : R}
+    (hab : a < b) (hV : varBetween (der P) (.finite a) (.finite b) = 0) :
+    ∀ r ∈ Set.Ioc a b, ¬ P.IsRoot r := by
+  classical
+  intro r hr hr_root
+  have hn := numRoots_eq_zero_of_var_eq_zero hIVP hP hab hV
+  rw [numRoots_finite_finite] at hn
+  have hfilter_zero : P.roots.filter (fun r => a < r ∧ r ≤ b) = 0 :=
+    Multiset.card_eq_zero.mp hn
+  have hmem : r ∈ P.roots.filter (fun r => a < r ∧ r ≤ b) :=
+    Multiset.mem_filter.mpr ⟨(Polynomial.mem_roots hP).mpr hr_root, hr⟩
+  rw [hfilter_zero] at hmem
+  exact Multiset.notMem_zero r hmem
+
+/-- **BPR Exercise 2.12 (second part).** If `Var(Der(P); a, b] = 1`, then
+    `P` has exactly one root in `(a, b]`, and that root is simple
+    (i.e. has multiplicity `1`). -/
+theorem unique_simple_root_of_var_eq_one
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0) {a b : R}
+    (hab : a < b) (hV : varBetween (der P) (.finite a) (.finite b) = 1) :
+    ∃ r ∈ Set.Ioc a b, P.IsRoot r ∧ P.rootMultiplicity r = 1 ∧
+      ∀ r' ∈ Set.Ioc a b, P.IsRoot r' → r' = r := by
+  classical
+  have hn := numRoots_eq_one_of_var_eq_one hIVP hP hab hV
+  rw [numRoots_finite_finite] at hn
+  obtain ⟨r, hr_eq⟩ := Multiset.card_eq_one.mp hn
+  have hr_mem : r ∈ P.roots.filter (fun r => a < r ∧ r ≤ b) := by
+    rw [hr_eq]; exact Multiset.mem_singleton_self r
+  rw [Multiset.mem_filter] at hr_mem
+  obtain ⟨hr_roots, hr_ioc⟩ := hr_mem
+  refine ⟨r, hr_ioc, (Polynomial.mem_roots hP).mp hr_roots, ?_, ?_⟩
+  · -- rootMultiplicity r = 1
+    have hcnt : Multiset.count r (P.roots.filter (fun r => a < r ∧ r ≤ b)) = 1 := by
+      rw [hr_eq]; exact Multiset.count_singleton_self r
+    rw [Multiset.count_filter, if_pos hr_ioc] at hcnt
+    rw [← Polynomial.count_roots]; exact hcnt
+  · intro r' hr' hr'_root
+    have hr'_mem : r' ∈ P.roots.filter (fun r => a < r ∧ r ≤ b) :=
+      Multiset.mem_filter.mpr ⟨(Polynomial.mem_roots hP).mpr hr'_root, hr'⟩
+    rw [hr_eq, Multiset.mem_singleton] at hr'_mem
+    exact hr'_mem
+
+/-! ## BPR Remark 2.38: equality when all roots are real
+
+When every root of `P` lies in the base field (i.e. `P.roots.card = natDegree P`),
+Budan-Fourier collapses to an equality:
+`Var(Der(P); a, b] = num(P; (a, b])` for every `a < b`.
+
+The argument proceeds in three steps.
+
+1. `Var(Der(P); −∞, +∞) = natDegree P`: the `≤` comes from `Var l ≤ length l - 1`
+   applied to `Der(P)` (a list of length `p + 1`); the `≥` comes from
+   `num(P; R) ≤ Var(Der(P); −∞, +∞)` via Budan-Fourier and
+   `num(P; R) = natDegree P` by hypothesis.
+2. Split both `num` and `Var` into the three sub-intervals `(−∞, a]`, `(a, b]`,
+   `(b, +∞)` and sum the per-interval Budan-Fourier inequalities.
+3. Since both sums equal `natDegree P` and each `num ≤ Var`, equality must hold
+   componentwise — in particular on the middle interval. -/
+
+omit [IsStrictOrderedRing R] in
+/-- Upper bound: `varNonzero l ≤ l.length − 1`. Each sign variation lives in
+    one of the `length − 1` adjacent pairs. -/
+private lemma varNonzero_le_length_sub_one :
+    ∀ (l : List R), varNonzero l ≤ l.length - 1
+  | [] => by simp
+  | [_] => by simp [varNonzero]
+  | a :: b :: rest => by
+    rw [varNonzero_cons_cons]
+    have ih := varNonzero_le_length_sub_one (b :: rest)
+    simp only [List.length_cons] at ih ⊢
+    split_ifs <;> omega
+
+omit [IsStrictOrderedRing R] in
+/-- Upper bound: `Var l ≤ l.length − 1`. Filtering zeros can only shrink the
+    length, and `varNonzero` on the filtered list satisfies the bound. -/
+private lemma Var_le_length_sub_one (l : List R) : Var l ≤ l.length - 1 := by
+  unfold Var
+  have hvn := varNonzero_le_length_sub_one (l.filter (· ≠ 0))
+  have hlen := List.length_filter_le (fun x : R => decide (x ≠ 0)) l
+  omega
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- `(der P).length = natDegree P + 1`. -/
+private lemma der_length (P : R[X]) : (der P).length = P.natDegree + 1 := by
+  unfold der; simp
+
+omit [IsStrictOrderedRing R] in
+/-- Upper bound: `varAt (der P) a ≤ natDegree P`. -/
+private lemma varAt_der_le_natDegree (P : R[X]) (a : ExtendedPoint R) :
+    varAt (der P) a ≤ P.natDegree := by
+  unfold varAt
+  have h := Var_le_length_sub_one ((der P).map (ExtendedPoint.evalPoly · a))
+  rw [List.length_map, der_length] at h
+  omega
+
+omit [IsStrictOrderedRing R] in
+/-- Partition: for `a ≤ b`, the number of roots of `P` in `R` splits as the sum
+    over `(−∞, a]`, `(a, b]`, `(b, +∞)`. -/
+private lemma numRoots_triple_split (P : R[X]) {a b : R} (hab : a ≤ b) :
+    numRoots P .negInf (.finite a) + numRoots P (.finite a) (.finite b) +
+      numRoots P (.finite b) .posInf = numRoots P .negInf .posInf := by
+  classical
+  show (P.roots.filter (· ≤ a)).card +
+      (P.roots.filter (fun r => a < r ∧ r ≤ b)).card +
+      (P.roots.filter (b < ·)).card = P.roots.card
+  rw [← Multiset.card_add, ← Multiset.card_add]
+  congr 1
+  ext r
+  simp only [Multiset.count_add, Multiset.count_filter]
+  by_cases h1 : r ≤ a
+  · have h2 : ¬ (a < r ∧ r ≤ b) := fun ⟨h, _⟩ =>
+      absurd (lt_of_lt_of_le h h1) (lt_irrefl a)
+    have h3 : ¬ b < r := fun h =>
+      absurd (lt_of_lt_of_le h h1) (not_lt.mpr hab)
+    simp [h1, h2, h3]
+  · push Not at h1
+    by_cases h2 : r ≤ b
+    · have h1' : ¬ r ≤ a := not_le.mpr h1
+      have h2ab : a < r ∧ r ≤ b := ⟨h1, h2⟩
+      have h3 : ¬ b < r := not_lt.mpr h2
+      simp [h1', h2ab, h3]
+    · push Not at h2
+      have h1' : ¬ r ≤ a := not_le.mpr h1
+      have h2' : ¬ (a < r ∧ r ≤ b) := fun ⟨_, h⟩ =>
+        absurd (lt_of_lt_of_le h2 h) (lt_irrefl b)
+      simp [h1', h2', h2]
+
+/-- **BPR Remark 2.38.** When every root of `P ≠ 0` is real
+    (`P.roots.card = natDegree P`), `Var(Der(P); a, b]` equals
+    `num(P; (a, b])` for every `a < b`.
+
+    Budan-Fourier provides only the inequality `num ≤ Var` with even
+    difference, but under the hypothesis the three-way sum telescopes:
+    the total `Var(Der(P); −∞, +∞)` equals `natDegree P = num(P; R)`,
+    forcing equality in each sub-interval. -/
+theorem var_eq_numRoots_of_all_roots_real
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0)
+    (hroots_card : P.roots.card = P.natDegree) {a b : R} (hab : a < b) :
+    varBetween (der P) (.finite a) (.finite b) =
+      (numRoots P (.finite a) (.finite b) : ℤ) := by
+  -- Total roots = natDegree.
+  have hnum_total : (numRoots P .negInf .posInf : ℤ) = (P.natDegree : ℤ) := by
+    show (P.roots.card : ℤ) = (P.natDegree : ℤ)
+    exact_mod_cast hroots_card
+  -- Total varBetween ≤ natDegree.
+  have hvar_le : varBetween (der P) .negInf .posInf ≤ (P.natDegree : ℤ) := by
+    unfold varBetween
+    have h1 : (varAt (der P) .negInf : ℤ) ≤ (P.natDegree : ℤ) :=
+      Int.ofNat_le.mpr (varAt_der_le_natDegree P .negInf)
+    have h2 : (0 : ℤ) ≤ (varAt (der P) .posInf : ℤ) := Int.natCast_nonneg _
+    linarith
+  -- BF total: num ≤ Var.
+  have hBF_total := (budan_fourier_negInf_posInf hIVP hP).1
+  -- Hence varBetween total = natDegree.
+  have hvar_total : varBetween (der P) .negInf .posInf = (P.natDegree : ℤ) := by
+    linarith
+  -- numRoots splits into three (as ℤ).
+  have hnum_split : (numRoots P .negInf (.finite a) : ℤ) +
+      (numRoots P (.finite a) (.finite b) : ℤ) +
+      (numRoots P (.finite b) .posInf : ℤ) = (P.natDegree : ℤ) := by
+    have h := numRoots_triple_split P hab.le
+    have h' : ((numRoots P .negInf (.finite a) +
+        numRoots P (.finite a) (.finite b) +
+        numRoots P (.finite b) .posInf : ℕ) : ℤ) =
+        ((numRoots P .negInf .posInf : ℕ) : ℤ) := by exact_mod_cast h
+    push_cast at h'
+    linarith
+  -- varBetween splits into three.
+  have hvar_split : varBetween (der P) .negInf (.finite a) +
+      varBetween (der P) (.finite a) (.finite b) +
+      varBetween (der P) (.finite b) .posInf = (P.natDegree : ℤ) := by
+    have h1 := varBetween_split (der P) .negInf (.finite b) .posInf
+    have h2 := varBetween_split (der P) .negInf (.finite a) (.finite b)
+    linarith
+  -- BF on each sub-interval.
+  have hBF_L := (budan_fourier_negInf hIVP hP a).1
+  have hBF_M := (budan_fourier_finite hIVP hP hab).1
+  have hBF_R := (budan_fourier_posInf hIVP hP b).1
+  -- Componentwise ≤ with equal sums forces componentwise equality.
+  linarith
+
 end Azurite.BPR.Theorem2_35
