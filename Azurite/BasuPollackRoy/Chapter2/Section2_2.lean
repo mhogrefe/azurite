@@ -3,6 +3,7 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 import Mathlib.Algebra.Polynomial.Degree.Defs
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Data.List.Basic
+import Mathlib.Data.Sign.Basic
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -156,11 +157,89 @@ lemma Var_eq_zero_of_forall_nonpos {l : List R} (h : ∀ x ∈ l, x ≤ 0) :
   exact varNonzero_eq_zero_of_forall_nonpos
     (fun x hx => h x (List.mem_of_mem_filter hx))
 
+omit [IsStrictOrderedRing R] in
 /-- Prepending a zero to a list does not change its variation count. -/
 @[simp] lemma Var_zero_cons (l : List R) : Var ((0 : R) :: l) = Var l := by
   unfold Var
   rw [List.filter_cons]
   simp
+
+end
+
+section
+
+variable [Ring R] [LinearOrder R] [IsStrictOrderedRing R]
+
+/-- If two lists of nonzero elements have pointwise matching signs, their
+    `varNonzero` counts agree. The `a * b < 0` comparison depends only on
+    `sign a * sign b` (via `sign_mul`), so sign-map equality is enough. -/
+lemma varNonzero_congr_sign : ∀ {l₁ l₂ : List R},
+    l₁.map SignType.sign = l₂.map SignType.sign →
+    varNonzero l₁ = varNonzero l₂ := by
+  intro l₁
+  induction l₁ with
+  | nil =>
+    intro l₂ h
+    cases l₂ with
+    | nil => rfl
+    | cons => simp at h
+  | cons a rest₁ ih =>
+    intro l₂ h
+    cases l₂ with
+    | nil => simp at h
+    | cons a' rest₂ =>
+      simp only [List.map_cons, List.cons.injEq] at h
+      obtain ⟨ha, hrest⟩ := h
+      cases rest₁ with
+      | nil =>
+        cases rest₂ with
+        | nil => rfl
+        | cons => simp at hrest
+      | cons b rest₁' =>
+        cases rest₂ with
+        | nil => simp at hrest
+        | cons b' rest₂' =>
+          simp only [List.map_cons, List.cons.injEq] at hrest
+          obtain ⟨hb, hrest'⟩ := hrest
+          rw [varNonzero_cons_cons, varNonzero_cons_cons]
+          have h_iff : (a * b < 0) ↔ (a' * b' < 0) := by
+            have hs : SignType.sign (a * b) = SignType.sign (a' * b') := by
+              rw [sign_mul, sign_mul, ha, hb]
+            refine ⟨fun hab => ?_, fun hab => ?_⟩
+            · rw [sign_eq_neg_one_iff.mpr hab] at hs
+              exact sign_eq_neg_one_iff.mp hs.symm
+            · rw [sign_eq_neg_one_iff.mpr hab] at hs
+              exact sign_eq_neg_one_iff.mp hs
+          have hif_eq : (if a * b < 0 then (1 : ℕ) else 0) =
+              (if a' * b' < 0 then 1 else 0) := by
+            by_cases hab : a * b < 0
+            · rw [if_pos hab, if_pos (h_iff.mp hab)]
+            · rw [if_neg hab, if_neg (fun hc => hab (h_iff.mpr hc))]
+          rw [hif_eq]
+          congr 1
+          apply ih
+          simp only [List.map_cons, List.cons.injEq]
+          exact ⟨hb, hrest'⟩
+
+/-- `Var` is invariant under operations that preserve the sign pattern of
+    the list. -/
+lemma Var_congr_sign {l₁ l₂ : List R}
+    (h : l₁.map SignType.sign = l₂.map SignType.sign) :
+    Var l₁ = Var l₂ := by
+  unfold Var
+  apply varNonzero_congr_sign
+  -- Goal: (l₁.filter (· ≠ 0)).map sign = (l₂.filter (· ≠ 0)).map sign
+  -- Strategy: show this equals (l_i.map sign).filter (· ≠ 0), then use h.
+  have key : ∀ (l : List R),
+      (l.filter (· ≠ 0)).map SignType.sign =
+      (l.map SignType.sign).filter (· ≠ 0) := by
+    intro l
+    rw [List.filter_map]
+    congr 1
+    apply List.filter_congr
+    intro x _
+    simp only [Function.comp_apply, decide_not, sign_eq_zero_iff]
+  rw [key, key, h]
 
 end
 

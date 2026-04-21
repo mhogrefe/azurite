@@ -1,5 +1,6 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
+import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
 
 /-!
 # BPR Theorem 2.33: Descartes' Rule of Signs
@@ -27,7 +28,7 @@ interval, applied with `a = 0`, `b = +∞`.
 
 namespace Azurite.BPR.Theorem2_33
 
-open Polynomial Azurite.BPR
+open Polynomial Azurite.BPR Azurite.BPR.Theorem2_35
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
@@ -200,5 +201,32 @@ lemma varAt_der_finite_zero (P : R[X]) :
 theorem varPoly_eq_varBetween_der (P : R[X]) :
     (varPoly P : ℤ) = varBetween (der P) (.finite 0) .posInf := by
   simp [varBetween, varAt_der_finite_zero, varAt_der_posInf]
+
+omit [IsStrictOrderedRing R] in
+/-- `posRoots P = numRoots P (0, +∞)`. Immediate from unfolding both sides. -/
+private lemma posRoots_eq_numRoots (P : R[X]) :
+    posRoots P = numRoots P (.finite 0) .posInf := rfl
+
+/-- **BPR Theorem 2.33 (Descartes' rule of signs).** Over a real closed field,
+    for `P ∈ R[X]`:
+
+    1. `Var(P) ≥ pos(P)` — the number of sign variations in the coefficient
+       sequence is an upper bound on the number of positive real roots
+       counted with multiplicity;
+    2. `Var(P) − pos(P)` is even.
+
+    The BPR proof reduces via `varPoly_eq_varBetween_der` to the Budan-Fourier
+    theorem on the half-open interval `(0, +∞)`. -/
+theorem descartes_rule_of_signs (hIVP : HasIntermediateValueProperty R)
+    (P : R[X]) :
+    posRoots P ≤ varPoly P ∧ Even ((varPoly P : ℤ) - posRoots P) := by
+  by_cases hP : P = 0
+  · subst hP
+    refine ⟨?_, ?_⟩
+    · simp [posRoots, varPoly]
+    · simp [posRoots, varPoly]
+  have hBF := budan_fourier_posInf hIVP hP 0
+  rw [← posRoots_eq_numRoots P, ← varPoly_eq_varBetween_der P] at hBF
+  exact ⟨by exact_mod_cast hBF.1, hBF.2⟩
 
 end Azurite.BPR.Theorem2_33
