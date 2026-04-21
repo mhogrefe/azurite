@@ -269,6 +269,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
+import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
 import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_19
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_20
