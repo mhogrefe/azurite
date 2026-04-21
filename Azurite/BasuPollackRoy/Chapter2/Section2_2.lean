@@ -109,6 +109,61 @@ lemma Var_of_forall_ne_zero {a : List R} (h : ∀ x ∈ a, x ≠ 0) :
 
 end
 
+section
+
+variable [Ring R] [LinearOrder R] [IsStrictOrderedRing R]
+
+/-- `varNonzero` vanishes on a list whose entries are all nonneg: every
+    adjacent product is nonneg, so no sign variation ever triggers. -/
+lemma varNonzero_eq_zero_of_forall_nonneg :
+    ∀ {l : List R}, (∀ x ∈ l, 0 ≤ x) → varNonzero l = 0
+  | [], _ => rfl
+  | [_], _ => rfl
+  | a :: b :: rest, h => by
+      rw [varNonzero_cons_cons]
+      have ha := h a (List.mem_cons_self)
+      have hb := h b (List.mem_cons_of_mem _ List.mem_cons_self)
+      have hab : ¬ a * b < 0 := not_lt.mpr (mul_nonneg ha hb)
+      rw [if_neg hab, zero_add]
+      exact varNonzero_eq_zero_of_forall_nonneg
+        (fun x hx => h x (List.mem_cons_of_mem _ hx))
+
+/-- `varNonzero` vanishes on a list whose entries are all nonpos. -/
+lemma varNonzero_eq_zero_of_forall_nonpos :
+    ∀ {l : List R}, (∀ x ∈ l, x ≤ 0) → varNonzero l = 0
+  | [], _ => rfl
+  | [_], _ => rfl
+  | a :: b :: rest, h => by
+      rw [varNonzero_cons_cons]
+      have ha := h a (List.mem_cons_self)
+      have hb := h b (List.mem_cons_of_mem _ List.mem_cons_self)
+      have hab : ¬ a * b < 0 := not_lt.mpr (mul_nonneg_of_nonpos_of_nonpos ha hb)
+      rw [if_neg hab, zero_add]
+      exact varNonzero_eq_zero_of_forall_nonpos
+        (fun x hx => h x (List.mem_cons_of_mem _ hx))
+
+/-- `Var` vanishes on a list whose entries are all nonneg. -/
+lemma Var_eq_zero_of_forall_nonneg {l : List R} (h : ∀ x ∈ l, 0 ≤ x) :
+    Var l = 0 := by
+  unfold Var
+  exact varNonzero_eq_zero_of_forall_nonneg
+    (fun x hx => h x (List.mem_of_mem_filter hx))
+
+/-- `Var` vanishes on a list whose entries are all nonpos. -/
+lemma Var_eq_zero_of_forall_nonpos {l : List R} (h : ∀ x ∈ l, x ≤ 0) :
+    Var l = 0 := by
+  unfold Var
+  exact varNonzero_eq_zero_of_forall_nonpos
+    (fun x hx => h x (List.mem_of_mem_filter hx))
+
+/-- Prepending a zero to a list does not change its variation count. -/
+@[simp] lemma Var_zero_cons (l : List R) : Var ((0 : R) :: l) = Var l := by
+  unfold Var
+  rw [List.filter_cons]
+  simp
+
+end
+
 /-! ### Worked example (BPR p. 43)
 
 `Var(1, −1, 2, 0, 0, 3, 4, −5, −2, 0, 3) = 4`: after dropping zeros the
