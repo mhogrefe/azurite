@@ -244,7 +244,7 @@ private lemma padCoeff_nonneg {P : R[X]} (hP : IsNormal P) (i : ℤ) :
 omit [IsStrictOrderedRing R] in
 /-- Positivity propagation from `no_gap`: if `P.coeff k > 0` and `P.coeff l > 0` with
     `k ≤ l`, then every coefficient on `[k, l]` is positive. -/
-private lemma isNormal_pos_between {P : R[X]} (hP : IsNormal P)
+lemma isNormal_pos_between {P : R[X]} (hP : IsNormal P)
     {k l i : ℕ} (hki : k ≤ i) (hil : i ≤ l)
     (hk : 0 < P.coeff k) (hl : 0 < P.coeff l) : 0 < P.coeff i := by
   rcases eq_or_lt_of_le hki with rfl | hki'
@@ -569,9 +569,9 @@ private lemma coeff_mul_eq_padSum (A B : R[X]) (m N : ℕ) (hN : m < N) :
   rw [Finset.mem_range] at hi
   show A.coeff i * B.coeff (m - i) = A.coeff i * padCoeff B ((m : ℤ) - i)
   congr 1
-  rw [padCoeff_of_nonneg _ (by push_cast; omega : (0 : ℤ) ≤ (m : ℤ) - i)]
+  rw [padCoeff_of_nonneg _ (by omega : (0 : ℤ) ≤ (m : ℤ) - i)]
   congr 1
-  rw [show ((m : ℤ) - i) = ((m - i : ℕ) : ℤ) by push_cast; omega]
+  rw [show ((m : ℤ) - i) = ((m - i : ℕ) : ℤ) by omega]
   exact Int.toNat_natCast _
 
 /-- The double sum expressing `c_{k+1}² − c_k · c_{k+2}`. -/
