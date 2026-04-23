@@ -53,6 +53,41 @@ For `a, b ∈ R ∪ {−∞, +∞}`:
   less than `Var(P; b)`).
 - `num(P; (a, b])` is the number of roots of `P` in the half-open interval
   `(a, b]`, counted with multiplicity.
+
+## Erratum: BPR Definition 2.45, "moreover" clause on virtual multiplicity
+
+Following Definition 2.45, BPR asserts:
+
+> Note that if `x` is a virtual root of `P′` with virtual multiplicity `ν`
+> with respect to `P`, the virtual multiplicity of `x` with respect to `P′`
+> can only be `ν`, `ν + 1` or `ν − 1`. **Moreover, if `x` is a root of `P′`,
+> the virtual multiplicity of `x` with respect to `P′` is necessarily
+> `ν + 1`.**
+
+The first claim (the three-way case split) is correct and formalized as
+`Azurite.BPR.VirtualRoots.virtualMultiplicity_derivative_cases`. The
+"moreover" refinement, however, is **false** in general — there is an
+unnoted counterexample:
+
+**Counterexample:** Take `P = X² + 1` over any real closed field, `x = 0`.
+- `P′ = 2X`, so `virtualRoots(P′) = [0]` and `x = 0` is a virtual root of
+  `P′` satisfying `P′.eval 0 = 0`.
+- `virtualRoots(X² + 1) = [0, 0]`: this list is forced, since any virtual
+  roots list of `X² + 1` must have length `2`, every entry must be a root
+  of some iterated derivative (only candidate: `0`, from `P′ = 2X`), and
+  `SignConstantOnGaps` is trivially satisfied since `X² + 1 > 0` everywhere.
+- Hence `ν = v(P, 0) = 2` and `v(P′, 0) = 1`, giving `v(P′, 0) = ν − 1`,
+  not `ν + 1`.
+
+The phenomenon is that a polynomial with no real roots can still have
+"spurious" virtual roots — argmins of `|P|` on each interval where `P`
+does not vanish — and `X² + 1` stacks two such argmins at the same point.
+The extra hypothesis "`x` is not a root of `P`" does not rescue the claim
+(the counterexample above already satisfies `P.eval 0 = 1 ≠ 0`).
+
+Because the claim as stated is not a theorem of the real closed field
+axioms, we do not formalize it. Downstream uses in BPR should instead rely
+on the correct three-way bound (`virtualMultiplicity_derivative_cases`).
 -/
 
 namespace Azurite.BPR

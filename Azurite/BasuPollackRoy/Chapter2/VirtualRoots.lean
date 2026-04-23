@@ -50,14 +50,109 @@ def SignConstantOnGaps (P : R[X]) (roots : List R) : Prop :=
   ∀ x y : R, x ≤ y → (∀ r ∈ roots, r < x ∨ y < r) →
     P.eval x ≠ 0 ∧ SignType.sign (P.eval x) = SignType.sign (P.eval y)
 
-/-- `IsVirtualRootsList P roots` asserts that `roots` is a sorted list of the
-    right length (= `natDegree P`) on whose gaps `P` has constant sign. The
-    interlacing condition (c) is stated separately via `Interlaced`, since it
-    relates the virtual roots of `P` to those of its derivative. -/
-structure IsVirtualRootsList (P : R[X]) (roots : List R) : Prop where
-  length_eq : roots.length = P.natDegree
-  sorted : roots.Pairwise (· ≤ ·)
-  sign_const : SignConstantOnGaps P roots
+/-- `x ∈ S` is a non-strict minimizer of `|P.eval|` on `S`: `|P.eval x| ≤ |P.eval z|`
+    for every `z ∈ S`. -/
+def IsArgminAbsOn (P : R[X]) (S : Set R) (x : R) : Prop :=
+  x ∈ S ∧ ∀ z ∈ S, |P.eval x| ≤ |P.eval z|
+
+/-- Partition argmin witness for the middle/right intervals. Given an anchor
+    `a` (the previous virtual root of `P'`), a non-empty tail `x :: rest` of
+    virtual roots of `P`, and the corresponding tail of virtual roots of `P'`,
+    say each `xᵢ` minimises `|P|` on `[yᵢ₋₁, yᵢ]` (or on `[y_{p−1}, ∞)` for
+    the last). -/
+def ArgminPartitionFrom (P : R[X]) (a : R) : List R → List R → Prop
+  | [x], [] => IsArgminAbsOn P (Set.Ici a) x
+  | x :: x' :: xs, y :: ys =>
+      IsArgminAbsOn P (Set.Icc a y) x ∧ ArgminPartitionFrom P y (x' :: xs) ys
+  | _, _ => False
+
+/-- Partition argmin witness for the whole line. The first entry `x` minimises
+    `|P|` on `(−∞, y₀]`, and subsequent entries follow via
+    `ArgminPartitionFrom`. -/
+def ArgminPartition (P : R[X]) : List R → List R → Prop
+  | [x], [] => IsArgminAbsOn P Set.univ x
+  | x :: x' :: xs, y :: ys =>
+      IsArgminAbsOn P (Set.Iic y) x ∧ ArgminPartitionFrom P y (x' :: xs) ys
+  | _, _ => False
+
+/-- Depth-`n` virtual-roots-list predicate, parameterised by a `ℕ` that the
+    recursion structurally decreases on. In practice, `n = P.natDegree`. The
+    `n + 1` case requires a nested virtual-roots list `ys` of `derivative P`
+    at depth `n`, which matches `(derivative P).natDegree = n`. -/
+def IsVirtualRootsListAux : ℕ → R[X] → List R → Prop
+  | 0, P, xs =>
+      xs.length = P.natDegree ∧
+      xs.Pairwise (· ≤ ·) ∧
+      SignConstantOnGaps P xs
+  | n + 1, P, xs =>
+      xs.length = P.natDegree ∧
+      xs.Pairwise (· ≤ ·) ∧
+      SignConstantOnGaps P xs ∧
+      (xs = [] ∨
+        ∃ ys : List R,
+          IsVirtualRootsListAux n (derivative P) ys ∧
+          Interlaced xs ys ∧
+          ArgminPartition P xs ys)
+
+/-- `IsVirtualRootsList P xs` captures BPR Definition 2.45: `xs` is a sorted
+    list whose length matches `natDegree P`, `P` has constant sign on each gap,
+    and (when `xs ≠ []`) there is a virtual roots list `ys` of `P'` interlaced
+    with `xs` such that each entry of `xs` is an argmin of `|P|` on the
+    corresponding interval `Iᵢ` determined by `ys`.
+
+    Implemented via `IsVirtualRootsListAux` with depth `P.natDegree`. -/
+def IsVirtualRootsList (P : R[X]) (xs : List R) : Prop :=
+  IsVirtualRootsListAux P.natDegree P xs
+
+omit [IsStrictOrderedRing R] in
+/-- `IsVirtualRootsListAux` always implies `xs.length = P.natDegree`. -/
+lemma IsVirtualRootsListAux.length_eq : ∀ {n : ℕ} {P : R[X]} {xs : List R},
+    IsVirtualRootsListAux n P xs → xs.length = P.natDegree
+  | 0, _, _, h => h.1
+  | _ + 1, _, _, h => h.1
+
+omit [IsStrictOrderedRing R] in
+/-- `IsVirtualRootsListAux` always implies `xs` is sorted. -/
+lemma IsVirtualRootsListAux.sorted : ∀ {n : ℕ} {P : R[X]} {xs : List R},
+    IsVirtualRootsListAux n P xs → xs.Pairwise (· ≤ ·)
+  | 0, _, _, h => h.2.1
+  | _ + 1, _, _, h => h.2.1
+
+omit [IsStrictOrderedRing R] in
+/-- `IsVirtualRootsListAux` always implies `P` has constant sign on gaps. -/
+lemma IsVirtualRootsListAux.sign_const : ∀ {n : ℕ} {P : R[X]} {xs : List R},
+    IsVirtualRootsListAux n P xs → SignConstantOnGaps P xs
+  | 0, _, _, h => h.2.2
+  | _ + 1, _, _, h => h.2.2.1
+
+omit [IsStrictOrderedRing R] in
+/-- Length of a virtual roots list equals `natDegree P`. -/
+lemma IsVirtualRootsList.length_eq {P : R[X]} {xs : List R}
+    (h : IsVirtualRootsList P xs) : xs.length = P.natDegree :=
+  IsVirtualRootsListAux.length_eq h
+
+omit [IsStrictOrderedRing R] in
+/-- A virtual roots list is sorted. -/
+lemma IsVirtualRootsList.sorted {P : R[X]} {xs : List R}
+    (h : IsVirtualRootsList P xs) : xs.Pairwise (· ≤ ·) :=
+  IsVirtualRootsListAux.sorted h
+
+omit [IsStrictOrderedRing R] in
+/-- `P` has constant sign on each gap between consecutive virtual roots. -/
+lemma IsVirtualRootsList.sign_const {P : R[X]} {xs : List R}
+    (h : IsVirtualRootsList P xs) : SignConstantOnGaps P xs :=
+  IsVirtualRootsListAux.sign_const h
+
+omit [IsStrictOrderedRing R] in
+/-- Argmin witness clause extracted from `IsVirtualRootsListAux (n + 1)`. -/
+lemma IsVirtualRootsListAux.argmin_wit_succ {n : ℕ} {P : R[X]} {xs : List R}
+    (h : IsVirtualRootsListAux (n + 1) P xs) :
+    xs = [] ∨
+      ∃ ys : List R,
+        IsVirtualRootsListAux n (derivative P) ys ∧
+        Interlaced xs ys ∧
+        ArgminPartition P xs ys :=
+  h.2.2.2
 
 /-! ### Elementary properties of `Interlaced` -/
 
@@ -107,11 +202,12 @@ omit [IsStrictOrderedRing R] in
     valid virtual roots list: there are no roots, so the only "gap" is the full
     line, and a nonzero constant has constant sign everywhere. -/
 lemma isVirtualRootsList_nil_of_natDegree_zero {P : R[X]} (hP : P.natDegree = 0)
-    (hP0 : P ≠ 0) : IsVirtualRootsList P [] where
-  length_eq := by simp [hP]
-  sorted := List.Pairwise.nil
-  sign_const := by
-    intro x y _ _
+    (hP0 : P ≠ 0) : IsVirtualRootsList P [] := by
+  unfold IsVirtualRootsList
+  rw [hP]
+  refine ⟨?_, List.Pairwise.nil, ?_⟩
+  · simp [hP]
+  · intro x y _ _
     have hPC : P = C (P.coeff 0) := by
       have := eq_C_of_natDegree_le_zero (le_of_eq hP)
       simpa using this
@@ -415,22 +511,24 @@ lemma strictAntiOn_Icc_sign_trichotomy (hIVP : HasIntermediateValueProperty R)
 lemma exists_argmin_abs_strictMonoOn_Icc (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} {a b : R} (hab : a ≤ b)
     (hmono : StrictMonoOn (fun x => P.eval x) (Set.Icc a b)) :
-    ∃ x ∈ Set.Icc a b, ∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y| := by
+    ∃ x ∈ Set.Icc a b,
+      (∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = a ∨ x = b) := by
   rcases strictMonoOn_Icc_sign_trichotomy hIVP hab hmono with
     ⟨c, hc, hPc⟩ | hpos | hneg
-  · refine ⟨c, hc, ?_⟩
+  · refine ⟨c, hc, ?_, Or.inl hPc⟩
     intro y _
     rw [hPc, abs_zero]
     exact abs_nonneg _
   · -- P > 0 on [a,b] and strict-mono: min |P| = min P = at a
-    refine ⟨a, Set.left_mem_Icc.mpr hab, ?_⟩
+    refine ⟨a, Set.left_mem_Icc.mpr hab, ?_, Or.inr (Or.inl rfl)⟩
     intro y hy
     have hPa : 0 < P.eval a := hpos a (Set.left_mem_Icc.mpr hab)
     have hPy : 0 < P.eval y := hpos y hy
     rw [abs_of_pos hPa, abs_of_pos hPy]
     exact hmono.monotoneOn (Set.left_mem_Icc.mpr hab) hy hy.1
   · -- P < 0 on [a,b] and strict-mono: min |P| = max P = at b
-    refine ⟨b, Set.right_mem_Icc.mpr hab, ?_⟩
+    refine ⟨b, Set.right_mem_Icc.mpr hab, ?_, Or.inr (Or.inr rfl)⟩
     intro y hy
     have hPb : P.eval b < 0 := hneg b (Set.right_mem_Icc.mpr hab)
     have hPy : P.eval y < 0 := hneg y hy
@@ -442,22 +540,24 @@ lemma exists_argmin_abs_strictMonoOn_Icc (hIVP : HasIntermediateValueProperty R)
 lemma exists_argmin_abs_strictAntiOn_Icc (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} {a b : R} (hab : a ≤ b)
     (hanti : StrictAntiOn (fun x => P.eval x) (Set.Icc a b)) :
-    ∃ x ∈ Set.Icc a b, ∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y| := by
+    ∃ x ∈ Set.Icc a b,
+      (∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = a ∨ x = b) := by
   rcases strictAntiOn_Icc_sign_trichotomy hIVP hab hanti with
     ⟨c, hc, hPc⟩ | hpos | hneg
-  · refine ⟨c, hc, ?_⟩
+  · refine ⟨c, hc, ?_, Or.inl hPc⟩
     intro y _
     rw [hPc, abs_zero]
     exact abs_nonneg _
   · -- P > 0 on [a,b] and strict-anti: min |P| = min P = at b
-    refine ⟨b, Set.right_mem_Icc.mpr hab, ?_⟩
+    refine ⟨b, Set.right_mem_Icc.mpr hab, ?_, Or.inr (Or.inr rfl)⟩
     intro y hy
     have hPb : 0 < P.eval b := hpos b (Set.right_mem_Icc.mpr hab)
     have hPy : 0 < P.eval y := hpos y hy
     rw [abs_of_pos hPb, abs_of_pos hPy]
     exact hanti.antitoneOn hy (Set.right_mem_Icc.mpr hab) hy.2
   · -- P < 0 on [a,b] and strict-anti: min |P| = max P = at a
-    refine ⟨a, Set.left_mem_Icc.mpr hab, ?_⟩
+    refine ⟨a, Set.left_mem_Icc.mpr hab, ?_, Or.inr (Or.inl rfl)⟩
     intro y hy
     have hPa : P.eval a < 0 := hneg a (Set.left_mem_Icc.mpr hab)
     have hPy : P.eval y < 0 := hneg y hy
@@ -484,7 +584,7 @@ lemma exists_argmin_abs_strictMonoOn_Iic_of_bound
   obtain ⟨N, hNc, hN⟩ := hbound
   have hmono' : StrictMonoOn (fun x => P.eval x) (Set.Icc N c) :=
     hmono.mono (fun _ h => h.2)
-  obtain ⟨x, hx_mem, hx_min⟩ := exists_argmin_abs_strictMonoOn_Icc hIVP hNc hmono'
+  obtain ⟨x, hx_mem, hx_min, _⟩ := exists_argmin_abs_strictMonoOn_Icc hIVP hNc hmono'
   refine ⟨x, hx_mem.2, ?_⟩
   intro y hy
   by_cases hyN : N ≤ y
@@ -504,7 +604,7 @@ lemma exists_argmin_abs_strictAntiOn_Iic_of_bound
   obtain ⟨N, hNc, hN⟩ := hbound
   have hanti' : StrictAntiOn (fun x => P.eval x) (Set.Icc N c) :=
     hanti.mono (fun _ h => h.2)
-  obtain ⟨x, hx_mem, hx_min⟩ := exists_argmin_abs_strictAntiOn_Icc hIVP hNc hanti'
+  obtain ⟨x, hx_mem, hx_min, _⟩ := exists_argmin_abs_strictAntiOn_Icc hIVP hNc hanti'
   refine ⟨x, hx_mem.2, ?_⟩
   intro y hy
   by_cases hyN : N ≤ y
@@ -525,7 +625,7 @@ lemma exists_argmin_abs_strictMonoOn_Ici_of_bound
   obtain ⟨N, hcN, hN⟩ := hbound
   have hmono' : StrictMonoOn (fun x => P.eval x) (Set.Icc c N) :=
     hmono.mono (fun _ h => h.1)
-  obtain ⟨x, hx_mem, hx_min⟩ := exists_argmin_abs_strictMonoOn_Icc hIVP hcN hmono'
+  obtain ⟨x, hx_mem, hx_min, _⟩ := exists_argmin_abs_strictMonoOn_Icc hIVP hcN hmono'
   refine ⟨x, hx_mem.1, ?_⟩
   intro y hy
   by_cases hyN : y ≤ N
@@ -545,7 +645,7 @@ lemma exists_argmin_abs_strictAntiOn_Ici_of_bound
   obtain ⟨N, hcN, hN⟩ := hbound
   have hanti' : StrictAntiOn (fun x => P.eval x) (Set.Icc c N) :=
     hanti.mono (fun _ h => h.1)
-  obtain ⟨x, hx_mem, hx_min⟩ := exists_argmin_abs_strictAntiOn_Icc hIVP hcN hanti'
+  obtain ⟨x, hx_mem, hx_min, _⟩ := exists_argmin_abs_strictAntiOn_Icc hIVP hcN hanti'
   refine ⟨x, hx_mem.1, ?_⟩
   intro y hy
   by_cases hyN : y ≤ N
@@ -563,7 +663,7 @@ For a polynomial of positive degree, `|P(y)|` exceeds any fixed bound once
 `HasSignAtNegInfty` / `HasSignAtPosInfty` and furnishes the asymptotic input
 for the half-infinite argmin lemmas. -/
 
-omit [LinearOrder R] [IsStrictOrderedRing R] in
+omit [IsStrictOrderedRing R] in
 /-- Decompose `P(y)` into its leading term and tail. -/
 private lemma eval_eq_lead_add_tail (P : R[X]) (y : R) :
     P.eval y = P.leadingCoeff * y ^ P.natDegree +
@@ -709,41 +809,163 @@ Combine the argmin reductions with the polynomial asymptotic bound to get
 argmin existence on `Iic c` and `Ici c` without a manually supplied far-endpoint
 witness. Available for polynomials of positive degree (needed for growth). -/
 
-/-- Argmin of `|P|` exists on `Iic c` for `P` strict-mono there (positive degree). -/
+/-- Argmin of `|P|` exists on `Iic c` for `P` strict-mono there (positive degree).
+    The witness is either a root of `P` (from a far-left sign change detected via
+    pos-degree asymptotics) or the right endpoint `c` (when `P(c) ≤ 0`). -/
 lemma exists_argmin_abs_strictMonoOn_Iic
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hmono : StrictMonoOn (fun x => P.eval x) (Set.Iic c)) :
-    ∃ x ∈ Set.Iic c, ∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y| :=
-  exists_argmin_abs_strictMonoOn_Iic_of_bound hIVP hmono
-    (exists_bound_far_left P hdeg c)
+    ∃ x ∈ Set.Iic c, (∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
+  rcases le_or_gt (P.eval c) 0 with hPc | hPc
+  · -- P(c) ≤ 0: x = c is argmin (strict mono gives P(y) ≤ P(c) ≤ 0 on Iic c)
+    refine ⟨c, le_refl c, ?_, ?_⟩
+    · intro y hy
+      have hPy_le : P.eval y ≤ P.eval c := hmono.monotoneOn hy (le_refl c) hy
+      have hPy_nonpos : P.eval y ≤ 0 := le_trans hPy_le hPc
+      rw [abs_of_nonpos hPy_nonpos, abs_of_nonpos hPc, neg_le_neg_iff]
+      exact hPy_le
+    · rcases eq_or_lt_of_le hPc with hPc0 | _
+      · exact Or.inl hPc0
+      · exact Or.inr rfl
+  · -- P(c) > 0: asymptotic forces P(y₀) < 0 far left, IVT yields a root
+    obtain ⟨K, hK_pos, hK⟩ :=
+      exists_abs_eval_ge_of_natDegree_pos P hdeg (|P.eval c| + 1)
+    set y₀ := min (c - 1) (-K - 1)
+    have hy₀_lt_c : y₀ < c := by
+      have : y₀ ≤ c - 1 := min_le_left _ _
+      linarith
+    have hy₀_le : y₀ ≤ -K - 1 := min_le_right _ _
+    have hy₀_neg : y₀ < 0 := by linarith [hK_pos]
+    have hy₀_abs : K < |y₀| := by rw [abs_of_neg hy₀_neg]; linarith
+    have hPy₀_abs : |P.eval c| + 1 ≤ |P.eval y₀| := hK y₀ hy₀_abs
+    have hPc_abs : |P.eval c| = P.eval c := abs_of_pos hPc
+    have hPy₀_lt_Pc : P.eval y₀ < P.eval c := hmono hy₀_lt_c.le (le_refl c) hy₀_lt_c
+    have hPy₀_neg : P.eval y₀ < 0 := by
+      rcases le_or_gt (P.eval y₀) 0 with hle | hgt
+      · rcases eq_or_lt_of_le hle with heq | hlt
+        · exfalso; rw [heq, abs_zero, hPc_abs] at hPy₀_abs; linarith
+        · exact hlt
+      · exfalso; rw [abs_of_pos hgt, hPc_abs] at hPy₀_abs; linarith
+    have hprod : P.eval y₀ * P.eval c < 0 := mul_neg_of_neg_of_pos hPy₀_neg hPc
+    obtain ⟨r, _, hrc, hPr⟩ := hIVP P y₀ c hy₀_lt_c hprod
+    refine ⟨r, hrc.le, ?_, Or.inl hPr⟩
+    intro y _; rw [hPr, abs_zero]; exact abs_nonneg _
 
 /-- Argmin of `|P|` exists on `Iic c` for `P` strict-anti there (positive degree). -/
 lemma exists_argmin_abs_strictAntiOn_Iic
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hanti : StrictAntiOn (fun x => P.eval x) (Set.Iic c)) :
-    ∃ x ∈ Set.Iic c, ∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y| :=
-  exists_argmin_abs_strictAntiOn_Iic_of_bound hIVP hanti
-    (exists_bound_far_left P hdeg c)
+    ∃ x ∈ Set.Iic c, (∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
+  rcases le_or_gt 0 (P.eval c) with hPc | hPc
+  · refine ⟨c, le_refl c, ?_, ?_⟩
+    · intro y hy
+      have hPy_ge : P.eval c ≤ P.eval y := hanti.antitoneOn hy (le_refl c) hy
+      have hPy_nonneg : 0 ≤ P.eval y := le_trans hPc hPy_ge
+      rw [abs_of_nonneg hPy_nonneg, abs_of_nonneg hPc]
+      exact hPy_ge
+    · rcases eq_or_lt_of_le hPc with hPc0 | _
+      · exact Or.inl hPc0.symm
+      · exact Or.inr rfl
+  · obtain ⟨K, hK_pos, hK⟩ :=
+      exists_abs_eval_ge_of_natDegree_pos P hdeg (|P.eval c| + 1)
+    set y₀ := min (c - 1) (-K - 1)
+    have hy₀_lt_c : y₀ < c := by
+      have : y₀ ≤ c - 1 := min_le_left _ _
+      linarith
+    have hy₀_le : y₀ ≤ -K - 1 := min_le_right _ _
+    have hy₀_neg : y₀ < 0 := by linarith [hK_pos]
+    have hy₀_abs : K < |y₀| := by rw [abs_of_neg hy₀_neg]; linarith
+    have hPy₀_abs : |P.eval c| + 1 ≤ |P.eval y₀| := hK y₀ hy₀_abs
+    have hPc_abs : |P.eval c| = -P.eval c := abs_of_neg hPc
+    have hPy₀_gt_Pc : P.eval c < P.eval y₀ := hanti hy₀_lt_c.le (le_refl c) hy₀_lt_c
+    have hPy₀_pos : 0 < P.eval y₀ := by
+      rcases le_or_gt (P.eval y₀) 0 with hle | hgt
+      · exfalso; rw [abs_of_nonpos hle, hPc_abs] at hPy₀_abs; linarith
+      · exact hgt
+    have hprod : P.eval y₀ * P.eval c < 0 := mul_neg_of_pos_of_neg hPy₀_pos hPc
+    obtain ⟨r, _, hrc, hPr⟩ := hIVP P y₀ c hy₀_lt_c hprod
+    refine ⟨r, hrc.le, ?_, Or.inl hPr⟩
+    intro y _; rw [hPr, abs_zero]; exact abs_nonneg _
 
 /-- Argmin of `|P|` exists on `Ici c` for `P` strict-mono there (positive degree). -/
 lemma exists_argmin_abs_strictMonoOn_Ici
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hmono : StrictMonoOn (fun x => P.eval x) (Set.Ici c)) :
-    ∃ x ∈ Set.Ici c, ∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y| :=
-  exists_argmin_abs_strictMonoOn_Ici_of_bound hIVP hmono
-    (exists_bound_far_right P hdeg c)
+    ∃ x ∈ Set.Ici c, (∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
+  rcases le_or_gt 0 (P.eval c) with hPc | hPc
+  · refine ⟨c, le_refl c, ?_, ?_⟩
+    · intro y hy
+      have hPy_ge : P.eval c ≤ P.eval y := hmono.monotoneOn (le_refl c) hy hy
+      have hPy_nonneg : 0 ≤ P.eval y := le_trans hPc hPy_ge
+      rw [abs_of_nonneg hPy_nonneg, abs_of_nonneg hPc]
+      exact hPy_ge
+    · rcases eq_or_lt_of_le hPc with hPc0 | _
+      · exact Or.inl hPc0.symm
+      · exact Or.inr rfl
+  · obtain ⟨K, hK_pos, hK⟩ :=
+      exists_abs_eval_ge_of_natDegree_pos P hdeg (|P.eval c| + 1)
+    set y₀ := max (c + 1) (K + 1)
+    have hc_lt_y₀ : c < y₀ := by
+      have : c + 1 ≤ y₀ := le_max_left _ _
+      linarith
+    have hK_lt_y₀ : K + 1 ≤ y₀ := le_max_right _ _
+    have hy₀_pos : 0 < y₀ := by linarith [hK_pos]
+    have hy₀_abs : K < |y₀| := by rw [abs_of_pos hy₀_pos]; linarith
+    have hPy₀_abs : |P.eval c| + 1 ≤ |P.eval y₀| := hK y₀ hy₀_abs
+    have hPc_abs : |P.eval c| = -P.eval c := abs_of_neg hPc
+    have hPy₀_gt_Pc : P.eval c < P.eval y₀ := hmono (le_refl c) hc_lt_y₀.le hc_lt_y₀
+    have hPy₀_pos : 0 < P.eval y₀ := by
+      rcases le_or_gt (P.eval y₀) 0 with hle | hgt
+      · exfalso; rw [abs_of_nonpos hle, hPc_abs] at hPy₀_abs; linarith
+      · exact hgt
+    have hprod : P.eval c * P.eval y₀ < 0 := mul_neg_of_neg_of_pos hPc hPy₀_pos
+    obtain ⟨r, hcr, _, hPr⟩ := hIVP P c y₀ hc_lt_y₀ hprod
+    refine ⟨r, hcr.le, ?_, Or.inl hPr⟩
+    intro y _; rw [hPr, abs_zero]; exact abs_nonneg _
 
 /-- Argmin of `|P|` exists on `Ici c` for `P` strict-anti there (positive degree). -/
 lemma exists_argmin_abs_strictAntiOn_Ici
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hanti : StrictAntiOn (fun x => P.eval x) (Set.Ici c)) :
-    ∃ x ∈ Set.Ici c, ∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y| :=
-  exists_argmin_abs_strictAntiOn_Ici_of_bound hIVP hanti
-    (exists_bound_far_right P hdeg c)
+    ∃ x ∈ Set.Ici c, (∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
+  rcases le_or_gt (P.eval c) 0 with hPc | hPc
+  · refine ⟨c, le_refl c, ?_, ?_⟩
+    · intro y hy
+      have hPy_le : P.eval y ≤ P.eval c := hanti.antitoneOn (le_refl c) hy hy
+      have hPy_nonpos : P.eval y ≤ 0 := le_trans hPy_le hPc
+      rw [abs_of_nonpos hPy_nonpos, abs_of_nonpos hPc, neg_le_neg_iff]
+      exact hPy_le
+    · rcases eq_or_lt_of_le hPc with hPc0 | _
+      · exact Or.inl hPc0
+      · exact Or.inr rfl
+  · obtain ⟨K, hK_pos, hK⟩ :=
+      exists_abs_eval_ge_of_natDegree_pos P hdeg (|P.eval c| + 1)
+    set y₀ := max (c + 1) (K + 1)
+    have hc_lt_y₀ : c < y₀ := by
+      have : c + 1 ≤ y₀ := le_max_left _ _
+      linarith
+    have hK_lt_y₀ : K + 1 ≤ y₀ := le_max_right _ _
+    have hy₀_pos : 0 < y₀ := by linarith [hK_pos]
+    have hy₀_abs : K < |y₀| := by rw [abs_of_pos hy₀_pos]; linarith
+    have hPy₀_abs : |P.eval c| + 1 ≤ |P.eval y₀| := hK y₀ hy₀_abs
+    have hPc_abs : |P.eval c| = P.eval c := abs_of_pos hPc
+    have hPy₀_lt_Pc : P.eval y₀ < P.eval c := hanti (le_refl c) hc_lt_y₀.le hc_lt_y₀
+    have hPy₀_neg : P.eval y₀ < 0 := by
+      rcases le_or_gt 0 (P.eval y₀) with hge | hlt
+      · exfalso; rw [abs_of_nonneg hge, hPc_abs] at hPy₀_abs; linarith
+      · exact hlt
+    have hprod : P.eval c * P.eval y₀ < 0 := mul_neg_of_pos_of_neg hPc hPy₀_neg
+    obtain ⟨r, hcr, _, hPr⟩ := hIVP P c y₀ hc_lt_y₀ hprod
+    refine ⟨r, hcr.le, ?_, Or.inl hPr⟩
+    intro y _; rw [hPr, abs_zero]; exact abs_nonneg _
 
 /-! ### Root existence from sign change at `±∞`
 
@@ -809,7 +1031,7 @@ lemma exists_root_of_sign_pos_neg_at_infty (hIVP : HasIntermediateValueProperty 
 
 For `natDegree P = 1`, the derivative is the constant polynomial `C P.leadingCoeff`. -/
 
-omit [LinearOrder R] [IsStrictOrderedRing R] in
+omit [IsStrictOrderedRing R] in
 /-- If `natDegree P = 1`, then `P.derivative` evaluates to `P.leadingCoeff`
     at every point. -/
 lemma eval_derivative_of_natDegree_one {P : R[X]} (hdeg : P.natDegree = 1) (x : R) :
@@ -1023,7 +1245,9 @@ lemma signConstantOnGaps_singleton_of_strictAnti {P : R[X]} {r : R}
     refine ⟨ne_of_gt hPx_pos, ?_⟩
     rw [sign_eq_one_iff.mpr hPx_pos, sign_eq_one_iff.mpr hPy_pos]
 
-/-- A linear polynomial has a virtual roots list consisting of its unique root. -/
+/-- A linear polynomial has a virtual roots list consisting of its unique root.
+    The argmin witness uses `ys = []` and `IsArgminAbsOn P Set.univ r` (since
+    `P.eval r = 0`). -/
 lemma exists_virtualRootsList_of_natDegree_one (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : P.natDegree = 1) :
     ∃ roots : List R, IsVirtualRootsList P roots := by
@@ -1033,20 +1257,42 @@ lemma exists_virtualRootsList_of_natDegree_one (hIVP : HasIntermediateValuePrope
   have hlc_ne : P.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hP
   have hderiv : ∀ x : R, (derivative P).eval x = P.leadingCoeff :=
     fun x => eval_derivative_of_natDegree_one hdeg x
-  refine ⟨[r], ?_, ?_, ?_⟩
-  · simp [hdeg]
-  · exact List.pairwise_singleton _ _
-  · rcases lt_or_gt_of_ne hlc_ne with hlc_neg | hlc_pos
-    · -- leadingCoeff < 0: P' < 0 everywhere, P strictly decreasing
-      have hder_neg : ∀ x : R, (derivative P).eval x < 0 := by
+  have hdP_ne : derivative P ≠ 0 := by
+    intro h; have := hderiv 0; rw [h, Polynomial.eval_zero] at this; exact hlc_ne this.symm
+  have hdP_deg : (derivative P).natDegree = 0 := by
+    have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
+      Polynomial.degree_derivative_eq P (by rw [hdeg]; norm_num)
+    have h' : (derivative P).natDegree = P.natDegree - 1 :=
+      Polynomial.natDegree_eq_of_degree_eq_some h
+    rw [h', hdeg]
+  have hsc : SignConstantOnGaps P [r] := by
+    rcases lt_or_gt_of_ne hlc_ne with hlc_neg | hlc_pos
+    · have hder_neg : ∀ x : R, (derivative P).eval x < 0 := by
         intro x; rw [hderiv]; exact hlc_neg
-      have hanti := strictAnti_of_deriv_neg hIVP hder_neg
-      exact signConstantOnGaps_singleton_of_strictAnti hr hanti
-    · -- leadingCoeff > 0: P' > 0 everywhere, P strictly increasing
-      have hder_pos : ∀ x : R, 0 < (derivative P).eval x := by
+      exact signConstantOnGaps_singleton_of_strictAnti hr
+        (strictAnti_of_deriv_neg hIVP hder_neg)
+    · have hder_pos : ∀ x : R, 0 < (derivative P).eval x := by
         intro x; rw [hderiv]; exact hlc_pos
-      have hmono := strictMono_of_deriv_pos hIVP hder_pos
-      exact signConstantOnGaps_singleton_of_strictMono hr hmono
+      exact signConstantOnGaps_singleton_of_strictMono hr
+        (strictMono_of_deriv_pos hIVP hder_pos)
+  refine ⟨[r], ?_⟩
+  unfold IsVirtualRootsList
+  rw [hdeg]
+  refine ⟨by simp [hdeg], List.pairwise_singleton _ _, hsc, Or.inr ⟨[], ?_, trivial, ?_⟩⟩
+  · -- IsVirtualRootsListAux 0 (derivative P) []
+    refine ⟨?_, List.Pairwise.nil, ?_⟩
+    · simp [hdP_deg]
+    · -- SignConstantOnGaps (derivative P) []: derivative P is a nonzero constant
+      intro x y _ _
+      refine ⟨?_, ?_⟩
+      · rw [hderiv]; exact hlc_ne
+      · rw [hderiv, hderiv]
+  · -- ArgminPartition P [r] [] = IsArgminAbsOn P Set.univ r
+    show IsArgminAbsOn P Set.univ r
+    refine ⟨Set.mem_univ _, ?_⟩
+    intro z _
+    rw [hr, abs_zero]
+    exact abs_nonneg _
 
 /-! ### Argmin existence chained off a derivative sign dichotomy
 
@@ -1056,46 +1302,51 @@ closed interval. These are the exact hypotheses produced by the
 `sign_dichotomy_*` family — ready for direct composition. -/
 
 /-- If `P'` has a dichotomous strict sign on `Iio c`, then `|P|` attains a
-    minimum on `Iic c`. Requires `0 < natDegree P` for the asymptotic bound. -/
+    minimum on `Iic c`. Requires `0 < natDegree P` for the asymptotic bound.
+    The witness is either a root of `P` or `x = c`. -/
 lemma exists_argmin_abs_on_Iic_of_deriv_dichotomy
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hdich : (∀ x ∈ Set.Iio c, 0 < (derivative P).eval x) ∨
              (∀ x ∈ Set.Iio c, (derivative P).eval x < 0)) :
-    ∃ x ∈ Set.Iic c, ∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y| := by
+    ∃ x ∈ Set.Iic c, (∀ y ∈ Set.Iic c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
   rcases hdich with hpos | hneg
-  · have hmono := strictMonoOn_of_deriv_pos_Iic hIVP hpos
-    exact exists_argmin_abs_strictMonoOn_Iic hIVP hdeg hmono
-  · have hanti := strictAntiOn_of_deriv_neg_Iic hIVP hneg
-    exact exists_argmin_abs_strictAntiOn_Iic hIVP hdeg hanti
+  · exact exists_argmin_abs_strictMonoOn_Iic hIVP hdeg
+      (strictMonoOn_of_deriv_pos_Iic hIVP hpos)
+  · exact exists_argmin_abs_strictAntiOn_Iic hIVP hdeg
+      (strictAntiOn_of_deriv_neg_Iic hIVP hneg)
 
 /-- If `P'` has a dichotomous strict sign on `Ioi c`, then `|P|` attains a
-    minimum on `Ici c`. -/
+    minimum on `Ici c`. The witness is either a root of `P` or `x = c`. -/
 lemma exists_argmin_abs_on_Ici_of_deriv_dichotomy
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg : 0 < P.natDegree) {c : R}
     (hdich : (∀ x ∈ Set.Ioi c, 0 < (derivative P).eval x) ∨
              (∀ x ∈ Set.Ioi c, (derivative P).eval x < 0)) :
-    ∃ x ∈ Set.Ici c, ∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y| := by
+    ∃ x ∈ Set.Ici c, (∀ y ∈ Set.Ici c, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = c) := by
   rcases hdich with hpos | hneg
-  · have hmono := strictMonoOn_of_deriv_pos_Ici hIVP hpos
-    exact exists_argmin_abs_strictMonoOn_Ici hIVP hdeg hmono
-  · have hanti := strictAntiOn_of_deriv_neg_Ici hIVP hneg
-    exact exists_argmin_abs_strictAntiOn_Ici hIVP hdeg hanti
+  · exact exists_argmin_abs_strictMonoOn_Ici hIVP hdeg
+      (strictMonoOn_of_deriv_pos_Ici hIVP hpos)
+  · exact exists_argmin_abs_strictAntiOn_Ici hIVP hdeg
+      (strictAntiOn_of_deriv_neg_Ici hIVP hneg)
 
 /-- If `P'` has a dichotomous strict sign on `Ioo a b` (with `a < b`), then
-    `|P|` attains a minimum on `Icc a b`. -/
+    `|P|` attains a minimum on `Icc a b`. The witness is a root of `P` or an
+    endpoint. -/
 lemma exists_argmin_abs_on_Icc_of_deriv_dichotomy
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} {a b : R} (hab : a < b)
     (hdich : (∀ x ∈ Set.Ioo a b, 0 < (derivative P).eval x) ∨
              (∀ x ∈ Set.Ioo a b, (derivative P).eval x < 0)) :
-    ∃ x ∈ Set.Icc a b, ∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y| := by
+    ∃ x ∈ Set.Icc a b, (∀ y ∈ Set.Icc a b, |P.eval x| ≤ |P.eval y|) ∧
+      (P.eval x = 0 ∨ x = a ∨ x = b) := by
   rcases hdich with hpos | hneg
-  · have hmono := corollary_2_24_increasing hIVP P hab hpos
-    exact exists_argmin_abs_strictMonoOn_Icc hIVP hab.le hmono
-  · have hanti := corollary_2_24_decreasing hIVP P hab hneg
-    exact exists_argmin_abs_strictAntiOn_Icc hIVP hab.le hanti
+  · exact exists_argmin_abs_strictMonoOn_Icc hIVP hab.le
+      (corollary_2_24_increasing hIVP P hab hpos)
+  · exact exists_argmin_abs_strictAntiOn_Icc hIVP hab.le
+      (corollary_2_24_decreasing hIVP P hab hneg)
 
 /-! ### Sign constancy from argmin of `|P|`
 
@@ -1310,79 +1561,99 @@ theorem exists_virtualRootsList_of_natDegree_two
     (hys : IsVirtualRootsList P.derivative [v]) :
     ∃ xs : List R, IsVirtualRootsList P xs ∧ Interlaced xs [v] := by
   have hdeg_pos : 0 < P.natDegree := by rw [hdeg]; norm_num
+  have hdP_deg : (derivative P).natDegree = 1 := by
+    have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
+      Polynomial.degree_derivative_eq P hdeg_pos
+    have h' : (derivative P).natDegree = P.natDegree - 1 :=
+      Polynomial.natDegree_eq_of_degree_eq_some h
+    rw [h', hdeg]
   have hle_Iio : ∀ r ∈ ([v] : List R), v ≤ r := by
     intro r hr; rw [List.mem_singleton] at hr; rw [hr]
   have hle_Ioi : ∀ r ∈ ([v] : List R), r ≤ v := by
     intro r hr; rw [List.mem_singleton] at hr; rw [hr]
   have hdich_Iio := sign_dichotomy_Iio hys.sign_const hle_Iio
   have hdich_Ioi := sign_dichotomy_Ioi hys.sign_const hle_Ioi
-  obtain ⟨x₁, hx₁_mem, hx₁_min⟩ :=
+  obtain ⟨x₁, hx₁_mem, hx₁_min, _hx₁_wit⟩ :=
     exists_argmin_abs_on_Iic_of_deriv_dichotomy hIVP hdeg_pos hdich_Iio
-  obtain ⟨x₂, hx₂_mem, hx₂_min⟩ :=
+  obtain ⟨x₂, hx₂_mem, hx₂_min, _hx₂_wit⟩ :=
     exists_argmin_abs_on_Ici_of_deriv_dichotomy hIVP hdeg_pos hdich_Ioi
   have hx₁v : x₁ ≤ v := hx₁_mem
   have hvx₂ : v ≤ x₂ := hx₂_mem
   have hx₁x₂ : x₁ ≤ x₂ := le_trans hx₁v hvx₂
-  refine ⟨[x₁, x₂], ⟨?_, ?_, ?_⟩, ?_⟩
-  · simp [hdeg]
-  · refine List.Pairwise.cons ?_ (List.pairwise_singleton _ _)
-    intro b hb; rw [List.mem_singleton] at hb; rw [hb]; exact hx₁x₂
-  · -- SignConstantOnGaps P [x₁, x₂]
-    intro x y hxy hgap
-    have hgap1 : x₁ < x ∨ y < x₁ := hgap x₁ (by simp)
-    have hgap2 : x₂ < x ∨ y < x₂ := hgap x₂ (by simp)
-    -- Helper: invoke the Iic argmin sign-const in either mono or anti branch
-    have iic_case : ∀ {x' y' : R}, x' ≤ y' → x' ≤ v → y' ≤ v →
-        (x₁ < x' ∨ y' < x₁) →
-        P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
-      intro x' y' hxy' hxv hyv hgap'
-      rcases hdich_Iio with hpos | hneg
-      · exact sign_const_of_argmin_strictMonoOn_Iic hIVP
-          (strictMonoOn_of_deriv_pos_Iic hIVP hpos)
-          hx₁_mem hx₁_min hxy' hxv hyv hgap'
-      · exact sign_const_of_argmin_strictAntiOn_Iic hIVP
-          (strictAntiOn_of_deriv_neg_Iic hIVP hneg)
-          hx₁_mem hx₁_min hxy' hxv hyv hgap'
-    have ici_case : ∀ {x' y' : R}, x' ≤ y' → v ≤ x' → v ≤ y' →
-        (x₂ < x' ∨ y' < x₂) →
-        P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
-      intro x' y' hxy' hvx hvy hgap'
-      rcases hdich_Ioi with hpos | hneg
-      · exact sign_const_of_argmin_strictMonoOn_Ici hIVP
-          (strictMonoOn_of_deriv_pos_Ici hIVP hpos)
-          hx₂_mem hx₂_min hxy' hvx hvy hgap'
-      · exact sign_const_of_argmin_strictAntiOn_Ici hIVP
-          (strictAntiOn_of_deriv_neg_Ici hIVP hneg)
-          hx₂_mem hx₂_min hxy' hvx hvy hgap'
-    -- Case split on position of [x, y] relative to x₁, x₂, v
-    rcases lt_or_ge y x₁ with hy_x₁ | hy_ge
-    · -- y < x₁: entirely below x₁, so [x,y] ⊆ Iic v
-      have hxv : x ≤ v := le_trans hxy (le_trans (le_of_lt hy_x₁) hx₁v)
-      have hyv : y ≤ v := le_trans (le_of_lt hy_x₁) hx₁v
-      exact iic_case hxy hxv hyv (Or.inr hy_x₁)
-    · -- x₁ ≤ y
-      have hx₁x : x₁ < x := hgap1.resolve_right (not_lt.mpr hy_ge)
-      rcases le_or_gt x x₂ with hxx₂ | hx₂x
-      · -- x ≤ x₂
-        have hyx₂ : y < x₂ := hgap2.resolve_left (not_lt.mpr hxx₂)
-        rcases le_or_gt y v with hyv | hvy
-        · -- y ≤ v: Iic case
-          have hxv : x ≤ v := le_trans hxy hyv
-          exact iic_case hxy hxv hyv (Or.inl hx₁x)
-        · rcases le_or_gt v x with hvx | hxv
-          · -- v ≤ x: Ici case
-            exact ici_case hxy hvx (le_trans hvx hxy) (Or.inr hyx₂)
-          · -- x < v < y: straddle — glue via sign at v
-            have hxv' : x ≤ v := le_of_lt hxv
-            have hvy' : v ≤ y := le_of_lt hvy
-            obtain ⟨hPx_ne, hsign_xv⟩ :=
-              iic_case hxv' hxv' (le_refl v) (Or.inl hx₁x)
-            obtain ⟨_, hsign_vy⟩ :=
-              ici_case hvy' (le_refl v) hvy' (Or.inr hyx₂)
-            exact ⟨hPx_ne, hsign_xv.trans hsign_vy⟩
-      · -- x₂ < x: Ici case
-        have hvx : v ≤ x := le_trans hvx₂ (le_of_lt hx₂x)
-        exact ici_case hxy hvx (le_trans hvx hxy) (Or.inl hx₂x)
+  have hys_aux : IsVirtualRootsListAux 1 (derivative P) [v] := by
+    have h := hys
+    unfold IsVirtualRootsList at h
+    rw [hdP_deg] at h
+    exact h
+  refine ⟨[x₁, x₂], ?_, ?_⟩
+  · unfold IsVirtualRootsList
+    rw [hdeg]
+    refine ⟨?_, ?_, ?_, Or.inr ⟨[v], hys_aux, ?_, ?_, ?_⟩⟩
+    · simp [hdeg]
+    · refine List.Pairwise.cons ?_ (List.pairwise_singleton _ _)
+      intro b hb; rw [List.mem_singleton] at hb; rw [hb]; exact hx₁x₂
+    · -- SignConstantOnGaps P [x₁, x₂]
+      intro x y hxy hgap
+      have hgap1 : x₁ < x ∨ y < x₁ := hgap x₁ (by simp)
+      have hgap2 : x₂ < x ∨ y < x₂ := hgap x₂ (by simp)
+      -- Helper: invoke the Iic argmin sign-const in either mono or anti branch
+      have iic_case : ∀ {x' y' : R}, x' ≤ y' → x' ≤ v → y' ≤ v →
+          (x₁ < x' ∨ y' < x₁) →
+          P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
+        intro x' y' hxy' hxv hyv hgap'
+        rcases hdich_Iio with hpos | hneg
+        · exact sign_const_of_argmin_strictMonoOn_Iic hIVP
+            (strictMonoOn_of_deriv_pos_Iic hIVP hpos)
+            hx₁_mem hx₁_min hxy' hxv hyv hgap'
+        · exact sign_const_of_argmin_strictAntiOn_Iic hIVP
+            (strictAntiOn_of_deriv_neg_Iic hIVP hneg)
+            hx₁_mem hx₁_min hxy' hxv hyv hgap'
+      have ici_case : ∀ {x' y' : R}, x' ≤ y' → v ≤ x' → v ≤ y' →
+          (x₂ < x' ∨ y' < x₂) →
+          P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
+        intro x' y' hxy' hvx hvy hgap'
+        rcases hdich_Ioi with hpos | hneg
+        · exact sign_const_of_argmin_strictMonoOn_Ici hIVP
+            (strictMonoOn_of_deriv_pos_Ici hIVP hpos)
+            hx₂_mem hx₂_min hxy' hvx hvy hgap'
+        · exact sign_const_of_argmin_strictAntiOn_Ici hIVP
+            (strictAntiOn_of_deriv_neg_Ici hIVP hneg)
+            hx₂_mem hx₂_min hxy' hvx hvy hgap'
+      -- Case split on position of [x, y] relative to x₁, x₂, v
+      rcases lt_or_ge y x₁ with hy_x₁ | hy_ge
+      · -- y < x₁: entirely below x₁, so [x,y] ⊆ Iic v
+        have hxv : x ≤ v := le_trans hxy (le_trans (le_of_lt hy_x₁) hx₁v)
+        have hyv : y ≤ v := le_trans (le_of_lt hy_x₁) hx₁v
+        exact iic_case hxy hxv hyv (Or.inr hy_x₁)
+      · -- x₁ ≤ y
+        have hx₁x : x₁ < x := hgap1.resolve_right (not_lt.mpr hy_ge)
+        rcases le_or_gt x x₂ with hxx₂ | hx₂x
+        · -- x ≤ x₂
+          have hyx₂ : y < x₂ := hgap2.resolve_left (not_lt.mpr hxx₂)
+          rcases le_or_gt y v with hyv | hvy
+          · -- y ≤ v: Iic case
+            have hxv : x ≤ v := le_trans hxy hyv
+            exact iic_case hxy hxv hyv (Or.inl hx₁x)
+          · rcases le_or_gt v x with hvx | hxv
+            · -- v ≤ x: Ici case
+              exact ici_case hxy hvx (le_trans hvx hxy) (Or.inr hyx₂)
+            · -- x < v < y: straddle — glue via sign at v
+              have hxv' : x ≤ v := le_of_lt hxv
+              have hvy' : v ≤ y := le_of_lt hvy
+              obtain ⟨hPx_ne, hsign_xv⟩ :=
+                iic_case hxv' hxv' (le_refl v) (Or.inl hx₁x)
+              obtain ⟨_, hsign_vy⟩ :=
+                ici_case hvy' (le_refl v) hvy' (Or.inr hyx₂)
+              exact ⟨hPx_ne, hsign_xv.trans hsign_vy⟩
+        · -- x₂ < x: Ici case
+          have hvx : v ≤ x := le_trans hvx₂ (le_of_lt hx₂x)
+          exact ici_case hxy hvx (le_trans hvx hxy) (Or.inl hx₂x)
+    · -- Interlaced [x₁, x₂] [v]
+      exact ⟨hx₁v, hvx₂, trivial⟩
+    · -- IsArgminAbsOn P (Set.Iic v) x₁
+      exact ⟨hx₁_mem, hx₁_min⟩
+    · -- ArgminPartitionFrom P v [x₂] [] = IsArgminAbsOn P (Set.Ici v) x₂
+      exact ⟨hx₂_mem, hx₂_min⟩
   · -- Interlaced [x₁, x₂] [v]
     exact ⟨hx₁v, hvx₂, trivial⟩
 
@@ -1452,7 +1723,8 @@ lemma gap_closure_last
 /-- The core induction: given `ys_full` a sorted list with sign-constancy on
     gaps for `P'`, and a split `ys_full = past ++ v_prev :: ys_rest`, build an
     xs_tail of length `ys_rest.length + 1` that captures the argmins on the
-    closed intervals starting at `v_prev`. -/
+    closed intervals starting at `v_prev`, packaged as an `ArgminPartitionFrom`
+    witness. -/
 lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hdeg_pos : 0 < P.natDegree)
     (ys_full : List R)
@@ -1467,7 +1739,8 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
       Interlaced (x_head :: xs_rest) ys_rest ∧
       (∀ x y : R, v_prev ≤ x → x ≤ y →
         (∀ r ∈ x_head :: xs_rest, r < x ∨ y < r) →
-        P.eval x ≠ 0 ∧ SignType.sign (P.eval x) = SignType.sign (P.eval y)) := by
+        P.eval x ≠ 0 ∧ SignType.sign (P.eval x) = SignType.sign (P.eval y)) ∧
+      ArgminPartitionFrom P v_prev (x_head :: xs_rest) ys_rest := by
   intro ys_rest
   induction ys_rest with
   | nil =>
@@ -1477,20 +1750,23 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
     have hdich : (∀ x ∈ Set.Ioi v_prev, 0 < (derivative P).eval x) ∨
                  (∀ x ∈ Set.Ioi v_prev, (derivative P).eval x < 0) :=
       sign_dichotomy_Ioi hsc_full hle_Ioi
-    obtain ⟨x_p, hx_p_mem, hx_p_min⟩ :=
+    obtain ⟨x_p, hx_p_mem, hx_p_min, _hx_p_wit⟩ :=
       exists_argmin_abs_on_Ici_of_deriv_dichotomy hIVP hdeg_pos hdich
-    refine ⟨x_p, [], rfl, List.pairwise_singleton _ _, hx_p_mem, trivial, ?_⟩
-    intro x y hv_prev_x hxy hgap
-    have hgap_x_p := hgap x_p List.mem_cons_self
-    have hx_mem : x ∈ Set.Ici v_prev := hv_prev_x
-    have hy_mem : y ∈ Set.Ici v_prev := le_trans hv_prev_x hxy
-    rcases hdich with hpos | hneg
-    · exact sign_const_of_argmin_strictMonoOn_Ici hIVP
-        (strictMonoOn_of_deriv_pos_Ici hIVP hpos)
-        hx_p_mem hx_p_min hxy hx_mem hy_mem hgap_x_p
-    · exact sign_const_of_argmin_strictAntiOn_Ici hIVP
-        (strictAntiOn_of_deriv_neg_Ici hIVP hneg)
-        hx_p_mem hx_p_min hxy hx_mem hy_mem hgap_x_p
+    refine ⟨x_p, [], rfl, List.pairwise_singleton _ _, hx_p_mem, trivial, ?_, ?_⟩
+    · -- sign-const
+      intro x y hv_prev_x hxy hgap
+      have hgap_x_p := hgap x_p List.mem_cons_self
+      have hx_mem : x ∈ Set.Ici v_prev := hv_prev_x
+      have hy_mem : y ∈ Set.Ici v_prev := le_trans hv_prev_x hxy
+      rcases hdich with hpos | hneg
+      · exact sign_const_of_argmin_strictMonoOn_Ici hIVP
+          (strictMonoOn_of_deriv_pos_Ici hIVP hpos)
+          hx_p_mem hx_p_min hxy hx_mem hy_mem hgap_x_p
+      · exact sign_const_of_argmin_strictAntiOn_Ici hIVP
+          (strictAntiOn_of_deriv_neg_Ici hIVP hneg)
+          hx_p_mem hx_p_min hxy hx_mem hy_mem hgap_x_p
+    · -- ArgminPartitionFrom P v_prev [x_p] [] = IsArgminAbsOn P (Set.Ici v_prev) x_p
+      exact ⟨hx_p_mem, hx_p_min⟩
   | cons v' ys'' ih =>
     intro past v_prev hsplit
     -- Derive sortedness on (v_prev :: v' :: ys'') by reading off sorted_full.
@@ -1501,22 +1777,10 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
       (List.pairwise_cons.mp hsorted_tail).1 v' List.mem_cons_self
     -- Need v_prev < v' for interior dichotomy. Handle v_prev = v' separately.
     rcases eq_or_lt_of_le hv_prev_le_v' with hveq | hvlt
-    · -- v_prev = v'. Apply IH with past'=past++[v_prev], v_prev'=v'=v_prev, ys_rest=ys''.
-      -- The resulting xs' has head ≥ v_prev already (from IH).
-      -- Prepend x_head := that head (coincident). But sortedness/interlacing requires x_head ≤ v'.
-      -- Since v_prev = v', x_head = that head works if we use v_prev itself? Hmm.
-      -- Simplest: use v_prev as x_head (= v'). Argmin on Icc v_prev v' degenerates.
-      -- Actually let's just recurse and prepend v_prev as x_head (sign-const at v_prev is delicate).
-      -- Alternative: use the IH's x_head as our x_head (then xs_rest = ih.xs_rest).
-      -- But Interlaced requires x_head ≤ v' AND v' ≤ x_next; with v_prev = v',
-      -- the first ≤ is ih.v_prev ≤ x_head, i.e., v' ≤ x_head. So x_head ≥ v' means
-      -- x_head ≤ v' only if equal. Nah.
-      -- Simpler: pick x_head = v_prev (= v'). It's in Icc v_prev v' = {v_prev}.
-      -- Check: v_prev ≤ v_prev ✓, v_prev ≤ v' ✓.
-      -- Apply IH for the rest.
-      obtain ⟨x_next, xs_more, hlen_ih, hpw_ih, hv'_le_next, hinter_ih, hsc_ih⟩ :=
+    · -- v_prev = v'. Use x_head := v_prev, recurse for the rest.
+      obtain ⟨x_next, xs_more, hlen_ih, hpw_ih, hv'_le_next, hinter_ih, hsc_ih, hamp_ih⟩ :=
         ih (past ++ [v_prev]) v' (by rw [hsplit]; simp)
-      refine ⟨v_prev, x_next :: xs_more, ?_, ?_, le_refl _, ?_, ?_⟩
+      refine ⟨v_prev, x_next :: xs_more, ?_, ?_, le_refl _, ?_, ?_, ?_, ?_⟩
       · -- length
         simp [hlen_ih]
       · -- sorted
@@ -1530,27 +1794,33 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
         exact ⟨hv_prev_le_v', hv'_le_next, hinter_ih⟩
       · -- sign-const
         intro x y hv_prev_x hxy hgap
-        -- x_head = v_prev, so gap at x_head: v_prev < x ∨ y < v_prev.
         have hgap_vprev : v_prev < x ∨ y < v_prev := hgap v_prev List.mem_cons_self
-        have hv_prev_lt_x : v_prev < x :=
+        have _hv_prev_lt_x : v_prev < x :=
           hgap_vprev.resolve_right (fun hyv => not_lt.mpr (le_trans hv_prev_x hxy) hyv)
-        -- Apply IH sign-const with v' ≤ x. We have v' = v_prev, so v' ≤ x iff v_prev ≤ x ✓.
         have hv'_le_x : v' ≤ x := by rw [← hveq]; exact hv_prev_x
         have hgap' : ∀ r ∈ x_next :: xs_more, r < x ∨ y < r := by
           intro r hr; exact hgap r (List.mem_cons_of_mem _ hr)
         exact hsc_ih x y hv'_le_x hxy hgap'
+      · -- IsArgminAbsOn P (Set.Icc v_prev v') v_prev
+        -- Since v_prev = v', the interval is a singleton {v_prev}.
+        refine ⟨⟨le_refl _, hv_prev_le_v'⟩, ?_⟩
+        intro z hz
+        have hzv : z = v_prev := le_antisymm (hveq ▸ hz.2) hz.1
+        rw [hzv]
+      · -- ArgminPartitionFrom P v' (x_next :: xs_more) ys''
+        exact hamp_ih
     · -- v_prev < v'. Proceed with argmin on Icc v_prev v'.
       have hgap_out : ∀ r ∈ ys_full, r ≤ v_prev ∨ v' ≤ r :=
         gap_closure_adjacent hsplit hsorted_full
       have hdich : (∀ x ∈ Set.Ioo v_prev v', 0 < (derivative P).eval x) ∨
                    (∀ x ∈ Set.Ioo v_prev v', (derivative P).eval x < 0) :=
         sign_dichotomy_Ioo hsc_full hvlt hgap_out
-      obtain ⟨x_head, hx_head_mem, hx_head_min⟩ :=
+      obtain ⟨x_head, hx_head_mem, hx_head_min, _hx_head_wit⟩ :=
         exists_argmin_abs_on_Icc_of_deriv_dichotomy hIVP hvlt hdich
       -- Recurse
-      obtain ⟨x_next, xs_more, hlen_ih, hpw_ih, hv'_le_next, hinter_ih, hsc_ih⟩ :=
+      obtain ⟨x_next, xs_more, hlen_ih, hpw_ih, hv'_le_next, hinter_ih, hsc_ih, hamp_ih⟩ :=
         ih (past ++ [v_prev]) v' (by rw [hsplit]; simp)
-      refine ⟨x_head, x_next :: xs_more, ?_, ?_, hx_head_mem.1, ?_, ?_⟩
+      refine ⟨x_head, x_next :: xs_more, ?_, ?_, hx_head_mem.1, ?_, ?_, ?_, ?_⟩
       · -- length
         simp [hlen_ih]
       · -- sorted
@@ -1589,12 +1859,8 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
           · -- v' ≤ x: entirely in IH territory.
             exact hsc_ih x y hv'x hxy hgap_rest
           · -- x < v' < y: straddle.
-            -- Sign from x to v' via Icc argmin, then v' to y via IH.
             have hxv'_le : x ≤ v' := hxv'.le
             have hv'y_le : v' ≤ y := hv'y.le
-            -- For the Icc piece, gap is x_head < x ∨ v' < x_head. Since x_head ≤ v',
-            -- x_head < x requires... we have hgap_head : x_head < x ∨ y < x_head.
-            -- If y < x_head: with x_head ≤ v' < y contradicts y < x_head ≤ v' < y, impossible.
             have hgap_head' : x_head < x := by
               rcases hgap_head with h | h
               · exact h
@@ -1606,6 +1872,10 @@ lemma exists_buildTail (hIVP : HasIntermediateValueProperty R)
             obtain ⟨_, hsign_v'y⟩ :=
               hsc_ih v' y (le_refl v') hv'y_le hgap_rest_v'
             exact ⟨hPx_ne, hsign_xv'.trans hsign_v'y⟩
+      · -- IsArgminAbsOn P (Set.Icc v_prev v') x_head
+        exact ⟨hx_head_mem, hx_head_min⟩
+      · -- ArgminPartitionFrom P v' (x_next :: xs_more) ys''
+        exact hamp_ih
 
 /-- General existence of a virtual roots list for `P`, given one for `P'`.
     Uses `exists_buildTail` to construct the tail after the first argmin on
@@ -1633,63 +1903,79 @@ theorem exists_virtualRootsList_of_ys_general
     have hdich_Iio : (∀ x ∈ Set.Iio v, 0 < (derivative P).eval x) ∨
                      (∀ x ∈ Set.Iio v, (derivative P).eval x < 0) :=
       sign_dichotomy_Iio hys.sign_const hle_Iio
-    obtain ⟨x₁, hx₁_mem, hx₁_min⟩ :=
+    obtain ⟨x₁, hx₁_mem, hx₁_min, _hx₁_wit⟩ :=
       exists_argmin_abs_on_Iic_of_deriv_dichotomy hIVP hdeg_pos hdich_Iio
     -- Tail via buildTail with past=[], v_prev=v, ys_rest=ys'.
-    obtain ⟨x_head, xs_rest, hlen_tail, hpw_tail, hv_le_head, hinter_tail, hsc_tail⟩ :=
+    obtain ⟨x_head, xs_rest, hlen_tail, hpw_tail, hv_le_head, hinter_tail, hsc_tail,
+        hamp_tail⟩ :=
       exists_buildTail hIVP hdeg_pos (v :: ys') hys.sorted hys.sign_const
         ys' [] v (by simp)
-    refine ⟨x₁ :: x_head :: xs_rest, ⟨?_, ?_, ?_⟩, ?_⟩
-    · -- length
-      simp [hlen_tail]; omega
-    · -- sorted: x₁ ≤ x_head (since x₁ ≤ v ≤ x_head)
-      refine List.Pairwise.cons ?_ hpw_tail
-      intro b hb
-      rcases List.mem_cons.mp hb with rfl | hb'
-      · exact le_trans hx₁_mem hv_le_head
-      · exact le_trans (le_trans hx₁_mem hv_le_head)
-          ((List.pairwise_cons.mp hpw_tail).1 b hb')
-    · -- sign-const on gaps of xs = x₁ :: x_head :: xs_rest
-      intro x y hxy hgap
-      have hgap_1 : x₁ < x ∨ y < x₁ := hgap x₁ List.mem_cons_self
-      have hgap_rest : ∀ r ∈ x_head :: xs_rest, r < x ∨ y < r :=
-        fun r hr => hgap r (List.mem_cons_of_mem _ hr)
-      -- Iic helper: sign-const on (x, y) ⊆ Iic v with gap x₁.
-      have iic_case : ∀ {x' y' : R}, x' ≤ y' → x' ≤ v → y' ≤ v →
-          (x₁ < x' ∨ y' < x₁) →
-          P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
-        intro x' y' hxy' hxv hyv hgap'
-        rcases hdich_Iio with hp | hn
-        · exact sign_const_of_argmin_strictMonoOn_Iic hIVP
-            (strictMonoOn_of_deriv_pos_Iic hIVP hp)
-            hx₁_mem hx₁_min hxy' hxv hyv hgap'
-        · exact sign_const_of_argmin_strictAntiOn_Iic hIVP
-            (strictAntiOn_of_deriv_neg_Iic hIVP hn)
-            hx₁_mem hx₁_min hxy' hxv hyv hgap'
-      -- Case split on y relative to v (the first virtual root of P')
-      rcases le_or_gt y v with hyv | hvy
-      · -- y ≤ v: [x, y] ⊆ Iic v; use iic_case with gap hgap_1.
-        exact iic_case hxy (le_trans hxy hyv) hyv hgap_1
-      · rcases le_or_gt v x with hvx | hxv
-        · -- v ≤ x: [x, y] ⊆ [v, ∞); use hsc_tail with gap hgap_rest.
-          exact hsc_tail x y hvx hxy hgap_rest
-        · -- x < v < y: straddle; glue at v.
-          have hxv' : x ≤ v := hxv.le
-          have hvy' : v ≤ y := hvy.le
-          -- Sign x to v via iic_case. Need gap at x₁ to apply.
-          have hgap_1' : x₁ < x := by
-            rcases hgap_1 with h | h
-            · exact h
-            · exact absurd (lt_of_lt_of_le h hx₁_mem) (not_lt.mpr hvy.le)
-          obtain ⟨hPx_ne, hsign_xv⟩ :=
-            iic_case hxv' hxv' (le_refl v) (Or.inl hgap_1')
-          have hgap_rest_v : ∀ r ∈ x_head :: xs_rest, r < v ∨ y < r := fun r hr =>
-            (hgap_rest r hr).imp_left (fun h => lt_trans h hxv)
-          obtain ⟨_, hsign_vy⟩ :=
-            hsc_tail v y (le_refl v) hvy' hgap_rest_v
-          exact ⟨hPx_ne, hsign_xv.trans hsign_vy⟩
+    -- hys at the (v :: ys').length depth for the argmin_wit clause
+    have hys_aux : IsVirtualRootsListAux (v :: ys').length (derivative P) (v :: ys') := by
+      have h : IsVirtualRootsListAux (derivative P).natDegree (derivative P) (v :: ys') := hys
+      rw [hys.length_eq.symm] at h
+      exact h
+    refine ⟨x₁ :: x_head :: xs_rest, ?_, ?_⟩
+    · unfold IsVirtualRootsList
+      rw [← hlen]
+      refine ⟨?_, ?_, ?_, Or.inr ⟨v :: ys', hys_aux, ?_, ?_, ?_⟩⟩
+      · -- length
+        simp only [List.length_cons, hlen_tail]
+        omega
+      · -- sorted: x₁ ≤ x_head (since x₁ ≤ v ≤ x_head)
+        refine List.Pairwise.cons ?_ hpw_tail
+        intro b hb
+        rcases List.mem_cons.mp hb with rfl | hb'
+        · exact le_trans hx₁_mem hv_le_head
+        · exact le_trans (le_trans hx₁_mem hv_le_head)
+            ((List.pairwise_cons.mp hpw_tail).1 b hb')
+      · -- sign-const on gaps of xs = x₁ :: x_head :: xs_rest
+        intro x y hxy hgap
+        have hgap_1 : x₁ < x ∨ y < x₁ := hgap x₁ List.mem_cons_self
+        have hgap_rest : ∀ r ∈ x_head :: xs_rest, r < x ∨ y < r :=
+          fun r hr => hgap r (List.mem_cons_of_mem _ hr)
+        -- Iic helper: sign-const on (x, y) ⊆ Iic v with gap x₁.
+        have iic_case : ∀ {x' y' : R}, x' ≤ y' → x' ≤ v → y' ≤ v →
+            (x₁ < x' ∨ y' < x₁) →
+            P.eval x' ≠ 0 ∧ SignType.sign (P.eval x') = SignType.sign (P.eval y') := by
+          intro x' y' hxy' hxv hyv hgap'
+          rcases hdich_Iio with hp | hn
+          · exact sign_const_of_argmin_strictMonoOn_Iic hIVP
+              (strictMonoOn_of_deriv_pos_Iic hIVP hp)
+              hx₁_mem hx₁_min hxy' hxv hyv hgap'
+          · exact sign_const_of_argmin_strictAntiOn_Iic hIVP
+              (strictAntiOn_of_deriv_neg_Iic hIVP hn)
+              hx₁_mem hx₁_min hxy' hxv hyv hgap'
+        -- Case split on y relative to v (the first virtual root of P')
+        rcases le_or_gt y v with hyv | hvy
+        · -- y ≤ v: [x, y] ⊆ Iic v; use iic_case with gap hgap_1.
+          exact iic_case hxy (le_trans hxy hyv) hyv hgap_1
+        · rcases le_or_gt v x with hvx | hxv
+          · -- v ≤ x: [x, y] ⊆ [v, ∞); use hsc_tail with gap hgap_rest.
+            exact hsc_tail x y hvx hxy hgap_rest
+          · -- x < v < y: straddle; glue at v.
+            have hxv' : x ≤ v := hxv.le
+            have hvy' : v ≤ y := hvy.le
+            -- Sign x to v via iic_case. Need gap at x₁ to apply.
+            have hgap_1' : x₁ < x := by
+              rcases hgap_1 with h | h
+              · exact h
+              · exact absurd (lt_of_lt_of_le h hx₁_mem) (not_lt.mpr hvy.le)
+            obtain ⟨hPx_ne, hsign_xv⟩ :=
+              iic_case hxv' hxv' (le_refl v) (Or.inl hgap_1')
+            have hgap_rest_v : ∀ r ∈ x_head :: xs_rest, r < v ∨ y < r := fun r hr =>
+              (hgap_rest r hr).imp_left (fun h => lt_trans h hxv)
+            obtain ⟨_, hsign_vy⟩ :=
+              hsc_tail v y (le_refl v) hvy' hgap_rest_v
+            exact ⟨hPx_ne, hsign_xv.trans hsign_vy⟩
+      · -- Interlaced (x₁ :: x_head :: xs_rest) (v :: ys')
+        -- = x₁ ≤ v ∧ v ≤ x_head ∧ Interlaced (x_head :: xs_rest) ys'
+        exact ⟨hx₁_mem, hv_le_head, hinter_tail⟩
+      · -- IsArgminAbsOn P (Set.Iic v) x₁
+        exact ⟨hx₁_mem, hx₁_min⟩
+      · -- ArgminPartitionFrom P v (x_head :: xs_rest) ys'
+        exact hamp_tail
     · -- Interlaced (x₁ :: x_head :: xs_rest) (v :: ys')
-      -- = x₁ ≤ v ∧ v ≤ x_head ∧ Interlaced (x_head :: xs_rest) ys'
       exact ⟨hx₁_mem, hv_le_head, hinter_tail⟩
 
 /-! ## Top-level existence and `virtualRoots` definition -/
@@ -1776,5 +2062,919 @@ theorem exists_interlaced_derivativeVirtualRootsList
   rcases (virtualRoots_choose_spec hIVP hP).2 with heq | h
   · exact absurd heq hdP
   · exact h
+
+/-- **BPR unnumbered corollary.** Every virtual root of `P` is a root of some
+    iterated derivative of `P`. -/
+theorem virtualRoots_root_of_derivative (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) :
+    ∀ x ∈ virtualRoots hIVP hP, ∃ k : ℕ, ((derivative)^[k] P).eval x = 0 := by
+  intro x _
+  refine ⟨P.natDegree + 1, ?_⟩
+  rw [Polynomial.iterate_derivative_eq_zero (Nat.lt_succ_self _)]
+  simp
+
+/-- The **virtual multiplicity** of `x` with respect to `P`, denoted `v(P, x)`
+    in BPR: the number of times `x` appears in the virtual roots list
+    `x_1 ≤ ⋯ ≤ x_p` of `P`. If `x` is not a virtual root of `P`, its virtual
+    multiplicity is `0`. -/
+noncomputable def virtualMultiplicity (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) (x : R) : ℕ :=
+  (virtualRoots hIVP hP).count x
+
+/-! ### Count bounds for interlaced sorted lists
+
+For the BPR theorem on virtual multiplicities: if `xs` and `ys` are interlaced
+with `ys` sorted, then for any `t : R`, the counts of `t` in `xs` and `ys`
+differ by at most `1`. -/
+
+omit [Field R] [IsStrictOrderedRing R] in
+/-- **Sub-lemma for count bounds.** In an interlaced pair `(x :: rest, ys)` with
+    `ys` sorted, the count of `x` in `ys` is at most the count in `x :: rest`. -/
+private lemma Interlaced.count_head_le {x : R} :
+    ∀ {rest ys : List R}, Interlaced (x :: rest) ys →
+      ys.Pairwise (· ≤ ·) → ys.count x ≤ (x :: rest).count x
+  | [], [], _, _ => by simp
+  | [], _ :: _, h, _ => absurd h (by simp [Interlaced])
+  | _ :: _, [], _, _ => by simp
+  | x' :: rest, y :: ys', h, hsort => by
+    obtain ⟨hxy, hyx', hrec⟩ := h
+    have hsort_tail : ys'.Pairwise (· ≤ ·) := hsort.tail
+    rcases lt_or_eq_of_le hxy with hy_gt | hy_eq
+    · have hall : ∀ a ∈ y :: ys', x < a := by
+        intro a ha
+        rcases List.mem_cons.mp ha with rfl | ha'
+        · exact hy_gt
+        · exact hy_gt.trans_le ((List.pairwise_cons.mp hsort).1 a ha')
+      have hcount : (y :: ys').count x = 0 :=
+        List.count_eq_zero.mpr (fun hm => (hall x hm).ne rfl)
+      rw [hcount]; exact Nat.zero_le _
+    · subst hy_eq
+      rcases lt_or_eq_of_le hyx' with hx'_gt | hx'_eq
+      · have hxs_sort : (x' :: rest).Pairwise (· ≤ ·) :=
+          Interlaced.pairwise_of_ys hrec hsort_tail
+        have hxs_gt : ∀ a ∈ x' :: rest, x < a := by
+          intro a ha
+          rcases List.mem_cons.mp ha with rfl | ha'
+          · exact hx'_gt
+          · exact hx'_gt.trans_le ((List.pairwise_cons.mp hxs_sort).1 a ha')
+        have hys'_gt : ∀ a ∈ ys', x < a := by
+          intro a ha
+          match ys', rest, hrec, ha with
+          | [], _, _, ha => exact absurd ha List.not_mem_nil
+          | y' :: ys'', [], hrec, _ => exact absurd hrec (by simp [Interlaced])
+          | y' :: ys'', x'' :: rest', hrec, ha =>
+            obtain ⟨hx'y', _, _⟩ := hrec
+            have hy'_gt : x < y' := hx'_gt.trans_le hx'y'
+            rcases List.mem_cons.mp ha with rfl | ha''
+            · exact hy'_gt
+            · exact hy'_gt.trans_le ((List.pairwise_cons.mp hsort_tail).1 a ha'')
+        have hcount_xs : (x' :: rest).count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hxs_gt x hm).ne rfl)
+        have hcount_ys' : ys'.count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hys'_gt x hm).ne rfl)
+        rw [List.count_cons_self, List.count_cons_self, hcount_ys', hcount_xs]
+      · subst hx'_eq
+        have ih : ys'.count x ≤ (x :: rest).count x :=
+          Interlaced.count_head_le hrec hsort_tail
+        rw [List.count_cons_self, List.count_cons_self, List.count_cons_self] at *
+        omega
+
+omit [Field R] [IsStrictOrderedRing R] in
+/-- **Count bound for interlaced sorted lists.** If `xs` and `ys` are interlaced
+    with `ys` sorted, then for any `t : R`, the counts of `t` in `xs` and `ys`
+    differ by at most `1`. -/
+lemma Interlaced.count_diff_le_one :
+    ∀ {xs ys : List R}, Interlaced xs ys →
+      ys.Pairwise (· ≤ ·) → ∀ (t : R),
+        ys.count t ≤ xs.count t + 1 ∧ xs.count t ≤ ys.count t + 1
+  | [_], [], _, _, _ => by
+    refine ⟨by simp, ?_⟩
+    rw [List.count_cons]; split_ifs <;> simp
+  | [], ys, h, _, _ => absurd h (by cases ys <;> simp [Interlaced])
+  | [_], _ :: _, h, _, _ => absurd h (by simp [Interlaced])
+  | _ :: _ :: _, [], h, _, _ => absurd h (by simp [Interlaced])
+  | x :: x' :: xs, y :: ys, h, hsort, t => by
+    obtain ⟨hxy, hyx', hrec⟩ := h
+    have hsort_tail : ys.Pairwise (· ≤ ·) := hsort.tail
+    obtain ⟨ih_yx, ih_xy⟩ := Interlaced.count_diff_le_one hrec hsort_tail t
+    by_cases hx : x = t
+    · subst hx
+      by_cases hy : y = x
+      · subst hy
+        simp only [List.count_cons_self] at ih_yx ih_xy ⊢
+        omega
+      · have hy_gt : x < y := lt_of_le_of_ne hxy (Ne.symm hy)
+        have hx'_gt : x < x' := hy_gt.trans_le hyx'
+        have hxs_sort := Interlaced.pairwise_of_ys hrec hsort_tail
+        have hxs_gt : ∀ a ∈ x' :: xs, x < a := by
+          intro a ha
+          rcases List.mem_cons.mp ha with rfl | ha'
+          · exact hx'_gt
+          · exact hx'_gt.trans_le ((List.pairwise_cons.mp hxs_sort).1 a ha')
+        have hys_gt : ∀ a ∈ ys, x < a := fun a ha =>
+          hy_gt.trans_le ((List.pairwise_cons.mp hsort).1 a ha)
+        have hcx' : (x' :: xs).count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hxs_gt x hm).ne rfl)
+        have hcy : ys.count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hys_gt x hm).ne rfl)
+        rw [List.count_cons_self, List.count_cons_of_ne hy, hcx', hcy]
+        simp
+    · by_cases hy : y = t
+      · subst hy
+        have hx_lt : x < y := lt_of_le_of_ne hxy hx
+        rcases lt_or_eq_of_le hyx' with hx'_gt | hx'_eq
+        · have hxs_sort := Interlaced.pairwise_of_ys hrec hsort_tail
+          have hxs_gt : ∀ a ∈ x' :: xs, y < a := by
+            intro a ha
+            rcases List.mem_cons.mp ha with rfl | ha'
+            · exact hx'_gt
+            · exact hx'_gt.trans_le ((List.pairwise_cons.mp hxs_sort).1 a ha')
+          have hys_gt : ∀ a ∈ ys, y < a := by
+            intro a ha
+            match xs, ys, hrec, ha with
+            | _, [], _, ha => exact absurd ha List.not_mem_nil
+            | [], y' :: ys', hrec, _ => exact absurd hrec (by simp [Interlaced])
+            | x'' :: xs', y' :: ys', hrec, ha =>
+              obtain ⟨hx'y', _, _⟩ := hrec
+              have hy'_gt : y < y' := hx'_gt.trans_le hx'y'
+              rcases List.mem_cons.mp ha with rfl | ha''
+              · exact hy'_gt
+              · exact hy'_gt.trans_le ((List.pairwise_cons.mp hsort_tail).1 a ha'')
+          have hcx' : (x' :: xs).count y = 0 :=
+            List.count_eq_zero.mpr (fun hm => (hxs_gt y hm).ne rfl)
+          have hcy : ys.count y = 0 :=
+            List.count_eq_zero.mpr (fun hm => (hys_gt y hm).ne rfl)
+          rw [List.count_cons_of_ne hx, List.count_cons_self, hcx', hcy]
+          simp
+        · subst hx'_eq
+          have sub := Interlaced.count_head_le hrec hsort_tail
+          simp only [List.count_cons_self, List.count_cons_of_ne hx] at sub ih_yx ih_xy ⊢
+          omega
+      · rw [List.count_cons_of_ne hx, List.count_cons_of_ne hy]
+        exact ⟨ih_yx, ih_xy⟩
+
+/-- **BPR.** If `x` is a virtual root of `P'` with virtual multiplicity `ν`
+    with respect to `P`, the virtual multiplicity of `x` with respect to `P'`
+    can only be `ν − 1`, `ν`, or `ν + 1`. Formalized via a witness virtual
+    roots list `ys` for `P'` interlacing `virtualRoots P`; the count of `x`
+    in `ys` is then the virtual multiplicity of `x` w.r.t. `P'`. -/
+theorem virtualMultiplicity_derivative_cases (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) (hdP : derivative P ≠ 0) (x : R) :
+    ∃ ys, IsVirtualRootsList (derivative P) ys ∧
+      Interlaced (virtualRoots hIVP hP) ys ∧
+      (ys.count x + 1 = virtualMultiplicity hIVP hP x ∨
+       ys.count x = virtualMultiplicity hIVP hP x ∨
+       ys.count x = virtualMultiplicity hIVP hP x + 1) := by
+  obtain ⟨ys, hys, hinter⟩ := exists_interlaced_derivativeVirtualRootsList hIVP hP hdP
+  refine ⟨ys, hys, hinter, ?_⟩
+  have hbound := Interlaced.count_diff_le_one hinter hys.sorted x
+  unfold virtualMultiplicity
+  omega
+
+/-! ### BPR Proposition 2.46 interpretation (1): `P(x) = 0 ⇒ ν(P, x) = ν(P', x) + 1` -/
+
+omit [IsStrictOrderedRing R] in
+/-- If `P` has constant sign on each gap determined by `xs` and `P.eval x = 0`,
+    then `x ∈ xs`: roots of `P` must be accounted for in the virtual roots. -/
+lemma mem_of_eval_eq_zero_of_signConstantOnGaps {P : R[X]} {xs : List R}
+    (h : SignConstantOnGaps P xs) {x : R} (hx : P.eval x = 0) : x ∈ xs := by
+  by_contra hne
+  have hgap : ∀ r ∈ xs, r < x ∨ x < r := by
+    intro r hr
+    rcases lt_trichotomy r x with h1 | rfl | h1
+    · exact Or.inl h1
+    · exact absurd hr hne
+    · exact Or.inr h1
+  exact (h x x (le_refl x) hgap).1 hx
+
+omit [IsStrictOrderedRing R] in
+/-- `P.eval x = 0` forces `x` to appear in any virtual roots list of `P`. -/
+lemma count_pos_of_eval_eq_zero {P : R[X]} {xs : List R}
+    (hxs : IsVirtualRootsList P xs) {x : R} (hx : P.eval x = 0) :
+    0 < xs.count x :=
+  List.count_pos_iff.mpr
+    (mem_of_eval_eq_zero_of_signConstantOnGaps hxs.sign_const hx)
+
+omit [IsStrictOrderedRing R] in
+/-- If `z ∉ ys` and `SignConstantOnGaps Q ys`, then `Q.eval z ≠ 0`. -/
+lemma eval_ne_zero_of_not_mem_of_signConstantOnGaps {Q : R[X]} {ys : List R}
+    (hys : SignConstantOnGaps Q ys) {z : R} (hz : z ∉ ys) : Q.eval z ≠ 0 := by
+  refine (hys z z (le_refl z) ?_).1
+  intro r hr
+  rcases lt_trichotomy r z with h1 | rfl | h1
+  · exact Or.inl h1
+  · exact absurd hr hz
+  · exact Or.inr h1
+
+/-- **Rolle + SignConstantOnGaps contradiction helper.** If `a < b` are both
+    actual roots of `P`, `ys` is sorted with `SignConstantOnGaps P' ys`, and
+    no entry of `ys` lies in the closed interval `[a, b]`, then a contradiction
+    ensues (via Rolle's theorem giving a root of `P'` in `(a, b)` that is
+    missed by `ys`'s sign-constant cover). -/
+lemma false_of_rolle_gap
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {ys : List R}
+    (hys : SignConstantOnGaps (derivative P) ys)
+    {a b : R} (hab : a < b) (hPa : P.eval a = 0) (hPb : P.eval b = 0)
+    (hno : ∀ y ∈ ys, y < a ∨ b < y) : False := by
+  obtain ⟨c, hc, hPc⟩ := proposition_2_22 hIVP P hab hPa hPb
+  have hc_not_in : c ∉ ys := fun hcy => by
+    rcases hno c hcy with hlt | hlt
+    · exact absurd hlt (not_lt.mpr hc.1.le)
+    · exact absurd hlt (not_lt.mpr hc.2.le)
+  exact eval_ne_zero_of_not_mem_of_signConstantOnGaps hys hc_not_in hPc
+
+/-- Non-strict variant of `false_of_rolle_gap`: if each `y ∈ ys` satisfies
+    `y ≤ a` or `b ≤ y`, the Rolle witness in the open interval `(a, b)`
+    strictly avoids all of `ys`, giving the same contradiction. -/
+lemma false_of_rolle_gap_closed
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {ys : List R}
+    (hys : SignConstantOnGaps (derivative P) ys)
+    {a b : R} (hab : a < b) (hPa : P.eval a = 0) (hPb : P.eval b = 0)
+    (hno : ∀ y ∈ ys, y ≤ a ∨ b ≤ y) : False := by
+  obtain ⟨c, hc, hPc⟩ := proposition_2_22 hIVP P hab hPa hPb
+  have hc_not_in : c ∉ ys := fun hcy => by
+    rcases hno c hcy with hle | hle
+    · exact absurd hc.1 (not_lt.mpr hle)
+    · exact absurd hc.2 (not_lt.mpr hle)
+  exact eval_ne_zero_of_not_mem_of_signConstantOnGaps hys hc_not_in hPc
+
+/-- **Argmin-chain uniqueness of a root.** In the `ArgminPartitionFrom`
+    structure, if `x₀ ∈ [v, y]` minimises `|P|` on `[v, y]`, `x ∈ [v, y]` with
+    `P(x) = 0`, and every `y' ∈ ys_full` satisfies `y' ≤ v` or `y ≤ y'`, then
+    `x₀ = x`. The two non-equal cases are ruled out by Rolle's theorem: any
+    witness `c` strictly between `x₀` and `x` lies in `(v, y)`, hence is
+    disjoint from `ys_full`, but `P'(c) ≠ 0` by sign-constancy. -/
+private lemma argmin_eq_root_of_Icc
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {ys_full : List R}
+    (hsg : SignConstantOnGaps (derivative P) ys_full)
+    {v y x₀ x : R}
+    (hx₀ : IsArgminAbsOn P (Set.Icc v y) x₀)
+    (hx : P.eval x = 0) (hvx : v ≤ x) (hxy : x ≤ y)
+    (hno : ∀ y' ∈ ys_full, y' ≤ v ∨ y ≤ y') :
+    x₀ = x := by
+  obtain ⟨⟨hvx₀, hx₀y⟩, hmin⟩ := hx₀
+  have hPx₀ : P.eval x₀ = 0 := by
+    have := hmin x ⟨hvx, hxy⟩
+    rw [hx, abs_zero] at this
+    exact abs_eq_zero.mp (le_antisymm this (abs_nonneg _))
+  rcases lt_trichotomy x₀ x with hlt | heq | hgt
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hlt hPx₀ hx ?_
+    intro y' hy'
+    rcases hno y' hy' with h | h
+    · exact Or.inl (h.trans hvx₀)
+    · exact Or.inr (hxy.trans h)
+  · exact heq
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hgt hx hPx₀ ?_
+    intro y' hy'
+    rcases hno y' hy' with h | h
+    · exact Or.inl (h.trans hvx)
+    · exact Or.inr (hx₀y.trans h)
+
+/-- Variant of `argmin_eq_root_of_Icc` for the leftmost interval `Iic y`. -/
+private lemma argmin_eq_root_of_Iic
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {ys_full : List R}
+    (hsg : SignConstantOnGaps (derivative P) ys_full)
+    {y x₀ x : R}
+    (hx₀ : IsArgminAbsOn P (Set.Iic y) x₀)
+    (hx : P.eval x = 0) (hxy : x ≤ y)
+    (hno : ∀ y' ∈ ys_full, y ≤ y') :
+    x₀ = x := by
+  obtain ⟨hx₀y, hmin⟩ := hx₀
+  have hPx₀ : P.eval x₀ = 0 := by
+    have := hmin x hxy
+    rw [hx, abs_zero] at this
+    exact abs_eq_zero.mp (le_antisymm this (abs_nonneg _))
+  rcases lt_trichotomy x₀ x with hlt | heq | hgt
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hlt hPx₀ hx ?_
+    intro y' hy'; exact Or.inr (hxy.trans (hno y' hy'))
+  · exact heq
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hgt hx hPx₀ ?_
+    intro y' hy'; exact Or.inr (hx₀y.trans (hno y' hy'))
+
+/-- Variant of `argmin_eq_root_of_Icc` for the rightmost interval `Ici v`. -/
+private lemma argmin_eq_root_of_Ici
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {ys_full : List R}
+    (hsg : SignConstantOnGaps (derivative P) ys_full)
+    {v x₀ x : R}
+    (hx₀ : IsArgminAbsOn P (Set.Ici v) x₀)
+    (hx : P.eval x = 0) (hvx : v ≤ x)
+    (hno : ∀ y' ∈ ys_full, y' ≤ v) :
+    x₀ = x := by
+  obtain ⟨hvx₀, hmin⟩ := hx₀
+  have hPx₀ : P.eval x₀ = 0 := by
+    have := hmin x hvx
+    rw [hx, abs_zero] at this
+    exact abs_eq_zero.mp (le_antisymm this (abs_nonneg _))
+  rcases lt_trichotomy x₀ x with hlt | heq | hgt
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hlt hPx₀ hx ?_
+    intro y' hy'; exact Or.inl ((hno y' hy').trans hvx₀)
+  · exact heq
+  · exfalso
+    refine false_of_rolle_gap_closed hIVP hsg hgt hx hPx₀ ?_
+    intro y' hy'; exact Or.inl ((hno y' hy').trans hvx)
+
+/-- Recursive count identity along an `ArgminPartitionFrom` chain, carrying a
+    full ambient list `ys_full` whose `SignConstantOnGaps (derivative P)`
+    witness survives the recursion. The invariants `past ++ ys = ys_full` and
+    `∀ p ∈ past, p ≤ v` let the recursion move one step of `ys` into `past`
+    while updating the anchor `v`. -/
+private lemma count_eq_of_root_from_aux
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} {ys_full : List R}
+    (hys_full_sort : ys_full.Pairwise (· ≤ ·))
+    (hsg : SignConstantOnGaps (derivative P) ys_full)
+    {x : R} (hx : P.eval x = 0) :
+    ∀ {xs ys : List R} {v : R} {past : List R},
+      ys_full = past ++ ys →
+      Interlaced xs ys →
+      ArgminPartitionFrom P v xs ys →
+      v ≤ x →
+      (∀ p ∈ past, p ≤ v) →
+      ys.count x + 1 = xs.count x := by
+  intro xs ys
+  induction ys generalizing xs with
+  | nil =>
+    intro v past hsplit hi harg hvx hpast
+    -- ys = []; Interlaced xs [] forces xs = [z].
+    match xs, hi with
+    | [z], _ =>
+      change IsArgminAbsOn P (Set.Ici v) z at harg
+      -- ys_full = past ++ [] = past, so ys_full = past. All of ys_full ≤ v.
+      have hno : ∀ y' ∈ ys_full, y' ≤ v := by
+        rw [hsplit, List.append_nil]; exact hpast
+      have hz : z = x := argmin_eq_root_of_Ici hIVP hsg harg hx hvx hno
+      subst hz; simp
+    | x₀ :: _ :: _, hi => exact absurd hi (by simp [Interlaced])
+    | [], hi => exact absurd hi (by simp [Interlaced])
+  | cons y ys' ih =>
+    intro v past hsplit hi harg hvx hpast
+    -- ys = y :: ys', xs must be x₀ :: x₁ :: xs''.
+    match xs, hi, harg with
+    | [], hi, _ => exact absurd hi (by simp [Interlaced])
+    | [_], hi, _ => exact absurd hi (by simp [Interlaced])
+    | x₀ :: x₁ :: xs'', hi, harg =>
+      obtain ⟨h_x0_le_y, h_y_le_x1, hi_rest⟩ := hi
+      change IsArgminAbsOn P (Set.Icc v y) x₀ ∧
+        ArgminPartitionFrom P y (x₁ :: xs'') ys' at harg
+      obtain ⟨harg_x0, harg_rest⟩ := harg
+      -- Extract: the suffix `y :: ys'` of `ys_full` is still pairwise-sorted.
+      have hpw_suff : (y :: ys').Pairwise (· ≤ ·) := by
+        have h := hys_full_sort
+        rw [hsplit, List.pairwise_append] at h
+        exact h.2.1
+      have hy_le_ys' : ∀ y' ∈ ys', y ≤ y' := (List.pairwise_cons.mp hpw_suff).1
+      have hys'_sort : ys'.Pairwise (· ≤ ·) := (List.pairwise_cons.mp hpw_suff).2
+      -- `v ≤ x₀ ≤ y`, so `v ≤ y`; combined with `hpast`, all `past ++ [y]` are `≤ y`.
+      have hv_le_y : v ≤ y := harg_x0.1.1.trans harg_x0.1.2
+      have hpast' : ∀ p ∈ past ++ [y], p ≤ y := by
+        intro p hp
+        rcases List.mem_append.mp hp with hp | hp
+        · exact (hpast p hp).trans hv_le_y
+        · rcases List.mem_cons.mp hp with rfl | h
+          · exact le_refl _
+          · exact absurd h List.not_mem_nil
+      have hsplit' : ys_full = (past ++ [y]) ++ ys' := by
+        rw [List.append_assoc, List.singleton_append]; exact hsplit
+      rcases le_or_gt x y with hxy | hyx
+      · -- Case x ≤ y: argmin on `Icc v y` forces `x₀ = x`.
+        have hno : ∀ y' ∈ ys_full, y' ≤ v ∨ y ≤ y' := by
+          intro y' hy'
+          rw [hsplit] at hy'
+          rcases List.mem_append.mp hy' with hp | hyrest
+          · exact Or.inl (hpast y' hp)
+          · rcases List.mem_cons.mp hyrest with rfl | hy'_in_ys'
+            · exact Or.inr (le_refl _)
+            · exact Or.inr (hy_le_ys' y' hy'_in_ys')
+        have hx0_eq : x₀ = x :=
+          argmin_eq_root_of_Icc hIVP hsg harg_x0 hx hvx hxy hno
+        rw [hx0_eq]
+        rcases lt_or_eq_of_le hxy with hxy_lt | hxy_eq
+        · -- x < y: all remaining entries are ≥ y > x, so counts past x are zero.
+          have hx_lt_x1 : x < x₁ := lt_of_lt_of_le hxy_lt h_y_le_x1
+          have hxs_sort := Interlaced.pairwise_of_ys hi_rest hys'_sort
+          have hxs_gt : ∀ a ∈ x₁ :: xs'', x < a := by
+            intro a ha
+            rcases List.mem_cons.mp ha with rfl | h
+            · exact hx_lt_x1
+            · exact hx_lt_x1.trans_le ((List.pairwise_cons.mp hxs_sort).1 a h)
+          have hys_gt : ∀ a ∈ y :: ys', x < a := by
+            intro a ha
+            rcases List.mem_cons.mp ha with rfl | h
+            · exact hxy_lt
+            · exact hxy_lt.trans_le (hy_le_ys' a h)
+          have hcy : (y :: ys').count x = 0 :=
+            List.count_eq_zero.mpr (fun hm => (hys_gt x hm).ne rfl)
+          have hcx1 : (x₁ :: xs'').count x = 0 :=
+            List.count_eq_zero.mpr (fun hm => (hxs_gt x hm).ne rfl)
+          rw [hcy, List.count_cons_self, hcx1]
+        · -- x = y: recurse with `v := x`, `past := past ++ [x]`.
+          subst hxy_eq
+          have hrec := ih (v := x) (past := past ++ [x]) hsplit' hi_rest harg_rest
+            (le_refl x) hpast'
+          rw [List.count_cons_self, List.count_cons_self]
+          omega
+      · -- Case y < x: `x₀ ≤ y < x`, so `x₀ ≠ x` and `y ≠ x`. Recurse.
+        have hx0_ne : x₀ ≠ x := ne_of_lt (lt_of_le_of_lt harg_x0.1.2 hyx)
+        have hy_ne : y ≠ x := ne_of_lt hyx
+        have hrec := ih (v := y) (past := past ++ [y]) hsplit' hi_rest harg_rest
+          hyx.le hpast'
+        rw [List.count_cons_of_ne hy_ne, List.count_cons_of_ne hx0_ne]
+        exact hrec
+
+/-- Core count identity. If `xs`, `ys` satisfy the virtual-roots structure
+    (interlaced, sorted, with argmin partition of `|P|`, `P` sign-constant on
+    xs-gaps, `P'` sign-constant on ys-gaps) and `P.eval x = 0`, then
+    `ys.count x + 1 = xs.count x`.
+
+    **Proof outline.** Each entry of `xs` is the argmin of `|P|` on an
+    interval. When the interval's endpoints are ≤ `x` or ≥ `x`, the argmin is
+    forced to equal `x` (by a Rolle contradiction on the polynomial roots
+    `x₀ ≠ x` case): any witness `c` strictly between lies in a region disjoint
+    from `ys`, so `P'(c) ≠ 0` contradicts the Rolle-produced root.
+    `count_eq_of_root_from_aux` packages this as a recursion along the
+    argmin chain. -/
+private lemma count_eq_of_root
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {xs ys : List R}
+    (hi : Interlaced xs ys)
+    (hys_sort : ys.Pairwise (· ≤ ·))
+    (harg : ArgminPartition P xs ys)
+    (hsg_xs : SignConstantOnGaps P xs)
+    (hsg_ys : SignConstantOnGaps (derivative P) ys)
+    {x : R} (hx : P.eval x = 0) :
+    ys.count x + 1 = xs.count x := by
+  match xs, ys, hi, harg with
+  | [], ys, hi, _ => exact absurd hi (by cases ys <;> simp [Interlaced])
+  | [_], _ :: _, hi, _ => exact absurd hi (by simp [Interlaced])
+  | _ :: _ :: _, [], hi, _ => exact absurd hi (by simp [Interlaced])
+  | [z], [], _, harg =>
+    change IsArgminAbsOn P Set.univ z at harg
+    have hz_mem_xs : x ∈ ([z] : List R) :=
+      mem_of_eval_eq_zero_of_signConstantOnGaps hsg_xs hx
+    have : z = x := by
+      rcases List.mem_cons.mp hz_mem_xs with h | h
+      · exact h.symm
+      · exact absurd h List.not_mem_nil
+    subst this; simp
+  | x₀ :: x₁ :: xs'', y :: ys', hi, harg =>
+    obtain ⟨h_x0_le_y, h_y_le_x1, hi_rest⟩ := hi
+    change IsArgminAbsOn P (Set.Iic y) x₀ ∧
+      ArgminPartitionFrom P y (x₁ :: xs'') ys' at harg
+    obtain ⟨harg_x0, harg_rest⟩ := harg
+    have hy_le_ys : ∀ y' ∈ y :: ys', y ≤ y' := by
+      intro y' hy'
+      rcases List.mem_cons.mp hy' with rfl | h
+      · exact le_refl _
+      · exact (List.pairwise_cons.mp hys_sort).1 y' h
+    rcases le_or_gt x y with hxy | hyx
+    · -- Case x ≤ y: argmin x₀ on Iic y forces x₀ = x.
+      have hx0_eq : x₀ = x :=
+        argmin_eq_root_of_Iic hIVP hsg_ys harg_x0 hx hxy hy_le_ys
+      rw [hx0_eq]
+      -- Further split on x vs y.
+      rcases lt_or_eq_of_le hxy with hxy_lt | hxy_eq
+      · -- x < y: y, x₁, and all later ≥ y > x, so counts of x all-zero past x.
+        have hx_lt_x1 : x < x₁ := lt_of_lt_of_le hxy_lt h_y_le_x1
+        have hxs_gt : ∀ a ∈ x₁ :: xs'', x < a := by
+          intro a ha
+          have hxs_sort := Interlaced.pairwise_of_ys hi_rest hys_sort.tail
+          rcases List.mem_cons.mp ha with rfl | h
+          · exact hx_lt_x1
+          · exact hx_lt_x1.trans_le ((List.pairwise_cons.mp hxs_sort).1 a h)
+        have hys_gt : ∀ a ∈ y :: ys', x < a := fun a ha =>
+          lt_of_lt_of_le hxy_lt (hy_le_ys a ha)
+        have hcy : (y :: ys').count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hys_gt x hm).ne rfl)
+        have hcx1 : (x₁ :: xs'').count x = 0 :=
+          List.count_eq_zero.mpr (fun hm => (hxs_gt x hm).ne rfl)
+        rw [hcy, List.count_cons_self, hcx1]
+      · -- x = y: recurse via count_eq_of_root_from_aux with past = [x], v = x.
+        subst hxy_eq
+        have hsplit : (x :: ys') = [x] ++ ys' := rfl
+        have hpast : ∀ p ∈ ([x] : List R), p ≤ x := by
+          intro p hp; rcases List.mem_cons.mp hp with rfl | h
+          · exact le_refl _
+          · exact absurd h List.not_mem_nil
+        have := count_eq_of_root_from_aux hIVP hys_sort hsg_ys hx
+          hsplit hi_rest harg_rest (le_refl x) hpast
+        rw [List.count_cons_self, List.count_cons_self]
+        omega
+    · -- Case y < x: x₀ ≤ y < x, so x₀ ≠ x. Recurse.
+      have hx0_ne : x₀ ≠ x := by
+        have : x₀ ≤ y := harg_x0.1
+        exact ne_of_lt (lt_of_le_of_lt this hyx)
+      have hy_ne : y ≠ x := ne_of_lt hyx
+      have hsplit : (y :: ys') = [y] ++ ys' := rfl
+      have hpast : ∀ p ∈ ([y] : List R), p ≤ y := by
+        intro p hp; rcases List.mem_cons.mp hp with rfl | h
+        · exact le_refl _
+        · exact absurd h List.not_mem_nil
+      have := count_eq_of_root_from_aux hIVP hys_sort hsg_ys hx
+        hsplit hi_rest harg_rest hyx.le hpast
+      rw [List.count_cons_of_ne hy_ne, List.count_cons_of_ne hx0_ne]
+      exact this
+
+/-- **BPR Proposition 2.46 interpretation (1).** If `x` is a root of `P` (i.e.,
+    `P.eval x = 0`), then the virtual multiplicity of `x` with respect to `P`
+    exceeds the virtual multiplicity of `x` with respect to `P'` by exactly `1`. -/
+theorem virtualMultiplicity_derivative_of_root
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) (hdP : derivative P ≠ 0) {x : R} (hx : P.eval x = 0) :
+    ∃ ys, IsVirtualRootsList (derivative P) ys ∧
+      Interlaced (virtualRoots hIVP hP) ys ∧
+      ys.count x + 1 = virtualMultiplicity hIVP hP x := by
+  set xs := virtualRoots hIVP hP with hxs_def
+  have hxs_spec : IsVirtualRootsList P xs := virtualRoots_spec hIVP hP
+  have hdeg : P.natDegree ≠ 0 := fun h =>
+    hdP (Polynomial.derivative_of_natDegree_zero h)
+  obtain ⟨m, hm⟩ : ∃ m, P.natDegree = m + 1 := Nat.exists_eq_succ_of_ne_zero hdeg
+  have hxs_aux : IsVirtualRootsListAux (m + 1) P xs := by
+    unfold IsVirtualRootsList at hxs_spec; rw [hm] at hxs_spec; exact hxs_spec
+  rcases hxs_aux.argmin_wit_succ with hnil | ⟨ys, hys_aux, hinter, hargmin⟩
+  · exfalso
+    have hlen : xs.length = P.natDegree := hxs_spec.length_eq
+    rw [hnil, hm] at hlen
+    simp at hlen
+  · have hdP_deg : (derivative P).natDegree = m := by
+      have h1 : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
+        Polynomial.degree_derivative_eq P (by rw [hm]; omega)
+      have h2 : (derivative P).natDegree = P.natDegree - 1 :=
+        Polynomial.natDegree_eq_of_degree_eq_some h1
+      rw [h2, hm]; omega
+    have hys : IsVirtualRootsList (derivative P) ys := by
+      unfold IsVirtualRootsList; rw [hdP_deg]; exact hys_aux
+    refine ⟨ys, hys, hinter, ?_⟩
+    unfold virtualMultiplicity
+    rw [← hxs_def]
+    exact count_eq_of_root hIVP hinter hys.sorted hargmin hxs_spec.sign_const
+      hys.sign_const hx
+
+/-! ### Uniqueness of virtual roots lists
+
+Virtual roots lists are pinned down by the argmin partition: given the same
+derivative witness `ys`, each entry of `xs` is the unique minimiser of `|P|`
+on its interval because `P` is strictly monotonic there (from the sign
+dichotomy for `P'` and `strictMonoOn_of_deriv_pos_*` / `strictAntiOn_of_deriv_neg_*`).
+We first prove a general argmin uniqueness on any order-connected set where
+`P` is injective, then specialize to each of the interval shapes that appear
+in `ArgminPartition`, and finally induct on `P.natDegree`. -/
+
+/-- **General argmin uniqueness.** On an order-connected set `S` on which `P`
+    is injective, the argmin of `|P|` is unique. The only non-trivial case is
+    `P z₁ = -P z₂` with both nonzero (opposite signs): `OrdConnected` gives
+    `Icc z₁ z₂ ⊆ S` and IVP produces a root between them — a strictly smaller
+    `|P|`, contradicting the argmin claim. -/
+lemma IsArgminAbsOn.unique_of_injOn
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {S : Set R}
+    (hord : S.OrdConnected)
+    (hinj : S.InjOn (fun x => P.eval x))
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P S z₁) (h₂ : IsArgminAbsOn P S z₂) :
+    z₁ = z₂ := by
+  obtain ⟨hz₁, hmin₁⟩ := h₁
+  obtain ⟨hz₂, hmin₂⟩ := h₂
+  have habs : |P.eval z₁| = |P.eval z₂| :=
+    le_antisymm (hmin₁ z₂ hz₂) (hmin₂ z₁ hz₁)
+  rcases abs_eq_abs.mp habs with heq | hneg
+  · exact hinj hz₁ hz₂ heq
+  · by_cases hP₁ : P.eval z₁ = 0
+    · have hP₂ : P.eval z₂ = 0 := by linarith
+      exact hinj hz₁ hz₂ (hP₁.trans hP₂.symm)
+    · have hP₂ : P.eval z₂ ≠ 0 := fun h => hP₁ (by rw [hneg, h, neg_zero])
+      have hsq_pos : 0 < P.eval z₂ * P.eval z₂ := by
+        rcases lt_or_gt_of_ne hP₂ with h | h
+        · exact mul_pos_of_neg_of_neg h h
+        · exact mul_pos h h
+      have hprod_neg : P.eval z₁ * P.eval z₂ < 0 := by
+        have : P.eval z₁ * P.eval z₂ = -(P.eval z₂ * P.eval z₂) := by
+          rw [hneg]; ring
+        linarith
+      rcases lt_trichotomy z₁ z₂ with hlt | heq | hgt
+      · have hsubset : Set.Icc z₁ z₂ ⊆ S := hord.out hz₁ hz₂
+        obtain ⟨r, hz₁r, hrz₂, hPr⟩ := hIVP P z₁ z₂ hlt hprod_neg
+        have hr_mem : r ∈ S := hsubset ⟨hz₁r.le, hrz₂.le⟩
+        have hle : |P.eval z₁| ≤ |P.eval r| := hmin₁ r hr_mem
+        rw [hPr, abs_zero] at hle
+        exact absurd (abs_eq_zero.mp (le_antisymm hle (abs_nonneg _))) hP₁
+      · exact heq
+      · have hsubset : Set.Icc z₂ z₁ ⊆ S := hord.out hz₂ hz₁
+        have hprod_neg' : P.eval z₂ * P.eval z₁ < 0 := by
+          rw [mul_comm]; exact hprod_neg
+        obtain ⟨r, hz₂r, hrz₁, hPr⟩ := hIVP P z₂ z₁ hgt hprod_neg'
+        have hr_mem : r ∈ S := hsubset ⟨hz₂r.le, hrz₁.le⟩
+        have hle : |P.eval z₁| ≤ |P.eval r| := hmin₁ r hr_mem
+        rw [hPr, abs_zero] at hle
+        exact absurd (abs_eq_zero.mp (le_antisymm hle (abs_nonneg _))) hP₁
+
+/-- Argmin uniqueness from strict monotonicity: every strict-mono function is
+    injective, so `unique_of_injOn` applies. -/
+lemma IsArgminAbsOn.unique_of_strictMonoOn
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {S : Set R}
+    (hord : S.OrdConnected)
+    (hmono : StrictMonoOn (fun x => P.eval x) S)
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P S z₁) (h₂ : IsArgminAbsOn P S z₂) :
+    z₁ = z₂ :=
+  IsArgminAbsOn.unique_of_injOn hIVP hord hmono.injOn h₁ h₂
+
+/-- Argmin uniqueness from strict antitonicity. -/
+lemma IsArgminAbsOn.unique_of_strictAntiOn
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {S : Set R}
+    (hord : S.OrdConnected)
+    (hanti : StrictAntiOn (fun x => P.eval x) S)
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P S z₁) (h₂ : IsArgminAbsOn P S z₂) :
+    z₁ = z₂ :=
+  IsArgminAbsOn.unique_of_injOn hIVP hord hanti.injOn h₁ h₂
+
+/-- Argmin uniqueness on `Iic c` from a derivative sign dichotomy on `Iio c`.
+    The dichotomy produces strict mono (if `P' > 0` on `Iio c`) or strict anti
+    (if `P' < 0` on `Iio c`) on `Iic c`. -/
+lemma IsArgminAbsOn.unique_on_Iic_of_deriv_dichotomy
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {c : R}
+    (hdich : (∀ x ∈ Set.Iio c, 0 < (derivative P).eval x) ∨
+             (∀ x ∈ Set.Iio c, (derivative P).eval x < 0))
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P (Set.Iic c) z₁)
+    (h₂ : IsArgminAbsOn P (Set.Iic c) z₂) :
+    z₁ = z₂ := by
+  rcases hdich with hpos | hneg
+  · exact IsArgminAbsOn.unique_of_strictMonoOn hIVP Set.ordConnected_Iic
+      (strictMonoOn_of_deriv_pos_Iic hIVP hpos) h₁ h₂
+  · exact IsArgminAbsOn.unique_of_strictAntiOn hIVP Set.ordConnected_Iic
+      (strictAntiOn_of_deriv_neg_Iic hIVP hneg) h₁ h₂
+
+/-- Argmin uniqueness on `Ici c` from a derivative sign dichotomy on `Ioi c`. -/
+lemma IsArgminAbsOn.unique_on_Ici_of_deriv_dichotomy
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {c : R}
+    (hdich : (∀ x ∈ Set.Ioi c, 0 < (derivative P).eval x) ∨
+             (∀ x ∈ Set.Ioi c, (derivative P).eval x < 0))
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P (Set.Ici c) z₁)
+    (h₂ : IsArgminAbsOn P (Set.Ici c) z₂) :
+    z₁ = z₂ := by
+  rcases hdich with hpos | hneg
+  · exact IsArgminAbsOn.unique_of_strictMonoOn hIVP Set.ordConnected_Ici
+      (strictMonoOn_of_deriv_pos_Ici hIVP hpos) h₁ h₂
+  · exact IsArgminAbsOn.unique_of_strictAntiOn hIVP Set.ordConnected_Ici
+      (strictAntiOn_of_deriv_neg_Ici hIVP hneg) h₁ h₂
+
+/-- Argmin uniqueness on `Icc a b` from a derivative sign dichotomy on `Ioo a b`. -/
+lemma IsArgminAbsOn.unique_on_Icc_of_deriv_dichotomy
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} {a b : R} (hab : a < b)
+    (hdich : (∀ x ∈ Set.Ioo a b, 0 < (derivative P).eval x) ∨
+             (∀ x ∈ Set.Ioo a b, (derivative P).eval x < 0))
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P (Set.Icc a b) z₁)
+    (h₂ : IsArgminAbsOn P (Set.Icc a b) z₂) :
+    z₁ = z₂ := by
+  rcases hdich with hpos | hneg
+  · exact IsArgminAbsOn.unique_of_strictMonoOn hIVP Set.ordConnected_Icc
+      (corollary_2_24_increasing hIVP P hab hpos) h₁ h₂
+  · exact IsArgminAbsOn.unique_of_strictAntiOn hIVP Set.ordConnected_Icc
+      (corollary_2_24_decreasing hIVP P hab hneg) h₁ h₂
+
+omit [IsStrictOrderedRing R] in
+/-- `SignConstantOnGaps Q []` means `Q` has a single strict sign everywhere. -/
+lemma sign_dichotomy_univ_of_nil {Q : R[X]} (h : SignConstantOnGaps Q []) :
+    (∀ x : R, 0 < Q.eval x) ∨ (∀ x : R, Q.eval x < 0) := by
+  have h0 : Q.eval 0 ≠ 0 := (h 0 0 (le_refl 0) (fun r hr => absurd hr List.not_mem_nil)).1
+  have hsign : ∀ x : R, SignType.sign (Q.eval x) = SignType.sign (Q.eval 0) := by
+    intro x
+    rcases le_or_gt x 0 with hx | hx
+    · exact (h x 0 hx (fun r hr => absurd hr List.not_mem_nil)).2
+    · exact ((h 0 x hx.le (fun r hr => absurd hr List.not_mem_nil)).2).symm
+  rcases lt_or_gt_of_ne h0 with hneg | hpos
+  · right; intro x
+    have := hsign x
+    rw [sign_eq_neg_one_iff.mpr hneg] at this
+    exact sign_eq_neg_one_iff.mp this
+  · left; intro x
+    have := hsign x
+    rw [sign_eq_one_iff.mpr hpos] at this
+    exact sign_eq_one_iff.mp this
+
+/-- Argmin uniqueness on `Set.univ` when `P'` has constant strict sign on all
+    of `R` (captured by `SignConstantOnGaps (derivative P) []`). -/
+lemma IsArgminAbsOn.unique_on_univ_of_signConstantOnGaps_nil
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]}
+    (hsg : SignConstantOnGaps (derivative P) [])
+    {z₁ z₂ : R}
+    (h₁ : IsArgminAbsOn P Set.univ z₁) (h₂ : IsArgminAbsOn P Set.univ z₂) :
+    z₁ = z₂ := by
+  rcases sign_dichotomy_univ_of_nil hsg with hpos | hneg
+  · exact IsArgminAbsOn.unique_of_strictMonoOn hIVP Set.ordConnected_univ
+      ((strictMono_of_deriv_pos hIVP hpos).strictMonoOn Set.univ) h₁ h₂
+  · exact IsArgminAbsOn.unique_of_strictAntiOn hIVP Set.ordConnected_univ
+      ((strictAnti_of_deriv_neg hIVP hneg).strictAntiOn Set.univ) h₁ h₂
+
+/-- **Uniqueness of the inner partition witness.** Given a sorted `ys_full`
+    with `SignConstantOnGaps (derivative P) ys_full`, and a split
+    `ys_full = past ++ a :: ys_rest`, any two `ArgminPartitionFrom P a _ ys_rest`
+    witnesses agree. -/
+private theorem ArgminPartitionFrom.unique_aux
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]}
+    {ys_full : List R}
+    (hys_full_sort : ys_full.Pairwise (· ≤ ·))
+    (hsg : SignConstantOnGaps (derivative P) ys_full) :
+    ∀ {past : List R} {a : R} {ys_rest : List R},
+      ys_full = past ++ a :: ys_rest →
+      ∀ {xs xs' : List R},
+        ArgminPartitionFrom P a xs ys_rest →
+        ArgminPartitionFrom P a xs' ys_rest →
+        xs = xs' := by
+  intro past a ys_rest hsplit
+  induction ys_rest generalizing past a with
+  | nil =>
+    intro xs xs' harg harg'
+    rcases xs with _ | ⟨x, xrest⟩
+    · exact absurd harg (by simp [ArgminPartitionFrom])
+    rcases xrest with _ | ⟨_, _⟩
+    swap
+    · exact absurd harg (by simp [ArgminPartitionFrom])
+    rcases xs' with _ | ⟨x', xrest'⟩
+    · exact absurd harg' (by simp [ArgminPartitionFrom])
+    rcases xrest' with _ | ⟨_, _⟩
+    swap
+    · exact absurd harg' (by simp [ArgminPartitionFrom])
+    change IsArgminAbsOn P (Set.Ici a) x at harg
+    change IsArgminAbsOn P (Set.Ici a) x' at harg'
+    have hr_le : ∀ r ∈ ys_full, r ≤ a := by
+      intro r hr
+      rw [hsplit] at hr
+      rcases List.mem_append.mp hr with hpast | hcons
+      · rw [hsplit] at hys_full_sort
+        exact (sorted_split_le hys_full_sort).1 r hpast
+      · rw [List.mem_cons] at hcons
+        rcases hcons with rfl | h0
+        · exact le_refl _
+        · exact absurd h0 List.not_mem_nil
+    have : x = x' := IsArgminAbsOn.unique_on_Ici_of_deriv_dichotomy hIVP
+      (sign_dichotomy_Ioi hsg hr_le) harg harg'
+    rw [this]
+  | cons y ys_rest' ih =>
+    intro xs xs' harg harg'
+    rcases xs with _ | ⟨x, xrest⟩
+    · exact absurd harg (by simp [ArgminPartitionFrom])
+    rcases xrest with _ | ⟨x'', xs_rest⟩
+    · exact absurd harg (by simp [ArgminPartitionFrom])
+    rcases xs' with _ | ⟨x₀, xrest'⟩
+    · exact absurd harg' (by simp [ArgminPartitionFrom])
+    rcases xrest' with _ | ⟨x₀'', xs_rest'⟩
+    · exact absurd harg' (by simp [ArgminPartitionFrom])
+    change IsArgminAbsOn P (Set.Icc a y) x ∧
+      ArgminPartitionFrom P y (x'' :: xs_rest) ys_rest' at harg
+    change IsArgminAbsOn P (Set.Icc a y) x₀ ∧
+      ArgminPartitionFrom P y (x₀'' :: xs_rest') ys_rest' at harg'
+    obtain ⟨harg_head, harg_rest⟩ := harg
+    obtain ⟨harg'_head, harg'_rest⟩ := harg'
+    have hsplit_next : ys_full = (past ++ [a]) ++ y :: ys_rest' := by
+      rw [hsplit, List.append_assoc]; rfl
+    have hay : a ≤ y := by
+      have hsorted' := hys_full_sort
+      rw [hsplit] at hsorted'
+      exact (sorted_split_le hsorted').2.1 y List.mem_cons_self
+    have hx_eq : x = x₀ := by
+      rcases eq_or_lt_of_le hay with heq | hlt
+      · have hx : x = a := by
+          have hm : x ∈ Set.Icc a y := harg_head.1
+          rw [← heq, Set.Icc_self] at hm; exact hm
+        have hx₀ : x₀ = a := by
+          have hm : x₀ ∈ Set.Icc a y := harg'_head.1
+          rw [← heq, Set.Icc_self] at hm; exact hm
+        rw [hx, hx₀]
+      · have hgap_out : ∀ r ∈ ys_full, r ≤ a ∨ y ≤ r :=
+          gap_closure_adjacent hsplit hys_full_sort
+        exact IsArgminAbsOn.unique_on_Icc_of_deriv_dichotomy hIVP hlt
+          (sign_dichotomy_Ioo hsg hlt hgap_out) harg_head harg'_head
+    subst hx_eq
+    have := ih hsplit_next harg_rest harg'_rest
+    rw [this]
+
+/-- **Uniqueness of the outer partition witness.** Given a sorted `ys` with
+    `SignConstantOnGaps (derivative P) ys`, any two `ArgminPartition P _ ys`
+    witnesses agree. -/
+theorem ArgminPartition.unique
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]}
+    {ys : List R} (hys_sort : ys.Pairwise (· ≤ ·))
+    (hsg : SignConstantOnGaps (derivative P) ys)
+    {xs xs' : List R}
+    (harg : ArgminPartition P xs ys) (harg' : ArgminPartition P xs' ys) :
+    xs = xs' := by
+  cases ys with
+  | nil =>
+    rcases xs with _ | ⟨x, xrest⟩
+    · exact absurd harg (by simp [ArgminPartition])
+    rcases xrest with _ | ⟨_, _⟩
+    swap
+    · exact absurd harg (by simp [ArgminPartition])
+    rcases xs' with _ | ⟨x', xrest'⟩
+    · exact absurd harg' (by simp [ArgminPartition])
+    rcases xrest' with _ | ⟨_, _⟩
+    swap
+    · exact absurd harg' (by simp [ArgminPartition])
+    change IsArgminAbsOn P Set.univ x at harg
+    change IsArgminAbsOn P Set.univ x' at harg'
+    have : x = x' :=
+      IsArgminAbsOn.unique_on_univ_of_signConstantOnGaps_nil hIVP hsg harg harg'
+    rw [this]
+  | cons y ys_rest =>
+    rcases xs with _ | ⟨x, xrest⟩
+    · exact absurd harg (by simp [ArgminPartition])
+    rcases xrest with _ | ⟨x'', xs_rest⟩
+    · exact absurd harg (by simp [ArgminPartition])
+    rcases xs' with _ | ⟨x₀, xrest'⟩
+    · exact absurd harg' (by simp [ArgminPartition])
+    rcases xrest' with _ | ⟨x₀'', xs_rest'⟩
+    · exact absurd harg' (by simp [ArgminPartition])
+    change IsArgminAbsOn P (Set.Iic y) x ∧
+      ArgminPartitionFrom P y (x'' :: xs_rest) ys_rest at harg
+    change IsArgminAbsOn P (Set.Iic y) x₀ ∧
+      ArgminPartitionFrom P y (x₀'' :: xs_rest') ys_rest at harg'
+    obtain ⟨harg_head, harg_rest⟩ := harg
+    obtain ⟨harg'_head, harg'_rest⟩ := harg'
+    have hy_le : ∀ r ∈ y :: ys_rest, y ≤ r := by
+      intro r hr
+      rcases List.mem_cons.mp hr with rfl | h'
+      · exact le_refl _
+      · exact (List.pairwise_cons.mp hys_sort).1 r h'
+    have hx_eq : x = x₀ :=
+      IsArgminAbsOn.unique_on_Iic_of_deriv_dichotomy hIVP
+        (sign_dichotomy_Iio hsg hy_le) harg_head harg'_head
+    subst hx_eq
+    have hsplit : (y :: ys_rest) = [] ++ y :: ys_rest := by rfl
+    have := ArgminPartitionFrom.unique_aux hIVP hys_sort hsg hsplit
+      harg_rest harg'_rest
+    rw [this]
+
+/-- **Uniqueness at a given depth.** If `P.natDegree = n`, then any two
+    `IsVirtualRootsListAux n P _` witnesses agree. -/
+private theorem IsVirtualRootsListAux.unique
+    (hIVP : HasIntermediateValueProperty R) :
+    ∀ (n : ℕ) {P : R[X]}, P.natDegree = n → ∀ {xs ys : List R},
+      IsVirtualRootsListAux n P xs → IsVirtualRootsListAux n P ys → xs = ys := by
+  intro n
+  induction n with
+  | zero =>
+    intro P hdeg xs ys hxs hys
+    have hxs_len := hxs.length_eq
+    have hys_len := hys.length_eq
+    rw [hdeg] at hxs_len hys_len
+    rw [List.length_eq_zero_iff] at hxs_len hys_len
+    rw [hxs_len, hys_len]
+  | succ n ih =>
+    intro P hdeg xs ys hxs hys
+    rcases hxs.argmin_wit_succ with hxnil | ⟨ys_x, hys_x_aux, _, harg_x⟩
+    · have hlen := hxs.length_eq
+      rw [hxnil, hdeg] at hlen
+      simp at hlen
+    rcases hys.argmin_wit_succ with hynil | ⟨ys_y, hys_y_aux, _, harg_y⟩
+    · have hlen := hys.length_eq
+      rw [hynil, hdeg] at hlen
+      simp at hlen
+    have hdP_deg : (derivative P).natDegree = n := by
+      have hdeg_pos : 0 < P.natDegree := by rw [hdeg]; omega
+      have h1 : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
+        Polynomial.degree_derivative_eq P hdeg_pos
+      have h2 : (derivative P).natDegree = P.natDegree - 1 :=
+        Polynomial.natDegree_eq_of_degree_eq_some h1
+      rw [h2, hdeg]; omega
+    have hys_eq : ys_x = ys_y := ih hdP_deg hys_x_aux hys_y_aux
+    subst hys_eq
+    exact ArgminPartition.unique hIVP hys_x_aux.sorted hys_x_aux.sign_const
+      harg_x harg_y
+
+/-- **Uniqueness of virtual roots lists.** Any two virtual roots lists of `P`
+    agree. The argmin entries are pinned down by the derivative witness (by
+    induction on `natDegree`), and the derivative witness itself is unique by
+    the inductive hypothesis. -/
+theorem IsVirtualRootsList.unique
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} {xs ys : List R}
+    (hxs : IsVirtualRootsList P xs) (hys : IsVirtualRootsList P ys) :
+    xs = ys :=
+  IsVirtualRootsListAux.unique hIVP P.natDegree rfl hxs hys
+
+/-- Unique existence of a virtual roots list for any nonzero polynomial. -/
+theorem exists_unique_virtualRootsList
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) : ∃! xs, IsVirtualRootsList P xs := by
+  refine ⟨virtualRoots hIVP hP, virtualRoots_spec hIVP hP, ?_⟩
+  intro ys hys
+  exact IsVirtualRootsList.unique hIVP hys (virtualRoots_spec hIVP hP)
+
+/-- Any virtual roots list of `P` coincides with the canonical `virtualRoots P`.
+    Lets callers promote an arbitrary witness to the canonical one. -/
+theorem virtualRoots_eq_of_isVirtualRootsList
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) {xs : List R} (hxs : IsVirtualRootsList P xs) :
+    xs = virtualRoots hIVP hP :=
+  IsVirtualRootsList.unique hIVP hxs (virtualRoots_spec hIVP hP)
 
 end Azurite.BPR.VirtualRoots
