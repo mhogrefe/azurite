@@ -39,7 +39,7 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
 /-- In a characteristic-zero ring, `natDegree (derivative P) = natDegree P - 1`
     when `natDegree P ≥ 1`. Used to show `der P = P :: der (derivative P)`. -/
-private lemma natDegree_derivative_of_pos {P : R[X]} (hP : 1 ≤ P.natDegree) :
+lemma natDegree_derivative_of_pos {P : R[X]} (hP : 1 ≤ P.natDegree) :
     (derivative P).natDegree = P.natDegree - 1 :=
   Polynomial.natDegree_eq_of_degree_eq_some
     (Polynomial.degree_derivative_eq P (Nat.lt_of_lt_of_le Nat.zero_lt_one hP))
@@ -49,7 +49,7 @@ private lemma natDegree_derivative_of_pos {P : R[X]} (hP : 1 ≤ P.natDegree) :
 /-- When `P.natDegree ≥ 1`, the derivative list unfolds as a cons:
     `der P = P :: der (derivative P)`. Immediate from the range definition
     and `natDegree_derivative_of_pos`. -/
-private lemma der_eq_cons {P : R[X]} (hP : 1 ≤ P.natDegree) :
+lemma der_eq_cons {P : R[X]} (hP : 1 ≤ P.natDegree) :
     der P = P :: der (derivative P) := by
   unfold der
   rw [natDegree_derivative_of_pos hP, Nat.sub_add_cancel hP,
@@ -110,7 +110,7 @@ private lemma Var_cons_zero_cons (a : R) (l : List R) :
     across the intervening zeros. Proved by strong induction on `Q.natDegree`:
     when `Q(c) ≠ 0` the cons-cons unfolding applies directly; when `Q(c) = 0`
     we strip the leading zero and recurse on `derivative Q`. -/
-private lemma varAt_cons_der_eq (P Q : R[X]) {c : R}
+lemma varAt_cons_der_eq (P Q : R[X]) {c : R}
     (hPc : P.eval c ≠ 0) (hQ_ne : Q ≠ 0) :
     varAt (P :: der Q) (.finite c) =
       (if P.eval c * ((⇑derivative)^[Q.rootMultiplicity c] Q).eval c < 0
@@ -182,7 +182,7 @@ private lemma varAt_cons_der_eq (P Q : R[X]) {c : R}
     then `Q` has the same sign at `x` and `y`. This is the key input that lets
     us compare `varAt (der P)` at different evaluation points inside a
     root-free interval. -/
-private lemma sign_eq_of_no_root_Icc (hIVP : HasIntermediateValueProperty R)
+lemma sign_eq_of_no_root_Icc (hIVP : HasIntermediateValueProperty R)
     (Q : R[X]) {x y : R} (hxy : x ≤ y)
     (hne : ∀ z ∈ Set.Icc x y, Q.eval z ≠ 0) :
     SignType.sign (Q.eval x) = SignType.sign (Q.eval y) := by
