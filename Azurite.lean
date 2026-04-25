@@ -333,11 +333,15 @@ import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Div2By1
 import Azurite.UInt64.Div3By2
+import Azurite.UInt64.DivMod
+import Azurite.UInt64.DivRound
 import Azurite.UInt64.Equiv.AddWithCarry
 import Azurite.UInt64.Equiv.Basic
 import Azurite.UInt64.Equiv.ClearBit
 import Azurite.UInt64.Equiv.Div2By1
 import Azurite.UInt64.Equiv.Div3By2
+import Azurite.UInt64.Equiv.DivMod
+import Azurite.UInt64.Equiv.DivRound
 import Azurite.UInt64.Equiv.IsMultipleOfPow2
 import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry

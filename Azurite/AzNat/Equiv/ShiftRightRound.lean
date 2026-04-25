@@ -92,11 +92,10 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
     -- Unfold the `.Nearest` branch of `round`.
     have hRound :
         round natBotSet RoundingMode.Nearest x =
-          (let dF : EReal := (x : EReal) - F.val
-           let dC : EReal := C.val - (x : EReal)
-           if dF < dC then F
-           else if dC < dF then C
-           else RoundingTarget.tiebreak F C) := rfl
+          match compare ((x : EReal) - F.val) (C.val - (x : EReal)) with
+          | .lt => F
+          | .gt => C
+          | .eq => RoundingTarget.tiebreak F C := rfl
     rw [hRound]
     -- Key computed quantities.
     set q := n.toNat / 2 ^ sh with hq_def
@@ -120,11 +119,8 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
       have hdF_eq_dC : (x : EReal) - F.val = C.val - (x : EReal) := by
         rw [hF_val, hC_val, show ((x : ℝ) : EReal) = (((q : ℕ) : ℝ) : EReal) from by
           rw [hx_eq_q]]
-      have hnot_lt1 : ¬ ((x : EReal) - F.val < C.val - (x : EReal)) := by
-        rw [hdF_eq_dC]; exact lt_irrefl _
-      have hnot_lt2 : ¬ (C.val - (x : EReal) < (x : EReal) - F.val) := by
-        rw [hdF_eq_dC]; exact lt_irrefl _
-      rw [if_neg hnot_lt1, if_neg hnot_lt2]
+      rw [show compare ((x : EReal) - F.val) (C.val - (x : EReal)) = .eq from
+            compare_eq_iff_eq.mpr hdF_eq_dC]
       -- tiebreak F C returns F because F and C have the same natBotToNat.
       have htiebreak_F : RoundingTarget.tiebreak F C = F := by
         show natBotTiebreak F C = F
@@ -262,15 +258,14 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
           have hr_eq : r = 2 ^ (sh - 1) :=
             eq_half_of_testBit_and_dvd r sh hsh_pos hr_bound hr_bit hr_dvd
           -- dF = dC (both equal 1/2 in real).
-          have hnot_dF_lt_dC_real : ¬ (x - q < (q : ℝ) + 1 - x) := by
-            rw [hdF_cmp_lt_iff]; omega
-          have hnot_dC_lt_dF_real : ¬ ((q : ℝ) + 1 - x < x - q) := by
-            rw [hdC_cmp_lt_iff]; omega
-          have hnot_dF_lt_dC : ¬ ((x : EReal) - F.val < C.val - (x : EReal)) :=
-            fun h => hnot_dF_lt_dC_real (hdF_lt_dC_iff.mp h)
-          have hnot_dC_lt_dF : ¬ (C.val - (x : EReal) < (x : EReal) - F.val) :=
-            fun h => hnot_dC_lt_dF_real (hdC_lt_dF_iff.mp h)
-          rw [if_neg hnot_dF_lt_dC, if_neg hnot_dC_lt_dF]
+          have hdF_eq_dC_real : x - q = (q : ℝ) + 1 - x := by
+            have h1 : ¬ (x - q < (q : ℝ) + 1 - x) := by rw [hdF_cmp_lt_iff]; omega
+            have h2 : ¬ ((q : ℝ) + 1 - x < x - q) := by rw [hdC_cmp_lt_iff]; omega
+            linarith
+          have hdF_eq_dC : (x : EReal) - F.val = C.val - (x : EReal) := by
+            rw [hdF_coe, hdC_coe, hdF_eq_dC_real]
+          rw [show compare ((x : EReal) - F.val) (C.val - (x : EReal)) = .eq from
+                compare_eq_iff_eq.mpr hdF_eq_dC]
           -- LHS: shifted.isOdd decides between q and q+1.
           by_cases hodd : Odd (n.shiftRight sh).toNat
           · -- q odd ⇒ LHS = q + 1.
@@ -319,12 +314,10 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
               have h2dvd : 2 ^ (sh - 1) ∣ 2 ^ sh := ⟨2, h_two_pow⟩
               exact Nat.dvd_add (h2dvd.mul_left q) (dvd_refl _)
           have hdC_lt_real : ((q : ℝ) + 1 - x < x - q) := hdC_cmp_lt_iff.mpr hr_gt
-          have hnot_dF_lt_dC_real : ¬ (x - q < (q : ℝ) + 1 - x) := by linarith
-          have hnot_dF_lt_dC : ¬ ((x : EReal) - F.val < C.val - (x : EReal)) :=
-            fun h => hnot_dF_lt_dC_real (hdF_lt_dC_iff.mp h)
           have hdC_lt : C.val - (x : EReal) < (x : EReal) - F.val :=
             hdC_lt_dF_iff.mpr hdC_lt_real
-          rw [if_neg hnot_dF_lt_dC, if_pos hdC_lt]
+          rw [show compare ((x : EReal) - F.val) (C.val - (x : EReal)) = .gt from
+                compare_gt_iff_gt.mpr hdC_lt]
           rw [AzNat.toNat_addUInt64, AzNat.toNat_shiftRight, hC_val]
           show (((n.toNat / 2 ^ sh + (1 : UInt64).toNat : ℕ) : ℕ) : EReal) =
             (((q + 1 : ℕ) : ℝ) : EReal)
@@ -342,7 +335,8 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
         have hdF_lt_real : (x - q < (q : ℝ) + 1 - x) := hdF_cmp_lt_iff.mpr hr_lt
         have hdF_lt : (x : EReal) - F.val < C.val - (x : EReal) :=
           hdF_lt_dC_iff.mpr hdF_lt_real
-        rw [if_pos hdF_lt]
+        rw [show compare ((x : EReal) - F.val) (C.val - (x : EReal)) = .lt from
+              compare_lt_iff_lt.mpr hdF_lt]
         rw [AzNat.toNat_shiftRight, hF_val]
         push_cast; rfl
 

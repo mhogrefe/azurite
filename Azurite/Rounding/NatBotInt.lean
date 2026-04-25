@@ -152,16 +152,18 @@ theorem val_round_natBotSet_eq_intSet (mode : RoundingMode) (x : ℝ) (hx : 0 �
           let C := roundCeiling natBotSet x
           let dF : EReal := ((x : ℝ) : EReal) - F.val
           let dC : EReal := C.val - ((x : ℝ) : EReal)
-          if dF < dC then F
-          else if dC < dF then C
-          else tiebreak F C).val =
+          match compare dF dC with
+          | .lt => F
+          | .gt => C
+          | .eq => tiebreak F C).val =
          (let F := roundFloor intSet x
           let C := roundCeiling intSet x
           let dF : EReal := ((x : ℝ) : EReal) - F.val
           let dC : EReal := C.val - ((x : ℝ) : EReal)
-          if dF < dC then F
-          else if dC < dF then C
-          else tiebreak F C).val
+          match compare dF dC with
+          | .lt => F
+          | .gt => C
+          | .eq => tiebreak F C).val
     simp only
     set Fn : ↥natBotSet := roundFloor natBotSet x
     set Cn : ↥natBotSet := roundCeiling natBotSet x
@@ -178,11 +180,16 @@ theorem val_round_natBotSet_eq_intSet (mode : RoundingMode) (x : ℝ) (hx : 0 �
     have hFn_eq_Fi : Fn.val = Fi.val := hFn_val.trans hFi_val.symm
     have hCn_eq_Ci : Cn.val = Ci.val := hCn_val.trans hCi_val.symm
     rw [hFn_eq_Fi, hCn_eq_Ci]
-    by_cases h1 : ((x : ℝ) : EReal) - Fi.val < Ci.val - ((x : ℝ) : EReal)
-    · rw [if_pos h1, if_pos h1]; exact hFn_eq_Fi
-    · by_cases h2 : Ci.val - ((x : ℝ) : EReal) < ((x : ℝ) : EReal) - Fi.val
-      · rw [if_neg h1, if_neg h1, if_pos h2, if_pos h2]; exact hCn_eq_Ci
-      · rw [if_neg h1, if_neg h1, if_neg h2, if_neg h2]
-        exact natBot_int_tiebreak_value_agree hx Fn Cn Fi Ci hFn_val hCn_val hFi_val hCi_val
+    rcases lt_trichotomy (((x : ℝ) : EReal) - Fi.val) (Ci.val - ((x : ℝ) : EReal))
+      with h1 | h1 | h1
+    · rw [show compare (((x : ℝ) : EReal) - Fi.val) (Ci.val - ((x : ℝ) : EReal)) = .lt
+            from compare_lt_iff_lt.mpr h1]
+      exact hFn_eq_Fi
+    · rw [show compare (((x : ℝ) : EReal) - Fi.val) (Ci.val - ((x : ℝ) : EReal)) = .eq
+            from compare_eq_iff_eq.mpr h1]
+      exact natBot_int_tiebreak_value_agree hx Fn Cn Fi Ci hFn_val hCn_val hFi_val hCi_val
+    · rw [show compare (((x : ℝ) : EReal) - Fi.val) (Ci.val - ((x : ℝ) : EReal)) = .gt
+            from compare_gt_iff_gt.mpr h1]
+      exact hCn_eq_Ci
 
 end Azurite

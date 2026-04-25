@@ -116,9 +116,10 @@ noncomputable def round (mode : RoundingMode) (x : ℝ) : ↥S :=
       let C := roundCeiling S x
       let dF : EReal := (x : EReal) - F.val
       let dC : EReal := C.val - (x : EReal)
-      if dF < dC then F
-      else if dC < dF then C
-      else tiebreak F C
+      match compare dF dC with
+      | .lt => F
+      | .gt => C
+      | .eq => tiebreak F C
 
 /-- The floor satisfies the defining `IsGreatest` property. -/
 lemma isGreatest_roundFloor (x : ℝ) :
@@ -161,19 +162,16 @@ theorem val_round_of_mem (mode : RoundingMode) {x : ℝ} (hx : ((x : ℝ) : ERea
           let C := roundCeiling S x
           let dF : EReal := ((x : ℝ) : EReal) - F.val
           let dC : EReal := C.val - ((x : ℝ) : EReal)
-          if dF < dC then F
-          else if dC < dF then C
-          else tiebreak F C).val = ((x : ℝ) : EReal)
+          match compare dF dC with
+          | .lt => F
+          | .gt => C
+          | .eq => tiebreak F C).val = ((x : ℝ) : EReal)
     simp only
     have hd_eq : ((x : ℝ) : EReal) - (roundFloor S x).val =
                  (roundCeiling S x).val - ((x : ℝ) : EReal) := by rw [hF, hC]
-    have h1 : ¬ ((x : ℝ) : EReal) - (roundFloor S x).val <
-                (roundCeiling S x).val - ((x : ℝ) : EReal) := by
-      rw [hd_eq]; exact lt_irrefl _
-    have h2 : ¬ (roundCeiling S x).val - ((x : ℝ) : EReal) <
-                ((x : ℝ) : EReal) - (roundFloor S x).val := by
-      rw [← hd_eq]; exact lt_irrefl _
-    rw [if_neg h1, if_neg h2]
+    rw [show compare (((x : ℝ) : EReal) - (roundFloor S x).val)
+              ((roundCeiling S x).val - ((x : ℝ) : EReal)) = .eq from
+            compare_eq_iff_eq.mpr hd_eq]
     rcases tiebreak_mem (roundFloor S x) (roundCeiling S x) with hT | hT
     · rw [hT]; exact hF
     · rw [hT]; exact hC
@@ -315,16 +313,18 @@ theorem round_neg (mode : RoundingMode) (x : ℝ) :
           let C := roundCeiling S (-x)
           let dF : EReal := ((-x : ℝ) : EReal) - F.val
           let dC : EReal := C.val - ((-x : ℝ) : EReal)
-          if dF < dC then F
-          else if dC < dF then C
-          else tiebreak F C).val =
+          match compare dF dC with
+          | .lt => F
+          | .gt => C
+          | .eq => tiebreak F C).val =
         -(let F := roundFloor S x
           let C := roundCeiling S x
           let dF : EReal := ((x : ℝ) : EReal) - F.val
           let dC : EReal := C.val - ((x : ℝ) : EReal)
-          if dF < dC then F
-          else if dC < dF then C
-          else tiebreak F C).val
+          match compare dF dC with
+          | .lt => F
+          | .gt => C
+          | .eq => tiebreak F C).val
     simp only
     set F : ↥S := roundFloor S x with hF_def
     set C : ↥S := roundCeiling S x with hC_def
@@ -340,67 +340,68 @@ theorem round_neg (mode : RoundingMode) (x : ℝ) :
     rw [h_dFn, h_dCn]
     set dF : EReal := ((x : ℝ) : EReal) - F.val
     set dC : EReal := C.val - ((x : ℝ) : EReal)
-    by_cases h1 : dF < dC
+    rcases lt_trichotomy dF dC with h1 | h1 | h1
     · -- dF < dC: original picks F, negated picks Cn = -F.
-      have h2 : ¬ dC < dF := not_lt.mpr (le_of_lt h1)
-      simp only [h1, h2, ↓reduceIte]
+      rw [show compare dC dF = .gt from compare_gt_iff_gt.mpr h1,
+          show compare dF dC = .lt from compare_lt_iff_lt.mpr h1]
       exact hCn_val
-    · by_cases h2 : dC < dF
-      · -- dC < dF: original picks C, negated picks Fn = -C.
-        simp only [h1, h2, ↓reduceIte]
-        exact hFn_val
-      · -- Tie: both branches use tiebreak. Split on F = C.
-        simp only [h1, h2, ↓reduceIte]
-        show (tiebreak Fn Cn).val = -(tiebreak F C).val
-        by_cases hFC : F = C
-        · -- F = C: trivial. tiebreak collapses on equal-value pairs.
-          have h_val_eq : F.val = C.val := congrArg Subtype.val hFC
-          rcases tiebreak_mem Fn Cn with hT | hT <;>
-            rcases tiebreak_mem F C with hT' | hT' <;>
-            simp [hT, hT', hFn_val, hCn_val, h_val_eq]
-        · -- F ≠ C: derive C.val ≠ -F.val from `zero_mem` and the rounding bounds,
-          -- then apply the `tiebreak_neg` axiom with `(a := C, b := F)`.
-          have hC_ne : C.val ≠ -F.val := by
-            intro hC_eq
-            apply hFC
-            apply Subtype.ext
-            -- Goal: F.val = C.val. Derive both equal to 0.
-            have hF_le_x : F.val ≤ (x : EReal) := (isGreatest_roundFloor S x).1.2
-            have hx_le_C : (x : EReal) ≤ C.val := (isLeast_roundCeiling S x).1.2
-            have h0memS : (0 : EReal) ∈ S := SymmetricRoundingTarget.zero_mem
-            by_cases hx0 : (0 : ℝ) ≤ x
-            · -- x ≥ 0: 0 is a candidate for F, so F.val ≥ 0; combined with
-              -- F.val ≤ -F.val gives F.val = 0.
-              have h0le_x : (0 : EReal) ≤ (x : EReal) := by exact_mod_cast hx0
-              have hF_ge_0 : (0 : EReal) ≤ F.val :=
-                (isGreatest_roundFloor S x).2 ⟨h0memS, h0le_x⟩
-              have hF_le_neg : F.val ≤ -F.val := by
-                rw [← hC_eq]; exact hF_le_x.trans hx_le_C
-              have h_neg_F_le_0 : -F.val ≤ 0 := by
-                have := (EReal.neg_le_neg_iff).mpr hF_ge_0
-                rwa [neg_zero] at this
-              have hF_le_0 : F.val ≤ 0 := hF_le_neg.trans h_neg_F_le_0
-              have hF_eq_0 : F.val = 0 := le_antisymm hF_le_0 hF_ge_0
-              rw [hF_eq_0, hC_eq, hF_eq_0, neg_zero]
-            · -- x < 0: 0 is a candidate for C, so C.val ≤ 0, hence F.val = -C.val ≥ 0;
-              -- but F.val ≤ x < 0, contradiction.
-              push Not at hx0
-              have hx_lt_0 : (x : EReal) < 0 := by exact_mod_cast hx0
-              have hx_le_0 : (x : EReal) ≤ 0 := hx_lt_0.le
-              have hC_le_0 : C.val ≤ 0 :=
-                (isLeast_roundCeiling S x).2 ⟨h0memS, hx_le_0⟩
-              have h_neg_F_le_0 : -F.val ≤ 0 := by rw [← hC_eq]; exact hC_le_0
-              have hF_ge_0 : (0 : EReal) ≤ F.val := by
-                have := (EReal.neg_le_neg_iff).mpr h_neg_F_le_0
-                rwa [neg_zero, neg_neg] at this
-              have hF_lt_0 : F.val < 0 := lt_of_le_of_lt hF_le_x hx_lt_0
-              exact absurd hF_ge_0 (not_le.mpr hF_lt_0)
-          have hFn_eq : Fn = ⟨-C.val, SymmetricRoundingTarget.neg_mem C.property⟩ :=
-            Subtype.ext hFn_val
-          have hCn_eq : Cn = ⟨-F.val, SymmetricRoundingTarget.neg_mem F.property⟩ :=
-            Subtype.ext hCn_val
-          rw [hFn_eq, hCn_eq]
-          exact SymmetricRoundingTarget.tiebreak_neg C F hC_ne
+    · -- Tie: both branches use tiebreak. Split on F = C.
+      rw [show compare dC dF = .eq from compare_eq_iff_eq.mpr h1.symm,
+          show compare dF dC = .eq from compare_eq_iff_eq.mpr h1]
+      show (tiebreak Fn Cn).val = -(tiebreak F C).val
+      by_cases hFC : F = C
+      · -- F = C: trivial. tiebreak collapses on equal-value pairs.
+        have h_val_eq : F.val = C.val := congrArg Subtype.val hFC
+        rcases tiebreak_mem Fn Cn with hT | hT <;>
+          rcases tiebreak_mem F C with hT' | hT' <;>
+          simp [hT, hT', hFn_val, hCn_val, h_val_eq]
+      · -- F ≠ C: derive C.val ≠ -F.val from `zero_mem` and the rounding bounds,
+        -- then apply the `tiebreak_neg` axiom with `(a := C, b := F)`.
+        have hC_ne : C.val ≠ -F.val := by
+          intro hC_eq
+          apply hFC
+          apply Subtype.ext
+          -- Goal: F.val = C.val. Derive both equal to 0.
+          have hF_le_x : F.val ≤ (x : EReal) := (isGreatest_roundFloor S x).1.2
+          have hx_le_C : (x : EReal) ≤ C.val := (isLeast_roundCeiling S x).1.2
+          have h0memS : (0 : EReal) ∈ S := SymmetricRoundingTarget.zero_mem
+          by_cases hx0 : (0 : ℝ) ≤ x
+          · -- x ≥ 0: 0 is a candidate for F, so F.val ≥ 0; combined with
+            -- F.val ≤ -F.val gives F.val = 0.
+            have h0le_x : (0 : EReal) ≤ (x : EReal) := by exact_mod_cast hx0
+            have hF_ge_0 : (0 : EReal) ≤ F.val :=
+              (isGreatest_roundFloor S x).2 ⟨h0memS, h0le_x⟩
+            have hF_le_neg : F.val ≤ -F.val := by
+              rw [← hC_eq]; exact hF_le_x.trans hx_le_C
+            have h_neg_F_le_0 : -F.val ≤ 0 := by
+              have := (EReal.neg_le_neg_iff).mpr hF_ge_0
+              rwa [neg_zero] at this
+            have hF_le_0 : F.val ≤ 0 := hF_le_neg.trans h_neg_F_le_0
+            have hF_eq_0 : F.val = 0 := le_antisymm hF_le_0 hF_ge_0
+            rw [hF_eq_0, hC_eq, hF_eq_0, neg_zero]
+          · -- x < 0: 0 is a candidate for C, so C.val ≤ 0, hence F.val = -C.val ≥ 0;
+            -- but F.val ≤ x < 0, contradiction.
+            push Not at hx0
+            have hx_lt_0 : (x : EReal) < 0 := by exact_mod_cast hx0
+            have hx_le_0 : (x : EReal) ≤ 0 := hx_lt_0.le
+            have hC_le_0 : C.val ≤ 0 :=
+              (isLeast_roundCeiling S x).2 ⟨h0memS, hx_le_0⟩
+            have h_neg_F_le_0 : -F.val ≤ 0 := by rw [← hC_eq]; exact hC_le_0
+            have hF_ge_0 : (0 : EReal) ≤ F.val := by
+              have := (EReal.neg_le_neg_iff).mpr h_neg_F_le_0
+              rwa [neg_zero, neg_neg] at this
+            have hF_lt_0 : F.val < 0 := lt_of_le_of_lt hF_le_x hx_lt_0
+            exact absurd hF_ge_0 (not_le.mpr hF_lt_0)
+        have hFn_eq : Fn = ⟨-C.val, SymmetricRoundingTarget.neg_mem C.property⟩ :=
+          Subtype.ext hFn_val
+        have hCn_eq : Cn = ⟨-F.val, SymmetricRoundingTarget.neg_mem F.property⟩ :=
+          Subtype.ext hCn_val
+        rw [hFn_eq, hCn_eq]
+        exact SymmetricRoundingTarget.tiebreak_neg C F hC_ne
+    · -- dC < dF: original picks C, negated picks Fn = -C.
+      rw [show compare dC dF = .lt from compare_lt_iff_lt.mpr h1,
+          show compare dF dC = .gt from compare_gt_iff_gt.mpr h1]
+      exact hFn_val
 
 end Symmetric
 
