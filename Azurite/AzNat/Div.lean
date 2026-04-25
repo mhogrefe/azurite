@@ -3,10 +3,12 @@ import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parse
 import Azurite.AzNat.ToString
 import Azurite.UInt64.Div2By1
+import Azurite.UInt64.Div3By2
 import Azurite.UInt64.DivMod
 import Azurite.UInt64.Equiv.LeadingZeros
 import Azurite.UInt64.LeadingZeros
 import Azurite.UInt64.Reciprocal
+import Azurite.UInt64.Reciprocal3By2
 
 namespace Azurite.AzNat
 
@@ -66,6 +68,39 @@ def divModLimb (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d ≠ 0)
       a[hi - 1]'h_top >>> UInt64.ofNat (64 - k)
   let res := divModLimb.go d' inv k hk_le a lo len r0 (by omega)
   (res.1, res.2 >>> kU)
+
+/-- Inner loop of `divModLimb2`: from `j = hi - lo` down to `0`, process limb
+    `a[lo + j - 1]` by calling `div3By2` with the running 128-bit remainder
+    `(r1, r0)` as the high two halves of the 192-bit dividend
+    `(r1, r0, a[lo + j - 1])`. The quotient limb overwrites `a[lo + j - 1]` in
+    place; the new running remainder is the 128-bit value returned by
+    `div3By2`. -/
+def divModLimb2.go (d1 d0 v : UInt64) (a : Array UInt64) (lo j : Nat)
+    (r1 r0 : UInt64) (hbnd : lo + j ≤ a.size) :
+    Array UInt64 × UInt64 × UInt64 :=
+  match j with
+  | 0 => (a, r1, r0)
+  | j + 1 =>
+    have h_idx : lo + j < a.size := by omega
+    let u_j := a[lo + j]
+    let qr := UInt64.div3By2 r1 r0 u_j d1 d0 v
+    divModLimb2.go d1 d0 v (a.set (lo + j) qr.1) lo j qr.2.1 qr.2.2
+      (by rw [Array.size_set]; omega)
+  termination_by j
+
+/-- Multi-limb division of the slice `a[lo:hi)` by a normalized 2-limb divisor
+    `(d1, d0)` with `2^63 ≤ d1.toNat`, in place. Iterates Algorithm 5
+    (DIV3BY2) of Möller–Granlund top-to-bottom: starting from a zero
+    128-bit running remainder, each step calls `div3By2` on the running
+    remainder concatenated with the next limb to produce a new quotient limb
+    (overwriting the slice) and a new 128-bit remainder. Returns the modified
+    array and the final 128-bit remainder `(r1, r0)`. -/
+def divModLimb2 (a : Array UInt64) (lo hi : Nat) (d1 d0 : UInt64)
+    (hd1 : 2 ^ 63 ≤ d1.toNat) (_hlo : lo ≤ hi) (hhi : hi ≤ a.size) :
+    Array UInt64 × UInt64 × UInt64 :=
+  let v := UInt64.reciprocal3By2 d1 d0 hd1
+  let len := hi - lo
+  divModLimb2.go d1 d0 v a lo len 0 0 (by omega)
 
 /-- Divide an `AzNat` `U` by a nonzero `UInt64` divisor `d`, returning the
     quotient `AzNat` and remainder `UInt64`. Single-limb dividends short-circuit
