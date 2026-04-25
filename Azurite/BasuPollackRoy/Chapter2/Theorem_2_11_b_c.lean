@@ -51,6 +51,7 @@ Key properties from the a⇒b file proved for `[CommRing R]`:
 We re-derive `conj_fixed_mem_range` (originally under `[IsRealClosed R]`)
 since the proof only needs `Irreducible (X² + 1)`. -/
 
+omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- Conjugation fixes elements of R. -/
 theorem Ri.conj_algebraMap_ordered (r : R) :
     (Ri.conj R) (algebraMap R (Ri R) r) = algebraMap R (Ri R) r :=
