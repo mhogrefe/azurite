@@ -3596,11 +3596,11 @@ private lemma nonRoot_case_cy_close_aux_A
     · have hτR_neg : ((⇑derivative)^[ν + 1] P).eval c < 0 := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
         · exact ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_neg_of_neg_of_pos hPc_neg ht).le)
       rw [sign_neg hPc_neg, sign_neg hτR_neg]
     · have hτR_pos : 0 < ((⇑derivative)^[ν + 1] P).eval c := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_neg_of_pos_of_neg hPc_pos ht).le)
         · exact ht
       rw [sign_pos hPc_pos, sign_pos hτR_pos]
   have hsign_rel_neg : P.eval c * ((⇑derivative)^[ν + 1] P).eval c < 0 →
@@ -3610,13 +3610,13 @@ private lemma nonRoot_case_cy_close_aux_A
     rcases lt_or_gt_of_ne hPc with hPc_neg | hPc_pos
     · have hτR_pos : 0 < ((⇑derivative)^[ν + 1] P).eval c := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_pos_of_neg_of_neg hPc_neg ht).le)
         · exact ht
       rw [sign_neg hPc_neg, sign_pos hτR_pos]; rfl
     · have hτR_neg : ((⇑derivative)^[ν + 1] P).eval c < 0 := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
         · exact ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_pos hPc_pos ht).le)
       rw [sign_pos hPc_pos, sign_neg hτR_neg]
   by_cases hν_even : Even ν
   · have hformula : nonRootDiffFormula P c = 0 := by
@@ -3643,10 +3643,11 @@ private lemma nonRoot_case_cy_close_aux_A
         argmin_left_of_derivSign_same_Ici hIVP hPc hhR hw_arg
       have hx0_ne : x₀ ≠ c := fun hx0_eq => by
         have h := forward_x0 hx0_eq
-        have hpow : (-1 : R) ^ (ν + 1) = -1 := by
+        have hh : (-1 : R) ^ (ν + 1) * P.eval c * ((⇑derivative)^[ν + 1] P).eval c
+                  = -(P.eval c * ((⇑derivative)^[ν + 1] P).eval c) := by
           rw [pow_succ, Even.neg_one_pow hν_even]; ring
-        rw [hpow] at h
-        nlinarith
+        rw [hh] at h
+        linarith
       rw [if_neg hx0_ne, if_pos hw_eq]; norm_num
   · have hν_odd : Odd ν := Nat.not_even_iff_odd.mp hν_even
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos
@@ -3737,11 +3738,11 @@ private lemma nonRoot_case_cy_close_aux_B
     · have hτR_neg : ((⇑derivative)^[ν + 1] P).eval c < 0 := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
         · exact ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_neg_of_neg_of_pos hPc_neg ht).le)
       rw [sign_neg hPc_neg, sign_neg hτR_neg]
     · have hτR_pos : 0 < ((⇑derivative)^[ν + 1] P).eval c := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_neg_of_pos_of_neg hPc_pos ht).le)
         · exact ht
       rw [sign_pos hPc_pos, sign_pos hτR_pos]
   have hsign_rel_neg : P.eval c * ((⇑derivative)^[ν + 1] P).eval c < 0 →
@@ -3751,13 +3752,13 @@ private lemma nonRoot_case_cy_close_aux_B
     rcases lt_or_gt_of_ne hPc with hPc_neg | hPc_pos
     · have hτR_pos : 0 < ((⇑derivative)^[ν + 1] P).eval c := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_pos_of_neg_of_neg hPc_neg ht).le)
         · exact ht
       rw [sign_neg hPc_neg, sign_pos hτR_pos]; rfl
     · have hτR_neg : ((⇑derivative)^[ν + 1] P).eval c < 0 := by
         rcases lt_or_gt_of_ne hτR_ne with ht | ht
         · exact ht
-        · exfalso; nlinarith
+        · exact absurd h (not_lt.mpr (mul_pos hPc_pos ht).le)
       rw [sign_pos hPc_pos, sign_neg hτR_neg]
   by_cases hν_even : Even ν
   · have hformula : nonRootDiffFormula P c = 0 := by
@@ -3784,10 +3785,11 @@ private lemma nonRoot_case_cy_close_aux_B
         argmin_left_of_derivSign_same hIVP hcz hPc hhR hw_arg
       have hx0_ne : x₀ ≠ c := fun hx0_eq => by
         have h := forward_x0 hx0_eq
-        have hpow : (-1 : R) ^ (ν + 1) = -1 := by
+        have hh : (-1 : R) ^ (ν + 1) * P.eval c * ((⇑derivative)^[ν + 1] P).eval c
+                  = -(P.eval c * ((⇑derivative)^[ν + 1] P).eval c) := by
           rw [pow_succ, Even.neg_one_pow hν_even]; ring
-        rw [hpow] at h
-        nlinarith
+        rw [hh] at h
+        linarith
       rw [if_neg hx0_ne, if_pos hw_eq]; norm_num
   · have hν_odd : Odd ν := Nat.not_even_iff_odd.mp hν_even
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos

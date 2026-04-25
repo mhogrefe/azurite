@@ -739,7 +739,7 @@ private lemma exists_no_root_Ioo_right_forall_der
 
 /-- There is an interval `(a, r)` to the left of `r` avoiding all roots of
     every iterated derivative `P^{(k)}` for `k ≤ P.natDegree`. -/
-private lemma exists_no_root_Ioo_left_forall_der
+lemma exists_no_root_Ioo_left_forall_der
     {P : R[X]} (hP : P ≠ 0) (r : R) :
     ∃ a, a < r ∧ ∀ x ∈ Set.Ioo a r, ∀ k ≤ P.natDegree,
       ((⇑derivative)^[k] P).eval x ≠ 0 := by
