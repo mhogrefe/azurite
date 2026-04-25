@@ -130,6 +130,54 @@ lemma isLeast_roundCeiling (x : ℝ) :
     IsLeast {s | s ∈ S ∧ (x : EReal) ≤ s} (roundCeiling S x).val :=
   (existsLeastGE (S := S) x).choose_spec
 
+/-- If `x` itself lies in `S`, the floor of `x` is `x`. -/
+lemma val_roundFloor_of_mem {x : ℝ} (hx : ((x : ℝ) : EReal) ∈ S) :
+    (roundFloor S x).val = ((x : ℝ) : EReal) := by
+  apply (isGreatest_roundFloor S x).unique
+  exact ⟨⟨hx, le_refl _⟩, fun _ ⟨_, hsle⟩ => hsle⟩
+
+/-- If `x` itself lies in `S`, the ceiling of `x` is `x`. -/
+lemma val_roundCeiling_of_mem {x : ℝ} (hx : ((x : ℝ) : EReal) ∈ S) :
+    (roundCeiling S x).val = ((x : ℝ) : EReal) := by
+  apply (isLeast_roundCeiling S x).unique
+  exact ⟨⟨hx, le_refl _⟩, fun _ ⟨_, hxle⟩ => hxle⟩
+
+/-- If `x ∈ S`, then rounding `x` (in any mode) returns `x`. -/
+theorem val_round_of_mem (mode : RoundingMode) {x : ℝ} (hx : ((x : ℝ) : EReal) ∈ S) :
+    (round S mode x).val = ((x : ℝ) : EReal) := by
+  have hF : (roundFloor S x).val = ((x : ℝ) : EReal) := val_roundFloor_of_mem S hx
+  have hC : (roundCeiling S x).val = ((x : ℝ) : EReal) := val_roundCeiling_of_mem S hx
+  cases mode with
+  | Floor => exact hF
+  | Ceiling => exact hC
+  | Down =>
+    show (if 0 ≤ x then roundFloor S x else roundCeiling S x).val = ((x : ℝ) : EReal)
+    split_ifs <;> [exact hF; exact hC]
+  | Up =>
+    show (if 0 ≤ x then roundCeiling S x else roundFloor S x).val = ((x : ℝ) : EReal)
+    split_ifs <;> [exact hC; exact hF]
+  | Nearest =>
+    show (let F := roundFloor S x
+          let C := roundCeiling S x
+          let dF : EReal := ((x : ℝ) : EReal) - F.val
+          let dC : EReal := C.val - ((x : ℝ) : EReal)
+          if dF < dC then F
+          else if dC < dF then C
+          else tiebreak F C).val = ((x : ℝ) : EReal)
+    simp only
+    have hd_eq : ((x : ℝ) : EReal) - (roundFloor S x).val =
+                 (roundCeiling S x).val - ((x : ℝ) : EReal) := by rw [hF, hC]
+    have h1 : ¬ ((x : ℝ) : EReal) - (roundFloor S x).val <
+                (roundCeiling S x).val - ((x : ℝ) : EReal) := by
+      rw [hd_eq]; exact lt_irrefl _
+    have h2 : ¬ (roundCeiling S x).val - ((x : ℝ) : EReal) <
+                ((x : ℝ) : EReal) - (roundFloor S x).val := by
+      rw [← hd_eq]; exact lt_irrefl _
+    rw [if_neg h1, if_neg h2]
+    rcases tiebreak_mem (roundFloor S x) (roundCeiling S x) with hT | hT
+    · rw [hT]; exact hF
+    · rw [hT]; exact hC
+
 end RoundingTarget
 
 /-- A **symmetric rounding target** is a `RoundingTarget` that contains `0`, is closed
