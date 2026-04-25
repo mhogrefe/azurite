@@ -1,14 +1,20 @@
+import Azurite.AzNat.Add
 import Azurite.AzNat.Basic
+import Azurite.AzNat.Compare
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parse
+import Azurite.AzNat.Sub
 import Azurite.AzNat.ToString
+import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.Div2By1
 import Azurite.UInt64.Div3By2
 import Azurite.UInt64.DivMod
 import Azurite.UInt64.Equiv.LeadingZeros
 import Azurite.UInt64.LeadingZeros
+import Azurite.UInt64.MulWithCarry
 import Azurite.UInt64.Reciprocal
 import Azurite.UInt64.Reciprocal3By2
+import Azurite.UInt64.SubWithBorrow
 
 namespace Azurite.AzNat
 
@@ -159,5 +165,170 @@ private def show2 (qr : AzNat × UInt64) : String × Nat :=
   = ("1267650600228229401496703205376", 0)
 
 end Examples
+
+/-!
+Formalization of Algorithm 1.6 (BasecaseDivRem) from
+"Modern Computer Arithmetic" by Brent and Zimmermann.
+Divides an `(n + m)`-limb dividend `A` by a normalized `n`-limb divisor `B`
+in place, producing an `n`-limb remainder (overwriting the low part of `A`),
+`m` quotient limbs (overwriting the high part of `A`), and a separate
+top quotient limb `q_m`.
+-/
+
+/-- Inner loop of `subMulLimbs`: from position `loA + k`, subtracts
+    `b[loB + k] * q` from `a[loA + k]` while threading a multiplication carry
+    (high half of the most recent product) and a single-bit subtraction borrow.
+    Returns the modified array, the final mul carry, and the final sub borrow. -/
+def subMulLimbs.go (b : Array UInt64) (loB n : Nat) (q : UInt64)
+    (a : Array UInt64) (loA k : Nat) (mulCarry : UInt64) (subBorrow : Bool)
+    (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
+    Array UInt64 × UInt64 × Bool :=
+  if h : k < n then
+    have hAi : loA + k < a.size := by omega
+    have hBi : loB + k < b.size := by omega
+    let mc := UInt64.mulWithCarry b[loB + k] q mulCarry
+    let swb := UInt64.subWithBorrow a[loA + k] mc.2 subBorrow
+    subMulLimbs.go b loB n q (a.set (loA + k) swb.1) loA (k + 1) mc.1 swb.2
+      (by rw [Array.size_set]; exact hA) hB
+  else
+    (a, mulCarry, subBorrow)
+  termination_by n - k
+
+/-- Size preservation of `subMulLimbs.go`. -/
+theorem subMulLimbs.go_size (b : Array UInt64) (loB n : Nat) (q : UInt64)
+    (a : Array UInt64) (loA k : Nat) (mulCarry : UInt64) (subBorrow : Bool)
+    (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
+    (subMulLimbs.go b loB n q a loA k mulCarry subBorrow hA hB).1.size = a.size := by
+  induction h_sub : n - k generalizing a k mulCarry subBorrow with
+  | zero =>
+    have h_ge : n ≤ k := by omega
+    rw [subMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+  | succ p ih =>
+    have h_lt : k < n := by omega
+    rw [subMulLimbs.go]
+    simp only [h_lt, ↓reduceDIte]
+    rw [ih _ _ _ _ _ (by omega), Array.size_set]
+
+/-- Subtract `q * b[loB : loB + n]` from `a[loA : loA + n + 1]` in place. The
+    final mul carry and sub borrow are absorbed into the high limb at position
+    `loA + n`. Returns the modified array and a final borrow-out (true means
+    the multi-precision result went negative). -/
+def subMulLimbs (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
+    (hA : loA + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) :
+    Array UInt64 × Bool :=
+  let r := subMulLimbs.go b loB n q a loA 0 0 false (by omega) hB
+  have h_size_eq : r.1.size = a.size :=
+    subMulLimbs.go_size b loB n q a loA 0 0 false (by omega) hB
+  have h_top_idx : loA + n < r.1.size := by rw [h_size_eq]; omega
+  let topVal := r.1[loA + n]'h_top_idx
+  let swb := UInt64.subWithBorrow topVal r.2.1 r.2.2
+  (r.1.set (loA + n) swb.1, swb.2)
+
+/-- Size preservation of `subMulLimbs`. -/
+theorem subMulLimbs_size (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
+    (hA : loA + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) :
+    (subMulLimbs a b loA loB n q hA hB).1.size = a.size := by
+  unfold subMulLimbs
+  simp only [Array.size_set]
+  exact subMulLimbs.go_size _ _ _ _ _ _ _ _ _ _ _
+
+/-- Addback fixup loop for `schoolbookDivMod`. If a pending borrow indicates
+    that the trial subtraction overshot, adds `b[loB : loB + n]` back into
+    `a[loA : loA + n]` and decrements `q`. Iterates at most `fuel` times; for
+    a normalized divisor with the standard quotient-selection cap, two
+    iterations suffice. -/
+def schoolbookDivMod.addback (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
+    (borrow : Bool) (fuel : Nat) (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
+    Array UInt64 × UInt64 :=
+  match fuel with
+  | 0 => (a, q)
+  | fuel' + 1 =>
+    if borrow then
+      let r := addSameLengthLimbs a b loA loB n hA hB
+      schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) fuel'
+        (by rw [addSameLengthLimbs_size]; exact hA) hB
+    else
+      (a, q)
+
+/-- Size preservation of `schoolbookDivMod.addback`. -/
+theorem schoolbookDivMod.addback_size (a b : Array UInt64) (loA loB n : Nat)
+    (q : UInt64) (borrow : Bool) (fuel : Nat)
+    (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
+    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.size = a.size := by
+  induction fuel generalizing a q borrow with
+  | zero => rw [schoolbookDivMod.addback]
+  | succ fuel' ih =>
+    rw [schoolbookDivMod.addback]
+    by_cases hb : borrow
+    · simp only [hb, ↓reduceIte]
+      rw [ih _ _ _]
+      exact addSameLengthLimbs_size _ _ _ _ _ _ _
+    · simp [hb]
+
+/-- Inner loop of `schoolbookDivMod`: processes the digits `j+1, j, ..., 1`
+    (i.e., remaining iteration count `j+1`) of the quotient from high to low.
+    At each step, picks a trial digit via `div2By1` (capped at `β - 1`), runs
+    `subMulLimbs`, performs the addback fixup, and stores the corrected digit
+    at position `loA + n + j_curr` (which has just been zeroed by the fixup). -/
+def schoolbookDivMod.go (a b : Array UInt64) (loA loB n j : Nat)
+    (bn1 : UInt64) (inv : UInt64)
+    (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
+    Array UInt64 :=
+  match j with
+  | 0 => a
+  | j + 1 =>
+    have h_a_top : loA + n + j < a.size := by omega
+    have h_a_next : loA + (n - 1) + j < a.size := by omega
+    let aj_top := a[loA + n + j]'h_a_top
+    let aj_next := a[loA + (n - 1) + j]'h_a_next
+    let q_init : UInt64 :=
+      if bn1 ≤ aj_top then
+        (0 : UInt64) - 1
+      else
+        (UInt64.div2By1 aj_top aj_next bn1 inv).1
+    have hSub : (loA + j) + n + 1 ≤ a.size := by omega
+    let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
+    have h_r_size : r.1.size = a.size := subMulLimbs_size _ _ _ _ _ _ _ _
+    have h_addback : (loA + j) + n ≤ r.1.size := by rw [h_r_size]; omega
+    let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2 h_addback hB
+    have h_fixup_size : fixup.1.size = a.size := by
+      rw [show fixup.1.size = r.1.size from
+            schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
+    have h_store_idx : loA + n + j < fixup.1.size := by
+      rw [h_fixup_size]; omega
+    let a' := fixup.1.set (loA + n + j) fixup.2
+    schoolbookDivMod.go a' b loA loB n j bn1 inv
+      (by rw [Array.size_set, h_fixup_size]; omega) hB h_n_pos
+  termination_by j
+
+/-- Multi-limb division of an `(n + m)`-limb dividend `a[loA : loA + n + m]`
+    by a normalized `n`-limb divisor `b[loB : loB + n]` (with the high limb of
+    `b` in `[2^63, 2^64)`), in place. Implements Algorithm 1.6 (BasecaseDivRem)
+    of Brent and Zimmermann.
+
+    On return, the slice `a[loA : loA + n + m]` is overwritten so that
+    `a[loA : loA + n]` holds the `n`-limb remainder and
+    `a[loA + n : loA + n + m]` holds the low `m` limbs of the quotient. The
+    top quotient limb `q_m ∈ {0, 1}` is returned as the second component. -/
+def schoolbookDivMod (a b : Array UInt64) (loA loB n m : Nat)
+    (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
+    (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
+    Array UInt64 × UInt64 :=
+  have h_bn1_idx : loB + n - 1 < b.size := by omega
+  let bn1 := b[loB + n - 1]'h_bn1_idx
+  let inv := UInt64.reciprocal bn1 hbn1
+  -- Step 1: compare A's top n limbs (at offset loA + m) with B; if ≥, set
+  -- q_m := 1 and subtract β^m * B from A. Else q_m := 0.
+  have h_top_slice : loA + m + n ≤ a.size := by omega
+  let cmp := compareLimbs a b (loA + m) loB n h_top_slice hB
+  if cmp = Ordering.lt then
+    let a' := schoolbookDivMod.go a b loA loB n m bn1 inv (by omega) hB h_n_pos
+    (a', 0)
+  else
+    let r := subSameLengthLimbs a b (loA + m) loB n h_top_slice hB
+    have h_r_size : r.1.size = a.size := subSameLengthLimbs_size _ _ _ _ _ _ _
+    let a' := schoolbookDivMod.go r.1 b loA loB n m bn1 inv
+                (by rw [h_r_size]; omega) hB h_n_pos
+    (a', 1)
 
 end Azurite.AzNat
