@@ -71,13 +71,12 @@ def divModLimb (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d ≠ 0)
     quotient `AzNat` and remainder `UInt64`. Single-limb dividends short-circuit
     to `UInt64.divMod`; multi-limb dividends use `divModLimb`. -/
 def divModUInt64 (U : AzNat) (d : UInt64) (hd : d ≠ 0) : AzNat × UInt64 :=
-  match h : U.limbs.size with
-  | 0 => (0, 0)
-  | 1 =>
-    have h0 : 0 < U.limbs.size := by rw [h]; decide
-    let qr := UInt64.divMod (U.limbs[0]'h0) d
+  if h0 : U.limbs.size = 0 then (0, 0)
+  else if h1 : U.limbs.size = 1 then
+    have h_pos : 0 < U.limbs.size := by rw [h1]; decide
+    let qr := UInt64.divMod (U.limbs[0]'h_pos) d
     (ofLimbs #[qr.1], qr.2)
-  | _ + 2 =>
+  else
     let res := divModLimb U.limbs 0 U.limbs.size d hd
       (Nat.zero_le _) (Nat.le_refl _)
     (ofLimbs res.1, res.2)

@@ -159,6 +159,7 @@ import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
+import Azurite.AzNat.Equiv.Div
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Mul
