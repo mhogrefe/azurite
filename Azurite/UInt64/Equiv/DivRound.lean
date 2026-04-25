@@ -436,4 +436,92 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
             simp only [Bool.false_eq_true, if_false]
             rw [hquot_toNat, hF_val]; push_cast; rfl
 
+/-! ### Ordering tag correctness
+
+The second component of `divRound` records whether the rounded value is less than,
+equal to, or greater than the true value `x.toNat / y.toNat`, viewed as a real. -/
+
+/-- Bridge between the integer-scaled `Nat` compare and the real-valued compare with
+division. Lets us prove ordering claims by Nat-arithmetic and read them off as
+statements about `(n : ℝ)` vs `(m : ℝ) / (yn : ℝ)`. -/
+private lemma compare_nat_mul_div_eq_compare_real_div (n m yn : ℕ) (hyn : 0 < yn) :
+    compare (n * yn) m = compare ((n : ℝ)) ((m : ℝ) / (yn : ℝ)) := by
+  have h2 : (0 : ℝ) < (yn : ℝ) := by exact_mod_cast hyn
+  rcases lt_trichotomy (n * yn) m with h | h | h
+  · rw [compare_lt_iff_lt.mpr h]
+    refine (compare_lt_iff_lt.mpr ?_).symm
+    rw [lt_div_iff₀ h2]; exact_mod_cast h
+  · rw [compare_eq_iff_eq.mpr h]
+    refine (compare_eq_iff_eq.mpr ?_).symm
+    rw [eq_div_iff (ne_of_gt h2)]; exact_mod_cast h
+  · rw [compare_gt_iff_gt.mpr h]
+    refine (compare_gt_iff_gt.mpr ?_).symm
+    rw [div_lt_iff₀ h2]; exact_mod_cast h
+
+/-- **Ordering tag correctness for `UInt64.divRound`.**
+
+The ordering in `(x.divRound y mode).2` records the relation between the rounded
+value and the true real value `x.toNat / y.toNat`. -/
+theorem snd_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
+    (x.divRound y mode).2 =
+      compare (((x.divRound y mode).1.toNat : ℕ) : ℝ)
+        ((x.toNat : ℝ) / (y.toNat : ℝ)) := by
+  rw [← compare_nat_mul_div_eq_compare_real_div _ _ y.toNat hy,
+      divRound_snd, divRound_fst]
+  by_cases hr : (x % y == 0) = true
+  · rw [if_pos hr, if_pos hr]
+    have hr0 : x.toNat % y.toNat = 0 := by
+      rw [beq_iff_eq] at hr
+      have := congrArg _root_.UInt64.toNat hr
+      rw [_root_.UInt64.toNat_mod, show ((0 : UInt64).toNat = 0) from rfl] at this
+      exact this
+    rw [_root_.UInt64.toNat_div]
+    have heq : x.toNat / y.toNat * y.toNat = x.toNat := by
+      have := Nat.div_add_mod' x.toNat y.toNat; omega
+    rw [heq]
+    show Ordering.eq = compareOfLessAndEq x.toNat x.toNat
+    simp [compareOfLessAndEq]
+  · rw [if_neg hr, if_neg hr]
+    have hr0 : x.toNat % y.toNat ≠ 0 := by
+      intro hr0
+      apply hr
+      rw [beq_iff_eq]
+      apply _root_.UInt64.toNat_inj.mp
+      rw [_root_.UInt64.toNat_mod, show ((0 : UInt64).toNat = 0) from rfl]
+      exact hr0
+    have hsum : x.toNat / y.toNat * y.toNat + x.toNat % y.toNat = x.toNat :=
+      Nat.div_add_mod' x.toNat y.toNat
+    have h_q_lt : x.toNat / y.toNat * y.toNat < x.toNat := by
+      have : 0 < x.toNat % y.toNat := Nat.pos_of_ne_zero hr0; omega
+    have h_q1_gt : x.toNat < (x.toNat / y.toNat + 1) * y.toNat := by
+      have hr_lt : x.toNat % y.toNat < y.toNat := Nat.mod_lt _ hy
+      have h1 : (x.toNat / y.toNat + 1) * y.toNat =
+        x.toNat / y.toNat * y.toNat + y.toNat := by ring
+      omega
+    have h_compare_q : compare ((x / y).toNat * y.toNat) x.toNat = Ordering.lt := by
+      rw [_root_.UInt64.toNat_div]
+      show compareOfLessAndEq _ _ = Ordering.lt
+      simp [compareOfLessAndEq, h_q_lt]
+    have h_compare_q1 : compare (((x / y) + 1).toNat * y.toNat) x.toNat = Ordering.gt := by
+      rw [toNat_quotient_add_one x y hy hr0]
+      show compareOfLessAndEq _ _ = Ordering.gt
+      have hnot_lt : ¬ ((x.toNat / y.toNat + 1) * y.toNat < x.toNat) :=
+        Nat.not_lt.mpr (Nat.le_of_lt h_q1_gt)
+      have hne : (x.toNat / y.toNat + 1) * y.toNat ≠ x.toNat := Nat.ne_of_gt h_q1_gt
+      simp [compareOfLessAndEq, hnot_lt, hne]
+    cases mode with
+    | Floor => simp only []; exact h_compare_q.symm
+    | Down => simp only []; exact h_compare_q.symm
+    | Ceiling => simp only []; exact h_compare_q1.symm
+    | Up => simp only []; exact h_compare_q1.symm
+    | Nearest =>
+      simp only []
+      cases hcmp : compare (y >>> 1) (x % y) with
+      | lt => exact h_compare_q1.symm
+      | gt => exact h_compare_q.symm
+      | eq =>
+        split_ifs
+        · exact h_compare_q1.symm
+        · exact h_compare_q.symm
+
 end UInt64

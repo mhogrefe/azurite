@@ -83,4 +83,53 @@ theorem AzInt.ofInt_toInt_shiftRightRound (i : Int) (mode : RoundingMode) (sh : 
   have h := AzInt.toInt_shiftRightRound (AzInt.ofInt i) mode sh
   rwa [AzInt.toInt_ofInt] at h
 
+/-! ### Ordering tag correctness -/
+
+/-- Negation flips ordering: `compare (-x) (-y)` is `(compare x y).swap`. -/
+private lemma compare_neg_neg_real (x y : ℝ) :
+    compare (-x) (-y) = (compare x y).swap := by
+  rcases lt_trichotomy x y with h | h | h
+  · rw [compare_lt_iff_lt.mpr h, compare_gt_iff_gt.mpr (neg_lt_neg h)]; rfl
+  · rw [compare_eq_iff_eq.mpr h, compare_eq_iff_eq.mpr (by rw [h])]; rfl
+  · rw [compare_gt_iff_gt.mpr h, compare_lt_iff_lt.mpr (neg_lt_neg h)]; rfl
+
+/-- **Ordering tag correctness for `AzInt.shiftRightRound`.**
+
+The ordering in `(z.shiftRightRound mode sh).2` records the relation between the
+rounded value and the true real value `z.toInt / 2^sh`. -/
+theorem AzInt.snd_shiftRightRound (z : AzInt) (mode : RoundingMode) (sh : Nat) :
+    (z.shiftRightRound mode sh).2 =
+      compare (((z.shiftRightRound mode sh).1.toInt : ℤ) : ℝ)
+        ((z.toInt : ℝ) / 2 ^ sh) := by
+  unfold AzInt.shiftRightRound
+  simp only []
+  by_cases hs : z.sign = true
+  · rw [hs]
+    simp only [if_true]
+    have h_az := AzNat.snd_shiftRightRound z.abs mode sh
+    rw [h_az]
+    have h_int : (((mkNorm true (z.abs.shiftRightRound mode sh).1).toInt : ℤ) : ℝ) =
+        (((z.abs.shiftRightRound mode sh).1.toNat : ℕ) : ℝ) := by
+      rw [AzInt.toInt_mkNorm_true]; push_cast; rfl
+    have h_z : (z.toInt : ℝ) = (z.abs.toNat : ℝ) := by
+      unfold AzInt.toInt; rw [if_pos hs]; push_cast; rfl
+    rw [h_int, h_z]
+  · have hs_false : z.sign = false := by cases h : z.sign <;> simp_all
+    rw [hs_false]
+    rw [if_neg (by decide : ¬ ((false : Bool) = true)),
+        if_neg (by decide : ¬ ((false : Bool) = true))]
+    have h_az := AzNat.snd_shiftRightRound z.abs (-mode) sh
+    rw [h_az]
+    have h_int : (((mkNorm false (z.abs.shiftRightRound (-mode) sh).1).toInt : ℤ) : ℝ) =
+        -(((z.abs.shiftRightRound (-mode) sh).1.toNat : ℕ) : ℝ) := by
+      by_cases ha : (z.abs.shiftRightRound (-mode) sh).1 = 0
+      · rw [ha]
+        have h0 : (mkNorm false (0 : AzNat)).toInt = 0 := by
+          unfold mkNorm; simp only [↓reduceDIte]; rfl
+        rw [h0]; push_cast; simp
+      · rw [AzInt.toInt_mkNorm_false _ ha]; push_cast; rfl
+    have h_z : (z.toInt : ℝ) = -(z.abs.toNat : ℝ) := by
+      unfold AzInt.toInt; rw [if_neg (by rw [hs_false]; simp)]; push_cast; rfl
+    rw [h_int, h_z, neg_div, compare_neg_neg_real]
+
 end Azurite
