@@ -153,6 +153,7 @@ import Azurite.AzNat.Basic
 import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
+import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
@@ -343,6 +344,7 @@ import Azurite.UInt64.Equiv.Div3By2
 import Azurite.UInt64.Equiv.DivMod
 import Azurite.UInt64.Equiv.DivRound
 import Azurite.UInt64.Equiv.IsMultipleOfPow2
+import Azurite.UInt64.Equiv.LeadingZeros
 import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry
 import Azurite.UInt64.Equiv.Pow2
@@ -359,6 +361,7 @@ import Azurite.UInt64.Equiv.WideMul
 import Azurite.UInt64.Equiv.WideSub
 import Azurite.UInt64.Equiv.WideSub3
 import Azurite.UInt64.IsMultipleOfPow2
+import Azurite.UInt64.LeadingZeros
 import Azurite.UInt64.MulAddWithCarry
 import Azurite.UInt64.MulWithCarry
 import Azurite.UInt64.Pow2
