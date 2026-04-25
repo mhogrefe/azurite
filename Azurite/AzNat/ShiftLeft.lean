@@ -218,4 +218,69 @@ def shiftLeft (a : AzNat) (sh : Nat) : AzNat :=
 
 instance : HShiftLeft AzNat Nat AzNat := ⟨shiftLeft⟩
 
+/-- Shifting left preserves the zero/nonzero distinction. -/
+theorem shiftLeft_eq_zero {a : AzNat} {sh : Nat} (h : a <<< sh = 0) : a = 0 := by
+  show a = ⟨#[], by simp⟩
+  have h_eq : a <<< sh = shiftLeft a sh := rfl
+  rw [h_eq] at h
+  unfold shiftLeft at h
+  by_cases hz : a.limbs.size = 0
+  · -- a.limbs.size = 0 → a = 0
+    rw [dif_pos hz] at h
+    exact h
+  · exfalso
+    rw [dif_neg hz] at h
+    by_cases hsm : sh % 64 = 0
+    · rw [dif_pos hsm] at h
+      have h_eq_zero : shiftLeftMul64 a (sh / 64) = ⟨#[], by simp⟩ := h
+      unfold shiftLeftMul64 at h_eq_zero
+      rw [dif_neg hz] at h_eq_zero
+      have h_limbs : (Array.replicate (sh / 64) 0 ++ a.limbs : Array UInt64) = #[] := by
+        have := congrArg AzNat.limbs h_eq_zero
+        exact this
+      have h_size : (Array.replicate (sh / 64) 0 ++ a.limbs).size = 0 := by
+        rw [h_limbs]; rfl
+      rw [Array.size_append, Array.size_replicate] at h_size
+      omega
+    · rw [dif_neg hsm] at h
+      have h_limbs : shiftLeftGeneralLimbs a sh hz hsm = #[] := by
+        have := congrArg AzNat.limbs h
+        exact this
+      -- shiftLeftGeneralLimbs builds an array with size ≥ bigShift + a.limbs.size > 0
+      unfold shiftLeftGeneralLimbs at h_limbs
+      simp only at h_limbs
+      have hn_pos : 0 < a.limbs.size := Nat.pos_of_ne_zero hz
+      set bigShift := sh / 64
+      set smallShift := sh % 64
+      have hsh_lb : 1 ≤ smallShift := by omega
+      have hsh_ub : smallShift ≤ 63 := by
+        have : sh % 64 < 64 := Nat.mod_lt _ (by omega)
+        omega
+      set combined : Array UInt64 := Array.replicate bigShift 0 ++ a.limbs
+      have hcs : combined.size = bigShift + a.limbs.size := by
+        simp [combined, Array.size_append, Array.size_replicate]
+      set prefixResult := shiftLimbsLeft combined bigShift (bigShift + a.limbs.size - 1)
+        smallShift (by omega) (by omega) hsh_lb hsh_ub
+      have h_psize : prefixResult.1.size = bigShift + a.limbs.size := by
+        show (shiftLimbsLeft _ _ _ _ _ _ _ _).1.size = _
+        rw [shiftLimbsLeft_size]; exact hcs
+      have h_last_idx : bigShift + a.limbs.size - 1 < prefixResult.1.size := by
+        rw [h_psize]; omega
+      set new_last_arr := prefixResult.1.set (bigShift + a.limbs.size - 1)
+        ((a.limbs[a.limbs.size - 1]'(Nat.sub_lt hn_pos Nat.zero_lt_one)
+          <<< UInt64.ofNat smallShift) ||| prefixResult.2) h_last_idx
+      have h_size_pos : 0 < new_last_arr.size := by
+        show 0 < (prefixResult.1.set _ _ _).size
+        rw [Array.size_set]; rw [h_psize]; omega
+      split_ifs at h_limbs with htc
+      · have h0 : new_last_arr.size = 0 := by rw [h_limbs]; rfl
+        omega
+      · have h_push_size :
+            (new_last_arr.push (a.limbs[a.limbs.size - 1]'
+              (Nat.sub_lt hn_pos Nat.zero_lt_one)
+              >>> UInt64.ofNat (64 - smallShift))).size = 0 := by
+          rw [h_limbs]; rfl
+        rw [Array.size_push] at h_push_size
+        omega
+
 end Azurite.AzNat

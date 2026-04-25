@@ -9,30 +9,28 @@ theorem toInt_subUInt64 (z : AzInt) (u : UInt64) :
   unfold subUInt64
   have h_tz : z.toInt = if z.sign then (z.abs.toNat : Int) else -(z.abs.toNat : Int) := rfl
   rw [h_tz]
-  by_cases hs : z.sign
-  · simp only [hs, ↓reduceIte]
-    rw [AzNat.compareUInt64_eq]
-    rcases h_cmp : Ord.compare z.abs.toNat u.toNat with _ | _ | _
-    · have h_lt : z.abs.toNat < u.toNat := by
-        have := Nat.compare_eq_lt.mp h_cmp; omega
+  by_cases hs : z.sign = true
+  · simp only [hs, ↓reduceDIte, ↓reduceIte]
+    have h_eq := AzNat.compareUInt64_eq z.abs u
+    split <;> rename_i h_cmp
+    · rw [h_cmp] at h_eq
+      have h_lt : z.abs.toNat < u.toNat := Nat.compare_eq_lt.mp h_eq.symm
       have h_sub_pos : u.toAzNat - z.abs ≠ 0 := by
         intro hc
         have hc' : (u.toAzNat - z.abs).toNat = 0 := by rw [hc]; rfl
-        rw [AzNat.toNat_sub, UInt64.toNat_toAzNat] at hc'
-        omega
-      rw [toInt_mkNorm_false _ h_sub_pos, AzNat.toNat_sub, UInt64.toNat_toAzNat]
+        rw [AzNat.toNat_sub, UInt64.toNat_toAzNat] at hc'; omega
+      rw [toInt_mkNonzero_false _ h_sub_pos, AzNat.toNat_sub, UInt64.toNat_toAzNat]
       omega
-    · have h_eq : z.abs.toNat = u.toNat := Nat.compare_eq_eq.mp h_cmp
-      rw [toInt_zero]
+    · rw [h_cmp] at h_eq
+      have h_e : z.abs.toNat = u.toNat := Nat.compare_eq_eq.mp h_eq.symm
+      rw [toInt_zero]; omega
+    · rw [h_cmp] at h_eq
+      have h_gt : u.toNat < z.abs.toNat := Nat.compare_eq_gt.mp h_eq.symm
+      rw [Azurite.AzNat.toInt_toAzInt, AzNat.toNat_subUInt64]
       omega
-    · have h_gt : u.toNat < z.abs.toNat := Nat.compare_eq_gt.mp h_cmp
-      rw [toInt_mkNorm_true, AzNat.toNat_subUInt64]
-      omega
-  · simp only [hs, Bool.false_eq_true, ↓reduceIte]
-    have h_abs_ne : z.abs ≠ 0 := by
-      intro h0
-      have := z.zero_sign h0
-      rw [this] at hs; contradiction
+  · simp only [hs, ↓reduceDIte, Bool.false_eq_true, ↓reduceIte]
+    have h_abs_ne : z.abs ≠ 0 := fun h0 => by
+      rw [z.zero_sign h0] at hs; exact hs rfl
     have h_abs_pos : 0 < z.abs.toNat := by
       rcases Nat.eq_zero_or_pos z.abs.toNat with h | h
       · exact absurd
@@ -41,9 +39,8 @@ theorem toInt_subUInt64 (z : AzInt) (u : UInt64) :
     have h_sum_pos : z.abs.addUInt64 u ≠ 0 := by
       intro hc
       have hc' : (z.abs.addUInt64 u).toNat = 0 := by rw [hc]; rfl
-      rw [AzNat.toNat_addUInt64] at hc'
-      omega
-    rw [toInt_mkNorm_false _ h_sum_pos, AzNat.toNat_addUInt64]
+      rw [AzNat.toNat_addUInt64] at hc'; omega
+    rw [toInt_mkNonzero_false _ h_sum_pos, AzNat.toNat_addUInt64]
     omega
 
 /-- `ofInt`-version of `toInt_subUInt64`. -/
@@ -169,65 +166,62 @@ theorem toInt_sub (a b : AzInt) : (a - b).toInt = a.toInt - b.toInt := by
   have h_ta : a.toInt = if a.sign then (a.abs.toNat : Int) else -(a.abs.toNat : Int) := rfl
   have h_tb : b.toInt = if b.sign then (b.abs.toNat : Int) else -(b.abs.toNat : Int) := rfl
   rw [h_ta, h_tb]
-  have h_a_ne : a.sign = false → a.abs ≠ 0 := fun hs h0 => by
-    rw [a.zero_sign h0] at hs; contradiction
-  have h_b_ne : b.sign = false → b.abs ≠ 0 := fun hs h0 => by
-    rw [b.zero_sign h0] at hs; contradiction
-  rcases hsa : a.sign with _ | _ <;> rcases hsb : b.sign with _ | _
-  all_goals simp only
-  · -- false, false: -a.abs - (-b.abs) = b.abs - a.abs
-    rw [AzNat.compare_eq_compare_toNat]
-    rcases h_cmp : Ord.compare a.abs.toNat b.abs.toNat with _ | _ | _
-    · have h_lt : a.abs.toNat < b.abs.toNat := by
-        have := Nat.compare_eq_lt.mp h_cmp; omega
-      have h_sub_ne : b.abs - a.abs ≠ 0 := by
+  have h_cmp_eq := AzNat.compare_eq_compare_toNat a.abs b.abs
+  by_cases hsa : a.sign = true
+  · by_cases hsb : b.sign = true
+    · -- true, true: a.abs - b.abs
+      simp only [hsa, hsb, ↓reduceDIte, ↓reduceIte]
+      split <;> rename_i h_cmp
+      · rw [h_cmp] at h_cmp_eq
+        have h_lt : a.abs.toNat < b.abs.toNat := Nat.compare_eq_lt.mp h_cmp_eq.symm
+        have h_sub_ne : b.abs - a.abs ≠ 0 := by
+          intro hc
+          have : (b.abs - a.abs).toNat = 0 := by rw [hc]; rfl
+          rw [AzNat.toNat_sub] at this; omega
+        rw [toInt_mkNonzero_false _ h_sub_ne, AzNat.toNat_sub]
+        omega
+      · rw [h_cmp] at h_cmp_eq
+        have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp_eq.symm
+        rw [toInt_zero]; omega
+      · rw [h_cmp] at h_cmp_eq
+        have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp_eq.symm
+        rw [Azurite.AzNat.toInt_toAzInt, AzNat.toNat_sub]
+        omega
+    · -- true, false: a.abs - (-b.abs) = a.abs + b.abs
+      simp only [hsa, hsb, ↓reduceDIte, Bool.false_eq_true, ↓reduceIte]
+      rw [Azurite.AzNat.toInt_toAzInt, AzNat.toNat_add]
+      push_cast; ring
+  · have hanz : a.abs ≠ 0 := fun h0 => by
+      rw [a.zero_sign h0] at hsa; exact hsa rfl
+    by_cases hsb : b.sign = true
+    · -- false, true: -a.abs - b.abs = -(a.abs + b.abs)
+      simp only [hsa, hsb, ↓reduceDIte, Bool.false_eq_true, ↓reduceIte]
+      have h_sum_ne : a.abs + b.abs ≠ 0 := by
         intro hc
-        have : (b.abs - a.abs).toNat = 0 := by rw [hc]; rfl
-        rw [AzNat.toNat_sub] at this; omega
-      rw [toInt_mkNorm_true, AzNat.toNat_sub]
-      push_cast; omega
-    · have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp
-      rw [toInt_zero]; push_cast; omega
-    · have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp
-      have h_sub_ne : a.abs - b.abs ≠ 0 := by
-        intro hc
-        have : (a.abs - b.abs).toNat = 0 := by rw [hc]; rfl
-        rw [AzNat.toNat_sub] at this; omega
-      rw [toInt_mkNorm_false _ h_sub_ne, AzNat.toNat_sub]
-      push_cast; omega
-  · -- false, true: -a.abs - b.abs = -(a.abs + b.abs)
-    have hanz : a.abs ≠ 0 := h_a_ne hsa
-    have h_sum_ne : a.abs + b.abs ≠ 0 := by
-      intro hc
-      have : (a.abs + b.abs).toNat = 0 := by rw [hc]; rfl
-      rw [AzNat.toNat_add] at this
-      have : a.abs.toNat = 0 := by omega
-      exact hanz (AzNat.toNat_injective (by rw [this, AzNat.toNat_zero]))
-    rw [toInt_mkNorm_false _ h_sum_ne, AzNat.toNat_add]
-    push_cast; ring
-  · -- true, false: a.abs - (-b.abs) = a.abs + b.abs
-    rw [toInt_mkNorm_true, AzNat.toNat_add]
-    push_cast; ring
-  · -- true, true: a.abs - b.abs
-    rw [AzNat.compare_eq_compare_toNat]
-    rcases h_cmp : Ord.compare a.abs.toNat b.abs.toNat with _ | _ | _
-    · have h_lt : a.abs.toNat < b.abs.toNat := by
-        have := Nat.compare_eq_lt.mp h_cmp; omega
-      have h_sub_ne : b.abs - a.abs ≠ 0 := by
-        intro hc
-        have : (b.abs - a.abs).toNat = 0 := by rw [hc]; rfl
-        rw [AzNat.toNat_sub] at this; omega
-      rw [toInt_mkNorm_false _ h_sub_ne, AzNat.toNat_sub]
-      push_cast; omega
-    · have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp
-      rw [toInt_zero]; push_cast; omega
-    · have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp
-      have h_sub_ne : a.abs - b.abs ≠ 0 := by
-        intro hc
-        have : (a.abs - b.abs).toNat = 0 := by rw [hc]; rfl
-        rw [AzNat.toNat_sub] at this; omega
-      rw [toInt_mkNorm_true, AzNat.toNat_sub]
-      push_cast; omega
+        have : (a.abs + b.abs).toNat = 0 := by rw [hc]; rfl
+        rw [AzNat.toNat_add] at this
+        have : a.abs.toNat = 0 := by omega
+        exact hanz (AzNat.toNat_injective (by rw [this, AzNat.toNat_zero]))
+      rw [toInt_mkNonzero_false _ h_sum_ne, AzNat.toNat_add]
+      push_cast; ring
+    · -- false, false: -a.abs - (-b.abs) = b.abs - a.abs
+      simp only [hsa, hsb, ↓reduceDIte, Bool.false_eq_true, ↓reduceIte]
+      split <;> rename_i h_cmp
+      · rw [h_cmp] at h_cmp_eq
+        have h_lt : a.abs.toNat < b.abs.toNat := Nat.compare_eq_lt.mp h_cmp_eq.symm
+        rw [Azurite.AzNat.toInt_toAzInt, AzNat.toNat_sub]
+        omega
+      · rw [h_cmp] at h_cmp_eq
+        have h_eq : a.abs.toNat = b.abs.toNat := Nat.compare_eq_eq.mp h_cmp_eq.symm
+        rw [toInt_zero]; omega
+      · rw [h_cmp] at h_cmp_eq
+        have h_gt : b.abs.toNat < a.abs.toNat := Nat.compare_eq_gt.mp h_cmp_eq.symm
+        have h_sub_ne : a.abs - b.abs ≠ 0 := by
+          intro hc
+          have : (a.abs - b.abs).toNat = 0 := by rw [hc]; rfl
+          rw [AzNat.toNat_sub] at this; omega
+        rw [toInt_mkNonzero_false _ h_sub_ne, AzNat.toNat_sub]
+        omega
 
 /-- `ofInt`-version of `toInt_sub`. -/
 theorem ofInt_sub (i j : Int) : ofInt (i - j) = ofInt i - ofInt j := by
