@@ -60,7 +60,7 @@ def computeD40 (d : UInt64) : UInt64 := (d >>> 24) + 1
 
 /-- `d_{63} = ⌈d / 2⌉`. -/
 @[inline]
-def computeD63 (d : UInt64) : UInt64 := d.shiftRightRound .Ceiling 1
+def computeD63 (d : UInt64) : UInt64 := (d.shiftRightRound .Ceiling 1).1
 
 /-- `v_0 = reciprocalTable[d_9 − 256]` — initial 11-bit reciprocal estimate.
 The hypothesis `h` witnesses that the index fits: holds whenever `d_9 ∈ [256, 511]`,

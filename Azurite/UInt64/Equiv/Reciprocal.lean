@@ -94,7 +94,8 @@ theorem toNat_computeD0 (d : UInt64) :
 /-- `computeD63 d` reads as `⌈d.toNat / 2⌉ = (d.toNat + 1) / 2` on the Nat side. -/
 theorem toNat_computeD63 (d : UInt64) :
     (computeD63 d).toNat = (d.toNat + 1) / 2 := by
-  unfold computeD63 shiftRightRound
+  unfold computeD63
+  rw [shiftRightRound_fst]
   by_cases h : d.isMultipleOfPow2 1 = true
   · rw [if_pos h, toNat_shiftRightSat]
     have hdvd : 2 ^ 1 ∣ d.toNat := (isMultipleOfPow2_iff d 1).mp h
