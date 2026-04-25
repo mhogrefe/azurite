@@ -33,6 +33,8 @@ import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Pow2
 import Azurite.AzInt.Equiv.ShiftLeft
+import Azurite.AzInt.Equiv.ShiftRight
+import Azurite.AzInt.Equiv.ShiftRightRound
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
@@ -43,6 +45,8 @@ import Azurite.AzInt.Parity
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Pow2
 import Azurite.AzInt.ShiftLeft
+import Azurite.AzInt.ShiftRight
+import Azurite.AzInt.ShiftRightRound
 import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
 import Azurite.AzInt.ToString
@@ -321,6 +325,7 @@ import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc
 import Azurite.Rounding.Nat
+import Azurite.Rounding.NatBotInt
 import Azurite.Rounding.NatDivPow
 import Azurite.Rounding.Rat
 import Azurite.Rounding.Real

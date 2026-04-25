@@ -59,18 +59,19 @@ noncomputable instance : RoundingTarget intSet where
     split_ifs <;> first | exact Or.inl rfl | exact Or.inr rfl
 
 /-- The defining spec of `toInt`: its real-cast equals the underlying value. -/
-private lemma toInt_spec (a : ↥intSet) : ((toInt a : ℝ) : EReal) = a.val := by
+lemma toInt_spec (a : ↥intSet) : ((toInt a : ℝ) : EReal) = a.val := by
   unfold toInt
   exact Classical.choose_spec a.property
 
 /-- If `a : ↥intSet` has value `((z : ℝ) : EReal)`, then `toInt a = z`. -/
-private lemma toInt_eq_of_val {a : ↥intSet} {z : ℤ} (h : ((z : ℝ) : EReal) = a.val) :
+lemma toInt_eq_of_val {a : ↥intSet} {z : ℤ} (h : ((z : ℝ) : EReal) = a.val) :
     toInt a = z := by
   have hsp := toInt_spec a
   have heq : ((toInt a : ℝ) : EReal) = ((z : ℝ) : EReal) := hsp.trans h.symm
   exact_mod_cast heq
 
-private lemma val_roundFloor_intSet (x : ℝ) :
+/-- The floor of `x : ℝ` in `intSet` is `⌊x⌋`. -/
+lemma val_roundFloor_intSet (x : ℝ) :
     (roundFloor intSet x).val = ((⌊x⌋ : ℝ) : EReal) := by
   apply (isGreatest_roundFloor intSet x).unique
   refine ⟨⟨⟨⌊x⌋, rfl⟩, ?_⟩, ?_⟩
@@ -79,7 +80,8 @@ private lemma val_roundFloor_intSet (x : ℝ) :
     have : (z : ℝ) ≤ x := by exact_mod_cast hz
     exact_mod_cast Int.le_floor.mpr this
 
-private lemma val_roundCeiling_intSet (x : ℝ) :
+/-- The ceiling of `x : ℝ` in `intSet` is `⌈x⌉`. -/
+lemma val_roundCeiling_intSet (x : ℝ) :
     (roundCeiling intSet x).val = ((⌈x⌉ : ℝ) : EReal) := by
   apply (isLeast_roundCeiling intSet x).unique
   refine ⟨⟨⟨⌈x⌉, rfl⟩, ?_⟩, ?_⟩
