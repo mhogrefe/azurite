@@ -154,6 +154,7 @@ import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
+import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
@@ -166,6 +167,7 @@ import Azurite.AzNat.Equiv.Div.DivModLimb
 import Azurite.AzNat.Equiv.Div.DivModLimb2
 import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.SubMulLimbs
+import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Mul
