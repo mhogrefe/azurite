@@ -24,10 +24,12 @@ import Azurite.AzInt.Add
 import Azurite.AzInt.Basic
 import Azurite.AzInt.Compare
 import Azurite.AzInt.Conversion
+import Azurite.AzInt.DivMod
 import Azurite.AzInt.Equiv.Add
 import Azurite.AzInt.Equiv.Basic
 import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
+import Azurite.AzInt.Equiv.DivMod
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
