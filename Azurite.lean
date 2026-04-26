@@ -155,11 +155,15 @@ import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Add
+import Azurite.AzNat.Equiv.Addback
 import Azurite.AzNat.Equiv.Basic
+import Azurite.AzNat.Equiv.BodyStep
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Div
+import Azurite.AzNat.Equiv.DivModLimb
+import Azurite.AzNat.Equiv.DivModLimb2
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Mul
@@ -171,6 +175,7 @@ import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
+import Azurite.AzNat.Equiv.SubMulLimbs
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.Instances

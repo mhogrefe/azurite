@@ -275,31 +275,47 @@ def schoolbookDivMod.go (a b : Array UInt64) (loA loB n j : Nat)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
     Array UInt64 :=
   match j with
-  | 0 => a
+  | 0 => a  -- Step 2: for-loop terminates.
   | j + 1 =>
     have h_a_top : loA + n + j < a.size := by omega
     have h_a_next : loA + (n - 1) + j < a.size := by omega
     let aj_top := a[loA + n + j]'h_a_top
     let aj_next := a[loA + (n - 1) + j]'h_a_next
+    -- Steps 3 + 4: quotient selection capped at β - 1.
     let q_init : UInt64 :=
       if bn1 ≤ aj_top then
         (0 : UInt64) - 1
       else
         (UInt64.div2By1 aj_top aj_next bn1 inv).1
+    -- Step 5: A := A - q_j * β^j * B.
     have hSub : (loA + j) + n + 1 ≤ a.size := by omega
     let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
     have h_r_size : r.1.size = a.size := subMulLimbs_size _ _ _ _ _ _ _ _
     have h_addback : (loA + j) + n ≤ r.1.size := by rw [h_r_size]; omega
+    -- Steps 6 + 7 + 8: while A < 0, decrement q_j and add β^j * B back
+    -- (at most twice, hence fuel = 2).
     let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2 h_addback hB
     have h_fixup_size : fixup.1.size = a.size := by
       rw [show fixup.1.size = r.1.size from
             schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
     have h_store_idx : loA + n + j < fixup.1.size := by
       rw [h_fixup_size]; omega
+    -- Store q_j at the now-zero top of the affected slice.
     let a' := fixup.1.set (loA + n + j) fixup.2
     schoolbookDivMod.go a' b loA loB n j bn1 inv
       (by rw [Array.size_set, h_fixup_size]; omega) hB h_n_pos
   termination_by j
+
+/-- Size preservation of `schoolbookDivMod.go`. -/
+theorem schoolbookDivMod.go_size (a b : Array UInt64) (loA loB n j : Nat)
+    (bn1 inv : UInt64)
+    (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
+    (schoolbookDivMod.go a b loA loB n j bn1 inv hA hB h_n_pos).size = a.size := by
+  induction j generalizing a with
+  | zero => rw [schoolbookDivMod.go]
+  | succ j ih =>
+    rw [schoolbookDivMod.go]
+    rw [ih, Array.size_set, schoolbookDivMod.addback_size, subMulLimbs_size]
 
 /-- Multi-limb division of an `(n + m)`-limb dividend `a[loA : loA + n + m]`
     by a normalized `n`-limb divisor `b[loB : loB + n]` (with the high limb of

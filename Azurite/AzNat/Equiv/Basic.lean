@@ -322,4 +322,24 @@ def equivNat : AzNat ≃ Nat where
     · omega
     · omega
 
+/-- `(drop lo).take (j+1) = (drop lo).take j ++ [a[lo+j]]`-style decomposition for arrays. -/
+lemma toNatLimbsList_drop_take_succ (a : Array UInt64) (lo j : Nat)
+    (h_idx : lo + j < a.size) :
+    toNatLimbsList ((a.toList.drop lo).take (j + 1))
+      = toNatLimbsList ((a.toList.drop lo).take j)
+        + (a[lo + j]'h_idx).toNat * 2 ^ (64 * j) := by
+  have h_drop_len : (a.toList.drop lo).length = a.size - lo := by
+    rw [List.length_drop, Array.length_toList]
+  have hj_drop : j < (a.toList.drop lo).length := by rw [h_drop_len]; omega
+  rw [List.take_succ_eq_append_getElem hj_drop]
+  rw [toNatLimbsList_append, List.length_take, Nat.min_eq_left (by omega)]
+  have h_get_drop : (a.toList.drop lo)[j]'hj_drop = a[lo + j]'h_idx := by
+    rw [List.getElem_drop, Array.getElem_toList]
+  rw [h_get_drop]
+  have h_single : toNatLimbsList [a[lo + j]'h_idx] = (a[lo + j]'h_idx).toNat := by
+    rw [show ([a[lo + j]'h_idx] : List UInt64) = a[lo + j]'h_idx :: [] from rfl,
+        toNatLimbsList_cons]
+    simp [toNatLimbsList]
+  rw [h_single]; ring
+
 end Azurite.AzNat
