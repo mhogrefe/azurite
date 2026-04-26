@@ -7,8 +7,8 @@ namespace UInt64
 where `ord` records how the rounded value relates to the true real value `x/y`:
 `.lt` if quotient < x/y, `.eq` if equal, `.gt` if greater.
 
-Uses `divMod` so the hardware `DIV` instruction is used once. The Rust analog
-recomputes `remainder = x - quotient * other`; this version is one mul+sub
+Uses `divMod` so the hardware `DIV` instruction is used once. An alternative
+would be computing `remainder = x - quotient * other`; this version is one mul+sub
 shorter and just as cache-friendly.
 
 Behavior for `y = 0` is unspecified (`x / 0 = 0` at the `UInt64` level). -/
