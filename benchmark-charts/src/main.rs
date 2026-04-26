@@ -302,7 +302,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: {} <benchmark> <input_file> [output_svg]", args[0]);
-        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul");
+        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add");
         std::process::exit(1);
     }
     let benchmark = &args[1];
@@ -344,9 +344,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Input size (significant_bits of both polynomials)",
             )?;
         }
+        "az_nat_add" => {
+            let rows = parse_multi_series_file(&content);
+            println!("Parsed {} rows.", rows.len());
+            print_summary(&rows);
+            plot_n_series(
+                rows, output_path,
+                "az_nat_add: median ns/op by input size",
+                "Input size (significant_bits of both naturals)",
+            )?;
+        }
         other => {
             eprintln!("Unknown benchmark: {other:?}");
-            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba");
+            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add");
             std::process::exit(1);
         }
     }

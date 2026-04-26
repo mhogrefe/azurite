@@ -1,6 +1,7 @@
 import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.AzPolynomialKaratsuba
+import Azurite.Benchmark.AzNatAdd
 import Azurite.AzPolynomial.Tune
 
 -- ── Config parsing ──────────────────────────────────────────────────────────
@@ -14,7 +15,7 @@ def parseConfig (s : String) : Std.HashMap String String :=
 -- ── Main ────────────────────────────────────────────────────────────────────
 
 def validBenchmarks : List String :=
-  ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
+  ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba", "az_nat_add",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all"]
 
 def main (args : List String) : IO Unit := do
@@ -32,6 +33,7 @@ def main (args : List String) : IO Unit := do
       | "rat_cmp" => runRatCmp limit cfg seed
       | "az_polynomial_mul" => runAzPolynomialMul limit cfg seed
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
+      | "az_nat_add" => runAzNatAdd limit cfg seed
       | "tune_karatsuba" =>
         let meanDegree := configGetRat cfg "meanDegree" 256
         let nPairs := configGetNat cfg "nPairs" 200

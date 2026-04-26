@@ -181,7 +181,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Rat/LogBase2` | `floorLogBase2Abs` and `ceilingLogBase2Abs` for rationals, proven equal to `⌊log₂ |q|⌋` and `⌈log₂ |q|⌉`. |
 | `Rat/Compare` | `Azurite.Rat.cmp`: a fast multi-stage rational comparison (sign → magnitude bracket → num/den comparison → log₂ comparison → cross-multiply). Proven equivalent to standard `compare` on `ℚ`. |
 | `Random/` | Random generators for `Nat`, `Int`, `Rat`, `Bool`, `AzPolynomial`, pairs, and geometric distributions. Used for testing and benchmarks. |
-| `Benchmark/` | Performance benchmarks for polynomial multiplication (basecase vs Karatsuba at various sizes) and rational comparison. Uses a C FFI nanosecond timer. |
+| `Benchmark/` | Performance benchmarks for polynomial multiplication (basecase vs Karatsuba at various sizes), rational comparison, and AzNat vs Nat addition. Uses a C FFI nanosecond timer. |
 
 ### Formalized Textbook Content
 

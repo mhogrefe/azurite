@@ -318,6 +318,7 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_47
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
+import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.Main
