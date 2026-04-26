@@ -522,4 +522,13 @@ private def showQR (qr : AzNat × AzNat) : String × String :=
 
 end DivModExamples
 
+/-- Division of two `AzNat`s, defined as the first projection of `divMod`. -/
+def div (U V : AzNat) : AzNat := (divMod U V).1
+
+/-- Modulus of two `AzNat`s, defined as the second projection of `divMod`. -/
+def mod (U V : AzNat) : AzNat := (divMod U V).2
+
+instance : Div AzNat := ⟨div⟩
+instance : Mod AzNat := ⟨mod⟩
+
 end Azurite.AzNat

@@ -971,4 +971,47 @@ theorem divMod_toNat (U V : AzNat) :
                     h_n_ge_3 h_nU_ge_n h_UBuf_size_dyn h_VBuf_size_eq
                     h_VBuf_norm h_UBuf_toNat h_VBuf_toNat hV_toNat_pos
 
+/-! ### Correctness of `div` and `mod` -/
+
+/-- When the divisor is zero, `divMod` returns `(0, U)`. -/
+private lemma divMod_of_toNat_zero (U V : AzNat) (hV : V.toNat = 0) :
+    divMod U V = (0, U) := by
+  have h_size : V.limbs.size = 0 := (toNat_eq_zero_iff V).mp hV
+  unfold divMod
+  rw [dif_pos h_size]
+
+/-- `(U / V).toNat = U.toNat / V.toNat`. -/
+@[simp] theorem toNat_div (U V : AzNat) : (U / V).toNat = U.toNat / V.toNat := by
+  show (divMod U V).1.toNat = _
+  by_cases hV : V.toNat = 0
+  · rw [divMod_of_toNat_zero U V hV, hV, Nat.div_zero, toNat_zero]
+  · obtain ⟨h_id, h_lt⟩ := divMod_toNat U V
+    have h_lt' := h_lt hV
+    have h_pos : 0 < V.toNat := Nat.pos_of_ne_zero hV
+    have h_eq : U.toNat
+        = (divMod U V).2.toNat + (divMod U V).1.toNat * V.toNat := by omega
+    rw [h_eq, Nat.add_mul_div_right _ _ h_pos, Nat.div_eq_of_lt h_lt', Nat.zero_add]
+
+/-- `(U % V).toNat = U.toNat % V.toNat`. -/
+@[simp] theorem toNat_mod (U V : AzNat) : (U % V).toNat = U.toNat % V.toNat := by
+  show (divMod U V).2.toNat = _
+  by_cases hV : V.toNat = 0
+  · rw [divMod_of_toNat_zero U V hV, hV, Nat.mod_zero]
+  · obtain ⟨h_id, h_lt⟩ := divMod_toNat U V
+    have h_lt' := h_lt hV
+    have h_pos : 0 < V.toNat := Nat.pos_of_ne_zero hV
+    have h_eq : U.toNat
+        = (divMod U V).2.toNat + (divMod U V).1.toNat * V.toNat := by omega
+    rw [h_eq, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt h_lt']
+
+/-- `ofNat`-version of `toNat_div`. -/
+theorem ofNat_div (m n : Nat) : ofNat (m / n) = ofNat m / ofNat n := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_div, toNat_ofNat, toNat_ofNat]
+
+/-- `ofNat`-version of `toNat_mod`. -/
+theorem ofNat_mod (m n : Nat) : ofNat (m % n) = ofNat m % ofNat n := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_mod, toNat_ofNat, toNat_ofNat]
+
 end Azurite.AzNat
