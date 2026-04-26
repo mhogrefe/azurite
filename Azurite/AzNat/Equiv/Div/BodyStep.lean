@@ -1,4 +1,4 @@
-import Azurite.AzNat.Equiv.Addback
+import Azurite.AzNat.Equiv.Div.Addback
 import Azurite.UInt64.Equiv.Div2By1
 
 namespace Azurite.AzNat

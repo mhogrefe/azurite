@@ -1,4 +1,4 @@
-import Azurite.AzNat.Equiv.BodyStep
+import Azurite.AzNat.Equiv.Div.BodyStep
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Sub
 

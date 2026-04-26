@@ -1,5 +1,5 @@
 import Azurite.AzNat.Equiv.Add
-import Azurite.AzNat.Equiv.SubMulLimbs
+import Azurite.AzNat.Equiv.Div.SubMulLimbs
 
 namespace Azurite.AzNat
 

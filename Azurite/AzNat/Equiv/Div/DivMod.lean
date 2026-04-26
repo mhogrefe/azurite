@@ -1,6 +1,6 @@
-import Azurite.AzNat.Equiv.Div
-import Azurite.AzNat.Equiv.DivModLimb
-import Azurite.AzNat.Equiv.DivModLimb2
+import Azurite.AzNat.Equiv.Div.DivModLimb
+import Azurite.AzNat.Equiv.Div.DivModLimb2
+import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.UInt64.Equiv.LeadingZeros

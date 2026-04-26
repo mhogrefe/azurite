@@ -1,4 +1,4 @@
-import Azurite.AzNat.Equiv.DivModLimb
+import Azurite.AzNat.Equiv.Div.DivModLimb
 import Azurite.UInt64.Equiv.Div3By2
 
 namespace Azurite.AzNat
