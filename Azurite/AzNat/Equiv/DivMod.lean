@@ -268,7 +268,7 @@ private theorem topB_shl_lt (topB : UInt64) (k : Nat) (hk_eq : k = topB.leadingZ
     facts: `UBuf` represents `U * 2^k`, `(d_top, d0)` represents `V * 2^k`,
     and `d_top` is normalized. -/
 private theorem divMod_size2_finish (U V : AzNat)
-    (k : Nat) (hk_le : k ≤ 63)
+    (k : Nat) (_hk_le : k ≤ 63)
     (UBuf : Array UInt64) (d_top d0 : UInt64)
     (h_UBuf_size : UBuf.size = U.limbs.size + 1)
     (h_dtop_norm : 2 ^ 63 ≤ d_top.toNat)
@@ -356,7 +356,7 @@ private theorem divMod_size2_finish (U V : AzNat)
     that UBuf represents `U * 2^k`, VBuf represents `V * 2^k`, and VBuf's top
     limb is normalized. -/
 private theorem divMod_size_ge3_finish (U V : AzNat)
-    (k : Nat) (hk_le : k ≤ 63)
+    (k : Nat) (_hk_le : k ≤ 63)
     (UBuf VBuf : Array UInt64)
     (h_n_ge_3 : 3 ≤ V.limbs.size)
     (h_n_le_nU : V.limbs.size ≤ U.limbs.size)
@@ -366,7 +366,7 @@ private theorem divMod_size_ge3_finish (U V : AzNat)
       2 ^ 63 ≤ (VBuf[0 + V.limbs.size - 1]'(by rw [h_VBuf_size]; omega)).toNat)
     (h_UBuf_toNat : toNatLimbsList UBuf.toList = U.toNat * 2 ^ k)
     (h_VBuf_toNat : toNatLimbsList VBuf.toList = V.toNat * 2 ^ k)
-    (hV_pos : 0 < V.toNat) :
+    (_hV_pos : 0 < V.toNat) :
     let res := schoolbookDivModLimbs UBuf VBuf 0 0 V.limbs.size
                   (U.limbs.size + 1 - V.limbs.size)
                   (by omega) (by rw [h_UBuf_size]; omega)
