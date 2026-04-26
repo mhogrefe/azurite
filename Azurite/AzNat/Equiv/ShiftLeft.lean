@@ -329,6 +329,47 @@ theorem shiftLimbsLeft_carry_lt (a : Array UInt64) (lo hi sh : Nat)
     show 0 < 2 ^ sh
     exact Nat.two_pow_pos _)
 
+/-- The carry-out of `shiftLimbsLeft.go hi sh a i carry` (when `i < hi`) equals
+    `a[hi - 1] >>> (64 - sh)`. The original limb at position `hi - 1` is read
+    because writes only touch positions `< hi - 1` before that step. -/
+private lemma shiftLimbsLeft.go_carry_eq (hi sh : Nat)
+    (a : Array UInt64) (i : Nat) (carry : UInt64) (h_size : hi ≤ a.size)
+    (hi_lt : i < hi) :
+    (shiftLimbsLeft.go hi sh a i carry h_size).2
+      = a[hi - 1]'(by omega) >>> UInt64.ofNat (64 - sh) := by
+  induction hi_sub_i : hi - i generalizing a i carry with
+  | zero => omega
+  | succ n ih =>
+    have h_i_size : i < a.size := Nat.lt_of_lt_of_le hi_lt h_size
+    rw [shiftLimbsLeft.go]
+    simp only [hi_lt, dif_pos]
+    by_cases hn : n = 0
+    · -- Base: i + 1 = hi, recursive call returns its carry input.
+      have hi1_eq : i + 1 = hi := by omega
+      have h_ge : ¬ i + 1 < hi := by omega
+      rw [shiftLimbsLeft.go]
+      simp only [h_ge, dif_neg, not_false_eq_true]
+      congr 1
+      have hi_eq : hi - 1 = i := by omega
+      subst hi_eq; rfl
+    · -- Inductive: i + 1 < hi, apply IH to the recursive call.
+      have hi1_lt : i + 1 < hi := by omega
+      have h_rec : hi - (i + 1) = n := by omega
+      have h_new_size : hi ≤ (a.set i ((a[i] <<< UInt64.ofNat sh) ||| carry)).size := by
+        rw [Array.size_set]; exact h_size
+      rw [ih _ _ _ h_new_size hi1_lt h_rec]
+      have h_ne : i ≠ hi - 1 := by omega
+      rw [Array.getElem_set_ne _ _ h_ne]
+
+/-- The carry-out of `shiftLimbsLeft a lo hi sh` (when `lo < hi`) equals
+    `a[hi - 1] >>> (64 - sh)`. -/
+theorem shiftLimbsLeft_carry_eq (a : Array UInt64) (lo hi sh : Nat)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size)
+    (hsh_lb : 1 ≤ sh) (hsh_ub : sh ≤ 63) (hlo_lt : lo < hi) :
+    (shiftLimbsLeft a lo hi sh hlo hhi hsh_lb hsh_ub).2
+      = a[hi - 1]'(by omega) >>> UInt64.ofNat (64 - sh) :=
+  shiftLimbsLeft.go_carry_eq hi sh a lo 0 hhi hlo_lt
+
 /-- `shiftLeftMul64 a k` represents `a * 2^(64*k)`. -/
 theorem toNat_shiftLeftMul64 (a : AzNat) (k : Nat) :
     (shiftLeftMul64 a k).toNat = a.toNat * 2 ^ (64 * k) := by

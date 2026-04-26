@@ -162,6 +162,7 @@ import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Div
+import Azurite.AzNat.Equiv.DivMod
 import Azurite.AzNat.Equiv.DivModLimb
 import Azurite.AzNat.Equiv.DivModLimb2
 import Azurite.AzNat.Equiv.IsMultipleOfPow2

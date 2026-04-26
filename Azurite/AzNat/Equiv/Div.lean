@@ -35,8 +35,7 @@ private theorem schoolbookDivModLimbs.go_succ_eq_bodyStep
     `A = Q · B + R`.
 
     Both the base case and inductive step are proved; the latter consumes
-    the helper `bodyStep_BZ` (currently a stub awaiting Möller–Granlund's
-    `q_init_bounds`). -/
+    the helper `bodyStep_BZ`. -/
 private theorem schoolbookDivModLimbs.go_toNat
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
@@ -272,11 +271,8 @@ private theorem schoolbookDivModLimbs.divisor_bound (b : Array UInt64) (loB n : 
 
     The full division identity is:
 
-      `A = (q_m · β^m + Q') · B + R`     with `R < B` and `q_m ≤ 1`.
-
-    Pending: `bodyStep_BZ` and `q_init_bounds` are still stubs (Möller–Granlund
-    two-correction analysis); modulo those, this proof is complete. -/
-private theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
+      `A = (q_m · β^m + Q') · B + R`     with `R < B` and `q_m ≤ 1`. -/
+theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
     (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
     (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
     let res := schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1

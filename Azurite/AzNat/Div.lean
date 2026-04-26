@@ -3,6 +3,8 @@ import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parse
+import Azurite.AzNat.ShiftLeft
+import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Sub
 import Azurite.AzNat.ToString
 import Azurite.UInt64.AddWithCarry
@@ -346,5 +348,178 @@ def schoolbookDivModLimbs (a b : Array UInt64) (loA loB n m : Nat)
     let a' := schoolbookDivModLimbs.go r.1 b loA loB n m bn1 inv
                 (by rw [h_r_size]; omega) hB h_n_pos
     (a', 1)
+
+/-- Divide `U` by `V`, returning `(quotient, remainder)`. By convention,
+    `divMod U 0 = (0, U)`. Dispatches to the smallest specialized primitive
+    based on the divisor's limb count: a 1-limb divisor uses `divModUInt64`
+    (which normalizes internally); a 2-limb divisor normalizes via
+    `leadingZeros` and dispatches to `divModLimb2`; an `n`-limb divisor with
+    `n ≥ 3` normalizes and dispatches to `schoolbookDivModLimbs`. The remainder
+    is right-shifted by the normalization shift to recover the unscaled value. -/
+def divMod (U V : AzNat) : AzNat × AzNat :=
+  if h0V : V.limbs.size = 0 then (0, U)
+  else if h1V : V.limbs.size = 1 then
+    have hV0 : 0 < V.limbs.size := by omega
+    let v := V.limbs[0]'hV0
+    have hv : v ≠ 0 := by
+      intro hv0
+      apply V.last_ne_zero
+      rw [Array.back?_eq_getElem?]
+      rw [show V.limbs.size - 1 = 0 from by omega]
+      rw [Array.getElem?_eq_getElem hV0]
+      exact congrArg some hv0
+    let qr := divModUInt64 U v hv
+    (qr.1, ofLimbs #[qr.2])
+  else if hUV : U.limbs.size < V.limbs.size then (0, U)
+  else
+    -- V.limbs.size ≥ 2 ; U.limbs.size ≥ V.limbs.size
+    let n := V.limbs.size
+    let nU := U.limbs.size
+    have h_n_ge_2 : 2 ≤ n := by omega
+    have h_nU_ge_n : n ≤ nU := Nat.le_of_not_lt hUV
+    have h_top_lt : n - 1 < V.limbs.size := by omega
+    have h_n2_lt : n - 2 < V.limbs.size := by omega
+    have h_lo_lt : 0 < V.limbs.size := by omega
+    let topB := V.limbs[n - 1]'h_top_lt
+    have h_topB_ne : topB ≠ 0 := by
+      intro h
+      apply V.last_ne_zero
+      rw [Array.back?_eq_getElem?, Array.getElem?_eq_getElem h_top_lt]
+      exact congrArg some h
+    let k := UInt64.leadingZeros topB
+    have hk_le : k ≤ 63 := UInt64.leadingZeros_le topB h_topB_ne
+    let kU : UInt64 := UInt64.ofNat k
+    let carryToTop : UInt64 :=
+      if hk0 : k = 0 then 0
+      else V.limbs[n - 2]'h_n2_lt >>> UInt64.ofNat (64 - k)
+    let d_top : UInt64 := (topB <<< kU) ||| carryToTop
+    have h_d_top_ge : 2 ^ 63 ≤ d_top.toNat := by
+      have h_shl_ge : 2 ^ 63 ≤ (topB <<< kU).toNat :=
+        UInt64.two_pow_63_le_toNat_shiftLeft_leadingZeros topB h_topB_ne
+      show 2 ^ 63 ≤ ((topB <<< kU) ||| carryToTop).toNat
+      rw [UInt64.toNat_or]
+      exact Nat.le_trans h_shl_ge Nat.left_le_or
+    -- Build dividend buffer of size nU + 1 (extra zero limb absorbs the shift carry).
+    let UBufRaw : Array UInt64 := U.limbs ++ #[0]
+    have h_UBufRaw_size : UBufRaw.size = nU + 1 := by
+      show (U.limbs ++ #[0]).size = nU + 1
+      rw [Array.size_append]; rfl
+    let UBuf : Array UInt64 :=
+      if hk0 : k = 0 then UBufRaw
+      else
+        have hk_lb : 1 ≤ k := by omega
+        (shiftLimbsLeft UBufRaw 0 (nU + 1) k (Nat.zero_le _)
+          (by rw [h_UBufRaw_size]) hk_lb hk_le).1
+    have h_UBuf_size : UBuf.size = nU + 1 := by
+      show (if hk0 : k = 0 then UBufRaw else _).size = nU + 1
+      split_ifs with hk0
+      · exact h_UBufRaw_size
+      · rw [shiftLimbsLeft_size]; exact h_UBufRaw_size
+    if _h2V : n = 2 then
+      -- 2-limb divisor: dispatch to divModLimb2.
+      let d0 : UInt64 := V.limbs[0]'h_lo_lt <<< kU
+      have hd1 : 2 ^ 63 ≤ d_top.toNat := h_d_top_ge
+      let res := divModLimb2 UBuf 0 (nU + 1) d_top d0 hd1
+        (Nat.zero_le _) (by rw [h_UBuf_size])
+      let quot := ofLimbs res.1
+      let remNorm := ofLimbs #[res.2.2, res.2.1]
+      (quot, remNorm >>> k)
+    else
+      -- n ≥ 3: dispatch to schoolbookDivModLimbs.
+      have h_n_ge_3 : 3 ≤ n := by omega
+      -- Build VBuf of size n with low limbs shifted and top limb manually normalized.
+      let VBufRaw : Array UInt64 :=
+        if hk0 : k = 0 then V.limbs
+        else
+          have hk_lb : 1 ≤ k := by omega
+          (shiftLimbsLeft V.limbs 0 (n - 1) k (by omega) (by omega) hk_lb hk_le).1
+      have h_VBufRaw_size : VBufRaw.size = n := by
+        show (if hk0 : k = 0 then V.limbs else _).size = n
+        split_ifs with hk0
+        · rfl
+        · rw [shiftLimbsLeft_size]
+      have h_top_in_raw : n - 1 < VBufRaw.size := by rw [h_VBufRaw_size]; omega
+      let VBuf : Array UInt64 := VBufRaw.set (n - 1) d_top h_top_in_raw
+      have h_VBuf_size : VBuf.size = n := by
+        show (VBufRaw.set _ _ _).size = n
+        rw [Array.size_set]; exact h_VBufRaw_size
+      let m := nU + 1 - n
+      have h_n_pos : 0 < n := by omega
+      have h_loA : 0 + n + m ≤ UBuf.size := by
+        show 0 + n + (nU + 1 - n) ≤ UBuf.size
+        rw [h_UBuf_size]; omega
+      have h_loB : 0 + n ≤ VBuf.size := by rw [h_VBuf_size]; omega
+      have h_VBuf_norm :
+          2 ^ 63 ≤ (VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega)).toNat := by
+        have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
+          show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
+          rw [Array.getElem_set]
+          rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+        rw [h_eq]; exact h_d_top_ge
+      let res :=
+        schoolbookDivModLimbs UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
+      let quotLimbs := res.1.extract n (n + m) ++ #[res.2]
+      let quot := ofLimbs quotLimbs
+      let remLimbs := res.1.extract 0 n
+      let remNorm := ofLimbs remLimbs
+      (quot, remNorm >>> k)
+
+section DivModExamples
+
+private def pp (s : String) : AzNat := (AzNat.parse s.toList).get!
+
+private def showQR (qr : AzNat × AzNat) : String × String :=
+  (toString qr.1, toString qr.2)
+
+-- 1-limb divisor (delegates to divModUInt64).
+#guard showQR (divMod (pp "100") (pp "7")) = ("14", "2")
+#guard showQR (divMod (pp "18446744073709551616") (pp "3")) =
+  ("6148914691236517205", "1")
+
+-- Division by zero convention.
+#guard showQR (divMod (pp "42") (pp "0")) = ("0", "42")
+
+-- Divisor larger than dividend.
+#guard showQR (divMod (pp "5") (pp "18446744073709551616")) =
+  ("0", "5")
+
+-- 2-limb divisor (uses divModLimb2 with normalization).
+-- 2^128 / (2^64 + 1) = 2^64 - 1 r 1, since (2^64-1)(2^64+1) = 2^128 - 1.
+#guard showQR
+    (divMod (pp "340282366920938463463374607431768211456")
+            (pp "18446744073709551617")) =
+  ("18446744073709551615", "1")
+
+-- (2^64)^2 / (2^64 - 1) — both 2-limb.
+-- 2^128 = (2^64-1)(2^64+1) + 1, so 2^128 / (2^64-1) = ?
+-- Actually let q = 2^128 / (2^64-1). Long division:
+--   2^128 = (2^64-1) * 2^64 + 2^64 = (2^64-1)(2^64 + 1) + 1.
+-- So q = 2^64 + 1 = 18446744073709551617, r = 1.
+#guard showQR
+    (divMod (pp "340282366920938463463374607431768211456")
+            (pp "18446744073709551615")) =
+  ("18446744073709551617", "1")
+
+-- 3-limb divisor (uses schoolbookDivModLimbs).
+-- 2^192 / (2^128 + 1) = 2^64 - 1, r = 2^128 - 2^64 + 1.
+-- Verify: (2^64-1)(2^128+1) = 2^192 + 2^64 - 2^128 - 1.
+-- 2^192 - (2^192 + 2^64 - 2^128 - 1) = 2^128 - 2^64 + 1.
+-- 2^128 - 2^64 + 1 = 340282366920938463444927863358058659841.
+#guard showQR
+    (divMod
+      (pp "6277101735386680763835789423207666416102355444464034512896")
+      (pp "340282366920938463463374607431768211457")) =
+  ("18446744073709551615", "340282366920938463444927863358058659841")
+
+-- Division by 1 — n-limb dividend, n-limb quotient, zero remainder.
+#guard showQR (divMod (pp "12345678901234567890") (pp "1")) =
+  ("12345678901234567890", "0")
+
+-- Equal dividend and divisor.
+#guard showQR (divMod (pp "999999999999999999999999999999")
+                       (pp "999999999999999999999999999999")) =
+  ("1", "0")
+
+end DivModExamples
 
 end Azurite.AzNat
