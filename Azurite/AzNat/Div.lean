@@ -232,12 +232,12 @@ theorem subMulLimbs_size (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
   simp only [Array.size_set]
   exact subMulLimbs.go_size _ _ _ _ _ _ _ _ _ _ _
 
-/-- Addback fixup loop for `schoolbookDivMod`. If a pending borrow indicates
+/-- Addback fixup loop for `schoolbookDivModLimbs`. If a pending borrow indicates
     that the trial subtraction overshot, adds `b[loB : loB + n]` back into
     `a[loA : loA + n]` and decrements `q`. Iterates at most `fuel` times; for
     a normalized divisor with the standard quotient-selection cap, two
     iterations suffice. -/
-def schoolbookDivMod.addback (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
+def schoolbookDivModLimbs.addback (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
     (borrow : Bool) (fuel : Nat) (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
     Array UInt64 × UInt64 :=
   match fuel with
@@ -245,32 +245,32 @@ def schoolbookDivMod.addback (a b : Array UInt64) (loA loB n : Nat) (q : UInt64)
   | fuel' + 1 =>
     if borrow then
       let r := addSameLengthLimbs a b loA loB n hA hB
-      schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) fuel'
+      schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) fuel'
         (by rw [addSameLengthLimbs_size]; exact hA) hB
     else
       (a, q)
 
-/-- Size preservation of `schoolbookDivMod.addback`. -/
-theorem schoolbookDivMod.addback_size (a b : Array UInt64) (loA loB n : Nat)
+/-- Size preservation of `schoolbookDivModLimbs.addback`. -/
+theorem schoolbookDivModLimbs.addback_size (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
-    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.size = a.size := by
+    (schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB).1.size = a.size := by
   induction fuel generalizing a q borrow with
-  | zero => rw [schoolbookDivMod.addback]
+  | zero => rw [schoolbookDivModLimbs.addback]
   | succ fuel' ih =>
-    rw [schoolbookDivMod.addback]
+    rw [schoolbookDivModLimbs.addback]
     by_cases hb : borrow
     · simp only [hb, ↓reduceIte]
       rw [ih _ _ _]
       exact addSameLengthLimbs_size _ _ _ _ _ _ _
     · simp [hb]
 
-/-- Inner loop of `schoolbookDivMod`: processes the digits `j+1, j, ..., 1`
+/-- Inner loop of `schoolbookDivModLimbs`: processes the digits `j+1, j, ..., 1`
     (i.e., remaining iteration count `j+1`) of the quotient from high to low.
     At each step, picks a trial digit via `div2By1` (capped at `β - 1`), runs
     `subMulLimbs`, performs the addback fixup, and stores the corrected digit
     at position `loA + n + j_curr` (which has just been zeroed by the fixup). -/
-def schoolbookDivMod.go (a b : Array UInt64) (loA loB n j : Nat)
+def schoolbookDivModLimbs.go (a b : Array UInt64) (loA loB n j : Nat)
     (bn1 : UInt64) (inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
     Array UInt64 :=
@@ -294,28 +294,28 @@ def schoolbookDivMod.go (a b : Array UInt64) (loA loB n j : Nat)
     have h_addback : (loA + j) + n ≤ r.1.size := by rw [h_r_size]; omega
     -- Steps 6 + 7 + 8: while A < 0, decrement q_j and add β^j * B back
     -- (at most twice, hence fuel = 2).
-    let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2 h_addback hB
+    let fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2 h_addback hB
     have h_fixup_size : fixup.1.size = a.size := by
       rw [show fixup.1.size = r.1.size from
-            schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
+            schoolbookDivModLimbs.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
     have h_store_idx : loA + n + j < fixup.1.size := by
       rw [h_fixup_size]; omega
     -- Store q_j at the now-zero top of the affected slice.
     let a' := fixup.1.set (loA + n + j) fixup.2
-    schoolbookDivMod.go a' b loA loB n j bn1 inv
+    schoolbookDivModLimbs.go a' b loA loB n j bn1 inv
       (by rw [Array.size_set, h_fixup_size]; omega) hB h_n_pos
   termination_by j
 
-/-- Size preservation of `schoolbookDivMod.go`. -/
-theorem schoolbookDivMod.go_size (a b : Array UInt64) (loA loB n j : Nat)
+/-- Size preservation of `schoolbookDivModLimbs.go`. -/
+theorem schoolbookDivModLimbs.go_size (a b : Array UInt64) (loA loB n j : Nat)
     (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
-    (schoolbookDivMod.go a b loA loB n j bn1 inv hA hB h_n_pos).size = a.size := by
+    (schoolbookDivModLimbs.go a b loA loB n j bn1 inv hA hB h_n_pos).size = a.size := by
   induction j generalizing a with
-  | zero => rw [schoolbookDivMod.go]
+  | zero => rw [schoolbookDivModLimbs.go]
   | succ j ih =>
-    rw [schoolbookDivMod.go]
-    rw [ih, Array.size_set, schoolbookDivMod.addback_size, subMulLimbs_size]
+    rw [schoolbookDivModLimbs.go]
+    rw [ih, Array.size_set, schoolbookDivModLimbs.addback_size, subMulLimbs_size]
 
 /-- Multi-limb division of an `(n + m)`-limb dividend `a[loA : loA + n + m]`
     by a normalized `n`-limb divisor `b[loB : loB + n]` (with the high limb of
@@ -326,7 +326,7 @@ theorem schoolbookDivMod.go_size (a b : Array UInt64) (loA loB n j : Nat)
     `a[loA : loA + n]` holds the `n`-limb remainder and
     `a[loA + n : loA + n + m]` holds the low `m` limbs of the quotient. The
     top quotient limb `q_m ∈ {0, 1}` is returned as the second component. -/
-def schoolbookDivMod (a b : Array UInt64) (loA loB n m : Nat)
+def schoolbookDivModLimbs (a b : Array UInt64) (loA loB n m : Nat)
     (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
     (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
     Array UInt64 × UInt64 :=
@@ -338,12 +338,12 @@ def schoolbookDivMod (a b : Array UInt64) (loA loB n m : Nat)
   have h_top_slice : loA + m + n ≤ a.size := by omega
   let cmp := compareLimbs a b (loA + m) loB n h_top_slice hB
   if cmp = Ordering.lt then
-    let a' := schoolbookDivMod.go a b loA loB n m bn1 inv (by omega) hB h_n_pos
+    let a' := schoolbookDivModLimbs.go a b loA loB n m bn1 inv (by omega) hB h_n_pos
     (a', 0)
   else
     let r := subSameLengthLimbs a b (loA + m) loB n h_top_slice hB
     have h_r_size : r.1.size = a.size := subSameLengthLimbs_size _ _ _ _ _ _ _
-    let a' := schoolbookDivMod.go r.1 b loA loB n m bn1 inv
+    let a' := schoolbookDivModLimbs.go r.1 b loA loB n m bn1 inv
                 (by rw [h_r_size]; omega) hB h_n_pos
     (a', 1)
 

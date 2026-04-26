@@ -3,19 +3,19 @@ import Azurite.AzNat.Equiv.SubMulLimbs
 
 namespace Azurite.AzNat
 
-/-! ### Correctness of `schoolbookDivMod.addback` -/
+/-! ### Correctness of `schoolbookDivModLimbs.addback` -/
 
-/-- `schoolbookDivMod.addback` preserves any prefix up to `loA`. -/
-theorem schoolbookDivMod.addback_toList_take_le (a b : Array UInt64) (loA loB n : Nat)
+/-- `schoolbookDivModLimbs.addback` preserves any prefix up to `loA`. -/
+theorem schoolbookDivModLimbs.addback_toList_take_le (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size)
     (m0 : Nat) (hm : m0 ≤ loA) :
-    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.toList.take m0
+    (schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB).1.toList.take m0
       = a.toList.take m0 := by
   induction fuel generalizing a q borrow with
-  | zero => rw [schoolbookDivMod.addback]
+  | zero => rw [schoolbookDivModLimbs.addback]
   | succ fuel' ih =>
-    rw [schoolbookDivMod.addback]
+    rw [schoolbookDivModLimbs.addback]
     by_cases hb : borrow
     · simp only [hb, ↓reduceIte]
       rw [ih]
@@ -24,25 +24,25 @@ theorem schoolbookDivMod.addback_toList_take_le (a b : Array UInt64) (loA loB n 
         (Nat.le_trans hm (Nat.le_add_right _ _))
     · simp [hb]
 
-/-- `schoolbookDivMod.addback` preserves the prefix of `a` up to `loA`. -/
-theorem schoolbookDivMod.addback_toList_take (a b : Array UInt64) (loA loB n : Nat)
+/-- `schoolbookDivModLimbs.addback` preserves the prefix of `a` up to `loA`. -/
+theorem schoolbookDivModLimbs.addback_toList_take (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
-    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.toList.take loA
+    (schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB).1.toList.take loA
       = a.toList.take loA :=
-  schoolbookDivMod.addback_toList_take_le a b loA loB n q borrow fuel hA hB loA
+  schoolbookDivModLimbs.addback_toList_take_le a b loA loB n q borrow fuel hA hB loA
     (Nat.le_refl _)
 
-/-- `schoolbookDivMod.addback` preserves the suffix of `a` from `loA + n`. -/
-theorem schoolbookDivMod.addback_toList_drop (a b : Array UInt64) (loA loB n : Nat)
+/-- `schoolbookDivModLimbs.addback` preserves the suffix of `a` from `loA + n`. -/
+theorem schoolbookDivModLimbs.addback_toList_drop (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
-    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.toList.drop (loA + n)
+    (schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB).1.toList.drop (loA + n)
       = a.toList.drop (loA + n) := by
   induction fuel generalizing a q borrow with
-  | zero => rw [schoolbookDivMod.addback]
+  | zero => rw [schoolbookDivModLimbs.addback]
   | succ fuel' ih =>
-    rw [schoolbookDivMod.addback]
+    rw [schoolbookDivModLimbs.addback]
     by_cases hb : borrow
     · simp only [hb, ↓reduceIte]
       rw [ih]
@@ -51,15 +51,15 @@ theorem schoolbookDivMod.addback_toList_drop (a b : Array UInt64) (loA loB n : N
       exact addSameLengthLimbs.go_toList_drop b loA loB n a 0 false hA hB
     · simp [hb]
 
-/-- Correctness of `schoolbookDivMod.addback`: the value of the `n`-limb slice
+/-- Correctness of `schoolbookDivModLimbs.addback`: the value of the `n`-limb slice
     plus a carry-flag-encoded high bit, plus `q * B`, is preserved. The
     precondition `borrow = true → fuel ≤ q.toNat` ensures `q` does not wrap
     around through `0` during the addback iterations. -/
-theorem schoolbookDivMod.addback_toNat (a b : Array UInt64) (loA loB n : Nat)
+theorem schoolbookDivModLimbs.addback_toNat (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size)
     (hq : borrow = true → fuel ≤ q.toNat) :
-    let res := schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB
+    let res := schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB
     ∃ b_out : Bool,
       toNatLimbsList ((res.1.toList.drop loA).take n)
         + (1 - b_out.toNat) * 2 ^ (64 * n)
@@ -69,10 +69,10 @@ theorem schoolbookDivMod.addback_toNat (a b : Array UInt64) (loA loB n : Nat)
         + q.toNat * toNatLimbsList ((b.toList.drop loB).take n) := by
   induction fuel generalizing a q borrow with
   | zero =>
-    rw [schoolbookDivMod.addback]
+    rw [schoolbookDivModLimbs.addback]
     exact ⟨borrow, rfl⟩
   | succ fuel' ih =>
-    rw [schoolbookDivMod.addback]
+    rw [schoolbookDivModLimbs.addback]
     by_cases hb : borrow
     · simp only [hb, ↓reduceIte]
       have hq_le : fuel' + 1 ≤ q.toNat := hq hb
@@ -136,7 +136,7 @@ theorem schoolbookDivMod.addback_toNat (a b : Array UInt64) (loA loB n : Nat)
     The boundary case `q.toNat = 1, borrow = true, Y + Z ≥ 2^(64·n)` (one
     addback fires, second iteration skipped) — which the original
     `addback_toNat` cannot accept — is handled here. -/
-theorem schoolbookDivMod.addback_toNat_two
+theorem schoolbookDivModLimbs.addback_toNat_two
     (a b : Array UInt64) (loA loB n : Nat) (q : UInt64) (borrow : Bool)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size)
     (h_safe1 : borrow = true → 1 ≤ q.toNat)
@@ -144,7 +144,7 @@ theorem schoolbookDivMod.addback_toNat_two
                  toNatLimbsList ((a.toList.drop loA).take n)
                    + toNatLimbsList ((b.toList.drop loB).take n) < 2 ^ (64 * n) →
                  2 ≤ q.toNat) :
-    let res := schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB
+    let res := schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB
     ∃ b_out : Bool,
       toNatLimbsList ((res.1.toList.drop loA).take n)
         + (1 - b_out.toNat) * 2 ^ (64 * n)
@@ -152,7 +152,7 @@ theorem schoolbookDivMod.addback_toNat_two
       = toNatLimbsList ((a.toList.drop loA).take n)
         + (1 - borrow.toNat) * 2 ^ (64 * n)
         + q.toNat * toNatLimbsList ((b.toList.drop loB).take n) := by
-  rw [schoolbookDivMod.addback]
+  rw [schoolbookDivModLimbs.addback]
   by_cases hb : borrow
   · simp only [hb, ↓reduceIte]
     have hq_ge1 : 1 ≤ q.toNat := h_safe1 hb
@@ -196,7 +196,7 @@ theorem schoolbookDivMod.addback_toNat_two
       have hq2 := h_safe2 hb h_lt
       rw [h_q_minus_one]; omega
     have h_inner :=
-      schoolbookDivMod.addback_toNat r.1 b loA loB n (q - 1) (!r.2) 1
+      schoolbookDivModLimbs.addback_toNat r.1 b loA loB n (q - 1) (!r.2) 1
         h_r_hyp hB h_inner_safe
     simp only at h_inner
     obtain ⟨b_out, h_eq⟩ := h_inner
@@ -220,12 +220,12 @@ theorem schoolbookDivMod.addback_toNat_two
     exact ⟨false, rfl⟩
 
 /-- Structural fact: when `borrow = false`, `addback` is a no-op: result = (a, q). -/
-theorem schoolbookDivMod.addback_borrow_false (a b : Array UInt64) (loA loB n : Nat)
+theorem schoolbookDivModLimbs.addback_borrow_false (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (fuel : Nat) (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size) :
-    schoolbookDivMod.addback a b loA loB n q false fuel hA hB = (a, q) := by
+    schoolbookDivModLimbs.addback a b loA loB n q false fuel hA hB = (a, q) := by
   cases fuel with
-  | zero => rw [schoolbookDivMod.addback]
-  | succ fuel' => rw [schoolbookDivMod.addback]; simp
+  | zero => rw [schoolbookDivModLimbs.addback]
+  | succ fuel' => rw [schoolbookDivModLimbs.addback]; simp
 
 /-- Strengthened version of `addback_toNat_two` that exposes additional
     structural facts about the result:
@@ -238,7 +238,7 @@ theorem schoolbookDivMod.addback_borrow_false (a b : Array UInt64) (loA loB n : 
       fired overflowed, leaving a "small" non-negative remainder).
 
     These are key for the BZ correctness proof. -/
-theorem schoolbookDivMod.addback_toNat_two_strong
+theorem schoolbookDivModLimbs.addback_toNat_two_strong
     (a b : Array UInt64) (loA loB n : Nat) (q : UInt64) (borrow : Bool)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size)
     (h_safe1 : borrow = true → 1 ≤ q.toNat)
@@ -246,7 +246,7 @@ theorem schoolbookDivMod.addback_toNat_two_strong
                  toNatLimbsList ((a.toList.drop loA).take n)
                    + toNatLimbsList ((b.toList.drop loB).take n) < 2 ^ (64 * n) →
                  2 ≤ q.toNat) :
-    let res := schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB
+    let res := schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB
     ∃ b_out : Bool,
       (toNatLimbsList ((res.1.toList.drop loA).take n)
         + (1 - b_out.toNat) * 2 ^ (64 * n)
@@ -261,7 +261,7 @@ theorem schoolbookDivMod.addback_toNat_two_strong
         toNatLimbsList ((res.1.toList.drop loA).take n)
           < toNatLimbsList ((b.toList.drop loB).take n)) := by
   -- We get the main equation from the existing `addback_toNat_two`.
-  have h_main := schoolbookDivMod.addback_toNat_two a b loA loB n q borrow hA hB h_safe1 h_safe2
+  have h_main := schoolbookDivModLimbs.addback_toNat_two a b loA loB n q borrow hA hB h_safe1 h_safe2
   obtain ⟨b_out, h_eq⟩ := h_main
   refine ⟨b_out, h_eq, ?_, ?_⟩
   all_goals (
@@ -286,9 +286,9 @@ theorem schoolbookDivMod.addback_toNat_two_strong
       rw [_root_.UInt64.toNat_sub_of_le _ _ h_le, h_one]
     -- Unfold addback (fuel = 2) with borrow = true.
     have h_unfold1 :
-        schoolbookDivMod.addback a b loA loB n q true 2 hA hB
-          = schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB := by
-      conv_lhs => rw [schoolbookDivMod.addback]
+        schoolbookDivModLimbs.addback a b loA loB n q true 2 hA hB
+          = schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB := by
+      conv_lhs => rw [schoolbookDivModLimbs.addback]
       simp only [if_true, ← hr_def]
     -- The (n)-limb slice bound for any array.
     have h_r_low_lt :
@@ -309,12 +309,12 @@ theorem schoolbookDivMod.addback_toNat_two_strong
       by_cases hr2 : r.2
       · -- r.2 = true: 1st addback overflowed. fixup.2 = q - 1, b_out = false (via inner no-op).
         have h_inner :
-            schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
+            schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
               = (r.1, q - 1) := by
           rw [hr2]
           simp only [Bool.not_true]
-          exact schoolbookDivMod.addback_borrow_false _ _ _ _ _ _ _ _ _
-        have h_res_eq : schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB = (r.1, q - 1) := by
+          exact schoolbookDivModLimbs.addback_borrow_false _ _ _ _ _ _ _ _ _
+        have h_res_eq : schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB = (r.1, q - 1) := by
           rw [show borrow = true from h_borrow, h_unfold1, h_inner]
         rw [h_res_eq] at h_eq
         simp only at h_eq
@@ -359,17 +359,17 @@ theorem schoolbookDivMod.addback_toNat_two_strong
           rw [_root_.UInt64.toNat_sub_of_le _ _ h_le, h_q_minus_one]
           omega
         have h_inner_unfold :
-            schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
-              = schoolbookDivMod.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB := by
+            schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
+              = schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB := by
           rw [hr2_false]
           simp only [Bool.not_false]
-          conv_lhs => rw [schoolbookDivMod.addback]
+          conv_lhs => rw [schoolbookDivModLimbs.addback]
           simp only [if_true, ← hr'_def]
         have h_inner_inner :
-            schoolbookDivMod.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
+            schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
               = (r'.1, q - 1 - 1) := by
-          rw [schoolbookDivMod.addback]
-        have h_res_eq : schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB = (r'.1, q - 1 - 1) := by
+          rw [schoolbookDivModLimbs.addback]
+        have h_res_eq : schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB = (r'.1, q - 1 - 1) := by
           rw [show borrow = true from h_borrow, h_unfold1, h_inner_unfold, h_inner_inner]
         rw [h_res_eq] at h_eq
         simp only at h_eq
@@ -408,12 +408,12 @@ theorem schoolbookDivMod.addback_toNat_two_strong
       -- We have r.1.low + β^n = Y + Z. So r.1.low = Y + Z - β^n.
       -- res.1.low < Z iff r.1.low < Z iff Y + Z - β^n < Z iff Y < β^n. ✓
       have h_inner :
-          schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
+          schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
             = (r.1, q - 1) := by
         rw [hr2]
         simp only [Bool.not_true]
-        exact schoolbookDivMod.addback_borrow_false _ _ _ _ _ _ _ _ _
-      have h_res_eq : schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB = (r.1, q - 1) := by
+        exact schoolbookDivModLimbs.addback_borrow_false _ _ _ _ _ _ _ _ _
+      have h_res_eq : schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB = (r.1, q - 1) := by
         rw [show borrow = true from h_borrow, h_unfold1, h_inner]
       rw [h_res_eq]
       simp only
@@ -456,17 +456,17 @@ theorem schoolbookDivMod.addback_toNat_two_strong
         rw [_root_.UInt64.toNat_sub_of_le _ _ h_le, h_q_minus_one]
         omega
       have h_inner_unfold :
-          schoolbookDivMod.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
-            = schoolbookDivMod.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB := by
+          schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB
+            = schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB := by
         rw [hr2_false]
         simp only [Bool.not_false]
-        conv_lhs => rw [schoolbookDivMod.addback]
+        conv_lhs => rw [schoolbookDivModLimbs.addback]
         simp only [if_true, ← hr'_def]
       have h_inner_inner :
-          schoolbookDivMod.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
+          schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
             = (r'.1, q - 1 - 1) := by
-        rw [schoolbookDivMod.addback]
-      have h_res_eq : schoolbookDivMod.addback a b loA loB n q borrow 2 hA hB = (r'.1, q - 1 - 1) := by
+        rw [schoolbookDivModLimbs.addback]
+      have h_res_eq : schoolbookDivModLimbs.addback a b loA loB n q borrow 2 hA hB = (r'.1, q - 1 - 1) := by
         rw [show borrow = true from h_borrow, h_unfold1, h_inner_unfold, h_inner_inner]
       rw [h_res_eq]
       simp only
@@ -505,47 +505,47 @@ theorem schoolbookDivMod.addback_toNat_two_strong
       -- Need: Y + 2*Z - β^n < Z, i.e., Y + Z < β^n. ✓ (from h_lt_first).
       omega
 
-/-! ### Structural lemmas for `schoolbookDivMod.go` -/
+/-! ### Structural lemmas for `schoolbookDivModLimbs.go` -/
 
-/-- `schoolbookDivMod.go` preserves the prefix of `a` up to `loA`. -/
-theorem schoolbookDivMod.go_toList_take (a b : Array UInt64) (loA loB n j : Nat)
+/-- `schoolbookDivModLimbs.go` preserves the prefix of `a` up to `loA`. -/
+theorem schoolbookDivModLimbs.go_toList_take (a b : Array UInt64) (loA loB n j : Nat)
     (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
-    (schoolbookDivMod.go a b loA loB n j bn1 inv hA hB h_n_pos).toList.take loA
+    (schoolbookDivModLimbs.go a b loA loB n j bn1 inv hA hB h_n_pos).toList.take loA
       = a.toList.take loA := by
   induction j generalizing a with
-  | zero => rw [schoolbookDivMod.go]
+  | zero => rw [schoolbookDivModLimbs.go]
   | succ j ih =>
-    rw [schoolbookDivMod.go]
+    rw [schoolbookDivModLimbs.go]
     rw [ih]
     rw [Array.toList_set, List.take_set_of_le (by omega : loA ≤ loA + n + j)]
-    rw [schoolbookDivMod.addback_toList_take_le _ _ _ _ _ _ _ _ _ _ loA
+    rw [schoolbookDivModLimbs.addback_toList_take_le _ _ _ _ _ _ _ _ _ _ loA
           (Nat.le_add_right _ _)]
     exact subMulLimbs_toList_take_le a b (loA + j) loB n _ _ hB loA
       (Nat.le_add_right _ _)
 
-/-- `schoolbookDivMod.addback` preserves any suffix from `loA + n` onward. -/
-theorem schoolbookDivMod.addback_toList_drop_ge (a b : Array UInt64) (loA loB n : Nat)
+/-- `schoolbookDivModLimbs.addback` preserves any suffix from `loA + n` onward. -/
+theorem schoolbookDivModLimbs.addback_toList_drop_ge (a b : Array UInt64) (loA loB n : Nat)
     (q : UInt64) (borrow : Bool) (fuel : Nat)
     (hA : loA + n ≤ a.size) (hB : loB + n ≤ b.size)
     (m0 : Nat) (hm : loA + n ≤ m0) :
-    (schoolbookDivMod.addback a b loA loB n q borrow fuel hA hB).1.toList.drop m0
+    (schoolbookDivModLimbs.addback a b loA loB n q borrow fuel hA hB).1.toList.drop m0
       = a.toList.drop m0 := by
   have h_drop_split : ∀ (l : List UInt64),
       l.drop m0 = (l.drop (loA + n)).drop (m0 - (loA + n)) := fun l => by
     rw [List.drop_drop, Nat.add_sub_cancel' hm]
-  rw [h_drop_split, schoolbookDivMod.addback_toList_drop, ← h_drop_split]
+  rw [h_drop_split, schoolbookDivModLimbs.addback_toList_drop, ← h_drop_split]
 
-/-- `schoolbookDivMod.go` preserves the suffix of `a` from `loA + n + j`. -/
-theorem schoolbookDivMod.go_toList_drop (a b : Array UInt64) (loA loB n j : Nat)
+/-- `schoolbookDivModLimbs.go` preserves the suffix of `a` from `loA + n + j`. -/
+theorem schoolbookDivModLimbs.go_toList_drop (a b : Array UInt64) (loA loB n j : Nat)
     (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
-    (schoolbookDivMod.go a b loA loB n j bn1 inv hA hB h_n_pos).toList.drop (loA + n + j)
+    (schoolbookDivModLimbs.go a b loA loB n j bn1 inv hA hB h_n_pos).toList.drop (loA + n + j)
       = a.toList.drop (loA + n + j) := by
   induction j generalizing a with
-  | zero => rw [schoolbookDivMod.go]
+  | zero => rw [schoolbookDivModLimbs.go]
   | succ j ih =>
-    rw [schoolbookDivMod.go]
+    rw [schoolbookDivModLimbs.go]
     -- After body: a' is the array passed to recursive `go ... j`.
     -- IH gives drop at (loA + n + j); we want drop at (loA + n + (j + 1)).
     have h_split : ∀ (l : List UInt64),
@@ -556,7 +556,7 @@ theorem schoolbookDivMod.go_toList_drop (a b : Array UInt64) (loA loB n j : Nat)
     -- a' = (addback (subMulLimbs ...).1 ...).1.set (loA + n + j) ...
     rw [Array.toList_set, List.drop_set,
         if_pos (by omega : loA + n + j < loA + n + (j + 1))]
-    rw [schoolbookDivMod.addback_toList_drop_ge _ _ (loA + j) _ _ _ _ _ _ _
+    rw [schoolbookDivModLimbs.addback_toList_drop_ge _ _ (loA + j) _ _ _ _ _ _ _
           (loA + n + (j + 1)) (by omega)]
     rw [show loA + n + (j + 1) = (loA + j) + n + 1 from by ring]
     exact subMulLimbs_toList_drop a b (loA + j) loB n _ (by omega) hB

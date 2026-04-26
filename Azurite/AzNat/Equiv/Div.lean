@@ -4,26 +4,26 @@ import Azurite.AzNat.Equiv.Sub
 
 namespace Azurite.AzNat
 
-/-- `bodyStep` matches what `schoolbookDivMod.go` computes for `j+1` before
+/-- `bodyStep` matches what `schoolbookDivModLimbs.go` computes for `j+1` before
     the recursive tail-call. Specifically, `go a b loA loB n (j+1) bn1 inv ...`
     equals `go (bodyStep a b loA loB n j q_init ...) b loA loB n j bn1 inv ...`
     where `q_init` is the trial digit that `go` would pick. -/
-private theorem schoolbookDivMod.go_succ_eq_bodyStep
+private theorem schoolbookDivModLimbs.go_succ_eq_bodyStep
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hA : loA + n + (j + 1) ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n) :
-    schoolbookDivMod.go a b loA loB n (j + 1) bn1 inv hA hB h_n_pos
-      = schoolbookDivMod.go
-          (schoolbookDivMod.bodyStep a b loA loB n j
+    schoolbookDivModLimbs.go a b loA loB n (j + 1) bn1 inv hA hB h_n_pos
+      = schoolbookDivModLimbs.go
+          (schoolbookDivModLimbs.bodyStep a b loA loB n j
             (if bn1 ≤ a[loA + n + j]'(by omega) then (0 : UInt64) - 1
              else (UInt64.div2By1 (a[loA + n + j]'(by omega))
                      (a[loA + (n - 1) + j]'(by omega)) bn1 inv).1)
             (by omega) hB)
           b loA loB n j bn1 inv
-          (by rw [schoolbookDivMod.bodyStep_size]; omega) hB h_n_pos := by
-  conv_lhs => rw [schoolbookDivMod.go]
+          (by rw [schoolbookDivModLimbs.bodyStep_size]; omega) hB h_n_pos := by
+  conv_lhs => rw [schoolbookDivModLimbs.go]
   rfl
 
-/-- **BZ correctness invariant for `schoolbookDivMod.go`**.
+/-- **BZ correctness invariant for `schoolbookDivModLimbs.go`**.
 
     Pre-condition: the dividend slice `a[loA : loA + n + j]` satisfies the
     Brent-Zimmermann invariant `A < β^j · B`, where `B` is the divisor
@@ -37,7 +37,7 @@ private theorem schoolbookDivMod.go_succ_eq_bodyStep
     Both the base case and inductive step are proved; the latter consumes
     the helper `bodyStep_BZ` (currently a stub awaiting Möller–Granlund's
     `q_init_bounds`). -/
-private theorem schoolbookDivMod.go_toNat
+private theorem schoolbookDivModLimbs.go_toNat
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hA : loA + n + j ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
     (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
@@ -46,7 +46,7 @@ private theorem schoolbookDivMod.go_toNat
     (h_B_pos : 0 < toNatLimbsList ((b.toList.drop loB).take n))
     (h_inv_BZ : toNatLimbsList ((a.toList.drop loA).take (n + j))
                   < 2 ^ (64 * j) * toNatLimbsList ((b.toList.drop loB).take n)) :
-    let a' := schoolbookDivMod.go a b loA loB n j bn1 inv hA hB h_n_pos
+    let a' := schoolbookDivModLimbs.go a b loA loB n j bn1 inv hA hB h_n_pos
     toNatLimbsList ((a'.toList.drop loA).take n)
         < toNatLimbsList ((b.toList.drop loB).take n)
       ∧ toNatLimbsList ((a.toList.drop loA).take (n + j))
@@ -55,7 +55,7 @@ private theorem schoolbookDivMod.go_toNat
             + toNatLimbsList ((a'.toList.drop loA).take n) := by
   induction j generalizing a with
   | zero =>
-    rw [schoolbookDivMod.go]
+    rw [schoolbookDivModLimbs.go]
     refine ⟨?_, ?_⟩
     · simpa using h_inv_BZ
     · simp [List.take_zero, toNatLimbsList]
@@ -63,13 +63,13 @@ private theorem schoolbookDivMod.go_toNat
     set B : Nat := toNatLimbsList ((b.toList.drop loB).take n) with hB_def
     -- Step 1: rewrite `go ... (j+1)` as `go (bodyStep ...) ... j` via
     -- `go_succ_eq_bodyStep`.
-    rw [schoolbookDivMod.go_succ_eq_bodyStep]
+    rw [schoolbookDivModLimbs.go_succ_eq_bodyStep]
     -- The trial digit `go` computes.
     set q_init : UInt64 :=
       if bn1 ≤ a[loA + n + j]'(by omega) then (0 : UInt64) - 1
       else (UInt64.div2By1 (a[loA + n + j]'(by omega))
               (a[loA + (n - 1) + j]'(by omega)) bn1 inv).1 with hq_init_def
-    set a₁ := schoolbookDivMod.bodyStep a b loA loB n j q_init (by omega) hB
+    set a₁ := schoolbookDivModLimbs.bodyStep a b loA loB n j q_init (by omega) hB
       with ha₁_def
     -- Step 2: derive the local BZ invariant on the (n+1)-limb slice from
     -- the global BZ invariant. Decompose `(a.drop loA).take (n + j + 1)`
@@ -110,7 +110,7 @@ private theorem schoolbookDivMod.go_toNat
       rw [h_eq] at h1
       exact Nat.lt_of_mul_lt_mul_right h1
     -- Step 3: invoke bodyStep_BZ to get the local correctness identity.
-    have h_bodyStep_BZ := schoolbookDivMod.bodyStep_BZ a b loA loB n j bn1 inv
+    have h_bodyStep_BZ := schoolbookDivModLimbs.bodyStep_BZ a b loA loB n j bn1 inv
       (by omega) hB h_n_pos hbn1_eq hbn1_norm hinv h_BZ_local h_B_pos
     -- Unwrap let-bindings inside bodyStep_BZ's statement.
     simp only at h_bodyStep_BZ
@@ -118,7 +118,7 @@ private theorem schoolbookDivMod.go_toNat
     obtain ⟨h_R_lt, h_value_local⟩ := h_bodyStep_BZ
     set R : Nat := toNatLimbsList ((a₁.toList.drop (loA + j)).take n) with hR_def
     set digit : Nat := (a₁[loA + n + j]'(by
-      rw [ha₁_def, schoolbookDivMod.bodyStep_size]; omega)).toNat with hdigit_def
+      rw [ha₁_def, schoolbookDivModLimbs.bodyStep_size]; omega)).toNat with hdigit_def
     -- Step 4: derive new BZ invariant on a₁ for step j: A_new < β^j · B.
     -- Decompose `(a₁.drop loA).take (n + j) = (a₁.drop loA).take j ++
     --   (a₁.drop (loA+j)).take n`. The low j slice equals A_low (preserved
@@ -127,10 +127,10 @@ private theorem schoolbookDivMod.go_toNat
     -- is the first j entries of (drop loA), which corresponds to indices
     -- [loA, loA + j). prefix preservation up to loA + j gives us this).
     have h_a₁_size : a₁.size = a.size := by
-      rw [ha₁_def]; exact schoolbookDivMod.bodyStep_size _ _ _ _ _ _ _ _ _
+      rw [ha₁_def]; exact schoolbookDivModLimbs.bodyStep_size _ _ _ _ _ _ _ _ _
     have h_low_preserved :
         (a₁.toList.drop loA).take j = (a.toList.drop loA).take j := by
-      have h_take := schoolbookDivMod.bodyStep_toList_take_le a b loA loB n j
+      have h_take := schoolbookDivModLimbs.bodyStep_toList_take_le a b loA loB n j
         q_init (by omega) hB (loA + j) (Nat.le_refl _)
       -- bodyStep preserves the prefix up to loA + j. Restrict to (drop loA).take j.
       rw [← ha₁_def] at h_take
@@ -172,7 +172,7 @@ private theorem schoolbookDivMod.go_toNat
     have h_ih := ih a₁ (by rw [h_a₁_size]; omega) h_a₁_BZ
     simp only at h_ih
     obtain ⟨h_remainder_lt, h_recursive_value⟩ := h_ih
-    set a₂ := schoolbookDivMod.go a₁ b loA loB n j bn1 inv (by rw [h_a₁_size]; omega)
+    set a₂ := schoolbookDivModLimbs.go a₁ b loA loB n j bn1 inv (by rw [h_a₁_size]; omega)
       hB h_n_pos with ha₂_def
     -- Step 6: combine the value identities to conclude.
     refine ⟨h_remainder_lt, ?_⟩
@@ -180,14 +180,14 @@ private theorem schoolbookDivMod.go_toNat
     -- h_split_a₁ + h_a₁_low_value (giving A_new = A_low + R * β^j), the IH,
     -- and h_split_a₂_Q (decomposing the (j+1)-digit quotient slice).
     have h_a₂_size : a₂.size = a.size := by
-      rw [ha₂_def, schoolbookDivMod.go_size, h_a₁_size]
+      rw [ha₂_def, schoolbookDivModLimbs.go_size, h_a₁_size]
     have h_a₂_digit_idx : loA + n + j < a₂.size := by rw [h_a₂_size]; omega
     have h_a₁_digit_idx : loA + n + j < a₁.size := by rw [h_a₁_size]; omega
     -- a₂[loA+n+j] = a₁[loA+n+j] (suffix preservation through the recursive go).
     have h_drop_preserved :
         a₂.toList.drop (loA + n + j) = a₁.toList.drop (loA + n + j) := by
       rw [ha₂_def]
-      exact schoolbookDivMod.go_toList_drop a₁ b loA loB n j bn1 inv _ hB h_n_pos
+      exact schoolbookDivModLimbs.go_toList_drop a₁ b loA loB n j bn1 inv _ hB h_n_pos
     have h_a₂_eq_a₁_at :
         (a₂[loA + n + j]'h_a₂_digit_idx) = (a₁[loA + n + j]'h_a₁_digit_idx) := by
       have h_lenA₂ : a₂.toList.length = a.size := by
@@ -228,13 +228,13 @@ private theorem schoolbookDivMod.go_toNat
     -- Hypothesis h_recursive_value: A_low + R * β^j = Q_recur * B + a₂R
     linarith [h_recursive_value]
 
-/-! ### Top-level correctness of `schoolbookDivMod` -/
+/-! ### Top-level correctness of `schoolbookDivModLimbs` -/
 
 /-- Helper: with a normalized divisor (`bn1.toNat ≥ 2^63`), the multi-limb
     divisor `B` satisfies `B ≥ 2^(64*n - 1)`, hence `2 * B ≥ 2^(64*n)`. This
     encapsulates the normalization → high-bound implication used in the
-    not-`lt` case of `schoolbookDivMod_toNat`. -/
-private theorem schoolbookDivMod.divisor_bound (b : Array UInt64) (loB n : Nat)
+    not-`lt` case of `schoolbookDivModLimbs_toNat`. -/
+private theorem schoolbookDivModLimbs.divisor_bound (b : Array UInt64) (loB n : Nat)
     (h_n_pos : 0 < n) (hB : loB + n ≤ b.size)
     (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
     2 ^ (64 * n - 1) ≤ toNatLimbsList ((b.toList.drop loB).take n) := by
@@ -261,7 +261,7 @@ private theorem schoolbookDivMod.divisor_bound (b : Array UInt64) (loB n : Nat)
         Nat.mul_le_mul_right _ hbn1
     _ ≤ _ := Nat.le_add_left _ _
 
-/-- **Top-level correctness of `schoolbookDivMod`** (BZ Algorithm 1.6).
+/-- **Top-level correctness of `schoolbookDivModLimbs`** (BZ Algorithm 1.6).
 
     Divides the `(n+m)`-limb dividend `A := a[loA : loA+n+m]` by the
     normalized `n`-limb divisor `B := b[loB : loB+n]`, producing:
@@ -276,10 +276,10 @@ private theorem schoolbookDivMod.divisor_bound (b : Array UInt64) (loB n : Nat)
 
     Pending: `bodyStep_BZ` and `q_init_bounds` are still stubs (Möller–Granlund
     two-correction analysis); modulo those, this proof is complete. -/
-private theorem schoolbookDivMod_toNat (a b : Array UInt64) (loA loB n m : Nat)
+private theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
     (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
     (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
-    let res := schoolbookDivMod a b loA loB n m h_n_pos hA hB hbn1
+    let res := schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1
     toNatLimbsList ((res.1.toList.drop loA).take n)
         < toNatLimbsList ((b.toList.drop loB).take n)
       ∧ toNatLimbsList ((a.toList.drop loA).take (n + m))
@@ -293,7 +293,7 @@ private theorem schoolbookDivMod_toNat (a b : Array UInt64) (loA loB n m : Nat)
   set B : Nat := toNatLimbsList ((b.toList.drop loB).take n) with hB_def
   -- B ≥ 2^(64n - 1), hence 2B ≥ β^n.
   have h_B_lb : 2 ^ (64 * n - 1) ≤ B :=
-    schoolbookDivMod.divisor_bound b loB n h_n_pos hB hbn1
+    schoolbookDivModLimbs.divisor_bound b loB n h_n_pos hB hbn1
   have h_B_pos : 0 < B := by
     have : 0 < (2 : Nat) ^ (64 * n - 1) := Nat.two_pow_pos _
     linarith
@@ -334,7 +334,7 @@ private theorem schoolbookDivMod_toNat (a b : Array UInt64) (loA loB n m : Nat)
                      (by omega) hB
   rw [← hA_top_def, ← hB_def] at h_cmp_eq
   -- Unfold the definition.
-  unfold schoolbookDivMod
+  unfold schoolbookDivModLimbs
   simp only
   by_cases h_cmp_lt :
       compareLimbs a b (loA + m) loB n (by omega) hB = Ordering.lt
@@ -360,7 +360,7 @@ private theorem schoolbookDivMod_toNat (a b : Array UInt64) (loA loB n m : Nat)
     have hbn1_eq : ∃ h_idx : loB + n - 1 < b.size,
         bn1 = b[loB + n - 1]'h_idx := ⟨by omega, hbn1_def⟩
     have hinv_ex : ∃ h, inv = UInt64.reciprocal bn1 h := ⟨hbn1, hinv_def⟩
-    have h_go := schoolbookDivMod.go_toNat a b loA loB n m bn1 inv
+    have h_go := schoolbookDivModLimbs.go_toNat a b loA loB n m bn1 inv
                    (by omega) hB h_n_pos hbn1_eq hbn1 hinv_ex h_B_pos h_BZ
     simp only at h_go
     obtain ⟨h_R_lt, h_value⟩ := h_go
@@ -462,7 +462,7 @@ private theorem schoolbookDivMod_toNat (a b : Array UInt64) (loA loB n m : Nat)
     have hbn1_eq : ∃ h_idx : loB + n - 1 < b.size,
         bn1 = b[loB + n - 1]'h_idx := ⟨by omega, hbn1_def⟩
     have hinv_ex : ∃ h, inv = UInt64.reciprocal bn1 h := ⟨hbn1, hinv_def⟩
-    have h_go := schoolbookDivMod.go_toNat r.1 b loA loB n m bn1 inv
+    have h_go := schoolbookDivModLimbs.go_toNat r.1 b loA loB n m bn1 inv
                    (by rw [h_r_size]; omega) hB h_n_pos hbn1_eq hbn1 hinv_ex
                    h_B_pos h_BZ
     simp only at h_go

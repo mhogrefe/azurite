@@ -3,7 +3,7 @@ import Azurite.UInt64.Equiv.Div2By1
 
 namespace Azurite.AzNat
 
-/-! ### Helper lemmas for one body iteration of `schoolbookDivMod.go` -/
+/-! ### Helper lemmas for one body iteration of `schoolbookDivModLimbs.go` -/
 
 /-- Setting a position outside the slice `[loA, loA + n)` does not affect
     `toNatLimbsList ((a.toList.drop loA).take n)`. -/
@@ -19,63 +19,63 @@ private lemma toNatLimbsList_set_outside (a : Array UInt64) (loA n i : Nat) (v :
     have hge : loA + n ≤ i := by omega
     rw [List.take_set_of_le (by omega : n ≤ i - loA)]
 
-/-- The single-iteration body of `schoolbookDivMod.go` (extracted as a helper
+/-- The single-iteration body of `schoolbookDivModLimbs.go` (extracted as a helper
     function for proof modularity). Given the same trial digit `q_init` that
     `go` would compute, this performs the `subMulLimbs` + `addback` + `set`
     sequence that mutates `a` before the recursive call.
 
     Returns the post-body array, which equals `a'` in the body of
-    `schoolbookDivMod.go` (recursive case). -/
-noncomputable def schoolbookDivMod.bodyStep
+    `schoolbookDivModLimbs.go` (recursive case). -/
+noncomputable def schoolbookDivModLimbs.bodyStep
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) :
     Array UInt64 :=
   let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
-  let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2
+  let fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2
                  (by rw [subMulLimbs_size]; omega) hB
   fixup.1.set (loA + n + j) fixup.2
     (by
       rw [show fixup.1.size = r.1.size from
-            schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _,
+            schoolbookDivModLimbs.addback_size _ _ _ _ _ _ _ _ _ _,
           subMulLimbs_size]
       omega)
 
 /-- Size preservation of `bodyStep`. -/
-theorem schoolbookDivMod.bodyStep_size
+theorem schoolbookDivModLimbs.bodyStep_size
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) :
-    (schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).size = a.size := by
-  unfold schoolbookDivMod.bodyStep
-  rw [Array.size_set, schoolbookDivMod.addback_size, subMulLimbs_size]
+    (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).size = a.size := by
+  unfold schoolbookDivModLimbs.bodyStep
+  rw [Array.size_set, schoolbookDivModLimbs.addback_size, subMulLimbs_size]
 
 /-- `bodyStep` preserves any prefix up to `loA + j`. The body mutates the slice
     `[loA + j, loA + j + n + 1)` (via `subMulLimbs`/`addback`) and stores at
     position `loA + n + j` — both lie at index `≥ loA + j`, so the prefix is
     untouched. -/
-theorem schoolbookDivMod.bodyStep_toList_take_le
+theorem schoolbookDivModLimbs.bodyStep_toList_take_le
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size)
     (m0 : Nat) (hm : m0 ≤ loA + j) :
-    (schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.take m0
+    (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.take m0
       = a.toList.take m0 := by
-  unfold schoolbookDivMod.bodyStep
+  unfold schoolbookDivModLimbs.bodyStep
   rw [Array.toList_set, List.take_set_of_le (by omega : m0 ≤ loA + n + j),
-    schoolbookDivMod.addback_toList_take_le _ _ _ _ _ _ _ _ _ _ m0 hm]
+    schoolbookDivModLimbs.addback_toList_take_le _ _ _ _ _ _ _ _ _ _ m0 hm]
   exact subMulLimbs_toList_take_le a b (loA + j) loB n q_init hSub hB m0 hm
 
 /-- `bodyStep` preserves the suffix from any `m0 ≥ loA + j + n + 1`.  All
     mutations (subMulLimbs over `[loA+j, loA+j+n)`, addback over the same range
     + final-borrow handling at `loA+j+n`, and the set at position `loA+n+j`)
     fall within indices `< loA + j + n + 1`. -/
-theorem schoolbookDivMod.bodyStep_toList_drop_ge
+theorem schoolbookDivModLimbs.bodyStep_toList_drop_ge
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size)
     (m0 : Nat) (hm : (loA + j) + n + 1 ≤ m0) :
-    (schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop m0
+    (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop m0
       = a.toList.drop m0 := by
-  unfold schoolbookDivMod.bodyStep
+  unfold schoolbookDivModLimbs.bodyStep
   rw [Array.toList_set, List.drop_set, if_pos (by omega : loA + n + j < m0),
-    schoolbookDivMod.addback_toList_drop_ge _ _ _ _ _ _ _ _ _ _ m0 (by omega)]
+    schoolbookDivModLimbs.addback_toList_drop_ge _ _ _ _ _ _ _ _ _ _ m0 (by omega)]
   -- Lift `subMulLimbs_toList_drop` (exact offset `(loA+j)+n+1`) to general `m0`.
   have h_split : ∀ (l : List UInt64),
       l.drop m0 = (l.drop ((loA + j) + n + 1)).drop (m0 - ((loA + j) + n + 1)) :=
@@ -84,18 +84,18 @@ theorem schoolbookDivMod.bodyStep_toList_drop_ge
 
 /-- The high slot of the post-`bodyStep` array (at index `loA + n + j`) holds
     the corrected quotient digit `fixup.2`. -/
-theorem schoolbookDivMod.bodyStep_high_slot
+theorem schoolbookDivModLimbs.bodyStep_high_slot
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) :
     let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
-    let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2
+    let fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2
                    (by rw [subMulLimbs_size]; omega) hB
     have h_idx : loA + n + j <
-        (schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).size := by
-      rw [schoolbookDivMod.bodyStep_size]; omega
-    (schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB)[loA + n + j]'h_idx
+        (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).size := by
+      rw [schoolbookDivModLimbs.bodyStep_size]; omega
+    (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB)[loA + n + j]'h_idx
       = fixup.2 := by
-  unfold schoolbookDivMod.bodyStep
+  unfold schoolbookDivModLimbs.bodyStep
   exact Array.getElem_set_self ..
 
 /-- **Body identity**: composing `subMulLimbs`, `addback`, and the storage
@@ -112,20 +112,20 @@ theorem schoolbookDivMod.bodyStep_high_slot
     The hypothesis `h_q_safe` is the safety condition that prevents UInt64
     wraparound: when `subMulLimbs` borrows, the trial digit `q_init` has
     `2 ≤ q_init.toNat` (the addback fuel). -/
-theorem schoolbookDivMod.bodyStep_toNat
+theorem schoolbookDivModLimbs.bodyStep_toNat
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size)
     (h_q_safe : (subMulLimbs a b (loA + j) loB n q_init hSub hB).2 = true →
                   2 ≤ q_init.toNat) :
     let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
-    let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2
+    let fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2
                    (by rw [subMulLimbs_size]; omega) hB
     ∃ b_out : Bool,
       toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
           + r.2.toNat * 2 ^ (64 * (n + 1))
           + b_out.toNat * 2 ^ (64 * n)
         = toNatLimbsList
-            (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop
+            (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop
               (loA + j)).take n)
           + fixup.2.toNat * toNatLimbsList ((b.toList.drop loB).take n)
           + ((r.1[(loA + j) + n]'(by rw [subMulLimbs_size]; omega)).toNat
@@ -137,21 +137,21 @@ theorem schoolbookDivMod.bodyStep_toNat
   have h_subMul := subMulLimbs_toNat a b (loA + j) loB n q_init hSub hB
   -- Step 2: addback identity.
   have h_addback_eq :=
-    schoolbookDivMod.addback_toNat r.1 b (loA + j) loB n q_init r.2 2
+    schoolbookDivModLimbs.addback_toNat r.1 b (loA + j) loB n q_init r.2 2
       h_addback_hyp hB h_q_safe
   obtain ⟨b_out, h_addback_eq⟩ := h_addback_eq
   refine ⟨b_out, ?_⟩
   -- Unfold bodyStep and identify a' = fixup.1.set (loA + n + j) fixup.2.
   have h_bodyStep_low :
       toNatLimbsList
-        (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop
+        (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop
           (loA + j)).take n)
       = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n) := by
-    unfold schoolbookDivMod.bodyStep
+    unfold schoolbookDivModLimbs.bodyStep
     -- The `set` is at position `loA + n + j`, which is outside `[loA + j, loA + j + n)`.
     have h_fixup_size : fixup.1.size = a.size := by
       rw [show fixup.1.size = r.1.size from
-            schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
+            schoolbookDivModLimbs.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
     have h_idx : loA + n + j < fixup.1.size := by rw [h_fixup_size]; omega
     have h_out : loA + n + j < loA + j ∨ (loA + j) + n ≤ loA + n + j := by omega
     exact toNatLimbsList_set_outside fixup.1 (loA + j) n (loA + n + j) fixup.2
@@ -195,7 +195,7 @@ theorem schoolbookDivMod.bodyStep_toNat
     hypotheses, allowing the boundary case `q_init.toNat = 1` (where the
     standard `bodyStep_toNat` would require `2 ≤ q_init.toNat` and fail).
     Identical conclusion to `bodyStep_toNat`, just weaker preconditions. -/
-theorem schoolbookDivMod.bodyStep_toNat_two
+theorem schoolbookDivModLimbs.bodyStep_toNat_two
     (a b : Array UInt64) (loA loB n j : Nat) (q_init : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size)
     (h_safe1 : (subMulLimbs a b (loA + j) loB n q_init hSub hB).2 = true →
@@ -207,14 +207,14 @@ theorem schoolbookDivMod.bodyStep_toNat_two
                     + toNatLimbsList ((b.toList.drop loB).take n) < 2 ^ (64 * n) →
                   2 ≤ q_init.toNat) :
     let r := subMulLimbs a b (loA + j) loB n q_init hSub hB
-    let fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2
+    let fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2
                    (by rw [subMulLimbs_size]; omega) hB
     ∃ b_out : Bool,
       toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
           + r.2.toNat * 2 ^ (64 * (n + 1))
           + b_out.toNat * 2 ^ (64 * n)
         = toNatLimbsList
-            (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop
+            (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop
               (loA + j)).take n)
           + fixup.2.toNat * toNatLimbsList ((b.toList.drop loB).take n)
           + ((r.1[(loA + j) + n]'(by rw [subMulLimbs_size]; omega)).toNat
@@ -224,19 +224,19 @@ theorem schoolbookDivMod.bodyStep_toNat_two
   have h_addback_hyp : (loA + j) + n ≤ r.1.size := by rw [h_r_size]; omega
   have h_subMul := subMulLimbs_toNat a b (loA + j) loB n q_init hSub hB
   have h_addback_eq :=
-    schoolbookDivMod.addback_toNat_two r.1 b (loA + j) loB n q_init r.2
+    schoolbookDivModLimbs.addback_toNat_two r.1 b (loA + j) loB n q_init r.2
       h_addback_hyp hB h_safe1 h_safe2
   obtain ⟨b_out, h_addback_eq⟩ := h_addback_eq
   refine ⟨b_out, ?_⟩
   have h_bodyStep_low :
       toNatLimbsList
-        (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop
+        (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop
           (loA + j)).take n)
       = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n) := by
-    unfold schoolbookDivMod.bodyStep
+    unfold schoolbookDivModLimbs.bodyStep
     have h_fixup_size : fixup.1.size = a.size := by
       rw [show fixup.1.size = r.1.size from
-            schoolbookDivMod.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
+            schoolbookDivModLimbs.addback_size _ _ _ _ _ _ _ _ _ _, h_r_size]
     have h_idx : loA + n + j < fixup.1.size := by rw [h_fixup_size]; omega
     have h_out : loA + n + j < loA + j ∨ (loA + j) + n ≤ loA + n + j := by omega
     exact toNatLimbsList_set_outside fixup.1 (loA + j) n (loA + n + j) fixup.2
@@ -271,7 +271,7 @@ theorem schoolbookDivMod.bodyStep_toNat_two
 
 /-! ### Trial-digit (`q_init`) bounds — Knuth/Möller–Granlund analysis
 
-The `schoolbookDivMod.go` body computes a trial quotient digit
+The `schoolbookDivModLimbs.go` body computes a trial quotient digit
 
   `q_init := if bn1 ≤ A_top then β-1
              else (div2By1 A_top A_next bn1 inv).1`
@@ -303,7 +303,7 @@ The proof is a substantial multi-step argument:
 
 Pending: actual proof. Statement is sufficient for `bodyStep_BZ` to consume. -/
 set_option maxHeartbeats 1000000 in
-theorem schoolbookDivMod.q_init_bounds
+theorem schoolbookDivModLimbs.q_init_bounds
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (h_n_pos : 0 < n)
     (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
@@ -709,7 +709,7 @@ theorem schoolbookDivMod.q_init_bounds
     Pre: BZ invariant on the `(n+1)`-limb dividend slice at offset `loA + j`
     (i.e., `A_local < β · B`).
 
-    Post (using the trial digit `q_init` that `schoolbookDivMod.go` would compute):
+    Post (using the trial digit `q_init` that `schoolbookDivModLimbs.go` would compute):
       - The post-bodyStep slice's low `n` limbs hold the new remainder `R < B`.
       - The high slot at `loA + n + j` holds the corrected quotient digit.
       - The value identity
@@ -738,7 +738,7 @@ theorem schoolbookDivMod.q_init_bounds
 
     Pending: full proof tying together `q_init_bounds`, `subMulLimbs_toNat`,
     `addback_toNat`, and the bodyStep identity. -/
-theorem schoolbookDivMod.bodyStep_BZ
+theorem schoolbookDivModLimbs.bodyStep_BZ
     (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
     (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
     (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
@@ -752,9 +752,9 @@ theorem schoolbookDivMod.bodyStep_BZ
     let q_init : UInt64 :=
       if bn1 ≤ A_top then (0 : UInt64) - 1
       else (UInt64.div2By1 A_top A_next bn1 inv).1
-    let a' := schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB
+    let a' := schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB
     have h_idx : loA + n + j < a'.size := by
-      rw [schoolbookDivMod.bodyStep_size]; omega
+      rw [schoolbookDivModLimbs.bodyStep_size]; omega
     -- Post-bodyStep array satisfies:
     -- (1) low n limbs at offset (loA + j) form the remainder R < B,
     -- (2) high slot at (loA + n + j) is the true quotient digit,
@@ -773,7 +773,7 @@ theorem schoolbookDivMod.bodyStep_BZ
   set Z := toNatLimbsList ((b.toList.drop loB).take n) with hZ_def
   set q_true := X / Z with hq_true_def
   -- Apply q_init_bounds.
-  have h_q_bounds := schoolbookDivMod.q_init_bounds a b loA loB n j bn1 inv hSub
+  have h_q_bounds := schoolbookDivModLimbs.q_init_bounds a b loA loB n j bn1 inv hSub
     h_n_pos hbn1_eq hbn1_norm hinv h_BZ_local h_B_pos
   simp only at h_q_bounds
   -- The let-bindings in q_init_bounds should match q_init.
@@ -940,7 +940,7 @@ theorem schoolbookDivMod.bodyStep_BZ
       rw [h_R1lo_plus_Z]; exact Nat.le_add_left _ _
     omega
   -- Apply bodyStep_toNat_two.
-  have h_bodyStep := schoolbookDivMod.bodyStep_toNat_two a b loA loB n j q_init hSub hB
+  have h_bodyStep := schoolbookDivModLimbs.bodyStep_toNat_two a b loA loB n j q_init hSub hB
     h_safe1 (by
       intro h_borrow h_lt
       change R1lo + Z < 2 ^ (64 * n) at h_lt
@@ -948,14 +948,14 @@ theorem schoolbookDivMod.bodyStep_BZ
   simp only at h_bodyStep
   obtain ⟨b_out, h_eq⟩ := h_bodyStep
   -- Set up names matching bodyStep_toNat_two output.
-  set fixup := schoolbookDivMod.addback r.1 b (loA + j) loB n q_init r.2 2
+  set fixup := schoolbookDivModLimbs.addback r.1 b (loA + j) loB n q_init r.2 2
     (by rw [h_r_size]; omega) hB with hfixup_def
   set Flo := toNatLimbsList ((a'.toList.drop (loA + j)).take n) with hFlo_def
   change X + r.2.toNat * 2 ^ (64 * (n + 1)) + b_out.toNat * 2 ^ (64 * n)
        = Flo + fixup.2.toNat * Z + (topR + r.2.toNat) * 2 ^ (64 * n) at h_eq
   -- The high slot of a' = fixup.2.
   have h_hi_slot : (a'[loA + n + j]'h_idx).toNat = fixup.2.toNat := by
-    have h := schoolbookDivMod.bodyStep_high_slot a b loA loB n j q_init hSub hB
+    have h := schoolbookDivModLimbs.bodyStep_high_slot a b loA loB n j q_init hSub hB
     simp only at h
     rw [h]
   -- Goal: Flo < Z ∧ X = (a'[..]).toNat * Z + Flo.
@@ -966,21 +966,21 @@ theorem schoolbookDivMod.bodyStep_BZ
   · -- Case r.2 = false: addback is a no-op. fixup = (r.1, q_init).
     have h_fixup_noop : fixup = (r.1, q_init) := by
       rw [hfixup_def, hr2]
-      exact schoolbookDivMod.addback_borrow_false r.1 b (loA + j) loB n q_init 2 _ hB
+      exact schoolbookDivModLimbs.addback_borrow_false r.1 b (loA + j) loB n q_init 2 _ hB
     have h_fixup_2 : fixup.2 = q_init := by rw [h_fixup_noop]
     -- Flo = R1lo since fixup.1 = r.1 (low n limbs unchanged).
     have h_Flo_eq_fixup_low :
         Flo = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n) := by
       show toNatLimbsList ((a'.toList.drop (loA + j)).take n)
         = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n)
-      change toNatLimbsList (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop (loA + j)).take n)
+      change toNatLimbsList (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop (loA + j)).take n)
         = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n)
-      unfold schoolbookDivMod.bodyStep
+      unfold schoolbookDivModLimbs.bodyStep
       have h_fixup_size : fixup.1.size = a.size := by
-        rw [hfixup_def, schoolbookDivMod.addback_size, h_r_size]
+        rw [hfixup_def, schoolbookDivModLimbs.addback_size, h_r_size]
       have h_idx2 : loA + n + j < fixup.1.size := by rw [h_fixup_size]; omega
       have h_out : loA + n + j < loA + j ∨ (loA + j) + n ≤ loA + n + j := by omega
-      have h_fixup_eq : (schoolbookDivMod.addback
+      have h_fixup_eq : (schoolbookDivModLimbs.addback
             (subMulLimbs a b (loA + j) loB n q_init hSub hB).1 b (loA + j) loB n q_init
             (subMulLimbs a b (loA + j) loB n q_init hSub hB).2 2 _ hB) = fixup := rfl
       simp only [h_fixup_eq]
@@ -1062,7 +1062,7 @@ theorem schoolbookDivMod.bodyStep_BZ
     -- q_init - fixup.2. From q_init_bounds, q_init ≤ q_true + 2.
     -- We use the addback equation directly.
     have h_addback_eq :=
-      schoolbookDivMod.addback_toNat_two_strong r.1 b (loA + j) loB n q_init r.2
+      schoolbookDivModLimbs.addback_toNat_two_strong r.1 b (loA + j) loB n q_init r.2
         (by rw [h_r_size]; omega) hB h_safe1 (by
           intro h_borrow h_lt
           change R1lo + Z < 2 ^ (64 * n) at h_lt
@@ -1079,11 +1079,11 @@ theorem schoolbookDivMod.bodyStep_BZ
     have h_Flo_alt : Flo = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n) := by
       show toNatLimbsList ((a'.toList.drop (loA + j)).take n)
         = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n)
-      show toNatLimbsList (((schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB).toList.drop (loA + j)).take n)
+      show toNatLimbsList (((schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop (loA + j)).take n)
         = toNatLimbsList ((fixup.1.toList.drop (loA + j)).take n)
-      unfold schoolbookDivMod.bodyStep
+      unfold schoolbookDivModLimbs.bodyStep
       have h_fixup_size : fixup.1.size = a.size := by
-        rw [hfixup_def, schoolbookDivMod.addback_size, h_r_size]
+        rw [hfixup_def, schoolbookDivModLimbs.addback_size, h_r_size]
       have h_idx2 : loA + n + j < fixup.1.size := by rw [h_fixup_size]; omega
       have h_out : loA + n + j < loA + j ∨ (loA + j) + n ≤ loA + n + j := by omega
       exact toNatLimbsList_set_outside fixup.1 (loA + j) n (loA + n + j) fixup.2 h_idx2 h_out
@@ -1106,7 +1106,7 @@ theorem schoolbookDivMod.bodyStep_BZ
     -- Key fact: Flo < β^n (slice bound).
     have h_Flo_lt : Flo < 2 ^ (64 * n) := by
       have h_pow := toNatLimbsList_lt_pow ((a'.toList.drop (loA + j)).take n)
-      have ha'_size : a'.size = a.size := schoolbookDivMod.bodyStep_size _ _ _ _ _ _ _ _ _
+      have ha'_size : a'.size = a.size := schoolbookDivModLimbs.bodyStep_size _ _ _ _ _ _ _ _ _
       have h_len : ((a'.toList.drop (loA + j)).take n).length = n := by
         rw [List.length_take, List.length_drop, Array.length_toList, ha'_size]
         omega
@@ -1168,7 +1168,7 @@ theorem schoolbookDivMod.bodyStep_BZ
       have h_topR_eq : topR = 2 ^ 64 - 1 := by
         have h_lower : (2 ^ 64 - 1) * 2 ^ (64 * n) < R1lo + topR * 2 ^ (64 * n) := by
           have h_calc : (2 ^ 64 - 1) * 2 ^ (64 * n) = 2 ^ (64 * n) * 2 ^ 64 - 2 ^ (64 * n) := by
-            rw [Nat.sub_mul, Nat.one_mul]; ring
+            rw [Nat.sub_mul, Nat.one_mul, Nat.mul_comm]
           have h_pow_n_le : 2 ^ (64 * n) ≤ 2 ^ (64 * n) * 2 ^ 64 :=
             Nat.le_mul_of_pos_right _ (Nat.two_pow_pos 64)
           rw [h_calc]
