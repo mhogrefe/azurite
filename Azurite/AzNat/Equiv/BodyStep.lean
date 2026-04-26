@@ -190,4 +190,125 @@ theorem schoolbookDivMod.bodyStep_toNat
     Nat.zero_mul, Nat.one_mul] at h_subMul h_addback_eq ⊢ <;>
   linarith [h_subMul, h_addback_eq]
 
+/-! ### Trial-digit (`q_init`) bounds — Knuth/Möller–Granlund analysis
+
+The `schoolbookDivMod.go` body computes a trial quotient digit
+
+  `q_init := if bn1 ≤ A_top then β-1
+             else (div2By1 A_top A_next bn1 inv).1`
+
+where `bn1 = b[loB + n - 1]` (normalized: `2^63 ≤ bn1`), `A_top = a[loA + n + j]`,
+`A_next = a[loA + (n-1) + j]`, and `inv = reciprocal bn1`. The BZ correctness
+proof needs the bound `q_true ≤ q_init.toNat ≤ q_true + 2`, where
+
+  `q_true := ⌊A_local / B⌋` with `A_local := toNatLimbsList ((a.drop (loA+j)).take (n+1))`
+  and       `B := toNatLimbsList ((b.drop loB).take n)`.
+
+This is the Knuth/Möller–Granlund "two-correction" bound: under normalization
+plus the BZ invariant `A_local < β · B`, the 2-by-1 trial digit (or its cap at
+`β-1`) overestimates the true digit by at most 2, which is why the addback
+fixup uses fuel = 2.
+
+The proof is a substantial multi-step argument:
+  1. Decompose `A_local = A_top · β^n + A_next · β^(n-1) + A_rest` and
+     `B = bn1 · β^(n-1) + B_rest`.
+  2. The BZ invariant `A_local < β · B` plus normalization gives `A_top ≤ bn1`.
+  3. **Cap branch** (`bn1 ≤ A_top`, hence `A_top = bn1`): show `β - 3 ≤ q_true`
+     using `A_local ≥ bn1 · β^n` and `B < (bn1 + 1) · β^(n-1)`. Always
+     `q_true < β`, so `q_init = β - 1 ∈ [q_true, q_true + 2]`.
+  4. **div2By1 branch** (`A_top < bn1`): apply `toNat_div2By1` to get the exact
+     2-by-1 quotient `q_init` of `(A_top · β + A_next) / bn1`. Show
+     `q_init ≥ q_true` and `q_init - q_true ≤ 2` via the standard
+     Knuth-style inequality argument relating the partial quotient to the
+     true quotient, leveraging `A_rest < β^(n-1)` and `B_rest < β^(n-1)`.
+
+Pending: actual proof. Statement is sufficient for `bodyStep_BZ` to consume. -/
+theorem schoolbookDivMod.q_init_bounds
+    (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
+    (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
+    (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
+    (hbn1_norm : 2 ^ 63 ≤ bn1.toNat)
+    (hinv : ∃ h, inv = UInt64.reciprocal bn1 h)
+    (h_BZ_local : toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
+                    < 2 ^ 64 * toNatLimbsList ((b.toList.drop loB).take n))
+    (h_B_pos : 0 < toNatLimbsList ((b.toList.drop loB).take n)) :
+    let A_top : UInt64 := a[loA + n + j]'(by omega)
+    let A_next : UInt64 := a[loA + (n - 1) + j]'(by omega)
+    let q_init : UInt64 :=
+      if bn1 ≤ A_top then (0 : UInt64) - 1
+      else (UInt64.div2By1 A_top A_next bn1 inv).1
+    let A_local : Nat := toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
+    let B : Nat := toNatLimbsList ((b.toList.drop loB).take n)
+    let q_true : Nat := A_local / B
+    q_true ≤ q_init.toNat ∧ q_init.toNat ≤ q_true + 2 := by
+  -- Pending: Knuth/Möller–Granlund bound (see comment block above).
+  sorry
+
+/-! ### `bodyStep_BZ` — one-step BZ invariant preservation -/
+
+/-- **BZ invariant preserved by one body iteration**.
+
+    Pre: BZ invariant on the `(n+1)`-limb dividend slice at offset `loA + j`
+    (i.e., `A_local < β · B`).
+
+    Post (using the trial digit `q_init` that `schoolbookDivMod.go` would compute):
+      - The post-bodyStep slice's low `n` limbs hold the new remainder `R < B`.
+      - The high slot at `loA + n + j` holds the corrected quotient digit.
+      - The value identity
+          `A_local = digit_stored.toNat · B + R`
+        holds, witnessing the standard division identity at this step.
+
+    Combined with prefix/suffix preservation (`bodyStep_toList_take_le`,
+    `bodyStep_toList_drop_ge`), this is exactly the inductive hypothesis the
+    `j+1` case of `go_toNat` needs.
+
+    Proof sketch:
+      1. Let `q_init` be the trial digit. By `q_init_bounds`,
+         `q_true ≤ q_init.toNat ≤ q_true + 2` where `q_true = A_local / B`.
+      2. The `subMulLimbs ... q_init` step computes `A_local - q_init · B`
+         (interpreted as signed); the borrow flag `r.2` records whether the
+         result is negative.
+      3. `addback ... fuel = 2` adds back `B` up to twice, producing the
+         corrected `(R, fixup.2)` with `0 ≤ R < B` and
+         `fixup.2.toNat = q_init.toNat - (number of addbacks) = q_true`.
+      4. `bodyStep_toNat` then gives the value identity.
+      5. The `q_init.toNat ≤ q_true + 2` bound ensures the addback fuel is
+         sufficient (the safety hypothesis `h_q_safe` of `bodyStep_toNat`
+         demands `r.2 = true → 2 ≤ q_init.toNat`, automatic from
+         `q_true ≥ 1` only when there's an actual borrow and `q_true ≥ 0`;
+         care needed at `q_true = 0`).
+
+    Pending: full proof tying together `q_init_bounds`, `subMulLimbs_toNat`,
+    `addback_toNat`, and the bodyStep identity. -/
+theorem schoolbookDivMod.bodyStep_BZ
+    (a b : Array UInt64) (loA loB n j : Nat) (bn1 inv : UInt64)
+    (hSub : (loA + j) + n + 1 ≤ a.size) (hB : loB + n ≤ b.size) (h_n_pos : 0 < n)
+    (hbn1_eq : ∃ h_idx : loB + n - 1 < b.size, bn1 = b[loB + n - 1]'h_idx)
+    (hbn1_norm : 2 ^ 63 ≤ bn1.toNat)
+    (hinv : ∃ h, inv = UInt64.reciprocal bn1 h)
+    (h_BZ_local : toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
+                    < 2 ^ 64 * toNatLimbsList ((b.toList.drop loB).take n))
+    (h_B_pos : 0 < toNatLimbsList ((b.toList.drop loB).take n)) :
+    let A_top : UInt64 := a[loA + n + j]'(by omega)
+    let A_next : UInt64 := a[loA + (n - 1) + j]'(by omega)
+    let q_init : UInt64 :=
+      if bn1 ≤ A_top then (0 : UInt64) - 1
+      else (UInt64.div2By1 A_top A_next bn1 inv).1
+    let a' := schoolbookDivMod.bodyStep a b loA loB n j q_init hSub hB
+    have h_idx : loA + n + j < a'.size := by
+      rw [schoolbookDivMod.bodyStep_size]; omega
+    -- Post-bodyStep array satisfies:
+    -- (1) low n limbs at offset (loA + j) form the remainder R < B,
+    -- (2) high slot at (loA + n + j) is the true quotient digit,
+    -- (3) value identity A_local = digit · B + R.
+    toNatLimbsList ((a'.toList.drop (loA + j)).take n)
+        < toNatLimbsList ((b.toList.drop loB).take n)
+      ∧ toNatLimbsList ((a.toList.drop (loA + j)).take (n + 1))
+          = (a'[loA + n + j]'h_idx).toNat
+              * toNatLimbsList ((b.toList.drop loB).take n)
+            + toNatLimbsList ((a'.toList.drop (loA + j)).take n) := by
+  -- Pending: combine q_init_bounds + subMulLimbs_toNat + addback_toNat +
+  -- bodyStep_toNat (see proof sketch above).
+  sorry
+
 end Azurite.AzNat
