@@ -1,6 +1,6 @@
 import Azurite.Random.NatGen
 import Azurite.Random.Pair
-import Azurite.AzNat.Mul
+import Azurite.AzNat.Karatsuba
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd -- reuse natSignificantBits
 import Azurite.Benchmark.RatCmp -- reuse timeNsIter, median3, configGetRat, configGetNat

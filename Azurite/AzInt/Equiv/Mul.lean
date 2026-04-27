@@ -1,6 +1,6 @@
 import Azurite.AzInt.Mul
 import Azurite.AzInt.Equiv.Add
-import Azurite.AzNat.Equiv.Mul.Basic
+import Azurite.AzNat.Equiv.Mul.Karatsuba
 
 namespace Azurite.AzInt
 

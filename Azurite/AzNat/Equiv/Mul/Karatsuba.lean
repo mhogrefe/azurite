@@ -1117,4 +1117,109 @@ theorem karatsubaMulLimbs_toNat (threshold : Nat) (a b : Array UInt64)
         * toNatLimbsList ((b.toList.drop loB).take len) :=
   karatsubaMulLimbsRec_toNat threshold len a b loA loB hA hB
 
+/-! ### Correctness of the limb-level dispatcher and AzNat-level mul -/
+
+/-- `toNat` of an array followed by zero-limb padding equals `toNat` of the
+    original array. -/
+private lemma toNatLimbsList_append_zeros (l : List UInt64) (k : Nat) :
+    toNatLimbsList (l ++ List.replicate k 0) = toNatLimbsList l := by
+  rw [toNatLimbsList_append]
+  have h_zero : toNatLimbsList (List.replicate k (0 : UInt64)) = 0 := by
+    induction k with
+    | zero => rfl
+    | succ n ih => rw [List.replicate_succ, toNatLimbsList_cons, ih]; simp
+  rw [h_zero]; ring
+
+/-- Correctness of `mulLimbs`: agrees with `Nat` multiplication over the
+    slices, regardless of whether the schoolbook or Karatsuba branch fires. -/
+theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
+    toNatLimbsList (mulLimbs a b loA lenA loB lenB hA hB).toList
+      = toNatLimbsList ((a.toList.drop loA).take lenA)
+        * toNatLimbsList ((b.toList.drop loB).take lenB) := by
+  unfold mulLimbs
+  by_cases h : (mulDispatchThreshold ≤ min lenA lenB
+                && 2 * min lenA lenB ≥ max lenA lenB) = true
+  · -- Karatsuba branch.
+    rw [if_pos h]
+    -- Compute toNat of the padded arrays.
+    set lenMax := max lenA lenB with hlenMax_def
+    set aSlice : Array UInt64 := a.extract loA (loA + lenA) with hAslice_def
+    set bSlice : Array UInt64 := b.extract loB (loB + lenB) with hBslice_def
+    set aPadded : Array UInt64 := aSlice ++ Array.replicate (lenMax - lenA) 0
+      with haPad_def
+    set bPadded : Array UInt64 := bSlice ++ Array.replicate (lenMax - lenB) 0
+      with hbPad_def
+    -- Slice toList characterizations.
+    have hAslice_toList : aSlice.toList = (a.toList.drop loA).take lenA := by
+      rw [hAslice_def, Array.toList_extract, List.extract_eq_take_drop]
+      congr 1; omega
+    have hBslice_toList : bSlice.toList = (b.toList.drop loB).take lenB := by
+      rw [hBslice_def, Array.toList_extract, List.extract_eq_take_drop]
+      congr 1; omega
+    have hAslice_size : aSlice.size = lenA := by
+      rw [hAslice_def, Array.size_extract]; omega
+    have hBslice_size : bSlice.size = lenB := by
+      rw [hBslice_def, Array.size_extract]; omega
+    have hLenA_le : lenA ≤ lenMax := by rw [hlenMax_def]; exact Nat.le_max_left _ _
+    have hLenB_le : lenB ≤ lenMax := by rw [hlenMax_def]; exact Nat.le_max_right _ _
+    have haPad_size : aPadded.size = lenMax := by
+      rw [haPad_def]
+      show (aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).size = lenMax
+      rw [Array.size_append, hAslice_size, Array.size_replicate]; omega
+    have hbPad_size : bPadded.size = lenMax := by
+      rw [hbPad_def]
+      show (bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).size = lenMax
+      rw [Array.size_append, hBslice_size, Array.size_replicate]; omega
+    -- `toNat aPadded = toNat aSlice = toNat ((a.drop loA).take lenA)`.
+    have haPad_toNat :
+        toNatLimbsList aPadded.toList = toNatLimbsList ((a.toList.drop loA).take lenA) := by
+      rw [haPad_def]
+      show toNatLimbsList ((aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).toList)
+            = toNatLimbsList ((a.toList.drop loA).take lenA)
+      rw [Array.toList_append, Array.toList_replicate]
+      rw [toNatLimbsList_append_zeros, hAslice_toList]
+    have hbPad_toNat :
+        toNatLimbsList bPadded.toList = toNatLimbsList ((b.toList.drop loB).take lenB) := by
+      rw [hbPad_def]
+      show toNatLimbsList ((bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).toList)
+            = toNatLimbsList ((b.toList.drop loB).take lenB)
+      rw [Array.toList_append, Array.toList_replicate]
+      rw [toNatLimbsList_append_zeros, hBslice_toList]
+    -- Apply karatsubaMulLimbs_toNat at slice (..., 0, lenMax) = full toList.
+    have h_kara :=
+      karatsubaMulLimbs_toNat mulDispatchThreshold aPadded bPadded 0 0 lenMax
+        (by rw [haPad_size]; omega) (by rw [hbPad_size]; omega)
+    -- The slices (drop 0).take lenMax equal the full toList (since size = lenMax).
+    have h_aslice_full :
+        (aPadded.toList.drop 0).take lenMax = aPadded.toList := by
+      rw [List.drop_zero, List.take_of_length_le]
+      rw [Array.length_toList, haPad_size]
+    have h_bslice_full :
+        (bPadded.toList.drop 0).take lenMax = bPadded.toList := by
+      rw [List.drop_zero, List.take_of_length_le]
+      rw [Array.length_toList, hbPad_size]
+    rw [h_aslice_full, h_bslice_full] at h_kara
+    rw [h_kara, haPad_toNat, hbPad_toNat]
+  · -- Schoolbook branch.
+    rw [if_neg h]
+    exact schoolbookMulLimbs_toNat a b loA lenA loB lenB hA hB
+
+/-- Correctness of `mul` (the dispatched AzNat multiplication, used by `*`). -/
+theorem toNat_mul (a b : AzNat) : (a * b).toNat = a.toNat * b.toNat := by
+  show (mul a b).toNat = _
+  unfold mul
+  rw [toNat_ofLimbs, mulLimbs_toNat]
+  show toNatLimbsList ((a.limbs.toList.drop 0).take a.limbs.size)
+        * toNatLimbsList ((b.limbs.toList.drop 0).take b.limbs.size) = a.toNat * b.toNat
+  rw [List.drop_zero, List.drop_zero]
+  rw [List.take_of_length_le (by rw [Array.length_toList])]
+  rw [List.take_of_length_le (by rw [Array.length_toList])]
+  rfl
+
+/-- `ofNat`-version of `toNat_mul`. -/
+theorem ofNat_mul (m n : Nat) : ofNat (m * n) = ofNat m * ofNat n := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_mul, toNat_ofNat, toNat_ofNat]
+
 end Azurite.AzNat

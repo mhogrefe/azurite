@@ -1,5 +1,5 @@
 import Azurite.AzInt.Add
-import Azurite.AzNat.Mul
+import Azurite.AzNat.Karatsuba
 
 namespace Azurite.AzInt
 

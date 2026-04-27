@@ -4,8 +4,10 @@ import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzNatMul
+import Azurite.Benchmark.AzNatMulCompare
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.AzPolynomial.Tune
+import Azurite.AzNat.Tune
 
 -- ── Config parsing ──────────────────────────────────────────────────────────
 
@@ -19,8 +21,9 @@ def parseConfig (s : String) : Std.HashMap String String :=
 
 def validBenchmarks : List String :=
   ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
-   "az_nat_add", "az_nat_sub", "az_nat_mul", "az_nat_div_mod",
-   "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all"]
+   "az_nat_add", "az_nat_sub", "az_nat_mul", "az_nat_mul_compare", "az_nat_div_mod",
+   "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
+   "tune_karatsuba_aznat"]
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -40,6 +43,7 @@ def main (args : List String) : IO Unit := do
       | "az_nat_add" => runAzNatAdd limit cfg seed
       | "az_nat_sub" => runAzNatSub limit cfg seed
       | "az_nat_mul" => runAzNatMul limit cfg seed
+      | "az_nat_mul_compare" => runAzNatMulCompare limit cfg seed
       | "az_nat_div_mod" => runAzNatDivMod limit cfg seed
       | "tune_karatsuba" =>
         let meanDegree := configGetRat cfg "meanDegree" 256
@@ -57,6 +61,15 @@ def main (args : List String) : IO Unit := do
         let meanDegree := configGetRat cfg "meanDegree" 256
         let nPairs := configGetNat cfg "nPairs" 200
         tuneKaratsubaAll (nPairs := nPairs) (meanDegree := meanDegree) (seed := seed)
+      | "tune_karatsuba_aznat" =>
+        let meanBitLength := configGetRat cfg "meanBitLength" 100000
+        let nPairs := configGetNat cfg "nPairs" 200
+        let balanceRatio := configGetNat cfg "balanceRatio" 50
+        let lo := configGetNat cfg "lo" 2
+        let hi := configGetNat cfg "hi" 128
+        let _ ← tuneAzNatKaratsuba (lo := lo) (hi := hi) (nPairs := nPairs)
+                  (meanBitLength := meanBitLength) (balanceRatio := balanceRatio)
+                  (seed := seed)
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

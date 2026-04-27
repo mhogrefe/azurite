@@ -686,17 +686,6 @@ theorem schoolbookMulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
   rw [h_go, h_acc0_zero]
   simp
 
-theorem toNat_mul (a b : AzNat) : (a * b).toNat = a.toNat * b.toNat := by
-  show (mul a b).toNat = _
-  unfold mul mulLimbs
-  rw [toNat_ofLimbs, schoolbookMulLimbs_toNat]
-  show toNatLimbsList ((a.limbs.toList.drop 0).take a.limbs.size)
-        * toNatLimbsList ((b.limbs.toList.drop 0).take b.limbs.size) = a.toNat * b.toNat
-  rw [List.drop_zero, List.drop_zero]
-  rw [List.take_of_length_le (by rw [Array.length_toList])]
-  rw [List.take_of_length_le (by rw [Array.length_toList])]
-  rfl
-
 /-- `ofNat`-version of `toNat_mulUInt64`. -/
 theorem ofNat_mulUInt64 (n : Nat) (b : UInt64) :
     ofNat (n * b.toNat) = (ofNat n).mulUInt64 b := by
@@ -704,10 +693,5 @@ theorem ofNat_mulUInt64 (n : Nat) (b : UInt64) :
     rw [toNat_ofNat, toNat_mulUInt64, toNat_ofNat]
   have := congrArg ofNat h
   rwa [ofNat_toNat, ofNat_toNat] at this
-
-/-- `ofNat`-version of `toNat_mul`. -/
-theorem ofNat_mul (m n : Nat) : ofNat (m * n) = ofNat m * ofNat n := by
-  apply toNat_injective
-  rw [toNat_ofNat, toNat_mul, toNat_ofNat, toNat_ofNat]
 
 end Azurite.AzNat

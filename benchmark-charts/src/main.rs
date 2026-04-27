@@ -302,7 +302,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: {} <benchmark> <input_file> [output_svg]", args[0]);
-        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_div_mod");
+        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
         std::process::exit(1);
     }
     let benchmark = &args[1];
@@ -344,7 +344,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Input size (significant_bits of both polynomials)",
             )?;
         }
-        "az_nat_add" | "az_nat_sub" | "az_nat_mul" | "az_nat_div_mod" => {
+        "az_nat_add" | "az_nat_sub" | "az_nat_mul" | "az_nat_mul_compare" | "az_nat_div_mod" => {
             let rows = parse_multi_series_file(&content);
             println!("Parsed {} rows.", rows.len());
             print_summary(&rows);
@@ -356,7 +356,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         other => {
             eprintln!("Unknown benchmark: {other:?}");
-            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_div_mod");
+            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
             std::process::exit(1);
         }
     }

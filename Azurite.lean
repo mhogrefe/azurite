@@ -205,6 +205,7 @@ import Azurite.AzNat.Sub
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToString
 import Azurite.AzNat.TrailingZeros
+import Azurite.AzNat.Tune
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
@@ -323,6 +324,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMul
+import Azurite.Benchmark.AzNatMulCompare
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul

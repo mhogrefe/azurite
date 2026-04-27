@@ -138,18 +138,4 @@ theorem schoolbookMulLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
   unfold schoolbookMulLimbs
   rw [schoolbookMulLimbs.go_size, Array.size_replicate]
 
-/-- Multiplication of two limb slices, currently delegating to
-    `schoolbookMulLimbs`.  Future sub-quadratic algorithms will dispatch here
-    by size. -/
-def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
-  schoolbookMulLimbs a b loA lenA loB lenB hA hB
-
-/-- Multiplication of two `AzNat`s. -/
-def mul (a b : AzNat) : AzNat :=
-  ofLimbs (mulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
-    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
-
-instance : Mul AzNat := ⟨mul⟩
-
 end Azurite.AzNat

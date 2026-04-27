@@ -1,4 +1,4 @@
-import Azurite.AzNat.Equiv.Mul.Basic
+import Azurite.AzNat.Equiv.Mul.Karatsuba
 
 namespace Azurite.AzNat
 
