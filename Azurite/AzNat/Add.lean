@@ -5,28 +5,30 @@ import Azurite.UInt64.AddWithCarry
 
 namespace Azurite.AzNat
 
+/-- Recursive helper for `addLimb`: processes positions `i .. hi` propagating
+    the running `carry`. -/
+def addLimb.go (hi : Nat) (a : Array UInt64) (i : Nat) (carry : UInt64)
+    (h_size : hi ≤ a.size) : Array UInt64 × Bool :=
+  if carry = 0 then
+    (a, false)
+  else if h : i < hi then
+    have h_i_size : i < a.size := Nat.lt_of_lt_of_le h h_size
+    let x := a[i]
+    let sum := x + carry
+    let newCarry : UInt64 := if sum < carry then 1 else 0
+    addLimb.go hi (a.set i sum) (i + 1) newCarry
+      (by rw [Array.size_set]; exact h_size)
+  else
+    (a, true)
+  termination_by hi - i
+
 /-- Add a single limb `b` into the subrange `a[lo:hi)`, propagating carry
     upward.  Returns the modified array (mutated in place when possible)
     and a boolean carry out of the high end.  When the running carry
     becomes zero, the remaining limbs are left untouched. -/
 def addLimb (a : Array UInt64) (lo hi : Nat) (b : UInt64)
     (_hlo : lo ≤ hi) (hhi : hi ≤ a.size) : Array UInt64 × Bool :=
-  go a lo b hhi
-where
-  go (a : Array UInt64) (i : Nat) (carry : UInt64) (h_size : hi ≤ a.size) :
-      Array UInt64 × Bool :=
-    if carry = 0 then
-      (a, false)
-    else if h : i < hi then
-      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h h_size
-      let x := a[i]
-      let sum := x + carry
-      let newCarry : UInt64 := if sum < carry then 1 else 0
-      go (a.set i sum) (i + 1) newCarry
-        (by rw [Array.size_set]; exact h_size)
-    else
-      (a, true)
-  termination_by hi - i
+  addLimb.go hi a lo b hhi
 
 /-- Recursive helper for `addSameLengthLimbs`: processes positions
     `loA + k .. loA + len` and `loB + k .. loB + len` simultaneously. -/
@@ -99,6 +101,42 @@ def addLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
     addGeqLimbs a b loA lenA loB lenB hA hB h h_posA h_posB
   else
     addGeqLimbs b a loB lenB loA lenA hB hA (by omega) h_posB h_posA
+
+/-- Size preservation of `addLimb.go`. -/
+theorem addLimb.go_size (hi : Nat) (a : Array UInt64) (i : Nat) (carry : UInt64)
+    (h_size : hi ≤ a.size) :
+    (addLimb.go hi a i carry h_size).1.size = a.size := by
+  induction h_sub : hi - i generalizing a i carry with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    rw [addLimb.go]
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · simp [h_carry, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    rw [addLimb.go]
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · have h_new : hi - (i + 1) = n := by omega
+      simp only [h_carry, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih _ _ _ _ h_new, Array.size_set]
+
+/-- Size preservation of `addLimb`. -/
+theorem addLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) :
+    (addLimb a lo hi b hlo hhi).1.size = a.size :=
+  addLimb.go_size hi a lo b hhi
+
+/-- Size preservation of `addGeqLimbs`. -/
+theorem addGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) :
+    (addGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
+  unfold addGeqLimbs
+  by_cases h : (addSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
+  · rw [if_pos h, addLimb_size, addSameLengthLimbs_size]
+  · rw [if_neg h, addSameLengthLimbs_size]
 
 /-- Add a `UInt64` `b` to an `AzNat` `a`.  Empty `a` is handled directly via
     `UInt64.toAzNat b`; otherwise `addLimb` runs over `a.limbs` and the carry

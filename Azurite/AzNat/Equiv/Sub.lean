@@ -6,33 +6,6 @@ import Azurite.UInt64.Equiv.SubWithBorrow
 
 namespace Azurite.AzNat
 
-/-- Size preservation of `subLimb.go`. -/
-theorem subLimb.go_size (hi : Nat) (a : Array UInt64) (i : Nat)
-    (borrow : UInt64) (h_size : hi ≤ a.size) :
-    (subLimb.go hi a i borrow h_size).1.size = a.size := by
-  induction hi_sub_i : hi - i generalizing a i borrow with
-  | zero =>
-    have h_ge : hi ≤ i := by omega
-    rw [subLimb.go]
-    by_cases hb : borrow = 0
-    · simp [hb]
-    · simp [hb, Nat.not_lt.mpr h_ge]
-  | succ n ih =>
-    have h_lt : i < hi := by omega
-    rw [subLimb.go]
-    by_cases hb : borrow = 0
-    · simp [hb]
-    · simp only [hb, ↓reduceIte, h_lt, ↓reduceDIte]
-      have h_rec : hi - (i + 1) = n := by omega
-      rw [ih _ _ _ _ h_rec]
-      rw [Array.size_set]
-
-/-- Size preservation of `subLimb`. -/
-theorem subLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
-    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) :
-    (subLimb a lo hi b hlo hhi).1.size = a.size :=
-  subLimb.go_size hi a lo b hhi
-
 /-- `subLimb.go` preserves the prefix `[0, i)`. -/
 theorem subLimb.go_toList_take (hi : Nat) (a : Array UInt64) (i : Nat)
     (borrow : UInt64) (h_size : hi ≤ a.size) :
@@ -414,17 +387,6 @@ theorem subSameLengthLimbs_toNat (a b : Array UInt64) (loA loB len : Nat)
   simpa using h
 
 /-! ### Correctness of `subGeqLimbs` -/
-
-/-- Size preservation of `subGeqLimbs`. -/
-theorem subGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
-    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) :
-    (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
-  unfold subGeqLimbs
-  simp only
-  split
-  · rw [subLimb_size, subSameLengthLimbs_size]
-  · exact subSameLengthLimbs_size a b loA loB lenB _ _
 
 /-- Correctness of `subGeqLimbs`: agrees with `Nat` subtraction over the slices. -/
 theorem subGeqLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)

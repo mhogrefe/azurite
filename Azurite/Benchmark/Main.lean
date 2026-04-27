@@ -2,6 +2,9 @@ import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzNatAdd
+import Azurite.Benchmark.AzNatSub
+import Azurite.Benchmark.AzNatMul
+import Azurite.Benchmark.AzNatDivMod
 import Azurite.AzPolynomial.Tune
 
 -- ── Config parsing ──────────────────────────────────────────────────────────
@@ -15,7 +18,8 @@ def parseConfig (s : String) : Std.HashMap String String :=
 -- ── Main ────────────────────────────────────────────────────────────────────
 
 def validBenchmarks : List String :=
-  ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba", "az_nat_add",
+  ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
+   "az_nat_add", "az_nat_sub", "az_nat_mul", "az_nat_div_mod",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all"]
 
 def main (args : List String) : IO Unit := do
@@ -34,6 +38,9 @@ def main (args : List String) : IO Unit := do
       | "az_polynomial_mul" => runAzPolynomialMul limit cfg seed
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
       | "az_nat_add" => runAzNatAdd limit cfg seed
+      | "az_nat_sub" => runAzNatSub limit cfg seed
+      | "az_nat_mul" => runAzNatMul limit cfg seed
+      | "az_nat_div_mod" => runAzNatDivMod limit cfg seed
       | "tune_karatsuba" =>
         let meanDegree := configGetRat cfg "meanDegree" 256
         let nPairs := configGetNat cfg "nPairs" 200

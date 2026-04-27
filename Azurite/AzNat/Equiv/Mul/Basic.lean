@@ -450,23 +450,6 @@ private lemma mulAddLimbs_getElem_ge (a : Array UInt64) (offA lenA offAcc : Nat)
   rw [h_L, h_R] at h_get
   exact Option.some.inj h_get
 
-/-- Size preservation of `schoolbookMulLimbs.go`. -/
-theorem schoolbookMulLimbs.go_size (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
-    (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
-    (hAcc : lenA + lenB ≤ acc.size) :
-    (schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).size = acc.size := by
-  induction h_sub : lenB - j generalizing acc j with
-  | zero =>
-    have h_ge : lenB ≤ j := by omega
-    rw [schoolbookMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
-  | succ n ih =>
-    have h_lt : j < lenB := by omega
-    have h_rec : lenB - (j + 1) = n := by omega
-    rw [schoolbookMulLimbs.go]
-    simp only [h_lt, ↓reduceDIte]
-    rw [ih _ _ _ h_rec, Array.size_set, mulAddLimbs_size]
-
 /-- Invariant of `schoolbookMulLimbs.go`: with the zero-tail invariant on `acc`
     (positions `[j+lenA, lenA+lenB)` of `acc` are zero), the low `lenA + lenB`
     limbs of the result equal `acc` plus `a_slice * b[loB+j:loB+lenB] * 2^(64j)`. -/

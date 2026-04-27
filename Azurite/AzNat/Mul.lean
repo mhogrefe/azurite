@@ -113,6 +113,31 @@ def schoolbookMulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (Array.replicate (lenA + lenB) 0) 0 hA hB
     (by rw [Array.size_replicate])
 
+/-- Size preservation of `schoolbookMulLimbs.go`: the accumulator's size is
+    unchanged by the outer loop. -/
+theorem schoolbookMulLimbs.go_size (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
+    (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (hAcc : lenA + lenB ≤ acc.size) :
+    (schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).size = acc.size := by
+  induction h_sub : lenB - j generalizing acc j with
+  | zero =>
+    have h_ge : lenB ≤ j := by omega
+    rw [schoolbookMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : j < lenB := by omega
+    have h_new : lenB - (j + 1) = n := by omega
+    rw [schoolbookMulLimbs.go]
+    simp only [h_lt, ↓reduceDIte]
+    rw [ih _ _ _ h_new, Array.size_set, mulAddLimbs_size]
+
+/-- Schoolbook multiplication produces a `lenA + lenB` limb result. -/
+theorem schoolbookMulLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
+    (schoolbookMulLimbs a b loA lenA loB lenB hA hB).size = lenA + lenB := by
+  unfold schoolbookMulLimbs
+  rw [schoolbookMulLimbs.go_size, Array.size_replicate]
+
 /-- Multiplication of two limb slices, currently delegating to
     `schoolbookMulLimbs`.  Future sub-quadratic algorithms will dispatch here
     by size. -/

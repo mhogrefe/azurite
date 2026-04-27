@@ -1,0 +1,3 @@
+lake env .lake/build/bin/benchmark az_nat_mul 10000 "meanBitLength:4096"
+
+with just naive mul

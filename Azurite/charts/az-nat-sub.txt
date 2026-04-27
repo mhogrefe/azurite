@@ -1,0 +1,1 @@
+lake env .lake/build/bin/benchmark az_sub_add 10000 "meanBitLength:65536"

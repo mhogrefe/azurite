@@ -4,28 +4,30 @@ import Azurite.UInt64.SubWithBorrow
 
 namespace Azurite.AzNat
 
+/-- Recursive helper for `subLimb`: processes positions `i .. hi` propagating
+    the running `borrow`. -/
+def subLimb.go (hi : Nat) (a : Array UInt64) (i : Nat) (borrow : UInt64)
+    (h_size : hi ≤ a.size) : Array UInt64 × Bool :=
+  if borrow = 0 then
+    (a, false)
+  else if h : i < hi then
+    have h_i_size : i < a.size := Nat.lt_of_lt_of_le h h_size
+    let x := a[i]
+    let diff := x - borrow
+    let newBorrow : UInt64 := if x < borrow then 1 else 0
+    subLimb.go hi (a.set i diff) (i + 1) newBorrow
+      (by rw [Array.size_set]; exact h_size)
+  else
+    (a, true)
+  termination_by hi - i
+
 /-- Subtract a single limb `b` from the subrange `a[lo:hi)`, propagating
     borrow upward.  Returns the modified array (mutated in place when
     possible) and a boolean borrow out of the high end.  When the running
     borrow becomes zero, the remaining limbs are left untouched. -/
 def subLimb (a : Array UInt64) (lo hi : Nat) (b : UInt64)
     (_hlo : lo ≤ hi) (hhi : hi ≤ a.size) : Array UInt64 × Bool :=
-  go a lo b hhi
-where
-  go (a : Array UInt64) (i : Nat) (borrow : UInt64) (h_size : hi ≤ a.size) :
-      Array UInt64 × Bool :=
-    if borrow = 0 then
-      (a, false)
-    else if h : i < hi then
-      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h h_size
-      let x := a[i]
-      let diff := x - borrow
-      let newBorrow : UInt64 := if x < borrow then 1 else 0
-      go (a.set i diff) (i + 1) newBorrow
-        (by rw [Array.size_set]; exact h_size)
-    else
-      (a, true)
-  termination_by hi - i
+  subLimb.go hi a lo b hhi
 
 /-- Recursive helper for `subSameLengthLimbs`: processes positions
     `loA + k .. loA + len` and `loB + k .. loB + len` simultaneously. -/
@@ -86,6 +88,42 @@ def subGeqLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
       (by rw [subSameLengthLimbs_size]; exact hA)
   else
     (lo.1, false)
+
+/-- Size preservation of `subLimb.go`. -/
+theorem subLimb.go_size (hi : Nat) (a : Array UInt64) (i : Nat) (borrow : UInt64)
+    (h_size : hi ≤ a.size) :
+    (subLimb.go hi a i borrow h_size).1.size = a.size := by
+  induction h_sub : hi - i generalizing a i borrow with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    rw [subLimb.go]
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · simp [h_borrow, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    rw [subLimb.go]
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · have h_new : hi - (i + 1) = n := by omega
+      simp only [h_borrow, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih _ _ _ _ h_new, Array.size_set]
+
+/-- Size preservation of `subLimb`. -/
+theorem subLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) :
+    (subLimb a lo hi b hlo hhi).1.size = a.size :=
+  subLimb.go_size hi a lo b hhi
+
+/-- Size preservation of `subGeqLimbs`. -/
+theorem subGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) :
+    (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
+  unfold subGeqLimbs
+  by_cases h : (subSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
+  · rw [if_pos h, subLimb_size, subSameLengthLimbs_size]
+  · rw [if_neg h, subSameLengthLimbs_size]
 
 /-- Subtract a `UInt64` `b` from an `AzNat` `a`.  Empty `a` returns `0`
     (truncated `Nat` subtraction).  Otherwise `subLimb` runs over `a.limbs`;

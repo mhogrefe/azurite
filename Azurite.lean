@@ -174,7 +174,8 @@ import Azurite.AzNat.Equiv.Div.SubMulLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
-import Azurite.AzNat.Equiv.Mul
+import Azurite.AzNat.Equiv.Mul.Basic
+import Azurite.AzNat.Equiv.Mul.Karatsuba
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.SetBit
@@ -187,6 +188,7 @@ import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
+import Azurite.AzNat.Karatsuba
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare
@@ -319,6 +321,9 @@ import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzNatAdd
+import Azurite.Benchmark.AzNatDivMod
+import Azurite.Benchmark.AzNatMul
+import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.Main

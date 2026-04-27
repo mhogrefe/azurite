@@ -1,6 +1,6 @@
 import Azurite.AzInt.Mul
 import Azurite.AzInt.Equiv.Add
-import Azurite.AzNat.Equiv.Mul
+import Azurite.AzNat.Equiv.Mul.Basic
 
 namespace Azurite.AzInt
 

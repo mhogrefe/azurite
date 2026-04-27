@@ -18,33 +18,6 @@ lemma toNatLimbsList_take_succ (a : Array UInt64) (i hi : Nat)
   rw [show a.toList[i] = a[i] from (Array.getElem_toList h).symm]
   ring
 
-/-- Size preservation of `addLimb.go`. -/
-theorem addLimb.go_size (hi : Nat) (a : Array UInt64) (i : Nat)
-    (carry : UInt64) (h_size : hi ≤ a.size) :
-    (addLimb.go hi a i carry h_size).1.size = a.size := by
-  induction hi_sub_i : hi - i generalizing a i carry with
-  | zero =>
-    have h_ge : hi ≤ i := by omega
-    rw [addLimb.go]
-    by_cases hc : carry = 0
-    · simp [hc]
-    · simp [hc, Nat.not_lt.mpr h_ge]
-  | succ n ih =>
-    have h_lt : i < hi := by omega
-    rw [addLimb.go]
-    by_cases hc : carry = 0
-    · simp [hc]
-    · simp only [hc, ↓reduceIte, h_lt, ↓reduceDIte]
-      have h_rec : hi - (i + 1) = n := by omega
-      rw [ih _ _ _ _ h_rec]
-      rw [Array.size_set]
-
-/-- Size preservation of `addLimb`. -/
-theorem addLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
-    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) :
-    (addLimb a lo hi b hlo hhi).1.size = a.size :=
-  addLimb.go_size hi a lo b hhi
-
 /-- `addLimb.go` preserves the prefix `[0, i)`. -/
 theorem addLimb.go_toList_take (hi : Nat) (a : Array UInt64) (i : Nat)
     (carry : UInt64) (h_size : hi ≤ a.size) :
@@ -641,17 +614,6 @@ theorem addGeqLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
     simp only [Nat.zero_mul, Nat.add_zero] at h_low
     rw [h_low, h_zero]
     ring
-
-/-- Size preservation of `addGeqLimbs`. -/
-theorem addGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
-    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) :
-    (addGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
-  unfold addGeqLimbs
-  simp only
-  split
-  · rw [addLimb_size, addSameLengthLimbs_size]
-  · exact addSameLengthLimbs_size a b loA loB lenB _ _
 
 /-- Correctness of `addLimbs`: dispatches to `addGeqLimbs` based on which slice
     is longer; the result is read out at the offset of the longer slice. -/
