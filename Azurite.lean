@@ -230,6 +230,7 @@ import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
+import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.Translate
 import Azurite.AzPolynomial.Equiv.TRems
@@ -254,6 +255,7 @@ import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SpecialTranslate
 import Azurite.AzPolynomial.StringLemmas
+import Azurite.AzPolynomial.SturmSequence
 import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.ToString
 import Azurite.AzPolynomial.Translate
@@ -308,6 +310,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
+import Azurite.BasuPollackRoy.Chapter2.SturmSequence
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_a_b
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_b_c
