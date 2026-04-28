@@ -295,6 +295,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
 import Azurite.BasuPollackRoy.Chapter2.Factorization
+import Azurite.BasuPollackRoy.Chapter2.Jumps
 import Azurite.BasuPollackRoy.Chapter2.Lemma_2_48
 import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
 import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
