@@ -293,6 +293,7 @@ import Azurite.AzVector.Parse
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
+import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
 import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
 import Azurite.BasuPollackRoy.Chapter2.Factorization
 import Azurite.BasuPollackRoy.Chapter2.Jumps
