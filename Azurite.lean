@@ -308,11 +308,13 @@ import Azurite.BasuPollackRoy.Chapter2.Proposition_2_28
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_39
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_40
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_44
+import Azurite.BasuPollackRoy.Chapter2.Proposition_2_57
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
 import Azurite.BasuPollackRoy.Chapter2.SturmSequence
+import Azurite.BasuPollackRoy.Chapter2.TarskiQuery
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_a_b
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_b_c
