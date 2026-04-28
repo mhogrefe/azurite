@@ -1589,4 +1589,468 @@ theorem remark_2_55_a
       Multiset.toFinset_card_of_nodup hP_nodup
     rw [h_toFinset, hP_card]
 
+/-! #### Helper lemmas for Remark 2.55(b)
+
+The key combinatorial fact is that `Q` and `Q % P` agree modulo the
+"high-order" perturbation `K · P` (where `K = Q / P`), which leaves all
+relevant lower-order behavior at `P`-roots untouched. -/
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- `rootMultiplicity` is preserved under negation. -/
+private lemma Polynomial.rootMultiplicity_neg
+    (p : R[X]) (a : R) :
+    (-p).rootMultiplicity a = p.rootMultiplicity a := by
+  classical
+  rcases eq_or_ne p 0 with hp | hp
+  · simp [hp]
+  have hnp : -p ≠ 0 := neg_ne_zero.mpr hp
+  have h_iff_le : ∀ n, n ≤ (-p).rootMultiplicity a ↔ n ≤ p.rootMultiplicity a := by
+    intro n
+    rw [Polynomial.le_rootMultiplicity_iff hnp, Polynomial.le_rootMultiplicity_iff hp,
+      dvd_neg]
+  apply Nat.le_antisymm
+  · exact (h_iff_le _).mp (le_refl _)
+  · exact (h_iff_le _).mpr (le_refl _)
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- If `g` has strictly smaller `rootMultiplicity` at `x` than `f`, then
+    `(f + g).rootMultiplicity x = g.rootMultiplicity x`. -/
+private lemma Polynomial.rootMultiplicity_add_of_lt
+    {x : R} {f g : R[X]} (hf_ne : f ≠ 0) (hg_ne : g ≠ 0)
+    (h_lt : g.rootMultiplicity x < f.rootMultiplicity x) :
+    (f + g).rootMultiplicity x = g.rootMultiplicity x := by
+  classical
+  set m := g.rootMultiplicity x with hm_def
+  -- `f + g ≠ 0`: else `f = -g` and so `f.rootMul = g.rootMul`, contradicting `h_lt`.
+  have hfg_ne : f + g ≠ 0 := by
+    intro h
+    have hf_eq : f = -g := by linear_combination h
+    have h_eq : f.rootMultiplicity x = g.rootMultiplicity x := by
+      rw [hf_eq]; exact Polynomial.rootMultiplicity_neg g x
+    omega
+  -- `(X − C x)^m ∣ g` and `(X − C x)^m ∣ f`, so `(X − C x)^m ∣ (f + g)`.
+  have h_dvd_g : (Polynomial.X - Polynomial.C x)^m ∣ g :=
+    (Polynomial.le_rootMultiplicity_iff hg_ne).mp (le_refl m)
+  have h_dvd_f : (Polynomial.X - Polynomial.C x)^m ∣ f :=
+    (Polynomial.le_rootMultiplicity_iff hf_ne).mp (le_of_lt h_lt)
+  have h_dvd_fg : (Polynomial.X - Polynomial.C x)^m ∣ (f + g) :=
+    dvd_add h_dvd_f h_dvd_g
+  have h_le : m ≤ (f + g).rootMultiplicity x :=
+    (Polynomial.le_rootMultiplicity_iff hfg_ne).mpr h_dvd_fg
+  -- `(X − C x)^(m+1) ∤ (f + g)`: else it would divide `((f + g) − f) = g`,
+  -- contradicting `m = g.rootMultiplicity x`.
+  have h_nodvd : ¬ (Polynomial.X - Polynomial.C x)^(m+1) ∣ (f + g) := by
+    intro h_dvd
+    have h_dvd_f' : (Polynomial.X - Polynomial.C x)^(m+1) ∣ f :=
+      (Polynomial.le_rootMultiplicity_iff hf_ne).mp h_lt
+    have h_dvd_g' : (Polynomial.X - Polynomial.C x)^(m+1) ∣ g := by
+      have h_sub : (f + g) - f = g := by ring
+      rw [← h_sub]
+      exact dvd_sub h_dvd h_dvd_f'
+    have : m + 1 ≤ g.rootMultiplicity x :=
+      (Polynomial.le_rootMultiplicity_iff hg_ne).mpr h_dvd_g'
+    omega
+  have h_lt_succ : (f + g).rootMultiplicity x < m + 1 := by
+    by_contra h
+    push Not at h
+    exact h_nodvd ((Polynomial.le_rootMultiplicity_iff hfg_ne).mp h)
+  omega
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- `Q ≠ 0` whenever `P ≠ 0`, `Q / P ≠ 0`, and `Q % P ≠ 0`.
+
+    Reason: if `Q = 0`, then `K · P + R = 0` so `R = −K · P`, but
+    `R.degree < P.degree` (Euclidean) while `(K · P).degree ≥ P.degree`
+    when `K ≠ 0` and `P ≠ 0`. -/
+private lemma Q_ne_zero_of_div_mod_ne
+    {Q P : R[X]} (hP_ne : P ≠ 0) (hK : Q / P ≠ 0) :
+    Q ≠ 0 := by
+  classical
+  intro hQ
+  have hKP_ne : Q / P * P ≠ 0 := mul_ne_zero hK hP_ne
+  have h_div_add_mod : P * (Q / P) + Q % P = Q := EuclideanDomain.div_add_mod Q P
+  have h_mod_eq : Q % P = -((Q / P) * P) := by
+    linear_combination h_div_add_mod + hQ
+  have h_mod_deg : (Q % P).degree < P.degree :=
+    Polynomial.degree_mod_lt Q hP_ne
+  rw [h_mod_eq, Polynomial.degree_neg] at h_mod_deg
+  have h_KP_deg : P.degree ≤ ((Q / P) * P).degree := by
+    rw [Polynomial.degree_mul, add_comm]
+    have : (0 : WithBot ℕ) ≤ (Q / P).degree := by
+      rw [Polynomial.zero_le_degree_iff]; exact hK
+    exact le_add_of_nonneg_right this
+  exact absurd h_mod_deg (not_lt.mpr h_KP_deg)
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- Helper: multiplicity equivalence `Q.rootMultiplicity x < µ_P ↔
+    (Q%P).rootMultiplicity x < µ_P` for the `Q % P ≠ 0` case, with
+    equality of multiplicities under either side.
+
+    Write `Q = K · P + R` (with `K = Q / P`, `R = Q % P`). If `K = 0`,
+    `Q = R` and the iff is trivial. Otherwise `(K · P).rootMultiplicity x ≥
+    µ_P`, so by `rootMultiplicity_add_of_lt` the lower-multiplicity `R`
+    dominates `Q`'s behavior at `x`. -/
+private lemma rootMultiplicity_mod_lt_iff_of_mod_ne
+    (Q P : R[X]) (hP_ne : P ≠ 0) (hR_ne : Q % P ≠ 0) (x : R) :
+    (Q.rootMultiplicity x < P.rootMultiplicity x ↔
+      (Q % P).rootMultiplicity x < P.rootMultiplicity x) ∧
+    (Q.rootMultiplicity x < P.rootMultiplicity x →
+      Q.rootMultiplicity x = (Q % P).rootMultiplicity x) := by
+  classical
+  set K := Q / P with hK_def
+  set R := Q % P with hR_def
+  have hQ_eq : Q = K * P + R := by
+    have h := EuclideanDomain.div_add_mod Q P
+    show Q = K * P + R
+    rw [mul_comm] at h
+    linear_combination -h
+  rcases eq_or_ne K 0 with hK | hK
+  · have hQ_R : Q = R := by rw [hQ_eq, hK, zero_mul, zero_add]
+    refine ⟨?_, ?_⟩
+    · rw [hQ_R]
+    · intro _; rw [hQ_R]
+  have hKP_ne : K * P ≠ 0 := mul_ne_zero hK hP_ne
+  have hKP_rootMul : (K * P).rootMultiplicity x =
+      K.rootMultiplicity x + P.rootMultiplicity x :=
+    Polynomial.rootMultiplicity_mul hKP_ne
+  have hKP_ge : P.rootMultiplicity x ≤ (K * P).rootMultiplicity x := by
+    rw [hKP_rootMul]; omega
+  have hQ_ne : Q ≠ 0 := Q_ne_zero_of_div_mod_ne hP_ne hK
+  -- Bidirectional analysis.
+  refine ⟨⟨?_, ?_⟩, ?_⟩
+  · -- Q.rootMul < µ_P → R.rootMul < µ_P.
+    intro hQ_lt
+    by_contra h_ge
+    push Not at h_ge
+    have h_min_ge : P.rootMultiplicity x ≤
+        min ((K * P).rootMultiplicity x) (R.rootMultiplicity x) :=
+      le_min hKP_ge h_ge
+    have h_min_le : min ((K * P).rootMultiplicity x) (R.rootMultiplicity x) ≤
+        Q.rootMultiplicity x := by
+      rw [hQ_eq]
+      exact Polynomial.rootMultiplicity_add (p := K * P) (q := R) x
+        (hQ_eq ▸ hQ_ne)
+    have : P.rootMultiplicity x ≤ Q.rootMultiplicity x := le_trans h_min_ge h_min_le
+    have : Q.rootMultiplicity x = (K * P + R).rootMultiplicity x := by
+      rw [← hQ_eq]
+    omega
+  · -- R.rootMul < µ_P → Q.rootMul < µ_P.
+    intro hR_lt
+    have h_lt_KP : R.rootMultiplicity x < (K * P).rootMultiplicity x :=
+      lt_of_lt_of_le hR_lt hKP_ge
+    have h_eq : (K * P + R).rootMultiplicity x = R.rootMultiplicity x :=
+      Polynomial.rootMultiplicity_add_of_lt hKP_ne hR_ne h_lt_KP
+    rw [hQ_eq, h_eq]; exact hR_lt
+  · -- Q.rootMul < µ_P → Q.rootMul = R.rootMul.
+    intro hQ_lt
+    by_contra h_ne
+    -- We will show R.rootMul < µ_P via the iff direction we just proved,
+    -- and then derive Q.rootMul = R.rootMul via rootMultiplicity_add_of_lt.
+    have hR_lt : R.rootMultiplicity x < P.rootMultiplicity x := by
+      by_contra h_ge
+      push Not at h_ge
+      have h_min_ge : P.rootMultiplicity x ≤
+          min ((K * P).rootMultiplicity x) (R.rootMultiplicity x) :=
+        le_min hKP_ge h_ge
+      have h_min_le : min ((K * P).rootMultiplicity x) (R.rootMultiplicity x) ≤
+          Q.rootMultiplicity x := by
+        rw [hQ_eq]
+        exact Polynomial.rootMultiplicity_add (p := K * P) (q := R) x
+          (hQ_eq ▸ hQ_ne)
+      omega
+    have h_lt_KP : R.rootMultiplicity x < (K * P).rootMultiplicity x :=
+      lt_of_lt_of_le hR_lt hKP_ge
+    have h_eq : (K * P + R).rootMultiplicity x = R.rootMultiplicity x :=
+      Polynomial.rootMultiplicity_add_of_lt hKP_ne hR_ne h_lt_KP
+    have : Q.rootMultiplicity x = R.rootMultiplicity x := by rw [hQ_eq]; exact h_eq
+    exact h_ne this
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- If `k < p.rootMultiplicity x`, then the `k`-th iterated derivative of
+    `p` evaluates to zero at `x`. Proof: factor `p = (X − Cx)^µ · q` and
+    expand the iterated derivative via Leibniz; every term contains a
+    positive power of `X − Cx`, which vanishes at `x`. -/
+private lemma eval_iterate_derivative_eq_zero_of_lt_rootMultiplicity
+    (p : R[X]) (x : R) {k : ℕ} (hk : k < p.rootMultiplicity x) :
+    (((⇑Polynomial.derivative)^[k]) p).eval x = 0 := by
+  set μ := p.rootMultiplicity x with hμ
+  set q := p /ₘ (X - C x)^μ with hq
+  have hp_eq : p = (X - C x)^μ * q :=
+    (Polynomial.pow_mul_divByMonic_rootMultiplicity_eq p x).symm
+  conv_lhs => rw [hp_eq]
+  rw [Polynomial.iterate_derivative_mul, Polynomial.eval_finset_sum]
+  apply Finset.sum_eq_zero
+  intro i hi
+  rw [Polynomial.eval_smul, Polynomial.eval_mul,
+    Polynomial.iterate_derivative_X_sub_pow,
+    Polynomial.eval_smul, Polynomial.eval_pow, Polynomial.eval_sub,
+    Polynomial.eval_X, Polynomial.eval_C, sub_self, zero_pow]
+  · simp
+  · exact Nat.sub_ne_zero_of_lt (lt_of_le_of_lt (Nat.sub_le k i) hk)
+
+/-- Helper: `HasSignRight ((Q % P) * P) x s ↔ HasSignRight (Q * P) x s`
+    when `Q.rootMultiplicity x < µ_P` (where `µ_P = P.rootMultiplicity x`).
+    The two products differ by `K · P²` (where `K = Q / P`), which has
+    multiplicity at least `2 · µ_P` at `x` — strictly greater than
+    `(Q · P)`'s multiplicity `µ_P + ν`. Hence the `(µ_P + ν)`-th derivative
+    of the difference vanishes at `x`, so by Proposition 2.21 (which uses
+    IVP) and uniqueness of `HasSignRight`, the two `HasSignRight` predicates
+    coincide. -/
+private lemma hasSignRight_mod_iff_of_mod_ne
+    (hIVP : Azurite.BPR.HasIntermediateValueProperty R)
+    (Q P : R[X]) (hP_ne : P ≠ 0) (hR_ne : Q % P ≠ 0) (x : R)
+    (hQ_lt : Q.rootMultiplicity x < P.rootMultiplicity x)
+    (s : SignType) :
+    HasSignRight ((Q % P) * P) x s ↔ HasSignRight (Q * P) x s := by
+  classical
+  set Rmod := Q % P with hRmod_def
+  set K := Q / P with hK_def
+  have hQ_eq : Q = K * P + Rmod := by
+    have h := EuclideanDomain.div_add_mod Q P
+    rw [mul_comm] at h
+    linear_combination -h
+  -- `Q ≠ 0` since `Rmod ≠ 0`.
+  have hQ_ne : Q ≠ 0 := by
+    intro h
+    apply hR_ne
+    rw [hRmod_def, h, EuclideanDomain.zero_mod]
+  -- `Q.rootMul = Rmod.rootMul`.
+  obtain ⟨_, h_eq_mult⟩ := rootMultiplicity_mod_lt_iff_of_mod_ne Q P hP_ne hR_ne x
+  have h_q_eq_r : Q.rootMultiplicity x = Rmod.rootMultiplicity x := h_eq_mult hQ_lt
+  -- Set `µ` and abbreviate.
+  set μ := P.rootMultiplicity x with hμ_def
+  -- `Q*P` and `Rmod*P` are nonzero with the same rootMul at `x`.
+  have hQP_ne : Q * P ≠ 0 := mul_ne_zero hQ_ne hP_ne
+  have hRP_ne : Rmod * P ≠ 0 := mul_ne_zero hR_ne hP_ne
+  have h_QP_rootMul : (Q * P).rootMultiplicity x = Q.rootMultiplicity x + μ :=
+    Polynomial.rootMultiplicity_mul hQP_ne
+  have h_RP_rootMul : (Rmod * P).rootMultiplicity x = Rmod.rootMultiplicity x + μ :=
+    Polynomial.rootMultiplicity_mul hRP_ne
+  have h_rootMul_eq : (Q * P).rootMultiplicity x = (Rmod * P).rootMultiplicity x := by
+    rw [h_QP_rootMul, h_RP_rootMul, h_q_eq_r]
+  -- Apply Prop 2.21 to both.
+  have h_QP_right := Proposition2_21.proposition_2_21_right hIVP hQP_ne x
+  have h_RP_right := Proposition2_21.proposition_2_21_right hIVP hRP_ne x
+  -- Show the canonical signs agree.
+  -- Set `k := (Q*P).rootMul x = (Rmod*P).rootMul x = Q.rootMul + µ`.
+  set k := (Q * P).rootMultiplicity x with hk_def
+  -- `Q*P = K*P*P + Rmod*P`.
+  have h_QP_eq_sum : Q * P = K * P * P + Rmod * P := by rw [hQ_eq]; ring
+  -- Show `(D^k(K*P*P)).eval x = 0`.
+  have h_KPP_zero : (((⇑Polynomial.derivative)^[k]) (K * P * P)).eval x = 0 := by
+    by_cases hK : K = 0
+    · rw [hK]; simp
+    have hKP_ne : K * P ≠ 0 := mul_ne_zero hK hP_ne
+    have hKPP_ne : K * P * P ≠ 0 := mul_ne_zero hKP_ne hP_ne
+    have h_KPP_rootMul : (K * P * P).rootMultiplicity x =
+        K.rootMultiplicity x + μ + μ := by
+      rw [Polynomial.rootMultiplicity_mul hKPP_ne,
+        Polynomial.rootMultiplicity_mul hKP_ne]
+    have h_k_lt : k < (K * P * P).rootMultiplicity x := by
+      rw [h_KPP_rootMul]
+      have : k = Q.rootMultiplicity x + μ := h_QP_rootMul
+      omega
+    exact eval_iterate_derivative_eq_zero_of_lt_rootMultiplicity _ _ h_k_lt
+  -- Therefore `(D^k(Q*P)).eval x = (D^k(Rmod*P)).eval x`.
+  have h_eval_eq : (((⇑Polynomial.derivative)^[k]) (Q * P)).eval x =
+      (((⇑Polynomial.derivative)^[(Rmod * P).rootMultiplicity x]) (Rmod * P)).eval x := by
+    have h_iter_add : ((⇑Polynomial.derivative)^[k]) (Q * P) =
+        ((⇑Polynomial.derivative)^[k]) (K * P * P) +
+        ((⇑Polynomial.derivative)^[k]) (Rmod * P) := by
+      rw [h_QP_eq_sum]
+      exact iterate_map_add Polynomial.derivative k (K * P * P) (Rmod * P)
+    rw [h_iter_add, Polynomial.eval_add, h_KPP_zero, zero_add, h_rootMul_eq]
+  -- Hence the canonical signs coincide.
+  have h_signs_eq :
+      SignType.sign ((((⇑Polynomial.derivative)^[(Q * P).rootMultiplicity x])
+        (Q * P)).eval x) =
+      SignType.sign ((((⇑Polynomial.derivative)^[(Rmod * P).rootMultiplicity x])
+        (Rmod * P)).eval x) := by
+    rw [show (Q * P).rootMultiplicity x = k from rfl, h_eval_eq]
+  -- Combine via uniqueness.
+  constructor
+  · intro h
+    have hs : s = SignType.sign ((((⇑Polynomial.derivative)^[(Rmod * P).rootMultiplicity x])
+        (Rmod * P)).eval x) := HasSignRight.unique h h_RP_right
+    rw [hs, ← h_signs_eq]
+    exact h_QP_right
+  · intro h
+    have hs : s = SignType.sign ((((⇑Polynomial.derivative)^[(Q * P).rootMultiplicity x])
+        (Q * P)).eval x) := HasSignRight.unique h h_QP_right
+    rw [hs, h_signs_eq]
+    exact h_RP_right
+
+/-- Helper: jump predicate equivalence under taking `Q` to `Q % P`. -/
+private lemma jumpsFromNegInfToPosInf_mod_iff
+    (hIVP : Azurite.BPR.HasIntermediateValueProperty R)
+    (Q P : R[X]) (hP_ne : P ≠ 0) (x : R) :
+    JumpsFromNegInfToPosInf (Q % P) P x ↔ JumpsFromNegInfToPosInf Q P x := by
+  -- Case split on `Q % P = 0`.
+  rcases eq_or_ne (Q % P) 0 with hR | hR_ne
+  · -- `Q % P = 0`: both jump predicates are False.
+    -- `(Q%P)` side: `HasSignRight (0 * P) x 1` requires sign 0 = 1, impossible.
+    -- `Q` side: if `Q = 0`, multiplicity condition fails. If `Q = K · P` with
+    -- `K ≠ 0`, then `Q.rootMul x ≥ µ_P`, so the multiplicity condition
+    -- `µ_P > Q.rootMul x` fails too.
+    constructor
+    · -- (Q%P) side false: deconstruct and derive False.
+      rintro ⟨_, _, h_sign⟩
+      rw [hR, zero_mul] at h_sign
+      obtain ⟨b, hb_gt, hb_sign⟩ := h_sign
+      obtain ⟨t, ht_lo, ht_hi⟩ := exists_between hb_gt
+      have h_eval : SignType.sign ((0 : R[X]).eval t) = 1 :=
+        hb_sign t ⟨ht_lo, ht_hi⟩
+      simp at h_eval
+    · -- Q side: derive `R = 0` situation, show predicate false.
+      rintro ⟨h_gt, h_odd, h_sign⟩
+      -- Q = K · P (since R = 0), so Q.rootMul ≥ µ_P; contradicts h_gt.
+      have hQ_eq : Q = (Q / P) * P := by
+        have h := EuclideanDomain.div_add_mod Q P
+        rw [hR, add_zero] at h
+        rw [mul_comm]; exact h.symm
+      rcases eq_or_ne (Q / P) 0 with hK | hK
+      · -- Q = 0 · P = 0: rootMul = 0, but x ∈ P.roots gives µ_P > 0, so h_gt
+        -- says `µ_P > 0`. We need a sign condition contradiction.
+        rw [hK, zero_mul] at hQ_eq
+        rw [hQ_eq, zero_mul] at h_sign
+        obtain ⟨b, hb_gt, hb_sign⟩ := h_sign
+        obtain ⟨t, ht_lo, ht_hi⟩ := exists_between hb_gt
+        have h_eval : SignType.sign ((0 : R[X]).eval t) = 1 :=
+          hb_sign t ⟨ht_lo, ht_hi⟩
+        simp at h_eval
+      · -- Q = K · P with K ≠ 0. Q.rootMul = K.rootMul + µ_P ≥ µ_P.
+        have hKP_ne : (Q / P) * P ≠ 0 := mul_ne_zero hK hP_ne
+        have hQ_ne : Q ≠ 0 := hQ_eq ▸ hKP_ne
+        have hQ_rootMul : Q.rootMultiplicity x =
+            (Q / P).rootMultiplicity x + P.rootMultiplicity x := by
+          conv_lhs => rw [hQ_eq]
+          exact Polynomial.rootMultiplicity_mul hKP_ne
+        rw [hQ_rootMul] at h_gt
+        omega
+  · -- `Q % P ≠ 0`: use the helpers.
+    unfold JumpsFromNegInfToPosInf
+    obtain ⟨h_iff_mult, h_eq_mult⟩ :=
+      rootMultiplicity_mod_lt_iff_of_mod_ne Q P hP_ne hR_ne x
+    constructor
+    · rintro ⟨h_gt, h_odd, h_sign⟩
+      have h_gt' := h_iff_mult.mpr h_gt
+      refine ⟨h_gt', ?_,
+        (hasSignRight_mod_iff_of_mod_ne hIVP Q P hP_ne hR_ne x h_gt' 1).mp
+          h_sign⟩
+      rw [(h_eq_mult h_gt').symm] at h_odd
+      exact h_odd
+    · rintro ⟨h_gt, h_odd, h_sign⟩
+      have h_gt' := h_iff_mult.mp h_gt
+      refine ⟨h_gt', ?_,
+        (hasSignRight_mod_iff_of_mod_ne hIVP Q P hP_ne hR_ne x h_gt 1).mpr
+          h_sign⟩
+      rw [h_eq_mult h_gt] at h_odd
+      exact h_odd
+
+/-- Helper: jump predicate equivalence (other direction). -/
+private lemma jumpsFromPosInfToNegInf_mod_iff
+    (hIVP : Azurite.BPR.HasIntermediateValueProperty R)
+    (Q P : R[X]) (hP_ne : P ≠ 0) (x : R) :
+    JumpsFromPosInfToNegInf (Q % P) P x ↔ JumpsFromPosInfToNegInf Q P x := by
+  rcases eq_or_ne (Q % P) 0 with hR | hR_ne
+  · constructor
+    · rintro ⟨_, _, h_sign⟩
+      rw [hR, zero_mul] at h_sign
+      obtain ⟨b, hb_gt, hb_sign⟩ := h_sign
+      obtain ⟨t, ht_lo, ht_hi⟩ := exists_between hb_gt
+      have h_eval : SignType.sign ((0 : R[X]).eval t) = -1 :=
+        hb_sign t ⟨ht_lo, ht_hi⟩
+      simp at h_eval
+    · rintro ⟨h_gt, h_odd, h_sign⟩
+      have hQ_eq : Q = (Q / P) * P := by
+        have h := EuclideanDomain.div_add_mod Q P
+        rw [hR, add_zero] at h
+        rw [mul_comm]; exact h.symm
+      rcases eq_or_ne (Q / P) 0 with hK | hK
+      · rw [hK, zero_mul] at hQ_eq
+        rw [hQ_eq, zero_mul] at h_sign
+        obtain ⟨b, hb_gt, hb_sign⟩ := h_sign
+        obtain ⟨t, ht_lo, ht_hi⟩ := exists_between hb_gt
+        have h_eval : SignType.sign ((0 : R[X]).eval t) = -1 :=
+          hb_sign t ⟨ht_lo, ht_hi⟩
+        simp at h_eval
+      · have hKP_ne : (Q / P) * P ≠ 0 := mul_ne_zero hK hP_ne
+        have hQ_rootMul : Q.rootMultiplicity x =
+            (Q / P).rootMultiplicity x + P.rootMultiplicity x := by
+          conv_lhs => rw [hQ_eq]
+          exact Polynomial.rootMultiplicity_mul hKP_ne
+        rw [hQ_rootMul] at h_gt
+        omega
+  · unfold JumpsFromPosInfToNegInf
+    obtain ⟨h_iff_mult, h_eq_mult⟩ :=
+      rootMultiplicity_mod_lt_iff_of_mod_ne Q P hP_ne hR_ne x
+    constructor
+    · rintro ⟨h_gt, h_odd, h_sign⟩
+      have h_gt' := h_iff_mult.mpr h_gt
+      refine ⟨h_gt', ?_,
+        (hasSignRight_mod_iff_of_mod_ne hIVP Q P hP_ne hR_ne x h_gt' (-1)).mp
+          h_sign⟩
+      rw [(h_eq_mult h_gt').symm] at h_odd
+      exact h_odd
+    · rintro ⟨h_gt, h_odd, h_sign⟩
+      have h_gt' := h_iff_mult.mp h_gt
+      refine ⟨h_gt', ?_,
+        (hasSignRight_mod_iff_of_mod_ne hIVP Q P hP_ne hR_ne x h_gt (-1)).mpr
+          h_sign⟩
+      rw [h_eq_mult h_gt] at h_odd
+      exact h_odd
+
+/-- **BPR Remark 2.55(b).** If `R = Rem(Q, P)` is the Euclidean remainder
+    of `Q` by `P`, then `Ind(Q/P; a, b) = Ind(R/P; a, b)`.
+
+    Intuition: writing `Q = K · P + R` with `K = Q / P` and `R = Q % P`,
+    we have `Q/P = K + R/P` where `K` is a polynomial (everywhere finite),
+    so `Q/P` and `R/P` differ only by a continuous polynomial term, and
+    therefore have the same `±∞`-jumps at any `P`-root. -/
+theorem remark_2_55_b
+    (hIVP : Azurite.BPR.HasIntermediateValueProperty R)
+    (Q P : R[X]) (a b : ExtendedPoint R) (hP_ne : P ≠ 0) :
+    cauchyIndexOn (Q % P) P a b = cauchyIndexOn Q P a b := by
+  classical
+  -- The two filtered Finsets agree pointwise (per `x ∈ P.roots.toFinset`).
+  have h_pos_eq : P.roots.toFinset.filter (fun x =>
+      x ∈ ExtendedPoint.openInterval a b ∧ JumpsFromNegInfToPosInf (Q % P) P x) =
+      P.roots.toFinset.filter (fun x =>
+        x ∈ ExtendedPoint.openInterval a b ∧ JumpsFromNegInfToPosInf Q P x) := by
+    apply Finset.filter_congr
+    intro x _
+    constructor
+    · rintro ⟨h_in, h_jump⟩
+      exact ⟨h_in,
+        (jumpsFromNegInfToPosInf_mod_iff hIVP Q P hP_ne x).mp h_jump⟩
+    · rintro ⟨h_in, h_jump⟩
+      exact ⟨h_in,
+        (jumpsFromNegInfToPosInf_mod_iff hIVP Q P hP_ne x).mpr h_jump⟩
+  have h_neg_eq : P.roots.toFinset.filter (fun x =>
+      x ∈ ExtendedPoint.openInterval a b ∧ JumpsFromPosInfToNegInf (Q % P) P x) =
+      P.roots.toFinset.filter (fun x =>
+        x ∈ ExtendedPoint.openInterval a b ∧ JumpsFromPosInfToNegInf Q P x) := by
+    apply Finset.filter_congr
+    intro x _
+    constructor
+    · rintro ⟨h_in, h_jump⟩
+      exact ⟨h_in,
+        (jumpsFromPosInfToNegInf_mod_iff hIVP Q P hP_ne x).mp h_jump⟩
+    · rintro ⟨h_in, h_jump⟩
+      exact ⟨h_in,
+        (jumpsFromPosInfToNegInf_mod_iff hIVP Q P hP_ne x).mpr h_jump⟩
+  show ((P.roots.toFinset.filter (fun x =>
+      x ∈ ExtendedPoint.openInterval a b ∧
+      JumpsFromNegInfToPosInf (Q % P) P x)).card : ℤ) -
+      ((P.roots.toFinset.filter (fun x =>
+        x ∈ ExtendedPoint.openInterval a b ∧
+        JumpsFromPosInfToNegInf (Q % P) P x)).card : ℤ) =
+      ((P.roots.toFinset.filter (fun x =>
+        x ∈ ExtendedPoint.openInterval a b ∧
+        JumpsFromNegInfToPosInf Q P x)).card : ℤ) -
+      ((P.roots.toFinset.filter (fun x =>
+        x ∈ ExtendedPoint.openInterval a b ∧
+        JumpsFromPosInfToNegInf Q P x)).card : ℤ)
+  rw [h_pos_eq, h_neg_eq]
+
 end Azurite.BPR
