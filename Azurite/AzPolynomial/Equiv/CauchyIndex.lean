@@ -107,16 +107,8 @@ theorem cauchyIndexOn_eq_BPR
     (hIVP : Azurite.BPR.Azurite.BPR.HasIntermediateValueProperty K)
     (Q P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (a b : ExtendedPoint K) (hab : ExtendedPoint.Lt a b)
-    (h_a : ∀ i : ℕ,
-      Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) i = 0 ∨
-        ExtendedPoint.evalPoly
-          (Azurite.BPR.SRemS (AzPolynomial.toPoly P)
-            (AzPolynomial.toPoly Q) i) a ≠ 0)
-    (h_b : ∀ i : ℕ,
-      Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) i = 0 ∨
-        ExtendedPoint.evalPoly
-          (Azurite.BPR.SRemS (AzPolynomial.toPoly P)
-            (AzPolynomial.toPoly Q) i) b ≠ 0)
+    (h_aP : ExtendedPoint.evalPoly (AzPolynomial.toPoly P) a ≠ 0)
+    (h_bP : ExtendedPoint.evalPoly (AzPolynomial.toPoly P) b ≠ 0)
     (h_n_zero : Azurite.BPR.SRemS (AzPolynomial.toPoly P)
         (AzPolynomial.toPoly Q) (Q.coeffs.size + 2) = 0) :
     (cauchyIndexOn Q P a b : ℤ) =
@@ -125,6 +117,6 @@ theorem cauchyIndexOn_eq_BPR
   unfold cauchyIndexOn
   rw [varAt_eq_BPR, varAt_eq_BPR, map_sRemSList_toPoly]
   exact Azurite.BPR.theorem_2_58 hIVP (AzPolynomial.toPoly P)
-    (AzPolynomial.toPoly Q) hP a b hab h_a h_b (Q.coeffs.size + 2) h_n_zero
+    (AzPolynomial.toPoly Q) hP a b hab h_aP h_bP (Q.coeffs.size + 2) h_n_zero
 
 end Azurite.AzPolynomial
