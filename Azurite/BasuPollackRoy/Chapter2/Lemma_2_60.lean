@@ -144,7 +144,7 @@ theorem cauchyIndexOn_neg_mod
   rw [cauchyIndexOn_neg_left, remark_2_55_b hIVP P Q a b hQ_ne]
 
 /-- The "sigma" tracker: `σ(t) = sign(P(t) · Q(t))` at extended `t`. -/
-private noncomputable def sigmaPQ (P Q : R[X]) (t : ExtendedPoint R) : ℤ :=
+noncomputable def sigmaPQ (P Q : R[X]) (t : ExtendedPoint R) : ℤ :=
   (SignType.sign (ExtendedPoint.evalPoly P t * ExtendedPoint.evalPoly Q t) : ℤ)
 
 /-- The "sign-flip contribution" of a polynomial `F` at a point `x`:

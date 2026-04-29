@@ -1,4 +1,5 @@
 import Azurite.AzPolynomial.SturmSequence
+import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.QuoRem
@@ -8,7 +9,9 @@ import Azurite.BasuPollackRoy.Chapter2.SturmSequence
 /-!
 # Equivalence: AzPolynomial Sturm sequence ↔ Polynomial Sturm sequence
 
-`toPoly (sturmSequence P n) = Azurite.BPR.sturmSequence (toPoly P) n`.
+`toPoly (sturmSequence P n) = Azurite.BPR.sturmSequence (toPoly P) n`,
+together with the underlying two-argument identity
+`toPoly (sRemS P Q n) = Azurite.BPR.SRemS (toPoly P) (toPoly Q) n`.
 -/
 
 open Polynomial
@@ -16,17 +19,6 @@ open Polynomial
 namespace Azurite.AzPolynomial
 
 variable {K : Type _} [Field K] [DecidableEq K] [PolynomialDerivative K]
-
-/-- The two-argument signed-remainder sequence on `AzPolynomial`, with the
-    same shape as `Azurite.BPR.SRemS`. We expose this as a building block
-    so `sturmSequence` matches `SRemS P P.derivative` term-by-term. -/
-private def sRemS (P Q : AzPolynomial K) : ℕ → AzPolynomial K
-  | 0 => P
-  | 1 => Q
-  | n + 2 =>
-      let prev := sRemS P Q (n + 1)
-      if prev = 0 then 0
-      else -((sRemS P Q n).rem prev)
 
 private theorem sturmSequence_eq_sRemS (P : AzPolynomial K) (n : ℕ) :
     sturmSequence P n = sRemS P (derivative P) n := by
@@ -41,7 +33,8 @@ private theorem sturmSequence_eq_sRemS (P : AzPolynomial K) (n : ℕ) :
 
 omit [PolynomialDerivative K] in
 open Classical in
-private theorem toPoly_sRemS (P Q : AzPolynomial K) (n : ℕ) :
+/-- `toPoly (sRemS P Q n) = BPR.SRemS (toPoly P) (toPoly Q) n`. -/
+theorem toPoly_sRemS (P Q : AzPolynomial K) (n : ℕ) :
     AzPolynomial.toPoly (sRemS P Q n) =
       Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) n := by
   induction n using Nat.strong_induction_on with

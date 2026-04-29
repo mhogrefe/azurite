@@ -209,6 +209,7 @@ import Azurite.AzNat.Tune
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
+import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
 import Azurite.AzPolynomial.Derivative
@@ -216,6 +217,7 @@ import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzPolynomial.Equiv.Basic
+import Azurite.AzPolynomial.Equiv.CauchyIndex
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Eval
@@ -254,6 +256,7 @@ import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SpecialTranslate
+import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.StringLemmas
 import Azurite.AzPolynomial.SturmSequence
 import Azurite.AzPolynomial.Sub
@@ -327,6 +330,7 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_31
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_33
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_47
+import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
