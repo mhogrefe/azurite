@@ -228,6 +228,7 @@ import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.MulXPow
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.AzPolynomial.Equiv.NumRoots
 import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.QuoRem
@@ -250,6 +251,7 @@ import Azurite.AzPolynomial.MvCoeffParse
 import Azurite.AzPolynomial.MvCoeffParseToString
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.NestedCoeffExamples
+import Azurite.AzPolynomial.NumRoots
 import Azurite.AzPolynomial.ParsableElement
 import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.ParseToString
@@ -316,6 +318,7 @@ import Azurite.BasuPollackRoy.Chapter2.Proposition_2_39
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_40
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_44
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_57
+import Azurite.BasuPollackRoy.Chapter2.Remark_2_51
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
@@ -332,6 +335,7 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_31
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_33
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_47
+import Azurite.BasuPollackRoy.Chapter2.Theorem_2_50
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
