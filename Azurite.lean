@@ -218,6 +218,7 @@ import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.CauchyIndex
+import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Eval
@@ -234,6 +235,7 @@ import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
+import Azurite.AzPolynomial.Equiv.TarskiQuery
 import Azurite.AzPolynomial.Equiv.Translate
 import Azurite.AzPolynomial.Equiv.TRems
 import Azurite.AzPolynomial.Equiv.Tru

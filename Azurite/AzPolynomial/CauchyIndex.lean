@@ -1,13 +1,18 @@
 import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.Cast
+import Azurite.AzPolynomial.Derivative
+import Azurite.AzPolynomial.Mul
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 
 /-!
-# Computable Cauchy Index on `AzPolynomial`
+# Computable Cauchy Index and Tarski Query on `AzPolynomial`
 
-A computable implementation of `Ind(Q/P; a, b)` derived from
-**BPR Theorem 2.58**: `Var(SRemS(P, Q); a, b) = Ind(Q/P; a, b)`.
+Computable implementations of `Ind(Q/P; a, b)` and `TaQ(Q, P; a, b)`
+derived from **BPR Theorems 2.58 and 2.61**:
+
+* `Var(SRemS(P, Q); a, b) = Ind(Q/P; a, b)`,
+* `Var(SRemS(P, P'·Q); a, b) = TaQ(Q, P; a, b)`.
 
 Endpoints come from the existing `Azurite.BPR.ExtendedPoint K` (an
 inductive type, fully computable). Sign-variation counting reuses the
@@ -51,8 +56,8 @@ def varAt {K : Type _} [Ring K] [LinearOrder K] [DecidableEq K]
     `Q`, hitting zero by index `Q.natDegree + 2 ≤ Q.coeffs.size + 2`. -/
 def cauchyIndexOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
     (Q P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
-  (varAt (sRemSList P Q (Q.coeffs.size + 2)) a : ℤ) -
-    (varAt (sRemSList P Q (Q.coeffs.size + 2)) b : ℤ)
+  let L := sRemSList P Q (Q.coeffs.size + 2)
+  (varAt L a : ℤ) - (varAt L b : ℤ)
 
 /-- Cauchy index for `AzPolynomial ℤ` with `ℚ`-endpoints, computed by
     lifting to `AzPolynomial ℚ` via `mapIntToRat`. -/
@@ -87,6 +92,46 @@ private def Q'_int : AzPolynomial ℤ := (parseAzPolynomial "2*x").get!
 
 -- Trivial: `Q = 0` gives Ind = 0.
 #guard cauchyIndexOn (0 : AzPolynomial ℚ) Q_ex .negInf .posInf = 0
+
+/-- **Computable Tarski query.** `tarskiQueryOn Q P a b` computes
+    `TaQ(Q, P; a, b) := ∑_{x ∈ (a, b), P(x) = 0} sign(Q(x)) : ℤ` via
+    `Var(SRemS(P, P'·Q); a, b)` (BPR Theorem 2.61).
+
+    The truncation length `(P'·Q).coeffs.size + 2` captures every nonzero
+    entry of the SRemS sequence: degrees strictly decrease starting from
+    `P'·Q`, hitting zero by index `(P'·Q).natDegree + 2 ≤
+    (P'·Q).coeffs.size + 2`. -/
+def tarskiQueryOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
+    [PolynomialDerivative K]
+    (Q P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
+  let P'Q := P.derivative * Q
+  let L := sRemSList P P'Q (P'Q.coeffs.size + 2)
+  (varAt L a : ℤ) - (varAt L b : ℤ)
+
+/-- Tarski query for `AzPolynomial ℤ` with `ℚ`-endpoints, computed by
+    lifting to `AzPolynomial ℚ` via `mapIntToRat`. -/
+def tarskiQueryOnInt (Q P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
+  tarskiQueryOn (mapIntToRat Q) (mapIntToRat P) a b
+
+/-! ### Worked examples (Tarski query)
+
+`P = X² − 1` has roots `±1`. With `Q = X`:
+* `TaQ(Q, P; −∞, +∞) = sign(1) + sign(−1) = 0`,
+* `TaQ(Q, P; 0, +∞) = sign(1) = 1`,
+* `TaQ(Q, P; −∞, 0) = sign(−1) = −1`. -/
+
+private def Q_taQ_ex : AzPolynomial ℚ := (parseAzPolynomial "x").get!
+
+#guard tarskiQueryOn Q_taQ_ex Q_ex .negInf .posInf = 0
+#guard tarskiQueryOn Q_taQ_ex Q_ex (.finite 0) .posInf = 1
+#guard tarskiQueryOn Q_taQ_ex Q_ex .negInf (.finite 0) = -1
+
+-- Trivial: `Q = 1` gives `TaQ = #roots in interval`.
+#guard tarskiQueryOn (1 : AzPolynomial ℚ) Q_ex .negInf .posInf = 2
+
+-- Integer-coefficient example.
+#guard tarskiQueryOnInt (parseAzPolynomial (R := ℤ) "x").get! Q_int
+  .negInf .posInf = 0
 
 /-! ### BPR Example 2.54
 
