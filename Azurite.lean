@@ -298,6 +298,8 @@ import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
 import Azurite.BasuPollackRoy.Chapter2.Factorization
 import Azurite.BasuPollackRoy.Chapter2.Jumps
 import Azurite.BasuPollackRoy.Chapter2.Lemma_2_48
+import Azurite.BasuPollackRoy.Chapter2.Lemma_2_59
+import Azurite.BasuPollackRoy.Chapter2.Lemma_2_60
 import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
 import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_19

@@ -192,7 +192,7 @@ theorem exercise_1_5 (P Q : K[X]) (hQ : Q ≠ 0) :
     exact absurd hDegSub (not_lt.mpr hDegProd)
 
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
-/-- Rem(aP, bQ) = a · Rem(P, Q) for a, b ∈ K with b ≠ 0. -/
+/-- Remark 1.4, first part. Rem(aP, bQ) = a · Rem(P, Q) for a, b ∈ K with b ≠ 0. -/
 theorem rem_C_mul_C_mul (a b : K) (hb : b ≠ 0) (P Q : K[X]) (hQ : Q ≠ 0) :
     Polynomial.C a * P % (Polynomial.C b * Q) = Polynomial.C a * (P % Q) := by
   simp only [mod_def, leadingCoeff_mul, leadingCoeff_C]
@@ -221,7 +221,7 @@ theorem rem_C_mul_C_mul (a b : K) (hb : b ≠ 0) (P Q : K[X]) (hQ : Q ≠ 0) :
     _ < M.degree := degree_modByMonic_lt P hM
 
 omit [IsAlgClosed C] [IsDomain D] [Algebra D C] [Algebra D K] [IsFractionRing D K] in
-/-- At a root x of Q, Rem(P, Q)(x) = P(x). -/
+/-- Remark 1.4, second part. At a root x of Q, Rem(P, Q)(x) = P(x). -/
 theorem eval_mod_at_root (P Q : K[X]) (x : K) (hx : Polynomial.eval x Q = 0) :
     Polynomial.eval x (P % Q) = Polynomial.eval x P := by
   have h := EuclideanDomain.div_add_mod P Q
