@@ -106,7 +106,37 @@ if [[ $build_status -ne 0 ]]; then
   exit $build_status
 fi
 
-# ── 9. Build the blueprint (PDF and web) ──
+# ── 9. Compile Asymptote diagrams ──
+
+ASY_DIR="blueprint/src/asymptote"
+if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
+  echo ""
+  echo "Compiling Asymptote diagrams..."
+  # dvisvgm (used by `asy -f svg`) needs libgs to convert LaTeX-typeset
+  # axis labels embedded as PostScript specials. Point LIBGS at the
+  # Homebrew install if present; otherwise rely on system search.
+  if [[ -z "${LIBGS:-}" ]]; then
+    for candidate in \
+        /opt/homebrew/lib/libgs.dylib \
+        /usr/local/lib/libgs.dylib \
+        /usr/lib/x86_64-linux-gnu/libgs.so; do
+      if [[ -e "$candidate" ]]; then
+        export LIBGS="$candidate"
+        break
+      fi
+    done
+  fi
+  (cd "$ASY_DIR" && for f in *.asy; do
+    [[ -f "$f" ]] || continue
+    # PDF output for the print build, SVG for the web build (vector, no
+    # rasterization — plastex picks SVG when both are present).
+    echo "  $f -> ${f%.asy}.{pdf,svg}"
+    asy -f pdf "$f"
+    asy -f svg "$f"
+  done)
+fi
+
+# ── 10. Build the blueprint (PDF and web) ──
 
 echo ""
 echo "Running leanblueprint pdf..."
@@ -116,7 +146,7 @@ echo ""
 echo "Running leanblueprint web..."
 leanblueprint web
 
-# ── 10. Print axioms (opt-in) ──
+# ── 11. Print axioms (opt-in) ──
 
 if [[ "$CHECK_AXIOMS" == true ]]; then
   echo ""

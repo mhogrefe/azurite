@@ -25,3 +25,7 @@ chart*.svg
 /blueprint/web/
 /blueprint/lean_decls
 *.paux
+
+# Asymptote diagram outputs (sources are tracked; PDFs and SVGs are regenerated)
+/blueprint/src/asymptote/*.pdf
+/blueprint/src/asymptote/*.svg
