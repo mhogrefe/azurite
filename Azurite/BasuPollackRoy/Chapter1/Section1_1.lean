@@ -1324,7 +1324,7 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
   simp only [monicPoly]
   convert hc using 1
   simp [p, q, Polynomial.eval_add, Polynomial.eval_pow,
-    Polynomial.eval_X, Polynomial.eval_finset_sum,
+    Polynomial.eval_X, Polynomial.eval_finsetSum,
     Polynomial.eval_mul, Polynomial.eval_C]
 
 private lemma forall_realization_univ_iff
@@ -1390,7 +1390,7 @@ theorem isAlgClosed_of_phiD_holds
   simp_rw [h_upd] at hc
   rw [← hc]
   conv_lhs => rw [Polynomial.as_sum_range_C_mul_X_pow p]
-  simp only [d_def, Polynomial.eval_finset_sum, Polynomial.eval_mul,
+  simp only [d_def, Polynomial.eval_finsetSum, Polynomial.eval_mul,
     Polynomial.eval_C, Polynomial.eval_pow, Polynomial.eval_X]
   rw [Finset.sum_range_succ,
     show p.coeff p.natDegree = 1 from hp.coeff_natDegree,

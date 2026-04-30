@@ -343,13 +343,6 @@ instance : NonAssocRing (AzPolynomial R) := fast_instance%
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
     toPoly_natCast toPoly_intCast
 
-instance : AddGroupWithOne (AzPolynomial R) := fast_instance%
-  Function.Injective.addGroupWithOne AzPolynomial.toPoly
-    (fun _ _ h => toPoly_inj.mp h)
-    toPoly_zero toPoly_one toPoly_add toPoly_neg toPoly_sub
-    (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
-    toPoly_natCast toPoly_intCast
-
 instance : Ring (AzPolynomial R) := fast_instance%
   Function.Injective.ring AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub

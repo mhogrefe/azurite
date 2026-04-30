@@ -340,6 +340,17 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
+import Azurite.BasuPollackRoy.Chapter4.Section4_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_2
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_3
+import Azurite.BasuPollackRoy.Chapter4.Section4_3.Subsection4_3_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_3.Subsection4_3_2
+import Azurite.BasuPollackRoy.Chapter4.Section4_4.Subsection4_4_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_4.Subsection4_4_2
+import Azurite.BasuPollackRoy.Chapter4.Section4_5
+import Azurite.BasuPollackRoy.Chapter4.Section4_6
+import Azurite.BasuPollackRoy.Chapter4.Section4_7
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod

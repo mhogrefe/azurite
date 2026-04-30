@@ -444,7 +444,7 @@ theorem exists_isRoot_of_odd_natDegree_of_noext
         -- But (S+1)(x) = ∑ g'ᵢ(x)² + 1, so -1 = ∑ g'ᵢ(x)²
         have : IsSumSq (-1 : R) := by
           have hS_eval : S.eval x = ∑ i : Fin m, (g' i).eval x * (g' i).eval x := by
-            simp [S, eval_finset_sum, eval_mul]
+            simp [S, eval_finsetSum, eval_mul]
           have hS1_eval : (S + 1).eval x = 0 := heval
           rw [eval_add, eval_one] at hS1_eval
           have hSx : S.eval x = -1 := by linear_combination hS1_eval

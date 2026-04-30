@@ -304,12 +304,6 @@ instance : NonUnitalCommRing (AzMvPolynomial n R ord) := fast_instance%
     toMvPoly_zero toMvPoly_add toMvPoly_mul toMvPoly_neg toMvPoly_sub
     (fun _ _ => toMvPoly_nsmul _ _) (fun _ _ => toMvPoly_zsmul _ _)
 
-instance : AddGroupWithOne (AzMvPolynomial n R ord) := fast_instance%
-  Function.Injective.addGroupWithOne AzMvPolynomial.toMvPoly toMvPoly_injective
-    toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_neg toMvPoly_sub
-    (fun _ _ => toMvPoly_nsmul _ _) (fun _ _ => toMvPoly_zsmul _ _)
-    toMvPoly_natCast toMvPoly_intCast
-
 instance : Ring (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.ring AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_mul

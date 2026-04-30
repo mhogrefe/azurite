@@ -1778,7 +1778,7 @@ private lemma eval_iterate_derivative_eq_zero_of_lt_rootMultiplicity
   have hp_eq : p = (X - C x)^μ * q :=
     (Polynomial.pow_mul_divByMonic_rootMultiplicity_eq p x).symm
   conv_lhs => rw [hp_eq]
-  rw [Polynomial.iterate_derivative_mul, Polynomial.eval_finset_sum]
+  rw [Polynomial.iterate_derivative_mul, Polynomial.eval_finsetSum]
   apply Finset.sum_eq_zero
   intro i hi
   rw [Polynomial.eval_smul, Polynomial.eval_mul,

@@ -531,7 +531,7 @@ of `Tru_i(Q)` is `Q.coeff j` when `j ≤ i`, and `0` otherwise. -/
 @[simp] theorem coeff_truncate {R : Type*} [Semiring R] (i : ℕ)
     (Q : Polynomial R) (j : ℕ) :
     (truncate i Q).coeff j = if j ≤ i then Q.coeff j else 0 := by
-  rw [truncate, Polynomial.finset_sum_coeff]
+  rw [truncate, Polynomial.finsetSum_coeff]
   simp only [Polynomial.coeff_monomial, Finset.sum_ite_eq', Finset.mem_range,
     Nat.lt_succ_iff]
 

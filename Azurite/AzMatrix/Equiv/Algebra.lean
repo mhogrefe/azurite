@@ -234,10 +234,6 @@ end SquareData
 section SemiringSection
 variable {R : Type _} [CommSemiring R] {n : Nat}
 
-instance : AddMonoid (AzMatrix R n n) := fast_instance%
-  Function.Injective.addMonoid toMat toMat_injective
-    toMat_zero toMat_add (fun _ _ => toMat_nsmul _ _)
-
 instance : Monoid (AzMatrix R n n) := fast_instance%
   Function.Injective.monoid toMat toMat_injective
     toMat_one toMat_mul toMat_npow
@@ -306,11 +302,6 @@ theorem toMat_intCast (k : ℤ) :
   unfold toMat intCastSq
   ext i j; simp
 
-instance : AddGroup (AzMatrix R n n) := fast_instance%
-  Function.Injective.addGroup toMat toMat_injective
-    toMat_zero toMat_add toMat_neg toMat_sub
-    (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _)
-
 instance : NonUnitalNonAssocRing (AzMatrix R n n) := fast_instance%
   Function.Injective.nonUnitalNonAssocRing toMat toMat_injective
     toMat_zero toMat_add toMat_mul toMat_neg toMat_sub
@@ -324,11 +315,6 @@ instance : NonUnitalRing (AzMatrix R n n) := fast_instance%
 instance : NonAssocRing (AzMatrix R n n) := fast_instance%
   Function.Injective.nonAssocRing toMat toMat_injective
     toMat_zero toMat_one toMat_add toMat_mul toMat_neg toMat_sub
-    (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _) toMat_natCast toMat_intCast
-
-instance : AddGroupWithOne (AzMatrix R n n) := fast_instance%
-  Function.Injective.addGroupWithOne toMat toMat_injective
-    toMat_zero toMat_one toMat_add toMat_neg toMat_sub
     (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _) toMat_natCast toMat_intCast
 
 /-- `AzMatrix R n n` forms a ring when `R` is a commutative ring. -/

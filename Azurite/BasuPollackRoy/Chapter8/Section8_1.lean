@@ -1261,7 +1261,7 @@ theorem Polynomial.specialTrans_eq_horner_comp {K : Type*} [Field K]
       C (c ^ i) * (P.horner i).comp (X - C (b * c⁻¹)) := by
   rw [Polynomial.horner_eq_sum, Polynomial.specialTrans_eq_sum]
   show _ = C (c ^ i) * eval₂ C (X - C (b * c⁻¹)) _
-  rw [eval₂_finset_sum, Finset.mul_sum]
+  rw [eval₂_finsetSum, Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro j hj; rw [Finset.mem_range] at hj
   simp only [eval₂_mul, eval₂_C, eval₂_pow, eval₂_X]
@@ -1303,7 +1303,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
   · push Not at hm
     -- m ≤ n: expand via binomial theorem, only the j = m term survives
     rw [sub_eq_add_neg, ← map_neg, Commute.add_pow (Commute.all _ _)]
-    simp only [finset_sum_coeff, coeff_mul_natCast, mul_pow, ← C_pow, coeff_mul_C, coeff_C_mul,
+    simp only [finsetSum_coeff, coeff_mul_natCast, mul_pow, ← C_pow, coeff_mul_C, coeff_C_mul,
                coeff_X_pow]
 
     rw [Finset.sum_eq_single_of_mem m (mem_range.mpr (by omega))]
@@ -1412,7 +1412,7 @@ theorem Polynomial.bitsize_specialTrans_coeff_le (P : ℤ[X]) (b c : ℤ) (i τ 
     ∀ m, Int.size ((P.specialTrans b c i).coeff m) ≤
       τ + i * (1 + τ') + Nat.size (P.natDegree + 1) := by
   intro m
-  rw [Polynomial.specialTrans_eq_sum, finset_sum_coeff]
+  rw [Polynomial.specialTrans_eq_sum, finsetSum_coeff]
   unfold Int.size at *
   -- Each summand has coeff of bitsize ≤ τ + i*(1+τ')
   have hB : ∀ j ∈ range (i + 1),

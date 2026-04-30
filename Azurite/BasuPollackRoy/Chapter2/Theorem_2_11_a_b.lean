@@ -882,7 +882,7 @@ theorem eval_lagrange_sum {A : Type*} [CommRing A] [DecidableEq ι]
     Polynomial.eval (γ m)
       (∑ i ∈ s, Polynomial.C (c i) * ∏ j ∈ s.erase i, (Polynomial.X - Polynomial.C (γ j))) =
     c m * ∏ j ∈ s.erase m, (γ m - γ j) := by
-  rw [Polynomial.eval_finset_sum]
+  rw [Polynomial.eval_finsetSum]
   rw [Finset.sum_eq_single m]
   · -- Main term
     simp [Polynomial.eval_mul, Polynomial.eval_prod]
