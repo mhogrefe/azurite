@@ -33,9 +33,7 @@ Chapter 4.
 
 | BPR ref | Statement | File | Status |
 |---|---|---|---|
-
-(Empty — populated as Chapter 4 is formalized. Each row links the BPR-numbered
-statement to the Lean file proving it.)
+| Notation 4.1 | Discriminant | `Section4_1/Notation_4_1.lean` | BPR-faithful def landed (product-over-roots in `C`); equivalence to `Polynomial.discr` deferred to §4.2 |
 
 ## Blueprint
 

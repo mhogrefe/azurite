@@ -19,3 +19,9 @@ benchmark-charts/target/
 # Benchmark results and generated charts
 benchmark-results*.txt
 chart*.svg
+
+# Blueprint generated outputs
+/blueprint/print/
+/blueprint/web/
+/blueprint/lean_decls
+*.paux

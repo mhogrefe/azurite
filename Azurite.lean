@@ -341,6 +341,7 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
 import Azurite.BasuPollackRoy.Chapter4.Section4_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_1.Notation_4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_2
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_3
