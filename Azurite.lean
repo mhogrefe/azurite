@@ -380,11 +380,13 @@ import Azurite.Rounding.Basic
 import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc
+import Azurite.Rounding.Mode
 import Azurite.Rounding.Nat
 import Azurite.Rounding.NatBotInt
 import Azurite.Rounding.NatDivPow
 import Azurite.Rounding.Rat
 import Azurite.Rounding.Real
+import Azurite.Rounding.Symmetric
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Div2By1

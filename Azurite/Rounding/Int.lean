@@ -1,4 +1,4 @@
-import Azurite.Rounding.Basic
+import Azurite.Rounding.Symmetric
 import Mathlib.Algebra.Order.Floor.Defs
 import Mathlib.Algebra.Order.Floor.Ring
 
