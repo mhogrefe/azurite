@@ -2,7 +2,6 @@
 /.lake
 *.olean
 *.ilean
-*.c
 
 # OS specific files
 .DS_Store
