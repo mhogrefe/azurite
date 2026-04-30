@@ -283,7 +283,7 @@ private lemma jumpContrib_eq_sign_leading_factor
     * Both zero (handled): both sides are zero by
       `jumpContrib_eq_zero_of_rootMultiplicity_zero` and the parity check
       in `signFlipAt`.
-    * Otherwise (currently `sorry`): exactly one positive, or both positive
+    * Otherwise: exactly one positive, or both positive
       with sum-even, or both positive with sum-odd (single jump matching
       sign-flip direction by Prop 2.21 + factorization `(P·Q)~ = P̃ · Q̃`). -/
 private theorem per_root_jump_sum_eq_signFlip

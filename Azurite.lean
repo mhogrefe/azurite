@@ -343,6 +343,7 @@ import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
 import Azurite.BasuPollackRoy.Chapter4.Section4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Notation_4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_3
+import Azurite.BasuPollackRoy.Chapter4.Section4_1.Remark_4_4
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_2
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_3

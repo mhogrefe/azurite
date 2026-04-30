@@ -35,6 +35,7 @@ Chapter 4.
 |---|---|---|---|
 | Notation 4.1 | Discriminant | `Section4_1/Notation_4_1.lean` | BPR-faithful def landed (product-over-roots in `C`); equivalence to `Polynomial.discr` deferred to §4.2 |
 | Proposition 4.3 | `Disc(P) = 0 ↔ deg(gcd(P, P')) > 0` | `Section4_1/Proposition_4_3.lean` | proved |
+| Remark 4.4 | `Disc(P) > 0` when roots in `R` distinct | `Section4_1/Remark_4_4.lean` | proved (R-side `discR_pos_of_distinct_roots` + bridge `disc_eq_algebraMap_discR` + C-side `disc_pos_of_real_distinct_roots`) |
 
 ## Blueprint
 

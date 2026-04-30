@@ -36,7 +36,7 @@ variable {K : Type*} [Field K] {C : Type*} [Field C] [Algebra K C] [IsAlgClosed 
 
 /-- Count of `(a, b)` in the Cartesian product of multisets equals
     the product of individual counts. -/
-private lemma count_product_eq {α β : Type*}
+lemma count_product_eq {α β : Type*} [DecidableEq α] [DecidableEq β]
     (s : Multiset α) (t : Multiset β) (a : α) (b : β) :
     (s ×ˢ t).count (a, b) = s.count a * t.count b := by
   induction s using Multiset.induction with
@@ -65,7 +65,7 @@ private lemma count_product_eq {α β : Type*}
 
 /-- The diagonal map `y ↦ (y, y)` is injective, so the count of `(a, a)`
     in `s.map (·, ·)` equals `s.count a`. -/
-private lemma count_diag_map {α : Type*} (s : Multiset α) (a : α) :
+lemma count_diag_map {α : Type*} [DecidableEq α] (s : Multiset α) (a : α) :
     (s.map (fun y => ((y, y) : α × α))).count (a, a) = s.count a := by
   apply Multiset.count_map_eq_count' _ _ ?_ a
   intros x y h
