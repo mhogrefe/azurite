@@ -34,6 +34,7 @@ Chapter 4.
 | BPR ref | Statement | File | Status |
 |---|---|---|---|
 | Notation 4.1 | Discriminant | `Section4_1/Notation_4_1.lean` | BPR-faithful def landed (product-over-roots in `C`); equivalence to `Polynomial.discr` deferred to §4.2 |
+| Proposition 4.3 | `Disc(P) = 0 ↔ deg(gcd(P, P')) > 0` | `Section4_1/Proposition_4_3.lean` | proved |
 
 ## Blueprint
 

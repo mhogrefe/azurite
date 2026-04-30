@@ -106,7 +106,17 @@ if [[ $build_status -ne 0 ]]; then
   exit $build_status
 fi
 
-# ── 9. Print axioms (opt-in) ──
+# ── 9. Build the blueprint (PDF and web) ──
+
+echo ""
+echo "Running leanblueprint pdf..."
+leanblueprint pdf
+
+echo ""
+echo "Running leanblueprint web..."
+leanblueprint web
+
+# ── 10. Print axioms (opt-in) ──
 
 if [[ "$CHECK_AXIOMS" == true ]]; then
   echo ""
