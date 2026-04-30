@@ -9,9 +9,6 @@ package «azurite» where
   ]
   -- add any additional package configuration options here
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
-
 @[default_target]
 lean_lib «Azurite» where
   -- add any library configuration options here
@@ -33,3 +30,14 @@ extern_lib timerLib pkg := do
 @[default_target]
 lean_exe «benchmark» where
   root := `Azurite.Benchmark.Main
+
+require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
+
+meta if get_config? env = some "dev" then
+require «doc-gen4» from git
+  "https://github.com/leanprover/doc-gen4" @ "main"
+
+-- Mathlib goes last so its transitive dependency pins (e.g. plausible)
+-- take precedence over doc-gen4's, keeping `lake exe cache get` valid.
+require mathlib from git
+  "https://github.com/leanprover-community/mathlib4.git"
