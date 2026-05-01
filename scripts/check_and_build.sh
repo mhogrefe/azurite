@@ -127,21 +127,35 @@ if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
     done
   fi
   # Determine which .asy files need rebuilding. A diagram is rebuilt
-  # if either of its outputs (.pdf, .svg) is missing, or `git status`
-  # reports the .asy file as modified or untracked. This skips the
-  # (potentially slow) rebuild on diagrams that are already up to
-  # date with their committed source.
+  # if any of:
+  #   * either of its outputs (.pdf, .svg) is missing,
+  #   * `git status` reports its .asy file as modified or untracked, or
+  #   * any shared library file under lib/ is modified or untracked
+  #     (every diagram imports from lib/, so all need rebuilding).
+  # The bash glob `*.asy` matches only top-level files, so library
+  # files in lib/*.asy are never compiled standalone.
   #
   # Launch one background job per .asy (pdf+svg sequentially within
   # each), then wait on all and propagate the worst exit status. PDF
   # for the print build, SVG for the web build — plastex picks SVG
   # when both are present.
   (cd "$ASY_DIR" || exit
+   lib_changed=false
+   if [[ -d lib ]] && compgen -G "lib/*.asy" >/dev/null; then
+     for libfile in lib/*.asy; do
+       if [[ -n "$(git status --porcelain -- "$libfile" 2>/dev/null)" ]]; then
+         lib_changed=true
+         break
+       fi
+     done
+   fi
    to_build=()
    for f in *.asy; do
      [[ -f "$f" ]] || continue
      base="${f%.asy}"
      if [[ ! -f "$base.pdf" ]] || [[ ! -f "$base.svg" ]]; then
+       to_build+=("$f")
+     elif [[ "$lib_changed" == true ]]; then
        to_build+=("$f")
      elif [[ -n "$(git status --porcelain -- "$f" 2>/dev/null)" ]]; then
        to_build+=("$f")
