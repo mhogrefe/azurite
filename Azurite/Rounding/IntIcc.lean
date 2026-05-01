@@ -31,7 +31,8 @@ noncomputable def intIccTiebreak {a b : ℤ}
     (s t : ↥(intIccBotTopSet a b)) : ↥(intIccBotTopSet a b) :=
   if Even (intIccToInt s) then s else if Even (intIccToInt t) then t else s
 
-noncomputable instance (a b : ℤ) : RoundingTarget (intIccBotTopSet a b) where
+noncomputable instance intIccBotTopRoundingTarget (a b : ℤ) :
+    RoundingTarget (intIccBotTopSet a b) where
   existsLeastGE x := by
     by_cases hab : a ≤ b
     · by_cases hxb : x ≤ (b : ℝ)

@@ -17,13 +17,13 @@ namespace RoundingTarget
 /-- `UInt64` values in `EReal` together with `⊥ = -∞` and `⊤ = +∞`. -/
 def uInt64BotTopSet : Set EReal := intIccBotTopSet 0 (2 ^ 64 - 1)
 
-noncomputable instance : RoundingTarget uInt64BotTopSet :=
+noncomputable instance uInt64BotTopRoundingTarget : RoundingTarget uInt64BotTopSet :=
   inferInstanceAs (RoundingTarget (intIccBotTopSet 0 (2 ^ 64 - 1)))
 
 /-- `Int64` values in `EReal` together with `⊥ = -∞` and `⊤ = +∞`. -/
 def int64BotTopSet : Set EReal := intIccBotTopSet (-(2 ^ 63)) (2 ^ 63 - 1)
 
-noncomputable instance : RoundingTarget int64BotTopSet :=
+noncomputable instance int64BotTopRoundingTarget : RoundingTarget int64BotTopSet :=
   inferInstanceAs (RoundingTarget (intIccBotTopSet (-(2 ^ 63)) (2 ^ 63 - 1)))
 
 end RoundingTarget

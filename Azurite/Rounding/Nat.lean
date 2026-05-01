@@ -49,7 +49,7 @@ is `⊥` (where `natBotToNat` returns `0`) the choice is not spec-relevant. -/
 noncomputable def natBotTiebreak (a b : ↥natBotSet) : ↥natBotSet :=
   if Even (natBotToNat a) then a else if Even (natBotToNat b) then b else a
 
-noncomputable instance : RoundingTarget natBotSet where
+noncomputable instance natBotRoundingTarget : RoundingTarget natBotSet where
   existsLeastGE x := by
     refine ⟨((⌈x⌉₊ : ℝ) : EReal), ⟨Or.inr ⟨⌈x⌉₊, rfl⟩, ?_⟩, ?_⟩
     · exact_mod_cast Nat.le_ceil x
