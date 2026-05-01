@@ -126,14 +126,36 @@ if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
       fi
     done
   fi
+  # Determine which .asy files need rebuilding. A diagram is rebuilt
+  # if either of its outputs (.pdf, .svg) is missing, or `git status`
+  # reports the .asy file as modified or untracked. This skips the
+  # (potentially slow) rebuild on diagrams that are already up to
+  # date with their committed source.
+  #
   # Launch one background job per .asy (pdf+svg sequentially within
   # each), then wait on all and propagate the worst exit status. PDF
   # for the print build, SVG for the web build — plastex picks SVG
   # when both are present.
   (cd "$ASY_DIR" || exit
-   pids=()
+   to_build=()
    for f in *.asy; do
      [[ -f "$f" ]] || continue
+     base="${f%.asy}"
+     if [[ ! -f "$base.pdf" ]] || [[ ! -f "$base.svg" ]]; then
+       to_build+=("$f")
+     elif [[ -n "$(git status --porcelain -- "$f" 2>/dev/null)" ]]; then
+       to_build+=("$f")
+     fi
+   done
+
+   if [[ ${#to_build[@]} -eq 0 ]]; then
+     echo "  All diagrams up to date."
+     exit 0
+   fi
+
+   echo "  Rebuilding ${#to_build[@]} diagram(s):"
+   pids=()
+   for f in "${to_build[@]}"; do
      echo "  $f -> ${f%.asy}.{pdf,svg}"
      (asy -f pdf "$f" && asy -f svg "$f") &
      pids+=($!)
