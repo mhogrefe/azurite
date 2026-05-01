@@ -111,7 +111,7 @@ fi
 ASY_DIR="blueprint/src/asymptote"
 if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
   echo ""
-  echo "Compiling Asymptote diagrams..."
+  echo "Compiling Asymptote diagrams (in parallel)..."
   # dvisvgm (used by `asy -f svg`) needs libgs to convert LaTeX-typeset
   # axis labels embedded as PostScript specials. Point LIBGS at the
   # Homebrew install if present; otherwise rely on system search.
@@ -126,14 +126,23 @@ if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
       fi
     done
   fi
-  (cd "$ASY_DIR" && for f in *.asy; do
-    [[ -f "$f" ]] || continue
-    # PDF output for the print build, SVG for the web build (vector, no
-    # rasterization — plastex picks SVG when both are present).
-    echo "  $f -> ${f%.asy}.{pdf,svg}"
-    asy -f pdf "$f"
-    asy -f svg "$f"
-  done)
+  # Launch one background job per .asy (pdf+svg sequentially within
+  # each), then wait on all and propagate the worst exit status. PDF
+  # for the print build, SVG for the web build — plastex picks SVG
+  # when both are present.
+  (cd "$ASY_DIR" || exit
+   pids=()
+   for f in *.asy; do
+     [[ -f "$f" ]] || continue
+     echo "  $f -> ${f%.asy}.{pdf,svg}"
+     (asy -f pdf "$f" && asy -f svg "$f") &
+     pids+=($!)
+   done
+   status=0
+   for pid in "${pids[@]}"; do
+     wait "$pid" || status=1
+   done
+   exit "$status")
 fi
 
 # ── 10. Build the blueprint (PDF and web) ──
