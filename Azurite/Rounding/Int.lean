@@ -40,7 +40,7 @@ noncomputable def intTiebreak (a b : ↥intSet) : ↥intSet :=
   else if (toInt b).natAbs < (toInt a).natAbs then b
   else a
 
-noncomputable instance : RoundingTarget intSet where
+noncomputable instance intRoundingTarget : RoundingTarget intSet where
   existsLeastGE x := by
     refine ⟨((⌈x⌉ : ℝ) : EReal), ⟨⟨⌈x⌉, rfl⟩, ?_⟩, ?_⟩
     · exact_mod_cast Int.le_ceil x
@@ -109,7 +109,7 @@ private lemma toInt_neg (a : ↥intSet) :
 private lemma val_eq_coe_toInt (a : ↥intSet) : a.val = ((toInt a : ℝ) : EReal) :=
   (toInt_spec a).symm
 
-noncomputable instance : SymmetricRoundingTarget intSet where
+noncomputable instance intSymmetricRoundingTarget : SymmetricRoundingTarget intSet where
   zero_mem := ⟨0, by push_cast; rfl⟩
   neg_mem := intSet_neg_mem
   tiebreak_neg a b hne := by
