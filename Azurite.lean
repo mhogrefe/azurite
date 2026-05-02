@@ -298,6 +298,12 @@ import Azurite.AzVector.Operations
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Parse
 import Azurite.BasuPollackRoy.Chapter1.Section1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_2
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Notation1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
