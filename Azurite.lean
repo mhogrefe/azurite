@@ -313,6 +313,8 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.RealizationInvariance
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Sentences
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.Divisor
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.PolynomialBasics
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
 import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
