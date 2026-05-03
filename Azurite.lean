@@ -297,12 +297,14 @@ import Azurite.AzVector.Equiv.Zero
 import Azurite.AzVector.Operations
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Parse
-import Azurite.BasuPollackRoy.Chapter1.Section1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Example1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_1
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_4
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.FieldFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Formula
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Notation1_1

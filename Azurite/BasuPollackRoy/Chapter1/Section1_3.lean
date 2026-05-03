@@ -1,7 +1,21 @@
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.Algebra.MvPolynomial.Polynomial
-import Azurite.BasuPollackRoy.Chapter1.Section1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Example1_2
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_2
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_4
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.FieldFormula
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Formula
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Notation1_1
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.PrenexNormalForm
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.RealizationInvariance
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Sentences
 import Azurite.BasuPollackRoy.Chapter1.Section1_2
 
 /-!
