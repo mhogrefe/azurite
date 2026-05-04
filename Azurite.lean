@@ -312,10 +312,10 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_1.PrenexNormalForm
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.RealizationInvariance
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Sentences
-import Azurite.BasuPollackRoy.Chapter1.Section1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Coprime
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Corollary1_6
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_10
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_13
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_7
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Divisor
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.EuclideanDivision
@@ -325,11 +325,15 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2.Exercise1_7
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Gcd
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lcm
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_11
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_14
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_14Corollaries
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.PolynomialBasics
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_12
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_5
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_8
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_9
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Remark1_4
+import Azurite.BasuPollackRoy.Chapter1.Section1_2.RootCharacterizations
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
