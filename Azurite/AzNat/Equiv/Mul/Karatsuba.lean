@@ -102,38 +102,14 @@ theorem absSubLimbsKM.copy_toNat (a : Array UInt64) (loA k : Nat)
     toNatLimbsList (absSubLimbsKM.copy a loA k hA).1.toList
       = toNatLimbsList ((a.toList.drop loA).take k) := by
   unfold absSubLimbsKM.copy
-  -- Set up the buffer and the carry-zero argument.
-  set buf₀ : Array UInt64 := Array.replicate k 0 with hbuf₀_def
-  have hbuf₀_sz : buf₀.size = k := by rw [hbuf₀_def]; exact Array.size_replicate
-  have hbuf₀ : 0 + k ≤ buf₀.size := by rw [hbuf₀_sz]; omega
-  -- toNat of a zero buffer slice is 0.
-  have h_buf₀_zero : toNatLimbsList ((buf₀.toList.drop 0).take k) = 0 := by
-    rw [← toNat_full_eq_slice _ _ hbuf₀_sz, hbuf₀_def]
-    exact toNat_replicate_zero k
-  -- addSameLengthLimbs gives us: result + carry · β^k = 0 + A₀.
-  set r := addSameLengthLimbs buf₀ a 0 loA k hbuf₀ hA with hr_def
-  have h_r_size : r.1.size = k := by
-    rw [hr_def, addSameLengthLimbs_size, hbuf₀_sz]
-  have h_eq := addSameLengthLimbs_toNat buf₀ a 0 loA k hbuf₀ hA
-  rw [show addSameLengthLimbs buf₀ a 0 loA k hbuf₀ hA = r from rfl] at h_eq
-  simp only at h_eq
-  rw [h_buf₀_zero] at h_eq
-  -- A₀ < β^k, so the carry must be 0.
-  have hA0_lt : toNatLimbsList ((a.toList.drop loA).take k) < 2 ^ (64 * k) :=
-    slice_lt_pow a loA k
-  have h_r_slice_lt : toNatLimbsList ((r.1.toList.drop 0).take k) < 2 ^ (64 * k) :=
-    slice_lt_pow r.1 0 k
-  have h_carry_zero : r.2 = false := by
-    match h : r.2 with
-    | false => rfl
-    | true =>
-      exfalso
-      have h_one : r.2.toNat = 1 := by rw [h]; rfl
-      rw [h_one] at h_eq; omega
-  rw [h_carry_zero] at h_eq
-  simp at h_eq
-  -- Conclude.
-  rw [toNat_full_eq_slice r.1 k h_r_size]; exact h_eq
+  -- The new implementation uses `Array.extract` (a plain memcpy), so the
+  -- buffer's `toList` is directly the slice we want.
+  show toNatLimbsList (a.extract loA (loA + k)).toList
+        = toNatLimbsList ((a.toList.drop loA).take k)
+  congr 1
+  rw [Array.toList_extract, List.extract_eq_take_drop]
+  congr 1
+  omega
 
 /-- Stage 2: `subPart a cpy loA k m` returns `(diff, borrow)` where
     `borrow = true ↔ toNat cpy < A₁`, and

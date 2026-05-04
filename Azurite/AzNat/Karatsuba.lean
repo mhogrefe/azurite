@@ -8,28 +8,22 @@ namespace Azurite.AzNat
 
 namespace absSubLimbsKM
 
-/-- Stage 1: copy `a[loA..loA+k]` into a fresh `k`-limb buffer.
-    Implemented by adding `a`'s slice into a zero buffer.
+/-- Stage 1: copy `a[loA..loA+k]` into a fresh `k`-limb buffer using
+    `Array.extract` (a plain memcpy), avoiding the `addWithCarry`
+    overhead that the previous `addSameLengthLimbs`-into-zero
+    implementation paid per limb.
 
-    OPTIMIZATION (TODO): two improvements possible without changing semantics:
-    1. Replace `addSameLengthLimbs` with `Array.extract`/plain copy — we are
-       paying `addWithCarry` overhead per limb to copy a value that never
-       overflows (input carry is always 0).
-    2. Fuse `copy` + `subPart` into a single pass: the low `m` limbs of the
-       buffer are immediately overwritten by `subPart`, so copying them here
-       is wasted work.  Only the high `k − m` limbs strictly need to come
-       from `a`.  This requires a new "subtract two `a`-slices into a fresh
-       buffer" primitive.  Impact on overall Karatsuba runtime is small
-       (the `2k × 2k` recursive multiplications dominate), but worth noting. -/
+    OPTIMIZATION (future): the `copy` and `subPart` stages could be
+    fused into a single pass — the low `m` limbs produced here are
+    immediately overwritten by `subPart`, so only the high `k − m`
+    limbs strictly need to come from `a`.  This requires a new
+    "subtract two `a`-slices into a fresh buffer" primitive.  Impact
+    on overall Karatsuba runtime is small (the `2k × 2k` recursive
+    multiplications dominate), but worth noting. -/
 def copy (a : Array UInt64) (loA k : Nat) (hA : loA + k ≤ a.size) :
     { c : Array UInt64 // c.size = k } :=
-  let buf₀ : Array UInt64 := Array.replicate k 0
-  have hbuf₀_sz : buf₀.size = k := Array.size_replicate
-  have hbuf₀ : 0 + k ≤ buf₀.size := by rw [hbuf₀_sz]; omega
-  let r := addSameLengthLimbs buf₀ a 0 loA k hbuf₀ hA
-  ⟨r.1, by
-    show (addSameLengthLimbs buf₀ a 0 loA k hbuf₀ hA).1.size = k
-    rw [addSameLengthLimbs_size, hbuf₀_sz]⟩
+  ⟨a.extract loA (loA + k), by
+    rw [Array.size_extract]; omega⟩
 
 /-- Stage 2: subtract `a[loA+k..loA+k+m]` from a length-`k` buffer.
     Returns `(diff, borrow)`: `borrow = true` ⇔ original buffer < subtrahend. -/
