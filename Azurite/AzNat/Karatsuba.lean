@@ -8,35 +8,73 @@ namespace Azurite.AzNat
 
 namespace absSubLimbsKM
 
-/-- Stage 1: copy `a[loA..loA+k]` into a fresh `k`-limb buffer using
-    `Array.extract` (a plain memcpy), avoiding the `addWithCarry`
-    overhead that the previous `addSameLengthLimbs`-into-zero
-    implementation paid per limb.
+/-- Recursive helper for `copySub`.  Iterates `i` from the input value
+    up to `k`, setting `r[i]` to the limb value computed from `a`:
 
-    OPTIMIZATION (future): the `copy` and `subPart` stages could be
-    fused into a single pass — the low `m` limbs produced here are
-    immediately overwritten by `subPart`, so only the high `k − m`
-    limbs strictly need to come from `a`.  This requires a new
-    "subtract two `a`-slices into a fresh buffer" primitive.  Impact
-    on overall Karatsuba runtime is small (the `2k × 2k` recursive
-    multiplications dominate), but worth noting. -/
-def copy (a : Array UInt64) (loA k : Nat) (hA : loA + k ≤ a.size) :
-    { c : Array UInt64 // c.size = k } :=
-  ⟨a.extract loA (loA + k), by
-    rw [Array.size_extract]; omega⟩
+    * `i < m`: `r[i] := a[loA+i] − a[loA+k+i] − borrow`,
+    * `i ≥ m`: `r[i] := a[loA+i] − borrow` (subtrahend is zero, only
+      borrow propagates).
 
-/-- Stage 2: subtract `a[loA+k..loA+k+m]` from a length-`k` buffer.
-    Returns `(diff, borrow)`: `borrow = true` ⇔ original buffer < subtrahend. -/
-def subPart (a cpy : Array UInt64) (loA k m : Nat)
-    (hCpy : cpy.size = k) (ha : loA + k + m ≤ a.size)
-    (h_le : m ≤ k) (h_kpos : 0 < k) (h_mpos : 0 < m) :
+    The buffer `r` is pre-allocated to size `k` and mutated in place. -/
+def copySub.go (a : Array UInt64) (loA k m i : Nat) (borrow : Bool)
+    (r : Array UInt64) (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (h_r : r.size = k) (_h_i : i ≤ k) :
+    Array UInt64 × Bool :=
+  if h : i < k then
+    have h_iA : loA + i < a.size := by omega
+    have h_i_r : i < r.size := by rw [h_r]; exact h
+    let x := a[loA + i]
+    if hm : i < m then
+      have h_iB : loA + k + i < a.size := by omega
+      let y := a[loA + k + i]
+      let swb := UInt64.subWithBorrow x y borrow
+      copySub.go a loA k m (i + 1) swb.2 (r.set i swb.1 h_i_r) h_a h_le
+        (by rw [Array.size_set, h_r]) (by omega)
+    else
+      let swb := UInt64.subWithBorrow x 0 borrow
+      copySub.go a loA k m (i + 1) swb.2 (r.set i swb.1 h_i_r) h_a h_le
+        (by rw [Array.size_set, h_r]) (by omega)
+  else
+    (r, borrow)
+  termination_by k - i
+
+/-- Size preservation of `copySub.go`: the buffer stays at size `k`. -/
+theorem copySub.go_size (a : Array UInt64) (loA k m i : Nat) (borrow : Bool)
+    (r : Array UInt64) (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (h_r : r.size = k) (h_i : i ≤ k) :
+    (copySub.go a loA k m i borrow r h_a h_le h_r h_i).1.size = k := by
+  induction h_sub : k - i generalizing r i borrow with
+  | zero =>
+    have h_ge : k ≤ i := by omega
+    rw [copySub.go]
+    simp [Nat.not_lt.mpr h_ge, h_r]
+  | succ n ih =>
+    have h_lt : i < k := by omega
+    rw [copySub.go]
+    simp only [h_lt, ↓reduceDIte]
+    have h_rec : k - (i + 1) = n := by omega
+    by_cases hm : i < m
+    · simp only [hm, ↓reduceDIte]
+      rw [ih _ _ _ (by rw [Array.size_set, h_r]) (by omega) h_rec]
+    · simp only [hm, ↓reduceDIte]
+      rw [ih _ _ _ (by rw [Array.size_set, h_r]) (by omega) h_rec]
+
+/-- Fused stage 1+2: compute `a[loA..loA+k] - a[loA+k..loA+k+m]` (the
+    subtrahend zero-extended to `k` limbs) into a fresh `k`-limb buffer
+    in a single pass, returning `(d, borrow)` with `borrow = true` ⇔
+    `a[loA..loA+k] < a[loA+k..loA+k+m]`.  This replaces the previous
+    two-stage `copy` + `subPart` flow, eliminating the wasted copy of
+    the low `m` limbs of `a[loA..loA+k]` (which were overwritten
+    immediately by the subtraction). -/
+def copySub (a : Array UInt64) (loA k m : Nat)
+    (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (_h_kpos : 0 < k) (_h_mpos : 0 < m) :
     { d : Array UInt64 // d.size = k } × Bool :=
-  have hcpy_size' : 0 + k ≤ cpy.size := by rw [hCpy]; omega
-  have ha1 : (loA + k) + m ≤ a.size := by omega
-  let r := subGeqLimbs cpy a 0 k (loA + k) m hcpy_size' ha1 h_le h_kpos h_mpos
-  (⟨r.1, by
-    show (subGeqLimbs cpy a 0 k (loA + k) m hcpy_size' ha1 h_le h_kpos h_mpos).1.size = k
-    rw [subGeqLimbs_size, hCpy]⟩, r.2)
+  let r₀ : Array UInt64 := Array.replicate k 0
+  have hr₀_sz : r₀.size = k := Array.size_replicate
+  let result := copySub.go a loA k m 0 false r₀ h_a h_le hr₀_sz (Nat.zero_le _)
+  (⟨result.1, copySub.go_size a loA k m 0 false r₀ h_a h_le hr₀_sz (Nat.zero_le _)⟩,
+   result.2)
 
 /-- Stage 3: negate a length-`k` buffer (compute `β^k − toNat d`). -/
 def negPart (d : Array UInt64) (k : Nat) (hd : d.size = k) :
@@ -60,12 +98,11 @@ with `m ≤ k`. The result is a fresh `k`-limb array along with a sign bit:
 def absSubLimbsKM (a : Array UInt64) (loA k m : Nat)
     (hA : loA + k + m ≤ a.size) (h_le : m ≤ k) (h_kpos : 0 < k) (h_mpos : 0 < m) :
     { d : Array UInt64 // d.size = k } × Bool :=
-  let cpy := absSubLimbsKM.copy a loA k (by omega)
-  let sub := absSubLimbsKM.subPart a cpy.1 loA k m cpy.2 hA h_le h_kpos h_mpos
-  if sub.2 then
-    (absSubLimbsKM.negPart sub.1.1 k sub.1.2, false)
+  let cs := absSubLimbsKM.copySub a loA k m hA h_le h_kpos h_mpos
+  if cs.2 then
+    (absSubLimbsKM.negPart cs.1.1 k cs.1.2, false)
   else
-    (sub.1, true)
+    (cs.1, true)
 
 -- ── karatsubaMulLimbsRec stages ─────────────────────────────────────────────
 

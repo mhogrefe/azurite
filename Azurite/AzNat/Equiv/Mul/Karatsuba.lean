@@ -92,77 +92,321 @@ private lemma toNat_replicate_zero (k : Nat) :
 
 Writing `A₀, A₁` for the low- and high-half slice values, the postcondition of
 `absSubLimbsKM` is `r.2 = true ↔ A₁ ≤ A₀` and `toNat r.1.1 = |A₀ − A₁|`.
-We build it from the three stage lemmas `copy_toNat`, `subPart_toNat`, and
+We build it from `copySub_toNat` (the fused stage 1+2 lemma) and
 `negPart_toNat`.
 -/
 
-/-- Stage 1: `copy a loA k` produces a length-`k` array equal to `A₀`. -/
-theorem absSubLimbsKM.copy_toNat (a : Array UInt64) (loA k : Nat)
-    (hA : loA + k ≤ a.size) :
-    toNatLimbsList (absSubLimbsKM.copy a loA k hA).1.toList
-      = toNatLimbsList ((a.toList.drop loA).take k) := by
-  unfold absSubLimbsKM.copy
-  -- The new implementation uses `Array.extract` (a plain memcpy), so the
-  -- buffer's `toList` is directly the slice we want.
-  show toNatLimbsList (a.extract loA (loA + k)).toList
-        = toNatLimbsList ((a.toList.drop loA).take k)
-  congr 1
-  rw [Array.toList_extract, List.extract_eq_take_drop]
-  congr 1
-  omega
+/-- `copySub.go` preserves any prefix `[0, j)` of `r` whenever `j ≤ i`. -/
+private theorem absSubLimbsKM.copySub.go_toList_take_le (a : Array UInt64) (loA k m : Nat)
+    (i : Nat) (borrow : Bool) (r : Array UInt64)
+    (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (h_r : r.size = k) (h_i : i ≤ k) (j : Nat) (hj : j ≤ i) :
+    (absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i).1.toList.take j
+      = r.toList.take j := by
+  induction h_sub : k - i generalizing r i borrow with
+  | zero =>
+    have h_ge : k ≤ i := by omega
+    rw [absSubLimbsKM.copySub.go]
+    simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < k := by omega
+    have h_rec : k - (i + 1) = n := by omega
+    rw [absSubLimbsKM.copySub.go]
+    simp only [h_lt, ↓reduceDIte]
+    by_cases hm : i < m
+    · simp only [hm, ↓reduceDIte]
+      rw [ih _ _ _ (by rw [Array.size_set, h_r]) (by omega) (by omega) h_rec]
+      rw [Array.toList_set, List.take_set_of_le hj]
+    · simp only [hm, ↓reduceDIte]
+      rw [ih _ _ _ (by rw [Array.size_set, h_r]) (by omega) (by omega) h_rec]
+      rw [Array.toList_set, List.take_set_of_le hj]
 
-/-- Stage 2: `subPart a cpy loA k m` returns `(diff, borrow)` where
-    `borrow = true ↔ toNat cpy < A₁`, and
-    `toNat diff = toNat cpy + (if borrow then β^k else 0) − A₁`. -/
-theorem absSubLimbsKM.subPart_toNat (a cpy : Array UInt64) (loA k m : Nat)
-    (hCpy : cpy.size = k) (ha : loA + k + m ≤ a.size)
-    (h_le : m ≤ k) (h_kpos : 0 < k) (h_mpos : 0 < m) :
-    let r := absSubLimbsKM.subPart a cpy loA k m hCpy ha h_le h_kpos h_mpos
-    let cpyVal := toNatLimbsList cpy.toList
+/-- `copySub.go` preserves the prefix of `r` up to index `i`. -/
+private theorem absSubLimbsKM.copySub.go_toList_take (a : Array UInt64) (loA k m : Nat)
+    (i : Nat) (borrow : Bool) (r : Array UInt64)
+    (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (h_r : r.size = k) (h_i : i ≤ k) :
+    (absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i).1.toList.take i
+      = r.toList.take i :=
+  absSubLimbsKM.copySub.go_toList_take_le a loA k m i borrow r h_a h_le h_r h_i i (Nat.le_refl _)
+
+/-- Recursive correctness invariant for `copySub.go`.  Threading the
+    "remaining" minuend `A₀[i..k]`, subtrahend `A₁[i..m]`, and the
+    accumulator `r`'s positions `[i, k)`:
+    `A₀[i..k] + b_out · 2^(64·(k−i)) = r_out[i..k] + A₁[i..m] + b_in`.
+    -/
+private lemma absSubLimbsKM.copySub.go_correct (a : Array UInt64) (loA k m : Nat)
+    (i : Nat) (borrow : Bool) (r : Array UInt64)
+    (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k)
+    (h_r : r.size = k) (h_i : i ≤ k) :
+    toNatLimbsList ((a.toList.drop (loA + i)).take (k - i))
+      + (absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i).2.toNat
+        * 2 ^ (64 * (k - i))
+    = toNatLimbsList
+        (((absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i).1.toList.drop i).take
+          (k - i))
+      + toNatLimbsList ((a.toList.drop (loA + k + i)).take (m - i))
+      + borrow.toNat := by
+  induction h_sub : k - i generalizing r i borrow with
+  | zero =>
+    have h_ge : k ≤ i := by omega
+    have h_eq : absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i = (r, borrow) := by
+      rw [absSubLimbsKM.copySub.go]
+      simp [Nat.not_lt.mpr h_ge]
+    rw [h_eq]
+    have h_mi : m - i = 0 := by omega
+    simp [h_mi, toNatLimbsList]
+  | succ n ih =>
+    have h_lt : i < k := by omega
+    have h_iA : loA + i < a.size := by omega
+    have h_i_r : i < r.size := by rw [h_r]; exact h_lt
+    have h_rec : k - (i + 1) = n := by omega
+    -- Helper: split a slice at the head index.
+    have split_arr : ∀ (A : Array UInt64) (j p : Nat) (hj : j < A.size),
+        toNatLimbsList ((A.toList.drop j).take (p + 1))
+          = A[j].toNat + toNatLimbsList ((A.toList.drop (j + 1)).take p) * 2 ^ 64 := by
+      intro A j p hj
+      have h_lt_list : j < A.toList.length := hj
+      rw [List.drop_eq_getElem_cons h_lt_list, List.take_succ_cons, toNatLimbsList_cons]
+      rw [show A.toList[j] = A[j] from (Array.getElem_toList hj).symm]
+      ring
+    -- The recursion descends to (i+1) with a new array `a'` and new borrow.
+    by_cases hm : i < m
+    · -- Low phase: subtrahend is a[loA+k+i].
+      have h_iB : loA + k + i < a.size := by omega
+      set swb := UInt64.subWithBorrow a[loA + i] a[loA + k + i] borrow with hswb_def
+      set diff := swb.1 with hdiff_def
+      set newBorrow := swb.2 with hnb_def
+      set r' := r.set i diff h_i_r with hr'_def
+      have hr'_sz : r'.size = k := by rw [hr'_def, Array.size_set, h_r]
+      have h_i_step : i + 1 ≤ k := by omega
+      have h_eq :
+          absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i
+            = absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r'
+                h_a h_le hr'_sz h_i_step := by
+        conv_lhs => rw [absSubLimbsKM.copySub.go]
+        simp [h_lt, hm, hswb_def, hdiff_def, hnb_def, hr'_def]
+      have h_ih := ih (i + 1) newBorrow r' hr'_sz h_i_step h_rec
+      have h_swb := UInt64.subWithBorrow_eq a[loA + i] a[loA + k + i] borrow
+      rw [← hswb_def] at h_swb
+      have h_res_size :
+          (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.size
+            = k := absSubLimbsKM.copySub.go_size _ _ _ _ _ _ _ _ _ _ _
+      have h_res_i_size :
+          i < (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.size := by
+        rw [h_res_size]; exact h_lt
+      have h_res_i :
+          (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1[i]'h_res_i_size
+            = diff := by
+        have h_prefix :=
+          absSubLimbsKM.copySub.go_toList_take a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step
+        have h_len_L :
+            ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList).length
+              = k := by rw [Array.length_toList]; exact h_res_size
+        have h_i_lt_L_take :
+            i < ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.take
+                  (i + 1)).length := by
+          rw [List.length_take, h_len_L]; omega
+        have h_i_lt_R_take : i < (r'.toList.take (i + 1)).length := by
+          rw [List.length_take, Array.length_toList, hr'_def, Array.size_set]; omega
+        have h_get_eq :
+            ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.take
+                (i + 1))[i]'h_i_lt_L_take
+              = (r'.toList.take (i + 1))[i]'h_i_lt_R_take := by
+          congr 1
+        rw [List.getElem_take, List.getElem_take] at h_get_eq
+        rw [← Array.getElem_toList h_res_i_size, h_get_eq]
+        have h_i_lt : i < (r.set i diff h_i_r).toList.length := by
+          rw [Array.length_toList, Array.size_set]; exact h_i_r
+        show (r.set i diff h_i_r).toList[i]'h_i_lt = diff
+        simp [Array.toList_set, List.getElem_set_self]
+      rw [h_eq]
+      rw [show n + 1 = k - i from h_sub.symm]
+      have h_k_split : k - i = (k - (i + 1)) + 1 := by omega
+      have h_m_split : m - i = (m - (i + 1)) + 1 := by omega
+      rw [h_k_split]
+      rw [split_arr (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1
+            i (k - (i + 1)) h_res_i_size]
+      rw [h_res_i]
+      rw [split_arr a (loA + i) (k - (i + 1)) h_iA]
+      rw [h_m_split]
+      rw [split_arr a (loA + k + i) (m - (i + 1)) h_iB]
+      have h_pow : (2 : Nat) ^ (64 * ((k - (i + 1)) + 1))
+                  = 2 ^ (64 * (k - (i + 1))) * 2 ^ 64 := by
+        rw [show 64 * ((k - (i + 1)) + 1) = 64 * (k - (i + 1)) + 64 from by ring, Nat.pow_add]
+      rw [h_pow]
+      rw [show loA + i + 1 = loA + (i + 1) from by ring]
+      rw [show loA + k + i + 1 = loA + k + (i + 1) from by ring]
+      rw [← h_rec] at h_ih
+      set P := toNatLimbsList ((a.toList.drop (loA + (i + 1))).take (k - (i + 1))) with hP_def
+      set Q := toNatLimbsList
+          (((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.drop
+              (i + 1)).take (k - (i + 1))) with hQ_def
+      set S := toNatLimbsList ((a.toList.drop (loA + k + (i + 1))).take (m - (i + 1))) with hS_def
+      set R := (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).2.toNat
+        with hR_def
+      change a[loA + i].toNat + P * 2 ^ 64 + R * (2 ^ (64 * (k - (i + 1))) * 2 ^ 64)
+           = diff.toNat + Q * 2 ^ 64
+             + (a[loA + k + i].toNat + S * 2 ^ 64) + borrow.toNat
+      have h1 : a[loA + i].toNat + P * 2 ^ 64 + R * (2 ^ (64 * (k - (i + 1))) * 2 ^ 64)
+              = a[loA + i].toNat + (P + R * 2 ^ (64 * (k - (i + 1)))) * 2 ^ 64 := by ring
+      rw [h1, h_ih]
+      have h_limb : a[loA + i].toNat + (if newBorrow then 1 else 0) * 2 ^ 64
+                  = diff.toNat + a[loA + k + i].toNat + (if borrow then 1 else 0) := by
+        rw [hdiff_def, hnb_def]; omega
+      have h_bN : newBorrow.toNat = (if newBorrow then 1 else 0) := by cases newBorrow <;> simp
+      have h_b : borrow.toNat = (if borrow then 1 else 0) := by cases borrow <;> simp
+      rw [h_bN, h_b]
+      have goal_eq :
+          a[loA + i].toNat + (Q + S + (if newBorrow = true then 1 else 0)) * 2 ^ 64
+            = (a[loA + i].toNat + (if newBorrow = true then 1 else 0) * 2 ^ 64)
+              + Q * 2 ^ 64 + S * 2 ^ 64 := by ring
+      rw [goal_eq, h_limb]
+      ring
+    · -- High phase: subtrahend is 0.
+      set swb := UInt64.subWithBorrow a[loA + i] 0 borrow with hswb_def
+      set diff := swb.1 with hdiff_def
+      set newBorrow := swb.2 with hnb_def
+      set r' := r.set i diff h_i_r with hr'_def
+      have hr'_sz : r'.size = k := by rw [hr'_def, Array.size_set, h_r]
+      have h_i_step : i + 1 ≤ k := by omega
+      have h_eq :
+          absSubLimbsKM.copySub.go a loA k m i borrow r h_a h_le h_r h_i
+            = absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r'
+                h_a h_le hr'_sz h_i_step := by
+        conv_lhs => rw [absSubLimbsKM.copySub.go]
+        simp [h_lt, hm, hswb_def, hdiff_def, hnb_def, hr'_def]
+      have h_ih := ih (i + 1) newBorrow r' hr'_sz h_i_step h_rec
+      have h_swb := UInt64.subWithBorrow_eq a[loA + i] 0 borrow
+      rw [← hswb_def] at h_swb
+      have h_res_size :
+          (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.size
+            = k := absSubLimbsKM.copySub.go_size _ _ _ _ _ _ _ _ _ _ _
+      have h_res_i_size :
+          i < (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.size := by
+        rw [h_res_size]; exact h_lt
+      have h_res_i :
+          (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1[i]'h_res_i_size
+            = diff := by
+        have h_prefix :=
+          absSubLimbsKM.copySub.go_toList_take a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step
+        have h_len_L :
+            ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList).length
+              = k := by rw [Array.length_toList]; exact h_res_size
+        have h_i_lt_L_take :
+            i < ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.take
+                  (i + 1)).length := by
+          rw [List.length_take, h_len_L]; omega
+        have h_i_lt_R_take : i < (r'.toList.take (i + 1)).length := by
+          rw [List.length_take, Array.length_toList, hr'_def, Array.size_set]; omega
+        have h_get_eq :
+            ((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.take
+                (i + 1))[i]'h_i_lt_L_take
+              = (r'.toList.take (i + 1))[i]'h_i_lt_R_take := by
+          congr 1
+        rw [List.getElem_take, List.getElem_take] at h_get_eq
+        rw [← Array.getElem_toList h_res_i_size, h_get_eq]
+        have h_i_lt : i < (r.set i diff h_i_r).toList.length := by
+          rw [Array.length_toList, Array.size_set]; exact h_i_r
+        show (r.set i diff h_i_r).toList[i]'h_i_lt = diff
+        simp [Array.toList_set, List.getElem_set_self]
+      rw [h_eq]
+      rw [show n + 1 = k - i from h_sub.symm]
+      have h_k_split : k - i = (k - (i + 1)) + 1 := by omega
+      have h_mi : m - i = 0 := by omega
+      have h_mi1 : m - (i + 1) = 0 := by omega
+      rw [h_k_split, h_mi]
+      rw [split_arr (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1
+            i (k - (i + 1)) h_res_i_size]
+      rw [h_res_i]
+      rw [split_arr a (loA + i) (k - (i + 1)) h_iA]
+      have h_pow : (2 : Nat) ^ (64 * ((k - (i + 1)) + 1))
+                  = 2 ^ (64 * (k - (i + 1))) * 2 ^ 64 := by
+        rw [show 64 * ((k - (i + 1)) + 1) = 64 * (k - (i + 1)) + 64 from by ring, Nat.pow_add]
+      rw [h_pow]
+      rw [show loA + i + 1 = loA + (i + 1) from by ring]
+      rw [← h_rec] at h_ih
+      set P := toNatLimbsList ((a.toList.drop (loA + (i + 1))).take (k - (i + 1))) with hP_def
+      set Q := toNatLimbsList
+          (((absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).1.toList.drop
+              (i + 1)).take (k - (i + 1))) with hQ_def
+      set R := (absSubLimbsKM.copySub.go a loA k m (i + 1) newBorrow r' h_a h_le hr'_sz h_i_step).2.toNat
+        with hR_def
+      -- The "remaining A₁" slice is empty since m - (i + 1) = 0 in this branch.
+      have h_A1_zero :
+          toNatLimbsList ((a.toList.drop (loA + k + (i + 1))).take (m - (i + 1))) = 0 := by
+        rw [h_mi1]; rfl
+      rw [h_A1_zero] at h_ih
+      change a[loA + i].toNat + P * 2 ^ 64 + R * (2 ^ (64 * (k - (i + 1))) * 2 ^ 64)
+           = diff.toNat + Q * 2 ^ 64 + 0 + borrow.toNat
+      have h1 : a[loA + i].toNat + P * 2 ^ 64 + R * (2 ^ (64 * (k - (i + 1))) * 2 ^ 64)
+              = a[loA + i].toNat + (P + R * 2 ^ (64 * (k - (i + 1)))) * 2 ^ 64 := by ring
+      rw [h1, h_ih]
+      have h_limb : a[loA + i].toNat + (if newBorrow then 1 else 0) * 2 ^ 64
+                  = diff.toNat + (if borrow then 1 else 0) := by
+        have : (0 : UInt64).toNat = 0 := rfl
+        rw [hdiff_def, hnb_def]; rw [this] at h_swb; omega
+      have h_bN : newBorrow.toNat = (if newBorrow then 1 else 0) := by cases newBorrow <;> simp
+      have h_b : borrow.toNat = (if borrow then 1 else 0) := by cases borrow <;> simp
+      rw [h_bN, h_b]
+      have goal_eq :
+          a[loA + i].toNat + (Q + 0 + (if newBorrow = true then 1 else 0)) * 2 ^ 64
+            = (a[loA + i].toNat + (if newBorrow = true then 1 else 0) * 2 ^ 64)
+              + Q * 2 ^ 64 := by ring
+      rw [goal_eq, h_limb]
+      ring
+
+/-- Top-level fused stage: `copySub a loA k m` returns `(d, borrow)` where
+    `borrow = true ↔ A₀ < A₁`, and
+    `toNat d + A₁ = A₀ + borrow · 2^(64·k)`. -/
+theorem absSubLimbsKM.copySub_toNat (a : Array UInt64) (loA k m : Nat)
+    (h_a : loA + k + m ≤ a.size) (h_le : m ≤ k) (h_kpos : 0 < k) (h_mpos : 0 < m) :
+    let r := absSubLimbsKM.copySub a loA k m h_a h_le h_kpos h_mpos
+    let A0 := toNatLimbsList ((a.toList.drop loA).take k)
     let A1 := toNatLimbsList ((a.toList.drop (loA + k)).take m)
-    (r.2 = true ↔ cpyVal < A1) ∧
-    toNatLimbsList r.1.1.toList + A1
-      = cpyVal + r.2.toNat * 2 ^ (64 * k) := by
-  unfold absSubLimbsKM.subPart
-  -- Set up the subGeqLimbs call.
-  have hcpy_size' : 0 + k ≤ cpy.size := by rw [hCpy]; omega
-  have ha1 : (loA + k) + m ≤ a.size := by omega
-  set s := subGeqLimbs cpy a 0 k (loA + k) m hcpy_size' ha1 h_le h_kpos h_mpos with hs_def
-  have h_s_size : s.1.size = k := by rw [hs_def, subGeqLimbs_size, hCpy]
-  -- subGeqLimbs_toNat: cpy + s.2 · β^k = s.1 + A₁ (over the appropriate slices).
-  have h_eq := subGeqLimbs_toNat cpy a 0 k (loA + k) m hcpy_size' ha1 h_le h_kpos h_mpos
-  rw [show subGeqLimbs cpy a 0 k (loA + k) m hcpy_size' ha1 h_le h_kpos h_mpos = s from rfl]
-    at h_eq
-  simp only at h_eq
-  -- Replace slices with full `toList` terms.
-  have h_cpy_full :
-      toNatLimbsList ((cpy.toList.drop 0).take k) = toNatLimbsList cpy.toList := by
-    rw [← toNat_full_eq_slice _ _ hCpy]
-  have h_s_full :
-      toNatLimbsList ((s.1.toList.drop 0).take k) = toNatLimbsList s.1.toList := by
-    rw [← toNat_full_eq_slice _ _ h_s_size]
-  rw [h_cpy_full, h_s_full] at h_eq
-  -- A₁ < β^k.
-  have hA1_lt_pk : toNatLimbsList ((a.toList.drop (loA + k)).take m) < 2 ^ (64 * k) := by
+    (r.2 = true ↔ A0 < A1) ∧
+    toNatLimbsList r.1.1.toList + A1 = A0 + r.2.toNat * 2 ^ (64 * k) := by
+  -- Reduce to `copySub.go_correct` at i = 0, borrow = false.
+  unfold absSubLimbsKM.copySub
+  set r₀ : Array UInt64 := Array.replicate k 0 with hr₀_def
+  have hr₀_sz : r₀.size = k := by rw [hr₀_def]; exact Array.size_replicate
+  set go := absSubLimbsKM.copySub.go a loA k m 0 false r₀ h_a h_le hr₀_sz (Nat.zero_le _) with hgo_def
+  have h_go_size : go.1.size = k := by
+    rw [hgo_def]; exact absSubLimbsKM.copySub.go_size _ _ _ _ _ _ _ _ _ _ _
+  have h_go_correct :=
+    absSubLimbsKM.copySub.go_correct a loA k m 0 false r₀ h_a h_le hr₀_sz (Nat.zero_le _)
+  rw [show absSubLimbsKM.copySub.go a loA k m 0 false r₀ h_a h_le hr₀_sz (Nat.zero_le _) = go from rfl]
+    at h_go_correct
+  simp only [Nat.add_zero, Nat.sub_zero, Bool.toNat_false] at h_go_correct
+  -- Replace slices with full toList using toNat_full_eq_slice.
+  have h_go_full :
+      toNatLimbsList ((go.1.toList.drop 0).take k) = toNatLimbsList go.1.toList := by
+    rw [← toNat_full_eq_slice _ _ h_go_size]
+  rw [h_go_full] at h_go_correct
+  set A0 := toNatLimbsList ((a.toList.drop loA).take k) with hA0_def
+  set A1 := toNatLimbsList ((a.toList.drop (loA + k)).take m) with hA1_def
+  -- Bounds.
+  have hA0_lt : A0 < 2 ^ (64 * k) := slice_lt_pow a loA k
+  have hA1_lt_pk : A1 < 2 ^ (64 * k) := by
     have h := slice_lt_pow a (loA + k) m
     have hp : 2 ^ (64 * m) ≤ 2 ^ (64 * k) := by
       apply Nat.pow_le_pow_right (by decide); omega
     omega
-  have h_s_lt : toNatLimbsList s.1.toList < 2 ^ (64 * k) := by
-    rw [← h_s_full]; exact slice_lt_pow s.1 0 k
+  have h_go_full_lt : toNatLimbsList go.1.toList < 2 ^ (64 * k) := by
+    rw [← h_go_full]; exact slice_lt_pow go.1 0 k
   refine ⟨?_, ?_⟩
   · constructor
     · intro h_carry
-      have h_one : s.2.toNat = 1 := by rw [h_carry]; rfl
-      rw [h_one] at h_eq; omega
+      have h_one : go.2.toNat = 1 := by rw [h_carry]; rfl
+      rw [h_one] at h_go_correct; omega
     · intro h_lt
-      match h : s.2 with
+      match h : go.2 with
       | false =>
-        have h_z : s.2.toNat = 0 := by rw [h]; rfl
-        rw [h_z] at h_eq
+        have h_z : go.2.toNat = 0 := by rw [h]; rfl
+        rw [h_z] at h_go_correct
         omega
       | true => rfl
-  · linarith [h_eq]
+  · linarith [h_go_correct]
 
 /-- Stage 3: `negPart d k` produces an array whose `toNat` is `β^k − toNat d`,
     when `0 < toNat d`. -/
@@ -227,34 +471,25 @@ theorem absSubLimbsKM_toNat (a : Array UInt64) (loA k m : Nat)
       apply Nat.pow_le_pow_right (by decide); omega
     omega
   unfold absSubLimbsKM
-  -- Stage 1: copy.
-  set cpy := absSubLimbsKM.copy a loA k (by omega : loA + k ≤ a.size) with hcpy_def
-  have h_cpy_size : cpy.1.size = k := cpy.2
-  have h_cpy_toNat : toNatLimbsList cpy.1.toList = A0 := by
-    rw [hcpy_def]; exact absSubLimbsKM.copy_toNat a loA k _
-  -- Stage 2: subPart.
-  set sub := absSubLimbsKM.subPart a cpy.1 loA k m cpy.2 hA h_le h_kpos h_mpos
-    with hsub_def
-  have h_sub_props := absSubLimbsKM.subPart_toNat a cpy.1 loA k m cpy.2 hA h_le h_kpos h_mpos
-  rw [show absSubLimbsKM.subPart a cpy.1 loA k m cpy.2 hA h_le h_kpos h_mpos = sub from rfl]
-    at h_sub_props
-  simp only at h_sub_props
-  rw [h_cpy_toNat] at h_sub_props
-  obtain ⟨h_sub_iff, h_sub_eq⟩ := h_sub_props
+  -- Fused stage 1+2: copySub.
+  set cs := absSubLimbsKM.copySub a loA k m hA h_le h_kpos h_mpos with hcs_def
+  have h_cs_props := absSubLimbsKM.copySub_toNat a loA k m hA h_le h_kpos h_mpos
+  rw [show absSubLimbsKM.copySub a loA k m hA h_le h_kpos h_mpos = cs from rfl] at h_cs_props
+  simp only at h_cs_props
+  obtain ⟨h_cs_iff, h_cs_eq⟩ := h_cs_props
   -- Step: case split on borrow.
-  by_cases h_borrow : sub.2 = true
+  by_cases h_borrow : cs.2 = true
   · -- A₀ < A₁; we negate to get A₁ - A₀.
-    have h_lt : A0 < A1 := h_sub_iff.mp h_borrow
-    have h_one : sub.2.toNat = 1 := by rw [h_borrow]; rfl
-    have h_sub_val : toNatLimbsList sub.1.1.toList = 2 ^ (64 * k) + A0 - A1 := by
-      have := h_sub_eq; rw [h_one] at this; omega
-    have h_sub_size : sub.1.1.size = k := sub.1.2
-    have h_sub_pos : 0 < toNatLimbsList sub.1.1.toList := by
-      rw [h_sub_val]; omega
-    have h_neg_toNat := absSubLimbsKM.negPart_toNat sub.1.1 k h_sub_size h_sub_pos
+    have h_lt : A0 < A1 := h_cs_iff.mp h_borrow
+    have h_one : cs.2.toNat = 1 := by rw [h_borrow]; rfl
+    have h_cs_val : toNatLimbsList cs.1.1.toList = 2 ^ (64 * k) + A0 - A1 := by
+      have := h_cs_eq; rw [h_one] at this; omega
+    have h_cs_size : cs.1.1.size = k := cs.1.2
+    have h_cs_pos : 0 < toNatLimbsList cs.1.1.toList := by
+      rw [h_cs_val]; omega
+    have h_neg_toNat := absSubLimbsKM.negPart_toNat cs.1.1 k h_cs_size h_cs_pos
     refine ⟨?_, ?_⟩
-    · -- The outer .2 is `false` in this branch.
-      rw [if_pos h_borrow]
+    · rw [if_pos h_borrow]
       simp only
       constructor
       · intro h; exact absurd h Bool.false_ne_true
@@ -262,30 +497,30 @@ theorem absSubLimbsKM_toNat (a : Array UInt64) (loA k m : Nat)
     · rw [if_pos h_borrow]
       simp only
       rw [if_neg (by omega : ¬ A1 ≤ A0)]
-      rw [h_neg_toNat, h_sub_val]
+      rw [h_neg_toNat, h_cs_val]
       omega
   · -- No borrow; A₀ ≥ A₁.
-    have h_sub_false : sub.2 = false := by
-      cases h : sub.2
+    have h_cs_false : cs.2 = false := by
+      cases h : cs.2
       · rfl
       · exact absurd h h_borrow
-    have h_z : sub.2.toNat = 0 := by rw [h_sub_false]; rfl
+    have h_z : cs.2.toNat = 0 := by rw [h_cs_false]; rfl
     have h_le_le : A1 ≤ A0 := by
       rcases Nat.lt_or_ge A0 A1 with h | h
       · exfalso
-        have h_true : sub.2 = true := h_sub_iff.mpr h
-        rw [h_sub_false] at h_true
+        have h_true : cs.2 = true := h_cs_iff.mpr h
+        rw [h_cs_false] at h_true
         exact Bool.false_ne_true h_true
       · exact h
-    have h_sub_val : toNatLimbsList sub.1.1.toList = A0 - A1 := by
-      have := h_sub_eq; rw [h_z] at this; omega
+    have h_cs_val : toNatLimbsList cs.1.1.toList = A0 - A1 := by
+      have := h_cs_eq; rw [h_z] at this; omega
     refine ⟨?_, ?_⟩
     · rw [if_neg h_borrow]
       refine ⟨fun _ => h_le_le, fun _ => ?_⟩
       rfl
     · rw [if_neg h_borrow]
       rw [if_pos h_le_le]
-      exact h_sub_val
+      exact h_cs_val
 
 /-! ### Correctness of `karatsubaMulLimbsRec` stages -/
 
