@@ -200,11 +200,12 @@ theorem toMat_fastPowAux (acc base : AzMatrix R n n) (k : ℕ) :
     · rename_i h
       split
       · rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [toMat_mul, show toMat base * toMat base = toMat base ^ 2 from (sq _).symm,
+        rw [Azurite.Square.square_eq, toMat_mul,
+            show toMat base * toMat base = toMat base ^ 2 from (sq _).symm,
             ← pow_mul]
         congr 2; omega
       · rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [toMat_mul, toMat_mul, mul_assoc]; congr 1
+        rw [Azurite.Square.square_eq, toMat_mul, toMat_mul, mul_assoc]; congr 1
         rw [show toMat base * toMat base = toMat base ^ 2 from (sq _).symm,
             ← pow_mul, ← pow_succ']
         congr 1; omega

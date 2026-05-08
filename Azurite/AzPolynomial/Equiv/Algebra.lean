@@ -127,11 +127,13 @@ theorem toPoly_fastPowAux (acc base : AzPolynomial R) (n : ℕ) :
     · rename_i h
       split
       · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        rw [Azurite.Square.square_eq]
         simp only [toPoly_mul]
         rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
             AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul]
         congr 2; omega
       · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+        rw [Azurite.Square.square_eq]
         simp only [toPoly_mul]
         rw [mul_assoc]; congr 1
         rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =

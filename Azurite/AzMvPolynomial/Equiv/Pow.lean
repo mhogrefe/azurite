@@ -54,9 +54,11 @@ private theorem toMvPoly_fastPowAux
     · rename_i h; split
       · rename_i heven
         rw [ih _ (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega)),
+            Azurite.Square.square_eq,
             toMvPoly_mul, ← sq, ← pow_mul]; congr 2; omega
       · rename_i hodd
         rw [ih _ (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega)),
+            Azurite.Square.square_eq,
             toMvPoly_mul, toMvPoly_mul, mul_assoc,
             ← sq, ← pow_mul, ← pow_succ']; congr 2; omega
 
