@@ -44,6 +44,8 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SplitLast
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 
 /-!
 # Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
@@ -111,94 +113,13 @@ open MvPolynomial Polynomial
 
 variable {k : ℕ} {C : Type*} [Field C] [IsAlgClosed C]
 
-/-! Note: `specialize`, `splitLast`, `proj`, `fiber`, and the signed
-pseudo-remainder `PRem` (with its descent) are defined in
-`Azurite.BasuPollackRoy.Chapter1.Section1_3.{Specialize,SplitLast,Projection,Fiber,SignedPseudoRemainder}`. -/
+/-! Note: `specialize`, `splitLast`, `proj`, `fiber`, the signed
+pseudo-remainder `PRem` (with its descent), and the truncations
+`truncate`/`Tru` are defined in
+`Azurite.BasuPollackRoy.Chapter1.Section1_3.{Specialize,SplitLast,Projection,Fiber,SignedPseudoRemainder,Truncate,Tru}`. -/
 
 variable {D : Type*} [CommRing D] [IsDomain D]
 variable {K : Type*} [Field K] [Algebra D K] [IsFractionRing D K]
-
-/-!
-### Truncation `Tru_i(Q)`
-
-BPR's **Notation 1.16**: for `Q = b_q X^q + ⋯ + b_0 ∈ D[X]` and
-`0 ≤ i ≤ q`, the *truncation of `Q` at `i`* is
-
-  Tru_i(Q) = b_i X^i + ⋯ + b_0,
-
-obtained from `Q` by dropping all monomial terms of degree `> i`.
-We extend the definition to arbitrary `i : ℕ` by the same formula;
-when `i ≥ natDegree Q` the result coincides with `Q`.
--/
-
-/-- BPR's **truncation** `Tru_i(Q)` (Notation 1.16): for
-`Q = b_q X^q + ⋯ + b_0 ∈ R[X]`, the polynomial obtained by
-dropping every monomial term of degree `> i`. Concretely,
-`Tru_i(Q) = b_i X^i + ⋯ + b_0`. Stated over an arbitrary semiring
-`R`; BPR's original statement takes `R = D` a domain. -/
-noncomputable def truncate {R : Type*} [Semiring R] (i : ℕ)
-    (Q : Polynomial R) : Polynomial R :=
-  ∑ j ∈ Finset.range (i + 1), Polynomial.monomial j (Q.coeff j)
-
-/-- Coefficient characterization of `truncate`: the `j`-th coefficient
-of `Tru_i(Q)` is `Q.coeff j` when `j ≤ i`, and `0` otherwise. -/
-@[simp] theorem coeff_truncate {R : Type*} [Semiring R] (i : ℕ)
-    (Q : Polynomial R) (j : ℕ) :
-    (truncate i Q).coeff j = if j ≤ i then Q.coeff j else 0 := by
-  rw [truncate, Polynomial.finsetSum_coeff]
-  simp only [Polynomial.coeff_monomial, Finset.sum_ite_eq', Finset.mem_range,
-    Nat.lt_succ_iff]
-
-/-- The `natDegree` of a truncation is at most `i`. -/
-theorem natDegree_truncate_le {R : Type*} [Semiring R] (i : ℕ)
-    (Q : Polynomial R) : (truncate i Q).natDegree ≤ i := by
-  rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
-  intro j hj
-  rw [coeff_truncate, if_neg (Nat.not_le.mpr hj)]
-
-/-!
-### Set of truncations `Tru(Q)`
-
-BPR's **set of truncations** of a non-zero polynomial
-`Q ∈ D[Y_1, …, Y_k][X]` is the finite subset of `D[Y_1, …, Y_k][X]`
-defined recursively by
-
-  Tru(Q) = {Q}                             if lcof(Q) ∈ D or deg_X(Q) = 0,
-            {Q} ∪ Tru(Tru_{deg_X(Q)−1}(Q)) otherwise.
-
-We extend to `Q = 0` by setting `Tru(0) = ∅`.
-
-The recursion terminates because `natDegree (truncate (natDegree Q − 1) Q)`
-is strictly less than `natDegree Q` whenever `natDegree Q > 0`.
--/
-
-section Tru
-open Classical
-
-/-- BPR's **set of truncations** `Tru(Q)` for
-`Q ∈ D[Y_1, …, Y_k][X]`. Returns the empty set when `Q = 0`;
-`{Q}` when `lcof(Q) ∈ D` or `deg_X(Q) = 0`; and
-`{Q} ∪ Tru(Tru_{deg_X(Q)-1}(Q))` otherwise. -/
-noncomputable def Tru :
-    Polynomial (MvPolynomial (Fin k) D) →
-    Set (Polynomial (MvPolynomial (Fin k) D))
-  | Q =>
-    if Q = 0 then ∅
-    else if (∃ d : D, Q.leadingCoeff = MvPolynomial.C d) ∨ Q.natDegree = 0 then
-      {Q}
-    else
-      {Q} ∪ Tru (truncate (Q.natDegree - 1) Q)
-termination_by Q => Q.natDegree
-decreasing_by
-  show (truncate (Q.natDegree - 1) Q).natDegree < Q.natDegree
-  have hQpos : 0 < Q.natDegree := by
-    rename_i _ hb
-    push Not at hb
-    exact Nat.pos_of_ne_zero hb.2
-  have h := natDegree_truncate_le (Q.natDegree - 1) Q
-  omega
-
-end Tru
 
 /-!
 ### Tree of possible signed pseudo-remainder sequences `TRems(P, Q)`
@@ -1896,7 +1817,7 @@ agrees with the projection of the basic constructible set defined by
 
 The proof combines `posgcd_gcd` + `leafFormula_gcd` (identifying the
 gcd structure) with `lemma_1_14` / `lemma_1_14_cor2` (characterising
-when a fibre is nonempty).
+when a fiber is nonempty).
 -/
 
 section ProjFormulaCorrectness
@@ -1906,7 +1827,7 @@ open Classical
 variable {D : Type*} [CommRing D] [IsDomain D]
 
 omit [IsAlgClosed C] [IsDomain D] in
-/-- Fibre-level version of the projection predicate: rewritten via
+/-- Fiber-level version of the projection predicate: rewritten via
 `splitLast` so that the variable `X` is explicit, and then mapped
 through `aeval y` to land in `C[X]`. -/
 private theorem exists_snoc_iff_exists_eval_splitLast [Algebra D C]
@@ -2001,7 +1922,7 @@ gcd of `extra_y = Qs'.prod^d_y` and `G_1_y`, with `d` strictly greater
 than the `X`-degree of every `P ∈ Ps'`, the existence of a common
 root of `Ps'_y` avoiding the zeros of `Qs'_y` is equivalent to
 `deg G_y ≠ deg G_1_y`. -/
-theorem fibre_iff_degree_ne
+theorem fiber_iff_degree_ne
     [Algebra D C]
     (Ps' Qs' : List (Polynomial (MvPolynomial (Fin k) D)))
     (d : ℕ) (hd : ∀ P' ∈ Ps', P'.natDegree < d) (hd_pos : 0 < d)
@@ -2180,14 +2101,14 @@ theorem realization_projBasic
     obtain ⟨hy_C_1, hy_leaf, hy_deg⟩ := hy_Φ
     have h_G_1_isListGCD := posgcd_gcd Ps' h_mem_posgcd y hy_C_1
     have h_G_isGCD := leafFormula_gcd extra G_1 hpath_mem y hy_leaf
-    exact (fibre_iff_degree_ne Ps' Qs' d (natDegree_lt_foldr_succ Ps')
+    exact (fiber_iff_degree_ne Ps' Qs' d (natDegree_lt_foldr_succ Ps')
       hd_pos y h_G_1_isListGCD h_G_isGCD).mpr hy_deg
   · rintro ⟨x, hP, hQ⟩
     obtain ⟨G_1, C_1, h_mem_posgcd, hy_C_1⟩ := posgcd_covering hinj Ps' y
     obtain ⟨path, hpath_mem, hy_leaf⟩ := leafFormula_covering hinj extra G_1 y
     have h_G_1_isListGCD := posgcd_gcd Ps' h_mem_posgcd y hy_C_1
     have h_G_isGCD := leafFormula_gcd extra G_1 hpath_mem y hy_leaf
-    have h_deg := (fibre_iff_degree_ne Ps' Qs' d (natDegree_lt_foldr_succ Ps')
+    have h_deg := (fiber_iff_degree_ne Ps' Qs' d (natDegree_lt_foldr_succ Ps')
       hd_pos y h_G_1_isListGCD h_G_isGCD).mp ⟨x, hP, hQ⟩
     refine ⟨C_1.and ((leafFormula extra G_1 path).and
               (degNeqFormula (pathLeafParent extra path) G_1)), ?_, ?_⟩

@@ -341,6 +341,8 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SplitLast
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
 import Azurite.BasuPollackRoy.Chapter2.Exercise_2_11
 import Azurite.BasuPollackRoy.Chapter2.Factorization

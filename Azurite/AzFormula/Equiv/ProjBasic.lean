@@ -347,7 +347,7 @@ theorem aeval_cons_eq_eval_finSuccEquiv
     · simp [Fin.cons_zero, MvPolynomial.finSuccEquiv_apply]
     · intro j; simp [Fin.cons_succ, MvPolynomial.finSuccEquiv_apply]
 
-/-- Fibre-level version of the projection predicate: rewritten via
+/-- Fiber-level version of the projection predicate: rewritten via
 `AzMvPolynomial.finSuccEquiv` so that the variable `X` is explicit
 and then mapped through `aeval y` to land in `C[X]`. Azurite analogue
 of BPR's `exists_snoc_iff_exists_eval_splitLast`. -/
@@ -559,7 +559,7 @@ theorem azRealization_azProjBasic
       rw [← hG_eq]; exact hy_leaf
     have h_G_isGCD_raw :=
       BPR.leafFormula_gcd (liftPoly extra_az) G' hpath'_mem y hy_leaf'
-    -- Reshape to match fibre_iff_degree_ne: need extra as `Qs'.prod^d` and
+    -- Reshape to match fiber_iff_degree_ne: need extra as `Qs'.prod^d` and
     -- the first arg as `pathLeafParent (Qs'.prod^d) (path.map liftPoly)`.
     rw [hextra_lift] at h_G_isGCD_raw
     -- Build h_deg_ne in the same BPR form
@@ -571,7 +571,7 @@ theorem azRealization_azProjBasic
           (G'.map (MvPolynomial.aeval y).toRingHom) := by
       rw [← hextra_lift, ← liftPoly_azPathLeafParent, ← hG_eq]
       exact hy_deg
-    exact (BPR.fibre_iff_degree_ne Ps' Qs' d hd_bound hd_pos y
+    exact (BPR.fiber_iff_degree_ne Ps' Qs' d hd_bound hd_pos y
       h_G_1_isListGCD h_G_isGCD_raw).mpr h_deg_ne
   · -- RHS → LHS: use posgcd_covering + leafFormula_covering to find clause
     rintro ⟨x, hP, hQ⟩
@@ -603,9 +603,9 @@ theorem azRealization_azProjBasic
     have h_G_isGCD :=
       BPR.leafFormula_gcd (liftPoly extra_az) G' hpath'_mem y hy_leaf'
     rw [hextra_lift] at h_G_isGCD
-    -- Use fibre_iff_degree_ne in forward direction
+    -- Use fiber_iff_degree_ne in forward direction
     have h_deg :=
-      (BPR.fibre_iff_degree_ne Ps' Qs' d hd_bound hd_pos y
+      (BPR.fiber_iff_degree_ne Ps' Qs' d hd_bound hd_pos y
         h_G_1_isListGCD h_G_isGCD).mp ⟨x, hP, hQ⟩
     -- Build the witness clause
     refine ⟨azSmartAnd 𝒞 (azSmartAnd
