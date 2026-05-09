@@ -38,7 +38,7 @@ open Azurite.BPR (ExtendedPoint)
 theorem cauchyIndexOn_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     [DecidableEq K]
-    (hIVP : Azurite.BPR.Azurite.BPR.HasIntermediateValueProperty K)
+    (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
     (Q P : AzPolynomial K) (hP : AzPolynomial.toPoly P ≠ 0)
     (a b : ExtendedPoint K) (hab : ExtendedPoint.Lt a b)
     (h_aP : ExtendedPoint.evalPoly (AzPolynomial.toPoly P) a ≠ 0)
