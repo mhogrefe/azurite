@@ -369,6 +369,10 @@ import Azurite.BasuPollackRoy.Chapter2.Proposition_2_44
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_57
 import Azurite.BasuPollackRoy.Chapter2.Remark_2_51
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Lemma_2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
