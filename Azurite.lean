@@ -336,11 +336,13 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2.Remark1_4
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.RootCharacterizations
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.DegFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Fiber
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SplitLast
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.TRems
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
