@@ -503,4 +503,34 @@ theorem mem_azPosgcd_image_iff [FaithfulSMul D C]
       azPosgcd_backward (C := C) Ps G' 𝒞' hmem'
     exact ⟨G, 𝒞, hmem, hG, hR.trans hS⟩
 
+/-- AzFormula-side analog of `BPR.posgcd_unique`: distinct positions in
+`azPosgcd Ps` whose `azRealization`s share a point `y` are actually
+equal as pairs. Combined with the existence inherent in
+`azPosgcd_forward` / `BPR.posgcd_covering`, this gives "exists one and
+only one" on the computable side. -/
+theorem azPosgcd_unique [FaithfulSMul D C]
+    (Ps : List (AzPolynomial (AzMvPolynomial k D ord)))
+    {G G' : AzPolynomial (AzMvPolynomial k D ord)}
+    {𝒞 𝒞' : Formula (Fin k) (AzFieldAtom k D ord)}
+    (hmem : (G, 𝒞) ∈ azPosgcd Ps)
+    (hmem' : (G', 𝒞') ∈ azPosgcd Ps)
+    (y : Fin k → C)
+    (hy : y ∈ azRealization 𝒞 (C := C))
+    (hy' : y ∈ azRealization 𝒞' (C := C)) :
+    liftPoly G = liftPoly G' ∧ azRealization 𝒞 (C := C) =
+      azRealization 𝒞' (C := C) := by
+  obtain ⟨Gb, 𝒞b, hmem_b, hG_eq, hR_eq⟩ :=
+    azPosgcd_forward (C := C) Ps G 𝒞 hmem
+  obtain ⟨Gb', 𝒞b', hmem_b', hG_eq', hR_eq'⟩ :=
+    azPosgcd_forward (C := C) Ps G' 𝒞' hmem'
+  rw [hR_eq] at hy
+  rw [hR_eq'] at hy'
+  have hpair_eq := BPR.posgcd_unique (C := C) (Ps.map liftPoly)
+    hmem_b hmem_b' y hy hy'
+  rw [Prod.mk.injEq] at hpair_eq
+  obtain ⟨hGb, h𝒞b⟩ := hpair_eq
+  refine ⟨?_, ?_⟩
+  · rw [hG_eq, hG_eq', hGb]
+  · rw [hR_eq, hR_eq', h𝒞b]
+
 end Azurite

@@ -338,6 +338,10 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
 import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.DegFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Fiber
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.LeafFormula
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_19
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_20
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Posgcd
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
