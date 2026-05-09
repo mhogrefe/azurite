@@ -1,7 +1,12 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_3
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Cones
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_4
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.InfinitesimalUnbounded
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Lemma_2_2
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.Algebra.Polynomial.Derivative
@@ -128,422 +133,35 @@ example : ∀ a : ℝ, Set.Ici a = {x | a ≤ x} := fun _ => rfl
 example : ∀ a : ℝ, Set.Iio a = {x | x < a} := fun _ => rfl
 example : ∀ a : ℝ, Set.Iic a = {x | x ≤ a} := fun _ => rfl
 
-/-!
-### Exercise 2.3: ℂ cannot be ordered
+/-! Note: BPR Exercise 2.3 (`exercise_2_3`, ℂ cannot be ordered) is
+defined in `Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_3`. -/
 
-**Exercise 2.3** (BPR p.35). Show that it is not possible to order the field
-of complex numbers ℂ so that it becomes an ordered field.
+/-! Note: BPR Proposition 2.4 (`prop_2_4`, sign of a polynomial for
+large `|x|`) is defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4`. -/
 
-*Proof.* In any ordered field, x² ≥ 0 for all x. But i² = −1, so we would
-need 0 ≤ −1, contradicting −1 < 0.
--/
+/-! Note: BPR's unnumbered definitions of infinitesimal /
+unbounded elements over an ordered field (`IsInfinitesimalOver`,
+`IsUnboundedOver`) are defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.InfinitesimalUnbounded`. -/
 
-open Complex in
-/-- **BPR Exercise 2.3.** ℂ cannot be made into an ordered field. -/
-theorem exercise_2_3 :
-    ¬ ∃ (_ : LinearOrder ℂ), IsStrictOrderedRing ℂ := by
-  rintro ⟨ord, hord⟩
-  letI := ord; letI := hord
-  have hsq : 0 ≤ I * I := mul_self_nonneg I
-  rw [I_mul_I] at hsq
-  exact not_le.mpr neg_one_lt_zero hsq
+/-! Note: BPR Notation 2.5 (the 0₊ order on F[ε] and F(ε), with
+infinitesimal `ε` and unbounded `1/ε`) is constructed in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.OrderZeroPlus`. Exposition is in
+the blueprint (`blueprint/src/chapter2/section2_1/notation_2_5.tex`). -/
 
-/-!
-### Proposition 2.4: Sign of polynomial for large |x|
+/-! Note: BPR Exercise 2.4 (`exercise_2_4`, uniqueness of the 0₊ order)
+is defined in `Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_4`. -/
 
-**Proposition 2.4** (BPR p.35). Let P = aₚ X^p + … + a₀, aₚ ≠ 0, be a polynomial
-with coefficients in an ordered field F. If
-
-  |x| > 2 ∑ᵢ≤ₚ |aᵢ/aₚ|,
-
-then P(x) and aₚ·x^p have the same sign.
-
-*Proof sketch.* Write P(x) = L + R where L = aₚ·x^p is the leading term and
-R = ∑ᵢ<ₚ aᵢ·x^i is the remainder. Show |R| < |L| using the hypothesis,
-which implies sign(P(x)) = sign(L).
--/
-
-section Prop_2_4
-
-variable {F : Type*} [Field F] [LinearOrder F] [IsStrictOrderedRing F]
-
-/-- If |a − b| < |b| and b ≠ 0, then sign(a) = sign(b). -/
-private lemma sign_eq_of_abs_sub_lt {a b : F} (hb : b ≠ 0) (h : |a - b| < |b|) :
-    SignType.sign a = SignType.sign b := by
-  rcases lt_or_gt_of_ne hb with hbn | hbp
-  · have : a < 0 := by
-      linarith [abs_of_neg hbn, (abs_sub_lt_iff.mp h).1, (abs_sub_lt_iff.mp h).2]
-    rw [sign_neg hbn, sign_neg this]
-  · have : 0 < a := by
-      linarith [abs_of_pos hbp, (abs_sub_lt_iff.mp h).1, (abs_sub_lt_iff.mp h).2]
-    rw [sign_pos hbp, sign_pos this]
-
-/-- The tail of P (everything except the leading term) evaluated at x. -/
-private lemma eval_sub_lead (P : F[X]) (x : F) :
-    P.eval x - P.leadingCoeff * x ^ P.natDegree =
-    ∑ i ∈ Finset.range P.natDegree, P.coeff i * x ^ i := by
-  have h : P.eval x = (∑ i ∈ Finset.range P.natDegree, P.coeff i * x ^ i)
-      + P.coeff P.natDegree * x ^ P.natDegree := by
-    rw [Polynomial.eval_eq_sum_range, Finset.sum_range_succ]
-  unfold leadingCoeff
-  linarith
-
-/-- **BPR Proposition 2.4.** If |x| > 2 ∑ᵢ≤ₚ |aᵢ/aₚ|, then P(x) and
-    aₚ·x^p have the same sign. -/
-theorem prop_2_4 (P : F[X]) (hP : P ≠ 0) (x : F)
-    (hx : 2 * ∑ i ∈ Finset.range (P.natDegree + 1),
-      |P.coeff i / P.leadingCoeff| < |x|) :
-    SignType.sign (P.eval x) =
-    SignType.sign (P.leadingCoeff * x ^ P.natDegree) := by
-  set p := P.natDegree with hp_def
-  set ap := P.leadingCoeff with hap_def
-  set L := ap * x ^ p with hL_def
-  have hap_ne : ap ≠ 0 := leadingCoeff_ne_zero.mpr hP
-  have hx_pos : 0 < |x| := by
-    have h1 : (0 : F) ≤ 2 * ∑ i ∈ Finset.range (p + 1), |P.coeff i / ap| := by positivity
-    linarith
-  have hx_ne : x ≠ 0 := fun h => by simp [h] at hx_pos
-  have hL_ne : L ≠ 0 := mul_ne_zero hap_ne (pow_ne_zero _ hx_ne)
-  -- Apply sign_eq_of_abs_sub_lt: suffices |P.eval x - L| < |L|
-  apply sign_eq_of_abs_sub_lt hL_ne
-  -- Rewrite the difference as the tail sum
-  rw [eval_sub_lead]
-  -- Split on p = 0 (trivial) vs p ≥ 1
-  by_cases hp : p = 0
-  · -- Constant polynomial: tail sum is empty, |0| < |L|
-    rw [show P.natDegree = 0 from hp ▸ hp_def.symm]
-    simp only [Finset.range_zero, Finset.sum_empty, abs_zero]
-    exact abs_pos.mpr hL_ne
-  · -- Degree p ≥ 1
-    have hp_pos : 0 < p := Nat.pos_of_ne_zero hp
-    have h1le : 1 ≤ |x| := by
-      have h_ap_term : |P.coeff p / ap| = 1 := by
-        rw [show P.coeff p = ap from rfl, div_self hap_ne, abs_one]
-      have h_sum_ge : 1 ≤ ∑ i ∈ Finset.range (p + 1), |P.coeff i / ap| := by
-        calc (1:F) = |P.coeff p / ap| := h_ap_term.symm
-          _ ≤ ∑ i ∈ Finset.range (p + 1), |P.coeff i / ap| :=
-              Finset.single_le_sum (fun i _ => abs_nonneg (P.coeff i / ap))
-                (show p ∈ Finset.range (p + 1) by simp)
-      linarith [mul_le_mul_of_nonneg_left h_sum_ge (by positivity : (0:F) ≤ 2)]
-    have hsum_lt : ∑ i ∈ Finset.range (p + 1), |P.coeff i / ap| < |x| / 2 := by
-      rw [lt_div_iff₀ (two_pos (α := F))]; linarith
-    -- Main inequality chain
-    calc |∑ i ∈ Finset.range p, P.coeff i * x ^ i|
-        ≤ ∑ i ∈ Finset.range p, |P.coeff i * x ^ i| :=
-          Finset.abs_sum_le_sum_abs _ _
-      _ = ∑ i ∈ Finset.range p, |P.coeff i| * |x| ^ i := by
-          congr 1; ext i; rw [abs_mul, abs_pow]
-      _ ≤ ∑ i ∈ Finset.range p, |P.coeff i| * |x| ^ (p - 1) := by
-          apply Finset.sum_le_sum; intro i hi
-          exact mul_le_mul_of_nonneg_left
-            (pow_le_pow_right₀ h1le (Nat.le_pred_of_lt (Finset.mem_range.mp hi)))
-            (abs_nonneg _)
-      _ = (∑ i ∈ Finset.range p, |P.coeff i|) * |x| ^ (p - 1) :=
-          (Finset.sum_mul ..).symm
-      _ ≤ (∑ i ∈ Finset.range (p + 1), |P.coeff i|) * |x| ^ (p - 1) := by
-          apply mul_le_mul_of_nonneg_right _ (pow_nonneg (abs_nonneg _) _)
-          exact Finset.sum_le_sum_of_subset_of_nonneg
-            (Finset.range_mono (by omega)) (fun i _ _ => abs_nonneg _)
-      _ = (|ap| * ∑ i ∈ Finset.range (p + 1), |P.coeff i / ap|) * |x| ^ (p - 1) := by
-          congr 1; rw [Finset.mul_sum]; apply Finset.sum_congr rfl; intro i _
-          rw [abs_div]; exact (mul_div_cancel₀ _ (abs_ne_zero.mpr hap_ne)).symm
-      _ < (|ap| * (|x| / 2)) * |x| ^ (p - 1) := by
-          apply mul_lt_mul_of_pos_right _ (pow_pos hx_pos _)
-          exact mul_lt_mul_of_pos_left hsum_lt (abs_pos.mpr hap_ne)
-      _ = |ap| * (|x| ^ (p - 1) * |x|) / 2 := by ring
-      _ = |ap| * |x| ^ p / 2 := by
-          congr 2; rw [← pow_succ]; congr 1; omega
-      _ < |ap| * |x| ^ p := by
-          linarith [mul_pos (abs_pos.mpr hap_ne) (pow_pos hx_pos p)]
-      _ = |L| := by rw [abs_mul, abs_pow]
-
-end Prop_2_4
-
-/-!
-### Infinitesimal and Unbounded Elements
-
-**Definition (BPR p.35).** Let F ⊂ F′ be two ordered fields (with `Algebra F F'`
-providing the canonical embedding `algebraMap F F'`).
-
-- The element x ∈ F′ is *infinitesimal over F* if its absolute value is
-  positive and smaller than any positive element of F.
-- The element x ∈ F′ is *unbounded over F* if its absolute value is
-  greater than any positive element of F.
-
-Mathlib has specific versions of these for the hyperreals (`Hyperreal.Infinitesimal`
-and `Hyperreal.Infinite` in `Mathlib.Analysis.Real.Hyperreal`). The definitions
-below generalize to any ordered field extension.
--/
-
-section InfinitesimalUnbounded
-
-variable (F : Type*) [Field F] [LinearOrder F] [IsStrictOrderedRing F]
-variable {F' : Type*} [Field F'] [LinearOrder F'] [IsStrictOrderedRing F']
-variable [Algebra F F']
-
-/-- **BPR Definition (Infinitesimal).** An element x ∈ F′ is *infinitesimal
-    over F* if x ≠ 0 and |x| < ι(a) for every positive a ∈ F,
-    where ι = algebraMap F F′. -/
-def IsInfinitesimalOver (x : F') : Prop :=
-  x ≠ 0 ∧ ∀ a : F, 0 < a → |x| < algebraMap F F' a
-
-/-- **BPR Definition (Unbounded).** An element x ∈ F′ is *unbounded
-    over F* if ι(a) < |x| for every positive a ∈ F,
-    where ι = algebraMap F F′. -/
-def IsUnboundedOver (x : F') : Prop :=
-  ∀ a : F, 0 < a → algebraMap F F' a < |x|
-
-end InfinitesimalUnbounded
-
-/-!
-### Notation 2.5: The 0₊ Order
-
-The 0₊ order on F(ε) is constructed in
-`Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus`, which provides:
-
-* A `LinearOrder` on `F[X]` where P > 0 iff the trailing coefficient
-  (lowest nonzero term) is positive.
-* An `IsStrictOrderedRing` instance making `F[X]` an ordered ring.
-* Notation `ε` for the indeterminate `X`.
-* A proof that `ε` is infinitesimal over `F` (i.e., `0 < ε < C a`
-  for every positive `a ∈ F`).
-* A `LinearOrder` on `RatFunc F` (= F(ε)) where `P/Q > 0 ↔ PQ > 0`,
-  extending the polynomial order to the full rational function field.
-* `rfPos_div`: bridge lemma connecting `rfPos` on canonical `num/denom`
-  to `polyPos` on arbitrary representative pairs.
-* `εR_inv_gt_ιR`: `1/ε` is greater than every element of `F` embedded
-  in `RatFunc F`, i.e., `∀ a : F, ιR a < εR_inv`. This is stronger
-  than BPR's statement and implies that `1/ε` is unbounded over `F`
-  in the sense of `IsUnboundedOver` above.
--/
-
-/-!
-### Exercise 2.4: Uniqueness of the 0₊ order
-
-**Exercise 2.4 (BPR).** Show that 0₊ is the only order on F[X] in which ε
-is positive infinitesimal over F.
-
-We formalize this as: any positivity predicate `pos` on `F[X]` satisfying
-the ordered-ring axioms + "X is positive infinitesimal" must agree with
-`polyPos` (the 0₊ positivity predicate).
--/
-
-end Azurite.BPR
-
-section Exercise_2_4
-
-open Polynomial
-
-variable {F : Type*} [Field F] [LinearOrder F] [IsStrictOrderedRing F]
-
-/-- **Exercise 2.4.** The 0₊ order is the unique order on F[X] making ε
-    positive infinitesimal: any positivity predicate satisfying the
-    ordered-ring axioms with X infinitesimal agrees with `polyPos`. -/
-theorem Azurite.BPR.exercise_2_4
-    (pos : F[X] → Prop)
-    (pos_add : ∀ {a b}, pos a → pos b → pos (a + b))
-    (pos_mul : ∀ {a b}, pos a → pos b → pos (a * b))
-    (pos_tri : ∀ a, pos a ∨ a = 0 ∨ pos (-a))
-    (pos_antisymm : ∀ {a}, pos a → ¬ pos (-a))
-    (hC : ∀ {a : F}, 0 < a → pos (C a))
-    (hε_pos : pos X)
-    (hε_inf : ∀ {a : F}, 0 < a → pos (C a - X))
-    (P : F[X]) (hP : P ≠ 0) :
-    pos P ↔ 0 < P.trailingCoeff := by
-  -- Helper facts
-  have not_pos_zero : ¬ pos 0 := fun h => pos_antisymm h (by rwa [neg_zero])
-  have pos_C_iff : ∀ {a : F}, a ≠ 0 → (pos (C a) ↔ 0 < a) := by
-    intro a ha
-    exact ⟨fun h => by
-      by_contra hle; push Not at hle
-      exact pos_antisymm h (by rw [← map_neg]; exact hC (neg_pos.mpr (lt_of_le_of_ne hle ha))),
-      fun h => hC h⟩
-  -- X^k > 0 for k ≥ 1
-  have pos_X_pow : ∀ k, 1 ≤ k → pos (X ^ k : F[X]) := by
-    intro k hk; induction k with
-    | zero => omega
-    | succ n ih => cases n with
-      | zero => simpa
-      | succ m => rw [pow_succ]; exact pos_mul (ih (by omega)) hε_pos
-  -- X^k < C(a) for k ≥ 1 and a > 0
-  have pos_C_sub_X_pow : ∀ k, 1 ≤ k → ∀ {a : F}, 0 < a → pos (C a - X ^ k : F[X]) := by
-    intro k hk; induction k with
-    | zero => omega
-    | succ n ih => intro a ha; cases n with
-      | zero => simpa using hε_inf ha
-      | succ m =>
-        rw [show C a - X ^ (m + 2) =
-            (C a - X ^ (m + 1)) + (X ^ (m + 1) * (C (1 : F) - X)) from by
-          rw [map_one]; ring]
-        exact pos_add (ih (by omega) ha)
-          (pos_mul (pos_X_pow _ (by omega)) (by rw [map_one]; exact hε_inf one_pos))
-  -- pos(a) → pos(a*b) ↔ pos(b)
-  have pos_cancel : ∀ {a b : F[X]}, pos a → (pos (a * b) ↔ pos b) := by
-    intro a b ha
-    constructor
-    · intro hab
-      rcases pos_tri b with hb | hb | hb
-      · exact hb
-      · exact absurd (by rw [hb, mul_zero] at hab; exact hab) not_pos_zero
-      · have : pos (a * (-b)) := pos_mul ha hb
-        rw [mul_neg] at this
-        exact absurd this (pos_antisymm hab)
-    · exact fun hb => pos_mul ha hb
-  -- KEY LEMMA: X * Q is bounded by any positive constant
-  have mul_X_bounded : ∀ Q : F[X], ∀ {a : F}, 0 < a → pos (C a - X * Q) := by
-    intro Q
-    induction Q using Polynomial.induction_on' with
-    | add p q ihp ihq =>
-      intro a ha
-      have hsplit : C a - X * (p + q) = (C (a / 2) - X * p) + (C (a / 2) - X * q) := by
-        have : C a = C (a / 2) + C (a / 2) := by rw [← map_add]; congr 1; field_simp; ring
-        rw [this]; ring
-      rw [hsplit]
-      exact pos_add (ihp (half_pos ha)) (ihq (half_pos ha))
-    | monomial n c =>
-      intro a ha
-      have hmon : X * monomial n c = C c * X ^ (n + 1) := by
-        rw [← C_mul_X_pow_eq_monomial]; ring
-      rw [hmon]
-      by_cases hc : c = 0
-      · simp [hc]; exact hC ha
-      · rcases pos_tri (C c * X ^ (n + 1) : F[X]) with h | h | h
-        · -- term > 0: show it's < C(a) via X^(n+1) < C(a/c)
-          have hc_pos : (0 : F) < c := by
-            rw [show C c * X ^ (n + 1) = X ^ (n + 1) * C c from mul_comm ..] at h
-            rwa [pos_cancel (pos_X_pow _ (Nat.one_le_iff_ne_zero.mpr (by omega))),
-                 pos_C_iff hc] at h
-          rw [show C a - C c * X ^ (n + 1) = C c * (C (a / c) - X ^ (n + 1)) from by
-            rw [mul_sub, ← map_mul, mul_div_cancel₀ _ hc]]
-          exact pos_mul (hC hc_pos) (pos_C_sub_X_pow _
-            (Nat.one_le_iff_ne_zero.mpr (by omega)) (div_pos ha hc_pos))
-        · -- term = 0: trivial
-          rw [show C a - C c * X ^ (n + 1) = C a + -(C c * X ^ (n + 1)) from sub_eq_add_neg ..,
-              h, neg_zero, add_zero]
-          exact hC ha
-        · -- term < 0: C(a) - term = C(a) + |term| > 0
-          rw [show C a - C c * X ^ (n + 1) = C a + -(C c * X ^ (n + 1)) from sub_eq_add_neg ..]
-          exact pos_add (hC ha) h
-  -- MAIN PROOF
-  -- Step 1: Factor P = X^m * Q where m = natTrailingDegree P
-  have hdvd : X ^ P.natTrailingDegree ∣ P :=
-    X_pow_dvd_iff.mpr (fun d hd => coeff_eq_zero_of_lt_natTrailingDegree hd)
-  obtain ⟨Q, hQ⟩ := hdvd
-  have hQne : Q ≠ 0 := right_ne_zero_of_mul (hQ ▸ hP)
-  -- Q.coeff 0 = trailingCoeff P ≠ 0
-  have hcm : (X ^ P.natTrailingDegree * Q).coeff P.natTrailingDegree = Q.coeff 0 := by
-    have := coeff_X_pow_mul Q P.natTrailingDegree 0; simp at this; exact this
-  have hQ0 : Q.coeff 0 = P.trailingCoeff := by
-    rw [trailingCoeff]; rw [← hcm]
-    congr 1; exact hQ.symm
-  have hQ0ne : Q.coeff 0 ≠ 0 := hQ0 ▸ trailingCoeff_nonzero_iff_nonzero.mpr hP
-  -- Step 2: pos P ↔ pos Q
-  have hfactor : pos P ↔ pos Q := by
-    rw [hQ]
-    rcases Nat.eq_zero_or_pos P.natTrailingDegree with hm | hm
-    · rw [hm]; simp
-    · exact pos_cancel (pos_X_pow _ hm)
-  -- Step 3: Q = C(Q.coeff 0) + X * Q.divX
-  have hQeq : Q = C (Q.coeff 0) + X * Q.divX := by
-    ext n; cases n with
-    | zero => simp [coeff_divX]
-    | succ k => simp [coeff_divX, coeff_X_mul]
-  -- Helper for splitting C(a) = C(a/2) + C(a/2)
-  have half_split : ∀ (a : F) (S : F[X]),
-      C a - X * S = C (a / 2) + (C (a / 2) - X * S) := by
-    intro a S
-    have : C a = C (a / 2) + C (a / 2) := by rw [← map_add]; congr 1; field_simp; ring
-    rw [show C a - X * S = C a + (-X * S) from by ring,
-        this, show C (a / 2) + C (a / 2) + -X * S = C (a / 2) + (C (a / 2) - X * S) from by ring]
-  -- Step 4: pos Q ↔ 0 < Q.coeff 0
-  have hQ_iff : pos Q ↔ 0 < Q.coeff 0 := by
-    constructor
-    · intro hposQ
-      rcases lt_trichotomy (Q.coeff 0) 0 with hlt | heq | hgt
-      · exfalso
-        have hneg : pos (-Q) := by
-          rw [hQeq, show -(C (Q.coeff 0) + X * Q.divX) = C (-(Q.coeff 0)) - X * Q.divX
-            from by rw [map_neg]; ring, half_split]
-          exact pos_add (hC (by linarith)) (mul_X_bounded _ (by linarith))
-        exact pos_antisymm hposQ hneg
-      · exact absurd heq.symm (Ne.symm hQ0ne)
-      · exact hgt
-    · intro hbpos
-      rw [hQeq, show C (Q.coeff 0) + X * Q.divX = C (Q.coeff 0) - X * (-Q.divX) from by ring,
-          half_split]
-      exact pos_add (hC (by linarith)) (mul_X_bounded _ (by linarith))
-  rw [hfactor, hQ_iff, hQ0]
-
-end Exercise_2_4
-
-namespace Azurite.BPR
-
-/-!
-### Cones (BPR Definition 2.6)
-
-**Definition.** A *cone* of a field `F` is a subset `C ⊆ F` satisfying:
-1. `x ∈ C, y ∈ C ⇒ x + y ∈ C`
-2. `x ∈ C, y ∈ C ⇒ x · y ∈ C`
-3. `x ∈ F ⇒ x² ∈ C`
-
-The cone `C` is *proper* if in addition `−1 ∉ C`.
-
-**Mathlib correspondence.**
-- BPR's "cone" is a `Subsemiring` that contains all squares.
-  We define `IsCone` below as this predicate on a `Subsemiring`.
-- BPR's "proper cone" is exactly Mathlib's `RingPreordering`
-  (from `Mathlib.Algebra.Order.Ring.Ordering.Basic`):
-  a `Subsemiring` containing all squares with `−1 ∉ C`.
-- Mathlib's `RingCone` is *stronger* than a proper cone: it
-  additionally requires `a ∈ C ∧ −a ∈ C → a = 0`, which
-  corresponds to the cone inducing a *total* order.
-- The *positive cone* `{x ∈ F | x ≥ 0}` of an ordered field is
-  `RingCone.nonneg` from `Mathlib.Algebra.Order.Ring.Cone`.
--/
+/-! Note: BPR's unnumbered definitions of cone (`IsCone`),
+proper cone (`IsProperCone`), and the positive-cone lemmas
+(`isCone_nonneg`, `isProperCone_nonneg`) — together with the
+`RingPreordering`/`IsProperCone` bridges — are defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.Cones`. -/
 
 section Cones
 
-variable {F : Type*} [CommRing F]
-
-/-- **BPR Definition 2.6 (Cone).** A *cone* of a commutative ring `F` is a
-    `Subsemiring` that contains all squares.
-    This is weaker than Mathlib's `RingPreordering`, which additionally
-    requires `−1 ∉ C`. -/
-def IsCone (C : Subsemiring F) : Prop :=
-  ∀ x : F, x ^ 2 ∈ C
-
-/-- A cone is *proper* iff `−1 ∉ C`. A proper `IsCone` is exactly a
-    `RingPreordering`. -/
-def IsProperCone (C : Subsemiring F) : Prop :=
-  IsCone C ∧ (-1 : F) ∉ C
-
-/-- Every `RingPreordering` is a proper cone. -/
-lemma RingPreordering.isProperCone (P : RingPreordering F) :
-    IsProperCone P.toSubsemiring :=
-  ⟨fun x => by
-    have : IsSquare (x ^ 2) := ⟨x, sq x⟩
-    exact P.mem_of_isSquare this,
-   P.neg_one_notMem⟩
-
-/-- A proper cone gives rise to a `RingPreordering`. -/
-def IsProperCone.toRingPreordering {C : Subsemiring F} (hC : IsProperCone C) :
-    RingPreordering F :=
-  RingPreordering.mk' (↑C)
-    (fun hx hy => C.add_mem hx hy)
-    (fun hx hy => C.mul_mem hx hy)
-    (fun x => by have := hC.1 x; rwa [sq] at this)
-    hC.2
-
 variable {F : Type*} [Field F] [LinearOrder F] [IsStrictOrderedRing F]
-
-/-- **BPR Remark.** The positive cone `{x ∈ F | x ≥ 0}` of an ordered field
-    is a cone. This is `Subsemiring.nonneg` in Mathlib. -/
-lemma isCone_nonneg : IsCone (Subsemiring.nonneg F) :=
-  fun x => by simp [Subsemiring.mem_nonneg]; positivity
-
-/-- The positive cone of an ordered field is proper. -/
-lemma isProperCone_nonneg : IsProperCone (Subsemiring.nonneg F) :=
-  ⟨isCone_nonneg, by simp [Subsemiring.mem_nonneg]⟩
 
 /-!
 ### Proposition 2.6

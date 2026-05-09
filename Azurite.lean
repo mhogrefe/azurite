@@ -357,7 +357,6 @@ import Azurite.BasuPollackRoy.Chapter2.Lemma_2_48
 import Azurite.BasuPollackRoy.Chapter2.Lemma_2_59
 import Azurite.BasuPollackRoy.Chapter2.Lemma_2_60
 import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
-import Azurite.BasuPollackRoy.Chapter2.OrderZeroPlus
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_19
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_20
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
@@ -369,10 +368,16 @@ import Azurite.BasuPollackRoy.Chapter2.Proposition_2_44
 import Azurite.BasuPollackRoy.Chapter2.Proposition_2_57
 import Azurite.BasuPollackRoy.Chapter2.Remark_2_51
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Cones
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_3
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_4
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.InfinitesimalUnbounded
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Lemma_2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.OrderZeroPlus
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.SignCondition
