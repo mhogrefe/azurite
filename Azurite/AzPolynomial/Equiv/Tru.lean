@@ -1,6 +1,7 @@
 import Azurite.AzPolynomial.Tru
 import Azurite.AzPolynomial.Equiv.Truncate
 import Azurite.AzMvPolynomial.Equiv.Algebra
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
 
 /-!
 # Equivalence: `AzPolynomial.tru` ↔ BPR's `Tru`

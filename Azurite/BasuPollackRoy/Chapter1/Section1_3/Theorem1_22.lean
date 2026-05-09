@@ -1,116 +1,28 @@
-import Mathlib.FieldTheory.IsAlgClosed.Basic
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Algebra.MvPolynomial.Polynomial
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Example1_2
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_1
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_3
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_4
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.FieldFormula
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Formula
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Notation1_1
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.PrenexNormalForm
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.RealizationInvariance
-import Azurite.BasuPollackRoy.Chapter1.Section1_1.Sentences
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Coprime
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Corollary1_6
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_7
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_10
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_13
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Divisor
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.EuclideanDivision
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Exercise1_5
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Exercise1_6
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Exercise1_7
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Gcd
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lcm
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_11
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_14
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Lemma1_14Corollaries
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.PolynomialBasics
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_5
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_8
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_9
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_12
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.Remark1_4
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.RootCharacterizations
-import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
-import Azurite.BasuPollackRoy.Chapter1.Section1_3.Fiber
-import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.DegFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.LeafFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_19
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_20
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Posgcd
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
-import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SplitLast
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.TRems
-import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
-import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 
-/-!
-# Basu, Pollack, Roy — *Algorithms in Real Algebraic Geometry*
-## Chapter 1: Algebraically Closed Fields
-## Section 1.3: Projection Theorem for Constructible Sets
+/-! # BPR Section 1.3 — Theorem 1.22: Projection theorem for constructible sets
 
-Reference: Basu, S., Pollack, R., & Roy, M.-F.
-*Algorithms in Real Algebraic Geometry*. Springer, 2006.
+BPR's projection theorem: the image of a constructible set in `C^{k+1}`
+under the projection to `C^k` is constructible. Equivalently, the
+theory of algebraically closed fields admits quantifier elimination.
 
-### Overview
-
-The goal of this section is the **projection theorem**: the image of
-a constructible set under a coordinate projection is again
-constructible. Equivalently, the theory of algebraically closed
-fields admits quantifier elimination.
-
-A basic constructible set `S ⊂ C^{k+1}` can be described as
-
-  S = { z ∈ C^{k+1} | ⋀_{P ∈ 𝓟} P(z) = 0 ∧ ⋀_{Q ∈ 𝓠} Q(z) ≠ 0}
-
-with `𝓟, 𝓠` finite subsets of `C[Y₁, …, Y_k, X]`, and its projection
-`π(S)` — obtained by forgetting the last coordinate — is
-
-  π(S) = { y ∈ C^k | ∃ x ∈ C, ⋀_{P ∈ 𝓟} P(y, x) = 0 ∧
-                              ⋀_{Q ∈ 𝓠} Q(y, x) ≠ 0}.
-
-We consider the polynomials in `𝓟` and `𝓠` as polynomials in the
-single variable `X` with the variables `(Y₁, …, Y_k)` appearing as
-parameters. For a specialization of `Y` to `y = (y₁, …, y_k) ∈ C^k`,
-we write `P_y(X)` for `P(y₁, …, y_k, X)`. Hence,
-
-  π(S) = { y ∈ C^k | ∃ x ∈ C, ⋀_{P ∈ 𝓟} P_y(x) = 0 ∧
-                              ⋀_{Q ∈ 𝓠} Q_y(x) ≠ 0}.
-
-### Representation via `Formula`
-
-Following Section 1.1, a constructible set is represented as (the
-`C`-realization of) a `Formula` over `Fin (k+1)`-many variables with
-atoms of the form `P = 0` or `P ≠ 0` (`FieldAtom`). A *basic*
-constructible set, as above, corresponds to a basic formula — a
-conjunction of atoms in the sense of `Formula.IsBasicFormula`.
-
-With this representation, the projection `π` is naturally defined
-for any formula `Φ` in `Fin (k+1)`-many variables, producing a
-subset of `C^k`: `y ∈ π(Φ)` iff some extension `(y, x) ∈ C^{k+1}`
-satisfies `Φ`.
-
-### Convention on the variable order
-
-We order the `k+1` variables as `(Y₁, …, Y_k, X)` — the last
-variable `X` is the one that gets eliminated by `π`. In Lean we use
-`Fin (k+1)`, identifying:
-
-* `Fin.castSucc i` (for `i : Fin k`) with the parameter `Y_{i+1}`;
-* `Fin.last k` with the eliminated variable `X`.
-
-Given `y : Fin k → C` and `x : C`, the concatenation `Fin.snoc y x`
-is the assignment `z : Fin (k+1) → C` with
-`z (Fin.castSucc i) = y i` and `z (Fin.last k) = x`.
+The construction goes through `projBasic Ps Qs`: a quantifier-free
+formula whose `C`-realization is the projection of a basic
+constructible set cut out by `Ps` (equalities) and `Qs` (disequalities).
+The general case follows by combining `projBasic` with the conj-form
+decomposition (`exercise_1_3`).
 -/
 
 namespace Azurite.BPR
@@ -118,37 +30,6 @@ namespace Azurite.BPR
 open MvPolynomial Polynomial
 
 variable {k : ℕ} {C : Type*} [Field C] [IsAlgClosed C]
-
-/-! Note: `specialize`, `splitLast`, `proj`, `fiber`, the signed
-pseudo-remainder `PRem` (with its descent), the truncations
-`truncate`/`Tru`, the tree `TRems` (with `RoseTree`, `pRemMv`,
-and `mkTRemsNode`), the degree formulas `degFormula`,
-`degEqFormula`, `degNeqFormula` (Notation 1.18), the leaf
-formula `leafFormula` (with `leafFormulaAux`), BPR Lemma
-1.19 (with `pathLeafParent` and the partition / GCD theorems
-`leafFormula_covering`, `leafFormula_disjoint`,
-`leafFormula_gcd`), and the set of possible greatest common
-divisors `posgcd` (with `posgcd_gcd` and `posgcd_covering`)
-are defined in
-`Azurite.BasuPollackRoy.Chapter1.Section1_3.{Specialize,SplitLast,Projection,Fiber,SignedPseudoRemainder,Truncate,Tru,TRems,DegFormula,LeafFormula,Lemma1_19,Posgcd}`. -/
-
-variable {D : Type*} [CommRing D] [IsDomain D]
-variable {K : Type*} [Field K] [Algebra D K] [IsFractionRing D K]
-
-
-/-!
-### Example 1.21
-
-For the same polynomials `P` and `P'` as in Example 1.17,
-`Posgcd({P, P'})` has 9 elements `(Gᵢ, Cᵢ)`. The `Gᵢ` are the
-leaf parents of `TRems(P, P')` (i.e. the last nonzero polynomial on
-each root-to-leaf path), and each `Cᵢ` is a conjunction of degree
-formulas specifying when `gcd(P_y, P'_y) = (Gᵢ)_y`.
-
-The computable version `Azurite.azPosgcd` reproduces all 9 elements
-with every `G`-component and formula-simplification property verified
-by `#guard` tests in `Azurite/AzFormula/Posgcd.lean`.
--/
 
 
 
@@ -877,21 +758,5 @@ theorem theorem_1_22
     rw [proj_set_union]
     exact ih₁.union ih₂
 
-/-!
-### Exercise 1.9
-
-Find the conditions on `(a, b, c)` for:
-(a) `P = aX² + bX + c` and `P' = 2aX + b` to have a common root; and
-(b) `P = aX² + bX + c` to have a root which is not a root of `P'`.
-
-Both conditions are computed by the concrete projection algorithm
-`Azurite.azProjectQFAt`, which eliminates the variable `X` (represented
-as `d`) from a quantifier-free formula. The resulting quantifier-free
-formulas in `(a, b, c)` are verified by `#guard` tests in
-`Azurite/AzFormula/ProjBasic.lean`:
-
-- (a) projects `d` from `a*d² + b*d + c = 0 ∧ 2*a*d + b = 0`.
-- (b) projects `d` from `a*d² + b*d + c = 0 ∧ 2*a*d + b ≠ 0`.
--/
 
 end Azurite.BPR

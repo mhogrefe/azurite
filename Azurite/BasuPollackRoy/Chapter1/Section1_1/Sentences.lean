@@ -33,7 +33,7 @@ theorem realization_eq_of_agree_on_freeVars
       apply MvPolynomial.eval₂_congr
       · intro i c hi hc
         apply h
-        rw [MvPolynomial.mem_vars]
+        rw [MvPolynomial.mem_vars_iff_mem_support]
         exact ⟨c, MvPolynomial.mem_support_iff.mpr hc, hi⟩
     split <;> simp only [Set.mem_setOf_eq] <;> rw [this]
   | not _ ih =>

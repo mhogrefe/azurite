@@ -32,7 +32,7 @@ theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
   · -- x = 0
     simp only [Finset.mem_sdiff, Finset.mem_singleton]
     exact ⟨fun _ => rfl, fun _ =>
-      ⟨(MvPolynomial.mem_vars _).mpr
+      ⟨(MvPolynomial.mem_vars_iff_mem_support _).mpr
         ⟨Finsupp.single 0 1 + Finsupp.single 1 1,
           MvPolynomial.mem_support_iff.mpr (by
             simp only [MvPolynomial.coeff_sub, MvPolynomial.coeff_one]

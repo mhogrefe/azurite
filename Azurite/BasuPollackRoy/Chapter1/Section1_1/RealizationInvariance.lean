@@ -72,7 +72,7 @@ theorem aeval_update_of_not_mem_vars
   intro i ci hi hci
   have : i ≠ x := by
     intro h; apply hx; subst h
-    rw [MvPolynomial.mem_vars]
+    rw [MvPolynomial.mem_vars_iff_mem_support]
     exact ⟨ci, P.mem_support_iff.mpr hci, hi⟩
   simp [this]
 

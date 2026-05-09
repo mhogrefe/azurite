@@ -8,7 +8,12 @@
 -/
 import Azurite.AzFormula.Posgcd
 import Azurite.AzFormula.Equiv.LeafFormula
-import Azurite.BasuPollackRoy.Chapter1.Section1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.LeafFormula
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_19
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Lemma1_20
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Posgcd
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.TRems
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
 
 namespace Azurite
 

@@ -335,7 +335,6 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_9
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Remark1_4
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.RootCharacterizations
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
-import Azurite.BasuPollackRoy.Chapter1.Section1_3
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.DegFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Fiber
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.LeafFormula
@@ -346,6 +345,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_3.Projection
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Specialize
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.SplitLast
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Theorem1_22
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.TRems
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
@@ -389,20 +389,9 @@ import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots
 import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
-import Azurite.BasuPollackRoy.Chapter4.Section4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Notation_4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_3
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Remark_4_4
-import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_1
-import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_2
-import Azurite.BasuPollackRoy.Chapter4.Section4_2.Subsection4_2_3
-import Azurite.BasuPollackRoy.Chapter4.Section4_3.Subsection4_3_1
-import Azurite.BasuPollackRoy.Chapter4.Section4_3.Subsection4_3_2
-import Azurite.BasuPollackRoy.Chapter4.Section4_4.Subsection4_4_1
-import Azurite.BasuPollackRoy.Chapter4.Section4_4.Subsection4_4_2
-import Azurite.BasuPollackRoy.Chapter4.Section4_5
-import Azurite.BasuPollackRoy.Chapter4.Section4_6
-import Azurite.BasuPollackRoy.Chapter4.Section4_7
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod

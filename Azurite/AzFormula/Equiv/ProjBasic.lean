@@ -17,6 +17,7 @@ import Azurite.AzFormula.Equiv.Posgcd
 import Azurite.AzFormula.Equiv.ElimTrivialAtoms
 import Azurite.AzFormula.Equiv.Prenex
 import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Theorem1_22
 
 namespace Azurite
 

@@ -8,6 +8,7 @@
 import Azurite.AzFormula.LeafFormula
 import Azurite.AzFormula.Equiv.DegFormula
 import Azurite.AzPolynomial.Equiv.TRems
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.LeafFormula
 
 namespace Azurite
 

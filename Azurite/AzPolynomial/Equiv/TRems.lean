@@ -2,6 +2,7 @@ import Azurite.AzPolynomial.TRems
 import Azurite.AzPolynomial.Equiv.Tru
 import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.TRems
 
 /-!
 # Equivalence: `AzPolynomial.tremsLeafParents` ↔ BPR's `TRems` leaf parents

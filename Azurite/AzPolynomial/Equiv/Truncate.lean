@@ -1,6 +1,6 @@
 import Azurite.AzPolynomial.Truncate
 import Azurite.AzPolynomial.Equiv.Basic
-import Azurite.BasuPollackRoy.Chapter1.Section1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 
 /-!
 # Equivalence: `AzPolynomial.truncate` ↔ BPR's `truncate`

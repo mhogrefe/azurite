@@ -877,7 +877,7 @@ noncomputable instance azFieldAtomRealization
       intro heq; apply hx; subst heq
       change i ∈ a.poly.vars
       have h1 : ci ∈ a.poly.toMvPoly.support := MvPolynomial.mem_support_iff.mpr hci
-      have h2 : i ∈ a.poly.toMvPoly.vars := (MvPolynomial.mem_vars i).mpr ⟨ci, h1, hi⟩
+      have h2 : i ∈ a.poly.toMvPoly.vars := (MvPolynomial.mem_vars_iff_mem_support i).mpr ⟨ci, h1, hi⟩
       convert h2 using 1
       exact (toMvPoly_vars a.poly).symm
     simp [hix]

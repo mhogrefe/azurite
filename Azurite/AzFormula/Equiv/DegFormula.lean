@@ -9,6 +9,7 @@
 import Azurite.AzFormula.DegFormula
 import Azurite.AzFormula.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Tru
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.DegFormula
 
 namespace Azurite
 

@@ -5,7 +5,7 @@ import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.MulXPow
-import Azurite.BasuPollackRoy.Chapter1.Section1_3
+import Azurite.BasuPollackRoy.Chapter1.Section1_3.SignedPseudoRemainder
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.RingTheory.EuclideanDomain
 import Mathlib.Tactic.LinearCombination
