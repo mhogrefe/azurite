@@ -1,5 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_d_a
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Theorem_2_11_d_a
 import Mathlib.Order.Zorn
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic

@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.HasNoNontrivialRealAlgebraicExtension
 import Mathlib.FieldTheory.KummerPolynomial
 import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.RingTheory.Algebraic.Integral

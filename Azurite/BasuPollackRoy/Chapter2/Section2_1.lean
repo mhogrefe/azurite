@@ -10,6 +10,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_6
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_7
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Exercise_2_8
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.GrlexProperties
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.HasNoNontrivialRealAlgebraicExtension
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.IsRealClosedOrder
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.InfinitesimalUnbounded
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.IntermediateValueProperty
@@ -22,6 +23,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_6
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_8
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_13
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_16
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealClosedField
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealField
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.SumOfSquares
@@ -249,20 +251,9 @@ The proof that `ℝ_alg` is real closed is Exercise 2.11
 (`HasIntermediateValueProperty`) is defined in
 `Azurite.BasuPollackRoy.Chapter2.Section2_1.IntermediateValueProperty`. -/
 
-section NoNontrivialRealExtension
-
-variable {u : _} (F : Type u) [Field F]
-
-/-- **BPR Theorem 2.11 (d).** A field `F` has *no non-trivial real algebraic extension*
-    if it is a real field and every algebraic extension of `F` that is also real must
-    coincide with `F` (i.e., the algebra map is surjective). -/
-def HasNoNontrivialRealAlgebraicExtension : Prop :=
-  IsRealField F ∧
-  ∀ (F₁ : Type u) [Field F₁] [Algebra F F₁],
-    Algebra.IsAlgebraic F F₁ → IsRealField F₁ →
-    Function.Surjective (algebraMap F F₁)
-
-end NoNontrivialRealExtension
+/-! Note: BPR's `HasNoNontrivialRealAlgebraicExtension` (condition (d) of
+Theorem 2.11) is defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.HasNoNontrivialRealAlgebraicExtension`. -/
 
 /-! Note: BPR's unnumbered definitions of symmetric polynomial
 (`IsSymmetricPolynomial`, deferring to `MvPolynomial.IsSymmetric`) and
@@ -301,61 +292,9 @@ ordering) is defined in
 of symmetric polynomials) is defined in
 `Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_13`. -/
 
-section Proposition_2_16
-
-open MvPolynomial Polynomial in
-/-- **BPR Proposition 2.16.** Let `P ∈ K[X]` be monic of degree `k`, and let
-    `x₁,…,xₖ` be its roots (with multiplicities) in a field extension `C ⊇ K`.
-    If `Q(X₁,…,Xₖ) ∈ K[X₁,…,Xₖ]` is symmetric, then `Q(x₁,…,xₖ) ∈ K`.
-
-    **Proof (BPR):** Let `eᵢ = Eᵢ(x₁,…,xₖ)`. Since the `eᵢ` are (up to sign)
-    coefficients of `P` by Lemma 2.12, we have `eᵢ ∈ K`. By Proposition 2.13,
-    `Q = R(E₁,…,Eₖ)` for some `R ∈ K[T₁,…,Tₖ]`. Thus
-    `Q(x₁,…,xₖ) = R(e₁,…,eₖ) ∈ K`. -/
-theorem proposition_2_16 {K C : Type*} [Field K] [Field C] [Algebra K C]
-    {k : ℕ} (P : Polynomial K)
-    (x : Fin k → C)
-    (hx : P.map (algebraMap K C) = ∏ j : Fin k, (Polynomial.X - Polynomial.C (x j)))
-    (Q : MvPolynomial (Fin k) K) (hQ : Q.IsSymmetric) :
-    MvPolynomial.aeval x Q ∈ Set.range (algebraMap K C) := by
-  -- Step 1: By Prop 2.13, Q = R(E₁,...,Eₖ) for some R ∈ K[T₁,...,Tₖ]
-  obtain ⟨R, hR⟩ := proposition_2_13 Q hQ
-  -- Step 2: Rewrite Q and compose the evaluations:
-  --   aeval x Q = aeval x (aeval(esymm) R) = aeval(aeval x ∘ esymm) R
-  rw [← hR]
-  show (MvPolynomial.aeval x).comp
-    (MvPolynomial.bind₁ (fun i : Fin k => MvPolynomial.esymm (Fin k) K (↑i + 1))) R ∈ _
-  rw [MvPolynomial.aeval_comp_bind₁]
-  -- Step 3: Each eᵢ ∈ K by Vieta. Extract preimages:
-  --   aeval x (esymm K (i+1)) = algebraMap K C (eᵢ) for some eᵢ : K
-  suffices h : ∀ i : Fin k, ∃ e : K,
-      algebraMap K C e = MvPolynomial.aeval x (MvPolynomial.esymm (Fin k) K (↑i + 1)) by
-    -- Choose the K-valued preimages
-    choose e he using h
-    -- Step 4: aeval(algebraMap K C ∘ e) R = algebraMap K C (eval e R)
-    refine ⟨MvPolynomial.eval e R, ?_⟩
-    have heq : (fun i : Fin k => MvPolynomial.aeval x (MvPolynomial.esymm (Fin k) K (↑i + 1))) =
-        fun i => algebraMap K C (e i) := funext (fun i => (he i).symm)
-    rw [heq]
-    simp only [MvPolynomial.aeval_def, MvPolynomial.eval₂_comp, Function.comp_def]
-  -- Step 3 proof: use Vieta to show each esymm eval is a coefficient of P
-  intro i
-  -- aeval x (esymm K (i+1)) = (univ.val.map x).esymm (i+1)
-  rw [MvPolynomial.aeval_esymm_eq_multiset_esymm]
-  -- By Vieta (lemma_2_12 over C): the RHS is (-1)^(i+1) * coeff of ∏(X-C(xⱼ))
-  have h2_12 := @lemma_2_12 C _ k x (i.val + 1) (by omega)
-  -- From hx, comparing coefficients: coeff of ∏(X-C(xⱼ)) = algebraMap K C (P.coeff _)
-  have hcoeff : (∏ j : Fin k, (Polynomial.X - Polynomial.C (x j))).coeff (k - (i.val + 1)) =
-      algebraMap K C (P.coeff (k - (i.val + 1))) := by
-    rw [← hx, Polynomial.coeff_map]
-  rw [hcoeff] at h2_12
-  -- h2_12 : algebraMap(coeff) = (-1)^(i+1) * esymm
-  -- So esymm = (-1)^(i+1) · algebraMap(coeff), since (-1)^n · (-1)^n = 1
-  refine ⟨(-1) ^ (i.val + 1) * P.coeff (k - (i.val + 1)), ?_⟩
-  rw [map_mul, map_pow, map_neg, map_one, h2_12, ← mul_assoc,
-      ← pow_add, ← Nat.two_mul, pow_mul, neg_one_sq, one_pow, one_mul]
-
-end Proposition_2_16
+/-! Note: BPR Proposition 2.16 (`proposition_2_16`, symmetric polynomials in
+the roots of a monic polynomial stay in `K`) is defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_16`. -/
 
 section Notation_2_18
 
@@ -643,14 +582,14 @@ end Exercise_2_9
 - (c) R has the intermediate value property.
 - (d) R is a real field with no non-trivial real algebraic extension.
 
-The proof is split across five files, one per implication:
+The proof is split across five files in `Section2_1/`, one per implication:
 - `Theorem_2_11_a_b.lean`: (a) ⇒ (b)
 - `Theorem_2_11_b_c.lean`: (b) ⇒ (c)
 - `Theorem_2_11_b_d.lean`: (b) ⇒ (d)
 - `Theorem_2_11_c_a.lean`: (c) ⇒ (a)
 - `Theorem_2_11_d_a.lean`: (d) ⇒ (a)
 
-The combined TFAE statement is in `Theorem_2_11.lean`.
+The combined TFAE statement is in `Section2_1/Theorem_2_11.lean`.
 -/
 
 /-!

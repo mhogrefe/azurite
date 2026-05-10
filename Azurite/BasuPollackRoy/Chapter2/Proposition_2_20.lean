@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_b_c
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Theorem_2_11_b_c
 
 /-!
 # BPR Proposition 2.20: Constant Sign on a Non-Vanishing Interval

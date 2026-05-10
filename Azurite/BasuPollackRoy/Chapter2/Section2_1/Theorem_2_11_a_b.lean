@@ -1762,4 +1762,8 @@ theorem Ri_poly_has_root [IsRealClosed R]
 theorem isAlgClosed_Ri [IsRealClosed R] : IsAlgClosed (Ri R) :=
   IsAlgClosed.of_exists_root _ Ri_poly_has_root
 
+/-- **BPR Theorem 2.11 (a) ⇒ (b).** Alias for `isAlgClosed_Ri`, matching the
+    naming convention of the other four implication files. -/
+theorem theorem_2_11_a_b [IsRealClosed R] : IsAlgClosed (Ri R) := isAlgClosed_Ri
+
 end Azurite.BPR.Theorem2_11

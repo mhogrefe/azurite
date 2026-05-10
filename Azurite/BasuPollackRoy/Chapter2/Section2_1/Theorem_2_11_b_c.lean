@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_11_a_b
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Theorem_2_11_a_b
 
 /-!
 # BPR Theorem 2.11 b) ⇒ c): R[i] Algebraically Closed ⟹ Intermediate Value Property
