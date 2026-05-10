@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_19
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_19
 
 /-!
 # Polynomial factorization over a real closed field

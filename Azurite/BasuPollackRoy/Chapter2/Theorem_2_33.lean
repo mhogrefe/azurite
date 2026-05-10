@@ -1,5 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
-import Azurite.BasuPollackRoy.Chapter2.SignCondition
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Definition_2_25
 import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
 
 /-!

@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_27
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_27
 import Mathlib.Data.List.Sort
 
 /-!
@@ -26,7 +26,7 @@ case `p = 0`. The inductive step is developed in subsequent sections.
 
 namespace Azurite.BPR.VirtualRoots.Internal
 
-open Polynomial Azurite.BPR Azurite.BPR.Proposition2_21 Azurite.BPR.Proposition2_27
+open Polynomial Azurite.BPR Azurite.BPR.Proposition2_21 Azurite.BPR.Proposition2_22 Azurite.BPR.Corollary2_23 Azurite.BPR.Corollary2_24 Azurite.BPR.Proposition2_27
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 

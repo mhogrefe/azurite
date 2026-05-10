@@ -6,7 +6,11 @@ import Mathlib.FieldTheory.SplittingField.Construction
 import Mathlib.RingTheory.Polynomial.UniqueFactorization
 import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.LinearAlgebra.Lagrange
-import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Notation_2_18
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.SymmetricPolynomials
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Lemma_2_12
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_13
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_16
 
 /-!
 # BPR Theorem 2.11 a) ⇒ b): Real Closed ⟹ R[i] Algebraically Closed

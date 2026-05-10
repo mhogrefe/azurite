@@ -1,5 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.TarskiQuery
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_21
 
 /-!
 # BPR Proposition 2.57

@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_27
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_27
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Order.Interval.Set.Infinite
 
@@ -19,7 +19,7 @@ of `x ∈ R` if `σ(P) = 0` and `Reali(σ) = {x}`.
 
 namespace Azurite.BPR.Proposition2_28
 
-open Polynomial Azurite.BPR Azurite.BPR.Proposition2_21 Azurite.BPR.Proposition2_27
+open Polynomial Azurite.BPR Azurite.BPR.Proposition2_21 Azurite.BPR.Proposition2_22 Azurite.BPR.Corollary2_23 Azurite.BPR.Corollary2_24 Azurite.BPR.Proposition2_27
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 
@@ -208,35 +208,8 @@ theorem proposition_2_28_part2 (hIVP : HasIntermediateValueProperty R)
         · exact absurd heq hxne.symm
         · exact absurd (hanti hx_mem hx'_mem h) (not_lt.mpr hval_lt.le)
 
-/-! ### Definition 2.29: Thom encoding -/
-
-/-- **BPR Definition 2.29 (Thom encoding).** A sign condition `σ` on `Der(P)` is
-    a *Thom encoding* of `x ∈ R` if `σ(P) = 0` and the derivative realization
-    set `{y | ∀ i ≤ n, sign(P⁽ⁱ⁾(y)) = σ(i)}` equals `{x}`. -/
-def IsThomEncoding (P : R[X]) (n : ℕ) (σ : ℕ → SignType) (x : R) : Prop :=
-  σ 0 = 0 ∧ derReali P n σ = {x}
-
-/-- A root realization gives a Thom encoding: if `P ≠ 0`, `σ(P) = 0`, and
-    `x ∈ derReali P n σ`, then `σ` is a Thom encoding of `x`. -/
-theorem isThomEncoding_of_mem (hIVP : HasIntermediateValueProperty R)
-    (P : R[X]) (hP : P ≠ 0) (n : ℕ) (σ : ℕ → SignType) (hn : P.natDegree ≤ n)
-    (hσ0 : σ 0 = 0) (x : R) (hx : x ∈ derReali P n σ) :
-    IsThomEncoding P n σ x :=
-  ⟨hσ0, Set.eq_singleton_iff_unique_mem.mpr
-    ⟨hx, fun _ hy => proposition_2_28_part1 hIVP P hP n σ hn hσ0 _ x hy hx⟩⟩
-
-theorem isThomEncoding_of_mem_of_isRealClosed
-    {R : Type*} [Field R] [IsRealClosed R]
-    (P : R[X]) (hP : P ≠ 0) (n : ℕ) (σ : ℕ → SignType) (hn : P.natDegree ≤ n)
-    (hσ0 : σ 0 = 0) (x : R)
-    (hx : letI : LinearOrder R := IsRealClosed.toLinearOrder; x ∈ derReali P n σ) :
-    letI : LinearOrder R := IsRealClosed.toLinearOrder
-    IsThomEncoding P n σ x := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
-  exact isThomEncoding_of_mem Theorem2_11.theorem_2_11_b_c P hP n σ hn hσ0 x hx
+/-! Note: BPR Definition 2.29 (`IsThomEncoding`, `isThomEncoding_of_mem`) is
+defined in `Azurite.BasuPollackRoy.Chapter2.Section2_1.Definition_2_29`. -/
 
 /-! ### Real closed corollaries -/
 
@@ -275,25 +248,9 @@ theorem proposition_2_28_part2_of_isRealClosed
   exact proposition_2_28_part2 Theorem2_11.theorem_2_11_b_c P hP n σ σ' hn x x' hx hx'
     j hj_le hj_diff hj_agree
 
-/-! ### Example 2.30: Thom encoding of roots of X² − 2 -/
-
-/-- A root of `X² − 2` is nonzero. -/
-private lemma root_X_sq_sub_two_ne_zero {r : R} (hr : r ^ 2 = 2) : r ≠ 0 := by
-  rintro rfl; norm_num at hr
-
-/-- **BPR Example 2.30.** In any ordered field, the roots of `X² − 2` are
-    distinguished by the sign of the derivative `2X`. Since `sign(2r) = sign(r)`
-    (as `2 > 0`), two roots `r, s` with `sign(r) = sign(s)` must be equal.
-    Each root has a unique Thom encoding `(σ(P) = 0, σ(P') = ±1)`. -/
-theorem example_2_30 {r s : R} (hr : r ^ 2 = 2) (hs : s ^ 2 = 2)
-    (hsign : SignType.sign r = SignType.sign s) : r = s := by
-  have h : (r - s) * (r + s) = 0 := by nlinarith
-  rcases mul_eq_zero.mp h with h | h
-  · linarith
-  · exfalso
-    have hr_ne := root_X_sq_sub_two_ne_zero hr
-    rw [show s = -r from by linarith, Left.sign_neg r] at hsign
-    have : SignType.sign r ≠ 0 := by rwa [ne_eq, sign_eq_zero_iff]
-    revert hsign this; generalize SignType.sign r = a; cases a <;> simp
+/-! Note: BPR Example 2.30 (`example_2_30`, the roots of `X² − 2` are
+distinguished by the sign of the derivative — the canonical Thom-encoding
+example) is defined in
+`Azurite.BasuPollackRoy.Chapter2.Section2_1.Example_2_30`. -/
 
 end Azurite.BPR.Proposition2_28

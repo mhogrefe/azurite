@@ -1,5 +1,7 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
-import Azurite.BasuPollackRoy.Chapter2.SignCondition
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Corollary_2_23
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Corollary_2_24
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Definition_2_25
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_21
 
 /-!
 # BPR Proposition 2.27: Basic Thom's Lemma
@@ -14,6 +16,7 @@ The proof is by induction on the depth `n` of the derivative list.
 namespace Azurite.BPR.Proposition2_27
 
 open Polynomial Azurite.BPR Azurite.BPR.Proposition2_21
+  Azurite.BPR.Corollary2_23 Azurite.BPR.Corollary2_24
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 

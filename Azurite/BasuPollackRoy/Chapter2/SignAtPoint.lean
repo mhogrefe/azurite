@@ -1,4 +1,5 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_20
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_20
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
 import Mathlib.Data.Sign.Basic
 
 /-!

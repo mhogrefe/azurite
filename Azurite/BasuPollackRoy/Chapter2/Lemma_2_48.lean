@@ -47,7 +47,7 @@ analysis using `varAt_cons_der_eq`, `sign_eq_of_no_root_Icc`, and
 namespace Azurite.BPR.Lemma_2_48
 
 open Polynomial Azurite.BPR Azurite.BPR.VirtualRoots Azurite.BPR.Theorem2_35
-  Azurite.BPR.Proposition2_21
+  Azurite.BPR.Proposition2_21 Azurite.BPR.Proposition2_22
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 

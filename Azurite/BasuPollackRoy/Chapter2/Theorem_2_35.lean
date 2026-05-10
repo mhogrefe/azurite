@@ -1,7 +1,8 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_2
-import Azurite.BasuPollackRoy.Chapter2.SignCondition
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_20
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Definition_2_25
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Notation_2_26
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_20
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_21
 import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
 
 /-!

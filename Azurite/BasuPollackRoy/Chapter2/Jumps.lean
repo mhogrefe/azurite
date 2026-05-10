@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_21
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_21
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Topology.Algebra.Polynomial
 import Mathlib.Topology.Algebra.Order.Field

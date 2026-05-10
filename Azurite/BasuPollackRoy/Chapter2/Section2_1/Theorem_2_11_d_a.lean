@@ -1,5 +1,7 @@
-import Azurite.BasuPollackRoy.Chapter2.Section2_1
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.HasNoNontrivialRealAlgebraicExtension
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealField
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.SumOfSquares
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Theorem_2_7
 import Mathlib.FieldTheory.KummerPolynomial
 import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.RingTheory.Algebraic.Integral

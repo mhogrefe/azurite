@@ -1,8 +1,11 @@
-import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.HasNoNontrivialRealAlgebraicExtension
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealField
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Theorem_2_11_d_a
+import Mathlib.Algebra.Algebra.Rat
 import Mathlib.Order.Zorn
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+import Mathlib.FieldTheory.IntermediateField.Adjoin.Defs
 
 /-!
 # BPR Theorem 2.31: Algebraically closed fields contain real closed subfields
@@ -46,7 +49,7 @@ variable (C : Type*) [Field C] [CharZero C]
 private lemma bot_isSemireal : IsSemireal ↥(⊥ : IntermediateField ℚ C) := by
   apply IsSemireal.of_not_isSumSq_neg_one
   intro h
-  have h' := isSumSq_map (botEquiv ℚ C).toAlgHom.toRingHom h
+  have h' := isSumSq_map (IntermediateField.botEquiv ℚ C).toAlgHom.toRingHom h
   simp at h'
   exact IsSemireal.not_isSumSq_neg_one ℚ h'
 
@@ -65,7 +68,7 @@ private lemma sSup_isSemireal_of_chain
   have hmem : ∀ (x : C), x ∈ (sSup c : IntermediateField ℚ C) → ∃ S ∈ c, x ∈ S := by
     intro x hx
     have hx' : x ∈ (sSup c).toSubfield := hx
-    rw [sSup_toSubfield c hne] at hx'
+    rw [IntermediateField.sSup_toSubfield c hne] at hx'
     have hne' : (IntermediateField.toSubfield '' c).Nonempty := hne.image _
     have hdir' : DirectedOn (· ≤ ·) (IntermediateField.toSubfield '' c) := by
       rintro _ ⟨Sa, hSa, rfl⟩ _ ⟨Sb, hSb, rfl⟩
@@ -89,9 +92,9 @@ private lemma sSup_isSemireal_of_chain
     obtain ⟨S₂, hS₂, ha_S₂⟩ := hmem a.val a.2
     obtain ⟨S₃, hS₃, h₁₃, h₂₃⟩ := hdir S₁ hS₁ S₂ hS₂
     refine ⟨S₃, hS₃,
-      ⟨a.val, h₂₃ ha_S₂⟩ * ⟨a.val, h₂₃ ha_S₂⟩ + inclusion h₁₃ y₁, ?_, ?_⟩
-    · simp [coe_inclusion, hy₁]
-    · exact .sq_add _ (isSumSq_map (inclusion h₁₃).toRingHom hsy₁)
+      ⟨a.val, h₂₃ ha_S₂⟩ * ⟨a.val, h₂₃ ha_S₂⟩ + IntermediateField.inclusion h₁₃ y₁, ?_, ?_⟩
+    · simp [IntermediateField.coe_inclusion, hy₁]
+    · exact .sq_add _ (isSumSq_map (IntermediateField.inclusion h₁₃).toRingHom hsy₁)
 
 end ChainComplete
 

@@ -1,4 +1,6 @@
-import Azurite.BasuPollackRoy.Chapter2.Section2_1
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.IntermediateValueProperty
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
+import Mathlib.FieldTheory.IsRealClosed.Basic
 
 /-!
 # BPR Theorem 2.11 c) => a): Intermediate Value Property => Real Closed
