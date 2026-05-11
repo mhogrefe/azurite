@@ -183,7 +183,7 @@ section Bridge
 
 /-- Multiset Cartesian product commutes with mapping a function on each
     component: `(s.map f) ×ˢ (t.map g) = (s ×ˢ t).map (Prod.map f g)`. -/
-private lemma multiset_product_map {α α' β β' : Type*}
+lemma multiset_product_map {α α' β β' : Type*}
     (s : Multiset α) (t : Multiset β) (f : α → α') (g : β → β') :
     (s.map f) ×ˢ (t.map g) = (s ×ˢ t).map (Prod.map f g) := by
   show (s.map f).bind (fun a' => (t.map g).map fun b' => (a', b')) =
@@ -196,7 +196,7 @@ private lemma multiset_product_map {α α' β β' : Type*}
 
 /-- Multiset subtraction commutes with mapping by an injective function:
     `(m - n).map f = m.map f - n.map f` when `f` is injective. -/
-private lemma multiset_map_sub_of_injective {α β : Type*}
+lemma multiset_map_sub_of_injective {α β : Type*}
     [DecidableEq α] [DecidableEq β] {f : α → β} (hf : Function.Injective f)
     (m n : Multiset α) :
     (m - n).map f = m.map f - n.map f := by
