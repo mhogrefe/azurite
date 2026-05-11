@@ -1,5 +1,7 @@
-import Azurite.BasuPollackRoy.Chapter2.Factorization
-import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Factorization
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_41
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_42
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_43
 
 /-!
 # BPR Proposition 2.40: monic with all roots in `ConeB` ⇒ `P` is normal

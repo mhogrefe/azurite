@@ -1,9 +1,9 @@
 import Azurite.AzPolynomial.NumRoots
 import Azurite.AzPolynomial.Equiv.CauchyIndex
 import Azurite.AzPolynomial.Equiv.Derivative
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_50
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
-import Azurite.BasuPollackRoy.Chapter2.Remark_2_51
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_50
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_51
 
 /-!
 # Equivalence: AzPolynomial real-root count ↔ BPR Sturm root count

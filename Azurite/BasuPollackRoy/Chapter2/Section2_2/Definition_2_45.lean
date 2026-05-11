@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.VirtualRoots.Internal
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Definition_2_45.Internal
 
 /-!
 # BPR Definition 2.45: Virtual Roots
@@ -260,7 +260,48 @@ theorem virtualMultiplicity_eq_zero_of_not_mem
     virtualMultiplicity hIVP hP x = 0 :=
   List.count_eq_zero.mpr hx
 
-/-- **BPR multiplicity bound.** The virtual multiplicities of `x` with respect
+/-! ### Unnumbered corollaries of the virtual multiplicity definition
+
+The following four results record how the virtual multiplicity at a point `c`
+relates to the virtual multiplicity at `c` for the derivative `P'`. BPR
+collects them as immediate consequences of the definition rather than
+numbering them.
+
+#### Erratum: BPR Definition 2.45, "moreover" clause on virtual multiplicity
+
+Following Definition 2.45, BPR asserts:
+
+> Note that if `x` is a virtual root of `P′` with virtual multiplicity `ν`
+> with respect to `P`, the virtual multiplicity of `x` with respect to `P′`
+> can only be `ν`, `ν + 1` or `ν − 1`. **Moreover, if `x` is a root of `P′`,
+> the virtual multiplicity of `x` with respect to `P′` is necessarily
+> `ν + 1`.**
+
+The first claim (the three-way case split) is correct and formalized as
+`virtualMultiplicity_derivative_cases` below. The "moreover" refinement,
+however, is **false** in general — there is an unnoted counterexample:
+
+**Counterexample:** Take `P = X² + 1` over any real closed field, `x = 0`.
+- `P′ = 2X`, so `virtualRoots(P′) = [0]` and `x = 0` is a virtual root of
+  `P′` satisfying `P′.eval 0 = 0`.
+- `virtualRoots(X² + 1) = [0, 0]`: this list is forced, since any virtual
+  roots list of `X² + 1` must have length `2`, every entry must be a root
+  of some iterated derivative (only candidate: `0`, from `P′ = 2X`), and
+  `SignConstantOnGaps` is trivially satisfied since `X² + 1 > 0` everywhere.
+- Hence `ν = v(P, 0) = 2` and `v(P′, 0) = 1`, giving `v(P′, 0) = ν − 1`,
+  not `ν + 1`.
+
+The phenomenon is that a polynomial with no real roots can still have
+"spurious" virtual roots — argmins of `|P|` on each interval where `P`
+does not vanish — and `X² + 1` stacks two such argmins at the same point.
+The extra hypothesis "`x` is not a root of `P`" does not rescue the claim
+(the counterexample above already satisfies `P.eval 0 = 1 ≠ 0`).
+
+Because the claim as stated is not a theorem of the real closed field
+axioms, we do not formalize it. Downstream uses in BPR should instead rely
+on the correct three-way bound (`virtualMultiplicity_derivative_cases`). -/
+
+/-- **Trichotomy bound.** The virtual multiplicities of `x` with respect
     to `P` and `P'` differ by at most `1`: `ν(P', x) ∈ {ν(P, x) − 1, ν(P, x),
     ν(P, x) + 1}`. -/
 theorem virtualMultiplicity_derivative_cases
@@ -275,9 +316,9 @@ theorem virtualMultiplicity_derivative_cases
   unfold virtualMultiplicity
   omega
 
-/-- **BPR Proposition 2.46 interpretation (1).** If `x` is a root of `P`, then
-    the virtual multiplicity of `x` with respect to `P` exceeds the virtual
-    multiplicity of `x` with respect to `P'` by exactly `1`. -/
+/-- **Root case.** If `x` is a root of `P`, then the virtual multiplicity of
+    `x` with respect to `P` exceeds the virtual multiplicity of `x` with
+    respect to `P'` by exactly `1`. -/
 theorem virtualMultiplicity_derivative_of_root
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hP : P ≠ 0) (hdP : derivative P ≠ 0) {x : R} (hx : P.eval x = 0) :
@@ -290,10 +331,10 @@ theorem virtualMultiplicity_derivative_of_root
   exact Internal.count_eq_of_root hIVP hinter hys_sort hargmin
     hxs_sg hys_sg hx
 
-/-- **BPR Proposition 2.46 interpretation (2).** If `x` is not a root of any
-    iterated derivative `P^{(k)}` (`k ∈ ℕ`), then its virtual multiplicity
-    with respect to `P` is zero. Contrapositively, every virtual root of `P`
-    is a root of some iterated derivative — this is `virtualRoots_root_of_derivative`. -/
+/-- **No-derivative-root case.** If `x` is not a root of any iterated
+    derivative `P^{(k)}` (`k ∈ ℕ`), then its virtual multiplicity with respect
+    to `P` is zero. Contrapositively, every virtual root of `P` is a root of
+    some iterated derivative — this is `virtualRoots_root_of_derivative`. -/
 theorem virtualMultiplicity_eq_zero_of_no_derivative_root
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hP : P ≠ 0) {x : R}
@@ -304,39 +345,18 @@ theorem virtualMultiplicity_eq_zero_of_no_derivative_root
   obtain ⟨k, hk⟩ := virtualRoots_root_of_derivative hIVP hP x hx
   exact h k hk
 
-/-- **BPR Proposition 2.46 interpretation (3): non-root sign formula.**
-    If `P.eval c ≠ 0`, let `ν := (derivative P).rootMultiplicity c`. The
-    difference `v(P, c) - v(P', c)` (which lies in `{-1, 0, 1}` by the
-    trichotomy) is determined by the parity of `ν` and, when `ν` is odd, the
-    sign of `P(c) · P^{(ν+1)}(c)`:
+/-- **Non-root sign formula.** If `P.eval c ≠ 0`, let `ν :=
+    (derivative P).rootMultiplicity c`. The difference `v(P, c) - v(P', c)`
+    (which lies in `{-1, 0, 1}` by the trichotomy) is determined by the
+    parity of `ν` and, when `ν` is odd, the sign of `P(c) · P^{(ν+1)}(c)`:
 
     * `ν` even → `v(P, c) = v(P', c)`.
     * `ν` odd and `P(c) · P^{(ν+1)}(c) > 0` → `v(P, c) = v(P', c) + 1`.
     * `ν` odd and `P(c) · P^{(ν+1)}(c) < 0` → `v(P', c) = v(P, c) + 1`.
 
     Combined with `virtualMultiplicity_derivative_of_root` (case `P(c) = 0`),
-    this gives a complete characterization of how `v(·, c)` changes upon
-    differentiation.
-
-    **Proof strategy (TODO).** A direct structural proof via the
-    argmin-partition: recurse along the interlaced chain `xs = virtualRoots P`
-    and `ys = virtualRoots P'`, analogous to `Internal.count_eq_of_root` but
-    with the non-root refinement. At each step, the argmin point of `|P|` on
-    an interval `[y_i, y_{i+1}]` around `c` is forced by sign analysis:
-
-    * When `P(c) ≠ 0` and `P'(c) ≠ 0` (ν = 0): neither `P` nor `P²` has a
-      critical point at `c` in the relevant interval, so `c ∉ xs` exactly
-      when `c ∉ ys` — hence the counts are equal.
-    * When `ν ≥ 1`: `c` is a critical point of `P`. Whether it appears in
-      `xs` depends on whether `|P|` decreases or increases around `c`. The
-      local parity and the sign of `P(c) · P^{(ν+1)}(c)` determine this
-      (via Proposition 2.21: `sign(P) = σ` on both sides of `c`, and
-      `sign(P')` flips by `(-1)^ν` across `c`).
-
-    The full proof requires an internal helper `Internal.count_diff_of_not_root`
-    that mirrors `count_eq_of_root_from_aux`'s argmin-chain induction with
-    the sign-based case split. This is substantial new infrastructure
-    (≈ a few hundred lines) and is deferred to a future commit. -/
+    this gives a complete characterisation of how `v(·, c)` changes upon
+    differentiation. -/
 theorem virtualMultiplicity_diff_of_not_root
     (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hP : P ≠ 0) (hdP : derivative P ≠ 0)

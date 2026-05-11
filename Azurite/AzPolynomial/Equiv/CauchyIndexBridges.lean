@@ -2,8 +2,8 @@ import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.SturmSequence
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
-import Azurite.BasuPollackRoy.Chapter2.Lemma_2_59
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_59
 
 /-!
 # Bridges: AzPolynomial Cauchy/Tarski primitives ↔ BPR primitives

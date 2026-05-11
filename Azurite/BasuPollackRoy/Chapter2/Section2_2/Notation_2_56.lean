@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Definition_2_53
 
 /-!
 # BPR Tarski-query

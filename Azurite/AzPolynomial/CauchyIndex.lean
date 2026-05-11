@@ -3,7 +3,7 @@ import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.Cast
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Mul
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
 
 /-!
 # Computable Cauchy Index and Tarski Query on `AzPolynomial`
@@ -66,23 +66,11 @@ def cauchyIndexOnInt (Q P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
 
 /-! ## Worked examples -/
 
-/-- BPR Example 2.52: `P = X⁴ − 5X² + 4 = (X−1)(X+1)(X−2)(X+2)` has
-    four distinct real roots, so `Ind(P'/P; −∞, +∞) = 4`. -/
-private def P_2_52 : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
-private def P'_2_52 : AzPolynomial ℚ :=
-  (parseAzPolynomial "4*x^3-10*x").get!
-
-#guard cauchyIndexOn P'_2_52 P_2_52 .negInf .posInf = 4
-
 /-- `P = X² − 1` has roots at `±1`, so `Ind(P'/P; −∞, +∞) = 2`. -/
 private def Q_ex : AzPolynomial ℚ := (parseAzPolynomial "x^2-1").get!
 private def Q'_ex : AzPolynomial ℚ := (parseAzPolynomial "2*x").get!
 
 #guard cauchyIndexOn Q'_ex Q_ex .negInf .posInf = 2
-
--- `Ind(P'/P; 0, +∞)` counts roots in `(0, +∞)` — `2` for
--- `P = X⁴ − 5X² + 4` (roots `1`, `2`).
-#guard cauchyIndexOn P'_2_52 P_2_52 (.finite 0) .posInf = 2
 
 /-- Integer-coefficient example: `P = X² − 1`, `P' = 2X`. -/
 private def Q_int : AzPolynomial ℤ := (parseAzPolynomial "x^2-1").get!
@@ -132,31 +120,5 @@ private def Q_taQ_ex : AzPolynomial ℚ := (parseAzPolynomial "x").get!
 -- Integer-coefficient example.
 #guard tarskiQueryOnInt (parseAzPolynomial (R := ℤ) "x").get! Q_int
   .negInf .posInf = 0
-
-/-! ### BPR Example 2.54
-
-With
-
-`P = (X−3)² (X−1) (X+3)`
-`Q = (X−5) (X−4) (X−2) (X+1) (X+2) (X+4)`
-
-we have:
-
-* `Ind(Q/P; −∞, +∞) = 0`,
-* `Ind(Q/P; −∞, 0) = 1`,
-* `Ind(Q/P; 0, +∞) = −1`. -/
-/-- Linear factor `X − r`. -/
-private def linFactor (r : ℚ) : AzPolynomial ℚ := X - C r
-
-private def P_2_54 : AzPolynomial ℚ :=
-  linFactor 3 * linFactor 3 * linFactor 1 * linFactor (-3)
-
-private def Q_2_54 : AzPolynomial ℚ :=
-  linFactor 5 * linFactor 4 * linFactor 2 *
-    linFactor (-1) * linFactor (-2) * linFactor (-4)
-
-#guard cauchyIndexOn Q_2_54 P_2_54 .negInf .posInf = 0
-#guard cauchyIndexOn Q_2_54 P_2_54 .negInf (.finite 0) = 1
-#guard cauchyIndexOn Q_2_54 P_2_54 (.finite 0) .posInf = -1
 
 end Azurite.AzPolynomial

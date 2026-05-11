@@ -1,6 +1,6 @@
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Definition_2_25
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_35
 
 /-!
 # BPR Theorem 2.33: Descartes' Rule of Signs

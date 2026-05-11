@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
 
 /-!
 # BPR Theorem 2.50 (Sturm's theorem)

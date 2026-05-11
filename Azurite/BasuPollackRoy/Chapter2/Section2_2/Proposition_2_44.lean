@@ -1,5 +1,6 @@
-import Azurite.BasuPollackRoy.Chapter2.NormalPolynomial
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_41
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_43
 
 /-!
 # BPR Proposition 2.44: Sign variations of `A · (X − x)` for normal `A`, `x > 0`

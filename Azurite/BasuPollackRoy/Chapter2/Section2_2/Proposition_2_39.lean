@@ -1,5 +1,5 @@
-import Azurite.BasuPollackRoy.Chapter2.Factorization
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.Factorization
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
 
 /-!
 # BPR Proposition 2.39: monic with non-positive real part roots ⇒ `Var(P) = 0`

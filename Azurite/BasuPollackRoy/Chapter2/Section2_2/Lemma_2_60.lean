@@ -1,4 +1,5 @@
-import Azurite.BasuPollackRoy.Chapter2.CauchyIndex
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Definition_2_53
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_55
 
 /-!
 # BPR Lemma 2.60

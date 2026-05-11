@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_50
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_50
 
 /-!
 # BPR Remark 2.51

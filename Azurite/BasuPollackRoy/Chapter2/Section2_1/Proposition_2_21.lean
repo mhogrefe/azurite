@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter2.SignAtPoint
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.SignAtPoint
 
 /-!
 # BPR Proposition 2.21: Sign of a Polynomial to the Right / Left of a Root

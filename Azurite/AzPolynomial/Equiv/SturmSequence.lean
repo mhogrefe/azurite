@@ -4,7 +4,7 @@ import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.Derivative
-import Azurite.BasuPollackRoy.Chapter2.SturmSequence
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.SturmSequence
 
 /-!
 # Equivalence: AzPolynomial Sturm sequence ↔ Polynomial Sturm sequence

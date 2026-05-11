@@ -50,25 +50,4 @@ theorem sturmSequence_succ_succ (P : AzPolynomial K) (n : ℕ) :
       (if sturmSequence P (n + 1) = 0 then 0
        else -((sturmSequence P n).rem (sturmSequence P (n + 1)))) := rfl
 
-/-! ### BPR Example 2.52
-
-Sturm sequence of `P = X⁴ − 5X² + 4`:
-- `s₀ = X⁴ − 5X² + 4`
-- `s₁ = 4X³ − 10X`
-- `s₂ = -Rem(s₀, s₁) = (5/2)X² − 4`
-- `s₃ = -Rem(s₁, s₂) = (18/5)X`
-- `s₄ = -Rem(s₂, s₃) = 4`
-- `s₅ = -Rem(s₃, s₄) = 0`, and zero forever after.
--/
-
-private def P_2_52 : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
-
-#guard toString (sturmSequence P_2_52 0) = "x^4-5*x^2+4"
-#guard toString (sturmSequence P_2_52 1) = "4*x^3-10*x"
-#guard toString (sturmSequence P_2_52 2) = "5/2*x^2-4"
-#guard toString (sturmSequence P_2_52 3) = "18/5*x"
-#guard toString (sturmSequence P_2_52 4) = "4"
-#guard toString (sturmSequence P_2_52 5) = "0"
-#guard toString (sturmSequence P_2_52 6) = "0"
-
 end Azurite.AzPolynomial

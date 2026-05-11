@@ -21,7 +21,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_12
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Remark1_4
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.RootCharacterizations
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.SRemSTermination
-import Azurite.BasuPollackRoy.Chapter2.Section2_2
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
 
 /-!
 # BPR Lemma 2.59

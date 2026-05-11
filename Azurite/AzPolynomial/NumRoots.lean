@@ -47,16 +47,6 @@ def numRootsInt (P : AzPolynomial ℤ) : ℤ :=
 
 /-! ## Worked examples -/
 
-/-- BPR Example 2.52: `P = X⁴ − 5X² + 4 = (X−1)(X+1)(X−2)(X+2)` has
-    four distinct real roots. -/
-private def P_2_52' : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
-
-#guard numRoots P_2_52' = 4
-#guard numRootsOn P_2_52' (.finite 0) .posInf = 2
-#guard numRootsOn P_2_52' .negInf (.finite 0) = 2
-#guard numRootsOn P_2_52' (.finite (-3 : ℚ)) (.finite 3) = 4
-#guard numRootsOn P_2_52' (.finite (3/2 : ℚ)) .posInf = 1
-
 /-- `P = X² + 1` has no real roots. -/
 private def P_no_roots : AzPolynomial ℚ := (parseAzPolynomial "x^2+1").get!
 

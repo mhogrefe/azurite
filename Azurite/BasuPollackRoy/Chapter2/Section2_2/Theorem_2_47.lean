@@ -1,5 +1,6 @@
-import Azurite.BasuPollackRoy.Chapter2.Lemma_2_48
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_35
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Corollary_2_49
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_48
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_35
 
 /-!
 # BPR Theorem 2.47: virtual roots count via sign variation of `Der(P)`
@@ -45,7 +46,7 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 noncomputable def numVirtualRoots (hIVP : HasIntermediateValueProperty R)
     {P : R[X]} (hP : P ≠ 0) (a b : R) : ℕ :=
   ((↑(virtualRoots hIVP hP) : Multiset R).filter
-    (fun r => a < r ∧ r ≤ b)).card
+    (fun x => a < x ∧ x ≤ b)).card
 
 /-! ### Splitting -/
 
@@ -60,7 +61,7 @@ lemma numVirtualRoots_split (hIVP : HasIntermediateValueProperty R)
   congr 1
   conv_lhs => rw [← Multiset.filter_add_not (fun r : R => r ≤ c)
     ((↑(virtualRoots hIVP hP) : Multiset R).filter
-      (fun r => a < r ∧ r ≤ b))]
+      (fun x => a < x ∧ x ≤ b))]
   congr 1
   · rw [Multiset.filter_filter]
     congr 1
@@ -299,5 +300,98 @@ theorem theorem_2_47_finite (hIVP : HasIntermediateValueProperty R)
     (numVirtualRoots hIVP hP a b : ℤ) =
       varBetween (der P) (.finite a) (.finite b) :=
   theorem_2_47_aux hIVP hP _ hab (le_refl _)
+
+/-! ### Unnumbered corollary: Budan-Fourier excess as a sum of multiplicity gaps
+
+BPR observes (immediately after Theorem 2.47) that the even non-negative
+quantity `Var(Der P; a, b) − num(P; (a, b])` from Budan-Fourier's theorem
+decomposes as the sum, over distinct virtual roots `r ∈ (a, b]`, of the
+gap `ν(P, r) − μ(P, r)` between virtual and algebraic multiplicities.
+By Corollary 2.49, each summand is a non-negative even integer. -/
+
+/-- **Unnumbered corollary to Theorem 2.47.** The even non-negative quantity
+    `Var(Der P; a, b) − num(P; (a, b])` (cf.\ Budan-Fourier, Theorem 2.35)
+    equals the sum, over the distinct virtual roots `r` of `P` in `(a, b]`,
+    of the multiplicity gaps `ν(P, r) − μ(P, r)`. Each summand is a
+    non-negative even integer by Corollary 2.49. -/
+theorem varBetween_sub_numRoots_eq_sum_multiplicity_gap
+    (hIVP : HasIntermediateValueProperty R)
+    {P : R[X]} (hP : P ≠ 0) {a b : R} (hab : a < b) :
+    varBetween (der P) (.finite a) (.finite b) -
+        (numRoots P (.finite a) (.finite b) : ℤ) =
+      ((virtualRoots hIVP hP).toFinset.filter (fun x => a < x ∧ x ≤ b)).sum
+        (fun r => (virtualMultiplicity hIVP hP r : ℤ) -
+                  (P.rootMultiplicity r : ℤ)) := by
+  classical
+  -- Replace LHS via Theorem 2.47.
+  rw [← theorem_2_47_finite hIVP hP hab]
+  -- Step 1: numVirtualRoots as a Finset sum of virtualMultiplicities.
+  have h_nVR : (numVirtualRoots hIVP hP a b : ℤ) =
+      ((virtualRoots hIVP hP).toFinset.filter (fun x => a < x ∧ x ≤ b)).sum
+        (fun r => (virtualMultiplicity hIVP hP r : ℤ)) := by
+    unfold numVirtualRoots
+    rw [← Multiset.toFinset_sum_count_eq
+      (((↑(virtualRoots hIVP hP) : Multiset R)).filter (fun x => a < x ∧ x ≤ b))]
+    push_cast
+    rw [Multiset.toFinset_filter]
+    refine Finset.sum_congr rfl ?_
+    intro r hr
+    rw [Finset.mem_filter] at hr
+    obtain ⟨_, hp⟩ := hr
+    rw [Multiset.count_filter_of_pos (p := fun x => a < x ∧ x ≤ b) hp,
+        Multiset.coe_count]
+    rfl
+  -- Step 2: numRoots as a Finset sum of rootMultiplicities indexed on Fvr.
+  -- By Corollary 2.49 every actual root of P is a virtual root, so the support
+  -- of `P.roots.filter pred` is contained in Fvr; the extra summands on
+  -- Fvr \ (P.roots.toFinset.filter pred) all have rootMultiplicity = 0.
+  have h_subset : P.roots.toFinset.filter (fun x => a < x ∧ x ≤ b) ⊆
+      (virtualRoots hIVP hP).toFinset.filter (fun x => a < x ∧ x ≤ b) := by
+    intro r hr
+    rw [Finset.mem_filter, Multiset.mem_toFinset] at hr
+    obtain ⟨hroot, hp⟩ := hr
+    have hPr : P.IsRoot r := (Polynomial.mem_roots hP).mp hroot
+    have hrm_pos : 0 < P.rootMultiplicity r :=
+      (Polynomial.rootMultiplicity_pos hP).mpr hPr
+    have h49 := (corollary_2_49 hIVP hP r).1
+    have hvm_pos : 0 < virtualMultiplicity hIVP hP r := by omega
+    rw [Finset.mem_filter]
+    refine ⟨?_, hp⟩
+    exact List.mem_toFinset.mpr (List.count_pos_iff.mp hvm_pos)
+  have h_nR : (numRoots P (.finite a) (.finite b) : ℤ) =
+      ((virtualRoots hIVP hP).toFinset.filter (fun x => a < x ∧ x ≤ b)).sum
+        (fun r => (P.rootMultiplicity r : ℤ)) := by
+    have hcard : ((P.roots.filter (fun x => a < x ∧ x ≤ b)).card : ℤ) =
+        ((virtualRoots hIVP hP).toFinset.filter (fun x => a < x ∧ x ≤ b)).sum
+          (fun r => ((P.roots.filter (fun x => a < x ∧ x ≤ b)).count r : ℤ)) := by
+      rw [← Multiset.toFinset_sum_count_eq (P.roots.filter (fun x => a < x ∧ x ≤ b)),
+          Multiset.toFinset_filter]
+      push_cast
+      refine Finset.sum_subset h_subset ?_
+      intro r hr hr_ne
+      rw [Finset.mem_filter, List.mem_toFinset] at hr
+      obtain ⟨_, hp⟩ := hr
+      have hr_not_root : r ∉ P.roots := by
+        intro hroot
+        exact hr_ne (Finset.mem_filter.mpr ⟨Multiset.mem_toFinset.mpr hroot, hp⟩)
+      have h1 : Multiset.count r (Multiset.filter (fun x => a < x ∧ x ≤ b) P.roots) =
+          Multiset.count r P.roots :=
+        Multiset.count_filter_of_pos (p := fun x => a < x ∧ x ≤ b) hp
+      have h2 : Multiset.count r P.roots = 0 := Multiset.count_eq_zero.mpr hr_not_root
+      have h12 : Multiset.count r (Multiset.filter (fun x => a < x ∧ x ≤ b) P.roots) = 0 :=
+        h1.trans h2
+      omega
+    show ((P.roots.filter (fun x => a < x ∧ x ≤ b)).card : ℤ) = _
+    rw [hcard]
+    refine Finset.sum_congr rfl ?_
+    intro r hr
+    rw [Finset.mem_filter] at hr
+    obtain ⟨_, hp⟩ := hr
+    have h1 : (P.roots.filter (fun x => a < x ∧ x ≤ b)).count r = P.roots.count r :=
+      Multiset.count_filter_of_pos (p := fun x => a < x ∧ x ≤ b) hp
+    have h2 : P.roots.count r = P.rootMultiplicity r := Polynomial.count_roots P
+    exact_mod_cast h1.trans h2
+  -- Step 3: Combine.
+  rw [h_nVR, h_nR, ← Finset.sum_sub_distrib]
 
 end Azurite.BPR.Theorem_2_47

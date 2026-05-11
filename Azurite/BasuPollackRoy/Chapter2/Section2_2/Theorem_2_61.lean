@@ -1,5 +1,5 @@
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
-import Azurite.BasuPollackRoy.Chapter2.Proposition_2_57
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Proposition_2_57
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_58
 
 /-!
 # BPR Theorem 2.61 (Tarski's theorem)

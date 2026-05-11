@@ -450,7 +450,12 @@ theorem toNat_computeV2 (v1 d40 : UInt64)
     omega
   have hvd : (v1 * d40).toNat = V * D := by
     rw [_root_.UInt64.toNat_mul]; exact Nat.mod_eq_of_lt hVD_lt64
-  have h_one_shl : ((1 : UInt64) <<< 60).toNat = 2 ^ 60 := by native_decide
+  have h_one_shl : ((1 : UInt64) <<< 60).toNat = 2 ^ 60 := by
+    rw [_root_.UInt64.toNat_shiftLeft]
+    show (1 : ℕ) <<< ((60 : UInt64).toNat % 64) % 2 ^ 64 = 2 ^ 60
+    rw [show ((60 : UInt64).toNat) = 60 from rfl,
+        show (60 : ℕ) % 64 = 60 from rfl, Nat.shiftLeft_eq]
+    decide
   have h_e : (((1 : UInt64) <<< 60) - v1 * d40).toNat = 2 ^ 60 - V * D := by
     rw [_root_.UInt64.toNat_sub, hvd, h_one_shl]; omega
   have hprod : (v1 * (((1 : UInt64) <<< 60) - v1 * d40)).toNat =

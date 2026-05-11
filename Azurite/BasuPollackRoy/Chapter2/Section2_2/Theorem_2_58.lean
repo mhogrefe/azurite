@@ -1,5 +1,5 @@
-import Azurite.BasuPollackRoy.Chapter2.Lemma_2_59
-import Azurite.BasuPollackRoy.Chapter2.Lemma_2_60
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_59
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Lemma_2_60
 
 /-!
 # BPR Theorem 2.58

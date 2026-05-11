@@ -1,5 +1,5 @@
 import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_58
 
 /-!
 # Equivalence: AzPolynomial Cauchy index ↔ BPR Cauchy index

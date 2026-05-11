@@ -1,8 +1,8 @@
 import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Mul
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_58
-import Azurite.BasuPollackRoy.Chapter2.Theorem_2_61
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_58
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
 
 /-!
 # Equivalence: AzPolynomial Tarski query ↔ BPR Tarski query
