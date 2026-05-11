@@ -135,7 +135,7 @@ private lemma card_filter_gt_eq (s : Multiset R) (hs : s.Nodup) :
 /-- The squaring identity: when `s.Nodup`, `discR`'s pre-image in `R`
     is a perfect square. With `Q := ∏_{(a, b) ∈ filter(>)}(a − b)`,
     we have `(-1)^N · off-diag-prod = Q^2`. -/
-private lemma discR_aux_eq_sq (s : Multiset R) (hs : s.Nodup) :
+lemma discR_aux_eq_sq (s : Multiset R) (hs : s.Nodup) :
     (-1 : R) ^ (s.card * (s.card - 1) / 2) *
       ((s ×ˢ s - s.map (fun a => (a, a))).map (fun ab => ab.1 - ab.2)).prod =
     ((((s ×ˢ s).filter (fun ab : R × R => ab.1 > ab.2)).map
@@ -156,7 +156,7 @@ private lemma discR_aux_eq_sq (s : Multiset R) (hs : s.Nodup) :
   linear_combination (Q ^ 2) * hsq
 
 /-- Distinct roots in `R` make the strict-greater product nonzero. -/
-private lemma filter_gt_prod_ne_zero (s : Multiset R) (_hs : s.Nodup) :
+lemma filter_gt_prod_ne_zero (s : Multiset R) (_hs : s.Nodup) :
     (((s ×ˢ s).filter (fun ab : R × R => ab.1 > ab.2)).map
       (fun ab => ab.1 - ab.2)).prod ≠ 0 := by
   apply Multiset.prod_ne_zero
