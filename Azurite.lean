@@ -446,6 +446,7 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_1.Notation_4_1
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_3
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_5
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Remark_4_4
+import Azurite.BasuPollackRoy.Chapter4.Section4_1.Subdiscriminant
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
