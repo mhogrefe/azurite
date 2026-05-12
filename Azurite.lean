@@ -443,7 +443,9 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_50
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
+import Azurite.BasuPollackRoy.Chapter4.Section4_1.NewtonMatrix
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Notation_4_1
+import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_10
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_3
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_5
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Proposition_4_8
