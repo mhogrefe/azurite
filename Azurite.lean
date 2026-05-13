@@ -456,6 +456,9 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_1.Remark_4_6
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Subdiscriminant
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.VandermondeMatrix
 import Azurite.BasuPollackRoy.Chapter8.Section8_1
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeBounds
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.ComputationStructures
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.Definition_8_4
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMul
