@@ -1,7 +1,7 @@
 import Azurite.AzInt.Size
 import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzNat.Equiv.Size
-import Azurite.BasuPollackRoy.Chapter8.Section8_1
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.Definition_8_4
 
 namespace Azurite.AzInt
 
