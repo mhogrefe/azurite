@@ -228,6 +228,7 @@ import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.MulXPow
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.AzPolynomial.Equiv.NewtonSum
 import Azurite.AzPolynomial.Equiv.NumRoots
 import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.PRem
@@ -251,6 +252,7 @@ import Azurite.AzPolynomial.MvCoeffParse
 import Azurite.AzPolynomial.MvCoeffParseToString
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.NestedCoeffExamples
+import Azurite.AzPolynomial.NewtonSum
 import Azurite.AzPolynomial.NumRoots
 import Azurite.AzPolynomial.ParsableElement
 import Azurite.AzPolynomial.Parse
