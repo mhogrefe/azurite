@@ -460,6 +460,10 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_1.VandermondeMatrix
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_10
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_8
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeBounds
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixAdd
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMul
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMvAdd
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMvMul
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMvAdd
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMvMul
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.ComputationStructures
