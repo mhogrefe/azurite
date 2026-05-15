@@ -174,6 +174,7 @@ import Azurite.AzNat.Equiv.Div.SubMulLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
+import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Karatsuba
 import Azurite.AzNat.Equiv.Parity
@@ -190,6 +191,7 @@ import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.Karatsuba
 import Azurite.AzNat.LowMask
+import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbs
