@@ -172,6 +172,7 @@ import Azurite.AzNat.Equiv.Div.DivModLimb2
 import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.SubMulLimbs
 import Azurite.AzNat.Equiv.DivRound
+import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.ModPow2
@@ -187,6 +188,7 @@ import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.Karatsuba
