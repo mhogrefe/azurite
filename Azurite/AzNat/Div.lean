@@ -2,7 +2,6 @@ import Azurite.AzNat.Add
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare
 import Azurite.AzNat.OfLimbs
-import Azurite.AzNat.Parse
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Sub
@@ -122,50 +121,6 @@ def divModUInt64 (U : AzNat) (d : UInt64) (hd : d ≠ 0) : AzNat × UInt64 :=
     let res := divModLimb U.limbs 0 U.limbs.size d hd
       (Nat.zero_le _) (Nat.le_refl _)
     (ofLimbs res.1, res.2)
-
-section Examples
-
-private def p (s : String) : AzNat := (AzNat.parse s.toList).get!
-
-private def show2 (qr : AzNat × UInt64) : Nat × Nat :=
-  (qr.1.toNat, qr.2.toNat)
-
--- 2^64 = 18446744073709551616. Multi-limb dividends.
-
--- 2^64 / 3 = 6148914691236517205 r 1
-#guard show2 (divModUInt64 (p "18446744073709551616") 3 (by decide))
-  = (6148914691236517205, 1)
-
--- 2^65 / 7 = 5270498306774157604 r 4
-#guard show2 (divModUInt64 (p "36893488147419103232") 7 (by decide))
-  = (5270498306774157604, 4)
-
--- (2^64 + 12345) / 1000000 = 18446744073709 r 563951
-#guard show2 (divModUInt64 (p "18446744073709563961") 1000000 (by decide))
-  = (18446744073709, 563961)
-
--- 2^128 - 1 / (2^63 + 1) — normalized divisor (k = 0).
--- 2^128 - 1 = 340282366920938463463374607431768211455
--- 2^63 + 1 = 9223372036854775809
--- quotient = 36893488147419103230, remainder = 36893488147419103265... actually let's
--- pick simpler: 2^128 / 2 = 2^127 = 170141183460469231731687303715884105728
-#guard show2 (divModUInt64 (p "340282366920938463463374607431768211456") 2 (by decide))
-  = (170141183460469231731687303715884105728, 0)
-
--- 10^20 / 7 = 14285714285714285714 r 2
-#guard show2 (divModUInt64 (p "100000000000000000000") 7 (by decide))
-  = (14285714285714285714, 2)
-
--- 10^25 / (10^9 - 1) = 10^16 + 10^7 r 10^7
-#guard show2 (divModUInt64 (p "10000000000000000000000000") 999999999 (by decide))
-  = (10000000010000000, 10000000)
-
--- Edge case: dividend much bigger, divisor = 1 (k = 63).
--- 2^100 / 1 = 2^100, remainder = 0
-#guard show2 (divModUInt64 (p "1267650600228229401496703205376") 1 (by decide))
-  = (1267650600228229401496703205376, 0)
-
-end Examples
 
 /-!
 Formalization of Algorithm 1.6 (BasecaseDivRem) from
@@ -462,64 +417,6 @@ def divMod (U V : AzNat) : AzNat × AzNat :=
       let remLimbs := res.1.extract 0 n
       let remNorm := ofLimbs remLimbs
       (quot, remNorm >>> k)
-
-section DivModExamples
-
-private def pp (s : String) : AzNat := (AzNat.parse s.toList).get!
-
-private def showQR (qr : AzNat × AzNat) : Nat × Nat :=
-  (qr.1.toNat, qr.2.toNat)
-
--- 1-limb divisor (delegates to divModUInt64).
-#guard showQR (divMod (pp "100") (pp "7")) = (14, 2)
-#guard showQR (divMod (pp "18446744073709551616") (pp "3")) =
-  (6148914691236517205, 1)
-
--- Division by zero convention.
-#guard showQR (divMod (pp "42") (pp "0")) = (0, 42)
-
--- Divisor larger than dividend.
-#guard showQR (divMod (pp "5") (pp "18446744073709551616")) =
-  (0, 5)
-
--- 2-limb divisor (uses divModLimb2 with normalization).
--- 2^128 / (2^64 + 1) = 2^64 - 1 r 1, since (2^64-1)(2^64+1) = 2^128 - 1.
-#guard showQR
-    (divMod (pp "340282366920938463463374607431768211456")
-            (pp "18446744073709551617")) =
-  (18446744073709551615, 1)
-
--- (2^64)^2 / (2^64 - 1) — both 2-limb.
--- 2^128 = (2^64-1)(2^64+1) + 1, so 2^128 / (2^64-1) = ?
--- Actually let q = 2^128 / (2^64-1). Long division:
---   2^128 = (2^64-1) * 2^64 + 2^64 = (2^64-1)(2^64 + 1) + 1.
--- So q = 2^64 + 1 = 18446744073709551617, r = 1.
-#guard showQR
-    (divMod (pp "340282366920938463463374607431768211456")
-            (pp "18446744073709551615")) =
-  (18446744073709551617, 1)
-
--- 3-limb divisor (uses schoolbookDivModLimbs).
--- 2^192 / (2^128 + 1) = 2^64 - 1, r = 2^128 - 2^64 + 1.
--- Verify: (2^64-1)(2^128+1) = 2^192 + 2^64 - 2^128 - 1.
--- 2^192 - (2^192 + 2^64 - 2^128 - 1) = 2^128 - 2^64 + 1.
--- 2^128 - 2^64 + 1 = 340282366920938463444927863358058659841.
-#guard showQR
-    (divMod
-      (pp "6277101735386680763835789423207666416102355444464034512896")
-      (pp "340282366920938463463374607431768211457")) =
-  (18446744073709551615, 340282366920938463444927863358058659841)
-
--- Division by 1 — n-limb dividend, n-limb quotient, zero remainder.
-#guard showQR (divMod (pp "12345678901234567890") (pp "1")) =
-  (12345678901234567890, 0)
-
--- Equal dividend and divisor.
-#guard showQR (divMod (pp "999999999999999999999999999999")
-                       (pp "999999999999999999999999999999")) =
-  (1, 0)
-
-end DivModExamples
 
 /-- Division of two `AzNat`s, defined as the first projection of `divMod`. -/
 def div (U V : AzNat) : AzNat := (divMod U V).1

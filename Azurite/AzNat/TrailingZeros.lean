@@ -1,5 +1,5 @@
 import Azurite.AzNat.Basic
-import Azurite.AzNat.Parse
+import Azurite.AzNat.OfLimbs
 
 namespace Azurite.AzNat
 
@@ -28,18 +28,5 @@ Returns `none` for zero (which has infinitely many trailing zeros). -/
 def trailingZeros (n : AzNat) : Option Nat :=
   if h : n.limbs.size = 0 then none
   else some (trailingZerosAux n 0 (by omega))
-
--- 0 has infinitely many trailing zeros
-#guard (Azurite.AzNat.parse "0".toList).get!.trailingZeros == none
--- 1 = ...001₂, 0 trailing zeros
-#guard (Azurite.AzNat.parse "1".toList).get!.trailingZeros == some 0
--- 8 = 1000₂, 3 trailing zeros
-#guard (Azurite.AzNat.parse "8".toList).get!.trailingZeros == some 3
--- 12 = 1100₂, 2 trailing zeros
-#guard (Azurite.AzNat.parse "12".toList).get!.trailingZeros == some 2
--- 2^64 = one zero limb then 1, so 64 trailing zeros
-#guard (Azurite.AzNat.parse "18446744073709551616".toList).get!.trailingZeros == some 64
--- 3 * 2^128 = two zero limbs then 3, so 128 trailing zeros
-#guard (Azurite.AzNat.parse "1020847100762815390390123822295304634368".toList).get!.trailingZeros == some 128
 
 end Azurite.AzNat

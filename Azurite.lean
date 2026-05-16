@@ -185,6 +185,7 @@ import Azurite.AzNat.Equiv.Mul.Karatsuba
 import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
+import Azurite.AzNat.Equiv.ParseBase
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
@@ -209,7 +210,7 @@ import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
-import Azurite.AzNat.Parse
+import Azurite.AzNat.ParseBase
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
@@ -218,7 +219,16 @@ import Azurite.AzNat.ShiftRightRound
 import Azurite.AzNat.Size
 import Azurite.AzNat.Sub
 import Azurite.AzNat.TestBit
-import Azurite.AzNat.ToString
+import Azurite.AzNat.Tests.Conversion
+import Azurite.AzNat.Tests.Div
+import Azurite.AzNat.Tests.DivRound
+import Azurite.AzNat.Tests.GetBits
+import Azurite.AzNat.Tests.IsMultipleOfPow2
+import Azurite.AzNat.Tests.ModPow2
+import Azurite.AzNat.Tests.OfLimbDigits
+import Azurite.AzNat.Tests.OfLimbDigitsPow2
+import Azurite.AzNat.Tests.ShiftRightRound
+import Azurite.AzNat.Tests.TrailingZeros
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
 import Azurite.AzNat.Tune

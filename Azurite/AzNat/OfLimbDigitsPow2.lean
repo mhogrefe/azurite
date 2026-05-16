@@ -1,6 +1,4 @@
 import Azurite.AzNat.OfLimbs
-import Azurite.AzNat.Parse
-import Azurite.AzNat.ToString
 import Azurite.AzNat.LimbDigitsPow2
 
 namespace Azurite
@@ -62,55 +60,5 @@ def AzNat.ofLimbDigitsPow2 (k : Nat) (digits : Array UInt64) : AzNat :=
     AzNat.ofLimbs limbs
   else
     0
-
--- Sanity checks.
-
--- k = 64 short-circuit: digits ARE the limbs.
--- 2^64 has limbs [0, 1].
-#guard (AzNat.ofLimbDigitsPow2 64 #[0, 1]) = AzNat.ofLimbs #[0, 1]
-#guard (AzNat.ofLimbDigitsPow2 64 #[100]) = AzNat.ofLimbs #[100]
-#guard (AzNat.ofLimbDigitsPow2 64 #[]) = (0 : AzNat)
--- Trailing-zero digits get trimmed (input was unnormalized).
-#guard (AzNat.ofLimbDigitsPow2 64 #[7, 0, 0]) = AzNat.ofLimbs #[7]
-
--- k | 64 with k < 64 (digits never span limb boundaries).
--- 100 = 0x64 in base 16 has LSB-first digits [4, 6]. Round-trip.
-#guard (AzNat.ofLimbDigitsPow2 4 #[4, 6]) = AzNat.ofLimbs #[100]
--- Sixteen Fs in base 16 reconstruct 0xFFFF_FFFF_FFFF_FFFF.
-#guard (AzNat.ofLimbDigitsPow2 4
-         #[0xF, 0xF, 0xF, 0xF, 0xF, 0xF, 0xF, 0xF,
-           0xF, 0xF, 0xF, 0xF, 0xF, 0xF, 0xF, 0xF])
-       = AzNat.ofLimbs #[0xFFFF_FFFF_FFFF_FFFF]
--- Cross-limb base-2^32: digits [1, 0, 1] → 1 + 1·2^64, limbs [1, 1].
-#guard (AzNat.ofLimbDigitsPow2 32 #[1, 0, 1]) = AzNat.ofLimbs #[1, 1]
--- Empty input → zero.
-#guard (AzNat.ofLimbDigitsPow2 4 #[]) = (0 : AzNat)
-
--- k ∤ 64 (digits span limb boundaries).
--- 100 = 0o144 in base 8 has LSB-first digits [4, 4, 1]. Round-trip.
-#guard (AzNat.ofLimbDigitsPow2 3 #[4, 4, 1]) = AzNat.ofLimbs #[100]
--- 2^65 in base 32: digit 13 = 1, others 0. Reconstructs limbs [0, 2].
-#guard (AzNat.ofLimbDigitsPow2 5 #[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-       = AzNat.ofLimbs #[0, 2]
--- Zero digits → zero.
-#guard (AzNat.ofLimbDigitsPow2 3 #[]) = (0 : AzNat)
-
--- Degenerate (k out of range).
-#guard (AzNat.ofLimbDigitsPow2 0 #[42]) = (0 : AzNat)
-#guard (AzNat.ofLimbDigitsPow2 65 #[42]) = (0 : AzNat)
-
--- Round-trip with `limbDigitsPow2`: `ofLimbDigitsPow2 k (limbDigitsPow2 k n) = n`.
-#guard AzNat.ofLimbDigitsPow2 64 ((AzNat.ofLimbs #[0, 1]).limbDigitsPow2 64)
-       = AzNat.ofLimbs #[0, 1]
-#guard AzNat.ofLimbDigitsPow2 4 ((AzNat.ofLimbs #[100]).limbDigitsPow2 4)
-       = AzNat.ofLimbs #[100]
-#guard AzNat.ofLimbDigitsPow2 3 ((AzNat.ofLimbs #[100]).limbDigitsPow2 3)
-       = AzNat.ofLimbs #[100]
-#guard AzNat.ofLimbDigitsPow2 5 ((AzNat.ofLimbs #[0, 2]).limbDigitsPow2 5)
-       = AzNat.ofLimbs #[0, 2]
--- Larger cross-limb round-trip.
-#guard AzNat.ofLimbDigitsPow2 7
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.limbDigitsPow2 7)
-       = (Azurite.AzNat.parse "36893488147419103233".toList).get!
 
 end Azurite

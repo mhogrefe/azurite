@@ -1,6 +1,4 @@
 import Azurite.AzNat.LimbDigits
-import Azurite.AzNat.Parse
-import Azurite.AzNat.ToString
 
 namespace Azurite
 
@@ -70,8 +68,7 @@ instance : ToString AzNat where
 #guard (0 : AzNat).toString = "0"
 #guard (1 : AzNat).toString = "1"
 #guard (AzNat.ofLimbs #[0, 1]).toString = "18446744073709551616"
-#guard (Azurite.AzNat.parse "36893488147419103233".toList).get!.toString
-       = "36893488147419103233"
+#guard (AzNat.ofLimbs #[1, 2]).toString = "36893488147419103233"
 
 -- Base 2 / 8 / 16 (no prefix).
 #guard (AzNat.ofLimbs #[100]).toStringBase 16 = "64"
@@ -96,8 +93,5 @@ instance : ToString AzNat where
 -- Out-of-range bases: empty string.
 #guard (AzNat.ofLimbs #[100]).toStringBase 1 = ""
 #guard (AzNat.ofLimbs #[100]).toStringBase 37 = ""
-
--- Round-trip with `parse` at decimal.
-#guard (AzNat.parse (AzNat.ofLimbs #[12345]).toString.toList).get! = AzNat.ofLimbs #[12345]
 
 end Azurite

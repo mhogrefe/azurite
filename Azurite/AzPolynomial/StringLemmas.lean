@@ -2,8 +2,6 @@ import Azurite.AzPolynomial.CoeffChars
 import Mathlib.Data.String.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Tactic.Ring
-import Azurite.AzNat.Parse
-import Azurite.AzNat.ToString
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.ZMod.Basic
 

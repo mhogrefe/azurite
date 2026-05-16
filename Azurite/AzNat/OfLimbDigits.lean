@@ -60,46 +60,4 @@ def AzNat.ofLimbDigits (b : UInt64) (digits : Array UInt64) : AzNat :=
     superDigits.foldr (init := (0 : AzNat)) fun d acc =>
       acc * PNat + AzNat.ofLimbs #[d]
 
--- Sanity checks.
-
--- Direct reconstruction in various bases.
-#guard AzNat.ofLimbDigits 10 #[5, 4, 3, 2, 1] = AzNat.ofLimbs #[12345]
-#guard AzNat.ofLimbDigits 10 #[] = (0 : AzNat)
-
--- Base-10 specialisation agrees with the general path.
-#guard AzNat.ofBase10Digits #[5, 4, 3, 2, 1] = AzNat.ofLimbs #[12345]
-#guard AzNat.ofBase10Digits #[] = (0 : AzNat)
--- Cross-`10^19` super-digit boundary: 2^65 + 1 = 36893488147419103233 has 20
--- decimal digits, so it spans two super-digits.
-#guard AzNat.ofBase10Digits ((Azurite.AzNat.parse "36893488147419103233".toList).get!.limbDigits 10)
-       = (Azurite.AzNat.parse "36893488147419103233".toList).get!
-#guard AzNat.ofLimbDigits 16 #[0xF, 0xE, 0xE, 0xB, 0xD, 0xA, 0xE, 0xD] =
-       AzNat.ofLimbs #[0xDEADBEEF]
-#guard AzNat.ofLimbDigits 2 #[0, 1, 1, 0, 1] = AzNat.ofLimbs #[0b10110]
-#guard AzNat.ofLimbDigits 8 #[5, 5, 7] = AzNat.ofLimbs #[0o755]
-
--- Degenerate bases.
-#guard AzNat.ofLimbDigits 0 #[1, 2, 3] = (0 : AzNat)
-#guard AzNat.ofLimbDigits 1 #[0, 0] = (0 : AzNat)
-
--- Round-trip with limbDigits across multiple bases.
-#guard AzNat.ofLimbDigits 10 ((AzNat.ofLimbs #[12345]).limbDigits 10)
-       = AzNat.ofLimbs #[12345]
-#guard AzNat.ofLimbDigits 16 ((AzNat.ofLimbs #[0xDEADBEEF]).limbDigits 16)
-       = AzNat.ofLimbs #[0xDEADBEEF]
-#guard AzNat.ofLimbDigits 2 ((AzNat.ofLimbs #[0xDEADBEEF]).limbDigits 2)
-       = AzNat.ofLimbs #[0xDEADBEEF]
--- Multi-limb round-trip (2^65 + 1).
-#guard AzNat.ofLimbDigits 10
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.limbDigits 10)
-       = (Azurite.AzNat.parse "36893488147419103233".toList).get!
--- Large base, multi-limb.
-#guard AzNat.ofLimbDigits 7
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.limbDigits 7)
-       = (Azurite.AzNat.parse "36893488147419103233".toList).get!
--- Power-of-two base (delegates to ofLimbDigitsPow2).
-#guard AzNat.ofLimbDigits 16
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.limbDigits 16)
-       = (Azurite.AzNat.parse "36893488147419103233".toList).get!
-
 end Azurite

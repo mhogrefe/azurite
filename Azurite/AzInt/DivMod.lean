@@ -107,7 +107,7 @@ def AzInt.fmod (a b : AzInt) : AzInt := (a.fdivMod b).2
 
 section Examples
 
-private def parse (s : String) : AzInt := (AzInt.parse s.toList).get!
+private def parse (s : String) : AzInt := (AzInt.parse s).get!
 
 -- Euclidean (div / mod): always 0 ≤ r < |b|.
 #guard (parse "7").div (parse "2") == parse "3"

@@ -1,14 +1,16 @@
 import Azurite.AzInt.Basic
-import Azurite.AzNat.ToString
+import Azurite.AzNat.ToStringBase
 
 namespace Azurite.AzInt
 
-/-- Converts an `AzInt` to a sequence of characters without evaluating standard `Int.toString`. -/
-def toChars (z : AzInt) : List Char :=
-  if z.sign then AzNat.toChars z.abs
-  else '-' :: AzNat.toChars z.abs
+/-- Convert an `AzInt` to its decimal `String` representation. Negative
+    values are prefixed with `'-'`; the zero invariant (`sign = true`
+    when `abs = 0`) ensures `0` prints as `"0"`, not `"-0"`. -/
+def toString (z : AzInt) : String :=
+  if z.sign then AzNat.toString z.abs
+  else "-" ++ AzNat.toString z.abs
 
 instance : ToString AzInt where
-  toString z := String.ofList (toChars z)
+  toString := AzInt.toString
 
 end Azurite.AzInt
