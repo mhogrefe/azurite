@@ -526,6 +526,7 @@ import Azurite.UInt64.Equiv.LeadingZeros
 import Azurite.UInt64.Equiv.MaxPow
 import Azurite.UInt64.Equiv.MulAddWithCarry
 import Azurite.UInt64.Equiv.MulWithCarry
+import Azurite.UInt64.Equiv.OfDigits
 import Azurite.UInt64.Equiv.Pow2
 import Azurite.UInt64.Equiv.Reciprocal
 import Azurite.UInt64.Equiv.Reciprocal3By2
@@ -544,6 +545,7 @@ import Azurite.UInt64.LeadingZeros
 import Azurite.UInt64.MaxPow
 import Azurite.UInt64.MulAddWithCarry
 import Azurite.UInt64.MulWithCarry
+import Azurite.UInt64.OfDigits
 import Azurite.UInt64.Pow2
 import Azurite.UInt64.Reciprocal
 import Azurite.UInt64.Reciprocal3By2

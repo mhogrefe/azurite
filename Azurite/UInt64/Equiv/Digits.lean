@@ -69,7 +69,7 @@ private lemma ctz_eq_padicValNat (x : UInt64) (hx : x ≠ 0) :
     exact not_dvd_of_testBit_true _ _ (BitVec.getLsbD_true_ctz_of_ne_zero hbv) h_dvd
 
 /-- For a power-of-two `UInt64` `u`, `u.toNat = 2 ^ ctz`. -/
-private lemma toNat_eq_two_pow_ctz (u : UInt64) (hu : u.isPowerOfTwo = true) :
+lemma toNat_eq_two_pow_ctz (u : UInt64) (hu : u.isPowerOfTwo = true) :
     u.toNat = 2 ^ u.toBitVec.ctz.toNat := by
   have hu_ne : u ≠ 0 := by
     intro he
