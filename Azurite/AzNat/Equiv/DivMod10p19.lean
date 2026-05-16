@@ -14,19 +14,20 @@ theorem divMod10p19_d_toNat : divMod10p19_d.toNat = 10000000000000000000 := rfl
 theorem divMod10p19_d_norm : 2 ^ 63 ≤ divMod10p19_d.toNat := by
   rw [divMod10p19_d_toNat]; norm_num
 
-/-- `divMod10p19_inv` is the precomputed reciprocal of `10^19`. The
-    equation is checked at compile time via `native_decide` — kernel
-    reduction would walk the entire `reciprocal` body and exhaust
-    memory (see `feedback_kernel_runaway_global_constants`). -/
+/-- `divMod10p19_inv` is the precomputed reciprocal of `10^19`. Reduce
+    to a Nat division on `(2^128 - 1) / 10^19 - 2^64` via
+    `UInt64.toNat_reciprocal` and let the kernel finish by `decide`. -/
 theorem divMod10p19_inv_eq :
     divMod10p19_inv = UInt64.reciprocal divMod10p19_d divMod10p19_d_norm := by
-  native_decide
+  apply UInt64.toNat.inj
+  rw [UInt64.toNat_reciprocal, divMod10p19_d_toNat]
+  decide
 
 /-- `10^19`'s `UInt64.leadingZeros` is `0`: the divisor is already
     normalized, so the shift bookkeeping in the general `divModLimb`
     loop collapses to the identity, which `divMod10p19_go` skips. -/
 theorem divMod10p19_d_leadingZeros : UInt64.leadingZeros divMod10p19_d = 0 := by
-  native_decide
+  decide
 
 /-! ### Inner loop: `divMod10p19_go` matches `divModLimb.go` at `k = 0`
 

@@ -182,6 +182,7 @@ import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.SetBit
@@ -202,6 +203,7 @@ import Azurite.AzNat.LowMask
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.NormalizedCompare
+import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
 import Azurite.AzNat.Parse
