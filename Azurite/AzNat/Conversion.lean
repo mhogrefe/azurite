@@ -1,5 +1,4 @@
 import Azurite.AzNat.Parse
-import Azurite.AzNat.ToString
 
 def UInt64.toAzNat (u : UInt64) : Azurite.AzNat :=
   if h : u = 0 then
@@ -28,22 +27,22 @@ def Int16.toAzNatClampNeg (i : Int16) : Azurite.AzNat := i.toInt64.toAzNatClampN
 def Int8.toAzNatClampNeg (i : Int8) : Azurite.AzNat := i.toInt64.toAzNatClampNeg
 def ISize.toAzNatClampNeg (i : ISize) : Azurite.AzNat := i.toInt64.toAzNatClampNeg
 
-#guard toString (0 : UInt64).toAzNat == "0"
-#guard toString (5 : UInt64).toAzNat == "5"
-#guard toString (18446744073709551615 : UInt64).toAzNat == "18446744073709551615"
+#guard (0 : UInt64).toAzNat.toNat == 0
+#guard (5 : UInt64).toAzNat.toNat == 5
+#guard (18446744073709551615 : UInt64).toAzNat.toNat == 18446744073709551615
 
-#guard toString ((0 : Int64).toAzNatClampNeg) == "0"
-#guard toString ((-5 : Int64).toAzNatClampNeg) == "0"
-#guard toString ((-9223372036854775808 : Int64).toAzNatClampNeg) == "0"
-#guard toString ((5 : Int64).toAzNatClampNeg) == "5"
-#guard toString ((9223372036854775807 : Int64).toAzNatClampNeg) == "9223372036854775807"
+#guard ((0 : Int64).toAzNatClampNeg).toNat == 0
+#guard ((-5 : Int64).toAzNatClampNeg).toNat == 0
+#guard ((-9223372036854775808 : Int64).toAzNatClampNeg).toNat == 0
+#guard ((5 : Int64).toAzNatClampNeg).toNat == 5
+#guard ((9223372036854775807 : Int64).toAzNatClampNeg).toNat == 9223372036854775807
 
-#guard toString ((0 : Int32).toAzNatClampNeg) == "0"
-#guard toString ((-5 : Int32).toAzNatClampNeg) == "0"
-#guard toString ((5 : Int32).toAzNatClampNeg) == "5"
+#guard ((0 : Int32).toAzNatClampNeg).toNat == 0
+#guard ((-5 : Int32).toAzNatClampNeg).toNat == 0
+#guard ((5 : Int32).toAzNatClampNeg).toNat == 5
 
-#guard toString ((-5 : ISize).toAzNatClampNeg) == "0"
-#guard toString ((5 : ISize).toAzNatClampNeg) == "5"
+#guard ((-5 : ISize).toAzNatClampNeg).toNat == 0
+#guard ((5 : ISize).toAzNatClampNeg).toNat == 5
 
 namespace Azurite.AzNat
 

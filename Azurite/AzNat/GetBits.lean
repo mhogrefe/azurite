@@ -3,7 +3,6 @@ import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Parse
 import Azurite.AzNat.ShiftRight
-import Azurite.AzNat.ToString
 
 namespace Azurite
 
@@ -65,31 +64,25 @@ def AzNat.getBits (n : AzNat) (i j : Nat) : AzNat :=
        == 40
 
 -- `getBits` parallels `getBitsAsLimb` but allows wide ranges.
-#guard toString ((Azurite.AzNat.parse "172".toList).get!.getBits 0 8) == "172"
-#guard toString ((Azurite.AzNat.parse "172".toList).get!.getBits 4 8) == "10"
-#guard toString ((Azurite.AzNat.parse "172".toList).get!.getBits 0 0) == "0"
+#guard ((Azurite.AzNat.parse "172".toList).get!.getBits 0 8).toNat == 172
+#guard ((Azurite.AzNat.parse "172".toList).get!.getBits 4 8).toNat == 10
+#guard ((Azurite.AzNat.parse "172".toList).get!.getBits 0 0).toNat == 0
 
 -- Wide extraction crossing the 64-bit boundary.
 -- `n = 2^65 + 1 = 36893488147419103233`. Bits 0 and 65 set.
 -- getBits 0 66: bits [0, 66) includes both 0 and 65 → value 2^65 + 1 = n.
-#guard toString
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 0 66)
-       == "36893488147419103233"
+#guard ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 0 66).toNat
+       == 36893488147419103233
 -- getBits 1 66: bits [1, 66), bit 0 of result = bit 1 of n = 0, bit 64 of result = bit 65 of n = 1.
 -- Value = 2^64 = 18446744073709551616.
-#guard toString
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 1 66)
-       == "18446744073709551616"
+#guard ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 1 66).toNat
+       == 18446744073709551616
 
 -- getBits agrees with the naive spec `(n >>> i).modPow2 (j - i)` on a wider example.
-#guard toString
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 30 100)
-       ==
-       toString
-         (((Azurite.AzNat.parse "36893488147419103233".toList).get!.shiftRight 30).modPow2 70)
+#guard ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 30 100)
+       == (((Azurite.AzNat.parse "36893488147419103233".toList).get!.shiftRight 30).modPow2 70)
 
-#guard toString
-         ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 0 200)
-       == toString (Azurite.AzNat.parse "36893488147419103233".toList).get!
+#guard ((Azurite.AzNat.parse "36893488147419103233".toList).get!.getBits 0 200)
+       == (Azurite.AzNat.parse "36893488147419103233".toList).get!
 
 end Azurite

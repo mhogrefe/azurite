@@ -20,8 +20,5 @@ namespace AzNat
 def toChars (n : AzNat) : List Char :=
   natToChars (toNat n)
 
-instance : ToString AzNat where
-  toString n := String.ofList (toChars n)
-
 end AzNat
 end Azurite
