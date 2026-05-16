@@ -62,6 +62,7 @@ import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
 import Azurite.AzMatrix.Equiv.Mul
+import Azurite.AzMatrix.Equiv.MulList
 import Azurite.AzMatrix.Equiv.MulVec
 import Azurite.AzMatrix.Equiv.Neg
 import Azurite.AzMatrix.Equiv.Pow
@@ -71,6 +72,7 @@ import Azurite.AzMatrix.Equiv.Sub
 import Azurite.AzMatrix.Equiv.Transpose
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Mul
+import Azurite.AzMatrix.MulList
 import Azurite.AzMatrix.MulVec
 import Azurite.AzMatrix.Operations
 import Azurite.AzMatrix.Parse
@@ -490,8 +492,10 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_10
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_8
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeBounds
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixAdd
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixListProd
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMul
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMvAdd
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMvListProd
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMatrixMvMul
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMvAdd
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeMvMul
