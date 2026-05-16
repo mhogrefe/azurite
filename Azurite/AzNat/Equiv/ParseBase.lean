@@ -486,5 +486,144 @@ theorem parse_eq_toNat? (s : String) (h_ne : s ≠ "")
   rw [String.toNat?_eq_some_ofDigitChars h_isNat]
   rw [filter_underscore_eq_self_of_digits s.toList h_digits]
 
+/-! ### Forward correctness for `parseBase b` (general `b`)
+
+For an `s : String` whose characters are all valid base-`b` digits (no
+prefix, no underscores), `parseBase b s` succeeds and its `.toNat` is
+the MSB-first base-`b` Horner fold over `s.toList`. -/
+
+private theorem parseDigitsInto_foldl_charValid (b : UInt64) :
+    ∀ (cs : List Char) (arr0 : Array UInt64),
+      (∀ c ∈ cs, ∃ d, AzNat.charToDigit c = some d ∧ d < b) →
+      cs.foldl
+          (fun acc c =>
+            match acc with
+            | none => none
+            | some arr =>
+              match AzNat.charToDigit c with
+              | none => none
+              | some d => if d < b then some (arr.push d) else none)
+          (some arr0)
+        = some { toList := arr0.toList ++ cs.map fun c => (AzNat.charToDigit c).getD 0 } := by
+  intro cs
+  induction cs with
+  | nil =>
+    intro arr0 _
+    show some arr0 = some { toList := arr0.toList ++ [] }
+    simp
+  | cons c cs' ih =>
+    intro arr0 h_valid
+    obtain ⟨d, hd_eq, hd_lt⟩ := h_valid c List.mem_cons_self
+    show ((c :: cs').foldl _ (some arr0)) = _
+    rw [List.foldl_cons]
+    rw [hd_eq]
+    simp only [hd_lt, ↓reduceIte]
+    have h_rest : ∀ x ∈ cs', ∃ d, AzNat.charToDigit x = some d ∧ d < b := fun x hx =>
+      h_valid x (List.mem_cons_of_mem _ hx)
+    rw [ih (arr0.push d) h_rest]
+    show some ({ toList := (arr0.push d).toList ++
+                  cs'.map fun c => (AzNat.charToDigit c).getD 0 } : Array UInt64) =
+         some ({ toList := arr0.toList ++ (c :: cs').map fun c => (AzNat.charToDigit c).getD 0 }
+                : Array UInt64)
+    rw [Array.toList_push, List.map_cons]
+    show some ({ toList := (arr0.toList ++ [d]) ++ _ } : Array UInt64) =
+         some ({ toList := arr0.toList ++ ((AzNat.charToDigit c).getD 0 :: _) } : Array UInt64)
+    rw [hd_eq]; simp
+
+private theorem parseDigitsInto_eq_charToDigit (b : UInt64) (cs : List Char)
+    (h_valid : ∀ c ∈ cs, ∃ d, AzNat.charToDigit c = some d ∧ d < b) :
+    AzNat.parseDigitsInto b cs =
+      some ⟨cs.map fun c => (AzNat.charToDigit c).getD 0⟩ := by
+  unfold AzNat.parseDigitsInto
+  have h := parseDigitsInto_foldl_charValid b cs #[] h_valid
+  refine h.trans ?_
+  congr 1
+
+/-- `Nat.ofDigits b` of a reversed digit-value list equals the MSB-first
+base-`b` Horner fold over the character list. Base-parameterized analogue
+of `ofDigits_reverse_eq_foldl`. -/
+private theorem ofDigits_reverse_eq_foldl_general (b : Nat) (cs : List Char) :
+    Nat.ofDigits b ((cs.map fun c => ((AzNat.charToDigit c).getD 0).toNat).reverse)
+      = cs.foldl (init := 0) fun acc c =>
+          b * acc + ((AzNat.charToDigit c).getD 0).toNat := by
+  -- Strengthen to a single fold parameterized by the initial accumulator.
+  suffices h : ∀ (init : Nat),
+      init * b ^ cs.length +
+        Nat.ofDigits b ((cs.map fun c => ((AzNat.charToDigit c).getD 0).toNat).reverse) =
+        cs.foldl (init := init) fun acc c =>
+          b * acc + ((AzNat.charToDigit c).getD 0).toNat by
+    have := h 0
+    simpa using this
+  intro init
+  induction cs generalizing init with
+  | nil => simp
+  | cons c cs' ih =>
+    rw [List.map_cons, List.reverse_cons, List.foldl_cons, List.length_cons]
+    have h_rev := Nat.ofDigits_reverse_cons (b := b)
+      (cs'.map fun c => ((AzNat.charToDigit c).getD 0).toNat)
+      ((AzNat.charToDigit c).getD 0).toNat
+    rw [List.reverse_cons] at h_rev
+    rw [h_rev]
+    rw [List.length_map]
+    have h_pow : b ^ (cs'.length + 1) = b ^ cs'.length * b := by
+      rw [Nat.pow_succ]
+    rw [h_pow]
+    have h_new_init :
+        init * (b ^ cs'.length * b) +
+          (Nat.ofDigits b (cs'.map fun c => ((AzNat.charToDigit c).getD 0).toNat).reverse +
+            b ^ cs'.length * ((AzNat.charToDigit c).getD 0).toNat) =
+        (b * init + ((AzNat.charToDigit c).getD 0).toNat) * b ^ cs'.length +
+          Nat.ofDigits b (cs'.map fun c => ((AzNat.charToDigit c).getD 0).toNat).reverse := by
+      ring
+    rw [h_new_init]
+    exact ih (b * init + ((AzNat.charToDigit c).getD 0).toNat)
+
+theorem toNat_parseBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat ≤ 36)
+    (s : String) (h_ne : s ≠ "")
+    (h_no_prefix : AzNat.stripPrefix s = none)
+    (h_valid : ∀ c ∈ s.toList, ∃ d, AzNat.charToDigit c = some d ∧ d.toNat < b.toNat) :
+    (AzNat.parseBase b s).map AzNat.toNat =
+      some (s.toList.foldl (init := 0) fun acc c =>
+        b.toNat * acc + ((AzNat.charToDigit c).getD 0).toNat) := by
+  unfold AzNat.parseBase
+  have h_b_in : ¬ (b < 2 ∨ 36 < b) := by
+    push Not
+    rw [UInt64.not_lt, UInt64.not_lt]
+    refine ⟨?_, ?_⟩
+    · show (2 : UInt64).toNat ≤ b.toNat; show (2 : Nat) ≤ b.toNat; omega
+    · show b.toNat ≤ (36 : UInt64).toNat; show b.toNat ≤ (36 : Nat); omega
+  rw [if_neg h_b_in]
+  simp only [h_no_prefix]
+  have h_s_ne_empty : s.isEmpty = false := by
+    rw [Bool.eq_false_iff, Ne, String.isEmpty_iff]; exact h_ne
+  rw [h_s_ne_empty, if_neg (by decide)]
+  -- `h_valid` is `d.toNat < b.toNat` on Nat; `parseDigitsInto_eq_charToDigit` needs `d < b` on UInt64.
+  have h_valid_uint : ∀ c ∈ s.toList, ∃ d, AzNat.charToDigit c = some d ∧ d < b := by
+    intro c hc
+    obtain ⟨d, hd_eq, hd_lt⟩ := h_valid c hc
+    exact ⟨d, hd_eq, (UInt64.lt_iff_toNat_lt_toNat).mpr hd_lt⟩
+  unfold AzNat.buildFromChars
+  rw [parseDigitsInto_eq_charToDigit b s.toList h_valid_uint]
+  rw [Option.map_some]
+  have h_lt_b : ∀ x ∈ ((⟨s.toList.map fun c => (AzNat.charToDigit c).getD 0⟩ :
+        Array UInt64).reverse.toList.map UInt64.toNat), x < b.toNat := by
+    intro x hx
+    rw [Array.toList_reverse, List.map_reverse, List.mem_reverse, List.mem_map] at hx
+    obtain ⟨d, hd_mem, hd_eq⟩ := hx
+    rw [List.mem_map] at hd_mem
+    obtain ⟨c, hc_mem, hc_eq⟩ := hd_mem
+    rw [← hd_eq, ← hc_eq]
+    obtain ⟨d', hd'_eq, hd'_lt⟩ := h_valid c hc_mem
+    rw [hd'_eq]; show d'.toNat < b.toNat; exact hd'_lt
+  rw [toNat_ofLimbDigits b hb _ h_lt_b]
+  rw [Array.toList_reverse]
+  show some (Nat.ofDigits b.toNat
+        ((s.toList.map fun c => (AzNat.charToDigit c).getD 0).reverse.map UInt64.toNat)) = _
+  rw [List.map_reverse]
+  rw [show (s.toList.map fun c => (AzNat.charToDigit c).getD 0).map UInt64.toNat =
+        s.toList.map fun c => ((AzNat.charToDigit c).getD 0).toNat from by
+    rw [List.map_map]; rfl]
+  rw [ofDigits_reverse_eq_foldl_general]
+
 end AzNat
 end Azurite

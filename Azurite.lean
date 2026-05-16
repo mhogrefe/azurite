@@ -35,6 +35,7 @@ import Azurite.AzInt.Equiv.DivRound
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
+import Azurite.AzInt.Equiv.Parse
 import Azurite.AzInt.Equiv.Pow2
 import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzInt.Equiv.ShiftRight
