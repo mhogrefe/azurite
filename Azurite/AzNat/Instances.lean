@@ -17,4 +17,8 @@ instance : CommSemiring AzNat where
   mul_comm a b := toNat_injective (by simp [toNat_mul, Nat.mul_comm])
   nsmul := nsmulRec
 
+instance : Nontrivial AzNat := ⟨0, 1, fun h => by
+  have : (0 : Nat) = 1 := by rw [← toNat_zero, ← toNat_one, h]
+  exact absurd this (by decide)⟩
+
 end Azurite.AzNat

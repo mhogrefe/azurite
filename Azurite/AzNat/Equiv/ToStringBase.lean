@@ -1,5 +1,6 @@
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.ToStringBase
+import Batteries.Data.Char.Basic
 import Mathlib.Data.Nat.Digits.Defs
 
 namespace Azurite
@@ -126,5 +127,83 @@ theorem AzNat.toString_eq (n : AzNat) :
   unfold AzNat.toString
   rw [AzNat.toStringBase_eq n 10 (by decide) (by decide)]
   rfl
+
+/-- `AzNat.toString n` is never the empty string (it is at least `"0"`). -/
+theorem AzNat.toString_ne_empty (n : AzNat) : (AzNat.toString n).toList ≠ [] := by
+  have h_b_in : ¬ ((10 : UInt64) < 2 ∨ 36 < (10 : UInt64)) := by decide
+  by_cases h_size : n.limbs.size = 0
+  · have h_str : AzNat.toString n = "0" := by
+      unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
+      rw [if_neg h_b_in]; simp [h_size]
+    rw [h_str]; decide
+  · have h_str : AzNat.toString n = String.ofList
+        ((n.limbDigits 10).toList.reverse.map fun d => AzNat.digitToChar d false) := by
+      unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
+      rw [if_neg h_b_in]; simp [h_size]
+    rw [h_str, String.toList_ofList]
+    intro he
+    rw [List.map_eq_nil_iff, List.reverse_eq_nil_iff] at he
+    have h_n_pos : 0 < n.toNat := by
+      by_contra h_nlt; push Not at h_nlt
+      have h_zero : n.toNat = 0 := by omega
+      have h_last_inv := n.last_ne_zero
+      have h_nil : n.limbs.toList = [] := by
+        apply toNatLimbsList_eq_zero_of_getLast_ne_zero
+        · rw [← Array.getLast?_toList] at h_last_inv; exact h_last_inv
+        · exact h_zero
+      apply h_size
+      rw [← Array.length_toList, h_nil]; rfl
+    have h_digits_ne : Nat.digits 10 n.toNat ≠ [] :=
+      Nat.digits_ne_nil_iff_ne_zero.mpr (by omega)
+    have h_lim_eq := Azurite.AzNat.limbDigits_eq 10 (by decide) n
+    rw [he] at h_lim_eq
+    simp at h_lim_eq
+    exact h_digits_ne h_lim_eq
+
+/-- `AzNat.toString 0 = "0"`. -/
+theorem AzNat.toString_zero : (AzNat.toString 0).toList = ['0'] := rfl
+
+/-- Every character of `AzNat.toString n` is a decimal digit `'0'`–`'9'`. -/
+theorem AzNat.toString_char_digit (n : AzNat) (c : Char)
+    (hc : c ∈ (AzNat.toString n).toList) :
+    '0'.toNat ≤ c.toNat ∧ c.toNat ≤ '9'.toNat := by
+  have h_b_in : ¬ ((10 : UInt64) < 2 ∨ 36 < (10 : UInt64)) := by decide
+  by_cases h_size : n.limbs.size = 0
+  · have h_str : AzNat.toString n = "0" := by
+      unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
+      rw [if_neg h_b_in]; simp [h_size]
+    rw [h_str] at hc
+    have h_c_eq : c = '0' := by
+      rw [show ("0" : String).toList = ['0'] from rfl] at hc
+      exact List.mem_singleton.mp hc
+    subst h_c_eq
+    exact ⟨le_refl _, by decide⟩
+  · have h_str : AzNat.toString n = String.ofList
+        ((n.limbDigits 10).toList.reverse.map fun d => AzNat.digitToChar d false) := by
+      unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
+      rw [if_neg h_b_in]; simp [h_size]
+    rw [h_str, String.toList_ofList, List.mem_map] at hc
+    obtain ⟨d, hd_mem, hd_eq⟩ := hc
+    rw [List.mem_reverse] at hd_mem
+    have h_mapped : d.toNat ∈ (n.limbDigits 10).toList.map UInt64.toNat :=
+      List.mem_map_of_mem hd_mem
+    rw [Azurite.AzNat.limbDigits_eq 10 (by decide) n] at h_mapped
+    have h_d_lt : d.toNat < 10 :=
+      Nat.digits_lt_base (by decide : 1 < (10 : UInt64).toNat) h_mapped
+    -- digitToChar d false for d < 10 gives Char.ofNat ('0'.toNat + d.toNat).
+    have h_dc : AzNat.digitToChar d false = Char.ofNat ('0'.toNat + d.toNat) := by
+      unfold AzNat.digitToChar
+      rw [if_pos h_d_lt]
+    rw [h_dc] at hd_eq
+    subst hd_eq
+    have h_zero : ('0' : Char).toNat = 48 := rfl
+    have h_nine : ('9' : Char).toNat = 57 := rfl
+    have h_valid : ('0'.toNat + d.toNat).isValidChar := by
+      show '0'.toNat + d.toNat < 0xd800 ∨ _
+      left; omega
+    have h_char_toNat : (Char.ofNat ('0'.toNat + d.toNat)).toNat = '0'.toNat + d.toNat := by
+      rw [Char.toNat_ofNat, if_pos h_valid]
+    rw [h_char_toNat]
+    omega
 
 end Azurite

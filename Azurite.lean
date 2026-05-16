@@ -140,6 +140,8 @@ import Azurite.AzMvPolynomial.OfAzPolynomial
 import Azurite.AzMvPolynomial.OptionEquivRight
 import Azurite.AzMvPolynomial.ParenFree
 import Azurite.AzMvPolynomial.ParsableCoeff
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzMvPolynomial.ParsableCoeff.AzNat
 import Azurite.AzMvPolynomial.ParsableElement
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
