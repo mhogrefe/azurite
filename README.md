@@ -16,7 +16,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation (`eval`, plus generic `eval₂`/`aeval` into any commutative semiring or `R`-algebra), exact division, monomial exponentiation, rename, map, merge-sorted operations, `bind₁`/`bind₂`/`join₂` substitution, and `finSuccEquiv` (forward direction: `AzMvPolynomial (Fin (n+1)) R → AzPolynomial (AzMvPolynomial (Fin n) R)`). |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
-| `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, and row/column access. |
+| `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, row/column access, Gaussian elimination (`gauss`, BPR Algorithm 8.15, early-abort), row-echelon reduction (`rowEchelon`, always upper-triangular), and determinant (`det`). |
 | `AzFormula/` | Computable first-order formulas over `AzFieldAtom` (field atoms using `AzMvPolynomial`). Provides computable free-variable computation, bound-variable computation, sentence checking, formula constructors, variable renaming, negation normal form (`toNNF`), prenex normal form conversion (`toPrenex`), and noncomputable realization. Generic `AtomVars`, `AtomRename`, `AtomRealization` typeclasses. Modular simplification passes (`elimDoubleNeg`, `elimVacuousQuantifiers`). |
 
 ### Equivalence Proofs (`Equiv/` subdirectories)
@@ -145,6 +145,8 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Basis` | Standard basis matrix preservation |
 | `Equiv/Algebra` | Algebra structure preservation |
 | `Equiv/Pow` | `toMat (A.pow k) = toMat A ^ k` and `(ofFn f).pow k = ofFn (f ^ k)` |
+| `Equiv/RowEchelon` | `(M.rowEchelon).1.toFn.BlockTriangular id` — the row-echelon variant produces an upper-triangular matrix (Mathlib `Matrix.BlockTriangular`) |
+| `Equiv/Det` | `M.det = Matrix.det M.toFn` — Gaussian-elimination determinant (via the `gauss` early-abort variant) agrees with Mathlib's `Matrix.det`, by per-step row-operation invariance + `Matrix.det_of_upperTriangular` / `Matrix.det_eq_zero_of_row_eq_zero` |
 
 #### AzFormula (AzFieldAtom) ↔ Formula (FieldAtom)
 
@@ -240,6 +242,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Multivariate partial derivative | — | `AzMvPolynomial/Derivative` | O(n) per variable |
 | Translation P(X-c) | BPR Alg. 8.9 | `AzPolynomial/Translate` | O(p²·deg(q)) via comp |
 | Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
+| Gaussian elimination (`gauss` early-abort + `rowEchelon` always-triangular + `det`) | BPR Alg. 8.15 | `AzMatrix/RowEchelon`, `AzMatrix/Det` | O(n³) over a field |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
 
 ## Building

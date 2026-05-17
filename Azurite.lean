@@ -57,16 +57,19 @@ import Azurite.AzInt.Sub
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Basic
+import Azurite.AzMatrix.Det
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
+import Azurite.AzMatrix.Equiv.Det
 import Azurite.AzMatrix.Equiv.Mul
 import Azurite.AzMatrix.Equiv.MulList
 import Azurite.AzMatrix.Equiv.MulVec
 import Azurite.AzMatrix.Equiv.Neg
 import Azurite.AzMatrix.Equiv.Pow
 import Azurite.AzMatrix.Equiv.RowCol
+import Azurite.AzMatrix.Equiv.RowEchelon
 import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Sub
 import Azurite.AzMatrix.Equiv.Transpose
@@ -78,6 +81,7 @@ import Azurite.AzMatrix.Operations
 import Azurite.AzMatrix.Parse
 import Azurite.AzMatrix.Pow
 import Azurite.AzMatrix.RowCol
+import Azurite.AzMatrix.RowEchelon
 import Azurite.AzMvPolynomial.Add
 import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.Bind1
