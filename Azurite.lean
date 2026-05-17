@@ -503,6 +503,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.ComputationStructures
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Definition_8_4
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Lemma_8_6
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Notation_8_7
+import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMul

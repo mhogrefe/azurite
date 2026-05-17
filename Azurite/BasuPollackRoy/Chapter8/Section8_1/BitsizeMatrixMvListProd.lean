@@ -356,23 +356,28 @@ private lemma Nat.size_mul_le' (a b : ℕ) : Nat.size (a * b) ≤ Nat.size a + N
   rw [Nat.size_le, pow_add]
   exact Nat.mul_lt_mul_of_pos_right ha' hb |>.trans_le (Nat.mul_le_mul le_rfl hb'.le)
 
-/-- For `m ≥ 1`: the bitsize of a `Finset.prod` of `(p_l + 1)` is bounded by the sum of
-    bitsizes. (For `m = 0` the LHS equals `1` while the RHS is `0`.) -/
-private lemma Nat.size_prod_succ_le {m : ℕ} (hm : 0 < m) (ps : Fin m → ℕ) :
-    Nat.size (∏ l, (ps l + 1)) ≤ ∑ l, Nat.size (ps l + 1) := by
-  induction m with
-  | zero => exact absurd hm (lt_irrefl 0)
-  | succ m ih =>
-    rw [Fin.prod_univ_succ, Fin.sum_univ_succ]
-    rcases Nat.eq_zero_or_pos m with hm0 | hm0
-    · subst hm0
-      simp
-    have ih' : Nat.size (∏ l : Fin m, (ps l.succ + 1)) ≤
-        ∑ l : Fin m, Nat.size (ps l.succ + 1) := ih hm0 (fun l => ps l.succ)
-    have h_mul : Nat.size ((ps 0 + 1) * ∏ l : Fin m, (ps l.succ + 1)) ≤
-        Nat.size (ps 0 + 1) + Nat.size (∏ l : Fin m, (ps l.succ + 1)) :=
-      Nat.size_mul_le' _ _
-    omega
+/-- Sharper variant: `bit(∏(p_l + 1) - 1) ≤ ∑ bit(p_l)`. Used together with
+    `Int.size_finset_sum_le'` to match BPR's exact `bit(p_i)` (rather than the
+    slacker `bit(p_i + 1)`). The key step is `p + 1 ≤ 2 ^ bit(p)`. -/
+private lemma Nat.size_prod_succ_sub_one_le {m : ℕ} (ps : Fin m → ℕ) :
+    Nat.size ((∏ l, (ps l + 1)) - 1) ≤ ∑ l, Nat.size (ps l) := by
+  rw [Nat.size_le]
+  have h_prod_le : ∏ l, (ps l + 1) ≤ 2 ^ (∑ l, Nat.size (ps l)) := by
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      rw [Fin.prod_univ_succ, Fin.sum_univ_succ, pow_add]
+      have h_first : ps 0 + 1 ≤ 2 ^ Nat.size (ps 0) := by
+        have : ps 0 < 2 ^ Nat.size (ps 0) := Nat.lt_size_self _
+        omega
+      have h_rest := ih (fun l => ps l.succ)
+      calc (ps 0 + 1) * ∏ l : Fin m, (ps l.succ + 1)
+          ≤ 2 ^ Nat.size (ps 0) * ∏ l : Fin m, (ps l.succ + 1) :=
+            Nat.mul_le_mul_right _ h_first
+        _ ≤ 2 ^ Nat.size (ps 0) * 2 ^ (∑ l : Fin m, Nat.size (ps l.succ)) :=
+            Nat.mul_le_mul_left _ h_rest
+  have h_2pow_pos : 0 < 2 ^ (∑ l, Nat.size (ps l)) := Nat.two_pow_pos _
+  omega
 
 /-- Cardinality bound on the antidiagonalTuple filtered by per-coordinate bounds. -/
 private lemma card_antidiagonalTuple_filter_le {m d : ℕ} (ps : Fin m → ℕ) :
@@ -404,7 +409,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
     List.Forall₂ (fun M τ => ∀ i j r, ((M i j).coeff r).natAbs.size ≤ τ) Ms τs →
     List.Forall₂ (fun M p => ∀ i j, (M i j).totalDegree ≤ p) Ms ps →
     ∀ i j r, (((Ms.prod) i j).coeff r).natAbs.size ≤
-      τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum +
+      τs.sum + k * (ps.map fun p => Nat.size p).sum +
         Ms.length * Nat.size (Fintype.card ν) := by
   intro k
   induction k with
@@ -461,7 +466,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
     rw [_root_.Matrix.sum_apply i j]
     rw [MvPolynomial.coeff_sum]
     set fe := (MvPolynomial.finSuccEquiv ℤ k).toRingHom
-    set B := τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum +
+    set B := τs.sum + k * (ps.map fun p => Nat.size p).sum +
       Ms.length * Nat.size (Fintype.card ν) with hB_def
     -- Per-summand bound: for any tuple `ds`, the summand bitsize is ≤ B (the IH bound).
     have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0),
@@ -557,7 +562,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
       · exact absurd hds h
       · push Not at h
         exact h_zero ds hds h]
-    have h_filtered_bound := Int.size_finset_sum_le
+    have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
         (fun ds => ∀ l, ds l ≤ p_fn l))
       (f := fun ds => MvPolynomial.coeff r.tail
@@ -565,25 +570,26 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
       (B := B)
       (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
     refine h_filtered_bound.trans ?_
-    -- Bound filtered.card by `∏ (p_fn l + 1)` and then by `2^(∑ bit(p_fn l + 1))`.
+    -- Sharper bound: bit(card - 1) ≤ ∑ bit(p_l) (no `+ 1` per coordinate).
     have h_card_le := card_antidiagonalTuple_filter_le
       (m := (Ms.map (Matrix.map · fe)).length) (d := r 0) (ps := p_fn)
-    have hm_pos : 0 < (Ms.map (Matrix.map · fe)).length := by
-      rw [h_map_len]
-      exact Nat.pos_of_ne_zero (fun h => h_ne (List.length_eq_zero_iff.mp h))
+    have h_card_sub_le :
+        ((Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l)).card - 1 ≤
+        (∏ l, (p_fn l + 1)) - 1 := by omega
     have h_card_size_le :
-        Nat.size ((Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
-          (fun ds => ∀ l, ds l ≤ p_fn l)).card
-        ≤ ∑ l, Nat.size (p_fn l + 1) :=
-      (Nat.size_le_size h_card_le).trans (Nat.size_prod_succ_le hm_pos p_fn)
-    -- Convert the Fin sum over `p_fn` to the List sum `(ps.map (fun p => bit(p+1))).sum`.
-    have list_map_sum_via_get : (ps.map (fun p => Nat.size (p + 1))).sum =
-        ∑ l : Fin ps.length, Nat.size (ps.get l + 1) := by
+        Nat.size (((Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l)).card - 1)
+        ≤ ∑ l, Nat.size (p_fn l) :=
+      (Nat.size_le_size h_card_sub_le).trans (Nat.size_prod_succ_sub_one_le p_fn)
+    -- Convert the Fin sum over `p_fn` to the List sum `(ps.map (fun p => bit(p))).sum`.
+    have list_map_sum_via_get : (ps.map (fun p => Nat.size p)).sum =
+        ∑ l : Fin ps.length, Nat.size (ps.get l) := by
       conv_lhs => rw [show ps = List.ofFn ps.get from (List.ofFn_get ps).symm]
       rw [List.map_ofFn, List.sum_ofFn]
       rfl
     have h_sum_fin_eq_list :
-        (∑ l, Nat.size (p_fn l + 1)) = (ps.map (fun p => Nat.size (p + 1))).sum := by
+        (∑ l, Nat.size (p_fn l)) = (ps.map (fun p => Nat.size p)).sum := by
       rw [list_map_sum_via_get]
       have h_len_eq : (Ms.map (Matrix.map · fe)).length = ps.length :=
         h_map_len.trans h_ps_len.symm
@@ -594,15 +600,15 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
         exact Fin.ext this
       · intro l _; exact ⟨Fin.cast h_len_eq.symm l, Finset.mem_univ _, by ext; rfl⟩
       · intro l _
-        show Nat.size (p_fn l + 1) = Nat.size (ps.get _ + 1)
+        show Nat.size (p_fn l) = Nat.size (ps.get _)
         rfl
-    have h_step : B + ∑ l, Nat.size (p_fn l + 1) ≤
-        τs.sum + (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum +
+    have h_step : B + ∑ l, Nat.size (p_fn l) ≤
+        τs.sum + (k + 1) * (ps.map fun p => Nat.size p).sum +
           Ms.length * Nat.size (Fintype.card ν) := by
       rw [h_sum_fin_eq_list, hB_def]
-      have : (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum =
-        k * (ps.map fun p => Nat.size (p + 1)).sum +
-          (ps.map fun p => Nat.size (p + 1)).sum := by ring
+      have : (k + 1) * (ps.map fun p => Nat.size p).sum =
+        k * (ps.map fun p => Nat.size p).sum +
+          (ps.map fun p => Nat.size p).sum := by ring
       omega
     exact le_trans (Nat.add_le_add_left h_card_size_le _) h_step
 
@@ -724,16 +730,17 @@ theorem Int.bitsize_list_prod_le :
 /-! ## Main theorem: BPR Remark 8.10 (polynomial analog of the matrix theorem) -/
 
 /-- **BPR §8.1 Remark 8.10.** Multiplying a non-empty list of `m` polynomials
-    `P_l ∈ ℤ[Y_1, …, Y_k]`, with `M_l(i,j)` having total degree bounded by `p_l`
+    `P_l ∈ ℤ[Y_1, …, Y_k]`, with `P_l` having total degree bounded by `p_l`
     (in `Y`) and coefficient bitsizes bounded by `τ_l`, produces coefficients
-    bounded by `(τ_1 + ⋯ + τ_m) + k · (bit(p_1+1) + ⋯ + bit(p_m+1))`. -/
+    bounded by `(τ_1 + ⋯ + τ_m) + k · (bit(p_1) + ⋯ + bit(p_m))`. This is
+    BPR's exact bound. -/
 theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     ∀ (k : ℕ) (Ps : List (MvPolynomial (Fin k) ℤ)) (τs ps : List ℕ),
     Ps ≠ [] →
     List.Forall₂ (fun P τ => ∀ r, (P.coeff r).natAbs.size ≤ τ) Ps τs →
     List.Forall₂ (fun P p => P.totalDegree ≤ p) Ps ps →
     ∀ r, ((Ps.prod).coeff r).natAbs.size ≤
-      τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum := by
+      τs.sum + k * (ps.map fun p => Nat.size p).sum := by
   intro k
   induction k with
   | zero =>
@@ -775,7 +782,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     rw [h_transport]
     -- Expand the polynomial X^(r 0)-coefficient of a list product.
     rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum]
-    set B := τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum with hB_def
+    set B := τs.sum + k * (ps.map fun p => Nat.size p).sum with hB_def
     -- Define `p_fn : Fin (Ps.map fe).length → ℕ` via `ps` (used in filter and bound).
     have h_ps_len : ps.length = Ps.length := h_p.length_eq.symm
     have h_map_len : (Ps.map fe).length = Ps.length := List.length_map _
@@ -863,7 +870,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
       · exact absurd hds h
       · push Not at h
         exact h_zero ds hds h]
-    have h_filtered_bound := Int.size_finset_sum_le
+    have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
         (fun ds => ∀ l, ds l ≤ p_fn l))
       (f := fun ds => MvPolynomial.coeff r.tail
@@ -872,24 +879,26 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     refine h_filtered_bound.trans ?_
     have h_card_le := card_antidiagonalTuple_filter_le
       (m := (Ps.map fe).length) (d := r 0) (ps := p_fn)
-    have hm_pos : 0 < (Ps.map fe).length := by
-      rw [h_map_len]
-      exact Nat.pos_of_ne_zero (fun h => h_ne (List.length_eq_zero_iff.mp h))
+    -- Sharper bound: bit(card - 1) ≤ ∑ bit(p_l) (no `+ 1` per coordinate).
+    have h_card_sub_le :
+        ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l)).card - 1 ≤
+        (∏ l, (p_fn l + 1)) - 1 := by omega
     have h_card_size_le :
-        Nat.size ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
-          (fun ds => ∀ l, ds l ≤ p_fn l)).card ≤
-          ∑ l, Nat.size (p_fn l + 1) :=
-      (Nat.size_le_size h_card_le).trans (Nat.size_prod_succ_le hm_pos p_fn)
+        Nat.size (((Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l)).card - 1) ≤
+          ∑ l, Nat.size (p_fn l) :=
+      (Nat.size_le_size h_card_sub_le).trans (Nat.size_prod_succ_sub_one_le p_fn)
     -- Convert Fin sum to List sum.
     have list_map_sum_via_get :
-        (ps.map (fun p => Nat.size (p + 1))).sum =
-        ∑ l : Fin ps.length, Nat.size (ps.get l + 1) := by
+        (ps.map (fun p => Nat.size p)).sum =
+        ∑ l : Fin ps.length, Nat.size (ps.get l) := by
       conv_lhs => rw [show ps = List.ofFn ps.get from (List.ofFn_get ps).symm]
       rw [List.map_ofFn, List.sum_ofFn]
       rfl
     have h_sum_fin_eq_list :
-        (∑ l, Nat.size (p_fn l + 1)) =
-        (ps.map (fun p => Nat.size (p + 1))).sum := by
+        (∑ l, Nat.size (p_fn l)) =
+        (ps.map (fun p => Nat.size p)).sum := by
       rw [list_map_sum_via_get]
       have h_len_eq : (Ps.map fe).length = ps.length :=
         h_map_len.trans h_ps_len.symm
@@ -899,14 +908,14 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
         exact (Fin.cast_inj _).mp heq
       · intro l _; exact ⟨Fin.cast h_len_eq.symm l, Finset.mem_univ _, by ext; rfl⟩
       · intro l _
-        show Nat.size (p_fn l + 1) = Nat.size (ps.get _ + 1)
+        show Nat.size (p_fn l) = Nat.size (ps.get _)
         rfl
-    have h_step : B + ∑ l, Nat.size (p_fn l + 1) ≤
-        τs.sum + (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum := by
+    have h_step : B + ∑ l, Nat.size (p_fn l) ≤
+        τs.sum + (k + 1) * (ps.map fun p => Nat.size p).sum := by
       rw [h_sum_fin_eq_list, hB_def]
-      have : (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum =
-        k * (ps.map fun p => Nat.size (p + 1)).sum +
-          (ps.map fun p => Nat.size (p + 1)).sum := by ring
+      have : (k + 1) * (ps.map fun p => Nat.size p).sum =
+        k * (ps.map fun p => Nat.size p).sum +
+          (ps.map fun p => Nat.size p).sum := by ring
       omega
     exact le_trans (Nat.add_le_add_left h_card_size_le _) h_step
 
@@ -918,11 +927,11 @@ set_option maxHeartbeats 800000 in
     degree-in-`Y` bound `q`, and uniform integer-coefficient bitsize bound `τ`,
     every integer coefficient of the product is bounded by
 
-      `m · (τ + k · bit(p+1) + ℓ · bit(q+1))`.
+      `m · (τ + k · bit(p) + ℓ · bit(q))`.
 
-    Encoded with `Y` as the outer variable block and `X` as the inner block:
-    `MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)`. The proof is by induction
-    on `ℓ`, with the base case `ℓ = 0` reducing to
+    This is BPR's exact bound. Encoded with `Y` as the outer variable block
+    and `X` as the inner block: `MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)`.
+    The proof is by induction on `ℓ`, with the base case `ℓ = 0` reducing to
     `MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact` (Remark 8.10). -/
 theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     ∀ (ℓ k : ℕ) (Ps : List (MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)))
@@ -932,7 +941,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     (∀ P ∈ Ps, P.totalDegree ≤ q) →
     (∀ P ∈ Ps, ∀ y, (P.coeff y).totalDegree ≤ p) →
     ∀ y x, (((Ps.prod).coeff y).coeff x).natAbs.size ≤
-      Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) := by
+      Ps.length * (τ + k * Nat.size p + ℓ * Nat.size q) := by
   intro ℓ
   induction ℓ with
   | zero =>
@@ -988,10 +997,10 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
       k Ps' (List.replicate Ps'.length τ) (List.replicate Ps'.length p)
       h_Ps'_ne h_τ' h_p' x
     refine h_bound.trans ?_
-    -- Convert τs.sum = m·τ and (ps.map ...).sum = m·bit(p+1).
+    -- Convert τs.sum = m·τ and (ps.map ...).sum = m·bit(p).
     rw [List.sum_replicate, smul_eq_mul, show Ps'.length = Ps.length from by simp [Ps']]
-    rw [show (List.replicate Ps.length p).map (fun p => Nat.size (p + 1)) =
-            List.replicate Ps.length (Nat.size (p + 1)) from List.map_replicate]
+    rw [show (List.replicate Ps.length p).map (fun p => Nat.size p) =
+            List.replicate Ps.length (Nat.size p) from List.map_replicate]
     rw [List.sum_replicate, smul_eq_mul]
     ring_nf
     omega
@@ -1015,7 +1024,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     -- Expand the polynomial Y_(ℓ+1)^(y 0)-coefficient of the list product, then
     -- distribute the outer y.tail- and x-coefficient extractions through the sum.
     rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum, MvPolynomial.coeff_sum]
-    set B := Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) with hB_def
+    set B := Ps.length * (τ + k * Nat.size p + ℓ * Nat.size q) with hB_def
     -- Per-summand bound via IH at ℓ.
     have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
         (MvPolynomial.coeff x (MvPolynomial.coeff y.tail
@@ -1127,8 +1136,8 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
       · exact absurd hds h
       · push Not at h
         exact h_zero ds hds h]
-    -- Apply size_finset_sum_le to filtered sum.
-    have h_filtered_bound := Int.size_finset_sum_le
+    -- Apply sharper Int.size_finset_sum_le' to filtered sum.
+    have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
         (fun ds => ∀ l, ds l ≤ q_fn l))
       (f := fun ds => MvPolynomial.coeff x (MvPolynomial.coeff y.tail
@@ -1137,26 +1146,27 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     refine h_filtered_bound.trans ?_
     have h_card_le := card_antidiagonalTuple_filter_le
       (m := (Ps.map fe).length) (d := y 0) (ps := q_fn)
-    have hm_pos : 0 < (Ps.map fe).length := by
-      rw [h_map_len]
-      exact Nat.pos_of_ne_zero (fun h => h_ne (List.length_eq_zero_iff.mp h))
+    have h_card_sub_le :
+        ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
+          (fun ds => ∀ l, ds l ≤ q_fn l)).card - 1 ≤
+        (∏ l, (q_fn l + 1)) - 1 := by omega
     have h_card_size_le :
-        Nat.size ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
-          (fun ds => ∀ l, ds l ≤ q_fn l)).card ≤
-          ∑ l, Nat.size (q_fn l + 1) :=
-      (Nat.size_le_size h_card_le).trans (Nat.size_prod_succ_le hm_pos q_fn)
-    have h_sum_const : (∑ l : Fin (Ps.map fe).length, Nat.size (q_fn l + 1)) =
-        (Ps.map fe).length * Nat.size (q + 1) := by
+        Nat.size (((Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
+          (fun ds => ∀ l, ds l ≤ q_fn l)).card - 1) ≤
+          ∑ l, Nat.size (q_fn l) :=
+      (Nat.size_le_size h_card_sub_le).trans (Nat.size_prod_succ_sub_one_le q_fn)
+    have h_sum_const : (∑ l : Fin (Ps.map fe).length, Nat.size (q_fn l)) =
+        (Ps.map fe).length * Nat.size q := by
       simp [q_fn, Finset.sum_const, Finset.card_univ, Fintype.card_fin]
     rw [h_sum_const] at h_card_size_le
     rw [hB_def]
     have h_target_expand :
-        Ps.length * (τ + k * Nat.size (p + 1) + (ℓ + 1) * Nat.size (q + 1)) =
-        Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) +
-          Ps.length * Nat.size (q + 1) := by ring
+        Ps.length * (τ + k * Nat.size p + (ℓ + 1) * Nat.size q) =
+        Ps.length * (τ + k * Nat.size p + ℓ * Nat.size q) +
+          Ps.length * Nat.size q := by ring
     rw [h_target_expand]
     have h_step :
-        (Ps.map fe).length * Nat.size (q + 1) ≤ Ps.length * Nat.size (q + 1) := by
+        (Ps.map fe).length * Nat.size q ≤ Ps.length * Nat.size q := by
       rw [h_map_len]
     exact le_trans (Nat.add_le_add_left h_card_size_le _)
       (Nat.add_le_add_left h_step _)

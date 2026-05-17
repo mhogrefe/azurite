@@ -54,6 +54,46 @@ theorem Int.size_finset_sum_le {ι : Type _} {s : Finset ι} {f : ι → ℤ} {B
         Nat.mul_lt_mul_of_pos_right (Nat.lt_size_self _) (Nat.two_pow_pos _)
     _ = 2 ^ (B + s.card.size) := by rw [← pow_add]; congr 1; omega
 
+/-- Sharper variant of `Int.size_finset_sum_le` using `Nat.size (s.card - 1)`
+    instead of `Nat.size s.card`. Saves one bit when `s.card` is a power of two
+    (e.g., for `s.card = 1` we get `B + 0` instead of `B + 1`). -/
+theorem Int.size_finset_sum_le' {ι : Type _} {s : Finset ι} {f : ι → ℤ} {B : ℕ}
+    (hB : ∀ i ∈ s, (f i).natAbs.size ≤ B) :
+    (∑ i ∈ s, f i).natAbs.size ≤ B + Nat.size (s.card - 1) := by
+  by_cases h_card : s.card = 0
+  · rw [Finset.card_eq_zero] at h_card
+    subst h_card
+    simp
+  have h_pos : 0 < s.card := Nat.pos_of_ne_zero h_card
+  rcases Nat.eq_zero_or_pos B with hB_zero | hB_pos
+  · subst hB_zero
+    have h_all_zero : ∀ i ∈ s, f i = 0 := by
+      intro i hi
+      have h := hB i hi
+      rw [Nat.size_le] at h
+      have : (f i).natAbs = 0 := by omega
+      exact Int.natAbs_eq_zero.mp this
+    simp [Finset.sum_eq_zero h_all_zero]
+  rw [Nat.size_le]
+  have h_card_le : s.card ≤ 2 ^ Nat.size (s.card - 1) := by
+    have : s.card - 1 < 2 ^ Nat.size (s.card - 1) := Nat.lt_size_self _
+    omega
+  have h_2N_pos : 0 < 2 ^ Nat.size (s.card - 1) := Nat.two_pow_pos _
+  have h_2B_pos : 0 < 2 ^ B := Nat.two_pow_pos _
+  calc (∑ i ∈ s, f i).natAbs
+      ≤ ∑ i ∈ s, (f i).natAbs := Int.natAbs_finset_sum_le s f
+    _ ≤ ∑ _i ∈ s, (2 ^ B - 1 : ℕ) := by
+        refine Finset.sum_le_sum (fun i hi => ?_)
+        have := hB i hi
+        rw [Nat.size_le] at this
+        omega
+    _ = s.card * (2 ^ B - 1) := by simp [Finset.sum_const, smul_eq_mul]
+    _ ≤ 2 ^ Nat.size (s.card - 1) * (2 ^ B - 1) :=
+        Nat.mul_le_mul_right _ h_card_le
+    _ < 2 ^ Nat.size (s.card - 1) * 2 ^ B :=
+        Nat.mul_lt_mul_of_pos_left (by omega) h_2N_pos
+    _ = 2 ^ (B + Nat.size (s.card - 1)) := by rw [← pow_add]; ring_nf
+
 private theorem Finsupp.antidiag_fin0 :
     Finset.antidiagonal (0 : Fin 0 →₀ ℕ) = {(0, 0)} := by
   ext ⟨a, b⟩; simp only [Finset.mem_antidiagonal, Finset.mem_singleton, Prod.mk.injEq]
