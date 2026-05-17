@@ -56,6 +56,7 @@ import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
+import Azurite.AzMatrix.Bareiss
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Det
 import Azurite.AzMatrix.Equiv.Add
