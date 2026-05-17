@@ -322,13 +322,13 @@ variable {ν : Type _} [Fintype ν] [DecidableEq ν]
 
 /-- `totalDegree` of an `X^d`-coefficient under `finSuccEquiv` is bounded by the
     original `totalDegree`. -/
-private lemma totalDegree_coeff_finSuccEquiv_le
-    {k : ℕ} (p : MvPolynomial (Fin (k+1)) ℤ) (d : ℕ) :
-    ((MvPolynomial.finSuccEquiv ℤ k p).coeff d).totalDegree ≤ p.totalDegree := by
+private lemma totalDegree_coeff_finSuccEquiv_le {R : Type _} [CommSemiring R]
+    {k : ℕ} (p : MvPolynomial (Fin (k+1)) R) (d : ℕ) :
+    ((MvPolynomial.finSuccEquiv R k p).coeff d).totalDegree ≤ p.totalDegree := by
   unfold MvPolynomial.totalDegree
   apply Finset.sup_le
   intro α hα
-  have h_ne : ((MvPolynomial.finSuccEquiv ℤ k p).coeff d).coeff α ≠ 0 :=
+  have h_ne : ((MvPolynomial.finSuccEquiv R k p).coeff d).coeff α ≠ 0 :=
     MvPolynomial.mem_support_iff.mp hα
   rw [MvPolynomial.finSuccEquiv_coeff_coeff] at h_ne
   have h_cons_mem : Finsupp.cons d α ∈ p.support := MvPolynomial.mem_support_iff.mpr h_ne
@@ -338,9 +338,9 @@ private lemma totalDegree_coeff_finSuccEquiv_le
   exact le_trans (Nat.le_add_left _ d) h_total
 
 /-- A coefficient of `finSuccEquiv` past the original `totalDegree` vanishes. -/
-private lemma coeff_finSuccEquiv_eq_zero_of_totalDegree_lt
-    {k : ℕ} (p : MvPolynomial (Fin (k+1)) ℤ) {d : ℕ} (h : p.totalDegree < d) :
-    (MvPolynomial.finSuccEquiv ℤ k p).coeff d = 0 := by
+private lemma coeff_finSuccEquiv_eq_zero_of_totalDegree_lt {R : Type _} [CommSemiring R]
+    {k : ℕ} (p : MvPolynomial (Fin (k+1)) R) {d : ℕ} (h : p.totalDegree < d) :
+    (MvPolynomial.finSuccEquiv R k p).coeff d = 0 := by
   apply Polynomial.coeff_eq_zero_of_natDegree_lt
   rw [MvPolynomial.natDegree_finSuccEquiv]
   exact lt_of_le_of_lt (MvPolynomial.degreeOf_le_totalDegree _ _) h
@@ -605,5 +605,560 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
           (ps.map fun p => Nat.size (p + 1)).sum := by ring
       omega
     exact le_trans (Nat.add_le_add_left h_card_size_le _) h_step
+
+/-! ## BPR Remark 8.10: polynomial-list analog (the `n = 1` special case)
+
+For a list of multivariate polynomials, BPR's bound drops the `m · bit(n)` term.
+The proof mirrors the matrix theorem above but operates directly on polynomials,
+using a polynomial-list coefficient convolution `Polynomial.coeff_list_prod`
+(analogous to `Matrix.polyCoeff_list_prod`) and an integer base case
+`Int.bitsize_list_prod_le` (analogous to `Matrix.bitsize_list_prod_per_matrix_le`,
+but without the `m · bit(n)` cost since scalar multiplication has no
+"middle-dimension" sum to pay for).
+-/
+
+section CoeffListProd
+
+variable {R : Type _} [CommSemiring R]
+
+/-- The `X^d`-coefficient of a polynomial list product equals the sum, over
+    tuples summing to `d`, of products of single coefficients. -/
+theorem Polynomial.coeff_list_prod (d : ℕ) (Ps : List (Polynomial R)) :
+    (Ps.prod).coeff d =
+      ∑ ds ∈ antidiagonalTuple Ps.length d,
+        ∏ l : Fin Ps.length, (Ps.get l).coeff (ds l) := by
+  induction Ps generalizing d with
+  | nil =>
+    rw [List.prod_nil]
+    show (1 : Polynomial R).coeff d =
+      ∑ ds ∈ antidiagonalTuple 0 d,
+        ∏ l : Fin 0, (([] : List (Polynomial R)).get l).coeff (ds l)
+    rcases Nat.eq_zero_or_pos d with hd | hd
+    · subst hd
+      rw [antidiagonalTuple_zero_zero, Finset.sum_singleton, Polynomial.coeff_one]
+      simp
+    · obtain ⟨d', rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.pos_iff_ne_zero.mp hd)
+      rw [antidiagonalTuple_zero_succ, Finset.sum_empty, Polynomial.coeff_one]
+      simp
+  | cons P rest ih =>
+    rw [List.prod_cons, Polynomial.coeff_mul]
+    conv_lhs =>
+      rw [show (∑ x ∈ Finset.antidiagonal d, P.coeff x.1 * (rest.prod).coeff x.2) =
+              ∑ x ∈ Finset.antidiagonal d, P.coeff x.1 *
+                (∑ ds' ∈ antidiagonalTuple rest.length x.2,
+                  ∏ l : Fin rest.length, (rest.get l).coeff (ds' l)) from by
+            apply Finset.sum_congr rfl
+            intro x _
+            rw [ih x.2]]
+    simp_rw [Finset.mul_sum]
+    rw [← Finset.sum_sigma (Finset.antidiagonal d)
+          (fun x : ℕ × ℕ => antidiagonalTuple rest.length x.2)
+          (fun p =>
+            P.coeff p.1.1 * ∏ l : Fin rest.length, (rest.get l).coeff (p.2 l))]
+    refine Finset.sum_bij'
+      (i := fun p _ => Fin.cons p.1.1 p.2)
+      (j := fun ds _ => ⟨(ds 0, ∑ l : Fin rest.length, ds l.succ), Fin.tail ds⟩)
+      ?_ ?_ ?_ ?_ ?_
+    · intro p hp
+      rw [Finset.mem_sigma] at hp
+      obtain ⟨hp1, hp2⟩ := hp
+      rw [Finset.mem_antidiagonal] at hp1
+      rw [mem_antidiagonalTuple] at hp2
+      change Fin.cons p.1.1 p.2 ∈ antidiagonalTuple (rest.length + 1) d
+      rw [mem_antidiagonalTuple, Fin.sum_cons]
+      omega
+    · intro ds hds
+      change ds ∈ antidiagonalTuple (rest.length + 1) d at hds
+      rw [mem_antidiagonalTuple] at hds
+      rw [Finset.mem_sigma]
+      refine ⟨?_, ?_⟩
+      · rw [Finset.mem_antidiagonal]
+        rw [Fin.sum_univ_succ] at hds
+        exact hds
+      · rw [mem_antidiagonalTuple]; rfl
+    · intro p hp
+      ext <;> simp [Fin.tail_cons, Fin.cons_succ, Fin.cons_zero]
+      rw [Finset.mem_sigma] at hp
+      obtain ⟨hp1, hp2⟩ := hp
+      rw [Finset.mem_antidiagonal] at hp1
+      rw [mem_antidiagonalTuple] at hp2
+      omega
+    · intro ds _
+      show Fin.cons (ds 0) (Fin.tail ds) = ds
+      exact Fin.cons_self_tail ds
+    · intro p _
+      show P.coeff p.1.1 * ∏ l : Fin rest.length, (rest.get l).coeff (p.2 l) =
+        ∏ l : Fin (rest.length + 1), ((P :: rest).get l).coeff
+          ((Fin.cons p.1.1 p.2 : Fin (rest.length + 1) → ℕ) l)
+      rw [Fin.prod_univ_succ]
+      simp only [Fin.cons_zero, Fin.cons_succ]
+      rfl
+
+end CoeffListProd
+
+/-! ## Integer base case: bitsize of a list product of integers -/
+
+/-- Per-element bitsize bound for a (non-empty) list product of integers. The
+    bound is `τs.sum` (no `m · bit(n)` term as in the matrix case). -/
+theorem Int.bitsize_list_prod_le :
+    ∀ (Ps : List ℤ) (τs : List ℕ),
+      Ps ≠ [] →
+      List.Forall₂ (fun P τ => P.natAbs.size ≤ τ) Ps τs →
+      Ps.prod.natAbs.size ≤ τs.sum := by
+  intro Ps τs h_ne hPs
+  induction hPs with
+  | nil => exact absurd rfl h_ne
+  | @cons P τ_head rest τs_rest hP_head h_rest ih =>
+    by_cases h_rest_nil : rest = []
+    · subst h_rest_nil
+      cases h_rest
+      rw [List.prod_cons, List.prod_nil, mul_one]
+      show P.natAbs.size ≤ (τ_head :: ([] : List ℕ)).sum
+      simp; omega
+    · have ih_rest := ih h_rest_nil
+      rw [List.prod_cons]
+      refine (Int.size_mul_le P rest.prod τ_head τs_rest.sum hP_head ih_rest).trans ?_
+      show τ_head + τs_rest.sum ≤ (τ_head :: τs_rest).sum
+      rw [show (τ_head :: τs_rest).sum = τ_head + τs_rest.sum from rfl]
+
+/-! ## Main theorem: BPR Remark 8.10 (polynomial analog of the matrix theorem) -/
+
+/-- **BPR §8.1 Remark 8.10.** Multiplying a non-empty list of `m` polynomials
+    `P_l ∈ ℤ[Y_1, …, Y_k]`, with `M_l(i,j)` having total degree bounded by `p_l`
+    (in `Y`) and coefficient bitsizes bounded by `τ_l`, produces coefficients
+    bounded by `(τ_1 + ⋯ + τ_m) + k · (bit(p_1+1) + ⋯ + bit(p_m+1))`. -/
+theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
+    ∀ (k : ℕ) (Ps : List (MvPolynomial (Fin k) ℤ)) (τs ps : List ℕ),
+    Ps ≠ [] →
+    List.Forall₂ (fun P τ => ∀ r, (P.coeff r).natAbs.size ≤ τ) Ps τs →
+    List.Forall₂ (fun P p => P.totalDegree ≤ p) Ps ps →
+    ∀ r, ((Ps.prod).coeff r).natAbs.size ≤
+      τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum := by
+  intro k
+  induction k with
+  | zero =>
+    intro Ps τs ps h_ne h_τ _ r
+    have hr : r = 0 := by ext i; exact i.elim0
+    subst hr
+    rw [show ((Ps.prod).coeff (0 : Fin 0 →₀ ℕ)).natAbs.size =
+            (MvPolynomial.constantCoeff (Ps.prod)).natAbs.size from rfl]
+    have h_transport :
+        MvPolynomial.constantCoeff (Ps.prod) =
+          (Ps.map MvPolynomial.constantCoeff).prod := by
+      simpa using MonoidHom.map_list_prod
+        MvPolynomial.constantCoeff.toMonoidHom Ps
+    rw [h_transport]
+    have h_τ_int : List.Forall₂
+        (fun (P_int : ℤ) τ => P_int.natAbs.size ≤ τ)
+        (Ps.map MvPolynomial.constantCoeff) τs := by
+      apply List.Forall₂.flip
+      have := h_τ.flip
+      rw [List.forall₂_map_right_iff]
+      apply this.imp
+      intro τ P h_bound
+      have h := h_bound 0
+      simpa using h
+    have h_Ps_int_ne : Ps.map MvPolynomial.constantCoeff ≠ [] := by
+      simp [List.map_eq_nil_iff, h_ne]
+    refine (Int.bitsize_list_prod_le _ _ h_Ps_int_ne h_τ_int).trans ?_
+    omega
+  | succ k ih =>
+    intro Ps τs ps h_ne h_τ h_p r
+    -- Decompose r = cons (r 0) r.tail; transport via finSuccEquiv.
+    rw [← Finsupp.cons_tail r]
+    rw [show ((Ps.prod).coeff (Finsupp.cons (r 0) r.tail)) =
+            (((MvPolynomial.finSuccEquiv ℤ k) (Ps.prod)).coeff (r 0)).coeff r.tail from
+            (MvPolynomial.finSuccEquiv_coeff_coeff r.tail Ps.prod (r 0)).symm]
+    set fe := (MvPolynomial.finSuccEquiv ℤ k).toRingHom
+    have h_transport : MvPolynomial.finSuccEquiv ℤ k (Ps.prod) = (Ps.map fe).prod := by
+      simpa using MonoidHom.map_list_prod fe.toMonoidHom Ps
+    rw [h_transport]
+    -- Expand the polynomial X^(r 0)-coefficient of a list product.
+    rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum]
+    set B := τs.sum + k * (ps.map fun p => Nat.size (p + 1)).sum with hB_def
+    -- Define `p_fn : Fin (Ps.map fe).length → ℕ` via `ps` (used in filter and bound).
+    have h_ps_len : ps.length = Ps.length := h_p.length_eq.symm
+    have h_map_len : (Ps.map fe).length = Ps.length := List.length_map _
+    let p_fn : Fin (Ps.map fe).length → ℕ := fun l =>
+      ps.get ⟨l.val, by rw [h_ps_len, ← h_map_len]; exact l.isLt⟩
+    -- Per-summand bound: each `ds`-summand has bitsize ≤ B (via IH).
+    have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
+        (MvPolynomial.coeff r.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))).natAbs.size
+          ≤ B := by
+      intro ds _
+      let Ps_inner : List (MvPolynomial (Fin k) ℤ) :=
+        List.ofFn (fun l : Fin (Ps.map fe).length =>
+          ((Ps.map fe).get l).coeff (ds l))
+      have h_Ps_inner_len : Ps_inner.length = Ps.length := by
+        show (List.ofFn _).length = _
+        rw [List.length_ofFn, h_map_len]
+      have h_Ps_inner_ne : Ps_inner ≠ [] := by
+        intro he
+        have hL : Ps_inner.length = 0 := by rw [he]; rfl
+        rw [h_Ps_inner_len] at hL
+        exact h_ne (List.length_eq_zero_iff.mp hL)
+      have h_prod_eq : Ps_inner.prod =
+          ∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l) := by
+        show (List.ofFn _).prod = _
+        exact List.prod_ofFn
+      rw [← h_prod_eq]
+      -- Per-element coefficient and degree Forall₂ for Ps_inner.
+      have h_τ_inner : List.Forall₂
+          (fun P' τ => ∀ r', (P'.coeff r').natAbs.size ≤ τ) Ps_inner τs := by
+        rw [List.forall₂_iff_get]
+        refine ⟨h_Ps_inner_len.trans h_τ.length_eq, fun l h₁ h₂ r' => ?_⟩
+        have hl_Ps : l < Ps.length := by rwa [h_Ps_inner_len] at h₁
+        have hl_map : l < (Ps.map fe).length := by rwa [h_map_len]
+        simp only [Ps_inner, List.get_eq_getElem, List.getElem_ofFn,
+          List.getElem_map]
+        show (MvPolynomial.coeff r' (((MvPolynomial.finSuccEquiv ℤ k) (Ps[l])).coeff
+              (ds ⟨l, hl_map⟩))).natAbs.size ≤ τs[l]
+        rw [MvPolynomial.finSuccEquiv_coeff_coeff]
+        exact (List.forall₂_iff_get.mp h_τ).2 l hl_Ps h₂ _
+      have h_p_inner : List.Forall₂
+          (fun P' p => P'.totalDegree ≤ p) Ps_inner ps := by
+        rw [List.forall₂_iff_get]
+        refine ⟨h_Ps_inner_len.trans h_p.length_eq, fun l h₁ h₂ => ?_⟩
+        have hl_Ps : l < Ps.length := by rwa [h_Ps_inner_len] at h₁
+        have hl_map : l < (Ps.map fe).length := by rwa [h_map_len]
+        simp only [Ps_inner, List.get_eq_getElem, List.getElem_ofFn,
+          List.getElem_map]
+        show (((MvPolynomial.finSuccEquiv ℤ k) (Ps[l])).coeff
+              (ds ⟨l, hl_map⟩)).totalDegree ≤ ps[l]
+        exact (totalDegree_coeff_finSuccEquiv_le _ _).trans
+          ((List.forall₂_iff_get.mp h_p).2 l hl_Ps h₂)
+      have h_ih := ih Ps_inner τs ps h_Ps_inner_ne h_τ_inner h_p_inner r.tail
+      exact h_ih
+    -- Zero-summand argument.
+    have h_zero : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
+        (∃ l, ds l > p_fn l) →
+        MvPolynomial.coeff r.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)) = 0 := by
+      intro ds _ ⟨l, hl_gt⟩
+      have hl_Ps : l.val < Ps.length := by rw [← h_map_len]; exact l.isLt
+      have h_factor_zero : ((Ps.map fe).get l).coeff (ds l) = 0 := by
+        rcases l with ⟨l, hl⟩
+        simp only [List.get_eq_getElem, List.getElem_map]
+        change ((MvPolynomial.finSuccEquiv ℤ k) (Ps[l])).coeff (ds ⟨l, hl⟩) = 0
+        apply coeff_finSuccEquiv_eq_zero_of_totalDegree_lt
+        exact lt_of_le_of_lt
+          ((List.forall₂_iff_get.mp h_p).2 l hl_Ps (by rw [h_ps_len]; exact hl_Ps))
+          hl_gt
+      rw [Finset.prod_eq_zero (Finset.mem_univ l) h_factor_zero]
+      simp
+    -- Reduce sum to filtered subset.
+    rw [show
+      (∑ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
+        MvPolynomial.coeff r.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))
+      = ∑ ds ∈ (Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l),
+        MvPolynomial.coeff r.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)) from by
+      apply (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro ds hds h_not_in
+      rw [Finset.mem_filter, not_and_or] at h_not_in
+      rcases h_not_in with h | h
+      · exact absurd hds h
+      · push Not at h
+        exact h_zero ds hds h]
+    have h_filtered_bound := Int.size_finset_sum_le
+      (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
+        (fun ds => ∀ l, ds l ≤ p_fn l))
+      (f := fun ds => MvPolynomial.coeff r.tail
+        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))
+      (B := B) (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
+    refine h_filtered_bound.trans ?_
+    have h_card_le := card_antidiagonalTuple_filter_le
+      (m := (Ps.map fe).length) (d := r 0) (ps := p_fn)
+    have hm_pos : 0 < (Ps.map fe).length := by
+      rw [h_map_len]
+      exact Nat.pos_of_ne_zero (fun h => h_ne (List.length_eq_zero_iff.mp h))
+    have h_card_size_le :
+        Nat.size ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
+          (fun ds => ∀ l, ds l ≤ p_fn l)).card ≤
+          ∑ l, Nat.size (p_fn l + 1) :=
+      (Nat.size_le_size h_card_le).trans (Nat.size_prod_succ_le hm_pos p_fn)
+    -- Convert Fin sum to List sum.
+    have list_map_sum_via_get :
+        (ps.map (fun p => Nat.size (p + 1))).sum =
+        ∑ l : Fin ps.length, Nat.size (ps.get l + 1) := by
+      conv_lhs => rw [show ps = List.ofFn ps.get from (List.ofFn_get ps).symm]
+      rw [List.map_ofFn, List.sum_ofFn]
+      rfl
+    have h_sum_fin_eq_list :
+        (∑ l, Nat.size (p_fn l + 1)) =
+        (ps.map (fun p => Nat.size (p + 1))).sum := by
+      rw [list_map_sum_via_get]
+      have h_len_eq : (Ps.map fe).length = ps.length :=
+        h_map_len.trans h_ps_len.symm
+      apply Finset.sum_bij (fun l _ => Fin.cast h_len_eq l)
+      · intros; exact Finset.mem_univ _
+      · intro l₁ _ l₂ _ heq
+        exact (Fin.cast_inj _).mp heq
+      · intro l _; exact ⟨Fin.cast h_len_eq.symm l, Finset.mem_univ _, by ext; rfl⟩
+      · intro l _
+        show Nat.size (p_fn l + 1) = Nat.size (ps.get _ + 1)
+        rfl
+    have h_step : B + ∑ l, Nat.size (p_fn l + 1) ≤
+        τs.sum + (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum := by
+      rw [h_sum_fin_eq_list, hB_def]
+      have : (k + 1) * (ps.map fun p => Nat.size (p + 1)).sum =
+        k * (ps.map fun p => Nat.size (p + 1)).sum +
+          (ps.map fun p => Nat.size (p + 1)).sum := by ring
+      omega
+    exact le_trans (Nat.add_le_add_left h_card_size_le _) h_step
+
+/-! ## BPR equation (8.2): products of polynomials in `ℤ[Y, X]` (two variable blocks) -/
+
+set_option maxHeartbeats 800000 in
+/-- **BPR §8.1 equation (8.2).** For a non-empty list of `m` polynomials in
+    `ℤ[Y_1, …, Y_ℓ][X_1, …, X_k]`, with uniform degree-in-`X` bound `p`,
+    degree-in-`Y` bound `q`, and uniform integer-coefficient bitsize bound `τ`,
+    every integer coefficient of the product is bounded by
+
+      `m · (τ + k · bit(p+1) + ℓ · bit(q+1))`.
+
+    Encoded with `Y` as the outer variable block and `X` as the inner block:
+    `MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)`. The proof is by induction
+    on `ℓ`, with the base case `ℓ = 0` reducing to
+    `MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact` (Remark 8.10). -/
+theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
+    ∀ (ℓ k : ℕ) (Ps : List (MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)))
+      (τ p q : ℕ),
+    Ps ≠ [] →
+    (∀ P ∈ Ps, ∀ y x, ((P.coeff y).coeff x).natAbs.size ≤ τ) →
+    (∀ P ∈ Ps, P.totalDegree ≤ q) →
+    (∀ P ∈ Ps, ∀ y, (P.coeff y).totalDegree ≤ p) →
+    ∀ y x, (((Ps.prod).coeff y).coeff x).natAbs.size ≤
+      Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) := by
+  intro ℓ
+  induction ℓ with
+  | zero =>
+    -- Base case: `ℓ = 0`. The polynomial-in-Y term vanishes; every `y : Fin 0 →₀ ℕ`
+    -- is `0`, and `P.coeff 0 = constantCoeff P`. Transport via the ring hom
+    -- `constantCoeff : MvPolynomial (Fin 0) R →+* R` to reduce to Remark 8.10
+    -- applied to the inner-X polynomial list with uniform bounds.
+    intro k Ps τ p q h_ne h_τ _ h_pX y x
+    have hy : y = 0 := by ext i; exact i.elim0
+    subst hy
+    -- (Ps.prod).coeff 0 = constantCoeff (Ps.prod) = (Ps.map constantCoeff).prod.
+    rw [show ((Ps.prod).coeff (0 : Fin 0 →₀ ℕ)) =
+            MvPolynomial.constantCoeff (Ps.prod) from rfl]
+    rw [show MvPolynomial.constantCoeff (Ps.prod) =
+            (Ps.map MvPolynomial.constantCoeff).prod from by
+        simpa using MonoidHom.map_list_prod
+          MvPolynomial.constantCoeff.toMonoidHom Ps]
+    -- Build Forall₂ relations for Remark 8.10 with uniform bounds τ_l = τ, p_l = p.
+    set Ps' : List (MvPolynomial (Fin k) ℤ) :=
+      Ps.map MvPolynomial.constantCoeff with hPs'_def
+    have h_Ps'_ne : Ps' ≠ [] := by simp [Ps', List.map_eq_nil_iff, h_ne]
+    have h_τ' : List.Forall₂
+        (fun (P : MvPolynomial (Fin k) ℤ) τ_l => ∀ r, (P.coeff r).natAbs.size ≤ τ_l)
+        Ps' (List.replicate Ps'.length τ) := by
+      apply List.forall₂_iff_get.mpr
+      refine ⟨by rw [List.length_replicate], fun l h₁ h₂ r => ?_⟩
+      have hl_Ps : l < Ps.length := by
+        rw [show Ps'.length = Ps.length from by simp [Ps']] at h₁
+        exact h₁
+      show ((Ps'.get ⟨l, h₁⟩).coeff r).natAbs.size ≤
+        (List.replicate Ps'.length τ).get ⟨l, h₂⟩
+      simp only [List.get_eq_getElem, List.getElem_replicate]
+      simp only [Ps', List.getElem_map]
+      show ((MvPolynomial.constantCoeff (Ps[l])).coeff r).natAbs.size ≤ τ
+      change ((Ps[l].coeff 0).coeff r).natAbs.size ≤ τ
+      exact h_τ Ps[l] (List.getElem_mem _) 0 r
+    have h_p' : List.Forall₂
+        (fun (P : MvPolynomial (Fin k) ℤ) p_l => P.totalDegree ≤ p_l)
+        Ps' (List.replicate Ps'.length p) := by
+      apply List.forall₂_iff_get.mpr
+      refine ⟨by rw [List.length_replicate], fun l h₁ h₂ => ?_⟩
+      have hl_Ps : l < Ps.length := by
+        rw [show Ps'.length = Ps.length from by simp [Ps']] at h₁
+        exact h₁
+      show (Ps'.get ⟨l, h₁⟩).totalDegree ≤
+        (List.replicate Ps'.length p).get ⟨l, h₂⟩
+      simp only [List.get_eq_getElem, List.getElem_replicate]
+      simp only [Ps', List.getElem_map]
+      show (MvPolynomial.constantCoeff (Ps[l])).totalDegree ≤ p
+      change (Ps[l].coeff 0).totalDegree ≤ p
+      exact h_pX Ps[l] (List.getElem_mem _) 0
+    have h_bound := MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact
+      k Ps' (List.replicate Ps'.length τ) (List.replicate Ps'.length p)
+      h_Ps'_ne h_τ' h_p' x
+    refine h_bound.trans ?_
+    -- Convert τs.sum = m·τ and (ps.map ...).sum = m·bit(p+1).
+    rw [List.sum_replicate, smul_eq_mul, show Ps'.length = Ps.length from by simp [Ps']]
+    rw [show (List.replicate Ps.length p).map (fun p => Nat.size (p + 1)) =
+            List.replicate Ps.length (Nat.size (p + 1)) from List.map_replicate]
+    rw [List.sum_replicate, smul_eq_mul]
+    ring_nf
+    omega
+  | succ ℓ ih =>
+    intro k Ps τ p q h_ne h_τ h_q h_pX y x
+    -- Decompose y = cons (y 0) y.tail; transport via finSuccEquiv on the outer
+    -- MvPolynomial layer (whose base ring is MvPolynomial (Fin k) ℤ).
+    rw [← Finsupp.cons_tail y]
+    -- Apply finSuccEquiv_coeff_coeff with R = MvPolynomial (Fin k) ℤ.
+    rw [show ((Ps.prod).coeff (Finsupp.cons (y 0) y.tail)) =
+            (((MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ)
+                (Ps.prod)).coeff (y 0)).coeff y.tail from
+            (MvPolynomial.finSuccEquiv_coeff_coeff
+              y.tail Ps.prod (y 0)).symm]
+    -- Ring-hom transport: `finSuccEquiv (Ps.prod) = (Ps.map fe).prod`.
+    set fe := (MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ).toRingHom
+      with hfe_def
+    rw [show MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ (Ps.prod) =
+            (Ps.map fe).prod from by
+        simpa using MonoidHom.map_list_prod fe.toMonoidHom Ps]
+    -- Expand the polynomial Y_(ℓ+1)^(y 0)-coefficient of the list product, then
+    -- distribute the outer y.tail- and x-coefficient extractions through the sum.
+    rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum, MvPolynomial.coeff_sum]
+    set B := Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) with hB_def
+    -- Per-summand bound via IH at ℓ.
+    have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
+        (MvPolynomial.coeff x (MvPolynomial.coeff y.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))).natAbs.size
+          ≤ B := by
+      intro ds _
+      have h_len_eq : (Ps.map fe).length = Ps.length := List.length_map _
+      -- Define `Ps_inner` directly indexed over `Fin Ps.length`.
+      let Ps_inner : List (MvPolynomial (Fin ℓ) (MvPolynomial (Fin k) ℤ)) :=
+        List.ofFn (n := Ps.length) (fun l =>
+          (fe (Ps.get l)).coeff (ds (Fin.cast h_len_eq.symm l)))
+      have h_Ps_inner_len : Ps_inner.length = Ps.length := List.length_ofFn
+      have h_Ps_inner_ne : Ps_inner ≠ [] := by
+        intro he
+        have hL : Ps_inner.length = 0 := by rw [he]; rfl
+        rw [h_Ps_inner_len] at hL
+        exact h_ne (List.length_eq_zero_iff.mp hL)
+      -- Key identity: Ps_inner.prod = ∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l).
+      have h_prod_eq : Ps_inner.prod =
+          ∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l) := by
+        show (List.ofFn _).prod = _
+        rw [List.prod_ofFn]
+        -- Both products are over ∏ on different Fin types; relate via cast.
+        apply Finset.prod_bij (fun l _ => Fin.cast h_len_eq.symm l)
+        · intros; exact Finset.mem_univ _
+        · intro l₁ _ l₂ _ heq; exact (Fin.cast_inj _).mp heq
+        · intro l _; exact ⟨Fin.cast h_len_eq l, Finset.mem_univ _, by ext; rfl⟩
+        · intro l _
+          simp only [List.get_eq_getElem, List.getElem_map, Fin.val_cast]
+      rw [← h_prod_eq]
+      have h_get_eq : ∀ (l : ℕ) (hl_Ps : l < Ps.length)
+          (hl_map : l < (Ps.map fe).length)
+          (hl : l < Ps_inner.length),
+          Ps_inner.get ⟨l, hl⟩ =
+            ((MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ)
+              (Ps[l]'hl_Ps)).coeff (ds ⟨l, hl_map⟩) := by
+        intro l hl_Ps hl_map hl
+        show (List.ofFn _).get _ = _
+        rw [List.get_ofFn]
+        simp only [Fin.cast_mk]
+        rfl
+      have h_τ_inner : ∀ P ∈ Ps_inner, ∀ y' x',
+          ((P.coeff y').coeff x').natAbs.size ≤ τ := by
+        intro P hP y' x'
+        rw [List.mem_iff_get] at hP
+        obtain ⟨⟨l, hl⟩, rfl⟩ := hP
+        have hl_Ps : l < Ps.length := h_Ps_inner_len ▸ hl
+        have hl_map : l < (Ps.map fe).length := h_len_eq.symm ▸ hl_Ps
+        rw [h_get_eq l hl_Ps hl_map hl]
+        rw [MvPolynomial.finSuccEquiv_coeff_coeff]
+        exact h_τ (Ps[l]'hl_Ps) (List.getElem_mem _) _ x'
+      have h_q_inner : ∀ P ∈ Ps_inner, P.totalDegree ≤ q := by
+        intro P hP
+        rw [List.mem_iff_get] at hP
+        obtain ⟨⟨l, hl⟩, rfl⟩ := hP
+        have hl_Ps : l < Ps.length := h_Ps_inner_len ▸ hl
+        have hl_map : l < (Ps.map fe).length := h_len_eq.symm ▸ hl_Ps
+        rw [h_get_eq l hl_Ps hl_map hl]
+        exact (totalDegree_coeff_finSuccEquiv_le _ _).trans
+          (h_q (Ps[l]'hl_Ps) (List.getElem_mem _))
+      have h_pX_inner : ∀ P ∈ Ps_inner, ∀ y',
+          (P.coeff y').totalDegree ≤ p := by
+        intro P hP y'
+        rw [List.mem_iff_get] at hP
+        obtain ⟨⟨l, hl⟩, rfl⟩ := hP
+        have hl_Ps : l < Ps.length := h_Ps_inner_len ▸ hl
+        have hl_map : l < (Ps.map fe).length := h_len_eq.symm ▸ hl_Ps
+        rw [h_get_eq l hl_Ps hl_map hl]
+        rw [MvPolynomial.finSuccEquiv_coeff_coeff]
+        exact h_pX (Ps[l]'hl_Ps) (List.getElem_mem _) _
+      have h_ih := ih k Ps_inner τ p q h_Ps_inner_ne h_τ_inner h_q_inner h_pX_inner
+        y.tail x
+      refine h_ih.trans ?_
+      rw [hB_def, h_Ps_inner_len]
+    -- Define `q_fn : Fin (Ps.map fe).length → ℕ` (uniform q).
+    have h_map_len : (Ps.map fe).length = Ps.length := List.length_map _
+    let q_fn : Fin (Ps.map fe).length → ℕ := fun _ => q
+    -- Zero-summand argument: if some `ds l > q` then the entire summand is 0.
+    have h_zero : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
+        (∃ l, ds l > q) →
+        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))) = 0 := by
+      intro ds _ ⟨l, hl_gt⟩
+      have hl_Ps : l.val < Ps.length := by rw [← h_map_len]; exact l.isLt
+      have h_factor_zero : ((Ps.map fe).get l).coeff (ds l) = 0 := by
+        rcases l with ⟨l, hl⟩
+        simp only [List.get_eq_getElem, List.getElem_map]
+        change ((MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ)
+          (Ps[l])).coeff (ds ⟨l, hl⟩) = 0
+        apply Polynomial.coeff_eq_zero_of_natDegree_lt
+        rw [MvPolynomial.natDegree_finSuccEquiv]
+        exact lt_of_le_of_lt (MvPolynomial.degreeOf_le_totalDegree _ _)
+          (lt_of_le_of_lt (h_q Ps[l] (List.getElem_mem _)) hl_gt)
+      rw [Finset.prod_eq_zero (Finset.mem_univ l) h_factor_zero]
+      simp
+    -- Reduce sum to filtered subset.
+    rw [show
+      (∑ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
+        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))))
+      = ∑ ds ∈ (Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
+          (fun ds => ∀ l, ds l ≤ q_fn l),
+        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
+          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))) from by
+      apply (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro ds hds h_not_in
+      rw [Finset.mem_filter, not_and_or] at h_not_in
+      rcases h_not_in with h | h
+      · exact absurd hds h
+      · push Not at h
+        exact h_zero ds hds h]
+    -- Apply size_finset_sum_le to filtered sum.
+    have h_filtered_bound := Int.size_finset_sum_le
+      (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
+        (fun ds => ∀ l, ds l ≤ q_fn l))
+      (f := fun ds => MvPolynomial.coeff x (MvPolynomial.coeff y.tail
+        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))))
+      (B := B) (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
+    refine h_filtered_bound.trans ?_
+    have h_card_le := card_antidiagonalTuple_filter_le
+      (m := (Ps.map fe).length) (d := y 0) (ps := q_fn)
+    have hm_pos : 0 < (Ps.map fe).length := by
+      rw [h_map_len]
+      exact Nat.pos_of_ne_zero (fun h => h_ne (List.length_eq_zero_iff.mp h))
+    have h_card_size_le :
+        Nat.size ((Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
+          (fun ds => ∀ l, ds l ≤ q_fn l)).card ≤
+          ∑ l, Nat.size (q_fn l + 1) :=
+      (Nat.size_le_size h_card_le).trans (Nat.size_prod_succ_le hm_pos q_fn)
+    have h_sum_const : (∑ l : Fin (Ps.map fe).length, Nat.size (q_fn l + 1)) =
+        (Ps.map fe).length * Nat.size (q + 1) := by
+      simp [q_fn, Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+    rw [h_sum_const] at h_card_size_le
+    rw [hB_def]
+    have h_target_expand :
+        Ps.length * (τ + k * Nat.size (p + 1) + (ℓ + 1) * Nat.size (q + 1)) =
+        Ps.length * (τ + k * Nat.size (p + 1) + ℓ * Nat.size (q + 1)) +
+          Ps.length * Nat.size (q + 1) := by ring
+    rw [h_target_expand]
+    have h_step :
+        (Ps.map fe).length * Nat.size (q + 1) ≤ Ps.length * Nat.size (q + 1) := by
+      rw [h_map_len]
+    exact le_trans (Nat.add_le_add_left h_card_size_le _)
+      (Nat.add_le_add_left h_step _)
 
 end Azurite.BPR
