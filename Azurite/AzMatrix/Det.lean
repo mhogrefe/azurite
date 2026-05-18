@@ -21,8 +21,9 @@ variable {K : Type _} {n : Nat}
 
       `det(M) = (-1)^s · U[0][0] · U[1][1] ⋯ U[n-1][n-1]`,
 
-    where `(U, s) = M.gauss`. -/
-def AzMatrix.det [Field K] [DecidableEq K] (M : AzMatrix K n n) : K :=
+    where `(U, s) = M.gauss`. The bundled-typeclass dispatcher
+    `AzMatrix.det` (in `AzMatrix.DetDispatch`) picks this over a field. -/
+def AzMatrix.gaussDet [Field K] [DecidableEq K] (M : AzMatrix K n n) : K :=
   let (U, s) := M.gauss
   (-1 : K) ^ s * ∏ i, U.get i i
 
@@ -34,24 +35,32 @@ section Tests
 
 -- 2×2 over ℚ: det [[1, 2], [3, 4]] = 1·4 − 2·3 = −2.
 #guard
-  (AzMatrix.ofLists [[(1 : ℚ), 2], [3, 4]] : AzMatrix ℚ 2 2).det = -2
+  match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix ℚ 2 2)) with
+  | some M => M.gaussDet = -2
+  | none => False
 
 -- 3×3 over ℚ: det [[2, 1, 1], [1, 3, 2], [1, 0, 0]] = −1.
 #guard
-  (AzMatrix.ofLists
-    [[(2 : ℚ), 1, 1], [1, 3, 2], [1, 0, 0]] : AzMatrix ℚ 3 3).det = -1
+  match (AzMatrix.parseStr "[2, 1, 1; 1, 3, 2; 1, 0, 0]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => M.gaussDet = -1
+  | none => False
 
 -- Identity over ℚ has determinant 1.
-#guard (1 : AzMatrix ℚ 4 4).det = 1
+#guard (1 : AzMatrix ℚ 4 4).gaussDet = 1
 
 -- Singular matrix (rank-deficient): determinant 0.
 #guard
-  (AzMatrix.ofLists
-    [[(1 : ℚ), 2, 3], [2, 4, 6], [1, 1, 1]] : AzMatrix ℚ 3 3).det = 0
+  match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => M.gaussDet = 0
+  | none => False
 
 -- Column-pivoting test: zero in the (0,0) position forces a swap.
 #guard
-  (AzMatrix.ofLists [[(0 : ℚ), 1], [1, 0]] : AzMatrix ℚ 2 2).det = -1
+  match (AzMatrix.parseStr "[0, 1; 1, 0]" : Option (AzMatrix ℚ 2 2)) with
+  | some M => M.gaussDet = -1
+  | none => False
 
 end Tests
 

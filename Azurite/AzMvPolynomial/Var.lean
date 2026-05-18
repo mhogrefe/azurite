@@ -97,9 +97,15 @@ class ParsableVar (α : Type _) (n : outParam ℕ) [LinearOrder α] extends Var 
 def natToSubscriptChars (n : ℕ) : List Char :=
   (natToChars n).map (fun c => Char.ofNat (c.toNat - '0'.toNat + '₀'.toNat))
 
-/-- Parse a list of Unicode subscript digit characters to a natural number. -/
+/-- Parse a list of Unicode subscript digit characters (₀..₉) to a natural number.
+    Rejects any character outside the Unicode subscript-digit range — without this
+    guard, `Nat`-truncated subtraction silently maps every ASCII character to `'0'`
+    (so e.g. `"_5"` would parse as `0` instead of failing). -/
 def parseSubscriptChars (cs : List Char) : Option ℕ :=
-  parseNatChars (cs.map (fun c => Char.ofNat (c.toNat - '₀'.toNat + '0'.toNat)))
+  if cs.all (fun c => decide (c.toNat ≥ '₀'.toNat ∧ c.toNat ≤ '₉'.toNat)) then
+    parseNatChars (cs.map (fun c => Char.ofNat (c.toNat - '₀'.toNat + '0'.toNat)))
+  else
+    none
 
 private theorem subscript_unsubscript_digit (c : Char)
     (hge : 48 ≤ c.toNat) (hle : c.toNat ≤ 57) :
@@ -119,9 +125,31 @@ private theorem subscript_map_cancel (l : List Char)
            ih (fun c hc => h c (.tail _ hc))⟩
 
 open AzPolynomial in
+theorem mem_natToSubscriptChars_range (n : ℕ) (c : Char) (h : c ∈ natToSubscriptChars n) :
+    c.toNat ≥ 8320 ∧ c.toNat ≤ 8329 := by
+  simp only [natToSubscriptChars, List.mem_map] at h
+  obtain ⟨d, hd, rfl⟩ := h
+  have ⟨hge, hle⟩ := mem_natToChars_only_digits n d hd
+  simp only [show ('0' : Char).toNat = 48 from by decide,
+             show ('9' : Char).toNat = 57 from by decide,
+             show ('₀' : Char).toNat = 8320 from by decide] at hge hle ⊢
+  constructor <;> (rw [charOfNat_toNat_small (d.toNat - 48 + 8320) (by omega)]; omega)
+
+open AzPolynomial in
 theorem parseSubscriptChars_natToSubscriptChars (n : ℕ) :
     parseSubscriptChars (natToSubscriptChars n) = some n := by
-  unfold parseSubscriptChars natToSubscriptChars
+  unfold parseSubscriptChars
+  have hall : (natToSubscriptChars n).all
+      (fun c => decide (c.toNat ≥ '₀'.toNat ∧ c.toNat ≤ '₉'.toNat)) = true := by
+    rw [List.all_eq_true]
+    intro c hc
+    have ⟨h1, h2⟩ := mem_natToSubscriptChars_range n c hc
+    simp only [decide_eq_true_eq,
+      show ('₀' : Char).toNat = 8320 from by decide,
+      show ('₉' : Char).toNat = 8329 from by decide]
+    exact ⟨h1, h2⟩
+  rw [if_pos hall]
+  unfold natToSubscriptChars
   simp only [List.map_map, Function.comp_def,
     show ('0' : Char).toNat = 48 from by decide,
     show ('₀' : Char).toNat = 8320 from by decide]
@@ -133,17 +161,6 @@ theorem parseSubscriptChars_natToSubscriptChars (n : ℕ) :
 
 /-- Convert a natural number to a string of Unicode subscript digits. -/
 private def natToSubscript (n : ℕ) : String := String.ofList (natToSubscriptChars n)
-
-open AzPolynomial in
-theorem mem_natToSubscriptChars_range (n : ℕ) (c : Char) (h : c ∈ natToSubscriptChars n) :
-    c.toNat ≥ 8320 ∧ c.toNat ≤ 8329 := by
-  simp only [natToSubscriptChars, List.mem_map] at h
-  obtain ⟨d, hd, rfl⟩ := h
-  have ⟨hge, hle⟩ := mem_natToChars_only_digits n d hd
-  simp only [show ('0' : Char).toNat = 48 from by decide,
-             show ('9' : Char).toNat = 57 from by decide,
-             show ('₀' : Char).toNat = 8320 from by decide] at hge hle ⊢
-  constructor <;> (rw [charOfNat_toNat_small (d.toNat - 48 + 8320) (by omega)]; omega)
 
 private theorem lowercase_not_syntax (c : Char) (hge : c.toNat ≥ 97) (hle : c.toNat ≤ 122) :
     ¬ isPolySyntaxChar c := by

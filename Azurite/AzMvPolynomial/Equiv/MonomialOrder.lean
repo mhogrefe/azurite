@@ -251,7 +251,7 @@ end Bridge
 /-! ### Connecting sorted representation to Mathlib degree -/
 
 section DegreeBridge
-variable {R : Type _} [Field R] {n : ℕ} {ord : MonomialOrder}
+variable {R : Type _} [CommSemiring R] {n : ℕ} {ord : MonomialOrder}
 
 private theorem toSyn_toFinsupp (m : MonomialOrder) (a : MonicMonomial n m) :
     (toMathlibMonomialOrder (n := n) m).toSyn a.toFinsupp = Additive.ofMul a :=

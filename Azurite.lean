@@ -1,5 +1,6 @@
 -- This module serves as the root of the `Azurite` library.
 -- Import modules here that should be built as part of the library.
+import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
@@ -43,10 +44,12 @@ import Azurite.AzInt.Equiv.ShiftRightRound
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
+import Azurite.AzInt.ExactDiv
 import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Mul
 import Azurite.AzInt.Parity
+import Azurite.AzInt.ParsableElement
 import Azurite.AzInt.Parse
 import Azurite.AzInt.Pow2
 import Azurite.AzInt.ShiftLeft
@@ -57,10 +60,14 @@ import Azurite.AzInt.Sub
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Bareiss
+import Azurite.AzMatrix.BareissDet
 import Azurite.AzMatrix.Basic
 import Azurite.AzMatrix.Det
+import Azurite.AzMatrix.DetDispatch
 import Azurite.AzMatrix.Equiv.Add
 import Azurite.AzMatrix.Equiv.Algebra
+import Azurite.AzMatrix.Equiv.Bareiss
+import Azurite.AzMatrix.Equiv.BareissDet
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
 import Azurite.AzMatrix.Equiv.Det
@@ -106,6 +113,7 @@ import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Eval2
 import Azurite.AzMvPolynomial.Equiv.ExactDiv
+import Azurite.AzMvPolynomial.Equiv.ExactDivCR
 import Azurite.AzMvPolynomial.Equiv.FinOneAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
 import Azurite.AzMvPolynomial.Equiv.FinZeroAlgEquiv
@@ -131,6 +139,7 @@ import Azurite.AzMvPolynomial.Equiv.Vars
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.Eval2
 import Azurite.AzMvPolynomial.ExactDiv
+import Azurite.AzMvPolynomial.ExactDivCommRing
 import Azurite.AzMvPolynomial.FinSuccEquiv
 import Azurite.AzMvPolynomial.Join2
 import Azurite.AzMvPolynomial.Map
@@ -220,6 +229,7 @@ import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
+import Azurite.AzNat.ParsableElement
 import Azurite.AzNat.ParseBase
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.SetBit
@@ -258,6 +268,7 @@ import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Eval
+import Azurite.AzPolynomial.Equiv.ExactDiv
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
 import Azurite.AzPolynomial.Equiv.Monomial
@@ -279,6 +290,7 @@ import Azurite.AzPolynomial.Equiv.TRems
 import Azurite.AzPolynomial.Equiv.Tru
 import Azurite.AzPolynomial.Equiv.Truncate
 import Azurite.AzPolynomial.Eval
+import Azurite.AzPolynomial.ExactDiv
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul

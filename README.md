@@ -10,13 +10,13 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 
 | Module | Description |
 |--------|-------------|
-| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Schoolbook multiplication plus a Karatsuba implementation (`karatsubaMulLimbs`) with a configurable basecase threshold. |
-| `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, bit-size, trailing-zeros, parsing, and `toString`. |
+| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Schoolbook multiplication plus a Karatsuba implementation (`karatsubaMulLimbs`) with a configurable basecase threshold. Also provides a `ParsableElement` instance for use as an `AzVector` / `AzMatrix` coefficient type. |
+| `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, bit-size, trailing-zeros, parsing, `toString`, and a `ParsableElement` instance (so `AzInt` works as a coefficient type for `AzVector` / `AzMatrix` `parseStr`). |
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, multiplication by `X^n` (`mulXPow`), truncation (`truncate`, BPR Notation 1.16), derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), signed pseudo-remainder (`pRem`, works over any `CommRing`), root bounds, the Sturm sequence (`sturmSequence`, BPR Chapter 2.2), parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation (`eval`, plus generic `eval₂`/`aeval` into any commutative semiring or `R`-algebra), exact division, monomial exponentiation, rename, map, merge-sorted operations, `bind₁`/`bind₂`/`join₂` substitution, and `finSuccEquiv` (forward direction: `AzMvPolynomial (Fin (n+1)) R → AzPolynomial (AzMvPolynomial (Fin n) R)`). |
 | `AzPolynomialQ/` | Rational univariate polynomials with a shared denominator: stores `numerators : Array ℤ` and `denom : ℕ` in canonical (GCD-reduced) form. Enables exact arithmetic without per-coefficient rational normalization, fast pointwise negation, and integer-level `Monic` property evaluation. |
 | `AzVector/` | Fixed-length vectors wrapping Lean's `Vector R n`. Includes addition, negation, subtraction, scalar multiplication, dot product, cross product, and basis vectors. |
-| `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, row/column access, Gaussian elimination (`gauss`, BPR Algorithm 8.15, early-abort), row-echelon reduction (`rowEchelon`, always upper-triangular), determinant (`det`), and the Bareiss block/minor (`bareissBlock`, `bareissMinor`, `principalMinor`; BPR Notation 8.19). |
+| `AzMatrix/` | Fixed-size `m × n` matrices wrapping `Vector (Vector R n) m`. Includes addition, negation, subtraction, scalar multiplication, matrix multiplication, matrix-vector multiplication, transpose, row/column access, Gaussian elimination (`gauss`, BPR Algorithm 8.15, early-abort; `gaussSteps`, indexed step iteration), row-echelon reduction (`rowEchelon`, always upper-triangular), determinant via Gauss (`det`), determinant via Bareiss recurrence (`bareissDet`, BPR Algorithm 8.16, fraction-free over a domain), and the Bareiss block/minor (`bareissBlock`, `bareissMinor`, `principalMinor`; BPR Notation 8.19). |
 | `AzFormula/` | Computable first-order formulas over `AzFieldAtom` (field atoms using `AzMvPolynomial`). Provides computable free-variable computation, bound-variable computation, sentence checking, formula constructors, variable renaming, negation normal form (`toNNF`), prenex normal form conversion (`toPrenex`), and noncomputable realization. Generic `AtomVars`, `AtomRename`, `AtomRealization` typeclasses. Modular simplification passes (`elimDoubleNeg`, `elimVacuousQuantifiers`). |
 
 ### Equivalence Proofs (`Equiv/` subdirectories)
@@ -147,6 +147,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Pow` | `toMat (A.pow k) = toMat A ^ k` and `(ofFn f).pow k = ofFn (f ^ k)` |
 | `Equiv/RowEchelon` | `(M.rowEchelon).1.toFn.BlockTriangular id` — the row-echelon variant produces an upper-triangular matrix (Mathlib `Matrix.BlockTriangular`) |
 | `Equiv/Det` | `M.det = Matrix.det M.toFn` — Gaussian-elimination determinant (via the `gauss` early-abort variant) agrees with Mathlib's `Matrix.det`, by per-step row-operation invariance + `Matrix.det_of_upperTriangular` / `Matrix.det_eq_zero_of_row_eq_zero` |
+| `Equiv/Bareiss` | **BPR equation (8.5)** `b_{i,j}^{(k)} = (∏ pivots) · g_{i,j}^{(k)}` — `bareissMinor_eq_prod_pivots_times_gaussSteps`. Proven under strict-nonzero-pivot hypothesis via the Gauss-block correspondence `gaussSteps_bareissBlock_toFn` + `det_gaussSteps` + `gaussSteps_blockTriangular` + `Matrix.det_of_upperTriangular`. **BPR Proposition 8.20** (Sylvester-Bareiss recurrence) `b_{i,j}^{(k+2)} · b_{k+1,k+1}^{(k)} = b_{k+2,k+2}^{(k+1)} · b_{i,j}^{(k+1)} − b_{i,k+2}^{(k+1)} · b_{k+2,j}^{(k+1)}` — `bareissMinor_recurrence`. |
 
 #### AzFormula (AzFieldAtom) ↔ Formula (FieldAtom)
 
@@ -174,6 +175,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | Module | Description |
 |--------|-------------|
 | `Algorithm/FastPow` | Right-to-left binary exponentiation (exponentiation by squaring) for any `Monoid`. Computes `a ^ n` in O(log n) multiplications. Proven equivalent to `HPow.hPow` (Mathlib's `^`). |
+| `Algorithm/ExactDiv` | `ExactDiv D` typeclass: `exactDiv a b : D` returns `c` such that `b * c = a` when `b ∣ a`. Default instance for any `Field K` (uses `a / b`). Instances: `AzInt` (`AzInt/ExactDiv`), `AzPolynomial R` over any `[CommRing R] [DecidableEq R] [ExactDiv R]` (`AzPolynomial/ExactDiv`, synthetic division), and `AzMvPolynomial n R ord` over any `[CommRing R] [IsDomain R] [DecidableEq R] [ExactDiv R]` (`AzMvPolynomial/ExactDivCommRing`, sibling of the existing field-only `AzMvPolynomial.exactDiv`). Used by `AzMatrix/BareissDet` so the fraction-free Bareiss determinant runs end-to-end over `AzInt`, `AzPolynomial AzInt`, or `AzMvPolynomial n AzInt ord` via the chained instances. |
 
 ### Utility Modules
 
@@ -243,6 +245,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Translation P(X-c) | BPR Alg. 8.9 | `AzPolynomial/Translate` | O(p²·deg(q)) via comp |
 | Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
 | Gaussian elimination (`gauss` early-abort + `rowEchelon` always-triangular + `det`) | BPR Alg. 8.15 | `AzMatrix/RowEchelon`, `AzMatrix/Det` | O(n³) over a field |
+| Dodgson-Jordan-Bareiss fraction-free det (`bareissDet`) | BPR Alg. 8.16 | `AzMatrix/BareissDet` | O(n³) over a field; stays in entry ring when that ring is a domain |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
 
 ## Building

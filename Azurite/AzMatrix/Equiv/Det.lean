@@ -1,7 +1,7 @@
 /-
-  Equivalence proof: `AzMatrix.det M = Matrix.det M.toFn`.
+  Equivalence proof: `AzMatrix.gaussDet M = Matrix.det M.toFn`.
 
-  The Gaussian-elimination determinant computed by `AzMatrix.det` agrees with
+  The Gaussian-elimination determinant computed by `AzMatrix.gaussDet` agrees with
   Mathlib's `Matrix.det`. The proof tracks the determinant through each step
   of `gaussAux` (the BPR early-abort variant):
 
@@ -200,11 +200,63 @@ theorem AzMatrix.det_swapCols
   push_cast
   ring
 
-/-! ### Invariant -/
+end Azurite
 
-/-- The partial-zero invariant: `M[i][j] = 0` for all `j < i` with `j < start`. -/
-def AzMatrix.PartialZero (M : AzMatrix K n n) (start : Nat) : Prop :=
-  ∀ i j : Fin n, j.val < i.val → j.val < start → M.toFn i j = 0
+/-! ### Invariant (generic; no Field required) -/
+
+namespace Azurite
+
+variable {R : Type _} [Zero R] {m : Nat}
+
+/-- The partial-zero invariant: `M[i][j] = 0` for all `j < i` with `j < start`.
+    Defined generically over any matrix-entry type with `Zero`. -/
+def AzMatrix.PartialZero (M : AzMatrix R m m) (start : Nat) : Prop :=
+  ∀ i j : Fin m, j.val < i.val → j.val < start → M.toFn i j = 0
+
+/-- After swapping cols `⟨start, _⟩` and `jₚ` (with `jₚ ≥ start`), the
+    invariant up to `start` is preserved. (Field-free.) -/
+theorem AzMatrix.swapCols_preservesPartialZero
+    (M : AzMatrix R m m) (start : Nat) (h_lt : start < m)
+    (h_inv : M.PartialZero start) (jₚ : Fin m) (h_jₚ_ge : start ≤ jₚ.val) :
+    (M.swapCols ⟨start, h_lt⟩ jₚ).PartialZero start := by
+  intro i j h_lt_ij h_bnd
+  rw [AzMatrix.toFn_swapCols]
+  have h_j_neq_kp : j ≠ ⟨start, h_lt⟩ := by
+    intro h_eq
+    have : j.val = start := by rw [h_eq]
+    omega
+  have h_j_neq_jₚ : j ≠ jₚ := by
+    intro h_eq
+    have : j.val = jₚ.val := by rw [h_eq]
+    omega
+  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
+  exact h_inv i j h_lt_ij h_bnd
+
+/-- Row `⟨start, _⟩` of the swap-result has zeros to the left of column
+    `start`. (Field-free.) -/
+theorem AzMatrix.swapCols_row_zeros
+    (M : AzMatrix R m m) (start : Nat) (h_lt : start < m)
+    (h_inv : M.PartialZero start) (jₚ : Fin m) (h_jₚ_ge : start ≤ jₚ.val) :
+    ∀ j : Fin m, j.val < start →
+      (M.swapCols ⟨start, h_lt⟩ jₚ).toFn ⟨start, h_lt⟩ j = 0 := by
+  intro j h_j_lt
+  rw [AzMatrix.toFn_swapCols]
+  have h_j_neq_kp : j ≠ ⟨start, h_lt⟩ := by
+    intro h_eq
+    have : j.val = start := by rw [h_eq]
+    omega
+  have h_j_neq_jₚ : j ≠ jₚ := by
+    intro h_eq
+    have : j.val = jₚ.val := by rw [h_eq]
+    omega
+  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
+  exact h_inv ⟨start, h_lt⟩ j h_j_lt h_j_lt
+
+end Azurite
+
+namespace Azurite
+
+variable {K : Type _} [Field K] [DecidableEq K] {n : Nat}
 
 omit [DecidableEq K] in
 /-- `eliminateBelow M ⟨start, _⟩` extends `PartialZero` from `start` to
@@ -227,48 +279,6 @@ theorem AzMatrix.eliminateBelow_preservesPartialZero
       have h_j_eq : j.val = start := by omega
       have h_j_kp : j = ⟨start, h_lt⟩ := Fin.ext h_j_eq
       rw [if_pos h_j_kp]
-
-omit [DecidableEq K] in
-/-- After swapping cols `⟨start, _⟩` and `jₚ` (with `jₚ ≥ start`), the
-    invariant up to `start` is preserved. -/
-theorem AzMatrix.swapCols_preservesPartialZero
-    (M : AzMatrix K n n) (start : Nat) (h_lt : start < n)
-    (h_inv : M.PartialZero start) (jₚ : Fin n) (h_jₚ_ge : start ≤ jₚ.val) :
-    (M.swapCols ⟨start, h_lt⟩ jₚ).PartialZero start := by
-  intro i j h_lt_ij h_bnd
-  rw [AzMatrix.toFn_swapCols]
-  have h_j_neq_kp : j ≠ ⟨start, h_lt⟩ := by
-    intro h_eq
-    have : j.val = start := by rw [h_eq]
-    omega
-  have h_j_neq_jₚ : j ≠ jₚ := by
-    intro h_eq
-    have : j.val = jₚ.val := by rw [h_eq]
-    omega
-  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
-  exact h_inv i j h_lt_ij h_bnd
-
-omit [DecidableEq K] in
-/-- Row `⟨start, _⟩` of the swap-result has zeros to the left of column
-    `start`. -/
-theorem AzMatrix.swapCols_row_zeros
-    (M : AzMatrix K n n) (start : Nat) (h_lt : start < n)
-    (h_inv : M.PartialZero start) (jₚ : Fin n) (h_jₚ_ge : start ≤ jₚ.val) :
-    ∀ j : Fin n, j.val < start →
-      (M.swapCols ⟨start, h_lt⟩ jₚ).toFn ⟨start, h_lt⟩ j = 0 := by
-  intro j h_j_lt
-  rw [AzMatrix.toFn_swapCols]
-  have h_j_neq_kp : j ≠ ⟨start, h_lt⟩ := by
-    intro h_eq
-    have : j.val = start := by rw [h_eq]
-    omega
-  have h_j_neq_jₚ : j ≠ jₚ := by
-    intro h_eq
-    have : j.val = jₚ.val := by rw [h_eq]
-    omega
-  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
-  -- Need M.toFn ⟨start, h_lt⟩ j = 0; use h_inv with i = ⟨start, h_lt⟩.
-  exact h_inv ⟨start, h_lt⟩ j h_j_lt h_j_lt
 
 /-! ### Per-step det invariant -/
 
@@ -390,9 +400,9 @@ theorem AzMatrix.gaussAux_det_eq
 
 /-! ### Main theorem -/
 
-/-- **`AzMatrix.det` agrees with `Matrix.det`.** -/
-theorem AzMatrix.det_eq_Matrix_det (M : AzMatrix K n n) :
-    M.det = Matrix.det M.toFn := by
+/-- **`AzMatrix.gaussDet` agrees with `Matrix.det`.** -/
+theorem AzMatrix.gaussDet_eq_Matrix_det (M : AzMatrix K n n) :
+    M.gaussDet = Matrix.det M.toFn := by
   have h_inv : M.PartialZero 0 := fun _ _ _ h => absurd h (Nat.not_lt_zero _)
   have h := M.gaussAux_det_eq 0 0 h_inv
   rw [pow_zero, mul_one] at h

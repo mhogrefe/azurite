@@ -170,6 +170,45 @@ def AzMatrix.rowEchelon [Field K] [DecidableEq K]
     (M : AzMatrix K n n) : AzMatrix K n n × Nat :=
   AzMatrix.rowEchelonAux M 0 0
 
+/-! ### Indexed Gauss iteration: `gaussSteps M k` -/
+
+/-- Apply exactly `k` Gauss elimination steps to `M`, with NO column swaps.
+    Step `ℓ` uses the pivot at `(ℓ, ℓ)` directly; if the pivot is zero the
+    step's `eliminateBelow` still zeros column `ℓ` below the diagonal but
+    leaves columns `> ℓ` unchanged (since `x / 0 = 0` in a field). This
+    matches BPR's `g_{i,j}^{(k)}` notation: `(gaussSteps M k).toFn i j` is
+    `g_{i+1, j+1}^{(k)}` in `1`-indexed BPR conventions.
+
+    Steps `k ≥ n` are no-ops (the matrix is already triangular by then). -/
+def AzMatrix.gaussSteps [Field K] (M : AzMatrix K n n) :
+    Nat → AzMatrix K n n
+  | 0 => M
+  | k + 1 =>
+    if h : k < n then
+      (M.gaussSteps k).eliminateBelow ⟨k, h⟩
+    else
+      M.gaussSteps k
+
+@[simp]
+theorem AzMatrix.gaussSteps_zero [Field K] (M : AzMatrix K n n) :
+    M.gaussSteps 0 = M := rfl
+
+theorem AzMatrix.gaussSteps_succ [Field K] (M : AzMatrix K n n)
+    (k : Nat) (hk : k < n) :
+    M.gaussSteps (k + 1) = (M.gaussSteps k).eliminateBelow ⟨k, hk⟩ := by
+  show (if h : k < n then (M.gaussSteps k).eliminateBelow ⟨k, h⟩
+        else M.gaussSteps k) = _
+  rw [dif_pos hk]
+
+/-- For step counts beyond `n`, `gaussSteps` stabilizes: no rows remain
+    below the pivot, so the step is a no-op. -/
+theorem AzMatrix.gaussSteps_of_ge [Field K] (M : AzMatrix K n n)
+    (k : Nat) (hk : ¬ k < n) :
+    M.gaussSteps (k + 1) = M.gaussSteps k := by
+  show (if h : k < n then (M.gaussSteps k).eliminateBelow ⟨k, h⟩
+        else M.gaussSteps k) = _
+  rw [dif_neg hk]
+
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests
 -- ═══════════════════════════════════════════════════════════════════
@@ -180,44 +219,56 @@ section Tests
 
 -- No swap needed: pivots are already nonzero on the diagonal.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(2 : ℚ), 1, 1], [4, 3, 3], [8, 7, 9]] : AzMatrix ℚ 3 3).gauss
-  toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
+  match (AzMatrix.parseStr "[2, 1, 1; 4, 3, 3; 8, 7, 9]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.gauss
+              toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
+  | none => False
 
 -- Column swap forced at step 0 (zero in the (0, 0) entry); s = 1.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(0 : ℚ), 1, 2], [1, 2, 3], [2, 3, 5]] : AzMatrix ℚ 3 3).gauss
-  toString U = "[1, 0, 2; 0, 1, -1; 0, 0, 1]" ∧ s = 1
+  match (AzMatrix.parseStr "[0, 1, 2; 1, 2, 3; 2, 3, 5]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.gauss
+              toString U = "[1, 0, 2; 0, 1, -1; 0, 0, 1]" ∧ s = 1
+  | none => False
 
 -- Singular: row 1 zeros out at step 0; algorithm aborts at step 1, leaving
 -- the matrix as-is (with the all-zero row visible on the diagonal at (1, 1)).
 -- Note that the output here is NOT upper-triangular (row 2 has `-1` at col 1).
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(1 : ℚ), 2, 3], [2, 4, 6], [1, 1, 1]] : AzMatrix ℚ 3 3).gauss
-  toString U = "[1, 2, 3; 0, 0, 0; 0, -1, -2]" ∧ s = 0
+  match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.gauss
+              toString U = "[1, 2, 3; 0, 0, 0; 0, -1, -2]" ∧ s = 0
+  | none => False
 
 /-! #### `rowEchelon` (always upper-triangular) -/
 
 -- Nonsingular, no row swap needed: same shape as `gauss`.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(2 : ℚ), 1, 1], [4, 3, 3], [8, 7, 9]] : AzMatrix ℚ 3 3).rowEchelon
-  toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
+  match (AzMatrix.parseStr "[2, 1, 1; 4, 3, 3; 8, 7, 9]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.rowEchelon
+              toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
+  | none => False
 
 -- Zero in (0, 0): a row swap (not a column swap) brings the pivot up.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(0 : ℚ), 1, 2], [1, 2, 3], [2, 3, 5]] : AzMatrix ℚ 3 3).rowEchelon
-  toString U = "[1, 2, 3; 0, 1, 2; 0, 0, 1]" ∧ s = 1
+  match (AzMatrix.parseStr "[0, 1, 2; 1, 2, 3; 2, 3, 5]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.rowEchelon
+              toString U = "[1, 2, 3; 0, 1, 2; 0, 0, 1]" ∧ s = 1
+  | none => False
 
 -- Singular: same input as the third `gauss` test. Here the algorithm swaps
 -- the all-zero row to the bottom and finishes — output IS triangular.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(1 : ℚ), 2, 3], [2, 4, 6], [1, 1, 1]] : AzMatrix ℚ 3 3).rowEchelon
-  toString U = "[1, 2, 3; 0, -1, -2; 0, 0, 0]" ∧ s = 1
+  match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.rowEchelon
+              toString U = "[1, 2, 3; 0, -1, -2; 0, 0, 0]" ∧ s = 1
+  | none => False
 
 -- Column 1 has no pivot at or below the diagonal at step 1; the algorithm
 -- skips that column. Since `rowEchelon` only zeros the current pivot column
@@ -225,9 +276,11 @@ section Tests
 -- but is *not* in strict echelon form: the diagonal `[1, 0, 1]` exposes the
 -- singular column, and row 2 keeps its leading `1` at col 2.
 #guard
-  let (U, s) := (AzMatrix.ofLists
-    [[(1 : ℚ), 0, 1], [0, 0, 1], [0, 0, 1]] : AzMatrix ℚ 3 3).rowEchelon
-  toString U = "[1, 0, 1; 0, 0, 1; 0, 0, 1]" ∧ s = 0
+  match (AzMatrix.parseStr "[1, 0, 1; 0, 0, 1; 0, 0, 1]" :
+      Option (AzMatrix ℚ 3 3)) with
+  | some M => let (U, s) := M.rowEchelon
+              toString U = "[1, 0, 1; 0, 0, 1; 0, 0, 1]" ∧ s = 0
+  | none => False
 
 end Tests
 
