@@ -264,6 +264,7 @@ import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
 import Azurite.AzPolynomial.Derivative
+import Azurite.AzPolynomial.Discriminant
 import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
@@ -272,6 +273,8 @@ import Azurite.AzPolynomial.Equiv.CauchyIndex
 import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative
+import Azurite.AzPolynomial.Equiv.Discriminant
+import Azurite.AzPolynomial.Equiv.DiscriminantMap
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.ExactDiv
 import Azurite.AzPolynomial.Equiv.Karatsuba
@@ -280,6 +283,7 @@ import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.MulXPow
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.AzPolynomial.Equiv.NewtonMatrix
 import Azurite.AzPolynomial.Equiv.NewtonSum
 import Azurite.AzPolynomial.Equiv.NumRoots
 import Azurite.AzPolynomial.Equiv.Pow
@@ -305,6 +309,7 @@ import Azurite.AzPolynomial.MvCoeffParse
 import Azurite.AzPolynomial.MvCoeffParseToString
 import Azurite.AzPolynomial.Neg
 import Azurite.AzPolynomial.NestedCoeffExamples
+import Azurite.AzPolynomial.NewtonMatrix
 import Azurite.AzPolynomial.NewtonSum
 import Azurite.AzPolynomial.NumRoots
 import Azurite.AzPolynomial.ParsableElement

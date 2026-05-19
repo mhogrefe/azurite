@@ -47,6 +47,50 @@ def newtonSumMonic (P : AzPolynomial R) : ℕ → R
 def newtonSumsMonic (P : AzPolynomial R) (n : ℕ) : Array R :=
   (Array.range n).map P.newtonSumMonic
 
+/-- Compute the next Newton sum given the array `prev = [N_0, …, N_{m-1}]`
+    of previously computed sums (so `m = prev.size`). Used inside
+    `newtonSumsMonicIter` to extend a partial array of Newton sums by
+    one entry without re-evaluating the recursive `newtonSumMonic`. -/
+def newtonSumStep (P : AzPolynomial R) (prev : Array R) : R :=
+  let m := prev.size
+  let p := P.natDegree
+  if m = 0 then
+    (p : R)
+  else
+    let leading : R :=
+      if m ≤ p then ((p - m : ℕ) : R) * P.coeff (p - m) else 0
+    leading - ∑ k ∈ Finset.range (min m p),
+      P.coeff (p - (k + 1)) * prev.getD (m - 1 - k) 0
+
+/-- The first `n` Newton sums `[N_0, N_1, …, N_{n-1}]` of a monic
+    polynomial `P`, computed iteratively so that each Newton sum is
+    evaluated exactly once.
+
+    Semantically equivalent to `newtonSumsMonic P n` but algorithmically
+    linear in `n` (each step references previously computed entries in
+    the array) rather than exponential (as `newtonSumMonic` re-explores
+    the recursion tree at each call). Prefer this version when consuming
+    multiple Newton sums at once, e.g. when assembling the Hankel
+    `newtMatMonic`. -/
+def newtonSumsMonicIter (P : AzPolynomial R) : ℕ → Array R
+  | 0 => #[]
+  | n + 1 =>
+    let prev := newtonSumsMonicIter P n
+    prev.push (newtonSumStep P prev)
+
+-- Sanity checks: same outputs as `newtonSumsMonic`.
+#guard (parseAzPolynomial (R := ℤ) "x-5").get!.newtonSumsMonicIter 4 ==
+       #[1, 5, 25, 125]
+
+#guard (parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtonSumsMonicIter 5 ==
+       #[2, 3, 5, 9, 17]
+
+#guard (parseAzPolynomial (R := ℤ) "x^3").get!.newtonSumsMonicIter 4 ==
+       #[3, 0, 0, 0]
+
+#guard (parseAzPolynomial (R := ℤ) "x^3-6*x^2+11*x-6").get!.newtonSumsMonicIter
+       4 == #[3, 6, 14, 36]
+
 -- Sanity checks.
 -- P = X - 5, roots = {5}, N_i = 5^i.
 #guard (parseAzPolynomial (R := ℤ) "x-5").get!.newtonSumsMonic 4 == #[1, 5, 25, 125]
