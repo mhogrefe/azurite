@@ -45,6 +45,30 @@ def AzMatrix.findPivot [Zero K] [DecidableEq K]
     (M : AzMatrix K n n) (k : Fin n) : Option (Fin n) :=
   M.findPivotAux k k.val
 
+/-! ### 2D pivot search (for rank algorithms) -/
+
+/-- Helper for `findFirstNonzero`: search rows `≥ i` for a row whose entry
+    in columns `≥ c_start` is nonzero. Iterates row-by-row, using
+    `findPivotAux` to scan each row. -/
+def AzMatrix.findFirstNonzeroAux [Zero K] [DecidableEq K]
+    (M : AzMatrix K n n) (i : Nat) (c_start : Nat) : Option (Fin n × Fin n) :=
+  if h : i < n then
+    match M.findPivotAux ⟨i, h⟩ c_start with
+    | some j => some (⟨i, h⟩, j)
+    | none => AzMatrix.findFirstNonzeroAux M (i + 1) c_start
+  else
+    none
+termination_by n - i
+
+/-- Find a pivot `(i, j)` with `i ≥ r_start`, `j ≥ c_start`, and `M[i][j] ≠ 0`.
+    Iterates rows top-down, scanning each row left-to-right from column
+    `c_start`. Returns `none` if the submatrix rows `≥ r_start`, columns
+    `≥ c_start` is all zero. Used by rank algorithms (BPR Exercise 8.1)
+    to find the next pivot when row and column indices may diverge. -/
+def AzMatrix.findFirstNonzero [Zero K] [DecidableEq K]
+    (M : AzMatrix K n n) (r_start c_start : Nat) : Option (Fin n × Fin n) :=
+  AzMatrix.findFirstNonzeroAux M r_start c_start
+
 /-! ### Column swap -/
 
 /-- Swap columns `j₁` and `j₂` of `M`. -/
