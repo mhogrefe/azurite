@@ -104,7 +104,7 @@ private theorem exists_UV_iff_lcm_natDegree_lt
 omit [DecidableEq K] in
 /-- The LCM/GCD degree identity in `K[X]`, established via BPR
     Proposition 1.5: `lcm P Q` and `P * Q / gcd P Q` are associated. -/
-private theorem lcm_natDegree_eq (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
+theorem lcm_natDegree_eq (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
     (lcm P Q).natDegree + (gcd P Q).natDegree =
       P.natDegree + Q.natDegree := by
   have h_gcd_ne : gcd P Q ≠ 0 :=
