@@ -1,4 +1,4 @@
-import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_18
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
 
 /-!
 # BPR Proposition 4.20: the Sylvester matrix as a Jacobian
@@ -119,12 +119,11 @@ theorem monicMulJacobian_eq_sylvester (P Q : R[X]) (p q : ℕ)
 /-- **BPR Proposition 4.20.** The Jacobian matrix of the
     monic-multiplication map is the Sylvester matrix of `P` and `Q`,
     and the Jacobian (determinant) is the resultant. -/
-theorem Proposition_4_20 (P Q : R[X]) (p q : ℕ)
-    (hP : P.natDegree ≤ p) (hQ : Q.natDegree ≤ q) :
-    (monicMulJacobian P Q p q).det = Res P p Q q := by
-  rw [monicMulJacobian_eq_sylvester P Q p q hP hQ]
-  show (Polynomial.sylvester P Q p q).det = Res P p Q q
-  rw [Res_eq_resultant P Q p q hP hQ]
+theorem Proposition_4_20 (P Q : R[X]) :
+    (monicMulJacobian P Q P.natDegree Q.natDegree).det = Res P Q := by
+  rw [monicMulJacobian_eq_sylvester P Q P.natDegree Q.natDegree le_rfl le_rfl]
+  show (Polynomial.sylvester P Q P.natDegree Q.natDegree).det = Res P Q
+  rw [Res_eq_resultant P Q]
   rfl
 
 end Azurite.BPR.Chapter4

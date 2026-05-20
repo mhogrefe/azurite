@@ -64,10 +64,10 @@ private lemma prod_eval_eq_leadingCoeff_pow_mul_prod_root_diffs
 
     where the products run over `P.roots × Q.roots`. -/
 theorem Theorem_4_17 (P Q : K[X]) (hP : P.Splits) (hQ : Q.Splits) :
-    Res P P.natDegree Q Q.natDegree =
+    Res P Q =
       P.leadingCoeff ^ Q.natDegree * Q.leadingCoeff ^ P.natDegree *
         ((P.roots ×ˢ Q.roots).map fun pr => pr.1 - pr.2).prod := by
-  rw [Res_eq_resultant P Q P.natDegree Q.natDegree le_rfl le_rfl]
+  rw [Res_eq_resultant P Q]
   rw [Polynomial.resultant_eq_prod_eval P Q Q.natDegree le_rfl hP]
   rw [prod_eval_eq_leadingCoeff_pow_mul_prod_root_diffs P Q hQ]
   rw [hP.natDegree_eq_card_roots]
@@ -79,8 +79,7 @@ theorem Theorem_4_17 (P Q : K[X]) (hP : P.Splits) (hQ : Q.Splits) :
     holds as soon as `P` splits over `K` — `Q` need not split, because
     the asymmetric form only references roots of the first argument. -/
 theorem Res_eq_Θ_of_splits (P Q : K[X]) (hP : P.Splits) :
-    Res P P.natDegree Q Q.natDegree = Θ P Q Q.natDegree := by
-  rw [Res_eq_resultant P Q P.natDegree Q.natDegree le_rfl le_rfl,
-      ← Θ_eq_resultant P Q Q.natDegree hP le_rfl]
+    Res P Q = Θ P Q Q.natDegree := by
+  rw [Res_eq_resultant P Q, ← Θ_eq_resultant P Q Q.natDegree hP le_rfl]
 
 end Azurite.BPR.Chapter4

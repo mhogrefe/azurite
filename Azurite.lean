@@ -519,11 +519,13 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_1.VandermondeMatrix
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_15
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_18
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_13
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_22
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_16
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_19
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_20
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_21
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_14
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_17
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_10
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_8

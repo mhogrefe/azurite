@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_15
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Proposition1_5
 import Mathlib.RingTheory.Localization.FractionRing
 import Mathlib.RingTheory.PrincipalIdealDomain
@@ -13,9 +14,10 @@ non-trivial common factor in `K[X]` — equivalently, `¬ IsCoprime`.
 
 Proof strategy (BPR §4.2.1, using Lemma 4.15 and Proposition 1.5).
 
-1. Lift `Res P p Q q` from `D` to `K = Frac(D)` via the ring-hom-
-   functoriality `(algebraMap D K) (Res P p Q q) = Res (P.map _) p
-   (Q.map _) q`; injectivity of `algebraMap` gives
+1. Lift `Res P Q` from `D` to `K = Frac(D)` via the ring-hom-
+   functoriality `(algebraMap D K) (Res P Q) = Res (P.map _) (Q.map _)`,
+   relying on the fact that the natDegrees are preserved by the
+   (injective) `algebraMap`. Injectivity then gives
    `Res = 0 ↔ Res_K = 0`.
 
 2. Apply Lemma 4.15 over `K[X]` (which is a Field, hence IsDomain) to
@@ -38,26 +40,19 @@ open Polynomial
 
 variable {D : Type*} [CommRing D]
 
-/-! ### Sylvester matrix commutes with ring homomorphisms -/
+/-! ### Resultant commutes with degree-preserving ring homomorphisms -/
 
-/-- The Sylvester matrix is functorial in the coefficient ring. -/
-theorem Syl_map {E : Type*} [CommRing E] (f : D →+* E)
-    (P : D[X]) (p : ℕ) (Q : D[X]) (q : ℕ) :
-    (Syl P p Q q).map f = Syl (P.map f) p (Q.map f) q := by
-  ext i j
-  simp only [Matrix.map_apply, Syl]
-  rw [Matrix.of_apply, Matrix.of_apply]
-  split_ifs <;>
-  · rw [← Polynomial.coeff_map, Polynomial.map_mul,
-        Polynomial.map_pow, Polynomial.map_X]
-
-/-- The resultant commutes with ring homomorphisms. -/
+/-- The resultant commutes with a ring homomorphism, provided the
+    homomorphism preserves the relevant natDegrees (so the formal
+    Sylvester sizes on the two sides agree). -/
 theorem Res_map {E : Type*} [CommRing E] (f : D →+* E)
-    (P : D[X]) (p : ℕ) (Q : D[X]) (q : ℕ) :
-    f (Res P p Q q) = Res (P.map f) p (Q.map f) q := by
-  unfold Res
-  rw [RingHom.map_det, ← Syl_map]
-  rfl
+    (P Q : D[X])
+    (hPdeg : (P.map f).natDegree = P.natDegree)
+    (hQdeg : (Q.map f).natDegree = Q.natDegree) :
+    f (Res P Q) = Res (P.map f) (Q.map f) := by
+  rw [Res_eq_resultant P Q, Res_eq_resultant (P.map f) (Q.map f)]
+  rw [hPdeg, hQdeg]
+  exact (Polynomial.resultant_map_map P Q P.natDegree Q.natDegree f).symm
 
 /-! ### Auxiliary lemmas in `K[X]` -/
 
@@ -121,7 +116,6 @@ private theorem lcm_natDegree_eq (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
   have h_deg_eq : (lcm P Q).natDegree = (P * Q / gcd P Q).natDegree :=
     Polynomial.natDegree_eq_of_degree_eq
       (Polynomial.degree_eq_degree_of_associated h_assoc)
-  -- `(P*Q/gcd) * gcd = P*Q`.
   have h_gcd_dvd_PQ : gcd P Q ∣ P * Q := dvd_mul_of_dvd_left (gcd_dvd_left P Q) Q
   have h_mul : gcd P Q * (P * Q / gcd P Q) = P * Q :=
     EuclideanDomain.mul_div_cancel' h_gcd_ne h_gcd_dvd_PQ
@@ -173,7 +167,7 @@ omit [IsDomain D] [DecidableEq D] in
     the resultant of non-zero `P, Q ∈ D[X]` vanishes if and only if `P`
     and `Q` are not coprime in `K[X]`. -/
 theorem Res_eq_zero_iff_not_isCoprime (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
-    Res P P.natDegree Q Q.natDegree = 0 ↔
+    Res P Q = 0 ↔
       ¬ IsCoprime (P.map (algebraMap D K)) (Q.map (algebraMap D K)) := by
   set fK : D →+* K := algebraMap D K with hfK
   set Pk := P.map fK
@@ -186,24 +180,20 @@ theorem Res_eq_zero_iff_not_isCoprime (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   have hqk_deg : Qk.natDegree = Q.natDegree :=
     Polynomial.natDegree_map_eq_of_injective h_inj _
   -- Step 1: Lift Res to K-side via algebraMap.
-  have h_lift : Res P P.natDegree Q Q.natDegree = 0 ↔
-                Res Pk P.natDegree Qk Q.natDegree = 0 := by
+  have h_lift : Res P Q = 0 ↔ Res Pk Qk = 0 := by
     constructor
     · intro h
-      have h_eq := Res_map fK P P.natDegree Q Q.natDegree
+      have h_eq := Res_map fK P Q hpk_deg hqk_deg
       rw [h, map_zero] at h_eq
       exact h_eq.symm
     · intro h
       apply h_inj
-      rw [map_zero, Res_map]
+      rw [map_zero, Res_map fK P Q hpk_deg hqk_deg]
       exact h
   rw [h_lift]
-  -- Step 2: Replace D-side natDegrees by K-side natDegrees.
-  rw [show P.natDegree = Pk.natDegree from hpk_deg.symm,
-      show Q.natDegree = Qk.natDegree from hqk_deg.symm]
-  -- Step 3: Apply Lemma 4.15 over K[X] (K is a Field, hence IsDomain).
+  -- Step 2: Apply Lemma 4.15 over K[X] (K is a Field, hence IsDomain).
   rw [Res_eq_zero_iff Pk Qk hPk hQk]
-  -- Step 4: Chain through lcm and gcd via Prop 1.5.
+  -- Step 3: Chain through lcm and gcd via Prop 1.5.
   rw [exists_UV_iff_lcm_natDegree_lt Pk Qk hPk hQk,
       not_isCoprime_iff_gcd_natDegree_pos Pk Qk hPk hQk]
   have h_lcm_gcd := lcm_natDegree_eq Pk Qk hPk hQk

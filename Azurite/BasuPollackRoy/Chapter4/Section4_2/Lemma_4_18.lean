@@ -1,32 +1,26 @@
-import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_13
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
 
 /-!
 # BPR Lemma 4.18 (Res part): resultant under a Euclidean step
 
-For polynomials `P, Q` of degrees `p, q` with `P = C·Q + R` and
-`deg R ≤ r < q`, BPR Lemma 4.18 asserts
+For polynomials `P, Q` with `P = C·Q + R` and `deg R < deg Q ≤ deg P`,
+BPR Lemma 4.18 asserts
 
   `Res(P, Q) = (-1)^{p·q} · b_q^{p-r} · Res(Q, R)`,
 
-where `b_q = Q.coeff q` is the leading coefficient of `Q`.
+where `p, q, r` are the natural degrees of `P, Q, R` and `b_q` is the
+leading coefficient of `Q`.
 
 ## Strategy
 
-Our `Syl P p Q q` (BPR-faithful, rows = polynomial shifts in descending
-power basis) is related to Mathlib's `Polynomial.sylvester P Q p q`
-(columns = polynomial shifts in ascending power basis, with the
-`Q`-shifts forming the first `p` columns and `P`-shifts the last `q`)
-via transposition and reindexing both axes by `Fin.rev`. Because
-`det` is invariant under transposition and under reindexing by the same
-equivalence, our `Res` equals Mathlib's `Polynomial.resultant` (under
-the natural hypotheses `P.natDegree ≤ p`, `Q.natDegree ≤ q`).
-
-We use this bridge plus three Mathlib facts —
+Our `Res P Q` agrees with Mathlib's
+`Polynomial.resultant P Q P.natDegree Q.natDegree` via the
+`Res_eq_resultant` bridge. The identity then follows from three Mathlib
+facts —
 `Polynomial.resultant_add_mul_left` (kills the `C·Q` term),
 `Polynomial.resultant_comm` (gives the `(-1)^{p·q}` factor), and
 `Polynomial.resultant_add_right_deg` (gives the `b_q^{p-r}` factor) —
-to conclude.
+chained at the Mathlib level and transported back across the bridge.
 -/
 
 namespace Azurite.BPR.Chapter4
@@ -35,119 +29,47 @@ open Polynomial
 
 variable {D : Type*} [CommRing D]
 
-/-! ### Bridge: `Syl = (Polynomial.sylvester)ᵀ.submatrix Fin.rev Fin.rev` -/
-
-/-- Each entry of our `Syl` matches the corresponding (transposed,
-    reversed) entry of `Polynomial.sylvester`, provided `P.natDegree ≤ p`
-    and `Q.natDegree ≤ q`. -/
-private theorem Syl_eq_sylvester_T_submatrix_rev (P Q : D[X]) (p q : ℕ)
-    (hP : P.natDegree ≤ p) (hQ : Q.natDegree ≤ q) :
-    Syl P p Q q =
-      ((Polynomial.sylvester P Q p q).transpose).submatrix Fin.rev Fin.rev := by
-  ext i j
-  rw [Matrix.submatrix_apply, Matrix.transpose_apply]
-  unfold Syl
-  rw [Matrix.of_apply]
-  unfold Polynomial.sylvester
-  rw [Matrix.of_apply]
-  have hij : i.val < p + q := i.isLt
-  have hjj : j.val < p + q := j.isLt
-  have h_revi_val : (Fin.rev i).val = p + q - 1 - i.val := by
-    rw [Fin.val_rev]; omega
-  have h_revj_val : (Fin.rev j).val = p + q - 1 - j.val := by
-    rw [Fin.val_rev]; omega
-  by_cases hi : i.val < q
-  · -- P-row branch. `(Fin.rev i).val ≥ p`, so addCases right.
-    rw [if_pos hi, Polynomial.coeff_X_pow_mul']
-    have h_natAdd : Fin.rev i = Fin.natAdd p ⟨q - 1 - i.val, by omega⟩ := by
-      apply Fin.ext
-      rw [h_revi_val]
-      show p + q - 1 - i.val = p + (q - 1 - i.val)
-      omega
-    conv_rhs => rw [h_natAdd]
-    rw [Fin.addCases_right]
-    simp only [Set.mem_Icc, h_revj_val]
-    split_ifs with h1 h2 h2
-    · -- Both conditions true. Compute the coefficient indices.
-      rfl
-    · -- LHS true, RHS false. RHS = 0, so need LHS coeff = 0.
-      apply Polynomial.coeff_eq_zero_of_natDegree_lt
-      push Not at h2
-      -- h1: q - 1 - i.val ≤ p + q - 1 - j.val.
-      -- h2: ¬(q - 1 - i.val ≤ p + q - 1 - j.val ∧ p + q - 1 - j.val ≤ q - 1 - i.val + p).
-      -- Combined with h1: ¬ p + q - 1 - j.val ≤ q - 1 - i.val + p.
-      -- Hence p + q - 1 - j.val > q - 1 - i.val + p, i.e., -j.val > -i.val, i.e., j.val < i.val.
-      -- Then p + q - 1 - j.val - (q - 1 - i.val) > p. So P.natDegree ≤ p < this. ✓
-      have := h2 h1
-      omega
-    · -- LHS false, RHS true. RHS coeff value = 0, so need 0 = 0.
-      -- LHS condition false means ¬ q - 1 - i.val ≤ p + q - 1 - j.val.
-      -- RHS conditions both hold; in particular the first means q - 1 - i.val ≤ p+q-1-j.val.
-      -- Contradiction.
-      exfalso
-      omega
-    · rfl
-  · -- Q-row branch. `(Fin.rev i).val < p`, so addCases left.
-    push Not at hi
-    rw [if_neg (not_lt.mpr hi), Polynomial.coeff_X_pow_mul']
-    have h_revi_lt : p + q - 1 - i.val < p := by omega
-    have h_castAdd : Fin.rev i = Fin.castAdd q ⟨p + q - 1 - i.val, h_revi_lt⟩ := by
-      apply Fin.ext
-      rw [h_revi_val]
-      rfl
-    conv_rhs => rw [h_castAdd]
-    rw [Fin.addCases_left]
-    simp only [Set.mem_Icc, h_revj_val]
-    split_ifs with h1 h2 h2
-    · -- Both conditions true.
-      rfl
-    · -- LHS true, RHS false.
-      apply Polynomial.coeff_eq_zero_of_natDegree_lt
-      push Not at h2
-      have := h2 h1
-      omega
-    · -- LHS false, RHS true. Contradiction.
-      exfalso
-      omega
-    · rfl
-
-/-- **Bridge.** Our `Res` agrees with Mathlib's `Polynomial.resultant`
-    when `P.natDegree ≤ p` and `Q.natDegree ≤ q`. -/
-theorem Res_eq_resultant (P Q : D[X]) (p q : ℕ)
-    (hP : P.natDegree ≤ p) (hQ : Q.natDegree ≤ q) :
-    Res P p Q q = Polynomial.resultant P Q p q := by
-  unfold Res Polynomial.resultant
-  rw [Syl_eq_sylvester_T_submatrix_rev P Q p q hP hQ]
-  rw [show ((Polynomial.sylvester P Q p q).transpose).submatrix
-        (Fin.rev : Fin (p + q) → _) (Fin.rev : Fin (p + q) → _)
-      = ((Polynomial.sylvester P Q p q).transpose).submatrix
-          (Fin.revPerm : Equiv.Perm (Fin (p + q)))
-          (Fin.revPerm : Equiv.Perm (Fin (p + q)))
-      from rfl]
-  rw [Matrix.det_submatrix_equiv_self Fin.revPerm]
-  exact Matrix.det_transpose _
-
 /-! ### Lemma 4.18 (Res part) -/
 
-/-- **BPR Lemma 4.18 (Res part).** For `P = C·Q + R` of formal degrees
-    `p, q, r` with `r ≤ p`, `R.natDegree ≤ r`, `Q.natDegree ≤ q`,
-    `P.natDegree ≤ p`, and `C.natDegree + q ≤ p`,
+/-- **BPR Lemma 4.18 (Res part).** For `P = C·Q + R` with `R.natDegree ≤
+    P.natDegree` and `C.natDegree + Q.natDegree ≤ P.natDegree`,
 
-      `Res(P, Q) = (-1)^{p·q} · b_q^{p-r} · Res(Q, R)`. -/
-theorem Lemma_4_18_Res (P Q C R : D[X]) (p q r : ℕ)
-    (h_P : P.natDegree ≤ p) (h_Q : Q.natDegree ≤ q)
-    (h_R : R.natDegree ≤ r) (h_r_le_p : r ≤ p)
-    (h_C : C.natDegree + q ≤ p)
+      `Res(P, Q) = (-1)^{p·q} · b_q^{p-r} · Res(Q, R)`,
+
+    where `p := P.natDegree`, `q := Q.natDegree`, `r := R.natDegree`,
+    and `b_q := Q.leadingCoeff`.
+
+    The hypothesis `C.natDegree + Q.natDegree ≤ P.natDegree` is exactly
+    BPR's ``$C$ is the quotient of $P/Q$'' (when `deg R < deg Q ≤ deg P`,
+    we have `deg(C·Q) = deg P` and so `deg C + deg Q = deg P`).
+    The hypothesis `R.natDegree ≤ P.natDegree` is implied by
+    `R.natDegree < Q.natDegree ≤ P.natDegree` in BPR's setting. -/
+theorem Lemma_4_18_Res (P Q C R : D[X])
+    (h_C : C.natDegree + Q.natDegree ≤ P.natDegree)
+    (h_R : R.natDegree ≤ P.natDegree)
     (h_decomp : P = C * Q + R) :
-    Res P p Q q =
-      (-1) ^ (p * q) * Q.coeff q ^ (p - r) * Res Q q R r := by
-  rw [Res_eq_resultant P Q p q h_P h_Q, Res_eq_resultant Q R q r h_Q h_R]
-  rw [h_decomp, show C * Q + R = R + Q * C from by ring]
-  rw [Polynomial.resultant_add_mul_left R Q C p q h_C h_Q]
-  rw [Polynomial.resultant_comm R Q p q]
-  rw [show (p : ℕ) = r + (p - r) from by omega]
-  rw [Polynomial.resultant_add_right_deg Q R q r (p - r) h_R]
-  rw [show r + (p - r) - r = p - r from by omega]
+    Res P Q =
+      (-1) ^ (P.natDegree * Q.natDegree) *
+        Q.leadingCoeff ^ (P.natDegree - R.natDegree) * Res Q R := by
+  -- Bridge both resultants to Mathlib's `Polynomial.resultant`.
+  rw [Res_eq_resultant P Q, Res_eq_resultant Q R]
+  -- Rewrite ONLY the first arg of the LHS resultant (the polynomial `P`):
+  -- replace it with `R + Q * C`, leaving `P.natDegree` intact.
+  have h_decomp' : P = R + Q * C := by rw [h_decomp]; ring
+  nth_rewrite 1 [h_decomp']
+  -- Apply `resultant_add_mul_left` to kill the `Q * C` term.
+  rw [Polynomial.resultant_add_mul_left R Q C P.natDegree Q.natDegree h_C le_rfl]
+  -- Apply `resultant_comm` to introduce `(-1)^{p*q}` and swap.
+  rw [Polynomial.resultant_comm R Q P.natDegree Q.natDegree]
+  -- Rewrite `P.natDegree = R.natDegree + (P.natDegree - R.natDegree)`,
+  -- then apply `resultant_add_right_deg` to introduce `b_q^{p-r}`.
+  rw [show P.natDegree = R.natDegree + (P.natDegree - R.natDegree) from by omega]
+  rw [Polynomial.resultant_add_right_deg Q R Q.natDegree R.natDegree
+        (P.natDegree - R.natDegree) le_rfl]
+  rw [show R.natDegree + (P.natDegree - R.natDegree) - R.natDegree =
+        P.natDegree - R.natDegree from by omega]
+  -- `Q.coeff Q.natDegree = Q.leadingCoeff`.
+  rw [show Q.coeff Q.natDegree = Q.leadingCoeff from rfl]
   ring
 
 /-! ### BPR notation Θ and Lemma 4.18 (Θ part) -/
@@ -173,29 +95,29 @@ theorem Θ_eq_resultant (P Q : K[X]) (q : ℕ) (hP : P.Splits)
   exact (Polynomial.resultant_eq_prod_eval P Q q hQ hP).symm
 
 /-- **BPR Lemma 4.18 (Θ part).** Under the same algebraic hypotheses as
-    the Res part plus the splitting hypotheses on `P` and `Q` (needed
-    for the BPR roots-based definition of `Θ` to capture all `p` roots
-    of `P` and all `q` roots of `Q`),
+    the Res part plus the splitting hypotheses on `P` and `Q`,
 
       `Θ(P, Q) = (-1)^{p·q} · b_q^{p-r} · Θ(Q, R)`. -/
-theorem Lemma_4_18_Theta (P Q C R : K[X]) (p q r : ℕ)
-    (h_P : P.natDegree = p) (h_Q : Q.natDegree = q)
-    (h_R : R.natDegree ≤ r) (h_r_le_p : r ≤ p)
-    (h_C : C.natDegree + q ≤ p)
+theorem Lemma_4_18_Theta (P Q C R : K[X])
+    (h_C : C.natDegree + Q.natDegree ≤ P.natDegree)
+    (h_R : R.natDegree ≤ P.natDegree)
     (h_P_splits : P.Splits) (h_Q_splits : Q.Splits)
     (h_decomp : P = C * Q + R) :
-    Θ P Q q = (-1) ^ (p * q) * Q.leadingCoeff ^ (p - r) * Θ Q R r := by
-  rw [Θ_eq_resultant P Q q h_P_splits (h_Q ▸ le_refl q),
-      Θ_eq_resultant Q R r h_Q_splits h_R]
-  rw [h_P, h_Q]
-  rw [h_decomp, show C * Q + R = R + Q * C from by ring]
-  rw [Polynomial.resultant_add_mul_left R Q C p q h_C (h_Q ▸ le_refl q)]
-  rw [Polynomial.resultant_comm R Q p q]
-  rw [show (p : ℕ) = r + (p - r) from by omega]
-  rw [Polynomial.resultant_add_right_deg Q R q r (p - r) h_R]
-  rw [show r + (p - r) - r = p - r from by omega]
-  -- Note: `Q.coeff q = Q.leadingCoeff` since `Q.natDegree = q`.
-  rw [show Q.coeff q = Q.leadingCoeff from by rw [← h_Q]; rfl]
+    Θ P Q Q.natDegree =
+      (-1) ^ (P.natDegree * Q.natDegree) *
+        Q.leadingCoeff ^ (P.natDegree - R.natDegree) * Θ Q R R.natDegree := by
+  rw [Θ_eq_resultant P Q Q.natDegree h_P_splits le_rfl,
+      Θ_eq_resultant Q R R.natDegree h_Q_splits le_rfl]
+  have h_decomp' : P = R + Q * C := by rw [h_decomp]; ring
+  nth_rewrite 1 [h_decomp']
+  rw [Polynomial.resultant_add_mul_left R Q C P.natDegree Q.natDegree h_C le_rfl]
+  rw [Polynomial.resultant_comm R Q P.natDegree Q.natDegree]
+  rw [show P.natDegree = R.natDegree + (P.natDegree - R.natDegree) from by omega]
+  rw [Polynomial.resultant_add_right_deg Q R Q.natDegree R.natDegree
+        (P.natDegree - R.natDegree) le_rfl]
+  rw [show R.natDegree + (P.natDegree - R.natDegree) - R.natDegree =
+        P.natDegree - R.natDegree from by omega]
+  rw [show Q.coeff Q.natDegree = Q.leadingCoeff from rfl]
   ring
 
 end Theta

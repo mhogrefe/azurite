@@ -4,10 +4,10 @@ import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 /-!
 # BPR Lemma 4.15: vanishing resultant criterion
 
-For non-zero polynomials `P, Q : D[X]` over a domain `D` of degrees
-`p, q`, the resultant `Res(P, Q)` vanishes iff there exist non-zero
-polynomials `U, V : D[X]` with `natDegree U < q`, `natDegree V < p`,
-and `U · P + V · Q = 0`.
+For non-zero polynomials `P, Q : D[X]` over a domain `D` (of degrees
+`p := P.natDegree`, `q := Q.natDegree`), the resultant `Res(P, Q)`
+vanishes iff there exist non-zero polynomials `U, V : D[X]` with
+`natDegree U < q`, `natDegree V < p`, and `U · P + V · Q = 0`.
 -/
 
 namespace Azurite.BPR.Chapter4
@@ -18,9 +18,13 @@ variable {D : Type*} [CommRing D]
 
 /-! ### Encoding a coordinate vector as a polynomial pair -/
 
+/-- Encode the first `q` entries of a coordinate vector
+    `uv : Fin (p + q) → D` as a polynomial `U` of `natDegree < q`. -/
 noncomputable def Syl.encodeU (p q : ℕ) (uv : Fin (p + q) → D) : D[X] :=
   ∑ k : Fin q, C (uv ⟨k.val, by have := k.isLt; omega⟩) * X ^ (q - 1 - k.val)
 
+/-- Encode the last `p` entries of a coordinate vector
+    `uv : Fin (p + q) → D` as a polynomial `V` of `natDegree < p`. -/
 noncomputable def Syl.encodeV (p q : ℕ) (uv : Fin (p + q) → D) : D[X] :=
   ∑ ℓ : Fin p, C (uv ⟨q + ℓ.val, by have := ℓ.isLt; omega⟩) *
     X ^ (p - 1 - ℓ.val)
@@ -105,13 +109,11 @@ private lemma Fin_sum_split_at {M : Type*} [AddCommMonoid M] (p q : ℕ)
     ∑ j : Fin (p + q), f j =
       (∑ k : Fin q, f ⟨k.val, by have := k.isLt; omega⟩) +
       (∑ ℓ : Fin p, f ⟨q + ℓ.val, by have := ℓ.isLt; omega⟩) := by
-  -- Use Finset.sum_filter_add_sum_filter_not with predicate j.val < q.
   classical
   rw [← Finset.sum_filter_add_sum_filter_not (Finset.univ : Finset (Fin (p + q)))
       (·.val < q) f]
   congr 1
-  · -- Bijection: filter (·.val < q) ↔ Fin q.
-    apply Finset.sum_bij
+  · apply Finset.sum_bij
       (fun (j : Fin (p + q)) (h : j ∈ _) =>
         (⟨j.val, by
           rw [Finset.mem_filter] at h
@@ -129,8 +131,7 @@ private lemma Fin_sum_split_at {M : Type*} [AddCommMonoid M] (p q : ℕ)
       apply congrArg
       apply Fin.ext
       rfl
-  · -- Bijection: filter (¬·.val < q) ↔ Fin p.
-    apply Finset.sum_bij
+  · apply Finset.sum_bij
       (fun (j : Fin (p + q)) (h : j ∈ _) =>
         (⟨j.val - q, by
           rw [Finset.mem_filter] at h
@@ -163,67 +164,80 @@ private lemma Fin_sum_split_at {M : Type*} [AddCommMonoid M] (p q : ℕ)
 
 /-! ### `mulMap` decomposes as `encodeU * P + encodeV * Q` -/
 
-theorem Syl.mulMap_eq_pair (P : D[X]) (p q : ℕ) (Q : D[X])
-    (uv : Fin (p + q) → D) :
-    Syl.mulMap P p Q q uv =
-      Syl.encodeU p q uv * P + Syl.encodeV p q uv * Q := by
+theorem Syl.mulMap_eq_pair (P Q : D[X])
+    (uv : Fin (P.natDegree + Q.natDegree) → D) :
+    Syl.mulMap P Q uv =
+      Syl.encodeU P.natDegree Q.natDegree uv * P +
+      Syl.encodeV P.natDegree Q.natDegree uv * Q := by
   apply Polynomial.ext
   intro n
   unfold Syl.mulMap
   rw [Polynomial.finsetSum_coeff]
   rw [Polynomial.coeff_add]
-  -- RHS: (encodeU * P).coeff n + (encodeV * Q).coeff n.
-  -- Expand each:
-  have h_eU : (Syl.encodeU p q uv * P).coeff n =
-      ∑ k : Fin q, uv ⟨k.val, by have := k.isLt; omega⟩ *
-        (X ^ (q - 1 - k.val) * P).coeff n := by
+  have h_eU : (Syl.encodeU P.natDegree Q.natDegree uv * P).coeff n =
+      ∑ k : Fin Q.natDegree,
+        uv ⟨k.val, by have := k.isLt; omega⟩ *
+        (X ^ (Q.natDegree - 1 - k.val) * P).coeff n := by
     unfold Syl.encodeU
     rw [Finset.sum_mul, Polynomial.finsetSum_coeff]
     apply Finset.sum_congr rfl
     intro k _
     rw [mul_assoc, Polynomial.coeff_C_mul]
-  have h_eV : (Syl.encodeV p q uv * Q).coeff n =
-      ∑ ℓ : Fin p, uv ⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ *
-        (X ^ (p - 1 - ℓ.val) * Q).coeff n := by
+  have h_eV : (Syl.encodeV P.natDegree Q.natDegree uv * Q).coeff n =
+      ∑ ℓ : Fin P.natDegree,
+        uv ⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ *
+        (X ^ (P.natDegree - 1 - ℓ.val) * Q).coeff n := by
     unfold Syl.encodeV
     rw [Finset.sum_mul, Polynomial.finsetSum_coeff]
     apply Finset.sum_congr rfl
     intro ℓ _
     rw [mul_assoc, Polynomial.coeff_C_mul]
   rw [h_eU, h_eV]
-  -- Now split LHS sum at q.
-  rw [Fin_sum_split_at p q]
+  rw [Fin_sum_split_at P.natDegree Q.natDegree]
   congr 1
-  · -- First half (k < q): condition j.val < q is true.
-    apply Finset.sum_congr rfl
+  · apply Finset.sum_congr rfl
     intro k _
-    have h_lt : (⟨k.val, by have := k.isLt; omega⟩ : Fin (p + q)).val < q :=
-      k.isLt
+    have h_lt :
+        (⟨k.val, by have := k.isLt; omega⟩ : Fin (P.natDegree + Q.natDegree)).val
+        < Q.natDegree := k.isLt
     show (C (uv ⟨k.val, by have := k.isLt; omega⟩) *
-        if (⟨k.val, by have := k.isLt; omega⟩ : Fin (p + q)).val < q then
-          X ^ (q - 1 - (⟨k.val, by have := k.isLt; omega⟩ : Fin (p + q)).val) * P
+        if (⟨k.val, by have := k.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val < Q.natDegree then
+          X ^ (Q.natDegree - 1 -
+            (⟨k.val, by have := k.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val) * P
         else
-          X ^ (p + q - 1 - (⟨k.val, by have := k.isLt; omega⟩ : Fin (p + q)).val) * Q).coeff n =
+          X ^ (P.natDegree + Q.natDegree - 1 -
+            (⟨k.val, by have := k.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val) * Q).coeff n =
       _
     rw [if_pos h_lt]
     rw [Polynomial.coeff_C_mul]
-  · -- Second half (q ≤ j.val): condition j.val < q is false.
-    apply Finset.sum_congr rfl
+  · apply Finset.sum_congr rfl
     intro ℓ _
-    have h_not_lt : ¬ (⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ : Fin (p + q)).val < q := by
-      show ¬ q + ℓ.val < q
+    have h_not_lt : ¬ (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
+                       Fin (P.natDegree + Q.natDegree)).val < Q.natDegree := by
+      show ¬ Q.natDegree + ℓ.val < Q.natDegree
       omega
-    show (C (uv ⟨q + ℓ.val, by have := ℓ.isLt; omega⟩) *
-        if (⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ : Fin (p + q)).val < q then
-          X ^ (q - 1 - (⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ : Fin (p + q)).val) * P
+    show (C (uv ⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩) *
+        if (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val < Q.natDegree then
+          X ^ (Q.natDegree - 1 -
+            (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val) * P
         else
-          X ^ (p + q - 1 - (⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ : Fin (p + q)).val) * Q).coeff n =
+          X ^ (P.natDegree + Q.natDegree - 1 -
+            (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
+              Fin (P.natDegree + Q.natDegree)).val) * Q).coeff n =
       _
     rw [if_neg h_not_lt]
     rw [Polynomial.coeff_C_mul]
-    have h_idx : p + q - 1 - (⟨q + ℓ.val, by have := ℓ.isLt; omega⟩ : Fin (p + q)).val =
-        p - 1 - ℓ.val := by
-      show p + q - 1 - (q + ℓ.val) = p - 1 - ℓ.val
+    have h_idx : P.natDegree + Q.natDegree - 1 -
+        (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
+          Fin (P.natDegree + Q.natDegree)).val =
+        P.natDegree - 1 - ℓ.val := by
+      show P.natDegree + Q.natDegree - 1 - (Q.natDegree + ℓ.val) =
+        P.natDegree - 1 - ℓ.val
       have := ℓ.isLt; omega
     rw [h_idx]
 
@@ -237,7 +251,6 @@ theorem Syl.encodeU_natDegree_lt (p q : ℕ) (uv : Fin (p + q) → D) (hq : 0 < 
   apply Nat.lt_of_lt_of_le _ (le_refl q)
   by_contra h_ge
   push Not at h_ge
-  -- natDegree ≥ q means there's a nonzero coefficient at some position ≥ q.
   have h_le_max : q ≤ (Syl.encodeU p q uv).natDegree := h_ge
   have h_coeff : (Syl.encodeU p q uv).coeff (Syl.encodeU p q uv).natDegree = 0 :=
     Syl.encodeU_coeff_of_ge p q uv _ h_le_max
@@ -261,17 +274,15 @@ theorem Syl.encodeV_natDegree_lt (p q : ℕ) (uv : Fin (p + q) → D) (hp : 0 < 
   · exact Polynomial.leadingCoeff_ne_zero.mpr h_zero h_coeff
 
 omit [Nontrivial D] in
-theorem Syl.mulMap_natDegree_lt (P : D[X]) (p q : ℕ) (Q : D[X])
-    (uv : Fin (p + q) → D)
-    (hPp : P.natDegree ≤ p) (hQq : Q.natDegree ≤ q) (hpq : 0 < p + q) :
-    (Syl.mulMap P p Q q uv).natDegree < p + q := by
+theorem Syl.mulMap_natDegree_lt (P Q : D[X])
+    (uv : Fin (P.natDegree + Q.natDegree) → D)
+    (hpq : 0 < P.natDegree + Q.natDegree) :
+    (Syl.mulMap P Q uv).natDegree < P.natDegree + Q.natDegree := by
   rw [Syl.mulMap_eq_pair]
   refine Nat.lt_of_le_of_lt (Polynomial.natDegree_add_le _ _) ?_
   refine max_lt ?_ ?_
-  · -- (encodeU * P).natDegree < p + q.
-    rcases Nat.eq_zero_or_pos q with hq | hq
-    · -- q = 0: encodeU is the empty sum, so encodeU * P = 0.
-      have h_eu_zero : Syl.encodeU p q uv = 0 := by
+  · rcases Nat.eq_zero_or_pos Q.natDegree with hq | hq
+    · have h_eu_zero : Syl.encodeU P.natDegree Q.natDegree uv = 0 := by
         unfold Syl.encodeU
         apply Finset.sum_eq_zero
         intro k _
@@ -280,13 +291,11 @@ theorem Syl.mulMap_natDegree_lt (P : D[X]) (p q : ℕ) (Q : D[X])
         omega
       rw [h_eu_zero, zero_mul, Polynomial.natDegree_zero]
       omega
-    · -- q > 0: use the degree bound.
-      refine Nat.lt_of_le_of_lt (Polynomial.natDegree_mul_le) ?_
-      have := Syl.encodeU_natDegree_lt p q uv hq
+    · refine Nat.lt_of_le_of_lt (Polynomial.natDegree_mul_le) ?_
+      have := Syl.encodeU_natDegree_lt P.natDegree Q.natDegree uv hq
       omega
-  · -- (encodeV * Q).natDegree < p + q.
-    rcases Nat.eq_zero_or_pos p with hp | hp
-    · have h_ev_zero : Syl.encodeV p q uv = 0 := by
+  · rcases Nat.eq_zero_or_pos P.natDegree with hp | hp
+    · have h_ev_zero : Syl.encodeV P.natDegree Q.natDegree uv = 0 := by
         unfold Syl.encodeV
         apply Finset.sum_eq_zero
         intro ℓ _
@@ -296,7 +305,7 @@ theorem Syl.mulMap_natDegree_lt (P : D[X]) (p q : ℕ) (Q : D[X])
       rw [h_ev_zero, zero_mul, Polynomial.natDegree_zero]
       omega
     · refine Nat.lt_of_le_of_lt (Polynomial.natDegree_mul_le) ?_
-      have := Syl.encodeV_natDegree_lt p q uv hp
+      have := Syl.encodeV_natDegree_lt P.natDegree Q.natDegree uv hp
       omega
 
 /-! ### `uv = 0` iff both encodings vanish -/
@@ -309,8 +318,7 @@ theorem Syl.encode_eq_zero_iff (p q : ℕ) (uv : Fin (p + q) → D) :
     funext j
     show uv j = (0 : Fin (p + q) → D) j
     by_cases h : j.val < q
-    · -- uv j = U.coeff (some) via encodeU = 0.
-      have h_uv_eq : uv j = (Syl.encodeU p q uv).coeff (q - 1 - j.val) := by
+    · have h_uv_eq : uv j = (Syl.encodeU p q uv).coeff (q - 1 - j.val) := by
         rw [Syl.encodeU_coeff p q uv (q - 1 - j.val) (by have := j.isLt; omega)]
         congr 1
         apply Fin.ext
@@ -340,7 +348,7 @@ theorem Syl.encode_eq_zero_iff (p q : ℕ) (uv : Fin (p + q) → D) :
 variable [IsDomain D] [DecidableEq D]
 
 /-- **BPR Lemma 4.15.** Over a domain `D`, the resultant `Res(P, Q)` of
-    non-zero `P, Q : D[X]` (with their actual degrees) vanishes if and
+    non-zero `P, Q : D[X]` (at their actual degrees) vanishes if and
     only if there exist non-zero polynomials `U, V : D[X]` with
     `U.natDegree < Q.natDegree`, `V.natDegree < P.natDegree`, and
     `U · P + V · Q = 0`.
@@ -352,7 +360,7 @@ variable [IsDomain D] [DecidableEq D]
     `Syl.mulMap_eq_pair` (`mulMap = encodeU·P + encodeV·Q`) + domain
     cancellation. -/
 theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
-    Res P P.natDegree Q Q.natDegree = 0 ↔
+    Res P Q = 0 ↔
       ∃ U V : D[X], U ≠ 0 ∧ V ≠ 0 ∧
         U.natDegree < Q.natDegree ∧ V.natDegree < P.natDegree ∧
         U * P + V * Q = 0 := by
@@ -361,16 +369,14 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
   set q := Q.natDegree with hq_def
   by_cases hpq_pos : 0 < p + q
   swap
-  · -- Edge case p = q = 0: P, Q are nonzero constants, Syl is 0×0, det = 1 ≠ 0.
-    push Not at hpq_pos
+  · push Not at hpq_pos
     have hpq0 : p + q = 0 := Nat.le_zero.mp hpq_pos
     have hq0 : q = 0 := by omega
     constructor
     · intro h_zero
       exfalso
-      -- Syl is a `Fin (p + q) × Fin (p + q) = Fin 0 × Fin 0` matrix.
-      have h_size_zero : (Syl P p Q q).det = 1 := by
-        rw [show (Syl P p Q q : Matrix (Fin (p + q)) (Fin (p + q)) D) = 1 from
+      have h_size_zero : (Syl P Q).det = 1 := by
+        rw [show (Syl P Q : Matrix (Fin (p + q)) (Fin (p + q)) D) = 1 from
             Matrix.ext (fun i _ => by have := i.isLt; omega)]
         exact Matrix.det_one
       unfold Res at h_zero
@@ -379,14 +385,12 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
     · rintro ⟨U, V, _, _, hUq, _, _⟩
       rw [hq0] at hUq
       exact absurd hUq (Nat.not_lt_zero _)
-  -- Main case: 0 < p + q.
-  rw [show Res P p Q q = (Syl P p Q q).transpose.det from by
+  rw [show Res P Q = (Syl P Q).transpose.det from by
     unfold Res; rw [Matrix.det_transpose]]
   rw [← Matrix.exists_mulVec_eq_zero_iff]
   constructor
-  · -- Forward direction: kernel → ∃ U, V.
-    rintro ⟨uv, h_ne, h_mul⟩
-    have h_mulMap_zero : Syl.mulMap P p Q q uv = 0 := by
+  · rintro ⟨uv, h_ne, h_mul⟩
+    have h_mulMap_zero : Syl.mulMap P Q uv = 0 := by
       apply Polynomial.ext
       intro k
       rw [Polynomial.coeff_zero]
@@ -395,15 +399,15 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
         have h_eq_k : p + q - 1 - (p + q - 1 - k) = k := by omega
         have h := congrFun h_mul ⟨p + q - 1 - k, h_hi⟩
         rw [Syl.transpose_mulVec_apply] at h
-        rw [show (⟨p + q - 1 - k, h_hi⟩ : Fin (p + q)).val = p + q - 1 - k from rfl, h_eq_k] at h
+        rw [show (⟨p + q - 1 - k, h_hi⟩ : Fin (p + q)).val = p + q - 1 - k from rfl,
+            h_eq_k] at h
         exact h
-      · have hd : (Syl.mulMap P p Q q uv).natDegree < p + q :=
-          Syl.mulMap_natDegree_lt P p q Q uv le_rfl le_rfl hpq_pos
+      · have hd : (Syl.mulMap P Q uv).natDegree < p + q :=
+          Syl.mulMap_natDegree_lt P Q uv hpq_pos
         exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
     rw [Syl.mulMap_eq_pair] at h_mulMap_zero
     set U := Syl.encodeU p q uv with hU_def
     set V := Syl.encodeV p q uv with hV_def
-    -- U ≠ 0 by domain cancellation.
     have h_U_nonzero : U ≠ 0 := by
       intro hU
       rw [hU, zero_mul, zero_add] at h_mulMap_zero
@@ -415,8 +419,7 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
       have hU_zero : U = 0 := (mul_eq_zero.mp h_mulMap_zero).resolve_right hP
       exact h_ne ((Syl.encode_eq_zero_iff p q uv).mp ⟨hU_zero, hV⟩)
     refine ⟨U, V, h_U_nonzero, h_V_nonzero, ?_, ?_, h_mulMap_zero⟩
-    · -- U.natDegree < q.
-      rcases Nat.eq_zero_or_pos q with hq0 | hq0
+    · rcases Nat.eq_zero_or_pos q with hq0 | hq0
       · exfalso
         apply h_U_nonzero
         rw [hU_def]
@@ -427,8 +430,7 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
         have := k.isLt
         omega
       · exact Syl.encodeU_natDegree_lt p q uv hq0
-    · -- V.natDegree < p.
-      rcases Nat.eq_zero_or_pos p with hp0 | hp0
+    · rcases Nat.eq_zero_or_pos p with hp0 | hp0
       · exfalso
         apply h_V_nonzero
         rw [hV_def]
@@ -439,15 +441,12 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
         have := ℓ.isLt
         omega
       · exact Syl.encodeV_natDegree_lt p q uv hp0
-  · -- Reverse direction: ∃ U, V → kernel.
-    rintro ⟨U, V, hU, hV, hUq, hVp, h_rel⟩
-    -- Build uv from U, V coefficients.
+  · rintro ⟨U, V, hU, hV, hUq, hVp, h_rel⟩
     let uv : Fin (p + q) → D := fun j =>
       if h : j.val < q then U.coeff (q - 1 - j.val)
       else V.coeff (p - 1 - (j.val - q))
     refine ⟨uv, ?_, ?_⟩
-    · -- uv ≠ 0.
-      intro h_uv_zero
+    · intro h_uv_zero
       apply hU
       apply Polynomial.ext
       intro m
@@ -465,10 +464,8 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
         rw [← h_uv_val, h]
         rfl
       · exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
-    · -- Sylᵀ.mulVec uv = 0.
-      funext i
+    · funext i
       rw [Syl.transpose_mulVec_apply]
-      -- Need: (mulMap P p Q q uv).coeff (p + q - 1 - i.val) = 0.
       have h_eU : Syl.encodeU p q uv = U := by
         apply Polynomial.ext
         intro m
