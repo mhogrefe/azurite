@@ -230,11 +230,14 @@ private lemma sum_powersetCard_aroots_eq_sum_finset_univ (P : K[X]) (k : ℕ)
 
 omit [IsAlgClosed C] in
 /-- **BPR Proposition 4.9**. For `P : K[X]` and `k ≤ (P.aroots C).card`,
-    the `(p - k)`-subdiscriminant of `P` equals the determinant of the
-    `k × k` Newton matrix `Newt_{p-k}(P)`. -/
+    the `(p - k)`-subdiscriminant of `P` is `a_p^{2k-2}` times the
+    determinant of the `k × k` Newton matrix `Newt_{p-k}(P)`. (For monic
+    `P`, the leading factor is `1`.) -/
 theorem proposition_4_9 (P : K[X]) (k : ℕ)
     (hk : k ≤ (P.aroots C).card) :
-    (sDisc P ((P.aroots C).card - k) : C) = (newtMat P k : Matrix (Fin k) (Fin k) C).det := by
+    (sDisc P ((P.aroots C).card - k) : C) =
+      algebraMap K C P.leadingCoeff ^ (2 * k - 2) *
+        (newtMat P k : Matrix (Fin k) (Fin k) C).det := by
   classical
   -- Step A: rewrite newtMat as V * V^T.
   rw [← vandermondeRect_mul_transpose_eq_newtMat]

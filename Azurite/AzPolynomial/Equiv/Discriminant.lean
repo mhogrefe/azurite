@@ -44,8 +44,11 @@ theorem discriminantMonic_toPoly (P : AzPolynomial K) (hMonic : P.Monic) :
   have hp_le : p ≤ (Q.aroots C).card := by rw [hcard]
   have h_prop49 := proposition_4_9 (C := C) Q p hp_le
   rw [hcard, Nat.sub_self] at h_prop49
-  rw [sDisc_zero_eq_disc] at h_prop49
-  -- h_prop49 : (disc Q : C) = (newtMat Q p).det
+  rw [sDisc_zero_eq_disc Q hQ_monic] at h_prop49
+  -- h_prop49 : disc Q = a_p^{2p-2} · (newtMat Q p).det. For monic Q the
+  -- leading factor is `1`.
+  rw [show (algebraMap K C) Q.leadingCoeff = 1 from by
+        rw [hQ_monic.leadingCoeff]; simp, one_pow, one_mul] at h_prop49
   rw [h_prop49]
   -- Goal: algebraMap K C P.discriminantMonic = (newtMat Q p).det
   unfold discriminantMonic
