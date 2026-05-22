@@ -250,10 +250,10 @@ theorem schoolbookSquareLimbs_size (a : Array UInt64) (lo len : Nat)
   rw [addDiagonalLimbs_size, doubleLimbs_size,
       schoolbookSquareLimbs.offDiag_size, Array.size_replicate]
 
-/-- Square an `AzNat` via `schoolbookSquareLimbs`. For benchmarking; callers
-    should normally use `a * a` (or `mul a a`) which dispatches to Karatsuba
-    above the threshold. -/
-def square (a : AzNat) : AzNat :=
+/-- Square an `AzNat` forced to use `schoolbookSquareLimbs`. For
+    benchmarking; once a dispatching `square` lands it should be preferred
+    by callers. -/
+def squareSchoolbook (a : AzNat) : AzNat :=
   ofLimbs (schoolbookSquareLimbs a.limbs 0 a.limbs.size
     (Nat.zero_add _ ▸ Nat.le_refl _))
 

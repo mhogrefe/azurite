@@ -4,8 +4,8 @@
 # n(n+1)/2 wideMul ops versus n² for the generic schoolbook product.
 
 benchmark = "az_nat_square"
-limit     = 200
-title     = "az_nat_square: square vs mulSchoolbook(a, a)"
+limit     = 2000
+title     = "az_nat_square: squareSchoolbook vs mulSchoolbook(a, a)"
 x_label   = "Input size (significant_bits of a)"
 
 [params]
