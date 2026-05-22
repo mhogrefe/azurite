@@ -1,8 +1,10 @@
 mod az_polynomial;
+mod run;
 
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
+use std::path::Path;
 use std::str::FromStr;
 
 use malachite_base::num::logic::traits::SignificantBits;
@@ -298,11 +300,31 @@ fn plot_two_series(
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
+fn print_usage(prog: &str) {
+    eprintln!("Usage:");
+    eprintln!("  {prog} run <config.toml>            # new config-driven flow");
+    eprintln!("  {prog} <benchmark> <input_file> [output_svg]   # legacy flow");
+    eprintln!("  legacy benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba,");
+    eprintln!("                     az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        print_usage(&args[0]);
+        std::process::exit(1);
+    }
+    // New config-driven flow: `benchmark-charts run <config.toml>`.
+    if args[1] == "run" {
+        if args.len() != 3 {
+            eprintln!("Usage: {} run <config.toml>", args[0]);
+            std::process::exit(1);
+        }
+        return run::run_from_config(Path::new(&args[2]));
+    }
+    // Legacy flow: `benchmark-charts <name> <input_file> [output_svg]`.
     if args.len() < 3 {
-        eprintln!("Usage: {} <benchmark> <input_file> [output_svg]", args[0]);
-        eprintln!("  benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
+        print_usage(&args[0]);
         std::process::exit(1);
     }
     let benchmark = &args[1];

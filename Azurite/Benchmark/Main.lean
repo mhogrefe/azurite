@@ -5,6 +5,7 @@ import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzNatMul
 import Azurite.Benchmark.AzNatMulCompare
+import Azurite.Benchmark.AzNatSquare
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.AzPolynomial.Tune
 import Azurite.AzNat.Tune
@@ -22,6 +23,7 @@ def parseConfig (s : String) : Std.HashMap String String :=
 def validBenchmarks : List String :=
   ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
    "az_nat_add", "az_nat_sub", "az_nat_mul", "az_nat_mul_compare", "az_nat_div_mod",
+   "az_nat_square",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat"]
 
@@ -45,6 +47,7 @@ def main (args : List String) : IO Unit := do
       | "az_nat_mul" => runAzNatMul limit cfg seed
       | "az_nat_mul_compare" => runAzNatMulCompare limit cfg seed
       | "az_nat_div_mod" => runAzNatDivMod limit cfg seed
+      | "az_nat_square" => runAzNatSquare limit cfg seed
       | "tune_karatsuba" =>
         let meanDegree := configGetRat cfg "meanDegree" 256
         let nPairs := configGetNat cfg "nPairs" 200

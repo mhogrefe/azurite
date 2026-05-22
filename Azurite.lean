@@ -557,6 +557,7 @@ import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMul
 import Azurite.Benchmark.AzNatMulCompare
+import Azurite.Benchmark.AzNatSquare
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
