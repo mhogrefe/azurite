@@ -182,6 +182,7 @@ import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
+import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
@@ -196,6 +197,7 @@ import Azurite.AzNat.Equiv.Div.DivModLimb
 import Azurite.AzNat.Equiv.Div.DivModLimb2
 import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.SubMulLimbs
+import Azurite.AzNat.Equiv.DivBy6
 import Azurite.AzNat.Equiv.DivMod10p19
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.GetBits
@@ -206,6 +208,7 @@ import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.Mul.ToomCook3
 import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
@@ -232,6 +235,7 @@ import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Mul.Schoolbook
+import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2

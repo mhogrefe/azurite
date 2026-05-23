@@ -1,5 +1,6 @@
 import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.Mul.Karatsuba
+import Azurite.AzNat.Mul.ToomCook3
 
 namespace Azurite.AzNat
 
@@ -108,5 +109,26 @@ def mulKaratsuba (threshold : Nat) (a b : AzNat) : AzNat :=
       have h := Nat.le_max_right a.limbs.size b.limbs.size
       omega
     ofLimbs (karatsubaMulLimbs threshold aPadded bPadded 0 0 n hA hB)
+
+/-- Multiplication of `AzNat`s forced to use Toom-Cook 3-way.  Pads the
+    shorter operand with high zero limbs.  For benchmarking; the threshold
+    is the recursion fallback to Karatsuba (set to ≥ 3). -/
+def mulToomCook3 (threshold : Nat) (a b : AzNat) : AzNat :=
+  if a.limbs.size = 0 ∨ b.limbs.size = 0 then 0
+  else
+    let n := max a.limbs.size b.limbs.size
+    let aPadded : Array UInt64 := a.limbs ++ Array.replicate (n - a.limbs.size) 0
+    let bPadded : Array UInt64 := b.limbs ++ Array.replicate (n - b.limbs.size) 0
+    have hA : 0 + n ≤ aPadded.size := by
+      show 0 + n ≤ (a.limbs ++ Array.replicate (n - a.limbs.size) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have h := Nat.le_max_left a.limbs.size b.limbs.size
+      omega
+    have hB : 0 + n ≤ bPadded.size := by
+      show 0 + n ≤ (b.limbs ++ Array.replicate (n - b.limbs.size) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have h := Nat.le_max_right a.limbs.size b.limbs.size
+      omega
+    ofLimbs (toomCook3MulLimbs threshold aPadded bPadded 0 0 n hA hB)
 
 end Azurite.AzNat

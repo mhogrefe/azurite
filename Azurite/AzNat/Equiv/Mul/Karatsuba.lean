@@ -1332,7 +1332,7 @@ theorem karatsubaMulLimbs_toNat (threshold : Nat) (a b : Array UInt64)
 
 /-- `toNat` of an array followed by zero-limb padding equals `toNat` of the
     original array. -/
-private lemma toNatLimbsList_append_zeros (l : List UInt64) (k : Nat) :
+lemma toNatLimbsList_append_zeros (l : List UInt64) (k : Nat) :
     toNatLimbsList (l ++ List.replicate k 0) = toNatLimbsList l := by
   rw [toNatLimbsList_append]
   have h_zero : toNatLimbsList (List.replicate k (0 : UInt64)) = 0 := by
