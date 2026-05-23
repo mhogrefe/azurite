@@ -1,4 +1,4 @@
-import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.Mul.ToomCook3
 
 namespace Azurite.AzNat
 

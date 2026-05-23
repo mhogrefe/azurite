@@ -1,0 +1,37 @@
+# Benchmark: Karatsuba vs Toom-Cook 3-way AzNat multiplication.
+#
+# Both operate on the same random `(a, b)` pairs.  Both pad the shorter
+# operand with high zero limbs so the slices have equal length.
+# `mulKaratsuba` recurses with schoolbook leaves at `karatsubaThreshold`;
+# `mulToomCook3` recurses with Karatsuba leaves at `toomCook3Threshold`.
+#
+# Mean bit length is set higher than `az_nat_mul_algorithms` (the
+# Schoolbook-vs-Karatsuba sweep), since the Karatsuba ↔ Toom-Cook 3
+# crossover is far up the size scale.
+#
+# Produces two charts:
+#   az_nat_mul_algorithms_toomcook3.svg          — median ns/op vs (bits(a) + bits(b))
+#   az_nat_mul_algorithms_toomcook3_heatmap.svg  — which algorithm wins at each
+#                                                 (bits(a), bits(b)) cell
+
+benchmark = "az_nat_mul_algorithms_toomcook3"
+limit     = 2000
+
+[params]
+meanBitLength      = 16384
+iters              = 10
+karatsubaThreshold = 16
+toomCook3Threshold = 32
+
+[[chart]]
+type    = "line"
+title   = "az_nat_mul_algorithms_toomcook3: Karatsuba vs Toom-Cook 3"
+x_label = "Input size (significant_bits of a + b)"
+
+[[chart]]
+type          = "heatmap"
+title         = "az_nat_mul_algorithms_toomcook3: which is faster (log₂ ratio)"
+x_label       = "significant_bits(a)"
+y_label       = "significant_bits(b)"
+output_suffix = "_heatmap"
+comparison    = ["Karatsuba", "ToomCook3"]

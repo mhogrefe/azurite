@@ -1,6 +1,6 @@
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.LimbDigits
-import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.Mul.ToomCook3
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbDigits
 import Azurite.UInt64.Equiv.MaxPow

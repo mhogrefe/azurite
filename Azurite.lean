@@ -564,6 +564,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMulAlgorithms
+import Azurite.Benchmark.AzNatMulAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatMulVsNat
 import Azurite.Benchmark.AzNatSquareAlgorithms
 import Azurite.Benchmark.AzNatSquareVsMul

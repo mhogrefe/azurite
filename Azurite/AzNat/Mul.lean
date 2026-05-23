@@ -20,21 +20,29 @@ def mulDispatchThreshold : Nat := 16
 def mulDispatchKNum : Nat := 1
 def mulDispatchKDen : Nat := 4
 
-/-- Parametrized limb-level dispatcher (used directly by `Tune`).  Dispatches
-    between `schoolbookMulLimbs` and `karatsubaMulLimbs` based on:
+/-- Default cutoff (in 64-bit limbs) for switching Karatsuba → Toom-Cook 3.
+    Tuned via `tune_aznat_mul_toomcook3`: at `lenMax ≥ 256` limbs (≈ 16384
+    bits per operand), Toom-Cook 3 starts winning over Karatsuba.  Below
+    256, the sweep is flat (no penalty for staying with Karatsuba);
+    above 384, forcing Karatsuba on large pairs becomes measurably slower. -/
+def mulDispatchToomCook3Cutoff : Nat := 256
 
-    * `lenMin ≥ minThreshold`  — both operands have non-trivial size, AND
-    * `kDen · lenMin ≥ kNum · lenMax`  — the shorter operand is not too short
-      relative to the longer (ratio `kNum/kDen`).
+/-- Parametrized limb-level dispatcher (used directly by `Tune`).  Three-way
+    dispatch:
 
-    Both criteria must hold to pick Karatsuba; otherwise schoolbook. -/
-def mulLimbsParam (minThreshold kNum kDen : Nat)
+    * If `lenMin < minThreshold` OR `kDen · lenMin < kNum · lenMax`
+      (too-short or too-unbalanced operands): `schoolbookMulLimbs` on the
+      original (unpadded) slices.
+    * Else if `lenMax < toomCook3Cutoff` (balanced but not too big):
+      `karatsubaMulLimbs` on the lenMax-padded slices.
+    * Else (balanced and big): `toomCook3MulLimbs` on the same padded slices. -/
+def mulLimbsParam (minThreshold kNum kDen toomCook3Cutoff : Nat)
     (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
   let lenMax := max lenA lenB
   let lenMin := min lenA lenB
   if minThreshold ≤ lenMin && kDen * lenMin ≥ kNum * lenMax then
-    -- Karatsuba branch: extract slices, pad to lenMax, recurse.
+    -- Balanced: extract slices, pad to lenMax, then pick Karatsuba or Toom-Cook 3.
     let aSlice : Array UInt64 := a.extract loA (loA + lenA)
     let bSlice : Array UInt64 := b.extract loB (loB + lenB)
     let aPadded : Array UInt64 := aSlice ++ Array.replicate (lenMax - lenA) 0
@@ -55,21 +63,25 @@ def mulLimbsParam (minThreshold kNum kDen : Nat)
         rw [Array.size_extract]; omega
       have hMax : lenB ≤ lenMax := Nat.le_max_right _ _
       omega
-    karatsubaMulLimbs minThreshold aPadded bPadded 0 0 lenMax hA' hB'
+    if toomCook3Cutoff ≤ lenMax then
+      -- Toom-Cook 3 with cutoff `toomCook3Cutoff` for self-recursion, falling
+      -- back to Karatsuba (with its own tuned schoolbook threshold) below.
+      toomCook3MulLimbs toomCook3Cutoff minThreshold aPadded bPadded 0 0 lenMax hA' hB'
+    else
+      karatsubaMulLimbs minThreshold aPadded bPadded 0 0 lenMax hA' hB'
   else
     schoolbookMulLimbs a b loA lenA loB lenB hA hB
 
-/-- Limb-level multiplication using the default `(mulDispatchThreshold,
-    mulDispatchKNum / mulDispatchKDen)` parameters. -/
+/-- Limb-level multiplication using the default dispatch parameters. -/
 def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
   mulLimbsParam mulDispatchThreshold mulDispatchKNum mulDispatchKDen
-    a b loA lenA loB lenB hA hB
+    mulDispatchToomCook3Cutoff a b loA lenA loB lenB hA hB
 
 /-- AzNat wrapper for `mulLimbsParam`; lets the tuner sweep the dispatch
     parameters. -/
-def mulDispatchParam (minThreshold kNum kDen : Nat) (a b : AzNat) : AzNat :=
-  ofLimbs (mulLimbsParam minThreshold kNum kDen
+def mulDispatchParam (minThreshold kNum kDen toomCook3Cutoff : Nat) (a b : AzNat) : AzNat :=
+  ofLimbs (mulLimbsParam minThreshold kNum kDen toomCook3Cutoff
     a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
     (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
 
@@ -111,9 +123,10 @@ def mulKaratsuba (threshold : Nat) (a b : AzNat) : AzNat :=
     ofLimbs (karatsubaMulLimbs threshold aPadded bPadded 0 0 n hA hB)
 
 /-- Multiplication of `AzNat`s forced to use Toom-Cook 3-way.  Pads the
-    shorter operand with high zero limbs.  For benchmarking; the threshold
-    is the recursion fallback to Karatsuba (set to ≥ 3). -/
-def mulToomCook3 (threshold : Nat) (a b : AzNat) : AzNat :=
+    shorter operand with high zero limbs.  For benchmarking; the
+    `toomThreshold` is the recursion fallback to Karatsuba (set to ≥ 3),
+    and `karaThreshold` is forwarded to Karatsuba's schoolbook fallback. -/
+def mulToomCook3 (toomThreshold karaThreshold : Nat) (a b : AzNat) : AzNat :=
   if a.limbs.size = 0 ∨ b.limbs.size = 0 then 0
   else
     let n := max a.limbs.size b.limbs.size
@@ -129,6 +142,6 @@ def mulToomCook3 (threshold : Nat) (a b : AzNat) : AzNat :=
       rw [Array.size_append, Array.size_replicate]
       have h := Nat.le_max_right a.limbs.size b.limbs.size
       omega
-    ofLimbs (toomCook3MulLimbs threshold aPadded bPadded 0 0 n hA hB)
+    ofLimbs (toomCook3MulLimbs toomThreshold karaThreshold aPadded bPadded 0 0 n hA hB)
 
 end Azurite.AzNat

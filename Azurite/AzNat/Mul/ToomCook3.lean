@@ -138,12 +138,12 @@ def toomCook3Interpolate (v0_az v1_az v2_az vm1_az vinf_az : AzNat)
 
 /-- Recursive Toom-Cook 3-way multiplication of two equal-length slices.
     Falls back to `karatsubaMulLimbs` when `len < threshold`. -/
-def toomCook3MulLimbsRec (threshold : Nat) (a b : Array UInt64)
+def toomCook3MulLimbsRec (toomThreshold karaThreshold : Nat) (a b : Array UInt64)
     (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
     { c : Array UInt64 // c.size = 2 * len } :=
-  if h_base : len < threshold ∨ len < 3 then
-    ⟨karatsubaMulLimbs threshold a b loA loB len hA hB, by
+  if h_base : len < toomThreshold ∨ len < 3 then
+    ⟨karatsubaMulLimbs karaThreshold a b loA loB len hA hB, by
       rw [karatsubaMulLimbs_size]⟩
   else
     have hlen : 3 ≤ len := by omega
@@ -161,9 +161,10 @@ def toomCook3MulLimbsRec (threshold : Nat) (a b : Array UInt64)
     have hA2 : (loA + 2 * k) + m ≤ a.size := by omega
     have hB2 : (loB + 2 * k) + m ≤ b.size := by omega
     -- v_0 = a_0 · b_0
-    let v0 := toomCook3MulLimbsRec threshold a b loA loB k hA0 hB0
+    let v0 := toomCook3MulLimbsRec toomThreshold karaThreshold a b loA loB k hA0 hB0
     -- v_∞ = a_2 · b_2
-    let vinf := toomCook3MulLimbsRec threshold a b (loA + 2 * k) (loB + 2 * k) m hA2 hB2
+    let vinf := toomCook3MulLimbsRec toomThreshold karaThreshold a b
+                  (loA + 2 * k) (loB + 2 * k) m hA2 hB2
     -- Evaluation sums (k+1 limbs each).
     let s0a := sum012 a loA k m
     let s0b := sum012 b loB k m
@@ -187,9 +188,12 @@ def toomCook3MulLimbsRec (threshold : Nat) (a b : Array UInt64)
     have hda : 0 + (k + 1) ≤ da.1.size := diffM1_size_ge _ _ _ _
     have hdb : 0 + (k + 1) ≤ db.1.size := diffM1_size_ge _ _ _ _
     -- v_1, v_2, v_-1 (each (k+1) × (k+1) → 2(k+1) limbs).
-    let v1 := toomCook3MulLimbsRec threshold s0a s0b 0 0 (k + 1) hs0a hs0b
-    let v2 := toomCook3MulLimbsRec threshold s2a s2b 0 0 (k + 1) hs2a hs2b
-    let vm1 := toomCook3MulLimbsRec threshold da.1 db.1 0 0 (k + 1) hda hdb
+    let v1 := toomCook3MulLimbsRec toomThreshold karaThreshold
+                s0a s0b 0 0 (k + 1) hs0a hs0b
+    let v2 := toomCook3MulLimbsRec toomThreshold karaThreshold
+                s2a s2b 0 0 (k + 1) hs2a hs2b
+    let vm1 := toomCook3MulLimbsRec toomThreshold karaThreshold
+                 da.1 db.1 0 0 (k + 1) hda hdb
     -- Interpolation factored out into a non-recursive helper.
     let result := toomCook3Interpolate (ofLimbs v0.1) (ofLimbs v1.1) (ofLimbs v2.1)
                     (ofLimbs vm1.1) (ofLimbs vinf.1) (da.2 == db.2) k
@@ -200,17 +204,18 @@ def toomCook3MulLimbsRec (threshold : Nat) (a b : Array UInt64)
     all_goals omega
 
 /-- Toom-Cook 3-way multiplication, mirroring the signature shape of
-    `schoolbookMulLimbs` (a single shared `len`). Falls back to Karatsuba
-    when `len < threshold`. -/
-def toomCook3MulLimbs (threshold : Nat) (a b : Array UInt64)
+    `schoolbookMulLimbs` (a single shared `len`).  `toomThreshold` is when
+    Toom-Cook 3 stops splitting and falls back to Karatsuba; `karaThreshold`
+    is the schoolbook-fallback threshold passed through to Karatsuba. -/
+def toomCook3MulLimbs (toomThreshold karaThreshold : Nat) (a b : Array UInt64)
     (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) : Array UInt64 :=
-  (toomCook3MulLimbsRec threshold a b loA loB len hA hB).1
+  (toomCook3MulLimbsRec toomThreshold karaThreshold a b loA loB len hA hB).1
 
-theorem toomCook3MulLimbs_size (threshold : Nat) (a b : Array UInt64)
+theorem toomCook3MulLimbs_size (toomThreshold karaThreshold : Nat) (a b : Array UInt64)
     (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
-    (toomCook3MulLimbs threshold a b loA loB len hA hB).size = 2 * len :=
-  (toomCook3MulLimbsRec threshold a b loA loB len hA hB).2
+    (toomCook3MulLimbs toomThreshold karaThreshold a b loA loB len hA hB).size = 2 * len :=
+  (toomCook3MulLimbsRec toomThreshold karaThreshold a b loA loB len hA hB).2
 
 end Azurite.AzNat

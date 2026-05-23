@@ -566,10 +566,11 @@ theorem toomCook3Interpolate_toNat (v0_az v1_az v2_az vm1_az vinf_az : AzNat)
     case delegates to Karatsuba; recursive case applies the IH to each of
     the five sub-products and assembles via `toomCook3Interpolate_toNat`
     + `toomCook3_nat_identity`. -/
-theorem toomCook3MulLimbsRec_toNat (threshold : Nat) :
+theorem toomCook3MulLimbsRec_toNat (toomThreshold karaThreshold : Nat) :
     ∀ (len : Nat) (a b : Array UInt64) (loA loB : Nat)
       (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size),
-    toNatLimbsList (toomCook3MulLimbsRec threshold a b loA loB len hA hB).val.toList
+    toNatLimbsList
+        (toomCook3MulLimbsRec toomThreshold karaThreshold a b loA loB len hA hB).val.toList
       = toNatLimbsList ((a.toList.drop loA).take len)
         * toNatLimbsList ((b.toList.drop loB).take len) := by
   intro len
@@ -577,9 +578,9 @@ theorem toomCook3MulLimbsRec_toNat (threshold : Nat) :
   | _ len ih =>
     intros a b loA loB hA hB
     unfold toomCook3MulLimbsRec
-    by_cases h_base : len < threshold ∨ len < 3
+    by_cases h_base : len < toomThreshold ∨ len < 3
     · simp only [h_base, ↓reduceDIte]
-      exact karatsubaMulLimbs_toNat threshold a b loA loB len hA hB
+      exact karatsubaMulLimbs_toNat karaThreshold a b loA loB len hA hB
     · simp only [h_base, ↓reduceDIte]
       have hlen : 3 ≤ len := by omega
       let k := (len + 2) / 3
@@ -631,11 +632,15 @@ theorem toomCook3MulLimbsRec_toNat (threshold : Nat) :
       let B0 := sliceToNat b loB k
       let B1 := sliceToNat b (loB + k) k
       let B2 := sliceToNat b (loB + 2 * k) m
-      let v0  := toomCook3MulLimbsRec threshold a b loA loB k hA0 hB0
-      let v1  := toomCook3MulLimbsRec threshold s0a s0b 0 0 (k + 1) hs0a_sz hs0b_sz
-      let v2  := toomCook3MulLimbsRec threshold s2a s2b 0 0 (k + 1) hs2a_sz hs2b_sz
-      let vm1 := toomCook3MulLimbsRec threshold da.1 db.1 0 0 (k + 1) hda_sz hdb_sz
-      let vinf := toomCook3MulLimbsRec threshold a b (loA + 2 * k) (loB + 2 * k) m hA2 hB2
+      let v0  := toomCook3MulLimbsRec toomThreshold karaThreshold a b loA loB k hA0 hB0
+      let v1  := toomCook3MulLimbsRec toomThreshold karaThreshold
+                   s0a s0b 0 0 (k + 1) hs0a_sz hs0b_sz
+      let v2  := toomCook3MulLimbsRec toomThreshold karaThreshold
+                   s2a s2b 0 0 (k + 1) hs2a_sz hs2b_sz
+      let vm1 := toomCook3MulLimbsRec toomThreshold karaThreshold
+                   da.1 db.1 0 0 (k + 1) hda_sz hdb_sz
+      let vinf := toomCook3MulLimbsRec toomThreshold karaThreshold
+                    a b (loA + 2 * k) (loB + 2 * k) m hA2 hB2
       have hv0_sz : v0.1.size = 2 * k := v0.2
       have hv1_sz : v1.1.size = 2 * (k + 1) := v1.2
       have hv2_sz : v2.1.size = 2 * (k + 1) := v2.2
@@ -738,17 +743,17 @@ theorem toomCook3MulLimbsRec_toNat (threshold : Nat) :
       rw [h_result_toNat, ← h_a_decomp, ← h_b_decomp]
 
 /-- Correctness of `toomCook3MulLimbs` (un-Subtyped). -/
-theorem toomCook3MulLimbs_toNat (threshold : Nat) (a b : Array UInt64)
+theorem toomCook3MulLimbs_toNat (toomThreshold karaThreshold : Nat) (a b : Array UInt64)
     (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
-    toNatLimbsList (toomCook3MulLimbs threshold a b loA loB len hA hB).toList
+    toNatLimbsList (toomCook3MulLimbs toomThreshold karaThreshold a b loA loB len hA hB).toList
       = toNatLimbsList ((a.toList.drop loA).take len)
         * toNatLimbsList ((b.toList.drop loB).take len) :=
-  toomCook3MulLimbsRec_toNat threshold len a b loA loB hA hB
+  toomCook3MulLimbsRec_toNat toomThreshold karaThreshold len a b loA loB hA hB
 
 /-- AzNat-level correctness of `mulToomCook3`. -/
-theorem toNat_mulToomCook3 (threshold : Nat) (a b : AzNat) :
-    (mulToomCook3 threshold a b).toNat = a.toNat * b.toNat := by
+theorem toNat_mulToomCook3 (toomThreshold karaThreshold : Nat) (a b : AzNat) :
+    (mulToomCook3 toomThreshold karaThreshold a b).toNat = a.toNat * b.toNat := by
   unfold mulToomCook3
   by_cases h : a.limbs.size = 0 ∨ b.limbs.size = 0
   · rw [if_pos h]
@@ -772,8 +777,8 @@ theorem toNat_mulToomCook3 (threshold : Nat) (a b : AzNat) :
     set n := max a.limbs.size b.limbs.size
     set aPadded : Array UInt64 := a.limbs ++ Array.replicate (n - a.limbs.size) 0
     set bPadded : Array UInt64 := b.limbs ++ Array.replicate (n - b.limbs.size) 0
-    show (ofLimbs (toomCook3MulLimbs threshold aPadded bPadded 0 0 n _ _)).toNat
-          = a.toNat * b.toNat
+    show (ofLimbs (toomCook3MulLimbs toomThreshold karaThreshold aPadded bPadded
+            0 0 n _ _)).toNat = a.toNat * b.toNat
     rw [toNat_ofLimbs, toomCook3MulLimbs_toNat]
     have h_aPadded_size : aPadded.size = n := by
       show (a.limbs ++ Array.replicate (n - a.limbs.size) (0 : UInt64)).size = n
@@ -802,5 +807,107 @@ theorem toNat_mulToomCook3 (threshold : Nat) (a b : AzNat) :
       rw [toNatLimbsList_append_zeros]
       rfl
     rw [h_a_eq, h_b_eq]
+
+-- ── 3-way dispatch correctness ──────────────────────────────────────────────
+
+/-- Correctness of `mulLimbs`: agrees with `Nat` multiplication over the
+    slices, regardless of which branch (schoolbook / Karatsuba / Toom-Cook 3)
+    fires. -/
+theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
+    toNatLimbsList (mulLimbs a b loA lenA loB lenB hA hB).toList
+      = toNatLimbsList ((a.toList.drop loA).take lenA)
+        * toNatLimbsList ((b.toList.drop loB).take lenB) := by
+  unfold mulLimbs mulLimbsParam
+  by_cases h : (mulDispatchThreshold ≤ min lenA lenB
+                && mulDispatchKDen * min lenA lenB ≥ mulDispatchKNum * max lenA lenB) = true
+  · -- Balanced branch.  The padded slices are shared between the Karatsuba
+    -- and Toom-Cook 3 sub-branches.
+    rw [if_pos h]
+    set lenMax := max lenA lenB with hlenMax_def
+    set aSlice : Array UInt64 := a.extract loA (loA + lenA) with hAslice_def
+    set bSlice : Array UInt64 := b.extract loB (loB + lenB) with hBslice_def
+    set aPadded : Array UInt64 := aSlice ++ Array.replicate (lenMax - lenA) 0
+      with haPad_def
+    set bPadded : Array UInt64 := bSlice ++ Array.replicate (lenMax - lenB) 0
+      with hbPad_def
+    have hAslice_toList : aSlice.toList = (a.toList.drop loA).take lenA := by
+      rw [hAslice_def, Array.toList_extract, List.extract_eq_take_drop]
+      congr 1; omega
+    have hBslice_toList : bSlice.toList = (b.toList.drop loB).take lenB := by
+      rw [hBslice_def, Array.toList_extract, List.extract_eq_take_drop]
+      congr 1; omega
+    have hAslice_size : aSlice.size = lenA := by
+      rw [hAslice_def, Array.size_extract]; omega
+    have hBslice_size : bSlice.size = lenB := by
+      rw [hBslice_def, Array.size_extract]; omega
+    have hLenA_le : lenA ≤ lenMax := by rw [hlenMax_def]; exact Nat.le_max_left _ _
+    have hLenB_le : lenB ≤ lenMax := by rw [hlenMax_def]; exact Nat.le_max_right _ _
+    have haPad_size : aPadded.size = lenMax := by
+      rw [haPad_def]
+      show (aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).size = lenMax
+      rw [Array.size_append, hAslice_size, Array.size_replicate]; omega
+    have hbPad_size : bPadded.size = lenMax := by
+      rw [hbPad_def]
+      show (bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).size = lenMax
+      rw [Array.size_append, hBslice_size, Array.size_replicate]; omega
+    have haPad_toNat :
+        toNatLimbsList aPadded.toList = toNatLimbsList ((a.toList.drop loA).take lenA) := by
+      rw [haPad_def]
+      show toNatLimbsList ((aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).toList)
+            = toNatLimbsList ((a.toList.drop loA).take lenA)
+      rw [Array.toList_append, Array.toList_replicate]
+      rw [toNatLimbsList_append_zeros, hAslice_toList]
+    have hbPad_toNat :
+        toNatLimbsList bPadded.toList = toNatLimbsList ((b.toList.drop loB).take lenB) := by
+      rw [hbPad_def]
+      show toNatLimbsList ((bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).toList)
+            = toNatLimbsList ((b.toList.drop loB).take lenB)
+      rw [Array.toList_append, Array.toList_replicate]
+      rw [toNatLimbsList_append_zeros, hBslice_toList]
+    have h_aslice_full :
+        (aPadded.toList.drop 0).take lenMax = aPadded.toList := by
+      rw [List.drop_zero, List.take_of_length_le]
+      rw [Array.length_toList, haPad_size]
+    have h_bslice_full :
+        (bPadded.toList.drop 0).take lenMax = bPadded.toList := by
+      rw [List.drop_zero, List.take_of_length_le]
+      rw [Array.length_toList, hbPad_size]
+    by_cases h' : mulDispatchToomCook3Cutoff ≤ lenMax
+    · -- Toom-Cook 3 sub-branch.
+      rw [if_pos h']
+      have h_toom :=
+        toomCook3MulLimbs_toNat mulDispatchToomCook3Cutoff mulDispatchThreshold
+          aPadded bPadded 0 0 lenMax
+          (by rw [haPad_size]; omega) (by rw [hbPad_size]; omega)
+      rw [h_aslice_full, h_bslice_full] at h_toom
+      rw [h_toom, haPad_toNat, hbPad_toNat]
+    · -- Karatsuba sub-branch.
+      rw [if_neg h']
+      have h_kara :=
+        karatsubaMulLimbs_toNat mulDispatchThreshold aPadded bPadded 0 0 lenMax
+          (by rw [haPad_size]; omega) (by rw [hbPad_size]; omega)
+      rw [h_aslice_full, h_bslice_full] at h_kara
+      rw [h_kara, haPad_toNat, hbPad_toNat]
+  · -- Schoolbook branch.
+    rw [if_neg h]
+    exact schoolbookMulLimbs_toNat a b loA lenA loB lenB hA hB
+
+/-- Correctness of `mul` (the dispatched AzNat multiplication, used by `*`). -/
+theorem toNat_mul (a b : AzNat) : (a * b).toNat = a.toNat * b.toNat := by
+  show (mul a b).toNat = _
+  unfold mul
+  rw [toNat_ofLimbs, mulLimbs_toNat]
+  show toNatLimbsList ((a.limbs.toList.drop 0).take a.limbs.size)
+        * toNatLimbsList ((b.limbs.toList.drop 0).take b.limbs.size) = a.toNat * b.toNat
+  rw [List.drop_zero, List.drop_zero]
+  rw [List.take_of_length_le (by rw [Array.length_toList])]
+  rw [List.take_of_length_le (by rw [Array.length_toList])]
+  rfl
+
+/-- `ofNat`-version of `toNat_mul`. -/
+theorem ofNat_mul (m n : Nat) : ofNat (m * n) = ofNat m * ofNat n := by
+  apply toNat_injective
+  rw [toNat_ofNat, toNat_mul, toNat_ofNat, toNat_ofNat]
 
 end Azurite.AzNat
