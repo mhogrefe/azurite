@@ -11,6 +11,10 @@ import Azurite.Benchmark.AzNatSquareAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatSquareVsMul
 import Azurite.Benchmark.AzNatSquareVsNat
 import Azurite.Benchmark.AzNatDivMod
+import Azurite.Benchmark.AzNatDivVsDivMod
+import Azurite.Benchmark.AzNatModVsDivMod
+import Azurite.Benchmark.AzIntDivVsDivMod
+import Azurite.Benchmark.AzIntModVsDivMod
 import Azurite.AzPolynomial.Tune
 import Azurite.AzNat.Tune
 
@@ -27,7 +31,8 @@ def parseConfig (s : String) : Std.HashMap String String :=
 def validBenchmarks : List String :=
   ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
    "az_nat_add", "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
-   "az_nat_mul_algorithms_toomcook3", "az_nat_div_mod",
+   "az_nat_mul_algorithms_toomcook3", "az_nat_div_mod", "az_nat_div_vs_div_mod",
+   "az_nat_mod_vs_div_mod", "az_int_div_vs_div_mod", "az_int_mod_vs_div_mod",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
@@ -55,6 +60,10 @@ def main (args : List String) : IO Unit := do
       | "az_nat_mul_algorithms" => runAzNatMulAlgorithms limit cfg seed
       | "az_nat_mul_algorithms_toomcook3" => runAzNatMulAlgorithmsToomCook3 limit cfg seed
       | "az_nat_div_mod" => runAzNatDivMod limit cfg seed
+      | "az_nat_div_vs_div_mod" => runAzNatDivVsDivMod limit cfg seed
+      | "az_nat_mod_vs_div_mod" => runAzNatModVsDivMod limit cfg seed
+      | "az_int_div_vs_div_mod" => runAzIntDivVsDivMod limit cfg seed
+      | "az_int_mod_vs_div_mod" => runAzIntModVsDivMod limit cfg seed
       | "az_nat_square_vs_mul" => runAzNatSquareVsMul limit cfg seed
       | "az_nat_square_algorithms" => runAzNatSquareAlgorithms limit cfg seed
       | "az_nat_square_algorithms_toomcook3" =>

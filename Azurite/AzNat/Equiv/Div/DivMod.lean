@@ -980,9 +980,28 @@ private lemma divMod_of_toNat_zero (U V : AzNat) (hV : V.toNat = 0) :
   unfold divMod
   rw [dif_pos h_size]
 
+/-- The specialised `div` returns the same value as `(divMod U V).1`.
+    Holds structurally: `div` mirrors `divMod`'s branch-by-branch
+    dispatch but skips the remainder-side post-processing, so each
+    branch produces the first component of the corresponding `divMod`
+    return. -/
+theorem div_eq_divMod_fst (U V : AzNat) : div U V = (divMod U V).1 := by
+  unfold div divMod
+  -- Push `(_).1` through both the outer 3-way dispatch and the inner
+  -- `n = 2` vs `n ≥ 3` split.  Each branch then matches structurally.
+  simp only [apply_dite Prod.fst]
+
+/-- The specialised `mod` agrees with the second projection of `divMod`.
+    Proof mirrors `div_eq_divMod_fst`: `mod` shares `divMod`'s outer
+    dispatch but skips the quotient-side assembly. -/
+theorem mod_eq_divMod_snd (U V : AzNat) : mod U V = (divMod U V).2 := by
+  unfold mod divMod
+  simp only [apply_dite Prod.snd]
+
 /-- `(U / V).toNat = U.toNat / V.toNat`. -/
 @[simp] theorem toNat_div (U V : AzNat) : (U / V).toNat = U.toNat / V.toNat := by
-  show (divMod U V).1.toNat = _
+  show (div U V).toNat = _
+  rw [div_eq_divMod_fst]
   by_cases hV : V.toNat = 0
   · rw [divMod_of_toNat_zero U V hV, hV, Nat.div_zero, toNat_zero]
   · obtain ⟨h_id, h_lt⟩ := divMod_toNat U V
@@ -994,7 +1013,8 @@ private lemma divMod_of_toNat_zero (U V : AzNat) (hV : V.toNat = 0) :
 
 /-- `(U % V).toNat = U.toNat % V.toNat`. -/
 @[simp] theorem toNat_mod (U V : AzNat) : (U % V).toNat = U.toNat % V.toNat := by
-  show (divMod U V).2.toNat = _
+  show (mod U V).toNat = _
+  rw [mod_eq_divMod_snd]
   by_cases hV : V.toNat = 0
   · rw [divMod_of_toNat_zero U V hV, hV, Nat.mod_zero]
   · obtain ⟨h_id, h_lt⟩ := divMod_toNat U V

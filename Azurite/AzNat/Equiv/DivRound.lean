@@ -146,12 +146,12 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     rw [hF_def, roundFloor_natBotSet_nonneg t ht_nonneg, hfloor_t]
   have hF_nat : natBotToNat F = q := natBotToNat_eq_of_nat_val q F hF_val
   have hquot_toNat : (x.divMod y).1.toNat = q := by
-    show (x / y).toNat = q; rw [toNat_div]
+    rw [← div_eq_divMod_fst]; show (x / y).toNat = q; rw [toNat_div]
   rw [divRound_fst]
   by_cases hr0 : r = 0
   · -- remainder = 0
     have hr_aznat_zero : (x.divMod y).2.toNat = 0 := by
-      show (x % y).toNat = 0; rw [toNat_mod]; exact hr0
+      rw [← mod_eq_divMod_snd]; show (x % y).toNat = 0; rw [toNat_mod]; exact hr0
     have hr_size_zero : (x.divMod y).2.limbs.size = 0 := (toNat_eq_zero_iff _).mp hr_aznat_zero
     rw [if_pos hr_size_zero]
     show ((x.divMod y).1.toNat : EReal) = (round natBotSet mode t).val
@@ -194,7 +194,7 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
       split_ifs <;> rw [hF_val] <;> push_cast <;> rfl
   · -- remainder ≠ 0
     have hr_aznat_ne : (x.divMod y).2.toNat ≠ 0 := by
-      show (x % y).toNat ≠ 0; rw [toNat_mod]; exact hr0
+      rw [← mod_eq_divMod_snd]; show (x % y).toNat ≠ 0; rw [toNat_mod]; exact hr0
     have hr_size_ne : ¬ ((x.divMod y).2.limbs.size = 0) := by
       intro h; apply hr_aznat_ne; exact (toNat_eq_zero_iff _).mpr h
     rw [if_neg hr_size_ne]
@@ -271,7 +271,7 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Nearest =>
       have hyhalf_toNat : (y >>> 1).toNat = yn / 2 := toNat_shiftRight_one y
       have hrem_toNat : (x.divMod y).2.toNat = r := by
-        show (x % y).toNat = r; rw [toNat_mod]
+        rw [← mod_eq_divMod_snd]; show (x % y).toNat = r; rw [toNat_mod]
       have hhalfY_lt_iff : (y >>> 1).toNat < (x.divMod y).2.toNat ↔ yn < 2 * r := by
         rw [hyhalf_toNat, hrem_toNat]; omega
       have hr_lt_imp : (x.divMod y).2.toNat < (y >>> 1).toNat → 2 * r < yn := by
@@ -399,9 +399,10 @@ theorem snd_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
   rw [← compare_nat_mul_div_eq_compare_real_div _ _ y.toNat hy,
       divRound_snd, divRound_fst]
   have hquot_toNat : (x.divMod y).1.toNat = x.toNat / y.toNat := by
+    rw [← div_eq_divMod_fst]
     show (x / y).toNat = x.toNat / y.toNat; rw [toNat_div]
   have hrem_toNat : (x.divMod y).2.toNat = x.toNat % y.toNat := by
-    show (x % y).toNat = x.toNat % y.toNat; rw [toNat_mod]
+    rw [← mod_eq_divMod_snd]; show (x % y).toNat = x.toNat % y.toNat; rw [toNat_mod]
   by_cases hr_size : (x.divMod y).2.limbs.size = 0
   · rw [if_pos hr_size, if_pos hr_size]
     have hr_aznat_zero : (x.divMod y).2.toNat = 0 := (toNat_eq_zero_iff _).mpr hr_size

@@ -1,0 +1,16 @@
+# Benchmark: specialised `ediv` vs full `edivMod` on AzInt inputs.
+#
+# `a / b` now dispatches through the specialised `ediv` (skips the
+# remainder-side AzInt construction in each branch — `r'.toAzInt`,
+# `mkNorm a.sign r'`, `mkNonzero a.sign r'`, and the `b.abs - r'`
+# multi-limb subtraction + `mkNonzero true (...)` wrap in branch 4).
+# `edivMod` builds both halves of the pair.
+
+benchmark = "az_int_div_vs_div_mod"
+limit     = 5000
+title     = "az_int_div_vs_div_mod: ediv vs edivMod"
+x_label   = "Input size (significant_bits of |a| + significant_bits of |b|)"
+
+[params]
+meanBitLength = 8192
+iters         = 50

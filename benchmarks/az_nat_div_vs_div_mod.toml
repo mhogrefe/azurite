@@ -1,0 +1,15 @@
+# Benchmark: specialised `div` vs full `divMod` on AzNat inputs.
+#
+# `U / V` now dispatches through the specialised `div` (skips the remainder
+# extract, ofLimbs normalise, and `>>> k` denormalisation shift).
+# `divMod` computes both quotient and remainder.  The expected gap is the
+# O(n) remainder post-processing that specialised `div` avoids.
+
+benchmark = "az_nat_div_vs_div_mod"
+limit     = 5000
+title     = "az_nat_div_vs_div_mod: div vs divMod"
+x_label   = "Input size (significant_bits of U + significant_bits of V)"
+
+[params]
+meanBitLength = 8192
+iters         = 50

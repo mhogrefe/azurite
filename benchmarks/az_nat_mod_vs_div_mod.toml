@@ -1,0 +1,16 @@
+# Benchmark: specialised `mod` vs full `divMod` on AzNat inputs.
+#
+# `U % V` now dispatches through the specialised `mod` (skips the
+# quotient-side `ofLimbs` assembly: `#[qr.1]` in the 1-limb branch,
+# `ofLimbs res.1` in the n=2 branch, `extract n (n+m) ++ #[res.2]` plus
+# `ofLimbs` in the n ≥ 3 branch).
+# `divMod` computes both quotient and remainder.
+
+benchmark = "az_nat_mod_vs_div_mod"
+limit     = 5000
+title     = "az_nat_mod_vs_div_mod: mod vs divMod"
+x_label   = "Input size (significant_bits of U + significant_bits of V)"
+
+[params]
+meanBitLength = 8192
+iters         = 50

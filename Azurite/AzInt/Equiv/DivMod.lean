@@ -158,8 +158,10 @@ theorem toInt_edivMod (a b : AzInt) :
     (a.edivMod b).2.toInt = a.toInt % b.toInt := by
   -- Bridge to Nat-level facts about divMod.
   have h_qq_n : (a.abs.divMod b.abs).1.toNat = a.abs.toNat / b.abs.toNat := by
+    rw [← AzNat.div_eq_divMod_fst]
     show (a.abs / b.abs).toNat = _; exact AzNat.toNat_div _ _
   have h_qr_n : (a.abs.divMod b.abs).2.toNat = a.abs.toNat % b.abs.toNat := by
+    rw [← AzNat.mod_eq_divMod_snd]
     show (a.abs % b.abs).toNat = _; exact AzNat.toNat_mod _ _
   have h_id_nat : (a.abs.divMod b.abs).1.toNat * b.abs.toNat + (a.abs.divMod b.abs).2.toNat
       = a.abs.toNat := (AzNat.divMod_toNat a.abs b.abs).1
@@ -367,13 +369,29 @@ theorem toInt_edivMod (a b : AzInt) :
             exact ⟨by linarith, by linarith⟩
           · intro hbz; exact absurd hbz h_b_ne
 
+/-- The specialised `AzInt.ediv` agrees with the first projection of
+    `edivMod`.  Mirrors `AzNat.div_eq_divMod_fst`: `ediv` shares
+    `edivMod`'s outer dispatch but skips the remainder-side AzInt
+    construction in each branch. -/
+theorem ediv_eq_edivMod_fst (a b : AzInt) : a.ediv b = (a.edivMod b).1 := by
+  unfold AzInt.ediv AzInt.edivMod
+  simp only [apply_ite Prod.fst, apply_dite Prod.fst]
+
+/-- The specialised `AzInt.emod` agrees with the second projection of
+    `edivMod`.  Mirrors `AzNat.mod_eq_divMod_snd`: `emod` shares
+    `edivMod`'s outer dispatch but skips the quotient-side AzInt
+    construction in each branch. -/
+theorem emod_eq_edivMod_snd (a b : AzInt) : a.emod b = (a.edivMod b).2 := by
+  unfold AzInt.emod AzInt.edivMod
+  simp only [apply_ite Prod.snd, apply_dite Prod.snd]
+
 /-- Correctness of `AzInt.ediv`. -/
-theorem toInt_ediv (a b : AzInt) : (a.ediv b).toInt = a.toInt / b.toInt :=
-  (toInt_edivMod a b).1
+theorem toInt_ediv (a b : AzInt) : (a.ediv b).toInt = a.toInt / b.toInt := by
+  rw [ediv_eq_edivMod_fst]; exact (toInt_edivMod a b).1
 
 /-- Correctness of `AzInt.emod`. -/
-theorem toInt_emod (a b : AzInt) : (a.emod b).toInt = a.toInt % b.toInt :=
-  (toInt_edivMod a b).2
+theorem toInt_emod (a b : AzInt) : (a.emod b).toInt = a.toInt % b.toInt := by
+  rw [emod_eq_edivMod_snd]; exact (toInt_edivMod a b).2
 
 /-- `AzInt.divMod = AzInt.edivMod`, so it inherits the same correctness. -/
 theorem toInt_divMod (a b : AzInt) :
@@ -421,8 +439,10 @@ theorem toInt_fdivMod (a b : AzInt) :
     (a.fdivMod b).1.toInt = a.toInt.fdiv b.toInt ∧
     (a.fdivMod b).2.toInt = a.toInt.fmod b.toInt := by
   have h_qq_n : (a.abs.divMod b.abs).1.toNat = a.abs.toNat / b.abs.toNat := by
+    rw [← AzNat.div_eq_divMod_fst]
     show (a.abs / b.abs).toNat = _; exact AzNat.toNat_div _ _
   have h_qr_n : (a.abs.divMod b.abs).2.toNat = a.abs.toNat % b.abs.toNat := by
+    rw [← AzNat.mod_eq_divMod_snd]
     show (a.abs % b.abs).toNat = _; exact AzNat.toNat_mod _ _
   have h_id_nat : (a.abs.divMod b.abs).1.toNat * b.abs.toNat + (a.abs.divMod b.abs).2.toNat
       = a.abs.toNat := (AzNat.divMod_toNat a.abs b.abs).1

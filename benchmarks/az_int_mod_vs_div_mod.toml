@@ -1,0 +1,16 @@
+# Benchmark: specialised `emod` vs full `edivMod` on AzInt inputs.
+#
+# `a % b` now dispatches through the specialised `emod` (skips the
+# quotient-side AzInt construction in each branch — `mkNorm (a.sign ==
+# b.sign) q'` in the first three branches, and the `q'.addUInt64 1`
+# increment + `mkNonzero (!b.sign) ...` wrap in branch 4).
+# `edivMod` builds both halves of the pair.
+
+benchmark = "az_int_mod_vs_div_mod"
+limit     = 5000
+title     = "az_int_mod_vs_div_mod: emod vs edivMod"
+x_label   = "Input size (significant_bits of |a| + significant_bits of |b|)"
+
+[params]
+meanBitLength = 8192
+iters         = 50
