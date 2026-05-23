@@ -217,6 +217,7 @@ import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Square
+import Azurite.AzNat.Equiv.Square.Karatsuba
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
@@ -245,6 +246,8 @@ import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.ShiftRightRound
 import Azurite.AzNat.Size
 import Azurite.AzNat.Square
+import Azurite.AzNat.Square.Karatsuba
+import Azurite.AzNat.Square.Schoolbook
 import Azurite.AzNat.Sub
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.Tests.Conversion
@@ -559,6 +562,7 @@ import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatMul
 import Azurite.Benchmark.AzNatMulCompare
 import Azurite.Benchmark.AzNatSquare
+import Azurite.Benchmark.AzNatSquareCompare
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul

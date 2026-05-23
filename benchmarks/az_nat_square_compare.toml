@@ -1,0 +1,16 @@
+# Benchmark: schoolbook vs Karatsuba AzNat squaring.
+#
+# Both algorithms produce a²; runtime correctness is checked per pair.
+# Karatsuba squaring uses the "minus" variant — three recursive squarings
+# (a₀², a₁², |a₀-a₁|²), no sign tracking — so the cross-over with
+# `schoolbookSquareLimbs` is sharper than the corresponding mul cross-over.
+
+benchmark = "az_nat_square_compare"
+limit     = 10000
+title     = "az_nat_square_compare: Schoolbook vs Karatsuba"
+x_label   = "Input size (significant_bits of a)"
+
+[params]
+meanBitLength = 65536
+iters         = 100
+threshold     = 32

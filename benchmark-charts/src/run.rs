@@ -9,10 +9,11 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
+use indicatif::{ProgressBar, ProgressStyle};
 use plotters::prelude::*;
 use serde::Deserialize;
 
@@ -628,6 +629,72 @@ fn repo_root() -> Result<PathBuf, Box<dyn std::error::Error>> {
     Ok(PathBuf::from(String::from_utf8_lossy(&out.stdout).trim()))
 }
 
+/// Spawn `lake` and stream its stdout line by line, incrementing a progress
+/// bar per non-`#` data line. Returns the full captured stdout when the
+/// process exits successfully; otherwise an error including any stderr.
+///
+/// `expected_rows` is the configured `limit`, used as the bar's total. The
+/// Lean side may emit fewer rows (e.g. filtered samples), in which case the
+/// bar simply ends short — that's preferable to overshooting.
+fn stream_lake_with_progress(
+    lake_args: &[String],
+    cwd: &Path,
+    expected_rows: u64,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut child = Command::new("lake")
+        .args(lake_args)
+        .current_dir(cwd)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to spawn lake: {e}"))?;
+
+    let stdout_pipe = child.stdout.take().expect("stdout piped");
+    let stderr_pipe = child.stderr.take().expect("stderr piped");
+
+    let pb = ProgressBar::new(expected_rows);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "  {bar:40.cyan/blue} {pos}/{len} ({percent}%) elapsed {elapsed} eta {eta}",
+        )
+        .unwrap()
+        .progress_chars("█▓▒░ "),
+    );
+    pb.enable_steady_tick(std::time::Duration::from_millis(200));
+
+    // Forward stderr on a thread so it doesn't fill the OS pipe buffer.
+    // Use pb.println so warnings/BUG lines appear cleanly above the bar.
+    let pb_for_stderr = pb.clone();
+    let stderr_handle = std::thread::spawn(move || {
+        let mut collected = String::new();
+        let reader = BufReader::new(stderr_pipe);
+        for line in reader.lines().map_while(Result::ok) {
+            pb_for_stderr.println(&line);
+            collected.push_str(&line);
+            collected.push('\n');
+        }
+        collected
+    });
+
+    let mut stdout_buf = String::new();
+    let reader = BufReader::new(stdout_pipe);
+    for line in reader.lines().map_while(Result::ok) {
+        if !line.is_empty() && !line.starts_with('#') {
+            pb.inc(1);
+        }
+        stdout_buf.push_str(&line);
+        stdout_buf.push('\n');
+    }
+    pb.finish_and_clear();
+
+    let status = child.wait()?;
+    let stderr_text = stderr_handle.join().unwrap_or_default();
+    if !status.success() {
+        return Err(format!("lake benchmark exited {status}: {stderr_text}").into());
+    }
+    Ok(stdout_buf)
+}
+
 /// Build the metadata header that gets prepended to the .txt and embedded in
 /// the SVG. Each line begins with `# ` so it's a comment in the .txt and
 /// trivially skippable by the parser.
@@ -744,20 +811,7 @@ pub fn run_from_config(
             );
         }
         println!("$ (cd {} && {lake_cmd_display})", root.display());
-        let output = Command::new("lake")
-            .args(&lake_args)
-            .current_dir(&root)
-            .output()
-            .map_err(|e| format!("failed to spawn lake: {e}"))?;
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("lake benchmark exited {}: {stderr}", output.status).into());
-        }
-        let stdout = String::from_utf8(output.stdout)?;
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        if !stderr.trim().is_empty() {
-            eprint!("{stderr}");
-        }
+        let stdout = stream_lake_with_progress(&lake_args, &root, cfg.limit)?;
         // Write .txt with metadata header.
         {
             let mut f = fs::File::create(&txt_path)?;
@@ -765,8 +819,6 @@ pub fn run_from_config(
             f.write_all(stdout.as_bytes())?;
         }
         println!("Raw data written to {}", txt_path.display());
-        // The body we hand to the parser doesn't include the header (parser
-        // skips `#` lines anyway, so either works).
         stdout
     };
 

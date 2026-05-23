@@ -55,7 +55,7 @@ namespace Azurite.AzNat
 
 /-- The `toNat` of a length-`k+m` slice splits into low (`k` limbs) and high
     (`m` limbs) parts.  Specialization of `toNatLimbsList_drop_take_split`. -/
-private lemma toNat_slice_split (a : Array UInt64) (lo k m : Nat)
+lemma toNat_slice_split (a : Array UInt64) (lo k m : Nat)
     (h : lo + (k + m) ≤ a.size) :
     toNatLimbsList ((a.toList.drop lo).take (k + m))
       = toNatLimbsList ((a.toList.drop lo).take k)
@@ -65,7 +65,7 @@ private lemma toNat_slice_split (a : Array UInt64) (lo k m : Nat)
   exact h_split
 
 /-- Bound on a `k`-limb slice value. -/
-private lemma slice_lt_pow (a : Array UInt64) (lo k : Nat) :
+lemma slice_lt_pow (a : Array UInt64) (lo k : Nat) :
     toNatLimbsList ((a.toList.drop lo).take k) < 2 ^ (64 * k) := by
   have h := toNatLimbsList_lt_pow ((a.toList.drop lo).take k)
   have h_len : ((a.toList.drop lo).take k).length ≤ k := by
@@ -816,7 +816,7 @@ private lemma pow_combine_factor (a b : Nat) :
   rw [← Nat.pow_add]; congr 1; ring
 
 /-- `2 ^ (64 * (2 * k)) = 2 ^ (64 * k) · 2 ^ (64 * k)`. -/
-private lemma pow_double_factor (k : Nat) :
+lemma pow_double_factor (k : Nat) :
     2 ^ (64 * (2 * k)) = 2 ^ (64 * k) * 2 ^ (64 * k) := by
   rw [show 2 * k = k + k from by ring]; exact pow_combine_factor k k
 
@@ -1004,7 +1004,7 @@ theorem karatsubaMulLimbsRec.assemble_toNat (k m len : Nat)
 
 /-- The middle term `A₀·B₁ + A₁·B₀` is bounded by `2 · β^(k+m)`, hence
     fits into `2*len - k` limbs (using `m ≥ 1`). -/
-private lemma mid_value_lt (A0 A1 B0 B1 : Nat) (k m : Nat)
+lemma mid_value_lt (A0 A1 B0 B1 : Nat) (k m : Nat)
     (hA0 : A0 < 2 ^ (64 * k)) (hA1 : A1 < 2 ^ (64 * m))
     (hB0 : B0 < 2 ^ (64 * k)) (hB1 : B1 < 2 ^ (64 * m))
     (h_mpos : 0 < m) :
@@ -1028,7 +1028,7 @@ private lemma mid_value_lt (A0 A1 B0 B1 : Nat) (k m : Nat)
 
 /-- The total `A·B = A₀·B₀ + (A₀·B₁+A₁·B₀)·β^k + A₁·B₁·β^(2k)` is bounded
     by `β^(2*len)`. -/
-private lemma total_lt (A0 A1 B0 B1 : Nat) (k m len : Nat)
+lemma total_lt (A0 A1 B0 B1 : Nat) (k m len : Nat)
     (hA0 : A0 < 2 ^ (64 * k)) (hA1 : A1 < 2 ^ (64 * m))
     (hB0 : B0 < 2 ^ (64 * k)) (hB1 : B1 < 2 ^ (64 * m))
     (hkm : k + m = len) :
@@ -1055,7 +1055,7 @@ private lemma total_lt (A0 A1 B0 B1 : Nat) (k m len : Nat)
     equals `A₀·B₁ + A₁·B₀`.  This is the algebraic identity at the heart of
     Karatsuba: `(A₀ − A₁)(B₀ − B₁) = A₀·B₀ + A₁·B₁ − (A₀·B₁ + A₁·B₀)`,
     handled in ℕ by case analysis on the four sign combinations. -/
-private lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
+lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
     (hsgnA : sgnA = true ↔ A1 ≤ A0) (hsgnB : sgnB = true ↔ B1 ≤ B0)
     (absAv : Nat) (h_absA : absAv = if A1 ≤ A0 then A0 - A1 else A1 - A0)
     (absBv : Nat) (h_absB : absBv = if B1 ≤ B0 then B0 - B1 else B1 - B0) :
@@ -1138,7 +1138,7 @@ private lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
 
 /-- The bound `toNat C₂ ≤ toNat C₀ + toNat C₁` needed by `middleBuf_toNat`'s
     subtraction case (when `sameSign = true`). -/
-private lemma C2_le_C0_plus_C1 (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
+lemma C2_le_C0_plus_C1 (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
     (hsgnA : sgnA = true ↔ A1 ≤ A0) (hsgnB : sgnB = true ↔ B1 ≤ B0)
     (absAv absBv : Nat)
     (h_absA : absAv = if A1 ≤ A0 then A0 - A1 else A1 - A0)

@@ -1,4 +1,5 @@
 import Azurite.AzNat.Mul
+import Azurite.AzNat.Square
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Random.NatGen
 import Azurite.Benchmark.Timer
@@ -251,3 +252,88 @@ def tuneAzNatDispatch2D
   IO.eprintln ""
   IO.eprintln s!"[AzNat-2D] Best: minThreshold = {bestThreshold}, kPercent = {bestKPercent} ({bestTime}ns)"
   return (bestThreshold, bestKPercent)
+
+-- ── 1-D tuner for square dispatch threshold ─────────────────────────────────
+
+/-- Generate `n` random `AzNat`s for the single-input squaring tune. -/
+def generateAzNatSingles (n : Nat) (meanBitLength : Rat) (seed : UInt64) :
+    Array AzNat := Id.run do
+  let mut g := mkNatRandomGen meanBitLength seed
+  let mut nats : Array AzNat := #[]
+  for _ in List.range n do
+    let (a, g') := NatRandomGen.next g
+    g := g'
+    nats := nats.push (AzNat.ofNat a)
+  return nats
+
+/-- Time `squareDispatchParam minThreshold` over all inputs.  Accumulates
+    result limb counts to prevent dead-code elimination. -/
+@[noinline]
+def benchAzNatSquareDispatch (minThreshold : Nat) (inputs : Array AzNat) :
+    IO (UInt64 × Nat) := do
+  let t0 ← monoNanos
+  let mut checksum : Nat := 0
+  for a in inputs do
+    let r := AzNat.squareDispatchParam minThreshold a
+    checksum := checksum + r.limbs.size
+  let t1 ← monoNanos
+  return (t1 - t0, checksum)
+
+/-- Median-of-3 timing for a given threshold. -/
+def benchAzNatSquareDispatchMedian (minThreshold : Nat) (inputs : Array AzNat) :
+    IO UInt64 := do
+  let (t1, _) ← benchAzNatSquareDispatch minThreshold inputs
+  let (t2, _) ← benchAzNatSquareDispatch minThreshold inputs
+  let (t3, _) ← benchAzNatSquareDispatch minThreshold inputs
+  if t1 ≤ t2 then
+    if t2 ≤ t3 then return t2
+    else if t1 ≤ t3 then return t3
+    else return t1
+  else
+    if t1 ≤ t3 then return t1
+    else if t2 ≤ t3 then return t3
+    else return t2
+
+/-- 1-D grid sweep over `minThreshold` for the squaring dispatcher.
+
+    Squaring has no balance dimension (single operand → split into nearly
+    equal halves), so this is a straightforward 1-D search.  Setting
+    `minThreshold = ∞` recovers schoolbook-only behavior; very small values
+    push Karatsuba down to trivially short inputs.
+
+    Returns the best `minThreshold`. -/
+def tuneAzNatSquareDispatch
+    (thresholds : Array Nat :=
+       #[2, 4, 8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 256])
+    (nInputs : Nat := 400) (meanBitLength : Rat := 100000)
+    (seed : UInt64 := 42) : IO Nat := do
+  IO.eprintln s!"[AzNat-Square] Generating {nInputs} test inputs (mean bit length {meanBitLength})..."
+  let inputs := generateAzNatSingles nInputs meanBitLength seed
+  IO.eprintln s!"[AzNat-Square] {inputs.size} inputs."
+  IO.eprintln ""
+  let mut bestThreshold : Nat := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  let mut times : Array UInt64 := #[]
+  for i in List.range thresholds.size do
+    let t := thresholds[i]!
+    let time ← benchAzNatSquareDispatchMedian t inputs
+    times := times.push time
+    if time < bestTime then
+      bestThreshold := t
+      bestTime := time
+  -- Render a single-row landscape.
+  let colWidth := 12
+  let header := "  threshold  " ++ String.join (thresholds.toList.map fun t =>
+    padLeft colWidth s!"{t}")
+  IO.eprintln header
+  IO.eprintln (String.ofList (List.replicate header.length '-'))
+  let mut line := padLeft 11 "µs/run" ++ "  "
+  for i in List.range thresholds.size do
+    let ns := times[i]!
+    let us := ns.toNat / 1000
+    let marker := if thresholds[i]! == bestThreshold then "*" else " "
+    line := line ++ padLeft colWidth (s!"{us}" ++ marker)
+  IO.eprintln line
+  IO.eprintln ""
+  IO.eprintln s!"[AzNat-Square] Best: minThreshold = {bestThreshold} ({bestTime}ns)"
+  return bestThreshold
