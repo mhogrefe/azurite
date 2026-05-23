@@ -1,0 +1,14 @@
+# Benchmark: Lean Nat (GMP-backed) `a * a` vs AzNat `square`.
+#
+# Mirrors az_nat_mul_vs_nat but for squaring. AzNat's `square` is the dispatched
+# function: schoolbook below `squareDispatchThreshold` (32) limbs,
+# Karatsuba above.
+
+benchmark = "az_nat_square_vs_nat"
+limit     = 10000
+title     = "az_nat_square_vs_nat: Nat (GMP) a*a vs AzNat.square"
+x_label   = "Input size (significant_bits of a)"
+
+[params]
+meanBitLength = 4096
+iters         = 100

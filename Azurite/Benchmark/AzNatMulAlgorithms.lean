@@ -8,7 +8,7 @@ import Azurite.Benchmark.RatCmp -- reuse timeNsIter, median3, configGetRat, conf
 open Azurite Azurite.Random Azurite.Benchmark
 
 /--
-Run the `az_nat_mul_compare` benchmark.
+Run the `az_nat_mul_algorithms` benchmark.
 For each of `limit` pairs `(a, b)` of random `Nat`s (sampled with geometric
 bit-length distribution of mean `meanBitLength`), time:
   - `mulSchoolbook` (current default mul, O(p·q))
@@ -29,7 +29,7 @@ Config keys:
   - `threshold` (Nat, default 32) — Karatsuba schoolbook fallback threshold
     (in 64-bit limbs).
 -/
-def runAzNatMulCompare (limit : Nat) (cfg : Std.HashMap String String)
+def runAzNatMulAlgorithms (limit : Nat) (cfg : Std.HashMap String String)
     (seed : UInt64) : IO Unit := do
   let meanBitLength := configGetRat cfg "meanBitLength" 256
   let iters := configGetNat cfg "iters" 100

@@ -5,9 +5,9 @@
 # (a₀², a₁², |a₀-a₁|²), no sign tracking — so the cross-over with
 # `schoolbookSquareLimbs` is sharper than the corresponding mul cross-over.
 
-benchmark = "az_nat_square_compare"
+benchmark = "az_nat_square_algorithms"
 limit     = 10000
-title     = "az_nat_square_compare: Schoolbook vs Karatsuba"
+title     = "az_nat_square_algorithms: Schoolbook vs Karatsuba"
 x_label   = "Input size (significant_bits of a)"
 
 [params]

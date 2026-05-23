@@ -1,6 +1,6 @@
 <svg width="1024" height="800" viewBox="0 0 1024 800" xmlns="http://www.w3.org/2000/svg">
 <!--
-# benchmark: az_nat_mul_compare
+# benchmark: az_nat_mul_algorithms
 # git_hash:  bc3e765 (dirty)
 # timestamp: 2026-05-22T22:21:53Z
 # limit:     10000
@@ -11,7 +11,7 @@
 
 <rect x="0" y="0" width="1024" height="800" opacity="1" fill="#FFFFFF" stroke="none"/>
 <text x="440" y="35" dy="0.76em" text-anchor="middle" font-family="sans-serif" font-size="17.741935483870968" opacity="1" fill="#000000">
-az_nat_mul_compare: which is faster (log₂ ratio)
+az_nat_mul_algorithms: which is faster (log₂ ratio)
 </text>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="110" y1="709" x2="110" y2="57"/>
 <line opacity="0.1" stroke="#000000" stroke-width="1" x1="120" y1="709" x2="120" y2="57"/>

@@ -1,0 +1,16 @@
+# Benchmark: Lean Nat (GMP-backed) vs AzNat multiplication.
+#
+# Times `a * b` for random Nat pairs against the dispatching
+# `AzNat.mul` (which picks schoolbook or Karatsuba via mulLimbs).
+# AzNat is expected to lag at the asymptotic high end where Nat's
+# GMP can call into FFT-based algorithms; the question is how close
+# AzNat gets in the schoolbook / Karatsuba regime.
+
+benchmark = "az_nat_mul_vs_nat"
+limit     = 10000
+title     = "az_nat_mul_vs_nat: Nat (GMP) vs AzNat"
+x_label   = "Input size (significant_bits of a + b)"
+
+[params]
+meanBitLength = 4096
+iters         = 100

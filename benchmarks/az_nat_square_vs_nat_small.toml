@@ -1,0 +1,14 @@
+# Small-input variant of az_nat_square_vs_nat (meanBitLength ≈ 500).
+#
+# At asymptotic sizes Nat's GMP backend dominates; this variant zooms into
+# the small-input regime where the cost of AzNat's pure-Lean implementation
+# is more directly comparable.
+
+benchmark = "az_nat_square_vs_nat"
+limit     = 10000
+title     = "az_nat_square_vs_nat (small): Nat (GMP) a*a vs AzNat.square"
+x_label   = "Input size (significant_bits of a)"
+
+[params]
+meanBitLength = 500
+iters         = 200

@@ -3,9 +3,9 @@
 # The expected ratio is ~2× since schoolbookSquareLimbs performs roughly
 # n(n+1)/2 wideMul ops versus n² for the generic schoolbook product.
 
-benchmark = "az_nat_square"
+benchmark = "az_nat_square_vs_mul"
 limit     = 2000
-title     = "az_nat_square: squareSchoolbook vs mulSchoolbook(a, a)"
+title     = "az_nat_square_vs_mul: squareSchoolbook vs mulSchoolbook(a, a)"
 x_label   = "Input size (significant_bits of a)"
 
 [params]

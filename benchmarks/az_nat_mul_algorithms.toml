@@ -5,11 +5,11 @@
 # recurses with `threshold`-limb schoolbook leaves.
 #
 # Produces two charts:
-#   az_nat_mul_compare.svg          — median ns/op vs (bits(a) + bits(b))
-#   az_nat_mul_compare_heatmap.svg  — which algorithm wins at each
+#   az_nat_mul_algorithms.svg          — median ns/op vs (bits(a) + bits(b))
+#   az_nat_mul_algorithms_heatmap.svg  — which algorithm wins at each
 #                                     (bits(a), bits(b)) cell
 
-benchmark = "az_nat_mul_compare"
+benchmark = "az_nat_mul_algorithms"
 limit     = 10000
 
 [params]
@@ -19,12 +19,12 @@ threshold     = 32
 
 [[chart]]
 type    = "line"
-title   = "az_nat_mul_compare: Schoolbook vs Karatsuba"
+title   = "az_nat_mul_algorithms: Schoolbook vs Karatsuba"
 x_label = "Input size (significant_bits of a + b)"
 
 [[chart]]
 type          = "heatmap"
-title         = "az_nat_mul_compare: which is faster (log₂ ratio)"
+title         = "az_nat_mul_algorithms: which is faster (log₂ ratio)"
 x_label       = "significant_bits(a)"
 y_label       = "significant_bits(b)"
 output_suffix = "_heatmap"

@@ -8,15 +8,16 @@ import Azurite.Benchmark.RatCmp -- reuse timeNsIter, median3, configGetRat, conf
 open Azurite Azurite.Random Azurite.Benchmark
 
 /--
-Run the `az_nat_mul` benchmark.
+Run the `az_nat_mul_vs_nat` benchmark.
 For each of `limit` pairs `(a, b)` of random `Nat`s (sampled with geometric
-bit-length distribution of mean `meanBitLength`), time `a * b` on `Nat` (which
-delegates to GMP `mpn_mul`) and on `AzNat` (schoolbook).
+bit-length distribution of mean `meanBitLength`), time `a * b` on `Nat`
+(GMP-backed) and on `AzNat` (dispatched between schoolbook and Karatsuba
+via `mulLimbs`).
 
 Output format:
   `<sb>;Nat,<ns>;AzNat,<ns>`
 -/
-def runAzNatMul (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
+def runAzNatMulVsNat (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
   let meanBitLength := configGetRat cfg "meanBitLength" 256
   let iters := configGetNat cfg "iters" 100
   let gen := mkPairRandomGenFromSingle (α := Nat) (mkNatRandomGen meanBitLength seed)

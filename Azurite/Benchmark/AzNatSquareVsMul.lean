@@ -8,7 +8,7 @@ import Azurite.Benchmark.RatCmp   -- reuse timeNsIter, median3, configGetRat, co
 open Azurite Azurite.Random Azurite.Benchmark
 
 /--
-Run the `az_nat_square` benchmark.
+Run the `az_nat_square_vs_mul` benchmark.
 For each of `limit` random `Nat`s (sampled with geometric bit-length
 distribution of mean `meanBitLength`), time `a * a` three ways:
   - `mulSchoolbook a a`         — uses `schoolbookMulLimbs` (n² wideMuls)
@@ -22,7 +22,7 @@ Output format:
   `<sb>;mulSchoolbook,<ns>;squareSchoolbook,<ns>;squareKaratsuba,<ns>`
 where `<sb>` is the significant-bit count of the input `a`.
 -/
-def runAzNatSquare (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
+def runAzNatSquareVsMul (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
   let meanBitLength := configGetRat cfg "meanBitLength" 256
   let iters := configGetNat cfg "iters" 100
   let threshold := configGetNat cfg "threshold" 32

@@ -1,4 +1,4 @@
-# benchmark: az_nat_square
+# benchmark: az_nat_square_vs_mul
 # git_hash:  fb271bb
 # timestamp: 2026-05-22T04:11:36Z
 # limit:     2000

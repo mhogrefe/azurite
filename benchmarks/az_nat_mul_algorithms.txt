@@ -1,4 +1,4 @@
-# benchmark: az_nat_mul_compare
+# benchmark: az_nat_mul_algorithms
 # git_hash:  bc3e765 (dirty)
 # timestamp: 2026-05-22T22:21:53Z
 # limit:     10000

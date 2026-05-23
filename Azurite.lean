@@ -559,10 +559,11 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Notation_8_7
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatDivMod
-import Azurite.Benchmark.AzNatMul
-import Azurite.Benchmark.AzNatMulCompare
-import Azurite.Benchmark.AzNatSquare
-import Azurite.Benchmark.AzNatSquareCompare
+import Azurite.Benchmark.AzNatMulAlgorithms
+import Azurite.Benchmark.AzNatMulVsNat
+import Azurite.Benchmark.AzNatSquareAlgorithms
+import Azurite.Benchmark.AzNatSquareVsMul
+import Azurite.Benchmark.AzNatSquareVsNat
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
