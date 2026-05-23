@@ -25,7 +25,7 @@ def validBenchmarks : List String :=
    "az_nat_add", "az_nat_sub", "az_nat_mul", "az_nat_mul_compare", "az_nat_div_mod",
    "az_nat_square",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
-   "tune_karatsuba_aznat"]
+   "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d"]
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -73,6 +73,13 @@ def main (args : List String) : IO Unit := do
         let _ ← tuneAzNatKaratsuba (lo := lo) (hi := hi) (nPairs := nPairs)
                   (meanBitLength := meanBitLength) (balanceRatio := balanceRatio)
                   (seed := seed)
+      | "tune_karatsuba_aznat_2d" =>
+        -- 2-D grid sweep over (minThreshold, kPercent). No balance filter:
+        -- the ratio dimension is part of what's being tuned.
+        let meanBitLength := configGetRat cfg "meanBitLength" 100000
+        let nPairs := configGetNat cfg "nPairs" 400
+        let _ ← tuneAzNatDispatch2D (nPairs := nPairs)
+                  (meanBitLength := meanBitLength) (seed := seed)
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

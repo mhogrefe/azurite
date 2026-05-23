@@ -224,12 +224,13 @@ import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
-import Azurite.AzNat.Karatsuba
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
+import Azurite.AzNat.Mul.Karatsuba
+import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2

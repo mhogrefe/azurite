@@ -1,0 +1,31 @@
+# Benchmark: schoolbook vs Karatsuba AzNat multiplication.
+#
+# Both operate on the same random `(a, b)` pairs. `mulKaratsuba` pads the
+# shorter operand with high zero limbs so the slices have equal length, then
+# recurses with `threshold`-limb schoolbook leaves.
+#
+# Produces two charts:
+#   az_nat_mul_compare.svg          — median ns/op vs (bits(a) + bits(b))
+#   az_nat_mul_compare_heatmap.svg  — which algorithm wins at each
+#                                     (bits(a), bits(b)) cell
+
+benchmark = "az_nat_mul_compare"
+limit     = 10000
+
+[params]
+meanBitLength = 65536
+iters         = 100
+threshold     = 32
+
+[[chart]]
+type    = "line"
+title   = "az_nat_mul_compare: Schoolbook vs Karatsuba"
+x_label = "Input size (significant_bits of a + b)"
+
+[[chart]]
+type          = "heatmap"
+title         = "az_nat_mul_compare: which is faster (log₂ ratio)"
+x_label       = "significant_bits(a)"
+y_label       = "significant_bits(b)"
+output_suffix = "_heatmap"
+comparison    = ["Schoolbook", "Karatsuba"]

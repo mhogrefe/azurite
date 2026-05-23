@@ -314,13 +314,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         print_usage(&args[0]);
         std::process::exit(1);
     }
-    // New config-driven flow: `benchmark-charts run <config.toml>`.
+    // New config-driven flow: `benchmark-charts run [--reuse] <config.toml>`.
     if args[1] == "run" {
-        if args.len() != 3 {
-            eprintln!("Usage: {} run <config.toml>", args[0]);
-            std::process::exit(1);
+        let mut config_path: Option<&str> = None;
+        let mut opts = run::RunOptions { reuse: false };
+        for a in &args[2..] {
+            match a.as_str() {
+                "--reuse" => opts.reuse = true,
+                "--help" | "-h" => {
+                    eprintln!("Usage: {} run [--reuse] <config.toml>", args[0]);
+                    eprintln!("  --reuse   Skip Lean run if <stem>.txt already exists.");
+                    return Ok(());
+                }
+                other if other.starts_with("--") => {
+                    eprintln!("Unknown flag: {other}");
+                    std::process::exit(1);
+                }
+                other => {
+                    if config_path.is_some() {
+                        eprintln!("Multiple config paths given.");
+                        std::process::exit(1);
+                    }
+                    config_path = Some(other);
+                }
+            }
         }
-        return run::run_from_config(Path::new(&args[2]));
+        let Some(p) = config_path else {
+            eprintln!("Usage: {} run [--reuse] <config.toml>", args[0]);
+            std::process::exit(1);
+        };
+        return run::run_from_config(Path::new(p), &opts);
     }
     // Legacy flow: `benchmark-charts <name> <input_file> [output_svg]`.
     if args.len() < 3 {

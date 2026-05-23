@@ -1,141 +1,112 @@
-import Azurite.AzNat.Basic
-import Azurite.AzNat.Conversion
-import Azurite.AzNat.OfLimbs
-import Azurite.UInt64.MulWithCarry
-import Azurite.UInt64.MulAddWithCarry
+import Azurite.AzNat.Mul.Schoolbook
+import Azurite.AzNat.Mul.Karatsuba
 
 namespace Azurite.AzNat
 
-/-- Multiply the subrange `a[lo:hi)` by a single limb `b`, threading a running
-    carry.  Each limb `a[i]` is replaced by the low half of
-    `a[i] * b + carry`; the high half becomes the new carry.  Returns the
-    modified array and the final carry-out. -/
-def mulLimb (a : Array UInt64) (lo hi : Nat) (b : UInt64)
-    (_hlo : lo ≤ hi) (hhi : hi ≤ a.size) : Array UInt64 × UInt64 :=
-  go b a lo 0 hhi
-where
-  go (b : UInt64) (a : Array UInt64) (i : Nat) (carry : UInt64)
-      (h_size : hi ≤ a.size) : Array UInt64 × UInt64 :=
-    if h : i < hi then
-      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h h_size
-      let x := a[i]
-      let (newCarry, lo') := UInt64.mulWithCarry x b carry
-      go b (a.set i lo') (i + 1) newCarry
-        (by rw [Array.size_set]; exact h_size)
-    else
-      (a, carry)
-  termination_by hi - i
+-- ── Limb-level dispatcher and AzNat wrapper ─────────────────────────────────
 
-/-- Multiply an `AzNat` `a` by a `UInt64` `b`.  Zero operands short-circuit;
-    otherwise `mulLimb` runs over `a.limbs` and the final carry (if nonzero)
-    is appended as a new high limb. -/
-def mulUInt64 (a : AzNat) (b : UInt64) : AzNat :=
-  if a.limbs.size = 0 then 0
-  else if b = 0 then 0
-  else
-    let r := mulLimb a.limbs 0 a.limbs.size b (Nat.zero_le _) (Nat.le_refl _)
-    if r.2 = 0 then ofLimbs r.1
-    else ofLimbs (r.1.push r.2)
+/-- Default minimum-length threshold for Karatsuba (in 64-bit limbs).  Tuned
+    via `Azurite.AzNat.Tune.tuneAzNatDispatch2D`: the 2-D `(minThreshold, k)`
+    sweep over an unfiltered random distribution favors a low threshold
+    combined with the ratio criterion below. -/
+def mulDispatchThreshold : Nat := 16
 
-/-- Fused multiply-accumulate loop: adds `a[offA : offA + lenA] * b` into
-    `acc[offAcc : offAcc + lenA]` in place, using `mulAddWithCarry` to combine
-    one limb of the product with one limb of the accumulator and a running
-    carry.  Returns the updated accumulator and the final carry-out. -/
-def mulAddLimbs.go (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64)
-    (acc : Array UInt64) (k : Nat) (carry : UInt64)
-    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
-    Array UInt64 × UInt64 :=
-  if h : k < lenA then
-    have h_iA : offA + k < a.size := by omega
-    have h_iAcc : offAcc + k < acc.size := by omega
-    let mac := UInt64.mulAddWithCarry a[offA + k] b acc[offAcc + k] carry
-    mulAddLimbs.go a offA lenA offAcc b (acc.set (offAcc + k) mac.2) (k + 1) mac.1
-      hA (by rw [Array.size_set]; exact hAcc)
-  else
-    (acc, carry)
-  termination_by lenA - k
+/-- Default ratio threshold (numerator/denominator).  Karatsuba is used when
+    `lenMin / lenMax ≥ mulDispatchKNum / mulDispatchKDen`, i.e.
+    `mulDispatchKDen · lenMin ≥ mulDispatchKNum · lenMax`.
 
-/-- Entry point for `mulAddLimbs.go`: starts with `k = 0`, `carry = 0`. -/
-def mulAddLimbs (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64)
-    (acc : Array UInt64)
-    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
-    Array UInt64 × UInt64 :=
-  mulAddLimbs.go a offA lenA offAcc b acc 0 0 hA hAcc
+    Tuner result: `k ≈ 1/4` (≈ 22% faster than the old `1/2`). -/
+def mulDispatchKNum : Nat := 1
+def mulDispatchKDen : Nat := 4
 
-/-- Size preservation of `mulAddLimbs.go`. -/
-theorem mulAddLimbs.go_size (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64)
-    (acc : Array UInt64) (k : Nat) (carry : UInt64)
-    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
-    (mulAddLimbs.go a offA lenA offAcc b acc k carry hA hAcc).1.size = acc.size := by
-  induction h_sub : lenA - k generalizing acc k carry with
-  | zero =>
-    have h_ge : lenA ≤ k := by omega
-    rw [mulAddLimbs.go]; simp [Nat.not_lt.mpr h_ge]
-  | succ n ih =>
-    have h_lt : k < lenA := by omega
-    rw [mulAddLimbs.go]
-    simp only [h_lt, ↓reduceDIte]
-    rw [ih _ _ _ _ (by omega), Array.size_set]
+/-- Parametrized limb-level dispatcher (used directly by `Tune`).  Dispatches
+    between `schoolbookMulLimbs` and `karatsubaMulLimbs` based on:
 
-/-- Size preservation of `mulAddLimbs`. -/
-theorem mulAddLimbs_size (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64)
-    (acc : Array UInt64)
-    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
-    (mulAddLimbs a offA lenA offAcc b acc hA hAcc).1.size = acc.size :=
-  mulAddLimbs.go_size a offA lenA offAcc b acc 0 0 hA hAcc
+    * `lenMin ≥ minThreshold`  — both operands have non-trivial size, AND
+    * `kDen · lenMin ≥ kNum · lenMax`  — the shorter operand is not too short
+      relative to the longer (ratio `kNum/kDen`).
 
-/-- Outer loop of naive schoolbook multiplication over slices.  For each
-    `j ∈ [0, lenB)`, runs `mulAddLimbs` to add `a[loA : loA + lenA] * b[loB + j]`
-    into `acc[j : j + lenA]`, then stores the final carry into `acc[j + lenA]`.
-    The accumulator `acc` is written at offset `0..lenA + lenB` (caller supplies
-    a fresh buffer). -/
-def schoolbookMulLimbs.go (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
-    (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
-    (hAcc : lenA + lenB ≤ acc.size) : Array UInt64 :=
-  if h : j < lenB then
-    have hBj : loB + j < b.size := by omega
-    have hAcc_row : j + lenA ≤ acc.size := by omega
-    let r := mulAddLimbs a loA lenA j b[loB + j] acc hA hAcc_row
-    have h_r_size : r.1.size = acc.size := mulAddLimbs_size _ _ _ _ _ _ _ _
-    have hCarryIdx : j + lenA < r.1.size := by rw [h_r_size]; omega
-    schoolbookMulLimbs.go a loA lenA b loB lenB (r.1.set (j + lenA) r.2) (j + 1) hA hB
-      (by rw [Array.size_set, h_r_size]; exact hAcc)
-  else
-    acc
-  termination_by lenB - j
-
-/-- Naive `O(lenA · lenB)` schoolbook multiplication of two slices, producing
-    a fresh array of size `lenA + lenB`. -/
-def schoolbookMulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    Both criteria must hold to pick Karatsuba; otherwise schoolbook. -/
+def mulLimbsParam (minThreshold kNum kDen : Nat)
+    (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
-  schoolbookMulLimbs.go a loA lenA b loB lenB
-    (Array.replicate (lenA + lenB) 0) 0 hA hB
-    (by rw [Array.size_replicate])
+  let lenMax := max lenA lenB
+  let lenMin := min lenA lenB
+  if minThreshold ≤ lenMin && kDen * lenMin ≥ kNum * lenMax then
+    -- Karatsuba branch: extract slices, pad to lenMax, recurse.
+    let aSlice : Array UInt64 := a.extract loA (loA + lenA)
+    let bSlice : Array UInt64 := b.extract loB (loB + lenB)
+    let aPadded : Array UInt64 := aSlice ++ Array.replicate (lenMax - lenA) 0
+    let bPadded : Array UInt64 := bSlice ++ Array.replicate (lenMax - lenB) 0
+    have hA' : 0 + lenMax ≤ aPadded.size := by
+      show 0 + lenMax ≤ (aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have hSlice : aSlice.size = lenA := by
+        show (a.extract loA (loA + lenA)).size = lenA
+        rw [Array.size_extract]; omega
+      have hMax : lenA ≤ lenMax := Nat.le_max_left _ _
+      omega
+    have hB' : 0 + lenMax ≤ bPadded.size := by
+      show 0 + lenMax ≤ (bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have hSlice : bSlice.size = lenB := by
+        show (b.extract loB (loB + lenB)).size = lenB
+        rw [Array.size_extract]; omega
+      have hMax : lenB ≤ lenMax := Nat.le_max_right _ _
+      omega
+    karatsubaMulLimbs minThreshold aPadded bPadded 0 0 lenMax hA' hB'
+  else
+    schoolbookMulLimbs a b loA lenA loB lenB hA hB
 
-/-- Size preservation of `schoolbookMulLimbs.go`: the accumulator's size is
-    unchanged by the outer loop. -/
-theorem schoolbookMulLimbs.go_size (a : Array UInt64) (loA lenA : Nat) (b : Array UInt64)
-    (loB lenB : Nat) (acc : Array UInt64) (j : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
-    (hAcc : lenA + lenB ≤ acc.size) :
-    (schoolbookMulLimbs.go a loA lenA b loB lenB acc j hA hB hAcc).size = acc.size := by
-  induction h_sub : lenB - j generalizing acc j with
-  | zero =>
-    have h_ge : lenB ≤ j := by omega
-    rw [schoolbookMulLimbs.go]; simp [Nat.not_lt.mpr h_ge]
-  | succ n ih =>
-    have h_lt : j < lenB := by omega
-    have h_new : lenB - (j + 1) = n := by omega
-    rw [schoolbookMulLimbs.go]
-    simp only [h_lt, ↓reduceDIte]
-    rw [ih _ _ _ h_new, Array.size_set, mulAddLimbs_size]
+/-- Limb-level multiplication using the default `(mulDispatchThreshold,
+    mulDispatchKNum / mulDispatchKDen)` parameters. -/
+def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
+  mulLimbsParam mulDispatchThreshold mulDispatchKNum mulDispatchKDen
+    a b loA lenA loB lenB hA hB
 
-/-- Schoolbook multiplication produces a `lenA + lenB` limb result. -/
-theorem schoolbookMulLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
-    (schoolbookMulLimbs a b loA lenA loB lenB hA hB).size = lenA + lenB := by
-  unfold schoolbookMulLimbs
-  rw [schoolbookMulLimbs.go_size, Array.size_replicate]
+/-- AzNat wrapper for `mulLimbsParam`; lets the tuner sweep the dispatch
+    parameters. -/
+def mulDispatchParam (minThreshold kNum kDen : Nat) (a b : AzNat) : AzNat :=
+  ofLimbs (mulLimbsParam minThreshold kNum kDen
+    a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
+    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+
+/-- Multiplication of two `AzNat`s.  Dispatches between schoolbook and
+    Karatsuba via `mulLimbs`. -/
+def mul (a b : AzNat) : AzNat :=
+  ofLimbs (mulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
+    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+
+instance : Mul AzNat := ⟨mul⟩
+
+-- ── Always-one-algorithm wrappers (for benchmarking) ────────────────────────
+
+/-- Multiplication of `AzNat`s forced to use schoolbook.  For benchmarking;
+    callers should use `*` (or `mul`) for the dispatched best-of-both. -/
+def mulSchoolbook (a b : AzNat) : AzNat :=
+  ofLimbs (schoolbookMulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
+    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+
+/-- Multiplication of `AzNat`s forced to use Karatsuba.  Pads the shorter
+    operand with high zero limbs.  For benchmarking; callers should use `*`
+    (or `mul`) for the dispatched best-of-both. -/
+def mulKaratsuba (threshold : Nat) (a b : AzNat) : AzNat :=
+  if a.limbs.size = 0 ∨ b.limbs.size = 0 then 0
+  else
+    let n := max a.limbs.size b.limbs.size
+    let aPadded : Array UInt64 := a.limbs ++ Array.replicate (n - a.limbs.size) 0
+    let bPadded : Array UInt64 := b.limbs ++ Array.replicate (n - b.limbs.size) 0
+    have hA : 0 + n ≤ aPadded.size := by
+      show 0 + n ≤ (a.limbs ++ Array.replicate (n - a.limbs.size) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have h := Nat.le_max_left a.limbs.size b.limbs.size
+      omega
+    have hB : 0 + n ≤ bPadded.size := by
+      show 0 + n ≤ (b.limbs ++ Array.replicate (n - b.limbs.size) (0 : UInt64)).size
+      rw [Array.size_append, Array.size_replicate]
+      have h := Nat.le_max_right a.limbs.size b.limbs.size
+      omega
+    ofLimbs (karatsubaMulLimbs threshold aPadded bPadded 0 0 n hA hB)
 
 end Azurite.AzNat

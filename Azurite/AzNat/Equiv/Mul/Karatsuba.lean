@@ -1,4 +1,4 @@
-import Azurite.AzNat.Karatsuba
+import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Sub
@@ -1348,9 +1348,9 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
     toNatLimbsList (mulLimbs a b loA lenA loB lenB hA hB).toList
       = toNatLimbsList ((a.toList.drop loA).take lenA)
         * toNatLimbsList ((b.toList.drop loB).take lenB) := by
-  unfold mulLimbs
+  unfold mulLimbs mulLimbsParam
   by_cases h : (mulDispatchThreshold ≤ min lenA lenB
-                && 2 * min lenA lenB ≥ max lenA lenB) = true
+                && mulDispatchKDen * min lenA lenB ≥ mulDispatchKNum * max lenA lenB) = true
   · -- Karatsuba branch.
     rw [if_pos h]
     -- Compute toNat of the padded arrays.

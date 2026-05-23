@@ -1,4 +1,4 @@
-import Azurite.AzNat.Karatsuba
+import Azurite.AzNat.Mul
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Random.NatGen
 import Azurite.Benchmark.Timer
@@ -148,3 +148,106 @@ def tuneAzNatKaratsuba
   else
     IO.eprintln "  → default is already optimal (or within noise)"
   return best
+
+-- ── 2-D tuner over (minThreshold, k) ────────────────────────────────────────
+
+/-- Generate `n` pairs of random `AzNat` with the full bivariate (lenA, lenB)
+    distribution — no balance filter. The 2-D tuner *wants* to see lopsided
+    pairs since the ratio dimension is what it's tuning. -/
+def generateAzNatPairsUnfiltered (n : Nat) (meanBitLength : Rat) (seed : UInt64) :
+    Array (AzNat × AzNat) := Id.run do
+  let mut g := mkNatRandomGen meanBitLength seed
+  let mut pairs : Array (AzNat × AzNat) := #[]
+  for _ in List.range n do
+    let (a, g₁) := NatRandomGen.next g
+    let (b, g₂) := NatRandomGen.next g₁
+    g := g₂
+    pairs := pairs.push (AzNat.ofNat a, AzNat.ofNat b)
+  return pairs
+
+/-- Time `mulDispatchParam` over all pairs at the given (minThreshold, kPercent),
+    where `k = kPercent / 100`. Returns total ns. -/
+@[noinline]
+def benchAzNatDispatchParam (minThreshold kPercent : Nat)
+    (pairs : Array (AzNat × AzNat)) : IO (UInt64 × Nat) := do
+  let t0 ← monoNanos
+  let mut checksum : Nat := 0
+  for (a, b) in pairs do
+    let r := AzNat.mulDispatchParam minThreshold kPercent 100 a b
+    checksum := checksum + r.limbs.size
+  let t1 ← monoNanos
+  return (t1 - t0, checksum)
+
+/-- Median-of-3 timing for a given (minThreshold, kPercent). -/
+def benchAzNatDispatchParamMedian (minThreshold kPercent : Nat)
+    (pairs : Array (AzNat × AzNat)) : IO UInt64 := do
+  let (t1, _) ← benchAzNatDispatchParam minThreshold kPercent pairs
+  let (t2, _) ← benchAzNatDispatchParam minThreshold kPercent pairs
+  let (t3, _) ← benchAzNatDispatchParam minThreshold kPercent pairs
+  if t1 ≤ t2 then
+    if t2 ≤ t3 then return t2
+    else if t1 ≤ t3 then return t3
+    else return t1
+  else
+    if t1 ≤ t3 then return t1
+    else if t2 ≤ t3 then return t3
+    else return t2
+
+/-- Pad a string with spaces on the left up to `width`. -/
+private def padLeft (width : Nat) (s : String) : String :=
+  let n := s.length
+  if n ≥ width then s else String.ofList (List.replicate (width - n) ' ') ++ s
+
+/-- 2-D grid sweep over `(minThreshold, kPercent)`.
+
+    Karatsuba is picked at the top-level dispatch when
+    `lenMin ≥ minThreshold ∧ 100 · lenMin ≥ kPercent · lenMax`.
+    Setting `kPercent = 0` recovers the "min-threshold only" criterion.
+
+    Prints a landscape table of total times and returns the best
+    `(minThreshold, kPercent)`. -/
+def tuneAzNatDispatch2D
+    (thresholds : Array Nat := #[16, 24, 32, 48, 64, 96, 128])
+    (kPercents  : Array Nat := #[0, 6, 12, 18, 25, 37, 50, 75])
+    (nPairs : Nat := 400) (meanBitLength : Rat := 100000)
+    (seed : UInt64 := 42) : IO (Nat × Nat) := do
+  IO.eprintln s!"[AzNat-2D] Generating {nPairs} test pairs (mean bit length {meanBitLength}, no filter)..."
+  let pairs := generateAzNatPairsUnfiltered nPairs meanBitLength seed
+  IO.eprintln s!"[AzNat-2D] {pairs.size} pairs."
+  IO.eprintln ""
+  -- Collect timings: timings[i][j] = ns at thresholds[i], kPercents[j].
+  let mut timings : Array (Array UInt64) := #[]
+  let mut bestThreshold : Nat := 0
+  let mut bestKPercent  : Nat := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  for i in List.range thresholds.size do
+    let t := thresholds[i]!
+    let mut row : Array UInt64 := #[]
+    for j in List.range kPercents.size do
+      let k := kPercents[j]!
+      let time ← benchAzNatDispatchParamMedian t k pairs
+      row := row.push time
+      if time < bestTime then
+        bestThreshold := t
+        bestKPercent := k
+        bestTime := time
+    timings := timings.push row
+  -- Render landscape: rows = minThreshold, columns = kPercent.
+  let colWidth := 9
+  let header := "  thr \\ k%  " ++ String.join (kPercents.toList.map fun k =>
+    padLeft colWidth s!"{k}")
+  IO.eprintln header
+  IO.eprintln (String.ofList (List.replicate header.length '-'))
+  for i in List.range thresholds.size do
+    let t := thresholds[i]!
+    let mut line := padLeft 10 s!"{t}" ++ "  "
+    for j in List.range kPercents.size do
+      let ns := timings[i]![j]!
+      -- Show in microseconds (rounded) to keep the table narrow.
+      let us := ns.toNat / 1000
+      let marker := if t == bestThreshold && kPercents[j]! == bestKPercent then "*" else " "
+      line := line ++ padLeft colWidth (s!"{us}" ++ marker)
+    IO.eprintln line
+  IO.eprintln ""
+  IO.eprintln s!"[AzNat-2D] Best: minThreshold = {bestThreshold}, kPercent = {bestKPercent} ({bestTime}ns)"
+  return (bestThreshold, bestKPercent)

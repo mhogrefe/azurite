@@ -1,6 +1,6 @@
 import Azurite.Random.NatGen
 import Azurite.Random.Pair
-import Azurite.AzNat.Karatsuba
+import Azurite.AzNat.Mul
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd -- reuse natSignificantBits
 import Azurite.Benchmark.RatCmp -- reuse timeNsIter, median3, configGetRat, configGetNat
@@ -18,8 +18,10 @@ Both operate on the same `AzNat` values; `mulKaratsuba` pads the shorter
 limb array with high zero limbs so the slices have equal length.
 
 Output format (one line per pair):
-  `<sb>;Schoolbook,<ns>;Karatsuba,<ns>`
-where `<sb>` is the sum of significant bits of the two operands.
+  `<bitsA>,<bitsB>;Schoolbook,<ns>;Karatsuba,<ns>`
+where `<bitsA>`, `<bitsB>` are the significant bits of `a` and `b`. The
+chart driver can derive the sum as needed for line plots, or use the pair
+as coordinates for a 2-D heatmap.
 
 Config keys:
   - `meanBitLength` (Rat, default 256) — geometric mean of operand bit length.
@@ -38,7 +40,8 @@ def runAzNatMulCompare (limit : Nat) (cfg : Std.HashMap String String)
     let ((a, b), g') := PairRandomGenFromSingle.next g
     let azA := Azurite.AzNat.ofNat a
     let azB := Azurite.AzNat.ofNat b
-    let sb := natSignificantBits a + natSignificantBits b
+    let bitsA := natSignificantBits a
+    let bitsB := natSignificantBits b
     -- Schoolbook
     let (rSch, ns1a) ← timeNsIter iters (fun _ => Azurite.AzNat.mulSchoolbook azA azB)
     let (_,    ns1b) ← timeNsIter iters (fun _ => Azurite.AzNat.mulSchoolbook azA azB)
@@ -51,5 +54,5 @@ def runAzNatMulCompare (limit : Nat) (cfg : Std.HashMap String String)
     let ns2 := median3 ns2a ns2b ns2c
     if Azurite.AzNat.toNat rSch ≠ Azurite.AzNat.toNat rKar then
       IO.eprintln s!"BUG: schoolbook ≠ karatsuba for a={a}, b={b}"
-    IO.println s!"{sb};Schoolbook,{ns1};Karatsuba,{ns2}"
+    IO.println s!"{bitsA},{bitsB};Schoolbook,{ns1};Karatsuba,{ns2}"
     g := g'

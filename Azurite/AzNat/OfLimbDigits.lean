@@ -1,4 +1,4 @@
-import Azurite.AzNat.Karatsuba
+import Azurite.AzNat.Mul
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.UInt64.MaxPow

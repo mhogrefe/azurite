@@ -1,6 +1,6 @@
 import Azurite.AzNat.Add
 import Azurite.AzNat.Sub
-import Azurite.AzNat.Mul
+import Azurite.AzNat.Mul.Schoolbook
 
 namespace Azurite.AzNat
 
@@ -251,91 +251,5 @@ theorem karatsubaMulLimbs_size (threshold : Nat) (a b : Array UInt64)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
     (karatsubaMulLimbs threshold a b loA loB len hA hB).size = 2 * len :=
   (karatsubaMulLimbsRec threshold a b loA loB len hA hB).2
-
--- ── Limb-level dispatcher and AzNat wrapper ─────────────────────────────────
-
-/-- Default Karatsuba schoolbook-fallback threshold (in 64-bit limbs).  Tuned
-    via `Azurite.AzNat.Tune` on a typical machine; the `az_nat_mul_compare`
-    benchmark shows Karatsuba already winning around limb count 25-32 on
-    balanced operands. -/
-def mulDispatchThreshold : Nat := 32
-
-/-- Multiplication of two limb slices.  Dispatches between `schoolbookMulLimbs`
-    and `karatsubaMulLimbs` based on operand size and balance:
-
-    * Both operands ≥ `mulDispatchThreshold` limbs AND the size ratio
-      `min/max` is at least 1/2 → Karatsuba (with the shorter slice padded
-      to match).
-    * Otherwise → schoolbook.
-
-    Putting the dispatch here means every caller (`AzNat.mul`, future
-    polynomial-coefficient mul, etc.) automatically benefits from the best
-    available algorithm. -/
-def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
-    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) : Array UInt64 :=
-  let lenMax := max lenA lenB
-  let lenMin := min lenA lenB
-  if mulDispatchThreshold ≤ lenMin && 2 * lenMin ≥ lenMax then
-    -- Karatsuba branch: extract slices, pad to lenMax, recurse.
-    let aSlice : Array UInt64 := a.extract loA (loA + lenA)
-    let bSlice : Array UInt64 := b.extract loB (loB + lenB)
-    let aPadded : Array UInt64 := aSlice ++ Array.replicate (lenMax - lenA) 0
-    let bPadded : Array UInt64 := bSlice ++ Array.replicate (lenMax - lenB) 0
-    have hA' : 0 + lenMax ≤ aPadded.size := by
-      show 0 + lenMax ≤ (aSlice ++ Array.replicate (lenMax - lenA) (0 : UInt64)).size
-      rw [Array.size_append, Array.size_replicate]
-      have hSlice : aSlice.size = lenA := by
-        show (a.extract loA (loA + lenA)).size = lenA
-        rw [Array.size_extract]; omega
-      have hMax : lenA ≤ lenMax := Nat.le_max_left _ _
-      omega
-    have hB' : 0 + lenMax ≤ bPadded.size := by
-      show 0 + lenMax ≤ (bSlice ++ Array.replicate (lenMax - lenB) (0 : UInt64)).size
-      rw [Array.size_append, Array.size_replicate]
-      have hSlice : bSlice.size = lenB := by
-        show (b.extract loB (loB + lenB)).size = lenB
-        rw [Array.size_extract]; omega
-      have hMax : lenB ≤ lenMax := Nat.le_max_right _ _
-      omega
-    karatsubaMulLimbs mulDispatchThreshold aPadded bPadded 0 0 lenMax hA' hB'
-  else
-    schoolbookMulLimbs a b loA lenA loB lenB hA hB
-
-/-- Multiplication of two `AzNat`s.  Dispatches between schoolbook and
-    Karatsuba via `mulLimbs`. -/
-def mul (a b : AzNat) : AzNat :=
-  ofLimbs (mulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
-    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
-
-instance : Mul AzNat := ⟨mul⟩
-
--- ── Always-one-algorithm wrappers (for benchmarking) ────────────────────────
-
-/-- Multiplication of `AzNat`s forced to use schoolbook.  For benchmarking;
-    callers should use `*` (or `mul`) for the dispatched best-of-both. -/
-def mulSchoolbook (a b : AzNat) : AzNat :=
-  ofLimbs (schoolbookMulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
-    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
-
-/-- Multiplication of `AzNat`s forced to use Karatsuba.  Pads the shorter
-    operand with high zero limbs.  For benchmarking; callers should use `*`
-    (or `mul`) for the dispatched best-of-both. -/
-def mulKaratsuba (threshold : Nat) (a b : AzNat) : AzNat :=
-  if a.limbs.size = 0 ∨ b.limbs.size = 0 then 0
-  else
-    let n := max a.limbs.size b.limbs.size
-    let aPadded : Array UInt64 := a.limbs ++ Array.replicate (n - a.limbs.size) 0
-    let bPadded : Array UInt64 := b.limbs ++ Array.replicate (n - b.limbs.size) 0
-    have hA : 0 + n ≤ aPadded.size := by
-      show 0 + n ≤ (a.limbs ++ Array.replicate (n - a.limbs.size) (0 : UInt64)).size
-      rw [Array.size_append, Array.size_replicate]
-      have h := Nat.le_max_left a.limbs.size b.limbs.size
-      omega
-    have hB : 0 + n ≤ bPadded.size := by
-      show 0 + n ≤ (b.limbs ++ Array.replicate (n - b.limbs.size) (0 : UInt64)).size
-      rw [Array.size_append, Array.size_replicate]
-      have h := Nat.le_max_right a.limbs.size b.limbs.size
-      omega
-    ofLimbs (karatsubaMulLimbs threshold aPadded bPadded 0 0 n hA hB)
 
 end Azurite.AzNat

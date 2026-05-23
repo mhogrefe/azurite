@@ -1,5 +1,5 @@
 import Azurite.Random.NatGen
-import Azurite.AzNat.Karatsuba
+import Azurite.AzNat.Mul
 import Azurite.AzNat.Square
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd -- reuse natSignificantBits
