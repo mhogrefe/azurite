@@ -31,7 +31,7 @@ namespace Azurite.AzNat
 
 /-- Value of a length-`len` slice `a[lo, lo+len)`.  Local to the proof
     file; the algorithm itself never names this value. -/
-private def sliceToNat (a : Array UInt64) (lo len : Nat) : Nat :=
+def sliceToNat (a : Array UInt64) (lo len : Nat) : Nat :=
   toNatLimbsList ((a.toList.drop lo).take len)
 
 private lemma sliceToNat_lt_pow (a : Array UInt64) (lo len : Nat) :
@@ -293,7 +293,7 @@ theorem diffM1_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
 -- ── Slice values as a single nat decomposition ─────────────────────────────
 
 /-- The slice of length `k + k + m` decomposes as `A_0 + A_1·β^k + A_2·β^{2k}`. -/
-private lemma slice_decomp_3 (a : Array UInt64) (lo k m : Nat)
+lemma slice_decomp_3 (a : Array UInt64) (lo k m : Nat)
     (h : lo + (k + k + m) ≤ a.size) :
     toNatLimbsList ((a.toList.drop lo).take (k + k + m))
       = sliceToNat a lo k

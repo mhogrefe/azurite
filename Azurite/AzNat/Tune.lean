@@ -275,7 +275,7 @@ def benchAzNatSquareDispatch (minThreshold : Nat) (inputs : Array AzNat) :
   let t0 ← monoNanos
   let mut checksum : Nat := 0
   for a in inputs do
-    let r := AzNat.squareDispatchParam minThreshold a
+    let r := AzNat.squareDispatchParam minThreshold AzNat.squareDispatchToomCook3Cutoff a
     checksum := checksum + r.limbs.size
   let t1 ← monoNanos
   return (t1 - t0, checksum)
@@ -422,4 +422,84 @@ def tuneAzNatMulToomCook3
   IO.eprintln line
   IO.eprintln ""
   IO.eprintln s!"[AzNat-MulToom3] Best: toomCook3Cutoff = {bestCutoff} ({bestTime}ns)"
+  return bestCutoff
+
+-- ── 1-D tuner for the Karatsuba ↔ Toom-Cook 3 squaring dispatch threshold ──
+
+/-- Dispatch between Karatsuba squaring and Toom-Cook 3 squaring based on
+    the input length.  Below `toomCook3Cutoff`, use `squareKaratsuba`;
+    at-or-above, use `squareToomCook3` with the tuned Karatsuba threshold
+    as its fallback. -/
+def squareToomCook3DispatchParam (toomCook3Cutoff : Nat) (a : AzNat) : AzNat :=
+  if toomCook3Cutoff ≤ a.limbs.size then
+    AzNat.squareToomCook3 toomCook3Cutoff AzNat.squareDispatchThreshold a
+  else
+    AzNat.squareKaratsuba AzNat.squareDispatchThreshold a
+
+/-- Time `squareToomCook3DispatchParam` over all inputs at the given cutoff. -/
+@[noinline]
+def benchAzNatSquareToomCook3Dispatch (cutoff : Nat) (inputs : Array AzNat) :
+    IO (UInt64 × Nat) := do
+  let t0 ← monoNanos
+  let mut checksum : Nat := 0
+  for a in inputs do
+    let r := squareToomCook3DispatchParam cutoff a
+    checksum := checksum + r.limbs.size
+  let t1 ← monoNanos
+  return (t1 - t0, checksum)
+
+/-- Median-of-3 timing for a given cutoff. -/
+def benchAzNatSquareToomCook3DispatchMedian (cutoff : Nat) (inputs : Array AzNat) :
+    IO UInt64 := do
+  let (t1, _) ← benchAzNatSquareToomCook3Dispatch cutoff inputs
+  let (t2, _) ← benchAzNatSquareToomCook3Dispatch cutoff inputs
+  let (t3, _) ← benchAzNatSquareToomCook3Dispatch cutoff inputs
+  if t1 ≤ t2 then
+    if t2 ≤ t3 then return t2
+    else if t1 ≤ t3 then return t3
+    else return t1
+  else
+    if t1 ≤ t3 then return t1
+    else if t2 ≤ t3 then return t3
+    else return t2
+
+/-- 1-D grid sweep over the Karatsuba ↔ Toom-Cook 3 squaring cutoff.
+
+    Squaring has no balance dimension (single operand → halves differ by
+    at most one limb), so this is a clean 1-D search.  Returns the best
+    `cutoff` (in limbs). -/
+def tuneAzNatSquareToomCook3
+    (cutoffs : Array Nat :=
+       #[32, 64, 128, 192, 256, 320, 384, 512, 768, 1024])
+    (nInputs : Nat := 400) (meanBitLength : Rat := 32768)
+    (seed : UInt64 := 42) : IO Nat := do
+  IO.eprintln s!"[AzNat-SquareToom3] Generating {nInputs} test inputs (mean bit length {meanBitLength})..."
+  let inputs := generateAzNatSingles nInputs meanBitLength seed
+  IO.eprintln s!"[AzNat-SquareToom3] {inputs.size} inputs."
+  IO.eprintln ""
+  let mut bestCutoff : Nat := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  let mut times : Array UInt64 := #[]
+  for i in List.range cutoffs.size do
+    let c := cutoffs[i]!
+    let time ← benchAzNatSquareToomCook3DispatchMedian c inputs
+    times := times.push time
+    if time < bestTime then
+      bestCutoff := c
+      bestTime := time
+  -- Render a single-row landscape.
+  let colWidth := 12
+  let header := "  cutoff    " ++ String.join (cutoffs.toList.map fun c =>
+    padLeft colWidth s!"{c}")
+  IO.eprintln header
+  IO.eprintln (String.ofList (List.replicate header.length '-'))
+  let mut line := padLeft 11 "µs/run" ++ "  "
+  for i in List.range cutoffs.size do
+    let ns := times[i]!
+    let us := ns.toNat / 1000
+    let marker := if cutoffs[i]! == bestCutoff then "*" else " "
+    line := line ++ padLeft colWidth (s!"{us}" ++ marker)
+  IO.eprintln line
+  IO.eprintln ""
+  IO.eprintln s!"[AzNat-SquareToom3] Best: toomCook3Cutoff = {bestCutoff} ({bestTime}ns)"
   return bestCutoff

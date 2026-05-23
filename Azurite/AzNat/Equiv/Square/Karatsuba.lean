@@ -170,24 +170,4 @@ theorem toNat_squareKaratsuba (threshold : Nat) (a : AzNat) :
   rw [List.drop_zero, List.take_of_length_le (by rw [Array.length_toList])]
   rfl
 
-/-- Correctness of `squareLimbs`: agrees with squaring on the slice,
-    regardless of which branch (schoolbook or Karatsuba) the dispatcher
-    picks. -/
-theorem squareLimbs_toNat (a : Array UInt64) (lo len : Nat)
-    (hA : lo + len ≤ a.size) :
-    toNatLimbsList (squareLimbs a lo len hA).toList
-      = (toNatLimbsList ((a.toList.drop lo).take len)) ^ 2 := by
-  unfold squareLimbs squareLimbsParam
-  by_cases h : squareDispatchThreshold ≤ len
-  · rw [if_pos h]; exact karatsubaSquareLimbs_toNat squareDispatchThreshold a lo len hA
-  · rw [if_neg h]; exact schoolbookSquareLimbs_toNat a lo len hA
-
-/-- Correctness of `square` (the dispatched AzNat squaring). -/
-theorem toNat_square (a : AzNat) : (square a).toNat = a.toNat ^ 2 := by
-  show (ofLimbs (squareLimbs a.limbs 0 a.limbs.size _)).toNat = _
-  rw [toNat_ofLimbs, squareLimbs_toNat]
-  show (toNatLimbsList ((a.limbs.toList.drop 0).take a.limbs.size)) ^ 2 = a.toNat ^ 2
-  rw [List.drop_zero, List.take_of_length_le (by rw [Array.length_toList])]
-  rfl
-
 end Azurite.AzNat

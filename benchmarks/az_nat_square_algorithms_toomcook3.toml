@@ -1,0 +1,22 @@
+# Benchmark: Karatsuba vs Toom-Cook 3-way AzNat squaring.
+#
+# Both algorithms produce a²; runtime correctness is checked per input.
+# Toom-Cook 3 squaring uses five recursive *squarings* (no sign tracking
+# since vm1 = (a₀ - a₁ + a₂)² ≥ 0 always), reusing `toomCook3Interpolate`
+# from the mul side.
+#
+# Mean bit length is set higher than `az_nat_square_algorithms` (the
+# Schoolbook-vs-Karatsuba sweep), since the Karatsuba ↔ Toom-Cook 3
+# crossover is far up the size scale (mul-side tuning suggests ~256 limbs
+# ≈ 16384 bits per operand).
+
+benchmark = "az_nat_square_algorithms_toomcook3"
+limit     = 2000
+title     = "az_nat_square_algorithms_toomcook3: Karatsuba vs Toom-Cook 3"
+x_label   = "Input size (significant_bits of a)"
+
+[params]
+meanBitLength      = 16384
+iters              = 10
+karatsubaThreshold = 32
+toomCook3Threshold = 256
