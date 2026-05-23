@@ -582,6 +582,7 @@ import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.Main
 import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.Timer
+import Azurite.Benchmark.UInt64SqrtRem
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
@@ -631,6 +632,7 @@ import Azurite.UInt64.Equiv.Reciprocal3By2
 import Azurite.UInt64.Equiv.SetBit
 import Azurite.UInt64.Equiv.ShiftRightRound
 import Azurite.UInt64.Equiv.SplitHalves
+import Azurite.UInt64.Equiv.SqrtRem
 import Azurite.UInt64.Equiv.SubWithBorrow
 import Azurite.UInt64.Equiv.TestBit
 import Azurite.UInt64.Equiv.WideAdd
@@ -650,6 +652,7 @@ import Azurite.UInt64.Reciprocal3By2
 import Azurite.UInt64.SetBit
 import Azurite.UInt64.ShiftRightRound
 import Azurite.UInt64.SplitHalves
+import Azurite.UInt64.SqrtRem
 import Azurite.UInt64.SubWithBorrow
 import Azurite.UInt64.TestBit
 import Azurite.UInt64.WideAdd

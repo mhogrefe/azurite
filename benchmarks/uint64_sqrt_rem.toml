@@ -1,0 +1,16 @@
+# Benchmark: UInt64.sqrtRem on random inputs.
+#
+# Times a single call to `sqrtRem` (Float-based guess + ±1 correction
+# loops).  No comparison series — this is a baseline measurement of
+# raw latency.  Each call is essentially one hardware sqrt plus a
+# handful of integer ops, so we expect tens of ns; `iters` is large
+# to lift the per-call cost above `timeNsIter`'s clock resolution.
+
+benchmark = "uint64_sqrt_rem"
+limit     = 5000
+title     = "uint64_sqrt_rem: UInt64.sqrtRem on random inputs"
+x_label   = "Input size (significant_bits of n)"
+
+[params]
+meanBitLength = 32
+iters         = 10000
