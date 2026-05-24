@@ -1,0 +1,40 @@
+# Benchmark: basecase (MCA 1.13, Newton) vs divide-and-conquer (MCA 1.12)
+# integer square root on AzNat.
+#
+# Both algorithms operate on the same random `n` per iteration.  D&C only
+# kicks in once `m.limbs.size ≥ 5` (~320 bits); below that it delegates
+# directly to the basecase, so values in the crossover region are the
+# interesting part of the sweep.
+#
+# Each row of the output uses the duplicated-bucket form
+# `<sb>,<sb>;Basecase,<ns>;DnC,<ns>` so the same dataset drives both a
+# line chart (x = `sb + sb = 2·sb`, i.e.\ effectively input bit length
+# rescaled) and a heatmap.  Because the input is one-dimensional, the
+# heatmap is populated along the `y = x` diagonal.
+#
+# Produces two charts:
+#   az_nat_sqrt_rem_algorithms.svg          — median ns/op vs 2·bits(n)
+#   az_nat_sqrt_rem_algorithms_heatmap.svg  — diagonal heatmap of the
+#                                             log₂ ratio of the two
+#                                             algorithms at each
+#                                             (bits(n), bits(n)) cell
+
+benchmark = "az_nat_sqrt_rem_algorithms"
+limit     = 2000
+
+[params]
+meanBitLength = 256
+iters         = 10
+
+[[chart]]
+type    = "line"
+title   = "az_nat_sqrt_rem_algorithms: Basecase (Newton) vs D&C"
+x_label = "Input size (2 × significant_bits(n))"
+
+[[chart]]
+type          = "heatmap"
+title         = "az_nat_sqrt_rem_algorithms: which is faster (log₂ ratio)"
+x_label       = "significant_bits(n)"
+y_label       = "significant_bits(n)"
+output_suffix = "_heatmap"
+comparison    = ["Basecase", "DnC"]

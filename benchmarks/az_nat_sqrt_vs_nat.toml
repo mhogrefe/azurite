@@ -1,0 +1,12 @@
+# Benchmark: Lean `Nat.sqrt` (pure-Lean Newton over GMP-backed Nat
+# arithmetic) vs `AzNat.sqrt` (divide-and-conquer, MCA 1.12, over
+# limb-level AzNat arithmetic — no GMP).
+
+benchmark = "az_nat_sqrt_vs_nat"
+limit     = 10000
+title     = "az_nat_sqrt_vs_nat: Nat.sqrt vs AzNat.sqrt"
+x_label   = "Input size (significant_bits of n)"
+
+[params]
+meanBitLength = 4096
+iters         = 10

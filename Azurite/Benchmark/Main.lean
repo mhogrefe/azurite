@@ -16,6 +16,8 @@ import Azurite.Benchmark.AzNatModVsDivMod
 import Azurite.Benchmark.AzIntDivVsDivMod
 import Azurite.Benchmark.AzIntModVsDivMod
 import Azurite.Benchmark.UInt64SqrtRem
+import Azurite.Benchmark.AzNatSqrtRemAlgorithms
+import Azurite.Benchmark.AzNatSqrtVsNat
 import Azurite.AzPolynomial.Tune
 import Azurite.AzNat.Tune
 
@@ -34,7 +36,7 @@ def validBenchmarks : List String :=
    "az_nat_add", "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
    "az_nat_mul_algorithms_toomcook3", "az_nat_div_mod", "az_nat_div_vs_div_mod",
    "az_nat_mod_vs_div_mod", "az_int_div_vs_div_mod", "az_int_mod_vs_div_mod",
-   "uint64_sqrt_rem",
+   "uint64_sqrt_rem", "az_nat_sqrt_rem_algorithms", "az_nat_sqrt_vs_nat",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
@@ -67,6 +69,8 @@ def main (args : List String) : IO Unit := do
       | "az_int_div_vs_div_mod" => runAzIntDivVsDivMod limit cfg seed
       | "az_int_mod_vs_div_mod" => runAzIntModVsDivMod limit cfg seed
       | "uint64_sqrt_rem" => runUInt64SqrtRem limit cfg seed
+      | "az_nat_sqrt_rem_algorithms" => runAzNatSqrtRemAlgorithms limit cfg seed
+      | "az_nat_sqrt_vs_nat" => runAzNatSqrtVsNat limit cfg seed
       | "az_nat_square_vs_mul" => runAzNatSquareVsMul limit cfg seed
       | "az_nat_square_algorithms" => runAzNatSquareAlgorithms limit cfg seed
       | "az_nat_square_algorithms_toomcook3" =>

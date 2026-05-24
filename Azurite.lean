@@ -574,6 +574,8 @@ import Azurite.Benchmark.AzNatModVsDivMod
 import Azurite.Benchmark.AzNatMulAlgorithms
 import Azurite.Benchmark.AzNatMulAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatMulVsNat
+import Azurite.Benchmark.AzNatSqrtRemAlgorithms
+import Azurite.Benchmark.AzNatSqrtVsNat
 import Azurite.Benchmark.AzNatSquareAlgorithms
 import Azurite.Benchmark.AzNatSquareAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatSquareVsMul
