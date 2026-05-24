@@ -219,6 +219,7 @@ import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
+import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.Square
 import Azurite.AzNat.Equiv.Square.Karatsuba
 import Azurite.AzNat.Equiv.Square.ToomCook3
@@ -250,6 +251,7 @@ import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.ShiftRightRound
 import Azurite.AzNat.Size
+import Azurite.AzNat.SqrtRem
 import Azurite.AzNat.Square
 import Azurite.AzNat.Square.Karatsuba
 import Azurite.AzNat.Square.Schoolbook
@@ -608,6 +610,7 @@ import Azurite.Rounding.Symmetric
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits
+import Azurite.UInt64.Div128By64
 import Azurite.UInt64.Div2By1
 import Azurite.UInt64.Div3By2
 import Azurite.UInt64.DivMod
