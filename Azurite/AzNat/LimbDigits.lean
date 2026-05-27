@@ -1,4 +1,4 @@
-import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.DivMod10p19
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.OfLimbs

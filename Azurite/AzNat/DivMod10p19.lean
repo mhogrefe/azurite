@@ -1,4 +1,4 @@
-import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Schoolbook
 import Azurite.UInt64.MaxPow
 
 namespace Azurite.AzNat

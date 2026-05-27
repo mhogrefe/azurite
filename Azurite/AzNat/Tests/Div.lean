@@ -1,4 +1,4 @@
-import Azurite.AzNat.DivRecursiveLimbs
+import Azurite.AzNat.Div
 import Azurite.AzNat.ParseBase
 
 namespace Azurite.AzNat

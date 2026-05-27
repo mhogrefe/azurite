@@ -1,6 +1,6 @@
 import Azurite.AzNat.Add
 import Azurite.AzNat.Compare
-import Azurite.AzNat.DivRecursiveLimbs
+import Azurite.AzNat.Div
 import Azurite.AzNat.Parity
 import Azurite.AzNat.ShiftRight
 import Azurite.Rounding.Basic

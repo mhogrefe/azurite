@@ -1,4 +1,4 @@
-import Azurite.AzNat.DivRecursiveLimbs
+import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Div.DivModLimb
 import Azurite.AzNat.Equiv.Compare
 import Azurite.UInt64.Equiv.Div3By2

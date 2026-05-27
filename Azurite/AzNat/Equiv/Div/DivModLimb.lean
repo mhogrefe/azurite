@@ -1,4 +1,4 @@
-import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.UInt64.Equiv.Basic

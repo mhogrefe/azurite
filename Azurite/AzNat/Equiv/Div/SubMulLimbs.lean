@@ -1,6 +1,6 @@
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Linarith
-import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.Equiv.Basic
 import Azurite.UInt64.Equiv.MulWithCarry
 import Azurite.UInt64.Equiv.SubWithBorrow

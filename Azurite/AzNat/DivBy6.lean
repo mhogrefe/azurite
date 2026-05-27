@@ -1,4 +1,4 @@
-import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Schoolbook
 
 namespace Azurite.AzNat
 

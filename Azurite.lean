@@ -182,9 +182,10 @@ import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Recursive
+import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
-import Azurite.AzNat.DivRecursiveLimbs
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic

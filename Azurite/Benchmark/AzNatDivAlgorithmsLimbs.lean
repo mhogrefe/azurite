@@ -1,6 +1,6 @@
 import Azurite.Random.NatGen
 import Azurite.Random.Pair
-import Azurite.AzNat.DivRecursiveLimbs
+import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.RatCmp

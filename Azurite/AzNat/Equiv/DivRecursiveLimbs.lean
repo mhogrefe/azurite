@@ -1,4 +1,4 @@
-import Azurite.AzNat.DivRecursiveLimbs
+import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Sub
@@ -12,7 +12,7 @@ namespace Azurite.AzNat
 ## `toNat`-level correctness of slice-level `recursiveDivModLimbsAux`
 
 This file proves the spec for the slice-style recursive divrem
-defined in `DivRecursiveLimbs.lean`.  The spec mirrors
+defined in `Div/Recursive.lean`.  The spec mirrors
 `schoolbookDivModLimbs_toNat`:
 
   Let `a`, `b` be limb arrays with `a[loA, loA+n+m)` the dividend,
@@ -47,7 +47,7 @@ Dependencies from other files:
     `subGeqLimbs_get_outside` (in `AzNat/Sub.lean`)
   - `zeroFill_get_outside`, `writeSlice_get_outside`,
     `addbackLoop_get_outside`, `afterFirstRec_get_outside`,
-    `afterSecondRec_get_outside` (in `AzNat/DivRecursiveLimbs.lean`)
+    `afterSecondRec_get_outside` (in `AzNat/Div/Recursive.lean`)
   - `schoolbookDivModLimbs_toList_take`/`drop`/`_getElem_outside`
     (in `Equiv/Div/Schoolbook.lean`)
 -/
@@ -4628,8 +4628,8 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
         have h_VBuf_norm :
             2 ^ 63 ≤ (VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega)).toNat := by
           -- VBuf = VBufRaw.set (n-1) d_top h_top_in_raw; position 0+n-1 = n-1.
-          -- This is the same proof used in the `def` at line 742-747 of
-          -- DivRecursiveLimbs.lean.
+          -- This is the same proof used in the `def` in
+          -- Div.lean.
           have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
             show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
             rw [Array.getElem_set]
