@@ -1,0 +1,33 @@
+# Benchmark: Schoolbook (Algorithm 1.6 of MCA) vs Brent-Zimmermann
+# recursive D&C (Algorithm 1.8 of MCA).
+#
+# Uses recursiveDivModFast with threshold=999999 (pure schoolbook) vs
+# threshold=32 (recursive D&C). Both produce the same (Q, R) (verified
+# at runtime per pair).
+#
+# Produces two charts:
+#   az_nat_div_algorithms.svg          -- median ns/op vs bits(U) + bits(V)
+#   az_nat_div_algorithms_heatmap.svg  -- which algorithm wins at each
+#                                         (bits(U), bits(V)) cell
+
+benchmark = "az_nat_div_algorithms"
+limit     = 2000
+
+[params]
+meanDividendBitLength = 32768
+meanDivisorBitLength  = 16384
+iters                 = 10
+threshold             = 32
+
+[[chart]]
+type    = "line"
+title   = "az_nat_div_algorithms: Schoolbook vs Recursive D&C"
+x_label = "Input size (significant_bits of U + V)"
+
+[[chart]]
+type          = "heatmap"
+title         = "az_nat_div_algorithms: which is faster (log2 ratio)"
+x_label       = "significant_bits(U)"
+y_label       = "significant_bits(V)"
+output_suffix = "_heatmap"
+comparison    = ["Schoolbook", "Recursive"]

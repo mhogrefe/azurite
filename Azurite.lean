@@ -184,6 +184,7 @@ import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
 import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
+import Azurite.AzNat.DivRecursiveLimbs
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
@@ -199,6 +200,7 @@ import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.SubMulLimbs
 import Azurite.AzNat.Equiv.DivBy6
 import Azurite.AzNat.Equiv.DivMod10p19
+import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
@@ -568,6 +570,8 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
 import Azurite.Benchmark.AzIntDivVsDivMod
 import Azurite.Benchmark.AzIntModVsDivMod
 import Azurite.Benchmark.AzNatAdd
+import Azurite.Benchmark.AzNatDivAlgorithms
+import Azurite.Benchmark.AzNatDivAlgorithmsLimbs
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatDivVsDivMod
 import Azurite.Benchmark.AzNatModVsDivMod

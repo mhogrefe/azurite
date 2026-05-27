@@ -2,7 +2,7 @@ import Azurite.AzNat.Add
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Conversion -- for UInt64.toAzNat / single-limb dispatch
-import Azurite.AzNat.Div
+import Azurite.AzNat.DivRecursiveLimbs
 import Azurite.AzNat.Mul
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.ShiftLeft

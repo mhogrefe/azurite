@@ -78,6 +78,33 @@ def mulLimbs (a b : Array UInt64) (loA lenA loB lenB : Nat)
   mulLimbsParam mulDispatchThreshold mulDispatchKNum mulDispatchKDen
     mulDispatchToomCook3Cutoff a b loA lenA loB lenB hA hB
 
+/-- Lower bound on `mulLimbsParam`'s output: `lenA + lenB ≤ size`.
+    Schoolbook gives exactly `lenA + lenB`; Karatsuba/Toom give
+    `2 * max lenA lenB` which is also `≥ lenA + lenB`. -/
+theorem mulLimbsParam_size_ge (minThreshold kNum kDen toomCook3Cutoff : Nat)
+    (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
+    lenA + lenB ≤ (mulLimbsParam minThreshold kNum kDen toomCook3Cutoff
+      a b loA lenA loB lenB hA hB).size := by
+  unfold mulLimbsParam
+  simp only
+  split_ifs
+  · rw [toomCook3MulLimbs_size]
+    have hmax_a := Nat.le_max_left lenA lenB
+    have hmax_b := Nat.le_max_right lenA lenB
+    omega
+  · rw [karatsubaMulLimbs_size]
+    have hmax_a := Nat.le_max_left lenA lenB
+    have hmax_b := Nat.le_max_right lenA lenB
+    omega
+  · rw [schoolbookMulLimbs_size]
+
+/-- Lower bound: `mulLimbs`'s output has at least `lenA + lenB` limbs. -/
+theorem mulLimbs_size_ge (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size) :
+    lenA + lenB ≤ (mulLimbs a b loA lenA loB lenB hA hB).size :=
+  mulLimbsParam_size_ge _ _ _ _ a b loA lenA loB lenB hA hB
+
 /-- AzNat wrapper for `mulLimbsParam`; lets the tuner sweep the dispatch
     parameters. -/
 def mulDispatchParam (minThreshold kNum kDen toomCook3Cutoff : Nat) (a b : AzNat) : AzNat :=

@@ -128,6 +128,126 @@ theorem addLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
     (addLimb a lo hi b hlo hhi).1.size = a.size :=
   addLimb.go_size hi a lo b hhi
 
+/-- Positions below the recursion's current index `i` are unchanged by
+    `addLimb.go`.  Used to show `addLimb` leaves low limbs intact. -/
+theorem addLimb.go_get_below (hi : Nat) (a : Array UInt64) (i : Nat)
+    (carry : UInt64) (h_size : hi ≤ a.size) (j : Nat) (h_j : j < i)
+    (h_j_size : j < a.size) :
+    (addLimb.go hi a i carry h_size).1[j]'(by
+      rw [addLimb.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : hi - i generalizing a i carry with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    unfold addLimb.go
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · simp [h_carry, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    unfold addLimb.go
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · have h_new : hi - (i + 1) = n := by omega
+      have h_j' : j < i + 1 := by omega
+      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h_lt h_size
+      simp only [h_carry, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih (a.set i (a[i] + carry)) (i + 1)
+        (if a[i] + carry < carry then 1 else 0)
+        (by rw [Array.size_set]; exact h_size) h_j'
+        (by rw [Array.size_set]; exact h_j_size) h_new]
+      rw [Array.getElem_set]
+      have h_ne : i ≠ j := by omega
+      simp [h_ne]
+
+/-- Positions strictly below `lo` are unchanged by `addLimb`. -/
+theorem addLimb_get_below (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) (j : Nat) (h_j : j < lo)
+    (h_j_size : j < a.size) :
+    (addLimb a lo hi b hlo hhi).1[j]'(by
+      rw [addLimb_size]; exact h_j_size) = a[j] :=
+  addLimb.go_get_below hi a lo b hhi j h_j h_j_size
+
+/-- Positions at or above `hi` are unchanged by `addLimb.go`. -/
+theorem addLimb.go_get_above (hi : Nat) (a : Array UInt64) (i : Nat)
+    (carry : UInt64) (h_size : hi ≤ a.size) (j : Nat) (h_j : hi ≤ j)
+    (h_j_size : j < a.size) :
+    (addLimb.go hi a i carry h_size).1[j]'(by
+      rw [addLimb.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : hi - i generalizing a i carry with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    unfold addLimb.go
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · simp [h_carry, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    unfold addLimb.go
+    by_cases h_carry : carry = 0
+    · simp [h_carry]
+    · have h_new : hi - (i + 1) = n := by omega
+      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h_lt h_size
+      simp only [h_carry, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih (a.set i (a[i] + carry)) (i + 1)
+        (if a[i] + carry < carry then 1 else 0)
+        (by rw [Array.size_set]; exact h_size)
+        (by rw [Array.size_set]; exact h_j_size) h_new]
+      rw [Array.getElem_set]
+      have h_ne : i ≠ j := by omega
+      simp [h_ne]
+
+/-- Positions at or above `hi` are unchanged by `addLimb`. -/
+theorem addLimb_get_above (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) (j : Nat) (h_j : hi ≤ j)
+    (h_j_size : j < a.size) :
+    (addLimb a lo hi b hlo hhi).1[j]'(by
+      rw [addLimb_size]; exact h_j_size) = a[j] :=
+  addLimb.go_get_above hi a lo b hhi j h_j h_j_size
+
+/-- `addSameLengthLimbs.go` preserves positions outside `[loA + k, loA + len)`. -/
+theorem addSameLengthLimbs.go_get_outside (b : Array UInt64) (loA loB len : Nat)
+    (a : Array UInt64) (k : Nat) (carry : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (j : Nat)
+    (h_j : j < loA + k ∨ loA + len ≤ j) (h_j_size : j < a.size) :
+    (addSameLengthLimbs.go b loA loB len a k carry hA hB).1[j]'(by
+      rw [addSameLengthLimbs.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : len - k generalizing a k carry with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    unfold addSameLengthLimbs.go
+    simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    unfold addSameLengthLimbs.go
+    simp only [h_lt, ↓reduceDIte]
+    have h_iA : loA + k < a.size := by omega
+    have h_iB : loB + k < b.size := by omega
+    have h_j' : j < loA + (k + 1) ∨ loA + len ≤ j := by
+      rcases h_j with h | h
+      · left; omega
+      · right; exact h
+    rw [ih _ (k + 1) _
+      (by rw [Array.size_set]; exact hA) h_j'
+      (by rw [Array.size_set]; exact h_j_size) (by omega)]
+    rw [Array.getElem_set]
+    have h_ne : loA + k ≠ j := by
+      rcases h_j with h | h
+      · omega
+      · omega
+    simp [h_ne]
+
+/-- `addSameLengthLimbs` preserves positions outside `[loA, loA + len)`. -/
+theorem addSameLengthLimbs_get_outside (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (j : Nat)
+    (h_j : j < loA ∨ loA + len ≤ j) (h_j_size : j < a.size) :
+    (addSameLengthLimbs a b loA loB len hA hB).1[j]'(by
+      rw [addSameLengthLimbs_size]; exact h_j_size) = a[j] := by
+  have h_j' : j < loA + 0 ∨ loA + len ≤ j := by
+    rcases h_j with h | h
+    · left; omega
+    · right; exact h
+  exact addSameLengthLimbs.go_get_outside b loA loB len a 0 false hA hB j h_j' h_j_size
+
 /-- Size preservation of `addGeqLimbs`. -/
 theorem addGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
@@ -137,6 +257,39 @@ theorem addGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
   by_cases h : (addSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
   · rw [if_pos h, addLimb_size, addSameLengthLimbs_size]
   · rw [if_neg h, addSameLengthLimbs_size]
+
+/-- `addGeqLimbs` preserves positions outside `[loA, loA + lenA)`. -/
+theorem addGeqLimbs_get_outside (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) (j : Nat)
+    (h_j : j < loA ∨ loA + lenA ≤ j) (h_j_size : j < a.size) :
+    (addGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1[j]'(by
+      rw [addGeqLimbs_size]; exact h_j_size) = a[j] := by
+  have h_j_inner : j < loA ∨ loA + lenB ≤ j := by
+    rcases h_j with h | h
+    · left; exact h
+    · right; omega
+  unfold addGeqLimbs
+  simp only
+  by_cases h_car : (addSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
+  · simp only [h_car, ↓reduceIte]
+    have h_sub_j : j < loA + lenB ∨ loA + lenA ≤ j := by
+      rcases h_j with h | h
+      · left; omega
+      · right; exact h
+    rcases h_sub_j with h_below | h_above
+    · rw [addLimb_get_below _ _ _ _ _ _ j h_below
+        (by rw [addSameLengthLimbs_size]; exact h_j_size)]
+      exact addSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+        h_j_inner h_j_size
+    · rw [addLimb_get_above _ _ _ _ _ _ j h_above
+        (by rw [addSameLengthLimbs_size]; exact h_j_size)]
+      exact addSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+        h_j_inner h_j_size
+  · set_option linter.unusedSimpArgs false in
+    simp only [h_car, ↓reduceIte]
+    exact addSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+      h_j_inner h_j_size
 
 /-- Add a `UInt64` `b` to an `AzNat` `a`.  Empty `a` is handled directly via
     `UInt64.toAzNat b`; otherwise `addLimb` runs over `a.limbs` and the carry

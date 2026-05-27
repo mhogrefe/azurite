@@ -115,6 +115,125 @@ theorem subLimb_size (a : Array UInt64) (lo hi : Nat) (b : UInt64)
     (subLimb a lo hi b hlo hhi).1.size = a.size :=
   subLimb.go_size hi a lo b hhi
 
+/-- Positions below the recursion's current index `i` are unchanged by
+    `subLimb.go`. -/
+theorem subLimb.go_get_below (hi : Nat) (a : Array UInt64) (i : Nat)
+    (borrow : UInt64) (h_size : hi ≤ a.size) (j : Nat) (h_j : j < i)
+    (h_j_size : j < a.size) :
+    (subLimb.go hi a i borrow h_size).1[j]'(by
+      rw [subLimb.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : hi - i generalizing a i borrow with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    unfold subLimb.go
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · simp [h_borrow, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    unfold subLimb.go
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · have h_new : hi - (i + 1) = n := by omega
+      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h_lt h_size
+      simp only [h_borrow, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih (a.set i (a[i] - borrow)) (i + 1)
+        (if a[i] < borrow then 1 else 0)
+        (by rw [Array.size_set]; exact h_size) (by omega)
+        (by rw [Array.size_set]; exact h_j_size) h_new]
+      rw [Array.getElem_set]
+      have h_ne : i ≠ j := by omega
+      simp [h_ne]
+
+/-- Positions at or above `hi` are unchanged by `subLimb.go`. -/
+theorem subLimb.go_get_above (hi : Nat) (a : Array UInt64) (i : Nat)
+    (borrow : UInt64) (h_size : hi ≤ a.size) (j : Nat) (h_j : hi ≤ j)
+    (h_j_size : j < a.size) :
+    (subLimb.go hi a i borrow h_size).1[j]'(by
+      rw [subLimb.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : hi - i generalizing a i borrow with
+  | zero =>
+    have h_ge : hi ≤ i := by omega
+    unfold subLimb.go
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · simp [h_borrow, Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : i < hi := by omega
+    unfold subLimb.go
+    by_cases h_borrow : borrow = 0
+    · simp [h_borrow]
+    · have h_new : hi - (i + 1) = n := by omega
+      have h_i_size : i < a.size := Nat.lt_of_lt_of_le h_lt h_size
+      simp only [h_borrow, ↓reduceIte, h_lt, ↓reduceDIte]
+      rw [ih (a.set i (a[i] - borrow)) (i + 1)
+        (if a[i] < borrow then 1 else 0)
+        (by rw [Array.size_set]; exact h_size)
+        (by rw [Array.size_set]; exact h_j_size) h_new]
+      rw [Array.getElem_set]
+      have h_ne : i ≠ j := by omega
+      simp [h_ne]
+
+/-- Positions strictly below `lo` are unchanged by `subLimb`. -/
+theorem subLimb_get_below (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) (j : Nat) (h_j : j < lo)
+    (h_j_size : j < a.size) :
+    (subLimb a lo hi b hlo hhi).1[j]'(by
+      rw [subLimb_size]; exact h_j_size) = a[j] :=
+  subLimb.go_get_below hi a lo b hhi j h_j h_j_size
+
+/-- Positions at or above `hi` are unchanged by `subLimb`. -/
+theorem subLimb_get_above (a : Array UInt64) (lo hi : Nat) (b : UInt64)
+    (hlo : lo ≤ hi) (hhi : hi ≤ a.size) (j : Nat) (h_j : hi ≤ j)
+    (h_j_size : j < a.size) :
+    (subLimb a lo hi b hlo hhi).1[j]'(by
+      rw [subLimb_size]; exact h_j_size) = a[j] :=
+  subLimb.go_get_above hi a lo b hhi j h_j h_j_size
+
+/-- `subSameLengthLimbs.go` preserves positions outside `[loA + k, loA + len)`. -/
+theorem subSameLengthLimbs.go_get_outside (b : Array UInt64) (loA loB len : Nat)
+    (a : Array UInt64) (k : Nat) (borrow : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (j : Nat)
+    (h_j : j < loA + k ∨ loA + len ≤ j) (h_j_size : j < a.size) :
+    (subSameLengthLimbs.go b loA loB len a k borrow hA hB).1[j]'(by
+      rw [subSameLengthLimbs.go_size]; exact h_j_size) = a[j] := by
+  induction h_sub : len - k generalizing a k borrow with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    unfold subSameLengthLimbs.go
+    simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    unfold subSameLengthLimbs.go
+    simp only [h_lt, ↓reduceDIte]
+    have h_iA : loA + k < a.size := by omega
+    have h_iB : loB + k < b.size := by omega
+    have h_j' : j < loA + (k + 1) ∨ loA + len ≤ j := by
+      rcases h_j with h | h
+      · left; omega
+      · right; exact h
+    rw [ih _ (k + 1) _
+      (by rw [Array.size_set]; exact hA) h_j'
+      (by rw [Array.size_set]; exact h_j_size) (by omega)]
+    rw [Array.getElem_set]
+    have h_ne : loA + k ≠ j := by
+      rcases h_j with h | h
+      · omega
+      · omega
+    simp [h_ne]
+
+/-- `subSameLengthLimbs` preserves positions outside `[loA, loA + len)`. -/
+theorem subSameLengthLimbs_get_outside (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (j : Nat)
+    (h_j : j < loA ∨ loA + len ≤ j) (h_j_size : j < a.size) :
+    (subSameLengthLimbs a b loA loB len hA hB).1[j]'(by
+      rw [subSameLengthLimbs_size]; exact h_j_size) = a[j] := by
+  have h_j' : j < loA + 0 ∨ loA + len ≤ j := by
+    rcases h_j with h | h
+    · left; omega
+    · right; exact h
+  exact subSameLengthLimbs.go_get_outside b loA loB len a 0 false hA hB j h_j' h_j_size
+
 /-- Size preservation of `subGeqLimbs`. -/
 theorem subGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
@@ -124,6 +243,42 @@ theorem subGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
   by_cases h : (subSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
   · rw [if_pos h, subLimb_size, subSameLengthLimbs_size]
   · rw [if_neg h, subSameLengthLimbs_size]
+
+/-- `subGeqLimbs` preserves positions outside `[loA, loA + lenA)`. -/
+theorem subGeqLimbs_get_outside (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB) (j : Nat)
+    (h_j : j < loA ∨ loA + lenA ≤ j) (h_j_size : j < a.size) :
+    (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1[j]'(by
+      rw [subGeqLimbs_size]; exact h_j_size) = a[j] := by
+  -- Both `subSameLengthLimbs` (modifies [loA, loA+lenB)) and `subLimb`
+  -- (modifies [loA+lenB, loA+lenA)) leave positions outside [loA, loA+lenA)
+  -- untouched.  Pre-derive the weaker hypothesis for subSameLengthLimbs.
+  have h_j_inner : j < loA ∨ loA + lenB ≤ j := by
+    rcases h_j with h | h
+    · left; exact h
+    · right; omega
+  unfold subGeqLimbs
+  simp only
+  by_cases h_bor : (subSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
+  · simp only [h_bor, ↓reduceIte]
+    have h_sub_j : j < loA + lenB ∨ loA + lenA ≤ j := by
+      rcases h_j with h | h
+      · left; omega
+      · right; exact h
+    rcases h_sub_j with h_below | h_above
+    · rw [subLimb_get_below _ _ _ _ _ _ j h_below
+        (by rw [subSameLengthLimbs_size]; exact h_j_size)]
+      exact subSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+        h_j_inner h_j_size
+    · rw [subLimb_get_above _ _ _ _ _ _ j h_above
+        (by rw [subSameLengthLimbs_size]; exact h_j_size)]
+      exact subSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+        h_j_inner h_j_size
+  · set_option linter.unusedSimpArgs false in
+    simp only [h_bor, ↓reduceIte]
+    exact subSameLengthLimbs_get_outside a b loA loB lenB (by omega) hB j
+      h_j_inner h_j_size
 
 /-- Subtract a `UInt64` `b` from an `AzNat` `a`.  Empty `a` returns `0`
     (truncated `Nat` subtraction).  Otherwise `subLimb` runs over `a.limbs`;

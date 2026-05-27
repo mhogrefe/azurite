@@ -342,4 +342,85 @@ lemma toNatLimbsList_drop_take_succ (a : Array UInt64) (lo j : Nat)
     simp [toNatLimbsList]
   rw [h_single]; ring
 
+/-- A nonempty `AzNat` has positive `toNat`: the top limb is nonzero (by
+    `last_ne_zero`), so the whole number is at least `2 ^ (64 * (n - 1))`. -/
+theorem toNat_pos_of_size_pos (V : AzNat) (h : 0 < V.limbs.size) :
+    2 ^ (64 * (V.limbs.size - 1)) ≤ V.toNat := by
+  have h_top_idx : V.limbs.size - 1 < V.limbs.size := Nat.sub_lt h Nat.zero_lt_one
+  have h_top_ne : V.limbs[V.limbs.size - 1]'h_top_idx ≠ 0 := by
+    intro h0
+    apply V.last_ne_zero
+    rw [Array.back?_eq_getElem?, Array.getElem?_eq_getElem h_top_idx]
+    exact congrArg some h0
+  have h_top_pos : 0 < (V.limbs[V.limbs.size - 1]'h_top_idx).toNat := by
+    by_contra h_le
+    have : (V.limbs[V.limbs.size - 1]'h_top_idx).toNat = 0 := by omega
+    exact h_top_ne (UInt64.eq_of_toNat_eq this)
+  show toNatLimbsList V.limbs.toList ≥ _
+  have h_lt : V.limbs.size - 1 < V.limbs.toList.length := by
+    rw [Array.length_toList]; exact h_top_idx
+  have h_take_succ_eq : V.limbs.toList.take (V.limbs.size - 1) ++
+        [V.limbs.toList[V.limbs.size - 1]'h_lt]
+      = V.limbs.toList.take (V.limbs.size - 1 + 1) := by
+    rw [List.take_succ_eq_append_getElem]
+  have h_take_full : V.limbs.toList.take (V.limbs.size - 1 + 1) = V.limbs.toList := by
+    apply List.take_of_length_le
+    rw [Array.length_toList]; omega
+  have h_arr_eq : V.limbs.toList[V.limbs.size - 1]'h_lt
+                    = V.limbs[V.limbs.size - 1]'h_top_idx := Array.getElem_toList _
+  have h_decomp : V.limbs.toList
+                    = V.limbs.toList.take (V.limbs.size - 1)
+                        ++ [V.limbs[V.limbs.size - 1]'h_top_idx] := by
+    rw [← h_arr_eq, h_take_succ_eq, h_take_full]
+  rw [h_decomp, toNatLimbsList_append]
+  have h_take_len : (V.limbs.toList.take (V.limbs.size - 1)).length = V.limbs.size - 1 := by
+    rw [List.length_take, Array.length_toList]; omega
+  rw [h_take_len]
+  have h_single : toNatLimbsList [V.limbs[V.limbs.size - 1]'h_top_idx]
+                    = (V.limbs[V.limbs.size - 1]'h_top_idx).toNat := by
+    show toNatLimbsList ((V.limbs[V.limbs.size - 1]'h_top_idx) :: []) = _
+    rw [toNatLimbsList_cons]; simp [toNatLimbsList]
+  rw [h_single]
+  calc 2 ^ (64 * (V.limbs.size - 1))
+      = 1 * 2 ^ (64 * (V.limbs.size - 1)) := by ring
+    _ ≤ (V.limbs[V.limbs.size - 1]'h_top_idx).toNat * 2 ^ (64 * (V.limbs.size - 1)) :=
+        Nat.mul_le_mul_right _ h_top_pos
+    _ ≤ (V.limbs[V.limbs.size - 1]'h_top_idx).toNat * 2 ^ (64 * (V.limbs.size - 1)) +
+          toNatLimbsList (V.limbs.toList.take (V.limbs.size - 1)) := Nat.le_add_right _ _
+
+/-- `U.toNat = 0` iff `U.limbs` is empty. -/
+theorem toNat_eq_zero_iff (U : AzNat) : U.toNat = 0 ↔ U.limbs.size = 0 := by
+  constructor
+  · intro h
+    by_contra h_ne
+    have h_pos : 0 < U.limbs.size := Nat.pos_of_ne_zero h_ne
+    have h_lb := toNat_pos_of_size_pos U h_pos
+    have h_pow_pos : 0 < (2 : Nat) ^ (64 * (U.limbs.size - 1)) := Nat.two_pow_pos _
+    omega
+  · intro h
+    have h_nil : U.limbs.toList = [] := by
+      have : U.limbs.toList.length = 0 := h
+      exact List.length_eq_zero_iff.mp this
+    show toNatLimbsList U.limbs.toList = 0
+    rw [h_nil]; rfl
+
+/-- `U.toNat < 2 ^ (64 * U.limbs.size)`. -/
+theorem toNat_lt_pow (U : AzNat) : U.toNat < 2 ^ (64 * U.limbs.size) := by
+  show toNatLimbsList U.limbs.toList < _
+  have h := toNatLimbsList_lt_pow U.limbs.toList
+  have h_len : U.limbs.toList.length = U.limbs.size := rfl
+  rw [h_len] at h; exact h
+
+/-- For a divisor of size ≥ 1, `V.toNat` strictly exceeds anything with fewer limbs. -/
+theorem toNat_lt_of_size_lt (U V : AzNat) (h : U.limbs.size < V.limbs.size) :
+    U.toNat < V.toNat := by
+  have hV_pos : 0 < V.limbs.size := by omega
+  have h_U_lt : U.toNat < 2 ^ (64 * U.limbs.size) := toNat_lt_pow U
+  have h_V_lb : 2 ^ (64 * (V.limbs.size - 1)) ≤ V.toNat :=
+    toNat_pos_of_size_pos V hV_pos
+  have h_pow_le : 2 ^ (64 * U.limbs.size) ≤ 2 ^ (64 * (V.limbs.size - 1)) := by
+    apply Nat.pow_le_pow_right (by decide)
+    omega
+  omega
+
 end Azurite.AzNat

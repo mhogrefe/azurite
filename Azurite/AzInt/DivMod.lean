@@ -2,7 +2,7 @@ import Azurite.AzInt.Add
 import Azurite.AzInt.Basic
 import Azurite.AzInt.Conversion
 import Azurite.AzInt.Parse
-import Azurite.AzNat.Div
+import Azurite.AzNat.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Div.DivMod

@@ -192,37 +192,12 @@ private theorem toNat_zero_of_size_zero (m : AzNat) (hm : m.limbs.size = 0) :
 -- D&C `sqrtRem` correctness
 -- ─────────────────────────────────────────────────────────────────────────
 
-/-- Value of an array slice `a[lo, lo + len)` as a `Nat`, LSB-first. -/
-private def sliceVal (a : Array UInt64) (lo len : Nat) : Nat :=
-  toNatLimbsList ((a.toList.drop lo).take len)
-
 /-- `(ofLimbs (a.extract lo (lo + len))).toNat = sliceVal a lo len`. -/
 private theorem toNat_ofLimbs_extract (a : Array UInt64) (lo len : Nat) :
     (ofLimbs (a.extract lo (lo + len))).toNat = sliceVal a lo len := by
   rw [toNat_ofLimbs, Array.toList_extract, List.extract_eq_take_drop]
   show toNatLimbsList ((a.toList.drop lo).take (lo + len - lo)) = _
   rw [Nat.add_sub_cancel_left]
-  rfl
-
-/-- Splitting a slice at offset `k`: low `k` limbs + high `len − k` limbs. -/
-private theorem sliceVal_split (a : Array UInt64) (lo len k : Nat)
-    (hk : k ≤ len) (hbound : lo + len ≤ a.size) :
-    sliceVal a lo len
-      = sliceVal a lo k + sliceVal a (lo + k) (len - k) * 2 ^ (64 * k) := by
-  unfold sliceVal
-  have h_len_a : a.toList.length = a.size := Array.length_toList
-  -- (a.toList.drop lo).take len = (a.toList.drop lo).take k ++ (a.toList.drop (lo+k)).take (len-k).
-  have h_split :
-      (a.toList.drop lo).take len
-        = (a.toList.drop lo).take k ++ (a.toList.drop (lo + k)).take (len - k) := by
-    conv_lhs => rw [show len = k + (len - k) from by omega]
-    rw [List.take_add, List.drop_drop]
-  rw [h_split, toNatLimbsList_append]
-  have h_drop_len : (a.toList.drop lo).length = a.size - lo := by
-    rw [List.length_drop, h_len_a]
-  have h_low_len : ((a.toList.drop lo).take k).length = k := by
-    rw [List.length_take, h_drop_len]; omega
-  rw [h_low_len]; ring
 
 /-- Value of a single-limb slice is the limb's `toNat`. -/
 private theorem sliceVal_one (a : Array UInt64) (lo : Nat) (h : lo < a.size) :

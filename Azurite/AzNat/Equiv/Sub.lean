@@ -510,6 +510,226 @@ theorem subGeqLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
     rw [h_low, h_zero]
     ring
 
+/-- Auxiliary: `subSameLengthLimbs.go` starting at step `k` with any incoming
+    borrow produces a result whose suffix from `loA + k` is bounded by the input's
+    suffix, provided the final borrow is 0.  This is the core inductive step:
+    `go_correct` gives `A_high + 0*β = R_high + B_high + borrow`, hence
+    `R_high ≤ A_high`. -/
+private theorem subSameLengthLimbs.go_high_le (b : Array UInt64) (loA loB len : Nat)
+    (a : Array UInt64) (k : Nat) (borrow : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size)
+    (h_no_borrow : (subSameLengthLimbs.go b loA loB len a k borrow hA hB).2 = false) :
+    toNatLimbsList (((subSameLengthLimbs.go b loA loB len a k borrow hA hB).1.toList.drop
+        (loA + k)).take (len - k))
+      ≤ toNatLimbsList ((a.toList.drop (loA + k)).take (len - k)) := by
+  have h := subSameLengthLimbs.go_correct b loA loB len a k borrow hA hB
+  rw [h_no_borrow] at h; simp at h
+  -- h : sliceVal a (loA+k) (len-k) = sliceVal result (loA+k) (len-k) + B_high + borrow
+  omega
+
+/-- When `subSameLengthLimbs` produces no final borrow, the high portion
+    of the result (from position `loA + split` onward) is bounded by the
+    corresponding portion of the original array.
+
+    For `split = 0` this follows directly from `subSameLengthLimbs_toNat`.
+    For `split > 0`, positions `[loA + split, loA + len)` of the intermediate
+    array at step `split` agree with the original (only positions below `split`
+    have been modified), so `go_high_le` applied at step `split` gives the bound. -/
+theorem subSameLengthLimbs_high_le (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size)
+    (split : Nat) (h_split : split ≤ len)
+    (h_no_borrow : (subSameLengthLimbs a b loA loB len hA hB).2 = false) :
+    toNatLimbsList (((subSameLengthLimbs a b loA loB len hA hB).1.toList.drop
+        (loA + split)).take (len - split))
+      ≤ toNatLimbsList ((a.toList.drop (loA + split)).take (len - split)) := by
+  -- `subSameLengthLimbs a b loA loB len hA hB = go b loA loB len a 0 false hA hB`.
+  -- We proceed by induction on `split`, peeling one step at a time.
+  -- At step `split`, the intermediate array's suffix [loA+split, loA+len)
+  -- equals the original `a`'s suffix (since only positions < loA+split have been set).
+  -- Then `go_high_le` at step `split` gives the result.
+  unfold subSameLengthLimbs at h_no_borrow ⊢
+  -- We need to show: going from step 0, the suffix from loA+split is ≤ original.
+  -- Strategy: peel off `split` steps and use go_high_le on the tail.
+  induction split generalizing a with
+  | zero =>
+    -- split = 0: directly use go_high_le at step 0.
+    exact subSameLengthLimbs.go_high_le b loA loB len a 0 false hA hB h_no_borrow
+  | succ s ih =>
+    -- Need: s+1 ≤ len.
+    have h_lt : s < len := by omega
+    -- Unfold one step of go: processes position loA+0, recurses at step 1.
+    -- Actually, we unfold `s+1` steps total. The key is that go at step 0
+    -- processes position loA, sets a[loA] to the diff, then calls go at step 1
+    -- on the modified array. After `s+1` steps, positions [loA+s+1, loA+len)
+    -- in the intermediate array are unchanged from `a`.
+    --
+    -- Rather than manually unfolding, use the fact that:
+    -- (1) The final result (go a 0 false) at positions [loA+s+1, loA+len) equals
+    --     the result of (go intermediate (s+1) carry_s_plus_1) at those positions.
+    -- (2) The intermediate array has [loA+s+1, loA+len) = a's [loA+s+1, loA+len).
+    -- (3) `go_high_le` at step s+1 gives the bound.
+    --
+    -- But this requires decomposing the go call. Instead, use the simpler fact:
+    -- The final output's suffix from loA+len is the same as a's (go_toList_drop),
+    -- and we can use `go_correct` at step 0 (the full conservation) plus
+    -- the observation that `go_get_outside` preserves positions outside [loA, loA+len).
+    -- The suffix from (loA+s+1) includes positions INSIDE the modified range.
+    --
+    -- Cleanest approach: prove the result from go_correct directly.
+    -- go_correct at step 0 gives: A + 0 = R + B + 0 (borrow_in=false, borrow_out=false).
+    -- Split everything at position s+1:
+    --   A = A_lo + A_hi * β^(s+1)
+    --   R = R_lo + R_hi * β^(s+1)
+    --   B = B_lo + B_hi * β^(s+1)
+    -- where all "lo" parts are (s+1)-limb values and "hi" parts are (len-s-1)-limb values.
+    -- From A = R + B:
+    --   A_lo + A_hi * β^(s+1) = R_lo + R_hi * β^(s+1) + B_lo + B_hi * β^(s+1)
+    -- Group: (A_hi - R_hi - B_hi) * β^(s+1) = R_lo + B_lo - A_lo
+    -- The RHS is bounded: R_lo, B_lo, A_lo < β^(s+1).
+    -- If A_hi - R_hi - B_hi ≥ 1: LHS ≥ β^(s+1) but RHS < 2*β^(s+1). So it's 0 or 1.
+    -- Actually: from A = R + B: A_hi * β + A_lo = (R_hi + B_hi) * β + (R_lo + B_lo).
+    -- Since R_lo + B_lo < 2*β^(s+1), we can write R_lo + B_lo = carry * β^(s+1) + rem
+    -- where carry ∈ {0, 1} and rem < β^(s+1).
+    -- Then: A_hi * β + A_lo = (R_hi + B_hi + carry) * β^(s+1) + rem.
+    -- Since A_lo < β^(s+1) and rem < β^(s+1): A_lo = rem and A_hi = R_hi + B_hi + carry.
+    -- Therefore: R_hi = A_hi - B_hi - carry ≤ A_hi (since B_hi ≥ 0, carry ≥ 0).
+    --
+    -- This is the argument! Let me formalize it.
+    have h := subSameLengthLimbs.go_correct b loA loB len a 0 false hA hB
+    rw [h_no_borrow] at h; simp at h
+    -- h : sliceVal a loA len = sliceVal result loA len + sliceVal b loB len
+    -- Now we need the suffix bound. Use toNatLimbsList split lemmas.
+    -- Let's denote the result as `res`.
+    set res := (subSameLengthLimbs.go b loA loB len a 0 false hA hB).1
+    have h_res_size : res.size = a.size := subSameLengthLimbs.go_size b loA loB len a 0 false hA hB
+    -- Split a at position s+1.
+    have h_split_a := toNatLimbsList_drop_take_split a loA len (s + 1) h_split hA
+    -- Split res at position s+1.
+    have h_split_r := toNatLimbsList_drop_take_split res loA len (s + 1) h_split
+      (by rw [h_res_size]; exact hA)
+    -- Split b at position s+1 (using min(s+1, len) = s+1 since s+1 ≤ len).
+    have h_split_b := toNatLimbsList_drop_take_split b loB len (s + 1) h_split hB
+    rw [h_split_a, h_split_r, h_split_b] at h
+    -- h now has the form: A_lo + A_hi * β = (R_lo + R_hi * β) + (B_lo + B_hi * β)
+    -- where β = 2^(64*(s+1)).
+    -- Extract: A_hi = R_hi + B_hi + (R_lo + B_lo - A_lo) / β^(s+1)
+    -- Since all terms are Nat and the equation holds, we can derive R_hi ≤ A_hi.
+    -- The "carry" (R_lo + B_lo - A_lo) / β^(s+1) is ≥ 0, so:
+    -- A_hi * β^(s+1) ≥ R_hi * β^(s+1) + B_hi * β^(s+1)
+    -- iff A_hi ≥ R_hi + B_hi ≥ R_hi.
+    -- But this is wrong: in Nat arithmetic, A_lo + A_hi * β = R_lo + R_hi * β + B_lo + B_hi * β
+    -- doesn't directly give A_hi ≥ R_hi.
+    -- The correct deduction: since the equation holds in Nat:
+    --   A_hi * β = R_hi * β + B_hi * β + (R_lo + B_lo - A_lo) (where RHS term could be negative)
+    -- In Nat: A_lo + A_hi * β = R_lo + B_lo + (R_hi + B_hi) * β
+    -- So: A_hi * β - (R_hi + B_hi) * β = R_lo + B_lo - A_lo
+    -- (A_hi - R_hi - B_hi) * β = R_lo + B_lo - A_lo
+    -- If A_hi < R_hi + B_hi: LHS < 0 in integers, impossible in Nat.
+    -- Actually in Nat subtraction: if A_hi < R_hi + B_hi, then
+    --   A_lo + A_hi * β < R_lo + B_lo + (R_hi + B_hi) * β which contradicts h.
+    -- So A_hi ≥ R_hi + B_hi ≥ R_hi.
+    have h_β_pos : 0 < 2 ^ (64 * (s + 1)) := Nat.two_pow_pos _
+    -- From h: A_lo + A_hi * β = R_lo + R_hi * β + B_lo + B_hi * β
+    -- Rewrite: A_hi * β = R_hi * β + B_hi * β + (R_lo + B_lo - A_lo)
+    -- Since this is Nat equality: A_hi * β ≥ (R_hi + B_hi) * β
+    -- (because R_lo + B_lo ≥ A_lo follows from the rearrangement being non-negative in Nat)
+    -- Actually: from h, (R_hi + B_hi) * β ≤ (R_hi + B_hi) * β + R_lo + B_lo
+    --           = A_lo + A_hi * β ≤ A_hi * β + β (since A_lo < β^(s+1) = β)
+    -- Hmm, not quite. Let me just use nlinarith with the right supporting facts.
+    set β := 2 ^ (64 * (s + 1))
+    set A_hi := toNatLimbsList ((a.toList.drop (loA + (s + 1))).take (len - (s + 1)))
+    set R_hi := toNatLimbsList ((res.toList.drop (loA + (s + 1))).take (len - (s + 1)))
+    set B_hi := toNatLimbsList ((b.toList.drop (loB + (s + 1))).take (len - (s + 1)))
+    set A_lo := toNatLimbsList ((a.toList.drop loA).take (s + 1))
+    set R_lo := toNatLimbsList ((res.toList.drop loA).take (s + 1))
+    set B_lo := toNatLimbsList ((b.toList.drop loB).take (s + 1))
+    -- h : A_lo + A_hi * β = R_lo + R_hi * β + (B_lo + B_hi * β)
+    -- From h: (R_hi + B_hi) * β ≤ A_lo + A_hi * β (since R_lo + B_lo ≥ 0... wait
+    -- the equation says A_lo + A_hi * β = R_lo + R_hi * β + B_lo + B_hi * β)
+    -- So: (R_hi + B_hi) * β = A_lo + A_hi * β - R_lo - B_lo ≤ A_hi * β + A_lo
+    -- But (R_hi + B_hi) * β ≤ A_hi * β + A_lo < A_hi * β + β = (A_hi + 1) * β
+    -- So (R_hi + B_hi) < A_hi + 1, i.e., R_hi + B_hi ≤ A_hi.
+    -- Therefore R_hi ≤ A_hi. QED.
+    have h_A_lo_lt : A_lo < β := by
+      have ht := toNatLimbsList_lt_pow ((a.toList.drop loA).take (s + 1))
+      have h_len : ((a.toList.drop loA).take (s + 1)).length = s + 1 := by
+        rw [List.length_take, List.length_drop, Array.length_toList]; omega
+      rw [h_len] at ht; exact ht
+    -- From h: A_lo + A_hi * β = R_lo + R_hi * β + (B_lo + B_hi * β)
+    -- Rearrange: R_hi * β + B_hi * β ≤ A_hi * β + A_lo < (A_hi + 1) * β
+    -- Hence (R_hi + B_hi) * β < (A_hi + 1) * β, giving R_hi + B_hi ≤ A_hi.
+    suffices h_le : R_hi + B_hi ≤ A_hi by omega
+    by_contra h_neg
+    push Not at h_neg
+    -- R_hi + B_hi ≥ A_hi + 1, so (R_hi + B_hi) * β ≥ (A_hi + 1) * β > A_hi * β + A_lo
+    have h1 : (A_hi + 1) * β ≤ (R_hi + B_hi) * β :=
+      Nat.mul_le_mul_right β h_neg
+    have h2 : A_lo + A_hi * β < (A_hi + 1) * β := by
+      calc A_lo + A_hi * β < β + A_hi * β := by omega
+        _ = (A_hi + 1) * β := by ring
+    -- But from h: (R_hi + B_hi) * β ≤ R_lo + R_hi * β + (B_lo + B_hi * β) = A_lo + A_hi * β
+    have h3 : (R_hi + B_hi) * β ≤ A_lo + A_hi * β := by
+      have : (R_hi + B_hi) * β = R_hi * β + B_hi * β := Nat.add_mul R_hi B_hi β
+      omega
+    omega
+
+/-- When `subGeqLimbs` produces no final borrow, the high portion of the
+    result (from position `loA + split` onward, within the full `lenA`
+    range) is bounded by the corresponding portion of the original array.
+
+    This extends `subSameLengthLimbs_high_le` to handle the borrow
+    propagation phase (via `subLimb`) that occurs when `lenB < lenA`. -/
+theorem subGeqLimbs_high_le (a b : Array UInt64) (loA lenA loB lenB : Nat)
+    (hA : loA + lenA ≤ a.size) (hB : loB + lenB ≤ b.size)
+    (h_ge : lenB ≤ lenA) (h_posA : 0 < lenA) (h_posB : 0 < lenB)
+    (split : Nat) (h_split : split ≤ lenA)
+    (h_no_borrow : (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).2 = false) :
+    toNatLimbsList (((subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.toList.drop
+        (loA + split)).take (lenA - split))
+      ≤ toNatLimbsList ((a.toList.drop (loA + split)).take (lenA - split)) := by
+  -- From subGeqLimbs_toNat with borrow = 0:
+  --   sliceVal a loA lenA = sliceVal result loA lenA + sliceVal b loB lenB
+  -- Decompose at split using the same argument as subSameLengthLimbs_high_le.
+  have h := subGeqLimbs_toNat a b loA lenA loB lenB hA hB h_ge h_posA h_posB
+  simp only at h
+  rw [h_no_borrow] at h; simp at h
+  -- h : sliceVal a loA lenA = sliceVal result loA lenA + sliceVal b loB lenB
+  set res := (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1
+  have h_res_size : res.size = a.size := subGeqLimbs_size a b loA lenA loB lenB hA hB h_ge h_posA h_posB
+  rcases Nat.eq_or_lt_of_le (Nat.zero_le split) with h0 | h_pos
+  · -- split = 0: directly from h.
+    subst h0; simp at h ⊢; omega
+  · -- split > 0: decompose at split.
+    have h_split_a := toNatLimbsList_drop_take_split a loA lenA split h_split hA
+    have h_split_r := toNatLimbsList_drop_take_split res loA lenA split h_split
+      (by rw [h_res_size]; exact hA)
+    rw [h_split_a, h_split_r] at h
+    set β := 2 ^ (64 * split)
+    set A_hi := toNatLimbsList ((a.toList.drop (loA + split)).take (lenA - split))
+    set R_hi := toNatLimbsList ((res.toList.drop (loA + split)).take (lenA - split))
+    set A_lo := toNatLimbsList ((a.toList.drop loA).take split)
+    set R_lo := toNatLimbsList ((res.toList.drop loA).take split)
+    set B := toNatLimbsList ((b.toList.drop loB).take lenB)
+    -- h : A_lo + A_hi * β = R_lo + R_hi * β + B
+    have h_A_lo_lt : A_lo < β := by
+      have ht := toNatLimbsList_lt_pow ((a.toList.drop loA).take split)
+      have h_len : ((a.toList.drop loA).take split).length = split := by
+        rw [List.length_take, List.length_drop, Array.length_toList]; omega
+      rw [h_len] at ht; exact ht
+    -- Same argument: (R_hi) * β ≤ (R_hi + B/β?) * β ≤ A_hi * β + A_lo < (A_hi + 1) * β
+    -- More directly: R_hi * β ≤ R_lo + R_hi * β ≤ R_lo + R_hi * β + B = A_lo + A_hi * β < β + A_hi * β
+    suffices h_le : R_hi ≤ A_hi by omega
+    by_contra h_neg
+    push Not at h_neg
+    -- R_hi ≥ A_hi + 1
+    have h1 : (A_hi + 1) * β ≤ R_hi * β := Nat.mul_le_mul_right β h_neg
+    have h2 : A_lo + A_hi * β < (A_hi + 1) * β := by
+      calc A_lo + A_hi * β < β + A_hi * β := by omega
+        _ = (A_hi + 1) * β := by ring
+    -- But R_hi * β ≤ R_lo + R_hi * β + B = A_lo + A_hi * β
+    have h3 : R_hi * β ≤ A_lo + A_hi * β := by omega
+    omega
+
 /-- Correctness of `AzNat.subUInt64`: agrees with truncated `Nat` subtraction. -/
 theorem toNat_subUInt64 (a : AzNat) (b : UInt64) :
     (a.subUInt64 b).toNat = a.toNat - b.toNat := by

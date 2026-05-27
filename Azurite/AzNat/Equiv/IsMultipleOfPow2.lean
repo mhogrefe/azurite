@@ -79,23 +79,6 @@ private lemma toNat_lt_two_pow_of_size_le (n : AzNat) (k : Nat)
     Nat.pow_le_pow_right (by omega) (by omega)
   omega
 
-/-- `n.toNat = 0` iff `n.limbs.size = 0` (follows from `last_ne_zero` invariant). -/
-private lemma toNat_eq_zero_iff (n : AzNat) : n.toNat = 0 ↔ n.limbs.size = 0 := by
-  constructor
-  · intro h
-    have hgetLast : n.limbs.toList.getLast? ≠ some 0 := by
-      have h1 := n.last_ne_zero
-      have h2 : n.limbs.back? = n.limbs.toList.getLast? := by cases n.limbs; simp
-      rw [← h2]; exact h1
-    have h_empty : n.limbs.toList = [] :=
-      toNatLimbsList_eq_zero_of_getLast_ne_zero _ hgetLast h
-    have : n.limbs.toList.length = 0 := by rw [h_empty]; rfl
-    exact this
-  · intro h
-    unfold toNat
-    have h_empty : n.limbs.toList = [] := List.length_eq_zero_iff.mp h
-    rw [h_empty]; rfl
-
 theorem isMultipleOfPow2_eq (n : AzNat) (k : Nat) :
     n.isMultipleOfPow2 k = decide (2 ^ k ∣ n.toNat) := by
   rw [Bool.eq_iff_iff, decide_eq_true_eq, pow_two_dvd_iff_testBit]

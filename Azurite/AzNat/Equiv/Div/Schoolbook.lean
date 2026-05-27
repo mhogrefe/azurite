@@ -482,4 +482,94 @@ theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
     · show (1 : UInt64).toNat ≤ 1
       decide
 
+/-- `schoolbookDivModLimbs` preserves the prefix of `a` strictly below
+    the dividend slice `[loA, loA + n + m)`. -/
+theorem schoolbookDivModLimbs_toList_take (a b : Array UInt64) (loA loB n m : Nat)
+    (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
+    (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
+    (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1.toList.take loA
+      = a.toList.take loA := by
+  unfold schoolbookDivModLimbs
+  simp only
+  by_cases h_cmp : compareLimbs a b (loA + m) loB n
+      (by omega) hB = Ordering.lt
+  · simp only [h_cmp, ↓reduceIte]
+    exact schoolbookDivModLimbs.go_toList_take a b loA loB n m _ _ _ hB h_n_pos
+  · simp only [h_cmp, ↓reduceIte]
+    rw [schoolbookDivModLimbs.go_toList_take]
+    -- subSameLengthLimbs at [loA + m, loA + m + n) preserves prefix up to loA.
+    show (subSameLengthLimbs.go b (loA + m) loB n a 0 false
+        (by omega) hB).1.toList.take loA = a.toList.take loA
+    exact subSameLengthLimbs.go_toList_take_le b (loA + m) loB n a 0 false
+      (by omega) hB loA (by omega)
+
+/-- `schoolbookDivModLimbs` preserves the suffix of `a` from
+    `loA + n + m` onward. -/
+theorem schoolbookDivModLimbs_toList_drop (a b : Array UInt64) (loA loB n m : Nat)
+    (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
+    (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) :
+    (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1.toList.drop (loA + n + m)
+      = a.toList.drop (loA + n + m) := by
+  unfold schoolbookDivModLimbs
+  simp only
+  by_cases h_cmp : compareLimbs a b (loA + m) loB n
+      (by omega) hB = Ordering.lt
+  · simp only [h_cmp, ↓reduceIte]
+    exact schoolbookDivModLimbs.go_toList_drop a b loA loB n m _ _ _ hB h_n_pos
+  · simp only [h_cmp, ↓reduceIte]
+    rw [schoolbookDivModLimbs.go_toList_drop]
+    -- subSameLengthLimbs at [loA + m, loA + m + n) preserves suffix from
+    -- loA + m + n = loA + n + m onward.
+    show (subSameLengthLimbs.go b (loA + m) loB n a 0 false
+        (by omega) hB).1.toList.drop (loA + n + m) = a.toList.drop (loA + n + m)
+    have h_eq : loA + n + m = (loA + m) + n := by ring
+    rw [h_eq]
+    exact subSameLengthLimbs.go_toList_drop b (loA + m) loB n a 0 false
+      (by omega) hB
+
+/-- Element-wise corollary: `schoolbookDivModLimbs` preserves positions
+    outside the dividend range `[loA, loA + n + m)`. -/
+theorem schoolbookDivModLimbs_getElem_outside
+    (a b : Array UInt64) (loA loB n m : Nat)
+    (h_n_pos : 0 < n) (hA : loA + n + m ≤ a.size) (hB : loB + n ≤ b.size)
+    (hbn1 : 2 ^ 63 ≤ (b[loB + n - 1]'(by omega)).toNat) (j : Nat)
+    (h_j : j < loA ∨ loA + n + m ≤ j) (h_j_size : j < a.size) :
+    (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1[j]'(by
+      rw [schoolbookDivModLimbs_size]; exact h_j_size) = a[j] := by
+  have h_size_eq :
+      (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1.size = a.size :=
+    schoolbookDivModLimbs_size a b loA loB n m h_n_pos hA hB hbn1
+  rcases h_j with h_below | h_above
+  · -- prefix preservation
+    have h_take := schoolbookDivModLimbs_toList_take a b loA loB n m
+      h_n_pos hA hB hbn1
+    have h1 : (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1.toList[j]?
+        = a.toList[j]? := by
+      have := congrArg (fun (l : List UInt64) => l[j]?) h_take
+      simp only [List.getElem?_take_of_lt h_below] at this
+      exact this
+    have h2 : (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1[j]?
+        = a[j]? := by
+      rw [← Array.getElem?_toList, ← Array.getElem?_toList]; exact h1
+    have h_j_size' : j < (schoolbookDivModLimbs a b loA loB n m
+        h_n_pos hA hB hbn1).1.size := by rw [h_size_eq]; exact h_j_size
+    rw [Array.getElem?_eq_getElem h_j_size', Array.getElem?_eq_getElem h_j_size] at h2
+    injection h2
+  · -- suffix preservation
+    have h_drop := schoolbookDivModLimbs_toList_drop a b loA loB n m
+      h_n_pos hA hB hbn1
+    have h_idx : j = (loA + n + m) + (j - (loA + n + m)) := by omega
+    have h1 : (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1.toList[j]?
+        = a.toList[j]? := by
+      conv_lhs => rw [h_idx]
+      conv_rhs => rw [h_idx]
+      rw [← List.getElem?_drop, ← List.getElem?_drop, h_drop]
+    have h_j_size' : j < (schoolbookDivModLimbs a b loA loB n m
+        h_n_pos hA hB hbn1).1.size := by rw [h_size_eq]; exact h_j_size
+    have h2 : (schoolbookDivModLimbs a b loA loB n m h_n_pos hA hB hbn1).1[j]?
+        = a[j]? := by
+      rw [← Array.getElem?_toList, ← Array.getElem?_toList]; exact h1
+    rw [Array.getElem?_eq_getElem h_j_size', Array.getElem?_eq_getElem h_j_size] at h2
+    injection h2
+
 end Azurite.AzNat
