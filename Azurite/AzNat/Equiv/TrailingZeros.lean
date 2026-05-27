@@ -98,12 +98,12 @@ private lemma padicValNat_toNatLimbsList_cons (x : UInt64) (rest : List UInt64) 
     exact Nat.dvd_add (Dvd.dvd.mul_left (Nat.pow_dvd_pow 2 h_le_64) _) h_dvd_x
 
 -- Core inductive lemma
-private lemma trailingZerosAux_eq (a : AzNat) (start : Nat) (hstart : start < a.limbs.size)
+private lemma trailingZerosLimbsAux_eq (a : AzNat) (start : Nat) (hstart : start < a.limbs.size)
     (h_zeros : ∀ k (hk : k < start),
       a.limbs.toList[k]'(by rw [Array.length_toList]; omega) = 0) :
-    trailingZerosAux a start hstart = padicValNat 2 a.toNat := by
+    trailingZerosLimbsAux a.limbs start hstart = padicValNat 2 a.toNat := by
   have h_len : a.limbs.toList.length = a.limbs.size := Array.length_toList
-  unfold trailingZerosAux
+  unfold trailingZerosLimbsAux
   split
   case isTrue h =>
     have hi2 : start + 1 < a.limbs.size := by
@@ -125,7 +125,8 @@ private lemma trailingZerosAux_eq (a : AzNat) (start : Nat) (hstart : start < a.
         subst this
         rw [show a.limbs.toList[k] = a.limbs[k] from Array.getElem_toList (by omega)]
         exact h
-    exact trailingZerosAux_eq a (start + 1) hi2 h_zeros'
+    rw [dif_pos hi2]
+    exact trailingZerosLimbsAux_eq a (start + 1) hi2 h_zeros'
   case isFalse h =>
     -- limbs[start] ≠ 0, first nonzero limb
     have h_len : a.limbs.toList.length = a.limbs.size := Array.length_toList
@@ -175,7 +176,6 @@ private lemma trailingZerosAux_eq (a : AzNat) (start : Nat) (hstart : start < a.
         padicValNat 2 ((a.limbs.toList.drop start).head h_drop_ne).toNat := by
       rw [← h_drop_head]; exact ctz_eq_padicValNat _ h_head_ne
     rw [h_pv, h_inner_pv, ← h_ctz]; ring
-termination_by a.limbs.size - start
 
 -- Main theorem
 theorem trailingZeros_eq_padicValNat (n : AzNat) (hn : n ≠ 0) :
@@ -189,9 +189,12 @@ theorem trailingZeros_eq_padicValNat (n : AzNat) (hn : n ≠ 0) :
     simp only at h_empty
     subst h_empty
     rfl
-  rw [dif_neg h_ne]
+  rw [if_neg h_ne]
   congr 1
-  exact trailingZerosAux_eq n 0 (by omega) (fun _ hk => absurd hk (Nat.not_lt_zero _))
+  show trailingZerosLimbs n.limbs = _
+  unfold trailingZerosLimbs
+  rw [dif_pos (by omega : 0 < n.limbs.size)]
+  exact trailingZerosLimbsAux_eq n 0 (by omega) (fun _ hk => absurd hk (Nat.not_lt_zero _))
 
 theorem trailingZeros_ofNat (n : Nat) (hn : n ≠ 0) :
     (ofNat n).trailingZeros = some (padicValNat 2 n) := by

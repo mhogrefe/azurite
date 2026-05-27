@@ -10,7 +10,7 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 
 | Module | Description |
 |--------|-------------|
-| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Schoolbook multiplication plus a Karatsuba implementation (`karatsubaMulLimbs`) with a configurable basecase threshold. Also provides a `ParsableElement` instance for use as an `AzVector` / `AzMatrix` coefficient type. |
+| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Schoolbook multiplication plus a Karatsuba implementation (`karatsubaMulLimbs`) with a configurable basecase threshold. Binary GCD (Stein's algorithm, `gcd`) with bulk trailing-zeros shifts. Also provides a `ParsableElement` instance for use as an `AzVector` / `AzMatrix` coefficient type. |
 | `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, bit-size, trailing-zeros, parsing, `toString`, and a `ParsableElement` instance (so `AzInt` works as a coefficient type for `AzVector` / `AzMatrix` `parseStr`). |
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, multiplication by `X^n` (`mulXPow`), truncation (`truncate`, BPR Notation 1.16), derivative, evaluation, composition (Horner), exponentiation (binary), quotient/remainder (Euclidean division), signed pseudo-remainder (`pRem`, works over any `CommRing`), root bounds, the Sturm sequence (`sturmSequence`, BPR Chapter 2.2), parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation (`eval`, plus generic `eval₂`/`aeval` into any commutative semiring or `R`-algebra), exact division, monomial exponentiation, rename, map, merge-sorted operations, `bind₁`/`bind₂`/`join₂` substitution, and `finSuccEquiv` (forward direction: `AzMvPolynomial (Fin (n+1)) R → AzPolynomial (AzMvPolynomial (Fin n) R)`). |
@@ -29,6 +29,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 |------|----------------|
 | `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
 | `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
+| `Equiv/Gcd` | `toNat_gcd`: `(gcd a b).toNat = Nat.gcd a.toNat b.toNat` — the binary GCD (Stein's algorithm) agrees with Mathlib's `Nat.gcd`. |
 
 #### AzInt ↔ Int
 
@@ -246,6 +247,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Special Translation c^p·P(X-b/c) | BPR Alg. 8.10 | `AzPolynomial/SpecialTranslate` | O(p²) via Horner fold |
 | Gaussian elimination (`gauss` early-abort + `rowEchelon` always-triangular + `det`) | BPR Alg. 8.15 | `AzMatrix/RowEchelon`, `AzMatrix/Det` | O(n³) over a field |
 | Dodgson-Jordan-Bareiss fraction-free det (`bareissDet`) | BPR Alg. 8.16 | `AzMatrix/BareissDet` | O(n³) over a field; stays in entry ring when that ring is a domain |
+| Binary GCD (Stein's algorithm) | MCA Alg. 1.18 | `AzNat/Gcd` | O(n²) |
 | Exponentiation by squaring | — | `Algorithm/FastPow` | O(log n) |
 
 ## Building

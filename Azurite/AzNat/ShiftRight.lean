@@ -52,6 +52,23 @@ theorem shiftLimbsRight_size (a : Array UInt64) (lo hi sh : Nat)
     (shiftLimbsRight a lo hi sh hlo hhi hsh_lb hsh_ub).1.size = a.size :=
   shiftLimbsRightAux_size lo sh a hi 0 hhi
 
+/-- Right-shift a limb array by `sh` bits, returning the result (not
+    trimmed).  Decomposes into whole-limb drop + sub-limb shift. -/
+def shrLimbs (a : Array UInt64) (sh : Nat) : Array UInt64 :=
+  let wholeLimbs := sh / 64
+  let smallShift := sh % 64
+  if wholeLimbs ≥ a.size then #[]
+  else
+    let dropped := a.extract wholeLimbs a.size
+    if h_ss : smallShift = 0 then dropped
+    else
+      have h_ss_lb : 1 ≤ smallShift := by omega
+      have h_ss_ub : smallShift ≤ 63 := by
+        have : sh % 64 < 64 := Nat.mod_lt _ (by omega)
+        omega
+      (shiftLimbsRight dropped 0 dropped.size smallShift
+        (Nat.zero_le _) (Nat.le_refl _) h_ss_lb h_ss_ub).1
+
 /-- Shift right by a multiple of 64 bits: drop `k` limbs from the bottom.
     If `k ≥ a.limbs.size`, returns zero. -/
 def shiftRightMul64 (a : AzNat) (k : Nat) : AzNat :=

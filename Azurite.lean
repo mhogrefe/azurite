@@ -203,6 +203,7 @@ import Azurite.AzNat.Equiv.DivBy6
 import Azurite.AzNat.Equiv.DivMod10p19
 import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
+import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.LimbDigits
@@ -230,6 +231,7 @@ import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.Gcd
 import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
