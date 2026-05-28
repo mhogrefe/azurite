@@ -754,4 +754,32 @@ theorem toNat_gcd (a b : AzNat) : (gcd a b).toNat = Nat.gcd a.toNat b.toNat := b
         -- Goal: (2^(va-vb) * a').gcd b' = a'.gcd b'
         exact (Nat.Coprime.pow_left _ (Odd.coprime_two_left h_b_odd)).gcd_mul_left_cancel a'
 
+/-- Correctness of `coprime`: agrees with `Nat.Coprime`. -/
+theorem coprime_iff (a b : AzNat) :
+    AzNat.coprime a b = true ↔ Nat.Coprime a.toNat b.toNat := by
+  show (if a.isEven && b.isEven then false else AzNat.gcd a b == 1) = true
+    ↔ Nat.gcd a.toNat b.toNat = 1
+  by_cases h_both_even : (a.isEven && b.isEven) = true
+  · rw [if_pos h_both_even]
+    simp only [Bool.false_eq_true, false_iff]
+    have ha_even : a.isEven = true := by
+      have := h_both_even; simp [Bool.and_eq_true] at this; exact this.1
+    have hb_even : b.isEven = true := by
+      have := h_both_even; simp [Bool.and_eq_true] at this; exact this.2
+    rw [isEven_iff] at ha_even hb_even
+    obtain ⟨ka, hka⟩ := ha_even
+    obtain ⟨kb, hkb⟩ := hb_even
+    intro h_gcd
+    have h2g : 2 ∣ Nat.gcd a.toNat b.toNat :=
+      Nat.dvd_gcd ⟨ka, by omega⟩ ⟨kb, by omega⟩
+    omega
+  · rw [if_neg (Bool.not_eq_true _ ▸ h_both_even)]
+    rw [beq_iff_eq]
+    constructor
+    · intro h
+      rw [← toNat_gcd a b, h]; rfl
+    · intro h
+      apply toNat_injective
+      rw [toNat_gcd, h]; rfl
+
 end Azurite.AzNat

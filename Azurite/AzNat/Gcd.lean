@@ -1,4 +1,5 @@
 import Azurite.AzNat.Compare
+import Azurite.AzNat.Parity
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Sub
@@ -117,6 +118,14 @@ def gcd (a b : AzNat) : AzNat :=
       else a
     else b
 
+/-- Coprimality test.  Returns `true` iff `gcd(a, b) = 1`.
+
+    Short-circuits: if both arguments are even, returns `false` without
+    computing the GCD (two even numbers share the factor 2). -/
+def coprime (a b : AzNat) : Bool :=
+  if a.isEven && b.isEven then false
+  else gcd a b == 1
+
 end Azurite.AzNat
 
 /-! ### Tests -/
@@ -154,5 +163,18 @@ where go (k : Nat) (acc : Array UInt64) : Array UInt64 :=
 #guard gcd (n (2^256 * 3 * 7)) (n (2^256 * 5 * 7)) = n (2^256 * 7)
 -- Coprime multi-limb
 #guard gcd (n (2^128 + 1)) (n (2^128 - 1)) = n 1
+
+-- coprime tests
+#guard coprime (n 1) (n 1) = true
+#guard coprime (n 3) (n 5) = true
+#guard coprime (n 6) (n 4) = false   -- both even, short-circuit
+#guard coprime (n 9) (n 6) = false    -- gcd(9,6) = 3
+#guard coprime (n 9) (n 4) = true     -- gcd(9,4) = 1
+#guard coprime (n 7) (n 15) = true
+#guard coprime (n 0) (n 1) = true
+#guard coprime (n 0) (n 0) = false
+#guard coprime (n 17) (n 13) = true
+#guard coprime (n 100) (n 21) = true
+#guard coprime (n (2^128 + 1)) (n (2^128 - 1)) = true
 
 end Tests
