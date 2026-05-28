@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
+import Azurite.BasuPollackRoy.Chapter1.Section1_1.Exercise1_2
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Formula
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.FieldFormula
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
@@ -768,5 +769,38 @@ theorem theorem_1_23 [IsDomain D]
             (Formula.not Ψ).realization (C := C) }
         rw [hnot]
       rw [hexists_rewrite, hexists]
+
+/-!
+### Corollaries 1.24 and 1.25
+
+Two immediate consequences of Theorem 1.23.
+
+* **Corollary 1.24** — The realisation of any formula over `C` is
+  constructible. Apply Theorem 1.23 with `D := C` (the algebra map is
+  the identity, hence injective), then use
+  `qf_realizable_isConstructible`.
+
+* **Corollary 1.25** — A subset of `C = C^1` defined by a formula over
+  `C` is finite or cofinite. By Corollary 1.24 the set is constructible;
+  Exercise 1.2 finishes.
+-/
+
+/-- **BPR Corollary 1.24.** The `C`-realisation of any formula in the
+language of fields with coefficients in `C` (the algebraically closed
+field itself) is constructible. -/
+theorem corollary_1_24 {k : ℕ}
+    (Φ : Formula (Fin k) (FieldAtom (Fin k) C)) :
+    IsConstructibleSet (Φ.realization (C := C)) := by
+  obtain ⟨Ψ, hΨ_qf, hΨ_real⟩ :=
+    theorem_1_23 (D := C) (C := C) Function.injective_id Φ
+  rw [hΨ_real]
+  exact qf_realizable_isConstructible hΨ_qf
+
+/-- **BPR Corollary 1.25.** A subset of `C` defined by a formula in the
+language of fields with coefficients in `C` is finite or cofinite. -/
+theorem corollary_1_25
+    (Φ : Formula (Fin 1) (FieldAtom (Fin 1) C)) :
+    (Φ.realization (C := C)).Finite ∨ (Φ.realization (C := C))ᶜ.Finite :=
+  exercise_1_2 _ (corollary_1_24 Φ)
 
 end Azurite.BPR
