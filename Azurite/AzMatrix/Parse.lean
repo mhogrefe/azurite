@@ -35,7 +35,7 @@ def toChars (M : AzMatrix R m n) : List Char :=
 
 /-- Length-aware parser for a semicolon-space-separated row list (without
     surrounding brackets). Each row is parsed as a length-`n` element list. -/
-def parseRowsN [ParsableElement R] (n : ℕ) :
+def parseRowsN (n : ℕ) :
     ℕ → List Char → Option (List (List R))
   | 0, [] => some []
   | 0, _ :: _ => none

@@ -27,7 +27,7 @@ def toChars (v : AzVector R n) : List Char :=
 
 /-- Length-aware parser for a comma-space-separated element list (without
     brackets). Recurses structurally on the expected element count `n`. -/
-def parseElementsN [ParsableElement R] :
+def parseElementsN :
     ℕ → List Char → Option (List R)
   | 0, [] => some []
   | 0, _ :: _ => none

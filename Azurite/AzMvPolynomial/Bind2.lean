@@ -13,7 +13,7 @@ variable {R S : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
   {n : ℕ} {ord : MonomialOrder}
 
 /-- Create a single-term polynomial from a monic monomial with coefficient 1. -/
-def MonicMonomial.toAzMvPoly [DecidableEq S]
+def MonicMonomial.toAzMvPoly
     (m : MonicMonomial n ord) : AzMvPolynomial n S ord :=
   if h : (1 : S) = 0 then 0
   else AzMvPolynomial.ofMonomial ⟨⟨1, h⟩, m⟩

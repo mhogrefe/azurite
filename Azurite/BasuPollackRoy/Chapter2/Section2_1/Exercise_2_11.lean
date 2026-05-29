@@ -3,7 +3,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_1.Example_2_10
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealClosedField
 import Mathlib.FieldTheory.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.RingTheory.Algebraic.Integral
 
 /-!

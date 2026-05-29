@@ -15,7 +15,7 @@ variable {R : Type _} [CommSemiring R] {n : Nat}
 
 /-! ### Helper lemmas: Array.foldl → List.sum → Finset.sum -/
 
-private theorem array_foldl_add_eq_sum [AddCommMonoid R]
+private theorem array_foldl_add_eq_sum
     (arr : Array R) : arr.foldl (· + ·) 0 = arr.toList.sum := by
   rw [← Array.foldl_toList]; rw [List.sum_eq_foldl]
 

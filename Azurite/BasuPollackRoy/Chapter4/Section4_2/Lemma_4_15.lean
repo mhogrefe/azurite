@@ -347,6 +347,7 @@ theorem Syl.encode_eq_zero_iff (p q : ℕ) (uv : Fin (p + q) → D) :
 
 variable [IsDomain D] [DecidableEq D]
 
+omit [Nontrivial D] in
 /-- **BPR Lemma 4.15.** Over a domain `D`, the resultant `Res(P, Q)` of
     non-zero `P, Q : D[X]` (at their actual degrees) vanishes if and
     only if there exist non-zero polynomials `U, V : D[X]` with

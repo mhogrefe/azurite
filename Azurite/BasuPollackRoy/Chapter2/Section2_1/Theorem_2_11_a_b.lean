@@ -389,7 +389,7 @@ theorem poly_in_image_iff_coeffs_in_range
 /-- If a polynomial f ∈ L[X] evaluates into the range of `algebraMap R L` at every
     R-point, then each coefficient of f lies in the range.
     Requires R to be an infinite integral domain. -/
-theorem eval_range_implies_coeff_range [Infinite R] [IsDomain R]
+theorem eval_range_implies_coeff_range [Infinite R]
     (f : L[X])
     (hf : ∀ r : R, f.eval (algebraMap R L r) ∈ Set.range (algebraMap R L))
     (n : ℕ) : f.coeff n ∈ Set.range (algebraMap R L) := by

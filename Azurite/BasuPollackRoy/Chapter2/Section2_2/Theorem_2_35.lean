@@ -450,7 +450,7 @@ private lemma varAt_finite_eq_negInf_of_signs_stable
 omit [IsStrictOrderedRing R] in
 /-- If every root of `P` is `≤ B`, then
     `numRoots P (finite a) (finite B) = numRoots P (finite a) posInf`. -/
-private lemma numRoots_finite_eq_posInf_of_roots_bdd [IsDomain R]
+private lemma numRoots_finite_eq_posInf_of_roots_bdd
     {P : R[X]} {a B : R} (hB : ∀ r ∈ P.roots, r ≤ B) :
     numRoots P (.finite a) (.finite B) = numRoots P (.finite a) .posInf := by
   classical
@@ -464,7 +464,7 @@ private lemma numRoots_finite_eq_posInf_of_roots_bdd [IsDomain R]
 omit [IsStrictOrderedRing R] in
 /-- If every root of `P` is strictly `> B`, then
     `numRoots P (finite B) (finite b) = numRoots P negInf (finite b)`. -/
-private lemma numRoots_finite_eq_negInf_of_roots_bdd [IsDomain R]
+private lemma numRoots_finite_eq_negInf_of_roots_bdd
     {P : R[X]} {B b : R} (hB : ∀ r ∈ P.roots, B < r) :
     numRoots P (.finite B) (.finite b) = numRoots P .negInf (.finite b) := by
   classical
@@ -477,7 +477,7 @@ private lemma numRoots_finite_eq_negInf_of_roots_bdd [IsDomain R]
 
 omit [IsStrictOrderedRing R] in
 /-- Symmetric versions for the `negInf, posInf` case. -/
-private lemma numRoots_finite_finite_eq_negInf_posInf [IsDomain R]
+private lemma numRoots_finite_finite_eq_negInf_posInf
     {P : R[X]} {B₁ B₂ : R} (hB₁ : ∀ r ∈ P.roots, B₁ < r)
     (hB₂ : ∀ r ∈ P.roots, r ≤ B₂) :
     numRoots P (.finite B₁) (.finite B₂) = numRoots P .negInf .posInf := by

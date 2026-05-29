@@ -28,7 +28,7 @@ namespace Monomial
 variable {R : Type _} [Semiring R] {n : ℕ} {ord : MonomialOrder}
 
 /-- The identity monomial with coefficient `1` and all exponents zero. -/
-def one [One R] (h : (1 : R) ≠ 0) : Monomial n R ord :=
+def one (h : (1 : R) ≠ 0) : Monomial n R ord :=
   ⟨⟨1, h⟩, MonicMonomial.one⟩
 
 /-- Negate a monomial by negating its coefficient. -/
@@ -53,6 +53,7 @@ def withOrder (m : Monomial n R ord) (ord' : MonomialOrder) :
 def totalDegree (m : Monomial n R ord) : ℕ :=
   m.monic.totalDegree
 
+set_option linter.overlappingInstances false in
 /-- Evaluate a monomial at a point given by `f : Fin n → R`. -/
 def eval [CommMonoidWithZero R] (m : Monomial n R ord) (f : Fin n → R) : R :=
   m.coeff.val * m.monic.eval f
@@ -62,6 +63,7 @@ def rename {n₂ : ℕ} (m : Monomial n R ord) (f : Fin n → Fin n₂)
     (ord₂ : MonomialOrder := ord) : Monomial n₂ R ord₂ :=
   ⟨m.coeff, m.monic.rename f ord₂⟩
 
+set_option linter.overlappingInstances false in
 /-- Evaluating a renamed monomial equals evaluating the original with a composed assignment. -/
 theorem eval_rename {n₂ : ℕ} [CommMonoidWithZero R]
     (m : Monomial n R ord) (f : Fin n → Fin n₂) (g : Fin n₂ → R) (ord₂ : MonomialOrder) :

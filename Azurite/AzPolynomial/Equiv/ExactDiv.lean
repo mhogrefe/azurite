@@ -162,7 +162,7 @@ private theorem coeff_zero_above_size (P : AzPolynomial R) (i : ℕ)
 
 section LawfulExactDiv
 
-variable [Azurite.ExactDiv R] [IsDomain R]
+variable [IsDomain R]
 
 /-- One step of `exactDivStep` at index `j` zeros out coefficient `j`
     (when the leading coefficient divides) and all higher coefficients
