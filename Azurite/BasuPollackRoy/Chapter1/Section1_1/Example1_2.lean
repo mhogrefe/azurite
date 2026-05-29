@@ -10,6 +10,10 @@ $\Phi$ and $\Psi$ are $C$-equivalent for any algebraically closed
 field $C$.
 -/
 
+-- These simp args look unused to the linter but are needed for `simp` to
+-- make progress through the typeclass-driven `Formula.realization` chain.
+set_option linter.unusedSimpArgs false
+
 namespace Azurite.BPR
 
 open MvPolynomial Polynomial
@@ -48,8 +52,8 @@ theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
     simp [Finset.mem_sdiff, Finset.mem_singleton]
 
 theorem freeVars_Ψ : Ψ_ex.freeVars = {0} := by
-  simp only [Ψ_ex, ne_zero, freeVars, FieldAtom.neZero, FieldAtom.vars,
-    MvPolynomial.vars_X]
+  simp only [Ψ_ex, ne_zero, freeVars, AtomVars.vars_fieldAtom,
+    FieldAtom.neZero, FieldAtom.vars, MvPolynomial.vars_X]
 
 theorem freeVars_eq : Φ_ex.freeVars = Ψ_ex.freeVars := by
   rw [freeVars_Φ, freeVars_Ψ]
@@ -71,7 +75,8 @@ theorem example_1_2 :
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)] at hc
     intro h0
-    simp only [FieldAtom.neZero, MvPolynomial.aeval_X] at h0
+    simp only [interpret_fieldAtom, FieldAtom.neZero, MvPolynomial.aeval_X,
+      Set.mem_setOf_eq, if_false] at h0
     rw [h0, zero_mul, zero_sub] at hc
     exact one_ne_zero (neg_eq_zero.mp hc)
   · intro h
@@ -80,7 +85,8 @@ theorem example_1_2 :
     refine ⟨(y 0)⁻¹, ?_⟩
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)]
-    simp only [FieldAtom.neZero, MvPolynomial.aeval_X] at h
+    simp only [interpret_fieldAtom, FieldAtom.neZero, MvPolynomial.aeval_X,
+      Set.mem_setOf_eq, if_false] at h
     rw [mul_inv_cancel₀ h, sub_self]
 
 end Example_1_2

@@ -33,7 +33,7 @@ theorem freeVarsOf_eq_freeVars_azFieldAtom
   induction Φ with
   | atom a =>
     show a.poly.vars = (azFormulaToFieldFormula (.atom a)).freeVars
-    simp only [azFormulaToFieldFormula, mapAtom, freeVars, FieldAtom.vars, AzFieldAtom.toFieldAtom]
+    simp only [azFormulaToFieldFormula, mapAtom, freeVars, AzFieldAtom.toFieldAtom]
     convert (toMvPoly_vars a.poly).symm
   | not _ ih =>
     simp only [freeVarsOf, show azFormulaToFieldFormula (.not _) =

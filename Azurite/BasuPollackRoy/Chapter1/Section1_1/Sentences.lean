@@ -27,7 +27,8 @@ theorem realization_eq_of_agree_on_freeVars
     y₂ ∈ Φ.realization := by
   induction Φ generalizing y₁ y₂ with
   | atom a =>
-    simp only [realization, freeVars, FieldAtom.vars] at *
+    simp only [realization, freeVars, AtomVars.vars_fieldAtom,
+      FieldAtom.vars, interpret_fieldAtom] at *
     have : (MvPolynomial.aeval y₁) a.poly = (MvPolynomial.aeval y₂) a.poly := by
       simp only [MvPolynomial.aeval_def]
       apply MvPolynomial.eval₂_congr

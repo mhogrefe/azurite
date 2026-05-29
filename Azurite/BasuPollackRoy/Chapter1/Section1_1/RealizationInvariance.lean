@@ -83,7 +83,8 @@ theorem realization_invariant_update [DecidableEq σ]
     Function.update y x c ∈ Φ.realization := by
   induction Φ generalizing y with
   | atom a =>
-    simp only [realization, freeVars, FieldAtom.vars] at *
+    simp only [realization, freeVars, AtomVars.vars_fieldAtom,
+      FieldAtom.vars, interpret_fieldAtom] at *
     split <;> simp only [Set.mem_setOf_eq] <;>
     rw [aeval_update_of_not_mem_vars a.poly y x c hx]
   | not _ ih =>

@@ -52,7 +52,7 @@ theorem multiplicativeInverse_holds :
 theorem fieldNontriviality_holds :
     fieldNontriviality.realization (C := C) =
       Set.univ := by
-  ext y; simp [fieldNontriviality, ne_zero, realization, FieldAtom.neZero]
+  ext y; simp [fieldNontriviality, ne_zero, FieldAtom.neZero]
 
 /-!
 ### Algebraic Closure Axiom Φ_d

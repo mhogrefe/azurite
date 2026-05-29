@@ -16,6 +16,28 @@ namespace Azurite.BPR
 
 open MvPolynomial Polynomial
 
+/-! ### Atom typeclasses
+
+We expose two minimal typeclasses on atom types:
+
+* `AtomVars α σ` provides the set of free variables of an atom.
+* `AtomRealization α σ C` interprets an atom as a set of assignments `σ → C`.
+
+These power generic `Formula.freeVars`, `Formula.boundVars`, `Formula.isSentence`,
+and `Formula.realization` definitions that work for any atom type with the
+appropriate instance — for example `FieldAtom σ D` (this file) and
+`OrderedFieldAtom σ D` (Section 2.3). -/
+
+/-- Typeclass for atom types that can report their free variables. -/
+class AtomVars (α : Type*) (σ : outParam (Type*)) where
+  /-- The variables appearing in an atom. -/
+  vars : α → Finset σ
+
+/-- Typeclass for atom types interpreted as sets of assignments `σ → C`. -/
+class AtomRealization (α : Type*) (σ : outParam (Type*)) (C : Type*) where
+  /-- The set of assignments at which the atom holds. -/
+  interpret : α → Set (σ → C)
+
 /-- An atom in the language of fields: a polynomial `P` together
     with `isEq = true` for `P = 0` or `isEq = false` for `P ≠ 0`. -/
 structure FieldAtom (σ : Type*) (D : Type*) [CommRing D] where
@@ -43,9 +65,50 @@ noncomputable def renameVars (f : σ → τ) (a : FieldAtom σ D) :
 
 end FieldAtom
 
+/-- `FieldAtom` instance of `AtomVars`: variables are those of the polynomial. -/
+noncomputable instance {σ : Type*} [DecidableEq σ] {D : Type*} [CommRing D] :
+    AtomVars (FieldAtom σ D) σ where
+  vars := FieldAtom.vars
+
+/-- Unfold `AtomVars.vars` on a `FieldAtom` to `FieldAtom.vars`.
+    This lets `simp only [FieldAtom.vars]` continue to work after the
+    generalization of `freeVars`. -/
+@[simp] theorem AtomVars.vars_fieldAtom {σ : Type*} [DecidableEq σ]
+    {D : Type*} [CommRing D] (a : FieldAtom σ D) :
+    (AtomVars.vars a : Finset σ) = FieldAtom.vars a := rfl
+
 namespace Formula
 
-variable {σ : Type*} {D : Type*} [CommRing D]
+variable {σ : Type*} {α : Type*}
+
+/-- The free variables of a formula, generic over any atom type with `AtomVars`. -/
+noncomputable def freeVars [AtomVars α σ] [DecidableEq σ] :
+    Formula σ α → Finset σ
+  | .atom a      => AtomVars.vars a
+  | .not Φ       => Φ.freeVars
+  | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .implies Φ₁ Φ₂ => Φ₁.freeVars ∪ Φ₂.freeVars
+  | .exists_ x Φ => Φ.freeVars \ {x}
+  | .forall_ x Φ => Φ.freeVars \ {x}
+
+/-- The bound variables of a formula: variables attached to a quantifier (∃ or ∀). -/
+noncomputable def boundVars [DecidableEq σ] :
+    Formula σ α → Finset σ
+  | .atom _        => ∅
+  | .not Φ         => Φ.boundVars
+  | .and Φ₁ Φ₂     => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .or Φ₁ Φ₂      => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .implies Φ₁ Φ₂ => Φ₁.boundVars ∪ Φ₂.boundVars
+  | .exists_ x Φ   => Φ.boundVars ∪ {x}
+  | .forall_ x Φ   => Φ.boundVars ∪ {x}
+
+/-- A sentence is a formula with no free variables. -/
+def isSentence [AtomVars α σ] [DecidableEq σ] (Φ : Formula σ α) :
+    Prop :=
+  Φ.freeVars = ∅
+
+variable {D : Type*} [CommRing D]
 
 /-- P = 0 as a formula. -/
 noncomputable def eq_zero (P : MvPolynomial σ D) :
@@ -56,33 +119,6 @@ noncomputable def eq_zero (P : MvPolynomial σ D) :
 noncomputable def ne_zero (P : MvPolynomial σ D) :
     Formula σ (FieldAtom σ D) :=
   .atom (FieldAtom.neZero P)
-
-/-- The free variables of a field formula. -/
-noncomputable def freeVars [DecidableEq σ] :
-    Formula σ (FieldAtom σ D) → Finset σ
-  | .atom a      => a.vars
-  | .not Φ       => Φ.freeVars
-  | .and Φ₁ Φ₂   => Φ₁.freeVars ∪ Φ₂.freeVars
-  | .or Φ₁ Φ₂    => Φ₁.freeVars ∪ Φ₂.freeVars
-  | .implies Φ₁ Φ₂ => Φ₁.freeVars ∪ Φ₂.freeVars
-  | .exists_ x Φ => Φ.freeVars \ {x}
-  | .forall_ x Φ => Φ.freeVars \ {x}
-
-/-- The bound variables of a field formula: variables attached to a quantifier (∃ or ∀). -/
-noncomputable def boundVars [DecidableEq σ] :
-    Formula σ (FieldAtom σ D) → Finset σ
-  | .atom _        => ∅
-  | .not Φ         => Φ.boundVars
-  | .and Φ₁ Φ₂     => Φ₁.boundVars ∪ Φ₂.boundVars
-  | .or Φ₁ Φ₂      => Φ₁.boundVars ∪ Φ₂.boundVars
-  | .implies Φ₁ Φ₂ => Φ₁.boundVars ∪ Φ₂.boundVars
-  | .exists_ x Φ   => Φ.boundVars ∪ {x}
-  | .forall_ x Φ   => Φ.boundVars ∪ {x}
-
-/-- A sentence is a formula with no free variables. -/
-def isSentence [DecidableEq σ] (Φ : Formula σ (FieldAtom σ D)) :
-    Prop :=
-  Φ.freeVars = ∅
 
 /-- The formula "True": 0 = 0. -/
 noncomputable def trueFormula : Formula σ (FieldAtom σ D) :=

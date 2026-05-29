@@ -331,8 +331,8 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
       rw [realization_conjFormFormula]
       ext y
       show _ ↔ _
-      simp only [Formula.realization, hisEq, Bool.false_eq_true, if_true,
-        if_false, Set.mem_setOf_eq, Set.mem_compl_iff,
+      simp only [Formula.realization, interpret_fieldAtom, hisEq,
+        Bool.false_eq_true, if_true, if_false, Set.mem_setOf_eq, Set.mem_compl_iff,
         List.mem_singleton, List.not_mem_nil, IsEmpty.forall_iff, forall_eq,
         implies_true, and_true, true_and]
       try tauto

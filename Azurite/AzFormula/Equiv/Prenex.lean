@@ -922,7 +922,8 @@ theorem gRealization_eq_azRealization {n : ℕ}
   induction Φ with
   | atom a =>
     show azFieldAtomInterpret a = (BPR.Formula.atom (AzFieldAtom.toFieldAtom a)).realization
-    simp only [azFieldAtomInterpret, BPR.Formula.realization, AzFieldAtom.toFieldAtom]
+    simp only [azFieldAtomInterpret, BPR.Formula.realization,
+      BPR.Formula.interpret_fieldAtom, AzFieldAtom.toFieldAtom]
   | not _ ih => simp only [gRealization, azRealization, azFormulaToFieldFormula, mapAtom,
       BPR.Formula.realization]; exact congrArg Set.compl ih
   | and _ _ ih₁ ih₂ => simp only [gRealization, azRealization, azFormulaToFieldFormula, mapAtom,

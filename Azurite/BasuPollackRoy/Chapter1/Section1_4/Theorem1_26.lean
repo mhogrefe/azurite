@@ -834,8 +834,8 @@ theorem qf_finZero_atom_transfer
     aeval_finZero_algebraMap (D := C) (C := C) (C' := C') a.poly
   rcases hb : a.isEq with _ | _
   · -- a.isEq = false: atom is "≠ 0".
-    simp only [Formula.realization, hb, Bool.false_eq_true, if_false,
-      Set.mem_setOf_eq]
+    simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
+      Bool.false_eq_true, if_false, Set.mem_setOf_eq]
     rw [hbridge]
     constructor
     · intro h heq
@@ -847,7 +847,8 @@ theorem qf_finZero_atom_transfer
       apply h
       rw [heq, map_zero]
   · -- a.isEq = true: atom is "= 0".
-    simp only [Formula.realization, hb, if_true, Set.mem_setOf_eq]
+    simp only [Formula.realization, Formula.interpret_fieldAtom, hb, if_true,
+      Set.mem_setOf_eq]
     rw [hbridge]
     constructor
     · intro h; rw [h, map_zero]
@@ -1025,11 +1026,12 @@ theorem qf_finZero_realization_transfer_general
         fun h => by rw [h, map_zero]⟩
     rcases hb : a.isEq with _ | _
     · -- atom is "≠ 0"
-      simp only [Formula.realization, hb, Bool.false_eq_true, if_false,
-        Set.mem_setOf_eq]
+      simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
+        Bool.false_eq_true, if_false, Set.mem_setOf_eq]
       exact not_congr hC_iff |>.trans (not_congr hC'_iff).symm
     · -- atom is "= 0"
-      simp only [Formula.realization, hb, if_true, Set.mem_setOf_eq]
+      simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
+        if_true, Set.mem_setOf_eq]
       rw [hC_iff, hC'_iff]
   | not Φ ih =>
     have hQF' : Φ.IsQuantifierFree := hQF

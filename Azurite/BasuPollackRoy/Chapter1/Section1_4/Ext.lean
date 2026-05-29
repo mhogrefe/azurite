@@ -132,10 +132,11 @@ theorem qf_sentence_realization_transfer
       exact ⟨fun h => hAlgInj (by rw [h, map_zero]),
         fun h => by rw [h, map_zero]⟩
     rcases hb : a.isEq with _ | _
-    · simp only [Formula.realization, hb, Bool.false_eq_true,
-        if_false, Set.mem_setOf_eq]
+    · simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
+        Bool.false_eq_true, if_false, Set.mem_setOf_eq]
       exact not_congr hC_iff |>.trans (not_congr hC'_iff).symm
-    · simp only [Formula.realization, hb, if_true, Set.mem_setOf_eq]
+    · simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
+        if_true, Set.mem_setOf_eq]
       rw [hC_iff, hC'_iff]
   | not Φ ih =>
     have hQF' : Φ.IsQuantifierFree := hQF
@@ -285,8 +286,7 @@ theorem rename_freeVars [DecidableEq σ] [DecidableEq τ]
       Φ.freeVars.image f := by
   induction Φ with
   | atom a =>
-    simp only [Formula.rename, freeVars, FieldAtom.vars,
-      FieldAtom.renameVars]
+    simp only [Formula.rename, freeVars, FieldAtom.renameVars]
     exact MvPolynomial.vars_rename f a.poly
   | not _ ih =>
     simp only [Formula.rename, freeVars]
