@@ -430,6 +430,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_3.Tru
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Truncate
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Characteristic
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Exercise1_10
+import Azurite.BasuPollackRoy.Chapter1.Section1_4.Exercise1_12
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Ext
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.SentencePreservation
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Theorem1_23
