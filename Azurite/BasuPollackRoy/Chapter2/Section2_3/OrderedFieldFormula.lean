@@ -188,6 +188,32 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     (geZeroO P : Formula σ (OrderedFieldAtom σ D)).realization (C := R) =
       { y | aeval y P ≥ 0 } := rfl
 
+/-! ### Tautologies over a linearly ordered field.
+
+BPR remarks that $1 > 0$ is $R$-equivalent to "true" and $1 < 0$ is
+$R$-equivalent to "false". In the present setup this is the
+specialisation of `realization_gtZeroO` / `realization_ltZeroO` at the
+constant polynomial `1`: in any linearly ordered field `1 > 0`, so the
+realisation is the whole space; and `1 < 0` is impossible, so the
+realisation is empty.
+-/
+
+/-- $1 > 0$ realises to `Set.univ`: this is the canonical
+ordered-field tautology. -/
+@[simp] theorem realization_gtZeroO_one [DecidableEq σ] :
+    ((gtZeroO 1 : Formula σ (OrderedFieldAtom σ D)).realization (C := R)) =
+      Set.univ := by
+  ext y
+  simp [realization_gtZeroO, zero_lt_one]
+
+/-- $1 < 0$ realises to `∅`: this is the canonical ordered-field
+contradiction. -/
+@[simp] theorem realization_ltZeroO_one [DecidableEq σ] :
+    ((ltZeroO 1 : Formula σ (OrderedFieldAtom σ D)).realization (C := R)) =
+      (∅ : Set (σ → R)) := by
+  ext y
+  simp [realization_ltZeroO, not_lt.mpr zero_le_one]
+
 end Formula
 
 end Azurite.BPR
