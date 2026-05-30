@@ -216,7 +216,7 @@ omit [IsDomain D] in
 /-- When `Q_y ≠ 0` and `algebraMap D C` is injective, the degree of `Q_y`
 equals `↑(natDegree q)` for some `q ∈ Tru Q`. This is the key lemma
 enabling the `degFormula`-based covering property. -/
-private theorem Tru_covers_degrees
+theorem Tru_covers_degrees
     {C : Type*} [Field C] [Algebra D C]
     (hinj : Function.Injective (algebraMap D C))
     (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0)
@@ -762,7 +762,7 @@ decreasing_by
 omit [IsDomain D] in
 /-- From `degFormula R (↑q.natDegree)` and `q ∈ Tru R`, the specialized
 polynomials are equal and the leading coefficient doesn't vanish. -/
-private theorem degFormula_Tru_spec
+theorem degFormula_Tru_spec
     {C : Type*} [Field C] [Algebra D C]
     (R q : Polynomial (MvPolynomial (Fin k) D))
     (hq : q ∈ Tru R) (_hq_ne : q ≠ 0)
@@ -937,6 +937,103 @@ theorem leafFormula_gcd
     simp only [pathLeafParent]
     rw [hQ_zero]
     exact isGCD_self_zero _
+
+/-- For `y ∈ Reali(leafFormulaAux parent cur sp)`, every non-zero
+polynomial along the sub-path `sp` has non-vanishing leading
+coefficient at `y`. Mirrors `mkTRemsNode_gcd`: each `degFormula` on the
+path pins a truncation `c ∈ Tru(R)`, and `degFormula_Tru_spec` gives
+`φ(c.leadingCoeff) ≠ 0`. -/
+theorem leafFormulaAux_lc_ne_zero
+    {C : Type*} [Field C] [Algebra D C]
+    (parent cur : Polynomial (MvPolynomial (Fin k) D)) (hcur : cur ≠ 0)
+    {sp : List (Polynomial (MvPolynomial (Fin k) D))}
+    (hsp : sp ∈ (mkTRemsNode parent cur).leafPaths)
+    (y : Fin k → C)
+    (hy : y ∈ (leafFormulaAux parent cur sp).realization (C := C)) :
+    ∀ p ∈ sp, p ≠ 0 → (MvPolynomial.aeval y).toRingHom p.leadingCoeff ≠ 0 := by
+  set R := -(pRemMv parent cur) with R_def
+  rw [mkTRemsNode, if_neg hcur] at hsp; dsimp only at hsp
+  set cs := (Tru_finite R).toFinset.toList with cs_def
+  set tru_trees := cs.attach.map (fun ⟨c, _⟩ => mkTRemsNode cur c) with tt_def
+  set ac := tru_trees ++ [RoseTree.node 0 []] with ac_def
+  have hac_ne : ac ≠ [] := by simp [ac_def]
+  rw [leafPaths_node_ne_nil cur ac hac_ne] at hsp
+  simp only [List.mem_flatMap, List.mem_map] at hsp
+  obtain ⟨child, hc_mem, sp', hsp', hsp_eq⟩ := hsp
+  subst hsp_eq
+  rw [ac_def, List.mem_append, List.mem_singleton] at hc_mem
+  rcases hc_mem with hc_tru | hc_zero
+  · rw [tt_def, List.mem_map] at hc_tru
+    obtain ⟨⟨c, hc_cs⟩, _, hc_eq⟩ := hc_tru
+    dsimp only at hc_eq; subst hc_eq
+    simp only [mkTRemsNode_root] at hy ⊢
+    have hc_tru : c ∈ Tru R :=
+      (Set.Finite.mem_toFinset _).mp (Finset.mem_toList.mp hc_cs)
+    have hR_ne : R ≠ 0 := by
+      intro h; rw [h, Tru_empty_of_eq_zero] at hc_tru; exact hc_tru.elim
+    have hc_ne : c ≠ 0 := fun h => absurd (h ▸ hc_tru) (zero_not_mem_Tru R hR_ne)
+    simp only [leafFormulaAux, if_neg hc_ne, Formula.realization_and] at hy
+    obtain ⟨hy_deg, hy_rest⟩ := hy
+    obtain ⟨_, hlc_c⟩ := degFormula_Tru_spec R c hc_tru hc_ne y hy_deg
+    have ih := leafFormulaAux_lc_ne_zero cur c hc_ne hsp' y hy_rest
+    intro p hp hp0
+    rcases List.mem_cons.mp hp with rfl | hp_sp'
+    · exact hlc_c
+    · exact ih p hp_sp' hp0
+  · subst hc_zero
+    simp only [RoseTree.leafPaths, List.mem_singleton] at hsp'
+    subst hsp'
+    intro p hp hp0
+    rw [List.mem_singleton] at hp; subst hp; exact absurd rfl hp0
+termination_by cur.natDegree
+decreasing_by
+  exact lt_of_le_of_lt (natDegree_mem_Tru_le hc_tru)
+    (Polynomial.natDegree_lt_natDegree hR_ne (by
+      rw [Polynomial.degree_neg]; exact degree_pRemMv_lt parent cur hcur))
+
+/-- For `y ∈ Reali(leafFormula P Q path)`, every non-zero polynomial
+along the leaf `path` has non-vanishing leading coefficient at `y`.
+Mirrors `leafFormula_gcd`. -/
+theorem leafFormula_path_lc_ne_zero
+    {C : Type*} [Field C] [Algebra D C]
+    (P Q : Polynomial (MvPolynomial (Fin k) D))
+    {path : List (Polynomial (MvPolynomial (Fin k) D))}
+    (hpath : path ∈ (TRems P Q).leafPaths)
+    (y : Fin k → C)
+    (hy : y ∈ (leafFormula P Q path).realization (C := C)) :
+    ∀ p ∈ path, p ≠ 0 → (MvPolynomial.aeval y).toRingHom p.leadingCoeff ≠ 0 := by
+  unfold TRems at hpath
+  set cs := (Tru_finite Q).toFinset.toList with cs_def
+  set tru_trees := cs.map (mkTRemsNode P) with tt_def
+  set ac := tru_trees ++ [RoseTree.node 0 []] with ac_def
+  have hac_ne : ac ≠ [] := by simp [ac_def]
+  rw [leafPaths_node_ne_nil P ac hac_ne] at hpath
+  simp only [List.mem_flatMap, List.mem_map] at hpath
+  obtain ⟨child, hc_mem, sp, hsp, heq⟩ := hpath
+  subst heq
+  rw [ac_def, List.mem_append, List.mem_singleton] at hc_mem
+  rcases hc_mem with hc_tru | hc_zero
+  · rw [tt_def, List.mem_map] at hc_tru
+    obtain ⟨q, hq_cs, rfl⟩ := hc_tru
+    simp only [mkTRemsNode_root] at hy ⊢
+    have hq_tru : q ∈ Tru Q :=
+      (Set.Finite.mem_toFinset _).mp (Finset.mem_toList.mp hq_cs)
+    have hQ_ne : Q ≠ 0 := by
+      intro h; rw [h, Tru_empty_of_eq_zero] at hq_tru; exact hq_tru.elim
+    have hq_ne : q ≠ 0 := fun h => absurd (h ▸ hq_tru) (zero_not_mem_Tru Q hQ_ne)
+    simp only [leafFormula, if_neg hq_ne, Formula.realization_and] at hy
+    obtain ⟨hy_deg, hy_rest⟩ := hy
+    obtain ⟨_, hlc_q⟩ := degFormula_Tru_spec Q q hq_tru hq_ne y hy_deg
+    have ih := leafFormulaAux_lc_ne_zero P q hq_ne hsp y hy_rest
+    intro p hp hp0
+    rcases List.mem_cons.mp hp with rfl | hp_sp
+    · exact hlc_q
+    · exact ih p hp_sp hp0
+  · subst hc_zero
+    simp only [RoseTree.leafPaths, List.mem_singleton] at hsp
+    subst hsp
+    intro p hp hp0
+    rw [List.mem_singleton] at hp; subst hp; exact absurd rfl hp0
 
 end Lemma_1_19
 

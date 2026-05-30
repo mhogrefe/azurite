@@ -154,6 +154,51 @@ theorem IsSemialgebraicSet.of_definedOver
   | compl _ ih => exact ih.compl
   | inter _ _ ihV ihW => exact ihV.inter ihW
 
+/-! ### Atomic semialgebraic-over-`D` sets.
+
+The six ordered-field atomic comparisons are semialgebraic over `D`
+provided the polynomial is in `D[X_1, …, X_k]`. -/
+
+omit [IsStrictOrderedRing R] in
+theorem IsSemialgebraicSetOver.eqZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P = 0}) :=
+  .algebraic ⟨{P}, by ext x; simp⟩
+
+omit [IsStrictOrderedRing R] in
+theorem IsSemialgebraicSetOver.neZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P ≠ 0}) :=
+  (IsSemialgebraicSetOver.eqZero (R := R) (D := D) P).compl
+
+omit [IsStrictOrderedRing R] in
+theorem IsSemialgebraicSetOver.gtZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P > 0}) :=
+  .pos_locus P
+
+theorem IsSemialgebraicSetOver.ltZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P < 0}) := by
+  have h := IsSemialgebraicSetOver.pos_locus (R := R) (D := D) (-P)
+  convert h using 1
+  ext x; simp
+
+theorem IsSemialgebraicSetOver.geZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P ≥ 0}) := by
+  have h := (IsSemialgebraicSetOver.ltZero (R := R) (D := D) P).compl
+  convert h using 1
+  ext x; simp [not_lt]
+
+omit [IsStrictOrderedRing R] in
+theorem IsSemialgebraicSetOver.leZero {D : Type*} [CommRing D] [Algebra D R]
+    (P : MvPolynomial (Fin k) D) :
+    IsSemialgebraicSetOver D ({x : Fin k → R | aeval x P ≤ 0}) := by
+  have h := (IsSemialgebraicSetOver.pos_locus (R := R) (D := D) P).compl
+  convert h using 1
+  ext x; simp [not_lt]
+
 /-! ### Single-generator characterization via `≥ 0`.
 
 BPR's definition lists two polynomial generators (`{P = 0}` and `{P > 0}`),
