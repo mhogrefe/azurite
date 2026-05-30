@@ -535,6 +535,11 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicQF
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SumOfSquaresZer
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.Theorem_2_62
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Definition_2_66
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Example_2_67
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_64
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_65
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealizationOverZeroSet
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
