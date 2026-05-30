@@ -74,6 +74,7 @@ import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
 import Azurite.AzMatrix.Equiv.Det
 import Azurite.AzMatrix.Equiv.GaussRank
+import Azurite.AzMatrix.Equiv.Kronecker
 import Azurite.AzMatrix.Equiv.Mul
 import Azurite.AzMatrix.Equiv.MulList
 import Azurite.AzMatrix.Equiv.MulVec
@@ -86,6 +87,7 @@ import Azurite.AzMatrix.Equiv.Sub
 import Azurite.AzMatrix.Equiv.Transpose
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.GaussRank
+import Azurite.AzMatrix.Kronecker
 import Azurite.AzMatrix.Mul
 import Azurite.AzMatrix.MulList
 import Azurite.AzMatrix.MulVec
@@ -535,11 +537,21 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicQF
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SumOfSquaresZer
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.Theorem_2_62
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Corollary_2_73
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Definition_2_66
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Example_2_67
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Example_2_70
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Exercise_2_13
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Lemma_2_74
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Lemma_2_75
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Notation_2_69
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Notation_2_71
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_64
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_65
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_68
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_72
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealizationOverZeroSet
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.SinglePolynomialMatrix
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
