@@ -533,12 +533,16 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_50
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_58
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.BasicSemialgebraicSets
+import Azurite.BasuPollackRoy.Chapter2.Section2_3.BasicSemialgebraicSetsOver
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.FiberFormula
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.OrderedFieldFormula
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicQF
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SumOfSquaresZer
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.Theorem_2_62
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.BasicCellProjection
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.BasicCellStratumA
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.BasicCellStratumB
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Corollary_2_73
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Definition_2_66
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.EmbeddingExtension
@@ -549,6 +553,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_4.Lemma_2_74
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Lemma_2_75
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Notation_2_69
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Notation_2_71
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.ParametrizedTarskiQuery
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_64
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_65
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_68
@@ -557,6 +562,8 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealClosureEmbedding
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealizationOverZeroSet
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.SignConditionTransfer
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.SinglePolynomialMatrix
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.StratumB
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.Theorem_2_76
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.ThomEncodingTransfer
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12

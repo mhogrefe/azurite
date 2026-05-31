@@ -1035,6 +1035,124 @@ private theorem sturmLeafSignFormula_sigPat_eq
     exact hmem.symm
 
 omit [IsRealClosed R] in
+/-- **Generalized combinatorial-to-actual Sturm-count bridge.** Identical to
+`sturmCount_eq_actual_varAt_diff` but with the second Sturm argument an
+*arbitrary* polynomial `S` (over `D[Y]`) in place of the hardcoded
+`Ptil.derivative`. The leaf path now ranges over `TRems Ptil S`, and the
+conclusion concerns the actual sign-change difference of `SRemS(P_y, S_y)`
+where `S_y = S.map φ`. (`leafFormula_sturm_posAssoc` is already generic in the
+second argument, so the proof is the `.derivative` one with the single
+`derivative_map` step removed — `S_y` is the second argument directly.)
+
+This is the Sturm–Tarski engine for BPR Theorem 2.76: taking
+`S = Ptil.derivative * 𝒫` (with `𝒫` a product of powers of the family `𝒬`)
+makes `S_y = P_y' · 𝒬_y^α`, so by Theorem 2.61 the difference is the
+parametrized Tarski query `TaQ(𝒬_y^α, P_y)`. -/
+theorem sturmCount_eq_actual_varAt_diff_gen
+    (Ptil S : Polynomial (MvPolynomial (Fin k) D))
+    (path : List (Polynomial (MvPolynomial (Fin k) D)))
+    (sigPat : List SignType)
+    (h_path : path ∈ (TRems Ptil S).leafPaths)
+    (h_sigPat : sigPat ∈ allSignPatterns (Ptil :: path).length)
+    (y : Fin k → R)
+    (h_leaf : y ∈ (leafFormula Ptil S path).realization (C := R))
+    (h_sign : y ∈ (Formula.sturmLeafSignFormula (Ptil :: path) sigPat).realization
+                    (C := R))
+    (hlc : MvPolynomial.aeval y Ptil.leadingCoeff ≠ 0) :
+    let P_y := Ptil.map (MvPolynomial.aeval y).toRingHom;
+    let S_y := S.map (MvPolynomial.aeval y).toRingHom;
+    (sturmCount sigPat ((Ptil :: path).map Polynomial.natDegree) : ℤ) =
+      ((varAt (SRemSList P_y S_y (S_y.natDegree + 2))
+            (.negInf : ExtendedPoint R) : ℤ) -
+        (varAt (SRemSList P_y S_y (S_y.natDegree + 2))
+            (.posInf : ExtendedPoint R) : ℤ)) := by
+  intro P_y S_y
+  set φ : MvPolynomial (Fin k) D →+* R := (MvPolynomial.aeval y).toRingHom with hφ
+  -- (1) `sigPat` is the actual leading-coefficient sign vector at `y`.
+  have hlen : sigPat.length = (Ptil :: path).length := by
+    rw [mem_allSignPatterns_iff] at h_sigPat; exact h_sigPat
+  have hsigPat : sigPat =
+      (Ptil :: path).map (fun p => SignType.sign (MvPolynomial.aeval y p.leadingCoeff)) :=
+    sturmLeafSignFormula_sigPat_eq _ _ hlen y h_sign
+  -- (2) Degree/sign preservation under specialisation.
+  have hpres : ∀ p ∈ (Ptil :: path), p ≠ 0 →
+      MvPolynomial.aeval y p.leadingCoeff ≠ 0 := by
+    intro p hp hp0
+    rcases List.mem_cons.mp hp with rfl | hp_path
+    · exact hlc
+    · exact leafFormula_path_lc_ne_zero Ptil S h_path y h_leaf p hp_path hp0
+  have hpres_full : ∀ p ∈ (Ptil :: path),
+      SignType.sign (MvPolynomial.aeval y p.leadingCoeff) =
+        SignType.sign (p.map φ).leadingCoeff ∧
+      p.natDegree = (p.map φ).natDegree := by
+    intro p hp
+    rcases eq_or_ne p 0 with rfl | hp0
+    · refine ⟨?_, ?_⟩ <;> simp [hφ]
+    · have hne : φ p.leadingCoeff ≠ 0 := hpres p hp hp0
+      have hnd : (p.map φ).natDegree = p.natDegree :=
+        Polynomial.natDegree_map_of_leadingCoeff_ne_zero φ hne
+      have hlc_eq : (p.map φ).leadingCoeff = MvPolynomial.aeval y p.leadingCoeff := by
+        unfold Polynomial.leadingCoeff
+        rw [hnd, Polynomial.coeff_map]; rfl
+      exact ⟨by rw [hlc_eq], hnd.symm⟩
+  -- (3) The specialised path sequence and the actual `SRemS(P_y, S_y)` have
+  --     equal `varAt` (pointwise positive-scalar associates modulo trailing 0s).
+  have hcorr : ∀ pt : ExtendedPoint R,
+      varAt (SRemSList P_y S_y (S_y.natDegree + 2)) pt
+        = varAt ((Ptil :: path).map (Polynomial.map φ)) pt := by
+    have hP_y_ne : P_y ≠ 0 := by
+      have hc : P_y.coeff Ptil.natDegree = MvPolynomial.aeval y Ptil.leadingCoeff := by
+        show (Ptil.map φ).coeff Ptil.natDegree = _
+        rw [Polynomial.coeff_map]; rfl
+      intro h
+      rw [h, Polynomial.coeff_zero] at hc
+      exact hlc hc.symm
+    have hpw := leafFormula_sturm_posAssoc Ptil S h_path y h_leaf
+    intro pt
+    apply varAt_eq_of_pointwise_posAssoc
+    intro i
+    rw [SRemSList_getD]
+    by_cases hiN : i < S_y.natDegree + 2
+    · rw [if_pos hiN]; exact hpw i
+    · rw [if_neg hiN]
+      have hSRemS0 : SRemS P_y S_y i = 0 :=
+        SRemS_eq_zero_of_natDegree_lt P_y S_y hP_y_ne i (by omega)
+      have hL2 : ((Ptil :: path).map (Polynomial.map φ)).getD i 0 = 0 := by
+        have hp := hpw i
+        rw [hSRemS0] at hp
+        obtain ⟨c, hc, hce⟩ := hp
+        rcases mul_eq_zero.mp hce.symm with h | h
+        · exact absurd h (Polynomial.C_ne_zero.mpr (ne_of_gt hc))
+        · exact h
+      rw [hL2]; exact PosAssoc.refl 0
+  -- Assemble: replace `SRemSList` by the path, convert to `varAtSigns`, match.
+  simp only [hcorr]
+  rw [varAt_negInf_eq_varAtSigns, varAt_posInf_eq_varAtSigns]
+  simp only [sturmCount, varAtNegInfWithDegrees]
+  have hB : varAtSigns sigPat =
+      varAtSigns (((Ptil :: path).map (Polynomial.map φ)).map
+        (fun Q => SignType.sign Q.leadingCoeff)) := by
+    rw [hsigPat]
+    simp only [List.map_map]
+    congr 1
+    apply List.map_congr_left
+    intro p hp
+    exact (hpres_full p hp).1
+  have hA : varAtSigns ((sigPat.zip ((Ptil :: path).map Polynomial.natDegree)).map
+        (fun sd => signWithParity sd.1 sd.2)) =
+      varAtSigns (((Ptil :: path).map (Polynomial.map φ)).map
+        (fun Q => signWithParity (SignType.sign Q.leadingCoeff) Q.natDegree)) := by
+    rw [hsigPat, zip_map_map_diag]
+    simp only [List.map_map]
+    congr 1
+    apply List.map_congr_left
+    intro p hp
+    obtain ⟨hs, hd⟩ := hpres_full p hp
+    simp only [Function.comp_apply]
+    rw [hs, hd]
+  rw [hA, hB]
+
+omit [IsRealClosed R] in
 /-- **Combinatorial-to-actual Sturm-count bridge**. On a
 `y` satisfying a root truncation's `degFormula`, the leaf path's
 `leafFormula`, and the full sequence's `sturmLeafSignFormula`, the
@@ -1074,96 +1192,15 @@ theorem sturmCount_eq_actual_varAt_diff
             (P_y.derivative.natDegree + 2))
             (.posInf : ExtendedPoint R) : ℤ)) := by
   intro P_y
-  set φ : MvPolynomial (Fin k) D →+* R := (MvPolynomial.aeval y).toRingHom with hφ
-  -- (1) `sigPat` is the actual leading-coefficient sign vector at `y`.
-  have hlen : sigPat.length = (Ptil :: path).length := by
-    rw [mem_allSignPatterns_iff] at h_sigPat; exact h_sigPat
-  have hsigPat : sigPat =
-      (Ptil :: path).map (fun p => SignType.sign (MvPolynomial.aeval y p.leadingCoeff)) :=
-    sturmLeafSignFormula_sigPat_eq _ _ hlen y h_sign
-  -- (2) Degree preservation: each non-zero path element keeps its leading
-  --     coefficient and degree under specialisation at `y`.
-  have hpres : ∀ p ∈ (Ptil :: path), p ≠ 0 →
-      MvPolynomial.aeval y p.leadingCoeff ≠ 0 := by
-    intro p hp hp0
-    rcases List.mem_cons.mp hp with rfl | hp_path
-    · exact hlc
-    · exact leafFormula_path_lc_ne_zero Ptil Ptil.derivative h_path y h_leaf p hp_path hp0
-  -- Per-element sign- and degree-preservation derived from `hpres`.
-  have hpres_full : ∀ p ∈ (Ptil :: path),
-      SignType.sign (MvPolynomial.aeval y p.leadingCoeff) =
-        SignType.sign (p.map φ).leadingCoeff ∧
-      p.natDegree = (p.map φ).natDegree := by
-    intro p hp
-    rcases eq_or_ne p 0 with rfl | hp0
-    · refine ⟨?_, ?_⟩ <;> simp [hφ]
-    · have hne : φ p.leadingCoeff ≠ 0 := hpres p hp hp0
-      have hnd : (p.map φ).natDegree = p.natDegree :=
-        Polynomial.natDegree_map_of_leadingCoeff_ne_zero φ hne
-      have hlc_eq : (p.map φ).leadingCoeff = MvPolynomial.aeval y p.leadingCoeff := by
-        unfold Polynomial.leadingCoeff
-        rw [hnd, Polynomial.coeff_map]; rfl
-      exact ⟨by rw [hlc_eq], hnd.symm⟩
-  -- (3) Geometric correspondence: the specialised path sequence and the
-  --     actual Sturm sequence have equal `varAt` (they are pointwise
-  --     positive-scalar associates modulo trailing zeros).
-  have hcorr : ∀ pt : ExtendedPoint R,
-      varAt (SRemSList P_y P_y.derivative (P_y.derivative.natDegree + 2)) pt
-        = varAt ((Ptil :: path).map (Polynomial.map φ)) pt := by
-    have hP_y_ne : P_y ≠ 0 := by
-      have hc : P_y.coeff Ptil.natDegree = MvPolynomial.aeval y Ptil.leadingCoeff := by
-        show (Ptil.map φ).coeff Ptil.natDegree = _
-        rw [Polynomial.coeff_map]; rfl
-      intro h
-      rw [h, Polynomial.coeff_zero] at hc
-      exact hlc hc.symm
-    have hderiv : P_y.derivative = Ptil.derivative.map φ := Polynomial.derivative_map Ptil φ
-    have hpw := leafFormula_sturm_posAssoc Ptil Ptil.derivative h_path y h_leaf
-    intro pt
-    apply varAt_eq_of_pointwise_posAssoc
-    intro i
-    rw [SRemSList_getD]
-    by_cases hiN : i < P_y.derivative.natDegree + 2
-    · rw [if_pos hiN, hderiv]; exact hpw i
-    · rw [if_neg hiN]
-      have hSRemS0 : SRemS (Ptil.map φ) (Ptil.derivative.map φ) i = 0 := by
-        rw [← hderiv]
-        exact SRemS_eq_zero_of_natDegree_lt P_y P_y.derivative hP_y_ne i (by omega)
-      have hL2 : ((Ptil :: path).map (Polynomial.map φ)).getD i 0 = 0 := by
-        have hp := hpw i
-        rw [hSRemS0] at hp
-        obtain ⟨c, hc, hce⟩ := hp
-        rcases mul_eq_zero.mp hce.symm with h | h
-        · exact absurd h (Polynomial.C_ne_zero.mpr (ne_of_gt hc))
-        · exact h
-      rw [hL2]; exact PosAssoc.refl 0
-  -- Assemble: replace `SRemSList` by the specialised path, convert both
-  -- sides to `varAtSigns`, and match them elementwise.
-  simp only [hcorr]
-  rw [varAt_negInf_eq_varAtSigns, varAt_posInf_eq_varAtSigns]
-  simp only [sturmCount, varAtNegInfWithDegrees]
-  have hB : varAtSigns sigPat =
-      varAtSigns (((Ptil :: path).map (Polynomial.map φ)).map
-        (fun Q => SignType.sign Q.leadingCoeff)) := by
-    rw [hsigPat]
-    simp only [List.map_map]
-    congr 1
-    apply List.map_congr_left
-    intro p hp
-    exact (hpres_full p hp).1
-  have hA : varAtSigns ((sigPat.zip ((Ptil :: path).map Polynomial.natDegree)).map
-        (fun sd => signWithParity sd.1 sd.2)) =
-      varAtSigns (((Ptil :: path).map (Polynomial.map φ)).map
-        (fun Q => signWithParity (SignType.sign Q.leadingCoeff) Q.natDegree)) := by
-    rw [hsigPat, zip_map_map_diag]
-    simp only [List.map_map]
-    congr 1
-    apply List.map_congr_left
-    intro p hp
-    obtain ⟨hs, hd⟩ := hpres_full p hp
-    simp only [Function.comp_apply]
-    rw [hs, hd]
-  rw [hA, hB]
+  -- `Ptil.derivative` is the special case `S = Ptil.derivative` of the
+  -- generalized bridge: `P_y.derivative = (Ptil.derivative).map φ` by
+  -- `derivative_map`, so the two conclusions coincide.
+  have hderiv : P_y.derivative
+      = Ptil.derivative.map (MvPolynomial.aeval y).toRingHom :=
+    Polynomial.derivative_map Ptil _
+  rw [hderiv]
+  exact sturmCount_eq_actual_varAt_diff_gen Ptil Ptil.derivative path sigPat
+    h_path h_sigPat y h_leaf h_sign hlc
 
 /-- **Per-triple Sturm-Tarski bridge**. Given a root truncation
 `Ptil ∈ Tru (splitLast P)` and a `y` pinning `P_y` to degree
