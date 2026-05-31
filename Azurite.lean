@@ -483,6 +483,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_6
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_8
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealClosedField
+import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealClosure
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealField
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.SignAtPoint
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.SumOfSquares
@@ -524,6 +525,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_38
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_51
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_55
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.SturmSequence
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.SturmTarskiTransfer
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_33
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_35
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_47
@@ -539,6 +541,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_3.SumOfSquaresZer
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.Theorem_2_62
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Corollary_2_73
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Definition_2_66
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.EmbeddingExtension
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Example_2_67
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Example_2_70
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Exercise_2_13
@@ -550,8 +553,11 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_64
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_65
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_68
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Proposition_2_72
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealClosureEmbedding
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealizationOverZeroSet
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.SignConditionTransfer
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.SinglePolynomialMatrix
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.ThomEncodingTransfer
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11

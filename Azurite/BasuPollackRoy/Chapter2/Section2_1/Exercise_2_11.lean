@@ -1,6 +1,7 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Archimedean
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Example_2_10
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.RealClosedField
+import Azurite.BasuPollackRoy.Chapter2.Section2_4.RealClosureEmbedding
 import Mathlib.FieldTheory.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Analysis.Real.Sqrt
@@ -25,7 +26,11 @@ import Mathlib.RingTheory.Algebraic.Integral
 
 namespace Azurite.BPR.Exercise2_11
 
-open Polynomial
+-- `open _root_.Polynomial` (not `open Polynomial`): importing the real-closure
+-- embedding machinery pulls in a chain that defines an `Azurite.BPR.Polynomial`
+-- sub-namespace, which would otherwise shadow the real `Polynomial` and break
+-- the `_[X]` notation here.
+open _root_.Polynomial
 
 /-- The real algebraic numbers, as an intermediate field. -/
 noncomputable abbrev R_alg : IntermediateField ℚ ℝ := algebraicClosure ℚ ℝ
@@ -186,5 +191,50 @@ instance : IsRealClosed R_alg where
 /-- `ℝ_alg` is archimedean (as an intermediate field of `ℝ`). -/
 instance : Archimedean R_alg :=
   Archimedean.comap R_alg.subtype.toAddMonoidHom (fun _ _ h => h)
+
+/-! ### `ℝ_alg` is the real closure of `ℚ`
+
+Having shown `R_alg` is real closed, we record that it is *the* real closure of
+`ℚ`: it is algebraic over `ℚ` (it is `algebraicClosure ℚ ℝ`) and its order extends
+that of `ℚ` (every nonnegative rational is a square), so by the uniqueness of the
+real closure (`realClosure_unique`) any real closure of `ℚ` is `ℚ`-isomorphic to
+it. -/
+
+/-- The order of `R_alg` extends that of `ℚ`: every nonnegative rational maps to a
+square (equivalently, a nonnegative element) of `R_alg`. -/
+theorem isSquare_algebraMap_of_nonneg (p : ℚ) (hp : 0 ≤ p) :
+    IsSquare (algebraMap ℚ R_alg p) :=
+  IsRealClosed.nonneg_iff_isSquare.mp (by
+    rw [← Subtype.coe_le_coe]
+    simp only [ZeroMemClass.coe_zero]
+    have h : ((algebraMap ℚ R_alg p : R_alg) : ℝ) = (p : ℝ) := by norm_cast
+    rw [h]; exact_mod_cast hp)
+
+/-- **The real algebraic numbers are the real closure of `ℚ`.** Any real closed
+field `R'` that is algebraic over `ℚ` and whose order extends `ℚ`'s (every
+nonnegative rational becomes a square) is isomorphic, as a `ℚ`-algebra, to the
+field `R_alg = ℝ_alg` of real algebraic numbers. -/
+theorem nonempty_algEquiv_of_isRealClosure {R' : Type*} [Field R'] [IsRealClosed R']
+    [Algebra ℚ R'] (halg : Algebra.IsAlgebraic ℚ R')
+    (hext : ∀ p : ℚ, 0 ≤ p → IsSquare (algebraMap ℚ R' p)) :
+    Nonempty (R_alg ≃ₐ[ℚ] R') :=
+  realClosure_unique (algebraicClosure.isAlgebraic ℚ ℝ) halg
+    isSquare_algebraMap_of_nonneg hext
+
+/-! ### Algebraic over `ℤ` versus over `ℚ`
+
+Since `ℚ` is the fraction field of `ℤ`, a real number is algebraic over `ℤ` if and
+only if it is algebraic over `ℚ`; so the real algebraic numbers `R_alg` may
+equivalently be described using `ℤ`. -/
+
+/-- For a real number, being algebraic over `ℤ` is equivalent to being algebraic
+over `ℚ` (as `ℚ` is the fraction field of `ℤ`). -/
+theorem isAlgebraic_int_iff_isAlgebraic_rat (x : ℝ) :
+    IsAlgebraic ℤ x ↔ IsAlgebraic ℚ x :=
+  IsFractionRing.isAlgebraic_iff ℤ ℚ ℝ
+
+/-- The real algebraic numbers are exactly the reals algebraic over `ℤ`. -/
+theorem mem_R_alg_iff_isAlgebraic_int {x : ℝ} : x ∈ R_alg ↔ IsAlgebraic ℤ x := by
+  rw [mem_algebraicClosure_iff, ← isAlgebraic_int_iff_isAlgebraic_rat]
 
 end Azurite.BPR.Exercise2_11

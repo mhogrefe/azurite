@@ -26,14 +26,14 @@ variable {R : Type*} [Field R]
 
 /-! ## Infrastructure: AdjoinRoot (X² - C a) -/
 
-private noncomputable def sqSubC (a : R) : R[X] := (X : R[X]) ^ 2 - C a
+noncomputable def sqSubC (a : R) : R[X] := (X : R[X]) ^ 2 - C a
 
 theorem irred_X_sq_sub_C {a : R} (ha : ¬ IsSquare a) :
     Irreducible (sqSubC a) := by
   apply X_pow_sub_C_irreducible_of_prime Nat.prime_two
   intro b; rw [sq]; exact fun h => ha ⟨b, h.symm⟩
 
-private theorem monic_sq_sub_C (a : R) : (sqSubC a).Monic :=
+theorem monic_sq_sub_C (a : R) : (sqSubC a).Monic :=
   monic_X_pow_sub_C a (by norm_num : (2 : ℕ) ≠ 0)
 
 private theorem natDegree_sq_sub_C (a : R) : (sqSubC a).natDegree = 2 :=
@@ -78,7 +78,7 @@ theorem isSumSq_inv_of_isSumSq [IsSemireal R]
 /-! ## Core decomposition lemma -/
 
 /-- `(root (X²−a))² = algebraMap a` -/
-private theorem root_sq_sub_C (a : R) [Fact (Irreducible (sqSubC a))] :
+theorem root_sq_sub_C (a : R) [Fact (Irreducible (sqSubC a))] :
     (AdjoinRoot.root (sqSubC a)) ^ 2 = algebraMap R _ a := by
   have h : Polynomial.aeval (AdjoinRoot.root (sqSubC a)) (sqSubC a) = 0 := by
     rw [AdjoinRoot.aeval_eq]; exact AdjoinRoot.mk_self
@@ -87,7 +87,7 @@ private theorem root_sq_sub_C (a : R) [Fact (Irreducible (sqSubC a))] :
   exact sub_eq_zero.mp h
 
 /-- Every element of AdjoinRoot(X²−a) decomposes as x + y * root. -/
-private theorem repr_exists_sq_sub (a : R) [Fact (Irreducible (sqSubC a))]
+theorem repr_exists_sq_sub (a : R) [Fact (Irreducible (sqSubC a))]
     (z : AdjoinRoot (sqSubC a)) :
     ∃ x y : R, z = algebraMap R _ x + algebraMap R _ y * AdjoinRoot.root (sqSubC a) := by
   induction z using AdjoinRoot.induction_on with
@@ -115,7 +115,7 @@ private theorem repr_exists_sq_sub (a : R) [Fact (Irreducible (sqSubC a))]
     exact ⟨r.coeff 0, r.coeff 1, by ring⟩
 
 /-- The decomposition x + y * root is unique (injectivity of algebraMap + linear independence). -/
-private theorem repr_unique_sq_sub (a : R) [Fact (Irreducible (sqSubC a))]
+theorem repr_unique_sq_sub (a : R) [Fact (Irreducible (sqSubC a))]
     {x y : R} (h : algebraMap R _ x + algebraMap R _ y * AdjoinRoot.root (sqSubC a) = 0) :
     x = 0 ∧ y = 0 := by
   set f := sqSubC a
