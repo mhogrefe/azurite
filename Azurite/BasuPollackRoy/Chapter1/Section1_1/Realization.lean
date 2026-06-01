@@ -65,6 +65,15 @@ noncomputable def realization [AtomRealization α σ C] [DecidableEq σ] :
     (a : α) :
     (Formula.atom a).realization (C := C) = AtomRealization.interpret a := rfl
 
+/-- A formula is *true* (valid) in `C` when its realization is all of `σ → C` — that is,
+every assignment satisfies it. For a sentence (no free variables) this is exactly the
+sentence's truth value in `C`. -/
+def IsTrue [AtomRealization α σ C] [DecidableEq σ] (Φ : Formula σ α) : Prop :=
+  Φ.realization (C := C) = Set.univ
+
+theorem isTrue_iff_forall [AtomRealization α σ C] [DecidableEq σ] (Φ : Formula σ α) :
+    Φ.IsTrue (C := C) ↔ ∀ y, y ∈ Φ.realization (C := C) := Set.eq_univ_iff_forall
+
 end Generic
 
 section FieldAtom

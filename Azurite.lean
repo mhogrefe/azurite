@@ -536,6 +536,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_3.BasicSemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.BasicSemialgebraicSetsOver
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.FiberFormula
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.OrderedFieldFormula
+import Azurite.BasuPollackRoy.Chapter2.Section2_3.OrderedSentences
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicQF
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.SumOfSquaresZer
@@ -565,6 +566,12 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_4.SinglePolynomialMatrix
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.StratumB
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Theorem_2_76
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.ThomEncodingTransfer
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Corollary_2_79
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.InitProjFormula
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_82
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_77
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_80
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_81
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
