@@ -595,6 +595,11 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_5.SignIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_77
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_80
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_81
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.Definitions
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.Infinitesimal
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.Lemma_2_93
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.PuiseuxSeries
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.RatFuncEmbedding
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
