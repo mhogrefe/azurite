@@ -571,6 +571,8 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_5.BringRadicalIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Corollary_2_79
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.EvenRootIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Exercise_2_15
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Exercise_2_16
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Exercise_2_17
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.InitProjFormula
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.LinearMapIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.OddRootIsSemialgebraic
@@ -581,9 +583,13 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_83
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_84
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_85
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_86
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_87
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_88
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Proposition_2_89
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.RatPowIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.RatPowPosIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.RecipIsSemialgebraic
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.Remark_2_87
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.SemialgebraicFunction
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.SignIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_77
