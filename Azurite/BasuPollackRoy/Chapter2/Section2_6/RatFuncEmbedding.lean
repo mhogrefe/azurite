@@ -148,6 +148,17 @@ theorem ratFuncToPuiseux_sub (r s : RatFunc F) :
     ratFuncToPuiseux (r - s) = ratFuncToPuiseux r - ratFuncToPuiseux s := by
   apply Subtype.ext; simp [map_sub]
 
+/-- The embedding `K(ε) ↪ K⟨⟨ε⟩⟩` as a ring homomorphism. -/
+noncomputable def ratFuncToPuiseuxHom (F : Type*) [Field F] : RatFunc F →+* PuiseuxSeries F where
+  toFun := ratFuncToPuiseux
+  map_one' := ratFuncToPuiseux_one
+  map_mul' := ratFuncToPuiseux_mul
+  map_zero' := ratFuncToPuiseux_zero
+  map_add' := ratFuncToPuiseux_add
+
+@[simp] theorem ratFuncToPuiseuxHom_apply (r : RatFunc F) :
+    ratFuncToPuiseuxHom F r = ratFuncToPuiseux r := rfl
+
 /-! ## The `0₊` order matches the Laurent leading coefficient
 
 When `F` is an ordered field, the `0₊` order on `K(ε) = RatFunc F` (BPR Notation 2.5,

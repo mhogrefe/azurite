@@ -182,4 +182,13 @@ theorem theorem_2_31 (C : Type*) [Field C] [IsAlgClosed C] [CharZero C] :
   exact ⟨R, Azurite.BPR.Theorem2_11.theorem_2_11_d_a
     (maximal_hasNoNontrivialRealAlgebraicExtension C R hR hmax)⟩
 
+/-- **Theorem 2.31, with maximality retained.** The real closed subfield can be taken to be a
+*maximal* semireal intermediate field. (Used to show `C` is algebraic over it, hence `C = R[i]`.) -/
+theorem theorem_2_31_maximal (C : Type*) [Field C] [IsAlgClosed C] [CharZero C] :
+    ∃ R : IntermediateField ℚ C, IsRealClosed ↥R ∧
+      ∀ S : IntermediateField ℚ C, IsSemireal ↥S → R ≤ S → S = R := by
+  obtain ⟨R, hR, hmax⟩ := exists_maximal_semireal C
+  exact ⟨R, Azurite.BPR.Theorem2_11.theorem_2_11_d_a
+    (maximal_hasNoNontrivialRealAlgebraicExtension C R hR hmax), hmax⟩
+
 end Azurite.BPR.Theorem2_31
