@@ -52,36 +52,55 @@ theorem exists_initial_RecState {P : Polynomial (PuiseuxSeries R)} (hodd : Odd P
 step produces the next valid state, with non-increasing multiplicity, `β > 0`, and the order jump
 `o(Pᵢ(ε^ξ(x + y))) > β`. -/
 theorem RecState.exists_next (s : RecState R) (h0 : s.poly.coeff 0 ≠ 0) :
-    ∃ (x : R) (ξ β : ℚ) (s' : RecState R), x ≠ 0 ∧ s'.mult ≤ s.mult ∧ 0 < β ∧
-      s'.poly = substPoly s.poly x ξ β ∧
+    ∃ (x : R) (ξ β : ℚ) (A B : ℕ × ℚ) (s' : RecState R),
+      x ≠ 0 ∧ s'.mult ≤ s.mult ∧ 0 < β ∧ 0 < ξ ∧ s'.poly = substPoly s.poly x ξ β ∧
+      A.1 < B.1 ∧ B.1 ≤ s.mult ∧
+      puiseuxOrder R (s.poly.coeff A.1) = (A.2 : WithTop ℚ) ∧
+      puiseuxOrder R (s.poly.coeff B.1) = (B.2 : WithTop ℚ) ∧
+      ξ = -(newtonSlope A B) ∧ β = A.2 + (A.1 : ℚ) * ξ ∧
+      s'.mult = (charPoly s.poly A B).rootMultiplicity x ∧
       (∀ y : PuiseuxSeries R, 0 < puiseuxOrder R y →
         (β : WithTop ℚ) <
           puiseuxOrder R (s.poly.eval (puiseuxMonomial ξ * (constPuiseux x + y)))) := by
-  obtain ⟨x, ξ, β, r', hx0, hodd', hrle, hβpos, ha1, ha2, ha3, hb⟩ :=
+  obtain ⟨x, ξ, β, A, B, hx0, hABlt, hBr, hβpos, hξpos, hcolA, hcolB, hξeq, hβeq, hodd', hrle, ha1,
+      ha2, ha3, hb⟩ :=
     recursion_step_neg s.odd_mult h0 s.coeff_mult_order s.coeff_lt_order s.coeff_ge_order
-  exact ⟨x, ξ, β,
-    { poly := substPoly s.poly x ξ β, mult := r', odd_mult := hodd', coeff_mult_order := ha3,
-      coeff_lt_order := ha2, coeff_ge_order := ha1 }, hx0, hrle, hβpos, rfl, hb⟩
+  exact ⟨x, ξ, β, A, B,
+    { poly := substPoly s.poly x ξ β, mult := (charPoly s.poly A B).rootMultiplicity x,
+      odd_mult := hodd', coeff_mult_order := ha3, coeff_lt_order := ha2, coeff_ge_order := ha1 },
+    hx0, hrle, hβpos, hξpos, rfl, hABlt, hBr, hcolA, hcolB, hξeq, hβeq, rfl, hb⟩
 
 /-- Bundled output of one continuation step: the new root coefficient `x`, exponent increment `ξ`,
-order increment `β`, the next state, and the step's properties. -/
+order increment `β`, the chosen edge `edgeA edgeB`, the next state, and the step's properties. -/
 structure StepResult (s : RecState R) where
   x : R
   xi : ℚ
   beta : ℚ
+  edgeA : ℕ × ℚ
+  edgeB : ℕ × ℚ
   next : RecState R
   x_ne : x ≠ 0
   mult_le : next.mult ≤ s.mult
   beta_pos : 0 < beta
+  xi_pos : 0 < xi
   next_poly : next.poly = substPoly s.poly x xi beta
+  edge_lt : edgeA.1 < edgeB.1
+  edge_le : edgeB.1 ≤ s.mult
+  colA : puiseuxOrder R (s.poly.coeff edgeA.1) = (edgeA.2 : WithTop ℚ)
+  colB : puiseuxOrder R (s.poly.coeff edgeB.1) = (edgeB.2 : WithTop ℚ)
+  xi_eq : xi = -(newtonSlope edgeA edgeB)
+  beta_eq : beta = edgeA.2 + (edgeA.1 : ℚ) * xi
+  next_mult_eq : next.mult = (charPoly s.poly edgeA edgeB).rootMultiplicity x
   order_jump : ∀ y : PuiseuxSeries R, 0 < puiseuxOrder R y →
     (beta : WithTop ℚ) <
       puiseuxOrder R (s.poly.eval (puiseuxMonomial xi * (constPuiseux x + y)))
 
 theorem RecState.nonempty_stepResult (s : RecState R) (h0 : s.poly.coeff 0 ≠ 0) :
     Nonempty (StepResult s) := by
-  obtain ⟨x, ξ, β, s', hx0, hrle, hβpos, hpoly, hb⟩ := s.exists_next h0
-  exact ⟨⟨x, ξ, β, s', hx0, hrle, hβpos, hpoly, hb⟩⟩
+  obtain ⟨x, ξ, β, A, B, s', hx0, hrle, hβpos, hξpos, hpoly, hABlt, hBr, hcolA, hcolB, hξeq, hβeq,
+    hmeq, hb⟩ := s.exists_next h0
+  exact ⟨⟨x, ξ, β, A, B, s', hx0, hrle, hβpos, hξpos, hpoly, hABlt, hBr, hcolA, hcolB, hξeq, hβeq,
+    hmeq, hb⟩⟩
 
 open Classical in
 /-- One step of the recursion as a total function: at the barrier `coeff 0 = 0` it returns junk and
@@ -135,6 +154,23 @@ theorem RecState.step_props (s : RecState R) (h : s.poly.coeff 0 ≠ 0) :
       (s.step).2.2.2.poly = substPoly s.poly (s.step).1 (s.step).2.1 (s.step).2.2.1 := by
   obtain ⟨sr, hsr⟩ := s.step_spec h
   rw [hsr]; exact ⟨sr.x_ne, sr.beta_pos, sr.next_poly⟩
+
+/-- Away from the barrier, the step's exponent increment `ξ` is positive. -/
+theorem RecState.step_xi_pos (s : RecState R) (h : s.poly.coeff 0 ≠ 0) : 0 < (s.step).2.1 := by
+  obtain ⟨sr, hsr⟩ := s.step_spec h
+  rw [hsr]; exact sr.xi_pos
+
+/-- Under the never-barrier hypothesis, every root coefficient `xₙ` is nonzero. -/
+theorem xSeq_ne_zero (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.coeff 0 ≠ 0) (n : ℕ) :
+    xSeq s0 n ≠ 0 := ((stateSeq s0 n).step_props (hnb n)).1
+
+/-- Under the never-barrier hypothesis, every exponent increment `ξₙ` is positive. -/
+theorem xiSeq_pos (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.coeff 0 ≠ 0) (n : ℕ) :
+    0 < xiSeq s0 n := (stateSeq s0 n).step_xi_pos (hnb n)
+
+/-- Under the never-barrier hypothesis, every order increment `βₙ` is positive. -/
+theorem betaSeq_pos (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.coeff 0 ≠ 0) (n : ℕ) :
+    0 < betaSeq s0 n := ((stateSeq s0 n).step_props (hnb n)).2.1
 
 /-- Away from the barrier, the step satisfies the order jump of Lemma 2.95(b). -/
 theorem RecState.step_order_jump (s : RecState R) (h : s.poly.coeff 0 ≠ 0)

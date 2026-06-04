@@ -18,7 +18,7 @@ namespace Azurite.BPR
 
 open Polynomial
 
-variable {R : Type*} [Field R] [CharZero R]
+variable {R : Type*} [Field R]
 
 /-- `ε = ε^1` as a Puiseux monomial. -/
 theorem eps_mono : (puiseuxEps : PuiseuxSeries R) = puiseuxMonomial 1 := by
@@ -35,7 +35,7 @@ theorem mono_pow (ξ : ℚ) (n : ℕ) :
 theorem subpow (n : ℕ) :
     (C (puiseuxMonomial (1 / 3 : ℚ)) * (1 + X) : Polynomial (PuiseuxSeries R)) ^ n
       = C (puiseuxMonomial ((n : ℚ) / 3)) * (1 + X) ^ n := by
-  rw [mul_pow, ← C_pow, mono_pow]; congr 3; push_cast; ring
+  rw [mul_pow, ← C_pow, mono_pow]; congr 3; ring
 
 /-- **`P₁(X) = ε^{−1} P(ε^{1/3}(1 + X))`** (Example 2.96). -/
 noncomputable def exP1 : Polynomial (PuiseuxSeries R) :=
@@ -82,13 +82,13 @@ theorem exP1_eq :
 /-- `b₀ = −ε^{5/3} + ε^{4/3}`. -/
 theorem exP1_coeff0 :
     (exP1 : Polynomial (PuiseuxSeries R)).coeff 0 = -puiseuxMonomial (5 / 3) + puiseuxMonomial (4 / 3) := by
-  rw [exP1_eq]; simp [coeff_C, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp [coeff_C, coeff_X_pow]
 
 /-- `b₁ = ε^{5/3} − 3 + 4ε^{4/3}`. -/
 theorem exP1_coeff1 :
     (exP1 : Polynomial (PuiseuxSeries R)).coeff 1
       = puiseuxMonomial (5 / 3) - 3 + 4 * puiseuxMonomial (4 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow, coeff_X]
+  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow]
 
 /-- The order of a Puiseux series is unchanged by negation. -/
 theorem puiseuxOrder_neg (a : PuiseuxSeries R) : puiseuxOrder R (-a) = puiseuxOrder R a := by
@@ -104,13 +104,13 @@ theorem order_exP1_coeff0 :
     puiseuxOrder_neg, puiseuxOrder_puiseuxMonomial, puiseuxOrder_puiseuxMonomial,
     min_eq_right (by rw [WithTop.coe_le_coe]; norm_num)]
 
-theorem puiseuxOrder_three : puiseuxOrder R (3 : PuiseuxSeries R) = 0 := by
+theorem puiseuxOrder_three [CharZero R] : puiseuxOrder R (3 : PuiseuxSeries R) = 0 := by
   have h : ((3 : PuiseuxSeries R) : HahnSeries ℚ R) = HahnSeries.single 0 3 := by
     rw [show ((3 : PuiseuxSeries R) : HahnSeries ℚ R) = (3 : HahnSeries ℚ R) from by norm_cast,
       ← HahnSeries.C_apply, map_ofNat]
   rw [puiseuxOrder, h, HahnSeries.orderTop_single (by norm_num : (3 : R) ≠ 0)]; rfl
 
-theorem puiseuxOrder_four : puiseuxOrder R (4 : PuiseuxSeries R) = 0 := by
+theorem puiseuxOrder_four [CharZero R] : puiseuxOrder R (4 : PuiseuxSeries R) = 0 := by
   have h : ((4 : PuiseuxSeries R) : HahnSeries ℚ R) = HahnSeries.single 0 4 := by
     rw [show ((4 : PuiseuxSeries R) : HahnSeries ℚ R) = (4 : HahnSeries ℚ R) from by norm_cast,
       ← HahnSeries.C_apply, map_ofNat]
@@ -118,7 +118,7 @@ theorem puiseuxOrder_four : puiseuxOrder R (4 : PuiseuxSeries R) = 0 := by
 
 /-- **Lemma 2.95(a), the `o(b_r) = 0` case** for this example (`r = 1`): `o(b₁) = 0`, because the
 order-`0` constant `−3` (the value `Q'(1)` of the multiplicity-`1` root) survives. -/
-theorem order_exP1_coeff1 : puiseuxOrder R (exP1.coeff 1) = 0 := by
+theorem order_exP1_coeff1 [CharZero R] : puiseuxOrder R (exP1.coeff 1) = 0 := by
   rw [exP1_coeff1]
   have hm3 : puiseuxOrder R (puiseuxMonomial (5 / 3) - 3 : PuiseuxSeries R) = 0 := by
     rw [sub_eq_add_neg,
@@ -138,18 +138,18 @@ theorem order_exP1_coeff1 : puiseuxOrder R (exP1.coeff 1) = 0 := by
 
 theorem exP1_coeff2 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 2
     = -3 + 8 * puiseuxMonomial (5 / 3) + 6 * puiseuxMonomial (4 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow, coeff_X]
+  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
 
 theorem exP1_coeff3 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 3
     = -1 + 4 * puiseuxMonomial (4 / 3) + 10 * puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow, coeff_X]
+  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
 
 theorem exP1_coeff4 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 4
     = puiseuxMonomial (4 / 3) + 5 * puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow, coeff_X]
+  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
 
 theorem exP1_coeff5 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 5 = puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow, coeff_X]
+  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
 
 /-- The Laurent coercion of an `OfNat` constant is the corresponding single term at exponent `0`. -/
 theorem coe_ofNat (n : ℕ) [n.AtLeastTwo] :
@@ -200,7 +200,7 @@ theorem coe_b5 : ((exP1.coeff 5 : PuiseuxSeries R) : HahnSeries ℚ R)
 
 /-- **The Newton diagram of `P₁`** (Example 2.96 continued): the 14 points
 `{(i, r) : r ∈ supp(b_i)}`, three per middle column and two/one at the ends. -/
-theorem exP1_newtonDiagram :
+theorem exP1_newtonDiagram [CharZero R] :
     newtonDiagram (exP1 (R := R)) = {(0, 4/3), (0, 5/3), (1, 0), (1, 4/3), (1, 5/3),
       (2, 0), (2, 4/3), (2, 5/3), (3, 0), (3, 4/3), (3, 5/3), (4, 4/3), (4, 5/3), (5, 5/3)} := by
   ext ⟨i, r⟩

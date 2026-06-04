@@ -76,6 +76,7 @@ obtained from `x̄ = ε^{1/3}(1 + ε^{4/3}(1/3 + Y))` by dropping the `Y`-term. 
 noncomputable def rootApprox : PuiseuxSeries R :=
   puiseuxMonomial (1 / 3) + (1 / 3) * puiseuxMonomial (5 / 3)
 
+omit [CharZero R] in
 /-- The recentering `ε^{1/3}(1 + ε^{4/3}(1/3 + Y))` expands as
 `ε^{1/3} + (1/3)ε^{5/3} + ε^{5/3} Y`, whose constant (`Y = 0`) part is `rootApprox`. -/
 theorem rootApprox_eq :

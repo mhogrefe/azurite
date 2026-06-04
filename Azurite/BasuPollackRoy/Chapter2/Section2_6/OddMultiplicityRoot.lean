@@ -104,4 +104,41 @@ theorem exists_ne_zero_odd_rootMultiplicity_of_span {g : R[X]} (hg : g ≠ 0)
     rootMultiplicity_eq_zero (by rw [IsRoot, eval_pow, eval_X]; exact pow_ne_zero t hx0), zero_add]
   exact hxodd
 
+omit [IsRealClosed R] in
+/-- **The multiplicity of a nonzero root is at most the span** `deg g − natTrailingDegree g` (the
+`X^t`-stripped degree). -/
+theorem rootMultiplicity_ne_zero_le_span {g : R[X]} (hg : g ≠ 0) {x : R} (hx : x ≠ 0) :
+    g.rootMultiplicity x ≤ g.natDegree - g.natTrailingDegree := by
+  set t := g.natTrailingDegree with ht
+  obtain ⟨h, hgh⟩ : (X : R[X]) ^ t ∣ g :=
+    X_pow_dvd_iff.mpr (fun d hd => coeff_eq_zero_of_lt_natTrailingDegree hd)
+  have hhne : h ≠ 0 := fun h0 => hg (by rw [hgh, h0, mul_zero])
+  have hdeg : h.natDegree = g.natDegree - t := by
+    have := natDegree_mul (pow_ne_zero t X_ne_zero) hhne
+    rw [← hgh, natDegree_X_pow] at this; omega
+  have hrm : g.rootMultiplicity x = h.rootMultiplicity x := by
+    rw [hgh, rootMultiplicity_mul (by rw [← hgh]; exact hg),
+      rootMultiplicity_eq_zero (by rw [IsRoot, eval_pow, eval_X]; exact pow_ne_zero t hx), zero_add]
+  have hle : h.rootMultiplicity x ≤ h.natDegree := by
+    have := natDegree_le_of_dvd (pow_rootMultiplicity_dvd h x) hhne
+    rwa [natDegree_pow, natDegree_X_sub_C, mul_one] at this
+  rw [hrm, ← hdeg]; exact hle
+
+omit [IsRealClosed R] in
+/-- **A polynomial whose degree equals a root's multiplicity is a scaled power.** If
+`deg p = n = rootMultiplicity a p`, then `p = (leadingCoeff p) · (X − a)^n`. -/
+theorem eq_C_leadingCoeff_mul_X_sub_C_pow {p : R[X]} {a : R} {n : ℕ} (hp : p ≠ 0)
+    (hdeg : p.natDegree = n) (hrm : p.rootMultiplicity a = n) :
+    p = C p.leadingCoeff * (X - C a) ^ n := by
+  obtain ⟨q, hq⟩ : (X - C a) ^ n ∣ p := by rw [← hrm]; exact pow_rootMultiplicity_dvd p a
+  have hqne : q ≠ 0 := fun h0 => hp (by rw [hq, h0, mul_zero])
+  have hnd : q.natDegree = 0 := by
+    have := natDegree_mul (pow_ne_zero n (X_sub_C_ne_zero a)) hqne
+    rw [← hq, hdeg, natDegree_pow, natDegree_X_sub_C, mul_one] at this; omega
+  have hqC : q = C (q.coeff 0) := eq_C_of_natDegree_eq_zero hnd
+  have hlc : p.leadingCoeff = q.coeff 0 := by
+    rw [hq, leadingCoeff_mul, ((monic_X_sub_C a).pow n).leadingCoeff, one_mul, leadingCoeff, hnd]
+  conv_lhs => rw [hq, hqC]
+  rw [← hlc, mul_comm]
+
 end Azurite.BPR

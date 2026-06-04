@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.Lemma_2_93
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.RootTelescope
 import Mathlib.FieldTheory.IsRealClosed.Basic
 
 /-! # BPR §2.6 Theorem 2.91 — `R⟨⟨ε⟩⟩` is real closed (reduction)
@@ -36,5 +37,12 @@ theorem isRealClosed_puiseux_of_exists_root
     (hroot : ∀ {f : Polynomial (PuiseuxSeries R)}, Odd f.natDegree → ∃ x, f.IsRoot x) :
     IsRealClosed (PuiseuxSeries R) :=
   IsRealClosed.of_linearOrderedField (fun hx => isSquare_of_nonneg hx) (fun hf => hroot hf)
+
+/-- **Theorem 2.91.** For a real closed field `R`, the field of Puiseux series `R⟨⟨ε⟩⟩` is real
+closed. Both obligations of `IsRealClosed.of_linearOrderedField` are discharged: squares
+(`isSquare_of_nonneg`, Lemma 2.93) and odd-degree roots (`exists_root_of_odd`, the Newton–Puiseux
+construction in `RootTelescope.lean`). -/
+theorem isRealClosed_puiseuxSeries : IsRealClosed (PuiseuxSeries R) :=
+  isRealClosed_puiseux_of_exists_root (fun hf => exists_root_of_odd hf)
 
 end Azurite.BPR

@@ -24,10 +24,15 @@ theorem recursion_step_neg {P : Polynomial (PuiseuxSeries R)} {r : ℕ}
     (hbr : puiseuxOrder R (P.coeff r) = (0 : WithTop ℚ))
     (hbi : ∀ i, i < r → 0 < puiseuxOrder R (P.coeff i))
     (hge : ∀ i, (0 : WithTop ℚ) ≤ puiseuxOrder R (P.coeff i)) :
-    ∃ (x : R) (ξ β : ℚ) (r' : ℕ), x ≠ 0 ∧ Odd r' ∧ r' ≤ r ∧ 0 < β ∧
+    ∃ (x : R) (ξ β : ℚ) (A B : ℕ × ℚ), x ≠ 0 ∧ A.1 < B.1 ∧ B.1 ≤ r ∧ 0 < β ∧ 0 < ξ ∧
+      puiseuxOrder R (P.coeff A.1) = (A.2 : WithTop ℚ) ∧
+      puiseuxOrder R (P.coeff B.1) = (B.2 : WithTop ℚ) ∧ ξ = -(newtonSlope A B) ∧
+      β = A.2 + (A.1 : ℚ) * ξ ∧
+      Odd ((charPoly P A B).rootMultiplicity x) ∧ (charPoly P A B).rootMultiplicity x ≤ r ∧
       (∀ i, 0 ≤ puiseuxOrder R ((substPoly P x ξ β).coeff i)) ∧
-      (∀ i < r', 0 < puiseuxOrder R ((substPoly P x ξ β).coeff i)) ∧
-      puiseuxOrder R ((substPoly P x ξ β).coeff r') = 0 ∧
+      (∀ i < (charPoly P A B).rootMultiplicity x,
+        0 < puiseuxOrder R ((substPoly P x ξ β).coeff i)) ∧
+      puiseuxOrder R ((substPoly P x ξ β).coeff ((charPoly P A B).rootMultiplicity x)) = 0 ∧
       (∀ y : PuiseuxSeries R, 0 < puiseuxOrder R y →
         (β : WithTop ℚ) <
           puiseuxOrder R (P.eval (puiseuxMonomial ξ * (constPuiseux x + y)))) := by
@@ -53,7 +58,7 @@ theorem recursion_step_neg {P : Polynomial (PuiseuxSeries R)} {r : ℕ}
   have hrle : (charPoly P A B).rootMultiplicity x ≤ r :=
     le_trans (charPoly_rootMultiplicity_le hABlt hcolB x) hBr
   obtain ⟨ha1, ha2, ha3⟩ := lemma_2_95a (x := x) hξ hβdef hsupport honseg hQne
-  exact ⟨x, ξ, β, (charPoly P A B).rootMultiplicity x, hx0, hxr, hrle, hβpos, ha1, ha2, ha3,
-    fun y hy => lemma_2_95b hξ hβdef hsupport honseg hQne hxroot y hy⟩
+  exact ⟨x, ξ, β, A, B, hx0, hABlt, hBr, hβpos, hξpos, hcolA, hcolB, hξdef, hβdef, hxr, hrle, ha1,
+    ha2, ha3, fun y hy => lemma_2_95b hξ hβdef hsupport honseg hQne hxroot y hy⟩
 
 end Azurite.BPR
