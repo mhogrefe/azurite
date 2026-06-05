@@ -181,7 +181,7 @@ theorem blockReversePerm_apply_val (p q : ℕ) (i : Fin (p + q)) :
     have h_cast : finCongr (Nat.add_comm p q) i = Fin.castAdd p ⟨i.val, h⟩ := by
       apply Fin.ext; simp [finCongr_apply, Fin.castAdd, Fin.castLE]
     rw [h_cast, finSumFinEquiv_symm_apply_castAdd]
-    simp [Equiv.sumCongr_apply, Equiv.symm_trans_apply, finCongr_symm,
+    simp [Equiv.sumCongr_apply, finCongr_symm,
       finSumFinEquiv_apply_left, Fin.castAdd, Fin.castLE]
   · rw [if_neg h]
     have h_ge : q ≤ i.val := Nat.le_of_not_lt h
@@ -192,7 +192,7 @@ theorem blockReversePerm_apply_val (p q : ℕ) (i : Fin (p + q)) :
       simp [finCongr_apply, Fin.natAdd]
       omega
     rw [h_cast, finSumFinEquiv_symm_apply_natAdd]
-    simp [Equiv.sumCongr_apply, Equiv.symm_trans_apply, finCongr_symm,
+    simp [Equiv.sumCongr_apply, finCongr_symm,
       finSumFinEquiv_apply_right, Fin.natAdd, Fin.revPerm_apply, Fin.rev]
     omega
 

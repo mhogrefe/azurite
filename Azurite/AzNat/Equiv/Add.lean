@@ -222,7 +222,6 @@ theorem addLimb_toNat (a : Array UInt64) (lo hi : Nat) (b : UInt64)
         + c.toNat * 2 ^ (64 * (hi - lo))
       = toNatLimbsList ((a.toList.drop lo).take (hi - lo)) + b.toNat := by
   have h := addLimb.go_correct hi a lo b hhi (Or.inr h_lo_lt)
-  simp at h
   exact h
 
 /-- Correctness of `AzNat.addUInt64`: agrees with `Nat` addition. -/
@@ -451,7 +450,7 @@ theorem addSameLengthLimbs_toNat (a b : Array UInt64) (loA loB len : Nat)
       = toNatLimbsList ((a.toList.drop loA).take len)
         + toNatLimbsList ((b.toList.drop loB).take len) := by
   have h := addSameLengthLimbs.go_correct b loA loB len a 0 false hA hB
-  simpa using h
+  simpa [addSameLengthLimbs] using h
 
 /-! ### Correctness of `addGeqLimbs` -/
 

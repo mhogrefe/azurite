@@ -59,7 +59,7 @@ theorem algebraicOfMaximal {C : Type*} [Field C] [CharZero C] (R : IntermediateF
     exact IntermediateField.subset_adjoin (↥R) {c} rfl
   rw [hmax S hsemiS hRS] at hcS
   -- `c ∈ R`, hence `c` is algebraic over `R`
-  exact hc (by simpa using isAlgebraic_algebraMap (⟨c, hcS⟩ : ↥R))
+  exact hc (isAlgebraic_algebraMap (⟨c, hcS⟩ : ↥R))
 
 /-- **`C ≅ R[i]`** for the maximal real closed subfield `R` (since `C` is its algebraic closure). -/
 noncomputable def cEquivRi {C : Type*} [Field C] [IsAlgClosed C] [CharZero C] (R : IntermediateField ℚ C)

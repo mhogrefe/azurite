@@ -159,7 +159,9 @@ theorem sumBeta_unbounded (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.c
   have hgrow : ∀ t : ℕ, (t : ℚ) / (M : ℚ) ≤ sumBeta s0 (N + t) := by
     intro t
     induction t with
-    | zero => simpa using Finset.sum_nonneg (fun k _ => (betaSeq_pos s0 hnb k).le)
+    | zero =>
+      simp only [Nat.add_zero, Nat.cast_zero, zero_div, sumBeta]
+      exact Finset.sum_nonneg (fun k _ => (betaSeq_pos s0 hnb k).le)
     | succ t ih =>
       have hstep : sumBeta s0 (N + (t + 1)) = sumBeta s0 (N + t) + betaSeq s0 (N + t) := by
         rw [show N + (t + 1) = (N + t) + 1 from by omega, sumBeta_succ]

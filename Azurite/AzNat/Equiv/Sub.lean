@@ -202,7 +202,6 @@ theorem subLimb_toNat (a : Array UInt64) (lo hi : Nat) (b : UInt64)
         + c.toNat * 2 ^ (64 * (hi - lo))
       = toNatLimbsList ((a'.toList.drop lo).take (hi - lo)) + b.toNat := by
   have h := subLimb.go_correct hi a lo b hhi (Or.inr h_lo_lt)
-  simp at h
   exact h
 
 /-! ### Correctness of `subSameLengthLimbs` -/
@@ -384,7 +383,7 @@ theorem subSameLengthLimbs_toNat (a b : Array UInt64) (loA loB len : Nat)
       = toNatLimbsList ((a'.toList.drop loA).take len)
         + toNatLimbsList ((b.toList.drop loB).take len) := by
   have h := subSameLengthLimbs.go_correct b loA loB len a 0 false hA hB
-  simpa using h
+  simpa [subSameLengthLimbs] using h
 
 /-! ### Correctness of `subGeqLimbs` -/
 

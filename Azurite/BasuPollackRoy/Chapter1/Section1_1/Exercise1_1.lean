@@ -72,7 +72,8 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
             _root_.funext fun ⟨i, hi⟩ => by simp [show i = 0 by omega]⟩
         · rintro ⟨c, hc, rfl⟩
           show MvPolynomial.eval _ P₀ = 0
-          rw [← eval_eq_polynomial_eval] at hc; simpa using hc]
+          rw [← eval_eq_polynomial_eval] at hc
+          exact hc]
       exact (Polynomial.finite_setOf_isRoot hpne).image _
     · intro x hx; exact hx P₀ hP₀mem
 

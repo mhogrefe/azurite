@@ -384,7 +384,7 @@ theorem mulAddLimbs_toNat (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt6
   have h := mulAddLimbs.go_correct a offA lenA offAcc b acc 0 0 hA hAcc
   have h0 : (0 : UInt64).toNat = 0 := rfl
   rw [h0, Nat.add_zero, Nat.add_zero, Nat.sub_zero] at h
-  simpa using h
+  simpa [mulAddLimbs] using h
 
 /-! ### Correctness of `schoolbookMulLimbs` -/
 
@@ -648,7 +648,6 @@ private lemma schoolbookMulLimbs.go_correct (a : Array UInt64) (loA lenA : Nat) 
       rw [show 64 * (j + 1) = 64 * j + 64 from by ring, Nat.pow_add]
     rw [h_pow1, h_pow2]
     have h_scaled := congrArg (· * 2 ^ (64 * j)) h_mac
-    simp only at h_scaled
     linarith [h_scaled, Nat.add_mul (AS * b[loB + j].toNat)
       (toNatLimbsList (List.take lenA (List.drop j acc.toList))) (2 ^ (64 * j))]
 

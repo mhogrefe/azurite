@@ -440,7 +440,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
       apply this.imp
       intro τ M h_bound i' j'
       have h := h_bound i' j' 0
-      simpa using h
+      simpa [MvPolynomial.constantCoeff_eq] using h
     have h_Ms_ne :
         Ms.map (Matrix.map · MvPolynomial.constantCoeff) ≠ [] := by
       simp [List.map_eq_nil_iff, h_ne]
@@ -764,7 +764,8 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
       apply this.imp
       intro τ P h_bound
       have h := h_bound 0
-      simpa using h
+      show (MvPolynomial.constantCoeff P).natAbs.size ≤ τ
+      rw [MvPolynomial.constantCoeff_eq]; exact h
     have h_Ps_int_ne : Ps.map MvPolynomial.constantCoeff ≠ [] := by
       simp [List.map_eq_nil_iff, h_ne]
     refine (Int.bitsize_list_prod_le _ _ h_Ps_int_ne h_τ_int).trans ?_
@@ -778,7 +779,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
             (MvPolynomial.finSuccEquiv_coeff_coeff r.tail Ps.prod (r 0)).symm]
     set fe := (MvPolynomial.finSuccEquiv ℤ k).toRingHom
     have h_transport : MvPolynomial.finSuccEquiv ℤ k (Ps.prod) = (Ps.map fe).prod := by
-      simpa using MonoidHom.map_list_prod fe.toMonoidHom Ps
+      exact map_list_prod fe Ps
     rw [h_transport]
     -- Expand the polynomial X^(r 0)-coefficient of a list product.
     rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum]
@@ -1020,7 +1021,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
       with hfe_def
     rw [show MvPolynomial.finSuccEquiv (MvPolynomial (Fin k) ℤ) ℓ (Ps.prod) =
             (Ps.map fe).prod from by
-        simpa using MonoidHom.map_list_prod fe.toMonoidHom Ps]
+        exact map_list_prod fe Ps]
     -- Expand the polynomial Y_(ℓ+1)^(y 0)-coefficient of the list product, then
     -- distribute the outer y.tail- and x-coefficient extractions through the sum.
     rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum, MvPolynomial.coeff_sum]

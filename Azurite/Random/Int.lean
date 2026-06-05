@@ -57,11 +57,12 @@ theorem nonzero_int_random_gen_nonzero (ig : NonzeroIntRandomGen) :
     let (v, _) := NonzeroIntRandomGen.next ig
     v ≠ 0 := by
   simp only [NonzeroIntRandomGen.next, PairRandomGen.next]
+  rw [show RandomGen.next ig.pairGen.gen2 = PositiveNatRandomGen.next ig.pairGen.gen2 from rfl]
   -- The Bool sign can be anything; the Nat absVal is always ≥ 1
   have hpos : 1 ≤ (PositiveNatRandomGen.next ig.pairGen.gen2).1 :=
     positive_nat_random_gen_positive ig.pairGen.gen2
-  set absVal := (PositiveNatRandomGen.next ig.pairGen.gen2).1
+  have hX : (PositiveNatRandomGen.next ig.pairGen.gen2).1 ≠ 0 := by omega
   -- Int.ofNat absVal ≠ 0 and -Int.ofNat absVal ≠ 0 both follow from absVal ≥ 1
-  split <;> simp_all <;> omega
+  split <;> simpa using hX
 
 end Azurite.Random

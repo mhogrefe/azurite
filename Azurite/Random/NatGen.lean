@@ -94,7 +94,10 @@ theorem positive_nat_random_gen_positive {G : Type} [RandomGen G UInt64]
   -- Since b ≥ 1, natGen.b ≠ 0; by next_bounds the output is ≥ 2^(b-1) ≥ 1
   have hb_ne : (getNatGen b ng.seed ng.genCache).1.b ≠ 0 := by omega
   have hbounds := NatWithBitsRandomGen.next_bounds (getNatGen b ng.seed ng.genCache).1 hb_ne
-  have h2 : 1 ≤ 2^((getNatGen b ng.seed ng.genCache).1.b - 1) := Nat.one_le_two_pow
-  omega
+  have hlow : 2 ^ ((getNatGen b ng.seed ng.genCache).1.b - 1)
+      ≤ (NatWithBitsRandomGen.next (getNatGen b ng.seed ng.genCache).1).1 := hbounds.1
+  have h2 : 1 ≤ 2 ^ ((getNatGen b ng.seed ng.genCache).1.b - 1) := Nat.one_le_two_pow
+  have hfinal : 1 ≤ (NatWithBitsRandomGen.next (getNatGen b ng.seed ng.genCache).1).1 := by omega
+  exact hfinal
 
 end Azurite.Random
