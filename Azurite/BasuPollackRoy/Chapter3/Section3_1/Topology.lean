@@ -33,7 +33,7 @@ omit [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
 theorem euclideanNormSq_add (a b : Fin k → R) :
     euclideanNormSq (a + b) = euclideanNormSq a + 2 * euclideanInner a b + euclideanNormSq b := by
   simp only [euclideanNormSq, euclideanInner, Pi.add_apply, add_sq, Finset.mul_sum]
-  rw [Finset.sum_add_distrib, Finset.sum_add_distrib]; ring
+  rw [Finset.sum_add_distrib, Finset.sum_add_distrib]; ring_nf
 
 omit [IsRealClosed R] in
 /-- **Cauchy–Schwarz** `⟨a,b⟩² ≤ ‖a‖²‖b‖²`. -/
