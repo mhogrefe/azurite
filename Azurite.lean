@@ -624,6 +624,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_6.OddMultiplicityRoot
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.Proposition_2_99
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.Proposition_2_99_Complex
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.PuiseuxFunctor
+import Azurite.BasuPollackRoy.Chapter2.Section2_6.PuiseuxLimit
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.PuiseuxMonomial
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.PuiseuxSeries
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.RatFuncEmbedding
@@ -638,6 +639,19 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_6.RootTelescope
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.Theorem_2_91
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.Theorem_2_92
 import Azurite.BasuPollackRoy.Chapter2.Section2_6.ValuationRing
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.ClosureInterior
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Continuity
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.EuclideanBall
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Exercise_3_1
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Exercise_3_2
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Proposition_3_1
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Proposition_3_3
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Proposition_3_4
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Proposition_3_5
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Remark_3_2
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.SemialgebraicGroupoid
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.SemialgebraicHomeomorphism
+import Azurite.BasuPollackRoy.Chapter3.Section3_1.Topology
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
