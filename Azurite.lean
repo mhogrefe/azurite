@@ -592,6 +592,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_5.RatPowPosIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.RecipIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Remark_2_87
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.SemialgebraicFunction
+import Azurite.BasuPollackRoy.Chapter2.Section2_5.SemialgebraicFunctionTuple
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.SignIsSemialgebraic
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_77
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.Theorem_2_80
@@ -665,6 +666,17 @@ import Azurite.BasuPollackRoy.Chapter3.Section3_2.Proposition_3_9
 import Azurite.BasuPollackRoy.Chapter3.Section3_2.RalgNotConnected
 import Azurite.BasuPollackRoy.Chapter3.Section3_2.SemialgebraicallyConnected
 import Azurite.BasuPollackRoy.Chapter3.Section3_2.SemialgebraicallyPathConnected
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.BivariateEval
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.GermPolynomial
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.GermRootCount
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.GermRootSelection
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.Lemma_3_12
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.Proposition_3_10
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.Proposition_3_11
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicGerm
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicGermField
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicGermOrdered
+import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicPolynomial
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
