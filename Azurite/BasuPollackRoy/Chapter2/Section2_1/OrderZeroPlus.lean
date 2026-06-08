@@ -454,6 +454,58 @@ noncomputable instance instLinearOrderRatFunc : LinearOrder (RatFunc F) where
     haveI : Decidable (rfPos (s - r)) := Classical.dec _
     exact instDecidableOr
 
+/-! ### `RatFunc F` is an ordered field in the 0₊ order -/
+
+/-- `rfPos` is preserved by multiplication. As for addition, reduce to the `F[X]` ordered ring via
+`rfPos_div`: `(a / b)·(c / d) = (a·c) / (b·d)` with `a·c·(b·d) = (a·b)·(c·d) > 0`. -/
+lemma rfPos_mul {r s : RatFunc F} (hr : rfPos r) (hs : rfPos s) : rfPos (r * s) := by
+  induction r using RatFunc.induction_on with
+  | f a b hb =>
+  induction s using RatFunc.induction_on with
+  | f c d hd =>
+  rw [rfPos_div hb] at hr
+  rw [rfPos_div hd] at hs
+  rw [div_mul_div_comm, ← map_mul, ← map_mul, rfPos_div (mul_ne_zero hb hd),
+    show a * c * (b * d) = a * b * (c * d) from by ring]
+  exact polyPos_mul hr hs
+
+noncomputable instance : IsOrderedAddMonoid (RatFunc F) where
+  add_le_add_left _ _ hab c := by
+    rcases hab with rfl | hab
+    · exact Or.inl rfl
+    · exact Or.inr (show rfPos _ by rwa [add_sub_add_right_eq_sub])
+
+noncomputable instance : IsOrderedCancelAddMonoid (RatFunc F) where
+  le_of_add_le_add_left a _ _ h := by
+    rcases h with heq | hpos
+    · exact Or.inl (add_left_cancel heq)
+    · exact Or.inr (show rfPos _ by rwa [add_sub_add_left_eq_sub] at hpos)
+
+noncomputable instance : ZeroLEOneClass (RatFunc F) where
+  zero_le_one := by
+    refine Or.inr ?_
+    rw [sub_zero,
+      show (1 : RatFunc F) = algebraMap F[X] (RatFunc F) 1 / algebraMap F[X] (RatFunc F) 1 from by
+        rw [map_one, div_one],
+      rfPos_div one_ne_zero, mul_one]
+    exact ⟨one_ne_zero, by simp [Polynomial.trailingCoeff, natTrailingDegree_one, coeff_one_zero]⟩
+
+noncomputable instance : PosMulStrictMono (RatFunc F) where
+  mul_lt_mul_of_pos_left {a} ha {b c} hbc := by
+    rw [rf_lt_def] at ha hbc ⊢
+    rw [sub_zero] at ha
+    rw [show a * c - a * b = a * (c - b) from by ring]
+    exact rfPos_mul ha hbc
+
+noncomputable instance : MulPosStrictMono (RatFunc F) where
+  mul_lt_mul_of_pos_right {c} hc {a b} hab := by
+    rw [rf_lt_def] at hc hab ⊢
+    rw [sub_zero] at hc
+    rw [show b * c - a * c = (b - a) * c from by ring]
+    exact rfPos_mul hab hc
+
+noncomputable instance : IsStrictOrderedRing (RatFunc F) where
+
 /-! ### ε in RatFunc F and 1/ε -/
 
 /-- ε as an element of `RatFunc F`. -/
