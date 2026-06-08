@@ -685,6 +685,13 @@ import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicGermOrdered
 import Azurite.BasuPollackRoy.Chapter3.Section3_3.SemialgebraicPolynomial
 import Azurite.BasuPollackRoy.Chapter3.Section3_3.Theorem_3_14
 import Azurite.BasuPollackRoy.Chapter3.Section3_3.Theorem_3_19
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.BoundedSet
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.GermNotCompact
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.Lemma_3_21
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.LimEps
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.NotCompact
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.RalgNotCompact
+import Azurite.BasuPollackRoy.Chapter3.Section3_4.Theorem_3_20
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Definition_4_7
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Example_4_12
 import Azurite.BasuPollackRoy.Chapter4.Section4_1.Lemma_4_11
