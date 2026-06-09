@@ -368,6 +368,12 @@ import Azurite.AzPolynomialQ.Eval
 import Azurite.AzPolynomialQ.Neg
 import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
+import Azurite.AzRat.Basic
+import Azurite.AzRat.Conversion
+import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Conversion
+import Azurite.AzRat.Equiv.Round
+import Azurite.AzRat.Round
 import Azurite.AzVector.Basic
 import Azurite.AzVector.Basis
 import Azurite.AzVector.Cross
