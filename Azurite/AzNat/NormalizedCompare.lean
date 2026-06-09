@@ -1,194 +1,91 @@
-import Mathlib.Data.Nat.Bits
+import Azurite.AzNat.GetBits
+import Azurite.AzNat.Size
+import Azurite.AzNat.Compare
+import Azurite.AzNat.Equiv.GetBits
+import Azurite.AzNat.Equiv.Size
+import Azurite.AzNat.Equiv.Compare
 import Mathlib.Data.Nat.Size
-import Mathlib.Algebra.Order.Ring.Defs
-import Mathlib.Order.Compare
-import Mathlib.Data.Rat.Defs
-import Mathlib.Algebra.Order.Field.Rat
+
+/-!
+# Normalized comparison (allocation-free `AzNat`)
+
+`normalizedCompare x y` compares `x` and `y` as if their bit encodings were left-aligned to a
+common length — equivalently, for positive inputs, it compares the reals `x / 2^(size x)` and
+`y / 2^(size y)`, both in `[1/2, 1)`.
+
+The implementation is **allocation-free**: instead of materialising a shifted copy of an operand,
+it reads the `k`-th limb of `x · 2^shift` directly from `x`'s limbs via `getBitsAsLimb` (one
+`UInt64`), comparing top-down against `y`'s limbs.
+
+Correctness (`normalizedCompare_eq_normalizedCompareNat`) is proved by reducing the loop to the
+radix-`2^64` comparison of `x.toNat · 2^shift` and `y.toNat`, then bridging to the legacy
+`normalizedCompareNat` (whose rational semantics is `normalizedCompareNat_eq_rat`).
+-/
 
 namespace Azurite.AzNat
 
-/-- For positive `n`, `Nat.size n = Nat.log2 n + 1`. -/
-lemma size_eq_log2_succ (n : ℕ) (hn : n > 0) : Nat.size n = Nat.log2 n + 1 := by
-  have hn' : n ≠ 0 := Nat.pos_iff_ne_zero.mp hn
-  apply Nat.le_antisymm
-  · rw [Nat.size_le]
-    exact (Nat.log2_lt hn').mp (Nat.lt_succ_of_le (Nat.le_refl _))
-  · rw [Nat.add_one_le_iff, Nat.lt_size]
-    exact Nat.log2_self_le hn'
+/-! ### Implementation -/
 
-/-- `normalizedCompare x y` compares `x` and `y` as if their bit encodings were shifted to have the same length.
-If `x > 0` and `y > 0`, the comparison is equivalent to a comparison between $f(x)$ and $f(y)$, where
-$$
-f(n) = n / 2^{\text{size} n}
-$$
--/
-def normalizedCompare (x y : ℕ) : Ordering :=
+/-- The `k`-th 64-bit limb of `a · 2^shift` (with `shift = 64·q + r`, `r < 64`), read directly from
+`a`'s limbs without materialising the shifted value. Equals `a.toNat · 2^shift / 2^(64k) % 2^64`. -/
+def shiftedLimb (a : AzNat) (q r k : Nat) (hr : r < 64) : UInt64 :=
+  if k < q then 0
+  else if k = q then (a.getBitsAsLimb 0 (64 - r) (by omega)) <<< UInt64.ofNat r
+  else a.getBitsAsLimb (64 * (k - q) - r) (64 * (k - q) - r + 64) (by omega)
+
+/-- Compare `a · 2^shift` against `b` (with `shift = 64·q + r`) by reading `a`'s shifted limbs on
+the fly and `b`'s limbs via `getBitsAsLimb`, lexicographically from limb `k-1` down to `0`. -/
+def cmpShiftedLimbs (a b : AzNat) (q r : Nat) (hr : r < 64) (k : Nat) : Ordering :=
+  match k with
+  | 0 => Ordering.eq
+  | k + 1 =>
+    match Ord.compare (shiftedLimb a q r k hr) (b.getBitsAsLimb (64 * k) (64 * k + 64) (by omega)) with
+    | Ordering.eq => cmpShiftedLimbs a b q r hr k
+    | o => o
+
+/-- `normalizedCompare x y` compares `x` and `y` with their most-significant bits aligned.
+Allocation-free: the size difference is absorbed by reading shifted limbs on the fly. -/
+def normalizedCompare (x y : AzNat) : Ordering :=
   if x = 0 then
     if y = 0 then Ordering.eq else Ordering.lt
   else if y = 0 then
     Ordering.gt
   else
-    let lx := Nat.log2 x
-    let ly := Nat.log2 y
-    if lx ≤ ly then
-      let shift := ly - lx
-      match compare x (y >>> shift) with
-      | .lt => .lt
-      | .gt => .gt
-      | .eq => if y &&& ((1 <<< shift) - 1) = 0 then .eq else .lt
+    let sx := x.size
+    let sy := y.size
+    if sx = sy then
+      compare x y
+    else if sx < sy then
+      let shift := sy - sx
+      cmpShiftedLimbs x y (shift / 64) (shift % 64) (Nat.mod_lt _ (by decide)) y.limbs.size
     else
-      let shift := lx - ly
-      match compare (x >>> shift) y with
-      | .lt => .lt
-      | .gt => .gt
-      | .eq => if x &&& ((1 <<< shift) - 1) = 0 then .eq else .gt
+      let shift := sx - sy
+      (cmpShiftedLimbs y x (shift / 64) (shift % 64) (Nat.mod_lt _ (by decide)) x.limbs.size).swap
 
-#guard normalizedCompare 0 0 == Ordering.eq
-#guard normalizedCompare 0 1 == Ordering.lt
-#guard normalizedCompare 1 0 == Ordering.gt
-#guard normalizedCompare 1 1 == Ordering.eq
-#guard normalizedCompare 2 3 == Ordering.lt
-#guard normalizedCompare 3 2 == Ordering.gt
-#guard normalizedCompare 2 4 == Ordering.eq
-#guard normalizedCompare 5 10 == Ordering.eq
-#guard normalizedCompare 5 11 == Ordering.lt
-#guard normalizedCompare 5 9 == Ordering.gt
+-- ═══════════════════════════════════════════════════════════════════
+-- Tests
+-- ═══════════════════════════════════════════════════════════════════
 
-/-- Bridge lemma: comparing x with y>>>shift is equivalent to comparing x<<<shift with y. -/
-lemma compare_shiftr_eq_compare_shiftl (x y shift : Nat) :
-    (match compare x (y >>> shift) with
-     | .lt => Ordering.lt
-     | .gt => Ordering.gt
-     | .eq => if y &&& ((1 <<< shift) - 1) = 0 then Ordering.eq else Ordering.lt) =
-    compare (x <<< shift) y := by
-  simp only [Nat.shiftLeft_eq, Nat.one_mul, Nat.shiftRight_eq_div_pow,
-             Nat.and_two_pow_sub_one_eq_mod]
-  have h_pos : (0 : Nat) < 2 ^ shift := Nat.pow_pos (by omega)
-  have h_dam := Nat.div_add_mod y (2 ^ shift)
-  have h_comm : 2 ^ shift * (y / 2 ^ shift) = y / 2 ^ shift * 2 ^ shift := Nat.mul_comm _ _
-  rcases lt_trichotomy x (y / 2 ^ shift) with h_lt | h_eq | h_gt
-  · have : x * 2 ^ shift < y :=
-      lt_of_lt_of_le ((Nat.mul_lt_mul_right h_pos).mpr h_lt) (Nat.div_mul_le_self y _)
-    simp [compare_lt_iff_lt.mpr h_lt, compare_lt_iff_lt.mpr this]
-  · simp only [h_eq, compare_eq_iff_eq.mpr rfl]
-    split
-    · rename_i h
-      exact (compare_eq_iff_eq.mpr (Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero h))).symm
-    · rename_i h
-      have : y / 2 ^ shift * 2 ^ shift < y := by omega
-      exact (compare_lt_iff_lt.mpr this).symm
-  · have : y < x * 2 ^ shift := Nat.lt_mul_of_div_lt h_gt h_pos
-    simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
+section Tests
 
-/-- Symmetric bridge lemma: comparing x>>>shift with y is equivalent to comparing x with y<<<shift. -/
-lemma compare_shiftr_eq_compare_shiftl' (x y shift : Nat) :
-    (match compare (x >>> shift) y with
-     | .lt => Ordering.lt
-     | .gt => Ordering.gt
-     | .eq => if x &&& ((1 <<< shift) - 1) = 0 then Ordering.eq else Ordering.gt) =
-    compare x (y <<< shift) := by
-  simp only [Nat.shiftLeft_eq, Nat.one_mul, Nat.shiftRight_eq_div_pow,
-             Nat.and_two_pow_sub_one_eq_mod]
-  have h_pos : (0 : Nat) < 2 ^ shift := Nat.pow_pos (by omega)
-  have h_dam := Nat.div_add_mod x (2 ^ shift)
-  have h_comm : 2 ^ shift * (x / 2 ^ shift) = x / 2 ^ shift * 2 ^ shift := Nat.mul_comm _ _
-  rcases lt_trichotomy (x / 2 ^ shift) y with h_lt | h_eq | h_gt
-  · have : x < y * 2 ^ shift := Nat.lt_mul_of_div_lt h_lt h_pos
-    simp [compare_lt_iff_lt.mpr h_lt, compare_lt_iff_lt.mpr this]
-  · simp only [h_eq, compare_eq_iff_eq.mpr rfl]
-    split
-    · rename_i h
-      have : x = x / 2 ^ shift * 2 ^ shift := by omega
-      exact (compare_eq_iff_eq.mpr (by rw [this, h_eq])).symm
-    · rename_i h
-      have : x / 2 ^ shift * 2 ^ shift < x := by omega
-      rw [h_eq] at this
-      exact (compare_gt_iff_gt.mpr this).symm
-  · have : y * 2 ^ shift < x :=
-      lt_of_lt_of_le ((Nat.mul_lt_mul_right h_pos).mpr h_gt) (Nat.div_mul_le_self x _)
-    simp [compare_gt_iff_gt.mpr h_gt, compare_gt_iff_gt.mpr this]
+#guard normalizedCompare (ofNat 0) (ofNat 0) == Ordering.eq
+#guard normalizedCompare (ofNat 0) (ofNat 1) == Ordering.lt
+#guard normalizedCompare (ofNat 1) (ofNat 0) == Ordering.gt
+#guard normalizedCompare (ofNat 2) (ofNat 4) == Ordering.eq
+#guard normalizedCompare (ofNat 5) (ofNat 11) == Ordering.lt
+#guard normalizedCompare (ofNat 5) (ofNat 9) == Ordering.gt
+#guard normalizedCompare (ofNat (2 ^ 200)) (ofNat (2 ^ 500)) == Ordering.eq
+#guard normalizedCompare (ofNat (2 ^ 500 + 1)) (ofNat (2 ^ 200 + 1)) == Ordering.lt
+#guard normalizedCompare (ofNat (2 ^ 200 + 1)) (ofNat (2 ^ 500 + 1)) == Ordering.gt
 
-/-- Transfer a `compare` equation via lt and eq iffs. Eliminates the common trichotomy boilerplate. -/
-lemma compare_transfer {α β : Type*} [LinearOrder α] [LinearOrder β]
-    {a b : α} {c d : β} (hl : a < b ↔ c < d) (he : a = b ↔ c = d) :
-    compare a b = compare c d := by
-  rcases lt_trichotomy a b with hab | hab | hab
-  · rw [compare_lt_iff_lt.mpr hab, compare_lt_iff_lt.mpr (hl.mp hab)]
-  · rw [compare_eq_iff_eq.mpr hab, compare_eq_iff_eq.mpr (he.mp hab)]
-  · have h1 : ¬ c < d := fun h => not_lt_of_gt hab (hl.mpr h)
-    have h2 : c ≠ d := fun h => ne_of_gt hab (he.mpr h)
-    rw [compare_gt_iff_gt.mpr hab,
-        compare_gt_iff_gt.mpr (lt_of_le_of_ne (not_lt.mp h1) (Ne.symm h2))]
+-- Cross-check against a direct cross-multiplication reference, over many sizes / shift residues
+-- (including cross-limb shifts). This is exactly the correctness statement
+-- `normalizedCompare_eq_cross` proved in `Equiv/NormalizedCompare`.
+private def refNormCompare (a b : ℕ) : Ordering := Ord.compare (a * 2 ^ Nat.size b) (b * 2 ^ Nat.size a)
 
-lemma compare_div_eq_compare_mul {a b c d : ℚ} (hb : b > 0) (hd : d > 0) :
-    compare (a / b) (c / d) = compare (a * d) (c * b) :=
-  compare_transfer (div_lt_div_iff₀ hb hd) (div_eq_div_iff hb.ne' hd.ne')
+#guard (List.range 40).all (fun a => (List.range 40).all (fun b => normalizedCompare (ofNat a) (ofNat b) == refNormCompare a b))
+#guard [0, 1, 5, 63, 64, 65, 127, 200, 1000].all (fun s => [1, 7, 12345].all (fun t => normalizedCompare (ofNat (2 ^ s + t)) (ofNat (2 ^ 333 + 99)) == refNormCompare (2 ^ s + t) (2 ^ 333 + 99)))
 
-lemma compare_nat_cast (x y : ℕ) : compare (x : ℚ) (y : ℚ) = compare x y :=
-  compare_transfer Nat.cast_lt Nat.cast_inj
-
-lemma compare_mul_pos_right (a b c : ℕ) (hc : c > 0) : compare a b = compare (a * c) (b * c) :=
-  compare_transfer (Nat.mul_lt_mul_right hc).symm
-    ⟨congrArg (· * c), Nat.eq_of_mul_eq_mul_right hc⟩
-
-lemma normalizedCompare_eq_rat (x y : ℕ) (hx : x > 0) (hy : y > 0) :
-  normalizedCompare x y = compare ((x : ℚ) / (2 ^ Nat.size x : ℚ)) ((y : ℚ) / (2 ^ Nat.size y : ℚ)) := by
-  -- Relate log2 to size for the proof
-  have h_sx : Nat.log2 x + 1 = Nat.size x := (size_eq_log2_succ x hx).symm
-  have h_sy : Nat.log2 y + 1 = Nat.size y := (size_eq_log2_succ y hy).symm
-  have sx_pos : 2 ^ Nat.size x > 0 := Nat.pow_pos (by decide)
-  have sy_pos : 2 ^ Nat.size y > 0 := Nat.pow_pos (by decide)
-  have qx_pos : (0 : ℚ) < (2 ^ Nat.size x : ℚ) := by exact_mod_cast sx_pos
-  have qy_pos : (0 : ℚ) < (2 ^ Nat.size y : ℚ) := by exact_mod_cast sy_pos
-  
-  -- The core logic will rely on the ordering equivalence of cross multiplication
-  have hm : compare ((x : ℚ) / (2 ^ Nat.size x : ℚ)) ((y : ℚ) / (2 ^ Nat.size y : ℚ)) = compare ((x : ℚ) * (2 ^ Nat.size y : ℚ)) ((y : ℚ) * (2 ^ Nat.size x : ℚ)) :=
-    compare_div_eq_compare_mul qx_pos qy_pos
-  rw [hm]
-  
-  -- Now we just pull the casts out
-  have h_pull_x : (x : ℚ) * (2 ^ Nat.size y : ℚ) = ((x * 2 ^ Nat.size y : ℕ) : ℚ) := by simp
-  have h_pull_y : (y : ℚ) * (2 ^ Nat.size x : ℚ) = ((y * 2 ^ Nat.size x : ℕ) : ℚ) := by simp
-  rw [h_pull_x, h_pull_y]
-  
-  -- And use compare_nat_cast
-  rw [compare_nat_cast]
-  
-  have hx_ne : x ≠ 0 := Nat.pos_iff_ne_zero.mp hx
-  have hy_ne : y ≠ 0 := Nat.pos_iff_ne_zero.mp hy
-  
-  -- Unfold and use bridge lemmas to convert shift-right back to shift-left form
-  unfold normalizedCompare
-  simp only [hx_ne, hy_ne, ↓reduceIte]
-  
-  have h_le_iff : Nat.log2 x ≤ Nat.log2 y ↔ Nat.size x ≤ Nat.size y := by omega
-  have h_diff_eq : Nat.log2 y - Nat.log2 x = Nat.size y - Nat.size x := by omega
-  have h_diff_eq' : Nat.log2 x - Nat.log2 y = Nat.size x - Nat.size y := by omega
-  
-  split
-  · -- log2 x ≤ log2 y: use bridge lemma to convert shift-right to shift-left
-    rename_i h_le
-    rw [compare_shiftr_eq_compare_shiftl, h_diff_eq, Nat.shiftLeft_eq]
-    have h_le' : Nat.size x ≤ Nat.size y := h_le_iff.mp h_le
-    have hm1 : compare (x * 2 ^ (y.size - x.size)) y = compare (x * 2 ^ (y.size - x.size) * 2 ^ x.size) (y * 2 ^ x.size) :=
-      compare_mul_pos_right (x * 2 ^ (y.size - x.size)) y (2 ^ x.size) sx_pos
-    rw [hm1]
-    have h_add : y.size - x.size + x.size = y.size := Nat.sub_add_cancel h_le'
-    have h_mul : x * 2 ^ (y.size - x.size) * 2 ^ x.size = x * 2 ^ y.size := by
-      rw [Nat.mul_assoc, ← Nat.pow_add, h_add]
-    rw [h_mul]
-  · -- log2 x > log2 y: use symmetric bridge lemma
-    rename_i h_not_le
-    rw [compare_shiftr_eq_compare_shiftl', h_diff_eq']
-    have h_lt : y.size < x.size := by omega
-    have h_le_rev : y.size ≤ x.size := Nat.le_of_lt h_lt
-    rw [Nat.shiftLeft_eq]
-    have hm1 : compare x (y * 2 ^ (x.size - y.size)) = compare (x * 2 ^ y.size) (y * 2 ^ (x.size - y.size) * 2 ^ y.size) :=
-      compare_mul_pos_right x (y * 2 ^ (x.size - y.size)) (2 ^ y.size) sy_pos
-    rw [hm1]
-    have h_add : x.size - y.size + y.size = x.size := Nat.sub_add_cancel h_le_rev
-    have h_mul : y * 2 ^ (x.size - y.size) * 2 ^ y.size = y * 2 ^ x.size := by
-      rw [Nat.mul_assoc, ← Nat.pow_add, h_add]
-    rw [h_mul]
+end Tests
 
 end Azurite.AzNat

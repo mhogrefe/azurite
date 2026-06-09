@@ -218,6 +218,7 @@ import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Karatsuba
 import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.NormalizedCompare
 import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
@@ -250,6 +251,7 @@ import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.NormalizedCompare
+import Azurite.AzNat.NormalizedCompareNat
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbs

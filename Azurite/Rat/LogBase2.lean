@@ -1,7 +1,7 @@
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.Nat.Size
 import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Azurite.AzNat.NormalizedCompare
+import Azurite.AzNat.NormalizedCompareNat
 
 open Real
 
@@ -11,7 +11,7 @@ namespace Azurite.Rat
  -/
 def floorLogBase2Abs (q : ℚ) : ℤ :=
   let exponent : ℤ := (Nat.log2 q.num.natAbs : ℤ) - (Nat.log2 q.den : ℤ)
-  if Azurite.AzNat.normalizedCompare q.num.natAbs q.den == Ordering.lt then
+  if Azurite.AzNat.normalizedCompareNat q.num.natAbs q.den == Ordering.lt then
     exponent - 1
   else
     exponent
@@ -51,7 +51,7 @@ def floorLogBase2Abs (q : ℚ) : ℤ :=
  -/
 def ceilingLogBase2Abs (q : ℚ) : ℤ :=
   let exponent : ℤ := (Nat.log2 q.num.natAbs : ℤ) - (Nat.log2 q.den : ℤ)
-  if Azurite.AzNat.normalizedCompare q.num.natAbs q.den == Ordering.gt then
+  if Azurite.AzNat.normalizedCompareNat q.num.natAbs q.den == Ordering.gt then
     exponent + 1
   else
     exponent
@@ -143,14 +143,14 @@ lemma compare_rat_cast (a b : ℚ) : @compare ℚ Rat.linearOrder.toOrd a b = co
     rw [c1, c2]
 
 lemma normalizedCompare_eq_real (x y : ℕ) (hx : x > 0) (hy : y > 0) :
-  Azurite.AzNat.normalizedCompare x y = compare ((x : ℝ) / (2 ^ Nat.size x : ℝ)) ((y : ℝ) / (2 ^ Nat.size y : ℝ)) := by
-  rw [Azurite.AzNat.normalizedCompare_eq_rat x y hx hy]
+  Azurite.AzNat.normalizedCompareNat x y = compare ((x : ℝ) / (2 ^ Nat.size x : ℝ)) ((y : ℝ) / (2 ^ Nat.size y : ℝ)) := by
+  rw [Azurite.AzNat.normalizedCompareNat_eq_rat x y hx hy]
   have h_compare := compare_rat_cast ((x : ℚ) / (2 ^ Nat.size x : ℚ)) ((y : ℚ) / (2 ^ Nat.size y : ℚ))
   rw [h_compare]
   push_cast
   rfl
 
-lemma compare_to_logb_bounds_lt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : Azurite.AzNat.normalizedCompare N D == Ordering.lt) :
+lemma compare_to_logb_bounds_lt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : Azurite.AzNat.normalizedCompareNat N D == Ordering.lt) :
     logb 2 (N : ℝ) - logb 2 (D : ℝ) < (Nat.size N : ℝ) - (Nat.size D : ℝ) := by
   have h_comp := normalizedCompare_eq_real N D hN hD
   have h_base : (1 : ℝ) < 2 := by norm_num
@@ -168,7 +168,7 @@ lemma compare_to_logb_bounds_lt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : Az
   rw [h_log_N, h_log_D] at h3
   linarith
 
-lemma compare_to_logb_bounds_ge (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : ¬(Azurite.AzNat.normalizedCompare N D == Ordering.lt)) :
+lemma compare_to_logb_bounds_ge (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : ¬(Azurite.AzNat.normalizedCompareNat N D == Ordering.lt)) :
     (Nat.size N : ℝ) - (Nat.size D : ℝ) ≤ logb 2 (N : ℝ) - logb 2 (D : ℝ) := by
   have h_comp := normalizedCompare_eq_real N D hN hD
   have h_base : (1 : ℝ) < 2 := by norm_num
@@ -178,7 +178,7 @@ lemma compare_to_logb_bounds_ge (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_lt : ¬
     rw [logb_div (Nat.cast_pos.mpr hN).ne' (by positivity), logb_pow, logb_self_eq_one h_base, mul_one]
   have h_log_D : logb 2 ((D : ℝ) / 2 ^ Nat.size D) = logb 2 (D : ℝ) - (Nat.size D : ℝ) := by
     rw [logb_div (Nat.cast_pos.mpr hD).ne' (by positivity), logb_pow, logb_self_eq_one h_base, mul_one]
-  have h_lt_ne : Azurite.AzNat.normalizedCompare N D ≠ Ordering.lt := by
+  have h_lt_ne : Azurite.AzNat.normalizedCompareNat N D ≠ Ordering.lt := by
     intro hc; apply h_lt; rw [hc]; rfl
   have h1 : compare ((N : ℝ) / (2 ^ Nat.size N : ℝ)) ((D : ℝ) / (2 ^ Nat.size D : ℝ)) ≠ Ordering.lt := by
     rw [← h_comp]; exact h_lt_ne
@@ -211,7 +211,7 @@ lemma floorLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
     rw [h_abs_q, logb_div hN_pos.ne' hD_pos.ne']
 
   have h_exponent : (floorLogBase2Abs q : ℝ) =
-    if Azurite.AzNat.normalizedCompare q.num.natAbs q.den == Ordering.lt then
+    if Azurite.AzNat.normalizedCompareNat q.num.natAbs q.den == Ordering.lt then
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) - 1
     else
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) := by
@@ -251,7 +251,7 @@ lemma floorLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
     · linarith [h_cmp]
     · linarith [h_sizeN.2, h_sizeD.1]
 
-lemma compare_to_logb_bounds_ceiling_gt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_gt : Azurite.AzNat.normalizedCompare N D == Ordering.gt) :
+lemma compare_to_logb_bounds_ceiling_gt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_gt : Azurite.AzNat.normalizedCompareNat N D == Ordering.gt) :
     (Nat.size N : ℝ) - (Nat.size D : ℝ) < logb 2 (N : ℝ) - logb 2 (D : ℝ) := by
   have h_comp := normalizedCompare_eq_real N D hN hD
   have h_base : (1 : ℝ) < 2 := by norm_num
@@ -269,7 +269,7 @@ lemma compare_to_logb_bounds_ceiling_gt (N D : ℕ) (hN : N > 0) (hD : D > 0) (h
   rw [h_log_N, h_log_D] at h3
   linarith
 
-lemma compare_to_logb_bounds_ceiling_le (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_gt : ¬(Azurite.AzNat.normalizedCompare N D == Ordering.gt)) :
+lemma compare_to_logb_bounds_ceiling_le (N D : ℕ) (hN : N > 0) (hD : D > 0) (h_gt : ¬(Azurite.AzNat.normalizedCompareNat N D == Ordering.gt)) :
     logb 2 (N : ℝ) - logb 2 (D : ℝ) ≤ (Nat.size N : ℝ) - (Nat.size D : ℝ) := by
   have h_comp := normalizedCompare_eq_real N D hN hD
   have h_base : (1 : ℝ) < 2 := by norm_num
@@ -279,7 +279,7 @@ lemma compare_to_logb_bounds_ceiling_le (N D : ℕ) (hN : N > 0) (hD : D > 0) (h
     rw [logb_div (Nat.cast_pos.mpr hN).ne' (by positivity), logb_pow, logb_self_eq_one h_base, mul_one]
   have h_log_D : logb 2 ((D : ℝ) / 2 ^ Nat.size D) = logb 2 (D : ℝ) - (Nat.size D : ℝ) := by
     rw [logb_div (Nat.cast_pos.mpr hD).ne' (by positivity), logb_pow, logb_self_eq_one h_base, mul_one]
-  have h_gt_ne : Azurite.AzNat.normalizedCompare N D ≠ Ordering.gt := by
+  have h_gt_ne : Azurite.AzNat.normalizedCompareNat N D ≠ Ordering.gt := by
     intro hc; apply h_gt; rw [hc]; rfl
   have h1 : compare ((N : ℝ) / (2 ^ Nat.size N : ℝ)) ((D : ℝ) / (2 ^ Nat.size D : ℝ)) ≠ Ordering.gt := by
     rw [← h_comp]; exact h_gt_ne
@@ -312,7 +312,7 @@ lemma ceilingLogBase2Abs_eq (q : ℚ) (hq : q ≠ 0) :
     rw [h_abs_q, logb_div hN_pos.ne' hD_pos.ne']
 
   have h_exponent : (ceilingLogBase2Abs q : ℝ) =
-    if Azurite.AzNat.normalizedCompare q.num.natAbs q.den == Ordering.gt then
+    if Azurite.AzNat.normalizedCompareNat q.num.natAbs q.den == Ordering.gt then
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) + 1
     else
       (Nat.size q.num.natAbs : ℝ) - (Nat.size q.den : ℝ) := by
