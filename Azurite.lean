@@ -38,6 +38,7 @@ import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Parse
+import Azurite.AzInt.Equiv.Pow
 import Azurite.AzInt.Equiv.Pow2
 import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzInt.Equiv.ShiftRight
@@ -52,6 +53,7 @@ import Azurite.AzInt.Mul
 import Azurite.AzInt.Parity
 import Azurite.AzInt.ParsableElement
 import Azurite.AzInt.Parse
+import Azurite.AzInt.Pow
 import Azurite.AzInt.Pow2
 import Azurite.AzInt.ShiftLeft
 import Azurite.AzInt.ShiftRight
@@ -220,6 +222,7 @@ import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.ParseBase
+import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft

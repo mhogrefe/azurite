@@ -1,5 +1,6 @@
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Sub
+import Azurite.AzInt.Equiv.Pow
 
 namespace Azurite.AzInt
 
@@ -23,6 +24,13 @@ instance : CommRing AzInt where
   sub_eq_add_neg a b := toInt_injective (by simp [toInt_sub, toInt_add, toInt_neg]; ring)
   nsmul := nsmulRec
   zsmul := zsmulRec
+  -- Exponentiation `z ^ n` runs `AzInt.pow` (magnitude delegated to `AzNat`'s sliding-window
+  -- power), so it is `O(log n)` multiplications rather than the default `O(n)`, and
+  -- `z.pow n = z ^ n` definitionally. The `npow_succ` obligation is discharged through `toInt`
+  -- via `toInt_pow` (which does not need the `Ring` structure that is still being built).
+  npow n z := z.pow n
+  npow_zero z := toInt_injective (by rw [toInt_pow, pow_zero, toInt_one])
+  npow_succ n z := toInt_injective (by rw [toInt_mul, toInt_pow, toInt_pow, pow_succ])
 
 instance : Nontrivial AzInt := ⟨0, 1, fun h => by
   have : (0 : Int) = 1 := by rw [← toInt_zero, ← toInt_one, h]

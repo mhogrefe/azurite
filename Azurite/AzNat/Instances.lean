@@ -1,6 +1,14 @@
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.Algorithm.SlidingWindowPow
 
 namespace Azurite.AzNat
+
+/-- Route `Square.square` to AzNat's dedicated three-way `square` (schoolbook / Karatsuba /
+Toom-Cook 3), so exponentiation squares in subquadratic time rather than via a general
+multiplication. Overrides the low-priority default `Square` instance. -/
+instance instSquareAzNat : Azurite.Square AzNat where
+  square := AzNat.square
+  square_eq a := toNat_injective (by rw [toNat_square, toNat_mul, pow_two])
 
 instance : CommSemiring AzNat where
   add_assoc a b c := toNat_injective (by simp [toNat_add, Nat.add_assoc])
@@ -16,6 +24,16 @@ instance : CommSemiring AzNat where
   mul_zero a := toNat_injective (by simp [toNat_mul])
   mul_comm a b := toNat_injective (by simp [toNat_mul, Nat.mul_comm])
   nsmul := nsmulRec
+  -- Exponentiation `a ^ n` runs the generic sliding-window algorithm (the same one behind
+  -- `AzNat.pow`), so it is `O(log n)` multiplications rather than the default `O(n)`, and
+  -- `a.pow n = a ^ n` definitionally. The `npow_succ` obligation is discharged by the generic
+  -- transport `map_slidingWindowPow` under `toNat`, which needs only `Mul`/`One`/`Square`
+  -- (all in scope here), so it goes through while the `Monoid` is still being built.
+  npow n a := Azurite.slidingWindowPow a n
+  npow_zero _ := rfl
+  npow_succ n a := toNat_injective (by
+    rw [toNat_mul, map_slidingWindowPow AzNat.toNat toNat_one toNat_mul a (n + 1),
+        map_slidingWindowPow AzNat.toNat toNat_one toNat_mul a n, pow_succ])
 
 instance : Nontrivial AzNat := ⟨0, 1, fun h => by
   have : (0 : Nat) = 1 := by rw [← toNat_zero, ← toNat_one, h]
