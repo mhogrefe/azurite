@@ -1,8 +1,13 @@
 import Azurite.Random.Rat
-import Azurite.Rat.Compare
 import Azurite.Benchmark.Timer
 
 open Azurite.Random Azurite.Benchmark
+
+/-!
+# Shared benchmark utilities
+
+Config parsing, timing, and small helpers reused across the benchmark drivers.
+-/
 
 -- ── Config helpers ──────────────────────────────────────────────────────────
 
@@ -47,35 +52,3 @@ def median3 (a b c : UInt64) : UInt64 :=
     if a ≤ c then a        -- b < a ≤ c
     else if b ≤ c then c   -- b ≤ c < a
     else b                 -- c < b < a
-
--- ── Benchmark ───────────────────────────────────────────────────────────────
-
-/--
-Run the `rat_cmp` benchmark.
-For each of `limit` pairs `(a, b)` of random `Rat`s, time both:
-  - `compare a b`          (Lean default)
-  - `Azurite.Rat.cmp a b`  (Azurite implementation)
-
-Output format (one line per pair):
-  `a,b,default,<ns>,azurite,<ns>`
--/
-def runRatCmp (limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
-  let meanBitLength := configGetRat cfg "meanBitLength" 64
-  let iters := configGetNat cfg "iters" 1000
-  let gen := mkPairRandomGenFromSingle (α := Rat) (mkRatRandomGen meanBitLength seed)
-  let mut g := gen
-  for _ in List.range limit do
-    let ((a, b), g') := PairRandomGenFromSingle.next g
-    let (r1, ns1a) ← timeNsIter iters (fun _ => compare a b)
-    let (_, ns1b) ← timeNsIter iters (fun _ => compare a b)
-    let (_, ns1c) ← timeNsIter iters (fun _ => compare a b)
-    let ns1 := median3 ns1a ns1b ns1c
-    let (r2, ns2a) ← timeNsIter iters (fun _ => Azurite.Rat.cmp a b)
-    let (_, ns2b) ← timeNsIter iters (fun _ => Azurite.Rat.cmp a b)
-    let (_, ns2c) ← timeNsIter iters (fun _ => Azurite.Rat.cmp a b)
-    let ns2 := median3 ns2a ns2b ns2c
-    if r1 ≠ r2 then
-      let fmt : Ordering → String | .lt => "lt" | .eq => "eq" | .gt => "gt"
-      IO.eprintln s!"BUG: compare={fmt r1} cmp={fmt r2} for {formatRat a},{formatRat b}"
-    IO.println s!"{formatRat a},{formatRat b},default,{ns1},azurite,{ns2}"
-    g := g'

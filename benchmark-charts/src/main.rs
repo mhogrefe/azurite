@@ -5,20 +5,10 @@ use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::Path;
-use std::str::FromStr;
 
-use malachite_base::num::logic::traits::SignificantBits;
-use malachite_q::Rational;
 use plotters::prelude::*;
 
 // ── Data models ──────────────────────────────────────────────────────────────
-
-/// Two-series row (for rat_cmp).
-struct Row {
-    bucket: u64,
-    default_ns: u64,
-    azurite_ns: u64,
-}
 
 /// N-series row (for benchmarks with variable number of implementations).
 struct MultiRow {
@@ -28,44 +18,6 @@ struct MultiRow {
 }
 
 // ── Parsing ──────────────────────────────────────────────────────────────────
-
-/// Parse rat_cmp benchmark output.
-fn parse_rat_cmp_file(content: &str) -> Vec<Row> {
-    let mut rows = Vec::new();
-    for line in content.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        // Format (6 fields): rat1,rat2,default,ns1,azurite,ns2
-        let parts: Vec<&str> = line.splitn(9, ',').collect();
-        let (rat1, rat2, ns1_str, ns2_str) = match parts.len() {
-            6 => (parts[0], parts[1], parts[3], parts[5]),
-            8 => (parts[0], parts[1], parts[3], parts[6]),
-            _ => {
-                eprintln!("Skipping malformed line ({} fields): {}", parts.len(), &line[..line.len().min(80)]);
-                continue;
-            }
-        };
-        let (Ok(a), Ok(b)) = (
-            Rational::from_str(rat1),
-            Rational::from_str(rat2),
-        ) else {
-            eprintln!("Could not parse rationals on line: {}", &line[..line.len().min(80)]);
-            continue;
-        };
-        let (Ok(default_ns), Ok(azurite_ns)) = (
-            ns1_str.parse::<u64>(),
-            ns2_str.parse::<u64>(),
-        ) else {
-            eprintln!("Could not parse timings on line: {}", &line[..line.len().min(80)]);
-            continue;
-        };
-        let bucket = a.significant_bits() + b.significant_bits();
-        rows.push(Row { bucket, default_ns, azurite_ns });
-    }
-    rows
-}
 
 /// Parse semicolon-separated N-series benchmark output.
 /// Format: `<bucket>;name1,ns1;name2,ns2;...;nameN,nsN`
@@ -278,33 +230,13 @@ fn plot_n_series(
     Ok(())
 }
 
-/// Two-series line chart (legacy, for rat_cmp).
-fn plot_two_series(
-    rows: Vec<Row>,
-    out_path: &str,
-    title: &str,
-    x_label: &str,
-    series1_label: &str,
-    series2_label: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // Convert to MultiRow format
-    let multi_rows: Vec<MultiRow> = rows.into_iter().map(|r| MultiRow {
-        bucket: r.bucket,
-        series: vec![
-            (series1_label.to_string(), r.default_ns),
-            (series2_label.to_string(), r.azurite_ns),
-        ],
-    }).collect();
-    plot_n_series(multi_rows, out_path, title, x_label)
-}
-
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 fn print_usage(prog: &str) {
     eprintln!("Usage:");
     eprintln!("  {prog} run <config.toml>            # new config-driven flow");
     eprintln!("  {prog} <benchmark> <input_file> [output_svg]   # legacy flow");
-    eprintln!("  legacy benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba,");
+    eprintln!("  legacy benchmarks: az_polynomial_mul, az_polynomial_karatsuba,");
     eprintln!("                     az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
 }
 
@@ -358,27 +290,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| format!("Cannot read {input_path}: {e}"))?;
 
     match benchmark.as_str() {
-        "rat_cmp" => {
-            let rows = parse_rat_cmp_file(&content);
-            println!("Parsed {} rows.", rows.len());
-            let series1_label = "default (Lean baseline)";
-            let series2_label = "azurite";
-            // Summary
-            let multi: Vec<MultiRow> = rows.iter().map(|r| MultiRow {
-                bucket: r.bucket,
-                series: vec![
-                    (series1_label.to_string(), r.default_ns),
-                    (series2_label.to_string(), r.azurite_ns),
-                ],
-            }).collect();
-            print_summary(&multi);
-            plot_two_series(
-                rows, output_path,
-                "rat_cmp: median ns/op by input size",
-                "Input size (significant_bits of both rationals)",
-                series1_label, series2_label,
-            )?;
-        }
         "az_polynomial_mul" | "az_polynomial_karatsuba" => {
             let rows = parse_multi_series_file(&content);
             println!("Parsed {} rows.", rows.len());
@@ -401,7 +312,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         other => {
             eprintln!("Unknown benchmark: {other:?}");
-            eprintln!("Valid benchmarks: rat_cmp, az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
+            eprintln!("Valid benchmarks: az_polynomial_mul, az_polynomial_karatsuba, az_nat_add, az_nat_sub, az_nat_mul, az_nat_mul_compare, az_nat_div_mod");
             std::process::exit(1);
         }
     }

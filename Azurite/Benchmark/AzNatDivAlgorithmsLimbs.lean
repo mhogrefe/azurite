@@ -3,7 +3,7 @@ import Azurite.Random.Pair
 import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd
-import Azurite.Benchmark.RatCmp
+import Azurite.Benchmark.Common
 
 open Azurite Azurite.Random Azurite.Benchmark
 

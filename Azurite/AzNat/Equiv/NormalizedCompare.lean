@@ -6,8 +6,8 @@ import Azurite.AzNat.Equiv.ShiftRight
 
 `normalizedCompare_eq_cross`: for positive inputs, `normalizedCompare x y` equals the
 cross-multiplication comparison `compare (x.toNat · 2^(size y)) (y.toNat · 2^(size x))` — i.e. it
-compares the normalized fractions `x / 2^(size x)` and `y / 2^(size y)`. This is self-contained
-and does **not** depend on the legacy `normalizedCompareNat` (which can be removed later).
+compares the normalized fractions `x / 2^(size x)` and `y / 2^(size y)`. The proof is
+self-contained, working directly from the limb loop.
 
 The core is `cmpShiftedLimbs_eq`: the limb loop computes the radix-`2^64` comparison of
 `x.toNat · 2^shift` and `y.toNat`, with each on-the-fly limb read (`shiftedLimb`) equal to the
@@ -127,7 +127,7 @@ private lemma toNat_lt_two_pow_size (x : AzNat) : x.toNat < 2 ^ x.size := by
 
 /-- **Correctness of `normalizedCompare`.** For positive inputs it is the cross-multiplication
 comparison `compare (x · 2^(size y)) (y · 2^(size x))` — i.e. it compares the normalized fractions
-`x / 2^(size x)` and `y / 2^(size y)`. Self-contained (independent of `normalizedCompareNat`). -/
+`x / 2^(size x)` and `y / 2^(size y)`. -/
 theorem normalizedCompare_eq_cross (x y : AzNat) (hx : 0 < x.toNat) (hy : 0 < y.toNat) :
     normalizedCompare x y = Ord.compare (x.toNat * 2 ^ y.size) (y.toNat * 2 ^ x.size) := by
   have hxne : x ≠ 0 := by rintro rfl; simp at hx

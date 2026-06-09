@@ -251,7 +251,6 @@ import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.NormalizedCompare
-import Azurite.AzNat.NormalizedCompareNat
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.OfLimbs
@@ -369,10 +368,14 @@ import Azurite.AzPolynomialQ.Neg
 import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
 import Azurite.AzRat.Basic
+import Azurite.AzRat.Compare
 import Azurite.AzRat.Conversion
 import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Compare
 import Azurite.AzRat.Equiv.Conversion
+import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Round
+import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Round
 import Azurite.AzVector.Basic
 import Azurite.AzVector.Basis
@@ -775,8 +778,8 @@ import Azurite.Benchmark.AzNatSquareVsNat
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzPolynomialMul
+import Azurite.Benchmark.Common
 import Azurite.Benchmark.Main
-import Azurite.Benchmark.RatCmp
 import Azurite.Benchmark.Timer
 import Azurite.Benchmark.UInt64SqrtRem
 import Azurite.Random.AzPolynomial
@@ -788,8 +791,6 @@ import Azurite.Random.Nat
 import Azurite.Random.NatGen
 import Azurite.Random.Pair
 import Azurite.Random.Rat
-import Azurite.Rat.Compare
-import Azurite.Rat.LogBase2
 import Azurite.Rounding.Basic
 import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int

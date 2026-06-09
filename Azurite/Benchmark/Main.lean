@@ -1,4 +1,4 @@
-import Azurite.Benchmark.RatCmp
+import Azurite.Benchmark.Common
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.AzPolynomialKaratsuba
 import Azurite.Benchmark.AzNatAdd
@@ -35,7 +35,7 @@ def parseConfig (s : String) : Std.HashMap String String :=
 -- ── Main ────────────────────────────────────────────────────────────────────
 
 def validBenchmarks : List String :=
-  ["rat_cmp", "az_polynomial_mul", "az_polynomial_karatsuba",
+  ["az_polynomial_mul", "az_polynomial_karatsuba",
    "az_nat_add", "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
    "az_nat_mul_algorithms_toomcook3", "az_nat_div_algorithms",
    "az_nat_div_algorithms_limbs",
@@ -61,7 +61,6 @@ def main (args : List String) : IO Unit := do
       IO.eprintln s!"Error: limit must be a natural number, got '{limitStr}'"
     | some limit =>
       match name with
-      | "rat_cmp" => runRatCmp limit cfg seed
       | "az_polynomial_mul" => runAzPolynomialMul limit cfg seed
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
       | "az_nat_add" => runAzNatAdd limit cfg seed

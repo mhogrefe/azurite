@@ -3,7 +3,7 @@ import Azurite.AzNat.Mul
 import Azurite.AzNat.Square
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Benchmark.AzNatAdd -- reuse natSignificantBits
-import Azurite.Benchmark.RatCmp   -- reuse timeNsIter, median3, configGetRat, configGetNat
+import Azurite.Benchmark.Common   -- reuse timeNsIter, median3, configGetRat, configGetNat
 
 open Azurite Azurite.Random Azurite.Benchmark
 

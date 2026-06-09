@@ -1,7 +1,7 @@
 import Azurite.Random.AzPolynomial
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.ToString
-import Azurite.Benchmark.RatCmp -- reuse timeNsIter, median3, configGetRat, configGetNat
+import Azurite.Benchmark.Common -- reuse timeNsIter, median3, configGetRat, configGetNat
 
 open Azurite Azurite.Random Azurite.Benchmark Azurite.AzPolynomial
 

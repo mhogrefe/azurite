@@ -17,9 +17,9 @@ The implementation is **allocation-free**: instead of materialising a shifted co
 it reads the `k`-th limb of `x · 2^shift` directly from `x`'s limbs via `getBitsAsLimb` (one
 `UInt64`), comparing top-down against `y`'s limbs.
 
-Correctness (`normalizedCompare_eq_normalizedCompareNat`) is proved by reducing the loop to the
-radix-`2^64` comparison of `x.toNat · 2^shift` and `y.toNat`, then bridging to the legacy
-`normalizedCompareNat` (whose rational semantics is `normalizedCompareNat_eq_rat`).
+Correctness (`normalizedCompare_eq_cross`, in `Equiv/NormalizedCompare.lean`) is proved by
+reducing the loop to the radix-`2^64` comparison of `x.toNat · 2^shift` and `y.toNat`, giving the
+cross-multiplication form `compare (x.toNat · 2^(size y)) (y.toNat · 2^(size x))`.
 -/
 
 namespace Azurite.AzNat
