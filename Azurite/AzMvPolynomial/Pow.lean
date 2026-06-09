@@ -3,7 +3,7 @@
   Mathlib equivalences (toMvPoly_pow etc.) live in the Equiv layer.
 -/
 import Azurite.AzMvPolynomial.Mul
-import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.SlidingWindowPow
 
 namespace Azurite.MonicMonomial
 
@@ -55,11 +55,11 @@ variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
 
 /-- Computable exponentiation for multivariate polynomials.
     Single-term polynomials use direct monomial exponentiation; multi-term
-    polynomials use `fastPow` (O(log k) multiplications). -/
+    polynomials use `slidingWindowPow` (O(log k) multiplications). -/
 def pow (p : AzMvPolynomial n R ord) (k : ℕ) : AzMvPolynomial n R ord :=
   if h : p.terms.size = 1 then
     AzMvPolynomial.ofMonomial ((p.terms[0]'(by omega)).pow k)
   else
-    Azurite.fastPow p k
+    Azurite.slidingWindowPow p k
 
 end Azurite.AzMvPolynomial

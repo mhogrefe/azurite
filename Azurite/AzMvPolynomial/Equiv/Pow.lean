@@ -5,7 +5,7 @@ import Azurite.AzMvPolynomial.Equiv.Mul
 # Equivalence: `AzMvPolynomial.pow` ↔ `MvPolynomial.pow`
 
 Proves that `AzMvPolynomial.pow p k` (computable, with single-monomial
-optimization and binary exponentiation fallback) agrees with Mathlib's
+optimization and sliding-window exponentiation fallback) agrees with Mathlib's
 `MvPolynomial` power.
 -/
 
@@ -41,27 +41,6 @@ theorem Monomial.toMvPoly_pow (m : Monomial n R ord) (k : ℕ) :
 
 /-! ### AzMvPolynomial.pow equivalence -/
 
-/-- `toMvPoly` distributes over `fastPowAux` (the tail-recursive binary
-    exponentiation helper). -/
-private theorem toMvPoly_fastPowAux
-    (acc base : AzMvPolynomial n R ord) (k : ℕ) :
-    (fastPowAux acc base k).toMvPoly =
-    acc.toMvPoly * base.toMvPoly ^ k := by
-  induction k using Nat.strongRecOn generalizing acc base with
-  | _ k ih =>
-    unfold fastPowAux; split
-    · rename_i h; subst h; simp
-    · rename_i h; split
-      · rename_i heven
-        rw [ih _ (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega)),
-            Azurite.Square.square_eq,
-            toMvPoly_mul, ← sq, ← pow_mul]; congr 2; omega
-      · rename_i hodd
-        rw [ih _ (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega)),
-            Azurite.Square.square_eq,
-            toMvPoly_mul, toMvPoly_mul, mul_assoc,
-            ← sq, ← pow_mul, ← pow_succ']; congr 2; omega
-
 omit [DecidableEq R] in
 /-- Exponentiating a single monomial and wrapping gives the correct `toMvPoly`. -/
 private theorem toMvPoly_pow_monomial (m : Monomial n R ord) (k : ℕ) :
@@ -93,9 +72,8 @@ private theorem toMvPoly_ofMonomial_first (p : AzMvPolynomial n R ord)
   · next h =>
     rw [toMvPoly_pow_monomial, toMvPoly_ofMonomial_first p h]
   · next _ =>
-    show (fastPowAux 1 p k).toMvPoly = _
-    rw [toMvPoly_fastPowAux,
-        show (1 : AzMvPolynomial n R ord).toMvPoly = 1 from toMvPoly_one, one_mul]
+    show (Azurite.slidingWindowPow p k).toMvPoly = _
+    exact Azurite.map_slidingWindowPow AzMvPolynomial.toMvPoly toMvPoly_one toMvPoly_mul p k
 
 /-- Backward direction: `ofMvPoly` preserves `pow`. -/
 @[simp] theorem ofMvPoly_pow (q : MvPolynomial (Fin n) R) (k : ℕ) :

@@ -66,9 +66,18 @@ instance (priority := low) [Mul M] : Square M where
 /-- Tail-recursive helper for binary exponentiation (right-to-left).
     Processes bits of `n` from LSB to MSB. Squares `base` via `Square.square`
     so types with a custom squaring path can plug in.
+
+    Once the remaining bits `n / 2` are exhausted we return directly instead of
+    squaring `base` one last time: that final square would be the single most
+    expensive operation (squaring the largest intermediate `base`), and its
+    result is never used.
+
     Invariant: `fastPowAux acc base n = acc * base ^ n` (when `M` is a `Monoid`). -/
 def fastPowAux [Mul M] [Square M] (acc base : M) (n : ℕ) : M :=
-  if h : n = 0 then acc
+  if n = 0 then acc
+  else if n / 2 = 0 then
+    -- last bit: `n = 1`, so the answer is `acc * base`; no more squaring.
+    if n % 2 = 0 then acc else acc * base
   else if n % 2 = 0 then
     fastPowAux acc (Square.square base) (n / 2)
   else
@@ -81,36 +90,65 @@ termination_by n
 def fastPow [Mul M] [One M] [Square M] (a : M) (n : ℕ) : M :=
   fastPowAux 1 a n
 
-/-- The loop invariant: `fastPowAux acc base n = acc * base ^ n`. -/
-theorem fastPowAux_eq [Monoid M] [Square M] (acc base : M) (n : ℕ) :
-    fastPowAux acc base n = acc * base ^ n := by
+/-- **The loop invariant, transported along any multiplicative map.** For a function `f : M → N`
+into a monoid `N` that preserves multiplication, `f (fastPowAux acc base n) = f acc * (f base) ^ n`.
+
+This is the single source of truth for `fastPow`'s correctness: it is proven once, by induction on the
+algorithm. Two important consequences follow without re-doing the induction:
+* `fastPowAux_eq` (take `f = id`, `N = M`): the plain invariant `fastPowAux acc base n = acc * base ^ n`;
+* for a wrapper type `T` whose `HPow` is *defined* as `fastPow`, a map `f : T → MathlibType` (such as
+  `toMat`/`toPoly`) gives `f (fastPow a n) = (f a) ^ n` directly — there the plain `fastPowAux_eq` would
+  be circular, since `a ^ n` on `T` is itself `fastPow`. -/
+theorem map_fastPowAux {M N : Type*} [Mul M] [Square M] [Monoid N]
+    (f : M → N) (hmul : ∀ a b : M, f (a * b) = f a * f b) (acc base : M) (n : ℕ) :
+    f (fastPowAux acc base n) = f acc * (f base) ^ n := by
   induction n using Nat.strongRecOn generalizing acc base with
   | _ n ih =>
     unfold fastPowAux
     split
-    · -- n = 0: acc = acc * base ^ 0 = acc * 1
-      rename_i h; subst h; simp [pow_zero, mul_one]
+    · -- n = 0: f acc = f acc * (f base) ^ 0
+      rename_i h; subst h; simp
     · rename_i h
       split
-      · -- n even: go acc (square base) (n/2) = acc * (base²)^(n/2) = acc * base^n
-        rename_i heven
-        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        congr 1
-        rw [Square.square_eq, show base * base = base ^ 2 from (sq base).symm, ← pow_mul]
-        congr 1; omega
-      · -- n odd: go (acc * base) (square base) (n/2) = (acc * base) * (base²)^(n/2)
-        --       = acc * base^(2*(n/2)+1) = acc * base^n
-        rename_i hodd
-        rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [mul_assoc]
-        congr 1
-        rw [Square.square_eq, show base * base = base ^ 2 from (sq base).symm,
-            ← pow_mul, ← pow_succ']
-        congr 1; omega
+      · -- n / 2 = 0, so n = 1: the answer is `acc * base`, mapping to `f acc * (f base) ^ 1`.
+        rename_i hd
+        have hn1 : n = 1 := by omega
+        subst hn1
+        rw [if_neg (show ¬ ((1 : ℕ) % 2 = 0) from by decide), hmul, pow_one]
+      · rename_i hd
+        split
+        · -- n even
+          rename_i heven
+          rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+          congr 1
+          rw [Square.square_eq, hmul, show f base * f base = (f base) ^ 2 from (sq _).symm, ← pow_mul]
+          congr 1; omega
+        · -- n odd
+          rename_i hodd
+          rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
+          rw [hmul, mul_assoc]
+          congr 1
+          rw [Square.square_eq, hmul, show f base * f base = (f base) ^ 2 from (sq _).symm,
+              ← pow_mul, ← pow_succ']
+          congr 1; omega
+
+/-- The loop invariant: `fastPowAux acc base n = acc * base ^ n`. The `f = id` case of
+`map_fastPowAux`. -/
+theorem fastPowAux_eq [Monoid M] [Square M] (acc base : M) (n : ℕ) :
+    fastPowAux acc base n = acc * base ^ n :=
+  map_fastPowAux id (fun _ _ => rfl) acc base n
 
 /-- Exponentiation by squaring agrees with Mathlib's `HPow.hPow`. -/
 theorem fastPow_eq_pow [Monoid M] [Square M] (a : M) (n : ℕ) : fastPow a n = a ^ n := by
   simp [fastPow, fastPowAux_eq, one_mul]
+
+/-- **`fastPow` transported along a multiplicative map.** For `f : M → N` preserving `1` and `*`,
+`f (fastPow a n) = (f a) ^ n`. This is how a wrapper type relates its `fastPow`-based power to the
+reference power on a Mathlib type, without re-proving the algorithm. -/
+theorem map_fastPow {M N : Type*} [Mul M] [One M] [Square M] [Monoid N]
+    (f : M → N) (hone : f 1 = 1) (hmul : ∀ a b : M, f (a * b) = f a * f b) (a : M) (n : ℕ) :
+    f (fastPow a n) = (f a) ^ n := by
+  rw [fastPow, map_fastPowAux f hmul, hone, one_mul]
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests

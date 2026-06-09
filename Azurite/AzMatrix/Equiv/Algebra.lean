@@ -20,7 +20,7 @@ import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.Equiv.Mul
 import Azurite.AzMatrix.Equiv.Basis
-import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.SlidingWindowPow
 import Mathlib.Algebra.Module.Pi
 import Mathlib.Algebra.Module.Equiv.Defs
 import Mathlib.Algebra.Ring.InjSurj
@@ -182,39 +182,20 @@ theorem toMat_nsmul (k : ℕ) (M : AzMatrix R n n) :
   unfold AzMatrix.nsmulAzM toMat
   ext i j; simp
 
-/-- Computable `npow` for square matrices via binary exponentiation.
+/-- Computable `npow` for square matrices via sliding-window exponentiation.
     O(log k) matrix multiplications. -/
 @[irreducible] def npowSq (A : AzMatrix R n n) (k : ℕ) : AzMatrix R n n :=
-  Azurite.fastPow A k
+  Azurite.slidingWindowPow A k
 
 instance : Pow (AzMatrix R n n) ℕ := ⟨npowSq⟩
 
-/-- `toMat` preserves the tail-recursive `fastPowAux` helper. -/
-theorem toMat_fastPowAux (acc base : AzMatrix R n n) (k : ℕ) :
-    toMat (Azurite.fastPowAux acc base k) = toMat acc * toMat base ^ k := by
-  induction k using Nat.strongRecOn generalizing acc base with
-  | _ k ih =>
-    unfold Azurite.fastPowAux
-    split
-    · rename_i h; subst h; simp [pow_zero, mul_one]
-    · rename_i h
-      split
-      · rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [Azurite.Square.square_eq, toMat_mul,
-            show toMat base * toMat base = toMat base ^ 2 from (sq _).symm,
-            ← pow_mul]
-        congr 2; omega
-      · rw [ih (k / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [Azurite.Square.square_eq, toMat_mul, toMat_mul, mul_assoc]; congr 1
-        rw [show toMat base * toMat base = toMat base ^ 2 from (sq _).symm,
-            ← pow_mul, ← pow_succ']
-        congr 1; omega
-
+/-- `toMat` preserves sliding-window exponentiation — the `f = toMat` case of the generic
+`map_slidingWindowPow`, no re-induction needed. -/
 theorem toMat_npow (A : AzMatrix R n n) (k : ℕ) :
     toMat (A ^ k) = toMat A ^ k := by
   show toMat (npowSq A k) = _
   unfold npowSq
-  rw [Azurite.fastPow, toMat_fastPowAux, toMat_one, one_mul]
+  exact Azurite.map_slidingWindowPow toMat toMat_one toMat_mul A k
 
 /-- Computable `ℕ`-cast: returns the constant matrix `(k : Matrix _ _ R)`. -/
 @[irreducible] def natCastSq (k : ℕ) : AzMatrix R n n :=

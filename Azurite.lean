@@ -2,6 +2,7 @@
 -- Import modules here that should be built as part of the library.
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.SlidingWindowPow
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula
@@ -252,6 +253,7 @@ import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.Parity
 import Azurite.AzNat.ParsableElement
 import Azurite.AzNat.ParseBase
+import Azurite.AzNat.Pow
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
@@ -752,6 +754,7 @@ import Azurite.Benchmark.AzNatModVsDivMod
 import Azurite.Benchmark.AzNatMulAlgorithms
 import Azurite.Benchmark.AzNatMulAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatMulVsNat
+import Azurite.Benchmark.AzNatPowAlgorithms
 import Azurite.Benchmark.AzNatSqrtRemAlgorithms
 import Azurite.Benchmark.AzNatSqrtVsNat
 import Azurite.Benchmark.AzNatSquareAlgorithms

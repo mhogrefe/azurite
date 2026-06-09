@@ -1,14 +1,14 @@
-import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.SlidingWindowPow
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Parse
 
 /-!
-# Exponentiation by Squaring for AzPolynomial
+# Sliding-Window Exponentiation for AzPolynomial
 
-Computable polynomial exponentiation using the generic `fastPow` algorithm.
+Computable polynomial exponentiation using the generic `slidingWindowPow` algorithm.
 
 The `^` operator on `AzPolynomial R` (from the `Semiring` instance in `Equiv/Algebra.lean`)
-already uses `fastPow` internally, so `p.pow n = p ^ n`. This file provides the explicit
+already uses `slidingWindowPow` internally, so `p.pow n = p ^ n`. This file provides the explicit
 `pow` function for direct use and adds `#guard` tests.
 
 ## Main Definition
@@ -20,11 +20,11 @@ namespace Azurite.AzPolynomial
 
 variable {R : Type _} [Semiring R] [DecidableEq R] [AzPolynomialMulConfig R]
 
-/-- Computable exponentiation for `AzPolynomial R` via binary exponentiation.
+/-- Computable exponentiation for `AzPolynomial R` via sliding-window exponentiation.
     Uses the configured multiplication algorithm (basecase or Karatsuba).
     Agrees with `p ^ n` (the `Semiring`'s `Pow` instance). -/
 def pow (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
-  Azurite.fastPow p n
+  Azurite.slidingWindowPow p n
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests

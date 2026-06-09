@@ -10,6 +10,7 @@ import Azurite.Benchmark.AzNatSquareAlgorithms
 import Azurite.Benchmark.AzNatSquareAlgorithmsToomCook3
 import Azurite.Benchmark.AzNatSquareVsMul
 import Azurite.Benchmark.AzNatSquareVsNat
+import Azurite.Benchmark.AzNatPowAlgorithms
 import Azurite.Benchmark.AzNatDivAlgorithms
 import Azurite.Benchmark.AzNatDivAlgorithmsLimbs
 import Azurite.Benchmark.AzNatDivMod
@@ -43,6 +44,7 @@ def validBenchmarks : List String :=
    "uint64_sqrt_rem", "az_nat_sqrt_rem_algorithms", "az_nat_sqrt_vs_nat",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
+   "az_nat_pow_algorithms",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d",
    "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3"]
@@ -82,6 +84,7 @@ def main (args : List String) : IO Unit := do
       | "az_nat_square_algorithms_toomcook3" =>
         runAzNatSquareAlgorithmsToomCook3 limit cfg seed
       | "az_nat_square_vs_nat" => runAzNatSquareVsNat limit cfg seed
+      | "az_nat_pow_algorithms" => runAzNatPowAlgorithms limit cfg seed
       | "tune_karatsuba" =>
         let meanDegree := configGetRat cfg "meanDegree" 256
         let nPairs := configGetNat cfg "nPairs" 200

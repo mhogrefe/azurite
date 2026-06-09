@@ -1,0 +1,31 @@
+# Benchmark: sliding-window vs binary AzNat exponentiation.
+#
+# Both compute `a ^ n` on the same random `(base, exponent)` pairs and share the
+# fast three-way `square` (via the `Square AzNat` instance), so the squarings are
+# identical; the only difference is the number of *multiplications* the exponent
+# recurrence performs (sliding-window does fewer, at the cost of a small
+# precomputed table of odd powers).
+#
+# The base `a` has a fixed mean bit length; the exponent `n` is small and capped,
+# since `a ^ n` has `n · bits(a)` bits and full (non-modular) exponentiation is
+# only practical for modest `n`. The x-axis is the exponent's bit length, which
+# sets how many squarings and window multiplications each algorithm performs.
+#
+# Produces one chart:
+#   az_nat_pow_algorithms.svg  — median ns/op vs significant_bits(n)
+
+# Each sample is a full exponentiation (many multiplications), so `limit` is much
+# smaller than the per-operation benchmarks. Scale it up for smoother curves.
+benchmark = "az_nat_pow_algorithms"
+limit     = 2000
+
+[params]
+baseBits    = 256
+meanExpBits = 9
+maxExp      = 2048
+iters       = 3
+
+[[chart]]
+type    = "line"
+title   = "az_nat_pow_algorithms: Sliding-window vs Binary"
+x_label = "Exponent size (significant_bits of n)"

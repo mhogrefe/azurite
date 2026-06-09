@@ -3,7 +3,7 @@ import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.Monomial
-import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.SlidingWindowPow
 import Mathlib.Algebra.Ring.InjSurj
 import Mathlib.Algebra.Ring.Hom.InjSurj
 import Mathlib.Algebra.Module.NatInt
@@ -62,10 +62,10 @@ section PowData
 
 variable {R : Type _} [Semiring R] [DecidableEq R]
 
-/-- Computable `npow` for `AzPolynomial` via binary exponentiation.
+/-- Computable `npow` for `AzPolynomial` via sliding-window exponentiation.
     O(log n) polynomial multiplications. -/
 @[irreducible] def npowAz (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
-  Azurite.fastPow p n
+  Azurite.slidingWindowPow p n
 
 instance : Pow (AzPolynomial R) ℕ := ⟨npowAz⟩
 
@@ -115,36 +115,13 @@ theorem toPoly_natCast (k : ℕ) :
   rw [toPoly_C]
   simp
 
-/-- `toPoly` preserves the tail-recursive `fastPowAux` helper. -/
-theorem toPoly_fastPowAux (acc base : AzPolynomial R) (n : ℕ) :
-    AzPolynomial.toPoly (Azurite.fastPowAux acc base n) =
-    AzPolynomial.toPoly acc * AzPolynomial.toPoly base ^ n := by
-  induction n using Nat.strongRecOn generalizing acc base with
-  | _ n ih =>
-    unfold Azurite.fastPowAux
-    split
-    · rename_i h; subst h; simp [pow_zero, mul_one]
-    · rename_i h
-      split
-      · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [Azurite.Square.square_eq]
-        simp only [toPoly_mul]
-        rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
-            AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul]
-        congr 2; omega
-      · rw [ih (n / 2) (Nat.div_lt_self (Nat.pos_of_ne_zero h) (by omega))]
-        rw [Azurite.Square.square_eq]
-        simp only [toPoly_mul]
-        rw [mul_assoc]; congr 1
-        rw [show AzPolynomial.toPoly base * AzPolynomial.toPoly base =
-            AzPolynomial.toPoly base ^ 2 from (sq _).symm, ← pow_mul, ← pow_succ']
-        congr 1; omega
-
+/-- `toPoly` preserves sliding-window exponentiation — the `f = toPoly` case of the generic
+`map_slidingWindowPow`, no re-induction needed. -/
 theorem toPoly_npow (p : AzPolynomial R) (n : ℕ) :
     AzPolynomial.toPoly (p ^ n) = AzPolynomial.toPoly p ^ n := by
   show AzPolynomial.toPoly (npowAz p n) = _
   unfold npowAz
-  simp [Azurite.fastPow, toPoly_fastPowAux, toPoly_one, one_mul]
+  exact Azurite.map_slidingWindowPow AzPolynomial.toPoly toPoly_one toPoly_mul p n
 
 end EquivLemmasSemiring
 

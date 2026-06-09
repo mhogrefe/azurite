@@ -3,10 +3,10 @@ import Azurite.AzMatrix.Pow
 /-!
 # Equivalence: AzMatrix.pow ↔ Matrix.pow
 
-Proves that `AzMatrix.pow A k` (computable, via exponentiation by squaring)
+Proves that `AzMatrix.pow A k` (computable, via sliding-window exponentiation)
 agrees with Mathlib's `Matrix.pow` (i.e., `toMat A ^ k`).
 
-Since the `Semiring` instance on `AzMatrix R n n` already uses `fastPow` as its `npow`,
+Since the `Semiring` instance on `AzMatrix R n n` already uses `slidingWindowPow` as its `npow`,
 `A.pow k` is definitionally `A ^ k`, and `toMat (A ^ k) = toMat A ^ k` follows from
 the `toMat_npow` lemma in `Equiv/Algebra.lean`.
 
@@ -28,8 +28,8 @@ variable {R : Type _} [CommSemiring R] {n : Nat}
     Uses `toMat` (not `toFn`) to get the `Matrix`-level `^` rather than `Pi.pow`. -/
 @[simp] theorem AzMatrix.toMat_pow (A : AzMatrix R n n) (k : ℕ) :
     toMat (A.pow k) = toMat A ^ k := by
-  show toMat (Azurite.fastPow A k) = _
-  rw [Azurite.fastPow, toMat_fastPowAux, toMat_one, one_mul]
+  show toMat (Azurite.slidingWindowPow A k) = _
+  exact Azurite.map_slidingWindowPow toMat toMat_one toMat_mul A k
 
 /-- Component-wise access for matrix power. -/
 theorem AzMatrix.get_pow (A : AzMatrix R n n) (k : ℕ) (i j : Fin n) :
