@@ -17,13 +17,14 @@ core lemmas `Rat.neg_divInt` / `Rat.inv_divInt` / `Rat.divInt_nonneg` apply dire
 
 namespace Azurite.AzRat
 
-/-- `toRat` in `divInt` normal form. -/
-private lemma toRat_eq_divInt (q : AzRat) :
+/-- `toRat` in `divInt` normal form (shared by the unary and multiplication
+correctness proofs). -/
+lemma toRat_eq_divInt (q : AzRat) :
     toRat q = Rat.divInt
       (if q.sign then (q.num.toNat : ℤ) else -(q.num.toNat : ℤ)) (q.den.toNat : ℤ) := by
   rw [toRat, Rat.mk_eq_divInt]
 
-private lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
+lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
   rw [toRat_eq_divInt, q.zero_sign h, if_pos rfl, h, AzNat.toNat_zero]
   simp
 
@@ -39,7 +40,7 @@ private lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
 @[simp] theorem toRat_abs (q : AzRat) : toRat q.abs = |toRat q| := by
   have habs : toRat q.abs = Rat.divInt (q.num.toNat : ℤ) (q.den.toNat : ℤ) := by
     rw [toRat_eq_divInt]
-    simp only [abs]
+    simp only [AzRat.abs]
     rw [if_pos trivial]
   have hnn : (0 : ℚ) ≤ Rat.divInt (q.num.toNat : ℤ) (q.den.toNat : ℤ) :=
     Rat.divInt_nonneg (Int.natCast_nonneg _) (Int.natCast_nonneg _)

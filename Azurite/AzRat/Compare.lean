@@ -68,4 +68,32 @@ def cmp (x y : AzRat) : Ordering :=
             let prod_cmp := AzNat.compare (x.num * y.den) (x.den * y.num)
             if is_pos then prod_cmp else prod_cmp.swap
 
+/-! ### Order instances
+
+`cmp` backs the standard order structure, mirroring `AzInt`: `≤` and `<` are
+defined by the comparison result, so deciding an inequality runs the staged
+limb-level algorithm above (never `ℚ` arithmetic). The `LinearOrder` instance
+itself lives in `Azurite/AzRat/Equiv/Order.lean`, where the order laws are
+transferred from `ℚ` via `cmp_eq_compare`. -/
+
+instance : Ord AzRat := ⟨cmp⟩
+
+instance : LE AzRat where
+  le q r := cmp q r ≠ Ordering.gt
+
+instance : LT AzRat where
+  lt q r := cmp q r = Ordering.lt
+
+instance : DecidableRel (α := AzRat) (· ≤ ·) :=
+  fun q r => if h : cmp q r ≠ Ordering.gt then isTrue h else isFalse h
+
+instance : DecidableRel (α := AzRat) (· < ·) :=
+  fun q r => if h : cmp q r = Ordering.lt then isTrue h else isFalse h
+
+instance : Max AzRat where
+  max q r := if q ≤ r then r else q
+
+instance : Min AzRat where
+  min q r := if q ≤ r then q else r
+
 end Azurite.AzRat

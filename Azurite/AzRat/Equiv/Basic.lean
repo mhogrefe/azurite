@@ -86,6 +86,14 @@ theorem ofRat_toRat (q : AzRat) : ofRat (toRat q) = q := by
 theorem toRat_injective : Function.Injective toRat := fun a b h => by
   rw [← ofRat_toRat a, h, ofRat_toRat]
 
+/-- The mathematical equivalence between `AzRat` and `ℚ`, bundling the two
+round-trips (mirroring `equivNat : AzNat ≃ ℕ` and `equivInt : AzInt ≃ ℤ`). -/
+def equivRat : AzRat ≃ ℚ where
+  toFun := toRat
+  invFun := ofRat
+  left_inv := ofRat_toRat
+  right_inv := toRat_ofRat
+
 -- `ofRat` computes (string-anchored via `toString`/`parse`; the `toRat`
 -- direction is covered by the round-trip theorems above).
 #guard (ofRat (3 / 4)).toString == "3/4"
