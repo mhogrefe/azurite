@@ -49,9 +49,9 @@ theorem mulWithCarry_eq (a b c : UInt64) :
   have hbd : (wideMul a b).1.toNat * 2^64 + (wideMul a b).2.toNat ≤
       (2^64 - 1) * (2^64 - 1) := by rw [hwm]; exact hab
   have key := mulWithCarry_aux (wideMul a b).1 (wideMul a b).2 c hbd
-  show (if (wideMul a b).2 + c < (wideMul a b).2
-        then (wideMul a b).1 + 1 else (wideMul a b).1).toNat * 2^64
+  show ((wideMul a b).1 +
+        (if (wideMul a b).2 + c < (wideMul a b).2 then 1 else 0)).toNat * 2^64
       + ((wideMul a b).2 + c).toNat = a.toNat * b.toNat + c.toNat
-  rw [key, hwm]
+  rw [add_ite_zero, key, hwm]
 
 end UInt64

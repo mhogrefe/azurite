@@ -1,4 +1,5 @@
 import Azurite.AzRat.LogBase2
+import Azurite.AzRat.Parse
 import Azurite.AzRat.Equiv.Basic
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.NormalizedCompare
@@ -222,14 +223,14 @@ lemma ceilingLogBase2Abs_eq (q : AzRat) (hq : q.num ≠ 0) :
     have h_cmp := logb_diff_le q.num q.den hN hD h_gt_ne
     exact ⟨by linarith [h_sizeN.1, h_sizeD.2], by linarith [h_cmp]⟩
 
--- Computational sanity checks (values match the `Rat` version).
-#guard floorLogBase2Abs (ofRat (1 / 3)) == -2
-#guard floorLogBase2Abs (ofRat (1 / 8)) == -3
-#guard floorLogBase2Abs (ofRat (-22 / 7)) == 1
-#guard floorLogBase2Abs (ofRat 100) == 6
-#guard ceilingLogBase2Abs (ofRat (1 / 3)) == -1
-#guard ceilingLogBase2Abs (ofRat (22 / 7)) == 2
-#guard ceilingLogBase2Abs (ofRat 100) == 7
-#guard ceilingLogBase2Abs (ofRat (-4294967297)) == 33
+-- Computational sanity checks.
+#guard (floorLogBase2Abs <$> parse "1/3") == some (-2)
+#guard (floorLogBase2Abs <$> parse "1/8") == some (-3)
+#guard (floorLogBase2Abs <$> parse "-22/7") == some 1
+#guard (floorLogBase2Abs <$> parse "100") == some 6
+#guard (ceilingLogBase2Abs <$> parse "1/3") == some (-1)
+#guard (ceilingLogBase2Abs <$> parse "22/7") == some 2
+#guard (ceilingLogBase2Abs <$> parse "100") == some 7
+#guard (ceilingLogBase2Abs <$> parse "-4294967297") == some 33
 
 end Azurite.AzRat

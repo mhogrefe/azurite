@@ -1,4 +1,5 @@
 import Azurite.AzRat.Basic
+import Azurite.AzRat.Parse
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.Basic
 import Mathlib.Data.Rat.Defs
@@ -80,11 +81,12 @@ theorem ofRat_toRat (q : AzRat) : ofRat (toRat q) = q := by
     show AzNat.ofNat (toRat q).den = q.den
     rw [hden, AzNat.ofNat_toNat]
 
--- Both conversions compute.
-#guard toRat (ofRat (3 / 4)) == (3 / 4 : ℚ)
-#guard toRat (ofRat (-7 / 12)) == (-7 / 12 : ℚ)
-#guard toRat (ofRat 0) == (0 : ℚ)
-#guard toRat (ofRat 5) == (5 : ℚ)
-#guard ofRat (toRat (ofRat (-2 / 9))) == ofRat (-2 / 9)
+-- `ofRat` computes (string-anchored via `toString`/`parse`; the `toRat`
+-- direction is covered by the round-trip theorems above).
+#guard (ofRat (3 / 4)).toString == "3/4"
+#guard (ofRat (-7 / 12)).toString == "-7/12"
+#guard (ofRat 0).toString == "0"
+#guard (ofRat 5).toString == "5"
+#guard parse ((ofRat (-2 / 9)).toString) == some (ofRat (-2 / 9))
 
 end Azurite.AzRat

@@ -49,6 +49,7 @@ theorem mulAddWithCarry_eq (a b acc c : UInt64) :
       = a.toNat * b.toNat + acc.toNat + c.toNat := by
   unfold mulAddWithCarry
   dsimp
+  rw [add_ite_zero]
   have hmwc : (mulWithCarry a b c).1.toNat * 2^64 + (mulWithCarry a b c).2.toNat
       = a.toNat * b.toNat + c.toNat := mulWithCarry_eq a b c
   have ha := _root_.UInt64.toNat_lt a

@@ -13,9 +13,19 @@
 # Root-file imports are also checked to be alphabetically sorted and
 # duplicate-free.
 #
-# Usage: ./scripts/check_and_build.sh [--axioms]
+# The Lean build and the blueprint pipeline (Asymptote diagrams, then the
+# PDF and web blueprints in parallel) are independent, so they run
+# concurrently: blueprint logs are captured to a temp dir and summarized at
+# the end, while `lake build` streams live. The machine-wide build lock
+# (`/tmp/malachite-bench.lock.d`, see ~/.claude/CLAUDE.md) is acquired for
+# the duration: concurrent heavy builds from other sessions have OOM'd this
+# machine.
+#
+# Usage: ./scripts/check_and_build.sh [--axioms] [--serial]
 #   --axioms  After building, verify all Azurite declarations use only
 #             allowed axioms (fails on sorryAx or unexpected axioms)
+#   --serial  Run the build steps sequentially (pre-parallel behavior),
+#             e.g. when debugging blueprint/diagram failures interactively
 
 set -euo pipefail
 
@@ -24,9 +34,11 @@ set -euo pipefail
 export LC_ALL=C
 
 CHECK_AXIOMS=false
+SERIAL=false
 for arg in "$@"; do
   case "$arg" in
     --axioms) CHECK_AXIOMS=true ;;
+    --serial) SERIAL=true ;;
     *) echo "Unknown option: $arg"; exit 1 ;;
   esac
 done
@@ -135,25 +147,33 @@ if [[ -n "$bench_missing" ]]; then
 fi
 echo "$BENCH_MAIN: covers all Benchmark and Tune modules."
 
-echo "Running lake build..."
-echo ""
+# ── 4. Acquire the machine-wide build lock ──
+# Multiple Claude/dev sessions run concurrently on this machine; concurrent
+# heavy builds have OOM'd it (see ~/.claude/CLAUDE.md, "Benchmark/build lock").
 
-# ── 8. Build ──
-
-lake build
-build_status=$?
-
-if [[ $build_status -ne 0 ]]; then
-  echo ""
-  echo "Build failed."
-  exit $build_status
+LOCK_DIR=/tmp/malachite-bench.lock.d
+if mkdir "$LOCK_DIR" 2>/dev/null; then
+  echo "check_and_build.sh $(date '+%F %T')" > "$LOCK_DIR/info"
+  trap 'rm -rf "$LOCK_DIR"' EXIT
+else
+  echo "Machine-wide build lock is held:"
+  cat "$LOCK_DIR/info" 2>/dev/null || true
+  echo "Refusing to start a heavy build; re-run when the holder finishes."
+  echo "(If the lock is stale — holder >2h old — remove $LOCK_DIR by hand.)"
+  exit 1
 fi
 
-# ── 9. Compile Asymptote diagrams ──
+# Cap Lean parallelism unless the caller overrides: full parallelism has
+# OOM'd this machine.
+export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
-ASY_DIR="blueprint/src/asymptote"
-if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
-  echo ""
+# ── 5. Blueprint pipeline (diagrams, then PDF ∥ web) ──
+
+# ── 5a. Compile Asymptote diagrams ──
+
+build_diagrams() {
+  local ASY_DIR="blueprint/src/asymptote"
+  [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null || return 0
   echo "Compiling Asymptote diagrams (in parallel)..."
   # dvisvgm (used by `asy -f svg`) needs libgs to convert LaTeX-typeset
   # axis labels embedded as PostScript specials. Point LIBGS at the
@@ -222,26 +242,110 @@ if [[ -d "$ASY_DIR" ]] && compgen -G "$ASY_DIR/*.asy" >/dev/null; then
      wait "$pid" || status=1
    done
    exit "$status")
+}
+
+# ── 5b. Diagrams, then `leanblueprint pdf` and `leanblueprint web` in
+#        parallel (both only read blueprint/src; pdf writes to print/, web
+#        to web/, so they do not collide) ──
+
+BP_LOG_DIR=$(mktemp -d /tmp/azurite-blueprint-logs.XXXXXX)
+
+build_blueprint() {
+  if ! build_diagrams > "$BP_LOG_DIR/diagrams.log" 2>&1; then
+    echo "diagrams" >> "$BP_LOG_DIR/failed"
+    return 1
+  fi
+  leanblueprint pdf > "$BP_LOG_DIR/pdf.log" 2>&1 &
+  local pdf_pid=$!
+  leanblueprint web > "$BP_LOG_DIR/web.log" 2>&1 &
+  local web_pid=$!
+  local st=0
+  wait "$pdf_pid" || { echo "pdf" >> "$BP_LOG_DIR/failed"; st=1; }
+  wait "$web_pid" || { echo "web" >> "$BP_LOG_DIR/failed"; st=1; }
+  return "$st"
+}
+
+report_blueprint() {
+  # $1 = blueprint status
+  if [[ "$1" -eq 0 ]]; then
+    echo "Blueprint: diagrams ✓  pdf ✓  web ✓  (logs in $BP_LOG_DIR)"
+  else
+    echo "Blueprint FAILED in: $(tr '\n' ' ' < "$BP_LOG_DIR/failed")"
+    for what in $(cat "$BP_LOG_DIR/failed"); do
+      echo ""
+      echo "── tail of $BP_LOG_DIR/$what.log ──"
+      tail -n 40 "$BP_LOG_DIR/$what.log"
+    done
+  fi
+}
+
+# ── 6. Build (Lean live in the foreground; blueprint in the background) ──
+
+overall_status=0
+
+if [[ "$SERIAL" == true ]]; then
+  echo "Running lake build..."
+  echo ""
+  lake build
+
+  echo ""
+  build_diagrams
+
+  echo ""
+  echo "Running leanblueprint pdf..."
+  leanblueprint pdf
+
+  echo ""
+  echo "Running leanblueprint web..."
+  leanblueprint web
+else
+  build_blueprint &
+  bp_pid=$!
+
+  echo "Running lake build (blueprint building in parallel; logs in $BP_LOG_DIR)..."
+  echo ""
+  lake_status=0
+  lake build || lake_status=$?
+
+  if [[ "$lake_status" -ne 0 ]]; then
+    echo ""
+    echo "Lean build failed; waiting for the blueprint pipeline to finish..."
+    overall_status=$lake_status
+  fi
+
+  # ── 7. Check axioms (opt-in; needs the Lean build, overlaps the blueprint) ──
+
+  if [[ "$CHECK_AXIOMS" == true && "$lake_status" -eq 0 ]]; then
+    echo ""
+    echo "Checking axioms (blueprint still building in parallel)..."
+    echo ""
+    lake env lean scripts/check_axioms.lean || overall_status=1
+  fi
+
+  bp_status=0
+  wait "$bp_pid" || bp_status=1
+  echo ""
+  report_blueprint "$bp_status"
+  [[ "$bp_status" -ne 0 ]] && overall_status=1
 fi
 
-# ── 10. Build the blueprint (PDF and web) ──
+# ── 8. Axiom check for --serial mode, and final summary ──
 
-echo ""
-echo "Running leanblueprint pdf..."
-leanblueprint pdf
-
-echo ""
-echo "Running leanblueprint web..."
-leanblueprint web
-
-# ── 11. Check axioms (opt-in) ──
-
-if [[ "$CHECK_AXIOMS" == true ]]; then
+if [[ "$SERIAL" == true && "$CHECK_AXIOMS" == true ]]; then
   echo ""
   echo "Checking axioms..."
   echo ""
-  lake env lean scripts/check_axioms.lean
-else
-  echo ""
-  echo "Build succeeded. (Run with --axioms to check axioms)"
+  lake env lean scripts/check_axioms.lean || overall_status=1
 fi
+
+echo ""
+if [[ "$overall_status" -eq 0 ]]; then
+  if [[ "$CHECK_AXIOMS" == true ]]; then
+    echo "Build succeeded (axioms checked)."
+  else
+    echo "Build succeeded. (Run with --axioms to check axioms)"
+  fi
+else
+  echo "BUILD FAILED."
+fi
+exit "$overall_status"

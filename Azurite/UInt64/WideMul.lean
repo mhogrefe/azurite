@@ -14,8 +14,12 @@ def wideMul (x y : UInt64) : UInt64 × UInt64 :=
   let (x₀y₀hi, x₀y₀lo) := splitInHalf x₀y₀
   let middle1 : UInt64 := x₀y₁ + x₀y₀hi.toUInt64
   let middle2 : UInt64 := middle1 + x₁y₀
+  -- The carry into the high word is added as a conditional *scalar* rather
+  -- than by branching on the result: keeping `(z₁, z₀)` out of conditional
+  -- control flow lets codegen hold the pair in registers instead of boxing
+  -- it at a control-flow join point.
   let carry : Bool := middle2 < middle1
-  let x₁y₁' : UInt64 := if carry then x₁y₁ + ((1 : UInt64) <<< 32) else x₁y₁
+  let x₁y₁' : UInt64 := x₁y₁ + (if carry then (1 : UInt64) <<< 32 else 0)
   let z₁ : UInt64 := x₁y₁' + wideHiHalf middle2
   let z₀ : UInt64 := joinHalves (loHalf middle2) x₀y₀lo
   (z₁, z₀)

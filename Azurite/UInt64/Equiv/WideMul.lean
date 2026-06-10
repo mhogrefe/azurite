@@ -25,6 +25,14 @@ private lemma loHalf_toNat_eq (u : UInt64) : u.loHalf.toNat = u.toNat % 2^32 := 
   unfold loHalf
   rw [_root_.UInt64.toNat_toUInt32]
 
+/-- Adding a conditional value equals the conditional of the additions.
+Bridges the branchless carry shape used by the implementations
+(`z + (if P then w else 0)`, which codegen keeps scalar) to the branching
+shape (`if P then z + w else z`) that the correctness proofs case on. -/
+theorem add_ite_zero (z w : UInt64) (P : Prop) [Decidable P] :
+    z + (if P then w else 0) = if P then z + w else z := by
+  by_cases h : P <;> simp [h]
+
 /-- Pure-Nat version of the wideMul correctness identity. -/
 private lemma wideMul_nat_eq
     (Xh Xl Yh Yl : Nat) (hXh : Xh < 2^32) (hXl : Xl < 2^32) (hYh : Yh < 2^32) (hYl : Yl < 2^32)
@@ -248,6 +256,7 @@ theorem toNat_wideMul (x y : UInt64) :
   -- Now unfold wideMul and reduce to wideMul_nat_eq
   unfold wideMul
   simp only [splitInHalf]
+  rw [add_ite_zero]
   split_ifs with h_if
   · -- carry = true
     have hK_true :

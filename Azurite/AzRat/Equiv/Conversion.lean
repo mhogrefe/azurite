@@ -1,4 +1,5 @@
 import Azurite.AzRat.Conversion
+import Azurite.AzRat.ToString
 import Azurite.AzRat.Equiv.Basic
 import Azurite.AzInt.Equiv.Conversion
 
@@ -65,8 +66,8 @@ theorem Int8.toRat_toAzRat (i : Int8) : Azurite.AzRat.toRat i.toAzRat = (i.toInt
 theorem ISize.toRat_toAzRat (i : ISize) : Azurite.AzRat.toRat i.toAzRat = (i.toInt : ℚ) := by
   rw [ISize.toAzRat, Azurite.AzRat.toRat_toAzRat_int, ISize.toInt_toAzInt]
 
--- The conversions compute.
-#guard Azurite.AzRat.toRat (Azurite.AzNat.ofNat 7).toAzRat == (7 : ℚ)
-#guard Azurite.AzRat.toRat (Azurite.AzInt.ofInt (-5)).toAzRat == (-5 : ℚ)
-#guard Azurite.AzRat.toRat (200 : UInt8).toAzRat == (200 : ℚ)
-#guard Azurite.AzRat.toRat (-13 : Int64).toAzRat == (-13 : ℚ)
+-- The conversions compute (string-anchored via `AzRat.toString`).
+#guard (Azurite.AzNat.ofNat 7).toAzRat.toString == "7"
+#guard (Azurite.AzInt.ofInt (-5)).toAzRat.toString == "-5"
+#guard (200 : UInt8).toAzRat.toString == "200"
+#guard (-13 : Int64).toAzRat.toString == "-13"
