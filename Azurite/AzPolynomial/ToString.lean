@@ -27,7 +27,7 @@ def toChars (p : AzPolynomial R) : String :=
 
 end AzPolynomial
 
-instance {R : Type _} [Semiring R] [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] :
+instance instToStringAzPolynomial {R : Type _} [Semiring R] [DecidableEq R] [NeZero (1 : R)] [ParsableCoeff R] :
     ToString (AzPolynomial R) where
   toString := AzPolynomial.toChars
 

@@ -368,10 +368,12 @@ import Azurite.AzRat.Equiv.Conversion
 import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Parse
 import Azurite.AzRat.Equiv.Round
+import Azurite.AzRat.Equiv.Unary
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Round
 import Azurite.AzRat.ToString
+import Azurite.AzRat.Unary
 import Azurite.AzVector.Basic
 import Azurite.AzVector.Basis
 import Azurite.AzVector.Cross

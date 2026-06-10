@@ -146,7 +146,7 @@ instance : AddMonoid (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.addMonoid AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_add (fun _ _ => toMvPoly_nsmul _ _)
 
-instance : AddCommMonoid (AzMvPolynomial n R ord) := fast_instance%
+instance instAzMvPolynomialAddCommMonoid : AddCommMonoid (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.addCommMonoid AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_add (fun _ _ => toMvPoly_nsmul _ _)
 
@@ -177,7 +177,7 @@ instance : NonUnitalCommSemiring (AzMvPolynomial n R ord) := fast_instance%
 
 /-- `AzMvPolynomial n R ord` forms a semiring when `R` is a commutative semiring
     with no zero divisors. -/
-instance : Semiring (AzMvPolynomial n R ord) where
+instance instAzMvPolynomialSemiring : Semiring (AzMvPolynomial n R ord) where
   __ := (inferInstance : NonUnitalSemiring (AzMvPolynomial n R ord))
   one_mul := one_mul
   mul_one := mul_one
@@ -196,7 +196,7 @@ instance : Semiring (AzMvPolynomial n R ord) where
     push_cast; ring)
 
 /-- `AzMvPolynomial n R ord` forms a commutative semiring. -/
-instance : CommSemiring (AzMvPolynomial n R ord) where
+instance instAzMvPolynomialCommSemiring : CommSemiring (AzMvPolynomial n R ord) where
   __ := (inferInstance : Semiring (AzMvPolynomial n R ord))
   mul_comm := mul_comm
 
@@ -253,7 +253,7 @@ instance : NoZeroDivisors (AzMvPolynomial n R ord) where
 
 /-- `AzMvPolynomial n R ord` is an `R`-algebra via the constant polynomial
     embedding `C`. -/
-instance : Algebra R (AzMvPolynomial n R ord) where
+instance instAzMvPolynomialAlgebra : Algebra R (AzMvPolynomial n R ord) where
   algebraMap := AzMvPolynomial.CHom
   commutes' := fun _ _ => mul_comm _ _
   smul_def' := fun r p => toMvPoly_injective (by
@@ -277,7 +277,7 @@ instance : AddGroup (AzMvPolynomial n R ord) := fast_instance%
     toMvPoly_zero toMvPoly_add toMvPoly_neg toMvPoly_sub
     (fun _ _ => toMvPoly_nsmul _ _) (fun _ _ => toMvPoly_zsmul _ _)
 
-instance : AddCommGroup (AzMvPolynomial n R ord) := fast_instance%
+instance instAzMvPolynomialAddCommGroup : AddCommGroup (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.addCommGroup AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_add toMvPoly_neg toMvPoly_sub
     (fun _ _ => toMvPoly_nsmul _ _) (fun _ _ => toMvPoly_zsmul _ _)
@@ -304,7 +304,7 @@ instance : NonUnitalCommRing (AzMvPolynomial n R ord) := fast_instance%
     toMvPoly_zero toMvPoly_add toMvPoly_mul toMvPoly_neg toMvPoly_sub
     (fun _ _ => toMvPoly_nsmul _ _) (fun _ _ => toMvPoly_zsmul _ _)
 
-instance : Ring (AzMvPolynomial n R ord) := fast_instance%
+instance instAzMvPolynomialRing : Ring (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.ring AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_mul
     toMvPoly_neg toMvPoly_sub
@@ -313,7 +313,7 @@ instance : Ring (AzMvPolynomial n R ord) := fast_instance%
 
 /-- `AzMvPolynomial n R ord` forms a commutative ring when `R` is a
     commutative ring with no zero divisors. -/
-instance : CommRing (AzMvPolynomial n R ord) := fast_instance%
+instance instAzMvPolynomialCommRing : CommRing (AzMvPolynomial n R ord) := fast_instance%
   Function.Injective.commRing AzMvPolynomial.toMvPoly toMvPoly_injective
     toMvPoly_zero toMvPoly_one toMvPoly_add toMvPoly_mul
     toMvPoly_neg toMvPoly_sub

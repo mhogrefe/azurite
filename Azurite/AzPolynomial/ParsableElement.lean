@@ -51,13 +51,13 @@ private def AzPolynomial.toCharList (p : AzPolynomial R) : List Char :=
 private def AzPolynomial.parseCharList (cs : List Char) : Option (AzPolynomial R) :=
   parseAzPolynomial (String.ofList cs)
 
-private theorem AzPolynomial.parseCharList_toCharList (p : AzPolynomial R) :
+theorem AzPolynomial.parseCharList_toCharList (p : AzPolynomial R) :
     AzPolynomial.parseCharList (AzPolynomial.toCharList p) = some p := by
   unfold AzPolynomial.parseCharList AzPolynomial.toCharList
   rw [String.ofList_toList]
   exact parseAzPolynomial_toChars p
 
-private theorem AzPolynomial.no_char_toCharList (p : AzPolynomial R) (c : Char)
+theorem AzPolynomial.no_char_toCharList (p : AzPolynomial R) (c : Char)
     (hcoeff : ∀ r : R, c ∉ ParsableCoeff.toChars r)
     (hvar : ∀ v : XyzVar 1, c ∉ ParsableVar.toChars v)
     (hdig : ∀ k : ℕ, c ∉ natToChars k)

@@ -45,6 +45,6 @@ def AzMvPolynomial.smul (r : R) (p : AzMvPolynomial n R ord) :
   ⟨(p.terms.toList.filterMap (smulMonomial r)).toArray,
    by rw [List.toList_toArray]; exact pairwise_gt_filterMap_smul r p.sorted⟩
 
-instance : SMul R (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.smul⟩
+instance instAzMvPolynomialSMul : SMul R (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.smul⟩
 
 end Azurite

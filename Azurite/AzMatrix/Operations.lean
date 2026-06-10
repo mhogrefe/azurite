@@ -9,27 +9,27 @@ variable {R : Type _} {m n : Nat}
 
 /-! ### Zero -/
 
-instance [Zero R] : Zero (AzMatrix R m n) :=
+instance instAzMatrixZero [Zero R] : Zero (AzMatrix R m n) :=
   ⟨⟨Vector.ofFn (fun _ => Vector.ofFn (fun _ => 0))⟩⟩
 
 /-! ### Addition -/
 
-instance [Add R] : Add (AzMatrix R m n) :=
+instance instAzMatrixAdd [Add R] : Add (AzMatrix R m n) :=
   ⟨fun M N => M.zip (· + ·) N⟩
 
 /-! ### Subtraction -/
 
-instance [Sub R] : Sub (AzMatrix R m n) :=
+instance instAzMatrixSub [Sub R] : Sub (AzMatrix R m n) :=
   ⟨fun M N => M.zip (· - ·) N⟩
 
 /-! ### Negation -/
 
-instance [Neg R] : Neg (AzMatrix R m n) :=
+instance instAzMatrixNeg [Neg R] : Neg (AzMatrix R m n) :=
   ⟨fun M => M.map (- ·)⟩
 
 /-! ### Scalar multiplication -/
 
-instance [SMul α R] : SMul α (AzMatrix R m n) :=
+instance instAzMatrixSMul [SMul α R] : SMul α (AzMatrix R m n) :=
   ⟨fun c M => M.map (c • ·)⟩
 
 /-! ### Identity -/

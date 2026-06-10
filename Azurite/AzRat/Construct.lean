@@ -18,7 +18,8 @@ canonicalizes zero and discharges the `AzRat` invariants:
   `x / gcd x y` for nonzero `x`;
 * `reduced` is `Nat.coprime_div_gcd_div_gcd` across the `coprime_iff` bridge.
 
-Also provides the canonical zero (`OfNat`/`Zero` instances), `+0/1`.
+Also provides the canonical zero `+0/1` and one `+1/1` (`OfNat`/`Zero`/`One`
+instances, mirroring `AzNat`/`AzInt`), and `Inhabited` with default `0`.
 -/
 
 namespace Azurite.AzRat
@@ -33,6 +34,19 @@ instance : OfNat AzRat 0 :=
        rw [AzNat.toNat_one]; exact Nat.coprime_one_right _) }⟩
 
 instance : Zero AzRat := ⟨0⟩
+
+instance : OfNat AzRat 1 :=
+  ⟨{ sign := true
+     num := 1
+     den := 1
+     den_nz := by decide
+     zero_sign := fun _ => rfl
+     reduced := (AzNat.coprime_iff 1 1).mpr (by
+       rw [AzNat.toNat_one]; exact Nat.coprime_one_right _) }⟩
+
+instance : One AzRat := ⟨1⟩
+
+instance : Inhabited AzRat := ⟨0⟩
 
 /-- Build the reduced fraction `num / den` with sign `s` (`true` = nonnegative).
 Returns the canonical zero when `den = 0` (the `mkRat` convention) or `num = 0`,

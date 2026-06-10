@@ -151,7 +151,7 @@ omit [CharZero K] in
 /-- The `k`-th coefficient of `polyFromNewtonSumsMonic N` matches the
     recursive specification `coeffFromNewtonSums N (N.size - 1) k`,
     when `N` is nonempty. -/
-private lemma polyFromNewtonSumsMonic_coeff_eq {N : Array K}
+lemma polyFromNewtonSumsMonic_coeff_eq {N : Array K}
     (hN : 0 < N.size) (k : ℕ) :
     (polyFromNewtonSumsMonic N).coeff k = coeffFromNewtonSums N (N.size - 1) k := by
   set p := N.size - 1 with hp_def
@@ -190,7 +190,7 @@ omit [CharZero K] in
     `(k : K) · P.coeff k = ∑_{m = k}^{p} P.coeff m · P.newtonSumMonic (m - k)`.
     Derived from BPR Proposition 4.8 (which lives in an algebraic
     closure) by injectivity of the `algebraMap` into that closure. -/
-private lemma newtonSumMonic_recurrence (P : Azurite.AzPolynomial K)
+lemma newtonSumMonic_recurrence (P : Azurite.AzPolynomial K)
     (hMonic : P.Monic) (k : ℕ) (hk : k ≤ P.natDegree) :
     ((k : ℕ) : K) * P.coeff k =
     ∑ m ∈ Finset.Ico k (P.natDegree + 1),

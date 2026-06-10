@@ -55,7 +55,7 @@ private theorem gcd_mul_pow2_left (a b k : Nat) :
 /-! ### Bridge lemmas: limb operations to Nat operations -/
 
 /-- `shrLimbs a sh` computes `toNatLimbsList a.toList / 2 ^ sh`. -/
-private theorem toNatLimbsList_shrLimbs (a : Array UInt64) (sh : Nat) :
+theorem toNatLimbsList_shrLimbs (a : Array UInt64) (sh : Nat) :
     toNatLimbsList (shrLimbs a sh).toList = toNatLimbsList a.toList / 2 ^ sh := by
   unfold shrLimbs
   dsimp only
@@ -205,7 +205,7 @@ private theorem trailingZerosLimbs_raw_eq (a : Array UInt64)
       trailingZerosLimbs_eq (ofLimbs a) h_size, h_toNat]
 
 /-- `makeOddLimbs` computes division by the 2-part. -/
-private theorem toNatLimbsList_makeOddLimbs (a : Array UInt64)
+theorem toNatLimbsList_makeOddLimbs (a : Array UInt64)
     (ha : toNatLimbsList a.toList ≠ 0) :
     toNatLimbsList (makeOddLimbs a).toList =
       toNatLimbsList a.toList / 2 ^ padicValNat 2 (toNatLimbsList a.toList) := by
@@ -280,7 +280,7 @@ private theorem toNatLimbsList_ge_of_trimmed (a : Array UInt64)
     - `subSameLengthLimbs_toNat` / `subGeqLimbs_toNat` (subtraction)
     - `toNatLimbsList_makeOddLimbs` (odd part extraction)
     to show each recursive call preserves `Nat.gcd` and decreases the measure. -/
-private theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
+theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
     (ha : 0 < a.size) (hb : 0 < b.size)
     (ha_odd : Odd (toNatLimbsList a.toList))
     (hb_odd : Odd (toNatLimbsList b.toList))

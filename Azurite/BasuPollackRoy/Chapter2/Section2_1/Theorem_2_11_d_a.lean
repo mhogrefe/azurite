@@ -194,7 +194,7 @@ theorem decompose_neg_one_in_adjoinRoot {a : R} (ha : ¬ IsSquare a)
 /-! ## Part 1: isSquare_or_isSquare_neg -/
 
 /-- If c is a nonzero SoS, then AdjoinRoot(X²−c) is semireal. -/
-private theorem adjoinRoot_sq_sub_isSemireal_of_isSumSq
+theorem adjoinRoot_sq_sub_isSemireal_of_isSumSq
     {c : R} (hc : IsSumSq c) (hc_sq : ¬ IsSquare c) (hR_real : Azurite.BPR.IsRealField R) :
     IsSemireal (AdjoinRoot (sqSubC c)) := by
   rw [isSemireal_iff_not_isSumSq_neg_one]
@@ -258,7 +258,7 @@ theorem isSquare_or_isSquare_neg_of_noext
 /-! ## Part 2: Every odd-degree polynomial has a root -/
 
 /-- In a semireal field, a² + (sum of squares) ≠ 0 when a ≠ 0. -/
-private theorem sq_add_isSumSq_ne_zero [IsSemireal R] {a : R} (ha : a ≠ 0)
+theorem sq_add_isSumSq_ne_zero [IsSemireal R] {a : R} (ha : a ≠ 0)
     {s : R} (hs : IsSumSq s) : a * a + s ≠ 0 := by
   intro h
   have hs_neg : IsSumSq (-(a * a)) := by
@@ -271,7 +271,7 @@ private theorem sq_add_isSumSq_ne_zero [IsSemireal R] {a : R} (ha : a ≠ 0)
     exact IsSumSq.mul hs_neg hinv)
 
 /-- A nonzero sum of squares in R[X] has even degree (when R is semireal). -/
-private theorem even_natDegree_isSumSq [IsSemireal R]
+theorem even_natDegree_isSumSq [IsSemireal R]
     {S : R[X]} (hS : IsSumSq S) (hne : S ≠ 0) :
     Even S.natDegree ∧ IsSumSq S.leadingCoeff := by
   induction hS with
@@ -313,7 +313,7 @@ private theorem even_natDegree_isSumSq [IsSemireal R]
         exact IsSumSq.mul_self _
 
 /-- R[X] is semireal when R is semireal. -/
-private theorem polynomial_isSemireal [IsSemireal R] : IsSemireal R[X] := by
+theorem polynomial_isSemireal [IsSemireal R] : IsSemireal R[X] := by
   rw [isSemireal_iff_not_isSumSq_neg_one]
   intro hss
   have key : ∀ (s : R[X]), IsSumSq s → IsSumSq (eval (0 : R) s) := by
@@ -325,7 +325,7 @@ private theorem polynomial_isSemireal [IsSemireal R] : IsSemireal R[X] := by
   exact (isSemireal_iff_not_isSumSq_neg_one.mp ‹IsSemireal R›) heval
 
 /-- AdjoinRoot of a nonzero polynomial is algebraic. -/
-private theorem adjoinRoot_isAlgebraic' {p : R[X]} (hp : p ≠ 0) :
+theorem adjoinRoot_isAlgebraic' {p : R[X]} (hp : p ≠ 0) :
     Algebra.IsAlgebraic R (AdjoinRoot p) := by
   haveI : Module.Finite R (AdjoinRoot p) := (AdjoinRoot.powerBasis hp).finite
   exact Algebra.IsAlgebraic.of_finite R _

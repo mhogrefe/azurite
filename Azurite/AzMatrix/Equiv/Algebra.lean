@@ -96,17 +96,17 @@ end RectangularData
 section Rectangular
 variable {R : Type _} {m n : Nat}
 
-instance [AddCommMonoid R] : AddCommMonoid (AzMatrix R m n) := fast_instance%
+instance instAzMatrixAddCommMonoid [AddCommMonoid R] : AddCommMonoid (AzMatrix R m n) := fast_instance%
   Function.Injective.addCommMonoid AzMatrix.toFn AzMatrix.toFn_injective
     AzMatrix.toFn_zero' AzMatrix.toFn_add' (fun M k => AzMatrix.toFn_nsmulAzM k M)
 
-instance [AddCommGroup R] : AddCommGroup (AzMatrix R m n) := fast_instance%
+instance instAzMatrixAddCommGroup [AddCommGroup R] : AddCommGroup (AzMatrix R m n) := fast_instance%
   Function.Injective.addCommGroup AzMatrix.toFn AzMatrix.toFn_injective
     AzMatrix.toFn_zero' AzMatrix.toFn_add' AzMatrix.toFn_neg' AzMatrix.toFn_sub'
     (fun M k => AzMatrix.toFn_nsmulAzM k M) (fun M k => AzMatrix.toFn_zsmulAzM k M)
 
 /-- `AzMatrix R m n` forms an `R`-module when `R` is a commutative semiring. -/
-instance [CommSemiring R] : Module R (AzMatrix R m n) :=
+instance instAzMatrixModule [CommSemiring R] : Module R (AzMatrix R m n) :=
   Function.Injective.module R
     { toFun := AzMatrix.toFn,
       map_zero' := AzMatrix.toFn_zero',
@@ -148,7 +148,7 @@ section SquareData
 variable {R : Type _} [CommSemiring R] {n : Nat}
 
 /-- One (identity matrix) for square matrices. -/
-instance : One (AzMatrix R n n) := ⟨AzMatrix.identity⟩
+instance instAzMatrixSqOne : One (AzMatrix R n n) := ⟨AzMatrix.identity⟩
 
 /-- Explicit homogeneous multiplication for square matrices. -/
 instance instMulAzMatrixSq : Mul (AzMatrix R n n) := ⟨fun A B => A.mul B⟩
@@ -187,7 +187,7 @@ theorem toMat_nsmul (k : ℕ) (M : AzMatrix R n n) :
 @[irreducible] def npowSq (A : AzMatrix R n n) (k : ℕ) : AzMatrix R n n :=
   Azurite.slidingWindowPow A k
 
-instance : Pow (AzMatrix R n n) ℕ := ⟨npowSq⟩
+instance instAzMatrixSqPow : Pow (AzMatrix R n n) ℕ := ⟨npowSq⟩
 
 /-- `toMat` preserves sliding-window exponentiation — the `f = toMat` case of the generic
 `map_slidingWindowPow`, no re-induction needed. -/
@@ -201,7 +201,7 @@ theorem toMat_npow (A : AzMatrix R n n) (k : ℕ) :
 @[irreducible] def natCastSq (k : ℕ) : AzMatrix R n n :=
   AzMatrix.ofFn ((k : Matrix (Fin n) (Fin n) R))
 
-instance : NatCast (AzMatrix R n n) := ⟨natCastSq⟩
+instance instAzMatrixSqNatCast : NatCast (AzMatrix R n n) := ⟨natCastSq⟩
 
 theorem toMat_natCast (k : ℕ) :
     toMat ((k : AzMatrix R n n)) = (k : Matrix (Fin n) (Fin n) R) := by
@@ -216,19 +216,19 @@ end SquareData
 section SemiringSection
 variable {R : Type _} [CommSemiring R] {n : Nat}
 
-instance : Monoid (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqMonoid : Monoid (AzMatrix R n n) := fast_instance%
   Function.Injective.monoid toMat toMat_injective
     toMat_one toMat_mul toMat_npow
 
-instance : NonUnitalNonAssocSemiring (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonUnitalNonAssocSemiring : NonUnitalNonAssocSemiring (AzMatrix R n n) := fast_instance%
   Function.Injective.nonUnitalNonAssocSemiring toMat toMat_injective
     toMat_zero toMat_add toMat_mul (fun _ _ => toMat_nsmul _ _)
 
-instance : NonUnitalSemiring (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonUnitalSemiring : NonUnitalSemiring (AzMatrix R n n) := fast_instance%
   Function.Injective.nonUnitalSemiring toMat toMat_injective
     toMat_zero toMat_add toMat_mul (fun _ _ => toMat_nsmul _ _)
 
-instance : NonAssocSemiring (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonAssocSemiring : NonAssocSemiring (AzMatrix R n n) := fast_instance%
   Function.Injective.nonAssocSemiring toMat toMat_injective
     toMat_zero toMat_one toMat_add toMat_mul (fun _ _ => toMat_nsmul _ _) toMat_natCast
 
@@ -238,7 +238,7 @@ instance : NonAssocSemiring (AzMatrix R n n) := fast_instance%
     that abbrev's `npow` field would otherwise pull in
     `Function.Injective.monoidWithZero` and force the instance to be
     noncomputable. -/
-instance : Semiring (AzMatrix R n n) where
+instance instAzMatrixSqSemiring : Semiring (AzMatrix R n n) where
   __ := (inferInstance : NonUnitalSemiring (AzMatrix R n n))
   one_mul := one_mul
   mul_one := mul_one
@@ -276,7 +276,7 @@ theorem toMat_zsmul (M : AzMatrix R n n) (k : ℤ) :
 @[irreducible] def intCastSq (k : ℤ) : AzMatrix R n n :=
   AzMatrix.ofFn ((k : Matrix (Fin n) (Fin n) R))
 
-instance : IntCast (AzMatrix R n n) := ⟨intCastSq⟩
+instance instAzMatrixSqIntCast : IntCast (AzMatrix R n n) := ⟨intCastSq⟩
 
 theorem toMat_intCast (k : ℤ) :
     toMat ((k : AzMatrix R n n)) = (k : Matrix (Fin n) (Fin n) R) := by
@@ -284,23 +284,23 @@ theorem toMat_intCast (k : ℤ) :
   unfold toMat intCastSq
   ext i j; simp
 
-instance : NonUnitalNonAssocRing (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonUnitalNonAssocRing : NonUnitalNonAssocRing (AzMatrix R n n) := fast_instance%
   Function.Injective.nonUnitalNonAssocRing toMat toMat_injective
     toMat_zero toMat_add toMat_mul toMat_neg toMat_sub
     (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _)
 
-instance : NonUnitalRing (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonUnitalRing : NonUnitalRing (AzMatrix R n n) := fast_instance%
   Function.Injective.nonUnitalRing toMat toMat_injective
     toMat_zero toMat_add toMat_mul toMat_neg toMat_sub
     (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _)
 
-instance : NonAssocRing (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqNonAssocRing : NonAssocRing (AzMatrix R n n) := fast_instance%
   Function.Injective.nonAssocRing toMat toMat_injective
     toMat_zero toMat_one toMat_add toMat_mul toMat_neg toMat_sub
     (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _) toMat_natCast toMat_intCast
 
 /-- `AzMatrix R n n` forms a ring when `R` is a commutative ring. -/
-instance : Ring (AzMatrix R n n) := fast_instance%
+instance instAzMatrixSqRing : Ring (AzMatrix R n n) := fast_instance%
   Function.Injective.ring toMat toMat_injective
     toMat_zero toMat_one toMat_add toMat_mul toMat_neg toMat_sub
     (fun _ _ => toMat_nsmul _ _) (fun _ _ => toMat_zsmul _ _) toMat_npow

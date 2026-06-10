@@ -10,7 +10,7 @@ variable {R : Type _} {n : Nat}
 
 /-! ### Zero -/
 
-instance [Zero R] : Zero (AzVector R n) := ⟨⟨Vector.ofFn (fun _ => 0)⟩⟩
+instance instAzVectorZero [Zero R] : Zero (AzVector R n) := ⟨⟨Vector.ofFn (fun _ => 0)⟩⟩
 
 @[simp]
 theorem AzVector.toFn_zero [Zero R] :
@@ -27,7 +27,7 @@ theorem AzVector.get_zero [Zero R] (i : Fin n) :
 
 /-! ### Addition -/
 
-instance [Add R] : Add (AzVector R n) :=
+instance instAzVectorAdd [Add R] : Add (AzVector R n) :=
   ⟨fun v w => v.zip (· + ·) w⟩
 
 @[simp]
@@ -39,7 +39,7 @@ theorem AzVector.toFn_add [Add R] (v w : AzVector R n) :
 
 /-! ### Negation -/
 
-instance [Neg R] : Neg (AzVector R n) :=
+instance instAzVectorNeg [Neg R] : Neg (AzVector R n) :=
   ⟨fun v => v.map (- ·)⟩
 
 @[simp]
@@ -51,7 +51,7 @@ theorem AzVector.toFn_neg [Neg R] (v : AzVector R n) :
 
 /-! ### Subtraction -/
 
-instance [Sub R] : Sub (AzVector R n) :=
+instance instAzVectorSub [Sub R] : Sub (AzVector R n) :=
   ⟨fun v w => v.zip (· - ·) w⟩
 
 @[simp]
@@ -63,7 +63,7 @@ theorem AzVector.toFn_sub [Sub R] (v w : AzVector R n) :
 
 /-! ### Scalar multiplication -/
 
-instance [SMul α R] : SMul α (AzVector R n) :=
+instance instAzVectorSMul [SMul α R] : SMul α (AzVector R n) :=
   ⟨fun c v => v.map (c • ·)⟩
 
 @[simp]

@@ -298,6 +298,10 @@ if [[ "$SERIAL" == true ]]; then
   echo ""
   echo "Running leanblueprint web..."
   leanblueprint web
+
+  echo ""
+  echo "Checking blueprint \\lean declarations (checkdecls)..."
+  lake exe checkdecls blueprint/lean_decls || overall_status=1
 else
   build_blueprint &
   bp_pid=$!
@@ -327,6 +331,17 @@ else
   echo ""
   report_blueprint "$bp_status"
   [[ "$bp_status" -ne 0 ]] && overall_status=1
+
+  # ── 7b. Verify every blueprint \lean{} reference resolves (needs both
+  #        the fresh lean_decls from the web build and the built oleans) ──
+  if [[ "$lake_status" -eq 0 && "$bp_status" -eq 0 ]]; then
+    echo ""
+    echo "Checking blueprint \\lean declarations (checkdecls)..."
+    lake exe checkdecls blueprint/lean_decls || {
+      echo "Blueprint references stale declarations (see above)."
+      overall_status=1
+    }
+  fi
 fi
 
 # ── 8. Axiom check for --serial mode, and final summary ──

@@ -33,7 +33,7 @@ theorem ordered_field_isRealField : Azurite.BPR.IsRealField R :=
 
 /-- A root of p in the range of algebraMap would give a linear factor,
     contradicting irreducibility when deg > 1. -/
-private theorem root_not_real [IsAlgClosed (Ri R)]
+theorem root_not_real [IsAlgClosed (Ri R)]
     {p : R[X]} (hp : Irreducible p) (hdeg : 1 < p.natDegree)
     {α : Ri R} (hα : Polynomial.aeval α p = 0)  :
     (Ri.conj R) α ≠ α := by

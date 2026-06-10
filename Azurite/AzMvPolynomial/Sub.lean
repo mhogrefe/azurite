@@ -20,6 +20,6 @@ def AzMvPolynomial.sub (p q : AzMvPolynomial n R ord) : AzMvPolynomial n R ord :
    by rw [List.toList_toArray]
       exact mergeSorted_sorted Neg.neg neg_preserves_ne_zero _ _ p.sorted q.sorted⟩
 
-instance : Sub (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.sub⟩
+instance instAzMvPolynomialSub : Sub (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.sub⟩
 
 end Azurite

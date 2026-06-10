@@ -14,10 +14,10 @@ variable {R : Type _} {n : Nat}
 
 /-! ### Auxiliary nsmul/zsmul -/
 
-private def nsmulAz [AddMonoid R] (k : Nat) (v : AzVector R n) : AzVector R n :=
+def nsmulAz [AddMonoid R] (k : Nat) (v : AzVector R n) : AzVector R n :=
   AzVector.ofFn (k • v.toFn)
 
-private def zsmulAz [SubNegMonoid R] (k : Int) (v : AzVector R n) : AzVector R n :=
+def zsmulAz [SubNegMonoid R] (k : Int) (v : AzVector R n) : AzVector R n :=
   AzVector.ofFn (k • v.toFn)
 
 private theorem toFn_nsmulAz [AddMonoid R] (v : AzVector R n) (k : Nat) :
@@ -31,7 +31,7 @@ private theorem toFn_zsmulAz [SubNegMonoid R] (v : AzVector R n) (k : Int) :
 /-! ### AddCommMonoid -/
 
 /-- `AzVector R n` forms an additive commutative monoid. -/
-noncomputable instance [AddCommMonoid R] : AddCommMonoid (AzVector R n) :=
+noncomputable instance instAzVectorAddCommMonoid [AddCommMonoid R] : AddCommMonoid (AzVector R n) :=
   letI : SMul Nat (AzVector R n) := ⟨fun k v => nsmulAz k v⟩
   Function.Injective.addCommMonoid AzVector.toFn AzVector.toFn_injective
     AzVector.toFn_zero AzVector.toFn_add toFn_nsmulAz
@@ -39,7 +39,7 @@ noncomputable instance [AddCommMonoid R] : AddCommMonoid (AzVector R n) :=
 /-! ### AddCommGroup -/
 
 /-- `AzVector R n` forms an additive commutative group. -/
-noncomputable instance [AddCommGroup R] : AddCommGroup (AzVector R n) :=
+noncomputable instance instAzVectorAddCommGroup [AddCommGroup R] : AddCommGroup (AzVector R n) :=
   letI : SMul Nat (AzVector R n) := ⟨fun k v => nsmulAz k v⟩
   letI : SMul Int (AzVector R n) := ⟨fun k v => zsmulAz k v⟩
   Function.Injective.addCommGroup AzVector.toFn AzVector.toFn_injective
@@ -49,7 +49,7 @@ noncomputable instance [AddCommGroup R] : AddCommGroup (AzVector R n) :=
 /-! ### Module -/
 
 /-- `AzVector R n` forms an `R`-module when `R` is a commutative semiring. -/
-noncomputable instance [CommSemiring R] : Module R (AzVector R n) :=
+noncomputable instance instAzVectorModule [CommSemiring R] : Module R (AzVector R n) :=
   Function.Injective.module R
     { toFun := AzVector.toFn,
       map_zero' := AzVector.toFn_zero,

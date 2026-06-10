@@ -113,7 +113,7 @@ section Instance
 variable {R : Type _} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
 variable {n : ℕ} {ord : MonomialOrder}
 
-instance : ParsableElement (AzMvPolynomial n R ord) where
+instance instParsableElementAzMvPolynomial : ParsableElement (AzMvPolynomial n R ord) where
   toChars := AzMvPolynomial.toChars
   parseChars := AzMvPolynomial.parse
   parse_toChars := AzMvPolynomial.parse_toChars

@@ -15,7 +15,7 @@ namespace Azurite.AzPolynomial
 
 variable {R : Type _} [Semiring R] [DecidableEq R]
 
-private abbrev derivArray (p : AzPolynomial R) (_h : ¬p.coeffs.size ≤ 1) :=
+abbrev derivArray (p : AzPolynomial R) (_h : ¬p.coeffs.size ≤ 1) :=
   Array.ofFn (fun (i : Fin (p.coeffs.size - 1)) =>
     p.coeff (i.val + 1) * (↑(i.val + 1) : R))
 

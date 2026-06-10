@@ -30,7 +30,7 @@ end Display
 
 end AzFieldAtom
 
-instance {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
+instance instToStringAzFieldAtom {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R] [NeZero (1 : R)] [ParsableCoeff R]
     {ord : MonomialOrder} :
     ToString (AzFieldAtom n R ord) where
   toString := AzFieldAtom.toStr
@@ -51,7 +51,7 @@ section Display
 variable (F : Type _) [LinearOrder F] [ParsableVar F n]
 
 /-- Render a `Fin n` variable as a string via the display type `F`. -/
-private def varStrWith (x : Fin n) : String :=
+def varStrWith (x : Fin n) : String :=
   String.ofList (ParsableVar.toChars (Var.ofFin x : F))
 
 /-- Display a `Formula (Fin n) (AzFieldAtom n R ord)` using naming scheme `F`
@@ -89,7 +89,7 @@ end BPR.Formula
 
 /-- Preferred `ToString` for `Formula (Fin n) (AzFieldAtom n R ord)`, using
     `IndexedVar n` naming for both atoms and quantifier variables. -/
-instance (priority := high) {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R]
+instance (priority := high) instToStringFormula {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R]
     [NeZero (1 : R)] [ParsableCoeff R] {ord : MonomialOrder} :
     ToString (Formula (Fin n) (AzFieldAtom n R ord)) where
   toString := BPR.Formula.toStr
@@ -97,7 +97,7 @@ instance (priority := high) {n : ℕ} {R : Type*} [DecidableEq R] [Semiring R]
 /-! ### Generic fallback `ToString` for arbitrary `Formula σ α` -/
 
 /-- Display a `Formula` in a readable form. -/
-instance {σ : Type*} [ToString σ] {α : Type*} [ToString α] :
+instance instToStringFormulaAzFieldAtom {σ : Type*} [ToString σ] {α : Type*} [ToString α] :
     ToString (Formula σ α) where
   toString := go false
 where

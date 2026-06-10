@@ -24,6 +24,16 @@ namespace Azurite.AzRat
 
 @[simp] theorem toRat_zero : toRat (0 : AzRat) = 0 := rfl
 
+@[simp] theorem toRat_one : toRat (1 : AzRat) = 1 := rfl
+
+@[simp] theorem default_eq_zero : (default : AzRat) = 0 := rfl
+
+@[simp] theorem ofRat_zero : ofRat 0 = 0 :=
+  toRat_injective (by rw [toRat_ofRat, toRat_zero])
+
+@[simp] theorem ofRat_one : ofRat 1 = 1 :=
+  toRat_injective (by rw [toRat_ofRat, toRat_one])
+
 theorem toRat_ofSignAzNats (s : Bool) (n d : AzNat) :
     toRat (ofSignAzNats s n d) =
       (if s then 1 else -1) * ((n.toNat : ℚ) / (d.toNat : ℚ)) := by

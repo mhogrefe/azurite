@@ -51,7 +51,7 @@ end Display
 @[inline] def AzMvPolynomial.toStr (p : AzMvPolynomial n R ord) : String :=
   String.ofList p.toChars
 
-instance : ToString (AzMvPolynomial n R ord) where
+instance instToStringAzMvPolynomial : ToString (AzMvPolynomial n R ord) where
   toString := AzMvPolynomial.toStr
 
 end Azurite

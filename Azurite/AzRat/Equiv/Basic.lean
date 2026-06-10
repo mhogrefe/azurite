@@ -81,6 +81,11 @@ theorem ofRat_toRat (q : AzRat) : ofRat (toRat q) = q := by
     show AzNat.ofNat (toRat q).den = q.den
     rw [hden, AzNat.ofNat_toNat]
 
+/-- `toRat` is injective (it has `ofRat` as a left inverse). Transports
+`ℚ`-side identities to `AzRat`-side ones (see e.g. `ofRat_neg`). -/
+theorem toRat_injective : Function.Injective toRat := fun a b h => by
+  rw [← ofRat_toRat a, h, ofRat_toRat]
+
 -- `ofRat` computes (string-anchored via `toString`/`parse`; the `toRat`
 -- direction is covered by the round-trip theorems above).
 #guard (ofRat (3 / 4)).toString == "3/4"

@@ -156,7 +156,7 @@ instance : AddMonoid (AzPolynomial R) := fast_instance%
   Function.Injective.addMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_add (fun _ _ => toPoly_nsmul _ _)
 
-instance : AddCommMonoid (AzPolynomial R) := fast_instance%
+instance instAzPolynomialAddCommMonoid : AddCommMonoid (AzPolynomial R) := fast_instance%
   Function.Injective.addCommMonoid AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_add (fun _ _ => toPoly_nsmul _ _)
 
@@ -186,7 +186,7 @@ instance : NonAssocSemiring (AzPolynomial R) := fast_instance%
     that abbrev's `npow` field would otherwise pull in
     `Function.Injective.monoidWithZero` and force the instance to be
     noncomputable. -/
-instance : Semiring (AzPolynomial R) where
+instance instAzPolynomialSemiring : Semiring (AzPolynomial R) where
   __ := (inferInstance : NonUnitalSemiring (AzPolynomial R))
   one_mul := one_mul
   mul_one := mul_one
@@ -221,7 +221,7 @@ instance : NonUnitalCommSemiring (AzPolynomial R) := fast_instance%
 
 /-- `AzPolynomial R` forms a commutative semiring when `R` is a commutative
     semiring. -/
-instance : CommSemiring (AzPolynomial R) where
+instance instAzPolynomialCommSemiring : CommSemiring (AzPolynomial R) where
   __ := (inferInstance : Semiring (AzPolynomial R))
   mul_comm := mul_comm
 
@@ -256,7 +256,7 @@ noncomputable def toPolyHom :
 /-- `AzPolynomial R` is an `R`-algebra via the constant polynomial embedding `C`.
     The algebra map is `CHom`, and the scalar action reuses the existing
     computable `SMul R (AzPolynomial R)` instance. -/
-instance : Algebra R (AzPolynomial R) where
+instance instAzPolynomialAlgebra : Algebra R (AzPolynomial R) where
   algebraMap := CHom
   commutes' := fun _ _ => mul_comm _ _
   smul_def' := fun r p => toPoly_inj.mp (by
@@ -298,7 +298,7 @@ instance : AddGroup (AzPolynomial R) := fast_instance%
     toPoly_zero toPoly_add toPoly_neg toPoly_sub
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
 
-instance : AddCommGroup (AzPolynomial R) := fast_instance%
+instance instAzPolynomialAddCommGroup : AddCommGroup (AzPolynomial R) := fast_instance%
   Function.Injective.addCommGroup AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_add toPoly_neg toPoly_sub
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
@@ -322,7 +322,7 @@ instance : NonAssocRing (AzPolynomial R) := fast_instance%
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
     toPoly_natCast toPoly_intCast
 
-instance : Ring (AzPolynomial R) := fast_instance%
+instance instAzPolynomialRing : Ring (AzPolynomial R) := fast_instance%
   Function.Injective.ring AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _) toPoly_npow
@@ -343,7 +343,7 @@ instance : NonUnitalCommRing (AzPolynomial R) := fast_instance%
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _)
 
 /-- `AzPolynomial R` forms a commutative ring when `R` is a commutative ring. -/
-instance : CommRing (AzPolynomial R) := fast_instance%
+instance instAzPolynomialCommRing : CommRing (AzPolynomial R) := fast_instance%
   Function.Injective.commRing AzPolynomial.toPoly (fun _ _ h => toPoly_inj.mp h)
     toPoly_zero toPoly_one toPoly_add toPoly_mul toPoly_neg toPoly_sub
     (fun _ _ => toPoly_nsmul _ _) (fun _ _ => toPoly_zsmul _ _) toPoly_npow

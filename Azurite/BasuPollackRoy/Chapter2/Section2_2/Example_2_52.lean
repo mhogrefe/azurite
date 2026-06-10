@@ -32,10 +32,10 @@ open Azurite.AzPolynomial
 open Azurite.BPR (ExtendedPoint)
 
 /-- `P = X⁴ − 5X² + 4`. -/
-private def P_2_52 : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
+def P_2_52 : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
 
 /-- `P' = 4X³ − 10X`. -/
-private def P'_2_52 : AzPolynomial ℚ := (parseAzPolynomial "4*x^3-10*x").get!
+def P'_2_52 : AzPolynomial ℚ := (parseAzPolynomial "4*x^3-10*x").get!
 
 /-! ### Sturm sequence terms `s₀..s₅` -/
 

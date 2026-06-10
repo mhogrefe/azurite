@@ -27,10 +27,10 @@ open Azurite.BPR (ExtendedPoint)
 /-- Linear factor `X − r`. -/
 private def linFactor (r : ℚ) : AzPolynomial ℚ := X - C r
 
-private def P_2_54 : AzPolynomial ℚ :=
+def P_2_54 : AzPolynomial ℚ :=
   linFactor 3 * linFactor 3 * linFactor 1 * linFactor (-3)
 
-private def Q_2_54 : AzPolynomial ℚ :=
+def Q_2_54 : AzPolynomial ℚ :=
   linFactor 5 * linFactor 4 * linFactor 2 *
     linFactor (-1) * linFactor (-2) * linFactor (-4)
 

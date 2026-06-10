@@ -173,7 +173,7 @@ termination_by n - k
 
 /-- `decrExp 0` preserves strict lex ordering when both monomials have positive
     exponent at position 0. -/
-private theorem MonicMonomial.decrExp_zero_preserves_lex_gt (hn : 0 < n)
+theorem MonicMonomial.decrExp_zero_preserves_lex_gt (hn : 0 < n)
     {a b : MonicMonomial n (MonomialOrder.Lex)}
     (hab : a > b) (ha : a.exponents[0]'hn > 0)
     (hb : b.exponents[0]'hn > 0) :
@@ -213,7 +213,7 @@ private theorem MonicMonomial.decrExp_zero_preserves_lex_gt (hn : 0 < n)
   · simp [hc] at hab'
 
 omit [DecidableEq R] in
-private theorem pderivAtNoCancel_sorted_lex [CharZero R] [NoZeroDivisors R]
+theorem pderivAtNoCancel_sorted_lex [CharZero R] [NoZeroDivisors R]
     (hn : 0 < n)
     {l : List (Monomial n R (.Lex))}
     (hp : l.Pairwise (fun a b => a.monic > b.monic)) :

@@ -284,7 +284,7 @@ theorem dvd_of_map_dvd_monic (M P : R[X]) (hM : M.Monic)
 /-! ## Section 7: Sign analysis helpers -/
 
 /-- If r < a < b or a < b < r, then (a - r)(b - r) > 0. -/
-private theorem pos_of_same_side {a b r : R} (hab : a < b)
+theorem pos_of_same_side {a b r : R} (hab : a < b)
     (hr : r < a ∨ b < r) :
     0 < (a - r) * (b - r) := by
   rcases hr with h | h
@@ -293,7 +293,7 @@ private theorem pos_of_same_side {a b r : R} (hab : a < b)
 
 /-- Key sign lemma: if P = (X - C r) * Q with r ∉ (a,b) and P(a)*P(b) < 0,
     then Q(a)*Q(b) < 0. -/
-private theorem sign_transfer {a b r : R} (hab : a < b)
+theorem sign_transfer {a b r : R} (hab : a < b)
     (hr : r < a ∨ b < r)
     {Q : R[X]} (hsign : eval a ((X - C r) * Q) * eval b ((X - C r) * Q) < 0) :
     eval a Q * eval b Q < 0 := by

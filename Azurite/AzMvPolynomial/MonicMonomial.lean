@@ -62,7 +62,7 @@ def mul (a b : MonicMonomial n ord) : MonicMonomial n ord :=
 instance : One (MonicMonomial n ord) := ⟨one⟩
 instance : Mul (MonicMonomial n ord) := ⟨mul⟩
 
-instance : Ord (MonicMonomial n ord) where
+instance instOrdMonicMonomial : Ord (MonicMonomial n ord) where
   compare a b := ord.compareExponents a.exponents b.exponents
 
 @[simp] theorem one_exponents :
@@ -82,7 +82,7 @@ theorem mul_one (a : MonicMonomial n ord) : a * 1 = a := by
 theorem mul_comm (a b : MonicMonomial n ord) : a * b = b * a := by
   ext1; simp only [mul_exponents]; ext i hi; simp [Nat.add_comm]
 
-instance : CommMonoid (MonicMonomial n ord) where
+instance instCommMonoidMonicMonomial : CommMonoid (MonicMonomial n ord) where
   mul_assoc := mul_assoc
   one_mul := one_mul
   mul_one := mul_one

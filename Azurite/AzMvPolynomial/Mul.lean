@@ -118,6 +118,6 @@ def AzMvPolynomial.mulNaive (p q : AzMvPolynomial n R ord) : AzMvPolynomial n R 
 def AzMvPolynomial.mul (p q : AzMvPolynomial n R ord) : AzMvPolynomial n R ord :=
   p.mulNaive q
 
-instance : Mul (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.mul⟩
+instance instAzMvPolynomialMul : Mul (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.mul⟩
 
 end Azurite

@@ -19,6 +19,6 @@ def AzMvPolynomial.add (p q : AzMvPolynomial n R ord) : AzMvPolynomial n R ord :
    by rw [List.toList_toArray]
       exact mergeSorted_sorted id id_preserves_ne_zero _ _ p.sorted q.sorted⟩
 
-instance : Add (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.add⟩
+instance instAzMvPolynomialAdd : Add (AzMvPolynomial n R ord) := ⟨AzMvPolynomial.add⟩
 
 end Azurite

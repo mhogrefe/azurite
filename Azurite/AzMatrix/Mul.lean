@@ -18,7 +18,7 @@ def AzMatrix.mul [Mul R] [Add R] [Zero R]
     (A : AzMatrix R m n) (B : AzMatrix R n p) : AzMatrix R m p :=
   A.mulBasecase B
 
-instance [Mul R] [Add R] [Zero R] : HMul (AzMatrix R m n) (AzMatrix R n p) (AzMatrix R m p) :=
+instance instAzMatrixHMul [Mul R] [Add R] [Zero R] : HMul (AzMatrix R m n) (AzMatrix R n p) (AzMatrix R m p) :=
   ⟨AzMatrix.mul⟩
 
 end Azurite

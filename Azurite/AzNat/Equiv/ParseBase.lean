@@ -8,7 +8,7 @@ namespace AzNat
 
 /-! ### Per-character inverse: `charToDigit ∘ digitToChar = id` -/
 
-private theorem charToDigit_digitToChar (d : UInt64) (hd : d.toNat < 36) :
+theorem charToDigit_digitToChar (d : UInt64) (hd : d.toNat < 36) :
     AzNat.charToDigit (AzNat.digitToChar d false) = some d := by
   have h_eq : d = UInt64.ofNat d.toNat := by
     apply UInt64.toNat.inj

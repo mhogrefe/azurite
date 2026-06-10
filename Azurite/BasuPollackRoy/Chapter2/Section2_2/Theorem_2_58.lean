@@ -1305,7 +1305,7 @@ private lemma strong_hyp_at_infinity
     exist perturbed endpoints `a', b'` with the strong "no SRemS root
     at endpoints" property AND with `varAt`/`cauchyIndexOn` matching
     those at the original `(a, b)`. -/
-private lemma theorem_2_58_perturbation_exists
+lemma theorem_2_58_perturbation_exists
     (hIVP : Azurite.BPR.HasIntermediateValueProperty R)
     (P Q : R[X]) (hP : P ≠ 0) (a b : ExtendedPoint R)
     (hab : ExtendedPoint.Lt a b)
