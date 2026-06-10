@@ -372,11 +372,13 @@ import Azurite.AzRat.Equiv.Mul
 import Azurite.AzRat.Equiv.Order
 import Azurite.AzRat.Equiv.Parse
 import Azurite.AzRat.Equiv.Round
+import Azurite.AzRat.Equiv.Shift
 import Azurite.AzRat.Equiv.Unary
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Mul
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Round
+import Azurite.AzRat.Shift
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
 import Azurite.AzVector.Basic
