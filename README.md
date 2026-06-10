@@ -10,8 +10,8 @@ Azurite provides array-backed data structures for polynomials, vectors, and matr
 
 | Module | Description |
 |--------|-------------|
-| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Schoolbook multiplication plus a Karatsuba implementation (`karatsubaMulLimbs`) with a configurable basecase threshold. Three-way `square` (schoolbook / Karatsuba / Toom-Cook 3). Exponentiation `pow` (sliding-window) and `powBinary` (binary, for benchmarking), both using the fast `square`. Binary GCD (Stein's algorithm, `gcd`) with bulk trailing-zeros shifts. Also provides a `ParsableElement` instance for use as an `AzVector` / `AzMatrix` coefficient type. |
-| `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, exponentiation `pow` (sign rule over `AzNat`'s sliding-window power, also the `CommRing`'s `npow`), bit-size, trailing-zeros, parsing, `toString`, and a `ParsableElement` instance (so `AzInt` works as a coefficient type for `AzVector` / `AzMatrix` `parseStr`). |
+| `AzNat/` | Computable multi-limb natural numbers over `Array UInt64`. Three-way multiplication (schoolbook / Karatsuba / Toom-Cook 3, with configurable basecase thresholds) and matching three-way `square`. Division: schoolbook `divMod` (Möller–Granlund reciprocal steps from `UInt64/`, with single- and double-limb divisor fast paths) plus a recursive divide-and-conquer variant (`Div/Recursive`); integer square root with remainder (`sqrtRem`). Exponentiation `pow` (sliding-window) and `powBinary` (binary, for benchmarking), both using the fast `square`. Binary GCD (Stein's algorithm, `gcd`) with bulk trailing-zeros shifts. Rounded division and right shift (`divRound`, `shiftRightRound`) correct against the `Rounding/` spec. Bit-level toolkit (`testBit`/`setBit`/`clearBit`/`getBits`, `modPow2`, `lowMask`, `size`, `trailingZeros`, `isMultipleOfPow2`). Base-`b` string conversion and parsing (`toStringBase`/`parseBase`) via base-10¹⁹ limb digits (`DivMod10p19`, `LimbDigits`). Also provides a `ParsableElement` instance for use as an `AzVector` / `AzMatrix` coefficient type. |
+| `AzInt/` | Computable integers as a sign-magnitude pair `(sign : Bool, abs : AzNat)` with a canonical zero invariant (`abs = 0 → sign = true`). Includes conversions to/from all Lean fixed-width int/uint types and `AzNat`, comparison against `UInt64`/`Int64`/`AzNat`, a custom `compare` with derived `Ord`/`LE`/`LT`/`Max`/`Min`, full ring arithmetic (add/sub/mul over `AzNat` magnitudes), Euclidean division `edivMod`, shifts (`shiftLeft`/`shiftRight`) and rounded division/right-shift (`divRound`/`shiftRightRound`, correct against the `Rounding/` spec), parity tests, `pow2`, `lowMask`, `isPowerOfTwo`, exponentiation `pow` (sign rule over `AzNat`'s sliding-window power, also the `CommRing`'s `npow`), bit-size, trailing-zeros, parsing, `toString`, and a `ParsableElement` instance (so `AzInt` works as a coefficient type for `AzVector` / `AzMatrix` `parseStr`). |
 | `AzRat/` | Computable rationals in lowest terms: a `(sign : Bool, num : AzNat, den : AzNat)` with proofs `den ≠ 0`, `num = 0 → sign = true` (canonical zero), and `AzNat.coprime num den` (reduced). Computable conversions `toRat`/`ofRat` to/from `ℚ` (`toRat` builds the `ℚ` directly via `Rat.mk'`, the AzRat invariants being exactly `Rat.mk'`'s nonzero-denominator and coprimality requirements via `AzNat.coprime_iff`) with round-trip equivalence both ways (`toRat_ofRat`, `ofRat_toRat`, axiom-clean). Conversions `AzNat.toAzRat` (`n` as `n/1`), `AzInt.toAzRat` (`z` as `|z|/1` with `z`'s sign), and every primitive `UIntN`/`IntN`/`USize`/`ISize` (`.toAzRat`, delegating through `.toAzInt`) with correctness (`toRat_toAzRat`, `toRat_toAzRat_int`, and per-primitive `*.toRat_toAzRat` agreeing with `toNat`/`toInt` casts into `ℚ`). Rounding `AzRat.round q mode : AzInt × Ordering` (signed numerator over denominator via `AzInt.divRound`, accepting a `RoundingMode`; the `Ordering` records how the result compares to `toRat q`) with correctness `toInt_round` (value agrees with abstract `RoundingTarget.round intSet mode (toRat q)`) and `snd_round` (ordering tag = `compare` of rounded value vs `toRat q`). Base-2 logarithm `floorLogBase2Abs`/`ceilingLogBase2Abs : AzRat → ℤ` (limb-level via `AzNat.size` + `AzNat.normalizedCompare`, no GMP `Nat.log2`) with correctness `floorLogBase2Abs_eq`/`ceilingLogBase2Abs_eq` (`= ⌊/⌈logb 2 |toRat q|⌋/⌉`, axiom-clean). Fast comparison `AzRat.cmp x y : Ordering` (staged, limb-level: sign → `|·|` vs 1 → num/den magnitudes → `floorLogBase2Abs` → cross-multiply, via `AzNat.compare`/`AzNat` mul) with correctness `cmp_eq_compare : cmp x y = compare (toRat x) (toRat y)`. |
 | `AzPolynomial/` | Dense univariate polynomials over a semiring `R`, stored as `Array R` with a trailing-nonzero invariant. Includes add, mul (basecase + Karatsuba), negation, scalar multiplication, multiplication by `X^n` (`mulXPow`), truncation (`truncate`, BPR Notation 1.16), derivative, evaluation, composition (Horner), exponentiation (sliding-window), quotient/remainder (Euclidean division), signed pseudo-remainder (`pRem`, works over any `CommRing`), root bounds, the Sturm sequence (`sturmSequence`, BPR Chapter 2.2), parsing, and `toString`. |
 | `AzMvPolynomial/` | Sparse multivariate polynomials over `R` in variables `σ`, stored as a sorted array of monomials (descending by monic part). Supports multiple monomial orderings (lex, deglex, degrevlex). Includes add, mul (naive + optimized), negation, scalar multiplication, partial derivative, evaluation (`eval`, plus generic `eval₂`/`aeval` into any commutative semiring or `R`-algebra), exact division, monomial exponentiation, rename, map, merge-sorted operations, `bind₁`/`bind₂`/`join₂` substitution, and `finSuccEquiv` (forward direction: `AzMvPolynomial (Fin (n+1)) R → AzPolynomial (AzMvPolynomial (Fin n) R)`). |
@@ -28,9 +28,45 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 
 | File | What it proves |
 |------|----------------|
-| `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation. |
+| `Equiv/Basic` | Computable equivalence `equivNat : AzNat ≃ Nat` via `toNat`/`ofNat`, including base invariant preservation, plus the foundational limb-list value lemmas (`toNatLimbsList_cons`, `toNatLimbsList_append`, `toNatLimbsList_lt_pow`). |
+| `Equiv/Add` | `toNat_add` / `toNat_addUInt64`: limb-level carry-chain addition agrees with `Nat` addition. |
+| `Equiv/Sub` | `toNat_sub`: limb-level borrow-chain subtraction agrees with `Nat` subtraction. |
 | `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
-| `Equiv/Gcd` | `toNat_gcd`: `(gcd a b).toNat = Nat.gcd a.toNat b.toNat` — the binary GCD (Stein's algorithm) agrees with Mathlib's `Nat.gcd`. |
+| `Equiv/Conversion` | `UInt64.toNat_toAzNat` and friends: conversions from every fixed-width unsigned type (and `Int64.toNat_toAzNatClampNeg`) agree with `toNat`. |
+| `Equiv/Mul/Basic` | `schoolbookMulLimbs_toNat` / `toNat_mulUInt64`: schoolbook multiplication agrees with `Nat` multiplication. |
+| `Equiv/Mul/Karatsuba` | `karatsubaMulLimbs_toNat`: Karatsuba limb multiplication agrees with `Nat` multiplication. |
+| `Equiv/Mul/ToomCook3` | `toomCook3MulLimbs_toNat` and the top-level `toNat_mul` / `ofNat_mul`: Toom-Cook 3 multiplication and the dispatching `mul` agree with `Nat` multiplication. |
+| `Equiv/Square`, `Equiv/Square/*` | `toNat_square` via `schoolbookSquareLimbs_toNat`, `karatsubaSquareLimbs_toNat`, `toomCook3SquareLimbs_toNat`: all three squaring strategies agree with `n * n`. |
+| `Equiv/Div/*` | Staged correctness of schoolbook division: per-phase lemmas (`subMulLimbs_toNat`, `bodyStep_toNat`, `addback_toNat`), single-/double-limb divisor fast paths (`divModLimb_toNat`, `divModLimb2_toNat`), the full algorithm (`schoolbookDivModLimbs_toNat`), and the top-level `divMod_toNat` / `ofNat_div` / `ofNat_mod`. |
+| `Equiv/DivRecursiveLimbs` | `recursiveDivModLimbsAux_spec`: the recursive (divide-and-conquer) divmod satisfies the division specification. |
+| `Equiv/DivRound` | `toNat_divRound` (+ `divRound_fst`/`divRound_snd`): rounded division agrees with `round natBotSet mode (x / y)` from the abstract `Rounding/` spec. |
+| `Equiv/ShiftLeft` | `toNat_hShiftLeft`: left shift agrees with `Nat` shift. |
+| `Equiv/ShiftRight` | `toNat_shiftRight`: right shift agrees with `Nat` shift. |
+| `Equiv/ShiftRightRound` | `toNat_shiftRightRound`: rounded right shift agrees with rounding `v / 2^sh` against the `natBotSet` rounding target. |
+| `Equiv/Gcd` | `toNat_gcd`: `(gcd a b).toNat = Nat.gcd a.toNat b.toNat` — the binary GCD (Stein's algorithm) agrees with Mathlib's `Nat.gcd` — plus `coprime_iff`. |
+| `Equiv/SqrtRem` | `toNat_sqrt` / `toNat_sqrtRem` (via `toNat_basecaseSqrt`): integer square root with remainder agrees with `Nat.sqrt`. |
+| `Equiv/Pow` | `toNat_pow`, `toNat_powBinary`, `pow_eq_powBinary`, `ofNat_pow`: both exponentiation strategies agree with `Nat` powers. |
+| `Equiv/Pow2` | `toNat_pow2 k = 2 ^ k` and `pow2_eq_ofNat`. |
+| `Equiv/LowMask` | `toNat_lowMask k = 2 ^ k - 1`. |
+| `Equiv/ModPow2` | `toNat_modPow2`: reduction mod `2^k` agrees with `Nat` mod. |
+| `Equiv/TestBit` | `testBit_eq_toNat_testBit`: bit testing agrees with `Nat.testBit`. |
+| `Equiv/SetBit` | `toNat_setBit`: bit setting agrees with the `Nat` semantics. |
+| `Equiv/ClearBit` | `toNat_clearBit`: bit clearing agrees with the `Nat` semantics. |
+| `Equiv/GetBits` | `toNat_getBits` / `toNat_getBitsAsLimb` and `getBits_eq_shiftRight_modPow2`: bit-range extraction agrees with shift-then-mod. |
+| `Equiv/IsMultipleOfPow2` | `isMultipleOfPow2_iff`: the power-of-two divisibility test agrees with `2 ^ k ∣ toNat`. |
+| `Equiv/Parity` | `isEven_iff` / `isOdd_iff` agree with `Even` / `Odd` on `Nat`. |
+| `Equiv/Size` | `size_toNat` / `size_ofNat`: the limb-level bit-size agrees with Mathlib's `Nat.size`. |
+| `Equiv/TrailingZeros` | `toNat_trailingZeros` / `trailingZeros_iff`: trailing-zero count correctness. |
+| `Equiv/NormalizedCompare` | `normalizedCompare_eq_cross`: the allocation-free MSB-aligned comparison equals the cross-multiplied `compare` (see Utility Modules below). |
+| `Equiv/RingEquiv` | Bundled forms of `toNat`: `ringEquivNat : AzNat ≃+* ℕ`, `toNatRingHom : AzNat →+* ℕ`, and `orderIsoNat : AzNat ≃o ℕ`, packaging the component lemmas so Mathlib's generic `map_*` and order-iso lemmas apply directly. |
+| `Equiv/LimbDigits` | `toBase10p19Digits_eq_toBaseUInt64Digits`: the optimized base-10¹⁹ digit extraction agrees with the generic base-`UInt64` digit extraction. |
+| `Equiv/LimbDigitsPow2` | `toNatLimbsList_eq_ofDigits` / `ofDigits_trimTrailingZeros`: power-of-two-base digit extraction correctness. |
+| `Equiv/OfLimbDigits` | `toNat_horner_foldr` / `toNat_ofLimbs_single`: digit-sequence reconstruction via Horner evaluation. |
+| `Equiv/OfLimbDigitsPow2` | `testBit_ofDigits_pow2`: bit-level characterization of power-of-two-base reconstruction. |
+| `Equiv/DivBy6` | Correctness of the precomputed normalized-divisor/reciprocal constants used by `divBy6` (`divBy6_dNorm_toNat`, `divBy6_inv_eq`, …). |
+| `Equiv/DivMod10p19` | Correctness of the precomputed base-10¹⁹ divisor constants used for decimal conversion (`divMod10p19_d_toNat`, `divMod10p19_inv_eq`, …). |
+| `Equiv/ParseBase` | Base-`b` parsing helpers: `charToDigit_digitToChar` round-trip and the `parseDigitsInto` fold characterization. |
+| `Equiv/ToStringBase` | `toStringBase_toNat`: base-`b` string rendering agrees with `Nat.toDigits`. |
 
 #### AzInt ↔ Int
 
@@ -39,12 +75,32 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Basic` | Bijection `AzInt ≃ Int` via `toInt`/`ofInt`, including the canonical-zero invariant round-trip. |
 | `Equiv/Compare` | `compare_eq_lt_iff_toInt_lt` and friends: custom sign-magnitude `compare` matches `Ord.compare` on `Int`, providing the `LinearOrder AzInt` instance. |
 | `Equiv/Conversion` | `toInt_toAzInt` / `toInt_toAzInt = toNat` for every fixed-width `UInt*`/`Int*`/`USize`/`ISize` and `AzNat`, and the reverse `toInt_toUInt*` / `toInt_toInt*` direction. |
+| `Equiv/Add` | `toInt_add`: sign-magnitude addition agrees with `Int` addition. |
+| `Equiv/Sub` | `toInt_sub`: sign-magnitude subtraction agrees with `Int` subtraction. |
+| `Equiv/Mul` | `toInt_mul`: sign-magnitude multiplication agrees with `Int` multiplication. |
+| `Equiv/DivMod` | `toInt_edivMod`: `edivMod` agrees with `Int`'s Euclidean division and modulus. |
+| `Equiv/DivRound` | `toInt_divRound`: rounded signed division agrees with `round intSet mode (x / y)` from the abstract `Rounding/` spec. |
+| `Equiv/ShiftLeft` | `toInt_shiftLeft`: left shift agrees with `Int` semantics. |
+| `Equiv/ShiftRight` | `toInt_shiftRight`: right shift agrees with floor-rounded division by `2^sh`. |
+| `Equiv/ShiftRightRound` | `toInt_shiftRightRound`: rounded right shift agrees with rounding `z / 2^sh` against the `intSet` rounding target. |
+| `Equiv/Parse` | `parse_toString`: parsing round-trips with `toString`. |
+| `Equiv/RingEquiv` | Bundled forms of `toInt`: `ringEquivInt : AzInt ≃+* ℤ`, `toIntRingHom : AzInt →+* ℤ`, and `orderIsoInt : AzInt ≃o ℤ`, packaging the component lemmas so Mathlib's generic `map_*` and order-iso lemmas apply directly. |
 | `Equiv/Parity` | `isEven_iff`/`isOdd_iff` agree with `Even`/`Odd` on `Int`. |
 | `Equiv/Pow` | `toInt_pow z n = z.toInt ^ n` and `ofInt_pow`: `AzInt.pow` (sign rule over `AzNat`'s power, the `CommRing`'s `npow`) matches `Int` exponentiation. |
 | `Equiv/Pow2` | `toInt_pow2 k = 2 ^ k`, `pow2_eq_ofInt`, and `isPowerOfTwo_iff`. |
 | `Equiv/LowMask` | `toInt_lowMask k = 2 ^ k - 1` and `lowMask_eq_ofInt`. |
 | `Equiv/Size` | `z.size = BPR.Int.size z.toInt` (bit-size agrees with the BPR Chapter 8 notion). |
 | `Equiv/TrailingZeros` | `trailingZeros z = some (padicValInt 2 z.toInt)` for nonzero `z`, and `trailingZeros 0 = none`. |
+
+#### AzRat ↔ ℚ
+
+| File | What it proves |
+|------|----------------|
+| `Equiv/Basic` | Round-trips `toRat_ofRat` / `ofRat_toRat`: `toRat`/`ofRat` form a bijection `AzRat ≃ ℚ`, including the canonical-zero and coprimality invariants. |
+| `Equiv/Conversion` | `toRat_toAzRat` (`AzNat`), `toRat_toAzRat_int` (`AzInt`), and per-primitive `UInt*`/`Int*`/`USize`/`ISize` `*.toRat_toAzRat` — every conversion into `AzRat` agrees with the `toNat`/`toInt` cast into `ℚ`. |
+| `Equiv/Compare` | `cmp_eq_compare`: the staged limb-level fast comparison agrees with `compare` on `ℚ`. |
+| `Equiv/LogBase2` | `floorLogBase2Abs_eq` / `ceilingLogBase2Abs_eq`: the limb-level base-2 logarithms equal `⌊logb 2 \|toRat q\|⌋` / `⌈logb 2 \|toRat q\|⌉`. |
+| `Equiv/Round` | `toInt_round`: rounding agrees with the abstract `RoundingTarget.round intSet mode (toRat q)`; `snd_round`: the returned `Ordering` tag is `compare` of the rounded value vs `toRat q`. |
 
 #### AzPolynomial ↔ Polynomial R
 
@@ -185,10 +241,11 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 
 | Module | Description |
 |--------|-------------|
-| `UInt64/` | Helpers on Lean's built-in `UInt64` type. `addWithCarry` (64-bit add with carry-in/out), `subWithBorrow` (64-bit sub with borrow-in/out), `wideMul` (full 128-bit product of two `UInt64`s, returned as a `(hi, lo)` pair), `isPowerOfTwo` (bit-trick power-of-two test), `testBit` (returns `false` for `i ≥ 64`), `setBit`/`clearBit` (identity for `i ≥ 64`), `splitInHalf`/`joinHalves` (convert between `UInt64` and a pair of `UInt32` halves). `Equiv/Basic` provides `UInt64.eq_of_toNat_eq`; the remaining `Equiv/*` files prove the `toNat` semantics of each helper, including `toNat_joinHalves` and the two-sided inverse properties of `splitInHalf`/`joinHalves`. |
+| `Rounding/` | Abstract rounding framework. `RoundingMode` (`Floor`/`Ceiling`/`Down`/`Up`/`Nearest`, with a negation involution swapping `Floor`/`Ceiling`) and the `RoundingTarget S` typeclass on subsets `S : Set EReal` (every real has a greatest element of `S` below it and a least element above it, plus a `tiebreak` for `Nearest`); `SymmetricRoundingTarget` adds `0 ∈ S`, negation closure, and a sign-compatible tiebreak, yielding the symmetry theorem `round_neg`. Instances: ℤ (`intSet`, round-to-even tiebreak), ℕ∪{−∞} (`natBotSet`; bare ℕ proven *not* a target), bounded integer ranges with ±∞ (`intIccBotTopSet`), `UInt64`/`Int64` ranges (`uInt64BotTopSet`/`int64BotTopSet`), and ℝ (trivially); ℚ proven *not* a target (density without order-closedness fails at irrationals). Bridges/helpers: `NatBotInt` (`natBotSet` and `intSet` rounding agree on nonnegative reals), `NatDivPow` (shared lemmas for rounding `v / 2^sh`). This is the correctness spec for the computable rounding operations `divRound`/`shiftRightRound` in `UInt64/`, `AzNat/`, `AzInt/` and for `AzRat.round`. |
+| `UInt64/` | Helpers on Lean's built-in `UInt64` type. **Carry/borrow and wide arithmetic**: `addWithCarry`, `subWithBorrow`, `mulWithCarry`, `mulAddWithCarry`, `wideMul` (full 128-bit product as a `(hi, lo)` pair), and multi-limb primitives `wideAdd`/`wideAdd3`/`wideSub`/`wideSub3`. **Division**: `divMod`, plus the Möller–Granlund machinery — precomputed reciprocals (`reciprocal`, `reciprocal3By2`) and the two-/three-limb-by-one/two division steps (`div2By1`, `div3By2`) underlying `AzNat`'s schoolbook division. **Rounded division**: `divRound` and `shiftRightRound`, correct against the `Rounding/` spec. **Integer square root**: `sqrtRem` (floating-point initial guess + integer correction; the correctness proof needs no floating-point semantics). **Bit operations**: `isPowerOfTwo`, `isMultipleOfPow2`, `testBit` (returns `false` for `i ≥ 64`), `setBit`/`clearBit` (identity for `i ≥ 64`), `leadingZeros`. **Halves and digits**: `splitInHalf`/`joinHalves` (`UInt64` ↔ pair of `UInt32` halves), base-`b` digit conversion (`digits`/`ofDigits` with optimized power-of-two paths), and `maxPow` (largest base power fitting in 64 bits, for batched string conversion). `Equiv/Basic` provides `UInt64.eq_of_toNat_eq`; the remaining `Equiv/*` files prove the `toNat` semantics of every helper (e.g. `toNat_wideAdd`, `toNat_wideMul`, `toNat_div2By1`, `toNat_div3By2`, `toNat_divRound`). |
 | `AzNat/NormalizedCompare` | `normalizedCompare`: **allocation-free** comparison of two `AzNat`s by their normalized (MSB-aligned) bit representations — reads the `k`-th limb of `x·2^shift` on the fly via `getBitsAsLimb` (no temporary shifted `AzNat`), comparing top-down against `y`'s limbs. Proven (`normalizedCompare_eq_cross`, axiom-clean) equal to the cross-multiplication `compare (x·2^size(y)) (y·2^size(x))`, i.e. comparing `x / 2^size(x)` vs `y / 2^size(y)`. |
 | `Random/` | Random generators for `Nat`, `Int`, `Rat`, `Bool`, `AzPolynomial`, pairs, and geometric distributions. Used for testing and benchmarks. |
-| `Benchmark/` | Performance benchmarks for polynomial multiplication (basecase vs Karatsuba at various sizes) and AzNat vs Nat addition. Uses a C FFI nanosecond timer. |
+| `Benchmark/` | Performance benchmarks: polynomial multiplication (basecase vs Karatsuba), `AzNat` add/sub/mul/square (schoolbook vs Karatsuba vs Toom-Cook 3, and vs `Nat`), division algorithms (schoolbook vs recursive, div/mod vs divMod, for `AzNat` and `AzInt`), exponentiation strategies, and integer square root (`AzNat` and `UInt64`). Uses a C FFI nanosecond timer; result charts live in `charts/`. |
 
 ### Formalized Textbook Content
 
@@ -233,7 +290,12 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Polynomial addition | BPR Alg. 8.1 | `AzPolynomial/Add` | O(max(p,q)) |
 | Polynomial multiplication (basecase) | BPR Alg. 8.2 | `AzPolynomial/Mul` | O(p·q) |
 | Karatsuba multiplication (polynomial) | — | `AzPolynomial/Karatsuba` | O(n^1.585) |
-| Karatsuba multiplication (multi-limb Nat) | — | `AzNat/Karatsuba` | O(n^1.585) |
+| Karatsuba multiplication (multi-limb Nat) | — | `AzNat/Mul/Karatsuba` | O(n^1.585) |
+| Toom-Cook 3-way multiplication & squaring (multi-limb Nat) | — | `AzNat/Mul/ToomCook3`, `AzNat/Square/ToomCook3` | O(n^1.465) |
+| Schoolbook multi-limb division (Möller–Granlund reciprocal steps) | MCA Alg. 1.6; Möller–Granlund Algs. 4, 5, 7 | `AzNat/Div/Schoolbook`, `UInt64/Div2By1`, `UInt64/Div3By2` | O(n²) |
+| Recursive (divide-and-conquer) multi-limb division | MCA Alg. 1.8 | `AzNat/Div/Recursive` | O(M(n) log n) |
+| Integer square root with remainder | MCA Alg. 1.13 | `AzNat/SqrtRem`, `UInt64/SqrtRem` | — |
+| Rounded division & right shift (all `RoundingMode`s) | — | `AzNat/DivRound`, `AzInt/DivRound`, `UInt64/DivRound`, `AzRat/Round` | — |
 | Euclidean division | BPR Alg. 8.3 | `AzPolynomial/QuoRem` | O((p−q)·q) |
 | Signed pseudo-remainder | BPR §1.3 | `AzPolynomial/PRem` | O((p−q)·q) over any `CommRing` |
 | Shift by `X^n` (mul by monic monomial) | — | `AzPolynomial/MulXPow` | O(n + p) |
@@ -255,9 +317,18 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 ## Building
 
 ```bash
-lake build        # build the library
+lake build            # build the library
+lake test             # build the #guard test suites (AzuriteTests)
 lake build benchmark  # build the benchmark executable
 ```
+
+CI (`.github/workflows/lean.yml`) builds the project, runs the tests, and
+verifies that every `Azurite.*` declaration depends only on allowed axioms
+via `scripts/check_axioms.lean`: the standard three (`propext`,
+`Classical.choice`, `Quot.sound`) plus what `native_decide` introduces
+(`Lean.ofReduceBool` / `Lean.trustCompiler` and its per-use generated
+`*._native.native_decide.ax_*` axioms). `sorry` or any other newly
+introduced axiom fails the build.
 
 ## Running Benchmarks
 
@@ -269,14 +340,18 @@ lake env .lake/build/bin/benchmark
 
 ```
 Azurite.lean          -- Root import file (all library modules)
+AzuriteTests.lean     -- Root import file for the #guard test suites (lake test)
 Examples.lean         -- Usage examples
 lakefile.lean         -- Lake build configuration
+scripts/              -- check_and_build.sh, check_axioms.lean
 Azurite/
   Algorithm/            -- Generic algorithms (e.g., fast exponentiation)
   AzNat/              -- Computable multi-limb natural numbers
     Equiv/            -- Equivalence proofs with Nat
   AzInt/              -- Computable sign-magnitude integers
     Equiv/            -- Equivalence proofs with Int
+  AzRat/              -- Computable lowest-terms rationals
+    Equiv/            -- Equivalence proofs with Rat
   AzPolynomial/       -- Univariate polynomials
     Equiv/            -- Equivalence proofs with Polynomial R
   AzMvPolynomial/     -- Multivariate polynomials
@@ -293,10 +368,10 @@ Azurite/
     Chapter1/
     Chapter2/
     Chapter8/
-  Nat/                -- Efficient natural number algorithms
-  Rat/                -- Efficient rational number algorithms
+  Rounding/           -- Abstract rounding framework (RoundingMode, RoundingTarget)
   UInt64/             -- Helpers on Lean's built-in UInt64 type
     Equiv/            -- toNat-semantics proofs for UInt64 helpers
   Random/             -- Random generation for testing
   Benchmark/          -- Performance benchmarks
+  charts/             -- Benchmark result charts (SVG) and their data
 ```

@@ -17,6 +17,13 @@ lean_lib «Azurite» where
 lean_lib «Examples» where
   -- add any library configuration options here
 
+/-- `#guard`-based test suites. Kept out of the `Azurite` library target;
+built (and thereby run, since `#guard` checks at elaboration time) by
+`lake test`. -/
+@[test_driver]
+lean_lib «AzuriteTests» where
+  -- add any library configuration options here
+
 -- Build the nanosecond timer C shim as a static library.
 extern_lib timerLib pkg := do
   let leanInclude := (← getLeanIncludeDir).toString

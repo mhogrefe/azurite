@@ -1,13 +1,27 @@
 #!/usr/bin/env bash
 # check_and_build.sh
 #
-# Validates that every .lean file under Azurite/ is imported in Azurite.lean,
-# that the imports are alphabetically sorted, and then runs lake build.
+# Validates that every .lean file under Azurite/ is imported by the root
+# module of the lake target that owns it, then runs lake build.
+#
+#   * Library files                  -> Azurite.lean        (auto-fixed)
+#   * Test files (*/Tests/*)         -> AzuriteTests.lean   (auto-fixed)
+#   * Benchmark/ and */Tune.lean     -> Azurite/Benchmark/Main.lean
+#                                       (checked only; Main.lean is the
+#                                       curated root of the benchmark exe)
+#
+# Root-file imports are also checked to be alphabetically sorted and
+# duplicate-free.
 #
 # Usage: ./scripts/check_and_build.sh [--axioms]
-#   --axioms  After building, print all axioms used by Azurite declarations (slow)
+#   --axioms  After building, verify all Azurite declarations use only
+#             allowed axioms (fails on sorryAx or unexpected axioms)
 
 set -euo pipefail
+
+# Pin collation so `sort` produces identical orderings on every machine
+# (macOS and Linux locales disagree about case, e.g. `Pow` vs `PRem`).
+export LC_ALL=C
 
 CHECK_AXIOMS=false
 for arg in "$@"; do
@@ -19,78 +33,107 @@ done
 
 cd "$(dirname "$0")/.."
 
-ROOT_FILE="Azurite.lean"
 SRC_DIR="Azurite"
 
-errors=0
+# ── 1. Partition .lean files by owning target ──
 
-# ── 1. Collect expected module names from .lean files ──
-
-expected=$(find "$SRC_DIR" -name '*.lean' -type f \
+all_modules=$(find "$SRC_DIR" -name '*.lean' -type f \
   | sed "s|^$SRC_DIR/||; s|\.lean$||; s|/|.|g" \
   | sed 's/^/Azurite./' \
   | sort)
 
-# ── 2. Collect actual imports from Azurite.lean ──
+lib_expected=$(echo "$all_modules" \
+  | grep -v '^Azurite\.Benchmark\.' \
+  | grep -v '\.Tests\.' \
+  | grep -v '\.Tune$')
 
-actual=$(grep '^import ' "$ROOT_FILE" | sed 's/^import //')
+tests_expected=$(echo "$all_modules" | grep '\.Tests\.' || true)
 
-# ── 3. Check for missing imports and stale imports ─���
+bench_expected=$(echo "$all_modules" \
+  | grep -e '^Azurite\.Benchmark\.' -e '\.Tune$' \
+  | grep -v '^Azurite\.Benchmark\.Main$' || true)
 
-missing=$(comm -23 <(echo "$expected") <(echo "$actual" | sort))
-extra=$(comm -13 <(echo "$expected") <(echo "$actual" | sort))
+# ── 2. Check (and auto-fix) a root file against an expected module list ──
 
-# ─��� 4. Check for duplicates ──
+check_root_file() {
+  local root_file="$1" expected="$2"
 
-dupes=$(echo "$actual" | sort | uniq -d)
+  local actual missing extra dupes sorted needs_fix
+  actual=$(grep '^import ' "$root_file" | sed 's/^import //')
+  missing=$(comm -23 <(echo "$expected") <(echo "$actual" | sort))
+  extra=$(comm -13 <(echo "$expected") <(echo "$actual" | sort))
+  dupes=$(echo "$actual" | sort | uniq -d)
+  needs_fix=false
 
-# ── 5. Auto-fix: add missing, remove stale/dupes, and sort ──
+  if [[ -n "$missing" ]]; then
+    echo "$root_file: adding missing imports:"
+    while IFS= read -r m; do
+      echo "  import $m"
+    done <<< "$missing"
+    needs_fix=true
+  fi
 
-needs_fix=false
+  if [[ -n "$extra" ]]; then
+    echo "$root_file: removing stale imports (no corresponding file, or file owned by another target):"
+    while IFS= read -r m; do
+      echo "  import $m"
+    done <<< "$extra"
+    needs_fix=true
+  fi
 
-if [[ -n "$missing" ]]; then
-  echo "Adding missing imports:"
+  if [[ -n "$dupes" ]]; then
+    echo "$root_file: removing duplicate imports:"
+    while IFS= read -r m; do
+      echo "  import $m"
+    done <<< "$dupes"
+    needs_fix=true
+  fi
+
+  sorted=$(echo "$actual" | sort)
+  if [[ "$actual" != "$sorted" ]]; then
+    echo "$root_file: reordering imports alphabetically."
+    needs_fix=true
+  fi
+
+  if [[ "$needs_fix" == true ]]; then
+    # Preserve the header comment (lines before the first import)
+    local header imports
+    header=$(sed '/^import /,$d' "$root_file")
+    # Generate the correct sorted import list from the filesystem
+    imports=$(echo "$expected" | sed 's/^/import /')
+    {
+      echo "$header"
+      echo "$imports"
+    } > "$root_file"
+    echo "Fixed $root_file."
+  else
+    echo "$root_file: all imports valid and sorted."
+  fi
+}
+
+check_root_file "Azurite.lean" "$lib_expected"
+check_root_file "AzuriteTests.lean" "$tests_expected"
+
+# ── 3. Check benchmark/tune coverage (no auto-fix: Main.lean is curated) ──
+
+BENCH_MAIN="$SRC_DIR/Benchmark/Main.lean"
+# A module is covered if it is imported by Main.lean or by any other
+# benchmark/tune file (Main imports those directly, so one level of
+# indirection suffices for the transitive closure).
+bench_actual=$(cat "$BENCH_MAIN" \
+    $(find "$SRC_DIR/Benchmark" -name '*.lean' -type f) \
+    $(find "$SRC_DIR" -name 'Tune.lean' -type f) \
+  | grep '^import ' | sed 's/^import //' | sort -u)
+bench_missing=$(comm -23 <(echo "$bench_expected") <(echo "$bench_actual"))
+if [[ -n "$bench_missing" ]]; then
+  echo "ERROR: $BENCH_MAIN does not (transitively) import:"
   while IFS= read -r m; do
     echo "  import $m"
-  done <<< "$missing"
-  needs_fix=true
+  done <<< "$bench_missing"
+  echo "Add the missing imports to $BENCH_MAIN by hand (its order is curated)."
+  exit 1
 fi
-
-if [[ -n "$extra" ]]; then
-  echo "Removing stale imports (no corresponding file):"
-  while IFS= read -r m; do
-    echo "  import $m"
-  done <<< "$extra"
-  needs_fix=true
-fi
-
-if [[ -n "$dupes" ]]; then
-  echo "Removing duplicate imports:"
-  while IFS= read -r m; do
-    echo "  import $m"
-  done <<< "$dupes"
-  needs_fix=true
-fi
-
-sorted=$(echo "$actual" | sort)
-if [[ "$actual" != "$sorted" ]]; then
-  echo "Reordering imports alphabetically."
-  needs_fix=true
-fi
-
-if [[ "$needs_fix" == true ]]; then
-  # Preserve the header comment (lines before the first import)
-  header=$(sed '/^import /,$d' "$ROOT_FILE")
-  # Generate the correct sorted import list from the filesystem
-  imports=$(echo "$expected" | sed 's/^/import /')
-  {
-    echo "$header"
-    echo "$imports"
-  } > "$ROOT_FILE"
-  echo "Fixed $ROOT_FILE."
-else
-  echo "All imports valid and sorted."
-fi
+echo "$BENCH_MAIN: covers all Benchmark and Tune modules."
 
 echo "Running lake build..."
 echo ""
@@ -191,13 +234,13 @@ echo ""
 echo "Running leanblueprint web..."
 leanblueprint web
 
-# ── 11. Print axioms (opt-in) ──
+# ── 11. Check axioms (opt-in) ──
 
 if [[ "$CHECK_AXIOMS" == true ]]; then
   echo ""
   echo "Checking axioms..."
   echo ""
-  lake env lean scripts/print_axioms.lean
+  lake env lean scripts/check_axioms.lean
 else
   echo ""
   echo "Build succeeded. (Run with --axioms to check axioms)"
