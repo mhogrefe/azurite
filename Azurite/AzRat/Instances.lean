@@ -2,6 +2,7 @@ import Azurite.AzRat.Equiv.Construct
 import Azurite.AzRat.Equiv.Conversion
 import Azurite.AzRat.Equiv.Div
 import Azurite.AzRat.Equiv.Order
+import Azurite.AzRat.Equiv.Pow
 import Azurite.AzRat.Equiv.Sub
 
 /-!
@@ -65,8 +66,38 @@ instance : Field AzRat where
   neg_add_cancel a := toRat_injective (by simp)
   sub_eq_add_neg := AzRat.sub_eq_add_neg
   div_eq_mul_inv := AzRat.div_eq_mul_inv
-  nsmul := nsmulRec
-  zsmul := zsmulRec
+  -- `n • q` / `z • q` are one cast plus one multiplication (the default
+  -- `nsmulRec`/`zsmulRec` would be `n` additions); the casts are limb-level
+  -- via `AzNat.ofNat`/`AzInt.ofInt`.
+  nsmul n q := (n : AzRat) * q
+  nsmul_zero q := toRat_injective (by simp)
+  nsmul_succ n q := toRat_injective (by
+    simp only [toRat_mul, toRat_add, toRat_natCast]; push_cast; ring)
+  zsmul z q := (z : AzRat) * q
+  zsmul_zero' q := toRat_injective (by simp)
+  zsmul_succ' n q := toRat_injective (by
+    simp only [toRat_mul, toRat_add, toRat_intCast]; push_cast; ring)
+  zsmul_neg' n q := toRat_injective (by
+    simp only [toRat_mul, toRat_neg, toRat_intCast]
+    push_cast [Int.negSucc_eq]; ring)
+  -- Exponentiation `q ^ n` and `q ^ z` run `AzRat.pow`/`AzRat.zpow`
+  -- (componentwise `AzNat` sliding-window powers, no reduction needed, and
+  -- negative exponents swap the components for free), so they are
+  -- `O(log n)` multiplications rather than the default `O(n)`, and
+  -- `q.pow n = q ^ n` / `q.zpow z = q ^ z` definitionally. The obligations
+  -- are discharged through `toRat` (which does not need the `Field`
+  -- structure being built).
+  npow n q := q.pow n
+  npow_zero q := toRat_injective (by rw [toRat_pow, pow_zero, toRat_one])
+  npow_succ n q := toRat_injective (by rw [toRat_mul, toRat_pow, toRat_pow, pow_succ])
+  zpow z q := q.zpow z
+  zpow_zero' q := toRat_injective (by
+    show toRat (q.pow 0) = toRat 1
+    rw [toRat_pow, pow_zero, toRat_one])
+  zpow_succ' n q := toRat_injective (by
+    show toRat (q.pow (n + 1)) = toRat (q.pow n * q)
+    rw [toRat_mul, toRat_pow, toRat_pow, pow_succ])
+  zpow_neg' n q := zpow_negSucc q n
   natCast_zero := toRat_injective (by simp)
   natCast_succ n := toRat_injective (by simp)
   intCast_ofNat n := toRat_injective (by simp)
@@ -116,6 +147,10 @@ namespace Azurite
 #guard ((1 : AzRat) / 3 - 1 / 2).toString == "-1/6"
 #guard ((-6 : AzRat) * (2 / 3)).toString == "-4"
 #guard ((2 / 3 : AzRat) ^ 2).toString == "4/9"
+#guard ((2 / 3 : AzRat) ^ (-2 : ℤ)).toString == "9/4"
+#guard ((-1 / 2 : AzRat) ^ (-3 : ℤ)).toString == "-8"
+#guard ((3 : ℕ) • (1 / 2 : AzRat)).toString == "3/2"
+#guard ((-2 : ℤ) • (1 / 3 : AzRat)).toString == "-2/3"
 #guard (((3 / 4 : ℚ) : AzRat)).toString == "3/4"
 #guard ((-22 : ℤ) : AzRat).toString == "-22"
 #guard (|(-5 : AzRat) / 2|).toString == "5/2"

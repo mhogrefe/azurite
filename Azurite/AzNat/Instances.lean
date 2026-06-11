@@ -23,7 +23,18 @@ instance : CommSemiring AzNat where
   zero_mul a := toNat_injective (by simp [toNat_mul])
   mul_zero a := toNat_injective (by simp [toNat_mul])
   mul_comm a b := toNat_injective (by simp [toNat_mul, Nat.mul_comm])
-  nsmul := nsmulRec
+  -- The cast `(n : ℕ) : AzNat` is the limb-level `AzNat.ofNat` (the default
+  -- `Nat.unaryCast` would be `n` additions of `1`), and `n • a` is one cast
+  -- plus one multiplication (the default `nsmulRec` would be `n` additions).
+  natCast n := AzNat.ofNat n
+  natCast_zero := toNat_injective (by rw [toNat_ofNat, toNat_zero])
+  natCast_succ n := toNat_injective (by
+    rw [toNat_add, toNat_ofNat, toNat_ofNat, toNat_one])
+  nsmul n a := AzNat.ofNat n * a
+  nsmul_zero a := toNat_injective (by
+    rw [toNat_mul, toNat_ofNat, toNat_zero, Nat.zero_mul])
+  nsmul_succ n a := toNat_injective (by
+    rw [toNat_add, toNat_mul, toNat_mul, toNat_ofNat, toNat_ofNat, Nat.succ_mul])
   -- Exponentiation `a ^ n` runs the generic sliding-window algorithm (the same one behind
   -- `AzNat.pow`), so it is `O(log n)` multiplications rather than the default `O(n)`, and
   -- `a.pow n = a ^ n` definitionally. The `npow_succ` obligation is discharged by the generic
