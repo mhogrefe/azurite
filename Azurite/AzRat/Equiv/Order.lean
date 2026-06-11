@@ -14,8 +14,8 @@ Mirrors the `AzInt` construction.
 
 Also provides the bundled `orderIsoRat : AzRat ≃o ℚ` and the order-level
 descriptions of the operations defined so far: `toRat_max`/`toRat_min`, and
-`abs_eq_max_neg` (so `AzRat.abs` will agree with the lattice absolute value
-once `AzRat` has additive structure).
+`abs_eq_max_neg` (through which `abs_eq` in `Azurite/AzRat/Instances.lean`
+identifies `AzRat.abs` with the lattice absolute value `|·|`).
 -/
 
 namespace Azurite.AzRat
@@ -100,8 +100,8 @@ def orderIsoRat : AzRat ≃o ℚ :=
 
 /-- `AzRat.abs` is the order-theoretic absolute value, `max q (-q)` — the
 defining equation of Mathlib's `|·|`. (The `|·|` notation itself requires an
-`AddGroup`, so it becomes available — and provably equal to the constant-time
-`AzRat.abs` via this lemma — once `AzRat` gains additive structure.) -/
+`AddGroup`, which `AzRat` acquires in `Azurite/AzRat/Instances.lean`; the
+lemma `abs_eq` there uses this equation to prove `|q| = q.abs`.) -/
 theorem abs_eq_max_neg (q : AzRat) : q.abs = max q (-q) := by
   apply toRat_injective
   rw [toRat_abs, toRat_max, toRat_neg]

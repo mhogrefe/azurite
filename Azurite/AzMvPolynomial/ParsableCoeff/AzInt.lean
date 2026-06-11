@@ -28,7 +28,7 @@ private theorem AzInt.parseChars_toChars (z : AzInt) :
 
 /-! ### Char-set facts about `AzInt.toString` -/
 
-private theorem AzInt.toChars_eq (z : AzInt) :
+theorem AzInt.toChars_eq (z : AzInt) :
     AzInt.toChars z =
       if z.sign then AzNat.toChars z.abs
       else '-' :: AzNat.toChars z.abs := by
@@ -38,7 +38,7 @@ private theorem AzInt.toChars_eq (z : AzInt) :
   · rw [if_neg h_sign, if_neg h_sign, String.toList_append]
     rfl
 
-private theorem AzInt.toChars_nonempty (z : AzInt) : AzInt.toChars z ≠ [] := by
+theorem AzInt.toChars_nonempty (z : AzInt) : AzInt.toChars z ≠ [] := by
   rw [AzInt.toChars_eq]
   split_ifs with h_sign
   · exact AzNat.toString_ne_empty z.abs
@@ -46,7 +46,7 @@ private theorem AzInt.toChars_nonempty (z : AzInt) : AzInt.toChars z ≠ [] := b
 
 /-- Every character of `AzInt.toChars z` is a decimal digit `'0'`–`'9'`
 or `'-'`. -/
-private theorem AzInt.mem_toChars_digit_or_dash (z : AzInt) (c : Char)
+theorem AzInt.mem_toChars_digit_or_dash (z : AzInt) (c : Char)
     (hc : c ∈ AzInt.toChars z) :
     c = '-' ∨ ('0'.toNat ≤ c.toNat ∧ c.toNat ≤ '9'.toNat) := by
   rw [AzInt.toChars_eq] at hc
@@ -69,7 +69,7 @@ private theorem AzInt.toChars_no_syntax (z : AzInt) (c : Char) (hc : c ∈ AzInt
     · cases hdash
     · omega
 
-private theorem AzInt.toChars_no_minus_tail (z : AzInt) (c : Char)
+theorem AzInt.toChars_no_minus_tail (z : AzInt) (c : Char)
     (hc : c ∈ (AzInt.toChars z).tail) (heq : c = '-') : False := by
   rw [AzInt.toChars_eq] at hc
   split_ifs at hc with h_sign
@@ -84,14 +84,14 @@ private theorem AzInt.toChars_no_minus_tail (z : AzInt) (c : Char)
     subst heq; have : ('-' : Char).toNat = 45 := rfl
     have h_zero : ('0' : Char).toNat = 48 := rfl; omega
 
-private theorem AzInt.toChars_head_is_syntax (z : AzInt) (c : Char) (t : List Char)
+theorem AzInt.toChars_head_is_syntax (z : AzInt) (c : Char) (t : List Char)
     (hct : AzInt.toChars z = c :: t) : isPolySyntaxChar c := by
   have h_mem : c ∈ AzInt.toChars z := hct ▸ List.mem_cons_self ..
   rcases AzInt.mem_toChars_digit_or_dash z c h_mem with rfl | hdig
   · right; right; left; rfl
   · left; exact hdig
 
-private theorem AzInt.toChars_minus_next_syntax (z : AzInt) (t : List Char)
+theorem AzInt.toChars_minus_next_syntax (z : AzInt) (t : List Char)
     (hct : AzInt.toChars z = '-' :: t) :
     ∃ c t', t = c :: t' ∧ isPolySyntaxChar c := by
   rw [AzInt.toChars_eq] at hct
@@ -113,7 +113,7 @@ private theorem AzInt.toChars_minus_next_syntax (z : AzInt) (t : List Char)
       AzNat.toString_char_digit z.abs c' h_c'_mem
     exact ⟨c', t', h_t_eq.trans hc't', Or.inl h_c'_dig⟩
 
-private theorem AzInt.toChars_zero : AzInt.toChars (0 : AzInt) = ['0'] := by
+theorem AzInt.toChars_zero : AzInt.toChars (0 : AzInt) = ['0'] := by
   rw [AzInt.toChars_eq]
   rw [show (0 : AzInt).sign = true from rfl, if_pos rfl]
   exact AzNat.toString_zero

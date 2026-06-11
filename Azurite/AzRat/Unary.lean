@@ -31,11 +31,10 @@ def neg (q : AzRat) : AzRat where
 instance : Neg AzRat := ⟨neg⟩
 
 /-- Absolute value: force the sign positive (constant-time, no comparison).
-Mathlib's `|·|` notation requires an `AddGroup`, so it cannot denote this
-function until `AzRat` gains additive structure; `abs_eq_max_neg`
-(`Azurite/AzRat/Equiv/Order.lean`) already records the defining equation
-`q.abs = max q (-q)`, so the two will agree definitionally-for-free then.
-`protected` keeps the eventual `|·|` resolution unambiguous. -/
+Mathlib's `|·|` notation requires an `AddGroup`, which `AzRat` acquires in
+`Azurite/AzRat/Instances.lean`; `abs_eq` there proves `|q| = q.abs` (via
+`abs_eq_max_neg` in `Azurite/AzRat/Equiv/Order.lean`, the defining equation
+`q.abs = max q (-q)`). `protected` keeps the `|·|` resolution unambiguous. -/
 protected def abs (q : AzRat) : AzRat :=
   { q with sign := true, zero_sign := fun _ => rfl }
 

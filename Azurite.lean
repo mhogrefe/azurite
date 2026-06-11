@@ -1,5 +1,3 @@
--- This module serves as the root of the `Azurite` library.
--- Import modules here that should be built as part of the library.
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.SlidingWindowPow
@@ -169,6 +167,7 @@ import Azurite.AzMvPolynomial.ParenFree
 import Azurite.AzMvPolynomial.ParsableCoeff
 import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 import Azurite.AzMvPolynomial.ParsableCoeff.AzNat
+import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
 import Azurite.AzMvPolynomial.ParsableElement
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ParseToString
@@ -357,11 +356,13 @@ import Azurite.AzPolynomialQ.Eval
 import Azurite.AzPolynomialQ.Neg
 import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
+import Azurite.AzRat.Add
 import Azurite.AzRat.Basic
 import Azurite.AzRat.Compare
 import Azurite.AzRat.Construct
 import Azurite.AzRat.Conversion
 import Azurite.AzRat.Div
+import Azurite.AzRat.Equiv.Add
 import Azurite.AzRat.Equiv.Basic
 import Azurite.AzRat.Equiv.Compare
 import Azurite.AzRat.Equiv.Construct
@@ -371,14 +372,19 @@ import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Mul
 import Azurite.AzRat.Equiv.Order
 import Azurite.AzRat.Equiv.Parse
+import Azurite.AzRat.Equiv.RingEquiv
 import Azurite.AzRat.Equiv.Round
 import Azurite.AzRat.Equiv.Shift
+import Azurite.AzRat.Equiv.Sub
 import Azurite.AzRat.Equiv.Unary
+import Azurite.AzRat.Instances
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Mul
+import Azurite.AzRat.ParsableElement
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Round
 import Azurite.AzRat.Shift
+import Azurite.AzRat.Sub
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
 import Azurite.AzVector.Basic
@@ -837,3 +843,5 @@ import Azurite.UInt64.WideAdd3
 import Azurite.UInt64.WideMul
 import Azurite.UInt64.WideSub
 import Azurite.UInt64.WideSub3
+-- This module serves as the root of the `Azurite` library.
+-- Import modules here that should be built as part of the library.

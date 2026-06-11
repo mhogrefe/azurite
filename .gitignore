@@ -29,3 +29,7 @@ chart*.svg
 # Asymptote diagram outputs (sources are tracked; PDFs and SVGs are regenerated)
 /blueprint/src/asymptote/*.pdf
 /blueprint/src/asymptote/*.svg
+
+# Claude Code session-local state (memory lives in ~/.claude, never in-repo)
+.claude/projects/
+.claude/settings.local.json
