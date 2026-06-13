@@ -16,10 +16,8 @@
 # The Lean build and the blueprint pipeline (Asymptote diagrams, then the
 # PDF and web blueprints in parallel) are independent, so they run
 # concurrently: blueprint logs are captured to a temp dir and summarized at
-# the end, while `lake build` streams live. The machine-wide build lock
-# (`/tmp/malachite-bench.lock.d`, see ~/.claude/CLAUDE.md) is acquired for
-# the duration: concurrent heavy builds from other sessions have OOM'd this
-# machine.
+# the end, while `lake build` streams live. Lean parallelism is capped at
+# `-j 4` (full parallelism has OOM'd this machine).
 #
 # Usage: ./scripts/check_and_build.sh [--axioms] [--serial]
 #   --axioms  After building, verify all Azurite declarations use only
@@ -147,29 +145,13 @@ if [[ -n "$bench_missing" ]]; then
 fi
 echo "$BENCH_MAIN: covers all Benchmark and Tune modules."
 
-# ── 4. Acquire the machine-wide build lock ──
-# Multiple Claude/dev sessions run concurrently on this machine; concurrent
-# heavy builds have OOM'd it (see ~/.claude/CLAUDE.md, "Benchmark/build lock").
-
-LOCK_DIR=/tmp/malachite-bench.lock.d
-if mkdir "$LOCK_DIR" 2>/dev/null; then
-  echo "check_and_build.sh $(date '+%F %T')" > "$LOCK_DIR/info"
-  trap 'rm -rf "$LOCK_DIR"' EXIT
-else
-  echo "Machine-wide build lock is held:"
-  cat "$LOCK_DIR/info" 2>/dev/null || true
-  echo "Refusing to start a heavy build; re-run when the holder finishes."
-  echo "(If the lock is stale — holder >2h old — remove $LOCK_DIR by hand.)"
-  exit 1
-fi
-
 # Cap Lean parallelism unless the caller overrides: full parallelism has
 # OOM'd this machine.
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
-# ── 5. Blueprint pipeline (diagrams, then PDF ∥ web) ──
+# ── 4. Blueprint pipeline (diagrams, then PDF ∥ web) ──
 
-# ── 5a. Compile Asymptote diagrams ──
+# ── 4a. Compile Asymptote diagrams ──
 
 build_diagrams() {
   local ASY_DIR="blueprint/src/asymptote"
@@ -244,7 +226,7 @@ build_diagrams() {
    exit "$status")
 }
 
-# ── 5b. Diagrams, then `leanblueprint pdf` and `leanblueprint web` in
+# ── 4b. Diagrams, then `leanblueprint pdf` and `leanblueprint web` in
 #        parallel (both only read blueprint/src; pdf writes to print/, web
 #        to web/, so they do not collide) ──
 
@@ -279,7 +261,7 @@ report_blueprint() {
   fi
 }
 
-# ── 6. Build (Lean live in the foreground; blueprint in the background) ──
+# ── 5. Build (Lean live in the foreground; blueprint in the background) ──
 
 overall_status=0
 
@@ -317,7 +299,7 @@ else
     overall_status=$lake_status
   fi
 
-  # ── 7. Check axioms (opt-in; needs the Lean build, overlaps the blueprint) ──
+  # ── 6. Check axioms (opt-in; needs the Lean build, overlaps the blueprint) ──
 
   if [[ "$CHECK_AXIOMS" == true && "$lake_status" -eq 0 ]]; then
     echo ""
@@ -332,7 +314,7 @@ else
   report_blueprint "$bp_status"
   [[ "$bp_status" -ne 0 ]] && overall_status=1
 
-  # ── 7b. Verify every blueprint \lean{} reference resolves (needs both
+  # ── 6b. Verify every blueprint \lean{} reference resolves (needs both
   #        the fresh lean_decls from the web build and the built oleans) ──
   if [[ "$lake_status" -eq 0 && "$bp_status" -eq 0 ]]; then
     echo ""
@@ -344,7 +326,7 @@ else
   fi
 fi
 
-# ── 8. Axiom check for --serial mode, and final summary ──
+# ── 7. Axiom check for --serial mode, and final summary ──
 
 if [[ "$SERIAL" == true && "$CHECK_AXIOMS" == true ]]; then
   echo ""

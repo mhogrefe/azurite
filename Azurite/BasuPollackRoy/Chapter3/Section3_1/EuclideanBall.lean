@@ -46,6 +46,9 @@ theorem sq_sqrt {a : R} (ha : 0 ≤ a) : sqrt a ^ 2 = a := by
   rw [sqrt, dif_pos ha, sq_abs, sq]
   exact (IsRealClosed.isSquare_of_nonneg ha).choose_spec.symm
 
+@[simp] theorem sqrt_zero : sqrt (0 : R) = 0 :=
+  pow_eq_zero_iff (two_ne_zero) |>.mp (sq_sqrt (le_refl (0 : R)))
+
 /-! ### Euclidean norm -/
 
 /-- The squared euclidean norm `‖x‖² = x₁² + ⋯ + x_k²`. -/
@@ -63,6 +66,13 @@ theorem euclideanNorm_nonneg (x : Fin k → R) : 0 ≤ euclideanNorm x := sqrt_n
 /-- `‖x‖² = x₁² + ⋯ + x_k²` (the defining property of the norm). -/
 theorem euclideanNorm_sq (x : Fin k → R) : euclideanNorm x ^ 2 = euclideanNormSq x :=
   sq_sqrt (euclideanNormSq_nonneg x)
+
+omit [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
+@[simp] theorem euclideanNormSq_zero : euclideanNormSq (0 : Fin k → R) = 0 := by
+  simp [euclideanNormSq]
+
+@[simp] theorem euclideanNorm_zero : euclideanNorm (0 : Fin k → R) = 0 := by
+  rw [euclideanNorm, euclideanNormSq_zero, sqrt_zero]
 
 /-! ### Balls and spheres -/
 
