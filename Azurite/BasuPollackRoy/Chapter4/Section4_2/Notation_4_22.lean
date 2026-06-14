@@ -77,19 +77,17 @@ noncomputable def SyHaSquare (P Q : D[X]) (j : ℕ) :
     With `p := P.natDegree` and `q := Q.natDegree`:
     * for `j ≤ q`, the determinant of the square Sylvester-Habicht
       submatrix `SyHa_{j,j}(P, Q)`;
-    * when `q < p`, BPR additionally extends this to `q < j ≤ p` by
-
-        `sRes_p(P, Q)     := a_p` (leading coefficient of `P`),
-        `sRes_{p-1}(P, Q) := b_q` (leading coefficient of `Q`),
-        `sRes_j(P, Q)     := 0` for `q < j < p - 1`;
-
+    * when `q < p`, the gap is filled by `sRes_p(P, Q) := a_p` (leading
+      coefficient of `P`) and `sRes_j(P, Q) := 0` for `q < j < p` (the
+      defective subresultants in the degree gap vanish). Note: in the
+      non-defective boundary case `q = p - 1` the value `sRes_{p-1} = b_q`
+      is already produced by the determinant branch (`j = p - 1 ≤ q`);
     * outside both ranges (`j > p`, or `q ≥ p` with `j > q`), we default
       to `0` so the function is total. -/
 noncomputable def sRes (P Q : D[X]) (j : ℕ) : D :=
   if j ≤ Q.natDegree then (SyHaSquare P Q j).det
   else if Q.natDegree < P.natDegree then
     if j = P.natDegree then P.leadingCoeff
-    else if j = P.natDegree - 1 then Q.leadingCoeff
     else 0
   else 0
 

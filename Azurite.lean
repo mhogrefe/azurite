@@ -1,3 +1,4 @@
+
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.SlidingWindowPow
@@ -762,9 +763,13 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_1.VandermondeMatrix
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_15
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_18
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_24
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_35
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_36
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_13
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_22
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_27
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_31
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_32
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_16
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_19
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_20
@@ -773,11 +778,16 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_25
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_26
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_28
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_30
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Proposition_4_37
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_14
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_23
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_29
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_17
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_32
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_33
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_33_NonMonic
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_34
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_10
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Algorithm_8_8
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.BitsizeBounds
@@ -870,5 +880,3 @@ import Azurite.UInt64.WideAdd3
 import Azurite.UInt64.WideMul
 import Azurite.UInt64.WideSub
 import Azurite.UInt64.WideSub3
--- This module serves as the root of the `Azurite` library.
--- Import modules here that should be built as part of the library.
