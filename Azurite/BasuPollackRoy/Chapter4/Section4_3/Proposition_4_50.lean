@@ -57,7 +57,7 @@ private theorem trace_pow_eq_of_isNilpotent_sub {K M : Type*} [Field K] [AddComm
 /-- **(P1) crux.** Over an algebraically closed field `K`, the `m`-th power sum of the
 eigenvalues of `A` (the roots of its characteristic polynomial, with multiplicity) is the
 trace of `A ^ m`. Equivalently, `(A ^ m).charpoly.roots = A.charpoly.roots.map (· ^ m)`. -/
-private theorem trace_pow_eq_sum_roots_pow {n : ℕ} {K : Type*} [Field K] [IsAlgClosed K]
+theorem trace_pow_eq_sum_roots_pow {n : ℕ} {K : Type*} [Field K] [IsAlgClosed K]
     (A : Matrix (Fin n) (Fin n) K) (m : ℕ) :
     Matrix.trace (A ^ m) = (A.charpoly.roots.map (fun x => x ^ m)).sum := by
   classical
@@ -116,7 +116,7 @@ private theorem trace_pow_eq_sum_roots_pow {n : ℕ} {K : Type*} [Field K] [IsAl
 omit [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
 /-- **(P1).** `newtonSum (CharPol M) m = algebraMap R C (Tr (M ^ m))`, for `C` an
 algebraically closed `R`-algebra (e.g. `AlgebraicClosure R`). -/
-private theorem newtonSum_charpoly_eq_trace {C : Type*} [Field C] [Algebra R C]
+theorem newtonSum_charpoly_eq_trace {C : Type*} [Field C] [Algebra R C]
     [IsAlgClosed C] (M : Matrix (Fin p) (Fin p) R) (m : ℕ) :
     newtonSum (C := C) M.charpoly m = algebraMap R C (Matrix.trace (M ^ m)) := by
   classical
