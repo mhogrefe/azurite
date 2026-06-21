@@ -106,7 +106,7 @@ private lemma lowSumLimbs_correct (a b : Array UInt64) (L i : Nat) (carry : Bool
   | succ n ih =>
     have h_lt : i < L := by omega
     rw [lowSumLimbs]
-    simp only [h_lt, ↓reduceIte]
+    simp only [h_lt, ↓reduceIte, Array.getD_eq_getD_getElem?]
     set awc := UInt64.addWithCarry (a[i]?.getD 0) (b[i]?.getD 0) carry with hawc
     have h_rec : L - (i + 1) = n := by omega
     rw [ih (i + 1) awc.2 (acc.push awc.1) h_rec]
@@ -152,13 +152,15 @@ theorem toNat_addModPow2 (a b : AzNat) (k : Nat) :
     (addModPow2 a b k).toNat = (a.toNat + b.toNat) % 2 ^ k := by
   set L := (k + 63) / 64 with hL
   -- `s` = the low-`L`-limb sum array.
-  set s := lowSumLimbs a.limbs b.limbs L 0 false #[] with hs
-  -- Invariant at i = 0, acc = #[], carry = false.
-  have h_inv := lowSumLimbs_correct a.limbs b.limbs L 0 false #[]
+  set s := lowSumLimbs a.limbs b.limbs L 0 false (Array.emptyWithCapacity L) with hs
+  -- Invariant at i = 0, acc = empty, carry = false.
+  have h_inv := lowSumLimbs_correct a.limbs b.limbs L 0 false (Array.emptyWithCapacity L)
   rw [← hs] at h_inv
-  have h_empty : toNatLimbsList (#[] : Array UInt64).toList = 0 := by
-    simp [toNatLimbsList]
-  rw [h_empty, Array.size_empty, Nat.sub_zero, Nat.zero_add] at h_inv
+  have h_empty : toNatLimbsList (Array.emptyWithCapacity L : Array UInt64).toList = 0 := by
+    rw [Array.emptyWithCapacity_eq]; simp [toNatLimbsList]
+  have h_size0 : (Array.emptyWithCapacity L : Array UInt64).size = 0 := by
+    rw [Array.emptyWithCapacity_eq]; exact Array.size_empty
+  rw [h_empty, h_size0, Nat.sub_zero, Nat.zero_add] at h_inv
   simp only [Nat.mul_zero, Nat.pow_zero, Nat.mul_one] at h_inv
   rw [show (false : Bool).toNat = 0 from rfl, Nat.zero_add] at h_inv
   rw [show (0 + L) = L from Nat.zero_add L] at h_inv

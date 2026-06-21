@@ -1,0 +1,19 @@
+# Benchmark: size-dispatched low product vs. naive full-product-then-mask, mod 2^k.
+#
+# Full-width b-bit residue operands (k = b).  The fused path computes only the
+# low L = ceil(k/64) limbs (schoolbook-/Karatsuba-/Toom-3-low, Mulders splits),
+# while the naive path forms the whole 2L-limb product and discards the top half.
+# This is where avoiding the top half should pay off most, growing with size.
+#
+# Series:
+#   Fused  = AzNat.mulDispatchModPow2 a c k   (low L limbs only)
+#   Naive  = AzNat.modPow2 (a * c) k          (full 2L-limb product, then mask)
+
+benchmark = "az_nat_mul_mod_pow2_residue"
+limit     = 5000
+title     = "az_nat_mul_mod_pow2_residue: low product vs full-product-then-mask (residues)"
+x_label   = "Modulus bit-width k"
+
+[params]
+meanBitLength = 4096
+iters         = 50

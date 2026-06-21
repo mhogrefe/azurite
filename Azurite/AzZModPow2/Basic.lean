@@ -5,6 +5,8 @@ import Azurite.AzNat.AddModPow2
 import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.Equiv.SubModPow2
+import Azurite.AzNat.MulModPow2.Dispatch
+import Azurite.AzNat.Equiv.MulModPow2.Dispatch
 import Azurite.AzNat.Sub
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.LowMask
@@ -108,6 +110,15 @@ def sub (a b : AzZModPow2 k) : AzZModPow2 k :=
 
 instance : Sub (AzZModPow2 k) := ⟨sub⟩
 
+/-- **Multiplication** in `ℤ / 2^k`: `a * b mod 2^k`, by the size-dispatched
+low-product `AzNat.mulDispatchModPow2`, which picks the schoolbook, Karatsuba, or
+Toom-3 low product by operand size and computes only the low `(k+63)/64` limbs. -/
+def mul (a b : AzZModPow2 k) : AzZModPow2 k :=
+  ⟨AzNat.mulDispatchModPow2 a.val b.val k, by
+    rw [AzNat.toNat_mulDispatchModPow2]; exact Nat.mod_lt _ (by positivity)⟩
+
+instance : Mul (AzZModPow2 k) := ⟨mul⟩
+
 end AzZModPow2
 
 end Azurite
@@ -148,5 +159,18 @@ open Azurite Azurite.AzZModPow2
   (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
 #guard (AzZModPow2.ofNat 128 4 - AzZModPow2.ofNat 128 5).val ==
   (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+
+-- Multiplication wraps mod `2^k`. `ℤ/16`: `5*7 = 35 ≡ 3`, `15*15 = 225 ≡ 1`.
+#guard (AzZModPow2.ofNat 4 5 * AzZModPow2.ofNat 4 7).val == (AzZModPow2.ofNat 4 3).val
+#guard (AzZModPow2.ofNat 4 15 * AzZModPow2.ofNat 4 15).val == (AzZModPow2.ofNat 4 1).val
+#guard (AzZModPow2.ofNat 8 200 * AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 32).val
+#guard (AzZModPow2.ofNat 32 0 * AzZModPow2.ofNat 32 123456789).val == (AzZModPow2.ofNat 32 0).val
+#guard (AzZModPow2.ofNat 32 1 * AzZModPow2.ofNat 32 123456789).val ==
+  (AzZModPow2.ofNat 32 123456789).val
+-- Multi-limb: `(2^64-1)^2 = 2^128 - 2^65 + 1 ≡ 1 (mod 2^64)`; full value mod `2^128`.
+#guard (AzZModPow2.ofNat 64 (2 ^ 64 - 1) * AzZModPow2.ofNat 64 (2 ^ 64 - 1)).val ==
+  (AzZModPow2.ofNat 64 1).val
+#guard (AzZModPow2.ofNat 128 (2 ^ 64 - 1) * AzZModPow2.ofNat 128 (2 ^ 64 - 1)).val ==
+  (AzZModPow2.ofNat 128 ((2 ^ 64 - 1) * (2 ^ 64 - 1) % 2 ^ 128)).val
 
 end Tests

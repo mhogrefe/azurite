@@ -20,15 +20,18 @@ namespace Azurite.AzNat
 def lowSumLimbs (a b : Array UInt64) (L i : Nat) (carry : Bool)
     (acc : Array UInt64) : Array UInt64 :=
   if i < L then
-    let awc := UInt64.addWithCarry (a[i]?.getD 0) (b[i]?.getD 0) carry
+    let awc := UInt64.addWithCarry (a.getD i 0) (b.getD i 0) carry
     lowSumLimbs a b L (i + 1) awc.2 (acc.push awc.1)
   else acc
 termination_by L - i
 
 /-- **Fused add-and-mask.** `(a + b) mod 2 ^ k`, computed by walking only the low
     `L = (k + 63) / 64` limbs of `a` and `b` (no carry-limb append, no padding)
-    and masking to the low `k` bits. -/
+    and masking to the low `k` bits.  Reads with allocation-free `Array.getD`
+    (no `Option` boxing) into a buffer pre-sized to `L` limbs (no reallocation
+    during the carry walk). -/
 def addModPow2 (a b : AzNat) (k : Nat) : AzNat :=
-  modPow2 (ofLimbs (lowSumLimbs a.limbs b.limbs ((k + 63) / 64) 0 false #[])) k
+  modPow2 (ofLimbs (lowSumLimbs a.limbs b.limbs ((k + 63) / 64) 0 false
+    (Array.emptyWithCapacity ((k + 63) / 64)))) k
 
 end Azurite.AzNat

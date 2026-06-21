@@ -108,7 +108,7 @@ private lemma lowDiffLimbs_correct (a b : Array UInt64) (L i : Nat) (borrow : Bo
   | succ n ih =>
     have h_lt : i < L := by omega
     rw [lowDiffLimbs]
-    simp only [h_lt, ↓reduceIte]
+    simp only [h_lt, ↓reduceIte, Array.getD_eq_getD_getElem?]
     set swb := UInt64.subWithBorrow (a[i]?.getD 0) (b[i]?.getD 0) borrow with hswb
     have h_rec : L - (i + 1) = n := by omega
     obtain ⟨c, hc⟩ := ih (i + 1) swb.2 (acc.push swb.1) h_rec
@@ -158,12 +158,14 @@ private lemma lowDiffLimbs_correct (a b : Array UInt64) (L i : Nat) (borrow : Bo
 theorem subModPow2_modEq (a b : AzNat) (k : Nat) :
     (AzNat.subModPow2 a b k).toNat + b.toNat ≡ a.toNat [MOD 2 ^ k] := by
   set L := (k + 63) / 64 with hL
-  set r := lowDiffLimbs a.limbs b.limbs L 0 false #[] with hr
-  obtain ⟨c, hinv⟩ := lowDiffLimbs_correct a.limbs b.limbs L 0 false #[]
+  set r := lowDiffLimbs a.limbs b.limbs L 0 false (Array.emptyWithCapacity L) with hr
+  obtain ⟨c, hinv⟩ := lowDiffLimbs_correct a.limbs b.limbs L 0 false (Array.emptyWithCapacity L)
   rw [← hr] at hinv
-  have h_empty : toNatLimbsList (#[] : Array UInt64).toList = 0 := by
-    simp [toNatLimbsList]
-  rw [h_empty, Array.size_empty, Nat.sub_zero, Nat.zero_add] at hinv
+  have h_empty : toNatLimbsList (Array.emptyWithCapacity L : Array UInt64).toList = 0 := by
+    rw [Array.emptyWithCapacity_eq]; simp [toNatLimbsList]
+  have h_size0 : (Array.emptyWithCapacity L : Array UInt64).size = 0 := by
+    rw [Array.emptyWithCapacity_eq]; exact Array.size_empty
+  rw [h_empty, h_size0, Nat.sub_zero, Nat.zero_add] at hinv
   simp only [Nat.mul_zero, Nat.pow_zero, Nat.mul_one] at hinv
   rw [show (false : Bool).toNat = 0 from rfl, Nat.add_zero] at hinv
   rw [show (0 + L) = L from Nat.zero_add L] at hinv

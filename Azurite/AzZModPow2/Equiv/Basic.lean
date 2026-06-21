@@ -120,4 +120,16 @@ in `ZMod (2^k)`. -/
   apply toZMod_injective
   rw [toZMod_sub, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
 
+/-- **Multiplication agrees with `ZMod`.**  The size-dispatched low product `mul`
+realizes multiplication in `ZMod (2^k)`. -/
+@[simp] theorem toZMod_mul (a b : AzZModPow2 k) : toZMod (a * b) = toZMod a * toZMod b := by
+  show (((AzNat.mulDispatchModPow2 a.val b.val k).toNat : ℕ) : ZMod (2 ^ k)) = toZMod a * toZMod b
+  rw [AzNat.toNat_mulDispatchModPow2, ZMod.natCast_mod, Nat.cast_mul]
+  rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_mul`. -/
+@[simp] theorem ofZMod_mul (x y : ZMod (2 ^ k)) : ofZMod (x * y) = ofZMod x * ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_mul, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
 end Azurite.AzZModPow2

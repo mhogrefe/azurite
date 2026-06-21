@@ -21,7 +21,7 @@ namespace Azurite.AzNat
 def lowDiffLimbs (a b : Array UInt64) (L i : Nat) (borrow : Bool)
     (acc : Array UInt64) : Array UInt64 :=
   if i < L then
-    let swb := UInt64.subWithBorrow (a[i]?.getD 0) (b[i]?.getD 0) borrow
+    let swb := UInt64.subWithBorrow (a.getD i 0) (b.getD i 0) borrow
     lowDiffLimbs a b L (i + 1) swb.2 (acc.push swb.1)
   else acc
 termination_by L - i
@@ -29,8 +29,10 @@ termination_by L - i
 /-- **Fused subtract-and-mask.** `(a - b) mod 2 ^ k`, computed by walking only the
     low `L = (k + 63) / 64` limbs of `a` and `b` (no padding) and masking to the
     low `k` bits.  The final borrow-out is dropped (the `+2^k` wrap when
-    `a < b`). -/
+    `a < b`).  Reads with allocation-free `Array.getD` (no `Option` boxing) into a
+    buffer pre-sized to `L` limbs (no reallocation during the borrow walk). -/
 def subModPow2 (a b : AzNat) (k : Nat) : AzNat :=
-  modPow2 (ofLimbs (lowDiffLimbs a.limbs b.limbs ((k + 63) / 64) 0 false #[])) k
+  modPow2 (ofLimbs (lowDiffLimbs a.limbs b.limbs ((k + 63) / 64) 0 false
+    (Array.emptyWithCapacity ((k + 63) / 64)))) k
 
 end Azurite.AzNat

@@ -1,0 +1,21 @@
+# Benchmark: fused add-and-mask vs. naive add-then-mask, mod 2^k — residue inputs.
+#
+# Unlike `az_nat_add_mod_pow2` (independent geometric operands, where the naive
+# path degenerates into a memcpy of the longer operand), here BOTH operands are
+# full-width b-bit values and the modulus is 2^b — the actual AzZModPow2 regime
+# (uniform k-bit residues of roughly equal width).  This isolates the real
+# question: with equal-width operands, does the fused single pass beat
+# `AzNat.add` (carry-limb append) followed by a separate `modPow2` masking pass?
+#
+# Series:
+#   Fused  = AzNat.addModPow2 a c k    (one pass: add-with-carry + mask)
+#   Naive  = AzNat.modPow2 (a + c) k   (full add, then a separate mask pass)
+
+benchmark = "az_nat_add_mod_pow2_residue"
+limit     = 10000
+title     = "az_nat_add_mod_pow2_residue: fused vs add-then-mask (full-width residues)"
+x_label   = "Modulus bit-width k"
+
+[params]
+meanBitLength = 4096
+iters         = 200

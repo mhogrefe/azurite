@@ -1,0 +1,17 @@
+# Benchmark: fused add-and-mask vs. naive add-then-mask, mod 2^k.
+#
+# Times the fused `AzNat.addModPow2 a b k` (a single pass over the low
+# L = ⌈k/64⌉ limbs that adds with carry and masks in one go) against the
+# naive `AzNat.modPow2 (a + b) k` (a full `AzNat.add` — which appends a
+# carry limb when the sum overflows — followed by a separate masking pass).
+# Operands are k-bit residues (k = max significant bits of the pair), so what
+# is being measured is the allocation / second pass the fused form avoids.
+
+benchmark = "az_nat_add_mod_pow2"
+limit     = 10000
+title     = "az_nat_add_mod_pow2: fused add-and-mask vs add-then-mask"
+x_label   = "Modulus bit-width k"
+
+[params]
+meanBitLength = 4096
+iters         = 200
