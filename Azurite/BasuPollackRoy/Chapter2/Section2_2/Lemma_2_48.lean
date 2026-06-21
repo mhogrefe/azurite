@@ -125,7 +125,7 @@ lemma varBetween_der_succ_of_root_at_c_add_one
       varBetween (der (derivative P)) (.finite d) (.finite c) + 1 := by
   have hdP : derivative P ≠ 0 := by
     intro h
-    have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+    have := Polynomial.derivative_eq_zero.mp h
     omega
   have hPd : P.eval d ≠ 0 := by
     have h := hno_root 0 (by omega) d ⟨le_refl d, hdc⟩
@@ -388,11 +388,11 @@ theorem lemma_2_48 (hIVP : HasIntermediateValueProperty R)
     have hpos : 1 ≤ P.natDegree := by rw [hn]; omega
     have hdP : derivative P ≠ 0 := by
       intro h
-      have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+      have := Polynomial.derivative_eq_zero.mp h
       rw [hn] at this; omega
     have hdP_deg : (derivative P).natDegree = n := by
       have h := Polynomial.natDegree_eq_of_degree_eq_some
-        (Polynomial.degree_derivative_eq P (Nat.lt_of_lt_of_le Nat.zero_lt_one hpos))
+        (Polynomial.degree_derivative (Nat.lt_of_lt_of_le Nat.zero_lt_one hpos).ne')
       rw [hn] at h; omega
     -- Derive the no-root hypothesis for P'.
     have hno_root_P' : ∀ k, k < (derivative P).natDegree → ∀ x ∈ Set.Ico d c,

@@ -875,7 +875,7 @@ theorem mvHerFormVec_indep (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
     intro a b hab
     apply (algebraMap R (Ri R)).injective
     simpa only [Algebra.smul_def, mul_one] using hab
-  convert hRimg using 1
+  exact hRimg
 
 /-! ### The transported quadratic form and its diagonal expression -/
 

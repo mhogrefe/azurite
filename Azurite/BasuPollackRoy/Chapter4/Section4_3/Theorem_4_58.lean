@@ -836,7 +836,7 @@ theorem herFormVec_indep (P Q : R[X]) (hP : P.Monic) :
     apply (algebraMap R (Ri R)).injective
     simpa only [Algebra.smul_def, mul_one] using hab
   -- `⇑g ∘ vecs` is exactly that image family
-  convert hRimg using 1
+  exact hRimg
 
 /-- **The Hermite diagonal expression.** A diagonal expression of `quadraticForm (HerMatR P Q)`
 with `r = #(herRoots P Q)` terms, indexed by the distinct roots of `P` in `C = Ri R` at

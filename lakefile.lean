@@ -47,4 +47,4 @@ require «doc-gen4» from git
 -- Mathlib goes last so its transitive dependency pins (e.g. plausible)
 -- take precedence over doc-gen4's, keeping `lake exe cache get` valid.
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "master-2026-06-04"
+  "https://github.com/leanprover-community/mathlib4.git" @ "master-2026-06-20"

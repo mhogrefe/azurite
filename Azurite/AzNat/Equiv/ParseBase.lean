@@ -411,17 +411,73 @@ private theorem startsWith_eq_false_of_head_ne_digit (s p : String) (c : Char)
   have h_c_mem : c ∈ s.toList := by rw [← ht]; simp
   exact h_c_nd (h_digits c h_c_mem)
 
-private theorem filter_underscore_eq_self_of_digits (cs : List Char)
-    (h : ∀ c ∈ cs, '0' ≤ c ∧ c ≤ '9') :
-    cs.filter (· != '_') = cs := by
-  rw [List.filter_eq_self]
-  intro c hc
-  have hc' := h c hc
-  have h_hi : c.toNat ≤ 57 := hc'.2
-  rw [bne_iff_ne]
-  intro h_eq
-  rw [h_eq] at h_hi
-  exact absurd h_hi (by decide)
+/-- Generic `List.foldl` congruence: two fold bodies that agree on every element of
+the list (for every accumulator) yield the same fold. -/
+private theorem foldl_congr_mem {α : Type u} {β : Type v} {g₁ g₂ : β → α → β} {init : β} :
+    ∀ {l : List α}, (∀ acc, ∀ c ∈ l, g₁ acc c = g₂ acc c) →
+      l.foldl g₁ init = l.foldl g₂ init := by
+  intro l
+  induction l generalizing init with
+  | nil => intro _; rfl
+  | cons a t ih =>
+    intro h
+    rw [List.foldl_cons, List.foldl_cons, h init a (List.mem_cons_self ..)]
+    exact ih (fun acc c hc => h acc c (List.mem_cons_of_mem _ hc))
+
+/-- The imperative loop underlying `String.Slice.isNat`, run over a list of
+characters that are all digits (hence `≠ '_'`), never short-circuits and ends with
+`lastWasDigit = true` exactly when the list is nonempty. -/
+private theorem isNat_loop (l : List Char) (b : Bool)
+    (h : ∀ c ∈ l, c.isDigit ∧ c ≠ '_') :
+    (forIn (m := Id) l (none, b) fun c (st : Option Bool × Bool) =>
+        if c = '_' then
+          if (!st.snd) = true then pure (ForInStep.done (some false, st.snd))
+          else pure (ForInStep.yield (none, false))
+        else
+          if c.isDigit = true then pure (ForInStep.yield (none, true))
+          else pure (ForInStep.done (some false, st.snd)))
+      = (none, if l = [] then b else true) := by
+  induction l generalizing b with
+  | nil => rfl
+  | cons a t ih =>
+    have ha := h a (List.mem_cons_self ..)
+    rw [List.forIn_cons, if_neg ha.2, if_pos ha.1]
+    rw [show (pure (ForInStep.yield (none, true)) : Id _) >>= _ =
+          (forIn (m := Id) t (none, true) _) from rfl]
+    rw [ih true (fun c hc => h c (List.mem_cons_of_mem _ hc))]
+    simp
+
+/-- For a nonempty string whose characters are all decimal digits, the new-core
+`String.isNat` (defined via the `String.Slice` API) returns `true`. -/
+private theorem isNat_eq_true_of_digits (s : String) (h_ne : s ≠ "")
+    (h_isDigit : ∀ c ∈ s.toList, c.isDigit)
+    (h_digits : ∀ c ∈ s.toList, '0' ≤ c ∧ c ≤ '9') :
+    s.isNat = true := by
+  have h_ne_list : s.toList ≠ [] := by
+    intro he; apply h_ne; rw [← String.toList_inj]; simpa using he
+  unfold String.isNat String.Slice.isNat
+  simp only [Id.run, String.Slice.forIn_eq_forIn_toList, String.copy_toSlice]
+  rw [isNat_loop s.toList false (fun c hc => ⟨h_isDigit c hc, by
+    intro he; have := (h_digits c hc).2; rw [he] at this; exact absurd this (by decide)⟩),
+    if_neg h_ne_list]
+  rfl
+
+/-- For a string whose characters are all decimal digits with `isNat = true`, the
+new-core `String.toNat?` (via the `String.Slice` API) equals the MSB-first decimal
+value `Nat.ofDigitChars 10 s.toList 0`. -/
+private theorem toNat?_eq_ofDigitChars (s : String)
+    (h_digits : ∀ c ∈ s.toList, '0' ≤ c ∧ c ≤ '9')
+    (h_isNat : s.isNat = true) :
+    s.toNat? = some (Nat.ofDigitChars 10 s.toList 0) := by
+  unfold String.toNat? String.Slice.toNat?
+  rw [← String.isNat, if_pos h_isNat]
+  congr 1
+  rw [String.Slice.foldl_eq_foldl_toList, String.copy_toSlice, Nat.ofDigitChars_eq_foldl]
+  apply foldl_congr_mem
+  intro acc c hc
+  have hc' := h_digits c hc
+  have hne : c ≠ '_' := by intro he; rw [he] at hc'; exact absurd hc'.2 (by decide)
+  rw [if_neg hne, Nat.mul_comm]
 
 theorem parse_eq_toNat? (s : String) (h_ne : s ≠ "")
     (h_digits : ∀ c ∈ s.toList, '0' ≤ c ∧ c ≤ '9') :
@@ -475,16 +531,15 @@ theorem parse_eq_toNat? (s : String) (h_ne : s ≠ "")
   show some (Nat.ofDigits (10 : Nat) _) = s.toNat?
   rw [ofDigits_reverse_eq_foldl s.toList]
   show some (Nat.ofDigitChars 10 s.toList 0) = s.toNat?
-  -- s.toNat? = some (Nat.ofDigitChars 10 (s.toList.filter (· != '_')) 0).
+  -- `s.toNat? = some (Nat.ofDigitChars 10 s.toList 0)` (no underscores present).
   have h_isDigit : ∀ c ∈ s.toList, c.isDigit := by
     intro c hc
     have h := h_digits c hc
     show (c.val ≥ '0'.val && c.val ≤ '9'.val) = true
     rw [Bool.and_eq_true, decide_eq_true_iff, decide_eq_true_iff]
     exact h
-  have h_isNat : s.isNat = true := String.isNat_of_isDigit h_ne h_isDigit
-  rw [String.toNat?_eq_some_ofDigitChars h_isNat]
-  rw [filter_underscore_eq_self_of_digits s.toList h_digits]
+  have h_isNat : s.isNat = true := isNat_eq_true_of_digits s h_ne h_isDigit h_digits
+  exact (toNat?_eq_ofDigitChars s h_digits h_isNat).symm
 
 /-! ### Forward correctness for `parseBase b` (general `b`)
 

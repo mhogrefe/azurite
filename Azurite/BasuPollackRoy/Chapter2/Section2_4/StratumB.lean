@@ -38,7 +38,7 @@ private theorem realizable_const_signPos (q : Fin s → R[X]) (hq : ∀ i, q i �
     (hC' : (∏ i, q i).derivative = 0) (hreal : ∃ x, ∀ i, 0 < (q i).eval x) (i : Fin s) :
     signAtPosInfty (q i) = SignType.pos := by
   have hprodne : (∏ i, q i) ≠ 0 := Finset.prod_ne_zero_iff.mpr (fun i _ => hq i)
-  have hdeg0 : (∏ i, q i).natDegree = 0 := Polynomial.natDegree_eq_zero_of_derivative_eq_zero hC'
+  have hdeg0 : (∏ i, q i).natDegree = 0 := Polynomial.derivative_eq_zero.mp hC'
   have hqi0 : (q i).natDegree = 0 := by
     have := Polynomial.natDegree_le_of_dvd (Finset.dvd_prod_of_mem q (Finset.mem_univ i)) hprodne
     omega

@@ -75,12 +75,12 @@ theorem proposition_3_9 {S : Set (Fin k → R)} {f : (Fin k → R) → (Fin ℓ 
   -- complementation: each is the relative complement of the other
   have hABc : A = S \ B := by
     rw [hA, hB]; ext x
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_diff,
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_sdiff,
       Set.mem_compl_iff, not_and]
     tauto
   have hBAc : B = S \ A := by
     rw [hA, hB]; ext x
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_diff,
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Set.mem_sdiff,
       Set.mem_compl_iff, not_and]
     tauto
   -- the splitting contradicts connectedness

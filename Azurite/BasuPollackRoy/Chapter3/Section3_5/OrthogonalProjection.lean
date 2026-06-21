@@ -118,7 +118,7 @@ omit [IsRealClosed R] in
 theorem euclideanInner_sub_orthProj (W : Submodule R (Fin k → R)) (y : Fin k → R)
     {w : Fin k → R} (hw : w ∈ W) : euclideanInner (y - orthProj W y) w = 0 := by
   have h := (LinearMap.BilinForm.mem_orthogonal_iff.mp (sub_orthProj_mem_orthogonal W y)) w hw
-  rw [LinearMap.BilinForm.isOrtho_def, euclideanBilin_apply] at h
+  rw [euclideanBilin_apply] at h
   rw [euclideanInner_comm]
   exact h
 

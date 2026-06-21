@@ -390,7 +390,7 @@ theorem exists_detour_point_proj {k : ℕ} {i j : Fin (k + 1)} (hij : i ≠ j)
   have hinf : (chartSet i ∩ chartSet j : Set (complexProjectiveSpace R k)).Infinite :=
     infinite_chartSet_inter hij
   have hne : ((chartSet i ∩ chartSet j) \ (↑Δ : Set (complexProjectiveSpace R k))).Nonempty :=
-    (hinf.diff Δ.finite_toSet).nonempty
+    (hinf.sdiff Δ.finite_toSet).nonempty
   obtain ⟨z, ⟨⟨hzi, hzj⟩, hzΔ⟩⟩ := hne
   exact ⟨z, hzi, hzj, hzΔ⟩
 

@@ -75,12 +75,12 @@ theorem example_2_46_no_distinct_roots
     rw [length_virtualRoots, hn]
   have hdP : derivative P ≠ 0 := by
     intro h
-    have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+    have := Polynomial.derivative_eq_zero.mp h
     rw [hn] at this; omega
   have hlenP' : (virtualRoots hIVP hdP).length = 1 := by
     rw [length_virtualRoots]
     have h := Polynomial.natDegree_eq_of_degree_eq_some
-      (Polynomial.degree_derivative_eq P (by rw [hn]; omega))
+      (Polynomial.degree_derivative (p := P) (by rw [hn]; omega))
     rw [hn] at h; omega
   -- Helper: any element x of virtualRoots P with virtualMultiplicity 1 is a root of P.
   have hroot_of_one :

@@ -43,7 +43,7 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 lemma natDegree_derivative_of_pos {P : R[X]} (hP : 1 ≤ P.natDegree) :
     (derivative P).natDegree = P.natDegree - 1 :=
   Polynomial.natDegree_eq_of_degree_eq_some
-    (Polynomial.degree_derivative_eq P (Nat.lt_of_lt_of_le Nat.zero_lt_one hP))
+    (Polynomial.degree_derivative (Nat.lt_of_lt_of_le Nat.zero_lt_one hP).ne')
 
 /-! ### Auxiliary: der P = P :: der (derivative P) -/
 
@@ -147,7 +147,7 @@ lemma varAt_cons_der_eq (P Q : R[X]) {c : R}
       have h := natDegree_derivative_of_pos hQpos
       omega
     have hderQ_ne : derivative Q ≠ 0 := fun h => by
-      have hh := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+      have hh := Polynomial.derivative_eq_zero.mp h
       rw [hQnat] at hh; omega
     by_cases hQc : Q.eval c = 0
     · -- Q(c) = 0: strip the leading zero and recurse on derivative Q.
@@ -316,7 +316,7 @@ theorem lemma_2_36 (hIVP : HasIntermediateValueProperty R)
       -- jumps by 1) and at d' the signs agree (so varAt is unchanged).
       set mu := P.rootMultiplicity c with hmu_def
       have hQ_ne : Q ≠ 0 := fun h => by
-        have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+        have := Polynomial.derivative_eq_zero.mp h
         rw [hP] at this; omega
       have hmu_pos : 1 ≤ mu :=
         (Polynomial.rootMultiplicity_pos hP_ne).mpr hPc
@@ -484,7 +484,7 @@ theorem lemma_2_36 (hIVP : HasIntermediateValueProperty R)
         Polynomial.rootMultiplicity_eq_zero hPc
       set ν := Q.rootMultiplicity c with hν_def
       have hQ_ne : Q ≠ 0 := fun h => by
-        have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+        have := Polynomial.derivative_eq_zero.mp h
         rw [hP] at this; omega
       set σP : SignType := SignType.sign (P.eval c) with hσP_def
       set τ : SignType := SignType.sign (((⇑derivative)^[ν] Q).eval c) with hτ_def

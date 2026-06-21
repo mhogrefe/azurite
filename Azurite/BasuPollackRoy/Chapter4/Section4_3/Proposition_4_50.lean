@@ -277,11 +277,11 @@ private theorem deg_gcd_charpoly_eq [NeZero p] (M : Matrix (Fin p) (Fin p) R) (_
   have hPne : M.charpoly ≠ 0 := fun h => by
     rw [h] at hposdeg; simp at hposdeg
   have hP'ne : M.charpoly.derivative ≠ 0 := fun h => by
-    have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h; omega
+    have := Polynomial.derivative_eq_zero.mp h; omega
   have hderdeg : M.charpoly.derivative.natDegree < M.charpoly.natDegree :=
     Polynomial.natDegree_derivative_lt (by omega)
   have hderdeg_eq : M.charpoly.derivative.natDegree = p - 1 := by
-    have h := Polynomial.degree_derivative_eq M.charpoly (by omega)
+    have h := Polynomial.degree_derivative (p := M.charpoly) (by omega)
     rw [hdeg] at h
     exact Polynomial.natDegree_eq_of_degree_eq_some h
   have hder_q : k ≤ M.charpoly.derivative.natDegree := by
@@ -319,7 +319,7 @@ private theorem rootMultiplicity_euclideanGcd_derivative {C : Type*} [Field C] [
       Polynomial.derivative_rootMultiplicity_of_root ht
     have hQ'ne : Q.derivative ≠ 0 := by
       intro h
-      have hdeg : Q.natDegree = 0 := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+      have hdeg : Q.natDegree = 0 := Polynomial.derivative_eq_zero.mp h
       obtain ⟨c, rfl⟩ := Polynomial.natDegree_eq_zero.1 hdeg
       simp only [Polynomial.IsRoot.def, Polynomial.eval_C] at ht
       exact hQ (by rw [ht, map_zero])

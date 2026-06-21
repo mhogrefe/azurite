@@ -34,7 +34,7 @@ theorem freeVarsOf_eq_freeVars_azFieldAtom
   | atom a =>
     show a.poly.vars = (azFormulaToFieldFormula (.atom a)).freeVars
     simp only [azFormulaToFieldFormula, mapAtom, freeVars, AzFieldAtom.toFieldAtom]
-    convert (toMvPoly_vars a.poly).symm
+    exact (toMvPoly_vars a.poly).symm
   | not _ ih =>
     simp only [freeVarsOf, show azFormulaToFieldFormula (.not _) =
       .not (azFormulaToFieldFormula _) from rfl, freeVars]; exact ih

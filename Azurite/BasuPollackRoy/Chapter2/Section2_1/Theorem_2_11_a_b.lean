@@ -1501,7 +1501,7 @@ theorem core_induction [IsRealClosed R]
       Polynomial.map_ne_zero (monic_X_pow_add_C 1 (by norm_num : (2 : ℕ) ≠ 0)).ne_zero
     rw [Polynomial.map_mul] at hPQ_splits
     have ⟨hP_splits, hXi_splits⟩ :=
-      (Polynomial.splits_mul_iff hP_ne hXi_ne).mp hPQ_splits
+      (Polynomial.splits_mul hP_ne hXi_ne).mp hPQ_splits
     -- ---- Step 2: Root of X²+1 in L, embedding φ : Ri R → L ----
     have hXi_deg : ((X ^ 2 + 1 : R[X]).map (algebraMap R L)).degree ≠ 0 := by
       simp only [Polynomial.degree_map_eq_of_injective (algebraMap R L).injective]

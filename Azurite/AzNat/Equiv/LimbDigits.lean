@@ -171,7 +171,7 @@ private theorem digit_lt_of_toBaseUInt64DigitsAux (d : UInt64) (hd : d ≠ 0) :
     -- toBaseUInt64DigitsAux d hd 0 U acc = acc
     show x < d.toNat
     apply h_acc x
-    convert hx using 2
+    exact hx
   | succ f ih =>
     intro U acc h_acc x hx
     by_cases h_size : U.limbs.size = 0

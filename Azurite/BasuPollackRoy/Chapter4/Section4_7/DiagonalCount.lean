@@ -123,7 +123,7 @@ theorem aeval_pderiv_affineFactor_ne_zero (d : ℕ) (i : Fin k) (g : Fin k → R
     ∏ n ∈ Finset.Icc 1 d \ {n₀}, (X i - C ((n : ℕ) : Ri R)) with hrest
   -- Factor `affineFactor = rest * (X i - C n₀)`.
   have hfact : affineFactor (R := R) d i = rest * (X i - C ((n₀ : ℕ) : Ri R)) := by
-    rw [affineFactor, hrest, Finset.prod_eq_prod_diff_singleton_mul hn₀]
+    rw [affineFactor, hrest, Finset.prod_eq_prod_sdiff_singleton_mul hn₀]
   -- Differentiate: the second term vanishes after `aeval` at `g`.
   have hpderiv : pderiv i (affineFactor (R := R) d i)
       = rest + pderiv i rest * (X i - C ((n₀ : ℕ) : Ri R)) := by

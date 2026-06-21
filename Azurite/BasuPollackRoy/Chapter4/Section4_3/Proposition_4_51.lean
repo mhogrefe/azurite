@@ -251,9 +251,9 @@ theorem proposition_4_51 (P : R[X]) (hp : 0 < P.natDegree) :
       have := hreal; omega
     -- (P4) deg gcd(P, P') = k via Proposition 4.26.
     have hP'ne : P.derivative ≠ 0 := fun h => by
-      have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h; omega
+      have := Polynomial.derivative_eq_zero.mp h; omega
     have hderdeg_eq : P.derivative.natDegree = p - 1 := by
-      have h := Polynomial.degree_derivative_eq P (by omega)
+      have h := Polynomial.degree_derivative (p := P) (by omega)
       exact Polynomial.natDegree_eq_of_degree_eq_some h
     have hsres : ∀ i, i ≤ p →
         (sRes P P.derivative i = 0 ↔ sDiscK P i = 0) := by

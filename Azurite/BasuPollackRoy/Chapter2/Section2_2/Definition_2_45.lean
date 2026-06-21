@@ -62,13 +62,13 @@ private noncomputable def virtualRootsAux
       have hdeg_pos : 0 < P.natDegree := by rw [hn]; omega
       have hdP_deg : (derivative P).natDegree = n := by
         have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-          Polynomial.degree_derivative_eq P hdeg_pos
+          Polynomial.degree_derivative hdeg_pos.ne'
         have h' : (derivative P).natDegree = P.natDegree - 1 :=
           Polynomial.natDegree_eq_of_degree_eq_some h
         rw [h', hn]; omega
       have hdP_ne : derivative P ≠ 0 := by
         intro heq
-        have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero heq
+        have := Polynomial.derivative_eq_zero.mp heq
         omega
       let hrec := virtualRootsAux hIVP n (derivative P) hdP_deg hdP_ne
       let ys : List R := hrec.val
@@ -183,7 +183,7 @@ theorem virtualRoots_eq_of_properties_of_derivative_ne_zero
   obtain ⟨m, hm⟩ : ∃ m, P.natDegree = m + 1 := Nat.exists_eq_succ_of_ne_zero hdeg
   have hdP_deg : (derivative P).natDegree = m := by
     have h1 : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-      Polynomial.degree_derivative_eq P (by rw [hm]; omega)
+      Polynomial.degree_derivative (p := P) (by rw [hm]; omega)
     have h2 : (derivative P).natDegree = P.natDegree - 1 :=
       Polynomial.natDegree_eq_of_degree_eq_some h1
     rw [h2, hm]; omega
@@ -227,7 +227,7 @@ theorem virtualRoots_eq_of_properties_of_derivative_zero
     by_contra hne
     have : derivative P ≠ 0 := by
       intro heq
-      have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero heq
+      have := Polynomial.derivative_eq_zero.mp heq
       exact hne this
     exact this hdP
   have hxs_nil : xs = [] := List.length_eq_zero_iff.mp (by rw [hlen, hn])

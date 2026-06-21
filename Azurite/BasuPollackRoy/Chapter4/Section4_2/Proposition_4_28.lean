@@ -558,7 +558,7 @@ theorem proposition_4_28 (P : K[X]) (hP : 0 < P.natDegree) (k : ℕ)
   -- Derivative degree.
   have hp_deriv : P.derivative.natDegree = P.natDegree - 1 :=
     Polynomial.natDegree_eq_of_degree_eq_some
-      (Polynomial.degree_derivative_eq P hP)
+      (Polynomial.degree_derivative hP.ne')
   -- Dimension equation.
   have h_size : 2 * k - 1 =
       P.natDegree + P.derivative.natDegree - 2 * (P.natDegree - k) := by

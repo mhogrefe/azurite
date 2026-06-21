@@ -276,7 +276,7 @@ theorem theorem_4_97 (Ps : Finset (MvPolynomial (Fin k) K))
         Φ a i = algebraMap (quotPolysExt C Ps) (M i) a := by
     -- the `C`-algebra hom `a ↦ (algebraMap a)_i`
     let toPi : quotPolysExt C Ps →ₐ[C] (∀ i : I, M i) :=
-      Pi.algHom C M (fun i => IsScalarTower.toAlgHom C (quotPolysExt C Ps) (M i))
+      AlgHom.pi (fun i => IsScalarTower.toAlgHom C (quotPolysExt C Ps) (M i))
     have htoPi : ∀ (a : quotPolysExt C Ps) (i : I),
         toPi a i = algebraMap (quotPolysExt C Ps) (M i) a := fun a i => by
       show (IsScalarTower.toAlgHom C (quotPolysExt C Ps) (M i)) a = _

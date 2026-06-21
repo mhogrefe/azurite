@@ -59,7 +59,7 @@ theorem PmV_sResSeq_derivative_eq_card (P : R[X]) (hP : 0 < P.natDegree) :
   have hdeg : P.derivative.natDegree < P.natDegree :=
     Polynomial.natDegree_derivative_lt (by omega)
   have hP' : P.derivative ≠ 0 := fun h => by
-    have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h; omega
+    have := Polynomial.derivative_eq_zero.mp h; omega
   rw [theorem_4_32 P P.derivative hP' hdeg,
     cauchyIndex_eq_cauchyIndexOn_negInf_posInf,
     ← cauchyIndexOn_derivative_self_eq_card_roots_in_openInterval hasIVP_of_isRealClosed P hPne]

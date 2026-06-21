@@ -107,6 +107,62 @@ private lemma startsWith_dash_decomp (s : String) (h : s.startsWith "-") :
 private lemma drop_copy_toList (s : String) : (s.drop 1).copy.toList = s.toList.drop 1 := by
   rw [String.toList_copy_drop]
 
+/-! ### Re-establishing the deleted `String.toInt?` lemmas
+
+Lean v4.32 reimplemented `String.toInt?` via the new `String.Slice` API
+(`s.toInt? = s.toSlice.toInt?`, with `Slice.toInt?` branching on
+`s.dropPrefix? '-'`) and removed the lemmas the round-trip proofs below used.
+The two private helpers `toInt?_pos` and `toInt?_minus_append'` re-establish
+the needed facts against the new core definitions. -/
+
+/-- `Slice.toNat?` depends only on the slice's character list (via `copy`):
+two slices with equal `copy` parse to the same `Option Nat`. Needed because the
+remainder slice produced by `dropPrefix? '-'` has the same characters as the
+original tail but is not definitionally `rest.toSlice`. -/
+private theorem slice_toNat?_congr (a b : String.Slice) (h : a.copy = b.copy) :
+    a.toNat? = b.toNat? := by
+  have hisnat : a.isNat = b.isNat := by
+    unfold String.Slice.isNat
+    simp only [String.Slice.forIn_eq_forIn_chars, ← Std.Iter.forIn_toList,
+      String.Slice.toList_chars, h]
+  unfold String.Slice.toNat?
+  rw [hisnat, String.Slice.foldl_eq_foldl_toList, String.Slice.foldl_eq_foldl_toList, h]
+
+/-- No leading dash ⇒ `String.toInt?` reduces to the natural-number parse.
+Replaces the deleted `String.toInt?_eq_toNat?_of_startsWith_eq_false`. -/
+private theorem toInt?_pos (s : String) (h : s.startsWith ('-' : Char) = false) :
+    s.toInt? = s.toNat?.map Int.ofNat := by
+  show s.toSlice.toInt? = _
+  unfold String.Slice.toInt?
+  have hnone : s.toSlice.dropPrefix? ('-' : Char) = none := by
+    rw [String.Slice.dropPrefix?_eq_none_iff, String.startsWith_toSlice, h]
+  rw [hnone]; rfl
+
+/-- A single leading dash ⇒ `String.toInt?` negates the natural-number parse of
+the remainder. Replaces the deleted `String.toInt?_minus_append`. -/
+private theorem toInt?_minus_append' (rest : String) :
+    ("-" ++ rest).toInt? = rest.toNat?.map Int.negOfNat := by
+  show ("-" ++ rest).toSlice.toInt? = _
+  unfold String.Slice.toInt?
+  have hstart : ("-" ++ rest).toSlice.startsWith ('-' : Char) = true := by
+    rw [String.startsWith_toSlice, String.startsWith_char_eq_head?]
+    simp
+  cases hdp : ("-" ++ rest).toSlice.dropPrefix? ('-' : Char) with
+  | none =>
+    rw [String.Slice.dropPrefix?_eq_none_iff] at hdp
+    rw [hdp] at hstart; exact absurd hstart (by simp)
+  | some R =>
+    simp only
+    have happ := String.Slice.eq_append_of_dropPrefix?_char_eq_some hdp
+    rw [String.copy_toSlice] at happ
+    have hsingle : String.singleton ('-' : Char) = "-" := rfl
+    rw [hsingle] at happ
+    -- happ : "-" ++ rest = "-" ++ R.copy
+    have hrest : R.copy = rest := (String.append_right_inj "-" |>.mp happ).symm
+    have hR : R.toNat? = rest.toSlice.toNat? :=
+      slice_toNat?_congr R rest.toSlice (by rw [hrest, String.copy_toSlice])
+    rw [hR]; rfl
+
 /-- Positive case: no leading dash, decimal digits only. -/
 theorem parse_eq_toInt?_of_digits (s : String) (h_ne : s ≠ "")
     (h_dig : ∀ c ∈ s.toList, '0' ≤ c ∧ c ≤ '9') :
@@ -122,17 +178,8 @@ theorem parse_eq_toInt?_of_digits (s : String) (h_ne : s ≠ "")
   rw [if_neg (by rw [h_dash]; decide)]
   -- AzInt.parse s ≡ AzNat.parse s wrapped in positive AzInt.
   have h_nat_eq := AzNat.parse_eq_toNat? s h_ne h_dig
-  rw [String.toInt?_eq_toNat?_of_startsWith_eq_false]
-  · rw [← h_nat_eq]
-    cases h_an : AzNat.parse s with
-    | none => simp
-    | some n =>
-      simp only [Option.map_some]
-      show some (AzInt.toInt _) = some (n.toNat : Int)
-      apply congrArg
-      show ({ sign := true, abs := n, zero_sign := _ } : AzInt).toInt = (n.toNat : Int)
-      unfold AzInt.toInt; simp
-  · rw [String.startsWith_char_eq_head?]
+  have h_dash_char : s.startsWith ('-' : Char) = false := by
+    rw [String.startsWith_char_eq_head?]
     cases h_head : s.toList.head? with
     | none => rfl
     | some c =>
@@ -143,6 +190,16 @@ theorem parse_eq_toInt?_of_digits (s : String) (h_ne : s ≠ "")
       have := h_dig '-' h_mem
       have h_lo : (45 : Nat) ≥ 48 := this.1
       omega
+  rw [toInt?_pos s h_dash_char]
+  rw [← h_nat_eq]
+  cases h_an : AzNat.parse s with
+  | none => simp
+  | some n =>
+    simp only [Option.map_some]
+    show some (AzInt.toInt _) = some (n.toNat : Int)
+    apply congrArg
+    show ({ sign := true, abs := n, zero_sign := _ } : AzInt).toInt = (n.toNat : Int)
+    unfold AzInt.toInt; simp
 
 /-- Negative case: leading dash, non-empty digit-only magnitude with
 non-zero value. -/
@@ -156,7 +213,7 @@ theorem parse_neg_eq_toInt?_of_digits (rest : String) (h_ne : rest ≠ "")
     exact ⟨rest.toList, by simp⟩
   rw [if_pos h_starts]
   rw [drop_one_dash_append]
-  rw [String.toInt?_minus_append]
+  rw [toInt?_minus_append']
   have h_nat_eq := AzNat.parse_eq_toNat? rest h_ne h_dig
   cases h_an : AzNat.parse rest with
   | none =>

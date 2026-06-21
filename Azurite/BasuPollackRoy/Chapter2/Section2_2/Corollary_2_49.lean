@@ -58,11 +58,11 @@ theorem corollary_2_49
     have hpos : 1 ≤ P.natDegree := by rw [hn]; omega
     have hdP : derivative P ≠ 0 := by
       intro h
-      have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero h
+      have := Polynomial.derivative_eq_zero.mp h
       rw [hn] at this; omega
     have hdP_deg : (derivative P).natDegree = n := by
       have h := Polynomial.natDegree_eq_of_degree_eq_some
-        (Polynomial.degree_derivative_eq P (Nat.lt_of_lt_of_le Nat.zero_lt_one hpos))
+        (Polynomial.degree_derivative (Nat.lt_of_lt_of_le Nat.zero_lt_one hpos).ne')
       rw [hn] at h; omega
     obtain ⟨k', hk'⟩ := ih (derivative P) hdP hdP_deg c
     by_cases hPc : P.eval c = 0

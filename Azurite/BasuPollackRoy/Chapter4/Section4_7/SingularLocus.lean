@@ -110,7 +110,7 @@ theorem IsMultihomogeneous.prod {ι : Type*} (s : Finset ι)
   induction s using Finset.induction with
   | empty =>
     rw [Finset.prod_empty, Finset.sum_empty]
-    convert isMultihomogeneous_one using 1
+    exact isMultihomogeneous_one
   | insert a s ha ih =>
     rw [Finset.prod_insert ha, Finset.sum_insert ha]
     exact (h a (Finset.mem_insert_self a s)).mul

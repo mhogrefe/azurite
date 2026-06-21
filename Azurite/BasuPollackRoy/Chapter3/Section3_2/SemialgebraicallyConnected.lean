@@ -28,14 +28,14 @@ theorem isOpenIn_sdiff_of_isClosedIn {S B : Set (Fin k → R)} (h : IsClosedIn S
     IsOpenIn S (S \ B) := by
   obtain ⟨F, hF, rfl⟩ := h
   refine ⟨Fᶜ, hF.isOpen_compl, ?_⟩
-  ext x; simp only [Set.mem_diff, Set.mem_inter_iff, Set.mem_compl_iff]; tauto
+  ext x; simp only [Set.mem_sdiff, Set.mem_inter_iff, Set.mem_compl_iff]; tauto
 
 /-- The complement (within `S`) of a set open in `S` is closed in `S`. -/
 theorem isClosedIn_sdiff_of_isOpenIn {S U : Set (Fin k → R)} (h : IsOpenIn S U) :
     IsClosedIn S (S \ U) := by
   obtain ⟨V, hV, rfl⟩ := h
   refine ⟨Vᶜ, hV.isClosed_compl, ?_⟩
-  ext x; simp only [Set.mem_diff, Set.mem_inter_iff, Set.mem_compl_iff]; tauto
+  ext x; simp only [Set.mem_sdiff, Set.mem_inter_iff, Set.mem_compl_iff]; tauto
 
 /-- **Preimage of a relatively-closed set under a `ContinuousOn` map is relatively closed.** If
 `f : A → B` is continuous on `A` and maps `A` into `B`, then the preimage in `A` of a set closed in
@@ -72,7 +72,7 @@ theorem isSemialgebraicallyConnected_iff {S : Set (Fin k → R)} (hS : IsSemialg
     have hAsub : A ⊆ S := by rw [← hABS]; exact Set.subset_union_left
     have hAeq : A = S \ B := by
       rw [← hABS]; ext x
-      simp only [Set.mem_union, Set.mem_diff]
+      simp only [Set.mem_union, Set.mem_sdiff]
       constructor
       · exact fun hx => ⟨Or.inl hx, fun hxB => Set.notMem_empty x (hAB ▸ Set.mem_inter hx hxB)⟩
       · rintro ⟨hx | hx, hxB⟩
@@ -86,8 +86,8 @@ theorem isSemialgebraicallyConnected_iff {S : Set (Fin k → R)} (hS : IsSemialg
     · rw [hAeq]; exact isOpenIn_sdiff_of_isClosedIn hBcl
   · rintro ⟨U, hU, hUS, hUsub, hUsa, hUop, hUcl⟩
     refine ⟨U, S \ U, hU, ?_, hUsa, ?_, hUcl, isClosedIn_sdiff_of_isOpenIn hUop,
-      Set.inter_diff_self U S, Set.union_diff_cancel hUsub⟩
-    · rw [Set.diff_nonempty]; exact fun hSU => hUS (Set.Subset.antisymm hUsub hSU)
-    · rw [Set.diff_eq]; exact hS.inter hUsa.compl
+      Set.inter_sdiff_self U S, Set.union_sdiff_cancel hUsub⟩
+    · rw [Set.sdiff_nonempty]; exact fun hSU => hUS (Set.Subset.antisymm hUsub hSU)
+    · rw [Set.sdiff_eq]; exact hS.inter hUsa.compl
 
 end Azurite.BPR

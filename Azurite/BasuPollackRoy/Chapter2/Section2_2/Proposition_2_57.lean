@@ -84,7 +84,7 @@ private lemma derivative_ne_zero_of_mem_roots
     P.derivative ≠ 0 := by
   intro hP'
   have hroot : P.IsRoot x := (mem_roots hP).mp hx
-  have hnatDeg : P.natDegree = 0 := natDegree_eq_zero_of_derivative_eq_zero hP'
+  have hnatDeg : P.natDegree = 0 := derivative_eq_zero.mp hP'
   obtain ⟨c, rfl⟩ := Polynomial.natDegree_eq_zero.mp hnatDeg
   rw [IsRoot, eval_C] at hroot
   rw [hroot] at hP

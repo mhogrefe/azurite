@@ -983,12 +983,12 @@ private lemma varAt_finite_perturb_eq
               varAt (SRemSList Q (-(P % Q)) (k + 1)) (.finite a) +
                 (if P.eval a * Q.eval a < 0 then 1 else 0) := by
             have := lemma_2_59_pointwise P Q hQ k (.finite a) h_aP hQa
-            convert this using 1
+            exact this
           have h_step_a' : varAt (SRemSList P Q (k + 2)) (.finite a') =
               varAt (SRemSList Q (-(P % Q)) (k + 1)) (.finite a') +
                 (if P.eval a' * Q.eval a' < 0 then 1 else 0) := by
             have := lemma_2_59_pointwise P Q hQ k (.finite a') hP_a' hQ_a'
-            convert this using 1
+            exact this
           rw [h_step_a, h_step_a']
           -- Sign preservation: P(a)Q(a) and P(a')Q(a') have same sign.
           have h_sign_PQ : (if P.eval a * Q.eval a < 0 then (1 : ℕ) else 0) =
@@ -1203,12 +1203,12 @@ private lemma varAt_finite_perturb_eq_left
               varAt (SRemSList Q (-(P % Q)) (k + 1)) (.finite a) +
                 (if P.eval a * Q.eval a < 0 then 1 else 0) := by
             have := lemma_2_59_pointwise P Q hQ k (.finite a) h_aP hQa
-            convert this using 1
+            exact this
           have h_step_a' : varAt (SRemSList P Q (k + 2)) (.finite a') =
               varAt (SRemSList Q (-(P % Q)) (k + 1)) (.finite a') +
                 (if P.eval a' * Q.eval a' < 0 then 1 else 0) := by
             have := lemma_2_59_pointwise P Q hQ k (.finite a') hP_a' hQ_a'
-            convert this using 1
+            exact this
           rw [h_step_a, h_step_a']
           have h_sign_PQ : (if P.eval a * Q.eval a < 0 then (1 : ℕ) else 0) =
               (if P.eval a' * Q.eval a' < 0 then 1 else 0) := by

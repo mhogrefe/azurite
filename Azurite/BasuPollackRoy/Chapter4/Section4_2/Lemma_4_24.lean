@@ -431,7 +431,7 @@ theorem Lemma_4_24 (P Q : D[X]) (j : ℕ)
       have hi := congrFun h i
       rw [h_castLE, SyHa.transpose_mulVec_apply] at hi
       show (SyHa.mulMap P Q j uv).coeff (p + q - j - 1 - i.val) = 0
-      convert hi using 2
+      exact hi
     · intro h
       funext i
       have h_castLE : (SyHaSquare P Q j).transpose.mulVec uv i =

@@ -1261,7 +1261,7 @@ lemma exists_virtualRootsList_of_natDegree_one (hIVP : HasIntermediateValuePrope
     intro h; have := hderiv 0; rw [h, Polynomial.eval_zero] at this; exact hlc_ne this.symm
   have hdP_deg : (derivative P).natDegree = 0 := by
     have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-      Polynomial.degree_derivative_eq P (by rw [hdeg]; norm_num)
+      Polynomial.degree_derivative (p := P) (by rw [hdeg]; norm_num)
     have h' : (derivative P).natDegree = P.natDegree - 1 :=
       Polynomial.natDegree_eq_of_degree_eq_some h
     rw [h', hdeg]
@@ -2580,7 +2580,7 @@ theorem exists_virtualRootsList_of_natDegree_two
   have hdeg_pos : 0 < P.natDegree := by rw [hdeg]; norm_num
   have hdP_deg : (derivative P).natDegree = 1 := by
     have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-      Polynomial.degree_derivative_eq P hdeg_pos
+      Polynomial.degree_derivative hdeg_pos.ne'
     have h' : (derivative P).natDegree = P.natDegree - 1 :=
       Polynomial.natDegree_eq_of_degree_eq_some h
     rw [h', hdeg]
@@ -3016,13 +3016,13 @@ theorem exists_virtualRootsList_aux (hIVP : HasIntermediateValueProperty R) :
     have hdeg_pos : 0 < P.natDegree := by rw [hn]; omega
     have hdP_deg : (derivative P).natDegree = m := by
       have h : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-        Polynomial.degree_derivative_eq P hdeg_pos
+        Polynomial.degree_derivative hdeg_pos.ne'
       have h' : (derivative P).natDegree = P.natDegree - 1 :=
         Polynomial.natDegree_eq_of_degree_eq_some h
       rw [h', hn]; omega
     have hdP_ne : derivative P ≠ 0 := by
       intro heq
-      have := Polynomial.natDegree_eq_zero_of_derivative_eq_zero heq
+      have := Polynomial.derivative_eq_zero.mp heq
       omega
     obtain ⟨ys, hys, _⟩ := IH (derivative P) hdP_deg hdP_ne
     have hlen : ys.length + 1 = P.natDegree := by rw [hys.length_eq, hdP_deg, hn]
@@ -4689,7 +4689,7 @@ private theorem IsVirtualRootsListAux.unique
     have hdP_deg : (derivative P).natDegree = n := by
       have hdeg_pos : 0 < P.natDegree := by rw [hdeg]; omega
       have h1 : (derivative P).degree = (P.natDegree - 1 : ℕ) :=
-        Polynomial.degree_derivative_eq P hdeg_pos
+        Polynomial.degree_derivative hdeg_pos.ne'
       have h2 : (derivative P).natDegree = P.natDegree - 1 :=
         Polynomial.natDegree_eq_of_degree_eq_some h1
       rw [h2, hdeg]; omega

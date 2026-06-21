@@ -61,10 +61,10 @@ theorem Proposition_4_30 (P : K[X]) (hP : 0 < P.natDegree)
   have hP_ne : P ≠ 0 := fun h => by rw [h] at hP; simp at hP
   have hp_deriv : P.derivative.natDegree = P.natDegree - 1 :=
     Polynomial.natDegree_eq_of_degree_eq_some
-      (Polynomial.degree_derivative_eq P hP)
+      (Polynomial.degree_derivative hP.ne')
   have hP'_ne : P.derivative ≠ 0 := by
     intro h
-    have h_deg := Polynomial.degree_derivative_eq P hP
+    have h_deg := Polynomial.degree_derivative hP.ne'
     rw [h, Polynomial.degree_zero] at h_deg
     exact (WithBot.bot_ne_coe h_deg).elim
   have hj_q : j ≤ P.derivative.natDegree := by rw [hp_deriv]; omega

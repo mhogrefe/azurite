@@ -27,11 +27,58 @@ Strategy:
   2. Establish that the initial guess satisfies the precondition for
      Mathlib's `Nat.sqrt.lt_iter_succ_sq` (`m < (u₀ + 1)²`), using
      `AzNat.size_toNat` + `Nat.lt_size_self`.
-  3. Use Mathlib's `Nat.sqrt.iter_sq_le` (unconditional `s² ≤ m`) and
-     `Nat.sqrt.lt_iter_succ_sq` to conclude both characterizing
+  3. Use `SqrtCore.iter_sq_le` (unconditional `s² ≤ m`) and
+     `SqrtCore.lt_iter_succ_sq` to conclude both characterizing
      bounds; `Nat.eq_sqrt` then identifies the result with
      `Nat.sqrt m.toNat`.
 -/
+
+/- Local copies of core's `Nat.sqrt.iter` correctness lemmas, which became
+`private` in `Init.Data.Nat.Sqrt.Lemmas` and are therefore no longer
+referenceable by name. Copied verbatim from the core source (with references
+fully qualified to avoid `open Nat` ambiguity against Mathlib). -/
+namespace SqrtCore
+
+private theorem AM_GM : {a b : Nat} → (4 * a * b ≤ (a + b) * (a + b))
+  | 0, _ => by rw [Nat.mul_zero, Nat.zero_mul]; exact Nat.zero_le _
+  | _, 0 => by rw [Nat.mul_zero]; exact Nat.zero_le _
+  | a + 1, b + 1 => by
+    simpa only [Nat.mul_add, Nat.add_mul, show (4 : Nat) = 1 + 1 + 1 + 1 from rfl, Nat.one_mul,
+      Nat.mul_one, Nat.add_assoc, Nat.add_left_comm, Nat.add_le_add_iff_left]
+      using Nat.add_le_add_right (@AM_GM a b) 4
+
+theorem iter_sq_le (n guess : Nat) : Nat.sqrt.iter n guess * Nat.sqrt.iter n guess ≤ n := by
+  unfold Nat.sqrt.iter
+  let next := (guess + n / guess) / 2
+  if h : next < guess then
+    simpa only [next, dif_pos h] using iter_sq_le n next
+  else
+    apply Nat.mul_le_of_le_div
+    simp only
+    split <;> omega
+
+theorem lt_iter_succ_sq (n guess : Nat) (hn : n < (guess + 1) * (guess + 1)) :
+    n < (Nat.sqrt.iter n guess + 1) * (Nat.sqrt.iter n guess + 1) := by
+  unfold Nat.sqrt.iter
+  let m := (guess + n / guess) / 2
+  dsimp
+  split <;> rename_i h
+  · suffices n < (m + 1) * (m + 1) by
+      simpa only [dif_pos h] using lt_iter_succ_sq n m this
+    refine Nat.lt_of_mul_lt_mul_left ?_ (a := 4 * (guess * guess))
+    apply Nat.lt_of_le_of_lt AM_GM
+    rw [show (4 : Nat) = 2 * 2 from rfl]
+    rw [Nat.mul_mul_mul_comm 2, Nat.mul_mul_mul_comm (2 * guess)]
+    refine Nat.mul_self_lt_mul_self (?_ : _ < _ * ((_ / 2) + 1))
+    rw [← Nat.add_div_right _ (by decide), Nat.mul_comm 2, Nat.mul_assoc,
+      show guess + n / guess + 2 = (guess + n / guess + 1) + 1 from rfl]
+    have aux_theorem {a : Nat} : a ≤ 2 * ((a + 1) / 2) := by omega
+    refine Nat.lt_of_lt_of_le ?_ (Nat.mul_le_mul_left _ aux_theorem)
+    rw [Nat.add_assoc, Nat.mul_add]
+    exact Nat.add_lt_add_left (Nat.lt_mul_div_succ _ (Nat.lt_of_le_of_lt (Nat.zero_le m) h)) _
+  · exact hn
+
+end SqrtCore
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- AzNat ↔ Nat translations for the operations used inside the loop
@@ -171,10 +218,10 @@ private theorem toNat_zero_of_size_zero (m : AzNat) (hm : m.limbs.size = 0) :
       rw [toNat_loop_eq_iter m fuel u₀ h_fuel]
       have h_sq_le : Nat.sqrt.iter m.toNat u₀.toNat *
                      Nat.sqrt.iter m.toNat u₀.toNat ≤ m.toNat :=
-        Nat.sqrt.iter_sq_le _ _
+        SqrtCore.iter_sq_le _ _
       have h_succ_sq : m.toNat < (Nat.sqrt.iter m.toNat u₀.toNat + 1) *
                                  (Nat.sqrt.iter m.toNat u₀.toNat + 1) :=
-        Nat.sqrt.lt_iter_succ_sq m.toNat u₀.toNat (m_lt_initialGuess_succ_sq m)
+        SqrtCore.lt_iter_succ_sq m.toNat u₀.toNat (m_lt_initialGuess_succ_sq m)
       exact Nat.eq_sqrt.mpr ⟨h_sq_le, h_succ_sq⟩
 
 /-- The sqrt component of `basecaseSqrtRem m` equals `Nat.sqrt m.toNat`. -/

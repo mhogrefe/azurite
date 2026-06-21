@@ -54,7 +54,7 @@ theorem lemma_3_12 :
         have hg0 : g ≠ 0 := fun hgz =>
           hP0 ((gcd_eq_zero_iff P (derivative P)).mp hgz).1
         have hP'0 : derivative P ≠ 0 := fun hd =>
-          hPnc (Polynomial.natDegree_eq_zero_of_derivative_eq_zero hd)
+          hPnc (Polynomial.derivative_eq_zero.mp hd)
         have hgP : g ∣ P := gcd_dvd_left P (derivative P)
         have hgP' : g ∣ derivative P := gcd_dvd_right P (derivative P)
         obtain ⟨P₂, hP2⟩ := hgP
