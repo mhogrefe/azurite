@@ -413,6 +413,8 @@ import Azurite.AzVector.GramSchmidt
 import Azurite.AzVector.Operations
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Parse
+import Azurite.AzZModPow2.Basic
+import Azurite.AzZModPow2.Equiv.Basic
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions
