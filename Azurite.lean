@@ -33,6 +33,7 @@ import Azurite.AzInt.Equiv.Compare
 import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzInt.Equiv.DivMod
 import Azurite.AzInt.Equiv.DivRound
+import Azurite.AzInt.Equiv.ExtendedGcd
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.Parity
@@ -47,6 +48,7 @@ import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.ExactDiv
+import Azurite.AzInt.ExtendedGcd
 import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Mul
