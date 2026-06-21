@@ -61,4 +61,63 @@ def equivZMod : AzZModPow2 k ≃ ZMod (2 ^ k) where
 
 theorem toZMod_injective : Function.Injective (toZMod (k := k)) := equivZMod.injective
 
+/-- **Negation agrees with `ZMod`.**  The limb-level two's-complement `neg`
+realizes negation in `ZMod (2^k)`. -/
+@[simp] theorem toZMod_neg (a : AzZModPow2 k) : toZMod (-a) = -(toZMod a) := by
+  show toZMod (neg a) = -(toZMod a)
+  unfold neg
+  by_cases h : a.val.limbs.size = 0
+  · rw [dif_pos h]
+    have hz : toZMod a = 0 := by
+      show ((a.val.toNat : ℕ) : ZMod (2 ^ k)) = 0
+      rw [(AzNat.toNat_eq_zero_iff a.val).mpr h, Nat.cast_zero]
+    rw [toZMod_zero, hz, neg_zero]
+  · rw [dif_neg h]
+    show ((AzNat.lowMask k - a.val + 1).toNat : ZMod (2 ^ k)) = -(toZMod a)
+    rw [AzNat.toNat_add, AzNat.toNat_one, AzNat.toNat_sub, AzNat.toNat_lowMask]
+    have h2 : a.val.toNat ≤ 2 ^ k := le_of_lt a.isLt
+    have hval : 2 ^ k - 1 - a.val.toNat + 1 = 2 ^ k - a.val.toNat := by
+      have hlt : a.val.toNat < 2 ^ k := a.isLt
+      omega
+    rw [hval, Nat.cast_sub h2, ZMod.natCast_self, zero_sub]
+    rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_neg`: reducing a negated
+`ZMod (2^k)` element agrees with negating its residue. -/
+@[simp] theorem ofZMod_neg (z : ZMod (2 ^ k)) : ofZMod (-z) = -(ofZMod z) := by
+  apply toZMod_injective
+  rw [toZMod_ofZMod, toZMod_neg, toZMod_ofZMod]
+
+/-- **Addition agrees with `ZMod`.**  The wrapping `add` realizes addition in
+`ZMod (2^k)`. -/
+@[simp] theorem toZMod_add (a b : AzZModPow2 k) : toZMod (a + b) = toZMod a + toZMod b := by
+  show (((AzNat.addModPow2 a.val b.val k).toNat : ℕ) : ZMod (2 ^ k)) = toZMod a + toZMod b
+  rw [AzNat.toNat_addModPow2, ZMod.natCast_mod, Nat.cast_add]
+  rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_add`. -/
+@[simp] theorem ofZMod_add (x y : ZMod (2 ^ k)) : ofZMod (x + y) = ofZMod x + ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_add, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
+/-- **Subtraction agrees with `ZMod`.**  The wrapping `sub` realizes subtraction
+in `ZMod (2^k)`. -/
+@[simp] theorem toZMod_sub (a b : AzZModPow2 k) : toZMod (a - b) = toZMod a - toZMod b := by
+  show (((AzNat.subModPow2 a.val b.val k).toNat : ℕ) : ZMod (2 ^ k)) = toZMod a - toZMod b
+  -- `(subModPow2 a b k).toNat + b.toNat ≡ a.toNat [MOD 2^k]`, cast to `ZMod`.
+  have hmod := AzNat.subModPow2_modEq a.val b.val k
+  have hcast : (((AzNat.subModPow2 a.val b.val k).toNat + b.val.toNat : ℕ) : ZMod (2 ^ k))
+      = ((a.val.toNat : ℕ) : ZMod (2 ^ k)) :=
+    (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+  rw [Nat.cast_add] at hcast
+  -- `toZMod a = (a.val.toNat : ZMod)`, `toZMod b = (b.val.toNat : ZMod)`.
+  show (((AzNat.subModPow2 a.val b.val k).toNat : ℕ) : ZMod (2 ^ k))
+      = ((a.val.toNat : ℕ) : ZMod (2 ^ k)) - ((b.val.toNat : ℕ) : ZMod (2 ^ k))
+  rw [eq_sub_iff_add_eq, hcast]
+
+/-- `ofZMod`-phrased companion of `toZMod_sub`. -/
+@[simp] theorem ofZMod_sub (x y : ZMod (2 ^ k)) : ofZMod (x - y) = ofZMod x - ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_sub, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
 end Azurite.AzZModPow2

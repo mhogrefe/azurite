@@ -185,6 +185,7 @@ import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
 import Azurite.AzNat.Add
+import Azurite.AzNat.AddModPow2
 import Azurite.AzNat.Basic
 import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
@@ -196,6 +197,7 @@ import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
+import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
@@ -240,6 +242,7 @@ import Azurite.AzNat.Equiv.Square
 import Azurite.AzNat.Equiv.Square.Karatsuba
 import Azurite.AzNat.Equiv.Square.ToomCook3
 import Azurite.AzNat.Equiv.Sub
+import Azurite.AzNat.Equiv.SubModPow2
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
@@ -276,6 +279,7 @@ import Azurite.AzNat.Square.Karatsuba
 import Azurite.AzNat.Square.Schoolbook
 import Azurite.AzNat.Square.ToomCook3
 import Azurite.AzNat.Sub
+import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
@@ -414,7 +418,12 @@ import Azurite.AzVector.Operations
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Parse
 import Azurite.AzZModPow2.Basic
+import Azurite.AzZModPow2.Conversion
 import Azurite.AzZModPow2.Equiv.Basic
+import Azurite.AzZModPow2.Equiv.Conversion
+import Azurite.AzZModPow2.Equiv.Parse
+import Azurite.AzZModPow2.Parse
+import Azurite.AzZModPow2.ToString
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Definitions

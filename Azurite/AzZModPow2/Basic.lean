@@ -1,5 +1,15 @@
 import Azurite.AzNat.ModPow2
+import Azurite.AzNat.LowMask
+import Azurite.AzNat.Add
+import Azurite.AzNat.AddModPow2
+import Azurite.AzNat.Equiv.AddModPow2
+import Azurite.AzNat.SubModPow2
+import Azurite.AzNat.Equiv.SubModPow2
+import Azurite.AzNat.Sub
 import Azurite.AzNat.Equiv.ModPow2
+import Azurite.AzNat.Equiv.LowMask
+import Azurite.AzNat.Equiv.Add
+import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Basic
 import Mathlib.Data.Nat.Cast.Defs
 import Mathlib.Tactic.Positivity
@@ -40,6 +50,13 @@ def toAzNat (a : AzZModPow2 k) : AzNat := a.val
 
 @[simp] theorem toAzNat_eq_val (a : AzZModPow2 k) : a.toAzNat = a.val := rfl
 
+/-- Reducing an already-canonical residue is the identity. -/
+@[simp] theorem ofAzNat_val (a : AzZModPow2 k) : ofAzNat k a.val = a := by
+  apply ext
+  show a.val.modPow2 k = a.val
+  apply AzNat.toNat_injective
+  rw [AzNat.toNat_modPow2, Nat.mod_eq_of_lt a.isLt]
+
 instance : Zero (AzZModPow2 k) := ⟨⟨0, by rw [AzNat.toNat_zero]; positivity⟩⟩
 instance : One (AzZModPow2 k) := ⟨ofAzNat k 1⟩
 instance : Inhabited (AzZModPow2 k) := ⟨0⟩
@@ -53,6 +70,83 @@ def ofNat (k m : Nat) : AzZModPow2 k := ofAzNat k (AzNat.ofNat m)
 instance instOfNat {m : Nat} [m.AtLeastTwo] : OfNat (AzZModPow2 k) m :=
   ⟨ofNat k m⟩
 
+/-- **Negation** in `ℤ / 2^k`: `-a = (2^k - a) mod 2^k`, as the two's complement
+`((2^k - 1) - a) + 1`. The subtraction is against the all-ones mask `lowMask k`,
+so it operates limb-by-limb directly on `val` (each output limb is the complement
+of the corresponding limb of `val`) with no borrow, and the `+1` carry is short;
+no `2^k` is materialized and no separate masking pass is needed. The `0` residue
+is short-circuited (`-0 = 0`). -/
+def neg (a : AzZModPow2 k) : AzZModPow2 k :=
+  if h : a.val.limbs.size = 0 then 0
+  else ⟨AzNat.lowMask k - a.val + 1, by
+    rw [AzNat.toNat_add, AzNat.toNat_one, AzNat.toNat_sub, AzNat.toNat_lowMask]
+    have h1 : a.val.toNat ≠ 0 := fun h0 => h ((AzNat.toNat_eq_zero_iff a.val).mp h0)
+    have h2 : a.val.toNat < 2 ^ k := a.isLt
+    have hpos : 0 < (2 : ℕ) ^ k := by positivity
+    omega⟩
+
+instance : Neg (AzZModPow2 k) := ⟨neg⟩
+
+/-- **Addition** in `ℤ / 2^k`: `a + b mod 2^k`, by the fused single-pass
+add-and-mask `AzNat.addModPow2`, which walks only the low `(k+63)/64` limbs and
+masks to the low `k` bits, never forming the carry-limb that `AzNat.add` would
+append. -/
+def add (a b : AzZModPow2 k) : AzZModPow2 k :=
+  ⟨AzNat.addModPow2 a.val b.val k, by
+    rw [AzNat.toNat_addModPow2]; exact Nat.mod_lt _ (by positivity)⟩
+
+instance : Add (AzZModPow2 k) := ⟨add⟩
+
+/-- **Subtraction** in `ℤ / 2^k`: `a - b mod 2^k`, by the fused single-pass
+subtract-and-mask `AzNat.subModPow2`, the borrow analogue of `add`.  It walks only
+the low `(k+63)/64` limbs, subtracts with borrow, drops the final borrow-out (the
+`+2^k` wrap when `a < b`), and masks to the low `k` bits. -/
+def sub (a b : AzZModPow2 k) : AzZModPow2 k :=
+  ⟨AzNat.subModPow2 a.val b.val k, by
+    unfold AzNat.subModPow2
+    rw [AzNat.toNat_modPow2]; exact Nat.mod_lt _ (by positivity)⟩
+
+instance : Sub (AzZModPow2 k) := ⟨sub⟩
+
 end AzZModPow2
 
 end Azurite
+
+/-! ### Tests -/
+
+section Tests
+
+open Azurite Azurite.AzZModPow2
+
+-- In `ℤ/16`: `-1 = 15`, `-0 = 0`, `-3 = 13`, `-(17 mod 16 = 1) = 15`.
+#guard (-(AzZModPow2.ofNat 4 1)).val == (AzZModPow2.ofNat 4 15).val
+#guard (-(AzZModPow2.ofNat 4 0)).val == (AzZModPow2.ofNat 4 0).val
+#guard (-(AzZModPow2.ofNat 4 3)).val == (AzZModPow2.ofNat 4 13).val
+#guard (-(AzZModPow2.ofNat 4 17)).val == (AzZModPow2.ofNat 4 15).val
+-- In `ℤ/256`: `-200 = 56`.
+#guard (-(AzZModPow2.ofNat 8 200)).val == (AzZModPow2.ofNat 8 56).val
+-- Multi-limb `ℤ/2^128`: `-1 = 2^128 - 1`.
+#guard (-(AzZModPow2.ofNat 128 1)).val == (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+
+-- Addition wraps mod `2^k`. `ℤ/16`: `9+10 = 19 ≡ 3`, `15+1 = 16 ≡ 0`.
+#guard (AzZModPow2.ofNat 4 9 + AzZModPow2.ofNat 4 10).val == (AzZModPow2.ofNat 4 3).val
+#guard (AzZModPow2.ofNat 4 15 + AzZModPow2.ofNat 4 1).val == (AzZModPow2.ofNat 4 0).val
+#guard (AzZModPow2.ofNat 8 200 + AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 44).val
+-- Multi-limb carry-out across the `2^128` boundary: `(2^128-1) + 1 ≡ 0`.
+#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 1).val ==
+  (AzZModPow2.ofNat 128 0).val
+#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 5).val ==
+  (AzZModPow2.ofNat 128 4).val
+
+-- Subtraction wraps mod `2^k`. `ℤ/16`: `3-5 = -2 ≡ 14`, `5-3 = 2`, `0-1 ≡ 15`.
+#guard (AzZModPow2.ofNat 4 3 - AzZModPow2.ofNat 4 5).val == (AzZModPow2.ofNat 4 14).val
+#guard (AzZModPow2.ofNat 4 5 - AzZModPow2.ofNat 4 3).val == (AzZModPow2.ofNat 4 2).val
+#guard (AzZModPow2.ofNat 4 0 - AzZModPow2.ofNat 4 1).val == (AzZModPow2.ofNat 4 15).val
+#guard (AzZModPow2.ofNat 8 44 - AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 200).val
+-- Multi-limb borrow across the `2^128` boundary: `0 - 1 ≡ 2^128 - 1`.
+#guard (AzZModPow2.ofNat 128 0 - AzZModPow2.ofNat 128 1).val ==
+  (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+#guard (AzZModPow2.ofNat 128 4 - AzZModPow2.ofNat 128 5).val ==
+  (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+
+end Tests
