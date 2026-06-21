@@ -228,6 +228,7 @@ import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.ParseBase
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.Pow2
+import Azurite.AzNat.Equiv.Primality
 import Azurite.AzNat.Equiv.RingEquiv
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
@@ -263,6 +264,7 @@ import Azurite.AzNat.ParsableElement
 import Azurite.AzNat.ParseBase
 import Azurite.AzNat.Pow
 import Azurite.AzNat.Pow2
+import Azurite.AzNat.Primality
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
