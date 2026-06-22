@@ -2,13 +2,16 @@ import Azurite.AzNat.Add
 import Azurite.AzNat.Div
 import Azurite.AzNat.Sub
 import Azurite.AzNat.Mul
+import Azurite.AzNat.Square
 import Azurite.AzNat.Compare
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Square.ToomCook3
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Basic
+import Azurite.Algorithm.FastPow
 import Mathlib.Data.Nat.Cast.Defs
 
 namespace Azurite
@@ -145,6 +148,17 @@ def mul [NeZero m.toNat] (a b : AzZMod m) : AzZMod m := ofAzNat m (a.val * b.val
 
 instance [NeZero m.toNat] : Mul (AzZMod m) := ⟨mul⟩
 
+/-- **Squaring** in `ℤ / m`, via the fast `AzNat.square` (exploiting symmetry)
+reduced modulo `m`.  Overrides the default `x * x` so a future sliding-window
+power can use the cheaper square. -/
+instance instSquare [NeZero m.toNat] : Azurite.Square (AzZMod m) where
+  square a := ofAzNat m (AzNat.square a.val)
+  square_eq a := by
+    apply ext
+    apply AzNat.toNat_injective
+    show (AzNat.square a.val % m).toNat = (a.val * a.val % m).toNat
+    rw [AzNat.toNat_mod, AzNat.toNat_mod, AzNat.toNat_square, AzNat.toNat_mul, pow_two]
+
 end AzZMod
 
 end Azurite
@@ -189,5 +203,10 @@ open Azurite Azurite.AzZMod
 #guard AzZMod.ofNat (AzNat.ofNat 7) 6 * AzZMod.ofNat (AzNat.ofNat 7) 6 == AzZMod.ofNat (AzNat.ofNat 7) 1
 #guard AzZMod.ofNat (AzNat.ofNat 1000) 123 * AzZMod.ofNat (AzNat.ofNat 1000) 456 ==
   AzZMod.ofNat (AzNat.ofNat 1000) 88
+
+-- Squaring in `ℤ/7`: `3² = 9 ≡ 2`, `6² = 36 ≡ 1`; `ℤ/1000`: `123² = 15129 ≡ 129`.
+#guard Square.square (AzZMod.ofNat (AzNat.ofNat 7) 3) == AzZMod.ofNat (AzNat.ofNat 7) 2
+#guard Square.square (AzZMod.ofNat (AzNat.ofNat 7) 6) == AzZMod.ofNat (AzNat.ofNat 7) 1
+#guard Square.square (AzZMod.ofNat (AzNat.ofNat 1000) 123) == AzZMod.ofNat (AzNat.ofNat 1000) 129
 
 end Tests

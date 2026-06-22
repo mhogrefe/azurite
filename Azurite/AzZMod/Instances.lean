@@ -1,5 +1,6 @@
 import Azurite.AzZMod.Equiv.Basic
 import Azurite.AzZMod.Equiv.Conversion
+import Azurite.AzZMod.Equiv.Pow
 
 /-!
 ## `CommRing (AzZMod m)`
@@ -66,8 +67,14 @@ instance instCommRing [NeZero m.toNat] : CommRing (AzZMod m) where
   zsmul_zero' a := toZMod_injective (by simp)
   zsmul_succ' n a := toZMod_injective (by simp [toZMod_add, toZMod_mul]; ring)
   zsmul_neg' n a := toZMod_injective (by simp [toZMod_mul, toZMod_neg, Int.negSucc_eq]; ring)
+  -- Exponentiation runs the sliding-window `pow` (`O(log n)` multiplications).
+  npow n a := a.pow n
+  npow_zero a := toZMod_injective (by rw [toZMod_pow, pow_zero, toZMod_one])
+  npow_succ n a := toZMod_injective (by rw [toZMod_mul, toZMod_pow, toZMod_pow, pow_succ])
 
--- Sanity: the `CommRing` is fully usable — `ring` discharges polynomial identities.
+-- Sanity: the `CommRing` is fully usable — `ring` discharges polynomial identities,
+-- and `pow` is the monoid power.
 example [NeZero m.toNat] (a b c : AzZMod m) : (a + b) * c = a * c + b * c := by ring
+example [NeZero m.toNat] (a : AzZMod m) (n : ℕ) : a ^ n = a.pow n := rfl
 
 end Azurite.AzZMod

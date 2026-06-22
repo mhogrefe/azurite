@@ -171,6 +171,7 @@ import Azurite.AzMvPolynomial.ParsableCoeff
 import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 import Azurite.AzMvPolynomial.ParsableCoeff.AzNat
 import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
+import Azurite.AzMvPolynomial.ParsableCoeff.AzZMod
 import Azurite.AzMvPolynomial.ParsableCoeff.AzZModPow2
 import Azurite.AzMvPolynomial.ParsableElement
 import Azurite.AzMvPolynomial.Parse
@@ -437,10 +438,17 @@ import Azurite.AzZMod.Basic
 import Azurite.AzZMod.Conversion
 import Azurite.AzZMod.Equiv.Basic
 import Azurite.AzZMod.Equiv.Conversion
+import Azurite.AzZMod.Equiv.Field
+import Azurite.AzZMod.Equiv.Inv
 import Azurite.AzZMod.Equiv.Parse
+import Azurite.AzZMod.Equiv.Pow
 import Azurite.AzZMod.Equiv.RingEquiv
+import Azurite.AzZMod.Field
 import Azurite.AzZMod.Instances
+import Azurite.AzZMod.Inv
+import Azurite.AzZMod.ParsableElement
 import Azurite.AzZMod.Parse
+import Azurite.AzZMod.Pow
 import Azurite.AzZMod.ToString
 import Azurite.AzZModPow2.Basic
 import Azurite.AzZModPow2.Conversion

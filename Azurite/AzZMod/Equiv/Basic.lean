@@ -151,4 +151,10 @@ multiplication in `ZMod m.toNat`. -/
   apply toZMod_injective
   rw [toZMod_mul, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
 
+/-- **Squaring agrees with `ZMod`.**  `Square.square` realizes squaring in
+`ZMod m.toNat` (it equals `a * a`). -/
+@[simp] theorem toZMod_square [NeZero m.toNat] (a : AzZMod m) :
+    toZMod (Azurite.Square.square a) = toZMod a * toZMod a := by
+  rw [Azurite.Square.square_eq, toZMod_mul]
+
 end Azurite.AzZMod
