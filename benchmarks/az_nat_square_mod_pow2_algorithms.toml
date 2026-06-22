@@ -1,0 +1,17 @@
+# Tuning: the three low-squaring algorithms head-to-head, mod 2^k.
+#
+# Full-width b-bit residue (k = b). Cross-overs of the three median-ns curves
+# give the squaring dispatch cutoffs (in limbs = ceil(k/64)):
+#   - where Karatsuba-low square first beats schoolbook-low square
+#   - where Toom-3-low square first beats Karatsuba-low square
+
+benchmark = "az_nat_square_mod_pow2_algorithms"
+limit     = 2500
+title     = "az_nat_square_mod_pow2: schoolbook vs Karatsuba vs Toom-3 (low)"
+x_label   = "Modulus bit-width k"
+
+[params]
+meanBitLength = 16384
+iters         = 30
+karaThreshold = 16
+toomThreshold = 256

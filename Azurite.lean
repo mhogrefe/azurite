@@ -245,6 +245,9 @@ import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.Square
 import Azurite.AzNat.Equiv.Square.Karatsuba
 import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.SquareModPow2.Dispatch
+import Azurite.AzNat.Equiv.SquareModPow2.Karatsuba
+import Azurite.AzNat.Equiv.SquareModPow2.ToomCook3
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.SubModPow2
 import Azurite.AzNat.Equiv.TestBit
@@ -286,6 +289,10 @@ import Azurite.AzNat.Square
 import Azurite.AzNat.Square.Karatsuba
 import Azurite.AzNat.Square.Schoolbook
 import Azurite.AzNat.Square.ToomCook3
+import Azurite.AzNat.SquareModPow2.Dispatch
+import Azurite.AzNat.SquareModPow2.Karatsuba
+import Azurite.AzNat.SquareModPow2.Schoolbook
+import Azurite.AzNat.SquareModPow2.ToomCook3
 import Azurite.AzNat.Sub
 import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.TestBit
@@ -430,7 +437,9 @@ import Azurite.AzZModPow2.Conversion
 import Azurite.AzZModPow2.Equiv.Basic
 import Azurite.AzZModPow2.Equiv.Conversion
 import Azurite.AzZModPow2.Equiv.Parse
+import Azurite.AzZModPow2.Equiv.Pow
 import Azurite.AzZModPow2.Parse
+import Azurite.AzZModPow2.Pow
 import Azurite.AzZModPow2.ToString
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets

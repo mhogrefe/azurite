@@ -13,12 +13,23 @@ Every branch returns the same value, so the dispatch is a pure performance choic
 
 namespace Azurite.AzNat
 
-/-- Limb-size cutoff below which schoolbook-low is used (and the Karatsuba-low
-    base / fallback).  Untuned default, mirroring `mulDispatchThreshold`. -/
-def mulModPow2KaratsubaCutoff : Nat := 16
+/-- Corner full-multiply fallbacks used *inside* the split low-product algorithms
+    (the tuned full-mul thresholds: full Karatsuba falls to schoolbook below 16
+    limbs, full Toom-3 to Karatsuba below 256).  These are independent of the
+    tier cutoffs below — the tier cutoff says which low-product *algorithm* to
+    run; the corner threshold keeps that algorithm's inner full multiply fast. -/
+def mulModPow2KaraCorner : Nat := 16
+/-- See `mulModPow2KaraCorner`. -/
+def mulModPow2ToomCorner : Nat := 256
 
-/-- Limb-size cutoff at/above which Toom-3-low is used (and the Toom-low base).
-    Untuned default, mirroring `mulDispatchToomCook3Cutoff`. -/
+/-- Limb-size cutoff below which schoolbook-low is used.  Tuned via
+    `az_nat_mul_mod_pow2_algorithms`: schoolbook-low's top-half-skipping beats the
+    split algorithms up to ~256 limbs, so for products the Karatsuba-low tier is
+    dominated — schoolbook-low directly hands off to Toom-3-low at 256. -/
+def mulModPow2KaratsubaCutoff : Nat := 256
+
+/-- Limb-size cutoff at/above which Toom-3-low is used.  Tuned: Toom-3-low (with
+    a Karatsuba/Toom corner) overtakes schoolbook-low at ~256 limbs. -/
 def mulModPow2ToomCutoff : Nat := 256
 
 /-- Size-dispatched `(a * b) mod 2 ^ k`, choosing among the three low-product
@@ -27,8 +38,8 @@ def mulDispatchModPow2 (a b : AzNat) (k : Nat) : AzNat :=
   if max a.limbs.size b.limbs.size < mulModPow2KaratsubaCutoff then
     mulSchoolbookModPow2 a b k
   else if max a.limbs.size b.limbs.size < mulModPow2ToomCutoff then
-    mulKaratsubaModPow2 mulModPow2KaratsubaCutoff a b k
+    mulKaratsubaModPow2 mulModPow2KaraCorner a b k
   else
-    mulToomCook3ModPow2 mulModPow2ToomCutoff mulModPow2KaratsubaCutoff a b k
+    mulToomCook3ModPow2 mulModPow2ToomCorner mulModPow2KaraCorner a b k
 
 end Azurite.AzNat

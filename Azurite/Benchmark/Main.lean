@@ -6,6 +6,8 @@ import Azurite.Benchmark.AzNatAddModPow2
 import Azurite.Benchmark.AzNatAddModPow2Residue
 import Azurite.Benchmark.AzNatSubModPow2Residue
 import Azurite.Benchmark.AzNatMulModPow2Residue
+import Azurite.Benchmark.AzNatMulModPow2Algorithms
+import Azurite.Benchmark.AzNatSquareModPow2Algorithms
 import Azurite.Benchmark.AzNatSub
 import Azurite.Benchmark.AzNatMulAlgorithms
 import Azurite.Benchmark.AzNatMulAlgorithmsToomCook3
@@ -42,6 +44,7 @@ def validBenchmarks : List String :=
   ["az_polynomial_mul", "az_polynomial_karatsuba",
    "az_nat_add", "az_nat_add_mod_pow2", "az_nat_add_mod_pow2_residue",
    "az_nat_sub_mod_pow2_residue", "az_nat_mul_mod_pow2_residue",
+   "az_nat_mul_mod_pow2_algorithms", "az_nat_square_mod_pow2_algorithms",
    "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
    "az_nat_mul_algorithms_toomcook3", "az_nat_div_algorithms",
    "az_nat_div_algorithms_limbs",
@@ -74,6 +77,8 @@ def main (args : List String) : IO Unit := do
       | "az_nat_add_mod_pow2_residue" => runAzNatAddModPow2Residue limit cfg seed
       | "az_nat_sub_mod_pow2_residue" => runAzNatSubModPow2Residue limit cfg seed
       | "az_nat_mul_mod_pow2_residue" => runAzNatMulModPow2Residue limit cfg seed
+      | "az_nat_mul_mod_pow2_algorithms" => runAzNatMulModPow2Algorithms limit cfg seed
+      | "az_nat_square_mod_pow2_algorithms" => runAzNatSquareModPow2Algorithms limit cfg seed
       | "az_nat_sub" => runAzNatSub limit cfg seed
       | "az_nat_mul_vs_nat" => runAzNatMulVsNat limit cfg seed
       | "az_nat_mul_algorithms" => runAzNatMulAlgorithms limit cfg seed

@@ -1,0 +1,18 @@
+# Tuning: the three low-multiplication algorithms head-to-head, mod 2^k.
+#
+# Full-width b-bit residue operands (k = b). The cross-overs of the three
+# median-ns curves give the dispatch cutoffs:
+#   - where Karatsuba-low first beats schoolbook-low -> mulModPow2KaratsubaCutoff
+#   - where Toom-3-low first beats Karatsuba-low      -> mulModPow2ToomCutoff
+# (cutoffs are in limbs = ceil(k/64)).
+
+benchmark = "az_nat_mul_mod_pow2_algorithms"
+limit     = 2500
+title     = "az_nat_mul_mod_pow2: schoolbook vs Karatsuba vs Toom-3 (low)"
+x_label   = "Modulus bit-width k"
+
+[params]
+meanBitLength = 16384
+iters         = 30
+karaThreshold = 16
+toomThreshold = 256
