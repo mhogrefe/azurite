@@ -44,12 +44,12 @@ section Tests
 open Azurite Azurite.AzZModPow2
 
 -- `3^4 = 81 ≡ 1 (mod 16)`, `2^10 = 1024 ≡ 0 (mod 256)`, `7^0 = 1`.
-#guard ((AzZModPow2.ofNat 4 3).pow 4).val == (AzZModPow2.ofNat 4 1).val
-#guard ((AzZModPow2.ofNat 8 2).pow 10).val == (AzZModPow2.ofNat 8 0).val
-#guard ((AzZModPow2.ofNat 8 7).pow 0).val == (AzZModPow2.ofNat 8 1).val
-#guard ((AzZModPow2.ofNat 32 3).pow 20).val == (AzZModPow2.ofNat 32 (3 ^ 20 % 2 ^ 32)).val
+#guard ((AzZModPow2.ofNat 4 3).pow 4) == (AzZModPow2.ofNat 4 1)
+#guard ((AzZModPow2.ofNat 8 2).pow 10) == (AzZModPow2.ofNat 8 0)
+#guard ((AzZModPow2.ofNat 8 7).pow 0) == (AzZModPow2.ofNat 8 1)
+#guard ((AzZModPow2.ofNat 32 3).pow 20) == (AzZModPow2.ofNat 32 (3 ^ 20 % 2 ^ 32))
 -- Multi-limb modulus.
-#guard ((AzZModPow2.ofNat 128 123456789).pow 50).val ==
-  (AzZModPow2.ofNat 128 (123456789 ^ 50 % 2 ^ 128)).val
+#guard ((AzZModPow2.ofNat 128 123456789).pow 50) ==
+  (AzZModPow2.ofNat 128 (123456789 ^ 50 % 2 ^ 128))
 
 end Tests

@@ -130,47 +130,47 @@ section Tests
 open Azurite Azurite.AzZModPow2
 
 -- In `ℤ/16`: `-1 = 15`, `-0 = 0`, `-3 = 13`, `-(17 mod 16 = 1) = 15`.
-#guard (-(AzZModPow2.ofNat 4 1)).val == (AzZModPow2.ofNat 4 15).val
-#guard (-(AzZModPow2.ofNat 4 0)).val == (AzZModPow2.ofNat 4 0).val
-#guard (-(AzZModPow2.ofNat 4 3)).val == (AzZModPow2.ofNat 4 13).val
-#guard (-(AzZModPow2.ofNat 4 17)).val == (AzZModPow2.ofNat 4 15).val
+#guard (-(AzZModPow2.ofNat 4 1)) == (AzZModPow2.ofNat 4 15)
+#guard (-(AzZModPow2.ofNat 4 0)) == (AzZModPow2.ofNat 4 0)
+#guard (-(AzZModPow2.ofNat 4 3)) == (AzZModPow2.ofNat 4 13)
+#guard (-(AzZModPow2.ofNat 4 17)) == (AzZModPow2.ofNat 4 15)
 -- In `ℤ/256`: `-200 = 56`.
-#guard (-(AzZModPow2.ofNat 8 200)).val == (AzZModPow2.ofNat 8 56).val
+#guard (-(AzZModPow2.ofNat 8 200)) == (AzZModPow2.ofNat 8 56)
 -- Multi-limb `ℤ/2^128`: `-1 = 2^128 - 1`.
-#guard (-(AzZModPow2.ofNat 128 1)).val == (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+#guard (-(AzZModPow2.ofNat 128 1)) == (AzZModPow2.ofNat 128 (2 ^ 128 - 1))
 
 -- Addition wraps mod `2^k`. `ℤ/16`: `9+10 = 19 ≡ 3`, `15+1 = 16 ≡ 0`.
-#guard (AzZModPow2.ofNat 4 9 + AzZModPow2.ofNat 4 10).val == (AzZModPow2.ofNat 4 3).val
-#guard (AzZModPow2.ofNat 4 15 + AzZModPow2.ofNat 4 1).val == (AzZModPow2.ofNat 4 0).val
-#guard (AzZModPow2.ofNat 8 200 + AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 44).val
+#guard (AzZModPow2.ofNat 4 9 + AzZModPow2.ofNat 4 10) == (AzZModPow2.ofNat 4 3)
+#guard (AzZModPow2.ofNat 4 15 + AzZModPow2.ofNat 4 1) == (AzZModPow2.ofNat 4 0)
+#guard (AzZModPow2.ofNat 8 200 + AzZModPow2.ofNat 8 100) == (AzZModPow2.ofNat 8 44)
 -- Multi-limb carry-out across the `2^128` boundary: `(2^128-1) + 1 ≡ 0`.
-#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 1).val ==
-  (AzZModPow2.ofNat 128 0).val
-#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 5).val ==
-  (AzZModPow2.ofNat 128 4).val
+#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 1) ==
+  (AzZModPow2.ofNat 128 0)
+#guard (AzZModPow2.ofNat 128 (2 ^ 128 - 1) + AzZModPow2.ofNat 128 5) ==
+  (AzZModPow2.ofNat 128 4)
 
 -- Subtraction wraps mod `2^k`. `ℤ/16`: `3-5 = -2 ≡ 14`, `5-3 = 2`, `0-1 ≡ 15`.
-#guard (AzZModPow2.ofNat 4 3 - AzZModPow2.ofNat 4 5).val == (AzZModPow2.ofNat 4 14).val
-#guard (AzZModPow2.ofNat 4 5 - AzZModPow2.ofNat 4 3).val == (AzZModPow2.ofNat 4 2).val
-#guard (AzZModPow2.ofNat 4 0 - AzZModPow2.ofNat 4 1).val == (AzZModPow2.ofNat 4 15).val
-#guard (AzZModPow2.ofNat 8 44 - AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 200).val
+#guard (AzZModPow2.ofNat 4 3 - AzZModPow2.ofNat 4 5) == (AzZModPow2.ofNat 4 14)
+#guard (AzZModPow2.ofNat 4 5 - AzZModPow2.ofNat 4 3) == (AzZModPow2.ofNat 4 2)
+#guard (AzZModPow2.ofNat 4 0 - AzZModPow2.ofNat 4 1) == (AzZModPow2.ofNat 4 15)
+#guard (AzZModPow2.ofNat 8 44 - AzZModPow2.ofNat 8 100) == (AzZModPow2.ofNat 8 200)
 -- Multi-limb borrow across the `2^128` boundary: `0 - 1 ≡ 2^128 - 1`.
-#guard (AzZModPow2.ofNat 128 0 - AzZModPow2.ofNat 128 1).val ==
-  (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
-#guard (AzZModPow2.ofNat 128 4 - AzZModPow2.ofNat 128 5).val ==
-  (AzZModPow2.ofNat 128 (2 ^ 128 - 1)).val
+#guard (AzZModPow2.ofNat 128 0 - AzZModPow2.ofNat 128 1) ==
+  (AzZModPow2.ofNat 128 (2 ^ 128 - 1))
+#guard (AzZModPow2.ofNat 128 4 - AzZModPow2.ofNat 128 5) ==
+  (AzZModPow2.ofNat 128 (2 ^ 128 - 1))
 
 -- Multiplication wraps mod `2^k`. `ℤ/16`: `5*7 = 35 ≡ 3`, `15*15 = 225 ≡ 1`.
-#guard (AzZModPow2.ofNat 4 5 * AzZModPow2.ofNat 4 7).val == (AzZModPow2.ofNat 4 3).val
-#guard (AzZModPow2.ofNat 4 15 * AzZModPow2.ofNat 4 15).val == (AzZModPow2.ofNat 4 1).val
-#guard (AzZModPow2.ofNat 8 200 * AzZModPow2.ofNat 8 100).val == (AzZModPow2.ofNat 8 32).val
-#guard (AzZModPow2.ofNat 32 0 * AzZModPow2.ofNat 32 123456789).val == (AzZModPow2.ofNat 32 0).val
-#guard (AzZModPow2.ofNat 32 1 * AzZModPow2.ofNat 32 123456789).val ==
-  (AzZModPow2.ofNat 32 123456789).val
+#guard (AzZModPow2.ofNat 4 5 * AzZModPow2.ofNat 4 7) == (AzZModPow2.ofNat 4 3)
+#guard (AzZModPow2.ofNat 4 15 * AzZModPow2.ofNat 4 15) == (AzZModPow2.ofNat 4 1)
+#guard (AzZModPow2.ofNat 8 200 * AzZModPow2.ofNat 8 100) == (AzZModPow2.ofNat 8 32)
+#guard (AzZModPow2.ofNat 32 0 * AzZModPow2.ofNat 32 123456789) == (AzZModPow2.ofNat 32 0)
+#guard (AzZModPow2.ofNat 32 1 * AzZModPow2.ofNat 32 123456789) ==
+  (AzZModPow2.ofNat 32 123456789)
 -- Multi-limb: `(2^64-1)^2 = 2^128 - 2^65 + 1 ≡ 1 (mod 2^64)`; full value mod `2^128`.
-#guard (AzZModPow2.ofNat 64 (2 ^ 64 - 1) * AzZModPow2.ofNat 64 (2 ^ 64 - 1)).val ==
-  (AzZModPow2.ofNat 64 1).val
-#guard (AzZModPow2.ofNat 128 (2 ^ 64 - 1) * AzZModPow2.ofNat 128 (2 ^ 64 - 1)).val ==
-  (AzZModPow2.ofNat 128 ((2 ^ 64 - 1) * (2 ^ 64 - 1) % 2 ^ 128)).val
+#guard (AzZModPow2.ofNat 64 (2 ^ 64 - 1) * AzZModPow2.ofNat 64 (2 ^ 64 - 1)) ==
+  (AzZModPow2.ofNat 64 1)
+#guard (AzZModPow2.ofNat 128 (2 ^ 64 - 1) * AzZModPow2.ofNat 128 (2 ^ 64 - 1)) ==
+  (AzZModPow2.ofNat 128 ((2 ^ 64 - 1) * (2 ^ 64 - 1) % 2 ^ 128))
 
 end Tests

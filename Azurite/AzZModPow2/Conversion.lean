@@ -13,9 +13,9 @@ end Azurite.AzZModPow2
 section Tests
 open Azurite Azurite.AzZModPow2
 -- `ℤ/16`: `+19 → 3`, `-1 → 15`, `-19 → 13`; `ℤ/256`: `-200 → 56`.
-#guard (ofAzInt 4 (AzInt.mkNorm true (AzNat.ofNat 19))).val == (AzZModPow2.ofNat 4 3).val
-#guard (ofAzInt 4 (AzInt.mkNorm false (AzNat.ofNat 1))).val == (AzZModPow2.ofNat 4 15).val
-#guard (ofAzInt 4 (AzInt.mkNorm false (AzNat.ofNat 19))).val == (AzZModPow2.ofNat 4 13).val
-#guard (ofAzInt 8 (AzInt.mkNorm false (AzNat.ofNat 200))).val == (AzZModPow2.ofNat 8 56).val
-#guard (ofAzInt 4 (AzInt.mkNorm true (AzNat.ofNat 0))).val == (AzZModPow2.ofNat 4 0).val
+#guard (ofAzInt 4 (AzInt.mkNorm true (AzNat.ofNat 19))) == (AzZModPow2.ofNat 4 3)
+#guard (ofAzInt 4 (AzInt.mkNorm false (AzNat.ofNat 1))) == (AzZModPow2.ofNat 4 15)
+#guard (ofAzInt 4 (AzInt.mkNorm false (AzNat.ofNat 19))) == (AzZModPow2.ofNat 4 13)
+#guard (ofAzInt 8 (AzInt.mkNorm false (AzNat.ofNat 200))) == (AzZModPow2.ofNat 8 56)
+#guard (ofAzInt 4 (AzInt.mkNorm true (AzNat.ofNat 0))) == (AzZModPow2.ofNat 4 0)
 end Tests
