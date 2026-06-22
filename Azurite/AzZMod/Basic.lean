@@ -1,5 +1,13 @@
+import Azurite.AzNat.Add
 import Azurite.AzNat.Div
+import Azurite.AzNat.Sub
+import Azurite.AzNat.Mul
+import Azurite.AzNat.Compare
+import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Div.DivMod
+import Azurite.AzNat.Equiv.Sub
+import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Basic
 import Mathlib.Data.Nat.Cast.Defs
 
@@ -76,6 +84,67 @@ def ofNat (m : AzNat) [NeZero m.toNat] (a : Nat) : AzZMod m := ofAzNat m (AzNat.
 instance instOfNat [NeZero m.toNat] {a : Nat} [a.AtLeastTwo] : OfNat (AzZMod m) a :=
   ⟨ofNat m a⟩
 
+/-- **Negation** in `ℤ / m`: `-a = (m - a) mod m`.  Since `a` is canonical
+(`a.val < m`), the difference `m - a.val` is already in `[0, m)`, so the
+truncating `AzNat` subtraction needs no further reduction; the `0` residue is
+short-circuited (`-0 = 0`). -/
+def neg [NeZero m.toNat] (a : AzZMod m) : AzZMod m :=
+  if h : a.val.limbs.size = 0 then 0
+  else ⟨m - a.val, by
+    rw [AzNat.toNat_sub]
+    have h1 : a.val.toNat ≠ 0 := fun h0 => h ((AzNat.toNat_eq_zero_iff a.val).mp h0)
+    have h2 : a.val.toNat < m.toNat := a.isLt
+    omega⟩
+
+instance [NeZero m.toNat] : Neg (AzZMod m) := ⟨neg⟩
+
+/-- **Addition** in `ℤ / m`: add the residues, then conditionally subtract `m`.
+Both inputs are canonical (`< m`), so the sum is `< 2m`; a single comparison and
+truncating subtraction reduce it back into `[0, m)` — cheaper than a full
+division. -/
+def add [NeZero m.toNat] (a b : AzZMod m) : AzZMod m :=
+  let s := a.val + b.val
+  if h : m ≤ s then
+    ⟨s - m, by
+      have hs : s.toNat = a.val.toNat + b.val.toNat := AzNat.toNat_add a.val b.val
+      have hms : m.toNat ≤ s.toNat := (AzNat.le_iff_toNat_le m s).mp h
+      rw [AzNat.toNat_sub]
+      have ha : a.val.toNat < m.toNat := a.isLt
+      have hb : b.val.toNat < m.toNat := b.isLt
+      omega⟩
+  else
+    ⟨s, by
+      have hns : ¬ m.toNat ≤ s.toNat := fun hle => h ((AzNat.le_iff_toNat_le m s).mpr hle)
+      omega⟩
+
+instance [NeZero m.toNat] : Add (AzZMod m) := ⟨add⟩
+
+/-- **Subtraction** in `ℤ / m`: the borrow analogue of `add`.  When `b.val ≤ a.val`
+the truncating difference `a.val - b.val` is already canonical; otherwise add the
+modulus first (`a.val + m - b.val`) to undo the borrow, landing back in `[0, m)`. -/
+def sub [NeZero m.toNat] (a b : AzZMod m) : AzZMod m :=
+  if h : b.val ≤ a.val then
+    ⟨a.val - b.val, by
+      rw [AzNat.toNat_sub]
+      have ha : a.val.toNat < m.toNat := a.isLt
+      omega⟩
+  else
+    ⟨a.val + m - b.val, by
+      rw [AzNat.toNat_sub, AzNat.toNat_add]
+      have hba : ¬ b.val.toNat ≤ a.val.toNat :=
+        fun hle => h ((AzNat.le_iff_toNat_le b.val a.val).mpr hle)
+      have hb : b.val.toNat < m.toNat := b.isLt
+      omega⟩
+
+instance [NeZero m.toNat] : Sub (AzZMod m) := ⟨sub⟩
+
+/-- **Multiplication** in `ℤ / m`: the full product reduced modulo `m`
+(`(a * b) mod m`).  Straightforward for now — a divisionless reduction
+(Barrett/Montgomery) is a future optimization. -/
+def mul [NeZero m.toNat] (a b : AzZMod m) : AzZMod m := ofAzNat m (a.val * b.val)
+
+instance [NeZero m.toNat] : Mul (AzZMod m) := ⟨mul⟩
+
 end AzZMod
 
 end Azurite
@@ -94,5 +163,31 @@ open Azurite Azurite.AzZMod
 #guard AzZMod.ofNat (AzNat.ofNat 1000) 123456 == AzZMod.ofNat (AzNat.ofNat 1000) 456
 -- Reduction is genuine division, not masking: `ℤ/100`, `250 ≡ 50`.
 #guard AzZMod.ofNat (AzNat.ofNat 100) 250 == AzZMod.ofNat (AzNat.ofNat 100) 50
+
+-- Negation in `ℤ/7`: `-3 ≡ 4`, `-0 ≡ 0`, `-1 ≡ 6`; multi-digit `ℤ/1000`: `-456 ≡ 544`.
+#guard -(AzZMod.ofNat (AzNat.ofNat 7) 3) == AzZMod.ofNat (AzNat.ofNat 7) 4
+#guard -(AzZMod.ofNat (AzNat.ofNat 7) 0) == AzZMod.ofNat (AzNat.ofNat 7) 0
+#guard -(AzZMod.ofNat (AzNat.ofNat 7) 1) == AzZMod.ofNat (AzNat.ofNat 7) 6
+#guard -(AzZMod.ofNat (AzNat.ofNat 1000) 456) == AzZMod.ofNat (AzNat.ofNat 1000) 544
+
+-- Addition in `ℤ/7`: `4+5 = 9 ≡ 2` (wraps), `2+3 = 5` (no wrap); `ℤ/1000`: `600+700 = 1300 ≡ 300`.
+#guard AzZMod.ofNat (AzNat.ofNat 7) 4 + AzZMod.ofNat (AzNat.ofNat 7) 5 == AzZMod.ofNat (AzNat.ofNat 7) 2
+#guard AzZMod.ofNat (AzNat.ofNat 7) 2 + AzZMod.ofNat (AzNat.ofNat 7) 3 == AzZMod.ofNat (AzNat.ofNat 7) 5
+#guard AzZMod.ofNat (AzNat.ofNat 1000) 600 + AzZMod.ofNat (AzNat.ofNat 1000) 700 ==
+  AzZMod.ofNat (AzNat.ofNat 1000) 300
+
+-- Subtraction in `ℤ/7`: `5-3 = 2` (no borrow), `3-5 ≡ 5` (borrow), `0-1 ≡ 6`; `ℤ/1000`: `300-700 ≡ 600`.
+#guard AzZMod.ofNat (AzNat.ofNat 7) 5 - AzZMod.ofNat (AzNat.ofNat 7) 3 == AzZMod.ofNat (AzNat.ofNat 7) 2
+#guard AzZMod.ofNat (AzNat.ofNat 7) 3 - AzZMod.ofNat (AzNat.ofNat 7) 5 == AzZMod.ofNat (AzNat.ofNat 7) 5
+#guard AzZMod.ofNat (AzNat.ofNat 7) 0 - AzZMod.ofNat (AzNat.ofNat 7) 1 == AzZMod.ofNat (AzNat.ofNat 7) 6
+#guard AzZMod.ofNat (AzNat.ofNat 1000) 300 - AzZMod.ofNat (AzNat.ofNat 1000) 700 ==
+  AzZMod.ofNat (AzNat.ofNat 1000) 600
+
+-- Multiplication in `ℤ/7`: `5*3 = 15 ≡ 1`, `4*5 = 20 ≡ 6`, `6*6 = 36 ≡ 1`; `ℤ/1000`: `123*456 = 56088 ≡ 88`.
+#guard AzZMod.ofNat (AzNat.ofNat 7) 5 * AzZMod.ofNat (AzNat.ofNat 7) 3 == AzZMod.ofNat (AzNat.ofNat 7) 1
+#guard AzZMod.ofNat (AzNat.ofNat 7) 4 * AzZMod.ofNat (AzNat.ofNat 7) 5 == AzZMod.ofNat (AzNat.ofNat 7) 6
+#guard AzZMod.ofNat (AzNat.ofNat 7) 6 * AzZMod.ofNat (AzNat.ofNat 7) 6 == AzZMod.ofNat (AzNat.ofNat 7) 1
+#guard AzZMod.ofNat (AzNat.ofNat 1000) 123 * AzZMod.ofNat (AzNat.ofNat 1000) 456 ==
+  AzZMod.ofNat (AzNat.ofNat 1000) 88
 
 end Tests

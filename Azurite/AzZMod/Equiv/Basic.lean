@@ -63,4 +63,92 @@ def equivZMod [NeZero m.toNat] : AzZMod m ≃ ZMod m.toNat where
 theorem toZMod_injective [NeZero m.toNat] : Function.Injective (toZMod (m := m)) :=
   equivZMod.injective
 
+/-- **Negation agrees with `ZMod`.**  The truncating `m - a.val` realizes
+negation in `ZMod m.toNat`. -/
+@[simp] theorem toZMod_neg [NeZero m.toNat] (a : AzZMod m) : toZMod (-a) = -(toZMod a) := by
+  show toZMod (neg a) = -(toZMod a)
+  unfold neg
+  by_cases h : a.val.limbs.size = 0
+  · rw [dif_pos h]
+    have hz : toZMod a = 0 := by
+      show ((a.val.toNat : ℕ) : ZMod m.toNat) = 0
+      rw [(AzNat.toNat_eq_zero_iff a.val).mpr h, Nat.cast_zero]
+    rw [toZMod_zero, hz, neg_zero]
+  · rw [dif_neg h]
+    show ((m - a.val).toNat : ZMod m.toNat) = -(toZMod a)
+    rw [AzNat.toNat_sub, Nat.cast_sub (le_of_lt a.isLt), ZMod.natCast_self, zero_sub]
+    rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_neg`. -/
+@[simp] theorem ofZMod_neg [NeZero m.toNat] (z : ZMod m.toNat) : ofZMod (-z) = -(ofZMod z) := by
+  apply toZMod_injective
+  rw [toZMod_ofZMod, toZMod_neg, toZMod_ofZMod]
+
+/-- **Addition agrees with `ZMod`.**  The add-then-conditionally-subtract `add`
+realizes addition in `ZMod m.toNat`. -/
+@[simp] theorem toZMod_add [NeZero m.toNat] (a b : AzZMod m) :
+    toZMod (a + b) = toZMod a + toZMod b := by
+  show toZMod (add a b) = toZMod a + toZMod b
+  have key : toZMod (add a b) = ((a.val.toNat + b.val.toNat : ℕ) : ZMod m.toNat) := by
+    simp only [add]
+    split
+    · rename_i h
+      have hms : m.toNat ≤ a.val.toNat + b.val.toNat := by
+        have := (AzNat.le_iff_toNat_le m (a.val + b.val)).mp h
+        rwa [AzNat.toNat_add] at this
+      show (((a.val + b.val - m).toNat : ℕ) : ZMod m.toNat) = _
+      rw [AzNat.toNat_sub, AzNat.toNat_add, Nat.cast_sub hms, ZMod.natCast_self, sub_zero]
+    · show (((a.val + b.val).toNat : ℕ) : ZMod m.toNat) = _
+      rw [AzNat.toNat_add]
+  rw [key, Nat.cast_add]
+  rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_add`. -/
+@[simp] theorem ofZMod_add [NeZero m.toNat] (x y : ZMod m.toNat) :
+    ofZMod (x + y) = ofZMod x + ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_add, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
+/-- **Subtraction agrees with `ZMod`.**  The borrow-or-add-`m` `sub` realizes
+subtraction in `ZMod m.toNat`. -/
+@[simp] theorem toZMod_sub [NeZero m.toNat] (a b : AzZMod m) :
+    toZMod (a - b) = toZMod a - toZMod b := by
+  show toZMod (sub a b) = toZMod a - toZMod b
+  have key : toZMod (sub a b) = (a.val.toNat : ZMod m.toNat) - (b.val.toNat : ZMod m.toNat) := by
+    simp only [sub]
+    split
+    · rename_i h
+      have hba : b.val.toNat ≤ a.val.toNat := (AzNat.le_iff_toNat_le b.val a.val).mp h
+      show (((a.val - b.val).toNat : ℕ) : ZMod m.toNat) = _
+      rw [AzNat.toNat_sub, Nat.cast_sub hba]
+    · rename_i h
+      have hbam : b.val.toNat ≤ a.val.toNat + m.toNat := by
+        have hb : b.val.toNat < m.toNat := b.isLt
+        omega
+      show (((a.val + m - b.val).toNat : ℕ) : ZMod m.toNat) = _
+      rw [AzNat.toNat_sub, AzNat.toNat_add, Nat.cast_sub hbam, Nat.cast_add, ZMod.natCast_self,
+        add_zero]
+  rw [key]
+  rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_sub`. -/
+@[simp] theorem ofZMod_sub [NeZero m.toNat] (x y : ZMod m.toNat) :
+    ofZMod (x - y) = ofZMod x - ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_sub, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
+/-- **Multiplication agrees with `ZMod`.**  The reduce-the-product `mul` realizes
+multiplication in `ZMod m.toNat`. -/
+@[simp] theorem toZMod_mul [NeZero m.toNat] (a b : AzZMod m) :
+    toZMod (a * b) = toZMod a * toZMod b := by
+  show toZMod (ofAzNat m (a.val * b.val)) = toZMod a * toZMod b
+  rw [toZMod_ofAzNat, AzNat.toNat_mul, Nat.cast_mul]
+  rfl
+
+/-- `ofZMod`-phrased companion of `toZMod_mul`. -/
+@[simp] theorem ofZMod_mul [NeZero m.toNat] (x y : ZMod m.toNat) :
+    ofZMod (x * y) = ofZMod x * ofZMod y := by
+  apply toZMod_injective
+  rw [toZMod_mul, toZMod_ofZMod, toZMod_ofZMod, toZMod_ofZMod]
+
 end Azurite.AzZMod
