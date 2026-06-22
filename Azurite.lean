@@ -433,6 +433,11 @@ import Azurite.AzVector.GramSchmidt
 import Azurite.AzVector.Operations
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Parse
+import Azurite.AzZMod.Basic
+import Azurite.AzZMod.Equiv.Basic
+import Azurite.AzZMod.Equiv.Parse
+import Azurite.AzZMod.Parse
+import Azurite.AzZMod.ToString
 import Azurite.AzZModPow2.Basic
 import Azurite.AzZModPow2.Conversion
 import Azurite.AzZModPow2.Equiv.Basic
