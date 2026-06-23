@@ -63,6 +63,45 @@ lemma varNonzero_cons_cons (a b : R) (rest : List R) :
     varNonzero (a :: b :: rest) =
       (if a * b < 0 then 1 else 0) + varNonzero (b :: rest) := rfl
 
+/-- Appending one element to a list adds the single sign variation between the
+    previous last element and the new one (none if the list was empty). -/
+private lemma varNonzero_append_singleton (l : List R) (x : R) :
+    varNonzero (l ++ [x]) =
+      varNonzero l + (match l.getLast? with
+        | none => 0
+        | some y => if y * x < 0 then 1 else 0) := by
+  induction l with
+  | nil => simp [varNonzero]
+  | cons a t ih =>
+    cases t with
+    | nil => simp [varNonzero]
+    | cons b s =>
+      rw [show (a :: b :: s) ++ [x] = a :: b :: (s ++ [x]) from rfl,
+        varNonzero_cons_cons, ← List.cons_append, ih, varNonzero_cons_cons,
+        List.getLast?_cons_cons, ← Nat.add_assoc]
+
+end
+
+section
+
+variable [CommMagma R] [Zero R] [LT R] [DecidableLT R]
+
+/-- `varNonzero` is invariant under reversal: the number of adjacent sign
+    variations does not depend on the orientation of the list. Needs
+    commutativity of multiplication, since the adjacent-pair test `a * b < 0`
+    must be symmetric. -/
+lemma varNonzero_reverse (l : List R) : varNonzero l.reverse = varNonzero l := by
+  induction l with
+  | nil => rfl
+  | cons a t ih =>
+    rw [List.reverse_cons, varNonzero_append_singleton, List.getLast?_reverse, ih]
+    cases t with
+    | nil => rfl
+    | cons b s =>
+      rw [varNonzero_cons_cons, List.head?_cons]
+      dsimp only
+      rw [mul_comm b a, Nat.add_comm]
+
 end
 
 section
@@ -81,6 +120,19 @@ lemma Var_of_forall_ne_zero {a : List R} (h : ∀ x ∈ a, x ≠ 0) :
   unfold Var
   congr 1
   exact List.filter_eq_self.mpr (fun x hx => by simpa using h x hx)
+
+end
+
+section
+
+variable [CommMagma R] [Zero R] [DecidableEq R] [LT R] [DecidableLT R]
+
+/-- **`Var` is invariant under reversal.** A coefficient sequence and its
+    reverse have the same number of sign variations, so `Var(a₀, …, aₙ)` (the
+    ascending form used by `varPoly`) equals `Var(aₙ, …, a₀)` (BPR's descending
+    display). -/
+lemma Var_reverse (a : List R) : Var a.reverse = Var a := by
+  rw [Var, Var, List.filter_reverse, varNonzero_reverse]
 
 end
 

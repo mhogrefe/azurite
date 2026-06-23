@@ -68,6 +68,7 @@ import Azurite.AzMatrix.Bareiss
 import Azurite.AzMatrix.BareissDet
 import Azurite.AzMatrix.BareissRank
 import Azurite.AzMatrix.Basic
+import Azurite.AzMatrix.CharPoly
 import Azurite.AzMatrix.Det
 import Azurite.AzMatrix.DetDispatch
 import Azurite.AzMatrix.Equiv.Add
@@ -77,6 +78,7 @@ import Azurite.AzMatrix.Equiv.BareissDet
 import Azurite.AzMatrix.Equiv.BareissRank
 import Azurite.AzMatrix.Equiv.Basic
 import Azurite.AzMatrix.Equiv.Basis
+import Azurite.AzMatrix.Equiv.CharPoly
 import Azurite.AzMatrix.Equiv.Det
 import Azurite.AzMatrix.Equiv.GaussRank
 import Azurite.AzMatrix.Equiv.Kronecker
@@ -89,6 +91,7 @@ import Azurite.AzMatrix.Equiv.RowCol
 import Azurite.AzMatrix.Equiv.RowEchelon
 import Azurite.AzMatrix.Equiv.SMul
 import Azurite.AzMatrix.Equiv.Sub
+import Azurite.AzMatrix.Equiv.Symmetric
 import Azurite.AzMatrix.Equiv.Transpose
 import Azurite.AzMatrix.Equiv.Zero
 import Azurite.AzMatrix.GaussRank
@@ -986,11 +989,13 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Definition_8_4
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Lemma_8_6
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Notation_8_7
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Algorithm_8_18
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Corollary_8_13
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_12
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_14
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_15
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_16
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_24
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen

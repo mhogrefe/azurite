@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_35
+import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_33
 
 /-!
 # BPR Remark 2.38: equality when all roots are real
@@ -146,5 +147,61 @@ theorem var_eq_numRoots_of_all_roots_real
   have hBF_R := (budan_fourier_posInf hIVP hP b).1
   -- Componentwise ≤ with equal sums forces componentwise equality.
   linarith
+
+/-- **Descartes' rule of signs is exact on `(0, +∞)` when all roots are real.**
+    If every root of `P` lies in the base field, then the number of positive
+    real roots (counted with multiplicity) equals the number of sign variations
+    in the coefficient sequence: `varPoly P = posRoots P`. This is the special
+    case of Remark 2.38 that powers the signature formula (BPR Proposition 8.24):
+    splitting `(−∞, +∞)` at `0`, Budan-Fourier gives `num ≤ Var` on each of
+    `(−∞, 0]` and `(0, +∞)`, but the two `num` sum to `natDegree P = ` the total
+    `Var`, forcing equality on `(0, +∞)`. -/
+theorem varPoly_eq_posRoots_of_all_roots_real
+    (hIVP : HasIntermediateValueProperty R) {P : R[X]} (hP : P ≠ 0)
+    (hroots_card : P.roots.card = P.natDegree) :
+    varPoly P = posRoots P := by
+  -- Total over `(−∞, +∞)`.
+  have hnum_total : (numRoots P .negInf .posInf : ℤ) = (P.natDegree : ℤ) := by
+    show (P.roots.card : ℤ) = (P.natDegree : ℤ)
+    exact_mod_cast hroots_card
+  have hvar_le : varBetween (der P) .negInf .posInf ≤ (P.natDegree : ℤ) := by
+    unfold varBetween
+    have h1 : (varAt (der P) .negInf : ℤ) ≤ (P.natDegree : ℤ) :=
+      Int.ofNat_le.mpr (varAt_der_le_natDegree P .negInf)
+    have h2 : (0 : ℤ) ≤ (varAt (der P) .posInf : ℤ) := Int.natCast_nonneg _
+    linarith
+  have hBF_total := (budan_fourier_negInf_posInf hIVP hP).1
+  have hvar_total : varBetween (der P) .negInf .posInf = (P.natDegree : ℤ) := by linarith
+  -- Split numRoots at `0` (trichotomy partition of the root multiset).
+  have hnum_split : (numRoots P .negInf (.finite 0) : ℤ) +
+      (numRoots P (.finite 0) .posInf : ℤ) = (P.natDegree : ℤ) := by
+    have hsplit : numRoots P .negInf (.finite 0) + numRoots P (.finite 0) .posInf
+        = numRoots P .negInf .posInf := by
+      show (P.roots.filter (· ≤ 0)).card + (P.roots.filter (0 < ·)).card = P.roots.card
+      rw [← Multiset.card_add]
+      congr 1
+      have hle : (P.roots.filter (· ≤ 0)) = P.roots.filter (fun x => ¬ (0 < x)) :=
+        Multiset.filter_congr (fun x _ => by rw [not_lt])
+      rw [hle, add_comm]
+      exact Multiset.filter_add_not _ _
+    have hcast : ((numRoots P .negInf (.finite 0) + numRoots P (.finite 0) .posInf : ℕ) : ℤ)
+        = (numRoots P .negInf .posInf : ℤ) := by exact_mod_cast hsplit
+    push_cast at hcast
+    rw [hnum_total] at hcast
+    linarith
+  -- Split varBetween at `0`.
+  have hvar_split := varBetween_split (der P) .negInf (.finite 0) .posInf
+  -- Budan-Fourier on each half.
+  have hBF_L := (budan_fourier_negInf hIVP hP 0).1
+  have hBF_R := (budan_fourier_posInf hIVP hP 0).1
+  -- Equal sums with componentwise `≤` force equality on `(0, +∞)`.
+  have hR_eq : varBetween (der P) (.finite 0) .posInf
+      = (numRoots P (.finite 0) .posInf : ℤ) := by linarith
+  -- Translate to `varPoly`/`posRoots`.
+  have e1 : (varPoly P : ℤ) = varBetween (der P) (.finite 0) .posInf :=
+    Theorem2_33.varPoly_eq_varBetween_der P
+  have e2 : posRoots P = numRoots P (.finite 0) .posInf := rfl
+  have : (varPoly P : ℤ) = (posRoots P : ℤ) := by rw [e1, hR_eq, e2]
+  exact_mod_cast this
 
 end Azurite.BPR.Theorem2_35
