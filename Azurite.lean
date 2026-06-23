@@ -986,6 +986,11 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_1.Definition_8_4
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Lemma_8_6
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Notation_8_7
 import Azurite.BasuPollackRoy.Chapter8.Section8_1.Proposition_8_11
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Corollary_8_13
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_12
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_14
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_15
+import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_16
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen

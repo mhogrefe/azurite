@@ -98,6 +98,23 @@ private theorem gs_sub_mem_span (v : Fin n → (Fin n → R)) (i : Fin n) :
   exact gs_mem_span v k
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
+/-- The triangular property in the `w`-span form of BPR's statement: `wᵢ − vᵢ`
+lies in the span of the *orthogonalized* vectors `w₁, …, w_{i-1}`. (Immediate
+from the recursion, where `wᵢ − vᵢ` is literally a combination of the earlier
+`wⱼ`.) -/
+private theorem gs_sub_mem_span_gs (v : Fin n → (Fin n → R)) (i : Fin n) :
+    gs v i - v i ∈ span R (gs v '' {j | j < i}) := by
+  rw [gs_def v i]
+  have : v i - ∑ j ∈ Finset.Iio i,
+      ((v i ⬝ᵥ gs v j) / (gs v j ⬝ᵥ gs v j)) • gs v j - v i
+      = - ∑ j ∈ Finset.Iio i,
+          ((v i ⬝ᵥ gs v j) / (gs v j ⬝ᵥ gs v j)) • gs v j := by ring
+  rw [this]
+  refine Submodule.neg_mem _ (Submodule.sum_mem _ fun k hk => ?_)
+  have hki : k < i := Finset.mem_Iio.1 hk
+  exact smul_mem _ _ (subset_span (mem_image_of_mem _ (Set.mem_setOf_eq.mpr hki)))
+
+omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- Gram–Schmidt produces nonzero vectors from independent input. -/
 private theorem gs_ne_zero (v : Fin n → (Fin n → R)) (hv : LinearIndependent R v)
     (i : Fin n) : gs v i ≠ 0 := by
@@ -153,20 +170,26 @@ private theorem gs_linearIndependent (v : Fin n → (Fin n → R))
 
 /-- **BPR Proposition 4.41 (Gram–Schmidt orthogonalization).** Linearly independent
 vectors `v₁, …, vₙ` of `Rⁿ` can be orthogonalized: there is a family of linearly
-independent, pairwise orthogonal vectors `w₁, …, wₙ` with `wᵢ − vᵢ` in the span of
-`v₁, …, v_{i-1}` for every `i`. The construction is the Gram–Schmidt recursion
-`w₁ = v₁`, `wᵢ = vᵢ − ∑_{j<i} μ_{i,j} wⱼ` with `μ_{i,j} = (vᵢ · wⱼ)/‖wⱼ‖²`
-(well-defined since `‖wⱼ‖² = wⱼ · wⱼ > 0` for `wⱼ ≠ 0` over an ordered field). -/
+independent, pairwise orthogonal vectors `w₁, …, wₙ` such that, for every `i`,
+`wᵢ − vᵢ` lies in the span of the orthogonalized `w₁, …, w_{i-1}` (BPR's stated
+triangular property); we additionally record that `wᵢ − vᵢ` lies in the span of
+the original `v₁, …, v_{i-1}` (equivalent, useful as a change-of-basis fact). The
+construction is the Gram–Schmidt recursion `w₁ = v₁`, `wᵢ = vᵢ − ∑_{j<i} μ_{i,j} wⱼ`
+with `μ_{i,j} = (vᵢ · wⱼ)/‖wⱼ‖²` (well-defined since `‖wⱼ‖² = wⱼ · wⱼ > 0` for
+`wⱼ ≠ 0` over an ordered field). -/
 theorem proposition_4_41 (v : Fin n → (Fin n → R)) (hv : LinearIndependent R v) :
     ∃ w : Fin n → (Fin n → R),
       LinearIndependent R w ∧
       (∀ i j, i ≠ j → IsOrthogonal (w i) (w j)) ∧
-      (∀ i, w i - v i ∈ Submodule.span R (v '' {j | j < i})) := by
-  refine ⟨gs v, gs_linearIndependent v hv, ?_, ?_⟩
+      (∀ i, w i - v i ∈ Submodule.span R (v '' {j | j < i})) ∧
+      (∀ i, w i - v i ∈ Submodule.span R (w '' {j | j < i})) := by
+  refine ⟨gs v, gs_linearIndependent v hv, ?_, ?_, ?_⟩
   · intro i j hij
     exact gs_orthogonal v hij
   · intro i
     exact gs_sub_mem_span v i
+  · intro i
+    exact gs_sub_mem_span_gs v i
 
 end GramSchmidt
 

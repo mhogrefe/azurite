@@ -241,7 +241,7 @@ private theorem exists_orthonormal_first_col {m : ℕ} [NeZero m] (u : Fin m →
     rw [hv0] at this
     simpa [Fin.castLE, Fin.ext_iff] using this
   -- Gram–Schmidt
-  obtain ⟨w, hw_li, hw_orth, hw_span⟩ := proposition_4_41 v hv_li
+  obtain ⟨w, hw_li, hw_orth, hw_span, _⟩ := proposition_4_41 v hv_li
   -- `w 0 = v 0 = u`
   have hw_zero : w 0 = u := by
     have hspan0 := hw_span 0
