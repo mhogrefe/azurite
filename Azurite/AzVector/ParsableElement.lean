@@ -38,53 +38,10 @@ end ParsableElement
 
 section ParsableElementInstances
 
-instance : ParsableElement ℕ where
-  toChars := natToChars
-  parseChars := parseNatChars
-  parse_toChars := parseNatChars_natToChars
-  toChars_no_comma n := not_mem_natToChars_of_not_digit ',' (by decide) n
-  toChars_no_semicolon n := not_mem_natToChars_of_not_digit ';' (by decide) n
-
-instance : ParsableElement ℤ where
-  toChars := intToChars
-  parseChars := parseIntChars
-  parse_toChars := parseIntChars_intToChars
-  toChars_no_comma z hc := by
-    rcases mem_intToChars_only_digits_or_dash z ',' hc with h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_semicolon z hc := by
-    rcases mem_intToChars_only_digits_or_dash z ';' hc with h | ⟨_, h2⟩
-    · exact absurd h (by decide)
-    · exact absurd h2 (by decide)
-
-instance : ParsableElement ℚ where
-  toChars := ratToChars
-  parseChars := parseRatChars
-  parse_toChars := parseRatChars_ratToChars
-  toChars_no_comma q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q ',' hc with h | h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_semicolon q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q ';' hc with h | h | ⟨_, h2⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h2 (by decide)
-
-instance {m : ℕ} [NeZero m] : ParsableElement (ZMod m) where
-  toChars := zmodToChars
-  parseChars := fun cs => (parseNatChars cs).bind
-    (fun k => if k < m then some (k : ZMod m) else none)
-  parse_toChars c := by
-    show ((parseNatChars (natToChars c.val)).bind _) = _
-    rw [parseNatChars_natToChars]
-    simp only [Option.bind, if_pos (ZMod.val_lt c)]
-    congr 1
-    exact ZMod.natCast_zmod_val c
-  toChars_no_comma c := not_mem_natToChars_of_not_digit ',' (by decide) c.val
-  toChars_no_semicolon c := not_mem_natToChars_of_not_digit ';' (by decide) c.val
+/- `ParsableElement` instances for the non-Az types `ℕ`, `ℤ`, `ℚ`, and `ZMod`
+   have been removed: `AzVector`/`AzMatrix` should use the Az element types
+   (`AzNat`, `AzInt`, `AzRat`, `AzZMod`, `AzZModPow2`) instead of the GMP-backed
+   `ℕ`/`ℤ`/`ℚ`/`ZMod`. -/
 
 end ParsableElementInstances
 

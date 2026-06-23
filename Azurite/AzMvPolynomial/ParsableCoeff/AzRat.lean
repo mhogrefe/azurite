@@ -5,9 +5,6 @@
   `AzMvPolynomial` string conversion.
 -/
 import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
-import Azurite.AzPolynomial.Mul
-import Azurite.AzPolynomial.Parse
-import Azurite.AzPolynomial.ToString
 import Azurite.AzRat.Equiv.Parse
 import Azurite.AzRat.Instances
 
@@ -154,17 +151,5 @@ instance : ParsableCoeff AzRat where
   toChars_zero := AzRat.toChars_zero
   toChars_no_comma := AzRat.toChars_no_comma
   toChars_no_semicolon := AzRat.toChars_no_semicolon
-
--- Sanity checks: `AzPolynomial AzRat` round-trips through strings
--- (rational coefficients render as `"3/2"`, `-1` coefficients as `"-x"`).
-
-#guard (AzPolynomial.parseAzPolynomial "3/2*x^2-1/3*x+5" :
-    Option (AzPolynomial AzRat)).map AzPolynomial.toChars == some "3/2*x^2-1/3*x+5"
-#guard (AzPolynomial.parseAzPolynomial "x^2-x-1/2" :
-    Option (AzPolynomial AzRat)).map AzPolynomial.toChars == some "x^2-x-1/2"
-#guard ((· * ·) <$>
-    (AzPolynomial.parseAzPolynomial "x-1/2" : Option (AzPolynomial AzRat)) <*>
-    (AzPolynomial.parseAzPolynomial "x+1/2" : Option (AzPolynomial AzRat))).map
-    AzPolynomial.toChars == some "x^2-1/4"
 
 end Azurite

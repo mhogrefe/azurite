@@ -5,6 +5,8 @@
   This makes it easy to swap the algorithm behind `mul` later.
 -/
 import Azurite.AzMatrix.Mul
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
 import Azurite.AzMatrix.Parse
 import Azurite.AzVector.Equiv.Dot
 import Azurite.AzMatrix.Equiv.RowCol
@@ -58,8 +60,8 @@ theorem AzMatrix.ofFn_mul (f : Fin m → Fin n → R) (g : Fin n → Fin p → R
 
 /-! ### Guards -/
 
-private def testA : AzMatrix Int 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
-private def testB : AzMatrix Int 2 2 := AzMatrix.ofLists [[5, 6], [7, 8]]
+private def testA : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
+private def testB : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[5, 6], [7, 8]]
 
 #guard toString (testA * testB) = "[19, 22; 43, 50]"
 

@@ -14,6 +14,8 @@ import Azurite.AzMatrix.Parse
 import Azurite.AzMatrix.Mul
 import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzVector.ParsableElement
+import Azurite.AzInt.Instances
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite
 
@@ -134,14 +136,14 @@ end Instance
 
 /-! ### Demonstration: `AzMatrix` over `AzMvPolynomial`
 
-    Two `2 × 2` matrices with `AzMvPolynomial 8 ℤ` entries are parsed from
+    Two `2 × 2` matrices with `AzMvPolynomial 8 AzInt` entries are parsed from
     strings, multiplied, and the product is serialized back to a string.
     This exercises the full `ParsableElement` chain: both `parseStr` and
     `toString` on `AzMatrix` delegate to the `AzMvPolynomial` instance for
     individual entries. -/
 section MatrixDemo
 
-private abbrev MvInt8 := AzMvPolynomial 8 ℤ .Degrevlex
+private abbrev MvInt8 := AzMvPolynomial 8 AzInt .Degrevlex
 
 private def demoA : AzMatrix MvInt8 2 2 :=
   (AzMatrix.parseStr "[x₀, x₁; x₂, x₃]").getD (AzMatrix.ofFn (fun _ _ => 0))

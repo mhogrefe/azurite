@@ -2,6 +2,8 @@
   Monomials (coefficient × monic monomial) for `Monomial` — Fin-indexed.
 -/
 import Azurite.AzMvPolynomial.ParsableCoeff
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
 import Azurite.AzMvPolynomial.MonicMonomial
 import Azurite.AzMvPolynomial.MonicMonomialProofs
 
@@ -508,32 +510,32 @@ end Monomial
 
 section MonomialGuards
 
-private def mkMonN (c : ℤ) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial 3 ℤ :=
+private def mkMonN (c : AzInt) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial 3 AzInt :=
   ⟨⟨c, hc⟩, ⟨v⟩⟩
 
 -- default (`IndexedVar`) display
-#guard (mkMonN 5 (by omega) (Vector.mk #[0, 0, 0] rfl)).toChars == "5".toList
-#guard (mkMonN 1 (by omega) (Vector.mk #[1, 0, 0] rfl)).toChars == "x₀".toList
-#guard (mkMonN 3 (by omega) (Vector.mk #[1, 0, 0] rfl)).toChars == "3*x₀".toList
-#guard (mkMonN (-2) (by omega) (Vector.mk #[1, 1, 0] rfl)).toChars == "-2*x₀*x₁".toList
+#guard (mkMonN 5 (by native_decide) (Vector.mk #[0, 0, 0] rfl)).toChars == "5".toList
+#guard (mkMonN 1 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toChars == "x₀".toList
+#guard (mkMonN 3 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toChars == "3*x₀".toList
+#guard (mkMonN (-2) (by native_decide) (Vector.mk #[1, 1, 0] rfl)).toChars == "-2*x₀*x₁".toList
 
 -- `toCharsWith (AbcVar 3)` same monomial, different naming
-#guard (mkMonN 1 (by omega) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "a".toList
-#guard (mkMonN 3 (by omega) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "3*a".toList
-#guard (mkMonN (-2) (by omega) (Vector.mk #[1, 1, 0] rfl)).toCharsWith (AbcVar 3) == "-2*a*b".toList
+#guard (mkMonN 1 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "a".toList
+#guard (mkMonN 3 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "3*a".toList
+#guard (mkMonN (-2) (by native_decide) (Vector.mk #[1, 1, 0] rfl)).toCharsWith (AbcVar 3) == "-2*a*b".toList
 
 -- parse round-trip via default display
-#guard (Monomial.parse (n := 3) (R := ℤ) (ord := .Degrevlex) "5".toList).map
+#guard (Monomial.parse (n := 3) (R := AzInt) (ord := .Degrevlex) "5".toList).map
     Monomial.toChars == some "5".toList
-#guard (Monomial.parse (n := 3) (R := ℤ) (ord := .Degrevlex) "x₀".toList).map
+#guard (Monomial.parse (n := 3) (R := AzInt) (ord := .Degrevlex) "x₀".toList).map
     Monomial.toChars == some "x₀".toList
-#guard (Monomial.parse (n := 3) (R := ℤ) (ord := .Degrevlex) "3*x₀".toList).map
+#guard (Monomial.parse (n := 3) (R := AzInt) (ord := .Degrevlex) "3*x₀".toList).map
     Monomial.toChars == some "3*x₀".toList
-#guard (Monomial.parse (n := 3) (R := ℤ) (ord := .Degrevlex) "-2*x₀*x₁".toList).map
+#guard (Monomial.parse (n := 3) (R := AzInt) (ord := .Degrevlex) "-2*x₀*x₁".toList).map
     Monomial.toChars == some "-2*x₀*x₁".toList
 
 -- parse round-trip via `AbcVar 3`
-#guard (Monomial.parseWith (n := 3) (R := ℤ) (ord := .Degrevlex) (AbcVar 3) "3*a".toList).map
+#guard (Monomial.parseWith (n := 3) (R := AzInt) (ord := .Degrevlex) (AbcVar 3) "3*a".toList).map
     (fun m => m.toCharsWith (AbcVar 3)) == some "3*a".toList
 
 end MonomialGuards

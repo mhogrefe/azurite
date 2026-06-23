@@ -7,6 +7,7 @@
   algorithm (e.g. balanced reductions or matrix-chain ordering).
 -/
 import Azurite.AzMatrix.Mul
+import Azurite.AzInt.Instances
 import Azurite.AzMatrix.Operations
 
 namespace Azurite
@@ -25,12 +26,12 @@ end Azurite
 
 namespace Azurite
 
-private def testA : AzMatrix Int 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
-private def testB : AzMatrix Int 2 2 := AzMatrix.ofLists [[5, 6], [7, 8]]
-private def testC : AzMatrix Int 2 2 := AzMatrix.ofLists [[9, 10], [11, 12]]
+private def testA : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
+private def testB : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[5, 6], [7, 8]]
+private def testC : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[9, 10], [11, 12]]
 
 -- Empty list → identity.
-#guard AzMatrix.mulList ([] : List (AzMatrix Int 2 2)) = AzMatrix.identity
+#guard AzMatrix.mulList ([] : List (AzMatrix AzInt 2 2)) = AzMatrix.identity
 -- Single matrix → itself.
 #guard AzMatrix.mulList [testA] = testA
 -- Three matrices: A * B * C.

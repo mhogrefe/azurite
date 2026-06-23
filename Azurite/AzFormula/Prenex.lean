@@ -12,6 +12,9 @@
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.ToString
 import Azurite.AzMvPolynomial.Parse
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite
 
@@ -143,11 +146,11 @@ section PrenexExamples
 
 open Azurite
 
-/-- Parse a polynomial in ℤ[x₀, x₁] as an abbreviation. -/
-private def p₂ (s : String) : AzMvPolynomial 2 ℤ .Degrevlex :=
+/-- Parse a polynomial in AzInt[x₀, x₁] as an abbreviation. -/
+private def p₂ (s : String) : AzMvPolynomial 2 AzInt .Degrevlex :=
   (AzMvPolynomial.parse s.toList).getD 0
 
-private abbrev F₂ := Formula (Fin 2) (AzFieldAtom 2 ℤ .Degrevlex)
+private abbrev F₂ := Formula (Fin 2) (AzFieldAtom 2 AzInt .Degrevlex)
 
 /-- Variables x₀ and x₁ for quantifying. -/
 private def x₀ : Fin 2 := ⟨0, by omega⟩

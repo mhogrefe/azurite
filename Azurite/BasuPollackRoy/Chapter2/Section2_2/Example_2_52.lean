@@ -32,10 +32,10 @@ open Azurite.AzPolynomial
 open Azurite.BPR (ExtendedPoint)
 
 /-- `P = X⁴ − 5X² + 4`. -/
-def P_2_52 : AzPolynomial ℚ := (parseAzPolynomial "x^4-5*x^2+4").get!
+def P_2_52 : AzPolynomial AzRat := (parseAzPolynomial "x^4-5*x^2+4").get!
 
 /-- `P' = 4X³ − 10X`. -/
-def P'_2_52 : AzPolynomial ℚ := (parseAzPolynomial "4*x^3-10*x").get!
+def P'_2_52 : AzPolynomial AzRat := (parseAzPolynomial "4*x^3-10*x").get!
 
 /-! ### Sturm sequence terms `s₀..s₅` -/
 
@@ -52,8 +52,8 @@ def P'_2_52 : AzPolynomial ℚ := (parseAzPolynomial "4*x^3-10*x").get!
 #guard Azurite.AzPolynomial.numRoots P_2_52 = 4
 #guard Azurite.AzPolynomial.numRootsOn P_2_52 (.finite 0) .posInf = 2
 #guard Azurite.AzPolynomial.numRootsOn P_2_52 .negInf (.finite 0) = 2
-#guard Azurite.AzPolynomial.numRootsOn P_2_52 (.finite (-3 : ℚ)) (.finite 3) = 4
-#guard Azurite.AzPolynomial.numRootsOn P_2_52 (.finite (3 / 2 : ℚ)) .posInf = 1
+#guard Azurite.AzPolynomial.numRootsOn P_2_52 (.finite (-3 : AzRat)) (.finite 3) = 4
+#guard Azurite.AzPolynomial.numRootsOn P_2_52 (.finite (3 / 2 : AzRat)) .posInf = 1
 
 /-! ### Cauchy index of `P'/P` -/
 

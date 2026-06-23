@@ -1,22 +1,22 @@
 import Azurite.Random.AzPolynomial
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.ToString
+import Azurite.AzInt.Size
 import Azurite.Benchmark.Common -- reuse timeNsIter, median3, configGetRat, configGetNat
 
 open Azurite Azurite.Random Azurite.Benchmark Azurite.AzPolynomial
 
 -- ── Input-size metric ───────────────────────────────────────────────────────
 
-/-- Sum of (log2(|c|) + 1) over all coefficients — significant bits for ℤ. -/
-def azPolynomialIntSignificantBits (p : AzPolynomial ℤ) : Nat :=
-  p.coeffs.foldl (fun acc c =>
-    acc + if c = 0 then 0 else c.natAbs.log2 + 1) 0
+/-- Sum of bit-lengths over all coefficients — significant bits for `AzInt`. -/
+def azPolynomialIntSignificantBits (p : AzPolynomial AzInt) : Nat :=
+  p.coeffs.foldl (fun acc c => acc + c.size) 0
 
 -- ── Benchmark ───────────────────────────────────────────────────────────────
 
 /--
 Run the `az_polynomial_karatsuba` benchmark.
-For each of `limit` pairs `(a, b)` of random `AzPolynomial ℤ`, time:
+For each of `limit` pairs `(a, b)` of random `AzPolynomial AzInt`, time:
   - `mulBasecaseFold a b`  (O(n^2) Fin.foldl)
   - `mulKaratsuba a b`     (O(n^1.585) Karatsuba)
 
@@ -29,7 +29,7 @@ def runAzPolynomialKaratsuba (limit : Nat) (cfg : Std.HashMap String String) (se
   let meanDegree := configGetRat cfg "meanDegree" 8
   let meanCoeffBitLength := configGetRat cfg "meanCoeffBitLength" 32
   let iters := configGetNat cfg "iters" 100
-  let mut g := mkAzPolynomialIntRandomGen meanDegree meanCoeffBitLength seed
+  let mut g := mkAzPolynomialAzIntRandomGen meanDegree meanCoeffBitLength seed
   for _ in List.range limit do
     let (a, g') := AzPolynomialRandomGen.next g
     let (b, g'') := AzPolynomialRandomGen.next g'

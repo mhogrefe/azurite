@@ -8,6 +8,11 @@
 import Azurite.AzPolynomial.ToString
 import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.ToAzPolynomial
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
+import Azurite.AzNat.ParsableElement
+import Azurite.AzInt.ParsableElement
+import Azurite.AzRat.ParsableElement
 
 namespace Azurite.AzPolynomial
 

@@ -6,6 +6,10 @@ import Azurite.Random.Int
 import Azurite.Random.Rat
 import Azurite.Random.Pair
 import Azurite.AzPolynomial.Basic
+import Azurite.AzNat.Instances
+import Azurite.AzNat.Equiv.Basic
+import Azurite.AzInt.Instances
+import Azurite.AzInt.Equiv.Basic
 import Mathlib.Data.ZMod.Basic
 
 namespace Azurite.Random
@@ -80,6 +84,26 @@ def mkAzPolynomialIntRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (se
     nonzeroCoeffGen := mkNonzeroIntRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
     nextCoeff        := IntRandomGen.next,
     nextNonzeroCoeff := NonzeroIntRandomGen.next}
+
+/-- Create a `AzPolynomialRandomGen` for `AzPolynomial AzNat`, reusing the `ℕ`
+generator and mapping each drawn coefficient through `AzNat.ofNat`. -/
+def mkAzPolynomialAzNatRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (seed : UInt64) :
+    AzPolynomialRandomGen AzNat (NatRandomGen SplitMix64) (PositiveNatRandomGen SplitMix64) :=
+  { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
+    coeffGen         := mkNatRandomGen meanCoeffBitLength (deriveSeed seed "coeff"),
+    nonzeroCoeffGen := mkPositiveNatRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
+    nextCoeff        := fun g => let (n, g') := NatRandomGen.next g; (AzNat.ofNat n, g'),
+    nextNonzeroCoeff := fun g => let (n, g') := PositiveNatRandomGen.next g; (AzNat.ofNat n, g') }
+
+/-- Create a `AzPolynomialRandomGen` for `AzPolynomial AzInt`, reusing the `ℤ`
+generator and mapping each drawn coefficient through `AzInt.ofInt`. -/
+def mkAzPolynomialAzIntRandomGen (meanDegree : Rat) (meanCoeffBitLength : Rat) (seed : UInt64) :
+    AzPolynomialRandomGen AzInt IntRandomGen NonzeroIntRandomGen :=
+  { degreeGen        := mkNatGeometricRandomGen meanDegree (deriveSeed seed "degree"),
+    coeffGen         := mkIntRandomGen meanCoeffBitLength (deriveSeed seed "coeff"),
+    nonzeroCoeffGen := mkNonzeroIntRandomGen meanCoeffBitLength (deriveSeed seed "nzcoeff"),
+    nextCoeff        := fun g => let (z, g') := IntRandomGen.next g; (AzInt.ofInt z, g'),
+    nextNonzeroCoeff := fun g => let (z, g') := NonzeroIntRandomGen.next g; (AzInt.ofInt z, g') }
 
 /-- Create a `AzPolynomialRandomGen` for `AzPolynomial ℚ`.
 - Coefficients are random rationals with geometric bit-length for numerator and denominator.

@@ -6,6 +6,8 @@
   index types `Fin (m*p)`, `Fin (n*q)` via `finProdFinEquiv`.
 -/
 import Azurite.AzMatrix.Kronecker
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
 import Azurite.AzMatrix.Parse
 import Mathlib.LinearAlgebra.Matrix.Kronecker
 
@@ -36,8 +38,8 @@ theorem AzMatrix.toFn_kronecker (A : AzMatrix R m n) (B : AzMatrix R p q) :
 
 /-! ### Guards -/
 
-private def kA : AzMatrix Int 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
-private def kB : AzMatrix Int 2 2 := AzMatrix.ofLists [[0, 5], [6, 7]]
+private def kA : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
+private def kB : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[0, 5], [6, 7]]
 
 -- `[aᵢⱼ B]`: block `(i,j)` is `aᵢⱼ • B`.
 #guard toString (kA.kronecker kB) =

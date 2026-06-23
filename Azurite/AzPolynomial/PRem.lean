@@ -21,7 +21,7 @@ for some `A ∈ D[X]` and with `deg R < deg Q`.
 
 The key property is that the computation stays entirely inside `D[X]`:
 no fraction field is required. This is why `pRem` is useful over rings
-that are not fields — in particular `ℤ` and `AzMvPolynomial σ ℤ ord`.
+that are not fields — in particular `AzInt` and `AzMvPolynomial σ AzInt ord`.
 
 ## Algorithm
 
@@ -83,49 +83,49 @@ def pRem (P Q : AzPolynomial R) : AzPolynomial R :=
     let R := (List.range numSteps).foldl (fun rem _ => pRemStep q b Q rem) P
     if numSteps % 2 = 1 then b • R else R
 
-/-! ### Tests over `ℤ` -/
+/-! ### Tests over `AzInt` -/
 
 -- `(x^2 + 1)` mod `(x + 1)`:
---   Euclidean division in ℚ gives remainder 2.
+--   Euclidean division in AzRat gives remainder 2.
 --   d = pRemExp = smallestEvenGe(2 - 1 + 1) = smallestEvenGe(2) = 2.
 --   b = 1, so b^d * P = P, and the remainder is the same as the normal one: 2.
-#guard pRem (parseAzPolynomial (R := ℤ) "x^2+1").get!
-             (parseAzPolynomial (R := ℤ) "x+1").get!
-  == (parseAzPolynomial (R := ℤ) "2").get!
+#guard pRem (parseAzPolynomial (R := AzInt) "x^2+1").get!
+             (parseAzPolynomial (R := AzInt) "x+1").get!
+  == (parseAzPolynomial (R := AzInt) "2").get!
 
 -- `(2*x^2 + 3*x + 1)` mod `(2*x + 1)`:
 --   d = smallestEvenGe(2 - 1 + 1) = 2. b = 2. b^d * P = 4 * P.
 --   4*P = (4x + 4)*(2x + 1), so remainder = 0.
-#guard pRem (parseAzPolynomial (R := ℤ) "2*x^2+3*x+1").get!
-             (parseAzPolynomial (R := ℤ) "2*x+1").get!
-  == (0 : AzPolynomial ℤ)
+#guard pRem (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!
+             (parseAzPolynomial (R := AzInt) "2*x+1").get!
+  == (0 : AzPolynomial AzInt)
 
 -- `(x^3 + 1)` mod `(2*x^2 + 3*x + 1)`:
 --   d = smallestEvenGe(3 - 2 + 1) = 2. b = 2.
 --   4*(x^3 + 1) = (2x - 3)*(2x^2 + 3x + 1) + (7x + 7).
-#guard pRem (parseAzPolynomial (R := ℤ) "x^3+1").get!
-             (parseAzPolynomial (R := ℤ) "2*x^2+3*x+1").get!
-  == (parseAzPolynomial (R := ℤ) "7*x+7").get!
+#guard pRem (parseAzPolynomial (R := AzInt) "x^3+1").get!
+             (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!
+  == (parseAzPolynomial (R := AzInt) "7*x+7").get!
 
 -- deg P < deg Q ⇒ pRem = P (with d = 0).
-#guard pRem (parseAzPolynomial (R := ℤ) "x+1").get!
-             (parseAzPolynomial (R := ℤ) "x^2+1").get!
-  == (parseAzPolynomial (R := ℤ) "x+1").get!
+#guard pRem (parseAzPolynomial (R := AzInt) "x+1").get!
+             (parseAzPolynomial (R := AzInt) "x^2+1").get!
+  == (parseAzPolynomial (R := AzInt) "x+1").get!
 
 -- P = 0: pseudo-remainder is 0.
-#guard pRem (0 : AzPolynomial ℤ) (parseAzPolynomial (R := ℤ) "x+1").get!
-  == (0 : AzPolynomial ℤ)
+#guard pRem (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x+1").get!
+  == (0 : AzPolynomial AzInt)
 
 -- Q = 0: by convention return P.
-#guard pRem (parseAzPolynomial (R := ℤ) "x+1").get! (0 : AzPolynomial ℤ)
-  == (parseAzPolynomial (R := ℤ) "x+1").get!
+#guard pRem (parseAzPolynomial (R := AzInt) "x+1").get! (0 : AzPolynomial AzInt)
+  == (parseAzPolynomial (R := AzInt) "x+1").get!
 
 -- Exponent computations:
-#guard pRemExp (parseAzPolynomial (R := ℤ) "x^3+1").get!
-               (parseAzPolynomial (R := ℤ) "x+1").get! == 4 -- smallestEvenGe 3 = 4
-#guard pRemExp (parseAzPolynomial (R := ℤ) "x^2+1").get!
-               (parseAzPolynomial (R := ℤ) "x+1").get! == 2 -- smallestEvenGe 2 = 2
-#guard pRemExp (parseAzPolynomial (R := ℤ) "x").get!
-               (parseAzPolynomial (R := ℤ) "x^2+1").get! == 0 -- deg P < deg Q
+#guard pRemExp (parseAzPolynomial (R := AzInt) "x^3+1").get!
+               (parseAzPolynomial (R := AzInt) "x+1").get! == 4 -- smallestEvenGe 3 = 4
+#guard pRemExp (parseAzPolynomial (R := AzInt) "x^2+1").get!
+               (parseAzPolynomial (R := AzInt) "x+1").get! == 2 -- smallestEvenGe 2 = 2
+#guard pRemExp (parseAzPolynomial (R := AzInt) "x").get!
+               (parseAzPolynomial (R := AzInt) "x^2+1").get! == 0 -- deg P < deg Q
 
 end Azurite.AzPolynomial

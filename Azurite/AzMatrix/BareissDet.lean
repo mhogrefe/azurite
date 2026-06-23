@@ -40,6 +40,9 @@ import Azurite.AzMvPolynomial.ParsableElement
 import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Rat.Defs
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
+import Azurite.AzRat.Conversion
 
 namespace Azurite
 
@@ -111,45 +114,45 @@ def AzMatrix.bareissDet [CommRing D] [DecidableEq D] [ExactDiv D]
 
 section Tests
 
--- 2×2 over ℚ: det [[1, 2], [3, 4]] = 1·4 − 2·3 = −2.
+-- 2×2 over AzRat: det [[1, 2], [3, 4]] = 1·4 − 2·3 = −2.
 #guard
-  match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix ℚ 2 2)) with
+  match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix AzRat 2 2)) with
   | some M => M.bareissDet = -2
   | none => False
 
--- 4×4 over ℚ matching the Gauss-based `gaussDet`.
+-- 4×4 over AzRat matching the Gauss-based `gaussDet`.
 #guard
   match (AzMatrix.parseStr "[2, 1, 1; 1, 3, 2; 1, 0, 0]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => M.bareissDet = -1
   | none => False
 
--- Identity over ℚ has determinant 1.
-#guard (1 : AzMatrix ℚ 4 4).bareissDet = 1
+-- Identity over AzRat has determinant 1.
+#guard (1 : AzMatrix AzRat 4 4).bareissDet = 1
 
 -- Singular matrix (rank-deficient): determinant 0.
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => M.bareissDet = 0
   | none => False
 
 -- Column-pivoting test: zero in the (0, 0) position forces a swap.
 #guard
-  match (AzMatrix.parseStr "[0, 1; 1, 0]" : Option (AzMatrix ℚ 2 2)) with
+  match (AzMatrix.parseStr "[0, 1; 1, 0]" : Option (AzMatrix AzRat 2 2)) with
   | some M => M.bareissDet = -1
   | none => False
 
 -- 4×4 — Bareiss agrees with Gauss-based `det`.
 #guard
   match (AzMatrix.parseStr "[2, 1, 3, 4; 1, 0, 2, 1; 3, 2, 1, 0; 4, 1, 1, 2]" :
-      Option (AzMatrix ℚ 4 4)) with
+      Option (AzMatrix AzRat 4 4)) with
   | some M => M.bareissDet = M.gaussDet
   | none => False
 
 /-! #### `bareissDet` over `AzInt` (fraction-free over a domain) -/
 
--- Identical 3×3 to the ℚ test above, but stays in `AzInt`.
+-- Identical 3×3 to the AzRat test above, but stays in `AzInt`.
 #guard
   match (AzMatrix.parseStr "[2, 1, 1; 1, 3, 2; 1, 0, 0]" :
       Option (AzMatrix AzInt 3 3)) with
@@ -157,14 +160,14 @@ section Tests
   | none => False
 
 -- 4×4 over `AzInt` — fraction-free determinant. Cross-checked against the
--- ℚ Gauss-det computation on the same matrix.
+-- AzRat Gauss-det computation on the same matrix.
 #guard
   match
     ((AzMatrix.parseStr "[2, 1, 3, 4; 1, 0, 2, 1; 3, 2, 1, 0; 4, 1, 1, 2]" :
         Option (AzMatrix AzInt 4 4)),
      (AzMatrix.parseStr "[2, 1, 3, 4; 1, 0, 2, 1; 3, 2, 1, 0; 4, 1, 1, 2]" :
-        Option (AzMatrix ℚ 4 4))) with
-  | (some Mz, some Mq) => Mz.bareissDet.toInt = Rat.num Mq.gaussDet
+        Option (AzMatrix AzRat 4 4))) with
+  | (some Mz, some Mq) => Mz.bareissDet.toAzRat = Mq.gaussDet
   | _ => False
 
 /-! #### `bareissDet` over `AzPolynomial AzInt`

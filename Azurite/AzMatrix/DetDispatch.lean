@@ -19,6 +19,8 @@ import Azurite.AzMatrix.Det
 import Azurite.AzMatrix.BareissDet
 import Azurite.AzMatrix.Equiv.Det
 import Azurite.AzMatrix.Equiv.BareissDet
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
 
 namespace Azurite
 
@@ -69,8 +71,8 @@ theorem AzMatrix.det_eq_Matrix_det {D : Type _} [CommRing D] [DecidableEq D]
 
 section Tests
 
--- Over ℚ (a field), `det` dispatches to Gauss.
-example (M : AzMatrix ℚ 3 3) : M.det = M.gaussDet := rfl
+-- Over AzRat (a field), `det` dispatches to Gauss.
+example (M : AzMatrix AzRat 3 3) : M.det = M.gaussDet := rfl
 
 -- Over a Domain without Field (here AzInt), `det` dispatches to Bareiss.
 example (M : AzMatrix AzInt 3 3) : M.det = M.bareissDet := rfl

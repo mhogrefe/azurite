@@ -10,6 +10,8 @@
 -/
 import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.Parse
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
 
 open Azurite
 
@@ -18,12 +20,12 @@ section NamedDisplayExamples
 -- Parse `x₀+x₁` into a `Fin 2` polynomial, then pretty-print it back using
 -- the default `IndexedVar`-based display.
 #guard
-  ((AzMvPolynomial.parseStr (R := ℤ) (ord := .Degrevlex) (n := 2) "x₀+x₁").map
+  ((AzMvPolynomial.parseStr (R := AzInt) (ord := .Degrevlex) (n := 2) "x₀+x₁").map
       AzMvPolynomial.toStr) == some "x₀+x₁"
 
 -- Parse a polynomial with a constant and a nonlinear term, round-trip.
 #guard
-  ((AzMvPolynomial.parseStr (R := ℤ) (ord := .Degrevlex) (n := 3)
+  ((AzMvPolynomial.parseStr (R := AzInt) (ord := .Degrevlex) (n := 3)
       "3*x₀^2*x₁-2*x₀*x₂+5").map AzMvPolynomial.toStr)
     == some "3*x₀^2*x₁-2*x₀*x₂+5"
 

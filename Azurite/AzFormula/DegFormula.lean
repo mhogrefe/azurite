@@ -9,6 +9,9 @@ import Azurite.AzFormula.ToString
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.MvCoeffParse
 import Azurite.AzMvPolynomial.Equiv.Algebra
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite
 
@@ -82,10 +85,10 @@ def azDegNeqFormula
     Formula (Fin k) (AzFieldAtom k D ord) :=
   .not (azDegEqFormula Q₁ Q₂)
 
-private abbrev MvInt3 := AzMvPolynomial 3 ℤ .Degrevlex
+private abbrev MvInt3 := AzMvPolynomial 3 AzInt .Degrevlex
 private instance : Fact (3 ≤ 26) := ⟨by omega⟩
 private def p (s : String) : AzPolynomial MvInt3 :=
-  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := AzInt)
     (ord := .Degrevlex) s).getD 0
 
 #guard toString (azDegEqFormula (p "(3*a+b)*x^2+(-c)*x+(a+b)") (p "(-a*b)*x^2+(a^2-b^2)*x+(a*b)")) == "((x₀+x₁ = 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ = 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((x₀+x₁ ≠ 0 ∧ (-x₂ = 0 ∧ 3*x₀+x₁ = 0)) ∧ (x₀*x₁ ≠ 0 ∧ (x₀^2-x₁^2 = 0 ∧ -x₀*x₁ = 0))) ∨ (((-x₂ ≠ 0 ∧ 3*x₀+x₁ = 0) ∧ (x₀^2-x₁^2 ≠ 0 ∧ -x₀*x₁ = 0)) ∨ (3*x₀+x₁ ≠ 0 ∧ -x₀*x₁ ≠ 0)))"

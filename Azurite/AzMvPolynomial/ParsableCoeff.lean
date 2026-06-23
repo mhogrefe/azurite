@@ -186,94 +186,12 @@ private lemma ratToChars_minus_next_syntax (q : ℚ) :
     refine ⟨c', tn' ++ ['/'] ++ natToChars q.den, ?_, hs⟩
     rw [← htail, hteq, List.cons_append, List.cons_append]
 
-instance : ParsableCoeff ℕ :=
-  ParsableCoeff.mkDigitOnly natToChars parseNatChars parseNatChars_natToChars
-    natToChars_ne_nil mem_natToChars_only_digits rfl
-
-instance : ParsableCoeff ℤ where
-  toChars := intToChars
-  parseChars := parseIntChars
-  parse_toChars := parseIntChars_intToChars
-  toChars_nonempty := intToChars_ne_nil
-  toChars_no_syntax := intToChars_no_coeff_syntax
-  toChars_no_minus_tail := fun z _ hc heq => by
-    apply not_mem_tail_intToChars z
-    rw [List.drop_one]
-    exact heq ▸ hc
-  toChars_head_is_syntax := intToChars_head_is_syntax
-  negOne := some ⟨-1, by omega, by omega⟩
-  toChars_minus_next_syntax := intToChars_minus_next_syntax
-  toChars_zero := rfl
-  toChars_no_comma z hc := by
-    rcases mem_intToChars_only_digits_or_dash z ',' hc with h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_semicolon z hc := by
-    rcases mem_intToChars_only_digits_or_dash z ';' hc with h | ⟨_, h2⟩
-    · exact absurd h (by decide)
-    · exact absurd h2 (by decide)
-
-instance : ParsableCoeff ℚ where
-  toChars := ratToChars
-  parseChars := parseRatChars
-  parse_toChars := parseRatChars_ratToChars
-  toChars_nonempty := ratToChars_ne_nil
-  toChars_no_syntax := ratToChars_no_coeff_syntax
-  toChars_no_minus_tail := fun q _ hc heq => by
-    apply not_mem_tail_ratToChars q
-    rw [List.drop_one]
-    exact heq ▸ hc
-  toChars_head_is_syntax := ratToChars_head_is_syntax
-  negOne := some ⟨-1, by decide, by decide⟩
-  toChars_minus_next_syntax := ratToChars_minus_next_syntax
-  toChars_zero := rfl
-  toChars_no_comma q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q ',' hc with h | h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_semicolon q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q ';' hc with h | h | ⟨_, h2⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h2 (by decide)
-
-/-- Parse a character list as a `ZMod n` value: parse as ℕ (possibly with a
-    leading `-`), check `< n`, cast (and negate if there was a leading `-`). -/
-def parseZmodChars (m : ℕ) [NeZero m] (cs : List Char) : Option (ZMod m) :=
-  match cs with
-  | '-' :: rest =>
-    (parseNatChars rest).bind
-      (fun k => if k < m then some (-(k : ZMod m)) else none)
-  | _ =>
-    (parseNatChars cs).bind
-      (fun k => if k < m then some (k : ZMod m) else none)
-
-private lemma parseZmodChars_zmodToChars {m : ℕ} [NeZero m] (c : ZMod m) :
-    parseZmodChars m (zmodToChars c) = some c := by
-  have hne : ∀ rest, zmodToChars c ≠ '-' :: rest := by
-    intro rest hr
-    exact not_mem_natToChars c.val
-      ((show zmodToChars c = natToChars c.val from rfl) ▸ hr ▸ List.mem_cons_self ..)
-  unfold parseZmodChars
-  split
-  · rename_i rest heq
-    exact absurd heq (hne rest)
-  · show ((parseNatChars (natToChars c.val)).bind _) = _
-    rw [parseNatChars_natToChars]
-    simp only [Option.bind, if_pos (ZMod.val_lt c)]
-    congr 1
-    exact ZMod.natCast_zmod_val c
-
-instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParsableCoeff (ZMod m) :=
-  { ParsableCoeff.mkDigitOnly zmodToChars (parseZmodChars m) parseZmodChars_zmodToChars
-      zmodToChars_ne_nil
-      (fun c _ch hch => mem_natToChars_only_digits c.val _ch hch)
-      (by show natToChars (0 : ZMod m).val = ['0']; rw [ZMod.val_zero]; rfl) with
-    negOne :=
-      if h0 : ((-1 : ZMod m) = 0) then none
-      else if h1 : ((-1 : ZMod m) = 1) then none
-      else some ⟨-1, h0, h1⟩ }
+/- `ParsableCoeff` instances for the non-Az types `ℕ`, `ℤ`, `ℚ`, and `ZMod` have
+   been removed: `AzPolynomial`/`AzMvPolynomial` should use the Az coefficient
+   types (`AzNat`, `AzInt`, `AzRat`, `AzZMod`, `AzZModPow2`) instead of the
+   GMP-backed `ℕ`/`ℤ`/`ℚ`/`ZMod`.  (`AzPolynomialQ` now serializes through
+   `AzPolynomial AzRat` rather than `AzPolynomial ℚ`.)  The supporting
+   digit/dash lemmas above are kept as shared scaffolding. -/
 
 end ParsableCoeffInstances
 

@@ -47,18 +47,18 @@ section Tests
 open AzMvPolynomial
 
 -- Trivial: zero → empty
-#guard tru (0 : AzPolynomial (AzMvPolynomial 0 ℤ .Degrevlex)) == []
+#guard tru (0 : AzPolynomial (AzMvPolynomial 0 AzInt .Degrevlex)) == []
 
 -- Constant polynomial (degree 0) → singleton
-#guard (tru (AzPolynomial.C (AzMvPolynomial.C (1 : ℤ) :
-    AzMvPolynomial 0 ℤ .Degrevlex))).length == 1
+#guard (tru (AzPolynomial.C (AzMvPolynomial.C (1 : AzInt) :
+    AzMvPolynomial 0 AzInt .Degrevlex))).length == 1
 
 -- Nontrivial: `(a)*x^2 + (b)*x + (1)` has non-constant leading coefficients
 -- at each level, so tru recurses down to the constant term.
-private abbrev MvInt3 := AzMvPolynomial 3 ℤ .Degrevlex
+private abbrev MvInt3 := AzMvPolynomial 3 AzInt .Degrevlex
 private instance : Fact (3 ≤ 26) := ⟨by omega⟩
 private def p (s : String) : AzPolynomial MvInt3 :=
-  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := AzInt)
     (ord := .Degrevlex) s).getD 0
 private def s (q : AzPolynomial MvInt3) : String :=
   q.toStrMvCoeffWith (AbcVar 3)

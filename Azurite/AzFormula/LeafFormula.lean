@@ -10,6 +10,9 @@ import Azurite.AzFormula.ToString
 import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.TRems
 import Azurite.AzPolynomial.MvCoeffParse
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite
 
@@ -54,10 +57,10 @@ def azLeafFormula
 
 section Tests
 
-private abbrev MvInt3 := AzMvPolynomial 3 ℤ .Degrevlex
+private abbrev MvInt3 := AzMvPolynomial 3 AzInt .Degrevlex
 private instance : Fact (3 ≤ 26) := ⟨by omega⟩
 private def p (s : String) : AzPolynomial MvInt3 :=
-  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := AzInt)
     (ord := .Degrevlex) s).getD 0
 private def s (q : AzPolynomial MvInt3) : String :=
   q.toStrMvCoeffWith (AbcVar 3)

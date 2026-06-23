@@ -9,6 +9,13 @@ import Azurite.AzMvPolynomial.Parse
 import Azurite.AzMvPolynomial.Monomial
 import Mathlib.Data.Rat.Defs
 import Mathlib.Data.ZMod.Basic
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzRat.Instances
+import Azurite.AzMvPolynomial.ParsableCoeff.AzRat
+import Azurite.AzZMod.Instances
+import Azurite.AzMvPolynomial.ParsableCoeff.AzZMod
 
 open Azurite
 
@@ -17,7 +24,7 @@ open Azurite
 instance : Fact (3 ≤ 26) := ⟨by omega⟩
 instance : Fact (2 ≤ 26) := ⟨by omega⟩
 instance : Fact (3 ≤ 24) := ⟨by omega⟩
-instance : Fact (1 < 5) := ⟨by omega⟩
+instance : Fact (1 < (AzNat.ofNat 5).toNat) := ⟨by rw [AzNat.toNat_ofNat]; omega⟩
 
 /-! ### Helper abbreviations -/
 
@@ -26,7 +33,7 @@ abbrev mkMono {n : ℕ} {R : Type _} [Semiring R] {ord : MonomialOrder}
     (c : R) (hc : c ≠ 0) (exps : Vector ℕ n) : Monomial n R ord :=
   ⟨⟨c, hc⟩, ⟨exps⟩⟩
 
-/-! ## 1. ℤ[x, y, z] — Three monomial orderings
+/-! ## 1. AzInt[x, y, z] — Three monomial orderings
 
     Polynomial: 3x²y − 2xz + 5
     Display:    `XyzVar 3` → x (index 0), y (index 1), z (index 2)
@@ -35,30 +42,30 @@ abbrev mkMono {n : ℕ} {R : Type _} [Semiring R] {ord : MonomialOrder}
 section IntXyz
 
 private def p_degrevlex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Degrevlex) #[
-    mkMono 3 (by decide) ⟨#[2, 1, 0], by simp⟩,   -- 3x²y
-    mkMono (-2) (by decide) ⟨#[1, 0, 1], by simp⟩, -- -2xz
-    mkMono 5 (by decide) ⟨#[0, 0, 0], by simp⟩     -- 5
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Degrevlex) #[
+    mkMono 3 (by native_decide) ⟨#[2, 1, 0], by simp⟩,   -- 3x²y
+    mkMono (-2) (by native_decide) ⟨#[1, 0, 1], by simp⟩, -- -2xz
+    mkMono 5 (by native_decide) ⟨#[0, 0, 0], by simp⟩     -- 5
   ] (by native_decide)
 
 -- degrevlex: x²y (deg 3) > xz (deg 2) > 1 (deg 0)
 #guard p_degrevlex.toStrWith (XyzVar 3) == "3*x^2*y-2*x*z+5"
 
 private def p_lex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Lex) #[
-    mkMono 3 (by decide) ⟨#[2, 1, 0], by simp⟩,
-    mkMono (-2) (by decide) ⟨#[1, 0, 1], by simp⟩,
-    mkMono 5 (by decide) ⟨#[0, 0, 0], by simp⟩
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Lex) #[
+    mkMono 3 (by native_decide) ⟨#[2, 1, 0], by simp⟩,
+    mkMono (-2) (by native_decide) ⟨#[1, 0, 1], by simp⟩,
+    mkMono 5 (by native_decide) ⟨#[0, 0, 0], by simp⟩
   ] (by native_decide)
 
 -- lex: x²y > xz > 1 (same ordering as degrevlex here)
 #guard p_lex.toStrWith (XyzVar 3) == "3*x^2*y-2*x*z+5"
 
 private def p_deglex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Deglex) #[
-    mkMono 3 (by decide) ⟨#[2, 1, 0], by simp⟩,
-    mkMono (-2) (by decide) ⟨#[1, 0, 1], by simp⟩,
-    mkMono 5 (by decide) ⟨#[0, 0, 0], by simp⟩
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Deglex) #[
+    mkMono 3 (by native_decide) ⟨#[2, 1, 0], by simp⟩,
+    mkMono (-2) (by native_decide) ⟨#[1, 0, 1], by simp⟩,
+    mkMono 5 (by native_decide) ⟨#[0, 0, 0], by simp⟩
   ] (by native_decide)
 
 -- deglex: x²y (deg 3) > xz (deg 2) > 1 (deg 0)
@@ -70,62 +77,62 @@ private def p_deglex :=
     - **deglex**:    x²z > y³ (same degree, then lex: 2 > 0 at first position) -/
 
 private def p_diff_degrevlex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Degrevlex) #[
-    mkMono 1 (by decide) ⟨#[2, 0, 1], by simp⟩,  -- x²z
-    mkMono 1 (by decide) ⟨#[0, 3, 0], by simp⟩   -- y³
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Degrevlex) #[
+    mkMono 1 (by native_decide) ⟨#[2, 0, 1], by simp⟩,  -- x²z
+    mkMono 1 (by native_decide) ⟨#[0, 3, 0], by simp⟩   -- y³
   ] (by native_decide)
 
 #guard p_diff_degrevlex.toStrWith (XyzVar 3) == "y^3+x^2*z"
 
 private def p_diff_lex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Lex) #[
-    mkMono 1 (by decide) ⟨#[2, 0, 1], by simp⟩,
-    mkMono 1 (by decide) ⟨#[0, 3, 0], by simp⟩
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Lex) #[
+    mkMono 1 (by native_decide) ⟨#[2, 0, 1], by simp⟩,
+    mkMono 1 (by native_decide) ⟨#[0, 3, 0], by simp⟩
   ] (by native_decide)
 
 #guard p_diff_lex.toStrWith (XyzVar 3) == "x^2*z+y^3"
 
 private def p_diff_deglex :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℤ) (ord := .Deglex) #[
-    mkMono 1 (by decide) ⟨#[2, 0, 1], by simp⟩,
-    mkMono 1 (by decide) ⟨#[0, 3, 0], by simp⟩
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzInt) (ord := .Deglex) #[
+    mkMono 1 (by native_decide) ⟨#[2, 0, 1], by simp⟩,
+    mkMono 1 (by native_decide) ⟨#[0, 3, 0], by simp⟩
   ] (by native_decide)
 
 #guard p_diff_deglex.toStrWith (XyzVar 3) == "x^2*z+y^3"
 
 end IntXyz
 
-/-! ## 2. ℚ[X₀, X₁, X₂] — Fractional coefficients with IndexedCapsVar -/
+/-! ## 2. AzRat[X₀, X₁, X₂] — Fractional coefficients with IndexedCapsVar -/
 
 section RatIndexedCaps
 
 private def q1 :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ℚ) (ord := .Degrevlex) #[
-    mkMono (1/2 : ℚ) (by norm_num) ⟨#[2, 0, 0], by simp⟩,   -- ½X₀²
-    mkMono (-3/4 : ℚ) (by norm_num) ⟨#[0, 1, 1], by simp⟩,   -- -¾X₁X₂
-    mkMono (7 : ℚ) (by norm_num) ⟨#[0, 0, 0], by simp⟩       -- 7
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzRat) (ord := .Degrevlex) #[
+    mkMono (1/2 : AzRat) (by native_decide) ⟨#[2, 0, 0], by simp⟩,   -- ½X₀²
+    mkMono (-3/4 : AzRat) (by native_decide) ⟨#[0, 1, 1], by simp⟩,   -- -¾X₁X₂
+    mkMono (7 : AzRat) (by native_decide) ⟨#[0, 0, 0], by simp⟩       -- 7
   ] (by native_decide)
 
 #guard q1.toStrWith (IndexedCapsVar 3) == "1/2*X₀^2-3/4*X₁*X₂+7"
 
 end RatIndexedCaps
 
-/-! ## 3. (ℤ/5ℤ)[α, β, γ] — Greek variables with modular coefficients -/
+/-! ## 3. (AzInt/5AzInt)[α, β, γ] — Greek variables with modular coefficients -/
 
 section ZMod5Greek
 
 private def z1 :=
-  AzMvPolynomial.ofMonomials (n := 3) (R := ZMod 5) (ord := .Degrevlex) #[
-    mkMono (3 : ZMod 5) (by decide) ⟨#[1, 1, 0], by simp⟩,  -- 3αβ
-    mkMono (2 : ZMod 5) (by decide) ⟨#[0, 2, 0], by simp⟩,  -- 2β²
-    mkMono (1 : ZMod 5) (by decide) ⟨#[0, 0, 0], by simp⟩   -- 1
+  AzMvPolynomial.ofMonomials (n := 3) (R := AzZMod (AzNat.ofNat 5)) (ord := .Degrevlex) #[
+    mkMono (3 : AzZMod (AzNat.ofNat 5)) (by native_decide) ⟨#[1, 1, 0], by simp⟩,  -- 3αβ
+    mkMono (2 : AzZMod (AzNat.ofNat 5)) (by native_decide) ⟨#[0, 2, 0], by simp⟩,  -- 2β²
+    mkMono (1 : AzZMod (AzNat.ofNat 5)) (by native_decide) ⟨#[0, 0, 0], by simp⟩   -- 1
   ] (by native_decide)
 
 #guard z1.toStrWith (GreekVar 3) == "3*α*β+2*β^2+1"
 
 end ZMod5Greek
 
-/-! ## 4. ℤ[♠, ♥, ♦, ♣] — Dingbat variables using ListVar -/
+/-! ## 4. AzInt[♠, ♥, ♦, ♣] — Dingbat variables using ListVar -/
 
 section Dingbats
 
@@ -135,11 +142,11 @@ instance : Fact dingbats.Nodup := ⟨by native_decide⟩
 instance : Fact (ListVar.ListVarParsable dingbats) := ⟨by native_decide⟩
 
 private def d1 :=
-  AzMvPolynomial.ofMonomials (n := dingbats.length) (R := ℤ) (ord := .Degrevlex) #[
-    mkMono (1 : ℤ) (by decide) ⟨#[2, 0, 0, 0], by decide⟩,   -- ♠²
-    mkMono (-3 : ℤ) (by decide) ⟨#[0, 1, 0, 0], by decide⟩,  -- -3♥
-    mkMono (1 : ℤ) (by decide) ⟨#[0, 0, 1, 1], by decide⟩,   -- ♦♣
-    mkMono (42 : ℤ) (by decide) ⟨#[0, 0, 0, 0], by decide⟩   -- 42
+  AzMvPolynomial.ofMonomials (n := dingbats.length) (R := AzInt) (ord := .Degrevlex) #[
+    mkMono (1 : AzInt) (by native_decide) ⟨#[2, 0, 0, 0], by decide⟩,   -- ♠²
+    mkMono (-3 : AzInt) (by native_decide) ⟨#[0, 1, 0, 0], by decide⟩,  -- -3♥
+    mkMono (1 : AzInt) (by native_decide) ⟨#[0, 0, 1, 1], by decide⟩,   -- ♦♣
+    mkMono (42 : AzInt) (by native_decide) ⟨#[0, 0, 0, 0], by decide⟩   -- 42
   ] (by native_decide)
 
 -- degrevlex ordering: ♠² (deg 2, rightmost=0) > ♦♣ (deg 2, rightmost=1) > ♥ (deg 1) > 1
@@ -149,12 +156,12 @@ end Dingbats
 
 /-! ## Zero polynomial -/
 
-#guard (0 : AzMvPolynomial 3 ℤ .Degrevlex).toStrWith (XyzVar 3) == "0"
+#guard (0 : AzMvPolynomial 3 AzInt .Degrevlex).toStrWith (XyzVar 3) == "0"
 
 private def p_neg_1 :=
-  AzMvPolynomial.ofMonomials (n := 2) (R := ℤ) (ord := .Degrevlex) #[
-    mkMono (1 : ℤ) (by decide) ⟨#[1, 0], by decide⟩,   -- x
-    mkMono (-1 : ℤ) (by decide) ⟨#[0, 1], by decide⟩, -- -y
+  AzMvPolynomial.ofMonomials (n := 2) (R := AzInt) (ord := .Degrevlex) #[
+    mkMono (1 : AzInt) (by native_decide) ⟨#[1, 0], by decide⟩,   -- x
+    mkMono (-1 : AzInt) (by native_decide) ⟨#[0, 1], by decide⟩, -- -y
   ] (by native_decide)
 
 #guard p_neg_1.toStrWith (XyzVar 2) == "x-y"
@@ -164,25 +171,25 @@ private def p_neg_1 :=
 section ParseExamples
 
 -- Round-trip: parseWith ∘ toStrWith = some
-#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := ℤ) (ord := .Degrevlex)
+#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := AzInt) (ord := .Degrevlex)
     "3*x^2*y-2*x*z+5".toList).map (·.toStrWith (XyzVar 3)) ==
       some "3*x^2*y-2*x*z+5"
 
 -- Out-of-order input: accepted and re-sorted
-#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := ℤ) (ord := .Degrevlex)
+#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := AzInt) (ord := .Degrevlex)
     "5+3*x^2*y-2*x*z".toList).map (·.toStrWith (XyzVar 3)) ==
       some "3*x^2*y-2*x*z+5"
 
 -- Duplicate monic monomials: rejected
-#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := ℤ) (ord := .Degrevlex)
+#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := AzInt) (ord := .Degrevlex)
     "x*y+y*x".toList).isNone
 
 -- Zero polynomial
-#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := ℤ) (ord := .Degrevlex)
+#guard (AzMvPolynomial.parseWith (XyzVar 3) (n := 3) (R := AzInt) (ord := .Degrevlex)
     "0".toList).map (·.toStrWith (XyzVar 3)) == some "0"
 
--- Parse with ℚ
-#guard (AzMvPolynomial.parseWith (IndexedCapsVar 3) (n := 3) (R := ℚ) (ord := .Degrevlex)
+-- Parse with AzRat
+#guard (AzMvPolynomial.parseWith (IndexedCapsVar 3) (n := 3) (R := AzRat) (ord := .Degrevlex)
     "1/2*X₀^2-3/4*X₁*X₂+7".toList).map (·.toStrWith (IndexedCapsVar 3)) ==
       some "1/2*X₀^2-3/4*X₁*X₂+7"
 

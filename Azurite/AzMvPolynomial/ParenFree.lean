@@ -34,39 +34,9 @@ class ParenFreeVar (α : Type _) (n : outParam ℕ) [LinearOrder α] [ParsableVa
 
 /-! ### ParenFreeCoeff instances -/
 
-instance : ParenFreeCoeff ℕ where
-  toChars_no_lparen k hc :=
-    not_mem_natToChars_of_not_digit '(' (by decide) k hc
-  toChars_no_rparen k hc :=
-    not_mem_natToChars_of_not_digit ')' (by decide) k hc
-
-instance : ParenFreeCoeff ℤ where
-  toChars_no_lparen z hc := by
-    rcases mem_intToChars_only_digits_or_dash z '(' hc with h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_rparen z hc := by
-    rcases mem_intToChars_only_digits_or_dash z ')' hc with h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-
-instance : ParenFreeCoeff ℚ where
-  toChars_no_lparen q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q '(' hc with h | h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-  toChars_no_rparen q hc := by
-    rcases mem_ratToChars_only_digits_or_dash_or_slash q ')' hc with h | h | ⟨h1, _⟩
-    · exact absurd h (by decide)
-    · exact absurd h (by decide)
-    · exact absurd h1 (by decide)
-
-instance {m : ℕ} [NeZero m] [Fact (1 < m)] : ParenFreeCoeff (ZMod m) where
-  toChars_no_lparen c hc :=
-    not_mem_natToChars_of_not_digit '(' (by decide) c.val hc
-  toChars_no_rparen c hc :=
-    not_mem_natToChars_of_not_digit ')' (by decide) c.val hc
+/- `ParenFreeCoeff` instances for the non-Az types `ℕ`, `ℤ`, `ℚ`, and `ZMod` have
+   been removed along with their `ParsableCoeff` instances; use the Az
+   coefficient types instead. -/
 
 /-! ### ParenFreeVar instances -/
 

@@ -16,9 +16,9 @@ open AzPolynomial
 namespace AzPolynomialQ
 
 /-- `AzPolynomialQ.toChars` agrees with `AzPolynomial.toChars` applied to
-    `p.toAzPolynomial`. -/
+    `p.toAzRatPolynomial`. -/
 theorem toChars_eq (p : AzPolynomialQ) :
-    p.toChars = AzPolynomial.toChars p.toAzPolynomial := rfl
+    p.toChars = AzPolynomial.toChars p.toAzRatPolynomial := rfl
 
 end AzPolynomialQ
 

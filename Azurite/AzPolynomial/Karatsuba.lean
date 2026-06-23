@@ -1,4 +1,7 @@
 import Azurite.AzPolynomial.Mul
+import Azurite.AzInt.Instances
+import Azurite.AzRat.Instances
+import Azurite.AzZMod.Instances
 
 /-!
 # Karatsuba Multiplication for AzPolynomial
@@ -159,55 +162,41 @@ instance (priority := 200) instAzPolynomialMulConfigKaratsuba
     {R : Type _} [CommRing R] [DecidableEq R] : AzPolynomialMulConfig R where
   dmul p q := mulKaratsubaWithThreshold karatsubaThreshold p q
 
-/-- Karatsuba multiplication for `ℤ`, threshold tuned to 29. -/
-instance (priority := 300) : AzPolynomialMulConfig ℤ where
+/-- Karatsuba multiplication for `AzInt`, threshold tuned to 29. -/
+instance (priority := 300) : AzPolynomialMulConfig AzInt where
   dmul p q := mulKaratsubaWithThreshold 29 p q
 
-/-- Karatsuba multiplication for `ℚ`, threshold tuned to 14. -/
-instance (priority := 300) : AzPolynomialMulConfig ℚ where
+/-- Karatsuba multiplication for `AzRat`, threshold tuned to 14. -/
+instance (priority := 300) : AzPolynomialMulConfig AzRat where
   dmul p q := mulKaratsubaWithThreshold 14 p q
 
-/-- Karatsuba multiplication for `ZMod n`, threshold tuned to 8. -/
-instance (priority := 300) {n : ℕ} [NeZero n] : AzPolynomialMulConfig (ZMod n) where
+/-- Karatsuba multiplication for `AzZMod m`, threshold tuned to 8. -/
+instance (priority := 300) {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig (AzZMod m) where
   dmul p q := mulKaratsubaWithThreshold 8 p q
-
-/-- Karatsuba multiplication for `ℕ` via ℤ lifting.
-    Since ℕ is only a `CommSemiring` (no subtraction), we cannot run
-    Karatsuba directly. Instead we:
-    1. Cast coefficients ℕ → ℤ
-    2. Run Karatsuba over ℤ (threshold 29)
-    3. Cast back ℤ → ℕ via `Int.toNat` (safe: product of ℕ-polynomials has ℕ coefficients)
-    4. Normalize to restore the `AzPolynomial` invariant -/
-instance (priority := 300) : AzPolynomialMulConfig ℕ where
-  dmul p q :=
-    let aZ : Array ℤ := p.coeffs.map (fun (c : ℕ) => (c : ℤ))
-    let bZ : Array ℤ := q.coeffs.map (fun (c : ℕ) => (c : ℤ))
-    let resultZ : Array ℤ := @rawKaratsubaWithThreshold ℤ _ 29 aZ bZ
-    normalize (Array.map Int.toNat resultZ)
 
 -- ── Tests ───────────────────────────────────────────────────────────────────
 
 -- Basic correctness tests
-#guard mulKaratsuba (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get!
-    == (parseAzPolynomial (R := ℤ) "x^2+3*x+2").get!
+#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
+    == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
 
-#guard mulKaratsuba (parseAzPolynomial (R := ℤ) "2*x^2+x").get! (parseAzPolynomial (R := ℤ) "x-1").get!
-    == (parseAzPolynomial (R := ℤ) "2*x^3-x^2-x").get!
+#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
+    == (parseAzPolynomial (R := AzInt) "2*x^3-x^2-x").get!
 
-#guard mulKaratsuba (0 : AzPolynomial ℤ) (parseAzPolynomial (R := ℤ) "x^2+1").get! == 0
+#guard mulKaratsuba (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x^2+1").get! == 0
 
-#guard mulKaratsuba (parseAzPolynomial (R := ℤ) "3").get! (parseAzPolynomial (R := ℤ) "4").get!
-    == (parseAzPolynomial (R := ℤ) "12").get!
+#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "3").get! (parseAzPolynomial (R := AzInt) "4").get!
+    == (parseAzPolynomial (R := AzInt) "12").get!
 
 -- Consistency with mulBasecaseFold
-#guard mulKaratsuba (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get!
-    == mulBasecaseFold (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get!
+#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
+    == mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
 
-#guard mulKaratsuba (parseAzPolynomial (R := ℤ) "2*x^2+x").get! (parseAzPolynomial (R := ℤ) "x-1").get!
-    == mulBasecaseFold (parseAzPolynomial (R := ℤ) "2*x^2+x").get! (parseAzPolynomial (R := ℤ) "x-1").get!
+#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
+    == mulBasecaseFold (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
 
--- Verify that * uses Karatsuba for ℤ (threshold 29)
-#guard (parseAzPolynomial (R := ℤ) "x+1").get! * (parseAzPolynomial (R := ℤ) "x+2").get!
-    == mulKaratsuba (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get!
+-- Verify that * uses Karatsuba for AzInt (threshold 29)
+#guard (parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!
+    == mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
 
 end Azurite.AzPolynomial

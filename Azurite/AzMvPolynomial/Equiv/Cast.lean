@@ -1,36 +1,15 @@
 /-
   Equivalence proofs for `AzMvPolynomial` cast functions.
+
+  The previous Mathlib-bridge theorems (`toMvPoly_mapNatToInt`, …) related the
+  cast functions to `MvPolynomial.map (algebraMap ℕ ℤ)` etc. over the GMP-backed
+  `ℕ`/`ℤ`/`ℚ`/`ZMod` coefficient types.  Those coefficient types are no longer
+  used (the casts now operate between the Az types `AzNat`/`AzInt`/`AzRat`/`AzZMod`
+  in `AzMvPolynomial/Cast.lean`), so the bridge theorems have been removed.
 -/
 import Azurite.AzMvPolynomial.Cast
 import Azurite.AzMvPolynomial.Equiv.Map
 
 namespace Azurite
-open MvPolynomial
-
-variable {n : ℕ} {ord : MonomialOrder}
-
-@[simp] theorem toMvPoly_mapNatToInt
-    (p : AzMvPolynomial n ℕ ord) :
-    (p.mapNatToInt).toMvPoly =
-      MvPolynomial.map (algebraMap ℕ ℤ) p.toMvPoly := by
-  exact toMvPoly_mapAlgebraMap _ p
-
-@[simp] theorem toMvPoly_mapIntToRat
-    (p : AzMvPolynomial n ℤ ord) :
-    (p.mapIntToRat).toMvPoly =
-      MvPolynomial.map (algebraMap ℤ ℚ) p.toMvPoly := by
-  exact toMvPoly_mapAlgebraMap _ p
-
-@[simp] theorem toMvPoly_mapNatToZMod {n' : ℕ} [NeZero n']
-    (p : AzMvPolynomial n ℕ ord) :
-    (p.mapNatToZMod (n' := n')).toMvPoly =
-      MvPolynomial.map (Nat.castRingHom (ZMod n')) p.toMvPoly := by
-  exact toMvPoly_map _ p
-
-@[simp] theorem toMvPoly_mapIntToZMod {n' : ℕ} [NeZero n']
-    (p : AzMvPolynomial n ℤ ord) :
-    (p.mapIntToZMod (n' := n')).toMvPoly =
-      MvPolynomial.map (Int.castRingHom (ZMod n')) p.toMvPoly := by
-  exact toMvPoly_map _ p
 
 end Azurite

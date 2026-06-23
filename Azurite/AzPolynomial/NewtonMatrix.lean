@@ -39,26 +39,26 @@ section Tests
 
 -- P = X^2 - 3X + 2, Newton sums [N_0, …] = [2, 3, 5, 9, 17].
 #guard
-  toString ((parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtMatMonic 1) ==
+  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 1) ==
     "[2]"
 
 #guard
-  toString ((parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtMatMonic 2) ==
+  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 2) ==
     "[2, 3; 3, 5]"
 
 #guard
-  toString ((parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtMatMonic 3) ==
+  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 3) ==
     "[2, 3, 5; 3, 5, 9; 5, 9, 17]"
 
 -- P = X^3 - 6X^2 + 11X - 6, roots {1, 2, 3}; Newton sums [3, 6, 14, 36, 98].
 #guard
   toString
-      ((parseAzPolynomial (R := ℤ) "x^3-6*x^2+11*x-6").get!.newtMatMonic 3) ==
+      ((parseAzPolynomial (R := AzInt) "x^3-6*x^2+11*x-6").get!.newtMatMonic 3) ==
     "[3, 6, 14; 6, 14, 36; 14, 36, 98]"
 
 -- Vacuous `k = 0` case (no entries).
 #guard
-  toString ((parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtMatMonic 0) == "[]"
+  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 0) == "[]"
 
 end Tests
 

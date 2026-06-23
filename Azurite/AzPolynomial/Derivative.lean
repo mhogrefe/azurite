@@ -61,7 +61,7 @@ private lemma derivArray_back_ne_zero [CharZero R] [NoZeroDivisors R]
   · -- ↑(size-1-1) + 1 ≠ 0 in R
     exact Nat.cast_add_one_ne_zero _
 
-/-- Specialized derivative for `CharZero` + `NoZeroDivisors` rings (e.g., ℤ, ℚ, ℝ).
+/-- Specialized derivative for `CharZero` + `NoZeroDivisors` rings (e.g., AzInt, AzRat, ℝ).
     Never calls `normalize`; the leading coefficient provably stays nonzero. -/
 def derivativeNoNormalize [CharZero R] [NoZeroDivisors R]
     (p : AzPolynomial R) : AzPolynomial R :=
@@ -105,12 +105,12 @@ instance (priority := high) [CharZero R] [NoZeroDivisors R] : PolynomialDerivati
 def derivative [PolynomialDerivative R] (p : AzPolynomial R) : AzPolynomial R :=
   PolynomialDerivative.derivative p
 
--- Testing: ℤ is CharZero + NoZeroDivisors, so uses the fast path
-#guard derivative (parseAzPolynomial (R := ℤ) "x^3+x").get! == (parseAzPolynomial (R := ℤ) "3*x^2+1").get!
-#guard derivative (parseAzPolynomial (R := ℤ) "2*x^2+3*x+5").get! == (parseAzPolynomial (R := ℤ) "4*x+3").get!
-#guard derivative (parseAzPolynomial (R := ℤ) "42").get! == (0 : AzPolynomial ℤ)
-#guard derivative (0 : AzPolynomial ℤ) == (0 : AzPolynomial ℤ)
-#guard derivative (parseAzPolynomial (R := ℤ) "x").get! == (parseAzPolynomial (R := ℤ) "1").get!
-#guard derivative (parseAzPolynomial (R := ℤ) "x^4").get! == (parseAzPolynomial (R := ℤ) "4*x^3").get!
+-- Testing: AzInt is CharZero + NoZeroDivisors, so uses the fast path
+#guard derivative (parseAzPolynomial (R := AzInt) "x^3+x").get! == (parseAzPolynomial (R := AzInt) "3*x^2+1").get!
+#guard derivative (parseAzPolynomial (R := AzInt) "2*x^2+3*x+5").get! == (parseAzPolynomial (R := AzInt) "4*x+3").get!
+#guard derivative (parseAzPolynomial (R := AzInt) "42").get! == (0 : AzPolynomial AzInt)
+#guard derivative (0 : AzPolynomial AzInt) == (0 : AzPolynomial AzInt)
+#guard derivative (parseAzPolynomial (R := AzInt) "x").get! == (parseAzPolynomial (R := AzInt) "1").get!
+#guard derivative (parseAzPolynomial (R := AzInt) "x^4").get! == (parseAzPolynomial (R := AzInt) "4*x^3").get!
 
 end Azurite.AzPolynomial

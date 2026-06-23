@@ -18,9 +18,9 @@ Endpoints come from the existing `Azurite.BPR.ExtendedPoint K` (an
 inductive type, fully computable). Sign-variation counting reuses the
 existing `Azurite.BPR.Var` (also computable).
 
-Allowed coefficient types: any computable ordered field. For `ℤ`
-coefficients the convenience function `cauchyIndexOnInt` lifts to `ℚ`
-through `mapIntToRat`.
+Allowed coefficient types: any computable ordered field. For `AzInt`
+coefficients the convenience function `cauchyIndexOnInt` lifts to `AzRat`
+through `mapAzIntToAzRat`.
 -/
 
 namespace Azurite.AzPolynomial
@@ -59,27 +59,27 @@ def cauchyIndexOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
   let L := sRemSList P Q (Q.coeffs.size + 2)
   (varAt L a : ℤ) - (varAt L b : ℤ)
 
-/-- Cauchy index for `AzPolynomial ℤ` with `ℚ`-endpoints, computed by
-    lifting to `AzPolynomial ℚ` via `mapIntToRat`. -/
-def cauchyIndexOnInt (Q P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
-  cauchyIndexOn (mapIntToRat Q) (mapIntToRat P) a b
+/-- Cauchy index for `AzPolynomial AzInt` with `AzRat`-endpoints, computed by
+    lifting to `AzPolynomial AzRat` via `mapAzIntToAzRat`. -/
+def cauchyIndexOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
+  cauchyIndexOn (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
 
 /-! ## Worked examples -/
 
 /-- `P = X² − 1` has roots at `±1`, so `Ind(P'/P; −∞, +∞) = 2`. -/
-private def Q_ex : AzPolynomial ℚ := (parseAzPolynomial "x^2-1").get!
-private def Q'_ex : AzPolynomial ℚ := (parseAzPolynomial "2*x").get!
+private def Q_ex : AzPolynomial AzRat := (parseAzPolynomial "x^2-1").get!
+private def Q'_ex : AzPolynomial AzRat := (parseAzPolynomial "2*x").get!
 
 #guard cauchyIndexOn Q'_ex Q_ex .negInf .posInf = 2
 
 /-- Integer-coefficient example: `P = X² − 1`, `P' = 2X`. -/
-private def Q_int : AzPolynomial ℤ := (parseAzPolynomial "x^2-1").get!
-private def Q'_int : AzPolynomial ℤ := (parseAzPolynomial "2*x").get!
+private def Q_int : AzPolynomial AzInt := (parseAzPolynomial "x^2-1").get!
+private def Q'_int : AzPolynomial AzInt := (parseAzPolynomial "2*x").get!
 
 #guard cauchyIndexOnInt Q'_int Q_int .negInf .posInf = 2
 
 -- Trivial: `Q = 0` gives Ind = 0.
-#guard cauchyIndexOn (0 : AzPolynomial ℚ) Q_ex .negInf .posInf = 0
+#guard cauchyIndexOn (0 : AzPolynomial AzRat) Q_ex .negInf .posInf = 0
 
 /-- **Computable Tarski query.** `tarskiQueryOn Q P a b` computes
     `TaQ(Q, P; a, b) := ∑_{x ∈ (a, b), P(x) = 0} sign(Q(x)) : ℤ` via
@@ -96,10 +96,10 @@ def tarskiQueryOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
   let L := sRemSList P P'Q (P'Q.coeffs.size + 2)
   (varAt L a : ℤ) - (varAt L b : ℤ)
 
-/-- Tarski query for `AzPolynomial ℤ` with `ℚ`-endpoints, computed by
-    lifting to `AzPolynomial ℚ` via `mapIntToRat`. -/
-def tarskiQueryOnInt (Q P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
-  tarskiQueryOn (mapIntToRat Q) (mapIntToRat P) a b
+/-- Tarski query for `AzPolynomial AzInt` with `AzRat`-endpoints, computed by
+    lifting to `AzPolynomial AzRat` via `mapAzIntToAzRat`. -/
+def tarskiQueryOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
+  tarskiQueryOn (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
 
 /-! ### Worked examples (Tarski query)
 
@@ -108,17 +108,17 @@ def tarskiQueryOnInt (Q P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
 * `TaQ(Q, P; 0, +∞) = sign(1) = 1`,
 * `TaQ(Q, P; −∞, 0) = sign(−1) = −1`. -/
 
-private def Q_taQ_ex : AzPolynomial ℚ := (parseAzPolynomial "x").get!
+private def Q_taQ_ex : AzPolynomial AzRat := (parseAzPolynomial "x").get!
 
 #guard tarskiQueryOn Q_taQ_ex Q_ex .negInf .posInf = 0
 #guard tarskiQueryOn Q_taQ_ex Q_ex (.finite 0) .posInf = 1
 #guard tarskiQueryOn Q_taQ_ex Q_ex .negInf (.finite 0) = -1
 
 -- Trivial: `Q = 1` gives `TaQ = #roots in interval`.
-#guard tarskiQueryOn (1 : AzPolynomial ℚ) Q_ex .negInf .posInf = 2
+#guard tarskiQueryOn (1 : AzPolynomial AzRat) Q_ex .negInf .posInf = 2
 
--- Integer-coefficient example.
-#guard tarskiQueryOnInt (parseAzPolynomial (R := ℤ) "x").get! Q_int
+-- Integer-coefficient example (`Q = X`).
+#guard tarskiQueryOnInt ((parseAzPolynomial "x").get! : AzPolynomial AzInt) Q_int
   .negInf .posInf = 0
 
 end Azurite.AzPolynomial

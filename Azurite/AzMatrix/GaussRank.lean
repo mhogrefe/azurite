@@ -13,6 +13,8 @@
 -/
 import Azurite.AzMatrix.RowEchelon
 import Mathlib.Data.Rat.Defs
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
 
 namespace Azurite
 
@@ -56,37 +58,37 @@ def AzMatrix.gaussRank [Field K] [DecidableEq K] (M : AzMatrix K n n) : Nat :=
 
 section Tests
 
--- 2×2 invertible over ℚ: rank 2.
+-- 2×2 invertible over AzRat: rank 2.
 #guard
-  match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix ℚ 2 2)) with
+  match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix AzRat 2 2)) with
   | some M => M.gaussRank = 2
   | none => False
 
 -- 2×2 singular: rank 1.
 #guard
-  match (AzMatrix.parseStr "[1, 2; 2, 4]" : Option (AzMatrix ℚ 2 2)) with
+  match (AzMatrix.parseStr "[1, 2; 2, 4]" : Option (AzMatrix AzRat 2 2)) with
   | some M => M.gaussRank = 1
   | none => False
 
 -- 3×3 rank 3 (full).
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 4, 5, 6; 7, 8, 10]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => M.gaussRank = 3
   | none => False
 
 -- 3×3 rank 2 (one dependent row).
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => M.gaussRank = 2
   | none => False
 
 -- Zero matrix: rank 0.
-#guard (0 : AzMatrix ℚ 3 3).gaussRank = 0
+#guard (0 : AzMatrix AzRat 3 3).gaussRank = 0
 
 -- Identity: rank n.
-#guard (1 : AzMatrix ℚ 5 5).gaussRank = 5
+#guard (1 : AzMatrix AzRat 5 5).gaussRank = 5
 
 end Tests
 

@@ -1,6 +1,6 @@
 /-
   Examples demonstrating that `AzPolynomial` works over coefficient rings
-  that are themselves built by Azurite: `AzPolynomial ℤ` and `AzMatrix ℤ n n`.
+  that are themselves built by Azurite: `AzPolynomial AzInt` and `AzMatrix AzInt n n`.
 
   These tests exercise the typeclass machinery: building an
   `AzPolynomial` over either coefficient ring requires `Semiring`,
@@ -22,23 +22,28 @@ import Azurite.AzMatrix.Operations
 import Azurite.AzMatrix.Mul
 import Azurite.AzMatrix.Parse
 import Azurite.AzMatrix.Equiv.Algebra
-import Mathlib.Data.ZMod.Basic
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
+import Azurite.AzZMod.Instances
+import Azurite.AzZMod.Pow
+import Azurite.AzZMod.ParsableElement
 
 namespace Azurite.AzPolynomial.NestedCoeffExamples
 
 open Azurite
 
-/-! ## Part 1: `AzPolynomial (AzPolynomial ℤ)`
+/-! ## Part 1: `AzPolynomial (AzPolynomial AzInt)`
 
 The outer indeterminate is written `T`; the inner indeterminate is `x`.
 Inner coefficients are built via `parseAzPolynomial`. -/
 
-/-- Inner coefficient ring: `ℤ[x]`. -/
-abbrev IntPoly := AzPolynomial ℤ
+/-- Inner coefficient ring: `AzInt[x]`. -/
+abbrev IntPoly := AzPolynomial AzInt
 
 /-- Helper: parse a string as an element of `IntPoly`. -/
 private def i (s : String) : IntPoly :=
-  (AzPolynomial.parseAzPolynomial (R := ℤ) s).getD 0
+  (AzPolynomial.parseAzPolynomial (R := AzInt) s).getD 0
 
 /-! ### Constructing values -/
 
@@ -56,7 +61,7 @@ private def pc : AzPolynomial IntPoly := AzPolynomial.C (i "x+1")
 #guard pc.coeffs.size == 1
 #guard pc.coeff 0 == i "x+1"
 
-/-- The polynomial `x * T + (x + 1)` in `ℤ[x][T]`. -/
+/-- The polynomial `x * T + (x + 1)` in `AzInt[x][T]`. -/
 private def pl : AzPolynomial IntPoly :=
   AzPolynomial.monomial 1 (i "x") + AzPolynomial.C (i "x+1")
 #guard pl.coeffs.size == 2
@@ -116,13 +121,13 @@ private def psq : AzPolynomial IntPoly := pT_plus * pT_plus
 #guard ((pT_plus : AzPolynomial IntPoly) ^ 0) == 1
 #guard ((pT_plus : AzPolynomial IntPoly) ^ 1) == pT_plus
 
-/-! ## Part 2: `AzPolynomial (AzMatrix ℤ 2 2)`
+/-! ## Part 2: `AzPolynomial (AzMatrix AzInt 2 2)`
 
 The coefficient ring is the (non-commutative) ring of `2 × 2` integer matrices.
 The outer indeterminate is again written `T`. -/
 
-/-- Coefficient ring: `M₂(ℤ)`. -/
-abbrev Mat22 := AzMatrix ℤ 2 2
+/-- Coefficient ring: `M₂(AzInt)`. -/
+abbrev Mat22 := AzMatrix AzInt 2 2
 
 /-- The identity `2 × 2` matrix. -/
 private def I2 : Mat22 := 1
@@ -208,11 +213,11 @@ If the outer or inner `^` were not the binary-exponentiation version, raising
 to `10^18` would not terminate. -/
 
 /-- The Fibonacci matrix `[[1,1],[1,0]]` over `ZMod (10^9 + 7)`. -/
-private def fibMat : AzMatrix (ZMod 1000000007) 2 2 :=
+private def fibMat : AzMatrix (AzZMod (AzNat.ofNat 1000000007)) 2 2 :=
   AzMatrix.ofLists [[1, 1], [1, 0]]
 
 /-- The constant polynomial whose unique coefficient is `fibMat`. -/
-private def fibMatPoly : AzPolynomial (AzMatrix (ZMod 1000000007) 2 2) :=
+private def fibMatPoly : AzPolynomial (AzMatrix (AzZMod (AzNat.ofNat 1000000007)) 2 2) :=
   AzPolynomial.C fibMat
 
 -- Constant polynomial → backing array stays size 1 throughout.

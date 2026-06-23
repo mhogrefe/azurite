@@ -1,6 +1,5 @@
 import Azurite.AzMatrix.DetDispatch
 import Azurite.AzPolynomial.NewtonMatrix
-import Azurite.AzInt.Instances
 import Azurite.AzInt.ExactDiv
 
 /-!
@@ -34,28 +33,28 @@ def discriminantMonic (P : AzPolynomial R) : R :=
 
 section Tests
 
-/-! #### Over `ℚ` (Field instance → Gauss) -/
+/-! #### Over `AzRat` (Field instance → Gauss) -/
 
 -- P = X − 5, single root, disc = empty product = 1.
 #guard
-  (parseAzPolynomial (R := ℚ) "x-5").get!.discriminantMonic == 1
+  (parseAzPolynomial (R := AzRat) "x-5").get!.discriminantMonic == 1
 
 -- P = X² − 3X + 2 = (X−1)(X−2), disc = (1−2)² = 1.
 #guard
-  (parseAzPolynomial (R := ℚ) "x^2-3*x+2").get!.discriminantMonic == 1
+  (parseAzPolynomial (R := AzRat) "x^2-3*x+2").get!.discriminantMonic == 1
 
 -- P = X² + 1 (roots ±i), disc = (i − (−i))² = (2i)² = −4.
 #guard
-  (parseAzPolynomial (R := ℚ) "x^2+1").get!.discriminantMonic == -4
+  (parseAzPolynomial (R := AzRat) "x^2+1").get!.discriminantMonic == -4
 
 -- P = (X−1)² = X² − 2X + 1 (repeated root), disc = (1−1)² = 0.
 #guard
-  (parseAzPolynomial (R := ℚ) "x^2-2*x+1").get!.discriminantMonic == 0
+  (parseAzPolynomial (R := AzRat) "x^2-2*x+1").get!.discriminantMonic == 0
 
 -- P = X³ − 6X² + 11X − 6 = (X−1)(X−2)(X−3),
 --   disc = (1−2)²(1−3)²(2−3)² = 4.
 #guard
-  (parseAzPolynomial (R := ℚ) "x^3-6*x^2+11*x-6").get!.discriminantMonic == 4
+  (parseAzPolynomial (R := AzRat) "x^3-6*x^2+11*x-6").get!.discriminantMonic == 4
 
 /-! #### Over `AzInt` (Domain + ExactDiv → Bareiss) -/
 

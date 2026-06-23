@@ -13,6 +13,9 @@
 import Azurite.AzFormula.LeafFormula
 import Azurite.AzFormula.Posgcd
 import Azurite.AzMvPolynomial.FinSuccEquiv
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite
 
@@ -113,44 +116,44 @@ open AzMvPolynomial
 -- trivially false, the formula comes out as `¬(0 ≠ 0)` — still a
 -- logical tautology in the ambient field atoms.
 #guard toString
-    (azProjBasic (k := 2) (D := ℤ) (ord := .Degrevlex) [] []) ==
+    (azProjBasic (k := 2) (D := AzInt) (ord := .Degrevlex) [] []) ==
   "¬(0 ≠ 0)"
 
 -- `Qs ≠ []` with `Ps = []`: same structural result as the empty system,
 -- because posgcd on an empty `Ps` still gives `[(0, true)]` and the
 -- outer posgcd only changes via `extra` which is `1^d`-capped on `Qs.prod`.
 #guard toString
-    (azProjBasic (k := 2) (D := ℤ) (ord := .Degrevlex) [] [X 0]) ==
+    (azProjBasic (k := 2) (D := AzInt) (ord := .Degrevlex) [] [X 0]) ==
   "¬(0 ≠ 0)"
 
 -- DNF extraction: single atom ⇒ 1 clause with one equality.
 #guard
-  let clauses := azToConjDisjForms (D := ℤ) (ord := .Degrevlex) (n := 3)
+  let clauses := azToConjDisjForms (D := AzInt) (ord := .Degrevlex) (n := 3)
     (azEqZero (X 0))
   clauses.length == 1 ∧ clauses == [([X (0 : Fin 3)], [])]
 
 -- DNF extraction: disjunction ⇒ 2 clauses.
 #guard
-  let clauses := azToConjDisjForms (D := ℤ) (ord := .Degrevlex) (n := 3)
+  let clauses := azToConjDisjForms (D := AzInt) (ord := .Degrevlex) (n := 3)
     (Formula.or (azEqZero (X 0)) (azEqZero (X 1)))
   clauses.length == 2
 
 -- DNF extraction: conjunction ⇒ 1 clause with both atoms.
 #guard
-  let clauses := azToConjDisjForms (D := ℤ) (ord := .Degrevlex) (n := 3)
+  let clauses := azToConjDisjForms (D := AzInt) (ord := .Degrevlex) (n := 3)
     (Formula.and (azEqZero (X 0)) (azNeZero (X 1)))
   clauses == [([X (0 : Fin 3)], [X (1 : Fin 3)])]
 
 -- DNF extraction: distribute `and` over `or` ⇒ 2 clauses.
 #guard
-  let clauses := azToConjDisjForms (D := ℤ) (ord := .Degrevlex) (n := 3)
+  let clauses := azToConjDisjForms (D := AzInt) (ord := .Degrevlex) (n := 3)
     (Formula.and (azEqZero (X 0))
       (Formula.or (azNeZero (X 1)) (azEqZero (X 2))))
   clauses.length == 2
 
 -- DNF extraction: negation absorbs into atom flip via toNNF.
 #guard
-  let clauses := azToConjDisjForms (D := ℤ) (ord := .Degrevlex) (n := 3)
+  let clauses := azToConjDisjForms (D := AzInt) (ord := .Degrevlex) (n := 3)
     (Formula.not (azEqZero (X 0)))
   clauses == [([], [X (0 : Fin 3)])]
 
@@ -158,21 +161,21 @@ open AzMvPolynomial
 -- so `¬(P = 0)` atoms are pushed into `P ≠ 0` atoms. The result
 -- should contain no residual `¬` characters.
 #guard
-  let s := toString (azProjectQF (k := 2) (D := ℤ) (ord := .Degrevlex)
+  let s := toString (azProjectQF (k := 2) (D := AzInt) (ord := .Degrevlex)
     (azEqZero (n := 3) (X 0)) trivial)
   !s.contains '¬'
 
 #guard
-  let s := toString (azProjectQF (k := 2) (D := ℤ) (ord := .Degrevlex)
+  let s := toString (azProjectQF (k := 2) (D := AzInt) (ord := .Degrevlex)
     (Formula.not (azEqZero (n := 3) (X 0))) trivial)
   !s.contains '¬'
 
 -- `azProjectQFAt i` projects variable `i` by renaming it to `0` first.
 -- Projecting variable `1` of `X₁ = 0` agrees (after renaming) with
 -- projecting variable `0` of `X₀ = 0`.
-#guard toString (azProjectQFAt (k := 2) (D := ℤ) (ord := .Degrevlex)
+#guard toString (azProjectQFAt (k := 2) (D := AzInt) (ord := .Degrevlex)
     (1 : Fin 3) (azEqZero (n := 3) (X 1)) trivial) ==
-  toString (azProjectQF (k := 2) (D := ℤ) (ord := .Degrevlex)
+  toString (azProjectQF (k := 2) (D := AzInt) (ord := .Degrevlex)
     (azEqZero (n := 3) (X 0)) trivial)
 
 -- Projecting `d` from the system `d^4 + a*d^2 + b*d + c = 0 ∧
@@ -183,12 +186,12 @@ open AzMvPolynomial
 local instance : Fact (4 ≤ 26) := ⟨by omega⟩
 local instance : Fact (3 ≤ 26) := ⟨by omega⟩
 
-private def parseAbc4 (s : String) : AzMvPolynomial 4 ℤ .Degrevlex :=
-  (AzMvPolynomial.parseStrWith (AbcVar 4) (n := 4) (R := ℤ)
+private def parseAbc4 (s : String) : AzMvPolynomial 4 AzInt .Degrevlex :=
+  (AzMvPolynomial.parseStrWith (AbcVar 4) (n := 4) (R := AzInt)
     (ord := .Degrevlex) s).getD 0
 
 #guard (BPR.Formula.toStrWith (AbcVar 3) <|
-  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+  azProjectQFAt (k := 3) (D := AzInt) (ord := .Degrevlex) (3 : Fin 4)
     (Formula.and
       (azEqZero (parseAbc4 "d^4+a*d^2+b*d+c"))
       (azEqZero (parseAbc4 "4*d^3+2*a*d+b")))
@@ -217,7 +220,7 @@ private def parseAbc4 (s : String) : AzMvPolynomial 4 ℤ .Degrevlex :=
 -- Exercise 1.9(a): conditions on (a, b, c) for P = a*X^2+b*X+c and its
 -- derivative P' = 2*a*X+b to have a common root.
 #guard (BPR.Formula.toStrWith (AbcVar 3) <|
-  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+  azProjectQFAt (k := 3) (D := AzInt) (ord := .Degrevlex) (3 : Fin 4)
     (Formula.and
       (azEqZero (parseAbc4 "a*d^2+b*d+c"))
       (azEqZero (parseAbc4 "2*a*d+b")))
@@ -238,7 +241,7 @@ private def parseAbc4 (s : String) : AzMvPolynomial 4 ℤ .Degrevlex :=
 -- Exercise 1.9(b): conditions on (a, b, c) for P = a*X^2+b*X+c to have
 -- a root which is not a root of P' = 2*a*X+b.
 #guard (BPR.Formula.toStrWith (AbcVar 3) <|
-  azProjectQFAt (k := 3) (D := ℤ) (ord := .Degrevlex) (3 : Fin 4)
+  azProjectQFAt (k := 3) (D := AzInt) (ord := .Degrevlex) (3 : Fin 4)
     (Formula.and
       (azEqZero (parseAbc4 "a*d^2+b*d+c"))
       (azNeZero (parseAbc4 "2*a*d+b")))

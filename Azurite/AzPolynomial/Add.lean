@@ -88,16 +88,16 @@ def addNoCancel [NoAddCancellation R] (p q : AzPolynomial R) : AzPolynomial R :=
 
 instance (priority := high) [NoAddCancellation R] : Add (AzPolynomial R) := ⟨addNoCancel⟩
 
--- Testing ℤ (uses add via default instance, normalizes same-size cancellation)
-#guard (parseAzPolynomial (R := ℤ) "x^2+1").get! + (parseAzPolynomial (R := ℤ) "x+2").get! == (parseAzPolynomial (R := ℤ) "x^2+x+3").get!
-#guard (parseAzPolynomial (R := ℤ) "x^2+x").get! + (parseAzPolynomial (R := ℤ) "-x^2+1").get! == (parseAzPolynomial (R := ℤ) "x+1").get!
-#guard (parseAzPolynomial (R := ℤ) "x^2").get! + (parseAzPolynomial (R := ℤ) "-x^2").get! == (0 : AzPolynomial ℤ)
-#guard (0 : AzPolynomial ℤ) + (parseAzPolynomial (R := ℤ) "x").get! == (parseAzPolynomial (R := ℤ) "x").get!
+-- Testing AzInt (uses add via default instance, normalizes same-size cancellation)
+#guard (parseAzPolynomial (R := AzInt) "x^2+1").get! + (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+x+3").get!
+#guard (parseAzPolynomial (R := AzInt) "x^2+x").get! + (parseAzPolynomial (R := AzInt) "-x^2+1").get! == (parseAzPolynomial (R := AzInt) "x+1").get!
+#guard (parseAzPolynomial (R := AzInt) "x^2").get! + (parseAzPolynomial (R := AzInt) "-x^2").get! == (0 : AzPolynomial AzInt)
+#guard (0 : AzPolynomial AzInt) + (parseAzPolynomial (R := AzInt) "x").get! == (parseAzPolynomial (R := AzInt) "x").get!
 
 -- Testing ℕ (uses addNoCancel via high-priority instance, never normalizes)
-#guard (parseAzPolynomial (R := ℕ) "x^2+1").get! + (parseAzPolynomial (R := ℕ) "x+2").get! == (parseAzPolynomial (R := ℕ) "x^2+x+3").get!
-#guard (0 : AzPolynomial ℕ) + (parseAzPolynomial (R := ℕ) "x^2+1").get! == (parseAzPolynomial (R := ℕ) "x^2+1").get!
-#guard (parseAzPolynomial (R := ℕ) "3").get! + (parseAzPolynomial (R := ℕ) "5").get! == (parseAzPolynomial (R := ℕ) "8").get!
+#guard (parseAzPolynomial (R := AzNat) "x^2+1").get! + (parseAzPolynomial (R := AzNat) "x+2").get! == (parseAzPolynomial (R := AzNat) "x^2+x+3").get!
+#guard (0 : AzPolynomial AzNat) + (parseAzPolynomial (R := AzNat) "x^2+1").get! == (parseAzPolynomial (R := AzNat) "x^2+1").get!
+#guard (parseAzPolynomial (R := AzNat) "3").get! + (parseAzPolynomial (R := AzNat) "5").get! == (parseAzPolynomial (R := AzNat) "8").get!
 
 end Azurite.AzPolynomial
 

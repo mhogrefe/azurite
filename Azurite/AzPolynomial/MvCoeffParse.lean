@@ -13,7 +13,7 @@
   `[ParsableVar F n]` is passed in by the caller (exactly like
   `AzMvPolynomial.toStrWith`).
 
-  Example: for `(3*a+b) * T^2 + (-c) * T + (a+d) : AzPolynomial (AzMvPolynomial 4 ℤ ord)`
+  Example: for `(3*a+b) * T^2 + (-c) * T + (a+d) : AzPolynomial (AzMvPolynomial 4 AzInt ord)`
   with `F = AbcVar 4`, the string representation is
   `"(3*a+b)*x^2+(-c)*x+(a+d)"`.
 -/
@@ -177,11 +177,11 @@ open AzPolynomial
 
 private instance : Fact (4 ≤ 26) := ⟨by omega⟩
 
-private abbrev MvInt4 := AzMvPolynomial 4 ℤ .Degrevlex
+private abbrev MvInt4 := AzMvPolynomial 4 AzInt .Degrevlex
 
 /-- Helper: parse a multivariate string into `MvInt4` using `AbcVar 4` (`a,b,c,d`). -/
 private def mv (s : String) : MvInt4 :=
-  (AzMvPolynomial.parseWith (n := 4) (R := ℤ) (ord := .Degrevlex)
+  (AzMvPolynomial.parseWith (n := 4) (R := AzInt) (ord := .Degrevlex)
     (AbcVar 4) s.toList).getD 0
 
 -- Zero polynomial
@@ -209,17 +209,17 @@ private def p_const_one : AzPolynomial MvInt4 := C (mv "1")
 #guard p_const_one.toStrMvCoeffWith (AbcVar 4) == "(1)"
 
 -- Parse round-trip on the flagship example
-#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := ℤ) (ord := .Degrevlex)
+#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := AzInt) (ord := .Degrevlex)
     "(3*a+b)*x^2+(-c)*x+(a+d)").map
       (·.toStrMvCoeffWith (AbcVar 4)) == some "(3*a+b)*x^2+(-c)*x+(a+d)"
 
 -- Parse round-trip on the `coeff=1` omission example
-#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := ℤ) (ord := .Degrevlex)
+#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := AzInt) (ord := .Degrevlex)
     "x^2+(a)*x+(b+c)").map
       (·.toStrMvCoeffWith (AbcVar 4)) == some "x^2+(a)*x+(b+c)"
 
 -- Zero polynomial round-trip
-#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := ℤ) (ord := .Degrevlex)
+#guard (AzPolynomial.parseStrMvCoeffWith (AbcVar 4) (n := 4) (R := AzInt) (ord := .Degrevlex)
     "0").map (·.toStrMvCoeffWith (AbcVar 4)) == some "0"
 
 end Tests

@@ -1,44 +1,56 @@
 /-
-  Cast functions for `AzMvPolynomial`.
+  Coefficient-type casts for `AzMvPolynomial`, between the Az coefficient types.
 -/
 import Azurite.AzMvPolynomial.Map
-import Mathlib.Data.Rat.Defs
-import Mathlib.Data.ZMod.Basic
+import Azurite.AzInt.Conversion
+import Azurite.AzInt.Equiv.Basic
+import Azurite.AzRat.Instances
+import Azurite.AzRat.Conversion
+import Azurite.AzRat.Equiv.Conversion
+import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Construct
+import Azurite.AzZMod.CastHom
 
 namespace Azurite
 
 variable {n : ℕ} {ord : MonomialOrder}
 
-/-- Lifts an `AzMvPolynomial n ℕ` to `AzMvPolynomial n ℤ`. -/
-def AzMvPolynomial.mapNatToInt (p : AzMvPolynomial n ℕ ord) :
-    AzMvPolynomial n ℤ ord :=
-  AzMvPolynomial.mapAlgebraMap (by intro x y h; exact Nat.cast_inj.mp h) p
+/-- Lifts an `AzMvPolynomial n AzNat` to `AzMvPolynomial n AzInt`. -/
+def AzMvPolynomial.mapAzNatToAzInt (p : AzMvPolynomial n AzNat ord) :
+    AzMvPolynomial n AzInt ord :=
+  AzMvPolynomial.mapZeroInjective AzNat.toAzInt
+    (fun a => ⟨fun h => congrArg AzInt.abs h, fun h => by subst h; rfl⟩) p
 
-/-- Lifts an `AzMvPolynomial n ℤ` to `AzMvPolynomial n ℚ`. -/
-def AzMvPolynomial.mapIntToRat (p : AzMvPolynomial n ℤ ord) :
-    AzMvPolynomial n ℚ ord :=
-  AzMvPolynomial.mapAlgebraMap (by intro x y h; exact Int.cast_inj.mp h) p
+/-- Lifts an `AzMvPolynomial n AzInt` to `AzMvPolynomial n AzRat`. -/
+def AzMvPolynomial.mapAzIntToAzRat (p : AzMvPolynomial n AzInt ord) :
+    AzMvPolynomial n AzRat ord :=
+  AzMvPolynomial.mapZeroInjective AzInt.toAzRat
+    (fun z => ⟨fun h => by
+        have hz := congrArg AzRat.toRat h
+        rw [AzRat.toRat_toAzRat_int, AzRat.toRat_zero] at hz
+        have hz0 : z.toInt = 0 := by exact_mod_cast hz
+        rw [← AzInt.ofInt_toInt z, hz0, AzInt.ofInt_zero],
+      fun h => by subst h; exact AzRat.toRat_injective (by
+        rw [AzRat.toRat_toAzRat_int, AzInt.toInt_zero, AzRat.toRat_zero, Int.cast_zero])⟩) p
 
-/-- Maps an `AzMvPolynomial n (ZMod n')` to `AzMvPolynomial n ℕ`. -/
-def AzMvPolynomial.mapZModToNat {n' : ℕ} [NeZero n']
-    (p : AzMvPolynomial n (ZMod n') ord) :
-    AzMvPolynomial n ℕ ord :=
-  AzMvPolynomial.mapZeroInjective ZMod.val (fun r => ⟨fun hr => by
-    have h1 : (r.val : ZMod n') = (0 : ZMod n') := by rw [hr, Nat.cast_zero]
-    have h2 : (r.val : ZMod n') = r := ZMod.natCast_zmod_val r
-    rw [h2] at h1; exact h1,
-    fun hr => by rw [hr, ZMod.val_zero]⟩) p
+/-- Maps an `AzMvPolynomial n (AzZMod m)` to `AzMvPolynomial n AzNat`. -/
+def AzMvPolynomial.mapAzZModToAzNat {m : AzNat} [NeZero m.toNat]
+    (p : AzMvPolynomial n (AzZMod m) ord) :
+    AzMvPolynomial n AzNat ord :=
+  AzMvPolynomial.mapZeroInjective AzZMod.val
+    (fun r => ⟨fun h => AzZMod.ext (h.trans AzZMod.val_zero.symm),
+               fun h => by rw [h, AzZMod.val_zero]⟩) p
 
-/-- Maps an `AzMvPolynomial n ℕ` to `AzMvPolynomial n (ZMod n')`. -/
-def AzMvPolynomial.mapNatToZMod {n' : ℕ} [NeZero n']
-    (p : AzMvPolynomial n ℕ ord) :
-    AzMvPolynomial n (ZMod n') ord :=
-  AzMvPolynomial.map (Nat.castRingHom (ZMod n')) p
+/-- Maps an `AzMvPolynomial n AzNat` to `AzMvPolynomial n (AzZMod m)`. -/
+def AzMvPolynomial.mapAzNatToAzZMod {m : AzNat} [NeZero m.toNat]
+    (p : AzMvPolynomial n AzNat ord) :
+    AzMvPolynomial n (AzZMod m) ord :=
+  AzMvPolynomial.map AzZMod.ofAzNatRingHom p
 
-/-- Maps an `AzMvPolynomial n ℤ` to `AzMvPolynomial n (ZMod n')`. -/
-def AzMvPolynomial.mapIntToZMod {n' : ℕ} [NeZero n']
-    (p : AzMvPolynomial n ℤ ord) :
-    AzMvPolynomial n (ZMod n') ord :=
-  AzMvPolynomial.map (Int.castRingHom (ZMod n')) p
+/-- Maps an `AzMvPolynomial n AzInt` to `AzMvPolynomial n (AzZMod m)`. -/
+def AzMvPolynomial.mapAzIntToAzZMod {m : AzNat} [NeZero m.toNat]
+    (p : AzMvPolynomial n AzInt ord) :
+    AzMvPolynomial n (AzZMod m) ord :=
+  AzMvPolynomial.map AzZMod.ofAzIntRingHom p
 
 end Azurite

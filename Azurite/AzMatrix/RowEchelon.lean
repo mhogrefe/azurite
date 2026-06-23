@@ -21,6 +21,8 @@ import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzMatrix.Parse
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Data.Rat.Defs
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
 
 namespace Azurite
 
@@ -244,7 +246,7 @@ section Tests
 -- No swap needed: pivots are already nonzero on the diagonal.
 #guard
   match (AzMatrix.parseStr "[2, 1, 1; 4, 3, 3; 8, 7, 9]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.gauss
               toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
   | none => False
@@ -252,7 +254,7 @@ section Tests
 -- Column swap forced at step 0 (zero in the (0, 0) entry); s = 1.
 #guard
   match (AzMatrix.parseStr "[0, 1, 2; 1, 2, 3; 2, 3, 5]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.gauss
               toString U = "[1, 0, 2; 0, 1, -1; 0, 0, 1]" ∧ s = 1
   | none => False
@@ -262,7 +264,7 @@ section Tests
 -- Note that the output here is NOT upper-triangular (row 2 has `-1` at col 1).
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.gauss
               toString U = "[1, 2, 3; 0, 0, 0; 0, -1, -2]" ∧ s = 0
   | none => False
@@ -272,7 +274,7 @@ section Tests
 -- Nonsingular, no row swap needed: same shape as `gauss`.
 #guard
   match (AzMatrix.parseStr "[2, 1, 1; 4, 3, 3; 8, 7, 9]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.rowEchelon
               toString U = "[2, 1, 1; 0, 1, 1; 0, 0, 2]" ∧ s = 0
   | none => False
@@ -280,7 +282,7 @@ section Tests
 -- Zero in (0, 0): a row swap (not a column swap) brings the pivot up.
 #guard
   match (AzMatrix.parseStr "[0, 1, 2; 1, 2, 3; 2, 3, 5]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.rowEchelon
               toString U = "[1, 2, 3; 0, 1, 2; 0, 0, 1]" ∧ s = 1
   | none => False
@@ -289,7 +291,7 @@ section Tests
 -- the all-zero row to the bottom and finishes — output IS triangular.
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.rowEchelon
               toString U = "[1, 2, 3; 0, -1, -2; 0, 0, 0]" ∧ s = 1
   | none => False
@@ -301,7 +303,7 @@ section Tests
 -- singular column, and row 2 keeps its leading `1` at col 2.
 #guard
   match (AzMatrix.parseStr "[1, 0, 1; 0, 0, 1; 0, 0, 1]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => let (U, s) := M.rowEchelon
               toString U = "[1, 0, 1; 0, 0, 1; 0, 0, 1]" ∧ s = 0
   | none => False

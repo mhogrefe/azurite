@@ -1,7 +1,9 @@
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.AzMatrix.Equiv.Algebra
 import Azurite.AzMatrix.Parse
-import Mathlib.Data.ZMod.Basic
+import Azurite.AzZMod.Instances
+import Azurite.AzZMod.Pow
+import Azurite.AzZMod.ParsableElement
 
 /-!
 # Sliding-Window Exponentiation for AzMatrix
@@ -36,7 +38,7 @@ section Tests
 /-- The Fibonacci matrix [[1,1],[1,0]] over ZMod p.
     Its n-th power gives Fibonacci numbers mod p:
     `(fibMat^n)[0][1] = F(n) mod p`. -/
-private def fibMat : AzMatrix (ZMod 1000000007) 2 2 :=
+private def fibMat : AzMatrix (AzZMod (AzNat.ofNat 1000000007)) 2 2 :=
   AzMatrix.ofLists [[1, 1], [1, 0]]
 
 -- Raise to 10^18 — runs in O(log(10^18)) ≈ 60 matrix multiplications.

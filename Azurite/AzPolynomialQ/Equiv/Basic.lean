@@ -4,6 +4,11 @@ import Mathlib.Data.Rat.Defs
 import Azurite.AzPolynomialQ.Basic
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Equiv.Basic
+import Azurite.AzRat.Instances
+import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Construct
+import Azurite.AzRat.ToString
+import Azurite.AzInt.Equiv.Basic
 
 /-!
 # AzPolynomialQ ↔ AzPolynomial ℚ Conversions
@@ -299,6 +304,112 @@ lemma AzPolynomialQ.ofAzPolynomial_toAzPolynomial (p : AzPolynomialQ) :
   apply AzPolynomialQ.coeff_ext
   intro i
   rw [coeff_ofAzPolynomial, coeff_toAzPolynomial]
+
+/-! ## AzRat conversions
+
+`AzPolynomialQ` ↔ `AzPolynomial AzRat`, used by the computable `toString`/`parse`
+so they need no `ParsableCoeff ℚ`.  Everything is proven by transporting to the
+existing `ℚ` conversions through the ring homomorphism `AzRat.toRat`. -/
+
+/-- `(toRat r).num` / `.den` are the signed `AzInt` numerator value and the `AzNat`
+denominator value (both definitional from `toRat = Rat.mk' …`). -/
+private lemma AzRat.toRat_num_eq (r : AzRat) : (AzRat.toRat r).num = r.numInt.toInt := rfl
+private lemma AzRat.toRat_den_eq (r : AzRat) : (AzRat.toRat r).den = r.den.toNat := rfl
+
+/-- `AzRat` analogue of `scaleRat`: scale `r` by `d` to an integer, computably. -/
+private def scaleRatAz (r : AzRat) (d : ℕ) : ℤ := r.numInt.toInt * (d / r.den.toNat : ℕ)
+
+private lemma scaleRatAz_eq (r : AzRat) (d : ℕ) : scaleRatAz r d = scaleRat (AzRat.toRat r) d := by
+  rw [scaleRatAz, scaleRat, AzRat.toRat_num_eq, AzRat.toRat_den_eq]
+
+/-- `AzPolynomial AzRat → AzPolynomial ℚ` via `toRat` (noncomputable; proof-only). -/
+private noncomputable def mapToRat (q : AzPolynomial AzRat) : AzPolynomial ℚ :=
+  AzPolynomial.mapZeroInjective AzRat.toRat
+    (fun r => ⟨fun h => AzRat.toRat_injective (by rw [h, AzRat.toRat_zero]),
+               fun h => by rw [h, AzRat.toRat_zero]⟩) q
+
+private lemma coeffsList_mapToRat (q : AzPolynomial AzRat) :
+    (mapToRat q).coeffs.toList = q.coeffs.toList.map AzRat.toRat := by
+  show (q.coeffs.map AzRat.toRat).toList = _
+  rw [Array.toList_map]
+
+private lemma coeff_mapToRat (q : AzPolynomial AzRat) (i : ℕ) :
+    (mapToRat q).coeff i = AzRat.toRat (q.coeff i) := by
+  show ((q.coeffs.map AzRat.toRat)[i]?.getD 0) = AzRat.toRat (q.coeffs[i]?.getD 0)
+  rw [Array.getElem?_map]
+  cases q.coeffs[i]? with
+  | none => simp [AzRat.toRat_zero]
+  | some r => simp
+
+/-- Convert a `AzPolynomialQ` to `AzPolynomial AzRat`: numerator `nᵢ ↦ nᵢ / denom`. -/
+def AzPolynomialQ.toAzRatPolynomial (p : AzPolynomialQ) : AzPolynomial AzRat :=
+  AzPolynomial.mapZeroInjective
+    (fun n : ℤ => AzRat.ofAzInts (AzInt.ofInt n) (AzInt.ofInt (p.denom : ℤ)))
+    (fun n => by
+      constructor
+      · intro h
+        have ht := congrArg AzRat.toRat h
+        rw [AzRat.toRat_ofAzInts, AzRat.toRat_zero, AzInt.toInt_ofInt, AzInt.toInt_ofInt] at ht
+        rcases div_eq_zero_iff.mp ht with h1 | h1
+        · exact_mod_cast h1
+        · exact absurd h1 (by exact_mod_cast p.denom_pos.ne')
+      · intro h; subst h
+        apply AzRat.toRat_injective
+        rw [AzRat.toRat_ofAzInts, AzRat.toRat_zero, AzInt.toInt_ofInt, AzInt.toInt_ofInt]
+        simp)
+    p.toIntPoly
+
+private lemma toRat_coeff_toAzRatPolynomial (p : AzPolynomialQ) (i : ℕ) :
+    AzRat.toRat (p.toAzRatPolynomial.coeff i) = p.coeff i := by
+  simp only [AzPolynomialQ.toAzRatPolynomial, AzPolynomial.mapZeroInjective, AzPolynomial.coeff,
+    AzPolynomialQ.toIntPoly, Array.getElem?_map, AzPolynomialQ.coeff]
+  cases p.numerators[i]? with
+  | none => simp [AzRat.toRat_zero]
+  | some n =>
+    simp only [Option.map_some, Option.getD_some]
+    rw [AzRat.toRat_ofAzInts, AzInt.toInt_ofInt, AzInt.toInt_ofInt]
+    push_cast
+    ring
+
+/-- Positivity of the `AzRat`-denominator lcm. -/
+private lemma listLcm'_denListAz_pos (q : AzPolynomial AzRat) :
+    0 < listLcm' (q.coeffs.toList.map (fun r => r.den.toNat)) := by
+  induction q.coeffs.toList with
+  | nil => simp [listLcm']
+  | cons a as ih =>
+    simp only [List.map_cons, listLcm', List.foldr_cons]
+    have ha : 0 < a.den.toNat :=
+      Nat.pos_of_ne_zero (fun h => a.den_nz (AzNat.toNat_injective (h.trans AzNat.toNat_zero.symm)))
+    exact Nat.lcm_pos ha (by simpa [listLcm'] using ih)
+
+/-- Convert a `AzPolynomial AzRat` back to a canonical `AzPolynomialQ` (computable). -/
+def AzPolynomialQ.ofAzRatPolynomial (q : AzPolynomial AzRat) : AzPolynomialQ :=
+  let l := q.coeffs.toList
+  let d := listLcm' (l.map (fun r => r.den.toNat))
+  AzPolynomialQ.normalize (l.map (fun r => scaleRatAz r d)).toArray d (listLcm'_denListAz_pos q)
+
+/-- `ofAzRatPolynomial` agrees with `ofAzPolynomial ∘ toRat` (so it can reuse the
+`ℚ` round-trip). -/
+private lemma AzPolynomialQ.ofAzRatPolynomial_eq (q : AzPolynomial AzRat) :
+    ofAzRatPolynomial q = ofAzPolynomial (mapToRat q) := by
+  have hden : (q.coeffs.toList.map AzRat.toRat).map (·.den)
+      = q.coeffs.toList.map (fun r => r.den.toNat) := by
+    rw [List.map_map]; exact List.map_congr_left (fun r _ => AzRat.toRat_den_eq r)
+  have hnum : ∀ d : ℕ, (q.coeffs.toList.map AzRat.toRat).map (fun r => scaleRat r d)
+      = q.coeffs.toList.map (fun r => scaleRatAz r d) := by
+    intro d; rw [List.map_map]; exact List.map_congr_left (fun r _ => (scaleRatAz_eq r d).symm)
+  simp only [ofAzRatPolynomial, ofAzPolynomial, coeffsList_mapToRat, hden, hnum]
+
+@[simp] lemma AzPolynomialQ.coeff_ofAzRatPolynomial (q : AzPolynomial AzRat) (i : ℕ) :
+    (ofAzRatPolynomial q).coeff i = AzRat.toRat (q.coeff i) := by
+  rw [ofAzRatPolynomial_eq, coeff_ofAzPolynomial, coeff_mapToRat]
+
+/-- **Roundtrip** `AzPolynomialQ → AzPolynomial AzRat → AzPolynomialQ` is the identity. -/
+lemma AzPolynomialQ.ofAzRatPolynomial_toAzRatPolynomial (p : AzPolynomialQ) :
+    ofAzRatPolynomial p.toAzRatPolynomial = p := by
+  apply AzPolynomialQ.coeff_ext
+  intro i
+  rw [coeff_ofAzRatPolynomial, toRat_coeff_toAzRatPolynomial]
 
 /-! ## AzPolynomialQ ↔ Polynomial ℚ equivalences -/
 

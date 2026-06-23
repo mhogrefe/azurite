@@ -79,36 +79,36 @@ def newtonSumsMonicIter (P : AzPolynomial R) : ℕ → Array R
     prev.push (newtonSumStep P prev)
 
 -- Sanity checks: same outputs as `newtonSumsMonic`.
-#guard (parseAzPolynomial (R := ℤ) "x-5").get!.newtonSumsMonicIter 4 ==
+#guard (parseAzPolynomial (R := AzInt) "x-5").get!.newtonSumsMonicIter 4 ==
        #[1, 5, 25, 125]
 
-#guard (parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtonSumsMonicIter 5 ==
+#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtonSumsMonicIter 5 ==
        #[2, 3, 5, 9, 17]
 
-#guard (parseAzPolynomial (R := ℤ) "x^3").get!.newtonSumsMonicIter 4 ==
+#guard (parseAzPolynomial (R := AzInt) "x^3").get!.newtonSumsMonicIter 4 ==
        #[3, 0, 0, 0]
 
-#guard (parseAzPolynomial (R := ℤ) "x^3-6*x^2+11*x-6").get!.newtonSumsMonicIter
+#guard (parseAzPolynomial (R := AzInt) "x^3-6*x^2+11*x-6").get!.newtonSumsMonicIter
        4 == #[3, 6, 14, 36]
 
 -- Sanity checks.
 -- P = X - 5, roots = {5}, N_i = 5^i.
-#guard (parseAzPolynomial (R := ℤ) "x-5").get!.newtonSumsMonic 4 == #[1, 5, 25, 125]
+#guard (parseAzPolynomial (R := AzInt) "x-5").get!.newtonSumsMonic 4 == #[1, 5, 25, 125]
 
 -- P = X^2 - 3X + 2 = (X-1)(X-2), roots = {1, 2}, N_i = 1 + 2^i.
-#guard (parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtonSumsMonic 5 ==
+#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtonSumsMonic 5 ==
        #[2, 3, 5, 9, 17]
 
 -- P = X^2 + b·X + c (general monic quadratic) with b = -3, c = 2:
 --   N_0 = 2, N_1 = -b = 3, N_2 = b² - 2c = 5.
-#guard (parseAzPolynomial (R := ℤ) "x^2-3*x+2").get!.newtonSumMonic 2 == 5
+#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtonSumMonic 2 == 5
 
 -- P = X^3, roots = {0, 0, 0}, N_i = 0 for i ≥ 1 and N_0 = 3.
-#guard (parseAzPolynomial (R := ℤ) "x^3").get!.newtonSumsMonic 4 == #[3, 0, 0, 0]
+#guard (parseAzPolynomial (R := AzInt) "x^3").get!.newtonSumsMonic 4 == #[3, 0, 0, 0]
 
 -- P = X^3 - 6X^2 + 11X - 6 = (X-1)(X-2)(X-3), roots = {1, 2, 3}.
 -- N_0 = 3, N_1 = 6, N_2 = 1 + 4 + 9 = 14, N_3 = 1 + 8 + 27 = 36.
-#guard (parseAzPolynomial (R := ℤ) "x^3-6*x^2+11*x-6").get!.newtonSumsMonic 4 ==
+#guard (parseAzPolynomial (R := AzInt) "x^3-6*x^2+11*x-6").get!.newtonSumsMonic 4 ==
        #[3, 6, 14, 36]
 
 section PolyFromNewtonSums
@@ -178,23 +178,23 @@ def polyFromNewtonSumsMonic (N : Array D) : AzPolynomial D :=
 
 -- Sanity checks.
 -- P = X - 5, Newton sums [1, 5].
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[1, 5]) == "x-5"
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[1, 5]) == "x-5"
 
 -- P = X^2 - 3X + 2, Newton sums [2, 3, 5].
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[2, 3, 5]) == "x^2-3*x+2"
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[2, 3, 5]) == "x^2-3*x+2"
 
 -- P = X^3, Newton sums [3, 0, 0, 0].
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[3, 0, 0, 0]) == "x^3"
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[3, 0, 0, 0]) == "x^3"
 
 -- P = X^3 - 6X^2 + 11X - 6, Newton sums [3, 6, 14, 36].
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[3, 6, 14, 36]) ==
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[3, 6, 14, 36]) ==
        "x^3-6*x^2+11*x-6"
 
 -- N = [0] (just N_0 = 0 = degree, monic of degree 0 → constant 1).
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[0]) == "1"
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[0]) == "1"
 
 -- Empty input → zero polynomial.
-#guard toString (polyFromNewtonSumsMonic (D := ℚ) #[]) == "0"
+#guard toString (polyFromNewtonSumsMonic (D := AzRat) #[]) == "0"
 
 end PolyFromNewtonSums
 

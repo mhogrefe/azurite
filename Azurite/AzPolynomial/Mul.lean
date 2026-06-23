@@ -66,15 +66,26 @@ def mul [AzPolynomialMulConfig R] (p q : AzPolynomial R) : AzPolynomial R :=
 instance [AzPolynomialMulConfig R] : Mul (AzPolynomial R) := ⟨mul⟩
 
 -- Testing the implementation using Integer polynomials
-#guard (parseAzPolynomial (R := ℤ) "x+1").get! * (parseAzPolynomial (R := ℤ) "x+2").get! == (parseAzPolynomial (R := ℤ) "x^2+3*x+2").get!
-#guard (parseAzPolynomial (R := ℤ) "2*x^2+x").get! * (parseAzPolynomial (R := ℤ) "x-1").get! == (parseAzPolynomial (R := ℤ) "2*x^3-x^2-x").get!
-#guard (0 : AzPolynomial ℤ) * (parseAzPolynomial (R := ℤ) "x^2+1").get! == 0
-#guard (parseAzPolynomial (R := ℤ) "3").get! * (parseAzPolynomial (R := ℤ) "4").get! == (parseAzPolynomial (R := ℤ) "12").get!
+#guard (parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
+#guard (parseAzPolynomial (R := AzInt) "2*x^2+x").get! * (parseAzPolynomial (R := AzInt) "x-1").get! == (parseAzPolynomial (R := AzInt) "2*x^3-x^2-x").get!
+#guard (0 : AzPolynomial AzInt) * (parseAzPolynomial (R := AzInt) "x^2+1").get! == 0
+#guard (parseAzPolynomial (R := AzInt) "3").get! * (parseAzPolynomial (R := AzInt) "4").get! == (parseAzPolynomial (R := AzInt) "12").get!
 
 -- Verify old implementation still works
-#guard mulBasecaseList (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get! == (parseAzPolynomial (R := ℤ) "x^2+3*x+2").get!
+#guard mulBasecaseList (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
 
 -- Verify fold implementation works
-#guard mulBasecaseFold (parseAzPolynomial (R := ℤ) "x+1").get! (parseAzPolynomial (R := ℤ) "x+2").get! == (parseAzPolynomial (R := ℤ) "x^2+3*x+2").get!
+#guard mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
+
+-- `AzPolynomial AzRat` round-trips through strings (rational coefficients render
+-- as `"3/2"`, `-1` coefficients as `"-x"`).  (Relocated from `ParsableCoeff/AzRat`.)
+#guard (parseAzPolynomial "3/2*x^2-1/3*x+5" :
+    Option (AzPolynomial AzRat)).map toChars == some "3/2*x^2-1/3*x+5"
+#guard (parseAzPolynomial "x^2-x-1/2" :
+    Option (AzPolynomial AzRat)).map toChars == some "x^2-x-1/2"
+#guard ((· * ·) <$>
+    (parseAzPolynomial "x-1/2" : Option (AzPolynomial AzRat)) <*>
+    (parseAzPolynomial "x+1/2" : Option (AzPolynomial AzRat))).map
+    toChars == some "x^2-1/4"
 
 end Azurite.AzPolynomial

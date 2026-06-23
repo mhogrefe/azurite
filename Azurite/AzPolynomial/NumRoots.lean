@@ -35,31 +35,31 @@ def numRoots {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
     [PolynomialDerivative K] (P : AzPolynomial K) : ℤ :=
   numRootsOn P .negInf .posInf
 
-/-- Real-root count for `AzPolynomial ℤ` with `ℚ`-endpoints, computed by
-    lifting to `AzPolynomial ℚ` via `mapIntToRat`. -/
-def numRootsOnInt (P : AzPolynomial ℤ) (a b : ExtendedPoint ℚ) : ℤ :=
-  numRootsOn (mapIntToRat P) a b
+/-- Real-root count for `AzPolynomial AzInt` with `AzRat`-endpoints, computed by
+    lifting to `AzPolynomial AzRat` via `mapAzIntToAzRat`. -/
+def numRootsOnInt (P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
+  numRootsOn (mapAzIntToAzRat P) a b
 
-/-- Real-root count for `AzPolynomial ℤ` on the full line, computed via
-    `mapIntToRat`. -/
-def numRootsInt (P : AzPolynomial ℤ) : ℤ :=
-  numRoots (mapIntToRat P)
+/-- Real-root count for `AzPolynomial AzInt` on the full line, computed via
+    `mapAzIntToAzRat`. -/
+def numRootsInt (P : AzPolynomial AzInt) : ℤ :=
+  numRoots (mapAzIntToAzRat P)
 
 /-! ## Worked examples -/
 
 /-- `P = X² + 1` has no real roots. -/
-private def P_no_roots : AzPolynomial ℚ := (parseAzPolynomial "x^2+1").get!
+private def P_no_roots : AzPolynomial AzRat := (parseAzPolynomial "x^2+1").get!
 
 #guard numRoots P_no_roots = 0
 
 /-- `P = X² − 1` has roots at `±1`. -/
-private def P_two_roots : AzPolynomial ℚ := (parseAzPolynomial "x^2-1").get!
+private def P_two_roots : AzPolynomial AzRat := (parseAzPolynomial "x^2-1").get!
 
 #guard numRoots P_two_roots = 2
 #guard numRootsOn P_two_roots (.finite 0) .posInf = 1
 
 -- Integer-coefficient examples.
-#guard numRootsInt (parseAzPolynomial (R := ℤ) "x^4-5*x^2+4").get! = 4
-#guard numRootsInt (parseAzPolynomial (R := ℤ) "x^2+1").get! = 0
+#guard numRootsInt ((parseAzPolynomial "x^4-5*x^2+4").get! : AzPolynomial AzInt) = 4
+#guard numRootsInt ((parseAzPolynomial "x^2+1").get! : AzPolynomial AzInt) = 0
 
 end Azurite.AzPolynomial

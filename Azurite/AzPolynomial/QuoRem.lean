@@ -79,40 +79,40 @@ def rem (P Q : AzPolynomial K) : AzPolynomial K :=
 -- ── Tests ──────────────────────────────────────────────────────────────────
 
 -- Basic: (x^2 + 2x + 1) / (x + 1) = (x + 1, 0)
-#guard quo (parseAzPolynomial (R := ℚ) "x^2+2*x+1").get! (parseAzPolynomial (R := ℚ) "x+1").get!
-  == (parseAzPolynomial (R := ℚ) "x+1").get!
-#guard rem (parseAzPolynomial (R := ℚ) "x^2+2*x+1").get! (parseAzPolynomial (R := ℚ) "x+1").get!
-  == (0 : AzPolynomial ℚ)
+#guard quo (parseAzPolynomial (R := AzRat) "x^2+2*x+1").get! (parseAzPolynomial (R := AzRat) "x+1").get!
+  == (parseAzPolynomial (R := AzRat) "x+1").get!
+#guard rem (parseAzPolynomial (R := AzRat) "x^2+2*x+1").get! (parseAzPolynomial (R := AzRat) "x+1").get!
+  == (0 : AzPolynomial AzRat)
 
 -- With nonzero remainder: (x^2 + 1) / (x + 1) = (x - 1, 2)
-#guard quo (parseAzPolynomial (R := ℚ) "x^2+1").get! (parseAzPolynomial (R := ℚ) "x+1").get!
-  == (parseAzPolynomial (R := ℚ) "x-1").get!
-#guard rem (parseAzPolynomial (R := ℚ) "x^2+1").get! (parseAzPolynomial (R := ℚ) "x+1").get!
-  == (parseAzPolynomial (R := ℚ) "2").get!
+#guard quo (parseAzPolynomial (R := AzRat) "x^2+1").get! (parseAzPolynomial (R := AzRat) "x+1").get!
+  == (parseAzPolynomial (R := AzRat) "x-1").get!
+#guard rem (parseAzPolynomial (R := AzRat) "x^2+1").get! (parseAzPolynomial (R := AzRat) "x+1").get!
+  == (parseAzPolynomial (R := AzRat) "2").get!
 
 -- Division by a constant: (3x^2 + 6x) / 3 = (x^2 + 2x, 0)
-#guard quo (parseAzPolynomial (R := ℚ) "3*x^2+6*x").get! (parseAzPolynomial (R := ℚ) "3").get!
-  == (parseAzPolynomial (R := ℚ) "x^2+2*x").get!
-#guard rem (parseAzPolynomial (R := ℚ) "3*x^2+6*x").get! (parseAzPolynomial (R := ℚ) "3").get!
-  == (0 : AzPolynomial ℚ)
+#guard quo (parseAzPolynomial (R := AzRat) "3*x^2+6*x").get! (parseAzPolynomial (R := AzRat) "3").get!
+  == (parseAzPolynomial (R := AzRat) "x^2+2*x").get!
+#guard rem (parseAzPolynomial (R := AzRat) "3*x^2+6*x").get! (parseAzPolynomial (R := AzRat) "3").get!
+  == (0 : AzPolynomial AzRat)
 
 -- deg P < deg Q: (x + 1) / (x^2 + 1) = (0, x + 1)
-#guard quo (parseAzPolynomial (R := ℚ) "x+1").get! (parseAzPolynomial (R := ℚ) "x^2+1").get!
-  == (0 : AzPolynomial ℚ)
-#guard rem (parseAzPolynomial (R := ℚ) "x+1").get! (parseAzPolynomial (R := ℚ) "x^2+1").get!
-  == (parseAzPolynomial (R := ℚ) "x+1").get!
+#guard quo (parseAzPolynomial (R := AzRat) "x+1").get! (parseAzPolynomial (R := AzRat) "x^2+1").get!
+  == (0 : AzPolynomial AzRat)
+#guard rem (parseAzPolynomial (R := AzRat) "x+1").get! (parseAzPolynomial (R := AzRat) "x^2+1").get!
+  == (parseAzPolynomial (R := AzRat) "x+1").get!
 
 -- P = 0: 0 / (x + 1) = (0, 0)
-#guard quo (0 : AzPolynomial ℚ) (parseAzPolynomial (R := ℚ) "x+1").get!
-  == (0 : AzPolynomial ℚ)
+#guard quo (0 : AzPolynomial AzRat) (parseAzPolynomial (R := AzRat) "x+1").get!
+  == (0 : AzPolynomial AzRat)
 
 -- Non-monic divisor: (2x^2 + 3x + 1) / (2x + 1) = (x + 1, 0)
-#guard quo (parseAzPolynomial (R := ℚ) "2*x^2+3*x+1").get! (parseAzPolynomial (R := ℚ) "2*x+1").get!
-  == (parseAzPolynomial (R := ℚ) "x+1").get!
-#guard rem (parseAzPolynomial (R := ℚ) "2*x^2+3*x+1").get! (parseAzPolynomial (R := ℚ) "2*x+1").get!
-  == (0 : AzPolynomial ℚ)
+#guard quo (parseAzPolynomial (R := AzRat) "2*x^2+3*x+1").get! (parseAzPolynomial (R := AzRat) "2*x+1").get!
+  == (parseAzPolynomial (R := AzRat) "x+1").get!
+#guard rem (parseAzPolynomial (R := AzRat) "2*x^2+3*x+1").get! (parseAzPolynomial (R := AzRat) "2*x+1").get!
+  == (0 : AzPolynomial AzRat)
 
-#guard quo (parseAzPolynomial (R := ℚ) "x^3+1").get! (parseAzPolynomial (R := ℚ) "2*x^2+3*x+1").get! == (parseAzPolynomial (R := ℚ) "1/2*x-3/4").get!
-#guard rem (parseAzPolynomial (R := ℚ) "x^3+1").get! (parseAzPolynomial (R := ℚ) "2*x^2+3*x+1").get! == (parseAzPolynomial (R := ℚ) "7/4*x+7/4").get!
+#guard quo (parseAzPolynomial (R := AzRat) "x^3+1").get! (parseAzPolynomial (R := AzRat) "2*x^2+3*x+1").get! == (parseAzPolynomial (R := AzRat) "1/2*x-3/4").get!
+#guard rem (parseAzPolynomial (R := AzRat) "x^3+1").get! (parseAzPolynomial (R := AzRat) "2*x^2+3*x+1").get! == (parseAzPolynomial (R := AzRat) "7/4*x+7/4").get!
 
 end Azurite.AzPolynomial

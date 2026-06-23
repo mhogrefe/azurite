@@ -45,34 +45,9 @@ lemma toPoly_map_list (f : R →+* S) (l : List R) :
   dsimp [mapAlgebraMap]
   exact toPoly_mapInjective (algebraMap R S) hf p
 
-@[simp] lemma toPoly_mapNatToInt (p : AzPolynomial ℕ) :
-  AzPolynomial.toPoly (mapNatToInt p) = (AzPolynomial.toPoly p).map (algebraMap ℕ ℤ) := by
-  dsimp [mapNatToInt]
-  exact toPoly_mapAlgebraMap _ p
-
-@[simp] lemma toPoly_mapIntToRat (p : AzPolynomial ℤ) :
-  AzPolynomial.toPoly (mapIntToRat p) = (AzPolynomial.toPoly p).map (algebraMap ℤ ℚ) := by
-  dsimp [mapIntToRat]
-  exact toPoly_mapAlgebraMap _ p
-
-@[simp] lemma toPoly_mapNatToZMod {n : ℕ} [NeZero n] (p : AzPolynomial ℕ) :
-  AzPolynomial.toPoly (mapNatToZMod p) = (AzPolynomial.toPoly p).map (algebraMap ℕ (ZMod n)) := by
-  dsimp [mapNatToZMod]
-  exact toPoly_map (Nat.castRingHom (ZMod n)) p
-
-@[simp] lemma toPoly_mapIntToZMod {n : ℕ} [NeZero n] (p : AzPolynomial ℤ) :
-  AzPolynomial.toPoly (mapIntToZMod p) = (AzPolynomial.toPoly p).map (algebraMap ℤ (ZMod n)) := by
-  dsimp [mapIntToZMod]
-  exact toPoly_map (Int.castRingHom (ZMod n)) p
-
-@[simp] lemma coeff_mapZModToNat {n : ℕ} [NeZero n] (p : AzPolynomial (ZMod n)) (i : ℕ) :
-  (AzPolynomial.toPoly (mapZModToNat p)).coeff i = (p.coeff i).val := by
-  rw [coeff_toPoly_eq]
-  dsimp [mapZModToNat, mapZeroInjective, coeff]
-  rw [Array.getElem?_map]
-  cases p.coeffs[i]? with
-  | none => exact ZMod.val_zero.symm
-  | some val => rfl
+/- The Mathlib-bridge lemmas for the coefficient casts (`toPoly_mapNatToInt`, …)
+   have been removed along with their `ℕ`/`ℤ`/`ℚ`/`ZMod`-typed cast functions;
+   the casts now operate between the Az types (see `AzPolynomial/Cast.lean`). -/
 
 end AzPolynomial
 end Azurite

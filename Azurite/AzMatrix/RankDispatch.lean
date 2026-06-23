@@ -16,6 +16,8 @@ import Azurite.AzMatrix.GaussRank
 import Azurite.AzMatrix.BareissRank
 import Azurite.AzMatrix.Equiv.GaussRank
 import Azurite.AzMatrix.Equiv.BareissRank
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
 
 namespace Azurite
 
@@ -65,8 +67,8 @@ theorem AzMatrix.rank_eq_rank {D : Type _} [CommRing D] [DecidableEq D]
 
 section Tests
 
--- Over ℚ (a field), `rank` dispatches to Gauss.
-example (M : AzMatrix ℚ 3 3) : M.rank = M.gaussRank := rfl
+-- Over AzRat (a field), `rank` dispatches to Gauss.
+example (M : AzMatrix AzRat 3 3) : M.rank = M.gaussRank := rfl
 
 -- Over `AzInt` (a domain, not a field), `rank` dispatches to Bareiss.
 example (M : AzMatrix AzInt 3 3) : M.rank = M.bareissRank := rfl
@@ -74,7 +76,7 @@ example (M : AzMatrix AzInt 3 3) : M.rank = M.bareissRank := rfl
 -- Concrete examples via the dispatcher.
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 4, 5, 6; 7, 8, 10]" :
-      Option (AzMatrix ℚ 3 3)) with
+      Option (AzMatrix AzRat 3 3)) with
   | some M => M.rank = 3
   | none => False
 

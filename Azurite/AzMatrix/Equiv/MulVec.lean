@@ -5,6 +5,8 @@
   `AzMatrix.vecMul` to Mathlib's `dotProduct` (`⬝ᵥ`).
 -/
 import Azurite.AzMatrix.MulVec
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
 import Azurite.AzVector.Equiv.Dot
 import Azurite.AzVector.Parse
 import Azurite.AzMatrix.Equiv.RowCol
@@ -63,8 +65,8 @@ theorem AzMatrix.ofFn_vecMul (g : Fin m → R) (f : Fin m → Fin n → R) :
 
 /-! ### Guards -/
 
-private def testM : AzMatrix Int 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
-private def testV : AzVector Int 2 := AzVector.ofList [5, 6]
+private def testM : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
+private def testV : AzVector AzInt 2 := AzVector.ofList [5, 6]
 
 #guard toString (testM.mulVec testV) = "[17, 39]"
 

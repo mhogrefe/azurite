@@ -1,5 +1,5 @@
 /-
-  Examples demonstrating that `AzPolynomial` works over `AzMvPolynomial ℤ`
+  Examples demonstrating that `AzPolynomial` works over `AzMvPolynomial AzInt`
   coefficients, using the dedicated `toStrMvCoeffWith` / `parseStrMvCoeffWith`
   serializers from `MvCoeffParse`.
 
@@ -11,20 +11,23 @@ import Azurite.AzPolynomial.Sub
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.MvCoeffParse
+import Azurite.AzInt.Instances
+import Azurite.AzInt.ParsableElement
+import Azurite.AzMvPolynomial.ParsableCoeff.AzInt
 
 namespace Azurite.AzPolynomial.MvCoeffExamples
 
 open Azurite
 
-/-- Coefficient ring used by the examples below: `ℤ[a, b, c]` under degrevlex. -/
-abbrev MvInt := AzMvPolynomial 3 ℤ .Degrevlex
+/-- Coefficient ring used by the examples below: `AzInt[a, b, c]` under degrevlex. -/
+abbrev MvInt := AzMvPolynomial 3 AzInt .Degrevlex
 
 private instance : Fact (3 ≤ 26) := ⟨by omega⟩
 
 /-- Parse a string as an `AzPolynomial MvInt` using `AbcVar 3` for the inner
     variables.  The outer variable is `x`. -/
 private def p (s : String) : AzPolynomial MvInt :=
-  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := ℤ)
+  (AzPolynomial.parseStrMvCoeffWith (AbcVar 3) (n := 3) (R := AzInt)
     (ord := .Degrevlex) s).getD 0
 
 /-- Render an `AzPolynomial MvInt` as a string using `AbcVar 3`. -/

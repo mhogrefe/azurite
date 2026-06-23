@@ -1,21 +1,22 @@
 import Azurite.Random.AzPolynomial
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.ToString
+import Azurite.AzNat.Size
 import Azurite.Benchmark.Common -- reuse timeNsIter, median3, configGetRat, configGetNat
 
 open Azurite Azurite.Random Azurite.Benchmark Azurite.AzPolynomial
 
 -- ── Input-size metric ───────────────────────────────────────────────────────
 
-/-- Sum of (log2 + 1) over all coefficients — matches the Rust AzPolynomial::significant_bits. -/
-def azPolynomialNatSignificantBits (p : AzPolynomial ℕ) : Nat :=
-  p.coeffs.foldl (fun acc c => acc + if c = 0 then 0 else c.log2 + 1) 0
+/-- Sum of bit-lengths over all coefficients — significant bits for `AzNat`. -/
+def azPolynomialNatSignificantBits (p : AzPolynomial AzNat) : Nat :=
+  p.coeffs.foldl (fun acc c => acc + c.size) 0
 
 -- ── Benchmark ───────────────────────────────────────────────────────────────
 
 /--
 Run the `az_polynomial_mul` benchmark.
-For each of `limit` pairs `(a, b)` of random `AzPolynomial ℕ`, time:
+For each of `limit` pairs `(a, b)` of random `AzPolynomial AzNat`, time:
   - `mulBasecaseList a b`  (List.range.map.sum)
   - `mulBasecase a b`      (Finset.sum)
   - `mulBasecaseFold a b`  (Fin.foldl)
@@ -27,7 +28,7 @@ def runAzPolynomialMul (limit : Nat) (cfg : Std.HashMap String String) (seed : U
   let meanDegree := configGetRat cfg "meanDegree" 8
   let meanCoeffBitLength := configGetRat cfg "meanCoeffBitLength" 32
   let iters := configGetNat cfg "iters" 100
-  let mut g := mkAzPolynomialNatRandomGen meanDegree meanCoeffBitLength seed
+  let mut g := mkAzPolynomialAzNatRandomGen meanDegree meanCoeffBitLength seed
   for _ in List.range limit do
     let (a, g') := AzPolynomialRandomGen.next g
     let (b, g'') := AzPolynomialRandomGen.next g'
