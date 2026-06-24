@@ -80,7 +80,8 @@ theorem map_sRemSList_toPoly {K : Type _} [Field K] [DecidableEq K]
     (P Q : AzPolynomial K) (n : ℕ) :
     (sRemSList P Q n).map AzPolynomial.toPoly =
       Azurite.BPR.SRemSList (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) n := by
-  unfold sRemSList Azurite.BPR.SRemSList
+  rw [sRemSList_eq]
+  unfold Azurite.BPR.SRemSList
   rw [List.map_map]
   apply List.map_congr_left
   intro i _

@@ -323,6 +323,7 @@ import Azurite.AzPolynomial.Equiv.Discriminant
 import Azurite.AzPolynomial.Equiv.DiscriminantMap
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.ExactDiv
+import Azurite.AzPolynomial.Equiv.ExtendedSRemS
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
 import Azurite.AzPolynomial.Equiv.Monomial
@@ -346,6 +347,7 @@ import Azurite.AzPolynomial.Equiv.Tru
 import Azurite.AzPolynomial.Equiv.Truncate
 import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.ExactDiv
+import Azurite.AzPolynomial.ExtendedSRemS
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
@@ -996,6 +998,17 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_14
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_15
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_16
 import Azurite.BasuPollackRoy.Chapter8.Section8_2.Proposition_8_24
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Example_8_25
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_28
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_29
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_31
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Multilinear
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.PdetSpecialCases
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.PolynomialDeterminant
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.PolynomialDeterminantRing
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.PolynomialDeterminants
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_27
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_27_Uniqueness
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
