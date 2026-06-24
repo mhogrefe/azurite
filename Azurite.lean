@@ -1009,6 +1009,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.PolynomialDeterminantRing
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.PolynomialDeterminants
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_27
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_27_Uniqueness
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.SignedSubresultant
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
