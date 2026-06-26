@@ -232,6 +232,14 @@ theorem isNonDefective_iff_sRes_ne_zero (P Q : D[X]) (hpq : Q.natDegree < P.natD
   · intro h
     exact le_antisymm (sResP_degree_le P Q hpq hj) (Polynomial.le_degree_of_ne_zero h)
 
+/-- **Theorem 8.34 (notation).** When `sResP_j(P, Q)` is non-defective (degree exactly
+    `j`), its leading coefficient `t_j` equals the signed subresultant coefficient
+    `s_j = sRes_j(P, Q)`. -/
+theorem leadingCoeff_sResP_eq_sRes (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : ℕ}
+    (hj : j ≤ Q.natDegree) (hnd : IsNonDefective P Q j) :
+    (sResP P Q j).leadingCoeff = Azurite.BPR.Chapter4.sRes P Q j := by
+  rw [Polynomial.leadingCoeff, natDegree_eq_of_degree_eq_some hnd, coeff_sResP P Q hpq (by omega)]
+
 /-- **BPR Notation 8.33 (closing note).** `sResP_q(P, Q) = ε_{p-q} · b_q^{p-q-1} · Q`. -/
 theorem sResP_eq_of_natDegree (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) (hQ0 : Q ≠ 0) :
     sResP P Q Q.natDegree
@@ -246,5 +254,15 @@ theorem sResP_eq_of_natDegree (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) (hQ
     funext r; simp
   rw [hfun, pdetRing_Q_shifts (by omega) (by omega) Q hQ0 (by omega),
     show P.natDegree + Q.natDegree - 2 * Q.natDegree = P.natDegree - Q.natDegree from by omega]
+
+/-- **The signed subresultant coefficient `s_q = sRes_q(P, Q) = ε_{p-q} · b_q^{p-q}`**:
+    the coefficient of `X^q` in the closing-note value of `sResP_q(P, Q)`. -/
+theorem sRes_natDegree (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) (hQ0 : Q ≠ 0) :
+    Azurite.BPR.Chapter4.sRes P Q Q.natDegree
+      = (ε (P.natDegree - Q.natDegree) : ℤ) • Q.leadingCoeff ^ (P.natDegree - Q.natDegree) := by
+  rw [← coeff_sResP P Q hpq (le_of_lt hpq), sResP_eq_of_natDegree P Q hpq hQ0]
+  rw [zsmul_eq_mul, zsmul_eq_mul, ← C_eq_intCast, ← mul_assoc, ← C_mul, Polynomial.coeff_C_mul,
+    Polynomial.coeff_natDegree, mul_assoc, ← pow_succ,
+    show P.natDegree - Q.natDegree - 1 + 1 = P.natDegree - Q.natDegree from by omega]
 
 end Azurite.BPR.Chapter8
