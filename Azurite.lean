@@ -1021,9 +1021,13 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_39
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_40
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_42
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_46
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_48
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_49
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_50
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.SignedSubresultant
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.StructureTheorem
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_34
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
