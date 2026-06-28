@@ -396,7 +396,7 @@ theorem sResV_sub_one_coeff (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : 
 /-- **BPR Proposition 8.42 (c), `sResV` part.**  Over a field, when `sResP_j(P,Q)` is
     non-defective (`sRes_j(P,Q) ≠ 0`), `deg(sResV_{j-1}(P,Q)) = p - j` and
     `lcof(sResV_{j-1}(P,Q)) = a_p · sRes_j(P,Q)`. -/
-theorem sResV_sub_one_natDegree {K : Type*} [Field K] (P Q : K[X]) (hP : P ≠ 0)
+theorem sResV_sub_one_natDegree {K : Type*} [CommRing K] [IsDomain K] (P Q : K[X]) (hP : P ≠ 0)
     (hpq : Q.natDegree < P.natDegree) {j : ℕ} (hj1 : 1 ≤ j) (hjq : j ≤ Q.natDegree)
     (hsRes : Azurite.BPR.Chapter4.sRes P Q j ≠ 0) :
     (sResV P Q (j - 1)).natDegree = P.natDegree - j

@@ -337,6 +337,7 @@ import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.SMul
+import Azurite.AzPolynomial.Equiv.SignedSubresultant
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
@@ -368,6 +369,7 @@ import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SRemS
+import Azurite.AzPolynomial.SignedSubresultant
 import Azurite.AzPolynomial.SpecialTranslate
 import Azurite.AzPolynomial.StringLemmas
 import Azurite.AzPolynomial.SturmSequence
@@ -1024,6 +1026,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_46
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_48
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_49
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_50
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_52
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.SignedSubresultant
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.StructureTheorem
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_34

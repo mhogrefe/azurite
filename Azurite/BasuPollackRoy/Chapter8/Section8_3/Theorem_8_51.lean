@@ -1,6 +1,7 @@
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_48
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Corollary_8_38
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_46
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Proposition_8_52
 
 /-!
 # BPR §8.3.4 Theorem 8.51: size of signed remainders
@@ -38,28 +39,164 @@ theorem int_size_dvd_le {d n : ℤ} (hn : n ≠ 0) (h : d ∣ n) : Int.size d �
   exact Nat.size_le_size (Nat.le_of_dvd (Int.natAbs_pos.mpr hn) (Int.natAbs_dvd_natAbs.mpr h))
 
 /-- **`sResP` commutes with an injective ring homomorphism.**  For `φ : D →+* E` injective,
-    `sResP (P.map φ) (Q.map φ) j = (sResP P Q j).map φ`. -/
+    `sResP (P.map φ) (Q.map φ) j = (sResP P Q j).map φ` (the injective special case of
+    Proposition 8.52, since injective maps preserve degrees). -/
 theorem sResP_map {D E : Type*} [CommRing E] [CommRing D] {φ : D →+* E}
     (hφ : Function.Injective φ) (P Q : D[X]) (j : ℕ) :
-    sResP (P.map φ) (Q.map φ) j = (sResP P Q j).map φ := by
-  have hp : (P.map φ).natDegree = P.natDegree := Polynomial.natDegree_map_eq_of_injective hφ P
-  have hq : (Q.map φ).natDegree = Q.natDegree := Polynomial.natDegree_map_eq_of_injective hφ Q
-  rw [sResP, sResP, hp, hq]
-  by_cases hjq : j ≤ Q.natDegree
-  · rw [if_pos hjq, if_pos hjq]
-    rw [← pdetRing_map φ]
-    congr 1
-    funext r
-    by_cases hr : (r : ℕ) < Q.natDegree - j
-    · simp only [hr, if_true, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
-    · simp only [hr, if_false, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
-  · rw [if_neg hjq, if_neg hjq]
-    by_cases hjp : j = P.natDegree
-    · rw [if_pos hjp, if_pos hjp]
-    · rw [if_neg hjp, if_neg hjp]
-      by_cases hjp1 : j = P.natDegree - 1
-      · rw [if_pos hjp1, if_pos hjp1]
-      · rw [if_neg hjp1, if_neg hjp1, Polynomial.map_zero]
+    sResP (P.map φ) (Q.map φ) j = (sResP P Q j).map φ :=
+  proposition_8_52 φ P Q (Polynomial.natDegree_map_eq_of_injective hφ P)
+    (Polynomial.natDegree_map_eq_of_injective hφ Q) j
+
+/-- **`Chapter4.sRes` commutes with an injective ring homomorphism** (for `j ≤ deg P`).  From
+    `sResP_map` + `coeff_sResP` (`sRes_j` is the `Xʲ`-coefficient of `sResP_j`). -/
+theorem sRes_map {D E : Type*} [CommRing E] [CommRing D] {φ : D →+* E}
+    (hφ : Function.Injective φ) (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {m : ℕ}
+    (hm : m ≤ P.natDegree) :
+    Azurite.BPR.Chapter4.sRes (P.map φ) (Q.map φ) m = φ (Azurite.BPR.Chapter4.sRes P Q m) := by
+  rw [← coeff_sResP (P.map φ) (Q.map φ)
+        (by rwa [Polynomial.natDegree_map_eq_of_injective hφ,
+          Polynomial.natDegree_map_eq_of_injective hφ])
+        (by rw [Polynomial.natDegree_map_eq_of_injective hφ]; exact hm),
+    sResP_map hφ, Polynomial.coeff_map, coeff_sResP P Q hpq hm]
+
+/-- **Cleared defective-block scalar identity over an integral domain** (Prop 8.46 (★'), descended).
+    `sRes_k · sRes_j^{j-k-1} = (-1)^{(j-k-1)(j-k)/2} · t_{j-1}^{j-k}` — obtained by transporting the
+    field-level `sRes_block_identity` through `Frac D` by injectivity. -/
+theorem sRes_block_identity_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) {j k : ℕ} (hjq : j ≤ Q.natDegree)
+    (hj1 : 1 ≤ j) (hjnd : (sResP P Q j).natDegree = j) (hk0 : sResP P Q (j - 1) ≠ 0)
+    (hkdeg : (sResP P Q (j - 1)).natDegree = k) :
+    Azurite.BPR.Chapter4.sRes P Q k * Azurite.BPR.Chapter4.sRes P Q j ^ (j - k - 1)
+      = (-1 : D) ^ ((j - k - 1) * (j - k) / 2) * (sResP P Q (j - 1)).leadingCoeff ^ (j - k) := by
+  have hkj : k ≤ j - 1 := by
+    have := Polynomial.natDegree_le_iff_degree_le.mpr
+      (sResP_degree_le P Q hpq (show j - 1 ≤ Q.natDegree by omega))
+    rw [hkdeg] at this; omega
+  have hkp : k ≤ P.natDegree := by omega
+  have hjp : j ≤ P.natDegree := by omega
+  set f := algebraMap D (FractionRing D) with hf_def
+  have hf : Function.Injective f := IsFractionRing.injective D (FractionRing D)
+  have hpqK : (Q.map f).natDegree < (P.map f).natDegree := by
+    rwa [Polynomial.natDegree_map_eq_of_injective hf, Polynomial.natDegree_map_eq_of_injective hf]
+  have hjndK : (sResP (P.map f) (Q.map f) j).natDegree = j := by
+    rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hjnd
+  have hk0K : sResP (P.map f) (Q.map f) (j - 1) ≠ 0 := by
+    rw [sResP_map hf]; exact (Polynomial.map_ne_zero_iff hf).mpr hk0
+  have hkdegK : (sResP (P.map f) (Q.map f) (j - 1)).natDegree = k := by
+    rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hkdeg
+  have hkey := sRes_block_identity (P.map f) (Q.map f) ((Polynomial.map_ne_zero_iff hf).mpr hP)
+    ((Polynomial.map_ne_zero_iff hf).mpr hQ) hpqK
+    (by rwa [Polynomial.natDegree_map_eq_of_injective hf]) hj1 hjndK hk0K hkdegK
+  rw [sRes_map hf P Q hpq hkp, sRes_map hf P Q hpq hjp, sResP_map hf,
+    Polynomial.leadingCoeff_map_of_injective hf] at hkey
+  apply hf
+  simp only [map_mul, map_pow, map_neg, map_one]
+  exact hkey
+
+/-- For associate `a, b` over a domain, `C(lcof b)·a = C(lcof a)·b` (division-free; the unit
+    relating `a`, `b` is a constant `C c`). -/
+theorem C_leadingCoeff_mul_eq_of_associated {D : Type*} [CommRing D] [IsDomain D] {a b : D[X]}
+    (hab : Associated a b) :
+    Polynomial.C b.leadingCoeff * a = Polynomial.C a.leadingCoeff * b := by
+  obtain ⟨u, hu⟩ := hab
+  obtain ⟨c, _, hcu⟩ := Polynomial.isUnit_iff.mp u.isUnit
+  have hca : b = a * Polynomial.C c := by rw [← hu, ← hcu]
+  have hlb : b.leadingCoeff = a.leadingCoeff * c := by
+    rw [hca, Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C]
+  rw [hlb, hca, Polynomial.C_mul]; ring
+
+/-- **Cleared defective-block proportionality over an integral domain** (Prop 8.46, descended):
+    `C(t_{j-1})·sResP_k = C(sRes_k)·sResP_{j-1}`.  Over `Frac D` the two subresultants are
+    *associate* (block proportionality); the cleared identity is integral and descends. -/
+theorem sResP_clear_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) {j k : ℕ} (hjq : j ≤ Q.natDegree)
+    (hj1 : 1 ≤ j) (hk0 : sResP P Q (j - 1) ≠ 0) (hkdeg : (sResP P Q (j - 1)).natDegree = k) :
+    Polynomial.C (sResP P Q (j - 1)).leadingCoeff * sResP P Q k
+      = Polynomial.C (Azurite.BPR.Chapter4.sRes P Q k) * sResP P Q (j - 1) := by
+  have hkj : k ≤ j - 1 := by
+    have := Polynomial.natDegree_le_iff_degree_le.mpr
+      (sResP_degree_le P Q hpq (show j - 1 ≤ Q.natDegree by omega))
+    rw [hkdeg] at this; omega
+  have hkp : k ≤ P.natDegree := by omega
+  set f := algebraMap D (FractionRing D) with hf_def
+  have hf : Function.Injective f := IsFractionRing.injective D (FractionRing D)
+  have hpqK : (Q.map f).natDegree < (P.map f).natDegree := by
+    rwa [Polynomial.natDegree_map_eq_of_injective hf, Polynomial.natDegree_map_eq_of_injective hf]
+  have hk0K : sResP (P.map f) (Q.map f) (j - 1) ≠ 0 := by
+    rw [sResP_map hf]; exact (Polynomial.map_ne_zero_iff hf).mpr hk0
+  have hkdegK : (sResP (P.map f) (Q.map f) (j - 1)).natDegree = k := by
+    rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hkdeg
+  have hassoc : Associated (sResP (P.map f) (Q.map f) k) (sResP (P.map f) (Q.map f) (j - 1)) := by
+    have h := sResP_block_associated (P.map f) (Q.map f) ((Polynomial.map_ne_zero_iff hf).mpr hP)
+      ((Polynomial.map_ne_zero_iff hf).mpr hQ) hpqK
+      (show j - 1 ≤ (Q.map f).natDegree by rw [Polynomial.natDegree_map_eq_of_injective hf]; omega)
+      hk0K
+    rwa [hkdegK] at h
+  have hkneK : sResP (P.map f) (Q.map f) k ≠ 0 := fun h =>
+    hk0K ((associated_zero_iff_eq_zero _).mp (h ▸ hassoc).symm)
+  have hkdegKk : (sResP (P.map f) (Q.map f) k).natDegree = k :=
+    (Polynomial.natDegree_eq_of_degree_eq
+      (Polynomial.degree_eq_degree_of_associated hassoc)).trans hkdegK
+  have hlcofK : (sResP (P.map f) (Q.map f) k).leadingCoeff = f (Azurite.BPR.Chapter4.sRes P Q k) := by
+    rw [leadingCoeff_sResP_eq_sRes (P.map f) (Q.map f) hpqK
+        (by rw [Polynomial.natDegree_map_eq_of_injective hf]; omega)
+        (show IsNonDefective (P.map f) (Q.map f) k from by
+          rw [IsNonDefective, Polynomial.degree_eq_natDegree hkneK, hkdegKk]),
+      sRes_map hf P Q hpq hkp]
+  apply Polynomial.map_injective f hf
+  rw [Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_C, Polynomial.map_C,
+    ← sResP_map hf, ← sResP_map hf,
+    show f (sResP P Q (j - 1)).leadingCoeff = (sResP (P.map f) (Q.map f) (j - 1)).leadingCoeff from by
+      rw [sResP_map hf, Polynomial.leadingCoeff_map_of_injective hf],
+    ← hlcofK]
+  exact C_leadingCoeff_mul_eq_of_associated hassoc
+
+/-- **Theorem 8.34 gcd-zeros branch over an integral domain** (descended): if `sResP_{j-1} = 0` then
+    `sResP_ℓ = 0` for all `ℓ < j`. -/
+theorem theorem_8_34_gcd_zeros_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) {i j : ℕ}
+    (hj1 : 1 ≤ j) (hji : j < i) (hip : i ≤ P.natDegree + 1) (hne : sResP P Q (i - 1) ≠ 0)
+    (hdeg : (sResP P Q (i - 1)).natDegree = j) (hzero : sResP P Q (j - 1) = 0) :
+    ∀ ℓ, ℓ < j → sResP P Q ℓ = 0 := by
+  set f := algebraMap D (FractionRing D) with hf_def
+  have hf : Function.Injective f := IsFractionRing.injective D (FractionRing D)
+  have hpqK : (Q.map f).natDegree < (P.map f).natDegree := by
+    rwa [Polynomial.natDegree_map_eq_of_injective hf, Polynomial.natDegree_map_eq_of_injective hf]
+  have hzeroK : sResP (P.map f) (Q.map f) (j - 1) = 0 := by
+    rw [sResP_map hf, hzero, Polynomial.map_zero]
+  have hkey := (theorem_8_34_monolithic (P.map f) (Q.map f) ((Polynomial.map_ne_zero_iff hf).mpr hP)
+    ((Polynomial.map_ne_zero_iff hf).mpr hQ) hpqK (by rwa [Polynomial.natDegree_map_eq_of_injective hf])
+    hj1 hji (by rwa [Polynomial.natDegree_map_eq_of_injective hf])
+    (by rw [sResP_map hf]; exact (Polynomial.map_ne_zero_iff hf).mpr hne)
+    (by rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hdeg)).1 hzeroK
+  intro ℓ hl
+  have h := hkey.2 ℓ hl
+  rw [sResP_map hf] at h
+  exact (Polynomial.map_eq_zero_iff hf).mp h
+
+/-- **Theorem 8.34 gap-zeros branch over an integral domain** (descended): in a defective block
+    (`k = deg sResP_{j-1} < j-1`), `sResP_ℓ = 0` for `k < ℓ < j-1`. -/
+theorem theorem_8_34_gap_zeros_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree) {i j : ℕ}
+    (hj1 : 1 ≤ j) (hji : j < i) (hip : i ≤ P.natDegree + 1) (hne : sResP P Q (i - 1) ≠ 0)
+    (hdeg : (sResP P Q (i - 1)).natDegree = j) {k : ℕ} (hk0 : sResP P Q (j - 1) ≠ 0)
+    (hkdeg : (sResP P Q (j - 1)).natDegree = k) (hkj : k < j - 1) :
+    ∀ ℓ, k < ℓ → ℓ < j - 1 → sResP P Q ℓ = 0 := by
+  set f := algebraMap D (FractionRing D) with hf_def
+  have hf : Function.Injective f := IsFractionRing.injective D (FractionRing D)
+  have hpqK : (Q.map f).natDegree < (P.map f).natDegree := by
+    rwa [Polynomial.natDegree_map_eq_of_injective hf, Polynomial.natDegree_map_eq_of_injective hf]
+  have hgapK := (((theorem_8_34_monolithic (P.map f) (Q.map f) ((Polynomial.map_ne_zero_iff hf).mpr hP)
+    ((Polynomial.map_ne_zero_iff hf).mpr hQ) hpqK (by rwa [Polynomial.natDegree_map_eq_of_injective hf])
+    hj1 hji (by rwa [Polynomial.natDegree_map_eq_of_injective hf])
+    (by rw [sResP_map hf]; exact (Polynomial.map_ne_zero_iff hf).mpr hne)
+    (by rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hdeg)).2 k
+    (by rw [sResP_map hf]; exact (Polynomial.map_ne_zero_iff hf).mpr hk0)
+    (by rw [sResP_map hf, Polynomial.natDegree_map_eq_of_injective hf]; exact hkdeg)).2 hkj).1
+  intro ℓ hl1 hl2
+  have h := hgapK ℓ hl1 hl2
+  rw [sResP_map hf] at h
+  exact (Polynomial.map_eq_zero_iff hf).mp h
 
 /-- **The `β_ℓ` proportionality.**  Each nonzero signed remainder is an explicit scalar multiple
     of a signed subresultant polynomial: `Sₗ = C(βₗ) · sResP_{d(ℓ-1)-1}` with
