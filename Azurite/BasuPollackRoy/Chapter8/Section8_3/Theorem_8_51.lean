@@ -151,6 +151,94 @@ theorem sResP_clear_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
     ← hlcofK]
   exact C_leadingCoeff_mul_eq_of_associated hassoc
 
+/-- **Cofactor clearing in a defective block** (`k < j-1`, `sResP_k ≠ 0`).  The `sResU`/`sResV`
+    cofactors inherit the same proportionality as `sResP_clear_domain`:
+    `C(lcof sResP_{j-1})·sResU_k = C(s_k)·sResU_{j-1}` (and likewise `sResV`).  Proof: the difference
+    `A := C(t)·sResU_k − C(s)·sResU_{j-1}` (and `B` for `sResV`) satisfies `A·P + B·Q = 0` (combining
+    the two Bézout relations with `sResP_clear_domain`).  Over `Frac(D)`, `gcd(P,Q) ∣ sResP_k` so
+    `deg gcd ≤ k`; then `Q/gcd ∣ A` while `deg A ≤ q-1-k < q − deg gcd = deg(Q/gcd)`, forcing `A = 0`,
+    after which `B·Q = 0` gives `B = 0`. -/
+theorem sResUV_clear_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) {j k : ℕ} (hjq : j ≤ Q.natDegree)
+    (hj1 : 1 ≤ j) (hk0 : sResP P Q (j - 1) ≠ 0) (hkdeg : (sResP P Q (j - 1)).natDegree = k)
+    (hkj : k < j - 1) :
+    Polynomial.C (sResP P Q (j - 1)).leadingCoeff * sResU P Q k
+        = Polynomial.C (Azurite.BPR.Chapter4.sRes P Q k) * sResU P Q (j - 1)
+      ∧ Polynomial.C (sResP P Q (j - 1)).leadingCoeff * sResV P Q k
+        = Polynomial.C (Azurite.BPR.Chapter4.sRes P Q k) * sResV P Q (j - 1) := by
+  have hkq : k ≤ Q.natDegree := by omega
+  have hjm1q : j - 1 ≤ Q.natDegree := by omega
+  set t := (sResP P Q (j - 1)).leadingCoeff with ht_def
+  set s := Azurite.BPR.Chapter4.sRes P Q k with hs_def
+  have hbk : sResP P Q k = sResU P Q k * P + sResV P Q k * Q := sResP_eq_cofactor P Q hQ hpq hkq
+  have hbj : sResP P Q (j - 1) = sResU P Q (j - 1) * P + sResV P Q (j - 1) * Q :=
+    sResP_eq_cofactor P Q hQ hpq hjm1q
+  have hclear : C t * sResP P Q k = C s * sResP P Q (j - 1) :=
+    sResP_clear_domain P Q hP hQ hpq hjq hj1 hk0 hkdeg
+  set A := C t * sResU P Q k - C s * sResU P Q (j - 1) with hA_def
+  set B := C t * sResV P Q k - C s * sResV P Q (j - 1) with hB_def
+  have hAB : A * P + B * Q = 0 := by
+    rw [hA_def, hB_def]; linear_combination C s * hbj + hclear - C t * hbk
+  have hA : A = 0 := by
+    set f := algebraMap D (FractionRing D) with hf_def
+    have hf : Function.Injective f := IsFractionRing.injective D (FractionRing D)
+    by_contra hAne
+    set AK := A.map f with hAK_def
+    set BK := B.map f with hBK_def
+    set PK := P.map f with hPK_def
+    set QK := Q.map f with hQK_def
+    have hAKne : AK ≠ 0 := (Polynomial.map_ne_zero_iff hf).mpr hAne
+    have hPKne : PK ≠ 0 := (Polynomial.map_ne_zero_iff hf).mpr hP
+    have hQKne : QK ≠ 0 := (Polynomial.map_ne_zero_iff hf).mpr hQ
+    have hABK : AK * PK + BK * QK = 0 := by
+      have h := congrArg (Polynomial.map f) hAB
+      rwa [Polynomial.map_add, Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_zero] at h
+    have hdvd : QK ∣ AK * PK := ⟨- BK, by linear_combination hABK⟩
+    set g := gcd PK QK with hg_def
+    have hgr : g ∣ QK := gcd_dvd_right PK QK
+    have hgl : g ∣ PK := gcd_dvd_left PK QK
+    have hgne : g ≠ 0 := fun h => hQKne ((gcd_eq_zero_iff PK QK).mp h).2
+    -- `deg g ≤ k`, since `g ∣ sResP_{j-1}` (mapped) which is nonzero of degree `k`.
+    have hsResPK : sResP PK QK (j - 1) = (sResP P Q (j - 1)).map f := by rw [sResP_map hf]
+    have hgsResP : g ∣ sResP PK QK (j - 1) := by
+      rw [sResP_eq_cofactor PK QK hQKne
+        (by rw [hPK_def, hQK_def, Polynomial.natDegree_map_eq_of_injective hf,
+          Polynomial.natDegree_map_eq_of_injective hf]; exact hpq)
+        (by rw [hQK_def, Polynomial.natDegree_map_eq_of_injective hf]; exact hjm1q)]
+      exact dvd_add (Dvd.dvd.mul_left hgl _) (Dvd.dvd.mul_left hgr _)
+    have hsResPKne : sResP PK QK (j - 1) ≠ 0 := by
+      rw [hsResPK]; exact (Polynomial.map_ne_zero_iff hf).mpr hk0
+    have hgdeg : g.natDegree ≤ k := by
+      refine le_trans (Polynomial.natDegree_le_of_dvd hgsResP hsResPKne) ?_
+      rw [hsResPK, Polynomial.natDegree_map_eq_of_injective hf, hkdeg]
+    -- `Q/g ∣ A`, with `deg(Q/g) ≥ q − k > deg A`.
+    have hcop : IsCoprime (PK / g) (QK / g) := isCoprime_div_gcd_div_gcd hQKne
+    have hPKfac : PK = g * (PK / g) := (EuclideanDomain.mul_div_cancel' hgne hgl).symm
+    have hQKfac : QK = g * (QK / g) := (EuclideanDomain.mul_div_cancel' hgne hgr).symm
+    have hdvd2 : QK / g ∣ AK := by
+      have h1 : g * (QK / g) ∣ g * (AK * (PK / g)) := by
+        rw [← hQKfac]
+        calc QK ∣ AK * PK := hdvd
+          _ = g * (AK * (PK / g)) := by linear_combination AK * hPKfac
+      have h2 : QK / g ∣ AK * (PK / g) := (mul_dvd_mul_iff_left hgne).mp h1
+      exact hcop.symm.dvd_of_dvd_mul_right h2
+    have hQKgne : QK / g ≠ 0 := by
+      intro h; rw [h, mul_zero] at hQKfac; exact hQKne hQKfac
+    have hmul : g.natDegree + (QK / g).natDegree = Q.natDegree := by
+      rw [← Polynomial.natDegree_mul hgne hQKgne, ← hQKfac, hQK_def,
+        Polynomial.natDegree_map_eq_of_injective hf]
+    have hAdeg : AK.natDegree ≤ Q.natDegree - 1 - k := by
+      rw [hAK_def, Polynomial.natDegree_map_eq_of_injective hf, hA_def]
+      refine le_trans (Polynomial.natDegree_sub_le _ _) (max_le ?_ ?_)
+      · exact le_trans (Polynomial.natDegree_C_mul_le _ _) (sResU_natDegree_le P Q hpq hkq)
+      · refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
+        exact le_trans (sResU_natDegree_le P Q hpq hjm1q) (by omega)
+    have := Polynomial.natDegree_le_of_dvd hdvd2 hAKne
+    omega
+  refine ⟨sub_eq_zero.mp hA, sub_eq_zero.mp ?_⟩
+  have hBQ : B * Q = 0 := by rw [hA, zero_mul, zero_add] at hAB; exact hAB
+  exact (mul_eq_zero.mp hBQ).resolve_right hQ
+
 /-- **Theorem 8.34 gcd-zeros branch over an integral domain** (descended): if `sResP_{j-1} = 0` then
     `sResP_ℓ = 0` for all `ℓ < j`. -/
 theorem theorem_8_34_gcd_zeros_domain {D : Type*} [CommRing D] [IsDomain D] (P Q : D[X])

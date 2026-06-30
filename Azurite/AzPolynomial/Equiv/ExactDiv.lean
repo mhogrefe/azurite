@@ -444,6 +444,25 @@ theorem toPoly_exactDivQuoRem_snd_of_euclidean (A B : AzPolynomial R) (Q Rem : P
     lt_of_le_of_lt (Polynomial.degree_sub_le _ _) (max_lt hdeg hrem_deg)
   exact absurd h1 (not_le.mpr h2)
 
+/-- **Synthetic division recovers the integral quotient.**  Companion of
+    `toPoly_exactDivQuoRem_snd_of_euclidean`: under the same hypotheses (an integral Euclidean
+    division `toPoly A = Q · toPoly B + Rem` with `deg Rem < deg(toPoly B)`, `B ≠ 0`), the *quotient*
+    component is `Q`: `toPoly (exactDivQuoRem A B).1 = Q`.  (Needed for Algorithm 8.22, where the
+    cofactor recurrence reuses the quotient `C`.) -/
+theorem toPoly_exactDivQuoRem_fst_of_euclidean (A B : AzPolynomial R) (Q Rem : Polynomial R)
+    (hB : AzPolynomial.toPoly B ≠ 0)
+    (hdiv : AzPolynomial.toPoly A = Q * AzPolynomial.toPoly B + Rem)
+    (hdeg : Rem.degree < (AzPolynomial.toPoly B).degree) :
+    AzPolynomial.toPoly (exactDivQuoRem A B).1 = Q := by
+  have hrem := toPoly_exactDivQuoRem_snd_of_euclidean A B Q Rem hB hdiv hdeg
+  have huncond := toPoly_exactDivQuoRem_eq A B
+  rw [hrem] at huncond
+  have hzero : (AzPolynomial.toPoly (exactDivQuoRem A B).1 - Q) * AzPolynomial.toPoly B = 0 := by
+    linear_combination hdiv - huncond
+  rcases mul_eq_zero.mp hzero with h | h
+  · exact sub_eq_zero.mp h
+  · exact absurd h hB
+
 /-! ### Pseudo-division: a `lcof(Q)^M`-scaled dividend divides exactly -/
 
 /-- **Pseudo-division fold invariant.**  Running the synthetic-division loop on a dividend whose every

@@ -336,6 +336,7 @@ import Azurite.AzPolynomial.Equiv.NumRoots
 import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
+import Azurite.AzPolynomial.Equiv.Resultant
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.SignedSubresultant
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
@@ -367,6 +368,7 @@ import Azurite.AzPolynomial.Parse
 import Azurite.AzPolynomial.ParseToString
 import Azurite.AzPolynomial.Pow
 import Azurite.AzPolynomial.QuoRem
+import Azurite.AzPolynomial.Resultant
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.SignedSubresultant
@@ -849,6 +851,7 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_14
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_23
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Remark_4_29
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResEqResultant
+import Azurite.BasuPollackRoy.Chapter4.Section4_2.ResReduce
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_17
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_32
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Theorem_4_33
@@ -1006,6 +1009,9 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Corollary_8_37
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Corollary_8_38
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Corollary_8_44
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Example_8_25
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Example_8_47
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Example_8_53
+import Azurite.BasuPollackRoy.Chapter8.Section8_3.Example_SignedSubresultant
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_28
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_29
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Lemma_8_31

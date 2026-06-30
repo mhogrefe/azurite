@@ -100,6 +100,68 @@ def signedSubresultant (P Q : AzPolynomial R) : Array (AzPolynomial R) × Array 
     let asc := lst.reverse
     ((asc.map Prod.fst).toArray, (asc.map Prod.snd).toArray)
 
+/-- **One block of Algorithm 8.22's main loop** (Extended Signed Subresultant), as a pure recursion.
+
+Mirrors `ssAux` but additionally carries the Bézout cofactors and emits
+`(sResP_ℓ, s_ℓ, sResU_ℓ, sResV_ℓ)` 4-tuples.  The carried state adds
+`Ui = sResU_{i-1}`, `Vi = sResV_{i-1}`, `Uj = sResU_{j-1}`, `Vj = sResV_{j-1}`.
+
+The cofactors are transported by the **same** quotient `C = Quo(d·sResP_{i-1}, sResP_{j-1})` and the
+same `divByRingElt denom` (`denom = s_j·t_{i-1}`) used for `sResP_k`, so the Bézout relation
+`sResP_ℓ = sResU_ℓ·P + sResV_ℓ·Q` is preserved by linearity (BPR's correctness remark). -/
+def ssAuxExt : ℕ → ℕ → AzPolynomial R → AzPolynomial R → R → R →
+    AzPolynomial R → AzPolynomial R → AzPolynomial R → AzPolynomial R →
+    List (AzPolynomial R × R × AzPolynomial R × AzPolynomial R)
+  | 0, j, _, _, _, _, _, _, _, _ => List.replicate j (0, 0, 0, 0)
+  | fuel + 1, j, Si, Sj, sj, ti, Ui, Vi, Uj, Vj =>
+    if Sj = 0 then List.replicate j (0, 0, 0, 0)
+    else
+      let k := Sj.natDegree
+      let tj := Sj.leadingCoeff
+      let denom := sj * ti
+      if k = j - 1 then
+        -- non-defective
+        if k = 0 then [(Sj, tj, Uj, Vj)]
+        else
+          let C := (exactDivQuoRem (tj ^ 2 • Si) Sj).1
+          let Skm1 := divByRingElt denom (-(remExact (tj ^ 2 • Si) Sj))
+          let Ukm1 := divByRingElt denom (C * Uj - tj ^ 2 • Ui)
+          let Vkm1 := divByRingElt denom (C * Vj - tj ^ 2 • Vi)
+          (Sj, tj, Uj, Vj) :: ssAuxExt fuel k Sj Skm1 tj tj Uj Vj Ukm1 Vkm1
+      else
+        -- defective: degree drop `> 1`
+        let sk := Azurite.ExactDiv.exactDiv (epsilonSign (j - k) * tj ^ (j - k)) (sj ^ (j - k - 1))
+        let Spk := divByRingElt tj (sk • Sj)
+        let Upk := divByRingElt tj (sk • Uj)
+        let Vpk := divByRingElt tj (sk • Vj)
+        let gaps : List (AzPolynomial R × R × AzPolynomial R × AzPolynomial R) :=
+          List.replicate (j - k - 2) (0, 0, 0, 0)
+        if k = 0 then (Sj, 0, Uj, Vj) :: (gaps ++ [(Spk, sk, Upk, Vpk)])
+        else
+          let C := (exactDivQuoRem ((tj * sk) • Si) Sj).1
+          let Skm1 := divByRingElt denom (-(remExact ((tj * sk) • Si) Sj))
+          let Ukm1 := divByRingElt denom (C * Uj - (tj * sk) • Ui)
+          let Vkm1 := divByRingElt denom (C * Vj - (tj * sk) • Vi)
+          (Sj, 0, Uj, Vj) :: (gaps ++ ((Spk, sk, Upk, Vpk) :: ssAuxExt fuel k Sj Skm1 sk tj Uj Vj Ukm1 Vkm1))
+
+/-- **BPR Algorithm 8.22 (Extended Signed Subresultant).**  For `P, Q` with `deg P = p > q = deg Q`
+    and `Q ≠ 0`, returns `(sResP, sRes, sResU, sResV)` where `sResP[ℓ] = sResP_ℓ`, `sRes[ℓ] = s_ℓ`,
+    `sResU[ℓ] = sResU_ℓ`, `sResV[ℓ] = sResV_ℓ` for `ℓ = 0, …, p`.  The cofactors satisfy the Bézout
+    relation `sResP_ℓ = sResU_ℓ·P + sResV_ℓ·Q`.  Returns `(#[], #[], #[], #[])` on malformed input.
+
+    Built on `ssAuxExt`; the `sResP`/`sRes` components coincide with `signedSubresultant`. -/
+def extendedSignedSubresultant (P Q : AzPolynomial R) :
+    Array (AzPolynomial R) × Array R × Array (AzPolynomial R) × Array (AzPolynomial R) :=
+  if Q = 0 ∨ P.natDegree ≤ Q.natDegree then (#[], #[], #[], #[])
+  else
+    let p := P.natDegree
+    -- `sResU_p = sResV_{p-1} = 1`, `sResV_p = sResU_{p-1} = 0`
+    let lst := (P, P.leadingCoeff, (1 : AzPolynomial R), (0 : AzPolynomial R))
+      :: ssAuxExt (p + 1) p P Q 1 1 1 0 0 1
+    let asc := lst.reverse
+    ((asc.map (·.1)).toArray, (asc.map (·.2.1)).toArray,
+     (asc.map (·.2.2.1)).toArray, (asc.map (·.2.2.2)).toArray)
+
 /-! ### Tests over `AzInt`
 
 Validated against the signed remainder sequence (Corollary 8.38): for these inputs the proportionality
@@ -128,5 +190,24 @@ private def pp (str : String) : AzPolynomial AzInt := (parseAzPolynomial (R := A
 #guard (signedSubresultant (pp "x^4+1") (pp "x^3")).1
         == #[pp "1", pp "0", pp "-1", pp "x^3", pp "x^4+1"]
 #guard (signedSubresultant (pp "x^4+1") (pp "x^3")).2 == #[(1 : AzInt), 0, 0, 1, 1]
+
+/-! ### Tests for `extendedSignedSubresultant` (Algorithm 8.22) -/
+
+-- The `sResP`/`sRes` components coincide with `signedSubresultant`.
+#guard (extendedSignedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1
+        == (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1
+#guard (extendedSignedSubresultant (pp "x^3+x+1") (pp "x^2+1")).2.1
+        == (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).2
+
+/-- Check the Bézout relation `sResU_ℓ · P + sResV_ℓ · Q = sResP_ℓ` at every output index. -/
+private def bezoutOK (P Q : AzPolynomial AzInt) : Bool :=
+  let r := extendedSignedSubresultant P Q
+  ((r.2.2.1.zip r.2.2.2).zip r.1).all (fun t => t.1.1 * P + t.1.2 * Q == t.2)
+
+#guard bezoutOK (pp "x^2+1") (pp "x")
+#guard bezoutOK (pp "x^2") (pp "x+1")
+#guard bezoutOK (pp "x^3+x+1") (pp "x^2+1")
+#guard bezoutOK (pp "x^4+1") (pp "x^3")
+#guard bezoutOK (pp "2*x^3+x+3") (pp "5*x^2+x+1")
 
 end Azurite.AzPolynomial

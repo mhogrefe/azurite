@@ -215,6 +215,38 @@ theorem sResP_cofactor_recurrence {D : Type*} [CommRing D] (P Q : D[X]) (hQ : Q 
     hi, hj, hk]
   ring
 
+/-- **Cofactor recurrence for `sResU`** (the `P`-cofactor track of Algorithm 8.22).  Identical in
+    shape to `sResP_cofactor_recurrence` with `sResU` in place of `sResP`, but it is a *pure*
+    2×2-minor (Plücker) identity among the cofactor determinants — provable by `ring` from the
+    `cofactorMat` definitions, with no Bézout relation and no hypotheses. -/
+theorem sResU_cofactor_recurrence {D : Type*} [CommRing D] (P Q : D[X]) (i j k : ℕ) :
+    (cofactorMat P Q j k).det * sResU P Q (i - 1)
+      = (sResU P Q (i - 1) * sResV P Q (k - 1) - sResV P Q (i - 1) * sResU P Q (k - 1))
+          * sResU P Q (j - 1)
+        - (cofactorMat P Q i j).det * sResU P Q (k - 1) := by
+  rw [show (cofactorMat P Q j k).det
+        = sResU P Q (j - 1) * sResV P Q (k - 1) - sResV P Q (j - 1) * sResU P Q (k - 1) from by
+      rw [cofactorMat, Matrix.det_fin_two_of],
+    show (cofactorMat P Q i j).det
+        = sResU P Q (i - 1) * sResV P Q (j - 1) - sResV P Q (i - 1) * sResU P Q (j - 1) from by
+      rw [cofactorMat, Matrix.det_fin_two_of]]
+  ring
+
+/-- **Cofactor recurrence for `sResV`** (the `Q`-cofactor track of Algorithm 8.22).  Same Plücker
+    identity, with `sResV` in place of `sResP`. -/
+theorem sResV_cofactor_recurrence {D : Type*} [CommRing D] (P Q : D[X]) (i j k : ℕ) :
+    (cofactorMat P Q j k).det * sResV P Q (i - 1)
+      = (sResU P Q (i - 1) * sResV P Q (k - 1) - sResV P Q (i - 1) * sResU P Q (k - 1))
+          * sResV P Q (j - 1)
+        - (cofactorMat P Q i j).det * sResV P Q (k - 1) := by
+  rw [show (cofactorMat P Q j k).det
+        = sResU P Q (j - 1) * sResV P Q (k - 1) - sResV P Q (j - 1) * sResU P Q (k - 1) from by
+      rw [cofactorMat, Matrix.det_fin_two_of],
+    show (cofactorMat P Q i j).det
+        = sResU P Q (i - 1) * sResV P Q (j - 1) - sResV P Q (i - 1) * sResU P Q (j - 1) from by
+      rw [cofactorMat, Matrix.det_fin_two_of]]
+  ring
+
 /-- **Boundary cofactor value.**  The constant cofactor `sResU_{q-1}(P,Q)` equals `-(s_q · lcof Q)`.
     Proof: compare the `X^p` coefficients of the Bézout relation
     `sResP_{q-1} = sResU_{q-1}·P + sResV_{q-1}·Q`.  Since `deg sResP_{q-1} < q < p`, the `X^p` terms
