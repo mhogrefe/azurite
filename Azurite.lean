@@ -317,6 +317,9 @@ import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
 import Azurite.AzPolynomial.Equiv.Basic
 import Azurite.AzPolynomial.Equiv.CauchyIndex
 import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
+import Azurite.AzPolynomial.Equiv.CauchyIndexOnMap
+import Azurite.AzPolynomial.Equiv.CauchyIndexSubres
+import Azurite.AzPolynomial.Equiv.CauchyIndexSubresMap
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Discriminant
@@ -344,6 +347,7 @@ import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.TRems
 import Azurite.AzPolynomial.Equiv.TarskiQuery
+import Azurite.AzPolynomial.Equiv.TarskiQuerySubres
 import Azurite.AzPolynomial.Equiv.Translate
 import Azurite.AzPolynomial.Equiv.Tru
 import Azurite.AzPolynomial.Equiv.Truncate

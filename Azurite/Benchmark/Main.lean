@@ -1,6 +1,7 @@
 import Azurite.Benchmark.Common
 import Azurite.Benchmark.AzPolynomialMul
 import Azurite.Benchmark.AzPolynomialKaratsuba
+import Azurite.Benchmark.CauchyIndexAlgorithms
 import Azurite.Benchmark.AzNatAdd
 import Azurite.Benchmark.AzNatAddModPow2
 import Azurite.Benchmark.AzNatAddModPow2Residue
@@ -41,7 +42,7 @@ def parseConfig (s : String) : Std.HashMap String String :=
 -- ── Main ────────────────────────────────────────────────────────────────────
 
 def validBenchmarks : List String :=
-  ["az_polynomial_mul", "az_polynomial_karatsuba",
+  ["az_polynomial_mul", "az_polynomial_karatsuba", "cauchy_index_algorithms",
    "az_nat_add", "az_nat_add_mod_pow2", "az_nat_add_mod_pow2_residue",
    "az_nat_sub_mod_pow2_residue", "az_nat_mul_mod_pow2_residue",
    "az_nat_mul_mod_pow2_algorithms", "az_nat_square_mod_pow2_algorithms",
@@ -72,6 +73,7 @@ def main (args : List String) : IO Unit := do
       match name with
       | "az_polynomial_mul" => runAzPolynomialMul limit cfg seed
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
+      | "cauchy_index_algorithms" => runCauchyIndexAlgorithms limit cfg seed
       | "az_nat_add" => runAzNatAdd limit cfg seed
       | "az_nat_add_mod_pow2" => runAzNatAddModPow2 limit cfg seed
       | "az_nat_add_mod_pow2_residue" => runAzNatAddModPow2Residue limit cfg seed

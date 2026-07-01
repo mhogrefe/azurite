@@ -47,4 +47,15 @@ def orderIsoInt : AzInt ≃o Int :=
 
 @[simp] theorem orderIsoInt_symm_apply (i : Int) : orderIsoInt.symm i = ofInt i := rfl
 
+/-- `AzInt` is a strict ordered ring: its order is compatible with the ring
+operations. Pulled back along the injective, order-reflecting ring hom
+`toInt : AzInt → ℤ` from `IsStrictOrderedRing ℤ`, exactly as the analogous
+`IsStrictOrderedRing AzRat` instance. With this, `AzInt` is a first-class
+ordered integral domain (it is already `IsDomain`), so the abstract
+ordered-domain results of the BPR layer instantiate at `AzInt` directly. -/
+instance : IsStrictOrderedRing AzInt :=
+  Function.Injective.isStrictOrderedRing toInt toInt_zero toInt_one toInt_add
+    toInt_mul (fun {a b} => (le_iff_toInt_le a b).symm)
+    (fun {a b} => (lt_iff_toInt_lt a b).symm)
+
 end Azurite.AzInt

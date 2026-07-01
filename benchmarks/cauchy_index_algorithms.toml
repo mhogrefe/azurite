@@ -1,0 +1,40 @@
+# Benchmark: signed-subresultant (BPR Algorithm 9.4) vs signed-remainder
+# whole-line Cauchy index `Ind(Q/P)` over `AzInt`.
+#
+# Both compute the same integer `Ind(Q/P)` for each random pair `(Q, P)` of
+# integer polynomials (with `deg P ≥ 1`):
+#
+#   - Subresultant    `cauchyIndexSubres Q P` — the signed subresultant
+#     sequence (Algorithm 8.21) + `PmV` (Notation 4.31). Fraction-free: every
+#     intermediate stays in `AzInt`, with coefficient growth bounded by the
+#     subresultant (Hadamard) structure.
+#   - SignedRemainder `cauchyIndexOnInt Q P (-∞) (+∞)` — the signed remainder
+#     sequence (Algorithm 8.19), which lifts coefficients to `AzRat` and does
+#     rational arithmetic with growing numerators/denominators.
+#
+# Hypothesis: the fraction-free subresultant route avoids rational blow-up, so
+# its advantage should widen as the inputs (degree / coefficient size) grow.
+#
+# NOTE: the signed remainder sequence over the rationals has super-exponential
+# coefficient swell, so input degrees are capped at `maxDegree` (larger random
+# draws are skipped). Without the cap a single degree-12 pair can run for
+# minutes. Raise `maxDegree` to push further into the regime where the
+# subresultant method dominates — but expect the SignedRemainder series to slow
+# down very fast.
+#
+# Produces:
+#   cauchy_index_algorithms.svg — median ns/op vs (bits(P) + bits(Q))
+
+benchmark = "cauchy_index_algorithms"
+limit     = 1000
+
+[params]
+meanDegree         = 5
+meanCoeffBitLength = 12
+maxDegree          = 8
+iters              = 1
+
+[[chart]]
+type    = "line"
+title   = "cauchy_index_algorithms: Signed Subresultant vs Signed Remainder"
+x_label = "Input size (significant_bits of P + Q)"
