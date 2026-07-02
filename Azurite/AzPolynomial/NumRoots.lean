@@ -12,7 +12,7 @@ We expose:
 * `numRootsOn P a b` for the open-interval count, with `a, b : ExtendedPoint K`.
 * `numRoots P` for the full real line, equal to `numRootsOn P .negInf .posInf`.
 
-Internally these reduce to `cauchyIndexOn P.derivative P` (BPR Theorem 2.58
+Internally these reduce to `cauchyIndexOnSRem P.derivative P` (BPR Theorem 2.58
 gives `Var(SRemS(P, P'); a, b) = Ind(P'/P; a, b)`, and Sturm identifies
 this Cauchy index with the root count).
 -/
@@ -27,7 +27,7 @@ open Azurite.BPR (ExtendedPoint)
 def numRootsOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
     [PolynomialDerivative K]
     (P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
-  cauchyIndexOn P.derivative P a b
+  cauchyIndexOnSRem P.derivative P a b
 
 /-- **Computable real-root count on the full real line.**
     `numRoots P = numRootsOn P −∞ +∞`. -/

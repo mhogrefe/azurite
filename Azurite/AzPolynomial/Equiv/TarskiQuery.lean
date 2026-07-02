@@ -8,7 +8,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_2.Theorem_2_61
 /-!
 # Equivalence: AzPolynomial Tarski query ↔ BPR Tarski query
 
-`AzPolynomial.tarskiQueryOn Q P a b` (computable) equals
+`AzPolynomial.tarskiQueryOnSRem Q P a b` (computable) equals
 `Azurite.BPR.tarskiQueryOn (toPoly Q) (toPoly P) a b` (noncomputable),
 under the BPR Theorem 2.61 hypotheses (real closed coefficient field,
 `a < b`, `P` not vanishing at `a, b`).
@@ -23,7 +23,7 @@ namespace Azurite.AzPolynomial
 
 open Azurite.BPR (ExtendedPoint)
 
-/-- **Correctness of `tarskiQueryOn` (BPR Theorem 2.61).**
+/-- **Correctness of `tarskiQueryOnSRem` (BPR Theorem 2.61).**
 
     Given:
     * `K` is a (computable) ordered field with the intermediate value
@@ -32,12 +32,12 @@ open Azurite.BPR (ExtendedPoint)
     * `a < b` in extended order;
     * `a` and `b` are not roots of `P`.
 
-    Then the computable `tarskiQueryOn Q P a b` equals BPR's
-    (noncomputable) `tarskiQueryOn`.
+    Then the computable `tarskiQueryOnSRem Q P a b` equals BPR's
+    (noncomputable) `tarskiQueryOnSRem`.
 
-    Unlike `cauchyIndexOn_eq_BPR`, no truncation hypothesis is needed:
+    Unlike `cauchyIndexOnSRem_eq_BPR`, no truncation hypothesis is needed:
     BPR Theorem 2.61 contains the SRemS termination bound internally. -/
-theorem tarskiQueryOn_eq_BPR
+theorem tarskiQueryOnSRem_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     [DecidableEq K] [PolynomialDerivative K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
@@ -48,7 +48,7 @@ theorem tarskiQueryOn_eq_BPR
     (h_n_zero : Azurite.BPR.SRemS (AzPolynomial.toPoly P)
         ((AzPolynomial.toPoly P).derivative * AzPolynomial.toPoly Q)
         ((P.derivative * Q).coeffs.size + 2) = 0) :
-    (tarskiQueryOn Q P a b : ℤ) =
+    (tarskiQueryOnSRem Q P a b : ℤ) =
       Azurite.BPR.tarskiQueryOn (AzPolynomial.toPoly Q)
         (AzPolynomial.toPoly P) a b := by
   show (varAt (sRemSList P (P.derivative * Q)
@@ -76,20 +76,20 @@ section WholeLine
 variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [DecidableEq R]
     [PolynomialDerivative R] [IsRealClosed R]
 
-/-- **Whole-line correctness of `tarskiQueryOn`.** Over a real closed coefficient
+/-- **Whole-line correctness of `tarskiQueryOnSRem`.** Over a real closed coefficient
 field, for *any* `Q` and `P`, the computable signed-remainder Tarski query on
 `(−∞, +∞)` equals `TaQ(Q, P)`. This is the exact analogue of
-`cauchyIndexOn_negInf_posInf_eq_cauchyIndex` (and of the subresultant
-`tarskiQuerySubres_eq_tarskiQuery`), with no degree hypothesis: `P = 0` gives `0`
+`cauchyIndexOnSRem_negInf_posInf_eq_BPR` (and of the subresultant
+`tarskiQuery_eq_BPR`), with no degree hypothesis: `P = 0` gives `0`
 on both sides. For `P ≠ 0` the Theorem 2.61 hypotheses are discharged: `±∞` are
 never roots of `P`, and the `SRemS(P, P'·Q)` sequence terminates by index
 `(P'·Q).coeffs.size + 2`. -/
-theorem tarskiQueryOn_negInf_posInf_eq_tarskiQuery (Q P : AzPolynomial R) :
-    tarskiQueryOn Q P .negInf .posInf
+theorem tarskiQueryOnSRem_negInf_posInf_eq_BPR (Q P : AzPolynomial R) :
+    tarskiQueryOnSRem Q P .negInf .posInf
       = Azurite.BPR.tarskiQuery (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
   rcases eq_or_ne P 0 with rfl | hP
   · -- `P = 0`: `P` has no poles and the remainder sequence collapses.
-    have hLHS : tarskiQueryOn Q (0 : AzPolynomial R) .negInf .posInf = 0 := by
+    have hLHS : tarskiQueryOnSRem Q (0 : AzPolynomial R) .negInf .posInf = 0 := by
       show (varAt (sRemSList 0 ((0 : AzPolynomial R).derivative * Q)
           (((0 : AzPolynomial R).derivative * Q).coeffs.size + 2)) .negInf : ℤ)
         - (varAt (sRemSList 0 ((0 : AzPolynomial R).derivative * Q)
@@ -120,16 +120,16 @@ theorem tarskiQueryOn_negInf_posInf_eq_tarskiQuery (Q P : AzPolynomial R) :
           = (AzPolynomial.toPoly P).derivative * AzPolynomial.toPoly Q := by
         rw [toPoly_mul, toPoly_derivative]
       rw [← h_prod, AzPolynomial.natDegree_toPoly]; unfold AzPolynomial.natDegree; omega
-    rw [tarskiQueryOn_eq_BPR Azurite.BPR.hasIVP_of_isRealClosed Q P hPm .negInf .posInf
+    rw [tarskiQueryOnSRem_eq_BPR Azurite.BPR.hasIVP_of_isRealClosed Q P hPm .negInf .posInf
         (by trivial) h_aP h_bP hn,
       ← Azurite.BPR.tarskiQuery_eq_tarskiQueryOn_negInf_posInf]
 
 /-- **`ofPoly` form.** For abstract polynomials `q, p : R[X]`, the computable
 whole-line Tarski query of their `ofPoly` images equals `TaQ(q, p)`. -/
-theorem tarskiQueryOn_ofPoly_negInf_posInf_eq_tarskiQuery (q p : R[X]) :
-    tarskiQueryOn (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p) .negInf .posInf
+theorem tarskiQueryOnSRem_ofPoly_negInf_posInf_eq_BPR (q p : R[X]) :
+    tarskiQueryOnSRem (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p) .negInf .posInf
       = Azurite.BPR.tarskiQuery q p := by
-  rw [tarskiQueryOn_negInf_posInf_eq_tarskiQuery, toPoly_ofPoly, toPoly_ofPoly]
+  rw [tarskiQueryOnSRem_negInf_posInf_eq_BPR, toPoly_ofPoly, toPoly_ofPoly]
 
 end WholeLine
 

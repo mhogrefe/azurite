@@ -6,7 +6,7 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_3.FiberFormula
 /-!
 # Equivalence: AzPolynomial Cauchy index ↔ BPR Cauchy index
 
-`AzPolynomial.cauchyIndexOn Q P a b` (computable) equals
+`AzPolynomial.cauchyIndexOnSRem Q P a b` (computable) equals
 `Azurite.BPR.cauchyIndexOn (toPoly Q) (toPoly P) a b` (noncomputable),
 under the BPR Theorem 2.58 hypotheses (real closed coefficient field,
 `a < b`, `P` not vanishing at `a, b`).
@@ -15,10 +15,10 @@ The shared bridges (`evalPolyExt_eq_BPR`, `varAt_eq_BPR`,
 `map_sRemSList_toPoly`) live in `Equiv.CauchyIndexBridges` and are
 shared with `Equiv.TarskiQuery`.
 
-The whole-line specialization `cauchyIndexOn_negInf_posInf_eq_cauchyIndex`
+The whole-line specialization `cauchyIndexOnSRem_negInf_posInf_eq_BPR`
 proves, unconditionally over a real closed field,
-`cauchyIndexOn Q P (-∞) (+∞) = Ind(Q/P)` — the exact analogue of
-`cauchyIndexSubres_eq_cauchyIndex` for the signed-remainder algorithm. The
+`cauchyIndexOnSRem Q P (-∞) (+∞) = Ind(Q/P)` — the exact analogue of
+`cauchyIndex_eq_BPR` for the signed-remainder algorithm. The
 `P = 0` case (both sides `0`) is handled directly, and for `P ≠ 0` the
 Theorem 2.58 hypotheses are discharged: the endpoints `±∞` are never roots of
 `P` (`h_aP`/`h_bP`), and the signed remainder sequence terminates by index
@@ -31,7 +31,7 @@ namespace Azurite.AzPolynomial
 
 open Azurite.BPR (ExtendedPoint)
 
-/-- **Correctness of `cauchyIndexOn` (BPR Theorem 2.58).**
+/-- **Correctness of `cauchyIndexOnSRem` (BPR Theorem 2.58).**
 
     Given:
     * `K` is a (computable) ordered field with the intermediate value
@@ -44,9 +44,9 @@ open Azurite.BPR (ExtendedPoint)
       property of the Euclidean degree-decrease that holds whenever the
       sequence is over a field).
 
-    Then the computable `cauchyIndexOn Q P a b` equals BPR's
-    (noncomputable) `cauchyIndexOn`. -/
-theorem cauchyIndexOn_eq_BPR
+    Then the computable `cauchyIndexOnSRem Q P a b` equals BPR's
+    (noncomputable) `cauchyIndexOnSRem`. -/
+theorem cauchyIndexOnSRem_eq_BPR
     {K : Type _} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     [DecidableEq K]
     (hIVP : Azurite.BPR.HasIntermediateValueProperty K)
@@ -56,7 +56,7 @@ theorem cauchyIndexOn_eq_BPR
     (h_bP : ExtendedPoint.evalPoly (AzPolynomial.toPoly P) b ≠ 0)
     (h_n_zero : Azurite.BPR.SRemS (AzPolynomial.toPoly P)
         (AzPolynomial.toPoly Q) (Q.coeffs.size + 2) = 0) :
-    (cauchyIndexOn Q P a b : ℤ) =
+    (cauchyIndexOnSRem Q P a b : ℤ) =
       Azurite.BPR.cauchyIndexOn (AzPolynomial.toPoly Q)
         (AzPolynomial.toPoly P) a b := by
   show (varAt (sRemSList P Q (Q.coeffs.size + 2)) a : ℤ) -
@@ -118,17 +118,17 @@ theorem varAt_sRemSList_zero_denom (Q : AzPolynomial R) (x : ExtendedPoint R) (m
 
 variable [IsRealClosed R]
 
-/-- **Whole-line correctness of `cauchyIndexOn`.** Over a real closed coefficient
+/-- **Whole-line correctness of `cauchyIndexOnSRem`.** Over a real closed coefficient
 field, for *any* `Q` and `P`, the computable signed-remainder Cauchy index on
 `(-∞, +∞)` equals `Ind(Q/P)`. This is the exact analogue of
-`cauchyIndexSubres_eq_cauchyIndex` (BPR Algorithm 9.4) for the signed-remainder
+`cauchyIndex_eq_BPR` (BPR Algorithm 9.4) for the signed-remainder
 algorithm: no degree hypothesis, `P = 0` giving `0` on both sides. -/
-theorem cauchyIndexOn_negInf_posInf_eq_cauchyIndex (Q P : AzPolynomial R) :
-    cauchyIndexOn Q P .negInf .posInf
+theorem cauchyIndexOnSRem_negInf_posInf_eq_BPR (Q P : AzPolynomial R) :
+    cauchyIndexOnSRem Q P .negInf .posInf
       = Azurite.BPR.cauchyIndex (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
   rcases eq_or_ne P 0 with rfl | hP
   · -- `P = 0`: `P` has no poles, and the remainder sequence collapses.
-    have hLHS : cauchyIndexOn Q (0 : AzPolynomial R) .negInf .posInf = 0 := by
+    have hLHS : cauchyIndexOnSRem Q (0 : AzPolynomial R) .negInf .posInf = 0 := by
       show (varAt (sRemSList 0 Q (Q.coeffs.size + 2)) .negInf : ℤ)
         - (varAt (sRemSList 0 Q (Q.coeffs.size + 2)) .posInf : ℤ) = 0
       rw [varAt_sRemSList_zero_denom Q .negInf Q.coeffs.size,
@@ -152,16 +152,16 @@ theorem cauchyIndexOn_negInf_posInf_eq_cauchyIndex (Q P : AzPolynomial R) :
       refine Azurite.BPR.SRemS_zero_ge _ _ ((AzPolynomial.toPoly Q).natDegree + 1) hbase
         (Q.coeffs.size + 2) ?_
       rw [AzPolynomial.natDegree_toPoly]; unfold AzPolynomial.natDegree; omega
-    rw [cauchyIndexOn_eq_BPR Azurite.BPR.hasIVP_of_isRealClosed Q P hPm .negInf .posInf
+    rw [cauchyIndexOnSRem_eq_BPR Azurite.BPR.hasIVP_of_isRealClosed Q P hPm .negInf .posInf
         (by trivial) h_aP h_bP hn,
       ← Azurite.BPR.cauchyIndex_eq_cauchyIndexOn_negInf_posInf]
 
 /-- **`ofPoly` form.** For abstract polynomials `q, p : R[X]`, the computable
 whole-line Cauchy index of their `ofPoly` images equals `Ind(q/p)`. -/
-theorem cauchyIndexOn_ofPoly_negInf_posInf_eq_cauchyIndex (q p : R[X]) :
-    cauchyIndexOn (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p) .negInf .posInf
+theorem cauchyIndexOnSRem_ofPoly_negInf_posInf_eq_BPR (q p : R[X]) :
+    cauchyIndexOnSRem (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p) .negInf .posInf
       = Azurite.BPR.cauchyIndex q p := by
-  rw [cauchyIndexOn_negInf_posInf_eq_cauchyIndex, toPoly_ofPoly, toPoly_ofPoly]
+  rw [cauchyIndexOnSRem_negInf_posInf_eq_BPR, toPoly_ofPoly, toPoly_ofPoly]
 
 end WholeLine
 

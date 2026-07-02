@@ -23,7 +23,7 @@ inductive type, fully computable). Sign-variation counting reuses the
 existing `Azurite.BPR.Var` (also computable).
 
 Allowed coefficient types: any computable ordered field. For `AzInt`
-coefficients the convenience function `cauchyIndexOnInt` lifts to `AzRat`
+coefficients the convenience function `cauchyIndexOnIntSRem` lifts to `AzRat`
 through `mapAzIntToAzRat`.
 -/
 
@@ -52,21 +52,21 @@ def varAt {K : Type _} [Ring K] [LinearOrder K] [DecidableEq K]
     (L : List (AzPolynomial K)) (x : ExtendedPoint K) : ℕ :=
   Azurite.BPR.Var (L.map (fun P => evalPolyExt P x))
 
-/-- **Computable Cauchy index.** `cauchyIndexOn Q P a b` computes
+/-- **Computable Cauchy index.** `cauchyIndexOnSRem Q P a b` computes
     `Ind(Q/P; a, b) : ℤ` via `Var(SRemS(P, Q); a, b)` (BPR Theorem 2.58).
 
     The truncation length `Q.coeffs.size + 2` captures every nonzero
     entry of the SRemS sequence: degrees strictly decrease starting from
     `Q`, hitting zero by index `Q.natDegree + 2 ≤ Q.coeffs.size + 2`. -/
-def cauchyIndexOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
+def cauchyIndexOnSRem {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
     (Q P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
   let L := sRemSList P Q (Q.coeffs.size + 2)
   (varAt L a : ℤ) - (varAt L b : ℤ)
 
 /-- Cauchy index for `AzPolynomial AzInt` with `AzRat`-endpoints, computed by
     lifting to `AzPolynomial AzRat` via `mapAzIntToAzRat`. -/
-def cauchyIndexOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
-  cauchyIndexOn (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
+def cauchyIndexOnIntSRem (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
+  cauchyIndexOnSRem (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
 
 /-! ## Worked examples -/
 
@@ -74,18 +74,18 @@ def cauchyIndexOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : �
 private def Q_ex : AzPolynomial AzRat := (parseAzPolynomial "x^2-1").get!
 private def Q'_ex : AzPolynomial AzRat := (parseAzPolynomial "2*x").get!
 
-#guard cauchyIndexOn Q'_ex Q_ex .negInf .posInf = 2
+#guard cauchyIndexOnSRem Q'_ex Q_ex .negInf .posInf = 2
 
 /-- Integer-coefficient example: `P = X² − 1`, `P' = 2X`. -/
 private def Q_int : AzPolynomial AzInt := (parseAzPolynomial "x^2-1").get!
 private def Q'_int : AzPolynomial AzInt := (parseAzPolynomial "2*x").get!
 
-#guard cauchyIndexOnInt Q'_int Q_int .negInf .posInf = 2
+#guard cauchyIndexOnIntSRem Q'_int Q_int .negInf .posInf = 2
 
 -- Trivial: `Q = 0` gives Ind = 0.
-#guard cauchyIndexOn (0 : AzPolynomial AzRat) Q_ex .negInf .posInf = 0
+#guard cauchyIndexOnSRem (0 : AzPolynomial AzRat) Q_ex .negInf .posInf = 0
 
-/-- **Computable Tarski query.** `tarskiQueryOn Q P a b` computes
+/-- **Computable Tarski query.** `tarskiQueryOnSRem Q P a b` computes
     `TaQ(Q, P; a, b) := ∑_{x ∈ (a, b), P(x) = 0} sign(Q(x)) : ℤ` via
     `Var(SRemS(P, P'·Q); a, b)` (BPR Theorem 2.61).
 
@@ -93,7 +93,7 @@ private def Q'_int : AzPolynomial AzInt := (parseAzPolynomial "2*x").get!
     entry of the SRemS sequence: degrees strictly decrease starting from
     `P'·Q`, hitting zero by index `(P'·Q).natDegree + 2 ≤
     (P'·Q).coeffs.size + 2`. -/
-def tarskiQueryOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
+def tarskiQueryOnSRem {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
     [PolynomialDerivative K]
     (Q P : AzPolynomial K) (a b : ExtendedPoint K) : ℤ :=
   let P'Q := P.derivative * Q
@@ -102,8 +102,8 @@ def tarskiQueryOn {K : Type _} [Field K] [LinearOrder K] [DecidableEq K]
 
 /-- Tarski query for `AzPolynomial AzInt` with `AzRat`-endpoints, computed by
     lifting to `AzPolynomial AzRat` via `mapAzIntToAzRat`. -/
-def tarskiQueryOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
-  tarskiQueryOn (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
+def tarskiQueryOnIntSRem (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : ℤ :=
+  tarskiQueryOnSRem (mapAzIntToAzRat Q) (mapAzIntToAzRat P) a b
 
 /-! ### Worked examples (Tarski query)
 
@@ -114,15 +114,15 @@ def tarskiQueryOnInt (Q P : AzPolynomial AzInt) (a b : ExtendedPoint AzRat) : �
 
 private def Q_taQ_ex : AzPolynomial AzRat := (parseAzPolynomial "x").get!
 
-#guard tarskiQueryOn Q_taQ_ex Q_ex .negInf .posInf = 0
-#guard tarskiQueryOn Q_taQ_ex Q_ex (.finite 0) .posInf = 1
-#guard tarskiQueryOn Q_taQ_ex Q_ex .negInf (.finite 0) = -1
+#guard tarskiQueryOnSRem Q_taQ_ex Q_ex .negInf .posInf = 0
+#guard tarskiQueryOnSRem Q_taQ_ex Q_ex (.finite 0) .posInf = 1
+#guard tarskiQueryOnSRem Q_taQ_ex Q_ex .negInf (.finite 0) = -1
 
 -- Trivial: `Q = 1` gives `TaQ = #roots in interval`.
-#guard tarskiQueryOn (1 : AzPolynomial AzRat) Q_ex .negInf .posInf = 2
+#guard tarskiQueryOnSRem (1 : AzPolynomial AzRat) Q_ex .negInf .posInf = 2
 
 -- Integer-coefficient example (`Q = X`).
-#guard tarskiQueryOnInt ((parseAzPolynomial "x").get! : AzPolynomial AzInt) Q_int
+#guard tarskiQueryOnIntSRem ((parseAzPolynomial "x").get! : AzPolynomial AzInt) Q_int
   .negInf .posInf = 0
 
 /-! ## Signed subresultant Cauchy index (BPR Algorithm 9.4)
@@ -131,8 +131,8 @@ An alternative computation of the whole-line Cauchy index `Ind(Q/P)` that stays
 inside the ordered integral domain `R` — no fraction field, no coefficient
 blow-up — using the signed subresultant sequence instead of the signed remainder
 sequence. This is the natural integral-domain counterpart of
-`cauchyIndexOn _ _ (-∞) (+∞)`, which lifts to a fraction field; the two agree on
-the whole line. The provisional name `cauchyIndexSubres` is kept distinct pending
+`cauchyIndexOnSRem _ _ (-∞) (+∞)`, which lifts to a fraction field; the two agree on
+the whole line. The provisional name `cauchyIndex` is kept distinct pending
 a benchmark comparison; if it wins, it can take over the default name. -/
 
 /-- **BPR Algorithm 9.4 (Signed Subresultant Cauchy Index).** Computes the Cauchy
@@ -148,10 +148,10 @@ a benchmark comparison; if it wins, it can take over the default name. -/
     `Azurite.BPR.Chapter4.PmV`).
 
     Correctness is BPR Theorem 4.32, `PmV(sRes(P, Q)) = Ind(Q/P)`, to be bridged
-    through `toPoly` later. Unlike `cauchyIndexOn`, this needs only `[CommRing R]
+    through `toPoly` later. Unlike `cauchyIndexOnSRem`, this needs only `[CommRing R]
     [LinearOrder R] [DecidableEq R] [ExactDiv R]` — no field — so it runs directly
     on `AzInt` coefficients. -/
-def cauchyIndexSubres {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
+def cauchyIndex {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
     [Azurite.ExactDiv R] (Q P : AzPolynomial R) : ℤ :=
   let Q' := if P.natDegree ≤ Q.natDegree then pRem Q P else Q
   Azurite.BPR.Chapter4.PmV (signedSubresultant P Q').2.toList.reverse
@@ -159,41 +159,41 @@ def cauchyIndexSubres {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
 /-! ### Worked examples (signed subresultant Cauchy index)
 
 All over `AzInt` directly (no fraction field), cross-checked against the signed
-remainder whole-line index `cauchyIndexOnInt _ _ (-∞) (+∞)`. -/
+remainder whole-line index `cauchyIndexOnIntSRem _ _ (-∞) (+∞)`. -/
 
 private def ppI (str : String) : AzPolynomial AzInt := (parseAzPolynomial (R := AzInt) str).get!
 
 -- `P = X² − 1` (roots `±1`), `Q = P' = 2X` ⇒ `Ind(P'/P) = #real roots = 2`.
-#guard cauchyIndexSubres (ppI "2*x") (ppI "x^2-1") = 2
+#guard cauchyIndex (ppI "2*x") (ppI "x^2-1") = 2
 -- `P = X³ − X` (roots `0, ±1`), `Q = P' = 3X² − 1` ⇒ `3`.
-#guard cauchyIndexSubres (ppI "3*x^2-1") (ppI "x^3-x") = 3
+#guard cauchyIndex (ppI "3*x^2-1") (ppI "x^3-x") = 3
 -- Defective: `P = X⁴ − 1` (real roots `±1`), `Q = P' = 4X³` ⇒ `2`.
-#guard cauchyIndexSubres (ppI "4*x^3") (ppI "x^4-1") = 2
+#guard cauchyIndex (ppI "4*x^3") (ppI "x^4-1") = 2
 -- `Ind(X/(X² − 1)) = 2` (both poles jump `−∞ → +∞`).
-#guard cauchyIndexSubres (ppI "x") (ppI "x^2-1") = 2
+#guard cauchyIndex (ppI "x") (ppI "x^2-1") = 2
 -- `deg Q > deg P` triggers the `pRem` normalization.
-#guard cauchyIndexSubres (ppI "x^3") (ppI "x^2-1") = 2
+#guard cauchyIndex (ppI "x^3") (ppI "x^2-1") = 2
 -- `deg Q = deg P` also triggers `pRem`.
-#guard cauchyIndexSubres (ppI "x^2+x") (ppI "x^2-1") = 1
+#guard cauchyIndex (ppI "x^2+x") (ppI "x^2-1") = 1
 -- `P ∣ Q` ⇒ `pRem = 0` ⇒ `Ind = 0`.
-#guard cauchyIndexSubres (ppI "2*x^2-2") (ppI "x^2-1") = 0
+#guard cauchyIndex (ppI "2*x^2-2") (ppI "x^2-1") = 0
 
 -- Agreement with the signed-remainder whole-line Cauchy index on each input.
-#guard cauchyIndexSubres (ppI "2*x") (ppI "x^2-1")
-        = cauchyIndexOnInt (ppI "2*x") (ppI "x^2-1") .negInf .posInf
-#guard cauchyIndexSubres (ppI "5*x^4-1") (ppI "x^5-x")
-        = cauchyIndexOnInt (ppI "5*x^4-1") (ppI "x^5-x") .negInf .posInf
-#guard cauchyIndexSubres (ppI "x^3") (ppI "x^2-1")
-        = cauchyIndexOnInt (ppI "x^3") (ppI "x^2-1") .negInf .posInf
+#guard cauchyIndex (ppI "2*x") (ppI "x^2-1")
+        = cauchyIndexOnIntSRem (ppI "2*x") (ppI "x^2-1") .negInf .posInf
+#guard cauchyIndex (ppI "5*x^4-1") (ppI "x^5-x")
+        = cauchyIndexOnIntSRem (ppI "5*x^4-1") (ppI "x^5-x") .negInf .posInf
+#guard cauchyIndex (ppI "x^3") (ppI "x^2-1")
+        = cauchyIndexOnIntSRem (ppI "x^3") (ppI "x^2-1") .negInf .posInf
 
 /-! ## Signed subresultant Tarski query (BPR Algorithm 9.5)
 
-The fraction-free counterpart of `tarskiQueryOn _ _ (-∞) (+∞)`: it computes the
+The fraction-free counterpart of `tarskiQueryOnSRem _ _ (-∞) (+∞)`: it computes the
 whole-line Tarski query `TaQ(Q, P) = ∑_{P(x)=0} sign(Q(x))` inside the ordered
 integral domain `R` (no fraction field), via signed subresultants + `PmV`. It
 cases on `deg Q`, using the more efficient subresultant computation of BPR
 Algorithm 9.5 in each range rather than the naive `Ind(P'·Q / P)`. The
-provisional name `tarskiQuerySubres` is kept distinct pending a benchmark. -/
+provisional name `tarskiQuery` is kept distinct pending a benchmark. -/
 
 /-- **BPR Algorithm 9.5 (Signed Subresultant Tarski Query).** Computes
     `TaQ(Q, P) : ℤ` for `P ≠ 0` and `Q` in `R[X]` over an ordered integral domain,
@@ -205,11 +205,11 @@ provisional name `tarskiQuerySubres` is kept distinct pending a benchmark. -/
       (constructed to have degree `< p`).
     * `q > 1`: `PmV(sRes(−P'·Q, P))`, plus `sign(b_q)` when `q − 1` is odd.
 
-    Matches `tarskiQueryOn _ _ (-∞) (+∞)` on the whole line; needs only
+    Matches `tarskiQueryOnSRem _ _ (-∞) (+∞)` on the whole line; needs only
     `[CommRing R] [LinearOrder R] [DecidableEq R] [ExactDiv R]
     [PolynomialDerivative R]` — no field — so it runs directly on `AzInt`.
     Correctness is BPR Lemma 4.36, to be bridged through `toPoly` later. -/
-def tarskiQuerySubres {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
+def tarskiQuery {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
     [Azurite.ExactDiv R] [PolynomialDerivative R] (Q P : AzPolynomial R) : ℤ :=
   let P' := derivative P
   let p := P.natDegree
@@ -227,22 +227,22 @@ def tarskiQuerySubres {R : Type _} [CommRing R] [LinearOrder R] [DecidableEq R]
 /-! ### Worked examples (signed subresultant Tarski query)
 
 Over `AzInt` directly, cross-checked against the signed-remainder whole-line
-Tarski query `tarskiQueryOnInt _ _ (-∞) (+∞)`. `P = X² − 1` has roots `±1`. -/
+Tarski query `tarskiQueryOnIntSRem _ _ (-∞) (+∞)`. `P = X² − 1` has roots `±1`. -/
 
 -- `q = 0`: `TaQ(1, P) = #real roots = 2`; `TaQ(−3, P) = −2`.
-#guard tarskiQuerySubres (ppI "1") (ppI "x^2-1") = 2
-#guard tarskiQuerySubres (ppI "-3") (ppI "x^2-1") = -2
+#guard tarskiQuery (ppI "1") (ppI "x^2-1") = 2
+#guard tarskiQuery (ppI "-3") (ppI "x^2-1") = -2
 -- `q = 1`: `TaQ(X, P) = sign(1) + sign(−1) = 0`.
-#guard tarskiQuerySubres (ppI "x") (ppI "x^2-1") = 0
+#guard tarskiQuery (ppI "x") (ppI "x^2-1") = 0
 -- `q > 1`: `TaQ(X², P) = sign(1) + sign(1) = 2`.
-#guard tarskiQuerySubres (ppI "x^2") (ppI "x^2-1") = 2
+#guard tarskiQuery (ppI "x^2") (ppI "x^2-1") = 2
 
 -- Agreement with the signed-remainder whole-line Tarski query.
-#guard tarskiQuerySubres (ppI "x+2") (ppI "x^2-1")
-        = tarskiQueryOnInt (ppI "x+2") (ppI "x^2-1") .negInf .posInf
-#guard tarskiQuerySubres (ppI "x^2+1") (ppI "x^3-x")
-        = tarskiQueryOnInt (ppI "x^2+1") (ppI "x^3-x") .negInf .posInf
-#guard tarskiQuerySubres (ppI "x^3+2") (ppI "x^3-x")
-        = tarskiQueryOnInt (ppI "x^3+2") (ppI "x^3-x") .negInf .posInf
+#guard tarskiQuery (ppI "x+2") (ppI "x^2-1")
+        = tarskiQueryOnIntSRem (ppI "x+2") (ppI "x^2-1") .negInf .posInf
+#guard tarskiQuery (ppI "x^2+1") (ppI "x^3-x")
+        = tarskiQueryOnIntSRem (ppI "x^2+1") (ppI "x^3-x") .negInf .posInf
+#guard tarskiQuery (ppI "x^3+2") (ppI "x^3-x")
+        = tarskiQueryOnIntSRem (ppI "x^3+2") (ppI "x^3-x") .negInf .posInf
 
 end Azurite.AzPolynomial

@@ -333,6 +333,7 @@ import Azurite.AzPolynomial.Equiv.Monomial
 import Azurite.AzPolynomial.Equiv.Mul
 import Azurite.AzPolynomial.Equiv.MulXPow
 import Azurite.AzPolynomial.Equiv.Neg
+import Azurite.AzPolynomial.Equiv.NegateRoots
 import Azurite.AzPolynomial.Equiv.NewtonMatrix
 import Azurite.AzPolynomial.Equiv.NewtonSum
 import Azurite.AzPolynomial.Equiv.NumRoots
@@ -341,6 +342,7 @@ import Azurite.AzPolynomial.Equiv.Pow
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.Resultant
 import Azurite.AzPolynomial.Equiv.SMul
+import Azurite.AzPolynomial.Equiv.ScaleRoots
 import Azurite.AzPolynomial.Equiv.SignedSubresultant
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.SturmSequence
@@ -362,6 +364,7 @@ import Azurite.AzPolynomial.MvCoeffExamples
 import Azurite.AzPolynomial.MvCoeffParse
 import Azurite.AzPolynomial.MvCoeffParseToString
 import Azurite.AzPolynomial.Neg
+import Azurite.AzPolynomial.NegateRoots
 import Azurite.AzPolynomial.NestedCoeffExamples
 import Azurite.AzPolynomial.NewtonMatrix
 import Azurite.AzPolynomial.NewtonSum
@@ -375,6 +378,7 @@ import Azurite.AzPolynomial.QuoRem
 import Azurite.AzPolynomial.Resultant
 import Azurite.AzPolynomial.SMul
 import Azurite.AzPolynomial.SRemS
+import Azurite.AzPolynomial.ScaleRoots
 import Azurite.AzPolynomial.SignedSubresultant
 import Azurite.AzPolynomial.SpecialTranslate
 import Azurite.AzPolynomial.StringLemmas

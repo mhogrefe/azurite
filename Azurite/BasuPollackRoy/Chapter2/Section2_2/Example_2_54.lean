@@ -15,7 +15,7 @@ we have:
 * `Ind(Q/P; 0, +∞) = −1`.
 
 The three identities are verified by `#guard` against the computable
-`Azurite.AzPolynomial.cauchyIndexOn` (which agrees with BPR's noncomputable
+`Azurite.AzPolynomial.cauchyIndexOnSRem` (which agrees with BPR's noncomputable
 `Azurite.BPR.cauchyIndexOn` via BPR Theorem 2.58).
 -/
 
@@ -34,8 +34,8 @@ def Q_2_54 : AzPolynomial ℚ :=
   linFactor 5 * linFactor 4 * linFactor 2 *
     linFactor (-1) * linFactor (-2) * linFactor (-4)
 
-#guard cauchyIndexOn Q_2_54 P_2_54 .negInf .posInf = 0
-#guard cauchyIndexOn Q_2_54 P_2_54 .negInf (.finite 0) = 1
-#guard cauchyIndexOn Q_2_54 P_2_54 (.finite 0) .posInf = -1
+#guard cauchyIndexOnSRem Q_2_54 P_2_54 .negInf .posInf = 0
+#guard cauchyIndexOnSRem Q_2_54 P_2_54 .negInf (.finite 0) = 1
+#guard cauchyIndexOnSRem Q_2_54 P_2_54 (.finite 0) .posInf = -1
 
 end Azurite.BPR.Example_2_54

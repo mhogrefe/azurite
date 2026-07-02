@@ -5,11 +5,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Azurite.AzPolynomial.Mul
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Add
+import Azurite.AzPolynomial.Parse
 
 /-! # BPR Algorithm 8.10 — Special Translation
 
-Given `P(X) = aₚXᵖ + ⋯ + a₀ ∈ ℤ[X]` and `b/c ∈ ℚ` with `b, c ∈ ℤ`,
-compute the polynomial `cᵖ P(X − b/c)` **without leaving the ring `ℤ[X]`**.
+Given `P(X) = aₚXᵖ + ⋯ + a₀ ∈ R[X]` over a commutative ring `R` and `b, c ∈ R`,
+compute the polynomial `cᵖ P(X − b/c)` **without leaving the ring `R[X]`** — the
+motivating case being `R = ℤ` with `b/c ∈ ℚ`, where the result has the roots of
+`P` shifted by the rational `b/c` while the coefficients stay integral.
 
 The algorithm performs a Horner‑style accumulation with the linear polynomial
 `cX − b`, keeping a running power‑of‑`c` factor `d`:
@@ -56,5 +59,32 @@ def specialTranslate [AzPolynomialMulConfig R] (p : AzPolynomial R) (b c : R) : 
   let cxb := cXSubB b c
   (p.coeffs.foldr (init := ((0 : AzPolynomial R), (1 : R)))
     (fun a ⟨acc, d⟩ => (AzPolynomial.C (a * d) + acc * cxb, d * c))).1
+
+-- ═══════════════════════════════════════════════════════════════════
+-- Tests
+-- ═══════════════════════════════════════════════════════════════════
+
+section Tests
+
+-- (x² + 1) shifted by 1/2: 2²·((x−1/2)² + 1) = 4x² − 4x + 5
+#guard (parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 2
+    == (parseAzPolynomial (R := AzInt) "4*x^2-4*x+5").get!
+
+-- (2x − 3) shifted by −1/2: 2·(2(x+1/2) − 3) = 4x − 4
+#guard (parseAzPolynomial (R := AzInt) "2*x-3").get!.specialTranslate (-1) 2
+    == (parseAzPolynomial (R := AzInt) "4*x-4").get!
+
+-- c = 1 degenerates to plain translation: (x² + 1) shifted by 1 is x² − 2x + 2
+#guard (parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 1
+    == (parseAzPolynomial (R := AzInt) "x^2-2*x+2").get!
+
+-- Constant: c⁰·P = P
+#guard (parseAzPolynomial (R := AzInt) "5").get!.specialTranslate 1 2
+    == (parseAzPolynomial (R := AzInt) "5").get!
+
+-- Zero polynomial: zero
+#guard (0 : AzPolynomial AzInt).specialTranslate 3 2 == 0
+
+end Tests
 
 end Azurite.AzPolynomial

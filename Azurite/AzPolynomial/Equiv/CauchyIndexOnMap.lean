@@ -7,11 +7,11 @@ import Azurite.AzRat.Equiv.RingEquiv
 import Azurite.AzRat.Equiv.Order
 
 /-!
-# Transport of `cauchyIndexOn` / `tarskiQueryOn` across an order embedding
+# Transport of `cauchyIndexOnSRem` / `tarskiQueryOnSRem` across an order embedding
 
 The signed-*remainder* Cauchy index and Tarski query use field division, so they
 run over a field (e.g. `AzRat`), not over `AzInt` directly — the `AzInt` entry
-points `cauchyIndexOnInt` / `tarskiQueryOnInt` first map `AzInt → AzRat`. This
+points `cauchyIndexOnIntSRem` / `tarskiQueryOnIntSRem` first map `AzInt → AzRat`. This
 file transports the whole-line computation across an order-preserving field
 homomorphism `g : K →+* R` into a real closed field `R`:
 
@@ -20,10 +20,10 @@ homomorphism `g : K →+* R` into a real closed field `R`:
 * `varAt` at `±∞` is a sign-variation count of leading coefficients, invariant
   under the sign-preserving `g` (`Var_map` + `evalPolyExt_map_*`).
 
-Hence `cauchyIndexOn Q P (-∞) (+∞) = Ind` over `R` even when the coefficients only
-live in a smaller ordered field `K` (`cauchyIndexOn_negInf_posInf_map_eq_cauchyIndex`,
-`tarskiQueryOn_negInf_posInf_map_eq_tarskiQuery`), specialized to the `AzInt`
-entry points (`cauchyIndexOnInt` / `tarskiQueryOnInt`).
+Hence `cauchyIndexOnSRem Q P (-∞) (+∞) = Ind` over `R` even when the coefficients only
+live in a smaller ordered field `K` (`cauchyIndexOnSRem_negInf_posInf_map_eq_BPR`,
+`tarskiQueryOnSRem_negInf_posInf_map_eq_BPR`), specialized to the `AzInt`
+entry points (`cauchyIndexOnIntSRem` / `tarskiQueryOnIntSRem`).
 -/
 
 open Polynomial
@@ -147,10 +147,10 @@ theorem varAt_map (g : K →+* L) (hg : StrictMono g) (L' : List (AzPolynomial K
   exact hx P
 
 omit [IsStrictOrderedRing K] [IsStrictOrderedRing L] in
-/-- **Whole-line transport of `cauchyIndexOn`.** The signed-remainder Cauchy index is
+/-- **Whole-line transport of `cauchyIndexOnSRem`.** The signed-remainder Cauchy index is
 unchanged when the coefficients are pushed along a strictly monotone field hom. -/
-theorem cauchyIndexOn_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P : AzPolynomial K) :
-    cauchyIndexOn (Q.map g) (P.map g) .negInf .posInf = cauchyIndexOn Q P .negInf .posInf := by
+theorem cauchyIndexOnSRem_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P : AzPolynomial K) :
+    cauchyIndexOnSRem (Q.map g) (P.map g) .negInf .posInf = cauchyIndexOnSRem Q P .negInf .posInf := by
   show (varAt (sRemSList (P.map g) (Q.map g) ((Q.map g).coeffs.size + 2)) .negInf : ℤ)
       - (varAt (sRemSList (P.map g) (Q.map g) ((Q.map g).coeffs.size + 2)) .posInf : ℤ)
     = (varAt (sRemSList P Q (Q.coeffs.size + 2)) .negInf : ℤ)
@@ -159,9 +159,9 @@ theorem cauchyIndexOn_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P
     varAt_map g hg _ .negInf .negInf (evalPolyExt_map_negInf g hg.injective),
     varAt_map g hg _ .posInf .posInf (evalPolyExt_map_posInf g hg.injective)]
 
-/-- **Whole-line transport of `tarskiQueryOn`.** -/
-theorem tarskiQueryOn_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P : AzPolynomial K) :
-    tarskiQueryOn (Q.map g) (P.map g) .negInf .posInf = tarskiQueryOn Q P .negInf .posInf := by
+/-- **Whole-line transport of `tarskiQueryOnSRem`.** -/
+theorem tarskiQueryOnSRem_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P : AzPolynomial K) :
+    tarskiQueryOnSRem (Q.map g) (P.map g) .negInf .posInf = tarskiQueryOnSRem Q P .negInf .posInf := by
   show (varAt (sRemSList (P.map g) ((P.map g).derivative * Q.map g)
         (((P.map g).derivative * Q.map g).coeffs.size + 2)) .negInf : ℤ)
       - (varAt (sRemSList (P.map g) ((P.map g).derivative * Q.map g)
@@ -177,34 +177,34 @@ theorem tarskiQueryOn_map_negInf_posInf (g : K →+* L) (hg : StrictMono g) (Q P
 variable [IsRealClosed L]
 
 omit [IsStrictOrderedRing K] in
-/-- **Correctness of `cauchyIndexOn` over a subfield.** For coefficients in an ordered
+/-- **Correctness of `cauchyIndexOnSRem` over a subfield.** For coefficients in an ordered
 field `K`, mapped by a strictly monotone hom `g` into a real closed field `L`, the
 whole-line signed-remainder Cauchy index equals `Ind` of the pushed polynomials. -/
-theorem cauchyIndexOn_negInf_posInf_map_eq_cauchyIndex (g : K →+* L) (hg : StrictMono g)
+theorem cauchyIndexOnSRem_negInf_posInf_map_eq_BPR (g : K →+* L) (hg : StrictMono g)
     (Q P : AzPolynomial K) :
-    cauchyIndexOn Q P .negInf .posInf
+    cauchyIndexOnSRem Q P .negInf .posInf
       = Azurite.BPR.cauchyIndex ((AzPolynomial.toPoly Q).map g) ((AzPolynomial.toPoly P).map g) := by
-  rw [← cauchyIndexOn_map_negInf_posInf g hg, cauchyIndexOn_negInf_posInf_eq_cauchyIndex,
+  rw [← cauchyIndexOnSRem_map_negInf_posInf g hg, cauchyIndexOnSRem_negInf_posInf_eq_BPR,
     toPoly_map, toPoly_map]
 
-/-- **Correctness of `tarskiQueryOn` over a subfield.** -/
-theorem tarskiQueryOn_negInf_posInf_map_eq_tarskiQuery (g : K →+* L) (hg : StrictMono g)
+/-- **Correctness of `tarskiQueryOnSRem` over a subfield.** -/
+theorem tarskiQueryOnSRem_negInf_posInf_map_eq_BPR (g : K →+* L) (hg : StrictMono g)
     (Q P : AzPolynomial K) :
-    tarskiQueryOn Q P .negInf .posInf
+    tarskiQueryOnSRem Q P .negInf .posInf
       = Azurite.BPR.tarskiQuery ((AzPolynomial.toPoly Q).map g) ((AzPolynomial.toPoly P).map g) := by
-  rw [← tarskiQueryOn_map_negInf_posInf g hg, tarskiQueryOn_negInf_posInf_eq_tarskiQuery,
+  rw [← tarskiQueryOnSRem_map_negInf_posInf g hg, tarskiQueryOnSRem_negInf_posInf_eq_BPR,
     toPoly_map, toPoly_map]
 
 end Transport
 
 /-! ### Specialization to the `AzInt` entry points
 
-`cauchyIndexOnInt` / `tarskiQueryOnInt` compute over `AzRat` (after
+`cauchyIndexOnIntSRem` / `tarskiQueryOnIntSRem` compute over `AzRat` (after
 `mapAzIntToAzRat`), so their whole-line correctness is the general transport at
 `K = AzRat` with the order embedding `AzRat → ℚ → R`. The statements are phrased
 over `(toPoly ·).map (AzInt → ℤ → R)` — the same right-hand side shape as the
-subresultant corollaries `cauchyIndexSubres_azInt_eq_cauchyIndex` /
-`tarskiQuerySubres_azInt_eq_tarskiQuery` — via the bridge
+subresultant corollaries `cauchyIndex_azInt_eq_BPR` /
+`tarskiQuery_azInt_eq_BPR` — via the bridge
 `toPoly_mapAzIntToAzRat_map`. -/
 
 section Int
@@ -240,26 +240,26 @@ private theorem azRatCast_strictMono :
     StrictMono ((Rat.castHom R).comp AzRat.toRatRingHom) := fun a b h =>
   Rat.cast_strictMono (by simpa using AzRat.orderIsoRat.strictMono h)
 
-/-- **Whole-line correctness of `cauchyIndexOnInt` over `AzInt`.** The
+/-- **Whole-line correctness of `cauchyIndexOnIntSRem` over `AzInt`.** The
 signed-remainder Cauchy index computed over the integers equals the Cauchy index
 of the polynomials pushed into any real closed field `R` (via `AzInt → ℤ → R`,
-matching `cauchyIndexSubres_azInt_eq_cauchyIndex`). -/
-theorem cauchyIndexOnInt_negInf_posInf_eq_cauchyIndex (Q P : AzPolynomial AzInt) :
-    cauchyIndexOnInt Q P .negInf .posInf
+matching `cauchyIndex_azInt_eq_BPR`). -/
+theorem cauchyIndexOnIntSRem_negInf_posInf_eq_BPR (Q P : AzPolynomial AzInt) :
+    cauchyIndexOnIntSRem Q P .negInf .posInf
       = Azurite.BPR.cauchyIndex
           ((AzPolynomial.toPoly Q).map ((Int.castRingHom R).comp AzInt.toIntRingHom))
           ((AzPolynomial.toPoly P).map ((Int.castRingHom R).comp AzInt.toIntRingHom)) := by
   rw [← toPoly_mapAzIntToAzRat_map, ← toPoly_mapAzIntToAzRat_map]
-  exact cauchyIndexOn_negInf_posInf_map_eq_cauchyIndex _ azRatCast_strictMono _ _
+  exact cauchyIndexOnSRem_negInf_posInf_map_eq_BPR _ azRatCast_strictMono _ _
 
-/-- **Whole-line correctness of `tarskiQueryOnInt` over `AzInt`.** -/
-theorem tarskiQueryOnInt_negInf_posInf_eq_tarskiQuery (Q P : AzPolynomial AzInt) :
-    tarskiQueryOnInt Q P .negInf .posInf
+/-- **Whole-line correctness of `tarskiQueryOnIntSRem` over `AzInt`.** -/
+theorem tarskiQueryOnIntSRem_negInf_posInf_eq_BPR (Q P : AzPolynomial AzInt) :
+    tarskiQueryOnIntSRem Q P .negInf .posInf
       = Azurite.BPR.tarskiQuery
           ((AzPolynomial.toPoly Q).map ((Int.castRingHom R).comp AzInt.toIntRingHom))
           ((AzPolynomial.toPoly P).map ((Int.castRingHom R).comp AzInt.toIntRingHom)) := by
   rw [← toPoly_mapAzIntToAzRat_map, ← toPoly_mapAzIntToAzRat_map]
-  exact tarskiQueryOn_negInf_posInf_map_eq_tarskiQuery _ azRatCast_strictMono _ _
+  exact tarskiQueryOnSRem_negInf_posInf_map_eq_BPR _ azRatCast_strictMono _ _
 
 end Int
 

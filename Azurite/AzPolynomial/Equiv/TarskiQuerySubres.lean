@@ -5,9 +5,9 @@ import Azurite.BasuPollackRoy.Chapter2.Section2_2.Proposition_2_57
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.FiberFormula
 
 /-!
-# Correctness of `tarskiQuerySubres` (BPR Algorithm 9.5)
+# Correctness of `tarskiQuery` (BPR Algorithm 9.5)
 
-`tarskiQuerySubres Q P` (the signed-subresultant Tarski query) computes the
+`tarskiQuery Q P` (the signed-subresultant Tarski query) computes the
 whole-line Tarski query `TaQ(Q, P)` over a real closed coefficient field, for a
 non-constant `P` (`1 ≤ deg P` — the query is `0` for constant `P`, but the
 algorithm's `q > 1` branch adds a spurious `sign(b_q)` there, so the hypothesis
@@ -108,12 +108,12 @@ variable {R : Type _} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealC
     [DecidableEq R] [Azurite.ExactDiv R]
 
 /-- **Subresultant → Cauchy index bridge.** For `deg B < deg A`,
-`PmV(sRes(A, B)) = Ind(B/A)`. This is exactly `cauchyIndexSubres B A` unfolded
+`PmV(sRes(A, B)) = Ind(B/A)`. This is exactly `cauchyIndex B A` unfolded
 (no pseudo-remainder normalization needed since `deg B < deg A`). -/
 theorem pmvSubres_eq (A B : AzPolynomial R) (hlt : B.natDegree < A.natDegree) :
     PmV (signedSubresultant A B).2.toList.reverse
       = Azurite.BPR.cauchyIndex (AzPolynomial.toPoly B) (AzPolynomial.toPoly A) := by
-  rw [← cauchyIndexSubres_eq_cauchyIndex_of_lt B A hlt]
+  rw [← cauchyIndex_eq_BPR_of_lt B A hlt]
   show PmV (signedSubresultant A B).2.toList.reverse
     = PmV (signedSubresultant A
         (if A.natDegree ≤ B.natDegree then pRem B A else B)).2.toList.reverse
@@ -169,11 +169,11 @@ private theorem sigma_diff (A P : R[X]) (hPm : P ≠ 0) (b : R) (qd : ℕ)
             = A.leadingCoeff * P.leadingCoeff by ring, hs]
     rw [if_pos (by rw [Nat.odd_iff] at ho; omega), hπ, hνo]; ring
 
-/-- **Correctness of `tarskiQuerySubres` (BPR Algorithm 9.5).** For non-constant
+/-- **Correctness of `tarskiQuery` (BPR Algorithm 9.5).** For non-constant
 `P` (`1 ≤ deg P`) over a real closed coefficient field,
-`tarskiQuerySubres Q P = TaQ(Q, P)`. -/
-theorem tarskiQuerySubres_eq_tarskiQuery (Q P : AzPolynomial R) (hP1 : 1 ≤ P.natDegree) :
-    tarskiQuerySubres Q P = Azurite.BPR.tarskiQuery (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
+`tarskiQuery Q P = TaQ(Q, P)`. -/
+theorem tarskiQuery_eq_BPR (Q P : AzPolynomial R) (hP1 : 1 ≤ P.natDegree) :
+    tarskiQuery Q P = Azurite.BPR.tarskiQuery (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
   have hP : P ≠ 0 := fun h => by rw [h, show (0 : AzPolynomial R).natDegree = 0 from rfl] at hP1; omega
   have hPm : AzPolynomial.toPoly P ≠ 0 := fun h => hP (toPoly_inj.mp (h.trans toPoly_zero.symm))
   have hpd : (AzPolynomial.toPoly P).natDegree = P.natDegree := AzPolynomial.natDegree_toPoly P
@@ -186,7 +186,7 @@ theorem tarskiQuerySubres_eq_tarskiQuery (Q P : AzPolynomial R) (hP1 : 1 ≤ P.n
   rcases Nat.lt_trichotomy Q.natDegree 1 with hq | hq | hq
   · -- q = 0
     have h0 : Q.natDegree = 0 := by omega
-    rw [tarskiQuerySubres, if_pos h0, pmvSubres_eq P (derivative P) hdP', toPoly_derivative]
+    rw [tarskiQuery, if_pos h0, pmvSubres_eq P (derivative P) hdP', toPoly_derivative]
     have hDQ : AzPolynomial.toPoly Q = Polynomial.C (Q.coeff 0) := by
       have hz : (AzPolynomial.toPoly Q).natDegree = 0 := by rw [hqd]; exact h0
       rw [Polynomial.eq_C_of_natDegree_eq_zero hz, AzPolynomial.coeff_toPoly]
@@ -194,7 +194,7 @@ theorem tarskiQuerySubres_eq_tarskiQuery (Q P : AzPolynomial R) (hP1 : 1 ≤ P.n
           = Polynomial.C (Q.coeff 0) * (AzPolynomial.toPoly P).derivative by ring,
       Azurite.BPR.cauchyIndex_C_mul_left_sign]
   · -- q = 1
-    rw [tarskiQuerySubres, if_neg (by omega : ¬ Q.natDegree = 0), if_pos hq]
+    rw [tarskiQuery, if_neg (by omega : ¬ Q.natDegree = 0), if_pos hq]
     have hdR : (derivative P * Q - ((P.natDegree : R) * Q.coeff 1) • P).natDegree < P.natDegree := by
       have key : (AzPolynomial.toPoly
             (derivative P * Q - ((P.natDegree : R) * Q.coeff 1) • P)).natDegree
@@ -223,7 +223,7 @@ theorem tarskiQuerySubres_eq_tarskiQuery (Q P : AzPolynomial R) (hP1 : 1 ≤ P.n
     --     `σ(+∞) − σ(−∞) = if (q−1) odd then −2·sign(b_q) else 0`,
     --   which by `omega`/`linarith` (÷2 over ℤ) matches the algorithm's
     --   `alg0 + [q−1 odd]·sign(b_q) = Ind(A/B) = TaQ`.
-    rw [tarskiQuerySubres, if_neg (by omega : ¬ Q.natDegree = 0),
+    rw [tarskiQuery, if_neg (by omega : ¬ Q.natDegree = 0),
       if_neg (by omega : ¬ Q.natDegree = 1)]
     have hQ : Q ≠ 0 := fun h => by rw [h, show (0 : AzPolynomial R).natDegree = 0 from rfl] at hq; omega
     have hDQ_ne : AzPolynomial.toPoly Q ≠ 0 := fun h => hQ (toPoly_inj.mp (h.trans toPoly_zero.symm))

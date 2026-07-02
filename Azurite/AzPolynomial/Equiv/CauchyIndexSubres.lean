@@ -6,19 +6,19 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_2.Lemma_4_36
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_55
 
 /-!
-# Correctness of `cauchyIndexSubres` (BPR Algorithm 9.4)
+# Correctness of `cauchyIndex` (BPR Algorithm 9.4)
 
-`cauchyIndexSubres Q P` (the signed-subresultant Cauchy index, Algorithm 9.4)
+`cauchyIndex Q P` (the signed-subresultant Cauchy index, Algorithm 9.4)
 computes the Cauchy index `Ind(Q/P)` over a real closed coefficient field, for
 every `Q` and every `P` of degree `≥ 1`. The correctness is BPR's cited "follows
 from Theorem 4.32": `PmV(sRes(P, Q)) = Ind(Q/P)`.
 
-* `cauchyIndexSubres_eq_cauchyIndex_of_lt` — the case `deg Q < deg P` (no
+* `cauchyIndex_eq_BPR_of_lt` — the case `deg Q < deg P` (no
   pseudo-remainder normalization), for *any* `Q` (zero, constant, or higher
   degree). This is where `PmV(sResSeq) = Ind` is applied via `theorem_4_32`; the
   `deg Q = 0` corner is handled by a direct signed-subresultant bridge
   (`snd_toList_deg0_sRes`), and `Q = 0` by `Ind(0/P) = 0`.
-* `cauchyIndexSubres_eq_cauchyIndex_general` — arbitrary `Q`, `deg P ≥ 1`. The
+* `cauchyIndex_eq_BPR` — arbitrary `Q`, `deg P ≥ 1`. The
   `deg Q ≥ deg P` branch replaces `Q` by `pRem Q P`; the Cauchy index is
   preserved (`cauchyIndex_toPoly_pRem`) and the computation reduces to the
   `< deg P` case on `(pRem Q P, P)`.
@@ -31,7 +31,7 @@ Supporting reusable results:
   index: `Ind((pRem Q P)/P) = Ind(Q/P)`.
 
 The statements are over a real closed field `R` (where `theorem_4_32` lives),
-mirroring how `cauchyIndexOn_eq_BPR` states the correctness of the
+mirroring how `cauchyIndexOnSRem_eq_BPR` states the correctness of the
 signed-remainder Cauchy index generically rather than at a fixed coefficient type.
 -/
 
@@ -230,17 +230,17 @@ theorem cauchyIndex_toPoly_pRem (Q P : AzPolynomial R) (hP : P ≠ 0) :
           (AzPolynomial.toPoly P) .negInf .posInf hPm,
       hmod]
 
-/-- **Correctness of `cauchyIndexSubres`, `deg Q < deg P`.** For any `Q` (zero,
+/-- **Correctness of `cauchyIndex`, `deg Q < deg P`.** For any `Q` (zero,
 constant, or higher degree) with `deg Q < deg P` over a real closed coefficient
-field, `cauchyIndexSubres Q P = Ind(Q/P)`. No pseudo-remainder normalization
+field, `cauchyIndex Q P = Ind(Q/P)`. No pseudo-remainder normalization
 happens, and `PmV(sResSeq) = Ind` (Theorem 4.32). -/
-theorem cauchyIndexSubres_eq_cauchyIndex_of_lt (Q P : AzPolynomial R)
+theorem cauchyIndex_eq_BPR_of_lt (Q P : AzPolynomial R)
     (hlt : Q.natDegree < P.natDegree) :
-    cauchyIndexSubres Q P
+    cauchyIndex Q P
       = Azurite.BPR.cauchyIndex (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
   have hP : P ≠ 0 := by
     rintro rfl; rw [show (0 : AzPolynomial R).natDegree = 0 from rfl] at hlt; omega
-  have hexpand : cauchyIndexSubres Q P = PmV (signedSubresultant P Q).2.toList.reverse := by
+  have hexpand : cauchyIndex Q P = PmV (signedSubresultant P Q).2.toList.reverse := by
     show PmV (signedSubresultant P
       (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse = _
     rw [if_neg (by omega)]
@@ -271,18 +271,18 @@ theorem cauchyIndexSubres_eq_cauchyIndex_of_lt (Q P : AzPolynomial R)
     rw [hexpand, hlist]
     exact theorem_4_32 (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) hQm hqpm
 
-/-- **Correctness of `cauchyIndexSubres` (BPR Algorithm 9.4), general form.** For
+/-- **Correctness of `cauchyIndex` (BPR Algorithm 9.4), general form.** For
 *any* `Q` and `P` over a real closed coefficient field,
-`cauchyIndexSubres Q P = Ind(Q/P)` — no degree hypothesis. When `deg P = 0` both
+`cauchyIndex Q P = Ind(Q/P)` — no degree hypothesis. When `deg P = 0` both
 sides are `0` (`P` has no poles, and the pseudo-remainder step collapses the
 subresultant list to empty). When `deg P ≥ 1`, the `deg Q ≥ deg P` branch replaces
 `Q` by `pRem Q P` (Cauchy index preserved), reducing to the `deg < deg P` case. -/
-theorem cauchyIndexSubres_eq_cauchyIndex (Q P : AzPolynomial R) :
-    cauchyIndexSubres Q P
+theorem cauchyIndex_eq_BPR (Q P : AzPolynomial R) :
+    cauchyIndex Q P
       = Azurite.BPR.cauchyIndex (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P) := by
   rcases Nat.eq_zero_or_pos P.natDegree with hP0 | hP1
   · -- `deg P = 0`: `P` is constant (or zero), so both sides are `0`.
-    have hLHS : cauchyIndexSubres Q P = 0 := by
+    have hLHS : cauchyIndex Q P = 0 := by
       show PmV (signedSubresultant P
         (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse = 0
       rw [signedSubresultant, if_pos (Or.inr (by rw [hP0]; exact Nat.zero_le _))]
@@ -295,7 +295,7 @@ theorem cauchyIndexSubres_eq_cauchyIndex (Q P : AzPolynomial R) :
     unfold Azurite.BPR.cauchyIndexOn
     simp [hroots]
   rcases Nat.lt_or_ge Q.natDegree P.natDegree with hlt | hge
-  · exact cauchyIndexSubres_eq_cauchyIndex_of_lt Q P hlt
+  · exact cauchyIndex_eq_BPR_of_lt Q P hlt
   · have hP : P ≠ 0 := by
       rintro rfl; rw [show (0 : AzPolynomial R).natDegree = 0 from rfl] at hP1; omega
     have hPm : AzPolynomial.toPoly P ≠ 0 := fun h => hP (toPoly_inj.mp (h.trans toPoly_zero.symm))
@@ -306,21 +306,21 @@ theorem cauchyIndexSubres_eq_cauchyIndex (Q P : AzPolynomial R) :
           fun h => hne (toPoly_inj.mp (h.trans toPoly_zero.symm))
         have := Polynomial.natDegree_lt_natDegree hprm (degree_toPoly_pRem_lt Q P hPm)
         rwa [AzPolynomial.natDegree_toPoly, AzPolynomial.natDegree_toPoly] at this
-    have hstep : cauchyIndexSubres Q P = cauchyIndexSubres (pRem Q P) P := by
+    have hstep : cauchyIndex Q P = cauchyIndex (pRem Q P) P := by
       show PmV (signedSubresultant P
           (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse
         = PmV (signedSubresultant P
           (if P.natDegree ≤ (pRem Q P).natDegree then pRem (pRem Q P) P
             else pRem Q P)).2.toList.reverse
       rw [if_pos hge, if_neg (by omega)]
-    rw [hstep, cauchyIndexSubres_eq_cauchyIndex_of_lt (pRem Q P) P hprlt,
+    rw [hstep, cauchyIndex_eq_BPR_of_lt (pRem Q P) P hprlt,
       cauchyIndex_toPoly_pRem Q P hP]
 
 /-- **`ofPoly` form.** For abstract polynomials `q, p : R[X]`, the
 signed-subresultant Cauchy index of their `ofPoly` images equals `Ind(q/p)`. -/
-theorem cauchyIndexSubres_ofPoly_eq_cauchyIndex (q p : R[X]) :
-    cauchyIndexSubres (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p)
+theorem cauchyIndex_ofPoly_eq_BPR (q p : R[X]) :
+    cauchyIndex (AzPolynomial.ofPoly q) (AzPolynomial.ofPoly p)
       = Azurite.BPR.cauchyIndex q p := by
-  rw [cauchyIndexSubres_eq_cauchyIndex, toPoly_ofPoly, toPoly_ofPoly]
+  rw [cauchyIndex_eq_BPR, toPoly_ofPoly, toPoly_ofPoly]
 
 end Azurite.AzPolynomial

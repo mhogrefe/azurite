@@ -54,10 +54,10 @@ theorem numRootsOn_eq_BPR
       (((AzPolynomial.toPoly P).roots.toFinset.filter
         (· ∈ ExtendedPoint.openInterval a b)).card : ℤ) := by
   classical
-  -- numRootsOn P a b = cauchyIndexOn P.derivative P a b (def)
-  show (cauchyIndexOn P.derivative P a b : ℤ) = _
+  -- numRootsOn P a b = cauchyIndexOnSRem P.derivative P a b (def)
+  show (cauchyIndexOnSRem P.derivative P a b : ℤ) = _
   -- Bridge to BPR's Cauchy index.
-  rw [cauchyIndexOn_eq_BPR hIVP P.derivative P hP a b hab h_aP h_bP h_n_zero]
+  rw [cauchyIndexOnSRem_eq_BPR hIVP P.derivative P hP a b hab h_aP h_bP h_n_zero]
   -- toPoly P.derivative = (toPoly P).derivative
   rw [toPoly_derivative]
   -- BPR.cauchyIndexOn (toPoly P).derivative (toPoly P) a b

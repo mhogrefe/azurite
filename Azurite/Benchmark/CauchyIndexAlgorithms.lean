@@ -15,9 +15,9 @@ For each of `limit` random pairs `(Q, P)` of `AzPolynomial AzInt` with a
 nonconstant denominator (`deg P ≥ 1`), compute the whole-line Cauchy index
 `Ind(Q/P) : ℤ` two ways and time each:
 
-  - `Subresultant`    — `cauchyIndexSubres Q P` (BPR Algorithm 9.4): signed
+  - `Subresultant`    — `cauchyIndex Q P` (BPR Algorithm 9.4): signed
     subresultant sequence + `PmV`, fraction-free, all arithmetic in `AzInt`.
-  - `SignedRemainder` — `cauchyIndexOnInt Q P (-∞) (+∞)`: signed remainder
+  - `SignedRemainder` — `cauchyIndexOnIntSRem Q P (-∞) (+∞)`: signed remainder
     sequence, which lifts the coefficients to `AzRat` (rational arithmetic).
 
 Both compute the same integer; a mismatch prints a `BUG:` line to stderr.
@@ -48,16 +48,16 @@ def runCauchyIndexAlgorithms (limit : Nat) (cfg : Std.HashMap String String)
       continue
     let sb := azPolynomialIntSignificantBits p + azPolynomialIntSignificantBits q
     -- Subresultant (BPR Algorithm 9.4), fraction-free over `AzInt`.
-    let (r1, ns1a) ← timeNsIter iters (fun _ => cauchyIndexSubres q p)
-    let (_, ns1b) ← timeNsIter iters (fun _ => cauchyIndexSubres q p)
-    let (_, ns1c) ← timeNsIter iters (fun _ => cauchyIndexSubres q p)
+    let (r1, ns1a) ← timeNsIter iters (fun _ => cauchyIndex q p)
+    let (_, ns1b) ← timeNsIter iters (fun _ => cauchyIndex q p)
+    let (_, ns1c) ← timeNsIter iters (fun _ => cauchyIndex q p)
     let ns1 := median3 ns1a ns1b ns1c
     -- Signed remainder sequence over `AzRat`.
-    let (r2, ns2a) ← timeNsIter iters (fun _ => cauchyIndexOnInt q p .negInf .posInf)
-    let (_, ns2b) ← timeNsIter iters (fun _ => cauchyIndexOnInt q p .negInf .posInf)
-    let (_, ns2c) ← timeNsIter iters (fun _ => cauchyIndexOnInt q p .negInf .posInf)
+    let (r2, ns2a) ← timeNsIter iters (fun _ => cauchyIndexOnIntSRem q p .negInf .posInf)
+    let (_, ns2b) ← timeNsIter iters (fun _ => cauchyIndexOnIntSRem q p .negInf .posInf)
+    let (_, ns2c) ← timeNsIter iters (fun _ => cauchyIndexOnIntSRem q p .negInf .posInf)
     let ns2 := median3 ns2a ns2b ns2c
     -- Sanity check: the two implementations must agree.
     if r1 ≠ r2 then
-      IO.eprintln s!"BUG: cauchyIndexSubres ≠ cauchyIndexOnInt at sb={sb}: {r1} vs {r2}"
+      IO.eprintln s!"BUG: cauchyIndex ≠ cauchyIndexOnIntSRem at sb={sb}: {r1} vs {r2}"
     IO.println s!"{sb};Subresultant,{ns1};SignedRemainder,{ns2}"

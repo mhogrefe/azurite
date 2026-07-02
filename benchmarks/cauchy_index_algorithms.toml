@@ -4,7 +4,7 @@
 # Both compute the same integer `Ind(Q/P)` for each random pair `(Q, P)` of
 # integer polynomials (with `deg P ≥ 1`):
 #
-#   - Subresultant    `cauchyIndexSubres Q P` — the signed subresultant
+#   - Subresultant    `cauchyIndex Q P` — the signed subresultant
 #     sequence (Algorithm 8.21) + `PmV` (Notation 4.31). Fraction-free: every
 #     intermediate stays in `AzInt`, with coefficient growth bounded by the
 #     subresultant (Hadamard) structure.

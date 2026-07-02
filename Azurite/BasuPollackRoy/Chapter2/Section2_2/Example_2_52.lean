@@ -17,7 +17,7 @@ With `P = X⁴ − 5X² + 4 = (X − 1)(X + 1)(X − 2)(X + 2)`, the Sturm seque
 
 Consequences computed against the corresponding `AzPolynomial`-side
 primitives (Theorems 2.50 and 2.58 plus the definitions of `numRoots` and
-`cauchyIndexOn`):
+`cauchyIndexOnSRem`):
 
 * `P` has `4` distinct real roots in `R`;
 * `2` lie in `(0, +∞)` and `2` in `(−∞, 0)`;
@@ -57,7 +57,7 @@ def P'_2_52 : AzPolynomial AzRat := (parseAzPolynomial "4*x^3-10*x").get!
 
 /-! ### Cauchy index of `P'/P` -/
 
-#guard cauchyIndexOn P'_2_52 P_2_52 .negInf .posInf = 4
-#guard cauchyIndexOn P'_2_52 P_2_52 (.finite 0) .posInf = 2
+#guard cauchyIndexOnSRem P'_2_52 P_2_52 .negInf .posInf = 4
+#guard cauchyIndexOnSRem P'_2_52 P_2_52 (.finite 0) .posInf = 2
 
 end Azurite.BPR.Example_2_52

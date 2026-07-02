@@ -6,25 +6,25 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.AzInt.Equiv.RingEquiv
 
 /-!
-# Transport of `cauchyIndexSubres` across an order-preserving ring homomorphism
+# Transport of `cauchyIndex` across an order-preserving ring homomorphism
 
-`cauchyIndexSubres` (BPR Algorithm 9.4) is a *fraction-free* integer computation
+`cauchyIndex` (BPR Algorithm 9.4) is a *fraction-free* integer computation
 over any ordered domain, so it runs over e.g. `AzInt`. Its meaning — the Cauchy
 index — lives in a real closed field. This file bridges the two:
 
-`cauchyIndexSubres_map_eq_cauchyIndex`: for a **strictly monotone** (hence
+`cauchyIndex_map_eq_BPR`: for a **strictly monotone** (hence
 injective, sign- and degree-preserving) ring hom `f : D →+* R` into a real closed
 field `R`,
-`cauchyIndexSubres Q P = Ind((toPoly Q).map f / (toPoly P).map f)`.
+`cauchyIndex Q P = Ind((toPoly Q).map f / (toPoly P).map f)`.
 
-The proof transports the computation itself: `cauchyIndexSubres Q P` equals
-`cauchyIndexSubres (Q.map f) (P.map f)` (over `R`), because the signed
+The proof transports the computation itself: `cauchyIndex Q P` equals
+`cauchyIndex (Q.map f) (P.map f)` (over `R`), because the signed
 subresultant coefficients commute with `f` (`Chapter4.sRes_map`, via the
 Sylvester–Habicht determinant), the pseudo-remainder normalization commutes
 (`pRem_map`), and `PmV` reads only signs (`Chapter4.PmV_map`); then the
-real-closed-field correctness `cauchyIndexSubres_eq_cauchyIndex` applies.
+real-closed-field correctness `cauchyIndex_eq_BPR` applies.
 
-Specialized to `D = AzInt` (`cauchyIndexSubres_azInt_eq_cauchyIndex`), where the
+Specialized to `D = AzInt` (`cauchyIndex_azInt_eq_BPR`), where the
 embedding is `AzInt → ℤ → R` (`Int.cast ∘ toInt`).
 -/
 
@@ -196,7 +196,7 @@ theorem signedSubresultant_snd_toList_map (f : D →+* E) (hf : Function.Injecti
 
 end SignedSubresMap
 
-/-! ### Transport of `cauchyIndexSubres` -/
+/-! ### Transport of `cauchyIndex` -/
 
 section Transport
 variable {D R : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [DecidableEq D]
@@ -205,16 +205,16 @@ variable {D R : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [Dec
 
 open Azurite.BPR.Chapter4 (PmV)
 
-/-- **Transport of `cauchyIndexSubres` (BPR Algorithm 9.4) across an order
+/-- **Transport of `cauchyIndex` (BPR Algorithm 9.4) across an order
 embedding.** For a strictly monotone ring hom `f : D →+* R` into a real closed
-field `R`, the fraction-free `cauchyIndexSubres` computed over the ordered domain
+field `R`, the fraction-free `cauchyIndex` computed over the ordered domain
 `D` equals the Cauchy index of the polynomials pushed into `R`. -/
-theorem cauchyIndexSubres_map_eq_cauchyIndex (f : D →+* R) (hf : StrictMono f)
+theorem cauchyIndex_map_eq_BPR (f : D →+* R) (hf : StrictMono f)
     (Q P : AzPolynomial D) :
-    cauchyIndexSubres Q P
+    cauchyIndex Q P
       = Azurite.BPR.cauchyIndex ((AzPolynomial.toPoly Q).map f) ((AzPolynomial.toPoly P).map f) := by
   have hfi := hf.injective
-  rw [← toPoly_map, ← toPoly_map, ← cauchyIndexSubres_eq_cauchyIndex (Q.map f) (P.map f)]
+  rw [← toPoly_map, ← toPoly_map, ← cauchyIndex_eq_BPR (Q.map f) (P.map f)]
   show PmV (signedSubresultant P
         (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse
     = PmV (signedSubresultant (P.map f)
@@ -240,19 +240,19 @@ theorem azIntCast_strictMono {R : Type*} [Ring R] [PartialOrder R] [IsStrictOrde
   simp only [RingHom.comp_apply, AzInt.toIntRingHom_apply, Int.coe_castRingHom]
   exact_mod_cast show a.toInt < b.toInt by simpa using AzInt.orderIsoInt.strictMono h
 
-/-- **Correctness of `cauchyIndexSubres` over `AzInt`.** For integer-coefficient
+/-- **Correctness of `cauchyIndex` over `AzInt`.** For integer-coefficient
 polynomials, the fraction-free signed-subresultant Cauchy index equals the Cauchy
 index of the polynomials cast into any real closed field `R` (via `AzInt → ℤ → R`). -/
-theorem cauchyIndexSubres_azInt_eq_cauchyIndex {R : Type*} [Field R] [LinearOrder R]
+theorem cauchyIndex_azInt_eq_BPR {R : Type*} [Field R] [LinearOrder R]
     [IsStrictOrderedRing R] [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
     (Q P : AzPolynomial AzInt) :
-    cauchyIndexSubres Q P
+    cauchyIndex Q P
       = Azurite.BPR.cauchyIndex
           ((AzPolynomial.toPoly Q).map ((Int.castRingHom R).comp AzInt.toIntRingHom))
           ((AzPolynomial.toPoly P).map ((Int.castRingHom R).comp AzInt.toIntRingHom)) :=
-  cauchyIndexSubres_map_eq_cauchyIndex _ azIntCast_strictMono Q P
+  cauchyIndex_map_eq_BPR _ azIntCast_strictMono Q P
 
-/-! ### Transport of `tarskiQuerySubres` -/
+/-! ### Transport of `tarskiQuery` -/
 
 section TarskiTransport
 open Azurite.BPR.Chapter4 (PmV PmV_map)
@@ -260,14 +260,14 @@ variable {D R : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing D] [Dec
     [Azurite.ExactDiv D] [Field R] [LinearOrder R] [IsStrictOrderedRing R]
     [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
 
-/-- **Transport of `tarskiQuerySubres` (BPR Algorithm 9.5) across an order
+/-- **Transport of `tarskiQuery` (BPR Algorithm 9.5) across an order
 embedding.** For a strictly monotone ring hom `f : D →+* R` into a real closed
 field `R` and non-constant `P` (`1 ≤ deg P`), the fraction-free signed-subresultant
 Tarski query computed over the ordered domain `D` equals the Tarski query of the
 polynomials pushed into `R`. -/
-theorem tarskiQuerySubres_map_eq_tarskiQuery (f : D →+* R) (hf : StrictMono f)
+theorem tarskiQuery_map_eq_BPR (f : D →+* R) (hf : StrictMono f)
     (Q P : AzPolynomial D) (hP1 : 1 ≤ P.natDegree) :
-    tarskiQuerySubres Q P
+    tarskiQuery Q P
       = Azurite.BPR.tarskiQuery ((AzPolynomial.toPoly Q).map f) ((AzPolynomial.toPoly P).map f) := by
   have hfi := hf.injective
   have hsign : ∀ x : D, (SignType.sign (f x) : ℤ) = (SignType.sign x : ℤ) := fun x => by
@@ -275,7 +275,7 @@ theorem tarskiQuerySubres_map_eq_tarskiQuery (f : D →+* R) (hf : StrictMono f)
     · rw [sign_neg h, sign_neg (map_zero f ▸ hf h)]
     · simp [h, map_zero f]
     · rw [sign_pos h, sign_pos (map_zero f ▸ hf h)]
-  rw [← toPoly_map, ← toPoly_map, ← tarskiQuerySubres_eq_tarskiQuery (Q.map f) (P.map f)
+  rw [← toPoly_map, ← toPoly_map, ← tarskiQuery_eq_BPR (Q.map f) (P.map f)
     (by rw [natDegree_map_of_injective f hfi]; exact hP1)]
   show (if Q.natDegree = 0 then
       (SignType.sign (Q.coeff 0) : ℤ) * PmV (signedSubresultant P (derivative P)).2.toList.reverse
@@ -313,17 +313,17 @@ theorem tarskiQuerySubres_map_eq_tarskiQuery (f : D →+* R) (hf : StrictMono f)
 
 end TarskiTransport
 
-/-- **Correctness of `tarskiQuerySubres` over `AzInt`.** For integer-coefficient
+/-- **Correctness of `tarskiQuery` over `AzInt`.** For integer-coefficient
 polynomials with non-constant `P`, the fraction-free signed-subresultant Tarski
 query equals the Tarski query of the polynomials cast into any real closed field
 `R` (via `AzInt → ℤ → R`). -/
-theorem tarskiQuerySubres_azInt_eq_tarskiQuery {R : Type*} [Field R] [LinearOrder R]
+theorem tarskiQuery_azInt_eq_BPR {R : Type*} [Field R] [LinearOrder R]
     [IsStrictOrderedRing R] [DecidableEq R] [Azurite.ExactDiv R] [IsRealClosed R]
     (Q P : AzPolynomial AzInt) (hP1 : 1 ≤ P.natDegree) :
-    tarskiQuerySubres Q P
+    tarskiQuery Q P
       = Azurite.BPR.tarskiQuery
           ((AzPolynomial.toPoly Q).map ((Int.castRingHom R).comp AzInt.toIntRingHom))
           ((AzPolynomial.toPoly P).map ((Int.castRingHom R).comp AzInt.toIntRingHom)) :=
-  tarskiQuerySubres_map_eq_tarskiQuery _ azIntCast_strictMono Q P hP1
+  tarskiQuery_map_eq_BPR _ azIntCast_strictMono Q P hP1
 
 end Azurite.AzPolynomial
