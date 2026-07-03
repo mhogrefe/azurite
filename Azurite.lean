@@ -309,6 +309,7 @@ import Azurite.AzPolynomial.Cast
 import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
+import Azurite.AzPolynomial.ComposedOps
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Discriminant
 import Azurite.AzPolynomial.Equiv.Add
@@ -321,12 +322,16 @@ import Azurite.AzPolynomial.Equiv.CauchyIndexOnMap
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubres
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubresMap
 import Azurite.AzPolynomial.Equiv.Comp
+import Azurite.AzPolynomial.Equiv.ComposedOps
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Discriminant
 import Azurite.AzPolynomial.Equiv.DiscriminantMap
+import Azurite.AzPolynomial.Equiv.EliminateCoeffs
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.ExactDiv
+import Azurite.AzPolynomial.Equiv.Expand
 import Azurite.AzPolynomial.Equiv.ExtendedSRemS
+import Azurite.AzPolynomial.Equiv.InvertRoots
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
 import Azurite.AzPolynomial.Equiv.Monomial
@@ -355,7 +360,9 @@ import Azurite.AzPolynomial.Equiv.Tru
 import Azurite.AzPolynomial.Equiv.Truncate
 import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.ExactDiv
+import Azurite.AzPolynomial.Expand
 import Azurite.AzPolynomial.ExtendedSRemS
+import Azurite.AzPolynomial.InvertRoots
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
 import Azurite.AzPolynomial.Mul
