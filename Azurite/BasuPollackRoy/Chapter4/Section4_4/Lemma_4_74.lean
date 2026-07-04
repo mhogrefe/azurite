@@ -242,7 +242,7 @@ theorem isQuasiMonic_finSuccEquiv_shearHom (a : Fin n → K)
         (((finSuccEquiv K n).toAlgHom).comp (shearHom a)) = aeval (ev0Map a) := by
       apply MvPolynomial.algHom_ext
       intro j
-      simp only [AlgHom.comp_apply, AlgEquiv.coe_algHom,
+      simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
         Polynomial.coe_mapAlgHom, shearHom, aeval_X]
       refine Fin.cases ?_ ?_ j
       · simp only [shearMap_zero, finSuccEquiv_X_zero, Polynomial.map_X, ev0Map, Fin.cons_zero]
@@ -254,7 +254,7 @@ theorem isQuasiMonic_finSuccEquiv_shearHom (a : Fin n → K)
           Polynomial.algebraMap_apply, MvPolynomial.algebraMap_eq, Polynomial.map_C]
         simp
     rw [← hfun]
-    simp only [AlgHom.comp_apply, AlgEquiv.coe_algHom, ← hQ, Polynomial.coe_mapAlgHom]
+    simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, ← hQ, Polynomial.coe_mapAlgHom]
     rw [MvPolynomial.coe_aeval_eq_eval]
   -- (β) `coeff (ev0 P) d = c`.
   have hbeta : (aeval (ev0Map a) P).coeff d = c := by

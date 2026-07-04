@@ -162,7 +162,7 @@ theorem signPreserving_bot (hιF : StrictMono (algebraMap F R))
   show SignType.sign (((botEquiv F R).symm f : ↥(⊥ : IntermediateField F R)) : R)
      = SignType.sign ((⊥ : Lifts F R R').emb ((botEquiv F R).symm f))
   rw [show (⊥ : Lifts F R R').emb = (Algebra.ofId F R').comp (botEquiv F R) from rfl]
-  simp only [AlgHom.comp_apply, AlgEquiv.coe_algHom, AlgEquiv.apply_symm_apply]
+  simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply]
   rw [show (((botEquiv F R).symm f : ↥(⊥ : IntermediateField F R)) : R) = algebraMap F R f from by
         simp [IntermediateField.botEquiv_symm],
     show (Algebra.ofId F R') f = algebraMap F R' f from rfl, hιF.sign_comp, hτF.sign_comp]

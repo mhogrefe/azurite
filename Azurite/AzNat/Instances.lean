@@ -32,8 +32,10 @@ instance : CommSemiring AzNat where
     rw [toNat_add, toNat_ofNat, toNat_ofNat, toNat_one])
   nsmul n a := AzNat.ofNat n * a
   nsmul_zero a := toNat_injective (by
+    show (AzNat.ofNat 0 * a).toNat = _
     rw [toNat_mul, toNat_ofNat, toNat_zero, Nat.zero_mul])
   nsmul_succ n a := toNat_injective (by
+    show (AzNat.ofNat (n + 1) * a).toNat = (AzNat.ofNat n * a + a).toNat
     rw [toNat_add, toNat_mul, toNat_mul, toNat_ofNat, toNat_ofNat, Nat.succ_mul])
   -- Exponentiation `a ^ n` runs the generic sliding-window algorithm (the same one behind
   -- `AzNat.pow`), so it is `O(log n)` multiplications rather than the default `O(n)`, and
@@ -43,6 +45,8 @@ instance : CommSemiring AzNat where
   npow n a := Azurite.slidingWindowPow a n
   npow_zero _ := rfl
   npow_succ n a := toNat_injective (by
+    show (Azurite.slidingWindowPow a (n + 1)).toNat
+      = (Azurite.slidingWindowPow a n * a).toNat
     rw [toNat_mul, map_slidingWindowPow AzNat.toNat toNat_one toNat_mul a (n + 1),
         map_slidingWindowPow AzNat.toNat toNat_one toNat_mul a n, pow_succ])
 

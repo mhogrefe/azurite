@@ -70,11 +70,19 @@ theorem mem_idealOfPolys_of_map_mem {Ps : Finset (MvPolynomial (Fin k) K)}
   have hπa : ∀ x : K, π (algebraMap K C x) = x := fun x => by
     simpa [Algebra.linearMap_apply] using LinearMap.congr_fun hπ x
   -- Extend `π` coefficient-wise to `prj : C[X] → K[X]`.
-  let prj : MvPolynomial (Fin k) C →ₗ[K] MvPolynomial (Fin k) K := Finsupp.mapRange.linearMap π
+  -- (`AddMonoidAlgebra` is now a structure, so the coefficient-wise
+  -- extension goes through `coeffLinearEquiv` rather than raw `Finsupp`.)
+  let prj : MvPolynomial (Fin k) C →ₗ[K] MvPolynomial (Fin k) K :=
+    (AddMonoidAlgebra.coeffLinearEquiv (R := K)).symm.toLinearMap ∘ₗ
+      Finsupp.mapRange.linearMap π ∘ₗ
+      (AddMonoidAlgebra.coeffLinearEquiv (R := K)).toLinearMap
   have prjcoeff : ∀ (p : MvPolynomial (Fin k) C) (m : Fin k →₀ ℕ),
       MvPolynomial.coeff m (prj p) = π (MvPolynomial.coeff m p) := fun p m => by
-    show (Finsupp.mapRange π (map_zero π) p) m = π (p m)
-    exact Finsupp.mapRange_apply
+    show MvPolynomial.coeff m ((AddMonoidAlgebra.coeffLinearEquiv (R := K)).symm
+      (Finsupp.mapRange π (map_zero π)
+        ((AddMonoidAlgebra.coeffLinearEquiv (R := K)) p))) = π (MvPolynomial.coeff m p)
+    rw [MvPolynomial.coeff, MvPolynomial.coeff]
+    simp [AddMonoidAlgebra.coeffLinearEquiv_apply, AddMonoidAlgebra.coeffLinearEquiv_symm_apply]
   -- `prj` is a retraction of base change: `prj(map g) = g`.
   have prjmap : ∀ g : MvPolynomial (Fin k) K,
       prj (MvPolynomial.map (algebraMap K C) g) = g := fun g => by

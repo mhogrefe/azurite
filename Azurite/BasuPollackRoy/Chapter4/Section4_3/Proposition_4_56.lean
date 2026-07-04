@@ -388,10 +388,11 @@ theorem proposition_4_56_powerSeries (P Q : K[X]) (hP : P.Monic) (hp : 0 < P.nat
     obtain ⟨m', rfl⟩ := Nat.exists_eq_add_of_lt hmpos
     rw [Nat.zero_add, PowerSeries.coeff_succ_X_mul, PowerSeries.coeff_mul]
     -- RHS: ∑_{a+b=m'} s a * (reflect p P).coeff b
-    have hRHS : ∑ x ∈ Finset.antidiagonal m',
+    have hRHS : ∑ x ∈ Finset.HasAntidiagonal.antidiagonal m',
           (PowerSeries.coeff x.1) (PowerSeries.mk s) *
             (PowerSeries.coeff x.2) (↑(Polynomial.reflect p P) : PowerSeries K) =
-        ∑ x ∈ Finset.antidiagonal m', s x.1 * P.coeff (Polynomial.revAt p x.2) := by
+        ∑ x ∈ Finset.HasAntidiagonal.antidiagonal m',
+          s x.1 * P.coeff (Polynomial.revAt p x.2) := by
       refine Finset.sum_congr rfl (fun x _ => ?_)
       rw [PowerSeries.coeff_mk, Polynomial.coeff_coe, Polynomial.coeff_reflect]
     rw [hRHS]
@@ -408,18 +409,18 @@ theorem proposition_4_56_powerSeries (P Q : K[X]) (hP : P.Monic) (hp : 0 < P.nat
       symm
       apply Finset.sum_nbij' (fun x => p - x.2) (fun n => (n - j, p - n))
       · rintro ⟨a, b⟩ hx
-        rw [Finset.mem_antidiagonal] at hx
+        rw [Finset.HasAntidiagonal.mem_antidiagonal] at hx
         rw [Finset.mem_Ico]; omega
       · intro n hn
         rw [Finset.mem_Ico] at hn
-        rw [Finset.mem_antidiagonal]; omega
+        rw [Finset.HasAntidiagonal.mem_antidiagonal]; omega
       · rintro ⟨a, b⟩ hx
-        rw [Finset.mem_antidiagonal] at hx
+        rw [Finset.HasAntidiagonal.mem_antidiagonal] at hx
         ext <;> simp <;> omega
       · intro n hn
         rw [Finset.mem_Ico] at hn; omega
       · rintro ⟨a, b⟩ hx
-        rw [Finset.mem_antidiagonal] at hx
+        rw [Finset.HasAntidiagonal.mem_antidiagonal] at hx
         simp only [Polynomial.revAt_le (show b ≤ p from by omega)]
         rw [mul_comm, show p - b - j = a from by omega]
     · -- m' ≥ p: high coefficients vanish by the moment recurrence.

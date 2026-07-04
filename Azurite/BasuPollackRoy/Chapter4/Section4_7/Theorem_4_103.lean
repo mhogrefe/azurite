@@ -72,22 +72,22 @@ theorem sumElim_σequiv (k : Fin 2 → ℕ) (a : Fin (k 0 + 1) → Ri R) (b : Fi
 
 variable {C : Type*} [CommRing C]
 
-/-- **Eval bridge for `sumToIter`.** Evaluating the iterated polynomial `sumToIter P` first in the
+/-- **Eval bridge for `sumToIter`.** Evaluating the iterated polynomial `sumRingEquiv P` first in the
 inner variables at `b` and then in the outer variables at `a` equals evaluating `P` at the combined
 assignment `Sum.elim a b`. -/
 theorem eval_sumToIter {S₁ S₂ : Type*} (a : S₁ → C) (b : S₂ → C)
     (P : MvPolynomial (S₁ ⊕ S₂) C) :
-    eval a (map (eval b) (sumToIter C S₁ S₂ P)) = eval (Sum.elim a b) P := by
+    eval a (map (eval b) (sumRingEquiv C S₁ S₂ P)) = eval (Sum.elim a b) P := by
   induction P using MvPolynomial.induction_on with
-  | C r => rw [sumToIter_C, map_C, eval_C, eval_C, eval_C]
+  | C r => rw [sumRingEquiv_C, map_C, eval_C, eval_C, eval_C]
   | add p q hp hq => rw [map_add, map_add, eval_add, hp, hq, eval_add]
   | mul_X p i hp =>
     cases i with
     | inl b₁ =>
-      rw [map_mul, map_mul, eval_mul, hp, sumToIter_Xl, map_X, eval_X, eval_mul, eval_X,
+      rw [map_mul, map_mul, eval_mul, hp, sumRingEquiv_X_inl, map_X, eval_X, eval_mul, eval_X,
         Sum.elim_inl]
     | inr c =>
-      rw [map_mul, map_mul, eval_mul, hp, sumToIter_Xr, map_C, eval_C, eval_mul]
+      rw [map_mul, map_mul, eval_mul, hp, sumRingEquiv_X_inr, map_C, eval_C, eval_mul]
       simp only [eval_X, Sum.elim_inr]
 
 /-- The split of a two-block polynomial `P` into an `X`-polynomial (block `0`) with `Y`-polynomial
@@ -95,14 +95,14 @@ theorem eval_sumToIter {S₁ S₂ : Type*} (a : S₁ → C) (b : S₂ → C)
 noncomputable def split (k : Fin 2 → ℕ)
     (P : MvPolynomial ((i : Fin 2) × Fin (k i + 1)) (Ri R)) :
     MvPolynomial (Fin (k 0 + 1)) (MvPolynomial (Fin (k 1 + 1)) (Ri R)) :=
-  sumToIter (Ri R) (Fin (k 0 + 1)) (Fin (k 1 + 1)) (rename (σequiv k) P)
+  sumRingEquiv (Ri R) (Fin (k 0 + 1)) (Fin (k 1 + 1)) (rename (σequiv k) P)
 
 /-- **Coefficient dictionary for `sumToIter`.** The `γ₁`-coefficient of the `γ₀`-coefficient of the
-iterated polynomial `sumToIter P` equals the coefficient of `P` at the combined exponent
+iterated polynomial `sumRingEquiv P` equals the coefficient of `P` at the combined exponent
 `γ₀.sumElim γ₁`. -/
 theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C) (γ₀ : S₁ →₀ ℕ)
     (γ₁ : S₂ →₀ ℕ) :
-    ((sumToIter C S₁ S₂ P).coeff γ₀).coeff γ₁ = P.coeff (γ₀.sumElim γ₁) := by
+    ((sumRingEquiv C S₁ S₂ P).coeff γ₀).coeff γ₁ = P.coeff (γ₀.sumElim γ₁) := by
   classical
   induction P using MvPolynomial.induction_on generalizing γ₀ γ₁ with
   | C r =>
@@ -114,7 +114,7 @@ theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C)
         · ext a; have := Finsupp.ext_iff.mp h (Sum.inl a); simpa [Finsupp.sumElim_inl] using this
         · ext b; have := Finsupp.ext_iff.mp h (Sum.inr b); simpa [Finsupp.sumElim_inr] using this
       · rintro ⟨h1, h2⟩; subst h1; subst h2; ext x; cases x <;> simp
-    simp only [sumToIter_C, coeff_C, apply_ite (coeff γ₁), coeff_zero]
+    simp only [sumRingEquiv_C, coeff_C, apply_ite (coeff γ₁), coeff_zero]
     split_ifs with h0 h1 h2 <;> simp_all
   | add p q hp hq => rw [map_add, coeff_add, coeff_add, coeff_add, hp, hq]
   | mul_X p i hp =>
@@ -128,16 +128,16 @@ theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C)
         cases x with
         | inl a => simp [Finsupp.sumElim_inl, Finsupp.single_apply, Sum.inl.injEq]
         | inr a => simp [Finsupp.sumElim_inr]
-      rw [map_mul, sumToIter_Xl, coeff_mul_X', coeff_mul_X', apply_ite (coeff γ₁), coeff_zero]
+      rw [map_mul, sumRingEquiv_X_inl, coeff_mul_X', coeff_mul_X', apply_ite (coeff γ₁), coeff_zero]
       split_ifs with h1 h2 h2
       · rw [hp, hsub]
       · exact absurd (hmem.1 h1) h2
       · exact absurd (hmem.2 h2) h1
       · rfl
     | inr c =>
-      rw [map_mul, sumToIter_Xr]
-      have e : coeff γ₀ ((sumToIter C S₁ S₂) p * MvPolynomial.C (X c))
-          = coeff γ₀ ((sumToIter C S₁ S₂) p) * X c := by rw [mul_comm, coeff_C_mul, mul_comm]
+      rw [map_mul, sumRingEquiv_X_inr]
+      have e : coeff γ₀ ((sumRingEquiv C S₁ S₂) p * MvPolynomial.C (X c))
+          = coeff γ₀ ((sumRingEquiv C S₁ S₂) p) * X c := by rw [mul_comm, coeff_C_mul, mul_comm]
       have hmem : c ∈ γ₁.support ↔ (Sum.inr c : S₁ ⊕ S₂) ∈ (γ₀.sumElim γ₁).support := by
         simp [Finsupp.mem_support_iff]
       have hsub : γ₀.sumElim (γ₁ - Finsupp.single c 1)

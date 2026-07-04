@@ -61,16 +61,35 @@ instance instCommRing [NeZero m.toNat] : CommRing (AzZMod m) where
   intCast_negSucc n := toZMod_injective (by simp [toZMod_neg, Int.negSucc_eq])
   -- `n • a` / `i • a` are one cast plus one multiplication.
   nsmul n a := (n : AzZMod m) * a
-  nsmul_zero a := toZMod_injective (by simp)
-  nsmul_succ n a := toZMod_injective (by simp [toZMod_add, toZMod_mul]; ring)
+  nsmul_zero a := toZMod_injective (by
+    show (((0 : ℕ) : AzZMod m) * a).toZMod = _
+    simp)
+  nsmul_succ n a := toZMod_injective (by
+    show ((((n + 1 : ℕ)) : AzZMod m) * a).toZMod = ((((n : ℕ)) : AzZMod m) * a + a).toZMod
+    simp [toZMod_add, toZMod_mul]
+    ring)
   zsmul i a := (i : AzZMod m) * a
-  zsmul_zero' a := toZMod_injective (by simp)
-  zsmul_succ' n a := toZMod_injective (by simp [toZMod_add, toZMod_mul]; ring)
-  zsmul_neg' n a := toZMod_injective (by simp [toZMod_mul, toZMod_neg, Int.negSucc_eq]; ring)
+  zsmul_zero' a := toZMod_injective (by
+    show (((0 : ℤ) : AzZMod m) * a).toZMod = _
+    simp)
+  zsmul_succ' n a := toZMod_injective (by
+    show ((((n + 1 : ℕ) : ℤ) : AzZMod m) * a).toZMod
+      = ((((n : ℕ) : ℤ) : AzZMod m) * a + a).toZMod
+    simp [toZMod_add, toZMod_mul]
+    ring)
+  zsmul_neg' n a := toZMod_injective (by
+    show (((Int.negSucc n) : AzZMod m) * a).toZMod
+      = (-((((n + 1 : ℕ) : ℤ) : AzZMod m) * a)).toZMod
+    simp [toZMod_mul, toZMod_neg, Int.negSucc_eq]
+    ring)
   -- Exponentiation runs the sliding-window `pow` (`O(log n)` multiplications).
   npow n a := a.pow n
-  npow_zero a := toZMod_injective (by rw [toZMod_pow, pow_zero, toZMod_one])
-  npow_succ n a := toZMod_injective (by rw [toZMod_mul, toZMod_pow, toZMod_pow, pow_succ])
+  npow_zero a := toZMod_injective (by
+    show (a.pow 0).toZMod = _
+    rw [toZMod_pow, pow_zero, toZMod_one])
+  npow_succ n a := toZMod_injective (by
+    show (a.pow (n + 1)).toZMod = (a.pow n * a).toZMod
+    rw [toZMod_mul, toZMod_pow, toZMod_pow, pow_succ])
 
 -- Sanity: the `CommRing` is fully usable — `ring` discharges polynomial identities,
 -- and `pow` is the monoid power.

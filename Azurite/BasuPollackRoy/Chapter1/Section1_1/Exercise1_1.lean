@@ -36,6 +36,15 @@ theorem eval_eq_polynomial_eval
     funext (fun i => by fin_cases i; rfl)
   rw [heq, MvPolynomial.eval_eq_eval_mv_eval']
   congr 1
+  simp only [mvPolyFinOneEquiv, AlgEquiv.trans_apply]
+  congr 1
+  refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => i.elim0)
+  simp only [MvPolynomial.eval_C]
+  rw [show ((MvPolynomial.isEmptyAlgEquiv C (Fin 0) : MvPolynomial (Fin 0) C ≃ₐ[C] C)
+        : MvPolynomial (Fin 0) C →ₐ[C] C).toRingHom (MvPolynomial.C r)
+      = (MvPolynomial.isEmptyAlgEquiv C (Fin 0)) (MvPolynomial.C r) from rfl,
+    ← MvPolynomial.isEmptyAlgEquiv_symm_apply (R := C) (σ := Fin 0) r,
+    AlgEquiv.apply_symm_apply]
 
 omit [IsAlgClosed C] in
 /-- Exercise 1.1: An algebraic subset of C is either finite

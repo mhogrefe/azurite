@@ -287,16 +287,16 @@ private theorem finSuccEquiv_liftAut {m : ℕ}
     apply MvPolynomial.ringHom_ext
     · intro r
       simp only [RingHom.coe_comp, Function.comp_apply, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
-        AlgEquiv.coe_algHom]
+        AlgEquiv.coe_toAlgHom]
       rw [show ((liftAut σ') (C r)) = C r from by simp [liftAut, liftHom]]
       rw [show (finSuccEquiv K m) (C r) = Polynomial.C (C r) from by simp [finSuccEquiv_apply]]
       rw [Polynomial.coe_mapRingHom, Polynomial.map_C]
-      simp only [RingHom.coe_coe, AlgEquiv.coe_algHom]
+      simp only [RingHom.coe_coe, AlgEquiv.coe_toAlgHom]
       rw [show σ' (C r) = C r from by rw [← MvPolynomial.algebraMap_eq, AlgEquiv.commutes,
         MvPolynomial.algebraMap_eq]]
     · intro j
       simp only [RingHom.coe_comp, Function.comp_apply, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
-        AlgEquiv.coe_algHom]
+        AlgEquiv.coe_toAlgHom]
       refine Fin.cases ?_ (fun i => ?_) j
       · rw [liftAut_X_zero, finSuccEquiv_X_zero]
         simp [Polynomial.coe_mapRingHom]
@@ -316,7 +316,7 @@ private theorem isQuasiMonic_liftAut {m : ℕ}
   have hinj : Function.Injective σ'.toAlgHom.toRingHom := σ'.injective
   -- `σ' (C c) = C c`, which is the leading coeff and is nonzero.
   have hσC : σ'.toAlgHom.toRingHom (MvPolynomial.C c) = MvPolynomial.C c := by
-    simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgEquiv.coe_algHom]
+    simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgEquiv.coe_toAlgHom]
     rw [← MvPolynomial.algebraMap_eq, AlgEquiv.commutes, MvPolynomial.algebraMap_eq]
   have hleadne : σ'.toAlgHom.toRingHom (finSuccEquiv K m P).leadingCoeff ≠ 0 := by
     rw [hc, hσC]

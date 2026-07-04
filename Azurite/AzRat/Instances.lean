@@ -70,14 +70,21 @@ instance : Field AzRat where
   -- `nsmulRec`/`zsmulRec` would be `n` additions); the casts are limb-level
   -- via `AzNat.ofNat`/`AzInt.ofInt`.
   nsmul n q := (n : AzRat) * q
-  nsmul_zero q := toRat_injective (by simp)
+  nsmul_zero q := toRat_injective (by
+    show (((0 : ℕ) : AzRat) * q).toRat = _
+    simp)
   nsmul_succ n q := toRat_injective (by
+    show (((n + 1 : ℕ) : AzRat) * q).toRat = ((((n : ℕ) : AzRat)) * q + q).toRat
     simp only [toRat_mul, toRat_add, toRat_natCast]; push_cast; ring)
   zsmul z q := (z : AzRat) * q
-  zsmul_zero' q := toRat_injective (by simp)
+  zsmul_zero' q := toRat_injective (by
+    show (((0 : ℤ) : AzRat) * q).toRat = _
+    simp)
   zsmul_succ' n q := toRat_injective (by
+    show ((((n + 1 : ℕ) : ℤ) : AzRat) * q).toRat = ((((n : ℕ) : ℤ) : AzRat) * q + q).toRat
     simp only [toRat_mul, toRat_add, toRat_intCast]; push_cast; ring)
   zsmul_neg' n q := toRat_injective (by
+    show (((Int.negSucc n) : AzRat) * q).toRat = (-((((n + 1 : ℕ) : ℤ) : AzRat) * q)).toRat
     simp only [toRat_mul, toRat_neg, toRat_intCast]
     push_cast [Int.negSucc_eq]; ring)
   -- Exponentiation `q ^ n` and `q ^ z` run `AzRat.pow`/`AzRat.zpow`
@@ -88,8 +95,12 @@ instance : Field AzRat where
   -- are discharged through `toRat` (which does not need the `Field`
   -- structure being built).
   npow n q := q.pow n
-  npow_zero q := toRat_injective (by rw [toRat_pow, pow_zero, toRat_one])
-  npow_succ n q := toRat_injective (by rw [toRat_mul, toRat_pow, toRat_pow, pow_succ])
+  npow_zero q := toRat_injective (by
+    show (q.pow 0).toRat = _
+    rw [toRat_pow, pow_zero, toRat_one])
+  npow_succ n q := toRat_injective (by
+    show (q.pow (n + 1)).toRat = (q.pow n * q).toRat
+    rw [toRat_mul, toRat_pow, toRat_pow, pow_succ])
   zpow z q := q.zpow z
   zpow_zero' q := toRat_injective (by
     show toRat (q.pow 0) = toRat 1

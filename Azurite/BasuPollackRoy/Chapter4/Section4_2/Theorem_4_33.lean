@@ -60,7 +60,9 @@ theorem sRes_right_zero_eq_zero (P : K[X]) {m : ℕ} (hm : m < P.natDegree) :
         Matrix.zero_apply]
       rw [if_neg (by simp [Polynomial.natDegree_zero]), mul_zero, Polynomial.coeff_zero]
     rw [hzero]
-    exact Matrix.det_zero ⟨⟨0, by simp only [Polynomial.natDegree_zero]; omega⟩⟩
+    haveI : Nonempty (Fin (P.natDegree + Polynomial.natDegree (0 : K[X]) - 2 * 0)) :=
+      ⟨⟨0, by simp only [Polynomial.natDegree_zero]; omega⟩⟩
+    exact Matrix.det_zero
   · rw [sRes, if_neg (by rw [Polynomial.natDegree_zero]; omega),
       if_pos (by rw [Polynomial.natDegree_zero]; omega), if_neg (by omega)]
 

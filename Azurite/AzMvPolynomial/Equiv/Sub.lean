@@ -35,8 +35,8 @@ private theorem neg_preserves : ∀ (x : R), x ≠ 0 → -x ≠ 0 :=
     | cons a t ih =>
       simp only [List.map_cons, List.sum_cons, ih, neg_add]
       congr 1
-      simp only [Monomial.toMvPoly, MvPolynomial.monomial]
-      exact Finsupp.single_neg a.monic.toFinsupp a.coeff.val
+      simp only [Monomial.toMvPoly]
+      exact map_neg (MvPolynomial.monomial a.monic.toFinsupp) a.coeff.val
   exact hmap q.terms.toList
 
 /-- Subtraction commutes with `ofMvPoly`. -/

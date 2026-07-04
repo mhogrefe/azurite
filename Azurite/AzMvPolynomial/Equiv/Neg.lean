@@ -21,9 +21,9 @@ variable {R : Type _} [CommRing R]
   show List.map (Monomial.toMvPoly ∘ mapCoeff (fun x => -x) _) p.terms.toList =
        List.map (Neg.neg ∘ Monomial.toMvPoly) p.terms.toList
   congr 1; ext m : 1
-  show Finsupp.single m.monic.toFinsupp (-m.coeff.val) =
-       -Finsupp.single m.monic.toFinsupp m.coeff.val
-  exact Finsupp.single_neg m.monic.toFinsupp m.coeff.val
+  show (MvPolynomial.monomial m.monic.toFinsupp) (-m.coeff.val) =
+       -(MvPolynomial.monomial m.monic.toFinsupp) m.coeff.val
+  exact map_neg (MvPolynomial.monomial m.monic.toFinsupp) m.coeff.val
 
 /-- Negation commutes with `ofMvPoly`. -/
 @[simp] theorem ofMvPoly_neg (p : MvPolynomial (Fin n) R) :

@@ -23,7 +23,7 @@ theorem coeff_mul_zero_of_nonneg {x y : HahnSeries ℚ K}
   rw [HahnSeries.coeff_mul, Finset.sum_subset (s₂ := {((0 : ℚ), (0 : ℚ))}) ?_ ?_]
   · simp
   · intro p hp
-    rw [Finset.mem_addAntidiagonal] at hp
+    rw [Finset.mem_antidiagonal] at hp
     obtain ⟨hi, hj, hsum⟩ := hp
     have hi0 : (0 : ℚ) ≤ p.1 := by
       have h2 := le_trans hx (orderTop_le_of_coeff_ne_zero (Function.mem_support.mp hi))
@@ -38,7 +38,7 @@ theorem coeff_mul_zero_of_nonneg {x y : HahnSeries ℚ K}
     have hx0 : x.coeff 0 = 0 ∨ y.coeff 0 = 0 := by
       by_contra hcon
       rw [not_or] at hcon
-      exact hpn (Finset.mem_addAntidiagonal.mpr
+      exact hpn (Finset.mem_antidiagonal.mpr
         ⟨Function.mem_support.mpr hcon.1, Function.mem_support.mpr hcon.2, add_zero 0⟩)
     rcases hx0 with h | h
     · rw [h, zero_mul]

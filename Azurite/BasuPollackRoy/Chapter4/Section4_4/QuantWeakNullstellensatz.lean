@@ -65,8 +65,9 @@ theorem quant_weak_nss [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algeb
     -- `P₁ = C c` for `c = e P₁`, and `c ≠ 0`.
     set c : K := MvPolynomial.isEmptyAlgEquiv K (Fin 0) P₁ with hc
     have hP₁C : P₁ = MvPolynomial.C c := by
-      conv_lhs => rw [← AlgEquiv.symm_apply_apply (MvPolynomial.isEmptyAlgEquiv K (Fin 0)) P₁]
-      simp [MvPolynomial.isEmptyAlgEquiv, hc]
+      conv_lhs => rw [← AlgEquiv.symm_apply_apply (MvPolynomial.isEmptyAlgEquiv K (Fin 0)) P₁,
+        ← hc]
+      exact MvPolynomial.isEmptyAlgEquiv_symm_apply (R := K) (σ := Fin 0) c
     have hcne : c ≠ 0 := by
       intro h0
       apply hP₁0

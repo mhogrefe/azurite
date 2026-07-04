@@ -44,20 +44,36 @@ instance : CommRing AzInt where
   -- `n • z` / `i • z` are one cast plus one multiplication (the default
   -- `nsmulRec`/`zsmulRec` would be `n` additions).
   nsmul n z := (n : AzInt) * z
-  nsmul_zero z := toInt_injective (by simp [toInt_mul])
-  nsmul_succ n z := toInt_injective (by simp [toInt_add, toInt_mul]; ring)
+  nsmul_zero z := toInt_injective (by
+    show (((0 : ℕ) : AzInt) * z).toInt = _
+    simp [toInt_mul])
+  nsmul_succ n z := toInt_injective (by
+    show (((n + 1 : ℕ) : AzInt) * z).toInt = ((((n : ℕ) : AzInt)) * z + z).toInt
+    simp [toInt_add, toInt_mul]
+    ring)
   zsmul i z := (i : AzInt) * z
-  zsmul_zero' z := toInt_injective (by simp [toInt_mul])
-  zsmul_succ' n z := toInt_injective (by simp [toInt_add, toInt_mul]; ring)
+  zsmul_zero' z := toInt_injective (by
+    show (((0 : ℤ) : AzInt) * z).toInt = _
+    simp [toInt_mul])
+  zsmul_succ' n z := toInt_injective (by
+    show ((((n + 1 : ℕ) : ℤ) : AzInt) * z).toInt = ((((n : ℕ) : ℤ) : AzInt) * z + z).toInt
+    simp [toInt_add, toInt_mul]
+    ring)
   zsmul_neg' n z := toInt_injective (by
-    simp [toInt_mul, toInt_neg, Int.negSucc_eq]; ring)
+    show (((Int.negSucc n) : AzInt) * z).toInt = (-((((n + 1 : ℕ) : ℤ) : AzInt) * z)).toInt
+    simp [toInt_mul, toInt_neg, Int.negSucc_eq]
+    ring)
   -- Exponentiation `z ^ n` runs `AzInt.pow` (magnitude delegated to `AzNat`'s sliding-window
   -- power), so it is `O(log n)` multiplications rather than the default `O(n)`, and
   -- `z.pow n = z ^ n` definitionally. The `npow_succ` obligation is discharged through `toInt`
   -- via `toInt_pow` (which does not need the `Ring` structure that is still being built).
   npow n z := z.pow n
-  npow_zero z := toInt_injective (by rw [toInt_pow, pow_zero, toInt_one])
-  npow_succ n z := toInt_injective (by rw [toInt_mul, toInt_pow, toInt_pow, pow_succ])
+  npow_zero z := toInt_injective (by
+    show (z.pow 0).toInt = _
+    rw [toInt_pow, pow_zero, toInt_one])
+  npow_succ n z := toInt_injective (by
+    show (z.pow (n + 1)).toInt = (z.pow n * z).toInt
+    rw [toInt_mul, toInt_pow, toInt_pow, pow_succ])
 
 instance : Nontrivial AzInt := ⟨0, 1, fun h => by
   have : (0 : Int) = 1 := by rw [← toInt_zero, ← toInt_one, h]
