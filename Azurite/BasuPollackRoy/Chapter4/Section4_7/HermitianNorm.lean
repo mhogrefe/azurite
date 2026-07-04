@@ -13,7 +13,7 @@ non-negative and vanishes only at `0` (anisotropy, as `R` is real closed).
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {n : ℕ}
 

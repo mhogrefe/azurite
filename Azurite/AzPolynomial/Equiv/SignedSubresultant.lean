@@ -1727,7 +1727,10 @@ theorem ssAuxExt_proj {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDi
   | succ f ih =>
     rw [ssAuxExt, ssAux]
     by_cases hSj : Sj = 0
-    · simp [hSj, List.map_replicate]
+    · by_cases hj : j = 0
+      · simp [hSj, hj]
+      · simp only [if_pos hSj, if_neg hj, List.map_cons, List.map_replicate]
+        conv_rhs => rw [show j = (j - 1) + 1 from by omega, List.replicate_succ]
     · rw [if_neg hSj, if_neg hSj]
       dsimp only
       split_ifs with hkj hk0 hk0' <;>
@@ -1798,10 +1801,13 @@ theorem ssAuxExt_spec_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.
     have htine : ti ≠ 0 := by rw [hti]; exact Polynomial.leadingCoeff_ne_zero.mpr hne
     rw [ssAuxExt]
     by_cases hSj0 : Sj = 0
-    · rw [if_pos hSj0]
+    · rw [if_pos hSj0, if_neg (show ¬j = 0 by omega)]
       intro t ht
-      rw [List.eq_of_mem_replicate ht]
-      exact ⟨by simp [toPoly_zero], fun h => absurd rfl h⟩
+      rcases List.mem_cons.mp ht with rfl | ht'
+      · refine ⟨?_, fun h => absurd rfl h⟩
+        rw [hhead, hSj0]
+      · rw [List.eq_of_mem_replicate ht']
+        exact ⟨by simp [toPoly_zero], fun h => absurd rfl h⟩
     · rw [if_neg hSj0]
       have hkdeg : (sResP P Q (j - 1)).natDegree = Sj.natDegree := by
         rw [← hSj, AzPolynomial.natDegree_toPoly]

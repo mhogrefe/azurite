@@ -21,7 +21,7 @@ Hermitian norm of the chart representative `(x₁ : ⋯ : 1 : ⋯ : x_k)`, which
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 open Azurite.BPR
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}

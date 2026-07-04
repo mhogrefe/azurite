@@ -1560,7 +1560,7 @@ relevant lower-order behavior at `P`-roots untouched. -/
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- `rootMultiplicity` is preserved under negation. -/
-private lemma Polynomial.rootMultiplicity_neg
+private lemma rootMultiplicity_neg'
     (p : R[X]) (a : R) :
     (-p).rootMultiplicity a = p.rootMultiplicity a := by
   classical
@@ -1578,7 +1578,7 @@ private lemma Polynomial.rootMultiplicity_neg
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- If `g` has strictly smaller `rootMultiplicity` at `x` than `f`, then
     `(f + g).rootMultiplicity x = g.rootMultiplicity x`. -/
-private lemma Polynomial.rootMultiplicity_add_of_lt
+private lemma rootMultiplicity_add_of_lt'
     {x : R} {f g : R[X]} (hf_ne : f ≠ 0) (hg_ne : g ≠ 0)
     (h_lt : g.rootMultiplicity x < f.rootMultiplicity x) :
     (f + g).rootMultiplicity x = g.rootMultiplicity x := by
@@ -1589,7 +1589,7 @@ private lemma Polynomial.rootMultiplicity_add_of_lt
     intro h
     have hf_eq : f = -g := by linear_combination h
     have h_eq : f.rootMultiplicity x = g.rootMultiplicity x := by
-      rw [hf_eq]; exact Polynomial.rootMultiplicity_neg g x
+      rw [hf_eq]; exact rootMultiplicity_neg' g x
     omega
   -- `(X − C x)^m ∣ g` and `(X − C x)^m ∣ f`, so `(X − C x)^m ∣ (f + g)`.
   have h_dvd_g : (Polynomial.X - Polynomial.C x)^m ∣ g :=
@@ -1702,7 +1702,7 @@ private lemma rootMultiplicity_mod_lt_iff_of_mod_ne
     have h_lt_KP : R.rootMultiplicity x < (K * P).rootMultiplicity x :=
       lt_of_lt_of_le hR_lt hKP_ge
     have h_eq : (K * P + R).rootMultiplicity x = R.rootMultiplicity x :=
-      Polynomial.rootMultiplicity_add_of_lt hKP_ne hR_ne h_lt_KP
+      rootMultiplicity_add_of_lt' hKP_ne hR_ne h_lt_KP
     rw [hQ_eq, h_eq]; exact hR_lt
   · -- Q.rootMul < µ_P → Q.rootMul = R.rootMul.
     intro hQ_lt
@@ -1724,7 +1724,7 @@ private lemma rootMultiplicity_mod_lt_iff_of_mod_ne
     have h_lt_KP : R.rootMultiplicity x < (K * P).rootMultiplicity x :=
       lt_of_lt_of_le hR_lt hKP_ge
     have h_eq : (K * P + R).rootMultiplicity x = R.rootMultiplicity x :=
-      Polynomial.rootMultiplicity_add_of_lt hKP_ne hR_ne h_lt_KP
+      rootMultiplicity_add_of_lt' hKP_ne hR_ne h_lt_KP
     have : Q.rootMultiplicity x = R.rootMultiplicity x := by rw [hQ_eq]; exact h_eq
     exact h_ne this
 

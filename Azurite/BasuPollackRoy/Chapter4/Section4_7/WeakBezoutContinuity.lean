@@ -19,7 +19,7 @@ assembles `proposition_4_106_of_sa` from the already-proven logical chain in `We
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}
 

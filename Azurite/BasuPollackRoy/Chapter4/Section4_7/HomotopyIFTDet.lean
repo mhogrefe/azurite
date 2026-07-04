@@ -21,7 +21,7 @@ namespace Azurite.BPR.Chapter4
 
 open Azurite.BPR (IsSFunction IsSemialgContinuousOn HasPartialDerivAtIn)
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}
 

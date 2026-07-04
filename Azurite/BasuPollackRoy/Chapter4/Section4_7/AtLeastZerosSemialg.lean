@@ -21,7 +21,7 @@ the `2m(k+1)` real representative coordinates yields the result.
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}
 

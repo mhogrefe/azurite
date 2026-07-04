@@ -616,7 +616,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
 
 For a list of multivariate polynomials, BPR's bound drops the `m · bit(n)` term.
 The proof mirrors the matrix theorem above but operates directly on polynomials,
-using a polynomial-list coefficient convolution `Polynomial.coeff_list_prod`
+using a polynomial-list coefficient convolution `coeff_list_prod`
 (analogous to `Matrix.polyCoeff_list_prod`) and an integer base case
 `Int.bitsize_list_prod_le` (analogous to `Matrix.bitsize_list_prod_per_matrix_le`,
 but without the `m · bit(n)` cost since scalar multiplication has no
@@ -629,7 +629,7 @@ variable {R : Type _} [CommSemiring R]
 
 /-- The `X^d`-coefficient of a polynomial list product equals the sum, over
     tuples summing to `d`, of products of single coefficients. -/
-theorem Polynomial.coeff_list_prod (d : ℕ) (Ps : List (Polynomial R)) :
+theorem coeff_list_prod (d : ℕ) (Ps : List (Polynomial R)) :
     (Ps.prod).coeff d =
       ∑ ds ∈ antidiagonalTuple Ps.length d,
         ∏ l : Fin Ps.length, (Ps.get l).coeff (ds l) := by
@@ -782,7 +782,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
       exact map_list_prod fe Ps
     rw [h_transport]
     -- Expand the polynomial X^(r 0)-coefficient of a list product.
-    rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum]
+    rw [coeff_list_prod, MvPolynomial.coeff_sum]
     set B := τs.sum + k * (ps.map fun p => Nat.size p).sum with hB_def
     -- Define `p_fn : Fin (Ps.map fe).length → ℕ` via `ps` (used in filter and bound).
     have h_ps_len : ps.length = Ps.length := h_p.length_eq.symm
@@ -1024,7 +1024,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
         exact map_list_prod fe Ps]
     -- Expand the polynomial Y_(ℓ+1)^(y 0)-coefficient of the list product, then
     -- distribute the outer y.tail- and x-coefficient extractions through the sum.
-    rw [Polynomial.coeff_list_prod, MvPolynomial.coeff_sum, MvPolynomial.coeff_sum]
+    rw [coeff_list_prod, MvPolynomial.coeff_sum, MvPolynomial.coeff_sum]
     set B := Ps.length * (τ + k * Nat.size p + ℓ * Nat.size q) with hB_def
     -- Per-summand bound via IH at ℓ.
     have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),

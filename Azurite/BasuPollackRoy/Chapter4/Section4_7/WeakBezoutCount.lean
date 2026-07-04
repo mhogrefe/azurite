@@ -34,7 +34,7 @@ Step (1) is the main infrastructure step.
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}
 

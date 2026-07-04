@@ -24,7 +24,7 @@ Everything stays inside `Ri.reL` / `Ri.imL`, the product/inverse formulas `reL_m
 
 namespace Azurite.BPR.Chapter4
 
-open MvPolynomial Polynomial
+open MvPolynomial
 
 variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] {k : ℕ}
 

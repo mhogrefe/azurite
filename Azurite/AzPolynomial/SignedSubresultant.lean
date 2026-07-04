@@ -108,13 +108,21 @@ Mirrors `ssAux` but additionally carries the Bézout cofactors and emits
 
 The cofactors are transported by the **same** quotient `C = Quo(d·sResP_{i-1}, sResP_{j-1})` and the
 same `divByRingElt denom` (`denom = s_j·t_{i-1}`) used for `sResP_k`, so the Bézout relation
-`sResP_ℓ = sResU_ℓ·P + sResV_ℓ·Q` is preserved by linearity (BPR's correctness remark). -/
+`sResP_ℓ = sResU_ℓ·P + sResV_ℓ·Q` is preserved by linearity (BPR's correctness remark).
+
+When the sequence terminates (`sResP_{j-1} = 0`, i.e. `j` is the gcd degree), the **boundary
+cofactors** `sResU_{j-1}, sResV_{j-1}` are still emitted (alongside `sResP_{j-1} = 0`): they are
+nonzero — `sResV_{j-1}` is the gcd-free part of `P` with respect to `Q` (Proposition 10.14, used
+by Algorithm 10.1) — and satisfy the Bézout relation `sResU_{j-1}·P + sResV_{j-1}·Q = 0`. Deeper
+entries stay at their initialized value `0`, per BPR's algorithmic convention. -/
 def ssAuxExt : ℕ → ℕ → AzPolynomial R → AzPolynomial R → R → R →
     AzPolynomial R → AzPolynomial R → AzPolynomial R → AzPolynomial R →
     List (AzPolynomial R × R × AzPolynomial R × AzPolynomial R)
   | 0, j, _, _, _, _, _, _, _, _ => List.replicate j (0, 0, 0, 0)
   | fuel + 1, j, Si, Sj, sj, ti, Ui, Vi, Uj, Vj =>
-    if Sj = 0 then List.replicate j (0, 0, 0, 0)
+    if Sj = 0 then
+      if j = 0 then []
+      else (0, 0, Uj, Vj) :: List.replicate (j - 1) (0, 0, 0, 0)
     else
       let k := Sj.natDegree
       let tj := Sj.leadingCoeff

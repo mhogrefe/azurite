@@ -310,6 +310,7 @@ import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
 import Azurite.AzPolynomial.ComposedOps
+import Azurite.AzPolynomial.Content
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Discriminant
 import Azurite.AzPolynomial.Equiv.Add
@@ -323,6 +324,7 @@ import Azurite.AzPolynomial.Equiv.CauchyIndexSubres
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubresMap
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.ComposedOps
+import Azurite.AzPolynomial.Equiv.Content
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Discriminant
 import Azurite.AzPolynomial.Equiv.DiscriminantMap
@@ -331,6 +333,8 @@ import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.ExactDiv
 import Azurite.AzPolynomial.Equiv.Expand
 import Azurite.AzPolynomial.Equiv.ExtendedSRemS
+import Azurite.AzPolynomial.Equiv.Gcd
+import Azurite.AzPolynomial.Equiv.GcdInt
 import Azurite.AzPolynomial.Equiv.InvertRoots
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
@@ -362,6 +366,7 @@ import Azurite.AzPolynomial.Eval
 import Azurite.AzPolynomial.ExactDiv
 import Azurite.AzPolynomial.Expand
 import Azurite.AzPolynomial.ExtendedSRemS
+import Azurite.AzPolynomial.Gcd
 import Azurite.AzPolynomial.InvertRoots
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
@@ -375,6 +380,7 @@ import Azurite.AzPolynomial.NegateRoots
 import Azurite.AzPolynomial.NestedCoeffExamples
 import Azurite.AzPolynomial.NewtonMatrix
 import Azurite.AzPolynomial.NewtonSum
+import Azurite.AzPolynomial.NormLengthMeasure
 import Azurite.AzPolynomial.NumRoots
 import Azurite.AzPolynomial.PRem
 import Azurite.AzPolynomial.ParsableElement
@@ -548,6 +554,26 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_4.Ext
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.SentencePreservation
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Theorem1_23
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Theorem1_26
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_12
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_15
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_4
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.GcdFreePart
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_10
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_13
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_16
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_17
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_2
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_3
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_6
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_7
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.NormLengthMeasure
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Notation_10_1
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Notation_10_5
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Proposition_10_11
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Proposition_10_14
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Proposition_10_8
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Proposition_10_9
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.SeparablePart
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Archimedean
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Cones
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Corollary_2_23
