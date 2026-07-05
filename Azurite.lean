@@ -1,4 +1,3 @@
-
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
@@ -310,6 +309,7 @@ import Azurite.AzPolynomial.Cast
 import Azurite.AzPolynomial.CauchyIndex
 import Azurite.AzPolynomial.CoeffChars
 import Azurite.AzPolynomial.Comp
+import Azurite.AzPolynomial.Compare
 import Azurite.AzPolynomial.ComposedOps
 import Azurite.AzPolynomial.Content
 import Azurite.AzPolynomial.Derivative
@@ -324,6 +324,7 @@ import Azurite.AzPolynomial.Equiv.CauchyIndexOnMap
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubres
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubresMap
 import Azurite.AzPolynomial.Equiv.Comp
+import Azurite.AzPolynomial.Equiv.Compare
 import Azurite.AzPolynomial.Equiv.ComposedOps
 import Azurite.AzPolynomial.Equiv.Content
 import Azurite.AzPolynomial.Equiv.Derivative
@@ -350,6 +351,7 @@ import Azurite.AzPolynomial.Equiv.NewtonSum
 import Azurite.AzPolynomial.Equiv.NumRoots
 import Azurite.AzPolynomial.Equiv.PRem
 import Azurite.AzPolynomial.Equiv.Pow
+import Azurite.AzPolynomial.Equiv.Predicates
 import Azurite.AzPolynomial.Equiv.QuoRem
 import Azurite.AzPolynomial.Equiv.Resultant
 import Azurite.AzPolynomial.Equiv.SMul
@@ -357,6 +359,7 @@ import Azurite.AzPolynomial.Equiv.ScaleRoots
 import Azurite.AzPolynomial.Equiv.SignedSubresultant
 import Azurite.AzPolynomial.Equiv.SignedSubresultantBoundary
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
+import Azurite.AzPolynomial.Equiv.SquarefreeFactorization
 import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.TRems
@@ -398,6 +401,7 @@ import Azurite.AzPolynomial.SRemS
 import Azurite.AzPolynomial.ScaleRoots
 import Azurite.AzPolynomial.SignedSubresultant
 import Azurite.AzPolynomial.SpecialTranslate
+import Azurite.AzPolynomial.SquarefreeFactorization
 import Azurite.AzPolynomial.StringLemmas
 import Azurite.AzPolynomial.SturmSequence
 import Azurite.AzPolynomial.Sub
@@ -449,6 +453,11 @@ import Azurite.AzRat.Shift
 import Azurite.AzRat.Sub
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
+import Azurite.AzRationalFunction.Basic
+import Azurite.AzRationalFunction.Equiv.Basic
+import Azurite.AzRationalFunction.Equiv.Parse
+import Azurite.AzRationalFunction.Parse
+import Azurite.AzRationalFunction.ToString
 import Azurite.AzVector.Basic
 import Azurite.AzVector.Basis
 import Azurite.AzVector.Cross
@@ -1160,3 +1169,4 @@ import Azurite.UInt64.WideAdd3
 import Azurite.UInt64.WideMul
 import Azurite.UInt64.WideSub
 import Azurite.UInt64.WideSub3
+

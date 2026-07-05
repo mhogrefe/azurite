@@ -1,3 +1,4 @@
+import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.SignedSubresultant
 import Azurite.AzPolynomial.Content
 import Azurite.AzPolynomial.Parse
@@ -248,6 +249,57 @@ instance {K : Type _} [Field K] [DecidableEq K] : GcdImpl K where
     let g := gcdMonic P Q
     (g, if g = 0 then 0 else (exactDivQuoRem P g).1)
 
+/-! ### Gcd-based predicates: coprimality, squarefreeness, primitivity
+
+`coprime` and `isSquarefree` inspect only the *degree* of the subresultant
+gcd, so they skip all normalization work (no monicization, no content
+computations) and delegate to the cheapest correct gcd — the non-extended
+Algorithm 8.21 (`subresGcd`). They work over any exact-division coefficient
+ring (`AzInt`, `AzRat`, any field carrier); over a `ℤ`-like domain the
+meaning is coprimality/squarefreeness over the fraction field (no common
+factor, or no repeated factor, of positive degree). -/
+
+/-- **Coprimality test**: `P` and `Q` are coprime iff their gcd is a nonzero
+constant. Total case-tree as in `gcdMonic` (constants and the degree swap
+explicit), with the subresultant gcd inspected only for its degree. -/
+def coprime (P Q : AzPolynomial R) : Bool :=
+  if P = 0 then Q != 0 && Q.natDegree == 0
+  else if Q = 0 then P.natDegree == 0
+  else if P.natDegree = 0 ∨ Q.natDegree = 0 then true
+  else if P.natDegree = Q.natDegree then
+    if preStep P Q = 0 then false
+    else if (preStep P Q).natDegree = 0 then true
+    else (subresGcd P (preStep P Q)).natDegree == 0
+  else if P.natDegree < Q.natDegree then (subresGcd Q P).natDegree == 0
+  else (subresGcd P Q).natDegree == 0
+
+/-- **Squarefreeness (separability) test**: `gcd(P, P′)` is a nonzero
+constant. In characteristic `0` this is squarefreeness; in general it is
+separability (no repeated roots in any extension). The zero polynomial is
+not squarefree; nonzero constants are. -/
+def isSquarefree [PolynomialDerivative R] (P : AzPolynomial R) : Bool :=
+  coprime P (derivative P)
+
+/-- Coefficient-type-directed primitivity test for `AzPolynomial` (in the
+style of `GcdImpl`): whether the content — the gcd of the coefficients — is
+a unit. -/
+class PrimitiveImpl (R : Type _) [Semiring R] where
+  /-- `true` iff the represented polynomial is primitive (unit content). -/
+  isPrimitive : AzPolynomial R → Bool
+
+/-- Primitivity, dispatched by coefficient type. -/
+abbrev isPrimitive {R : Type _} [Semiring R] [PrimitiveImpl R] :
+    AzPolynomial R → Bool := PrimitiveImpl.isPrimitive
+
+/-- `ℤ` coefficients: the content (gcd of the coefficients) is `1`. -/
+instance : PrimitiveImpl AzInt where
+  isPrimitive p := p.content == 1
+
+/-- Field coefficients: every nonzero polynomial is primitive (any nonzero
+constant is a unit); the zero polynomial is not. -/
+instance {K : Type _} [Field K] [DecidableEq K] : PrimitiveImpl K where
+  isPrimitive p := p != 0
+
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests
 -- ═══════════════════════════════════════════════════════════════════
@@ -321,6 +373,38 @@ private def Q₂ : AzPolynomial AzInt := pp "x^3+3*x^2-9*x+5"
 -- zero conventions: `gcd P 0 = normalize P` with unit free part
 #guard gcdGcdFreePart (pp "0") (pp "0") == (pp "0", pp "0")
 #guard gcdGcdFreePart (pp "-2*x") (pp "0") == (pp "2*x", pp "-1")
+
+/-! Predicates. -/
+
+-- coprimality over `AzInt` (`ℚ[X]`-sense) and over `AzRat`
+#guard coprime (pp "x^2+1") (pp "x-1") == true
+#guard coprime P₁ Q₁ == false                        -- share `(X−1)(X+2)`
+#guard coprime (pp "x^2+x") (pp "x^2+x") == false
+#guard coprime (pq "x^2+1/2") (pq "x-1/3") == true   -- works over `AzRat` too
+#guard coprime (pq "x^2-1") (pq "2*x-2") == false
+-- equal degrees (pre-step); proportional pair; constants; zero
+#guard coprime (pp "x^2+1") (pp "x^2-1") == true
+#guard coprime (pp "2*x+2") (pp "3*x+3") == false    -- proportional: preStep = 0
+#guard coprime (pp "5") (pp "x^17-3") == true
+#guard coprime (pp "0") (pp "7") == true
+#guard coprime (pp "0") (pp "x+1") == false
+#guard coprime (pp "0") (pp "0") == false
+-- squarefreeness (separability)
+#guard isSquarefree (pp "x^2-1") == true
+#guard isSquarefree (pp "x^2-2*x+1") == false        -- `(X−1)²`
+#guard isSquarefree P₂ == false                      -- `(X−1)³(X+1)`
+#guard isSquarefree (pp "x^3-x") == true
+#guard isSquarefree (pq "x^2-1/4") == true
+#guard isSquarefree (pq "4*x^2-4*x+1") == false      -- `(2X−1)²`
+#guard isSquarefree (pp "42") == true                -- nonzero constant
+#guard isSquarefree (0 : AzPolynomial AzInt) == false
+-- primitivity
+#guard isPrimitive (pp "3*x^2+2*x+5") == true
+#guard isPrimitive (pp "6*x^2+4*x+10") == false      -- content 2
+#guard isPrimitive (pp "-x-7") == true
+#guard isPrimitive (0 : AzPolynomial AzInt) == false
+#guard isPrimitive (pq "2*x+4") == true              -- any nonzero over a field
+#guard isPrimitive (0 : AzPolynomial AzRat) == false
 
 end Tests
 
