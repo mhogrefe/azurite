@@ -69,7 +69,7 @@ def subresGcd (P Q : AzPolynomial R) : AzPolynomial R :=
 /-- Core of Algorithm 10.1 after the `p = q` reduction: requires
 `deg P > deg Q`, `Q ≠ 0`. Returns `(sResP_j, sResV_{j−1})`; at `j = 0`
 (coprime case) the gcd-free part is `P` itself. -/
-private def gcdGcdFreePartCore (P Q : AzPolynomial R) :
+def gcdGcdFreePartCore (P Q : AzPolynomial R) :
     AzPolynomial R × AzPolynomial R :=
   let (sP, _, _, sV) := extendedSignedSubresultant P Q
   match firstNonzero sP with
@@ -92,7 +92,7 @@ def gcdGcdFreePartRaw (P Q : AzPolynomial R) : AzPolynomial R × AzPolynomial R 
 /-- Core of the `ℤ` branch: normalized outputs
 `(a_p·sResP_j / s_j, a_p·sResV_{j−1} / lcof(sResV_{j−1}))`; exact divisions
 by Lemma 10.17. -/
-private def gcdGcdFreePartIntCore (P Q : AzPolynomial AzInt) :
+def gcdGcdFreePartIntCore (P Q : AzPolynomial AzInt) :
     AzPolynomial AzInt × AzPolynomial AzInt :=
   let ap := P.leadingCoeff
   let (sP, s, _, sV) := extendedSignedSubresultant P Q

@@ -133,4 +133,87 @@ theorem proposition_10_14_gcdFree {P Q : Polynomial (Ri R)} (hP : P ≠ 0) (hQ :
   · -- `sResV_{j-1}·Q` is associated to the lcm
     exact Associated.symm ⟨u, by rw [hc, hu]⟩
 
+/-- **General-field variant of the gcd-free-part claim** (the semantic core
+of Proposition 10.14, over any field): if `deg(gcd(P, Q)) = j ≥ 1`, then
+`sResV_{j−1}(P, Q) · gcd(P, Q)` is associated to `P` — i.e. `sResV_{j−1}` is
+the gcd-free part of `P` with respect to `Q` up to a multiplicative
+constant. Serves the correctness of both the exact-division and the
+determinant-fallback computations of the gcd-free part. -/
+theorem sResV_gcdFree_associated {K : Type*} [Field K] [DecidableEq K]
+    {P Q : Polynomial K} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (hpq : Q.natDegree < P.natDegree) {j : ℕ} (hj1 : 1 ≤ j)
+    (hj : (gcd P Q).natDegree = j) :
+    Associated (Chapter8.sResV P Q (j - 1) * gcd P Q) P := by
+  have hjq : j ≤ Q.natDegree :=
+    hj ▸ Polynomial.natDegree_le_of_dvd (gcd_dvd_right P Q) hQ
+  have hsRes : Azurite.BPR.Chapter4.sRes P Q j ≠ 0 :=
+    ((Azurite.BPR.Chapter4.Proposition_4_26 P Q hP hQ j hjq (by omega)).mp hj).2
+  obtain ⟨hVnd, hVlc⟩ := Chapter8.sResV_sub_one_natDegree P Q hP hpq hj1 hjq hsRes
+  have hVne : Chapter8.sResV P Q (j - 1) ≠ 0 := by
+    intro h
+    rw [h, Polynomial.leadingCoeff_zero] at hVlc
+    exact mul_ne_zero (Polynomial.leadingCoeff_ne_zero.mpr hP) hsRes hVlc.symm
+  have hP0 : Chapter8.sResP P Q (j - 1) = 0 :=
+    Chapter8.sResP_eq_zero_of_lt_gcd P Q hP hQ hpq (by omega) (by omega)
+  have hbez := Chapter8.sResP_eq_cofactor P Q hQ hpq (show j - 1 ≤ Q.natDegree by omega)
+  rw [hP0] at hbez
+  have hM : Chapter8.sResV P Q (j - 1) * Q = -(Chapter8.sResU P Q (j - 1) * P) :=
+    eq_neg_of_add_eq_zero_right hbez.symm
+  have hPd : P ∣ Chapter8.sResV P Q (j - 1) * Q :=
+    ⟨-(Chapter8.sResU P Q (j - 1)), by rw [hM]; ring⟩
+  have hQd : Q ∣ Chapter8.sResV P Q (j - 1) * Q := dvd_mul_left Q _
+  have hlcmd : EuclideanDomain.lcm P Q ∣ Chapter8.sResV P Q (j - 1) * Q :=
+    EuclideanDomain.lcm_dvd hPd hQd
+  have hdegM : (Chapter8.sResV P Q (j - 1) * Q).natDegree
+      = P.natDegree + Q.natDegree - j := by
+    rw [Polynomial.natDegree_mul hVne hQ, hVnd]
+    omega
+  have hgcdE : Associated (EuclideanDomain.gcd P Q) (gcd P Q) :=
+    associated_of_dvd_dvd
+      (dvd_gcd (EuclideanDomain.gcd_dvd_left _ _) (EuclideanDomain.gcd_dvd_right _ _))
+      (EuclideanDomain.dvd_gcd (gcd_dvd_left _ _) (gcd_dvd_right _ _))
+  have hgcdE_deg : (EuclideanDomain.gcd P Q).natDegree = j := by
+    rw [Polynomial.natDegree_eq_of_degree_eq (degree_eq_degree_of_associated hgcdE), hj]
+  have hlcm_ne : EuclideanDomain.lcm P Q ≠ 0 := by
+    intro h
+    have h2 := EuclideanDomain.gcd_mul_lcm P Q
+    rw [h, mul_zero] at h2
+    exact mul_ne_zero hP hQ h2.symm
+  have hgcd_ne : EuclideanDomain.gcd P Q ≠ 0 := fun h =>
+    hP (EuclideanDomain.gcd_eq_zero_iff.mp h).1
+  have hdeglcm : (EuclideanDomain.lcm P Q).natDegree
+      = P.natDegree + Q.natDegree - j := by
+    have h2 := congrArg Polynomial.natDegree (EuclideanDomain.gcd_mul_lcm P Q)
+    rw [Polynomial.natDegree_mul hgcd_ne hlcm_ne, Polynomial.natDegree_mul hP hQ,
+      hgcdE_deg] at h2
+    omega
+  obtain ⟨c, hc⟩ := hlcmd
+  have hcne : c ≠ 0 := by
+    rintro rfl
+    rw [mul_zero] at hc
+    exact mul_ne_zero hVne hQ hc
+  have hcdeg : c.natDegree = 0 := by
+    have h2 := congrArg Polynomial.natDegree hc
+    rw [Polynomial.natDegree_mul hlcm_ne hcne, hdegM, hdeglcm] at h2
+    omega
+  have hcu : IsUnit c := by
+    rw [Polynomial.eq_C_of_natDegree_eq_zero hcdeg, Polynomial.isUnit_C]
+    exact isUnit_iff_ne_zero.mpr (fun h => hcne (by
+      rw [Polynomial.eq_C_of_natDegree_eq_zero hcdeg, h, Polynomial.C_0]))
+  obtain ⟨u, hu⟩ := hcu
+  -- cancel `Q`: `sResV_{j-1} · gcdE = P · c`, with `c` a unit
+  have hVg : Chapter8.sResV P Q (j - 1) * EuclideanDomain.gcd P Q = P * c := by
+    apply mul_right_cancel₀ hQ
+    calc Chapter8.sResV P Q (j - 1) * EuclideanDomain.gcd P Q * Q
+        = EuclideanDomain.gcd P Q * EuclideanDomain.lcm P Q * c := by
+          rw [show EuclideanDomain.gcd P Q * EuclideanDomain.lcm P Q * c
+            = (EuclideanDomain.lcm P Q * c) * EuclideanDomain.gcd P Q from by ring,
+            ← hc]
+          ring
+      _ = P * c * Q := by rw [EuclideanDomain.gcd_mul_lcm]; ring
+  have h1 : Associated (Chapter8.sResV P Q (j - 1) * EuclideanDomain.gcd P Q) P := by
+    rw [hVg, ← hu]
+    exact ⟨u⁻¹, Units.mul_inv_cancel_right P u⟩
+  exact ((Associated.refl _).mul_mul hgcdE).symm.trans h1
+
 end Azurite.BPR

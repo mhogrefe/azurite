@@ -1,5 +1,7 @@
 import Azurite.AzPolynomial.Equiv.Gcd
 import Azurite.AzPolynomial.Equiv.Content
+import Azurite.AzPolynomial.Equiv.SignedSubresultantBoundary
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.Proposition_10_14
 import Azurite.AzPolynomial.Equiv.Neg
 import Azurite.AzInt.Equiv.RingEquiv
 import Mathlib.RingTheory.Polynomial.GaussLemma
@@ -734,6 +736,54 @@ private theorem map_toPoly_ofPoly_map (p : ℤ[X]) :
     RingHom.ext fun x => Azurite.AzInt.ringEquivInt.apply_symm_apply x
   rw [hcomp, Polynomial.map_id]
 
+/-! ### Exactness core for the raw BPR pair (Algorithm 10.1 over `ℤ`) -/
+
+/-- `ℚ[X]` image of a polynomial is associated to that of its primitive part. -/
+private theorem map_assoc_primPart {T : ℤ[X]} (hT : T ≠ 0) :
+    Associated (T.map (Int.castRingHom ℚ)) ((T.primPart).map (Int.castRingHom ℚ)) := by
+  have hcT : T.content ≠ 0 := by rwa [Ne, Polynomial.content_eq_zero_iff]
+  have hu : IsUnit (Polynomial.C ((T.content : ℤ) : ℚ) : ℚ[X]) :=
+    Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr (by exact_mod_cast hcT))
+  have h1 : T.map (Int.castRingHom ℚ)
+      = Polynomial.C ((T.content : ℤ) : ℚ) * (T.primPart).map (Int.castRingHom ℚ) := by
+    conv_lhs => rw [T.eq_C_content_mul_primPart]
+    rw [Polynomial.map_mul, Polynomial.map_C]
+    rfl
+  rw [h1]
+  exact Associated.symm ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
+
+/-- **Exactness core for the `a_p·sResV_{j−1}/lcof` normalization** (BPR's
+Lemma 10.17 argument): if `V` divides `A` over `ℚ`, then `lcof(V)` divides
+`lcof(A) · v` for every coefficient `v` of `V` — `lc(primPart V)` divides
+`lc(primPart A)` by primitive descent (Gauss), hence divides `lcof(A)`,
+while the content of `V` cancels against itself. -/
+private theorem lcof_dvd_lcof_mul_coeff {A V : ℤ[X]} (hA : A ≠ 0) (hV : V ≠ 0)
+    (hdvd : V.map (Int.castRingHom ℚ) ∣ A.map (Int.castRingHom ℚ)) (i : ℕ) :
+    V.leadingCoeff ∣ A.leadingCoeff * V.coeff i := by
+  -- primitive descent: `primPart V ∣ primPart A` in `ℤ[X]`
+  have hPdvd : V.primPart ∣ A.primPart := by
+    refine V.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map (K := ℚ)
+      A.isPrimitive_primPart ?_
+    exact ((map_assoc_primPart hV).symm.dvd.trans hdvd).trans (map_assoc_primPart hA).dvd
+  obtain ⟨W, hW⟩ := hPdvd
+  have hlcP : V.primPart.leadingCoeff ∣ A.leadingCoeff := by
+    have h1 : A.primPart.leadingCoeff = V.primPart.leadingCoeff * W.leadingCoeff := by
+      rw [hW, Polynomial.leadingCoeff_mul]
+    have h2 : A.leadingCoeff = A.content * A.primPart.leadingCoeff := by
+      conv_lhs => rw [A.eq_C_content_mul_primPart]
+      rw [Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C]
+    exact (Dvd.intro _ h1.symm).trans (Dvd.intro_left _ h2.symm)
+  have hlcV : V.leadingCoeff = V.content * V.primPart.leadingCoeff := by
+    conv_lhs => rw [V.eq_C_content_mul_primPart]
+    rw [Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C]
+  have hcoefV : V.coeff i = V.content * V.primPart.coeff i := by
+    conv_lhs => rw [V.eq_C_content_mul_primPart]
+    rw [Polynomial.coeff_C_mul]
+  rw [hlcV, hcoefV,
+    show A.leadingCoeff * (V.content * V.primPart.coeff i)
+      = V.content * (A.leadingCoeff * V.primPart.coeff i) from by ring]
+  exact mul_dvd_mul_left _ (dvd_mul_of_dvd_left hlcP _)
+
 /-- **`ofPoly` version of the `ℤ[X]` equivalence**: pulling two `ℤ[X]`
 polynomials back to `AzInt` coefficients, the computable gcd represents
 Mathlib's normalized `ℤ[X]` gcd. -/
@@ -774,5 +824,496 @@ theorem ofPoly_gcdGcdFreePart_int (p q : ℤ[X]) :
   refine ⟨?_, h2⟩
   rw [h1]
   exact ofPoly_gcd_int p q
+
+/-! ### The raw BPR-normalized pair over `ℤ`: gcd-free-part correctness -/
+
+open Azurite.BPR.Chapter8 in
+/-- **Gcd-free-part correctness of the raw `ℤ` pair** (BPR Algorithm 10.1 over
+`AzInt`, `deg P > deg Q ≥ 1`, gcd degree `j₀ ≥ 1` over `ℚ`): the second
+output of `gcdGcdFreePartInt` — the BPR-normalized
+`a_p·sResV_{j₀−1}/lcof(sResV_{j₀−1})`, whose divisions are exact by the
+Lemma 10.17 content argument — times the gcd is associated to `P` over `ℚ`:
+it is the gcd-free part of `P` with respect to `Q` up to a multiplicative
+constant. -/
+theorem gcdGcdFreePartInt_snd_gcdFree (P Q : AzPolynomial AzInt)
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
+    {j₀ : ℕ} (hj₀1 : 1 ≤ j₀)
+    (hj₀ : (@GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial
+        (((AzPolynomial.toPoly P).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))
+        (((AzPolynomial.toPoly Q).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))).natDegree
+      = j₀) :
+    Associated
+      ((((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).2).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ))
+        * @GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial
+            (((AzPolynomial.toPoly P).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))
+            (((AzPolynomial.toPoly Q).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)))
+      (((AzPolynomial.toPoly P).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)) := by
+  have hψinj : Function.Injective (Int.castRingHom ℚ) := Int.cast_injective
+  -- abbreviations
+  set A : ℤ[X] := (AzPolynomial.toPoly P).map AzInt.toIntRingHom with hA
+  set B : ℤ[X] := (AzPolynomial.toPoly Q).map AzInt.toIntRingHom with hB
+  set Aq : ℚ[X] := A.map (Int.castRingHom ℚ) with hAq
+  set Bq : ℚ[X] := B.map (Int.castRingHom ℚ) with hBq
+  have hP' : AzPolynomial.toPoly P ≠ 0 := toPoly_ne_zero hP
+  have hQ' : AzPolynomial.toPoly Q ≠ 0 := toPoly_ne_zero hQ
+  have hA0 : A ≠ 0 := map_toPoly_ne_zero hP
+  have hB0 : B ≠ 0 := map_toPoly_ne_zero hQ
+  have hAq0 : Aq ≠ 0 := by
+    rw [hAq, Ne, Polynomial.map_eq_zero_iff hψinj]
+    exact hA0
+  have hBq0 : Bq ≠ 0 := by
+    rw [hBq, Ne, Polynomial.map_eq_zero_iff hψinj]
+    exact hB0
+  have hdegA : A.natDegree = P.natDegree := natDegree_map_toPoly P
+  have hdegB : B.natDegree = Q.natDegree := natDegree_map_toPoly Q
+  have hdegAq : Aq.natDegree = P.natDegree := by
+    rw [hAq, Polynomial.natDegree_map_eq_of_injective hψinj, hdegA]
+  have hdegBq : Bq.natDegree = Q.natDegree := by
+    rw [hBq, Polynomial.natDegree_map_eq_of_injective hψinj, hdegB]
+  have hpqq : Bq.natDegree < Aq.natDegree := by rw [hdegAq, hdegBq]; exact hpq
+  have hjq : j₀ ≤ Q.natDegree := by
+    have h := Polynomial.natDegree_le_of_dvd
+      (@gcd_dvd_right _ _ Azurite.BPR.gcdMonoidPolynomial Aq Bq) hBq0
+    rw [hj₀, hdegBq] at h
+    exact h
+  -- ℚ-side sResP facts at the gcd degree, transferred down to `AzInt`
+  have hq0 : sResP Aq Bq (j₀ - 1) = 0 :=
+    sResP_eq_zero_of_lt_gcd Aq Bq hAq0 hBq0 hpqq (by omega) (by omega)
+  have hqne : sResP Aq Bq j₀ ≠ 0 :=
+    fun h => sResP_natDegree_gcd_ne_zero Aq Bq hAq0 hBq0 hpqq (hj₀ ▸ h)
+  have hqnd : (sResP Aq Bq j₀).natDegree = j₀ := by
+    have h1 : (sResP Aq Bq j₀).natDegree ≤ j₀ :=
+      Polynomial.natDegree_le_iff_degree_le.mpr
+        (sResP_degree_le Aq Bq hpqq (by rw [hdegBq]; exact hjq))
+    have h2 : j₀ ≤ (sResP Aq Bq j₀).natDegree := by
+      have h := natDegree_gcd_le_natDegree_sResP Aq Bq hAq0 hBq0 hpqq hqne
+      rwa [hj₀] at h
+    omega
+  -- fuse the two coefficient maps into one for `sResP_map`/`sResV_map`
+  have hAfuse : Aq = (AzPolynomial.toPoly P).map
+      ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    rw [hAq, hA, Polynomial.map_map]
+  have hBfuse : Bq = (AzPolynomial.toPoly Q).map
+      ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    rw [hBq, hB, Polynomial.map_map]
+  have hρinj : Function.Injective ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) :=
+    fun a b h => hιinj (hψinj h)
+  have hsResPq : ∀ m, sResP Aq Bq m
+      = (sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) m).map
+          ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    intro m
+    rw [hAfuse, hBfuse, sResP_map hρinj]
+  have hsResVq : ∀ m, sResV Aq Bq m
+      = (sResV (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) m).map
+          ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    intro m
+    rw [hAfuse, hBfuse, sResV_map hρinj]
+  have h0 : sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (j₀ - 1) = 0 := by
+    have h := hq0
+    rw [hsResPq] at h
+    exact (Polynomial.map_eq_zero_iff hρinj).mp h
+  have hne : sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j₀ ≠ 0 := by
+    intro h
+    apply hqne
+    rw [hsResPq, h, Polynomial.map_zero]
+  have hnd : (sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j₀).natDegree = j₀ := by
+    have h := hqnd
+    rw [hsResPq, Polynomial.natDegree_map_eq_of_injective hρinj] at h
+    exact h
+  -- boundary identification for the `AzInt` run
+  have hbnd := extendedSignedSubresultant_boundary_domain P Q hP hQ hpq hq1 hj₀1 hjq
+    h0 hnd hne
+  -- the scan lands exactly on `j₀`
+  obtain ⟨hmaps, -⟩ := signedSubresultant_toPoly_domain P Q hP hQ hpq hq1
+  have hlen : (signedSubresultant P Q).1.size = P.natDegree + 1 := by
+    have h := congrArg List.length hmaps
+    simpa using h
+  have hentry : ∀ ℓ, ℓ < P.natDegree + 1 →
+      AzPolynomial.toPoly ((signedSubresultant P Q).1[ℓ]!)
+        = sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) ℓ := by
+    intro ℓ hℓ
+    have h := congrArg (fun l => l[ℓ]?) hmaps
+    simp only [List.getElem?_map, List.getElem?_range, hℓ] at h
+    have hℓs : ℓ < (signedSubresultant P Q).1.toList.length := by
+      simpa [hlen] using hℓ
+    rw [List.getElem?_eq_getElem hℓs] at h
+    simp only [Option.map_some] at h
+    rw [Array.getElem!_eq_getD, Array.getD_eq_getD_getElem?,
+      Array.getElem?_eq_getElem (by omega : ℓ < (signedSubresultant P Q).1.size)]
+    simpa [Array.getElem_toList] using h
+  have hfst : (extendedSignedSubresultant P Q).1 = (signedSubresultant P Q).1 :=
+    extendedSignedSubresultant_fst P Q
+  have hfind : firstNonzero (extendedSignedSubresultant P Q).1 = some j₀ := by
+    rw [hfst]
+    refine firstNonzero_eq_some _ j₀ (by omega) ?_ ?_
+    · intro i hi
+      apply toPoly_inj.mp
+      rw [hentry i (by omega), toPoly_zero]
+      -- below `j₀` everything vanishes: transfer the `ℚ`-side vanishing down
+      have hqz : sResP Aq Bq i = 0 :=
+        sResP_eq_zero_of_lt_gcd Aq Bq hAq0 hBq0 hpqq (by omega) (by omega)
+      rw [hsResPq] at hqz
+      exact (Polynomial.map_eq_zero_iff hρinj).mp hqz
+    · intro h
+      have h2 := hentry j₀ (by omega)
+      rw [h, toPoly_zero] at h2
+      exact hne h2.symm
+  -- reduce the wrapper
+  have hsnd : (gcdGcdFreePartInt P Q).2
+      = divByRingElt ((extendedSignedSubresultant P Q).2.2.2[j₀ - 1]!).leadingCoeff
+          (P.leadingCoeff • (extendedSignedSubresultant P Q).2.2.2[j₀ - 1]!) := by
+    rw [gcdGcdFreePartInt, if_neg hQ, if_neg (by omega)]
+    show (gcdGcdFreePartIntCore P Q).2 = _
+    rw [gcdGcdFreePartIntCore]
+    split
+    rename_i sP s sU sV heq
+    have hsP : sP = (extendedSignedSubresultant P Q).1 := by rw [heq]
+    have hsV : sV = (extendedSignedSubresultant P Q).2.2.2 := by rw [heq]
+    rw [show firstNonzero sP = some j₀ from by rw [hsP]; exact hfind, hsV]
+    match j₀, hj₀1 with
+    | jj + 1, _ => rfl
+  -- names for the boundary tuple
+  set W : AzPolynomial AzInt := (extendedSignedSubresultant P Q).2.2.2[j₀ - 1]! with hWdef
+  have hW : AzPolynomial.toPoly W
+      = sResV (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (j₀ - 1) := hbnd
+  -- `V ≠ 0` over `ℚ` (Proposition 8.42(c) at the non-defective gcd degree)
+  have hsRes : Azurite.BPR.Chapter4.sRes Aq Bq j₀ ≠ 0 :=
+    ((Azurite.BPR.Chapter4.Proposition_4_26 Aq Bq hAq0 hBq0 j₀
+      (by rw [hdegBq]; exact hjq) (by omega)).mp hj₀).2
+  obtain ⟨hVnd, hVlc⟩ := sResV_sub_one_natDegree Aq Bq hAq0 hpqq hj₀1
+    (by rw [hdegBq]; exact hjq) hsRes
+  have hVqne : sResV Aq Bq (j₀ - 1) ≠ 0 := by
+    intro h
+    rw [h, Polynomial.leadingCoeff_zero] at hVlc
+    exact mul_ne_zero (Polynomial.leadingCoeff_ne_zero.mpr hAq0) hsRes hVlc.symm
+  have hWne : W ≠ 0 := by
+    intro h
+    apply hVqne
+    rw [hsResVq, ← hW, h, toPoly_zero, Polynomial.map_zero]
+  have hWlc0 : W.leadingCoeff ≠ 0 := by
+    rw [← leadingCoeff_toPoly]
+    exact Polynomial.leadingCoeff_ne_zero.mpr (toPoly_ne_zero hWne)
+  have hPlc0 : P.leadingCoeff ≠ 0 := by
+    rw [← leadingCoeff_toPoly]
+    exact Polynomial.leadingCoeff_ne_zero.mpr hP'
+  -- exactness of the normalization (Lemma 10.17 content argument)
+  have hVzq_dvd : ((AzPolynomial.toPoly W).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)
+      ∣ Aq := by
+    have hassoc := Azurite.BPR.sResV_gcdFree_associated (K := ℚ) hAq0 hBq0 hpqq hj₀1 hj₀
+    have h1 : sResV Aq Bq (j₀ - 1) ∣ Aq :=
+      (dvd_mul_right _ _).trans hassoc.dvd
+    rw [hW, Polynomial.map_map, ← hsResVq]
+    exact h1
+  have hdvd_az : ∀ i, W.leadingCoeff ∣ (P.leadingCoeff • W).coeff i := by
+    intro i
+    apply azInt_dvd_of_toInt_dvd
+    have hz := lcof_dvd_lcof_mul_coeff hA0
+      (map_toPoly_ne_zero hWne)
+      (by rw [← hAq]; exact hVzq_dvd) i
+    rw [leadingCoeff_map_toPoly, leadingCoeff_map_toPoly] at hz
+    have hcoeff : ((P.leadingCoeff • W).coeff i).toInt
+        = (P.leadingCoeff).toInt * (W.coeff i).toInt := by
+      rw [coeff_smul, smul_eq_mul, Azurite.AzInt.toInt_mul]
+    rw [hcoeff]
+    have hWc : ((AzPolynomial.toPoly W).map AzInt.toIntRingHom).coeff i
+        = (W.coeff i).toInt := by
+      rw [Polynomial.coeff_map, coeff_toPoly_eq]
+      rfl
+    rwa [hWc] at hz
+  -- the division identity at the `AzInt[X]` level, mapped to `ℚ[X]`
+  have hCmul := C_mul_toPoly_divByRingElt W.leadingCoeff hWlc0
+    (P.leadingCoeff • W) hdvd_az
+  have hWqVq : ((AzPolynomial.toPoly W).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)
+      = sResV Aq Bq (j₀ - 1) := by
+    rw [hW, Polynomial.map_map, ← hsResVq]
+  have hmapped : Polynomial.C ((W.leadingCoeff.toInt : ℚ))
+      * (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).2).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ))
+      = Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResV Aq Bq (j₀ - 1) := by
+    have h1 := congrArg (fun p : Polynomial AzInt =>
+      (p.map AzInt.toIntRingHom).map (Int.castRingHom ℚ)) hCmul
+    simp only [Polynomial.map_mul, Polynomial.map_C] at h1
+    have h2 : ((AzPolynomial.toPoly (P.leadingCoeff • W)).map AzInt.toIntRingHom).map
+        (Int.castRingHom ℚ)
+        = Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResV Aq Bq (j₀ - 1) := by
+      rw [map_toPoly_smul, Polynomial.map_mul, Polynomial.map_C, hWqVq]
+      rfl
+    rw [hsnd]
+    rw [h2] at h1
+    convert h1 using 3
+    rfl
+  have ha : ((W.leadingCoeff.toInt : ℚ)) ≠ 0 := by
+    rw [Ne, Int.cast_eq_zero]
+    exact toInt_ne_zero hWlc0
+  have hb : ((P.leadingCoeff.toInt : ℚ)) ≠ 0 := by
+    rw [Ne, Int.cast_eq_zero]
+    exact toInt_ne_zero hPlc0
+  have hsnd_eq : (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).2).map AzInt.toIntRingHom).map
+      (Int.castRingHom ℚ))
+      = Polynomial.C ((W.leadingCoeff.toInt : ℚ)⁻¹ * (P.leadingCoeff.toInt : ℚ))
+        * sResV Aq Bq (j₀ - 1) := by
+    have h3 : Polynomial.C ((W.leadingCoeff.toInt : ℚ))⁻¹
+        * (Polynomial.C ((W.leadingCoeff.toInt : ℚ))
+          * (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).2).map AzInt.toIntRingHom).map
+              (Int.castRingHom ℚ)))
+        = Polynomial.C ((W.leadingCoeff.toInt : ℚ))⁻¹
+          * (Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResV Aq Bq (j₀ - 1)) := by
+      rw [hmapped]
+    rw [← mul_assoc, ← Polynomial.C_mul, inv_mul_cancel₀ ha, Polynomial.C_1, one_mul] at h3
+    rw [h3, ← mul_assoc, ← Polynomial.C_mul]
+  have hu : IsUnit (Polynomial.C
+      ((W.leadingCoeff.toInt : ℚ)⁻¹ * (P.leadingCoeff.toInt : ℚ)) : ℚ[X]) :=
+    Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr (mul_ne_zero (inv_ne_zero ha) hb))
+  have hassocV : Associated
+      ((((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).2).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ)))
+      (sResV Aq Bq (j₀ - 1)) := by
+    rw [hsnd_eq]
+    exact Associated.symm ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
+  exact (hassocV.mul_mul (Associated.refl _)).trans
+    (Azurite.BPR.sResV_gcdFree_associated hAq0 hBq0 hpqq hj₀1 hj₀)
+
+open Azurite.BPR.Chapter8 in
+/-- **Gcd correctness of the raw `ℤ` pair's first output** (BPR Algorithm
+10.1 over `AzInt`): the first output of `gcdGcdFreePartInt` — the
+BPR-normalized `a_p·sResP_{j₀}/s_{j₀}`, whose division is exact by the same
+Lemma 10.17 content argument since the non-defective `sResP_{j₀}` has
+leading coefficient `s_{j₀}` — has `ℚ[X]` image associated to the gcd.
+(Holds for any gcd degree `j₀ ≤ deg Q`, including the coprime case
+`j₀ = 0`.) -/
+theorem gcdGcdFreePartInt_fst_gcd (P Q : AzPolynomial AzInt)
+    (hP : P ≠ 0) (hQ : Q ≠ 0) (hpq : Q.natDegree < P.natDegree) (hq1 : 1 ≤ Q.natDegree)
+    {j₀ : ℕ}
+    (hj₀ : (@GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial
+        (((AzPolynomial.toPoly P).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))
+        (((AzPolynomial.toPoly Q).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))).natDegree
+      = j₀) :
+    Associated
+      ((((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).1).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ)))
+      (@GCDMonoid.gcd _ _ Azurite.BPR.gcdMonoidPolynomial
+        (((AzPolynomial.toPoly P).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))
+        (((AzPolynomial.toPoly Q).map AzInt.toIntRingHom).map (Int.castRingHom ℚ))) := by
+  have hψinj : Function.Injective (Int.castRingHom ℚ) := Int.cast_injective
+  set A : ℤ[X] := (AzPolynomial.toPoly P).map AzInt.toIntRingHom with hA
+  set B : ℤ[X] := (AzPolynomial.toPoly Q).map AzInt.toIntRingHom with hB
+  set Aq : ℚ[X] := A.map (Int.castRingHom ℚ) with hAq
+  set Bq : ℚ[X] := B.map (Int.castRingHom ℚ) with hBq
+  have hP' : AzPolynomial.toPoly P ≠ 0 := toPoly_ne_zero hP
+  have hA0 : A ≠ 0 := map_toPoly_ne_zero hP
+  have hB0 : B ≠ 0 := map_toPoly_ne_zero hQ
+  have hAq0 : Aq ≠ 0 := by
+    rw [hAq, Ne, Polynomial.map_eq_zero_iff hψinj]
+    exact hA0
+  have hBq0 : Bq ≠ 0 := by
+    rw [hBq, Ne, Polynomial.map_eq_zero_iff hψinj]
+    exact hB0
+  have hdegAq : Aq.natDegree = P.natDegree := by
+    rw [hAq, Polynomial.natDegree_map_eq_of_injective hψinj, natDegree_map_toPoly]
+  have hdegBq : Bq.natDegree = Q.natDegree := by
+    rw [hBq, Polynomial.natDegree_map_eq_of_injective hψinj, natDegree_map_toPoly]
+  have hpqq : Bq.natDegree < Aq.natDegree := by rw [hdegAq, hdegBq]; exact hpq
+  have hjq : j₀ ≤ Q.natDegree := by
+    have h := Polynomial.natDegree_le_of_dvd
+      (@gcd_dvd_right _ _ Azurite.BPR.gcdMonoidPolynomial Aq Bq) hBq0
+    rw [hj₀, hdegBq] at h
+    exact h
+  -- ℚ-side facts at the gcd degree, transferred down to `AzInt`
+  have hqne : sResP Aq Bq j₀ ≠ 0 :=
+    fun h => sResP_natDegree_gcd_ne_zero Aq Bq hAq0 hBq0 hpqq (hj₀ ▸ h)
+  have hqnd : (sResP Aq Bq j₀).natDegree = j₀ := by
+    have h1 : (sResP Aq Bq j₀).natDegree ≤ j₀ :=
+      Polynomial.natDegree_le_iff_degree_le.mpr
+        (sResP_degree_le Aq Bq hpqq (by rw [hdegBq]; exact hjq))
+    have h2 : j₀ ≤ (sResP Aq Bq j₀).natDegree := by
+      have h := natDegree_gcd_le_natDegree_sResP Aq Bq hAq0 hBq0 hpqq hqne
+      rwa [hj₀] at h
+    omega
+  have hAfuse : Aq = (AzPolynomial.toPoly P).map
+      ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    rw [hAq, hA, Polynomial.map_map]
+  have hBfuse : Bq = (AzPolynomial.toPoly Q).map
+      ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    rw [hBq, hB, Polynomial.map_map]
+  have hρinj : Function.Injective ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) :=
+    fun a b h => hιinj (hψinj h)
+  have hsResPq : ∀ m, sResP Aq Bq m
+      = (sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) m).map
+          ((Int.castRingHom ℚ).comp AzInt.toIntRingHom) := by
+    intro m
+    rw [hAfuse, hBfuse, sResP_map hρinj]
+  have hne : sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j₀ ≠ 0 := by
+    intro h
+    apply hqne
+    rw [hsResPq, h, Polynomial.map_zero]
+  have hnd : (sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j₀).natDegree = j₀ := by
+    have h := hqnd
+    rw [hsResPq, Polynomial.natDegree_map_eq_of_injective hρinj] at h
+    exact h
+  -- positional identification of the two output arrays
+  obtain ⟨hmaps, hmaps2⟩ := signedSubresultant_toPoly_domain P Q hP hQ hpq hq1
+  have hlen : (signedSubresultant P Q).1.size = P.natDegree + 1 := by
+    have h := congrArg List.length hmaps
+    simpa using h
+  have hlen2 : (signedSubresultant P Q).2.size = P.natDegree + 1 := by
+    have h := congrArg List.length hmaps2
+    simpa using h
+  have hentry : ∀ ℓ, ℓ < P.natDegree + 1 →
+      AzPolynomial.toPoly ((signedSubresultant P Q).1[ℓ]!)
+        = sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) ℓ := by
+    intro ℓ hℓ
+    have h := congrArg (fun l => l[ℓ]?) hmaps
+    simp only [List.getElem?_map, List.getElem?_range, hℓ] at h
+    have hℓs : ℓ < (signedSubresultant P Q).1.toList.length := by
+      simpa [hlen] using hℓ
+    rw [List.getElem?_eq_getElem hℓs] at h
+    simp only [Option.map_some] at h
+    rw [Array.getElem!_eq_getD, Array.getD_eq_getD_getElem?,
+      Array.getElem?_eq_getElem (by omega : ℓ < (signedSubresultant P Q).1.size)]
+    simpa [Array.getElem_toList] using h
+  have hentry2 : ∀ ℓ, ℓ < P.natDegree + 1 →
+      (signedSubresultant P Q).2[ℓ]!
+        = Azurite.BPR.Chapter4.sRes (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) ℓ := by
+    intro ℓ hℓ
+    have h := congrArg (fun l => l[ℓ]?) hmaps2
+    simp only [List.getElem?_map, List.getElem?_range, hℓ] at h
+    have hℓs : ℓ < (signedSubresultant P Q).2.toList.length := by
+      simpa [hlen2] using hℓ
+    rw [List.getElem?_eq_getElem hℓs] at h
+    rw [Array.getElem!_eq_getD, Array.getD_eq_getD_getElem?,
+      Array.getElem?_eq_getElem (by omega : ℓ < (signedSubresultant P Q).2.size)]
+    simpa [Array.getElem_toList] using h
+  have hfstarr : (extendedSignedSubresultant P Q).1 = (signedSubresultant P Q).1 :=
+    extendedSignedSubresultant_fst P Q
+  have hsndarr : (extendedSignedSubresultant P Q).2.1 = (signedSubresultant P Q).2 :=
+    extendedSignedSubresultant_snd_fst P Q
+  have hfind : firstNonzero (extendedSignedSubresultant P Q).1 = some j₀ := by
+    rw [hfstarr]
+    refine firstNonzero_eq_some _ j₀ (by omega) ?_ ?_
+    · intro i hi
+      apply toPoly_inj.mp
+      rw [hentry i (by omega), toPoly_zero]
+      have hqz : sResP Aq Bq i = 0 :=
+        sResP_eq_zero_of_lt_gcd Aq Bq hAq0 hBq0 hpqq (by omega) (by omega)
+      rw [hsResPq] at hqz
+      exact (Polynomial.map_eq_zero_iff hρinj).mp hqz
+    · intro h
+      have h2 := hentry j₀ (by omega)
+      rw [h, toPoly_zero] at h2
+      exact hne h2.symm
+  -- reduce the wrapper (both `some 0` and `some (j+1)` arms give this `fst`)
+  have hfstval : (gcdGcdFreePartInt P Q).1
+      = divByRingElt ((extendedSignedSubresultant P Q).2.1[j₀]!)
+          (P.leadingCoeff • (extendedSignedSubresultant P Q).1[j₀]!) := by
+    rw [gcdGcdFreePartInt, if_neg hQ, if_neg (by omega)]
+    show (gcdGcdFreePartIntCore P Q).1 = _
+    rw [gcdGcdFreePartIntCore]
+    split
+    rename_i sP s sU sV heq
+    have hsP : sP = (extendedSignedSubresultant P Q).1 := by rw [heq]
+    have hs : s = (extendedSignedSubresultant P Q).2.1 := by rw [heq]
+    rw [show firstNonzero sP = some j₀ from by rw [hsP]; exact hfind, hsP, hs]
+    match j₀ with
+    | 0 => rfl
+    | jj + 1 => rfl
+  -- names for the gcd tuple
+  set V : AzPolynomial AzInt := (extendedSignedSubresultant P Q).1[j₀]! with hVdef
+  have hV : AzPolynomial.toPoly V
+      = sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j₀ := by
+    rw [hVdef, hfstarr]
+    exact hentry j₀ (by omega)
+  -- the divisor is the leading coefficient: `s_{j₀} = lcof(sResP_{j₀})`
+  have hsval : (extendedSignedSubresultant P Q).2.1[j₀]! = V.leadingCoeff := by
+    rw [hsndarr, hentry2 j₀ (by omega), ← leadingCoeff_toPoly, hV,
+      Polynomial.leadingCoeff, hnd]
+    exact (coeff_sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q)
+      (by rw [AzPolynomial.natDegree_toPoly, AzPolynomial.natDegree_toPoly]; exact hpq)
+      (by rw [AzPolynomial.natDegree_toPoly]; omega)).symm
+  have hVne : V ≠ 0 := by
+    intro h
+    apply hne
+    rw [← hV, h, toPoly_zero]
+  have hVlc0 : V.leadingCoeff ≠ 0 := by
+    rw [← leadingCoeff_toPoly]
+    exact Polynomial.leadingCoeff_ne_zero.mpr (toPoly_ne_zero hVne)
+  -- exactness (Lemma 10.17 content argument, `sResP_{j₀} ~ gcd ∣ P` over `ℚ`)
+  have hVzq_dvd : ((AzPolynomial.toPoly V).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)
+      ∣ Aq := by
+    have hassoc := associated_sResP_gcd Aq Bq hAq0 hBq0 hpqq hj₀
+    have h1 : sResP Aq Bq j₀ ∣ Aq :=
+      hassoc.dvd.trans (@gcd_dvd_left _ _ Azurite.BPR.gcdMonoidPolynomial Aq Bq)
+    rw [hV, Polynomial.map_map, ← hsResPq]
+    exact h1
+  have hdvd_az : ∀ i, V.leadingCoeff ∣ (P.leadingCoeff • V).coeff i := by
+    intro i
+    apply azInt_dvd_of_toInt_dvd
+    have hz := lcof_dvd_lcof_mul_coeff hA0
+      (map_toPoly_ne_zero hVne)
+      (by rw [← hAq]; exact hVzq_dvd) i
+    rw [leadingCoeff_map_toPoly, leadingCoeff_map_toPoly] at hz
+    have hcoeff : ((P.leadingCoeff • V).coeff i).toInt
+        = (P.leadingCoeff).toInt * (V.coeff i).toInt := by
+      rw [coeff_smul, smul_eq_mul, Azurite.AzInt.toInt_mul]
+    rw [hcoeff]
+    have hVc : ((AzPolynomial.toPoly V).map AzInt.toIntRingHom).coeff i
+        = (V.coeff i).toInt := by
+      rw [Polynomial.coeff_map, coeff_toPoly_eq]
+      rfl
+    rwa [hVc] at hz
+  have hCmul := C_mul_toPoly_divByRingElt V.leadingCoeff hVlc0
+    (P.leadingCoeff • V) hdvd_az
+  -- pass to `ℚ[X]`
+  have hVqPq : ((AzPolynomial.toPoly V).map AzInt.toIntRingHom).map (Int.castRingHom ℚ)
+      = sResP Aq Bq j₀ := by
+    rw [hV, Polynomial.map_map, ← hsResPq]
+  have hmapped : Polynomial.C ((V.leadingCoeff.toInt : ℚ))
+      * (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).1).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ))
+      = Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResP Aq Bq j₀ := by
+    have h1 := congrArg (fun p : Polynomial AzInt =>
+      (p.map AzInt.toIntRingHom).map (Int.castRingHom ℚ)) hCmul
+    simp only [Polynomial.map_mul, Polynomial.map_C] at h1
+    have h2 : ((AzPolynomial.toPoly (P.leadingCoeff • V)).map AzInt.toIntRingHom).map
+        (Int.castRingHom ℚ)
+        = Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResP Aq Bq j₀ := by
+      rw [map_toPoly_smul, Polynomial.map_mul, Polynomial.map_C, hVqPq]
+      rfl
+    rw [hfstval, hsval]
+    rw [h2] at h1
+    convert h1 using 3
+    rfl
+  have hPlc0 : P.leadingCoeff ≠ 0 := by
+    rw [← leadingCoeff_toPoly]
+    exact Polynomial.leadingCoeff_ne_zero.mpr hP'
+  have ha : ((V.leadingCoeff.toInt : ℚ)) ≠ 0 := by
+    rw [Ne, Int.cast_eq_zero]
+    exact toInt_ne_zero hVlc0
+  have hb : ((P.leadingCoeff.toInt : ℚ)) ≠ 0 := by
+    rw [Ne, Int.cast_eq_zero]
+    exact toInt_ne_zero hPlc0
+  have hfst_eq : (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).1).map AzInt.toIntRingHom).map
+      (Int.castRingHom ℚ))
+      = Polynomial.C ((V.leadingCoeff.toInt : ℚ)⁻¹ * (P.leadingCoeff.toInt : ℚ))
+        * sResP Aq Bq j₀ := by
+    have h3 : Polynomial.C ((V.leadingCoeff.toInt : ℚ))⁻¹
+        * (Polynomial.C ((V.leadingCoeff.toInt : ℚ))
+          * (((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).1).map AzInt.toIntRingHom).map
+              (Int.castRingHom ℚ)))
+        = Polynomial.C ((V.leadingCoeff.toInt : ℚ))⁻¹
+          * (Polynomial.C ((P.leadingCoeff.toInt : ℚ)) * sResP Aq Bq j₀) := by
+      rw [hmapped]
+    rw [← mul_assoc, ← Polynomial.C_mul, inv_mul_cancel₀ ha, Polynomial.C_1, one_mul] at h3
+    rw [h3, ← mul_assoc, ← Polynomial.C_mul]
+  have hu : IsUnit (Polynomial.C
+      ((V.leadingCoeff.toInt : ℚ)⁻¹ * (P.leadingCoeff.toInt : ℚ)) : ℚ[X]) :=
+    Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr (mul_ne_zero (inv_ne_zero ha) hb))
+  have hassocP : Associated
+      ((((AzPolynomial.toPoly (gcdGcdFreePartInt P Q).1).map AzInt.toIntRingHom).map
+          (Int.castRingHom ℚ)))
+      (sResP Aq Bq j₀) := by
+    rw [hfst_eq]
+    exact Associated.symm ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
+  exact hassocP.trans (associated_sResP_gcd Aq Bq hAq0 hBq0 hpqq hj₀)
 
 end Azurite.AzPolynomial

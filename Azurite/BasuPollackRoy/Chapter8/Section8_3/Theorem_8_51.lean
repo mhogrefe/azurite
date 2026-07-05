@@ -47,6 +47,89 @@ theorem sResP_map {D E : Type*} [CommRing E] [CommRing D] {φ : D →+* E}
   proposition_8_52 φ P Q (Polynomial.natDegree_map_eq_of_injective hφ P)
     (Polynomial.natDegree_map_eq_of_injective hφ Q) j
 
+/-- **`sResV` commutes with a degree-preserving ring homomorphism.**  The
+    `V`-cofactor is the determinant of `sResVMat`, whose entries (constants from
+    `SyHa` and monomials) all map coefficient-wise; the dimension is aligned by a
+    `finCongr` reindex. -/
+theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D →+* E)
+    (P Q : D[X]) (hP : (P.map f).natDegree = P.natDegree)
+    (hQ : (Q.map f).natDegree = Q.natDegree) (j : ℕ) :
+    sResV (P.map f) (Q.map f) j = (sResV P Q j).map f := by
+  have hm : (P.map f).natDegree + (Q.map f).natDegree - 2 * j
+      = P.natDegree + Q.natDegree - 2 * j := by rw [hP, hQ]
+  rw [sResV, sResV]
+  have hmat : sResVMat (P.map f) (Q.map f) j
+      = ((sResVMat P Q j).map (Polynomial.mapRingHom f)).submatrix
+          (finCongr hm) (finCongr hm) := by
+    ext i k
+    rw [Matrix.submatrix_apply, Matrix.map_apply, sResVMat, sResVMat,
+      Matrix.of_apply, Matrix.of_apply]
+    rcases Nat.lt_or_ge ((k : ℕ) + 1) ((P.map f).natDegree + (Q.map f).natDegree - 2 * j)
+      with hk1 | hk1
+    · rw [if_pos hk1,
+        if_pos (show (((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j
+          from by show (k : ℕ) + 1 < _; omega),
+        Polynomial.coe_mapRingHom, Polynomial.map_C]
+      congr 1
+      -- the `SyHa` entries map coefficient-wise
+      rw [Azurite.BPR.Chapter4.SyHa, Azurite.BPR.Chapter4.SyHa,
+        Matrix.of_apply, Matrix.of_apply]
+      rcases Nat.lt_or_ge (i : ℕ) ((Q.map f).natDegree - j) with hib | hib
+      · rw [if_pos hib,
+          if_pos (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
+            from by show (i : ℕ) < _; omega)]
+        rw [show Polynomial.X ^ ((Q.map f).natDegree - j - 1 - (i : ℕ)) * P.map f
+            = (Polynomial.X ^ (Q.natDegree - j - 1 - (i : ℕ)) * P).map f from by
+          rw [Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+          congr 2
+          omega,
+          Polynomial.coeff_map]
+        congr 1
+        simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
+        congr 2
+        all_goals first | rfl | omega
+      · rw [if_neg (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
+          if_neg (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
+            from by show ¬ ((i : ℕ) < _); omega)]
+        rw [show Polynomial.X ^ ((i : ℕ) - ((Q.map f).natDegree - j)) * Q.map f
+            = (Polynomial.X ^ ((i : ℕ) - (Q.natDegree - j)) * Q).map f from by
+          rw [Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+          congr 2
+          omega,
+          Polynomial.coeff_map]
+        congr 1
+        simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
+        congr 2
+        all_goals first | rfl | omega
+    · rw [if_neg (show ¬ ((k : ℕ) + 1
+            < (P.map f).natDegree + (Q.map f).natDegree - 2 * j) from by omega),
+        if_neg (show ¬ ((((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)
+          from by show ¬ ((k : ℕ) + 1 < _); omega)]
+      rcases Nat.lt_or_ge (i : ℕ) ((Q.map f).natDegree - j) with hib | hib
+      · rw [if_pos hib,
+          if_pos (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
+            from by show (i : ℕ) < _; omega),
+          Polynomial.coe_mapRingHom, Polynomial.map_zero]
+      · rw [if_neg (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
+          if_neg (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
+            from by show ¬ ((i : ℕ) < _); omega),
+          Polynomial.coe_mapRingHom, Polynomial.map_pow, Polynomial.map_X]
+        congr 2
+        show (i : ℕ) - ((Q.map f).natDegree - j) = (((finCongr hm) i : Fin _) : ℕ) - (Q.natDegree - j)
+        simp only [finCongr_apply, Fin.val_cast]
+        omega
+  rw [hmat, Matrix.det_submatrix_equiv_self, ← Polynomial.coe_mapRingHom,
+    RingHom.map_det]
+  rfl
+
+/-- **`sResV` commutes with an injective ring homomorphism** (the injective special
+    case, mirroring `sResP_map`). -/
+theorem sResV_map {D E : Type*} [CommRing E] [CommRing D] {φ : D →+* E}
+    (hφ : Function.Injective φ) (P Q : D[X]) (j : ℕ) :
+    sResV (P.map φ) (Q.map φ) j = (sResV P Q j).map φ :=
+  sResV_map_of_natDegree_eq φ P Q (Polynomial.natDegree_map_eq_of_injective hφ P)
+    (Polynomial.natDegree_map_eq_of_injective hφ Q) j
+
 /-- **`Chapter4.sRes` commutes with an injective ring homomorphism** (for `j ≤ deg P`).  From
     `sResP_map` + `coeff_sResP` (`sRes_j` is the `Xʲ`-coefficient of `sResP_j`). -/
 theorem sRes_map {D E : Type*} [CommRing E] [CommRing D] {φ : D →+* E}

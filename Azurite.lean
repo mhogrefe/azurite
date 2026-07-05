@@ -1,4 +1,5 @@
 
+import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.SlidingWindowPow
@@ -334,6 +335,7 @@ import Azurite.AzPolynomial.Equiv.ExactDiv
 import Azurite.AzPolynomial.Equiv.Expand
 import Azurite.AzPolynomial.Equiv.ExtendedSRemS
 import Azurite.AzPolynomial.Equiv.Gcd
+import Azurite.AzPolynomial.Equiv.GcdDet
 import Azurite.AzPolynomial.Equiv.GcdInt
 import Azurite.AzPolynomial.Equiv.InvertRoots
 import Azurite.AzPolynomial.Equiv.Karatsuba
@@ -353,6 +355,7 @@ import Azurite.AzPolynomial.Equiv.Resultant
 import Azurite.AzPolynomial.Equiv.SMul
 import Azurite.AzPolynomial.Equiv.ScaleRoots
 import Azurite.AzPolynomial.Equiv.SignedSubresultant
+import Azurite.AzPolynomial.Equiv.SignedSubresultantBoundary
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
@@ -367,6 +370,7 @@ import Azurite.AzPolynomial.ExactDiv
 import Azurite.AzPolynomial.Expand
 import Azurite.AzPolynomial.ExtendedSRemS
 import Azurite.AzPolynomial.Gcd
+import Azurite.AzPolynomial.GcdDet
 import Azurite.AzPolynomial.InvertRoots
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial
@@ -557,6 +561,7 @@ import Azurite.BasuPollackRoy.Chapter1.Section1_4.Theorem1_26
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_12
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_15
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.Corollary_10_4
+import Azurite.BasuPollackRoy.Chapter10.Section10_1.GcdBitsize
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.GcdFreePart
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_10
 import Azurite.BasuPollackRoy.Chapter10.Section10_1.Lemma_10_13
