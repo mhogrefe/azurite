@@ -66,16 +66,16 @@ def mul [AzPolynomialMulConfig R] (p q : AzPolynomial R) : AzPolynomial R :=
 instance [AzPolynomialMulConfig R] : Mul (AzPolynomial R) := ⟨mul⟩
 
 -- Testing the implementation using Integer polynomials
-#guard (parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
-#guard (parseAzPolynomial (R := AzInt) "2*x^2+x").get! * (parseAzPolynomial (R := AzInt) "x-1").get! == (parseAzPolynomial (R := AzInt) "2*x^3-x^2-x").get!
-#guard (0 : AzPolynomial AzInt) * (parseAzPolynomial (R := AzInt) "x^2+1").get! == 0
-#guard (parseAzPolynomial (R := AzInt) "3").get! * (parseAzPolynomial (R := AzInt) "4").get! == (parseAzPolynomial (R := AzInt) "12").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2+3*x+2"
+#guard toChars ((parseAzPolynomial (R := AzInt) "2*x^2+x").get! * (parseAzPolynomial (R := AzInt) "x-1").get!) == "2*x^3-x^2-x"
+#guard toChars ((0 : AzPolynomial AzInt) * (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "0"
+#guard toChars ((parseAzPolynomial (R := AzInt) "3").get! * (parseAzPolynomial (R := AzInt) "4").get!) == "12"
 
 -- Verify old implementation still works
-#guard mulBasecaseList (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
+#guard toChars (mulBasecaseList (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2+3*x+2"
 
 -- Verify fold implementation works
-#guard mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
+#guard toChars (mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2+3*x+2"
 
 -- `AzPolynomial AzRat` round-trips through strings (rational coefficients render
 -- as `"3/2"`, `-1` coefficients as `"-x"`).  (Relocated from `ParsableCoeff/AzRat`.)

@@ -182,7 +182,7 @@ private def s (q : AzPolynomial MvInt3) : String :=
 #guard (tremsLeafParents (p "x+(a)") (p "0")).map s == ["x+(a)"]
 
 -- Q = 0: tree root is P with one child (the 0-sentinel)
-#guard (tremsTree (p "x+(a)") (p "0")).root == p "x+(a)"
+#guard s ((tremsTree (p "x+(a)") (p "0")).root) == "x+(a)"
 #guard (tremsTree (p "x+(a)") (p "0")).children.length == 1
 
 -- Q is a nonzero constant: tru(Q) = [Q], pRem(P, Q) = 0,
@@ -199,8 +199,8 @@ private def s (q : AzPolynomial MvInt3) : String :=
 #guard (tru (p "(a)*x+(b)")).map s == ["(a)*x+(b)", "(b)"]
 
 -- Full tree structure: root label
-#guard (tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).root
-  == p "(a)*x^2+(b)*x+(1)"
+#guard s ((tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).root)
+  == "(a)*x^2+(b)*x+(1)"
 
 -- Number of children of root = length of tru(Q) + 1 (0-sentinel)
 #guard (tremsTree (p "(a)*x^2+(b)*x+(1)") (p "(a)*x+(b)")).children.length == 3

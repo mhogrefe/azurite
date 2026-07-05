@@ -48,23 +48,23 @@ def translate [AzPolynomialMulConfig R] (p : AzPolynomial R) (c : R) : AzPolynom
 section Tests
 
 -- (x² + 1) translated by 1: (x-1)² + 1 = x² - 2x + 2
-#guard (parseAzPolynomial (R := AzInt) "x^2+1").get!.translate 1
-    == (parseAzPolynomial (R := AzInt) "x^2-2*x+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+1").get!.translate 1)
+    == "x^2-2*x+2"
 
 -- x³ translated by -1: (x+1)³ = x³ + 3x² + 3x + 1
-#guard (parseAzPolynomial (R := AzInt) "x^3").get!.translate (-1)
-    == (parseAzPolynomial (R := AzInt) "x^3+3*x^2+3*x+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^3").get!.translate (-1))
+    == "x^3+3*x^2+3*x+1"
 
 -- Constant translated by anything: unchanged
-#guard (parseAzPolynomial (R := AzInt) "5").get!.translate 42
-    == (parseAzPolynomial (R := AzInt) "5").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "5").get!.translate 42)
+    == "5"
 
 -- Zero translated: zero
-#guard (0 : AzPolynomial AzInt).translate 7 == 0
+#guard toChars ((0 : AzPolynomial AzInt).translate 7) == "0"
 
 -- 2x + 3 translated by 5: 2(x-5) + 3 = 2x - 7
-#guard (parseAzPolynomial (R := AzInt) "2*x+3").get!.translate 5
-    == (parseAzPolynomial (R := AzInt) "2*x-7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "2*x+3").get!.translate 5)
+    == "2*x-7"
 
 end Tests
 

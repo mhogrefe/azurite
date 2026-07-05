@@ -1,6 +1,7 @@
 import Azurite.AzZMod.Inv
 import Azurite.AzZMod.Equiv.Conversion
 import Azurite.AzZMod.Instances
+import Azurite.AzZMod.ToString
 import Azurite.AzInt.Equiv.ExtendedGcd
 
 /-!
@@ -67,14 +68,16 @@ private theorem coprimeLit {k a : Nat} [NeZero (AzNat.ofNat k).toNat]
 
 -- `3⁻¹ = 5` in `ℤ/7` (`3·5 = 15 ≡ 1`), `= 7` in `ℤ/10` (`3·7 = 21 ≡ 1`),
 -- `= 667` in `ℤ/1000` (`3·667 = 2001 ≡ 1`).
-#guard (AzZMod.ofNat (AzNat.ofNat 7) 3).inv (coprimeLit (by decide)) == AzZMod.ofNat (AzNat.ofNat 7) 5
-#guard (AzZMod.ofNat (AzNat.ofNat 10) 3).inv (coprimeLit (by decide)) == AzZMod.ofNat (AzNat.ofNat 10) 7
-#guard (AzZMod.ofNat (AzNat.ofNat 1000) 3).inv (coprimeLit (by decide)) ==
-  AzZMod.ofNat (AzNat.ofNat 1000) 667
+#guard Azurite.AzZMod.toString
+  ((AzZMod.ofNat (AzNat.ofNat 7) 3).inv (coprimeLit (by decide))) == "5"
+#guard Azurite.AzZMod.toString
+  ((AzZMod.ofNat (AzNat.ofNat 10) 3).inv (coprimeLit (by decide))) == "7"
+#guard Azurite.AzZMod.toString
+  ((AzZMod.ofNat (AzNat.ofNat 1000) 3).inv (coprimeLit (by decide))) == "667"
 -- The inverse really inverts.
-#guard AzZMod.ofNat (AzNat.ofNat 1000) 3 *
-  (AzZMod.ofNat (AzNat.ofNat 1000) 3).inv (coprimeLit (by decide)) == 1
-#guard AzZMod.ofNat (AzNat.ofNat 1000) 999 *
-  (AzZMod.ofNat (AzNat.ofNat 1000) 999).inv (coprimeLit (by decide)) == 1
+#guard Azurite.AzZMod.toString (AzZMod.ofNat (AzNat.ofNat 1000) 3 *
+  (AzZMod.ofNat (AzNat.ofNat 1000) 3).inv (coprimeLit (by decide))) == "1"
+#guard Azurite.AzZMod.toString (AzZMod.ofNat (AzNat.ofNat 1000) 999 *
+  (AzZMod.ofNat (AzNat.ofNat 1000) 999).inv (coprimeLit (by decide))) == "1"
 
 end Tests

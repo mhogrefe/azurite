@@ -1,4 +1,5 @@
 import Azurite.AzInt.Add
+import Azurite.AzInt.ToString
 import Azurite.AzNat.Pow
 
 /-!
@@ -33,15 +34,15 @@ def pow (z : AzInt) (n : ℕ) : AzInt :=
 
 section Tests
 
-#guard (Int64.toAzInt 2).pow 10 = Int64.toAzInt 1024
-#guard (Int64.toAzInt (-2)).pow 10 = Int64.toAzInt 1024
-#guard (Int64.toAzInt (-2)).pow 11 = Int64.toAzInt (-2048)
-#guard (Int64.toAzInt (-3)).pow 3 = Int64.toAzInt (-27)
-#guard (Int64.toAzInt (-7)).pow 2 = Int64.toAzInt 49
-#guard (Int64.toAzInt (-5)).pow 0 = Int64.toAzInt 1
-#guard (Int64.toAzInt 0).pow 5 = Int64.toAzInt 0
-#guard (Int64.toAzInt 0).pow 0 = Int64.toAzInt 1
-#guard (Int64.toAzInt (-2)).pow 30 = Int64.toAzInt 1073741824
+#guard toString ((Int64.toAzInt 2).pow 10) == "1024"
+#guard toString ((Int64.toAzInt (-2)).pow 10) == "1024"
+#guard toString ((Int64.toAzInt (-2)).pow 11) == "-2048"
+#guard toString ((Int64.toAzInt (-3)).pow 3) == "-27"
+#guard toString ((Int64.toAzInt (-7)).pow 2) == "49"
+#guard toString ((Int64.toAzInt (-5)).pow 0) == "1"
+#guard toString ((Int64.toAzInt 0).pow 5) == "0"
+#guard toString ((Int64.toAzInt 0).pow 0) == "1"
+#guard toString ((Int64.toAzInt (-2)).pow 30) == "1073741824"
 
 end Tests
 

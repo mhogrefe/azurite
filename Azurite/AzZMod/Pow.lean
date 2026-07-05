@@ -1,4 +1,5 @@
 import Azurite.AzZMod.Basic
+import Azurite.AzZMod.ToString
 import Azurite.Algorithm.SlidingWindowPow
 
 /-!
@@ -27,10 +28,10 @@ section Tests
 open Azurite Azurite.AzZMod
 
 -- `3^4 = 81 ≡ 4 (mod 7)`, `2^10 = 1024 ≡ 24 (mod 1000)`, `7^0 = 1`.
-#guard (AzZMod.ofNat (AzNat.ofNat 7) 3).pow 4 == AzZMod.ofNat (AzNat.ofNat 7) 4
-#guard (AzZMod.ofNat (AzNat.ofNat 1000) 2).pow 10 == AzZMod.ofNat (AzNat.ofNat 1000) 24
-#guard (AzZMod.ofNat (AzNat.ofNat 1000) 7).pow 0 == AzZMod.ofNat (AzNat.ofNat 1000) 1
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 7) 3).pow 4) == "4"
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 1000) 2).pow 10) == "24"
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 1000) 7).pow 0) == "1"
 -- `123^5 mod 1000`: `123^5 = 28153056843`, `≡ 843`.
-#guard (AzZMod.ofNat (AzNat.ofNat 1000) 123).pow 5 == AzZMod.ofNat (AzNat.ofNat 1000) 843
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 1000) 123).pow 5) == "843"
 
 end Tests

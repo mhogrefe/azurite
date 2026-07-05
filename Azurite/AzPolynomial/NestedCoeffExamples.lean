@@ -54,41 +54,41 @@ private def pz : AzPolynomial IntPoly := 0
 /-- The one polynomial. -/
 private def po : AzPolynomial IntPoly := 1
 #guard po.coeffs.size == 1
-#guard po.coeff 0 == i "1"
+#guard toChars (po.coeff 0) == "1"
 
 /-- A constant polynomial whose coefficient is `x + 1`. -/
 private def pc : AzPolynomial IntPoly := AzPolynomial.C (i "x+1")
 #guard pc.coeffs.size == 1
-#guard pc.coeff 0 == i "x+1"
+#guard toChars (pc.coeff 0) == "x+1"
 
 /-- The polynomial `x * T + (x + 1)` in `AzInt[x][T]`. -/
 private def pl : AzPolynomial IntPoly :=
   AzPolynomial.monomial 1 (i "x") + AzPolynomial.C (i "x+1")
 #guard pl.coeffs.size == 2
-#guard pl.coeff 0 == i "x+1"
-#guard pl.coeff 1 == i "x"
+#guard toChars (pl.coeff 0) == "x+1"
+#guard toChars (pl.coeff 1) == "x"
 
 /-- The polynomial `x^2 * T^2 + (-x) * T + 1`. -/
 private def pq : AzPolynomial IntPoly :=
   AzPolynomial.monomial 2 (i "x^2") + AzPolynomial.monomial 1 (i "-x")
     + AzPolynomial.C (i "1")
 #guard pq.coeffs.size == 3
-#guard pq.coeff 0 == i "1"
-#guard pq.coeff 1 == i "-x"
-#guard pq.coeff 2 == i "x^2"
+#guard toChars (pq.coeff 0) == "1"
+#guard toChars (pq.coeff 1) == "-x"
+#guard toChars (pq.coeff 2) == "x^2"
 
 /-! ### Ring operations -/
 
 -- Addition: `(x*T + (x+1)) + ((-x)*T + 1) = (x+2)`
 #guard
-  (pl + (AzPolynomial.monomial 1 (i "-x") + AzPolynomial.C (i "1"))).coeff 0
-    == i "x+2"
+  toChars ((pl + (AzPolynomial.monomial 1 (i "-x") + AzPolynomial.C (i "1"))).coeff 0)
+    == "x+2"
 
 -- Subtraction collapses to zero.
 #guard (pl - pl).coeffs.size == 0
 
 -- Negation through subtraction: `0 - C(x) = C(-x)`.
-#guard ((0 : AzPolynomial IntPoly) - AzPolynomial.C (i "x")).coeff 0 == i "-x"
+#guard toChars (((0 : AzPolynomial IntPoly) - AzPolynomial.C (i "x")).coeff 0) == "-x"
 
 -- Multiplication: `(T + x) * (T - x) = T^2 - x^2`.
 private def pa : AzPolynomial IntPoly :=
@@ -98,12 +98,12 @@ private def pb : AzPolynomial IntPoly :=
 private def pab : AzPolynomial IntPoly := pa * pb
 
 #guard pab.coeffs.size == 3
-#guard pab.coeff 0 == i "-x^2"
-#guard pab.coeff 1 == i "0"
-#guard pab.coeff 2 == i "1"
+#guard toChars (pab.coeff 0) == "-x^2"
+#guard toChars (pab.coeff 1) == "0"
+#guard toChars (pab.coeff 2) == "1"
 
 -- The leading coefficient of `pq` is `x^2`.
-#guard pq.leadingCoeff == i "x^2"
+#guard toChars (pq.leadingCoeff) == "x^2"
 
 -- Squaring `(T + (x+1))` gives `T^2 + 2*(x+1)*T + (x+1)^2`,
 -- i.e. `T^2 + (2x+2)*T + (x^2+2x+1)`.
@@ -112,9 +112,9 @@ private def pT_plus : AzPolynomial IntPoly :=
 private def psq : AzPolynomial IntPoly := pT_plus * pT_plus
 
 #guard psq.coeffs.size == 3
-#guard psq.coeff 0 == i "x^2+2*x+1"
-#guard psq.coeff 1 == i "2*x+2"
-#guard psq.coeff 2 == i "1"
+#guard toChars (psq.coeff 0) == "x^2+2*x+1"
+#guard toChars (psq.coeff 1) == "2*x+2"
+#guard toChars (psq.coeff 2) == "1"
 
 -- Power via `^` (exercises the computable `npow`/`Semiring` machinery).
 #guard (pT_plus ^ 2) == psq

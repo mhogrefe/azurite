@@ -322,57 +322,57 @@ private def Q₂ : AzPolynomial AzInt := pp "x^3+3*x^2-9*x+5"
 
 -- ── Algorithm 10.1, `ℤ`-normalized outputs (`a_p·sResP_j/s_j`,
 --    `a_p·sResV_{j−1}/lcof`) ──
-#guard gcdGcdFreePartInt P₁ Q₁ == (pp "x^2+x-2", pp "x+2")
+#guard (let (g, f) := gcdGcdFreePartInt P₁ Q₁; toChars g == "x^2+x-2" && toChars f == "x+2")
 -- the leading coefficient `a_p = 2` enters both outputs
-#guard gcdGcdFreePartInt (pp "2*x^3+6*x^2-8") Q₁ == (pp "2*x^2+2*x-4", pp "2*x+4")
-#guard gcdGcdFreePartInt P₂ Q₂ == (pp "x^2-2*x+1", pp "x^2-1")
+#guard (let (g, f) := gcdGcdFreePartInt (pp "2*x^3+6*x^2-8") Q₁; toChars g == "2*x^2+2*x-4" && toChars f == "2*x+4")
+#guard (let (g, f) := gcdGcdFreePartInt P₂ Q₂; toChars g == "x^2-2*x+1" && toChars f == "x^2-1")
 -- coprime: constant gcd, gcd-free part `= P`
-#guard gcdGcdFreePartInt (pp "x^2+1") (pp "x-1") == (pp "1", pp "x^2+1")
+#guard (let (g, f) := gcdGcdFreePartInt (pp "x^2+1") (pp "x-1"); toChars g == "1" && toChars f == "x^2+1")
 -- degenerate: zero and proportional inputs
-#guard gcdGcdFreePartInt (pp "x^2+1") (pp "0") == (pp "x^2+1", pp "1")
-#guard gcdGcdFreePartInt (pp "3*x^2+3") (pp "x^2+1") == (pp "3*x^2+3", pp "1")
+#guard (let (g, f) := gcdGcdFreePartInt (pp "x^2+1") (pp "0"); toChars g == "x^2+1" && toChars f == "1")
+#guard (let (g, f) := gcdGcdFreePartInt (pp "3*x^2+3") (pp "x^2+1"); toChars g == "3*x^2+3" && toChars f == "1")
 
 -- ── Algorithm 10.1, generic-domain branch: raw subresultant outputs,
 --    proportional to the normalized ones (`−5(X²+X−2)`, `−5(X+2)`) ──
-#guard gcdGcdFreePartRaw P₁ Q₁ == (pp "-5*x^2-5*x+10", pp "-5*x-10")
+#guard (let (g, f) := gcdGcdFreePartRaw P₁ Q₁; toChars g == "-5*x^2-5*x+10" && toChars f == "-5*x-10")
 
 -- ── gcd only, via the non-extended Algorithm 8.21 ──
-#guard gcdSubresultant P₁ Q₁ == pp "-5*x^2-5*x+10"
-#guard gcdSubresultant (pp "x^2+1") (pp "x-1") == pp "-2"
+#guard toChars (gcdSubresultant P₁ Q₁) == "-5*x^2-5*x+10"
+#guard toChars (gcdSubresultant (pp "x^2+1") (pp "x-1")) == "-2"
 
 -- ── `gcdNormalizedInt`: exactly Mathlib's normalized `ℤ[X]` gcd ──
 -- primitive part independent of input scaling; content gcd reinstated
-#guard gcdNormalizedInt P₁ Q₁ == pp "x^2+x-2"
-#guard gcdNormalizedInt (pp "2*x^3+6*x^2-8") Q₁ == pp "x^2+x-2"
-#guard gcdNormalizedInt (pp "2*x^3+6*x^2-8") (pp "2*x^3-4*x^2-10*x+12")
-        == pp "2*x^2+2*x-4"
+#guard toChars (gcdNormalizedInt P₁ Q₁) == "x^2+x-2"
+#guard toChars (gcdNormalizedInt (pp "2*x^3+6*x^2-8") Q₁) == "x^2+x-2"
+#guard toChars (gcdNormalizedInt (pp "2*x^3+6*x^2-8") (pp "2*x^3-4*x^2-10*x+12"))
+        == "2*x^2+2*x-4"
 -- proportional and constant arguments: `gcd(2X+2, 4X+4) = 2X+2`,
 -- `gcd(−3X−3, 6) = 3`
-#guard gcdNormalizedInt (pp "2*x+2") (pp "4*x+4") == pp "2*x+2"
-#guard gcdNormalizedInt (pp "-3*x-3") (pp "6") == pp "3"
+#guard toChars (gcdNormalizedInt (pp "2*x+2") (pp "4*x+4")) == "2*x+2"
+#guard toChars (gcdNormalizedInt (pp "-3*x-3") (pp "6")) == "3"
 -- zero conventions and sign normalization; swapped degrees
-#guard gcdNormalizedInt (pp "0") (pp "-2*x") == pp "2*x"
-#guard gcdNormalizedInt (pp "0") (pp "0") == pp "0"
-#guard gcdNormalizedInt (pp "x-1") (pp "x^2-1") == pp "x-1"
+#guard toChars (gcdNormalizedInt (pp "0") (pp "-2*x")) == "2*x"
+#guard toChars (gcdNormalizedInt (pp "0") (pp "0")) == "0"
+#guard toChars (gcdNormalizedInt (pp "x-1") (pp "x^2-1")) == "x-1"
 
 -- ── `gcdMonic`: exactly Mathlib's monic `K[X]` gcd (over `AzRat`) ──
-#guard gcdMonic (pq "2*x^2+2*x-4") (pq "x^2+3*x+2") == pq "x+2"
-#guard gcdMonic (pq "x^3+3*x^2-4") (pq "x^3-2*x^2-5*x+6") == pq "x^2+x-2"
-#guard gcdMonic (pq "0") (pq "2*x+4") == pq "x+2"
-#guard gcdMonic (pq "0") (pq "0") == pq "0"
+#guard toChars (gcdMonic (pq "2*x^2+2*x-4") (pq "x^2+3*x+2")) == "x+2"
+#guard toChars (gcdMonic (pq "x^3+3*x^2-4") (pq "x^3-2*x^2-5*x+6")) == "x^2+x-2"
+#guard toChars (gcdMonic (pq "0") (pq "2*x+4")) == "x+2"
+#guard toChars (gcdMonic (pq "0") (pq "0")) == "0"
 
 -- ── the `GcdImpl` typeclass: uniform `gcd`/`gcdGcdFreePart`, dispatched by
 --    coefficient type; the pair is the canonical `(g, P/g)` ──
-#guard gcd P₁ Q₁ == pp "x^2+x-2"
-#guard gcd (pq "x^3+3*x^2-4") (pq "x^3-2*x^2-5*x+6") == pq "x^2+x-2"
-#guard gcdGcdFreePart P₁ Q₁ == (pp "x^2+x-2", pp "x+2")
+#guard toChars (gcd P₁ Q₁) == "x^2+x-2"
+#guard toChars (gcd (pq "x^3+3*x^2-4") (pq "x^3-2*x^2-5*x+6")) == "x^2+x-2"
+#guard (let (g, f) := gcdGcdFreePart P₁ Q₁; toChars g == "x^2+x-2" && toChars f == "x+2")
 -- content-scaled `P`: the canonical free part keeps `P`'s content
-#guard gcdGcdFreePart (pp "2*x^3+6*x^2-8") Q₁ == (pp "x^2+x-2", pp "2*x+4")
+#guard (let (g, f) := gcdGcdFreePart (pp "2*x^3+6*x^2-8") Q₁; toChars g == "x^2+x-2" && toChars f == "2*x+4")
 -- field: monic gcd, free part carries `P`'s leading coefficient
-#guard gcdGcdFreePart (pq "2*x^2+2*x-4") (pq "x^2+3*x+2") == (pq "x+2", pq "2*x-2")
+#guard (let (g, f) := gcdGcdFreePart (pq "2*x^2+2*x-4") (pq "x^2+3*x+2"); toChars g == "x+2" && toChars f == "2*x-2")
 -- zero conventions: `gcd P 0 = normalize P` with unit free part
-#guard gcdGcdFreePart (pp "0") (pp "0") == (pp "0", pp "0")
-#guard gcdGcdFreePart (pp "-2*x") (pp "0") == (pp "2*x", pp "-1")
+#guard (let (g, f) := gcdGcdFreePart (pp "0") (pp "0"); toChars g == "0" && toChars f == "0")
+#guard (let (g, f) := gcdGcdFreePart (pp "-2*x") (pp "0"); toChars g == "2*x" && toChars f == "-1")
 
 /-! Predicates. -/
 

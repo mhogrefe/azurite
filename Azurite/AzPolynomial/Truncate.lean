@@ -59,23 +59,23 @@ theorem natDegree_truncate_le (i : ℕ) (p : AzPolynomial R) :
 section Tests
 
 -- Basic truncation: drop terms of degree > 2 from `x^5 - x^3 + 2x + 1`
-#guard truncate 2 (parseAzPolynomial (R := AzInt) "x^5-x^3+2*x+1").get!
-  == (parseAzPolynomial (R := AzInt) "2*x+1").get!
+#guard toChars (truncate 2 (parseAzPolynomial (R := AzInt) "x^5-x^3+2*x+1").get!)
+  == "2*x+1"
 
 -- Truncating at `i ≥ natDegree` is a no-op.
-#guard truncate 10 (parseAzPolynomial (R := AzInt) "x^3-x+1").get!
-  == (parseAzPolynomial (R := AzInt) "x^3-x+1").get!
+#guard toChars (truncate 10 (parseAzPolynomial (R := AzInt) "x^3-x+1").get!)
+  == "x^3-x+1"
 
 -- Truncating at `i = natDegree` is a no-op.
-#guard truncate 3 (parseAzPolynomial (R := AzInt) "x^3+x^2+x+1").get!
-  == (parseAzPolynomial (R := AzInt) "x^3+x^2+x+1").get!
+#guard toChars (truncate 3 (parseAzPolynomial (R := AzInt) "x^3+x^2+x+1").get!)
+  == "x^3+x^2+x+1"
 
 -- Truncating the zero polynomial yields zero.
-#guard truncate 5 (0 : AzPolynomial AzInt) == (0 : AzPolynomial AzInt)
+#guard toChars (truncate 5 (0 : AzPolynomial AzInt)) == "0"
 
 -- Renormalization test: `x^4 - x^3` truncated at 3 is `-x^3`.
-#guard truncate 3 (parseAzPolynomial (R := AzInt) "x^4-x^3").get!
-  == (parseAzPolynomial (R := AzInt) "-x^3").get!
+#guard toChars (truncate 3 (parseAzPolynomial (R := AzInt) "x^4-x^3").get!)
+  == "-x^3"
 
 -- Renormalization test: `x^4 - x^3` truncated at 2 is `0`
 -- (since `b_0 = b_1 = b_2 = 0`, the leading monomial is dropped entirely).
@@ -83,8 +83,8 @@ section Tests
   == (0 : AzPolynomial AzInt)
 
 -- Truncating at 0 keeps only the constant term.
-#guard truncate 0 (parseAzPolynomial (R := AzInt) "x^3+x^2+x+7").get!
-  == (parseAzPolynomial (R := AzInt) "7").get!
+#guard toChars (truncate 0 (parseAzPolynomial (R := AzInt) "x^3+x^2+x+7").get!)
+  == "7"
 
 end Tests
 

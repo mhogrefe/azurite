@@ -177,26 +177,26 @@ instance (priority := 300) {m : AzNat} [NeZero m.toNat] : AzPolynomialMulConfig 
 -- ── Tests ───────────────────────────────────────────────────────────────────
 
 -- Basic correctness tests
-#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
-    == (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!
+#guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!)
+    == "x^2+3*x+2"
 
-#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
-    == (parseAzPolynomial (R := AzInt) "2*x^3-x^2-x").get!
+#guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!)
+    == "2*x^3-x^2-x"
 
-#guard mulKaratsuba (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x^2+1").get! == 0
+#guard toChars (mulKaratsuba (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "0"
 
-#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "3").get! (parseAzPolynomial (R := AzInt) "4").get!
-    == (parseAzPolynomial (R := AzInt) "12").get!
+#guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "3").get! (parseAzPolynomial (R := AzInt) "4").get!)
+    == "12"
 
 -- Consistency with mulBasecaseFold
-#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
-    == mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
+#guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!)
+    == toChars (mulBasecaseFold (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!)
 
-#guard mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
-    == mulBasecaseFold (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!
+#guard toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!)
+    == toChars (mulBasecaseFold (parseAzPolynomial (R := AzInt) "2*x^2+x").get! (parseAzPolynomial (R := AzInt) "x-1").get!)
 
 -- Verify that * uses Karatsuba for AzInt (threshold 29)
-#guard (parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!
-    == mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get! * (parseAzPolynomial (R := AzInt) "x+2").get!)
+    == toChars (mulKaratsuba (parseAzPolynomial (R := AzInt) "x+1").get! (parseAzPolynomial (R := AzInt) "x+2").get!)
 
 end Azurite.AzPolynomial

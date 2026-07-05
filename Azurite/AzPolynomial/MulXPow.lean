@@ -67,23 +67,23 @@ section Tests
 variable [DecidableEq R]
 
 -- `(x + 1) * x = x^2 + x`
-#guard mulXPow 1 (parseAzPolynomial (R := AzInt) "x+1").get!
-  == (parseAzPolynomial (R := AzInt) "x^2+x").get!
+#guard toChars (mulXPow 1 (parseAzPolynomial (R := AzInt) "x+1").get!)
+  == "x^2+x"
 
 -- `(x^2 + 2*x + 3) * x^2 = x^4 + 2*x^3 + 3*x^2`
-#guard mulXPow 2 (parseAzPolynomial (R := AzInt) "x^2+2*x+3").get!
-  == (parseAzPolynomial (R := AzInt) "x^4+2*x^3+3*x^2").get!
+#guard toChars (mulXPow 2 (parseAzPolynomial (R := AzInt) "x^2+2*x+3").get!)
+  == "x^4+2*x^3+3*x^2"
 
 -- Shifting by 0 is a no-op.
-#guard mulXPow 0 (parseAzPolynomial (R := AzInt) "x^3-5*x+7").get!
-  == (parseAzPolynomial (R := AzInt) "x^3-5*x+7").get!
+#guard toChars (mulXPow 0 (parseAzPolynomial (R := AzInt) "x^3-5*x+7").get!)
+  == "x^3-5*x+7"
 
 -- Shifting the zero polynomial yields zero.
-#guard mulXPow 5 (0 : AzPolynomial AzInt) == (0 : AzPolynomial AzInt)
+#guard toChars (mulXPow 5 (0 : AzPolynomial AzInt)) == "0"
 
 -- Constant `7 * x^3 = 7*x^3`
-#guard mulXPow 3 (parseAzPolynomial (R := AzInt) "7").get!
-  == (parseAzPolynomial (R := AzInt) "7*x^3").get!
+#guard toChars (mulXPow 3 (parseAzPolynomial (R := AzInt) "7").get!)
+  == "7*x^3"
 
 end Tests
 

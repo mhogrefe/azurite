@@ -89,36 +89,36 @@ def pRem (P Q : AzPolynomial R) : AzPolynomial R :=
 --   Euclidean division in AzRat gives remainder 2.
 --   d = pRemExp = smallestEvenGe(2 - 1 + 1) = smallestEvenGe(2) = 2.
 --   b = 1, so b^d * P = P, and the remainder is the same as the normal one: 2.
-#guard pRem (parseAzPolynomial (R := AzInt) "x^2+1").get!
-             (parseAzPolynomial (R := AzInt) "x+1").get!
-  == (parseAzPolynomial (R := AzInt) "2").get!
+#guard toChars (pRem (parseAzPolynomial (R := AzInt) "x^2+1").get!
+             (parseAzPolynomial (R := AzInt) "x+1").get!)
+  == "2"
 
 -- `(2*x^2 + 3*x + 1)` mod `(2*x + 1)`:
 --   d = smallestEvenGe(2 - 1 + 1) = 2. b = 2. b^d * P = 4 * P.
 --   4*P = (4x + 4)*(2x + 1), so remainder = 0.
-#guard pRem (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!
-             (parseAzPolynomial (R := AzInt) "2*x+1").get!
-  == (0 : AzPolynomial AzInt)
+#guard toChars (pRem (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!
+             (parseAzPolynomial (R := AzInt) "2*x+1").get!)
+  == "0"
 
 -- `(x^3 + 1)` mod `(2*x^2 + 3*x + 1)`:
 --   d = smallestEvenGe(3 - 2 + 1) = 2. b = 2.
 --   4*(x^3 + 1) = (2x - 3)*(2x^2 + 3x + 1) + (7x + 7).
-#guard pRem (parseAzPolynomial (R := AzInt) "x^3+1").get!
-             (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!
-  == (parseAzPolynomial (R := AzInt) "7*x+7").get!
+#guard toChars (pRem (parseAzPolynomial (R := AzInt) "x^3+1").get!
+             (parseAzPolynomial (R := AzInt) "2*x^2+3*x+1").get!)
+  == "7*x+7"
 
 -- deg P < deg Q ⇒ pRem = P (with d = 0).
-#guard pRem (parseAzPolynomial (R := AzInt) "x+1").get!
-             (parseAzPolynomial (R := AzInt) "x^2+1").get!
-  == (parseAzPolynomial (R := AzInt) "x+1").get!
+#guard toChars (pRem (parseAzPolynomial (R := AzInt) "x+1").get!
+             (parseAzPolynomial (R := AzInt) "x^2+1").get!)
+  == "x+1"
 
 -- P = 0: pseudo-remainder is 0.
-#guard pRem (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x+1").get!
-  == (0 : AzPolynomial AzInt)
+#guard toChars (pRem (0 : AzPolynomial AzInt) (parseAzPolynomial (R := AzInt) "x+1").get!)
+  == "0"
 
 -- Q = 0: by convention return P.
-#guard pRem (parseAzPolynomial (R := AzInt) "x+1").get! (0 : AzPolynomial AzInt)
-  == (parseAzPolynomial (R := AzInt) "x+1").get!
+#guard toChars (pRem (parseAzPolynomial (R := AzInt) "x+1").get! (0 : AzPolynomial AzInt))
+  == "x+1"
 
 -- Exponent computations:
 #guard pRemExp (parseAzPolynomial (R := AzInt) "x^3+1").get!

@@ -68,27 +68,27 @@ theorem coeff_invertRoots (p : AzPolynomial R) {i : ℕ} (hi : i ≤ p.natDegree
 section Tests
 
 -- (x−1)(x−2) = x² − 3x + 2 with roots 1, 2 becomes 2x² − 3x + 1 (roots 1, 1/2)
-#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.invertRoots
-    == (parseAzPolynomial (R := AzInt) "2*x^2-3*x+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.invertRoots)
+    == "2*x^2-3*x+1"
 
 -- x(x−1): the root 0 is dropped, only 1/1 remains: −x + 1
-#guard (parseAzPolynomial (R := AzInt) "x^2-x").get!.invertRoots
-    == (parseAzPolynomial (R := AzInt) "-x+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-x").get!.invertRoots)
+    == "-x+1"
 
 -- x³: all roots at 0, everything drops: the constant 1
-#guard (parseAzPolynomial (R := AzInt) "x^3").get!.invertRoots
-    == (parseAzPolynomial (R := AzInt) "1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^3").get!.invertRoots)
+    == "1"
 
 -- Constants unchanged
-#guard (parseAzPolynomial (R := AzInt) "7").get!.invertRoots
-    == (parseAzPolynomial (R := AzInt) "7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "7").get!.invertRoots)
+    == "7"
 
 -- Zero unchanged
-#guard (0 : AzPolynomial AzInt).invertRoots == 0
+#guard toChars ((0 : AzPolynomial AzInt).invertRoots) == "0"
 
 -- Involution when the constant term is nonzero
-#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.invertRoots.invertRoots
-    == (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.invertRoots.invertRoots)
+    == "x^2-3*x+2"
 
 end Tests
 

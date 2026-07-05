@@ -1,6 +1,7 @@
 import Azurite.AzZMod.Inv
 import Azurite.AzZMod.Equiv.Inv
 import Azurite.AzZMod.Instances
+import Azurite.AzZMod.ToString
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Algebra.Field.Basic
 
@@ -69,12 +70,15 @@ open Azurite Azurite.AzZMod
 private instance : Fact (Nat.Prime (AzNat.ofNat 7).toNat) := ⟨by rw [AzNat.toNat_ofNat]; decide⟩
 
 -- In `ℤ/7`: `3⁻¹ = 5`, `1/3 = 5`, `6/2 = 3` (`2⁻¹ = 4`, `6·4 = 24 ≡ 3`).
-#guard (AzZMod.ofNat (AzNat.ofNat 7) 3)⁻¹ == AzZMod.ofNat (AzNat.ofNat 7) 5
-#guard AzZMod.ofNat (AzNat.ofNat 7) 1 / AzZMod.ofNat (AzNat.ofNat 7) 3 == AzZMod.ofNat (AzNat.ofNat 7) 5
-#guard AzZMod.ofNat (AzNat.ofNat 7) 6 / AzZMod.ofNat (AzNat.ofNat 7) 2 == AzZMod.ofNat (AzNat.ofNat 7) 3
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 7) 3)⁻¹) == "5"
+#guard Azurite.AzZMod.toString
+  (AzZMod.ofNat (AzNat.ofNat 7) 1 / AzZMod.ofNat (AzNat.ofNat 7) 3) == "5"
+#guard Azurite.AzZMod.toString
+  (AzZMod.ofNat (AzNat.ofNat 7) 6 / AzZMod.ofNat (AzNat.ofNat 7) 2) == "3"
 -- `0⁻¹ = 0`.
-#guard (AzZMod.ofNat (AzNat.ofNat 7) 0)⁻¹ == AzZMod.ofNat (AzNat.ofNat 7) 0
+#guard Azurite.AzZMod.toString ((AzZMod.ofNat (AzNat.ofNat 7) 0)⁻¹) == "0"
 -- `a / a = 1` for nonzero `a`.
-#guard AzZMod.ofNat (AzNat.ofNat 7) 4 / AzZMod.ofNat (AzNat.ofNat 7) 4 == AzZMod.ofNat (AzNat.ofNat 7) 1
+#guard Azurite.AzZMod.toString
+  (AzZMod.ofNat (AzNat.ofNat 7) 4 / AzZMod.ofNat (AzNat.ofNat 7) 4) == "1"
 
 end Tests

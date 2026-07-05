@@ -38,35 +38,35 @@ def comp (p q : AzPolynomial R) : AzPolynomial R :=
 section Tests
 
 -- x² ∘ (x+1) = (x+1)² = x²+2x+1
-#guard (parseAzPolynomial (R := AzInt) "x^2").get!.comp (parseAzPolynomial (R := AzInt) "x+1").get!
-    == (parseAzPolynomial (R := AzInt) "x^2+2*x+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2").get!.comp (parseAzPolynomial (R := AzInt) "x+1").get!)
+    == "x^2+2*x+1"
 
 -- (2x+1) ∘ (x+1) = 2(x+1)+1 = 2x+3
-#guard (parseAzPolynomial (R := AzInt) "2*x+1").get!.comp (parseAzPolynomial (R := AzInt) "x+1").get!
-    == (parseAzPolynomial (R := AzInt) "2*x+3").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "2*x+1").get!.comp (parseAzPolynomial (R := AzInt) "x+1").get!)
+    == "2*x+3"
 
 -- x³ ∘ 2x = (2x)³ = 8x³
-#guard (parseAzPolynomial (R := AzInt) "x^3").get!.comp (parseAzPolynomial (R := AzInt) "2*x").get!
-    == (parseAzPolynomial (R := AzInt) "8*x^3").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^3").get!.comp (parseAzPolynomial (R := AzInt) "2*x").get!)
+    == "8*x^3"
 
 -- Identity: x ∘ g = g
-#guard (parseAzPolynomial (R := AzInt) "x").get!.comp (parseAzPolynomial (R := AzInt) "x^2+1").get!
-    == (parseAzPolynomial (R := AzInt) "x^2+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x").get!.comp (parseAzPolynomial (R := AzInt) "x^2+1").get!)
+    == "x^2+1"
 
 -- Constant: 5 ∘ g = 5
-#guard (parseAzPolynomial (R := AzInt) "5").get!.comp (parseAzPolynomial (R := AzInt) "x^10").get!
-    == (parseAzPolynomial (R := AzInt) "5").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "5").get!.comp (parseAzPolynomial (R := AzInt) "x^10").get!)
+    == "5"
 
 -- Zero: 0 ∘ g = 0
-#guard (0 : AzPolynomial AzInt).comp (parseAzPolynomial (R := AzInt) "x+1").get! == 0
+#guard toChars ((0 : AzPolynomial AzInt).comp (parseAzPolynomial (R := AzInt) "x+1").get!) == "0"
 
 -- g ∘ 0 = f(0) = constant term
-#guard (parseAzPolynomial (R := AzInt) "x^2+3*x+7").get!.comp (0 : AzPolynomial AzInt)
-    == (parseAzPolynomial (R := AzInt) "7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+3*x+7").get!.comp (0 : AzPolynomial AzInt))
+    == "7"
 
 -- (x+1)² ∘ (x-1) = ((x-1)+1)² = x²
-#guard (parseAzPolynomial (R := AzInt) "x^2+2*x+1").get!.comp (parseAzPolynomial (R := AzInt) "x-1").get!
-    == (parseAzPolynomial (R := AzInt) "x^2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+2*x+1").get!.comp (parseAzPolynomial (R := AzInt) "x-1").get!)
+    == "x^2"
 
 end Tests
 

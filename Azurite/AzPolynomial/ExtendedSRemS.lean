@@ -154,25 +154,24 @@ private def exP : AzPolynomial AzRat := (parseAzPolynomial (R := AzRat) "x^2-1")
 private def exQ : AzPolynomial AzRat := (parseAzPolynomial (R := AzRat) "x").get!
 
 -- Cofactor values.
-#guard sRemU exP exQ 2 == (parseAzPolynomial (R := AzRat) "-1").get!
-#guard sRemV exP exQ 2 == (parseAzPolynomial (R := AzRat) "x").get!
-#guard sRemU exP exQ 3 == (parseAzPolynomial (R := AzRat) "-x").get!
-#guard sRemV exP exQ 3 == (parseAzPolynomial (R := AzRat) "x^2-1").get!
+#guard toChars (sRemU exP exQ 2) == "-1"
+#guard toChars (sRemV exP exQ 2) == "x"
+#guard toChars (sRemU exP exQ 3) == "-x"
+#guard toChars (sRemV exP exQ 3) == "x^2-1"
 
 -- Bézout identity `sRemUᵢ · P + sRemVᵢ · Q = sRemSᵢ` (BPR Lemma 1.11).
-#guard (sRemU exP exQ 0 * exP + sRemV exP exQ 0 * exQ) == sRemS exP exQ 0
-#guard (sRemU exP exQ 1 * exP + sRemV exP exQ 1 * exQ) == sRemS exP exQ 1
-#guard (sRemU exP exQ 2 * exP + sRemV exP exQ 2 * exQ) == sRemS exP exQ 2
-#guard (sRemU exP exQ 3 * exP + sRemV exP exQ 3 * exQ) == sRemS exP exQ 3
+#guard toChars (sRemU exP exQ 0 * exP + sRemV exP exQ 0 * exQ) == toChars (sRemS exP exQ 0)
+#guard toChars (sRemU exP exQ 1 * exP + sRemV exP exQ 1 * exQ) == toChars (sRemS exP exQ 1)
+#guard toChars (sRemU exP exQ 2 * exP + sRemV exP exQ 2 * exQ) == toChars (sRemS exP exQ 2)
+#guard toChars (sRemU exP exQ 3 * exP + sRemV exP exQ 3 * exQ) == toChars (sRemS exP exQ 3)
 
 -- The fast single-pass `extendedSRemS` agrees with the spec lists (cf.
 -- `extendedSRemS_eq_spec`); here `SRemS = [x²−1, x, 1, 0]`, `SRemU = [1, 0, −1, −x]`,
 -- `SRemV = [0, 1, x, x²−1]`.
-#guard sRemSList exP exQ 4 == [exP, exQ, (1 : AzPolynomial AzRat), 0]
+#guard (sRemSList exP exQ 4).map toChars == ["x^2-1", "x", "1", "0"]
 #guard extendedSRemS exP exQ 4
   == (sRemSList exP exQ 4, sRemUList exP exQ 4, sRemVList exP exQ 4)
-#guard (extendedSRemS exP exQ 4).2.1
-  == [(1 : AzPolynomial AzRat), 0, -1, (parseAzPolynomial (R := AzRat) "-x").get!]
+#guard ((extendedSRemS exP exQ 4).2.1).map toChars == ["1", "0", "-1", "-x"]
 
 end Tests
 

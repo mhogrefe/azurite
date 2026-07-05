@@ -179,38 +179,38 @@ private def pp (str : String) : AzPolynomial AzInt := (parseAzPolynomial (R := A
 
 -- `P = X² + 1`, `Q = X`: non-defective, degrees `2, 1, 0`.
 --   sResP = [-1, X, X²+1],  s = [-1, 1, a₂=1].
-#guard (signedSubresultant (pp "x^2+1") (pp "x")).1 == #[pp "-1", pp "x", pp "x^2+1"]
+#guard ((signedSubresultant (pp "x^2+1") (pp "x")).1).map toChars == #["-1", "x", "x^2+1"]
 #guard (signedSubresultant (pp "x^2+1") (pp "x")).2 == #[(-1 : AzInt), 1, 1]
 
 -- `P = X² `, `Q = X + 1`:  sResP_0 = -(0 + 1) = -1.
-#guard (signedSubresultant (pp "x^2") (pp "x+1")).1 == #[pp "-1", pp "x+1", pp "x^2"]
+#guard ((signedSubresultant (pp "x^2") (pp "x+1")).1).map toChars == #["-1", "x+1", "x^2"]
 #guard (signedSubresultant (pp "x^2") (pp "x+1")).2 == #[(-1 : AzInt), 1, 1]
 
 -- `P = X³ + X + 1`, `Q = X² + 1`: defective (degree drop `2 → 0`, gap at degree 1).
 --   sResP = [-1, -1, X²+1, X³+X+1],  s = [-1, 0, 1, a₃=1].
-#guard (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1
-        == #[pp "-1", pp "-1", pp "x^2+1", pp "x^3+x+1"]
+#guard ((signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1).map toChars
+        == #["-1", "-1", "x^2+1", "x^3+x+1"]
 #guard (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).2 == #[(-1 : AzInt), 0, 1, 1]
 
 -- `P = X⁴ + 1`, `Q = X³`: defective with a degree-2 gap (degrees `3 → 0`), so the inner
 --   recurrence runs twice with alternating signs.
 --   sResP = [1, 0, -1, X³, X⁴+1],  s = [1, 0, 0, 1, a₄=1].
-#guard (signedSubresultant (pp "x^4+1") (pp "x^3")).1
-        == #[pp "1", pp "0", pp "-1", pp "x^3", pp "x^4+1"]
+#guard ((signedSubresultant (pp "x^4+1") (pp "x^3")).1).map toChars
+        == #["1", "0", "-1", "x^3", "x^4+1"]
 #guard (signedSubresultant (pp "x^4+1") (pp "x^3")).2 == #[(1 : AzInt), 0, 0, 1, 1]
 
 /-! ### Tests for `extendedSignedSubresultant` (Algorithm 8.22) -/
 
 -- The `sResP`/`sRes` components coincide with `signedSubresultant`.
-#guard (extendedSignedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1
-        == (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1
+#guard ((extendedSignedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1).map toChars
+        == ((signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).1).map toChars
 #guard (extendedSignedSubresultant (pp "x^3+x+1") (pp "x^2+1")).2.1
         == (signedSubresultant (pp "x^3+x+1") (pp "x^2+1")).2
 
 /-- Check the Bézout relation `sResU_ℓ · P + sResV_ℓ · Q = sResP_ℓ` at every output index. -/
 private def bezoutOK (P Q : AzPolynomial AzInt) : Bool :=
   let r := extendedSignedSubresultant P Q
-  ((r.2.2.1.zip r.2.2.2).zip r.1).all (fun t => t.1.1 * P + t.1.2 * Q == t.2)
+  ((r.2.2.1.zip r.2.2.2).zip r.1).all (fun t => toChars (t.1.1 * P + t.1.2 * Q) == toChars t.2)
 
 #guard bezoutOK (pp "x^2+1") (pp "x")
 #guard bezoutOK (pp "x^2") (pp "x+1")

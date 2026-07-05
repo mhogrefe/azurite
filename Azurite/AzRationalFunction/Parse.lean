@@ -48,25 +48,32 @@ def parse (s : String) : Option AzRationalFunction :=
     if d = 0 then none else some (ofNumDen n d)
 
 -- ═══════════════════════════════════════════════════════════════════
--- Tests
+-- Tests (string in via `parse`, string out via `toString`)
 -- ═══════════════════════════════════════════════════════════════════
 
 section Tests
 
-private def pp (s : String) : AzPolynomial AzInt := (parseAzPolynomial s).get!
-
--- canonical forms round-trip
-#guard parse "(x-1)/2" == some (ofNumDen (pp "x-1") (pp "2"))
-#guard parse "(x^2+1)/(x-1)" == some (ofNumDen (pp "x^2+1") (pp "x-1"))
-#guard parse "-x/2" == some (ofNumDen (pp "-x") (pp "2"))
-#guard parse "0" == some 0
-#guard parse "-3/4" == some (ofAzRat ((Azurite.AzRat.parse "-3/4").get!))
--- liberal: unnormalized inputs normalize
-#guard parse "(2*x^2-2)/(4*x+4)" == some (ofNumDen (pp "2*x^2-2") (pp "4*x+4"))
-#guard parse "6*x/-4" == some (ofNumDen (pp "3*x") (pp "-2"))
+-- construction and normalization
+#guard (parse "(2*x^2-2)/(4*x+4)").map toString == some "(x-1)/2"
+#guard (parse "x/-2").map toString == some "-x/2"
+#guard (parse "(x^2+1)/(x-1)").map toString == some "(x^2+1)/(x-1)"
+#guard (parse "3*x^2/(x+1)").map toString == some "3*x^2/(x+1)"
+#guard (parse "6*x/-4").map toString == some "-3*x/2"
+#guard (parse "0/(7*x+7)").map toString == some "0"
+#guard (parse "-6*x-9").map toString == some "-6*x-9"
 -- liberal: one level of unnecessary parens
-#guard parse "(x+1)" == some (ofPolynomial (pp "x+1"))
-#guard parse "(x)/(2)" == some (ofNumDen (pp "x") (pp "2"))
+#guard (parse "(x+1)").map toString == some "x+1"
+#guard (parse "(x)/(2)").map toString == some "x/2"
+-- constants
+#guard (parse "-3/4").map toString == some "-3/4"
+#guard toString (0 : AzRationalFunction) == "0"
+#guard toString (1 : AzRationalFunction) == "1"
+-- canonical: the same function parses to the same value
+#guard parse "2*x/(-4*x^2-4*x)" == parse "-x/(2*x^2+2*x)"
+-- conversions agree with parsing
+#guard (parse "x+1") == (parseAzPolynomial "x+1").map ofPolynomial
+#guard toString (ofAzInt ((AzInt.parse "-5").get!)) == "-5"
+#guard toString (ofAzRat ((Azurite.AzRat.parse "-3/4").get!)) == "-3/4"
 -- rejections: zero denominator, malformed
 #guard parse "x/0" == none
 #guard parse "x//2" == none

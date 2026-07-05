@@ -75,8 +75,8 @@ private def pq (s : String) : AzPolynomial AzRat := (parseAzPolynomial s).get!
 #guard pq "1/2*x+1/3" < pq "2/3*x"
 #guard pq "0" < pq "-1/2"
 -- sorting a list gives the canonical order
-#guard ([pp "x^2", pp "0", pp "-x^3", pp "x^2-1", pp "5"].mergeSort (· ≤ ·))
-    == [pp "0", pp "5", pp "x^2-1", pp "x^2", pp "-x^3"]
+#guard ([pp "x^2", pp "0", pp "-x^3", pp "x^2-1", pp "5"].mergeSort (· ≤ ·)).map toChars
+    == ["0", "5", "x^2-1", "x^2", "-x^3"]
 
 end Tests
 

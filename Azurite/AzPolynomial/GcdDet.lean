@@ -112,22 +112,22 @@ private def pp (s : String) : AzPolynomial AzInt := (parseAzPolynomial s).get!
 -- `sResPDet` agrees with Algorithm 8.21's output (both are the abstract
 -- `sResP` — proven, not just tested; see `Equiv.GcdDet`)
 #guard (List.range 4).all (fun j =>
-  sResPDet (pp "x^3+3*x^2-4") (pp "-5*x^2-5*x+10") j
-    == (signedSubresultant (pp "x^3+3*x^2-4") (pp "-5*x^2-5*x+10")).1[j]!)
+  toChars (sResPDet (pp "x^3+3*x^2-4") (pp "-5*x^2-5*x+10") j)
+    == toChars ((signedSubresultant (pp "x^3+3*x^2-4") (pp "-5*x^2-5*x+10")).1[j]!))
 
 -- fallback pair on the running example: `gcd ∝ (X−1)(X+2)`,
 -- free part `∝ X+2`
-#guard (gcdGcdFreePartDet (pp "x^3+3*x^2-4") (pp "x^3-2*x^2-5*x+6")).1
-    == pp "-5*x^2-5*x+10"
-#guard (gcdGcdFreePartDet (pp "x^3+3*x^2-4") (pp "x^3-2*x^2-5*x+6")).2
-    == pp "-5*x-10"
+#guard toChars ((gcdGcdFreePartDet (pp "x^3+3*x^2-4") (pp "x^3-2*x^2-5*x+6")).1)
+    == "-5*x^2-5*x+10"
+#guard toChars ((gcdGcdFreePartDet (pp "x^3+3*x^2-4") (pp "x^3-2*x^2-5*x+6")).2)
+    == "-5*x-10"
 -- higher multiplicity: `P = (X−1)³(X+1)`, `Q = (X−1)²(X+5)`
 #guard (let (g, f) := gcdGcdFreePartDet (pp "x^4-2*x^3+2*x-1") (pp "x^3+3*x^2-9*x+5")
         g.natDegree == 2 && f.natDegree == 2)
 -- coprime: constant gcd, free part `= P`
-#guard (gcdGcdFreePartDet (pp "x^2+1") (pp "x-1")).2 == pp "x^2+1"
+#guard toChars ((gcdGcdFreePartDet (pp "x^2+1") (pp "x-1")).2) == "x^2+1"
 -- degenerate
-#guard gcdGcdFreePartDet (pp "x^2+1") (pp "0") == (pp "x^2+1", pp "1")
+#guard (let (g, f) := gcdGcdFreePartDet (pp "x^2+1") (pp "0"); toChars g == "x^2+1" && toChars f == "1")
 
 end Tests
 

@@ -151,41 +151,6 @@ theorem den_ne_zero (r : AzRationalFunction) : r.den ≠ 0 := by
 theorem ofNumDen_den_zero (n : AzPolynomial AzInt) : ofNumDen n 0 = 0 := by
   rw [ofNumDen, if_pos (Or.inr rfl)]
 
--- ═══════════════════════════════════════════════════════════════════
--- Tests
--- ═══════════════════════════════════════════════════════════════════
-
-section Tests
-
-private def pp (s : String) : AzPolynomial AzInt := (parseAzPolynomial s).get!
-private def qq (s : String) : AzRat := (Azurite.AzRat.parse s).get!
-
--- common polynomial factor and contents: `2(x−1)(x+1) / 4(x+1)`
-#guard (ofNumDen (pp "2*x^2-2") (pp "4*x+4")).factor == qq "1/2"
-#guard (ofNumDen (pp "2*x^2-2") (pp "4*x+4")).num == pp "x-1"
-#guard (ofNumDen (pp "2*x^2-2") (pp "4*x+4")).den == pp "1"
--- the sign lives in the factor; parts stay positive
-#guard (ofNumDen (pp "x") (pp "-2")).factor == qq "-1/2"
-#guard (ofNumDen (pp "x") (pp "-2")).num == pp "x"
-#guard (ofNumDen (pp "x") (pp "-2")).den == pp "1"
--- already reduced and primitive
-#guard (ofNumDen (pp "x^2+1") (pp "x-1")).factor == qq "1"
-#guard (ofNumDen (pp "x^2+1") (pp "x-1")).num == pp "x^2+1"
-#guard (ofNumDen (pp "x^2+1") (pp "x-1")).den == pp "x-1"
--- zero numerator / zero denominator
-#guard ofNumDen (pp "0") (pp "7*x+7") == 0
-#guard ofNumDen (pp "x") (pp "0") == 0
--- conversions
-#guard (ofPolynomial (pp "-6*x-9")).factor == qq "-3"
-#guard (ofPolynomial (pp "-6*x-9")).num == pp "2*x+3"
-#guard (ofAzInt ((AzInt.parse "-5").get!)).factor == qq "-5"
-#guard (ofAzRat (qq "-3/4")).factor == qq "-3/4"
-#guard (ofAzRat (qq "-3/4")).num == pp "1"
--- canonical: same function, same representation
-#guard ofNumDen (pp "2*x") (pp "-4*x^2-4*x") == ofNumDen (pp "-x") (pp "2*x^2+2*x")
-
-end Tests
-
 end AzRationalFunction
 
 end Azurite

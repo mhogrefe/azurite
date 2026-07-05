@@ -106,32 +106,32 @@ def scaleRoots (p : AzPolynomial R) (b c : R) : AzPolynomial R :=
 section Tests
 
 -- roots ±1 scaled by 2: x² − 1 ↦ x² − 4 (b-powers keep the result monic)
-#guard (parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 2 1
-    == (parseAzPolynomial (R := AzInt) "x^2-4").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 2 1)
+    == "x^2-4"
 
 -- roots ±1 scaled by 1/2: x² − 1 ↦ 4x² − 1 (roots ±1/2)
-#guard (parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 1 2
-    == (parseAzPolynomial (R := AzInt) "4*x^2-1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 1 2)
+    == "4*x^2-1"
 
 -- root 2 scaled by 3/2: x − 2 ↦ 2x − 6 (root 3)
-#guard (parseAzPolynomial (R := AzInt) "x-2").get!.scaleRoots 3 2
-    == (parseAzPolynomial (R := AzInt) "2*x-6").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x-2").get!.scaleRoots 3 2)
+    == "2*x-6"
 
 -- roots scaled by 0: all roots collapse to 0, degree preserved
-#guard (parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 0 1
-    == (parseAzPolynomial (R := AzInt) "x^2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 0 1)
+    == "x^2"
 
 -- denominator 0 (degenerate): only the constant term survives; normalize
 -- strips the vanished leading coefficients
-#guard (parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 1 0
-    == (parseAzPolynomial (R := AzInt) "-1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-1").get!.scaleRoots 1 0)
+    == "-1"
 
 -- scaling by 1/1 is the identity
-#guard (parseAzPolynomial (R := AzInt) "x^3-2*x+7").get!.scaleRoots 1 1
-    == (parseAzPolynomial (R := AzInt) "x^3-2*x+7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^3-2*x+7").get!.scaleRoots 1 1)
+    == "x^3-2*x+7"
 
 -- zero polynomial
-#guard (0 : AzPolynomial AzInt).scaleRoots 5 3 == 0
+#guard toChars ((0 : AzPolynomial AzInt).scaleRoots 5 3) == "0"
 
 end Tests
 

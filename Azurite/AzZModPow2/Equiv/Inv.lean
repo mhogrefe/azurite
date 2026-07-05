@@ -1,5 +1,6 @@
 import Azurite.AzZModPow2.Inv
 import Azurite.AzZModPow2.Equiv.Pow
+import Azurite.AzZModPow2.ToString
 import Azurite.AzNat.Equiv.Parity
 
 /-!
@@ -85,14 +86,17 @@ private theorem oddLit {k m : Nat} (hm : m % 2 ^ k % 2 = 1) : (AzZModPow2.ofNat 
   rw [isOdd_iff, val_toNat_ofNat, Nat.odd_iff]; exact hm
 
 -- `3⁻¹ = 11` in `ℤ/16` (`3·11 = 33 ≡ 1`); `7⁻¹ = 183` in `ℤ/256` (`7·183 = 1281 ≡ 1`).
-#guard (AzZModPow2.ofNat 4 3).invOdd (oddLit (by decide)) == AzZModPow2.ofNat 4 11
-#guard (AzZModPow2.ofNat 8 7).invOdd (oddLit (by decide)) == AzZModPow2.ofNat 8 183
+#guard Azurite.AzZModPow2.toString
+  ((AzZModPow2.ofNat 4 3).invOdd (oddLit (by decide))) == "11"
+#guard Azurite.AzZModPow2.toString
+  ((AzZModPow2.ofNat 8 7).invOdd (oddLit (by decide))) == "183"
 -- The inverse really inverts.
-#guard AzZModPow2.ofNat 8 7 * (AzZModPow2.ofNat 8 7).invOdd (oddLit (by decide)) == 1
-#guard AzZModPow2.ofNat 32 123456789 *
-  (AzZModPow2.ofNat 32 123456789).invOdd (oddLit (by decide)) == 1
+#guard Azurite.AzZModPow2.toString
+  (AzZModPow2.ofNat 8 7 * (AzZModPow2.ofNat 8 7).invOdd (oddLit (by decide))) == "1"
+#guard Azurite.AzZModPow2.toString (AzZModPow2.ofNat 32 123456789 *
+  (AzZModPow2.ofNat 32 123456789).invOdd (oddLit (by decide))) == "1"
 -- Multi-limb modulus `ℤ/2^128`.
-#guard AzZModPow2.ofNat 128 (2 ^ 127 - 1) *
-  (AzZModPow2.ofNat 128 (2 ^ 127 - 1)).invOdd (oddLit (by decide)) == 1
+#guard Azurite.AzZModPow2.toString (AzZModPow2.ofNat 128 (2 ^ 127 - 1) *
+  (AzZModPow2.ofNat 128 (2 ^ 127 - 1)).invOdd (oddLit (by decide))) == "1"
 
 end Tests

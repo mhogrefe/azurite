@@ -32,13 +32,13 @@ def pow (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
 
 section Tests
 
-#guard (parseAzPolynomial (R := AzInt) "x+1").get!.pow 0 == 1
-#guard (parseAzPolynomial (R := AzInt) "x+1").get!.pow 1 == (parseAzPolynomial (R := AzInt) "x+1").get!
-#guard (parseAzPolynomial (R := AzInt) "x+1").get!.pow 2 == (parseAzPolynomial (R := AzInt) "x^2+2*x+1").get!
-#guard (parseAzPolynomial (R := AzInt) "x+1").get!.pow 3 == (parseAzPolynomial (R := AzInt) "x^3+3*x^2+3*x+1").get!
-#guard (parseAzPolynomial (R := AzInt) "2*x").get!.pow 4 == (parseAzPolynomial (R := AzInt) "16*x^4").get!
-#guard (0 : AzPolynomial AzInt).pow 5 == 0
-#guard (1 : AzPolynomial AzInt).pow 100 == 1
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 0) == "1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 1) == "x+1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 2) == "x^2+2*x+1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x+1").get!.pow 3) == "x^3+3*x^2+3*x+1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "2*x").get!.pow 4) == "16*x^4"
+#guard toChars ((0 : AzPolynomial AzInt).pow 5) == "0"
+#guard toChars ((1 : AzPolynomial AzInt).pow 100) == "1"
 
 end Tests
 

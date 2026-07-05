@@ -1,5 +1,6 @@
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.AzNat.Instances
+import Azurite.AzNat.ToStringBase
 
 /-!
 # Exponentiation for AzNat
@@ -44,12 +45,14 @@ def powBinary (a : AzNat) (n : ℕ) : AzNat :=
 
 section Tests
 
-#guard (AzNat.ofNat 3).pow 4 = AzNat.ofNat 81
-#guard (AzNat.ofNat 2).pow 10 = AzNat.ofNat 1024
-#guard (AzNat.ofNat 7).pow 0 = AzNat.ofNat 1
-#guard (AzNat.ofNat 7).pow 1 = AzNat.ofNat 7
-#guard (AzNat.ofNat 5).pow 3 = AzNat.ofNat 125
-#guard (AzNat.ofNat 2).pow 64 = AzNat.ofNat (2 ^ 64)
+#guard AzNat.toString ((AzNat.ofNat 3).pow 4) == "81"
+#guard AzNat.toString ((AzNat.ofNat 2).pow 10) == "1024"
+#guard AzNat.toString ((AzNat.ofNat 7).pow 0) == "1"
+#guard AzNat.toString ((AzNat.ofNat 7).pow 1) == "7"
+#guard AzNat.toString ((AzNat.ofNat 5).pow 3) == "125"
+#guard AzNat.toString ((AzNat.ofNat 2).pow 64) == "18446744073709551616"
+-- huge targets (48- and 302-digit numerals): kept as algorithm-level equality
+-- against `AzNat.ofNat`, for readability, rather than a giant string literal
 #guard (AzNat.ofNat 3).pow 100 = AzNat.ofNat (3 ^ 100)
 #guard (AzNat.ofNat 2).pow 1000 = AzNat.ofNat (2 ^ 1000)
 

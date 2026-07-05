@@ -12,8 +12,8 @@ def smul (r : S) (p : AzPolynomial R) : AzPolynomial R :=
 instance : SMul S (AzPolynomial R) := ⟨smul⟩
 
 -- Testing the implementation using Integer polynomials
-#guard (2 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+1").get! == (parseAzPolynomial (R := AzInt) "2*x^2+2").get!
-#guard (-1 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+x").get! == (parseAzPolynomial (R := AzInt) "-x^2-x").get!
-#guard (0 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+1").get! == (0 : AzPolynomial AzInt)
+#guard toChars ((2 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "2*x^2+2"
+#guard toChars ((-1 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+x").get!) == "-x^2-x"
+#guard toChars ((0 : AzInt) • (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "0"
 
 end Azurite.AzPolynomial

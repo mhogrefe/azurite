@@ -2,6 +2,7 @@ import Azurite.AzInt.Add
 import Azurite.AzInt.Basic
 import Azurite.AzInt.Conversion
 import Azurite.AzInt.Parse
+import Azurite.AzInt.ToString
 import Azurite.AzNat.Div
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Basic
@@ -172,37 +173,38 @@ section Examples
 private def parse (s : String) : AzInt := (AzInt.parse s).get!
 
 -- Euclidean (div / mod): always 0 ≤ r < |b|.
-#guard (parse "7").div (parse "2") == parse "3"
-#guard (parse "7").mod (parse "2") == parse "1"
-#guard (parse "-7").div (parse "2") == parse "-4"
-#guard (parse "-7").mod (parse "2") == parse "1"
-#guard (parse "7").div (parse "-2") == parse "-3"
-#guard (parse "7").mod (parse "-2") == parse "1"
-#guard (parse "-7").div (parse "-2") == parse "4"
-#guard (parse "-7").mod (parse "-2") == parse "1"
-#guard (parse "8").div (parse "2") == parse "4"
-#guard (parse "8").mod (parse "2") == parse "0"
+#guard Azurite.AzInt.toString ((parse "7").div (parse "2")) == "3"
+#guard Azurite.AzInt.toString ((parse "7").mod (parse "2")) == "1"
+#guard Azurite.AzInt.toString ((parse "-7").div (parse "2")) == "-4"
+#guard Azurite.AzInt.toString ((parse "-7").mod (parse "2")) == "1"
+#guard Azurite.AzInt.toString ((parse "7").div (parse "-2")) == "-3"
+#guard Azurite.AzInt.toString ((parse "7").mod (parse "-2")) == "1"
+#guard Azurite.AzInt.toString ((parse "-7").div (parse "-2")) == "4"
+#guard Azurite.AzInt.toString ((parse "-7").mod (parse "-2")) == "1"
+#guard Azurite.AzInt.toString ((parse "8").div (parse "2")) == "4"
+#guard Azurite.AzInt.toString ((parse "8").mod (parse "2")) == "0"
 
 -- Floor (fdiv / fmod): r has the sign of b.
-#guard (parse "7").fdiv (parse "2") == parse "3"
-#guard (parse "7").fmod (parse "2") == parse "1"
-#guard (parse "-7").fdiv (parse "2") == parse "-4"
-#guard (parse "-7").fmod (parse "2") == parse "1"
-#guard (parse "7").fdiv (parse "-2") == parse "-4"
-#guard (parse "7").fmod (parse "-2") == parse "-1"
-#guard (parse "-7").fdiv (parse "-2") == parse "3"
-#guard (parse "-7").fmod (parse "-2") == parse "-1"
+#guard Azurite.AzInt.toString ((parse "7").fdiv (parse "2")) == "3"
+#guard Azurite.AzInt.toString ((parse "7").fmod (parse "2")) == "1"
+#guard Azurite.AzInt.toString ((parse "-7").fdiv (parse "2")) == "-4"
+#guard Azurite.AzInt.toString ((parse "-7").fmod (parse "2")) == "1"
+#guard Azurite.AzInt.toString ((parse "7").fdiv (parse "-2")) == "-4"
+#guard Azurite.AzInt.toString ((parse "7").fmod (parse "-2")) == "-1"
+#guard Azurite.AzInt.toString ((parse "-7").fdiv (parse "-2")) == "3"
+#guard Azurite.AzInt.toString ((parse "-7").fmod (parse "-2")) == "-1"
 
 -- Division by zero: q = 0, r = a (Lean's convention).
-#guard (parse "7").div (parse "0") == parse "0"
-#guard (parse "7").mod (parse "0") == parse "7"
-#guard (parse "-7").div (parse "0") == parse "0"
-#guard (parse "-7").mod (parse "0") == parse "-7"
-#guard (parse "-7").fdiv (parse "0") == parse "0"
-#guard (parse "-7").fmod (parse "0") == parse "-7"
+#guard Azurite.AzInt.toString ((parse "7").div (parse "0")) == "0"
+#guard Azurite.AzInt.toString ((parse "7").mod (parse "0")) == "7"
+#guard Azurite.AzInt.toString ((parse "-7").div (parse "0")) == "0"
+#guard Azurite.AzInt.toString ((parse "-7").mod (parse "0")) == "-7"
+#guard Azurite.AzInt.toString ((parse "-7").fdiv (parse "0")) == "0"
+#guard Azurite.AzInt.toString ((parse "-7").fmod (parse "0")) == "-7"
 
 -- divMod returns (div, mod).
-#guard (parse "-7").divMod (parse "2") == (parse "-4", parse "1")
+#guard (let (q, r) := (parse "-7").divMod (parse "2")
+        (Azurite.AzInt.toString q, Azurite.AzInt.toString r)) == ("-4", "1")
 
 end Examples
 

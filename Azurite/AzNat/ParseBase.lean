@@ -82,9 +82,9 @@ end AzNat
 -- Sanity checks.
 
 -- Default decimal.
-#guard AzNat.parse "123" = some (AzNat.ofLimbs #[123])
-#guard AzNat.parse "0" = some (0 : AzNat)
-#guard AzNat.parse "12345" = some (AzNat.ofLimbs #[12345])
+#guard (AzNat.parse "123").map AzNat.toString == some "123"
+#guard (AzNat.parse "0").map AzNat.toString == some "0"
+#guard (AzNat.parse "12345").map AzNat.toString == some "12345"
 
 -- Empty / malformed input.
 #guard AzNat.parse "" = none
@@ -93,10 +93,10 @@ end AzNat
 #guard AzNat.parse "0b" = none
 
 -- Auto-detected prefix (lowercase only).
-#guard AzNat.parse "0b101" = some (AzNat.ofLimbs #[5])
-#guard AzNat.parse "0xff" = some (AzNat.ofLimbs #[255])
-#guard AzNat.parse "0o17" = some (AzNat.ofLimbs #[15])
-#guard AzNat.parse "0xDEADBEEF" = some (AzNat.ofLimbs #[0xDEADBEEF])
+#guard (AzNat.parse "0b101").map AzNat.toString == some "5"
+#guard (AzNat.parse "0xff").map AzNat.toString == some "255"
+#guard (AzNat.parse "0o17").map AzNat.toString == some "15"
+#guard (AzNat.parse "0xDEADBEEF").map AzNat.toString == some "3735928559"
 
 -- Uppercase prefixes are not recognised (matches Lean / C / Rust convention).
 -- "0X" / "0B" / "0O" fall through to decimal parsing and fail on the second char.
@@ -104,24 +104,24 @@ end AzNat
 #guard AzNat.parse "0B101" = none
 
 -- Mixed case in hex digits is fine.
-#guard AzNat.parse "0xDeAdBeEf" = some (AzNat.ofLimbs #[0xDEADBEEF])
+#guard (AzNat.parse "0xDeAdBeEf").map AzNat.toString == some "3735928559"
 
 -- Base given, prefix ignored.
-#guard AzNat.parseBase 10 "123" = some (AzNat.ofLimbs #[123])
-#guard AzNat.parseBase 16 "ff" = some (AzNat.ofLimbs #[255])
-#guard AzNat.parseBase 16 "FF" = some (AzNat.ofLimbs #[255])
-#guard AzNat.parseBase 2 "101" = some (AzNat.ofLimbs #[5])
-#guard AzNat.parseBase 8 "755" = some (AzNat.ofLimbs #[0o755])
+#guard (AzNat.parseBase 10 "123").map AzNat.toString == some "123"
+#guard (AzNat.parseBase 16 "ff").map AzNat.toString == some "255"
+#guard (AzNat.parseBase 16 "FF").map AzNat.toString == some "255"
+#guard (AzNat.parseBase 2 "101").map AzNat.toString == some "5"
+#guard (AzNat.parseBase 8 "755").map AzNat.toString == some "493"
 
 -- Prefix stripped regardless of match with the user-supplied base.
-#guard AzNat.parseBase 16 "0xff" = some (AzNat.ofLimbs #[255])
+#guard (AzNat.parseBase 16 "0xff").map AzNat.toString == some "255"
 -- "0x10" with parseBase 10 strips the "0x" and parses "10" in decimal.
-#guard AzNat.parseBase 10 "0x10" = some (AzNat.ofLimbs #[10])
+#guard (AzNat.parseBase 10 "0x10").map AzNat.toString == some "10"
 
 -- Up-to base 36, both cases.
-#guard AzNat.parseBase 36 "z" = some (AzNat.ofLimbs #[35])
-#guard AzNat.parseBase 36 "Z" = some (AzNat.ofLimbs #[35])
-#guard AzNat.parseBase 36 "10" = some (AzNat.ofLimbs #[36])
+#guard (AzNat.parseBase 36 "z").map AzNat.toString == some "35"
+#guard (AzNat.parseBase 36 "Z").map AzNat.toString == some "35"
+#guard (AzNat.parseBase 36 "10").map AzNat.toString == some "36"
 
 -- Out-of-range bases.
 #guard AzNat.parseBase 1 "0" = none
@@ -133,17 +133,17 @@ end AzNat
 #guard AzNat.parseBase 10 "12A" = none
 
 -- Leading zeros allowed.
-#guard AzNat.parse "007" = some (AzNat.ofLimbs #[7])
-#guard AzNat.parseBase 16 "0000ff" = some (AzNat.ofLimbs #[255])
+#guard (AzNat.parse "007").map AzNat.toString == some "7"
+#guard (AzNat.parseBase 16 "0000ff").map AzNat.toString == some "255"
 
 -- Round-trip via `parse` and `toString`.
 #guard AzNat.parse (AzNat.ofLimbs #[12345]).toString = some (AzNat.ofLimbs #[12345])
 #guard AzNat.parse (AzNat.ofLimbs #[0xDEADBEEF]).toString = some (AzNat.ofLimbs #[0xDEADBEEF])
 
 -- Multi-limb values.
-#guard AzNat.parse "18446744073709551616" = some (AzNat.ofLimbs #[0, 1])
-#guard AzNat.parse "36893488147419103233" = some (AzNat.ofLimbs #[1, 2])
-#guard AzNat.parse "0xffffffffffffffff" = some (AzNat.ofLimbs #[0xffffffffffffffff])
-#guard AzNat.parse "0x10000000000000000" = some (AzNat.ofLimbs #[0, 1])
+#guard (AzNat.parse "18446744073709551616").map AzNat.toString == some "18446744073709551616"
+#guard (AzNat.parse "36893488147419103233").map AzNat.toString == some "36893488147419103233"
+#guard (AzNat.parse "0xffffffffffffffff").map AzNat.toString == some "18446744073709551615"
+#guard (AzNat.parse "0x10000000000000000").map AzNat.toString == some "18446744073709551616"
 
 end Azurite

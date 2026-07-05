@@ -13,6 +13,7 @@ import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Rat.Defs
 import Azurite.AzRat.Instances
 import Azurite.AzRat.ParsableElement
+import Azurite.AzRat.ToString
 
 namespace Azurite
 
@@ -38,30 +39,30 @@ section Tests
 -- 2×2 over AzRat: det [[1, 2], [3, 4]] = 1·4 − 2·3 = −2.
 #guard
   match (AzMatrix.parseStr "[1, 2; 3, 4]" : Option (AzMatrix AzRat 2 2)) with
-  | some M => M.gaussDet = -2
+  | some M => Azurite.AzRat.toString M.gaussDet == "-2"
   | none => False
 
 -- 3×3 over AzRat: det [[2, 1, 1], [1, 3, 2], [1, 0, 0]] = −1.
 #guard
   match (AzMatrix.parseStr "[2, 1, 1; 1, 3, 2; 1, 0, 0]" :
       Option (AzMatrix AzRat 3 3)) with
-  | some M => M.gaussDet = -1
+  | some M => Azurite.AzRat.toString M.gaussDet == "-1"
   | none => False
 
 -- Identity over AzRat has determinant 1.
-#guard (1 : AzMatrix AzRat 4 4).gaussDet = 1
+#guard Azurite.AzRat.toString ((1 : AzMatrix AzRat 4 4).gaussDet) == "1"
 
 -- Singular matrix (rank-deficient): determinant 0.
 #guard
   match (AzMatrix.parseStr "[1, 2, 3; 2, 4, 6; 1, 1, 1]" :
       Option (AzMatrix AzRat 3 3)) with
-  | some M => M.gaussDet = 0
+  | some M => Azurite.AzRat.toString M.gaussDet == "0"
   | none => False
 
 -- Column-pivoting test: zero in the (0,0) position forces a swap.
 #guard
   match (AzMatrix.parseStr "[0, 1; 1, 0]" : Option (AzMatrix AzRat 2 2)) with
-  | some M => M.gaussDet = -1
+  | some M => Azurite.AzRat.toString M.gaussDet == "-1"
   | none => False
 
 end Tests

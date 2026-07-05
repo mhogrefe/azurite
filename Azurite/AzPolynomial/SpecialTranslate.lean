@@ -67,23 +67,23 @@ def specialTranslate [AzPolynomialMulConfig R] (p : AzPolynomial R) (b c : R) : 
 section Tests
 
 -- (x² + 1) shifted by 1/2: 2²·((x−1/2)² + 1) = 4x² − 4x + 5
-#guard (parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 2
-    == (parseAzPolynomial (R := AzInt) "4*x^2-4*x+5").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 2)
+    == "4*x^2-4*x+5"
 
 -- (2x − 3) shifted by −1/2: 2·(2(x+1/2) − 3) = 4x − 4
-#guard (parseAzPolynomial (R := AzInt) "2*x-3").get!.specialTranslate (-1) 2
-    == (parseAzPolynomial (R := AzInt) "4*x-4").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "2*x-3").get!.specialTranslate (-1) 2)
+    == "4*x-4"
 
 -- c = 1 degenerates to plain translation: (x² + 1) shifted by 1 is x² − 2x + 2
-#guard (parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 1
-    == (parseAzPolynomial (R := AzInt) "x^2-2*x+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+1").get!.specialTranslate 1 1)
+    == "x^2-2*x+2"
 
 -- Constant: c⁰·P = P
-#guard (parseAzPolynomial (R := AzInt) "5").get!.specialTranslate 1 2
-    == (parseAzPolynomial (R := AzInt) "5").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "5").get!.specialTranslate 1 2)
+    == "5"
 
 -- Zero polynomial: zero
-#guard (0 : AzPolynomial AzInt).specialTranslate 3 2 == 0
+#guard toChars ((0 : AzPolynomial AzInt).specialTranslate 3 2) == "0"
 
 end Tests
 

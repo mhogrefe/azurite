@@ -10,6 +10,7 @@ import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Size
 import Azurite.AzNat.Square
 import Azurite.AzNat.Sub
+import Azurite.AzNat.ToStringBase
 import Azurite.UInt64.SqrtRem
 
 namespace Azurite.AzNat
@@ -171,38 +172,52 @@ section Examples
 open Azurite Azurite.AzNat
 
 -- Tiny inputs: agree with `UInt64.sqrtRem` (where applicable).
-#guard basecaseSqrtRem (AzNat.ofNat 0) = (AzNat.ofNat 0, AzNat.ofNat 0)
-#guard basecaseSqrtRem (AzNat.ofNat 1) = (AzNat.ofNat 1, AzNat.ofNat 0)
-#guard basecaseSqrtRem (AzNat.ofNat 2) = (AzNat.ofNat 1, AzNat.ofNat 1)
-#guard basecaseSqrtRem (AzNat.ofNat 100) = (AzNat.ofNat 10, AzNat.ofNat 0)
-#guard basecaseSqrtRem (AzNat.ofNat 9999) = (AzNat.ofNat 99, AzNat.ofNat 198)
-#guard basecaseSqrtRem (AzNat.ofNat 10000) = (AzNat.ofNat 100, AzNat.ofNat 0)
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 0); AzNat.toString s == "0" && AzNat.toString r == "0")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 1); AzNat.toString s == "1" && AzNat.toString r == "0")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 2); AzNat.toString s == "1" && AzNat.toString r == "1")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 100); AzNat.toString s == "10" && AzNat.toString r == "0")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 9999); AzNat.toString s == "99" && AzNat.toString r == "198")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat 10000); AzNat.toString s == "100" && AzNat.toString r == "0")
 
 -- 2-limb perfect squares: (2^32)² = 2^64.
-#guard basecaseSqrtRem (AzNat.ofNat (2 ^ 64)) = (AzNat.ofNat (2 ^ 32), AzNat.ofNat 0)
-#guard basecaseSqrtRem (AzNat.ofNat (2 ^ 64 + 1)) = (AzNat.ofNat (2 ^ 32), AzNat.ofNat 1)
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat (2 ^ 64));
+  AzNat.toString s == "4294967296" && AzNat.toString r == "0")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat (2 ^ 64 + 1));
+  AzNat.toString s == "4294967296" && AzNat.toString r == "1")
 
 -- A non-square 2-limb input near 2^96.
-#guard basecaseSqrtRem (AzNat.ofNat (2 ^ 96)) = (AzNat.ofNat (2 ^ 48), AzNat.ofNat 0)
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat (2 ^ 96));
+  AzNat.toString s == "281474976710656" && AzNat.toString r == "0")
 
 -- Larger: a perfect square at 4 limbs.
 -- (2^120)² = 2^240, which lives in 4 limbs.
-#guard basecaseSqrtRem (AzNat.ofNat (2 ^ 240)) = (AzNat.ofNat (2 ^ 120), AzNat.ofNat 0)
-#guard basecaseSqrtRem (AzNat.ofNat (2 ^ 240 + 1)) = (AzNat.ofNat (2 ^ 120), AzNat.ofNat 1)
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat (2 ^ 240));
+  AzNat.toString s == "1329227995784915872903807060280344576" && AzNat.toString r == "0")
+#guard (let (s, r) := basecaseSqrtRem (AzNat.ofNat (2 ^ 240 + 1));
+  AzNat.toString s == "1329227995784915872903807060280344576" && AzNat.toString r == "1")
 
 -- Divide-and-conquer: small inputs delegate to basecase, so should match.
-#guard sqrtRem (AzNat.ofNat 0) = (AzNat.ofNat 0, AzNat.ofNat 0)
-#guard sqrtRem (AzNat.ofNat 9999) = (AzNat.ofNat 99, AzNat.ofNat 198)
-#guard sqrtRem (AzNat.ofNat (2 ^ 240 + 1)) = (AzNat.ofNat (2 ^ 120), AzNat.ofNat 1)
+#guard (let (s, r) := sqrtRem (AzNat.ofNat 0); AzNat.toString s == "0" && AzNat.toString r == "0")
+#guard (let (s, r) := sqrtRem (AzNat.ofNat 9999); AzNat.toString s == "99" && AzNat.toString r == "198")
+#guard (let (s, r) := sqrtRem (AzNat.ofNat (2 ^ 240 + 1));
+  AzNat.toString s == "1329227995784915872903807060280344576" && AzNat.toString r == "1")
 
 -- D&C kicks in at ≥ 5 limbs. (2^192)² = 2^384, lives in 7 limbs.
-#guard sqrtRem (AzNat.ofNat (2 ^ 384)) = (AzNat.ofNat (2 ^ 192), AzNat.ofNat 0)
-#guard sqrtRem (AzNat.ofNat (2 ^ 384 + 1)) = (AzNat.ofNat (2 ^ 192), AzNat.ofNat 1)
+#guard (let (s, r) := sqrtRem (AzNat.ofNat (2 ^ 384));
+  AzNat.toString s == "6277101735386680763835789423207666416102355444464034512896" &&
+  AzNat.toString r == "0")
+#guard (let (s, r) := sqrtRem (AzNat.ofNat (2 ^ 384 + 1));
+  AzNat.toString s == "6277101735386680763835789423207666416102355444464034512896" &&
+  AzNat.toString r == "1")
 
 -- A bigger perfect square: (2^320)² = 2^640, 11 limbs.
-#guard sqrtRem (AzNat.ofNat (2 ^ 640)) = (AzNat.ofNat (2 ^ 320), AzNat.ofNat 0)
+#guard (let (s, r) := sqrtRem (AzNat.ofNat (2 ^ 640));
+  AzNat.toString s ==
+    "2135987035920910082395021706169552114602704522356652769947041607822219725780640550022962086936576" &&
+  AzNat.toString r == "0")
 
 -- A non-trivial non-square: 2^384 + 2^192 (= roughly the next bit above a square).
-#guard (sqrtRem (AzNat.ofNat (2 ^ 384 + 2 ^ 192))).1 = AzNat.ofNat (2 ^ 192)
+#guard AzNat.toString (sqrtRem (AzNat.ofNat (2 ^ 384 + 2 ^ 192))).1 ==
+  "6277101735386680763835789423207666416102355444464034512896"
 
 end Examples

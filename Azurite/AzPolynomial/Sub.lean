@@ -63,9 +63,9 @@ def sub (p q : AzPolynomial R) : AzPolynomial R :=
 instance : Sub (AzPolynomial R) := ⟨sub⟩
 
 -- Testing the implementation using Integer polynomials
-#guard (parseAzPolynomial (R := AzInt) "x^2+1").get! - (parseAzPolynomial (R := AzInt) "x+2").get! == (parseAzPolynomial (R := AzInt) "x^2-x-1").get!
-#guard (parseAzPolynomial (R := AzInt) "x^2+x").get! - (parseAzPolynomial (R := AzInt) "x^2+1").get! == (parseAzPolynomial (R := AzInt) "x-1").get!
-#guard (parseAzPolynomial (R := AzInt) "x^2").get! - (parseAzPolynomial (R := AzInt) "x^2").get! == (0 : AzPolynomial AzInt)
-#guard (0 : AzPolynomial AzInt) - (parseAzPolynomial (R := AzInt) "x").get! == (parseAzPolynomial (R := AzInt) "-x").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+1").get! - (parseAzPolynomial (R := AzInt) "x+2").get!) == "x^2-x-1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+x").get! - (parseAzPolynomial (R := AzInt) "x^2+1").get!) == "x-1"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2").get! - (parseAzPolynomial (R := AzInt) "x^2").get!) == "0"
+#guard toChars ((0 : AzPolynomial AzInt) - (parseAzPolynomial (R := AzInt) "x").get!) == "-x"
 
 end Azurite.AzPolynomial

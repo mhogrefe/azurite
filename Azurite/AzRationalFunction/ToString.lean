@@ -46,23 +46,4 @@ def toString (r : AzRationalFunction) : String :=
 
 instance : ToString AzRationalFunction := ⟨toString⟩
 
--- ═══════════════════════════════════════════════════════════════════
--- Tests
--- ═══════════════════════════════════════════════════════════════════
-
-section Tests
-
-private def pp (s : String) : AzPolynomial AzInt := (parseAzPolynomial s).get!
-
-#guard toString (ofNumDen (pp "2*x^2-2") (pp "4*x+4")) == "(x-1)/2"
-#guard toString (ofNumDen (pp "x") (pp "-2")) == "-x/2"
-#guard toString (ofNumDen (pp "x^2+1") (pp "x-1")) == "(x^2+1)/(x-1)"
-#guard toString (ofNumDen (pp "3*x^2") (pp "x+1")) == "3*x^2/(x+1)"
-#guard toString (ofNumDen (pp "-6*x-9") (pp "1")) == "-6*x-9"
-#guard toString (0 : AzRationalFunction) == "0"
-#guard toString (1 : AzRationalFunction) == "1"
-#guard toString (ofAzRat ((Azurite.AzRat.parse "-3/4").get!)) == "-3/4"
-
-end Tests
-
 end Azurite.AzRationalFunction

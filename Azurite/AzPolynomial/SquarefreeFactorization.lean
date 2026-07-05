@@ -87,30 +87,37 @@ private def pp (s : String) : AzPolynomial AzInt := (parseAzPolynomial s).get!
 private def pq (s : String) : AzPolynomial AzRat := (parseAzPolynomial s).get!
 
 -- squarefree input: a single pair at exponent 1
-#guard squarefreeFactorization (pp "x^2+1") == [(pp "x^2+1", 1)]
+#guard (squarefreeFactorization (pp "x^2+1")).map (fun gi => (toChars gi.1, gi.2))
+  == [("x^2+1", 1)]
 -- `(X−1)(X+2)²`: two classes, `x−1 < x+2` in the canonical order
-#guard squarefreeFactorization (pp "x^3+3*x^2-4") == [(pp "x-1", 1), (pp "x+2", 2)]
+#guard (squarefreeFactorization (pp "x^3+3*x^2-4")).map (fun gi => (toChars gi.1, gi.2))
+  == [("x-1", 1), ("x+2", 2)]
 -- `(X−1)³(X+1)`: gap at multiplicity 2 filtered; sorted `x−1 < x+1`,
 -- so the exponents are NOT monotone — the polynomials are
-#guard squarefreeFactorization (pp "x^4-2*x^3+2*x-1") == [(pp "x-1", 3), (pp "x+1", 1)]
+#guard (squarefreeFactorization (pp "x^4-2*x^3+2*x-1")).map (fun gi => (toChars gi.1, gi.2))
+  == [("x-1", 3), ("x+1", 1)]
 -- pure power `(X+2)³` — in particular `(X+2)⁵` yields ONE pair, never
 -- split across duplicate polynomials
-#guard squarefreeFactorization (pp "x^3+6*x^2+12*x+8") == [(pp "x+2", 3)]
-#guard squarefreeFactorization (pp "x^5+10*x^4+40*x^3+80*x^2+80*x+32")
-  == [(pp "x+2", 5)]
+#guard (squarefreeFactorization (pp "x^3+6*x^2+12*x+8")).map (fun gi => (toChars gi.1, gi.2))
+  == [("x+2", 3)]
+#guard (squarefreeFactorization (pp "x^5+10*x^4+40*x^3+80*x^2+80*x+32")).map
+    (fun gi => (toChars gi.1, gi.2))
+  == [("x+2", 5)]
 -- the GCL running example shape: `(X²+1)(X−1)²(X+3)³`, ascending:
 -- `x−1 < x+3 < x²+1` (degree first, then top-down lexicographic)
-#guard squarefreeFactorization
-    (pp "x^7+7*x^6+11*x^5-11*x^4-17*x^3+9*x^2-27*x+27")
-  == [(pp "x-1", 2), (pp "x+3", 3), (pp "x^2+1", 1)]
+#guard (squarefreeFactorization
+    (pp "x^7+7*x^6+11*x^5-11*x^4-17*x^3+9*x^2-27*x+27")).map
+    (fun gi => (toChars gi.1, gi.2))
+  == [("x-1", 2), ("x+3", 3), ("x^2+1", 1)]
 -- product check on the previous example
 #guard (let f := squarefreeFactorization
           (pp "x^7+7*x^6+11*x^5-11*x^4-17*x^3+9*x^2-27*x+27")
-        (f.map (fun gi => gi.1.pow gi.2)).foldl (· * ·) 1
-          == pp "x^7+7*x^6+11*x^5-11*x^4-17*x^3+9*x^2-27*x+27")
+        toChars ((f.map (fun gi => gi.1.pow gi.2)).foldl (· * ·) 1)
+          == "x^7+7*x^6+11*x^5-11*x^4-17*x^3+9*x^2-27*x+27")
 -- monic over `AzRat`
-#guard squarefreeFactorization (pq "x^3-3/2*x^2+3/4*x-1/8")
-  == [(pq "x-1/2", 3)]
+#guard (squarefreeFactorization (pq "x^3-3/2*x^2+3/4*x-1/8")).map
+    (fun gi => (toChars gi.1, gi.2))
+  == [("x-1/2", 3)]
 -- constants
 #guard squarefreeFactorization (pp "1") == []
 

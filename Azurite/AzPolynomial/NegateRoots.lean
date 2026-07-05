@@ -84,27 +84,27 @@ theorem leadingCoeff_negateRoots (p : AzPolynomial R) :
 section Tests
 
 -- (x+1)(x+2) = x² + 3x + 2 with roots −1, −2 becomes (x−1)(x−2) = x² − 3x + 2
-#guard (parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!.negateRoots
-    == (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+3*x+2").get!.negateRoots)
+    == "x^2-3*x+2"
 
 -- Odd degree flips the sign of the polynomial: x³ ↦ −x³
-#guard (parseAzPolynomial (R := AzInt) "x^3").get!.negateRoots
-    == (parseAzPolynomial (R := AzInt) "-x^3").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^3").get!.negateRoots)
+    == "-x^3"
 
 -- Root 5 becomes root −5 (up to overall sign): x − 5 ↦ −x − 5
-#guard (parseAzPolynomial (R := AzInt) "x-5").get!.negateRoots
-    == (parseAzPolynomial (R := AzInt) "-x-5").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x-5").get!.negateRoots)
+    == "-x-5"
 
 -- Constants unchanged
-#guard (parseAzPolynomial (R := AzInt) "7").get!.negateRoots
-    == (parseAzPolynomial (R := AzInt) "7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "7").get!.negateRoots)
+    == "7"
 
 -- Zero unchanged
-#guard (0 : AzPolynomial AzInt).negateRoots == 0
+#guard toChars ((0 : AzPolynomial AzInt).negateRoots) == "0"
 
 -- Involution
-#guard (parseAzPolynomial (R := AzInt) "x^4-2*x^3+x-11").get!.negateRoots.negateRoots
-    == (parseAzPolynomial (R := AzInt) "x^4-2*x^3+x-11").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^4-2*x^3+x-11").get!.negateRoots.negateRoots)
+    == "x^4-2*x^3+x-11"
 
 end Tests
 

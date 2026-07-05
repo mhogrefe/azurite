@@ -106,11 +106,11 @@ def derivative [PolynomialDerivative R] (p : AzPolynomial R) : AzPolynomial R :=
   PolynomialDerivative.derivative p
 
 -- Testing: AzInt is CharZero + NoZeroDivisors, so uses the fast path
-#guard derivative (parseAzPolynomial (R := AzInt) "x^3+x").get! == (parseAzPolynomial (R := AzInt) "3*x^2+1").get!
-#guard derivative (parseAzPolynomial (R := AzInt) "2*x^2+3*x+5").get! == (parseAzPolynomial (R := AzInt) "4*x+3").get!
-#guard derivative (parseAzPolynomial (R := AzInt) "42").get! == (0 : AzPolynomial AzInt)
-#guard derivative (0 : AzPolynomial AzInt) == (0 : AzPolynomial AzInt)
-#guard derivative (parseAzPolynomial (R := AzInt) "x").get! == (parseAzPolynomial (R := AzInt) "1").get!
-#guard derivative (parseAzPolynomial (R := AzInt) "x^4").get! == (parseAzPolynomial (R := AzInt) "4*x^3").get!
+#guard toChars (derivative (parseAzPolynomial (R := AzInt) "x^3+x").get!) == "3*x^2+1"
+#guard toChars (derivative (parseAzPolynomial (R := AzInt) "2*x^2+3*x+5").get!) == "4*x+3"
+#guard toChars (derivative (parseAzPolynomial (R := AzInt) "42").get!) == "0"
+#guard toChars (derivative (0 : AzPolynomial AzInt)) == "0"
+#guard toChars (derivative (parseAzPolynomial (R := AzInt) "x").get!) == "1"
+#guard toChars (derivative (parseAzPolynomial (R := AzInt) "x^4").get!) == "4*x^3"
 
 end Azurite.AzPolynomial

@@ -107,28 +107,28 @@ theorem coeff_expand (p : AzPolynomial R) {n : ℕ} (hn : 0 < n) (j : ℕ) :
 section Tests
 
 -- x − 2 (root 2) expanded by 2: x² − 2 (roots ±√2)
-#guard (parseAzPolynomial (R := AzInt) "x-2").get!.expand 2
-    == (parseAzPolynomial (R := AzInt) "x^2-2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x-2").get!.expand 2)
+    == "x^2-2"
 
 -- (x−1)(x−2) expanded by 3: roots are the cube roots of 1 and 2
-#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.expand 3
-    == (parseAzPolynomial (R := AzInt) "x^6-3*x^3+2").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.expand 3)
+    == "x^6-3*x^3+2"
 
 -- n = 1 is the identity
-#guard (parseAzPolynomial (R := AzInt) "x^2+x+1").get!.expand 1
-    == (parseAzPolynomial (R := AzInt) "x^2+x+1").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2+x+1").get!.expand 1)
+    == "x^2+x+1"
 
 -- Constants unchanged
-#guard (parseAzPolynomial (R := AzInt) "7").get!.expand 5
-    == (parseAzPolynomial (R := AzInt) "7").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "7").get!.expand 5)
+    == "7"
 
 -- Zero unchanged
-#guard (0 : AzPolynomial AzInt).expand 3 == 0
+#guard toChars ((0 : AzPolynomial AzInt).expand 3) == "0"
 
 -- n = 0 degenerates to C (P(1)) — here P(1) = 0 and P(1) = 3 respectively
-#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.expand 0 == 0
-#guard (parseAzPolynomial (R := AzInt) "x^2-3*x+5").get!.expand 0
-    == (parseAzPolynomial (R := AzInt) "3").get!
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.expand 0) == "0"
+#guard toChars ((parseAzPolynomial (R := AzInt) "x^2-3*x+5").get!.expand 0)
+    == "3"
 
 end Tests
 

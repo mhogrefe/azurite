@@ -1,4 +1,5 @@
 import Azurite.AzZModPow2.Basic
+import Azurite.AzZModPow2.ToString
 import Azurite.AzNat.SquareModPow2.Dispatch
 import Azurite.AzNat.Equiv.SquareModPow2.Dispatch
 import Azurite.Algorithm.SlidingWindowPow
@@ -44,12 +45,13 @@ section Tests
 open Azurite Azurite.AzZModPow2
 
 -- `3^4 = 81 ≡ 1 (mod 16)`, `2^10 = 1024 ≡ 0 (mod 256)`, `7^0 = 1`.
-#guard ((AzZModPow2.ofNat 4 3).pow 4) == (AzZModPow2.ofNat 4 1)
-#guard ((AzZModPow2.ofNat 8 2).pow 10) == (AzZModPow2.ofNat 8 0)
-#guard ((AzZModPow2.ofNat 8 7).pow 0) == (AzZModPow2.ofNat 8 1)
-#guard ((AzZModPow2.ofNat 32 3).pow 20) == (AzZModPow2.ofNat 32 (3 ^ 20 % 2 ^ 32))
--- Multi-limb modulus.
-#guard ((AzZModPow2.ofNat 128 123456789).pow 50) ==
-  (AzZModPow2.ofNat 128 (123456789 ^ 50 % 2 ^ 128))
+#guard Azurite.AzZModPow2.toString ((AzZModPow2.ofNat 4 3).pow 4) == "1"
+#guard Azurite.AzZModPow2.toString ((AzZModPow2.ofNat 8 2).pow 10) == "0"
+#guard Azurite.AzZModPow2.toString ((AzZModPow2.ofNat 8 7).pow 0) == "1"
+-- `3^20 = 3486784401`, already `< 2^32`.
+#guard Azurite.AzZModPow2.toString ((AzZModPow2.ofNat 32 3).pow 20) == "3486784401"
+-- Multi-limb modulus: `123456789^50 mod 2^128 = 13523750621578854313149582633077514233`.
+#guard Azurite.AzZModPow2.toString ((AzZModPow2.ofNat 128 123456789).pow 50) ==
+  "13523750621578854313149582633077514233"
 
 end Tests
