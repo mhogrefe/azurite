@@ -12,8 +12,11 @@ content-coprime integer fraction with positive-leading-coefficient
 denominator). Format:
 
 * denominator `1`: just the numerator string;
-* otherwise `num/den`, with a component wrapped in parentheses exactly when
-  it has more than one nonzero term.
+* otherwise `num/den`, with the numerator wrapped in parentheses exactly
+  when it has more than one nonzero term, and the denominator wrapped
+  unless it is a constant or a monic monomial — so `x/2`, `3/x`, `1/x^2`
+  stay bare while `3/(2*x)` is parenthesized (never `3/2*x`, which would
+  read as `(3/2)·x`).
 -/
 
 namespace Azurite.AzRationalFunction
@@ -37,12 +40,22 @@ def wrapComponent (p : AzPolynomial AzInt) : String :=
   if numTerms p ≤ 1 then AzPolynomial.toChars p
   else "(" ++ AzPolynomial.toChars p ++ ")"
 
+/-- The denominator string, parenthesized unless it is a constant or a
+monic monomial (there `…/den` already reads unambiguously; a coefficient
+would bind to the wrong side, e.g. `3/2*x` reads as `(3/2)·x`). The display
+denominator has a positive leading coefficient, so no sign cases arise. -/
+def wrapDenominator (p : AzPolynomial AzInt) : String :=
+  if p.natDegree = 0 ∨ (numTerms p ≤ 1 ∧ p.leadingCoeff = 1) then
+    AzPolynomial.toChars p
+  else "(" ++ AzPolynomial.toChars p ++ ")"
+
 /-- **String form** of a rational function: the reduced integer fraction
-`num/den` (parenthesizing multi-term components), or just the numerator
-when the denominator is `1`. -/
+`num/den` (parenthesizing a multi-term numerator and any denominator other
+than a constant or monic monomial), or just the numerator when the
+denominator is `1`. -/
 def toString (r : AzRationalFunction) : String :=
   if displayDen r == 1 then AzPolynomial.toChars (displayNum r)
-  else wrapComponent (displayNum r) ++ "/" ++ wrapComponent (displayDen r)
+  else wrapComponent (displayNum r) ++ "/" ++ wrapDenominator (displayDen r)
 
 instance : ToString AzRationalFunction := ⟨toString⟩
 

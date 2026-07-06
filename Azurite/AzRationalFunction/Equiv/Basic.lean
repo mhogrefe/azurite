@@ -892,4 +892,12 @@ noncomputable def equivRatFunc : AzRationalFunction ≃ RatFunc ℚ where
   left_inv := ofRatFunc_toRatFunc
   right_inv := toRatFunc_ofRatFunc
 
+/-- `ofRatFunc` version: zero pulls back to the canonical zero. -/
+theorem ofRatFunc_zero : ofRatFunc 0 = 0 :=
+  toRatFunc_injective (by rw [toRatFunc_ofRatFunc, toRatFunc_zero])
+
+/-- `ofRatFunc` version: one pulls back to the canonical one. -/
+theorem ofRatFunc_one : ofRatFunc 1 = 1 :=
+  toRatFunc_injective (by rw [toRatFunc_ofRatFunc, toRatFunc_one])
+
 end Azurite.AzRationalFunction

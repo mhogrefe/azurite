@@ -453,13 +453,16 @@ import Azurite.AzRat.Shift
 import Azurite.AzRat.Sub
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
+import Azurite.AzRationalFunction.Arithmetic
 import Azurite.AzRationalFunction.Basic
 import Azurite.AzRationalFunction.Compare
+import Azurite.AzRationalFunction.Equiv.Arithmetic
 import Azurite.AzRationalFunction.Equiv.Basic
 import Azurite.AzRationalFunction.Equiv.Compare
 import Azurite.AzRationalFunction.Equiv.Eval
 import Azurite.AzRationalFunction.Equiv.Parse
 import Azurite.AzRationalFunction.Eval
+import Azurite.AzRationalFunction.Instances
 import Azurite.AzRationalFunction.Parse
 import Azurite.AzRationalFunction.ToString
 import Azurite.AzVector.Basic

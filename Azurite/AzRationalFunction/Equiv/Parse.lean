@@ -312,6 +312,31 @@ private theorem wrap_facts (p : Azurite.AzPolynomial AzInt) :
         · exact absurd (List.mem_singleton.mp h2) (by decide)
     exact ⟨fun rest => splitSlash_bare _ hs rest, stripParens_paren _⟩
 
+/-- The same two facts for the denominator wrapping rule (the branch proofs
+do not depend on the wrapping condition, only on the two possible shapes). -/
+private theorem wrapDen_facts (p : Azurite.AzPolynomial AzInt) :
+    (∀ rest, splitSlash ((wrapDenominator p).toList ++ '/' :: rest)
+        = some ((wrapDenominator p).toList, rest))
+    ∧ stripParens ((wrapDenominator p).toList)
+        = (Azurite.AzPolynomial.toChars p).toList := by
+  unfold wrapDenominator
+  split
+  · exact ⟨fun rest => splitSlash_bare _ (bad_notin_polyChars h47 p) rest,
+      stripParens_of_no_open _ (bad_notin_polyChars h40 p)⟩
+  · have hlist : ("(" ++ Azurite.AzPolynomial.toChars p ++ ")").toList
+        = '(' :: (Azurite.AzPolynomial.toChars p).toList ++ [')'] := by
+      rw [String.toList_append, String.toList_append]
+      rfl
+    rw [hlist]
+    have hs : '/' ∉ ('(' :: (Azurite.AzPolynomial.toChars p).toList ++ [')']) := by
+      intro hmem
+      rcases List.mem_cons.mp hmem with h1 | h1
+      · exact absurd h1 (by decide)
+      · rcases List.mem_append.mp h1 with h2 | h2
+        · exact bad_notin_polyChars h47 p h2
+        · exact absurd (List.mem_singleton.mp h2) (by decide)
+    exact ⟨fun rest => splitSlash_bare _ hs rest, stripParens_paren _⟩
+
 /-- Printer output contains no slash at all. -/
 private theorem splitSlash_wrap_none (p : Azurite.AzPolynomial AzInt) :
     splitSlash ((Azurite.AzPolynomial.toChars p).toList) = none :=
@@ -335,9 +360,9 @@ theorem parse_toString (r : AzRationalFunction) : parse (toString r) = some r :=
   · -- fraction form
     rw [toString, if_neg (fun h => hd1 (beq_iff_eq.mp h)), parse]
     have hcs : (wrapComponent (displayNum r) ++ "/"
-          ++ wrapComponent (displayDen r)).toList
+          ++ wrapDenominator (displayDen r)).toList
         = (wrapComponent (displayNum r)).toList
-          ++ '/' :: (wrapComponent (displayDen r)).toList := by
+          ++ '/' :: (wrapDenominator (displayDen r)).toList := by
       rw [String.toList_append, String.toList_append]
       simp
     rw [hcs, (wrap_facts (displayNum r)).1 _]
@@ -345,9 +370,9 @@ theorem parse_toString (r : AzRationalFunction) : parse (toString r) = some r :=
       let n ← parseAzPolynomial
         (String.ofList (stripParens (wrapComponent (displayNum r)).toList))
       let d ← parseAzPolynomial
-        (String.ofList (stripParens (wrapComponent (displayDen r)).toList))
+        (String.ofList (stripParens (wrapDenominator (displayDen r)).toList))
       if d = 0 then none else some (ofNumDen n d)) = some r
-    rw [(wrap_facts (displayNum r)).2, (wrap_facts (displayDen r)).2, ofList_toList,
+    rw [(wrap_facts (displayNum r)).2, (wrapDen_facts (displayDen r)).2, ofList_toList,
       ofList_toList, Azurite.AzPolynomial.parseAzPolynomial_toChars,
       Azurite.AzPolynomial.parseAzPolynomial_toChars]
     show (if displayDen r = 0 then none
