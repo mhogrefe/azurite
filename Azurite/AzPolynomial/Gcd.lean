@@ -384,6 +384,7 @@ private def Q₂ : AzPolynomial AzInt := pp "x^3+3*x^2-9*x+5"
 #guard coprime (pq "x^2-1") (pq "2*x-2") == false
 -- equal degrees (pre-step); proportional pair; constants; zero
 #guard coprime (pp "x^2+1") (pp "x^2-1") == true
+#guard coprime (pp "2*x") (pp "2") == true
 #guard coprime (pp "2*x+2") (pp "3*x+3") == false    -- proportional: preStep = 0
 #guard coprime (pp "5") (pp "x^17-3") == true
 #guard coprime (pp "0") (pp "7") == true

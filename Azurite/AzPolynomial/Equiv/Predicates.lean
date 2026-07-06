@@ -390,4 +390,195 @@ theorem isPrimitive_int_iff (p : AzPolynomial AzInt) :
     apply Azurite.AzNat.toNat_injective
     exact_mod_cast h
 
+/-! ### `char`: `coprime` decides that the normalized gcd is a nonzero constant
+
+`AzPolynomial.coprime P Q = true ↔ (gcd P Q ≠ 0 ∧ (gcd P Q).natDegree = 0)`
+where `gcd = gcdNormalizedInt`. This is a **structural** identity — both
+`coprime` and `gcdNormalizedInt` are defined via the same `subresGcd`, so
+matching them needs only degree/nonzero bookkeeping on the components
+(`signNorm`, `contentGcdInt • ·`, `primPos`) plus `subresGcd ≠ 0` (from
+`subresGcd_int_qassoc`); no Gauss theory. Used by
+`AzMvPolynomial.coprime_toAzMvPolynomial` (lifting preserves coprimality). -/
+
+private theorem azNatToAzInt_eq_zero {m : AzNat} : azNatToAzInt m = 0 ↔ m = 0 := by
+  constructor
+  · intro h
+    calc m = (azNatToAzInt m).abs := rfl
+      _ = (0 : AzInt).abs := by rw [h]
+      _ = 0 := rfl
+  · intro h; subst h; rfl
+
+private theorem content_ne_zero {P : AzPolynomial AzInt} (hP : P ≠ 0) :
+    P.content ≠ 0 := by
+  intro h
+  have h0 : ((AzPolynomial.toPoly P).map AzInt.toIntRingHom).content = 0 := by
+    rw [content_toPoly, h]; rfl
+  rw [Polynomial.content_eq_zero_iff] at h0
+  exact map_toPoly_ne_zero hP h0
+
+private theorem contentGcdInt_ne_zero {P Q : AzPolynomial AzInt} (hP : P ≠ 0) :
+    contentGcdInt P Q ≠ 0 := by
+  rw [contentGcdInt, ne_eq, azNatToAzInt_eq_zero]
+  intro h
+  apply content_ne_zero hP
+  apply Azurite.AzNat.toNat_injective
+  have hh := congrArg Azurite.AzNat.toNat h
+  rw [Azurite.AzNat.toNat_gcd] at hh
+  exact (Nat.gcd_eq_zero_iff.mp hh).1
+
+private theorem smul_natDegree {c : AzInt} (hc : c ≠ 0) (p : AzPolynomial AzInt) :
+    (c • p).natDegree = p.natDegree := by
+  rw [← AzPolynomial.natDegree_toPoly, ← AzPolynomial.natDegree_toPoly, toPoly_smul,
+    Polynomial.smul_eq_C_mul, Polynomial.natDegree_C_mul hc]
+
+private theorem smul_eq_zero_iff {c : AzInt} (hc : c ≠ 0) (p : AzPolynomial AzInt) :
+    c • p = 0 ↔ p = 0 := by
+  constructor
+  · intro h
+    apply toPoly_inj.mp
+    rw [toPoly_zero]
+    have hh := congrArg AzPolynomial.toPoly h
+    rw [toPoly_smul, Polynomial.smul_eq_C_mul, toPoly_zero, mul_eq_zero] at hh
+    rcases hh with h1 | h1
+    · exact absurd (Polynomial.C_eq_zero.mp h1) hc
+    · exact h1
+  · intro h; rw [h, smul_zero]
+
+private theorem primPos_natDegree {g : AzPolynomial AzInt} (hg : g ≠ 0) :
+    (primPos g).natDegree = g.natDegree := by
+  obtain ⟨c, hc, hkey, _, _⟩ := primPos_spec hg
+  have h1 : ((AzPolynomial.toPoly (primPos g)).map AzInt.toIntRingHom).natDegree
+      = (primPos g).natDegree := natDegree_map_toPoly (primPos g)
+  have h2 : ((AzPolynomial.toPoly g).map AzInt.toIntRingHom).natDegree
+      = g.natDegree := natDegree_map_toPoly g
+  rw [← h1, ← h2, ← hkey, Polynomial.natDegree_C_mul hc]
+
+private theorem primPos_ne_zero {g : AzPolynomial AzInt} (hg : g ≠ 0) :
+    primPos g ≠ 0 := by
+  obtain ⟨c, _, hkey, _, _⟩ := primPos_spec hg
+  intro h0
+  rw [h0, toPoly_zero, Polynomial.map_zero, mul_zero] at hkey
+  exact map_toPoly_ne_zero hg hkey.symm
+
+private theorem signNorm_natDegree (p : AzPolynomial AzInt) :
+    (signNorm p).natDegree = p.natDegree := by
+  rw [signNorm]
+  split
+  · rfl
+  · rw [← AzPolynomial.natDegree_toPoly, ← AzPolynomial.natDegree_toPoly, toPoly_neg,
+      Polynomial.natDegree_neg]
+
+private theorem signNorm_eq_zero_iff (p : AzPolynomial AzInt) :
+    signNorm p = 0 ↔ p = 0 := by
+  rw [signNorm]
+  split
+  · exact Iff.rfl
+  · exact neg_eq_zero
+
+/-- The composite ring isomorphism `AzPolynomial AzInt ≃+* ℤ[X]`, sending
+`a` to `(toPoly a).map toIntRingHom`. -/
+private noncomputable def intPolyEquiv : AzPolynomial AzInt ≃+* Polynomial ℤ :=
+  (Azurite.AzPolynomial.ringEquivPolynomial).trans
+    (Polynomial.mapEquiv Azurite.AzInt.ringEquivInt)
+
+private theorem intPolyEquiv_apply (a : AzPolynomial AzInt) :
+    intPolyEquiv a = (AzPolynomial.toPoly a).map AzInt.toIntRingHom := rfl
+
+/-- The normalized gcd divides `P` (in `AzPolynomial AzInt`). -/
+theorem gcd_dvd_left_int (P Q : AzPolynomial AzInt) : AzPolynomial.gcd P Q ∣ P := by
+  rw [← map_dvd_iff intPolyEquiv, intPolyEquiv_apply, intPolyEquiv_apply,
+    map_toPoly_gcd_int]
+  exact gcd_dvd_left _ _
+
+/-- The normalized gcd divides `Q` (in `AzPolynomial AzInt`). -/
+theorem gcd_dvd_right_int (P Q : AzPolynomial AzInt) : AzPolynomial.gcd P Q ∣ Q := by
+  rw [← map_dvd_iff intPolyEquiv, intPolyEquiv_apply, intPolyEquiv_apply,
+    map_toPoly_gcd_int]
+  exact gcd_dvd_right _ _
+
+/-- The normalized gcd is zero iff both inputs are zero. -/
+theorem gcd_eq_zero_iff_int {P Q : AzPolynomial AzInt} :
+    AzPolynomial.gcd P Q = 0 ↔ P = 0 ∧ Q = 0 := by
+  rw [← map_eq_zero_iff intPolyEquiv intPolyEquiv.injective, intPolyEquiv_apply,
+    map_toPoly_gcd_int, gcd_eq_zero_iff,
+    Polynomial.map_eq_zero_iff hιinj, Polynomial.map_eq_zero_iff hιinj]
+  constructor
+  · rintro ⟨h1, h2⟩
+    exact ⟨toPoly_inj.mp (h1.trans toPoly_zero.symm),
+      toPoly_inj.mp (h2.trans toPoly_zero.symm)⟩
+  · rintro ⟨h1, h2⟩; subst h1; subst h2; exact ⟨toPoly_zero, toPoly_zero⟩
+
+/-- **`char`**: the coprimality test decides that the normalized gcd is a
+nonzero constant. -/
+theorem coprime_iff_gcd_isConstant (P Q : AzPolynomial AzInt) :
+    coprime P Q = true
+      ↔ (AzPolynomial.gcd P Q ≠ 0 ∧ (AzPolynomial.gcd P Q).natDegree = 0) := by
+  show coprime P Q = true ↔ (gcdNormalizedInt P Q ≠ 0 ∧ (gcdNormalizedInt P Q).natDegree = 0)
+  unfold coprime gcdNormalizedInt
+  split_ifs with h1 h2 h3 h4 h5 h6 h7
+  · -- P = 0
+    subst h1
+    rw [Bool.and_eq_true, bne_iff_ne, beq_iff_eq, signNorm_natDegree, ne_eq, ne_eq,
+      signNorm_eq_zero_iff]
+  · -- Q = 0
+    subst h2
+    rw [beq_iff_eq, signNorm_natDegree, ne_eq, signNorm_eq_zero_iff]
+    exact ⟨fun h => ⟨h1, h⟩, fun h => h.2⟩
+  · -- P.natDegree = 0 ∨ Q.natDegree = 0
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    simp only [true_iff]
+    exact ⟨(smul_eq_zero_iff hc _).not.mpr one_ne_zero,
+      by rw [smul_natDegree hc]; rfl⟩
+  · -- P.natDegree = Q.natDegree, preStep = 0
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    simp only [false_iff, not_and]
+    intro _
+    rw [smul_natDegree hc, primPos_natDegree h1]
+    push Not at h3
+    omega
+  · -- P.natDegree = Q.natDegree, preStep ≠ 0, preStep.natDegree = 0
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    simp only [true_iff]
+    exact ⟨(smul_eq_zero_iff hc _).not.mpr one_ne_zero,
+      by rw [smul_natDegree hc]; rfl⟩
+  · -- P.natDegree = Q.natDegree, preStep ≠ 0, preStep.natDegree ≠ 0
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    have hlt : (preStep P Q).natDegree < P.natDegree :=
+      pre_step_natDegree_lt h1 h2 h4 h5
+    have hne : subresGcd P (preStep P Q) ≠ 0 :=
+      (subresGcd_int_qassoc P (preStep P Q) h1 h5 hlt (by omega)).2
+    rw [beq_iff_eq]
+    constructor
+    · intro h
+      exact ⟨(smul_eq_zero_iff hc _).not.mpr (primPos_ne_zero hne),
+        by rw [smul_natDegree hc, primPos_natDegree hne]; exact h⟩
+    · intro h
+      rw [smul_natDegree hc, primPos_natDegree hne] at h
+      exact h.2
+  · -- P.natDegree < Q.natDegree
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    have hne : subresGcd Q P ≠ 0 :=
+      (subresGcd_int_qassoc Q P h2 h1 h7 (by push Not at h3; omega)).2
+    rw [beq_iff_eq]
+    constructor
+    · intro h
+      exact ⟨(smul_eq_zero_iff hc _).not.mpr (primPos_ne_zero hne),
+        by rw [smul_natDegree hc, primPos_natDegree hne]; exact h⟩
+    · intro h
+      rw [smul_natDegree hc, primPos_natDegree hne] at h
+      exact h.2
+  · -- P.natDegree > Q.natDegree
+    have hc : contentGcdInt P Q ≠ 0 := contentGcdInt_ne_zero h1
+    have hne : subresGcd P Q ≠ 0 :=
+      (subresGcd_int_qassoc P Q h1 h2 (by push Not at h3 h4 h7; omega)
+        (by push Not at h3; omega)).2
+    rw [beq_iff_eq]
+    constructor
+    · intro h
+      exact ⟨(smul_eq_zero_iff hc _).not.mpr (primPos_ne_zero hne),
+        by rw [smul_natDegree hc, primPos_natDegree hne]; exact h⟩
+    · intro h
+      rw [smul_natDegree hc, primPos_natDegree hne] at h
+      exact h.2
+
 end Azurite.AzPolynomial

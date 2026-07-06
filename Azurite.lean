@@ -1,6 +1,7 @@
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
+import Azurite.Algorithm.NormalizedGcd
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
@@ -36,6 +37,7 @@ import Azurite.AzInt.Equiv.DivRound
 import Azurite.AzInt.Equiv.ExtendedGcd
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
+import Azurite.AzInt.Equiv.NormalizedGcd
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Parse
 import Azurite.AzInt.Equiv.Pow
@@ -52,6 +54,7 @@ import Azurite.AzInt.ExtendedGcd
 import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Mul
+import Azurite.AzInt.NormalizedGcd
 import Azurite.AzInt.Parity
 import Azurite.AzInt.ParsableElement
 import Azurite.AzInt.Parse
@@ -110,6 +113,7 @@ import Azurite.AzMvPolynomial.Basic
 import Azurite.AzMvPolynomial.Bind1
 import Azurite.AzMvPolynomial.Bind2
 import Azurite.AzMvPolynomial.Cast
+import Azurite.AzMvPolynomial.Compare
 import Azurite.AzMvPolynomial.CompareEmbed
 import Azurite.AzMvPolynomial.Derivative
 import Azurite.AzMvPolynomial.Equiv.Add
@@ -123,6 +127,8 @@ import Azurite.AzMvPolynomial.Equiv.Bind2
 import Azurite.AzMvPolynomial.Equiv.Bind2Hom
 import Azurite.AzMvPolynomial.Equiv.Cast
 import Azurite.AzMvPolynomial.Equiv.CommAlgEquiv
+import Azurite.AzMvPolynomial.Equiv.Compare
+import Azurite.AzMvPolynomial.Equiv.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.ConstantCoeff
 import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
@@ -132,6 +138,7 @@ import Azurite.AzMvPolynomial.Equiv.ExactDivCR
 import Azurite.AzMvPolynomial.Equiv.FinOneAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
 import Azurite.AzMvPolynomial.Equiv.FinZeroAlgEquiv
+import Azurite.AzMvPolynomial.Equiv.Gcd
 import Azurite.AzMvPolynomial.Equiv.Join2
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MapHom
@@ -156,6 +163,7 @@ import Azurite.AzMvPolynomial.Eval2
 import Azurite.AzMvPolynomial.ExactDiv
 import Azurite.AzMvPolynomial.ExactDivCommRing
 import Azurite.AzMvPolynomial.FinSuccEquiv
+import Azurite.AzMvPolynomial.Gcd
 import Azurite.AzMvPolynomial.Join2
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MergeSorted
@@ -338,6 +346,7 @@ import Azurite.AzPolynomial.Equiv.ExtendedSRemS
 import Azurite.AzPolynomial.Equiv.Gcd
 import Azurite.AzPolynomial.Equiv.GcdDet
 import Azurite.AzPolynomial.Equiv.GcdInt
+import Azurite.AzPolynomial.Equiv.GcdTower
 import Azurite.AzPolynomial.Equiv.InvertRoots
 import Azurite.AzPolynomial.Equiv.Karatsuba
 import Azurite.AzPolynomial.Equiv.Map
@@ -374,6 +383,7 @@ import Azurite.AzPolynomial.Expand
 import Azurite.AzPolynomial.ExtendedSRemS
 import Azurite.AzPolynomial.Gcd
 import Azurite.AzPolynomial.GcdDet
+import Azurite.AzPolynomial.GcdTower
 import Azurite.AzPolynomial.InvertRoots
 import Azurite.AzPolynomial.Karatsuba
 import Azurite.AzPolynomial.Monomial

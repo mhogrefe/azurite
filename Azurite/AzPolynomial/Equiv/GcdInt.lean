@@ -101,7 +101,7 @@ private theorem normalize_eq_self_of_pos_lcof {p : ℤ[X]} (hp : 0 < p.leadingCo
 
 /-- The `primPos` specification: a nonzero constant multiple relation with
 the input, primitivity, and positive leading coefficient. -/
-private theorem primPos_spec {g : AzPolynomial AzInt} (hg : g ≠ 0) :
+theorem primPos_spec {g : AzPolynomial AzInt} (hg : g ≠ 0) :
     ∃ c : ℤ, c ≠ 0
       ∧ Polynomial.C c * ((AzPolynomial.toPoly (primPos g)).map AzInt.toIntRingHom)
           = (AzPolynomial.toPoly g).map AzInt.toIntRingHom
@@ -203,7 +203,7 @@ private theorem primPos_spec {g : AzPolynomial AzInt} (hg : g ≠ 0) :
       nlinarith [hlc, mul_nonneg hspos.le (neg_nonneg.mpr hcon)]
 
 /-- `signNorm` computes `normalize` on the represented polynomial. -/
-private theorem map_toPoly_signNorm {p : AzPolynomial AzInt} (hp : p ≠ 0) :
+theorem map_toPoly_signNorm {p : AzPolynomial AzInt} (hp : p ≠ 0) :
     (AzPolynomial.toPoly (signNorm p)).map AzInt.toIntRingHom
       = _root_.normalize ((AzPolynomial.toPoly p).map AzInt.toIntRingHom) := by
   set pZ : ℤ[X] := (AzPolynomial.toPoly p).map AzInt.toIntRingHom with hpZ
@@ -432,19 +432,19 @@ theorem subresGcd_int_qassoc (P Q : AzPolynomial AzInt) (hP : P ≠ 0) (hQ : Q �
 
 /-! ### Assembly: `gcdNormalizedInt` computes the `ℤ[X]` gcd -/
 
-private theorem hιinj : Function.Injective (AzInt.toIntRingHom) :=
+theorem hιinj : Function.Injective (AzInt.toIntRingHom) :=
   fun a b h => Azurite.AzInt.ringEquivInt.injective (by simpa using h)
 
-private theorem map_toPoly_ne_zero {T : AzPolynomial AzInt} (hT : T ≠ 0) :
+theorem map_toPoly_ne_zero {T : AzPolynomial AzInt} (hT : T ≠ 0) :
     (AzPolynomial.toPoly T).map AzInt.toIntRingHom ≠ 0 := by
   rw [Ne, Polynomial.map_eq_zero_iff hιinj]
   exact toPoly_ne_zero hT
 
-private theorem natDegree_map_toPoly (T : AzPolynomial AzInt) :
+theorem natDegree_map_toPoly (T : AzPolynomial AzInt) :
     ((AzPolynomial.toPoly T).map AzInt.toIntRingHom).natDegree = T.natDegree := by
   rw [Polynomial.natDegree_map_eq_of_injective hιinj, AzPolynomial.natDegree_toPoly]
 
-private theorem signNorm_zero : signNorm (0 : AzPolynomial AzInt) = 0 := by
+theorem signNorm_zero : signNorm (0 : AzPolynomial AzInt) = 0 := by
   rw [signNorm]
   split <;> simp
 
