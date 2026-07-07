@@ -1,9 +1,11 @@
 
 import Azurite.Algorithm.DetExpansion
+import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.NormalizedGcd
 import Azurite.Algorithm.SlidingWindowPow
+import Azurite.Algorithm.SlidingWindowPowAzNat
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula
@@ -340,6 +342,8 @@ import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
+import Azurite.AzPolyMod.Basic
+import Azurite.AzPolyMod.Equiv.AdjoinRoot
 import Azurite.AzPolynomial.Add
 import Azurite.AzPolynomial.Basic
 import Azurite.AzPolynomial.Cast
@@ -352,6 +356,7 @@ import Azurite.AzPolynomial.ComposedOps
 import Azurite.AzPolynomial.Content
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Discriminant
+import Azurite.AzPolynomial.DivModByMonic
 import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
 import Azurite.AzPolynomial.Equiv.AlgebraOfAlgebra
@@ -369,6 +374,7 @@ import Azurite.AzPolynomial.Equiv.Content
 import Azurite.AzPolynomial.Equiv.Derivative
 import Azurite.AzPolynomial.Equiv.Discriminant
 import Azurite.AzPolynomial.Equiv.DiscriminantMap
+import Azurite.AzPolynomial.Equiv.DivModByMonic
 import Azurite.AzPolynomial.Equiv.EliminateCoeffs
 import Azurite.AzPolynomial.Equiv.Eval
 import Azurite.AzPolynomial.Equiv.ExactDiv
