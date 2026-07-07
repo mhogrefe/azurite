@@ -666,7 +666,7 @@ theorem AzMvPolynomial.coprime_of_isRelPrime {n : ℕ}
 /-! ### Lifting a univariate polynomial preserves coprimality (Task 2) -/
 
 /-- The single-variable embedding `ℚ[x] →+* ℚ[x⃗]` sending `x ↦ x_i`. -/
-private noncomputable def AzMvPolynomial.embVar {n : ℕ} (i : Fin n) :
+noncomputable def AzMvPolynomial.embVar {n : ℕ} (i : Fin n) :
     Polynomial ℚ →+* MvPolynomial (Fin n) ℚ :=
   Polynomial.eval₂RingHom MvPolynomial.C (MvPolynomial.X i)
 
@@ -751,7 +751,7 @@ private theorem AzMvPolynomial.totalDegree_le_of_dvd {n : ℕ}
   exact fun h0 => hb (toMvPoly_injective (by rw [h0, toMvPoly_zero]))
 
 /-- `gcd 0 0 = 0`. -/
-private theorem AzMvPolynomial.gcd_zero_zero {n : ℕ} :
+theorem AzMvPolynomial.gcd_zero_zero {n : ℕ} :
     AzMvPolynomial.gcd (0 : AzMvPolynomial n AzInt ord) 0 = 0 := by
   rw [gcd_zero_right]
   apply toNested_injective (n := n)
@@ -967,7 +967,7 @@ theorem AzMvPolynomial.squarefreeGradientGcd_dvd_pderiv {n : ℕ}
   foldl_gcd_dvd_mem _ P _ (List.mem_finRange j)
 
 /-- The `ℚ[x⃗]`-image commutes with the partial derivative. -/
-private theorem AzMvPolynomial.ratImg_pderivGeneral {n : ℕ}
+theorem AzMvPolynomial.ratImg_pderivGeneral {n : ℕ}
     (P : AzMvPolynomial n AzInt ord) (j : Fin n) :
     AzMvPolynomial.ratImg (AzMvPolynomial.pderivGeneral j P)
       = MvPolynomial.pderiv j (AzMvPolynomial.ratImg P) := by

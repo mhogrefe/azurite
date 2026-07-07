@@ -294,6 +294,17 @@ theorem map_contentGcdGen
           ((AzPolynomial.toPoly Q).map ρ).content := by
   rw [contentGcdGen, hgcd, map_contentGen hgcd, map_contentGen hgcd]
 
+/-- **Content is multiplicative** (Gauss, one tower level): `contentGen`
+respects products. Proved by transporting to `M` (a `NormalizedGCDMonoid`)
+along the injective bridge `ρ` and using Mathlib's `Polynomial.content_mul`. -/
+theorem contentGen_mul (hρ : Function.Injective ρ)
+    (hgcd : ∀ a b : D, ρ (NormalizedGcd.ngcd a b) = GCDMonoid.gcd (ρ a) (ρ b))
+    (p q : AzPolynomial D) :
+    contentGen (p * q) = contentGen p * contentGen q := by
+  apply hρ
+  rw [map_mul, map_contentGen hgcd, map_contentGen hgcd, map_contentGen hgcd,
+    Azurite.AzPolynomial.toPoly_mul, Polynomial.map_mul, Polynomial.content_mul]
+
 private theorem normalize_mul' (a b : M) :
     _root_.normalize (a * b) = _root_.normalize a * _root_.normalize b :=
   map_mul _root_.normalize a b
@@ -893,6 +904,11 @@ namespace NormalizedGcdBridge
 variable {D M : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
   [IsDomain D] [NormalizedGcd D] [CommRing M] [IsDomain M]
   [NormalizedGCDMonoid M]
+
+/-- Bundled form of `contentGen_mul`: content is multiplicative. -/
+theorem contentGen_mul' (β : NormalizedGcdBridge D M) (p q : AzPolynomial D) :
+    contentGen (p * q) = contentGen p * contentGen q :=
+  contentGen_mul β.injective β.map_ngcd p q
 
 /-- Bundled form of `map_toPoly_ngcdPoly`. -/
 theorem map_toPoly_ngcd' (β : NormalizedGcdBridge D M) (P Q : AzPolynomial D) :

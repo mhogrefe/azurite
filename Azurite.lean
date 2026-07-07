@@ -1,3 +1,4 @@
+
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
@@ -130,6 +131,7 @@ import Azurite.AzMvPolynomial.Equiv.CommAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.Compare
 import Azurite.AzMvPolynomial.Equiv.CompareEmbed
 import Azurite.AzMvPolynomial.Equiv.ConstantCoeff
+import Azurite.AzMvPolynomial.Equiv.ContentDescent
 import Azurite.AzMvPolynomial.Equiv.Derivative
 import Azurite.AzMvPolynomial.Equiv.Eval
 import Azurite.AzMvPolynomial.Equiv.Eval2
@@ -139,6 +141,9 @@ import Azurite.AzMvPolynomial.Equiv.FinOneAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.FinSuccEquiv
 import Azurite.AzMvPolynomial.Equiv.FinZeroAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.Gcd
+import Azurite.AzMvPolynomial.Equiv.GcdCofactor
+import Azurite.AzMvPolynomial.Equiv.IntContent
+import Azurite.AzMvPolynomial.Equiv.IntContentMul
 import Azurite.AzMvPolynomial.Equiv.Join2
 import Azurite.AzMvPolynomial.Equiv.Map
 import Azurite.AzMvPolynomial.Equiv.MapHom
@@ -164,6 +169,7 @@ import Azurite.AzMvPolynomial.ExactDiv
 import Azurite.AzMvPolynomial.ExactDivCommRing
 import Azurite.AzMvPolynomial.FinSuccEquiv
 import Azurite.AzMvPolynomial.Gcd
+import Azurite.AzMvPolynomial.IntContent
 import Azurite.AzMvPolynomial.Join2
 import Azurite.AzMvPolynomial.Map
 import Azurite.AzMvPolynomial.MergeSorted
@@ -197,6 +203,10 @@ import Azurite.AzMvPolynomial.ToString
 import Azurite.AzMvPolynomial.ToStringExamples
 import Azurite.AzMvPolynomial.Var
 import Azurite.AzMvPolynomial.Vars
+import Azurite.AzMvRationalFunction.Basic
+import Azurite.AzMvRationalFunction.Equiv.Basic
+import Azurite.AzMvRationalFunction.Equiv.OfAzRationalFunction
+import Azurite.AzMvRationalFunction.OfAzRationalFunction
 import Azurite.AzNat.Add
 import Azurite.AzNat.AddModPow2
 import Azurite.AzNat.Basic
@@ -1186,4 +1196,3 @@ import Azurite.UInt64.WideAdd3
 import Azurite.UInt64.WideMul
 import Azurite.UInt64.WideSub
 import Azurite.UInt64.WideSub3
-
