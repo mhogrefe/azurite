@@ -71,10 +71,10 @@ def termsBelow (i : Fin n) (coeffs : Array R) : ℕ → List (Monomial n R ord)
     if h : (coeffs[k]?).getD 0 = 0 then termsBelow i coeffs k
     else ⟨⟨(coeffs[k]?).getD 0, h⟩, MonicMonomial.ofVarPow i k⟩ :: termsBelow i coeffs k
 
-@[simp] private theorem termsBelow_zero (i : Fin n) (coeffs : Array R) :
+@[simp] theorem termsBelow_zero (i : Fin n) (coeffs : Array R) :
     termsBelow i coeffs (ord := ord) 0 = [] := rfl
 
-private theorem termsBelow_succ (i : Fin n) (coeffs : Array R) (k : ℕ) :
+theorem termsBelow_succ (i : Fin n) (coeffs : Array R) (k : ℕ) :
     termsBelow i coeffs (ord := ord) (k + 1) =
       if h : (coeffs[k]?).getD 0 = 0 then termsBelow i coeffs k
       else ⟨⟨(coeffs[k]?).getD 0, h⟩, MonicMonomial.ofVarPow i k⟩ :: termsBelow i coeffs k := rfl
@@ -160,7 +160,7 @@ private theorem buildTermsDesc_toList (i : Fin n) (coeffs : Array R)
           Array.toList_push, show idx - 1 + 1 = idx from by omega, termsBelow_succ]
         simp only [dif_neg hc, List.append_assoc, List.cons_append, List.nil_append]
 
-private theorem image_terms_toList (i : Fin n) (p : AzPolynomial R) :
+theorem image_terms_toList (i : Fin n) (p : AzPolynomial R) :
     (AzPolynomial.toAzMvPolynomial i ord p).terms.toList =
       termsBelow i p.coeffs p.coeffs.size := by
   unfold AzPolynomial.toAzMvPolynomial

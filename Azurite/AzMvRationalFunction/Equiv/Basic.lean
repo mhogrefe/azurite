@@ -155,7 +155,7 @@ theorem toMvRatFunc_zero :
   rw [toMvRatFunc, show (0 : AzMvRationalFunction n ord).factor = 0 from rfl,
     Azurite.AzRat.toRat_zero, map_zero, zero_mul]
 
-private theorem algebraMapQ_C (q : ℚ) :
+theorem algebraMapQ_C (q : ℚ) :
     algebraMap ℚ (FractionRing (MvPolynomial (Fin n) ℚ)) q
       = algebraMap (MvPolynomial (Fin n) ℚ) (FractionRing (MvPolynomial (Fin n) ℚ))
         (MvPolynomial.C q) := by

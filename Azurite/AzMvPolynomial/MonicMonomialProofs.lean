@@ -46,7 +46,7 @@ private theorem parseFactorWith_exp1 (i : Fin n) (exps : Vector ℕ n) (h0 : exp
     · rfl
   simp only [hne, Bool.false_eq_true, ↓reduceIte]
   have hnc : '^' ∉ pv.toChars (pv.ofFin i) :=
-    fun h => pv.toChars_no_syntax _ '^' h (Or.inr (Or.inr (Or.inr (Or.inr rfl))))
+    fun h => pv.toChars_no_syntax _ '^' h (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
   rw [show (pv.toChars (pv.ofFin i)).splitOn '^' = [pv.toChars (pv.ofFin i)] from by
     conv_lhs => rw [← show ['^'].intercalate [pv.toChars (pv.ofFin i)] =
         pv.toChars (pv.ofFin i) from by simp [List.intercalate]]
@@ -68,7 +68,7 @@ private theorem parseFactorWith_expN (i : Fin n) (e : ℕ) (he : e ≥ 2)
       simp [List.intercalate, List.intersperse]]
     exact List.splitOn_intercalate _
       (by intro l hl; simp at hl; rcases hl with rfl | rfl
-          · exact fun h => pv.toChars_no_syntax _ '^' h (Or.inr (Or.inr (Or.inr (Or.inr rfl))))
+          · exact fun h => pv.toChars_no_syntax _ '^' h (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
           · exact not_mem_natToChars_of_not_digit '^' (by decide) _) (by simp)]
   simp only [parseNatChars_natToChars, show ¬(e = 0) from by omega, ↓reduceIte,
     pv.parse_toChars, pv.toFin_ofFin, h0, ne_eq, not_true_eq_false]

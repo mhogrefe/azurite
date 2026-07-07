@@ -77,9 +77,15 @@ end Embed
 end Var
 
 
-/-- A character used in polynomial syntax: ASCII digits, `+`, `-`, `*`, `^`. -/
+/-- A character reserved by the serialization grammar, which a variable name may
+    not contain: ASCII digits, `+`, `-`, `*`, `^`, and the rational-function
+    structure characters `(`, `)`, `/`. (Coefficient heads — digits and `-` — are
+    still in this set; the `/` inside a rational coefficient like `1/2` is
+    consumed by `ParsableCoeff.parseChars`, not routed on here. The name is
+    retained for historical continuity.) -/
 def isPolySyntaxChar (c : Char) : Prop :=
   (c.toNat ≥ '0'.toNat ∧ c.toNat ≤ '9'.toNat) ∨ c = '+' ∨ c = '-' ∨ c = '*' ∨ c = '^'
+    ∨ c = '(' ∨ c = ')' ∨ c = '/'
 
 instance : DecidablePred isPolySyntaxChar := fun c => by
   unfold isPolySyntaxChar; infer_instance
@@ -167,14 +173,14 @@ private theorem lowercase_not_syntax (c : Char) (hge : c.toNat ≥ 97) (hle : c.
   simp only [isPolySyntaxChar, not_or, not_and,
     show ('0' : Char).toNat = 48 from by decide,
     show ('9' : Char).toNat = 57 from by decide]
-  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
 
 private theorem subscript_not_syntax (c : Char) (hge : c.toNat ≥ 8320) (hle : c.toNat ≤ 8329) :
     ¬ isPolySyntaxChar c := by
   simp only [isPolySyntaxChar, not_or, not_and,
     show ('0' : Char).toNat = 48 from by decide,
     show ('9' : Char).toNat = 57 from by decide]
-  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
 
 /-- A variable indexed by `Fin n`, displayed as `x₀`, `x₁`, etc. -/
 @[ext]
@@ -253,7 +259,7 @@ private theorem uppercase_not_syntax (c : Char) (hge : c.toNat ≥ 65) (hle : c.
   simp only [isPolySyntaxChar, not_or, not_and,
     show ('0' : Char).toNat = 48 from by decide,
     show ('9' : Char).toNat = 57 from by decide]
-  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge hle)
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge hle)
 
 /-- A variable indexed by `Fin n`, displayed as `X₀`, `X₁`, etc. (capital X). -/
 @[ext]
@@ -803,7 +809,7 @@ private theorem greek_not_syntax (c : Char) (hge : c.toNat ≥ 945) :
   simp only [isPolySyntaxChar, not_or, not_and,
     show ('0' : Char).toNat = 48 from by decide,
     show ('9' : Char).toNat = 57 from by decide]
-  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
 
 /-! ### GreekVar -/
 
@@ -958,7 +964,7 @@ private theorem greekCaps_not_syntax (c : Char) (hge : c.toNat ≥ 913) :
   simp only [isPolySyntaxChar, not_or, not_and,
     show ('0' : Char).toNat = 48 from by decide,
     show ('9' : Char).toNat = 57 from by decide]
-  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
+  refine ⟨fun _ => by omega, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (intro h; simp [h] at hge)
 
 /-! ### GreekCapsVar -/
 
