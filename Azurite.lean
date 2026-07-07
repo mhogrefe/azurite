@@ -158,11 +158,13 @@ import Azurite.AzMvPolynomial.Equiv.Pow
 import Azurite.AzMvPolynomial.Equiv.Rename
 import Azurite.AzMvPolynomial.Equiv.RenameHom
 import Azurite.AzMvPolynomial.Equiv.SMul
+import Azurite.AzMvPolynomial.Equiv.SquarefreeFactorization
 import Azurite.AzMvPolynomial.Equiv.Sub
 import Azurite.AzMvPolynomial.Equiv.SumAlgEquiv
 import Azurite.AzMvPolynomial.Equiv.ToAzPolynomial
 import Azurite.AzMvPolynomial.Equiv.ToAzPolynomialAt
 import Azurite.AzMvPolynomial.Equiv.ToCharsAlign
+import Azurite.AzMvPolynomial.Equiv.TowerGcd
 import Azurite.AzMvPolynomial.Equiv.Vars
 import Azurite.AzMvPolynomial.Eval
 import Azurite.AzMvPolynomial.Eval2
@@ -197,6 +199,7 @@ import Azurite.AzMvPolynomial.ParseToString
 import Azurite.AzMvPolynomial.Pow
 import Azurite.AzMvPolynomial.Rename
 import Azurite.AzMvPolynomial.SMul
+import Azurite.AzMvPolynomial.SquarefreeFactorization
 import Azurite.AzMvPolynomial.Sub
 import Azurite.AzMvPolynomial.SumAlgEquiv
 import Azurite.AzMvPolynomial.ToAzPolynomial
@@ -358,6 +361,7 @@ import Azurite.AzPolynomial.Equiv.CauchyIndexBridges
 import Azurite.AzPolynomial.Equiv.CauchyIndexOnMap
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubres
 import Azurite.AzPolynomial.Equiv.CauchyIndexSubresMap
+import Azurite.AzPolynomial.Equiv.CharZeroSquarefree
 import Azurite.AzPolynomial.Equiv.Comp
 import Azurite.AzPolynomial.Equiv.Compare
 import Azurite.AzPolynomial.Equiv.ComposedOps
@@ -396,6 +400,7 @@ import Azurite.AzPolynomial.Equiv.SignedSubresultant
 import Azurite.AzPolynomial.Equiv.SignedSubresultantBoundary
 import Azurite.AzPolynomial.Equiv.SpecialTranslate
 import Azurite.AzPolynomial.Equiv.SquarefreeFactorization
+import Azurite.AzPolynomial.Equiv.SquarefreeFactorizationUFD
 import Azurite.AzPolynomial.Equiv.SturmSequence
 import Azurite.AzPolynomial.Equiv.Sub
 import Azurite.AzPolynomial.Equiv.TRems
