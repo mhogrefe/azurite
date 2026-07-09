@@ -328,6 +328,42 @@ instance nonzeroInt64Gen : ExhaustiveGenerator {x : Int64 // x ≠ 0} :=
     (fun _ _ _ => by rw [Int64.toInt_ofInt, Int64.size]; exact Int.bmod_eq_of_le (by omega) (by omega))
     Int64.ofInt_toInt Int64.toInt_lt Int64.le_toInt Int64.toInt_minValue rfl
 
+/-! ### Contiguity instances
+
+The finite half-line generators are `ofBoundedBijOn` applications and the full /
+nonzero zig-zag generators reduce to `ofBoundedBij` / `ofBoundedBijOn`, so each
+is discharged by the matching shape lemma with `rfl`. -/
+
+section
+open ExhaustiveGenerator
+
+instance : Contiguous {x : Int8 // 0 ≤ x} := contiguous_of_boundedBijOn nonnegativeInt8Gen rfl
+instance : Contiguous {x : Int16 // 0 ≤ x} := contiguous_of_boundedBijOn nonnegativeInt16Gen rfl
+instance : Contiguous {x : Int32 // 0 ≤ x} := contiguous_of_boundedBijOn nonnegativeInt32Gen rfl
+instance : Contiguous {x : Int64 // 0 ≤ x} := contiguous_of_boundedBijOn nonnegativeInt64Gen rfl
+
+instance : Contiguous {x : Int8 // x < 0} := contiguous_of_boundedBijOn negativeInt8Gen rfl
+instance : Contiguous {x : Int16 // x < 0} := contiguous_of_boundedBijOn negativeInt16Gen rfl
+instance : Contiguous {x : Int32 // x < 0} := contiguous_of_boundedBijOn negativeInt32Gen rfl
+instance : Contiguous {x : Int64 // x < 0} := contiguous_of_boundedBijOn negativeInt64Gen rfl
+
+instance : Contiguous {x : Int8 // 0 < x} := contiguous_of_boundedBijOn positiveInt8Gen rfl
+instance : Contiguous {x : Int16 // 0 < x} := contiguous_of_boundedBijOn positiveInt16Gen rfl
+instance : Contiguous {x : Int32 // 0 < x} := contiguous_of_boundedBijOn positiveInt32Gen rfl
+instance : Contiguous {x : Int64 // 0 < x} := contiguous_of_boundedBijOn positiveInt64Gen rfl
+
+instance : Contiguous Int8 := contiguous_of_boundedBij int8Gen rfl
+instance : Contiguous Int16 := contiguous_of_boundedBij int16Gen rfl
+instance : Contiguous Int32 := contiguous_of_boundedBij int32Gen rfl
+instance : Contiguous Int64 := contiguous_of_boundedBij int64Gen rfl
+
+instance : Contiguous {x : Int8 // x ≠ 0} := contiguous_of_boundedBijOn nonzeroInt8Gen rfl
+instance : Contiguous {x : Int16 // x ≠ 0} := contiguous_of_boundedBijOn nonzeroInt16Gen rfl
+instance : Contiguous {x : Int32 // x ≠ 0} := contiguous_of_boundedBijOn nonzeroInt32Gen rfl
+instance : Contiguous {x : Int64 // x ≠ 0} := contiguous_of_boundedBijOn nonzeroInt64Gen rfl
+
+end
+
 -- First-10 of one of each shape (Malachite doctests) + finiteness.
 #guard ((ExhaustiveGenerator.firstN {x : Int8 // 0 ≤ x} 10).map (·.val.toInt)) ==
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]

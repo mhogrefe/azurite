@@ -27,6 +27,18 @@ class ExhaustiveGenerator (T : Type*) where
   /-- Every value of `T` is produced at exactly one position. -/
   occurs_exactly_once : ∀ t : T, ∃! n : ℕ, gen n = some t
 
+/-- A `Contiguous` generator is one whose `some`-outputs form an INITIAL SEGMENT
+of `ℕ`: once the generator yields `none` it yields `none` forever (`contig`).
+Equivalently, the produced values occupy positions `0, 1, …` with no gaps. All
+of Azurite's base generators have this shape (`ofBijective` is always `some`;
+the finite builders are `if n < card then some … else none`). This mixin is
+what upgrades a `[Fintype B] + [Contiguous B]` finite component into the
+`hnone`/`hsome` contiguity witnesses that `lexPairGenOfFinite` consumes (see
+`finiteBound_none`/`finiteBound_some` in `Count.lean`). -/
+class Contiguous (T : Type*) [inst : ExhaustiveGenerator T] : Prop where
+  /-- Once `none`, always `none`: a `none` at position `n` forces `none` at `n+1`. -/
+  contig : ∀ n, inst.gen n = none → inst.gen (n + 1) = none
+
 namespace ExhaustiveGenerator
 
 /-- Build an (infinite) generator from a bijection `f : ℕ → T`: every position
@@ -102,7 +114,124 @@ completeness (`hcomp`), uniqueness from `hnd` (`List.getElem?_inj`). Since
       have hmn : l[n]? = l[m]? := by rw [hm, List.getElem?_eq_getElem hn, hget]
       exact ((List.getElem?_inj hn hnd).mp hmn).symm
 
+/-- **Relabel a generator along a computable bijection.** Given a generator for
+`S` and a bijection `f : S → T` (the map is DATA, its bijectivity a `Prop`),
+produce a generator for `T` that emits `f`-images: `gen k := (g.gen k).map f`.
+Positions, finiteness, and enumeration order are inherited verbatim from `g`;
+only the emitted values are relabeled. Because `f` is a plain function (not a
+`noncomputable` bundled `Equiv`), the result stays computable — usable in
+`#eval`/`#guard`. This is the reusable transport combinator underlying the
+nested tuple generators. -/
+@[reducible] def mapGen {S T : Type*} (f : S → T) (hf : Function.Bijective f)
+    (g : ExhaustiveGenerator S) : ExhaustiveGenerator T where
+  gen k := (g.gen k).map f
+  occurs_exactly_once t := by
+    obtain ⟨s, hs⟩ := hf.surjective t
+    obtain ⟨n, hn, hun⟩ := g.occurs_exactly_once s
+    refine ⟨n, ?_, ?_⟩
+    · -- Existence: `g` produces `s` at `n`, so `mapGen` produces `f s = t` there.
+      show (g.gen n).map f = some t
+      rw [hn, Option.map_some, hs]
+    · -- Uniqueness: a producing position for `t` gives (via `f` injective) one for `s`.
+      intro m hm
+      have hm : (g.gen m).map f = some t := hm
+      rcases hgm : g.gen m with _ | s'
+      · rw [hgm] at hm; simp at hm
+      · rw [hgm, Option.map_some] at hm
+        exact hun m (hgm.trans (by rw [hf.injective ((Option.some.inj hm).trans hs.symm)]))
+
+/-! ### Builder contiguity lemmas
+
+Each builder produces a `Contiguous` generator. These lemmas are keyed on the
+`gen`-FUNCTION SHAPE (not on the specific proof arguments of the builder, which
+live only in the proof-irrelevant `occurs_exactly_once` field and so cannot be
+recovered by unification). The generator is passed explicitly and the shape
+hypothesis is discharged by `rfl` (the builders are `@[reducible]`, so their
+`gen` field is definitionally the stated shape). Typical use:
+`instance : Contiguous UInt8 := contiguous_of_boundedBij uint8Gen rfl`. -/
+
+/-- An always-`some` generator (shape `fun n => some (f n)`, as from
+`ofBijective`) is vacuously contiguous. -/
+theorem contiguous_of_gen_some {T : Type*} (g : ExhaustiveGenerator T) {f : ℕ → T}
+    (hg : g.gen = fun n => some (f n)) : @Contiguous T g :=
+  ⟨fun n h => by rw [hg] at h; exact absurd h (Option.some_ne_none _)⟩
+
+/-- A bounded generator of shape `fun n => if n < card then some (f n) else none`
+(as from `ofBoundedBij`) is contiguous: a `none` means `n ≥ card`, so `n + 1 ≥
+card` is `none` too. -/
+theorem contiguous_of_boundedBij {T : Type*} (g : ExhaustiveGenerator T) {card : ℕ}
+    {f : ℕ → T} (hg : g.gen = fun n => if n < card then some (f n) else none) :
+    @Contiguous T g := by
+  refine ⟨fun n h => ?_⟩
+  rw [hg] at h ⊢
+  simp only at h ⊢
+  by_cases hn : n < card
+  · rw [if_pos hn] at h; exact absurd h (Option.some_ne_none _)
+  · rw [if_neg (by omega)]
+
+/-- A bounded generator of shape `fun n => if h : n < card then some (f n h) else
+none` (as from `ofBoundedBijOn`) is contiguous. -/
+theorem contiguous_of_boundedBijOn {T : Type*} (g : ExhaustiveGenerator T) {card : ℕ}
+    {f : (n : ℕ) → n < card → T}
+    (hg : g.gen = fun n => if h : n < card then some (f n h) else none) :
+    @Contiguous T g := by
+  refine ⟨fun n h => ?_⟩
+  rw [hg] at h ⊢
+  simp only at h ⊢
+  by_cases hn : n < card
+  · rw [dif_pos hn] at h; exact absurd h (Option.some_ne_none _)
+  · rw [dif_neg (by omega)]
+
+/-- A list-backed generator of shape `fun n => l[n]?` (as from `ofListNodup`) is
+contiguous: `l[n]? = none` means `l.length ≤ n`, so `l[n+1]? = none` too. -/
+theorem contiguous_of_getElem? {T : Type*} (g : ExhaustiveGenerator T) {l : List T}
+    (hg : g.gen = fun n => l[n]?) : @Contiguous T g := by
+  refine ⟨fun n h => ?_⟩
+  rw [hg] at h ⊢
+  simp only at h ⊢
+  rw [List.getElem?_eq_none_iff] at h ⊢
+  omega
+
+/-- `mapGen` preserves contiguity: relabeling along `f` does not change which
+positions are `some` (`Option.map` sends `none ↔ none`). Stated as a raw
+`contig`-step over the underlying generator `g` (with `hstep` its step) since
+`mapGen` takes `g` as explicit data. -/
+theorem mapGen_contig_step {S T : Type*} (f : S → T) (hf : Function.Bijective f)
+    (g : ExhaustiveGenerator S) (hstep : ∀ n, g.gen n = none → g.gen (n + 1) = none) :
+    ∀ n, (mapGen f hf g).gen n = none → (mapGen f hf g).gen (n + 1) = none := by
+  intro n h
+  have h : (g.gen n).map f = none := h
+  show (g.gen (n + 1)).map f = none
+  rw [Option.map_eq_none_iff] at h ⊢
+  exact hstep n h
+
+/-- `mapGen` preserves `Contiguous` (packaged form): relabeling a contiguous
+generator along `f` yields a contiguous generator. `f` is passed explicitly so
+the produced `@Contiguous T (mapGen f hf g)` matches a `mapGen`-defined instance
+definitionally. -/
+theorem mapGen_contiguous {S T : Type*} (f : S → T) (hf : Function.Bijective f)
+    (g : ExhaustiveGenerator S) (hg : @Contiguous S g) : @Contiguous T (mapGen f hf g) :=
+  @Contiguous.mk T (mapGen f hf g) (mapGen_contig_step f hf g (fun n => hg.contig n))
+
 variable {T : Type*} [ExhaustiveGenerator T]
+
+/-- **Monotone `none`-propagation.** From the `contig` step, a `none` output at
+position `m` forces `none` at every later position `n ≥ m`. This is the
+initial-segment property in its usable form. -/
+theorem gen_none_of_le [Contiguous T] {m n : ℕ} (hmn : m ≤ n)
+    (h : gen (T := T) m = none) : gen (T := T) n = none := by
+  induction hmn with
+  | refl => exact h
+  | step _ ih => exact Contiguous.contig _ ih
+
+/-- Step-form of `gen_none_of_le` for a generator `g` supplied as explicit data
+(not resolved as the ambient instance): a `none` at `m ≤ n` propagates to `n`. -/
+theorem gen_none_of_le_step {S : Type*} (g : ExhaustiveGenerator S)
+    (hstep : ∀ n, g.gen n = none → g.gen (n + 1) = none) {m n : ℕ} (hmn : m ≤ n)
+    (h : g.gen m = none) : g.gen n = none := by
+  induction hmn with
+  | refl => exact h
+  | step _ ih => exact hstep _ ih
 
 /-- The first `n` generated values, dropping any `none`s. A pure inspection
 helper for previewing what a generator produces; for a finite generator with
@@ -127,6 +256,8 @@ theorem naturals_bijective : Function.Bijective AzNat.ofNat := by
 
 instance naturalsGen : ExhaustiveGenerator AzNat :=
   ExhaustiveGenerator.ofBijective AzNat.ofNat naturals_bijective
+
+instance : Contiguous AzNat := ExhaustiveGenerator.contiguous_of_gen_some naturalsGen rfl
 
 -- Demonstrate the `AzNat` generator produces `0, 1, 2, …`.
 #guard ((ExhaustiveGenerator.firstN AzNat 5).map (·.toNat)) == [0, 1, 2, 3, 4]

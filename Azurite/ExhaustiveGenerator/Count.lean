@@ -65,6 +65,58 @@ theorem fintypeCard_eq [ExhaustiveGenerator T] [Fintype T] (bound : ℕ)
     (hsome : ∀ n, n < bound → gen (T := T) n ≠ none) : Fintype T :=
   Fintype.ofEquiv _ (equivFin bound hnone hsome).symm
 
+/-- **`finiteBound` bridge, `none` half.** For a FINITE `[Contiguous]` generator,
+positions at or beyond `Fintype.card T` are `none`. Proof: if some position
+`n ≥ card` were `some`, then by contiguity every position `0, …, n` is `some`,
+giving an injection `Fin (n+1) ↪ T` (each position's value is distinct — a
+shared value would force equal indices via `idx_unique`), so `n + 1 ≤ card T`,
+contradicting `card T ≤ n`. This is the `hnone` witness `lexPairGenOfFinite`
+needs, synthesized from `[Fintype T] + [Contiguous T]` alone. -/
+theorem finiteBound_none [ExhaustiveGenerator T] [Fintype T] [Contiguous T] :
+    ∀ n, Fintype.card T ≤ n → gen (T := T) n = none := by
+  intro n hn
+  by_contra hne
+  -- Every position `≤ n` is `some` (contiguity: a `none` at `i ≤ n` would
+  -- propagate to `n`, contradicting `hne`).
+  have hsome_le : ∀ i, i ≤ n → gen (T := T) i ≠ none := fun i hi h0 => hne (gen_none_of_le hi h0)
+  -- The distinct values at positions `0, …, n` inject `Fin (n+1)` into `T`.
+  let F : Fin (n + 1) → T := fun i =>
+    (gen (T := T) i.val).get (Option.isSome_iff_ne_none.mpr (hsome_le i.val (Nat.lt_succ_iff.mp i.isLt)))
+  have hF : Function.Injective F := by
+    intro i j hij
+    have hgi : gen (T := T) i.val = some (F i) := (Option.some_get _).symm
+    have hgj : gen (T := T) j.val = some (F j) := (Option.some_get _).symm
+    rw [hij] at hgi
+    exact Fin.ext ((idx_unique hgi).trans (idx_unique hgj).symm)
+  have := Fintype.card_le_of_injective F hF
+  rw [Fintype.card_fin] at this
+  omega
+
+/-- **`finiteBound` bridge, `some` half.** For a FINITE `[Contiguous]` generator,
+positions below `Fintype.card T` are `some`. Proof: if some position `n < card`
+were `none`, then by contiguity every position `≥ n` is `none`, so the index map
+`idx : T ↪ Fin n` is well-defined and injective, giving `card T ≤ n < card T`, a
+contradiction. This is the `hsome` witness `lexPairGenOfFinite` needs. -/
+theorem finiteBound_some [ExhaustiveGenerator T] [Fintype T] [Contiguous T] :
+    ∀ n, n < Fintype.card T → gen (T := T) n ≠ none := by
+  intro n hn h0
+  -- A `none` at `n` propagates to every later position.
+  have hnone_ge : ∀ m, n ≤ m → gen (T := T) m = none := fun m hm => gen_none_of_le hm h0
+  -- Hence every value's index is `< n`, giving an injection `T ↪ Fin n`.
+  let G : T → Fin n := fun t => ⟨idx t, by
+    by_contra hge
+    rw [Nat.not_lt] at hge
+    exact Option.some_ne_none _ ((gen_idx t).symm.trans (hnone_ge (idx t) hge))⟩
+  have hG : Function.Injective G := by
+    intro a b hab
+    have hidx : idx a = idx b := congrArg Fin.val hab
+    have h1 := gen_idx a
+    rw [hidx, gen_idx b] at h1
+    exact (Option.some.inj h1).symm
+  have := Fintype.card_le_of_injective G hG
+  rw [Fintype.card_fin] at this
+  omega
+
 /-- An always-`some` generator built from a bijection `f : ℕ → T` makes `T`
 infinite. -/
 theorem infinite_of_bijective (f : ℕ → T) (hf : Function.Bijective f) : Infinite T :=

@@ -570,6 +570,9 @@ theorem positiveRationalsFun_bijective : Function.Bijective positiveRationalsFun
 instance positiveRationalsGen : ExhaustiveGenerator {q : AzRat // 0 < q} :=
   ExhaustiveGenerator.ofBijective positiveRationalsFun positiveRationalsFun_bijective
 
+instance : Contiguous {q : AzRat // 0 < q} :=
+  ExhaustiveGenerator.contiguous_of_gen_some positiveRationalsGen rfl
+
 /-! ### The negative-rationals generator (negate the positives) -/
 
 /-- `negativeRationals n` is strictly negative. -/
@@ -604,6 +607,9 @@ theorem negativeRationalsFun_bijective : Function.Bijective negativeRationalsFun
 
 instance negativeRationalsGen : ExhaustiveGenerator {q : AzRat // q < 0} :=
   ExhaustiveGenerator.ofBijective negativeRationalsFun negativeRationalsFun_bijective
+
+instance : Contiguous {q : AzRat // q < 0} :=
+  ExhaustiveGenerator.contiguous_of_gen_some negativeRationalsGen rfl
 
 /-! ### The nonnegative-rationals generator (prepend `0`) -/
 
@@ -644,6 +650,9 @@ theorem nonNegativeRationalsFun_bijective : Function.Bijective nonNegativeRation
 
 instance nonNegativeRationalsGen : ExhaustiveGenerator {q : AzRat // 0 ≤ q} :=
   ExhaustiveGenerator.ofBijective nonNegativeRationalsFun nonNegativeRationalsFun_bijective
+
+instance : Contiguous {q : AzRat // 0 ≤ q} :=
+  ExhaustiveGenerator.contiguous_of_gen_some nonNegativeRationalsGen rfl
 
 /-! ### The nonzero-rationals generator (interleave positive and negative) -/
 
@@ -717,6 +726,9 @@ theorem nonzeroRationalsFun_bijective : Function.Bijective nonzeroRationalsFun :
 instance nonzeroRationalsGen : ExhaustiveGenerator {q : AzRat // q ≠ 0} :=
   ExhaustiveGenerator.ofBijective nonzeroRationalsFun nonzeroRationalsFun_bijective
 
+instance : Contiguous {q : AzRat // q ≠ 0} :=
+  ExhaustiveGenerator.contiguous_of_gen_some nonzeroRationalsGen rfl
+
 /-! ### The all-rationals generator (prepend `0` to the nonzero) -/
 
 theorem rationals_bijective : Function.Bijective rationals := by
@@ -742,6 +754,8 @@ theorem rationals_bijective : Function.Bijective rationals := by
 
 instance rationalsGen : ExhaustiveGenerator AzRat :=
   ExhaustiveGenerator.ofBijective rationals rationals_bijective
+
+instance : Contiguous AzRat := ExhaustiveGenerator.contiguous_of_gen_some rationalsGen rfl
 
 /-! ### Infiniteness of every rational generator -/
 

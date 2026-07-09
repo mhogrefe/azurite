@@ -48,6 +48,9 @@ theorem positiveNaturalsFun_bijective : Function.Bijective positiveNaturalsFun :
 instance positiveNaturalsGen : ExhaustiveGenerator {n : AzNat // 0 < n} :=
   ExhaustiveGenerator.ofBijective positiveNaturalsFun positiveNaturalsFun_bijective
 
+instance : Contiguous {n : AzNat // 0 < n} :=
+  ExhaustiveGenerator.contiguous_of_gen_some positiveNaturalsGen rfl
+
 -- Demonstrate the positive-naturals generator produces `1, 2, 3, …, 10`
 -- (Malachite's `exhaustive_positive_naturals` doctest).
 #guard (positiveNaturals 0).toNat == 1

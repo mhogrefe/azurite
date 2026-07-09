@@ -63,6 +63,9 @@ theorem positiveIntegersFun_bijective : Function.Bijective positiveIntegersFun :
 instance positiveIntegersGen : ExhaustiveGenerator {z : AzInt // 0 < z} :=
   ExhaustiveGenerator.ofBijective positiveIntegersFun positiveIntegersFun_bijective
 
+instance : Contiguous {z : AzInt // 0 < z} :=
+  ExhaustiveGenerator.contiguous_of_gen_some positiveIntegersGen rfl
+
 /-! ### Nonnegative integers `0, 1, 2, …` -/
 
 /-- The nonnegative-integers generator: `nonnegativeIntegers k = AzInt.ofInt k`,
@@ -103,6 +106,9 @@ theorem nonnegativeIntegersFun_bijective :
 instance nonnegativeIntegersGen : ExhaustiveGenerator {z : AzInt // 0 ≤ z} :=
   ExhaustiveGenerator.ofBijective nonnegativeIntegersFun nonnegativeIntegersFun_bijective
 
+instance : Contiguous {z : AzInt // 0 ≤ z} :=
+  ExhaustiveGenerator.contiguous_of_gen_some nonnegativeIntegersGen rfl
+
 /-! ### Negative integers `-1, -2, -3, …` -/
 
 /-- The negative-integers generator: `negativeIntegers k = AzInt.ofInt (-(k + 1))`,
@@ -142,6 +148,9 @@ theorem negativeIntegersFun_bijective : Function.Bijective negativeIntegersFun :
 instance negativeIntegersGen : ExhaustiveGenerator {z : AzInt // z < 0} :=
   ExhaustiveGenerator.ofBijective negativeIntegersFun negativeIntegersFun_bijective
 
+instance : Contiguous {z : AzInt // z < 0} :=
+  ExhaustiveGenerator.contiguous_of_gen_some negativeIntegersGen rfl
+
 /-! ### All integers `0, 1, -1, 2, -2, 3, -3, …` (zig-zag) -/
 
 /-- The all-integers generator, zig-zagging outward from `0`:
@@ -177,6 +186,8 @@ theorem integers_bijective : Function.Bijective integers := by
 /-- Exhaustive generator for all of `AzInt`, `0, 1, -1, 2, -2, …`. -/
 instance integersGen : ExhaustiveGenerator AzInt :=
   ExhaustiveGenerator.ofBijective integers integers_bijective
+
+instance : Contiguous AzInt := ExhaustiveGenerator.contiguous_of_gen_some integersGen rfl
 
 /-! ### Nonzero integers `1, -1, 2, -2, 3, -3, …` (zig-zag) -/
 
@@ -226,6 +237,9 @@ theorem nonzeroIntegersFun_bijective : Function.Bijective nonzeroIntegersFun := 
 /-- Exhaustive generator for the nonzero `AzInt`s, `1, -1, 2, -2, …`. -/
 instance nonzeroIntegersGen : ExhaustiveGenerator {z : AzInt // z ≠ 0} :=
   ExhaustiveGenerator.ofBijective nonzeroIntegersFun nonzeroIntegersFun_bijective
+
+instance : Contiguous {z : AzInt // z ≠ 0} :=
+  ExhaustiveGenerator.contiguous_of_gen_some nonzeroIntegersGen rfl
 
 -- Demonstrate the three generators produce Malachite's doctest sequences.
 #guard (positiveIntegers 0).toInt == 1

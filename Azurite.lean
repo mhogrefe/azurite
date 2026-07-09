@@ -1154,6 +1154,10 @@ import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.Count
 import Azurite.ExhaustiveGenerator.Enums
 import Azurite.ExhaustiveGenerator.Integers
+import Azurite.ExhaustiveGenerator.LexDepPairs
+import Azurite.ExhaustiveGenerator.LexPairs
+import Azurite.ExhaustiveGenerator.LexTuples
+import Azurite.ExhaustiveGenerator.LexVecs
 import Azurite.ExhaustiveGenerator.PositiveNaturals
 import Azurite.ExhaustiveGenerator.Ranges
 import Azurite.ExhaustiveGenerator.Rationals

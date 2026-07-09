@@ -39,6 +39,10 @@ instance roundingModesGen : ExhaustiveGenerator RoundingMode :=
   ofListNodup [.Down, .Up, .Floor, .Ceiling, .Nearest] (by decide)
     (by intro t; cases t <;> decide)
 
+instance : Contiguous Bool := contiguous_of_getElem? boolsGen rfl
+instance : Contiguous Ordering := contiguous_of_getElem? orderingsIncreasingGen rfl
+instance : Contiguous RoundingMode := contiguous_of_getElem? roundingModesGen rfl
+
 /-! ### Counts
 
 `Bool` and `Ordering` have Mathlib `Fintype` instances; `RoundingMode` does
