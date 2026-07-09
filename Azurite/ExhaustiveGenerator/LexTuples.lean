@@ -198,47 +198,67 @@ theorem card {A B C D : Type*} [Fintype A] [Fintype B] [Fintype C] [Fintype D] :
 
 end LexQuadruple
 
-/-! ### The `ExhaustiveGenerator`/`Contiguous` instances on the flat tuples
+/-! ### The `ExhaustiveGenerator`/`Contiguous`/`FiniteGenerator` instances on the flat tuples
 
 These re-express the `lexTripleGen`/`lexQuadrupleGen` `def`s as INSTANCES: the
-finiteness/contiguity of the components is now resolved from the `[Fintype] +
-[Contiguous]` mixins (via the nested `LexPair` instances) rather than threaded
-explicitly. The first component `A` may be infinite; the remaining components
-must be finite + contiguous. `Contiguous` of the tuple follows (with
-`[Contiguous A]`) from `mapGen_contig_step` over the underlying nested pair. -/
+finiteness of the non-first components is resolved from the `[FiniteGenerator]`
+mixin (via the nested `LexPair` instances) rather than threaded explicitly —
+and stays computable, since the bound travels as the class's literal `card`.
+The first component `A` may be infinite; the remaining components must have
+finite generators. `Contiguous` of the tuple follows (with `[Contiguous A]`)
+from `mapGen_contiguous` over the underlying nested pair, and when `A` is also
+finite the tuple is a `FiniteGenerator` (product card) via
+`FiniteGenerator.map` — so tuples compose further. -/
 
 open ExhaustiveGenerator
 
 /-- Lexicographic `ExhaustiveGenerator` on the flat `LexTriple A B C` (last
-coordinate fastest); `B`, `C` finite + contiguous, `A` possibly infinite. -/
+coordinate fastest); `B`, `C` finite, `A` possibly infinite. -/
 instance instExhaustiveGeneratorTriple {A B C : Type*} [ExhaustiveGenerator A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B]
-    [ExhaustiveGenerator C] [Fintype C] [Contiguous C] :
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C] :
     ExhaustiveGenerator (LexTriple A B C) :=
   mapGen flattenTriple flattenTriple_bijective inferInstance
 
-/-- The triple generator is contiguous when all components are. -/
+/-- The triple generator is contiguous when the first component is. -/
 instance instContiguousTriple {A B C : Type*} [ExhaustiveGenerator A] [Contiguous A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B]
-    [ExhaustiveGenerator C] [Fintype C] [Contiguous C] :
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C] :
     Contiguous (LexTriple A B C) :=
   mapGen_contiguous flattenTriple flattenTriple_bijective inferInstance inferInstance
 
+/-- The triple generator is finite (`card = card A * (card B * card C)`) when
+all components are. -/
+instance instFiniteGeneratorTriple {A B C : Type*} [ExhaustiveGenerator A] [FiniteGenerator A]
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C] :
+    FiniteGenerator (LexTriple A B C) :=
+  FiniteGenerator.map flattenTriple flattenTriple_bijective inferInstance inferInstance
+
 /-- Lexicographic `ExhaustiveGenerator` on the flat `LexQuadruple A B C D`. -/
 instance instExhaustiveGeneratorQuadruple {A B C D : Type*} [ExhaustiveGenerator A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B]
-    [ExhaustiveGenerator C] [Fintype C] [Contiguous C]
-    [ExhaustiveGenerator D] [Fintype D] [Contiguous D] :
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C]
+    [ExhaustiveGenerator D] [FiniteGenerator D] :
     ExhaustiveGenerator (LexQuadruple A B C D) :=
   mapGen flattenQuad flattenQuad_bijective inferInstance
 
-/-- The quadruple generator is contiguous when all components are. -/
+/-- The quadruple generator is contiguous when the first component is. -/
 instance instContiguousQuadruple {A B C D : Type*} [ExhaustiveGenerator A] [Contiguous A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B]
-    [ExhaustiveGenerator C] [Fintype C] [Contiguous C]
-    [ExhaustiveGenerator D] [Fintype D] [Contiguous D] :
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C]
+    [ExhaustiveGenerator D] [FiniteGenerator D] :
     Contiguous (LexQuadruple A B C D) :=
   mapGen_contiguous flattenQuad flattenQuad_bijective inferInstance inferInstance
+
+/-- The quadruple generator is finite when all components are. -/
+instance instFiniteGeneratorQuadruple {A B C D : Type*}
+    [ExhaustiveGenerator A] [FiniteGenerator A]
+    [ExhaustiveGenerator B] [FiniteGenerator B]
+    [ExhaustiveGenerator C] [FiniteGenerator C]
+    [ExhaustiveGenerator D] [FiniteGenerator D] :
+    FiniteGenerator (LexQuadruple A B C D) :=
+  FiniteGenerator.map flattenQuad flattenQuad_bijective inferInstance inferInstance
 
 /-! ### Guards
 
@@ -249,32 +269,34 @@ fastest. -/
 
 open ExhaustiveGenerator
 
--- `boolsGen` produces values exactly at positions `0, 1` (`cB = 2`).
-private theorem boolsGen_hnone : ∀ n, 2 ≤ n → boolsGen.gen n = none :=
-  fun _ h => List.getElem?_eq_none h
-private theorem boolsGen_hsome : ∀ n, n < 2 → boolsGen.gen n ≠ none :=
-  fun _ h => by
-    rw [show boolsGen.gen _ = some _ from List.getElem?_eq_getElem h]; exact Option.some_ne_none _
+-- The explicit builders take explicit finiteness witnesses; `Bool`'s come
+-- straight off its `FiniteGenerator` instance.
 
 /-- Infinite-first triple: `AzNat` lex `Bool` lex `Bool`, last coordinate fastest. -/
 @[reducible] def natBoolBoolLex : ExhaustiveGenerator (LexTriple AzNat Bool Bool) :=
   lexTripleGen naturalsGen boolsGen boolsGen
-    boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 /-- Fully-finite triple: `Bool × Bool × Bool`; runs out after `8` elements. -/
 @[reducible] def boolTripleLex : ExhaustiveGenerator (LexTriple Bool Bool Bool) :=
   lexTripleGen boolsGen boolsGen boolsGen
-    boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 /-- Infinite-first quadruple: `AzNat × Bool × Bool × Bool`. -/
 @[reducible] def natBoolBoolBoolLex : ExhaustiveGenerator (LexQuadruple AzNat Bool Bool Bool) :=
   lexQuadrupleGen naturalsGen boolsGen boolsGen boolsGen
-    boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 /-- Fully-finite quadruple: `Bool × Bool × Bool × Bool`; runs out after `16`. -/
 @[reducible] def boolQuadrupleLex : ExhaustiveGenerator (LexQuadruple Bool Bool Bool Bool) :=
   lexQuadrupleGen boolsGen boolsGen boolsGen boolsGen
-    boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome boolsGen_hnone boolsGen_hsome
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 -- Triple (a) first 8: first coordinate slowest, last fastest.
 #guard (@firstN _ natBoolBoolLex 8).map (fun t => (t.fst.toNat, t.snd, t.thd))
@@ -316,5 +338,10 @@ identical lexicographic order. -/
 
 -- Instance-resolved fully-finite quadruple `Bool × Bool × Bool × Bool`: caps at 16.
 #guard (firstN (LexQuadruple Bool Bool Bool Bool) 40).length == 16
+
+-- Instance-resolved triple with a previously-poisoned component (`UInt8`'s old
+-- `Fintype` was noncomputable): radices `2^8` and `2`, last coordinate fastest.
+#guard (firstN (LexTriple AzNat UInt8 Bool) 6).map (fun t => (t.fst.toNat, t.snd.toNat, t.thd))
+  = [(0, 0, false), (0, 0, true), (0, 1, false), (0, 1, true), (0, 2, false), (0, 2, true)]
 
 end Azurite

@@ -39,6 +39,36 @@ class Contiguous (T : Type*) [inst : ExhaustiveGenerator T] : Prop where
   /-- Once `none`, always `none`: a `none` at position `n` forces `none` at `n+1`. -/
   contig : ∀ n, inst.gen n = none → inst.gen (n + 1) = none
 
+/-- A `FiniteGenerator` carries a finite generator's bound as **data**: `card`
+is the number of values produced (positions `0, …, card-1` are `some`, the rest
+`none`). Azurite's finite instances supply `card` as a cheap literal (e.g.
+`2 ^ 8`), which is what keeps the compositional generators (`LexPair` etc.)
+COMPUTABLE: the mixed-radix odometer consumes the bound as its runtime radix.
+Even a computable `Fintype.card` would not do — evaluating
+`Fintype.card UInt64` materializes a `2^64`-element `univ`. The bound proofs
+`gen_none`/`gen_some` are `Prop`s; they are exactly the finiteness witnesses
+the `lexPair*` builders consume. NB the named `[inst : …]` binding (same gotcha
+as `Contiguous`): the fields must refer to THIS instance's `gen`
+(`ExhaustiveGenerator.gen (T := T)` inside the class would re-synthesize). -/
+class FiniteGenerator (T : Type*) [inst : ExhaustiveGenerator T] where
+  /-- The number of values the generator produces (a cheap literal in instances). -/
+  card : ℕ
+  /-- Positions at or beyond `card` are `none`. -/
+  gen_none : ∀ n, card ≤ n → inst.gen n = none
+  /-- Positions below `card` produce a value. -/
+  gen_some : ∀ n, n < card → inst.gen n ≠ none
+
+/-- Every finite generator is contiguous: a `none` at `n` puts `n` at or past
+`card` (else `gen_some` would contradict it), so `n + 1` is past `card` too.
+This lets `[FiniteGenerator T]` alone supply the `Contiguous` mixin everywhere
+downstream. -/
+instance (priority := 100) FiniteGenerator.toContiguous {T : Type*}
+    [ExhaustiveGenerator T] [FiniteGenerator T] : Contiguous T where
+  contig n h := by
+    by_cases hc : FiniteGenerator.card (T := T) ≤ n + 1
+    · exact FiniteGenerator.gen_none (n + 1) hc
+    · exact absurd h (FiniteGenerator.gen_some n (by omega))
+
 namespace ExhaustiveGenerator
 
 /-- Build an (infinite) generator from a bijection `f : ℕ → T`: every position
@@ -240,6 +270,69 @@ def firstN (T : Type*) [ExhaustiveGenerator T] (n : ℕ) : List T :=
   (List.range n).filterMap (gen (T := T))
 
 end ExhaustiveGenerator
+
+namespace FiniteGenerator
+
+/-! ### Builder `FiniteGenerator` data
+
+Like the builder contiguity lemmas above, these are keyed on the `gen`-function
+SHAPE, with the shape hypothesis discharged by `rfl` (the builders are
+`@[reducible]`). `card` is passed EXPLICITLY so instances carry the intended
+literal (which need only be *definitionally* equal to the shape's bound — e.g.
+`2 ^ 8` for a builder bound spelled `2 * 2 ^ 7`). Typical use:
+`instance : FiniteGenerator UInt8 := .ofBoundedBij uint8Gen (2 ^ 8) rfl`. -/
+
+/-- `FiniteGenerator` data for a bounded generator of shape
+`fun n => if n < card then some (f n) else none` (as from `ofBoundedBij`). -/
+@[reducible] def ofBoundedBij {T : Type*} (g : ExhaustiveGenerator T) (card : ℕ)
+    {f : ℕ → T} (hg : g.gen = fun n => if n < card then some (f n) else none) :
+    @FiniteGenerator T g where
+  card := card
+  gen_none n hn := by simp only [hg]; exact if_neg (by omega)
+  gen_some n hn := by simp only [hg]; rw [if_pos hn]; exact Option.some_ne_none _
+
+/-- `FiniteGenerator` data for a bounded generator of shape
+`fun n => if h : n < card then some (f n h) else none` (as from `ofBoundedBijOn`). -/
+@[reducible] def ofBoundedBijOn {T : Type*} (g : ExhaustiveGenerator T) (card : ℕ)
+    {f : (n : ℕ) → n < card → T}
+    (hg : g.gen = fun n => if h : n < card then some (f n h) else none) :
+    @FiniteGenerator T g where
+  card := card
+  gen_none n hn := by simp only [hg]; exact dif_neg (by omega)
+  gen_some n hn := by simp only [hg]; rw [dif_pos hn]; exact Option.some_ne_none _
+
+/-- `FiniteGenerator` data for a list-backed generator of shape `fun n => l[n]?`
+(as from `ofListNodup`); `card` is the list length, passed as a literal with the
+`hlen` obligation discharged by `rfl`. -/
+@[reducible] def ofListNodup {T : Type*} (g : ExhaustiveGenerator T) (card : ℕ)
+    {l : List T} (hg : g.gen = fun n => l[n]?) (hlen : l.length = card) :
+    @FiniteGenerator T g where
+  card := card
+  gen_none n hn := by simp only [hg]; exact List.getElem?_eq_none (by omega)
+  gen_some n hn := by
+    simp only [hg]
+    rw [List.getElem?_eq_getElem (by omega)]
+    exact Option.some_ne_none _
+
+/-- `mapGen` preserves `FiniteGenerator` data with the SAME bound: relabeling
+along `f` does not change which positions are `some` (`Option.map` sends
+`none ↔ none`). This is how the flat tuple/vec composites inherit their finite
+bound from the underlying nested pair. -/
+@[reducible] def map {S T : Type*} (f : S → T) (hf : Function.Bijective f)
+    (g : ExhaustiveGenerator S) (fg : @FiniteGenerator S g) :
+    @FiniteGenerator T (ExhaustiveGenerator.mapGen f hf g) :=
+  -- NB explicit `mk` (not `where`): structure-instance notation fails to unify
+  -- the explicit instance argument when it is an application, not a variable.
+  @FiniteGenerator.mk T (ExhaustiveGenerator.mapGen f hf g) fg.card
+    (fun n hn => by
+      show (g.gen n).map f = none
+      rw [fg.gen_none n hn, Option.map_none])
+    (fun n hn => by
+      show (g.gen n).map f ≠ none
+      rw [Ne, Option.map_eq_none_iff]
+      exact fg.gen_some n hn)
+
+end FiniteGenerator
 
 /-- The exhaustive generator for `AzNat`: `gen n = some (AzNat.ofNat n)`,
 producing `0, 1, 2, …`. Bijectivity of `AzNat.ofNat` follows from the

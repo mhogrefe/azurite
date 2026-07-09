@@ -31,9 +31,10 @@ isomorphism) are reusable.
 
 open scoped Classical
 
-set_option maxHeartbeats 1000000
-
 /-! ### Generic transport of the gcd structure along a ring isomorphism -/
+
+-- TODO: the `transfer*` helpers below only use the multiplicative structure of
+-- `e`; they could be generalized to `MulEquiv` (out of scope here).
 
 /-- Pull a `NormalizationMonoid` back along a ring isomorphism. -/
 @[reducible] noncomputable def RingEquiv.transferNormalizationMonoid

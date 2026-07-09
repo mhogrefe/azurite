@@ -81,6 +81,12 @@ instance : Contiguous UInt16 := ExhaustiveGenerator.contiguous_of_boundedBij uin
 instance : Contiguous UInt32 := ExhaustiveGenerator.contiguous_of_boundedBij uint32Gen rfl
 instance : Contiguous UInt64 := ExhaustiveGenerator.contiguous_of_boundedBij uint64Gen rfl
 
+-- Finite bounds as literal data (the runtime radix for compositional generators).
+instance : FiniteGenerator UInt8 := .ofBoundedBij uint8Gen (2 ^ 8) rfl
+instance : FiniteGenerator UInt16 := .ofBoundedBij uint16Gen (2 ^ 16) rfl
+instance : FiniteGenerator UInt32 := .ofBoundedBij uint32Gen (2 ^ 32) rfl
+instance : FiniteGenerator UInt64 := .ofBoundedBij uint64Gen (2 ^ 64) rfl
+
 -- The unsigned generators start `0, 1, 2, …`.
 #guard ((ExhaustiveGenerator.firstN UInt8 10).map (·.toNat)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 #guard ((ExhaustiveGenerator.firstN UInt16 10).map (·.toNat)) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -120,6 +126,15 @@ instance : Contiguous {x : UInt32 // 0 < x} :=
   ExhaustiveGenerator.contiguous_of_boundedBijOn positiveUInt32Gen rfl
 instance : Contiguous {x : UInt64 // 0 < x} :=
   ExhaustiveGenerator.contiguous_of_boundedBijOn positiveUInt64Gen rfl
+
+instance : FiniteGenerator {x : UInt8 // 0 < x} :=
+  .ofBoundedBijOn positiveUInt8Gen (2 ^ 8 - 1) rfl
+instance : FiniteGenerator {x : UInt16 // 0 < x} :=
+  .ofBoundedBijOn positiveUInt16Gen (2 ^ 16 - 1) rfl
+instance : FiniteGenerator {x : UInt32 // 0 < x} :=
+  .ofBoundedBijOn positiveUInt32Gen (2 ^ 32 - 1) rfl
+instance : FiniteGenerator {x : UInt64 // 0 < x} :=
+  .ofBoundedBijOn positiveUInt64Gen (2 ^ 64 - 1) rfl
 
 -- Positive unsigneds start `1, 2, …`; and stop at cardinality `2^w - 1`.
 #guard ((ExhaustiveGenerator.firstN {x : UInt8 // 0 < x} 10).map (·.val.toNat)) ==

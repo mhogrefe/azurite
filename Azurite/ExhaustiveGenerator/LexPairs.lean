@@ -200,6 +200,22 @@ theorem lexPairGenOfFinite_contig_step {A B : Type*} (gA : ExhaustiveGenerator A
       (lexPairGenOfFinite gA gB hnoneB hsomeB).gen (k + 1) = none :=
   lexPairGen_contig_step gA _ _ hA
 
+/-- **`lexPairGenOfFinite`'s `gen` does not depend on the finiteness
+witnesses.** Any two presentations of `B`'s bound (`cB = cB'`, with whatever
+`hnone`/`hsome` proofs) produce the same `gen`: after `subst`, the remaining
+difference is proofs, and proof irrelevance makes the two generators
+definitionally equal. This is the radix-rewriting glue between the
+`FiniteGenerator`-literal instance path and any other witness presentation
+(e.g. the `Fintype.card`-based `finiteBound_none`/`finiteBound_some`). -/
+theorem lexPairGenOfFinite_gen_irrel {A B : Type*} (gA : ExhaustiveGenerator A)
+    (gB : ExhaustiveGenerator B) {cB cB' : ℕ}
+    (hnoneB : ∀ n, cB ≤ n → gB.gen n = none) (hsomeB : ∀ n, n < cB → gB.gen n ≠ none)
+    (hnoneB' : ∀ n, cB' ≤ n → gB.gen n = none) (hsomeB' : ∀ n, n < cB' → gB.gen n ≠ none)
+    (hc : cB = cB') :
+    (lexPairGenOfFinite gA gB hnoneB hsomeB).gen
+      = (lexPairGenOfFinite gA gB hnoneB' hsomeB').gen := by
+  subst hc; rfl
+
 end ExhaustiveGenerator
 
 /-! ### Counts
@@ -228,30 +244,64 @@ theorem card {A B : Type*} [Fintype A] [Fintype B] :
 
 end LexPair
 
-/-! ### The `ExhaustiveGenerator`/`Contiguous` instances on `LexPair`
+/-! ### The `ExhaustiveGenerator`/`Contiguous`/`FiniteGenerator` instances on `LexPair`
 
-With the `finiteBound` bridge turning `[Fintype B] + [Contiguous B]` into the
-`hnone`/`hsome` witnesses, the lexicographic pair generator becomes a genuine
-`ExhaustiveGenerator (LexPair A B)` INSTANCE (the deliverable): the FIRST
-component `A` may be infinite, while the LAST component `B` must be a finite,
-contiguous type (its cardinality supplies the odometer's radix `cB`). The
-enumeration stays computable — `finiteBound_*` supply only PROOFS. When `A` is
-additionally contiguous, so is the pair (via `lexPairGen_contig_step`). -/
+With `[FiniteGenerator B]` supplying the finite bound as a LITERAL plus its
+`gen_none`/`gen_some` witnesses, the lexicographic pair generator becomes a
+genuine COMPUTABLE `ExhaustiveGenerator (LexPair A B)` INSTANCE (the
+deliverable): the FIRST component `A` may be infinite, while the LAST component
+`B` must have a finite generator (its `FiniteGenerator.card` literal is the
+odometer's runtime radix `cB`). Computability is exactly why the class carries
+the bound as data — the noncomputable `Fintype.card B` route would poison
+`#eval`/`#guard` (and even a computable `Fintype.card` is runtime-infeasible
+for the big fixed-width types). When `A` is additionally contiguous, so is the
+pair (via `lexPairGen_contig_step`); when `A` is also finite, the pair is a
+`FiniteGenerator` with `card = card A * card B`, so pairs compose further. -/
 
 open ExhaustiveGenerator in
 /-- Lexicographic `ExhaustiveGenerator` on the newtype `LexPair A B` (last
-coordinate fastest); `A` may be infinite, `B` must be finite + contiguous. -/
-instance instExhaustiveGenerator {A B : Type*} [ExhaustiveGenerator A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B] : ExhaustiveGenerator (LexPair A B) :=
-  lexPairGenOfFinite inferInstance inferInstance finiteBound_none finiteBound_some
+coordinate fastest); `A` may be infinite, `B` must have a finite generator. -/
+instance instExhaustiveGeneratorLexPair {A B : Type*} [ExhaustiveGenerator A]
+    [ExhaustiveGenerator B] [FiniteGenerator B] : ExhaustiveGenerator (LexPair A B) :=
+  lexPairGenOfFinite inferInstance inferInstance
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 open ExhaustiveGenerator in
-/-- The lex pair generator is contiguous when both components are (needed so a
-`LexPair` can itself serve as a finite component of a further `LexPair`). -/
-instance instContiguous {A B : Type*} [ExhaustiveGenerator A] [Contiguous A]
-    [ExhaustiveGenerator B] [Fintype B] [Contiguous B] : Contiguous (LexPair A B) :=
-  ⟨lexPairGenOfFinite_contig_step inferInstance inferInstance finiteBound_none finiteBound_some
-    (fun n => Contiguous.contig n)⟩
+/-- The lex pair generator is contiguous when the first component is (needed so
+a `LexPair` with infinite `A` can still feed the dependent/`mapGen` layers; for
+finite `A` the `FiniteGenerator` instance below subsumes this via
+`FiniteGenerator.toContiguous`). -/
+instance instContiguousLexPair {A B : Type*} [ExhaustiveGenerator A] [Contiguous A]
+    [ExhaustiveGenerator B] [FiniteGenerator B] : Contiguous (LexPair A B) :=
+  ⟨lexPairGenOfFinite_contig_step inferInstance inferInstance
+    FiniteGenerator.gen_none FiniteGenerator.gen_some (fun n => Contiguous.contig n)⟩
+
+open ExhaustiveGenerator in
+/-- The lex pair generator is finite with `card = card A * card B` when both
+components are — this is what lets a `LexPair` serve as the finite LAST
+component of a further composition. -/
+instance instFiniteGeneratorLexPair {A B : Type*} [ExhaustiveGenerator A] [FiniteGenerator A]
+    [ExhaustiveGenerator B] [FiniteGenerator B] : FiniteGenerator (LexPair A B) where
+  card := FiniteGenerator.card (T := A) * FiniteGenerator.card (T := B)
+  gen_none := (lexPairGenOfFinite_contiguous inferInstance inferInstance
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some).1
+  gen_some := (lexPairGenOfFinite_contiguous inferInstance inferInstance
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    FiniteGenerator.gen_none FiniteGenerator.gen_some).2
+
+open ExhaustiveGenerator in
+/-- The instance path (`FiniteGenerator`-literal radix) and the classic
+`Fintype`-witness builder path produce the SAME enumeration: the radix rewrite
+is `fintypeCard_eq_finiteCard` through `lexPairGenOfFinite_gen_irrel`. -/
+theorem instExhaustiveGeneratorLexPair_gen_eq {A B : Type*} [ExhaustiveGenerator A]
+    [ExhaustiveGenerator B] [FiniteGenerator B] [Fintype B] [Contiguous B] :
+    (instExhaustiveGeneratorLexPair (A := A) (B := B)).gen
+      = (lexPairGenOfFinite inferInstance inferInstance
+          finiteBound_none finiteBound_some).gen :=
+  lexPairGenOfFinite_gen_irrel inferInstance inferInstance
+    FiniteGenerator.gen_none FiniteGenerator.gen_some
+    finiteBound_none finiteBound_some fintypeCard_eq_finiteCard.symm
 
 /-! ### Guards
 
@@ -261,20 +311,14 @@ finite × finite (`Bool × Bool`), which runs out after `4` elements. -/
 
 open ExhaustiveGenerator
 
--- `gB = boolsGen` produces values exactly at positions `0, 1` (`cB = 2`).
-private theorem boolsGen_hnone : ∀ n, 2 ≤ n → boolsGen.gen n = none :=
-  fun _ h => List.getElem?_eq_none h
-private theorem boolsGen_hsome : ∀ n, n < 2 → boolsGen.gen n ≠ none :=
-  fun _ h => by
-    rw [show boolsGen.gen _ = some _ from List.getElem?_eq_getElem h]; exact Option.some_ne_none _
-
-/-- (a) Infinite-first: `AzNat` lex `Bool`, last coordinate fastest. -/
+/-- (a) Infinite-first: `AzNat` lex `Bool`, last coordinate fastest. The
+`hnone`/`hsome` witnesses come straight off `Bool`'s `FiniteGenerator`. -/
 @[reducible] def natBoolLex : ExhaustiveGenerator (LexPair AzNat Bool) :=
-  lexPairGenOfFinite naturalsGen boolsGen boolsGen_hnone boolsGen_hsome
+  lexPairGenOfFinite naturalsGen boolsGen FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 /-- (b) Finite × finite: `Bool` lex `Bool`; runs out after `4` elements. -/
 @[reducible] def boolBoolLex : ExhaustiveGenerator (LexPair Bool Bool) :=
-  lexPairGenOfFinite boolsGen boolsGen boolsGen_hnone boolsGen_hsome
+  lexPairGenOfFinite boolsGen boolsGen FiniteGenerator.gen_none FiniteGenerator.gen_some
 
 -- (a) first 6: (0,F),(0,T),(1,F),(1,T),(2,F),(2,T).
 #guard (@firstN _ natBoolLex 6).map (fun p => (p.fst.toNat, p.snd))
@@ -294,12 +338,26 @@ instance produces the identical lexicographic order. -/
   = [(false, false), (false, true), (true, false), (true, true)]
 #guard (firstN (LexPair Bool Bool) 10).length == 4
 
--- Instance-resolved infinite-first `AzNat` lex `Bool` (needs `Contiguous AzNat`).
+-- Instance-resolved infinite-first `AzNat` lex `Bool` (radix from `FiniteGenerator Bool`).
 #guard (firstN (LexPair AzNat Bool) 6).map (fun p => (p.fst.toNat, p.snd))
   = [(0, false), (0, true), (1, false), (1, true), (2, false), (2, true)]
 
 -- Instance-resolved `Ordering` lex `Bool`: 3 * 2 = 6 elements, last fastest.
 #guard (firstN (LexPair Ordering Bool) 10).map (fun p => (p.fst, p.snd))
   = [(.lt, false), (.lt, true), (.eq, false), (.eq, true), (.gt, false), (.gt, true)]
+
+/-! Components whose old `Fintype`-based instances were NONCOMPUTABLE (the
+`fintypeOfBounded`-derived `RoundingMode`/`UIntX` instances): with the bound now
+a `FiniteGenerator` literal, these must genuinely `#eval`. -/
+
+-- Instance-resolved `Bool` lex `RoundingMode`: all 2 * 5 = 10 elements.
+#guard (firstN (LexPair Bool RoundingMode) 12).map (fun p => (p.fst, p.snd))
+  = [(false, .Down), (false, .Up), (false, .Floor), (false, .Ceiling), (false, .Nearest),
+     (true, .Down), (true, .Up), (true, .Floor), (true, .Ceiling), (true, .Nearest)]
+#guard (firstN (LexPair Bool RoundingMode) 12).length == 10
+
+-- Instance-resolved infinite-first `AzNat` lex `UInt8` (radix `2^8`).
+#guard (firstN (LexPair AzNat UInt8) 5).map (fun p => (p.fst.toNat, p.snd.toNat))
+  = [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
 
 end Azurite

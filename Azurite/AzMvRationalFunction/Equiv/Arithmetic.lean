@@ -157,10 +157,10 @@ theorem toMvRatFunc_mul (r s : AzMvRationalFunction n ord) :
   have hD0 : D ≠ 0 := fun h0 => den_ne_zero s (zero_dvd_iff.mp (h0 ▸ hDdvd))
   -- guard: contents (Gauss: products of primitive cofactors of primitives)
   have hncont : (A * B).intContent = 1 := by
-    rw [intContent_mul hA0 hB0, intContent_exactDiv_eq_one hG₁a hG₁0 r.num_primitive,
+    rw [intContent_mul, intContent_exactDiv_eq_one hG₁a hG₁0 r.num_primitive,
       intContent_exactDiv_eq_one hG₂a hG₂0 s.num_primitive, mul_one]
   have hdcont : (C * D).intContent = 1 := by
-    rw [intContent_mul hC0 hD0, intContent_exactDiv_eq_one hG₂d hG₂0 r.den_primitive,
+    rw [intContent_mul, intContent_exactDiv_eq_one hG₂d hG₂0 r.den_primitive,
       intContent_exactDiv_eq_one hG₁d hG₁0 s.den_primitive, mul_one]
   -- guard: positive leading coefficients
   have hAlc : 0 < A.leadingCoeff := leadingCoeff_exactDiv_pos hG₁a hG₁0
@@ -178,10 +178,10 @@ theorem toMvRatFunc_mul (r s : AzMvRationalFunction n ord) :
   -- guard: coprimality, via the four cross pairs (IsRelPrime over `ℚ[x⃗]`)
   have hr_rel : IsRelPrime (toMvPolyQ r.num) (toMvPolyQ r.den) := by
     rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-    exact coprime_isRelPrime (num_ne_zero r) r.reduced
+    exact coprime_isRelPrime r.reduced
   have hs_rel : IsRelPrime (toMvPolyQ s.num) (toMvPolyQ s.den) := by
     rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-    exact coprime_isRelPrime (num_ne_zero s) s.reduced
+    exact coprime_isRelPrime s.reduced
   -- A ⊥ C (both divide r's coprime parts); B ⊥ D (both divide s's)
   have hAC : IsRelPrime (toMvPolyQ A) (toMvPolyQ C) :=
     (hr_rel.of_dvd_left (map_dvd toMvPolyQHom hAdvd)).of_dvd_right (map_dvd toMvPolyQHom hCdvd)
@@ -190,10 +190,10 @@ theorem toMvRatFunc_mul (r s : AzMvRationalFunction n ord) :
   -- A ⊥ D (cofactors of the same gcd G₁); B ⊥ C (cofactors of the same gcd G₂)
   have hAD : IsRelPrime (toMvPolyQ A) (toMvPolyQ D) := by
     rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-    exact coprime_isRelPrime hA0 (coprime_exactDiv_signNorm (num_ne_zero r) (den_ne_zero s))
+    exact coprime_isRelPrime (coprime_exactDiv_signNorm (num_ne_zero r) (den_ne_zero s))
   have hBC : IsRelPrime (toMvPolyQ B) (toMvPolyQ C) := by
     rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-    exact coprime_isRelPrime hB0 (coprime_exactDiv_signNorm (num_ne_zero s) (den_ne_zero r))
+    exact coprime_isRelPrime (coprime_exactDiv_signNorm (num_ne_zero s) (den_ne_zero r))
   have hcop : AzMvPolynomial.coprime (A * B) (C * D) = true := by
     apply coprime_of_isRelPrime
     rw [← toMvPolyQ_eq_ratImg (A * B), ← toMvPolyQ_eq_ratImg (C * D), toMvPolyQ_mul, toMvPolyQ_mul]
@@ -524,7 +524,7 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
       exact ⟨gcd_ne_zero_left (den_ne_zero r), by rw [← signNorm_totalDegree]; exact hdeg⟩
     have hDD : IsRelPrime (toMvPolyQ r.den) (toMvPolyQ s.den) := by
       rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-      exact coprime_isRelPrime (den_ne_zero r) hcop_dd
+      exact coprime_isRelPrime hcop_dd
     by_cases hT : fastT r s = 0
     · -- the combination vanishes: both sides are `0`
       have hres : add r s = 0 := by
@@ -573,7 +573,7 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
         exact (hTD₁.mul_right hTD₂).of_dvd_left (map_dvd toMvPolyQHom (primPos_dvd (fastT r s)))
       have h1g : (primPos (fastT r s)).intContent = 1 := intContent_primPos hT
       have h2g : (r.den * s.den).intContent = 1 := by
-        rw [intContent_mul (den_ne_zero r) (den_ne_zero s), r.den_primitive, s.den_primitive,
+        rw [intContent_mul, r.den_primitive, s.den_primitive,
           mul_one]
       have h3g : (0 : AzInt) < (primPos (fastT r s)).leadingCoeff := leadingCoeff_primPos_pos hT
       have h4g : (0 : AzInt) < (r.den * s.den).leadingCoeff := by
@@ -643,7 +643,7 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
       hND₂.of_dvd_right (map_dvd toMvPolyQHom ⟨_, hD₂id.symm⟩)
     have hDD' : IsRelPrime (toMvPolyQ (slowD₁ r s)) (toMvPolyQ (slowD₂ r s)) := by
       rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-      exact coprime_isRelPrime hD₁0 (coprime_exactDiv_signNorm (den_ne_zero r) (den_ne_zero s))
+      exact coprime_isRelPrime (coprime_exactDiv_signNorm (den_ne_zero r) (den_ne_zero s))
     have hPfac : MvPolynomial.C (((ratNum r.factor).toInt : ℚ) * ((ratDen s.factor).toInt : ℚ))
           * (toMvPolyQ r.num * toMvPolyQ s.den)
         + MvPolynomial.C (((ratNum s.factor).toInt : ℚ) * ((ratDen r.factor).toInt : ℚ))
@@ -692,7 +692,7 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
           (toMvPolyQ (Azurite.ExactDiv.exactDiv
             (signNorm (AzMvPolynomial.gcd r.den s.den)) (slowH r s))) := by
         rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-        exact coprime_isRelPrime hT'0 (coprime_exactDiv_signNorm hT₀ hG0)
+        exact coprime_isRelPrime (coprime_exactDiv_signNorm hT₀ hG0)
       have hT₀D₁ : IsRelPrime (toMvPolyQ (slowT₀ r s)) (toMvPolyQ (slowD₁ r s)) := by
         have hbase : IsRelPrime
             (MvPolynomial.C (((ratNum r.factor).toInt : ℚ) * ((ratDen s.factor).toInt : ℚ))
@@ -739,7 +739,7 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
           (map_dvd toMvPolyQHom (primPos_dvd (slowT r s)))
       have h1g : (primPos (slowT r s)).intContent = 1 := intContent_primPos hT'0
       have h2g : (slowD₁ r s * slowD₂H r s).intContent = 1 := by
-        rw [intContent_mul hD₁0 hD₂H0, intContent_exactDiv_eq_one hGa hG0 r.den_primitive,
+        rw [intContent_mul, intContent_exactDiv_eq_one hGa hG0 r.den_primitive,
           intContent_exactDiv_eq_one hHdvds hH0 s.den_primitive, mul_one]
       have h3g : (0 : AzInt) < (primPos (slowT r s)).leadingCoeff := leadingCoeff_primPos_pos hT'0
       have h4g : (0 : AzInt) < (slowD₁ r s * slowD₂H r s).leadingCoeff := by
@@ -816,11 +816,11 @@ namespace Azurite.AzMvPolynomial
 variable {n : ℕ} {ord : MonomialOrder}
 
 /-- `intContent` of a power is the power of the `intContent` (Gauss, iterated). -/
-theorem intContent_pow {P : AzMvPolynomial n AzInt ord} (hP : P ≠ 0) (m : ℕ) :
+theorem intContent_pow {P : AzMvPolynomial n AzInt ord} (m : ℕ) :
     intContent (P ^ m) = intContent P ^ m := by
   induction m with
   | zero => rw [pow_zero, pow_zero]; rfl
-  | succ k ih => rw [pow_succ, pow_succ, intContent_mul (pow_ne_zero k hP) hP, ih]
+  | succ k ih => rw [pow_succ, pow_succ, intContent_mul, ih]
 
 /-- `leadingCoeff` of a power is the power of the `leadingCoeff`. -/
 theorem leadingCoeff_pow {P : AzMvPolynomial n AzInt ord} (hP : P ≠ 0) (m : ℕ) :
@@ -848,9 +848,9 @@ set_option maxHeartbeats 1600000 in
 theorem toMvRatFunc_pow (r : AzMvRationalFunction n ord) (m : ℕ) :
     toMvRatFunc (pow r m) = toMvRatFunc r ^ m := by
   have h1g : (r.num ^ m).intContent = 1 := by
-    rw [intContent_pow (num_ne_zero r), r.num_primitive, one_pow]
+    rw [intContent_pow, r.num_primitive, one_pow]
   have h2g : (r.den ^ m).intContent = 1 := by
-    rw [intContent_pow (den_ne_zero r), r.den_primitive, one_pow]
+    rw [intContent_pow, r.den_primitive, one_pow]
   have h3g : (0 : AzInt) < (r.num ^ m).leadingCoeff := by
     rw [leadingCoeff_pow (num_ne_zero r)]; exact pow_pos r.num_lc_pos m
   have h4g : (0 : AzInt) < (r.den ^ m).leadingCoeff := by
@@ -860,7 +860,7 @@ theorem toMvRatFunc_pow (r : AzMvRationalFunction n ord) (m : ℕ) :
     rw [← toMvPolyQ_eq_ratImg, ← toMvPolyQ_eq_ratImg, toMvPolyQ_pow, toMvPolyQ_pow]
     have hrel : IsRelPrime (toMvPolyQ r.num) (toMvPolyQ r.den) := by
       rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-      exact coprime_isRelPrime (num_ne_zero r) r.reduced
+      exact coprime_isRelPrime r.reduced
     exact hrel.pow
   have h6g : r.factor.pow m = 0 → r.num ^ m = 1 ∧ r.den ^ m = 1 := by
     intro h0

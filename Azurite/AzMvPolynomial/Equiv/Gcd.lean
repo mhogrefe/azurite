@@ -562,7 +562,7 @@ fraction-field notion of coprimality, matching the univariate
 
 /-- The coefficient homomorphism `AzInt →+* ℚ` used for the fraction-field
 statements: `ℤ`-cast composed with `toInt`. -/
-private def AzMvPolynomial.coeffToRat : AzInt →+* ℚ :=
+def AzMvPolynomial.coeffToRat : AzInt →+* ℚ :=
   (Int.castRingHom ℚ).comp AzInt.toIntRingHom
 
 private theorem AzMvPolynomial.coeffToRat_injective :
@@ -787,17 +787,16 @@ theorem AzMvPolynomial.coprime_toAzMvPolynomial {n : ℕ} (i : Fin n)
 
 /-! ### Gcd and gcd-free part -/
 
-/-- **The canonical pair**: the first component of `gcdGcdFreePart` is the
-gcd, and the second is the exact quotient — `gcd(P,Q)-image · snd-image =
-P-image` in `MvPolynomial (Fin n) ℤ`, unconditionally (mirror of the
-univariate `gcdGcdFreePart_int_spec`). -/
-theorem AzMvPolynomial.gcdGcdFreePart_spec {n : ℕ}
+/-- **The canonical pair, computable-ring form**: the first component of
+`gcdGcdFreePart` is the gcd, and the gcd-free part (second component) times
+the gcd recovers `P` **as an `AzMvPolynomial n AzInt ord` identity**,
+unconditionally — no base change required (mirror of the univariate
+`gcdGcdFreePart_int_spec`). This is the strongest statement; the
+`MvPolynomial (Fin n) ℤ`-image form follows as `gcdGcdFreePart_spec`. -/
+theorem AzMvPolynomial.gcdGcdFreePart_spec' {n : ℕ}
     (P Q : AzMvPolynomial n AzInt ord) :
     (AzMvPolynomial.gcdGcdFreePart P Q).1 = AzMvPolynomial.gcd P Q
-    ∧ MvPolynomial.map AzInt.toIntRingHom (AzMvPolynomial.gcd P Q).toMvPoly
-        * MvPolynomial.map AzInt.toIntRingHom
-            (AzMvPolynomial.gcdGcdFreePart P Q).2.toMvPoly
-      = MvPolynomial.map AzInt.toIntRingHom P.toMvPoly := by
+    ∧ (AzMvPolynomial.gcdGcdFreePart P Q).2 * AzMvPolynomial.gcd P Q = P := by
   have hpair : AzMvPolynomial.gcdGcdFreePart P Q
       = (AzMvPolynomial.gcd P Q,
          if AzMvPolynomial.gcd P Q = 0 then 0
@@ -806,18 +805,28 @@ theorem AzMvPolynomial.gcdGcdFreePart_spec {n : ℕ}
   rw [hpair]
   by_cases hg : AzMvPolynomial.gcd P Q = 0
   · have hP0 : P = 0 := zero_dvd_iff.mp (hg ▸ gcd_dvd_left P Q)
-    rw [if_pos hg, hg, hP0]
-    simp only [toMvPoly_zero, map_zero, mul_zero]
+    rw [if_pos hg, hg, hP0, mul_zero]
   · rw [if_neg hg]
-    have hkey : Azurite.ExactDiv.exactDiv P (AzMvPolynomial.gcd P Q)
-        * AzMvPolynomial.gcd P Q = P :=
-      Azurite.ExactDiv.exactDiv_mul_self P _ (gcd_dvd_left P Q) hg
-    have h1 := congrArg
-      (fun z : AzMvPolynomial n AzInt ord =>
-        MvPolynomial.map AzInt.toIntRingHom z.toMvPoly) hkey
-    simp only [toMvPoly_mul, map_mul] at h1
-    rw [← h1]
-    ring
+    exact Azurite.ExactDiv.exactDiv_mul_self P _ (gcd_dvd_left P Q) hg
+
+/-- **The canonical pair, image form**: `gcd(P,Q)-image · snd-image =
+P-image` in `MvPolynomial (Fin n) ℤ`, unconditionally — an immediate
+corollary of the computable-ring identity `gcdGcdFreePart_spec'`. -/
+theorem AzMvPolynomial.gcdGcdFreePart_spec {n : ℕ}
+    (P Q : AzMvPolynomial n AzInt ord) :
+    (AzMvPolynomial.gcdGcdFreePart P Q).1 = AzMvPolynomial.gcd P Q
+    ∧ MvPolynomial.map AzInt.toIntRingHom (AzMvPolynomial.gcd P Q).toMvPoly
+        * MvPolynomial.map AzInt.toIntRingHom
+            (AzMvPolynomial.gcdGcdFreePart P Q).2.toMvPoly
+      = MvPolynomial.map AzInt.toIntRingHom P.toMvPoly := by
+  obtain ⟨h1, hkey⟩ := AzMvPolynomial.gcdGcdFreePart_spec' P Q
+  refine ⟨h1, ?_⟩
+  have h2 := congrArg
+    (fun z : AzMvPolynomial n AzInt ord =>
+      MvPolynomial.map AzInt.toIntRingHom z.toMvPoly) hkey
+  simp only [toMvPoly_mul, map_mul] at h2
+  rw [← h2]
+  ring
 
 /-! ### Squarefreeness
 

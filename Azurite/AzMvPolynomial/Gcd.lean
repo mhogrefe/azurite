@@ -152,10 +152,10 @@ Mathlib's `Polynomial.primPart` and BPR's `pp(P)`, so that
 `primPart 0 = 1`), `primitivePart 0 = 0`. -/
 def primitivePart {n : ℕ} (P : AzMvPolynomial (n + 1) AzInt ord) :
     AzMvPolynomial (n + 1) AzInt ord :=
+  let X := nestedDown (toNested (n + 1) P)
   ofNested (n + 1)
     (Azurite.AzPolynomial.divByRingElt
-      (Azurite.AzPolynomial.contentGen (nestedDown (toNested (n + 1) P)))
-      (nestedDown (toNested (n + 1) P)))
+      (Azurite.AzPolynomial.contentGen X) X)
 
 /-- **Primitivity test** (with respect to the first variable): whether the
 content is `1`. Since the content is normalized, this is equivalent to the
@@ -179,7 +179,8 @@ over `ℚ[x⃗]` (`Equiv/Gcd`, `coprime_iff`) — the content-cleared /
 fraction-field coprimality (equivalent to `IsRelPrime` of the `ℚ[x⃗]`
 images, whose easy direction is `coprime_of_isRelPrime`). -/
 def coprime {n : ℕ} (P Q : AzMvPolynomial n AzInt ord) : Bool :=
-  gcd P Q != 0 && (gcd P Q).totalDegree == 0
+  let g := gcd P Q
+  g != 0 && g.totalDegree == 0
 
 /-- **Gcd and gcd-free part** (the univariate `GcdImpl.gcdGcdFreePart`
 convention): the pair `(g, P / g)` where `g = gcd P Q` is the normalized
@@ -197,7 +198,10 @@ def gcdGcdFreePart {n : ℕ} (P Q : AzMvPolynomial n AzInt ord) :
 partial derivatives `∂P/∂x_j` (`j : Fin n`) — computed by folding
 `AzMvPolynomial.gcd` over `P` and the whole gradient. The full gradient is
 essential: a single partial misses squares in the other variables (e.g.
-`∂(x₁²)/∂x₀ = 0`). Named so the squarefreeness spec can refer to it. -/
+`∂(x₁²)/∂x₀ = 0`). Named so the squarefreeness spec can refer to it. For
+`n = 0` the gradient is empty, so the fold returns `P` itself (un-normalized:
+`gcd`-normalization is only applied at the fold steps, of which there are
+none). -/
 def squarefreeGradientGcd {n : ℕ} (P : AzMvPolynomial n AzInt ord) :
     AzMvPolynomial n AzInt ord :=
   (List.finRange n).foldl

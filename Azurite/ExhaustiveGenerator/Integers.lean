@@ -1,16 +1,21 @@
 /-
   Exhaustive generators over `AzInt` (Malachite's `exhaustive_positive_integers`,
-  `exhaustive_nonnegative_integers`, `exhaustive_negative_integers`).
+  `exhaustive_nonnegative_integers`, `exhaustive_negative_integers`,
+  `exhaustive_integers`, `exhaustive_nonzero_integers`).
 
-  Each generator enumerates a half-line of the integers:
-    * `positiveIntegers`    : `1, 2, 3, …`   (values `> 0`)
-    * `nonnegativeIntegers` : `0, 1, 2, …`   (values `≥ 0`)
+  Three generators enumerate a half-line of the integers:
+    * `positiveIntegers`    : `1, 2, 3, …`    (values `> 0`)
+    * `nonnegativeIntegers` : `0, 1, 2, …`    (values `≥ 0`)
     * `negativeIntegers`    : `-1, -2, -3, …` (values `< 0`)
+  and two zig-zag outward from `0`, interleaving the signs:
+    * `integers`            : `0, 1, -1, 2, -2, …` (ALL of `AzInt`)
+    * `nonzeroIntegers`     : `1, -1, 2, -2, …`    (values `≠ 0`)
 
   As with `positiveNaturals`, a generator that skips part of `AzInt` is not an
   `ExhaustiveGenerator AzInt`; the honest fit is the corresponding order
-  subtype (`{z // 0 < z}`, `{z // 0 ≤ z}`, `{z // z < 0}`), for which the
-  generator is a genuine bijection with `ℕ`.
+  subtype (`{z // 0 < z}`, `{z // 0 ≤ z}`, `{z // z < 0}`, `{z // z ≠ 0}`), for
+  which the generator is a genuine bijection with `ℕ`. Only `integers` covers
+  the full type.
 -/
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.AzInt.Equiv.Basic

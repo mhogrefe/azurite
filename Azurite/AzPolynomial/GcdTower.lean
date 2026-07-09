@@ -82,6 +82,9 @@ def contentGcdGen (P Q : AzPolynomial R) : R :=
     primitive parts (via the fraction-free subresultant chain `subresGcd`,
     with the `p = q` pre-step), leading coefficient normalized. Total in
     `P, Q` (zero, constant and swapped-degree inputs included). -/
+-- TODO: the equal-degree branch evaluates `preStep P Q` up to three times (no
+-- CSE guarantee); hoisting it into a `let` would need matching adjustments on
+-- both proof rails (out of scope here).
 def ngcdPoly (P Q : AzPolynomial R) : AzPolynomial R :=
   if P = 0 then leadNormalize Q
   else if Q = 0 then leadNormalize P

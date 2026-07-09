@@ -263,7 +263,7 @@ theorem toMvPolyQ_eq_ratImg (P : AzMvPolynomial n AzInt ord) : toMvPolyQ P = rat
 theorem isRelPrime_num_den (r : AzMvRationalFunction n ord) :
     IsRelPrime (toMvPolyQ r.num) (toMvPolyQ r.den) := by
   rw [toMvPolyQ_eq_ratImg, toMvPolyQ_eq_ratImg]
-  exact AzMvPolynomial.coprime_isRelPrime (num_ne_zero r) r.reduced
+  exact AzMvPolynomial.coprime_isRelPrime r.reduced
 
 private theorem azInt_unit_pos_eq_one {c : AzInt} (hu : IsUnit c) (hpos : 0 < c) : c = 1 := by
   have h1 : IsUnit c.toInt := hu.map Azurite.AzInt.ringEquivInt

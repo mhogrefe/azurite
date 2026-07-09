@@ -115,7 +115,7 @@ theorem dvd_of_map_intImg_dvd {P M : AzMvPolynomial n AzInt ord}
     exact (mul_ne_zero hCne hM) hkey
   have hcontent : cAz.abs * intContent M = intContent K := by
     have h1 : intContent (AzMvPolynomial.C cAz * M) = intContent (P * K) := by rw [hkey]
-    rwa [intContent_C_mul, intContent_mul hP0 hK0, hP, one_mul] at h1
+    rwa [intContent_C_mul, intContent_mul, hP, one_mul] at h1
   obtain ⟨K', hK'⟩ := C_dvd_of_abs_dvd_intContent (K := K)
     (c := cAz) ⟨intContent M, hcontent.symm⟩
   refine ⟨K', mul_left_cancel₀ hCne ?_⟩
@@ -139,17 +139,17 @@ private theorem map_intImg_ne_zero {P : AzMvPolynomial n AzInt ord} (hP : P ≠ 
   have h1 : intImg P = 0 := MvPolynomial.map_injective _ Int.cast_injective (by rw [h, map_zero])
   exact (AzMvPolynomial.ringEquivMvPolynomialInt).injective (h1.trans (map_zero _).symm)
 
-/-- **`coprime → IsRelPrime`** over `ℚ[x⃗]` — the converse of
-`coprime_of_isRelPrime`, i.e. the *hard* multivariate-Gauss direction, closed
-by the content-descent above. -/
-theorem coprime_isRelPrime {P Q : AzMvPolynomial n AzInt ord}
-    (hP : P ≠ 0) (hcop : AzMvPolynomial.coprime P Q = true) :
-    IsRelPrime (ratImg P) (ratImg Q) := by
-  rw [ratImg_eq_map_intImg P, ratImg_eq_map_intImg Q,
-    UniqueFactorizationMonoid.isRelPrime_iff_no_prime_factors (map_intImg_ne_zero hP)]
-  intro d hdP hdQ hdprime
+/-- **The primitive `ℤ`-preimage of a nonzero `ℚ[x⃗]` polynomial.** For any
+nonzero `d : ℚ[x⃗]` there is a primitive `q : AzMvPolynomial n AzInt ord`
+(`intContent q = 1`) whose `ℚ[x⃗]`-image is an associate of `d`, and which
+divides any `M` whose `ℚ[x⃗]`-image `d` divides. This packages the shared
+denominator-clearing / content-descent step used by both `coprime_isRelPrime`
+and `squarefree_of_isSquarefree`. -/
+theorem exists_primitive_preimage {d : MvPolynomial (Fin n) ℚ} (hd0 : d ≠ 0) :
+    ∃ q : AzMvPolynomial n AzInt ord,
+      intContent q = 1 ∧ Associated (ratImg q) d ∧
+        ∀ M : AzMvPolynomial n AzInt ord, d ∣ ratImg M → q ∣ M := by
   obtain ⟨e, he0, Dz, hDz⟩ := mvClearDenom d
-  have hd0 : d ≠ 0 := hdprime.ne_zero
   set Daz := (AzMvPolynomial.ringEquivMvPolynomialInt (n := n) (ord := ord)).symm Dz with hDazdef
   have hDazImg : intImg Daz = Dz := by
     rw [hDazdef]; exact (AzMvPolynomial.ringEquivMvPolynomialInt).apply_symm_apply Dz
@@ -171,38 +171,69 @@ theorem coprime_isRelPrime {P Q : AzMvPolynomial n AzInt ord}
     rw [← hDazImgQ]
     exact map_dvd (MvPolynomial.map (Int.castRingHom ℚ))
       ((map_dvd_iff AzMvPolynomial.ringEquivMvPolynomialInt).mpr hq_dvd_Daz)
-  have hqP : q ∣ P :=
-    dvd_of_map_intImg_dvd hq_prim (hqImg_dvd.trans ((hCe_unit.mul_left_dvd).mpr hdP))
-  have hqQ : q ∣ Q :=
-    dvd_of_map_intImg_dvd hq_prim (hqImg_dvd.trans ((hCe_unit.mul_left_dvd).mpr hdQ))
-  have hq_gcd : q ∣ AzMvPolynomial.gcd P Q := dvd_gcd hqP hqQ
-  -- coprimality: the gcd's `ℚ`-image is a unit, so `q`'s image is a unit
-  have hunit_gcd : IsUnit ((intImg (AzMvPolynomial.gcd P Q)).map (Int.castRingHom ℚ)) := by
-    have h : IsUnit (ratImg (AzMvPolynomial.gcd P Q)) := AzMvPolynomial.coprime_iff.mp hcop
-    rw [ratImg_eq_map_intImg] at h; exact h
-  have hunit_qImg : IsUnit ((intImg q).map (Int.castRingHom ℚ)) :=
-    isUnit_of_dvd_unit (map_dvd (MvPolynomial.map (Int.castRingHom ℚ))
-      ((map_dvd_iff AzMvPolynomial.ringEquivMvPolynomialInt).mpr hq_gcd)) hunit_gcd
-  -- but `q`'s image is an associate of the prime `d` — contradiction
-  have hfac : MvPolynomial.C (e : ℚ) * d
-      = MvPolynomial.C (((signedIntContent Daz).toInt : ℚ)) * (intImg q).map (Int.castRingHom ℚ) := by
-    rw [← hDazImgQ]
-    conv_lhs => rw [← primPos_factorization Daz]
-    rw [intImg_mul, map_mul, map_intImg_C, ← hqdef]
-  have hs0 : ((signedIntContent Daz).toInt : ℚ) ≠ 0 := by
-    exact_mod_cast toInt_ne_zero (signedIntContent_ne_zero hDaz0)
-  have hCs_unit : IsUnit (MvPolynomial.C (((signedIntContent Daz).toInt : ℚ))
-      : MvPolynomial (Fin n) ℚ) := (isUnit_iff_ne_zero.mpr hs0).map MvPolynomial.C
-  have hunit_Ced : IsUnit (MvPolynomial.C (e : ℚ) * d) := by
-    rw [hfac]; exact hCs_unit.mul hunit_qImg
-  exact hdprime.not_unit (isUnit_of_mul_isUnit_right hunit_Ced)
+  refine ⟨q, hq_prim, ?_, ?_⟩
+  · -- `ratImg q` is an associate of `d`: `C(e)·d = C(s)·ratImg q` with both units
+    have hfac : MvPolynomial.C (e : ℚ) * d
+        = MvPolynomial.C (((signedIntContent Daz).toInt : ℚ))
+            * (intImg q).map (Int.castRingHom ℚ) := by
+      rw [← hDazImgQ]
+      conv_lhs => rw [← primPos_factorization Daz]
+      rw [intImg_mul, map_mul, map_intImg_C, ← hqdef]
+    have hs0 : ((signedIntContent Daz).toInt : ℚ) ≠ 0 := by
+      exact_mod_cast toInt_ne_zero (signedIntContent_ne_zero hDaz0)
+    have hCs_unit : IsUnit (MvPolynomial.C (((signedIntContent Daz).toInt : ℚ))
+        : MvPolynomial (Fin n) ℚ) := (isUnit_iff_ne_zero.mpr hs0).map MvPolynomial.C
+    -- `C(e)·d = C(s)·ratImg q` with both `C(e)`, `C(s)` units, so `ratImg q ~ d`
+    rw [ratImg_eq_map_intImg]
+    have h1 : Associated (MvPolynomial.C (e : ℚ) * d) d :=
+      associated_unit_mul_left d _ hCe_unit
+    have h2 : Associated (MvPolynomial.C (e : ℚ) * d) ((intImg q).map (Int.castRingHom ℚ)) := by
+      rw [hfac]; exact associated_unit_mul_left _ _ hCs_unit
+    exact h2.symm.trans h1
+  · intro M hdM
+    apply dvd_of_map_intImg_dvd hq_prim
+    rw [← ratImg_eq_map_intImg M]
+    exact hqImg_dvd.trans ((hCe_unit.mul_left_dvd).mpr hdM)
+
+/-- **`coprime → IsRelPrime`** over `ℚ[x⃗]` — the converse of
+`coprime_of_isRelPrime`, i.e. the *hard* multivariate-Gauss direction, closed
+by the content-descent above. -/
+theorem coprime_isRelPrime {P Q : AzMvPolynomial n AzInt ord}
+    (hcop : AzMvPolynomial.coprime P Q = true) :
+    IsRelPrime (ratImg P) (ratImg Q) := by
+  by_cases hP : P = 0
+  · -- `coprime 0 Q` forces `ratImg Q` (hence its unit-associate `gcd`-image) to
+    -- be a unit; `IsRelPrime 0 x ↔ IsUnit x`.
+    subst hP
+    rw [show (ratImg (0 : AzMvPolynomial n AzInt ord)) = 0 by
+      rw [ratImg, toMvPoly_zero, map_zero], isRelPrime_zero_left]
+    have hg : IsUnit (ratImg (AzMvPolynomial.gcd (0 : AzMvPolynomial n AzInt ord) Q)) :=
+      AzMvPolynomial.coprime_iff.mp hcop
+    exact isUnit_of_dvd_unit
+      (map_dvd (MvPolynomial.map AzMvPolynomial.coeffToRat)
+        (map_dvd AzMvPolynomial.toMvPolyHom
+          (AzMvPolynomial.dvd_gcd (dvd_zero Q) (dvd_refl Q)))) hg
+  rw [ratImg_eq_map_intImg P, ratImg_eq_map_intImg Q,
+    UniqueFactorizationMonoid.isRelPrime_iff_no_prime_factors (map_intImg_ne_zero hP)]
+  intro d hdP hdQ hdprime
+  -- descend `d` to a primitive `q ∣ gcd P Q` whose `ℚ`-image is an associate of `d`
+  obtain ⟨q, -, hassoc, hdvd⟩ := exists_primitive_preimage (ord := ord) hdprime.ne_zero
+  have hq_gcd : q ∣ AzMvPolynomial.gcd P Q :=
+    dvd_gcd (hdvd P (ratImg_eq_map_intImg P ▸ hdP)) (hdvd Q (ratImg_eq_map_intImg Q ▸ hdQ))
+  -- coprimality: `ratImg (gcd P Q)` is a unit, hence `ratImg q` is, hence `d` is
+  have hunit_gcd : IsUnit (ratImg (AzMvPolynomial.gcd P Q)) :=
+    AzMvPolynomial.coprime_iff.mp hcop
+  have hunit_qImg : IsUnit (ratImg q) :=
+    isUnit_of_dvd_unit (map_dvd (MvPolynomial.map AzMvPolynomial.coeffToRat)
+      (map_dvd AzMvPolynomial.toMvPolyHom hq_gcd)) hunit_gcd
+  exact hdprime.not_unit (hassoc.isUnit_iff.mp hunit_qImg)
 
 /-- **The full `coprime ↔ IsRelPrime` characterization** over `ℚ[x⃗]` (for
 nonzero `P`), combining `coprime_isRelPrime` (the multivariate-Gauss direction,
 above) with `coprime_of_isRelPrime` (the easy direction). -/
-theorem coprime_iff_isRelPrime {P Q : AzMvPolynomial n AzInt ord} (hP : P ≠ 0) :
+theorem coprime_iff_isRelPrime {P Q : AzMvPolynomial n AzInt ord} :
     AzMvPolynomial.coprime P Q = true ↔ IsRelPrime (ratImg P) (ratImg Q) :=
-  ⟨coprime_isRelPrime hP, coprime_of_isRelPrime⟩
+  ⟨coprime_isRelPrime, coprime_of_isRelPrime⟩
 
 /-! ### Squarefreeness (the reverse direction) -/
 
@@ -265,54 +296,18 @@ theorem squarefree_of_isSquarefree {P : AzMvPolynomial n AzInt ord}
       rw [show d * d * bb = d * (d * bb) from by ring, Derivation.leibniz]
       simp only [smul_eq_mul]; ring
     rw [hpd]; exact Dvd.intro _ rfl
-  obtain ⟨e, he0, Dz, hDz⟩ := mvClearDenom d
-  have hd0 : d ≠ 0 := hd.ne_zero
-  set Daz := (AzMvPolynomial.ringEquivMvPolynomialInt (n := n) (ord := ord)).symm Dz with hDazdef
-  have hDazImg : intImg Daz = Dz := by
-    rw [hDazdef]; exact (AzMvPolynomial.ringEquivMvPolynomialInt).apply_symm_apply Dz
-  have hCe_unit : IsUnit (MvPolynomial.C (e : ℚ) : MvPolynomial (Fin n) ℚ) :=
-    (isUnit_iff_ne_zero.mpr (by exact_mod_cast he0)).map MvPolynomial.C
-  have hDazImgQ : (intImg Daz).map (Int.castRingHom ℚ) = MvPolynomial.C (e : ℚ) * d := by
-    rw [hDazImg, ← hDz]
-  have hDaz0 : Daz ≠ 0 := by
-    intro hz0
-    have hz : MvPolynomial.C (e : ℚ) * d = 0 := by
-      rw [← hDazImgQ, hz0,
-        show intImg (0 : AzMvPolynomial n AzInt ord) = 0 from
-          map_zero AzMvPolynomial.ringEquivMvPolynomialInt, map_zero]
-    exact (mul_ne_zero hCe_unit.ne_zero hd0) hz
-  set qaz := primPos Daz with hqdef
-  have hq_prim : intContent qaz = 1 := intContent_primPos hDaz0
-  have hq_dvd_Daz : qaz ∣ Daz := Dvd.intro_left _ (primPos_factorization Daz)
-  have hqImg_dvd : (intImg qaz).map (Int.castRingHom ℚ) ∣ MvPolynomial.C (e : ℚ) * d := by
-    rw [← hDazImgQ]
-    exact map_dvd (MvPolynomial.map (Int.castRingHom ℚ))
-      ((map_dvd_iff AzMvPolynomial.ringEquivMvPolynomialInt).mpr hq_dvd_Daz)
-  have hdvd_of : ∀ M : AzMvPolynomial n AzInt ord,
-      d ∣ AzMvPolynomial.ratImg M → qaz ∣ M := by
-    intro M hdM
-    apply dvd_of_map_intImg_dvd hq_prim
-    rw [← ratImg_eq_map_intImg M]
-    exact hqImg_dvd.trans ((hCe_unit.mul_left_dvd).mpr hdM)
+  -- descend `d` to a primitive `qaz` dividing the gradient gcd; its image is a unit
+  obtain ⟨qaz, -, hassoc, hdvd_of⟩ := exists_primitive_preimage (ord := ord) hd.ne_zero
   have hqazg : qaz ∣ AzMvPolynomial.squarefreeGradientGcd P := by
     rw [AzMvPolynomial.squarefreeGradientGcd]
     exact dvd_foldl_gcd_mv _ P _ (hdvd_of P hdP)
       (fun k => hdvd_of _ (by rw [AzMvPolynomial.ratImg_pderivGeneral]; exact hdD k))
-  have hunit_qImg : IsUnit ((intImg qaz).map (Int.castRingHom ℚ)) :=
-    isUnit_of_dvd_unit (map_dvd (MvPolynomial.map (Int.castRingHom ℚ))
-      ((map_dvd_iff AzMvPolynomial.ringEquivMvPolynomialInt).mpr hqazg)) hgU
-  have hfac : MvPolynomial.C (e : ℚ) * d
-      = MvPolynomial.C (((signedIntContent Daz).toInt : ℚ)) * (intImg qaz).map (Int.castRingHom ℚ) := by
-    rw [← hDazImgQ]
-    conv_lhs => rw [← primPos_factorization Daz]
-    rw [intImg_mul, map_mul, map_intImg_C, ← hqdef]
-  have hs0 : ((signedIntContent Daz).toInt : ℚ) ≠ 0 := by
-    exact_mod_cast toInt_ne_zero (signedIntContent_ne_zero hDaz0)
-  have hCs_unit : IsUnit (MvPolynomial.C (((signedIntContent Daz).toInt : ℚ))
-      : MvPolynomial (Fin n) ℚ) := (isUnit_iff_ne_zero.mpr hs0).map MvPolynomial.C
-  have hunit_Ced : IsUnit (MvPolynomial.C (e : ℚ) * d) := by
-    rw [hfac]; exact hCs_unit.mul hunit_qImg
-  exact hd.prime.not_unit (isUnit_of_mul_isUnit_right hunit_Ced)
+  have hgU' : IsUnit (AzMvPolynomial.ratImg (AzMvPolynomial.squarefreeGradientGcd P)) := by
+    rw [ratImg_eq_map_intImg]; exact hgU
+  have hunit_qImg : IsUnit (AzMvPolynomial.ratImg qaz) :=
+    isUnit_of_dvd_unit (map_dvd (MvPolynomial.map AzMvPolynomial.coeffToRat)
+      (map_dvd AzMvPolynomial.toMvPolyHom hqazg)) hgU'
+  exact hd.prime.not_unit (hassoc.isUnit_iff.mp hunit_qImg)
 
 /-- **The full squarefreeness characterization** over `ℚ[x⃗]`: `isSquarefree`
 decides genuine `Squarefree`ness of the `ℚ[x⃗]`-image, combining

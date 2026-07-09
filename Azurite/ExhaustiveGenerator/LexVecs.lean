@@ -7,9 +7,11 @@
   vecs `[t₀, …, t_{n-1}]` over `T` in LEXICOGRAPHIC order — position `0` slowest,
   position `n-1` fastest. Building the enumeration from a SINGLE generator for
   all positions forces `T` to be finite: for `n ≥ 2` the non-first positions
-  reuse the generator and must run out (Malachite: "`xs` must be finite"). So we
-  gate on `[Fintype T] [Contiguous T]`, giving `(Fintype.card T) ^ n` vecs
-  (`n = 0` ⇒ the single empty vec; `n = 1` ⇒ the `T` values).
+  reuse the generator and must run out (Malachite: "`xs` must be finite"). The
+  explicit builder takes `T`'s finite bound `cT` with its witnesses; the
+  INSTANCE is gated on `[FiniteGenerator T]` (whose literal `card` keeps the
+  enumeration computable), giving `cT ^ n` vecs (`n = 0` ⇒ the single empty
+  vec; `n = 1` ⇒ the `T` values).
 
   We take the RECURSIVE route on `n`, reusing `lexPairGen`'s proven odometer
   wholesale (no fresh mixed-radix arithmetic): the length-`(n+1)` generator is
@@ -85,21 +87,21 @@ theorem consVec_bijective {T : Type*} {n : ℕ} :
        exact congrArg LexVec.mk (List.Vector.cons_head_tail v)⟩
 
 /-- **Bundled recursion carrier.** A length-`n` vec generator together with its
-finite bounds: values are produced exactly at positions `0, …, (card T)^n - 1`.
-Threading the bounds through the recursion is what lets each step present the
-previous (length-`n`) generator as the FINITE second component of the next
-`lexPairGenOfFinite`. -/
-structure LexVecData (T : Type*) [Fintype T] (n : ℕ) where
+finite bounds: values are produced exactly at positions `0, …, cT^n - 1`, where
+`cT` is the bound of `T`'s own generator. Threading the bounds through the
+recursion is what lets each step present the previous (length-`n`) generator as
+the FINITE second component of the next `lexPairGenOfFinite`. -/
+structure LexVecData (T : Type*) (cT : ℕ) (n : ℕ) where
   /-- The length-`n` vec generator. -/
   gen : ExhaustiveGenerator (LexVec T n)
-  /-- Positions at or beyond `(card T)^n` produce `none`. -/
-  hnone : ∀ k, (Fintype.card T) ^ n ≤ k → gen.gen k = none
-  /-- Positions below `(card T)^n` produce a value. -/
-  hsome : ∀ k, k < (Fintype.card T) ^ n → gen.gen k ≠ none
+  /-- Positions at or beyond `cT ^ n` produce `none`. -/
+  hnone : ∀ k, cT ^ n ≤ k → gen.gen k = none
+  /-- Positions below `cT ^ n` produce a value. -/
+  hsome : ∀ k, k < cT ^ n → gen.gen k ≠ none
 
 /-- The finite bounds make the bundled generator contiguous (a `none` at `k`
-means `k ≥ (card T)^n`, so `k+1 ≥ (card T)^n` is `none` too). -/
-theorem LexVecData.contiguous {T : Type*} [Fintype T] {n : ℕ} (d : LexVecData T n) :
+means `k ≥ cT^n`, so `k+1 ≥ cT^n` is `none` too). -/
+theorem LexVecData.contiguous {T : Type*} {cT n : ℕ} (d : LexVecData T cT n) :
     @Contiguous _ d.gen := by
   refine @Contiguous.mk (LexVec T n) d.gen (fun k h => d.hnone (k + 1) ?_)
   by_contra hlt
@@ -109,10 +111,11 @@ theorem LexVecData.contiguous {T : Type*} [Fintype T] {n : ℕ} (d : LexVecData 
 empty vec; `n+1` nests `LexVec T n` (finite, by the induction bounds) as the fast
 component of `lexPairGen g _`, relabeled to a `LexVec T (n+1)` via `consVec`. The
 first coordinate (head) is slowest; the last varies fastest. `g` is the generator
-for `T`, `hg` its contiguity (supplying `T`'s own `card T` bound via
-`finiteBound_*`). -/
-def lexVecData {T : Type*} [Fintype T] (g : ExhaustiveGenerator T) (hg : @Contiguous T g) :
-    (n : ℕ) → LexVecData T n
+for `T`, presented (per the builder convention) with explicit finiteness
+witnesses `hnone`/`hsome` for its bound `cT`. -/
+def lexVecData {T : Type*} (g : ExhaustiveGenerator T) {cT : ℕ}
+    (hnone : ∀ k, cT ≤ k → g.gen k = none) (hsome : ∀ k, k < cT → g.gen k ≠ none) :
+    (n : ℕ) → LexVecData T cT n
   | 0 =>
     let G : ExhaustiveGenerator (LexVec T 0) :=
       ofListNodup [⟨List.Vector.nil⟩] (by simp)
@@ -126,10 +129,10 @@ def lexVecData {T : Type*} [Fintype T] (g : ExhaustiveGenerator T) (hg : @Contig
         rw [show G.gen k = some _ from List.getElem?_eq_getElem (by simpa using hk)]
         exact Option.some_ne_none _ }
   | n + 1 =>
-    let prev := lexVecData g hg n
+    let prev := lexVecData g hnone hsome n
     let pair := lexPairGenOfFinite g prev.gen prev.hnone prev.hsome
     have hc := lexPairGenOfFinite_contiguous g prev.gen
-      (@finiteBound_none T g _ hg) (@finiteBound_some T g _ hg) prev.hnone prev.hsome
+      hnone hsome prev.hnone prev.hsome
     { gen := mapGen consVec consVec_bijective pair
       hnone := fun k hk => by
         show (pair.gen k).map consVec = none
@@ -142,33 +145,39 @@ def lexVecData {T : Type*} [Fintype T] (g : ExhaustiveGenerator T) (hg : @Contig
 
 /-- **The lexicographic fixed-length vec generator** (Malachite
 `lex_vecs_fixed_length_from_single`): all length-`n` vecs over the finite type
-`T`, first coordinate slowest / last fastest. `g` is `T`'s generator and `hg` its
-contiguity; `T` must be finite. Extracted from the bundled `lexVecData`. -/
+`T`, first coordinate slowest / last fastest. `g` is `T`'s generator, with
+explicit witnesses that it is finite with bound `cT` (builder convention:
+explicit builders take explicit witnesses, no instance constraints on the
+explicit `g`). Extracted from the bundled `lexVecData`. -/
 @[reducible] def lexVecsFixedLength {T : Type*} (n : ℕ) (g : ExhaustiveGenerator T)
-    [Fintype T] [hg : @Contiguous T g] : ExhaustiveGenerator (LexVec T n) :=
-  (lexVecData g hg n).gen
+    {cT : ℕ} (hnone : ∀ k, cT ≤ k → g.gen k = none)
+    (hsome : ∀ k, k < cT → g.gen k ≠ none) : ExhaustiveGenerator (LexVec T n) :=
+  (lexVecData g hnone hsome n).gen
 
 end ExhaustiveGenerator
 
-/-! ### The `ExhaustiveGenerator`/`Contiguous` instances on `LexVec`
+/-! ### The `ExhaustiveGenerator`/`FiniteGenerator` instances on `LexVec`
 
-With `T` finite + contiguous, the fixed-length vec generator becomes a genuine
-`ExhaustiveGenerator (LexVec T n)` INSTANCE, and (being finite) it is itself
-contiguous — so a `LexVec` can serve as a finite component of further
-compositions. -/
+With `[FiniteGenerator T]`, the fixed-length vec generator becomes a genuine
+computable `ExhaustiveGenerator (LexVec T n)` INSTANCE, itself a
+`FiniteGenerator` with `card = (card T) ^ n` — so a `LexVec` can serve as a
+finite component of further compositions (and `Contiguous (LexVec T n)` follows
+via `FiniteGenerator.toContiguous`). -/
 
 open ExhaustiveGenerator
 
 /-- Lexicographic `ExhaustiveGenerator` on `LexVec T n` (first coordinate
-slowest, last fastest); `T` must be finite + contiguous. -/
+slowest, last fastest); `T` must have a finite generator. -/
 instance instExhaustiveGeneratorLexVec {T : Type*} {n : ℕ} [inst : ExhaustiveGenerator T]
-    [Fintype T] [Contiguous T] : ExhaustiveGenerator (LexVec T n) :=
-  lexVecsFixedLength n inst
+    [FiniteGenerator T] : ExhaustiveGenerator (LexVec T n) :=
+  lexVecsFixedLength n inst FiniteGenerator.gen_none FiniteGenerator.gen_some
 
-/-- The fixed-length vec generator is contiguous (it is finite). -/
-instance instContiguousLexVec {T : Type*} {n : ℕ} [ExhaustiveGenerator T] [Fintype T]
-    [Contiguous T] : Contiguous (LexVec T n) :=
-  (lexVecData inferInstance inferInstance n).contiguous
+/-- The fixed-length vec generator is finite with `card = (card T) ^ n`. -/
+instance instFiniteGeneratorLexVec {T : Type*} {n : ℕ} [inst : ExhaustiveGenerator T]
+    [FiniteGenerator T] : FiniteGenerator (LexVec T n) where
+  card := (FiniteGenerator.card (T := T)) ^ n
+  gen_none := (lexVecData inst FiniteGenerator.gen_none FiniteGenerator.gen_some n).hnone
+  gen_some := (lexVecData inst FiniteGenerator.gen_none FiniteGenerator.gen_some n).hsome
 
 /-! ### Guards
 
@@ -204,7 +213,21 @@ open ExhaustiveGenerator
 #guard (firstN (LexVec Ordering 2) 20).length == 9
 
 -- The explicit builder produces the identical order as the instance.
-#guard (@firstN _ (lexVecsFixedLength 2 boolsGen) 10).map (fun v => v.val.toList)
+#guard (@firstN _
+    (lexVecsFixedLength 2 boolsGen FiniteGenerator.gen_none FiniteGenerator.gen_some) 10).map
+    (fun v => v.val.toList)
   = [[false, false], [false, true], [true, false], [true, true]]
+
+-- A previously-poisoned component type (`UInt8`'s old `Fintype` was
+-- noncomputable): length-2 vecs over `UInt8`, radix `2^8` per position.
+#guard (firstN (LexVec UInt8 2) 10).map (fun v => v.val.toList.map (·.toNat))
+  = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8], [0, 9]]
+
+-- Composite of composites: an infinite-first pair whose finite component is
+-- itself a composite (`LexVec Bool 2`, card `4`).
+#guard (firstN (LexPair AzNat (LexVec Bool 2)) 5).map
+    (fun p => (p.fst.toNat, p.snd.val.toList))
+  = [(0, [false, false]), (0, [false, true]), (0, [true, false]), (0, [true, true]),
+     (1, [false, false])]
 
 end Azurite

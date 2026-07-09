@@ -365,9 +365,16 @@ theorem intContent_exactDiv_eq_one {M g : AzMvPolynomial n AzInt ord}
   intContent_eq_one_of_dvd
     ⟨g, (Azurite.ExactDiv.exactDiv_mul_self M g hdvd hg).symm⟩ hM
 
-/-- **`intContent` is multiplicative.** -/
-theorem intContent_mul {P Q : AzMvPolynomial n AzInt ord} (hP : P ≠ 0) (hQ : Q ≠ 0) :
+/-- **`intContent` is multiplicative.** (`intContent 0 = 0` trivializes the
+zero cases.) -/
+theorem intContent_mul {P Q : AzMvPolynomial n AzInt ord} :
     intContent (P * Q) = intContent P * intContent Q := by
+  by_cases hP : P = 0
+  · rw [hP, zero_mul, show intContent (0 : AzMvPolynomial n AzInt ord) = 0 from rfl,
+      zero_mul]
+  by_cases hQ : Q = 0
+  · rw [hQ, mul_zero, show intContent (0 : AzMvPolynomial n AzInt ord) = 0 from rfl,
+      mul_zero]
   have hppP := intContent_primPos hP
   have hppQ := intContent_primPos hQ
   -- factor the product

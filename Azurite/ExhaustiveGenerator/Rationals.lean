@@ -12,10 +12,11 @@
   `a_n / a_{n+1}`, with consecutive terms automatically coprime (so the fraction
   is already reduced).
 
-  This file (Phase 1) provides only the *computable* enumerations as plain
-  `def`s together with `#guard`s pinning their order to Malachite's doctests.
-  The bijectivity proofs (`occurs_exactly_once`) and the `ExhaustiveGenerator`
-  instances over the order subtypes (`{q // 0 < q}`, etc.) are Phase 2.
+  The file has two layers: the *computable* enumerations as plain `def`s with
+  `#guard`s pinning their order to Malachite's doctests, and then the full
+  bijectivity proofs (`occurs_exactly_once`, via Stern's diatomic sequence
+  `fusc` and the Calkin–Wilf theorem) giving `ExhaustiveGenerator` instances
+  over the order subtypes (`{q // 0 < q}`, etc.) and all of `AzRat`.
 -/
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.AzRat.Construct
@@ -64,7 +65,7 @@ def positiveRationals (n : ℕ) : AzRat :=
 
 /-- All nonnegative rationals: `0` first, then the positive rationals:
 `0, 1, 1/2, 2, 1/3, …`. -/
-def nonNegativeRationals (n : ℕ) : AzRat :=
+def nonnegativeRationals (n : ℕ) : AzRat :=
   if n = 0 then 0 else positiveRationals (n - 1)
 
 /-- All negative rationals: the positive rationals negated:
@@ -90,7 +91,7 @@ def rationals (n : ℕ) : AzRat :=
    "5/3", "3/4", "4", "1/5", "5/4", "4/7", "7/3"]
 
 -- `exhaustive_non_negative_rationals` (first 10).
-#guard ((List.range 10).map (fun i => AzRat.toString (nonNegativeRationals i))) ==
+#guard ((List.range 10).map (fun i => AzRat.toString (nonnegativeRationals i))) ==
   ["0", "1", "1/2", "2", "1/3", "3/2", "2/3", "3", "1/4", "4/3"]
 
 -- `exhaustive_negative_rationals` (first 10).
@@ -613,21 +614,21 @@ instance : Contiguous {q : AzRat // q < 0} :=
 
 /-! ### The nonnegative-rationals generator (prepend `0`) -/
 
-/-- `nonNegativeRationals n` is nonnegative. -/
-theorem nonNegativeRationals_nonneg (n : ℕ) : 0 ≤ nonNegativeRationals n := by
-  rw [nonNegativeRationals]
+/-- `nonnegativeRationals n` is nonnegative. -/
+theorem nonnegativeRationals_nonneg (n : ℕ) : 0 ≤ nonnegativeRationals n := by
+  rw [nonnegativeRationals]
   split
   · exact le_refl 0
   · exact le_of_lt (positiveRationals_pos _)
 
-def nonNegativeRationalsFun : ℕ → {q : AzRat // 0 ≤ q} :=
-  fun n => ⟨nonNegativeRationals n, nonNegativeRationals_nonneg n⟩
+def nonnegativeRationalsFun : ℕ → {q : AzRat // 0 ≤ q} :=
+  fun n => ⟨nonnegativeRationals n, nonnegativeRationals_nonneg n⟩
 
-theorem nonNegativeRationalsFun_bijective : Function.Bijective nonNegativeRationalsFun := by
+theorem nonnegativeRationalsFun_bijective : Function.Bijective nonnegativeRationalsFun := by
   constructor
   · intro m n h
-    have hv : nonNegativeRationals m = nonNegativeRationals n := congrArg Subtype.val h
-    rw [nonNegativeRationals, nonNegativeRationals] at hv
+    have hv : nonnegativeRationals m = nonnegativeRationals n := congrArg Subtype.val h
+    rw [nonnegativeRationals, nonnegativeRationals] at hv
     -- case on the two `if`s
     by_cases hm0 : m = 0 <;> by_cases hn0 : n = 0
     · omega
@@ -641,18 +642,18 @@ theorem nonNegativeRationalsFun_bijective : Function.Bijective nonNegativeRation
       omega
   · rintro ⟨q, hq⟩
     rcases eq_or_lt_of_le hq with h0 | h0
-    · exact ⟨0, Subtype.ext (by show nonNegativeRationals 0 = q; rw [nonNegativeRationals, if_pos rfl]; exact h0)⟩
+    · exact ⟨0, Subtype.ext (by show nonnegativeRationals 0 = q; rw [nonnegativeRationals, if_pos rfl]; exact h0)⟩
     · obtain ⟨n, hn⟩ := positiveRationalsFun_bijective.surjective ⟨q, h0⟩
       refine ⟨n + 1, Subtype.ext ?_⟩
-      show nonNegativeRationals (n + 1) = q
-      rw [nonNegativeRationals, if_neg (by omega), Nat.add_sub_cancel]
+      show nonnegativeRationals (n + 1) = q
+      rw [nonnegativeRationals, if_neg (by omega), Nat.add_sub_cancel]
       exact congrArg Subtype.val hn
 
-instance nonNegativeRationalsGen : ExhaustiveGenerator {q : AzRat // 0 ≤ q} :=
-  ExhaustiveGenerator.ofBijective nonNegativeRationalsFun nonNegativeRationalsFun_bijective
+instance nonnegativeRationalsGen : ExhaustiveGenerator {q : AzRat // 0 ≤ q} :=
+  ExhaustiveGenerator.ofBijective nonnegativeRationalsFun nonnegativeRationalsFun_bijective
 
 instance : Contiguous {q : AzRat // 0 ≤ q} :=
-  ExhaustiveGenerator.contiguous_of_gen_some nonNegativeRationalsGen rfl
+  ExhaustiveGenerator.contiguous_of_gen_some nonnegativeRationalsGen rfl
 
 /-! ### The nonzero-rationals generator (interleave positive and negative) -/
 
@@ -757,22 +758,36 @@ instance rationalsGen : ExhaustiveGenerator AzRat :=
 
 instance : Contiguous AzRat := ExhaustiveGenerator.contiguous_of_gen_some rationalsGen rfl
 
-/-! ### Infiniteness of every rational generator -/
+/-! ### Infiniteness of every rational generator
+
+Each result is REGISTERED as an instance (the types/subtypes are Azurite's own,
+so there is no Mathlib instance to clash with); the named theorem form is kept
+for the blueprint/discoverability. -/
 
 theorem positiveRationalsGen_infinite : Infinite {q : AzRat // 0 < q} :=
   Infinite.of_injective positiveRationalsFun positiveRationalsFun_bijective.injective
 
+instance : Infinite {q : AzRat // 0 < q} := positiveRationalsGen_infinite
+
 theorem negativeRationalsGen_infinite : Infinite {q : AzRat // q < 0} :=
   Infinite.of_injective negativeRationalsFun negativeRationalsFun_bijective.injective
 
-theorem nonNegativeRationalsGen_infinite : Infinite {q : AzRat // 0 ≤ q} :=
-  Infinite.of_injective nonNegativeRationalsFun nonNegativeRationalsFun_bijective.injective
+instance : Infinite {q : AzRat // q < 0} := negativeRationalsGen_infinite
+
+theorem nonnegativeRationalsGen_infinite : Infinite {q : AzRat // 0 ≤ q} :=
+  Infinite.of_injective nonnegativeRationalsFun nonnegativeRationalsFun_bijective.injective
+
+instance : Infinite {q : AzRat // 0 ≤ q} := nonnegativeRationalsGen_infinite
 
 theorem nonzeroRationalsGen_infinite : Infinite {q : AzRat // q ≠ 0} :=
   Infinite.of_injective nonzeroRationalsFun nonzeroRationalsFun_bijective.injective
 
+instance : Infinite {q : AzRat // q ≠ 0} := nonzeroRationalsGen_infinite
+
 theorem rationalsGen_infinite : Infinite AzRat :=
   Infinite.of_injective rationals rationals_bijective.injective
+
+instance : Infinite AzRat := rationalsGen_infinite
 
 /-! ### Generator previews (Malachite doctests) -/
 

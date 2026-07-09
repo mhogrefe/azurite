@@ -87,6 +87,12 @@ structure DepFinGen {A : Type*} (B : A → Type*) (a : A) where
   /-- The enumeration is a bijection onto `B a`. -/
   bij : Function.Bijective enum
 
+/-- The block size is honest: `card` equals the fiber's cardinality (one line
+from the block bijection `enum : Fin card ≃ B a`). -/
+theorem DepFinGen.card_eq {A : Type*} {B : A → Type*} {a : A} [Fintype (B a)]
+    (d : DepFinGen B a) : d.card = Fintype.card (B a) := by
+  rw [← Fintype.card_of_bijective d.bij, Fintype.card_fin]
+
 namespace ExhaustiveGenerator
 
 /-! ### The ragged prefix sum and its monotonicity -/
@@ -143,6 +149,23 @@ theorem le_blockSum_of_some {A : Type*} {B : A → Type*} (gA : ExhaustiveGenera
     have hlt : blockSum gA dB i < blockSum gA dB (i + 1) := blockSum_lt_succ gA dB ha
     have := ih (fun j hj => hsome j (Nat.lt_succ_of_lt hj))
     omega
+
+/-- **Block location.** An index below the prefix sum `S(c)` lands in some
+block `i < c`: `S(i) ≤ k < S(i+1)`. Induction on `c` (the last block or the
+inductive prefix). -/
+theorem exists_block {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a) :
+    ∀ (c k : ℕ), k < blockSum gA dB c →
+      ∃ i, i < c ∧ blockSum gA dB i ≤ k ∧ k < blockSum gA dB (i + 1) := by
+  intro c
+  induction c with
+  | zero => intro k hk; simp [blockSum] at hk
+  | succ c ih =>
+    intro k hk
+    by_cases h : k < blockSum gA dB c
+    · obtain ⟨i, h1, h2, h3⟩ := ih k h
+      exact ⟨i, by omega, h2, h3⟩
+    · exact ⟨c, by omega, by omega, hk⟩
 
 /-! ### The gen (ragged prefix-sum odometer via fuel recursion) -/
 
@@ -260,13 +283,113 @@ theorem depFind_decode {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A
           rw [blockSum_succ, hga]
         omega
 
+/-- **Fuel irrelevance.** With sufficient fuel (`r < fuel`), the walk's result
+does not depend on the fuel: nonempty blocks make the remaining index strictly
+decrease at each step, so any fuel above `r` resolves the same search. Strong
+induction on the remaining index `r`. -/
+theorem depFind_fuel_irrel {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a) :
+    ∀ (r fuel fuel' i : ℕ), r < fuel → r < fuel' →
+      depFind gA dB fuel i r = depFind gA dB fuel' i r := by
+  intro r
+  induction r using Nat.strong_induction_on with
+  | _ r ih =>
+    intro fuel fuel' i hf hf'
+    obtain ⟨f, rfl⟩ : ∃ f, fuel = f + 1 := ⟨fuel - 1, by omega⟩
+    obtain ⟨f', rfl⟩ : ∃ f2, fuel' = f2 + 1 := ⟨fuel' - 1, by omega⟩
+    unfold depFind
+    rcases hga : gA.gen i with _ | a
+    · rfl
+    · simp only
+      by_cases hr : r < (dB a).card
+      · rw [dif_pos hr, dif_pos hr]
+      · rw [dif_neg hr, dif_neg hr]
+        have hpos := (dB a).pos
+        exact ih (r - (dB a).card) (by omega) f f' (i + 1) (by omega) (by omega)
+
+/-- **`none`-step for the ragged walk.** If the walk (with its exactly-adequate
+fuel `r + 1`) returns `none` at remaining index `r`, it returns `none` at
+`r + 1` too: the walk stops only by running off `gA`'s end, and a larger
+remaining index reaches at least as far. Strong induction on `r`, with
+`depFind_fuel_irrel` aligning the fuels across the recursive step. -/
+theorem depFind_none_step {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a) :
+    ∀ (r i : ℕ), depFind gA dB (r + 1) i r = none →
+      depFind gA dB (r + 2) i (r + 1) = none := by
+  intro r
+  induction r using Nat.strong_induction_on with
+  | _ r ih =>
+    intro i h
+    rw [depFind] at h
+    show depFind gA dB ((r + 1) + 1) i (r + 1) = none
+    unfold depFind
+    rcases hga : gA.gen i with _ | a
+    · rfl
+    · rw [hga] at h
+      simp only at h ⊢
+      have hpos := (dB a).pos
+      by_cases hr : r < (dB a).card
+      · rw [dif_pos hr] at h
+        exact absurd h (Option.some_ne_none _)
+      · rw [dif_neg hr] at h
+        rw [dif_neg (by omega)]
+        -- Align the recursive hypothesis to fuel `r' + 1` (`r' := r - card`),
+        -- step it, then align to the goal's fuel `r + 1`.
+        have h' : depFind gA dB (r - (dB a).card + 1) (i + 1) (r - (dB a).card) = none :=
+          (depFind_fuel_irrel gA dB (r - (dB a).card) _ r (i + 1) (by omega) (by omega)).trans h
+        have hstep := ih (r - (dB a).card) (by omega) (i + 1) h'
+        rw [show r + 1 - (dB a).card = (r - (dB a).card) + 1 from by omega]
+        exact (depFind_fuel_irrel gA dB (r - (dB a).card + 1) _ _ (i + 1)
+          (by omega) (by omega)).trans hstep
+
+/-- **Generalized miss lemma** (the dual of `depFind_hit_gen`): if block
+`i₀ + d` is `none` in `gA`, all intermediate blocks are `some`, and the
+remaining index `r` reaches at least the sum of the intervening block sizes,
+the walk runs off `gA`'s end and returns `none`. Induction on the gap `d`. -/
+theorem depFind_miss_gen {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a) :
+    ∀ (d fuel i₀ r : ℕ),
+      gA.gen (i₀ + d) = none →
+      (∀ j, j < d → gA.gen (i₀ + j) ≠ none) →
+      blockSum gA dB (i₀ + d) - blockSum gA dB i₀ ≤ r →
+      d < fuel →
+      depFind gA dB fuel i₀ r = none := by
+  intro d
+  induction d with
+  | zero =>
+    intro fuel i₀ r hga _ _ hfuel
+    obtain ⟨f, rfl⟩ : ∃ f, fuel = f + 1 := ⟨fuel - 1, by omega⟩
+    rw [Nat.add_zero] at hga
+    unfold depFind
+    rw [hga]
+  | succ d ih =>
+    intro fuel i₀ r hga hmid hsum hfuel
+    obtain ⟨f, rfl⟩ : ∃ f, fuel = f + 1 := ⟨fuel - 1, by omega⟩
+    have hmid0 : gA.gen (i₀ + 0) ≠ none := hmid 0 (by omega)
+    rw [Nat.add_zero] at hmid0
+    obtain ⟨a₀, ha₀⟩ := Option.ne_none_iff_exists'.mp hmid0
+    have hc0 : blockSum gA dB (i₀ + 1) = blockSum gA dB i₀ + (dB a₀).card := by
+      rw [blockSum_succ, ha₀]
+    have hmono : blockSum gA dB (i₀ + 1) ≤ blockSum gA dB (i₀ + (d + 1)) :=
+      blockSum_mono gA dB (by omega)
+    unfold depFind
+    rw [ha₀]
+    simp only
+    rw [dif_neg (by omega)]
+    refine ih f (i₀ + 1) (r - (dB a₀).card) ?_ ?_ ?_ (by omega)
+    · rw [show (i₀ + 1) + d = i₀ + (d + 1) by omega]; exact hga
+    · intro j hj
+      rw [show (i₀ + 1) + j = i₀ + (j + 1) by omega]
+      exact hmid (j + 1) (by omega)
+    · rw [show (i₀ + 1) + d = i₀ + (d + 1) by omega]
+      omega
+
 /-- **Uniqueness of the producing position.** Any `m` with `gen m = some ⟨a, b⟩`
 equals `S(iA) + jB`, where `iA = idx a` and `jB` is `b`'s block position.
 Recovers the block index via `gA`-uniqueness (`huA`) and the offset via `enum`
 injectivity. -/
 theorem depFind_unique {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
     (dB : (a : A) → DepFinGen B a)
-    (_hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none)
     (m : ℕ) (a : A) (b : B a) (iA : ℕ) (hiA : gA.gen iA = some a)
     (huA : ∀ y, gA.gen y = some a → y = iA) (jB : ℕ) (hjB : jB < (dB a).card)
     (hjFin : (dB a).enum ⟨jB, hjB⟩ = b)
@@ -322,7 +445,97 @@ Azurite base generator satisfies it (see `contiguous_of_*`). -/
       rw [hhit, hjFin]
     · -- Uniqueness: any producing position decodes back to `S(iA) + jB`.
       intro m hm
-      exact depFind_unique gA dB hA m a b iA hiA huA jB hjB hjFin hm
+      exact depFind_unique gA dB m a b iA hiA huA jB hjB hjFin hm
+
+/-! ### The composition kit: contiguity and finite bounds for `lexDepPairGen`
+
+These export the walk's structure in the interface the compositional layers
+consume: the `contig`-step (so a `LexDepPair` can feed `mapGen`/further
+compositions), and — when `gA` is finite with bound `cA` — the exact
+`hnone`/`hsome` bounds at the total block count `blockSum gA dB cA`, packaged
+as `FiniteGenerator` data. -/
+
+/-- **`lexDepPairGen` preserves the `contig` step**: the walk stops at the
+first `gA`-`none`, and a larger target index stops at the same block
+(`depFind_none_step`). Note this holds for ANY `gA` — the `hA` hypothesis of
+the generator itself is only needed for coverage, not contiguity. -/
+theorem lexDepPairGen_contig_step {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a)
+    (hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none) :
+    ∀ k, (lexDepPairGen gA dB hA).gen k = none →
+      (lexDepPairGen gA dB hA).gen (k + 1) = none :=
+  fun k h => depFind_none_step gA dB k 0 h
+
+/-- Packaged `Contiguous` form of `lexDepPairGen_contig_step`. -/
+theorem lexDepPairGen_contiguous {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a)
+    (hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none) :
+    @Contiguous (LexDepPair A B) (lexDepPairGen gA dB hA) :=
+  @Contiguous.mk (LexDepPair A B) (lexDepPairGen gA dB hA) (lexDepPairGen_contig_step gA dB hA)
+
+/-- **Finite bound, `none` half**: when `gA` is finite with bound `cA`, the
+dependent-pair generator runs out exactly at the total block count
+`blockSum gA dB cA` (the ragged analogue of `cA * cB`). Via `depFind_miss_gen`
+with the `none` block at gap `cA`. -/
+theorem lexDepPairGen_gen_none {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a)
+    (hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none) {cA : ℕ}
+    (hnoneA : ∀ n, cA ≤ n → gA.gen n = none) (hsomeA : ∀ n, n < cA → gA.gen n ≠ none) :
+    ∀ k, blockSum gA dB cA ≤ k → (lexDepPairGen gA dB hA).gen k = none := by
+  intro k hk
+  have hle : cA ≤ blockSum gA dB cA :=
+    le_blockSum_of_some gA dB cA (fun j hj => hsomeA j hj)
+  show depFind gA dB (k + 1) 0 k = none
+  refine depFind_miss_gen gA dB cA (k + 1) 0 k ?_ ?_ ?_ (by omega)
+  · rw [Nat.zero_add]; exact hnoneA cA (le_refl _)
+  · intro j hj; rw [Nat.zero_add]; exact hsomeA j hj
+  · rw [Nat.zero_add]
+    simp only [blockSum]
+    omega
+
+/-- **Finite bound, `some` half**: positions below the total block count
+`blockSum gA dB cA` produce a value. Locate the block (`exists_block`), then
+run the hit lemma at its offset. -/
+theorem lexDepPairGen_gen_some {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A)
+    (dB : (a : A) → DepFinGen B a)
+    (hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none) {cA : ℕ}
+    (hsomeA : ∀ n, n < cA → gA.gen n ≠ none) :
+    ∀ k, k < blockSum gA dB cA → (lexDepPairGen gA dB hA).gen k ≠ none := by
+  intro k hk
+  obtain ⟨i, hic, h1, h2⟩ := exists_block gA dB cA k hk
+  obtain ⟨a, ha⟩ := Option.ne_none_iff_exists'.mp (hsomeA i hic)
+  have hcard : blockSum gA dB (i + 1) = blockSum gA dB i + (dB a).card := by
+    rw [blockSum_succ, ha]
+  have hjB : k - blockSum gA dB i < (dB a).card := by omega
+  have hile : i ≤ blockSum gA dB i :=
+    le_blockSum_of_some gA dB i (fun j hj => hsomeA j (by omega))
+  have hhit := depFind_hit_gen gA dB i (k + 1) 0 (k - blockSum gA dB i) a hjB
+    (by rw [Nat.zero_add]; exact ha)
+    (fun j hj => by rw [Nat.zero_add]; exact hsomeA j (by omega))
+    (by omega)
+  have hSeq : blockSum gA dB (0 + i) - blockSum gA dB 0 + (k - blockSum gA dB i) = k := by
+    rw [Nat.zero_add]
+    simp only [blockSum]
+    omega
+  rw [hSeq] at hhit
+  show depFind gA dB (k + 1) 0 k ≠ none
+  rw [hhit]
+  exact Option.some_ne_none _
+
+/-- **`FiniteGenerator` data for `lexDepPairGen`** over a finite first
+component: `card` is the total block count `blockSum gA dB cA` — COMPUTABLE
+when `cA` is a literal (a fold of the block sizes over `gA`'s enumeration). An
+INSTANCE form is deliberately not provided: the per-fiber block data `dB` is
+value-indexed data with no typeclass carrier (unlike `FiniteGenerator B` for
+the non-dependent `LexPair`). -/
+@[reducible] def lexDepPairGen_finiteGenerator {A : Type*} {B : A → Type*}
+    (gA : ExhaustiveGenerator A) (dB : (a : A) → DepFinGen B a)
+    (hA : ∀ n, gA.gen n = none → gA.gen (n + 1) = none) {cA : ℕ}
+    (hnoneA : ∀ n, cA ≤ n → gA.gen n = none) (hsomeA : ∀ n, n < cA → gA.gen n ≠ none) :
+    @FiniteGenerator (LexDepPair A B) (lexDepPairGen gA dB hA) :=
+  @FiniteGenerator.mk (LexDepPair A B) (lexDepPairGen gA dB hA) (blockSum gA dB cA)
+    (lexDepPairGen_gen_none gA dB hA hnoneA hsomeA)
+    (lexDepPairGen_gen_some gA dB hA hsomeA)
 
 end ExhaustiveGenerator
 
@@ -373,10 +586,10 @@ private theorem naturalsGen_contigStep :
   fun n => Contiguous.contig n
 
 /-- (a) RAGGED finite-first: `B false = Fin 1`, `B true = Fin 3`. -/
-def raggedB : Bool → Type := fun b => if b then Fin 3 else Fin 1
+private def raggedB : Bool → Type := fun b => if b then Fin 3 else Fin 1
 
 /-- Per-block data for `raggedB`: block `false` has size `1`, block `true` size `3`. -/
-def raggedDB : (b : Bool) → DepFinGen raggedB b
+private def raggedDB : (b : Bool) → DepFinGen raggedB b
   | false => { card := 1, pos := Nat.one_pos, enum := id, bij := Function.bijective_id }
   | true  => { card := 3, pos := by norm_num, enum := id, bij := Function.bijective_id }
 
@@ -385,15 +598,15 @@ def raggedDB : (b : Bool) → DepFinGen raggedB b
   lexDepPairGen boolsGen raggedDB boolsGen_contigStep
 
 /-- Render a `raggedB` pair as `(Bool, ℕ)` for the guard. -/
-def raggedRender : LexDepPair Bool raggedB → Bool × ℕ
+private def raggedRender : LexDepPair Bool raggedB → Bool × ℕ
   | ⟨false, c⟩ => (false, (c : Fin 1).val)
   | ⟨true, c⟩  => (true, (c : Fin 3).val)
 
 /-- (b) CONSTANT infinite-first: `A = AzNat`, `B _ = Bool` (card `2` each). -/
-@[reducible] def constB : AzNat → Type := fun _ => Bool
+@[reducible] private def constB : AzNat → Type := fun _ => Bool
 
 /-- Per-block data for `constB`: every block is `[false, true]` (`Bool`, size `2`). -/
-def constDB : (a : AzNat) → DepFinGen constB a := fun _ =>
+private def constDB : (a : AzNat) → DepFinGen constB a := fun _ =>
   { card := 2, pos := by norm_num, enum := ![false, true],
     bij := (by decide : Function.Bijective (![false, true] : Fin 2 → Bool)) }
 

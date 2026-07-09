@@ -11,7 +11,16 @@
   special case); the `[a, ∞)` / `(-∞, b]` families are infinite, via
   `ofBijective`.
 
-  The `AzInt` magnitude-ordered ranges are a separate later round.
+  The bounded `AzInt` magnitude-ordered ranges use the CLOSED-FORM `magF` index
+  formula from `Ranges.lean` (the finite two-sided analogue of the infinite-ray
+  `toInfF` below), so `gen n` is O(1) — no per-call list materialization. An
+  earlier version built the ascending list and `mergeSort`ed it, making `gen 0`
+  Θ(N log N) and `azIntRangeGen` over a wide range (e.g. ±10^12) unusable.
+
+  Deviation from Malachite: where Malachite's range constructors `assert!(a <= b)`
+  (and PANIC on a reversed range), every Azurite range generator here is a TOTAL
+  function — a reversed or degenerate range (`a ≥ b`) is simply the empty
+  generator (card `0`, `gen ≡ none`), needing no precondition.
 -/
 import Azurite.ExhaustiveGenerator.Count
 import Azurite.ExhaustiveGenerator.Ranges
@@ -42,16 +51,27 @@ open ExhaustiveGenerator
       show AzNat.ofNat (a.toNat + (t.val.toNat - a.toNat)) = t.val
       rw [show a.toNat + (t.val.toNat - a.toNat) = t.val.toNat from by omega, AzNat.ofNat_toNat])
 
+/-- Positions at or past the card `b.toNat - a.toNat` are `none`. -/
+theorem azNatRangeGen_gen_none (a b : AzNat) (n : ℕ) (h : b.toNat - a.toNat ≤ n) :
+    @gen _ (azNatRangeGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azNatRangeGen_gen_some (a b : AzNat) (n : ℕ) (h : n < b.toNat - a.toNat) :
+    @gen _ (azNatRangeGen a b) n ≠ none := by
+  rw [show @gen _ (azNatRangeGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
+
 noncomputable instance instFintypeAzNatRange (a b : AzNat) :
     Fintype {x : AzNat // a ≤ x ∧ x < b} :=
-  @fintypeOfBounded _ (azNatRangeGen a b) (b.toNat - a.toNat) (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azNatRangeGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeOfBounded _ (azNatRangeGen a b) (b.toNat - a.toNat)
+    (azNatRangeGen_gen_none a b) (azNatRangeGen_gen_some a b)
 
 /-- `azNatRangeGen a b` produces `b.toNat - a.toNat` elements. -/
 theorem azNatRangeGen_card (a b : AzNat) :
     Fintype.card {x : AzNat // a ≤ x ∧ x < b} = b.toNat - a.toNat :=
-  @fintypeCard_eq _ (azNatRangeGen a b) _ (b.toNat - a.toNat) (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azNatRangeGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeCard_eq _ (azNatRangeGen a b) _ (b.toNat - a.toNat)
+    (azNatRangeGen_gen_none a b) (azNatRangeGen_gen_some a b)
 
 /-- `AzNat` ascending inclusive range `[a, b]`. Card `b.toNat + 1 - a.toNat` (the
 `+1` before the `ℕ` subtraction, so reversed `a > b` gives `0`). -/
@@ -73,16 +93,27 @@ theorem azNatRangeGen_card (a b : AzNat) :
       show AzNat.ofNat (a.toNat + (t.val.toNat - a.toNat)) = t.val
       rw [show a.toNat + (t.val.toNat - a.toNat) = t.val.toNat from by omega, AzNat.ofNat_toNat])
 
+/-- Positions at or past the card `b.toNat + 1 - a.toNat` are `none`. -/
+theorem azNatRangeInclusiveGen_gen_none (a b : AzNat) (n : ℕ) (h : b.toNat + 1 - a.toNat ≤ n) :
+    @gen _ (azNatRangeInclusiveGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azNatRangeInclusiveGen_gen_some (a b : AzNat) (n : ℕ) (h : n < b.toNat + 1 - a.toNat) :
+    @gen _ (azNatRangeInclusiveGen a b) n ≠ none := by
+  rw [show @gen _ (azNatRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
+
 noncomputable instance instFintypeAzNatRangeInclusive (a b : AzNat) :
     Fintype {x : AzNat // a ≤ x ∧ x ≤ b} :=
-  @fintypeOfBounded _ (azNatRangeInclusiveGen a b) (b.toNat + 1 - a.toNat) (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azNatRangeInclusiveGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeOfBounded _ (azNatRangeInclusiveGen a b) (b.toNat + 1 - a.toNat)
+    (azNatRangeInclusiveGen_gen_none a b) (azNatRangeInclusiveGen_gen_some a b)
 
 /-- `azNatRangeInclusiveGen a b` produces `b.toNat + 1 - a.toNat` elements. -/
 theorem azNatRangeInclusiveGen_card (a b : AzNat) :
     Fintype.card {x : AzNat // a ≤ x ∧ x ≤ b} = b.toNat + 1 - a.toNat :=
-  @fintypeCard_eq _ (azNatRangeInclusiveGen a b) _ (b.toNat + 1 - a.toNat) (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azNatRangeInclusiveGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeCard_eq _ (azNatRangeInclusiveGen a b) _ (b.toNat + 1 - a.toNat)
+    (azNatRangeInclusiveGen_gen_none a b) (azNatRangeInclusiveGen_gen_some a b)
 
 /-! ### `AzInt` bounded ascending ranges -/
 
@@ -105,16 +136,27 @@ theorem azNatRangeInclusiveGen_card (a b : AzNat) :
       show AzInt.ofInt (a.toInt + ((t.val.toInt - a.toInt).toNat : ℤ)) = t.val
       rw [show a.toInt + ((t.val.toInt - a.toInt).toNat : ℤ) = t.val.toInt from by omega, AzInt.ofInt_toInt])
 
+/-- Positions at or past the card `(b.toInt - a.toInt).toNat` are `none`. -/
+theorem azIntIncreasingRangeGen_gen_none (a b : AzInt) (n : ℕ) (h : (b.toInt - a.toInt).toNat ≤ n) :
+    @gen _ (azIntIncreasingRangeGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azIntIncreasingRangeGen_gen_some (a b : AzInt) (n : ℕ) (h : n < (b.toInt - a.toInt).toNat) :
+    @gen _ (azIntIncreasingRangeGen a b) n ≠ none := by
+  rw [show @gen _ (azIntIncreasingRangeGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
+
 noncomputable instance instFintypeAzIntIncreasingRange (a b : AzInt) :
     Fintype {x : AzInt // a ≤ x ∧ x < b} :=
-  @fintypeOfBounded _ (azIntIncreasingRangeGen a b) (b.toInt - a.toInt).toNat (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azIntIncreasingRangeGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeOfBounded _ (azIntIncreasingRangeGen a b) (b.toInt - a.toInt).toNat
+    (azIntIncreasingRangeGen_gen_none a b) (azIntIncreasingRangeGen_gen_some a b)
 
 /-- `azIntIncreasingRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements. -/
 theorem azIntIncreasingRangeGen_card (a b : AzInt) :
     Fintype.card {x : AzInt // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
-  @fintypeCard_eq _ (azIntIncreasingRangeGen a b) _ (b.toInt - a.toInt).toNat (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azIntIncreasingRangeGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeCard_eq _ (azIntIncreasingRangeGen a b) _ (b.toInt - a.toInt).toNat
+    (azIntIncreasingRangeGen_gen_none a b) (azIntIncreasingRangeGen_gen_some a b)
 
 /-- `AzInt` ascending inclusive range `[a, b]`. Card `(b.toInt - a.toInt + 1).toNat`. -/
 @[reducible] def azIntIncreasingRangeInclusiveGen (a b : AzInt) :
@@ -135,16 +177,29 @@ theorem azIntIncreasingRangeGen_card (a b : AzInt) :
       show AzInt.ofInt (a.toInt + ((t.val.toInt - a.toInt).toNat : ℤ)) = t.val
       rw [show a.toInt + ((t.val.toInt - a.toInt).toNat : ℤ) = t.val.toInt from by omega, AzInt.ofInt_toInt])
 
+/-- Positions at or past the card `(b.toInt - a.toInt + 1).toNat` are `none`. -/
+theorem azIntIncreasingRangeInclusiveGen_gen_none (a b : AzInt) (n : ℕ)
+    (h : (b.toInt - a.toInt + 1).toNat ≤ n) :
+    @gen _ (azIntIncreasingRangeInclusiveGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azIntIncreasingRangeInclusiveGen_gen_some (a b : AzInt) (n : ℕ)
+    (h : n < (b.toInt - a.toInt + 1).toNat) :
+    @gen _ (azIntIncreasingRangeInclusiveGen a b) n ≠ none := by
+  rw [show @gen _ (azIntIncreasingRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
+
 noncomputable instance instFintypeAzIntIncreasingRangeInclusive (a b : AzInt) :
     Fintype {x : AzInt // a ≤ x ∧ x ≤ b} :=
-  @fintypeOfBounded _ (azIntIncreasingRangeInclusiveGen a b) (b.toInt - a.toInt + 1).toNat (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azIntIncreasingRangeInclusiveGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeOfBounded _ (azIntIncreasingRangeInclusiveGen a b) (b.toInt - a.toInt + 1).toNat
+    (azIntIncreasingRangeInclusiveGen_gen_none a b) (azIntIncreasingRangeInclusiveGen_gen_some a b)
 
 /-- `azIntIncreasingRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat` elements. -/
 theorem azIntIncreasingRangeInclusiveGen_card (a b : AzInt) :
     Fintype.card {x : AzInt // a ≤ x ∧ x ≤ b} = (b.toInt - a.toInt + 1).toNat :=
-  @fintypeCard_eq _ (azIntIncreasingRangeInclusiveGen a b) _ (b.toInt - a.toInt + 1).toNat (fun _ _ => dif_neg (by omega))
-    (fun _ h => by rw [show @gen _ (azIntIncreasingRangeInclusiveGen a b) _ = some _ from dif_pos (by omega)]; exact Option.some_ne_none _)
+  @fintypeCard_eq _ (azIntIncreasingRangeInclusiveGen a b) _ (b.toInt - a.toInt + 1).toNat
+    (azIntIncreasingRangeInclusiveGen_gen_none a b) (azIntIncreasingRangeInclusiveGen_gen_some a b)
 
 /-! ### Infinite: rays to `+∞` / `-∞` -/
 
@@ -230,21 +285,44 @@ theorem azIntDecreasingRangeToNegativeInfinityGen_infinite (b : AzInt) :
 /-! ### `AzInt` bounded magnitude-ordered ranges
 
 Malachite `exhaustive_integer_range`/`_inclusive_range`: the same SET as the
-ascending range, sorted by the key `(|x|, positive-first)`. Realized by
-`List.mergeSort`ing the ascending list, exactly like the fixed-width
-`exhaustiveSignedRangeGen`; `Nodup`/completeness transfer through
-`List.mergeSort_perm`, and the counts are reused from the ascending versions. -/
+ascending range, ordered by the key `(|x|, positive-first)`. Realized by the
+CLOSED-FORM `magF` index formula from `Ranges.lean` (`gen n` O(1), no sort),
+exactly like the fixed-width `exhaustiveSignedRangeGen`; the counts are reused
+from the ascending versions (they are order-independent). `AzInt`'s `ofInt`/
+`toInt` round-trip unconditionally, so — unlike the fixed-width builder — no
+`bmod`/`canon` bound is needed. -/
 
-/-- `AzInt` magnitude-ordered range `[a, b)`. -/
+/-- `AzInt` magnitude-ordered range `[a, b)`, closed-form. -/
 @[reducible] def azIntRangeGen (a b : AzInt) : ExhaustiveGenerator {x : AzInt // a ≤ x ∧ x < b} :=
-  let base := azIntIncreasingRangeGen a b
-  let l := (List.range (b.toInt - a.toInt).toNat).filterMap (@gen _ base)
-  let keyNat := fun (x : {v : AzInt // a ≤ v ∧ v < b}) =>
-    x.val.toInt.natAbs * 2 + (if 0 < x.val.toInt then 0 else 1)
-  ExhaustiveGenerator.ofListNodup (l.mergeSort (fun p q => decide (keyNat p ≤ keyNat q)))
-    ((List.mergeSort_perm l _).nodup_iff.mpr (@nodup_range_filterMap_gen _ base (b.toInt - a.toInt).toNat))
-    (fun t => (List.mergeSort_perm l _).mem_iff.mpr
-      (@mem_range_filterMap_gen _ base (b.toInt - a.toInt).toNat (fun _ _ => dif_neg (by omega)) t))
+  ExhaustiveGenerator.ofBoundedBijOn (b.toInt - a.toInt).toNat
+    (fun n h => ⟨AzInt.ofInt (magF a.toInt b.toInt n), by
+      obtain ⟨hm1, hm2⟩ := magF_mem (a := a.toInt) (b := b.toInt) (n := n) (by omega)
+      refine ⟨?_, ?_⟩
+      · rw [AzInt.le_iff_toInt_le, AzInt.toInt_ofInt]; omega
+      · rw [AzInt.lt_iff_toInt_lt, AzInt.toInt_ofInt]; omega⟩)
+    (fun i j hi hj h => by
+      have h2 := congrArg AzInt.toInt (congrArg Subtype.val h)
+      rw [AzInt.toInt_ofInt, AzInt.toInt_ofInt] at h2
+      exact magF_inj h2)
+    (fun t => by
+      have hla : a.toInt ≤ t.val.toInt := (AzInt.le_iff_toInt_le a t.val).mp t.2.1
+      have hlt : t.val.toInt < b.toInt := (AzInt.lt_iff_toInt_lt t.val b).mp t.2.2
+      obtain ⟨n, hn, hval⟩ := magF_surj (a := a.toInt) (b := b.toInt) (x := t.val.toInt) hla hlt
+      refine ⟨n, by omega, ?_⟩
+      apply Subtype.ext
+      show AzInt.ofInt (magF a.toInt b.toInt n) = t.val
+      rw [hval, AzInt.ofInt_toInt])
+
+/-- Positions at or past the card `(b.toInt - a.toInt).toNat` are `none`. -/
+theorem azIntRangeGen_gen_none (a b : AzInt) (n : ℕ) (h : (b.toInt - a.toInt).toNat ≤ n) :
+    @gen _ (azIntRangeGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azIntRangeGen_gen_some (a b : AzInt) (n : ℕ) (h : n < (b.toInt - a.toInt).toNat) :
+    @gen _ (azIntRangeGen a b) n ≠ none := by
+  rw [show @gen _ (azIntRangeGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
 
 /-- `azIntRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (count reused
 from the ascending `azIntIncreasingRangeGen`). -/
@@ -252,17 +330,41 @@ theorem azIntRangeGen_card (a b : AzInt) :
     Fintype.card {x : AzInt // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
   azIntIncreasingRangeGen_card a b
 
-/-- `AzInt` magnitude-ordered inclusive range `[a, b]`. -/
+/-- `AzInt` magnitude-ordered inclusive range `[a, b]`, closed-form (uses
+`magF a.toInt (b.toInt + 1)`). -/
 @[reducible] def azIntRangeInclusiveGen (a b : AzInt) :
     ExhaustiveGenerator {x : AzInt // a ≤ x ∧ x ≤ b} :=
-  let base := azIntIncreasingRangeInclusiveGen a b
-  let l := (List.range (b.toInt - a.toInt + 1).toNat).filterMap (@gen _ base)
-  let keyNat := fun (x : {v : AzInt // a ≤ v ∧ v ≤ b}) =>
-    x.val.toInt.natAbs * 2 + (if 0 < x.val.toInt then 0 else 1)
-  ExhaustiveGenerator.ofListNodup (l.mergeSort (fun p q => decide (keyNat p ≤ keyNat q)))
-    ((List.mergeSort_perm l _).nodup_iff.mpr (@nodup_range_filterMap_gen _ base (b.toInt - a.toInt + 1).toNat))
-    (fun t => (List.mergeSort_perm l _).mem_iff.mpr
-      (@mem_range_filterMap_gen _ base (b.toInt - a.toInt + 1).toNat (fun _ _ => dif_neg (by omega)) t))
+  ExhaustiveGenerator.ofBoundedBijOn (b.toInt - a.toInt + 1).toNat
+    (fun n h => ⟨AzInt.ofInt (magF a.toInt (b.toInt + 1) n), by
+      obtain ⟨hm1, hm2⟩ := magF_mem (a := a.toInt) (b := b.toInt + 1) (n := n) (by omega)
+      refine ⟨?_, ?_⟩
+      · rw [AzInt.le_iff_toInt_le, AzInt.toInt_ofInt]; omega
+      · rw [AzInt.le_iff_toInt_le, AzInt.toInt_ofInt]; omega⟩)
+    (fun i j hi hj h => by
+      have h2 := congrArg AzInt.toInt (congrArg Subtype.val h)
+      rw [AzInt.toInt_ofInt, AzInt.toInt_ofInt] at h2
+      exact magF_inj h2)
+    (fun t => by
+      have hla : a.toInt ≤ t.val.toInt := (AzInt.le_iff_toInt_le a t.val).mp t.2.1
+      have hlb : t.val.toInt ≤ b.toInt := (AzInt.le_iff_toInt_le t.val b).mp t.2.2
+      obtain ⟨n, hn, hval⟩ := magF_surj (a := a.toInt) (b := b.toInt + 1) (x := t.val.toInt) hla (by omega)
+      refine ⟨n, by omega, ?_⟩
+      apply Subtype.ext
+      show AzInt.ofInt (magF a.toInt (b.toInt + 1) n) = t.val
+      rw [hval, AzInt.ofInt_toInt])
+
+/-- Positions at or past the card `(b.toInt - a.toInt + 1).toNat` are `none`. -/
+theorem azIntRangeInclusiveGen_gen_none (a b : AzInt) (n : ℕ)
+    (h : (b.toInt - a.toInt + 1).toNat ≤ n) :
+    @gen _ (azIntRangeInclusiveGen a b) n = none :=
+  dif_neg (by omega)
+
+/-- Positions below the card produce a value (`≠ none`). -/
+theorem azIntRangeInclusiveGen_gen_some (a b : AzInt) (n : ℕ)
+    (h : n < (b.toInt - a.toInt + 1).toNat) :
+    @gen _ (azIntRangeInclusiveGen a b) n ≠ none := by
+  rw [show @gen _ (azIntRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  exact Option.some_ne_none _
 
 /-- `azIntRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat` elements
 (count reused from the ascending `azIntIncreasingRangeInclusiveGen`). -/
@@ -391,6 +493,13 @@ theorem azIntRangeToNegativeInfinityGen_infinite (b : AzInt) : Infinite {x : AzI
 #guard (@firstN _ (azIntRangeInclusiveGen (AzInt.ofInt (-5)) (AzInt.ofInt 5)) 20).map (·.val.toInt) =
   [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5]
 #guard (@firstN _ (azIntRangeGen (AzInt.ofInt 3) (AzInt.ofInt 3)) 20).map (·.val.toInt) = []
+-- Wide `AzInt` magnitude range: the closed form yields the leading interleave
+-- instantly (the old materialize-and-sort would build a 2·10^12-element list).
+#guard (@firstN _ (azIntRangeGen (AzInt.ofInt (-(10 ^ 12))) (AzInt.ofInt (10 ^ 12))) 7).map (·.val.toInt) =
+  [0, 1, -1, 2, -2, 3, -3]
+-- A deep index is O(1): position 2·10^9 in the interleave is `-(10^9)`.
+#guard (@gen _ (azIntRangeGen (AzInt.ofInt (-(10 ^ 12))) (AzInt.ofInt (10 ^ 12))) (2 * 10 ^ 9)).map (·.val.toInt) =
+  some (-(10 ^ 9))
 -- Magnitude-ordered infinite rays (Malachite doctests).
 #guard (@firstN _ (azIntRangeToInfinityGen (AzInt.ofInt (-2))) 10).map (·.val.toInt) =
   [0, 1, -1, 2, -2, 3, 4, 5, 6, 7]

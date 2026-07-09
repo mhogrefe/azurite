@@ -1,19 +1,25 @@
 /-
-  FINITE monotone exhaustive generators over the fixed-width signed integers
+  FINITE exhaustive generators over the fixed-width signed integers
   `Int8`, `Int16`, `Int32`, `Int64` (Malachite's `exhaustive_natural_signeds`,
-  `exhaustive_negative_signeds`, `exhaustive_positive_signeds`).
+  `exhaustive_negative_signeds`, `exhaustive_positive_signeds`,
+  `exhaustive_signeds`, `exhaustive_nonzero_signeds`).
 
-  Each width has three monotone half-line generators onto an order subtype:
+  Each width has FIVE generators. Three monotone half-lines onto an order
+  subtype:
     * nonnegative `{x // 0 ≤ x}` : `0, 1, …, MAX`   (card `2^(w-1)`)
     * negative    `{x // x < 0}` : `-1, -2, …, MIN`  (card `2^(w-1)`)
     * positive    `{x // 0 < x}` : `1, 2, …, MAX`    (card `2^(w-1) - 1`)
+  and two sign-interleaving zig-zags:
+    * full type   `IntX`         : `0, 1, -1, …, MAX, -MAX, MIN` (card `2^w`)
+    * nonzero     `{x // x ≠ 0}` : `1, -1, 2, -2, …, MIN`        (card `2^w - 1`)
 
-  All are finite, so each is built with `ExhaustiveGenerator.ofBoundedBijOn`.
-  To avoid twelve copy-pasted proofs, three GENERIC builders
-  (`positiveSignedGen`, `nonnegativeSignedGen`, `negativeSignedGen`) do the
-  proof once over an abstract type `T` with its `toInt`/`ofInt`, its
-  in-range round-trip (`canon`), range bounds, and the order↔`toInt` bridge;
-  each width is then a one-line application supplying its core lemmas.
+  All are finite, built with `ExhaustiveGenerator.ofBoundedBij(On)`. To avoid
+  twenty copy-pasted proofs, five GENERIC builders (`positiveSignedGen`,
+  `nonnegativeSignedGen`, `negativeSignedGen`, `zigZagSignedGen`,
+  `zigZagNonzeroSignedGen`) do each proof once over an abstract type `T` with
+  its `toInt`/`ofInt`, its in-range round-trip (`canon`), range bounds, and the
+  order↔`toInt` bridge; each width is then a one-line application supplying its
+  core lemmas.
 -/
 import Azurite.ExhaustiveGenerator.Basic
 
@@ -363,6 +369,38 @@ instance : Contiguous {x : Int32 // x ≠ 0} := contiguous_of_boundedBijOn nonze
 instance : Contiguous {x : Int64 // x ≠ 0} := contiguous_of_boundedBijOn nonzeroInt64Gen rfl
 
 end
+
+/-! ### `FiniteGenerator` instances
+
+Finite bounds as literal data (the runtime radix for compositional generators).
+The stated literal need only be *definitionally* equal to the builder's bound
+(`2 ^ w` vs the zig-zag's `2 * 2 ^ (w-1)`); the kernel's `Nat`-literal
+arithmetic closes the gap inside the `rfl`. -/
+
+instance : FiniteGenerator {x : Int8 // 0 ≤ x} := .ofBoundedBijOn nonnegativeInt8Gen (2 ^ 7) rfl
+instance : FiniteGenerator {x : Int16 // 0 ≤ x} := .ofBoundedBijOn nonnegativeInt16Gen (2 ^ 15) rfl
+instance : FiniteGenerator {x : Int32 // 0 ≤ x} := .ofBoundedBijOn nonnegativeInt32Gen (2 ^ 31) rfl
+instance : FiniteGenerator {x : Int64 // 0 ≤ x} := .ofBoundedBijOn nonnegativeInt64Gen (2 ^ 63) rfl
+
+instance : FiniteGenerator {x : Int8 // x < 0} := .ofBoundedBijOn negativeInt8Gen (2 ^ 7) rfl
+instance : FiniteGenerator {x : Int16 // x < 0} := .ofBoundedBijOn negativeInt16Gen (2 ^ 15) rfl
+instance : FiniteGenerator {x : Int32 // x < 0} := .ofBoundedBijOn negativeInt32Gen (2 ^ 31) rfl
+instance : FiniteGenerator {x : Int64 // x < 0} := .ofBoundedBijOn negativeInt64Gen (2 ^ 63) rfl
+
+instance : FiniteGenerator {x : Int8 // 0 < x} := .ofBoundedBijOn positiveInt8Gen (2 ^ 7 - 1) rfl
+instance : FiniteGenerator {x : Int16 // 0 < x} := .ofBoundedBijOn positiveInt16Gen (2 ^ 15 - 1) rfl
+instance : FiniteGenerator {x : Int32 // 0 < x} := .ofBoundedBijOn positiveInt32Gen (2 ^ 31 - 1) rfl
+instance : FiniteGenerator {x : Int64 // 0 < x} := .ofBoundedBijOn positiveInt64Gen (2 ^ 63 - 1) rfl
+
+instance : FiniteGenerator Int8 := .ofBoundedBij int8Gen (2 ^ 8) rfl
+instance : FiniteGenerator Int16 := .ofBoundedBij int16Gen (2 ^ 16) rfl
+instance : FiniteGenerator Int32 := .ofBoundedBij int32Gen (2 ^ 32) rfl
+instance : FiniteGenerator Int64 := .ofBoundedBij int64Gen (2 ^ 64) rfl
+
+instance : FiniteGenerator {x : Int8 // x ≠ 0} := .ofBoundedBijOn nonzeroInt8Gen (2 ^ 8 - 1) rfl
+instance : FiniteGenerator {x : Int16 // x ≠ 0} := .ofBoundedBijOn nonzeroInt16Gen (2 ^ 16 - 1) rfl
+instance : FiniteGenerator {x : Int32 // x ≠ 0} := .ofBoundedBijOn nonzeroInt32Gen (2 ^ 32 - 1) rfl
+instance : FiniteGenerator {x : Int64 // x ≠ 0} := .ofBoundedBijOn nonzeroInt64Gen (2 ^ 64 - 1) rfl
 
 -- First-10 of one of each shape (Malachite doctests) + finiteness.
 #guard ((ExhaustiveGenerator.firstN {x : Int8 // 0 ≤ x} 10).map (·.val.toInt)) ==
