@@ -31,35 +31,48 @@ isomorphism) are reusable.
 
 open scoped Classical
 
-/-! ### Generic transport of the gcd structure along a ring isomorphism -/
+/-! ### Generic transport of the gcd structure along a multiplicative isomorphism
 
--- TODO: the `transfer*` helpers below only use the multiplicative structure of
--- `e`; they could be generalized to `MulEquiv` (out of scope here).
+Mathlib provides `MulEquiv.uniqueFactorizationMonoid` to transport a
+`UniqueFactorizationMonoid` along a `MulEquiv`, but has **no** analogous
+transport for `GCDMonoid` / `NormalizationMonoid` / `NormalizedGCDMonoid`.
+The `MulEquiv.transfer*` helpers below fill that gap. They live at the
+`CommMonoidWithZero` level (where these classes are defined; the `GCDMonoid`
+variants additionally take `IsCancelMulZero α`, the parent that class now
+extends) and use only the multiplicative structure of `e`
+(`map_mul`, `map_dvd`, `Associated.map`), plus a single zero-preservation
+hypothesis `e 0 = 0` — needed for `NormalizationMonoid`'s `normUnit 0 = 1`
+clause (a bare `MulEquiv` between `CommMonoidWithZero`s need not preserve `0`).
+These are candidates for
+upstreaming to Mathlib. The `RingEquiv.transfer*` names are kept as thin
+wrappers (a `RingEquiv` supplies `.toMulEquiv` and `map_zero`). -/
 
-/-- Pull a `NormalizationMonoid` back along a ring isomorphism. -/
-@[reducible] noncomputable def RingEquiv.transferNormalizationMonoid
-    {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
-    [NormalizationMonoid β] (e : α ≃+* β) : NormalizationMonoid α where
-  normUnit a := (Units.mapEquiv (e.symm.toMulEquiv)) (normUnit (e a))
-  normUnit_zero := by simp
+/-- Pull a `NormalizationMonoid` back along a `MulEquiv` that preserves `0`. -/
+@[reducible] noncomputable def MulEquiv.transferNormalizationMonoid
+    {α β : Type*} [CommMonoidWithZero α] [CommMonoidWithZero β]
+    [NormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) :
+    NormalizationMonoid α where
+  normUnit a := (Units.mapEquiv e.symm) (normUnit (e a))
+  normUnit_zero := by rw [h0]; simp
   normUnit_mul {a b} ha hb := by
-    have hea : e a ≠ 0 := fun h => ha (by simpa using congrArg e.symm h)
-    have heb : e b ≠ 0 := fun h => hb (by simpa using congrArg e.symm h)
+    have hea : e a ≠ 0 := fun h => ha (e.injective (h.trans h0.symm))
+    have heb : e b ≠ 0 := fun h => hb (e.injective (h.trans h0.symm))
     simp only [map_mul, normUnit_mul hea heb]
   normUnit_coe_units u := by
-    have : e ↑u = ↑(Units.mapEquiv e.toMulEquiv u) := rfl
+    have : e ↑u = ↑(Units.mapEquiv e u) := rfl
     rw [this, normUnit_coe_units]; ext; simp
 
-/-- Pull a `GCDMonoid` back along a ring isomorphism. -/
-@[reducible] noncomputable def RingEquiv.transferGCDMonoid
-    {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
-    [GCDMonoid β] (e : α ≃+* β) : GCDMonoid α where
+/-- Pull a `GCDMonoid` back along a `MulEquiv`. -/
+@[reducible] noncomputable def MulEquiv.transferGCDMonoid
+    {α β : Type*} [CommMonoidWithZero α] [IsCancelMulZero α] [CommMonoidWithZero β]
+    [GCDMonoid β] (e : α ≃* β) : GCDMonoid α where
   gcd a b := e.symm (gcd (e a) (e b))
   lcm a b := e.symm (lcm (e a) (e b))
-  gcd_dvd_left a b := by simpa using map_dvd e.symm.toRingHom (gcd_dvd_left (e a) (e b))
-  gcd_dvd_right a b := by simpa using map_dvd e.symm.toRingHom (gcd_dvd_right (e a) (e b))
+  gcd_dvd_left a b := by simpa using map_dvd e.symm.toMonoidHom (gcd_dvd_left (e a) (e b))
+  gcd_dvd_right a b := by simpa using map_dvd e.symm.toMonoidHom (gcd_dvd_right (e a) (e b))
   dvd_gcd {a b c} hac hab := by
-    have := map_dvd e.symm.toRingHom (dvd_gcd (map_dvd e.toRingHom hac) (map_dvd e.toRingHom hab))
+    have := map_dvd e.symm.toMonoidHom
+      (dvd_gcd (map_dvd e.toMonoidHom hac) (map_dvd e.toMonoidHom hab))
     simpa using this
   gcd_mul_lcm a b := by
     have h := gcd_mul_lcm (e a) (e b)
@@ -70,34 +83,66 @@ open scoped Classical
   lcm_zero_right a := by simp
 
 /-- With the transported `NormalizationMonoid`, `normalize` conjugates to the
+target's `normalize` across the `MulEquiv`. -/
+theorem MulEquiv.transfer_normalize
+    {α β : Type*} [CommMonoidWithZero α] [CommMonoidWithZero β]
+    [NormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) (a : α) :
+    letI := e.transferNormalizationMonoid h0
+    normalize a = e.symm (normalize (e a)) := by
+  letI := e.transferNormalizationMonoid h0
+  rw [normalize_apply, normalize_apply]
+  show a * ↑((Units.mapEquiv e.symm) (normUnit (e a)))
+      = e.symm (e a * ↑(normUnit (e a)))
+  rw [map_mul, MulEquiv.symm_apply_apply]; rfl
+
+/-- Pull a `NormalizedGCDMonoid` back along a `MulEquiv` that preserves `0`. -/
+@[reducible] noncomputable def MulEquiv.transferNormalizedGCDMonoid
+    {α β : Type*} [CommMonoidWithZero α] [IsCancelMulZero α] [CommMonoidWithZero β]
+    [NormalizedGCDMonoid β] (e : α ≃* β) (h0 : e 0 = 0) : NormalizedGCDMonoid α :=
+  letI := e.transferNormalizationMonoid h0
+  letI := e.transferGCDMonoid
+  { normalize_gcd := by
+      intro a b
+      rw [e.transfer_normalize h0]
+      show e.symm (normalize (e (e.symm (gcd (e a) (e b))))) = e.symm (gcd (e a) (e b))
+      rw [MulEquiv.apply_symm_apply, normalize_gcd]
+    normalize_lcm := by
+      intro a b
+      rw [e.transfer_normalize h0]
+      show e.symm (normalize (e (e.symm (lcm (e a) (e b))))) = e.symm (lcm (e a) (e b))
+      rw [MulEquiv.apply_symm_apply, normalize_lcm] }
+
+/-! ### `RingEquiv` wrappers
+
+Thin one-line wrappers so existing call sites (which hold a `RingEquiv`) are
+unchanged; `map_zero` supplies the zero-preservation hypothesis. -/
+
+/-- Pull a `NormalizationMonoid` back along a ring isomorphism. -/
+@[reducible] noncomputable def RingEquiv.transferNormalizationMonoid
+    {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
+    [NormalizationMonoid β] (e : α ≃+* β) : NormalizationMonoid α :=
+  e.toMulEquiv.transferNormalizationMonoid (map_zero e)
+
+/-- Pull a `GCDMonoid` back along a ring isomorphism. -/
+@[reducible] noncomputable def RingEquiv.transferGCDMonoid
+    {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
+    [GCDMonoid β] (e : α ≃+* β) : GCDMonoid α :=
+  e.toMulEquiv.transferGCDMonoid
+
+/-- With the transported `NormalizationMonoid`, `normalize` conjugates to the
 target's `normalize` across the ring isomorphism. -/
 theorem RingEquiv.transfer_normalize
     {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
     [NormalizationMonoid β] (e : α ≃+* β) (a : α) :
     letI := e.transferNormalizationMonoid
-    normalize a = e.symm (normalize (e a)) := by
-  letI := e.transferNormalizationMonoid
-  rw [normalize_apply, normalize_apply]
-  show a * ↑((Units.mapEquiv (e.symm.toMulEquiv)) (normUnit (e a)))
-      = e.symm (e a * ↑(normUnit (e a)))
-  rw [map_mul, RingEquiv.symm_apply_apply]; rfl
+    normalize a = e.symm (normalize (e a)) :=
+  e.toMulEquiv.transfer_normalize (map_zero e) a
 
 /-- Pull a `NormalizedGCDMonoid` back along a ring isomorphism. -/
 @[reducible] noncomputable def RingEquiv.transferNormalizedGCDMonoid
     {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
     [NormalizedGCDMonoid β] (e : α ≃+* β) : NormalizedGCDMonoid α :=
-  letI := e.transferNormalizationMonoid
-  letI := e.transferGCDMonoid
-  { normalize_gcd := by
-      intro a b
-      rw [e.transfer_normalize]
-      show e.symm (normalize (e (e.symm (gcd (e a) (e b))))) = e.symm (gcd (e a) (e b))
-      rw [RingEquiv.apply_symm_apply, normalize_gcd]
-    normalize_lcm := by
-      intro a b
-      rw [e.transfer_normalize]
-      show e.symm (normalize (e (e.symm (lcm (e a) (e b))))) = e.symm (lcm (e a) (e b))
-      rw [RingEquiv.apply_symm_apply, normalize_lcm] }
+  e.toMulEquiv.transferNormalizedGCDMonoid (map_zero e)
 
 namespace Azurite.AzMvPolynomial
 

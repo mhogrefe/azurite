@@ -196,41 +196,56 @@ zig-zag onto `[-MAX, MAX]`. -/
     (toInt_lt : ∀ x : T, toInt x < (bound : ℤ))
     (le_toInt : ∀ x : T, -(bound : ℤ) ≤ toInt x)
     (toInt_minValue : toInt minValue = -(bound : ℤ)) :
-    ExhaustiveGenerator T := by
-  have tinj : ∀ a b : T, toInt a = toInt b → a = b :=
-    fun a b hab => by rw [← ofInt_toInt a, ← ofInt_toInt b, hab]
-  -- Bridge: the `toInt` of the (finite) zig-zag value, for indices in range.
-  have key : ∀ m, m < 2 * bound →
-      toInt (if m = 2 * bound - 1 then minValue
-             else ofInt (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1))
-      = (if m = 2 * bound - 1 then -(bound : ℤ)
-         else (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1)) := by
-    intro m hm
-    split_ifs with h1 h2
-    · exact toInt_minValue
-    · apply canon <;> omega
-    · apply canon <;> omega
-  refine ExhaustiveGenerator.ofBoundedBij (2 * bound)
+    ExhaustiveGenerator T :=
+  -- Term-mode `ofBoundedBij`: the `gen`-field shape is the value function `f`
+  -- written directly; only the injectivity/surjectivity PROOFS are tactic blocks.
+  -- The `tinj`/`key` bridges (shared by both proofs) are re-established inside each.
+  ExhaustiveGenerator.ofBoundedBij (2 * bound)
     (fun n => if n = 2 * bound - 1 then minValue
-              else ofInt (if n % 2 = 0 then -(n / 2 : ℤ) else (n / 2 : ℤ) + 1)) ?_ ?_
-  · -- injective: reduce to `ℤ` via `key`, then parity/`MIN` disjointness by `omega`
-    intro i j hi hj h
-    have h2 := congrArg toInt h
-    rw [key i hi, key j hj] at h2
-    split_ifs at h2 <;> omega
-  · -- surjective: `MIN` at the last index, `t.toInt ≥ 1` at `2·t.toInt - 1`,
-    -- `t.toInt ≤ 0` (and `≠ MIN`) at `2·(-t.toInt)`
-    intro t
-    by_cases hmin : toInt t = -(bound : ℤ)
-    · exact ⟨2 * bound - 1, by omega, by
-        apply tinj; rw [key (2 * bound - 1) (by omega)]; split_ifs <;> omega⟩
-    · by_cases hpos : 1 ≤ toInt t
-      · exact ⟨(2 * toInt t - 1).toNat, by have := toInt_lt t; omega, by
-          apply tinj; rw [key _ (by have := toInt_lt t; omega)]
-          have := toInt_lt t; split_ifs <;> omega⟩
-      · exact ⟨(2 * (-toInt t)).toNat, by have := le_toInt t; omega, by
-          apply tinj; rw [key _ (by have := le_toInt t; omega)]
-          have := le_toInt t; split_ifs <;> omega⟩
+              else ofInt (if n % 2 = 0 then -(n / 2 : ℤ) else (n / 2 : ℤ) + 1))
+    (by
+      -- Bridge: the `toInt` of the (finite) zig-zag value, for indices in range.
+      have key : ∀ m, m < 2 * bound →
+          toInt (if m = 2 * bound - 1 then minValue
+                 else ofInt (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1))
+          = (if m = 2 * bound - 1 then -(bound : ℤ)
+             else (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1)) := by
+        intro m hm
+        split_ifs with h1 h2
+        · exact toInt_minValue
+        · apply canon <;> omega
+        · apply canon <;> omega
+      -- injective: reduce to `ℤ` via `key`, then parity/`MIN` disjointness by `omega`
+      intro i j hi hj h
+      have h2 := congrArg toInt h
+      rw [key i hi, key j hj] at h2
+      split_ifs at h2 <;> omega)
+    (by
+      have tinj : ∀ a b : T, toInt a = toInt b → a = b :=
+        fun a b hab => by rw [← ofInt_toInt a, ← ofInt_toInt b, hab]
+      have key : ∀ m, m < 2 * bound →
+          toInt (if m = 2 * bound - 1 then minValue
+                 else ofInt (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1))
+          = (if m = 2 * bound - 1 then -(bound : ℤ)
+             else (if m % 2 = 0 then -(m / 2 : ℤ) else (m / 2 : ℤ) + 1)) := by
+        intro m hm
+        split_ifs with h1 h2
+        · exact toInt_minValue
+        · apply canon <;> omega
+        · apply canon <;> omega
+      -- surjective: `MIN` at the last index, `t.toInt ≥ 1` at `2·t.toInt - 1`,
+      -- `t.toInt ≤ 0` (and `≠ MIN`) at `2·(-t.toInt)`
+      intro t
+      by_cases hmin : toInt t = -(bound : ℤ)
+      · exact ⟨2 * bound - 1, by omega, by
+          apply tinj; rw [key (2 * bound - 1) (by omega)]; split_ifs <;> omega⟩
+      · by_cases hpos : 1 ≤ toInt t
+        · exact ⟨(2 * toInt t - 1).toNat, by have := toInt_lt t; omega, by
+            apply tinj; rw [key _ (by have := toInt_lt t; omega)]
+            have := toInt_lt t; split_ifs <;> omega⟩
+        · exact ⟨(2 * (-toInt t)).toNat, by have := le_toInt t; omega, by
+            apply tinj; rw [key _ (by have := le_toInt t; omega)]
+            have := le_toInt t; split_ifs <;> omega⟩)
 
 /-- Generic builder for the NONZERO signed subtype in zig-zag order
 `1, -1, 2, -2, …, MAX, -MAX, MIN`. Card `= 2·bound - 1`; the last index
@@ -245,50 +260,70 @@ its `≠ 0` proof (valid only in range). -/
     (le_toInt : ∀ x : T, -(bound : ℤ) ≤ toInt x)
     (toInt_minValue : toInt minValue = -(bound : ℤ))
     (zero_toInt : toInt (0 : T) = 0) :
-    ExhaustiveGenerator {x : T // x ≠ 0} := by
-  have tinj : ∀ a b : T, toInt a = toInt b → a = b :=
-    fun a b hab => by rw [← ofInt_toInt a, ← ofInt_toInt b, hab]
-  let g : ℕ → T := fun m => if m = 2 * bound - 2 then minValue
-                            else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))
-  have key : ∀ m, m < 2 * bound - 1 → toInt (g m)
-      = (if m = 2 * bound - 2 then -(bound : ℤ)
-         else (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))) := by
-    intro m hm
-    show toInt (if m = 2 * bound - 2 then minValue
-                else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))) = _
-    split_ifs with h1 h2
-    · exact toInt_minValue
-    · apply canon <;> omega
-    · apply canon <;> omega
-  -- every produced value is nonzero (`MIN ≠ 0`, zig-zag values are `≥1` or `≤-1`)
-  have gne : ∀ m, m < 2 * bound - 1 → g m ≠ 0 := by
-    intro m hm hz
-    have hk := key m hm
-    rw [hz, zero_toInt] at hk
-    split_ifs at hk <;> omega
-  refine ExhaustiveGenerator.ofBoundedBijOn (2 * bound - 1) (fun m h => ⟨g m, gne m h⟩) ?_ ?_
-  · intro i j hi hj h
-    have h2 := congrArg toInt (congrArg Subtype.val h)
-    rw [key i hi, key j hj] at h2
-    split_ifs at h2 <;> omega
-  · intro t
-    have hz0 : toInt t.val ≠ 0 := fun h0 => t.2 (tinj t.val 0 (by rw [h0, zero_toInt]))
-    by_cases hmin : toInt t.val = -(bound : ℤ)
-    · refine ⟨2 * bound - 2, by omega, ?_⟩
-      apply Subtype.ext
-      show g (2 * bound - 2) = t.val
-      apply tinj; rw [key (2 * bound - 2) (by omega)]; split_ifs <;> omega
-    · by_cases hpos : 1 ≤ toInt t.val
-      · refine ⟨(2 * (toInt t.val - 1)).toNat, by have := toInt_lt t.val; omega, ?_⟩
+    ExhaustiveGenerator {x : T // x ≠ 0} :=
+  -- Term-mode `ofBoundedBijOn`: the `gen`-field shape is the value function
+  -- (`⟨g m, _⟩`, where `g` is inlined) written directly; the `≠ 0` witness and
+  -- the injectivity/surjectivity obligations are the tactic blocks. The
+  -- `tinj`/`key`/`gne` bridges are re-established inside each proof that needs them.
+  ExhaustiveGenerator.ofBoundedBijOn (2 * bound - 1)
+    (fun m _ =>
+      ⟨if m = 2 * bound - 2 then minValue
+       else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1)), by
+        -- every produced value is nonzero (`MIN ≠ 0`, zig-zag values are `≥1` or `≤-1`)
+        intro hz
+        have hk : toInt (if m = 2 * bound - 2 then minValue
+                   else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1)))
+            = (if m = 2 * bound - 2 then -(bound : ℤ)
+               else (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))) := by
+          split_ifs with h1 h2
+          · exact toInt_minValue
+          · apply canon <;> omega
+          · apply canon <;> omega
+        rw [hz, zero_toInt] at hk
+        split_ifs at hk <;> omega⟩)
+    (by
+      have key : ∀ m, m < 2 * bound - 1 →
+          toInt (if m = 2 * bound - 2 then minValue
+                 else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1)))
+          = (if m = 2 * bound - 2 then -(bound : ℤ)
+             else (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))) := by
+        intro m hm
+        split_ifs with h1 h2
+        · exact toInt_minValue
+        · apply canon <;> omega
+        · apply canon <;> omega
+      intro i j hi hj h
+      have h2 := congrArg toInt (congrArg Subtype.val h)
+      rw [key i hi, key j hj] at h2
+      split_ifs at h2 <;> omega)
+    (by
+      have tinj : ∀ a b : T, toInt a = toInt b → a = b :=
+        fun a b hab => by rw [← ofInt_toInt a, ← ofInt_toInt b, hab]
+      have key : ∀ m, m < 2 * bound - 1 →
+          toInt (if m = 2 * bound - 2 then minValue
+                 else ofInt (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1)))
+          = (if m = 2 * bound - 2 then -(bound : ℤ)
+             else (if m % 2 = 0 then (m / 2 : ℤ) + 1 else -((m / 2 : ℤ) + 1))) := by
+        intro m hm
+        split_ifs with h1 h2
+        · exact toInt_minValue
+        · apply canon <;> omega
+        · apply canon <;> omega
+      intro t
+      have hz0 : toInt t.val ≠ 0 := fun h0 => t.2 (tinj t.val 0 (by rw [h0, zero_toInt]))
+      by_cases hmin : toInt t.val = -(bound : ℤ)
+      · refine ⟨2 * bound - 2, by omega, ?_⟩
         apply Subtype.ext
-        show g ((2 * (toInt t.val - 1)).toNat) = t.val
-        apply tinj; rw [key _ (by have := toInt_lt t.val; omega)]
-        have := toInt_lt t.val; split_ifs <;> omega
-      · refine ⟨(-2 * toInt t.val - 1).toNat, by have := le_toInt t.val; omega, ?_⟩
-        apply Subtype.ext
-        show g ((-2 * toInt t.val - 1).toNat) = t.val
-        apply tinj; rw [key _ (by have := le_toInt t.val; omega)]
-        have := le_toInt t.val; split_ifs <;> omega
+        apply tinj; rw [key (2 * bound - 2) (by omega)]; split_ifs <;> omega
+      · by_cases hpos : 1 ≤ toInt t.val
+        · refine ⟨(2 * (toInt t.val - 1)).toNat, by have := toInt_lt t.val; omega, ?_⟩
+          apply Subtype.ext
+          apply tinj; rw [key _ (by have := toInt_lt t.val; omega)]
+          have := toInt_lt t.val; split_ifs <;> omega
+        · refine ⟨(-2 * toInt t.val - 1).toNat, by have := le_toInt t.val; omega, ?_⟩
+          apply Subtype.ext
+          apply tinj; rw [key _ (by have := le_toInt t.val; omega)]
+          have := le_toInt t.val; split_ifs <;> omega)
 
 /-! #### Zig-zag signeds (full type) `0, 1, -1, 2, -2, …, MAX, -MAX, MIN` -/
 

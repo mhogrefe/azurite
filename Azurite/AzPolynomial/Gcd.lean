@@ -174,9 +174,10 @@ def gcdNormalizedInt (P Q : AzPolynomial AzInt) : AzPolynomial AzInt :=
   else if P.natDegree = 0 ∨ Q.natDegree = 0 then
     contentGcdInt P Q • (1 : AzPolynomial AzInt)
   else if P.natDegree = Q.natDegree then
-    if preStep P Q = 0 then contentGcdInt P Q • primPos P
-    else if (preStep P Q).natDegree = 0 then contentGcdInt P Q • (1 : AzPolynomial AzInt)
-    else contentGcdInt P Q • primPos (subresGcd P (preStep P Q))
+    let p := preStep P Q
+    if p = 0 then contentGcdInt P Q • primPos P
+    else if p.natDegree = 0 then contentGcdInt P Q • (1 : AzPolynomial AzInt)
+    else contentGcdInt P Q • primPos (subresGcd P p)
   else if P.natDegree < Q.natDegree then contentGcdInt P Q • primPos (subresGcd Q P)
   else contentGcdInt P Q • primPos (subresGcd P Q)
 

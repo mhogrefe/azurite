@@ -686,8 +686,11 @@ theorem exhaustiveSignedRangeInclusiveGen_gen_some {T : Type*} [LE T]
     Int8.ofInt_toInt Int8.toInt_lt Int8.le_toInt
     (fun _ _ => Int8.lt_iff_toInt_lt) (fun _ _ => Int8.le_iff_toInt_le) a b
 
-/-- `int8SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (same
-set as the ascending `int8RangeGen`, so the count is reused). -/
+/-- `int8SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements.
+`Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x < b}`, independent
+of which generator enumerates it or in what order — so the magnitude-ordered
+count is literally the ascending `int8RangeGen_card` restated; the proof never
+touches the magnitude generator. -/
 theorem int8SignedRangeGen_card (a b : Int8) :
     Fintype.card {x : Int8 // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
   int8RangeGen_card a b
@@ -699,8 +702,11 @@ theorem int8SignedRangeGen_card (a b : Int8) :
     Int16.ofInt_toInt Int16.toInt_lt Int16.le_toInt
     (fun _ _ => Int16.lt_iff_toInt_lt) (fun _ _ => Int16.le_iff_toInt_le) a b
 
-/-- `int16SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (same
-set as the ascending `int16RangeGen`, so the count is reused). -/
+/-- `int16SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements.
+`Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x < b}`, independent
+of which generator enumerates it or in what order — so the magnitude-ordered
+count is literally the ascending `int16RangeGen_card` restated; the proof never
+touches the magnitude generator. -/
 theorem int16SignedRangeGen_card (a b : Int16) :
     Fintype.card {x : Int16 // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
   int16RangeGen_card a b
@@ -712,8 +718,11 @@ theorem int16SignedRangeGen_card (a b : Int16) :
     Int32.ofInt_toInt Int32.toInt_lt Int32.le_toInt
     (fun _ _ => Int32.lt_iff_toInt_lt) (fun _ _ => Int32.le_iff_toInt_le) a b
 
-/-- `int32SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (same
-set as the ascending `int32RangeGen`, so the count is reused). -/
+/-- `int32SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements.
+`Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x < b}`, independent
+of which generator enumerates it or in what order — so the magnitude-ordered
+count is literally the ascending `int32RangeGen_card` restated; the proof never
+touches the magnitude generator. -/
 theorem int32SignedRangeGen_card (a b : Int32) :
     Fintype.card {x : Int32 // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
   int32RangeGen_card a b
@@ -725,8 +734,11 @@ theorem int32SignedRangeGen_card (a b : Int32) :
     Int64.ofInt_toInt Int64.toInt_lt Int64.le_toInt
     (fun _ _ => Int64.lt_iff_toInt_lt) (fun _ _ => Int64.le_iff_toInt_le) a b
 
-/-- `int64SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (same
-set as the ascending `int64RangeGen`, so the count is reused). -/
+/-- `int64SignedRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements.
+`Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x < b}`, independent
+of which generator enumerates it or in what order — so the magnitude-ordered
+count is literally the ascending `int64RangeGen_card` restated; the proof never
+touches the magnitude generator. -/
 theorem int64SignedRangeGen_card (a b : Int64) :
     Fintype.card {x : Int64 // a ≤ x ∧ x < b} = (b.toInt - a.toInt).toNat :=
   int64RangeGen_card a b
@@ -738,7 +750,10 @@ theorem int64SignedRangeGen_card (a b : Int64) :
     Int8.ofInt_toInt Int8.toInt_lt Int8.le_toInt (fun _ _ => Int8.le_iff_toInt_le) a b
 
 /-- `int8SignedRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat`
-elements (count reused from the ascending `int8RangeInclusiveGen`). -/
+elements. `Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x ≤ b}`,
+independent of which generator enumerates it or in what order — so the
+magnitude-ordered count is literally the ascending `int8RangeInclusiveGen_card`
+restated; the proof never touches the magnitude generator. -/
 theorem int8SignedRangeInclusiveGen_card (a b : Int8) :
     Fintype.card {x : Int8 // a ≤ x ∧ x ≤ b} = (b.toInt - a.toInt + 1).toNat :=
   int8RangeInclusiveGen_card a b
@@ -750,7 +765,10 @@ theorem int8SignedRangeInclusiveGen_card (a b : Int8) :
     Int16.ofInt_toInt Int16.toInt_lt Int16.le_toInt (fun _ _ => Int16.le_iff_toInt_le) a b
 
 /-- `int16SignedRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat`
-elements (count reused from the ascending `int16RangeInclusiveGen`). -/
+elements. `Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x ≤ b}`,
+independent of which generator enumerates it or in what order — so the
+magnitude-ordered count is literally the ascending `int16RangeInclusiveGen_card`
+restated; the proof never touches the magnitude generator. -/
 theorem int16SignedRangeInclusiveGen_card (a b : Int16) :
     Fintype.card {x : Int16 // a ≤ x ∧ x ≤ b} = (b.toInt - a.toInt + 1).toNat :=
   int16RangeInclusiveGen_card a b
@@ -762,7 +780,10 @@ theorem int16SignedRangeInclusiveGen_card (a b : Int16) :
     Int32.ofInt_toInt Int32.toInt_lt Int32.le_toInt (fun _ _ => Int32.le_iff_toInt_le) a b
 
 /-- `int32SignedRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat`
-elements (count reused from the ascending `int32RangeInclusiveGen`). -/
+elements. `Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x ≤ b}`,
+independent of which generator enumerates it or in what order — so the
+magnitude-ordered count is literally the ascending `int32RangeInclusiveGen_card`
+restated; the proof never touches the magnitude generator. -/
 theorem int32SignedRangeInclusiveGen_card (a b : Int32) :
     Fintype.card {x : Int32 // a ≤ x ∧ x ≤ b} = (b.toInt - a.toInt + 1).toNat :=
   int32RangeInclusiveGen_card a b
@@ -774,7 +795,10 @@ theorem int32SignedRangeInclusiveGen_card (a b : Int32) :
     Int64.ofInt_toInt Int64.toInt_lt Int64.le_toInt (fun _ _ => Int64.le_iff_toInt_le) a b
 
 /-- `int64SignedRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat`
-elements (count reused from the ascending `int64RangeInclusiveGen`). -/
+elements. `Fintype.card` is a fact about the *subtype* `{x // a ≤ x ∧ x ≤ b}`,
+independent of which generator enumerates it or in what order — so the
+magnitude-ordered count is literally the ascending `int64RangeInclusiveGen_card`
+restated; the proof never touches the magnitude generator. -/
 theorem int64SignedRangeInclusiveGen_card (a b : Int64) :
     Fintype.card {x : Int64 // a ≤ x ∧ x ≤ b} = (b.toInt - a.toInt + 1).toNat :=
   int64RangeInclusiveGen_card a b

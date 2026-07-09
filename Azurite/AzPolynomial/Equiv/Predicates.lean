@@ -515,6 +515,7 @@ theorem coprime_iff_gcd_isConstant (P Q : AzPolynomial AzInt) :
       ↔ (AzPolynomial.gcd P Q ≠ 0 ∧ (AzPolynomial.gcd P Q).natDegree = 0) := by
   show coprime P Q = true ↔ (gcdNormalizedInt P Q ≠ 0 ∧ (gcdNormalizedInt P Q).natDegree = 0)
   unfold coprime gcdNormalizedInt
+  simp only []
   split_ifs with h1 h2 h3 h4 h5 h6 h7
   · -- P = 0
     subst h1

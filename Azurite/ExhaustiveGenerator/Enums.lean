@@ -62,9 +62,12 @@ theorem boolsGen_card : Fintype.card Bool = 2 := fintypeCard_eq_finiteCard
 /-- `orderingsIncreasingGen` produces `3` elements. -/
 theorem orderingsIncreasingGen_card : Fintype.card Ordering = 3 := fintypeCard_eq_finiteCard
 
-/-- `orderingsGen` produces `3` elements (same type, so same card as the
-increasing variant; proved through `orderingsGen`'s own bijection, which is a
-named generator rather than the instance — hence the explicit `@`). -/
+/-- `orderingsGen` produces `3` elements. This restates the very same
+proposition as `orderingsIncreasingGen_card`: `Fintype.card Ordering` is a fact
+about the *type* (and its `Fintype` instance), independent of which generator
+enumerates it or in what order. The two differ only in proof route — this one
+goes through `orderingsGen`'s own bijection (a named generator, not the default
+instance, hence the explicit `@`) rather than the `FiniteGenerator` bridge. -/
 theorem orderingsGen_card : Fintype.card Ordering = 3 :=
   @fintypeCard_eq Ordering orderingsGen _ 3 (fun _ h => List.getElem?_eq_none h)
     (fun _ h => by rw [show @gen Ordering orderingsGen _ = some _ from List.getElem?_eq_getElem h]; exact Option.some_ne_none _)
