@@ -1151,8 +1151,18 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
+import Azurite.ExhaustiveGenerator.BitInterleave
+import Azurite.ExhaustiveGenerator.BitInterleaveCapped
+import Azurite.ExhaustiveGenerator.BitInterleaveWeighted
+import Azurite.ExhaustiveGenerator.Cache
+import Azurite.ExhaustiveGenerator.Compress
 import Azurite.ExhaustiveGenerator.Count
 import Azurite.ExhaustiveGenerator.Enums
+import Azurite.ExhaustiveGenerator.FairCapped
+import Azurite.ExhaustiveGenerator.FairPairs
+import Azurite.ExhaustiveGenerator.FairTuples
+import Azurite.ExhaustiveGenerator.FairVecs
+import Azurite.ExhaustiveGenerator.FairWeighted
 import Azurite.ExhaustiveGenerator.Integers
 import Azurite.ExhaustiveGenerator.LexDepPairs
 import Azurite.ExhaustiveGenerator.LexPairs
@@ -1162,6 +1172,7 @@ import Azurite.ExhaustiveGenerator.PositiveNaturals
 import Azurite.ExhaustiveGenerator.Ranges
 import Azurite.ExhaustiveGenerator.Rationals
 import Azurite.ExhaustiveGenerator.Signeds
+import Azurite.ExhaustiveGenerator.Stream
 import Azurite.ExhaustiveGenerator.Unsigneds
 import Azurite.FoerSequence.Basic
 import Azurite.Random.AzPolynomial
