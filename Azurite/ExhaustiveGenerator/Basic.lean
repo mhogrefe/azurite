@@ -314,6 +314,19 @@ literal (which need only be *definitionally* equal to the shape's bound — e.g.
     rw [List.getElem?_eq_getElem (by omega)]
     exact Option.some_ne_none _
 
+/-- A finite generator over a NONEMPTY type produces at least one value:
+`occurs_exactly_once` puts a witness at some position, which `gen_none` forces
+below `card`. This is what discharges nonemptiness side conditions (e.g.
+`lexDepPairGen`'s nonempty-blocks requirement) from a `[Nonempty T]`
+hypothesis. -/
+theorem card_pos {T : Type*} [inst : ExhaustiveGenerator T] [FiniteGenerator T]
+    [Nonempty T] : 0 < card (T := T) := by
+  obtain ⟨t⟩ := ‹Nonempty T›
+  obtain ⟨n, hn, -⟩ := inst.occurs_exactly_once t
+  by_contra h
+  rw [gen_none n (by omega)] at hn
+  exact Option.some_ne_none t hn.symm
+
 /-- `mapGen` preserves `FiniteGenerator` data with the SAME bound: relabeling
 along `f` does not change which positions are `some` (`Option.map` sends
 `none ↔ none`). This is how the flat tuple/vec composites inherit their finite

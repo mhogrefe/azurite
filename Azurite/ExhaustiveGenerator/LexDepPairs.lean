@@ -93,6 +93,57 @@ theorem DepFinGen.card_eq {A : Type*} {B : A → Type*} {a : A} [Fintype (B a)]
     (d : DepFinGen B a) : d.card = Fintype.card (B a) := by
   rw [← Fintype.card_of_bijective d.bij, Fintype.card_fin]
 
+namespace DepFinGen
+
+/-- Read a bounded generator at a `Fin`-position: positions below the bound
+are `some` (by `hsome`), so the read is total. This is the enumeration
+underlying `DepFinGen.ofBounded`. -/
+def boundedEnum {S : Type*} (g : ExhaustiveGenerator S) {c : ℕ}
+    (hsome : ∀ k, k < c → g.gen k ≠ none) (i : Fin c) : S :=
+  (g.gen i).get (Option.isSome_iff_ne_none.mpr (hsome i i.isLt))
+
+/-- The bounded read enumerates the type bijectively: injectivity is the
+uniqueness half of `occurs_exactly_once`, surjectivity its existence half
+(with the producing position below `c` by `hnone`). -/
+theorem boundedEnum_bijective {S : Type*} (g : ExhaustiveGenerator S) {c : ℕ}
+    (hnone : ∀ k, c ≤ k → g.gen k = none) (hsome : ∀ k, k < c → g.gen k ≠ none) :
+    Function.Bijective (boundedEnum g hsome) := by
+  constructor
+  · intro i j h
+    have hi : g.gen i = some (boundedEnum g hsome i) := (Option.some_get _).symm
+    have hj : g.gen j = some (boundedEnum g hsome j) := (Option.some_get _).symm
+    obtain ⟨n, _, hun⟩ := g.occurs_exactly_once (boundedEnum g hsome i)
+    have h1 : (i : ℕ) = n := hun i hi
+    have h2 : (j : ℕ) = n := hun j (hj.trans (congrArg some h.symm))
+    exact Fin.ext (h1.trans h2.symm)
+  · intro b
+    obtain ⟨n, hn, -⟩ := g.occurs_exactly_once b
+    have hlt : n < c := by
+      by_contra hge
+      rw [hnone n (by omega)] at hn
+      exact Option.some_ne_none b hn.symm
+    refine ⟨⟨n, hlt⟩, ?_⟩
+    simp only [boundedEnum]
+    apply Option.some_injective
+    rw [Option.some_get]
+    exact hn
+
+/-- **Build `DepFinGen` block data from any bounded generator of the fiber**:
+`enum i` reads the generator at position `i`; bijectivity comes from
+`occurs_exactly_once` and the bounds. This is the bridge that lets an existing
+finite generator (e.g. a `lexVecData` level) serve as a per-`a` block of
+`lexDepPairGen`. -/
+@[reducible] def ofBounded {A : Type*} {B : A → Type*} {a : A}
+    (g : ExhaustiveGenerator (B a)) {c : ℕ} (hpos : 0 < c)
+    (hnone : ∀ k, c ≤ k → g.gen k = none) (hsome : ∀ k, k < c → g.gen k ≠ none) :
+    DepFinGen B a where
+  card := c
+  pos := hpos
+  enum := boundedEnum g hsome
+  bij := boundedEnum_bijective g hnone hsome
+
+end DepFinGen
+
 namespace ExhaustiveGenerator
 
 /-! ### The ragged prefix sum and its monotonicity -/
