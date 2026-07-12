@@ -15,11 +15,12 @@
   This completes the planned BitDistributor port surface (chunks 1–5: the
   abstract assignment + weight-1 round-robin, the fair pair/tuple/vec
   instances, the capped assignment + finite components, hole compression, and
-  the weighted assignment + these builders). Flagged extensions that remain:
-  the fast rank/unrank for deep compressed positions (4d), TINY output types
-  (a future `BitAssignment` instance owning the ruler positions), and
-  WEIGHTED + CAPPED combined (a future `CappedBitAssignment` instance with
-  weighted rounds) — see the scope notes in `BitInterleaveWeighted`.
+  the weighted assignment + these builders). TINY output types have since
+  landed as the `tinyAssignment` instance in `BitInterleaveTiny` (with
+  `fairPairGenTinyFirst`/`fairPairGenTinySecond` builders there). Flagged
+  extensions that remain: the fast rank/unrank for deep compressed positions
+  (4d) and WEIGHTED + CAPPED combined (a future `CappedBitAssignment` instance
+  with weighted rounds) — see the scope notes in `BitInterleaveWeighted`.
 -/
 import Azurite.ExhaustiveGenerator.BitInterleaveWeighted
 import Azurite.ExhaustiveGenerator.FairTuples

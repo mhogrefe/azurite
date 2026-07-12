@@ -28,8 +28,8 @@
   NOT built here (flagged extensions of the port):
   - TINY output types (`BitDistributorOutputType::tiny()`): tiny slots own the
     logarithmically-sparse ruler positions `i` with `i + 1` a power of two, and
-    the normal slots' closed forms shift around them. That is a future
-    `BitAssignment` instance — the bijection is still free.
+    the normal slots' closed forms shift around them. NOW BUILT in
+    `BitInterleaveTiny` (`tinyAssignment`) — the bijection was indeed free.
   - WEIGHTED + CAPPED combined (`normal(w)` with `max_bits`): a future
     `CappedBitAssignment` instance with weighted rounds, following the same
     pattern as `cappedRoundRobin` in `BitInterleaveCapped`.

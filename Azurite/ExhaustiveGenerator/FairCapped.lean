@@ -17,9 +17,11 @@
   builder returns `none` there (an INTERIOR hole, unlike the initial-segment
   `none`s of the lex generators). Likewise, when ALL slots are capped,
   counters `k ≥ 2 ^ ∑ bits` are invalid. The raw builders (`fair*GenCapped`)
-  remain the SEMANTIC layer; the public instances run them through the hole
-  compression of `Compress.lean` (`compress`, re-indexing along the
-  increasing enumeration of the live counters) — the VALUE sequence is
+  remain the SEMANTIC layer; the public instances run them through the FAST
+  hole compression of `CompressFast.lean` (`compressFast`, re-indexing along
+  the increasing enumeration of the live counters by digit-DP rank/unrank —
+  gen-pointwise identical to `Compress.lean`'s spec `compress`) — the VALUE
+  sequence is
   unchanged (compression deletes gaps, order untouched; hole-free cases like
   power-of-two cards are gen-pointwise untouched), but positions are DENSE
   again, so capped composites are `Contiguous` and, when every component is
@@ -43,15 +45,19 @@
   all-finite pair carries `FiniteGenerator` data (capped slot). Chunk 4b's
   documented finite-tail gap is CLOSED (see the resolution pins below).
 
-  NB the spec `unrank` reaches compressed position `i` by a linear
-  left-to-right scan of the raw counters, so guards must stay in small
-  windows; the DEEP spot checks (counters `2^16`–`2^25`) are stated against
-  the raw builders. A fast digit-DP `rank`/`unrank` is chunk 4d.
+  The compression consumes one hypothesis beyond the counts: the per-arity
+  LIVENESS BRIDGES `fair*GenCapped_gen_isSome_iff` (proved next to the
+  builders below) identify each raw builder's producing counters with
+  `CompressFast.Live`, which is what lets `compressFast` replace the spec
+  `unrank`'s linear scan by the digit-DP `fastUnrank` — reaching compressed
+  position `i` in `O(bits³ · m)`, so even DEEP single accesses go through the
+  INSTANCE (see the `10^6`-index guards and the `10^12 + 39`-card scale
+  demonstration at the bottom).
 -/
 import Azurite.ExhaustiveGenerator.FairTuples
 import Azurite.ExhaustiveGenerator.FairVecs
 import Azurite.ExhaustiveGenerator.BitInterleaveCapped
-import Azurite.ExhaustiveGenerator.Compress
+import Azurite.ExhaustiveGenerator.CompressFast
 import Azurite.ExhaustiveGenerator.Enums
 import Mathlib.Algebra.BigOperators.Fin
 
@@ -505,10 +511,223 @@ of `fairPairGenCapped`. The unique index of `(a, b, c, d)` is
 
 end ExhaustiveGenerator
 
+/-! ### Slot production bounds and the liveness bridges
+
+`compressFast` consumes, per instance, a bridge identifying the raw builder's
+producing counters with `CompressFast.Live` — mechanical per arity, from the
+per-slot production shape `FairSlot.gen_isSome_iff`. -/
+
+/-- A slot's generator produces a value exactly when the index is under the
+capped card (vacuously always, for an infinite slot): the `isSome` shape of
+`spec_none`/`spec_some`, matching the per-slot guard of
+`CompressFast.Live`. -/
+theorem FairSlot.gen_isSome_iff {T : Type*} {g : ExhaustiveGenerator T}
+    (s : @FairSlot T g) (x : ℕ) :
+    (g.gen x).isSome ↔ ∀ b, s.bits = some b → x < s.card := by
+  constructor
+  · intro hs b hb
+    obtain ⟨-, -, hnone⟩ := s.spec_some b hb
+    by_contra hge
+    rw [hnone x (Nat.le_of_not_lt hge)] at hs
+    exact absurd hs (by simp)
+  · intro h
+    rcases hb : s.bits with _ | b
+    · exact Option.isSome_iff_ne_none.mpr (s.spec_none hb x)
+    · obtain ⟨-, hsome, -⟩ := s.spec_some b hb
+      exact Option.isSome_iff_ne_none.mpr (hsome x (h b hb))
+
+namespace CompressFast
+
+open ExhaustiveGenerator
+
+/-- **The raw capped pair builder's liveness is `Live`**: a counter produces a
+value exactly when it is valid and both slots decode in range. -/
+theorem fairPairGenCapped_gen_isSome_iff {A B : Type*} (gA : ExhaustiveGenerator A)
+    (gB : ExhaustiveGenerator B) (sA : @FairSlot A gA) (sB : @FairSlot B gB) (k : ℕ) :
+    ((fairPairGenCapped gA gB sA sB).gen k).isSome
+      ↔ Live ![sA.bits, sB.bits] ![sA.card, sB.card] k := by
+  have hgen : (fairPairGenCapped gA gB sA sB).gen k
+      = if (fairPairCappedAssignment sA.bits sB.bits).Valid k then
+          (gA.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 0 k)).bind fun a =>
+            (gB.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 1 k)).map fun b =>
+              (a, b)
+        else none := rfl
+  rw [hgen]
+  by_cases hv : (fairPairCappedAssignment sA.bits sB.bits).Valid k
+  · rw [if_pos hv]
+    constructor
+    · intro hs
+      refine ⟨hv, ?_⟩
+      rcases hga : gA.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 0 k)
+        with _ | a
+      · rw [hga] at hs
+        exact absurd hs (by simp)
+      rcases hgb : gB.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 1 k)
+        with _ | b
+      · rw [hga, hgb] at hs
+        exact absurd hs (by simp)
+      intro j bb hj
+      match j with
+      | ⟨0, _⟩ =>
+        exact (sA.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨a, hga⟩) bb hj
+      | ⟨1, _⟩ =>
+        exact (sB.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨b, hgb⟩) bb hj
+    · rintro ⟨-, hlt⟩
+      have ha : (gA.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 0 k)).isSome :=
+        (sA.gen_isSome_iff _).mpr fun bb hb => hlt 0 bb hb
+      have hb : (gB.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 1 k)).isSome :=
+        (sB.gen_isSome_iff _).mpr fun bb hb => hlt 1 bb hb
+      obtain ⟨a, hga⟩ := Option.isSome_iff_exists.mp ha
+      obtain ⟨b, hgb⟩ := Option.isSome_iff_exists.mp hb
+      rw [hga, hgb]
+      rfl
+  · rw [if_neg hv]
+    exact iff_of_false (by simp) fun hlive => hv hlive.1
+
+/-- **The raw capped triple builder's liveness is `Live`**: the 3-slot clone
+of `fairPairGenCapped_gen_isSome_iff`. -/
+theorem fairTripleGenCapped_gen_isSome_iff {A B C : Type*} (gA : ExhaustiveGenerator A)
+    (gB : ExhaustiveGenerator B) (gC : ExhaustiveGenerator C) (sA : @FairSlot A gA)
+    (sB : @FairSlot B gB) (sC : @FairSlot C gC) (k : ℕ) :
+    ((fairTripleGenCapped gA gB gC sA sB sC).gen k).isSome
+      ↔ Live ![sA.bits, sB.bits, sC.bits] ![sA.card, sB.card, sC.card] k := by
+  have hgen : (fairTripleGenCapped gA gB gC sA sB sC).gen k
+      = if (fairTripleCappedAssignment sA.bits sB.bits sC.bits).Valid k then
+          (gA.gen ((fairTripleCappedAssignment sA.bits sB.bits sC.bits).deinterleave 0 k)).bind
+            fun a =>
+              (gB.gen ((fairTripleCappedAssignment
+                sA.bits sB.bits sC.bits).deinterleave 1 k)).bind fun b =>
+                  (gC.gen ((fairTripleCappedAssignment
+                    sA.bits sB.bits sC.bits).deinterleave 2 k)).map fun c => (a, b, c)
+        else none := rfl
+  rw [hgen]
+  by_cases hv : (fairTripleCappedAssignment sA.bits sB.bits sC.bits).Valid k
+  · rw [if_pos hv]
+    constructor
+    · intro hs
+      refine ⟨hv, ?_⟩
+      rcases hga : gA.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 0 k) with _ | a
+      · rw [hga] at hs
+        exact absurd hs (by simp)
+      rcases hgb : gB.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 1 k) with _ | b
+      · rw [hga, hgb] at hs
+        exact absurd hs (by simp)
+      rcases hgc : gC.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 2 k) with _ | c
+      · rw [hga, hgb, hgc] at hs
+        exact absurd hs (by simp)
+      intro j bb hj
+      match j with
+      | ⟨0, _⟩ =>
+        exact (sA.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨a, hga⟩) bb hj
+      | ⟨1, _⟩ =>
+        exact (sB.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨b, hgb⟩) bb hj
+      | ⟨2, _⟩ =>
+        exact (sC.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨c, hgc⟩) bb hj
+    · rintro ⟨-, hlt⟩
+      have ha : (gA.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 0 k)).isSome :=
+        (sA.gen_isSome_iff _).mpr fun bb hb => hlt 0 bb hb
+      have hb : (gB.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 1 k)).isSome :=
+        (sB.gen_isSome_iff _).mpr fun bb hb => hlt 1 bb hb
+      have hc : (gC.gen ((fairTripleCappedAssignment
+          sA.bits sB.bits sC.bits).deinterleave 2 k)).isSome :=
+        (sC.gen_isSome_iff _).mpr fun bb hb => hlt 2 bb hb
+      obtain ⟨a, hga⟩ := Option.isSome_iff_exists.mp ha
+      obtain ⟨b, hgb⟩ := Option.isSome_iff_exists.mp hb
+      obtain ⟨c, hgc⟩ := Option.isSome_iff_exists.mp hc
+      rw [hga, hgb, hgc]
+      rfl
+  · rw [if_neg hv]
+    exact iff_of_false (by simp) fun hlive => hv hlive.1
+
+/-- **The raw capped quadruple builder's liveness is `Live`**: the 4-slot
+clone of `fairPairGenCapped_gen_isSome_iff`. -/
+theorem fairQuadrupleGenCapped_gen_isSome_iff {A B C D : Type*}
+    (gA : ExhaustiveGenerator A) (gB : ExhaustiveGenerator B) (gC : ExhaustiveGenerator C)
+    (gD : ExhaustiveGenerator D) (sA : @FairSlot A gA) (sB : @FairSlot B gB)
+    (sC : @FairSlot C gC) (sD : @FairSlot D gD) (k : ℕ) :
+    ((fairQuadrupleGenCapped gA gB gC gD sA sB sC sD).gen k).isSome
+      ↔ Live ![sA.bits, sB.bits, sC.bits, sD.bits] ![sA.card, sB.card, sC.card, sD.card] k := by
+  have hgen : (fairQuadrupleGenCapped gA gB gC gD sA sB sC sD).gen k
+      = if (fairQuadrupleCappedAssignment sA.bits sB.bits sC.bits sD.bits).Valid k then
+          (gA.gen ((fairQuadrupleCappedAssignment
+            sA.bits sB.bits sC.bits sD.bits).deinterleave 0 k)).bind fun a =>
+              (gB.gen ((fairQuadrupleCappedAssignment
+                sA.bits sB.bits sC.bits sD.bits).deinterleave 1 k)).bind fun b =>
+                  (gC.gen ((fairQuadrupleCappedAssignment
+                    sA.bits sB.bits sC.bits sD.bits).deinterleave 2 k)).bind fun c =>
+                      (gD.gen ((fairQuadrupleCappedAssignment
+                        sA.bits sB.bits sC.bits sD.bits).deinterleave 3 k)).map fun d =>
+                          (a, b, c, d)
+        else none := rfl
+  rw [hgen]
+  by_cases hv : (fairQuadrupleCappedAssignment sA.bits sB.bits sC.bits sD.bits).Valid k
+  · rw [if_pos hv]
+    constructor
+    · intro hs
+      refine ⟨hv, ?_⟩
+      rcases hga : gA.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 0 k) with _ | a
+      · rw [hga] at hs
+        exact absurd hs (by simp)
+      rcases hgb : gB.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 1 k) with _ | b
+      · rw [hga, hgb] at hs
+        exact absurd hs (by simp)
+      rcases hgc : gC.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 2 k) with _ | c
+      · rw [hga, hgb, hgc] at hs
+        exact absurd hs (by simp)
+      rcases hgd : gD.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 3 k) with _ | d
+      · rw [hga, hgb, hgc, hgd] at hs
+        exact absurd hs (by simp)
+      intro j bb hj
+      match j with
+      | ⟨0, _⟩ =>
+        exact (sA.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨a, hga⟩) bb hj
+      | ⟨1, _⟩ =>
+        exact (sB.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨b, hgb⟩) bb hj
+      | ⟨2, _⟩ =>
+        exact (sC.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨c, hgc⟩) bb hj
+      | ⟨3, _⟩ =>
+        exact (sD.gen_isSome_iff _).mp (Option.isSome_iff_exists.mpr ⟨d, hgd⟩) bb hj
+    · rintro ⟨-, hlt⟩
+      have ha : (gA.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 0 k)).isSome :=
+        (sA.gen_isSome_iff _).mpr fun bb hb => hlt 0 bb hb
+      have hb : (gB.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 1 k)).isSome :=
+        (sB.gen_isSome_iff _).mpr fun bb hb => hlt 1 bb hb
+      have hc : (gC.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 2 k)).isSome :=
+        (sC.gen_isSome_iff _).mpr fun bb hb => hlt 2 bb hb
+      have hd : (gD.gen ((fairQuadrupleCappedAssignment
+          sA.bits sB.bits sC.bits sD.bits).deinterleave 3 k)).isSome :=
+        (sD.gen_isSome_iff _).mpr fun bb hb => hlt 3 bb hb
+      obtain ⟨a, hga⟩ := Option.isSome_iff_exists.mp ha
+      obtain ⟨b, hgb⟩ := Option.isSome_iff_exists.mp hb
+      obtain ⟨c, hgc⟩ := Option.isSome_iff_exists.mp hc
+      obtain ⟨d, hgd⟩ := Option.isSome_iff_exists.mp hd
+      rw [hga, hgb, hgc, hgd]
+      rfl
+  · rw [if_neg hv]
+    exact iff_of_false (by simp) fun hlive => hv hlive.1
+
+end CompressFast
+
 open ExhaustiveGenerator in
 /-- **The capped fair `ExhaustiveGenerator (A × B)` instance**: `fairPairGenCapped`
 on the components' `FairSlot` specs, COMPRESSED (holes deleted, value sequence
-untouched) at the live count `mulCount sA.count sB.count`. Priority 900 sits
+untouched) at the live count `mulCount sA.count sB.count` — through the FAST
+path `compressFast` (gen-pointwise identical to the spec `compress` by
+`compressFast_gen_eq_compress`, so nothing observable changed in the swap),
+with the liveness bridge `fairPairGenCapped_gen_isSome_iff` feeding the digit
+DP. Priority 900 sits
 BELOW the all-infinite fair pair (default 1000) — `FairSlot` also covers
 infinite components, so on an all-infinite product both apply and the uncapped
 one (whose values agree, the capped assignment degenerating to `roundRobin`)
@@ -517,9 +736,11 @@ both components are finite, a `FiniteGenerator` of card `cardA * cardB`. -/
 instance (priority := 900) instExhaustiveGeneratorProdCapped {A B : Type*}
     [gA : ExhaustiveGenerator A] [sA : FairSlot A] [gB : ExhaustiveGenerator B]
     [sB : FairSlot B] : ExhaustiveGenerator (A × B) :=
-  compress (fairPairGenCapped gA gB sA sB) (mulCount sA.count sB.count)
+  CompressFast.compressFast ![sA.bits, sB.bits] ![sA.card, sB.card]
+    (fairPairGenCapped gA gB sA sB) (mulCount sA.count sB.count)
     (hasCount_h _ (sA.hasCount.prod sB.hasCount))
     (hasCount_h' _ (sA.hasCount.prod sB.hasCount))
+    (CompressFast.fairPairGenCapped_gen_isSome_iff gA gB sA sB)
 
 open ExhaustiveGenerator in
 /-- Compressed capped fair pairs are contiguous (priority matching the
@@ -527,9 +748,11 @@ generator instance, as in `FairTuples`). -/
 instance (priority := 900) instContiguousProdCapped {A B : Type*}
     [gA : ExhaustiveGenerator A] [sA : FairSlot A] [gB : ExhaustiveGenerator B]
     [sB : FairSlot B] : Contiguous (A × B) :=
-  compress_contiguous (fairPairGenCapped gA gB sA sB) (mulCount sA.count sB.count)
+  CompressFast.compressFast_contiguous ![sA.bits, sB.bits] ![sA.card, sB.card]
+    (fairPairGenCapped gA gB sA sB) (mulCount sA.count sB.count)
     (hasCount_h _ (sA.hasCount.prod sB.hasCount))
     (hasCount_h' _ (sA.hasCount.prod sB.hasCount))
+    (CompressFast.fairPairGenCapped_gen_isSome_iff gA gB sA sB)
 
 open ExhaustiveGenerator in
 /-- A compressed capped fair pair of FINITE components is a finite generator
@@ -539,12 +762,16 @@ finite-tail case). -/
 instance (priority := 900) instFiniteGeneratorProdCapped {A B : Type*}
     [gA : ExhaustiveGenerator A] [FiniteGenerator A] [gB : ExhaustiveGenerator B]
     [FiniteGenerator B] : FiniteGenerator (A × B) :=
-  FiniteGenerator.ofCompress (fairPairGenCapped gA gB fairSlotOfFinite fairSlotOfFinite)
+  FiniteGenerator.ofCompressFast
+    ![(fairSlotOfFinite (T := A)).bits, (fairSlotOfFinite (T := B)).bits]
+    ![(fairSlotOfFinite (T := A)).card, (fairSlotOfFinite (T := B)).card]
+    (fairPairGenCapped gA gB fairSlotOfFinite fairSlotOfFinite)
     (FiniteGenerator.card (T := A) * FiniteGenerator.card (T := B))
     (hasCount_h _ ((fairSlotOfFinite (T := A)).hasCount.prod
       (fairSlotOfFinite (T := B)).hasCount))
     (hasCount_h' _ ((fairSlotOfFinite (T := A)).hasCount.prod
       (fairSlotOfFinite (T := B)).hasCount))
+    (CompressFast.fairPairGenCapped_gen_isSome_iff gA gB fairSlotOfFinite fairSlotOfFinite)
 
 open ExhaustiveGenerator in
 /-- **The capped fair `ExhaustiveGenerator (A × B × C)` instance**, compressed
@@ -556,10 +783,12 @@ instance (priority := 1050) instExhaustiveGeneratorProd3Capped {A B C : Type*}
     [gA : ExhaustiveGenerator A] [sA : FairSlot A] [gB : ExhaustiveGenerator B]
     [sB : FairSlot B] [gC : ExhaustiveGenerator C] [sC : FairSlot C] :
     ExhaustiveGenerator (A × B × C) :=
-  compress (fairTripleGenCapped gA gB gC sA sB sC)
+  CompressFast.compressFast ![sA.bits, sB.bits, sC.bits] ![sA.card, sB.card, sC.card]
+    (fairTripleGenCapped gA gB gC sA sB sC)
     (mulCount sA.count (mulCount sB.count sC.count))
     (hasCount_h _ (sA.hasCount.prod (sB.hasCount.prod sC.hasCount)))
     (hasCount_h' _ (sA.hasCount.prod (sB.hasCount.prod sC.hasCount)))
+    (CompressFast.fairTripleGenCapped_gen_isSome_iff gA gB gC sA sB sC)
 
 open ExhaustiveGenerator in
 /-- Compressed capped fair triples are contiguous. -/
@@ -567,10 +796,12 @@ instance (priority := 1050) instContiguousProd3Capped {A B C : Type*}
     [gA : ExhaustiveGenerator A] [sA : FairSlot A] [gB : ExhaustiveGenerator B]
     [sB : FairSlot B] [gC : ExhaustiveGenerator C] [sC : FairSlot C] :
     Contiguous (A × B × C) :=
-  compress_contiguous (fairTripleGenCapped gA gB gC sA sB sC)
+  CompressFast.compressFast_contiguous ![sA.bits, sB.bits, sC.bits]
+    ![sA.card, sB.card, sC.card] (fairTripleGenCapped gA gB gC sA sB sC)
     (mulCount sA.count (mulCount sB.count sC.count))
     (hasCount_h _ (sA.hasCount.prod (sB.hasCount.prod sC.hasCount)))
     (hasCount_h' _ (sA.hasCount.prod (sB.hasCount.prod sC.hasCount)))
+    (CompressFast.fairTripleGenCapped_gen_isSome_iff gA gB gC sA sB sC)
 
 open ExhaustiveGenerator in
 /-- A compressed capped fair triple of FINITE components is a finite generator
@@ -579,7 +810,11 @@ instance (priority := 1050) instFiniteGeneratorProd3Capped {A B C : Type*}
     [gA : ExhaustiveGenerator A] [FiniteGenerator A] [gB : ExhaustiveGenerator B]
     [FiniteGenerator B] [gC : ExhaustiveGenerator C] [FiniteGenerator C] :
     FiniteGenerator (A × B × C) :=
-  FiniteGenerator.ofCompress
+  FiniteGenerator.ofCompressFast
+    ![(fairSlotOfFinite (T := A)).bits, (fairSlotOfFinite (T := B)).bits,
+      (fairSlotOfFinite (T := C)).bits]
+    ![(fairSlotOfFinite (T := A)).card, (fairSlotOfFinite (T := B)).card,
+      (fairSlotOfFinite (T := C)).card]
     (fairTripleGenCapped gA gB gC fairSlotOfFinite fairSlotOfFinite fairSlotOfFinite)
     (FiniteGenerator.card (T := A) * (FiniteGenerator.card (T := B)
       * FiniteGenerator.card (T := C)))
@@ -587,6 +822,8 @@ instance (priority := 1050) instFiniteGeneratorProd3Capped {A B C : Type*}
       (((fairSlotOfFinite (T := B)).hasCount).prod (fairSlotOfFinite (T := C)).hasCount)))
     (hasCount_h' _ ((fairSlotOfFinite (T := A)).hasCount.prod
       (((fairSlotOfFinite (T := B)).hasCount).prod (fairSlotOfFinite (T := C)).hasCount)))
+    (CompressFast.fairTripleGenCapped_gen_isSome_iff gA gB gC fairSlotOfFinite
+      fairSlotOfFinite fairSlotOfFinite)
 
 open ExhaustiveGenerator in
 /-- **The capped fair `ExhaustiveGenerator (A × B × C × D)` instance**,
@@ -601,10 +838,13 @@ instance (priority := 1150) instExhaustiveGeneratorProd4Capped {A B C D : Type*}
     [sB : FairSlot B] [gC : ExhaustiveGenerator C] [sC : FairSlot C]
     [gD : ExhaustiveGenerator D] [sD : FairSlot D] :
     ExhaustiveGenerator (A × B × C × D) :=
-  compress (fairQuadrupleGenCapped gA gB gC gD sA sB sC sD)
+  CompressFast.compressFast ![sA.bits, sB.bits, sC.bits, sD.bits]
+    ![sA.card, sB.card, sC.card, sD.card]
+    (fairQuadrupleGenCapped gA gB gC gD sA sB sC sD)
     (mulCount sA.count (mulCount sB.count (mulCount sC.count sD.count)))
     (hasCount_h _ (sA.hasCount.prod (sB.hasCount.prod (sC.hasCount.prod sD.hasCount))))
     (hasCount_h' _ (sA.hasCount.prod (sB.hasCount.prod (sC.hasCount.prod sD.hasCount))))
+    (CompressFast.fairQuadrupleGenCapped_gen_isSome_iff gA gB gC gD sA sB sC sD)
 
 open ExhaustiveGenerator in
 /-- Compressed capped fair quadruples are contiguous. -/
@@ -613,10 +853,13 @@ instance (priority := 1150) instContiguousProd4Capped {A B C D : Type*}
     [sB : FairSlot B] [gC : ExhaustiveGenerator C] [sC : FairSlot C]
     [gD : ExhaustiveGenerator D] [sD : FairSlot D] :
     Contiguous (A × B × C × D) :=
-  compress_contiguous (fairQuadrupleGenCapped gA gB gC gD sA sB sC sD)
+  CompressFast.compressFast_contiguous ![sA.bits, sB.bits, sC.bits, sD.bits]
+    ![sA.card, sB.card, sC.card, sD.card]
+    (fairQuadrupleGenCapped gA gB gC gD sA sB sC sD)
     (mulCount sA.count (mulCount sB.count (mulCount sC.count sD.count)))
     (hasCount_h _ (sA.hasCount.prod (sB.hasCount.prod (sC.hasCount.prod sD.hasCount))))
     (hasCount_h' _ (sA.hasCount.prod (sB.hasCount.prod (sC.hasCount.prod sD.hasCount))))
+    (CompressFast.fairQuadrupleGenCapped_gen_isSome_iff gA gB gC gD sA sB sC sD)
 
 open ExhaustiveGenerator in
 /-- A compressed capped fair quadruple of FINITE components is a finite
@@ -626,7 +869,11 @@ instance (priority := 1150) instFiniteGeneratorProd4Capped {A B C D : Type*}
     [FiniteGenerator B] [gC : ExhaustiveGenerator C] [FiniteGenerator C]
     [gD : ExhaustiveGenerator D] [FiniteGenerator D] :
     FiniteGenerator (A × B × C × D) :=
-  FiniteGenerator.ofCompress
+  FiniteGenerator.ofCompressFast
+    ![(fairSlotOfFinite (T := A)).bits, (fairSlotOfFinite (T := B)).bits,
+      (fairSlotOfFinite (T := C)).bits, (fairSlotOfFinite (T := D)).bits]
+    ![(fairSlotOfFinite (T := A)).card, (fairSlotOfFinite (T := B)).card,
+      (fairSlotOfFinite (T := C)).card, (fairSlotOfFinite (T := D)).card]
     (fairQuadrupleGenCapped gA gB gC gD fairSlotOfFinite fairSlotOfFinite fairSlotOfFinite
       fairSlotOfFinite)
     (FiniteGenerator.card (T := A) * (FiniteGenerator.card (T := B)
@@ -637,6 +884,8 @@ instance (priority := 1150) instFiniteGeneratorProd4Capped {A B C D : Type*}
     (hasCount_h' _ ((fairSlotOfFinite (T := A)).hasCount.prod
       (((fairSlotOfFinite (T := B)).hasCount).prod
         (((fairSlotOfFinite (T := C)).hasCount).prod (fairSlotOfFinite (T := D)).hasCount))))
+    (CompressFast.fairQuadrupleGenCapped_gen_isSome_iff gA gB gC gD fairSlotOfFinite
+      fairSlotOfFinite fairSlotOfFinite fairSlotOfFinite)
 
 /-! ### Capped fair vecs -/
 
@@ -713,6 +962,35 @@ but through the guarded round-trips. -/
 
 end ExhaustiveGenerator
 
+namespace CompressFast
+
+open ExhaustiveGenerator
+
+/-- **The raw capped vec builder's liveness is `Live`** (positive length,
+every slot sharing the component's cap and card): the vec clone of
+`fairPairGenCapped_gen_isSome_iff` — simpler, because the builder's own guard
+already carries the per-coordinate `isSome` conjunct. -/
+theorem fairVecGenCapped_gen_isSome_iff {T : Type*} (g : ExhaustiveGenerator T)
+    (s : @FairSlot T g) (m k : ℕ) :
+    ((fairVecGenCapped g s m).gen k).isSome
+      ↔ Live (fun _ : Fin (m + 1) => s.bits) (fun _ => s.card) k := by
+  have hgen : (fairVecGenCapped g s m).gen k
+      = if h : (fairVecCappedAssignment m s.bits).Valid k ∧
+          ∀ j, (g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)).isSome then
+        some (List.Vector.ofFn fun j =>
+          (g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)).get (h.2 j))
+      else none := rfl
+  rw [hgen]
+  by_cases hc : (fairVecCappedAssignment m s.bits).Valid k ∧
+      ∀ j, (g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)).isSome
+  · rw [dif_pos hc]
+    exact iff_of_true rfl ⟨hc.1, fun j b hj => (s.gen_isSome_iff _).mp (hc.2 j) b hj⟩
+  · rw [dif_neg hc]
+    refine iff_of_false (by simp) fun hlive => hc ⟨hlive.1, fun j => ?_⟩
+    exact (s.gen_isSome_iff _).mpr fun b hb => hlive.2 j b hb
+
+end CompressFast
+
 open ExhaustiveGenerator in
 /-- **The capped fair `ExhaustiveGenerator (List.Vector T n)` instance** for a
 FINITE component: by cases on `n`, the singleton empty-vec generator at length
@@ -726,10 +1004,13 @@ instance (priority := 900) instExhaustiveGeneratorVectorCapped {T : Type*}
     [inst : ExhaustiveGenerator T] [FiniteGenerator T] :
     {n : ℕ} → ExhaustiveGenerator (List.Vector T n)
   | 0 => fairVecGenZero T
-  | m + 1 => compress (fairVecGenCapped inst fairSlotOfFinite m)
+  | m + 1 => CompressFast.compressFast (fun _ => (fairSlotOfFinite (T := T)).bits)
+      (fun _ => (fairSlotOfFinite (T := T)).card)
+      (fairVecGenCapped inst fairSlotOfFinite m)
       (some (FiniteGenerator.card (T := T) ^ (m + 1)))
       (hasCount_h _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
       (hasCount_h' _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
+      (CompressFast.fairVecGenCapped_gen_isSome_iff inst fairSlotOfFinite m)
 
 open ExhaustiveGenerator in
 /-- The length-0 capped vec generator is list-backed, hence contiguous (it
@@ -752,10 +1033,13 @@ instance (priority := 900) instContiguousVectorCapped {T : Type*}
     [inst : ExhaustiveGenerator T] [FiniteGenerator T] :
     {n : ℕ} → Contiguous (List.Vector T n)
   | 0 => instContiguousVectorZeroCapped
-  | m + 1 => compress_contiguous (fairVecGenCapped inst fairSlotOfFinite m)
+  | m + 1 => CompressFast.compressFast_contiguous
+      (fun _ => (fairSlotOfFinite (T := T)).bits) (fun _ => (fairSlotOfFinite (T := T)).card)
+      (fairVecGenCapped inst fairSlotOfFinite m)
       (some (FiniteGenerator.card (T := T) ^ (m + 1)))
       (hasCount_h _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
       (hasCount_h' _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
+      (CompressFast.fairVecGenCapped_gen_isSome_iff inst fairSlotOfFinite m)
 
 open ExhaustiveGenerator in
 /-- A compressed capped fair vec is a finite generator with the exact card
@@ -764,10 +1048,13 @@ instance (priority := 900) instFiniteGeneratorVectorCapped {T : Type*}
     [inst : ExhaustiveGenerator T] [FiniteGenerator T] :
     {n : ℕ} → FiniteGenerator (List.Vector T n)
   | 0 => instFiniteGeneratorVectorZeroCapped
-  | m + 1 => FiniteGenerator.ofCompress (fairVecGenCapped inst fairSlotOfFinite m)
+  | m + 1 => FiniteGenerator.ofCompressFast
+      (fun _ => (fairSlotOfFinite (T := T)).bits) (fun _ => (fairSlotOfFinite (T := T)).card)
+      (fairVecGenCapped inst fairSlotOfFinite m)
       (FiniteGenerator.card (T := T) ^ (m + 1))
       (hasCount_h _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
       (hasCount_h' _ ((fairSlotOfFinite (T := T)).hasCount.vector (m + 1)))
+      (CompressFast.fairVecGenCapped_gen_isSome_iff inst fairSlotOfFinite m)
 
 /-! ### Instance-resolution pins
 
@@ -813,10 +1100,10 @@ Value-sequence fidelity: compression deletes gaps and touches nothing else,
 so every VALUE table of the 4b raw layer must replay VERBATIM — with the
 positions now DENSE (no `none`-skips inside the enumeration). Hole-free
 cases (power-of-two cards) are gen-pointwise unchanged. The DEEP spot checks
-(counters `2^16`–`2^25`) are stated against the RAW builders: the spec
-`unrank` reaches a compressed position by a linear scan, infeasible that far
-out until chunk 4d's fast path (the raw layer is the semantic source of
-truth those positions pin). -/
+(counters `2^16`–`2^25`) stated against the RAW builders remain the semantic
+source of truth those positions pin; with the instances on `compressFast`'s
+digit DP, deep accesses now ALSO go through the INSTANCES directly (the
+`2^16` pin right below, and the `10^6`-index guards at the bottom). -/
 
 open ExhaustiveGenerator
 
@@ -840,11 +1127,14 @@ open ExhaustiveGenerator
 -- 8; the drop-out rotation hands position 16 to `AzNat` as its rank-8 bit
 -- instead, so `k = 2^16` decodes to `(2^8, 0)` — the first component absorbs
 -- all remaining bits. (`AzNat × UInt8` is hole-free, so the compressed
--- instance agrees here — but its spec `unrank` cannot reach `2^16`.)
+-- instance agrees here — and the digit-DP instance reaches `2^16` directly,
+-- pinned right after.)
 #guard ((List.range 4).map fun i =>
     ((fairPairGenCapped naturalsGen uint8Gen inferInstance inferInstance).gen
       (65536 + i)).map (fun p => (p.1.toNat, p.2.toNat)))
   = [some (256, 0), some (256, 1), some (257, 0), some (257, 1)]
+#guard (gen (T := AzNat × UInt8) 65536).map (fun p => (p.1.toNat, p.2.toNat))
+  = some (256, 0)
 
 -- Non-power-of-two: `Ordering` (card 3) is a 2-bit slot with one hole
 -- pattern (`3`). `cap = ![some 2, none]`: the `Ordering` index reads counter
@@ -957,5 +1247,157 @@ open ExhaustiveGenerator
 #guard (gen (T := List.Vector Ordering 1) 3).isNone
 #guard FiniteGenerator.card (T := List.Vector Ordering 1) == 3
 #guard (firstN (List.Vector UInt8 0) 5).length == 1
+
+/-! ### The digit-DP scale layer
+
+Packaged pair rank/unrank (fast vs. spec), the generator-level `countBelow`
+cross-checks, and the SCALE guards — all stated against the raw builders and
+bridges above (this is `CompressFast.lean`'s machinery instantiated at the
+slot specs, kept here with the builders it consumes). -/
+
+namespace CompressFast
+
+open ExhaustiveGenerator
+
+/-- The fast unrank of a capped fair PAIR, with all hypotheses derived from
+the slot specs: the raw counter of the `i`-th live position of
+`fairPairGenCapped gA gB sA sB`. -/
+def fastUnrankPair {A B : Type*} (gA : ExhaustiveGenerator A) (gB : ExhaustiveGenerator B)
+    (sA : @FairSlot A gA) (sB : @FairSlot B gB) (i : ℕ) : ℕ :=
+  fastUnrank ![sA.bits, sB.bits] ![sA.card, sB.card] (fairPairGenCapped gA gB sA sB)
+    (mulCount sA.count sB.count)
+    (hasCount_h _ (sA.hasCount.prod sB.hasCount))
+    (fairPairGenCapped_gen_isSome_iff gA gB sA sB) i
+
+/-- The SPEC unrank of a capped fair pair — the linear scan, for
+cross-checking. -/
+def specUnrankPair {A B : Type*} (gA : ExhaustiveGenerator A) (gB : ExhaustiveGenerator B)
+    (sA : @FairSlot A gA) (sB : @FairSlot B gB) (i : ℕ) : ℕ :=
+  unrank (fairPairGenCapped gA gB sA sB) (mulCount sA.count sB.count)
+    (hasCount_h _ (sA.hasCount.prod sB.hasCount)) i
+
+/-- The packaged pair unranks agree (unconditionally). -/
+theorem fastUnrankPair_eq_specUnrankPair {A B : Type*} (gA : ExhaustiveGenerator A)
+    (gB : ExhaustiveGenerator B) (sA : @FairSlot A gA) (sB : @FairSlot B gB) (i : ℕ) :
+    fastUnrankPair gA gB sA sB i = specUnrankPair gA gB sA sB i :=
+  fastUnrank_eq_unrank (fairPairGenCapped_gen_isSome_iff gA gB sA sB) i
+
+/-! ### Guards
+
+Small cross-checks against the spec `unrank` and `rankSpec`, then the SCALE
+demonstration: a `10^12 + 39`-card component (a 40-bit capped slot) paired
+with `Ordering`, fast-unranked at compressed index `10^9` — where the spec
+path would scan `1 333 333 333` raw counters, `fastUnrank` answers
+instantly, with the expected raw counter verifiable by hand: the `Ordering`
+slot reads counter bits `{0, 2}`, so exactly the counters `k ≡ 5, 7 (mod 8)`
+are holes (`6` live per `8`-block) at this depth, and
+`10^9 = 6 · 166666666 + 4` places the answer at `8 · 166666666 + 4`.
+Finally, the DEEP INSTANCE accesses the swap to `compressFast` makes
+feasible: compressed positions `~10^6` read through the PUBLIC instances,
+where the spec path would scan `~1.3 × 10^6` raw counters per access. -/
+
+-- `countBelow` = `rankSpec` on the raw pair builders (the generator bridge,
+-- valued).
+#guard (List.range 40).all fun n =>
+  countBelow ![some 2, some 2] ![3, 3] n
+    == ExhaustiveGenerator.rankSpec
+      (fairPairGenCapped orderingsIncreasingGen orderingsIncreasingGen
+        inferInstance inferInstance) n
+#guard (List.range 40).all fun n =>
+  countBelow ![some 2, none] ![3, 0] n
+    == ExhaustiveGenerator.rankSpec
+      (fairPairGenCapped orderingsIncreasingGen naturalsGen
+        inferInstance inferInstance) n
+
+-- `fastUnrank` = spec `unrank`, including past the live count (both junk `0`
+-- from index 9 on for the all-finite pair).
+#guard (List.range 16).all fun i =>
+  fastUnrankPair orderingsIncreasingGen orderingsIncreasingGen inferInstance inferInstance i
+    == specUnrankPair orderingsIncreasingGen orderingsIncreasingGen
+      inferInstance inferInstance i
+#guard (List.range 40).all fun i =>
+  fastUnrankPair orderingsIncreasingGen naturalsGen inferInstance inferInstance i
+    == specUnrankPair orderingsIncreasingGen naturalsGen inferInstance inferInstance i
+
+/-- The scale-demo component: a `Fin`-backed finite generator with the LARGE
+non-power-of-two card `10^12 + 39` (a 40-bit capped slot — the
+polynomial-coefficient scale the spec scan cannot reach). -/
+@[reducible] def bigDemoGen : ExhaustiveGenerator (Fin (10 ^ 12 + 39)) :=
+  ofBoundedBijOn (10 ^ 12 + 39) (fun n h => ⟨n, h⟩)
+    (fun _ _ _ _ hij => congrArg Fin.val hij)
+    (fun t => ⟨t.val, t.isLt, rfl⟩)
+
+/-- `FiniteGenerator` data for the scale-demo component. -/
+@[reducible] def bigDemoFinite : @FiniteGenerator _ bigDemoGen :=
+  FiniteGenerator.ofBoundedBijOn bigDemoGen (10 ^ 12 + 39) rfl
+
+/-- The scale-demo slot: `10^12 + 39` values on 40 counter bits. -/
+@[reducible] def bigDemoSlot : @FairSlot _ bigDemoGen :=
+  @fairSlotOfFinite _ bigDemoGen bigDemoFinite
+
+-- The demo slot caps at exactly 40 bits.
+#guard bigDemoSlot.bits == some 40
+
+-- The TOTAL live count of the `big × Ordering` product, read off instantly
+-- at the full `2^42` validity budget: exactly `3 · (10^12 + 39)` — the digit
+-- DP's clamp formula hitting the full cards.
+#guard countBelow ![some 40, some 2] ![10 ^ 12 + 39, 3] (2 ^ 42) == 3 * (10 ^ 12 + 39)
+
+-- THE SCALE DEMONSTRATION: fast-unrank the `big × Ordering` product at
+-- compressed index `10^9`. The spec `unrank` would scan ~`1.33 × 10^9` raw
+-- counters; `fastUnrank` binary-searches `countBelow` and answers instantly.
+#guard fastUnrankPair bigDemoGen orderingsIncreasingGen bigDemoSlot inferInstance (10 ^ 9)
+  == 1333333332
+
+-- Round-trip: the found counter ranks back to exactly `10^9`…
+#guard countBelow ![some 40, some 2] ![10 ^ 12 + 39, 3] 1333333332 == 10 ^ 9
+
+-- …is live for the liveness predicate…
+#guard decide (Live ![some 40, some 2] ![10 ^ 12 + 39, 3] 1333333332)
+
+-- …and the raw pair builder produces a value there — with the expected
+-- `Ordering` coordinate: counter bits `{0, 2}` of `1333333332 ≡ 4 (mod 8)`
+-- decode the `Ordering` index `2 = .gt`.
+#guard ((fairPairGenCapped bigDemoGen orderingsIncreasingGen bigDemoSlot inferInstance).gen
+  1333333332).map Prod.snd == some Ordering.gt
+
+/-- The scale demo COMPRESSED: `compressFast` on the `big × Ordering` raw
+builder — exactly the shape of the public capped pair instance, at a card the
+spec scan cannot reach. -/
+@[reducible] def bigDemoCompressedGen :
+    ExhaustiveGenerator (Fin (10 ^ 12 + 39) × Ordering) :=
+  compressFast ![bigDemoSlot.bits, (fairSlotOfFinite (T := Ordering)).bits]
+    ![bigDemoSlot.card, (fairSlotOfFinite (T := Ordering)).card]
+    (fairPairGenCapped bigDemoGen orderingsIncreasingGen bigDemoSlot fairSlotOfFinite)
+    (mulCount bigDemoSlot.count (fairSlotOfFinite (T := Ordering)).count)
+    (hasCount_h _ (bigDemoSlot.hasCount.prod (fairSlotOfFinite (T := Ordering)).hasCount))
+    (hasCount_h' _ (bigDemoSlot.hasCount.prod (fairSlotOfFinite (T := Ordering)).hasCount))
+    (fairPairGenCapped_gen_isSome_iff bigDemoGen orderingsIncreasingGen bigDemoSlot
+      fairSlotOfFinite)
+
+-- The big non-power-of-two demo, END TO END: a single deep `firstN`-free
+-- access through the compressed generator at index `10^9` — the value at the
+-- raw counter found above (`Fin` index `bit 1 + (k >> 4) · 4 = 333333332`,
+-- `Ordering` index `2 = .gt`).
+#guard (bigDemoCompressedGen.gen (10 ^ 9)).map (fun p => (p.1.val, p.2))
+  == some (333333332, Ordering.gt)
+
+-- The mixed regime at depth: `Ordering × AzNat` (holes at counter bits
+-- `{1, 3}` both set — 12 live per 16-block), fast-unranked at `10^9 + 5 =
+-- 12 · 83333333 + 9`: the 9th live offset of block `16 · 83333333` is 9.
+#guard fastUnrankPair orderingsIncreasingGen naturalsGen inferInstance inferInstance
+  (10 ^ 9 + 5) == 1333333337
+#guard countBelow ![some 2, none] ![3, 0] 1333333337 == 10 ^ 9 + 5
+
+end CompressFast
+
+-- THE DEEP INSTANCE ACCESSES (new with the `compressFast` swap): compressed
+-- position `10^6` read directly through the PUBLIC instances. For the pair,
+-- `10^6 = 12 · 83333 + 4` lands on raw counter `16 · 83333 + 4 = 1333332`
+-- (12 live per 16-block, holes at counter bits `{1, 3}` both set), whose
+-- `Ordering` bits `{1, 3}` are clear (`.lt`) and whose `AzNat` index is
+-- `bit 0 + bit 2 · 2 + (k >> 4) · 4 = 333334`.
+#guard (gen (T := Ordering × AzNat) (10 ^ 6)).map (fun p => (p.1, p.2.toNat))
+  = some (.lt, 333334)
 
 end Azurite

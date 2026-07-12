@@ -29,11 +29,14 @@
   `fairVecFirstNCached`: one forward walk of the counter, each component
   value computed ONCE, provably equal to the spec rail — instance-level
   (`… = firstN _ n`, the composite instances being `fairPairGen`-shaped) on
-  top of assignment-generic builder-level laws. The capped sibling
-  `fairPairCappedFirstNCached` walks the RAW capped builder
-  (`fairPairGenCapped`) — the cache returns exactly the component `Option`s
-  the capped `gen` binds through — with its law stated against the raw
-  builder's prefix (`(List.range n).filterMap gen`): the public capped
+  top of assignment-generic builder-level laws. The capped siblings
+  `fairPairCappedFirstNCached` / `fairTripleCappedFirstNCached` /
+  `fairQuadrupleCappedFirstNCached` / `fairVecCappedFirstNCached` walk the RAW
+  capped builders (`fairPairGenCapped` etc.) — the cache returns exactly the
+  component `Option`s the capped `gen` binds through (the vec driver threads
+  ONE shared cache across all coordinates and reconstructs each vec from it) —
+  with laws stated against the raw builder's prefix
+  (`(List.range n).filterMap gen`): the public capped
   INSTANCES are hole-compressed (`compress` re-indexes positions), so their
   prefixes are the raw walker's output continued until `n` values
   accumulate, not a fixed-`n` counter window.
@@ -569,6 +572,224 @@ theorem fairPairCappedFirstNCached_eq (sA : StreamFor gA) (sB : StreamFor gB)
   rw [List.range_eq_range']
   exact fairPairCappedCachedGo_eq sA sB slA slB _ _ 0 n
 
+/-- Core walker for the cached capped fair triple driver (mirror of
+`fairPairCappedCachedGo`). -/
+def fairTripleCappedCachedGo (sA : StreamFor gA) (sB : StreamFor gB) (sC : StreamFor gC)
+    (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC) :
+    GenCache sA → GenCache sB → GenCache sC → ℕ → ℕ → List (A × B × C)
+  | _, _, _, _, 0 => []
+  | cA, cB, cC, k, n + 1 =>
+    let rA := cA.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 0 k)
+    let rB := cB.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 1 k)
+    let rC := cC.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 2 k)
+    (if (fairTripleCappedAssignment slA.bits slB.bits slC.bits).Valid k then
+        rA.1.bind fun a => rB.1.bind fun b => rC.1.map fun c => (a, b, c)
+      else none).toList
+      ++ fairTripleCappedCachedGo sA sB sC slA slB slC rA.2 rB.2 rC.2 (k + 1) n
+
+/-- The walker law for capped triples: the cached walk equals the RAW capped
+builder's outputs on the counter window (holes skipped). -/
+theorem fairTripleCappedCachedGo_eq (sA : StreamFor gA) (sB : StreamFor gB)
+    (sC : StreamFor gC) (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC)
+    (cA : GenCache sA) (cB : GenCache sB) (cC : GenCache sC) (k n : ℕ) :
+    fairTripleCappedCachedGo sA sB sC slA slB slC cA cB cC k n
+      = (List.range' k n).filterMap (fairTripleGenCapped gA gB gC slA slB slC).gen := by
+  induction n generalizing cA cB cC k with
+  | zero => rfl
+  | succ m ih =>
+    show (if (fairTripleCappedAssignment slA.bits slB.bits slC.bits).Valid k then
+          (cA.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 0 k)).1.bind
+            fun a =>
+              (cB.get
+                ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 1 k)).1.bind
+                fun b =>
+                  (cC.get ((fairTripleCappedAssignment
+                    slA.bits slB.bits slC.bits).deinterleave 2 k)).1.map fun c => (a, b, c)
+        else none).toList
+        ++ fairTripleCappedCachedGo sA sB sC slA slB slC
+          (cA.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 0 k)).2
+          (cB.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 1 k)).2
+          (cC.get ((fairTripleCappedAssignment slA.bits slB.bits slC.bits).deinterleave 2 k)).2
+          (k + 1) m
+      = (k :: List.range' (k + 1) m).filterMap (fairTripleGenCapped gA gB gC slA slB slC).gen
+    rw [GenCache.get_fst cA, GenCache.get_fst cB, GenCache.get_fst cC, ih]
+    show ((fairTripleGenCapped gA gB gC slA slB slC).gen k).toList
+        ++ (List.range' (k + 1) m).filterMap (fairTripleGenCapped gA gB gC slA slB slC).gen
+      = (k :: List.range' (k + 1) m).filterMap (fairTripleGenCapped gA gB gC slA slB slC).gen
+    cases hgk : (fairTripleGenCapped gA gB gC slA slB slC).gen k with
+    | none => rw [List.filterMap_cons_none hgk]; rfl
+    | some t => rw [List.filterMap_cons_some hgk]; rfl
+
+/-- **The cached capped fair triple driver** (raw layer). -/
+def fairTripleCappedFirstNCached (sA : StreamFor gA) (sB : StreamFor gB) (sC : StreamFor gC)
+    (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC) (n : ℕ) :
+    List (A × B × C) :=
+  fairTripleCappedCachedGo sA sB sC slA slB slC
+    (GenCache.init sA) (GenCache.init sB) (GenCache.init sC) 0 n
+
+/-- The capped triple driver law (raw builder prefix). -/
+theorem fairTripleCappedFirstNCached_eq (sA : StreamFor gA) (sB : StreamFor gB)
+    (sC : StreamFor gC) (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC)
+    (n : ℕ) :
+    fairTripleCappedFirstNCached sA sB sC slA slB slC n
+      = (List.range n).filterMap (fairTripleGenCapped gA gB gC slA slB slC).gen := by
+  rw [List.range_eq_range']
+  exact fairTripleCappedCachedGo_eq sA sB sC slA slB slC _ _ _ 0 n
+
+/-- Core walker for the cached capped fair quadruple driver (mirror of
+`fairPairCappedCachedGo`). -/
+def fairQuadrupleCappedCachedGo (sA : StreamFor gA) (sB : StreamFor gB) (sC : StreamFor gC)
+    (sD : StreamFor gD) (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC)
+    (slD : @FairSlot D gD) :
+    GenCache sA → GenCache sB → GenCache sC → GenCache sD → ℕ → ℕ → List (A × B × C × D)
+  | _, _, _, _, _, 0 => []
+  | cA, cB, cC, cD, k, n + 1 =>
+    let A' := fairQuadrupleCappedAssignment slA.bits slB.bits slC.bits slD.bits
+    let rA := cA.get (A'.deinterleave 0 k)
+    let rB := cB.get (A'.deinterleave 1 k)
+    let rC := cC.get (A'.deinterleave 2 k)
+    let rD := cD.get (A'.deinterleave 3 k)
+    (if A'.Valid k then
+        rA.1.bind fun a => rB.1.bind fun b => rC.1.bind fun c => rD.1.map fun d => (a, b, c, d)
+      else none).toList
+      ++ fairQuadrupleCappedCachedGo sA sB sC sD slA slB slC slD rA.2 rB.2 rC.2 rD.2 (k + 1) n
+
+/-- The walker law for capped quadruples. -/
+theorem fairQuadrupleCappedCachedGo_eq (sA : StreamFor gA) (sB : StreamFor gB)
+    (sC : StreamFor gC) (sD : StreamFor gD) (slA : @FairSlot A gA) (slB : @FairSlot B gB)
+    (slC : @FairSlot C gC) (slD : @FairSlot D gD) (cA : GenCache sA) (cB : GenCache sB)
+    (cC : GenCache sC) (cD : GenCache sD) (k n : ℕ) :
+    fairQuadrupleCappedCachedGo sA sB sC sD slA slB slC slD cA cB cC cD k n
+      = (List.range' k n).filterMap
+        (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen := by
+  induction n generalizing cA cB cC cD k with
+  | zero => rfl
+  | succ m ih =>
+    show (if (fairQuadrupleCappedAssignment slA.bits slB.bits slC.bits slD.bits).Valid k then
+          (cA.get ((fairQuadrupleCappedAssignment
+            slA.bits slB.bits slC.bits slD.bits).deinterleave 0 k)).1.bind fun a =>
+              (cB.get ((fairQuadrupleCappedAssignment
+                slA.bits slB.bits slC.bits slD.bits).deinterleave 1 k)).1.bind fun b =>
+                  (cC.get ((fairQuadrupleCappedAssignment
+                    slA.bits slB.bits slC.bits slD.bits).deinterleave 2 k)).1.bind fun c =>
+                      (cD.get ((fairQuadrupleCappedAssignment
+                        slA.bits slB.bits slC.bits slD.bits).deinterleave 3 k)).1.map
+                        fun d => (a, b, c, d)
+        else none).toList
+        ++ fairQuadrupleCappedCachedGo sA sB sC sD slA slB slC slD
+          (cA.get ((fairQuadrupleCappedAssignment
+            slA.bits slB.bits slC.bits slD.bits).deinterleave 0 k)).2
+          (cB.get ((fairQuadrupleCappedAssignment
+            slA.bits slB.bits slC.bits slD.bits).deinterleave 1 k)).2
+          (cC.get ((fairQuadrupleCappedAssignment
+            slA.bits slB.bits slC.bits slD.bits).deinterleave 2 k)).2
+          (cD.get ((fairQuadrupleCappedAssignment
+            slA.bits slB.bits slC.bits slD.bits).deinterleave 3 k)).2
+          (k + 1) m
+      = (k :: List.range' (k + 1) m).filterMap
+        (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen
+    rw [GenCache.get_fst cA, GenCache.get_fst cB, GenCache.get_fst cC, GenCache.get_fst cD, ih]
+    show ((fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen k).toList
+        ++ (List.range' (k + 1) m).filterMap
+          (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen
+      = (k :: List.range' (k + 1) m).filterMap
+        (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen
+    cases hgk : (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen k with
+    | none => rw [List.filterMap_cons_none hgk]; rfl
+    | some t => rw [List.filterMap_cons_some hgk]; rfl
+
+/-- **The cached capped fair quadruple driver** (raw layer). -/
+def fairQuadrupleCappedFirstNCached (sA : StreamFor gA) (sB : StreamFor gB) (sC : StreamFor gC)
+    (sD : StreamFor gD) (slA : @FairSlot A gA) (slB : @FairSlot B gB) (slC : @FairSlot C gC)
+    (slD : @FairSlot D gD) (n : ℕ) : List (A × B × C × D) :=
+  fairQuadrupleCappedCachedGo sA sB sC sD slA slB slC slD
+    (GenCache.init sA) (GenCache.init sB) (GenCache.init sC) (GenCache.init sD) 0 n
+
+/-- The capped quadruple driver law (raw builder prefix). -/
+theorem fairQuadrupleCappedFirstNCached_eq (sA : StreamFor gA) (sB : StreamFor gB)
+    (sC : StreamFor gC) (sD : StreamFor gD) (slA : @FairSlot A gA) (slB : @FairSlot B gB)
+    (slC : @FairSlot C gC) (slD : @FairSlot D gD) (n : ℕ) :
+    fairQuadrupleCappedFirstNCached sA sB sC sD slA slB slC slD n
+      = (List.range n).filterMap
+        (fairQuadrupleGenCapped gA gB gC gD slA slB slC slD).gen := by
+  rw [List.range_eq_range']
+  exact fairQuadrupleCappedCachedGo_eq sA sB sC sD slA slB slC slD _ _ _ _ 0 n
+
+/-- Core walker for the cached capped fair vec driver: one shared component
+cache across all `m + 1` coordinates (mirror of `fairVecCachedGo` with the
+capped validity-and-`isSome` guard). -/
+def fairVecCappedCachedGo (m : ℕ) (s : StreamFor g) (sl : @FairSlot T g) :
+    GenCache s → ℕ → ℕ → List (List.Vector T (m + 1))
+  | _, _, 0 => []
+  | c, k, n + 1 =>
+    let c' := (List.finRange (m + 1)).foldl
+      (fun cc j => (cc.get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).2) c
+    (if h : (fairVecCappedAssignment m sl.bits).Valid k ∧
+        ∀ j, ((c'.get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).isSome then
+        [List.Vector.ofFn fun j =>
+          ((c'.get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).get (h.2 j)]
+      else [])
+      ++ fairVecCappedCachedGo m s sl c' (k + 1) n
+
+/-- The walker law for capped vecs: the cached walk equals the RAW capped
+builder's outputs on the counter window (holes skipped). Each emitted vec is
+reconstructed from the shared cache (`GenCache.get_fst` identifies a cached
+read with the underlying `gen`, so both the guard and the coordinates match
+the raw builder). -/
+theorem fairVecCappedCachedGo_eq (m : ℕ) (s : StreamFor g) (sl : @FairSlot T g)
+    (c : GenCache s) (k n : ℕ) :
+    fairVecCappedCachedGo m s sl c k n
+      = (List.range' k n).filterMap (fairVecGenCapped g sl m).gen := by
+  induction n generalizing c k with
+  | zero => rfl
+  | succ p ih =>
+    show (if h : (fairVecCappedAssignment m sl.bits).Valid k ∧
+          ∀ j, ((((List.finRange (m + 1)).foldl
+            (fun cc j' => (cc.get ((fairVecCappedAssignment m sl.bits).deinterleave j' k)).2)
+              c).get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).isSome then
+          [List.Vector.ofFn fun j => ((((List.finRange (m + 1)).foldl
+            (fun cc j' => (cc.get ((fairVecCappedAssignment m sl.bits).deinterleave j' k)).2)
+              c).get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).get (h.2 j)]
+        else [])
+        ++ fairVecCappedCachedGo m s sl ((List.finRange (m + 1)).foldl
+          (fun cc j' => (cc.get ((fairVecCappedAssignment m sl.bits).deinterleave j' k)).2)
+            c) (k + 1) p
+      = (k :: List.range' (k + 1) p).filterMap (fairVecGenCapped g sl m).gen
+    rw [ih]
+    have hcell : ∀ c' : GenCache s,
+        (if h : (fairVecCappedAssignment m sl.bits).Valid k ∧
+            ∀ j, ((c'.get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).isSome then
+            [List.Vector.ofFn fun j =>
+              ((c'.get ((fairVecCappedAssignment m sl.bits).deinterleave j k)).1).get (h.2 j)]
+          else [])
+          = ((fairVecGenCapped g sl m).gen k).toList := by
+      intro c'
+      simp only [GenCache.get_fst]
+      rw [show (fairVecGenCapped g sl m).gen k
+          = dite ((fairVecCappedAssignment m sl.bits).Valid k ∧
+              ∀ j, (g.gen ((fairVecCappedAssignment m sl.bits).deinterleave j k)).isSome)
+            (fun h => some (List.Vector.ofFn fun j =>
+              (g.gen ((fairVecCappedAssignment m sl.bits).deinterleave j k)).get (h.2 j)))
+            (fun _ => none) from rfl, apply_dite Option.toList]
+      simp only [Option.toList_some, Option.toList_none]
+    rw [hcell]
+    cases hgk : (fairVecGenCapped g sl m).gen k with
+    | none => rw [List.filterMap_cons_none hgk]; rfl
+    | some t => rw [List.filterMap_cons_some hgk]; rfl
+
+/-- **The cached capped fair vec driver** (positive length `m + 1`, one shared
+component cache). -/
+def fairVecCappedFirstNCached (m : ℕ) (s : StreamFor g) (sl : @FairSlot T g) (n : ℕ) :
+    List (List.Vector T (m + 1)) :=
+  fairVecCappedCachedGo m s sl (GenCache.init s) 0 n
+
+/-- The capped vec driver law (raw builder prefix). -/
+theorem fairVecCappedFirstNCached_eq (m : ℕ) (s : StreamFor g) (sl : @FairSlot T g) (n : ℕ) :
+    fairVecCappedFirstNCached m s sl n
+      = (List.range n).filterMap (fairVecGenCapped g sl m).gen := by
+  rw [List.range_eq_range']
+  exact fairVecCappedCachedGo_eq m s sl _ 0 n
+
 end ExhaustiveGenerator
 
 /-! ### Guards
@@ -651,5 +872,26 @@ open ExhaustiveGenerator
     inferInstance inferInstance 14).map (fun p => (p.1, p.2.toNat))
   = [(.lt, 0), (.lt, 1), (.eq, 0), (.eq, 1), (.lt, 2), (.lt, 3), (.eq, 2), (.eq, 3),
      (.gt, 0), (.gt, 1), (.gt, 2), (.gt, 3)]
+
+-- The cached capped triple driver (raw layer): `Ordering × Ordering × AzNat`
+-- (two finite slots, one infinite). Over the first 16 counters no hole
+-- truncates, so this raw prefix matches the public instance's `firstN`.
+#guard (fairTripleCappedFirstNCached (StreamFor.ofGen orderingsIncreasingGen)
+    (StreamFor.ofGen orderingsIncreasingGen) naturalsStream
+    inferInstance inferInstance inferInstance 16).map (fun t => (t.1, t.2.1, t.2.2.toNat))
+  = [(.lt, .lt, 0), (.lt, .lt, 1), (.lt, .eq, 0), (.lt, .eq, 1),
+     (.eq, .lt, 0), (.eq, .lt, 1), (.eq, .eq, 0), (.eq, .eq, 1),
+     (.lt, .lt, 2), (.lt, .lt, 3), (.lt, .eq, 2), (.lt, .eq, 3),
+     (.eq, .lt, 2), (.eq, .lt, 3), (.eq, .eq, 2), (.eq, .eq, 3)]
+
+-- The cached capped vec driver (raw layer): `List.Vector Ordering 2`. The raw
+-- counter walk skips holes, so 12 counters yield the 8 raw values below — one
+-- SHORT of the compressed instance's 9-element `firstN` (the 9th, `[gt, gt]`,
+-- sits past counter 12). This is the raw-layer/instance distinction the
+-- driver documents.
+#guard (fairVecCappedFirstNCached 1 (StreamFor.ofGen orderingsIncreasingGen)
+    inferInstance 12).map (fun v => v.toList)
+  = [[.lt, .lt], [.lt, .eq], [.eq, .lt], [.eq, .eq],
+     [.lt, .gt], [.eq, .gt], [.gt, .lt], [.gt, .eq]]
 
 end Azurite

@@ -1153,9 +1153,12 @@ import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitInterleave
 import Azurite.ExhaustiveGenerator.BitInterleaveCapped
+import Azurite.ExhaustiveGenerator.BitInterleaveTiny
 import Azurite.ExhaustiveGenerator.BitInterleaveWeighted
+import Azurite.ExhaustiveGenerator.BitInterleaveWeightedCapped
 import Azurite.ExhaustiveGenerator.Cache
 import Azurite.ExhaustiveGenerator.Compress
+import Azurite.ExhaustiveGenerator.CompressFast
 import Azurite.ExhaustiveGenerator.Count
 import Azurite.ExhaustiveGenerator.Enums
 import Azurite.ExhaustiveGenerator.FairCapped

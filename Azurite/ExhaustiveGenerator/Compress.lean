@@ -22,8 +22,8 @@
     this places every value at a compressed index.
 
   `rankSpec k` counts the live counters below `k` (a `Finset.range` filter
-  card — the computable-but-linear SPEC; a fast digit-DP rank/unrank is
-  chunk 4d). `unrank` walks the live counters by iterated `Nat.find`
+  card — the computable-but-linear SPEC; the drop-in fast digit-DP rank/unrank
+  lives in `CompressFast.lean`). `unrank` walks the live counters by iterated `Nat.find`
   (`unrankAux` packages the walk with its invariant, so the runtime cost of
   `unrank i` is ONE scan of the raw counters up to the `i`-th live one —
   `rankSpec` itself is never evaluated at runtime). `rankSpec`/`unrank` are
