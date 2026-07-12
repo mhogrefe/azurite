@@ -109,6 +109,20 @@ instance instFiniteGeneratorVectorZero {T : Type*} [ExhaustiveGenerator T] [Cont
     [Infinite T] : FiniteGenerator (List.Vector T 0) :=
   FiniteGenerator.ofListNodup (instExhaustiveGeneratorVector (n := 0)) 1 rfl rfl
 
+/-- Positive-length vecs over an infinite type are infinite (the constant
+vecs embed the element type), so vec components resolve through the
+infinite rail in further compositions. -/
+instance instInfiniteVector {T : Type*} [Infinite T] {n : ℕ} :
+    Infinite (List.Vector T (n + 1)) :=
+  Infinite.of_injective
+    (fun t => (⟨List.replicate (n + 1) t, List.length_replicate⟩ : List.Vector T (n + 1)))
+    (fun a b h => by
+      have h2 : List.replicate (n + 1) a = List.replicate (n + 1) b :=
+        congrArg Subtype.val h
+      have h3 := congrArg List.head? h2
+      rw [List.head?_replicate, List.head?_replicate] at h3
+      simpa using h3)
+
 /-! ### Guards
 
 The exact Malachite `exhaustive_vecs_fixed_length_from_single` sequences,

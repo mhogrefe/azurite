@@ -1176,6 +1176,7 @@ import Azurite.ExhaustiveGenerator.LexDepPairs
 import Azurite.ExhaustiveGenerator.LexPairs
 import Azurite.ExhaustiveGenerator.LexTuples
 import Azurite.ExhaustiveGenerator.LexVecs
+import Azurite.ExhaustiveGenerator.Polynomials
 import Azurite.ExhaustiveGenerator.PositiveNaturals
 import Azurite.ExhaustiveGenerator.Ranges
 import Azurite.ExhaustiveGenerator.Rationals
@@ -1184,6 +1185,8 @@ import Azurite.ExhaustiveGenerator.ShortlexVecs
 import Azurite.ExhaustiveGenerator.Signeds
 import Azurite.ExhaustiveGenerator.Stream
 import Azurite.ExhaustiveGenerator.Unsigneds
+import Azurite.ExhaustiveGenerator.VecsLengthRange
+import Azurite.ExhaustiveGenerator.ZMods
 import Azurite.FoerSequence.Basic
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
