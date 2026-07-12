@@ -356,6 +356,7 @@ import Azurite.AzPolynomial.ComposedOps
 import Azurite.AzPolynomial.Content
 import Azurite.AzPolynomial.Derivative
 import Azurite.AzPolynomial.Discriminant
+import Azurite.AzPolynomial.DistinctDegreeFactorization
 import Azurite.AzPolynomial.DivModByMonic
 import Azurite.AzPolynomial.Equiv.Add
 import Azurite.AzPolynomial.Equiv.Algebra
@@ -543,6 +544,7 @@ import Azurite.AzZMod.Equiv.Parse
 import Azurite.AzZMod.Equiv.Pow
 import Azurite.AzZMod.Equiv.RingEquiv
 import Azurite.AzZMod.Field
+import Azurite.AzZMod.Fintype
 import Azurite.AzZMod.Instances
 import Azurite.AzZMod.Inv
 import Azurite.AzZMod.ParsableElement
@@ -1188,6 +1190,9 @@ import Azurite.ExhaustiveGenerator.Unsigneds
 import Azurite.ExhaustiveGenerator.VecsLengthRange
 import Azurite.ExhaustiveGenerator.ZMods
 import Azurite.FoerSequence.Basic
+import Azurite.GathenGerhard.Chapter14.Algorithm_14_3
+import Azurite.GathenGerhard.Chapter14.DistinctDegree
+import Azurite.GathenGerhard.Chapter14.Theorem_14_2
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
