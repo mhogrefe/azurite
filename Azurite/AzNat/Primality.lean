@@ -15,7 +15,7 @@ namespace Azurite.AzNat
 /-!
 ## Naive primality test (trial division)
 
-A deliberately simple `isPrime` for `AzNat`, intended as a placeholder to be
+A deliberately simple trial-division test for `AzNat`, intended as a building block to be
 replaced by a real primality test later: handle `< 2`, `2`, and even numbers
 directly, then trial-divide by every odd `d` with `3 ≤ d ≤ ⌊√n⌋` (the integer
 square root `AzNat.sqrt`).  `n` is prime iff none of those `d` divides it.
@@ -47,10 +47,12 @@ def trialDivideOdd (n s d : AzNat) : Bool :=
       rw [toNat_add, htwo]
     omega
 
-/-- **Naive primality test.**  `n` is prime iff `n ≥ 2`, and (when odd and `> 2`)
-no odd `d` with `3 ≤ d ≤ ⌊√n⌋` divides `n`.  Trial division — slow; a placeholder
-to be superseded by a fast test. -/
-def isPrime (n : AzNat) : Bool :=
+/-- **Naive primality test** (trial division).  `n` is prime iff `n ≥ 2`, and
+(when odd and `> 2`) no odd `d` with `3 ≤ d ≤ ⌊√n⌋` divides `n`.  Exponential in
+the bit size — the production test is `isPrime` (`Azurite/AzNat/IsPrime.lean`),
+which uses Miller–Rabin for fast rejection and falls back to this for the
+deterministic confirmation. -/
+def isPrimeNaive (n : AzNat) : Bool :=
   if compare n (2 : UInt64).toAzNat = Ordering.lt then
     false                                         -- n < 2: not prime
   else if n == (2 : UInt64).toAzNat then
@@ -71,24 +73,24 @@ open Azurite Azurite.AzNat
 /-- Parse a decimal string into an `AzNat` (exercises the real parse path). -/
 private def parse (s : String) : AzNat := (AzNat.parse s).get!
 
-#guard isPrime (parse "0") == false
-#guard isPrime (parse "1") == false
-#guard isPrime (parse "2") == true
-#guard isPrime (parse "3") == true
-#guard isPrime (parse "4") == false
-#guard isPrime (parse "5") == true
-#guard isPrime (parse "7") == true
-#guard isPrime (parse "9") == false       -- 3·3
-#guard isPrime (parse "15") == false      -- 3·5
-#guard isPrime (parse "17") == true
-#guard isPrime (parse "25") == false      -- 5·5
-#guard isPrime (parse "49") == false      -- 7·7
-#guard isPrime (parse "97") == true
-#guard isPrime (parse "100") == false
-#guard isPrime (parse "221") == false     -- 13·17
-#guard isPrime (parse "7919") == true     -- 1000th prime
-#guard isPrime (parse "7917") == false    -- 3·7·13·29
-#guard isPrime (parse "104729") == true   -- 10000th prime
-#guard isPrime (parse "104730") == false
+#guard isPrimeNaive (parse "0") == false
+#guard isPrimeNaive (parse "1") == false
+#guard isPrimeNaive (parse "2") == true
+#guard isPrimeNaive (parse "3") == true
+#guard isPrimeNaive (parse "4") == false
+#guard isPrimeNaive (parse "5") == true
+#guard isPrimeNaive (parse "7") == true
+#guard isPrimeNaive (parse "9") == false       -- 3·3
+#guard isPrimeNaive (parse "15") == false      -- 3·5
+#guard isPrimeNaive (parse "17") == true
+#guard isPrimeNaive (parse "25") == false      -- 5·5
+#guard isPrimeNaive (parse "49") == false      -- 7·7
+#guard isPrimeNaive (parse "97") == true
+#guard isPrimeNaive (parse "100") == false
+#guard isPrimeNaive (parse "221") == false     -- 13·17
+#guard isPrimeNaive (parse "7919") == true     -- 1000th prime
+#guard isPrimeNaive (parse "7917") == false    -- 3·7·13·29
+#guard isPrimeNaive (parse "104729") == true   -- 10000th prime
+#guard isPrimeNaive (parse "104730") == false
 
 end Tests

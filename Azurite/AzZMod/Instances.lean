@@ -1,6 +1,7 @@
 import Azurite.AzZMod.Equiv.Basic
 import Azurite.AzZMod.Equiv.Conversion
 import Azurite.AzZMod.Equiv.Pow
+import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
 
 /-!
 ## `CommRing (AzZMod m)`
@@ -95,5 +96,26 @@ instance instCommRing [NeZero m.toNat] : CommRing (AzZMod m) where
 -- and `pow` is the monoid power.
 example [NeZero m.toNat] (a b c : AzZMod m) : (a + b) * c = a * c + b * c := by ring
 example [NeZero m.toNat] (a : AzZMod m) (n : ℕ) : a ^ n = a.pow n := rfl
+
+end Azurite.AzZMod
+
+/-! ### The `AzNat`-exponent power, post-`Monoid` -/
+
+namespace Azurite.AzZMod
+
+variable {m : AzNat}
+
+/-- **`powAzNat` computes the monoid power** at the `toNat` exponent. -/
+theorem powAzNat_eq_pow [NeZero m.toNat] (a : AzZMod m) (n : AzNat) :
+    a.powAzNat n = a ^ n.toNat :=
+  Azurite.slidingWindowPowAzNat_eq_pow a n
+
+/-- **The `AzNat`-exponent power agrees with `ZMod`.** -/
+@[simp] theorem toZMod_powAzNat [NeZero m.toNat] (a : AzZMod m) (n : AzNat) :
+    toZMod (a.powAzNat n) = (toZMod a) ^ n.toNat := by
+  rw [powAzNat_eq_pow]
+  induction n.toNat with
+  | zero => simp [toZMod_one]
+  | succ k ih => rw [pow_succ, pow_succ, toZMod_mul, ih]
 
 end Azurite.AzZMod

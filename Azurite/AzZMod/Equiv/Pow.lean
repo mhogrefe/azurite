@@ -24,4 +24,5 @@ variable {m : AzNat}
   apply toZMod_injective
   rw [toZMod_pow, toZMod_ofZMod, toZMod_ofZMod]
 
+
 end Azurite.AzZMod

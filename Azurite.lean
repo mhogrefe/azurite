@@ -1,9 +1,11 @@
 
 import Azurite.Algorithm.DetExpansion
+import Azurite.Algorithm.Equiv.PrimeSieve
 import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.NormalizedGcd
+import Azurite.Algorithm.PrimeSieve
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.Algorithm.SlidingWindowPowAzNat
 import Azurite.AzFormula.Atom
@@ -240,6 +242,7 @@ import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
 import Azurite.AzNat.DivRound
+import Azurite.AzNat.Divisors
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.Equiv.Basic
@@ -257,12 +260,15 @@ import Azurite.AzNat.Equiv.DivBy6
 import Azurite.AzNat.Equiv.DivMod10p19
 import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
+import Azurite.AzNat.Equiv.Divisors
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
+import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
 import Azurite.AzNat.Equiv.LowMask
+import Azurite.AzNat.Equiv.MillerRabin
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Karatsuba
@@ -278,6 +284,7 @@ import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.ParseBase
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.Pow2
+import Azurite.AzNat.Equiv.Pratt
 import Azurite.AzNat.Equiv.Primality
 import Azurite.AzNat.Equiv.RingEquiv
 import Azurite.AzNat.Equiv.SetBit
@@ -301,9 +308,11 @@ import Azurite.AzNat.Gcd
 import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
+import Azurite.AzNat.IsPrime
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.LowMask
+import Azurite.AzNat.MillerRabin
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Mul.Karatsuba
@@ -322,6 +331,7 @@ import Azurite.AzNat.ParsableElement
 import Azurite.AzNat.ParseBase
 import Azurite.AzNat.Pow
 import Azurite.AzNat.Pow2
+import Azurite.AzNat.Pratt
 import Azurite.AzNat.Primality
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft

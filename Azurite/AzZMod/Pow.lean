@@ -1,6 +1,7 @@
 import Azurite.AzZMod.Basic
 import Azurite.AzZMod.ToString
 import Azurite.Algorithm.SlidingWindowPow
+import Azurite.Algorithm.SlidingWindowPowAzNat
 
 /-!
 ## Exponentiation for `AzZMod`
@@ -18,6 +19,13 @@ variable {m : AzNat}
 exponentiation over the `AzZMod` ring operations. -/
 def pow [NeZero m.toNat] (a : AzZMod m) (n : ℕ) : AzZMod m :=
   Azurite.slidingWindowPow a n
+
+/-- **Exponentiation with an `AzNat` exponent** in `ℤ / m`: the exponent is
+read at the limb level (never through `AzNat.toNat`), so huge exponents —
+Miller–Rabin's `d` with `n − 1 = 2^s·d`, Fermat/Euler exponents — stay
+limb-level.  Mirrors `AzPolyMod.powAzNat`. -/
+def powAzNat [NeZero m.toNat] (a : AzZMod m) (n : AzNat) : AzZMod m :=
+  Azurite.slidingWindowPowAzNat a n
 
 end Azurite.AzZMod
 

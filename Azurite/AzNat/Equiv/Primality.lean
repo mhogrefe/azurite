@@ -11,8 +11,8 @@ import Mathlib.Data.Nat.Prime.Basic
 /-!
 # Correctness of the naive primality test
 
-This file proves that `Azurite.AzNat.isPrime` reflects `Nat.Prime`:
-`isPrime n = true ↔ Nat.Prime n.toNat`.
+This file proves that `Azurite.AzNat.isPrimeNaive` reflects `Nat.Prime`:
+`isPrimeNaive n = true ↔ Nat.Prime n.toNat`.
 -/
 
 namespace Azurite.AzNat
@@ -82,10 +82,10 @@ theorem trialDivideOdd_eq_true_iff (n s d : AzNat) :
       have he : d.toNat + 2 * (k + 1) = d.toNat + 2 + 2 * k := by ring
       rwa [he] at this
 
-/-- **Correctness of the naive primality test.**  `isPrime n` returns `true`
+/-- **Correctness of the naive primality test.**  `isPrimeNaive n` returns `true`
 iff `n.toNat` is prime. -/
-theorem isPrime_eq_true_iff (n : AzNat) : isPrime n = true ↔ Nat.Prime n.toNat := by
-  unfold isPrime
+theorem isPrimeNaive_eq_true_iff (n : AzNat) : isPrimeNaive n = true ↔ Nat.Prime n.toNat := by
+  unfold isPrimeNaive
   -- Condition translations
   have hlt2 : (compare n (2 : UInt64).toAzNat = Ordering.lt) ↔ n.toNat < 2 := by
     rw [compare_eq_compare_toNat, toNat_two]
@@ -153,8 +153,8 @@ theorem isPrime_eq_true_iff (n : AzNat) : isPrime n = true ↔ Nat.Prime n.toNat
           rintro ⟨_, h⟩ k hk
           exact h (3 + 2 * k) (by omega) hk
 
-/-- `ofNat`-phrased correctness: `isPrime (ofNat k)` returns `true` iff `k` is prime. -/
-theorem isPrime_ofNat_eq_true_iff (k : Nat) : isPrime (ofNat k) = true ↔ Nat.Prime k := by
-  rw [isPrime_eq_true_iff, toNat_ofNat]
+/-- `ofNat`-phrased correctness: `isPrimeNaive (ofNat k)` returns `true` iff `k` is prime. -/
+theorem isPrimeNaive_ofNat_eq_true_iff (k : Nat) : isPrimeNaive (ofNat k) = true ↔ Nat.Prime k := by
+  rw [isPrimeNaive_eq_true_iff, toNat_ofNat]
 
 end Azurite.AzNat
