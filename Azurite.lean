@@ -265,6 +265,7 @@ import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.IsPrime
+import Azurite.AzNat.Equiv.IsSquare
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
 import Azurite.AzNat.Equiv.LowMask
@@ -277,6 +278,7 @@ import Azurite.AzNat.Equiv.MulModPow2.Dispatch
 import Azurite.AzNat.Equiv.MulModPow2.Karatsuba
 import Azurite.AzNat.Equiv.MulModPow2.Schoolbook
 import Azurite.AzNat.Equiv.MulModPow2.ToomCook3
+import Azurite.AzNat.Equiv.NMinusOneTest
 import Azurite.AzNat.Equiv.NormalizedCompare
 import Azurite.AzNat.Equiv.OfLimbDigits
 import Azurite.AzNat.Equiv.OfLimbDigitsPow2
@@ -309,6 +311,7 @@ import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.IsPrime
+import Azurite.AzNat.IsSquare
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.LowMask
@@ -322,6 +325,7 @@ import Azurite.AzNat.MulModPow2.Dispatch
 import Azurite.AzNat.MulModPow2.Karatsuba
 import Azurite.AzNat.MulModPow2.Schoolbook
 import Azurite.AzNat.MulModPow2.ToomCook3
+import Azurite.AzNat.NMinusOneTest
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzNat.OfLimbDigitsPow2
@@ -1165,6 +1169,11 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.StructureTheorem
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_34
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
+import Azurite.CrandallPomerance.Chapter4.Corollary_4_1_4
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_2
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_3
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_5
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_6
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
