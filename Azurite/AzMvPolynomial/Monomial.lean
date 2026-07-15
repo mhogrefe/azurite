@@ -514,15 +514,15 @@ private def mkMonN (c : AzInt) (hc : c ≠ 0) (v : Vector ℕ 3) : Monomial 3 Az
   ⟨⟨c, hc⟩, ⟨v⟩⟩
 
 -- default (`IndexedVar`) display
-#guard (mkMonN 5 (by native_decide) (Vector.mk #[0, 0, 0] rfl)).toChars == "5".toList
-#guard (mkMonN 1 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toChars == "x₀".toList
-#guard (mkMonN 3 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toChars == "3*x₀".toList
-#guard (mkMonN (-2) (by native_decide) (Vector.mk #[1, 1, 0] rfl)).toChars == "-2*x₀*x₁".toList
+#guard (mkMonN 5 (AzInt.ofNat_ne_zero 5) (Vector.mk #[0, 0, 0] rfl)).toChars == "5".toList
+#guard (mkMonN 1 (by decide) (Vector.mk #[1, 0, 0] rfl)).toChars == "x₀".toList
+#guard (mkMonN 3 (AzInt.ofNat_ne_zero 3) (Vector.mk #[1, 0, 0] rfl)).toChars == "3*x₀".toList
+#guard (mkMonN (-2) (AzInt.neg_ofNat_ne_zero 2) (Vector.mk #[1, 1, 0] rfl)).toChars == "-2*x₀*x₁".toList
 
 -- `toCharsWith (AbcVar 3)` same monomial, different naming
-#guard (mkMonN 1 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "a".toList
-#guard (mkMonN 3 (by native_decide) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "3*a".toList
-#guard (mkMonN (-2) (by native_decide) (Vector.mk #[1, 1, 0] rfl)).toCharsWith (AbcVar 3) == "-2*a*b".toList
+#guard (mkMonN 1 (by decide) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "a".toList
+#guard (mkMonN 3 (AzInt.ofNat_ne_zero 3) (Vector.mk #[1, 0, 0] rfl)).toCharsWith (AbcVar 3) == "3*a".toList
+#guard (mkMonN (-2) (AzInt.neg_ofNat_ne_zero 2) (Vector.mk #[1, 1, 0] rfl)).toCharsWith (AbcVar 3) == "-2*a*b".toList
 
 -- parse round-trip via default display
 #guard (Monomial.parse (n := 3) (R := AzInt) (ord := .Degrevlex) "5".toList).map

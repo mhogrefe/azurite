@@ -31,19 +31,32 @@ def reciprocalTable : Array UInt16 := #[
   1090, 1088, 1086, 1083, 1081, 1079, 1077, 1074, 1072, 1070, 1068, 1066, 1064, 1061, 1059, 1057,
   1055, 1053, 1051, 1049, 1047, 1044, 1042, 1040, 1038, 1036, 1034, 1032, 1030, 1028, 1026, 1024]
 
+/-- The reciprocal lookup table has exactly 256 entries. -/
+theorem reciprocalTable_size : reciprocalTable.size = 256 := by
+  set_option maxRecDepth 2000 in decide
+
+set_option maxRecDepth 100000 in
+/-- Each table entry agrees with the spec, pointwise — a kernel-checked
+`decide` over the 256 entries (no `native_decide`). -/
+theorem reciprocalTable_pointwise : ∀ i : Nat, i < 256 →
+    reciprocalTable[i]! = ((2 ^ 19 - 3 * 2 ^ 8) / (i + 256) : Nat).toUInt16 := by
+  decide
+
 /-- The literal table agrees with the spec `⌊(2^19 − 3 · 2^8) / d_9⌋`. -/
 theorem reciprocalTable_eq :
     reciprocalTable =
       Array.ofFn (n := 256) fun i => ((2 ^ 19 - 3 * 2 ^ 8) / (i.val + 256) : Nat).toUInt16 := by
-  native_decide
+  apply Array.ext
+  · rw [reciprocalTable_size, Array.size_ofFn]
+  · intro i h1 h2
+    rw [Array.getElem_ofFn]
+    have := reciprocalTable_pointwise i
+      (by rw [reciprocalTable_size] at h1; omega)
+    rwa [getElem!_pos reciprocalTable i h1] at this
 
 #guard reciprocalTable.size = 256
 #guard reciprocalTable[0]! = 2045     -- d_9 = 256
 #guard reciprocalTable[255]! = 1024   -- d_9 = 511
-
-/-- The reciprocal lookup table has exactly 256 entries. -/
-theorem reciprocalTable_size : reciprocalTable.size = 256 := by
-  set_option maxRecDepth 2000 in decide
 
 /-- `d_0 = d mod 2` — the least significant bit of `d`. -/
 @[inline]

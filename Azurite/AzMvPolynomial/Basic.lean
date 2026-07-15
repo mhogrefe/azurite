@@ -168,7 +168,7 @@ def withOrder (p : AzMvPolynomial n R ord) (ord' : MonomialOrder) :
 
 /-- Construct a polynomial from an array of monomials with pairwise-distinct
     monic parts. The monomials are sorted into descending order automatically.
-    The distinctness proof can typically be discharged with `by native_decide`. -/
+    The distinctness proof can typically be discharged with `by decide`. -/
 def ofMonomials (ms : Array (Monomial n R ord))
     (hdistinct : ms.toList.Pairwise (fun a b => a.monic ≠ b.monic)) :
     AzMvPolynomial n R ord :=

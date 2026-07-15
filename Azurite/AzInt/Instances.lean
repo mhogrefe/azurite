@@ -22,6 +22,29 @@ instance : IntCast AzInt := ⟨ofInt⟩
 
 @[simp] theorem toInt_intCast (i : ℤ) : (i : AzInt).toInt = i := toInt_ofInt i
 
+/-- Numeral literals `≥ 2` are nonzero (the kernel cannot decide this
+directly, since `AzNat.ofNat` is defined by well-founded recursion). -/
+theorem ofNat_ne_zero (k : ℕ) [inst : k.AtLeastTwo] :
+    (OfNat.ofNat k : AzInt) ≠ 0 := by
+  intro h
+  have h2 := congrArg AzInt.toInt h
+  rw [show (OfNat.ofNat k : AzInt) = ((k : ℕ) : AzInt) from rfl,
+    toInt_natCast] at h2
+  simp at h2
+  have hk : 2 ≤ k := inst.prop
+  omega
+
+/-- Negated numeral literals `≥ 2` are nonzero. -/
+theorem neg_ofNat_ne_zero (k : ℕ) [inst : k.AtLeastTwo] :
+    (-(OfNat.ofNat k) : AzInt) ≠ 0 := by
+  intro h
+  have h2 := congrArg AzInt.toInt h
+  rw [show (-(OfNat.ofNat k) : AzInt) = -((k : ℕ) : AzInt) from rfl,
+    toInt_neg, toInt_natCast] at h2
+  simp at h2
+  have hk : 2 ≤ k := inst.prop
+  omega
+
 instance : CommRing AzInt where
   add_assoc a b c := toInt_injective (by simp [toInt_add, Int.add_assoc])
   zero_add a := toInt_injective (by simp [toInt_add])

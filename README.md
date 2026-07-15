@@ -364,11 +364,11 @@ lake build benchmark  # build the benchmark executable
 
 CI (`.github/workflows/lean.yml`) builds the project, runs the tests, and
 verifies that every `Azurite.*` declaration depends only on allowed axioms
-via `scripts/check_axioms.lean`: the standard three (`propext`,
-`Classical.choice`, `Quot.sound`) plus what `native_decide` introduces
-(`Lean.ofReduceBool` / `Lean.trustCompiler` and its per-use generated
-`*._native.native_decide.ax_*` axioms). `sorry` or any other newly
-introduced axiom fails the build.
+via `scripts/check_axioms.lean`: exactly the standard three (`propext`,
+`Classical.choice`, `Quot.sound`). `native_decide` is NOT permitted —
+its last use (the Möller–Granlund reciprocal table) was replaced by a
+kernel-checked pointwise `decide` — so `sorry`, `native_decide`, or any
+other newly introduced axiom fails the build.
 
 ## Running Benchmarks
 
