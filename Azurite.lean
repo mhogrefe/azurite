@@ -266,6 +266,7 @@ import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.IsSquare
+import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
 import Azurite.AzNat.Equiv.LowMask
@@ -313,6 +314,7 @@ import Azurite.AzNat.Instances
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.IsPrime
 import Azurite.AzNat.IsSquare
+import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.LowMask
@@ -1177,11 +1179,15 @@ import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_2
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_3
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_5
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_1_6
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_10
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_12
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_2
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_3
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_4
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_5
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_6
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_8
+import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_9
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
