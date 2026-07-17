@@ -154,6 +154,67 @@ theorem X_pow_card_pow_sub_X_eq_prod [DecidableEq F] {d : ℕ} (hd : d ≠ 0) :
     exact Polynomial.monic_normalize (irreducible_of_factor g hg).ne_zero
   exact (Polynomial.eq_of_monic_of_associated hprodmonic hmonic hassoc).symm
 
+/-- **The Ben-Or irreducibility criterion** (the mathematics of the
+distinct-degree irreducibility test; Crandall–Pomerance Algorithm
+2.2.9): a monic `f` of positive degree over a finite field is
+irreducible exactly when `X^(q^i) − X` is coprime to `f` for every
+`i` up to half the degree.  A reducible `f` has an irreducible factor
+`g` of degree at most `(deg f)/2`, which divides both `f` and
+`X^(q^(deg g)) − X`; conversely an irreducible `f` divides no
+`X^(q^i) − X` with `0 < i < deg f`. -/
+theorem irreducible_iff_isCoprime_X_pow_card_pow_sub_X {f : F[X]}
+    (hf : f.Monic) (hdeg : 0 < f.natDegree) :
+    Irreducible f ↔ ∀ i : ℕ, 1 ≤ i → 2 * i ≤ f.natDegree →
+      IsCoprime (X ^ Fintype.card F ^ i - X) f := by
+  constructor
+  · intro hirr i hi1 hi2
+    have hnd : ¬f ∣ X ^ Fintype.card F ^ i - X := by
+      intro hdvd
+      have hdvd' := (irreducible_dvd_X_pow_card_pow_sub_X_iff hirr).mp hdvd
+      have := Nat.le_of_dvd hi1 hdvd'
+      omega
+    exact ((hirr.coprime_iff_not_dvd).mpr hnd).symm
+  · intro hall
+    by_contra hnirr
+    have hfu : ¬IsUnit f := by
+      intro hu
+      have := natDegree_eq_zero_of_isUnit hu
+      omega
+    -- a nonunit nonzero polynomial over a field has positive degree
+    have hdeg_pos : ∀ c : F[X], c ≠ 0 → ¬IsUnit c → 0 < c.natDegree := by
+      intro c hc0 hcu
+      rcases Nat.eq_zero_or_pos c.natDegree with h0 | h
+      · obtain ⟨x, hx⟩ := Polynomial.natDegree_eq_zero.mp h0
+        refine absurd (isUnit_C.mpr (isUnit_iff_ne_zero.mpr fun hx0 => ?_)) (hx ▸ hcu)
+        rw [← hx, hx0, C_0] at hc0
+        exact hc0 rfl
+      · exact h
+    -- split off two nonunit factors and keep the smaller
+    rw [irreducible_iff] at hnirr
+    push Not at hnirr
+    obtain ⟨a, b, hab, hau, hbu⟩ := hnirr hfu
+    have ha0 : a ≠ 0 := fun h => hf.ne_zero (by rw [hab, h, zero_mul])
+    have hb0 : b ≠ 0 := fun h => hf.ne_zero (by rw [hab, h, mul_zero])
+    have hadeg := hdeg_pos a ha0 hau
+    have hbdeg := hdeg_pos b hb0 hbu
+    have hsum : a.natDegree + b.natDegree = f.natDegree := by
+      rw [hab, Polynomial.natDegree_mul ha0 hb0]
+    obtain ⟨c, hc0, hcu, hcdvd, hcdeg⟩ :
+        ∃ c : F[X], c ≠ 0 ∧ ¬IsUnit c ∧ c ∣ f ∧
+          2 * c.natDegree ≤ f.natDegree := by
+      rcases Nat.le_total a.natDegree b.natDegree with h | h
+      · exact ⟨a, ha0, hau, ⟨b, hab⟩, by omega⟩
+      · exact ⟨b, hb0, hbu, ⟨a, by rw [hab, mul_comm]⟩, by omega⟩
+    -- an irreducible factor of the smaller piece is caught by the sweep
+    obtain ⟨g, hgirr, hgdvd⟩ := WfDvdMonoid.exists_irreducible_factor hcu hc0
+    have hgdeg : g.natDegree ≤ c.natDegree :=
+      Polynomial.natDegree_le_of_dvd hgdvd hc0
+    have hg1 : 1 ≤ g.natDegree := hdeg_pos g hgirr.ne_zero hgirr.not_isUnit
+    have hgX : g ∣ X ^ Fintype.card F ^ g.natDegree - X :=
+      dvd_X_pow_card_pow_sub_X_of_natDegree_dvd hgirr dvd_rfl
+    have hcop := hall g.natDegree hg1 (by omega)
+    exact hgirr.not_isUnit (hcop.isUnit_of_dvd' hgX (hgdvd.trans hcdvd))
+
 end GG
 
 end Azurite
