@@ -53,6 +53,7 @@ theorem discriminantMonic_toPoly (P : AzPolynomial K) (hMonic : P.Monic) :
   -- Goal: algebraMap K C P.discriminantMonic = (newtMat Q p).det
   unfold discriminantMonic
   rw [AzMatrix.det_eq_Matrix_det]
+  show (algebraMap K C) ((Matrix.of (P.newtMatMonic p).toFn).det) = (newtMat Q p).det
   rw [RingHom.map_det (algebraMap K C)]
   -- Now both sides are determinants over C; show the matrices coincide.
   congr 1

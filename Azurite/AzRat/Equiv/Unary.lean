@@ -34,7 +34,8 @@ lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
   · rw [toRat_of_num_zero q hn, toRat_of_num_zero q.neg hn, neg_zero]
   · rw [toRat_eq_divInt q.neg, toRat_eq_divInt q]
     simp only [neg]
-    rw [if_neg hn, Rat.neg_divInt]
+    simp only [if_neg hn]
+    rw [Rat.neg_divInt]
     cases q.sign <;> simp
 
 @[simp] theorem toRat_abs (q : AzRat) : toRat q.abs = |toRat q| := by

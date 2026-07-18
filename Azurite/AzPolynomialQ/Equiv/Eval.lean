@@ -19,7 +19,7 @@ This module proves the bidirectional equivalence between `AzPolynomialQ.eval`
 
 namespace Azurite
 
-open Polynomial Finset AzPolynomial
+open Polynomial Finset _root_.Azurite.AzPolynomial
 
 /-! ## Helper lemma -/
 

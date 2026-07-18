@@ -14,7 +14,7 @@ import Mathlib.Order.WellFounded
 
 namespace Azurite
 
-open MonicMonomial MonomialOrder
+open MonicMonomial _root_.Azurite.MonomialOrder
 
 /-! ### Auxiliary lemmas on `List.foldl (· + ·)` -/
 
@@ -211,17 +211,15 @@ variable {n : ℕ}
 noncomputable def toMathlibMonomialOrder (ord : MonomialOrder) :
     _root_.MonomialOrder (Fin n) where
   syn := Additive (MonicMonomial n ord)
-  acm := Additive.addCommMonoid
-  lo := Additive.linearOrder
-  iocam := {
+  addCommMonoidSyn := Additive.addCommMonoid
+  linearOrderSyn := Additive.linearOrder
+  isOrderedAddMonoid_syn := {
     add_le_add_left := fun a b hab c => by
       show Additive.ofMul (Additive.toMul a * Additive.toMul c) ≤
            Additive.ofMul (Additive.toMul b * Additive.toMul c)
       rw [MonicMonomial.mul_comm (Additive.toMul a),
           MonicMonomial.mul_comm (Additive.toMul b)]
       exact MonicMonomial.mul_le_mul_left' (Additive.toMul c) hab
-    le_of_add_le_add_left := fun a b c h =>
-      MonicMonomial.le_of_mul_le_mul_left (Additive.toMul a) b c h
   }
   toSyn := {
     toEquiv := {
@@ -244,7 +242,7 @@ noncomputable def toMathlibMonomialOrder (ord : MonomialOrder) :
           MonicMonomial.toFinsupp_ofFinsupp, MonicMonomial.toFinsupp_ofFinsupp]
   }
   toSyn_monotone := fun {_ _} h => ofFinsupp_monotone _ _ h
-  wf := ⟨wellFoundedLT_monicMonomial.wf⟩
+  wellFoundedLT_syn := ⟨wellFoundedLT_monicMonomial.wf⟩
 
 end Bridge
 

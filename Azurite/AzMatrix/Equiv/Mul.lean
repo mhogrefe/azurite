@@ -35,6 +35,7 @@ theorem AzMatrix.toFn_mulBasecase (A : AzMatrix R m n) (B : AzMatrix R n p)
   unfold dotProduct
   apply Finset.sum_congr rfl; intro j _
   simp [row, col, AzVector.toFn, AzMatrix.toFn, AzMatrix.get, Vector.get]
+  rfl
 
 /-- `mulBasecase` commutes with `ofFn`. -/
 theorem AzMatrix.ofFn_mulBasecase (f : Fin m → Fin n → R) (g : Fin n → Fin p → R) :

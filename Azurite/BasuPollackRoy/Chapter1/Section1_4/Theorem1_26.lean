@@ -26,7 +26,7 @@ exhibits the same `Ψ` working over two fields simultaneously.
 
 namespace Azurite.BPR
 
-open MvPolynomial Polynomial Formula
+open _root_.Azurite.BPR.MvPolynomial Polynomial Formula
 
 variable {D : Type*} [CommRing D]
 

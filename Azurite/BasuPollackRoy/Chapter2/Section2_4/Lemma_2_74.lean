@@ -89,7 +89,8 @@ theorem signMatrixQ_mulVec_card (s : Nat) (P : R[X]) (Q : Fin s → R[X]) :
       = fun i => (tarskiQuery (familyPow Q (expFn s i)) P : ℚ) := by
   funext i
   have hZ := congrFun (signMatrix_mulVec_card s P Q) i
-  simp only [Matrix.mulVec, dotProduct, signMatrixQ, Matrix.map_apply] at hZ ⊢
+  simp only [Matrix.mulVec, dotProduct, signMatrixQ, Matrix.map_apply,
+    Matrix.of_apply] at hZ ⊢
   have := congrArg (fun z : ℤ => (z : ℚ)) hZ
   push_cast at this ⊢
   convert this using 2

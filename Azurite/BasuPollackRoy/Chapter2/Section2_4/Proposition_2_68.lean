@@ -82,7 +82,10 @@ theorem proposition_2_68 (P : R[X]) (Q : ι → R[X]) (A : List (ι → ℕ))
       = fun i => tarskiQuery (familyPow Q (A.get i)) P := by
   classical
   funext i
-  rw [Matrix.mulVec, dotProduct]
+  show dotProduct (fun j => ((matrixOfSigns A S i j : SignType) : ℤ))
+    (fun j => (((S.get j).realizationOverFinset P Q).card : ℤ))
+    = tarskiQuery (familyPow Q (A.get i)) P
+  rw [dotProduct]
   rw [tarskiQuery_familyPow_eq_sum P Q (A.get i) S.toFinset
     (fun x hx => List.mem_toFinset.mpr (hcover x hx)),
     List.sum_toFinset _ hS]

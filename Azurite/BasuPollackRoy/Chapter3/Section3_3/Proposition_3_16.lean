@@ -385,7 +385,8 @@ theorem proposition_3_16_id [Nonempty (Fin k)] (t : R) (ht : 0 < t)
     refine Fin.addCases (fun a => ?_) (fun j => ?_) i
     · rw [hc', Fin.append_left, Fin.append_left, germHom_idSub]
     · rw [hc', Fin.append_right, Fin.append_right]
-  rw [← hgermtup, proposition_3_16_mem t ht c' _ _]
+  rw [← hgermtup]
+  refine (proposition_3_16_mem t ht c' _ _).mpr ?_
   refine ⟨t, ht, fun s hs hst => ?_⟩
   show (fun i => (c' i : (Fin 1 → R) → R) (constPt s))
     ∈ funGraph (rightNbhd t) (fun x : Fin 1 → R => fun i => (c i : (Fin 1 → R) → R) x)
@@ -488,7 +489,8 @@ theorem proposition_3_16_comp [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)
     refine Fin.addCases (fun a => ?_) (fun b => ?_) i
     · rw [hc', Fin.append_left, Fin.append_left]
     · rw [hc', Fin.append_right, Fin.append_right]
-  rw [← hgermtup, proposition_3_16_mem t ht c' _ _]
+  rw [← hgermtup]
+  refine (proposition_3_16_mem t ht c' _ _).mpr ?_
   refine ⟨t, ht, fun s hs hst => ?_⟩
   show (fun i => (c' i : (Fin 1 → R) → R) (constPt s)) ∈ funGraph S g
   rw [mem_funGraph]

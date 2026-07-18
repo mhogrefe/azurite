@@ -95,7 +95,7 @@ end AzPolynomial
 
 namespace AzPolyMod
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R] [Nontrivial R]
 

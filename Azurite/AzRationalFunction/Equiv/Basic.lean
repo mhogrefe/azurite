@@ -205,7 +205,7 @@ private theorem isCoprime_map_of_gcd_isUnit {A B : ℤ[X]} (hB : B ≠ 0)
     · have h1 : E'.map (Int.castRingHom ℚ) ∣ (T.primPart).map (Int.castRingHom ℚ) :=
         (hassoc.dvd.trans hdvdT).trans (map_assoc_primPart hT).dvd
       exact (hprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ)
-        T.isPrimitive_primPart h1).trans T.primPart_dvd
+        h1).trans T.primPart_dvd
   have hE'unit : IsUnit E' :=
     isUnit_of_dvd_unit
       (dvd_gcd (hdvd A (EuclideanDomain.gcd_dvd_left _ _))
@@ -219,8 +219,8 @@ private theorem isCoprime_map_of_gcd_isUnit {A B : ℤ[X]} (hB : B ≠ 0)
 private theorem intPoly_eq_of_assoc {A B : ℤ[X]} (hA : A.IsPrimitive) (hB : B.IsPrimitive)
     (hlcA : 0 < A.leadingCoeff) (hlcB : 0 < B.leadingCoeff)
     (h : Associated (A.map (Int.castRingHom ℚ)) (B.map (Int.castRingHom ℚ))) : A = B := by
-  have hAB : A ∣ B := hA.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) hB h.dvd
-  have hBA : B ∣ A := hB.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) hA h.symm.dvd
+  have hAB : A ∣ B := hA.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) h.dvd
+  have hBA : B ∣ A := hB.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) h.symm.dvd
   obtain ⟨u, hu⟩ := associated_of_dvd_dvd hAB hBA
   obtain ⟨w, hw_unit, hwC⟩ := Polynomial.isUnit_iff.mp u.isUnit
   have hlcu := congrArg Polynomial.leadingCoeff hu

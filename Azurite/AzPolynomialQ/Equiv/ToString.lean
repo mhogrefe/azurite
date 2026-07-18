@@ -11,7 +11,7 @@ so the equivalence is by definition.
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 namespace AzPolynomialQ
 

@@ -159,7 +159,9 @@ theorem deltaSet_eq_image (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d :
     refine ⟨fun _ : Fin 1 => p, ⟨xp, ⟨?_, ?_⟩, ?_⟩, rfl⟩
     · intro i; rw [hxp0, hxp1]; exact hzero i
     · rw [hxp0, hxp1]; exact hrank
-    · funext j; fin_cases j; rw [hxp1]
+    · funext j; fin_cases j
+      show xp 1 = p
+      exact hxp1
   · rintro ⟨g, ⟨xp, ⟨hzero, hrank⟩, hg⟩, hp⟩
     refine ⟨xp 0, ?_, ?_⟩
     · intro i

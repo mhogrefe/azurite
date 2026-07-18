@@ -253,9 +253,24 @@ theorem toNat_wideMul (x y : UInt64) :
             + x.hiHalf.toNat * y.loHalf.toNat) % 2^64 % 2^32 * 2^32
           + x.loHalf.toNat * y.loHalf.toNat % 2^32 := by
     rw [toNat_joinHalves, hloHi, hAl]
-  -- Now unfold wideMul and reduce to wideMul_nat_eq
-  unfold wideMul
-  simp only [splitInHalf]
+  -- Now unfold wideMul (defeq: delta + pair projections + lets) and
+  -- reduce to wideMul_nat_eq
+  show (x.hiHalf.toUInt64 * y.hiHalf.toUInt64 +
+        (if decide (x.loHalf.toUInt64 * y.hiHalf.toUInt64 +
+              (x.loHalf.toUInt64 * y.loHalf.toUInt64).hiHalf.toUInt64 +
+              x.hiHalf.toUInt64 * y.loHalf.toUInt64 <
+            x.loHalf.toUInt64 * y.hiHalf.toUInt64 +
+              (x.loHalf.toUInt64 * y.loHalf.toUInt64).hiHalf.toUInt64) = true
+          then (1 : UInt64) <<< 32 else 0) +
+        (x.loHalf.toUInt64 * y.hiHalf.toUInt64 +
+            (x.loHalf.toUInt64 * y.loHalf.toUInt64).hiHalf.toUInt64 +
+          x.hiHalf.toUInt64 * y.loHalf.toUInt64).wideHiHalf).toNat * 2^64 +
+      (joinHalves
+          (x.loHalf.toUInt64 * y.hiHalf.toUInt64 +
+              (x.loHalf.toUInt64 * y.loHalf.toUInt64).hiHalf.toUInt64 +
+            x.hiHalf.toUInt64 * y.loHalf.toUInt64).loHalf
+          (x.loHalf.toUInt64 * y.loHalf.toUInt64).loHalf).toNat
+    = x.toNat * y.toNat
   rw [add_ite_zero]
   split_ifs with h_if
   · -- carry = true

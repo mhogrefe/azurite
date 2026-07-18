@@ -168,9 +168,10 @@ theorem rename_emb0_isMultihomogeneous {n : ℕ} {Q : MvPolynomial (Fin (k + 1))
   · -- block 1
     show ∑ j : Fin (1 + 1), Finsupp.mapDomain (emb0 k) c' ⟨1, j⟩ = 0
     refine Finset.sum_eq_zero fun j _ => ?_
-    rw [Finsupp.mapDomain_notin_range]
+    rw [Finsupp.mapDomain_of_notMem_range]
     rintro ⟨a, ha⟩
-    simp [emb0] at ha
+    have hfst := congrArg Sigma.fst ha
+    simp [emb0] at hfst
 
 /-! ### Multihomogeneity of the defining polynomials -/
 
@@ -248,8 +249,12 @@ theorem evalCoords_Hpoly (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : 
     (xp : (i : Fin 2) → complexProjectiveSpace R (kk k i)) (i : Fin k) :
     evalCoords (Hpoly P d i) (fun i => (xp i).rep)
       = aeval (xp 0).rep (homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1) i) := by
-  rw [evalCoords, Hpoly, homotopyPoly]
-  rw [aeval_eq_eval]
+  have hHP : homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1) i
+      = C ((xp 1).rep 0) * P i + C ((xp 1).rep 1) * diagFactor (d i) i := rfl
+  show MvPolynomial.eval (fun s : Sig k => (xp s.1).rep s.2) (Hpoly P d i)
+      = aeval ((show complexProjectiveSpace R k from xp 0).rep)
+          (homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1) i)
+  rw [Hpoly, hHP, aeval_eq_eval ((show complexProjectiveSpace R k from xp 0).rep)]
   rw [map_add, map_add, map_mul, map_mul, map_mul, map_mul]
   rw [eval_rename_emb0, eval_rename_emb0, eval_C, eval_C,
     show eval (fun s : Sig k => (xp s.1).rep s.2) (X (⟨1, 0⟩ : Sig k)) = (xp 1).rep 0 from
@@ -266,7 +271,15 @@ theorem evalCoords_entryPoly (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (
       = C ((xp 1).rep 0) * pderiv j (P i)
         + C ((xp 1).rep 1) * pderiv j (diagFactor (d i) i) := by
     rw [homotopyPoly, map_add, pderiv_C_mul, pderiv_C_mul]
-  rw [evalCoords, entryPoly, projJacobian, Matrix.of_apply, hpderiv, aeval_eq_eval]
+  have hPJ : projJacobian (homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1))
+        (show complexProjectiveSpace R k from xp 0) i j
+      = aeval ((show complexProjectiveSpace R k from xp 0).rep)
+          (pderiv j (homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1) i)) := rfl
+  show MvPolynomial.eval (fun s : Sig k => (xp s.1).rep s.2) (entryPoly P d i j)
+      = projJacobian (homotopyPoly P d ((xp 1).rep 0) ((xp 1).rep 1))
+          (show complexProjectiveSpace R k from xp 0) i j
+  rw [entryPoly, hPJ, hpderiv,
+    aeval_eq_eval ((show complexProjectiveSpace R k from xp 0).rep)]
   rw [map_add, map_add, map_mul, map_mul, map_mul, map_mul]
   rw [eval_rename_emb0, eval_rename_emb0, eval_C, eval_C,
     show eval (fun s : Sig k => (xp s.1).rep s.2) (X (⟨1, 0⟩ : Sig k)) = (xp 1).rep 0 from
@@ -331,7 +344,7 @@ theorem singularLocus_eq_projZerOfFinset (P : Fin k → MvPolynomial (Fin (k + 1
       intro i
       have := h (Hpoly P d i)
         (Finset.mem_union_left _ (Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩))
-      rwa [ProjVanishes, evalCoords_Hpoly] at this
+      rwa [ProjVanishes, evalCoords_Hpoly P d xp i] at this
     refine ⟨hzero, ?_⟩
     rw [projJacobian_rank_lt_iff_forall_det_eq_zero hP' hzero]
     intro c

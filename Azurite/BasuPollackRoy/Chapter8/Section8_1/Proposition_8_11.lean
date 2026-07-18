@@ -40,7 +40,7 @@ itself; see `Nat.size_prod_succ_sub_one_le` in `BitsizeMatrixMvListProd.lean`. -
 
 namespace Azurite.BPR
 
-open MvPolynomial
+open _root_.Azurite.BPR.MvPolynomial
 
 variable {k ℓ m : ℕ}
 

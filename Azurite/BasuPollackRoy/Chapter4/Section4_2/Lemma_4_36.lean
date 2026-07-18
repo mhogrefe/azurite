@@ -52,11 +52,11 @@ theorem PmV_smul {c : K} (hc : c ≠ 0) :
     have hdrop : (rest.map (fun x => c * x)).dropWhile (fun x => decide (x = 0))
         = (rest.dropWhile (fun x => decide (x = 0))).map (fun x => c * x) := by
       rw [dropWhile_map]; simp only [hpred]
-    rw [List.map_cons, PmV, PmV, hdrop]
     -- split on whether the next nonzero exists
     rcases hd : rest.dropWhile (fun x => decide (x = 0)) with _ | ⟨sq, tl⟩
-    · simp
-    · simp only [List.map_cons, List.length_cons, List.length_map]
+    · rw [List.map_cons, PmV, PmV, hdrop, hd, List.map_nil]
+    · rw [List.map_cons, PmV, PmV, hdrop, hd, List.map_cons]
+      simp only [List.length_cons, List.length_map]
       have hsign : SignType.sign (c * sp * (c * sq)) = SignType.sign (sp * sq) := by
         rw [show c * sp * (c * sq) = c ^ 2 * (sp * sq) by ring, sign_mul,
           sign_pos (show (0 : K) < c ^ 2 by positivity), one_mul]

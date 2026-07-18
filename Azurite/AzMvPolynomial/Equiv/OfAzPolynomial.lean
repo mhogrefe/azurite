@@ -20,7 +20,7 @@ toMvPoly (p.toAzMvPolynomial i) =
 -/
 
 namespace Azurite
-open AzMvPolynomial MvPolynomial Polynomial MonomialOrder
+open AzMvPolynomial MvPolynomial Polynomial _root_.Azurite.MonomialOrder
 
 variable {R : Type _} [CommSemiring R] [DecidableEq R]
   {n : ℕ} {ord : MonomialOrder}

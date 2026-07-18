@@ -188,7 +188,7 @@ theorem xbar_coeff_notMem (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.c
     obtain ⟨n, rfl⟩ := hk
     exact hd n (etaSeq_eq_gamma s0 n).symm
   · rw [xbar, puiseuxEmb, HahnSeries.embDomainRingHom_apply]
-    apply HahnSeries.embDomain_notin_range
+    apply HahnSeries.embDomain_of_notMem_range
     rintro ⟨k, hk⟩
     exact hdM ⟨k, by rw [← hk]; exact puiseuxExpHom_apply (limM s0) k⟩
 

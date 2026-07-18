@@ -63,6 +63,8 @@ theorem nonzero_int_random_gen_nonzero (ig : NonzeroIntRandomGen) :
     positive_nat_random_gen_positive ig.pairGen.gen2
   have hX : (PositiveNatRandomGen.next ig.pairGen.gen2).1 ≠ 0 := by omega
   -- Int.ofNat absVal ≠ 0 and -Int.ofNat absVal ≠ 0 both follow from absVal ≥ 1
-  split <;> simpa using hX
+  by_cases hsign : (RandomGen.next ig.pairGen.gen1).1 = true <;>
+    simp only [hsign, Bool.false_eq_true, if_true, if_false] <;>
+    simpa using hX
 
 end Azurite.Random

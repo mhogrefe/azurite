@@ -58,28 +58,28 @@ open AzMvPolynomial
 /-! ### The mathematical model tower: `ℤ`, `ℤ[y]`, `ℤ[y][x]`, … -/
 
 /-- A carrier bundled with the instances the *model* side of the gcd tower
-needs: a `NormalizedGCDMonoid` domain. Mirror of `GcdRing` (the computable
+needs: a `StrongNormalizedGCDMonoid` domain. Mirror of `GcdRing` (the computable
 side). -/
 structure GcdModelRing where
   /-- The carrier type of this model level. -/
   carrier : Type
   [commRing : CommRing carrier]
   [isDomain : IsDomain carrier]
-  [normalizedGCD : NormalizedGCDMonoid carrier]
+  [normalizedGCD : StrongNormalizedGCDMonoid carrier]
 
 attribute [instance] GcdModelRing.commRing GcdModelRing.isDomain
   GcdModelRing.normalizedGCD
 
 /-- One model tower step: adjoin one polynomial variable
 (`NormalizedGCDMonoid` propagates by `Polynomial.normalizedGcdMonoid`). -/
-noncomputable def GcdModelRing.step (S : GcdModelRing) : GcdModelRing :=
+@[reducible] noncomputable def GcdModelRing.step (S : GcdModelRing) : GcdModelRing :=
   { carrier := Polynomial S.carrier
     commRing := inferInstance
     isDomain := inferInstance
     normalizedGCD := inferInstance }
 
 /-- The `ℤ`-based model tower: `ℤ`, `ℤ[x]`, `ℤ[x][T]`, … -/
-noncomputable def intModelTower : ℕ → GcdModelRing
+@[reducible] noncomputable def intModelTower : ℕ → GcdModelRing
   | 0 =>
     { carrier := ℤ
       commRing := inferInstance
@@ -187,7 +187,12 @@ theorem AzMvPolynomial.ofNested_eq :
           (q : AzPolynomial (NestedPoly n))
         = AzPolynomial.ofPoly
             ((AzPolynomial.toPoly (q : AzPolynomial (NestedPoly n))).map _)
-    rw [← Azurite.AzPolynomial.toPoly_map, ofPoly_toPoly]
+    exact ((congrArg AzPolynomial.ofPoly
+        (Azurite.AzPolynomial.toPoly_map
+          ((nestedRingEquiv (ord := ord) n).symm :
+            NestedPoly n →+* AzMvPolynomial n AzInt ord)
+          (q : AzPolynomial (NestedPoly n))).symm).trans
+      (ofPoly_toPoly _)).symm
 
 /-! ### Round trips and divisibility transport -/
 
@@ -756,7 +761,8 @@ theorem AzMvPolynomial.gcd_zero_zero {n : ℕ} :
   rw [gcd_zero_right]
   apply toNested_injective (n := n)
   apply (towerBridge n).injective
-  simp only [towerBridge_toNested_normalized, toNested_zero, map_zero]
+  simp only [towerBridge_toNested_normalized, toNested_zero, map_zero,
+    normalize_zero]
 
 /-- **Lifting a univariate polynomial into `AzMvPolynomial` (via variable
 `x_i`) does not affect coprimality.** -/

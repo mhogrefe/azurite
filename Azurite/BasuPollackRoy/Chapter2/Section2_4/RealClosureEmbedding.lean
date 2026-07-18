@@ -51,7 +51,7 @@ theorem exists_lift_of_root (x : Lifts F E K) {s : E} (h1 : IsIntegral x.carrier
     ⟨fun z hz ↦ IntermediateField.algebraMap_mem x.carrier⟮s⟯ ⟨z, hz⟩, φ.commutes⟩,
     mem_adjoin_simple_self x.carrier s, ?_, ?_⟩
   · show (φ.restrictScalars F) (AdjoinSimple.gen x.carrier s) = β
-    rw [AlgHom.restrictScalars_apply, hφgen]
+    exact hφgen
   · intro z
     rw [← adjoin_simple_toSubalgebra_of_isAlgebraic h1.isAlgebraic]
     exact z.2

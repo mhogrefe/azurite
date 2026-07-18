@@ -77,7 +77,7 @@ section TowerBridge
 
 variable {D M : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
   [IsDomain D] [NormalizedGcd D] [CommRing M] [IsDomain M]
-  [NormalizedGCDMonoid M] {ρ : D →+* M}
+  [StrongNormalizedGCDMonoid M] {ρ : D →+* M}
 
 /-- `DecidableEq` on the fraction field, needed only so that the ambient
 `NormalizedGCDMonoid (FractionRing M)` (the `CommGroupWithZero` instance)
@@ -307,7 +307,7 @@ theorem contentGen_mul (hρ : Function.Injective ρ)
 
 private theorem normalize_mul' (a b : M) :
     _root_.normalize (a * b) = _root_.normalize a * _root_.normalize b :=
-  map_mul _root_.normalize a b
+  normalize_mul a b
 
 /-! ### `leadNormalize` represents `normalize` -/
 
@@ -495,12 +495,10 @@ private theorem gcd_char {A B G : M[X]} {d : M} (hA : A ≠ 0) (hB : B ≠ 0)
   have hdnorm : _root_.normalize d = d := by rw [hd]; exact normalize_gcd _ _
   -- (i)/(ii): `C d · G` divides both `A` and `B`
   have hGdvdA : G ∣ A.primPart := by
-    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing M)
-      A.isPrimitive_primPart ?_
+    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing M) ?_
     exact (hGq.dvd.trans (gcd_dvd_left _ _)).trans (map_assoc_primPart hA).dvd
   have hGdvdB : G ∣ B.primPart := by
-    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing M)
-      B.isPrimitive_primPart ?_
+    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := FractionRing M) ?_
     exact (hGq.dvd.trans (gcd_dvd_right _ _)).trans (map_assoc_primPart hB).dvd
   have hdvdA : Polynomial.C d * G ∣ A := by
     conv_rhs => rw [A.eq_C_content_mul_primPart]
@@ -518,7 +516,7 @@ private theorem gcd_char {A B G : M[X]} {d : M} (hA : A ≠ 0) (hB : B ≠ 0)
       exact dvd_gcd (content_dvd_of_dvd heA) (content_dvd_of_dvd heB)
     have hpe : e.primPart ∣ G := by
       refine e.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map
-        (K := FractionRing M) hGprim ?_
+        (K := FractionRing M) ?_
       have h1 : (e.primPart).map (algebraMap M (FractionRing M))
           ∣ A.map (algebraMap M (FractionRing M)) :=
         Polynomial.map_dvd _ (e.primPart_dvd.trans heA)
@@ -888,7 +886,7 @@ of) ring isomorphisms, so `dvd_reflect` is automatic (see
 `NormalizedGcdBridge.step`). -/
 structure NormalizedGcdBridge (D M : Type _) [CommRing D] [DecidableEq D]
     [Azurite.ExactDiv D] [IsDomain D] [NormalizedGcd D] [CommRing M]
-    [IsDomain M] [NormalizedGCDMonoid M] where
+    [IsDomain M] [StrongNormalizedGCDMonoid M] where
   /-- The coefficient-model homomorphism. -/
   hom : D →+* M
   /-- `hom` is injective. -/
@@ -903,7 +901,7 @@ namespace NormalizedGcdBridge
 
 variable {D M : Type _} [CommRing D] [DecidableEq D] [Azurite.ExactDiv D]
   [IsDomain D] [NormalizedGcd D] [CommRing M] [IsDomain M]
-  [NormalizedGCDMonoid M]
+  [StrongNormalizedGCDMonoid M]
 
 /-- Bundled form of `contentGen_mul`: content is multiplicative. -/
 theorem contentGen_mul' (β : NormalizedGcdBridge D M) (p q : AzPolynomial D) :

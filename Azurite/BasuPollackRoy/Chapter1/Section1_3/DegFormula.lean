@@ -175,16 +175,16 @@ theorem realization_degEqFormula
     List.mem_cons, List.mem_map, List.mem_range]
   constructor
   · rintro ⟨_, rfl | ⟨i, _, rfl⟩, hmem⟩ <;>
-    simp only [Formula.realization_and, Set.mem_inter_iff,
-      realization_degFormula, Set.mem_setOf_eq] at hmem <;>
-    exact hmem.1.trans hmem.2.symm
+    rw [Formula.realization_and, Set.mem_inter_iff] at hmem <;>
+    exact ((Set.ext_iff.mp (realization_degFormula _ _) y).mp hmem.1).trans
+      ((Set.ext_iff.mp (realization_degFormula _ _) y).mp hmem.2).symm
   · intro h
     match hd : (Q₁.map (MvPolynomial.aeval y).toRingHom).degree with
     | ⊥ =>
       refine ⟨_, Or.inl rfl, ?_⟩
-      simp only [Formula.realization_and, Set.mem_inter_iff,
-        realization_degFormula, Set.mem_setOf_eq]
-      exact ⟨hd, h.symm.trans hd⟩
+      rw [Formula.realization_and, Set.mem_inter_iff]
+      exact ⟨(Set.ext_iff.mp (realization_degFormula _ _) y).mpr hd,
+        (Set.ext_iff.mp (realization_degFormula _ _) y).mpr (h.symm.trans hd)⟩
     | some n =>
       refine ⟨_, Or.inr ⟨n, ?_, rfl⟩, ?_⟩
       · simp only [Nat.lt_succ_iff]
@@ -192,9 +192,9 @@ theorem realization_degEqFormula
         have hle : (Q₁.map (MvPolynomial.aeval y).toRingHom).natDegree ≤ Q₁.natDegree :=
           Polynomial.natDegree_map_le
         exact le_trans (by omega : n ≤ Q₁.natDegree) (le_max_left _ _)
-      · simp only [Formula.realization_and, Set.mem_inter_iff,
-          realization_degFormula, Set.mem_setOf_eq]
-        exact ⟨hd, h.symm.trans hd⟩
+      · rw [Formula.realization_and, Set.mem_inter_iff]
+        exact ⟨(Set.ext_iff.mp (realization_degFormula _ _) y).mpr hd,
+          (Set.ext_iff.mp (realization_degFormula _ _) y).mpr (h.symm.trans hd)⟩
 
 /-- The realization of `degNeqFormula Q₁ Q₂` is the set of `y ∈ C^k`
 where `Q₁_y` and `Q₂_y` have distinct degrees. -/

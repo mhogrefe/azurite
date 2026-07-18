@@ -15,7 +15,7 @@ create a diamond with this more general instance.
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 variable {R S : Type _} [CommSemiring R] [CommSemiring S] [DecidableEq S] [Algebra R S]
 

@@ -15,6 +15,7 @@ variable {R : Type _} [Zero R] [One R] {n : Nat}
 theorem AzVector.toFn_stdBasis (i j : Fin n) :
     (AzVector.stdBasis (R := R) i).toFn j = if i = j then 1 else 0 := by
   simp [AzVector.toFn, stdBasis, Vector.get, Vector.ofFn]
+  rfl
 
 /-- `Pi.single` maps back to `stdBasis` via `ofFn`. -/
 theorem AzVector.ofFn_indicator (i : Fin n) :

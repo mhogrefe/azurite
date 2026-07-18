@@ -12,7 +12,7 @@ and defers to `AzPolynomial.toChars`.
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 namespace AzPolynomialQ
 

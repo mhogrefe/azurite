@@ -55,6 +55,7 @@ theorem AzMatrix.toFn_vecMul (v : AzVector R m) (M : AzMatrix R m n) (j : Fin n)
   rw [AzVector.dot_eq_dotProduct]; unfold dotProduct
   apply Finset.sum_congr rfl; intro i _
   simp [col, AzVector.toFn, AzMatrix.toFn, AzMatrix.get, Vector.get]
+  rfl
 
 /-- `vecMul` commutes with `ofFn`. -/
 theorem AzMatrix.ofFn_vecMul (g : Fin m → R) (f : Fin m → Fin n → R) :

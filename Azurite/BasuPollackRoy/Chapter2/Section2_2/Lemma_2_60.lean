@@ -843,6 +843,7 @@ private theorem running_sign_flip_count
       simp only [ExtendedPoint.evalPoly, ExtendedPoint.openInterval]
       simp only [ExtendedPoint.evalPoly] at ha hb
       convert running_sign_flip_count_finite hIVP F hF _ a_val b_val h_lt ha hb rfl
+      exact Finset.filter_congr_decidable _ _ _
     | posInf =>
       -- a finite, b = +∞. Pick b₀ past all F-roots and past a_val.
       obtain ⟨b₀_raw, h_sign_b₀, h_b₀_gt_roots, h_b₀_ne⟩ :=

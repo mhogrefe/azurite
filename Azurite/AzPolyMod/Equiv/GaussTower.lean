@@ -117,7 +117,7 @@ end AzPolynomial
 
 namespace AzPolyMod
 
-open AzPolynomial CP
+open _root_.Azurite.AzPolynomial CP
 
 variable (n : AzNat) (p q : ℕ) [Fact (1 < n.toNat)] [Fact p.Prime]
   [Fact q.Prime]

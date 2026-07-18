@@ -135,12 +135,17 @@ private theorem sumExtend_inl {V : Type*} [AddCommGroup V] [Module K V] {ι : Ty
     {v : ι → V} (hs : LinearIndependent K v) (i : ι) :
     Module.Basis.sumExtend hs (Sum.inl i) = v i := by
   classical
-  rw [Module.Basis.sumExtend, Module.Basis.reindex_apply, Module.Basis.coe_extend,
-    Equiv.symm_symm]
-  change (Equiv.Set.sumDiffSubset (hs.linearIndepOn_id.subset_extend (Set.subset_univ _))
-    ((Equiv.ofInjective v hs.injective).sumCongr (Equiv.refl _) (Sum.inl i)) : V) = v i
-  rw [Equiv.sumCongr_apply, Sum.map_inl, Equiv.Set.sumDiffSubset_apply_inl,
-    Equiv.ofInjective_apply, Set.inclusion_mk]
+  calc Module.Basis.sumExtend hs (Sum.inl i)
+      = Module.Basis.extend hs.linearIndepOn_id
+          (((Equiv.ofInjective v hs.injective).sumCongr (Equiv.refl _)).trans
+            (Equiv.Set.sumDiffSubset
+              (hs.linearIndepOn_id.subset_extend (Set.subset_univ _)))
+            (Sum.inl i)) :=
+        Module.Basis.reindex_apply _ _ _
+    _ = v i := by
+        rw [Equiv.trans_apply, Equiv.sumCongr_apply, Sum.map_inl,
+          Equiv.Set.sumDiffSubset_apply_inl, Module.Basis.coe_extend]
+        rfl
 
 section Ordered
 
@@ -172,7 +177,11 @@ def DiagonalExpression.neg (de : DiagonalExpression Φ) : DiagonalExpression (-�
 @[simp] theorem DiagonalExpression.neg_posCount (de : DiagonalExpression Φ) :
     de.neg.posCount = de.negCount := by
   unfold DiagonalExpression.posCount DiagonalExpression.negCount
-  exact congrArg Finset.card (Finset.filter_congr (fun i _ => neg_pos))
+  exact congrArg Finset.card
+    (@Finset.filter_congr _ _ _
+      (fun _ => LinearOrder.toDecidableLT _ _)
+      (fun _ => LinearOrder.toDecidableLT _ _) _
+      (fun i _ => neg_pos (a := de.coeff i)))
 
 /-- **Sylvester, uniqueness part (positive).** The number of positive coefficients
 of any diagonal expression of `Φ` equals the positive inertia index `sigPos Φ`.

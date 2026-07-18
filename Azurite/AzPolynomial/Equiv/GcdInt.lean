@@ -293,10 +293,10 @@ private theorem int_gcd_eq {A B G : ℤ[X]} {d : ℤ} (hA : A ≠ 0) (hB : B ≠
     exact Associated.symm ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
   -- (i)/(ii): `C d · G` divides both `A` and `B`
   have hGdvdA : G ∣ A.primPart := by
-    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) A.isPrimitive_primPart ?_
+    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) ?_
     exact (hGq.dvd.trans (gcd_dvd_left _ _)).trans (hprimq A hA).dvd
   have hGdvdB : G ∣ B.primPart := by
-    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) B.isPrimitive_primPart ?_
+    refine hGprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) ?_
     exact (hGq.dvd.trans (gcd_dvd_right _ _)).trans (hprimq B hB).dvd
   have hdvdA : Polynomial.C d * G ∣ A := by
     conv_rhs => rw [A.eq_C_content_mul_primPart]
@@ -311,7 +311,7 @@ private theorem int_gcd_eq {A B G : ℤ[X]} {d : ℤ} (hA : A ≠ 0) (hB : B ≠
       rw [hd]
       exact dvd_gcd (content_dvd_of_dvd heA) (content_dvd_of_dvd heB)
     have hpe : e.primPart ∣ G := by
-      refine e.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) hGprim ?_
+      refine e.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) ?_
       have h1 : (e.primPart).map (Int.castRingHom ℚ) ∣ A.map (Int.castRingHom ℚ) :=
         Polynomial.map_dvd _ (e.primPart_dvd.trans heA)
       have h2 : (e.primPart).map (Int.castRingHom ℚ) ∣ B.map (Int.castRingHom ℚ) :=
@@ -762,8 +762,7 @@ private theorem lcof_dvd_lcof_mul_coeff {A V : ℤ[X]} (hA : A ≠ 0) (hV : V �
     V.leadingCoeff ∣ A.leadingCoeff * V.coeff i := by
   -- primitive descent: `primPart V ∣ primPart A` in `ℤ[X]`
   have hPdvd : V.primPart ∣ A.primPart := by
-    refine V.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map (K := ℚ)
-      A.isPrimitive_primPart ?_
+    refine V.isPrimitive_primPart.dvd_of_fraction_map_dvd_fraction_map (K := ℚ) ?_
     exact ((map_assoc_primPart hV).symm.dvd.trans hdvd).trans (map_assoc_primPart hA).dvd
   obtain ⟨W, hW⟩ := hPdvd
   have hlcP : V.primPart.leadingCoeff ∣ A.leadingCoeff := by

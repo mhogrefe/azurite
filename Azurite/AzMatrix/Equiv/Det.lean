@@ -195,10 +195,13 @@ theorem AzMatrix.det_swapCols
     (M : AzMatrix K n n) (j₁ j₂ : Fin n) (h_neq : j₁ ≠ j₂) :
     Matrix.det (M.swapCols j₁ j₂).toFn = -Matrix.det M.toFn := by
   rw [AzMatrix.toFn_swapCols_eq_submatrix]
+  rw [show Matrix.submatrix M.toFn id ⇑(Equiv.swap j₁ j₂)
+      = Matrix.submatrix (Matrix.of M.toFn) id ⇑(Equiv.swap j₁ j₂) from rfl]
   rw [Matrix.det_permute']
   rw [Equiv.Perm.sign_swap h_neq]
   push_cast
-  ring
+  rw [neg_one_mul]
+  rfl
 
 end Azurite
 

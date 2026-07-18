@@ -68,7 +68,8 @@ theorem newtonSumsMonicIter_getElem (P : AzPolynomial R) (n : ℕ) :
     have h' : i < n + 1 := by
       rw [P.newtonSumsMonicIter_size] at h; exact h
     show ((P.newtonSumsMonicIter n).push
-      (newtonSumStep P (P.newtonSumsMonicIter n)))[i] = _
+      (newtonSumStep P (P.newtonSumsMonicIter n)))[i]'(by
+        rw [Array.size_push, P.newtonSumsMonicIter_size]; exact h') = _
     rcases lt_or_eq_of_le (Nat.lt_succ_iff.mp h') with h_lt | h_eq
     · have h_iter : i < (P.newtonSumsMonicIter n).size := by
         rw [P.newtonSumsMonicIter_size]; exact h_lt
@@ -109,8 +110,10 @@ theorem newtonSumsMonicIter_eq_newtonSumsMonic
     have h_lt : i < n := by
       rw [P.newtonSumsMonicIter_size] at h_iter; exact h_iter
     rw [P.newtonSumsMonicIter_getElem n i h_iter]
-    unfold newtonSumsMonic
-    simp
+    have hmap : (Array.map P.newtonSumMonic (Array.range n))[i]'(by
+        simpa using h_lt) = P.newtonSumMonic i := by
+      rw [Array.getElem_map, Array.getElem_range]
+    exact hmap.symm
 
 /-! ### Correctness of the Newton matrix -/
 

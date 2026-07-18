@@ -51,6 +51,11 @@ theorem exampleM_kronecker_exampleM :
 theorem exampleM_kronecker_eq_matrixOfSigns :
     (exampleM.kronecker exampleM).toFn =
       matrixOfSigns exampleExponents exampleSignConditions := by
-  decide
+  have h : ∀ i j : Fin (3 * 3),
+      (exampleM.kronecker exampleM).toFn i j
+        = matrixOfSigns exampleExponents exampleSignConditions
+            (Fin.cast (by decide) i) (Fin.cast (by decide) j) := by decide
+  funext i j
+  exact h i j
 
 end Azurite.BPR

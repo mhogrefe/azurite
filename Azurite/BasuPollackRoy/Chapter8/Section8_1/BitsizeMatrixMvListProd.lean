@@ -40,7 +40,7 @@ the extra `k → k+1` summand.
 
 namespace Azurite.BPR
 
-open Matrix MvPolynomial Polynomial Finset.Nat
+open _root_.Azurite.BPR.Matrix _root_.Azurite.BPR.MvPolynomial Polynomial Finset.Nat
 
 /-! ## Matrix-polynomial coefficient (binary convolution) -/
 

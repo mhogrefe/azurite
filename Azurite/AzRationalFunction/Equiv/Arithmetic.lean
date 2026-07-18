@@ -220,7 +220,7 @@ private theorem isCoprime_map_of_gcd_isUnit {A B : ℤ[X]} (hB : B ≠ 0)
     · have h1 : E'.map (Int.castRingHom ℚ) ∣ (T.primPart).map (Int.castRingHom ℚ) :=
         (hassoc.dvd.trans hdvdT).trans (map_assoc_primPart hT).dvd
       exact (hprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ)
-        T.isPrimitive_primPart h1).trans T.primPart_dvd
+        h1).trans T.primPart_dvd
   have hE'unit : IsUnit E' :=
     isUnit_of_dvd_unit
       (dvd_gcd (hdvd A (EuclideanDomain.gcd_dvd_left _ _))
@@ -923,7 +923,7 @@ private theorem isCoprime_map_of_gcd_natDegree_eq_zero {A B : ℤ[X]} (hB : B �
     · have h1 : E'.map (Int.castRingHom ℚ) ∣ (T.primPart).map (Int.castRingHom ℚ) :=
         (hassoc.dvd.trans hdvdT).trans (map_assoc_primPart hT).dvd
       exact (hprim.dvd_of_fraction_map_dvd_fraction_map (K := ℚ)
-        T.isPrimitive_primPart h1).trans T.primPart_dvd
+        h1).trans T.primPart_dvd
   have hgcd0 : GCDMonoid.gcd A B ≠ 0 := fun h0 => hB ((gcd_eq_zero_iff _ _).mp h0).2
   have hdvdgcd : E' ∣ GCDMonoid.gcd A B :=
     dvd_gcd (hdvd A (EuclideanDomain.gcd_dvd_left _ _))

@@ -83,10 +83,12 @@ and `Σ = {0,1,-1}^{Fin s}` in lexicographic order. The `submatrix` by
 the list-length indices `Fin |A|`, `Fin |Σ|` of `matrixOfSigns`. -/
 theorem proposition_2_72 (s : Nat) :
     matrixOfSigns (expList s) (signList s)
-      = Matrix.submatrix (signMatrix s).toFn (Fin.cast (by simp [expList]))
-          (Fin.cast (by simp [signList])) := by
+      = Matrix.submatrix (Matrix.of (signMatrix s).toFn)
+          (Fin.cast (by simp [expList])) (Fin.cast (by simp [signList])) := by
   ext i j
-  rw [matrixOfSigns_apply, Matrix.submatrix_apply, signMatrix_toFn_eq_pow]
-  simp only [signList, expList, List.get_ofFn]
+  rw [matrixOfSigns_apply, Matrix.submatrix_apply, Matrix.of_apply,
+    signMatrix_toFn_eq_pow]
+  exact congrArg₂ SignCondition.pow (List.get_ofFn (signFn s) j)
+    (List.get_ofFn (expFn s) i)
 
 end Azurite.BPR

@@ -28,7 +28,7 @@ Here `bit(N) = Int.size N = N.natAbs.size` (BPR Definition 8.4).
 
 namespace Azurite.BPR
 
-open MvPolynomial
+open _root_.Azurite.BPR.MvPolynomial
 
 variable {n k : ℕ}
 

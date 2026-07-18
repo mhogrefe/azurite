@@ -16,7 +16,7 @@ image vanishes at `g` both sides are `0` by the field division convention.
 
 namespace Azurite.AzMvRationalFunction
 
-open Azurite.AzMvPolynomial MvPolynomial
+open Azurite.AzMvPolynomial _root_.Azurite.MvPolynomial
 
 variable {n m : ℕ} {ord ord' : MonomialOrder}
 

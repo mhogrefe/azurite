@@ -90,10 +90,13 @@ theorem AzMatrix.det_swapCols_domain
     (M : AzMatrix D n n) (j₁ j₂ : Fin n) (h_neq : j₁ ≠ j₂) :
     Matrix.det (M.swapCols j₁ j₂).toFn = -Matrix.det M.toFn := by
   rw [AzMatrix.toFn_swapCols_eq_submatrix]
+  rw [show Matrix.submatrix M.toFn id ⇑(Equiv.swap j₁ j₂)
+      = Matrix.submatrix (Matrix.of M.toFn) id ⇑(Equiv.swap j₁ j₂) from rfl]
   rw [Matrix.det_permute']
   rw [Equiv.Perm.sign_swap h_neq]
   push_cast
-  ring
+  rw [neg_one_mul]
+  rfl
 
 /-! ### Column swap preserves low-level `principalMinor`s
 
@@ -112,7 +115,12 @@ theorem AzMatrix.principalMinor_swapCols_low_level
       AzMatrix.principalMinor_eq_top_left_det]
   congr 1
   funext i' j'
-  rw [Matrix.submatrix_apply, Matrix.submatrix_apply, AzMatrix.toFn_swapCols]
+  show (M.swapCols ⟨k, hk⟩ j).toFn
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) i')
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) j')
+    = M.toFn (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) i')
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) j')
+  rw [AzMatrix.toFn_swapCols]
   set j'_lift : Fin n := Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) j'
     with hj'_lift
   have h_j'_val : j'_lift.val = j'.val := rfl
@@ -168,7 +176,6 @@ theorem AzMatrix.bareissMinor_swapCols
   unfold AzMatrix.bareissMinor
   rw [AzMatrix.toFn_bareissBlock, AzMatrix.toFn_bareissBlock,
       AzMatrix.toFn_swapCols_eq_submatrix]
-  rw [Matrix.submatrix_submatrix]
   show Matrix.det (Matrix.submatrix M.toFn
       (id ∘ AzMatrix.bareissIdx k hk i)
       (Equiv.swap _ j ∘ AzMatrix.bareissIdx k hk j')) = _
@@ -184,7 +191,8 @@ theorem AzMatrix.bareissMinor_zero (M : AzMatrix D n n) (h_n : 0 ≤ n)
   unfold AzMatrix.bareissMinor
   rw [AzMatrix.toFn_bareissBlock]
   rw [Matrix.det_fin_one]
-  simp only [Matrix.submatrix_apply]
+  show M.toFn (AzMatrix.bareissIdx 0 h_n i 0) (AzMatrix.bareissIdx 0 h_n j 0)
+    = M.toFn i j
   rw [AzMatrix.bareissIdx_of_val_eq h_n i (0 : Fin 1) (by decide)]
   rw [AzMatrix.bareissIdx_of_val_eq h_n j (0 : Fin 1) (by decide)]
 
@@ -197,7 +205,11 @@ theorem AzMatrix.bareissMinor_one (M : AzMatrix D n n) (h_n : 1 ≤ n)
         M.toFn i ⟨0, by omega⟩ * M.toFn ⟨0, by omega⟩ j := by
   unfold AzMatrix.bareissMinor
   rw [AzMatrix.toFn_bareissBlock, Matrix.det_fin_two]
-  simp only [Matrix.submatrix_apply]
+  show M.toFn (AzMatrix.bareissIdx 1 h_n i 0) (AzMatrix.bareissIdx 1 h_n j 0)
+        * M.toFn (AzMatrix.bareissIdx 1 h_n i 1) (AzMatrix.bareissIdx 1 h_n j 1)
+      - M.toFn (AzMatrix.bareissIdx 1 h_n i 0) (AzMatrix.bareissIdx 1 h_n j 1)
+        * M.toFn (AzMatrix.bareissIdx 1 h_n i 1) (AzMatrix.bareissIdx 1 h_n j 0)
+    = _
   have h0_eq : AzMatrix.bareissIdx 1 h_n i (0 : Fin 2) = ⟨0, by omega⟩ :=
     AzMatrix.bareissIdx_val_of_lt h_n i 0 (by decide)
   have h0_eq_j : AzMatrix.bareissIdx 1 h_n j (0 : Fin 2) = ⟨0, by omega⟩ :=
@@ -228,7 +240,9 @@ private theorem AzMatrix.algebraMap_bareissMinor
   rw [RingHom.map_det]
   congr 1
   funext i' j'
-  simp [Matrix.submatrix_apply, RingHom.mapMatrix_apply]
+  show f (M.toFn (AzMatrix.bareissIdx k hk i i') (AzMatrix.bareissIdx k hk j j'))
+    = (M.map ⇑f).toFn (AzMatrix.bareissIdx k hk i i') (AzMatrix.bareissIdx k hk j j')
+  rw [AzMatrix.toFn_map]
 
 omit [DecidableEq D] [Azurite.ExactDiv D] in
 /-- Lifting: `algebraMap` commutes with `principalMinor`. -/
@@ -615,7 +629,12 @@ theorem AzMatrix.BareissInv.step_swap
       rw [(M_ref.swapCols kp j).principalMinor_eq_top_left_det (start - 1) (by omega)]
       congr 1
       funext i' j'
-      rw [Matrix.submatrix_apply, Matrix.submatrix_apply]
+      show M_ref.toFn
+          (Fin.castLE (Nat.succ_le_of_lt (show start - 1 < n by omega)) i')
+          (Fin.castLE (Nat.succ_le_of_lt (show start - 1 < n by omega)) j')
+        = (M_ref.swapCols kp j).toFn
+          (Fin.castLE (Nat.succ_le_of_lt (show start - 1 < n by omega)) i')
+          (Fin.castLE (Nat.succ_le_of_lt (show start - 1 < n by omega)) j')
       rw [AzMatrix.toFn_swapCols]
       have h_j'_val : (Fin.castLE (Nat.succ_le_of_lt (show start - 1 < n by omega)) j').val =
           j'.val := rfl
@@ -676,6 +695,7 @@ theorem AzMatrix.BareissInv.det_eq_zero_of_findPivot_none
   let f : D →+* K := algebraMap D K
   have h_inj : Function.Injective f := IsFractionRing.injective D K
   apply h_inj
+  show f ((Matrix.of M_ref.toFn).det) = f 0
   rw [map_zero, RingHom.map_det]
   -- Work in K (a field). Lift the algorithm's hypotheses.
   have h_start_lt : start < n := by omega
@@ -739,7 +759,8 @@ theorem AzMatrix.BareissInv.det_eq_zero_of_findPivot_none
   show Matrix.det (f.mapMatrix M_ref.toFn) = 0
   have h_eq : f.mapMatrix M_ref.toFn = (M_ref.map f).toFn := by
     funext i j
-    simp [RingHom.mapMatrix_apply, AzMatrix.toFn_map]
+    rw [AzMatrix.toFn_map]
+    rfl
   rw [h_eq]
   exact h_det_K_gauss_zero
 
@@ -839,6 +860,7 @@ theorem AzMatrix.bareissDet_eq_Matrix_det (M : AzMatrix D n n) :
     rw [AzMatrix.bareissAux.eq_def]
     rw [dif_neg (show ¬ (0 + 1 < 0) from by omega)]
     rw [dif_neg (show ¬ (0 < 0) from by omega)]
+    show (1 : D) = (Matrix.of M.toFn).det
     rw [Matrix.det_isEmpty]
   · -- n ≥ 1: apply the inductive theorem at start = 0, s = 0, b_prev = 1,
     -- with M_ref = M (the initial reference matrix).

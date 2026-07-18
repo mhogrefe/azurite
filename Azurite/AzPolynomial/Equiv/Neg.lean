@@ -11,6 +11,7 @@ lemma toPoly_map_neg (l : List R) : (l.map (-·)).toPoly = - l.toPoly := by
   induction l with
   | nil => simp [List.toPoly]
   | cons a as ih =>
+    rw [List.map_cons]
     dsimp [List.toPoly]
     rw [ih]
     rw [map_neg, mul_neg]

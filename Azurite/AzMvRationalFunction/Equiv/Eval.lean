@@ -21,7 +21,7 @@ agrees with the rational one (`evalAzInt_eq_evalAzRat`).
 
 namespace Azurite
 
-open MvPolynomial Azurite.AzMvRationalFunction
+open _root_.Azurite.MvPolynomial Azurite.AzMvRationalFunction
 
 variable {n : ℕ} {ord : MonomialOrder}
 

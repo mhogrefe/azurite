@@ -47,11 +47,11 @@ These are candidates for
 upstreaming to Mathlib. The `RingEquiv.transfer*` names are kept as thin
 wrappers (a `RingEquiv` supplies `.toMulEquiv` and `map_zero`). -/
 
-/-- Pull a `NormalizationMonoid` back along a `MulEquiv` that preserves `0`. -/
+/-- Pull a `StrongNormalizationMonoid` back along a `MulEquiv` that preserves `0`. -/
 @[reducible] noncomputable def MulEquiv.transferNormalizationMonoid
     {α β : Type*} [CommMonoidWithZero α] [CommMonoidWithZero β]
-    [NormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) :
-    NormalizationMonoid α where
+    [StrongNormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) :
+    StrongNormalizationMonoid α where
   normUnit a := (Units.mapEquiv e.symm) (normUnit (e a))
   normUnit_zero := by rw [h0]; simp
   normUnit_mul {a b} ha hb := by
@@ -86,7 +86,7 @@ wrappers (a `RingEquiv` supplies `.toMulEquiv` and `map_zero`). -/
 target's `normalize` across the `MulEquiv`. -/
 theorem MulEquiv.transfer_normalize
     {α β : Type*} [CommMonoidWithZero α] [CommMonoidWithZero β]
-    [NormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) (a : α) :
+    [StrongNormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) (a : α) :
     letI := e.transferNormalizationMonoid h0
     normalize a = e.symm (normalize (e a)) := by
   letI := e.transferNormalizationMonoid h0
@@ -95,10 +95,10 @@ theorem MulEquiv.transfer_normalize
       = e.symm (e a * ↑(normUnit (e a)))
   rw [map_mul, MulEquiv.symm_apply_apply]; rfl
 
-/-- Pull a `NormalizedGCDMonoid` back along a `MulEquiv` that preserves `0`. -/
+/-- Pull a `StrongNormalizedGCDMonoid` back along a `MulEquiv` that preserves `0`. -/
 @[reducible] noncomputable def MulEquiv.transferNormalizedGCDMonoid
     {α β : Type*} [CommMonoidWithZero α] [IsCancelMulZero α] [CommMonoidWithZero β]
-    [NormalizedGCDMonoid β] (e : α ≃* β) (h0 : e 0 = 0) : NormalizedGCDMonoid α :=
+    [StrongNormalizedGCDMonoid β] (e : α ≃* β) (h0 : e 0 = 0) : StrongNormalizedGCDMonoid α :=
   letI := e.transferNormalizationMonoid h0
   letI := e.transferGCDMonoid
   { normalize_gcd := by
@@ -117,10 +117,10 @@ theorem MulEquiv.transfer_normalize
 Thin one-line wrappers so existing call sites (which hold a `RingEquiv`) are
 unchanged; `map_zero` supplies the zero-preservation hypothesis. -/
 
-/-- Pull a `NormalizationMonoid` back along a ring isomorphism. -/
+/-- Pull a `StrongNormalizationMonoid` back along a ring isomorphism. -/
 @[reducible] noncomputable def RingEquiv.transferNormalizationMonoid
     {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
-    [NormalizationMonoid β] (e : α ≃+* β) : NormalizationMonoid α :=
+    [StrongNormalizationMonoid β] (e : α ≃+* β) : StrongNormalizationMonoid α :=
   e.toMulEquiv.transferNormalizationMonoid (map_zero e)
 
 /-- Pull a `GCDMonoid` back along a ring isomorphism. -/
@@ -133,15 +133,15 @@ unchanged; `map_zero` supplies the zero-preservation hypothesis. -/
 target's `normalize` across the ring isomorphism. -/
 theorem RingEquiv.transfer_normalize
     {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
-    [NormalizationMonoid β] (e : α ≃+* β) (a : α) :
+    [StrongNormalizationMonoid β] (e : α ≃+* β) (a : α) :
     letI := e.transferNormalizationMonoid
     normalize a = e.symm (normalize (e a)) :=
   e.toMulEquiv.transfer_normalize (map_zero e) a
 
-/-- Pull a `NormalizedGCDMonoid` back along a ring isomorphism. -/
+/-- Pull a `StrongNormalizedGCDMonoid` back along a ring isomorphism. -/
 @[reducible] noncomputable def RingEquiv.transferNormalizedGCDMonoid
     {α β : Type*} [CommRing α] [IsDomain α] [CommRing β] [IsDomain β]
-    [NormalizedGCDMonoid β] (e : α ≃+* β) : NormalizedGCDMonoid α :=
+    [StrongNormalizedGCDMonoid β] (e : α ≃+* β) : StrongNormalizedGCDMonoid α :=
   e.toMulEquiv.transferNormalizedGCDMonoid (map_zero e)
 
 namespace Azurite.AzMvPolynomial
@@ -184,10 +184,10 @@ theorem modelEquiv_gcd (P Q : AzMvPolynomial n AzInt ord) :
       = GCDMonoid.gcd (modelEquiv n P) (modelEquiv n Q) := by
   rw [modelEquiv_apply, towerBridge_toNested_gcd, ← modelEquiv_apply, ← modelEquiv_apply]
 
-/-- `AzMvPolynomial n AzInt ord` is a normalized gcd monoid, transported from
-the model tower `ModelPoly n`. -/
+/-- `AzMvPolynomial n AzInt ord` is a (strong) normalized gcd monoid,
+transported from the model tower `ModelPoly n`. -/
 noncomputable instance instNormalizedGCDMonoid :
-    NormalizedGCDMonoid (AzMvPolynomial n AzInt ord) :=
+    StrongNormalizedGCDMonoid (AzMvPolynomial n AzInt ord) :=
   (modelEquiv n).transferNormalizedGCDMonoid
 
 /-- **The lawfulness of the computable gcd**: Mathlib's normalized

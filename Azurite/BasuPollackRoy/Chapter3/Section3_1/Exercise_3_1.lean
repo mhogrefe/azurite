@@ -133,7 +133,8 @@ theorem ext_closeChainSet (k : ℕ) :
       = (Formula.ltZeroO (distPoly k : MvPolynomial (Fin ((k + 1) + k)) R)).realization (C := R) := by
     rw [Formula.realization_ltZeroO]
     ext w; simp only [closeChainSet, Set.mem_setOf_eq, aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_ltZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_ltZeroO]
   ext w'; simp only [closeChainSet, Set.mem_setOf_eq, aeval_distPoly]
 
 /-- **Atom locus `r > 0` extends to its `R'`-counterpart**. -/
@@ -145,7 +146,8 @@ theorem ext_posChainSet (k : ℕ) :
           (C := R) := by
     rw [Formula.realization_gtZeroO]
     ext xr; simp only [posChainSet, Set.mem_setOf_eq, aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_gtZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_gtZeroO]
   ext xr'; simp only [posChainSet, Set.mem_setOf_eq, aeval_X, eval_X]
 
 /-- **The cylinder over `S` extends to the cylinder over `Ext S`** (via `ext_comap`). -/
@@ -433,7 +435,8 @@ theorem ext_ball1Set :
   have hΦ : ball1Set (C := R) (k := k) (ℓ := ℓ) = (Formula.ltZeroO
       (distSqPoly (xIdx k ℓ) (yIdx k ℓ) (dltIdx k ℓ) : MvPolynomial _ R)).realization (C := R) := by
     rw [Formula.realization_ltZeroO]; ext w; simp only [ball1Set, Set.mem_setOf_eq, aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_ltZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_ltZeroO]
   ext w'; simp only [ball1Set, Set.mem_setOf_eq, aeval_distSqPoly]
 
 theorem ext_ball2Set :
@@ -443,7 +446,8 @@ theorem ext_ball2Set :
       (distSqPoly (uIdx k ℓ) (vIdx k ℓ) (rIdx k ℓ) : MvPolynomial _ R)).realization (C := R) := by
     rw [Formula.realization_geZeroO]; ext w; simp only [ball2Set, Set.mem_setOf_eq, ge_iff_le,
       aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_geZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_geZeroO]
   ext w'; simp only [ball2Set, Set.mem_setOf_eq, ge_iff_le, aeval_distSqPoly]
 
 theorem ext_graphBlockSet {G : Set (Fin (k + ℓ) → R)} (hG : IsSemialgebraicSet G) :
@@ -458,7 +462,8 @@ theorem ext_posDltSet :
       (X (Fin.natAdd (k + ℓ + 1) (0 : Fin 1)) : MvPolynomial (Fin (k + ℓ + 1 + 1)) R)).realization
         (C := R) := by
     rw [Formula.realization_gtZeroO]; ext p; simp only [posDltSet, Set.mem_setOf_eq, aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_gtZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_gtZeroO]
   ext p'; simp only [posDltSet, Set.mem_setOf_eq, aeval_X, eval_X]
 
 theorem ext_posRSet :
@@ -468,7 +473,8 @@ theorem ext_posRSet :
       (X (Fin.natAdd (k + ℓ) (0 : Fin 1)) : MvPolynomial (Fin (k + ℓ + 1)) R)).realization
         (C := R) := by
     rw [Formula.realization_gtZeroO]; ext q; simp only [posRSet, Set.mem_setOf_eq, aeval_eq_eval_self]
-  rw [ext_eq _ hΦ, Formula.realization_gtZeroO]
+  refine (ext_eq _ hΦ).trans ?_
+  rw [Formula.realization_gtZeroO]
   ext q'; simp only [posRSet, Set.mem_setOf_eq, aeval_X, eval_X]
 
 /-- **`Ext(dscGraph G) = dscGraph(Ext G)`** — pushing the extension through the locus. -/
@@ -506,7 +512,8 @@ theorem ext_dscGraph {G : Set (Fin (k + ℓ) → R)} (hG : IsSemialgebraicSet G)
     rw [ext_exists_append (hpr.inter had) hdp, ext_inter hpr had, ext_posRSet, e_allDlt]
     rfl
   show extension (R' := R') {x : Fin k → R | ∃ u : Fin ℓ → R, Fin.append x u ∈ G ∩ dscPointSet G} _ = _
-  rw [ext_exists_append (hG.inter hdp) _, ext_inter hG hdp, e_dscPoint]
+  refine (ext_exists_append (hG.inter hdp) _).trans ?_
+  rw [ext_inter hG hdp, e_dscPoint]
   rfl
 
 /-- `Ext A = ∅ ↔ A = ∅` for semialgebraic `A`. -/

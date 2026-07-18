@@ -382,7 +382,7 @@ theorem theorem_4_97 (Ps : Finset (MvPolynomial (Fin k) K))
     have hinjPi : Function.Injective toPi := fun a b hab =>
       sub_eq_zero.mp (hker (a - b) (by rw [map_sub, hab, sub_self]))
     refine ⟨AlgEquiv.ofBijective toPi ⟨hinjPi, hsurjPi⟩, ?_⟩
-    intro a i; rw [AlgEquiv.ofBijective_apply]; exact htoPi a i
+    intro a i; exact htoPi a i
   -- conjugating `L_f` by `Φ` gives the block-diagonal multiplication map.
   have hconj : Φ.toLinearEquiv.conj (mulMapExt C Ps f)
       = blockEnd M (fun i => mulMapLoc C Ps i.1 (hfin.mem_toFinset.mp i.2) f) := by

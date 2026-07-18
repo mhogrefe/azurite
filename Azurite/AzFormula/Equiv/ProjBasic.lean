@@ -672,7 +672,9 @@ theorem azRealization_azProjectQFAt
             azRealization Φ (C := C) } := by
   have : FaithfulSMul D C := (faithfulSMul_iff_algebraMap_injective _ _).mpr hinj
   unfold azProjectQFAt
-  rw [azRealization_azProjectQF hinj]
+  dsimp only
+  rw [azRealization_azProjectQF hinj (renameFormulaEquiv (Equiv.swap 0 i) Φ)
+    (Formula.rename_isQF _ _ Φ hqf)]
   ext y
   simp only [Set.mem_setOf_eq]
   constructor

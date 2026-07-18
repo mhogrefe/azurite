@@ -62,7 +62,7 @@ attribute [instance] GcdRing.commRing GcdRing.decEq GcdRing.isDomain
 /-- One tower step: adjoin one (outer) polynomial variable. All five
     instance fields are inherited from the coefficient level by the
     `AzPolynomial` instance chain. -/
-def GcdRing.step (S : GcdRing) : GcdRing :=
+@[reducible] def GcdRing.step (S : GcdRing) : GcdRing :=
   { carrier := AzPolynomial S.carrier
     commRing := inferInstance
     decEq := inferInstance
@@ -71,7 +71,7 @@ def GcdRing.step (S : GcdRing) : GcdRing :=
     normalizedGcd := inferInstance }
 
 /-- The `AzInt`-based nested polynomial tower: `ℤ`, `ℤ[x]`, `ℤ[x][T]`, … -/
-def intTower : ℕ → GcdRing
+@[reducible] def intTower : ℕ → GcdRing
   | 0 =>
     { carrier := AzInt
       commRing := inferInstance

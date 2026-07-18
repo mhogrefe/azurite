@@ -120,16 +120,24 @@ theorem sResU_coeff_size_le (P Q : ℤ[X]) {τ : ℕ} (hτ1 : 1 ≤ τ)
       ≤ (P.natDegree + Q.natDegree - 2 * j)
           * (τ + Nat.size (P.natDegree + Q.natDegree - 2 * j)) := by
   rw [sResU, coeff_det_lastCol (show 0 < P.natDegree + Q.natDegree - 2 * j by omega)
-    (fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
+    (Matrix.of fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
     (fun i => if (i : ℕ) < Q.natDegree - j then X ^ (Q.natDegree - 1 - j - (i : ℕ)) else 0)
-    (sResUMat P Q j) (fun r c => by rw [sResUMat, Matrix.of_apply]) a]
+    (sResUMat P Q j) (fun r c => by rw [sResUMat, Matrix.of_apply, Matrix.of_apply]) a]
   refine int_size_det_le _ (show 0 < P.natDegree + Q.natDegree - 2 * j by omega) (fun i k => ?_)
+  show Int.size
+      (Matrix.updateCol
+        (Matrix.of fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
+        ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
+        (fun r => (if (r : ℕ) < Q.natDegree - j
+          then X ^ (Q.natDegree - 1 - j - (r : ℕ)) else 0).coeff a) i k) ≤ τ
+  rw [Matrix.updateCol_apply]
   by_cases hk : k = ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
-  · rw [hk, Matrix.updateCol_self]
+  · rw [if_pos hk]
     split_ifs
     · exact int_size_coeff_X_pow hτ1 _ _
     · simp [Int.size]
-  · rw [Matrix.updateCol_ne hk]; exact int_size_SyHa_le hP hQ j i _
+  · rw [if_neg hk]
+    exact int_size_SyHa_le hP hQ j i _
 
 /-- **BPR Proposition 8.48, `sResV` part.** -/
 theorem sResV_coeff_size_le (P Q : ℤ[X]) {τ : ℕ} (hτ1 : 1 ≤ τ)
@@ -139,16 +147,24 @@ theorem sResV_coeff_size_le (P Q : ℤ[X]) {τ : ℕ} (hτ1 : 1 ≤ τ)
       ≤ (P.natDegree + Q.natDegree - 2 * j)
           * (τ + Nat.size (P.natDegree + Q.natDegree - 2 * j)) := by
   rw [sResV, coeff_det_lastCol (show 0 < P.natDegree + Q.natDegree - 2 * j by omega)
-    (fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
+    (Matrix.of fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
     (fun i => if (i : ℕ) < Q.natDegree - j then 0 else X ^ ((i : ℕ) - (Q.natDegree - j)))
-    (sResVMat P Q j) (fun r c => by rw [sResVMat, Matrix.of_apply]) a]
+    (sResVMat P Q j) (fun r c => by rw [sResVMat, Matrix.of_apply, Matrix.of_apply]) a]
   refine int_size_det_le _ (show 0 < P.natDegree + Q.natDegree - 2 * j by omega) (fun i k => ?_)
+  show Int.size
+      (Matrix.updateCol
+        (Matrix.of fun i k => Chapter4.SyHa P Q j i (Fin.castLE (by omega) k))
+        ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
+        (fun r => (if (r : ℕ) < Q.natDegree - j
+          then 0 else X ^ ((r : ℕ) - (Q.natDegree - j))).coeff a) i k) ≤ τ
+  rw [Matrix.updateCol_apply]
   by_cases hk : k = ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
-  · rw [hk, Matrix.updateCol_self]
+  · rw [if_pos hk]
     split_ifs
     · simp [Int.size]
     · exact int_size_coeff_X_pow hτ1 _ _
-  · rw [Matrix.updateCol_ne hk]; exact int_size_SyHa_le hP hQ j i _
+  · rw [if_neg hk]
+    exact int_size_SyHa_le hP hQ j i _
 
 /-- **BPR Proposition 8.48 (size of signed subresultants).**  If `P, Q ∈ ℤ[X]` have coefficients
     of bitsize at most `τ` (with `1 ≤ τ`), then every coefficient of `sResP_j(P,Q)`,

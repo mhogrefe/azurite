@@ -23,10 +23,12 @@ def zsmulAz [SubNegMonoid R] (k : Int) (v : AzVector R n) : AzVector R n :=
 private theorem toFn_nsmulAz [AddMonoid R] (v : AzVector R n) (k : Nat) :
     (nsmulAz k v).toFn = k • v.toFn := by
   ext i; simp [nsmulAz, AzVector.toFn, AzVector.ofFn, Vector.get]
+  rfl
 
 private theorem toFn_zsmulAz [SubNegMonoid R] (v : AzVector R n) (k : Int) :
     (zsmulAz k v).toFn = k • v.toFn := by
   ext i; simp [zsmulAz, AzVector.toFn, AzVector.ofFn, Vector.get]
+  rfl
 
 /-! ### AddCommMonoid -/
 

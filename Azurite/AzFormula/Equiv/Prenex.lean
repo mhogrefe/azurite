@@ -212,7 +212,8 @@ private theorem rename_swap_update_mem
   have h_comp : Function.update y fresh c ∘ ⇑(Equiv.swap x fresh) =
       Function.update (Function.update y fresh (y x)) x c := by
     ext v; simp only [Function.comp, Function.update, Equiv.swap_apply_def]
-    split <;> split <;> simp_all
+    split <;> split <;> try simp_all
+    exact eq_rec_constant c _
   rw [h_comp]
   -- Now use update_comm + invariant_update
   rw [Function.update_comm hne.symm]

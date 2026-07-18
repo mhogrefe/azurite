@@ -181,6 +181,8 @@ theorem toMat_nsmul (k : ℕ) (M : AzMatrix R n n) :
   show toMat (AzMatrix.nsmulAzM k M) = _
   unfold AzMatrix.nsmulAzM toMat
   ext i j; simp
+  show (↑k : R) * M.toFn i j = k • (M.toFn i j)
+  rw [nsmul_eq_mul]
 
 /-- Computable `npow` for square matrices via sliding-window exponentiation.
     O(log k) matrix multiplications. -/
@@ -199,7 +201,7 @@ theorem toMat_npow (A : AzMatrix R n n) (k : ℕ) :
 
 /-- Computable `ℕ`-cast: returns the constant matrix `(k : Matrix _ _ R)`. -/
 @[irreducible] def natCastSq (k : ℕ) : AzMatrix R n n :=
-  AzMatrix.ofFn ((k : Matrix (Fin n) (Fin n) R))
+  AzMatrix.ofFn (Matrix.of.symm (k : Matrix (Fin n) (Fin n) R))
 
 instance instAzMatrixSqNatCast : NatCast (AzMatrix R n n) := ⟨natCastSq⟩
 
@@ -271,10 +273,12 @@ theorem toMat_zsmul (M : AzMatrix R n n) (k : ℤ) :
   show toMat (AzMatrix.zsmulAzM k M) = _
   unfold AzMatrix.zsmulAzM toMat
   ext i j; simp
+  show (↑k : R) * M.toFn i j = k • (M.toFn i j)
+  rw [zsmul_eq_mul]
 
 /-- Computable `ℤ`-cast: returns the constant matrix `(k : Matrix _ _ R)`. -/
 @[irreducible] def intCastSq (k : ℤ) : AzMatrix R n n :=
-  AzMatrix.ofFn ((k : Matrix (Fin n) (Fin n) R))
+  AzMatrix.ofFn (Matrix.of.symm (k : Matrix (Fin n) (Fin n) R))
 
 instance instAzMatrixSqIntCast : IntCast (AzMatrix R n n) := ⟨intCastSq⟩
 

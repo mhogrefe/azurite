@@ -304,40 +304,52 @@ def tinyCount (isTiny : Fin m → Bool) : ℕ := (tinySlots isTiny).card
 /-- The number of normal slots. -/
 def normalCount (isTiny : Fin m → Bool) : ℕ := (normalSlots isTiny).card
 
+theorem card_tinySlots (isTiny : Fin m → Bool) :
+    (tinySlots isTiny).card = tinyCount isTiny := rfl
+
+theorem card_normalSlots (isTiny : Fin m → Bool) :
+    (normalSlots isTiny).card = normalCount isTiny := rfl
+
 /-- The ascending enumeration of the tiny slots. -/
 def tinyEmb (isTiny : Fin m → Bool) : Fin (tinyCount isTiny) ↪o Fin m :=
-  (tinySlots isTiny).orderEmbOfFin rfl
+  (tinySlots isTiny).orderEmbOfFin (card_tinySlots isTiny)
 
 /-- The ascending enumeration of the normal slots. -/
 def normalEmb (isTiny : Fin m → Bool) : Fin (normalCount isTiny) ↪o Fin m :=
-  (normalSlots isTiny).orderEmbOfFin rfl
+  (normalSlots isTiny).orderEmbOfFin (card_normalSlots isTiny)
 
 theorem isTiny_tinyEmb (isTiny : Fin m → Bool) (c : Fin (tinyCount isTiny)) :
     isTiny (tinyEmb isTiny c) = true :=
-  (Finset.mem_filter.mp ((tinySlots isTiny).orderEmbOfFin_mem rfl c)).2
+  (Finset.mem_filter.mp
+    ((tinySlots isTiny).orderEmbOfFin_mem (card_tinySlots isTiny) c)).2
 
 theorem isTiny_normalEmb (isTiny : Fin m → Bool) (c : Fin (normalCount isTiny)) :
     isTiny (normalEmb isTiny c) = false :=
-  (Finset.mem_filter.mp ((normalSlots isTiny).orderEmbOfFin_mem rfl c)).2
+  (Finset.mem_filter.mp
+    ((normalSlots isTiny).orderEmbOfFin_mem (card_normalSlots isTiny) c)).2
 
 /-- The tiny-order index of a tiny slot: the inverse of `tinyEmb`. -/
 def tinyIdx (isTiny : Fin m → Bool) (j : Fin m) (hj : isTiny j = true) :
     Fin (tinyCount isTiny) :=
-  ((tinySlots isTiny).orderIsoOfFin rfl).symm ⟨j, by simp [tinySlots, hj]⟩
+  ((tinySlots isTiny).orderIsoOfFin (card_tinySlots isTiny)).symm
+    ⟨j, by simp [tinySlots, hj]⟩
 
 /-- The normal-order index of a normal slot: the inverse of `normalEmb`. -/
 def normalIdx (isTiny : Fin m → Bool) (j : Fin m) (hj : isTiny j = false) :
     Fin (normalCount isTiny) :=
-  ((normalSlots isTiny).orderIsoOfFin rfl).symm ⟨j, by simp [normalSlots, hj]⟩
+  ((normalSlots isTiny).orderIsoOfFin (card_normalSlots isTiny)).symm
+    ⟨j, by simp [normalSlots, hj]⟩
 
 theorem tinyEmb_tinyIdx (isTiny : Fin m → Bool) {j : Fin m} (hj : isTiny j = true) :
     tinyEmb isTiny (tinyIdx isTiny j hj) = j := by
-  show ((tinySlots isTiny).orderEmbOfFin rfl) (tinyIdx isTiny j hj) = j
+  show (tinySlots isTiny).orderEmbOfFin (card_tinySlots isTiny)
+    (tinyIdx isTiny j hj) = j
   rw [← Finset.coe_orderIsoOfFin_apply, tinyIdx, OrderIso.apply_symm_apply]
 
 theorem normalEmb_normalIdx (isTiny : Fin m → Bool) {j : Fin m}
     (hj : isTiny j = false) : normalEmb isTiny (normalIdx isTiny j hj) = j := by
-  show ((normalSlots isTiny).orderEmbOfFin rfl) (normalIdx isTiny j hj) = j
+  show (normalSlots isTiny).orderEmbOfFin (card_normalSlots isTiny)
+    (normalIdx isTiny j hj) = j
   rw [← Finset.coe_orderIsoOfFin_apply, normalIdx, OrderIso.apply_symm_apply]
 
 theorem tinyIdx_tinyEmb (isTiny : Fin m → Bool) (c : Fin (tinyCount isTiny))

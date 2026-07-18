@@ -38,10 +38,12 @@ theorem AzMatrix.ext {M N : AzMatrix R m n}
 theorem AzMatrix.toFn_ofFn (f : Fin m → Fin n → R) (i : Fin m) (j : Fin n) :
     (AzMatrix.ofFn f).toFn i j = f i j := by
   simp [toFn, ofFn, Vector.get]
+  rfl
 
 @[simp]
 theorem AzMatrix.ofFn_toFn (M : AzMatrix R m n) : AzMatrix.ofFn M.toFn = M := by
   ext i j; simp [toFn, ofFn, get, Vector.get]
+  rfl
 
 theorem AzMatrix.toFn_injective :
     Function.Injective (AzMatrix.toFn (R := R) (m := m) (n := n)) := by
@@ -58,6 +60,7 @@ theorem AzMatrix.toFn_map {S : Type _} (f : R → S) (M : AzMatrix R m n)
     (i : Fin m) (j : Fin n) :
     (M.map f).toFn i j = f (M.toFn i j) := by
   simp [map, AzMatrix.toFn, Vector.get, Vector.map]
+  rfl
 
 /-! ### Zip -/
 
@@ -71,6 +74,7 @@ theorem AzMatrix.toFn_zip {S T : Type _} (f : R → S → T)
     (M : AzMatrix R m n) (N : AzMatrix S m n) (i : Fin m) (j : Fin n) :
     (M.zip f N).toFn i j = f (M.toFn i j) (N.toFn i j) := by
   simp [zip, AzMatrix.toFn, Vector.get, Vector.zipWith]
+  rfl
 
 /-! ### ofLists -/
 

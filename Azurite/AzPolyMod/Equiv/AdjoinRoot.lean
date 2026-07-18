@@ -30,7 +30,7 @@ namespace Azurite
 
 namespace AzPolyMod
 
-open Polynomial AzPolynomial
+open Polynomial _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommRing R] [DecidableEq R] {f : AzPolynomial R}
 

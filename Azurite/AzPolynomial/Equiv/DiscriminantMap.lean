@@ -114,6 +114,8 @@ theorem discriminantMonic_map (f : R →+* S) (P : AzPolynomial R)
   unfold discriminantMonic
   rw [h_deg]
   rw [AzMatrix.det_eq_Matrix_det, AzMatrix.det_eq_Matrix_det]
+  show f ((Matrix.of (P.newtMatMonic P.natDegree).toFn).det)
+    = (Matrix.of ((P.map f).newtMatMonic P.natDegree).toFn).det
   rw [RingHom.map_det f]
   congr 1
   funext i j

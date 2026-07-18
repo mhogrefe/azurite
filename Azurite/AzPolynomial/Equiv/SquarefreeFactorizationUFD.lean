@@ -12,7 +12,7 @@ division `/`).
 
 This file generalizes the **product identity** to a coefficient ring `R` that is
 only a characteristic-zero UFD (`[CommRing R] [IsDomain R]
-[UniqueFactorizationMonoid R] [NormalizedGCDMonoid R] [CharZero R]`), *not*
+[UniqueFactorizationMonoid R] [StrongNormalizedGCDMonoid R] [CharZero R]`), *not*
 necessarily a field. Two obstacles are handled:
 
 * `Polynomial R` for a non-field `R` has **no** `HDiv`/`/`. The "divide by the
@@ -64,7 +64,7 @@ theorem edivExact_eq_of_mul {S : Type _} [CommRing S] [IsDomain S] {w g q : S}
   exact mul_right_cancel₀ hg0 h2
 
 variable {R : Type _} [CommRing R] [IsDomain R] [UniqueFactorizationMonoid R]
-  [NormalizedGCDMonoid R] [CharZero R]
+  [StrongNormalizedGCDMonoid R] [CharZero R]
 
 /-! ### Primitivity helpers -/
 
@@ -392,7 +392,8 @@ theorem exists_yunFamily {a : R[X]} (hprim : a.IsPrimitive) (hnorm : _root_.norm
     isPrimitive_finset_prod _ (fun p => p) fun p hp => hprimf p (hmemF hp)
   have hnormC : ∀ n, _root_.normalize (∏ p ∈ f.toFinset.filter fun q => f.count q = n, p)
       = ∏ p ∈ f.toFinset.filter fun q => f.count q = n, p := fun n => by
-    rw [map_prod]
+    rw [← coe_normalizeHom, map_prod]
+    simp only [coe_normalizeHom]
     exact Finset.prod_congr rfl fun p hp => hnormf p (hmemF hp)
   have hm1 : 1 ≤ m :=
     le_trans (Multiset.count_pos.mpr hp₀)
@@ -479,8 +480,12 @@ theorem yunPoly_closed_form {a : R[X]} (hprim : a.IsPrimitive)
   have hCCprim : CC.IsPrimitive :=
     isPrimitive_finset_prod _ _ fun j _ => isPrimitive_pow _ (hF.primitive j) _
   have hCCnorm : _root_.normalize CC = CC := by
-    rw [hCCdef, map_prod]
-    exact Finset.prod_congr rfl fun j _ => by rw [map_pow, hF.normalized j]
+    rw [hCCdef, ← coe_normalizeHom, map_prod]
+    simp only [coe_normalizeHom]
+    exact Finset.prod_congr rfl fun j _ => by
+      rw [← coe_normalizeHom, map_pow]
+      simp only [coe_normalizeHom]
+      rw [hF.normalized j]
   have hCCne : CC ≠ 0 := hCCprim.ne_zero
   -- `a = CC · ∏ A j` and `a' = CC · (Yun sum with coefficients j)`
   have hsplit : a = CC * ∏ j ∈ Finset.Icc 1 m, A j := by
@@ -806,7 +811,7 @@ theorem forall2_pairwise {α β : Type _} {r : α → β → Prop} {s1 : α → 
     obtain ⟨b', hb', hrb⟩ := forall2_mem_left hrest b hb
     exact hrs _ _ _ _ hxy hrb (hp.1 b' hb')
 
-omit [IsDomain R] [UniqueFactorizationMonoid R] [NormalizedGCDMonoid R] [CharZero R] in
+omit [IsDomain R] [UniqueFactorizationMonoid R] [StrongNormalizedGCDMonoid R] [CharZero R] in
 /-- Primitivity is associate-invariant. -/
 theorem associated_isPrimitive {p q : R[X]} (h : Associated p q) (hp : p.IsPrimitive) :
     q.IsPrimitive := fun r hr => hp r (hr.trans h.symm.dvd)

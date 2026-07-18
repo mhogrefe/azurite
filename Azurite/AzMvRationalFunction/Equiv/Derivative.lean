@@ -19,7 +19,7 @@ derivative commutes with the `ℚ[x⃗]`-image, via `MvPolynomial.pderiv_map`) p
 
 namespace Azurite.AzMvRationalFunction
 
-open Azurite.AzMvPolynomial MvPolynomial
+open Azurite.AzMvPolynomial _root_.Azurite.MvPolynomial
 
 variable {n : ℕ} {ord : MonomialOrder}
 

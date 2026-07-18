@@ -34,7 +34,8 @@ theorem AzMatrix.toFn_kronecker (A : AzMatrix R m n) (B : AzMatrix R p q) :
     (A.kronecker B).toFn =
       Matrix.reindex finProdFinEquiv finProdFinEquiv (A.toFn ⊗ₖ B.toFn) := by
   funext r c
-  simp [Matrix.reindex_apply, Matrix.submatrix_apply, Matrix.kroneckerMap_apply]
+  simp [Matrix.reindex_apply, Matrix.submatrix_apply]
+  rfl
 
 /-! ### Guards -/
 

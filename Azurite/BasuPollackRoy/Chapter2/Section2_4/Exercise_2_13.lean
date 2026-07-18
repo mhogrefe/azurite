@@ -23,20 +23,25 @@ open scoped Kronecker
 
 /-- `Mₛ` as a rational matrix (entries cast `SignType → ℚ`). -/
 def signMatrixQ (s : Nat) : Matrix (Fin (3 ^ s)) (Fin (3 ^ s)) ℚ :=
-  Matrix.map (signMatrix s).toFn (fun x : SignType => (x : ℚ))
+  Matrix.map (Matrix.of (signMatrix s).toFn) (fun x : SignType => (x : ℚ))
 
 /-- The base matrix `M₁` over `ℚ`. -/
 def baseQ : Matrix (Fin 3) (Fin 3) ℚ :=
-  Matrix.map exampleM.toFn (fun x : SignType => (x : ℚ))
+  Matrix.map (Matrix.of exampleM.toFn) (fun x : SignType => (x : ℚ))
 
 /-- `M_{s+1}` over `ℚ` is `Mₛ ⊗ M₁` reindexed to flat indices. -/
 theorem signMatrixQ_succ (s : Nat) :
     signMatrixQ (s + 1) =
-      Matrix.reindex finProdFinEquiv finProdFinEquiv (signMatrixQ s ⊗ₖ baseQ) := by
+      Matrix.reindex (finProdFinEquiv.trans (finCongr (by ring)))
+        (finProdFinEquiv.trans (finCongr (by ring)))
+        (signMatrixQ s ⊗ₖ baseQ) := by
   ext i j
-  simp only [signMatrixQ, signMatrix, baseQ, Matrix.map_apply, Matrix.reindex_apply,
-    Matrix.submatrix_apply, Matrix.kroneckerMap_apply]
+  simp only [signMatrixQ, signMatrix, baseQ, Matrix.map_apply, Matrix.of_apply,
+    Matrix.reindex_apply, Matrix.submatrix_apply, Matrix.kroneckerMap_apply,
+    Equiv.symm_trans_apply, finCongr_symm, finCongr_apply]
   erw [AzMatrix.toFn_kronecker_apply, SignType.coe_mul]
+  simp only [finProdFinEquiv_symm_apply]
+  rfl
 
 /-- `det(M₁) = 2`. -/
 theorem baseQ_det : baseQ.det = 2 := by

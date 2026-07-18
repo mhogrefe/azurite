@@ -713,7 +713,8 @@ theorem modelEquiv_normalize (X : AzMvPolynomial n AzInt ord) :
   rw [h, RingEquiv.apply_symm_apply]
 
 /-- `normalize` commutes with `Polynomial.C`. -/
-theorem normalize_C_poly {S : Type _} [CommRing S] [IsDomain S] [NormalizedGCDMonoid S] (x : S) :
+theorem normalize_C_poly {S : Type _} [CommRing S] [IsDomain S]
+    [StrongNormalizedGCDMonoid S] (x : S) :
     normalize (Polynomial.C x) = Polynomial.C (normalize x) := by
   rw [normalize_apply, normalize_apply, Polynomial.coe_normUnit, Polynomial.leadingCoeff_C,
     ← Polynomial.C_mul]
@@ -721,7 +722,8 @@ theorem normalize_C_poly {S : Type _} [CommRing S] [IsDomain S] [NormalizedGCDMo
 /-- **`primPart` of a normalized polynomial is normalized** (generic): from
 `p = C(content p)·primPart p`, `normalize (content p) = content p`, and cancelling. -/
 theorem normalize_primPart_of_normalize {S : Type _} [CommRing S] [IsDomain S]
-    [NormalizedGCDMonoid S] {q : Polynomial S} (hq0 : q ≠ 0) (hqn : normalize q = q) :
+    [StrongNormalizedGCDMonoid S] {q : Polynomial S} (hq0 : q ≠ 0)
+    (hqn : normalize q = q) :
     normalize q.primPart = q.primPart := by
   have hcontent0 : q.content ≠ 0 := fun h => hq0 (Polynomial.content_eq_zero_iff.mp h)
   have hC0 : (Polynomial.C q.content : Polynomial S) ≠ 0 :=
@@ -730,7 +732,7 @@ theorem normalize_primPart_of_normalize {S : Type _} [CommRing S] [IsDomain S]
   have hqeq : q = Polynomial.C q.content * q.primPart := q.eq_C_content_mul_primPart
   have h1 : normalize q = Polynomial.C q.content * normalize q.primPart := by
     conv_lhs => rw [hqeq]
-    rw [map_mul normalize, normalize_C_poly, hcnorm]
+    rw [normalize_mul, normalize_C_poly, hcnorm]
   exact mul_left_cancel₀ hC0 (h1.symm.trans (hqn.trans hqeq))
 
 /-- **Sub-fact 2**: the `x₀`-content is normalized (it is the normalized gcd). -/

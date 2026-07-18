@@ -907,7 +907,6 @@ private lemma partialOffDiagSum_eq_offDiagSumAux (a : Array UInt64) (lo len : Na
       rw [List.length_take, List.length_drop, Array.length_toList]; omega
     have h_get : ((a.toList.drop lo).take (n + 1))[n]'h_n_lt = a[lo + n] := by
       rw [List.getElem_take, List.getElem_drop, Array.getElem_toList]
-      rfl
     rw [offDiagSumAux, dif_pos h_n_lt, h_get, h_take_take]
     have h_inner :
         offDiagSumAux ((a.toList.drop lo).take (n + 1)) n

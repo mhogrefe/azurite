@@ -32,7 +32,7 @@ a shared positive denominator, in canonical form) and `AzPolynomial ℚ` (array 
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 /-! ## LCM helpers -/
 

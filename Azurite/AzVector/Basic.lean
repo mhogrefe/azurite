@@ -33,10 +33,12 @@ theorem AzVector.ext {v w : AzVector R n} (h : ∀ i : Fin n, v.get i = w.get i)
 theorem AzVector.toFn_ofFn (f : Fin n → R) (i : Fin n) :
     (AzVector.ofFn f).toFn i = f i := by
   simp [toFn, ofFn, Vector.get]
+  rfl
 
 @[simp]
 theorem AzVector.ofFn_toFn (v : AzVector R n) : AzVector.ofFn v.toFn = v := by
   ext i; simp [toFn, ofFn, get, Vector.get]
+  rfl
 
 /-- `toFn` is injective. -/
 theorem AzVector.toFn_injective : Function.Injective (AzVector.toFn (R := R) (n := n)) := by
@@ -52,6 +54,7 @@ def AzVector.map {S : Type _} (f : R → S) (v : AzVector R n) : AzVector S n :=
 theorem AzVector.toFn_map {S : Type _} (f : R → S) (v : AzVector R n) (i : Fin n) :
     (v.map f).toFn i = f (v.toFn i) := by
   simp [map, AzVector.toFn, Vector.get, Vector.map]
+  rfl
 
 /-! ### Zip -/
 
@@ -65,6 +68,7 @@ theorem AzVector.toFn_zip {S T : Type _} (f : R → S → T)
     (v : AzVector R n) (w : AzVector S n) (i : Fin n) :
     (v.zip f w).toFn i = f (v.toFn i) (w.toFn i) := by
   simp [zip, AzVector.toFn, Vector.get, Vector.zipWith]
+  rfl
 
 /-! ### ofList -/
 

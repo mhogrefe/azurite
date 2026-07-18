@@ -14,9 +14,13 @@ def AzVector.stdBasis [Zero R] [One R] (i : Fin n) : AzVector R n :=
 theorem AzVector.get_stdBasis_self [Zero R] [One R] (i : Fin n) :
     (AzVector.stdBasis i).get i = (1 : R) := by
   simp [AzVector.get, stdBasis, Vector.get]
+  intro hne
+  exact absurd rfl hne
 
 theorem AzVector.get_stdBasis_ne [Zero R] [One R] {i j : Fin n} (h : i ≠ j) :
     (AzVector.stdBasis i).get j = (0 : R) := by
-  simp [AzVector.get, stdBasis, Vector.get, h]
+  simp [AzVector.get, stdBasis, Vector.get]
+  intro hij
+  exact absurd hij h
 
 end Azurite

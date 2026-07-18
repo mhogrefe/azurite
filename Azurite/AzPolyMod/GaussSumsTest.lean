@@ -30,7 +30,7 @@ namespace Azurite
 
 namespace AzPolyMod
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 /-- **The `some true`-soundness core of the Gauss sums test**: if all
 rail-level checks pass and the step-6 scan finds no nontrivial

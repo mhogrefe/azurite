@@ -22,7 +22,7 @@ exercise.
 
 namespace Azurite.BPR
 
-open MvPolynomial Polynomial Formula
+open _root_.Azurite.BPR.MvPolynomial Polynomial Formula
 
 section PointFormula
 

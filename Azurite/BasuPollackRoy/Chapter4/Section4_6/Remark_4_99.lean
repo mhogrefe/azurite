@@ -39,8 +39,8 @@ theorem algEquivExt_one_tmul (Ps : Finset (MvPolynomial (Fin k) K)) (a : quotPol
     (Ideal.quotientEquivAlg (Ideal.map (Algebra.TensorProduct.includeRight) (idealOfPolys Ps))
       (idealOfPolysExt C Ps) (algebraTensorAlgEquiv K C) _)
       (1 ⊗ₜ[K] (Ideal.Quotient.mk _ p)) = _
-  rw [AlgEquiv.trans_apply, Algebra.TensorProduct.tensorQuotientEquiv_apply_tmul,
-    Ideal.quotientEquivAlg_mk]
+  rw [AlgEquiv.trans_apply, Algebra.TensorProduct.tensorQuotientEquiv_apply_tmul]
+  refine (Ideal.quotientEquivAlg_mk _ _ _ _).trans ?_
   congr 1
   rw [MvPolynomial.algebraTensorAlgEquiv_tmul, one_smul]
 

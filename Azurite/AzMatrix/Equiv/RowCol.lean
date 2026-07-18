@@ -18,15 +18,18 @@ theorem AzMatrix.toFn_row (M : AzMatrix R m n) (i : Fin m) :
 theorem AzMatrix.toFn_col (M : AzMatrix R m n) (j : Fin n) :
     (M.col j).toFn = fun i => M.toFn i j := by
   ext i; simp [col, AzVector.toFn, AzMatrix.toFn, get, Vector.get]
+  rfl
 
 /-- `ofRows` commutes with `toFn`. -/
 theorem AzMatrix.toFn_ofRows (rows : Vector (AzVector R n) m) (i : Fin m) (j : Fin n) :
     (AzMatrix.ofRows rows).toFn i j = (rows.get i).data.get j := by
   simp [ofRows, AzMatrix.toFn, Vector.get, Vector.map]
+  rfl
 
 /-- `ofCols` commutes with `toFn`. -/
 theorem AzMatrix.toFn_ofCols (cols : Vector (AzVector R m) n) (i : Fin m) (j : Fin n) :
     (AzMatrix.ofCols cols).toFn i j = (cols.get j).data.get i := by
   simp [ofCols, AzMatrix.toFn, AzMatrix.ofFn, Vector.get]
+  rfl
 
 end Azurite

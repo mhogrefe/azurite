@@ -15,7 +15,7 @@ collapse, coefficient by coefficient, to the `R[i]` decomposition `Ri.of_reL_add
 
 namespace Azurite.BPR
 
-open Polynomial AdjoinRoot HahnSeries
+open Polynomial AdjoinRoot _root_.Azurite.BPR.HahnSeries
 
 variable {R : Type*} [Field R] [IsRealClosed R]
 

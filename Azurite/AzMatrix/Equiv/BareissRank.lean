@@ -537,7 +537,6 @@ theorem AzMatrix.bareissMinor_swapRows
   unfold AzMatrix.bareissMinor
   rw [AzMatrix.toFn_bareissBlock, AzMatrix.toFn_bareissBlock,
       AzMatrix.toFn_swapRows_eq_submatrix_gen]
-  rw [Matrix.submatrix_submatrix]
   show Matrix.det (Matrix.submatrix M.toFn
       (Equiv.swap _ i ∘ AzMatrix.bareissIdx k hk i')
       (id ∘ AzMatrix.bareissIdx k hk j)) = _
@@ -555,7 +554,12 @@ theorem AzMatrix.principalMinor_swapRows_low_level
       AzMatrix.principalMinor_eq_top_left_det]
   congr 1
   funext i' j'
-  rw [Matrix.submatrix_apply, Matrix.submatrix_apply, AzMatrix.toFn_swapRows]
+  show (M.swapRows ⟨k, hk⟩ i).toFn
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) i')
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) j')
+    = M.toFn (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) i')
+      (Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) j')
+  rw [AzMatrix.toFn_swapRows]
   set i'_lift : Fin n := Fin.castLE (Nat.succ_le_of_lt (show ℓ < n by omega)) i'
     with hi'_lift
   have h_i'_val : i'_lift.val = i'.val := rfl

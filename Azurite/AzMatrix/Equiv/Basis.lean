@@ -14,11 +14,13 @@ variable {R : Type _} [Zero R] [One R] {m n : Nat}
 theorem AzMatrix.toFn_identity :
     (AzMatrix.identity (R := R) (n := n)).toFn = fun i j => if i = j then 1 else 0 := by
   ext i j; simp [identity, toFn, ofFn, Vector.get]
+  exact if_congr (Fin.val_inj (a := i) (b := j)) rfl rfl
 
 /-- The single-entry matrix equals Mathlib's `Matrix.stdBasisMatrix`. -/
 theorem AzMatrix.toFn_single (i₀ : Fin m) (j₀ : Fin n) :
     (AzMatrix.single (R := R) i₀ j₀).toFn = fun i j => if i = i₀ ∧ j = j₀ then 1 else 0 := by
   ext i j; simp [single, toFn, ofFn, Vector.get]
+  rfl
 
 /-- `ofFn` of the identity function yields `AzMatrix.identity`. -/
 theorem AzMatrix.ofFn_identity :

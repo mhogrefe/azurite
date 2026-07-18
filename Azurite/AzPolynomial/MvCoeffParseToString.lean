@@ -17,7 +17,7 @@ import Azurite.AzPolynomial.Equiv.Monomial
 
 namespace Azurite
 
-open AzPolynomial AzMvPolynomial
+open _root_.Azurite.AzPolynomial AzMvPolynomial
 
 variable {R : Type _} [DecidableEq R] [CommSemiring R] [NoZeroDivisors R]
          [NeZero (1 : R)] [ParsableCoeff R] [ParenFreeCoeff R]

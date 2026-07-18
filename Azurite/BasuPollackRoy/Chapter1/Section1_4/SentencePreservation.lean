@@ -776,7 +776,8 @@ theorem degEqFormula_freeVars_empty
   · rw [List.mem_map] at hΦ
     obtain ⟨i, _, rfl⟩ := hΦ
     show Formula.freeVars _ ∪ Formula.freeVars _ = ∅
-    rw [degFormula_freeVars_empty hQ₁ (some i), degFormula_freeVars_empty hQ₂]
+    rw [degFormula_freeVars_empty hQ₁ (some i),
+      degFormula_freeVars_empty hQ₂ (some i)]
     simp
 
 theorem degNeqFormula_freeVars_empty

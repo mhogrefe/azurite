@@ -19,11 +19,16 @@ variable {R : Type*} [Field R]
 `ξ.den`, so it is a Laurent series in `ε^{1/ξ.den}`. -/
 theorem single_mem_puiseux (ξ : ℚ) : (HahnSeries.single ξ (1 : R)) ∈ PuiseuxSeries R := by
   rw [mem_puiseuxSeries_iff]
-  refine ⟨⟨ξ.den, ξ.den_pos⟩, ?_⟩
-  rw [puiseuxSubfield, RingHom.mem_fieldRange]
+  refine ⟨ξ.den.toPNat ξ.den_pos, ?_⟩
+  show HahnSeries.single ξ (1 : R)
+    ∈ (puiseuxEmb R (ξ.den.toPNat ξ.den_pos)).fieldRange
+  rw [RingHom.mem_fieldRange]
   refine ⟨HahnSeries.single ξ.num 1, ?_⟩
-  rw [puiseuxEmb_single, show puiseuxExpHom ⟨ξ.den, ξ.den_pos⟩ ξ.num = ξ from by
-    simp only [puiseuxExpHom_apply, PNat.mk_coe]; exact_mod_cast Rat.num_div_den ξ]
+  rw [puiseuxEmb_single,
+    show puiseuxExpHom (ξ.den.toPNat ξ.den_pos) ξ.num = ξ from by
+      simp only [puiseuxExpHom_apply]
+      show (ξ.num : ℚ) / ((ξ.den : ℕ) : ℚ) = ξ
+      exact_mod_cast Rat.num_div_den ξ]
 
 /-- **The Puiseux monomial `ε^ξ`** for a rational exponent `ξ`. -/
 noncomputable def puiseuxMonomial (ξ : ℚ) : PuiseuxSeries R :=

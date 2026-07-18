@@ -137,10 +137,10 @@ theorem PmV_map {D S : Type*} [CommRing D] [LinearOrder D] [IsStrictOrderedRing 
     have hdrop : (rest.map f).dropWhile (fun x => decide (x = 0))
         = (rest.dropWhile (fun x => decide (x = 0))).map f := by
       rw [dropWhile_map]; simp only [hpred]
-    rw [List.map_cons, PmV, PmV, hdrop]
     rcases hd : rest.dropWhile (fun x => decide (x = 0)) with _ | ⟨sq, tl⟩
-    · simp
-    · simp only [List.map_cons, List.length_cons, List.length_map]
+    · rw [List.map_cons, PmV, PmV, hdrop, hd, List.map_nil]
+    · rw [List.map_cons, PmV, PmV, hdrop, hd, List.map_cons]
+      simp only [List.length_cons, List.length_map]
       have hsign : SignType.sign (f sp * f sq) = SignType.sign (sp * sq) := by
         rw [← map_mul]
         rcases lt_trichotomy (sp * sq) 0 with h | h | h

@@ -33,7 +33,7 @@ variables through the `projBasic` pipeline (`splitLast`, `posgcd`, `TRems`,
 
 namespace Azurite.BPR
 
-open MvPolynomial Polynomial Formula
+open _root_.Azurite.BPR.MvPolynomial Polynomial Formula
 
 /-!
 ### Generalized Lefschetz transfer for `Fin ℓ` sentences

@@ -15,7 +15,7 @@ corresponding Mathlib `MvPolynomial.eval₂` formulations, across the
 
 namespace Azurite
 
-open AzMvPolynomial AzPolynomial
+open AzMvPolynomial _root_.Azurite.AzPolynomial
 
 variable {R : Type _} [CommSemiring R] [NoZeroDivisors R] [DecidableEq R]
 

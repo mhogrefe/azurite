@@ -71,7 +71,8 @@ theorem oddRoot_isSemialgebraicFunction {k : ℕ} (hodd : Odd k) :
       · intro h
         funext i; rw [Subsingleton.elim i 0]
         simpa [oddRoot, Function.comp_apply, hcidx, hnidx] using h
-    rw [hkey, Equiv.eq_symm_apply, oddPowEquiv, Equiv.ofBijective_apply]
+    rw [hkey, Equiv.eq_symm_apply, oddPowEquiv]
+    exact Iff.rfl
   show IsSemialgebraicSet (funGraph (Set.univ : Set (Fin 1 → R)) (oddRoot hodd))
   rw [hgraph]
   exact IsSemialgebraicSet.eqZero Q

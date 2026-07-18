@@ -12,7 +12,7 @@ import Azurite.AzMvPolynomial.ParsableElement
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 /-! ### Variable-layer lemmas for `XyzVar n` -/
 

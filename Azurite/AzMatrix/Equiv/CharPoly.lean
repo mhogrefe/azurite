@@ -56,8 +56,9 @@ private theorem trace_restrict_pow_maxGenEigenspace (f : End K V) (μ : K) (k : 
         = (f - algebraMap K (End K V) μ).restrict
             (mapsTo_maxGenEigenspace_of_comm (Algebra.mul_sub_algebraMap_commutes f μ) μ) := by
       refine LinearMap.ext fun x => Subtype.ext ?_
-      simp only [hg, LinearMap.sub_apply, AddSubgroupClass.coe_sub, coe_restrict_apply,
+      simp only [hg, LinearMap.sub_apply, AddSubgroupClass.coe_sub,
         Module.algebraMap_end_apply, SetLike.val_smul]
+      rfl
     rw [heq]
     exact isNilpotent_restrict_maxGenEigenspace_sub_algebraMap f μ
   have hnil : IsNilpotent (g ^ k - algebraMap K (End K W) (μ ^ k)) := by

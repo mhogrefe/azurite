@@ -13,7 +13,7 @@ toString → parse roundtrip recovers the original `AzPolynomialQ`.
 
 namespace Azurite
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 namespace AzPolynomialQ
 

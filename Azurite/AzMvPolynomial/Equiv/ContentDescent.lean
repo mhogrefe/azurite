@@ -19,7 +19,7 @@ and thence injectivity of the `AzMvRationalFunction → ℚ(x⃗)` representatio
 
 namespace Azurite.AzMvPolynomial
 
-open MvPolynomial
+open _root_.Azurite.MvPolynomial
 
 variable {n : ℕ} {ord : MonomialOrder}
 

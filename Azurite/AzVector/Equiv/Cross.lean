@@ -27,9 +27,15 @@ theorem AzVector.ofFn_cross (f g : Fin 3 → R) :
   rw [toFn_cross]
   funext ⟨i, hi⟩
   match i, hi with
-  | 0, _ => simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get, Matrix.cons_val_zero]
-  | 1, _ => simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get, Matrix.cons_val_zero,
-                   Matrix.cons_val_one]
-  | 2, _ => simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get]
+  | 0, _ =>
+    simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get, Matrix.cons_val_zero]
+    rfl
+  | 1, _ =>
+    simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get, Matrix.cons_val_zero,
+      Matrix.cons_val_one]
+    rfl
+  | 2, _ =>
+    simp [crossProduct, AzVector.toFn, AzVector.ofFn, Vector.get]
+    rfl
 
 end Azurite

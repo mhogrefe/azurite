@@ -29,7 +29,7 @@ namespace Azurite
 
 namespace AzPolyMod
 
-open AzPolynomial
+open _root_.Azurite.AzPolynomial
 
 section OfCoeff
 

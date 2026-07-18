@@ -342,8 +342,10 @@ theorem sResV_minor_det_eq (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
   set Mb2 := N'.submatrix e2 e2 with hMb2
   have htb21 : Mb2.toBlocks₂₁ = 0 := by
     ext a k
-    simp only [hMb2, Matrix.toBlocks₂₁, Matrix.submatrix_apply, Matrix.zero_apply, hN', hA, he2r,
-      he2l, Fin.castLE_mk, Chapter4.SyHa, Matrix.of_apply]
+    simp only [hMb2, Matrix.toBlocks₂₁, Matrix.of_apply, Matrix.submatrix_apply,
+      Matrix.zero_apply]
+    rw [he2r, he2l]
+    simp only [hN', hA, Fin.castLE_mk, Chapter4.SyHa, Matrix.of_apply]
     split_ifs with hcond
     · apply Polynomial.coeff_eq_zero_of_natDegree_lt
       refine lt_of_le_of_lt Polynomial.natDegree_mul_le ?_
@@ -357,8 +359,9 @@ theorem sResV_minor_det_eq (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
       omega
   have htb11 : Mb2.toBlocks₁₁.det = P.leadingCoeff := by
     rw [Matrix.det_fin_one]
-    simp only [hMb2, Matrix.toBlocks₁₁, Matrix.submatrix_apply, hN', hA, he2l, Fin.castLE_mk,
-      Chapter4.SyHa, Matrix.of_apply]
+    simp only [hMb2, Matrix.toBlocks₁₁, Matrix.of_apply, Matrix.submatrix_apply]
+    rw [he2l]
+    simp only [hN', hA, Fin.castLE_mk, Chapter4.SyHa, Matrix.of_apply]
     rw [if_pos (by omega), Polynomial.leadingCoeff,
       show Q.natDegree - (j - 1) - 1 - 0 = Q.natDegree - j from by omega,
       show P.natDegree + Q.natDegree - (j - 1) - 1 - 0 = P.natDegree + (Q.natDegree - j) from by omega,
@@ -369,8 +372,10 @@ theorem sResV_minor_det_eq (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
       show Mb2.toBlocks₂₂ = (Chapter4.SyHaSquare P Q j).submatrix (finCongr hmcast) (finCongr hmcast) from ?_,
       Matrix.det_submatrix_equiv_self]
     ext a b
-    simp only [hMb2, Matrix.toBlocks₂₂, Matrix.submatrix_apply, hN', hA, he2r,
-      Chapter4.SyHaSquare, Chapter4.SyHa, Matrix.of_apply, Fin.val_castLE, finCongr_apply,
+    simp only [hMb2, Matrix.toBlocks₂₂, Matrix.of_apply, Matrix.submatrix_apply]
+    rw [he2r, he2r]
+    simp only [hN', hA, Chapter4.SyHaSquare, Chapter4.SyHa,
+      Matrix.of_apply, Matrix.submatrix_apply, Fin.val_castLE, finCongr_apply,
       Fin.val_cast, id_eq]
     split_ifs with h1 h2
     · rw [show Q.natDegree - (j - 1) - 1 - (1 + (a : ℕ)) = Q.natDegree - j - 1 - (a : ℕ) from by omega,

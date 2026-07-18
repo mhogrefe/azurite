@@ -61,8 +61,8 @@ theorem HahnSeries.map_embDomain {Γ₁ Γ₂ : Type*} [PartialOrder Γ₁] [Par
   · obtain ⟨a, rfl⟩ := hb
     rw [HahnSeries.map_coeff, HahnSeries.embDomain_coeff, HahnSeries.embDomain_coeff,
       HahnSeries.map_coeff]
-  · rw [HahnSeries.map_coeff, HahnSeries.embDomain_notin_range hb,
-      HahnSeries.embDomain_notin_range hb, map_zero]
+  · rw [HahnSeries.map_coeff, HahnSeries.embDomain_of_notMem_range hb,
+      HahnSeries.embDomain_of_notMem_range hb, map_zero]
 
 section Puiseux
 
