@@ -167,28 +167,108 @@ variable [Nontrivial R] [hfact : Fact (AzPolynomial.toPoly f).Monic]
 private theorem monic_f : (AzPolynomial.toPoly f).Monic := hfact.out
 private theorem ne_zero_f : AzPolynomial.toPoly f ≠ 0 := hfact.out.ne_zero
 
-/-- **`AzPolyMod f` is a commutative ring** for monic `f`: the ring structure is pulled back
-from `AdjoinRoot (toPoly f)` through the injective, operation-preserving `toAdjoin`. -/
-noncomputable instance instCommRing : CommRing (AzPolyMod f) :=
-  Function.Injective.commRing (toAdjoin (f := f))
-    (toAdjoin_injective (monic_f) (ne_zero_f))
-    (toAdjoin_zero)
-    (toAdjoin_one (monic_f) (ne_zero_f))
-    (toAdjoin_add (monic_f) (ne_zero_f))
-    (toAdjoin_mul (monic_f) (ne_zero_f))
-    (toAdjoin_neg (monic_f) (ne_zero_f))
-    (toAdjoin_sub (monic_f) (ne_zero_f))
-    (fun n a => by
-      show toAdjoin ((n : AzPolyMod f) * a) = n • toAdjoin a
-      rw [toAdjoin_mul (monic_f) (ne_zero_f), toAdjoin_natCast (monic_f) (ne_zero_f), nsmul_eq_mul])
-    (fun n a => by
-      show toAdjoin ((n : AzPolyMod f) * a) = n • toAdjoin a
-      rw [toAdjoin_mul (monic_f) (ne_zero_f), toAdjoin_intCast (monic_f) (ne_zero_f), zsmul_eq_mul])
-    (fun a n => by
-      show toAdjoin (a.pow n) = toAdjoin a ^ n
-      rw [toAdjoin_pow (monic_f) (ne_zero_f)])
-    (toAdjoin_natCast (monic_f) (ne_zero_f))
-    (toAdjoin_intCast (monic_f) (ne_zero_f))
+private theorem inj' : Function.Injective (toAdjoin (f := f)) :=
+  toAdjoin_injective (monic_f) (ne_zero_f)
+
+/-- **`AzPolyMod f` is a commutative ring** for monic `f`: every law is proven by
+transporting through the injective, operation-preserving `toAdjoin` (the `AzZMod`
+pattern), so the DATA is the computable Phase-1 operations and the instance
+COMPUTES. -/
+instance instCommRing : CommRing (AzPolyMod f) where
+  add_assoc a b c := inj' (by
+    simp only [toAdjoin_add (monic_f) (ne_zero_f)]; ring)
+  zero_add a := inj' (by
+    simp only [toAdjoin_add (monic_f) (ne_zero_f), toAdjoin_zero]; ring)
+  add_zero a := inj' (by
+    simp only [toAdjoin_add (monic_f) (ne_zero_f), toAdjoin_zero]; ring)
+  add_comm a b := inj' (by
+    simp only [toAdjoin_add (monic_f) (ne_zero_f)]; ring)
+  mul_assoc a b c := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f)]; ring)
+  one_mul a := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_one (monic_f) (ne_zero_f)]; ring)
+  mul_one a := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_one (monic_f) (ne_zero_f)]; ring)
+  left_distrib a b c := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f)]; ring)
+  right_distrib a b c := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f)]; ring)
+  zero_mul a := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f), toAdjoin_zero]; ring)
+  mul_zero a := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f), toAdjoin_zero]; ring)
+  mul_comm a b := inj' (by
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f)]; ring)
+  neg_add_cancel a := inj' (by
+    simp only [toAdjoin_add (monic_f) (ne_zero_f),
+      toAdjoin_neg (monic_f) (ne_zero_f), toAdjoin_zero]; ring)
+  sub_eq_add_neg a b := inj' (by
+    simp only [toAdjoin_sub (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f),
+      toAdjoin_neg (monic_f) (ne_zero_f)]; ring)
+  natCast_zero := inj' (by
+    simp only [toAdjoin_natCast (monic_f) (ne_zero_f), toAdjoin_zero,
+      Nat.cast_zero])
+  natCast_succ n := inj' (by
+    simp only [toAdjoin_natCast (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f),
+      toAdjoin_one (monic_f) (ne_zero_f), Nat.cast_succ])
+  intCast_ofNat n := inj' (by
+    simp only [toAdjoin_intCast (monic_f) (ne_zero_f),
+      toAdjoin_natCast (monic_f) (ne_zero_f), Int.cast_natCast])
+  intCast_negSucc n := inj' (by
+    simp only [toAdjoin_intCast (monic_f) (ne_zero_f),
+      toAdjoin_neg (monic_f) (ne_zero_f),
+      toAdjoin_natCast (monic_f) (ne_zero_f), Int.cast_negSucc])
+  nsmul k a := (k : AzPolyMod f) * a
+  nsmul_zero a := inj' (by
+    show toAdjoin (((0 : ℕ) : AzPolyMod f) * a) = toAdjoin 0
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_natCast (monic_f) (ne_zero_f), toAdjoin_zero,
+      Nat.cast_zero, zero_mul])
+  nsmul_succ k a := inj' (by
+    show toAdjoin (((k + 1 : ℕ) : AzPolyMod f) * a)
+      = toAdjoin (((k : ℕ) : AzPolyMod f) * a + a)
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f),
+      toAdjoin_natCast (monic_f) (ne_zero_f), Nat.cast_succ]
+    ring)
+  zsmul i a := (i : AzPolyMod f) * a
+  zsmul_zero' a := inj' (by
+    show toAdjoin (((0 : ℤ) : AzPolyMod f) * a) = toAdjoin 0
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_intCast (monic_f) (ne_zero_f), toAdjoin_zero,
+      Int.cast_zero, zero_mul])
+  zsmul_succ' k a := inj' (by
+    show toAdjoin ((((k + 1 : ℕ) : ℤ) : AzPolyMod f) * a)
+      = toAdjoin ((((k : ℕ) : ℤ) : AzPolyMod f) * a + a)
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_add (monic_f) (ne_zero_f),
+      toAdjoin_intCast (monic_f) (ne_zero_f)]
+    push_cast
+    ring)
+  zsmul_neg' k a := inj' (by
+    show toAdjoin (((Int.negSucc k) : AzPolyMod f) * a)
+      = toAdjoin (-((((k + 1 : ℕ) : ℤ) : AzPolyMod f) * a))
+    simp only [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_neg (monic_f) (ne_zero_f),
+      toAdjoin_intCast (monic_f) (ne_zero_f), Int.cast_negSucc]
+    push_cast
+    ring)
+  npow k a := a.pow k
+  npow_zero a := inj' (by
+    show toAdjoin (a.pow 0) = toAdjoin 1
+    rw [toAdjoin_pow (monic_f) (ne_zero_f), pow_zero,
+      toAdjoin_one (monic_f) (ne_zero_f)])
+  npow_succ k a := inj' (by
+    show toAdjoin (a.pow (k + 1)) = toAdjoin (a.pow k * a)
+    rw [toAdjoin_mul (monic_f) (ne_zero_f),
+      toAdjoin_pow (monic_f) (ne_zero_f),
+      toAdjoin_pow (monic_f) (ne_zero_f), pow_succ])
 
 /-- `toAdjoin` bundled as a **ring homomorphism** `AzPolyMod f →+* AdjoinRoot (toPoly f)`. -/
 noncomputable def toAdjoinRingHom : AzPolyMod f →+* AdjoinRoot (AzPolynomial.toPoly f) where
