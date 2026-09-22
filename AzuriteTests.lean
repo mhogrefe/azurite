@@ -10,5 +10,6 @@ import Azurite.AzNat.Tests.IsMultipleOfPow2
 import Azurite.AzNat.Tests.ModPow2
 import Azurite.AzNat.Tests.OfLimbDigits
 import Azurite.AzNat.Tests.OfLimbDigitsPow2
+import Azurite.AzNat.Tests.RootInt
 import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.TrailingZeros
