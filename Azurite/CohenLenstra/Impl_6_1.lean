@@ -358,6 +358,44 @@ theorem findH_spec {R : Type _} [CommRing R] [DecidableEq R] {p k : ℕ}
     rw [hsum]
     exact negPattern_sum hp hk hz hlP
 
+/-- **(6.2) is sound, mapped form**: the coordinates `a : ℕ → R` may live in
+the coefficient ring while the sum is taken in `S` along `φ : R →+* S`. -/
+theorem findH_spec_map {R S : Type _} [CommRing R] [DecidableEq R] [CommRing S]
+    (φ : R →+* S) {p k : ℕ} (hp : p.Prime) (hk : 0 < k) {z : S}
+    (hz : eval₂ (Int.castRingHom S) z (cyclotomic (p ^ k) ℤ) = 0)
+    (a : ℕ → R) {h : ℕ} (hfind : findH p k a = some h) :
+    ∑ i ∈ range ((p - 1) * p ^ (k - 1)), φ (a i) * z ^ i = z ^ h := by
+  unfold findH at hfind
+  split at hfind
+  · rename_i l hl
+    obtain rfl : l = h := Option.some.inj hfind
+    have hprop0 := List.find?_some hl
+    have hprop := List.all_eq_true.mp hprop0
+    have hlm : l < (p - 1) * p ^ (k - 1) :=
+      List.mem_range.mp (List.mem_of_find?_eq_some hl)
+    have hsum : ∑ i ∈ range ((p - 1) * p ^ (k - 1)), φ (a i) * z ^ i
+        = ∑ i ∈ range ((p - 1) * p ^ (k - 1)),
+            (if i = l then (1 : S) else 0) * z ^ i :=
+      Finset.sum_congr rfl fun i hi => by
+        rw [of_decide_eq_true (hprop i (List.mem_range.mpr (mem_range.mp hi)))]
+        split_ifs <;> simp
+    rw [hsum]
+    exact unitVec_sum z hlm
+  · rw [Option.map_eq_some_iff] at hfind
+    obtain ⟨l, hl, rfl⟩ := hfind
+    have hprop0 := List.find?_some hl
+    have hprop := List.all_eq_true.mp hprop0
+    have hlP : l < p ^ (k - 1) :=
+      List.mem_range.mp (List.mem_of_find?_eq_some hl)
+    have hsum : ∑ i ∈ range ((p - 1) * p ^ (k - 1)), φ (a i) * z ^ i
+        = ∑ i ∈ range ((p - 1) * p ^ (k - 1)),
+            (if i % p ^ (k - 1) = l then (-1 : S) else 0) * z ^ i :=
+      Finset.sum_congr rfl fun i hi => by
+        rw [of_decide_eq_true (hprop i (List.mem_range.mpr (mem_range.mp hi)))]
+        split_ifs <;> simp
+    rw [hsum]
+    exact negPattern_sum hp hk hz hlP
+
 -- `p^k = 4`, `m = 2`: `(−1, 0)` is `ζ² = −1`, so `h = 2` (the paper's `h = l` would give `0`);
 -- `(0, 1)` is `ζ`; `(1, 1)` is no power of `ζ`.
 #guard findH (R := ℤ) 2 2 (fun i => if i = 0 then -1 else 0) = some 2

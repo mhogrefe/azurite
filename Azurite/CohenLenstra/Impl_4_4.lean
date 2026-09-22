@@ -148,16 +148,14 @@ theorem beta_two_zero_of_cyclotomic {n l : ℕ} (hodd : n % 2 = 1)
     exact Nat.odd_iff.mpr hodd
   exact beta_zero_of_cyclotomic Nat.prime_two hl hdvd hx1 hunit
 
-/-- **The (c2) verdict**: for prime `n` and `((u² + 4a)/n) = −1`,
+/-- **The (c2) verdict**: for prime `n` and a nonsquare discriminant,
 `α^(n+1) = N(α) = −a` in `A`; so (at `a = 1`) `α^(n+1) ≠ −1`
 proves `n` composite. -/
-theorem root_pow_card_succ_eq_neg {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) :
-    (AdjoinRoot.root (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-        : Polynomial (ZMod n))) ^ (n + 1)
-      = - algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n))
-          (a : ZMod n) := by
-  have h := pow_card_succ_eq_quadNorm hn hJ 0 1
+theorem root_pow_card_succ_eq_neg {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) :
+    (AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ (n + 1)
+      = - algebraMap (ZMod n) (QuadRing (ZMod n) u a) a := by
+  have h := pow_card_succ_eq_quadNorm hn hns 0 1
   rw [map_zero, map_one, zero_add, one_mul] at h
   rw [h, quadNorm, ← map_neg]
   congr 1

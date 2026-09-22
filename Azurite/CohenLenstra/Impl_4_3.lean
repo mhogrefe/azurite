@@ -20,8 +20,10 @@
 
   The `n + 1` analogue of Fermat, proved here
   (`pow_card_succ_eq_quadNorm` / `quadNorm_one_pow_eq_one`): for
-  *prime* `n` and Jacobi symbol `((u² + 4a)/n) = −1`, the
-  discriminant is a nonsquare mod `n`, so `T² − uT − a` is
+  *prime* `n` and a nonsquare discriminant `u² + 4a` (which the
+  Jacobi symbol `((u² + 4a)/n) = −1` guarantees, `not_isSquare_disc`;
+  the lemmas take `u, a ∈ ℤ/nℤ` so the computable rail applies them
+  directly), `T² − uT − a` is irreducible `T² − uT − a` is
   irreducible (`quad_irreducible`) and `A = 𝔽_(n²)`; the Frobenius
   sends `α` to the other root `u − α` (`root_pow_card_eq_conj` —
   the `a = 1` argument of `xi_pow_eq_neg_one_of_prime`, which this
@@ -81,32 +83,37 @@ theorem mul_conj_eq_quadNorm {R : Type _} [CommRing R] (u a x₀ x₁ : R) :
   simp only [map_sub, map_add, map_mul, map_pow]
   linear_combination (-(algebraMap R (QuadRing R u a) x₁) ^ 2) * hrel
 
-/-- **Irreducibility of `T² − uT − a` over `𝔽_n`** from the Jacobi
-symbol `((u² + 4a)/n) = −1`: the discriminant is a nonsquare, so
-there is no root, and a rootless quadratic is irreducible. -/
-theorem quad_irreducible {n : ℕ} (hn : n.Prime) {u a : ℤ}
+/-- **The Jacobi-symbol form of the hypothesis**: `((u² + 4a)/n) = −1`
+for prime `n` makes the discriminant a nonsquare mod `n`. -/
+theorem not_isSquare_disc {n : ℕ} (hn : n.Prime) {u a : ℤ}
     (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) :
-    Irreducible (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-      : Polynomial (ZMod n)) := by
+    ¬ IsSquare ((u : ZMod n) ^ 2 + 4 * (a : ZMod n)) := by
   haveI : Fact n.Prime := ⟨hn⟩
-  set u' : ZMod n := ((u : ℤ) : ZMod n) with hu'
-  set a' : ZMod n := ((a : ℤ) : ZMod n) with ha'
-  set f : Polynomial (ZMod n) := X ^ 2 - C u' * X - C a' with hf
-  have hns : ¬ IsSquare (u' ^ 2 + 4 * a' : ZMod n) := by
-    have hleg : legendreSym n (u ^ 2 + 4 * a) = -1 := by
-      rw [jacobiSym.legendreSym.to_jacobiSym]
-      exact hJ
-    have hnsq := (legendreSym.eq_neg_one_iff (p := n)).mp hleg
-    have hcast : (((u ^ 2 + 4 * a : ℤ)) : ZMod n) = u' ^ 2 + 4 * a' := by
-      push_cast
-      rfl
-    rwa [hcast] at hnsq
-  have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u' * c - a' = 0) := by
+  have hleg : legendreSym n (u ^ 2 + 4 * a) = -1 := by
+    rw [jacobiSym.legendreSym.to_jacobiSym]
+    exact hJ
+  have hnsq := (legendreSym.eq_neg_one_iff (p := n)).mp hleg
+  have hcast : (((u ^ 2 + 4 * a : ℤ)) : ZMod n)
+      = (u : ZMod n) ^ 2 + 4 * (a : ZMod n) := by
+    push_cast
+    rfl
+  rwa [hcast] at hnsq
+
+/-- **Irreducibility of `T² − uT − a` over `𝔽_n`** for a nonsquare
+discriminant `u² + 4a` (the Jacobi-symbol form `((u² + 4a)/n) = −1`
+gives this via `not_isSquare_disc`): there is no root, and a rootless
+quadratic is irreducible. -/
+theorem quad_irreducible {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) :
+    Irreducible (X ^ 2 - C u * X - C a : Polynomial (ZMod n)) := by
+  haveI : Fact n.Prime := ⟨hn⟩
+  set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
+  have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u * c - a = 0) := by
     intro c hc
     apply hns
-    refine ⟨2 * c - u', ?_⟩
+    refine ⟨2 * c - u, ?_⟩
     linear_combination (-4 : ZMod n) * hc
-  have hfrw : f = X ^ 2 - (C u' * X + C a') := by
+  have hfrw : f = X ^ 2 - (C u * X + C a) := by
     rw [hf]
     ring
   have hfmonic : f.Monic := by
@@ -130,46 +137,31 @@ theorem quad_irreducible {n : ℕ} (hn : n.Prime) {u a : ℤ}
     (by omega) (by omega)).mpr hroots0
 
 /-- **The Frobenius swaps the roots**: for prime `n` and
-`((u² + 4a)/n) = −1`, `α^n = u − α` in `A = 𝔽_(n²)`.  (The `a = 1`
+a nonsquare discriminant, `α^n = u − α` in `A = 𝔽_(n²)`.  (The `a = 1`
 case is the engine of `xi_pow_eq_neg_one_of_prime`.) -/
-theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) :
-    (AdjoinRoot.root (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-        : Polynomial (ZMod n))) ^ n
-      = algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n))
-          (u : ZMod n)
-        - AdjoinRoot.root (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-        : Polynomial (ZMod n)) := by
+theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) :
+    (AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ n
+      = algebraMap (ZMod n) (QuadRing (ZMod n) u a) u
+        - AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n)) := by
   haveI : Fact n.Prime := ⟨hn⟩
   have hn1 : 1 < n := hn.one_lt
-  set u' : ZMod n := ((u : ℤ) : ZMod n) with hu'
-  set a' : ZMod n := ((a : ℤ) : ZMod n) with ha'
-  set f : Polynomial (ZMod n) := X ^ 2 - C u' * X - C a' with hf
-  have hirr : Irreducible f := quad_irreducible hn hJ
+  set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
+  have hirr : Irreducible f := quad_irreducible hn hns
   haveI : Fact (Irreducible f) := ⟨hirr⟩
   haveI : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
-  -- the discriminant is a nonsquare, so `f` has no root in `𝔽_n`
-  have hns : ¬ IsSquare (u' ^ 2 + 4 * a' : ZMod n) := by
-    have hleg : legendreSym n (u ^ 2 + 4 * a) = -1 := by
-      rw [jacobiSym.legendreSym.to_jacobiSym]
-      exact hJ
-    have hnsq := (legendreSym.eq_neg_one_iff (p := n)).mp hleg
-    have hcast : (((u ^ 2 + 4 * a : ℤ)) : ZMod n) = u' ^ 2 + 4 * a' := by
-      push_cast
-      rfl
-    rwa [hcast] at hnsq
-  have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u' * c - a' = 0) := by
+  have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u * c - a = 0) := by
     intro c hc
     apply hns
-    refine ⟨2 * c - u', ?_⟩
+    refine ⟨2 * c - u, ?_⟩
     linear_combination (-4 : ZMod n) * hc
   set ξ : AdjoinRoot f := AdjoinRoot.root f with hξ
-  set uK : AdjoinRoot f := algebraMap (ZMod n) (AdjoinRoot f) u' with huK
-  set aK : AdjoinRoot f := algebraMap (ZMod n) (AdjoinRoot f) a' with haK
+  set uK : AdjoinRoot f := algebraMap (ZMod n) (AdjoinRoot f) u with huK
+  set aK : AdjoinRoot f := algebraMap (ZMod n) (AdjoinRoot f) a with haK
   have hzero : ξ ^ 2 - uK * ξ - aK = 0 := by
-    have h := quadRing_root_sq u' a'
+    have h := quadRing_root_sq u a
     rw [← hξ, ← huK, ← haK] at h
     linear_combination h
   have hfrobfix : ∀ c : ZMod n,
@@ -182,8 +174,8 @@ theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ℤ}
     rw [map_zero, map_sub, map_sub, map_mul] at hφ
     simp only [frobenius_def] at hφ
     rw [← pow_mul, mul_comm 2 n, pow_mul] at hφ
-    have hUK : uK ^ n = uK := hfrobfix u'
-    have hAK : aK ^ n = aK := hfrobfix a'
+    have hUK : uK ^ n = uK := hfrobfix u
+    have hAK : aK ^ n = aK := hfrobfix a
     rwa [hUK, hAK] at hφ
   have hswap : ξ ^ n = ξ ∨ ξ ^ n = uK - ξ := by
     have hfact : (ξ ^ n - ξ) * (ξ ^ n - (uK - ξ)) = 0 := by
@@ -211,7 +203,7 @@ theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ℤ}
       obtain ⟨c, _, hc⟩ := Finset.mem_image.mp hmem
       apply hnoroot c
       have h1 : algebraMap (ZMod n) (AdjoinRoot f)
-          (c ^ 2 - u' * c - a') = 0 := by
+          (c ^ 2 - u * c - a) = 0 := by
         rw [map_sub, map_sub, map_pow, map_mul, hc, ← huK, ← haK]
         linear_combination hzero
       exact hinj (h1.trans (map_zero _).symm)
@@ -243,28 +235,24 @@ theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ℤ}
   exact hswap.resolve_left hnotfix
 
 /-- **The `n + 1` Fermat analogue of Test (4.3)**: for prime `n`
-and `((u² + 4a)/n) = −1`, every `x = x₀ + x₁α ∈ A` satisfies
+and a nonsquare discriminant, every `x = x₀ + x₁α ∈ A` satisfies
 `x^(n+1) = N(x)` — Frobenius gives `x^n = x̄`, and `x·x̄ = N(x)`. -/
-theorem pow_card_succ_eq_quadNorm {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) (x₀ x₁ : ZMod n) :
-    (algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n)) x₀
-        + algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n)) x₁
-          * AdjoinRoot.root (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-            : Polynomial (ZMod n))) ^ (n + 1)
-      = algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n))
-          (quadNorm (u : ZMod n) (a : ZMod n) x₀ x₁) := by
+theorem pow_card_succ_eq_quadNorm {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) (x₀ x₁ : ZMod n) :
+    (algebraMap (ZMod n) (QuadRing (ZMod n) u a) x₀
+        + algebraMap (ZMod n) (QuadRing (ZMod n) u a) x₁
+          * AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ (n + 1)
+      = algebraMap (ZMod n) (QuadRing (ZMod n) u a) (quadNorm u a x₀ x₁) := by
   haveI : Fact n.Prime := ⟨hn⟩
-  set u' : ZMod n := ((u : ℤ) : ZMod n) with hu'
-  set a' : ZMod n := ((a : ℤ) : ZMod n) with ha'
-  set f : Polynomial (ZMod n) := X ^ 2 - C u' * X - C a' with hf
-  have hirr : Irreducible f := quad_irreducible hn hJ
+  set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
+  have hirr : Irreducible f := quad_irreducible hn hns
   haveI : Fact (Irreducible f) := ⟨hirr⟩
   haveI : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
   set ξ : AdjoinRoot f := AdjoinRoot.root f with hξ
-  have hconj : ξ ^ n = algebraMap (ZMod n) (AdjoinRoot f) u' - ξ :=
-    root_pow_card_eq_conj hn hJ
+  have hconj : ξ ^ n = algebraMap (ZMod n) (AdjoinRoot f) u - ξ :=
+    root_pow_card_eq_conj hn hns
   have hfrobfix : ∀ c : ZMod n,
       (algebraMap (ZMod n) (AdjoinRoot f) c) ^ n
         = algebraMap (ZMod n) (AdjoinRoot f) c := by
@@ -274,23 +262,23 @@ theorem pow_card_succ_eq_quadNorm {n : ℕ} (hn : n.Prime) {u a : ℤ}
       + algebraMap (ZMod n) (AdjoinRoot f) x₁ * ξ) ^ n
       = algebraMap (ZMod n) (AdjoinRoot f) x₀
         + algebraMap (ZMod n) (AdjoinRoot f) x₁
-          * (algebraMap (ZMod n) (AdjoinRoot f) u' - ξ) := by
+          * (algebraMap (ZMod n) (AdjoinRoot f) u - ξ) := by
     rw [add_pow_char, mul_pow, hfrobfix, hfrobfix, hconj]
   rw [pow_succ, hxn, mul_comm]
-  exact mul_conj_eq_quadNorm u' a' x₀ x₁
+  exact mul_conj_eq_quadNorm u a x₀ x₁
 
 /-- **The (4.3) composite verdict**: for prime `n` and
-`((u² + 4a)/n) = −1`, a norm-one `x ∈ A` has `x^(n+1) = 1`.
+a nonsquare discriminant, a norm-one `x ∈ A` has `x^(n+1) = 1`.
 Contrapositive: a norm-one `x` with `x^(n+1) ≠ 1` proves `n`
 composite. -/
-theorem quadNorm_one_pow_eq_one {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) {x₀ x₁ : ZMod n}
-    (hN : quadNorm (u : ZMod n) (a : ZMod n) x₀ x₁ = 1) :
-    (algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n)) x₀
-        + algebraMap (ZMod n) (QuadRing (ZMod n) (u : ZMod n) (a : ZMod n)) x₁
-          * AdjoinRoot.root (X ^ 2 - C ((u : ZMod n)) * X - C ((a : ZMod n))
-            : Polynomial (ZMod n))) ^ (n + 1) = 1 := by
-  rw [pow_card_succ_eq_quadNorm hn hJ, hN, map_one]
+theorem quadNorm_one_pow_eq_one {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) {x₀ x₁ : ZMod n}
+    (hN : quadNorm u a x₀ x₁ = 1) :
+    (algebraMap (ZMod n) (QuadRing (ZMod n) u a) x₀
+        + algebraMap (ZMod n) (QuadRing (ZMod n) u a) x₁
+          * AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ (n + 1)
+      = 1 := by
+  rw [pow_card_succ_eq_quadNorm hn hns, hN, map_one]
 
 end CL
 

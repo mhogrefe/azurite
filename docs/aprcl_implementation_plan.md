@@ -202,3 +202,43 @@ Compose the stage theorems through B2 and `step5_prime_sqrt` into `aprclTest_tru
 
 Recommended start: **A1** (this week's question), then A3 and A2 in parallel, then
 C2 to get a shippable two-sided test early while B proceeds.
+
+---
+
+## Status log
+
+* **2026-09-22** — A1 (`AzPolyMod/Cyclotomic`, `Equiv/Cyclotomic`), A2 (`AzZMod/Quad`,
+  `Equiv/Quad`), A3 (`AzNat/JacobiSym`, `Equiv/JacobiSym`), A4
+  (`CohenLenstra/Tables`) done, all axiom-clean and blueprinted.  The (4.3)/(4.4)/(4.10)
+  verdict lemmas now take `u a : ZMod n` with a nonsquare-discriminant hypothesis
+  (`not_isSquare_disc` recovers the Jacobi-symbol form).  A5 (AzNat ports of the
+  §2/§5 helpers) pending.
+* **Design fork for B1/C2 (open)**: the Lucas–Lehmer confinement with coherent exponents
+  is *already proven* in Lucas-sequence form as C&P Theorem 4.2.10
+  (`theorem_4_2_10`: every prime `r ∣ n` is `≡ 1` or `≡ n` mod `lcm F₁ F₂`), with the
+  `n+1` side phrased through `lucasU`.  Test (4.3)'s norm-one powers are Lucas
+  `V`/`U`-sequences with `Q = 1` (`x^k + x̄^k = V_k(tr x, 1)`), so either (i) bridge
+  `QuadT` powers to `lucasU`/`lucasV` and reuse 4.2.10, or (ii) prove the ring-level
+  confinement in `A ⊗ ℤ/r` directly as planned.  Decide before starting B1.
+* **2026-09-22 (decisions)** — keep the generic `AzPolyMod` ring through Phase C; the
+  Phase D list is: dedicated `Φ_{p^k}` reduction (the current `modByMonic` doubles every
+  ring multiplication), lazy coefficient reduction + Montgomery in `AzZMod`, array-accumulated
+  `jacobiSumT`, small-constant multiplications in `QuadT`, prime-only trial division with the
+  (2.1) single reduction.  **Fork resolved: option (ii), ring-level.**  Test (4.3)'s
+  condition (a *unit coordinate* of `x^{(n+1)/p} − 1`) is not the Lucas condition
+  `gcd(U_{(n+1)/p}, n) = 1` (the constant coordinate can be a unit while `U` is not), so the
+  4.2.10 bridge would change the test; instead prove the confinement in
+  `A_r = (ℤ/r)[T]/(T² − uT − a)`: inert ⟹ `x^{r+1} = N(x)` (have it), split with distinct
+  roots ⟹ `x^{r−1} = 1` via the two evaluation maps, ramified ⟹ `x^{2r} = 1` via
+  `ε² = 0` and `add_pow_char`; the splitting type is the coherent `ε(r)`.
+* **2026-09-22 (B1 base level done)** — `CohenLenstra/Impl_5_3.lean`: `normOne_pow_cases`
+  (inert/split/ramified structure of `A_r`), `test_4_3_confinement` (odd `p`: `r ≡ n^{ε(r)}
+  mod p^v`, `ε(r)` = inertness of `Δ` mod `r`), `c1_two_adic`/`c2_two_adic` (the 2-adic
+  parity is the same `ε(r)`).  Next in B: the parity-forcing lemma for lifted exponents,
+  (10.7) lifting to all levels, then B2 (generalized Theorem (6.3)).
+* **2026-09-22 (B2 done)** — `CohenLenstra/Theorem_6_3_LL.lean`: `theorem_6_3_LL`, the
+  generalized (6.3) for `s = s₁·s₂` with the LL base congruence + parity at `s₁`-primes and
+  characters at `s₂`-primes.  Remaining in B: B3 (feed the per-(p,q) Jacobi checks and the
+  (6.4) sources — flags, LL via (10.7) lifting, (i3)/(j)(k) — into `theorem_6_3_LL`'s
+  hypotheses; completeness halves).
+

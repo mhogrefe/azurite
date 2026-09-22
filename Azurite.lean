@@ -268,6 +268,7 @@ import Azurite.AzNat.Equiv.InvMod
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.IsSquare
+import Azurite.AzNat.Equiv.JacobiSym
 import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
@@ -319,6 +320,7 @@ import Azurite.AzNat.InvMod
 import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.IsPrime
 import Azurite.AzNat.IsSquare
+import Azurite.AzNat.JacobiSym
 import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
@@ -367,7 +369,9 @@ import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
 import Azurite.AzPolyMod.Basic
+import Azurite.AzPolyMod.Cyclotomic
 import Azurite.AzPolyMod.Equiv.AdjoinRoot
+import Azurite.AzPolyMod.Equiv.Cyclotomic
 import Azurite.AzPolyMod.Equiv.GaussSumT
 import Azurite.AzPolyMod.Equiv.GaussTower
 import Azurite.AzPolyMod.Equiv.TowerContent
@@ -582,6 +586,7 @@ import Azurite.AzZMod.Equiv.Field
 import Azurite.AzZMod.Equiv.Inv
 import Azurite.AzZMod.Equiv.Parse
 import Azurite.AzZMod.Equiv.Pow
+import Azurite.AzZMod.Equiv.Quad
 import Azurite.AzZMod.Equiv.RingEquiv
 import Azurite.AzZMod.Field
 import Azurite.AzZMod.Fintype
@@ -591,6 +596,7 @@ import Azurite.AzZMod.Order
 import Azurite.AzZMod.ParsableElement
 import Azurite.AzZMod.Parse
 import Azurite.AzZMod.Pow
+import Azurite.AzZMod.Quad
 import Azurite.AzZMod.ToString
 import Azurite.AzZModPow2.Basic
 import Azurite.AzZModPow2.Conversion
@@ -1207,6 +1213,7 @@ import Azurite.CohenLenstra.Impl_4_5
 import Azurite.CohenLenstra.Impl_4_9
 import Azurite.CohenLenstra.Impl_5_1
 import Azurite.CohenLenstra.Impl_5_2
+import Azurite.CohenLenstra.Impl_5_3
 import Azurite.CohenLenstra.Impl_5_6
 import Azurite.CohenLenstra.Impl_6
 import Azurite.CohenLenstra.Impl_6_1
@@ -1224,7 +1231,9 @@ import Azurite.CohenLenstra.Proposition_10_7
 import Azurite.CohenLenstra.Proposition_4_1
 import Azurite.CohenLenstra.Proposition_7_18
 import Azurite.CohenLenstra.Remark_11_4
+import Azurite.CohenLenstra.Tables
 import Azurite.CohenLenstra.Theorem_6_3
+import Azurite.CohenLenstra.Theorem_6_3_LL
 import Azurite.CohenLenstra.Theorem_7_8
 import Azurite.CohenLenstra.Theorem_8_5
 import Azurite.CohenLenstra.Theorem_9_1

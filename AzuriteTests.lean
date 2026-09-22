@@ -7,6 +7,7 @@ import Azurite.AzNat.Tests.Div
 import Azurite.AzNat.Tests.DivRound
 import Azurite.AzNat.Tests.GetBits
 import Azurite.AzNat.Tests.IsMultipleOfPow2
+import Azurite.AzNat.Tests.JacobiSym
 import Azurite.AzNat.Tests.ModPow2
 import Azurite.AzNat.Tests.OfLimbDigits
 import Azurite.AzNat.Tests.OfLimbDigitsPow2

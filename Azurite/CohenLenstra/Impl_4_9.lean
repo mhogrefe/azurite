@@ -172,35 +172,61 @@ theorem quadNorm_norm_one_candidate {R : Type _} [CommRing R]
   simp only [quadNorm]
   linear_combination (d * (m * (m + u) - a) + 1) * hd
 
-/-- The discriminant `u² + 4a` is a nonsquare mod prime `n` when
-`((u² + 4a)/n) = −1`. -/
-theorem not_isSquare_disc {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) :
-    ¬ IsSquare ((u : ZMod n) ^ 2 + 4 * (a : ZMod n)) := by
-  haveI : Fact n.Prime := ⟨hn⟩
-  have hleg : legendreSym n (u ^ 2 + 4 * a) = -1 := by
-    rw [jacobiSym.legendreSym.to_jacobiSym]
-    exact hJ
-  have hnsq := (legendreSym.eq_neg_one_iff (p := n)).mp hleg
-  have hcast : (((u ^ 2 + 4 * a : ℤ)) : ZMod n)
-      = (u : ZMod n) ^ 2 + 4 * (a : ZMod n) := by
-    push_cast
-    rfl
-  rwa [hcast] at hnsq
-
-/-- **(4.10), "unless `n` is composite"**: for prime `n` with
-`((u² + 4a)/n) = −1`, the denominator `m(m + u) − a` is a unit of
+/-- **(4.10), "unless `n` is composite"**: for prime `n` with a
+nonsquare discriminant, the denominator `m(m + u) − a` is a unit of
 `ℤ/nℤ` for every `m` — it vanishes only if `u² + 4a = (2m + u)²`
 were a square.  Contrapositive: a non-unit denominator convicts `n`. -/
-theorem norm_one_denominator_isUnit {n : ℕ} (hn : n.Prime) {u a : ℤ}
-    (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) (m : ZMod n) :
-    IsUnit (m * (m + (u : ZMod n)) - (a : ZMod n)) := by
+theorem norm_one_denominator_isUnit {n : ℕ} (hn : n.Prime) {u a : ZMod n}
+    (hns : ¬ IsSquare (u ^ 2 + 4 * a)) (m : ZMod n) :
+    IsUnit (m * (m + u) - a) := by
   haveI : Fact n.Prime := ⟨hn⟩
   rw [isUnit_iff_ne_zero]
   intro h0
-  apply not_isSquare_disc hn hJ
-  refine ⟨2 * m + (u : ZMod n), ?_⟩
+  apply hns
+  refine ⟨2 * m + u, ?_⟩
   linear_combination (-4 : ZMod n) * h0
+
+/-- **Injectivity of the coordinate representation** `x₀ + x₁α` in
+`R[T]/(T² − uT − a)`: the power basis `1, α` of a monic quadratic. -/
+theorem quadElt_injective {R : Type _} [CommRing R] [Nontrivial R] (u a : R)
+    {x₀ x₁ y₀ y₁ : R} (h : quadElt u a x₀ x₁ = quadElt u a y₀ y₁) :
+    x₀ = y₀ ∧ x₁ = y₁ := by
+  have hmk : ∀ c d : R, quadElt u a c d
+      = AdjoinRoot.mk (X ^ 2 - C u * X - C a) (C c + C d * X) := by
+    intro c d
+    rw [quadElt, map_add, map_mul, AdjoinRoot.mk_C, AdjoinRoot.mk_C, AdjoinRoot.mk_X]
+    rfl
+  rw [hmk, hmk, AdjoinRoot.mk_eq_mk] at h
+  have hfrw : (X ^ 2 - C u * X - C a : R[X]) = X ^ 2 - (C u * X + C a) := by ring
+  have hfmonic : (X ^ 2 - C u * X - C a : R[X]).Monic := by
+    rw [hfrw]
+    exact monic_X_pow_sub (lt_of_le_of_lt degree_linear_le
+      (by exact_mod_cast (by norm_num : (1 : ℕ) < 2)))
+  have hfdeg : (X ^ 2 - C u * X - C a : R[X]).natDegree = 2 := by
+    rw [hfrw, natDegree_sub_eq_left_of_natDegree_lt, natDegree_X_pow]
+    rw [natDegree_X_pow]
+    exact lt_of_le_of_lt natDegree_linear_le (by norm_num)
+  have hg : (C x₀ + C x₁ * X - (C y₀ + C y₁ * X) : R[X])
+      = C (x₁ - y₁) * X + C (x₀ - y₀) := by
+    simp only [C_sub]
+    ring
+  rw [hg] at h
+  by_cases hg0 : (C (x₁ - y₁) * X + C (x₀ - y₀) : R[X]) = 0
+  · have h0 := congrArg (fun q : R[X] => q.coeff 0) hg0
+    have h1 := congrArg (fun q : R[X] => q.coeff 1) hg0
+    simp only [coeff_add, coeff_C_mul, coeff_X_zero, coeff_X_one, mul_zero, mul_one,
+      coeff_C_zero, coeff_C_succ, zero_add, add_zero, coeff_zero] at h0 h1
+    exact ⟨sub_eq_zero.mp h0, sub_eq_zero.mp h1⟩
+  · exfalso
+    obtain ⟨c, hc⟩ := h
+    have hc0 : c ≠ 0 := by
+      rintro rfl
+      rw [mul_zero] at hc
+      exact hg0 hc
+    have hdeg := congrArg natDegree hc
+    rw [hfmonic.natDegree_mul' hc0, hfdeg] at hdeg
+    have hle : (C (x₁ - y₁) * X + C (x₀ - y₀) : R[X]).natDegree ≤ 1 := natDegree_linear_le
+    omega
 
 end CL
 
