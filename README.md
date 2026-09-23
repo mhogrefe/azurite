@@ -20,9 +20,10 @@ GMP, and Mathlib's polynomials, matrices and residue rings are noncomputable
 abstractions built over them.  The `Az*` types replace both: their limbs are
 `UInt64` arrays, every operation is written in Lean, and each is proven to agree
 with the corresponding `Nat`, `Int`, `ℚ` or Mathlib value.  Large-number
-computation therefore never leaves verified Lean code, and the built-in and
-Mathlib types appear only in specifications and as the baseline the benchmarks
-compare against.
+computation therefore never leaves verified Lean code: `Nat` still appears where
+small numbers belong, such as array indices, sizes and exponents, but large
+values are always `AzNat`, and the Mathlib types appear only in specifications
+and as the baseline the benchmarks compare against.
 
 ## Highlights
 
@@ -103,6 +104,15 @@ Azurite is written using Claude. I have manually verified that the statements of
 ofPoly_mul (p q : Polynomial R) :
     AzPolynomial.ofPoly (p * q) = AzPolynomial.ofPoly p * AzPolynomial.ofPoly q
 ```
+
+## Project Status
+
+Azurite is in active development and is very incomplete. A several-hundred-page blueprint exists, but I'm not releasing it yet because it isn't polished. Some major goals of the project include
+- Formalizing the rest of Basu-Pollack-Roy
+- Computable algebraic numbers
+- A practical formally-verified CAD implementation
+- Formalized float and ball arithmetic
+- Proofs of results in polyhedral geometry like the classification of convex regular-faced polyhedra
 
 ## License
 
