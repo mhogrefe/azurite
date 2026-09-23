@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Algorithm 4.2.11 and Theorem 4.2.12 (Lenstra):
   divisors in residue classes.  Given `n, r, s` with `0 < r < s < n`
   and `gcd(r, s) = 1`, the algorithm finds ALL divisors of `n` that

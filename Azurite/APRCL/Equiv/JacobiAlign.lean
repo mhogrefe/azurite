@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **From the per-`(p, q)` character equations to the clauses of Theorem (6.3).**
 
   * The common-ring characters are transported into `ℂ` along the embedding

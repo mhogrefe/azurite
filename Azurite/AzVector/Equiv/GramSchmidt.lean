@@ -1,3 +1,12 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
 import Azurite.AzVector.GramSchmidt
 import Azurite.AzVector.Equiv.Dot
 import Azurite.AzVector.Equiv.Sub

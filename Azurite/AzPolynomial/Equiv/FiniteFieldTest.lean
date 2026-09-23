@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Soundness of the finite field primality test
   (`Azurite.AzPolynomial.finiteFieldTest`): pure verdict pass-through
   from the certificate checker — whichever attempt reaches a verdict,

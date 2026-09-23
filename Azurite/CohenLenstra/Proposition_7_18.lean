@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Cohen–Lenstra Proposition (7.18) and the finite (5.1) engine.**
 
   Proposition (7.18): if `p ≥ 3` and `n^(p−1) ≢ 1 (mod p²)`, then

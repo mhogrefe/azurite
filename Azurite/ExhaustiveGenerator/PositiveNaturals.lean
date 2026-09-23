@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `exhaustivePositiveNaturals` — the exhaustive generator producing all
   POSITIVE `AzNat`s in the order `1, 2, 3, …` (Malachite's
   `exhaustive_positive_naturals`).

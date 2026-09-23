@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Soundness of the Lucas–Lehmer stage** (`Azurite/APRCL/LucasLehmer.lean`):
   `llCheck n cert = some true` implies `n` prime and `llCheck n cert = some false`
   implies `n` composite.

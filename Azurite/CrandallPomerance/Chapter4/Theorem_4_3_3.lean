@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.3.3 (Lenstra): the finite-field
   divisor-confinement theorem — the engine of the finite field
   primality test.

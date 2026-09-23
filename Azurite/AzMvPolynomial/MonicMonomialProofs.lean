@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Round-trip proof: `parseWith F (toCharsWith F m) = some m`
   for `MonicMonomial n ord`, parameterized over a display type `F`
   with `[ParsableVar F n]`.

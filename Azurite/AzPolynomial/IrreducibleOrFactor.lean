@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Optimistic irreducibility test over `Z_m[x]`** — step 1 of the
   finite field primality test (C&P Algorithm 4.3.4, using the
   distinct-degree / Ben-Or criterion of C&P Algorithm 2.2.9).

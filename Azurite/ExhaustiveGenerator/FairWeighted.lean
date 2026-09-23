@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `FairWeighted` — WEIGHTED fair pair/triple/quadruple builders on the plain
   products (Malachite `exhaustive_pairs_custom_output` etc.: a `BitDistributor`
   with `normal(w)` output types).

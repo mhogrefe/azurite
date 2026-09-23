@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Algorithm 4.3.2 (finding a principal
   generator): the Euclidean algorithm in `Z_n[x]`, where the only
   obstruction is inverting a leading coefficient — and any failure to

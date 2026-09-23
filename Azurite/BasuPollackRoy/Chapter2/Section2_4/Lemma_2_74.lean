@@ -1,3 +1,12 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Corollary_2_73
 import Azurite.BasuPollackRoy.Chapter2.Section2_4.Exercise_2_13
 

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Correctness of the limb-level Algorithm 4.2.11**: the `AzNat`
   divisors-in-residue-classes list maps under `toNat` to the proven
   reference list `Azurite.CP.lenstraDivisors`

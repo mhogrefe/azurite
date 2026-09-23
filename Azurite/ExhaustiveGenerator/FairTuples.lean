@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `FairTuples` — FLAT fair triple and quadruple generators on the plain
   products `A × B × C` and `A × B × C × D` (Malachite
   `exhaustive_triples_from_single` / `exhaustive_quadruples_from_single`,

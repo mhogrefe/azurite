@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The (5.5) selection of `t'` and `s₂`, on the generator side** — the `AzNat`
   port of the ℕ-level specification `CL.selection_5_5` (`CohenLenstra/Impl_5_2.lean`).
 

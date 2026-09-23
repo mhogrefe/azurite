@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.2.8: the cube-root strengthening of
   Morrison's `n + 1` test — the `n + 1` analogue of
   Brillhart–Lehmer–Selfridge (Theorem 4.1.5).

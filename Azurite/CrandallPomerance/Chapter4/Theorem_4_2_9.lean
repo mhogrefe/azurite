@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.2.9: the Konyagin–Pomerance-style
   refinement of the `n + 1` test, reaching down to `F ≥ n^(3/10)`.
   The book states it and leaves the proof as an exercise ("completely

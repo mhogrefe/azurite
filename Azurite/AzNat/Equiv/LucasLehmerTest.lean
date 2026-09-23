@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Correctness of the Lucas–Lehmer test** (Algorithm 4.2.7):
 
   * `lucasLehmerTest_eq_true_iff`: for an odd prime `p`,

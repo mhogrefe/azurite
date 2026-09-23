@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The Lucas–Lehmer divisor confinement (5.3), part 1: the structure
   of `A_r = (ℤ/rℤ)[T]/(T² − uT − a)` for a prime `r`.**
 

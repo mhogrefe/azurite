@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Completeness of the Jacobi-sum tests**: for a prime `n` the products of
   Theorems (8.5)/(9.x) are congruent to a root of unity, so the exponent search
   (6.2) succeeds — the paper's "if `h` does not exist, then `n` is composite".

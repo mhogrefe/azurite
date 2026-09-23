@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Fixed-window exponentiation with an `AzNat` exponent.**  `slidingWindowPowAzNat`
   is plain square-and-multiply; here the exponent is read in windows of `w = 5`
   bits (`getBitsAsLimb`, limb-level) against a table of `a^0, …, a^31`, so an

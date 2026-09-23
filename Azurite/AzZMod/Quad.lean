@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The computable quadratic ring `A = (ℤ/nℤ)[T]/(T² − uT − a)`** — Phase A2
   of the APR-CL implementation plan (`docs/aprcl_implementation_plan.md`).
 

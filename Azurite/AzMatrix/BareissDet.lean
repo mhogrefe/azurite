@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   BPR Algorithm 8.16 (Dodgson-Jordan-Bareiss): fraction-free determinant.
 
   At each step `k` of the elimination, an entry `b_{i, j}^{(k+1)}` is computed

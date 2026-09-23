@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   ToString for `AzMvPolynomial` — display layer parameterized over a
   `ParsableVar F n` naming scheme.  The math core does not reference `Var`.
 -/

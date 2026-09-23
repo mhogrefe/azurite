@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   The single-cyclotomic model `ℤ[ζ_m] = ℤ[x]/(Φ_m)` — the COMMON
   RING of the Theorem 4.4.6 assembly.  The per-`q` hypotheses of
   `theorem_4_4_6_composite` need one domain carrying primitive

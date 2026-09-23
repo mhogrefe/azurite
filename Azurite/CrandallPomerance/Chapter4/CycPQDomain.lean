@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   The `ℤ[ζ_p, ζ_q]` model is FAITHFUL: for distinct primes `p, q`,
   the tower `CycPQ p q` of Definition 4.4.4 is an integral domain and
   its symbols `zetaP`, `zetaQ` are genuine primitive roots of unity —

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.2.4 (left as an exercise there): for an
   odd prime `p`, the number `N` of pairs `a, b ∈ {0, …, p−1}` with
   `(Δ/p) = −1` and `r_f(p) = p + 1` is

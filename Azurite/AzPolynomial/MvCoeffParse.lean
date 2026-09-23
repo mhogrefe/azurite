@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `toChars` / `parse` for an `AzPolynomial` whose coefficients are themselves
   `AzMvPolynomial` values.  These cannot go through the regular `ParsableCoeff`
   layer because `AzMvPolynomial n R ord` does not satisfy `ParsableCoeff` — the

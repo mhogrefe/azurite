@@ -54,6 +54,9 @@ particular:
   rather than inline in library files; existing inline guards are being moved there over time.
 - **Whitespace**: no trailing whitespace (CI rejects it; `scripts/check_and_build.sh` strips it),
   lines at most 100 characters as in Mathlib, LF line endings.
+- **License header**: every source file (`.lean`, `.rs`, `.c`, `.sh`) starts with the Azurite
+  copyright header, as in Malachite (`/- Copyright © <year> Mikhail Hogrefe … -/`). CI checks it
+  (`scripts/check_headers.py`); `scripts/check_and_build.sh` inserts it where missing.
 
 # Lean 4 Tips
 

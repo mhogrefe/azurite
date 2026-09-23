@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Modular inversion at limb level**: `invMod a n` — the least
   nonnegative inverse of `a` mod `n` (meaningful for `a`, `n`
   coprime), read off the extended binary GCD: `AzInt.egcd a n`

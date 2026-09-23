@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.2.3 (Morrison): the `n + 1` analogue of
   Pocklington.  Let `f, Δ` be as in (4.12), `n` positive with
   `gcd(n, 2b) = 1` and Jacobi symbol `(Δ/n) = −1`.  If `F ∣ n + 1` and

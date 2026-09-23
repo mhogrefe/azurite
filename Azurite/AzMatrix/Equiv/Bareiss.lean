@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   BPR equation (8.5):  b_{i,j}^{(k)} = g_{1,1}^{(0)} ⋯ g_{k,k}^{(k-1)} g_{i,j}^{(k)}.
 
   Reads: the Bareiss minor `det(M_{i,j}^{(k)})` equals the product of the

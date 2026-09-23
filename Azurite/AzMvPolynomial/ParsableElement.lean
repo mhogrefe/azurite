@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `ParsableElement` instance for `AzMvPolynomial n R ord`, using the default
   `IndexedVar n` display.  This allows `AzMvPolynomial` values to be used as
   entries inside `AzVector` / `AzMatrix` string representations.

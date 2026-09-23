@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Correctness of the per-`(p, q)` Jacobi tests**: a found exponent `h` is
   the congruence `n ∣ W − ζ^h` in `ℤ[ζ_{p^k}]` for the product `W` of
   Theorems (8.5)/(9.1)/(9.3)/(9.5)/(9.10)/(9.19).  Every proof is the same

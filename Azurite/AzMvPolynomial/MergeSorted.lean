@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Generic sorted merge for `AzMvPolynomial` (Fin-indexed).
 
   `mergeSorted f hf` merges two sorted monomial lists, applying `f` to each

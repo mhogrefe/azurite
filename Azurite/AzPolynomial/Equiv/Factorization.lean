@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Correctness of the complete factorization over `F_q`**
   (`Azurite.AzPolynomial.factorization`, GG Algorithm 14.13-style): for
   monic `f` and `q = card K`, the output pairs are

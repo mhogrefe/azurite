@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `shortlex_vecs_length_range` / `exhaustive_vecs_length_range` — all vecs
   with lengths in the half-open range `[a, b)` (Malachite normalizes `a > b`
   to the empty range; here that is automatic, `card = b - a = 0`).

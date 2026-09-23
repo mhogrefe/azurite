@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `ruler_sequence` — the ruler sequence (Malachite `ruler_sequence`,
   OEIS A007814): `0, 1, 0, 2, 0, 1, 0, 3, …`, where term `n` is the number of
   times `2` divides `n + 1`.

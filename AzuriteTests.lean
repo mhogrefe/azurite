@@ -1,3 +1,12 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
 -- This module is the root of the `AzuriteTests` library: `#guard`-based
 -- test suites, kept out of the main `Azurite` library target.
 -- Built (and thereby run, since `#guard` checks at elaboration time)

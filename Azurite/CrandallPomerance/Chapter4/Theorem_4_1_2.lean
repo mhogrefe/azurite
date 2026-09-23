@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.1.2 (Pépin test): for `k ≥ 1`, the Fermat
   number `F_k = 2^(2^k) + 1` is prime IF AND ONLY IF
   `3^((F_k − 1)/2) ≡ −1 (mod F_k)`.

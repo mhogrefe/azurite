@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Soundness of the Miller–Rabin filter**: primes pass every base
   (`millerRabinBase_eq_true_of_prime`), hence every `false` verdict is a
   PROOF of compositeness (`millerRabin_eq_false_imp_not_prime`).

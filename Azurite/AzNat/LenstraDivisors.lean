@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Algorithm 4.2.11 at limb level**: Lenstra's divisors in residue
   classes on `AzNat`/`AzInt` — the port of the proven reference
   implementation `Azurite.CP.lenstraDivisors`

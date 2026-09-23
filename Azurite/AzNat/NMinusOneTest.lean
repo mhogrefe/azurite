@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Algorithm 4.1.7 (the `n − 1` test)**, Crandall–Pomerance: given
   `n ≥ 214` and the complete prime factorization of a divisor `F` of
   `n − 1` with `F ≥ n^(3/10)`, decide primality.

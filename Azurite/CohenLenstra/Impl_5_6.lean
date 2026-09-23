@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Implementation paper, Remarks (5.6)–(5.9).**
 
   **(5.6)** Adding the test `r ≤ n^(1/2)` in step (l3) before `r ∣ n`

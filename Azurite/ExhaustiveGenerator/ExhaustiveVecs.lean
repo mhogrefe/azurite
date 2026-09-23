@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `exhaustive_vecs` — all vecs of every length, fairly (Malachite
   `exhaustive_vecs` / `exhaustive_vecs_from_length_iterator`).
 

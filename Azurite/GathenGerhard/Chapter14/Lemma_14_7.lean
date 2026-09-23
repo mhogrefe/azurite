@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Gathen–Gerhard, Lemma 14.7: the squares in `F_q^×`, for odd `q`.
 
   Specializing Lemma 14.6 to `k = 2` (and, for part (iii), squaring up to

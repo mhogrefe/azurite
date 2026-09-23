@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Implementation paper, §6 (continued): the Karatsuba identity,
   the inverse of `σ_x` (6.1), the determination of `h` (6.2), and
   the `λ`-route of (1.3)(i2a).**

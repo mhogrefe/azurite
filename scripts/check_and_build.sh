@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Copyright © 2026 Mikhail Hogrefe
+#
+# This file is part of Azurite.
+#
+# Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+# License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+
 # check_and_build.sh
 #
 # Validates that every .lean file under Azurite/ is imported by the root
@@ -162,6 +169,12 @@ if [[ -n "$ws_files" ]]; then
 else
   echo "No trailing whitespace in tracked text files."
 fi
+
+# ── 3c. License headers (auto-fixed) ──
+
+# Every tracked source file starts with the Azurite license header; insert it
+# where missing. CI checks the same thing without fixing.
+python3 scripts/check_headers.py --fix
 
 # Cap Lean parallelism unless the caller overrides: full parallelism can
 # exhaust memory on typical machines.

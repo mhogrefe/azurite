@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The exponent alignment: from Theorem (7.8)'s `χ(r) = ζ^(f·m_r)` to
   Theorem (6.3)'s `χ(r) = χ(n)^(m_r)`** — phase B3 (Jacobi side).
 

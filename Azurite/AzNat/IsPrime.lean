@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The production primality test**: Miller–Rabin for fast rejection,
   APR-CL for the deterministic verdict, trial division as the total
   fallback — with the same proven characterization as the naive test it

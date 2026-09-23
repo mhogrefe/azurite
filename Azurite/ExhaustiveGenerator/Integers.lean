@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Exhaustive generators over `AzInt` (Malachite's `exhaustive_positive_integers`,
   `exhaustive_nonnegative_integers`, `exhaustive_negative_integers`,
   `exhaustive_integers`, `exhaustive_nonzero_integers`).

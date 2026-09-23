@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, equation (4.21) — the order-climbing engines of
   the proof of Theorem 4.4.6 (correctness of the Gauss sums primality
   test): for `n` composite with least prime factor `r` surviving

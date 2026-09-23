@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   FINITE exhaustive generators over the fixed-width signed integers
   `Int8`, `Int16`, `Int32`, `Int64` (Malachite's `exhaustive_natural_signeds`,
   `exhaustive_negative_signeds`, `exhaustive_positive_signeds`,

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Theorem 4.1.6 (Konyagin–Pomerance): suppose
   `n ≥ 214`, `n − 1 = F·R` with `F` fully factored, the Pocklington
   conditions (4.3) hold for a witness, and `n^(3/10) ≤ F < n^(1/3)`

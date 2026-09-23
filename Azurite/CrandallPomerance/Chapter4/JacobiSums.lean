@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Jacobi sums — the structural upgrade motivating APR-CL** (the
   book's closing passage of §4.4 before AKS): the Gauss sums
   `G(p, q)` live in `ℤ[ζ_p, ζ_q]` — vectors of `(p−1)(q−1)`

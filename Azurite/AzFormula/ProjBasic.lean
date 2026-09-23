@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Computable version of BPR's `projBasic` (Section 1.3).
 
   Given two finite lists `Ps, Qs ⊂ D[X₀, Y₁, …, Y_k]`, produces a

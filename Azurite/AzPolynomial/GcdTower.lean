@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Normalized polynomial gcd, recursively over a nested coefficient tower.
 
   This generalizes the SHAPE of `gcdNormalizedInt` (`AzPolynomial/Gcd.lean`,

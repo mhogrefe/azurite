@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, equation (4.23), the per-pair chain: for each
   pair of primes `p ∣ I`, `q ∣ F` with `p ∣ q − 1`, the proof of
   Theorem 4.4.6 runs

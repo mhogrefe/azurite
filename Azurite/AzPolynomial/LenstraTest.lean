@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The finite field primality certificate checker** — the
   deterministic core of C&P Algorithm 4.3.4 (steps 2–4, plus the
   step-1 irreducibility test), executable for `n` of UNKNOWN

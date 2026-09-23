@@ -1,3 +1,12 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
 import Azurite.BasuPollackRoy.Chapter3.Section3_5.Proposition_3_26
 
 /-! # BPR §3.5 — the tangent space `T_x(M)`

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `CompressFast` — fast rank/unrank for capped-product compression.
 
   `Compress.lean`'s `rankSpec`/`unrank` are linear scans of the raw counters,

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Crandall–Pomerance, Algorithm 2.1.7 (CRT reconstruction with
   preconditioning (Garner)): given `r ≥ 2` fixed, pairwise coprime
   moduli `m_0, …, m_(r−1)` with product `M` and residues

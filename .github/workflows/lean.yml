@@ -17,6 +17,8 @@ jobs:
       - name: No trailing whitespace
         run: |
           ! git grep -nE '[[:space:]]+$' -- '*.lean' '*.md' '*.tex' '*.yml' '*.yaml' '*.sh' '*.toml' '*.rs' '*.html' '*.scss'
+      - name: License headers
+        run: python3 scripts/check_headers.py
       - name: Run tests
         run: lake test
       - name: Build benchmark executable

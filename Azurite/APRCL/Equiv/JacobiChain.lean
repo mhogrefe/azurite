@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **From a passed `(p, q)` test to the character equation `χ(r) = ζ^(f₀·m)`**
   (Theorems (8.5)/(9.1)/(9.3)/(9.5)/(9.10)/(9.19) followed by Theorem (7.8)).
 

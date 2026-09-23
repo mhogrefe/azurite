@@ -1,3 +1,12 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
 import Azurite.BasuPollackRoy.Chapter4.Section4_3.Corollary_4_45
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Remark_2_38
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.FiberFormula

@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Exhaustive generators over `AzRat` (Malachite's `exhaustive_positive_rationals`,
   `exhaustive_non_negative_rationals`, `exhaustive_negative_rationals`,
   `exhaustive_nonzero_rationals`, `exhaustive_rationals`).

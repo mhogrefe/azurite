@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `FairVecs` — the FAIR fixed-length vec generator on the PLAIN vector type
   `List.Vector T n` (Malachite `exhaustive_vecs_fixed_length_from_single`, all
   output types `normal(1)`).

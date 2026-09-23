@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **The finite field primality test** (C&P Algorithm 4.3.4, complete):
   the certificate checker `lenstraTest` wrapped in the usual
   random-head, exhaustive-tail candidate search.

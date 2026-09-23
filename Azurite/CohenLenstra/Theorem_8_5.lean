@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   **Cohen–Lenstra Theorem (8.5): the Jacobi-sum test implies (7.9).**
 
   The paper defines, for `p ≥ 3` and integers `a, b` satisfying

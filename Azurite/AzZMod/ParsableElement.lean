@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `ParsableElement (AzZMod m)` instance, plus the shared char-list facade
   (`AzZMod.toChars` / `AzZMod.parseChars`) over the limb-level decimal
   `AzZMod.toString` / `AzZMod.parse` pipeline.  The representation is the decimal

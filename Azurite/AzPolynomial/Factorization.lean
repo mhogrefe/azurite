@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   Complete polynomial factorization over `F_q` (Gathen–Gerhard, "Modern
   Computer Algebra", Algorithm 14.13-style), computable: distinct-degree
   sweep + multiplicity extraction by division + equal-degree splitting.

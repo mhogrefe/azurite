@@ -1,4 +1,13 @@
 /-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+/-
   `exhaustive_dependent_pairs` — FAIR dependent-pair generation (Malachite
   `exhaustive_dependent_pairs`): pairs `⟨a, b⟩` where `b`'s type depends on
   `a`'s value and — unlike the lexicographic `lexDepPairGen` — each fiber may
