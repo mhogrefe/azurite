@@ -7,9 +7,9 @@
 A Lean 4 library for efficient, formally verified mathematical computation.
 
 Azurite provides computable, array-backed implementations of the objects of
-computer algebra — multi-precision naturals, integers and rationals,
+computer algebra (multi-precision naturals, integers and rationals,
 polynomials in one and several variables, vectors and matrices, residue rings,
-and first-order formulas — together with proofs that every operation agrees
+and first-order formulas) together with proofs that every operation agrees
 with its abstract [Mathlib](https://github.com/leanprover-community/mathlib4)
 counterpart.  On top of these it formalizes the algorithms of several standard
 texts and runs them: the computable code is the code that is proven correct,
@@ -84,8 +84,12 @@ scripts/              axiom checker and build helper
 ```
 
 Each computable directory keeps its implementation at the top level and the
-correctness proofs — the equivalences with the Mathlib objects — in an `Equiv/`
+correctness proofs (the equivalences with the Mathlib objects) in an `Equiv/`
 subdirectory.
+
+## AI usage
+
+Azurite is written using Claude. I have manually verified that the statements of key theorems are formalized correctly.
 
 ## License
 
