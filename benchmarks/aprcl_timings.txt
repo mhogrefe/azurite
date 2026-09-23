@@ -22,3 +22,12 @@ After CycArith (additive Φ-reduction, cycPow): 101: 3.0 s; 180: 20.3 s; 247: 59
 Primitives at 820 bits (13 limbs): AzNat mul 2.2 µs, mod 4.3 µs, AzZMod mul 5.6 µs, add 0.4 µs;
 degree-12 CycT: raw AzPolynomial product 197 µs, generic mul (division reduction) 445 µs, cycMul 267 µs.
 247-digit top tests after all fixes: q=65521 p=13 k=1: u-power 864 ms, jTest 1287 ms.
+
+After windowPowAzNat (5-bit window) + lazy coefficient reduction in cycMul: 101: 2.8 s; 180: 14.3 s; 247: 38.1 s;
+301 digits (first prime above 10^300): t' = 240240, 244 tests, check 90.5 s (finalDiv 1.7 s).
+Primitives at 820 bits, FULL-SIZE operands (earlier probe used tiny table coefficients): generic degree-12
+CycT mult 1110 µs, raw AzPolynomial product over AzZMod 844 µs, cycMul 466 µs; u-power at p=13: 864 → 453 ms.
+
+After cycSquare (symmetric squaring): 180: 12.5 s; 247: 31.5 s.
+After the (5.2) s₁ lift + trial division to 10^6 (s₁ = 80 bits, t' = 55440, no p = 13): 247: 26.5 s (194 tests);
+180: 12.3 s (147 tests); 101 digits: 2.3 s (95 tests).

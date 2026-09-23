@@ -299,3 +299,45 @@ C2 to get a shippable two-sided test early while B proceeds.
   limb product, boxing-bound) — further speedups are AzNat codegen work (unboxed limbs /
   Montgomery), not APR-CL-specific.  Also remaining: λ-route (i2a) for flagged p^k, the (5.2)
   `s1 t' F` lift (theory already supports it), incremental `checkIndexTable`.
+* **2026-09-23 (Phase D, second round)** — (4) `Algorithm/WindowPowAzNat.lean` + Equiv: fixed 5-bit
+  window exponentiation for `AzNat` exponents (`windowPowAzNat_eq_pow`); `slidingWindowPowAzNat`
+  was plain square-and-multiply (≈ s/2 extra multiplications). (5) `cycMul` now lazy: product over
+  `AzNat` residues (`liftNat`), one reduction per product coefficient (`reduceCoeffs`), then
+  `reduceCyc` — proofs via `toPoly_reduceCoeffs`/`toPoly_map_liftNat` (coefficient map along
+  `ofAzNatRingHom`).  Corrected primitive probe (full-size operands): generic degree-12 mult
+  1110 µs, cycMul 466 µs.  Timings: 101 digits 2.8 s, 180: 14.3 s, 247: 38 s (from 60), 301: 90 s
+  (t' = 240240, 244 tests).  (6) Generator: factorization-based `divisorsFast`/`qPrimesFast`
+  (`Nat.divisors` scans `[1, t]`), `t` candidates extended to 6983776800.  Remaining ideas, by
+  payoff: dedicated squaring (symmetric products, ~25% of the powers); λ-route (i2a) for flagged
+  `p^k` via the extension `Λ : ℤ[ζ_{q p^k}] → (ℤ/n)[y]/(Φ_q)`, `ζ_{p^k} ↦ β`, whose kernel is a
+  σ-stable ideal meeting ℤ in nℤ (needs Φ_{q p^k}(β·y) = 0 in the target ring); the (5.2) `s₁`
+  lift (~3%); AzNat multiplication (deferred by the user).
+* **2026-09-23 (Phase D, third round)** — (7) `cycSquare`: symmetric square on the lifted `AzNat`
+  polynomial (`coeffSq`/`squareNat`, `squareNat_eq_mul` via `sum_antidiagonal_symm`), the wrapper's
+  `Square`; 247: 38 → 31.5 s.  (8) The (5.2) `s₁` lift: `liftedS1 cert t' = 2^(e₂+v₂(t')−1)·∏
+  p^(e+v_p(t'))` in checker, generator and `prime_of_aprcl` (`pow_modEq_one_of_sq` Hensel lift;
+  `p ∤ t'` keeps `v_p(s₁) = e`); with trial division to 10^6 (adaptive default `B`: 10^4/10^5/10^6
+  by size) `s₁` = 80 bits at 247 digits and the selection takes `t' = 55440` — no degree-12 tests:
+  247: 26.5 s (194 tests), 180: 12.3 s, 101: 2.3 s.  Deferred with design notes: λ-route (i2a)
+  — estimated ≤ 8% for the 247-digit example (only `p = 7` and small `2^k` are flagged), needs the
+  tower ring `ℤ[ζ_{p^k}][ζ_q]` as a domain (generalize `CycPQDomain` to `p^k`) and
+  `Λ = AdjoinRoot.lift` twice into `CycModN q n`; AzNat multiplication (user-deferred).
+* **2026-09-23 (Completeness of the Jacobi tests)** — `Azurite/APRCL/Equiv/Complete.lean`: for
+  prime `n` coprime to `p q` every `jTest` returns `some h` (`jTest_isSome`; checker shape
+  `jTest_isSome_of_checks` with certified generator/index table), so `qCheck` now returns
+  `composite` when a Jacobi test finds no `h` (and checks `p ∤ n` per `p ∣ q−1` first: a proper
+  `p ∣ n` is composite).  Proof: (1) descent `natCast_dvd_of_phiR_dvd` — `N ∣ φ(x)` in
+  `ℤ[ζ_{q p^k}]` ⟹ `N ∣ x` in `ℤ[ζ_{p^k}]` (φ(ζ^i) = ζ^{qi}, `q·i < φ(q p^k)` since
+  `φ(p^k) < q`, contents agree); (2) generic converse `exists_dvd_sub_zP_pow_of_identity` — from
+  an exact identity `u·W·∏τ(χ^{Nx})^ν = (∏τ(χ^x)^ν)^N` (u a power of ζ_P, χ^x ≠ 1) and
+  `corollary_7_5`, with Gauss sums units mod prime `N` (`isUnit_mk_gaussSum` via
+  `tau_mul_tau_inv`), to `W ≡ ζ_P^h`; instances: odd `p` (`jacobi_tau_identity`), `p^k = 4`
+  (the (9.3)/(9.5) identities re-derived from `eq_8_2` + `gaussSum_sq`), `k ≥ 3`
+  (`jacobi_tau_identity_M2(_neg)` reindexed by `minv`); `p^k = 2` directly by Euler's criterion
+  in `CycM 2`; (3) `findHT_complete`: `a = zetaT^h`, `h < p^k` ⟹ `findHT a` is `some`
+  (`coeffT_ofCoeffFn`, `zetaT_pow_eq_ofCoeffFn`).  `Equiv/JacobiStage.lean` now exports the
+  computed elements as `findHT (reduceCycT W)` (`jOdd_eq`, `j2k1_eq`, `j2k2_eq_one/three`,
+  `j2k3_eq_low/high`); the `_spec` lemmas are one-liners from them.  Not proven (checker keeps
+  `none`): the auxiliary route (k) with `p ∣ h`, and the two-sided statement "prime + valid
+  certificate ⟹ `some true`" (would need completeness of the Lucas–Lehmer stage, of the (6.4)
+  sources and of the final division).

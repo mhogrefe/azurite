@@ -15,6 +15,7 @@ import Azurite.APRCL.Test
 import Azurite.APRCL.Select
 import Azurite.AzNat.Equiv.RootInt
 import Azurite.APRCL.Equiv.LucasLehmer
+import Azurite.APRCL.Equiv.Complete
 import Azurite.APRCL.Equiv.JacobiAlign
 import Azurite.CohenLenstra.Proposition_7_18
 
@@ -83,7 +84,7 @@ theorem qCheck_pass {F : AzNat} {t' : ℕ} {d : QCert} {hs : List (ℕ × ℕ)}
       (∀ p ∈ (d.q - 1).primeFactors, ∃ h, (p, h) ∈ hs) := by
   unfold qCheck at h
   dsimp only at h
-  split_ifs at h with h1 h2 h3 h4 h5 h6 h7
+  split_ifs at h with h1 h2 h3 h4 h5 h6 h7 h8 h9
   obtain rfl := Outcome.pass.inj h
   simp only [Bool.not_eq_true', Bool.and_eq_false_iff, decide_eq_true_eq,
     not_or, Bool.not_eq_false] at h1 h5 h6
@@ -95,7 +96,7 @@ theorem qCheck_pass {F : AzNat} {t' : ℕ} {d : QCert} {hs : List (ℕ × ℕ)}
   · intro ph hph
     obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hph
     obtain ⟨p, hp, rfl⟩ := List.mem_map.mp hx
-    have hsome := List.all_eq_true.mp h7 _ hx
+    have hsome := List.all_eq_true.mp h9 _ hx
     simp only at hsome
     refine ⟨(Nat.mem_primeFactors_iff_mem_primeFactorsList).mpr hp, ?_⟩
     obtain ⟨hv, hhv⟩ := Option.isSome_iff_exists.mp hsome
@@ -108,18 +109,41 @@ theorem qCheck_pass {F : AzNat} {t' : ℕ} {d : QCert} {hs : List (ℕ × ℕ)}
 /-- **The per-`q` `composite` verdict is sound.** -/
 theorem qCheck_composite {F : AzNat} {t' : ℕ} {d : QCert} (h : qCheck n F t' d = .composite) :
     ¬ n.toNat.Prime := by
+  intro hN
   unfold qCheck at h
   dsimp only at h
-  split_ifs at h with h1 h2 h3 h4 h5 h6 h7
-  simp only [Bool.not_eq_true', Bool.and_eq_false_iff, decide_eq_true_eq,
-    not_or, Bool.not_eq_false] at h1
-  have hq := isPrimeNat_eq_true_iff.mp h1.1.1.1.1
-  have hd : d.q ∣ n.toNat := dvd_of_mod_ofNat_eq_zero h2
-  have hlt := lt_of_ofNat_lt h3
-  intro hN
-  rcases hN.eq_one_or_self_of_dvd _ hd with h | h
-  · exact hq.one_lt.ne' h
-  · omega
+  split_ifs at h with h1 h2 h3 h4 h5 h6 h7 h8 h9
+  · -- `q ∣ n`, `q < n`
+    simp only [Bool.not_eq_true', Bool.and_eq_false_iff, decide_eq_true_eq,
+      not_or, Bool.not_eq_false] at h1
+    have hq := isPrimeNat_eq_true_iff.mp h1.1.1.1.1
+    have hd : d.q ∣ n.toNat := dvd_of_mod_ofNat_eq_zero h2
+    have hlt := lt_of_ofNat_lt h3
+    rcases hN.eq_one_or_self_of_dvd _ hd with h | h
+    · exact hq.one_lt.ne' h
+    · omega
+  · -- some `p ∣ q − 1` with `p ∣ n`, `p < n`
+    simp only [List.any_eq_true, Bool.and_eq_true, decide_eq_true_eq] at h8
+    obtain ⟨p, hp, hpd, hlt⟩ := h8
+    have hp' := Nat.prime_of_mem_primeFactorsList hp
+    have hd : p ∣ n.toNat := dvd_of_mod_ofNat_eq_zero hpd
+    have hlt' := lt_of_ofNat_lt hlt
+    rcases hN.eq_one_or_self_of_dvd _ hd with h | h
+    · exact hp'.one_lt.ne' h
+    · omega
+  · -- a Jacobi test found no `h`: impossible for prime `n` (`jTest_isSome_of_checks`)
+    simp only [Bool.not_eq_true', Bool.and_eq_false_iff, decide_eq_true_eq,
+      not_or, Bool.not_eq_false] at h1 h5 h6
+    have hq := isPrimeNat_eq_true_iff.mp h1.1.1.1.1
+    simp only [Bool.not_eq_true, List.any_eq_false, decide_eq_true_eq] at h7
+    simp only [Bool.not_eq_true, List.all_eq_false, List.mem_map] at h9
+    obtain ⟨ph, ⟨p, hp, rfl⟩, hnone⟩ := h9
+    have hsome := jTest_isSome_of_checks hq (Nat.prime_of_mem_primeFactorsList hp)
+      (Nat.dvd_of_mem_primeFactorsList hp) h5 h6 hN (not_dvd_of_mod_ne_zero h2)
+      (not_dvd_of_mod_ne_zero (h7 p hp))
+    simp only at hnone
+    rw [hsome] at hnone
+    exact Bool.noConfusion hnone
 
 /-- **The `q`-stage `pass` decoded.** -/
 theorem qStage_pass {F : AzNat} {t' : ℕ} :
@@ -283,16 +307,31 @@ end Decode
 
 /-! ### The assembled primality argument -/
 
+/-- The lifting step of (5.2): `n² ≡ 1 (mod p^e)` gives `n^(2·p^v·w) ≡ 1 (mod p^(e+v))`. -/
+theorem pow_modEq_one_of_sq {N p e v w : ℕ} (hp : p.Prime) (he : 0 < e)
+    (h : N ^ 2 ≡ 1 [MOD p ^ e]) : N ^ (2 * p ^ v * w) ≡ 1 [MOD p ^ (e + v)] := by
+  have h' := (CL.pow_prime_pow_modEq_one_lift hp he h v).pow w
+  rw [one_pow] at h'
+  calc N ^ (2 * p ^ v * w) = ((N ^ 2) ^ p ^ v) ^ w := by rw [← pow_mul, ← pow_mul, mul_assoc]
+    _ ≡ 1 [MOD p ^ (e + v)] := h'
+
+theorem toNat_liftedS1 (cert : LLCert) (t' : ℕ) :
+    (liftedS1 cert t').toNat = 2 ^ (cert.e2 + padicValNat 2 t' - 1)
+      * prodPow ((certPairs cert).map fun pe => (pe.1, pe.2 + padicValNat pe.1 t')) := by
+  simp [liftedS1, AzNat.toNat_mul, toNat_listProd, List.map_map, Function.comp_def, AzNat.toNat_ofNat,
+    prodPow, certPairs, mul_assoc]
+
 open Classical in
 /-- **APR-CL proves primality**: the Lucas–Lehmer data (`F`, the confinements `h42`/`h43`
 with a coherent `ε`), the `q`-primes of `s₂` with the character family `Y` and the two
-aligned Jacobi clauses, the bound `n < (F·s₂)²`, and a successful final trial division. -/
+aligned Jacobi clauses, the bound `n < (s₁·s₂)²` for the (5.2)-lifted `s₁`, and a successful
+final trial division. -/
 theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
     {Lm Lp : List (ℕ × ℕ)} {e2 : ℕ}
     (hnd : ((Lm ++ Lp).map Prod.fst).Nodup)
     (hm : ∀ pe ∈ Lm, pe.1.Prime ∧ pe.1 ≠ 2 ∧ 1 ≤ pe.2 ∧ pe.1 ^ pe.2 ∣ N - 1)
     (hp : ∀ pe ∈ Lp, pe.1.Prime ∧ pe.1 ≠ 2 ∧ 1 ≤ pe.2 ∧ pe.1 ^ pe.2 ∣ N + 1)
-    (he2d : 2 ^ e2 ∣ N ^ 2 - 1)
+    (he2 : 1 ≤ e2) (he2d : 2 ^ e2 ∣ N ^ 2 - 1)
     (ε : ℕ → ℕ) (hε : ∀ r, ε r < 2)
     (h42 : ∀ pe ∈ Lm, ∀ r, r.Prime → r ∣ N → r ≡ 1 [MOD pe.1 ^ pe.2])
     (h43 : ∀ pe ∈ Lp, ∀ r, r.Prime → r ∣ N → r ≡ N ^ ε r [MOD pe.1 ^ pe.2])
@@ -300,24 +339,29 @@ theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
     {Qs : List (ℕ × ℕ)} (hQnd : (Qs.map Prod.fst).Nodup)
     (hQ : ∀ qe ∈ Qs, qe.1.Prime ∧ qe.1 ≠ 2 ∧ (qe.1 - 1) ∣ t' ∧ 1 ≤ qe.2 ∧
       (2 ≤ qe.2 → qe.1 ∣ t') ∧ ¬ qe.1 ∣ N ∧ N ^ t' ≡ 1 [MOD qe.1 ^ qe.2])
-    {F : ℕ} (hF : F = 2 ^ e2 * prodPow (Lm ++ Lp)) (hQF : ∀ qe ∈ Qs, ¬ qe.1 ∣ F)
+    {S₁ : ℕ} (hS₁ : S₁ = 2 ^ (e2 + padicValNat 2 t' - 1)
+      * prodPow ((Lm ++ Lp).map fun pe => (pe.1, pe.2 + padicValNat pe.1 t')))
+    (hQF : ∀ qe ∈ Qs, ¬ qe.1 ∣ S₁)
     (Y : (q : ℕ) → (p : ℕ) → MulChar (ZMod q) ℂ)
     (hY : ∀ qe ∈ Qs, ∀ p ∈ (qe.1 - 1).primeFactors,
       orderOf (Y qe.1 p) = p ^ (qe.1 - 1).factorization p)
     (hcl_odd : ∀ p ∈ t'.primeFactors, p ≠ 2 → ∀ r ∈ N.primeFactors, ∃ l,
       (∀ qe ∈ Qs, p ∣ qe.1 - 1 → Y qe.1 p r = Y qe.1 p N ^ l) ∧
-      r ^ (p - 1) ≡ (N ^ (p - 1)) ^ l [MOD p ^ (F * prodPow Qs).factorization p])
+      r ^ (p - 1) ≡ (N ^ (p - 1)) ^ l [MOD p ^ (S₁ * prodPow Qs).factorization p])
     (hcl_two : ∀ r ∈ N.primeFactors, ∃ l, l % 2 = ε r ∧
       (∀ qe ∈ Qs, Y qe.1 2 r = Y qe.1 2 N ^ l) ∧
-      r ≡ N ^ l [MOD 2 ^ (F * prodPow Qs).factorization 2])
-    (hsize : N < (F * prodPow Qs) ^ 2)
-    {i : ℕ} (hi1 : 1 ≤ i) (hri : N ^ i % (F * prodPow Qs) = 1)
+      r ≡ N ^ l [MOD 2 ^ (S₁ * prodPow Qs).factorization 2])
+    (hsize : N < (S₁ * prodPow Qs) ^ 2)
+    {i : ℕ} (hi1 : 1 ≤ i) (hri : N ^ i % (S₁ * prodPow Qs) = 1)
     (hloop : ∀ j, 1 ≤ j → j < i →
-      ¬ (N ^ j % (F * prodPow Qs) ∣ N ∧ N ^ j % (F * prodPow Qs) < N)) :
+      ¬ (N ^ j % (S₁ * prodPow Qs) ∣ N ∧ N ^ j % (S₁ * prodPow Qs) < N)) :
     N.Prime := by
   have hN1 : 1 < N := by omega
   set L := Lm ++ Lp with hL
   set s₂ := prodPow Qs with hs₂
+  set L' := L.map (fun pe => (pe.1, pe.2 + padicValNat pe.1 t')) with hL'
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have hv2 : 1 ≤ padicValNat 2 t' := one_le_padicValNat_of_dvd ht0.ne' ht2
   -- the Lucas–Lehmer list facts
   have hLp : ∀ pe ∈ L, pe.1.Prime := fun pe hpe => by
     rcases List.mem_append.mp hpe with h | h
@@ -347,66 +391,115 @@ theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
       have h3 : pe.1 ∣ N + 1 - N := Nat.dvd_sub h2 hd
       rw [show N + 1 - N = 1 by omega] at h3
       exact hpp.one_lt.ne' (Nat.dvd_one.mp h3)
-  -- `F`
-  have hP0 : 0 < prodPow L := prodPow_pos fun pe hpe => (hLp pe hpe).pos
-  have hF0 : 0 < F := by rw [hF]; exact Nat.mul_pos (pow_pos two_pos _) hP0
-  have hcop2 : Nat.Coprime (2 ^ e2) (prodPow L) :=
-    Nat.Coprime.pow_left _ (coprime_prodPow Nat.prime_two fun pe hpe => ⟨hLp pe hpe, hL2 pe hpe⟩)
-  have hFdvd : F ∣ N ^ 2 - 1 := by
-    rw [hF]
-    exact hcop2.mul_dvd_of_dvd_of_dvd he2d (prodPow_dvd hLp hnd hLd)
-  have hpowF2 : N ^ 2 ≡ 1 [MOD F] :=
-    ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr hFdvd).symm
-  have hprimeF : ∀ q, q.Prime → q ∣ F → q = 2 ∨ ∃ pe ∈ L, q = pe.1 := fun q hq hqF => by
-    rw [hF] at hqF
+  -- the lifted list
+  have hL'mem : ∀ pe' ∈ L', ∃ pe ∈ L, pe' = (pe.1, pe.2 + padicValNat pe.1 t') := fun pe' h => by
+    obtain ⟨pe, hpe, rfl⟩ := List.mem_map.mp h
+    exact ⟨pe, hpe, rfl⟩
+  have hL'p : ∀ pe ∈ L', pe.1.Prime := fun pe' h => by
+    obtain ⟨pe, hpe, rfl⟩ := hL'mem pe' h
+    exact hLp pe hpe
+  have hL'2 : ∀ pe ∈ L', pe.1 ≠ 2 := fun pe' h => by
+    obtain ⟨pe, hpe, rfl⟩ := hL'mem pe' h
+    exact hL2 pe hpe
+  have hL'nd : (L'.map Prod.fst).Nodup := by
+    rw [hL', List.map_map]
+    exact hnd
+  -- `S₁`
+  have hP0 : 0 < prodPow L' := prodPow_pos fun pe hpe => (hL'p pe hpe).pos
+  have hS0 : 0 < S₁ := by rw [hS₁]; exact Nat.mul_pos (pow_pos two_pos _) hP0
+  have hS2 : 2 ∣ S₁ := by
+    rw [hS₁]
+    exact (dvd_pow_self 2 (by omega)).mul_right _
+  have hcop2 : Nat.Coprime (2 ^ (e2 + padicValNat 2 t' - 1)) (prodPow L') :=
+    Nat.Coprime.pow_left _ (coprime_prodPow Nat.prime_two fun pe hpe => ⟨hL'p pe hpe, hL'2 pe hpe⟩)
+  -- `N^t' ≡ 1 (mod S₁)` by lifting
+  have hpowS₁ : N ^ t' ≡ 1 [MOD S₁] := by
+    have hsq : ∀ pe ∈ L, N ^ 2 ≡ 1 [MOD pe.1 ^ pe.2] := fun pe hpe =>
+      ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr (hLd pe hpe)).symm
+    have h2sq : N ^ 2 ≡ 1 [MOD 2 ^ e2] :=
+      ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr he2d).symm
+    have hdvd : S₁ ∣ N ^ t' - 1 := by
+      rw [hS₁]
+      refine hcop2.mul_dvd_of_dvd_of_dvd ?_ (prodPow_dvd hL'p hL'nd fun pe' hpe' => ?_)
+      · -- the `2`-part: `t' = 2 · 2^(v−1) · w`
+        set v := padicValNat 2 t' with hv
+        obtain ⟨w, hw⟩ : 2 ^ v ∣ t' := pow_padicValNat_dvd
+        have ht'eq : t' = 2 * 2 ^ (v - 1) * w := by
+          rw [hw]
+          congr 1
+          rw [← pow_succ', Nat.sub_add_cancel hv2]
+        have := pow_modEq_one_of_sq Nat.prime_two (by omega) h2sq (v := v - 1) (w := w)
+        rw [← ht'eq, show e2 + (v - 1) = e2 + v - 1 by omega] at this
+        exact (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mp this.symm
+      · obtain ⟨pe, hpe, rfl⟩ := hL'mem pe' hpe'
+        have hpp := hLp pe hpe
+        have hpv : pe.1 ^ padicValNat pe.1 t' ∣ t' := pow_padicValNat_dvd
+        have hcop : Nat.Coprime 2 (pe.1 ^ padicValNat pe.1 t') :=
+          Nat.Coprime.pow_right _ ((Nat.coprime_primes Nat.prime_two hpp).mpr (hL2 pe hpe).symm)
+        obtain ⟨w, hw⟩ := hcop.mul_dvd_of_dvd_of_dvd ht2 hpv
+        have := pow_modEq_one_of_sq hpp (by have := hLe pe hpe; omega) (hsq pe hpe)
+          (v := padicValNat pe.1 t') (w := w)
+        rw [← hw] at this
+        exact (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mp this.symm
+    exact ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr hdvd).symm
+  have hprimeS : ∀ q, q.Prime → q ∣ S₁ → q = 2 ∨ ∃ pe ∈ L, q = pe.1 := fun q hq hqF => by
+    rw [hS₁] at hqF
     rcases (Nat.Prime.dvd_mul hq).mp hqF with h | h
     · exact Or.inl ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp (hq.dvd_of_dvd_pow h))
-    · obtain ⟨pe, hpe, hqe, -⟩ := prime_dvd_prodPow hLp hq h
+    · obtain ⟨pe', hpe', hqe, -⟩ := prime_dvd_prodPow hL'p hq h
+      obtain ⟨pe, hpe, rfl⟩ := hL'mem pe' hpe'
       exact Or.inr ⟨pe, hpe, hqe⟩
-  have hnsF : N.Coprime F := Nat.coprime_of_dvd fun k hk hkN hkF => by
-    rcases hprimeF k hk hkF with rfl | ⟨pe, hpe, rfl⟩
+  have hnsS : N.Coprime S₁ := Nat.coprime_of_dvd fun k hk hkN hkF => by
+    rcases hprimeS k hk hkF with rfl | ⟨pe, hpe, rfl⟩
     · omega
     · exact hLn pe hpe hkN
-  have hfactp : ∀ pe ∈ L, F.factorization pe.1 = pe.2 := fun pe hpe => by
-    rw [hF, Nat.factorization_mul (pow_pos two_pos _).ne' hP0.ne', Finsupp.add_apply,
-      Nat.prime_two.factorization_pow, Finsupp.single_apply, if_neg (hL2 pe hpe).symm, zero_add,
-      factorization_prodPow_of_mem hLp hnd hpe]
+  have hfactp : ∀ pe ∈ L, S₁.factorization pe.1 = pe.2 + padicValNat pe.1 t' := fun pe hpe => by
+    rw [hS₁, Nat.factorization_mul (pow_pos two_pos _).ne' hP0.ne', Finsupp.add_apply,
+      Nat.prime_two.factorization_pow, Finsupp.single_apply, if_neg (hL2 pe hpe).symm, zero_add]
+    exact factorization_prodPow_of_mem hL'p hL'nd (List.mem_map_of_mem hpe :
+      (pe.1, pe.2 + padicValNat pe.1 t') ∈ L')
+  have hpdvd : ∀ pe ∈ L, pe.1 ∣ N ^ 2 - 1 := fun pe hpe =>
+    (dvd_pow_self _ (by have := hLe pe hpe; omega)).trans (hLd pe hpe)
   -- `s₂`
   have hQp : ∀ qe ∈ Qs, qe.1.Prime := fun qe h => (hQ qe h).1
   have hs₂0 : 0 < s₂ := prodPow_pos fun qe h => (hQp qe h).pos
   have hprimes₂ : ∀ k, k.Prime → k ∣ s₂ → ∃ qe ∈ Qs, k = qe.1 := fun k hk hks => by
     obtain ⟨qe, hqe, hke, -⟩ := prime_dvd_prodPow hQp hk hks
     exact ⟨qe, hqe, hke⟩
-  have hcopF : Nat.Coprime F s₂ := Nat.coprime_of_dvd fun k hk hkF hks => by
+  have hcopF : Nat.Coprime S₁ s₂ := Nat.coprime_of_dvd fun k hk hkF hks => by
     obtain ⟨qe, hqe, rfl⟩ := hprimes₂ k hk hks
     exact hQF qe hqe hkF
   have hnss₂ : N.Coprime s₂ := Nat.coprime_of_dvd fun k hk hkN hks => by
     obtain ⟨qe, hqe, rfl⟩ := hprimes₂ k hk hks
     exact (hQ qe hqe).2.2.2.2.2.1 hkN
-  have hpowS : N ^ t' ≡ 1 [MOD F * s₂] := by
-    refine (Nat.modEq_and_modEq_iff_modEq_mul hcopF).mp ⟨?_, ?_⟩
-    · obtain ⟨u, rfl⟩ := ht2
-      rw [pow_mul]
-      exact (hpowF2.pow u).trans (by rw [one_pow])
-    · have hd : s₂ ∣ N ^ t' - 1 := prodPow_dvd hQp hQnd fun qe hqe =>
-        (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mp (hQ qe hqe).2.2.2.2.2.2.symm
-      exact ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr hd).symm
+  have hpowS : N ^ t' ≡ 1 [MOD S₁ * s₂] := by
+    refine (Nat.modEq_and_modEq_iff_modEq_mul hcopF).mp ⟨hpowS₁, ?_⟩
+    have hd : s₂ ∣ N ^ t' - 1 := prodPow_dvd hQp hQnd fun qe hqe =>
+      (Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mp (hQ qe hqe).2.2.2.2.2.2.symm
+    exact ((Nat.modEq_iff_dvd' (Nat.one_le_pow _ _ (by omega))).mpr hd).symm
   have hmemQs : ∀ q, q ∈ s₂.primeFactors → ∃ qe ∈ Qs, qe.1 = q := fun q hq => by
     obtain ⟨qe, hqe, rfl⟩ := hprimes₂ q (Nat.prime_of_mem_primeFactors hq)
       (Nat.dvd_of_mem_primeFactors hq)
     exact ⟨qe, hqe, rfl⟩
   -- Theorem (6.3)
-  have hconf : ∀ r, r ∣ N → ∃ i < t', r ≡ N ^ i [MOD F * s₂] := by
-    refine CL.theorem_6_3_LL hN1 hF0 hs₂0 ht0 ht2 (Nat.Coprime.mul_right hnsF hnss₂) hcopF hpowS
+  have hconf : ∀ r, r ∣ N → ∃ i < t', r ≡ N ^ i [MOD S₁ * s₂] := by
+    refine CL.theorem_6_3_LL hN1 hS0 hs₂0 ht0 ht2 (Nat.Coprime.mul_right hnsS hnss₂) hcopF hpowS
       ?_ ?_ ?_ Y ?_ ?_
     · intro q hq
       obtain ⟨qe, hqe, rfl⟩ := hmemQs q hq
       refine ⟨(hQ qe hqe).2.2.1, fun h2 => (hQ qe hqe).2.2.2.2.1 ?_⟩
       rwa [factorization_prodPow_of_mem hQp hQnd hqe] at h2
     · intro p hpF
-      exact (Nat.dvd_of_mem_primeFactors hpF).trans hFdvd
-    · intro p hpF _
-      exact (Nat.ordProj_dvd F p).trans hFdvd
+      rcases hprimeS p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
+        with rfl | ⟨pe, hpe, rfl⟩
+      · exact (dvd_pow_self 2 (by omega)).trans he2d
+      · exact hpdvd pe hpe
+    · intro p hpF hpt
+      rcases hprimeS p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
+        with rfl | ⟨pe, hpe, rfl⟩
+      · exact absurd ht2 hpt
+      · rw [hfactp pe hpe, padicValNat.eq_zero_of_not_dvd hpt, add_zero]
+        exact hLd pe hpe
     · intro q hq p hpq
       obtain ⟨qe, hqe, rfl⟩ := hmemQs q hq
       exact hY qe hqe p hpq
@@ -422,16 +515,16 @@ theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
       · exact h43 pe h r hrp hrn
     refine ⟨ε r, hε r, ?_, ?_, ?_⟩
     · intro p hpF
-      rcases hprimeF p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
+      rcases hprimeS p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
         with rfl | ⟨pe, hpe, rfl⟩
       · show r % 2 = N ^ ε r % 2
         rw [hrodd, Nat.pow_mod, hodd, one_pow, Nat.one_mod_eq_one.mpr (by norm_num)]
       · exact Nat.ModEq.of_dvd (dvd_pow_self _ (by have := hLe pe hpe; omega)) (hoddp pe hpe)
     · intro p hpF hp2
-      rcases hprimeF p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
+      rcases hprimeS p (Nat.prime_of_mem_primeFactors hpF) (Nat.dvd_of_mem_primeFactors hpF)
         with rfl | ⟨pe, hpe, rfl⟩
       · exact absurd ht2 hp2
-      · rw [hfactp pe hpe]
+      · rw [hfactp pe hpe, padicValNat.eq_zero_of_not_dvd hp2, add_zero]
         exact hoddp pe hpe
     · intro p hpt
       by_cases hp2 : p = 2
@@ -697,8 +790,12 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
     set Lm := cert.ll.minus.map (fun t => (t.1, t.2.1)) with hLm
     set Lp := cert.ll.plus.map (fun t => (t.1, t.2.1)) with hLp
     set Qs := cert.qs.map (fun d => (d.q, d.e)) with hQs
-    set F := (llF cert.ll).toNat with hFdef
-    have hF : F = 2 ^ cert.ll.e2 * prodPow (Lm ++ Lp) := toNat_llF cert.ll
+    haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+    set F := (liftedS1 cert.ll cert.t').toNat with hFdef
+    have hF : F = 2 ^ (cert.ll.e2 + padicValNat 2 cert.t' - 1)
+        * prodPow ((Lm ++ Lp).map fun pe => (pe.1, pe.2 + padicValNat pe.1 cert.t')) :=
+      toNat_liftedS1 cert.ll cert.t'
+    have hv2 : 1 ≤ padicValNat 2 cert.t' := one_le_padicValNat_of_dvd ht0.ne' ht2
     have hF2 : 2 ∣ F := by
       rw [hF]
       exact (dvd_pow_self 2 (by omega)).mul_right _
@@ -876,19 +973,20 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
       obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hqe
       exact hlY d.q (List.mem_map_of_mem hd)
     -- the final trial division
-    have hS : (llF cert.ll * AzNat.ofNat (s2Of cert.qs)).toNat = F * prodPow Qs := by
+    have hS : (liftedS1 cert.ll cert.t' * AzNat.ofNat (s2Of cert.qs)).toNat = F * prodPow Qs := by
       rw [AzNat.toNat_mul, AzNat.toNat_ofNat, s2Of_eq]
     have hsize' : N < (F * prodPow Qs) ^ 2 := by
       have := (AzNat.lt_iff_toNat_lt _ _).mp hsize
       rwa [AzNat.toNat_square, hS] at this
-    have hs1 : 1 < (llF cert.ll * AzNat.ofNat (s2Of cert.qs)).toNat := by
+    have hs1 : 1 < (liftedS1 cert.ll cert.t' * AzNat.ofNat (s2Of cert.qs)).toNat := by
       rw [hS]
       have hP : 0 < prodPow Qs := prodPow_pos fun qe hqe => by
         obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hqe
         exact (hQd d hd).1.pos
       have hF0 : 0 < F := by
         rw [hF]
-        refine Nat.mul_pos (pow_pos two_pos _) (prodPow_pos fun pe hpe => ?_)
+        refine Nat.mul_pos (pow_pos two_pos _) (prodPow_pos fun pe' hpe' => ?_)
+        obtain ⟨pe, hpe, rfl⟩ := List.mem_map.mp hpe'
         rcases List.mem_append.mp hpe with h | h
         · exact (hm pe h).1.pos
         · exact (hp pe h).1.pos
@@ -898,7 +996,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
     obtain ⟨i, hi0, hri, hloop⟩ := finalDiv_true (by omega) hs1 (i₀ := 0) (r := 1)
       (by rw [pow_zero]; exact (Nat.mod_eq_of_lt hs1).symm) (fun j hj hj' => by omega) h
     rw [hS] at hri hloop
-    exact prime_of_aprcl h2 hodd' hnd hm hp he2d ε hε h42' h43' ht0 ht2
+    exact prime_of_aprcl h2 hodd' hnd hm hp he2 he2d ε hε h42' h43' ht0 ht2
       (by simpa [hQs, List.map_map, Function.comp_def] using hQnd)
       (fun qe hqe => by
         obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hqe

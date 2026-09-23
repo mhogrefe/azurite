@@ -8,7 +8,7 @@
 
   * runs the Lucas–Lehmer stage (`llStage`, giving `F` and the ring parameters);
   * for each `q`: `q` prime, `q − 1 ∣ t'`, `1 ≤ e`, `2 ≤ e → q ∣ t'`, `q ∤ n`
-    (else composite), `q ∤ F`, `n^t' ≡ 1 (mod q^e)` (computed in `ZMod (q^e)`),
+    (else composite), `q ∤ s₁`, `n^t' ≡ 1 (mod q^e)` (computed in `ZMod (q^e)`),
     a certified generator and index table, and the Jacobi test `jTest` for
     every prime `p ∣ q − 1` (the exponents `h` are recorded) — (1.3)(i);
   * for each odd `p ∣ t'`: `p ∤ n` (else composite), `p` non-Wieferich
@@ -18,12 +18,15 @@
     `p ∤ h` ((1.3)(i3), Theorem (7.19)), or the additional test (1.3)(k) at an
     auxiliary prime `q'` from the certificate (`auxOK`); with no source, `n` a
     `p`-th power is composite ((1.3)(j));
-  * `s = F·s₂ > √n` and the final trial division (1.3)(l) over `i ≤ t'`.
+  * `s = s₁·s₂ > √n` with the (5.2) lift `s₁ = 2^(e₂+v₂(t')−1)·∏ p^(e+v_p(t'))`
+    (`liftedS1`), and the final trial division (1.3)(l) over `i ≤ t'`.
 
   Soundness of both verdicts is `aprclCheck_true`/`aprclCheck_false` in
-  `Azurite/APRCL/Equiv/Test.lean`.  The flag/`λ`-route (i2a) is not
-  implemented, and the completeness halves ("no `h` ⟹ composite") are not
-  proven, so the checker reports `none` there.
+  `Azurite/APRCL/Equiv/Test.lean`.  The Jacobi tests are complete
+  (`Azurite/APRCL/Equiv/Complete.lean`: for prime `n` an `h` always exists), so a
+  test finding no `h` reports `composite`.  The flag/`λ`-route (i2a) is not
+  implemented, and the auxiliary-prime route (k) reports `none` when its `h` is
+  divisible by `p`.
 -/
 import Azurite.APRCL.LucasLehmer
 import Azurite.APRCL.JacobiStage
@@ -51,6 +54,13 @@ structure Cert where
   aux : List (ℕ × ℕ × ℕ)
   deriving Repr
 
+/-- **The (5.2) `s₁`**: the Lucas–Lehmer part `F` lifted by `t'`,
+`s₁ = 2^(e₂ + v₂(t') − 1) · ∏ p^(e + v_p(t'))` (the paper's `½ ∏_{p ∣ F} p^(v_p(t') + v_p(F))`). -/
+def liftedS1 (cert : LLCert) (t' : ℕ) : AzNat :=
+  AzNat.ofNat (2 ^ (cert.e2 + padicValNat 2 t' - 1))
+    * (cert.minus.map fun pe => AzNat.ofNat (pe.1 ^ (pe.2.1 + padicValNat pe.1 t'))).prod
+    * (cert.plus.map fun pe => AzNat.ofNat (pe.1 ^ (pe.2.1 + padicValNat pe.1 t'))).prod
+
 /-- `s₂ = ∏ q^e`. -/
 def s2Of (qs : List QCert) : ℕ := (qs.map fun d => d.q ^ d.e).prod
 
@@ -70,7 +80,9 @@ section Checks
 variable (n : AzNat) [Fact (1 < n.toNat)]
 
 /-- **The per-`q` check** of (1.3)(i): returns the exponents `(p, h)` for the primes
-`p ∣ q − 1`. -/
+`p ∣ q − 1`.  A prime `p ∣ q − 1` dividing `n` is a factor (composite unless `n = p`), and a
+Jacobi test finding no `h` is composite (`jTest_isSome_of_checks`: for prime `n` an `h` always
+exists). -/
 def qCheck (F : AzNat) (t' : ℕ) (d : QCert) : Outcome (List (ℕ × ℕ)) :=
   if !(isPrimeNat d.q && decide ((d.q - 1) ∣ t') && decide (1 ≤ d.e)
       && decide (2 ≤ d.e → d.q ∣ t') && powModEqOne n t' (d.q ^ d.e)) then .fail
@@ -82,10 +94,14 @@ def qCheck (F : AzNat) (t' : ℕ) (d : QCert) : Outcome (List (ℕ × ℕ)) :=
     let f := CL.indexTableOf tbl
     if !(CL.checkIndexTable d.q d.g f) then .fail
     else
-      let res := (d.q - 1).primeFactorsList.map fun p =>
-        (p, jTest n p (padicValNat p (d.q - 1)) d.q f)
-      if res.all (fun ph => ph.2.isSome) then .pass (res.map fun ph => (ph.1, ph.2.getD 0))
-      else .fail
+      let ps := (d.q - 1).primeFactorsList
+      if ps.any (fun p => decide (n % AzNat.ofNat p = 0)) then
+        (if ps.any (fun p => decide (n % AzNat.ofNat p = 0) && decide (AzNat.ofNat p < n))
+          then .composite else .fail)
+      else
+        let res := ps.map fun p => (p, jTest n p (padicValNat p (d.q - 1)) d.q f)
+        if res.all (fun ph => ph.2.isSome) then .pass (res.map fun ph => (ph.1, ph.2.getD 0))
+        else .composite
 
 /-- **The additional test (1.3)(k)** for an odd `p` with the auxiliary prime `q'`: `q'` prime,
 `p ∣ q' − 1`, `q' ∤ n`, certified generator and index table, and the `k = 1` odd-`p` test at
@@ -152,7 +168,7 @@ def aprclCheck (n : AzNat) (cert : Cert) : Option Bool :=
       | .fail => none
       | .composite => some false
       | .pass _ =>
-        let F := llF cert.ll
+        let F := liftedS1 cert.ll cert.t'
         if !(decide (2 ∣ cert.t') && decide (0 < cert.t')
             && decide ((cert.qs.map (·.q)).Nodup)) then none
         else
@@ -172,10 +188,19 @@ def aprclCheck (n : AzNat) (cert : Cert) : Option Bool :=
 
 /-! ### The generator (search side, unproven) -/
 
+/-- All divisors of `t` from its prime factorization (`Nat.divisors` scans `[1, t]`). -/
+def divisorsFast (t : ℕ) : List ℕ :=
+  (t.primeFactorsList.dedup.map fun p => (p, padicValNat p t)).foldl
+    (fun acc pe => (List.range (pe.2 + 1)).flatMap fun i => acc.map (· * pe.1 ^ i)) [1]
+
+/-- The `q`-primes of `t` (primes `q` with `q − 1 ∣ t`), via `divisorsFast`. -/
+def qPrimesFast (t : ℕ) : List ℕ :=
+  ((divisorsFast t).filter fun d => isPrimeNat (d + 1)).map (· + 1) |>.mergeSort
+
 /-- The `q`-primes for `t'` not dividing `n·F`, with `e = v_q(t') + 1` and the least
 primitive root. -/
 def generateQs (n F : AzNat) (t' : ℕ) : List QCert :=
-  (CL.qPrimes t').filterMap fun q =>
+  (qPrimesFast t').filterMap fun q =>
     if n % AzNat.ofNat q = 0 ∨ F % AzNat.ofNat q = 0 then none
     else some ⟨q, padicValNat q t' + 1, (CL.findGenerator q).getD 0⟩
 

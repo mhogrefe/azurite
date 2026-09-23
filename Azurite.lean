@@ -1,4 +1,5 @@
 
+import Azurite.APRCL.Equiv.Complete
 import Azurite.APRCL.Equiv.JacobiAlign
 import Azurite.APRCL.Equiv.JacobiChain
 import Azurite.APRCL.Equiv.JacobiStage
@@ -11,12 +12,14 @@ import Azurite.APRCL.Test
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.Equiv.PrimeSieve
 import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
+import Azurite.Algorithm.Equiv.WindowPowAzNat
 import Azurite.Algorithm.ExactDiv
 import Azurite.Algorithm.FastPow
 import Azurite.Algorithm.NormalizedGcd
 import Azurite.Algorithm.PrimeSieve
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.Algorithm.SlidingWindowPowAzNat
+import Azurite.Algorithm.WindowPowAzNat
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula

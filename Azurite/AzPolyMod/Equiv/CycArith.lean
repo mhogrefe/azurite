@@ -1,12 +1,15 @@
 /-
   **Correctness of the dedicated cyclotomic arithmetic**: `reduceCyc` lands in the
   residue class of its input (`toAdjoin_reduceCyc`), hence `cycMul a b = a * b`
-  (`cycMul_eq`), the wrapper `CycF` is a monoid transported from `CycT`, and the
-  sliding-window power `cycPow a u = a ^ u.toNat` (`cycPow_eq`).
+  (`cycMul_eq`, via the lifted `AzNat` product mapped back along `ofAzNatRingHom`),
+  the wrapper `CycF` is a monoid transported from `CycT`, and the fixed-window
+  power `cycPow a u = a ^ u.toNat` (`cycPow_eq`).
 -/
 import Azurite.AzPolyMod.CycArith
 import Azurite.AzPolyMod.Equiv.Cyclotomic
 import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
+import Azurite.Algorithm.Equiv.WindowPowAzNat
+import Azurite.AzZMod.CastHom
 import Azurite.CohenLenstra.Tables
 
 namespace Azurite
@@ -89,12 +92,34 @@ theorem toAdjoin_reduceCyc (c : AzPolynomial (AzZMod n)) :
     rw [zetaCoeff_eq_sub (k := k) hi', mul_sub, mul_ite, mul_ite, mul_one, mul_zero]
   rw [Finset.sum_congr rfl this, Finset.sum_sub_distrib]
 
+/-- Reducing the coefficients is mapping the polynomial along `ofAzNatRingHom`. -/
+theorem toPoly_reduceCoeffs (P : AzPolynomial AzNat) :
+    AzPolynomial.toPoly (reduceCoeffs n P)
+      = (AzPolynomial.toPoly P).map (AzZMod.ofAzNatRingHom (m := n)) := by
+  rw [reduceCoeffs, toPoly_normalize_ofFn _ (fun j => AzZMod.ofAzNat n (P.coeff j)),
+    toPoly_eq_sum_coeff P le_rfl, Polynomial.map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X]
+  rfl
+
+/-- The lifted coefficients map back to the original polynomial. -/
+theorem toPoly_map_liftNat (a : CycT n p k) :
+    (AzPolynomial.toPoly (liftNat n p k a)).map (AzZMod.ofAzNatRingHom (m := n))
+      = AzPolynomial.toPoly a.val := by
+  rw [liftNat, toPoly_normalize_ofFn _ (fun j => (a.val.coeff j).val), Polynomial.map_sum,
+    toPoly_eq_sum_coeff a.val le_rfl]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.map_pow, Polynomial.map_X]
+  congr 2
+  exact AzZMod.ofAzNat_val _
+
 include hp hk in
 /-- **The dedicated multiplication is the ring multiplication.** -/
 theorem cycMul_eq (a b : CycT n p k) : cycMul n p k a b = a * b := by
   apply toAdjoin_injective (monic_toPoly_cyclotomicPrimePow (AzZMod n) p k)
     (monic_toPoly_cyclotomicPrimePow (AzZMod n) p k).ne_zero
-  rw [cycMul, toAdjoin_reduceCyc hp hk, toPoly_mul, map_mul, toAdjoin_mul
+  rw [cycMul, toAdjoin_reduceCyc hp hk, toPoly_reduceCoeffs, toPoly_mul, Polynomial.map_mul,
+    toPoly_map_liftNat, toPoly_map_liftNat, map_mul, toAdjoin_mul
     (monic_toPoly_cyclotomicPrimePow (AzZMod n) p k) (monic_toPoly_cyclotomicPrimePow (AzZMod n) p k).ne_zero]
   rfl
 
@@ -108,7 +133,7 @@ include hp hk in
 /-- **`cycPow` is the monoid power.** -/
 theorem cycPow_eq (a : CycT n p k) (u : AzNat) : cycPow n p k a u = a ^ u.toNat := by
   letI := cycFMonoid (n := n) hp hk
-  exact Azurite.slidingWindowPowAzNat_eq_pow (toF n p k a) u
+  exact Azurite.windowPowAzNat_eq_pow (toF n p k a) u
 
 end AzPolyMod
 

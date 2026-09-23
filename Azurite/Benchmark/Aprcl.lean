@@ -26,19 +26,19 @@ def ms (ns : UInt64) : String :=
 def timeOnce {α : Type} (f : Unit → α) : IO (α × UInt64) := timeNsIter 1 f
 
 /-- Profile one number: generator, checker, and the stages. -/
-def profile (n : AzNat) (detail : Bool := false) : IO Unit := do
+def profile (n : AzNat) (detail : Bool := false) (B : ℕ := 0) : IO Unit := do
   if h : 1 < n.toNat then
     haveI : Fact (1 < n.toNat) := ⟨h⟩
-    profileAux n detail
+    profileAux n detail B
   else IO.println "n ≤ 1"
 where
- profileAux (n : AzNat) (detail : Bool) [Fact (1 < n.toNat)] : IO Unit := do
+ profileAux (n : AzNat) (detail : Bool) (B : ℕ) [Fact (1 < n.toNat)] : IO Unit := do
   let digits := (toString n.toNat).length
-  let (cert, tGen) ← timeOnce fun _ => generateSel n
+  let (cert, tGen) ← timeOnce fun _ => generateSel n B
   let (res, tCheck) ← timeOnce fun _ => aprclCheck n cert
   -- stages
   let (llRes, tLL) ← timeOnce fun _ => llStage n cert.ll
-  let F := llF cert.ll
+  let F := liftedS1 cert.ll cert.t'
   let (qRes, tQ) ← timeOnce fun _ => qStage n F cert.t' cert.qs
   let nTests := (cert.qs.map fun d => (d.q - 1).primeFactorsList.length).sum
   let llPrimes := cert.ll.minus.map (·.1) ++ cert.ll.plus.map (·.1)
@@ -94,8 +94,10 @@ where
     IO.println s!"{n.toNat.log2 + 1}-bit n ({rMul + rMod + rZ + rS + rA - rMul - rMod - rZ - rS - rA}): AzNat mul={per tMul}ns  mod={per tMod}ns  AzZMod mul={per tZ}ns  AzZMod x*x={per tS}ns  add={per tA}ns"
     let f := CL.indexTableOf (CL.indexTableArr 53 2)
     let J : AzPolyMod.CycT n p k := CL.jacobiSumT n p k 53 f 1 1
-    let J2 := J * J
+    -- full-size operands: a large power of `J + 2` has coefficients of the size of `n`
+    let J2 := AzPolyMod.cycPow n p k (J + 2) (n / AzNat.ofNat 7)
     let xs : List (AzPolyMod.CycT n p k) := (List.range 100).map fun i => J2 + (i : AzPolyMod.CycT n p k)
+    let J := J2 + 1
     let (rR, tRaw) ← timeOnce fun _ => (xs.foldl (fun acc x => acc + (x.val * J.val).coeffs.size) 0)
     IO.println s!"   raw AzPolynomial product (no Φ-reduction) ={tRaw / 100 / 1000}µs ({rR - rR})"
     let (rC, tC) ← timeOnce fun _ => (xs.foldl (fun acc x => acc + AzPolyMod.cycMul n p k x J) 0).val.coeffs.size
@@ -112,8 +114,8 @@ def run (limit : Nat) (cfg : Std.HashMap String String) : IO Unit := do
     prims (AzNat.ofNat (10 ^ 100 + 267)) 7 1
     return
   match cfg.get? "paper" with
-  | some "180" => profile (AzNat.ofNat CL.prime180_table2) (cfg.contains "detail")
-  | some "247" => profile (AzNat.ofNat CL.prime247_2_892) (cfg.contains "detail")
+  | some "180" => profile (AzNat.ofNat CL.prime180_table2) (cfg.contains "detail") (configGetNat cfg "B" 0)
+  | some "247" => profile (AzNat.ofNat CL.prime247_2_892) (cfg.contains "detail") (configGetNat cfg "B" 0)
   | _ =>
     let d := configGetNat cfg "digits" 30
     let detail := cfg.contains "detail"
