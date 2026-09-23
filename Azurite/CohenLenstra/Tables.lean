@@ -115,14 +115,25 @@ theorem checkIndexTable_spec {q g : ℕ} {f : ℕ → ℕ} (h : checkIndexTable 
 
 /-- The discrete-log table `dlog[g^i mod q] = i` (generator-side). -/
 def dlogTable (q g : ℕ) : Array ℕ :=
-  (List.range (q - 1)).foldl (fun arr i => arr.setIfInBounds ((g : ZMod q) ^ i).val i)
-    (Array.replicate q 0)
+  ((List.range (q - 1)).foldl
+    (fun (st : Array ℕ × ZMod q) i => (st.1.setIfInBounds st.2.val i, st.2 * (g : ZMod q)))
+    (Array.replicate q 0, 1)).1
 
-/-- The index table `f x = dlog(1 − g^x)` (generator-side; certify with
-`checkIndexTable`). -/
-def indexTable (q g : ℕ) : ℕ → ℕ :=
+/-- The index table as an array: `f x = dlog(1 − g^x)` for `x < q − 1` (generator-side;
+certify with `checkIndexTable`).  Materialized once — a partially applied function would
+recompute the discrete-log table at every lookup. -/
+def indexTableArr (q g : ℕ) : Array ℕ :=
   let tbl := dlogTable q g
-  fun x => tbl.getD (1 - (g : ZMod q) ^ x).val 0
+  ((List.range (q - 1)).foldl
+    (fun (st : Array ℕ × ZMod q) x => (st.1.setIfInBounds x (tbl.getD (1 - st.2).val 0), st.2 * (g : ZMod q)))
+    (Array.replicate (q - 1) 0, 1)).1
+
+/-- Lookup in a materialized index table. -/
+def indexTableOf (tbl : Array ℕ) (x : ℕ) : ℕ := tbl.getD x 0
+
+/-- The index table as a function (for guards and generators; checkers should bind
+`indexTableArr` once and use `indexTableOf`). -/
+def indexTable (q g : ℕ) : ℕ → ℕ := indexTableOf (indexTableArr q g)
 
 #guard checkIndexTable 13 2 (indexTable 13 2) = true
 #guard checkIndexTable 19 2 (indexTable 19 2) = true
@@ -138,11 +149,178 @@ def zetaCoeff (p k l i : ℕ) : ℤ :=
   else (if i % p ^ (k - 1) = l % p ^ (k - 1) then -1 else 0)
 
 /-- **The (1.1)(b2) table** `Σ_{x=1}^{q−2} ζ^(a·x + b·f(x))` in `CycT n p k`,
-as a coefficient vector. -/
-def jacobiSumT (n : AzNat) (p k q : ℕ) [Fact (1 < n.toNat)] (f : ℕ → ℕ) (a b : ℕ) :
+as a coefficient vector — the specification form, one sum per coefficient. -/
+def jacobiSumTSum (n : AzNat) (p k q : ℕ) [Fact (1 < n.toNat)] (f : ℕ → ℕ) (a b : ℕ) :
     CycT n p k :=
   ofCoeffFn ((p - 1) * p ^ (k - 1)) fun i =>
     ((∑ x ∈ Finset.Icc 1 (q - 2), zetaCoeff p k ((a * x + b * f x) % p ^ k) i : ℤ) : AzZMod n)
+
+/-- **The exponent-class counts** `c_l = #{1 ≤ x ≤ q − 2 : a·x + b·f(x) ≡ l (mod p^k)}`,
+in one pass over `x`. -/
+def expCounts (p k q : ℕ) (f : ℕ → ℕ) (a b : ℕ) : Array ℕ :=
+  (List.range (q - 2)).foldl
+    (fun arr x' => arr.modify ((a * (x' + 1) + b * f (x' + 1)) % p ^ k) (· + 1))
+    (Array.replicate (p ^ k) 0)
+
+/-- **The (1.1)(b2) table**, computed from the exponent-class counts: the coefficient of
+`ζ^i` (`i < m = (p−1)p^(k−1)`) is `c_i − c_(m + (i mod p^(k−1)))`, since the class
+`l = m + (i mod p^(k−1))` is the unique `l ≥ m` with `ζ^l` having `−1` at position `i`.
+Cost `O(q + p^k)` instead of `O(m·q)`; equal to `jacobiSumTSum` (`jacobiSumT_eq_sum`). -/
+def jacobiSumT (n : AzNat) (p k q : ℕ) [Fact (1 < n.toNat)] (f : ℕ → ℕ) (a b : ℕ) :
+    CycT n p k :=
+  let c := expCounts p k q f a b
+  let m := (p - 1) * p ^ (k - 1)
+  ofCoeffFn m fun i => (((c.getD i 0 : ℤ) - (c.getD (m + i % p ^ (k - 1)) 0 : ℤ) : ℤ) : AzZMod n)
+
+section Counts
+
+/-- The fold invariant of `expCounts`: entry `l` counts the `x ≤ t` in class `l`. -/
+theorem foldl_modify_count {P : ℕ} (e : ℕ → ℕ) (he : ∀ x, e x < P) (init : Array ℕ)
+    (hsize : init.size = P) {l : ℕ} (hl : l < P) :
+    ∀ t : ℕ, ((List.range t).foldl (fun arr x' => arr.modify (e (x' + 1)) (· + 1)) init).getD l 0
+      = init.getD l 0 + ((Finset.Icc 1 t).filter fun x => e x = l).card
+  | 0 => by simp
+  | t + 1 => by
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    have hsz : ∀ t, ((List.range t).foldl (fun arr x' => arr.modify (e (x' + 1)) (· + 1)) init).size
+        = P := by
+      intro t
+      induction t with
+      | zero => simpa using hsize
+      | succ t ih => rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+          Array.size_modify, ih]
+    set A := (List.range t).foldl (fun arr x' => arr.modify (e (x' + 1)) (· + 1)) init with hA
+    have hIcc : (Finset.Icc 1 (t + 1)).filter (fun x => e x = l)
+        = ((Finset.Icc 1 t).filter fun x => e x = l) ∪
+          (if e (t + 1) = l then {t + 1} else ∅) := by
+      ext x
+      simp only [Finset.mem_filter, Finset.mem_Icc, Finset.mem_union]
+      split_ifs with h <;> simp only [Finset.mem_singleton, Finset.notMem_empty, or_false]
+      · constructor
+        · rintro ⟨⟨h1, h2⟩, h3⟩
+          rcases Nat.lt_or_ge x (t + 1) with h4 | h4
+          · exact Or.inl ⟨⟨h1, by omega⟩, h3⟩
+          · exact Or.inr (by omega)
+        · rintro (⟨⟨h1, h2⟩, h3⟩ | rfl)
+          · exact ⟨⟨h1, by omega⟩, h3⟩
+          · exact ⟨⟨by omega, le_rfl⟩, h⟩
+      · constructor
+        · rintro ⟨⟨h1, h2⟩, h3⟩
+          refine ⟨⟨h1, ?_⟩, h3⟩
+          rcases Nat.lt_or_ge x (t + 1) with h4 | h4
+          · omega
+          · exfalso
+            exact h (by rw [show x = t + 1 by omega] at h3; exact h3)
+        · rintro ⟨⟨h1, h2⟩, h3⟩
+          exact ⟨⟨h1, by omega⟩, h3⟩
+    have hdisj : Disjoint ((Finset.Icc 1 t).filter fun x => e x = l)
+        (if e (t + 1) = l then {t + 1} else ∅) := by
+      split_ifs
+      · rw [Finset.disjoint_singleton_right, Finset.mem_filter, Finset.mem_Icc]
+        omega
+      · exact Finset.disjoint_empty_right _
+    rw [hIcc, Finset.card_union_of_disjoint hdisj, ← add_assoc,
+      ← foldl_modify_count e he init hsize hl t]
+    have hlA : l < A.size := by rw [hA, hsz]; exact hl
+    have hlA' : l < (A.modify (e (t + 1)) (· + 1)).size := by rw [Array.size_modify]; exact hlA
+    rw [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hlA',
+      Array.getElem?_eq_getElem hlA, Option.getD_some, Option.getD_some, Array.getElem_modify]
+    split_ifs with h1 <;> simp
+
+theorem expCounts_getD {p k q : ℕ} (hp : 0 < p ^ k) (f : ℕ → ℕ) (a b : ℕ) {l : ℕ} (hl : l < p ^ k) :
+    (expCounts p k q f a b).getD l 0
+      = ((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ k = l).card := by
+  have := foldl_modify_count (fun x => (a * x + b * f x) % p ^ k) (fun x => Nat.mod_lt _ hp)
+    (Array.replicate (p ^ k) 0) (by simp) hl (q - 2)
+  rw [expCounts, this, Array.getD_eq_getD_getElem?, Array.getElem?_replicate, if_pos hl,
+    Option.getD_some, zero_add]
+
+variable {p k : ℕ} (hp : p.Prime) (hk : 0 < k)
+include hp hk
+
+/-- **The coefficient identity**: the per-coefficient sum of `zetaCoeff` over the classes
+equals `c_i − c_(m + (i mod p^(k−1)))`. -/
+theorem sum_zetaCoeff_eq_counts (q : ℕ) (f : ℕ → ℕ) (a b : ℕ) {i : ℕ}
+    (hi : i < (p - 1) * p ^ (k - 1)) :
+    ∑ x ∈ Finset.Icc 1 (q - 2), zetaCoeff p k ((a * x + b * f x) % p ^ k) i
+      = (((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ k = i).card : ℤ)
+        - (((Finset.Icc 1 (q - 2)).filter fun x =>
+            (a * x + b * f x) % p ^ k = (p - 1) * p ^ (k - 1) + i % p ^ (k - 1)).card : ℤ) := by
+  obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  simp only [Nat.add_sub_cancel] at hi ⊢
+  set m := (p - 1) * p ^ k' with hm
+  set P := p ^ k' with hP
+  have hP0 : 0 < P := pow_pos hp.pos _
+  have hpk : p ^ (k' + 1) = m + P := by
+    rw [pow_succ, hm, hP, Nat.sub_one_mul, Nat.sub_add_cancel (Nat.le_mul_of_pos_left _ hp.pos),
+      mul_comm]
+  have hiP : i % P < P := Nat.mod_lt i hP0
+  have hmaps : ∀ x ∈ Finset.Icc 1 (q - 2),
+      (a * x + b * f x) % p ^ (k' + 1) ∈ Finset.range (p ^ (k' + 1)) := fun x _ =>
+    Finset.mem_range.mpr (Nat.mod_lt _ (pow_pos hp.pos _))
+  rw [← Finset.sum_fiberwise_of_maps_to hmaps]
+  have hinner : ∀ y ∈ Finset.range (p ^ (k' + 1)),
+      ∑ x ∈ (Finset.Icc 1 (q - 2)).filter (fun x => (a * x + b * f x) % p ^ (k' + 1) = y),
+          zetaCoeff p (k' + 1) ((a * x + b * f x) % p ^ (k' + 1)) i
+        = ((((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ (k' + 1) = y).card : ℤ))
+          * zetaCoeff p (k' + 1) y i := by
+    intro y _
+    rw [Finset.sum_congr rfl (fun x hx => by rw [(Finset.mem_filter.mp hx).2]), Finset.sum_const,
+      nsmul_eq_mul]
+  rw [Finset.sum_congr rfl hinner, Finset.range_eq_Ico, ← Finset.sum_Ico_consecutive _ (Nat.zero_le m)
+    (by omega : m ≤ p ^ (k' + 1))]
+  -- the low part
+  have hlow : ∑ y ∈ Finset.Ico 0 m,
+      ((((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ (k' + 1) = y).card : ℤ))
+        * zetaCoeff p (k' + 1) y i
+      = (((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ (k' + 1) = i).card : ℤ) := by
+    rw [Finset.sum_eq_single i]
+    · rw [zetaCoeff, Nat.add_sub_cancel, if_pos hi, if_pos rfl, mul_one]
+    · intro y hy hyi
+      rw [zetaCoeff, Nat.add_sub_cancel, if_pos (Finset.mem_Ico.mp hy).2, if_neg (Ne.symm hyi), mul_zero]
+    · intro h
+      exact absurd (Finset.mem_Ico.mpr ⟨Nat.zero_le _, hi⟩) h
+  -- the high part
+  have hhigh : ∑ y ∈ Finset.Ico m (p ^ (k' + 1)),
+      ((((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ (k' + 1) = y).card : ℤ))
+        * zetaCoeff p (k' + 1) y i
+      = -(((Finset.Icc 1 (q - 2)).filter fun x =>
+          (a * x + b * f x) % p ^ (k' + 1) = m + i % P).card : ℤ) := by
+    have hmP : m % P = 0 := by rw [hm]; exact Nat.mul_mod_left _ _
+    rw [Finset.sum_eq_single (m + i % P)]
+    · rw [zetaCoeff, Nat.add_sub_cancel, if_neg (by omega), if_pos (by rw [Nat.add_mod, hmP, zero_add,
+        Nat.mod_mod, Nat.mod_eq_of_lt hiP]), mul_neg_one]
+    · intro y hy hyi
+      rw [Finset.mem_Ico] at hy
+      rw [zetaCoeff, Nat.add_sub_cancel, if_neg (by omega), if_neg, mul_zero]
+      intro heq
+      apply hyi
+      obtain ⟨r, hr⟩ : ∃ r, y = m + r := ⟨y - m, by omega⟩
+      have hrP : r < P := by omega
+      rw [hr, Nat.add_mod, hmP, zero_add, Nat.mod_mod, Nat.mod_eq_of_lt hrP] at heq
+      rw [hr, ← heq]
+    · intro h
+      exact absurd (Finset.mem_Ico.mpr ⟨Nat.le_add_right _ _, by omega⟩) h
+  rw [hlow, hhigh, sub_eq_add_neg]
+
+end Counts
+
+/-- **The fast table is the specification table.** -/
+theorem jacobiSumT_eq_sum (n : AzNat) {p k : ℕ} (q : ℕ) [Fact (1 < n.toNat)] (hp : p.Prime)
+    (hk : 0 < k) (f : ℕ → ℕ) (a b : ℕ) :
+    jacobiSumT n p k q f a b = jacobiSumTSum n p k q f a b := by
+  unfold jacobiSumT jacobiSumTSum ofCoeffFn
+  dsimp only
+  refine congrArg (fun F => ofPoly (AzPolynomial.normalize (Array.ofFn F))) (funext fun ⟨i, hi⟩ => ?_)
+  simp only
+  have hpk0 : 0 < p ^ k := pow_pos hp.pos k
+  have hpk : (p - 1) * p ^ (k - 1) + p ^ (k - 1) = p ^ k := by
+    obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+    simp only [Nat.add_sub_cancel]
+    rw [pow_succ, Nat.sub_one_mul, Nat.sub_add_cancel (Nat.le_mul_of_pos_left _ hp.pos), mul_comm]
+  have hiP := Nat.mod_lt i (pow_pos hp.pos (k - 1))
+  rw [expCounts_getD hpk0 f a b (by omega), expCounts_getD hpk0 f a b (by omega),
+    sum_zetaCoeff_eq_counts hp hk q f a b hi]
 
 section Correctness
 
@@ -195,7 +373,7 @@ theorem toAdjoin_jacobiSumT (f : ℕ → ℕ) (a b : ℕ) :
   have hf := AzPolynomial.monic_toPoly_cyclotomicPrimePow (AzZMod n) p k
   have hz := eval₂_root_cyclotomic_int n p k hp hk
   have hz1 := pow_eq_one_of_cyclotomic hz
-  rw [jacobiSumT, toAdjoin_ofCoeffFn hf, toAdjoin_zetaT]
+  rw [jacobiSumT_eq_sum n q hp hk, jacobiSumTSum, toAdjoin_ofCoeffFn hf, toAdjoin_zetaT]
   have h1 : ∀ i, AdjoinRoot.of (AzPolynomial.toPoly (AzPolynomial.cyclotomicPrimePow (AzZMod n) p k))
       ((∑ x ∈ Finset.Icc 1 (q - 2), zetaCoeff p k ((a * x + b * f x) % p ^ k) i : ℤ) : AzZMod n)
       = ∑ x ∈ Finset.Icc 1 (q - 2),

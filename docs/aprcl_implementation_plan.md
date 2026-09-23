@@ -271,3 +271,31 @@ C2 to get a shippable two-sided test early while B proceeds.
   halves (checker returns `none` where the paper says "composite" without proof here).
   Guards: 10^6+3, 10^18+3, 10^18+9 certified through the Jacobi stage.  Next: A5 ports and (5.5)
   selection as generator, then Phase D (dedicated Φ-reduction, Montgomery, benchmarks — ask first).
+* **2026-09-22 (A5: (5.5) selection ported)** — `Azurite/APRCL/Select.lean`: `qExp`, `s2OfListAz`,
+  `bigEnoughAz`, `s2barInitAz`, `pruneStepAz`/`pruneAz`, `procedureAz`, `selectionAz`,
+  `certOfSelection`, `generateSel`, `aprclTestSel` (+ `aprclTestSel_true/false`).  Only the guard
+  touches `n`.  `t` tried from `[2, 12, 60, 120, 720, 5040, 55440, 720720]`; 2^127−1 certified.
+  Remaining generator-side ports (`smoothPart`/`oddPrimeDivs`/prime-only trial division with (2.1))
+  are Phase D items together with the performance work.
+* **2026-09-22 ((1.3)(j)/(k) additional tests + p-th-power verdict)** — `Cert.aux : List (p, q', g')`;
+  `auxOK` (q' prime, `p ∣ q'−1`, `q' ∤ n`, certified g'/index table, `jOdd n p 1 q' f = some h`,
+  `p ∤ h`) is a fourth (6.4) source in `sixFourOK` (sound via `sixFour_of_jOdd` = Theorem 7.19 at
+  `k = 1`); `pCheck` returns `composite` when `n.isPow p` (`not_prime_of_eq_pow`); generator
+  `findAux`/`generateAux` (q' = 2pm+1, m ≤ 50, `n^((q'−1)/p) ≢ 1 mod q'`).  Only the λ-route
+  and the completeness halves remain unimplemented from (1.3).
+* **2026-09-23 (Phase D, first round — benchmarks + three fixes)** — `benchmark aprcl` added
+  (`Azurite/Benchmark/Aprcl.lean`: `digits:D` finds the next prime above 10^D and profiles
+  generator/checker/stages, `paper:180|247`, `detail:1` per-(p,q), `prims:1` primitives).
+  Baseline 247-digit paper prime: 94 s.  Fixes: (1) `indexTable` was a partially applied
+  function rebuilding the discrete-log table per lookup (O(q²) each!) → `indexTableArr`
+  materialized once + `indexTableOf` (41 digits: 28 s → 0.3 s); (2) `jacobiSumT` computed one
+  sum per coefficient (O(m·q)) → `expCounts` one pass + `c_i − c_{m+(i mod P)}`, proven equal to
+  the spec `jacobiSumTSum` (247: 94 → 66 s, tables now negligible); (3) `AzPolyMod/CycArith`:
+  additive Φ-reduction `reduceCyc`, `cycMul`, wrapper `CycF`, `cycPow`, proven (`cycMul_eq`,
+  `cycPow_eq`); all Jacobi-test powers routed through `cycPow` (ring mult 445 → 267 µs; 247:
+  66 → 60 s).  Selection cost model → `testCost p k = m²` (no effect at 247 digits: t' = 65520
+  forced by size).  Current: 21 digits 0.16 s, 41: 0.25 s, 101: 3.0 s, 180: 20 s, 247: 60 s;
+  time = the u-th powers = AzZMod multiplication (2.2 µs mul + 4.3 µs mod at 13 limbs ≈ 13 ns per
+  limb product, boxing-bound) — further speedups are AzNat codegen work (unboxed limbs /
+  Montgomery), not APR-CL-specific.  Also remaining: λ-route (i2a) for flagged p^k, the (5.2)
+  `s1 t' F` lift (theory already supports it), incremental `checkIndexTable`.

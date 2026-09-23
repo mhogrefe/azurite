@@ -28,6 +28,7 @@ import Azurite.Benchmark.AzIntModVsDivMod
 import Azurite.Benchmark.UInt64SqrtRem
 import Azurite.Benchmark.AzNatSqrtRemAlgorithms
 import Azurite.Benchmark.AzNatSqrtVsNat
+import Azurite.Benchmark.Aprcl
 import Azurite.AzPolynomial.Tune
 import Azurite.AzNat.Tune
 
@@ -54,7 +55,7 @@ def validBenchmarks : List String :=
    "uint64_sqrt_rem", "az_nat_sqrt_rem_algorithms", "az_nat_sqrt_vs_nat",
    "az_nat_square_vs_mul", "az_nat_square_algorithms",
    "az_nat_square_algorithms_toomcook3", "az_nat_square_vs_nat",
-   "az_nat_pow_algorithms",
+   "az_nat_pow_algorithms", "aprcl",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d",
    "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3"]
@@ -74,6 +75,7 @@ def main (args : List String) : IO Unit := do
       | "az_polynomial_mul" => runAzPolynomialMul limit cfg seed
       | "az_polynomial_karatsuba" => runAzPolynomialKaratsuba limit cfg seed
       | "cauchy_index_algorithms" => runCauchyIndexAlgorithms limit cfg seed
+      | "aprcl" => Azurite.Benchmark.Aprcl.run limit cfg
       | "az_nat_add" => runAzNatAdd limit cfg seed
       | "az_nat_add_mod_pow2" => runAzNatAddModPow2 limit cfg seed
       | "az_nat_add_mod_pow2_residue" => runAzNatAddModPow2Residue limit cfg seed

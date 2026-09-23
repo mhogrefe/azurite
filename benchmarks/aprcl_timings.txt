@@ -1,0 +1,24 @@
+APR-CL timings (benchmark aprcl), 2026-09-23, after the indexTable fix (materialized array).
+Machine quiet; compiled `lake build benchmark`; times = one run.
+
+digits | t'    | (p,q)-tests | gen    | check    | LL stage | jacobi   | finalDiv
+    21 |    60 |     9       |  7 ms  |  160 ms  |   7 ms   |  125 ms  |   0 ms
+    31 |   120 |    18       |  4 ms  |  299 ms  |   3 ms   |  292 ms  |   0 ms
+    41 |   720 |    30       | 20 ms  |  296 ms  |  14 ms   |  279 ms  |   1 ms
+    61 |  1260 |    43       | 25 ms  |  444 ms  |  17 ms   |  414 ms  |   2 ms
+    81 |  2520 |    64       | 32 ms  | 1334 ms  |  22 ms   | 1354 ms  |   5 ms
+   101 |  5040 |   100       | 23 ms  | 3954 ms  |  14 ms   | 3940 ms  |  12 ms
+   180 | 55440 |   145       | 161 ms | 38.8 s   | 158 ms   | 38.6 s   | 215 ms   (paper Table 4, 180-digit)
+   247 | 65520 |   202       | 330 ms | 94.0 s   | 214 ms   | 93.6 s   | 353 ms   (paper 247-digit, 2^892+1 factor)
+
+Before the indexTable fix the 41-digit case took 28.1 s (tables rebuilt the dlog table per lookup).
+247-digit breakdown (top): q=65521 p=13 k=1: one table 182 ms, one u-power 1108 ms, jTest 5798 ms;
+q=65521 p=2 k=4: one table 134 ms, one u-power 357 ms, jTest 2680 ms (16 tables per test).
+Tables cost m·q per table (one sum per coefficient) — next optimization target; then the u-powers
+(generic AzPolyMod multiplication with per-coefficient reduction).
+
+After expCounts (fast tables): 41 digits 0.25 s; 101: 3.4 s; 180: 20.1 s; 247: 66.5 s (tables ≤ 6 ms each).
+After CycArith (additive Φ-reduction, cycPow): 101: 3.0 s; 180: 20.3 s; 247: 59.6 s.
+Primitives at 820 bits (13 limbs): AzNat mul 2.2 µs, mod 4.3 µs, AzZMod mul 5.6 µs, add 0.4 µs;
+degree-12 CycT: raw AzPolynomial product 197 µs, generic mul (division reduction) 445 µs, cycMul 267 µs.
+247-digit top tests after all fixes: q=65521 p=13 k=1: u-power 864 ms, jTest 1287 ms.

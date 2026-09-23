@@ -15,16 +15,19 @@
     (`2^p ≢ 2 (mod p²)`, the (8.6)-condition for `a = b = 1`), and a (6.4) source
     (`sixFourOK`): `p ∣ F` (Lucas–Lehmer side), or `n^(p−1) ≢ 1 (mod p²)`
     (Proposition (7.18)), or some `q` with `p ∣ q − 1` whose exponent `h` has
-    `p ∤ h` ((1.3)(i3), Theorem (7.19));
+    `p ∤ h` ((1.3)(i3), Theorem (7.19)), or the additional test (1.3)(k) at an
+    auxiliary prime `q'` from the certificate (`auxOK`); with no source, `n` a
+    `p`-th power is composite ((1.3)(j));
   * `s = F·s₂ > √n` and the final trial division (1.3)(l) over `i ≤ t'`.
 
   Soundness of both verdicts is `aprclCheck_true`/`aprclCheck_false` in
-  `Azurite/APRCL/Equiv/Test.lean`.  The additional tests (1.3)(j)/(k) with an
-  auxiliary `q` and the flag/`λ`-route (i2a) are not implemented (the checker
-  reports `none` where they would be needed).
+  `Azurite/APRCL/Equiv/Test.lean`.  The flag/`λ`-route (i2a) is not
+  implemented, and the completeness halves ("no `h` ⟹ composite") are not
+  proven, so the checker reports `none` there.
 -/
 import Azurite.APRCL.LucasLehmer
 import Azurite.APRCL.JacobiStage
+import Azurite.AzNat.RootInt
 
 namespace Azurite
 
@@ -39,11 +42,13 @@ structure QCert where
   g : ℕ
   deriving Repr
 
-/-- **The APR-CL certificate.** -/
+/-- **The APR-CL certificate.**  `aux` holds the auxiliary primes of the additional tests
+(1.3)(j)/(k): `(p, q', g')` with `q' ≡ 1 (mod 2p)`, `g'` a primitive root mod `q'`. -/
 structure Cert where
   ll : LLCert
   t' : ℕ
   qs : List QCert
+  aux : List (ℕ × ℕ × ℕ)
   deriving Repr
 
 /-- `s₂ = ∏ q^e`. -/
@@ -73,7 +78,8 @@ def qCheck (F : AzNat) (t' : ℕ) (d : QCert) : Outcome (List (ℕ × ℕ)) :=
   else if F % AzNat.ofNat d.q = 0 then .fail
   else if !(CL.checkGenerator d.q d.g) then .fail
   else
-    let f := CL.indexTable d.q d.g
+    let tbl := CL.indexTableArr d.q d.g
+    let f := CL.indexTableOf tbl
     if !(CL.checkIndexTable d.q d.g f) then .fail
     else
       let res := (d.q - 1).primeFactorsList.map fun p =>
@@ -81,18 +87,34 @@ def qCheck (F : AzNat) (t' : ℕ) (d : QCert) : Outcome (List (ℕ × ℕ)) :=
       if res.all (fun ph => ph.2.isSome) then .pass (res.map fun ph => (ph.1, ph.2.getD 0))
       else .fail
 
+/-- **The additional test (1.3)(k)** for an odd `p` with the auxiliary prime `q'`: `q'` prime,
+`p ∣ q' − 1`, `q' ∤ n`, certified generator and index table, and the `k = 1` odd-`p` test at
+`q'` with `p ∤ h`. -/
+def auxOK (p q' g' : ℕ) : Bool :=
+  isPrimeNat q' && decide (p ∣ q' - 1) && !(n % AzNat.ofNat q' = 0) && CL.checkGenerator q' g'
+    && (let tbl := CL.indexTableArr q' g'
+        let f := CL.indexTableOf tbl
+        CL.checkIndexTable q' g' f
+          && match jOdd n p 1 q' f with
+            | some h => decide (¬ p ∣ h)
+            | none => false)
+
 /-- **The (6.4) source for an odd prime `p ∣ t'`**: Lucas–Lehmer side, Proposition (7.18),
-or a `q` with `p ∣ q − 1` and `p ∤ h` (Theorem (7.19)). -/
-def sixFourOK (llPrimes : List ℕ) (hs : List (ℕ × List (ℕ × ℕ))) (p : ℕ) : Bool :=
+a `q` with `p ∣ q − 1` and `p ∤ h` (Theorem (7.19)), or the additional test (k). -/
+def sixFourOK (llPrimes : List ℕ) (hs : List (ℕ × List (ℕ × ℕ))) (aux : List (ℕ × ℕ × ℕ))
+    (p : ℕ) : Bool :=
   llPrimes.contains p || notOneModSq n p
-    || hs.any fun qh => decide (p ∣ qh.1 - 1) && qh.2.any fun ph => ph.1 = p && decide (¬ p ∣ ph.2)
+    || hs.any (fun qh => decide (p ∣ qh.1 - 1) && qh.2.any fun ph => ph.1 = p && decide (¬ p ∣ ph.2))
+    || aux.any fun a => a.1 = p && auxOK n p a.2.1 a.2.2
 
 /-- **The odd-prime checks** for `p ∣ t'`: `p ∤ n` (else composite), non-Wieferich, a
-(6.4) source. -/
-def pCheck (llPrimes : List ℕ) (hs : List (ℕ × List (ℕ × ℕ))) (p : ℕ) : Outcome Unit :=
+(6.4) source; failing that, `n` a `p`-th power is composite ((1.3)(j)). -/
+def pCheck (llPrimes : List ℕ) (hs : List (ℕ × List (ℕ × ℕ))) (aux : List (ℕ × ℕ × ℕ))
+    (p : ℕ) : Outcome Unit :=
   if p = 2 then .pass ()
   else if n % AzNat.ofNat p = 0 then (if AzNat.ofNat p < n then .composite else .fail)
-  else if wieferichFree p && sixFourOK n llPrimes hs p then .pass () else .fail
+  else if wieferichFree p && sixFourOK n llPrimes hs aux p then .pass ()
+  else if n.isPow p then .composite else .fail
 
 /-- Collect the per-`q` outcomes. -/
 def qStage (F : AzNat) (t' : ℕ) : List QCert → Outcome (List (ℕ × List (ℕ × ℕ)))
@@ -139,7 +161,7 @@ def aprclCheck (n : AzNat) (cert : Cert) : Option Bool :=
           | .composite => some false
           | .pass hs =>
             let llPrimes := cert.ll.minus.map (·.1) ++ cert.ll.plus.map (·.1)
-            match Outcome.all (cert.t'.primeFactorsList.map (pCheck n llPrimes hs)) with
+            match Outcome.all (cert.t'.primeFactorsList.map (pCheck n llPrimes hs cert.aux)) with
             | .fail => none
             | .composite => some false
             | .pass () =>
@@ -157,6 +179,18 @@ def generateQs (n F : AzNat) (t' : ℕ) : List QCert :=
     if n % AzNat.ofNat q = 0 ∨ F % AzNat.ofNat q = 0 then none
     else some ⟨q, padicValNat q t' + 1, (CL.findGenerator q).getD 0⟩
 
+/-- **(1.3)(j)**: an auxiliary prime `q' = 2pm + 1 ≤ 2p·50 + 1` with `q' ∤ n` and
+`n^((q'−1)/p) ≢ 1 (mod q')`, with its least primitive root. -/
+def findAux (n : AzNat) (p : ℕ) : Option (ℕ × ℕ) :=
+  ((List.range 50).map fun m => 2 * p * (m + 1) + 1).findSome? fun q' =>
+    if isPrimeNat q' && !(n % AzNat.ofNat q' = 0)
+        && decide ((((n % AzNat.ofNat q').toNat : ℕ) : ZMod q') ^ ((q' - 1) / p) ≠ 1)
+    then some (q', (CL.findGenerator q').getD 0) else none
+
+/-- The auxiliary primes for the odd primes of `t'`. -/
+def generateAux (n : AzNat) (t' : ℕ) : List (ℕ × ℕ × ℕ) :=
+  (t'.primeFactorsList.filter (· ≠ 2)).filterMap fun p => (findAux n p).map fun qg => (p, qg)
+
 /-- Search a certificate: the Lucas–Lehmer data, then the first `t'` from a fixed list
 of smooth even exponents whose `s = F·s₂` exceeds `√n`. -/
 def generate (n : AzNat) (B : ℕ := 10000) : Cert :=
@@ -168,8 +202,8 @@ def generate (n : AzNat) (B : ℕ := 10000) : Cert :=
     let qs := generateQs n F t'
     n < (F * AzNat.ofNat (s2Of qs)).square
   match pick with
-  | some t' => ⟨ll, t', generateQs n F t'⟩
-  | none => ⟨ll, 2, []⟩
+  | some t' => ⟨ll, t', generateQs n F t', generateAux n t'⟩
+  | none => ⟨ll, 2, [], []⟩
 
 /-- **The APR-CL test with generated certificate.** -/
 def aprclTest (n : AzNat) (B : ℕ := 10000) : Option Bool := aprclCheck n (generate n B)

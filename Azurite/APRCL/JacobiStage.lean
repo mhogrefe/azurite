@@ -19,6 +19,7 @@
 -/
 import Azurite.CohenLenstra.Tables
 import Azurite.CohenLenstra.Theorem_9_10
+import Azurite.AzPolyMod.CycArith
 
 namespace Azurite
 
@@ -39,13 +40,13 @@ def uQuot (m : ℕ) : AzNat := n / AzNat.ofNat m
 `j₀^u · j_v = ζ^h` (Theorem (8.5) with `a = b = 1`). -/
 def jOdd (p k q : ℕ) (f : ℕ → ℕ) : Option ℕ :=
   let J : ℕ → CycT n p k := fun x => jacobiSumT n p k q f (minv p k x) (minv p k x)
-  let j0 : CycT n p k := ∏ x ∈ Mset p k, J x ^ AzNat.ofNat x
-  let jv : CycT n p k := ∏ x ∈ Mset p k, J x ^ AzNat.ofNat (αc (vRem n (p ^ k)) p k x)
-  findHT (j0 ^ uQuot n (p ^ k) * jv)
+  let j0 : CycT n p k := ∏ x ∈ Mset p k, cycPow n p k (J x) (AzNat.ofNat x)
+  let jv : CycT n p k := ∏ x ∈ Mset p k, cycPow n p k (J x) (AzNat.ofNat (αc (vRem n (p ^ k)) p k x))
+  findHT (cycPow n p k j0 (uQuot n (p ^ k)) * jv)
 
 /-- **(i1b), `p^k = 2`**: `q^((n−1)/2) = ζ^h` with `ζ = −1` (Theorem (9.1)). -/
 def j2k1 (q : ℕ) : Option ℕ :=
-  findHT ((q : CycT n 2 1) ^ ((n - 1) / AzNat.ofNat 2))
+  findHT (cycPow n 2 1 (q : CycT n 2 1) ((n - 1) / AzNat.ofNat 2))
 
 /-- **(i1c), `p^k = 4`**: the tests (9.4)/(9.6) of Theorems (9.3)/(9.5):
 `J(χ,χ)^((n−1)/2)·q^((n−1)/4) = ζ^h` for `n ≡ 1 (mod 4)`, and
@@ -53,9 +54,11 @@ def j2k1 (q : ℕ) : Option ℕ :=
 def j2k2 (q : ℕ) (f : ℕ → ℕ) : Option ℕ :=
   let J : CycT n 2 2 := jacobiSumT n 2 2 q f 1 1
   if vRem n 4 = 1 then
-    findHT (J ^ ((n - 1) / AzNat.ofNat 2) * (q : CycT n 2 2) ^ ((n - 1) / AzNat.ofNat 4))
+    findHT (cycPow n 2 2 J ((n - 1) / AzNat.ofNat 2)
+      * cycPow n 2 2 (q : CycT n 2 2) ((n - 1) / AzNat.ofNat 4))
   else
-    findHT (J ^ ((n + 1) / AzNat.ofNat 2) * (q : CycT n 2 2) ^ ((n - AzNat.ofNat 3) / AzNat.ofNat 4))
+    findHT (cycPow n 2 2 J ((n + 1) / AzNat.ofNat 2)
+      * cycPow n 2 2 (q : CycT n 2 2) ((n - AzNat.ofNat 3) / AzNat.ofNat 4))
 
 /-- **(i1d), `p = 2`, `k ≥ 3`**: with `J(x) = J(χ^{x⁻¹}, χ^{x⁻¹})·J(χ^{x⁻¹}, χ^{2x⁻¹})`
 over `M = {x < 2^k : x ≡ 1, 3 (mod 8)}`, the product `j₀^u·j_v` of Theorem (9.10),
@@ -63,11 +66,11 @@ multiplied by `J(χ^{2^{k−3}}, χ^{3·2^{k−3}})²` when `n ≡ 5, 7 (mod 8)`
 def j2k3 (k q : ℕ) (f : ℕ → ℕ) : Option ℕ :=
   let J : ℕ → CycT n 2 k := fun x =>
     jacobiSumT n 2 k q f (minv 2 k x) (minv 2 k x) * jacobiSumT n 2 k q f (minv 2 k x) (2 * minv 2 k x)
-  let j0 : CycT n 2 k := ∏ x ∈ M2set k, J x ^ AzNat.ofNat x
-  let jv : CycT n 2 k := ∏ x ∈ M2set k, J x ^ AzNat.ofNat (αc (vRem n (2 ^ k)) 2 k x)
-  let w : CycT n 2 k := j0 ^ uQuot n (2 ^ k) * jv
+  let j0 : CycT n 2 k := ∏ x ∈ M2set k, cycPow n 2 k (J x) (AzNat.ofNat x)
+  let jv : CycT n 2 k := ∏ x ∈ M2set k, cycPow n 2 k (J x) (AzNat.ofNat (αc (vRem n (2 ^ k)) 2 k x))
+  let w : CycT n 2 k := cycPow n 2 k j0 (uQuot n (2 ^ k)) * jv
   if vRem n 8 = 1 ∨ vRem n 8 = 3 then findHT w
-  else findHT (w * jacobiSumT n 2 k q f (2 ^ (k - 3)) (3 * 2 ^ (k - 3)) ^ AzNat.ofNat 2)
+  else findHT (w * cycPow n 2 k (jacobiSumT n 2 k q f (2 ^ (k - 3)) (3 * 2 ^ (k - 3))) (AzNat.ofNat 2))
 
 /-- **The `(p, q)` test dispatch** on `k = v_p(q − 1)`. -/
 def jTest (p k q : ℕ) (f : ℕ → ℕ) : Option ℕ :=

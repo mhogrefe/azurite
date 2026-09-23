@@ -10,6 +10,7 @@
 -/
 import Azurite.APRCL.JacobiStage
 import Azurite.AzPolyMod.Equiv.Cyclotomic
+import Azurite.AzPolyMod.Equiv.CycArith
 import Azurite.CohenLenstra.Algorithm_12_1
 
 namespace Azurite
@@ -20,9 +21,10 @@ open AzPolyMod CL CP Finset
 
 variable {n : AzNat} [Fact (1 < n.toNat)] {p k : ℕ} (hp : p.Prime) (hk : 0 < k)
 
-/-- `AzNat`-exponent powers in `CycT` are monoid powers. -/
-theorem cycT_pow_azNat (a : CycT n p k) (m : AzNat) : a ^ m = a ^ m.toNat :=
-  powAzNat_eq_pow a m
+include hp hk in
+/-- `cycPow` is the monoid power (restated for the `rw` chains below). -/
+theorem cycT_pow_azNat (a : CycT n p k) (m : AzNat) : cycPow n p k a m = a ^ m.toNat :=
+  cycPow_eq hp hk a m
 
 include hp hk in
 /-- **The common kernel of the bridges**: `findHT w = some h` and
@@ -60,13 +62,13 @@ theorem jOdd_spec {h : ℕ} (hh : jOdd n p k q f = some h) :
   refine findHT_reduce hp hk hh ?_
   simp only [jOdd] at *
   rw [prod_pow_alphac_decomp _ n.toNat p k (pow_pos hp.pos k), map_mul, map_pow, map_prod,
-    map_prod, cycT_pow_azNat, toNat_uQuot]
+    map_prod, cycT_pow_azNat hp hk, toNat_uQuot]
   congr 1
   · congr 1
     refine Finset.prod_congr rfl fun x _ => ?_
-    rw [cycT_pow_azNat, AzNat.toNat_ofNat, map_pow, jacobiSumT_eq_reduce n hp hk hpk hg hf]
+    rw [cycT_pow_azNat hp hk, AzNat.toNat_ofNat, map_pow, jacobiSumT_eq_reduce n hp hk hpk hg hf]
   · refine Finset.prod_congr rfl fun x _ => ?_
-    rw [cycT_pow_azNat, AzNat.toNat_ofNat, map_pow, jacobiSumT_eq_reduce n hp hk hpk hg hf, vRem_eq]
+    rw [cycT_pow_azNat hp hk, AzNat.toNat_ofNat, map_pow, jacobiSumT_eq_reduce n hp hk hpk hg hf, vRem_eq]
 
 end Tables
 
@@ -82,7 +84,8 @@ theorem j2k1_spec {h : ℕ} (hh : j2k1 n q = some h) :
     ((n.toNat : ℕ) : CycM (2 ^ 1)) ∣ ((q : ℕ) : CycM (2 ^ 1)) ^ ((n.toNat - 1) / 2)
       - zetaM (2 ^ 1) ^ h := by
   refine findHT_reduce Nat.prime_two one_pos hh ?_
-  rw [map_pow, map_natCast, cycT_pow_azNat, AzNat.toNat_div, AzNat.toNat_sub, AzNat.toNat_ofNat]
+  rw [map_pow, map_natCast, cycT_pow_azNat Nat.prime_two one_pos, AzNat.toNat_div, AzNat.toNat_sub,
+    AzNat.toNat_ofNat]
   rfl
 
 include hg hf
@@ -97,7 +100,7 @@ theorem j2k2_spec_one (hpk : 2 ^ 2 ∣ q - 1) (hn4 : n.toNat % 4 = 1) {h : ℕ}
   rw [vRem_eq, if_pos hn4] at hh
   refine findHT_reduce Nat.prime_two two_pos hh ?_
   have hJ := jacobiSumT_eq_reduce n Nat.prime_two two_pos hpk hg hf 1 1
-  rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat, cycT_pow_azNat, AzNat.toNat_div,
+  rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat Nat.prime_two two_pos, cycT_pow_azNat Nat.prime_two two_pos, AzNat.toNat_div,
     AzNat.toNat_div, AzNat.toNat_sub, AzNat.toNat_ofNat, AzNat.toNat_ofNat]
   simp only [pow_one]
   rfl
@@ -112,7 +115,7 @@ theorem j2k2_spec_three (hpk : 2 ^ 2 ∣ q - 1) (hn4 : n.toNat % 4 = 3) {h : ℕ
   rw [vRem_eq, if_neg (by omega)] at hh
   refine findHT_reduce Nat.prime_two two_pos hh ?_
   have hJ := jacobiSumT_eq_reduce n Nat.prime_two two_pos hpk hg hf 1 1
-  rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat, cycT_pow_azNat, AzNat.toNat_div,
+  rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat Nat.prime_two two_pos, cycT_pow_azNat Nat.prime_two two_pos, AzNat.toNat_div,
     AzNat.toNat_div, AzNat.toNat_add, AzNat.toNat_sub, AzNat.toNat_ofNat, AzNat.toNat_ofNat,
     AzNat.toNat_ofNat]
   simp only [pow_one]
@@ -123,23 +126,23 @@ include hpk
 
 /-- The (9.11)/(9.20) product, as computed by `j2k3` before the `n mod 8` split. -/
 theorem j2k3_core (hk : 0 < k) :
-    (∏ x ∈ M2set k, (jacobiSumT n 2 k q f (minv 2 k x) (minv 2 k x)
-        * jacobiSumT n 2 k q f (minv 2 k x) (2 * minv 2 k x)) ^ AzNat.ofNat x) ^ uQuot n (2 ^ k)
-      * ∏ x ∈ M2set k, (jacobiSumT n 2 k q f (minv 2 k x) (minv 2 k x)
-        * jacobiSumT n 2 k q f (minv 2 k x) (2 * minv 2 k x)) ^ AzNat.ofNat (αc (vRem n (2 ^ k)) 2 k x)
+    cycPow n 2 k (∏ x ∈ M2set k, cycPow n 2 k (jacobiSumT n 2 k q f (minv 2 k x) (minv 2 k x)
+        * jacobiSumT n 2 k q f (minv 2 k x) (2 * minv 2 k x)) (AzNat.ofNat x)) (uQuot n (2 ^ k))
+      * ∏ x ∈ M2set k, cycPow n 2 k (jacobiSumT n 2 k q f (minv 2 k x) (minv 2 k x)
+        * jacobiSumT n 2 k q f (minv 2 k x) (2 * minv 2 k x)) (AzNat.ofNat (αc (vRem n (2 ^ k)) 2 k x))
     = reduceCycT n 2 k Nat.prime_two (by omega) (∏ x ∈ M2set k,
         (jacobiSum (chiT Nat.prime_two hpk hg ^ minv 2 k x) (chiT Nat.prime_two hpk hg ^ minv 2 k x)
           * jacobiSum (chiT Nat.prime_two hpk hg ^ minv 2 k x)
               (chiT Nat.prime_two hpk hg ^ (2 * minv 2 k x))) ^ αc n.toNat 2 k x) := by
   rw [prod_pow_alphac_decomp _ n.toNat 2 k (pow_pos two_pos k), map_mul, map_pow, map_prod,
-    map_prod, cycT_pow_azNat, toNat_uQuot]
+    map_prod, cycT_pow_azNat Nat.prime_two hk, toNat_uQuot]
   congr 1
   · congr 1
     refine Finset.prod_congr rfl fun x _ => ?_
-    rw [cycT_pow_azNat, AzNat.toNat_ofNat, map_pow, map_mul,
+    rw [cycT_pow_azNat Nat.prime_two hk, AzNat.toNat_ofNat, map_pow, map_mul,
       jacobiSumT_eq_reduce n Nat.prime_two hk hpk hg hf, jacobiSumT_eq_reduce n Nat.prime_two hk hpk hg hf]
   · refine Finset.prod_congr rfl fun x _ => ?_
-    rw [cycT_pow_azNat, AzNat.toNat_ofNat, map_pow, map_mul,
+    rw [cycT_pow_azNat Nat.prime_two hk, AzNat.toNat_ofNat, map_pow, map_mul,
       jacobiSumT_eq_reduce n Nat.prime_two hk hpk hg hf, jacobiSumT_eq_reduce n Nat.prime_two hk hpk hg hf,
       vRem_eq]
 
@@ -172,8 +175,8 @@ theorem j2k3_spec_high (hk3 : 3 ≤ k) (hn8 : n.toNat % 8 = 5 ∨ n.toNat % 8 = 
   refine findHT_reduce Nat.prime_two (by omega) hh ?_
   rw [map_mul, ← j2k3_core hg hf hpk (by omega), map_pow, ← pow_mul, mul_comm (2 ^ (k - 3)) 3,
     ← jacobiSumT_eq_reduce n Nat.prime_two (by omega) hpk hg hf (2 ^ (k - 3)) (3 * 2 ^ (k - 3)),
-    cycT_pow_azNat (jacobiSumT n 2 k q f (2 ^ (k - 3)) (3 * 2 ^ (k - 3))) (AzNat.ofNat 2),
-    AzNat.toNat_ofNat]
+    cycT_pow_azNat Nat.prime_two (by omega) (jacobiSumT n 2 k q f (2 ^ (k - 3)) (3 * 2 ^ (k - 3)))
+      (AzNat.ofNat 2), AzNat.toNat_ofNat]
 
 end Two
 

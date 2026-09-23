@@ -6,6 +6,7 @@ import Azurite.APRCL.Equiv.LucasLehmer
 import Azurite.APRCL.Equiv.Test
 import Azurite.APRCL.JacobiStage
 import Azurite.APRCL.LucasLehmer
+import Azurite.APRCL.Select
 import Azurite.APRCL.Test
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.Equiv.PrimeSieve
@@ -377,8 +378,10 @@ import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
 import Azurite.AzPolyMod.Basic
+import Azurite.AzPolyMod.CycArith
 import Azurite.AzPolyMod.Cyclotomic
 import Azurite.AzPolyMod.Equiv.AdjoinRoot
+import Azurite.AzPolyMod.Equiv.CycArith
 import Azurite.AzPolyMod.Equiv.Cyclotomic
 import Azurite.AzPolyMod.Equiv.GaussSumT
 import Azurite.AzPolyMod.Equiv.GaussTower

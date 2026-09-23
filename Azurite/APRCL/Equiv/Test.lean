@@ -12,6 +12,8 @@
   source and parity); then the final trial division `step5_prime`.
 -/
 import Azurite.APRCL.Test
+import Azurite.APRCL.Select
+import Azurite.AzNat.Equiv.RootInt
 import Azurite.APRCL.Equiv.LucasLehmer
 import Azurite.APRCL.Equiv.JacobiAlign
 import Azurite.CohenLenstra.Proposition_7_18
@@ -75,9 +77,9 @@ theorem qCheck_pass {F : AzNat} {t' : ℕ} {d : QCert} {hs : List (ℕ × ℕ)}
     d.q.Prime ∧ (d.q - 1) ∣ t' ∧ 1 ≤ d.e ∧ (2 ≤ d.e → d.q ∣ t') ∧
       n.toNat ^ t' ≡ 1 [MOD d.q ^ d.e] ∧ ¬ d.q ∣ n.toNat ∧ ¬ d.q ∣ F.toNat ∧
       CL.checkGenerator d.q d.g = true ∧
-      CL.checkIndexTable d.q d.g (CL.indexTable d.q d.g) = true ∧
+      CL.checkIndexTable d.q d.g (CL.indexTableOf (CL.indexTableArr d.q d.g)) = true ∧
       (∀ ph ∈ hs, ph.1 ∈ (d.q - 1).primeFactors ∧
-        jTest n ph.1 (padicValNat ph.1 (d.q - 1)) d.q (CL.indexTable d.q d.g) = some ph.2) ∧
+        jTest n ph.1 (padicValNat ph.1 (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some ph.2) ∧
       (∀ p ∈ (d.q - 1).primeFactors, ∃ h, (p, h) ∈ hs) := by
   unfold qCheck at h
   dsimp only at h
@@ -99,7 +101,7 @@ theorem qCheck_pass {F : AzNat} {t' : ℕ} {d : QCert} {hs : List (ℕ × ℕ)}
     obtain ⟨hv, hhv⟩ := Option.isSome_iff_exists.mp hsome
     simp only [hhv, Option.getD_some]
   · intro p hp
-    refine ⟨(jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTable d.q d.g)).getD 0, ?_⟩
+    refine ⟨(jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g))).getD 0, ?_⟩
     exact List.mem_map_of_mem (List.mem_map_of_mem
       ((Nat.mem_primeFactors_iff_mem_primeFactorsList).mp hp))
 
@@ -160,43 +162,61 @@ theorem qStage_composite {F : AzNat} {t' : ℕ} :
       obtain ⟨d', h1, h2⟩ := qStage_composite hrest
       exact ⟨d', List.mem_cons_of_mem _ h1, h2⟩
 
-omit [Fact (1 < n.toNat)] in
+/-- **The additional test (k) decoded.** -/
+theorem auxOK_eq_true {p q' g' : ℕ} (h : auxOK n p q' g' = true) :
+    q'.Prime ∧ p ∣ q' - 1 ∧ ¬ q' ∣ n.toNat ∧ CL.checkGenerator q' g' = true ∧
+      CL.checkIndexTable q' g' (CL.indexTableOf (CL.indexTableArr q' g')) = true ∧
+      ∃ h, jOdd n p 1 q' (CL.indexTableOf (CL.indexTableArr q' g')) = some h ∧ ¬ p ∣ h := by
+  unfold auxOK at h
+  simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true'] at h
+  obtain ⟨⟨⟨⟨hq, hpq⟩, hqn⟩, hchk⟩, hidx, hj⟩ := h
+  refine ⟨isPrimeNat_eq_true_iff.mp hq, hpq, not_dvd_of_mod_ne_zero (by simpa using hqn), hchk,
+    hidx, ?_⟩
+  split at hj
+  · rename_i h hh
+    exact ⟨h, hh, decide_eq_true_eq.mp hj⟩
+  · cases hj
+
 /-- **The (6.4)-source check decoded.** -/
-theorem sixFourOK_eq_true {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))} {p : ℕ}
-    (h : sixFourOK n llPrimes hs p = true) :
+theorem sixFourOK_eq_true {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))}
+    {aux : List (ℕ × ℕ × ℕ)} {p : ℕ} (h : sixFourOK n llPrimes hs aux p = true) :
     p ∈ llPrimes ∨ ¬ n.toNat ^ (p - 1) ≡ 1 [MOD p ^ 2] ∨
-      ∃ qh ∈ hs, p ∣ qh.1 - 1 ∧ ∃ ph ∈ qh.2, ph.1 = p ∧ ¬ p ∣ ph.2 := by
+      (∃ qh ∈ hs, p ∣ qh.1 - 1 ∧ ∃ ph ∈ qh.2, ph.1 = p ∧ ¬ p ∣ ph.2) ∨
+      ∃ a ∈ aux, a.1 = p ∧ auxOK n p a.2.1 a.2.2 = true := by
   unfold sixFourOK at h
   simp only [Bool.or_eq_true, List.contains_iff_mem, List.any_eq_true, Bool.and_eq_true,
     decide_eq_true_eq] at h
-  rcases h with (h | h) | ⟨qh, hqh, hpq, ph, hph, hp1, hp2⟩
+  rcases h with ((h | h) | ⟨qh, hqh, hpq, ph, hph, hp1, hp2⟩) | ⟨a, ha, hap, hok⟩
   · exact Or.inl h
   · exact Or.inr (Or.inl (notOneModSq_eq_true h))
-  · exact Or.inr (Or.inr ⟨qh, hqh, hpq, ph, hph, hp1, hp2⟩)
+  · exact Or.inr (Or.inr (Or.inl ⟨qh, hqh, hpq, ph, hph, hp1, hp2⟩))
+  · exact Or.inr (Or.inr (Or.inr ⟨a, ha, hap, hok⟩))
 
-omit [Fact (1 < n.toNat)] in
 /-- **The odd-prime check `pass` decoded.** -/
-theorem pCheck_pass {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))} {p : ℕ} (hp2 : p ≠ 2)
-    (h : pCheck n llPrimes hs p = .pass ()) :
-    ¬ p ∣ n.toNat ∧ ¬ 2 ^ p ≡ 2 [MOD p ^ 2] ∧ sixFourOK n llPrimes hs p = true := by
+theorem pCheck_pass {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))} {aux : List (ℕ × ℕ × ℕ)}
+    {p : ℕ} (hp2 : p ≠ 2) (h : pCheck n llPrimes hs aux p = .pass ()) :
+    ¬ p ∣ n.toNat ∧ ¬ 2 ^ p ≡ 2 [MOD p ^ 2] ∧ sixFourOK n llPrimes hs aux p = true := by
   unfold pCheck at h
   rw [if_neg hp2] at h
-  split_ifs at h with h1 h2 h3
+  split_ifs at h with h1 h2 h3 h4
   rw [Bool.and_eq_true] at h3
   exact ⟨not_dvd_of_mod_ne_zero h1, wieferichFree_eq_true h3.1, h3.2⟩
 
-omit [Fact (1 < n.toNat)] in
-/-- **The odd-prime check `composite` decoded**: a prime `p ∣ t'` divides `n` properly. -/
-theorem pCheck_composite {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))} {p : ℕ} (hp : p.Prime)
-    (h : pCheck n llPrimes hs p = .composite) : ¬ n.toNat.Prime := by
+/-- **The odd-prime check `composite` decoded**: a prime `p ∣ t'` divides `n` properly, or
+`n` is a `p`-th power. -/
+theorem pCheck_composite (hn1 : 1 < n.toNat) {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))}
+    {aux : List (ℕ × ℕ × ℕ)} {p : ℕ} (hp : p.Prime)
+    (h : pCheck n llPrimes hs aux p = .composite) : ¬ n.toNat.Prime := by
   unfold pCheck at h
-  split_ifs at h with h0 h1 h2 h3
-  have hd : p ∣ n.toNat := dvd_of_mod_ofNat_eq_zero h1
-  have hlt := lt_of_ofNat_lt h2
-  intro hN
-  rcases hN.eq_one_or_self_of_dvd _ hd with h | h
-  · exact hp.one_lt.ne' h
-  · omega
+  split_ifs at h with h0 h1 h2 h3 h4
+  · have hd : p ∣ n.toNat := dvd_of_mod_ofNat_eq_zero h1
+    have hlt := lt_of_ofNat_lt h2
+    intro hN
+    rcases hN.eq_one_or_self_of_dvd _ hd with h | h
+    · exact hp.one_lt.ne' h
+    · omega
+  · obtain ⟨y, hy⟩ := (AzNat.isPow_eq_true_iff n p hp.one_lt.le).mp h4
+    exact CL.not_prime_of_eq_pow hn1 hp.two_le hy.symm
 
 omit [Fact (1 < n.toNat)] in
 /-- **The final trial division, `some true`**: the loop found `n^i ≡ 1 (mod s)` with no
@@ -469,7 +489,7 @@ section Chains
 
 variable {n : AzNat} [Fact (1 < n.toNat)] {d : QCert} (hq : d.q.Prime)
   (hchk : CL.checkGenerator d.q d.g = true)
-  (hidx : CL.checkIndexTable d.q d.g (CL.indexTable d.q d.g) = true)
+  (hidx : CL.checkIndexTable d.q d.g (CL.indexTableOf (CL.indexTableArr d.q d.g)) = true)
 
 include hq hchk hidx
 
@@ -478,7 +498,7 @@ theorem indexTable_spec_gen :
     haveI : Fact d.q.Prime := ⟨hq⟩
     ∀ x ∈ Finset.Icc 1 (d.q - 2),
       ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod d.q)ˣ) : ZMod d.q)
-          ^ CL.indexTable d.q d.g x
+          ^ CL.indexTableOf (CL.indexTableArr d.q d.g) x
         = 1 - ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod d.q)ˣ) : ZMod d.q) ^ x := by
   haveI : Fact d.q.Prime := ⟨hq⟩
   have hval := (Classical.choose_spec (CL.checkGenerator_spec hchk)).1
@@ -488,7 +508,7 @@ theorem indexTable_spec_gen :
 /-- **The odd-`p` chain in `ℂ`.** -/
 theorem chain_odd_complex {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hW : ¬ 2 ^ p ≡ 2 [MOD p ^ 2])
     (hpn : ¬ p ∣ n.toNat) (hqn : ¬ d.q ∣ n.toNat) (hpq : p ∣ d.q - 1) {h : ℕ}
-    (hh : jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTable d.q d.g) = some h) :
+    (hh : jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some h) :
     haveI : Fact d.q.Prime := ⟨hq⟩
     ∃ f₀ : ℕ, ∀ r, r.Prime → r ∣ n.toNat → ∀ m : ℕ,
       ((p : ℤ) ^ ((n.toNat ^ ((p - 1) * p ^ (d.q - 1).factorization p) - 1).factorization p)
@@ -507,10 +527,55 @@ theorem chain_odd_complex {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hW : ¬ 2 ^ p 
     (Classical.choose_spec (CL.checkGenerator_spec hchk)).2 hpn hp3 hW hn1 hqn h88
   exact ⟨f₀, fun r hr hrn m hm => Yc_eq_of_chiR hp _ _ (hf₀ r hr hrn m hm)⟩
 
+end Chains
+
+section AuxChains
+
+variable {n : AzNat} [Fact (1 < n.toNat)] {q g : ℕ} (hq : q.Prime)
+  (hchk : CL.checkGenerator q g = true)
+  (hidx : CL.checkIndexTable q g (CL.indexTableOf (CL.indexTableArr q g)) = true)
+
+include hq hchk hidx
+
+/-- The certified generator's index table (plain `q`, `g` form). -/
+theorem indexTable_spec_gen' :
+    haveI : Fact q.Prime := ⟨hq⟩
+    ∀ x ∈ Finset.Icc 1 (q - 2),
+      ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod q)ˣ) : ZMod q) ^ CL.indexTableOf (CL.indexTableArr q g) x
+        = 1 - ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod q)ˣ) : ZMod q) ^ x := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hval := (Classical.choose_spec (CL.checkGenerator_spec hchk)).1
+  rw [hval]
+  exact CL.checkIndexTable_spec hidx
+
+/-- **A passed odd-`p` test at level `k` with `p ∤ h` is a (6.4) source** (Theorem (7.19)),
+for any certified `q`, `g`, `k` — used by the additional test (k) at `k = 1`. -/
+theorem sixFour_of_jOdd {p k : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hk : 0 < k) (hpk : p ^ k ∣ q - 1)
+    (hpn : ¬ p ∣ n.toNat) (hqn : ¬ q ∣ n.toNat) {h : ℕ}
+    (hh : jOdd n p k q (CL.indexTableOf (CL.indexTableArr q g)) = some h) (hph : ¬ p ∣ h) :
+    ∀ r, r.Prime → r ∣ n.toNat → ∀ D, ∃ l,
+      r ^ (p - 1) ≡ (n.toNat ^ (p - 1)) ^ l [MOD p ^ D] := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hn1 : 1 < n.toNat := Fact.out
+  have h88 := jOdd_spec hp hk hpk (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
+    (indexTable_spec_gen' hq hchk hidx) hh
+  exact sixFour_of_odd hp hk hpk (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
+    hpn hp3 hn1 hqn hph h88
+
+end AuxChains
+
+section Chains
+
+variable {n : AzNat} [Fact (1 < n.toNat)] {d : QCert} (hq : d.q.Prime)
+  (hchk : CL.checkGenerator d.q d.g = true)
+  (hidx : CL.checkIndexTable d.q d.g (CL.indexTableOf (CL.indexTableArr d.q d.g)) = true)
+
+include hq hchk hidx
+
 /-- **The (1.3)(i3) source in `ℂ`-free form**: `p ∤ h` gives (6.4) for `p`. -/
 theorem sixFour_odd_of_h {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hpn : ¬ p ∣ n.toNat)
     (hqn : ¬ d.q ∣ n.toNat) (hpq : p ∣ d.q - 1) {h : ℕ}
-    (hh : jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTable d.q d.g) = some h) (hph : ¬ p ∣ h) :
+    (hh : jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some h) (hph : ¬ p ∣ h) :
     ∀ r, r.Prime → r ∣ n.toNat → ∀ D, ∃ l,
       r ^ (p - 1) ≡ (n.toNat ^ (p - 1)) ^ l [MOD p ^ D] := by
   haveI : Fact d.q.Prime := ⟨hq⟩
@@ -526,7 +591,7 @@ theorem sixFour_odd_of_h {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hpn : ¬ p ∣ 
 
 /-- **The `p = 2` chain in `ℂ`**, by cases on `k = v₂(q − 1)`. -/
 theorem chain_two_complex (hodd : n.toNat % 2 = 1) (hqn : ¬ d.q ∣ n.toNat) (hq2 : d.q ≠ 2) {h : ℕ}
-    (hh : jTest n 2 (padicValNat 2 (d.q - 1)) d.q (CL.indexTable d.q d.g) = some h) :
+    (hh : jTest n 2 (padicValNat 2 (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some h) :
     haveI : Fact d.q.Prime := ⟨hq⟩
     ∃ f₀ : ℕ, ∀ r, r.Prime → r ∣ n.toNat → ∀ m : ℕ,
       ((2 : ℤ) ^ ((n.toNat ^ ((2 - 1) * 2 ^ (d.q - 1).factorization 2) - 1).factorization 2)
@@ -641,9 +706,9 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
     have hQd : ∀ d ∈ cert.qs, d.q.Prime ∧ (d.q - 1) ∣ cert.t' ∧ 1 ≤ d.e ∧ (2 ≤ d.e → d.q ∣ cert.t') ∧
         N ^ cert.t' ≡ 1 [MOD d.q ^ d.e] ∧ ¬ d.q ∣ N ∧ ¬ d.q ∣ F ∧
         CL.checkGenerator d.q d.g = true ∧
-        CL.checkIndexTable d.q d.g (CL.indexTable d.q d.g) = true ∧
+        CL.checkIndexTable d.q d.g (CL.indexTableOf (CL.indexTableArr d.q d.g)) = true ∧
         (∀ p ∈ (d.q - 1).primeFactors, ∃ h,
-          jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTable d.q d.g) = some h) := by
+          jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some h) := by
       intro d hd
       obtain ⟨hs, hchk, -⟩ := hq1 d hd
       obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ := qCheck_pass hchk
@@ -701,7 +766,8 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
         ((Nat.mem_primeFactors_iff_mem_primeFactorsList).mp hpt))
       obtain ⟨hpn, hW, hsrc⟩ := pCheck_pass hp2 hpass
       refine ⟨hpn, hW, ?_⟩
-      rcases sixFourOK_eq_true hsrc with hll | hwf | ⟨qh, hqh, hpq, ph, hph, rfl, hph2⟩
+      rcases sixFourOK_eq_true hsrc with hll | hwf | ⟨qh, hqh, hpq, ph, hph, rfl, hph2⟩ |
+        ⟨a, ha, rfl, hok⟩
       · rcases List.mem_append.mp hll with hmm | hpp'
         · obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hmm
           have hpe : (t.1, t.2.1) ∈ Lm := List.mem_map_of_mem ht
@@ -727,6 +793,8 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
         obtain ⟨a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11⟩ := qCheck_pass hchk
         rw [← hdq] at hpq
         exact sixFour_odd_of_h a1 a8 a9 hpp hp3 hpn a6 hpq (a10 _ hph).2 hph2
+      · obtain ⟨hq', hpq', hqn', hchk', hidx', h, hh, hph⟩ := auxOK_eq_true hok
+        exact sixFour_of_jOdd hq' hchk' hidx' hpp hp3 one_pos (by rwa [pow_one]) hpn hqn' hh hph
     -- the odd clauses
     have hcl_odd : ∀ p ∈ cert.t'.primeFactors, p ≠ 2 → ∀ r ∈ N.primeFactors, ∃ l,
         (∀ qe ∈ Qs, p ∣ qe.1 - 1 → Yfam cert qe.1 p r = Yfam cert qe.1 p N ^ l) ∧
@@ -897,7 +965,7 @@ theorem aprclCheck_false {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some
         · rename_i hall
           obtain ⟨o, ho, ho'⟩ := Outcome.all_composite hall
           obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ho
-          exact pCheck_composite (Nat.prime_of_mem_primeFactorsList hp) ho' hN
+          exact pCheck_composite (by omega) (Nat.prime_of_mem_primeFactorsList hp) ho' hN
         · try dsimp only at h
           split_ifs at h with hsize
           obtain ⟨d, hd, hd1, hdn⟩ := finalDiv_false h
@@ -914,6 +982,15 @@ theorem aprclTest_true {n : AzNat} {B : ℕ} (h : aprclTest n B = some true) : n
 
 /-- **The generated-certificate test is sound**: `some false` means composite. -/
 theorem aprclTest_false {n : AzNat} {B : ℕ} (h : aprclTest n B = some false) : ¬ n.toNat.Prime :=
+  aprclCheck_false h
+
+/-- **The selected-certificate test is sound**: `some true` means prime. -/
+theorem aprclTestSel_true {n : AzNat} {B : ℕ} (h : aprclTestSel n B = some true) : n.toNat.Prime :=
+  aprclCheck_true h
+
+/-- **The selected-certificate test is sound**: `some false` means composite. -/
+theorem aprclTestSel_false {n : AzNat} {B : ℕ} (h : aprclTestSel n B = some false) :
+    ¬ n.toNat.Prime :=
   aprclCheck_false h
 
 end APRCL
