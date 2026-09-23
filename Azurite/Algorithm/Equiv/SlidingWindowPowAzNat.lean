@@ -65,4 +65,30 @@ theorem slidingWindowPowAzNat_eq_pow [Monoid M] [Square M] (a : M) (n : AzNat) :
     slidingWindowPowAzNatAux_eq a n n.size 0, zero_mul, zero_add, ← AzNat.size_toNat n]
   exact congrArg (a ^ ·) (Nat.mod_eq_of_lt (Nat.lt_size_self n.toNat))
 
+/-- The loop commutes with a multiplicative map. -/
+theorem map_slidingWindowPowAzNatAux [Mul M] [Square M] {N : Type _} [Mul N] [Square N]
+    (f : M → N) (hmul : ∀ a b : M, f (a * b) = f a * f b) (a : M) (n : AzNat) :
+    ∀ (i : ℕ) (acc : M), f (slidingWindowPowAzNatAux a n i acc)
+      = slidingWindowPowAzNatAux (f a) n i (f acc)
+  | 0, _ => rfl
+  | i + 1, acc => by
+    have hsq : f (Square.square acc) = Square.square (f acc) := by
+      rw [Square.square_eq, Square.square_eq, hmul]
+    show f (slidingWindowPowAzNatAux a n i
+        (if n.testBit i then Square.square acc * a else Square.square acc))
+      = slidingWindowPowAzNatAux (f a) n i
+        (if n.testBit i then Square.square (f acc) * f a else Square.square (f acc))
+    rw [map_slidingWindowPowAzNatAux f hmul a n i]
+    congr 1
+    split_ifs <;> simp only [hmul, hsq]
+
+/-- **Transport of `AzNat`-exponent exponentiation** along a multiplicative, unital map
+into a monoid: `f (slidingWindowPowAzNat a n) = f a ^ n.toNat`.  The source needs only
+`Mul`/`One`/`Square` (e.g.\ a subtype with a shortcut squaring). -/
+theorem map_slidingWindowPowAzNat [Mul M] [One M] [Square M] {N : Type _} [Monoid N] [Square N]
+    (f : M → N) (hone : f 1 = 1) (hmul : ∀ a b : M, f (a * b) = f a * f b) (a : M) (n : AzNat) :
+    f (slidingWindowPowAzNat a n) = f a ^ n.toNat := by
+  rw [slidingWindowPowAzNat, map_slidingWindowPowAzNatAux f hmul, hone]
+  exact slidingWindowPowAzNat_eq_pow (f a) n
+
 end Azurite

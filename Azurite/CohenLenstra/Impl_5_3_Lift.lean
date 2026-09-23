@@ -163,7 +163,7 @@ theorem c2_parity {n r : ℕ} (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {
       = -1) {v : ℕ} (hv : 2 ≤ v) (h2v : 2 ^ v ∣ n + 1)
     {l : ℕ} (hl : r ≡ n ^ l [MOD 2 ^ (v + 1)]) :
     l % 2 = if IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) then 0 else 1 := by
-  obtain ⟨hbase, hsplit⟩ := c2_two_adic hn3 hr hrn hα hv h2v
+  obtain ⟨hbase, hsplit, -⟩ := c2_two_adic hn3 hr hrn hα hv h2v
   have hn2 : n ^ 2 ≡ 1 [MOD 2 ^ (v + 1)] := sq_modEq_one_of_dvd_add_one (by omega) h2v
   have hn1 : ¬ n ≡ 1 [MOD 2 ^ (v + 1)] := by
     intro h

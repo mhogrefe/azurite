@@ -33,6 +33,7 @@ import Azurite.AzZMod.Inv
 import Azurite.AzNat.InvMod
 import Azurite.AzNat.Gcd
 import Azurite.Algorithm.SlidingWindowPow
+import Azurite.Algorithm.SlidingWindowPowAzNat
 
 namespace Azurite
 
@@ -87,6 +88,9 @@ instance : Mul (QuadT m u a) := ⟨mul⟩
 /-- **The general power** (default squaring `x * x`). -/
 def pow (x : QuadT m u a) (n : ℕ) : QuadT m u a := Azurite.slidingWindowPow x n
 instance : Pow (QuadT m u a) ℕ := ⟨pow⟩
+
+/-- The general power with an `AzNat` exponent (bits read at limb level). -/
+def powAzNat (x : QuadT m u a) (n : AzNat) : QuadT m u a := Azurite.slidingWindowPowAzNat x n
 
 /-- **The norm** `N(x₀ + x₁α) = x₀² + u·x₀x₁ − a·x₁²`. -/
 def norm (x : QuadT m u a) : AzZMod m :=
@@ -171,6 +175,10 @@ instance : Azurite.Square (NormOne m u a) where
 /-- **Powers of norm-one elements** by the sliding-window method with the
 two-multiplication squaring (Remarks (4.8), (4.9)). -/
 def pow (x : NormOne m u a) (n : ℕ) : NormOne m u a := Azurite.slidingWindowPow x n
+
+/-- Powers of norm-one elements with an `AzNat` exponent. -/
+def powAzNat (x : NormOne m u a) (n : AzNat) : NormOne m u a :=
+  Azurite.slidingWindowPowAzNat x n
 
 end NormOne
 

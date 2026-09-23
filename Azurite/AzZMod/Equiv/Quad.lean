@@ -23,6 +23,7 @@ import Azurite.AzZMod.Equiv.Pow
 import Azurite.AzNat.Equiv.InvMod
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.CohenLenstra.Impl_4_9
+import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
 
 namespace Azurite
 
@@ -96,6 +97,16 @@ theorem toQuad_add (x y : QuadT m u a) : toQuad (x + y) = toQuad x + toQuad y :=
   simp only [toQuad, add, CL.quadElt, toZMod_add, map_add]
   ring
 
+theorem toQuad_neg (x : QuadT m u a) : toQuad (-x) = -toQuad x := by
+  show toQuad (neg x) = _
+  simp only [toQuad, neg, CL.quadElt, toZMod_neg, map_neg]
+  ring
+
+theorem toQuad_sub (x y : QuadT m u a) : toQuad (x - y) = toQuad x - toQuad y := by
+  show toQuad (sub x y) = _
+  simp only [toQuad, sub, CL.quadElt, toZMod_sub, map_sub]
+  ring
+
 theorem toQuad_alpha :
     toQuad (alpha : QuadT m u a)
       = AdjoinRoot.root (X ^ 2 - C (toZMod u) * X - C (toZMod a) : Polynomial (ZMod m.toNat)) := by
@@ -132,6 +143,10 @@ theorem toQuad_mul_conj (x : QuadT m u a) :
 theorem toQuad_pow (x : QuadT m u a) (n : ℕ) : toQuad (x ^ n) = toQuad x ^ n :=
   Azurite.map_slidingWindowPow toQuad toQuad_one toQuad_mul x n
 
+theorem toQuad_powAzNat (x : QuadT m u a) (n : AzNat) :
+    toQuad (x.powAzNat n) = toQuad x ^ n.toNat :=
+  Azurite.map_slidingWindowPowAzNat toQuad toQuad_one toQuad_mul x n
+
 /-- **The coordinate map is injective** (for `m > 1`). -/
 theorem toQuad_injective [Fact (1 < m.toNat)] :
     Function.Injective (toQuad : QuadT m u a → _) := by
@@ -148,6 +163,14 @@ theorem alpha_pow_card_succ [Fact (1 < m.toNat)] (hn : m.toNat.Prime)
   rw [toQuad_pow, toQuad_alpha, CL.root_pow_card_succ_eq_neg hn hns, toQuad_const, toZMod_neg,
     map_neg]
 
+/-- **(4.4)(c2) transported, `AzNat` exponent.** -/
+theorem alpha_powAzNat_card_succ [Fact (1 < m.toNat)] (hn : m.toNat.Prime)
+    (hns : ¬ IsSquare (toZMod u ^ 2 + 4 * toZMod a)) :
+    (alpha : QuadT m u a).powAzNat (m + 1) = const (-a) := by
+  apply toQuad_injective
+  rw [toQuad_powAzNat, toQuad_alpha, AzNat.toNat_add, show (1 : AzNat).toNat = 1 from rfl,
+    CL.root_pow_card_succ_eq_neg hn hns, toQuad_const, toZMod_neg, map_neg]
+
 end QuadT
 
 namespace NormOne
@@ -158,6 +181,11 @@ variable {u a : AzZMod m}
 theorem toQuad_pow (x : NormOne m u a) (n : ℕ) :
     QuadT.toQuad (pow x n).1 = QuadT.toQuad x.1 ^ n :=
   Azurite.map_slidingWindowPow (fun y : NormOne m u a => QuadT.toQuad y.1)
+    QuadT.toQuad_one (fun y z => QuadT.toQuad_mul y.1 z.1) x n
+
+theorem toQuad_powAzNat (x : NormOne m u a) (n : AzNat) :
+    QuadT.toQuad (powAzNat x n).1 = QuadT.toQuad x.1 ^ n.toNat :=
+  Azurite.map_slidingWindowPowAzNat (fun y : NormOne m u a => QuadT.toQuad y.1)
     QuadT.toQuad_one (fun y z => QuadT.toQuad_mul y.1 z.1) x n
 
 theorem quadNorm_toQuad (x : NormOne m u a) :
@@ -172,6 +200,15 @@ theorem pow_card_succ_eq_one [Fact (1 < m.toNat)] (hn : m.toNat.Prime)
     (pow x (m.toNat + 1)).1 = 1 := by
   apply QuadT.toQuad_injective
   rw [toQuad_pow, QuadT.toQuad_one]
+  exact CL.quadNorm_one_pow_eq_one hn hns (quadNorm_toQuad x)
+
+/-- **Test (4.3) transported, `AzNat` exponent**: `x^(n+1) = 1` for the `AzNat`
+exponent `n + 1`. -/
+theorem powAzNat_card_succ_eq_one [Fact (1 < m.toNat)] (hn : m.toNat.Prime)
+    (hns : ¬ IsSquare (toZMod u ^ 2 + 4 * toZMod a)) (x : NormOne m u a) :
+    (powAzNat x (m + 1)).1 = 1 := by
+  apply QuadT.toQuad_injective
+  rw [toQuad_powAzNat, QuadT.toQuad_one, AzNat.toNat_add, show (1 : AzNat).toNat = 1 from rfl]
   exact CL.quadNorm_one_pow_eq_one hn hns (quadNorm_toQuad x)
 
 /-- **Remark (4.10) transported**: for prime `n` and a nonsquare

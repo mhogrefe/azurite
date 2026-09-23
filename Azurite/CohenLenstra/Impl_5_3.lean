@@ -438,7 +438,8 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
     (hα : (AdjoinRoot.root (X ^ 2 - C u * X - C (1 : ZMod n) : Polynomial (ZMod n))) ^ (n + 1)
       = -1) {v : ℕ} (hv : 2 ≤ v) (h2v : 2 ^ v ∣ n + 1) :
     r ≡ n ^ (if IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) then 0 else 1) [MOD 2 ^ v]
-      ∧ (IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) → 2 ^ (v + 1) ∣ r - 1) := by
+      ∧ (IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) → 2 ^ (v + 1) ∣ r - 1)
+      ∧ (¬ IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) → r ≡ n [MOD 2 ^ (v + 1)]) := by
   haveI : Fact r.Prime := ⟨hr⟩
   have hn2 : ¬ 2 ∣ n := by omega
   have hr2 : r ≠ 2 := by
@@ -533,7 +534,7 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
       · rw [e₂.map_sub, e₂.map_pow, e₂.map_one, he₂, evAt_quadElt, zero_add, one_mul,
           ZMod.pow_card_sub_one_eq_one hc₂0, sub_self]
     have h1 : 2 ^ (v + 1) ∣ r - 1 := hord.trans (orderOf_dvd_of_pow_eq_one hpow)
-    refine ⟨?_, fun _ => h1⟩
+    refine ⟨?_, fun _ => h1, fun h => absurd ⟨δ, hδ⟩ h⟩
     rw [if_pos ⟨δ, hδ⟩, pow_zero]
     exact ((Nat.modEq_iff_dvd' hr.one_lt.le).mpr ((pow_dvd_pow 2 (by omega)).trans h1)).symm
   · -- inert: `y^(r+1) = −1`, so `y^(2(r+1)) = 1` and `2^v ∣ r + 1`
@@ -549,11 +550,22 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
     have h2 : 2 ^ v ∣ r + 1 := by
       rw [pow_succ, mul_comm] at h1
       exact Nat.dvd_of_mul_dvd_mul_left (by norm_num) h1
-    refine ⟨?_, fun h => absurd h hsq⟩
-    rw [if_neg hsq, pow_one]
-    have h3 : r + 1 ≡ n + 1 [MOD 2 ^ v] :=
-      (Nat.modEq_zero_iff_dvd.mpr h2).trans (Nat.modEq_zero_iff_dvd.mpr h2v).symm
-    exact Nat.ModEq.add_right_cancel' 1 h3
+    refine ⟨?_, fun h => absurd h hsq, fun _ => ?_⟩
+    · rw [if_neg hsq, pow_one]
+      have h3 : r + 1 ≡ n + 1 [MOD 2 ^ v] :=
+        (Nat.modEq_zero_iff_dvd.mpr h2).trans (Nat.modEq_zero_iff_dvd.mpr h2v).symm
+      exact Nat.ModEq.add_right_cancel' 1 h3
+    · -- `y^(n+1) = −1 = y^(r+1)`, so `ord(y) ∣ n − r`
+      have hrn' : r ≤ n := Nat.le_of_dvd (by omega) hrn
+      have hy3 : y ^ (n - r) = 1 := by
+        have h4 : y ^ (n + 1) = y ^ (n - r) * y ^ (r + 1) := by
+          rw [← pow_add]
+          congr 1
+          omega
+        rw [hy1, hpow, mul_neg_one] at h4
+        exact (neg_inj.mp h4).symm
+      have h5 : 2 ^ (v + 1) ∣ n - r := hord.trans (orderOf_dvd_of_pow_eq_one hy3)
+      exact (Nat.modEq_iff_dvd' hrn').mpr h5
 
 end TwoAdic
 

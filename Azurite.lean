@@ -1,4 +1,12 @@
 
+import Azurite.APRCL.Equiv.JacobiAlign
+import Azurite.APRCL.Equiv.JacobiChain
+import Azurite.APRCL.Equiv.JacobiStage
+import Azurite.APRCL.Equiv.LucasLehmer
+import Azurite.APRCL.Equiv.Test
+import Azurite.APRCL.JacobiStage
+import Azurite.APRCL.LucasLehmer
+import Azurite.APRCL.Test
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.Equiv.PrimeSieve
 import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat

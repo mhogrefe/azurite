@@ -55,7 +55,7 @@ As `step5_prime`, but the sweep tests divisibility only for residues
 theorem step5_prime_sqrt {n s t : ℕ} (hn : 1 < n) (hs2 : n < s ^ 2)
     (h25 : ∀ r, r ∣ n → ∃ j < t, r ≡ n ^ j [MOD s])
     {i : ℕ} (hi1 : 1 ≤ i) (hri : n ^ i % s = 1)
-    (hloop : ∀ j, 1 ≤ j → j ≤ i → (n ^ j % s) ^ 2 ≤ n
+    (hloop : ∀ j, 1 ≤ j → j < i → (n ^ j % s) ^ 2 ≤ n
       → ¬ (n ^ j % s ∣ n ∧ n ^ j % s < n)) :
     n.Prime := by
   have hs1 : 1 < s := by
@@ -96,7 +96,7 @@ theorem step5_prime_sqrt {n s t : ℕ} (hn : 1 < n) (hs2 : n < s ^ 2)
   · rw [h0, pow_zero, Nat.mod_eq_of_lt hs1] at hreq
     have := hr.one_lt
     omega
-  · have hjmi : j % i ≤ i := le_of_lt (Nat.mod_lt _ (by omega))
+  · have hjmi : j % i < i := Nat.mod_lt _ (by omega)
     exact hloop (j % i) h1 hjmi (hreq ▸ hrsq) ⟨hreq ▸ hrdvd, hreq ▸ hrlt_n⟩
 
 /-- The `p`-adic valuation of a product of distinct prime powers is

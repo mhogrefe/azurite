@@ -246,4 +246,28 @@ C2 to get a shippable two-sided test early while B proceeds.
   with one exponent per (r,p)).  What remains of B is glue that belongs with the certificate
   in Phase C: per (p,q), `theorem_8_5`/(9.10)/(9.19) → `theorem_7_8` → `chi_eq_chi_pow`, the
   (6.4) sources by case, and the completeness halves.
-
+* **2026-09-22 (C1/C2 milestone: Lucas–Lehmer stage shipped)** — `Azurite/APRCL/LucasLehmer.lean`
+  (`Outcome`, `LLCert`, `test42`/`test43`/`ringParams`/`structOK`/`llStage`/`llCheck`, generator
+  `llGenerate`, `llTest : AzNat → Option Bool`) + `Equiv/LucasLehmer.lean` (`llCheck_true`,
+  `llCheck_false`, both 3-axiom).  Primality = `theorem_6_3_LL` at `s₁ = F, s₂ = 1, t' = 2` +
+  `step5_prime`; the full 2-part of `n² − 1` needed strengthening `c2_two_adic` (inert clause
+  `r ≡ n (mod 2^(v+1))`) and a (c1) pinning lemma.  Supporting: `map_slidingWindowPowAzNat`
+  (transport of AzNat-exponent powers along a multiplicative map — `QuadT`/`NormOne.powAzNat`
+  need no `Monoid`), `toQuad_powAzNat`, `alpha_powAzNat_card_succ`, `powAzNat_card_succ_eq_one`.
+  Also fixed the vacuous `step5_prime`/`step5_prime_sqrt` sweep hypothesis (`j ≤ i` → `j < i`).
+  Next: the Jacobi-sum stage certificate (per `(p, q)` chain → `chi_eq_chi_pow` → `theorem_6_3_LL`
+  with `s₂ ≠ 1`), then `aprclTest` composing both stages, then A5 ports and Phase D.
+* **2026-09-22 (C3: full APR-CL test shipped)** — `Azurite/APRCL/JacobiStage.lean` (per-`(p,q)`
+  tests `jOdd`/`j2k1`/`j2k2`/`j2k3`/`jTest` in `CycT`, tables read as `J(χ^{x⁻¹}, χ^{x⁻¹})`
+  directly instead of `σ_x⁻¹`), `Equiv/JacobiStage.lean` (each `some h` = `n ∣ W − ζ^h` in
+  `ℤ[ζ_{p^k}]`), `Equiv/JacobiChain.lean` (common ring `ℤ[ζ_{q p^k}]`, `χ_R`, `ψ`, CRT-twisted
+  `σ`, `(n)`; chains 8.5/9.1/9.3/9.5/9.10/9.19 → 7.8; 7.19 source), `Equiv/JacobiAlign.lean`
+  (ℂ-characters `Yc`, `clause_odd`/`clause_two`), `Test.lean` (`Cert`, `aprclCheck`, `generate`,
+  `aprclTest`), `Equiv/Test.lean` (`prime_of_aprcl`, `aprclCheck_true`/`_false`, all 3-axiom).
+  Design: `s₁ = F` (not the (5.2) `s1 t' F` — the `t'`-lift is a refinement), `s₂ = ∏ q^e`
+  with `n^t' ≡ 1 mod q^e` checked computationally, non-Wieferich check per odd `p` (needed for
+  `a = b = 1` in Theorem 8.5), (6.4) sources LL / (7.18) / (7.19); not implemented: flags +
+  `λ`-route (i2a), the (j)/(k) auxiliary-`q` tests, `n` a `p`-th power ⟹ composite, completeness
+  halves (checker returns `none` where the paper says "composite" without proof here).
+  Guards: 10^6+3, 10^18+3, 10^18+9 certified through the Jacobi stage.  Next: A5 ports and (5.5)
+  selection as generator, then Phase D (dedicated Φ-reduction, Montgomery, benchmarks — ask first).
