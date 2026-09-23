@@ -341,3 +341,13 @@ C2 to get a shippable two-sided test early while B proceeds.
   `none`): the auxiliary route (k) with `p ∣ h`, and the two-sided statement "prime + valid
   certificate ⟹ `some true`" (would need completeness of the Lucas–Lehmer stage, of the (6.4)
   sources and of the final division).
+* **2026-09-23 (APR-CL is the production `isPrime`)** — `Azurite/AzNat/IsPrime.lean`: `isPrime n` =
+  trial division for `n.size ≤ 32`, else `millerRabin n 0 0 && (aprclTestSel n).getD-style match` with
+  trial division as the fallback on `none`.  Total (`Bool`, never `none`) and PROVEN
+  `isPrime_eq_true_iff` unconditionally (`aprclOrNaive_eq_true_iff`: `some b ⟹ b` iff prime by
+  `aprclTestSel_true/false`, `none ⟹ isPrimeNaive` iff).  The worst case moved from "returns
+  `none`" to "runs trial division on a huge input" — only on inputs where a generator search list
+  (`w`, `x`, `c` witnesses, (6.4) sources) misses, never observed; the `Option Bool` tests stay as
+  the diagnostic layer.  Guard: the strong pseudoprime 3317044064679887385961981 (first twelve
+  prime bases) passes MR and is refuted by APR-CL.  Consumers (`Pratt`, `NMinusOneTest`,
+  `LenstraTest`, `FiniteFieldTest`) now import the APR-CL stack through `AzNat.IsPrime`.
