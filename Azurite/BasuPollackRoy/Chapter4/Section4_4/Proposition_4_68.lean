@@ -33,8 +33,8 @@ private theorem Red_eq_reduce (m : MonomialOrder (Fin k)) (P G : MvPolynomial (F
   -- equate the two monomial coefficients
   have hlcG : (↑hb.unit⁻¹ : K) = (m.leadingCoeff G)⁻¹ := by
     rw [Units.val_inv_eq_inv_val, hb.unit_spec]
-  -- `coeff (m.degree P) P = m.leadingCoeff P` by definition
-  have hlcP : coeff (m.degree P) P = m.leadingCoeff P := rfl
+  -- `P.coeff (m.degree P) = m.leadingCoeff P` by definition
+  have hlcP : P.coeff (m.degree P) = m.leadingCoeff P := rfl
   rw [hlcG, hlcP, div_eq_inv_mul, mul_comm]
 
 /-- **BPR Proposition 4.68.** Let `𝒢` be a Gröbner basis of the ideal `I` for the monomial
@@ -76,9 +76,9 @@ theorem proposition_4_68 (m : MonomialOrder (Fin k)) {I : Ideal (MvPolynomial (F
               have hPC : P = C (m.leadingCoeff P) := MonomialOrder.eq_C_of_degree_eq_zero hdP
               have hGC : G = C (m.leadingCoeff G) := MonomialOrder.eq_C_of_degree_eq_zero hdG
               rw [hQdef, Red_of_le m P G hdeg_le, hdP, hdG, tsub_zero, monomial_zero']
-              show P - C (coeff 0 P / m.leadingCoeff G) * G = 0
-              have hc0 : coeff 0 P = m.leadingCoeff P := by rw [← hdP]; rfl
-              have hmul : C (coeff 0 P / m.leadingCoeff G) * G = P := by
+              show P - C (P.coeff 0 / m.leadingCoeff G) * G = 0
+              have hc0 : P.coeff 0 = m.leadingCoeff P := by rw [← hdP]; rfl
+              have hmul : C (P.coeff 0 / m.leadingCoeff G) * G = P := by
                 rw [hc0]
                 nth_rewrite 2 [hGC]
                 rw [← C_mul, div_mul_cancel₀ _ hlc, ← hPC]

@@ -42,7 +42,7 @@ lemma linearFactor_coeff_nonneg {a : R} (ha : a ≤ 0) :
     rw [coeff_sub, coeff_X_zero, coeff_C_zero, zero_sub, neg_nonneg]
     exact ha
   | 1 =>
-    rw [coeff_sub, coeff_X_one, coeff_C, if_neg one_ne_zero, sub_zero]
+    rw [coeff_sub, coeff_X_one, coeff_C, ite_eq_right one_ne_zero, sub_zero]
     exact zero_le_one
   | n + 2 =>
     rw [coeff_sub, coeff_X, coeff_C]
@@ -70,19 +70,19 @@ lemma quadraticFactor_coeff_nonneg {c d : R} (hc : c ≤ 0) :
   rw [hexpand, coeff_add, coeff_add, coeff_X_pow, coeff_C_mul, coeff_X, coeff_C]
   match k with
   | 0 =>
-    simp only [Nat.reduceEqDiff, if_false, mul_zero, add_zero, if_true]
+    simp only [Nat.reduceEqDiff, ite_false, mul_zero, add_zero, ite_true]
     positivity
   | 1 =>
-    simp only [Nat.reduceEqDiff, if_false, mul_one, if_true, zero_add]
+    simp only [Nat.reduceEqDiff, ite_false, mul_one, ite_true, zero_add]
     linarith
   | 2 =>
-    simp only [Nat.reduceEqDiff, if_false, mul_zero, add_zero, if_true]
+    simp only [Nat.reduceEqDiff, ite_false, mul_zero, add_zero, ite_true]
     exact zero_le_one
   | n + 3 =>
     have h1 : (n + 3 = 2) = False := by simp
     have h2 : (1 = n + 3) = False := by simp
     have h3 : (n + 3 = 0) = False := by simp
-    simp only [h1, h2, h3, if_false, mul_zero, add_zero, le_refl]
+    simp only [h1, h2, h3, ite_false, mul_zero, add_zero, le_refl]
 
 /-- The product of a multiset of linear factors `X − a` with all `a ≤ 0` has
     non-negative coefficients. -/
@@ -161,9 +161,9 @@ theorem proposition_2_39
         a ≤ 0) :
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     varPoly P = 0 := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
   obtain ⟨linears, quadratics, _hqs_d, hfact⟩ := exists_factorization P
   rw [hP.leadingCoeff, map_one, one_mul] at hfact
   -- hfact : P = (linears.map linearFactor).prod * (quadratics.map quadraticFactor).prod

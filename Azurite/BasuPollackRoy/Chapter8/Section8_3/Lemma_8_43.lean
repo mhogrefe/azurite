@@ -109,8 +109,8 @@ theorem det_cofactorMat (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   -- `s_j t_{i-1} = sRes_j · lcof(sResP_{i-1})` (both `j, i-1 ≠ p`).
   have hc_eq : sBPR P Q j * tBPR P Q (i - 1)
       = Azurite.BPR.Chapter4.sRes P Q j * (sResP P Q (i - 1)).leadingCoeff := by
-    rw [sBPR, if_neg (show j ≠ P.natDegree by omega),
-      tBPR, if_neg (show i - 1 ≠ P.natDegree by omega)]
+    rw [sBPR, ite_eq_right (show j ≠ P.natDegree by omega),
+      tBPR, ite_eq_right (show i - 1 ≠ P.natDegree by omega)]
   rw [Polynomial.eq_C_of_natDegree_eq_zero hdBnd, hc_eq]
   congr 1
   rw [show (cofactorMat P Q i j).det.coeff 0 = (cofactorMat P Q i j).det.leadingCoeff from by

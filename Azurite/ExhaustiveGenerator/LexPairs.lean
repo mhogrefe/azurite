@@ -84,10 +84,10 @@ vacuous. -/
           rw [show (⟨(iA * cB + iB) % cB, Nat.mod_lt _ hcB⟩ : Fin cB) = ⟨iB, hlt⟩ from
             Fin.ext hmod, hiFin]
         beta_reduce
-        rw [dif_pos hcB, hdiv, hiA, Option.map_some, hb]
+        rw [dite_eq_left hcB, hdiv, hiA, Option.map_some, hb]
       · -- Uniqueness: any producing position decodes to `(iA, iB)`.
         rintro m hm
-        rw [dif_pos hcB] at hm
+        rw [dite_eq_left hcB] at hm
         rcases hga : gA.gen (m / cB) with _ | a'
         · rw [hga] at hm; simp at hm
         · rw [hga, Option.map_some] at hm
@@ -135,12 +135,12 @@ theorem lexPairGen_contiguous {A B : Type*} {cA cB : ℕ} (gA : ExhaustiveGenera
   · intro n hn
     show (if h : 0 < cB then _ else none) = none
     rcases Nat.eq_zero_or_pos cB with hcB | hcB
-    · rw [dif_neg (by omega)]
-    · rw [dif_pos hcB, hnoneA (n / cB) ((Nat.le_div_iff_mul_le hcB).mpr hn), Option.map_none]
+    · rw [dite_eq_right (by omega)]
+    · rw [dite_eq_left hcB, hnoneA (n / cB) ((Nat.le_div_iff_mul_le hcB).mpr hn), Option.map_none]
   · intro n hn
     have hcB : 0 < cB := Nat.pos_of_ne_zero (by rintro rfl; simp at hn)
     show (if h : 0 < cB then _ else none) ≠ none
-    rw [dif_pos hcB]
+    rw [dite_eq_left hcB]
     have hlt : n / cB < cA := (Nat.div_lt_iff_lt_mul hcB).mpr hn
     rcases hga : gA.gen (n / cB) with _ | a
     · exact absurd hga (hsomeA (n / cB) hlt)
@@ -176,16 +176,16 @@ theorem lexPairGen_contig_step {A B : Type*} {cB : ℕ} (gA : ExhaustiveGenerato
   rcases Nat.eq_zero_or_pos cB with hcB | hcB
   · subst hcB
     show (if h : 0 < 0 then _ else none) = none
-    rw [dif_neg (lt_irrefl 0)]
+    rw [dite_eq_right (lt_irrefl 0)]
   · -- Extract `gA.gen (k / cB) = none` from the `none` at `k`.
     have hk : (lexPairGen gA eB hbij).gen k
         = (gA.gen (k / cB)).map (fun a => (⟨a, eB ⟨k % cB, Nat.mod_lt k hcB⟩⟩ : LexPair A B)) := by
       show (if h : 0 < cB then _ else none) = _
-      rw [dif_pos hcB]
+      rw [dite_eq_left hcB]
     rw [hk, Option.map_eq_none_iff] at h
     -- Propagate to `(k+1) / cB ≥ k / cB`, then repackage as `none` at `k+1`.
     show (if h : 0 < cB then (gA.gen ((k + 1) / cB)).map _ else none) = none
-    rw [dif_pos hcB, Option.map_eq_none_iff]
+    rw [dite_eq_left hcB, Option.map_eq_none_iff]
     exact gen_none_of_le_step gA hA (Nat.div_le_div_right (Nat.le_succ k)) h
 
 /-- `contig`-step form for `lexPairGenOfFinite` (the shape the `Contiguous`

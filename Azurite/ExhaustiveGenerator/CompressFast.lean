@@ -113,8 +113,8 @@ theorem testBit_add_of_mod_eq_zero {a b f : ℕ} (ha : a % 2 ^ f = 0) (hb : b < 
   subst hq
   rw [Nat.testBit_two_pow_mul_add q hb p]
   by_cases hp : p < f
-  · rw [if_pos hp, if_pos hp]
-  · rw [if_neg hp, if_neg hp,
+  · rw [ite_eq_left hp, ite_eq_left hp]
+  · rw [ite_eq_right hp, ite_eq_right hp,
       show 2 ^ f * q = q <<< f by rw [Nat.shiftLeft_eq, Nat.mul_comm],
       Nat.testBit_shiftLeft]
     simp [Nat.le_of_not_lt hp]
@@ -156,7 +156,7 @@ theorem roundStart_eq_sum (cap : Fin m → Option ℕ) (t : ℕ) :
         rcases hc : cap j with _ | b
         · -- Uncapped: active in every round.
           have hone : ∀ t' ∈ Finset.range t, (if ActiveIn cap t' j then 1 else 0) = 1 :=
-            fun t' _ => if_pos fun b hb => nomatch hc.symm.trans hb
+            fun t' _ => ite_eq_left fun b hb => nomatch hc.symm.trans hb
           rw [Finset.sum_congr rfl hone]
           simp
         · -- Capped at `b`: active in exactly the first `b` rounds.
@@ -166,9 +166,9 @@ theorem roundStart_eq_sum (cap : Fin m → Option ℕ) (t : ℕ) :
             by_cases h : t' < b
             · have ha : ActiveIn cap t' j := fun b' hb' =>
                 Option.some.inj (hc.symm.trans hb') ▸ h
-              rw [if_pos h, if_pos ha]
+              rw [ite_eq_left h, ite_eq_left ha]
             · have hna : ¬ActiveIn cap t' j := fun ha => h (ha b hc)
-              rw [if_neg hna, if_neg h]
+              rw [ite_eq_right hna, ite_eq_right h]
           rw [Finset.sum_congr rfl hiff, ← Finset.card_filter,
             show (Finset.range t).filter (fun t' => t' < b) = Finset.range (min t b) by
               ext x; simp]
@@ -398,15 +398,15 @@ theorem deinterleave_add_of_prefix (A : CappedBitAssignment m) {i hi lo : ℕ}
   rw [A.testBit_deinterleave, testBit_add_of_mod_eq_zero hdhimod hdlo r]
   by_cases hrf : r < f
   · obtain ⟨hv, hp⟩ := (hf r).mpr hrf
-    rw [if_pos hrf, A.testBit_deinterleave, hsum (A.pos j r), if_pos (by omega)]
-  · rw [if_neg hrf, A.testBit_deinterleave]
+    rw [ite_eq_left hrf, A.testBit_deinterleave, hsum (A.pos j r), ite_eq_left (by omega)]
+  · rw [ite_eq_right hrf, A.testBit_deinterleave]
     by_cases hv : ∀ b, A.cap j = some b → r < b
     · have hpos : ¬A.pos j r < i := fun hp => hrf ((hf r).mp ⟨hv, hp⟩)
       rw [hsum (A.pos j r)]
       by_cases hpi : A.pos j r < i + 1
       · have hpe : A.pos j r = i := by omega
-        rw [if_pos hpi, hpe, hhi i (le_refl i), Nat.testBit_lt_two_pow (hpe ▸ hlo)]
-      · rw [if_neg hpi]
+        rw [ite_eq_left hpi, hpe, hhi i (le_refl i), Nat.testBit_lt_two_pow (hpe ▸ hlo)]
+      · rw [ite_eq_right hpi]
     · simp [hv]
 
 /-! ### The class card -/
@@ -552,17 +552,17 @@ theorem card_class (cap : Fin m → Option ℕ) (cards : Fin m → ℕ) {n' i : 
     refine ⟨?_, ⟨?_, ?_⟩, ?_, ?_⟩
     · -- `hi' + interleave x < n'`, by the first-differing-bit criterion at `i`.
       refine Nat.lt_of_testBit i ?_ hbit ?_
-      · rw [hsum i, if_pos (by omega)]
+      · rw [hsum i, ite_eq_left (by omega)]
         exact Nat.testBit_lt_two_pow hlox
       · intro p hp
-        rw [hsum p, if_neg (by omega), hhibit' p hp]
+        rw [hsum p, ite_eq_right (by omega), hhibit' p hp]
     · -- Valid: low bits are owned by `interleave_valid`, high bits by `hval`.
       intro p hbitp
       rw [hsum p] at hbitp
       by_cases hpi : p < i + 1
-      · rw [if_pos hpi] at hbitp
+      · rw [ite_eq_left hpi] at hbitp
         exact A.interleave_valid x p hbitp
-      · rw [if_neg hpi] at hbitp
+      · rw [ite_eq_right hpi] at hbitp
         exact hval p hbitp
     · -- Capped slots stay below their cards.
       intro j b hc
@@ -572,12 +572,12 @@ theorem card_class (cap : Fin m → Option ℕ) (cards : Fin m → ℕ) {n' i : 
       have hDx := Nat.lt_min.mp this
       omega
     · -- Bit `i` is clear.
-      rw [hsum i, if_pos (by omega)]
+      rw [hsum i, ite_eq_left (by omega)]
       exact Nat.testBit_lt_two_pow hlox
     · -- Agreement above `i`.
       rw [shiftRight_eq_iff_agree]
       intro p hp
-      rw [hsum p, if_neg (by omega), hhibit' p hp]
+      rw [hsum p, ite_eq_right (by omega), hhibit' p hp]
   · -- Left inverse: `prefix + interleave (deinterleaveTuple low) = k`.
     intro k hk
     rw [Finset.mem_filter, Finset.mem_range] at hk
@@ -775,7 +775,7 @@ theorem binSearch_spec {P : ℕ → Bool} (hmono : ∀ x y, x ≤ y → P x = tr
     intro lo hi hd hlh hhi
     have heq : hi = lo := by omega
     subst heq
-    rw [binSearch, dif_pos (le_refl _)]
+    rw [binSearch, dite_eq_left (le_refl _)]
     exact ⟨hhi, fun x hx hx' => absurd hx' (by omega), le_refl _, le_refl _⟩
   | succ d ih =>
     intro lo hi hd hlh hhi
@@ -835,7 +835,7 @@ theorem fastUnrank_eq_unrank_of_under {T : Type*} {g : ExhaustiveGenerator T} {N
     {cap : Fin m → Option ℕ} {cards : Fin m → ℕ}
     (hbr : ∀ k, (g.gen k).isSome ↔ Live cap cards k) {i : ℕ} (hi : Under N i) :
     fastUnrank cap cards g N h hbr i = unrank g N h i := by
-  rw [fastUnrank, dif_pos hi]
+  rw [fastUnrank, dite_eq_left hi]
   have hlive : (g.gen (unrank g N h i)).isSome := gen_unrank_isSome hi
   have hrank : rankSpec g (unrank g N h i) = i := rankSpec_unrank hi
   have hcb : ∀ x, countBelow cap cards x = rankSpec g x :=
@@ -890,7 +890,7 @@ theorem fastUnrank_eq_unrank {T : Type*} {g : ExhaustiveGenerator T} {N : Option
     fastUnrank cap cards g N h hbr i = unrank g N h i := by
   by_cases hi : Under N i
   · exact fastUnrank_eq_unrank_of_under hbr hi
-  · rw [fastUnrank, dif_neg hi, unrank, dif_neg hi]
+  · rw [fastUnrank, dite_eq_right hi, unrank, dite_eq_right hi]
 
 /-! ### The re-pointed compression -/
 

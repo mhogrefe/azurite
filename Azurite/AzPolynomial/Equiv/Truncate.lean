@@ -29,13 +29,13 @@ lemma coeff_truncate (i : ℕ) (p : AzPolynomial R) (j : ℕ) :
     have hji : j ≤ i := by
       have h1 : j < i + 1 := Nat.lt_of_lt_of_le h (Nat.min_le_left _ _)
       omega
-    rw [if_pos h, if_pos hji]
+    rw [ite_eq_left h, ite_eq_left hji]
     rfl
   · -- Out of range for the extract: the `getElem?` returns `none`.
-    rw [if_neg h]
+    rw [ite_eq_right h]
     show (none : Option R).getD 0 = if j ≤ i then p.coeff j else 0
     by_cases hji : j ≤ i
-    · rw [if_pos hji]
+    · rw [ite_eq_left hji]
       -- `j ≤ i` but `¬(j < min (i+1) p.coeffs.size)`, so `j ≥ p.coeffs.size`,
       -- which forces `p.coeff j = 0`.
       have hsize : p.coeffs.size ≤ j := by
@@ -46,7 +46,7 @@ lemma coeff_truncate (i : ℕ) (p : AzPolynomial R) (j : ℕ) :
       dsimp [coeff]
       rw [Array.getElem?_eq_none hsize]
       rfl
-    · rw [if_neg hji]
+    · rw [ite_eq_right hji]
       rfl
 
 /-- `truncate` on `AzPolynomial R` agrees with BPR's `Tru_i(·)` on

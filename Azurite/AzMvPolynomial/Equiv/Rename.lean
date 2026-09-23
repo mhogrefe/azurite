@@ -81,7 +81,7 @@ theorem filterMap_sum_eq (l : List (MonicMonomial n ord × R)) :
     simp only [List.filterMap_cons, List.map_cons, List.sum_cons]
     by_cases h : p.2 = 0
     · simp [h, pairToMvPoly, MvPolynomial.monomial_zero, ih]
-    · simp only [dif_neg h, List.map_cons, List.sum_cons, ← ih]
+    · simp only [dite_eq_right h, List.map_cons, List.sum_cons, ← ih]
       simp [Monomial.toMvPoly, pairToMvPoly]
 
 end SumPreservation

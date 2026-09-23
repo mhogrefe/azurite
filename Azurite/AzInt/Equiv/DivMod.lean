@@ -291,7 +291,7 @@ theorem toInt_edivMod (a b : AzInt) :
       simp only [hr0, ↓reduceDIte]
       by_cases hBzero : b.abs = 0
       · -- B2: a.sign=F, r'≠0, b.abs = 0
-        rw [dif_pos hBzero]
+        rw [dite_eq_left hBzero]
         have hqb0 : b.abs.toNat = 0 := by rw [hBzero]; rfl
         have hb_sign : b.sign = true := b.zero_sign hBzero
         have h_btoint_zero : b.toInt = 0 := h_b_zero_iff.mpr hqb0
@@ -307,7 +307,7 @@ theorem toInt_edivMod (a b : AzInt) :
           refine ⟨rfl, ?_⟩
           rw [h_a_neg]
       · -- B3: a.sign=F, r'≠0, b.abs ≠ 0
-        rw [dif_neg hBzero]
+        rw [dite_eq_right hBzero]
         have hbn : b.abs.toNat ≠ 0 := by
           intro h; apply hBzero; apply AzNat.toNat_injective
           rw [h, AzNat.toNat_zero]
@@ -527,7 +527,7 @@ theorem toInt_fdivMod (a b : AzInt) :
         simp only [hr0, ↓reduceDIte]
         have hBzero : ¬ b.abs = 0 := by
           intro h; apply hbn; rw [h]; rfl
-        rw [dif_neg hBzero]
+        rw [dite_eq_right hBzero]
         have hrlt : (a.abs.divMod b.abs).2.toNat < b.abs.toNat := h_bnd hbn
         have hqr_pos : (a.abs.divMod b.abs).2.toNat ≠ 0 := by
           intro h; apply hr0; apply AzNat.toNat_injective
@@ -591,7 +591,7 @@ theorem toInt_fdivMod (a b : AzInt) :
       · -- FT, r' ≠ 0
         simp only [hr0, ↓reduceDIte]
         by_cases hBzero : b.abs = 0
-        · rw [dif_pos hBzero]
+        · rw [dite_eq_left hBzero]
           have hqb0 : b.abs.toNat = 0 := by rw [hBzero]; rfl
           have h_btoint_zero : b.toInt = 0 := h_b_zero_iff.mpr hqb0
           have h_qq0 : (a.abs.divMod b.abs).1.toNat = 0 := by rw [h_qq_n, hqb0]; simp
@@ -605,7 +605,7 @@ theorem toInt_fdivMod (a b : AzInt) :
           · intro h_p; rw [h_btoint_zero] at h_p; exact absurd h_p (lt_irrefl _)
           · intro h_n; rw [h_btoint_zero] at h_n; exact absurd h_n (lt_irrefl _)
           · intro _; refine ⟨rfl, ?_⟩; rw [h_a_neg]
-        · rw [dif_neg hBzero]
+        · rw [dite_eq_right hBzero]
           have hbn : b.abs.toNat ≠ 0 := by
             intro h; apply hBzero; apply AzNat.toNat_injective
             rw [h, AzNat.toNat_zero]

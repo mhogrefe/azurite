@@ -60,8 +60,8 @@ theorem sRemSStep_map (g : K →+* L) (a b : AzPolynomial K) :
   by_cases hb : b = 0
   · subst hb; simp [sRemSStep, hmz]
   · rw [sRemSStep, sRemSStep,
-      if_neg (fun h => hb ((map_eq_zero_iff_of_injective g g.injective b).mp h)),
-      if_neg hb, map_neg', rem_map]
+      ite_eq_right (fun h => hb ((map_eq_zero_iff_of_injective g g.injective b).mp h)),
+      ite_eq_right hb, map_neg', rem_map]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] [LinearOrder L] [IsStrictOrderedRing L] in
 /-- The signed remainder builder commutes with a field homomorphism. -/

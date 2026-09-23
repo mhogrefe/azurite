@@ -35,7 +35,7 @@ theorem corollary_10_12 {P Q : ℤ[X]} (hP : P ≠ 0) (hQP : Q ∣ P) {τ : ℕ}
   set s := Nat.size (p + 1) with hs
   rw [Nat.size_le]
   -- work in `C = ℝ[i]`
-  haveI : CharZero (Ri ℝ) :=
+  have : CharZero (Ri ℝ) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective ℝ (Ri ℝ))
   have hcast : Function.Injective (Int.castRingHom (Ri ℝ)) := fun a b h => by simpa using h
   set P' := P.map (Int.castRingHom (Ri ℝ)) with hP'

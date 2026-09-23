@@ -28,7 +28,7 @@ theorem isSemialgebraicFunction_polynomialMap {A : Set (Fin k → R)} (hA : IsSe
             {z : Fin (k + ℓ) → R |
               eval z (X (Fin.natAdd k j) - rename (Fin.castAdd ℓ) (P j)) = 0} := by
     ext z
-    simp only [funGraph, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_iInter, Finset.mem_univ,
+    simp only [funGraph, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_iInter, Finset.mem_univ,
       forall_true_left, map_sub, eval_X, eval_rename, sub_eq_zero, polynomialMap, funext_iff,
       Function.comp_apply]
   rw [heq]
@@ -56,7 +56,7 @@ theorem proposition_3_7 {C : Set (Fin k → R)} (hCconv : IsConvex C) :
   have hIsa : IsSemialgebraicSet I := by
     have he : I = {v : Fin 1 → R | eval v (X 0) ≥ 0} ∩ {v : Fin 1 → R | eval v (X 0 - MvPolynomial.C 1) ≤ 0} := by
       ext v
-      simp only [hI, Set.mem_Icc, Set.mem_inter_iff, Set.mem_setOf_eq, eval_X, map_sub, eval_C,
+      simp only [hI, Set.mem_Icc, Set.mem_inter_iff, Set.mem_ofPred_eq, eval_X, map_sub, eval_C,
         ge_iff_le, sub_nonpos]
     rw [he]; exact (IsSemialgebraicSet.geZero _).inter (IsSemialgebraicSet.leZero (X 0 - MvPolynomial.C 1))
   have hφsa : IsSemialgebraicFunction I (polynomialMap P) :=

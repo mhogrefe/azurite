@@ -96,7 +96,7 @@ theorem dvd_of_dvd_mod {y : ℕ} (hd : p ∣ y % p ^ k) : p ∣ y := by
 include hp hk in
 theorem mAct_mem {c x : ℕ} (hc : ¬ p ∣ c) (hx : x ∈ Mset p k) :
     mAct p k c x ∈ Mset p k := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   obtain ⟨⟨hx1, hxlt⟩, hxp⟩ := mem_Mset.mp hx
   have hval : mAct p k c x = (c * x) % p ^ k := by
     rw [mAct]
@@ -121,7 +121,7 @@ theorem mAct_mem {c x : ℕ} (hc : ¬ p ∣ c) (hx : x ∈ Mset p k) :
 include hp in
 theorem minv_spec {x : ℕ} (hx : ¬ p ∣ x) :
     x * minv p k x ≡ 1 [MOD p ^ k] := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   have hco : x.Coprime (p ^ k) :=
     Nat.Coprime.pow_right _
       (Nat.coprime_comm.mp (hp.coprime_iff_not_dvd.mpr hx))
@@ -167,7 +167,7 @@ theorem minv_not_dvd {x : ℕ} (hx : ¬ p ∣ x) : ¬ p ∣ minv p k x := by
 
 include hp hk in
 theorem minv_mem {x : ℕ} (hx : x ∈ Mset p k) : minv p k x ∈ Mset p k := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   obtain ⟨⟨hx1, hxlt⟩, hxp⟩ := mem_Mset.mp hx
   have hnd := minv_not_dvd hp hk hxp
   refine mem_Mset.mpr ⟨⟨?_, ?_⟩, hnd⟩
@@ -181,7 +181,7 @@ omit hk in
 theorem mAct_mAct_one {c1 c2 x : ℕ} (h12 : c1 * c2 ≡ 1 [MOD p ^ k])
     (hxlt : x < p ^ k) :
     mAct p k c1 (mAct p k c2 x) = x := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   have hz : ((c1 * mAct p k c2 x : ℕ) : ZMod (p ^ k))
       = ((x : ℕ) : ZMod (p ^ k)) := by
     push_cast
@@ -200,7 +200,7 @@ theorem mAct_mAct_one {c1 c2 x : ℕ} (h12 : c1 * c2 ≡ 1 [MOD p ^ k])
 include hp hk in
 theorem minv_invol {x : ℕ} (hx : x ∈ Mset p k) :
     minv p k (minv p k x) = x := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   obtain ⟨⟨hx1, hxlt⟩, hxp⟩ := mem_Mset.mp hx
   have h1 := minv_spec (k := k) hp hxp
   have h2 := minv_spec (k := k) hp (minv_not_dvd hp hk hxp)
@@ -224,7 +224,7 @@ include hp in
 omit hk in
 theorem mAct_minv_cancel {c x : ℕ} (hc : ¬ p ∣ c) (hx : x ∈ Mset p k) :
     mAct p k c (mAct p k (minv p k c) x) = x := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   obtain ⟨⟨hx1, hxlt⟩, hxp⟩ := mem_Mset.mp hx
   have hcinv := minv_spec (k := k) hp hc
   -- compute at the `ZMod` level
@@ -249,7 +249,7 @@ theorem minv_mAct_congr' {c x : ℕ} (hc : ¬ p ∣ c) (hxp : ¬ p ∣ x) :
   set y := mAct p k (minv p k c) x with hy
   have hyp : ¬ p ∣ y := by
     rw [hy, mAct]
-    haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+    have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
     rw [ZMod.val_natCast]
     intro hd
     have hpd : p ∣ minv p k c * x := dvd_of_dvd_mod hk hd
@@ -259,7 +259,7 @@ theorem minv_mAct_congr' {c x : ℕ} (hc : ¬ p ∣ c) (hxp : ¬ p ∣ x) :
   -- `y ≡ c⁻¹·x`, so `c·(minv x)` inverts `y`; conclude by uniqueness
   have hycong : y ≡ minv p k c * x [MOD p ^ k] := by
     rw [hy, mAct]
-    haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+    have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
     rw [ZMod.val_natCast]
     exact (Nat.mod_modEq _ _)
   have hinv1 : y * (c * minv p k x) ≡ 1 [MOD p ^ k] := by
@@ -303,7 +303,7 @@ theorem exponent_identity {p k n a b y : ℕ} (hp : p.Prime) :
     n * βc a b p k y + αc n p k (mAct p k (a + b) y)
       = βc a b p k (mAct p k n y)
         + (αc n p k (mAct p k a y) + αc n p k (mAct p k b y)) := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   have hN0 : (0 : ℕ) < p ^ k := pow_pos hp.pos k
   have hact : ∀ c z : ℕ, mAct p k c z = (c * z) % p ^ k := fun c z => by
     rw [mAct]
@@ -639,7 +639,7 @@ algorithm, three times. -/
 theorem eq_8_14_coeff {p k a b y : ℕ} (hp : p.Prime) :
     mAct p k a y + mAct p k b y
       = mAct p k (a + b) y + p ^ k * βc a b p k y := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   have hN0 : (0 : ℕ) < p ^ k := pow_pos hp.pos k
   have hact : ∀ c z : ℕ, mAct p k c z = (c * z) % p ^ k := fun c z => by
     rw [mAct]
@@ -700,8 +700,8 @@ theorem sum_Mset_eq_sum_units {p k : ℕ} [NeZero (p ^ k)]
     ∑ x ∈ Mset p k, f ((x : ℕ) : ZMod (p ^ k))
       = ∑ u : (ZMod (p ^ k))ˣ, f ((u : ZMod (p ^ k))) := by
   classical
-  haveI : Nontrivial (ZMod (p ^ k)) := by
-    haveI : Fact (1 < p ^ k) := ⟨Nat.one_lt_pow hk.ne' hp.one_lt⟩
+  have : Nontrivial (ZMod (p ^ k)) := by
+    have : Fact (1 < p ^ k) := ⟨Nat.one_lt_pow hk.ne' hp.one_lt⟩
     infer_instance
   refine Finset.sum_bij
     (fun x hx => ZMod.unitOfCoprime x
@@ -774,7 +774,7 @@ theorem sum_one_unit_pows {p k : ℕ} (hp : p.Prime) (hk : 0 < k)
       = ((∑ i ∈ Finset.range (p ^ (k - 1)), (1 + p * i) : ℕ)
           : ZMod (p ^ k)) := by
   classical
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   set F : ℕ → ℕ := fun j =>
     ((((h ^ j : (ZMod (p ^ k))ˣ) : ZMod (p ^ k))).val - 1) / p with hF
   have hFval : ∀ j : ℕ,
@@ -870,9 +870,9 @@ theorem sum_pow_M_modEq {p k : ℕ} (hp : p.Prime) (hp3 : 2 < p)
     (hk : 0 < k) :
     ∑ x ∈ Mset p k, x ^ (p - 1) ≡ (p - 1) * p ^ (k - 1) [MOD p ^ k] := by
   classical
-  haveI : Fact p.Prime := ⟨hp⟩
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
-  haveI := ZMod.isCyclic_units_of_prime_pow p hp (by omega) k
+  have : Fact p.Prime := ⟨hp⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have := ZMod.isCyclic_units_of_prime_pow p hp (by omega) k
   obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (ZMod (p ^ k))ˣ)
   have hgord : orderOf g = (p - 1) * p ^ (k - 1) := by
     rw [orderOf_eq_card_of_forall_mem_zpowers hg,
@@ -994,7 +994,7 @@ theorem sum_mAct_pow_modEq {p k c : ℕ} (hp : p.Prime) (hk : 0 < k)
 /-- Fermat's little theorem, `ℕ`-congruence form: `m^p ≡ m (mod p)`. -/
 theorem fermat_nat {p : ℕ} (hp : p.Prime) (m : ℕ) :
     m ^ p ≡ m [MOD p] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   refine (ZMod.natCast_eq_natCast_iff _ _ _).mp ?_
   push_cast
   exact ZMod.pow_card _

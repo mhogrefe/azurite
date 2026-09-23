@@ -69,8 +69,8 @@ variable {m n : ℕ} {h : Polynomial ℤ}
 noncomputable def sigmaN (hm : 0 < m) (hco : Nat.Coprime n m) :
     CycM m →+* CycM m :=
   AdjoinRoot.lift (Int.castRingHom (CycM m)) (zetaM m ^ n) <| by
-    haveI := isDomain_cycM hm
-    haveI : NeZero ((m : ℕ) : CycM m) := ⟨natCast_ne_zero_cycM hm hm.ne'⟩
+    have := isDomain_cycM hm
+    have : NeZero ((m : ℕ) : CycM m) := ⟨natCast_ne_zero_cycM hm hm.ne'⟩
     have hprim : IsPrimitiveRoot (zetaM m ^ n) m :=
       (isPrimitiveRoot_zetaM hm).pow_of_coprime n hco
     have hroot : IsRoot (cyclotomic m (CycM m)) (zetaM m ^ n) :=
@@ -185,7 +185,7 @@ theorem mIdeal_natCast_imp_dvd (hn : 1 < n)
     (hdvd : h.map (Int.castRingHom (ZMod n))
       ∣ (cyclotomic m ℤ).map (Int.castRingHom (ZMod n))) :
     ∀ a : ℕ, ((a : ℕ) : CycM m) ∈ mIdeal m n h → n ∣ a := by
-  haveI : Fact (1 < n) := ⟨hn⟩
+  have : Fact (1 < n) := ⟨hn⟩
   intro a ha
   rw [mIdeal, Ideal.mem_span_pair] at ha
   obtain ⟨u, v, huv⟩ := ha
@@ -281,7 +281,7 @@ theorem mIdeal_sigmaN_map_eq (hm : 0 < m) (hco : Nat.Coprime n m)
 theorem sigmaN_sub_pow_mem (hm : 0 < m) (hn : n.Prime)
     (hco : Nat.Coprime n m) (α : CycM m) :
     sigmaN hm hco α - α ^ n ∈ Ideal.span {((n : ℕ) : CycM m)} := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   obtain ⟨U, rfl⟩ := exists_aeval_rep α
   -- polynomial level: `C n ∣ expand n U − U^n`
   have hkey : Polynomial.C ((n : ℕ) : ℤ)
@@ -338,8 +338,8 @@ theorem mIdeal_eq_span_natCast (hn : 1 < n) (hmonic : h.Monic)
       ∣ (cyclotomic m ℤ).map (Int.castRingHom (ZMod n)))
     (hdeg : h.natDegree = m.totient) :
     mIdeal m n h = Ideal.span {((n : ℕ) : CycM m)} := by
-  haveI : Fact (1 < n) := ⟨hn⟩
-  haveI : NeZero n := ⟨by omega⟩
+  have : Fact (1 < n) := ⟨hn⟩
+  have : NeZero n := ⟨by omega⟩
   -- `(h mod n) = (Φ_m mod n)`: monic divisor of equal degree
   have hmonich : (h.map (Int.castRingHom (ZMod n))).Monic :=
     hmonic.map _

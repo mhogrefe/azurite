@@ -138,7 +138,7 @@ noncomputable def disjList : List (Formula σ (FieldAtom σ D)) →
   | nil => simp [conjList]
   | cons Φ Φs ih =>
     simp only [conjList, realization_and, ih]
-    ext y; simp [Set.mem_inter_iff, Set.mem_setOf_eq,
+    ext y; simp [Set.mem_inter_iff, Set.mem_ofPred_eq,
       List.mem_cons, forall_eq_or_imp]
 
 @[simp] theorem realization_disjList [DecidableEq σ]
@@ -149,7 +149,7 @@ noncomputable def disjList : List (Formula σ (FieldAtom σ D)) →
   | nil => simp [disjList]
   | cons Φ Φs ih =>
     simp only [disjList, realization_or, ih]
-    ext y; simp [Set.mem_union, Set.mem_setOf_eq,
+    ext y; simp [Set.mem_union, Set.mem_ofPred_eq,
       List.mem_cons, exists_eq_or_imp]
 
 end FieldAtom

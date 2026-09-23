@@ -44,10 +44,10 @@ theorem sRes_eq_leadingCoeff_mul_sDiscK (P : R[X])
     rintro rfl; simp at hdeg
   rw [sDiscK]
   by_cases h : i < P.natDegree
-  · rw [if_pos h, ← mul_div_assoc, mul_div_cancel_left₀ _ ha]
-  · rw [if_neg h, mul_one]
+  · rw [ite_eq_left h, ← mul_div_assoc, mul_div_cancel_left₀ _ ha]
+  · rw [ite_eq_right h, mul_one]
     obtain rfl : i = P.natDegree := by omega
-    rw [sRes, if_neg (by omega), if_pos hdeg, if_pos rfl]
+    rw [sRes, ite_eq_right (by omega), ite_eq_left hdeg, ite_eq_left rfl]
 
 /-- **Core of Theorem 4.34.** `PmV(sRes(P, P')) = #{distinct roots}` over a real
 closed field: `PmV(sRes(P,P')) = Ind(P'/P)` (Theorem 4.32) `= #roots`

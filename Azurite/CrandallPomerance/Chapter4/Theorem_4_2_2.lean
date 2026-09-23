@@ -129,9 +129,9 @@ theorem lucasU_card_add_one
   have hirr : Irreducible g :=
     irreducible_of_degree_le_three_of_not_isRoot
       (by rw [hgdeg]; decide) hnoroot
-  haveI : Fact (Irreducible g) := ⟨hirr⟩
+  have : Fact (Irreducible g) := ⟨hirr⟩
   set K := AdjoinRoot g with hK
-  haveI : CharP K p :=
+  have : CharP K p :=
     charP_of_injective_algebraMap (algebraMap (ZMod p) K).injective p
   set α : K := AdjoinRoot.root g with hαdef
   set β : K := ((a : ℤ) : K) - α with hβdef
@@ -197,8 +197,8 @@ theorem lucasU_card_add_one
     have hgp0 : gp ≠ 0 := by
       intro h0
       have hc : gp.coeff p = 1 := by
-        rw [hgp, coeff_sub, coeff_X_pow, if_pos rfl, coeff_X]
-        rw [if_neg (by omega : ¬(1 : ℕ) = p)]
+        rw [hgp, coeff_sub, coeff_X_pow, ite_eq_left rfl, coeff_X]
+        rw [ite_eq_right (by omega : ¬(1 : ℕ) = p)]
         ring
       rw [h0, coeff_zero] at hc
       exact one_ne_zero hc.symm

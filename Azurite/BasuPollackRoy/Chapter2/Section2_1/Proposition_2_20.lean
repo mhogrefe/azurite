@@ -61,10 +61,10 @@ theorem proposition_2_20_of_isRealClosed
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     (∀ x ∈ Set.Ioo a b, P.eval x ≠ 0) →
     (∀ x ∈ Set.Ioo a b, 0 < P.eval x) ∨ (∀ x ∈ Set.Ioo a b, P.eval x < 0) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact proposition_2_20 theorem_2_11_b_c P a b
 
 end Azurite.BPR.Proposition2_20

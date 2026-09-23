@@ -34,7 +34,7 @@ theorem mem_pointFormOn_realization {k : ℕ} {K : Type*} [Field K] [LinearOrder
     have hunfold : pointFormOn ([] : List (Fin k)) a
         = Formula.atom (⟨0, OrderRel.eq⟩ : OrderedFieldAtom (Fin k) R) := rfl
     rw [hunfold]
-    simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, map_zero,
+    simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, map_zero,
       List.not_mem_nil, false_implies, implies_true]
   | cons j M' ih =>
     have hunfold : pointFormOn (j :: M') a
@@ -42,7 +42,7 @@ theorem mem_pointFormOn_realization {k : ℕ} {K : Type*} [Field K] [LinearOrder
             (pointFormOn M' a) := rfl
     rw [hunfold]
     simp only [Formula.realization, Set.mem_inter_iff, AtomRealization.interpret,
-      Set.mem_setOf_eq, map_sub, aeval_X, aeval_C, sub_eq_zero, ih, List.forall_mem_cons]
+      Set.mem_ofPred_eq, map_sub, aeval_X, aeval_C, sub_eq_zero, ih, List.forall_mem_cons]
 
 /-- `⋁_{a ∈ L} ⋀_{j} (X_j = a_j)` — the disjunction, over a list `L` of points, of the point
 conjunctions. The empty disjunction is `1 = 0` (always false). -/
@@ -59,7 +59,7 @@ theorem mem_setForm_realization {k : ℕ} {K : Type*} [Field K] [LinearOrder K]
     have hunfold : setForm ([] : List (Fin k → R))
         = Formula.atom (⟨1, OrderRel.eq⟩ : OrderedFieldAtom (Fin k) R) := rfl
     rw [hunfold]
-    simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, map_one,
+    simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, map_one,
       List.not_mem_nil, false_and, exists_false, iff_false]
     exact one_ne_zero
   | cons a L' ih =>

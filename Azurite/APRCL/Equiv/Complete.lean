@@ -77,7 +77,7 @@ theorem natCast_dvd_of_phiR_dvd {N : ℕ} {x : CycM (p ^ k)}
     simp only [f, zP, ← pow_mul]
   have hrepr : ∀ i, B'.repr (phiR (q := q) hp x) (f i) = B.repr x i := by
     intro i
-    rw [hφx, Module.Basis.repr_linearCombination, Finsupp.mapDomain_apply hf]
+    rw [hφx, Module.Basis.repr_linearCombination, Finsupp.mapDomain_apply_of_injective hf]
   -- `N ∣ every coordinate of x`
   refine Finset.dvd_gcd fun i _ => ?_
   have h1 : N ∣ (B'.repr (phiR (q := q) hp x) (f i)).natAbs :=
@@ -173,7 +173,7 @@ theorem coeffT_ofCoeffFn {m : ℕ} (hm : m ≤ (p - 1) * p ^ (k - 1)) (c : ℕ �
   rw [hred, ← coeff_toPoly_eq, AzPolynomial.toPoly_normalize_ofFn _ c,
     Polynomial.finsetSum_coeff]
   simp only [Polynomial.coeff_C_mul_X_pow]
-  rw [Finset.sum_ite_eq, if_pos (Finset.mem_range.mpr hi)]
+  rw [Finset.sum_ite_eq, ite_eq_left (Finset.mem_range.mpr hi)]
 
 include hp hk in
 /-- `ζ^h` as a coefficient vector. -/
@@ -213,12 +213,12 @@ theorem findHT_complete {a : AzPolyMod.CycT n p k} {h : ℕ} (hh : h < p ^ k)
       apply hnone h (List.mem_range.mpr hlt)
       rw [List.all_eq_true]
       intro i hi
-      rw [decide_eq_true_eq, hcoeff i (List.mem_range.mp hi), CL.zetaCoeff, if_pos hlt]
+      rw [decide_eq_true_eq, hcoeff i (List.mem_range.mp hi), CL.zetaCoeff, ite_eq_left hlt]
       split_ifs <;> simp
     refine ⟨h - m, List.mem_range.mpr (by omega), ?_⟩
     rw [List.all_eq_true]
     intro i hi
-    rw [decide_eq_true_eq, hcoeff i (List.mem_range.mp hi), CL.zetaCoeff, if_neg (by omega)]
+    rw [decide_eq_true_eq, hcoeff i (List.mem_range.mp hi), CL.zetaCoeff, ite_eq_right (by omega)]
     have hmP : m % P = 0 := by rw [hm]; exact Nat.mul_mod_left _ _
     have hhP : h % P = h - m := by
       obtain ⟨r, hr⟩ : ∃ r, h = m + r := ⟨h - m, by omega⟩
@@ -241,7 +241,7 @@ theorem exists_dvd_sub_zP_pow_odd (hp3 : 2 < p) (hn : N.Prime) (hqn : ¬ q ∣ N
     ∃ h < p ^ k, ((N : ℕ) : CR q p k) ∣ (∏ x ∈ Mset p k,
       jacobiSum (chiR hp hpk hg ^ minv p k x) (chiR hp hpk hg ^ minv p k x) ^ αc N p k x)
       - zP q p k ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   set χ := chiR hp hpk hg with hχ
   set ψ := psiR q p k hp with hψ
   have hord := orderOf_chiR hp hpk hg
@@ -346,7 +346,7 @@ theorem exists_dvd_sub_zP_pow_of_identity (hn : N.Prime) (hqn : ¬ q ∣ N) (hpn
     (hid : u * W * ∏ x ∈ S, gaussSum (chiR hp hpk hg ^ (N * x)) (psiR q p k hp) ^ ν x
       = (∏ x ∈ S, gaussSum (chiR hp hpk hg ^ x) (psiR q p k hp) ^ ν x) ^ N) :
     ∃ h < p ^ k, ((N : ℕ) : CR q p k) ∣ W - zP q p k ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   set χ := chiR hp hpk hg with hχ
   set ψ := psiR q p k hp with hψ
   have hord := orderOf_chiR hp hpk hg
@@ -433,8 +433,8 @@ include hn hqn hodd in
 theorem exists_dvd_sub_zetaM_pow_k1 :
     ∃ h < 2 ^ 1, ((N : ℕ) : CycM (2 ^ 1)) ∣ ((q : ℕ) : CycM (2 ^ 1)) ^ ((N - 1) / 2)
       - zetaM (2 ^ 1) ^ h := by
-  haveI : Fact N.Prime := ⟨hn⟩
-  haveI := isDomain_cycM (show 0 < 2 ^ 1 by norm_num)
+  have : Fact N.Prime := ⟨hn⟩
+  have := isDomain_cycM (show 0 < 2 ^ 1 by norm_num)
   have hq0 : ((q : ℕ) : ZMod N) ≠ 0 := by
     rw [Ne, ZMod.natCast_eq_zero_iff]
     intro h
@@ -473,7 +473,7 @@ theorem exists_dvd_sub_zP_pow_k2_one (hpk : 2 ^ 2 ∣ q - 1) (hn4 : N % 4 = 1) :
     ∃ h < 2 ^ 2, ((N : ℕ) : CR q 2 2) ∣
       jacobiSum (chiR Nat.prime_two hpk hg) (chiR Nat.prime_two hpk hg) ^ ((N - 1) / 2)
         * ((q : ℕ) : CR q 2 2) ^ ((N - 1) / 4) - zP q 2 2 ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
   set χ := chiR Nat.prime_two hpk hg with hχ
   set ψ := psiR q 2 2 Nat.prime_two with hψ
   have hord : orderOf χ = 4 := orderOf_chiR Nat.prime_two hpk hg
@@ -520,7 +520,7 @@ theorem exists_dvd_sub_zP_pow_k2_three (hpk : 2 ^ 2 ∣ q - 1) (hn4 : N % 4 = 3)
     ∃ h < 2 ^ 2, ((N : ℕ) : CR q 2 2) ∣
       jacobiSum (chiR Nat.prime_two hpk hg) (chiR Nat.prime_two hpk hg) ^ ((N + 1) / 2)
         * ((q : ℕ) : CR q 2 2) ^ ((N - 3) / 4) - zP q 2 2 ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
   set χ := chiR Nat.prime_two hpk hg with hχ
   set ψ := psiR q 2 2 Nat.prime_two with hψ
   have hord : orderOf χ = 4 := orderOf_chiR Nat.prime_two hpk hg
@@ -592,7 +592,7 @@ theorem exists_dvd_sub_zP_pow_k3_low (hn8 : N % 8 = 1 ∨ N % 8 = 3) :
           * jacobiSum (chiR Nat.prime_two hpk hg ^ minv 2 k x)
               (chiR Nat.prime_two hpk hg ^ (2 * minv 2 k x))) ^ αc N 2 k x)
       - zP q 2 k ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
   have hk : 0 < k := by omega
   set χ := chiR Nat.prime_two hpk hg with hχ
   set ψ := psiR q 2 k Nat.prime_two with hψ
@@ -632,7 +632,7 @@ theorem exists_dvd_sub_zP_pow_k3_high (hn8 : N % 8 = 5 ∨ N % 8 = 7) :
         * jacobiSum (chiR Nat.prime_two hpk hg ^ 2 ^ (k - 3))
             ((chiR Nat.prime_two hpk hg ^ 2 ^ (k - 3)) ^ 3) ^ 2
       - zP q 2 k ^ h := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
   have hk : 0 < k := by omega
   set χ := chiR Nat.prime_two hpk hg with hχ
   set ψ := psiR q 2 k Nat.prime_two with hψ
@@ -705,7 +705,7 @@ omit [Fact q.Prime] in
 /-- **(i1b) is complete.** -/
 theorem j2k1_isSome (hq : q.Prime) (hn : n.toNat.Prime) (hqn : ¬ q ∣ n.toNat)
     (hodd : n.toNat % 2 = 1) : (j2k1 n q).isSome = true := by
-  haveI : Fact q.Prime := ⟨hq⟩
+  have : Fact q.Prime := ⟨hq⟩
   rw [j2k1_eq]
   obtain ⟨h, hh, hd⟩ := exists_dvd_sub_zetaM_pow_k1 (q := q) hn hqn hodd
   exact findHT_reduce_isSome Nat.prime_two one_pos hh hd
@@ -768,7 +768,7 @@ theorem jTest_isSome_of_checks (hq : q.Prime) (hp : p.Prime) (hpq : p ∣ q - 1)
     (hidx : CL.checkIndexTable q g (CL.indexTableOf (CL.indexTableArr q g)) = true)
     (hn : n.toNat.Prime) (hqn : ¬ q ∣ n.toNat) (hpn : ¬ p ∣ n.toNat) :
     (jTest n p (padicValNat p (q - 1)) q (CL.indexTableOf (CL.indexTableArr q g))).isSome = true := by
-  haveI : Fact q.Prime := ⟨hq⟩
+  have : Fact q.Prime := ⟨hq⟩
   have hq1 : q - 1 ≠ 0 := by have := hq.two_le; omega
   obtain ⟨gu, hgv, hg⟩ := CL.checkGenerator_spec hchk
   have hf := CL.checkIndexTable_spec hidx

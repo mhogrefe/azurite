@@ -67,14 +67,14 @@ theorem isSemialgebraicFunction_id {S : Set (Fin k → R)} (hS : IsSemialgebraic
         = ⋂ i ∈ (Finset.univ : Finset (Fin k)),
             {z : Fin (k + k) → R | eval z (X (Fin.natAdd k i) - X (Fin.castAdd k i)) = 0} := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left,
+      simp only [Set.mem_ofPred_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left,
         map_sub, eval_X, sub_eq_zero, funext_iff, Function.comp_apply]
     rw [he]
     exact IsSemialgebraicSet.iInter_finset _ (fun i _ => IsSemialgebraicSet.eqZero _)
   have hgraph : funGraph S id
       = {z : Fin (k + k) → R | z ∘ Fin.castAdd k ∈ S} ∩
           {z : Fin (k + k) → R | z ∘ Fin.natAdd k = z ∘ Fin.castAdd k} := by
-    ext z; simp only [mem_funGraph, id_eq, Set.mem_inter_iff, Set.mem_setOf_eq]
+    ext z; simp only [mem_funGraph, id_eq, Set.mem_inter_iff, Set.mem_ofPred_eq]
   rw [hgraph]
   exact (IsSemialgebraicSet.comap (Fin.castAdd k) hS).inter hdiag
 
@@ -98,7 +98,7 @@ theorem funGraph_inverse_eq {S : Set (Fin k → R)} {T : Set (Fin ℓ → R)}
   have hsn : blockSwap k ℓ ∘ Fin.natAdd k = Fin.castAdd k := by
     funext j; simp only [Function.comp_apply, blockSwap, Fin.addCases_right]
   ext v
-  simp only [mem_funGraph, Set.mem_setOf_eq, Function.comp_assoc, hsc, hsn]
+  simp only [mem_funGraph, Set.mem_ofPred_eq, Function.comp_assoc, hsc, hsn]
   constructor
   · rintro ⟨hyT, hxg⟩
     obtain ⟨x₀, hx₀S, hfx₀⟩ := hbij.surjOn hyT
@@ -117,7 +117,7 @@ theorem invOn_of_funGraph_transpose {S : Set (Fin k → R)} {T : Set (Fin ℓ �
   have hmem : ∀ (x : Fin k → R) (y : Fin ℓ → R), (y ∈ T ∧ x = g y) ↔ (x ∈ S ∧ y = f x) := by
     intro x y
     have h := congrArg (Fin.append y x ∈ ·) hgt
-    simpa only [eq_iff_iff, mem_funGraph, Set.mem_setOf_eq, blockSwap_append,
+    simpa only [eq_iff_iff, mem_funGraph, Set.mem_ofPred_eq, blockSwap_append,
       append_comp_castAdd, append_comp_natAdd] using h
   exact ⟨fun x hx => ((hmem x (f x)).mpr ⟨hx, rfl⟩).2.symm,
     fun y hy => ((hmem (g y) y).mp ⟨hy, rfl⟩).2.symm⟩

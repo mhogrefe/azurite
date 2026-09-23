@@ -102,7 +102,7 @@ theorem Ri.repr_exists {R : Type*} [CommRing R] [Nontrivial R] (z : Ri R) :
       have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
       have hf_deg : f.degree = 2 := by
         have hnat : f.natDegree = 2 := by
-          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+          simp [f]
         rw [Polynomial.degree_eq_natDegree hfm.ne_zero, hnat]; norm_num
       rw [hf_deg] at hrd
       by_cases hr : r = 0
@@ -158,8 +158,8 @@ theorem Ri.normSqR_nonneg {R : Type*} [Field R] [IsRealClosed R] (z : Ri R) :
   have heq : Ri.normSqR z = a ^ 2 + b ^ 2 := hinj (by
     rw [Ri.normSqR_spec, hab, Ri.normSq_repr])
   rw [heq]
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
   exact add_nonneg (sq_nonneg a) (sq_nonneg b)
 
 /-- **Modulus** |z| = √(a² + b²), the unique nonneg r ∈ R with r² = normSqR z. -/
@@ -173,16 +173,16 @@ noncomputable def Ri.modulus {R : Type*} [Field R] [IsRealClosed R]
 theorem Ri.modulus_nonneg {R : Type*} [Field R] [IsRealClosed R]
     (z : Ri R) : @LE.le R IsRealClosed.toLinearOrder.toLE 0 (Ri.modulus z) := by
   unfold Ri.modulus
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
   exact abs_nonneg _
 
 /-- The modulus squared equals the norm squared. -/
 theorem Ri.modulus_sq {R : Type*} [Field R] [IsRealClosed R]
     (z : Ri R) : Ri.modulus z ^ 2 = Ri.normSqR z := by
   unfold Ri.modulus
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
   rw [sq_abs]
   exact (IsRealClosed.exists_eq_pow_of_nonneg (Ri.normSqR_nonneg z) two_ne_zero).choose_spec.symm
 

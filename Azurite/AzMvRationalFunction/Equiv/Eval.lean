@@ -60,8 +60,8 @@ theorem evalAzRat_eq_none_iff (r : AzMvRationalFunction n ord) (x : Fin n → Az
       = AzRat.toRat (AzMvPolynomial.evalAzRat r.den x) := (toRat_evalAzRat r.den x).symm
   rw [evalAzRat, hval]
   by_cases h : AzMvPolynomial.evalAzRat r.den x = 0
-  · rw [if_pos h, h, AzRat.toRat_zero]; simp
-  · rw [if_neg h]
+  · rw [ite_eq_left h, h, AzRat.toRat_zero]; simp
+  · rw [ite_eq_right h]
     simp only [reduceCtorEq, false_iff]
     intro h0
     exact h (AzRat.toRat_injective (by rw [h0, AzRat.toRat_zero]))
@@ -76,8 +76,8 @@ theorem toRat_evalAzRat_rf (r : AzMvRationalFunction n ord) (x : Fin n → AzRat
               / MvPolynomial.eval (fun i => AzRat.toRat (x i)) (toMvPolyQ r.den)) := by
   rw [evalAzRat] at h
   by_cases hd : AzMvPolynomial.evalAzRat r.den x = 0
-  · rw [if_pos hd] at h; exact absurd h (by simp)
-  · rw [if_neg hd, Option.some_inj] at h
+  · rw [ite_eq_left hd] at h; exact absurd h (by simp)
+  · rw [ite_eq_right hd, Option.some_inj] at h
     rw [← h, AzRat.toRat_mul, AzRat.toRat_div, toRat_evalAzRat, toRat_evalAzRat]
 
 /-- The integer-tuple evaluator agrees with the rational-tuple one. -/
@@ -107,8 +107,8 @@ theorem evalAzInt_eq_evalAzRat (r : AzMvRationalFunction n ord) (z : Fin n → A
       exact AzInt.ringEquivInt.injective (by simpa using h2)
   rw [evalAzInt, evalAzRat]
   by_cases hd : AzMvPolynomial.eval r.den z = 0
-  · rw [if_pos hd, if_pos (hzero.mp hd)]
-  · rw [if_neg hd, if_neg (fun h0 => hd (hzero.mpr h0))]
+  · rw [ite_eq_left hd, ite_eq_left (hzero.mp hd)]
+  · rw [ite_eq_right hd, ite_eq_right (fun h0 => hd (hzero.mpr h0))]
     congr 1
     apply AzRat.toRat_injective
     rw [AzRat.toRat_mul, AzRat.toRat_mul, AzRat.toRat_div, AzRat.toRat_ofAzInts,

@@ -49,12 +49,12 @@ decreasing_by exact Nat.div_lt_self (by omega) Nat.one_lt_two
 
 theorem twoAdicVal_of_odd {n : ℕ} (h : n % 2 = 1) : twoAdicVal n = 0 := by
   rw [twoAdicVal]
-  exact dif_pos (Or.inr h)
+  exact dite_eq_left (Or.inr h)
 
 theorem twoAdicVal_two_mul {n : ℕ} (h : 0 < n) :
     twoAdicVal (2 * n) = twoAdicVal n + 1 := by
   rw [twoAdicVal]
-  rw [dif_neg (by omega), Nat.mul_div_cancel_left n (by norm_num)]
+  rw [dite_eq_right (by omega), Nat.mul_div_cancel_left n (by norm_num)]
 
 /-- The valuation is honest, lower half: `2 ^ twoAdicVal n` divides `n`. -/
 theorem two_pow_twoAdicVal_dvd (n : ℕ) : 2 ^ twoAdicVal n ∣ n := by
@@ -81,11 +81,11 @@ theorem not_two_pow_twoAdicVal_succ_dvd {n : ℕ} (hn : n ≠ 0) :
     rw [twoAdicVal] at hdvd
     by_cases h : n = 0 ∨ n % 2 = 1
     · -- `n` odd: `2 ^ (0 + 1) = 2` would divide it.
-      rw [dif_pos h, zero_add, pow_one] at hdvd
+      rw [dite_eq_left h, zero_add, pow_one] at hdvd
       obtain ⟨c, rfl⟩ := hdvd
       omega
     · -- `n` even: strip the factor of `2` and recurse.
-      rw [dif_neg h] at hdvd
+      rw [dite_eq_right h] at hdvd
       refine ih (n / 2) (Nat.div_lt_self (by omega) Nat.one_lt_two) (by omega) ?_
       obtain ⟨c, hc⟩ := hdvd
       refine ⟨c, ?_⟩

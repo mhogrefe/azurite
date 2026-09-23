@@ -149,15 +149,15 @@ instance : LinearOrder AzRationalFunction where
   compare_eq_compareOfLessAndEq r s := by
     rw [compareOfLessAndEq]
     rcases h : compare r s with _ | _ | _
-    · rw [if_pos (show r < s from h)]
-    · rw [if_neg (show ¬ r < s from fun h2 => by
+    · rw [ite_eq_left (show r < s from h)]
+    · rw [ite_eq_right (show ¬ r < s from fun h2 => by
           rw [show compare r s = .lt from h2] at h
           exact absurd h (by simp)),
-        if_pos (eq_of_compare_eq' h)]
-    · rw [if_neg (show ¬ r < s from fun h2 => by
+        ite_eq_left (eq_of_compare_eq' h)]
+    · rw [ite_eq_right (show ¬ r < s from fun h2 => by
           rw [show compare r s = .lt from h2] at h
           exact absurd h (by simp)),
-        if_neg (fun h2 => by
+        ite_eq_right (fun h2 => by
           subst h2
           rw [compare_self'] at h
           exact absurd h (by simp))]
@@ -224,7 +224,7 @@ private theorem display_ofPolynomial (p : Azurite.AzPolynomial AzInt) :
     subst hp
     have h0 : ofPolynomial (0 : Azurite.AzPolynomial AzInt) = 0 := by
       show ofNumDen 0 1 = 0
-      rw [ofNumDen, if_pos (Or.inl rfl)]
+      rw [ofNumDen, ite_eq_left (Or.inl rfl)]
     rw [h0]
     constructor
     · apply toPoly_inj.mp

@@ -31,17 +31,17 @@ theorem combineSorted_forall_le (m : MonicMonomial n ord)
   | case1 => simp [combineSorted]
   | case2 m' => simp [combineSorted]; exact hl m' (List.mem_cons_self ..)
   | case3 m₁ m₂ rest heq hcz ih =>
-    simp only [combineSorted, if_pos heq, dif_pos hcz]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_left hcz]
     exact ih (fun x hx => hl x (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hx)))
   | case4 m₁ m₂ rest heq hcnz ih =>
-    simp only [combineSorted, if_pos heq, dif_neg hcnz]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_right hcnz]
     have hm₁ : m₁.monic ≤ m := hl m₁ (List.mem_cons_self ..)
     exact ih (fun x hx => by
       rcases List.mem_cons.mp hx with rfl | hx
       · exact hm₁
       · exact hl x (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ hx)))
   | case5 m₁ m₂ rest hneq ih =>
-    simp only [combineSorted, if_neg hneq]
+    simp only [combineSorted, ite_eq_right hneq]
     intro x hx
     rcases List.mem_cons.mp hx with rfl | hx
     · exact hl _ (List.mem_cons_self ..)
@@ -55,17 +55,17 @@ theorem combineSorted_sorted_of_ge (l : List (Monomial n R ord))
   | case1 => simp [combineSorted]
   | case2 _ => simp [combineSorted]
   | case3 m₁ m₂ rest heq hcz ih =>
-    simp only [combineSorted, if_pos heq, dif_pos hcz]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_left hcz]
     rw [List.pairwise_cons] at hl
     exact ih (List.pairwise_cons.mp hl.2).2
   | case4 m₁ m₂ rest heq hcnz ih =>
-    simp only [combineSorted, if_pos heq, dif_neg hcnz]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_right hcnz]
     rw [List.pairwise_cons] at hl
     rw [List.pairwise_cons] at hl
     exact ih (List.pairwise_cons.mpr ⟨fun x hx =>
       le_trans (hl.2.1 x hx) (heq ▸ le_refl _), hl.2.2⟩)
   | case5 m₁ m₂ rest hneq ih =>
-    simp only [combineSorted, if_neg hneq]
+    simp only [combineSorted, ite_eq_right hneq]
     rw [List.pairwise_cons] at hl
     have hgt : m₁.monic > m₂.monic :=
       lt_of_le_of_ne (hl.1 m₂ (List.mem_cons_self ..)) (Ne.symm hneq)

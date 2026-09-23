@@ -21,7 +21,7 @@ variable {k : Nat}
 
 /-- For `k ≠ 0` the ring `ℤ / 2^k` is nontrivial, so `1 ≠ 0`. -/
 instance instNeZeroOne [NeZero k] : NeZero (1 : AzZModPow2 k) := by
-  haveI : Fact (1 < 2 ^ k) := ⟨Nat.one_lt_two_pow_iff.mpr (NeZero.ne k)⟩
+  have : Fact (1 < 2 ^ k) := ⟨Nat.one_lt_two_pow_iff.mpr (NeZero.ne k)⟩
   refine ⟨fun h => one_ne_zero (?_ : (1 : ZMod (2 ^ k)) = 0)⟩
   rw [← toZMod_one, ← toZMod_zero, h]
 

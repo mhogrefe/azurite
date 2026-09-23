@@ -40,9 +40,9 @@ theorem liftPoly_azPathLeafParentAux
     · subst h0
       simp only [beq_self_eq_true, ↓reduceIte, liftPoly_zero, BPR.pathLeafParentAux]
     · have hbeq : ¬(next == 0) = true := by rwa [beq_iff_eq]
-      rw [if_neg hbeq]
+      rw [ite_eq_right hbeq]
       have hlift_ne : liftPoly next ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
-      simp only [BPR.pathLeafParentAux, if_neg hlift_ne]
+      simp only [BPR.pathLeafParentAux, ite_eq_right hlift_ne]
       exact ih next
 
 /-- The computable `azPathLeafParent` matches BPR's `pathLeafParent`
@@ -61,9 +61,9 @@ theorem liftPoly_azPathLeafParent
     · subst h0
       simp only [beq_self_eq_true, ↓reduceIte, liftPoly_zero, BPR.pathLeafParent]
     · have hbeq : ¬(q == 0) = true := by rwa [beq_iff_eq]
-      rw [if_neg hbeq]
+      rw [ite_eq_right hbeq]
       have hlift_ne : liftPoly q ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
-      simp only [BPR.pathLeafParent, if_neg hlift_ne]
+      simp only [BPR.pathLeafParent, ite_eq_right hlift_ne]
       exact liftPoly_azPathLeafParentAux q rest
 
 /-! ### Tree-path bridge -/
@@ -176,7 +176,7 @@ where
     | _ n ih =>
     intro pp cc hcc hcn path hmem
     have hcc_beq : ¬(cc == 0) = true := by rwa [beq_iff_eq]
-    rw [AzPolynomial.mkTRemsNode, dif_neg hcc_beq] at hmem
+    rw [AzPolynomial.mkTRemsNode, dite_eq_right hcc_beq] at hmem
     dsimp only at hmem
     have hlcc : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr hcc
     -- Children: (tru next).attach.map f ++ [.node 0 []]
@@ -216,7 +216,7 @@ where
         (BPR.mkTRemsNode (liftPoly cc) (liftPoly c))
         hst_bpr (sp.map liftPoly) hsp_bridge
       rw [BPR.mkTRemsNode_root] at hmem_bpr
-      rw [BPR.mkTRemsNode, if_neg hlcc]
+      rw [BPR.mkTRemsNode, ite_eq_right hlcc]
       dsimp only
       exact hmem_bpr
     · -- From 0-sentinel
@@ -225,7 +225,7 @@ where
       simp only [AzPolynomial.RoseTree.leafPaths, List.mem_singleton] at hsp_mem
       rw [hsp_mem]
       simp only [AzPolynomial.RoseTree.root, List.map_cons, List.map_nil, liftPoly_zero]
-      rw [BPR.mkTRemsNode, if_neg hlcc]
+      rw [BPR.mkTRemsNode, ite_eq_right hlcc]
       dsimp only
       exact BPR.mem_leafPaths_zero _ _
 
@@ -282,7 +282,7 @@ private theorem leafPaths_mkTRemsNode_bridge_rev
   intro pp cc hcc hcn path' hmem
   have hlcc : liftPoly cc ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr hcc
   -- Unfold BPR mkTRemsNode
-  rw [BPR.mkTRemsNode, if_neg hlcc] at hmem
+  rw [BPR.mkTRemsNode, ite_eq_right hlcc] at hmem
   dsimp only at hmem
   -- BPR children are non-empty
   have bpr_hne :
@@ -315,7 +315,7 @@ private theorem leafPaths_mkTRemsNode_bridge_rev
     refine ⟨c_az :: sp, ?_, ?_⟩
     · -- Membership in computable mkTRemsNode
       have hcc_beq : ¬(cc == 0) = true := by rwa [beq_iff_eq]
-      rw [AzPolynomial.mkTRemsNode, dif_neg hcc_beq]
+      rw [AzPolynomial.mkTRemsNode, dite_eq_right hcc_beq]
       dsimp only
       have hmem_child : AzPolynomial.mkTRemsNode cc c_az ∈
           (AzPolynomial.tru (-(AzPolynomial.pRem pp cc))).attach.map
@@ -336,7 +336,7 @@ private theorem leafPaths_mkTRemsNode_bridge_rev
     simp only [BPR.RoseTree.root]
     refine ⟨[0], ?_, by simp⟩
     have hcc_beq : ¬(cc == 0) = true := by rwa [beq_iff_eq]
-    rw [AzPolynomial.mkTRemsNode, dif_neg hcc_beq]
+    rw [AzPolynomial.mkTRemsNode, dite_eq_right hcc_beq]
     dsimp only
     exact mem_comp_leafPaths_zero cc _
 

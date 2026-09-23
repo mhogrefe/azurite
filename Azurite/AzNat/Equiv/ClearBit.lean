@@ -17,22 +17,22 @@ theorem toNat_clearBit (n : AzNat) (i : Nat) :
   have h_size_eq : n.limbs.toList.length = n.limbs.size := rfl
   by_cases h_in_range : i / 64 < n.limbs.size
   · -- Case A: i / 64 < n.limbs.size — one existing limb is modified in place.
-    simp only [clearBit, dif_pos h_in_range]
+    simp only [clearBit, dite_eq_left h_in_range]
     rw [toNat_ofLimbs, Array.toList_set]
     conv_lhs => rw [hj_decomp]
     rw [testBit_toNatLimbsList_aux _ _ hr_lt]
     simp only [List.length_set]
     by_cases hq : j / 64 < n.limbs.toList.length
-    · rw [dif_pos hq, dif_pos hq, List.getElem_set]
+    · rw [dite_eq_left hq, dite_eq_left hq, List.getElem_set]
       by_cases hqi : i / 64 = j / 64
-      · rw [if_pos hqi, UInt64.testBit_toNat_clearBit]
+      · rw [ite_eq_left hqi, UInt64.testBit_toNat_clearBit]
         have h_limb_eq : n.limbs[i / 64]'h_in_range = n.limbs.toList[j / 64]'hq := by
           rw [← Array.getElem_toList]; congr 1
         rw [h_limb_eq, decide_mod_eq_of_div_eq hqi]
-      · rw [if_neg hqi]
+      · rw [ite_eq_right hqi]
         have h_ij : i ≠ j := fun h => hqi (by rw [h])
         rw [decide_eq_false h_ij, Bool.not_false, Bool.and_true]
-    · rw [dif_neg hq, dif_neg hq]
+    · rw [dite_eq_right hq, dite_eq_right hq]
       have h_ij : i ≠ j := by
         intro h
         apply hq
@@ -40,19 +40,19 @@ theorem toNat_clearBit (n : AzNat) (i : Nat) :
         exact h_in_range
       rw [decide_eq_false h_ij, Bool.not_false, Bool.and_true]
   · -- Case B: i / 64 ≥ n.limbs.size — n unchanged (bit already 0).
-    simp only [clearBit, dif_neg h_in_range]
+    simp only [clearBit, dite_eq_right h_in_range]
     push Not at h_in_range
     conv_lhs => rw [hj_decomp]
     show Nat.testBit (toNatLimbsList _) _ = _
     rw [testBit_toNatLimbsList_aux _ _ hr_lt]
     by_cases hq : j / 64 < n.limbs.toList.length
-    · rw [dif_pos hq]
+    · rw [dite_eq_left hq]
       have h_ij : i ≠ j := by
         intro h
         rw [← h, h_size_eq] at hq
         omega
       rw [decide_eq_false h_ij, Bool.not_false, Bool.and_true]
-    · rw [dif_neg hq, Bool.false_and]
+    · rw [dite_eq_right hq, Bool.false_and]
 
 theorem clearBit_ofNat (n i : Nat) : clearBit (ofNat n) i = ofNat (Nat.ldiff n (2 ^ i)) := by
   apply toNat_injective

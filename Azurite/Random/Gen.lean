@@ -14,7 +14,7 @@ structure SplitMix64 where
 def mkSplitMix64 (seed : UInt64) : SplitMix64 :=
   { state := seed}
 
-/-- 
+/--
 A generic typeclass for a pseudorandom number generator mapping a Generator state `G` to
 randomness of type `α`.
 -/

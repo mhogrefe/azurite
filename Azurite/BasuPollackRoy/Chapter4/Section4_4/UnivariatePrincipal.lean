@@ -1,6 +1,7 @@
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.RingTheory.PrincipalIdealDomain
 import Mathlib.Algebra.MvPolynomial.Division
+import Mathlib.Algebra.MvPolynomial.Eval
 import Mathlib.RingTheory.Ideal.Operations
 import Mathlib.Tactic.LinearCombination
 import Azurite.BasuPollackRoy.Chapter1.Section1_2.Definition1_13
@@ -40,7 +41,7 @@ theorem idealOfPolys_univariate_eq_span_gcd (P : Finset K[X]) :
     exact Ideal.mem_span_singleton.mpr (hgcd.1 p (Finset.mem_toList.mpr (Finset.mem_coe.mp hp)))
   · -- span {listGcd} ≤ span ↑P: `listGcd 𝒫 ∈ Ideal(𝒫, K)`
     rw [Ideal.span_singleton_le_iff_mem]
-    haveI : (Ideal.span (↑P : Set K[X])).IsPrincipal := IsPrincipalIdealRing.principal _
+    have : (Ideal.span (↑P : Set K[X])).IsPrincipal := IsPrincipalIdealRing.principal _
     obtain ⟨g, hg⟩ : ∃ g, Ideal.span (↑P : Set K[X]) = Ideal.span {g} :=
       ⟨_, (Submodule.IsPrincipal.span_singleton_generator _).symm⟩
     rw [hg, Ideal.mem_span_singleton]
@@ -81,7 +82,7 @@ theorem span_X_pair_not_isPrincipal :
     have := key 1 h
     simp at this
   -- Extract a generator `g`.
-  haveI := hprinc
+  have := hprinc
   obtain ⟨g, hg⟩ : ∃ g, Ideal.span ({MvPolynomial.X 0, MvPolynomial.X 1} :
       Set (MvPolynomial (Fin 2) K)) = Ideal.span {g} :=
     ⟨_, (Submodule.IsPrincipal.span_singleton_generator _).symm⟩

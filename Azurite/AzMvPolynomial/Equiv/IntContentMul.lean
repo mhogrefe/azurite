@@ -127,7 +127,7 @@ theorem redp_eq_zero_iff {p : ℕ} (Q : MvPolynomial (Fin n) ℤ) :
     redp p Q = 0 ↔ ∀ f, (p : ℤ) ∣ Q.coeff f := by
   rw [redp, MvPolynomial.ext_iff]
   refine forall_congr' (fun f => ?_)
-  rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+  rw [MvPolynomial.coeff_map, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
   exact ZMod.intCast_zmod_eq_zero_iff_dvd _ _
 
 /-- **The core bridge (content ↔ vanishing mod `p`).** -/
@@ -168,7 +168,7 @@ theorem intContent_mul_primitive {P Q : AzMvPolynomial n AzInt ord}
     intContent (P * Q) = 1 := by
   rw [intContent_eq_one_iff] at hP hQ ⊢
   intro p hp
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rw [intImg_mul, redp_mul]
   exact mul_ne_zero (hP p hp) (hQ p hp)
 
@@ -190,7 +190,7 @@ private theorem smulMonomial_eq_some {k : AzInt} (hk : k ≠ 0)
     Azurite.smulMonomial k m
       = some ⟨⟨k * m.coeff.val, mul_ne_zero hk m.coeff.property⟩, m.monic⟩ := by
   unfold Azurite.smulMonomial
-  rw [dif_neg (mul_ne_zero hk m.coeff.property)]
+  rw [dite_eq_right (mul_ne_zero hk m.coeff.property)]
 
 private theorem filterMap_smul_coeff_map {k : AzInt} (hk : k ≠ 0)
     (l : List (Monomial n AzInt ord)) :
@@ -411,7 +411,7 @@ theorem leadingCoeff_ne_zero {P : AzMvPolynomial n AzInt ord} (hP : P ≠ 0) :
 theorem leadingCoeff_C {c : AzInt} (hc : c ≠ 0) :
     leadingCoeff (AzMvPolynomial.C c : AzMvPolynomial n AzInt ord) = c := by
   rw [show (AzMvPolynomial.C c : AzMvPolynomial n AzInt ord)
-      = ofMonomial ⟨⟨c, hc⟩, MonicMonomial.one⟩ from by unfold AzMvPolynomial.C; exact dif_neg hc]
+      = ofMonomial ⟨⟨c, hc⟩, MonicMonomial.one⟩ from by unfold AzMvPolynomial.C; exact dite_eq_right hc]
   rfl
 
 private theorem toAzInt_pos {m : AzNat} (hm : m ≠ 0) : (0 : AzInt) < m.toAzInt := by
@@ -433,13 +433,13 @@ theorem leadingCoeff_primPos_pos {P : AzMvPolynomial n AzInt ord} (hP : P ≠ 0)
     rw [leadingCoeff_mul hCsic hpp, leadingCoeff_C (signedIntContent_ne_zero hP)]
   by_cases hsign : (0 : AzInt) < leadingCoeff P
   · have hsicpos : 0 < signedIntContent P := by
-      rw [signedIntContent, if_pos hsign]; exact toAzInt_pos (intContent_ne_zero hP)
+      rw [signedIntContent, ite_eq_left hsign]; exact toAzInt_pos (intContent_ne_zero hP)
     rw [hlc] at hsign
     exact (pos_iff_pos_of_mul_pos hsign).mp hsicpos
   · have hlcneg : leadingCoeff P < 0 :=
       lt_of_le_of_ne (not_lt.mp hsign) (leadingCoeff_ne_zero hP)
     have hsicneg : signedIntContent P < 0 := by
-      rw [signedIntContent, if_neg hsign]
+      rw [signedIntContent, ite_eq_right hsign]
       exact neg_neg_of_pos (toAzInt_pos (intContent_ne_zero hP))
     have h1 : 0 < -leadingCoeff P := neg_pos.mpr hlcneg
     rw [hlc, ← neg_mul] at h1

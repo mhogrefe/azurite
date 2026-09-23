@@ -40,7 +40,7 @@ theorem pocklington {n F R : ℕ} (hn : 1 < n) (hsplit : n - 1 = F * R)
     (hunit : ∀ q : ℕ, q.Prime → q ∣ F → IsUnit (a ^ ((n - 1) / q) - 1)) :
     ∀ p : ℕ, p.Prime → p ∣ n → p ≡ 1 [MOD F] := by
   intro p hp hpn
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hM : n - 1 ≠ 0 := by omega
   have hF : F ≠ 0 := by
     rintro rfl

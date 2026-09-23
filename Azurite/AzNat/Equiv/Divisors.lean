@@ -26,11 +26,11 @@ theorem mem_divisorsAux_dvd {n : AzNat} :
     intro d x hx
     rw [divisorsAux] at hx
     by_cases hstop : compare (d * d) n == .gt
-    · rw [if_pos hstop] at hx
+    · rw [ite_eq_left hstop] at hx
       exact absurd hx (List.not_mem_nil)
-    rw [if_neg hstop] at hx
+    rw [ite_eq_right hstop] at hx
     by_cases hdvd : n % d = 0
-    · rw [if_pos hdvd] at hx
+    · rw [ite_eq_left hdvd] at hx
       have hd : d.toNat ∣ n.toNat := by
         have h0 : (n % d).toNat = 0 := by rw [hdvd]; rfl
         rw [toNat_mod] at h0
@@ -41,7 +41,7 @@ theorem mem_divisorsAux_dvd {n : AzNat} :
       · rw [toNat_div]
         exact Nat.div_dvd_of_dvd hd
       · exact ih (d + 1) x hx
-    · rw [if_neg hdvd] at hx
+    · rw [ite_eq_right hdvd] at hx
       exact ih (d + 1) x hx
 
 /-- The completeness invariant: a divisor `k` with `d ≤ k` and `k² ≤ n`
@@ -69,18 +69,18 @@ theorem divisorsAux_complete {n : AzNat} :
       intro h
       have := Nat.compare_eq_gt.mp (by simpa using h)
       omega
-    rw [if_neg hstop]
+    rw [ite_eq_right hstop]
     rcases Nat.lt_or_ge d.toNat k with hlt | hge
     · -- not yet at `k`: recurse (whichever branch is taken)
       have hrec := ih (d + 1) k hk (by rw [toNat_add, toNat_one]; omega) hkk
         (by rw [toNat_add, toNat_one]; omega)
       by_cases hdvd : n % d = 0
-      · rw [if_pos hdvd]
+      · rw [ite_eq_left hdvd]
         exact ⟨⟨hrec.1.choose, List.mem_cons_of_mem _
             (List.mem_cons_of_mem _ hrec.1.choose_spec.1), hrec.1.choose_spec.2⟩,
           ⟨hrec.2.choose, List.mem_cons_of_mem _
             (List.mem_cons_of_mem _ hrec.2.choose_spec.1), hrec.2.choose_spec.2⟩⟩
-      · rw [if_neg hdvd]
+      · rw [ite_eq_right hdvd]
         exact hrec
     · -- `d.toNat = k`: this step emits both
       have hdk' : d.toNat = k := by omega
@@ -91,7 +91,7 @@ theorem divisorsAux_complete {n : AzNat} :
         apply toNat_injective
         rw [h0]
         rfl
-      rw [if_pos hdvd]
+      rw [ite_eq_left hdvd]
       refine ⟨⟨d, List.mem_cons_self, hdk'⟩,
         ⟨n / d, List.mem_cons_of_mem _ List.mem_cons_self, ?_⟩⟩
       rw [toNat_div, hdk']

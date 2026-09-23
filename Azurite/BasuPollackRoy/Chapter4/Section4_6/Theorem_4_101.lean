@@ -60,7 +60,7 @@ theorem hermiteBilin_bridge (Ps : Finset (MvPolynomial (Fin k) R))
             • (valueAt (Ri R) Ps u x.1 (hfin.mem_toFinset.mp x.2)
                 * valueAt (Ri R) Ps w x.1 (hfin.mem_toFinset.mp x.2)
                 * valueAt (Ri R) Ps Q' x.1 (hfin.mem_toFinset.mp x.2)) := by
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   rw [hermiteBilin_apply, ← remark_4_99_trace (Ri R) Ps (u * w * Q')]
   have hmm : mulMapBaseExt (Ri R) Ps (u * w * Q')
       = mulMapExt (Ri R) Ps (inclExt (Ri R) Ps (u * w * Q')) := rfl
@@ -119,7 +119,7 @@ noncomputable def mult (Ps : Finset (MvPolynomial (Fin k) R)) (x : Fin k → Ri 
 
 theorem mult_eq_of_mem {Ps : Finset (MvPolynomial (Fin k) R)} {x : Fin k → Ri R}
     (hx : x ∈ zerOfFinset (Ri R) Ps) :
-    mult Ps x = multiplicityOfZero (Ri R) Ps x hx := dif_pos hx
+    mult Ps x = multiplicityOfZero (Ri R) Ps x hx := dite_eq_left hx
 
 /-- The weight `μ(x)·Q(x)` of a tuple `x`. -/
 noncomputable def mvHerWeight (Ps : Finset (MvPolynomial (Fin k) R))
@@ -150,8 +150,8 @@ theorem mult_conjTuple (Ps : Finset (MvPolynomial (Fin k) R))
     (x : Fin k → Ri R) :
     mult Ps (conjTuple x) = mult Ps x := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
-  haveI : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   -- separating element
   obtain ⟨i, _, hsep⟩ := lemma_4_90 (K := R) (Ri R) Ps hfin
   set a : quotPolys Ps := Ideal.Quotient.mk _ (linearForm (K := R) i) with ha
@@ -223,8 +223,8 @@ theorem mult_conjTuple (Ps : Finset (MvPolynomial (Fin k) R))
       Multiset.count_singleton]
     congr 1
     by_cases h : valueAt (Ri R) Ps a z.1 (hfin.mem_toFinset.mp z.2) = v
-    · rw [if_pos (by rw [eq_comm]; exact h), if_pos h]
-    · rw [if_neg (by rw [eq_comm]; exact h), if_neg h]
+    · rw [ite_eq_left (by rw [eq_comm]; exact h), ite_eq_left h]
+    · rw [ite_eq_right (by rw [eq_comm]; exact h), ite_eq_right h]
   -- the count of `a(y)` is exactly `μ(y)` (separation)
   have hcount_aval : ∀ (y : Fin k → Ri R) (hy : y ∈ zerOfFinset (Ri R) Ps),
       Multiset.count (valueAt (Ri R) Ps a y hy) prodPoly.roots = mult Ps y := by
@@ -232,11 +232,11 @@ theorem mult_conjTuple (Ps : Finset (MvPolynomial (Fin k) R))
     rw [hcount_prod, mult_eq_of_mem hy]
     set yT : hfin.toFinset := ⟨y, hfin.mem_toFinset.mpr hy⟩ with hyT
     rw [Finset.sum_eq_single yT]
-    · rw [if_pos (by
+    · rw [ite_eq_left (by
         show valueAt (Ri R) Ps a y (hfin.mem_toFinset.mp yT.2) = valueAt (Ri R) Ps a y hy
         rfl), mul_one]
     · intro z _ hz
-      rw [if_neg ?_, mul_zero]
+      rw [ite_eq_right ?_, mul_zero]
       intro hval
       apply hz
       apply Subtype.ext
@@ -252,7 +252,7 @@ theorem mult_conjTuple (Ps : Finset (MvPolynomial (Fin k) R))
   · have hcx : conjTuple x ∉ zerOfFinset (Ri R) Ps := by
       intro h
       exact hx (by have := conjTuple_mem_zer h; rwa [conjTuple_involutive x] at this)
-    rw [mult, mult, dif_neg hx, dif_neg hcx]
+    rw [mult, mult, dite_eq_right hx, dite_eq_right hcx]
 
 theorem mvHerWeight_conjTuple (Ps : Finset (MvPolynomial (Fin k) R))
     [Module.Finite R (quotPolys Ps)] (hfin : (zerOfFinset (Ri R) Ps).Finite)
@@ -265,14 +265,14 @@ theorem mvHerWeight_ne_zero {Ps : Finset (MvPolynomial (Fin k) R)}
     [Module.Finite R (quotPolys Ps)]
     {Q : MvPolynomial (Fin k) R} {hfin : (zerOfFinset (Ri R) Ps).Finite} {x : Fin k → Ri R}
     (hx : x ∈ mvHerRoots Ps Q hfin) : mvHerWeight Ps Q x ≠ 0 := by
-  haveI : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
+  have : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   rw [mem_mvHerRoots_iff] at hx
   rw [mvHerWeight, nsmul_eq_mul]
   refine mul_ne_zero ?_ hx.2
   have hpos : 0 < mult Ps x := by
     rw [mult_eq_of_mem hx.1]
-    haveI : Module.Finite (Ri R) (quotPolysExt (Ri R) Ps) := moduleFinite_quotPolysExt (Ri R) Ps
-    haveI : Nontrivial (localizationAtPoint (Ri R) Ps x hx.1) :=
+    have : Module.Finite (Ri R) (quotPolysExt (Ri R) Ps) := moduleFinite_quotPolysExt (Ri R) Ps
+    have : Nontrivial (localizationAtPoint (Ri R) Ps x hx.1) :=
       (isLocalRing_localizationAtPoint (Ri R) Ps x hx.1).toNontrivial
     exact Module.finrank_pos
   exact Nat.cast_ne_zero.mpr hpos.ne'
@@ -476,7 +476,7 @@ noncomputable def mvHerSqrt (Ps : Finset (MvPolynomial (Fin k) R))
 theorem mvHerSqrt_sq (Ps : Finset (MvPolynomial (Fin k) R))
     (Q : MvPolynomial (Fin k) R) (x : Fin k → Ri R) :
     mvHerSqrt Ps Q x ^ 2 = mvHerWeight Ps Q x := by
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact (IsAlgClosed.exists_pow_nat_eq (mvHerWeight Ps Q x) (n := 2) (by norm_num)).choose_spec
 
 /-- The coefficient attached to a zero `x`:
@@ -528,14 +528,14 @@ theorem mvHerCoeff_conjTuple_of_not_real [CharZero R] (Ps : Finset (MvPolynomial
     mvHerCoeff Ps Q hfin (conjTuple x) = - mvHerCoeff Ps Q hfin x := by
   have hxr' : conjTuple (conjTuple x) ≠ conjTuple x := by
     rw [conjTuple_involutive]; exact fun h => hxr h.symm
-  rw [mvHerCoeff, mvHerCoeff, if_neg hxr, if_neg hxr']
+  rw [mvHerCoeff, mvHerCoeff, ite_eq_right hxr, ite_eq_right hxr']
   by_cases hpos : posRep Ps hfin x
-  · rw [if_pos hpos, if_neg ((posRep_conjTuple_iff Ps hfin hx hxr).mp hpos)]
-  · rw [if_neg hpos]
+  · rw [ite_eq_left hpos, ite_eq_right ((posRep_conjTuple_iff Ps hfin hx hxr).mp hpos)]
+  · rw [ite_eq_right hpos]
     have : posRep Ps hfin (conjTuple x) := by
       by_contra hc
       exact hpos ((posRep_conjTuple_iff Ps hfin hx hxr).mpr hc)
-    rw [if_pos this]; norm_num
+    rw [ite_eq_left this]; norm_num
 
 /-- `mvHerCoeff` is nonzero on `mvHerRoots`. -/
 theorem mvHerCoeff_ne_zero {Ps : Finset (MvPolynomial (Fin k) R)}
@@ -574,8 +574,8 @@ theorem mvEval_indep (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
           MvPolynomial.aeval ((mvHerRoots Ps Q hfin).equivFin.symm j : Fin k → Ri R)
             (mvRep Ps l))) := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
-  haveI : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   set r := (mvHerRoots Ps Q hfin).card with hr
   set xs : Fin r → (Fin k → Ri R) :=
     fun j => ((mvHerRoots Ps Q hfin).equivFin.symm j : Fin k → Ri R) with hxs
@@ -643,8 +643,8 @@ theorem mvHerFormVec_image_C_indep (Ps : Finset (MvPolynomial (Fin k) R)) [CharZ
             (mvHerFormVec Ps Q hfin
               ((mvHerRoots Ps Q hfin).equivFin.symm j : Fin k → Ri R) l))) := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
-  haveI : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   set ι := algebraMap R (Ri R) with hι
   set eqv := (mvHerRoots Ps Q hfin).equivFin with heqv
   set p := mvN Ps with hp
@@ -695,26 +695,26 @@ theorem mvHerFormVec_image_C_indep (Ps : Finset (MvPolynomial (Fin k) R)) [CharZ
     rw [hF, hcF, heF]
     dsimp only
     by_cases hxr : conjTuple x = x
-    · rw [if_pos hxr, if_pos hxr]
+    · rw [ite_eq_left hxr, ite_eq_left hxr]
       have hpowfix : Ri.conj R (ev x l) = ev x l := by rw [← hev_conj, hxr]
       have : ι (Ri.reL (ev x l)) = ev x l := by
         rw [hι]; exact algebraMap_reL_of_conj_fixed hpowfix
-      rw [mvHerFormVec, if_pos hxr]
+      rw [mvHerFormVec, ite_eq_left hxr]
       show 2 * ι (Ri.reL (ev x l)) = 2 * ev x l + 0 * ev (conjTuple x) l
       rw [this]
       ring
-    · rw [if_neg hxr, if_neg hxr]
+    · rw [ite_eq_right hxr, ite_eq_right hxr]
       by_cases hpos : posRep Ps hfin x
-      · rw [if_pos hpos, if_pos hpos]
-        rw [mvHerFormVec, if_neg hxr, if_pos hpos]
+      · rw [ite_eq_left hpos, ite_eq_left hpos]
+        rw [mvHerFormVec, ite_eq_right hxr, ite_eq_left hpos]
         rw [show Ri.reL (w x) * Ri.reL (ev x l) - Ri.imL (w x) * Ri.imL (ev x l)
               = Ri.reL (w x * ev x l) from (reL_mul _ _).symm,
           show (2 : Ri R) * ι (Ri.reL (w x * ev x l))
               = ι (2 * Ri.reL (w x * ev x l)) by rw [← map_ofNat ι 2, ← map_mul],
           h2reL, map_mul]
         rw [hev_conj]
-      · rw [if_neg hpos, if_neg hpos]
-        rw [mvHerFormVec, if_neg hxr, if_neg hpos]
+      · rw [ite_eq_right hpos, ite_eq_right hpos]
+        rw [mvHerFormVec, ite_eq_right hxr, ite_eq_right hpos]
         rw [show Ri.reL (w (conjTuple x)) * Ri.imL (ev (conjTuple x) l)
                 + Ri.imL (w (conjTuple x)) * Ri.reL (ev (conjTuple x) l)
               = Ri.imL (w (conjTuple x) * ev (conjTuple x) l) from (imL_mul _ _).symm,
@@ -746,7 +746,7 @@ theorem mvHerFormVec_image_C_indep (Ps : Finset (MvPolynomial (Fin k) R)) [CharZ
   set G : (Fin k → Ri R) → Ri R :=
     fun y => if h : y ∈ mvHerRoots Ps Q hfin then g (eqv ⟨y, h⟩) else 0 with hG
   have hGy : ∀ (y : mvHerRoots Ps Q hfin), G (y : Fin k → Ri R) = g (eqv y) := by
-    intro y; rw [hG]; simp only [y.2, dif_pos]
+    intro y; rw [hG]; simp only [y.2, dite_eq_left]
   have hgl : ∀ l : Fin p, ∑ y ∈ mvHerRoots Ps Q hfin, G y * F y l = 0 := by
     intro l
     have hgl0 := congrArg (fun v : Fin p → Ri R => v l) hg
@@ -900,7 +900,7 @@ theorem algebraMap_mvHerQuad_eq (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero
           mvHerWeight Ps Q x
             * (∑ l, algebraMap R (Ri R) (f l) * MvPolynomial.aeval x (mvRep Ps l)) ^ 2 := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   set v : quotPolys Ps := ∑ l, f l • mvBasis Ps l with hv
   -- `Ψ f = hermiteBilin Ps (mk Q) v v`
   have hΨ : mvHerQuad Ps Q f = hermiteBilin Ps (Ideal.Quotient.mk (idealOfPolys Ps) Q) v v := by
@@ -952,7 +952,7 @@ theorem mvHerApply_eq (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
       = ∑ x ∈ mvHerRoots Ps Q hfin,
           mvHerCoeff Ps Q hfin x * (mvHerFormVec Ps Q hfin x ⬝ᵥ f) ^ 2 := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   apply (algebraMap R (Ri R)).injective
   rw [algebraMap_mvHerQuad_eq Ps Q hfin f, map_sum]
   set ι := algebraMap R (Ri R) with hι
@@ -994,12 +994,12 @@ theorem mvHerApply_eq (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
     have hwfix : Ri.conj R (mvHerWeight Ps Q x) = mvHerWeight Ps Q x := by
       rw [← hweight_conj, hxr]
     have hcoeff : ι (mvHerCoeff Ps Q hfin x) = mvHerWeight Ps Q x := by
-      rw [mvHerCoeff, if_pos hxr, hι]
+      rw [mvHerCoeff, ite_eq_left hxr, hι]
       exact algebraMap_reL_of_conj_fixed hwfix
     have hform : ι (mvHerFormVec Ps Q hfin x ⬝ᵥ f) = lcv x := by
       rw [hdot, hlcv]
       refine Finset.sum_congr rfl fun l _ => ?_
-      rw [mvHerFormVec, if_pos hxr]
+      rw [mvHerFormVec, ite_eq_left hxr]
       have hpowfix : Ri.conj R (MvPolynomial.aeval x (mvRep Ps l)) = MvPolynomial.aeval x (mvRep Ps l) := by
         rw [← aeval_conjTuple, hxr]
       have : ι (Ri.reL (MvPolynomial.aeval x (mvRep Ps l))) = MvPolynomial.aeval x (mvRep Ps l) := by
@@ -1055,14 +1055,14 @@ theorem mvHerApply_eq (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
       have hlrx_pos : lrx = Ri.reL (w * lcv x) := by
         rw [hlrx, dotProduct, hreL_wmul]
         refine Finset.sum_congr rfl fun l _ => ?_
-        rw [mvHerFormVec, if_neg hxr, if_pos hpos, reL_mul]
+        rw [mvHerFormVec, ite_eq_right hxr, ite_eq_left hpos, reL_mul]
       have hlrc_pos : lrc = Ri.imL (w * lcv x) := by
         rw [hlrc, dotProduct, himL_wmul]
         refine Finset.sum_congr rfl fun l _ => ?_
-        rw [mvHerFormVec, if_neg (by rw [hcc]; exact fun h => hxr h.symm), if_neg hcjneg]
+        rw [mvHerFormVec, ite_eq_right (by rw [hcc]; exact fun h => hxr h.symm), ite_eq_right hcjneg]
         simp only [hcc]
         rw [hw, imL_mul]
-      rw [hlrx_pos, hlrc_pos, mvHerCoeff, if_neg hxr, if_pos hpos]
+      rw [hlrx_pos, hlrc_pos, mvHerCoeff, ite_eq_right hxr, ite_eq_left hpos]
       have hsq : Ri.reL (w * lcv x) ^ 2 - Ri.imL (w * lcv x) ^ 2 = Ri.reL (A x) := by
         rw [← reL_sq, mul_pow, hwsq]
       rw [show Ri.reL (w * lcv x) ^ 2 - Ri.imL (w * lcv x) ^ 2 = Ri.reL (A x) from hsq]
@@ -1073,13 +1073,13 @@ theorem mvHerApply_eq (Ps : Finset (MvPolynomial (Fin k) R)) [CharZero R]
       have hlrx_neg : lrx = Ri.imL (w' * lcv (conjTuple x)) := by
         rw [hlrx, dotProduct, himL_wmul]
         refine Finset.sum_congr rfl fun l _ => ?_
-        rw [mvHerFormVec, if_neg hxr, if_neg hpos, imL_mul, ← hw']
+        rw [mvHerFormVec, ite_eq_right hxr, ite_eq_right hpos, imL_mul, ← hw']
       have hlrc_neg : lrc = Ri.reL (w' * lcv (conjTuple x)) := by
         rw [hlrc, dotProduct, hreL_wmul]
         refine Finset.sum_congr rfl fun l _ => ?_
-        rw [mvHerFormVec, if_neg (by rw [hcc]; exact fun h => hxr h.symm), if_pos hcjpos, reL_mul,
+        rw [mvHerFormVec, ite_eq_right (by rw [hcc]; exact fun h => hxr h.symm), ite_eq_left hcjpos, reL_mul,
           ← hw']
-      rw [hlrx_neg, hlrc_neg, mvHerCoeff, if_neg hxr, if_neg hpos]
+      rw [hlrx_neg, hlrc_neg, mvHerCoeff, ite_eq_right hxr, ite_eq_right hpos]
       have hsq : Ri.reL (w' * lcv (conjTuple x)) ^ 2 - Ri.imL (w' * lcv (conjTuple x)) ^ 2
           = Ri.reL (A x) := by
         rw [← reL_sq, mul_pow, hw'sq,
@@ -1204,8 +1204,8 @@ theorem card_pos_sub_card_neg_eq_sum_sign {α : Type*} (s : Finset α) (c : α �
   rw [Finset.card_filter, Finset.card_filter, Nat.cast_sum, Nat.cast_sum, ← Finset.sum_sub_distrib]
   refine Finset.sum_congr rfl fun x hx => ?_
   rcases lt_or_gt_of_ne (hc x hx) with hneg | hpos
-  · rw [if_neg (not_lt.mpr hneg.le), if_pos hneg, sign_neg hneg]; simp
-  · rw [if_pos hpos, if_neg (not_lt.mpr hpos.le), sign_pos hpos]; simp
+  · rw [ite_eq_right (not_lt.mpr hneg.le), ite_eq_left hneg, sign_neg hneg]; simp
+  · rw [ite_eq_left hpos, ite_eq_right (not_lt.mpr hpos.le), sign_pos hpos]; simp
 
 /-! ### The signature sum equals the Tarski query -/
 
@@ -1248,7 +1248,7 @@ theorem sign_mvHerCoeff_real {Ps : Finset (MvPolynomial (Fin k) R)}
   have hxz : x ∈ zerOfFinset (Ri R) Ps := (mem_mvHerRoots_iff.mp hx).1
   have hmap : (fun i => algebraMap R (Ri R) (Ri.reL (x i))) = x := by
     funext i; exact algebraMap_reL_tuple_of_conj_fixed hxr i
-  rw [mvHerCoeff, if_pos hxr]
+  rw [mvHerCoeff, ite_eq_left hxr]
   -- mvHerWeight x = mult • aeval x Q = algebraMap (mult • aeval (reL x) Q)
   have hweight : mvHerWeight Ps Q x
       = algebraMap R (Ri R) ((mult Ps x) • MvPolynomial.aeval (fun i => Ri.reL (x i)) Q) := by
@@ -1265,8 +1265,8 @@ theorem sign_mvHerCoeff_real {Ps : Finset (MvPolynomial (Fin k) R)}
   have hcount : 0 < (mult Ps x : R) := by
     have hpos : 0 < mult Ps x := by
       rw [mult_eq_of_mem hxz]
-      haveI : Module.Finite (Ri R) (quotPolysExt (Ri R) Ps) := moduleFinite_quotPolysExt (Ri R) Ps
-      haveI : Nontrivial (localizationAtPoint (Ri R) Ps x hxz) :=
+      have : Module.Finite (Ri R) (quotPolysExt (Ri R) Ps) := moduleFinite_quotPolysExt (Ri R) Ps
+      have : Nontrivial (localizationAtPoint (Ri R) Ps x hxz) :=
         (isLocalRing_localizationAtPoint (Ri R) Ps x hxz).toNontrivial
       exact Module.finrank_pos
     exact_mod_cast hpos
@@ -1373,8 +1373,8 @@ finite. This is the `R`-finiteness direction of Theorem 4.86 (`FiniteDimensional
 Zer(𝒫, Cᵏ).Finite`), so `hfinC` need not be assumed separately. -/
 theorem zerOfFinset_finite_of_moduleFinite (Ps : Finset (MvPolynomial (Fin k) R))
     [Module.Finite R (quotPolys Ps)] : (zerOfFinset (Ri R) Ps).Finite := by
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
-  haveI : CharZero R := inferInstance
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : CharZero R := inferInstance
   have hfd : FiniteDimensional R (quotPolys Ps) ↔ (zerOfFinset (Ri R) Ps).Finite := by
     rw [(lemma_4_88 (Ri R) Ps).2, finiteDimensional_ext_iff_isIntegral, isIntegral_iff_finite]
   exact hfd.mp inferInstance
@@ -1390,7 +1390,7 @@ theorem theorem_4_101 (Ps : Finset (MvPolynomial (Fin k) R)) (Q : MvPolynomial (
         = {x ∈ zerOfFinset (Ri R) Ps | MvPolynomial.aeval x Q ≠ 0}.ncard
       ∧ hermiteFormSign Ps (Ideal.Quotient.mk (idealOfPolys Ps) Q)
         = tarskiQuery R Q Ps hfinR := by
-  haveI : CharZero R := inferInstance
+  have : CharZero R := inferInstance
   have hfinC : (zerOfFinset (Ri R) Ps).Finite := zerOfFinset_finite_of_moduleFinite Ps
   -- isometry invariance of the inertia indices
   have hequiv := MvHermite.mvHerQuad_equiv Ps Q
@@ -1407,7 +1407,7 @@ theorem theorem_4_101 (Ps : Finset (MvPolynomial (Fin k) R)) (Q : MvPolynomial (
     congr 1
     rw [Finset.coe_filter]
     ext x
-    simp only [Set.mem_setOf_eq, hfinC.mem_toFinset]
+    simp only [Set.mem_ofPred_eq, hfinC.mem_toFinset]
   · -- SIGNATURE
     rw [hermiteFormSign, hpos, hneg,
       show ((sigPos (MvHermite.mvHerQuad Ps Q) : ℤ) - sigNeg (MvHermite.mvHerQuad Ps Q))

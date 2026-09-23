@@ -46,7 +46,7 @@ theorem leadingCoeffSign_pos_locus (P : Polynomial (MvPolynomial (Fin k) D)) :
         {y : Fin k → R | (P.map (MvPolynomial.aeval y).toRingHom).degree = (n : ℕ) ∧
           0 < MvPolynomial.aeval y (P.coeff n)} := by
     ext y
-    simp only [Set.mem_setOf_eq, Set.mem_iUnion, Finset.mem_range, exists_prop]
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_range, exists_prop]
     constructor
     · intro hpos
       have hne : P.map (MvPolynomial.aeval y).toRingHom ≠ 0 := by
@@ -80,7 +80,7 @@ theorem signAtPosInfty_pos_locus (P : Polynomial (MvPolynomial (Fin k) D)) :
         signAtPosInfty (P.map (MvPolynomial.aeval y).toRingHom) = SignType.pos} =
       {y : Fin k → R | 0 < (P.map (MvPolynomial.aeval y).toRingHom).leadingCoeff} := by
     ext y
-    rw [Set.mem_setOf_eq, Set.mem_setOf_eq, signAtPosInfty_eq_sign_leadingCoeff]
+    rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, signAtPosInfty_eq_sign_leadingCoeff]
     exact sign_eq_one_iff
   rw [hset]; exact leadingCoeffSign_pos_locus P
 
@@ -104,7 +104,7 @@ theorem signAtNegInfty_pos_locus (P : Polynomial (MvPolynomial (Fin k) D)) :
     have haeval : ∀ (j : ℕ), MvPolynomial.aeval y ((-1) ^ j * P.coeff j)
         = (-1 : R) ^ j * MvPolynomial.aeval y (P.coeff j) := fun j => by
       rw [map_mul, map_pow, map_neg, map_one]
-    simp only [Set.mem_setOf_eq, Set.mem_iUnion, Finset.mem_range, exists_prop,
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_range, exists_prop,
       signAtNegInfty_eq_sign_leadingCoeff]
     constructor
     · intro hsign

@@ -375,13 +375,13 @@ instance : LinearOrder (AzMvPolynomial n R ord) where
   compare_eq_compareOfLessAndEq p q := by
     rw [compareOfLessAndEq]
     rcases h : compare p q with _ | _ | _
-    · rw [if_pos (show p < q from h)]
-    · rw [if_neg (show ¬ p < q from fun h2 => by
+    · rw [ite_eq_left (show p < q from h)]
+    · rw [ite_eq_right (show ¬ p < q from fun h2 => by
             rw [show compare p q = .lt from h2] at h; exact absurd h (by simp)),
-        if_pos (eq_of_compare_eq h)]
-    · rw [if_neg (show ¬ p < q from fun h2 => by
+        ite_eq_left (eq_of_compare_eq h)]
+    · rw [ite_eq_right (show ¬ p < q from fun h2 => by
             rw [show compare p q = .lt from h2] at h; exact absurd h (by simp)),
-        if_neg (fun h2 => by
+        ite_eq_right (fun h2 => by
           subst h2; rw [compare_self'] at h; exact absurd h (by simp))]
 
 /-! ### Degree domination -/
@@ -392,12 +392,12 @@ private theorem toList_nil_of_degreeKey_zero {p : AzMvPolynomial n R ord}
   rw [degreeKey] at h
   by_cases he : p.terms.isEmpty = true
   · exact Array.toList_eq_nil_iff.mpr (Array.isEmpty_iff.mp he)
-  · rw [if_neg he] at h; omega
+  · rw [ite_eq_right he] at h; omega
 
 omit [LinearOrder R] in
 private theorem degreeKey_of_ne {p : AzMvPolynomial n R ord}
     (hp : p.terms.isEmpty = false) : degreeKey p = p.totalDegree + 1 := by
-  rw [degreeKey, if_neg (by rw [hp]; decide)]
+  rw [degreeKey, ite_eq_right (by rw [hp]; decide)]
 
 /-- The zero polynomial is the least element. -/
 theorem zero_le' (p : AzMvPolynomial n R ord) : (0 : AzMvPolynomial n R ord) ≤ p := by

@@ -132,7 +132,7 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
   have hB : IsSemialgebraicSet B := by
     have heq : B = {w : Fin 5 → R | ∃ ty : Fin 2 → R, Fin.append w ty ∈ Aᶜ}ᶜ := by
       ext w
-      simp only [hBd, Set.mem_setOf_eq, Set.mem_compl_iff, not_exists, not_not]
+      simp only [hBd, Set.mem_ofPred_eq, Set.mem_compl_iff, not_exists, not_not]
     rw [heq]
     exact (IsSemialgebraicSet.exists_append_right hA.compl).compl
   -- `∃ δ > 0`
@@ -152,7 +152,7 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
     have heq : DD = {w : Fin 3 → R | ∃ rv : Fin 1 → R,
         Fin.append w rv ∈ (RPOSᶜ ∪ C)ᶜ}ᶜ := by
       ext w
-      simp only [hDDd, Set.mem_setOf_eq, Set.mem_compl_iff, not_exists, not_not]
+      simp only [hDDd, Set.mem_ofPred_eq, Set.mem_compl_iff, not_exists, not_not]
     rw [heq]
     exact (IsSemialgebraicSet.exists_append_right (hRPOS.compl.union hC).compl).compl
   -- `∃ y_x ((x, y_x) ∈ G ∧ ⋯)`
@@ -183,23 +183,23 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
         ∘ ![(5 : Fin 7), 6]) 1 = ty 1 := rfl
     have hGTm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ GT)
         ↔ ((a < ty 0 ∧ ty 0 < b) ∧ ty 1 = g (ty 0)) := by
-      rw [hGTd, Set.mem_setOf_eq, hmemG, c0, c1]
+      rw [hGTd, Set.mem_ofPred_eq, hmemG, c0, c1]
     have hNEm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ NE)
         ↔ ty 0 ≠ z 0 := by
-      rw [hNEd, Set.mem_setOf_eq]
+      rw [hNEd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, eval_X]
       rw [b5, b0]
       exact sq_pos_iff_ne.trans sub_ne_zero
     have hNEARm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ NEAR)
         ↔ (ty 0 - z 0) ^ 2 < dv 0 ^ 2 := by
-      rw [hNEARd, Set.mem_setOf_eq]
+      rw [hNEARd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, eval_X]
       rw [b5, b0, b4]
       exact sub_neg
     have hTARGETm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty
         ∈ TARGET)
         ↔ ((ty 1 - yv 0) - z 1 * (ty 0 - z 0)) ^ 2 < rv 0 ^ 2 * (ty 0 - z 0) ^ 2 := by
-      rw [hTARGETd, Set.mem_setOf_eq]
+      rw [hTARGETd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, map_mul, eval_X]
       rw [b5, b0, b1, b2, b3, b6]
       exact sub_neg
@@ -216,8 +216,8 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
     rw [Set.mem_inter_iff]
     have d4 : Fin.append (Fin.append (Fin.append z yv) rv) dv 4 = dv 0 := rfl
     have hDPm : (Fin.append (Fin.append (Fin.append z yv) rv) dv ∈ DPOS) ↔ 0 < dv 0 := by
-      rw [hDPOSd, Set.mem_setOf_eq, eval_X, d4]
-    rw [hDPm, hBd, Set.mem_setOf_eq]
+      rw [hDPOSd, Set.mem_ofPred_eq, eval_X, d4]
+    rw [hDPm, hBd, Set.mem_ofPred_eq]
     refine and_congr_right fun _ => ?_
     constructor
     · intro h t yt
@@ -242,26 +242,26 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
     intro yv
     have x0 : (Fin.append z yv ∘ ![(0 : Fin 3), 2]) 0 = z 0 := rfl
     have x1 : (Fin.append z yv ∘ ![(0 : Fin 3), 2]) 1 = yv 0 := rfl
-    rw [hGXd, Set.mem_setOf_eq, hmemG, x0, x1]
+    rw [hGXd, Set.mem_ofPred_eq, hmemG, x0, x1]
   -- `RPOS` membership for the `r` append
   have hRPm : ∀ (yv rv : Fin 1 → R),
       (Fin.append (Fin.append z yv) rv ∈ RPOS) ↔ 0 < rv 0 := by
     intro yv rv
     have r3 : Fin.append (Fin.append z yv) rv 3 = rv 0 := rfl
-    rw [hRPOSd, Set.mem_setOf_eq, eval_X, r3]
+    rw [hRPOSd, Set.mem_ofPred_eq, eval_X, r3]
   constructor
   · -- graph of `f′` ⊆ described set
     rintro ⟨⟨hax, hxb⟩, hval⟩
     have hd : z 1 = f' (z 0) := congrFun hval 0
-    rw [hEd, Set.mem_setOf_eq]
+    rw [hEd, Set.mem_ofPred_eq]
     refine ⟨fun _ => g (z 0), Set.mem_inter ((hGXm _).mpr ⟨⟨hax, hxb⟩, rfl⟩) ?_⟩
-    rw [hDDd, Set.mem_setOf_eq]
+    rw [hDDd, Set.mem_ofPred_eq]
     intro rv
     rw [Set.mem_union, Set.mem_compl_iff, hRPm]
     by_cases hr : 0 < rv 0
     · right
       obtain ⟨δ, hδ, hball⟩ := hdiff (z 0) hax hxb (rv 0) hr
-      rw [hCd, Set.mem_setOf_eq]
+      rw [hCd, Set.mem_ofPred_eq]
       refine ⟨fun _ => δ, (hmemDB z _ rv _).mpr ⟨hδ, fun t yt hprem => ?_⟩⟩
       obtain ⟨⟨htdom, htval⟩, htne, htδ⟩ := hprem
       have htδ' : |t - z 0| < δ := (abs_lt_iff_sq_lt_sq hδ).mpr htδ
@@ -274,19 +274,19 @@ theorem proposition_3_22 {f : (Fin 1 → R) → (Fin 1 → R)} {f' : R → R} {a
       exact hr
   · -- described set ⊆ graph of `f′`
     intro hzE
-    rw [hEd, Set.mem_setOf_eq] at hzE
+    rw [hEd, Set.mem_ofPred_eq] at hzE
     obtain ⟨yv, hyvGX, hyvDD⟩ := hzE
     rw [hGXm] at hyvGX
     obtain ⟨⟨hax, hxb⟩, hyx⟩ := hyvGX
     -- the condition says `z 1` is a derivative of `g` at `z 0`
     have hderiv : HasDerivAtIn g (Set.Ioo a b) (z 0) (z 1) := by
       intro r hr
-      rw [hDDd, Set.mem_setOf_eq] at hyvDD
+      rw [hDDd, Set.mem_ofPred_eq] at hyvDD
       have hmem := hyvDD (fun _ => r)
       rw [Set.mem_union, Set.mem_compl_iff, hRPm] at hmem
       rcases hmem with hcon | hCm
       · exact absurd hr hcon
-      · rw [hCd, Set.mem_setOf_eq] at hCm
+      · rw [hCd, Set.mem_ofPred_eq] at hCm
         obtain ⟨dv, hdv⟩ := hCm
         rw [hmemDB z yv (fun _ => r) dv] at hdv
         obtain ⟨hδ, hall⟩ := hdv

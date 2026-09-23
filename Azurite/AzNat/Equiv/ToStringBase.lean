@@ -70,20 +70,20 @@ theorem AzNat.toStringBase_eq (n : AzNat) (b : UInt64)
     · show b.toNat ≤ (36 : UInt64).toNat
       show b.toNat ≤ (36 : Nat)
       omega
-  rw [if_neg hb_lt]
+  rw [ite_eq_right hb_lt]
   -- usePrefix = false ⇒ no prefix branch
   show (if (n.limbs.size = 0) then "0" else
         String.ofList ((n.limbDigits b).toList.reverse.map (fun d =>
           AzNat.digitToChar d false))) = _
   by_cases h_zero : n.limbs.size = 0
-  · rw [if_pos h_zero]
+  · rw [ite_eq_left h_zero]
     have h_n_zero : n.toNat = 0 := by
       show toNatLimbsList n.limbs.toList = 0
       have h_nil : n.limbs.toList = [] :=
         List.length_eq_zero_iff.mp (by rw [Array.length_toList, h_zero])
       rw [h_nil]; rfl
     rw [h_n_zero, Nat.toDigits_zero]
-  · rw [if_neg h_zero]
+  · rw [ite_eq_right h_zero]
     have h_n_pos : 0 < n.toNat := by
       by_contra h_nlt
       push Not at h_nlt
@@ -134,12 +134,12 @@ theorem AzNat.toString_ne_empty (n : AzNat) : (AzNat.toString n).toList ≠ [] :
   by_cases h_size : n.limbs.size = 0
   · have h_str : AzNat.toString n = "0" := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str]; decide
   · have h_str : AzNat.toString n = String.ofList
         ((n.limbDigits 10).toList.reverse.map fun d => AzNat.digitToChar d false) := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str, String.toList_ofList]
     intro he
     rw [List.map_eq_nil_iff, List.reverse_eq_nil_iff] at he
@@ -171,7 +171,7 @@ theorem AzNat.toString_char_digit (n : AzNat) (c : Char)
   by_cases h_size : n.limbs.size = 0
   · have h_str : AzNat.toString n = "0" := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str] at hc
     have h_c_eq : c = '0' := by
       rw [show ("0" : String).toList = ['0'] from rfl] at hc
@@ -181,7 +181,7 @@ theorem AzNat.toString_char_digit (n : AzNat) (c : Char)
   · have h_str : AzNat.toString n = String.ofList
         ((n.limbDigits 10).toList.reverse.map fun d => AzNat.digitToChar d false) := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str, String.toList_ofList, List.mem_map] at hc
     obtain ⟨d, hd_mem, hd_eq⟩ := hc
     rw [List.mem_reverse] at hd_mem
@@ -193,7 +193,7 @@ theorem AzNat.toString_char_digit (n : AzNat) (c : Char)
     -- digitToChar d false for d < 10 gives Char.ofNat ('0'.toNat + d.toNat).
     have h_dc : AzNat.digitToChar d false = Char.ofNat ('0'.toNat + d.toNat) := by
       unfold AzNat.digitToChar
-      rw [if_pos h_d_lt]
+      rw [ite_eq_left h_d_lt]
     rw [h_dc] at hd_eq
     subst hd_eq
     have h_zero : ('0' : Char).toNat = 48 := rfl
@@ -202,7 +202,7 @@ theorem AzNat.toString_char_digit (n : AzNat) (c : Char)
       show '0'.toNat + d.toNat < 0xd800 ∨ _
       left; omega
     have h_char_toNat : (Char.ofNat ('0'.toNat + d.toNat)).toNat = '0'.toNat + d.toNat := by
-      rw [Char.toNat_ofNat, if_pos h_valid]
+      rw [Char.toNat_ofNat, ite_eq_left h_valid]
     rw [h_char_toNat]
     omega
 

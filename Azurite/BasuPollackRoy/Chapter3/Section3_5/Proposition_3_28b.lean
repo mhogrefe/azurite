@@ -86,7 +86,7 @@ theorem finrank_coordSubmodule (hℓk : ℓ ≤ k) :
     rw [hbeq]; exact hbasis
   have hrange : Set.range b = (fun j : Fin k => Pi.single j (1 : R)) '' {j | (j : ℕ) < ℓ} := by
     ext v
-    simp only [Set.mem_range, Set.mem_image, Set.mem_setOf_eq, hb_def]
+    simp only [Set.mem_range, Set.mem_image, Set.mem_ofPred_eq, hb_def]
     constructor
     · rintro ⟨⟨j, hj⟩, rfl⟩; exact ⟨j, hj, rfl⟩
     · rintro ⟨j, hj, rfl⟩; exact ⟨⟨j, hj⟩, rfl⟩

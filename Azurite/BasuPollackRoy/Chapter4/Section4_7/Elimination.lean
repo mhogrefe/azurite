@@ -264,9 +264,9 @@ theorem coeff_polyOfVec {N : ℕ} (t : Mon k₁ N → C) (β : Mon k₁ N) :
   rw [polyOfVec, MvPolynomial.coeff_sum,
     Finset.sum_eq_single β
       (fun α _ hαβ => by
-        rw [coeff_smul, coeff_monomial, if_neg (fun h => hαβ (Subtype.ext h)), smul_zero])
+        rw [coeff_smul, coeff_monomial, ite_eq_right (fun h => hαβ (Subtype.ext h)), smul_zero])
       (fun h => absurd (Finset.mem_univ β) h)]
-  rw [coeff_smul, coeff_monomial, if_pos rfl, smul_eq_mul, mul_one]
+  rw [coeff_smul, coeff_monomial, ite_eq_left rfl, smul_eq_mul, mul_one]
 
 theorem polyOfVec_isHomogeneous {N : ℕ} (t : Mon k₁ N → C) :
     (polyOfVec t).IsHomogeneous N := by

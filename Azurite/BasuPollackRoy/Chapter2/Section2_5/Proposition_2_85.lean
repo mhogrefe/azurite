@@ -25,7 +25,7 @@ theorem polyFun_isSemialgebraicFunction_on {k : ℕ} {A : Set (Fin k → R)}
   have heq : funGraph A (polyFun P)
       = funGraph (Set.univ : Set (Fin k → R)) (polyFun P) ∩ {z | z ∘ Fin.castAdd 1 ∈ A} := by
     ext z
-    simp only [mem_funGraph, Set.mem_univ, true_and, Set.mem_inter_iff, Set.mem_setOf_eq]
+    simp only [mem_funGraph, Set.mem_univ, true_and, Set.mem_inter_iff, Set.mem_ofPred_eq]
     tauto
   rw [heq]
   exact (polyFun_isSemialgebraicFunction P).inter (IsSemialgebraicSet.comap (Fin.castAdd 1) hA)
@@ -85,17 +85,17 @@ theorem pair_isSemialgebraicFunction {k : ℕ} {A : Set (Fin k → R)}
   have hgraph : funGraph A (fun (x : Fin k → R) (j : Fin 2) => if j = 0 then f x 0 else g x 0)
       = {z | z ∘ gf ∈ funGraph A f} ∩ {z | z ∘ gg ∈ funGraph A g} := by
     ext z
-    rw [mem_funGraph, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_setOf_eq, memf, memg]
+    rw [mem_funGraph, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_ofPred_eq, memf, memg]
     constructor
     · rintro ⟨hA, hfg⟩
       have h0 := congrFun hfg 0
       have h1 := congrFun hfg 1
-      simp only [if_neg (by decide : (1 : Fin 2) ≠ 0)] at h0 h1
+      simp only [ite_eq_right (by decide : (1 : Fin 2) ≠ 0)] at h0 h1
       exact ⟨⟨hA, h0⟩, hA, h1⟩
     · rintro ⟨⟨hA, h0⟩, _, h1⟩
       refine ⟨hA, ?_⟩
       rw [funext_iff, Fin.forall_fin_two]
-      simp only [Function.comp_apply, if_neg (by decide : (1 : Fin 2) ≠ 0)]
+      simp only [Function.comp_apply, ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
       exact ⟨h0, h1⟩
   rw [hgraph]
   exact (IsSemialgebraicSet.comap gf hf).inter (IsSemialgebraicSet.comap gg hg)
@@ -110,8 +110,8 @@ theorem IsSemialgebraicFunction.add
       = addFun ∘ (fun (x : Fin k → R) (j : Fin 2) => if j = 0 then f x 0 else g x 0) := by
     funext x i; rw [Subsingleton.elim i 0]
     show (f x + g x) 0 = addFun (fun j => if j = 0 then f x 0 else g x 0) 0
-    simp only [Pi.add_apply, addFun, polyFun, map_add, MvPolynomial.eval_X, if_true,
-      if_neg (by decide : (1 : Fin 2) ≠ 0)]
+    simp only [Pi.add_apply, addFun, polyFun, map_add, MvPolynomial.eval_X, ite_true,
+      ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
   rw [heq]
   exact proposition_2_84 (pair_isSemialgebraicFunction hf hg)
     (polyFun_isSemialgebraicFunction (X 0 + X 1)) (Set.mapsTo_univ _ _)
@@ -124,8 +124,8 @@ theorem IsSemialgebraicFunction.mul
       = mulFun ∘ (fun (x : Fin k → R) (j : Fin 2) => if j = 0 then f x 0 else g x 0) := by
     funext x i; rw [Subsingleton.elim i 0]
     show (f x * g x) 0 = mulFun (fun j => if j = 0 then f x 0 else g x 0) 0
-    simp only [Pi.mul_apply, mulFun, polyFun, map_mul, MvPolynomial.eval_X, if_true,
-      if_neg (by decide : (1 : Fin 2) ≠ 0)]
+    simp only [Pi.mul_apply, mulFun, polyFun, map_mul, MvPolynomial.eval_X, ite_true,
+      ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
   rw [heq]
   exact proposition_2_84 (pair_isSemialgebraicFunction hf hg)
     (polyFun_isSemialgebraicFunction (X 0 * X 1)) (Set.mapsTo_univ _ _)

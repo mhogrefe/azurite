@@ -127,8 +127,8 @@ private theorem taylor_mem (x : Fin k → R) (p : MvPolynomial (Fin k) R) :
         rw [MvPolynomial.pderiv_mul, map_add, map_mul, map_mul, aeval_X]
         by_cases hij : i = j
         · subst hij
-          rw [MvPolynomial.pderiv_X_self, map_one, if_pos rfl, mul_one, ← ha]
-        · rw [MvPolynomial.pderiv_X_of_ne (Ne.symm hij), map_zero, mul_zero, add_zero, if_neg hij,
+          rw [MvPolynomial.pderiv_X_self, map_one, ite_eq_left rfl, mul_one, ← ha]
+        · rw [MvPolynomial.pderiv_X_of_ne (Ne.symm hij), map_zero, mul_zero, add_zero, ite_eq_right hij,
             add_zero]
       have haevalmul : MvPolynomial.aeval x (p * X j) = a * x j := by
         rw [map_mul, aeval_X]
@@ -142,11 +142,11 @@ private theorem taylor_mem (x : Fin k → R) (p : MvPolynomial (Fin k) R) :
           rw [hderiv, map_add, add_mul]
           by_cases hij : i = j
           · subst hij
-            rw [if_pos rfl, if_pos rfl, map_mul]; ring
-          · rw [if_neg hij, if_neg hij, map_zero, zero_mul, add_zero, map_mul]; ring
+            rw [ite_eq_left rfl, ite_eq_left rfl, map_mul]; ring
+          · rw [ite_eq_right hij, ite_eq_right hij, map_zero, zero_mul, add_zero, map_mul]; ring
         rw [Finset.sum_congr rfl (fun i _ => step i), Finset.sum_add_distrib,
           Finset.sum_ite_eq' Finset.univ j (fun _ => C a * gen x j)]
-        rw [if_pos (Finset.mem_univ j), ← Finset.mul_sum]
+        rw [ite_eq_left (Finset.mem_univ j), ← Finset.mul_sum]
       -- the main polynomial identity
       have hSgenj : (∑ i, C (b i) * (gen x i * gen x j)) = S * gen x j := by
         rw [hS, Finset.sum_mul]
@@ -239,12 +239,12 @@ theorem nonsingular_imp_cotangent {C : Type*} [Field C] [Algebra K C]
             = MvPolynomial.C (if i = l then 1 else 0) * gen x l)]
       rw [Finset.sum_congr rfl (fun l _ => by
         by_cases h : i = l
-        · rw [if_pos h, if_pos h, map_one, one_mul]
-        · rw [if_neg h, if_neg h, map_zero, zero_mul] :
+        · rw [ite_eq_left h, ite_eq_left h, map_one, one_mul]
+        · rw [ite_eq_right h, ite_eq_right h, map_zero, zero_mul] :
         ∀ l ∈ Finset.univ,
           MvPolynomial.C (if i = l then 1 else 0) * gen x l
             = (if i = l then gen x l else 0))]
-      rw [Finset.sum_ite_eq Finset.univ i (gen x), if_pos (Finset.mem_univ i)]
+      rw [Finset.sum_ite_eq Finset.univ i (gen x), ite_eq_left (Finset.mem_univ i)]
     rw [hexpand]
     refine Submodule.sum_mem _ fun j _ => ?_
     exact Ideal.mul_mem_left _ _ (hw j)
@@ -355,7 +355,7 @@ theorem cotangent_imp_simple [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] 
     have hmspan : Ideal.map mk M = Ideal.span (Set.range (fun i => mk (gen x i))) := by
       rw [hmkdef, hMdef, vanishing_eq_span, Ideal.map_span, ← Set.range_comp]
       rfl
-    rw [hmspan, Ideal.span_mul_span']
+    rw [hmspan, Ideal.span_mul_span]
     congr 1
     ext y
     constructor
@@ -405,7 +405,7 @@ theorem cotangent_imp_simple [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] 
   have hex_mem : ex ∈ evalAtPointSubmonoid C Ps x hx :=
     (mem_evalAtPointSubmonoid C Ps x hx ex).mpr (by rw [hex_eval1]; exact one_ne_zero)
   -- Work with the concrete localization.
-  haveI : IsLocalization (evalAtPointSubmonoid C Ps x hx)
+  have : IsLocalization (evalAtPointSubmonoid C Ps x hx)
       (Localization (evalAtPointSubmonoid C Ps x hx)) := Localization.isLocalization
   -- Step 2: every element of `m` maps to `0` in `Ā_x`.
   have hzero_loc : ∀ μ ∈ m, algebraMap (quotPolysExt C Ps)
@@ -432,7 +432,7 @@ theorem cotangent_imp_simple [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] 
   have hbij : Function.Bijective (algebraMap C (localizationAtPoint C Ps x hx)) := by
     constructor
     · -- injective: nontrivial target + field source.
-      haveI hnt : Nontrivial (localizationAtPoint C Ps x hx) := by
+      have hnt : Nontrivial (localizationAtPoint C Ps x hx) := by
         show Nontrivial (Localization (evalAtPointSubmonoid C Ps x hx))
         refine ⟨1, 0, ?_⟩
         intro h
@@ -501,7 +501,7 @@ theorem simple_imp_nonsingular [CharZero K] {C : Type*} [Field C] [IsAlgClosed C
   obtain ⟨isoCorner⟩ := proposition_4_93 Ps x hx ex hidem hexval heyval
   obtain ⟨isoC⟩ := isSimpleZero_algEquiv C Ps x hx hb
   have isoCornerC : hidem.Corner ≃+* C := isoCorner.trans isoC.toRingEquiv
-  haveI : IsReduced hidem.Corner :=
+  have : IsReduced hidem.Corner :=
     isReduced_of_injective isoCornerC.toRingHom isoCornerC.injective
   -- ============ Step (i): `ex * mk (gen x i) = 0` in `Ā`, for each `i` ============
   have hgen_zero : ∀ i, ex * mk (gen x i) = 0 := by
@@ -603,8 +603,8 @@ theorem simple_imp_nonsingular [CharZero K] {C : Type*} [Field C] [IsAlgClosed C
       rw [gen, map_sub, MvPolynomial.pderiv_C, sub_zero]
       by_cases hℓi : ℓ = i
       · subst hℓi
-        rw [MvPolynomial.pderiv_X_self, map_one, if_pos rfl]
-      · rw [MvPolynomial.pderiv_X_of_ne (Ne.symm hℓi), map_zero, if_neg hℓi]
+        rw [MvPolynomial.pderiv_X_self, map_one, ite_eq_left rfl]
+      · rw [MvPolynomial.pderiv_X_of_ne (Ne.symm hℓi), map_zero, ite_eq_right hℓi]
     rw [hLHS, hRHS] at hd
     exact hd
   -- ============ Step (iv): `det J ≠ 0` ============
@@ -616,8 +616,8 @@ theorem simple_imp_nonsingular [CharZero K] {C : Type*} [Field C] [IsAlgClosed C
     rw [show (∑ j, B i j * J j ℓ) = ∑ j, MvPolynomial.aeval x (A i j) * J j ℓ from rfl]
     rw [hBJ i ℓ, Matrix.one_apply]
     by_cases h : i = ℓ
-    · rw [if_pos h, if_pos h.symm]
-    · rw [if_neg h, if_neg (fun he => h he.symm)]
+    · rw [ite_eq_left h, ite_eq_left h.symm]
+    · rw [ite_eq_right h, ite_eq_right (fun he => h he.symm)]
   have hdetprod : B.det * J.det = 1 := by
     rw [← Matrix.det_mul, hBJ_one, Matrix.det_one]
   have hdet : J.det ≠ 0 := by

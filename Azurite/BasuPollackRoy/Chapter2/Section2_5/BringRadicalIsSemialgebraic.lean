@@ -59,7 +59,7 @@ theorem bringRadical_isSemialgebraicFunction :
       = {z : Fin 2 → R | MvPolynomial.eval z Q = 0} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_univ, true_and, Set.mem_setOf_eq, hQeval]
+    simp only [Set.mem_univ, true_and, Set.mem_ofPred_eq, hQeval]
     have hkey : (z ∘ Fin.natAdd 1 = bringRadical (z ∘ Fin.castAdd 1)) ↔
         z 1 = (bringEquiv).symm (z 0) := by
       constructor

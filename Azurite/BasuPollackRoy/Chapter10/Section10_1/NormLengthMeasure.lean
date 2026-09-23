@@ -53,7 +53,7 @@ theorem sqrt_le_of_le_sq {a y : R} (hy : 0 ≤ y) (h : a ≤ y ^ 2) : sqrt a ≤
   · have h1 := sq_sqrt ha
     have h2 := sqrt_nonneg a
     nlinarith
-  · rw [sqrt, dif_neg ha]
+  · rw [sqrt, dite_eq_right ha]
     exact hy
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
@@ -274,7 +274,7 @@ theorem sqrt_lt_of_lt_sq {a B : R} (hB : 0 < B) (h : a < B ^ 2) : sqrt a < B := 
   · have h1 := sq_sqrt ha
     have h2 := sqrt_nonneg a
     nlinarith
-  · rw [sqrt, dif_neg ha]
+  · rw [sqrt, dite_eq_right ha]
     exact hB
 
 end Azurite.BPR

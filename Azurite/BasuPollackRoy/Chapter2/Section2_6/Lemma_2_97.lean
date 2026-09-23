@@ -75,7 +75,7 @@ theorem coeff_zero_sum_monomial {R : Type*} [CommRing R] {S : Finset ℕ} {j q :
   rw [Polynomial.finsetSum_coeff]; simp only [Polynomial.coeff_monomial]
   rw [Finset.sum_eq_single j]
   · simp
-  · intro b hb hbj; rw [if_neg]; intro he
+  · intro b hb hbj; rw [ite_eq_right]; intro he
     have hbj' : j < b := lt_of_le_of_ne (hj b hb) (Ne.symm hbj)
     have h1 := Nat.div_mul_cancel (hd b hb); rw [he, zero_mul] at h1; omega
   · intro h; exact absurd hjS h
@@ -90,7 +90,7 @@ theorem natDegree_sum_monomial {R : Type*} [CommRing R] {S : Finset ℕ} {j k q 
     rw [Polynomial.finsetSum_coeff]; simp only [Polynomial.coeff_monomial]
     rw [Finset.sum_eq_single k]
     · simp
-    · intro b hb hbk; rw [if_neg]; intro he; apply hbk
+    · intro b hb hbk; rw [ite_eq_right]; intro he; apply hbk
       have h1 := Nat.div_mul_cancel (hd b hb)
       have h2 := Nat.div_mul_cancel (hd k hkS)
       rw [he] at h1; have := hj b hb; have := hj k hkS; omega
@@ -100,7 +100,7 @@ theorem natDegree_sum_monomial {R : Type*} [CommRing R] {S : Finset ℕ} {j k q 
   intro e he
   rw [Polynomial.finsetSum_coeff]; simp only [Polynomial.coeff_monomial]
   apply Finset.sum_eq_zero
-  intro h hh; rw [if_neg]; intro heq
+  intro h hh; rw [ite_eq_right]; intro heq
   have hle : (h - j) / q ≤ (k - j) / q := Nat.div_le_div_right (Nat.sub_le_sub_right (hk h hh) j)
   omega
 

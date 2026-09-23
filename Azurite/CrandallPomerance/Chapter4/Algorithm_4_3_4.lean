@@ -60,11 +60,11 @@ group of `K = Z_n[x]/(f)`. -/
 theorem cond1_of_prime {n I : ℕ} [Fact n.Prime] {f g : Polynomial (ZMod n)}
     (hirr : Irreducible f) (hdeg : f.natDegree = I) (hg : ¬f ∣ g) :
     f ∣ g ^ (n ^ I - 1) - 1 := by
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : Module.Finite (ZMod n) (AdjoinRoot f) :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : Module.Finite (ZMod n) (AdjoinRoot f) :=
     (AdjoinRoot.powerBasis hirr.ne_zero).finite
-  haveI : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
-  haveI : Fintype (AdjoinRoot f) := Fintype.ofFinite _
+  have : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
+  have : Fintype (AdjoinRoot f) := Fintype.ofFinite _
   have hcard : Fintype.card (AdjoinRoot f) = n ^ I := by
     rw [Module.card_eq_pow_finrank (K := ZMod n) (V := AdjoinRoot f),
       (AdjoinRoot.powerBasis hirr.ne_zero).finrank,
@@ -120,13 +120,13 @@ theorem cond3_of_prime {n I : ℕ} [Fact n.Prime] (hI : 0 < I)
     ∀ k : ℕ, 1 ≤ k → k ≤ I → ∃ c : ZMod n,
       f ∣ ((Multiset.range I).map fun j => g ^ n ^ j).esymm k - C c := by
   intro k _ _
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : Module.Finite (ZMod n) (AdjoinRoot f) :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : Module.Finite (ZMod n) (AdjoinRoot f) :=
     (AdjoinRoot.powerBasis hirr.ne_zero).finite
-  haveI : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
-  haveI : Fintype (AdjoinRoot f) := Fintype.ofFinite _
-  haveI : DecidableEq (AdjoinRoot f) := Classical.decEq _
-  haveI : CharP (AdjoinRoot f) n :=
+  have : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
+  have : Fintype (AdjoinRoot f) := Fintype.ofFinite _
+  have : DecidableEq (AdjoinRoot f) := Classical.decEq _
+  have : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
   have hcard : Fintype.card (AdjoinRoot f) = n ^ I := by
@@ -188,11 +188,11 @@ theorem exists_lenstra_witness {n I : ℕ} [Fact n.Prime] (hI : 0 < I)
       f ∣ g ^ (n ^ I - 1) - 1 ∧
       ∀ q : ℕ, q.Prime → q ∣ n ^ I - 1 →
         IsCoprime (g ^ ((n ^ I - 1) / q) - 1) f := by
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : Module.Finite (ZMod n) (AdjoinRoot f) :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : Module.Finite (ZMod n) (AdjoinRoot f) :=
     (AdjoinRoot.powerBasis hirr.ne_zero).finite
-  haveI : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
-  haveI : Fintype (AdjoinRoot f) := Fintype.ofFinite _
+  have : Finite (AdjoinRoot f) := Module.finite_of_finite (ZMod n)
+  have : Fintype (AdjoinRoot f) := Fintype.ofFinite _
   have hcard : Fintype.card (AdjoinRoot f) = n ^ I := by
     rw [Module.card_eq_pow_finrank (K := ZMod n) (V := AdjoinRoot f),
       (AdjoinRoot.powerBasis hirr.ne_zero).finrank,
@@ -355,7 +355,7 @@ example : Nat.Prime 3 := by
     (f := (X : Polynomial (ZMod 3))) (g := C 2)
     monic_X
     (by
-      haveI : Fact (1 < 3) := ⟨by norm_num⟩
+      have : Fact (1 < 3) := ⟨by norm_num⟩
       rw [natDegree_X]
       exact one_pos)
     ?_ ?_ ?_ ?_

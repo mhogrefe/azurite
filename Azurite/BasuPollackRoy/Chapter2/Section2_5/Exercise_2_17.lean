@@ -52,7 +52,7 @@ theorem exercise_2_17b {k ℓ : ℕ} {S : Set (Fin k → R)} {T' : Set (Fin ℓ 
       = {x : Fin k → R | ∃ y : Fin ℓ → R,
           Fin.append x y ∈ funGraph S f ∩ {p : Fin (k + ℓ) → R | p ∘ Fin.natAdd k ∈ T'}} := by
     ext x
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
     constructor
     · rintro ⟨hxS, hfx⟩
       exact ⟨f x, (append_mem_funGraph S f x (f x)).mpr ⟨hxS, rfl⟩, by
@@ -66,7 +66,7 @@ theorem exercise_2_17b {k ℓ : ℕ} {S : Set (Fin k → R)} {T' : Set (Fin ℓ 
     ext_inter hf (IsSemialgebraicSet.comap (Fin.natAdd k) hT'),
     ext_comap (Fin.natAdd k) (Fin.natAdd_injective ℓ k) hT', hgraph]
   ext x'
-  simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+  simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
   constructor
   · rintro ⟨y', hg, hy'⟩
     rw [append_comp_natAdd] at hy'
@@ -240,12 +240,12 @@ theorem ext_exists_append_left {k ℓ : ℕ} {W : Set (Fin (k + ℓ) → R)} (hW
   have hset : {y : Fin ℓ → R | ∃ x : Fin k → R, Fin.append x y ∈ W}
       = {y : Fin ℓ → R | ∃ x : Fin k → R,
           Fin.append y x ∈ {v : Fin (ℓ + k) → R | v ∘ blockSwap k ℓ ∈ W}} := by
-    ext y; simp only [Set.mem_setOf_eq, blockSwap_append]
+    ext y; simp only [Set.mem_ofPred_eq, blockSwap_append]
   rw [ext_congr hπ (IsSemialgebraicSet.exists_append_right
         (IsSemialgebraicSet.comap (blockSwap k ℓ) hW)) hset,
       ext_exists_append (IsSemialgebraicSet.comap (blockSwap k ℓ) hW),
       ext_comap (blockSwap k ℓ) (blockSwap_injective k ℓ) hW]
-  ext y'; simp only [Set.mem_setOf_eq, blockSwap_append]
+  ext y'; simp only [Set.mem_ofPred_eq, blockSwap_append]
 
 omit [IsRealClosed R] [IsRealClosed R'] [Algebra R R'] in
 /-- The image of a function is the left projection of its graph. -/
@@ -253,7 +253,7 @@ theorem image_eq_proj_left {k ℓ : ℕ} {K : Type*} [Field K] [LinearOrder K] [
     (A : Set (Fin k → K)) (g : (Fin k → K) → (Fin ℓ → K)) :
     g '' A = {y : Fin ℓ → K | ∃ x : Fin k → K, Fin.append x y ∈ funGraph A g} := by
   ext y
-  simp only [Set.mem_image, Set.mem_setOf_eq]
+  simp only [Set.mem_image, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨x, hx, rfl⟩; exact ⟨x, (append_mem_funGraph A g x (g x)).mpr ⟨hx, rfl⟩⟩
   · rintro ⟨x, hx⟩

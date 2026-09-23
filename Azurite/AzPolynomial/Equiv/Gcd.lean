@@ -51,9 +51,9 @@ private theorem List.findIdx?_eq_some_of {α : Type _} (p : α → Bool) :
     intro j hj h1 h2
     match j with
     | 0 =>
-      rw [List.findIdx?_cons, if_pos (by simpa using h2)]
+      rw [List.findIdx?_cons, ite_eq_left (by simpa using h2)]
     | j + 1 =>
-      rw [List.findIdx?_cons, if_neg (by simpa using h1 0 (by omega)),
+      rw [List.findIdx?_cons, ite_eq_right (by simpa using h1 0 (by omega)),
         ih j (by simpa using hj) (fun i hi => h1 (i + 1) (by omega)) (by simpa using h2)]
       rfl
 
@@ -292,25 +292,25 @@ theorem toPoly_gcdMonic (P Q : AzPolynomial K) :
       = GCDMonoid.gcd (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) := by
   rw [gcdMonic]
   by_cases h00 : P = 0 ∧ Q = 0
-  · rw [if_pos h00]
+  · rw [ite_eq_left h00]
     obtain ⟨rfl, rfl⟩ := h00
     rw [toPoly_zero, gcd_zero_right, normalize_zero]
-  rw [if_neg h00]
+  rw [ite_eq_right h00]
   by_cases hP0 : P = 0
   · have hQ0 : Q ≠ 0 := fun h => h00 ⟨hP0, h⟩
-    rw [if_pos hP0, hP0, toPoly_zero, toPoly_monicize Q hQ0, gcd_zero_left]
-  rw [if_neg hP0]
+    rw [ite_eq_left hP0, hP0, toPoly_zero, toPoly_monicize Q hQ0, gcd_zero_left]
+  rw [ite_eq_right hP0]
   by_cases hQ0 : Q = 0
-  · rw [if_pos hQ0, hQ0, toPoly_zero, toPoly_monicize P hP0, gcd_zero_right]
-  rw [if_neg hQ0]
+  · rw [ite_eq_left hQ0, hQ0, toPoly_zero, toPoly_monicize P hP0, gcd_zero_right]
+  rw [ite_eq_right hQ0]
   have hP' := toPoly_ne_zero hP0
   have hQ' := toPoly_ne_zero hQ0
   by_cases hd0 : P.natDegree = 0 ∨ Q.natDegree = 0
-  · rw [if_pos hd0, toPoly_one]
+  · rw [ite_eq_left hd0, toPoly_one]
     rcases hd0 with h | h
     · exact (gcd_isUnit_left (isUnit_toPoly_of_natDegree_eq_zero hP0 h)).symm
     · exact (gcd_isUnit_right (isUnit_toPoly_of_natDegree_eq_zero hQ0 h)).symm
-  rw [if_neg hd0]
+  rw [ite_eq_right hd0]
   push Not at hd0
   obtain ⟨hPd0, hQd0⟩ := hd0
   have hlcP : P.leadingCoeff ≠ 0 := by
@@ -320,13 +320,13 @@ theorem toPoly_gcdMonic (P Q : AzPolynomial K) :
     rw [← leadingCoeff_toPoly]
     exact Polynomial.leadingCoeff_ne_zero.mpr hQ'
   by_cases hdeq : P.natDegree = Q.natDegree
-  · rw [if_pos hdeq]
+  · rw [ite_eq_left hdeq]
     have hstep : GCDMonoid.gcd (AzPolynomial.toPoly P) (AzPolynomial.toPoly (preStep P Q))
         = GCDMonoid.gcd (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) := by
       rw [preStep, toPoly_pre_step]
       exact gcd_pre_step _ _ hlcP
     by_cases hT0 : preStep P Q = 0
-    · rw [if_pos hT0]
+    · rw [ite_eq_left hT0]
       -- proportional: `C lcP · tpQ = C lcQ · tpP`, so `tpP ∣ tpQ`
       have hprop : Polynomial.C P.leadingCoeff * AzPolynomial.toPoly Q
           = Polynomial.C Q.leadingCoeff * AzPolynomial.toPoly P := by
@@ -341,11 +341,11 @@ theorem toPoly_gcdMonic (P Q : AzPolynomial K) :
         rw [h2, Polynomial.C_mul]
         ring
       rw [toPoly_monicize P hP0, gcd_eq_normalize_left hdvd]
-    rw [if_neg hT0]
+    rw [ite_eq_right hT0]
     by_cases hTd : (preStep P Q).natDegree = 0
-    · rw [if_pos hTd, toPoly_one, ← hstep]
+    · rw [ite_eq_left hTd, toPoly_one, ← hstep]
       exact (gcd_isUnit_right (isUnit_toPoly_of_natDegree_eq_zero hT0 hTd)).symm
-    · rw [if_neg hTd]
+    · rw [ite_eq_right hTd]
       have hlt : (preStep P Q).natDegree < P.natDegree := by
         rw [preStep]
         exact pre_step_natDegree_lt hP0 hQ0 hdeq (by rw [← preStep]; exact hT0)
@@ -353,13 +353,13 @@ theorem toPoly_gcdMonic (P Q : AzPolynomial K) :
         (by omega)
       rw [toPoly_monicize _ hne, ← hstep, ← normalize_gcd,
         normalize_eq_normalize_iff_associated.mpr hassoc]
-  rw [if_neg hdeq]
+  rw [ite_eq_right hdeq]
   by_cases hdlt : P.natDegree < Q.natDegree
-  · rw [if_pos hdlt]
+  · rw [ite_eq_left hdlt]
     obtain ⟨hassoc, hne⟩ := toPoly_subresGcd_associated Q P hQ0 hP0 hdlt (by omega)
     rw [toPoly_monicize _ hne, ← normalize_gcd,
       normalize_eq_normalize_iff_associated.mpr hassoc, gcd_comm]
-  · rw [if_neg hdlt]
+  · rw [ite_eq_right hdlt]
     obtain ⟨hassoc, hne⟩ := toPoly_subresGcd_associated P Q hP0 hQ0 (by omega) (by omega)
     rw [toPoly_monicize _ hne, ← normalize_gcd,
       normalize_eq_normalize_iff_associated.mpr hassoc]
@@ -392,10 +392,10 @@ theorem gcdGcdFreePart_field_spec (P Q : AzPolynomial K) :
   · have hgcd0 : GCDMonoid.gcd (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) = 0 := by
       rw [← hgcd, hg0, toPoly_zero]
     have hP0 : AzPolynomial.toPoly P = 0 := ((gcd_eq_zero_iff _ _).mp hgcd0).1
-    rw [if_pos hg0]
+    rw [ite_eq_left hg0]
     show GCDMonoid.gcd _ _ * AzPolynomial.toPoly (0 : AzPolynomial K) = _
     rw [hgcd0, zero_mul, hP0]
-  · rw [if_neg hg0]
+  · rw [ite_eq_right hg0]
     have hGdvd : AzPolynomial.toPoly g ∣ AzPolynomial.toPoly P := by
       rw [hgcd]
       exact gcd_dvd_left _ _
@@ -444,7 +444,7 @@ theorem ofPoly_gcdGcdFreePart_field (p q : K[X]) :
           then (0 : AzPolynomial K)
           else (exactDivQuoRem (AzPolynomial.ofPoly p)
             (gcdMonic (AzPolynomial.ofPoly p) (AzPolynomial.ofPoly q))).1) = 0
-        rw [if_pos h6]
+        rw [ite_eq_left h6]
       rw [h4, toPoly_zero, hg, EuclideanDomain.div_zero]
     · -- cancel the gcd: `snd = p / gcd`
       apply mul_left_cancel₀ hg

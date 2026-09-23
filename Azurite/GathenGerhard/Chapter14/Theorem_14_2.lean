@@ -47,11 +47,11 @@ theorem dvd_X_pow_card_pow_sub_X_of_natDegree_dvd {d : ℕ} {f : F[X]}
     (hf : Irreducible f) (hdvd : f.natDegree ∣ d) :
     f ∣ X ^ Fintype.card F ^ d - X := by
   have hf0 : f ≠ 0 := hf.ne_zero
-  haveI : Fact (Irreducible f) := ⟨hf⟩
+  have : Fact (Irreducible f) := ⟨hf⟩
   -- `K = F[x]/⟨f⟩` is a field with `q ^ deg f` elements
-  haveI : Module.Finite F (AdjoinRoot f) := (AdjoinRoot.powerBasis hf0).finite
-  haveI : Finite (AdjoinRoot f) := Module.finite_of_finite F
-  haveI : Fintype (AdjoinRoot f) := Fintype.ofFinite (AdjoinRoot f)
+  have : Module.Finite F (AdjoinRoot f) := (AdjoinRoot.powerBasis hf0).finite
+  have : Finite (AdjoinRoot f) := Module.finite_of_finite F
+  have : Fintype (AdjoinRoot f) := Fintype.ofFinite (AdjoinRoot f)
   have hcard : Fintype.card (AdjoinRoot f) = Fintype.card F ^ f.natDegree := by
     rw [Module.card_eq_pow_finrank (K := F) (V := AdjoinRoot f),
       (AdjoinRoot.powerBasis hf0).finrank, AdjoinRoot.powerBasis_dim]
@@ -86,7 +86,7 @@ derivative is `−1` in characteristic `p ∣ q^d`). -/
 theorem squarefree_X_pow_card_pow_sub_X {d : ℕ} (hd : d ≠ 0) :
     Squarefree (X ^ Fintype.card F ^ d - X : F[X]) := by
   obtain ⟨p, hchar⟩ := CharP.exists F
-  haveI hp : Fact p.Prime := ⟨CharP.char_is_prime F p⟩
+  have hp : Fact p.Prime := ⟨CharP.char_is_prime F p⟩
   obtain ⟨k, -, hcard⟩ := FiniteField.card F p
   refine (galois_poly_separable p (Fintype.card F ^ d) ?_).squarefree
   rw [hcard]

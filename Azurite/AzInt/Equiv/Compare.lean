@@ -143,12 +143,12 @@ lemma compare_eq_compareOfLessAndEq (a b : AzInt) : compare a b = compareOfLessA
   rcases hc2 : Ord.compare a.toInt b.toInt
   · have ht : a.toInt < b.toInt := compare_lt_iff_lt.mp hc2
     have ha : a < b := hl1.mpr ht
-    rw [if_pos ha]
+    rw [ite_eq_left ha]
   · have ht : a.toInt = b.toInt := compare_eq_iff_eq.mp hc2
     have h1 : ¬ (a.toInt < b.toInt) := by omega
     have h_not_lt : ¬ (a < b) := fun h => h1 (hl1.mp h)
     have ha : a = b := he1.mpr ht
-    rw [if_neg h_not_lt, if_pos ha]
+    rw [ite_eq_right h_not_lt, ite_eq_left ha]
   · have ht : Ord.compare a.toInt b.toInt = Ordering.gt := hc2
     have h_not_lt : ¬(a.toInt < b.toInt) := by
       intro h_lt
@@ -160,7 +160,7 @@ lemma compare_eq_compareOfLessAndEq (a b : AzInt) : compare a b = compareOfLessA
       rw [hz2] at ht; contradiction
     have h1 : ¬ (a < b) := fun h => h_not_lt (hl1.mp h)
     have h2 : ¬ (a = b) := fun h => h_not_eq (he1.mp h)
-    rw [if_neg h1, if_neg h2]
+    rw [ite_eq_right h1, ite_eq_right h2]
 
 -- Helper: sign=false implies abs is positive
 private lemma neg_sign_abs_pos {z : AzInt} (hs : z.sign = false) : z.abs.toNat > 0 := by
@@ -172,7 +172,7 @@ private lemma neg_sign_abs_pos {z : AzInt} (hs : z.sign = false) : z.abs.toNat >
 
 -- Helper: sign=false implies toInt < 0
 private lemma neg_sign_toInt_neg {z : AzInt} (hs : z.sign = false) : z.toInt < 0 := by
-  unfold toInt; rw [if_neg (by rw [hs]; decide)]
+  unfold toInt; rw [ite_eq_right (by rw [hs]; decide)]
   have := neg_sign_abs_pos hs
   omega
 
@@ -240,7 +240,7 @@ theorem compareInt64_eq (z : AzInt) (i : Int64) :
   split_ifs with hs hi hs2
   · -- sign = true, i < 0
     have h_neg : i.toInt < 0 := by rwa [Int64.lt_iff_toInt_lt] at hi
-    have h_pos : z.toInt ≥ 0 := by unfold toInt; rw [if_pos hs]; exact Int.natCast_nonneg _
+    have h_pos : z.toInt ≥ 0 := by unfold toInt; rw [ite_eq_left hs]; exact Int.natCast_nonneg _
     symm; exact compare_gt_iff_gt.mpr (by omega)
   · -- sign = true, i ≥ 0
     rw [AzNat.compareUInt64_eq]
@@ -255,12 +255,12 @@ theorem compareInt64_eq (z : AzInt) (i : Int64) :
       · rfl
       · exfalso; simp only [not_lt] at h
         split_ifs at h_nn with h2 <;> omega
-    unfold toInt; rw [if_pos hs]
+    unfold toInt; rw [ite_eq_left hs]
     rw [AzNat.compare_nat_cast_int, h_eq]
   · -- sign = false, i < 0: compare two negatives
     rw [AzNat.compareUInt64_eq, compare_swap_nat, AzNat.compare_nat_cast_int]
     have h_neg_eq := Int64.neg_toUInt64_toNat_eq hs2
-    unfold toInt; rw [if_neg hs, h_neg_eq, compare_neg_int]
+    unfold toInt; rw [ite_eq_right hs, h_neg_eq, compare_neg_int]
     congr 1; omega
   · -- sign = false, i ≥ 0
     have h_neg := neg_sign_toInt_neg (Bool.eq_false_iff.mpr hs)

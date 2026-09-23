@@ -59,9 +59,9 @@ theorem natRangeGen_contigStep (a b : ℕ) :
   intro n h
   by_cases hn : n < b - a
   · rw [show (natRangeGen a b).gen n
-        = some ⟨a + n, Nat.le_add_right a n, by omega⟩ from dif_pos hn] at h
+        = some ⟨a + n, Nat.le_add_right a n, by omega⟩ from dite_eq_left hn] at h
     exact absurd h (Option.some_ne_none _)
-  · exact dif_neg (by omega)
+  · exact dite_eq_right (by omega)
 
 /-! ### Shortlex, lengths in `[a, b)` -/
 

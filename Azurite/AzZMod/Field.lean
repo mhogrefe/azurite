@@ -38,7 +38,7 @@ the extended-GCD `inv`, with the usual `0⁻¹ = 0` convention. -/
 instance instField [Fact (Nat.Prime p.toNat)] : Field (AzZMod p) where
   inv := fieldInv
   exists_pair_ne := ⟨0, 1, by
-    haveI : Fact (1 < p.toNat) := ⟨(Fact.out (p := Nat.Prime p.toNat)).one_lt⟩
+    have : Fact (1 < p.toNat) := ⟨(Fact.out (p := Nat.Prime p.toNat)).one_lt⟩
     intro h
     have hz : toZMod (0 : AzZMod p) = toZMod (1 : AzZMod p) := by rw [h]
     rw [toZMod_zero, toZMod_one] at hz
@@ -53,7 +53,7 @@ instance instField [Fact (Nat.Prime p.toNat)] : Field (AzZMod p) where
       rw [(AzNat.toNat_eq_zero_iff a.val).mpr h0, AzNat.toNat_zero]
     show a * fieldInv a = 1
     unfold fieldInv
-    rw [dif_neg hsz]
+    rw [dite_eq_right hsz]
     exact mul_inv a _
   inv_zero := rfl
   nnqsmul := _

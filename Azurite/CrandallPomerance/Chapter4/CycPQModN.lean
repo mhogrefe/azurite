@@ -169,7 +169,7 @@ when the mod-`n` reduction of `x` vanishes — the semantic content of
 the algorithm's coefficientwise computations. -/
 theorem natCast_dvd_iff_reduceModN (x : CycPQ p q) :
     (n : CycPQ p q) ∣ x ↔ reduceModN n p q x = 0 := by
-  haveI : NeZero n := ⟨by have := Fact.out (p := 1 < n); omega⟩
+  have : NeZero n := ⟨by have := Fact.out (p := 1 < n); omega⟩
   constructor
   · rintro ⟨y, rfl⟩
     rw [map_mul, map_natCast, natCast_self_reduceModN, zero_mul]

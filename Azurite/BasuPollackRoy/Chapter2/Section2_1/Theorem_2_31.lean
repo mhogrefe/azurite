@@ -136,8 +136,8 @@ private lemma maximal_hasNoNontrivialRealAlgebraicExtension
   · exact hR
   · intro F₁ _ _ halg hreal x
     -- Embed F₁ into C via IsAlgClosed.lift
-    letI : Algebra ℚ F₁ := (algebraMap ↥R F₁).comp (algebraMap ℚ ↥R) |>.toAlgebra
-    haveI : IsScalarTower ℚ ↥R F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    let : Algebra ℚ F₁ := (algebraMap ↥R F₁).comp (algebraMap ℚ ↥R) |>.toAlgebra
+    have : IsScalarTower ℚ ↥R F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
     let f : F₁ →ₐ[↥R] C := IsAlgClosed.lift
     -- The field range, restricted to ℚ-scalars, is an IntermediateField ℚ C
     let S : IntermediateField ℚ C := f.fieldRange.restrictScalars ℚ

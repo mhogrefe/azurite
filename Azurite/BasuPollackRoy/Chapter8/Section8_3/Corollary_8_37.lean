@@ -37,8 +37,8 @@ theorem corollary_8_35_nondefective (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   have hsj1 : sResP P Q (j - 1) ≠ 0 := fun h => by
     rw [h, Polynomial.natDegree_zero] at hndj1; omega
   have htj1 : tBPR P Q (j - 1) = sBPR P Q (j - 1) := by
-    rw [tBPR, if_neg (show j - 1 ≠ P.natDegree by omega),
-      sBPR, if_neg (show j - 1 ≠ P.natDegree by omega)]
+    rw [tBPR, ite_eq_right (show j - 1 ≠ P.natDegree by omega),
+      sBPR, ite_eq_right (show j - 1 ≠ P.natDegree by omega)]
     exact leadingCoeff_sResP_eq_sRes P Q hpq hj1q
       (show (sResP P Q (j - 1)).degree = ((j - 1 : ℕ) : WithBot ℕ) from by
         rw [Polynomial.degree_eq_natDegree hsj1, hndj1])
@@ -70,8 +70,8 @@ theorem corollary_8_37 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   have hsBPR_ne : ∀ j, j ≤ P.natDegree → sBPR P Q j ≠ 0 := by
     intro j hj
     by_cases hjp : j = P.natDegree
-    · rw [sBPR, if_pos hjp]; exact one_ne_zero
-    · rw [sBPR, if_neg hjp,
+    · rw [sBPR, ite_eq_left hjp]; exact one_ne_zero
+    · rw [sBPR, ite_eq_right hjp,
         ← leadingCoeff_sResP_eq_sRes P Q hpq (by omega) (hnd j hj)]
       exact Polynomial.leadingCoeff_ne_zero.mpr (hnd_ne j hj)
   -- two-step induction on `ℓ`
@@ -101,7 +101,7 @@ theorem corollary_8_37 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
       hnd_ne (P.natDegree - (m + 1)) (by omega) (by rw [hb, h, mul_zero])
     have hsrem : SRemS P Q m % SRemS P Q (m + 1) = -SRemS P Q (m + 2) := by
       rw [show SRemS P Q (m + 2) = -(SRemS P Q m % SRemS P Q (m + 1)) from by
-        rw [SRemS, if_neg hSm1_ne], neg_neg]
+        rw [SRemS, ite_eq_right hSm1_ne], neg_neg]
     rw [hc, hb] at hcor
     -- simplify the right-hand side to `C(t² c²) · SRemS_{m+2}`, `t = sBPR_{p-(m+1)}`
     have hrhs : -((C (sBPR P Q (P.natDegree - (m + 1))) ^ 2 * (C (c ^ 2) * SRemS P Q m))

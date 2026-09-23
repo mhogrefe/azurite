@@ -1,6 +1,6 @@
 import Mathlib.Algebra.Order.Ring.Defs
 import Mathlib.Data.List.Basic
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 
 /-! # BPR Section 2.2 — Notation 2.32: Sign variations
 
@@ -151,7 +151,7 @@ lemma varNonzero_eq_zero_of_forall_nonneg :
       have ha := h a (List.mem_cons_self)
       have hb := h b (List.mem_cons_of_mem _ List.mem_cons_self)
       have hab : ¬ a * b < 0 := not_lt.mpr (mul_nonneg ha hb)
-      rw [if_neg hab, zero_add]
+      rw [ite_eq_right hab, zero_add]
       exact varNonzero_eq_zero_of_forall_nonneg
         (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
@@ -165,7 +165,7 @@ lemma varNonzero_eq_zero_of_forall_nonpos :
       have ha := h a (List.mem_cons_self)
       have hb := h b (List.mem_cons_of_mem _ List.mem_cons_self)
       have hab : ¬ a * b < 0 := not_lt.mpr (mul_nonneg_of_nonpos_of_nonpos ha hb)
-      rw [if_neg hab, zero_add]
+      rw [ite_eq_right hab, zero_add]
       exact varNonzero_eq_zero_of_forall_nonpos
         (fun x hx => h x (List.mem_cons_of_mem _ hx))
 
@@ -239,8 +239,8 @@ lemma varNonzero_congr_sign : ∀ {l₁ l₂ : List R},
           have hif_eq : (if a * b < 0 then (1 : ℕ) else 0) =
               (if a' * b' < 0 then 1 else 0) := by
             by_cases hab : a * b < 0
-            · rw [if_pos hab, if_pos (h_iff.mp hab)]
-            · rw [if_neg hab, if_neg (fun hc => hab (h_iff.mpr hc))]
+            · rw [ite_eq_left hab, ite_eq_left (h_iff.mp hab)]
+            · rw [ite_eq_right hab, ite_eq_right (fun hc => hab (h_iff.mpr hc))]
           rw [hif_eq]
           congr 1
           apply ih

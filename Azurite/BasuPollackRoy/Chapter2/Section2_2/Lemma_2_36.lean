@@ -440,12 +440,12 @@ theorem lemma_2_36 (hIVP : HasIntermediateValueProperty R)
         rw [varAt_finite, varAt_finite, hder_cons, hderQ]
         simp only [List.map_cons]
         rw [Var_cons_cons_of_ne_zero hPd'_ne hQd'_ne,
-          if_neg (not_lt.mpr (le_of_lt hPQd'_pos)), zero_add]
+          ite_eq_right (not_lt.mpr (le_of_lt hPQd'_pos)), zero_add]
       -- At d: opposite-sign heads ⇒ jump of exactly 1.
       have hvard : varAt (der P) (.finite d) = 1 + varAt (der Q) (.finite d) := by
         rw [varAt_finite, varAt_finite, hder_cons, hderQ]
         simp only [List.map_cons]
-        rw [Var_cons_cons_of_ne_zero hPd_ne hQd_ne, if_pos hPQd_neg]
+        rw [Var_cons_cons_of_ne_zero hPd_ne hQd_ne, ite_eq_left hPQd_neg]
       -- `((mu - 1 : ℕ) : ℤ) = (mu : ℤ) - 1` since mu ≥ 1.
       have hcast_sub : ((mu - 1 : ℕ) : ℤ) = (mu : ℤ) - 1 := by
         rw [Nat.cast_sub hmu_pos]; push_cast; ring
@@ -640,12 +640,12 @@ theorem lemma_2_36 (hIVP : HasIntermediateValueProperty R)
           have hjc_true : P.eval c * ((⇑derivative)^[ν] Q).eval c < 0 := hc_neg
           refine ⟨⟨?_, ?_⟩, ?_⟩
           · unfold varBetween at hQmult_le ⊢
-            rw [hvard, hvarc, if_neg hjd_false, if_pos hjc_true]
+            rw [hvard, hvarc, ite_eq_right hjd_false, ite_eq_left hjc_true]
             push_cast [hmult_P]
             push_cast [hk] at hQmult_le
             omega
           · unfold varBetween at hQeven ⊢
-            rw [hvard, hvarc, if_neg hjd_false, if_pos hjc_true]
+            rw [hvard, hvarc, ite_eq_right hjd_false, ite_eq_left hjc_true]
             push_cast [hmult_P]
             rcases hQeven with ⟨m, hm⟩
             refine ⟨m + k, ?_⟩
@@ -664,12 +664,12 @@ theorem lemma_2_36 (hIVP : HasIntermediateValueProperty R)
             not_lt.mpr hc_pos.le
           refine ⟨⟨?_, ?_⟩, ?_⟩
           · unfold varBetween at hQmult_le ⊢
-            rw [hvard, hvarc, if_pos hjd_true, if_neg hjc_false]
+            rw [hvard, hvarc, ite_eq_left hjd_true, ite_eq_right hjc_false]
             push_cast [hmult_P]
             push_cast [hk] at hQmult_le
             omega
           · unfold varBetween at hQeven ⊢
-            rw [hvard, hvarc, if_pos hjd_true, if_neg hjc_false]
+            rw [hvard, hvarc, ite_eq_left hjd_true, ite_eq_right hjc_false]
             push_cast [hmult_P]
             rcases hQeven with ⟨m, hm⟩
             refine ⟨m + k + 1, ?_⟩

@@ -141,7 +141,7 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
     have heq : B = {w : Fin ((((k + 1) + 1) + 1) + 1) → R |
         ∃ ty : Fin 2 → R, Fin.append w ty ∈ Aᶜ}ᶜ := by
       ext w
-      simp only [hBd, Set.mem_setOf_eq, Set.mem_compl_iff, not_exists, not_not]
+      simp only [hBd, Set.mem_ofPred_eq, Set.mem_compl_iff, not_exists, not_not]
     rw [heq]
     exact (IsSemialgebraicSet.exists_append_right hA.compl).compl
   -- `∃ δ > 0`
@@ -163,7 +163,7 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
     have heq : DD = {w : Fin ((k + 1) + 1) → R | ∃ rv : Fin 1 → R,
         Fin.append w rv ∈ (RPOSᶜ ∪ C)ᶜ}ᶜ := by
       ext w
-      simp only [hDDd, Set.mem_setOf_eq, Set.mem_compl_iff, not_exists, not_not]
+      simp only [hDDd, Set.mem_ofPred_eq, Set.mem_compl_iff, not_exists, not_not]
     rw [heq]
     exact (IsSemialgebraicSet.exists_append_right (hRPOS.compl.union hC).compl).compl
   -- `∃ y_x ((x, y_x) ∈ G ∧ ⋯)`
@@ -218,8 +218,8 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
         (σ (Fin.castAdd 1 j)) = _
     rw [hσd, Fin.append_left]
     by_cases hj : j = i
-    · rw [if_pos hj, hcoT, hj, Function.update_self]
-    · rw [if_neg hj, hcoX, Function.update_of_ne hj]
+    · rw [ite_eq_left hj, hcoT, hj, Function.update_self]
+    · rw [ite_eq_right hj, hcoX, Function.update_of_ne hj]
       rfl
   have hσnat : ∀ (z : Fin (k + 1) → R) (yv rv dv : Fin 1 → R) (ty : Fin 2 → R),
       (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∘ σ)
@@ -243,16 +243,16 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
     have hGSm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ GS)
         ↔ (Function.update (z ∘ Fin.castAdd 1) i (ty 0) ∈ U ∧
             ty 1 = c (Function.update (z ∘ Fin.castAdd 1) i (ty 0))) := by
-      rw [hGSd, Set.mem_setOf_eq, hGd, hmemGraph c, hσcast, hσnat]
+      rw [hGSd, Set.mem_ofPred_eq, hGd, hmemGraph c, hσcast, hσnat]
     have hNEm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ NE)
         ↔ ty 0 ≠ z (Fin.castAdd 1 i) := by
-      rw [hNEd, Set.mem_setOf_eq]
+      rw [hNEd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, eval_X]
       rw [hcoT, hcoX]
       exact sq_pos_iff_ne.trans sub_ne_zero
     have hNEARm : (Fin.append (Fin.append (Fin.append (Fin.append z yv) rv) dv) ty ∈ NEAR)
         ↔ (ty 0 - z (Fin.castAdd 1 i)) ^ 2 < dv 0 ^ 2 := by
-      rw [hNEARd, Set.mem_setOf_eq]
+      rw [hNEARd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, eval_X]
       rw [hcoT, hcoX, hcoδ]
       exact sub_neg
@@ -260,7 +260,7 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
         ∈ TARGET)
         ↔ ((ty 1 - yv 0) - z (Fin.natAdd k 0) * (ty 0 - z (Fin.castAdd 1 i))) ^ 2
             < rv 0 ^ 2 * (ty 0 - z (Fin.castAdd 1 i)) ^ 2 := by
-      rw [hTARGETd, Set.mem_setOf_eq]
+      rw [hTARGETd, Set.mem_ofPred_eq]
       simp only [map_sub, map_pow, map_mul, eval_X]
       rw [hcoT, hcoX, hcoD, hcoYX, hcoYT, hcoR]
       exact sub_neg
@@ -281,8 +281,8 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
     have hd4 : Fin.append (Fin.append (Fin.append z yv) rv) dv
         (Fin.natAdd (((k + 1) + 1) + 1) 0) = dv 0 := Fin.append_right _ _ _
     have hDPm : (Fin.append (Fin.append (Fin.append z yv) rv) dv ∈ DPOS) ↔ 0 < dv 0 := by
-      rw [hDPOSd, Set.mem_setOf_eq, eval_X, hd4]
-    rw [hDPm, hBd, Set.mem_setOf_eq]
+      rw [hDPOSd, Set.mem_ofPred_eq, eval_X, hd4]
+    rw [hDPm, hBd, Set.mem_ofPred_eq]
     refine and_congr_right fun _ => ?_
     constructor
     · intro h t yt
@@ -309,27 +309,27 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
     have hτnat : (Fin.append z yv ∘ τ) (Fin.natAdd k 0) = yv 0 := by
       show Fin.append z yv (τ (Fin.natAdd k 0)) = _
       rw [hτd, Fin.append_right, Fin.append_right]
-    rw [hGXd, Set.mem_setOf_eq, hGd, hmemGraph c, hτcast, hτnat]
+    rw [hGXd, Set.mem_ofPred_eq, hGd, hmemGraph c, hτcast, hτnat]
   -- `RPOS` membership for the `r` append
   have hRPm : ∀ (yv rv : Fin 1 → R),
       (Fin.append (Fin.append z yv) rv ∈ RPOS) ↔ 0 < rv 0 := by
     intro yv rv
     have hr3 : Fin.append (Fin.append z yv) rv (Fin.natAdd ((k + 1) + 1) 0) = rv 0 :=
       Fin.append_right _ _ _
-    rw [hRPOSd, Set.mem_setOf_eq, eval_X, hr3]
+    rw [hRPOSd, Set.mem_ofPred_eq, eval_X, hr3]
   constructor
   · -- graph of `∂c/∂X_i` ⊆ described set
     rintro ⟨hx, hd⟩
-    rw [hEd, Set.mem_setOf_eq]
+    rw [hEd, Set.mem_ofPred_eq]
     refine ⟨fun _ => c (z ∘ Fin.castAdd 1),
       Set.mem_inter ((hGXm _).mpr ⟨hx, rfl⟩) ?_⟩
-    rw [hDDd, Set.mem_setOf_eq]
+    rw [hDDd, Set.mem_ofPred_eq]
     intro rv
     rw [Set.mem_union, Set.mem_compl_iff, hRPm]
     by_cases hr : 0 < rv 0
     · right
       obtain ⟨δ, hδ, hball⟩ := hdiff (z ∘ Fin.castAdd 1) hx (rv 0) hr
-      rw [hCd, Set.mem_setOf_eq]
+      rw [hCd, Set.mem_ofPred_eq]
       refine ⟨fun _ => δ, (hmemDB z _ rv _).mpr ⟨hδ, fun t yt hprem => ?_⟩⟩
       obtain ⟨⟨htdom, htval⟩, htne, htδ⟩ := hprem
       have htδ' : |t - z (Fin.castAdd 1 i)| < δ := (abs_lt_iff_sq_lt_sq hδ).mpr htδ
@@ -349,19 +349,19 @@ theorem isSemialgebraicFunction_partialDeriv {k : ℕ} {U : Set (Fin k → R)}
       exact hr
   · -- described set ⊆ graph of `∂c/∂X_i`
     intro hzE
-    rw [hEd, Set.mem_setOf_eq] at hzE
+    rw [hEd, Set.mem_ofPred_eq] at hzE
     obtain ⟨yv, hyvGX, hyvDD⟩ := hzE
     rw [hGXm] at hyvGX
     obtain ⟨hx, hyx⟩ := hyvGX
     -- the condition says `z (natAdd k 0)` is the `i`-th partial derivative at `x`
     have hderiv : HasPartialDerivAtIn c U i (z ∘ Fin.castAdd 1) (z (Fin.natAdd k 0)) := by
       intro r hr
-      rw [hDDd, Set.mem_setOf_eq] at hyvDD
+      rw [hDDd, Set.mem_ofPred_eq] at hyvDD
       have hmem := hyvDD (fun _ => r)
       rw [Set.mem_union, Set.mem_compl_iff, hRPm] at hmem
       rcases hmem with hcon | hCm
       · exact absurd hr hcon
-      · rw [hCd, Set.mem_setOf_eq] at hCm
+      · rw [hCd, Set.mem_ofPred_eq] at hCm
         obtain ⟨dv, hdv⟩ := hCm
         rw [hmemDB z yv (fun _ => r) dv] at hdv
         obtain ⟨hδ, hall⟩ := hdv

@@ -35,7 +35,7 @@ theorem pdetColIdx_injective (hmn : m ≤ n) (i : ℕ) (hi : i ≤ n - m) :
   simp only [pdetColIdx] at h
   apply Fin.ext
   by_cases h1 : (c : ℕ) + 1 < m <;> by_cases h2 : (c' : ℕ) + 1 < m <;>
-    simp only [h1, h2, if_true, if_false] at h <;> omega
+    simp only [h1, h2, ite_true, ite_false] at h <;> omega
 
 /-- **Positive normalization (BPR Proposition 8.27).** On the top-monomial tuple
     `(X^{n-1}, …, X^{n-m+1}, X^i)` (so `e r = n-1-r` for `r < m-1`),
@@ -51,8 +51,8 @@ theorem normalization_pdet_pos (e : Fin m → ℕ) (hmn : m ≤ n)
     intro s
     simp only [pdetColIdx]
     by_cases hs : (s : ℕ) + 1 < m
-    · rw [if_pos hs, hcond s hs]
-    · rw [if_neg hs]
+    · rw [ite_eq_left hs, hcond s hs]
+    · rw [ite_eq_right hs]
       congr 1
       apply Fin.ext
       have := s.isLt
@@ -64,8 +64,8 @@ theorem normalization_pdet_pos (e : Fin m → ℕ) (hmn : m ≤ n)
     show (X ^ (e r) : K[X]).coeff (pdetColIdx n (e last) c) = _
     rw [coeff_X_pow, Matrix.one_apply]
     by_cases hrc : r = c
-    · subst hrc; rw [if_pos (he_val r).symm, if_pos rfl]
-    · rw [if_neg hrc, if_neg]
+    · subst hrc; rw [ite_eq_left (he_val r).symm, ite_eq_left rfl]
+    · rw [ite_eq_right hrc, ite_eq_right]
       intro hcon
       exact hrc ((pdetColIdx_injective hmn (e last) hi (hcon.trans (he_val r))).symm)
   -- Each minor: `1` at `k = e last`, `0` elsewhere (the last row vanishes).
@@ -73,25 +73,25 @@ theorem normalization_pdet_pos (e : Fin m → ℕ) (hmn : m ≤ n)
       pdetMinor (monoFamily (K := K) e he) (k : ℕ) = if (k : ℕ) = e last then 1 else 0 := by
     intro k
     by_cases hk : (k : ℕ) = e last
-    · rw [if_pos hk, pdetMinor, hk, hIdent, Matrix.det_one]
-    · rw [if_neg hk, pdetMinor]
+    · rw [ite_eq_left hk, pdetMinor, hk, hIdent, Matrix.det_one]
+    · rw [ite_eq_right hk, pdetMinor]
       apply Matrix.det_eq_zero_of_row_eq_zero last
       intro c
       rw [pdetMinorMat]
       show (X ^ (e last) : K[X]).coeff (pdetColIdx n (k : ℕ) c) = 0
-      rw [coeff_X_pow, if_neg]
+      rw [coeff_X_pow, ite_eq_right]
       intro hcon
       have hkle := k.isLt
       have hcc := c.isLt
       simp only [pdetColIdx] at hcon
-      by_cases hc1 : (c : ℕ) + 1 < m <;> simp only [hc1, if_true, if_false] at hcon <;> omega
+      by_cases hc1 : (c : ℕ) + 1 < m <;> simp only [hc1, ite_true, ite_false] at hcon <;> omega
   -- Assemble the sum.
   unfold pdet
   rw [Finset.sum_congr rfl (fun k _ => by rw [minorval k])]
   rw [Finset.sum_eq_single ⟨e last, by omega⟩]
   · simp
   · intro b _ hb
-    rw [if_neg, zero_smul]
+    rw [ite_eq_right, zero_smul]
     intro hbi; exact hb (Fin.ext hbi)
   · intro hcontra; exact absurd (Finset.mem_univ _) hcontra
 
@@ -151,7 +151,7 @@ theorem pdetColIdx_strictAnti (hmn : m ≤ n) (k : ℕ) (hk : k ≤ n - m) :
   have hlt : (c : ℕ) < (c' : ℕ) := hcc
   simp only [pdetColIdx]
   by_cases h1 : (c' : ℕ) + 1 < m <;> by_cases h2 : (c : ℕ) + 1 < m <;>
-    simp only [h1, h2, if_true, if_false] <;> omega
+    simp only [h1, h2, ite_true, ite_false] <;> omega
 
 /-- **Vanishing normalization (BPR Proposition 8.27).** On a strictly-decreasing
     monomial tuple that is *not* `(X^{n-1}, …, X^{n-m+1}, X^i)` (some `e r` with
@@ -172,7 +172,7 @@ theorem normalization_pdet_zero (e : Fin m → ℕ) (hmn : m ≤ n)
       obtain ⟨r₀, hr₀lt, hr₀ne⟩ := hne
       apply hr₀ne
       have hval := congrFun heq r₀
-      simp only [pdetColIdx, if_pos hr₀lt] at hval
+      simp only [pdetColIdx, ite_eq_left hr₀lt] at hval
       exact hval
     obtain ⟨r, hr⟩ := hmiss
     rw [pdetMinor]
@@ -180,7 +180,7 @@ theorem normalization_pdet_zero (e : Fin m → ℕ) (hmn : m ≤ n)
     intro c
     rw [pdetMinorMat]
     show (X ^ (e r) : K[X]).coeff (pdetColIdx n (k : ℕ) c) = 0
-    rw [coeff_X_pow, if_neg (hr c)]
+    rw [coeff_X_pow, ite_eq_right (hr c)]
   unfold pdet
   apply Finset.sum_eq_zero
   intro k _

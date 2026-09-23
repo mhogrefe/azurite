@@ -52,8 +52,8 @@ theorem mem_range_algebraMap_of_pow_card {x : K} (hx : x ^ p = x) :
   have hgp0 : gp ≠ 0 := by
     intro h0
     have hc : gp.coeff p = 1 := by
-      rw [hgp, coeff_sub, coeff_X_pow, if_pos rfl, coeff_X]
-      rw [if_neg (by omega : ¬(1 : ℕ) = p)]
+      rw [hgp, coeff_sub, coeff_X_pow, ite_eq_left rfl, coeff_X]
+      rw [ite_eq_right (by omega : ¬(1 : ℕ) = p)]
       ring
     rw [h0, coeff_zero] at hc
     exact one_ne_zero hc.symm
@@ -157,7 +157,7 @@ omit [DecidableEq K] in
 /-- Traces `x + x^p` are Frobenius-stable. -/
 theorem trace_pow_card (hcard : Fintype.card K = p ^ 2) {x : K} :
     (x + x ^ p) ^ p = x + x ^ p := by
-  haveI : CharP K p :=
+  have : CharP K p :=
     charP_of_injective_algebraMap (algebraMap (ZMod p) K).injective p
   rw [add_pow_char, ← pow_mul, ← pow_two, pow_card_sq hcard]
   ring
@@ -254,7 +254,7 @@ theorem legendreSym_disc_eq_neg_one (hcard : Fintype.card K = p ^ 2)
     {a b : ℤ} (ha : ((a : ℤ) : K) = (u : K) + (u : K) ^ p)
     (hb : ((b : ℤ) : K) = (u : K) * (u : K) ^ p) :
     legendreSym p (a ^ 2 - 4 * b) = -1 := by
-  haveI : CharP K p :=
+  have : CharP K p :=
     charP_of_injective_algebraMap (algebraMap (ZMod p) K).injective p
   have hp1 : 1 < p := (Fact.out (p := p.Prime)).one_lt
   set α : K := (u : K) with hα
@@ -410,7 +410,7 @@ theorem theorem_4_2_4 (hp2 : p ≠ 2) :
         rankApp (ab.1.val : ℤ) (ab.2.val : ℤ) p = p + 1)).card
       = (p - 1) * Nat.totient (p + 1) := by
   have hp1 : 1 < p := (Fact.out (p := p.Prime)).one_lt
-  haveI : NeZero p := ⟨by omega⟩
+  have : NeZero p := ⟨by omega⟩
   -- build a field `K` with `p²` elements
   obtain ⟨c, hc⟩ := FiniteField.exists_nonsquare (F := ZMod p)
     (by rw [ZMod.ringChar_zmod_n]; exact hp2)
@@ -425,13 +425,13 @@ theorem theorem_4_2_4 (hp2 : p ≠ 2) :
     rw [hg₀, IsRoot] at hγ
     simp only [eval_sub, eval_pow, eval_X, eval_C, sub_eq_zero] at hγ
     exact hc ⟨γ, by rw [← hγ]; ring⟩
-  haveI : Fact (Irreducible g₀) := ⟨hg₀irr⟩
+  have : Fact (Irreducible g₀) := ⟨hg₀irr⟩
   set K := AdjoinRoot g₀ with hK
-  haveI : Module.Finite (ZMod p) K :=
+  have : Module.Finite (ZMod p) K :=
     (AdjoinRoot.powerBasis hg₀irr.ne_zero).finite
-  haveI : Finite K := Module.finite_of_finite (ZMod p)
-  haveI : Fintype K := Fintype.ofFinite K
-  haveI : DecidableEq K := Classical.decEq K
+  have : Finite K := Module.finite_of_finite (ZMod p)
+  have : Fintype K := Fintype.ofFinite K
+  have : DecidableEq K := Classical.decEq K
   have hcardK : Fintype.card K = p ^ 2 := by
     rw [Module.card_eq_pow_finrank (K := ZMod p) (V := K),
       (AdjoinRoot.powerBasis hg₀irr.ne_zero).finrank,
@@ -549,7 +549,7 @@ theorem theorem_4_2_4 (hp2 : p ≠ 2) :
       rw [h0] at h
       linear_combination h
     set u : Kˣ := Units.mk0 α hα0 with hu_def
-    haveI : CharP K p :=
+    have : CharP K p :=
       charP_of_injective_algebraMap (algebraMap (ZMod p) K).injective p
     have hAfix : (algebraMap (ZMod p) K A) ^ p
         = algebraMap (ZMod p) K A := by

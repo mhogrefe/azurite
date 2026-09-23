@@ -282,7 +282,7 @@ private theorem buildTermsDesc_mem_of_coeff (i : Fin n) (coeffs : Array R)
       subst hki
       have hcv : (coeffs[k]?).getD 0 = c := by rw [hc]; rfl
       have hcne : (coeffs[k]?).getD 0 ≠ 0 := by rw [hcv]; exact hc0
-      simp only [dif_neg hcne]
+      simp only [dite_eq_right hcne]
       have htmem :
           (⟨⟨(coeffs[k]?).getD 0, hcne⟩, MonicMonomial.ofVarPow i k⟩ : Monomial n R ord) ∈
           (acc.push ⟨⟨(coeffs[k]?).getD 0, hcne⟩, MonicMonomial.ofVarPow i k⟩).toList := by
@@ -294,7 +294,7 @@ private theorem buildTermsDesc_mem_of_coeff (i : Fin n) (coeffs : Array R)
     · -- k < idx, recurse
       have hklt : k < idx := lt_of_le_of_ne hk hki
       have hidx0 : idx ≠ 0 := by omega
-      rw [if_neg hidx0]
+      rw [ite_eq_right hidx0]
       exact ih (idx - 1) _ (by omega) (by omega)
 
 end OfAzPolynomialContent
@@ -338,10 +338,10 @@ theorem AzMvPolynomial.leadingCoeff_toAzMvPolynomial {n : ℕ} (i : Fin n)
           (if hc : (p.coeffs[m]?).getD 0 = 0 then #[]
            else (#[] : Array (Monomial n AzInt ord)).push
              ⟨⟨_, hc⟩, MonicMonomial.ofVarPow i m⟩)) from rfl]
-      rw [dif_neg hlast]
+      rw [dite_eq_right hlast]
       by_cases hm0 : m = 0
-      · rw [if_pos hm0]; rfl
-      · rw [if_neg hm0, buildTermsDesc_toList_head? i p.coeffs m (m - 1) _ (by simp)]
+      · rw [ite_eq_left hm0]; rfl
+      · rw [ite_eq_right hm0, buildTermsDesc_toList_head? i p.coeffs m (m - 1) _ (by simp)]
         rfl
     -- conclude
     have hzero0 : (buildTermsDesc i p.coeffs p.coeffs.size m #[])[0]? =

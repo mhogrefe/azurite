@@ -154,7 +154,7 @@ theorem finiteFieldTest_complete (hp : Nat.Prime m.toNat) (hI : 0 < I)
     (hFdvd : (m.pow I - 1) % F = 0)
     (hnF2 : m ≤ F * F) (seed : UInt64) :
     ∃ attempts, finiteFieldTest m I F qs attempts seed = some true := by
-  haveI := Fact.mk hp
+  have := Fact.mk hp
   have hN1 : 1 ≤ m.toNat ^ I - 1 := by
     have h2 : 2 ≤ m.toNat := hp.two_le
     have h2I : 2 ≤ m.toNat ^ I := le_trans h2 (Nat.le_self_pow hI.ne' _)
@@ -190,7 +190,7 @@ theorem finiteFieldTest_complete (hp : Nat.Prime m.toNat) (hI : 0 < I)
     have hlc : μ.leadingCoeff
         = (Polynomial.monomial I (1 : ZMod m.toNat)).leadingCoeff := by
       rw [hμm.leadingCoeff, Polynomial.leadingCoeff_monomial]
-    have h := Polynomial.degree_sub_lt hd hμ0 hlc
+    have h := Polynomial.degree_sub_lt_left hd hμ0 hlc
     rwa [hdμ] at h
   have hdegcf : (ofZModPoly m (μ - Polynomial.monomial I 1)).degree
       < (I : WithBot ℕ) := by

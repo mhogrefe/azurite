@@ -164,12 +164,12 @@ theorem isSFunction_matrixInvEntry {k n ℓ : ℕ} {U : Set (Fin k → R)}
   by_cases hib : i = b
   · have heq : (fun x => ((Matrix.of fun i' j' => E i' j' x).updateRow b (Pi.single a 1)) i j)
         = fun _ : Fin k → R => (Pi.single a (1 : R) : Fin n → R) j := by
-      funext x; rw [Matrix.updateRow_apply, if_pos hib]
+      funext x; rw [Matrix.updateRow_apply, ite_eq_left hib]
     rw [heq]
     exact isSFunction_const hU _ ℓ
   · have heq : (fun x => ((Matrix.of fun i' j' => E i' j' x).updateRow b (Pi.single a 1)) i j)
         = E i j := by
-      funext x; rw [Matrix.updateRow_apply, if_neg hib, Matrix.of_apply]
+      funext x; rw [Matrix.updateRow_apply, ite_eq_right hib, Matrix.of_apply]
     rw [heq]
     exact hE i j
 

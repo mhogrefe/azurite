@@ -96,7 +96,7 @@ theorem topForm_ne_zero {P : MvPolynomial (Fin (n + 1)) K} (hP : P ≠ 0) : topF
     rw [← hα0deg, hd, totalDegree]
   -- The top form is the image of `H` under dehomogenization.
   have hsum : topForm P = ∑ α ∈ H.support, monomial (α.comapDomain Fin.succ
-      (Fin.succ_injective n).injOn) (coeff α H) := by
+      (Fin.succ_injective n).injOn) (H.coeff α) := by
     rw [topForm, ← hd, ← hH]
     conv_lhs => rw [H.as_sum, map_sum]
     exact Finset.sum_congr rfl (fun α _ => dehom_monomial _ _)
@@ -109,12 +109,12 @@ theorem topForm_ne_zero {P : MvPolynomial (Fin (n + 1)) K} (hP : P ≠ 0) : topF
   -- The tail map is injective on `H.support`, so the coefficient at `tail α₀` is `coeff α₀ H ≠ 0`.
   set β := α₀.comapDomain Fin.succ (Fin.succ_injective n).injOn with hβ
   refine fun hzero => (mem_support_iff.mp hα0H) ?_
-  have hco : coeff β (topForm P) = coeff α₀ H := by
+  have hco : (topForm P).coeff β = H.coeff α₀ := by
     rw [hsum, MvPolynomial.coeff_sum]
     rw [Finset.sum_eq_single α₀]
-    · rw [coeff_monomial, if_pos rfl]
+    · rw [coeff_monomial, ite_eq_left rfl]
     · intro α hα hne
-      rw [coeff_monomial, if_neg]
+      rw [coeff_monomial, ite_eq_right]
       intro hcontra
       apply hne
       -- `tail α = tail α₀ = β` and both have degree `d` ⇒ `α 0 = α₀ 0`, hence `α = α₀`.
@@ -142,7 +142,7 @@ theorem topForm_ne_zero {P : MvPolynomial (Fin (n + 1)) K} (hP : P ≠ 0) : topF
         rwa [Finsupp.comapDomain_apply, Finsupp.comapDomain_apply] at this
     · intro h
       exact absurd hα0H h
-  rw [← hco, hzero, coeff_zero]
+  rw [← hco, hzero, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
 
 /-- If all the images `g j` have total degree at most `1`, then `aeval g` does not increase
 total degree. -/
@@ -218,7 +218,7 @@ private theorem ev0_homogeneous (a : Fin n → K) {H : MvPolynomial (Fin (n + 1)
   conv_rhs => rw [H.as_sum, map_sum, map_sum, Finset.sum_mul]
   apply Finset.sum_congr rfl
   intro α hα
-  refine ev0_monomial a α (coeff α H) ?_
+  refine ev0_monomial a α (H.coeff α) ?_
   by_contra hne
   exact (mem_support_iff.mp hα) (hH.coeff_eq_zero (by rwa [Finsupp.degree_apply]))
 
@@ -262,11 +262,11 @@ theorem isQuasiMonic_finSuccEquiv_shearHom (a : Fin n → K)
     rw [map_sum, Polynomial.finsetSum_coeff]
     rw [Finset.sum_eq_single d]
     · rw [ev0_homogeneous a (homogeneousComponent_isHomogeneous d P)]
-      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
       rw [hc, eval_topForm]
     · intro i hi hne
       rw [ev0_homogeneous a (homogeneousComponent_isHomogeneous i P)]
-      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_neg (Ne.symm hne), mul_zero]
+      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_right (Ne.symm hne), mul_zero]
     · intro hi
       rw [Finset.mem_range] at hi
       exact absurd (Nat.lt_succ_self d) hi
@@ -275,10 +275,10 @@ theorem isQuasiMonic_finSuccEquiv_shearHom (a : Fin n → K)
     apply MvPolynomial.ext
     intro m
     rcases eq_or_ne m 0 with rfl | hm
-    · rw [MvPolynomial.coeff_C, if_pos rfl]
+    · rw [MvPolynomial.coeff_C, ite_eq_left rfl]
       rw [← hbeta, halpha, Polynomial.coeff_map]
       rw [MvPolynomial.eval_zero, MvPolynomial.constantCoeff_eq]
-    · rw [MvPolynomial.coeff_C, if_neg (Ne.symm hm)]
+    · rw [MvPolynomial.coeff_C, ite_eq_right (Ne.symm hm)]
       rw [MvPolynomial.finSuccEquiv_coeff_coeff]
       by_contra hne
       have hmem : (Finsupp.cons d m) ∈ (shearHom a P).support := mem_support_iff.mpr hne

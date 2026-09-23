@@ -53,7 +53,7 @@ theorem AzInt.toInt_shiftRightRound (z : AzInt) (mode : RoundingMode) (sh : Nat)
   · -- z.sign = true: x = y, mode' = mode.
     have hxy : ((z.toInt : ℝ) / ((2 : ℝ) ^ sh)) = y := by
       rw [hy_def]; congr 1
-      unfold AzInt.toInt; rw [if_pos hs]; push_cast; rfl
+      unfold AzInt.toInt; rw [ite_eq_left hs]; push_cast; rfl
     rw [hxy, hs]
     show (((mkNorm true (z.abs.shiftRightRound mode sh).1).toInt : ℝ) : EReal) =
          (round intSet mode y).val
@@ -65,7 +65,7 @@ theorem AzInt.toInt_shiftRightRound (z : AzInt) (mode : RoundingMode) (sh : Nat)
     have hxy : ((z.toInt : ℝ) / ((2 : ℝ) ^ sh)) = -y := by
       rw [hy_def]
       have hzi : (z.toInt : ℝ) = -(z.abs.toNat : ℝ) := by
-        unfold AzInt.toInt; rw [if_neg hs]; push_cast; rfl
+        unfold AzInt.toInt; rw [ite_eq_right hs]; push_cast; rfl
       rw [hzi, neg_div]
     rw [hxy, hs_false]
     show (((mkNorm false (z.abs.shiftRightRound (-mode) sh).1).toInt : ℝ) : EReal) =
@@ -105,19 +105,19 @@ theorem AzInt.snd_shiftRightRound (z : AzInt) (mode : RoundingMode) (sh : Nat) :
   simp only []
   by_cases hs : z.sign = true
   · rw [hs]
-    simp only [if_true]
+    simp only [ite_true]
     have h_az := AzNat.snd_shiftRightRound z.abs mode sh
     rw [h_az]
     have h_int : (((mkNorm true (z.abs.shiftRightRound mode sh).1).toInt : ℤ) : ℝ) =
         (((z.abs.shiftRightRound mode sh).1.toNat : ℕ) : ℝ) := by
       rw [AzInt.toInt_mkNorm_true]; push_cast; rfl
     have h_z : (z.toInt : ℝ) = (z.abs.toNat : ℝ) := by
-      unfold AzInt.toInt; rw [if_pos hs]; push_cast; rfl
+      unfold AzInt.toInt; rw [ite_eq_left hs]; push_cast; rfl
     rw [h_int, h_z]
   · have hs_false : z.sign = false := by cases h : z.sign <;> simp_all
     rw [hs_false]
-    rw [if_neg (by decide : ¬ ((false : Bool) = true)),
-        if_neg (by decide : ¬ ((false : Bool) = true))]
+    rw [ite_eq_right (by decide : ¬ ((false : Bool) = true)),
+        ite_eq_right (by decide : ¬ ((false : Bool) = true))]
     have h_az := AzNat.snd_shiftRightRound z.abs (-mode) sh
     rw [h_az]
     have h_int : (((mkNorm false (z.abs.shiftRightRound (-mode) sh).1).toInt : ℤ) : ℝ) =
@@ -129,7 +129,7 @@ theorem AzInt.snd_shiftRightRound (z : AzInt) (mode : RoundingMode) (sh : Nat) :
         rw [h0]; push_cast; simp
       · rw [AzInt.toInt_mkNorm_false _ ha]; push_cast; rfl
     have h_z : (z.toInt : ℝ) = -(z.abs.toNat : ℝ) := by
-      unfold AzInt.toInt; rw [if_neg (by rw [hs_false]; simp)]; push_cast; rfl
+      unfold AzInt.toInt; rw [ite_eq_right (by rw [hs_false]; simp)]; push_cast; rfl
     rw [h_int, h_z, neg_div, compare_neg_neg_real]
 
 end Azurite

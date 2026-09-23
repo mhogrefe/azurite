@@ -56,7 +56,7 @@ def expand (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
     have h' := Option.some.inj h
     rw [Array.getElem_ofFn] at h'
     simp only [Nat.add_sub_cancel] at h'
-    rw [if_pos (dvd_mul_left n _), Nat.mul_div_cancel _ (Nat.pos_of_ne_zero hn)] at h'
+    rw [ite_eq_left (dvd_mul_left n _), Nat.mul_div_cancel _ (Nat.pos_of_ne_zero hn)] at h'
     exact coeff_last_ne_zero p hp h'⟩
 
 @[simp] theorem zero_expand (n : ℕ) : (0 : AzPolynomial R).expand n = 0 := rfl
@@ -65,20 +65,20 @@ def expand (p : AzPolynomial R) (n : ℕ) : AzPolynomial R :=
 theorem expand_zero (p : AzPolynomial R) (hp : p ≠ 0) : p.expand 0 = C (p.eval 1) := by
   have hsz : p.coeffs.size ≠ 0 :=
     fun h => hp (AzPolynomial.ext (by rw [Array.size_eq_zero_iff.mp h]; rfl))
-  rw [expand, dif_neg hsz, dif_pos rfl]
+  rw [expand, dite_eq_right hsz, dite_eq_left rfl]
 
 /-- The coefficient formula, matching Mathlib's `Polynomial.coeff_expand`:
 `(expand p n).coeff j` is `p.coeff (j / n)` when `n ∣ j`, and `0` otherwise. -/
 theorem coeff_expand (p : AzPolynomial R) {n : ℕ} (hn : 0 < n) (j : ℕ) :
     (p.expand n).coeff j = if n ∣ j then p.coeff (j / n) else 0 := by
   rcases Nat.eq_zero_or_pos p.coeffs.size with hsz | hsz
-  · rw [expand, dif_pos hsz]
+  · rw [expand, dite_eq_left hsz]
     have hpc : ∀ m, p.coeff m = 0 := fun m => by
       show (p.coeffs[m]?).getD 0 = 0
       rw [Array.getElem?_eq_none (by omega)]; rfl
     rw [show (0 : AzPolynomial R).coeff j = 0 from rfl, hpc]
     split <;> rfl
-  · rw [expand, dif_neg (by omega), dif_neg (by omega)]
+  · rw [expand, dite_eq_right (by omega), dite_eq_right (by omega)]
     show ((Array.ofFn _)[j]?).getD 0 = _
     by_cases hj : j < (p.coeffs.size - 1) * n + 1
     · rw [Array.getElem?_eq_getElem (by rw [Array.size_ofFn]; omega), Array.getElem_ofFn]

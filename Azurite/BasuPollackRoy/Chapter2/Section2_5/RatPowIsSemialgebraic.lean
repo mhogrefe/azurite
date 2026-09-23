@@ -64,7 +64,7 @@ theorem ratPow_isSemialgebraicFunction (q : ℚ) (_hq : 0 ≤ q) :
         = {z | MvPolynomial.eval z (X 0) ≥ 0} ∩ ({z | MvPolynomial.eval z (X 1) ≥ 0} ∩
             {z | MvPolynomial.eval z (X 1 ^ q.den - X 0 ^ q.num.toNat) = 0}) := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
+      simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
         MvPolynomial.eval_pow, sub_eq_zero, ge_iff_le]
     rw [heq]
     exact (IsSemialgebraicSet.geZero _).inter

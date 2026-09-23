@@ -167,7 +167,7 @@ theorem signedSubresultant_snd_toList_map (f : D →+* E) (hf : Function.Injecti
       rcases hc with h | h
       · exact Or.inl ((map_eq_zero_iff_of_injective f hf Q).mpr h)
       · exact Or.inr (by rw [natDegree_map_of_injective f hf, natDegree_map_of_injective f hf]; exact h)
-    rw [signedSubresultant, if_pos hc', signedSubresultant, if_pos hc]; simp
+    rw [signedSubresultant, ite_eq_left hc', signedSubresultant, ite_eq_left hc]; simp
   · obtain ⟨hQ, hle⟩ := not_or.mp hc
     have hlt : Q.natDegree < P.natDegree := not_le.mp hle
     have hP : P ≠ 0 := fun h => by rw [h, show (0 : AzPolynomial D).natDegree = 0 from rfl] at hlt; omega

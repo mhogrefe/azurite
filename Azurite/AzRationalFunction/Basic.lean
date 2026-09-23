@@ -149,7 +149,7 @@ theorem den_ne_zero (r : AzRationalFunction) : r.den ≠ 0 := by
 
 /-- `ofNumDen` with a zero denominator is the zero function. -/
 theorem ofNumDen_den_zero (n : AzPolynomial AzInt) : ofNumDen n 0 = 0 := by
-  rw [ofNumDen, if_pos (Or.inr rfl)]
+  rw [ofNumDen, ite_eq_left (Or.inr rfl)]
 
 end AzRationalFunction
 

@@ -56,12 +56,12 @@ theorem theorem_4_48 (k : ℕ) (M : Matrix (Fin p) (Fin p) R) (hM : M.IsSymm) :
   refine Finset.sum_congr rfl ?_
   intro I hI
   by_cases h : I.card = p - k
-  · rw [dif_pos h, dif_pos h]
+  · rw [dite_eq_left h, dite_eq_left h]
     have htr : ((AkFin k M)ᵀ.submatrix (I.orderEmbOfFin h) id).det =
         ((AkFin k M).submatrix id (I.orderEmbOfFin h)).det := by
       rw [← Matrix.transpose_submatrix, Matrix.det_transpose]
     rw [htr, sq]
-  · rw [dif_neg h, dif_neg h]
+  · rw [dite_eq_right h, dite_eq_right h]
 
 end
 
@@ -201,7 +201,7 @@ theorem sDiscOfMatrix_eq_sum_pow_two_mul_sq (k : ℕ) (M : Matrix (Fin p) (Fin p
     proposition_4_10 (RAkFin k M * Matrix.diagonal wtF) ((RAkFin k M)ᵀ)]
   refine Finset.sum_congr rfl (fun J hJ => ?_)
   by_cases h : J.card = p - k
-  · rw [dif_pos h, dif_pos h]
+  · rw [dite_eq_left h, dite_eq_left h]
     set f := J.orderEmbOfFin h with hf
     -- Transpose factor equals the minor of `RAkFin`.
     have htr : ((RAkFin k M)ᵀ.submatrix (⇑f) id).det
@@ -231,17 +231,17 @@ theorem sDiscOfMatrix_eq_sum_pow_two_mul_sq (k : ℕ) (M : Matrix (Fin p) (Fin p
       rw [Finset.prod_congr rfl (g := fun _ => (1 : D)) (fun c hc => ?_)]
       rotate_left
       · simp only [Finset.mem_filter] at hc
-        simp only [wtF, if_pos hc.2]
+        simp only [wtF, ite_eq_left hc.2]
       rw [Finset.prod_const_one, one_mul]
       -- Off-diagonal part: every factor is `2`; the index set matches `offDiagCard`.
       rw [Finset.prod_congr rfl (g := fun _ => (2 : D)) (fun c hc => ?_)]
       rotate_left
       · simp only [Finset.mem_filter] at hc
-        simp only [wtF, if_neg hc.2]
+        simp only [wtF, ite_eq_right hc.2]
       rw [Finset.prod_const]
     rw [hprod, sq]
     ring
-  · rw [dif_neg h, dif_neg h]
+  · rw [dite_eq_right h, dite_eq_right h]
 
 /-- **Consequence.** Over any commutative ring `D`, the `k`-th subdiscriminant of the
 characteristic polynomial of a symmetric matrix is a sum of products of powers of `2` by
@@ -264,7 +264,7 @@ theorem sDiscOfMatrix_isSumOfPowTwoMulSq (k : ℕ) (M : Matrix (Fin p) (Fin p) D
   rw [← Finset.sum_attach S (fun J => if h : J.card = p - k then
     2 ^ offDiagCard J * ((RAkFin k M).submatrix id (J.orderEmbOfFin h)).det ^ 2 else 0)]
   refine Finset.sum_congr rfl (fun x _ => ?_)
-  rw [dif_pos (Finset.mem_powersetCard.mp x.2).2]
+  rw [dite_eq_left (Finset.mem_powersetCard.mp x.2).2]
 
 /-- **Example (2 × 2).** For a symmetric `2 × 2` matrix `!![a, b; b, c]`, the
 subdiscriminant `sDisc₀` equals the sum of the squares of the `2 × 2` minors of

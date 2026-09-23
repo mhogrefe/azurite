@@ -72,10 +72,10 @@ theorem reduction_standard_repr (m : MonomialOrder (Fin k))
     by_cases hle : m.degree G₀ ≤ α
     · rw [Red_of_le m b G₀ hle]
       set β := α - m.degree G₀ with hβ
-      set d := coeff α b / m.leadingCoeff G₀ with hd
+      set d := b.coeff α / m.leadingCoeff G₀ with hd
       set T := (monomial β d : MvPolynomial (Fin k) K) * G₀ with hT
-      -- coeff α b ≠ 0 since α ∈ b.support
-      have hcoeff : coeff α b ≠ 0 := by
+      -- b.coeff α ≠ 0 since α ∈ b.support
+      have hcoeff : b.coeff α ≠ 0 := by
         rwa [← MvPolynomial.mem_support_iff]
       -- degree bound for T
       have hdegT : m.toSyn (m.degree T) ≤ m.toSyn (m.degree P) := by
@@ -90,7 +90,7 @@ theorem reduction_standard_repr (m : MonomialOrder (Fin k))
           have hdeg_mul : m.degree T = β + m.degree G₀ := by
             rw [hT, MonomialOrder.degree_mul hmon0 hG0]
             congr 1
-            rw [MonomialOrder.degree_monomial, if_neg hd0]
+            rw [MonomialOrder.degree_monomial, ite_eq_right hd0]
           have hβadd : β + m.degree G₀ = α := by
             rw [hβ, tsub_add_cancel_of_le hle]
           rw [hdeg_mul, hβadd]
@@ -112,17 +112,17 @@ theorem reduction_standard_repr (m : MonomialOrder (Fin k))
           · subst hGG₀; simp [hT]
           · simp [hGG₀]
         simp only [this, Finset.sum_add_distrib]
-        rw [← hrepr, Finset.sum_ite_eq' 𝒢 G₀ (fun _ => T), if_pos hG₀]
+        rw [← hrepr, Finset.sum_ite_eq' 𝒢 G₀ (fun _ => T), ite_eq_left hG₀]
       · -- conjunct 3: degree bound
         intro G hG
         rw [add_mul]
         by_cases hGG₀ : G = G₀
         · subst hGG₀
-          rw [if_pos rfl]
+          rw [ite_eq_left rfl]
           refine le_trans MonomialOrder.degree_add_le ?_
           rw [← hT]
           exact sup_le (hbound G hG) hdegT
-        · rw [if_neg hGG₀, zero_mul, add_zero]
+        · rw [ite_eq_right hGG₀, zero_mul, add_zero]
           exact hbound G hG
     · rw [Red_of_not_le m b G₀ hle]
       exact ⟨hdeg_b, A, hrepr, hbound⟩

@@ -115,22 +115,22 @@ theorem isSemialgebraicSet_closure {k : ℕ} {S : Set (Fin k → R)}
       (0 < rv 0 ∧ ∀ y ∈ S, (rv 0) ^ 2 ≤ euclideanNormSq (y - x)) := by
     intro x rv
     have hSm : ∀ y : Fin k → R, (Fin.append (Fin.append x rv) y ∈ Slift) ↔ y ∈ S := by
-      intro y; rw [hSlift_def, Set.mem_setOf_eq, append_comp_natAdd]
+      intro y; rw [hSlift_def, Set.mem_ofPred_eq, append_comp_natAdd]
     have hCm : ∀ y : Fin k → R,
         (Fin.append (Fin.append x rv) y ∈ Close) ↔ euclideanNormSq (y - x) < (rv 0) ^ 2 := by
       intro y
-      rw [hClose_def, Set.mem_setOf_eq, eval_distPoly]
+      rw [hClose_def, Set.mem_ofPred_eq, eval_distPoly]
       simp only [Fin.append_left, Fin.append_right]
       rw [show (∑ i, (y i - x i) ^ 2) = euclideanNormSq (y - x) from by
             simp only [euclideanNormSq, Pi.sub_apply], sub_lt_zero]
-    rw [hFar_def, Set.mem_inter_iff, hPos_def, Set.mem_setOf_eq, eval_X, Fin.append_right,
-      Set.mem_compl_iff, hEC_def, Set.mem_setOf_eq, not_exists]
+    rw [hFar_def, Set.mem_inter_iff, hPos_def, Set.mem_ofPred_eq, eval_X, Fin.append_right,
+      Set.mem_compl_iff, hEC_def, Set.mem_ofPred_eq, not_exists]
     refine and_congr_right (fun _ => forall_congr' (fun y => ?_))
     rw [Set.mem_inter_iff, hSm y, hCm y, not_and, not_lt]
   -- closure S = (NotClosure)ᶜ
   have hEq : closure S = NotClosureᶜ := by
     ext x
-    rw [Set.mem_compl_iff, hNC_def, Set.mem_setOf_eq, mem_closure_iff_ball, not_exists]
+    rw [Set.mem_compl_iff, hNC_def, Set.mem_ofPred_eq, mem_closure_iff_ball, not_exists]
     constructor
     · intro hcl rv hF
       rw [hmem] at hF

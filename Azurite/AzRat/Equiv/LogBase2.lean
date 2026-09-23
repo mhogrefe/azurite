@@ -55,15 +55,15 @@ private lemma normalizedCompare_eq_realFrac (x y : AzNat) (hx : 0 < x.toNat) (hy
       else Ordering.gt := rfl
   rw [ordNat]
   rcases lt_trichotomy (x.toNat * 2 ^ y.size) (y.toNat * 2 ^ x.size) with h | h | h
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have hf : (x.toNat : ℝ) / 2 ^ x.size < (y.toNat : ℝ) / 2 ^ y.size := by
       rw [div_lt_div_iff₀ hsx hsy]; exact_mod_cast h
     exact (compare_lt_iff_lt.mpr hf).symm
-  · rw [if_neg (by omega), if_pos h]
+  · rw [ite_eq_right (by omega), ite_eq_left h]
     have hf : (x.toNat : ℝ) / 2 ^ x.size = (y.toNat : ℝ) / 2 ^ y.size := by
       rw [div_eq_div_iff hsx.ne' hsy.ne']; exact_mod_cast h
     exact (compare_eq_iff_eq.mpr hf).symm
-  · rw [if_neg (by omega), if_neg (by omega)]
+  · rw [ite_eq_right (by omega), ite_eq_right (by omega)]
     have hf : (y.toNat : ℝ) / 2 ^ y.size < (x.toNat : ℝ) / 2 ^ x.size := by
       rw [div_lt_div_iff₀ hsy hsx]; exact_mod_cast h
     exact (compare_gt_iff_gt.mpr hf).symm

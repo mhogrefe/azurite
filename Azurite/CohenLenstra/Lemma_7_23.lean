@@ -85,7 +85,7 @@ theorem lemma_7_23 {n r : ℕ} [hrF : Fact r.Prime] {a : ℤ}
     ring
   have hM2 : ((a : ZMod r)) ^ ((n - 1) / 2) ≠ 1 := by
     rw [hAhalf]
-    haveI : Fact (2 < r) := ⟨by omega⟩
+    have : Fact (2 < r) := ⟨by omega⟩
     exact ZMod.neg_one_ne_one
   -- the order of `a` mod `r` and its 2-part
   have hω0 : orderOf ((a : ZMod r)) ≠ 0 := by
@@ -151,7 +151,7 @@ theorem lemma_7_23 {n r : ℕ} [hrF : Fact r.Prime] {a : ℤ}
         have h2 := congrArg (fun f => f ℓ) hfr
         have h4 : (2 : ℕ).factorization ℓ = 0 := by
           rw [Nat.Prime.factorization Nat.prime_two,
-            Finsupp.single_apply, if_neg (fun h => hℓ h.symm)]
+            Finsupp.single_apply, ite_eq_right (fun h => hℓ h.symm)]
         simp only [Finsupp.coe_add, Pi.add_apply, h4] at h2
         omega
   constructor
@@ -192,7 +192,7 @@ theorem proposition_7_24 {n : ℕ} (hn1 : 1 < n) (hmod : n % 4 = 1)
   have hodd : Odd n := by
     rw [Nat.odd_iff]
     omega
-  haveI : Fact r.Prime := ⟨hr⟩
+  have : Fact r.Prime := ⟨hr⟩
   have h723 := (lemma_7_23 hodd ha hrn).1
   have hn10 : n - 1 ≠ 0 := by omega
   have hv2 : 2 ≤ (n - 1).factorization 2 := by
@@ -236,7 +236,7 @@ theorem proposition_7_25 {n : ℕ} (hmod : n % 8 = 3)
     (ha : Int.ModEq (n : ℤ) ((2 : ℤ) ^ ((n - 1) / 2)) (-1))
     {r : ℕ} (hr : r.Prime) (hrn : r ∣ n) :
     ∀ D, ∃ l, r ≡ n ^ l [MOD 2 ^ D] := by
-  haveI : Fact r.Prime := ⟨hr⟩
+  have : Fact r.Prime := ⟨hr⟩
   have hodd : Odd n := by
     rw [Nat.odd_iff]
     omega

@@ -63,7 +63,7 @@ theorem symm_exists_real_eigenvalue [Nonempty (Fin n)]
     (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
     ∃ μ : R, (Matrix.scalar (Fin n) μ - M).det = 0 := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   set φ : R →+* Ri R := algebraMap R (Ri R) with hφ
   set M' : Matrix (Fin n) (Fin n) (Ri R) := M.map φ with hM'
   -- entries of `M'` are real (fixed by conj)
@@ -247,7 +247,7 @@ private theorem exists_orthonormal_first_col {m : ℕ} [NeZero m] (u : Fin m →
     have hspan0 := hw_span 0
     have hempty : {j : Fin m | j < 0} = ∅ := by
       ext j
-      simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_lt]
+      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false, not_lt]
       exact Fin.zero_le j
     rw [hempty, Set.image_empty, Submodule.span_empty, Submodule.mem_bot,
       sub_eq_zero] at hspan0
@@ -284,7 +284,7 @@ private theorem exists_orthonormal_first_col {m : ℕ} [NeZero m] (u : Fin m →
     by_cases hij : i = j
     · subst hij
       have hww : w i ⬝ᵥ w i = (s i) ^ 2 := (hs_sq i).symm
-      rw [hww, if_pos rfl]
+      rw [hww, ite_eq_left rfl]
       field_simp
       exact div_self (hs_ne i)
     · have horth : w i ⬝ᵥ w j = 0 := hw_orth i j hij
@@ -466,18 +466,18 @@ theorem theorem_4_43 (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
       refine Fin.cases ?_ (fun i' => ?_) i
       · refine Fin.cases ?_ (fun j' => ?_) j
         · -- i = 0, j = 0
-          rw [hC00, hBC0, if_pos rfl, Fin.cons_zero]
+          rw [hC00, hBC0, ite_eq_left rfl, Fin.cons_zero]
           have : ∀ x : Fin k, C x.succ 0 * (B * C) x.succ 0 = 0 :=
             fun x => by rw [hCs0]; ring
           simp only [this, Finset.sum_const_zero, add_zero, one_mul]
         · -- i = 0, j = succ j'
-          rw [hC00, hBC0s, if_neg (Fin.succ_ne_zero j').symm]
+          rw [hC00, hBC0s, ite_eq_right (Fin.succ_ne_zero j').symm]
           have : ∀ x : Fin k, C x.succ 0 * (B * C) x.succ (Fin.succ j') = 0 :=
             fun x => by rw [hCs0]; ring
           simp only [this, Finset.sum_const_zero, mul_zero, add_zero]
       · refine Fin.cases ?_ (fun j' => ?_) j
         · -- i = succ i', j = 0
-          rw [hC0s, if_neg (Fin.succ_ne_zero i')]
+          rw [hC0s, ite_eq_right (Fin.succ_ne_zero i')]
           have : ∀ x : Fin k, C x.succ (Fin.succ i') * (B * C) x.succ 0 = 0 :=
             fun x => by rw [hBCs0]; ring
           simp only [this, Finset.sum_const_zero, zero_mul, add_zero]
@@ -497,8 +497,8 @@ theorem theorem_4_43 (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
             apply Finset.sum_congr rfl; intro x _; ring
           rw [hval, hD', Matrix.diagonal_apply]
           by_cases hij : i' = j'
-          · subst hij; rw [if_pos rfl, if_pos rfl, Fin.cons_succ]
-          · rw [if_neg hij, if_neg (fun h => hij (Fin.succ_injective _ h))]
+          · subst hij; rw [ite_eq_left rfl, ite_eq_left rfl, Fin.cons_succ]
+          · rw [ite_eq_right hij, ite_eq_right (fun h => hij (Fin.succ_injective _ h))]
 
 /-- **Theorem 4.43, eigenbasis form.** The columns of the orthogonal matrix `A` from
 `theorem_4_43` form an *orthonormal basis of eigenvectors* of `M`: a linearly independent
@@ -528,7 +528,7 @@ theorem theorem_4_43_orthonormal_eigenbasis (M : Matrix (Fin n) (Fin n) R) (hM :
     have hstep : (∑ j, (c j • a j) ⬝ᵥ a i) = ∑ j, (if j = i then c j else 0) :=
       Finset.sum_congr rfl fun j _ => by
         rw [smul_dotProduct, smul_eq_mul, hortho]; split <;> simp
-    rw [hstep, Finset.sum_ite_eq', if_pos (Finset.mem_univ i)] at hdot
+    rw [hstep, Finset.sum_ite_eq', ite_eq_left (Finset.mem_univ i)] at hdot
     exact hdot
   · -- Eigenvectors: from `A Aᵀ = 1`, `M A = A · diagonal D`, so column `j` is `D j • a j`.
     have hAAt : A * Aᵀ = 1 := mul_eq_one_comm.mpr hAo

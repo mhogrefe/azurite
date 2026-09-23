@@ -64,18 +64,18 @@ private lemma ordCompare_lex (hiA loA hiB loB m : ℕ) (hloA : loA < m) (hloB : 
   rcases lt_trichotomy hiA hiB with h | h | h
   · have hbm : hiA * m + m ≤ hiB * m := by
       have := Nat.mul_le_mul_right m (show hiA + 1 ≤ hiB by omega); rwa [Nat.add_one_mul] at this
-    rw [ordNat hiA hiB, if_pos h, ordNat (hiA * m + loA), if_pos (by omega)]
+    rw [ordNat hiA hiB, ite_eq_left h, ordNat (hiA * m + loA), ite_eq_left (by omega)]
   · subst h
-    rw [ordNat hiA hiA, if_neg (lt_irrefl _), if_pos rfl, ordNat (hiA * m + loA), ordNat loA loB]
+    rw [ordNat hiA hiA, ite_eq_right (lt_irrefl _), ite_eq_left rfl, ordNat (hiA * m + loA), ordNat loA loB]
     by_cases h2 : loA < loB
-    · rw [if_pos (by omega), if_pos h2]
+    · rw [ite_eq_left (by omega), ite_eq_left h2]
     · by_cases h3 : loA = loB
-      · subst h3; rw [if_neg (lt_irrefl _), if_pos rfl, if_neg (lt_irrefl _), if_pos rfl]
-      · rw [if_neg (by omega), if_neg (by omega), if_neg h2, if_neg h3]
+      · subst h3; rw [ite_eq_right (lt_irrefl _), ite_eq_left rfl, ite_eq_right (lt_irrefl _), ite_eq_left rfl]
+      · rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right h2, ite_eq_right h3]
   · have hbm : hiB * m + m ≤ hiA * m := by
       have := Nat.mul_le_mul_right m (show hiB + 1 ≤ hiA by omega); rwa [Nat.add_one_mul] at this
-    rw [ordNat hiA hiB, if_neg (by omega), if_neg (by omega), ordNat (hiA * m + loA),
-      if_neg (by omega), if_neg (by omega)]
+    rw [ordNat hiA hiB, ite_eq_right (by omega), ite_eq_right (by omega), ordNat (hiA * m + loA),
+      ite_eq_right (by omega), ite_eq_right (by omega)]
 
 /-- Radix-`2^64` step: comparing the low `(k+1)` limbs of `A` and `B` reduces to comparing limb `k`,
 breaking ties with the low `k` limbs. -/
@@ -116,10 +116,10 @@ private lemma compare_mul_pos_right (a b c : ℕ) (hc : 0 < c) :
     Ord.compare a b = Ord.compare (a * c) (b * c) := by
   rw [ordNat a b, ordNat (a * c) (b * c)]
   rcases lt_trichotomy a b with h | h | h
-  · rw [if_pos h, if_pos ((Nat.mul_lt_mul_right hc).mpr h)]
-  · subst h; rw [if_neg (lt_irrefl _), if_pos rfl, if_neg (lt_irrefl _), if_pos rfl]
+  · rw [ite_eq_left h, ite_eq_left ((Nat.mul_lt_mul_right hc).mpr h)]
+  · subst h; rw [ite_eq_right (lt_irrefl _), ite_eq_left rfl, ite_eq_right (lt_irrefl _), ite_eq_left rfl]
   · have hba : b * c < a * c := (Nat.mul_lt_mul_right hc).mpr h
-    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+    rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega)]
 
 /-- A nonzero `AzNat` is bounded by `2 ^ size`. -/
 private lemma toNat_lt_two_pow_size (x : AzNat) : x.toNat < 2 ^ x.size := by
@@ -135,7 +135,7 @@ theorem normalizedCompare_eq_cross (x y : AzNat) (hx : 0 < x.toNat) (hy : 0 < y.
   have hSyL : y.size ≤ 64 * y.limbs.size := by rw [← size_toNat]; exact Nat.size_le.mpr (toNat_lt_pow y)
   have hSxL : x.size ≤ 64 * x.limbs.size := by rw [← size_toNat]; exact Nat.size_le.mpr (toNat_lt_pow x)
   unfold normalizedCompare
-  rw [if_neg hxne, if_neg hyne]
+  rw [ite_eq_right hxne, ite_eq_right hyne]
   simp only []
   split
   · -- x.size = y.size : a direct comparison

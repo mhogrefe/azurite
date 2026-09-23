@@ -43,11 +43,11 @@ theorem conjEqZero_realization [DecidableEq σ]
   | P :: Q :: Ps => by
     ext y
     simp only [conjEqZero, realization, Set.mem_inter_iff,
-      Set.mem_setOf_eq, List.mem_cons]
+      Set.mem_ofPred_eq, List.mem_cons]
     rw [show (conjEqZero (Q :: Ps)).realization (C := C) =
       { y | ∀ P ∈ (Q :: Ps), MvPolynomial.aeval y P = 0}
       from conjEqZero_realization (Q :: Ps)]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨hP, hrest⟩ R hR
       rcases hR with rfl | hR
@@ -75,7 +75,7 @@ theorem qf_realizable_isConstructible
     · -- P ≠ 0 case: complement of algebraic set
       have : (atom a).realization (C := C) =
           ({y | MvPolynomial.eval y a.poly = 0} : Set (Fin k → C))ᶜ := by
-        ext y; simp [realization, h, Set.mem_compl_iff, Set.mem_setOf_eq]
+        ext y; simp [realization, h, Set.mem_compl_iff, Set.mem_ofPred_eq]
       rw [this]
       exact .compl (.algebraic ⟨{a.poly}, by
         ext y; simp [Zer]⟩)

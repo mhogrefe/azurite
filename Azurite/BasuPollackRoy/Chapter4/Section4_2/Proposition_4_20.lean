@@ -81,7 +81,7 @@ theorem monicMulJacobian_eq_sylvester (P Q : R[X]) (p q : ℕ)
   rw [Matrix.of_apply, Matrix.of_apply]
   by_cases hi : i.val < p
   · -- Q-shift case.
-    rw [if_pos hi]
+    rw [ite_eq_left hi]
     rw [Polynomial.coeff_X_pow_mul']
     have h_natAdd : i = Fin.castAdd q ⟨i.val, hi⟩ := by
       apply Fin.ext; rfl
@@ -97,7 +97,7 @@ theorem monicMulJacobian_eq_sylvester (P Q : R[X]) (p q : ℕ)
     · rfl
   · -- P-shift case.
     push Not at hi
-    rw [if_neg (not_lt.mpr hi)]
+    rw [ite_eq_right (not_lt.mpr hi)]
     rw [Polynomial.coeff_X_pow_mul']
     have hi_sub : i.val - p < q := by
       have := i.isLt; omega

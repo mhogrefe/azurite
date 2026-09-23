@@ -304,7 +304,7 @@ theorem parseWith_toCharsWith
   have hFo : ∀ v : F, ('(' : Char) ∉ (ParsableVar.toChars v : List Char) := var_no_open F
   have hFs : ∀ v : F, ('/' : Char) ∉ (ParsableVar.toChars v : List Char) := var_no_slash F
   by_cases hd1 : displayDen r = 1
-  · rw [toCharsWith, if_pos (by rw [beq_iff_eq]; exact hd1), parseWith,
+  · rw [toCharsWith, ite_eq_left (by rw [beq_iff_eq]; exact hd1), parseWith,
       splitSlash_none _ (bad_notin_polyChars F h47 hFs _),
       stripParens_of_no_open _ (bad_notin_polyChars F h40 hFo _),
       AzMvPolynomial.parseWith_toCharsWith, Option.map_some]
@@ -312,7 +312,7 @@ theorem parseWith_toCharsWith
       show ofNumDen (displayNum r) 1 = r
       rw [← hd1]; exact ofNumDen_displayNum_displayDen r
     rw [h1]
-  · rw [toCharsWith, if_neg (fun h => hd1 (beq_iff_eq.mp h)), parseWith,
+  · rw [toCharsWith, ite_eq_right (fun h => hd1 (beq_iff_eq.mp h)), parseWith,
       (wrap_facts F hFo hFs (displayNum r)).1 _]
     show (do
       let nm ← AzMvPolynomial.parseWith (R := AzInt) (ord := ord) F
@@ -324,7 +324,7 @@ theorem parseWith_toCharsWith
       AzMvPolynomial.parseWith_toCharsWith, AzMvPolynomial.parseWith_toCharsWith]
     show (if displayDen r = 0 then none
       else some (ofNumDen (displayNum r) (displayDen r))) = some r
-    rw [if_neg (displayDen_ne_zero r), ofNumDen_displayNum_displayDen r]
+    rw [ite_eq_right (displayDen_ne_zero r), ofNumDen_displayNum_displayDen r]
 
 /-- **String round-trip**: `parseStrWith F (toStrWith F r) = some r`, for any
 `ParsableVar` naming scheme `F` — hypothesis-free. -/

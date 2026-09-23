@@ -23,14 +23,14 @@ theorem isMultipleOfPow2_iff (u : UInt64) (k : Nat) :
     u.isMultipleOfPow2 k = true ↔ 2 ^ k ∣ u.toNat := by
   unfold isMultipleOfPow2
   by_cases hk : k < 64
-  · rw [if_pos hk, beq_iff_eq]
+  · rw [ite_eq_left hk, beq_iff_eq]
     have h_toNat_eq :
         u &&& (((1 : UInt64) <<< UInt64.ofNat k) - 1) = 0 ↔
           (u &&& (((1 : UInt64) <<< UInt64.ofNat k) - 1)).toNat = 0 :=
       ⟨fun h => h ▸ rfl, fun h => _root_.UInt64.eq_of_toNat_eq (by rw [h]; rfl)⟩
     rw [h_toNat_eq, _root_.UInt64.toNat_and, lowMask_toNat k hk,
         Nat.and_two_pow_sub_one_eq_mod, ← Nat.dvd_iff_mod_eq_zero]
-  · rw [if_neg hk, beq_iff_eq]
+  · rw [ite_eq_right hk, beq_iff_eq]
     push Not at hk
     have hu_lt : u.toNat < 2 ^ k :=
       lt_of_lt_of_le (_root_.UInt64.toNat_lt _)

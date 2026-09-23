@@ -89,7 +89,7 @@ private theorem pairwise_attach {α : Type _} {r : α → α → Prop} {l : List
 private theorem coeff_ne_zero_of_mem_sort
     (p : MvPolynomial (Fin n) R) (m : MonicMonomial n ord)
     (hm : m ∈ (p.support.image MonicMonomial.ofFinsupp : Finset _).sort (· ≥ ·)) :
-    MvPolynomial.coeff m.toFinsupp p ≠ 0 := by
+    p.coeff m.toFinsupp ≠ 0 := by
   obtain ⟨g, hgs, hgm⟩ := Finset.mem_image.mp ((Finset.mem_sort _).mp hm)
   rw [← hgm, MonicMonomial.toFinsupp_ofFinsupp]
   exact Finsupp.mem_support_iff.mp hgs
@@ -100,7 +100,7 @@ noncomputable def AzMvPolynomial.ofMvPoly
   let monics := p.support.image MonicMonomial.ofFinsupp
   let sorted := monics.sort (· ≥ ·)
   let terms := sorted.attach.map fun ⟨m, hm⟩ =>
-    (⟨⟨MvPolynomial.coeff m.toFinsupp p,
+    (⟨⟨p.coeff m.toFinsupp,
        coeff_ne_zero_of_mem_sort p m hm⟩, m⟩ : Monomial n R ord)
   ⟨terms.toArray, List.toList_toArray ▸
     List.pairwise_map.mpr ((pairwise_attach
@@ -140,11 +140,11 @@ theorem toMvPoly_ofMvPoly (p : MvPolynomial (Fin n) R) :
   simp only [AzMvPolynomial.toMvPoly, AzMvPolynomial.ofMvPoly]
   rw [← Array.foldl_toList, foldl_add_map_eq_sum, List.toList_toArray, List.map_map]
   rw [sum_map_attach_eq _
-    (fun m => (MvPolynomial.monomial m.toFinsupp) (MvPolynomial.coeff m.toFinsupp p))
+    (fun m => (MvPolynomial.monomial m.toFinsupp) (p.coeff m.toFinsupp))
     (fun _ _ => rfl)]
   rw [← Multiset.sum_coe, ← Multiset.map_coe, Finset.sort_eq]
   show (p.support.image MonicMonomial.ofFinsupp).sum
-    (fun m => (MvPolynomial.monomial m.toFinsupp) (MvPolynomial.coeff m.toFinsupp p)) = p
+    (fun m => (MvPolynomial.monomial m.toFinsupp) (p.coeff m.toFinsupp)) = p
   rw [Finset.sum_image (fun a _ b _ h => MonicMonomial.ofFinsupp_injective h)]
   simp only [MonicMonomial.toFinsupp_ofFinsupp]
   exact MvPolynomial.support_sum_monomial_coeff p
@@ -194,10 +194,10 @@ theorem list_sum_ite_eq_of_nodup_map {α β M : Type _} [AddCommMonoid M]
         rw [this, add_zero]
       apply List.sum_eq_zero; intro x hx
       obtain ⟨y, hy, rfl⟩ := List.mem_map.mp hx
-      rw [if_neg]
+      rw [ite_eq_right]
       exact fun heq => hnd.1
         (show g t ∈ s.map g from heq ▸ List.mem_map.mpr ⟨y, hy, rfl⟩)
-    · rw [if_neg (show g b ≠ g t from fun h => hnd.1
+    · rw [ite_eq_right (show g b ≠ g t from fun h => hnd.1
         (show g b ∈ s.map g from h ▸ List.mem_map.mpr ⟨t, ht, rfl⟩)),
         zero_add]
       exact ih hnd.2 ht
@@ -212,7 +212,7 @@ theorem toFinsupp_nodup (p : AzMvPolynomial n R ord) :
 
 theorem coeff_toMvPoly
     (p : AzMvPolynomial n R ord) (f : Fin n →₀ ℕ) :
-    MvPolynomial.coeff f p.toMvPoly =
+    (p.toMvPoly).coeff f =
     (p.terms.toList.map (fun m : Monomial n R ord =>
       if m.monic.toFinsupp = f then m.coeff.val else 0)).sum := by
   rw [toMvPoly_eq_sum]
@@ -231,7 +231,7 @@ theorem support_toMvPoly
   constructor
   · intro hne; by_contra hall; push Not at hall
     apply hne; rw [coeff_toMvPoly]
-    exact sum_map_eq_zero₂  _ _ (fun m hm => if_neg (hall m hm))
+    exact sum_map_eq_zero₂  _ _ (fun m hm => ite_eq_right (hall m hm))
   · rintro ⟨m, hm, rfl⟩
     rw [coeff_toMvPoly,
       list_sum_ite_eq_of_nodup_map _ _ (toFinsupp_nodup p) m hm]
@@ -297,13 +297,11 @@ theorem toMvPoly_injective :
       have h2 : (bt_.toList.map (fun t : Monomial n R ord => t.monic))[i]'(by simp; exact hi₂) =
           bt_.toList[i].monic := List.getElem_map ..
       rw [← h1, ← h2]; congr 1
-    have ha : MvPolynomial.coeff at_.toList[i].monic.toFinsupp
-        (⟨at_, as_⟩ : AzMvPolynomial n R ord).toMvPoly =
+    have ha : ((⟨at_, as_⟩ : AzMvPolynomial n R ord).toMvPoly).coeff at_.toList[i].monic.toFinsupp =
         at_.toList[i].coeff.val := by
       rw [coeff_toMvPoly]; exact list_sum_ite_eq_of_nodup_map _ _
         (toFinsupp_nodup ⟨at_, as_⟩) _ (List.getElem_mem ..) _
-    have hb : MvPolynomial.coeff bt_.toList[i].monic.toFinsupp
-        (⟨bt_, bs_⟩ : AzMvPolynomial n R ord).toMvPoly =
+    have hb : ((⟨bt_, bs_⟩ : AzMvPolynomial n R ord).toMvPoly).coeff bt_.toList[i].monic.toFinsupp =
         bt_.toList[i].coeff.val := by
       rw [coeff_toMvPoly]; exact list_sum_ite_eq_of_nodup_map _ _
         (toFinsupp_nodup ⟨bt_, bs_⟩) _ (List.getElem_mem ..) _

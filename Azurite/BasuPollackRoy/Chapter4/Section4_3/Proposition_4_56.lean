@@ -125,7 +125,7 @@ private theorem proposition_4_56_coeff_C (P : K[X]) (d j : ℕ)
   simp_rw [hQC_coeff]
   by_cases hdj : d ≤ j - 1
   · -- Case A: `d < j`. Set `l := j - d ≥ 1`.
-    rw [if_pos hdj]
+    rw [ite_eq_left hdj]
     -- T1 simplifies to `(j-d) * a_{j-d}`.
     rw [show j - 1 - d + 1 = j - d from by omega]
     -- T2 sum: every `if` is true.
@@ -137,7 +137,7 @@ private theorem proposition_4_56_coeff_C (P : K[X]) (d j : ℕ)
       apply Finset.sum_congr rfl
       intro i hi
       rw [Finset.mem_range] at hi
-      rw [if_pos (by omega), show j - 1 - (d - 1 - i) = j - d + i from by omega]
+      rw [ite_eq_left (by omega), show j - 1 - (d - 1 - i) = j - d + i from by omega]
     rw [hT2A]
     -- prop_4_8 at l = j - d.
     have h48 := proposition_4_8 (C := C) P (j - d) (by omega)
@@ -174,7 +174,7 @@ private theorem proposition_4_56_coeff_C (P : K[X]) (d j : ℕ)
     -- h48 : (j-d) * a_{j-d} = T2 + target.  Rearrange.
     rw [h48]; ring
   · -- Case B: `j ≤ d`. Set `q := d - j ≥ 0`.
-    rw [if_neg hdj]
+    rw [ite_eq_right hdj]
     set q := d - j with hq_def
     -- T2 sum: only `i ≥ q` survive.
     have hT2B : (Finset.range d).sum (fun i =>
@@ -192,11 +192,11 @@ private theorem proposition_4_56_coeff_C (P : K[X]) (d j : ℕ)
               (if d - 1 - i ≤ j - 1 then f (P.coeff (j - 1 - (d - 1 - i))) else 0)) = 0 from by
         apply Finset.sum_eq_zero
         intro i hi; rw [Finset.mem_Ico] at hi
-        rw [if_neg (by omega), mul_zero]]
+        rw [ite_eq_right (by omega), mul_zero]]
       rw [zero_add]
       apply Finset.sum_congr rfl
       intro i hi; rw [Finset.mem_Ico] at hi
-      rw [if_pos (by omega), show j - 1 - (d - 1 - i) = i - q from by omega]
+      rw [ite_eq_left (by omega), show j - 1 - (d - 1 - i) = i - q from by omega]
     rw [hT2B]
     -- Orthogonality at q.
     have hortho := newtonSum_orthogonality (C := C) P q

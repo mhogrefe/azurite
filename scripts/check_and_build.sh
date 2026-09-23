@@ -17,7 +17,7 @@
 # PDF and web blueprints in parallel) are independent, so they run
 # concurrently: blueprint logs are captured to a temp dir and summarized at
 # the end, while `lake build` streams live. Lean parallelism is capped at
-# `-j 4` (full parallelism has OOM'd this machine).
+# `-j 4` (full parallelism can exhaust memory on typical machines).
 #
 # Usage: ./scripts/check_and_build.sh [--axioms] [--serial]
 #   --axioms  After building, verify all Azurite declarations use only
@@ -145,8 +145,26 @@ if [[ -n "$bench_missing" ]]; then
 fi
 echo "$BENCH_MAIN: covers all Benchmark and Tune modules."
 
-# Cap Lean parallelism unless the caller overrides: full parallelism has
-# OOM'd this machine.
+# ── 3b. Trailing whitespace (auto-fixed) ──
+
+# Strip trailing whitespace from every tracked text file. CI rejects it
+# (`.github/workflows/lean.yml`), so fix it here before it gets committed.
+ws_files=$(git grep -lE '[[:space:]]+$' -- \
+  '*.lean' '*.md' '*.tex' '*.yml' '*.yaml' '*.sh' '*.toml' '*.rs' '*.html' '*.scss' \
+  2>/dev/null || true)
+if [[ -n "$ws_files" ]]; then
+  echo "Stripping trailing whitespace from:"
+  while IFS= read -r f; do
+    echo "  $f"
+    # BSD and GNU sed differ on `-i`; a temp file works for both.
+    sed -E 's/[[:space:]]+$//' "$f" > "$f.ws.tmp" && mv "$f.ws.tmp" "$f"
+  done <<< "$ws_files"
+else
+  echo "No trailing whitespace in tracked text files."
+fi
+
+# Cap Lean parallelism unless the caller overrides: full parallelism can
+# exhaust memory on typical machines.
 export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
 # ── 4. Blueprint pipeline (diagrams, then PDF ∥ web) ──

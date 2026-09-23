@@ -47,7 +47,7 @@ theorem adjoinRoot_isAlgebraic {p : R[X]} (hp : p.Monic) :
 theorem adjoinRoot_algebraMap_not_surjective {p : R[X]} (hp : Irreducible p)
     (hdeg : 1 < p.natDegree) :
     ¬ Function.Surjective (algebraMap R (AdjoinRoot p)) := by
-  haveI : Fact (Irreducible p) := ⟨hp⟩
+  have : Fact (Irreducible p) := ⟨hp⟩
   intro hsurj
   obtain ⟨r, hr⟩ := hsurj (AdjoinRoot.root p)
   have hpr : p.IsRoot r := by
@@ -147,7 +147,7 @@ theorem decompose_neg_one_in_adjoinRoot {a : R} (ha : ¬ IsSquare a)
     (hns : ¬ IsSemireal (AdjoinRoot (sqSubC a))) :
     ∃ (n : ℕ) (xs ys : Fin n → R),
       -1 = ∑ i, xs i * xs i + a * ∑ i, ys i * ys i := by
-  haveI : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha⟩
+  have : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha⟩
   -- -1 is a sum of squares in AdjoinRoot
   have hss : IsSumSq (-1 : AdjoinRoot (sqSubC a)) := by
     rwa [← not_not (a := IsSumSq _), ← isSemireal_iff_not_isSumSq_neg_one]
@@ -214,7 +214,7 @@ theorem sum_sq_isSquare (hR : Azurite.BPR.HasNoNontrivialRealAlgebraicExtension 
   obtain ⟨hR1, hR2⟩ := hR
   by_contra hns
   have hirr := irred_X_sq_sub_C hns
-  haveI : Fact (Irreducible (sqSubC c)) := ⟨hirr⟩
+  have : Fact (Irreducible (sqSubC c)) := ⟨hirr⟩
   have halg := adjoinRoot_isAlgebraic (monic_sq_sub_C c)
   have hnsurj := adjoinRoot_algebraMap_not_surjective hirr
     (by rw [natDegree_sq_sub_C]; norm_num)
@@ -232,7 +232,7 @@ theorem isSquare_or_isSquare_neg_of_noext
   · right
     have hx_ne : x ≠ 0 := fun h => hx ⟨0, by simp [h]⟩
     have hirr := irred_X_sq_sub_C hx
-    haveI : Fact (Irreducible (sqSubC x)) := ⟨hirr⟩
+    have : Fact (Irreducible (sqSubC x)) := ⟨hirr⟩
     have halg := adjoinRoot_isAlgebraic (monic_sq_sub_C x)
     have hnsurj := adjoinRoot_algebraMap_not_surjective hirr
       (by rw [natDegree_sq_sub_C]; norm_num)
@@ -248,7 +248,7 @@ theorem isSquare_or_isSquare_neg_of_noext
           (∑ i : Fin n, ys i * ys i)⁻¹ := by
         rw [eq_comm, mul_inv_eq_iff_eq_mul₀ hy_ne]; linear_combination -hdecomp
       rw [heq]
-      haveI : IsSemireal R := hR1
+      have : IsSemireal R := hR1
       apply IsSumSq.mul
       · have := IsSumSq.sq_add 1 (IsSumSq.sum_mul_self Finset.univ xs)
         simpa [one_mul] using this
@@ -327,7 +327,7 @@ theorem polynomial_isSemireal [IsSemireal R] : IsSemireal R[X] := by
 /-- AdjoinRoot of a nonzero polynomial is algebraic. -/
 theorem adjoinRoot_isAlgebraic' {p : R[X]} (hp : p ≠ 0) :
     Algebra.IsAlgebraic R (AdjoinRoot p) := by
-  haveI : Module.Finite R (AdjoinRoot p) := (AdjoinRoot.powerBasis hp).finite
+  have : Module.Finite R (AdjoinRoot p) := (AdjoinRoot.powerBasis hp).finite
   exact Algebra.IsAlgebraic.of_finite R _
 
 /-- Every polynomial of odd degree has a root. -/
@@ -355,7 +355,7 @@ theorem exists_isRoot_of_odd_natDegree_of_noext
       by_cases hirr : Irreducible Q
       · -- IRREDUCIBLE CASE: derive contradiction
         exfalso
-        haveI : Fact (Irreducible Q) := ⟨hirr⟩
+        have : Fact (Irreducible Q) := ⟨hirr⟩
         have halg := adjoinRoot_isAlgebraic' hirr.ne_zero
         have hnsurj := adjoinRoot_algebraMap_not_surjective hirr (by omega)
         have hns : ¬ IsSemireal (AdjoinRoot Q) :=
@@ -391,7 +391,7 @@ theorem exists_isRoot_of_odd_natDegree_of_noext
         rw [AdjoinRoot.mk_eq_zero] at hS1_mk
         obtain ⟨T, hST⟩ := hS1_mk
         -- S + 1 ≠ 0 (R[X] is semireal)
-        haveI : IsSemireal R := hR1
+        have : IsSemireal R := hR1
         have hS1_ne : S + 1 ≠ 0 := by
           intro h
           have hS_eq : S = -1 := by linear_combination h

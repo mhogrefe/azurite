@@ -77,7 +77,7 @@ theorem ratPowPos_isSemialgebraicFunction (q : ℚ) :
             {z | MvPolynomial.eval z (X 1 ^ q.den * X 0 ^ (-q.num).toNat - X 0 ^ q.num.toNat)
               = 0}) := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub, map_mul,
+      simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub, map_mul,
         MvPolynomial.eval_pow, sub_eq_zero, gt_iff_lt, ge_iff_le]
     rw [heq]
     exact (IsSemialgebraicSet.gtZero _).inter

@@ -106,7 +106,7 @@ theorem trace_pow_eq_sum_roots_pow {n : ℕ} {K : Type*} [Field K] [IsAlgClosed 
     have key : f.maxGenEigenspace μ ≠ ⊥ ↔ Multiset.count μ A.charpoly.roots ≠ 0 := by
       rw [← hfc, ne_eq, ne_eq]
       exact not_congr (Submodule.finrank_eq_zero).symm
-    rw [Set.Finite.mem_toFinset, Set.mem_setOf_eq, Multiset.mem_toFinset, ← Multiset.count_pos,
+    rw [Set.Finite.mem_toFinset, Set.mem_ofPred_eq, Multiset.mem_toFinset, ← Multiset.count_pos,
       pos_iff_ne_zero, key]
   rw [hset]
   refine Finset.sum_congr rfl (fun μ _ => ?_)
@@ -222,7 +222,7 @@ private theorem pmv_sDiscSeq_eq [NeZero p] (M : Matrix (Fin p) (Fin p) R) (hM : 
     rcases eq_or_lt_of_le hip with h | h
     · -- i = p : sDiscK = 1 directly from its definition.
       subst h
-      rw [sDiscK, if_neg (by rw [hdeg]; omega)]
+      rw [sDiscK, ite_eq_right (by rw [hdeg]; omega)]
       exact one_pos
     · rw [hval i hip]; exact hpos i hki (by omega)
   -- vanishing of each `sDiscK` for `i < k`.

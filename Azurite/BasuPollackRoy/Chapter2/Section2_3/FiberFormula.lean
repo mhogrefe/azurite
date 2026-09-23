@@ -76,7 +76,7 @@ theorem varAtSigns_zero_cons (L : List SignType) :
     varAtSigns (0 :: L) = varAtSigns L := by
   cases L with
   | nil => simp
-  | cons t rest => rw [varAtSigns_cons_cons, if_pos rfl]
+  | cons t rest => rw [varAtSigns_cons_cons, ite_eq_left rfl]
 
 /-- `varAtSigns` depends only on the list with zeros removed: the
 recursion skips zeros inline, so filtering them out first is a no-op. -/
@@ -98,11 +98,11 @@ theorem varAtSigns_filter_ne_zero : ∀ (L : List SignType),
         rcases eq_or_ne t 0 with ht | ht
         · subst ht
           rw [List.filter_cons_of_neg (by simp), varAtSigns_cons_cons,
-              if_neg hs, if_pos rfl,
+              ite_eq_right hs, ite_eq_left rfl,
               ← List.filter_cons_of_pos (a := s) (by simpa using hs)]
           exact varAtSigns_filter_ne_zero (s :: rest)
         · rw [List.filter_cons_of_pos (by simpa using ht), varAtSigns_cons_cons,
-              varAtSigns_cons_cons, if_neg hs, if_neg hs, if_neg ht, if_neg ht,
+              varAtSigns_cons_cons, ite_eq_right hs, ite_eq_right hs, ite_eq_right ht, ite_eq_right ht,
               ← List.filter_cons_of_pos (a := t) (by simpa using ht),
               varAtSigns_filter_ne_zero (t :: rest)]
   termination_by L => L.length
@@ -387,7 +387,7 @@ Theorem 2.11 ((a) ⇒ (b) via `isAlgClosed_Ri`, then (b) ⇒ (c) via
 directly instead of carrying an explicit IVP hypothesis. -/
 theorem hasIVP_of_isRealClosed :
     Azurite.BPR.HasIntermediateValueProperty R := by
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   exact Theorem2_11.theorem_2_11_b_c
 
 /-- Helper: `(l.map f).zip (l.map g) = l.map (fun a => (f a, g a))`. -/
@@ -481,26 +481,26 @@ theorem Var_eq_varAtSigns_map_sign : ∀ (L : List R),
       by_cases ha : a = 0
       · -- a = 0: skip it.
         subst ha
-        rw [if_pos sign_zero, Var_zero_cons, ← List.map_cons]
+        rw [ite_eq_left sign_zero, Var_zero_cons, ← List.map_cons]
         exact Var_eq_varAtSigns_map_sign (b :: rest)
       · have ha' : SignType.sign a ≠ 0 := sign_ne_zero.mpr ha
-        rw [if_neg ha']
+        rw [ite_eq_right ha']
         by_cases hb : b = 0
         · -- b = 0: skip it.
           subst hb
-          rw [if_pos sign_zero, Var_cons_zero_cons, ← List.map_cons]
+          rw [ite_eq_left sign_zero, Var_cons_zero_cons, ← List.map_cons]
           exact Var_eq_varAtSigns_map_sign (a :: rest)
         · have hb' : SignType.sign b ≠ 0 := sign_ne_zero.mpr hb
-          rw [if_neg hb', Var_cons_cons_of_ne a b rest ha hb]
+          rw [ite_eq_right hb', Var_cons_cons_of_ne a b rest ha hb]
           by_cases hsab : SignType.sign a = SignType.sign b
           · -- same sign: no variation.
-            rw [if_pos hsab,
-              if_neg (fun h => (mul_neg_iff_sign_ne ha hb).mp h hsab),
+            rw [ite_eq_left hsab,
+              ite_eq_right (fun h => (mul_neg_iff_sign_ne ha hb).mp h hsab),
               zero_add, ← List.map_cons]
             exact Var_eq_varAtSigns_map_sign (b :: rest)
           · -- opposite sign: one variation.
-            rw [if_neg hsab,
-              if_pos ((mul_neg_iff_sign_ne ha hb).mpr hsab),
+            rw [ite_eq_right hsab,
+              ite_eq_left ((mul_neg_iff_sign_ne ha hb).mpr hsab),
               ← List.map_cons]
             congr 1
             exact Var_eq_varAtSigns_map_sign (b :: rest)
@@ -773,7 +773,7 @@ private theorem mkTRemsNode_sturm_posAssoc
       (((cur :: sp).map (Polynomial.map (MvPolynomial.aeval y).toRingHom)).getD i 0) := by
   set φ := (MvPolynomial.aeval (R := D) y).toRingHom with hφ
   set Rp := -(pRemMv parent cur) with Rp_def
-  rw [mkTRemsNode, if_neg hcur] at hsp; dsimp only at hsp
+  rw [mkTRemsNode, ite_eq_right hcur] at hsp; dsimp only at hsp
   set cs := (Tru_finite Rp).toFinset.toList with cs_def
   set tru_trees := cs.attach.map (fun ⟨c, _⟩ => mkTRemsNode cur c) with tt_def
   set ac := tru_trees ++ [RoseTree.node 0 []] with ac_def
@@ -793,7 +793,7 @@ private theorem mkTRemsNode_sturm_posAssoc
     have hRp_ne : Rp ≠ 0 := by
       intro h; rw [h, Tru_empty_of_eq_zero] at hc_tru; exact hc_tru.elim
     have hc_ne : c ≠ 0 := fun h => absurd (h ▸ hc_tru) (zero_not_mem_Tru Rp hRp_ne)
-    simp only [leafFormulaAux, if_neg hc_ne, Formula.realization_and] at hy
+    simp only [leafFormulaAux, ite_eq_right hc_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     obtain ⟨hRc, hlc_c⟩ := degFormula_Tru_spec Rp c hc_tru hc_ne y hy_deg
     have hK : (0 : R) < φ cur.leadingCoeff ^ pRemExp parent cur :=
@@ -824,7 +824,7 @@ private theorem mkTRemsNode_sturm_posAssoc
     simp only [RoseTree.root] at hy ⊢
     simp only [leafFormulaAux, ↓reduceIte] at hy
     have hRp_zero : Rp.map φ = 0 := by
-      rw [realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot] at hy; exact hy
+      rw [realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot] at hy; exact hy
     have hB0 : -(parent.map φ % cur.map φ) = 0 := by
       have hpRem0 : (pRemMv parent cur).map φ = 0 := by
         have hRn : Rp.map φ = -(pRemMv parent cur).map φ := by
@@ -883,7 +883,7 @@ private theorem leafFormula_sturm_posAssoc
     have hQ_ne : Q ≠ 0 := by
       intro h; rw [h, Tru_empty_of_eq_zero] at hq_tru; exact hq_tru.elim
     have hq_ne : q ≠ 0 := fun h => absurd (h ▸ hq_tru) (zero_not_mem_Tru Q hQ_ne)
-    simp only [leafFormula, if_neg hq_ne, Formula.realization_and] at hy
+    simp only [leafFormula, ite_eq_right hq_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     obtain ⟨hQq, hlc_q⟩ := degFormula_Tru_spec Q q hq_tru hq_ne y hy_deg
     have hQy_ne : Q.map φ ≠ 0 := by
@@ -905,7 +905,7 @@ private theorem leafFormula_sturm_posAssoc
     simp only [RoseTree.root] at hy ⊢
     simp only [leafFormula, ↓reduceIte] at hy
     have hQy0 : Q.map φ = 0 := by
-      rw [realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot] at hy; exact hy
+      rw [realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot] at hy; exact hy
     intro i
     rcases i with _ | n
     · exact PosAssoc.refl _
@@ -1011,9 +1011,9 @@ private theorem SRemSList_getD (P Q : Polynomial R) (N i : ℕ) :
   unfold SRemSList
   rw [List.getD_eq_getElem?_getD, List.getElem?_map]
   by_cases h : i < N
-  · rw [List.getElem?_range h, Option.map_some, Option.getD_some, if_pos h]
+  · rw [List.getElem?_range h, Option.map_some, Option.getD_some, ite_eq_left h]
   · rw [List.getElem?_eq_none (by rw [List.length_range]; omega),
-        Option.map_none, Option.getD_none, if_neg h]
+        Option.map_none, Option.getD_none, ite_eq_right h]
 
 omit [IsDomain D] [IsRealClosed R] in
 /-- If `y` satisfies `sturmLeafSignFormula seq sigPat` and `sigPat` has
@@ -1024,7 +1024,7 @@ private theorem sturmLeafSignFormula_sigPat_eq
     (hlen : sigPat.length = seq.length) (y : Fin k → R)
     (h : y ∈ (Formula.sturmLeafSignFormula seq sigPat).realization (C := R)) :
     sigPat = seq.map (fun p => SignType.sign (MvPolynomial.aeval y p.leadingCoeff)) := by
-  rw [Formula.realization_sturmLeafSignFormula, Set.mem_setOf_eq] at h
+  rw [Formula.realization_sturmLeafSignFormula, Set.mem_ofPred_eq] at h
   apply List.ext_getElem
   · rw [List.length_map]; exact hlen
   · intro i hi _
@@ -1113,8 +1113,8 @@ theorem sturmCount_eq_actual_varAt_diff_gen
     intro i
     rw [SRemSList_getD]
     by_cases hiN : i < S_y.natDegree + 2
-    · rw [if_pos hiN]; exact hpw i
-    · rw [if_neg hiN]
+    · rw [ite_eq_left hiN]; exact hpw i
+    · rw [ite_eq_right hiN]
       have hSRemS0 : SRemS P_y S_y i = 0 :=
         SRemS_eq_zero_of_natDegree_lt P_y S_y hP_y_ne i (by omega)
       have hL2 : ((Ptil :: path).map (Polynomial.map φ)).getD i 0 = 0 := by
@@ -1275,7 +1275,7 @@ theorem fiber_nonempty_iff_some_good_disjunct
     intro h_exists
     by_cases hP_y0 : (splitLast P).map (MvPolynomial.aeval y).toRingHom = 0
     · left
-      rw [realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot]
+      rw [realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot]
       exact hP_y0
     · right
       have hsplit_ne : splitLast P ≠ 0 :=
@@ -1285,7 +1285,7 @@ theorem fiber_nonempty_iff_some_good_disjunct
         Tru_covers_degrees hinj (splitLast P) hsplit_ne y hP_y0
       have h_deg : y ∈ (degFormula (splitLast P) (↑Ptil.natDegree)).realization
           (C := R) := by
-        rw [realization_degFormula, Set.mem_setOf_eq]; exact hPtil_deg
+        rw [realization_degFormula, Set.mem_ofPred_eq]; exact hPtil_deg
       -- Find a TRems(Ptil, Ptil') leaf path covering y.
       obtain ⟨path, h_path, h_leaf⟩ :=
         leafFormula_covering hinj Ptil Ptil.derivative y
@@ -1299,7 +1299,7 @@ theorem fiber_nonempty_iff_some_good_disjunct
       have h_sign : y ∈ (Formula.sturmLeafSignFormula (Ptil :: path)
           sigPat).realization (C := R) := by
         rw [Formula.realization_sturmLeafSignFormula]
-        simp only [Set.mem_setOf_eq]
+        simp only [Set.mem_ofPred_eq]
         intro ps hps
         rw [sigPat_def, zip_map_map_diag, List.mem_map] at hps
         obtain ⟨p, _, rfl⟩ := hps
@@ -1313,7 +1313,7 @@ theorem fiber_nonempty_iff_some_good_disjunct
   · -- Backward.
     rintro (h_bot | ⟨Ptil, path, sigPat, h_mem, h_deg, h_leaf, h_sign⟩)
     · -- P_y = 0: any x is a root.
-      rw [realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot] at h_bot
+      rw [realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot] at h_bot
       rw [exists_aeval_snoc_iff_exists_isRoot_specialized]
       exact ⟨0, by rw [h_bot]; simp [Polynomial.IsRoot]⟩
     · obtain ⟨hPtil_mem, h_path, h_sigPat, h_good⟩ :=
@@ -1336,9 +1336,9 @@ theorem fiberFormula_high_realization
       {y : Fin k → R |
         ∃ x : R, MvPolynomial.aeval (Fin.snoc y x) P = 0} := by
   ext y
-  rw [Set.mem_setOf_eq, fiber_nonempty_iff_some_good_disjunct P hinj y]
+  rw [Set.mem_ofPred_eq, fiber_nonempty_iff_some_good_disjunct P hinj y]
   unfold fiberFormula_high
-  rw [Formula.realization_disjListO, Set.mem_setOf_eq]
+  rw [Formula.realization_disjListO, Set.mem_ofPred_eq]
   simp only [List.mem_cons, List.mem_map]
   constructor
   · rintro ⟨Φ, hΦ_mem, hy_in⟩

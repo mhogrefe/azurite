@@ -13,7 +13,7 @@ def leadingZeros (d : UInt64) : Nat :=
 theorem leadingZeros_le (d : UInt64) (hd : d ≠ 0) :
     leadingZeros d ≤ 63 := by
   unfold leadingZeros
-  rw [if_neg hd]
+  rw [ite_eq_right hd]
   exact Nat.sub_le _ _
 
 end UInt64

@@ -72,9 +72,9 @@ theorem tarskiQueryOn_eq_card_pos_sub_card_neg (Q P : R[X]) (a b : ExtendedPoint
       (if Q.eval x < 0 then (1 : ℤ) else 0) := by
     intro x
     rcases lt_trichotomy (Q.eval x) 0 with h | h | h
-    · rw [sign_neg h, if_neg (asymm h), if_pos h]; rfl
+    · rw [sign_neg h, ite_eq_right (asymm h), ite_eq_left h]; rfl
     · rw [h]; simp
-    · rw [sign_pos h, if_pos h, if_neg (asymm h)]; rfl
+    · rw [sign_pos h, ite_eq_left h, ite_eq_right (asymm h)]; rfl
   rw [Finset.sum_congr rfl (fun x _ => h_sign x), Finset.sum_sub_distrib]
   -- Each indicator sum equals the card of the filter of `S` by the predicate.
   rw [show (∑ x ∈ S, if 0 < Q.eval x then (1 : ℤ) else 0)

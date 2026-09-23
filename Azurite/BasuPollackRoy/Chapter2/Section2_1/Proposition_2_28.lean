@@ -49,7 +49,7 @@ theorem proposition_2_28_part1 (hIVP : HasIntermediateValueProperty R)
       have h := hy 0 (Nat.zero_le n)
       rw [Function.iterate_zero_apply, hσ0] at h
       exact sign_eq_zero_iff.mp h
-    exact isOpenInterval_infinite _ hopen ((finite_setOf_isRoot hP).subset hroots)
+    exact isOpenInterval_infinite _ hopen ((finite_setOfPred_isRoot hP).subset hroots)
 
 /-! ### Helper: sign ordering reflects value ordering -/
 
@@ -220,10 +220,10 @@ theorem proposition_2_28_part1_of_isRealClosed
     (hx : letI : LinearOrder R := IsRealClosed.toLinearOrder; x ∈ derReali P n σ)
     (hx' : letI : LinearOrder R := IsRealClosed.toLinearOrder; x' ∈ derReali P n σ) :
     x = x' := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   exact proposition_2_28_part1 Theorem2_11.theorem_2_11_b_c P hP n σ hn hσ0 x x' hx hx'
 
 theorem proposition_2_28_part2_of_isRealClosed
@@ -241,10 +241,10 @@ theorem proposition_2_28_part2_of_isRealClosed
     σ (j + 1) ≠ 0 ∧
     (σ (j + 1) = 1 → (x' < x ↔ σ' j < σ j)) ∧
     (σ (j + 1) = -1 → (x' < x ↔ σ j < σ' j)) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   exact proposition_2_28_part2 Theorem2_11.theorem_2_11_b_c P hP n σ σ' hn x x' hx hx'
     j hj_le hj_diff hj_agree
 

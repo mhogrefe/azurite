@@ -184,8 +184,8 @@ private theorem chain_antitone {α : Type _} [Preorder α] {f : ℕ → α}
   | step _ ih => exact lt_trans (hf _) ih
 
 /-- `MonicMonomial` with any ordering is well-founded. -/
-instance wellFoundedLT_monicMonomial : WellFoundedLT (MonicMonomial n ord) where
-  wf := by
+instance wellFoundedLT_monicMonomial : WellFoundedLT (MonicMonomial n ord) := by
+    show WellFounded (fun a b : MonicMonomial n ord => a < b)
     rw [wellFounded_iff_isEmpty_descending_chain]
     by_contra h; rw [not_isEmpty_iff] at h
     obtain ⟨f, hf⟩ := h
@@ -242,7 +242,7 @@ noncomputable def toMathlibMonomialOrder (ord : MonomialOrder) :
           MonicMonomial.toFinsupp_ofFinsupp, MonicMonomial.toFinsupp_ofFinsupp]
   }
   toSyn_monotone := fun {_ _} h => ofFinsupp_monotone _ _ h
-  wellFoundedLT_syn := ⟨wellFoundedLT_monicMonomial.wf⟩
+  wellFoundedLT_syn := wellFoundedLT_monicMonomial
 
 end Bridge
 

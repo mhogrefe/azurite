@@ -75,17 +75,17 @@ private theorem cr_quotient_totalDegree_le (c q : MvPolynomial (Fin n) R)
 omit [Azurite.ExactDiv R] in
 private theorem support_card_sub_monomial (c : MvPolynomial (Fin n) R) (s : Fin n →₀ ℕ)
     (hs : s ∈ c.support) :
-    (c - monomial s (coeff s c)).support.card < c.support.card := by
-  have h_not_mem : s ∉ (c - monomial s (coeff s c)).support := by
-    rw [mem_support_iff, not_not, coeff_sub, coeff_monomial, if_pos rfl]; ring
-  have h_sub : (c - monomial s (coeff s c)).support ⊆ c.support.erase s := by
+    (c - monomial s (c.coeff s)).support.card < c.support.card := by
+  have h_not_mem : s ∉ (c - monomial s (c.coeff s)).support := by
+    rw [mem_support_iff, not_not, coeff_sub, coeff_monomial, ite_eq_left rfl]; ring
+  have h_sub : (c - monomial s (c.coeff s)).support ⊆ c.support.erase s := by
     intro t ht
     rw [Finset.mem_erase]; exact ⟨fun h => by subst h; exact h_not_mem ht,
       by rw [mem_support_iff] at ht ⊢; intro h; apply ht
-         simp [coeff_sub, coeff_monomial, h]
+         simp [coeff_monomial, h]
          intro heq; subst heq; exact absurd h (mem_support_iff.mp hs)⟩
   have : c.support.card ≥ 1 := Finset.card_pos.mpr ⟨s, hs⟩
-  calc (c - monomial s (coeff s c)).support.card
+  calc (c - monomial s (c.coeff s)).support.card
       ≤ (c.support.erase s).card := Finset.card_le_card h_sub
     _ = c.support.card - 1 := Finset.card_erase_of_mem hs
     _ < c.support.card := by omega
@@ -163,7 +163,7 @@ private theorem exactDivStepCR_is_leading_term
     (hc : c ≠ 0) (hqnz : q.toMvPoly ≠ 0) :
     ∃ s ∈ c.support,
       (AzMvPolynomial.ofMonomial (exactDivStepCR r q hr hq).1).toMvPoly =
-        monomial s (coeff s c) := by
+        monomial s (c.coeff s) := by
   set mo := toMathlibMonomialOrder (n := n) ord
   have hdeg_r := degree_eq_terms_zero r hr
   have hdeg_q := degree_eq_terms_zero q hq
@@ -174,7 +174,7 @@ private theorem exactDivStepCR_is_leading_term
     rw [hdeg_r, hdeg_q] at h1; rw [h1, add_tsub_cancel_right]
   -- Coefficient identity: r's leading coeff = c's leading coeff * q's leading coeff.
   have hlc_eq : (r.terms[0]'(by omega)).coeff.val =
-      coeff (mo.degree c) c * (q.terms[0]'(by omega)).coeff.val := by
+      c.coeff (mo.degree c) * (q.terms[0]'(by omega)).coeff.val := by
     conv_lhs => rw [← leadingCoeff_eq_terms_zero r hr, hcq,
       show mo.leadingCoeff (c * q.toMvPoly) =
         mo.leadingCoeff c * mo.leadingCoeff q.toMvPoly from
@@ -185,20 +185,20 @@ private theorem exactDivStepCR_is_leading_term
   have hqlead_ne : (q.terms[0]'(by omega)).coeff.val ≠ 0 :=
     (q.terms[0]'(by omega)).coeff.property
   have h_dvd : (q.terms[0]'(by omega)).coeff.val ∣ (r.terms[0]'(by omega)).coeff.val :=
-    ⟨coeff (mo.degree c) c, by rw [hlc_eq]; ring⟩
+    ⟨c.coeff (mo.degree c), by rw [hlc_eq]; ring⟩
   have h_law := Azurite.ExactDiv.exactDiv_mul_self
     (r.terms[0]'(by omega)).coeff.val (q.terms[0]'(by omega)).coeff.val h_dvd hqlead_ne
   -- The cancellation: `exactDiv leadR leadQ = coeff (deg c) c`.
   have hlc_c : Azurite.ExactDiv.exactDiv (r.terms[0]'(by omega)).coeff.val
-      (q.terms[0]'(by omega)).coeff.val = coeff (mo.degree c) c := by
+      (q.terms[0]'(by omega)).coeff.val = c.coeff (mo.degree c) := by
     have h_eq : Azurite.ExactDiv.exactDiv (r.terms[0]'(by omega)).coeff.val
         (q.terms[0]'(by omega)).coeff.val * (q.terms[0]'(by omega)).coeff.val =
-        coeff (mo.degree c) c * (q.terms[0]'(by omega)).coeff.val := by
+        c.coeff (mo.degree c) * (q.terms[0]'(by omega)).coeff.val := by
       rw [h_law]; exact hlc_eq
     exact mul_right_cancel₀ hqlead_ne h_eq
   -- The chosen monomial is nonzero (coefficient is leading coeff of c).
-  have h_lead_c_ne : coeff (mo.degree c) c ≠ 0 := by
-    rw [show coeff (mo.degree c) c = mo.leadingCoeff c from rfl]
+  have h_lead_c_ne : c.coeff (mo.degree c) ≠ 0 := by
+    rw [show c.coeff (mo.degree c) = mo.leadingCoeff c from rfl]
     exact MonomialOrder.leadingCoeff_ne_zero_iff.mpr hc
   -- The exactDiv result is nonzero, so we hit the `else` branch of `Monomial.exactDivCR`.
   have h_exactDiv_ne : Azurite.ExactDiv.exactDiv (r.terms[0]'(by omega)).coeff.val
@@ -206,7 +206,7 @@ private theorem exactDivStepCR_is_leading_term
   refine ⟨mo.degree c, _root_.MonomialOrder.degree_mem_support hc, ?_⟩
   simp only [exactDivStepCR, cr_toMvPoly_ofMonomial, Monomial.toMvPoly,
     Monomial.exactDivCR]
-  rw [dif_neg h_exactDiv_ne]
+  rw [dite_eq_right h_exactDiv_ne]
   have hfs : (MonicMonomial.div (r.terms[0]'(by omega)).monic
       (q.terms[0]'(by omega)).monic).toFinsupp = mo.degree c := by
     rw [toFinsupp_div, hdeg_c]
@@ -287,7 +287,7 @@ theorem exactDivCR_spec (p q : AzMvPolynomial n R ord) (hq : q.terms.size > 0)
     (hdvd : q.toMvPoly ∣ p.toMvPoly) :
     (AzMvPolynomial.exactDivCR p q).toMvPoly * q.toMvPoly = p.toMvPoly := by
   have hinv := exactDivAuxCR_invariant q hq ((p.totalDegree + 1) ^ n) 0 p
-  simp only [AzMvPolynomial.exactDivCR, dif_pos hq, toMvPoly_zero,
+  simp only [AzMvPolynomial.exactDivCR, dite_eq_left hq, toMvPoly_zero,
     zero_mul, zero_add] at hinv ⊢
   rw [remainderCR_zero_of_dvd p q hq hdvd, add_zero] at hinv
   exact hinv

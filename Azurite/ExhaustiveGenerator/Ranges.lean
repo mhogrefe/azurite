@@ -68,7 +68,7 @@ theorem increasingRangeSignedGen_gen_none {T : Type*} [LE T] [LT T]
     (canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : (toInt b - toInt a).toNat ≤ n) :
     @gen _ (increasingRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem increasingRangeSignedGen_gen_some {T : Type*} [LE T] [LT T]
@@ -76,7 +76,7 @@ theorem increasingRangeSignedGen_gen_some {T : Type*} [LE T] [LT T]
     (canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : n < (toInt b - toInt a).toNat) :
     @gen _ (increasingRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n ≠ none := by
-  rw [show @gen _ (increasingRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (increasingRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- Signed inclusive range `[a, b]`, ascending. Card `(toInt b - toInt a + 1).toNat`. -/
@@ -112,7 +112,7 @@ theorem increasingInclusiveRangeSignedGen_gen_none {T : Type*} [LE T]
     (canon ofInt_toInt toInt_lt le_toInt le_iff) (a b : T) (n : ℕ)
     (h : (toInt b - toInt a + 1).toNat ≤ n) :
     @gen _ (increasingInclusiveRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem increasingInclusiveRangeSignedGen_gen_some {T : Type*} [LE T]
@@ -120,7 +120,7 @@ theorem increasingInclusiveRangeSignedGen_gen_some {T : Type*} [LE T]
     (canon ofInt_toInt toInt_lt le_toInt le_iff) (a b : T) (n : ℕ)
     (h : n < (toInt b - toInt a + 1).toNat) :
     @gen _ (increasingInclusiveRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n ≠ none := by
-  rw [show @gen _ (increasingInclusiveRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (increasingInclusiveRangeSignedGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- Unsigned exclusive range `[a, b)`, ascending. Card `toNat b - toNat a`. -/
@@ -156,7 +156,7 @@ theorem increasingRangeUnsignedGen_gen_none {T : Type*} [LE T] [LT T]
     (canon ofNat_toNat toNat_lt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : toNat b - toNat a ≤ n) :
     @gen _ (increasingRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt lt_iff le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem increasingRangeUnsignedGen_gen_some {T : Type*} [LE T] [LT T]
@@ -164,7 +164,7 @@ theorem increasingRangeUnsignedGen_gen_some {T : Type*} [LE T] [LT T]
     (canon ofNat_toNat toNat_lt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : n < toNat b - toNat a) :
     @gen _ (increasingRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt lt_iff le_iff a b) n ≠ none := by
-  rw [show @gen _ (increasingRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt lt_iff le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (increasingRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt lt_iff le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- Unsigned inclusive range `[a, b]`, ascending. Card `toNat b + 1 - toNat a`
@@ -201,7 +201,7 @@ theorem increasingInclusiveRangeUnsignedGen_gen_none {T : Type*} [LE T]
     (canon ofNat_toNat toNat_lt le_iff) (a b : T) (n : ℕ)
     (h : toNat b + 1 - toNat a ≤ n) :
     @gen _ (increasingInclusiveRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem increasingInclusiveRangeUnsignedGen_gen_some {T : Type*} [LE T]
@@ -209,7 +209,7 @@ theorem increasingInclusiveRangeUnsignedGen_gen_some {T : Type*} [LE T]
     (canon ofNat_toNat toNat_lt le_iff) (a b : T) (n : ℕ)
     (h : n < toNat b + 1 - toNat a) :
     @gen _ (increasingInclusiveRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt le_iff a b) n ≠ none := by
-  rw [show @gen _ (increasingInclusiveRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (increasingInclusiveRangeUnsignedGen toNat ofNat bound canon ofNat_toNat toNat_lt le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-! ### Per-type wrappers, `Fintype` instances, and counts -/
@@ -557,21 +557,21 @@ theorem magF_inj {a b : ℤ} {i j : ℕ} (h : magF a b i = magF a b j) : i = j :
 theorem magF_surj {a b : ℤ} {x : ℤ} (hax : a ≤ x) (hxb : x < b) :
     ∃ n : ℕ, (n : ℤ) < b - a ∧ magF a b n = x := by
   by_cases ha : 0 ≤ a
-  · exact ⟨(x - a).toNat, by omega, by unfold magF; rw [if_pos ha]; omega⟩
+  · exact ⟨(x - a).toNat, by omega, by unfold magF; rw [ite_eq_left ha]; omega⟩
   · by_cases hb : b ≤ 0
-    · exact ⟨(b - 1 - x).toNat, by omega, by unfold magF; rw [if_neg ha, if_pos hb]; omega⟩
+    · exact ⟨(b - 1 - x).toNat, by omega, by unfold magF; rw [ite_eq_right ha, ite_eq_left hb]; omega⟩
     · rcases lt_trichotomy x 0 with hneg | hzero | hpos
       · by_cases hle : -x ≤ min (b - 1) (-a)
         · exact ⟨(-2 * x).toNat, by omega, by
-            unfold magF; rw [if_neg ha, if_neg hb]; split_ifs <;> omega⟩
+            unfold magF; rw [ite_eq_right ha, ite_eq_right hb]; split_ifs <;> omega⟩
         · exact ⟨(-x + min (b - 1) (-a)).toNat, by omega, by
-            unfold magF; rw [if_neg ha, if_neg hb]; split_ifs <;> omega⟩
-      · exact ⟨0, by omega, by unfold magF; rw [if_neg ha, if_neg hb]; simp [hzero]⟩
+            unfold magF; rw [ite_eq_right ha, ite_eq_right hb]; split_ifs <;> omega⟩
+      · exact ⟨0, by omega, by unfold magF; rw [ite_eq_right ha, ite_eq_right hb]; simp [hzero]⟩
       · by_cases hle : x ≤ min (b - 1) (-a)
         · exact ⟨(2 * x - 1).toNat, by omega, by
-            unfold magF; rw [if_neg ha, if_neg hb]; split_ifs <;> omega⟩
+            unfold magF; rw [ite_eq_right ha, ite_eq_right hb]; split_ifs <;> omega⟩
         · exact ⟨(x + min (b - 1) (-a)).toNat, by omega, by
-            unfold magF; rw [if_neg ha, if_neg hb]; split_ifs <;> omega⟩
+            unfold magF; rw [ite_eq_right ha, ite_eq_right hb]; split_ifs <;> omega⟩
 
 /-- Magnitude-ordered signed exclusive range `[a, b)`, closed-form: `gen n =
 some ⟨ofInt (magF (toInt a) (toInt b) n), _⟩` (O(1) per index, no sort). -/
@@ -615,7 +615,7 @@ theorem exhaustiveSignedRangeGen_gen_none {T : Type*} [LE T] [LT T]
     (canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : (toInt b - toInt a).toNat ≤ n) :
     @gen _ (exhaustiveSignedRangeGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem exhaustiveSignedRangeGen_gen_some {T : Type*} [LE T] [LT T]
@@ -623,7 +623,7 @@ theorem exhaustiveSignedRangeGen_gen_some {T : Type*} [LE T] [LT T]
     (canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff) (a b : T) (n : ℕ)
     (h : n < (toInt b - toInt a).toNat) :
     @gen _ (exhaustiveSignedRangeGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n ≠ none := by
-  rw [show @gen _ (exhaustiveSignedRangeGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (exhaustiveSignedRangeGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt lt_iff le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- Magnitude-ordered signed inclusive range `[a, b]`, closed-form (uses
@@ -667,7 +667,7 @@ theorem exhaustiveSignedRangeInclusiveGen_gen_none {T : Type*} [LE T]
     (canon ofInt_toInt toInt_lt le_toInt le_iff) (a b : T) (n : ℕ)
     (h : (toInt b - toInt a + 1).toNat ≤ n) :
     @gen _ (exhaustiveSignedRangeInclusiveGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem exhaustiveSignedRangeInclusiveGen_gen_some {T : Type*} [LE T]
@@ -675,7 +675,7 @@ theorem exhaustiveSignedRangeInclusiveGen_gen_some {T : Type*} [LE T]
     (canon ofInt_toInt toInt_lt le_toInt le_iff) (a b : T) (n : ℕ)
     (h : n < (toInt b - toInt a + 1).toNat) :
     @gen _ (exhaustiveSignedRangeInclusiveGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n ≠ none := by
-  rw [show @gen _ (exhaustiveSignedRangeInclusiveGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (exhaustiveSignedRangeInclusiveGen toInt ofInt bound canon ofInt_toInt toInt_lt le_toInt le_iff a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 

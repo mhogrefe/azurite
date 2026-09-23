@@ -91,8 +91,8 @@ theorem lemma_4_91 (Ps : Finset (MvPolynomial (Fin k) K)) (a : quotPolys Ps)
     rw [Polynomial.finsetSum_coeff,
       Finset.sum_eq_single_of_mem i (Finset.mem_univ i)
         (fun j _ hj => by rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow,
-          if_neg (fun heq => hj (Fin.val_injective heq).symm), mul_zero])]
-    rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+          ite_eq_right (fun heq => hj (Fin.val_injective heq).symm), mul_zero])]
+    rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
   rw [hq0, Polynomial.coeff_zero] at hcoeff
   exact (algebraMap K C).injective (hcoeff.symm.trans (map_zero (algebraMap K C)).symm)
 

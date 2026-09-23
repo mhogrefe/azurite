@@ -93,11 +93,11 @@ private theorem Tru_degEq_imp_eq
       q.map (MvPolynomial.aeval y).toRingHom := by
   set φ := (MvPolynomial.aeval (R := D) y).toRingHom
   by_cases hR : R = 0
-  · subst hR; rw [Tru, if_pos rfl] at hq; exact hq.elim
-  · rw [Tru, if_neg hR] at hq
+  · subst hR; rw [Tru, ite_eq_left rfl] at hq; exact hq.elim
+  · rw [Tru, ite_eq_right hR] at hq
     by_cases hbase : (∃ d : D, R.leadingCoeff = MvPolynomial.C d) ∨ R.natDegree = 0
-    · rw [if_pos hbase, Set.mem_singleton_iff] at hq; subst hq; rfl
-    · rw [if_neg hbase, Set.mem_union, Set.mem_singleton_iff] at hq
+    · rw [ite_eq_left hbase, Set.mem_singleton_iff] at hq; subst hq; rfl
+    · rw [ite_eq_right hbase, Set.mem_union, Set.mem_singleton_iff] at hq
       push Not at hbase
       obtain ⟨_, hnd_pos⟩ := hbase
       have hnd_pos' : 0 < R.natDegree := Nat.pos_of_ne_zero hnd_pos
@@ -153,7 +153,7 @@ omit [IsDomain D] in
 private theorem Tru_nonempty_of_ne_zero
     (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
     Q ∈ Tru Q := by
-  rw [Tru, if_neg hQ]
+  rw [Tru, ite_eq_right hQ]
   split_ifs
   · exact Set.mem_singleton_iff.mpr rfl
   · exact Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl)
@@ -161,13 +161,13 @@ private theorem Tru_nonempty_of_ne_zero
 omit [IsDomain D] in
 theorem Tru_empty_of_eq_zero :
     Tru (0 : Polynomial (MvPolynomial (Fin k) D)) = ∅ := by
-  rw [Tru, if_pos rfl]
+  rw [Tru, ite_eq_left rfl]
 
 omit [IsDomain D] in
 theorem zero_not_mem_Tru
     (Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
     (0 : Polynomial (MvPolynomial (Fin k) D)) ∉ Tru Q := by
-  rw [Tru, if_neg hQ]; split_ifs with hbase
+  rw [Tru, ite_eq_right hQ]; split_ifs with hbase
   · exact fun h => hQ (Set.mem_singleton_iff.mp h).symm
   · intro hmem
     rw [Set.mem_union, Set.mem_singleton_iff] at hmem
@@ -191,7 +191,7 @@ private theorem Tru_natDegree_injective
     {q₁ q₂ : Polynomial (MvPolynomial (Fin k) D)}
     (h₁ : q₁ ∈ Tru Q) (h₂ : q₂ ∈ Tru Q)
     (hnd : q₁.natDegree = q₂.natDegree) : q₁ = q₂ := by
-  rw [Tru, if_neg hQ] at h₁ h₂
+  rw [Tru, ite_eq_right hQ] at h₁ h₂
   split_ifs at h₁ h₂ with hbase
   · rw [Set.mem_singleton_iff.mp h₁, Set.mem_singleton_iff.mp h₂]
   · rw [Set.mem_union, Set.mem_singleton_iff] at h₁ h₂
@@ -320,11 +320,11 @@ private theorem mkTRemsNode_covering
   rw [mkTRemsNode]
   by_cases hcur : cur = 0
   · -- cur = 0: .node 0 [], leafPaths = [[]]
-    rw [if_pos hcur]
+    rw [ite_eq_left hcur]
     exact ⟨[], by simp [RoseTree.leafPaths], by
-      rw [leafFormulaAux, realization_degFormula, Set.mem_setOf_eq,
-          hcur, pRemMv, dif_pos rfl, neg_zero, Polynomial.map_zero, Polynomial.degree_zero]⟩
-  · rw [if_neg hcur]; dsimp only
+      rw [leafFormulaAux, realization_degFormula, Set.mem_ofPred_eq,
+          hcur, pRemMv, dite_eq_left rfl, neg_zero, Polynomial.map_zero, Polynomial.degree_zero]⟩
+  · rw [ite_eq_right hcur]; dsimp only
     set R := -(pRemMv parent cur) with R_def
     set children := (Tru_finite R).toFinset.toList with children_def
     set tru_subtrees := children.attach.map (fun ⟨child, _⟩ => mkTRemsNode cur child)
@@ -334,8 +334,8 @@ private theorem mkTRemsNode_covering
     · -- R_y = 0: use the 0 child, path = [0]
       refine ⟨[0], mem_leafPaths_zero cur tru_subtrees, ?_⟩
       have : leafFormulaAux parent cur [0] = degFormula (-(pRemMv parent cur)) ⊥ := by
-        unfold leafFormulaAux; exact if_pos rfl
-      rw [this, realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot]
+        unfold leafFormulaAux; exact ite_eq_left rfl
+      rw [this, realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot]
       exact hRy
     · -- R_y ≠ 0: find matching Tru element
       have hR : R ≠ 0 := by intro h; exact hRy (h ▸ Polynomial.map_zero φ)
@@ -365,9 +365,9 @@ private theorem mkTRemsNode_covering
         have : leafFormulaAux parent cur (c :: subpath) =
             (degFormula (-(pRemMv parent cur)) (↑c.natDegree)).and
               (leafFormulaAux cur c subpath) := by
-          show (if c = 0 then _ else _) = _; exact if_neg hc_ne
+          show (if c = 0 then _ else _) = _; exact ite_eq_right hc_ne
         rw [this, Formula.realization_and, Set.mem_inter_iff]
-        exact ⟨by rw [realization_degFormula, Set.mem_setOf_eq]; exact hc_deg, hsp_real⟩
+        exact ⟨by rw [realization_degFormula, Set.mem_ofPred_eq]; exact hc_deg, hsp_real⟩
 termination_by cur.natDegree
 decreasing_by exact hc_nd
 
@@ -389,8 +389,8 @@ theorem leafFormula_covering
   · -- Q_y = 0: use the 0 child, path = [0]
     refine ⟨[0], mem_leafPaths_zero P (cs.map (mkTRemsNode P)), ?_⟩
     have : leafFormula P Q [0] = degFormula Q ⊥ := by
-      unfold leafFormula; exact if_pos rfl
-    rw [this, realization_degFormula, Set.mem_setOf_eq, Polynomial.degree_eq_bot]
+      unfold leafFormula; exact ite_eq_left rfl
+    rw [this, realization_degFormula, Set.mem_ofPred_eq, Polynomial.degree_eq_bot]
     exact hQy
   · -- Q_y ≠ 0: find matching Tru element
     have hQ : Q ≠ 0 := by intro h; exact hQy (h ▸ Polynomial.map_zero φ)
@@ -412,9 +412,9 @@ theorem leafFormula_covering
     · -- y ∈ realization of leafFormula P Q (q :: subpath)
       have : leafFormula P Q (q :: subpath) =
           (degFormula Q (↑q.natDegree)).and (leafFormulaAux P q subpath) := by
-        show (if q = 0 then _ else _) = _; exact if_neg hq_ne
+        show (if q = 0 then _ else _) = _; exact ite_eq_right hq_ne
       rw [this, Formula.realization_and, Set.mem_inter_iff]
-      exact ⟨by rw [realization_degFormula, Set.mem_setOf_eq]; exact hq_deg, hsp_real⟩
+      exact ⟨by rw [realization_degFormula, Set.mem_ofPred_eq]; exact hq_deg, hsp_real⟩
 
 /-! #### Helper: leafPaths extraction -/
 
@@ -443,11 +443,11 @@ private theorem mkTRemsNode_disjoint
       (leafFormulaAux parent cur path2).realization (C := C) = ∅ := by
   by_cases hcur : cur = 0
   · -- Only one leaf path
-    rw [mkTRemsNode, if_pos hcur] at h1 h2
+    rw [mkTRemsNode, ite_eq_left hcur] at h1 h2
     simp only [RoseTree.leafPaths, List.mem_singleton] at h1 h2
     exact absurd (h1 ▸ h2 ▸ rfl) hne
   · -- cur ≠ 0: unfold one level of mkTRemsNode
-    rw [mkTRemsNode, if_neg hcur] at h1 h2; dsimp only at h1 h2
+    rw [mkTRemsNode, ite_eq_right hcur] at h1 h2; dsimp only at h1 h2
     set R := -(pRemMv parent cur) with R_def
     set cs := (Tru_finite R).toFinset.toList with cs_def
     set tru_trees := cs.attach.map (fun ⟨c, _⟩ => mkTRemsNode cur c) with tt_def
@@ -484,10 +484,10 @@ private theorem mkTRemsNode_disjoint
         have hsp_ne : sp1 ≠ sp2 := fun h => hne (by rw [h])
         have heq1 : leafFormulaAux parent cur (c1 :: sp1) =
             (degFormula R (↑c1.natDegree)).and (leafFormulaAux cur c1 sp1) := by
-          show (if c1 = 0 then _ else _) = _; exact if_neg hc1_ne
+          show (if c1 = 0 then _ else _) = _; exact ite_eq_right hc1_ne
         have heq2 : leafFormulaAux parent cur (c1 :: sp2) =
             (degFormula R (↑c1.natDegree)).and (leafFormulaAux cur c1 sp2) := by
-          show (if c1 = 0 then _ else _) = _; exact if_neg hc1_ne
+          show (if c1 = 0 then _ else _) = _; exact ite_eq_right hc1_ne
         rw [heq1, heq2]
         -- (A.and B₁).realization ∩ (A.and B₂).realization = ∅ follows from B₁ ∩ B₂ = ∅
         have ih := mkTRemsNode_disjoint cur c1 hsp1 hsp2 hsp_ne (C := C)
@@ -504,11 +504,11 @@ private theorem mkTRemsNode_disjoint
         -- ⊆ (degFormula R (↑cᵢ.natDegree)).realization
         have hsub1 : (leafFormulaAux parent cur (c1 :: sp1)).realization (C := C) ⊆
             (degFormula R (↑c1.natDegree)).realization := by
-          simp only [leafFormulaAux, if_neg hc1_ne, Formula.realization_and]
+          simp only [leafFormulaAux, ite_eq_right hc1_ne, Formula.realization_and]
           exact Set.inter_subset_left
         have hsub2 : (leafFormulaAux parent cur (c2 :: sp2)).realization (C := C) ⊆
             (degFormula R (↑c2.natDegree)).realization := by
-          simp only [leafFormulaAux, if_neg hc2_ne, Formula.realization_and]
+          simp only [leafFormulaAux, ite_eq_right hc2_ne, Formula.realization_and]
           exact Set.inter_subset_left
         have hdisj := degFormula_disjoint (C := C) R (↑c1.natDegree) (↑c2.natDegree)
           (by exact_mod_cast hnd_ne)
@@ -536,7 +536,7 @@ private theorem mkTRemsNode_disjoint
       -- leafFormulaAux parent cur (0 :: []) = degFormula R ⊥
       have hsub1 : (leafFormulaAux parent cur (c1 :: sp1)).realization (C := C) ⊆
           (degFormula R (↑c1.natDegree)).realization := by
-        simp only [leafFormulaAux, if_neg hc1_ne, Formula.realization_and]
+        simp only [leafFormulaAux, ite_eq_right hc1_ne, Formula.realization_and]
         exact Set.inter_subset_left
       have heq2 : (leafFormulaAux parent cur [0]).realization (C := C) =
           (degFormula R ⊥).realization := by
@@ -567,7 +567,7 @@ private theorem mkTRemsNode_disjoint
         simp [leafFormulaAux, ← R_def]
       have hsub2 : (leafFormulaAux parent cur (c2 :: sp2)).realization (C := C) ⊆
           (degFormula R (↑c2.natDegree)).realization := by
-        simp only [leafFormulaAux, if_neg hc2_ne, Formula.realization_and]
+        simp only [leafFormulaAux, ite_eq_right hc2_ne, Formula.realization_and]
         exact Set.inter_subset_left
       rw [heq1]
       have hdisj := degFormula_disjoint (C := C) R ⊥ (↑c2.natDegree) (by simp)
@@ -629,7 +629,7 @@ theorem leafFormula_disjoint
     · -- Same q: leafFormula uses same degFormula Q prefix, disjointness from subtrees
       subst hq_eq
       have hsp_ne : sp1 ≠ sp2 := fun h => hne (by rw [h])
-      simp only [leafFormula, if_neg hq1_ne, Formula.realization_and]
+      simp only [leafFormula, ite_eq_right hq1_ne, Formula.realization_and]
       have ih := mkTRemsNode_disjoint P q1 hsp1 hsp2 hsp_ne (C := C)
       ext y; simp only [Set.mem_inter_iff, Set.mem_empty_iff_false, iff_false]
       intro ⟨⟨_, hy1⟩, ⟨_, hy2⟩⟩
@@ -641,11 +641,11 @@ theorem leafFormula_disjoint
         hq_eq (Tru_natDegree_injective Q hQ_ne hq1_tru hq2_tru h)
       have hsub1 : (leafFormula P Q (q1 :: sp1)).realization (C := C) ⊆
           (degFormula Q (↑q1.natDegree)).realization := by
-        simp only [leafFormula, if_neg hq1_ne, Formula.realization_and]
+        simp only [leafFormula, ite_eq_right hq1_ne, Formula.realization_and]
         exact Set.inter_subset_left
       have hsub2 : (leafFormula P Q (q2 :: sp2)).realization (C := C) ⊆
           (degFormula Q (↑q2.natDegree)).realization := by
-        simp only [leafFormula, if_neg hq2_ne, Formula.realization_and]
+        simp only [leafFormula, ite_eq_right hq2_ne, Formula.realization_and]
         exact Set.inter_subset_left
       have hdisj := degFormula_disjoint (C := C) Q (↑q1.natDegree) (↑q2.natDegree)
         (by exact_mod_cast hnd_ne)
@@ -666,7 +666,7 @@ theorem leafFormula_disjoint
     simp only [RoseTree.leafPaths, List.mem_singleton] at hsp2; subst hsp2
     have hsub1 : (leafFormula P Q (q1 :: sp1)).realization (C := C) ⊆
         (degFormula Q (↑q1.natDegree)).realization := by
-      simp only [leafFormula, if_neg hq1_ne, Formula.realization_and]
+      simp only [leafFormula, ite_eq_right hq1_ne, Formula.realization_and]
       exact Set.inter_subset_left
     have heq2 : (leafFormula P Q [0]).realization (C := C) =
         (degFormula Q ⊥).realization := by
@@ -695,7 +695,7 @@ theorem leafFormula_disjoint
       simp [leafFormula]
     have hsub2 : (leafFormula P Q (q2 :: sp2)).realization (C := C) ⊆
         (degFormula Q (↑q2.natDegree)).realization := by
-      simp only [leafFormula, if_neg hq2_ne, Formula.realization_and]
+      simp only [leafFormula, ite_eq_right hq2_ne, Formula.realization_and]
       exact Set.inter_subset_left
     rw [heq1]
     have hdisj := degFormula_disjoint (C := C) Q ⊥ (↑q2.natDegree) (by simp)
@@ -743,15 +743,15 @@ private theorem Tru_coeff_eq
     (hq : q ∈ Tru R) (j : ℕ) (hj : j ≤ q.natDegree) :
     q.coeff j = R.coeff j := by
   by_cases hR : R = 0
-  · subst hR; rw [Tru, if_pos rfl] at hq; exact hq.elim
-  · rw [Tru, if_neg hR] at hq
+  · subst hR; rw [Tru, ite_eq_left rfl] at hq; exact hq.elim
+  · rw [Tru, ite_eq_right hR] at hq
     split_ifs at hq with hbase
     · rw [Set.mem_singleton_iff.mp hq]
     · rw [Set.mem_union, Set.mem_singleton_iff] at hq
       rcases hq with rfl | hq_trunc
       · rfl
       · have ih := Tru_coeff_eq (truncate (R.natDegree - 1) R) q hq_trunc j hj
-        rw [ih, coeff_truncate, if_pos (le_trans hj (le_trans
+        rw [ih, coeff_truncate, ite_eq_left (le_trans hj (le_trans
           (natDegree_mem_Tru_le hq_trunc) (natDegree_truncate_le _ _)))]
 termination_by R.natDegree
 decreasing_by
@@ -773,7 +773,7 @@ theorem degFormula_Tru_spec
     (MvPolynomial.aeval y).toRingHom q.leadingCoeff ≠ 0 := by
   set φ := (MvPolynomial.aeval (R := D) y).toRingHom
   have hdeg_R : (R.map φ).degree = ↑q.natDegree := by
-    simp only [realization_degFormula, Set.mem_setOf_eq] at hy; exact hy
+    simp only [realization_degFormula, Set.mem_ofPred_eq] at hy; exact hy
   have hlc_eq : q.leadingCoeff = R.coeff q.natDegree := by
     show q.coeff q.natDegree = R.coeff q.natDegree
     exact Tru_coeff_eq R q hq q.natDegree le_rfl
@@ -798,7 +798,7 @@ private theorem degFormula_bot_spec
     (y : Fin k → C)
     (hy : y ∈ (degFormula R ⊥).realization (C := C)) :
     R.map (MvPolynomial.aeval y).toRingHom = 0 := by
-  simp only [realization_degFormula, Set.mem_setOf_eq] at hy
+  simp only [realization_degFormula, Set.mem_ofPred_eq] at hy
   exact Polynomial.degree_eq_bot.mp hy
 
 /-- BPR Lemma 1.19 (iii), recursive case: for a valid sub-path in
@@ -826,7 +826,7 @@ private theorem mkTRemsNode_gcd
   have hc_pow : φ cur.leadingCoeff ^ pRemExp parent cur ≠ 0 :=
     pow_ne_zero _ hlc
   -- Unfold mkTRemsNode to get children structure
-  rw [mkTRemsNode, if_neg hcur] at hsp; dsimp only at hsp
+  rw [mkTRemsNode, ite_eq_right hcur] at hsp; dsimp only at hsp
   set cs := (Tru_finite R).toFinset.toList with cs_def
   set tru_trees := cs.attach.map (fun ⟨c, _⟩ => mkTRemsNode cur c) with tt_def
   set ac := tru_trees ++ [RoseTree.node 0 []] with ac_def
@@ -848,14 +848,14 @@ private theorem mkTRemsNode_gcd
       intro h; rw [h, Tru_empty_of_eq_zero] at hc_tru; exact hc_tru.elim
     have hc_ne : c ≠ 0 := fun h => absurd (h ▸ hc_tru) (zero_not_mem_Tru R hR_ne)
     -- leafFormulaAux parent cur (c :: sp') = degFormula R (↑c.natDegree) ∧ ...
-    simp only [leafFormulaAux, if_neg hc_ne, Formula.realization_and] at hy
+    simp only [leafFormulaAux, ite_eq_right hc_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     -- From degFormula: R_y = c_y and φ(c.leadingCoeff) ≠ 0
     obtain ⟨hRc, hlc_c⟩ := degFormula_Tru_spec R c hc_tru hc_ne y hy_deg
     -- IH: IsGCD (pathLeafParentAux c sp').map φ (cur.map φ) (c.map φ)
     have ih := mkTRemsNode_gcd cur c hc_ne hsp' y hy_rest hlc_c
     -- pathLeafParentAux cur (c :: sp') = pathLeafParentAux c sp'
-    simp only [pathLeafParentAux, if_neg hc_ne]
+    simp only [pathLeafParentAux, ite_eq_right hc_ne]
     -- Chain: rewrite c_y to R_y, then R_y to -(pRemMv parent cur)_y
     rw [← hRc] at ih
     have hR_eq : R.map φ = -(pRemMv parent cur).map φ := by
@@ -918,14 +918,14 @@ theorem leafFormula_gcd
       intro h; rw [h, Tru_empty_of_eq_zero] at hq_tru; exact hq_tru.elim
     have hq_ne : q ≠ 0 := fun h => absurd (h ▸ hq_tru) (zero_not_mem_Tru Q hQ_ne)
     -- leafFormula P Q (q :: sp) = degFormula Q (↑q.natDegree) ∧ leafFormulaAux P q sp
-    simp only [leafFormula, if_neg hq_ne, Formula.realization_and] at hy
+    simp only [leafFormula, ite_eq_right hq_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     -- From degFormula: Q_y = q_y and φ(q.leadingCoeff) ≠ 0
     obtain ⟨hQq, hlc_q⟩ := degFormula_Tru_spec Q q hq_tru hq_ne y hy_deg
     -- By mkTRemsNode_gcd: IsGCD lp_y P_y q_y
     have ih := mkTRemsNode_gcd P q hq_ne hsp y hy_rest hlc_q
     -- pathLeafParent P (q :: sp) = pathLeafParentAux q sp
-    simp only [pathLeafParent, if_neg hq_ne]
+    simp only [pathLeafParent, ite_eq_right hq_ne]
     rw [hQq]
     exact ih
   · -- child = .node 0 []: path = [0], Q_y = 0
@@ -952,7 +952,7 @@ theorem leafFormulaAux_lc_ne_zero
     (hy : y ∈ (leafFormulaAux parent cur sp).realization (C := C)) :
     ∀ p ∈ sp, p ≠ 0 → (MvPolynomial.aeval y).toRingHom p.leadingCoeff ≠ 0 := by
   set R := -(pRemMv parent cur) with R_def
-  rw [mkTRemsNode, if_neg hcur] at hsp; dsimp only at hsp
+  rw [mkTRemsNode, ite_eq_right hcur] at hsp; dsimp only at hsp
   set cs := (Tru_finite R).toFinset.toList with cs_def
   set tru_trees := cs.attach.map (fun ⟨c, _⟩ => mkTRemsNode cur c) with tt_def
   set ac := tru_trees ++ [RoseTree.node 0 []] with ac_def
@@ -972,7 +972,7 @@ theorem leafFormulaAux_lc_ne_zero
     have hR_ne : R ≠ 0 := by
       intro h; rw [h, Tru_empty_of_eq_zero] at hc_tru; exact hc_tru.elim
     have hc_ne : c ≠ 0 := fun h => absurd (h ▸ hc_tru) (zero_not_mem_Tru R hR_ne)
-    simp only [leafFormulaAux, if_neg hc_ne, Formula.realization_and] at hy
+    simp only [leafFormulaAux, ite_eq_right hc_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     obtain ⟨_, hlc_c⟩ := degFormula_Tru_spec R c hc_tru hc_ne y hy_deg
     have ih := leafFormulaAux_lc_ne_zero cur c hc_ne hsp' y hy_rest
@@ -1021,7 +1021,7 @@ theorem leafFormula_path_lc_ne_zero
     have hQ_ne : Q ≠ 0 := by
       intro h; rw [h, Tru_empty_of_eq_zero] at hq_tru; exact hq_tru.elim
     have hq_ne : q ≠ 0 := fun h => absurd (h ▸ hq_tru) (zero_not_mem_Tru Q hQ_ne)
-    simp only [leafFormula, if_neg hq_ne, Formula.realization_and] at hy
+    simp only [leafFormula, ite_eq_right hq_ne, Formula.realization_and] at hy
     obtain ⟨hy_deg, hy_rest⟩ := hy
     obtain ⟨_, hlc_q⟩ := degFormula_Tru_spec Q q hq_tru hq_ne y hy_deg
     have ih := leafFormulaAux_lc_ne_zero P q hq_ne hsp y hy_rest

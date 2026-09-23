@@ -87,13 +87,13 @@ theorem rankSpec_zero (g : ExhaustiveGenerator T) : rankSpec g 0 = 0 := by
 
 theorem rankSpec_succ_of_isSome {g : ExhaustiveGenerator T} {k : ℕ}
     (hk : (g.gen k).isSome) : rankSpec g (k + 1) = rankSpec g k + 1 := by
-  rw [rankSpec, Finset.range_add_one, Finset.filter_insert, if_pos hk,
+  rw [rankSpec, Finset.range_add_one, Finset.filter_insert, ite_eq_left hk,
     Finset.card_insert_of_notMem (by simp)]
   rfl
 
 theorem rankSpec_succ_of_not_isSome {g : ExhaustiveGenerator T} {k : ℕ}
     (hk : ¬(g.gen k).isSome) : rankSpec g (k + 1) = rankSpec g k := by
-  rw [rankSpec, Finset.range_add_one, Finset.filter_insert, if_neg hk]
+  rw [rankSpec, Finset.range_add_one, Finset.filter_insert, ite_eq_right hk]
   rfl
 
 theorem rankSpec_le_rankSpec (g : ExhaustiveGenerator T) {k k' : ℕ} (h : k ≤ k') :
@@ -172,12 +172,12 @@ variable {g : ExhaustiveGenerator T} {N : Option ℕ}
 
 /-- The `i`-th live counter is live. -/
 theorem gen_unrank_isSome {i : ℕ} (hi : Under N i) : (g.gen (unrank g N h i)).isSome := by
-  rw [unrank, dif_pos hi]
+  rw [unrank, dite_eq_left hi]
   exact (unrankAux g N h i hi).2.1
 
 /-- `rankSpec` is a left inverse of `unrank` on indices under the count. -/
 theorem rankSpec_unrank {i : ℕ} (hi : Under N i) : rankSpec g (unrank g N h i) = i := by
-  rw [unrank, dif_pos hi]
+  rw [unrank, dite_eq_left hi]
   exact (unrankAux g N h i hi).2.2
 
 /-- `unrank` is strictly monotone on the indices under the count. -/
@@ -217,17 +217,17 @@ at most `N` live counters) are typically supplied by
     · -- Existence: the compressed index of `t` is the rank of its raw index.
       show (if Under N (rankSpec g n) then g.gen (unrank g N h (rankSpec g n)) else none)
         = some t
-      rw [if_pos hU, unrank_rankSpec hlive hU]
+      rw [ite_eq_left hU, unrank_rankSpec hlive hU]
       exact hn
     · -- Uniqueness: a producing compressed index unranks to the raw index.
       intro j hj
       have hj' : (if Under N j then g.gen (unrank g N h j) else none) = some t := hj
       by_cases hUj : Under N j
-      · rw [if_pos hUj] at hj'
+      · rw [ite_eq_left hUj] at hj'
         have hjeq : unrank g N h j = n := hun _ hj'
         calc j = rankSpec g (unrank g N h j) := (rankSpec_unrank hUj).symm
           _ = rankSpec g n := by rw [hjeq]
-      · rw [if_neg hUj] at hj'
+      · rw [ite_eq_right hUj] at hj'
         exact absurd hj' (by simp)
 
 /-- The compressed generator produces a value at every index under the count. -/
@@ -236,7 +236,7 @@ theorem compress_gen_isSome (g : ExhaustiveGenerator T) (N : Option ℕ)
     (h' : ∀ k, (g.gen k).isSome → Under N (rankSpec g k)) {i : ℕ} (hi : Under N i) :
     ((compress g N h h').gen i).isSome := by
   show (if Under N i then g.gen (unrank g N h i) else none).isSome
-  rw [if_pos hi]
+  rw [ite_eq_left hi]
   exact gen_unrank_isSome hi
 
 /-- The compressed generator is `none` at every index past the count. -/
@@ -244,7 +244,7 @@ theorem compress_gen_none (g : ExhaustiveGenerator T) (N : Option ℕ)
     (h : ∀ n, Under N (rankSpec g n) → ∃ k, n ≤ k ∧ (g.gen k).isSome)
     (h' : ∀ k, (g.gen k).isSome → Under N (rankSpec g k)) {i : ℕ} (hi : ¬Under N i) :
     (compress g N h h').gen i = none :=
-  if_neg hi
+  ite_eq_right hi
 
 /-- **Compression restores contiguity**: the compressed generator is `some`
 exactly on the initial segment under the count, hence `Contiguous` — in both
@@ -293,8 +293,8 @@ theorem compress_gen_eq_of_no_holes (g : ExhaustiveGenerator T) (N : Option ℕ)
     (compress g N h h').gen i = g.gen i := by
   show (if Under N i then g.gen (unrank g N h i) else none) = g.gen i
   by_cases hi : Under N i
-  · rw [if_pos hi, unrank_eq_self hnh hi]
-  · rw [if_neg hi]
+  · rw [ite_eq_left hi, unrank_eq_self hnh hi]
+  · rw [ite_eq_right hi]
     cases N with
     | none => exact absurd (under_none i) hi
     | some m =>

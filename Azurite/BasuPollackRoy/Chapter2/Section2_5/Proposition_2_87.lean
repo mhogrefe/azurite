@@ -62,7 +62,7 @@ theorem realization_forallList_finRange_univ_iff {k : ℕ} {α : Type*} {C : Typ
     (Formula.forallList (List.finRange k) Φ).realization (C := C) = Set.univ ↔
       Φ.realization (C := C) = Set.univ := by
   rw [Formula.realization_forallList, Set.eq_univ_iff_forall, Set.eq_univ_iff_forall]
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · intro h v; exact h v v (fun s hs => absurd (List.mem_finRange s) hs)
   · intro h _ v _; exact h v
@@ -154,7 +154,7 @@ theorem mem_interval_formula {F : Type*} [Field F] [LinearOrder F] [IsStrictOrde
         (Formula.atom ⟨MvPolynomial.C 4 - MvPolynomial.X 0, OrderRel.ge⟩)).realization (C := C')
       ↔ (0 ≤ y 0 ∧ y 0 ≤ 4) := by
   simp only [Formula.realization, AtomRealization.interpret, Set.mem_inter_iff,
-    Set.mem_setOf_eq, MvPolynomial.aeval_X, map_sub, map_ofNat, ge_iff_le]
+    Set.mem_ofPred_eq, MvPolynomial.aeval_X, map_sub, map_ofNat, ge_iff_le]
   constructor
   · rintro ⟨h1, h2⟩; exact ⟨h1, by linarith⟩
   · rintro ⟨h1, h2⟩; exact ⟨h1, by linarith⟩
@@ -199,7 +199,7 @@ theorem ext_not_unique (t : R') (ht : ∀ y : R, algebraMap R R' y ≠ t)
     have huniv : (fun y : Fin 1 → R => algebraMap R R' ∘ y) ⁻¹' {y : Fin 1 → R' | y 0 ≠ t}
         = Set.univ := by
       ext y
-      simp only [Set.mem_preimage, Set.mem_setOf_eq, Function.comp_apply, Set.mem_univ, iff_true]
+      simp only [Set.mem_preimage, Set.mem_ofPred_eq, Function.comp_apply, Set.mem_univ, iff_true]
       exact ht (y 0)
     rw [huniv, Set.inter_univ]
   · -- `T'` differs from `Ext S`: the point `t` lies in `Ext S = [0,4]` but not in `T'`

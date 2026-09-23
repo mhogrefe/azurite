@@ -334,14 +334,14 @@ def nonzeroRationalsStream : StreamFor nonzeroRationalsGen where
       show AzRat.ofAzNats (positiveRationalPair (n / 2)).1 (positiveRationalPair (n / 2)).2
         = nonzeroRationals n
       unfold nonzeroRationals
-      rw [if_pos hn]
+      rw [ite_eq_left hn]
       rfl
     · rw [decide_eq_false (show ¬n % 2 = 0 by omega)]
       refine congrArg some (Subtype.ext ?_)
       show -(AzRat.ofAzNats (positiveRationalPair (n / 2)).1 (positiveRationalPair (n / 2)).2)
         = nonzeroRationals n
       unfold nonzeroRationals
-      rw [if_neg (show ¬n % 2 = 0 by omega)]
+      rw [ite_eq_right (show ¬n % 2 = 0 by omega)]
       rfl
 
 /-! #### All rationals (prepend `0` to the interleave) -/
@@ -390,14 +390,14 @@ def rationalsStream : StreamFor rationalsGen where
         show AzRat.ofAzNats (positiveRationalPair (m / 2)).1 (positiveRationalPair (m / 2)).2
           = nonzeroRationals m
         unfold nonzeroRationals
-        rw [if_pos hm]
+        rw [ite_eq_left hm]
         rfl
       · rw [decide_eq_false (show ¬m % 2 = 0 by omega)]
         refine congrArg some ?_
         show -(AzRat.ofAzNats (positiveRationalPair (m / 2)).1 (positiveRationalPair (m / 2)).2)
           = nonzeroRationals m
         unfold nonzeroRationals
-        rw [if_neg (show ¬m % 2 = 0 by omega)]
+        rw [ite_eq_right (show ¬m % 2 = 0 by omega)]
         rfl
 
 /-! ### The compress stream
@@ -462,20 +462,20 @@ theorem unrank_eq_find {p i : ℕ} (hp : rankSpec g p = i) (hu : Under N i)
 theorem compressNext_idx_of_under {s : CompressState g} (hu : Under N s.idx) :
     ((compressNext g N h s).2).idx = s.idx + 1 := by
   simp only [compressNext]
-  rw [dif_pos hu]
+  rw [dite_eq_left hu]
 
 /-- A step under the live count emits the next live counter's value. -/
 theorem compressNext_fst_of_under {s : CompressState g} (hu : Under N s.idx)
     (hex : ∃ k, s.pos ≤ k ∧ (g.gen k).isSome) :
     (compressNext g N h s).1 = g.gen (Nat.find hex) := by
   simp only [compressNext]
-  rw [dif_pos hu]
+  rw [dite_eq_left hu]
 
 /-- A step past the live count emits `none` and stays put. -/
 theorem compressNext_of_not_under {s : CompressState g} (hu : ¬Under N s.idx) :
     compressNext g N h s = (none, s) := by
   simp only [compressNext]
-  rw [dif_neg hu]
+  rw [dite_eq_right hu]
 
 /-- The compressed index after `n` advances is `n` — until the live count is
 exhausted, after which the state is stuck past the count. -/
@@ -522,13 +522,13 @@ def compressStream (g : ExhaustiveGenerator T) (N : Option ℕ)
         have hex : ∃ k, (advanceN (compressNext g N h) (compressInit g) n).pos ≤ k ∧
             (g.gen k).isSome :=
           h _ (by rw [(advanceN (compressNext g N h) (compressInit g) n).inv]; exact hu')
-        rw [compressNext_fst_of_under hu' hex, if_pos hu,
+        rw [compressNext_fst_of_under hu' hex, ite_eq_left hu,
           unrank_eq_find
             (by rw [(advanceN (compressNext g N h) (compressInit g) n).inv]; exact hidx)
             hu hex]
-      · rw [compressNext_of_not_under (by rw [hidx]; exact hu), if_neg hu]
+      · rw [compressNext_of_not_under (by rw [hidx]; exact hu), ite_eq_right hu]
     · rw [compressNext_of_not_under hnu,
-        if_neg fun hun => hnu (Under.of_le hle hun)]
+        ite_eq_right fun hun => hnu (Under.of_le hle hun)]
 
 end ExhaustiveGenerator
 
@@ -548,21 +548,21 @@ counter `3`, dead everywhere else. Exists purely to exercise
       have hm' : (if m = 1 then some false else if m = 3 then some true else none)
           = some false := hm
       by_contra h1
-      rw [if_neg h1] at hm'
+      rw [ite_eq_right h1] at hm'
       by_cases h3 : m = 3
-      · rw [if_pos h3] at hm'
+      · rw [ite_eq_left h3] at hm'
         exact Bool.noConfusion (Option.some.inj hm')
-      · rw [if_neg h3] at hm'
+      · rw [ite_eq_right h3] at hm'
         simp at hm'
     · refine ⟨3, rfl, fun m hm => ?_⟩
       have hm' : (if m = 1 then some false else if m = 3 then some true else none)
           = some true := hm
       by_cases h1 : m = 1
-      · rw [if_pos h1] at hm'
+      · rw [ite_eq_left h1] at hm'
         exact Bool.noConfusion (Option.some.inj hm')
-      · rw [if_neg h1] at hm'
+      · rw [ite_eq_right h1] at hm'
         by_contra h3
-        rw [if_neg h3] at hm'
+        rw [ite_eq_right h3] at hm'
         simp at hm'
 
 /-- `Bool` has exactly two values. -/
@@ -613,12 +613,12 @@ def zigZag (n : ℕ) : ℤ :=
 
 theorem zigZag_succ_of_even {k : ℕ} (hk : k % 2 = 0) : zigZag (k + 1) = -zigZag k + 1 := by
   unfold zigZag
-  rw [if_pos hk, if_neg (show ¬(k + 1) % 2 = 0 by omega)]
+  rw [ite_eq_left hk, ite_eq_right (show ¬(k + 1) % 2 = 0 by omega)]
   omega
 
 theorem zigZag_succ_of_odd {k : ℕ} (hk : k % 2 = 1) : zigZag (k + 1) = -zigZag k := by
   unfold zigZag
-  rw [if_neg (show ¬k % 2 = 0 by omega), if_pos (show (k + 1) % 2 = 0 by omega)]
+  rw [ite_eq_right (show ¬k % 2 = 0 by omega), ite_eq_left (show (k + 1) % 2 = 0 by omega)]
   omega
 
 /-- Stepper for `integersStream`: emit the current `AzInt`; the parity flag
@@ -700,13 +700,13 @@ def azNatRangeNext (a b : AzNat) (s : AzNatRangeState a b) :
 theorem azNatRangeNext_of_zero {a b : AzNat} {s : AzNatRangeState a b} (h : s.rem = 0) :
     azNatRangeNext a b s = (none, s) := by
   simp only [azNatRangeNext]
-  rw [dif_pos h]
+  rw [dite_eq_left h]
 
 /-- A live step decrements the remaining count. -/
 theorem azNatRangeNext_rem_of_ne {a b : AzNat} {s : AzNatRangeState a b} (h : s.rem ≠ 0) :
     ((azNatRangeNext a b s).2).rem = s.rem - 1 := by
   simp only [azNatRangeNext]
-  rw [dif_neg h]
+  rw [dite_eq_right h]
 
 theorem azNatRange_state (a b : AzNat) (n : ℕ) :
     (advanceN (azNatRangeNext a b) (azNatRangeInit a b) n).rem
@@ -735,8 +735,8 @@ def azNatRangeStream (a b : AzNat) : StreamFor (azNatRangeGen a b) where
     · have h0 : (advanceN (azNatRangeNext a b) (azNatRangeInit a b) n).rem ≠ 0 := by
         omega
       simp only [azNatRangeNext]
-      rw [dif_neg h0,
-        show @gen _ (azNatRangeGen a b) n = some _ from dif_pos (show n < b.toNat - a.toNat from hn)]
+      rw [dite_eq_right h0,
+        show @gen _ (azNatRangeGen a b) n = some _ from dite_eq_left (show n < b.toNat - a.toNat from hn)]
       refine congrArg some (Subtype.ext ?_)
       show (advanceN (azNatRangeNext a b) (azNatRangeInit a b) n).cur
         = AzNat.ofNat (a.toNat + n)
@@ -747,7 +747,7 @@ def azNatRangeStream (a b : AzNat) : StreamFor (azNatRangeGen a b) where
     · have h0 : (advanceN (azNatRangeNext a b) (azNatRangeInit a b) n).rem = 0 := by
         omega
       simp only [azNatRangeNext]
-      rw [dif_pos h0, azNatRangeGen_gen_none a b n (by omega)]
+      rw [dite_eq_left h0, azNatRangeGen_gen_none a b n (by omega)]
 
 /-! ### Guards
 

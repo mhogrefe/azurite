@@ -122,7 +122,7 @@ theorem exercise_2_4
     have := coeff_X_pow_mul Q P.natTrailingDegree 0; simp at this; exact this
   have hQ0 : Q.coeff 0 = P.trailingCoeff := by
     rw [trailingCoeff]; rw [← hcm]
-    congr 1; exact hQ.symm
+    exact congrArg (fun p => Polynomial.coeff p P.natTrailingDegree) hQ.symm
   have hQ0ne : Q.coeff 0 ≠ 0 := hQ0 ▸ trailingCoeff_nonzero_iff_nonzero.mpr hP
   -- Step 2: pos P ↔ pos Q
   have hfactor : pos P ↔ pos Q := by

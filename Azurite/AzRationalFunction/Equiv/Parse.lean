@@ -349,7 +349,7 @@ recovers it. -/
 theorem parse_toString (r : AzRationalFunction) : parse (toString r) = some r := by
   by_cases hd1 : displayDen r = 1
   · -- denominator `1`: the string is just the numerator
-    rw [toString, if_pos (by rw [beq_iff_eq]; exact hd1), parse, splitSlash_wrap_none,
+    rw [toString, ite_eq_left (by rw [beq_iff_eq]; exact hd1), parse, splitSlash_wrap_none,
       stripParens_of_no_open _ (bad_notin_polyChars h40 _), ofList_toList,
       Azurite.AzPolynomial.parseAzPolynomial_toChars, Option.map_some]
     have h1 : ofPolynomial (displayNum r) = r := by
@@ -358,7 +358,7 @@ theorem parse_toString (r : AzRationalFunction) : parse (toString r) = some r :=
       exact ofNumDen_displayNum_displayDen r
     rw [h1]
   · -- fraction form
-    rw [toString, if_neg (fun h => hd1 (beq_iff_eq.mp h)), parse]
+    rw [toString, ite_eq_right (fun h => hd1 (beq_iff_eq.mp h)), parse]
     have hcs : (wrapComponent (displayNum r) ++ "/"
           ++ wrapDenominator (displayDen r)).toList
         = (wrapComponent (displayNum r)).toList
@@ -377,6 +377,6 @@ theorem parse_toString (r : AzRationalFunction) : parse (toString r) = some r :=
       Azurite.AzPolynomial.parseAzPolynomial_toChars]
     show (if displayDen r = 0 then none
       else some (ofNumDen (displayNum r) (displayDen r))) = some r
-    rw [if_neg (displayDen_ne_zero r), ofNumDen_displayNum_displayDen r]
+    rw [ite_eq_right (displayDen_ne_zero r), ofNumDen_displayNum_displayDen r]
 
 end Azurite.AzRationalFunction

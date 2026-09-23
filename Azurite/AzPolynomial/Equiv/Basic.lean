@@ -348,12 +348,12 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.AzPolynomial R ≃ P
       rw [he]
       rfl
     rw [h_toPoly_zero, Polynomial.degree_zero]
-    rw [if_pos he]
+    rw [ite_eq_left he]
   else
     have he : ¬(p.coeffs = #[]) := by
       intro hc; have hz : p.coeffs.toList = [] := toList_empty_of_eq_empty p.coeffs hc
       exact h hz
-    rw [if_neg he]
+    rw [ite_eq_right he]
     have hp_nat := AzPolynomial.natDegree_toPoly p
     have ht : toPoly p ≠ 0 := by
       intro hc
@@ -415,7 +415,7 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.AzPolynomial R ≃ P
       simp at hc
       exact hc.symm
     dsimp [Azurite.AzPolynomial.one]
-    rw [dif_pos h1]
+    rw [dite_eq_left h1]
     rfl
   · next h =>
     -- 1 ≠ 0 in Polynomial R -> 1 ≠ 0 in R
@@ -426,7 +426,7 @@ noncomputable def equivPolynomial [DecidableEq R] : Azurite.AzPolynomial R ≃ P
       rw [Polynomial.C_0] at hc2
       exact h hc2
     dsimp [Azurite.AzPolynomial.one]
-    rw [dif_neg h1]
+    rw [dite_eq_right h1]
     apply Azurite.AzPolynomial.ext
     dsimp [Polynomial.toDenseList]
     split

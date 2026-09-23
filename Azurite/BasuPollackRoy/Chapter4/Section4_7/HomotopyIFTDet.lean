@@ -110,9 +110,9 @@ theorem exists_reL_imL_aeval_cauchyRiemann {m : ℕ} (ψ : MvPolynomial (Fin m) 
             + (if b = c then aeval (realEquiv.symm w) P' else 0) := by
         rw [pderiv_mul, map_add, map_mul, aeval_X, ← hY, map_mul]
         by_cases hbc : b = c
-        · subst hbc; rw [pderiv_X_self, if_pos rfl, map_one, mul_one]
+        · subst hbc; rw [pderiv_X_self, ite_eq_left rfl, map_one, mul_one]
         · rw [pderiv_X_of_ne (fun h => hbc h.symm), map_zero, mul_zero, add_zero,
-            if_neg hbc, add_zero]
+            ite_eq_right hbc, add_zero]
       -- the four LHS partial-derivative evaluations, expanded via `pderiv_mul`
       have eL1 : (eval w) (pderiv (Fin.castAdd m b)
             (Qre' * X (Fin.castAdd m c) - Qim' * X (Fin.natAdd m c)))
@@ -122,9 +122,9 @@ theorem exists_reL_imL_aeval_cauchyRiemann {m : ℕ} (ψ : MvPolynomial (Fin m) 
         rw [map_sub, pderiv_mul, pderiv_mul, pderiv_X_of_ne hcbcn.symm, mul_zero, add_zero,
           eval_sub, eval_add, eval_mul, eval_mul, eval_mul, eval_X, eval_X, h1', h2']
         by_cases hbc : b = c
-        · subst hbc; rw [pderiv_X_self, map_one, if_pos rfl]; ring
+        · subst hbc; rw [pderiv_X_self, map_one, ite_eq_left rfl]; ring
         · rw [pderiv_X_of_ne (hccb hbc), map_zero, mul_zero,
-            add_zero, if_neg hbc]; ring
+            add_zero, ite_eq_right hbc]; ring
       have eL2 : (eval w) (pderiv (Fin.castAdd m b)
             (Qre' * X (Fin.natAdd m c) + Qim' * X (Fin.castAdd m c)))
           = Ri.reL (aeval (realEquiv.symm w) (pderiv b P')) * w (Fin.natAdd m c)
@@ -133,9 +133,9 @@ theorem exists_reL_imL_aeval_cauchyRiemann {m : ℕ} (ψ : MvPolynomial (Fin m) 
         rw [map_add, pderiv_mul, pderiv_mul, pderiv_X_of_ne hcbcn.symm, mul_zero, add_zero,
           eval_add, eval_add, eval_mul, eval_mul, eval_mul, eval_X, eval_X, h1', h2']
         by_cases hbc : b = c
-        · subst hbc; rw [pderiv_X_self, map_one, if_pos rfl]; ring
+        · subst hbc; rw [pderiv_X_self, map_one, ite_eq_left rfl]; ring
         · rw [pderiv_X_of_ne (hccb hbc), map_zero, mul_zero,
-            add_zero, if_neg hbc]; ring
+            add_zero, ite_eq_right hbc]; ring
       have eL3 : (eval w) (pderiv (Fin.natAdd m b)
             (Qre' * X (Fin.castAdd m c) - Qim' * X (Fin.natAdd m c)))
           = -Ri.imL (aeval (realEquiv.symm w) (pderiv b P')) * w (Fin.castAdd m c)
@@ -144,9 +144,9 @@ theorem exists_reL_imL_aeval_cauchyRiemann {m : ℕ} (ψ : MvPolynomial (Fin m) 
         rw [map_sub, pderiv_mul, pderiv_mul, pderiv_X_of_ne hnbcc.symm, mul_zero, add_zero,
           eval_sub, eval_add, eval_mul, eval_mul, eval_mul, eval_X, eval_X, h3', h4']
         by_cases hbc : b = c
-        · subst hbc; rw [pderiv_X_self, map_one, if_pos rfl]; ring
+        · subst hbc; rw [pderiv_X_self, map_one, ite_eq_left rfl]; ring
         · rw [pderiv_X_of_ne (hnnb hbc), map_zero, mul_zero,
-            add_zero, if_neg hbc]; ring
+            add_zero, ite_eq_right hbc]; ring
       have eL4 : (eval w) (pderiv (Fin.natAdd m b)
             (Qre' * X (Fin.natAdd m c) + Qim' * X (Fin.castAdd m c)))
           = -Ri.imL (aeval (realEquiv.symm w) (pderiv b P')) * w (Fin.natAdd m c)
@@ -155,9 +155,9 @@ theorem exists_reL_imL_aeval_cauchyRiemann {m : ℕ} (ψ : MvPolynomial (Fin m) 
         rw [map_add, pderiv_mul, pderiv_mul, pderiv_X_of_ne hnbcc.symm, mul_zero, add_zero,
           eval_add, eval_add, eval_mul, eval_mul, eval_mul, eval_X, eval_X, h3', h4']
         by_cases hbc : b = c
-        · subst hbc; rw [pderiv_X_self, map_one, if_pos rfl]; ring
+        · subst hbc; rw [pderiv_X_self, map_one, ite_eq_left rfl]; ring
         · rw [pderiv_X_of_ne (hnnb hbc), map_zero, mul_zero,
-            add_zero, if_neg hbc]; ring
+            add_zero, ite_eq_right hbc]; ring
       refine ⟨?_, ?_, ?_, ?_⟩
       · rw [eL1, hRHS, map_add, reL_mul, hYre, hYim]
         split_ifs with hbc

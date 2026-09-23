@@ -229,7 +229,7 @@ theorem proposition_2_27 (hIVP : HasIntermediateValueProperty R)
     set S' := derReali (derivative P) n σ'
     have hdecomp : S = {x | SignType.sign (P.eval x) = σ 0} ∩ S' := by
       ext x
-      simp only [S, S', derReali, Set.mem_inter_iff, Set.mem_setOf_eq]
+      simp only [S, S', derReali, Set.mem_inter_iff, Set.mem_ofPred_eq]
       constructor
       · intro h
         refine ⟨?_, fun i hi => ?_⟩
@@ -254,10 +254,10 @@ theorem proposition_2_27 (hIVP : HasIntermediateValueProperty R)
       by_cases ha : SignType.sign (P.eval a) = σ 0
       · right; left
         refine ⟨a, ?_⟩
-        ext x; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff]
+        ext x; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_singleton_iff]
         exact ⟨fun ⟨_, h⟩ => h, fun h => ⟨h ▸ ha, h⟩⟩
       · left
-        ext x; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_singleton_iff,
+        ext x; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_singleton_iff,
           Set.mem_empty_iff_false, iff_false, not_and]
         intro hxsign hx; exact ha (hx ▸ hxsign)
     · -- S' is an open interval
@@ -307,7 +307,7 @@ theorem proposition_2_27 (hIVP : HasIntermediateValueProperty R)
             show SignType.sign (P.eval x) = σ 0
             rw [hP_const x hx a haS']; exact ha
         · left
-          ext x; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_empty_iff_false,
+          ext x; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_empty_iff_false,
             iff_false, not_and]
           intro hxsign hxS'
           exact ha (by rw [hP_const a haS' x hxS']; exact hxsign)
@@ -341,10 +341,10 @@ theorem proposition_2_27_of_isRealClosed
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     let S := derReali P n σ
     S = ∅ ∨ (∃ a, S = {a}) ∨ IsOpenInterval S := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   exact proposition_2_27 Theorem2_11.theorem_2_11_b_c P n σ hn
 
 end Azurite.BPR.Proposition2_27

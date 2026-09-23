@@ -39,7 +39,7 @@ algebraic closure of `R(ε)` in the Puiseux series), and its order extends that 
 (`algebraicPuiseux_isSquare_of_nonneg`); hence by Proposition 3.13 it is `R(ε)`-isomorphic to the
 germ field. -/
 theorem theorem_3_14 : Nonempty (SemialgGerm R ≃ₐ[RatFunc R] algebraicPuiseux R) := by
-  haveI : Algebra.IsAlgebraic (RatFunc R) (algebraicPuiseux R) :=
+  have : Algebra.IsAlgebraic (RatFunc R) (algebraicPuiseux R) :=
     inferInstanceAs (Algebra.IsAlgebraic (RatFunc R)
       (algebraicClosure (RatFunc R) (PuiseuxSeries R)))
   exact proposition_3_13 inferInstance algebraicPuiseux_isSquare_of_nonneg

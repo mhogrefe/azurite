@@ -104,7 +104,7 @@ private lemma recip3by2_finish_nat
   · -- c3 = 0: no overflow in step 6, Vf = V1.
     have hVf_val : Vf = V1 := by
       show (if c3 = 0 then V1 else _) = V1
-      rw [if_pos hc3]
+      rw [ite_eq_left hc3]
     have hc3Z : (c3 : ℤ) = 0 := by exact_mod_cast hc3
     have hP2_eq : P2 = P1 + T_hi := by omega
     have hP2_ge : 2 ^ 64 - D1 ≤ P2 := by rw [hP2_eq]; omega
@@ -145,7 +145,7 @@ private lemma recip3by2_finish_nat
       have hVf_val : Vf = V1 - 2 := by
         show (if c3 = 0 then V1 else if D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo) then V1 - 2
               else V1 - 1) = V1 - 2
-        rw [if_neg (by omega : c3 ≠ 0), if_pos hStep7]
+        rw [ite_eq_right (by omega : c3 ≠ 0), ite_eq_left hStep7]
       have hV1_ge_2 : 2 ≤ V1 := by
         by_contra h
         push Not at h
@@ -220,7 +220,7 @@ private lemma recip3by2_finish_nat
       have hVf_val : Vf = V1 - 1 := by
         show (if c3 = 0 then V1 else if D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo) then V1 - 2
               else V1 - 1) = V1 - 1
-        rw [if_neg (by omega : c3 ≠ 0), if_neg hStep7]
+        rw [ite_eq_right (by omega : c3 ≠ 0), ite_eq_right hStep7]
       have hV1_ge_1 : 1 ≤ V1 := by
         by_contra h
         push Not at h
@@ -383,14 +383,14 @@ private lemma recip3by2_tail_toNat
   · -- c3 = 0: final is v1.
     have h_nlt : ¬ p_u < t_hi_u := by
       rw [h_lt_iff]; omega
-    rw [if_neg h_nlt]
+    rw [ite_eq_right h_nlt]
     -- Vf = V1 in the helper
     obtain ⟨hle_f, hlt_f, hVf_lt⟩ := hFinish
     -- Vf = if c3 = 0 then V1 else _ = V1
     have hVf_eq : (if c3 = 0 then V1
                   else if D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo) then V1 - 2
                   else V1 - 1) = V1 := by
-      rw [if_pos hc3_0]
+      rw [ite_eq_left hc3_0]
     rw [hVf_eq] at hle_f hlt_f
     show V1 = (2 ^ 192 - 1) / D - 2 ^ 64
     have hdiv : (2 ^ 192 - 1) / D = V1 + 2 ^ 64 :=
@@ -398,18 +398,18 @@ private lemma recip3by2_tail_toNat
     omega
   · -- c3 = 1
     have h_lt : p_u < t_hi_u := by rw [h_lt_iff]; exact hc3_1
-    rw [if_pos h_lt]
+    rw [ite_eq_left h_lt]
     -- Need to compute (v1 - 1).toNat. Depends on V1 ≥ 1.
     obtain ⟨hle_f, hlt_f, hVf_lt⟩ := hFinish
     have hVf_def : (if c3 = 0 then V1
                     else if D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo) then V1 - 2
                     else V1 - 1)
           = if D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo) then V1 - 2 else V1 - 1 := by
-      rw [if_neg (by omega : c3 ≠ 0)]
+      rw [ite_eq_right (by omega : c3 ≠ 0)]
     rw [hVf_def] at hle_f hlt_f hVf_lt
     by_cases hStep7 : D1 < P2 ∨ (P2 = D1 ∧ D0 ≤ T_lo)
     · -- Vf = V1 - 2. Need V1 ≥ 2.
-      rw [if_pos hStep7] at hle_f hlt_f hVf_lt
+      rw [ite_eq_left hStep7] at hle_f hlt_f hVf_lt
       have hV1_ge_2 : 2 ≤ V1 := by
         -- Derived from the helper's proof: if V1 < 2 then c3 = 0, contradicting c3 = 1.
         by_contra h; push Not at h
@@ -430,7 +430,7 @@ private lemma recip3by2_tail_toNat
         rcases hStep7 with h1 | ⟨h1, h2⟩
         · left; rw [h_gt_d_iff]; exact h1
         · right; exact ⟨h_eq_d_iff.mpr h1, h_tlo_ge_iff.mpr h2⟩
-      rw [if_pos h_step7_u]
+      rw [ite_eq_left h_step7_u]
       -- Final UInt64 is v1 - 1 - 1. Its .toNat = V1 - 2.
       have h1 : (v1 - 1).toNat = V1 - 1 := by
         rw [_root_.UInt64.toNat_sub_of_le]
@@ -452,10 +452,10 @@ private lemma recip3by2_tail_toNat
       have hdiv : (2 ^ 192 - 1) / D = (V1 - 2) + 2 ^ 64 :=
         Nat.div_eq_of_lt_le (n := D) (m := 2 ^ 192 - 1) (k := V1 - 2 + 2 ^ 64) hle_f hlt_f
       omega
-    · rw [if_neg hStep7] at hle_f hlt_f hVf_lt
+    · rw [ite_eq_right hStep7] at hle_f hlt_f hVf_lt
       have h_nstep7_u : ¬ (p_u > d_hi ∨ p_u = d_hi ∧ t_lo_u ≥ d_lo) :=
         h_pgt_or_teq.mpr hStep7
-      rw [if_neg h_nstep7_u]
+      rw [ite_eq_right h_nstep7_u]
       -- Final UInt64 is v1 - 1. Its .toNat = V1 - 1.
       have hV1_ge_1 : 1 ≤ V1 := by
         by_contra h; push Not at h
@@ -628,7 +628,7 @@ private lemma recip3by2_caseA
   have h_red : reciprocal3By2 d_hi d_lo hd =
       reciprocal3By2Tail d_hi d_lo (reciprocal d_hi hd) p_raw := by
     unfold reciprocal3By2
-    rw [if_neg hA_raw]
+    rw [ite_eq_right hA_raw]
   rw [h_red]
   set v1_u : UInt64 := reciprocal d_hi hd with hv1_u_eq
   set p1_u : UInt64 := p_raw with hp1_u_eq
@@ -822,7 +822,7 @@ private lemma recip3by2_caseB1
          let v := reciprocal d_hi hd - 1 - 1
          if p > d_hi ∨ (p = d_hi ∧ t_lo ≥ d_lo) then v - 1 else v
        else reciprocal d_hi hd - 1) := by
-    simp only [reciprocal3By2, if_pos hA_raw, if_neg hB2_raw]
+    simp only [reciprocal3By2, ite_eq_left hA_raw, ite_eq_right hB2_raw]
     rfl
   rw [h_red]
   set v1_u : UInt64 := reciprocal d_hi hd - 1 with hv1_u_eq
@@ -1025,7 +1025,7 @@ private lemma recip3by2_caseB2
          let v := reciprocal d_hi hd - 1 - 1 - 1
          if p > d_hi ∨ (p = d_hi ∧ t_lo ≥ d_lo) then v - 1 else v
        else reciprocal d_hi hd - 1 - 1) := by
-    simp only [reciprocal3By2, if_pos hA_raw, if_pos hB2_raw]
+    simp only [reciprocal3By2, ite_eq_left hA_raw, ite_eq_left hB2_raw]
     rfl
   rw [h_red]
   set v1_u : UInt64 := reciprocal d_hi hd - 1 - 1 with hv1_u_eq

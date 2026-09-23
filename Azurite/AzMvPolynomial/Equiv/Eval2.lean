@@ -29,7 +29,7 @@ theorem Monomial.toMvPoly_eval₂ (m : Monomial n R ord)
 
 omit [DecidableEq R] in
 /-- Folding-with-add lemma: pulling `eval₂` over a foldl-sum of monomials. -/
-private theorem toMvPoly_foldl_eval₂ 
+private theorem toMvPoly_foldl_eval₂
     (l : List (Monomial n R ord)) (φ : R →+* S) (f : Fin n → S) (acc : S) :
     l.foldl (fun acc m => acc + m.eval₂ φ f) acc =
     acc + (l.map (fun m => MvPolynomial.eval₂ φ f m.toMvPoly)).sum := by

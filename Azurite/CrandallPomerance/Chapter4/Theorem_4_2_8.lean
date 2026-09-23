@@ -178,7 +178,7 @@ theorem theorem_4_2_8 {a b : ℤ} {n F r₁ r₀ : ℕ} (hn : 0 < n)
   · -- no positive roots ⟹ prime
     rintro ⟨hno0, hno1⟩
     by_contra hcomp
-    haveI : NeZero n := ⟨by omega⟩
+    have : NeZero n := ⟨by omega⟩
     -- `Δ` is coprime to `n` (the Jacobi symbol is nonzero) …
     have hΔn : Int.gcd (a ^ 2 - 4 * b) n = 1 := by
       by_contra h
@@ -236,8 +236,8 @@ theorem theorem_4_2_8 {a b : ℤ} {n F r₁ r₀ : ℕ} (hn : 0 < n)
           jacobiSym (a ^ 2 - 4 * b) Q = -1 := by
       obtain ⟨p, q, hp, hq, hpq⟩ :=
         two_prime_factors_lower (by omega) hcomp hcube hlow
-      haveI : NeZero p := ⟨hp.pos.ne'⟩
-      haveI : NeZero q := ⟨hq.pos.ne'⟩
+      have : NeZero p := ⟨hp.pos.ne'⟩
+      have : NeZero q := ⟨hq.pos.ne'⟩
       have hmul : (-1 : ℤ) = jacobiSym (a ^ 2 - 4 * b) p
           * jacobiSym (a ^ 2 - 4 * b) q := by
         rw [← hjac, hpq, jacobiSym.mul_right]

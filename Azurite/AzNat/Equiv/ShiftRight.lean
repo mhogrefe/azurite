@@ -29,13 +29,13 @@ theorem toNatLimbsList_trimTrailingZeros (a : Array UInt64) :
     have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1] = 0
-    · rw [if_pos h_last]
+    · rw [ite_eq_left h_last]
       rw [toNatLimbsList_trimTrailingZeros a.pop]
       rw [Array.toList_pop]
       apply toNatLimbsList_dropLast_of_getLast?_zero
       rw [Array.getLast?_toList, Array.back?_eq_getElem?,
           Array.getElem?_eq_getElem h_idx, h_last]
-    · rw [if_neg h_last]
+    · rw [ite_eq_right h_last]
   termination_by a.size
   decreasing_by simp [Array.size_pop]; omega
 
@@ -158,7 +158,7 @@ private lemma shiftLimbsRightAux_preserves_ge (lo sh : Nat)
     intro hj_new hj_old
     unfold shiftLimbsRightAux
     by_cases hlt : lo < i
-    · simp only [hlt, dif_pos]
+    · simp only [hlt, dite_eq_left]
       have h_dec : i - 1 < i := Nat.sub_lt (by omega) Nat.zero_lt_one
       have hij' : i - 1 ≤ j := by omega
       have h_ne : j ≠ i - 1 := by omega
@@ -290,7 +290,7 @@ private lemma shiftLimbsRightAux_correct (lo sh : Nat)
         (a'.toList.drop lo).take ((i - 1) - lo)
           = (a.toList.drop lo).take ((i - 1) - lo) := by
       rw [ha'_def, Array.toList_set, List.drop_set]
-      rw [if_neg (by omega : ¬ i - 1 < lo)]
+      rw [ite_eq_right (by omega : ¬ i - 1 < lo)]
       rw [List.take_set]
       rw [List.set_eq_of_length_le (by
         rw [List.length_take, List.length_drop]
@@ -339,7 +339,7 @@ private lemma shiftLimbsRightAux_preserves_lt (lo sh : Nat)
     intro hj_new hj_old
     unfold shiftLimbsRightAux
     by_cases hlt : lo < i
-    · simp only [hlt, dif_pos]
+    · simp only [hlt, dite_eq_left]
       have h_dec : i - 1 < i := Nat.sub_lt (by omega) Nat.zero_lt_one
       have h_ne : j ≠ i - 1 := by omega
       have h_inner := ih (i - 1) h_dec
@@ -406,7 +406,7 @@ theorem toNat_shiftRightGeneralLimbs (a : AzNat) (sh : Nat)
     have : sh % 64 < 64 := Nat.mod_lt _ (by omega)
     omega
   by_cases h : sh / 64 ≥ a.limbs.size
-  · rw [dif_pos h]
+  · rw [dite_eq_left h]
     have h_a_lt : a.toNat < 2 ^ sh := by
       have h1 : a.toNat < 2 ^ (64 * a.limbs.size) := by
         have := toNatLimbsList_lt_pow a.limbs.toList
@@ -420,7 +420,7 @@ theorem toNat_shiftRightGeneralLimbs (a : AzNat) (sh : Nat)
     show (0 : AzNat).toNat = a.toNat / 2 ^ sh
     rw [Nat.div_eq_of_lt h_a_lt]
     rfl
-  · rw [dif_neg h]
+  · rw [dite_eq_right h]
     -- Setup: bigShift, smallShift, shifted, carry
     set bigShift := sh / 64 with hbs
     set smallShift := sh % 64 with hss
@@ -529,7 +529,7 @@ theorem toNat_shiftRight (a : AzNat) (sh : Nat) :
     (shiftRight a sh).toNat = a.toNat / 2 ^ sh := by
   unfold shiftRight
   by_cases hz : a.limbs.size = 0
-  · rw [if_pos hz]
+  · rw [ite_eq_left hz]
     have h_nil : a.limbs.toList = [] := by
       have : a.limbs.toList.length = 0 := hz
       simp_all
@@ -537,13 +537,13 @@ theorem toNat_shiftRight (a : AzNat) (sh : Nat) :
       show toNatLimbsList a.limbs.toList = 0
       rw [h_nil]; rfl
     rw [h_toNat_zero]; simp
-  · rw [if_neg hz]
+  · rw [ite_eq_right hz]
     by_cases hsm : sh % 64 = 0
-    · rw [dif_pos hsm, toNat_shiftRightMul64]
+    · rw [dite_eq_left hsm, toNat_shiftRightMul64]
       congr 1
       conv_rhs => rw [show sh = 64 * (sh / 64) + sh % 64 from (Nat.div_add_mod sh 64).symm]
       rw [hsm, Nat.add_zero]
-    · rw [dif_neg hsm]
+    · rw [dite_eq_right hsm]
       exact toNat_shiftRightGeneralLimbs a sh hsm
 
 /-- Compatibility of `HShiftRight` notation with `shiftRight`. -/

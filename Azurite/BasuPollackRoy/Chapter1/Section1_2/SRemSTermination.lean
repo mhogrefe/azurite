@@ -52,13 +52,13 @@ noncomputable def sremTermIndex (P Q : K[X]) : ℕ :=
 open Classical in
 lemma SRemS_sremTermIndex_succ_eq_zero (P Q : K[X]) (hP : P ≠ 0) :
     SRemS P Q (sremTermIndex P Q + 1) = 0 := by
-  rw [sremTermIndex, dif_neg hP]
+  rw [sremTermIndex, dite_eq_right hP]
   exact (Classical.choose_spec (SRemS_terminates P Q hP)).1
 
 open Classical in
 lemma SRemS_sremTermIndex_ne_zero (P Q : K[X]) (hP : P ≠ 0) :
     SRemS P Q (sremTermIndex P Q) ≠ 0 := by
-  rw [sremTermIndex, dif_neg hP]
+  rw [sremTermIndex, dite_eq_right hP]
   exact (Classical.choose_spec (SRemS_terminates P Q hP)).2
 
 open Classical in

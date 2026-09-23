@@ -55,22 +55,22 @@ theorem toNat_setBit (n : AzNat) (i : Nat) :
   have h_size_eq : n.limbs.toList.length = n.limbs.size := rfl
   by_cases h_in_range : i / 64 < n.limbs.size
   · -- Case A: i / 64 < n.limbs.size — one existing limb is modified in place.
-    simp only [setBit, dif_pos h_in_range]
+    simp only [setBit, dite_eq_left h_in_range]
     rw [toNat_ofLimbs, Array.toList_set]
     conv_lhs => rw [hj_decomp]
     rw [testBit_toNatLimbsList_aux _ _ hr_lt]
     simp only [List.length_set]
     by_cases hq : j / 64 < n.limbs.toList.length
-    · rw [dif_pos hq, dif_pos hq, List.getElem_set]
+    · rw [dite_eq_left hq, dite_eq_left hq, List.getElem_set]
       by_cases hqi : i / 64 = j / 64
-      · rw [if_pos hqi, UInt64.toNat_setBit _ _ his_lt,
+      · rw [ite_eq_left hqi, UInt64.toNat_setBit _ _ his_lt,
             Nat.testBit_or, Nat.one_shiftLeft, Nat.testBit_two_pow,
             decide_mod_eq_of_div_eq hqi]
         simp [hqi]
-      · rw [if_neg hqi]
+      · rw [ite_eq_right hqi]
         have h_ij : i ≠ j := fun h => hqi (by rw [h])
         rw [decide_eq_false h_ij, Bool.or_false]
-    · rw [dif_neg hq, dif_neg hq]
+    · rw [dite_eq_right hq, dite_eq_right hq]
       have h_ij : i ≠ j := by
         intro h
         apply hq
@@ -78,7 +78,7 @@ theorem toNat_setBit (n : AzNat) (i : Nat) :
         exact h_in_range
       rw [decide_eq_false h_ij, Bool.false_or]
   · -- Case B: i / 64 ≥ n.limbs.size — array is extended with zero padding.
-    simp only [setBit, dif_neg h_in_range]
+    simp only [setBit, dite_eq_right h_in_range]
     push Not at h_in_range
     rw [toNat_ofLimbs]
     have h_arr_toList :
@@ -99,11 +99,11 @@ theorem toNat_setBit (n : AzNat) (i : Nat) :
         List.replicate (i / 64 - n.limbs.size) 0 ++
           [((1 : UInt64) <<< UInt64.ofNat (i % 64))]).length
     · -- j / 64 ≤ i / 64
-      rw [dif_pos hjtop_lst]
+      rw [dite_eq_left hjtop_lst]
       have hjtop : j / 64 < i / 64 + 1 := h_len ▸ hjtop_lst
       by_cases hjleft : j / 64 < n.limbs.toList.length
       · -- Sub B1: j / 64 < n.limbs.size (so j ≠ i because i / 64 ≥ n.limbs.size).
-        rw [dif_pos hjleft]
+        rw [dite_eq_left hjleft]
         have h_get :
             (n.limbs.toList ++ List.replicate (i / 64 - n.limbs.size) 0 ++
                 [((1 : UInt64) <<< UInt64.ofNat (i % 64))])[j / 64]'hjtop_lst
@@ -121,7 +121,7 @@ theorem toNat_setBit (n : AzNat) (i : Nat) :
           omega
         rw [decide_eq_false h_ij, Bool.or_false]
       · -- j / 64 ≥ n.limbs.size
-        rw [dif_neg hjleft]
+        rw [dite_eq_right hjleft]
         push Not at hjleft
         rw [h_size_eq] at hjleft
         by_cases hji : j / 64 = i / 64
@@ -162,12 +162,12 @@ theorem toNat_setBit (n : AzNat) (i : Nat) :
             intro h; apply hji; rw [h]
           rw [decide_eq_false h_ij, Bool.or_false]
     · -- j / 64 > i / 64: out of range of the extended array and of n.
-      rw [dif_neg hjtop_lst]
+      rw [dite_eq_right hjtop_lst]
       push Not at hjtop_lst
       have hjtop : i / 64 + 1 ≤ j / 64 := h_len ▸ hjtop_lst
       have hjleft_not : ¬ j / 64 < n.limbs.toList.length := by
         rw [h_size_eq]; omega
-      rw [dif_neg hjleft_not]
+      rw [dite_eq_right hjleft_not]
       have h_ij : i ≠ j := by
         intro h
         rw [h] at hjtop

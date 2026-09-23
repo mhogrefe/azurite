@@ -494,8 +494,8 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
           rwa [List.length_ofFn, List.length_map] at this
         simp only [Matrix.polyCoeffList, List.get_eq_getElem, List.getElem_ofFn,
           Matrix.polyCoeff_apply, List.getElem_map, Matrix.map_apply]
-        show (MvPolynomial.coeff r' (((MvPolynomial.finSuccEquiv ℤ k) (Ms[l] i' j')).coeff
-              (ds ⟨l, by rw [List.length_map]; exact hl_Ms⟩))).natAbs.size ≤ τs[l]
+        show ((((MvPolynomial.finSuccEquiv ℤ k) (Ms[l] i' j')).coeff
+              (ds ⟨l, by rw [List.length_map]; exact hl_Ms⟩)).coeff r').natAbs.size ≤ τs[l]
         rw [MvPolynomial.finSuccEquiv_coeff_coeff]
         exact (List.forall₂_iff_get.mp h_τ).2 l hl_Ms h₂ i' j' _
       have h_p_inner : List.Forall₂
@@ -526,8 +526,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
     -- Show: any tuple `ds` with some `ds l > p_fn l` gives a zero summand.
     have h_zero : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0),
         (∃ l, ds l > p_fn l) →
-        MvPolynomial.coeff r.tail
-          ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j) = 0 := by
+        ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j).coeff r.tail = 0 := by
       intro ds _ ⟨l, hl_gt⟩
       have hl_Ms : l.val < Ms.length := by rw [← h_map_len]; exact l.isLt
       have h_mat_zero : Matrix.polyCoeff (ds l) ((Ms.map (Matrix.map · fe)).get l) = 0 := by
@@ -545,16 +544,14 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
         unfold Matrix.polyCoeffList
         rw [List.mem_ofFn]
         exact ⟨l, h_mat_zero⟩
-      rw [List.prod_eq_zero h_zero_in, Matrix.zero_apply, MvPolynomial.coeff_zero]
+      rw [List.prod_eq_zero h_zero_in, Matrix.zero_apply, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
     -- Reduce the sum to its filtered subset (the rest are zero).
     rw [show
       (∑ ds ∈ Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0),
-        MvPolynomial.coeff r.tail
-          ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j))
+        ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j).coeff r.tail)
       = ∑ ds ∈ (Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
           (fun ds => ∀ l, ds l ≤ p_fn l),
-        MvPolynomial.coeff r.tail
-          ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j) from by
+        ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j).coeff r.tail from by
       apply (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro ds hds h_not_in
       rw [Finset.mem_filter, not_and_or] at h_not_in
@@ -565,8 +562,7 @@ theorem Matrix.bitsize_coeff_mvList_prod_le_bpr_exact :
     have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ms.map (Matrix.map · fe)).length (r 0)).filter
         (fun ds => ∀ l, ds l ≤ p_fn l))
-      (f := fun ds => MvPolynomial.coeff r.tail
-        ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j))
+      (f := fun ds => ((Matrix.polyCoeffList (Ms.map (Matrix.map · fe)) ds).prod i j).coeff r.tail)
       (B := B)
       (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
     refine h_filtered_bound.trans ?_
@@ -791,8 +787,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
       ps.get ⟨l.val, by rw [h_ps_len, ← h_map_len]; exact l.isLt⟩
     -- Per-summand bound: each `ds`-summand has bitsize ≤ B (via IH).
     have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
-        (MvPolynomial.coeff r.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))).natAbs.size
+        ((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff r.tail).natAbs.size
           ≤ B := by
       intro ds _
       let Ps_inner : List (MvPolynomial (Fin k) ℤ) :=
@@ -820,8 +815,8 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
         have hl_map : l < (Ps.map fe).length := by rwa [h_map_len]
         simp only [Ps_inner, List.get_eq_getElem, List.getElem_ofFn,
           List.getElem_map]
-        show (MvPolynomial.coeff r' (((MvPolynomial.finSuccEquiv ℤ k) (Ps[l])).coeff
-              (ds ⟨l, hl_map⟩))).natAbs.size ≤ τs[l]
+        show ((((MvPolynomial.finSuccEquiv ℤ k) (Ps[l])).coeff
+              (ds ⟨l, hl_map⟩)).coeff r').natAbs.size ≤ τs[l]
         rw [MvPolynomial.finSuccEquiv_coeff_coeff]
         exact (List.forall₂_iff_get.mp h_τ).2 l hl_Ps h₂ _
       have h_p_inner : List.Forall₂
@@ -841,8 +836,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     -- Zero-summand argument.
     have h_zero : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
         (∃ l, ds l > p_fn l) →
-        MvPolynomial.coeff r.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)) = 0 := by
+        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff r.tail = 0 := by
       intro ds _ ⟨l, hl_gt⟩
       have hl_Ps : l.val < Ps.length := by rw [← h_map_len]; exact l.isLt
       have h_factor_zero : ((Ps.map fe).get l).coeff (ds l) = 0 := by
@@ -858,12 +852,10 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     -- Reduce sum to filtered subset.
     rw [show
       (∑ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0),
-        MvPolynomial.coeff r.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))
+        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff r.tail)
       = ∑ ds ∈ (Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
           (fun ds => ∀ l, ds l ≤ p_fn l),
-        MvPolynomial.coeff r.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)) from by
+        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff r.tail from by
       apply (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro ds hds h_not_in
       rw [Finset.mem_filter, not_and_or] at h_not_in
@@ -874,8 +866,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_exact :
     have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (r 0)).filter
         (fun ds => ∀ l, ds l ≤ p_fn l))
-      (f := fun ds => MvPolynomial.coeff r.tail
-        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))
+      (f := fun ds => (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff r.tail)
       (B := B) (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
     refine h_filtered_bound.trans ?_
     have h_card_le := card_antidiagonalTuple_filter_le
@@ -1028,8 +1019,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     set B := Ps.length * (τ + k * Nat.size p + ℓ * Nat.size q) with hB_def
     -- Per-summand bound via IH at ℓ.
     have h_summand_bound : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
-        (MvPolynomial.coeff x (MvPolynomial.coeff y.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)))).natAbs.size
+        (((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff y.tail).coeff x).natAbs.size
           ≤ B := by
       intro ds _
       have h_len_eq : (Ps.map fe).length = Ps.length := List.length_map _
@@ -1106,8 +1096,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     -- Zero-summand argument: if some `ds l > q` then the entire summand is 0.
     have h_zero : ∀ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
         (∃ l, ds l > q) →
-        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))) = 0 := by
+        ((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff y.tail).coeff x = 0 := by
       intro ds _ ⟨l, hl_gt⟩
       have hl_Ps : l.val < Ps.length := by rw [← h_map_len]; exact l.isLt
       have h_factor_zero : ((Ps.map fe).get l).coeff (ds l) = 0 := by
@@ -1124,12 +1113,10 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     -- Reduce sum to filtered subset.
     rw [show
       (∑ ds ∈ Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0),
-        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))))
+        ((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff y.tail).coeff x)
       = ∑ ds ∈ (Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
           (fun ds => ∀ l, ds l ≤ q_fn l),
-        MvPolynomial.coeff x (MvPolynomial.coeff y.tail
-          (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))) from by
+        ((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff y.tail).coeff x from by
       apply (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
       intro ds hds h_not_in
       rw [Finset.mem_filter, not_and_or] at h_not_in
@@ -1141,8 +1128,7 @@ theorem MvPolynomial.bitsize_coeff_list_prod_le_bpr_8_2 :
     have h_filtered_bound := Int.size_finset_sum_le'
       (s := (Finset.Nat.antidiagonalTuple (Ps.map fe).length (y 0)).filter
         (fun ds => ∀ l, ds l ≤ q_fn l))
-      (f := fun ds => MvPolynomial.coeff x (MvPolynomial.coeff y.tail
-        (∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l))))
+      (f := fun ds => ((∏ l : Fin (Ps.map fe).length, ((Ps.map fe).get l).coeff (ds l)).coeff y.tail).coeff x)
       (B := B) (fun ds hds => h_summand_bound ds (Finset.mem_filter.mp hds).1)
     refine h_filtered_bound.trans ?_
     have h_card_le := card_antidiagonalTuple_filter_le

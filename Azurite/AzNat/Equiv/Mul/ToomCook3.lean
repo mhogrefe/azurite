@@ -145,8 +145,8 @@ private lemma abs_diff_lt (k m : Nat) (h_mk : m ≤ k) (A0 A1 A2 : Nat)
   have h1_lt : A1 < 2 ^ (64 * (k + 1)) :=
     h1.trans_le (Nat.pow_le_pow_right (by decide) (by omega))
   by_cases h : A0 + A2 ≥ A1
-  · rw [if_pos h]; omega
-  · rw [if_neg h]; omega
+  · rw [ite_eq_left h]; omega
+  · rw [ite_eq_right h]; omega
 
 /-- `sum012` returns `A_0 + A_1 + A_2` exactly when the input bounds hold. -/
 theorem sum012_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
@@ -224,7 +224,7 @@ theorem diffM1_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
               from (toNat_ofLimbs_extract _ _ _).symm]
         rw [← toNat_add]
         exact (azNat_lt_iff_toNat_lt _ _).mp h
-      rw [if_neg (by omega)]
+      rw [ite_eq_right (by omega)]
       rw [truncatePad_toNat]
       · show (_ : AzNat).toNat = _
         rw [toNat_sub, toNat_ofLimbs_extract, toNat_add, toNat_ofLimbs_extract,
@@ -236,7 +236,7 @@ theorem diffM1_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
                       (sliceToNat_lt_pow a lo k)
                       (sliceToNat_lt_pow a (lo + k) k)
                       (sliceToNat_lt_pow a (lo + 2 * k) m)
-        simp only [if_neg (by omega : ¬ A0 + A2 ≥ A1)] at h_a
+        simp only [ite_eq_right (by omega : ¬ A0 + A2 ≥ A1)] at h_a
         omega
     · -- s0 + s2 ≥ s1: return (s0 + s2) - s1, sign true.
       simp only [h, ↓reduceIte]
@@ -249,7 +249,7 @@ theorem diffM1_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
               from (toNat_ofLimbs_extract _ _ _).symm]
         rw [← toNat_add]
         exact Nat.le_of_not_lt fun hlt => h ((azNat_lt_iff_toNat_lt _ _).mpr hlt)
-      rw [if_pos h_ge_nat]
+      rw [ite_eq_left h_ge_nat]
       rw [truncatePad_toNat]
       · show (_ : AzNat).toNat = _
         rw [toNat_sub, toNat_add, toNat_ofLimbs_extract, toNat_ofLimbs_extract,
@@ -261,7 +261,7 @@ theorem diffM1_toNat (a : Array UInt64) (lo k m : Nat) (h_mk : m ≤ k) :
                       (sliceToNat_lt_pow a lo k)
                       (sliceToNat_lt_pow a (lo + k) k)
                       (sliceToNat_lt_pow a (lo + 2 * k) m)
-        simp only [if_pos h_ge_nat] at h_a
+        simp only [ite_eq_left h_ge_nat] at h_a
         exact h_a
   · -- Sign bit.
     by_cases h : ofLimbs (a.extract lo (lo + k))
@@ -351,7 +351,7 @@ theorem toomCook3_nat_identity (A0 A1 A2 B0 B1 B2 K : ℕ)
   -- ── Case (T, T) ────────────────────────────────────────────────────────
   · have hsA : sgnA = true := h_sgnA.mpr hA
     have hsB : sgnB = true := h_sgnB.mpr hB
-    simp only [hsA, hsB, if_pos hA, if_pos hB, beq_self_eq_true, if_true]
+    simp only [hsA, hsB, ite_eq_left hA, ite_eq_left hB, beq_self_eq_true, ite_true]
     have h_t1_eq6 : 3 * (A0 * B0) + (A0 + 2 * A1 + 4 * A2) * (B0 + 2 * B1 + 4 * B2)
                     + 2 * ((A0 + A2 - A1) * (B0 + B2 - B1)) = 6 * Q := by
       rw [hQ_def]; zify [hA, hB]; ring
@@ -379,9 +379,9 @@ theorem toomCook3_nat_identity (A0 A1 A2 B0 B1 B2 K : ℕ)
       · rfl
       · exact absurd (h_sgnB.mp h_b) hB
     have hB' : B0 + B2 ≤ B1 := Nat.le_of_lt (Nat.lt_of_not_le hB)
-    simp only [hsA, hsB, if_pos hA, if_neg hB,
+    simp only [hsA, hsB, ite_eq_left hA, ite_eq_right hB,
                show ((true : Bool) == false) = false from rfl,
-               Bool.false_eq_true, if_false]
+               Bool.false_eq_true, ite_false]
     have h_t1_safe : 2 * ((A0 + A2 - A1) * (B1 - (B0 + B2)))
                     ≤ 3 * (A0 * B0) + (A0 + 2 * A1 + 4 * A2) * (B0 + 2 * B1 + 4 * B2) := by
       zify [hA, hB']
@@ -426,9 +426,9 @@ theorem toomCook3_nat_identity (A0 A1 A2 B0 B1 B2 K : ℕ)
       · exact absurd (h_sgnA.mp h_a) hA
     have hsB : sgnB = true := h_sgnB.mpr hB
     have hA' : A0 + A2 ≤ A1 := Nat.le_of_lt (Nat.lt_of_not_le hA)
-    simp only [hsA, hsB, if_neg hA, if_pos hB,
+    simp only [hsA, hsB, ite_eq_right hA, ite_eq_left hB,
                show ((false : Bool) == true) = false from rfl,
-               Bool.false_eq_true, if_false]
+               Bool.false_eq_true, ite_false]
     have h_t1_safe : 2 * ((A1 - (A0 + A2)) * (B0 + B2 - B1))
                     ≤ 3 * (A0 * B0) + (A0 + 2 * A1 + 4 * A2) * (B0 + 2 * B1 + 4 * B2) := by
       zify [hA', hB]
@@ -477,7 +477,7 @@ theorem toomCook3_nat_identity (A0 A1 A2 B0 B1 B2 K : ℕ)
       · exact absurd (h_sgnB.mp h_b) hB
     have hA' : A0 + A2 ≤ A1 := Nat.le_of_lt (Nat.lt_of_not_le hA)
     have hB' : B0 + B2 ≤ B1 := Nat.le_of_lt (Nat.lt_of_not_le hB)
-    simp only [hsA, hsB, if_neg hA, if_neg hB, beq_self_eq_true, if_true]
+    simp only [hsA, hsB, ite_eq_right hA, ite_eq_right hB, beq_self_eq_true, ite_true]
     have h_t1_eq6 : 3 * (A0 * B0) + (A0 + 2 * A1 + 4 * A2) * (B0 + 2 * B1 + 4 * B2)
                     + 2 * ((A1 - (A0 + A2)) * (B1 - (B0 + B2))) = 6 * Q := by
       rw [hQ_def]; zify [hA', hB']; ring
@@ -544,7 +544,7 @@ theorem toomCook3Interpolate_toNat (v0_az v1_az v2_az vm1_az vinf_az : AzNat)
   unfold toomCook3Interpolate
   cases vm1_sign with
   | false =>
-    simp only [Bool.false_eq_true, if_false,
+    simp only [Bool.false_eq_true, ite_false,
                azNat_toNat_hShiftLeft, azNat_toNat_hShiftRight,
                toNat_add, toNat_sub, toNat_mulUInt64, divBy6_quotient_toNat,
                show (2 : UInt64).toNat = 2 from rfl,
@@ -552,7 +552,7 @@ theorem toomCook3Interpolate_toNat (v0_az v1_az v2_az vm1_az vinf_az : AzNat)
                show (2 : Nat) ^ 1 = 2 from rfl]
     ring_nf
   | true =>
-    simp only [if_true,
+    simp only [ite_true,
                azNat_toNat_hShiftLeft, azNat_toNat_hShiftRight,
                toNat_add, toNat_sub, toNat_mulUInt64, divBy6_quotient_toNat,
                show (2 : UInt64).toNat = 2 from rfl,
@@ -756,7 +756,7 @@ theorem toNat_mulToomCook3 (toomThreshold karaThreshold : Nat) (a b : AzNat) :
     (mulToomCook3 toomThreshold karaThreshold a b).toNat = a.toNat * b.toNat := by
   unfold mulToomCook3
   by_cases h : a.limbs.size = 0 ∨ b.limbs.size = 0
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     show (0 : AzNat).toNat = a.toNat * b.toNat
     rcases h with ha | hb
     · have ha_toNat : a.toNat = 0 := by
@@ -773,7 +773,7 @@ theorem toNat_mulToomCook3 (toomThreshold karaThreshold : Nat) (a b : AzNat) :
           exact List.eq_nil_of_length_eq_zero hb
         rw [this]; rfl
       simp [hb_toNat]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     set n := max a.limbs.size b.limbs.size
     set aPadded : Array UInt64 := a.limbs ++ Array.replicate (n - a.limbs.size) 0
     set bPadded : Array UInt64 := b.limbs ++ Array.replicate (n - b.limbs.size) 0
@@ -823,7 +823,7 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
                 && mulDispatchKDen * min lenA lenB ≥ mulDispatchKNum * max lenA lenB) = true
   · -- Balanced branch.  The padded slices are shared between the Karatsuba
     -- and Toom-Cook 3 sub-branches.
-    rw [if_pos h]
+    rw [ite_eq_left h]
     set lenMax := max lenA lenB with hlenMax_def
     set aSlice : Array UInt64 := a.extract loA (loA + lenA) with hAslice_def
     set bSlice : Array UInt64 := b.extract loB (loB + lenB) with hBslice_def
@@ -875,7 +875,7 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
       rw [Array.length_toList, hbPad_size]
     by_cases h' : mulDispatchToomCook3Cutoff ≤ lenMax
     · -- Toom-Cook 3 sub-branch.
-      rw [if_pos h']
+      rw [ite_eq_left h']
       have h_toom :=
         toomCook3MulLimbs_toNat mulDispatchToomCook3Cutoff mulDispatchThreshold
           aPadded bPadded 0 0 lenMax
@@ -883,14 +883,14 @@ theorem mulLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
       rw [h_aslice_full, h_bslice_full] at h_toom
       rw [h_toom, haPad_toNat, hbPad_toNat]
     · -- Karatsuba sub-branch.
-      rw [if_neg h']
+      rw [ite_eq_right h']
       have h_kara :=
         karatsubaMulLimbs_toNat mulDispatchThreshold aPadded bPadded 0 0 lenMax
           (by rw [haPad_size]; omega) (by rw [hbPad_size]; omega)
       rw [h_aslice_full, h_bslice_full] at h_kara
       rw [h_kara, haPad_toNat, hbPad_toNat]
   · -- Schoolbook branch.
-    rw [if_neg h]
+    rw [ite_eq_right h]
     exact schoolbookMulLimbs_toNat a b loA lenA loB lenB hA hB
 
 /-- Correctness of `mul` (the dispatched AzNat multiplication, used by `*`). -/

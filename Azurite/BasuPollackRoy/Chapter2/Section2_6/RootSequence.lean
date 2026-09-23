@@ -114,10 +114,10 @@ noncomputable def RecState.step (s : RecState R) : R × ℚ × ℚ × RecState R
 /-- Away from the barrier, `step` returns the data of a genuine `StepResult`. -/
 theorem RecState.step_spec (s : RecState R) (h : s.poly.coeff 0 ≠ 0) :
     ∃ sr : StepResult s, s.step = (sr.x, sr.xi, sr.beta, sr.next) :=
-  ⟨Classical.choice (s.nonempty_stepResult h), by rw [RecState.step, dif_neg h]⟩
+  ⟨Classical.choice (s.nonempty_stepResult h), by rw [RecState.step, dite_eq_right h]⟩
 
 @[simp] theorem RecState.step_barrier (s : RecState R) (h : s.poly.coeff 0 = 0) :
-    s.step = (0, 0, 0, s) := by rw [RecState.step, dif_pos h]
+    s.step = (0, 0, 0, s) := by rw [RecState.step, dite_eq_left h]
 
 /-- The multiplicity is non-increasing under `step` (it freezes at the barrier). -/
 theorem RecState.step_mult_le (s : RecState R) : (s.step).2.2.2.mult ≤ s.mult := by

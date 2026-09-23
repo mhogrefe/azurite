@@ -23,13 +23,13 @@ theorem div_eq_mul_inv (x y : AzRat) : x / y = x * y⁻¹ := by
   show AzRat.div x y = AzRat.mul x (AzRat.inv y)
   by_cases hx : x.num = 0
   · by_cases hy : y.num = 0
-    · rw [AzRat.div, dif_pos hx, AzRat.inv, dif_pos hy, AzRat.mul, dif_pos hx]
-    · rw [AzRat.div, dif_pos hx, AzRat.inv, dif_neg hy, AzRat.mul, dif_pos hx]
+    · rw [AzRat.div, dite_eq_left hx, AzRat.inv, dite_eq_left hy, AzRat.mul, dite_eq_left hx]
+    · rw [AzRat.div, dite_eq_left hx, AzRat.inv, dite_eq_right hy, AzRat.mul, dite_eq_left hx]
   · by_cases hy : y.num = 0
-    · rw [AzRat.div, dif_neg hx, dif_pos hy, AzRat.inv, dif_pos hy, AzRat.mul,
-          dif_neg hx, dif_pos (show (0 : AzRat).num = 0 from rfl)]
-    · rw [AzRat.div, dif_neg hx, dif_neg hy, AzRat.inv, dif_neg hy, AzRat.mul,
-          dif_neg hx, dif_neg (show ¬((⟨y.sign, y.den, y.num, hy,
+    · rw [AzRat.div, dite_eq_right hx, dite_eq_left hy, AzRat.inv, dite_eq_left hy, AzRat.mul,
+          dite_eq_right hx, dite_eq_left (show (0 : AzRat).num = 0 from rfl)]
+    · rw [AzRat.div, dite_eq_right hx, dite_eq_right hy, AzRat.inv, dite_eq_right hy, AzRat.mul,
+          dite_eq_right hx, dite_eq_right (show ¬((⟨y.sign, y.den, y.num, hy,
             fun h => absurd h y.den_nz,
             (AzNat.coprime_iff _ _).mpr ((AzNat.coprime_iff _ _).mp y.reduced).symm⟩ :
               AzRat).num = 0) from y.den_nz)]

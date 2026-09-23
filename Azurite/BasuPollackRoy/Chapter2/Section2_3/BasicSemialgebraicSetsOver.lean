@@ -63,7 +63,7 @@ theorem inter {V W : Set (Fin k → R)}
   obtain ⟨P₁, Q₁, rfl⟩ := hV; obtain ⟨P₂, Q₂, rfl⟩ := hW
   refine ⟨P₁ ^ 2 + P₂ ^ 2, Q₁ ∪ Q₂, ?_⟩
   ext x
-  simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Finset.mem_union, map_add, map_pow]
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Finset.mem_union, map_add, map_pow]
   constructor
   · rintro ⟨⟨hp₁, hQ₁⟩, hp₂, hQ₂⟩
     refine ⟨by rw [hp₁, hp₂]; ring, ?_⟩
@@ -108,7 +108,7 @@ private theorem le_zero (P : MvPolynomial (Fin k) D) :
     .basic (IsBasicSemialgebraicSetOver.eqZero P)
   have h := h_lt.union h_eq
   convert h using 1
-  ext x; simp only [Set.mem_setOf_eq, Set.mem_union]; exact le_iff_lt_or_eq
+  ext x; simp only [Set.mem_ofPred_eq, Set.mem_union]; exact le_iff_lt_or_eq
 
 private theorem ne_zero (P : MvPolynomial (Fin k) D) :
     IsFinUnionOfBasicOver D ({x : Fin k → R | aeval x P ≠ 0}) := by
@@ -118,7 +118,7 @@ private theorem ne_zero (P : MvPolynomial (Fin k) D) :
     .basic (IsBasicSemialgebraicSetOver.ltZero P)
   have h := h_pos.union h_neg
   convert h using 1
-  ext x; simp only [Set.mem_setOf_eq, Set.mem_union]
+  ext x; simp only [Set.mem_ofPred_eq, Set.mem_union]
   exact ⟨fun h => (lt_or_gt_of_ne h).symm, fun h => h.elim ne_of_gt ne_of_lt⟩
 
 private theorem complementOfBasic (P : MvPolynomial (Fin k) D)
@@ -134,7 +134,7 @@ private theorem complementOfBasic (P : MvPolynomial (Fin k) D)
     have h := ih.union (le_zero (R := R) q')
     convert h using 1
     ext x
-    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_union, Finset.forall_mem_insert]
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, Set.mem_union, Finset.forall_mem_insert]
     constructor
     · intro hn
       by_cases hq' : aeval x q' > 0
@@ -160,7 +160,7 @@ theorem of_isSemialgebraicSetOver {V : Set (Fin k → R)} (h : IsSemialgebraicSe
     obtain ⟨S, rfl⟩ := hAlg
     refine .basic ⟨∑ P ∈ S, P ^ 2, ∅, ?_⟩
     ext x
-    simp only [Set.mem_setOf_eq, Finset.notMem_empty, false_implies, implies_true, and_true,
+    simp only [Set.mem_ofPred_eq, Finset.notMem_empty, false_implies, implies_true, and_true,
       map_sum, map_pow]
     rw [Finset.sum_eq_zero_iff_of_nonneg (fun P _ => sq_nonneg (aeval x P : R))]
     constructor

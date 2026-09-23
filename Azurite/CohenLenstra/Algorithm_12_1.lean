@@ -193,7 +193,7 @@ theorem jacobiSum_eq_sum_gen_pow {R : Type _} [CommRing R] {q : ℕ}
     jacobiSum (χ ^ a) (χ ^ b)
       = ∑ x ∈ Finset.Icc 1 (q - 2), (χ ↑gu) ^ (a * x + b * f x) := by
   have hq := Fact.out (p := q.Prime)
-  haveI : Fact (1 < q) := ⟨hq.one_lt⟩
+  have : Fact (1 < q) := ⟨hq.one_lt⟩
   have hq2 : 2 ≤ q := hq.two_le
   have hgord : orderOf gu = q - 1 := by
     rw [orderOf_eq_card_of_forall_mem_zpowers hg,
@@ -310,7 +310,7 @@ theorem dvd_e_iff_exponent_dvd {s t' : ℕ} (hs : 0 < s)
 /-- The unit-group exponent is positive. -/
 theorem exponent_units_pos {s : ℕ} (hs : 0 < s) :
     0 < Monoid.exponent (ZMod s)ˣ := by
-  haveI : NeZero s := ⟨hs.ne'⟩
+  have : NeZero s := ⟨hs.ne'⟩
   exact Monoid.exponent_pos_of_exists (Fintype.card (ZMod s)ˣ)
     Fintype.card_pos fun g => pow_card_eq_one
 
@@ -370,7 +370,7 @@ by `i = t` at the latest. -/
 theorem pow_t_mod_eq_one {n s t : ℕ} (hs : 1 < s)
     (hco : n.Coprime s) (h23 : ∀ u : (ZMod s)ˣ, u ^ t = 1) :
     n ^ t % s = 1 := by
-  haveI : NeZero s := ⟨by omega⟩
+  have : NeZero s := ⟨by omega⟩
   have hu : IsUnit ((n : ℕ) : ZMod s) :=
     (ZMod.isUnit_iff_coprime n s).mpr hco
   have h1 : ((n ^ t : ℕ) : ZMod s) = ((1 : ℕ) : ZMod s) := by

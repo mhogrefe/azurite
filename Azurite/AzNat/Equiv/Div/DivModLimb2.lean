@@ -41,7 +41,7 @@ theorem divModLimb2.go_toList_drop (d1 d0 v : UInt64) (a : Array UInt64) (lo j :
       rw [List.drop_drop]; congr 1
     rw [h_eq, h_eq, ih]
     rw [Array.toList_set, List.drop_set]
-    rw [if_neg (lt_irrefl _)]
+    rw [ite_eq_right (lt_irrefl _)]
     rw [show lo + j - (lo + j) = 0 from by omega]
     exact List.drop_set_of_lt (by decide : 0 < 1)
 
@@ -342,7 +342,7 @@ theorem topB_shl_lt (topB : UInt64) (k : Nat) (hk_eq : k = topB.leadingZeros)
     rw [hk_eq]
     show topB.leadingZeros = 63 - L
     show (if topB = 0 then 64 else 63 - topB.toNat.log2) = 63 - L
-    rw [if_neg h_topB_ne]
+    rw [ite_eq_right h_topB_ne]
   have hk_le : k ≤ 63 := by rw [hk_def]; exact Nat.sub_le _ _
   have hLk : L + k = 63 := by rw [hk_def]; omega
   have hpow_hi : topB.toNat < 2 ^ (L + 1) :=

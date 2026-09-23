@@ -96,7 +96,7 @@ theorem isSquare_eq_true_iff (n : AzNat) :
   have hspec := squareResidueTest_spec b.toNat hblt
   rw [UInt64.ofNat_toNat] at hspec
   by_cases hfilter : squareResidueTest b = true
-  · rw [if_pos hfilter, beq_iff_eq]
+  · rw [ite_eq_left hfilter, beq_iff_eq]
     constructor
     · intro h
       have := congrArg toNat h
@@ -106,7 +106,7 @@ theorem isSquare_eq_true_iff (n : AzNat) :
       apply toNat_injective
       rw [toNat_square, toNat_sqrt]
       exact (sqrt_mul_self_iff n.toNat).mpr h
-  · rw [if_neg hfilter]
+  · rw [ite_eq_right hfilter]
     simp only [Bool.false_eq_true, false_iff]
     rintro ⟨r, hr⟩
     apply hfilter

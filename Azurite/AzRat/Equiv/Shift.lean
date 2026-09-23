@@ -73,7 +73,7 @@ private lemma shr_cross {A B k n : ℕ} (hdvd : 2 ^ k ∣ A) (hkn : k ≤ n) :
     toRat (q >>> n) = toRat q / 2 ^ n := by
   show toRat (AzRat.shiftRight q n) = _
   by_cases hx : q.num = 0
-  · rw [AzRat.shiftRight, dif_pos hx, toRat_zero, toRat_of_num_zero q hx, zero_div]
+  · rw [AzRat.shiftRight, dite_eq_left hx, toRat_zero, toRat_of_num_zero q hx, zero_div]
   have hk0 : (q.num.trailingZeros).getD 0 = padicValNat 2 q.num.toNat := by
     rw [AzNat.trailingZeros_eq_padicValNat q.num hx]
     rfl
@@ -94,7 +94,7 @@ private lemma shr_cross {A B k n : ℕ} (hdvd : 2 ^ k ∣ A) (hkn : k ≤ n) :
       = (q.num.toNat : ℤ) *
         ((q.den.toNat : ℤ) * 2 ^ (n - min n ((q.num.trailingZeros).getD 0))) := by
     exact_mod_cast shr_cross hdvd (min_le_left _ _)
-  rw [AzRat.shiftRight, dif_neg hx, toRat_eq_divInt, toRat_eq_divInt q, div_eq_mul_inv,
+  rw [AzRat.shiftRight, dite_eq_right hx, toRat_eq_divInt, toRat_eq_divInt q, div_eq_mul_inv,
       show ((2 : ℚ) ^ n)⁻¹ = Rat.divInt 1 (2 ^ n) by
         rw [show ((2 : ℚ) ^ n) = Rat.divInt (2 ^ n) 1 by
               rw [Rat.divInt_one]; push_cast; ring,

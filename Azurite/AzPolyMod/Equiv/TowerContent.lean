@@ -135,7 +135,7 @@ variable (n : AzNat) (p q : ℕ) [Fact (1 < n.toNat)] [Fact p.Prime]
 multiple has `d`-divisible canonical residue, when `d ∣ n`. -/
 private theorem dvd_val_natCast_mul {d : ℕ} (hdn : d ∣ n.toNat)
     (c : AzZMod n) : d ∣ (((d : ℕ) : AzZMod n) * c).val.toNat := by
-  haveI : NeZero n.toNat :=
+  have : NeZero n.toNat :=
     ⟨by have := Fact.out (p := 1 < n.toNat); omega⟩
   have hval : (((d : ℕ) : AzZMod n) * c).val.toNat
       = (AzZMod.toZMod (((d : ℕ) : AzZMod n) * c)).val := by

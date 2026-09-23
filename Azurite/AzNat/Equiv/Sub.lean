@@ -434,7 +434,7 @@ theorem subGeqLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
                         (by rw [h_lo_size]; exact hA) else (lo.1, false))
           = (lo.1, lo.2) := by
       by_cases hc : lo.2 = true
-      · rw [if_pos hc, h_subLimb_empty, hc]
+      · rw [ite_eq_left hc, h_subLimb_empty, hc]
       · have hcf : lo.2 = false := by cases h : lo.2 <;> simp_all
         rw [hcf]; rfl
     rw [h_result]

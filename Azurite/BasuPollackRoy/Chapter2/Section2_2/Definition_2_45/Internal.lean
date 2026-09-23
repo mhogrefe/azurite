@@ -3622,7 +3622,7 @@ private lemma nonRoot_case_cy_close_aux_A
   · have hformula : nonRootDiffFormula P c = 0 := by
       unfold nonRootDiffFormula
       rw [hν_def] at hν_even
-      rw [if_pos hν_even]
+      rw [ite_eq_left hν_even]
     rw [hformula]
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos
     · have hτ_eq := hsign_rel_neg hστ_neg
@@ -3633,7 +3633,7 @@ private lemma nonRoot_case_cy_close_aux_A
       have hx0_eq : x₀ = c :=
         argmin_right_of_derivSign_opp hIVP hvc hPc hhL harg_x0
       have hw_ne : w ≠ c := fun hw_eq => by linarith [forward_w hw_eq]
-      rw [if_pos hx0_eq, if_neg hw_ne]; norm_num
+      rw [ite_eq_left hx0_eq, ite_eq_right hw_ne]; norm_num
     · have hτ_eq := hsign_rel_pos hστ_pos
       have hhR : ∀ x ∈ Set.Ioi c,
           SignType.sign ((derivative P).eval x) = SignType.sign (P.eval c) := by
@@ -3648,13 +3648,13 @@ private lemma nonRoot_case_cy_close_aux_A
           rw [pow_succ, Even.neg_one_pow hν_even]; ring
         rw [hh] at h
         linarith
-      rw [if_neg hx0_ne, if_pos hw_eq]; norm_num
+      rw [ite_eq_right hx0_ne, ite_eq_left hw_eq]; norm_num
   · have hν_odd : Odd ν := Nat.not_even_iff_odd.mp hν_even
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos
     · have hformula : nonRootDiffFormula P c = -1 := by
         unfold nonRootDiffFormula
         rw [hν_def] at hν_even
-        rw [if_neg hν_even, if_neg (not_lt.mpr hστ_neg.le)]
+        rw [ite_eq_right hν_even, ite_eq_right (not_lt.mpr hστ_neg.le)]
       rw [hformula]
       have hw_ne : w ≠ c := fun hw_eq => by linarith [forward_w hw_eq]
       have hx0_ne : x₀ ≠ c := fun hx0_eq => by
@@ -3663,11 +3663,11 @@ private lemma nonRoot_case_cy_close_aux_A
           rw [pow_succ, Odd.neg_one_pow hν_odd]; ring
         rw [hpow] at h
         linarith
-      rw [if_neg hx0_ne, if_neg hw_ne]; norm_num
+      rw [ite_eq_right hx0_ne, ite_eq_right hw_ne]; norm_num
     · have hformula : nonRootDiffFormula P c = 1 := by
         unfold nonRootDiffFormula
         rw [hν_def] at hν_even
-        rw [if_neg hν_even, if_pos hστ_pos]
+        rw [ite_eq_right hν_even, ite_eq_left hστ_pos]
       rw [hformula]
       have hτ_eq := hsign_rel_pos hστ_pos
       have hhL : ∀ x ∈ Set.Ioo v c,
@@ -3682,7 +3682,7 @@ private lemma nonRoot_case_cy_close_aux_A
         rw [hR_const_sign x hx, hτ_eq]
       have hw_eq : w = c :=
         argmin_left_of_derivSign_same_Ici hIVP hPc hhR hw_arg
-      rw [if_pos hx0_eq, if_pos hw_eq]; norm_num
+      rw [ite_eq_left hx0_eq, ite_eq_left hw_eq]; norm_num
 
 /-- **Non-root `c = y` case, right-boundary `Icc c z` variant.** Same as
     `nonRoot_case_cy_close_aux_A` but the right-side argmin is on a bounded
@@ -3764,7 +3764,7 @@ private lemma nonRoot_case_cy_close_aux_B
   · have hformula : nonRootDiffFormula P c = 0 := by
       unfold nonRootDiffFormula
       rw [hν_def] at hν_even
-      rw [if_pos hν_even]
+      rw [ite_eq_left hν_even]
     rw [hformula]
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos
     · have hτ_eq := hsign_rel_neg hστ_neg
@@ -3775,7 +3775,7 @@ private lemma nonRoot_case_cy_close_aux_B
       have hx0_eq : x₀ = c :=
         argmin_right_of_derivSign_opp hIVP hvc hPc hhL harg_x0
       have hw_ne : w ≠ c := fun hw_eq => by linarith [forward_w hw_eq]
-      rw [if_pos hx0_eq, if_neg hw_ne]; norm_num
+      rw [ite_eq_left hx0_eq, ite_eq_right hw_ne]; norm_num
     · have hτ_eq := hsign_rel_pos hστ_pos
       have hhR : ∀ x ∈ Set.Ioo c z,
           SignType.sign ((derivative P).eval x) = SignType.sign (P.eval c) := by
@@ -3790,13 +3790,13 @@ private lemma nonRoot_case_cy_close_aux_B
           rw [pow_succ, Even.neg_one_pow hν_even]; ring
         rw [hh] at h
         linarith
-      rw [if_neg hx0_ne, if_pos hw_eq]; norm_num
+      rw [ite_eq_right hx0_ne, ite_eq_left hw_eq]; norm_num
   · have hν_odd : Odd ν := Nat.not_even_iff_odd.mp hν_even
     rcases lt_or_gt_of_ne hστ_ne with hστ_neg | hστ_pos
     · have hformula : nonRootDiffFormula P c = -1 := by
         unfold nonRootDiffFormula
         rw [hν_def] at hν_even
-        rw [if_neg hν_even, if_neg (not_lt.mpr hστ_neg.le)]
+        rw [ite_eq_right hν_even, ite_eq_right (not_lt.mpr hστ_neg.le)]
       rw [hformula]
       have hw_ne : w ≠ c := fun hw_eq => by linarith [forward_w hw_eq]
       have hx0_ne : x₀ ≠ c := fun hx0_eq => by
@@ -3805,11 +3805,11 @@ private lemma nonRoot_case_cy_close_aux_B
           rw [pow_succ, Odd.neg_one_pow hν_odd]; ring
         rw [hpow] at h
         linarith
-      rw [if_neg hx0_ne, if_neg hw_ne]; norm_num
+      rw [ite_eq_right hx0_ne, ite_eq_right hw_ne]; norm_num
     · have hformula : nonRootDiffFormula P c = 1 := by
         unfold nonRootDiffFormula
         rw [hν_def] at hν_even
-        rw [if_neg hν_even, if_pos hστ_pos]
+        rw [ite_eq_right hν_even, ite_eq_left hστ_pos]
       rw [hformula]
       have hτ_eq := hsign_rel_pos hστ_pos
       have hhL : ∀ x ∈ Set.Ioo v c,
@@ -3824,7 +3824,7 @@ private lemma nonRoot_case_cy_close_aux_B
         rw [hR_const_sign x hx, hτ_eq]
       have hw_eq : w = c :=
         argmin_left_of_derivSign_same hIVP hcz hPc hhR hw_arg
-      rw [if_pos hx0_eq, if_pos hw_eq]; norm_num
+      rw [ite_eq_left hx0_eq, ite_eq_left hw_eq]; norm_num
 
 /-- Non-root version of `count_eq_of_root_from_aux`: along the argmin chain,
     the difference of counts of `c` in `xs` vs. `ys` equals the sign-dependent
@@ -4004,10 +4004,10 @@ private lemma count_diff_of_not_root_from_aux
             ((x₀ :: x₁ :: xs'').count c : ℤ) - ((c :: ys').count c : ℤ)
               = (if x₀ = c then 1 else 0) + (if w = c then 1 else 0) - 1 := by
           by_cases hx0 : x₀ = c
-          · rw [if_pos hx0, hx0, List.count_cons_self, hxs1_count_eq,
+          · rw [ite_eq_left hx0, hx0, List.count_cons_self, hxs1_count_eq,
               hys_count_eq]
             push_cast; split_ifs <;> ring
-          · rw [if_neg hx0, List.count_cons_of_ne hx0, hxs1_count_eq,
+          · rw [ite_eq_right hx0, List.count_cons_of_ne hx0, hxs1_count_eq,
               hys_count_eq]
             push_cast; split_ifs <;> ring
         rw [hcount_diff]
@@ -4261,10 +4261,10 @@ lemma count_diff_of_not_root
           ((x₀ :: x₁ :: xs'').count c : ℤ) - ((c :: ys').count c : ℤ)
             = (if x₀ = c then 1 else 0) + (if w = c then 1 else 0) - 1 := by
         by_cases hx0 : x₀ = c
-        · rw [if_pos hx0, hx0, List.count_cons_self, hxs1_count_eq,
+        · rw [ite_eq_left hx0, hx0, List.count_cons_self, hxs1_count_eq,
             hys_count_eq]
           push_cast; split_ifs <;> ring
-        · rw [if_neg hx0, List.count_cons_of_ne hx0, hxs1_count_eq,
+        · rw [ite_eq_right hx0, List.count_cons_of_ne hx0, hxs1_count_eq,
             hys_count_eq]
           push_cast; split_ifs <;> ring
       rw [hcount_diff]

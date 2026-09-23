@@ -21,12 +21,12 @@ private lemma azNat_toString_not_dash (n : AzNat) :
   by_cases h_size : n.limbs.size = 0
   · have h_str : AzNat.toString n = "0" := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str] at h_min; revert h_min; decide
   · have h_str : AzNat.toString n = String.ofList
         ((n.limbDigits 10).toList.reverse.map fun d => AzNat.digitToChar d false) := by
       unfold AzNat.toString AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str, String.toList_ofList, List.mem_map] at h_min
     obtain ⟨d, hd_mem, hd_eq⟩ := h_min
     rw [List.mem_reverse] at hd_mem
@@ -37,7 +37,7 @@ private lemma azNat_toString_not_dash (n : AzNat) :
       Nat.digits_lt_base (by decide : 1 < (10 : UInt64).toNat) h_mapped
     have h_dc : AzNat.digitToChar d false = '-' := hd_eq
     unfold AzNat.digitToChar at h_dc
-    rw [if_pos (by omega : d.toNat < 10)] at h_dc
+    rw [ite_eq_left (by omega : d.toNat < 10)] at h_dc
     have h_eq_tonat := congrArg Char.toNat h_dc
     have h_45 : ('-' : Char).toNat = 45 := rfl
     have h_zero : ('0' : Char).toNat = 48 := rfl
@@ -46,7 +46,7 @@ private lemma azNat_toString_not_dash (n : AzNat) :
     have h_valid : ('0'.toNat + d.toNat).isValidChar := by
       rw [h_zero]
       left; omega
-    rw [if_pos h_valid, h_zero] at h_eq_tonat
+    rw [ite_eq_left h_valid, h_zero] at h_eq_tonat
     omega
 
 private lemma drop_one_dash_append (s : String) :
@@ -61,23 +61,23 @@ theorem parse_toString (z : AzInt) : AzInt.parse (AzInt.toString z) = some z := 
   unfold AzInt.parse AzInt.toString
   by_cases h_sign : z.sign
   · -- Positive: toString = AzNat.toString z.abs (no leading dash).
-    rw [if_pos h_sign]
-    rw [if_neg (by rw [azNat_toString_not_dash z.abs]; decide)]
+    rw [ite_eq_left h_sign]
+    rw [ite_eq_right (by rw [azNat_toString_not_dash z.abs]; decide)]
     rw [AzNat.parse_toString z.abs]
     exact congrArg some (azInt_ext _ _ h_sign.symm rfl)
   · -- Negative: toString = "-" ++ AzNat.toString z.abs.
-    rw [if_neg h_sign]
+    rw [ite_eq_right h_sign]
     have h_dash : ("-" ++ AzNat.toString z.abs).startsWith "-" = true := by
       rw [String.startsWith_string_iff]
       exact ⟨(AzNat.toString z.abs).toList, by simp⟩
-    rw [if_pos h_dash]
+    rw [ite_eq_left h_dash]
     rw [drop_one_dash_append, AzNat.parse_toString z.abs]
     have h_abs_ne : z.abs ≠ 0 := by
       intro h_abs_zero
       have := z.zero_sign h_abs_zero
       rw [this] at h_sign; exact h_sign rfl
     simp only  -- reduce `match some _ with | some n => …` to its arm
-    rw [dif_neg h_abs_ne]
+    rw [dite_eq_right h_abs_ne]
     apply congrArg
     apply azInt_ext
     · show false = z.sign
@@ -175,7 +175,7 @@ theorem parse_eq_toInt?_of_digits (s : String) (h_ne : s ≠ "")
     have h_lo : (45 : Nat) ≥ 48 := this.1
     omega
   unfold AzInt.parse
-  rw [if_neg (by rw [h_dash]; decide)]
+  rw [ite_eq_right (by rw [h_dash]; decide)]
   -- AzInt.parse s ≡ AzNat.parse s wrapped in positive AzInt.
   have h_nat_eq := AzNat.parse_eq_toNat? s h_ne h_dig
   have h_dash_char : s.startsWith ('-' : Char) = false := by
@@ -211,7 +211,7 @@ theorem parse_neg_eq_toInt?_of_digits (rest : String) (h_ne : rest ≠ "")
   have h_starts : ("-" ++ rest).startsWith "-" = true := by
     rw [String.startsWith_string_iff]
     exact ⟨rest.toList, by simp⟩
-  rw [if_pos h_starts]
+  rw [ite_eq_left h_starts]
   rw [drop_one_dash_append]
   rw [toInt?_minus_append']
   have h_nat_eq := AzNat.parse_eq_toNat? rest h_ne h_dig
@@ -226,7 +226,7 @@ theorem parse_neg_eq_toInt?_of_digits (rest : String) (h_ne : rest ≠ "")
       have h_n_toNat : n.toNat = 0 := by rw [h_n_zero]; rfl
       exact (h_nonzero n h_an) h_n_toNat
     simp only
-    rw [dif_neg h_n_ne]
+    rw [dite_eq_right h_n_ne]
     rw [← h_nat_eq]
     simp only [Option.map_some]
     apply congrArg

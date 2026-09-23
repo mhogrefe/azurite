@@ -36,7 +36,7 @@ theorem toomCook3MulLowLimbs_modEq (toomThreshold karaThreshold : Nat) :
   | _ len ih =>
   intro a b loA loB hA hB
   by_cases h_base : len < 2 ∨ len < toomThreshold
-  · rw [toomCook3MulLowLimbs, dif_pos h_base, toNat_ofLimbs]
+  · rw [toomCook3MulLowLimbs, dite_eq_left h_base, toNat_ofLimbs]
     exact schoolbookMulLowLimbs_modEq a b loA len loB len len hA hB
   · have hlen : 2 ≤ len := by omega
     set k := min ((4 * len + 4) / 5) (len - 1) with hk_def

@@ -154,7 +154,7 @@ theorem parseSubscriptChars_natToSubscriptChars (n : ℕ) :
       show ('₀' : Char).toNat = 8320 from by decide,
       show ('₉' : Char).toNat = 8329 from by decide]
     exact ⟨h1, h2⟩
-  rw [if_pos hall]
+  rw [ite_eq_left hall]
   unfold natToSubscriptChars
   simp only [List.map_map, Function.comp_def,
     show ('0' : Char).toNat = 48 from by decide,
@@ -367,7 +367,7 @@ def parse {n : ℕ} (c : Char) : Option (AbcVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : AbcVar n) :
     AbcVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct an `AbcVar` from a `Fin n` index (0 → 'a', 1 → 'b', etc.). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : AbcVar n :=
@@ -407,7 +407,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -459,7 +459,7 @@ def parse {n : ℕ} (c : Char) : Option (AbcCapsVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : AbcCapsVar n) :
     AbcCapsVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct an `AbcCapsVar` from a `Fin n` index (0 → 'A', 1 → 'B', etc.). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : AbcCapsVar n :=
@@ -499,7 +499,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (AbcCapsVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -577,7 +577,7 @@ def parse {n : ℕ} (c : Char) : Option (XyzVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : XyzVar n) :
     XyzVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct an `XyzVar` from a `Fin n` rank (0 → 'x', 1 → 'y', 2 → 'z', 3 → 'w', ...). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : XyzVar n :=
@@ -626,7 +626,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -684,7 +684,7 @@ def parse {n : ℕ} (c : Char) : Option (XyzCapsVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : XyzCapsVar n) :
     XyzCapsVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct an `XyzCapsVar` from a `Fin n` rank (0 → 'X', 1 → 'Y', 2 → 'Z', 3 → 'W', ...). -/
 def ofIndex {n : ℕ} (hn : n ≤ 26) (i : Fin n) : XyzCapsVar n :=
@@ -733,7 +733,7 @@ instance {n : ℕ} [Fact (n ≤ 26)] : ParsableVar (XyzCapsVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -772,13 +772,13 @@ private theorem greekCharOfIndex_greekCharIndex (c : Char)
   · -- c.toNat ≤ 961
     rename_i h
     have idx_le : c.toNat - 945 ≤ 16 := by omega
-    rw [if_pos idx_le]
+    rw [ite_eq_left idx_le]
     rw [show c.toNat - 945 + 945 = c.toNat from by omega]
     exact Char.ofNat_toNat c
   · -- c.toNat > 961
     rename_i h; push Not at h
     have idx_gt : ¬ (c.toNat - 946 ≤ 16) := by omega
-    rw [if_neg idx_gt]
+    rw [ite_eq_right idx_gt]
     rw [show c.toNat - 946 + 946 = c.toNat from by omega]
     exact Char.ofNat_toNat c
 
@@ -856,7 +856,7 @@ def parse {n : ℕ} (c : Char) : Option (GreekVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : GreekVar n) :
     GreekVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct a `GreekVar` from a `Fin n` index (0 → α, 1 → β, ..., 23 → ω). -/
 def ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) : GreekVar n :=
@@ -893,7 +893,7 @@ instance {n : ℕ} [Fact (n ≤ 24)] : ParsableVar (GreekVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -928,12 +928,12 @@ private theorem greekCapsCharOfIndex_greekCapsCharIndex (c : Char)
   split
   · rename_i h
     have idx_le : c.toNat - 913 ≤ 16 := by omega
-    rw [if_pos idx_le]
+    rw [ite_eq_left idx_le]
     rw [show c.toNat - 913 + 913 = c.toNat from by omega]
     exact Char.ofNat_toNat c
   · rename_i h; push Not at h
     have idx_gt : ¬ (c.toNat - 914 ≤ 16) := by omega
-    rw [if_neg idx_gt]
+    rw [ite_eq_right idx_gt]
     rw [show c.toNat - 914 + 914 = c.toNat from by omega]
     exact Char.ofNat_toNat c
 
@@ -1011,7 +1011,7 @@ def parse {n : ℕ} (c : Char) : Option (GreekCapsVar n) :=
 
 theorem parse_toChars {n : ℕ} (v : GreekCapsVar n) :
     GreekCapsVar.parse v.ch = some v := by
-  simp only [parse, dif_pos v.is_valid]
+  simp only [parse, dite_eq_left v.is_valid]
 
 /-- Construct a `GreekCapsVar` from a `Fin n` index (0 → Α, 1 → Β, ..., 23 → Ω). -/
 def ofIndex {n : ℕ} (hn : n ≤ 24) (i : Fin n) : GreekCapsVar n :=
@@ -1048,7 +1048,7 @@ instance {n : ℕ} [Fact (n ≤ 24)] : ParsableVar (GreekCapsVar n) n where
         some ⟨c, h⟩
       else none
     | _ => none
-  parse_toChars v := by simp only [dif_pos v.is_valid]
+  parse_toChars v := by simp only [dite_eq_left v.is_valid]
   toChars_nonempty _ := by simp
   toChars_no_syntax v c hc := by
     simp at hc; subst hc
@@ -1139,7 +1139,7 @@ private theorem findByToString_self [ToString α] :
         intro heq
         have hmem := @List.mem_map_of_mem _ _ as _ (fun a => (toString a).toList) (List.get_mem as ⟨j, hj⟩)
         exact hnodup.1 (heq ▸ hmem)
-      rw [if_neg hne, ih j hj hnodup.2]
+      rw [ite_eq_right hne, ih j hj hnodup.2]
       simp [Option.map]
 
 private theorem findByToString_lt [ToString α] :

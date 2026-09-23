@@ -224,7 +224,7 @@ theorem AzMatrix.gaussSteps_succ [Field K] (M : AzMatrix K n n)
     M.gaussSteps (k + 1) = (M.gaussSteps k).eliminateBelow ⟨k, hk⟩ := by
   show (if h : k < n then (M.gaussSteps k).eliminateBelow ⟨k, h⟩
         else M.gaussSteps k) = _
-  rw [dif_pos hk]
+  rw [dite_eq_left hk]
 
 /-- For step counts beyond `n`, `gaussSteps` stabilizes: no rows remain
     below the pivot, so the step is a no-op. -/
@@ -233,7 +233,7 @@ theorem AzMatrix.gaussSteps_of_ge [Field K] (M : AzMatrix K n n)
     M.gaussSteps (k + 1) = M.gaussSteps k := by
   show (if h : k < n then (M.gaussSteps k).eliminateBelow ⟨k, h⟩
         else M.gaussSteps k) = _
-  rw [dif_neg hk]
+  rw [dite_eq_right hk]
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests

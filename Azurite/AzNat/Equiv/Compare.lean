@@ -78,7 +78,7 @@ lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length)
       rw [hz1, hz2]
       exact Nat.add_lt_add_left h_sub _
     change (if _ then Ordering.lt else if _ then Ordering.eq else Ordering.gt) = Ordering.lt
-    rw [if_pos h_add_C]
+    rw [ite_eq_left h_add_C]
   · have hb2 := toNatLimbsList_lt_pow (l2.take i)
     have hl2 : (l2.take i).length = i := List.length_take_of_le (by omega)
     rw [hl2] at hb2
@@ -91,7 +91,7 @@ lemma compare_eq_of_drop_eq (l1 l2 : List UInt64) (i : Nat) (h1 : i < l1.length)
     change (if _ then Ordering.lt else if _ then Ordering.eq else Ordering.gt) = Ordering.gt
     have ht : ¬ (toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l1.get ⟨i, h1⟩).toNat * 2 ^ (64 * i) + toNatLimbsList (List.take i l1) < toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l2.get ⟨i, h2⟩).toNat * 2 ^ (64 * i) + toNatLimbsList (List.take i l2)) := by omega
     have ht2 : toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l1.get ⟨i, h1⟩).toNat * 2 ^ (64 * i) + toNatLimbsList (List.take i l1) ≠ toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l2.get ⟨i, h2⟩).toNat * 2 ^ (64 * i) + toNatLimbsList (List.take i l2) := by omega
-    rw [if_neg ht, if_neg ht2]
+    rw [ite_eq_right ht, ite_eq_right ht2]
   · have heq : (l1.get ⟨i, h1⟩).toNat = (l2.get ⟨i, h2⟩).toNat := by omega
     rw [heq]
     exact compare_add_eq (toNatLimbsList (List.drop (i + 1) l2) * 2 ^ (64 * (i + 1)) + (l2.get ⟨i, h2⟩).toNat * 2 ^ (64 * i)) (toNatLimbsList (List.take i l1)) (toNatLimbsList (List.take i l2))
@@ -114,7 +114,7 @@ lemma compare_UInt64_eq_of_lt (a b : UInt64) (h : a < b) : Ord.compare a b = Ord
   have ht : a.toNat < b.toNat := h
   rw [compare_UInt64_eq_compare_toNat]
   have hc : Ord.compare a.toNat b.toNat = if a.toNat < b.toNat then Ordering.lt else if a.toNat = b.toNat then Ordering.eq else Ordering.gt := rfl
-  rw [hc, if_pos ht]
+  rw [hc, ite_eq_left ht]
 
 lemma compare_UInt64_eq_of_gt (a b : UInt64) (h : a > b) : Ord.compare a b = Ordering.gt := by
   have ht : a.toNat > b.toNat := h
@@ -122,7 +122,7 @@ lemma compare_UInt64_eq_of_gt (a b : UInt64) (h : a > b) : Ord.compare a b = Ord
   have ht3 : a.toNat ≠ b.toNat := by omega
   rw [compare_UInt64_eq_compare_toNat]
   have hc : Ord.compare a.toNat b.toNat = if a.toNat < b.toNat then Ordering.lt else if a.toNat = b.toNat then Ordering.eq else Ordering.gt := rfl
-  rw [hc, if_neg ht2, if_neg ht3]
+  rw [hc, ite_eq_right ht2, ite_eq_right ht3]
 
 lemma compare_UInt64_eq_of_eq (a b : UInt64) (h : a = b) : Ord.compare a b = Ordering.eq := by
   rw [compare_UInt64_eq_compare_toNat, h]
@@ -196,13 +196,13 @@ lemma pow_le_toNatLimbsList (l : List UInt64) (h_not_empty : l ≠ []) (hl : l.g
 
 lemma compare_Nat_eq_of_lt (a b : Nat) (h : a < b) : Ord.compare a b = Ordering.lt := by
   change (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.lt
-  rw [if_pos h]
+  rw [ite_eq_left h]
 
 lemma compare_Nat_eq_of_gt (a b : Nat) (h : a > b) : Ord.compare a b = Ordering.gt := by
   change (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.gt
   have ht : ¬ (a < b) := by omega
   have ht2 : a ≠ b := by omega
-  rw [if_neg ht, if_neg ht2]
+  rw [ite_eq_right ht, ite_eq_right ht2]
 
 lemma toNatLimbsList_take_one (l : List UInt64) (h : 0 < l.length) :
   toNatLimbsList (l.take 1) = (l.get ⟨0, h⟩).toNat := by
@@ -372,17 +372,17 @@ lemma compare_eq_compareOfLessAndEq (a b : AzNat) : compare a b = compareOfLessA
   rcases hc : compare a b with _ | _ | _
   · have h_lt : a < b := by rw [hl1]; exact hc
     have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.lt := by
-      rw [if_pos h_lt]
+      rw [ite_eq_left h_lt]
     exact h1.symm
   · have h_eq_b : a = b := by rw [h_eq]; exact hc
     have hn_lt : ¬ (a < b) := by rw [h_eq_b, lt_iff_toNat_lt]; exact Nat.lt_irrefl _
     have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.eq := by
-      rw [if_neg hn_lt, if_pos h_eq_b]
+      rw [ite_eq_right hn_lt, ite_eq_left h_eq_b]
     exact h1.symm
   · have h_not_lt : ¬ (a < b) := by rw [hl1]; intro h; rw [h] at hc; contradiction
     have h_not_eq : ¬ (a = b) := by rw [h_eq]; intro h; rw [h] at hc; contradiction
     have h1 : (if a < b then Ordering.lt else if a = b then Ordering.eq else Ordering.gt) = Ordering.gt := by
-      rw [if_neg h_not_lt, if_neg h_not_eq]
+      rw [ite_eq_right h_not_lt, ite_eq_right h_not_eq]
     exact h1.symm
 
 instance : LinearOrder AzNat where
@@ -484,9 +484,8 @@ theorem compareInt64_eq (a : AzNat) (i : Int64) :
         · omega
     rw [compare_nat_cast_int, h_eq]
 
-instance : WellFoundedLT AzNat where
-  wf := by
-    have h : WellFounded (InvImage (· < ·) toNat) := InvImage.wf toNat wellFounded_lt
-    exact Subrelation.wf (fun {a b : AzNat} (hlt : a < b) => (lt_iff_toNat_lt a b).mp hlt) h
+instance : WellFoundedLT AzNat :=
+  Subrelation.wf (fun {a b : AzNat} (hlt : a < b) => (lt_iff_toNat_lt a b).mp hlt)
+    (InvImage.wf toNat wellFounded_lt)
 
 end Azurite.AzNat

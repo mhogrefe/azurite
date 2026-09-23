@@ -56,7 +56,7 @@ theorem pepin_necessity {k : ℕ} (hk : 1 ≤ k)
     (hp : (Nat.fermatNumber k).Prime) :
     3 ^ ((Nat.fermatNumber k - 1) / 2) = (-1 : ZMod (Nat.fermatNumber k)) := by
   set p := Nat.fermatNumber k with hpdef
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have h12 : p % 12 = 5 := fermatNumber_mod_twelve hk
   -- the Legendre symbol `(3 | p)` is `−1`
   have hleg : legendreSym p 3 = -1 := by

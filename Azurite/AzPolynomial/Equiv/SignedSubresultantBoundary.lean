@@ -196,12 +196,12 @@ theorem ssAuxExt_boundary {D : Type _} [CommRing D] [DecidableEq D] [Azurite.Exa
       have hzero : sResP P Q (j - 1) = 0 := by rw [← hSj, hSj0, toPoly_zero]
       have hj₀j : j₀ = j :=
         (boundary_index_unique P Q hP hQ hpq hj₀1 hj₀q h0 hnd hne0 hj1 hjq hzero hjnd).symm
-      rw [if_pos hSj0, if_neg (show ¬j = 0 by omega)]
+      rw [ite_eq_left hSj0, ite_eq_right (show ¬j = 0 by omega)]
       refine ⟨by rw [List.length_cons, List.length_replicate]; omega, (0, 0, Uj, Vj), ?_, ?_, ?_⟩
       · rw [show j - j₀ = 0 from by omega, List.getElem?_cons_zero]
       · rw [show j₀ - 1 = j - 1 from by omega]; exact hUj
       · rw [show j₀ - 1 = j - 1 from by omega]; exact hVj
-    · rw [if_neg hSj0]
+    · rw [ite_eq_right hSj0]
       have hkdeg : (sResP P Q (j - 1)).natDegree = Sj.natDegree := by
         rw [← hSj, AzPolynomial.natDegree_toPoly]
       have hsResPne : sResP P Q (j - 1) ≠ 0 := by
@@ -455,7 +455,7 @@ theorem ssAuxExt_boundary_first {D : Type _} [CommRing D] [DecidableEq D] [Azuri
       = AzPolynomial.toPoly Q := by
     rw [show P.natDegree - 1 = (AzPolynomial.toPoly P).natDegree - 1 from by rw [hpd]]
     exact sResP_pm1_eq_Q_domain _ _ hQm hpqm
-  rw [ssAuxExt, if_neg hQ]
+  rw [ssAuxExt, ite_eq_right hQ]
   dsimp only
   split_ifs with hkj hk0 hk0'
   · exact absurd hk0 (by omega)
@@ -606,12 +606,12 @@ theorem extendedSignedSubresultant_boundary_cofactors_domain {D : Type _} [CommR
   constructor
   · have harr : (extendedSignedSubresultant P Q).2.2.1
         = (lst.reverse.map (·.2.2.1)).toArray := by
-      rw [hlst]; unfold extendedSignedSubresultant; rw [if_neg hcond]
+      rw [hlst]; unfold extendedSignedSubresultant; rw [ite_eq_right hcond]
     rw [harr, hframe (·.2.2.1)]
     exact hU
   · have harr : (extendedSignedSubresultant P Q).2.2.2
         = (lst.reverse.map (·.2.2.2)).toArray := by
-      rw [hlst]; unfold extendedSignedSubresultant; rw [if_neg hcond]
+      rw [hlst]; unfold extendedSignedSubresultant; rw [ite_eq_right hcond]
     rw [harr, hframe (·.2.2.2)]
     exact hV
 
@@ -779,7 +779,7 @@ theorem gcdGcdFreePartRaw_snd {K : Type _} [Field K] [DecidableEq K]
       rw [h, toPoly_zero] at h2
       exact sResP_natDegree_gcd_ne_zero _ _ hP' hQ' hpq' (hj₀ ▸ h2.symm)
   -- reduce the wrapper and apply the boundary identification
-  rw [gcdGcdFreePartRaw, if_neg hQ0, if_neg (by omega)]
+  rw [gcdGcdFreePartRaw, ite_eq_right hQ0, ite_eq_right (by omega)]
   show AzPolynomial.toPoly (gcdGcdFreePartCore P Q).2 = _
   rw [gcdGcdFreePartCore]
   split

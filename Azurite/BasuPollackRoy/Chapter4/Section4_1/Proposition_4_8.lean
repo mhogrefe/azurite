@@ -505,7 +505,7 @@ theorem proposition_4_8_series (P : K[X]) (hP : 0 < P.natDegree) (N : ℕ) :
   rw [hT1, hT2]
   by_cases hkN : N ≤ k
   · -- Case k ≥ N: use Prop 4.8 at j = k - N + 1.
-    rw [if_pos hkN]
+    rw [ite_eq_left hkN]
     -- Drop the if from T2 (always true when k ≥ N).
     have hT2_simp : (Finset.range N).sum (fun i =>
           newtonSum P i *
@@ -521,7 +521,7 @@ theorem proposition_4_8_series (P : K[X]) (hP : 0 < P.natDegree) (N : ℕ) :
         intro i hi
         rw [Finset.mem_range] at hi
         have : N - 1 - i ≤ k := by omega
-        rw [if_pos this]
+        rw [ite_eq_left this]
         congr 2; omega]
       apply Finset.sum_nbij' (fun i => i + (k - N + 1)) (fun m => m - (k - N + 1))
       · intro i hi
@@ -580,7 +580,7 @@ theorem proposition_4_8_series (P : K[X]) (hP : 0 < P.natDegree) (N : ℕ) :
         rw [hQ_coeff_zero m (by omega), zero_mul]]
       ring
   · -- Case k < N: T1 = 0, T2 = 0 via orthogonality.
-    rw [if_neg hkN]
+    rw [ite_eq_right hkN]
     push Not at hkN
     rw [zero_sub, neg_eq_zero]
     -- T2 simplifies via reindex + orthogonality at q = N - 1 - k.
@@ -610,13 +610,13 @@ theorem proposition_4_8_series (P : K[X]) (hP : 0 < P.natDegree) (N : ℕ) :
           intro i hi
           rw [Finset.mem_Ico] at hi
           have : ¬ (N - 1 - i ≤ k) := by omega
-          rw [if_neg this]; ring]
+          rw [ite_eq_right this]; ring]
         rw [zero_add]
         apply Finset.sum_congr rfl
         intro i hi
         rw [Finset.mem_Ico] at hi
         have : N - 1 - i ≤ k := by omega
-        rw [if_pos this]
+        rw [ite_eq_left this]
         congr 2; omega]
       -- Reindex i = m + q, m ∈ [0, N - q) = [0, k + 1)
       rw [show (Finset.Ico q N).sum (fun i =>

@@ -153,7 +153,7 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     have hr_aznat_zero : (x.divMod y).2.toNat = 0 := by
       rw [← mod_eq_divMod_snd]; show (x % y).toNat = 0; rw [toNat_mod]; exact hr0
     have hr_size_zero : (x.divMod y).2.limbs.size = 0 := (toNat_eq_zero_iff _).mp hr_aznat_zero
-    rw [if_pos hr_size_zero]
+    rw [ite_eq_left hr_size_zero]
     show ((x.divMod y).1.toNat : EReal) = (round natBotSet mode t).val
     rw [hquot_toNat]
     have ht_eq_q : t = (q : ℝ) := by rw [ht_decomp, hr0]; push_cast; simp
@@ -171,11 +171,11 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Down =>
       show ((q : ℕ) : EReal) =
         (if 0 ≤ t then roundFloor natBotSet t else roundCeiling natBotSet t).val
-      rw [if_pos ht_nonneg, ← hF_def, hF_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, ← hF_def, hF_val]; push_cast; rfl
     | Up =>
       show ((q : ℕ) : EReal) =
         (if 0 ≤ t then roundCeiling natBotSet t else roundFloor natBotSet t).val
-      rw [if_pos ht_nonneg, hC_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hC_val]; push_cast; rfl
     | Nearest =>
       show ((q : ℕ) : EReal) =
         (match Ord.compare ((t : EReal) - F.val) ((roundCeiling natBotSet t).val - (t : EReal)) with
@@ -197,7 +197,7 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
       rw [← mod_eq_divMod_snd]; show (x % y).toNat ≠ 0; rw [toNat_mod]; exact hr0
     have hr_size_ne : ¬ ((x.divMod y).2.limbs.size = 0) := by
       intro h; apply hr_aznat_ne; exact (toNat_eq_zero_iff _).mpr h
-    rw [if_neg hr_size_ne]
+    rw [ite_eq_right hr_size_ne]
     have hr_pos : 0 < r := Nat.pos_of_ne_zero hr0
     have h_not_dvd : ¬ yn ∣ xn := fun hdvd => hr0 (Nat.mod_eq_zero_of_dvd hdvd)
     set C := roundCeiling natBotSet t with hC_def
@@ -260,14 +260,14 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Down =>
       show ((x.divMod y).1.toNat : EReal) =
         (if 0 ≤ t then F else C).val
-      rw [if_pos ht_nonneg, hquot_toNat, hF_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hquot_toNat, hF_val]; push_cast; rfl
     | Ceiling =>
       show (((x.divMod y).1.addUInt64 1).toNat : EReal) = C.val
       rw [hquot_succ_toNat, hC_val]; push_cast; rfl
     | Up =>
       show (((x.divMod y).1.addUInt64 1).toNat : EReal) =
         (if 0 ≤ t then C else F).val
-      rw [if_pos ht_nonneg, hquot_succ_toNat, hC_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hquot_succ_toNat, hC_val]; push_cast; rfl
     | Nearest =>
       have hyhalf_toNat : (y >>> 1).toNat = yn / 2 := toNat_shiftRight_one y
       have hrem_toNat : (x.divMod y).2.toNat = r := by
@@ -335,11 +335,11 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
                 rw [isOdd_iff, hquot_toNat]; exact ⟨q / 2, by omega⟩
               rw [show (y.isEven && (x.divMod y).1.isOdd) = true from by
                 rw [hy_isEven_true, hq_isOdd]; rfl]
-              rw [if_pos rfl, hquot_succ_toNat]
+              rw [ite_eq_left rfl, hquot_succ_toNat]
               have hq_odd : Odd q := ⟨q / 2, by omega⟩
               have hq_not_even : ¬ Even q := Nat.not_even_iff_odd.mpr hq_odd
               have hq1_even : Even (q + 1) := Odd.add_one hq_odd
-              rw [if_neg hq_not_even, if_pos hq1_even, hC_val]; push_cast; rfl
+              rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]; push_cast; rfl
             · -- q even: round down
               have hq_mod : q % 2 = 0 := by omega
               have hq_even : Even q := (Nat.even_iff).mpr hq_mod
@@ -351,8 +351,8 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
                   rcases h with ⟨k, hk⟩; omega
               rw [show (y.isEven && (x.divMod y).1.isOdd) = false from by
                 rw [hq_isOdd_false, Bool.and_false]]
-              simp only [Bool.false_eq_true, if_false]
-              rw [hquot_toNat, if_pos hq_even, hF_val]; push_cast; rfl
+              simp only [Bool.false_eq_true, ite_false]
+              rw [hquot_toNat, ite_eq_left hq_even, hF_val]; push_cast; rfl
           · -- yn odd
             have hyn_odd : yn % 2 = 1 := by omega
             have hreal_lt : 2 * r < yn := by omega
@@ -367,7 +367,7 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
                 rcases h with ⟨k, hk⟩; omega
             rw [show (y.isEven && (x.divMod y).1.isOdd) = false from by
               rw [hy_isEven_false]; rfl]
-            simp only [Bool.false_eq_true, if_false]
+            simp only [Bool.false_eq_true, ite_false]
             rw [hquot_toNat, hF_val]; push_cast; rfl
 
 /-! ### Ordering tag correctness -/
@@ -404,7 +404,7 @@ theorem snd_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
   have hrem_toNat : (x.divMod y).2.toNat = x.toNat % y.toNat := by
     rw [← mod_eq_divMod_snd]; show (x % y).toNat = x.toNat % y.toNat; rw [toNat_mod]
   by_cases hr_size : (x.divMod y).2.limbs.size = 0
-  · rw [if_pos hr_size, if_pos hr_size]
+  · rw [ite_eq_left hr_size, ite_eq_left hr_size]
     have hr_aznat_zero : (x.divMod y).2.toNat = 0 := (toNat_eq_zero_iff _).mpr hr_size
     have hr0 : x.toNat % y.toNat = 0 := by rw [← hrem_toNat]; exact hr_aznat_zero
     rw [hquot_toNat]
@@ -413,7 +413,7 @@ theorem snd_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     rw [heq]
     show Ordering.eq = compareOfLessAndEq x.toNat x.toNat
     simp [compareOfLessAndEq]
-  · rw [if_neg hr_size, if_neg hr_size]
+  · rw [ite_eq_right hr_size, ite_eq_right hr_size]
     have hr_aznat_ne : (x.divMod y).2.toNat ≠ 0 := fun h => hr_size ((toNat_eq_zero_iff _).mp h)
     have hr0 : x.toNat % y.toNat ≠ 0 := by rw [← hrem_toNat]; exact hr_aznat_ne
     have hsum : x.toNat / y.toNat * y.toNat + x.toNat % y.toNat = x.toNat :=

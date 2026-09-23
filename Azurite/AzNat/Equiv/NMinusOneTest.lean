@@ -114,15 +114,15 @@ private lemma gcdVerdict_comp {n x : AzNat} (hn2 : 2 ≤ n.toNat)
     ∃ g : ℕ, g ∣ n.toNat ∧ 1 < g ∧ g < n.toNat := by
   rw [gcdVerdict] at h
   by_cases h0 : (x == 0) = true
-  · rw [if_pos h0] at h
+  · rw [ite_eq_left h0] at h
     exact absurd h (by simp)
-  rw [if_neg h0] at h
+  rw [ite_eq_right h0] at h
   by_cases h1 : (gcd (x - 1) n == n) = true
-  · rw [if_pos h1] at h
+  · rw [ite_eq_left h1] at h
     exact absurd h (by simp)
-  rw [if_neg h1] at h
+  rw [ite_eq_right h1] at h
   by_cases h2 : (gcd (x - 1) n == 1) = true
-  · rw [if_pos h2] at h
+  · rw [ite_eq_left h2] at h
     exact absurd h (by simp)
   refine ⟨(gcd (x - 1) n).toNat, ?_, ?_, ?_⟩
   · rw [toNat_gcd]
@@ -154,11 +154,11 @@ private lemma gcdVerdict_pass {n x : AzNat} [NeZero n.toNat]
     rw [beq_iff_toNat_eq.mp h0, toNat_zero]
     simp only [Nat.cast_zero, zero_sub]
     exact isUnit_one.neg
-  rw [if_neg h0] at h
+  rw [ite_eq_right h0] at h
   by_cases h1 : (gcd (x - 1) n == n) = true
-  · rw [if_pos h1] at h
+  · rw [ite_eq_left h1] at h
     exact absurd h (by simp)
-  rw [if_neg h1] at h
+  rw [ite_eq_right h1] at h
   by_cases h2 : (gcd (x - 1) n == 1) = true
   · -- `gcd(x − 1, n) = 1`: coprime, hence a unit
     have hg : (gcd (x - 1) n).toNat = 1 :=
@@ -173,7 +173,7 @@ private lemma gcdVerdict_pass {n x : AzNat} [NeZero n.toNat]
     rw [show ((x.toNat : ℕ) : ZMod n.toNat) - 1
       = ((x.toNat - 1 : ℕ) : ZMod n.toNat) by push_cast [hx1]; ring]
     exact hunit
-  · rw [if_neg h2] at h
+  · rw [ite_eq_right h2] at h
     exact absurd h (by simp)
 
 /-- A `.comp` verdict from the gcd loop yields a nontrivial divisor. -/
@@ -221,14 +221,14 @@ private lemma pocklingtonStep_comp {factors : List AzNat} {a : AzNat}
   intro hprime
   rw [pocklingtonStep] at h
   by_cases hferm : (AzZMod.ofAzNat n a).powAzNat M == 1
-  · rw [if_pos hferm] at h
+  · rw [ite_eq_left hferm] at h
     obtain ⟨g, hg, hg1, hgn⟩ := pocklingtonGcds_comp hn2 h
     rcases (hprime.eq_one_or_self_of_dvd g hg) with h' | h' <;> omega
-  · rw [if_neg hferm] at h
+  · rw [ite_eq_right hferm] at h
     apply hferm
     rw [beq_iff_eq]
     apply AzZMod.toZMod_injective
-    haveI : Fact (Nat.Prime n.toNat) := ⟨hprime⟩
+    have : Fact (Nat.Prime n.toNat) := ⟨hprime⟩
     rw [AzZMod.toZMod_powAzNat, AzZMod.toZMod_ofAzNat, AzZMod.toZMod_one, hM]
     have hb0 : ((a.toNat : ℕ) : ZMod n.toNat) ≠ 0 := by
       rw [Ne, ZMod.natCast_eq_zero_iff]
@@ -245,12 +245,12 @@ private lemma pocklingtonStep_pass {factors : List AzNat} {a : AzNat}
         ^ ((M / q).toNat) - (1 : ZMod n.toNat)) := by
   rw [pocklingtonStep] at h
   by_cases hferm : (AzZMod.ofAzNat n a).powAzNat M == 1
-  · rw [if_pos hferm] at h
+  · rw [ite_eq_left hferm] at h
     refine ⟨?_, pocklingtonGcds_pass h⟩
     have := beq_iff_eq.mp hferm
     have := congrArg AzZMod.toZMod this
     rwa [AzZMod.toZMod_powAzNat, AzZMod.toZMod_one] at this
-  · rw [if_neg hferm] at h
+  · rw [ite_eq_right hferm] at h
     exact absurd h (by simp)
 
 end Pocklington
@@ -372,13 +372,13 @@ private lemma nm1Magnitude_iff {n F : AzNat} {R : ℕ}
   have hF2sq : (square F).toNat = F.toNat ^ 2 := toNat_square F
   by_cases hs2 : compare n (square F) ≠ .gt
   · -- stage 2: `n ≤ F²`, Pocklington's corollary
-    rw [if_pos hs2]
+    rw [ite_eq_left hs2]
     simp only [true_iff]
     have hFn : n.toNat ≤ F.toNat ^ 2 := by
       have := compare_ne_gt_iff.mp hs2
       omega
     exact corollary_4_1_4 hn1 hsplit b hb hunit hFn
-  · rw [if_neg hs2]
+  · rw [ite_eq_right hs2]
     have hhi : F.toNat ^ 2 < n.toNat := by
       by_contra hno
       exact hs2 (fun hg => absurd (compare_eq_gt_iff.mp hg) (by omega))
@@ -415,7 +415,7 @@ private lemma nm1Magnitude_iff {n F : AzNat} {R : ℕ}
       rw [toNat_mul, toNat_ofNat]
     by_cases hs3 : compare n (square F * F) ≠ .gt
     · -- stage 3: `F² < n ≤ F³`, BLS
-      rw [if_pos hs3]
+      rw [ite_eq_left hs3]
       have hF3n : n.toNat ≤ F.toNat ^ 3 := by
         have := compare_ne_gt_iff.mp hs3
         rw [toNat_mul, hF2sq] at this
@@ -449,7 +449,7 @@ private lemma nm1Magnitude_iff {n F : AzNat} {R : ℕ}
         · exact absurd (hd.mp ht) hns
         · exact hf
     · -- stage 4: `F³ < n`, Konyagin–Pomerance
-      rw [if_neg hs3]
+      rw [ite_eq_right hs3]
       have hF3n : F.toNat ^ 3 < n.toNat := by
         by_contra hno
         apply hs3
@@ -549,7 +549,7 @@ private lemma nm1Magnitude_iff {n F : AzNat} {R : ℕ}
             == ofNat 4 * chi)) with h1 | h1
       · -- condition (1) FAILS: some discriminant is a square
         rw [h1]
-        simp only [if_true]
+        simp only [ite_true]
         constructor
         · intro h
           exact absurd h (by simp)
@@ -557,7 +557,7 @@ private lemma nm1Magnitude_iff {n F : AzNat} {R : ℕ}
           obtain ⟨t, ht5, htsq⟩ := hbad1.mp h1
           exact absurd htsq (hcond1 t ht5)
       · rw [h1]
-        simp only [Bool.false_eq_true, if_false, Bool.not_eq_true']
+        simp only [Bool.false_eq_true, ite_false, Bool.not_eq_true']
         have hcond1 : ∀ t : ℕ, t ≤ 5 →
             ¬IsSquare (((c₁.toNat : ℤ) + t * F.toNat) ^ 2 + 4 * t
               - 4 * chi.toNat) := by
@@ -641,13 +641,13 @@ private lemma nMinusOneTest_sound {n : AzNat} {factors : List (AzNat × ℕ)}
     v = true ↔ Nat.Prime n.toNat := by
   rw [nMinusOneTest] at h
   by_cases h214 : 214 ≤ n.toNat
-  · rw [dif_pos h214] at h
-    haveI : NeZero n.toNat := ⟨by omega⟩
+  · rw [dite_eq_left h214] at h
+    have : NeZero n.toNat := ⟨by omega⟩
     by_cases hcheck : (factors.all (fun qe => isPrime qe.1)
         && (n - 1) % certProduct factors == 0
         && (decide (compare (pow n 3)
             (pow (certProduct factors) 10) ≠ .gt))) = true
-    · rw [if_pos hcheck] at h
+    · rw [ite_eq_left hcheck] at h
       simp only [Bool.and_eq_true, decide_eq_true_eq,
         List.all_eq_true] at hcheck
       obtain ⟨⟨hprimes, hmod⟩, hcmp⟩ := hcheck
@@ -681,9 +681,9 @@ private lemma nMinusOneTest_sound {n : AzNat} {factors : List (AzNat × ℕ)}
           (Nat.prime_dvd_prime_iff_eq hp hqprime).mp (hp.dvd_of_dvd_pow hpx)
         exact ⟨qe.1, List.mem_map.mpr ⟨qe, hqe, rfl⟩, hpq.symm⟩
       exact nm1Loop_sound h214 hM hsplit hcover hlo 0 attempts v h
-    · rw [if_neg hcheck] at h
+    · rw [ite_eq_right hcheck] at h
       exact absurd h (by simp)
-  · rw [dif_neg h214] at h
+  · rw [dite_eq_right h214] at h
     exact absurd h (by simp)
 
 /-- **A `some true` verdict of the `n − 1` test is a primality proof.** -/

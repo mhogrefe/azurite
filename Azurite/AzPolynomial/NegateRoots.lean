@@ -58,8 +58,8 @@ def negateRoots (p : AzPolynomial R) : AzPolynomial R :=
   · simp only [Option.map_some, Option.getD_some, AzPolynomial.coeff, hb]
     rcases Nat.even_or_odd n with he | ho
     · have h2 := Nat.even_iff.mp he
-      rw [if_neg (by omega : ¬ n % 2 = 1), he.neg_one_pow, one_mul]
-    · rw [if_pos (Nat.odd_iff.mp ho), ho.neg_one_pow, neg_one_mul]
+      rw [ite_eq_right (by omega : ¬ n % 2 = 1), he.neg_one_pow, one_mul]
+    · rw [ite_eq_left (Nat.odd_iff.mp ho), ho.neg_one_pow, neg_one_mul]
 
 /-- Root negation preserves the degree (the coefficient array size is unchanged). -/
 theorem natDegree_negateRoots (p : AzPolynomial R) :

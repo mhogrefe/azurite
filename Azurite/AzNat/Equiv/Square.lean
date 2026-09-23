@@ -67,7 +67,7 @@ lemma toNatLimbsList_sq_eq (s : List UInt64) :
     have h_diag :
         diagSumAux (xs ++ [x]) (xs.length + 1) =
           diagSumAux (xs ++ [x]) xs.length + x.toNat ^ 2 * 2 ^ (128 * xs.length) := by
-      rw [diagSumAux, dif_pos h_idx, h_get]
+      rw [diagSumAux, dite_eq_left h_idx, h_get]
     -- diag xs is the same when computed over (xs ++ [x]).
     have h_diag_pref :
         ∀ n ≤ xs.length, diagSumAux (xs ++ [x]) n = diagSumAux xs n := by
@@ -79,7 +79,7 @@ lemma toNatLimbsList_sq_eq (s : List UInt64) :
         congr 1
         have h_k_lt_xs : k < xs.length := by omega
         have h_k_lt_xx : k < (xs ++ [x]).length := by simp; omega
-        rw [dif_pos h_k_lt_xs, dif_pos h_k_lt_xx]
+        rw [dite_eq_left h_k_lt_xs, dite_eq_left h_k_lt_xx]
         have h_get' : (xs ++ [x])[k]'h_k_lt_xx = xs[k]'h_k_lt_xs := by
           rw [List.getElem_append_left h_k_lt_xs]
         rw [h_get']
@@ -88,7 +88,7 @@ lemma toNatLimbsList_sq_eq (s : List UInt64) :
         offDiagSumAux (xs ++ [x]) (xs.length + 1) =
           offDiagSumAux (xs ++ [x]) xs.length
             + x.toNat * toNatLimbsList xs * 2 ^ (64 * xs.length) := by
-      rw [offDiagSumAux, dif_pos h_idx, h_get, h_take_xs]
+      rw [offDiagSumAux, dite_eq_left h_idx, h_get, h_take_xs]
     have h_offdiag_pref :
         ∀ n ≤ xs.length, offDiagSumAux (xs ++ [x]) n = offDiagSumAux xs n := by
       intro n hn
@@ -99,7 +99,7 @@ lemma toNatLimbsList_sq_eq (s : List UInt64) :
         congr 1
         have h_k_lt_xs : k < xs.length := by omega
         have h_k_lt_xx : k < (xs ++ [x]).length := by simp; omega
-        rw [dif_pos h_k_lt_xs, dif_pos h_k_lt_xx]
+        rw [dite_eq_left h_k_lt_xs, dite_eq_left h_k_lt_xx]
         have h_get' : (xs ++ [x])[k]'h_k_lt_xx = xs[k]'h_k_lt_xs := by
           rw [List.getElem_append_left h_k_lt_xs]
         have h_take_pref : (xs ++ [x]).take k = xs.take k :=
@@ -138,7 +138,7 @@ lemma toNatLimbsList_set (a : Array UInt64) (i : Nat) (v : UInt64)
     rw [Array.toList_set]
     conv_lhs => rw [← List.take_append_drop i (a.toList.set i v)]
     rw [List.take_set_of_le (Nat.le_refl _)]
-    rw [List.drop_set, if_neg (by omega)]
+    rw [List.drop_set, ite_eq_right (by omega)]
     rw [show i - i = 0 from Nat.sub_self _]
     rw [List.drop_eq_getElem_cons hi_list, List.set_cons_zero]
   rw [h_set_list]
@@ -490,7 +490,7 @@ private lemma diagSumAux_stabilizes (s : List UInt64) (k : Nat) :
   | zero => rfl
   | succ j ih =>
     rw [show s.length + (j + 1) = (s.length + j) + 1 from by ring, diagSumAux]
-    rw [dif_neg (by omega : ¬ s.length + j < s.length), Nat.add_zero, ih]
+    rw [dite_eq_right (by omega : ¬ s.length + j < s.length), Nat.add_zero, ih]
 
 private lemma diagSumAux_slice_succ (a : Array UInt64) (lo len i : Nat)
     (hA : lo + len ≤ a.size) (hi : i < len) :
@@ -503,7 +503,7 @@ private lemma diagSumAux_slice_succ (a : Array UInt64) (lo len i : Nat)
     rw [h_slice_len]; exact hi
   have h_get : ((a.toList.drop lo).take len)[i]'h_i_lt_slice = a[lo + i]'(by omega) := by
     rw [List.getElem_take, List.getElem_drop, Array.getElem_toList]
-  rw [diagSumAux, dif_pos h_i_lt_slice, h_get]
+  rw [diagSumAux, dite_eq_left h_i_lt_slice, h_get]
 
 /-- Inductive invariant for `addDiagonalLimbs.go`. -/
 theorem addDiagonalLimbs.go_toNat (a : Array UInt64) (lo len : Nat)
@@ -776,7 +776,7 @@ private lemma offDiagSumAux_take_eq (s : List UInt64) :
     · exact ih m (by omega)
     · by_cases hk_lt : k < s.length
       · have hk_lt_tm : k < (s.take m).length := by rw [List.length_take]; omega
-        rw [dif_pos hk_lt, dif_pos hk_lt_tm]
+        rw [dite_eq_left hk_lt, dite_eq_left hk_lt_tm]
         have h_get_eq : (s.take m)[k]'hk_lt_tm = s[k]'hk_lt := List.getElem_take
         have h_take_eq : (s.take m).take k = s.take k := by
           rw [List.take_take]; congr 1; omega
@@ -784,7 +784,7 @@ private lemma offDiagSumAux_take_eq (s : List UInt64) :
       · push Not at hk_lt
         have hk_ge_tm : ¬ k < (s.take m).length := by
           rw [List.length_take]; omega
-        rw [dif_neg hk_ge_tm, dif_neg (Nat.not_lt.mpr hk_lt)]
+        rw [dite_eq_right hk_ge_tm, dite_eq_right (Nat.not_lt.mpr hk_lt)]
 
 /-- Helper: snoc-decompose `(a.drop X).take (Y+1)` at the boundary. -/
 private lemma drop_take_succ_snoc (a : Array UInt64) (X Y : Nat)
@@ -907,7 +907,7 @@ private lemma partialOffDiagSum_eq_offDiagSumAux (a : Array UInt64) (lo len : Na
       rw [List.length_take, List.length_drop, Array.length_toList]; omega
     have h_get : ((a.toList.drop lo).take (n + 1))[n]'h_n_lt = a[lo + n] := by
       rw [List.getElem_take, List.getElem_drop, Array.getElem_toList]
-    rw [offDiagSumAux, dif_pos h_n_lt, h_get, h_take_take]
+    rw [offDiagSumAux, dite_eq_left h_n_lt, h_get, h_take_take]
     have h_inner :
         offDiagSumAux ((a.toList.drop lo).take (n + 1)) n
           = offDiagSumAux ((a.toList.drop lo).take n) n := by
@@ -1317,7 +1317,7 @@ private lemma diagSumAux_le (s : List UInt64) (n : Nat) :
       | zero => rfl
       | succ j ih =>
         rw [show s.length + (j + 1) = (s.length + j) + 1 from by ring, diagSumAux]
-        rw [dif_neg (by omega : ¬ s.length + j < s.length)]
+        rw [dite_eq_right (by omega : ¬ s.length + j < s.length)]
         rw [Nat.add_zero, ih]
     obtain ⟨k, rfl⟩ : ∃ k, n = s.length + k := ⟨n - s.length, by omega⟩
     rw [h_stab]
@@ -1336,7 +1336,7 @@ private lemma offDiagSumAux_le (s : List UInt64) (n : Nat) :
       | zero => rfl
       | succ j ih =>
         rw [show s.length + (j + 1) = (s.length + j) + 1 from by ring, offDiagSumAux]
-        rw [dif_neg (by omega : ¬ s.length + j < s.length)]
+        rw [dite_eq_right (by omega : ¬ s.length + j < s.length)]
         rw [Nat.add_zero, ih]
     obtain ⟨k, rfl⟩ : ∃ k, n = s.length + k := ⟨n - s.length, by omega⟩
     rw [h_stab]

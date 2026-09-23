@@ -25,7 +25,7 @@ lemma toRat_eq_divInt (q : AzRat) :
   rw [toRat, Rat.mk_eq_divInt]
 
 lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
-  rw [toRat_eq_divInt, q.zero_sign h, if_pos rfl, h, AzNat.toNat_zero]
+  rw [toRat_eq_divInt, q.zero_sign h, ite_eq_left rfl, h, AzNat.toNat_zero]
   simp
 
 @[simp] theorem toRat_neg (q : AzRat) : toRat (-q) = -(toRat q) := by
@@ -34,7 +34,7 @@ lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
   · rw [toRat_of_num_zero q hn, toRat_of_num_zero q.neg hn, neg_zero]
   · rw [toRat_eq_divInt q.neg, toRat_eq_divInt q]
     simp only [neg]
-    simp only [if_neg hn]
+    simp only [ite_eq_right hn]
     rw [Rat.neg_divInt]
     cases q.sign <;> simp
 
@@ -42,23 +42,23 @@ lemma toRat_of_num_zero (q : AzRat) (h : q.num = 0) : toRat q = 0 := by
   have habs : toRat q.abs = Rat.divInt (q.num.toNat : ℤ) (q.den.toNat : ℤ) := by
     rw [toRat_eq_divInt]
     simp only [AzRat.abs]
-    rw [if_pos trivial]
+    rw [ite_eq_left trivial]
   have hnn : (0 : ℚ) ≤ Rat.divInt (q.num.toNat : ℤ) (q.den.toNat : ℤ) :=
     Rat.divInt_nonneg (Int.natCast_nonneg _) (Int.natCast_nonneg _)
   by_cases hs : q.sign
-  · rw [habs, toRat_eq_divInt, if_pos hs, abs_of_nonneg hnn]
-  · rw [habs, toRat_eq_divInt, if_neg hs, ← Rat.neg_divInt, abs_neg, abs_of_nonneg hnn]
+  · rw [habs, toRat_eq_divInt, ite_eq_left hs, abs_of_nonneg hnn]
+  · rw [habs, toRat_eq_divInt, ite_eq_right hs, ← Rat.neg_divInt, abs_neg, abs_of_nonneg hnn]
 
 @[simp] theorem toRat_inv (q : AzRat) : toRat q⁻¹ = (toRat q)⁻¹ := by
   show toRat q.inv = (toRat q)⁻¹
   by_cases hn : q.num = 0
-  · rw [inv, dif_pos hn, toRat_zero, toRat_of_num_zero q hn, inv_zero]
-  · rw [inv, dif_neg hn, toRat_eq_divInt, toRat_eq_divInt q]
+  · rw [inv, dite_eq_left hn, toRat_zero, toRat_of_num_zero q hn, inv_zero]
+  · rw [inv, dite_eq_right hn, toRat_eq_divInt, toRat_eq_divInt q]
     dsimp only
     cases hs : q.sign with
-    | true => rw [if_pos rfl, if_pos rfl, Rat.inv_divInt]
+    | true => rw [ite_eq_left rfl, ite_eq_left rfl, Rat.inv_divInt]
     | false =>
-      rw [if_neg Bool.false_ne_true, if_neg Bool.false_ne_true,
+      rw [ite_eq_right Bool.false_ne_true, ite_eq_right Bool.false_ne_true,
           ← Rat.neg_divInt, ← Rat.neg_divInt, inv_neg, Rat.inv_divInt]
 
 @[simp] theorem ofRat_neg (r : ℚ) : ofRat (-r) = -(ofRat r) :=

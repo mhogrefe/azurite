@@ -128,7 +128,7 @@ theorem hasPartialDerivAtIn_comp {k p : ℕ} {V : Set (Fin k → R)} {U : Set (F
     show HasDerivAtIn (fun t => c (h (Function.update x₀ j t)))
       {t : R | Function.update x₀ j t ∈ V} (x₀ j) 0
     exact hasDerivAtIn_of_constOn (fun t _ => hconst _) (hconst _)
-  haveI : Nonempty (Fin p) := ⟨⟨0, hp⟩⟩
+  have : Nonempty (Fin p) := ⟨⟨0, hp⟩⟩
   set u₀ : Fin p → R := h x₀ with hu₀
   have hu₀U : u₀ ∈ U := hmaps hx₀V
   -- the first-order approximation of `c` at `u₀` (through the scalar view `p' = 1`)

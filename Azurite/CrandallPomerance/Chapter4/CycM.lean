@@ -142,8 +142,8 @@ theorem natCast_dvd_natCast_iff_cycM (hm : 0 < m) (n k : ℕ) :
 /-- **The symbol is a genuine primitive `m`-th root of unity.** -/
 theorem isPrimitiveRoot_zetaM (hm : 0 < m) :
     IsPrimitiveRoot (zetaM m) m := by
-  haveI := isDomain_cycM hm
-  haveI : NeZero ((m : ℕ) : CycM m) := ⟨natCast_ne_zero_cycM hm hm.ne'⟩
+  have := isDomain_cycM hm
+  have : NeZero ((m : ℕ) : CycM m) := ⟨natCast_ne_zero_cycM hm hm.ne'⟩
   have hroot : IsRoot (cyclotomic m (CycM m)) (zetaM m) := by
     have h := AdjoinRoot.isRoot_root (cyclotomic m ℤ)
     rwa [map_cyclotomic] at h

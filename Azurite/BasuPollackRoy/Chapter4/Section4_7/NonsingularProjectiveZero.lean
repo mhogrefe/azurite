@@ -3,6 +3,7 @@ import Azurite.BasuPollackRoy.Chapter4.Section4_5.NonsingularZero
 import Mathlib.Algebra.MvPolynomial.PDeriv
 import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.RingTheory.MvPolynomial.EulerIdentity
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 
 /-!
 # BPR §4.7: non-singular projective zeros

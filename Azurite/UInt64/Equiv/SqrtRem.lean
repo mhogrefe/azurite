@@ -177,7 +177,7 @@ theorem correctUp_spec (s n : UInt64) (fuel : Nat)
         toNat_two_mul_succ_of_le_cap h_cap
       by_cases h_room : 2 * s + 1 ≤ n - s * s
       · -- Recurse with s + 1.
-        rw [if_pos h_room]
+        rw [ite_eq_left h_room]
         have h_room_nat : 2 * s.toNat + 1 ≤ n.toNat - s.toNat * s.toNat := by
           have := (_root_.UInt64.le_iff_toNat_le).mp h_room
           rw [h_two_s, h_n_minus_ss] at this
@@ -195,7 +195,7 @@ theorem correctUp_spec (s n : UInt64) (fuel : Nat)
           rw [h_add_toNat]; omega
         exact ih (s + 1) h_add_cap h_add_le h_add_fuel
       · -- 2s + 1 > n - s². Equivalent to (s + 1)² > n.
-        rw [if_neg h_room]
+        rw [ite_eq_right h_room]
         refine ⟨h_cap, h_le, ?_⟩
         -- Translate h_room to Nat side.
         have h_gt_nat : n.toNat - s.toNat * s.toNat < 2 * s.toNat + 1 := by

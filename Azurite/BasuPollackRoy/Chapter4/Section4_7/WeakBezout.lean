@@ -146,7 +146,7 @@ theorem deltaSet_eq_image (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d :
           ((fun xp : (i : Fin 2) → complexProjectiveSpace R ((![k, 1] : Fin 2 → ℕ) i) =>
               fun _ : Fin 1 => xp 1) '' singularLocus P d) := by
   ext p
-  simp only [deltaSet, Set.mem_setOf_eq, Set.mem_image, singularLocus]
+  simp only [deltaSet, Set.mem_ofPred_eq, Set.mem_image, singularLocus]
   constructor
   · rintro ⟨x, hzero, hrank⟩
     -- build a sigma point `xp` with `xp 0 = x`, `xp 1 = p`

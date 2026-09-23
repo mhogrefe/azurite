@@ -126,7 +126,7 @@ private lemma revPerm_term_eq_neg_one (n : ℕ) (i j : Fin n)
   have h_rev_gt : Fin.revPerm j < Fin.revPerm i := by
     simp only [Fin.revPerm_apply, Fin.rev_lt_rev]
     exact hi_lt_j
-  rw [if_neg (not_lt_of_gt h_rev_gt)]
+  rw [ite_eq_right (not_lt_of_gt h_rev_gt)]
 
 /-- The signature of `Fin.revPerm` on `Fin n` is `ε_n = (-1)^{n(n-1)/2}`. -/
 theorem sign_revPerm (n : ℕ) :
@@ -141,13 +141,8 @@ theorem sign_revPerm (n : ℕ) :
     intro i
     rw [Finset.prod_congr rfl fun j hj => revPerm_term_eq_neg_one n i j hj]
     rw [Finset.prod_const, Fin.card_Ioi]
-    rfl
   rw [Finset.prod_congr rfl fun i _ => h_inner i]
   push_cast
-  have h_pow : ∀ i : Fin n,
-      (((-1 : ℤˣ) ^ (n - 1 - i.val) : ℤˣ) : ℤ) = ((-1 : ℤ)) ^ (n - 1 - i.val) :=
-    fun i => Units.val_pow_eq_pow_val (-1 : ℤˣ) (n - 1 - i.val)
-  rw [Finset.prod_congr rfl (fun i _ => h_pow i)]
   rw [Finset.prod_pow_eq_pow_sum]
   congr 1
   rw [Fin.sum_univ_eq_sum_range (fun k => n - 1 - k) n]
@@ -177,13 +172,13 @@ theorem blockReversePerm_apply_val (p q : ℕ) (i : Fin (p + q)) :
   unfold blockReversePerm
   simp only [Equiv.permCongr_apply, Equiv.symm_symm, Equiv.trans_apply]
   by_cases h : i.val < q
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have h_cast : finCongr (Nat.add_comm p q) i = Fin.castAdd p ⟨i.val, h⟩ := by
       apply Fin.ext; simp [finCongr_apply, Fin.castAdd, Fin.castLE]
     rw [h_cast, finSumFinEquiv_symm_apply_castAdd]
     simp [Equiv.sumCongr_apply, finCongr_symm,
       finSumFinEquiv_apply_left, Fin.castAdd, Fin.castLE]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have h_ge : q ≤ i.val := Nat.le_of_not_lt h
     have h_lt_p : i.val - q < p := by have := i.isLt; omega
     have h_cast : finCongr (Nat.add_comm p q) i =
@@ -224,25 +219,25 @@ theorem SyHa_zero_eq_Syl_submatrix (P Q : D[X]) :
             (P.natDegree + Q.natDegree - 0 - 1 - j.val)) = _
   simp only [Nat.sub_zero]
   by_cases h : i.val < Q.natDegree
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     have h_perm : (blockReversePerm P.natDegree Q.natDegree i).val = i.val := by
-      rw [blockReversePerm_apply_val, if_pos h]
+      rw [blockReversePerm_apply_val, ite_eq_left h]
     show _ = Syl P Q (blockReversePerm P.natDegree Q.natDegree i) j
     unfold Syl
-    rw [Matrix.of_apply, if_pos]
+    rw [Matrix.of_apply, ite_eq_left]
     · congr 1
       rw [h_perm]
     · rw [h_perm]; exact h
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     push Not at h
     have h_perm : (blockReversePerm P.natDegree Q.natDegree i).val =
         P.natDegree + 2 * Q.natDegree - 1 - i.val := by
-      rw [blockReversePerm_apply_val, if_neg (not_lt_of_ge h)]
+      rw [blockReversePerm_apply_val, ite_eq_right (not_lt_of_ge h)]
     have h_perm_ge : ¬ (blockReversePerm P.natDegree Q.natDegree i).val < Q.natDegree := by
       rw [h_perm]; have := i.isLt; omega
     show _ = Syl P Q (blockReversePerm P.natDegree Q.natDegree i) j
     unfold Syl
-    rw [Matrix.of_apply, if_neg h_perm_ge]
+    rw [Matrix.of_apply, ite_eq_right h_perm_ge]
     rw [h_perm]
     have h_exp_eq : P.natDegree + Q.natDegree - 1 -
         (P.natDegree + 2 * Q.natDegree - 1 - i.val) = i.val - Q.natDegree := by
@@ -259,7 +254,7 @@ theorem sRes_zero_eq_eps_mul_Res (P Q : D[X]) :
   -- the identity, so `SyHaSquare = SyHa`.
   have h_sRes : sRes P Q 0 = (SyHa P Q 0).det := by
     unfold sRes
-    rw [if_pos (Nat.zero_le _)]
+    rw [ite_eq_left (Nat.zero_le _)]
     unfold SyHaSquare
     show (Matrix.submatrix (SyHa P Q 0) id (Fin.castLE _)).det = _
     congr 1

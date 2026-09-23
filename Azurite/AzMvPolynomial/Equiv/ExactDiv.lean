@@ -134,17 +134,17 @@ omit [DecidableEq R] in
 /-- Subtracting a matching monomial from a polynomial reduces `support.card`. -/
 private theorem support_card_sub_monomial (c : MvPolynomial (Fin n) R) (s : Fin n →₀ ℕ)
     (hs : s ∈ c.support) :
-    (c - monomial s (coeff s c)).support.card < c.support.card := by
-  have h_not_mem : s ∉ (c - monomial s (coeff s c)).support := by
-    rw [mem_support_iff, not_not, coeff_sub, coeff_monomial, if_pos rfl]; ring
-  have h_sub : (c - monomial s (coeff s c)).support ⊆ c.support.erase s := by
+    (c - monomial s (c.coeff s)).support.card < c.support.card := by
+  have h_not_mem : s ∉ (c - monomial s (c.coeff s)).support := by
+    rw [mem_support_iff, not_not, coeff_sub, coeff_monomial, ite_eq_left rfl]; ring
+  have h_sub : (c - monomial s (c.coeff s)).support ⊆ c.support.erase s := by
     intro t ht
     rw [Finset.mem_erase]; exact ⟨fun h => by subst h; exact h_not_mem ht,
       by rw [mem_support_iff] at ht ⊢; intro h; apply ht
-         simp [coeff_sub, coeff_monomial, h]
+         simp [coeff_monomial, h]
          intro heq; subst heq; exact absurd h (mem_support_iff.mp hs)⟩
   have : c.support.card ≥ 1 := Finset.card_pos.mpr ⟨s, hs⟩
-  calc (c - monomial s (coeff s c)).support.card
+  calc (c - monomial s (c.coeff s)).support.card
       ≤ (c.support.erase s).card := Finset.card_le_card h_sub
     _ = c.support.card - 1 := Finset.card_erase_of_mem hs
     _ < c.support.card := by omega
@@ -162,7 +162,7 @@ private theorem exactDivStep_is_leading_term
     (c : MvPolynomial (Fin n) R) (hcq : r.toMvPoly = c * q.toMvPoly)
     (hc : c ≠ 0) (hqnz : q.toMvPoly ≠ 0) :
     ∃ s ∈ c.support,
-      (exactDivStep r q hr hq).1.toMvPoly = monomial s (coeff s c) := by
+      (exactDivStep r q hr hq).1.toMvPoly = monomial s (c.coeff s) := by
   set mo := toMathlibMonomialOrder (n := n) ord
   have hdeg_r := degree_eq_terms_zero r hr
   have hdeg_q := degree_eq_terms_zero q hq
@@ -171,10 +171,10 @@ private theorem exactDivStep_is_leading_term
     have h1 : mo.degree r.toMvPoly = mo.degree c + mo.degree q.toMvPoly := by
       rw [hcq]; exact _root_.MonomialOrder.degree_mul hc hqnz
     rw [hdeg_r, hdeg_q] at h1; rw [h1, add_tsub_cancel_right]
-  have hlc_c : coeff (mo.degree c) c =
+  have hlc_c : c.coeff (mo.degree c) =
       (r.terms[0]'(by omega)).coeff.val / (q.terms[0]'(by omega)).coeff.val := by
     have hlc_eq : (r.terms[0]'(by omega)).coeff.val =
-        coeff (mo.degree c) c * (q.terms[0]'(by omega)).coeff.val := by
+        c.coeff (mo.degree c) * (q.terms[0]'(by omega)).coeff.val := by
       conv_lhs => rw [← leadingCoeff_eq_terms_zero r hr, hcq,
         show mo.leadingCoeff (c * q.toMvPoly) =
           mo.leadingCoeff c * mo.leadingCoeff q.toMvPoly from

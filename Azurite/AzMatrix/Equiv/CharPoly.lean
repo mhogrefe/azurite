@@ -92,7 +92,7 @@ theorem trace_pow_eq_sum_roots_pow (f : End K V) (k : ℕ) :
   simp_rw [trace_restrict_pow_maxGenEigenspace f _ k]
   rw [Finset.sum_multiset_map_count]
   have hset : hfin.toFinset = f.charpoly.roots.toFinset := by
-    ext μ; rw [Set.Finite.mem_toFinset, mem_setOf_eq, hbot μ]
+    ext μ; rw [Set.Finite.mem_toFinset, mem_ofPred_eq, hbot μ]
   rw [hset]
   refine Finset.sum_congr rfl (fun μ _ => ?_)
   rw [finrank_maxGenEigenspace_eq, Polynomial.count_roots, nsmul_eq_mul]

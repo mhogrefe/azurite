@@ -409,7 +409,7 @@ instance instIsAlgebraicSemialgGerm : Algebra.IsAlgebraic (RatFunc R) (SemialgGe
 square in the (real closed) germ field, since the embedding `ratFuncToGermHom` is order-preserving. -/
 theorem germ_isSquare_of_nonneg (p : RatFunc R) (hp : 0 ≤ p) :
     IsSquare (algebraMap (RatFunc R) (SemialgGerm R) p) := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   apply IsRealClosed.nonneg_iff_isSquare.mp
   show (0 : SemialgGerm R) ≤ ratFuncToGermHom p
   calc (0 : SemialgGerm R) = ratFuncToGermHom 0 := (map_zero ratFuncToGermHom).symm
@@ -426,7 +426,7 @@ theorem proposition_3_13 {R' : Type*} [Field R'] [IsRealClosed R'] [Algebra (Rat
     (halg' : Algebra.IsAlgebraic (RatFunc R) R')
     (hR'_ext : ∀ p : RatFunc R, 0 ≤ p → IsSquare (algebraMap (RatFunc R) R' p)) :
     Nonempty (SemialgGerm R ≃ₐ[RatFunc R] R') := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   exact realClosure_unique instIsAlgebraicSemialgGerm halg' germ_isSquare_of_nonneg hR'_ext
 
 end Azurite.BPR

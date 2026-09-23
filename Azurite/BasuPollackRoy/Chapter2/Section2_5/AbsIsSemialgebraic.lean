@@ -25,7 +25,7 @@ theorem absFun_isSemialgebraicFunction :
       = {z : Fin 2 → R | z 1 = |z 0|} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_univ, true_and, Set.mem_setOf_eq]
+    simp only [Set.mem_univ, true_and, Set.mem_ofPred_eq]
     constructor
     · intro hb; simpa [absFun, Function.comp_apply, hcidx, hnidx] using congrFun hb 0
     · intro hz1; funext i; rw [Subsingleton.elim i 0]
@@ -35,7 +35,7 @@ theorem absFun_isSemialgebraicFunction :
         = ({z | MvPolynomial.eval z (X 0) ≥ 0} ∩ {z | MvPolynomial.eval z (X 1 - X 0) = 0}) ∪
           ({z | MvPolynomial.eval z (X 0) ≤ 0} ∩ {z | MvPolynomial.eval z (X 1 + X 0) = 0}) := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff, MvPolynomial.eval_X,
+      simp only [Set.mem_ofPred_eq, Set.mem_union, Set.mem_inter_iff, MvPolynomial.eval_X,
         map_sub, map_add, sub_eq_zero, ge_iff_le]
       constructor
       · intro h

@@ -50,14 +50,14 @@ theorem rename_realization [DecidableEq σ] [DecidableEq τ]
       Set.preimage_union, Set.preimage_compl]
   | exists_ x _ ih =>
     ext y
-    simp only [rename, realization, Set.mem_setOf_eq,
+    simp only [rename, realization, Set.mem_ofPred_eq,
       Set.mem_preimage, ih]
     constructor <;> rintro ⟨c, hc⟩ <;> refine ⟨c, ?_⟩ <;>
     · convert hc using 1; ext i
       simp [Function.update, hf.eq_iff]
   | forall_ x _ ih =>
     ext y
-    simp only [rename, realization, Set.mem_setOf_eq,
+    simp only [rename, realization, Set.mem_ofPred_eq,
       Set.mem_preimage, ih]
     constructor <;> intro hc <;> intro c <;>
     · have := hc c; convert this using 1; ext i
@@ -85,7 +85,7 @@ theorem realization_invariant_update [DecidableEq σ]
   | atom a =>
     simp only [realization, freeVars, AtomVars.vars_fieldAtom,
       FieldAtom.vars, interpret_fieldAtom] at *
-    split <;> simp only [Set.mem_setOf_eq] <;>
+    split <;> simp only [Set.mem_ofPred_eq] <;>
     rw [aeval_update_of_not_mem_vars a.poly y x c hx]
   | not _ ih =>
     simp only [realization, Set.mem_compl_iff, freeVars] at *
@@ -103,7 +103,7 @@ theorem realization_invariant_update [DecidableEq σ]
       Finset.mem_union, not_or] at *
     rw [ih₁ hx.1, ih₂ hx.2]
   | exists_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq, freeVars,
+    simp only [realization, Set.mem_ofPred_eq, freeVars,
       Finset.mem_sdiff, Finset.mem_singleton] at *
     push Not at hx
     constructor <;> rintro ⟨d, hd⟩ <;> refine ⟨d, ?_⟩
@@ -116,7 +116,7 @@ theorem realization_invariant_update [DecidableEq σ]
       · rw [Function.update_comm hxz] at hd
         rwa [ih (fun hmem => absurd (hx hmem) hxz)]
   | forall_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq, freeVars,
+    simp only [realization, Set.mem_ofPred_eq, freeVars,
       Finset.mem_sdiff, Finset.mem_singleton] at *
     push Not at hx
     constructor
@@ -139,7 +139,7 @@ theorem exists_and_equiv [DecidableEq σ]
     (Formula.exists_ x (Formula.and A B)).realization := by
   ext y
   simp only [realization, Set.mem_inter_iff,
-    Set.mem_setOf_eq]
+    Set.mem_ofPred_eq]
   constructor
   · rintro ⟨⟨c, hc⟩, hB⟩
     exact ⟨c, hc,
@@ -155,7 +155,7 @@ theorem forall_and_equiv [DecidableEq σ]
       B.realization =
     (Formula.forall_ x (Formula.and A B)).realization := by
   ext y
-  simp only [realization, Set.mem_inter_iff, Set.mem_setOf_eq]
+  simp only [realization, Set.mem_inter_iff, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨hA, hB⟩ c
     exact ⟨hA c,

@@ -24,7 +24,7 @@ theorem isPowerOfTwo_iff (z : AzInt) :
   · rintro ⟨hsign, k, hk⟩
     refine ⟨k, ?_⟩
     unfold toInt
-    rw [if_pos hsign, hk]
+    rw [ite_eq_left hsign, hk]
     push_cast
     rfl
   · rintro ⟨k, hk⟩
@@ -35,13 +35,13 @@ theorem isPowerOfTwo_iff (z : AzInt) :
         | true => exact absurd hb h
         | false => rfl
       unfold toInt at hk
-      rw [if_neg (by rw [h']; decide)] at hk
+      rw [ite_eq_right (by rw [h']; decide)] at hk
       have hnn : (0 : Int) ≤ z.abs.toNat := Int.natCast_nonneg _
       have := hpow_pos k
       omega
     refine ⟨hsign, k, ?_⟩
     unfold toInt at hk
-    rw [if_pos hsign] at hk
+    rw [ite_eq_left hsign] at hk
     have h2 : ((2 ^ k : Nat) : Int) = (2 : Int) ^ k := by push_cast; rfl
     rw [← h2] at hk
     exact_mod_cast hk

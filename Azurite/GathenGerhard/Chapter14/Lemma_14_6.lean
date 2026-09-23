@@ -84,7 +84,7 @@ theorem lemma_14_6 [Fintype F] {k : ℕ} (hk0 : k ≠ 0)
     Nat.card (kthPowers F k) = (Fintype.card F - 1) / k ∧
     kthPowers F k = rootsOfUnity ((Fintype.card F - 1) / k) F ∧
     Nat.card ((powMonoidHom k : Fˣ →* Fˣ).ker) = k := by
-  haveI : NeZero k := ⟨hk0⟩
+  have : NeZero k := ⟨hk0⟩
   -- the order of the unit group is `q − 1`, positive; and `(q−1)/k ≠ 0`
   have hnu : Nat.card Fˣ = Fintype.card F - 1 := by
     rw [Nat.card_units, Nat.card_eq_fintype_card]
@@ -95,7 +95,7 @@ theorem lemma_14_6 [Fintype F] {k : ℕ} (hk0 : k ≠ 0)
     have hkn := Nat.le_of_dvd (Nat.pos_of_ne_zero hn0) hk
     have := Nat.div_pos hkn (Nat.pos_of_ne_zero hk0)
     omega
-  haveI : NeZero ((Fintype.card F - 1) / k) := ⟨hnk0⟩
+  have : NeZero ((Fintype.card F - 1) / k) := ⟨hnk0⟩
   -- the kernel is at most `k` (at most `k` roots of `x^k − 1`)
   have hker_le : Nat.card ((powMonoidHom k : Fˣ →* Fˣ).ker) ≤ k := by
     rw [ker_powMonoidHom_eq_rootsOfUnity]

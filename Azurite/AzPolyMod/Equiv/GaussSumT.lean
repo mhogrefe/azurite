@@ -142,7 +142,7 @@ theorem reduceT_gaussSum {p q : ℕ} [Fact p.Prime] [Fact q.Prime]
         (MulChar.ofRootOfUnity (CP.zetaPQUnit_mem hp) hgen)
         (AddChar.zmodChar q (CP.isPrimitiveRoot_zetaQPQ hp).pow_eq_one))
       = gaussSumT n p q g := by
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   rw [CP.gaussSum_eq_sum_range _ _ hgen, map_sum, gaussSumT_eq]
   refine Finset.sum_congr rfl fun k _ => ?_
   rw [map_mul, map_pow, map_pow]

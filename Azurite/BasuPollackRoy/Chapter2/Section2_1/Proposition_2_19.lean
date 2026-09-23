@@ -125,9 +125,9 @@ theorem proposition_2_19_of_isRealClosed
     {q : R[X]} (hq : Irreducible q) (hm : q.Monic) :
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     q.natDegree = 1 ∨ ∃ c d : R, d ≠ 0 ∧ q = (X - C c) ^ 2 + C (d ^ 2) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact proposition_2_19 hq hm
 
 end Azurite.BPR.Proposition2_19

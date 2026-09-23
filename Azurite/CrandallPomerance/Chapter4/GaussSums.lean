@@ -139,7 +139,7 @@ theorem gaussSum_eq_sum_range {ζq : R} (hζq : ζq ^ q = 1)
     gaussSum χ (AddChar.zmodChar q hζq)
       = ∑ k ∈ range (q - 1),
           χ (g : ZMod q) ^ k * ζq ^ ((g ^ k : (ZMod q)ˣ) : ZMod q).val := by
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   have hq1 : 1 < q := (Fact.out (p := q.Prime)).one_lt
   have hord : orderOf g = q - 1 := by
     rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card,
@@ -216,7 +216,7 @@ theorem lemma_4_4_1 {q p : ℕ} [Fact q.Prime] (hp : 1 < p)
       * gaussSum (MulChar.ofRootOfUnity hζmem hg)⁻¹
         (AddChar.zmodChar q hζq.pow_eq_one)⁻¹
       = (q : R) := by
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   have hχ : MulChar.ofRootOfUnity hζmem hg ≠ 1 :=
     ofRootOfUnity_ne_one hζmem hg (by rw [← hζp.eq_orderOf]; exact hp)
   have hψ : (AddChar.zmodChar q hζq.pow_eq_one).IsPrimitive := by
@@ -252,7 +252,7 @@ theorem lemma_4_4_2 {q p n : ℕ} [Fact q.Prime] (hp : p.Prime)
     (n : R) ∣ gaussSum (MulChar.ofRootOfUnity hζmem hg)
         (AddChar.zmodChar q hζq.pow_eq_one) ^ (n ^ (p - 1) - 1)
       - MulChar.ofRootOfUnity hζmem hg (n : ZMod q) := by
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   set χ := MulChar.ofRootOfUnity hζmem hg with hχdef
   set ψ := AddChar.zmodChar q hζq.pow_eq_one with hψdef
   have hpn : Nat.Coprime p n :=
@@ -276,7 +276,7 @@ theorem lemma_4_4_2 {q p n : ℕ} [Fact q.Prime] (hp : p.Prime)
   have hN1 : 1 ≤ n ^ (p - 1) := Nat.one_le_pow _ _ hn.pos
   -- Fermat: `n^(p−1) = 1 + p·t`
   obtain ⟨t, ht⟩ : ∃ t, n ^ (p - 1) = 1 + p * t := by
-    haveI : Fact p.Prime := ⟨hp⟩
+    have : Fact p.Prime := ⟨hp⟩
     have hfer : (n : ZMod p) ^ (p - 1) = 1 := by
       apply ZMod.pow_card_sub_one_eq_one
       rw [Ne, ZMod.natCast_eq_zero_iff]
@@ -336,7 +336,7 @@ theorem lemma_4_4_2 {q p n : ℕ} [Fact q.Prime] (hp : p.Prime)
     rw [show ((n : ℕ) : R ⧸ Ideal.span {(n : R)}) = π (n : R) from
       (map_natCast π n).symm, hπdef, Ideal.Quotient.eq_zero_iff_mem]
     exact Ideal.mem_span_singleton_self _
-  haveI : CharP (R ⧸ Ideal.span {(n : R)}) n := by
+  have : CharP (R ⧸ Ideal.span {(n : R)}) n := by
     have hdvd : ringChar (R ⧸ Ideal.span {(n : R)}) ∣ n := ringChar.dvd hnS
     rcases hn.eq_one_or_self_of_dvd _ hdvd with h1 | hcharn
     · exfalso
@@ -345,7 +345,7 @@ theorem lemma_4_4_2 {q p n : ℕ} [Fact q.Prime] (hp : p.Prime)
       rw [h1, Nat.cast_one] at h0
       exact one_ne_zero h0
     · exact CharP.congr (ringChar (R ⧸ Ideal.span {(n : R)})) hcharn
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   -- Frobenius: the multinomial step of the book
   have hfrob : π (gaussSum χ ψ) ^ n ^ (p - 1)
       = π (gaussSum χ (ψ.mulShift
@@ -506,7 +506,7 @@ theorem lemma_4_4_2_zeta_pow {p n : ℕ} (hp : p.Prime)
         (AddChar.zmodChar q hζq.pow_eq_one) ^ (n ^ (p - 1) - 1)
       - (ζp : R) ^ j₀ := by
   have hq := Fact.out (p := q.Prime)
-  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have : NeZero q := ⟨hq.ne_zero⟩
   have hunit : IsUnit ((n : ℕ) : ZMod q) := by
     rw [ZMod.isUnit_iff_coprime]
     exact Nat.Coprime.coprime_dvd_right (dvd_mul_left q p) hgcd.symm

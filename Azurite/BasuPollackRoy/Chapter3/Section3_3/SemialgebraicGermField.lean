@@ -82,7 +82,7 @@ theorem IsSemialgContinuousOn.mono {S S' : Set (Fin k → R)} {c : (Fin k → R)
   have heq : funGraph S' (scalarFun c)
       = funGraph S (scalarFun c) ∩ setProd S' (Set.univ : Set (Fin 1 → R)) := by
     ext z
-    simp only [mem_funGraph, setProd, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_univ, and_true]
+    simp only [mem_funGraph, setProd, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_univ, and_true]
     exact ⟨fun ⟨hz, hf⟩ => ⟨⟨hsub hz, hf⟩, hz⟩, fun ⟨⟨_, hf⟩, hz⟩ => ⟨hz, hf⟩⟩
   rw [IsSemialgebraicFunction, heq]
   exact hc.1.inter (hS'.prod hunivSA)
@@ -379,7 +379,7 @@ theorem SemialgGermRep.eventually_nonzero_of_not_equiv_zero {f : SemialgGermRep 
       (scalarFun f.toFun) ⁻¹' {v : Fin 1 → R | MvPolynomial.eval v (MvPolynomial.X 0) = 0}) ↔
       (0 < s ∧ s < f.bound) ∧ f.toFun (constPt s) = 0 := by
     intro s
-    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_setOf_eq,
+    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_ofPred_eq,
       MvPolynomial.eval_X, scalarFun, constPt]
   rcases FUOC_dichotomy_at_zero (semialgebraic_sect_FUOC hA) with ⟨t, ht, hsub⟩ | ⟨t, ht, hdisj⟩
   · exact absurd ⟨t, ht, fun s hs hst => by
@@ -412,13 +412,13 @@ noncomputable def SemialgGermRep.inv (f : SemialgGermRep R) : SemialgGermRep R :
 
 theorem SemialgGermRep.inv_of_equiv_zero {f : SemialgGermRep R} (hf : f ≈ SemialgGermRep.zero) :
     f.inv = SemialgGermRep.zero := by
-  simp only [SemialgGermRep.inv, dif_pos hf]
+  simp only [SemialgGermRep.inv, dite_eq_left hf]
 
 theorem SemialgGermRep.inv_spec_of_not_equiv_zero {f : SemialgGermRep R}
     (hf : ¬ f ≈ SemialgGermRep.zero) :
     (f.inv).toFun = (fun u => (f.toFun u)⁻¹) ∧ 0 < (f.inv).bound ∧
       ∀ s : R, 0 < s → s < (f.inv).bound → f.toFun (constPt s) ≠ 0 := by
-  simp only [SemialgGermRep.inv, dif_neg hf]
+  simp only [SemialgGermRep.inv, dite_eq_right hf]
   exact ⟨trivial, (f.eventually_nonzero_of_not_equiv_zero hf).choose_spec.1,
     (f.eventually_nonzero_of_not_equiv_zero hf).choose_spec.2.2⟩
 

@@ -36,7 +36,7 @@ theorem proposition_4_70 (m : MonomialOrder (Fin k)) (I : Ideal (MvPolynomial (F
     have hmne : (monomial (b - m.degree P) 1 : MvPolynomial (Fin k) K) ≠ 0 := by
       rw [Ne, MvPolynomial.monomial_eq_zero]; exact one_ne_zero
     exact ⟨monomial (b - m.degree P) 1 * P, Ideal.mul_mem_left I _ hPI, mul_ne_zero hmne hP0, by
-      rw [MonomialOrder.degree_mul hmne hP0, MonomialOrder.degree_monomial, if_neg one_ne_zero,
+      rw [MonomialOrder.degree_mul hmne hP0, MonomialOrder.degree_monomial, ite_eq_right one_ne_zero,
         tsub_add_cancel_of_le hab]⟩
   -- Step 2: finitely many minimal leading monomials.
   have hfin : {a | Minimal (· ∈ S) a}.Finite := lemma_4_62 S hup
@@ -53,7 +53,7 @@ theorem proposition_4_70 (m : MonomialOrder (Fin k)) (I : Ideal (MvPolynomial (F
   have hg : ∀ a, Minimal (· ∈ S) a → g a ∈ I ∧ g a ≠ 0 ∧ m.degree (g a) = a := by
     intro a h
     have hspec := h.1.choose_spec
-    simp only [g, dif_pos h]
+    simp only [g, dite_eq_left h]
     exact hspec
   refine ⟨hfin.toFinset.image g, ?_, ?_, ?_⟩
   · -- (1) `𝒢 ⊆ I`

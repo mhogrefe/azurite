@@ -94,7 +94,7 @@ theorem toPoly_quoRem_eq (P Q : AzPolynomial K) :
 private theorem coeff_monomial_mul' (Q : AzPolynomial K) (d : ℕ) (c : K) (k : ℕ) :
     coeff ((monomial d c) * Q) (d + k) = c * Q.coeff k := by
   have h := toPoly_mul (monomial d c) Q
-  have hc := congr_fun (congr_arg Polynomial.coeff h) (d + k)
+  have hc := congrArg (fun p => Polynomial.coeff p (d + k)) h
   rw [coeff_toPoly_eq] at hc
   rw [hc, toPoly_monomial, Polynomial.coeff_mul]
   simp_rw [Polynomial.coeff_monomial]
@@ -116,7 +116,7 @@ private theorem coeff_monomial_mul_eq_zero (Q : AzPolynomial K) (d : ℕ) (c : K
     (hk : k > d + (Q.coeffs.size - 1)) :
     coeff ((monomial d c) * Q) k = 0 := by
   have h := toPoly_mul (monomial d c) Q
-  have hc := congr_fun (congr_arg Polynomial.coeff h) k
+  have hc := congrArg (fun p => Polynomial.coeff p k) h
   rw [coeff_toPoly_eq] at hc
   rw [hc, toPoly_monomial, Polynomial.coeff_mul]
   simp_rw [Polynomial.coeff_monomial]

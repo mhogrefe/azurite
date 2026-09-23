@@ -426,7 +426,7 @@ theorem dddLoop_ddTail [Fintype F] {f : F[X]} (hm : f.Monic)
   | succ fuel ih =>
     intro i h hfuel hcong
     by_cases h1 : ddTail f i = 1
-    · rw [dddLoop, if_pos h1]
+    · rw [dddLoop, ite_eq_left h1]
       have h0 : ddLength f - i = 0 := by
         have := ddTail_eq_one_iff.mp h1
         omega
@@ -438,7 +438,7 @@ theorem dddLoop_ddTail [Fintype F] {f : F[X]} (hm : f.Monic)
         · exact absurd (ddTail_eq_one_iff.mpr h') h1
       by_cases h2 : (ddTail f i).natDegree < 2 * (i + 1)
       · -- EARLY ABORT: the tail is a single irreducible in position `deg fᵢ`
-        rw [dddLoop, if_neg h1, if_pos h2]
+        rw [dddLoop, ite_eq_right h1, ite_eq_left h2]
         obtain ⟨hlen, hge, hlast, hmid⟩ := ddTail_early_abort h1 h2
         rw [hlen,
           show (ddTail f i).natDegree - i
@@ -448,7 +448,7 @@ theorem dddLoop_ddTail [Fintype F] {f : F[X]} (hm : f.Monic)
           show i + 1 + ((ddTail f i).natDegree - i - 1)
             = (ddTail f i).natDegree from by omega,
           hlast, Nat.add_sub_cancel]
-      · rw [dddLoop, if_neg h1, if_neg h2]
+      · rw [dddLoop, ite_eq_right h1, ite_eq_right h2]
         -- the powered `h` is congruent to `x^(q^(i+1))` mod the tail
         have hstep : ddTail f i
             ∣ (h %ₘ ddTail f i) ^ Fintype.card F %ₘ ddTail f i
@@ -514,7 +514,7 @@ theorem toPoly_val_pow {fAz : AzPolynomial K}
     (hf : (AzPolynomial.toPoly fAz).Monic) (a : AzPolyMod fAz) (q : AzNat) :
     AzPolynomial.toPoly ((a ^ q).val)
       = AzPolynomial.toPoly a.val ^ q.toNat %ₘ AzPolynomial.toPoly fAz := by
-  haveI : Fact (AzPolynomial.toPoly fAz).Monic := ⟨hf⟩
+  have : Fact (AzPolynomial.toPoly fAz).Monic := ⟨hf⟩
   have hmk := AzPolyMod.toAdjoin_powAzNat (f := fAz) a q
   rw [AzPolyMod.toAdjoin_def, AzPolyMod.toAdjoin_def, ← map_pow,
     AdjoinRoot.mk_eq_mk] at hmk
@@ -558,20 +558,20 @@ theorem map_toPoly_distinctDegreeFactorizationLoop (q : AzNat) :
     have hfi0' : AzPolynomial.toPoly fi ≠ 0 := hfim.ne_zero
     rw [AzPolynomial.distinctDegreeFactorizationLoop, dddLoop]
     by_cases h1 : fi = 1
-    · rw [if_pos h1, if_pos (by rw [h1, toPoly_one])]
+    · rw [ite_eq_left h1, ite_eq_left (by rw [h1, toPoly_one])]
       rfl
     · have h1' : AzPolynomial.toPoly fi ≠ 1 := by
         rw [Ne, ← toPoly_one (R := K), toPoly_inj]
         exact h1
-      rw [if_neg h1, if_neg h1']
+      rw [ite_eq_right h1, ite_eq_right h1']
       by_cases h2 : fi.natDegree < 2 * (i + 1)
       · -- the early aborts fire together (the degrees agree)
-        rw [if_pos h2,
-          if_pos (by rw [AzPolynomial.natDegree_toPoly]; exact h2),
+        rw [ite_eq_left h2,
+          ite_eq_left (by rw [AzPolynomial.natDegree_toPoly]; exact h2),
           List.map_append, List.map_replicate, toPoly_one,
           List.map_singleton, AzPolynomial.natDegree_toPoly]
-      · rw [if_neg h2,
-          if_neg (by rw [AzPolynomial.natDegree_toPoly]; exact h2)]
+      · rw [ite_eq_right h2,
+          ite_eq_right (by rw [AzPolynomial.natDegree_toPoly]; exact h2)]
         have hpow := toPoly_powModByMonic hfim h q
         -- the gcd bridge
         have hg : AzPolynomial.toPoly

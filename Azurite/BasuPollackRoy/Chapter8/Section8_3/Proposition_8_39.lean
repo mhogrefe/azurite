@@ -105,25 +105,25 @@ theorem pdetRing_replaceUpTo_eq (P Q : K[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree <
       ext r
       rw [Function.update_apply]
       by_cases hr : r = ⟨k, hrk⟩
-      · rw [if_pos hr, hr]
-        simp only [replaceUpTo, if_pos hk, if_pos (Nat.lt_succ_self k)]
-      · rw [if_neg hr]
+      · rw [ite_eq_left hr, hr]
+        simp only [replaceUpTo, ite_eq_left hk, ite_eq_left (Nat.lt_succ_self k)]
+      · rw [ite_eq_right hr]
         have hrk' : (r : ℕ) ≠ k := fun h => hr (Fin.ext h)
         simp only [replaceUpTo]
         by_cases h1 : (r : ℕ) < Q.natDegree - j
-        · rw [if_pos h1, if_pos h1]
+        · rw [ite_eq_left h1, ite_eq_left h1]
           rcases lt_trichotomy (r : ℕ) k with h2 | h2 | h2
-          · rw [if_pos (by omega), if_pos h2]
+          · rw [ite_eq_left (by omega), ite_eq_left h2]
           · exact absurd h2 hrk'
-          · rw [if_neg (by omega), if_neg (by omega)]
-        · rw [if_neg h1, if_neg h1]
+          · rw [ite_eq_right (by omega), ite_eq_right (by omega)]
+        · rw [ite_eq_right h1, ite_eq_right h1]
     have hk_row : (replaceUpTo P Q j k) ⟨k, hrk⟩ = X ^ (Q.natDegree - j - 1 - k) * P := by
-      simp only [replaceUpTo, if_pos hk, if_neg (Nat.lt_irrefl k)]
+      simp only [replaceUpTo, ite_eq_left hk, ite_eq_right (Nat.lt_irrefl k)]
     have hQ_row : ∀ i : Fin (P.natDegree - Q.natDegree + 1),
         (replaceUpTo P Q j k) (Qidx i) = X ^ (Q.natDegree - j - 1 - k + (i : ℕ)) * Q := by
       intro i
       simp only [replaceUpTo, hQidx]
-      rw [if_neg (by omega)]
+      rw [ite_eq_right (by omega)]
       congr 2
       omega
     have hval : (replaceUpTo P Q j k) ⟨k, hrk⟩
@@ -178,8 +178,8 @@ theorem sResP_eq_eps_smul_Aseq (P Q : K[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree < 
     have hseq : replaceUpTo P Q j 0 = fun r : Fin (P.natDegree + Q.natDegree - 2 * j) =>
         if (r : ℕ) < Q.natDegree - j then
         X ^ (Q.natDegree - j - 1 - (r : ℕ)) * P else X ^ ((r : ℕ) - (Q.natDegree - j)) * Q := by
-      funext r; simp only [replaceUpTo, Nat.not_lt_zero, if_false]
-    rw [hseq, sResP, if_pos (by omega)]
+      funext r; simp only [replaceUpTo, Nat.not_lt_zero, ite_false]
+    rw [hseq, sResP, ite_eq_left (by omega)]
   have hRQ : pdetRing (P.natDegree + Q.natDegree - j)
       (replaceUpTo P Q j (Q.natDegree - j)) = sResP P Q j := by
     rw [pdetRing_replaceUpTo_eq P Q hQ hpq j (by omega), hb]
@@ -204,10 +204,10 @@ theorem sResP_eq_eps_smul_Aseq (P Q : K[X]) (hQ : Q ≠ 0) (hpq : Q.natDegree < 
     rw [hs]
     simp only [Function.comp_apply, hseqRQ, Finset.mem_filter, Finset.mem_univ, true_and, hrev, Aseq]
     by_cases h : (r : ℕ) < P.natDegree - j
-    · rw [if_pos h, if_neg (not_le.mpr h),
-        if_neg (aux_cond1 _ _ _ _ h (by omega) hpq), aux1 _ _ _ _ h (by omega) hpq]
-    · rw [if_neg h, if_pos (not_lt.mp h),
-        if_pos (aux_cond2 _ _ _ _ (not_lt.mp h) hrlt (by omega) hpq),
+    · rw [ite_eq_left h, ite_eq_right (not_le.mpr h),
+        ite_eq_right (aux_cond1 _ _ _ _ h (by omega) hpq), aux1 _ _ _ _ h (by omega) hpq]
+    · rw [ite_eq_right h, ite_eq_left (not_lt.mp h),
+        ite_eq_left (aux_cond2 _ _ _ _ (not_lt.mp h) hrlt (by omega) hpq),
         aux2 _ _ _ _ (not_lt.mp h) hrlt (by omega) hpq]
   have hcard : s.card = Q.natDegree - j := by
     rw [hs, show (Finset.univ.filter (fun r : Fin (P.natDegree + Q.natDegree - 2 * j) =>
@@ -256,11 +256,11 @@ theorem Aseq_triangular (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
   have hnd1 : ∀ i : Fin (P.natDegree + Q.natDegree - 2 * j), (i : ℕ) < P.natDegree - j →
       (Aseq P Q j i).natDegree = P.natDegree + Q.natDegree - j - 1 - (i : ℕ) := by
     intro i hi
-    rw [Aseq, if_pos hi, natDegree_X_pow_mul _ hQ]; exact aux_ndeg _ _ _ _ hi
+    rw [Aseq, ite_eq_left hi, natDegree_X_pow_mul _ hQ]; exact aux_ndeg _ _ _ _ hi
   have hnd2 : ∀ i : Fin (P.natDegree + Q.natDegree - 2 * j), ¬ ((i : ℕ) < P.natDegree - j) →
       (Aseq P Q j i).natDegree = r + ((i : ℕ) - (P.natDegree - j)) := by
     intro i hi
-    rw [Aseq, if_neg hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
+    rw [Aseq, ite_eq_right hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
   rw [pdetRing_triangular (m := P.natDegree + Q.natDegree - 2 * j)
       (n := P.natDegree + Q.natDegree - j) (ℓ := P.natDegree - r) (by omega) (by omega)
       (Aseq P Q j) ?hd1 ?hd2]
@@ -281,7 +281,7 @@ theorem Aseq_triangular (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
     rw [Finset.prod_congr rfl (fun i _ => ?_), Finset.prod_const, Finset.card_univ, Fintype.card_fin]
     have hi := i.isLt
     show (Aseq P Q j ⟨(i : ℕ), _⟩).coeff (P.natDegree + Q.natDegree - j - 1 - (i : ℕ)) = Q.leadingCoeff
-    rw [Aseq, if_pos (aux_prodcond _ _ _ _ _ hi hjr hpq),
+    rw [Aseq, ite_eq_left (aux_prodcond _ _ _ _ _ hi hjr hpq),
       (aux_ndeg P.natDegree Q.natDegree j (i : ℕ) (aux_prodcond _ _ _ _ _ hi hjr hpq)).symm,
       coeff_X_pow_mul, Polynomial.coeff_natDegree]
   -- the tail is the `sResP(Q,-R)` sequence
@@ -289,16 +289,16 @@ theorem Aseq_triangular (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
       = pdetRing (P.natDegree + Q.natDegree - j - (P.natDegree - r))
           (fun i' : Fin (P.natDegree + Q.natDegree - 2 * j - (P.natDegree - r)) =>
             Aseq P Q j ⟨P.natDegree - r + (i' : ℕ), by omega⟩) := by
-    rw [sResP, if_pos (by rw [natDegree_neg]; omega),
+    rw [sResP, ite_eq_left (by rw [natDegree_neg]; omega),
       show Q.natDegree + (-(P % Q)).natDegree - j = P.natDegree + Q.natDegree - j - (P.natDegree - r)
         from by rw [natDegree_neg]; omega]
     apply pdetRing_congr_cast (by rw [natDegree_neg]; omega)
     intro i'
     simp only [Fin.val_cast, natDegree_neg, ← hr_def]
     by_cases h : (i' : ℕ) < r - j
-    · rw [if_pos h, Aseq, if_pos (aux_condpos _ _ _ _ _ hjr hrq hpq h),
+    · rw [ite_eq_left h, Aseq, ite_eq_left (aux_condpos _ _ _ _ _ hjr hrq hpq h),
         aux_tailQ _ _ _ _ _ hjr hrq hpq (aux_condpos _ _ _ _ _ hjr hrq hpq h)]
-    · rw [if_neg h, Aseq, if_neg (aux_condneg _ _ _ _ _ hjr hrq hpq h),
+    · rw [ite_eq_right h, Aseq, ite_eq_right (aux_condneg _ _ _ _ _ hjr hrq hpq h),
         aux_tailR _ _ _ _ _ hjr hrq hpq (aux_condneg _ _ _ _ _ hjr hrq hpq h), mul_neg]
   rw [hprod, htail, smul_eq_C_mul]
 
@@ -320,11 +320,11 @@ theorem Aseq_zero (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
   have hnd1 : ∀ i : Fin (P.natDegree + Q.natDegree - 2 * j), (i : ℕ) < P.natDegree - j →
       (Aseq P Q j i).natDegree = P.natDegree + Q.natDegree - j - 1 - (i : ℕ) := by
     intro i hi
-    rw [Aseq, if_pos hi, natDegree_X_pow_mul _ hQ]; exact aux_ndeg _ _ _ _ hi
+    rw [Aseq, ite_eq_left hi, natDegree_X_pow_mul _ hQ]; exact aux_ndeg _ _ _ _ hi
   have hnd2 : ∀ i : Fin (P.natDegree + Q.natDegree - 2 * j), ¬ ((i : ℕ) < P.natDegree - j) →
       (Aseq P Q j i).natDegree = r + ((i : ℕ) - (P.natDegree - j)) := by
     intro i hi
-    rw [Aseq, if_neg hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
+    rw [Aseq, ite_eq_right hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
   rw [pdetRing_triangular (m := P.natDegree + Q.natDegree - 2 * j)
       (n := P.natDegree + Q.natDegree - j) (ℓ := P.natDegree - j) (by omega) (by omega)
       (Aseq P Q j) ?hd1 ?hd2]
@@ -340,7 +340,7 @@ theorem Aseq_zero (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
       (fun i' : Fin (P.natDegree + Q.natDegree - 2 * j - (P.natDegree - j)) =>
         Aseq P Q j ⟨P.natDegree - j + (i' : ℕ), aux_zfin _ _ _ _ i'.isLt (by omega) hpq⟩)
       (fun i' => ?_), mul_zero]
-  rw [Aseq, if_neg (not_lt.mpr (Nat.le_add_right _ _)), degree_neg]
+  rw [Aseq, ite_eq_right (not_lt.mpr (Nat.le_add_right _ _)), degree_neg]
   have hne : X ^ (P.natDegree - j + (i' : ℕ) - (P.natDegree - j)) * (P % Q) ≠ 0 :=
     mul_ne_zero (pow_ne_zero _ Polynomial.X_ne_zero) hR0
   rw [degree_eq_natDegree hne, natDegree_X_pow_mul _ hR0]
@@ -361,12 +361,12 @@ theorem Aseq_qm1 (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
       (Aseq P Q (Q.natDegree - 1) i).natDegree
         = P.natDegree + Q.natDegree - (Q.natDegree - 1) - 1 - (i : ℕ) := by
     intro i hi
-    rw [Aseq, if_pos hi, natDegree_X_pow_mul _ hQ]; omega
+    rw [Aseq, ite_eq_left hi, natDegree_X_pow_mul _ hQ]; omega
   have hnd2 : ∀ i : Fin (P.natDegree + Q.natDegree - 2 * (Q.natDegree - 1)),
       ¬ ((i : ℕ) < P.natDegree - (Q.natDegree - 1)) →
       (Aseq P Q (Q.natDegree - 1) i).natDegree = r + ((i : ℕ) - (P.natDegree - (Q.natDegree - 1))) := by
     intro i hi
-    rw [Aseq, if_neg hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
+    rw [Aseq, ite_eq_right hi, natDegree_neg, natDegree_X_pow_mul _ hR0]
   rw [pdetRing_triangular (m := P.natDegree + Q.natDegree - 2 * (Q.natDegree - 1))
       (n := P.natDegree + Q.natDegree - (Q.natDegree - 1)) (ℓ := P.natDegree - (Q.natDegree - 1))
       (by omega) (by omega) (Aseq P Q (Q.natDegree - 1)) ?hd1 ?hd2]
@@ -387,12 +387,12 @@ theorem Aseq_qm1 (P Q : K[X]) (hQ : Q ≠ 0) (hR0 : P % Q ≠ 0)
     have hi := i.isLt
     show (Aseq P Q (Q.natDegree - 1) ⟨(i : ℕ), _⟩).coeff
       (P.natDegree + Q.natDegree - (Q.natDegree - 1) - 1 - (i : ℕ)) = Q.leadingCoeff
-    rw [Aseq, if_pos (by omega), show P.natDegree + Q.natDegree - (Q.natDegree - 1) - 1 - (i : ℕ)
+    rw [Aseq, ite_eq_left (by omega), show P.natDegree + Q.natDegree - (Q.natDegree - 1) - 1 - (i : ℕ)
       = Q.natDegree + (P.natDegree - (Q.natDegree - 1) - 1 - (i : ℕ)) from by omega,
       coeff_X_pow_mul, Polynomial.coeff_natDegree]
   have htail0 : Aseq P Q (Q.natDegree - 1)
       ⟨P.natDegree - (Q.natDegree - 1) + (0 : ℕ), by omega⟩ = -(P % Q) := by
-    rw [Aseq, if_neg (not_lt.mpr (Nat.le_add_right _ _))]
+    rw [Aseq, ite_eq_right (not_lt.mpr (Nat.le_add_right _ _))]
     simp
   rw [hprod, pdetRing_single_of_eq (by omega) (by omega) _ (by rw [htail0, natDegree_neg]; omega),
     htail0, mul_neg, smul_eq_C_mul]

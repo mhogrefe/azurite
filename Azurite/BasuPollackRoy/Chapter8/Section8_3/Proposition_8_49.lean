@@ -38,14 +38,14 @@ theorem proposition_8_49 {R : Type*} [CommRing R] {k : ℕ}
     (hpq : Q.natDegree < P.natDegree) {j : ℕ} (hjq : j ≤ Q.natDegree) (a : ℕ) :
     ((sResP P Q j).coeff a).totalDegree ≤ d * (P.natDegree + Q.natDegree - 2 * j) := by
   by_cases ha : a ≤ j
-  · rw [sResP, if_pos hjq,
+  · rw [sResP, ite_eq_left hjq,
       pdetRing_coeff _ (show a ≤ P.natDegree + Q.natDegree - j - (P.natDegree + Q.natDegree - 2 * j)
         by omega), pdetMinorRing]
     refine Azurite.BPR.proposition_8_14 _ (fun r c => ?_)
     rw [pdetMinorMatRing]
     by_cases hr : (r : ℕ) < Q.natDegree - j
-    · simp only [hr, if_true]; exact totalDegree_coeff_X_pow_mul hP _ _
-    · simp only [hr, if_false]; exact totalDegree_coeff_X_pow_mul hQ _ _
+    · simp only [hr, ite_true]; exact totalDegree_coeff_X_pow_mul hP _ _
+    · simp only [hr, ite_false]; exact totalDegree_coeff_X_pow_mul hQ _ _
   · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt
       (Polynomial.natDegree_le_iff_degree_le.mpr (sResP_degree_le P Q hpq hjq)) (by omega))]
     simp

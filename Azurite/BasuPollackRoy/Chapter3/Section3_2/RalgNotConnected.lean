@@ -32,7 +32,7 @@ theorem lt_threshold_not_isSemialgebraicSet {t : ℝ} (ht : t ∉ R_alg) :
   have hcoe_ne : ∀ z : R_alg, (↑z : ℝ) ≠ t := fun z hz => ht (hz ▸ z.2)
   have hsect : ∀ x : R_alg,
       x ∈ constPt ⁻¹' {v : Fin 1 → R_alg | (↑(v 0) : ℝ) < t} ↔ (↑x : ℝ) < t := by
-    intro x; simp only [Set.mem_preimage, Set.mem_setOf_eq, constPt]
+    intro x; simp only [Set.mem_preimage, Set.mem_ofPred_eq, constPt]
   -- Pick `ε > 0` so that `(t − ε, t + ε)` avoids every coordinate of `F` (none equals `t`).
   obtain ⟨ε, hε, hεF⟩ : ∃ ε : ℝ, 0 < ε ∧ ∀ z ∈ F, ε ≤ |(↑z : ℝ) - t| := by
     rcases F.eq_empty_or_nonempty with hFe | hFne

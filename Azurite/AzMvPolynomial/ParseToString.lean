@@ -57,7 +57,7 @@ private theorem tw_dw_tail
   · rw [List.takeWhile_append,
         show (t.takeWhile isNotSign).length = t.length from by
           rw [(List.takeWhile_eq_self_iff).mpr ht],
-        if_pos rfl]
+        ite_eq_left rfl]
     rcases joinMonomialsAux_head_cond ms hne' with h | ⟨d, ds, h, hd⟩
     · rw [h]; simp
     · rw [h, List.takeWhile_cons_of_neg (Bool.eq_false_iff.mp hd)]; simp
@@ -247,7 +247,7 @@ theorem AzMvPolynomial.parseWith_toCharsWith (p : AzMvPolynomial n R ord) :
     -- `splitMonomials_joinMonomials` then `mapM_parseWith_map_toCharsWith`.
     unfold AzMvPolynomial.toCharsWith AzMvPolynomial.parseWith
     simp only [hemp, ↓reduceIte, Bool.false_eq_true]
-    rw [if_neg (toCharsWith_ne_zeroChar_of_nonempty F p (by simp [hemp])),
+    rw [ite_eq_right (toCharsWith_ne_zeroChar_of_nonempty F p (by simp [hemp])),
       splitMonomials_joinMonomials _
         (by intro m hm; obtain ⟨mono, _, rfl⟩ := List.mem_map.mp hm
             exact Monomial.toCharsWith_ne_nil F _)

@@ -40,11 +40,11 @@ theorem mvClearDenom (h : MvPolynomial (Fin n) ℚ) :
   rw [Finset.sum_ite_eq' h.support m
     (fun m => if hm : m ∈ h.support then z m hm else 0)]
   by_cases hm : m ∈ h.support
-  · rw [if_pos hm, dif_pos hm]
+  · rw [ite_eq_left hm, dite_eq_left hm]
     have hval := hz m hm
     rw [zsmul_eq_mul] at hval
     exact hval.symm
-  · rw [if_neg hm, MvPolynomial.notMem_support_iff.mp hm, mul_zero, map_zero]
+  · rw [ite_eq_right hm, MvPolynomial.notMem_support_iff.mp hm, mul_zero, map_zero]
 
 /-- If `|c|` divides the content of `K`, then `C c` divides `K`. -/
 theorem C_dvd_of_abs_dvd_intContent {c : AzInt} {K : AzMvPolynomial n AzInt ord}
@@ -226,7 +226,7 @@ theorem coprime_isRelPrime {P Q : AzMvPolynomial n AzInt ord}
   have hunit_qImg : IsUnit (ratImg q) :=
     isUnit_of_dvd_unit (map_dvd (MvPolynomial.map AzMvPolynomial.coeffToRat)
       (map_dvd AzMvPolynomial.toMvPolyHom hq_gcd)) hunit_gcd
-  exact hdprime.not_unit (hassoc.isUnit_iff.mp hunit_qImg)
+  exact hdprime.not_isUnit (hassoc.isUnit_iff.mp hunit_qImg)
 
 /-- **The full `coprime ↔ IsRelPrime` characterization** over `ℚ[x⃗]` (for
 nonzero `P`), combining `coprime_isRelPrime` (the multivariate-Gauss direction,
@@ -307,7 +307,7 @@ theorem squarefree_of_isSquarefree {P : AzMvPolynomial n AzInt ord}
   have hunit_qImg : IsUnit (AzMvPolynomial.ratImg qaz) :=
     isUnit_of_dvd_unit (map_dvd (MvPolynomial.map AzMvPolynomial.coeffToRat)
       (map_dvd AzMvPolynomial.toMvPolyHom hqazg)) hgU'
-  exact hd.prime.not_unit (hassoc.isUnit_iff.mp hunit_qImg)
+  exact hd.prime.not_isUnit (hassoc.isUnit_iff.mp hunit_qImg)
 
 /-- **The full squarefreeness characterization** over `ℚ[x⃗]`: `isSquarefree`
 decides genuine `Squarefree`ness of the `ℚ[x⃗]`-image, combining

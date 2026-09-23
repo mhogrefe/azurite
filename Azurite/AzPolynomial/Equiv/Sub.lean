@@ -13,7 +13,7 @@ variable {R : Type _} [Ring R] [DecidableEq R]
 @[simp] lemma coeff_neg' (q : AzPolynomial R) (n : ℕ) :
     coeff (-q) n = -(coeff q n) := by
   have h := toPoly_neg q
-  have hc := congr_fun (congr_arg Polynomial.coeff h) n
+  have hc := congrArg (fun p => Polynomial.coeff p n) h
   rw [Polynomial.coeff_neg, coeff_toPoly, coeff_toPoly] at hc
   exact hc
 

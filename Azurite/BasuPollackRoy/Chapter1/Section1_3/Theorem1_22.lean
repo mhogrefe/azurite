@@ -365,7 +365,7 @@ theorem realization_projBasic
           (degNeqFormula (pathLeafParent extra path) QC₁.1))) := rfl
   rw [hproj_eq, Formula.realization_disjList]
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   rw [exists_snoc_iff_exists_eval_splitLast y Ps Qs]
   constructor
   · rintro ⟨Φ, hΦ_mem, hy_Φ⟩
@@ -373,7 +373,7 @@ theorem realization_projBasic
     obtain ⟨G_1, C_1, h_mem_posgcd, path, hpath_mem, hΦ_eq⟩ := hΦ_mem
     subst hΦ_eq
     simp only [Formula.realization_and, Set.mem_inter_iff,
-      realization_degNeqFormula, Set.mem_setOf_eq] at hy_Φ
+      realization_degNeqFormula, Set.mem_ofPred_eq] at hy_Φ
     obtain ⟨hy_C_1, hy_leaf, hy_deg⟩ := hy_Φ
     have h_G_1_isListGCD := posgcd_gcd Ps' h_mem_posgcd y hy_C_1
     have h_G_isGCD := leafFormula_gcd extra G_1 hpath_mem y hy_leaf
@@ -391,7 +391,7 @@ theorem realization_projBasic
     · simp only [List.mem_flatMap, List.mem_map, Prod.exists]
       exact ⟨G_1, C_1, h_mem_posgcd, path, hpath_mem, rfl⟩
     · simp only [Formula.realization_and, Set.mem_inter_iff,
-        realization_degNeqFormula, Set.mem_setOf_eq]
+        realization_degNeqFormula, Set.mem_ofPred_eq]
       exact ⟨hy_C_1, hy_leaf, h_deg⟩
 
 end ProjFormulaCorrectness
@@ -570,7 +570,7 @@ theorem proj_set_union (S T : Set (Fin (k+1) → C)) :
     { y : Fin k → C | ∃ x : C, Fin.snoc y x ∈ S ∪ T } =
       { y | ∃ x, Fin.snoc y x ∈ S } ∪ { y | ∃ x, Fin.snoc y x ∈ T } := by
   ext y
-  simp only [Set.mem_setOf_eq, Set.mem_union]
+  simp only [Set.mem_ofPred_eq, Set.mem_union]
   constructor
   · rintro ⟨x, hx | hx⟩
     · exact Or.inl ⟨x, hx⟩
@@ -620,7 +620,7 @@ theorem conj_inter (Ps Qs : List (MvPolynomial (Fin (k+1)) C))
       .conj (Ps ++ Ps') (Qs ++ Qs')
     convert h using 1
     ext z
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.mem_append]
+    simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, List.mem_append]
     constructor
     · rintro ⟨⟨hP, hQ⟩, hP', hQ'⟩
       refine ⟨fun P hP_ => ?_, fun Q hQ_ => ?_⟩
@@ -669,7 +669,7 @@ theorem exists_ne_zero_of_list
           { z | MvPolynomial.aeval z head ≠ 0 } ∪
           { z | ∃ P ∈ rest, MvPolynomial.aeval z P ≠ 0 } := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_union, List.mem_cons]
+      simp only [Set.mem_ofPred_eq, Set.mem_union, List.mem_cons]
       constructor
       · rintro ⟨P, hmem | hmem, hne⟩
         · exact Or.inl (hmem ▸ hne)
@@ -702,7 +702,7 @@ theorem IsAlgebraicSet.isFinUnionConjForm
             (∀ Q ∈ ([] : List (MvPolynomial (Fin (k+1)) C)),
               MvPolynomial.aeval z Q ≠ 0) } := by
     ext z
-    simp only [Zer, Set.mem_setOf_eq, Finset.mem_toList, List.not_mem_nil,
+    simp only [Zer, Set.mem_ofPred_eq, Finset.mem_toList, List.not_mem_nil,
                false_implies, implies_true, and_true,
                MvPolynomial.aeval_eq_eval]
   rw [hshape]
@@ -718,7 +718,7 @@ theorem IsAlgebraicSet.compl_isFinUnionConjForm
   have hshape : (Zer finset : Set (Fin (k+1) → C))ᶜ =
       { z | ∃ P ∈ finset.toList, MvPolynomial.aeval z P ≠ 0 } := by
     ext z
-    simp only [Zer, Set.mem_compl_iff, Set.mem_setOf_eq, not_forall,
+    simp only [Zer, Set.mem_compl_iff, Set.mem_ofPred_eq, not_forall,
                Finset.mem_toList, MvPolynomial.aeval_eq_eval, exists_prop]
   rw [hshape]
   exact IsFinUnionConjForm.exists_ne_zero_of_list _

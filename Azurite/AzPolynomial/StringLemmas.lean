@@ -426,7 +426,7 @@ lemma parseRatChars_ratToChars (q : ℚ) : parseRatChars (ratToChars q) = some q
     have hn0 : q.den ≠ 0 := by
       have hpos := q.den_pos
       omega
-    rw [if_neg hn0]
+    rw [ite_eq_right hn0]
     have h_eq_q : some ((q.num : ℚ) / (q.den : ℚ)) = some q := by
       congr 1
       exact (rat_ext_eq q).symm

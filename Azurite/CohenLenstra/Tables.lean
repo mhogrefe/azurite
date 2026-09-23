@@ -232,7 +232,7 @@ theorem expCounts_getD {p k q : ℕ} (hp : 0 < p ^ k) (f : ℕ → ℕ) (a b : �
       = ((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ k = l).card := by
   have := foldl_modify_count (fun x => (a * x + b * f x) % p ^ k) (fun x => Nat.mod_lt _ hp)
     (Array.replicate (p ^ k) 0) (by simp) hl (q - 2)
-  rw [expCounts, this, Array.getD_eq_getD_getElem?, Array.getElem?_replicate, if_pos hl,
+  rw [expCounts, this, Array.getD_eq_getD_getElem?, Array.getElem?_replicate, ite_eq_left hl,
     Option.getD_some, zero_add]
 
 variable {p k : ℕ} (hp : p.Prime) (hk : 0 < k)
@@ -275,9 +275,9 @@ theorem sum_zetaCoeff_eq_counts (q : ℕ) (f : ℕ → ℕ) (a b : ℕ) {i : ℕ
         * zetaCoeff p (k' + 1) y i
       = (((Finset.Icc 1 (q - 2)).filter fun x => (a * x + b * f x) % p ^ (k' + 1) = i).card : ℤ) := by
     rw [Finset.sum_eq_single i]
-    · rw [zetaCoeff, Nat.add_sub_cancel, if_pos hi, if_pos rfl, mul_one]
+    · rw [zetaCoeff, Nat.add_sub_cancel, ite_eq_left hi, ite_eq_left rfl, mul_one]
     · intro y hy hyi
-      rw [zetaCoeff, Nat.add_sub_cancel, if_pos (Finset.mem_Ico.mp hy).2, if_neg (Ne.symm hyi), mul_zero]
+      rw [zetaCoeff, Nat.add_sub_cancel, ite_eq_left (Finset.mem_Ico.mp hy).2, ite_eq_right (Ne.symm hyi), mul_zero]
     · intro h
       exact absurd (Finset.mem_Ico.mpr ⟨Nat.zero_le _, hi⟩) h
   -- the high part
@@ -288,11 +288,11 @@ theorem sum_zetaCoeff_eq_counts (q : ℕ) (f : ℕ → ℕ) (a b : ℕ) {i : ℕ
           (a * x + b * f x) % p ^ (k' + 1) = m + i % P).card : ℤ) := by
     have hmP : m % P = 0 := by rw [hm]; exact Nat.mul_mod_left _ _
     rw [Finset.sum_eq_single (m + i % P)]
-    · rw [zetaCoeff, Nat.add_sub_cancel, if_neg (by omega), if_pos (by rw [Nat.add_mod, hmP, zero_add,
+    · rw [zetaCoeff, Nat.add_sub_cancel, ite_eq_right (by omega), ite_eq_left (by rw [Nat.add_mod, hmP, zero_add,
         Nat.mod_mod, Nat.mod_eq_of_lt hiP]), mul_neg_one]
     · intro y hy hyi
       rw [Finset.mem_Ico] at hy
-      rw [zetaCoeff, Nat.add_sub_cancel, if_neg (by omega), if_neg, mul_zero]
+      rw [zetaCoeff, Nat.add_sub_cancel, ite_eq_right (by omega), ite_eq_right, mul_zero]
       intro heq
       apply hyi
       obtain ⟨r, hr⟩ : ∃ r, y = m + r := ⟨y - m, by omega⟩
@@ -338,13 +338,13 @@ theorem sum_zetaCoeff {l : ℕ} (hl : l < p ^ k) :
     omega
   by_cases hlm : l < (p - 1) * p ^ (k - 1)
   · have hc : ∀ i, ((zetaCoeff p k l i : ℤ) : R) = if i = l then 1 else 0 := fun i => by
-      rw [zetaCoeff, if_pos hlm]
+      rw [zetaCoeff, ite_eq_left hlm]
       split_ifs <;> simp
     simp_rw [hc]
     exact unitVec_sum z hlm
   · have hc : ∀ i, ((zetaCoeff p k l i : ℤ) : R)
         = if i % p ^ (k - 1) = l % p ^ (k - 1) then (-1 : R) else 0 := fun i => by
-      rw [zetaCoeff, if_neg hlm]
+      rw [zetaCoeff, ite_eq_right hlm]
       split_ifs <;> simp
     simp_rw [hc]
     have hP : 0 < p ^ (k - 1) := pow_pos hp.pos _

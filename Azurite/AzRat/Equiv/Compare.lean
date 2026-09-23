@@ -217,15 +217,15 @@ private lemma signOrd_eq (x : AzRat) : signOrd x = compare (toRat x).num 0 := by
   · have hz : (toRat x).num = 0 := by
       have h := toRat_num_natAbs x; rw [h0, AzNat.toNat_zero] at h
       exact Int.natAbs_eq_zero.mp h
-    rw [if_pos h0, hz]; exact (compare_eq_iff_eq.mpr rfl).symm
+    rw [ite_eq_left h0, hz]; exact (compare_eq_iff_eq.mpr rfl).symm
   · have hposZ : (0 : ℤ) < x.num.toNat := by
       have : 0 < x.num.toNat :=
         Nat.pos_of_ne_zero (fun h => h0 (AzNat.toNat_injective (h.trans AzNat.toNat_zero.symm)))
       exact_mod_cast this
-    rw [if_neg h0]
+    rw [ite_eq_right h0]
     cases hs : x.sign
     · have hneg : (toRat x).num < 0 := by
-        rw [hnum, hs]; simp only [Bool.false_eq_true, if_false]; omega
+        rw [hnum, hs]; simp only [Bool.false_eq_true, ite_false]; omega
       simp [compare_lt_iff_lt.mpr hneg]
     · have hgt : (0 : ℤ) < (toRat x).num := by rw [hnum, hs]; simpa using hposZ
       simp [compare_gt_iff_gt.mpr hgt]
@@ -321,11 +321,11 @@ private lemma combine_sign (x y : AzRat) (mag : Ordering)
   · have hxnum : compare (toRat x).num 0 = Ordering.lt :=
       compare_lt_iff_lt.mpr (Rat.num_neg.mpr hx)
     have hy : toRat y < 0 := Rat.num_neg.mp (compare_lt_iff_lt.mp (h_sign_eq ▸ hxnum))
-    rw [hxnum, if_neg (by decide), h_mag, compare_neg (toRat x) (toRat y) hx hy]
+    rw [hxnum, ite_eq_right (by decide), h_mag, compare_neg (toRat x) (toRat y) hx hy]
   · have hxnum : compare (toRat x).num 0 = Ordering.gt :=
       compare_gt_iff_gt.mpr (Rat.num_pos.mpr hx)
     have hy : 0 < toRat y := Rat.num_pos.mp (compare_gt_iff_gt.mp (h_sign_eq ▸ hxnum))
-    rw [hxnum, if_pos (by decide), h_mag, compare_pos (toRat x) (toRat y) hx hy]
+    rw [hxnum, ite_eq_left (by decide), h_mag, compare_pos (toRat x) (toRat y) hx hy]
 
 /-! ### Staged correctness -/
 
@@ -341,7 +341,7 @@ private lemma cmp_sign_exit (x y : AzRat)
         ∨ (compare (toRat x).num 0 == Ordering.eq)) :
     cmp x y = compare (compare (toRat x).num 0) (compare (toRat y).num 0) := by
   unfold cmp
-  rw [signOrd_eq x, signOrd_eq y, if_pos h]
+  rw [signOrd_eq x, signOrd_eq y, ite_eq_left h]
 
 /-- Helper: the stage-1 condition is false when signs agree and `x.num ≠ 0`. -/
 private lemma stage1_not_exit (x y : AzRat)
@@ -363,8 +363,8 @@ private lemma cmp_one_cmp_ne_eq (x y : AzRat)
                         (compare (toRat y).num.natAbs (toRat y).den) ≠ Ordering.eq) :
     cmp x y = compare (toRat x) (toRat y) := by
   unfold cmp
-  rw [signOrd_eq x, signOrd_eq y, if_neg (stage1_not_exit x y h_sign_eq h_nz),
-      cmp_num_den x, cmp_num_den y, if_pos h_one_ne]
+  rw [signOrd_eq x, signOrd_eq y, ite_eq_right (stage1_not_exit x y h_sign_eq h_nz),
+      cmp_num_den x, cmp_num_den y, ite_eq_left h_one_ne]
   refine combine_sign x y _ h_sign_eq h_nz ?_
   rw [compare_natAbs_den_eq (toRat x), compare_natAbs_den_eq (toRat y)]
   rw [compare_natAbs_den_eq (toRat x), compare_natAbs_den_eq (toRat y)] at h_one_ne
@@ -380,13 +380,13 @@ private lemma cmp_nd_cmp_ne_eq (x y : AzRat)
                        (compare (toRat x).den (toRat y).den) ≠ Ordering.eq) :
     cmp x y = compare (toRat x) (toRat y) := by
   unfold cmp
-  rw [signOrd_eq x, signOrd_eq y, if_neg (stage1_not_exit x y h_sign_eq h_nz),
-      cmp_num_den x, cmp_num_den y, if_neg (by rwa [ne_eq, not_not]),
+  rw [signOrd_eq x, signOrd_eq y, ite_eq_right (stage1_not_exit x y h_sign_eq h_nz),
+      cmp_num_den x, cmp_num_den y, ite_eq_right (by rwa [ne_eq, not_not]),
       cmp_num_num x y, cmp_den_den x y]
-  rw [if_neg (by
+  rw [ite_eq_right (by
     rintro ⟨h1, h2⟩
     exact h_not_both ⟨compare_eq_iff_eq.mp (beq_iff_eq.mp h1), compare_eq_iff_eq.mp (beq_iff_eq.mp h2)⟩)]
-  rw [if_pos h_nd_ne]
+  rw [ite_eq_left h_nd_ne]
   exact combine_sign x y _ h_sign_eq h_nz
     (nd_cmp_of_ne (toRat x) (toRat y) (toRat_num_ne_zero x h_nz) h_nd_ne)
 
@@ -402,13 +402,13 @@ private lemma cmp_log_cmp_ne_eq (x y : AzRat)
     cmp x y = compare (toRat x) (toRat y) := by
   have hy_nz : y.num ≠ 0 := y_num_ne_zero x y h_sign_eq h_nz
   unfold cmp
-  rw [signOrd_eq x, signOrd_eq y, if_neg (stage1_not_exit x y h_sign_eq h_nz),
-      cmp_num_den x, cmp_num_den y, if_neg (by rwa [ne_eq, not_not]),
+  rw [signOrd_eq x, signOrd_eq y, ite_eq_right (stage1_not_exit x y h_sign_eq h_nz),
+      cmp_num_den x, cmp_num_den y, ite_eq_right (by rwa [ne_eq, not_not]),
       cmp_num_num x y, cmp_den_den x y]
-  rw [if_neg (by
+  rw [ite_eq_right (by
     rintro ⟨h1, h2⟩
     exact h_not_both ⟨compare_eq_iff_eq.mp (beq_iff_eq.mp h1), compare_eq_iff_eq.mp (beq_iff_eq.mp h2)⟩)]
-  rw [if_neg (by rwa [ne_eq, not_not]), if_pos h_log_ne]
+  rw [ite_eq_right (by rwa [ne_eq, not_not]), ite_eq_left h_log_ne]
   exact combine_sign x y _ h_sign_eq h_nz (log_cmp_of_ne x y h_nz hy_nz h_log_ne)
 
 /-- **Correctness of `AzRat.cmp`.** -/
@@ -440,10 +440,10 @@ theorem cmp_eq_compare (x y : AzRat) : cmp x y = compare (toRat x) (toRat y) := 
           h3.1 h3.2
       rw [hxy, show compare (toRat y) (toRat y) = Ordering.eq from compare_eq_iff_eq.mpr rfl]
       unfold cmp
-      rw [signOrd_eq x, signOrd_eq y, if_neg (stage1_not_exit x y h_sign_eq h_nz),
-          cmp_num_den x, cmp_num_den y, if_neg (by rwa [ne_eq, not_not]),
+      rw [signOrd_eq x, signOrd_eq y, ite_eq_right (stage1_not_exit x y h_sign_eq h_nz),
+          cmp_num_den x, cmp_num_den y, ite_eq_right (by rwa [ne_eq, not_not]),
           cmp_num_num x y, cmp_den_den x y]
-      rw [if_pos ⟨beq_iff_eq.mpr (compare_eq_iff_eq.mpr h3.1),
+      rw [ite_eq_left ⟨beq_iff_eq.mpr (compare_eq_iff_eq.mpr h3.1),
                   beq_iff_eq.mpr (compare_eq_iff_eq.mpr h3.2)⟩]
     · by_cases h4 : compare (compare (toRat x).num.natAbs (toRat y).num.natAbs)
                             (compare (toRat x).den (toRat y).den) ≠ Ordering.eq
@@ -454,13 +454,13 @@ theorem cmp_eq_compare (x y : AzRat) : cmp x y = compare (toRat x) (toRat y) := 
       rw [not_not] at h5
       -- final stage: cross-multiply
       unfold cmp
-      rw [signOrd_eq x, signOrd_eq y, if_neg (stage1_not_exit x y h_sign_eq h_nz),
-          cmp_num_den x, cmp_num_den y, if_neg (by rwa [ne_eq, not_not]),
+      rw [signOrd_eq x, signOrd_eq y, ite_eq_right (stage1_not_exit x y h_sign_eq h_nz),
+          cmp_num_den x, cmp_num_den y, ite_eq_right (by rwa [ne_eq, not_not]),
           cmp_num_num x y, cmp_den_den x y]
-      rw [if_neg (by
+      rw [ite_eq_right (by
         rintro ⟨h1', h2'⟩
         exact h3 ⟨compare_eq_iff_eq.mp (beq_iff_eq.mp h1'), compare_eq_iff_eq.mp (beq_iff_eq.mp h2')⟩)]
-      rw [if_neg (by rwa [ne_eq, not_not]), if_neg (by rwa [ne_eq, not_not]), cmp_cross x y]
+      rw [ite_eq_right (by rwa [ne_eq, not_not]), ite_eq_right (by rwa [ne_eq, not_not]), cmp_cross x y]
       exact combine_sign x y _ h_sign_eq h_nz (cross_mul_eq_compare_abs (toRat x) (toRat y))
 
 end Azurite.AzRat

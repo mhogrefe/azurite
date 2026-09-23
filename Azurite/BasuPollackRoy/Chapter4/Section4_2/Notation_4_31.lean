@@ -1,7 +1,7 @@
 import Azurite.BasuPollackRoy.Chapter4.Section4_2.Notation_4_27
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_32
 import Azurite.BasuPollackRoy.Chapter2.Section2_2.Notation_2_34
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 import Mathlib.Data.List.TakeWhile
 
 /-!
@@ -113,9 +113,9 @@ theorem PmV_eq_of_forall_ne_zero :
     have hsign : (SignType.sign (sp * sq) : ℤ)
         + 2 * (if sp * sq < 0 then (1 : ℤ) else 0) = 1 := by
       rcases lt_trichotomy (sp * sq) 0 with hlt | heq | hgt
-      · rw [if_pos hlt, sign_neg hlt]; decide
+      · rw [ite_eq_left hlt, sign_neg hlt]; decide
       · exact absurd heq (mul_ne_zero hsp hsq)
-      · rw [if_neg (not_lt.mpr hgt.le), sign_pos hgt]; decide
+      · rw [ite_eq_right (not_lt.mpr hgt.le), sign_pos hgt]; decide
     rw [PmV_cons_cons_ne sp sq tl hsq, Var_of_forall_ne_zero h0, varNonzero_cons_cons,
       ← Var_of_forall_ne_zero (fun x hx => h0 x (List.mem_cons_of_mem sp hx))]
     simp only [List.length_cons] at hIH ⊢
@@ -178,9 +178,9 @@ private theorem Var_negInf_add_Var_posInf :
           + (if Q.leadingCoeff * Q'.leadingCoeff < 0 then (1 : ℕ) else 0) = 1 := by
       rw [hprod]
       rcases lt_trichotomy (Q.leadingCoeff * Q'.leadingCoeff) 0 with hlt | heq | hgt
-      · rw [if_neg (by simpa using hlt.le), if_pos hlt]
+      · rw [ite_eq_right (by simpa using hlt.le), ite_eq_left hlt]
       · exact absurd heq (mul_ne_zero hlcQ hlcQ')
-      · rw [if_pos (by simpa using hgt), if_neg (by simpa using hgt.le)]
+      · rw [ite_eq_left (by simpa using hgt), ite_eq_right (by simpa using hgt.le)]
     simp only [List.map_cons, List.length_cons] at hIH ⊢
     rw [Var_cons_cons_of_ne _ _ _ hnegAll, Var_cons_cons_of_ne _ _ _ hlcAll]
     beta_reduce at hIH ⊢

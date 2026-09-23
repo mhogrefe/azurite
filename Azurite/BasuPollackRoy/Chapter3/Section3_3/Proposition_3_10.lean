@@ -242,7 +242,7 @@ theorem proposition_3_10_pos {S : Set (Fin k → R)} (hS : IsSemialgebraicSet S)
     with hfdef
   have hf_spec : ∀ u (h : u ∈ U),
       f u ∈ Set.Ioo a b ∧ (specializeAt P u).eval (f u) = 0 := by
-    intro u h; rw [hfdef]; simp only [dif_pos h]; exact ((hexU u h).exists).choose_spec
+    intro u h; rw [hfdef]; simp only [dite_eq_left h]; exact ((hexU u h).exists).choose_spec
   have hf_eq : ∀ u (h : u ∈ U) (c : R), c ∈ Set.Ioo a b → (specializeAt P u).eval c = 0 →
       c = f u := fun u h c hc hc0 => (hexU u h).unique ⟨hc, hc0⟩ (hf_spec u h)
   -- `f x = y`
@@ -269,7 +269,7 @@ theorem proposition_3_10_pos {S : Set (Fin k → R)} (hS : IsSemialgebraicSet S)
         ∩ (S ∩ sliceFun P a ⁻¹' {v | MvPolynomial.eval v (MvPolynomial.X 0) < 0})
         ∩ (S ∩ sliceFun P b ⁻¹' {v | 0 < MvPolynomial.eval v (MvPolynomial.X 0)}) := by
       ext u
-      simp only [hUdef, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_preimage,
+      simp only [hUdef, Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_preimage,
         mem_openBall_iff_norm hρ, sliceFun, constPt, MvPolynomial.eval_X]
       constructor
       · rintro ⟨hS', hn, ha', hb'⟩; exact ⟨⟨⟨hS', hn⟩, hS', ha'⟩, hS', hb'⟩
@@ -324,7 +324,7 @@ theorem proposition_3_10_pos {S : Set (Fin k → R)} (hS : IsSemialgebraicSet S)
     rw [IsSemialgebraicFunction]
     convert hGsa using 1
     ext z
-    simp only [mem_funGraph, setProd, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_preimage,
+    simp only [mem_funGraph, setProd, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_preimage,
       Set.mem_univ, and_true, scalarFun, map_sub, MvPolynomial.eval_X, MvPolynomial.eval_C]
     have hbiv : bivariateEval P z 0
         = (specializeAt P (z ∘ Fin.castAdd 1)).eval (z (Fin.natAdd k 0)) := rfl

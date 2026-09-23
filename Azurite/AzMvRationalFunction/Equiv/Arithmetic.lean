@@ -45,13 +45,13 @@ theorem toMvRatFunc_inv (r : AzMvRationalFunction n ord) :
   show toMvRatFunc (inv r) = _
   rw [inv]
   by_cases h : r.factor = 0
-  · rw [dif_pos h]
+  · rw [dite_eq_left h]
     have hr : toMvRatFunc r = 0 := by
       rw [toMvRatFunc, h]
       have h0 : Azurite.AzRat.toRat 0 = 0 := rfl
       rw [h0, map_zero, zero_mul]
     rw [hr, inv_zero, toMvRatFunc_zero]
-  · rw [dif_neg h, toMvRatFunc, toMvRatFunc]
+  · rw [dite_eq_right h, toMvRatFunc, toMvRatFunc]
     show algebraMap ℚ (FractionRing (MvPolynomial (Fin n) ℚ))
           (Azurite.AzRat.toRat r.factor⁻¹)
         * (algebraMap (MvPolynomial (Fin n) ℚ) (FractionRing (MvPolynomial (Fin n) ℚ))
@@ -102,8 +102,8 @@ private theorem mul_eq_of_guard (r s : AzMvRationalFunction n ord)
       Azurite.ExactDiv.exactDiv r.den (signNorm (AzMvPolynomial.gcd s.num r.den))
         * Azurite.ExactDiv.exactDiv s.den (signNorm (AzMvPolynomial.gcd r.num s.den)),
       h1, h2, h3, h4, h5, h6⟩ := by
-  simp only [mul, if_neg hrs]
-  rw [dif_pos (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+  simp only [mul, ite_eq_right hrs]
+  rw [dite_eq_left (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
 
 set_option maxHeartbeats 1600000 in
 /-- **Multiplication is correct**: `toMvRatFunc (r * s) = toMvRatFunc r * toMvRatFunc s`
@@ -113,12 +113,12 @@ theorem toMvRatFunc_mul (r s : AzMvRationalFunction n ord) :
     toMvRatFunc (r * s) = toMvRatFunc r * toMvRatFunc s := by
   show toMvRatFunc (mul r s) = _
   by_cases hr : r.factor = 0
-  · have hmz : mul r s = 0 := by rw [mul, if_pos (Or.inl hr)]
+  · have hmz : mul r s = 0 := by rw [mul, ite_eq_left (Or.inl hr)]
     have hr0 : toMvRatFunc r = 0 := by
       rw [toMvRatFunc, hr, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [hmz, toMvRatFunc_zero, hr0, zero_mul]
   by_cases hs : s.factor = 0
-  · have hmz : mul r s = 0 := by rw [mul, if_pos (Or.inr hs)]
+  · have hmz : mul r s = 0 := by rw [mul, ite_eq_left (Or.inr hs)]
     have hs0 : toMvRatFunc s = 0 := by
       rw [toMvRatFunc, hs, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [hmz, toMvRatFunc_zero, hs0, mul_zero]
@@ -476,12 +476,12 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
   classical
   show toMvRatFunc (add r s) = _
   by_cases hr : r.factor = 0
-  · have h0 : add r s = s := by rw [add, if_pos hr]
+  · have h0 : add r s = s := by rw [add, ite_eq_left hr]
     have hr0 : toMvRatFunc r = 0 := by
       rw [toMvRatFunc, hr, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [h0, hr0, zero_add]
   by_cases hs : s.factor = 0
-  · have h0 : add r s = r := by rw [add, if_neg hr, if_pos hs]
+  · have h0 : add r s = r := by rw [add, ite_eq_right hr, ite_eq_left hs]
     have hs0 : toMvRatFunc s = 0 := by
       rw [toMvRatFunc, hs, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [h0, hs0, add_zero]
@@ -528,9 +528,9 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
     by_cases hT : fastT r s = 0
     · -- the combination vanishes: both sides are `0`
       have hres : add r s = 0 := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, fastT_def,
-          if_pos hdeg]
-        rw [if_pos hT]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, fastT_def,
+          ite_eq_left hdeg]
+        rw [ite_eq_left hT]
       rw [hres, toMvRatFunc_zero, sum_eq r s, ← toMvPolyQ_fastT r s, hT, toMvPolyQ_zero,
         map_zero, zero_div]
     · -- guard discharge and value
@@ -586,8 +586,8 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
       have hres : add r s = ⟨AzRat.ofAzInts (signedIntContent (fastT r s))
           (ratDen r.factor * ratDen s.factor),
           primPos (fastT r s), r.den * s.den, h1g, h2g, h3g, h4g, hcop, h6g⟩ := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, fastT_def, if_pos hdeg]
-        rw [if_neg hT, dif_pos (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, fastT_def, ite_eq_left hdeg]
+        rw [ite_eq_right hT, dite_eq_left (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
       have hφL : algebraMap (MvPolynomial (Fin n) ℚ) (FractionRing (MvPolynomial (Fin n) ℚ))
           (MvPolynomial.C (((ratDen r.factor * ratDen s.factor).toInt : ℚ))
             * toMvPolyQ (r.den * s.den)) ≠ 0 :=
@@ -653,9 +653,9 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
     by_cases hT₀ : slowT₀ r s = 0
     · -- the combination vanishes: both sides are `0`
       have hres : add r s = 0 := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, slowD₁_def,
-          slowD₂_def, slowT₀_def, if_neg hdeg, if_pos hT₀]
-        rw [if_pos trivial]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, slowD₁_def,
+          slowD₂_def, slowT₀_def, ite_eq_right hdeg, ite_eq_left hT₀]
+        rw [ite_eq_left trivial]
       rw [hres, toMvRatFunc_zero, sum_eq r s, hPfac, hT₀, toMvPolyQ_zero, mul_zero,
         map_zero, zero_div]
     · -- guard discharge and value
@@ -753,9 +753,9 @@ theorem toMvRatFunc_add (r s : AzMvRationalFunction n ord) :
       have hres : add r s = ⟨AzRat.ofAzInts (signedIntContent (slowT r s))
           (ratDen r.factor * ratDen s.factor),
           primPos (slowT r s), slowD₁ r s * slowD₂H r s, h1g, h2g, h3g, h4g, hcop, h6g⟩ := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, slowD₁_def,
-          slowD₂_def, slowT₀_def, slowH_def, slowT_def, slowD₂H_def, if_neg hdeg, if_neg hT₀]
-        rw [if_neg hT'0, dif_pos (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, slowD₁_def,
+          slowD₂_def, slowT₀_def, slowH_def, slowT_def, slowD₂H_def, ite_eq_right hdeg, ite_eq_right hT₀]
+        rw [ite_eq_right hT'0, dite_eq_left (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
       have hφL : algebraMap (MvPolynomial (Fin n) ℚ) (FractionRing (MvPolynomial (Fin n) ℚ))
           (MvPolynomial.C (((ratDen r.factor * ratDen s.factor).toInt : ℚ))
             * toMvPolyQ (slowD₁ r s * slowD₂H r s)) ≠ 0 :=
@@ -875,7 +875,7 @@ theorem toMvRatFunc_pow (r : AzMvRationalFunction n ord) (m : ℕ) :
   have hres : pow r m
       = ⟨r.factor.pow m, r.num ^ m, r.den ^ m, h1g, h2g, h3g, h4g, h5g, h6g⟩ := by
     simp only [pow]
-    rw [dif_pos (⟨h1g, h2g, h3g, h4g, h5g, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+    rw [dite_eq_left (⟨h1g, h2g, h3g, h4g, h5g, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
   rw [hres]
   show algebraMap ℚ (FractionRing (MvPolynomial (Fin n) ℚ))
         (Azurite.AzRat.toRat (r.factor.pow m))
@@ -892,8 +892,8 @@ theorem toMvRatFunc_zpow (r : AzMvRationalFunction n ord) (z : ℤ) :
     toMvRatFunc (zpow r z) = toMvRatFunc r ^ z := by
   rw [zpow]
   by_cases hz : 0 ≤ z
-  · rw [if_pos hz, toMvRatFunc_pow, ← zpow_natCast, Int.toNat_of_nonneg hz]
-  · rw [if_neg hz, toMvRatFunc_inv, toMvRatFunc_pow, ← zpow_natCast,
+  · rw [ite_eq_left hz, toMvRatFunc_pow, ← zpow_natCast, Int.toNat_of_nonneg hz]
+  · rw [ite_eq_right hz, toMvRatFunc_inv, toMvRatFunc_pow, ← zpow_natCast,
       Int.toNat_of_nonneg (by omega), ← zpow_neg, neg_neg]
 
 /-- `ofMvRatFunc` version: pulling back a `ℕ`-power. -/

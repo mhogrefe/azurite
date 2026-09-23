@@ -241,7 +241,7 @@ theorem tarski_eq_iff_some_disjunct
     obtain ⟨Ptil, hPtil_mem, hPtil_deg⟩ :=
       Tru_covers_degrees hinj P_split hsplit_ne y hP_y_ne
     have h_deg : y ∈ (degFormula P_split (↑Ptil.natDegree)).realization (C := R) := by
-      rw [realization_degFormula, Set.mem_setOf_eq]; exact hPtil_deg
+      rw [realization_degFormula, Set.mem_ofPred_eq]; exact hPtil_deg
     have hPtil_ne : Ptil ≠ 0 := fun h => zero_not_mem_Tru _ hsplit_ne (h ▸ hPtil_mem)
     obtain ⟨hP_y_eq, hlc⟩ := degFormula_Tru_spec P_split Ptil hPtil_mem hPtil_ne y h_deg
     obtain ⟨path, h_path, h_leaf⟩ :=
@@ -253,7 +253,7 @@ theorem tarski_eq_iff_some_disjunct
       rw [mem_allSignPatterns_iff, sigPat_def, List.length_map]
     have h_sign : y ∈ (Formula.sturmLeafSignFormula (Ptil :: path) sigPat).realization (C := R) := by
       rw [Formula.realization_sturmLeafSignFormula]
-      simp only [Set.mem_setOf_eq]
+      simp only [Set.mem_ofPred_eq]
       intro ps hps
       rw [sigPat_def, zip_map_map_diag, List.mem_map] at hps
       obtain ⟨p, _, rfl⟩ := hps
@@ -291,9 +291,9 @@ theorem tarskiFormula_realization
         tarskiQuery (familyPow (fun i => (Q i).map (MvPolynomial.aeval y).toRingHom) α)
           (P_split.map (MvPolynomial.aeval y).toRingHom) = c} := by
   ext y
-  rw [Set.mem_setOf_eq, tarski_eq_iff_some_disjunct P_split Q α c hinj y]
+  rw [Set.mem_ofPred_eq, tarski_eq_iff_some_disjunct P_split Q α c hinj y]
   unfold tarskiFormula
-  rw [Formula.realization_disjListO, Set.mem_setOf_eq]
+  rw [Formula.realization_disjListO, Set.mem_ofPred_eq]
   simp only [List.mem_map]
   constructor
   · rintro ⟨Φ, ⟨⟨Ptil, path, sigPat⟩, h_mem, rfl⟩, hy_in⟩

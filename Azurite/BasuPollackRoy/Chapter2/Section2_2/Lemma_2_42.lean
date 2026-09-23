@@ -54,7 +54,7 @@ private lemma natDegree_quadFromRoots (a b : R) :
 lemma isNormal_quadFromRoots_iff (a b : R) :
     IsNormal (quadFromRoots a b) ↔ (a, b) ∈ ConeB := by
   unfold ConeB
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · intro h
     refine ⟨?_, ?_⟩
@@ -97,7 +97,7 @@ lemma isNormal_quadFromRoots_iff (a b : R) :
           have hi : i = 1 := by omega
           subst hi
           rw [coeff_quadFromRoots]
-          simp only [show (1 : ℕ) ≠ 0 from by decide, if_false, if_true]
+          simp only [show (1 : ℕ) ≠ 0 from by decide, ite_false, ite_true]
           by_contra hnot
           push Not at hnot
           have ha_eq : a = 0 := le_antisymm ha (by linarith)

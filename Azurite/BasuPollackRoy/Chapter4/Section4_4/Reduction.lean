@@ -28,18 +28,18 @@ otherwise leave `P` unchanged. -/
 noncomputable def Red (m : MonomialOrder (Fin k)) (P : MvPolynomial (Fin k) K)
     (α : Fin k →₀ ℕ) (G : MvPolynomial (Fin k) K) : MvPolynomial (Fin k) K :=
   if m.degree G ≤ α then
-    P - monomial (α - m.degree G) (coeff α P / m.leadingCoeff G) * G
+    P - monomial (α - m.degree G) (P.coeff α / m.leadingCoeff G) * G
   else P
 
 theorem Red_of_le (m : MonomialOrder (Fin k)) (P : MvPolynomial (Fin k) K)
     {α : Fin k →₀ ℕ} (G : MvPolynomial (Fin k) K) (h : m.degree G ≤ α) :
-    Red m P α G = P - monomial (α - m.degree G) (coeff α P / m.leadingCoeff G) * G := by
-  rw [Red, if_pos h]
+    Red m P α G = P - monomial (α - m.degree G) (P.coeff α / m.leadingCoeff G) * G := by
+  rw [Red, ite_eq_left h]
 
 theorem Red_of_not_le (m : MonomialOrder (Fin k)) (P : MvPolynomial (Fin k) K)
     {α : Fin k →₀ ℕ} (G : MvPolynomial (Fin k) K) (h : ¬ m.degree G ≤ α) :
     Red m P α G = P := by
-  rw [Red, if_neg h]
+  rw [Red, ite_eq_right h]
 
 /-- **`Q` is a reduction of `P` modulo `𝒢`**: `Q = Red(P, X^α, G)` for some `G ∈ 𝒢` and some
 monomial `X^α` of `P` (`α ∈ P.support`). -/

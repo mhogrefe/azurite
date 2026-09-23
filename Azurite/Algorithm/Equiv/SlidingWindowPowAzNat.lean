@@ -43,10 +43,10 @@ theorem slidingWindowPowAzNatAux_eq [Monoid M] [Square M] (a : M) (n : AzNat) :
     have hnext : (if n.testBit k then Square.square (a ^ h) * a else Square.square (a ^ h))
         = a ^ (h * 2 + (n.testBit k).toNat) := by
       cases n.testBit k
-      · simp only [Bool.false_eq_true, if_false, Square.square_eq, ← pow_add,
+      · simp only [Bool.false_eq_true, ite_false, Square.square_eq, ← pow_add,
           Bool.toNat_false, Nat.add_zero]
         congr 1; ring
-      · simp only [if_true, Square.square_eq, ← pow_add, Bool.toNat_true]
+      · simp only [ite_true, Square.square_eq, ← pow_add, Bool.toNat_true]
         rw [← pow_succ]; congr 1; ring
     have hstep : slidingWindowPowAzNatAux a n (k + 1) (a ^ h)
         = slidingWindowPowAzNatAux a n k (a ^ (h * 2 + (n.testBit k).toNat)) := by

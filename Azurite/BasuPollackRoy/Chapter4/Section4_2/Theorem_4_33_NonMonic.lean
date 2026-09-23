@@ -149,8 +149,8 @@ private theorem prod_ite_one_const (c : D) (m N : ℕ) :
       rw [← ih]; exact Finset.prod_congr rfl (fun x _ => by rw [Fin.val_castSucc])
     rw [hcong]
     by_cases h : n < m
-    · rw [if_pos h, mul_one]; congr 1; omega
-    · rw [if_neg h, show n + 1 - m = (n - m) + 1 by omega, pow_succ]
+    · rw [ite_eq_left h, mul_one]; congr 1; omega
+    · rw [ite_eq_right h, show n + 1 - m = (n - m) + 1 by omega, pow_succ]
 
 /-- **`sRes` homogeneity (determinant branch).** Scaling the second argument by a
 constant `c ≠ 0` multiplies `sRes_j(P, Q)` (for `j ≤ deg Q`) by `c^{p-j}`: the
@@ -160,7 +160,7 @@ theorem sRes_smul_right_det {c : D} (hc : c ≠ 0) (P Q : D[X]) {j : ℕ} (hj : 
   have hQc : (Polynomial.C c * Q).natDegree = Q.natDegree := by
     rw [Polynomial.natDegree_C_mul hc]
   unfold sRes
-  rw [if_pos hj, if_pos (show j ≤ (Polynomial.C c * Q).natDegree by rw [hQc]; exact hj)]
+  rw [ite_eq_left hj, ite_eq_left (show j ≤ (Polynomial.C c * Q).natDegree by rw [hQc]; exact hj)]
   have hdim : P.natDegree + Q.natDegree - 2 * j
       = P.natDegree + (Polynomial.C c * Q).natDegree - 2 * j := by rw [hQc]
   set e := finCongr hdim with he
@@ -174,8 +174,8 @@ theorem sRes_smul_right_det {c : D} (hc : c ≠ 0) (P Q : D[X]) {j : ℕ} (hj : 
       finCongr_apply, Fin.val_cast, Fin.val_castLE, hv]
     rw [hQc]
     by_cases hc' : i.val < Q.natDegree - j
-    · rw [if_pos hc', if_pos hc', if_pos hc', one_mul]
-    · rw [if_neg hc', if_neg hc', if_neg hc',
+    · rw [ite_eq_left hc', ite_eq_left hc', ite_eq_left hc', one_mul]
+    · rw [ite_eq_right hc', ite_eq_right hc', ite_eq_right hc',
         show X ^ (i.val - (Q.natDegree - j)) * (Polynomial.C c * Q)
           = Polynomial.C c * (X ^ (i.val - (Q.natDegree - j)) * Q) by ring,
         Polynomial.coeff_C_mul]
@@ -201,8 +201,8 @@ theorem sRes_sign_smul_right {c : K} (hc : 0 < c) (P Q : K[X]) (j : ℕ) :
   by_cases hj : j ≤ Q.natDegree
   · rw [sRes_smul_right_det hc0 P Q hj, sign_mul, sign_pos (pow_pos hc _), one_mul]
   · have hgap : sRes P (Polynomial.C c * Q) j = sRes P Q j := by
-      rw [sRes, sRes, if_neg (show ¬ j ≤ (Polynomial.C c * Q).natDegree by rw [hQc]; exact hj),
-        if_neg hj, hQc]
+      rw [sRes, sRes, ite_eq_right (show ¬ j ≤ (Polynomial.C c * Q).natDegree by rw [hQc]; exact hj),
+        ite_eq_right hj, hQc]
     rw [hgap]
 
 /-- **`PmV` invariance.** Scaling the second argument by a positive constant leaves

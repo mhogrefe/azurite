@@ -104,9 +104,9 @@ private theorem list_foldl_count (l : List AzInt) (a : ℕ) :
     rw [List.foldl_cons, ih, List.countP_cons]
     by_cases hc : (c == 0) = true
     · have h0 : ((c != 0) = true) = False := by simp [bne, hc]
-      rw [if_pos hc]; simp only [h0]; simp
+      rw [ite_eq_left hc]; simp only [h0]; simp
     · have h1 : (c != 0) = true := by simp [bne]; simpa using hc
-      rw [if_neg hc]; simp only [h1]; simp; omega
+      rw [ite_eq_right hc]; simp only [h1]; simp; omega
 
 /-- Univariate `numTerms` counts nonzero coefficients. -/
 private theorem uni_numTerms_eq_countP (p : AzPolynomial AzInt) :
@@ -130,10 +130,10 @@ private theorem termsBelow_length (i : Fin n) (coeffs : Array AzInt) (N : ℕ)
         rw [List.take_add_one, List.getElem?_eq_getElem (by simpa using hk)]; rfl,
       List.countP_append]
     by_cases hc : (coeffs[k]?).getD 0 = 0
-    · rw [dif_pos hc, ih (by omega)]
+    · rw [dite_eq_left hc, ih (by omega)]
       have hval : ((coeffs[k]'hk) != 0) = false := by rw [← hget]; simp [hc]
       simp [hval]
-    · rw [dif_neg hc, List.length_cons, ih (by omega)]
+    · rw [dite_eq_right hc, List.length_cons, ih (by omega)]
       have hval : ((coeffs[k]'hk) != 0) = true := by rw [← hget]; simpa using hc
       simp [hval]
 
@@ -151,7 +151,7 @@ private theorem totalDegree_lift (i : Fin n) (p : AzPolynomial AzInt) :
     (p.toAzMvPolynomial i ord).totalDegree = p.natDegree := by
   rcases Nat.eq_zero_or_pos p.coeffs.size with h | h
   · have hz : p.toAzMvPolynomial i ord = (0 : AzMvPolynomial n AzInt ord) := by
-      unfold AzPolynomial.toAzMvPolynomial; rw [dif_pos h]; rfl
+      unfold AzPolynomial.toAzMvPolynomial; rw [dite_eq_left h]; rfl
     rw [hz]; simp [AzMvPolynomial.totalDegree, AzPolynomial.natDegree, h]
   · rw [Azurite.totalDegree_image i p h, AzPolynomial.natDegree]
 
@@ -167,7 +167,7 @@ private theorem ofVarPow_countP_le_one (i : Fin n) (k : ℕ) :
       intro j _
       by_cases hij : i = j
       · subst hij; simp [Function.comp_apply, bne_iff_ne, hk.ne']
-      · simp only [Function.comp_apply, bne_iff_ne, beq_iff_eq, if_neg hij]
+      · simp only [Function.comp_apply, bne_iff_ne, beq_iff_eq, ite_eq_right hij]
         constructor
         · intro h; exact absurd rfl h
         · intro h; exact absurd h.symm hij
@@ -216,7 +216,7 @@ private theorem denBare_iff (i : Fin n) (p : AzPolynomial AzInt) :
     have hmemtop : mtop ∈ (p.toAzMvPolynomial i ord).terms.toList := by
       rw [Azurite.image_terms_toList]
       have hs : p.coeffs.size = (p.coeffs.size - 1) + 1 := by omega
-      rw [hs, Azurite.termsBelow_succ, dif_neg hne]
+      rw [hs, Azurite.termsBelow_succ, dite_eq_right hne]
       exact List.mem_cons_self
     rw [or_iff_right hd, or_iff_right hd]
     apply and_congr_right
@@ -248,9 +248,9 @@ private theorem wrapComponent_toList (hn : 0 < n) [Fact (n ≤ 26)] (p : AzPolyn
   unfold Azurite.AzRationalFunction.wrapComponent wrapComponent
   rw [numTerms_agree (⟨0, hn⟩ : Fin n) p]
   by_cases hc : (p.toAzMvPolynomial (⟨0, hn⟩ : Fin n) ord).numTerms ≤ 1
-  · rw [if_pos hc, if_pos hc]
+  · rw [ite_eq_left hc, ite_eq_left hc]
     exact AzMvPolynomial.toChars_toAzMvPolynomial_align hn p
-  · rw [if_neg hc, if_neg hc, String.toList_append, String.toList_append,
+  · rw [ite_eq_right hc, ite_eq_right hc, String.toList_append, String.toList_append,
       AzMvPolynomial.toChars_toAzMvPolynomial_align hn p]
     rfl
 
@@ -261,9 +261,9 @@ private theorem wrapDenominator_toList (hn : 0 < n) [Fact (n ≤ 26)] (p : AzPol
       = wrapDenominator (XyzVar n) (p.toAzMvPolynomial (⟨0, hn⟩ : Fin n) ord) := by
   unfold Azurite.AzRationalFunction.wrapDenominator wrapDenominator
   by_cases hc : denBare (p.toAzMvPolynomial (⟨0, hn⟩ : Fin n) ord)
-  · rw [if_pos hc, if_pos ((denBare_iff (⟨0, hn⟩ : Fin n) p).mp hc)]
+  · rw [ite_eq_left hc, ite_eq_left ((denBare_iff (⟨0, hn⟩ : Fin n) p).mp hc)]
     exact AzMvPolynomial.toChars_toAzMvPolynomial_align hn p
-  · rw [if_neg hc, if_neg (fun h => hc ((denBare_iff (⟨0, hn⟩ : Fin n) p).mpr h)),
+  · rw [ite_eq_right hc, ite_eq_right (fun h => hc ((denBare_iff (⟨0, hn⟩ : Fin n) p).mpr h)),
       String.toList_append, String.toList_append,
       AzMvPolynomial.toChars_toAzMvPolynomial_align hn p]
     rfl
@@ -289,9 +289,9 @@ theorem toString_eq_toStrWith (hn : 0 < n) [Fact (n ≤ 26)] (r : AzRationalFunc
   rw [displayNum_toAzMvRationalFunction, displayDen_toAzMvRationalFunction,
     beq_toAzMvPolynomial_one]
   by_cases hd : (Azurite.AzRationalFunction.displayDen r == 1) = true
-  · rw [if_pos hd, if_pos hd]
+  · rw [ite_eq_left hd, ite_eq_left hd]
     exact AzMvPolynomial.toChars_toAzMvPolynomial_align hn _
-  · rw [if_neg hd, if_neg hd, String.toList_append, String.toList_append,
+  · rw [ite_eq_right hd, ite_eq_right hd, String.toList_append, String.toList_append,
       wrapComponent_toList (ord := ord) hn (Azurite.AzRationalFunction.displayNum r),
       wrapDenominator_toList (ord := ord) hn (Azurite.AzRationalFunction.displayDen r),
       show ("/" : String).toList = ['/'] from rfl, List.append_assoc]

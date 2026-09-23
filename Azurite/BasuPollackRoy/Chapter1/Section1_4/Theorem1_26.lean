@@ -85,7 +85,7 @@ theorem existsQE_two_fields
           conjFormFormula PQ.1 PQ.2)).realization (C := C) := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -112,7 +112,7 @@ theorem existsQE_two_fields
           conjFormFormula PQ.1 PQ.2)).realization (C := C') := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -207,7 +207,7 @@ theorem existsQE_two_fields_preserves_sentence
           conjFormFormula PQ.1 PQ.2)).realization (C := C) := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -234,7 +234,7 @@ theorem existsQE_two_fields_preserves_sentence
           conjFormFormula PQ.1 PQ.2)).realization (C := C') := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -404,7 +404,7 @@ theorem existsQE_two_fields_preserves_sentence_relative
           conjFormFormula PQ.1 PQ.2)).realization (C := C) := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -431,7 +431,7 @@ theorem existsQE_two_fields_preserves_sentence_relative
           conjFormFormula PQ.1 PQ.2)).realization (C := C') := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩
@@ -835,7 +835,7 @@ theorem qf_finZero_atom_transfer
   rcases hb : a.isEq with _ | _
   · -- a.isEq = false: atom is "≠ 0".
     simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
-      Bool.false_eq_true, if_false, Set.mem_setOf_eq]
+      Bool.false_eq_true, ite_false, Set.mem_ofPred_eq]
     rw [hbridge]
     constructor
     · intro h heq
@@ -847,8 +847,8 @@ theorem qf_finZero_atom_transfer
       apply h
       rw [heq, map_zero]
   · -- a.isEq = true: atom is "= 0".
-    simp only [Formula.realization, Formula.interpret_fieldAtom, hb, if_true,
-      Set.mem_setOf_eq]
+    simp only [Formula.realization, Formula.interpret_fieldAtom, hb, ite_true,
+      Set.mem_ofPred_eq]
     rw [hbridge]
     constructor
     · intro h; rw [h, map_zero]
@@ -1027,11 +1027,11 @@ theorem qf_finZero_realization_transfer_general
     rcases hb : a.isEq with _ | _
     · -- atom is "≠ 0"
       simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
-        Bool.false_eq_true, if_false, Set.mem_setOf_eq]
+        Bool.false_eq_true, ite_false, Set.mem_ofPred_eq]
       exact not_congr hC_iff |>.trans (not_congr hC'_iff).symm
     · -- atom is "= 0"
       simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
-        if_true, Set.mem_setOf_eq]
+        ite_true, Set.mem_ofPred_eq]
       rw [hC_iff, hC'_iff]
   | not Φ ih =>
     have hQF' : Φ.IsQuantifierFree := hQF
@@ -1125,8 +1125,8 @@ theorem theorem_1_26_same_charP
     letI : Algebra (ZMod p) C' := ZMod.algebra C' p
     Φ.realization (C := C) = Set.univ ↔
     Φ.realization (C := C') = Set.univ := by
-  letI : Algebra (ZMod p) C := ZMod.algebra C p
-  letI : Algebra (ZMod p) C' := ZMod.algebra C' p
+  let : Algebra (ZMod p) C := ZMod.algebra C p
+  let : Algebra (ZMod p) C' := ZMod.algebra C' p
   have hinj_C : Function.Injective (algebraMap (ZMod p) C) :=
     ZMod.castHom_injective C
   have hinj_C' : Function.Injective (algebraMap (ZMod p) C') :=

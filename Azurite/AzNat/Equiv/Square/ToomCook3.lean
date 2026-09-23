@@ -184,14 +184,14 @@ theorem squareLimbs_toNat (a : Array UInt64) (lo len : Nat)
       = (toNatLimbsList ((a.toList.drop lo).take len)) ^ 2 := by
   unfold squareLimbs squareLimbsParam
   by_cases h_toom : squareDispatchToomCook3Cutoff ≤ len
-  · rw [if_pos h_toom]
+  · rw [ite_eq_left h_toom]
     exact toomCook3SquareLimbs_toNat squareDispatchToomCook3Cutoff
             squareDispatchThreshold a lo len hA
-  · rw [if_neg h_toom]
+  · rw [ite_eq_right h_toom]
     by_cases h_kara : squareDispatchThreshold ≤ len
-    · rw [if_pos h_kara]
+    · rw [ite_eq_left h_kara]
       exact karatsubaSquareLimbs_toNat squareDispatchThreshold a lo len hA
-    · rw [if_neg h_kara]
+    · rw [ite_eq_right h_kara]
       exact schoolbookSquareLimbs_toNat a lo len hA
 
 /-- Correctness of `square` (the dispatched AzNat squaring). -/

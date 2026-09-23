@@ -47,18 +47,18 @@ theorem toRat_ofSignAzNats (s : Bool) (n d : AzNat) :
       have hg : 0 < Nat.gcd n.toNat d.toNat :=
         Nat.gcd_pos_of_pos_right _ (Nat.pos_of_ne_zero hd')
       have hgQ : (Nat.gcd n.toNat d.toNat : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.ne_of_gt hg)
-      rw [ofSignAzNats, dif_neg hd, dif_neg hn]
+      rw [ofSignAzNats, dite_eq_right hd, dite_eq_right hn]
       rw [toRat, Rat.mk_eq_divInt, Rat.divInt_eq_div]
       simp only [AzNat.toNat_div, AzNat.toNat_gcd]
       cases s with
       | true =>
-        rw [if_pos rfl, if_pos rfl]
+        rw [ite_eq_left rfl, ite_eq_left rfl]
         simp only [Int.cast_natCast]
         rw [Rat.natCast_div _ _ (Nat.gcd_dvd_left _ _),
             Rat.natCast_div _ _ (Nat.gcd_dvd_right _ _),
             div_div_div_cancel_right₀ hgQ, one_mul]
       | false =>
-        rw [if_neg Bool.false_ne_true, if_neg Bool.false_ne_true]
+        rw [ite_eq_right Bool.false_ne_true, ite_eq_right Bool.false_ne_true]
         simp only [Int.cast_neg, Int.cast_natCast]
         rw [Rat.natCast_div _ _ (Nat.gcd_dvd_left _ _),
             Rat.natCast_div _ _ (Nat.gcd_dvd_right _ _),
@@ -75,9 +75,9 @@ theorem toRat_ofAzNats (n d : AzNat) :
 gcd is `1` and the zero branch agrees.) Used by the parse round-trip. -/
 theorem ofSignAzNats_self (q : AzRat) : ofSignAzNats q.sign q.num q.den = q := by
   have hcop : Nat.Coprime q.num.toNat q.den.toNat := (AzNat.coprime_iff _ _).mp q.reduced
-  rw [ofSignAzNats, dif_neg q.den_nz]
+  rw [ofSignAzNats, dite_eq_right q.den_nz]
   by_cases hn : q.num = 0
-  · rw [dif_pos hn]
+  · rw [dite_eq_left hn]
     -- `q` is the canonical zero: `num = 0` forces `sign = true` and (by
     -- coprimality) `den = 1`.
     have hsign : q.sign = true := q.zero_sign hn
@@ -88,7 +88,7 @@ theorem ofSignAzNats_self (q : AzRat) : ofSignAzNats q.sign q.num q.den = q := b
       rw [h0] at hcop
       exact Nat.coprime_zero_left _ |>.mp hcop
     exact AzRat.ext hsign.symm hn.symm hden.symm
-  · rw [dif_neg hn]
+  · rw [dite_eq_right hn]
     have hg1 : Nat.gcd q.num.toNat q.den.toNat = 1 := hcop
     refine AzRat.ext rfl ?_ ?_
     · apply AzNat.toNat_injective

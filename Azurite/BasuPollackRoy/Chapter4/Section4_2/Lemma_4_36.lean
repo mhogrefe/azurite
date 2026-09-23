@@ -103,7 +103,7 @@ matrix; reversing columns makes it lower-triangular with diagonal `b_q`. -/
 theorem sRes_q_eq (P Q : K[X]) (hQ : Q ≠ 0) (hqp : Q.natDegree < P.natDegree) :
     sRes P Q Q.natDegree = ((ε (P.natDegree - Q.natDegree) : ℤ) : K) *
       Q.leadingCoeff ^ (P.natDegree - Q.natDegree) := by
-  rw [sRes, if_pos (le_refl Q.natDegree)]
+  rw [sRes, ite_eq_left (le_refl Q.natDegree)]
   -- reversed-column entry: `(X^i · Q).coeff (q + k)`
   have hentry : ∀ i k : Fin (P.natDegree + Q.natDegree - 2 * Q.natDegree),
       ((SyHaSquare P Q Q.natDegree).submatrix id Fin.revPerm) i k
@@ -111,7 +111,7 @@ theorem sRes_q_eq (P Q : K[X]) (hQ : Q ≠ 0) (hqp : Q.natDegree < P.natDegree) 
     intro i k
     have hk := k.isLt
     simp only [Matrix.submatrix_apply, id_eq, SyHaSquare, SyHa, Matrix.of_apply, Fin.val_castLE]
-    rw [if_neg (by omega),
+    rw [ite_eq_right (by omega),
       show i.val - (Q.natDegree - Q.natDegree) = i.val by omega,
       show P.natDegree + Q.natDegree - Q.natDegree - 1 - (Fin.revPerm k).val
           = Q.natDegree + k.val by
@@ -119,7 +119,7 @@ theorem sRes_q_eq (P Q : K[X]) (hQ : Q ≠ 0) (hqp : Q.natDegree < P.natDegree) 
   -- the reversed matrix is lower-triangular with `b_q` diagonal
   have hlow : ((SyHaSquare P Q Q.natDegree).submatrix id Fin.revPerm).det
       = Q.leadingCoeff ^ (P.natDegree - Q.natDegree) := by
-    rw [Matrix.det_of_lowerTriangular _ (fun i j hij => ?_)]
+    rw [Matrix.det_of_isLowerTriangular _ (fun i j hij => ?_)]
     · rw [Finset.prod_congr rfl (g := fun _ => Q.leadingCoeff) (fun i _ => ?_),
         Finset.prod_const, Finset.card_univ, Fintype.card_fin,
         show P.natDegree + Q.natDegree - 2 * Q.natDegree = P.natDegree - Q.natDegree by omega]
@@ -197,7 +197,7 @@ omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- `sRes_j(P, Q) = 0` for `q < j < p` (the defective subresultants in the gap). -/
 theorem sRes_eq_zero_of_gap (P Q : K[X]) {j : ℕ} (hqj : Q.natDegree < j)
     (hjp : j < P.natDegree) : sRes P Q j = 0 := by
-  rw [sRes, if_neg (by omega), if_pos (lt_trans hqj hjp), if_neg (by omega)]
+  rw [sRes, ite_eq_right (by omega), ite_eq_left (lt_trans hqj hjp), ite_eq_right (by omega)]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- `partialSeq P Q b` has head `sRes_b`. -/
@@ -286,14 +286,14 @@ theorem lemma_4_36 (P Q : K[X]) (hQ : Q ≠ 0) (hR : P % Q ≠ 0)
       = PmV (partialSeq Q (-(P % Q)) Q.natDegree) + _
   -- subresultant values
   have hsp : sRes P Q P.natDegree = P.leadingCoeff := by
-    rw [sRes, if_neg (by omega), if_pos hqp, if_pos rfl]
+    rw [sRes, ite_eq_right (by omega), ite_eq_left hqp, ite_eq_left rfl]
   have hsq : sRes P Q Q.natDegree
       = ((ε (P.natDegree - Q.natDegree) : ℤ) : K) * Q.leadingCoeff ^ (P.natDegree - Q.natDegree) :=
     sRes_q_eq P Q hQ hqp
   have hsq_ne : sRes P Q Q.natDegree ≠ 0 := by
     rw [hsq]; exact mul_ne_zero (eps_cast_ne _) (pow_ne_zero _ hbq)
   have hsqQR : sRes Q (-(P % Q)) Q.natDegree = Q.leadingCoeff := by
-    rw [sRes, if_neg (by rw [hrneg]; omega), if_pos (by rw [hrneg]; omega), if_pos rfl]
+    rw [sRes, ite_eq_right (by rw [hrneg]; omega), ite_eq_left (by rw [hrneg]; omega), ite_eq_left rfl]
   have hdr_ne : sRes Q (-(P % Q)) (P % Q).natDegree ≠ 0 := by
     have h := sRes_q_eq Q (-(P % Q)) hRn (by rw [hrneg]; exact hrq)
     rw [hrneg] at h; rw [h]
@@ -336,7 +336,7 @@ theorem lemma_4_36 (P Q : K[X]) (hQ : Q ≠ 0) (hR : P % Q ≠ 0)
           (SignType.sign (sRes Q (-(P % Q)) Q.natDegree * sRes Q (-(P % Q)) (P % Q).natDegree) : ℤ)
         else 0) := by
     by_cases hodd : Odd (Q.natDegree - (P % Q).natDegree)
-    · rw [if_pos hodd, if_pos hodd]
+    · rw [ite_eq_left hodd, ite_eq_left hodd]
       congr 1
       -- both signs equal sign(b_q · d_r)
       have hPside : (SignType.sign (sRes P Q Q.natDegree * sRes P Q (P % Q).natDegree) : ℤ)
@@ -352,14 +352,14 @@ theorem lemma_4_36 (P Q : K[X]) (hQ : Q ≠ 0) (hR : P % Q ≠ 0)
           sign_pow_odd Q.leadingCoeff hbq (by rw [Nat.odd_iff] at hodd ⊢; omega),
           ← SignType.coe_mul, ← sign_mul]
       rw [hPside, hsqQR]
-    · rw [if_neg hodd, if_neg hodd]
+    · rw [ite_eq_right hodd, ite_eq_right hodd]
   have hAeq : (if Odd (P.natDegree - Q.natDegree) then
         ε (P.natDegree - Q.natDegree) *
           (SignType.sign (sRes P Q P.natDegree * sRes P Q Q.natDegree) : ℤ) else 0)
       = (if Odd (P.natDegree - Q.natDegree) then
           (SignType.sign (P.leadingCoeff * Q.leadingCoeff) : ℤ) else 0) := by
     by_cases hodd : Odd (P.natDegree - Q.natDegree)
-    · rw [if_pos hodd, if_pos hodd, hsp, hsq,
+    · rw [ite_eq_left hodd, ite_eq_left hodd, hsp, hsq,
         show P.leadingCoeff * (((ε (P.natDegree - Q.natDegree) : ℤ) : K) *
             Q.leadingCoeff ^ (P.natDegree - Q.natDegree))
           = ((ε (P.natDegree - Q.natDegree) : ℤ) : K) *
@@ -367,7 +367,7 @@ theorem lemma_4_36 (P Q : K[X]) (hQ : Q ≠ 0) (hR : P % Q ≠ 0)
         sign_mul, SignType.coe_mul, sign_eps, ← mul_assoc, ε_mul_self, one_mul,
         sign_mul, SignType.coe_mul, sign_pow_odd Q.leadingCoeff hbq hodd,
         ← SignType.coe_mul, ← sign_mul]
-    · rw [if_neg hodd, if_neg hodd]
+    · rw [ite_eq_right hodd, ite_eq_right hodd]
   rw [hBeq, hAeq]
 
 end Azurite.BPR.Chapter4

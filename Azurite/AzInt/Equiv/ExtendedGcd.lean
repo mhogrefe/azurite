@@ -86,14 +86,14 @@ private lemma egcdMakeOdd_bezout (x y : AzNat)
   | succ fuel ih =>
     rw [egcdMakeOdd]
     by_cases hcond : u.isEven && !(u.limbs.size == 0)
-    · rw [if_pos hcond]
+    · rw [ite_eq_left hcond]
       have hue : u.isEven = true := by
         simp only [Bool.and_eq_true] at hcond; exact hcond.1
       have h2u : 2 * ((u >>> 1).toNat : ℤ) = (u.toNat : ℤ) :=
         two_mul_shiftRight_one_toNat u hue
       by_cases hAB : A.isEven && B.isEven
       · -- both even branch
-        simp only [hAB, if_true]
+        simp only [hAB, ite_true]
         have hABp := (Bool.and_eq_true _ _).mp hAB
         have hAe : Even A.toInt := (AzInt.isEven_iff A).mp hABp.1
         have hBe : Even B.toInt := (AzInt.isEven_iff B).mp hABp.2
@@ -139,7 +139,7 @@ private lemma egcdMakeOdd_bezout (x y : AzNat)
             rw [h2u, ← hinv]; nlinarith [h2A, h2B]
           omega
         exact ih (u >>> 1) A' B' hnew
-    · rw [if_neg hcond]
+    · rw [ite_eq_right hcond]
       simpa using hinv
 
 /-! ### `egcdLoop` preserves the Bézout invariant -/
@@ -172,7 +172,7 @@ private lemma egcdLoop_bezout (x y : AzNat)
       exact this
     simp only
     by_cases hcmp : AzNat.compare u' v' = Ordering.lt
-    · rw [if_pos hcmp]
+    · rw [ite_eq_left hcmp]
       -- u' < v', so subtraction (v' - u') is exact
       have hlt : u'.toNat < v'.toNat := by
         rw [AzNat.compare_eq_compare_toNat] at hcmp
@@ -183,7 +183,7 @@ private lemma egcdLoop_bezout (x y : AzNat)
           = ((v' - u').toNat : ℤ) := by
         rw [hsub, AzInt.toInt_sub, AzInt.toInt_sub, ← hVpost, ← hUpost]; ring
       exact ih u' (v' - u') A' B' (C' - A') (D' - B') hUpost hVnew
-    · rw [if_neg hcmp]
+    · rw [ite_eq_right hcmp]
       have hge : v'.toNat ≤ u'.toNat := by
         rw [AzNat.compare_eq_compare_toNat] at hcmp
         rcases Nat.lt_trichotomy u'.toNat v'.toNat with h | h | h
@@ -191,8 +191,8 @@ private lemma egcdLoop_bezout (x y : AzNat)
         · omega
         · omega
       by_cases hsize : (u' - v').limbs.size == 0
-      · rw [if_pos hsize]; simpa using hVpost
-      · rw [if_neg hsize]
+      · rw [ite_eq_left hsize]; simpa using hVpost
+      · rw [ite_eq_right hsize]
         have hsub : ((u' - v').toNat : ℤ) = (u'.toNat : ℤ) - (v'.toNat : ℤ) := by
           rw [AzNat.toNat_sub]; omega
         have hUnew : (A' - C').toInt * (x.toNat : ℤ) + (B' - D').toInt * (y.toNat : ℤ)
@@ -209,12 +209,12 @@ theorem egcd_bezout (a b : AzNat) :
       = ((egcd a b).1.toNat : ℤ) := by
   rw [egcd]
   by_cases ha0 : a.limbs.size = 0
-  · simp only [ha0, if_pos]
+  · simp only [ha0, ite_eq_left]
     rw [(AzNat.toNat_eq_zero_iff a).mpr ha0]
     simp [AzInt.toInt_zero, AzInt.toInt_one]
-  · simp only [ha0, if_false]
+  · simp only [ha0, ite_false]
     by_cases hb0 : b.limbs.size = 0
-    · simp only [hb0, if_pos]
+    · simp only [hb0, ite_eq_left]
       rw [(AzNat.toNat_eq_zero_iff b).mpr hb0]
       simp [AzInt.toInt_zero, AzInt.toInt_one]
     · simp only [hb0]
@@ -423,7 +423,7 @@ private lemma egcdMakeOdd_value (x y : AzNat) (fuel : Nat) (u : AzNat) (A B : Az
   | succ fuel ih =>
     simp only [egcdMakeOdd]
     by_cases hcond : u.isEven && !(u.limbs.size == 0)
-    · rw [if_pos hcond]
+    · rw [ite_eq_left hcond]
       have hue : u.isEven = true := by
         simp only [Bool.and_eq_true] at hcond; exact hcond.1
       have hev : Even u.toNat := (AzNat.isEven_iff u).mp hue
@@ -449,7 +449,7 @@ private lemma egcdMakeOdd_value (x y : AzNat) (fuel : Nat) (u : AzNat) (A B : Az
         rw [hu'val, oddpart_div_two_of_even u.toNat hpos hev]
       -- The recursive call's first component depends only on u', not on AB.
       rw [ih (u >>> 1) _ _ hu'ne hpv', hoddeq]
-    · rw [if_neg hcond]
+    · rw [ite_eq_right hcond]
       -- u odd or size 0; size 0 contradicts hu
       have hsz_ne : ¬ (u.limbs.size = 0) := by
         intro h; exact hu ((AzNat.toNat_eq_zero_iff u).mpr h)
@@ -535,7 +535,7 @@ private lemma egcdLoop_gcd (x y : AzNat) (G : Nat) (hG_odd : Odd G)
       have hb := oddpart_le_or_self v.toNat hv
       omega
     by_cases hcmp : AzNat.compare u₁ v₁ = Ordering.lt
-    · rw [if_pos hcmp]
+    · rw [ite_eq_left hcmp]
       have hlt : u₁.toNat < v₁.toNat := by
         rw [AzNat.compare_eq_compare_toNat, Nat.compare_eq_lt] at hcmp; exact hcmp
       have hsub : (v₁ - u₁).toNat = v₁.toNat - u₁.toNat := by
@@ -568,7 +568,7 @@ private lemma egcdLoop_gcd (x y : AzNat) (G : Nat) (hG_odd : Odd G)
         rw [hsub] at hw; omega
       exact ih u₁ (v₁ - u₁) A₁ B₁ (C₁ - A₁) (D₁ - B₁) hu₁pos hsub_pos hgcdnew
         hboundnew hinnernew
-    · rw [if_neg hcmp]
+    · rw [ite_eq_right hcmp]
       have hge : v₁.toNat ≤ u₁.toNat := by
         rw [AzNat.compare_eq_compare_toNat] at hcmp
         rcases Nat.lt_trichotomy u₁.toNat v₁.toNat with h | h | h
@@ -577,14 +577,14 @@ private lemma egcdLoop_gcd (x y : AzNat) (G : Nat) (hG_odd : Odd G)
         · omega
       have hsub : (u₁ - v₁).toNat = u₁.toNat - v₁.toNat := by rw [AzNat.toNat_sub]
       by_cases hsize : (u₁ - v₁).limbs.size == 0
-      · rw [if_pos hsize]
+      · rw [ite_eq_left hsize]
         -- u₁ = v₁, so G = gcd v₁ v₁ = v₁
         have hzero : (u₁ - v₁).toNat = 0 := by
           rw [AzNat.toNat_eq_zero_iff]; exact beq_iff_eq.mp hsize
         rw [hsub] at hzero
         have heq : u₁.toNat = v₁.toNat := by omega
         rw [← hgcd₁, heq, Nat.gcd_self]
-      · rw [if_neg hsize]
+      · rw [ite_eq_right hsize]
         have hsub_pos : 0 < (u₁ - v₁).toNat := by
           rw [Nat.pos_iff_ne_zero]
           intro h
@@ -621,11 +621,11 @@ theorem egcd_gcd (a b : AzNat) :
     (egcd a b).1.toNat = Nat.gcd a.toNat b.toNat := by
   rw [egcd]
   by_cases ha0 : a.limbs.size = 0
-  · simp only [ha0, if_pos]
+  · simp only [ha0, ite_eq_left]
     rw [(AzNat.toNat_eq_zero_iff a).mpr ha0, Nat.gcd_zero_left]
-  · simp only [ha0, if_false]
+  · simp only [ha0, ite_false]
     by_cases hb0 : b.limbs.size = 0
-    · simp only [hb0, if_pos]
+    · simp only [hb0, ite_eq_left]
       rw [(AzNat.toNat_eq_zero_iff b).mpr hb0, Nat.gcd_zero_right]
     · simp only [hb0]
       have ha_ne : a.toNat ≠ 0 := fun h => ha0 ((AzNat.toNat_eq_zero_iff a).mp h)

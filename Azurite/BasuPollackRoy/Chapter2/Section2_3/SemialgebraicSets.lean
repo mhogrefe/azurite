@@ -141,7 +141,7 @@ theorem IsSemialgebraicSet.of_definedOver
     refine .algebraic
       ⟨poly_set.image (map (algebraMap D R)), ?_⟩
     rw [hV]; ext x
-    simp only [Zer, Set.mem_setOf_eq, Finset.mem_image]
+    simp only [Zer, Set.mem_ofPred_eq, Finset.mem_image]
     refine ⟨fun hx Q hQ => ?_, fun hx P hP => ?_⟩
     · obtain ⟨P, hP, rfl⟩ := hQ
       rw [heval]; exact hx P hP
@@ -150,7 +150,7 @@ theorem IsSemialgebraicSet.of_definedOver
   | pos_locus P =>
     have hpos := IsSemialgebraicSet.pos_locus (map (algebraMap D R) P)
     convert hpos using 1
-    ext x; rw [Set.mem_setOf_eq, Set.mem_setOf_eq, heval]
+    ext x; rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, heval]
   | compl _ ih => exact ih.compl
   | inter _ _ ihV ihW => exact ihV.inter ihW
 
@@ -229,7 +229,7 @@ theorem IsSemialgebraicSetGe.eqZero (P : MvPolynomial (Fin k) R) :
   have h := (nonneg_locus P).inter (nonneg_locus (-P))
   convert h using 1
   ext x
-  simp only [Set.mem_setOf_eq, Set.mem_inter_iff, map_neg, ge_iff_le,
+  simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, map_neg, ge_iff_le,
     neg_nonneg, le_antisymm_iff]
   tauto
 
@@ -249,7 +249,7 @@ theorem IsSemialgebraicSetGe.zer
     have h := (eqZero P).inter ih
     convert h using 1
     ext x
-    simp only [Zer, Set.mem_setOf_eq, Set.mem_inter_iff,
+    simp only [Zer, Set.mem_ofPred_eq, Set.mem_inter_iff,
       Finset.forall_mem_insert]
 
 /-- Every `IsSemialgebraicSetGe` set is semialgebraic. -/
@@ -273,7 +273,7 @@ theorem IsSemialgebraicSetGe.of_isSemialgebraicSet
     have h := (nonneg_locus (-P)).compl
     convert h using 1
     ext x
-    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, map_neg, ge_iff_le,
+    simp only [Set.mem_ofPred_eq, Set.mem_compl_iff, map_neg, ge_iff_le,
       not_le, neg_lt_zero, gt_iff_lt]
   | compl _ ih => exact ih.compl
   | inter _ _ ihV ihW => exact ihV.inter ihW

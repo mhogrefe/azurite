@@ -31,7 +31,7 @@ omit [LinearOrder R] [IsStrictOrderedRing R] in
 theorem corollary_10_15_gcd {P : Polynomial (Ri R)} (hd : 0 < P.natDegree)
     {j : ℕ} (hj : (gcd P (derivative P)).natDegree = j) :
     Associated (Chapter8.sResP P (derivative P) j) (gcd P (derivative P)) := by
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective R (Ri R))
   have hP : P ≠ 0 := fun h => by rw [h, Polynomial.natDegree_zero] at hd; omega
   have hP' : derivative P ≠ 0 := fun h => by
@@ -47,7 +47,7 @@ then `sResV_{j−1}(P, P′)` is the separable part of `P`. -/
 theorem corollary_10_15_sep {P : Polynomial (Ri R)} (hd : 0 < P.natDegree)
     {j : ℕ} (hj1 : 1 ≤ j) (hj : (gcd P (derivative P)).natDegree = j) :
     IsSeparablePart (Chapter8.sResV P (derivative P) (j - 1)) P := by
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective R (Ri R))
   have hP : P ≠ 0 := fun h => by rw [h, Polynomial.natDegree_zero] at hd; omega
   have hP' : derivative P ≠ 0 := fun h => by

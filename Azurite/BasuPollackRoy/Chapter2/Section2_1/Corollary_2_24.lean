@@ -50,10 +50,10 @@ theorem corollary_2_24_increasing_of_isRealClosed
     a < b →
     (∀ x ∈ Set.Ioo a b, 0 < (derivative P).eval x) →
     StrictMonoOn (fun x => P.eval x) (Set.Icc a b) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact corollary_2_24_increasing theorem_2_11_b_c P
 
 /-- **Corollary 2.24 (decreasing), real closed form.** -/
@@ -64,10 +64,10 @@ theorem corollary_2_24_decreasing_of_isRealClosed
     a < b →
     (∀ x ∈ Set.Ioo a b, (derivative P).eval x < 0) →
     StrictAntiOn (fun x => P.eval x) (Set.Icc a b) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact corollary_2_24_decreasing theorem_2_11_b_c P
 
 end Azurite.BPR.Corollary2_24

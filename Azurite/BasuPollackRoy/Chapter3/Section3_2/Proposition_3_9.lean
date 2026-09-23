@@ -39,7 +39,7 @@ theorem isSemialgebraicSet_singleton (d : Fin ℓ → R) :
       = ⋂ i ∈ (Finset.univ : Finset (Fin ℓ)), {w : Fin ℓ → R | eval w (X i - C (d i)) = 0} := by
     ext w
     simp only [Set.mem_singleton_iff, Set.mem_iInter, Finset.mem_univ, forall_true_left,
-      Set.mem_setOf_eq, map_sub, eval_X, eval_C, sub_eq_zero, funext_iff]
+      Set.mem_ofPred_eq, map_sub, eval_X, eval_C, sub_eq_zero, funext_iff]
   rw [he]; exact IsSemialgebraicSet.iInter_finset _ fun i _ => IsSemialgebraicSet.eqZero _
 
 /-- **BPR Proposition 3.9.** A locally constant semialgebraic function on a semialgebraically

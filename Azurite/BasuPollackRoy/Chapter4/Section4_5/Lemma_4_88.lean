@@ -31,23 +31,27 @@ variable {k : ℕ} {K : Type*} [Field K] (C : Type*) [Field C] [Algebra K C]
 
 /-- **`Ā ≅ C ⊗_K A` as `C`-algebras.** Tensoring `A = K[X]/Ideal(𝒫,K)` up to `C` and identifying
 `C ⊗_K K[X]` with `C[X]` (under which the extended ideal becomes `Ideal(𝒫,C)`) yields `Ā`. -/
-noncomputable def algEquivExt (Ps : Finset (MvPolynomial (Fin k) K)) :
-    C ⊗[K] quotPolys Ps ≃ₐ[C] quotPolysExt C Ps := by
-  have key : ∀ P : MvPolynomial (Fin k) K,
-      (algebraTensorAlgEquiv K C) (Algebra.TensorProduct.includeRight P)
-        = MvPolynomial.map (algebraMap K C) P := fun P => by
-    rw [Algebra.TensorProduct.includeRight_apply, MvPolynomial.algebraTensorAlgEquiv_tmul, one_smul]
-  have hIJ : idealOfPolysExt C Ps
+theorem algebraTensorAlgEquiv_includeRight (P : MvPolynomial (Fin k) K) :
+    (algebraTensorAlgEquiv K C) (Algebra.TensorProduct.includeRight P)
+      = MvPolynomial.map (algebraMap K C) P := by
+  rw [Algebra.TensorProduct.includeRight_apply, MvPolynomial.algebraTensorAlgEquiv_tmul, one_smul]
+
+/-- The extended ideal is the image of the base-changed ideal under `C ⊗_K K[X] ≅ C[X]`. -/
+theorem idealOfPolysExt_eq_map_tensor (Ps : Finset (MvPolynomial (Fin k) K)) :
+    idealOfPolysExt C Ps
       = Ideal.map (algebraTensorAlgEquiv K C)
           (Ideal.map (Algebra.TensorProduct.includeRight) (idealOfPolys Ps)) := by
-    rw [idealOfPolysExt, idealOfPolys, idealOfPolys, Ideal.map_span, Ideal.map_span,
-      ← Set.image_comp, Finset.coe_image]
-    congr 1
-    exact Set.image_congr fun P _ => (key P).symm
-  exact (Algebra.TensorProduct.tensorQuotientEquiv (R := K) C (MvPolynomial (Fin k) K) C
+  rw [idealOfPolysExt, idealOfPolys, idealOfPolys, Ideal.map_span, Ideal.map_span,
+    ← Set.image_comp, Finset.coe_image]
+  congr 1
+  exact Set.image_congr fun P _ => (algebraTensorAlgEquiv_includeRight C P).symm
+
+noncomputable def algEquivExt (Ps : Finset (MvPolynomial (Fin k) K)) :
+    C ⊗[K] quotPolys Ps ≃ₐ[C] quotPolysExt C Ps :=
+  (Algebra.TensorProduct.tensorQuotientEquiv (R := K) C (MvPolynomial (Fin k) K) C
       (idealOfPolys Ps)).trans
     (Ideal.quotientEquivAlg (Ideal.map (Algebra.TensorProduct.includeRight) (idealOfPolys Ps))
-      (idealOfPolysExt C Ps) (algebraTensorAlgEquiv K C) hIJ)
+      (idealOfPolysExt C Ps) (algebraTensorAlgEquiv K C) (idealOfPolysExt_eq_map_tensor C Ps))
 
 /-- **BPR Lemma 4.88.** `A = K[X]/Ideal(𝒫,K)` is finite-dimensional of dimension `m` over `K` if
 and only if `Ā = C[X]/Ideal(𝒫,C)` is finite-dimensional of dimension `m` over `C`: the dimensions
@@ -60,14 +64,14 @@ theorem lemma_4_88 (Ps : Finset (MvPolynomial (Fin k) K)) :
   refine ⟨?_, ?_, ?_⟩
   · rw [e.finrank_eq, Module.finrank_baseChange]
   · intro hA
-    haveI := hA
-    haveI : Module.Finite C (C ⊗[K] quotPolys Ps) := inferInstance
+    have := hA
+    have : Module.Finite C (C ⊗[K] quotPolys Ps) := inferInstance
     exact Module.Finite.equiv (algEquivExt C Ps).toLinearEquiv
   · intro hAbar
-    haveI := hAbar
-    haveI : Module.Finite C (C ⊗[K] quotPolys Ps) := Module.Finite.equiv e
+    have := hAbar
+    have : Module.Finite C (C ⊗[K] quotPolys Ps) := Module.Finite.equiv e
     let b := Module.Free.chooseBasis K (quotPolys Ps)
-    haveI : Fintype (Module.Free.ChooseBasisIndex K (quotPolys Ps)) :=
+    have : Fintype (Module.Free.ChooseBasisIndex K (quotPolys Ps)) :=
       FiniteDimensional.fintypeBasisIndex (Algebra.TensorProduct.basis C b)
     exact Module.Finite.of_basis b
 

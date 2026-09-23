@@ -119,10 +119,10 @@ noncomputable def lfam (s0 : RecState R) (hnb : ∀ n, (stateSeq s0 n).poly.coef
   finite_co_support' g := by
     refine Set.Finite.subset (s := {n | gammaSeq s0 n = g}) ?_ ?_
     · refine Set.Subsingleton.finite (fun a ha b hb => ?_)
-      rw [Set.mem_setOf_eq] at ha hb
+      rw [Set.mem_ofPred_eq] at ha hb
       exact (strictMono_gammaSeq s0 hnb).injective (ha.trans hb.symm)
     · intro n hn
-      rw [Set.mem_setOf_eq] at hn ⊢
+      rw [Set.mem_ofPred_eq] at hn ⊢
       by_contra hne
       exact hn (coeff_single_of_ne (Ne.symm hne))
 

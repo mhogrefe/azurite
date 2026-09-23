@@ -112,7 +112,7 @@ private lemma parseNatCharsAux_natToCharsAux (fuel n acc : ℕ) (h_fuel : n < 10
       have h_dig : digit.isDigit = true := isDigit_digit n
       have h_val : digit.toNat - 48 = n % 10 := toNat_digit n
       show (if digit.isDigit then _ else _) = _
-      rw [h_dig, if_pos rfl]
+      rw [h_dig, ite_eq_left rfl]
       rw [h_val]
       congr 1
       have hl := length_natToCharsAux f (n / 10) [digit]

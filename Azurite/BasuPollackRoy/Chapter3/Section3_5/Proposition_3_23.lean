@@ -124,7 +124,7 @@ theorem exists_isGreatest_opNorm_segment {k ℓ : ℕ} (hk : 0 < k) {U : Set (Fi
     ∃ M, IsGreatest {r : R | ∃ t : R, 0 ≤ t ∧ t ≤ 1 ∧
       r = opNorm (jacobianMatrix g (segPath x y t))} M := by
   classical
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   -- the product domain `[0,1] × S^{k−1} ⊆ R^{1+k}`
   set P : Set (Fin (1 + k) → R) :=
     {w | w ∘ Fin.castAdd k ∈ Set.Icc (constPt 0) (constPt 1) ∧
@@ -241,7 +241,7 @@ theorem exists_isGreatest_opNorm_segment {k ℓ : ℕ} (hk : 0 < k) {U : Set (Fi
     rw [hcobjd, euclideanNormSq]
     exact Finset.sum_congr rfl fun l _ => rfl
   -- maximize over the product
-  haveI : Nonempty (Fin (1 + k)) := ⟨⟨0, by omega⟩⟩
+  have : Nonempty (Fin (1 + k)) := ⟨⟨0, by omega⟩⟩
   obtain ⟨w₀, hw₀P, hw₀max⟩ := exists_max_of_closed_bounded hPsa hPcl hPb hPne
     hcobj.1 hcobj.2
   set tstar : R := w₀ (Fin.castAdd k 0) with htstard
@@ -456,7 +456,7 @@ theorem proposition_3_23 {k ℓ : ℕ} {U : Set (Fin k → R)}
   have hmemAc : ∀ t : R, constPt t ∈ Ac ↔ (0 ≤ t ∧ t ≤ 1) ∧
       euclideanNorm (f (segPath x y t) - f x) ≤ (B + c) * t := by
     intro t
-    rw [hAcd, Set.mem_inter_iff, mem_Icc_fin_one, Set.mem_preimage, Set.mem_setOf_eq]
+    rw [hAcd, Set.mem_inter_iff, mem_Icc_fin_one, Set.mem_preimage, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨⟨h0, h1⟩, hD⟩
       refine ⟨⟨h0, h1⟩, ?_⟩
@@ -470,7 +470,7 @@ theorem proposition_3_23 {k ℓ : ℕ} {U : Set (Fin k → R)}
         (show (0:R) ≤ (B + c) * t by positivity)).mp hle
       linarith
   -- the affine parametrization of the segment from the line
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   set Λ : (Fin 1 → R) → (Fin k → R) := fun w => segPath x y (w 0) with hΛd
   set Qvec : Fin k → MvPolynomial (Fin 1) R := fun i =>
     (1 - X 0) * C (x i) + X 0 * C (y i) with hQvecd
@@ -537,10 +537,10 @@ theorem proposition_3_23 {k ℓ : ℕ} {U : Set (Fin k → R)}
   have hVcl : IsClosed {v : Fin 1 → R | v 0 ≤ 0} := by
     rw [isClosed_iff, isOpen_iff]
     intro v hv
-    rw [Set.mem_compl_iff, Set.mem_setOf_eq, not_le] at hv
+    rw [Set.mem_compl_iff, Set.mem_ofPred_eq, not_le] at hv
     refine ⟨v, v 0, hv, mem_openBall_self v hv, fun z hz => ?_⟩
     rw [mem_openBall, euclideanNormSq_fin_one, Pi.sub_apply] at hz
-    rw [Set.mem_compl_iff, Set.mem_setOf_eq, not_le]
+    rw [Set.mem_compl_iff, Set.mem_ofPred_eq, not_le]
     nlinarith
   have hAcsa : IsSemialgebraicSet Ac := (proposition_2_83 hD.1).2 hVsa
   have hAccl : IsClosed Ac :=

@@ -54,10 +54,10 @@ theorem ext_openBall {k : ℕ} (x : Fin k → R) (r : R) :
       = openBall (algebraMap R R' ∘ x) (algebraMap R R' r) := by
   have hΦ : openBall x r = (Formula.ltZeroO (ballPoly x r)).realization (C := R) := by
     rw [Formula.realization_ltZeroO]; ext y
-    simp only [mem_openBall, Set.mem_setOf_eq, aeval_eq_eval_self, eval_ballPoly, sub_lt_zero]
+    simp only [mem_openBall, Set.mem_ofPred_eq, aeval_eq_eval_self, eval_ballPoly, sub_lt_zero]
   rw [ext_eq _ hΦ, Formula.realization_ltZeroO]
   ext y'
-  simp only [mem_openBall, Set.mem_setOf_eq,
+  simp only [mem_openBall, Set.mem_ofPred_eq,
     show aeval y' (ballPoly x r) = eval y' (ballPoly (algebraMap R R' ∘ x) (algebraMap R R' r)) from by
       rw [aeval_def, ← eval_map, map_ballPoly],
     eval_ballPoly, sub_lt_zero]
@@ -152,10 +152,10 @@ theorem ext_evalPos {n : ℕ} (P : MvPolynomial (Fin n) R) :
       = {w' : Fin n → R' | eval w' (MvPolynomial.map (algebraMap R R') P) > 0} := by
   have hΦ : {w : Fin n → R | eval w P > 0} = (Formula.gtZeroO P).realization (C := R) := by
     rw [Formula.realization_gtZeroO]; ext w
-    simp only [Set.mem_setOf_eq, aeval_eq_eval_self, gt_iff_lt]
+    simp only [Set.mem_ofPred_eq, aeval_eq_eval_self, gt_iff_lt]
   rw [ext_eq _ hΦ, Formula.realization_gtZeroO]
   ext w'
-  simp only [Set.mem_setOf_eq, gt_iff_lt,
+  simp only [Set.mem_ofPred_eq, gt_iff_lt,
     show aeval w' P = eval w' (MvPolynomial.map (algebraMap R R') P) from by rw [aeval_def, ← eval_map]]
 
 /-- **`Ext` of a `< 0` polynomial locus** (coefficients embedded). -/
@@ -164,10 +164,10 @@ theorem ext_evalNeg {n : ℕ} (P : MvPolynomial (Fin n) R) :
       = {w' : Fin n → R' | eval w' (MvPolynomial.map (algebraMap R R') P) < 0} := by
   have hΦ : {w : Fin n → R | eval w P < 0} = (Formula.ltZeroO P).realization (C := R) := by
     rw [Formula.realization_ltZeroO]; ext w
-    simp only [Set.mem_setOf_eq, aeval_eq_eval_self]
+    simp only [Set.mem_ofPred_eq, aeval_eq_eval_self]
   rw [ext_eq _ hΦ, Formula.realization_ltZeroO]
   ext w'
-  simp only [Set.mem_setOf_eq,
+  simp only [Set.mem_ofPred_eq,
     show aeval w' P = eval w' (MvPolynomial.map (algebraMap R R') P) from by rw [aeval_def, ← eval_map]]
 
 /-- **Proposition 3.5, ⟸.** If `Ext(f)` preserves infinitesimal closeness at every embedded point,
@@ -211,9 +211,9 @@ theorem prop_3_5_backward {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → 
     have hc : Fin.append p y (Fin.castAdd k (0 : Fin 1)) = p 0 :=
       congrFun (append_comp_castAdd p y) 0
     refine ⟨y, ?_, ?_⟩
-    · rw [hPballdef, Set.mem_setOf_eq, eval_varBallPoly, append_comp_natAdd, hc]
+    · rw [hPballdef, Set.mem_ofPred_eq, eval_varBallPoly, append_comp_natAdd, hc]
       linarith [hball]
-    · rw [hPcyldef, Set.mem_setOf_eq, append_comp_natAdd, hCoFdef, Set.mem_setOf_eq,
+    · rw [hPcyldef, Set.mem_ofPred_eq, append_comp_natAdd, hCoFdef, Set.mem_ofPred_eq,
         Set.mem_compl_iff, mem_openBall, not_lt]
       exact ⟨hyS, hff⟩
   -- Hence `{p | 0 < p 0} ∩ ExBᶜ = ∅`.
@@ -222,7 +222,7 @@ theorem prop_3_5_backward {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → 
   have hgapEmpty : posSet ∩ ExBᶜ = ∅ := by
     rw [Set.eq_empty_iff_forall_notMem]
     rintro p ⟨hp, hpn⟩
-    rw [hposdef, Set.mem_setOf_eq, eval_X, gt_iff_lt] at hp
+    rw [hposdef, Set.mem_ofPred_eq, eval_X, gt_iff_lt] at hp
     exact hpn (hsub p hp)
   -- Transfer the emptiness to `R⟨ε⟩` (all extension-equalities are stated as `have`s with the
   -- local set names on the left, so `rw` matches without disturbing the proof arguments).
@@ -233,7 +233,7 @@ theorem prop_3_5_backward {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → 
   have hposExt : extension (R' := algebraicPuiseux R) posSet hpos
       = {p' : Fin 1 → algebraicPuiseux R | 0 < p' 0} := by
     rw [ext_evalPos (R' := algebraicPuiseux R) (X (0 : Fin 1))]; ext p'
-    simp only [Set.mem_setOf_eq, MvPolynomial.map_X, eval_X, gt_iff_lt]
+    simp only [Set.mem_ofPred_eq, MvPolynomial.map_X, eval_X, gt_iff_lt]
   have hExBExt : extension (R' := algebraicPuiseux R) ExB hExB
       = {p' : Fin 1 → algebraicPuiseux R |
           ∃ y' : Fin k → algebraicPuiseux R,
@@ -262,7 +262,7 @@ theorem prop_3_5_backward {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → 
       = {w' : Fin (1 + k) → algebraicPuiseux R |
           eval w' (MvPolynomial.map (algebraMap R (algebraicPuiseux R)) (varBallPoly x)) < 0} :=
     ext_evalNeg (R' := algebraicPuiseux R) (varBallPoly x)
-  rw [hballExt, Set.mem_setOf_eq, map_varBallPoly, eval_varBallPoly, append_comp_natAdd, hc',
+  rw [hballExt, Set.mem_ofPred_eq, map_varBallPoly, eval_varBallPoly, append_comp_natAdd, hc',
     sub_neg] at hy'ball
   have hcylExt : extension (R' := algebraicPuiseux R) Pcyl hPcyl
       = {w' : Fin (1 + k) → algebraicPuiseux R |
@@ -274,7 +274,7 @@ theorem prop_3_5_backward {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → 
               (isSemialgebraicSet_openBall (f x) a).compl} :=
     exercise_2_17b (R' := algebraicPuiseux R) hS (isSemialgebraicSet_openBall (f x) a).compl hf
       hgraph hCoF
-  rw [hcylExt, Set.mem_setOf_eq, append_comp_natAdd, hCoFExt, Set.mem_setOf_eq,
+  rw [hcylExt, Set.mem_ofPred_eq, append_comp_natAdd, hCoFExt, Set.mem_ofPred_eq,
     ext_compl (R' := algebraicPuiseux R) (isSemialgebraicSet_openBall (f x) a),
     ext_openBall (R' := algebraicPuiseux R) (f x) a, Set.mem_compl_iff, mem_openBall,
     not_lt] at hy'cyl

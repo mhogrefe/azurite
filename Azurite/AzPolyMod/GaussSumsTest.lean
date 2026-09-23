@@ -89,7 +89,7 @@ theorem prime_of_rail_checks
       (g := gu) hgen ?_ ?_ hlq hl
     · -- step 3/4: rail equality → tower congruence
       intro q hq _ p hp
-      haveI : Fact p.Prime := ⟨Nat.prime_of_mem_primeFactors hp⟩
+      have : Fact p.Prime := ⟨Nat.prime_of_mem_primeFactors hp⟩
       have hpI : p ∈ I.primeFactors :=
         Nat.mem_primeFactors.mpr ⟨Nat.prime_of_mem_primeFactors hp,
           (Nat.dvd_of_mem_primeFactors hp).trans (hqI q hq), hI.ne_zero⟩
@@ -100,7 +100,7 @@ theorem prime_of_rail_checks
     · -- step 5: `step5Check = true` → divisor-quantified
       -- non-divisibility, extended to all `j` by periodicity
       intro q hq _ p hp hq₀p d hd hd1 j
-      haveI : Fact p.Prime := ⟨Nat.prime_of_mem_primeFactors hp⟩
+      have : Fact p.Prime := ⟨Nat.prime_of_mem_primeFactors hp⟩
       have hpI : p ∈ I.primeFactors :=
         Nat.mem_primeFactors.mpr ⟨Nat.prime_of_mem_primeFactors hp,
           (Nat.dvd_of_mem_primeFactors hp).trans (hqI q hq), hI.ne_zero⟩
@@ -305,9 +305,9 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
     n.toNat.Prime := by
   rw [gaussSumsTest] at h
   by_cases h1 : AzNat.ofNat 1 < n
-  case neg => rw [dif_neg h1] at h; exact absurd h (by simp)
-  rw [dif_pos h1] at h
-  haveI : Fact (1 < n.toNat) := ⟨by
+  case neg => rw [dite_eq_right h1] at h; exact absurd h (by simp)
+  rw [dite_eq_left h1] at h
+  have : Fact (1 < n.toNat) := ⟨by
     have h' := (AzNat.lt_iff_toNat_lt _ _).mp h1
     rwa [AzNat.toNat_ofNat] at h'⟩
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq,
@@ -329,7 +329,7 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
       ∧ ((c.l : ℕ) : ZMod q) = ((c.g q : ℕ) : ZMod q) ^ c.lq q := by
     intro q hq
     have hcheck := hQ q hq
-    rw [qCheck, dif_pos (hFpr q hq)] at hcheck
+    rw [qCheck, dite_eq_left (hFpr q hq)] at hcheck
     simp only [Bool.and_eq_true, List.all_eq_true, List.mem_filter,
       decide_eq_true_eq, and_imp] at hcheck
     obtain ⟨⟨⟨⟨hdvd, hco⟩, hgen'⟩, hpair⟩, hl'⟩ := hcheck
@@ -344,13 +344,13 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
           = true := by
     intro p hp
     have hcheck := hP p hp
-    rw [pCheck, dif_pos (hIpr p hp)] at hcheck
+    rw [pCheck, dite_eq_left (hIpr p hp)] at hcheck
     by_cases hq : (c.q₀ p).Prime
-    · rw [dif_pos hq] at hcheck
+    · rw [dite_eq_left hq] at hcheck
       simp only [Bool.and_eq_true, decide_eq_true_eq] at hcheck
       obtain ⟨⟨⟨⟨hw, hu⟩, hq₀F⟩, hq₀d⟩, h5⟩ := hcheck
       exact ⟨hq, hw, hu, hq₀F, hq₀d, fun _ _ => h5⟩
-    · rw [dif_neg hq] at hcheck
+    · rw [dite_eq_right hq] at hcheck
       exact absurd hcheck (by simp)
   -- the generator family
   let gu : (q : ℕ) → (ZMod q)ˣ := fun q =>
@@ -381,11 +381,11 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
     intro q hq
     have hco := (hQ' q (memF.mp hq)).2.1
     show _ = ((gu q : (ZMod q)ˣ) : ZMod q)
-    rw [show gu q = ZMod.unitOfCoprime _ hco from dif_pos hco,
+    rw [show gu q = ZMod.unitOfCoprime _ hco from dite_eq_left hco,
       ZMod.coe_unitOfCoprime]
   · -- hgen
     intro q hq
-    haveI : Fact q.Prime := ⟨hFpr q (memF.mp hq)⟩
+    have : Fact q.Prime := ⟨hFpr q (memF.mp hq)⟩
     have hco := (hQ' q (memF.mp hq)).2.1
     refine CP.forall_mem_zpowers_of_pow_div_prime (g := gu q) ?_
     intro r hr
@@ -403,7 +403,7 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
     have h := congrArg (fun u : (ZMod q)ˣ => (u : ZMod q)) heq
     rw [Units.val_pow_eq_pow_val, Units.val_one] at h
     rwa [show ((gu q : (ZMod q)ˣ) : ZMod q) = ((c.g q : ℕ) : ZMod q) from by
-      rw [show gu q = ZMod.unitOfCoprime _ hco from dif_pos hco,
+      rw [show gu q = ZMod.unitOfCoprime _ hco from dite_eq_left hco,
         ZMod.coe_unitOfCoprime]] at h
   · -- hstep
     intro q hq _ p hp _
@@ -416,7 +416,7 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
       exact memI.mp this
     have hpair := ((hQ' q (memF.mp hq)).2.2.2.1 p hpI
       (Nat.dvd_of_mem_primeFactors hp)).1
-    rw [pairCheck, dif_pos (Nat.prime_of_mem_primeFactors hp),
+    rw [pairCheck, dite_eq_left (Nat.prime_of_mem_primeFactors hp),
       decide_eq_true_eq] at hpair
     exact hpair
   · -- h5
@@ -438,7 +438,7 @@ theorem gaussSumsTest_eq_true (h : gaussSumsTest n c = true) :
     have hco := (hQ' q (memF.mp hq)).2.1
     rw [(hQ' q (memF.mp hq)).2.2.2.2, Units.val_pow_eq_pow_val,
       show ((gu q : (ZMod q)ˣ) : ZMod q) = ((c.g q : ℕ) : ZMod q) from by
-        rw [show gu q = ZMod.unitOfCoprime _ hco from dif_pos hco,
+        rw [show gu q = ZMod.unitOfCoprime _ hco from dite_eq_left hco,
           ZMod.coe_unitOfCoprime]]
   · -- hscan
     intro j hj0 hjI hjdvd
@@ -574,7 +574,7 @@ omit [Fact q.Prime] in
 theorem gaussTower_eq_zero_of_grid (T : GaussTowerPQ n p q)
     (h : ∀ c2 ∈ T.val.coeffs, ∀ c1 ∈ c2.val.coeffs, c1.val.toNat = 0) :
     T = 0 := by
-  haveI : NeZero n.toNat :=
+  have : NeZero n.toNat :=
     ⟨by have := Fact.out (p := 1 < n.toNat); omega⟩
   have hc2 : ∀ c2 ∈ T.val.coeffs, c2 = 0 := by
     intro c2 hc2
@@ -678,7 +678,7 @@ theorem gaussSumsTest_complete
   have h1 : AzNat.ofNat 1 < n := by
     rw [AzNat.lt_iff_toNat_lt, AzNat.toNat_ofNat]
     exact hn1
-  rw [gaussSumsTest, dif_pos h1]
+  rw [gaussSumsTest, dite_eq_left h1]
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq,
     beq_iff_eq]
   refine ⟨⟨⟨⟨⟨⟨⟨⟨hIndup, hIpr⟩, hFndup⟩, hFpr⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
@@ -691,9 +691,9 @@ theorem gaussSumsTest_complete
     exact hnF
   · -- the per-`p` checks, including step 5
     intro p hp
-    haveI : Fact p.Prime := ⟨hIpr p hp⟩
-    haveI : Fact (c.q₀ p).Prime := ⟨hFpr _ (hq₀F p hp)⟩
-    rw [pCheck, dif_pos (hIpr p hp), dif_pos (hFpr _ (hq₀F p hp))]
+    have : Fact p.Prime := ⟨hIpr p hp⟩
+    have : Fact (c.q₀ p).Prime := ⟨hFpr _ (hq₀F p hp)⟩
+    rw [pCheck, dite_eq_left (hIpr p hp), dite_eq_left (hFpr _ (hq₀F p hp))]
     simp only [Bool.and_eq_true, decide_eq_true_eq]
     refine ⟨⟨⟨⟨hw p hp, hu p hp⟩, hq₀F p hp⟩, hq₀d p hp⟩, ?_⟩
     have hpmem : p ∈ (c.q₀ p - 1).primeFactors :=
@@ -716,15 +716,15 @@ theorem gaussSumsTest_complete
     exact h0
   · -- the per-`q` checks: generator, step 3/4, step-6 tables
     intro q hq
-    haveI : Fact q.Prime := ⟨hFpr q hq⟩
+    have : Fact q.Prime := ⟨hFpr q hq⟩
     have hq1 : q - 1 ≠ 0 := by
       have := (hFpr q hq).two_le
       omega
-    rw [qCheck, dif_pos (hFpr q hq)]
+    rw [qCheck, dite_eq_left (hFpr q hq)]
     simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     refine ⟨⟨⟨⟨hqI q hq, ?_⟩, ?_⟩, ?_⟩, hlh q hq⟩
     · -- the verified primitive root is coprime to `q`
-      haveI : NeZero q := ⟨(hFpr q hq).pos.ne'⟩
+      have : NeZero q := ⟨(hFpr q hq).pos.ne'⟩
       rw [← ZMod.isUnit_iff_coprime, hgu q hq]
       exact (gu q).isUnit
     · -- the generator power checks
@@ -733,7 +733,7 @@ theorem gaussSumsTest_complete
       obtain ⟨hrI, hrdvd⟩ := hr
       rw [decide_eq_true_eq] at hrdvd
       have hrp : r.Prime := hIpr r hrI
-      haveI : NeZero q := ⟨(hFpr q hq).pos.ne'⟩
+      have : NeZero q := ⟨(hFpr q hq).pos.ne'⟩
       have hord : orderOf (gu q) = q - 1 := by
         rw [orderOf_eq_card_of_forall_mem_zpowers (hgen q hq),
           Nat.card_eq_fintype_card, ZMod.card_units_eq_totient,
@@ -755,11 +755,11 @@ theorem gaussSumsTest_complete
       rw [List.mem_filter] at hp
       obtain ⟨hpI, hpdvd⟩ := hp
       rw [decide_eq_true_eq] at hpdvd
-      haveI : Fact p.Prime := ⟨hIpr p hpI⟩
+      have : Fact p.Prime := ⟨hIpr p hpI⟩
       have hpmem : p ∈ (q - 1).primeFactors :=
         Nat.mem_primeFactors.mpr ⟨hIpr p hpI, hpdvd, hq1⟩
       refine ⟨?_, hlqh q hq p hpI hpdvd⟩
-      rw [pairCheck, dif_pos (hIpr p hpI), decide_eq_true_eq]
+      rw [pairCheck, dite_eq_left (hIpr p hpI), decide_eq_true_eq]
       have hd := hpair q hq p hpmem
       rw [natCast_dvd_iff_reduceT,
         reduceT_sub_pow hpmem (hgen q hq) (hgu q hq)] at hd
@@ -866,14 +866,14 @@ theorem gaussSumsTestO_eq_some_true
     (h : gaussSumsTestO n c = some true) : n.toNat.Prime := by
   rw [gaussSumsTestO] at h
   by_cases h1 : AzNat.ofNat 1 < n
-  case neg => rw [dif_neg h1] at h; exact absurd h (by simp)
-  rw [dif_pos h1] at h
-  haveI : Fact (1 < n.toNat) := ⟨by
+  case neg => rw [dite_eq_right h1] at h; exact absurd h (by simp)
+  rw [dite_eq_left h1] at h
+  have : Fact (1 < n.toNat) := ⟨by
     have h' := (AzNat.lt_iff_toNat_lt _ _).mp h1
     rwa [AzNat.toNat_ofNat] at h'⟩
   by_cases hlists : listChecks c = true
-  case neg => rw [if_neg hlists] at h; exact absurd h (by simp)
-  rw [if_pos hlists] at h
+  case neg => rw [ite_eq_right hlists] at h; exact absurd h (by simp)
+  rw [ite_eq_left hlists] at h
   rw [listChecks] at hlists
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     at hlists
@@ -891,18 +891,18 @@ theorem gaussSumsTestO_eq_some_true
       rw [AzNat.toNat_ofNat] at this
       rw [← this]
       exact hFpr p hp
-  · rw [if_neg hmem] at h
+  · rw [ite_eq_right hmem] at h
     by_cases hgcd : (!(AzNat.gcd
         (AzNat.ofNat (c.Ips.prod * c.Fps.prod)) n
         == AzNat.ofNat 1)) = true
-    case pos => rw [if_pos hgcd] at h; exact absurd h (by simp)
-    rw [if_neg hgcd] at h
+    case pos => rw [ite_eq_left hgcd] at h; exact absurd h (by simp)
+    rw [ite_eq_right hgcd] at h
     by_cases hfac : (c.Ips.any (step5FactorFound n c)
         || scanFactorFound n c) = true
-    case pos => rw [if_pos hfac] at h; exact absurd h (by simp)
-    rw [if_neg hfac] at h
+    case pos => rw [ite_eq_left hfac] at h; exact absurd h (by simp)
+    rw [ite_eq_right hfac] at h
     by_cases htest : gaussSumsTest n c = true
-    case neg => rw [if_neg htest] at h; exact absurd h (by simp)
+    case neg => rw [ite_eq_right htest] at h; exact absurd h (by simp)
     exact gaussSumsTest_eq_true n c htest
 
 /-- A firing factor detector (step 5 or the step-6 scan) exhibits a
@@ -914,16 +914,16 @@ private theorem not_prime_of_factor_found [Fact (1 < n.toNat)]
   rw [Bool.or_eq_true, List.any_eq_true] at hfac
   rcases hfac with ⟨p, hp, hfound⟩ | hfound
   · -- a step-5 content gcd is a proper factor
-    rw [step5FactorFound, dif_pos (hIpr p hp)] at hfound
+    rw [step5FactorFound, dite_eq_left (hIpr p hp)] at hfound
     by_cases hq : (c.q₀ p).Prime
-    case neg => rw [dif_neg hq] at hfound; exact absurd hfound (by simp)
-    rw [dif_pos hq] at hfound
+    case neg => rw [dite_eq_right hq] at hfound; exact absurd hfound (by simp)
+    rw [dite_eq_left hq] at hfound
     rw [List.any_eq_true] at hfound
     obtain ⟨j, -, hj⟩ := hfound
     simp only [Bool.and_eq_true, decide_eq_true_eq] at hj
     obtain ⟨hj1, hjn⟩ := hj
-    haveI : Fact p.Prime := ⟨hIpr p hp⟩
-    haveI : Fact (c.q₀ p).Prime := ⟨hq⟩
+    have : Fact p.Prime := ⟨hIpr p hp⟩
+    have : Fact (c.q₀ p).Prime := ⟨hq⟩
     set T := (gaussSumT n p (c.q₀ p) (c.g (c.q₀ p))).powAzNat (certE' c p)
       - zetaPPowT n p (c.q₀ p) j with hT
     have hdvd := (towerContentGcd_dvd n p (c.q₀ p) T).1
@@ -955,14 +955,14 @@ theorem gaussSumsTestO_eq_some_false
     (h : gaussSumsTestO n c = some false) : ¬n.toNat.Prime := by
   rw [gaussSumsTestO] at h
   by_cases h1 : AzNat.ofNat 1 < n
-  case neg => rw [dif_neg h1] at h; exact absurd h (by simp)
-  rw [dif_pos h1] at h
-  haveI hfact : Fact (1 < n.toNat) := ⟨by
+  case neg => rw [dite_eq_right h1] at h; exact absurd h (by simp)
+  rw [dite_eq_left h1] at h
+  have hfact : Fact (1 < n.toNat) := ⟨by
     have h' := (AzNat.lt_iff_toNat_lt _ _).mp h1
     rwa [AzNat.toNat_ofNat] at h'⟩
   by_cases hlists : listChecks c = true
-  case neg => rw [if_neg hlists] at h; exact absurd h (by simp)
-  rw [if_pos hlists] at h
+  case neg => rw [ite_eq_right hlists] at h; exact absurd h (by simp)
+  rw [ite_eq_left hlists] at h
   rw [listChecks] at hlists
   simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     at hlists
@@ -972,8 +972,8 @@ theorem gaussSumsTestO_eq_some_false
   have hFpos : 0 < c.Fps.prod :=
     List.prod_pos fun q hq => (hFpr q hq).pos
   by_cases hmem : (memListAz n c.Ips || memListAz n c.Fps) = true
-  case pos => rw [if_pos hmem] at h; exact absurd h (by simp)
-  rw [if_neg hmem] at h
+  case pos => rw [ite_eq_left hmem] at h; exact absurd h (by simp)
+  rw [ite_eq_right hmem] at h
   by_cases hgcd : (!(AzNat.gcd
       (AzNat.ofNat (c.Ips.prod * c.Fps.prod)) n
       == AzNat.ofNat 1)) = true
@@ -1014,15 +1014,15 @@ theorem gaussSumsTestO_eq_some_false
           (mem_primeFactors_prod_iff hFndup hFpr).mp hmem',
           by rw [beq_iff_eq]; exact hself⟩
       simp [hm]
-  rw [if_neg hgcd] at h
+  rw [ite_eq_right hgcd] at h
   by_cases hfac : (c.Ips.any (step5FactorFound n c)
       || scanFactorFound n c) = true
   case neg =>
-    rw [if_neg hfac] at h
+    rw [ite_eq_right hfac] at h
     by_cases htest : gaussSumsTest n c = true
-    · rw [if_pos htest] at h; exact absurd h (by simp)
-    · rw [if_neg htest] at h; exact absurd h (by simp)
-  rw [if_pos hfac] at h
+    · rw [ite_eq_left htest] at h; exact absurd h (by simp)
+    · rw [ite_eq_right htest] at h; exact absurd h (by simp)
+  rw [ite_eq_left hfac] at h
   exact not_prime_of_factor_found n c hIpr hfac
 
 /-- **Completeness of the verdicts**: for PRIME `n` and a genuinely
@@ -1077,25 +1077,25 @@ theorem gaussSumsTestO_complete [Fact (1 < n.toNat)]
   have h1 : AzNat.ofNat 1 < n := by
     rw [AzNat.lt_iff_toNat_lt, AzNat.toNat_ofNat]
     exact hn1
-  rw [gaussSumsTestO, dif_pos h1]
+  rw [gaussSumsTestO, dite_eq_left h1]
   have hlc : listChecks c = true := by
     rw [listChecks]
     simp only [Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     exact ⟨⟨⟨hIndup, hIpr⟩, hFndup⟩, hFpr⟩
-  rw [if_pos hlc]
+  rw [ite_eq_left hlc]
   by_cases hmem : (memListAz n c.Ips || memListAz n c.Fps) = true
-  · rw [if_pos hmem]
-  · rw [if_neg hmem]
+  · rw [ite_eq_left hmem]
+  · rw [ite_eq_right hmem]
     have hbeq : (AzNat.gcd (AzNat.ofNat (c.Ips.prod * c.Fps.prod)) n
         == AzNat.ofNat 1) = true := by
       rw [beq_iff_eq]
       exact AzNat.toNat_injective (by
         rw [AzNat.toNat_gcd, AzNat.toNat_ofNat, AzNat.toNat_ofNat]
         exact hgcd)
-    rw [if_neg (by rw [hbeq]; simp)]
-    rw [if_neg fun hfac =>
+    rw [ite_eq_right (by rw [hbeq]; simp)]
+    rw [ite_eq_right fun hfac =>
       not_prime_of_factor_found n c hIpr hfac hprime]
-    rw [if_pos htest]
+    rw [ite_eq_left htest]
 
 end OptionChecker
 

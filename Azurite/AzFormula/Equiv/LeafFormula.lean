@@ -40,7 +40,7 @@ theorem azRealization_azLeafFormulaAux [FaithfulSMul D C]
       rw [azRealization_azDegFormula, liftPoly_neg, liftPoly_pRem_eq_pRemMv _ _ hcur]
     · -- next ≠ 0: conjoin degree formula with recursive call
       have hbeq : ¬(next == 0) = true := by rwa [beq_iff_eq]
-      rw [if_neg hbeq]
+      rw [ite_eq_right hbeq]
       have hlift_ne : liftPoly next ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
       simp only [BPR.leafFormulaAux, hlift_ne, ↓reduceIte]
       rw [azRealization_azSmartAnd, azRealization_azDegFormula,
@@ -66,7 +66,7 @@ theorem azRealization_azLeafFormula [FaithfulSMul D C]
       simp only [beq_self_eq_true, ↓reduceIte, BPR.leafFormula, liftPoly_zero]
       exact azRealization_azDegFormula Q ⊥
     · have hbeq : ¬(q == 0) = true := by rwa [beq_iff_eq]
-      rw [if_neg hbeq]
+      rw [ite_eq_right hbeq]
       have hlift_ne : liftPoly q ≠ 0 := (liftPoly_eq_zero_iff _).not.mpr h0
       simp only [BPR.leafFormula, hlift_ne, ↓reduceIte]
       rw [azRealization_azSmartAnd, azRealization_azDegFormula,

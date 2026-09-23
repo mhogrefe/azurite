@@ -62,7 +62,7 @@ theorem isUnit_one_sub_zetaBar_pow (hm : 0 < m) (hco : Nat.Coprime n m)
     (hn1 : 1 < n) {𝔪 : Ideal (CycM m)}
     (hnI : ((n : ℕ) : CycM m) ∈ 𝔪) {x : ℕ} (hx : ¬ m ∣ x) :
     IsUnit (1 - Ideal.Quotient.mk 𝔪 (zetaM m) ^ x) := by
-  haveI := isDomain_cycM hm
+  have := isDomain_cycM hm
   set π := Ideal.Quotient.mk 𝔪 with hπ
   set z := π (zetaM m) with hzdef
   -- `(m : Q)` is a unit

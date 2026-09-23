@@ -232,7 +232,7 @@ theorem normOneCandidate_isSome [Fact (1 < m.toNat)] (hn : m.toNat.Prime)
       simp only [toZMod_mul, toZMod_add]
       have h := CL.quadNorm_norm_one_candidate (toZMod u) (toZMod a) (toZMod c) (toZMod d) hd1'
       convert h using 2 <;> ring
-    simp only [dif_pos hN]
+    simp only [dite_eq_left hN]
     rfl
 
 end NormOne

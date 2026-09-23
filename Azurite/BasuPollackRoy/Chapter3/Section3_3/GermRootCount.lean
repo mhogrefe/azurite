@@ -57,7 +57,7 @@ theorem coeffPoly_rootCount_isSemialgebraicSet (n : ℕ) (c : ℤ) :
                 (fun _ => 0))
               ((genericPoly n).map (MvPolynomial.aeval (R := R) y).toRingHom) = c} := by
     ext y
-    simp only [Set.mem_setOf_eq, genericPoly_map]
+    simp only [Set.mem_ofPred_eq, genericPoly_map]
     have hfam : familyPow (fun _ : Fin 1 =>
         ((1 : Polynomial (MvPolynomial (Fin n) R)).map (MvPolynomial.aeval (R := R) y).toRingHom))
         (fun _ => 0) = (1 : Polynomial R) := by simp [familyPow]
@@ -95,11 +95,11 @@ theorem coeffPoly_coeff (n : ℕ) (y : Fin n → R) (j : ℕ) :
   · next h =>
     rw [Finset.sum_eq_single (⟨j, h⟩ : Fin n)]
     · simp
-    · intro b _ hb; rw [if_neg]; exact fun hbj => hb (Fin.ext hbj)
+    · intro b _ hb; rw [ite_eq_right]; exact fun hbj => hb (Fin.ext hbj)
     · intro hcon; exact absurd (Finset.mem_univ _) hcon
   · next h =>
     rw [Finset.sum_eq_zero]
-    intro i _; rw [if_neg]; intro hij; exact h (hij ▸ i.isLt)
+    intro i _; rw [ite_eq_right]; intro hij; exact h (hij ▸ i.isLt)
 
 /-- The **coefficient map** `u ↦ (Q.coeff i u)ᵢ : R¹ → Rⁿ`. -/
 noncomputable def coeffMap (n : ℕ) (Q : Polynomial ((Fin 1 → R) → R)) :
@@ -162,8 +162,8 @@ theorem coeffPoly_coeffMap_eq (u : Fin 1 → R) :
   refine Polynomial.ext fun j => ?_
   rw [coeffPoly_coeff, specializeAt, Polynomial.coeff_map, Pi.evalRingHom_apply]
   by_cases h : j < P.natDegree + 1
-  · rw [dif_pos h]; rfl
-  · rw [dif_neg h]
+  · rw [dite_eq_left h]; rfl
+  · rw [dite_eq_right h]
     have : Q.coeff j = 0 :=
       Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hQdeg (by omega))
     rw [this]; rfl
@@ -183,7 +183,7 @@ theorem germPoly_rootCount_isSemialgebraicSet (c : ℤ) :
       = {u : Fin 1 → R | u ∈ rightNbhd t₀ ∧
         specializeAt Q u ≠ 0 ∧ ((specializeAt Q u).roots.toFinset.card : ℤ) = c} := by
     ext u
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq,
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_ofPred_eq,
       coeffPoly_coeffMap_eq (P := P) hQdeg]
   rwa [hset] at hpre
 

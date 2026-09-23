@@ -311,7 +311,7 @@ theorem hasPartialDerivAtIn_coord {k : ℕ} (U : Set (Fin k → R)) (i j : Fin k
     HasPartialDerivAtIn (fun w => w i) U j x (if i = j then 1 else 0) := by
   by_cases hij : i = j
   · subst hij
-    rw [if_pos rfl]
+    rw [ite_eq_left rfl]
     show HasDerivAtIn (fun t => Function.update x i t i)
       {t : R | Function.update x i t ∈ U} (x i) 1
     have heq : (fun t : R => Function.update x i t i) = fun t => 1 * t + 0 := by
@@ -319,7 +319,7 @@ theorem hasPartialDerivAtIn_coord {k : ℕ} (U : Set (Fin k → R)) (i j : Fin k
       rw [Function.update_self, one_mul, add_zero]
     rw [heq]
     exact hasDerivAtIn_affine 1 0 _ _
-  · rw [if_neg hij]
+  · rw [ite_eq_right hij]
     show HasDerivAtIn (fun t => Function.update x j t i)
       {t : R | Function.update x j t ∈ U} (x j) 0
     have heq : (fun t : R => Function.update x j t i) = fun _ => x i := by
@@ -366,7 +366,7 @@ theorem proposition_3_24_sClass {k : ℕ} {U' : Set (Fin k → R)}
     hhomeo, hFinvSa, ?_⟩
   rcases Nat.eq_zero_or_pos k with hk0 | hk
   · subst hk0; intro a; exact a.elim0
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   -- the inverse maps `V → U` and is a right inverse
   have hfinvMaps : Set.MapsTo finv V U := by
     intro y hy

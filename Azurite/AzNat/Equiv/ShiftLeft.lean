@@ -314,7 +314,7 @@ private lemma shiftLimbsLeft.go_carry_lt (hi sh : Nat) (hsh_lb : 1 ≤ sh) (hsh_
     have h_lt : i < hi := by omega
     have h_i_size : i < a.size := Nat.lt_of_lt_of_le h_lt h_size
     rw [shiftLimbsLeft.go]
-    simp only [h_lt, dif_pos]
+    simp only [h_lt, dite_eq_left]
     have h_rec : hi - (i + 1) = n := by omega
     obtain ⟨_, h_newCarry_lt⟩ :=
       limb_shift_step a[i] carry sh hsh_lb hsh_ub hcarry
@@ -342,13 +342,13 @@ private lemma shiftLimbsLeft.go_carry_eq (hi sh : Nat)
   | succ n ih =>
     have h_i_size : i < a.size := Nat.lt_of_lt_of_le hi_lt h_size
     rw [shiftLimbsLeft.go]
-    simp only [hi_lt, dif_pos]
+    simp only [hi_lt, dite_eq_left]
     by_cases hn : n = 0
     · -- Base: i + 1 = hi, recursive call returns its carry input.
       have hi1_eq : i + 1 = hi := by omega
       have h_ge : ¬ i + 1 < hi := by omega
       rw [shiftLimbsLeft.go]
-      simp only [h_ge, dif_neg, not_false_eq_true]
+      simp only [h_ge, dite_eq_right, not_false_eq_true]
       congr 1
       have hi_eq : hi - 1 = i := by omega
       subst hi_eq; rfl
@@ -379,10 +379,10 @@ theorem toNat_shiftLeftMul64 (a : AzNat) (k : Nat) :
       have h_len : a.limbs.toList.length = 0 := hz
       have h_nil : a.limbs.toList = [] := by simp_all
       rw [h_nil]; rfl
-    have h_eq : shiftLeftMul64 a k = a := by unfold shiftLeftMul64; rw [dif_pos hz]
+    have h_eq : shiftLeftMul64 a k = a := by unfold shiftLeftMul64; rw [dite_eq_left hz]
     rw [h_eq, h_toNat_zero]; simp
   · have h_limbs : (shiftLeftMul64 a k).limbs = Array.replicate k 0 ++ a.limbs := by
-      unfold shiftLeftMul64; rw [dif_neg hz]
+      unfold shiftLeftMul64; rw [dite_eq_right hz]
     show toNatLimbsList (shiftLeftMul64 a k).limbs.toList = _
     rw [h_limbs, Array.toList_append, Array.toList_replicate]
     rw [toNatLimbsList_append, toNatLimbsList_replicate_zero, List.length_replicate]
@@ -559,7 +559,7 @@ theorem toNat_shiftLeft (a : AzNat) (sh : Nat) :
     (shiftLeft a sh).toNat = a.toNat * 2 ^ sh := by
   unfold shiftLeft
   by_cases hz : a.limbs.size = 0
-  · rw [dif_pos hz]
+  · rw [dite_eq_left hz]
     have h_nil : a.limbs.toList = [] := by
       have : a.limbs.toList.length = 0 := hz
       simp_all
@@ -567,13 +567,13 @@ theorem toNat_shiftLeft (a : AzNat) (sh : Nat) :
       show toNatLimbsList a.limbs.toList = 0
       rw [h_nil]; rfl
     rw [h_toNat_zero]; simp
-  · rw [dif_neg hz]
+  · rw [dite_eq_right hz]
     by_cases hsm : sh % 64 = 0
-    · rw [dif_pos hsm, toNat_shiftLeftMul64]
+    · rw [dite_eq_left hsm, toNat_shiftLeftMul64]
       congr 1
       conv_rhs => rw [show sh = 64 * (sh / 64) + sh % 64 from (Nat.div_add_mod sh 64).symm]
       rw [hsm, Nat.add_zero]
-    · rw [dif_neg hsm]
+    · rw [dite_eq_right hsm]
       show toNatLimbsList _ = _
       exact toNat_shiftLeftGeneralLimbs a sh hz hsm
 

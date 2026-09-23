@@ -296,7 +296,7 @@ theorem negPattern_sum {R : Type _} [CommRing R] {p k : ℕ} (hp : p.Prime) (hk 
   simp_rw [hmod]
   rw [Finset.sum_eq_single l]
   · rw [Nat.mod_eq_of_lt hl]
-    simp only [if_true, neg_one_mul, Finset.sum_neg_distrib]
+    simp only [ite_true, neg_one_mul, Finset.sum_neg_distrib]
     have hvan := sum_pow_root_cyclotomic_eq_zero hp hk hz hp.not_dvd_one l
     have hsplit := Finset.sum_range_succ
       (fun j => z ^ (l + 1 * j * p ^ (k - 1))) (p - 1)
@@ -304,7 +304,7 @@ theorem negPattern_sum {R : Type _} [CommRing R] {p k : ℕ} (hp : p.Prime) (hk 
     simp only [one_mul] at hvan hsplit
     linear_combination hsplit - hvan
   · intro r hr hrl
-    rw [Nat.mod_eq_of_lt (mem_range.mp hr), if_neg hrl]
+    rw [Nat.mod_eq_of_lt (mem_range.mp hr), ite_eq_right hrl]
     simp
   · intro h
     exact absurd (mem_range.mpr hl) h

@@ -32,7 +32,7 @@ private theorem filterMap_single {α β : Type} [DecidableEq α] (l : List α) (
     · have hxs : a ∉ xs := hx ▸ hnodup.1
       have hrest : xs.filterMap (fun i => if i = a then some c else none) = [] := by
         rw [List.filterMap_eq_nil_iff]; intro i hi
-        exact if_neg (fun (h : i = a) => hxs (h ▸ hi))
+        exact ite_eq_right (fun (h : i = a) => hxs (h ▸ hi))
       rw [List.filterMap_cons_some (b := c) (by simp [hx]), hrest]
     · rw [List.filterMap_cons_none (by simp [hx])]
       exact ih ((List.mem_cons.mp hmem).resolve_left (Ne.symm hx)) hnodup.2
@@ -56,7 +56,7 @@ private theorem monic_charsWith_ofVarPow
   simp only [MonicMonomial.ofVarPow_exponent]
   by_cases hk : k = 0
   · subst hk; simp
-  · rw [if_neg hk]
+  · rw [ite_eq_right hk]
     have hfun : (fun i : Fin m =>
         if (if (⟨0, h⟩ : Fin m) = i then k else 0) = 0 then none
         else if (if (⟨0, h⟩ : Fin m) = i then k else 0) = 1
@@ -69,9 +69,9 @@ private theorem monic_charsWith_ofVarPow
       funext i
       by_cases hi : (⟨0, h⟩ : Fin m) = i
       · subst hi
-        simp only [if_true, xyz_varChars_zero]
+        simp only [ite_true, xyz_varChars_zero]
         by_cases hk1 : k = 1 <;> simp [hk, hk1]
-      · simp only [if_neg hi, if_neg (Ne.symm hi), if_true]
+      · simp only [ite_eq_right hi, ite_eq_right (Ne.symm hi), ite_true]
     rw [hfun, filterMap_single _ (⟨0, h⟩ : Fin m) _ (List.mem_finRange _) (List.nodup_finRange _)]
     simp [List.intercalate]
 
@@ -97,7 +97,7 @@ private theorem monomial_charsWith_eq {R : Type _} [Semiring R] [DecidableEq R]
   · subst hk
     simp [Monomial.toCharsWith, MonicMonomial.ofVarPow_zero]
   · unfold Monomial.toCharsWith
-    rw [if_neg (ofVarPow_ne_one h1 k hk), if_neg (ofVarPow_ne_one h2 k hk)]
+    rw [ite_eq_right (ofVarPow_ne_one h1 k hk), ite_eq_right (ofVarPow_ne_one h2 k hk)]
     simp only [monic_charsWith_ofVarPow]
 
 /-! ### `termsBelow`-level: the mapped char-lists agree -/
@@ -115,8 +115,8 @@ private theorem termsBelow_map_charsWith_eq {R : Type _} [Semiring R] [LinearOrd
   | succ k ih =>
     rw [termsBelow_succ, termsBelow_succ]
     by_cases hc : (coeffs[k]?).getD 0 = 0
-    · rw [dif_pos hc, dif_pos hc]; exact ih
-    · rw [dif_neg hc, dif_neg hc, List.map_cons, List.map_cons, ih,
+    · rw [dite_eq_left hc, dite_eq_left hc]; exact ih
+    · rw [dite_eq_right hc, dite_eq_right hc, List.map_cons, List.map_cons, ih,
         monomial_charsWith_eq h1 h2 ⟨_, hc⟩ k]
 
 /-! ### Poly-level: the two `toCharsWith` outputs agree -/

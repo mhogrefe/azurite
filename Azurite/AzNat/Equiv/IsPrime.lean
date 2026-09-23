@@ -34,8 +34,8 @@ theorem isPrime_eq_true_iff (n : AzNat) :
     isPrime n = true ↔ Nat.Prime n.toNat := by
   rw [isPrime]
   by_cases hsize : n.size ≤ 32
-  · rw [if_pos hsize, isPrimeNaive_eq_true_iff]
-  · rw [if_neg hsize, Bool.and_eq_true, aprclOrNaive_eq_true_iff]
+  · rw [ite_eq_left hsize, isPrimeNaive_eq_true_iff]
+  · rw [ite_eq_right hsize, Bool.and_eq_true, aprclOrNaive_eq_true_iff]
     constructor
     · exact fun h => h.2
     · exact fun hp => ⟨millerRabin_eq_true_of_prime hp 0 0, hp⟩

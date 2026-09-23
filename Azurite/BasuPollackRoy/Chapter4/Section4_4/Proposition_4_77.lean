@@ -208,7 +208,7 @@ theorem mem_zerOfFinset_image {N : ℕ} [DecidableEq (MvPolynomial (Fin N) K)]
     (Ps : Finset (MvPolynomial (Fin N) K)) (x : Fin N → C) :
     x ∈ zerOfFinset C (Ps.image τ) ↔ ptMap τ x ∈ zerOfFinset C Ps := by
   unfold zerOfFinset
-  simp only [Set.mem_setOf_eq, Finset.mem_image, forall_exists_index, and_imp]
+  simp only [Set.mem_ofPred_eq, Finset.mem_image, forall_exists_index, and_imp]
   constructor
   · intro h p hp
     rw [← aeval_comp_algHom]

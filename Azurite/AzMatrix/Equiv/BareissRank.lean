@@ -55,14 +55,14 @@ theorem AzMatrix.bareissElimMatrix_apply_diag
     M.bareissElimMatrix k b_prev i i =
       (if k.val < i.val then M.toFn k k / b_prev else 1) := by
   unfold AzMatrix.bareissElimMatrix
-  rw [if_pos rfl]
+  rw [ite_eq_left rfl]
 
 theorem AzMatrix.bareissElimMatrix_apply_of_ne
     (M : AzMatrix K n n) (k : Fin n) (b_prev : K) (i l : Fin n) (h : i ≠ l) :
     M.bareissElimMatrix k b_prev i l =
       (if k.val < i.val ∧ l = k then -(M.toFn i k / b_prev) else 0) := by
   unfold AzMatrix.bareissElimMatrix
-  rw [if_neg h]
+  rw [ite_eq_right h]
 
 /-! ### `det` of the Bareiss elimination matrix is nonzero -/
 
@@ -76,25 +76,25 @@ theorem AzMatrix.bareissElimMatrix_blockTriangular
   have h_lt' : i.val < l.val := h_lt
   unfold AzMatrix.bareissElimMatrix
   have h_neq : i ≠ l := fun h => by rw [h] at h_lt'; exact Nat.lt_irrefl _ h_lt'
-  rw [if_neg h_neq]
+  rw [ite_eq_right h_neq]
   have h_neg : ¬ (k.val < i.val ∧ l = k) := by
     intro ⟨h_ki, h_lk⟩
     have h_l_val : l.val = k.val := by rw [h_lk]
     omega
-  rw [if_neg h_neg]
+  rw [ite_eq_right h_neg]
 
 theorem AzMatrix.det_bareissElimMatrix_ne_zero
     (M : AzMatrix K n n) (k : Fin n) (b_prev : K)
     (h_pivot : M.toFn k k ≠ 0) (h_b_prev : b_prev ≠ 0) :
     Matrix.det (M.bareissElimMatrix k b_prev) ≠ 0 := by
-  rw [Matrix.det_of_lowerTriangular _
+  rw [Matrix.det_of_isLowerTriangular _
         (M.bareissElimMatrix_blockTriangular k b_prev)]
   apply Finset.prod_ne_zero_iff.mpr
   intro i _
   rw [M.bareissElimMatrix_apply_diag k b_prev]
   by_cases h_ki : k.val < i.val
-  · rw [if_pos h_ki]; exact div_ne_zero h_pivot h_b_prev
-  · rw [if_neg h_ki]; exact one_ne_zero
+  · rw [ite_eq_left h_ki]; exact div_ne_zero h_pivot h_b_prev
+  · rw [ite_eq_right h_ki]; exact one_ne_zero
 
 theorem AzMatrix.isUnit_det_bareissElimMatrix
     (M : AzMatrix K n n) (k : Fin n) (b_prev : K)
@@ -119,19 +119,19 @@ theorem AzMatrix.toFn_bareissEliminate_eq_bareissElimMatrix_mul
   simp only [Matrix.of_apply]
   by_cases h_ile : i.val ≤ k.val
   · -- i ≤ k: row of bareissElimMatrix is the identity row.
-    rw [if_pos h_ile]
+    rw [ite_eq_left h_ile]
     rw [Finset.sum_eq_single i]
     · rw [M.bareissElimMatrix_apply_diag k b_prev]
       have h_not_lt : ¬ k.val < i.val := by omega
-      rw [if_neg h_not_lt, one_mul]
+      rw [ite_eq_right h_not_lt, one_mul]
     · intro l _ h_li
       rw [M.bareissElimMatrix_apply_of_ne k b_prev i l (Ne.symm h_li)]
       have h_neg : ¬ (k.val < i.val ∧ l = k) := by
         intro ⟨h, _⟩; omega
-      rw [if_neg h_neg, zero_mul]
+      rw [ite_eq_right h_neg, zero_mul]
     · intro h; exact absurd (Finset.mem_univ _) h
   · -- i > k: two contributions: `l = i` (diagonal) and `l = k` (column k).
-    rw [if_neg h_ile]
+    rw [ite_eq_right h_ile]
     have h_ki : k.val < i.val := by omega
     have h_ik_ne : i ≠ k := by
       intro h; rw [h] at h_ki; exact Nat.lt_irrefl _ h_ki
@@ -141,13 +141,13 @@ theorem AzMatrix.toFn_bareissEliminate_eq_bareissElimMatrix_mul
             -(M.toFn i k / b_prev) * M.toFn k j := by
       rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i)]
       rw [M.bareissElimMatrix_apply_diag k b_prev]
-      rw [if_pos h_ki]
+      rw [ite_eq_left h_ki]
       rw [← Finset.add_sum_erase _ _
             (Finset.mem_erase.mpr ⟨Ne.symm h_ik_ne, Finset.mem_univ k⟩)]
       rw [M.bareissElimMatrix_apply_of_ne k b_prev i k h_ik_ne]
       have h_elim_k : (if k.val < i.val ∧ k = k then
             -(M.toFn i k / b_prev) else 0) = -(M.toFn i k / b_prev) :=
-        if_pos ⟨h_ki, rfl⟩
+        ite_eq_left ⟨h_ki, rfl⟩
       rw [h_elim_k]
       have h_rest :
           ∑ l ∈ (Finset.univ.erase i).erase k,
@@ -158,26 +158,26 @@ theorem AzMatrix.toFn_bareissEliminate_eq_bareissElimMatrix_mul
         obtain ⟨h_lk, h_li, _⟩ := h_l
         rw [M.bareissElimMatrix_apply_of_ne k b_prev i l (Ne.symm h_li)]
         have h_neg : ¬ (k.val < i.val ∧ l = k) := fun ⟨_, h⟩ => h_lk h
-        rw [if_neg h_neg, zero_mul]
+        rw [ite_eq_right h_neg, zero_mul]
       rw [h_rest, add_zero]
     rw [h_sum]
     by_cases h_jk_lt : j.val < k.val
     · -- j < k: under PartialZero, M[i][j] = 0 and M[k][j] = 0.
-      rw [if_pos h_jk_lt]
+      rw [ite_eq_left h_jk_lt]
       have h_M_i_j : M.toFn i j = 0 := h_partial i j (by omega) h_jk_lt
       have h_M_k_j : M.toFn k j = 0 := h_partial k j h_jk_lt h_jk_lt
       rw [h_M_i_j, h_M_k_j]
       ring
-    · rw [if_neg h_jk_lt]
+    · rw [ite_eq_right h_jk_lt]
       by_cases h_jk : j = k
       · -- j = k: target is 0 (column k zeroed).
-        rw [if_pos h_jk]
+        rw [ite_eq_left h_jk]
         subst h_jk
         show (0 : K) = M.toFn j j / b_prev * M.toFn i j +
           -(M.toFn i j / b_prev) * M.toFn j j
         field_simp; ring
       · -- j > k: full bareiss formula via ExactDiv.
-        rw [if_neg h_jk]
+        rw [ite_eq_right h_jk]
         show Azurite.ExactDiv.exactDiv
               (M.toFn k k * M.toFn i j - M.toFn i k * M.toFn k j) b_prev =
             M.toFn k k / b_prev * M.toFn i j +
@@ -204,7 +204,7 @@ theorem AzMatrix.bareissEliminate_preservesDiag
     (M.bareissEliminate kp b_prev).toFn i i = M.toFn i i := by
   rw [AzMatrix.toFn_bareissEliminate]
   have h_i_le_kp : i.val ≤ kp.val := Nat.le_of_lt h_i_lt
-  rw [if_pos h_i_le_kp]
+  rw [ite_eq_left h_i_le_kp]
 
 /-! ### Field-case inductive correctness -/
 
@@ -241,41 +241,41 @@ theorem AzMatrix.bareissRankAux_eq_rank_field
             Matrix.rank (Matrix.of M_row.toFn) =
               Matrix.rank (Matrix.of M.toFn) := by
           by_cases h_eq : i_p = kp
-          · rw [hM_row, if_pos h_eq]
-          · rw [hM_row, if_neg h_eq]; exact M.rank_swapRows kp i_p
+          · rw [hM_row, ite_eq_left h_eq]
+          · rw [hM_row, ite_eq_right h_eq]; exact M.rank_swapRows kp i_p
         have h_rank_swapped :
             Matrix.rank (Matrix.of M_swapped.toFn) =
               Matrix.rank (Matrix.of M.toFn) := by
           by_cases h_eq : j_p = kp
-          · rw [hM_swapped, if_pos h_eq]; exact h_rank_row
-          · rw [hM_swapped, if_neg h_eq]
+          · rw [hM_swapped, ite_eq_left h_eq]; exact h_rank_row
+          · rw [hM_swapped, ite_eq_right h_eq]
             rw [M_row.rank_swapCols kp j_p]
             exact h_rank_row
         have h_partial_row : M_row.PartialZero start := by
           by_cases h_eq : i_p = kp
-          · rw [hM_row, if_pos h_eq]; exact h_partial
-          · rw [hM_row, if_neg h_eq]
+          · rw [hM_row, ite_eq_left h_eq]; exact h_partial
+          · rw [hM_row, ite_eq_right h_eq]
             exact M.swapRows_preservesPartialZero start (by omega) h_partial
               i_p h_i_ge
         have h_partial_swapped : M_swapped.PartialZero start := by
           by_cases h_eq : j_p = kp
-          · rw [hM_swapped, if_pos h_eq]; exact h_partial_row
-          · rw [hM_swapped, if_neg h_eq]
+          · rw [hM_swapped, ite_eq_left h_eq]; exact h_partial_row
+          · rw [hM_swapped, ite_eq_right h_eq]
             exact M_row.swapCols_preservesPartialZero start (by omega)
               h_partial_row j_p h_j_ge
         have h_M_swapped_kp_kp : M_swapped.toFn kp kp = M.toFn i_p j_p := by
           by_cases h_jp_kp : j_p = kp
-          · rw [hM_swapped, if_pos h_jp_kp]
+          · rw [hM_swapped, ite_eq_left h_jp_kp]
             by_cases h_ip_kp : i_p = kp
-            · rw [hM_row, if_pos h_ip_kp, h_ip_kp, h_jp_kp]
-            · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-              rw [if_pos rfl, h_jp_kp]
-          · rw [hM_swapped, if_neg h_jp_kp, AzMatrix.toFn_swapCols]
-            rw [if_pos rfl]
+            · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp, h_jp_kp]
+            · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+              rw [ite_eq_left rfl, h_jp_kp]
+          · rw [hM_swapped, ite_eq_right h_jp_kp, AzMatrix.toFn_swapCols]
+            rw [ite_eq_left rfl]
             by_cases h_ip_kp : i_p = kp
-            · rw [hM_row, if_pos h_ip_kp, h_ip_kp]
-            · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-              rw [if_pos rfl]
+            · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp]
+            · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+              rw [ite_eq_left rfl]
         have h_M_swapped_kp_kp_nz : M_swapped.toFn kp kp ≠ 0 := by
           rw [h_M_swapped_kp_kp]; exact h_pivot_nz
         have h_diag_swapped : ∀ i : Fin n, i.val < start →
@@ -283,14 +283,14 @@ theorem AzMatrix.bareissRankAux_eq_rank_field
           intro i h_i_lt
           have h_row_eq : M_row.toFn i i = M.toFn i i := by
             by_cases h_eq : i_p = kp
-            · rw [hM_row, if_pos h_eq]
-            · rw [hM_row, if_neg h_eq]
+            · rw [hM_row, ite_eq_left h_eq]
+            · rw [hM_row, ite_eq_right h_eq]
               exact M.swapRows_preservesDiag kp i_p h_i_ge i
                 (by show i.val < kp.val; exact h_i_lt)
           have h_swapped_eq : M_swapped.toFn i i = M_row.toFn i i := by
             by_cases h_eq : j_p = kp
-            · rw [hM_swapped, if_pos h_eq]
-            · rw [hM_swapped, if_neg h_eq]
+            · rw [hM_swapped, ite_eq_left h_eq]
+            · rw [hM_swapped, ite_eq_right h_eq]
               exact M_row.swapCols_preservesDiag kp j_p h_j_ge i
                 (by show i.val < kp.val; exact h_i_lt)
           rw [h_swapped_eq, h_row_eq]
@@ -309,7 +309,7 @@ theorem AzMatrix.bareissRankAux_eq_rank_field
           exact h_rank_swapped
         have h_M_new_kp_kp : M_new.toFn kp kp = M_swapped.toFn kp kp := by
           rw [hM_new, AzMatrix.toFn_bareissEliminate]
-          rw [if_pos (le_refl _)]
+          rw [ite_eq_left (le_refl _)]
         have h_diag_new : ∀ i : Fin n, i.val < start + 1 →
             M_new.toFn i i ≠ 0 := by
           intro i h_i_lt
@@ -460,14 +460,14 @@ theorem AzMatrix.bareissEliminate_map_algebraMap_of_sylvester
       AzMatrix.toFn_bareissEliminate]
   simp only [AzMatrix.toFn_map]
   by_cases h_ile : i.val ≤ kp.val
-  · rw [if_pos h_ile, if_pos h_ile]
-  · rw [if_neg h_ile, if_neg h_ile]
+  · rw [ite_eq_left h_ile, ite_eq_left h_ile]
+  · rw [ite_eq_right h_ile, ite_eq_right h_ile]
     by_cases h_jlt : j.val < kp.val
-    · rw [if_pos h_jlt, if_pos h_jlt]
-    · rw [if_neg h_jlt, if_neg h_jlt]
+    · rw [ite_eq_left h_jlt, ite_eq_left h_jlt]
+    · rw [ite_eq_right h_jlt, ite_eq_right h_jlt]
       by_cases h_jeq : j = kp
-      · rw [if_pos h_jeq, if_pos h_jeq, map_zero]
-      · rw [if_neg h_jeq, if_neg h_jeq]
+      · rw [ite_eq_left h_jeq, ite_eq_left h_jeq, map_zero]
+      · rw [ite_eq_right h_jeq, ite_eq_right h_jeq]
         -- Now we have the exactDiv case. Apply `algebraMap_exactDiv`.
         have h_ki : kp.val < i.val := by omega
         have h_kj : kp.val < j.val := by omega
@@ -517,10 +517,10 @@ private theorem AzMatrix.toFn_swapRows_eq_submatrix_gen
         else if i = i₂ then M.toFn i₁ j
         else M.toFn i j) = M.toFn ((Equiv.swap i₁ i₂) i) j
   by_cases h₁ : i = i₁
-  · rw [if_pos h₁, h₁, Equiv.swap_apply_left]
+  · rw [ite_eq_left h₁, h₁, Equiv.swap_apply_left]
   · by_cases h₂ : i = i₂
-    · rw [if_neg h₁, if_pos h₂, h₂, Equiv.swap_apply_right]
-    · rw [if_neg h₁, if_neg h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
+    · rw [ite_eq_right h₁, ite_eq_left h₂, h₂, Equiv.swap_apply_right]
+    · rw [ite_eq_right h₁, ite_eq_right h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
 
 /-! #### `bareissMinor` under row swap (analog of `bareissMinor_swapCols`)
 
@@ -571,7 +571,7 @@ theorem AzMatrix.principalMinor_swapRows_low_level
     intro h_eq
     have : i'_lift.val = i.val := congrArg Fin.val h_eq
     rw [h_i'_val] at this; have := i'.isLt; omega
-  rw [if_neg h_neq_kp, if_neg h_neq_i]
+  rw [ite_eq_right h_neq_kp, ite_eq_right h_neq_i]
 
 /-! #### `swapRows` preserves `PartialZero` and `findFirstNonzero` semantics -/
 
@@ -582,15 +582,15 @@ theorem AzMatrix.swapRows_preservesPartialZero_gen
   intro i j h_lt_ij h_bnd
   rw [AzMatrix.toFn_swapRows]
   by_cases h_i_kp : i = ⟨start, h_lt⟩
-  · rw [if_pos h_i_kp]
+  · rw [ite_eq_left h_i_kp]
     apply h_inv i_p j
     · have h_j_lt : j.val < start := h_bnd
       omega
     · exact h_bnd
   · by_cases h_i_iₚ : i = i_p
-    · rw [if_neg h_i_kp, if_pos h_i_iₚ]
+    · rw [ite_eq_right h_i_kp, ite_eq_left h_i_iₚ]
       apply h_inv ⟨start, h_lt⟩ j h_bnd h_bnd
-    · rw [if_neg h_i_kp, if_neg h_i_iₚ]
+    · rw [ite_eq_right h_i_kp, ite_eq_right h_i_iₚ]
       exact h_inv i j h_lt_ij h_bnd
 
 /-! #### `BareissInv` transitions: row-swap preservation -/
@@ -614,15 +614,15 @@ theorem AzMatrix.BareissInv.swapRows_preserves
       funext i j
       rw [AzMatrix.toFn_swapRows]
       by_cases h : i = kp
-      · rw [if_pos h, h]
-      · rw [if_neg h, if_neg h]
+      · rw [ite_eq_left h, h]
+      · rw [ite_eq_right h, ite_eq_right h]
     have h_id_ref : M_ref.swapRows kp kp = M_ref := by
       apply AzMatrix.toFn_injective
       funext i j
       rw [AzMatrix.toFn_swapRows]
       by_cases h : i = kp
-      · rw [if_pos h, h]
-      · rw [if_neg h, if_neg h]
+      · rw [ite_eq_left h, h]
+      · rw [ite_eq_right h, ite_eq_right h]
     rw [h_id_curr, h_id_ref]
     exact h_inv
   · -- i_p ≠ kp, so i_p.val > start.
@@ -637,25 +637,25 @@ theorem AzMatrix.BareissInv.swapRows_preserves
       rw [AzMatrix.toFn_swapRows]
       rw [M_ref.bareissMinor_swapRows start h_inv.start_le i_p h_i_gt i j]
       by_cases h_i_eq : i = kp
-      · rw [if_pos h_i_eq, h_i_eq, Equiv.swap_apply_left]
+      · rw [ite_eq_left h_i_eq, h_i_eq, Equiv.swap_apply_left]
         exact h_inv.bareiss i_p j h_i_ge hj
       · by_cases h_i_eq' : i = i_p
-        · rw [if_neg h_i_eq, if_pos h_i_eq', h_i_eq', Equiv.swap_apply_right]
+        · rw [ite_eq_right h_i_eq, ite_eq_left h_i_eq', h_i_eq', Equiv.swap_apply_right]
           exact h_inv.bareiss kp j (le_refl _) hj
-        · rw [if_neg h_i_eq, if_neg h_i_eq']
+        · rw [ite_eq_right h_i_eq, ite_eq_right h_i_eq']
           rw [Equiv.swap_apply_of_ne_of_ne h_i_eq h_i_eq']
           exact h_inv.bareiss i j hi hj
     · -- b_prev_eq: principal minor at start-1 unchanged.
       by_cases hs : 0 < start
-      · simp only [dif_pos hs]
+      · simp only [dite_eq_left hs]
         have h_bp := h_inv.b_prev_eq
-        simp only [dif_pos hs] at h_bp
+        simp only [dite_eq_left hs] at h_bp
         have h_pm_eq := M_ref.principalMinor_swapRows_low_level start h_lt i_p
           h_i_gt (start - 1) (by omega)
         exact h_bp.trans h_pm_eq.symm
-      · simp only [dif_neg hs]
+      · simp only [dite_eq_right hs]
         have h_bp := h_inv.b_prev_eq
-        simp only [dif_neg hs] at h_bp
+        simp only [dite_eq_right hs] at h_bp
         exact h_bp
     · intro ℓ hℓ h
       rw [M_ref.principalMinor_swapRows_low_level start h_lt i_p h_i_gt ℓ hℓ]
@@ -679,15 +679,15 @@ theorem AzMatrix.BareissInv.swapCols_preserves
       funext i j
       rw [AzMatrix.toFn_swapCols]
       by_cases h : j = kp
-      · rw [if_pos h, h]
-      · rw [if_neg h, if_neg h]
+      · rw [ite_eq_left h, h]
+      · rw [ite_eq_right h, ite_eq_right h]
     have h_id_ref : M_ref.swapCols kp kp = M_ref := by
       apply AzMatrix.toFn_injective
       funext i j
       rw [AzMatrix.toFn_swapCols]
       by_cases h : j = kp
-      · rw [if_pos h, h]
-      · rw [if_neg h, if_neg h]
+      · rw [ite_eq_left h, h]
+      · rw [ite_eq_right h, ite_eq_right h]
     rw [h_id_curr, h_id_ref]
     exact h_inv
   · -- j_p ≠ kp, so j_p.val > start.
@@ -702,24 +702,24 @@ theorem AzMatrix.BareissInv.swapCols_preserves
       rw [AzMatrix.toFn_swapCols]
       rw [M_ref.bareissMinor_swapCols start h_inv.start_le j_p h_j_gt i j]
       by_cases h_j_eq : j = kp
-      · rw [if_pos h_j_eq, h_j_eq, Equiv.swap_apply_left]
+      · rw [ite_eq_left h_j_eq, h_j_eq, Equiv.swap_apply_left]
         exact h_inv.bareiss i j_p hi h_j_ge
       · by_cases h_j_eq' : j = j_p
-        · rw [if_neg h_j_eq, if_pos h_j_eq', h_j_eq', Equiv.swap_apply_right]
+        · rw [ite_eq_right h_j_eq, ite_eq_left h_j_eq', h_j_eq', Equiv.swap_apply_right]
           exact h_inv.bareiss i kp hi (le_refl _)
-        · rw [if_neg h_j_eq, if_neg h_j_eq']
+        · rw [ite_eq_right h_j_eq, ite_eq_right h_j_eq']
           rw [Equiv.swap_apply_of_ne_of_ne h_j_eq h_j_eq']
           exact h_inv.bareiss i j hi hj
     · by_cases hs : 0 < start
-      · simp only [dif_pos hs]
+      · simp only [dite_eq_left hs]
         have h_bp := h_inv.b_prev_eq
-        simp only [dif_pos hs] at h_bp
+        simp only [dite_eq_left hs] at h_bp
         have h_pm_eq := M_ref.principalMinor_swapCols_low_level start h_lt j_p
           h_j_gt (start - 1) (by omega)
         exact h_bp.trans h_pm_eq.symm
-      · simp only [dif_neg hs]
+      · simp only [dite_eq_right hs]
         have h_bp := h_inv.b_prev_eq
-        simp only [dif_neg hs] at h_bp
+        simp only [dite_eq_right hs] at h_bp
         exact h_bp
     · intro ℓ hℓ h
       rw [M_ref.principalMinor_swapCols_low_level start h_lt j_p h_j_gt ℓ hℓ]
@@ -760,7 +760,7 @@ theorem AzMatrix.BareissInv.sylvester
     obtain ⟨k, rfl⟩ := Nat.exists_eq_succ_of_ne_zero h_start_zero
     have h_b_prev_eq : b_prev = M_ref.principalMinor k (by omega) := by
       have h_be := h_inv.b_prev_eq
-      simp only [show 0 < k + 1 from by omega, dif_pos] at h_be
+      simp only [show 0 < k + 1 from by omega, dite_eq_left] at h_be
       have h_sub : (k + 1) - 1 = k := by omega
       have : b_prev = M_ref.principalMinor ((k + 1) - 1) (by omega) := h_be
       simp only [h_sub] at this
@@ -802,10 +802,10 @@ theorem AzMatrix.map_swapRows {E : Type _} (f : D → E)
   funext r c
   rw [AzMatrix.toFn_map, AzMatrix.toFn_swapRows, AzMatrix.toFn_swapRows]
   by_cases h₁ : r = i
-  · rw [if_pos h₁, if_pos h₁, AzMatrix.toFn_map]
+  · rw [ite_eq_left h₁, ite_eq_left h₁, AzMatrix.toFn_map]
   · by_cases h₂ : r = j
-    · rw [if_neg h₁, if_pos h₂, if_neg h₁, if_pos h₂, AzMatrix.toFn_map]
-    · rw [if_neg h₁, if_neg h₂, if_neg h₁, if_neg h₂, AzMatrix.toFn_map]
+    · rw [ite_eq_right h₁, ite_eq_left h₂, ite_eq_right h₁, ite_eq_left h₂, AzMatrix.toFn_map]
+    · rw [ite_eq_right h₁, ite_eq_right h₂, ite_eq_right h₁, ite_eq_right h₂, AzMatrix.toFn_map]
 
 theorem AzMatrix.map_swapCols {E : Type _} (f : D → E)
     (M : AzMatrix D n n) (i j : Fin n) :
@@ -814,10 +814,10 @@ theorem AzMatrix.map_swapCols {E : Type _} (f : D → E)
   funext r c
   rw [AzMatrix.toFn_map, AzMatrix.toFn_swapCols, AzMatrix.toFn_swapCols]
   by_cases h₁ : c = i
-  · rw [if_pos h₁, if_pos h₁, AzMatrix.toFn_map]
+  · rw [ite_eq_left h₁, ite_eq_left h₁, AzMatrix.toFn_map]
   · by_cases h₂ : c = j
-    · rw [if_neg h₁, if_pos h₂, if_neg h₁, if_pos h₂, AzMatrix.toFn_map]
-    · rw [if_neg h₁, if_neg h₂, if_neg h₁, if_neg h₂, AzMatrix.toFn_map]
+    · rw [ite_eq_right h₁, ite_eq_left h₂, ite_eq_right h₁, ite_eq_left h₂, AzMatrix.toFn_map]
+    · rw [ite_eq_right h₁, ite_eq_right h₂, ite_eq_right h₁, ite_eq_right h₂, AzMatrix.toFn_map]
 
 /-! #### Generic spec lemmas for `findFirstNonzero` (Field-free) -/
 
@@ -833,7 +833,7 @@ theorem AzMatrix.findFirstNonzeroAux_some_mem_gen
         i ≤ i'.val ∧ c_start ≤ j'.val ∧ M.toFn i' j' ≠ 0)
   · intro i h_lt j h_match i' j' h_rec
     rw [AzMatrix.findFirstNonzeroAux.eq_def] at h_rec
-    simp only [dif_pos h_lt, h_match, Option.some.injEq, Prod.mk.injEq] at h_rec
+    simp only [dite_eq_left h_lt, h_match, Option.some.injEq, Prod.mk.injEq] at h_rec
     obtain ⟨h_i', h_j'⟩ := h_rec
     refine ⟨?_, ?_, ?_⟩
     · rw [← h_i']
@@ -844,7 +844,7 @@ theorem AzMatrix.findFirstNonzeroAux_some_mem_gen
   · intro i h_lt h_match ih i' j' h_rec
     have h_rec_eq : M.findFirstNonzeroAux (i + 1) c_start = some (i', j') := by
       rw [AzMatrix.findFirstNonzeroAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, h_match] at h_rec
+      simp only [dite_eq_left h_lt, h_match] at h_rec
       exact h_rec
     obtain ⟨h_a, h_b, h_c⟩ := ih i' j' h_rec_eq
     exact ⟨by omega, h_b, h_c⟩
@@ -876,7 +876,7 @@ theorem AzMatrix.findPivotAux_map_eq_of_injective
       rw [h_zero, map_zero]
     conv_lhs => rw [AzMatrix.findPivotAux.eq_def]
     conv_rhs => rw [AzMatrix.findPivotAux.eq_def]
-    simp only [dif_pos h_lt, if_pos h_map_zero, if_pos h_zero]
+    simp only [dite_eq_left h_lt, ite_eq_left h_map_zero, ite_eq_left h_zero]
     exact ih
   · intro j h_lt h_nz
     have h_map_nz : (M.map f).get k ⟨j, h_lt⟩ ≠ 0 := by
@@ -888,11 +888,11 @@ theorem AzMatrix.findPivotAux_map_eq_of_injective
       exact h_inj_eq
     conv_lhs => rw [AzMatrix.findPivotAux.eq_def]
     conv_rhs => rw [AzMatrix.findPivotAux.eq_def]
-    simp only [dif_pos h_lt, if_neg h_map_nz, if_neg h_nz]
+    simp only [dite_eq_left h_lt, ite_eq_right h_map_nz, ite_eq_right h_nz]
   · intro j h_ge
     conv_lhs => rw [AzMatrix.findPivotAux.eq_def]
     conv_rhs => rw [AzMatrix.findPivotAux.eq_def]
-    simp only [dif_neg h_ge]
+    simp only [dite_eq_right h_ge]
 
 theorem AzMatrix.findFirstNonzeroAux_map_eq_of_injective
     {E : Type _} [CommRing E] [DecidableEq E] (M : AzMatrix D n n)
@@ -909,19 +909,19 @@ theorem AzMatrix.findFirstNonzeroAux_map_eq_of_injective
       rw [M.findPivotAux_map_eq_of_injective f h_inj]; exact h_match
     conv_lhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
     conv_rhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
-    simp only [dif_pos h_lt, h_match, h_map_match]
+    simp only [dite_eq_left h_lt, h_match, h_map_match]
   · intro i h_lt h_match ih
     have h_map_match :
         (M.map f).findPivotAux ⟨i, h_lt⟩ c_start = none := by
       rw [M.findPivotAux_map_eq_of_injective f h_inj]; exact h_match
     conv_lhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
     conv_rhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
-    simp only [dif_pos h_lt, h_match, h_map_match]
+    simp only [dite_eq_left h_lt, h_match, h_map_match]
     exact ih
   · intro i h_ge
     conv_lhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
     conv_rhs => rw [AzMatrix.findFirstNonzeroAux.eq_def]
-    simp only [dif_neg h_ge]
+    simp only [dite_eq_right h_ge]
 
 theorem AzMatrix.findFirstNonzero_map_eq_of_injective
     {E : Type _} [CommRing E] [DecidableEq E] (M : AzMatrix D n n)
@@ -979,22 +979,22 @@ theorem AzMatrix.bareissRankAux_map_algebraMap
             M_curr.swapRows kp i_p ∨
             (if i_p = kp then M_curr else M_curr.swapRows kp i_p) = M_curr := by
           by_cases h : i_p = kp
-          · right; rw [if_pos h]
-          · left; rw [if_neg h]
+          · right; rw [ite_eq_left h]
+          · left; rw [ite_eq_right h]
         set M_row := if i_p = kp then M_curr else M_curr.swapRows kp i_p
           with hM_row
         set M_ref_row := if i_p = kp then M_ref else M_ref.swapRows kp i_p
           with hM_ref_row
         have h_inv_row' : M_row.BareissInv M_ref_row start b_prev := by
           by_cases h : i_p = kp
-          · rw [hM_row, hM_ref_row, if_pos h, if_pos h]; exact h_inv
-          · rw [hM_row, hM_ref_row, if_neg h, if_neg h]; exact h_inv_row
+          · rw [hM_row, hM_ref_row, ite_eq_left h, ite_eq_left h]; exact h_inv
+          · rw [hM_row, hM_ref_row, ite_eq_right h, ite_eq_right h]; exact h_inv_row
         have h_map_row :
             ((if i_p = kp then M_curr else M_curr.swapRows kp i_p).map f) =
             (if i_p = kp then M_curr.map f else (M_curr.map f).swapRows kp i_p) := by
           by_cases h : i_p = kp
-          · rw [if_pos h, if_pos h]
-          · rw [if_neg h, if_neg h]; exact M_curr.map_swapRows f kp i_p
+          · rw [ite_eq_left h, ite_eq_left h]
+          · rw [ite_eq_right h, ite_eq_right h]; exact M_curr.map_swapRows f kp i_p
         -- Apply col swap to both sides.
         set M_swapped := if j_p = kp then M_row else M_row.swapCols kp j_p
           with hM_swapped
@@ -1003,42 +1003,42 @@ theorem AzMatrix.bareissRankAux_map_algebraMap
           with hM_ref_swapped
         have h_inv_swapped' : M_swapped.BareissInv M_ref_swapped start b_prev := by
           by_cases h : j_p = kp
-          · rw [hM_swapped, hM_ref_swapped, if_pos h, if_pos h]; exact h_inv_row'
-          · rw [hM_swapped, hM_ref_swapped, if_neg h, if_neg h]
+          · rw [hM_swapped, hM_ref_swapped, ite_eq_left h, ite_eq_left h]; exact h_inv_row'
+          · rw [hM_swapped, hM_ref_swapped, ite_eq_right h, ite_eq_right h]
             exact h_inv_row'.swapCols_preserves (by omega) j_p h_j_ge
         have h_map_swapped :
             (M_swapped.map f) =
               if j_p = kp then M_row.map f else (M_row.map f).swapCols kp j_p := by
           by_cases h : j_p = kp
-          · rw [hM_swapped, if_pos h, if_pos h]
-          · rw [hM_swapped, if_neg h, if_neg h]; exact M_row.map_swapCols f kp j_p
+          · rw [hM_swapped, ite_eq_left h, ite_eq_left h]
+          · rw [hM_swapped, ite_eq_right h, ite_eq_right h]; exact M_row.map_swapCols f kp j_p
         -- M_swapped[kp][kp] ≠ 0.
         have h_pivot_swapped : M_swapped.toFn kp kp ≠ 0 := by
           have h_M_swapped_kp_kp : M_swapped.toFn kp kp = M_curr.toFn i_p j_p := by
             by_cases h_jp_kp : j_p = kp
-            · rw [hM_swapped, if_pos h_jp_kp]
+            · rw [hM_swapped, ite_eq_left h_jp_kp]
               by_cases h_ip_kp : i_p = kp
-              · rw [hM_row, if_pos h_ip_kp, h_ip_kp, h_jp_kp]
-              · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-                rw [if_pos rfl, h_jp_kp]
-            · rw [hM_swapped, if_neg h_jp_kp, AzMatrix.toFn_swapCols]
-              rw [if_pos rfl]
+              · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp, h_jp_kp]
+              · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+                rw [ite_eq_left rfl, h_jp_kp]
+            · rw [hM_swapped, ite_eq_right h_jp_kp, AzMatrix.toFn_swapCols]
+              rw [ite_eq_left rfl]
               by_cases h_ip_kp : i_p = kp
-              · rw [hM_row, if_pos h_ip_kp, h_ip_kp]
-              · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-                rw [if_pos rfl]
+              · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp]
+              · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+                rw [ite_eq_left rfl]
           rw [h_M_swapped_kp_kp]; exact h_pivot_nz
         -- findPivot M_swapped kp = some kp.
         have h_findPivot_swapped : M_swapped.findPivot kp = some kp := by
           show M_swapped.findPivotAux kp kp.val = some kp
           rw [AzMatrix.findPivotAux.eq_def]
           have h_kp_lt : kp.val < n := kp.isLt
-          rw [dif_pos h_kp_lt]
+          rw [dite_eq_left h_kp_lt]
           have h_get_nz : M_swapped.get kp ⟨kp.val, h_kp_lt⟩ ≠ 0 := by
             show M_swapped.toFn kp ⟨kp.val, h_kp_lt⟩ ≠ 0
             have h_eq : (⟨kp.val, h_kp_lt⟩ : Fin n) = kp := Fin.ext rfl
             rw [h_eq]; exact h_pivot_swapped
-          rw [if_neg h_get_nz]
+          rw [ite_eq_right h_get_nz]
         -- Apply step_no_swap to get BareissInv at start + 1.
         have h_inv_new := h_inv_swapped'.step_no_swap h_lt h_findPivot_swapped
         -- The map version: (M_swapped.bareissEliminate kp b_prev).map f =
@@ -1051,7 +1051,7 @@ theorem AzMatrix.bareissRankAux_map_algebraMap
             simp only [Nat.lt_irrefl, dite_false] at h_be
             rw [h_be]; exact one_ne_zero
           · have h_be := h_inv.b_prev_eq
-            simp only [dif_pos hs] at h_be
+            simp only [dite_eq_left hs] at h_be
             rw [h_be]
             exact h_inv.principalMinors_nz (start - 1) (by omega) (by omega)
         have h_bareiss_map :
@@ -1143,7 +1143,7 @@ theorem AzMatrix.rank_map_algebraMap (M : AzMatrix D n n) :
   -- The entrywise algebra map as a D-linear map, built from the
   -- per-coordinate algebra map via `IsLocalizedModule.pi`. The result
   -- has the form `LinearMap.pi (fun i => (Algebra.linearMap D K) ∘ proj i)`.
-  haveI : IsLocalizedModule p
+  have : IsLocalizedModule p
       (LinearMap.pi (fun i : Fin n =>
         (Algebra.linearMap D K).comp
           (LinearMap.proj (R := D) (φ := fun _ : Fin n => D) i))) :=

@@ -417,10 +417,10 @@ theorem tinyPos_slotOf (isTiny : Fin m → Bool) (w : Fin m → ℕ)
     tinySlotOf isTiny w ht hn (tinyPos isTiny w ht j r) = j := by
   unfold tinyPos tinySlotOf
   by_cases hj : isTiny j = true
-  · rw [dif_pos hj, if_pos (isRulerPos_two_pow_sub_one _), size_two_pow_sub_one,
+  · rw [dite_eq_left hj, ite_eq_left (isRulerPos_two_pow_sub_one _), size_two_pow_sub_one,
       (roundRobin (tinyCount isTiny) ht).pos_slotOf]
     exact tinyEmb_tinyIdx isTiny hj
-  · rw [dif_neg hj, if_neg (by simp [isRulerPos_nonRulerPos]), nonRulerPos_rank,
+  · rw [dite_eq_right hj, ite_eq_right (by simp [isRulerPos_nonRulerPos]), nonRulerPos_rank,
       weightedPos_slotOf _ hn (normalWeights_pos isTiny hw)]
     exact normalEmb_normalIdx isTiny (by simpa using hj)
 
@@ -431,9 +431,9 @@ theorem tinyRank_pos (isTiny : Fin m → Bool) (w : Fin m → ℕ)
     tinyRank isTiny w ht hn (tinyPos isTiny w ht j r) = r := by
   unfold tinyPos tinyRank
   by_cases hj : isTiny j = true
-  · rw [dif_pos hj, if_pos (isRulerPos_two_pow_sub_one _), size_two_pow_sub_one,
+  · rw [dite_eq_left hj, ite_eq_left (isRulerPos_two_pow_sub_one _), size_two_pow_sub_one,
       (roundRobin (tinyCount isTiny) ht).rank_pos]
-  · rw [dif_neg hj, if_neg (by simp [isRulerPos_nonRulerPos]), nonRulerPos_rank,
+  · rw [dite_eq_right hj, ite_eq_right (by simp [isRulerPos_nonRulerPos]), nonRulerPos_rank,
       weightedRank_pos _ hn (normalWeights_pos isTiny hw)]
 
 /-- Law 3: every position is reached — `pos` inverts `(slotOf, rank)`. -/
@@ -444,12 +444,12 @@ theorem tinyPos_rank (isTiny : Fin m → Bool) (w : Fin m → ℕ)
       = i := by
   unfold tinySlotOf tinyRank tinyPos
   by_cases hi : isRulerPos i = true
-  · rw [if_pos hi, if_pos hi, dif_pos (isTiny_tinyEmb isTiny _), tinyIdx_tinyEmb,
+  · rw [ite_eq_left hi, ite_eq_left hi, dite_eq_left (isTiny_tinyEmb isTiny _), tinyIdx_tinyEmb,
       (roundRobin (tinyCount isTiny) ht).pos_rank]
     have h2 : i + 1 = 2 ^ i.size := of_decide_eq_true hi
     omega
   · have hi' : isRulerPos i = false := by simpa using hi
-    rw [if_neg hi, if_neg hi, dif_neg (by simp [isTiny_normalEmb]),
+    rw [ite_eq_right hi, ite_eq_right hi, dite_eq_right (by simp [isTiny_normalEmb]),
       normalIdx_normalEmb, weightedPos_rank _ hn (normalWeights_pos isTiny hw)]
     exact nonRulerPos_nonRulerRank hi'
 
@@ -462,7 +462,7 @@ theorem tinyPos_strictMono (isTiny : Fin m → Bool) (w : Fin m → ℕ)
   intro r r' hr
   unfold tinyPos
   by_cases hj : isTiny j = true
-  · rw [dif_pos hj, dif_pos hj]
+  · rw [dite_eq_left hj, dite_eq_left hj]
     have hlt := (roundRobin (tinyCount isTiny) ht).pos_strictMono
       (tinyIdx isTiny j hj) hr
     have h1 : (0 : ℕ)
@@ -470,7 +470,7 @@ theorem tinyPos_strictMono (isTiny : Fin m → Bool) (w : Fin m → ℕ)
       positivity
     have h2 := Nat.pow_lt_pow_right (show 1 < 2 by norm_num) hlt
     omega
-  · rw [dif_neg hj, dif_neg hj]
+  · rw [dite_eq_right hj, dite_eq_right hj]
     exact nonRulerPos_strictMono
       (weightedPos_strictMono_aux (normalWeights_pos isTiny hw _)
         (weight_le_sum (normalWeights isTiny w) _) hr)

@@ -293,7 +293,7 @@ private theorem finite_root_set {P₁ : MvPolynomial (Fin (n + 1)) K}
       rw [hPy, Polynomial.coeff_map, ← Polynomial.leadingCoeff, hc]; simp
     rw [h0, Polynomial.coeff_zero] at hcoeff
     exact hcne ((map_eq_zero_iff _ (algebraMap K C).injective).mp hcoeff.symm)
-  apply Set.Finite.subset (Polynomial.finite_setOf_isRoot hPyne)
+  apply Set.Finite.subset (Polynomial.finite_setOfPred_isRoot hPyne)
   intro ξ hξ
   show Py.IsRoot ξ
   rw [hPy, Polynomial.IsRoot, ← aeval_cons_eq']
@@ -311,8 +311,8 @@ private theorem exists_lift {P₁ : MvPolynomial (Fin (n + 1)) K}
   -- The finite set of admissible `ξ`.
   have hfin := finite_root_set hqm x'
   set S : Set C := {ξ : C | aeval (Fin.cons ξ x') P₁ = 0} with hS
-  haveI : Finite ↥S := hfin
-  haveI : Infinite C := by
+  have : Finite ↥S := hfin
+  have : Infinite C := by
     have : Infinite C := IsAlgClosed.instInfinite
     exact this
   -- Choose, for each `u`, a root `ξ_u ∈ S` with the `R`-condition.
@@ -347,9 +347,9 @@ private theorem exists_lift {P₁ : MvPolynomial (Fin (n + 1)) K}
   have hcoeff : Φ.coeff i = aeval (Fin.cons z x') (rest.getD i 0) := by
     rw [hΦ, Polynomial.finsetSum_coeff]
     rw [Finset.sum_eq_single i]
-    · rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+    · rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
     · intro j _ hj
-      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_neg hj.symm, mul_zero]
+      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_right hj.symm, mul_zero]
     · intro h; exact absurd (Finset.mem_range.mpr hi) h
   rw [← hcoeff, hΦzero, Polynomial.coeff_zero]
 

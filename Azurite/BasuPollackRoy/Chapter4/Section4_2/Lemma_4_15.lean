@@ -40,7 +40,7 @@ theorem Syl.encodeU_coeff (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ) (hm : m
     have h_eq : q - 1 - (⟨q - 1 - m, by omega⟩ : Fin q).val = m := by
       show q - 1 - (q - 1 - m) = m
       omega
-    rw [if_pos h_eq.symm, mul_one]
+    rw [ite_eq_left h_eq.symm, mul_one]
   · intro k _ h_ne
     rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
     have h_neq : q - 1 - k.val ≠ m := by
@@ -50,7 +50,7 @@ theorem Syl.encodeU_coeff (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ) (hm : m
       show k.val = q - 1 - m
       have := k.isLt
       omega
-    rw [if_neg (Ne.symm h_neq), mul_zero]
+    rw [ite_eq_right (Ne.symm h_neq), mul_zero]
   · intro h_not_mem
     exact absurd (Finset.mem_univ _) h_not_mem
 
@@ -63,7 +63,7 @@ theorem Syl.encodeV_coeff (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ) (hm : m
     have h_eq : p - 1 - (⟨p - 1 - m, by omega⟩ : Fin p).val = m := by
       show p - 1 - (p - 1 - m) = m
       omega
-    rw [if_pos h_eq.symm, mul_one]
+    rw [ite_eq_left h_eq.symm, mul_one]
   · intro ℓ _ h_ne
     rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
     have h_neq : p - 1 - ℓ.val ≠ m := by
@@ -73,7 +73,7 @@ theorem Syl.encodeV_coeff (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ) (hm : m
       show ℓ.val = p - 1 - m
       have := ℓ.isLt
       omega
-    rw [if_neg (Ne.symm h_neq), mul_zero]
+    rw [ite_eq_right (Ne.symm h_neq), mul_zero]
   · intro h_not_mem
     exact absurd (Finset.mem_univ _) h_not_mem
 
@@ -87,7 +87,7 @@ theorem Syl.encodeU_coeff_of_ge (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ)
   have h_neq : q - 1 - k.val ≠ m := by
     have := k.isLt
     omega
-  rw [if_neg (Ne.symm h_neq), mul_zero]
+  rw [ite_eq_right (Ne.symm h_neq), mul_zero]
 
 theorem Syl.encodeV_coeff_of_ge (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ)
     (hm : p ≤ m) : (Syl.encodeV p q uv).coeff m = 0 := by
@@ -99,7 +99,7 @@ theorem Syl.encodeV_coeff_of_ge (p q : ℕ) (uv : Fin (p + q) → D) (m : ℕ)
   have h_neq : p - 1 - ℓ.val ≠ m := by
     have := ℓ.isLt
     omega
-  rw [if_neg (Ne.symm h_neq), mul_zero]
+  rw [ite_eq_right (Ne.symm h_neq), mul_zero]
 
 /-! ### `Fin (p + q)` sum split at coordinate `q` -/
 
@@ -211,7 +211,7 @@ theorem Syl.mulMap_eq_pair (P Q : D[X])
             (⟨k.val, by have := k.isLt; omega⟩ :
               Fin (P.natDegree + Q.natDegree)).val) * Q).coeff n =
       _
-    rw [if_pos h_lt]
+    rw [ite_eq_left h_lt]
     rw [Polynomial.coeff_C_mul]
   · apply Finset.sum_congr rfl
     intro ℓ _
@@ -230,7 +230,7 @@ theorem Syl.mulMap_eq_pair (P Q : D[X])
             (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
               Fin (P.natDegree + Q.natDegree)).val) * Q).coeff n =
       _
-    rw [if_neg h_not_lt]
+    rw [ite_eq_right h_not_lt]
     rw [Polynomial.coeff_C_mul]
     have h_idx : P.natDegree + Q.natDegree - 1 -
         (⟨Q.natDegree + ℓ.val, by have := ℓ.isLt; omega⟩ :
@@ -459,7 +459,7 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
         show U.coeff m = 0
         have h_uv_val : uv ⟨q - 1 - m, by omega⟩ = U.coeff m := by
           show (if h : _ < q then _ else _) = _
-          rw [dif_pos h_idx]
+          rw [dite_eq_left h_idx]
           congr 1
           show q - 1 - (q - 1 - m) = m; omega
         rw [← h_uv_val, h]
@@ -475,7 +475,7 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
           have h_idx : (⟨q - 1 - m, by omega⟩ : Fin (p + q)).val < q := by
             show q - 1 - m < q; omega
           show (if h : _ < q then _ else _) = U.coeff m
-          rw [dif_pos h_idx]
+          rw [dite_eq_left h_idx]
           congr 1
           show q - 1 - (q - 1 - m) = m; omega
         · rw [Syl.encodeU_coeff_of_ge p q uv m (by omega)]
@@ -489,7 +489,7 @@ theorem Res_eq_zero_iff (P Q : D[X]) (hP : P ≠ 0) (hQ : Q ≠ 0) :
           have h_idx : ¬ (⟨q + (p - 1 - m), by omega⟩ : Fin (p + q)).val < q := by
             show ¬ q + (p - 1 - m) < q; omega
           show (if h : _ < q then _ else _) = V.coeff m
-          rw [dif_neg h_idx]
+          rw [dite_eq_right h_idx]
           congr 1
           show p - 1 - ((q + (p - 1 - m)) - q) = m; omega
         · rw [Syl.encodeV_coeff_of_ge p q uv m (by omega)]

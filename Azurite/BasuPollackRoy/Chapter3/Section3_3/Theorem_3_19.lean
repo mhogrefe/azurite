@@ -159,7 +159,7 @@ theorem exists_germ_in_ext_ball (S : Set (Fin k → R)) (hS : IsSemialgebraicSet
     ∃ ϕ : Fin k → SemialgGerm R,
       ϕ ∈ extension (R' := SemialgGerm R) S hS ∧
       (∑ i, (ϕ i - algebraMap R (SemialgGerm R) (x i)) ^ 2) < idGerm ^ 2 := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   obtain ⟨φS, hφSqf, hφS⟩ := semialgebraic_isQFRealizable S hS
   set Ψ : Formula (Fin k) (OrderedFieldAtom (Fin k) (Polynomial R)) :=
     (φS.mapCoeffO (D' := Polynomial R)).and (Formula.atom ⟨ballPolyEps x, OrderRel.lt⟩) with hΨ
@@ -291,7 +291,7 @@ theorem isSemialgebraicSet_closedRightNbhd (a : R) :
   have heq : closedRightNbhd a = {u : Fin 1 → R | eval u (-MvPolynomial.X 0) ≤ 0}
       ∩ {u : Fin 1 → R | eval u (MvPolynomial.X 0 - MvPolynomial.C a) < 0} := by
     ext u
-    simp only [closedRightNbhd, Set.mem_inter_iff, Set.mem_setOf_eq, map_neg, MvPolynomial.eval_X,
+    simp only [closedRightNbhd, Set.mem_inter_iff, Set.mem_ofPred_eq, map_neg, MvPolynomial.eval_X,
       map_sub, MvPolynomial.eval_C, Left.neg_nonpos_iff, sub_neg]
   rw [heq]
   exact (IsSemialgebraicSet.leZero _).inter (IsSemialgebraicSet.ltZero _)
@@ -302,7 +302,7 @@ theorem funGraph_union {ℓ : ℕ} {S T : Set (Fin k → R)}
     (f : (Fin k → R) → (Fin ℓ → R)) :
     funGraph (S ∪ T) f = funGraph S f ∪ funGraph T f := by
   ext z
-  simp only [funGraph, Set.mem_union, Set.mem_setOf_eq]
+  simp only [funGraph, Set.mem_union, Set.mem_ofPred_eq]
   tauto
 
 omit [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
@@ -310,7 +310,7 @@ omit [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
 theorem funGraph_congr {ℓ : ℕ} {S : Set (Fin k → R)} {f g : (Fin k → R) → (Fin ℓ → R)}
     (h : ∀ u ∈ S, f u = g u) : funGraph S f = funGraph S g := by
   ext z
-  simp only [funGraph, Set.mem_setOf_eq]
+  simp only [funGraph, Set.mem_ofPred_eq]
   constructor <;> rintro ⟨h1, h2⟩
   · exact ⟨h1, by rw [h2, h _ h1]⟩
   · exact ⟨h1, by rw [h2, ← h _ h1]⟩
@@ -329,13 +329,13 @@ theorem isSemialgContinuousOn_endpointExtend {a : R} {g : (Fin 1 → R) → R}
         = {u : Fin 1 → R | eval u (MvPolynomial.X 0) = 0}
           ∩ {u : Fin 1 → R | eval u (MvPolynomial.X 0 - MvPolynomial.C a) < 0} := by
       ext u
-      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, MvPolynomial.eval_X, map_sub,
+      simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, MvPolynomial.eval_X, map_sub,
         MvPolynomial.eval_C, sub_neg]
     rw [heq]
     exact (IsSemialgebraicSet.eqZero _).inter (IsSemialgebraicSet.ltZero _)
   have hunion : closedRightNbhd a = rightNbhd a ∪ {u : Fin 1 → R | u 0 = 0 ∧ u 0 < a} := by
     ext u
-    simp only [closedRightNbhd, rightNbhd, Set.mem_union, Set.mem_setOf_eq]
+    simp only [closedRightNbhd, rightNbhd, Set.mem_union, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨h0, ha⟩
       rcases eq_or_lt_of_le h0 with h | h
@@ -351,12 +351,12 @@ theorem isSemialgContinuousOn_endpointExtend {a : R} {g : (Fin 1 → R) → R}
     apply IsSemialgebraicSet.union
     · rw [funGraph_congr (f := scalarFun ghat) (g := scalarFun g) (fun u hu => by
         show constPt (if u 0 = 0 then b else g u) = constPt (g u)
-        rw [if_neg hu.1.ne'])]
+        rw [ite_eq_right hu.1.ne'])]
       exact hg.1
     · rw [funGraph_congr (f := scalarFun ghat) (g := scalarFun (fun _ : Fin 1 → R => b))
         (fun u hu => by
           show constPt (if u 0 = 0 then b else g u) = constPt b
-          rw [if_pos hu.1])]
+          rw [ite_eq_left hu.1])]
       have hpoly : scalarFun (fun _ : Fin 1 → R => b) = polynomialMap ![MvPolynomial.C b] := by
         funext u i
         rw [Subsingleton.elim i 0]
@@ -372,15 +372,15 @@ theorem isSemialgContinuousOn_endpointExtend {a : R} {g : (Fin 1 → R) → R}
       refine ⟨δ, hδ, fun y hy hyd => ?_⟩
       rw [euclideanNorm_fin_one, Pi.sub_apply, hp0, sub_zero] at hyd
       show |scalarFun ghat y 0 - scalarFun ghat p 0| < r
-      have hgp : ghat p = b := by rw [hghat]; exact if_pos hp0
+      have hgp : ghat p = b := by rw [hghat]; exact ite_eq_left hp0
       show |ghat y - ghat p| < r
       rw [hgp]
       by_cases hy0 : y 0 = 0
-      · rw [hghat]; simp only [if_pos hy0, sub_self, abs_zero]; exact hr
+      · rw [hghat]; simp only [ite_eq_left hy0, sub_self, abs_zero]; exact hr
       · have hy0' : 0 < y 0 := lt_of_le_of_ne hy.1 (Ne.symm hy0)
         have hyeq : y = constPt (y 0) := by funext i; rw [Subsingleton.elim i 0]; rfl
         rw [hghat]
-        simp only [if_neg hy0]
+        simp only [ite_eq_right hy0]
         rw [hyeq]
         exact hld (y 0) hy0' (by rw [abs_of_pos hy0'] at hyd; exact hyd)
     · -- interior point `p 0 > 0`: use continuity of `g`.
@@ -397,7 +397,7 @@ theorem isSemialgContinuousOn_endpointExtend {a : R} {g : (Fin 1 → R) → R}
       show |scalarFun ghat y 0 - scalarFun ghat p 0| < r
       show |ghat y - ghat p| < r
       rw [hghat]
-      simp only [if_neg hy0.ne', if_neg hp0]
+      simp only [ite_eq_right hy0.ne', ite_eq_right hp0]
       have := h' y hyin (by
         rw [euclideanNorm_fin_one, Pi.sub_apply]
         exact lt_of_lt_of_le hyd (min_le_left _ _))
@@ -426,7 +426,7 @@ theorem theorem_3_19 (S : Set (Fin k → R)) (hS : IsSemialgebraicSet S)
     have hfg : funGraph (closedRightNbhd 1) (fun _ : Fin 1 → R => x)
         = {z : Fin (1 + k) → R | z ∘ Fin.castAdd k ∈ closedRightNbhd 1} := by
       ext z
-      simp only [funGraph, Set.mem_setOf_eq, and_iff_left_iff_imp]
+      simp only [funGraph, Set.mem_ofPred_eq, and_iff_left_iff_imp]
       exact fun _ => Subsingleton.elim _ _
     rw [hfg]
     exact (isSemialgebraicSet_closedRightNbhd 1).comap (Fin.castAdd k)
@@ -484,7 +484,7 @@ theorem theorem_3_19 (S : Set (Fin k → R)) (hS : IsSemialgebraicSet S)
       continuousOn_of_components (fun j => (hγ j).2), ?_, ?_⟩
     · funext j
       show (if ((constPt (0 : R)) : Fin 1 → R) 0 = 0 then x j else _) = x j
-      rw [if_pos (show ((constPt (0 : R)) : Fin 1 → R) 0 = 0 from rfl)]
+      rw [ite_eq_left (show ((constPt (0 : R)) : Fin 1 → R) 0 = 0 from rfl)]
     · intro s hs hs1
       have hτs0 : 0 < τ * s := mul_pos hτ0 hs
       have hτsτ : τ * s < τ := by nlinarith [hs1, hτ0]
@@ -493,7 +493,7 @@ theorem theorem_3_19 (S : Set (Fin k → R)) (hS : IsSemialgebraicSet S)
             else (c j : (Fin 1 → R) → R) (constPt (τ * (constPt s : Fin 1 → R) 0)))
           = fun i => (c i : (Fin 1 → R) → R) (constPt (τ * s)) := by
         funext j
-        rw [show ((constPt s : Fin 1 → R)) 0 = s from rfl, if_neg hs.ne']
+        rw [show ((constPt s : Fin 1 → R)) 0 = s from rfl, ite_eq_right hs.ne']
       show (fun j => if ((constPt s : Fin 1 → R)) 0 = 0 then x j
           else (c j : (Fin 1 → R) → R) (constPt (τ * (constPt s : Fin 1 → R) 0))) ∈ S
       rw [hfun]

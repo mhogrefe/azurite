@@ -171,7 +171,7 @@ theorem den_ne_zero (r : AzMvRationalFunction n ord) : r.den ≠ 0 := by
 /-- `ofNumDen` with a zero denominator is the zero function. -/
 theorem ofNumDen_den_zero (num : AzMvPolynomial n AzInt ord) :
     ofNumDen num 0 = 0 := by
-  rw [ofNumDen, if_pos (Or.inr rfl)]
+  rw [ofNumDen, ite_eq_left (Or.inr rfl)]
 
 -- ═══════════════════════════════════════════════════════════════════
 -- Tests

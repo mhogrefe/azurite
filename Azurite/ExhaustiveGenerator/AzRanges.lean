@@ -54,12 +54,12 @@ open ExhaustiveGenerator
 /-- Positions at or past the card `b.toNat - a.toNat` are `none`. -/
 theorem azNatRangeGen_gen_none (a b : AzNat) (n : ℕ) (h : b.toNat - a.toNat ≤ n) :
     @gen _ (azNatRangeGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azNatRangeGen_gen_some (a b : AzNat) (n : ℕ) (h : n < b.toNat - a.toNat) :
     @gen _ (azNatRangeGen a b) n ≠ none := by
-  rw [show @gen _ (azNatRangeGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azNatRangeGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 noncomputable instance instFintypeAzNatRange (a b : AzNat) :
@@ -96,12 +96,12 @@ theorem azNatRangeGen_card (a b : AzNat) :
 /-- Positions at or past the card `b.toNat + 1 - a.toNat` are `none`. -/
 theorem azNatRangeInclusiveGen_gen_none (a b : AzNat) (n : ℕ) (h : b.toNat + 1 - a.toNat ≤ n) :
     @gen _ (azNatRangeInclusiveGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azNatRangeInclusiveGen_gen_some (a b : AzNat) (n : ℕ) (h : n < b.toNat + 1 - a.toNat) :
     @gen _ (azNatRangeInclusiveGen a b) n ≠ none := by
-  rw [show @gen _ (azNatRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azNatRangeInclusiveGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 noncomputable instance instFintypeAzNatRangeInclusive (a b : AzNat) :
@@ -139,12 +139,12 @@ theorem azNatRangeInclusiveGen_card (a b : AzNat) :
 /-- Positions at or past the card `(b.toInt - a.toInt).toNat` are `none`. -/
 theorem azIntIncreasingRangeGen_gen_none (a b : AzInt) (n : ℕ) (h : (b.toInt - a.toInt).toNat ≤ n) :
     @gen _ (azIntIncreasingRangeGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azIntIncreasingRangeGen_gen_some (a b : AzInt) (n : ℕ) (h : n < (b.toInt - a.toInt).toNat) :
     @gen _ (azIntIncreasingRangeGen a b) n ≠ none := by
-  rw [show @gen _ (azIntIncreasingRangeGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azIntIncreasingRangeGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 noncomputable instance instFintypeAzIntIncreasingRange (a b : AzInt) :
@@ -181,13 +181,13 @@ theorem azIntIncreasingRangeGen_card (a b : AzInt) :
 theorem azIntIncreasingRangeInclusiveGen_gen_none (a b : AzInt) (n : ℕ)
     (h : (b.toInt - a.toInt + 1).toNat ≤ n) :
     @gen _ (azIntIncreasingRangeInclusiveGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azIntIncreasingRangeInclusiveGen_gen_some (a b : AzInt) (n : ℕ)
     (h : n < (b.toInt - a.toInt + 1).toNat) :
     @gen _ (azIntIncreasingRangeInclusiveGen a b) n ≠ none := by
-  rw [show @gen _ (azIntIncreasingRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azIntIncreasingRangeInclusiveGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 noncomputable instance instFintypeAzIntIncreasingRangeInclusive (a b : AzInt) :
@@ -316,12 +316,12 @@ from the ascending versions (they are order-independent). `AzInt`'s `ofInt`/
 /-- Positions at or past the card `(b.toInt - a.toInt).toNat` are `none`. -/
 theorem azIntRangeGen_gen_none (a b : AzInt) (n : ℕ) (h : (b.toInt - a.toInt).toNat ≤ n) :
     @gen _ (azIntRangeGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azIntRangeGen_gen_some (a b : AzInt) (n : ℕ) (h : n < (b.toInt - a.toInt).toNat) :
     @gen _ (azIntRangeGen a b) n ≠ none := by
-  rw [show @gen _ (azIntRangeGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azIntRangeGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- `azIntRangeGen a b` produces `(b.toInt - a.toInt).toNat` elements (count reused
@@ -357,13 +357,13 @@ theorem azIntRangeGen_card (a b : AzInt) :
 theorem azIntRangeInclusiveGen_gen_none (a b : AzInt) (n : ℕ)
     (h : (b.toInt - a.toInt + 1).toNat ≤ n) :
     @gen _ (azIntRangeInclusiveGen a b) n = none :=
-  dif_neg (by omega)
+  dite_eq_right (by omega)
 
 /-- Positions below the card produce a value (`≠ none`). -/
 theorem azIntRangeInclusiveGen_gen_some (a b : AzInt) (n : ℕ)
     (h : n < (b.toInt - a.toInt + 1).toNat) :
     @gen _ (azIntRangeInclusiveGen a b) n ≠ none := by
-  rw [show @gen _ (azIntRangeInclusiveGen a b) n = some _ from dif_pos (by omega)]
+  rw [show @gen _ (azIntRangeInclusiveGen a b) n = some _ from dite_eq_left (by omega)]
   exact Option.some_ne_none _
 
 /-- `azIntRangeInclusiveGen a b` produces `(b.toInt - a.toInt + 1).toNat` elements
@@ -396,13 +396,13 @@ theorem toInfF_inj (a : AzInt) {i j : ℕ} (h : toInfF a i = toInfF a j) : i = j
 
 theorem toInfF_surj (a : AzInt) (x : ℤ) (hx : a.toInt ≤ x) : ∃ n, toInfF a n = x := by
   by_cases hsign : 0 ≤ a.toInt
-  · exact ⟨(x - a.toInt).toNat, by unfold toInfF; rw [if_pos hsign]; omega⟩
+  · exact ⟨(x - a.toInt).toNat, by unfold toInfF; rw [ite_eq_left hsign]; omega⟩
   · rcases lt_trichotomy x 0 with hneg | hzero | hpos
-    · exact ⟨(2 * (-x)).toNat, by unfold toInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
-    · exact ⟨0, by unfold toInfF; rw [if_neg hsign]; simp [hzero]⟩
+    · exact ⟨(2 * (-x)).toNat, by unfold toInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
+    · exact ⟨0, by unfold toInfF; rw [ite_eq_right hsign]; simp [hzero]⟩
     · by_cases hle : x ≤ -a.toInt
-      · exact ⟨(2 * x - 1).toNat, by unfold toInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
-      · exact ⟨(x - a.toInt).toNat, by unfold toInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
+      · exact ⟨(2 * x - 1).toNat, by unfold toInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
+      · exact ⟨(x - a.toInt).toNat, by unfold toInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
 
 /-- `[a, ∞)` over `AzInt` in magnitude order (`|x|` ascending, positive first). -/
 def azIntRangeToInfinityFun (a : AzInt) : ℕ → {x : AzInt // a ≤ x} :=
@@ -445,13 +445,13 @@ theorem toNegInfF_inj (b : AzInt) {i j : ℕ} (h : toNegInfF b i = toNegInfF b j
 
 theorem toNegInfF_surj (b : AzInt) (x : ℤ) (hx : x ≤ b.toInt) : ∃ n, toNegInfF b n = x := by
   by_cases hsign : b.toInt ≤ 0
-  · exact ⟨(b.toInt - x).toNat, by unfold toNegInfF; rw [if_pos hsign]; omega⟩
+  · exact ⟨(b.toInt - x).toNat, by unfold toNegInfF; rw [ite_eq_left hsign]; omega⟩
   · rcases lt_trichotomy x 0 with hneg | hzero | hpos
     · by_cases hge : -b.toInt ≤ x
-      · exact ⟨(2 * (-x)).toNat, by unfold toNegInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
-      · exact ⟨(b.toInt - x).toNat, by unfold toNegInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
-    · exact ⟨0, by unfold toNegInfF; rw [if_neg hsign]; simp [hzero]⟩
-    · exact ⟨(2 * x - 1).toNat, by unfold toNegInfF; rw [if_neg hsign]; split_ifs <;> omega⟩
+      · exact ⟨(2 * (-x)).toNat, by unfold toNegInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
+      · exact ⟨(b.toInt - x).toNat, by unfold toNegInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
+    · exact ⟨0, by unfold toNegInfF; rw [ite_eq_right hsign]; simp [hzero]⟩
+    · exact ⟨(2 * x - 1).toNat, by unfold toNegInfF; rw [ite_eq_right hsign]; split_ifs <;> omega⟩
 
 /-- `(-∞, b]` over `AzInt` in magnitude order (`|x|` ascending, positive first). -/
 def azIntRangeToNegativeInfinityFun (b : AzInt) : ℕ → {x : AzInt // x ≤ b} :=

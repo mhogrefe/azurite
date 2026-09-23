@@ -68,14 +68,14 @@ theorem ofRat_toRat (q : AzRat) : ofRat (toRat q) = q := by
         intro h
         have hz : q.num = 0 := AzNat.toNat_injective (h.trans AzNat.toNat_zero.symm)
         rw [q.zero_sign hz] at hs; exact absurd hs (by decide)
-      simp only [Bool.false_eq_true, if_false, decide_eq_false_iff_not]
+      simp only [Bool.false_eq_true, ite_false, decide_eq_false_iff_not]
       omega
-    · simp only [if_true, decide_eq_true_eq]; omega
+    · simp only [ite_true, decide_eq_true_eq]; omega
   · -- num
     show AzNat.ofNat (toRat q).num.natAbs = q.num
     rw [hnum]
     cases hs : q.sign <;>
-      simp only [Bool.false_eq_true, if_false, if_true, Int.natAbs_neg, Int.natAbs_natCast] <;>
+      simp only [Bool.false_eq_true, ite_false, ite_true, Int.natAbs_neg, Int.natAbs_natCast] <;>
       exact AzNat.ofNat_toNat q.num
   · -- den
     show AzNat.ofNat (toRat q).den = q.den

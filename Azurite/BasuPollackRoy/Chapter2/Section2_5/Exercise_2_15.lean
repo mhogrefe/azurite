@@ -66,7 +66,7 @@ theorem exercise_2_15 :
   have hL : IsSemialgebraicSet {p : Fin 2 → R | p 0 = 1} := by
     convert IsSemialgebraicSet.eqZero (MvPolynomial.X 0 - 1 : MvPolynomial (Fin 2) R) using 1
     ext p
-    simp only [Set.mem_setOf_eq, map_sub, MvPolynomial.eval_X, map_one, sub_eq_zero]
+    simp only [Set.mem_ofPred_eq, map_sub, MvPolynomial.eval_X, map_one, sub_eq_zero]
   -- project `S ∩ {x = 1}` to the `y`-axis
   have e0 : ∀ (x y : Fin 1 → R), Fin.append x y 0 = x 0 := fun x y => by
     rw [show (0 : Fin 2) = Fin.castAdd 1 (0 : Fin 1) from Fin.ext rfl, Fin.append_left]
@@ -77,7 +77,7 @@ theorem exercise_2_15 :
         ({p : Fin 2 → R | ∃ n : ℕ, p 1 = ↑n * p 0} ∩ {p | p 0 = 1})}
       = {y : Fin 1 → R | y 0 ∈ Set.range (Nat.cast : ℕ → R)} := by
     ext y
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_range]
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_range]
     constructor
     · rintro ⟨x, ⟨n, hn⟩, hx1⟩
       rw [e0, e1] at hn

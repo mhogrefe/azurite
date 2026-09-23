@@ -71,8 +71,8 @@ theorem pdetRing_eq_det_matStar (hm : 0 < m) (hmn : m ≤ n) (P : Fin m → degr
     rw [Matrix.updateCol_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, matStar, if_neg (by rw [hlastval]; omega)]
-    · rw [if_neg hc]
+      rw [ite_eq_left rfl, matStar, ite_eq_right (by rw [hlastval]; omega)]
+    · rw [ite_eq_right hc]
   -- The `k`-th term is `X^k * C(m_k)`.
   have hterm : ∀ k, ((matStar n Q).updateCol last ((X : D[X]) ^ k • colVec k)).det
       = (X : D[X]) ^ k * C (pdetMinorRing n Q k) := by
@@ -84,12 +84,12 @@ theorem pdetRing_eq_det_matStar (hm : 0 < m) (hmn : m ≤ n) (P : Fin m → degr
       rw [Matrix.updateCol_apply, Matrix.map_apply, pdetMinorMatRing, pdetColIdx]
       by_cases hc : c = last
       · subst hc
-        rw [if_pos rfl, hcolVec, if_neg (by rw [hlastval]; omega)]
-      · rw [if_neg hc, matStar, if_pos (by
+        rw [ite_eq_left rfl, hcolVec, ite_eq_right (by rw [hlastval]; omega)]
+      · rw [ite_eq_right hc, matStar, ite_eq_left (by
           have := c.isLt
           rw [Fin.ext_iff, hlastval] at hc; omega)]
         congr 2
-        rw [if_pos (by have := c.isLt; rw [Fin.ext_iff, hlastval] at hc; omega)]
+        rw [ite_eq_left (by have := c.isLt; rw [Fin.ext_iff, hlastval] at hc; omega)]
     rw [hmat, pdetMinorRing, RingHom.map_det, RingHom.mapMatrix_apply]
   rw [hms, det_updateCol_finsetSum]
   simp only [hterm]
@@ -112,7 +112,7 @@ theorem pdetRing_eq_det_matStar (hm : 0 < m) (hmn : m ≤ n) (P : Fin m → degr
         (Fin.ne_of_val_ne (by simp only [hlastval]; exact hk3))
       intro r
       simp only [pdetMinorMatRing, pdetColIdx, hlastval]
-      rw [if_pos hk1, if_neg (show ¬ (m - 1 + 1 < m) by omega), hk2]
+      rw [ite_eq_left hk1, ite_eq_right (show ¬ (m - 1 + 1 < m) by omega), hk2]
     rw [hz, zero_smul]
 
 /-- **BPR Remark 8.30.** Expanding `det(Mat(𝒫)*)` along its last column shows that
@@ -142,8 +142,8 @@ theorem pdetRing_eq_linear_combination (hm : 0 < m) (hmn : m ≤ n) (P : Fin m �
     rw [Matrix.updateCol_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, matStar, if_neg (show ¬ ((last : ℕ) + 1 < m) by rw [hlastval]; omega)]
-    · rw [if_neg hc]
+      rw [ite_eq_left rfl, matStar, ite_eq_right (show ¬ ((last : ℕ) + 1 < m) by rw [hlastval]; omega)]
+    · rw [ite_eq_right hc]
   rw [hms, det_updateCol_finsetSum]
   refine Finset.sum_congr rfl (fun r₀ _ => ?_)
   rw [Matrix.det_updateCol_smul]
@@ -152,17 +152,17 @@ theorem pdetRing_eq_linear_combination (hm : 0 < m) (hmn : m ≤ n) (P : Fin m �
     rw [Matrix.updateCol_apply, Matrix.map_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl]
+      rw [ite_eq_left rfl]
       simp only [hN]
-      rw [if_neg (show ¬ ((last : ℕ) + 1 < m) by rw [hlastval]; omega),
+      rw [ite_eq_right (show ¬ ((last : ℕ) + 1 < m) by rw [hlastval]; omega),
         Pi.single_apply, apply_ite C, map_one, map_zero]
-    · rw [if_neg hc]
+    · rw [ite_eq_right hc]
       have hcm : (c : ℕ) + 1 < m := by
         have h1 := c.isLt
         have h2 : (c : ℕ) ≠ m - 1 := by rw [← hlastval]; exact Fin.val_ne_of_ne hc
         omega
       simp only [matStar, hN]
-      rw [if_pos hcm, if_pos hcm]
+      rw [ite_eq_left hcm, ite_eq_left hcm]
   rw [hmat, ← RingHom.mapMatrix_apply, ← RingHom.map_det, mul_comm]
 
 end Azurite.BPR.Chapter8

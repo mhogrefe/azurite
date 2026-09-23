@@ -68,7 +68,7 @@ theorem evenRoot_isSemialgebraicFunction {k : ℕ} (_heven : Even k) (hk : 2 ≤
         have h := congrFun hb 0
         rwa [Function.comp_apply, hnidx] at h
       rw [Function.comp_apply, hcidx] at hspec
-      rw [Set.mem_setOf_eq]
+      rw [Set.mem_ofPred_eq]
       refine ⟨?_, ?_⟩
       · rw [hb0]; exact hspec.1
       · rw [hb0]; exact hspec.2
@@ -86,7 +86,7 @@ theorem evenRoot_isSemialgebraicFunction {k : ℕ} (_heven : Even k) (hk : 2 ≤
     have heq : {z : Fin 2 → R | (0 : R) ≤ z 1 ∧ z 1 ^ k = z 0}
         = {z | MvPolynomial.eval z (X 1) ≥ 0} ∩ {z | MvPolynomial.eval z (X 1 ^ k - X 0) = 0} := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
+      simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
         MvPolynomial.eval_pow, sub_eq_zero, ge_iff_le]
     rw [heq]
     exact (IsSemialgebraicSet.geZero _).inter (IsSemialgebraicSet.eqZero _)

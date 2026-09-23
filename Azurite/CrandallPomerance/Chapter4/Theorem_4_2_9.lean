@@ -298,7 +298,7 @@ theorem theorem_4_2_9 {a b : ℤ} {n F c₁ c₄ u v d : ℕ} (hn : 214 ≤ n)
   · -- (1) ∧ (2) ⟹ prime
     rintro ⟨h1, h2a, h2b⟩
     by_contra hcomp
-    haveI : NeZero n := ⟨by omega⟩
+    have : NeZero n := ⟨by omega⟩
     -- every prime factor is `≡ ±1 (mod F)` (Theorem 4.2.3 + Jacobi)
     have hΔn : Int.gcd (a ^ 2 - 4 * b) n = 1 := by
       by_contra h

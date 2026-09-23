@@ -54,13 +54,13 @@ membership hypothesis of the character construction. -/
 theorem zetaPFam_mem (p : ℕ) :
     zetaPFam q p ∈ rootsOfUnity (Fintype.card (ZMod q)ˣ)
       (CycM ((q - 1) * q)) := by
-  rw [zetaPFam, dif_pos hm_pos]
+  rw [zetaPFam, dite_eq_left hm_pos]
   by_cases hd : p ∣ q - 1
-  · rw [if_pos hd]
+  · rw [ite_eq_left hd]
     refine mem_rootsOfUnity_card_units_of_dvd ?_ hd
     rw [← pow_mul, Nat.div_mul_cancel (hd.mul_right q),
       zetaMUnit_pow_eq_one]
-  · rw [if_neg hd]
+  · rw [ite_eq_right hd]
     exact mem_rootsOfUnity_card_units_of_dvd (one_pow 1) (one_dvd _)
 
 /-- The family members at prime factors of `q − 1` are genuine
@@ -68,7 +68,7 @@ primitive `p`-th roots. -/
 theorem isPrimitiveRoot_zetaPFam {p : ℕ} (hp : p ∈ (q - 1).primeFactors) :
     IsPrimitiveRoot (zetaPFam q p) p := by
   have hd : p ∣ q - 1 := Nat.dvd_of_mem_primeFactors hp
-  rw [zetaPFam, dif_pos hm_pos, if_pos hd, ← IsPrimitiveRoot.coe_units_iff,
+  rw [zetaPFam, dite_eq_left hm_pos, ite_eq_left hd, ← IsPrimitiveRoot.coe_units_iff,
     Units.val_pow_eq_pow_val, val_zetaMUnit]
   exact (isPrimitiveRoot_zetaM hm_pos).pow hm_pos
     (Nat.div_mul_cancel (hd.mul_right q)).symm
@@ -117,7 +117,7 @@ theorem theorem_4_4_6_composite_cycM
     (R := fun q => CycM ((q - 1) * q)) (ζP := zetaPFam) (ζQ := zetaQFam)
     (g := g) ?_ ?_
   · intro q hq
-    haveI : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
+    have : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
     exact isDomain_cycM hm_pos
   · intro q hq inst
     exact ⟨isPrimitiveRoot_zetaQFam, zetaPFam_mem, hgen q hq,

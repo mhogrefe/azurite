@@ -55,7 +55,7 @@ leaves each root of `P` with multiplicity exactly one. -/
 theorem rootMultiplicity_div_gcd_derivative {P : Polynomial (Ri R)} (hP : P ≠ 0) (z : Ri R) :
     rootMultiplicity z (P / EuclideanDomain.gcd P (derivative P))
       = if P.IsRoot z then 1 else 0 := by
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective R (Ri R))
   have hg : EuclideanDomain.gcd P (derivative P) ≠ 0 := fun h =>
     hP (EuclideanDomain.gcd_eq_zero_iff.mp h).1
@@ -78,7 +78,7 @@ theorem rootMultiplicity_div_gcd_derivative {P : Polynomial (Ri R)} (hP : P ≠ 
       have hC := Polynomial.eq_C_of_natDegree_eq_zero hd
       rw [hC, Polynomial.IsRoot, Polynomial.eval_C] at h
       exact hP (by rw [hC, h, Polynomial.C_0])
-    rw [if_neg hzroot]
+    rw [ite_eq_right hzroot]
     have h0 : rootMultiplicity z P = 0 := Polynomial.rootMultiplicity_eq_zero hzroot
     omega
   · -- nonconstant case: `P′ ≠ 0` (char 0) and the min formula applies
@@ -87,13 +87,13 @@ theorem rootMultiplicity_div_gcd_derivative {P : Polynomial (Ri R)} (hP : P ≠ 
       exact hd (Polynomial.derivative_eq_zero.mp h)
     have hgmin := rootMultiplicity_gcd hP hP' z
     by_cases hz : P.IsRoot z
-    · rw [if_pos hz]
+    · rw [ite_eq_left hz]
       have hm1 : 0 < rootMultiplicity z P := (Polynomial.rootMultiplicity_pos hP).mpr hz
       have hder : rootMultiplicity z (derivative P) = rootMultiplicity z P - 1 :=
         Polynomial.derivative_rootMultiplicity_of_root hz
       rw [hder] at hgmin
       omega
-    · rw [if_neg hz]
+    · rw [ite_eq_right hz]
       have h0 : rootMultiplicity z P = 0 := Polynomial.rootMultiplicity_eq_zero hz
       omega
 
@@ -102,7 +102,7 @@ of `P`. -/
 theorem lemma_10_13 {P : Polynomial (Ri R)} (hP : P ≠ 0) :
     IsSeparablePart (P / EuclideanDomain.gcd P (derivative P)) P := by
   classical
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   have hg : EuclideanDomain.gcd P (derivative P) ≠ 0 := fun h =>
     hP (EuclideanDomain.gcd_eq_zero_iff.mp h).1
   have hfac : EuclideanDomain.gcd P (derivative P)
@@ -126,11 +126,11 @@ theorem lemma_10_13 {P : Polynomial (Ri R)} (hP : P ≠ 0) :
     · intro h
       by_contra hz
       have h1 := (Polynomial.rootMultiplicity_pos hS0).mpr h
-      rw [rootMultiplicity_div_gcd_derivative hP, if_neg hz] at h1
+      rw [rootMultiplicity_div_gcd_derivative hP, ite_eq_right hz] at h1
       omega
     · intro h
       rw [← Polynomial.rootMultiplicity_pos hS0,
-        rootMultiplicity_div_gcd_derivative hP, if_pos h]
+        rootMultiplicity_div_gcd_derivative hP, ite_eq_left h]
       omega
 
 end Azurite.BPR

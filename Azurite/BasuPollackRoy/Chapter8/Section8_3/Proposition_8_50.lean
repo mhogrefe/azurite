@@ -46,19 +46,19 @@ theorem proposition_8_50 {k : ℕ} (P Q : Polynomial (MvPolynomial (Fin k) ℤ))
               * (τ + Nat.size (P.natDegree + Q.natDegree - 2 * j) + k * Nat.size (d + 1)) := by
   refine ⟨proposition_8_49 P Q hPd hQd hpq hjq a, fun r => ?_⟩
   by_cases ha : a ≤ j
-  · rw [sResP, if_pos hjq,
+  · rw [sResP, ite_eq_left hjq,
       pdetRing_coeff _ (show a ≤ P.natDegree + Q.natDegree - j - (P.natDegree + Q.natDegree - 2 * j)
         by omega), pdetMinorRing]
     refine (proposition_8_15 _ (show 0 < P.natDegree + Q.natDegree - 2 * j by omega)
       (fun i' c => ?_) (fun i' c r' => ?_)).2 r
     · rw [pdetMinorMatRing]
       by_cases hr : (i' : ℕ) < Q.natDegree - j
-      · simp only [hr, if_true]; exact totalDegree_coeff_X_pow_mul hPd _ _
-      · simp only [hr, if_false]; exact totalDegree_coeff_X_pow_mul hQd _ _
+      · simp only [hr, ite_true]; exact totalDegree_coeff_X_pow_mul hPd _ _
+      · simp only [hr, ite_false]; exact totalDegree_coeff_X_pow_mul hQd _ _
     · rw [pdetMinorMatRing]
       by_cases hr : (i' : ℕ) < Q.natDegree - j
-      · simp only [hr, if_true]; exact int_size_coeff_coeff_X_pow_mul hPτ _ _ _
-      · simp only [hr, if_false]; exact int_size_coeff_coeff_X_pow_mul hQτ _ _ _
+      · simp only [hr, ite_true]; exact int_size_coeff_coeff_X_pow_mul hPτ _ _ _
+      · simp only [hr, ite_false]; exact int_size_coeff_coeff_X_pow_mul hQτ _ _ _
   · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt
       (Polynomial.natDegree_le_iff_degree_le.mpr (sResP_degree_le P Q hpq hjq)) (by omega))]
     simp [Int.size]

@@ -68,13 +68,13 @@ theorem lemma_4_35 (P Q : R[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     have hpe : Even (P.natDegree + Q.natDegree) := by
       rw [Nat.even_iff] at hpar ⊢; omega
     rw [hpe.neg_one_pow] at key
-    rw [if_neg (Nat.not_odd_iff_even.mpr hpar)]
+    rw [ite_eq_right (Nat.not_odd_iff_even.mpr hpar)]
     linarith [key]
   · -- p − q odd: (−1)^{p+q} = −1, σ flips, index gains sign(a_p b_q)
     have hpo : Odd (P.natDegree + Q.natDegree) := by
       rw [Nat.odd_iff] at hpar ⊢; omega
     rw [hpo.neg_one_pow] at key
-    rw [if_pos hpar]
+    rw [ite_eq_left hpar]
     linarith [key]
 
 end Azurite.BPR.Chapter4

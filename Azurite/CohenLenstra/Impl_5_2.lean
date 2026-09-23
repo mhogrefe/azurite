@@ -100,12 +100,12 @@ theorem two_mul_s1 (t' : ℕ) {F : ℕ} (hF0 : F ≠ 0) (hF : 2 ∣ F) :
       = ∏ p ∈ F.primeFactors.erase 2,
           p ^ (padicValNat p t' + padicValNat p F) := by
     refine Finset.prod_congr rfl fun p hp => ?_
-    rw [s1Exp, if_neg (Finset.mem_erase.mp hp).1, Nat.sub_zero]
+    rw [s1Exp, ite_eq_right (Finset.mem_erase.mp hp).1, Nat.sub_zero]
   rw [hrest, ← mul_assoc]
   congr 1
-  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   have hv : 1 ≤ padicValNat 2 F := one_le_padicValNat_of_dvd hF0 hF
-  rw [s1Exp, if_pos rfl, ← pow_succ']
+  rw [s1Exp, ite_eq_left rfl, ← pow_succ']
   congr 1
   omega
 
@@ -125,7 +125,7 @@ def s2 (t' n s2bar : ℕ) : ℕ := ∏ q ∈ s2bar.primeFactors, s2Part t' n q
 (mod p)`. -/
 theorem pow_prime_modEq_one_lift {p a m : ℕ} (hp : p.Prime) (hm : 0 < m)
     (ha : a ≡ 1 [MOD p ^ m]) : a ^ p ≡ 1 [MOD p ^ (m + 1)] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have h1 : ((p : ℤ) ^ m) ∣ (a : ℤ) - 1 := by
     have := Nat.modEq_iff_dvd.mp ha
     push_cast at this
@@ -173,7 +173,7 @@ theorem pow_modEq_one_s1 {n t' F : ℕ} (hn : 1 ≤ n) (ht2 : 2 ∣ t')
       (Nat.prime_of_mem_primeFactors (Finset.mem_coe.mp hq))).mpr hne)
   · intro p hp
     have hpp := Nat.prime_of_mem_primeFactors hp
-    haveI : Fact p.Prime := ⟨hpp⟩
+    have : Fact p.Prime := ⟨hpp⟩
     have hpF : p ∣ F := Nat.dvd_of_mem_primeFactors hp
     rw [s1Exp]
     set v := padicValNat p F with hv
@@ -185,7 +185,7 @@ theorem pow_modEq_one_s1 {n t' F : ℕ} (hn : 1 ≤ n) (ht2 : 2 ∣ t')
     have hpk : p ^ k ∣ t' := pow_padicValNat_dvd
     by_cases h2 : p = 2
     · subst h2
-      rw [if_pos rfl]
+      rw [ite_eq_left rfl]
       have hk1 : 1 ≤ k := one_le_padicValNat_of_dvd ht0 ht2
       have hlift := pow_prime_pow_modEq_one_lift Nat.prime_two hv1 hsq (k - 1)
       have h2k : 2 ^ (k - 1) * 2 = 2 ^ k := by
@@ -199,7 +199,7 @@ theorem pow_modEq_one_s1 {n t' F : ℕ} (hn : 1 ≤ n) (ht2 : 2 ∣ t')
         ring
       rw [hpow, show k + v - 1 = v + (k - 1) by omega]
       exact (hlift.pow c).trans (by rw [one_pow])
-    · rw [if_neg h2, Nat.sub_zero]
+    · rw [ite_eq_right h2, Nat.sub_zero]
       have hlift := pow_prime_pow_modEq_one_lift hpp hv1 hsq k
       have hcop : Nat.Coprime 2 (p ^ k) :=
         Nat.Coprime.pow_right _
@@ -232,7 +232,7 @@ theorem pow_modEq_one_s2 {n t' s2bar : ℕ} (hn : 1 < n)
       (Nat.prime_of_mem_primeFactors (Finset.mem_coe.mp hq'))).mpr hne)
   · intro q hqmem
     have hqp := Nat.prime_of_mem_primeFactors hqmem
-    haveI : Fact q.Prime := ⟨hqp⟩
+    have : Fact q.Prime := ⟨hqp⟩
     obtain ⟨hq1, hqn⟩ := hq q hqmem
     have hferm : n ^ (q - 1) ≡ 1 [MOD q] :=
       Nat.ModEq.pow_card_sub_one_eq_one hqp

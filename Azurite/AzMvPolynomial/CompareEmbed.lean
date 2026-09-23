@@ -22,7 +22,7 @@ private theorem lex_skip {n : ℕ} (a b : Vector ℕ n) (start stop : ℕ)
     (heq : ∀ j : ℕ, start ≤ j → j < stop → (hj : j < n) → a[j] = b[j]) :
     lexCompareAux a b start = lexCompareAux a b stop := by
   by_cases h : start = stop; · rw [h]
-  · rw [lexCompareAux, dif_pos (show start < n by omega)]
+  · rw [lexCompareAux, dite_eq_left (show start < n by omega)]
     rw [show compare (a[start]'(by omega)) (b[start]'(by omega)) = .eq from
       Nat.compare_eq_eq.mpr (heq start (le_refl _) (by omega) (by omega))]
     exact lex_skip a b (start + 1) stop (by omega) (by omega)
@@ -35,7 +35,7 @@ private theorem revlex_skip {n : ℕ} (a b : Vector ℕ n) (start stop : ℕ)
       a[n - 1 - j]'(by omega) = b[n - 1 - j]'(by omega)) :
     revlexCompareAux a b start = revlexCompareAux a b stop := by
   by_cases h : start = stop; · rw [h]
-  · rw [revlexCompareAux, dif_pos (show start < n by omega)]; dsimp only
+  · rw [revlexCompareAux, dite_eq_left (show start < n by omega)]; dsimp only
     rw [show compare (a[n - 1 - start]'(by omega)) (b[n - 1 - start]'(by omega)) = .eq from
       Nat.compare_eq_eq.mpr (heq start (le_refl _) (by omega) (by omega))]
     exact revlex_skip a b (start + 1) stop (by omega) (by omega)
@@ -57,9 +57,9 @@ theorem lex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vector 
       (if h : k < n₁ then (g ⟨k, h⟩).val else n₂) =
     lexCompareAux a b k := by
   by_cases hkn : k < n₁
-  · rw [dif_pos hkn, lexCompareAux, dif_pos (g ⟨k, hkn⟩).isLt,
+  · rw [dite_eq_left hkn, lexCompareAux, dite_eq_left (g ⟨k, hkn⟩).isLt,
         embedVec_at g hg.injective a k hkn, embedVec_at g hg.injective b k hkn]
-    conv_rhs => rw [lexCompareAux, dif_pos hkn]
+    conv_rhs => rw [lexCompareAux, dite_eq_left hkn]
     rcases compare (a[k]'hkn) (b[k]'hkn) with _ | _ | _
     · rfl
     · set next := if h : k + 1 < n₁ then (g ⟨k + 1, h⟩).val else n₂ with hnext
@@ -81,8 +81,8 @@ theorem lex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vector 
             split; exact absurd (Fin.val_eq_of_eq ‹_›) this; rfl)]
       exact lex_embed g hg a b (k + 1) (by omega)
     · rfl
-  · rw [dif_neg hkn, lexCompareAux, dif_neg (show ¬(n₂ < n₂) by omega),
-        lexCompareAux, dif_neg hkn]
+  · rw [dite_eq_right hkn, lexCompareAux, dite_eq_right (show ¬(n₂ < n₂) by omega),
+        lexCompareAux, dite_eq_right hkn]
 termination_by n₁ - k
 
 theorem revlex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vector ℕ n₁)
@@ -91,16 +91,16 @@ theorem revlex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vect
       (if h : k < n₁ then n₂ - 1 - (g ⟨n₁ - 1 - k, by omega⟩).val else n₂) =
     revlexCompareAux a b k := by
   by_cases hkn : k < n₁
-  · rw [dif_pos hkn]
+  · rw [dite_eq_left hkn]
     set rk := n₂ - 1 - (g ⟨n₁ - 1 - k, by omega⟩).val
-    rw [revlexCompareAux, dif_pos (show rk < n₂ by simp [rk]; omega)]; dsimp only
+    rw [revlexCompareAux, dite_eq_left (show rk < n₂ by simp [rk]; omega)]; dsimp only
     have hsimp : n₂ - 1 - rk = (g ⟨n₁ - 1 - k, by omega⟩).val := by simp [rk]; omega
     conv_lhs =>
       rw [show (embedVec g a)[n₂ - 1 - rk] = a[n₁ - 1 - k] from by
         simp_rw [hsimp]; exact embedVec_at g hg.injective a _ (by omega)]
       rw [show (embedVec g b)[n₂ - 1 - rk] = b[n₁ - 1 - k] from by
         simp_rw [hsimp]; exact embedVec_at g hg.injective b _ (by omega)]
-    conv_rhs => rw [revlexCompareAux, dif_pos hkn]; dsimp only
+    conv_rhs => rw [revlexCompareAux, dite_eq_left hkn]; dsimp only
     rcases compare (a[n₁ - 1 - k]'(by omega)) (b[n₁ - 1 - k]'(by omega)) with _ | _ | _
     · rfl
     · show revlexCompareAux (embedVec g a) (embedVec g b) (rk + 1) = revlexCompareAux a b (k + 1)
@@ -128,8 +128,8 @@ theorem revlex_embed (g : Fin n₁ → Fin n₂) (hg : StrictMono g) (a b : Vect
             split; exact absurd (Fin.val_eq_of_eq ‹_›) hni; rfl)]
       exact revlex_embed g hg a b (k + 1) (by omega)
     · rfl
-  · rw [dif_neg hkn, revlexCompareAux, dif_neg (show ¬(n₂ < n₂) by omega),
-        revlexCompareAux, dif_neg hkn]
+  · rw [dite_eq_right hkn, revlexCompareAux, dite_eq_right (show ¬(n₂ < n₂) by omega),
+        revlexCompareAux, dite_eq_right hkn]
 termination_by n₁ - k
 
 theorem totalDeg_eq_finsum {n : ℕ} (v : Vector ℕ n) :
@@ -179,7 +179,7 @@ theorem lexCompare_embedVec (g : Fin n₁ → Fin n₂) (hg : StrictMono g)
       (fun j _ _ hjn₂ => by
         simp only [embedVec, Vector.getElem_ofFn, Fin.getElem_fin]
         congr 1; ext i; exact absurd i.isLt (by omega))]
-    rw [lexCompareAux, dif_neg (by omega), lexCompareAux, dif_neg (by omega)]
+    rw [lexCompareAux, dite_eq_right (by omega), lexCompareAux, dite_eq_right (by omega)]
 
 /-- `revlexCompare` is preserved by strictly monotone embedding. -/
 theorem revlexCompare_embedVec (g : Fin n₁ → Fin n₂) (hg : StrictMono g)
@@ -209,7 +209,7 @@ theorem revlexCompare_embedVec (g : Fin n₁ → Fin n₂) (hg : StrictMono g)
       (fun j _ _ hjn₂ => by
         simp only [embedVec, Vector.getElem_ofFn, Fin.getElem_fin]
         congr 1; ext i; exact absurd i.isLt (by omega))]
-    rw [revlexCompareAux, dif_neg (by omega), revlexCompareAux, dif_neg (by omega)]
+    rw [revlexCompareAux, dite_eq_right (by omega), revlexCompareAux, dite_eq_right (by omega)]
 
 /-- `compareExponents` is preserved by strictly monotone embedding. -/
 theorem compareExponents_embedVec (g : Fin n₁ → Fin n₂) (hg : StrictMono g)

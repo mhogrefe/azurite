@@ -55,14 +55,14 @@ theorem evalPolyExt_eq_BPR {K : Type _} [CommRing K]
           rcases h_even with ⟨k, hk⟩
           refine ⟨k - 1, ?_⟩
           omega
-        rw [if_neg (by omega), h_odd_nat.neg_one_pow, neg_one_mul]
+        rw [ite_eq_right (by omega), h_odd_nat.neg_one_pow, neg_one_mul]
       · -- size odd: condition true, natDegree = size - 1 even.
         have h_mod : P.coeffs.size % 2 = 1 := Nat.odd_iff.mp h_odd
         have h_even_nat : Even (P.coeffs.size - 1) := by
           rcases h_odd with ⟨k, hk⟩
           refine ⟨k, ?_⟩
           omega
-        rw [if_pos h_mod, h_even_nat.neg_one_pow, one_mul]
+        rw [ite_eq_left h_mod, h_even_nat.neg_one_pow, one_mul]
 
 /-- `varAt` on `AzPolynomial` matches `BPR.varAt` on `toPoly` images. -/
 theorem varAt_eq_BPR {K : Type _} [CommRing K] [LinearOrder K] [DecidableEq K]

@@ -125,7 +125,7 @@ theorem toNat_wideSub3 (x y : UInt64 × UInt64 × UInt64) :
   have hY_lt' : Ys < P := hY_lt
   clear_value Xs Ys Rs P
   by_cases hc2 : r2.2
-  · have hc2_val : (if r2.2 then 1 else 0 : ℕ) = 1 := by rw [if_pos hc2]
+  · have hc2_val : (if r2.2 then 1 else 0 : ℕ) = 1 := by rw [ite_eq_left hc2]
     rw [hc2_val] at hfull
     -- hfull : Rs + Ys = Xs + 1 * P   (after rewrites)
     have hfull' : Rs + Ys = Xs + P := by linarith [hfull]
@@ -134,7 +134,7 @@ theorem toNat_wideSub3 (x y : UInt64 × UInt64 × UInt64) :
     rw [hval]
     have hsum_lt : P - Ys + Xs < P := by omega
     exact (Nat.mod_eq_of_lt hsum_lt).symm
-  · have hc2_val : (if r2.2 then 1 else 0 : ℕ) = 0 := by rw [if_neg hc2]
+  · have hc2_val : (if r2.2 then 1 else 0 : ℕ) = 0 := by rw [ite_eq_right hc2]
     rw [hc2_val] at hfull
     have hfull' : Rs + Ys = Xs := by linarith [hfull]
     have hXge : Ys ≤ Xs := by linarith

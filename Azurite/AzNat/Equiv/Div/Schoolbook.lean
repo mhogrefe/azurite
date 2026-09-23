@@ -335,7 +335,7 @@ theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
   by_cases h_cmp_lt :
       compareLimbs a b (loA + m) loB n (by omega) hB = Ordering.lt
   · -- Lt case: q_m = 0, no subSameLengthLimbs.
-    rw [if_pos h_cmp_lt]
+    rw [ite_eq_left h_cmp_lt]
     have h_top_lt_B : A_top < B := by
       rw [h_cmp_eq] at h_cmp_lt
       exact Nat.compare_eq_lt.mp h_cmp_lt
@@ -369,7 +369,7 @@ theorem schoolbookDivModLimbs_toNat (a b : Array UInt64) (loA loB n m : Nat)
     · have h_zero : (0 : UInt64).toNat = 0 := by decide
       rw [h_zero]; omega
   · -- Not-Lt case: A_top ≥ B; subtract B from top, then go with q_m = 1.
-    rw [if_neg h_cmp_lt]
+    rw [ite_eq_right h_cmp_lt]
     have h_top_ge_B : B ≤ A_top := by
       rw [h_cmp_eq] at h_cmp_lt
       cases h : Ord.compare A_top B with

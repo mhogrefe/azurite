@@ -93,59 +93,59 @@ private theorem compareTopDown_trans {a b c : Array R} {k : ℕ}
 /-! ### Laws of the full comparison -/
 
 private theorem compare_self' (p : AzPolynomial R) : compare p p = .eq := by
-  rw [compare, if_neg (by omega), if_neg (by omega)]
+  rw [compare, ite_eq_right (by omega), ite_eq_right (by omega)]
   exact compareTopDown_self _ _
 
 private theorem compare_swap' (p q : AzPolynomial R) :
     compare q p = (compare p q).swap := by
   rcases lt_trichotomy p.coeffs.size q.coeffs.size with h | h | h
-  · rw [show compare p q = .lt from by rw [compare, if_pos h],
-      show compare q p = .gt from by rw [compare, if_neg (by omega), if_pos h]]
+  · rw [show compare p q = .lt from by rw [compare, ite_eq_left h],
+      show compare q p = .gt from by rw [compare, ite_eq_right (by omega), ite_eq_left h]]
     rfl
   · rw [show compare p q = compareTopDown p.coeffs q.coeffs p.coeffs.size from by
-        rw [compare, if_neg (by omega), if_neg (by omega)],
+        rw [compare, ite_eq_right (by omega), ite_eq_right (by omega)],
       show compare q p = compareTopDown q.coeffs p.coeffs q.coeffs.size from by
-        rw [compare, if_neg (by omega), if_neg (by omega)],
+        rw [compare, ite_eq_right (by omega), ite_eq_right (by omega)],
       h, compareTopDown_swap]
-  · rw [show compare p q = .gt from by rw [compare, if_neg (by omega), if_pos h],
-      show compare q p = .lt from by rw [compare, if_pos h]]
+  · rw [show compare p q = .gt from by rw [compare, ite_eq_right (by omega), ite_eq_left h],
+      show compare q p = .lt from by rw [compare, ite_eq_left h]]
     rfl
 
 private theorem eq_of_compare_eq {p q : AzPolynomial R} (h : compare p q = .eq) :
     p = q := by
   rw [compare] at h
   rcases lt_trichotomy p.coeffs.size q.coeffs.size with hs | hs | hs
-  · rw [if_pos hs] at h
+  · rw [ite_eq_left hs] at h
     exact absurd h (by simp)
-  · rw [if_neg (by omega), if_neg (by omega)] at h
+  · rw [ite_eq_right (by omega), ite_eq_right (by omega)] at h
     apply AzPolynomial.ext
     apply Array.ext hs
     intro i hi _
     have h2 := getD_eq_of_compareTopDown_eq h i hi
     rwa [Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?,
       Array.getElem?_eq_getElem hi, Array.getElem?_eq_getElem (by omega)] at h2
-  · rw [if_neg (by omega), if_pos hs] at h
+  · rw [ite_eq_right (by omega), ite_eq_left hs] at h
     exact absurd h (by simp)
 
 private theorem compare_trans' {p q r : AzPolynomial R}
     (h1 : compare p q ≠ .gt) (h2 : compare q r ≠ .gt) : compare p r ≠ .gt := by
   rcases lt_trichotomy p.coeffs.size q.coeffs.size with hpq | hpq | hpq <;>
     rcases lt_trichotomy q.coeffs.size r.coeffs.size with hqr | hqr | hqr
-  · rw [compare, if_pos (by omega)]; simp
-  · rw [compare, if_pos (by omega)]; simp
-  · exfalso; exact h2 (by rw [compare, if_neg (by omega), if_pos (by omega)])
-  · rw [compare, if_pos (by omega)]; simp
+  · rw [compare, ite_eq_left (by omega)]; simp
+  · rw [compare, ite_eq_left (by omega)]; simp
+  · exfalso; exact h2 (by rw [compare, ite_eq_right (by omega), ite_eq_left (by omega)])
+  · rw [compare, ite_eq_left (by omega)]; simp
   · -- equal sizes throughout: the top-down scans compose
-    rw [compare, if_neg (by omega), if_neg (by omega)]
+    rw [compare, ite_eq_right (by omega), ite_eq_right (by omega)]
     have h1' : compareTopDown p.coeffs q.coeffs p.coeffs.size ≠ .gt := fun hx =>
-      h1 (by rw [compare, if_neg (by omega), if_neg (by omega)]; exact hx)
+      h1 (by rw [compare, ite_eq_right (by omega), ite_eq_right (by omega)]; exact hx)
     have h2' : compareTopDown q.coeffs r.coeffs p.coeffs.size ≠ .gt := fun hx =>
-      h2 (by rw [compare, if_neg (by omega), if_neg (by omega), ← hpq]; exact hx)
+      h2 (by rw [compare, ite_eq_right (by omega), ite_eq_right (by omega), ← hpq]; exact hx)
     exact compareTopDown_trans h1' h2'
-  · exfalso; exact h2 (by rw [compare, if_neg (by omega), if_pos (by omega)])
-  · exfalso; exact h1 (by rw [compare, if_neg (by omega), if_pos (by omega)])
-  · exfalso; exact h1 (by rw [compare, if_neg (by omega), if_pos (by omega)])
-  · exfalso; exact h1 (by rw [compare, if_neg (by omega), if_pos (by omega)])
+  · exfalso; exact h2 (by rw [compare, ite_eq_right (by omega), ite_eq_left (by omega)])
+  · exfalso; exact h1 (by rw [compare, ite_eq_right (by omega), ite_eq_left (by omega)])
+  · exfalso; exact h1 (by rw [compare, ite_eq_right (by omega), ite_eq_left (by omega)])
+  · exfalso; exact h1 (by rw [compare, ite_eq_right (by omega), ite_eq_left (by omega)])
 
 /-! ### The `LinearOrder` instance -/
 
@@ -182,15 +182,15 @@ instance : LinearOrder (AzPolynomial R) where
   compare_eq_compareOfLessAndEq p q := by
     rw [compareOfLessAndEq]
     rcases h : compare p q with _ | _ | _
-    · rw [if_pos (show p < q from h)]
-    · rw [if_neg (show ¬ p < q from fun h2 => by
+    · rw [ite_eq_left (show p < q from h)]
+    · rw [ite_eq_right (show ¬ p < q from fun h2 => by
           rw [show compare p q = .lt from h2] at h
           exact absurd h (by simp)),
-        if_pos (eq_of_compare_eq h)]
-    · rw [if_neg (show ¬ p < q from fun h2 => by
+        ite_eq_left (eq_of_compare_eq h)]
+    · rw [ite_eq_right (show ¬ p < q from fun h2 => by
           rw [show compare p q = .lt from h2] at h
           exact absurd h (by simp)),
-        if_neg (fun h2 => by
+        ite_eq_right (fun h2 => by
           subst h2
           rw [compare_self'] at h
           exact absurd h (by simp))]
@@ -202,9 +202,9 @@ theorem zero_le' (p : AzPolynomial R) : (0 : AzPolynomial R) ≤ p := by
   show compare 0 p ≠ .gt
   have hz : (0 : AzPolynomial R).coeffs.size = 0 := rfl
   rcases Nat.eq_zero_or_pos p.coeffs.size with h | h
-  · rw [compare, if_neg (by omega), if_neg (by omega), hz]
+  · rw [compare, ite_eq_right (by omega), ite_eq_right (by omega), hz]
     simp [compareTopDown]
-  · rw [compare, if_pos (by omega)]
+  · rw [compare, ite_eq_left (by omega)]
     simp
 
 /-- Strictly smaller degree means strictly smaller polynomial (for a nonzero
@@ -220,6 +220,6 @@ theorem lt_of_natDegree_lt {p q : AzPolynomial R} (hq : q ≠ 0)
     rfl
   have hd : p.natDegree = p.coeffs.size - 1 := rfl
   have hd2 : q.natDegree = q.coeffs.size - 1 := rfl
-  rw [compare, if_pos (by omega)]
+  rw [compare, ite_eq_left (by omega)]
 
 end Azurite.AzPolynomial

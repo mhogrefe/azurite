@@ -52,14 +52,14 @@ theorem sResP_coeff_size_le (P Q : ℤ[X]) {τ : ℕ}
       ≤ (P.natDegree + Q.natDegree - 2 * j)
           * (τ + Nat.size (P.natDegree + Q.natDegree - 2 * j)) := by
   by_cases ha : a ≤ j
-  · rw [sResP, if_pos hjq,
+  · rw [sResP, ite_eq_left hjq,
       pdetRing_coeff _ (show a ≤ P.natDegree + Q.natDegree - j - (P.natDegree + Q.natDegree - 2 * j)
         by omega), pdetMinorRing]
     refine int_size_det_le _ (show 0 < P.natDegree + Q.natDegree - 2 * j by omega) (fun r c => ?_)
     rw [pdetMinorMatRing]
     by_cases hr : (r : ℕ) < Q.natDegree - j
-    · simp only [hr, if_true]; exact int_size_coeff_X_pow_mul hP _ _
-    · simp only [hr, if_false]; exact int_size_coeff_X_pow_mul hQ _ _
+    · simp only [hr, ite_true]; exact int_size_coeff_X_pow_mul hP _ _
+    · simp only [hr, ite_false]; exact int_size_coeff_X_pow_mul hQ _ _
   · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt
       (Polynomial.natDegree_le_iff_degree_le.mpr (sResP_degree_le P Q hpq hjq)) (by omega))]
     simp [Int.size]
@@ -79,7 +79,7 @@ theorem coeff_det_lastCol {N : ℕ} (hN : 0 < N) (A : Matrix (Fin N) (Fin N) ℤ
   set last : Fin N := ⟨N - 1, by omega⟩ with hlast
   have hrest : ∀ i ∈ Finset.univ.erase last, M (σ i) i = C (A (σ i) i) := by
     intro i hi
-    rw [hM, if_pos]
+    rw [hM, ite_eq_left]
     have hine : i ≠ last := (Finset.mem_erase.mp hi).1
     have : (i : ℕ) ≠ N - 1 := fun h => hine (Fin.ext (by simp [hlast, h]))
     have := i.isLt; omega
@@ -87,7 +87,7 @@ theorem coeff_det_lastCol {N : ℕ} (hN : 0 < N) (A : Matrix (Fin N) (Fin N) ℤ
       (A.updateCol last (fun r => (V r).coeff a)) (σ i) i = A (σ i) i :=
     fun i hi => Matrix.updateCol_ne (Finset.mem_erase.mp hi).1
   rw [← Finset.mul_prod_erase Finset.univ (fun i => M (σ i) i) (Finset.mem_univ last),
-    hM (σ last) last, if_neg (show ¬ (last : ℕ) + 1 < N by simp [hlast]; omega),
+    hM (σ last) last, ite_eq_right (show ¬ (last : ℕ) + 1 < N by simp [hlast]; omega),
     Finset.prod_congr rfl hrest, ← map_prod Polynomial.C, Polynomial.coeff_mul_C,
     ← Finset.mul_prod_erase Finset.univ
       (fun i => (A.updateCol last (fun r => (V r).coeff a)) (σ i) i) (Finset.mem_univ last),
@@ -132,11 +132,11 @@ theorem sResU_coeff_size_le (P Q : ℤ[X]) {τ : ℕ} (hτ1 : 1 ≤ τ)
           then X ^ (Q.natDegree - 1 - j - (r : ℕ)) else 0).coeff a) i k) ≤ τ
   rw [Matrix.updateCol_apply]
   by_cases hk : k = ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
-  · rw [if_pos hk]
+  · rw [ite_eq_left hk]
     split_ifs
     · exact int_size_coeff_X_pow hτ1 _ _
     · simp [Int.size]
-  · rw [if_neg hk]
+  · rw [ite_eq_right hk]
     exact int_size_SyHa_le hP hQ j i _
 
 /-- **BPR Proposition 8.48, `sResV` part.** -/
@@ -159,11 +159,11 @@ theorem sResV_coeff_size_le (P Q : ℤ[X]) {τ : ℕ} (hτ1 : 1 ≤ τ)
           then 0 else X ^ ((r : ℕ) - (Q.natDegree - j))).coeff a) i k) ≤ τ
   rw [Matrix.updateCol_apply]
   by_cases hk : k = ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩
-  · rw [if_pos hk]
+  · rw [ite_eq_left hk]
     split_ifs
     · simp [Int.size]
     · exact int_size_coeff_X_pow hτ1 _ _
-  · rw [if_neg hk]
+  · rw [ite_eq_right hk]
     exact int_size_SyHa_le hP hQ j i _
 
 /-- **BPR Proposition 8.48 (size of signed subresultants).**  If `P, Q ∈ ℤ[X]` have coefficients

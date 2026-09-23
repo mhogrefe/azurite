@@ -77,7 +77,7 @@ theorem newtonSumMonic_toPoly (P : Azurite.AzPolynomial K) (hMonic : P.Monic) (i
       -- Two cases: n + 1 ≤ p (use Prop 4.8) or n + 1 > p (use orthogonality).
       by_cases hle : n + 1 ≤ p
       · -- Case n + 1 ≤ p. Apply Prop 4.8 at j = p - (n + 1).
-        rw [if_pos hle]
+        rw [ite_eq_left hle]
         rw [show min (n + 1) p = n + 1 from min_eq_left hle]
         have hj_le : p - (n + 1) ≤ Q.natDegree := by rw [hQ_natDeg]; omega
         have hProp48 := proposition_4_8 (C := C) Q (p - (n + 1)) hj_le
@@ -113,7 +113,7 @@ theorem newtonSumMonic_toPoly (P : Azurite.AzPolynomial K) (hMonic : P.Monic) (i
         rw [sub_eq_iff_eq_add]
         exact hProp48
       · -- Case n + 1 > p: leading = 0; use orthogonality at q = n + 1 - p.
-        rw [if_neg hle]
+        rw [ite_eq_right hle]
         push Not at hle
         rw [zero_sub]
         rw [show min (n + 1) p = p from min_eq_right (by omega)]
@@ -169,17 +169,17 @@ lemma polyFromNewtonSumsMonic_coeff_eq {N : Array K}
   rw [Array.getElem?_push, Array.size_map, Array.size_range]
   rcases lt_trichotomy k p with hlt | heq | hgt
   · -- k < p
-    rw [if_neg hlt.ne, Array.getElem?_map, Array.getElem?_range, if_pos hlt]
+    rw [ite_eq_right hlt.ne, Array.getElem?_map, Array.getElem?_range, ite_eq_left hlt]
     rfl
   · -- k = p
     subst heq
-    rw [if_pos rfl]
+    rw [ite_eq_left rfl]
     show (some (1 : K)).getD 0 = _
     conv_rhs => rw [coeffFromNewtonSums]
     simp
   · -- k > p
-    rw [if_neg hgt.ne', Array.getElem?_map, Array.getElem?_range,
-        if_neg (by omega : ¬ k < p)]
+    rw [ite_eq_right hgt.ne', Array.getElem?_map, Array.getElem?_range,
+        ite_eq_right (by omega : ¬ k < p)]
     show (Option.map _ none).getD 0 = _
     conv_rhs => rw [coeffFromNewtonSums]
     simp [show ¬ k < p from by omega, show k ≠ p from by omega]
@@ -231,7 +231,7 @@ theorem polyFromNewtonSumsMonic_newtonSumsMonic
     rw [hN_def]
     unfold newtonSumsMonic
     rw [Array.getD_eq_getD_getElem?, Array.getElem?_map, Array.getElem?_range,
-        if_pos hj]
+        ite_eq_left hj]
     rfl
   classical
   ext k
@@ -250,7 +250,7 @@ theorem polyFromNewtonSumsMonic_newtonSumsMonic
         exact hMonic
       · -- k < p: apply the K-side Newton recurrence.
         have hlt : k < p := lt_of_le_of_ne hkp heq
-        rw [coeffFromNewtonSums, if_pos hlt]
+        rw [coeffFromNewtonSums, ite_eq_left hlt]
         have hrec := newtonSumMonic_recurrence P hMonic k hkp
         -- IH: coeffFromNewtonSums N p (k + j + 1) = P.coeff (k + j + 1) for j ∈ range (p - k).
         have hIH : ∀ j ∈ Finset.range (p - k),

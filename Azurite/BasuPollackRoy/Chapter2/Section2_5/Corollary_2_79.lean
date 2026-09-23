@@ -75,7 +75,7 @@ theorem compl_ordConnected_FUOC {C : Set R} (hC : C.OrdConnected) :
     ⟨fun x hx y _ z hz c hc => lt_of_lt_of_le (hx c hc) hz.1⟩
   have hAB : Cᶜ = {x | ∀ c ∈ C, x < c} ∪ {x | ∀ c ∈ C, c < x} := by
     ext x
-    simp only [Set.mem_compl_iff, Set.mem_union, Set.mem_setOf_eq]
+    simp only [Set.mem_compl_iff, Set.mem_union, Set.mem_ofPred_eq]
     constructor
     · intro hxC
       by_contra hcon
@@ -144,7 +144,7 @@ theorem FUOC_zero_locus (P : R[X]) :
   · subst hP
     have : {x : R | (0 : R[X]).eval x = 0} = Set.univ := by ext x; simp
     rw [this]; exact ordConnected_FUOC Set.ordConnected_univ
-  · exact FUOC_finite (P.finite_setOf_isRoot hP)
+  · exact FUOC_finite (P.finite_setOfPred_isRoot hP)
 
 /-- A positivity locus is a finite union of intervals: it is the union, over the
 order-connected pieces of `{P = 0}ᶜ`, of those pieces on which `P` is positive
@@ -163,20 +163,20 @@ theorem FUOC_pos_locus (P : R[X]) :
       have hrf : ∀ x ∈ G, P.eval x ≠ 0 := fun x hx => hGsub hx
       rcases const_sign_ordConnected (ho𝒢 G hG) P hrf with hpos | hneg
       · have heq : G ∩ {x : R | 0 < P.eval x} = G := by
-          ext z; simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
+          ext z; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq]
           exact ⟨fun h => h.1, fun h => ⟨h, hpos z h⟩⟩
         rw [heq]; exact ho𝒢 G hG
       · have heq : G ∩ {x : R | 0 < P.eval x} = ∅ := by
           ext z
-          simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+          simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
           rintro ⟨hz, hpz⟩; exact absurd (hneg z hz) (by linarith)
         rw [heq]; exact Set.ordConnected_empty
     · ext x
-      simp only [Set.mem_setOf_eq, Set.mem_sUnion, Set.mem_image]
+      simp only [Set.mem_ofPred_eq, Set.mem_sUnion, Set.mem_image]
       constructor
       · intro hpx
         have hxc : x ∈ {y : R | P.eval y = 0}ᶜ := by
-          simp only [Set.mem_compl_iff, Set.mem_setOf_eq]; linarith
+          simp only [Set.mem_compl_iff, Set.mem_ofPred_eq]; linarith
         rw [h𝒢, Set.mem_sUnion] at hxc
         obtain ⟨G, hG, hxG⟩ := hxc
         exact ⟨G ∩ {x : R | 0 < P.eval x}, ⟨G, hG, rfl⟩, hxG, hpx⟩
@@ -212,7 +212,7 @@ theorem semialgebraic_sect_FUOC {S : Set (Fin 1 → R)} (hS : IsSemialgebraicSet
             Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) P) = 0})
             '' (↑pset : Set (MvPolynomial (Fin 1) R))) := by
       ext t
-      simp only [Set.mem_preimage, Zer, Set.mem_setOf_eq, Set.mem_sInter, Set.mem_image,
+      simp only [Set.mem_preimage, Zer, Set.mem_ofPred_eq, Set.mem_sInter, Set.mem_image,
         Finset.mem_coe]
       constructor
       · rintro ht F ⟨P, hP, rfl⟩
@@ -224,7 +224,7 @@ theorem semialgebraic_sect_FUOC {S : Set (Fin 1 → R)} (hS : IsSemialgebraicSet
   | pos_locus P =>
     have hset : (constPt ⁻¹' {x : Fin 1 → R | MvPolynomial.eval x P > 0})
         = {t : R | 0 < Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) P)} := by
-      ext t; simp only [Set.mem_preimage, Set.mem_setOf_eq, gt_iff_lt]
+      ext t; simp only [Set.mem_preimage, Set.mem_ofPred_eq, gt_iff_lt]
       rw [eval_constPt_eq_eval_toPoly]
     rw [hset]; exact FUOC_pos_locus _
   | compl _ ih => rw [Set.preimage_compl]; exact ih.compl

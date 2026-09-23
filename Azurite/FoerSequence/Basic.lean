@@ -342,7 +342,7 @@ theorem trailingCount_stop (a Q : List T) (j : Nat) (hQ : Q ≠ [])
     have hjlt : j % Q.length < Q.length := Nat.mod_lt _ (List.length_pos_of_ne_nil hQ)
     rw [trailingCount_cons x a' Q j hjlt] at h ⊢
     by_cases hxy : x = Q[j % Q.length]'hjlt
-    · rw [if_pos hxy] at h ⊢
+    · rw [ite_eq_left hxy] at h ⊢
       have hc' : trailingCount a' Q (j + 1) < a'.length := by
         rw [List.length_cons] at h; omega
       have hih := ih (j + 1) hc'
@@ -350,7 +350,7 @@ theorem trailingCount_stop (a Q : List T) (j : Nat) (hQ : Q ≠ [])
         List.getElem?_cons_succ,
         show j + (trailingCount a' Q (j + 1) + 1) = (j + 1) + trailingCount a' Q (j + 1) from by omega]
       exact hih
-    · rw [if_neg hxy, Nat.add_zero, List.getElem?_cons_zero, List.getElem?_eq_getElem hjlt]
+    · rw [ite_eq_right hxy, Nat.add_zero, List.getElem?_cons_zero, List.getElem?_eq_getElem hjlt]
       simpa using hxy
 
 /-- If the first element of `a` already disagrees with the pattern, `trailingCount` is `0`. -/
@@ -358,7 +358,7 @@ theorem trailingCount_head_ne (a Q : List T) (j : Nat) (hQ : Q ≠ []) (ha : a �
     (hne : a[0]? ≠ Q[j % Q.length]?) : trailingCount a Q j = 0 := by
   obtain ⟨x, a', rfl⟩ := List.exists_cons_of_ne_nil ha
   have hjlt : j % Q.length < Q.length := Nat.mod_lt _ (List.length_pos_of_ne_nil hQ)
-  rw [trailingCount_cons x a' Q j hjlt, if_neg]
+  rw [trailingCount_cons x a' Q j hjlt, ite_eq_right]
   intro heq
   exact hne (by rw [List.getElem?_cons_zero, List.getElem?_eq_getElem hjlt, heq])
 
@@ -410,8 +410,8 @@ theorem foerIsReduced_nil_left (rp' : List T) (h : minRepeatingLen rp' = rp'.len
     foerIsReduced [] rp' = true := by
   unfold foerIsReduced
   by_cases hrp' : rp' = []
-  · rw [if_pos hrp']
-  · rw [if_neg hrp', if_neg (not_not_intro h), if_pos rfl]
+  · rw [ite_eq_left hrp']
+  · rw [ite_eq_right hrp', ite_eq_right (not_not_intro h), ite_eq_left rfl]
 
 /-- Canonicalization produces a canonical (reduced) form. -/
 theorem reduce_isReduced (nr rp : List T) :
@@ -428,22 +428,22 @@ theorem reduce_isReduced (nr rp : List T) :
         = (rp.take (minRepeatingLen rp)).length := minRepeatingLen_take rp hrp
     by_cases hnr : nr = []
     · rw [show reduce nr rp = (nr, rp.take (minRepeatingLen rp)) from by
-        unfold reduce; rw [if_neg hrp, if_pos hnr]]
+        unfold reduce; rw [ite_eq_right hrp, ite_eq_left hnr]]
       subst hnr
       exact foerIsReduced_nil_left _ hAred
     · by_cases hextra : trailingMatch nr (rp.take (minRepeatingLen rp)) = 0
       · rw [show reduce nr rp = (nr, rp.take (minRepeatingLen rp)) from by
-          unfold reduce; rw [if_neg hrp, if_neg hnr, if_pos hextra]]
+          unfold reduce; rw [ite_eq_right hrp, ite_eq_right hnr, ite_eq_left hextra]]
         show foerIsReduced nr (rp.take (minRepeatingLen rp)) = true
         unfold foerIsReduced
-        rw [if_neg hrp'ne, if_neg (not_not_intro hAred), if_neg hnr]
+        rw [ite_eq_right hrp'ne, ite_eq_right (not_not_intro hAred), ite_eq_right hnr]
         simp [hextra]
       · rw [show reduce nr rp
               = (nr.take (nr.length - trailingMatch nr (rp.take (minRepeatingLen rp))),
                   rotateRight (rp.take (minRepeatingLen rp))
                     (trailingMatch nr (rp.take (minRepeatingLen rp))
                       % (rp.take (minRepeatingLen rp)).length)) from by
-          unfold reduce; rw [if_neg hrp, if_neg hnr, if_neg hextra]]
+          unfold reduce; rw [ite_eq_right hrp, ite_eq_right hnr, ite_eq_right hextra]]
         show foerIsReduced (nr.take (nr.length - trailingMatch nr (rp.take (minRepeatingLen rp))))
             (rotateRight (rp.take (minRepeatingLen rp))
               (trailingMatch nr (rp.take (minRepeatingLen rp))
@@ -457,10 +457,10 @@ theorem reduce_isReduced (nr rp : List T) :
         have hB : minRepeatingLen rp'' = rp''.length := by
           rw [hrp''def]; unfold rotateRight; exact minRepeatingLen_rotate _ _ hAred
         unfold foerIsReduced
-        rw [if_neg hrp''ne, if_neg (not_not_intro hB)]
+        rw [ite_eq_right hrp''ne, ite_eq_right (not_not_intro hB)]
         by_cases hnr'' : nr'' = []
-        · rw [if_pos hnr'']
-        · rw [if_neg hnr'']
+        · rw [ite_eq_left hnr'']
+        · rw [ite_eq_right hnr'']
           have he_lt : e < nr.length := by
             have hpos : 0 < nr''.length := List.length_pos_of_ne_nil hnr''
             rw [hnr''def, List.length_take] at hpos

@@ -60,7 +60,7 @@ theorem toNatLimbsList_shrLimbs (a : Array UInt64) (sh : Nat) :
   unfold shrLimbs
   dsimp only
   by_cases h_big : sh / 64 ≥ a.size
-  · rw [if_pos h_big]
+  · rw [ite_eq_left h_big]
     show 0 = _
     symm; apply Nat.div_eq_of_lt
     calc toNatLimbsList a.toList
@@ -73,12 +73,12 @@ theorem toNatLimbsList_shrLimbs (a : Array UInt64) (sh : Nat) :
           have h2 : 64 * a.size ≤ 64 * (sh / 64) := Nat.mul_le_mul_left 64 h_big
           omega
   · push Not at h_big
-    rw [if_neg (by omega : ¬(sh / 64 ≥ a.size))]
+    rw [ite_eq_right (by omega : ¬(sh / 64 ≥ a.size))]
     by_cases h_ss0 : sh % 64 = 0
-    · rw [dif_pos h_ss0, toNatLimbsList_extract_size]
+    · rw [dite_eq_left h_ss0, toNatLimbsList_extract_size]
       congr 1; congr 1
       have := (Nat.div_add_mod sh 64).symm; omega
-    · rw [dif_neg h_ss0]
+    · rw [dite_eq_right h_ss0]
       have h_ss_lb : 1 ≤ sh % 64 := by omega
       have h_ss_ub : sh % 64 ≤ 63 := by
         have : sh % 64 < 64 := Nat.mod_lt _ (by omega); omega
@@ -125,7 +125,7 @@ private theorem trailingZerosLimbs_eq (a : AzNat) (ha : a.limbs.size ≠ 0) :
     exact ha (by show a.limbs.size = 0; have := congr_arg AzNat.limbs h; rw [this]; rfl)
   have h := trailingZeros_eq_padicValNat a h_ne
   unfold trailingZeros at h
-  rw [if_neg ha] at h
+  rw [ite_eq_right ha] at h
   exact Option.some.inj h
 
 set_option maxHeartbeats 400000 in
@@ -160,7 +160,7 @@ private theorem trailingZerosLimbs_pop (a : Array UInt64)
   unfold trailingZerosLimbs
   by_cases h_one : a.size = 1
   · have h_pop_empty : a.pop.size = 0 := by simp [Array.size_pop]; omega
-    rw [dif_pos h_size, dif_neg (by omega : ¬(0 < a.pop.size))]
+    rw [dite_eq_left h_size, dite_eq_right (by omega : ¬(0 < a.pop.size))]
     conv_lhs => unfold trailingZerosLimbsAux
     have h0 : a[(0 : Nat)]'h_size = 0 := by
       have : 0 = a.size - 1 := by omega
@@ -169,7 +169,7 @@ private theorem trailingZerosLimbs_pop (a : Array UInt64)
     · simp [show ¬(0 + 1 < a.size) from by omega]
     · rename_i hne; exact absurd h0 hne
   · have h_pop_pos : 0 < a.pop.size := by simp [Array.size_pop]; omega
-    rw [dif_pos h_size, dif_pos h_pop_pos]
+    rw [dite_eq_left h_size, dite_eq_left h_pop_pos]
     exact trailingZerosLimbsAux_pop a 0 h_size h_pop_pos hlast
 
 /-- `trailingZerosLimbs` is invariant under `trimTrailingZeros`. -/
@@ -181,9 +181,9 @@ private theorem trailingZerosLimbs_trimTrailingZeros_eq (a : Array UInt64) :
   · simp only [h, ↓reduceDIte]
     have h_idx : a.size - 1 < a.size := Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1] = 0
-    · rw [if_pos h_last, trailingZerosLimbs_pop a (by omega) h_last]
+    · rw [ite_eq_left h_last, trailingZerosLimbs_pop a (by omega) h_last]
       exact trailingZerosLimbs_trimTrailingZeros_eq a.pop
-    · rw [if_neg h_last]
+    · rw [ite_eq_right h_last]
   termination_by a.size
   decreasing_by simp [Array.size_pop]; omega
 
@@ -349,7 +349,7 @@ theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
         have h_diff_odd : Odd (toNatLimbsList diff.toList) := by
           rw [h_diff_val]; exact odd_div_two_pow_padicVal _ (by omega)
         have h_diff_pos : 0 < diff.size := makeOddLimbs_size_pos _ h_sub_ne
-        rw [dif_pos h_diff_pos]
+        rw [dite_eq_left h_diff_pos]
         rw [binary_gcd_step _ _ hb_odd h_a_gt_b, ← h_diff_val]
         refine ih diff b h_diff_pos hb h_diff_odd hb_odd ?_
           (back?_makeOddLimbs _) hb_trim h_diff_odd.pos hb_pos
@@ -412,7 +412,7 @@ theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
         have h_diff_odd : Odd (toNatLimbsList diff.toList) := by
           rw [h_diff_val]; exact odd_div_two_pow_padicVal _ (by omega)
         have h_diff_pos : 0 < diff.size := makeOddLimbs_size_pos _ h_sub_ne
-        rw [dif_pos h_diff_pos]
+        rw [dite_eq_left h_diff_pos]
         rw [Nat.gcd_comm, binary_gcd_step _ _ ha_odd h_b_gt_a, ← h_diff_val, Nat.gcd_comm]
         refine ih a diff ha h_diff_pos ha_odd h_diff_odd ?_
           ha_trim (back?_makeOddLimbs _) ha_pos h_diff_odd.pos
@@ -487,7 +487,7 @@ theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
         have h_diff_odd : Odd (toNatLimbsList diff.toList) := by
           rw [h_diff_val]; exact odd_div_two_pow_padicVal _ (by omega)
         have h_diff_pos : 0 < diff.size := makeOddLimbs_size_pos _ h_trim_ne
-        rw [dif_pos h_diff_pos]
+        rw [dite_eq_left h_diff_pos]
         rw [binary_gcd_step _ _ hb_odd h_a_gt_b, ← h_diff_val]
         refine ih diff b h_diff_pos hb h_diff_odd hb_odd ?_
           (back?_makeOddLimbs _) hb_trim h_diff_odd.pos hb_pos
@@ -557,7 +557,7 @@ theorem gcdOddLimbs_correct (a b : Array UInt64) (fuel : Nat)
         have h_diff_odd : Odd (toNatLimbsList diff.toList) := by
           rw [h_diff_val]; exact odd_div_two_pow_padicVal _ (by omega)
         have h_diff_pos : 0 < diff.size := makeOddLimbs_size_pos _ h_trim_ne
-        rw [dif_pos h_diff_pos]
+        rw [dite_eq_left h_diff_pos]
         rw [Nat.gcd_comm, binary_gcd_step _ _ ha_odd h_b_gt_a, ← h_diff_val, Nat.gcd_comm]
         refine ih a diff ha h_diff_pos ha_odd h_diff_odd ?_
           ha_trim (back?_makeOddLimbs _) ha_pos h_diff_odd.pos
@@ -760,7 +760,7 @@ theorem coprime_iff (a b : AzNat) :
   show (if a.isEven && b.isEven then false else AzNat.gcd a b == 1) = true
     ↔ Nat.gcd a.toNat b.toNat = 1
   by_cases h_both_even : (a.isEven && b.isEven) = true
-  · rw [if_pos h_both_even]
+  · rw [ite_eq_left h_both_even]
     simp only [Bool.false_eq_true, false_iff]
     have ha_even : a.isEven = true := by
       have := h_both_even; simp [Bool.and_eq_true] at this; exact this.1
@@ -773,7 +773,7 @@ theorem coprime_iff (a b : AzNat) :
     have h2g : 2 ∣ Nat.gcd a.toNat b.toNat :=
       Nat.dvd_gcd ⟨ka, by omega⟩ ⟨kb, by omega⟩
     omega
-  · rw [if_neg (Bool.not_eq_true _ ▸ h_both_even)]
+  · rw [ite_eq_right (Bool.not_eq_true _ ▸ h_both_even)]
     rw [beq_iff_eq]
     constructor
     · intro h

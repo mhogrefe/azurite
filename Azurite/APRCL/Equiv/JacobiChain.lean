@@ -107,8 +107,8 @@ include hp in
 /-- **The embedding `φ : ℤ[ζ_{p^k}] → R`**, `ζ ↦ ζ_P`. -/
 noncomputable def phiR (hp : p.Prime) : CycM (p ^ k) →+* CR q p k :=
   AdjoinRoot.lift (Int.castRingHom (CR q p k)) (zP q p k) (by
-    haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
-    haveI : NeZero ((p ^ k : ℕ) : CR q p k) :=
+    have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+    have : NeZero ((p ^ k : ℕ) : CR q p k) :=
       ⟨natCast_ne_zero_cycM (cr_pos hp) (pow_pos hp.pos k).ne'⟩
     have hroot : IsRoot (cyclotomic (p ^ k) (CR q p k)) (zP q p k) :=
       isRoot_cyclotomic_iff.mpr (isPrimitiveRoot_zP hp)
@@ -262,7 +262,7 @@ theorem chiR_eq_of_odd (hp3 : 2 < p) (hW : ¬ 2 ^ p ≡ 2 [MOD p ^ 2]) (hn1 : 1 
       ((p : ℤ) ^ ((N ^ ((p - 1) * p ^ k) - 1).factorization p)
         ∣ (r : ℤ) ^ (p - 1) - (N : ℤ) ^ ((p - 1) * m)) →
       chiR hp hpk hg r = zP q p k ^ (f₀ * m) := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   have hN0 : N ≠ 0 := by omega
   have h88' : (∏ x ∈ Mset p k, jacobiSum (chiR hp hpk hg ^ (1 * minv p k x))
       (chiR hp hpk hg ^ (1 * minv p k x)) ^ αc N p k x) - zP q p k ^ h
@@ -301,7 +301,7 @@ theorem sixFour_of_odd (hp3 : 2 < p) (hn1 : 1 < N) (hqn : ¬ q ∣ N)
       jacobiSum (chiT hp hpk hg ^ minv p k x) (chiT hp hpk hg ^ minv p k x) ^ αc N p k x)
       - zetaM (p ^ k) ^ h) :
     ∀ r, r.Prime → r ∣ N → ∀ D, ∃ l, r ^ (p - 1) ≡ (N ^ (p - 1)) ^ l [MOD p ^ D] := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   have hN0 : N ≠ 0 := by omega
   have h88' : (∏ x ∈ Mset p k, jacobiSum (chiR hp hpk hg ^ (1 * minv p k x))
       (chiR hp hpk hg ^ (1 * minv p k x)) ^ αc N p k x) - zP q p k ^ h
@@ -329,7 +329,7 @@ include hp hpk hg in
 /-- For `p = 2`, `χ_R(−1) = ±1` is a power of `ζ_P`. -/
 theorem chiR_neg_one_eq_pow (hp2 : p = 2) (hk : 0 < k) :
     ∃ e : ℕ, chiR hp hpk hg (-1) = zP q p k ^ e := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   rcases mul_self_eq_one_iff.mp (chi_neg_one_sq (chiR hp hpk hg)) with h1 | h1
   · exact ⟨0, by rw [h1, pow_zero]⟩
   · refine ⟨p ^ (k - 1), ?_⟩
@@ -364,7 +364,7 @@ theorem chiR_eq_of_79 (hn1 : 1 < N) (hqn : ¬ q ∣ N)
       ((p : ℤ) ^ ((N ^ ((p - 1) * p ^ k) - 1).factorization p)
         ∣ (r : ℤ) ^ (p - 1) - (N : ℤ) ^ ((p - 1) * m)) →
       chiR hp hpk hg r = zP q p k ^ (f₀ * m) := by
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) hp)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) hp)
   have hN0 : N ≠ 0 := by omega
   have hNS : ¬ p ∣ N * ∑ x ∈ S, ν x * x := fun hd => by
     rcases (Nat.Prime.dvd_mul hp).mp hd with h | h
@@ -393,7 +393,7 @@ theorem chiR_eq_of_k1 (hpk : 2 ^ 1 ∣ q - 1) {h : ℕ}
       ((2 : ℤ) ^ ((N ^ ((2 - 1) * 2 ^ 1) - 1).factorization 2) ∣ (r : ℤ) ^ (2 - 1) - (N : ℤ) ^ ((2 - 1) * m)) →
       chiR Nat.prime_two hpk hg r = zP q 2 1 ^ (f₀ * m) := by
   have hpn : ¬ 2 ∣ N := by omega
-  haveI := isDomain_cycM (cr_pos (q := q) (k := 1) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := 1) Nat.prime_two)
   have h92' : ((q : ℕ) : CR q 2 1) ^ ((N - 1) / 2) - zP q 2 1 ^ h ∈ Ideal.span {((N : ℕ) : CR q 2 1)} := by
     have := spanN_of_dvd_cycM (q := q) Nat.prime_two h92
     rwa [map_pow, map_natCast] at this
@@ -413,7 +413,7 @@ theorem chiR_eq_of_k2_one (hpk : 2 ^ 2 ∣ q - 1) (hn4 : N % 4 = 1) {h : ℕ}
       ((2 : ℤ) ^ ((N ^ ((2 - 1) * 2 ^ 2) - 1).factorization 2) ∣ (r : ℤ) ^ (2 - 1) - (N : ℤ) ^ ((2 - 1) * m)) →
       chiR Nat.prime_two hpk hg r = zP q 2 2 ^ (f₀ * m) := by
   have hpn : ¬ 2 ∣ N := by omega
-  haveI := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
   have h94' : jacobiSum (chiR Nat.prime_two hpk hg) (chiR Nat.prime_two hpk hg) ^ ((N - 1) / 2)
       * ((q : ℕ) : CR q 2 2) ^ ((N - 1) / 4) - zP q 2 2 ^ h ∈ Ideal.span {((N : ℕ) : CR q 2 2)} := by
     have := spanN_of_dvd_cycM (q := q) Nat.prime_two h94
@@ -435,7 +435,7 @@ theorem chiR_eq_of_k2_three (hpk : 2 ^ 2 ∣ q - 1) (hn4 : N % 4 = 3) {h : ℕ}
       ((2 : ℤ) ^ ((N ^ ((2 - 1) * 2 ^ 2) - 1).factorization 2) ∣ (r : ℤ) ^ (2 - 1) - (N : ℤ) ^ ((2 - 1) * m)) →
       chiR Nat.prime_two hpk hg r = zP q 2 2 ^ (f₀ * m) := by
   have hpn : ¬ 2 ∣ N := by omega
-  haveI := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := 2) Nat.prime_two)
   have h96' : jacobiSum (chiR Nat.prime_two hpk hg) (chiR Nat.prime_two hpk hg) ^ ((N + 1) / 2)
       * ((q : ℕ) : CR q 2 2) ^ ((N - 3) / 4) - zP q 2 2 ^ h ∈ Ideal.span {((N : ℕ) : CR q 2 2)} := by
     have := spanN_of_dvd_cycM (q := q) Nat.prime_two h96
@@ -480,7 +480,7 @@ theorem chiR_eq_of_k3_low (hn8 : N % 8 = 1 ∨ N % 8 = 3) {h : ℕ}
       chiR Nat.prime_two hpk hg r = zP q 2 k ^ (f₀ * m) := by
   have hpn : ¬ 2 ∣ N := by omega
   have hk : 0 < k := by omega
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
   have h911' := spanN_of_dvd_cycM (q := q) Nat.prime_two h911
   rw [phiR_prod_M2 hg hpk] at h911'
   have h79 := theorem_9_10 hk3 (by omega) (orderOf_chiR Nat.prime_two hpk hg) (psiR_primitive Nat.prime_two)
@@ -502,7 +502,7 @@ theorem chiR_eq_of_k3_high (hn8 : N % 8 = 5 ∨ N % 8 = 7) {h : ℕ}
       chiR Nat.prime_two hpk hg r = zP q 2 k ^ (f₀ * m) := by
   have hpn : ¬ 2 ∣ N := by omega
   have hk : 0 < k := by omega
-  haveI := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
+  have := isDomain_cycM (cr_pos (q := q) (k := k) Nat.prime_two)
   have h920' := spanN_of_dvd_cycM (q := q) Nat.prime_two h920
   rw [map_mul, phiR_prod_M2 hg hpk, map_pow, ← pow_mul, phiR_jacobiSum, pow_mul] at h920'
   have h79 := theorem_9_19 hk3 (orderOf_chiR Nat.prime_two hpk hg) (psiR_primitive Nat.prime_two)

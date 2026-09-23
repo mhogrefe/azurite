@@ -36,7 +36,7 @@ theorem realization_eq_of_agree_on_freeVars
         apply h
         rw [MvPolynomial.mem_vars_iff_mem_support]
         exact ⟨c, MvPolynomial.mem_support_iff.mpr hc, hi⟩
-    split <;> simp only [Set.mem_setOf_eq] <;> rw [this]
+    split <;> simp only [Set.mem_ofPred_eq] <;> rw [this]
   | not _ ih =>
     simp only [realization, Set.mem_compl_iff]
     rw [ih _ _ h]
@@ -49,7 +49,7 @@ theorem realization_eq_of_agree_on_freeVars
     rw [ih₁ _ _ (fun x hx => h x (Finset.mem_union_left _ hx)),
         ih₂ _ _ (fun x hx => h x (Finset.mem_union_right _ hx))]
   | exists_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq]
+    simp only [realization, Set.mem_ofPred_eq]
     constructor <;> rintro ⟨c, hc⟩
     · exact ⟨c, (ih _ _ (fun x hx => by
         simp only [Function.update]; split
@@ -62,7 +62,7 @@ theorem realization_eq_of_agree_on_freeVars
         · rename_i hne
           exact h x (by simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mpr hc⟩
   | forall_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq]
+    simp only [realization, Set.mem_ofPred_eq]
     constructor <;> intro hc <;> intro c
     · exact (ih _ _ (fun x hx => by
         simp only [Function.update]; split

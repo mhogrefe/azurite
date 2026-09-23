@@ -80,7 +80,7 @@ theorem coprime_iff (P Q : AzPolynomial K) :
   rw [coprime]
   by_cases hP : P = 0
   · subst hP
-    rw [if_pos rfl, toPoly_zero, isCoprime_zero_left, isUnit_iff_natDegree]
+    rw [ite_eq_left rfl, toPoly_zero, isCoprime_zero_left, isUnit_iff_natDegree]
     simp only [Bool.and_eq_true, bne_iff_ne, ne_eq, beq_iff_eq]
     constructor
     · rintro ⟨h1, h2⟩
@@ -89,10 +89,10 @@ theorem coprime_iff (P Q : AzPolynomial K) :
       refine ⟨fun h0 => h1 (by rw [h0, toPoly_zero]), ?_⟩
       rw [← AzPolynomial.natDegree_toPoly]
       exact h2
-  · rw [if_neg hP]
+  · rw [ite_eq_right hP]
     by_cases hQ : Q = 0
     · subst hQ
-      rw [if_pos rfl, toPoly_zero, isCoprime_zero_right, isUnit_iff_natDegree]
+      rw [ite_eq_left rfl, toPoly_zero, isCoprime_zero_right, isUnit_iff_natDegree]
       simp only [beq_iff_eq]
       constructor
       · intro h
@@ -100,20 +100,20 @@ theorem coprime_iff (P Q : AzPolynomial K) :
       · rintro ⟨-, h2⟩
         rw [← AzPolynomial.natDegree_toPoly]
         exact h2
-    · rw [if_neg hQ]
+    · rw [ite_eq_right hQ]
       by_cases hconst : P.natDegree = 0 ∨ Q.natDegree = 0
-      · rw [if_pos hconst]
+      · rw [ite_eq_left hconst]
         simp only [true_iff]
         rcases hconst with h | h
         · exact isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
             ⟨toPoly_ne_zero hP, by rw [AzPolynomial.natDegree_toPoly]; exact h⟩)
         · exact (isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
             ⟨toPoly_ne_zero hQ, by rw [AzPolynomial.natDegree_toPoly]; exact h⟩)).symm
-      · rw [if_neg hconst]
+      · rw [ite_eq_right hconst]
         push Not at hconst
         obtain ⟨hp1, hq1⟩ := hconst
         by_cases hdeq : P.natDegree = Q.natDegree
-        · rw [if_pos hdeq]
+        · rw [ite_eq_left hdeq]
           have hlcP : P.leadingCoeff ≠ 0 := by
             rw [← leadingCoeff_toPoly]
             exact Polynomial.leadingCoeff_ne_zero.mpr (toPoly_ne_zero hP)
@@ -129,7 +129,7 @@ theorem coprime_iff (P Q : AzPolynomial K) :
                   - Polynomial.C Q.leadingCoeff * AzPolynomial.toPoly P from toPoly_pre_step P Q]
             rw [gcd_pre_step _ _ hlcP]
           by_cases hpre : preStep P Q = 0
-          · rw [if_pos hpre]
+          · rw [ite_eq_left hpre]
             simp only [Bool.false_eq_true, false_iff]
             -- `preStep = 0` forces `P ∣ Q`, so a coprime pair would make `P` a unit
             intro hco
@@ -153,23 +153,23 @@ theorem coprime_iff (P Q : AzPolynomial K) :
             have h2 := (isUnit_iff_natDegree.mp hunit).2
             rw [AzPolynomial.natDegree_toPoly] at h2
             omega
-          · rw [if_neg hpre]
+          · rw [ite_eq_right hpre]
             by_cases hpre0 : (preStep P Q).natDegree = 0
-            · rw [if_pos hpre0]
+            · rw [ite_eq_left hpre0]
               simp only [true_iff]
               rw [← hgcd_pre]
               exact (isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
                 ⟨toPoly_ne_zero hpre,
                   by rw [AzPolynomial.natDegree_toPoly]; exact hpre0⟩)).symm
-            · rw [if_neg hpre0]
+            · rw [ite_eq_right hpre0]
               rw [coprime_main hP hpre
                 (pre_step_natDegree_lt hP hQ hdeq hpre) (by omega)]
               exact hgcd_pre
-        · rw [if_neg hdeq]
+        · rw [ite_eq_right hdeq]
           rcases Nat.lt_or_ge P.natDegree Q.natDegree with hlt | hge
-          · rw [if_pos hlt, coprime_main hQ hP hlt (by omega)]
+          · rw [ite_eq_left hlt, coprime_main hQ hP hlt (by omega)]
             exact isCoprime_comm
-          · rw [if_neg (by omega)]
+          · rw [ite_eq_right (by omega)]
             exact coprime_main hP hQ (by omega) (by omega)
 
 /-- **Correctness of `isSquarefree` over a field**: the test decides
@@ -252,7 +252,7 @@ theorem coprime_int_iff (P Q : AzPolynomial AzInt) :
   rw [coprime]
   by_cases hP : P = 0
   · subst hP
-    rw [if_pos rfl, toPoly_zero, Polynomial.map_zero, isCoprime_zero_left,
+    rw [ite_eq_left rfl, toPoly_zero, Polynomial.map_zero, isCoprime_zero_left,
       isUnit_iff_natDegree]
     simp only [Bool.and_eq_true, bne_iff_ne, ne_eq, beq_iff_eq]
     constructor
@@ -262,10 +262,10 @@ theorem coprime_int_iff (P Q : AzPolynomial AzInt) :
       refine ⟨fun h0 => h1 (by rw [h0, toPoly_zero, Polynomial.map_zero]), ?_⟩
       rw [← natDegree_img Q]
       exact h2
-  · rw [if_neg hP]
+  · rw [ite_eq_right hP]
     by_cases hQ : Q = 0
     · subst hQ
-      rw [if_pos rfl, toPoly_zero, Polynomial.map_zero, isCoprime_zero_right,
+      rw [ite_eq_left rfl, toPoly_zero, Polynomial.map_zero, isCoprime_zero_right,
         isUnit_iff_natDegree]
       simp only [beq_iff_eq]
       constructor
@@ -274,20 +274,20 @@ theorem coprime_int_iff (P Q : AzPolynomial AzInt) :
       · rintro ⟨-, h2⟩
         rw [← natDegree_img P]
         exact h2
-    · rw [if_neg hQ]
+    · rw [ite_eq_right hQ]
       by_cases hconst : P.natDegree = 0 ∨ Q.natDegree = 0
-      · rw [if_pos hconst]
+      · rw [ite_eq_left hconst]
         simp only [true_iff]
         rcases hconst with h | h
         · exact isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
             ⟨img_ne_zero hP, by rw [natDegree_img]; exact h⟩)
         · exact (isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
             ⟨img_ne_zero hQ, by rw [natDegree_img]; exact h⟩)).symm
-      · rw [if_neg hconst]
+      · rw [ite_eq_right hconst]
         push Not at hconst
         obtain ⟨hp1, hq1⟩ := hconst
         by_cases hdeq : P.natDegree = Q.natDegree
-        · rw [if_pos hdeq]
+        · rw [ite_eq_left hdeq]
           have hlcP : P.leadingCoeff ≠ 0 := by
             rw [← leadingCoeff_toPoly]
             exact Polynomial.leadingCoeff_ne_zero.mpr (toPoly_ne_zero hP)
@@ -317,7 +317,7 @@ theorem coprime_int_iff (P Q : AzPolynomial AzInt) :
             rw [isCoprime_iff_isUnit_gcd, isCoprime_iff_isUnit_gcd, himg_pre,
               gcd_pre_step _ _ hlcPq]
           by_cases hpre : preStep P Q = 0
-          · rw [if_pos hpre]
+          · rw [ite_eq_left hpre]
             simp only [Bool.false_eq_true, false_iff]
             intro hco
             have h0 : Polynomial.C (((Int.castRingHom ℚ).comp AzInt.toIntRingHom) P.leadingCoeff)
@@ -349,22 +349,22 @@ theorem coprime_int_iff (P Q : AzPolynomial AzInt) :
             have h2 := (isUnit_iff_natDegree.mp hunit).2
             rw [natDegree_img] at h2
             omega
-          · rw [if_neg hpre]
+          · rw [ite_eq_right hpre]
             by_cases hpre0 : (preStep P Q).natDegree = 0
-            · rw [if_pos hpre0]
+            · rw [ite_eq_left hpre0]
               simp only [true_iff]
               rw [← hgcd_pre]
               exact (isUnit_isCoprime_left (isUnit_iff_natDegree.mpr
                 ⟨img_ne_zero hpre, by rw [natDegree_img]; exact hpre0⟩)).symm
-            · rw [if_neg hpre0]
+            · rw [ite_eq_right hpre0]
               rw [coprime_main_int hP hpre
                 (pre_step_natDegree_lt hP hQ hdeq hpre) (by omega)]
               exact hgcd_pre
-        · rw [if_neg hdeq]
+        · rw [ite_eq_right hdeq]
           rcases Nat.lt_or_ge P.natDegree Q.natDegree with hlt | hge
-          · rw [if_pos hlt, coprime_main_int hQ hP hlt (by omega)]
+          · rw [ite_eq_left hlt, coprime_main_int hQ hP hlt (by omega)]
             exact isCoprime_comm
-          · rw [if_neg (by omega)]
+          · rw [ite_eq_right (by omega)]
             exact coprime_main_int hP hQ (by omega) (by omega)
 
 /-- **Correctness of `isSquarefree` over `ℤ` (`AzInt`)**: the test decides

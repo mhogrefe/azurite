@@ -121,7 +121,7 @@ theorem matrixLocus_isSemialgebraicSetOver
       ⋃ c ∈ S, ⋂ i ∈ (Finset.univ : Finset (Fin (3 ^ s))),
         {y : Fin k → R | P_split.map (MvPolynomial.aeval y).toRingHom ≠ 0 ∧ taq y i = c i} := by
     ext y
-    simp only [Set.mem_setOf_eq, Set.mem_iUnion, Set.mem_iInter,
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Set.mem_iInter,
       exists_prop, Finset.mem_univ, forall_true_left]
     constructor
     · rintro ⟨hPy, hpos⟩

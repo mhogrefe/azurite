@@ -33,8 +33,8 @@ private theorem equiv_weightedSumSquares_of_congr (M : Matrix (Fin n) (Fin n) R)
     (hM_eq : M = P.transpose * Matrix.diagonal D * P) :
     QuadraticMap.Equivalent (quadraticForm M) (QuadraticMap.weightedSumSquares R D) := by
   classical
-  haveI h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
-  haveI hinv : Invertible P := P.invertibleOfIsUnitDet hP
+  have h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
+  have hinv : Invertible P := P.invertibleOfIsUnitDet hP
   -- the linear automorphism with matrix `P`
   set e : (Fin n → R) ≃ₗ[R] (Fin n → R) := Matrix.toLinearEquiv' P hinv with he
   have hemat : LinearMap.toMatrix' (e : (Fin n → R) →ₗ[R] (Fin n → R)) = P := by
@@ -77,10 +77,10 @@ private theorem sigPos_eq_card_pos_of_congr (M : Matrix (Fin n) (Fin n) R)
     (hM_eq : M = P.transpose * Matrix.diagonal D * P) :
     (Finset.univ.filter (fun i => 0 < D i)).card = sigPos (quadraticForm M) := by
   classical
-  haveI h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
+  have h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
   have := QuadraticForm.sigPos_of_equiv_weightedSumSquares
     (Q := quadraticForm M) (w := D) (equiv_weightedSumSquares_of_congr M P D hP hM_eq)
-  rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+  rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
 
 omit [IsRealClosed R] in
 /-- **Congruence ⇒ inertia, negative part.** -/
@@ -89,10 +89,10 @@ private theorem sigNeg_eq_card_neg_of_congr (M : Matrix (Fin n) (Fin n) R)
     (hM_eq : M = P.transpose * Matrix.diagonal D * P) :
     (Finset.univ.filter (fun i => D i < 0)).card = sigNeg (quadraticForm M) := by
   classical
-  haveI h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
+  have h2 : Invertible (2 : R) := invertibleOfNonzero (by norm_num)
   have := QuadraticForm.sigNeg_of_equiv_weightedSumSquares
     (Q := quadraticForm M) (w := D) (equiv_weightedSumSquares_of_congr M P D hP hM_eq)
-  rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+  rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
 
 /-- The roots of the characteristic polynomial of a symmetric matrix over a real closed
 field is the multiset of diagonal entries of its spectral diagonalization. We package the

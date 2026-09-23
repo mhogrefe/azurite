@@ -39,7 +39,7 @@ theorem shiftLimbsRightAux_size (lo sh : Nat) (a : Array UInt64) (i : Nat)
   | _ i ih =>
     rw [shiftLimbsRightAux]
     by_cases hlt : lo < i
-    · simp only [hlt, dif_pos]
+    · simp only [hlt, dite_eq_left]
       have h_dec : i - 1 < i := Nat.sub_lt (by omega) Nat.zero_lt_one
       rw [ih (i - 1) h_dec _ _ (by rw [Array.size_set]; omega)]
       rw [Array.size_set]

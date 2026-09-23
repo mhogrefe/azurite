@@ -37,7 +37,7 @@ theorem shiftLimbsLeft.go_size (hi sh : Nat) (a : Array UInt64) (i : Nat)
   | succ n ih =>
     have h_lt : i < hi := by omega
     rw [shiftLimbsLeft.go]
-    simp only [h_lt, dif_pos]
+    simp only [h_lt, dite_eq_left]
     have h_rec : hi - (i + 1) = n := by omega
     rw [ih _ _ _ _ h_rec]
     rw [Array.size_set]
@@ -182,7 +182,7 @@ theorem shiftLeftGeneralLimbs_last_ne_zero (a : AzNat) (sh : Nat)
   extract_lets bigShift smallShift _ _ combined _ prefixResult prefixShifted prevCarry
     h_psize h_last_idx last_orig new_last top_carry withLast
   by_cases htc : top_carry = 0
-  · simp only [htc, if_true]
+  · simp only [htc, ite_true]
     have h_wsize : withLast.size = bigShift + a.limbs.size := by
       show (prefixShifted.set _ _ _).size = _
       rw [Array.size_set]; exact h_psize
@@ -200,7 +200,7 @@ theorem shiftLeftGeneralLimbs_last_ne_zero (a : AzNat) (sh : Nat)
       lor_eq_zero_left_uint64 _ _ hnl
     exact shl_ne_zero_of_shr_eq_zero last_orig smallShift hsh_lb hsh_ub
       h_last_orig_ne htc hshl
-  · simp only [htc, if_false]
+  · simp only [htc, ite_false]
     rw [Array.back?_push]
     intro h
     exact htc (Option.some.inj h)
@@ -226,15 +226,15 @@ theorem shiftLeft_eq_zero {a : AzNat} {sh : Nat} (h : a <<< sh = 0) : a = 0 := b
   unfold shiftLeft at h
   by_cases hz : a.limbs.size = 0
   · -- a.limbs.size = 0 → a = 0
-    rw [dif_pos hz] at h
+    rw [dite_eq_left hz] at h
     exact h
   · exfalso
-    rw [dif_neg hz] at h
+    rw [dite_eq_right hz] at h
     by_cases hsm : sh % 64 = 0
-    · rw [dif_pos hsm] at h
+    · rw [dite_eq_left hsm] at h
       have h_eq_zero : shiftLeftMul64 a (sh / 64) = ⟨#[], by simp⟩ := h
       unfold shiftLeftMul64 at h_eq_zero
-      rw [dif_neg hz] at h_eq_zero
+      rw [dite_eq_right hz] at h_eq_zero
       have h_limbs : (Array.replicate (sh / 64) 0 ++ a.limbs : Array UInt64) = #[] := by
         have := congrArg AzNat.limbs h_eq_zero
         exact this
@@ -242,7 +242,7 @@ theorem shiftLeft_eq_zero {a : AzNat} {sh : Nat} (h : a <<< sh = 0) : a = 0 := b
         rw [h_limbs]; rfl
       rw [Array.size_append, Array.size_replicate] at h_size
       omega
-    · rw [dif_neg hsm] at h
+    · rw [dite_eq_right hsm] at h
       have h_limbs : shiftLeftGeneralLimbs a sh hz hsm = #[] := by
         have := congrArg AzNat.limbs h
         exact this

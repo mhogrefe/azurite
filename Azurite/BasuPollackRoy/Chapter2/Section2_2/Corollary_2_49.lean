@@ -83,19 +83,19 @@ theorem corollary_2_49
       unfold virtualMultiplicity at hk' ⊢
       rw [hrm]
       by_cases hν_even : Even ν
-      · rw [if_pos hν_even] at h46
+      · rw [ite_eq_left hν_even] at h46
         obtain ⟨j, hj⟩ := hν_even
         refine ⟨j + k', ?_⟩
         unfold virtualMultiplicity at h46
         omega
-      · rw [if_neg hν_even] at h46
+      · rw [ite_eq_right hν_even] at h46
         obtain ⟨j, hj⟩ := Nat.not_even_iff_odd.mp hν_even
         by_cases hsign : 0 < P.eval c * ((⇑derivative)^[ν + 1] P).eval c
-        · rw [if_pos hsign] at h46
+        · rw [ite_eq_left hsign] at h46
           refine ⟨j + k' + 1, ?_⟩
           unfold virtualMultiplicity at h46
           omega
-        · rw [if_neg hsign] at h46
+        · rw [ite_eq_right hsign] at h46
           refine ⟨j + k', ?_⟩
           unfold virtualMultiplicity at h46
           omega

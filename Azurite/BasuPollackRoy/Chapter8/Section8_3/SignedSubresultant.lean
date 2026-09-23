@@ -87,7 +87,7 @@ theorem pdetRing_Q_shifts {m n : ℕ} (hm : 0 < m) (hmn : m ≤ n) (Q : D[X]) (h
     (hq : Q.natDegree + m = n) :
     pdetRing n (fun r : Fin m => X ^ (r : ℕ) * Q)
       = (ε m : ℤ) • (C (Q.leadingCoeff ^ (m - 1)) * Q) := by
-  haveI : Nontrivial D := Polynomial.nontrivial_iff.mp (nontrivial_of_ne Q 0 hQ0)
+  have : Nontrivial D := Polynomial.nontrivial_iff.mp (nontrivial_of_ne Q 0 hQ0)
   -- reversing the family gives the decreasing shifts `X^{m-1}Q, …, Q`
   have hrev : (fun r : Fin m => X ^ (r : ℕ) * Q) ∘ ⇑(Fin.revPerm)
       = fun r : Fin m => X ^ (m - 1 - (r : ℕ)) * Q := by
@@ -146,7 +146,7 @@ noncomputable def sResP (P Q : D[X]) (j : ℕ) : D[X] :=
 theorem sResP_degree_le (P Q : D[X]) (hpq : Q.natDegree < P.natDegree)
     {j : ℕ} (hj : j ≤ Q.natDegree) :
     (sResP P Q j).degree ≤ (j : WithBot ℕ) := by
-  rw [sResP, if_pos hj]
+  rw [sResP, ite_eq_left hj]
   refine le_trans (pdetRing_degree_le _) ?_
   exact_mod_cast
     (show P.natDegree + Q.natDegree - j - (P.natDegree + Q.natDegree - 2 * j) ≤ j by omega)
@@ -154,19 +154,19 @@ theorem sResP_degree_le (P Q : D[X]) (hpq : Q.natDegree < P.natDegree)
 /-- Convention: `sResP_p(P, Q) = P`. -/
 theorem sResP_eq_self (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) :
     sResP P Q P.natDegree = P := by
-  rw [sResP, if_neg (by omega), if_pos rfl]
+  rw [sResP, ite_eq_right (by omega), ite_eq_left rfl]
 
 /-- Convention: `sResP_{p-1}(P, Q) = Q` (in the proper gap `q < p - 1`). -/
 theorem sResP_eq_self_Q (P Q : D[X]) (hpq : Q.natDegree + 1 < P.natDegree) :
     sResP P Q (P.natDegree - 1) = Q := by
-  rw [sResP, if_neg (by omega), if_neg (by omega), if_pos rfl]
+  rw [sResP, ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_left rfl]
 
 /-- Convention: `sResP_j(P, Q) = 0` for `q < j` with `j ∉ {p-1, p}` (the defective
     subresultants in the degree gap vanish). -/
 theorem sResP_eq_zero (P Q : D[X]) {j : ℕ} (h1 : Q.natDegree < j)
     (h2 : j ≠ P.natDegree) (h3 : j ≠ P.natDegree - 1) :
     sResP P Q j = 0 := by
-  rw [sResP, if_neg (by omega), if_neg h2, if_neg h3]
+  rw [sResP, ite_eq_right (by omega), ite_eq_right h2, ite_eq_right h3]
 
 /-- The coefficient of `Xⁱ` in `pdet_{m,n}(𝒫)` is the minor `mᵢ`, for `i ≤ n - m`. -/
 theorem pdetRing_coeff {m n : ℕ} (P : Fin m → D[X]) {i₀ : ℕ} (hi₀ : i₀ ≤ n - m) :
@@ -174,9 +174,9 @@ theorem pdetRing_coeff {m n : ℕ} (P : Fin m → D[X]) {i₀ : ℕ} (hi₀ : i�
   rw [pdetRing, Polynomial.finsetSum_coeff,
     Fin.sum_univ_eq_sum_range (fun k => (pdetMinorRing n P k • (X : D[X]) ^ k).coeff i₀) (n - m + 1),
     Finset.sum_eq_single i₀]
-  · rw [Polynomial.coeff_smul, Polynomial.coeff_X_pow, if_pos rfl, smul_eq_mul, mul_one]
+  · rw [Polynomial.coeff_smul, Polynomial.coeff_X_pow, ite_eq_left rfl, smul_eq_mul, mul_one]
   · intro b _ hb
-    rw [Polynomial.coeff_smul, Polynomial.coeff_X_pow, if_neg (Ne.symm hb), smul_eq_mul, mul_zero]
+    rw [Polynomial.coeff_smul, Polynomial.coeff_X_pow, ite_eq_right (Ne.symm hb), smul_eq_mul, mul_zero]
   · intro h
     exact absurd (Finset.mem_range.mpr (by omega)) h
 
@@ -196,19 +196,19 @@ theorem coeff_sResP (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : ℕ}
       split
       · rfl
       · have := c.isLt; omega
-    rw [sResP, if_pos hjq, pdetRing_coeff _ (by omega), pdetMinorRing,
-      Azurite.BPR.Chapter4.sRes, if_pos hjq]
+    rw [sResP, ite_eq_left hjq, pdetRing_coeff _ (by omega), pdetMinorRing,
+      Azurite.BPR.Chapter4.sRes, ite_eq_left hjq]
     congr 1
     ext r c
     simp only [pdetMinorMatRing, Azurite.BPR.Chapter4.SyHaSquare, Matrix.submatrix_apply,
       Azurite.BPR.Chapter4.SyHa, Matrix.of_apply, id_eq, Fin.val_castLE, hcol]
     by_cases h : (r : ℕ) < Q.natDegree - j <;> simp [h]
   · -- `q < j ≤ p`: the convention cases.
-    rw [Azurite.BPR.Chapter4.sRes, if_neg (by omega), if_pos hpq]
+    rw [Azurite.BPR.Chapter4.sRes, ite_eq_right (by omega), ite_eq_left hpq]
     rcases eq_or_ne j P.natDegree with hjp | hjp
     · subst hjp
-      rw [if_pos rfl, sResP_eq_self P Q hpq, Polynomial.coeff_natDegree]
-    · rw [if_neg hjp]
+      rw [ite_eq_left rfl, sResP_eq_self P Q hpq, Polynomial.coeff_natDegree]
+    · rw [ite_eq_right hjp]
       rcases eq_or_ne j (P.natDegree - 1) with hjp1 | hjp1
       · rw [hjp1, sResP_eq_self_Q P Q (by omega),
           Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
@@ -245,7 +245,7 @@ theorem sResP_eq_of_natDegree (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) (hQ
     sResP P Q Q.natDegree
       = (ε (P.natDegree - Q.natDegree) : ℤ)
         • (C (Q.leadingCoeff ^ (P.natDegree - Q.natDegree - 1)) * Q) := by
-  rw [sResP, if_pos (le_refl _)]
+  rw [sResP, ite_eq_left (le_refl _)]
   have hfun : (fun r : Fin (P.natDegree + Q.natDegree - 2 * Q.natDegree) =>
         if (r : ℕ) < Q.natDegree - Q.natDegree then
           X ^ (Q.natDegree - Q.natDegree - 1 - (r : ℕ)) * P

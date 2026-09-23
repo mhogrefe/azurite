@@ -97,13 +97,13 @@ values, the rest are `none`. -/
     obtain ⟨i, hi, hfi⟩ := hsurj t
     refine ⟨i, ?_, ?_⟩
     · show (if i < card then some (f i) else none) = some t
-      rw [if_pos hi, hfi]
+      rw [ite_eq_left hi, hfi]
     · intro m hm
       have hm' : (if m < card then some (f m) else none) = some t := hm
       by_cases hmc : m < card
-      · rw [if_pos hmc] at hm'
+      · rw [ite_eq_left hmc] at hm'
         exact hinj m i hmc hi (by rw [Option.some.inj hm', hfi])
-      · rw [if_neg hmc] at hm'
+      · rw [ite_eq_right hmc] at hm'
         exact absurd hm' (by simp)
 
 /-- Like `ofBoundedBij`, but the value function `f` may depend on the proof
@@ -118,18 +118,18 @@ holds within the bounded range. -/
     obtain ⟨i, hi, hfi⟩ := hsurj t
     refine ⟨i, ?_, ?_⟩
     · show (if h : i < card then some (f i h) else none) = some t
-      rw [dif_pos hi, hfi]
+      rw [dite_eq_left hi, hfi]
     · intro m hm
       have hm' : (if h : m < card then some (f m h) else none) = some t := hm
       by_cases hmc : m < card
-      · rw [dif_pos hmc] at hm'
+      · rw [dite_eq_left hmc] at hm'
         exact hinj m i hmc hi (by rw [Option.some.inj hm', hfi])
-      · rw [dif_neg hmc] at hm'
+      · rw [dite_eq_right hmc] at hm'
         exact absurd hm' (by simp)
 
 /-- Build a (finite) generator from an explicit duplicate-free list that
 contains every value of `T`: `gen n = l[n]?`. Existence of the index comes from
-completeness (`hcomp`), uniqueness from `hnd` (`List.getElem?_inj`). Since
+completeness (`hcomp`), uniqueness from `hnd` (`List.Nodup.getElem?_inj`). Since
 `l[n]?` is `some` below `l.length` and `none` above, this matches the finite
 `fintypeCard_eq` shape with `bound = l.length`. -/
 @[reducible] def ofListNodup {T : Type*} (l : List T) (hnd : l.Nodup)
@@ -142,7 +142,7 @@ completeness (`hcomp`), uniqueness from `hnd` (`List.getElem?_inj`). Since
       rw [List.getElem?_eq_getElem hn, hget]
     · intro m hm
       have hmn : l[n]? = l[m]? := by rw [hm, List.getElem?_eq_getElem hn, hget]
-      exact ((List.getElem?_inj hn hnd).mp hmn).symm
+      exact ((List.Nodup.getElem?_inj hn hnd).mp hmn).symm
 
 /-- **Relabel a generator along a computable bijection.** Given a generator for
 `S` and a bijection `f : S → T` (the map is DATA, its bijectivity a `Prop`),
@@ -196,8 +196,8 @@ theorem contiguous_of_boundedBij {T : Type*} (g : ExhaustiveGenerator T) {card :
   rw [hg] at h ⊢
   simp only at h ⊢
   by_cases hn : n < card
-  · rw [if_pos hn] at h; exact absurd h (Option.some_ne_none _)
-  · rw [if_neg (by omega)]
+  · rw [ite_eq_left hn] at h; exact absurd h (Option.some_ne_none _)
+  · rw [ite_eq_right (by omega)]
 
 /-- A bounded generator of shape `fun n => if h : n < card then some (f n h) else
 none` (as from `ofBoundedBijOn`) is contiguous. -/
@@ -209,8 +209,8 @@ theorem contiguous_of_boundedBijOn {T : Type*} (g : ExhaustiveGenerator T) {card
   rw [hg] at h ⊢
   simp only at h ⊢
   by_cases hn : n < card
-  · rw [dif_pos hn] at h; exact absurd h (Option.some_ne_none _)
-  · rw [dif_neg (by omega)]
+  · rw [dite_eq_left hn] at h; exact absurd h (Option.some_ne_none _)
+  · rw [dite_eq_right (by omega)]
 
 /-- A list-backed generator of shape `fun n => l[n]?` (as from `ofListNodup`) is
 contiguous: `l[n]? = none` means `l.length ≤ n`, so `l[n+1]? = none` too. -/
@@ -288,8 +288,8 @@ literal (which need only be *definitionally* equal to the shape's bound — e.g.
     {f : ℕ → T} (hg : g.gen = fun n => if n < card then some (f n) else none) :
     @FiniteGenerator T g where
   card := card
-  gen_none n hn := by simp only [hg]; exact if_neg (by omega)
-  gen_some n hn := by simp only [hg]; rw [if_pos hn]; exact Option.some_ne_none _
+  gen_none n hn := by simp only [hg]; exact ite_eq_right (by omega)
+  gen_some n hn := by simp only [hg]; rw [ite_eq_left hn]; exact Option.some_ne_none _
 
 /-- `FiniteGenerator` data for a bounded generator of shape
 `fun n => if h : n < card then some (f n h) else none` (as from `ofBoundedBijOn`). -/
@@ -298,8 +298,8 @@ literal (which need only be *definitionally* equal to the shape's bound — e.g.
     (hg : g.gen = fun n => if h : n < card then some (f n h) else none) :
     @FiniteGenerator T g where
   card := card
-  gen_none n hn := by simp only [hg]; exact dif_neg (by omega)
-  gen_some n hn := by simp only [hg]; rw [dif_pos hn]; exact Option.some_ne_none _
+  gen_none n hn := by simp only [hg]; exact dite_eq_right (by omega)
+  gen_some n hn := by simp only [hg]; rw [dite_eq_left hn]; exact Option.some_ne_none _
 
 /-- `FiniteGenerator` data for a list-backed generator of shape `fun n => l[n]?`
 (as from `ofListNodup`); `card` is the list length, passed as a literal with the

@@ -27,10 +27,10 @@ theorem toNat_wideSub (x y : UInt64 × UInt64) :
     by_cases h : X0 < Y0
     · have hlt : x.2 < y.2 := by
         rw [_root_.UInt64.lt_iff_toNat_lt]; exact h
-      rw [if_pos hlt, if_pos h]; rfl
+      rw [ite_eq_left hlt, ite_eq_left h]; rfl
     · have hnlt : ¬ x.2 < y.2 := by
         rw [_root_.UInt64.lt_iff_toNat_lt]; exact h
-      rw [if_neg hnlt, if_neg h]; rfl
+      rw [ite_eq_right hnlt, ite_eq_right h]; rfl
   have hhi_inner : (x.1 - y.1).toNat = (2 ^ 64 - Y1 + X1) % 2 ^ 64 :=
     _root_.UInt64.toNat_sub _ _
   rw [_root_.UInt64.toNat_sub, hhi_inner, hborrow_toNat, hlo_toNat]

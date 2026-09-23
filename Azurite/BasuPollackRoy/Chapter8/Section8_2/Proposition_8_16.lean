@@ -75,7 +75,7 @@ theorem proposition_8_16 (M : Matrix (Fin n) (Fin n) (MvPolynomial (Fin k) ℤ))
       rw [hNdet]
       rcases Nat.eq_zero_or_pos s.card with hc0 | hcpos
       · -- empty minor: `N.det = 1`.
-        haveI : IsEmpty (Fin s.card) := hc0 ▸ inferInstanceAs (IsEmpty (Fin 0))
+        have : IsEmpty (Fin s.card) := hc0 ▸ inferInstanceAs (IsEmpty (Fin 0))
         rw [Matrix.det_isEmpty]
         refine le_trans ?_ hone_le
         rw [MvPolynomial.coeff_one]
@@ -126,6 +126,6 @@ theorem proposition_8_16 (M : Matrix (Fin n) (Fin n) (MvPolynomial (Fin k) ℤ))
       rw [Matrix.charpoly_natDegree_eq_dim, Fintype.card_fin]; exact not_le.mp hi
     rw [hzero]
     refine ⟨by rw [MvPolynomial.totalDegree_zero]; exact Nat.zero_le _, fun r => ?_⟩
-    rw [MvPolynomial.coeff_zero]; exact Nat.zero_le _
+    rw [AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]; exact Nat.zero_le _
 
 end Azurite.BPR

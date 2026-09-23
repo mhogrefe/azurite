@@ -260,7 +260,7 @@ private lemma jumpContrib_eq_sign_leading_factor
       rw [hs_neg] at h_uniq
       exact absurd h_uniq (by decide)
     unfold jumpContrib
-    rw [if_neg h_not_J_pos, if_pos h_J_neg, hs_neg]
+    rw [ite_eq_right h_not_J_pos, ite_eq_left h_J_neg, hs_neg]
     decide
   · exact absurd hs_zero hs_ne
   · -- s = 1.
@@ -270,7 +270,7 @@ private lemma jumpContrib_eq_sign_leading_factor
       rw [hs_pos] at h_uniq
       exact absurd h_uniq (by decide)
     unfold jumpContrib
-    rw [if_pos h_J_pos, if_neg h_not_J_neg, hs_pos]
+    rw [ite_eq_left h_J_pos, ite_eq_right h_not_J_neg, hs_pos]
     decide
 
 /-- **Per-root identity (heart of Lemma 2.60).** At any `x : R` and any
@@ -328,7 +328,7 @@ private theorem per_root_jump_sum_eq_signFlip
     have h_signFlip : signFlipAt (P * Q) x =
         (SignType.sign
           (((P * Q) /ₘ (X - C x)^((P * Q).rootMultiplicity x)).eval x) : ℤ) := by
-      unfold signFlipAt; rw [if_pos h_odd_PQ]
+      unfold signFlipAt; rw [ite_eq_left h_odd_PQ]
     rcases lt_or_gt_of_ne h_ne with h_lt | h_gt
     · -- µ_P < µ_Q: `P/Q` jumps; `Q/P` doesn't.
       have h_diff_odd : Odd (Q.rootMultiplicity x - P.rootMultiplicity x) := by
@@ -359,7 +359,7 @@ private theorem per_root_jump_sum_eq_signFlip
     rw [h_no_jump Q P h_even']
     rw [h_no_jump P Q h_even]
     unfold signFlipAt
-    rw [if_neg h_odd_PQ]
+    rw [ite_eq_right h_odd_PQ]
     ring
 
 omit [IsStrictOrderedRing R] in
@@ -380,7 +380,7 @@ private lemma sign_jump_at_root_eq_signFlipAt
   · -- µ odd: (-1)^µ = -1.
     rw [h_odd.neg_one_pow]
     unfold signFlipAt
-    rw [if_pos h_odd]
+    rw [ite_eq_left h_odd]
     show s - ((-1 : SignType) * _ : ℤ) = 2 * s
     have h_neg_one : ((-1 : SignType) : ℤ) = -1 := by decide
     push_cast [h_neg_one]
@@ -389,7 +389,7 @@ private lemma sign_jump_at_root_eq_signFlipAt
     have h_even : Even (F.rootMultiplicity x) := Nat.not_odd_iff_even.mp h_odd
     rw [h_even.neg_one_pow]
     unfold signFlipAt
-    rw [if_neg h_odd]
+    rw [ite_eq_right h_odd]
     show s - ((1 : SignType) * _ : ℤ) = 2 * 0
     have h_one : ((1 : SignType) : ℤ) = 1 := by decide
     push_cast [h_one]

@@ -4633,7 +4633,7 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
           have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
             show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
             rw [Array.getElem_set]
-            rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+            rw [ite_eq_left (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
           rw [h_eq]; exact h_d_top_ge
         -- Call the D&C core.
         set res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 n m
@@ -4673,7 +4673,7 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
           · -- UBuf = UBufRaw = U.limbs ++ #[0].
             have h_UBuf_eq : UBuf = UBufRaw := by
               show (if hk0' : k = 0 then UBufRaw else _) = UBufRaw
-              rw [dif_pos hk0]
+              rw [dite_eq_left hk0]
             rw [h_UBuf_eq, hk0, Nat.pow_zero, Nat.mul_one]
             -- toNatLimbsList (U.limbs ++ #[0]).toList = U.toNat.
             rw [Array.toList_append]
@@ -4686,7 +4686,7 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
                 (shiftLimbsLeft UBufRaw 0 (nU + 1) k (Nat.zero_le _)
                   (by rw [h_UBufRaw_size]) hk_lb hk_le).1 := by
               show (if hk0' : k = 0 then UBufRaw else _) = _
-              rw [dif_neg hk0]
+              rw [dite_eq_right hk0]
             rw [h_UBuf_eq]
             -- From shiftLimbsLeft_toNat: slice + carry*β = original * 2^k.
             have h_shift := shiftLimbsLeft_toNat UBufRaw 0 (nU + 1) k
@@ -4751,10 +4751,10 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
             -- Since topB = V.limbs[n-1], the set is a no-op.
             have h_VBufRaw_eq : VBufRaw = V.limbs := by
               show (if hk0' : k = 0 then V.limbs else _) = V.limbs
-              rw [dif_pos hk0]
+              rw [dite_eq_left hk0]
             have h_carryToTop_zero : carryToTop = 0 := by
               show (if hk0' : k = 0 then (0 : UInt64) else _) = 0
-              rw [dif_pos hk0]
+              rw [dite_eq_left hk0]
             have h_dtop_eq : d_top = topB := by
               rw [hd_top_def, h_carryToTop_zero]
               have h_kU_zero : kU = 0 := by show UInt64.ofNat k = 0; rw [hk0]; rfl
@@ -4790,14 +4790,14 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
             have h_VBufRaw_eq : VBufRaw =
                 (shiftLimbsLeft V.limbs 0 (n - 1) k (by omega) (by omega) hk_lb hk_le).1 := by
               show (if hk0' : k = 0 then V.limbs else _) = _
-              rw [dif_neg hk0]
+              rw [dite_eq_right hk0]
             have h_VBufRaw_len : VBufRaw.toList.length = n := by
               rw [Array.length_toList, h_VBufRaw_size]
             -- carryToTop = V.limbs[n-2] >>> (64 - k).
             have h_carryToTop_eq : carryToTop =
                 V.limbs[n - 2]'h_n2_lt >>> UInt64.ofNat (64 - k) := by
               show (if hk0' : k = 0 then (0 : UInt64) else _) = _
-              rw [dif_neg hk0]
+              rw [dite_eq_right hk0]
             -- Bound on carryToTop from limb_shift_step's right-shift bound.
             have h_carry_lt : carryToTop.toNat < 2 ^ k := by
               rw [h_carryToTop_eq]
@@ -4822,7 +4822,7 @@ theorem recursiveDivModFast_toNat (threshold : Nat) (U V : AzNat) :
                 have hk_def2 : k = 63 - topB.toNat.log2 := by
                   rw [hk_def]
                   show (if topB = 0 then 64 else 63 - topB.toNat.log2) = _
-                  rw [if_neg h_topB_ne]
+                  rw [ite_eq_right h_topB_ne]
                 have hpow_hi : topB.toNat < 2 ^ (topB.toNat.log2 + 1) :=
                   (Nat.log2_lt hd_nat_ne).mp (Nat.lt_succ_of_le (Nat.le_refl _))
                 calc topB.toNat * 2 ^ k

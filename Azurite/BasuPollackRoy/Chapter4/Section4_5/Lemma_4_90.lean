@@ -44,8 +44,8 @@ private theorem coeff_pairPoly (x y : Fin k → C) (j : Fin k) :
     Finset.sum_eq_single_of_mem j (Finset.mem_univ j)
       (fun j' _ hj' => by
         rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow,
-          if_neg (fun heq => hj' (Fin.val_injective heq).symm), mul_zero])]
-  rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+          ite_eq_right (fun heq => hj' (Fin.val_injective heq).symm), mul_zero])]
+  rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, ite_eq_left rfl, mul_one]
 
 private theorem pairPoly_ne_zero (x y : Fin k → C) (hxy : x ≠ y) : pairPoly C x y ≠ 0 := by
   obtain ⟨j, hj⟩ := Function.ne_iff.mp hxy
@@ -77,7 +77,7 @@ theorem lemma_4_90 [CharZero K] (Ps : Finset (MvPolynomial (Fin k) K))
     (hfin : (zerOfFinset C Ps).Finite) :
     ∃ i : ℕ, i ≤ (k - 1) * (hfin.toFinset.card).choose 2 ∧
       IsSeparating C Ps (Ideal.Quotient.mk _ (linearForm (K := K) i)) := by
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   set M := (k - 1) * (hfin.toFinset.card).choose 2 with hM
   set R := Finset.range (M + 1) with hR
   have hRcard : R.card = M + 1 := by rw [hR, Finset.card_range]

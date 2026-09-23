@@ -265,7 +265,7 @@ theorem depFind_hit_gen {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator 
     unfold depFind
     rw [hga]
     simp only
-    rw [dif_pos hjB]
+    rw [dite_eq_left hjB]
   | succ d ih =>
     intro fuel i₀ jB a hjB hga hmid hfuel
     -- Gap `d+1`: block `i₀` is `some a₀`; step into `i₀+1`.
@@ -285,7 +285,7 @@ theorem depFind_hit_gen {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator 
     unfold depFind
     rw [ha₀]
     simp only
-    rw [dif_neg (by omega)]
+    rw [dite_eq_right (by omega)]
     -- Recurse into `i₀+1`, gap `d`; rewrite the remaining index accordingly.
     have hkey : blockSum gA dB (i₀ + (d + 1)) - blockSum gA dB i₀ + jB - (dB a₀).card =
         blockSum gA dB ((i₀ + 1) + d) - blockSum gA dB (i₀ + 1) + jB := by
@@ -320,14 +320,14 @@ theorem depFind_decode {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator A
       simp only at h
       by_cases hr : r < (dB a₀).card
       · -- Value found in block `i₀`.
-        rw [dif_pos hr] at h
+        rw [dite_eq_left hr] at h
         have heq : (⟨a₀, (dB a₀).enum ⟨r, hr⟩⟩ : LexDepPair A B) = ⟨a', b'⟩ := Option.some.inj h
         obtain ⟨rfl, hb⟩ := LexDepPair.mk.injEq .. ▸ heq
         -- `hb : enum ⟨r, hr⟩ ≍ b'`; fst equal ⇒ heq collapses to a plain eq.
         refine ⟨i₀, r, hr, le_refl _, hga, (eq_of_heq hb).symm, ?_⟩
         omega
       · -- Recurse into block `i₀+1` with `r - card`.
-        rw [dif_neg hr] at h
+        rw [dite_eq_right hr] at h
         obtain ⟨i, jB', hj, hle, hgi, hbi, hsum⟩ := ih (i₀ + 1) (r - (dB a₀).card) a' b' h
         refine ⟨i, jB', hj, by omega, hgi, hbi, ?_⟩
         have hc0 : blockSum gA dB (i₀ + 1) = blockSum gA dB i₀ + (dB a₀).card := by
@@ -353,8 +353,8 @@ theorem depFind_fuel_irrel {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerat
     · rfl
     · simp only
       by_cases hr : r < (dB a).card
-      · rw [dif_pos hr, dif_pos hr]
-      · rw [dif_neg hr, dif_neg hr]
+      · rw [dite_eq_left hr, dite_eq_left hr]
+      · rw [dite_eq_right hr, dite_eq_right hr]
         have hpos := (dB a).pos
         exact ih (r - (dB a).card) (by omega) f f' (i + 1) (by omega) (by omega)
 
@@ -380,10 +380,10 @@ theorem depFind_none_step {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerato
       simp only at h ⊢
       have hpos := (dB a).pos
       by_cases hr : r < (dB a).card
-      · rw [dif_pos hr] at h
+      · rw [dite_eq_left hr] at h
         exact absurd h (Option.some_ne_none _)
-      · rw [dif_neg hr] at h
-        rw [dif_neg (by omega)]
+      · rw [dite_eq_right hr] at h
+        rw [dite_eq_right (by omega)]
         -- Align the recursive hypothesis to fuel `r' + 1` (`r' := r - card`),
         -- step it, then align to the goal's fuel `r + 1`.
         have h' : depFind gA dB (r - (dB a).card + 1) (i + 1) (r - (dB a).card) = none :=
@@ -426,7 +426,7 @@ theorem depFind_miss_gen {A : Type*} {B : A → Type*} (gA : ExhaustiveGenerator
     unfold depFind
     rw [ha₀]
     simp only
-    rw [dif_neg (by omega)]
+    rw [dite_eq_right (by omega)]
     refine ih f (i₀ + 1) (r - (dB a₀).card) ?_ ?_ ?_ (by omega)
     · rw [show (i₀ + 1) + d = i₀ + (d + 1) by omega]; exact hga
     · intro j hj

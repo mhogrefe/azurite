@@ -48,7 +48,7 @@ theorem isSemialgebraicSet_Icc (a b : R) :
   have heq : Set.Icc (constPt a) (constPt b)
       = {y : Fin 1 → R | eval y (X 0 - C a) ≥ 0} ∩ {y | eval y (X 0 - C b) ≤ 0} := by
     ext y
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, map_sub, eval_X, eval_C, ge_iff_le,
+    simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, map_sub, eval_X, eval_C, ge_iff_le,
       sub_nonneg, sub_nonpos, mem_Icc_fin_one]
   rw [heq]
   exact (IsSemialgebraicSet.geZero _).inter (IsSemialgebraicSet.leZero _)

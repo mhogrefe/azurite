@@ -53,7 +53,7 @@ theorem charpoly_pi_eq_prod {ι : Type*} [Fintype ι] (M : ι → Type*)
   refine Fintype.induction_empty_option (P := P) ?_ ?_ ?_ ι M g
   · -- transport along an equivalence `α ≃ β`
     intro α β _ e hα M _ _ _ _ g
-    haveI : Fintype α := Fintype.ofEquiv β e.symm
+    have : Fintype α := Fintype.ofEquiv β e.symm
     -- reindex the family along `e`
     set φ : ((i' : α) → M (e i')) ≃ₗ[R] ((i : β) → M i) := LinearEquiv.piCongrLeft R M e with hφ
     have happ : ∀ (f : (i' : α) → M (e i')) (a : α), φ f (e a) = f a := by
@@ -126,8 +126,8 @@ omit [CharZero K] [IsAlgClosed C] in
 theorem algebraMap_localizationAtPoint_surjective [Module.Finite C (quotPolysExt C Ps)] :
     Function.Surjective
       (algebraMap (quotPolysExt C Ps) (localizationAtPoint C Ps x hx)) := by
-  haveI := isArtinianRing_quotPolysExt Ps (C := C)
-  haveI : IsLocalization (evalAtPointSubmonoid C Ps x hx)
+  have := isArtinianRing_quotPolysExt Ps (C := C)
+  have : IsLocalization (evalAtPointSubmonoid C Ps x hx)
       (Localization (evalAtPointSubmonoid C Ps x hx)) := Localization.isLocalization
   exact IsArtinianRing.localization_surjective (evalAtPointSubmonoid C Ps x hx)
     (Localization (evalAtPointSubmonoid C Ps x hx))
@@ -155,15 +155,15 @@ theorem isNilpotent_algebraMap_localization_of_evalBar_eq_zero
     [Module.Finite C (quotPolysExt C Ps)] (w : quotPolysExt C Ps)
     (hw : evalBar C Ps x hx w = 0) :
     IsNilpotent (algebraMap (quotPolysExt C Ps) (localizationAtPoint C Ps x hx) w) := by
-  haveI := isLocalRing_localizationAtPoint C Ps x hx
-  haveI := isArtinianRing_quotPolysExt Ps (C := C)
-  haveI : IsArtinianRing (localizationAtPoint C Ps x hx) :=
+  have := isLocalRing_localizationAtPoint C Ps x hx
+  have := isArtinianRing_quotPolysExt Ps (C := C)
+  have : IsArtinianRing (localizationAtPoint C Ps x hx) :=
     inferInstanceAs (IsArtinianRing (Localization (evalAtPointSubmonoid C Ps x hx)))
-  haveI : Ring.KrullDimLE 0 (localizationAtPoint C Ps x hx) :=
+  have : Ring.KrullDimLE 0 (localizationAtPoint C Ps x hx) :=
     (isArtinianRing_iff_krullDimLE_zero).mp inferInstance
   -- membership in the maximal ideal of the local Artinian ring `Ā_x`
-  letI hP : (RingHom.ker (evalBar C Ps x hx)).IsPrime := RingHom.ker_isPrime (evalBar C Ps x hx)
-  haveI : IsLocalization.AtPrime (localizationAtPoint C Ps x hx)
+  let hP : (RingHom.ker (evalBar C Ps x hx)).IsPrime := RingHom.ker_isPrime (evalBar C Ps x hx)
+  have : IsLocalization.AtPrime (localizationAtPoint C Ps x hx)
       (RingHom.ker (evalBar C Ps x hx)) :=
     inferInstanceAs (IsLocalization.AtPrime
       (Localization (RingHom.ker (evalBar C Ps x hx)).primeCompl)
@@ -229,7 +229,7 @@ theorem isUnit_of_evalBar_ne_zero (Ps : Finset (MvPolynomial (Fin k) K))
     (ht : ∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps), evalBar C Ps x hx t ≠ 0) :
     IsUnit t := by
   classical
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   obtain ⟨e, _hsum, _horth, _hidem, hval1, hval0⟩ := proposition_4_92 (C := C) Ps hfin
   set u : quotPolysExt C Ps :=
     ∑ i : hfin.toFinset,
@@ -266,7 +266,7 @@ theorem theorem_4_97 (Ps : Finset (MvPolynomial (Fin k) K))
             - Polynomial.C (evalBar C Ps x.1 (hfin.mem_toFinset.mp x.2) f))
             ^ multiplicityOfZero C Ps x.1 (hfin.mem_toFinset.mp x.2) := by
   classical
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   -- index type and the per-point localizations
   let I := hfin.toFinset
   let M : I → Type _ := fun i => localizationAtPoint C Ps i.1 (hfin.mem_toFinset.mp i.2)
@@ -291,7 +291,7 @@ theorem theorem_4_97 (Ps : Finset (MvPolynomial (Fin k) K))
       have hmem : e i.1 ∈ evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2) := by
         rw [mem_evalAtPointSubmonoid, hval1 i.1 (hfin.mem_toFinset.mp i.2)]
         exact one_ne_zero
-      haveI : IsLocalization (evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2))
+      have : IsLocalization (evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2))
           (M i) :=
         inferInstanceAs (IsLocalization _
           (Localization (evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2))))
@@ -352,7 +352,7 @@ theorem theorem_4_97 (Ps : Finset (MvPolynomial (Fin k) K))
       have hSi : ∀ i : I, ∃ s : quotPolysExt C Ps,
           s ∈ evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2) ∧ s * w = 0 := by
         intro i
-        haveI : IsLocalization
+        have : IsLocalization
             (evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2)) (M i) :=
           inferInstanceAs (IsLocalization _
             (Localization (evalAtPointSubmonoid C Ps i.1 (hfin.mem_toFinset.mp i.2))))

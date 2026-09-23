@@ -38,9 +38,9 @@ lemma sremUV_det_eq_one {P Q : K[X]} (n : ℕ) (hn : ∀ i ≤ n, SRemS P Q i �
     have hn_ne' : ∀ i ≤ n, SRemS P Q i ≠ 0 := fun i hi => hn i (by omega)
     have ih_app := ih hn_ne'
     have H_U : SRemU P Q (n + 2) = - SRemU P Q n + (SRemS P Q n / SRemS P Q (n + 1)) * SRemU P Q (n + 1) := by
-      rw [SRemU, if_neg hn_ne]
+      rw [SRemU, ite_eq_right hn_ne]
     have H_V : SRemV P Q (n + 2) = - SRemV P Q n + (SRemS P Q n / SRemS P Q (n + 1)) * SRemV P Q (n + 1) := by
-      rw [SRemV, if_neg hn_ne]
+      rw [SRemV, ite_eq_right hn_ne]
     rw [H_U, H_V]
     calc SRemU P Q (n + 1) * (-SRemV P Q n + SRemS P Q n / SRemS P Q (n + 1) * SRemV P Q (n + 1)) - SRemV P Q (n + 1) * (-SRemU P Q n + SRemS P Q n / SRemS P Q (n + 1) * SRemU P Q (n + 1))
       _ = SRemU P Q n * SRemV P Q (n + 1) - SRemV P Q n * SRemU P Q (n + 1) := by ring

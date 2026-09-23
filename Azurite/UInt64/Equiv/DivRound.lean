@@ -171,7 +171,7 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
     have hr_uint_zero : (x % y).toNat = 0 := by rw [_root_.UInt64.toNat_mod]; exact hr0
     have hr_eq_check : (x % y == 0) = true := by
       rw [beq_iff_eq]; exact _root_.UInt64.toNat_inj.mp (by rw [hr_uint_zero]; rfl)
-    rw [if_pos hr_eq_check]
+    rw [ite_eq_left hr_eq_check]
     show ((x / y).toNat : EReal) = (round natBotSet mode t).val
     rw [hquot_toNat]
     have ht_eq_q : t = (q : ℝ) := by rw [ht_decomp, hr0]; push_cast; simp
@@ -189,11 +189,11 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Down =>
       show ((q : ℕ) : EReal) =
         (if 0 ≤ t then roundFloor natBotSet t else roundCeiling natBotSet t).val
-      rw [if_pos ht_nonneg, ← hF_def, hF_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, ← hF_def, hF_val]; push_cast; rfl
     | Up =>
       show ((q : ℕ) : EReal) =
         (if 0 ≤ t then roundCeiling natBotSet t else roundFloor natBotSet t).val
-      rw [if_pos ht_nonneg, hC_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hC_val]; push_cast; rfl
     | Nearest =>
       show ((q : ℕ) : EReal) =
         (match compare ((t : EReal) - F.val) ((roundCeiling natBotSet t).val - (t : EReal)) with
@@ -214,7 +214,7 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
     have hr_uint_ne : (x % y).toNat ≠ 0 := by rw [_root_.UInt64.toNat_mod]; exact hr0
     have hr_eq_check : ¬ ((x % y == 0) = true) := by
       rw [beq_iff_eq]; intro he; apply hr_uint_ne; rw [he]; rfl
-    rw [if_neg hr_eq_check]
+    rw [ite_eq_right hr_eq_check]
     have hr_pos : 0 < r := Nat.pos_of_ne_zero hr0
     have h_not_dvd : ¬ yn ∣ xn := fun hdvd => hr0 (Nat.mod_eq_zero_of_dvd hdvd)
     set C := roundCeiling natBotSet t with hC_def
@@ -280,14 +280,14 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Down =>
       show ((x / y).toNat : EReal) =
         (if 0 ≤ t then F else C).val
-      rw [if_pos ht_nonneg, hquot_toNat, hF_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hquot_toNat, hF_val]; push_cast; rfl
     | Ceiling =>
       show (((x / y) + 1).toNat : EReal) = C.val
       rw [hquot_succ_toNat, hC_val]; push_cast; rfl
     | Up =>
       show (((x / y) + 1).toNat : EReal) =
         (if 0 ≤ t then C else F).val
-      rw [if_pos ht_nonneg, hquot_succ_toNat, hC_val]; push_cast; rfl
+      rw [ite_eq_left ht_nonneg, hquot_succ_toNat, hC_val]; push_cast; rfl
     | Nearest =>
       -- Translate UInt64 comparisons to nat r/yn.
       have hhalfY_lt_iff : y >>> 1 < x % y ↔ yn < 2 * r := by
@@ -396,11 +396,11 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
               have hqparity_true : ((x / y) &&& 1 == 1) = true := hqparity_iff.mpr hq_par
               rw [show ((y &&& 1 == 0) && ((x / y) &&& 1 == 1)) = true from by
                 rw [hyparity_true, hqparity_true]; rfl]
-              rw [if_pos rfl, hquot_succ_toNat]
+              rw [ite_eq_left rfl, hquot_succ_toNat]
               have hq_odd : Odd q := ⟨q / 2, by omega⟩
               have hq_not_even : ¬ Even q := Nat.not_even_iff_odd.mpr hq_odd
               have hq1_even : Even (q + 1) := Odd.add_one hq_odd
-              rw [if_neg hq_not_even, if_pos hq1_even, hC_val]; push_cast; rfl
+              rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]; push_cast; rfl
             · -- q even: round down.
               have hq_mod : q % 2 = 0 := by omega
               have hq_even : Even q := by
@@ -415,9 +415,9 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
                 · exact absurd h hqparity_false
               rw [show ((y &&& 1 == 0) && ((x / y) &&& 1 == 1)) = false from by
                 rw [hqp_eq, Bool.and_false]]
-              simp only [Bool.false_eq_true, if_false]
+              simp only [Bool.false_eq_true, ite_false]
               rw [hquot_toNat]
-              rw [if_pos hq_even, hF_val]; push_cast; rfl
+              rw [ite_eq_left hq_even, hF_val]; push_cast; rfl
           · -- yn odd: 2r = yn - 1 < yn, math returns F, alg returns q (y odd kills the &&).
             have hyn_odd : yn % 2 = 1 := by omega
             have hreal_lt : 2 * r < yn := by omega
@@ -433,7 +433,7 @@ theorem toNat_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
               · exact absurd h hyparity_false
             rw [show ((y &&& 1 == 0) && ((x / y) &&& 1 == 1)) = false from by
               rw [hyp_eq]; rfl]
-            simp only [Bool.false_eq_true, if_false]
+            simp only [Bool.false_eq_true, ite_false]
             rw [hquot_toNat, hF_val]; push_cast; rfl
 
 /-! ### Ordering tag correctness
@@ -469,7 +469,7 @@ theorem snd_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
   rw [← compare_nat_mul_div_eq_compare_real_div _ _ y.toNat hy,
       divRound_snd, divRound_fst]
   by_cases hr : (x % y == 0) = true
-  · rw [if_pos hr, if_pos hr]
+  · rw [ite_eq_left hr, ite_eq_left hr]
     have hr0 : x.toNat % y.toNat = 0 := by
       rw [beq_iff_eq] at hr
       have := congrArg _root_.UInt64.toNat hr
@@ -481,7 +481,7 @@ theorem snd_divRound (x y : UInt64) (mode : RoundingMode) (hy : 0 < y.toNat) :
     rw [heq]
     show Ordering.eq = compareOfLessAndEq x.toNat x.toNat
     simp [compareOfLessAndEq]
-  · rw [if_neg hr, if_neg hr]
+  · rw [ite_eq_right hr, ite_eq_right hr]
     have hr0 : x.toNat % y.toNat ≠ 0 := by
       intro hr0
       apply hr

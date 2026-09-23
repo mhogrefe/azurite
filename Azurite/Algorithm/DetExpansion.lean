@@ -63,19 +63,19 @@ theorem detFn_eq_det : ∀ (n : ℕ) (M : ℕ → ℕ → S) (A : Matrix (Fin n)
     intro r c hr hc
     simp only [Matrix.submatrix_apply]
     rcases Nat.lt_or_ge c (j : ℕ) with hcj | hcj
-    · rw [if_pos hcj, h (r + 1) c (by omega) (by omega)]
+    · rw [ite_eq_left hcj, h (r + 1) c (by omega) (by omega)]
       congr 1
       apply Fin.ext
       simp only [Fin.succAbove]
-      rw [if_pos (by
+      rw [ite_eq_left (by
         simp only [Fin.lt_def, Fin.val_castSucc]
         omega)]
       rfl
-    · rw [if_neg (by omega), h (r + 1) (c + 1) (by omega) (by omega)]
+    · rw [ite_eq_right (by omega), h (r + 1) (c + 1) (by omega) (by omega)]
       congr 1
       apply Fin.ext
       simp only [Fin.succAbove]
-      rw [if_neg (by
+      rw [ite_eq_right (by
         simp only [Fin.lt_def, Fin.val_castSucc]
         omega)]
       rfl

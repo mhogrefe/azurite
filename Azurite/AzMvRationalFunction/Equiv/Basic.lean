@@ -134,17 +134,17 @@ theorem ofNumDen_guard (hnum : num ≠ 0) (hden : den ≠ 0) :
 theorem ofNumDen_factor (hnum : num ≠ 0) (hden : den ≠ 0) :
     (ofNumDen num den).factor
       = AzRat.ofAzInts (signedIntContent num) (signedIntContent den) := by
-  rw [ofNumDen, if_neg (not_or.mpr ⟨hnum, hden⟩), dif_pos (ofNumDen_guard hnum hden)]
+  rw [ofNumDen, ite_eq_right (not_or.mpr ⟨hnum, hden⟩), dite_eq_left (ofNumDen_guard hnum hden)]
 
 theorem ofNumDen_num (hnum : num ≠ 0) (hden : den ≠ 0) :
     (ofNumDen num den).num
       = Azurite.ExactDiv.exactDiv (primPos num) (gNum num den) := by
-  rw [ofNumDen, if_neg (not_or.mpr ⟨hnum, hden⟩), dif_pos (ofNumDen_guard hnum hden)]
+  rw [ofNumDen, ite_eq_right (not_or.mpr ⟨hnum, hden⟩), dite_eq_left (ofNumDen_guard hnum hden)]
 
 theorem ofNumDen_den (hnum : num ≠ 0) (hden : den ≠ 0) :
     (ofNumDen num den).den
       = Azurite.ExactDiv.exactDiv (primPos den) (gNum num den) := by
-  rw [ofNumDen, if_neg (not_or.mpr ⟨hnum, hden⟩), dif_pos (ofNumDen_guard hnum hden)]
+  rw [ofNumDen, ite_eq_right (not_or.mpr ⟨hnum, hden⟩), dite_eq_left (ofNumDen_guard hnum hden)]
 
 end Guard
 
@@ -176,7 +176,7 @@ theorem toMvRatFunc_ofNumDen (num den : AzMvPolynomial n AzInt ord) (hden : den 
   by_cases hnum : num = 0
   · subst hnum
     rw [show ofNumDen (0 : AzMvPolynomial n AzInt ord) den = 0 from by
-        rw [ofNumDen, if_pos (Or.inl rfl)],
+        rw [ofNumDen, ite_eq_left (Or.inl rfl)],
       toMvRatFunc_zero, toMvPolyQ_zero, map_zero, zero_div]
   set g := gNum num den with hgdef
   set N := Azurite.ExactDiv.exactDiv (primPos num) g with hNdef

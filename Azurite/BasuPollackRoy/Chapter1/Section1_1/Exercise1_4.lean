@@ -111,7 +111,7 @@ theorem phiD_holds [IsAlgClosed C] (d : ℕ) (hd : 0 < d) :
   unfold phiD
   apply realization_finRange_forall_of_univ
   ext y
-  simp only [realization, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+  simp only [realization, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
   let q := ∑ i : Fin d,
     Polynomial.C (y ⟨↑i + 1, by omega⟩) * Polynomial.X ^ (d - 1 - (i : ℕ))
   let p : C[X] := Polynomial.X ^ d + q
@@ -157,10 +157,10 @@ private lemma forall_realization_univ_iff
   constructor
   · intro h; ext z; simp only [Set.mem_univ, iff_true]
     have hz := (Set.eq_univ_iff_forall.mp h) z
-    simp only [realization, Set.mem_setOf_eq] at hz
+    simp only [realization, Set.mem_ofPred_eq] at hz
     convert hz (z x); exact (Function.update_eq_self x z).symm
   · intro h; ext y; simp only [Set.mem_univ, iff_true]
-    simp only [realization, Set.mem_setOf_eq]
+    simp only [realization, Set.mem_ofPred_eq]
     intro c; exact Set.eq_univ_iff_forall.mp h _
 
 private lemma phiD_univ_iff (d : ℕ) :
@@ -194,7 +194,7 @@ theorem isAlgClosed_of_phiD_holds
   have hR := Set.eq_univ_iff_forall.mp hphi
   set y : Fin (d + 1) → C := fun j => p.coeff (d - j.val)
   have hy := hR y
-  simp only [realization, Set.mem_setOf_eq] at hy
+  simp only [realization, Set.mem_ofPred_eq] at hy
   obtain ⟨c, hc⟩ := hy
   refine ⟨c, ?_⟩
   simp only [monicPoly] at hc
@@ -205,7 +205,7 @@ theorem isAlgClosed_of_phiD_holds
     rw [Function.update_of_ne (show (⟨↑i + 1, by omega⟩ : Fin (d + 1)) ≠ 0
       from by simp [Fin.ext_iff])]
     simp only [y]; congr 1; omega
-  simp only [realization_eq_zero, Set.mem_setOf_eq] at hc
+  simp only [realization_eq_zero, Set.mem_ofPred_eq] at hc
   simp only [map_add, map_pow, MvPolynomial.aeval_X,
     map_sum, map_mul, Function.update_self] at hc
   simp_rw [h_upd] at hc

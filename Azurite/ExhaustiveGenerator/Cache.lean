@@ -112,11 +112,11 @@ def push (c : GenCache s) : GenCache s where
     have h' : i < c.cache.size + 1 := by simpa using h
     rw [Array.getElem_push]
     rcases Nat.lt_or_ge i c.cache.size with hi | hi
-    · rw [dif_pos hi]
+    · rw [dite_eq_left hi]
       exact c.cache_inv i hi
     · have hie : i = c.cache.size := by omega
       subst hie
-      rw [dif_neg (Nat.lt_irrefl _), c.state_inv]
+      rw [dite_eq_right (Nat.lt_irrefl _), c.state_inv]
       exact s.emits c.cache.size
 
 theorem push_cache_size (c : GenCache s) : c.push.cache.size = c.cache.size + 1 :=

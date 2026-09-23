@@ -22,7 +22,7 @@ noncomputable def nnroot (m : ℕ) (t : R) : R :=
 
 theorem nnroot_spec {m : ℕ} (hm : m ≠ 0) (t : R) (ht : 0 ≤ t) :
     0 ≤ nnroot m t ∧ (nnroot m t) ^ m = t := by
-  rw [nnroot, dif_neg hm]; exact (exists_root_total hm t).choose_spec ht
+  rw [nnroot, dite_eq_right hm]; exact (exists_root_total hm t).choose_spec ht
 
 omit [IsStrictOrderedRing R] [IsRealClosed R] in
 /-- Finite intersections of semialgebraic sets are semialgebraic. -/
@@ -85,7 +85,7 @@ theorem pNormFun_isSemialgebraicFunction {k : ℕ} (p : ℚ) (hp : 1 ≤ p) :
       refine IsSemialgebraicSet.algebraic
         ⟨Finset.univ.image (fun i => X (uc i) ^ (2 * p.den) - X (xc i) ^ (2 * p.num.toNat)), ?_⟩
       ext w
-      simp only [Zer, Set.mem_setOf_eq, Finset.mem_image, Finset.mem_univ, true_and,
+      simp only [Zer, Set.mem_ofPred_eq, Finset.mem_image, Finset.mem_univ, true_and,
         forall_exists_index, forall_apply_eq_imp_iff, map_sub, map_pow, MvPolynomial.eval_X,
         sub_eq_zero]
     have h3 : IsSemialgebraicSet {w : Fin ((k + 1) + k) → R | 0 ≤ w yc} := by
@@ -97,11 +97,11 @@ theorem pNormFun_isSemialgebraicFunction {k : ℕ} (p : ℚ) (hp : 1 ≤ p) :
         (X yc ^ p.num.toNat - (∑ i, X (uc i)) ^ p.den)
       convert this using 1
       ext w
-      simp only [Set.mem_setOf_eq, map_sub, map_pow, map_sum, MvPolynomial.eval_X, sub_eq_zero]
+      simp only [Set.mem_ofPred_eq, map_sub, map_pow, map_sum, MvPolynomial.eval_X, sub_eq_zero]
     have : W = ({w | ∀ i, 0 ≤ w (uc i)} ∩
         {w | ∀ i, (w (uc i)) ^ (2 * p.den) = (w (xc i)) ^ (2 * p.num.toNat)}) ∩
         ({w | 0 ≤ w yc} ∩ {w | (w yc) ^ p.num.toNat = (∑ i, w (uc i)) ^ p.den}) := by
-      rw [hW]; ext w; simp only [Set.mem_setOf_eq, Set.mem_inter_iff, forall_and]
+      rw [hW]; ext w; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, forall_and]
     rw [this]
     exact (h1.inter h2).inter (h3.inter h4)
   -- the graph of the `p`-norm is the projection of `W`.
@@ -109,7 +109,7 @@ theorem pNormFun_isSemialgebraicFunction {k : ℕ} (p : ℚ) (hp : 1 ≤ p) :
       = {q : Fin (k + 1) → R | ∃ u : Fin k → R, Fin.append q u ∈ W} := by
     ext q
     rw [mem_funGraph]
-    simp only [Set.mem_univ, true_and, Set.mem_setOf_eq, hW, happ_uc, happ_xc, happ_yc]
+    simp only [Set.mem_univ, true_and, Set.mem_ofPred_eq, hW, happ_uc, happ_xc, happ_yc]
     constructor
     · intro hq
       have hQ : q (Fin.natAdd k 0) = pNorm p (q ∘ Fin.castAdd 1) := by

@@ -255,8 +255,8 @@ theorem addGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (addGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
   unfold addGeqLimbs
   by_cases h : (addSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
-  · rw [if_pos h, addLimb_size, addSameLengthLimbs_size]
-  · rw [if_neg h, addSameLengthLimbs_size]
+  · rw [ite_eq_left h, addLimb_size, addSameLengthLimbs_size]
+  · rw [ite_eq_right h, addSameLengthLimbs_size]
 
 /-- `addGeqLimbs` preserves positions outside `[loA, loA + lenA)`. -/
 theorem addGeqLimbs_get_outside (a b : Array UInt64) (loA lenA loB lenB : Nat)

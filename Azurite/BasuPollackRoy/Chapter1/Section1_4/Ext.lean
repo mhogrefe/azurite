@@ -133,10 +133,10 @@ theorem qf_sentence_realization_transfer
         fun h => by rw [h, map_zero]⟩
     rcases hb : a.isEq with _ | _
     · simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
-        Bool.false_eq_true, if_false, Set.mem_setOf_eq]
+        Bool.false_eq_true, ite_false, Set.mem_ofPred_eq]
       exact not_congr hC_iff |>.trans (not_congr hC'_iff).symm
     · simp only [Formula.realization, Formula.interpret_fieldAtom, hb,
-        if_true, Set.mem_setOf_eq]
+        ite_true, Set.mem_ofPred_eq]
       rw [hC_iff, hC'_iff]
   | not Φ ih =>
     have hQF' : Φ.IsQuantifierFree := hQF
@@ -244,7 +244,7 @@ theorem qf_realizable_isConstructible_algebra
           ({y | MvPolynomial.eval y
             (MvPolynomial.map (algebraMap D K) a.poly) = 0} : Set (Fin k → K))ᶜ := by
         ext y
-        simp [realization, h, Set.mem_compl_iff, Set.mem_setOf_eq,
+        simp [realization, h, Set.mem_compl_iff, Set.mem_ofPred_eq,
           MvPolynomial.aeval_def, MvPolynomial.eval_map]
       rw [this]
       exact .compl (.algebraic
@@ -398,7 +398,7 @@ theorem wrapForall_realization_univ_iff
       rwa [Function.update_eq_self] at this
     · intro h
       ext y
-      simp only [Set.mem_univ, iff_true, Set.mem_setOf_eq]
+      simp only [Set.mem_univ, iff_true, Set.mem_ofPred_eq]
       intro c
       have : Function.update y x c ∈ (wrapForall rest Φ).realization (C := C) := by
         rw [ih.mpr h]; trivial

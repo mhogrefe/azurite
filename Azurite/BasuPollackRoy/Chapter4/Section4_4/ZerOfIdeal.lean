@@ -36,7 +36,7 @@ theorem mem_zerOfIdeal {I : Ideal (MvPolynomial (Fin k) K)} {x : Fin k → L} :
 theorem zerOfIdeal_idealOfPolys (P : Finset (MvPolynomial (Fin k) K)) :
     zerOfIdeal (L := L) (idealOfPolys P) = {x : Fin k → L | ∀ p ∈ P, MvPolynomial.aeval x p = 0} := by
   ext x
-  simp only [mem_zerOfIdeal, Set.mem_setOf_eq]
+  simp only [mem_zerOfIdeal, Set.mem_ofPred_eq]
   constructor
   · intro h p hp
     exact h p (Ideal.subset_span (Finset.mem_coe.mpr hp))

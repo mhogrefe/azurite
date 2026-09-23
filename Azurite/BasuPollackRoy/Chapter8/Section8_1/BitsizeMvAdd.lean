@@ -31,11 +31,11 @@ theorem Int.size_add_le (a b : ℤ) (τ : ℕ)
     polynomial whose coefficient bitsizes are bounded by `τ + 1`. -/
 theorem MvPolynomial.bitsize_coeff_add_le {σ : Type _}
     {P Q : MvPolynomial σ ℤ} {τ : ℕ}
-    (hP : ∀ m, (MvPolynomial.coeff m P).natAbs.size ≤ τ)
-    (hQ : ∀ m, (MvPolynomial.coeff m Q).natAbs.size ≤ τ) :
-    ∀ m, (MvPolynomial.coeff m (P + Q)).natAbs.size ≤ τ + 1 := by
+    (hP : ∀ m, (P.coeff m).natAbs.size ≤ τ)
+    (hQ : ∀ m, (Q.coeff m).natAbs.size ≤ τ) :
+    ∀ m, ((P + Q).coeff m).natAbs.size ≤ τ + 1 := by
   intro m
-  rw [MvPolynomial.coeff_add]
+  rw [AddMonoidAlgebra.coeff_add, Finsupp.add_apply]
   exact Int.size_add_le _ _ τ (hP m) (hQ m)
 
 end Azurite.BPR

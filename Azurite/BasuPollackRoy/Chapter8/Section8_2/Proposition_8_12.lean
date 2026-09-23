@@ -52,7 +52,7 @@ theorem det_sq_le_prod_dotProduct_col (M : Matrix (Fin n) (Fin n) R) :
   by_cases hLI : LinearIndependent R (fun i => Mᵀ i)
   · rcases isEmpty_or_nonempty (Fin n) with hE | hNE
     · -- Empty matrix: det = 1, empty product = 1.
-      haveI := hE
+      have := hE
       simp [Matrix.det_isEmpty]
     · -- Gram–Schmidt on the (independent) columns.
       obtain ⟨w, hw_li, hw_orth, hw_spanv, hw_spanw⟩ := Chapter4.proposition_4_41 _ hLI
@@ -93,9 +93,9 @@ theorem det_sq_le_prod_dotProduct_col (M : Matrix (Fin n) (Fin n) R) :
         rw [OrderDual.toDual_lt_toDual] at hij
         simp only [hC, Matrix.of_apply]
         rw [hrepr i j, hzero_above i j (not_lt.mpr hij.le), zero_add, ← hbi i,
-          Basis.repr_self, Finsupp.single_apply, if_neg (ne_of_lt hij)]
+          Basis.repr_self, Finsupp.single_apply, ite_eq_right (ne_of_lt hij)]
       have hdetC : C.det = 1 := by
-        rw [Matrix.det_of_lowerTriangular C hCtri]
+        rw [Matrix.det_of_isLowerTriangular C hCtri]
         exact Finset.prod_eq_one (fun i _ => hCdiag i)
       -- `W = M * Cᵀ`, hence `det W = det M`.
       have hWMC : W = M * Cᵀ := by
@@ -150,7 +150,7 @@ theorem det_sq_le_prod_dotProduct_col (M : Matrix (Fin n) (Fin n) R) :
       calc M.det ^ 2 = W.det ^ 2 := by rw [hdetW]
         _ = ∏ i, (w i ⬝ᵥ w i) := hdetWsq
         _ ≤ ∏ i, (Mᵀ i ⬝ᵥ Mᵀ i) :=
-            Finset.prod_le_prod (fun i _ => hw_nonneg i) (fun i _ => hpyth i)
+            Finset.prod_le_prod₀ (fun i _ => hw_nonneg i) (fun i _ => hpyth i)
   · -- Dependent columns: `det M = 0`.
     have hdet0 : M.det = 0 := by
       rw [Fintype.not_linearIndependent_iff] at hLI

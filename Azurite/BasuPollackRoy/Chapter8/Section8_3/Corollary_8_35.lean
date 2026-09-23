@@ -74,8 +74,8 @@ theorem corollary_8_35 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   -- `t_j = s_j` (non-defective): trivial at `j = p` (both `= 1`), else `leadingCoeff = sRes`
   have htj : tBPR P Q j = sBPR P Q j := by
     by_cases hjpe : j = P.natDegree
-    · rw [tBPR, if_pos hjpe, sBPR, if_pos hjpe]
-    · rw [tBPR, if_neg hjpe, sBPR, if_neg hjpe]
+    · rw [tBPR, ite_eq_left hjpe, sBPR, ite_eq_left hjpe]
+    · rw [tBPR, ite_eq_right hjpe, sBPR, ite_eq_right hjpe]
       have hjq : j ≤ Q.natDegree := by
         by_contra hjq'
         by_cases hjpm1 : j = P.natDegree - 1
@@ -90,7 +90,7 @@ theorem corollary_8_35 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (by rw [Nat.add_sub_cancel]; exact hndj)).2 k hk0 hkdeg
   obtain ⟨hmono, _⟩ := hmono
   simp only [Nat.add_sub_cancel] at hmono
-  rw [if_neg (show ¬ k = 0 by omega), htj] at hmono
+  rw [ite_eq_right (show ¬ k = 0 by omega), htj] at hmono
   rw [pow_two]; exact hmono
 
 end Azurite.BPR.Chapter8

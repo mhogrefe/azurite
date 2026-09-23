@@ -67,12 +67,12 @@ realizes negation in `ZMod (2^k)`. -/
   show toZMod (neg a) = -(toZMod a)
   unfold neg
   by_cases h : a.val.limbs.size = 0
-  · rw [dif_pos h]
+  · rw [dite_eq_left h]
     have hz : toZMod a = 0 := by
       show ((a.val.toNat : ℕ) : ZMod (2 ^ k)) = 0
       rw [(AzNat.toNat_eq_zero_iff a.val).mpr h, Nat.cast_zero]
     rw [toZMod_zero, hz, neg_zero]
-  · rw [dif_neg h]
+  · rw [dite_eq_right h]
     show ((AzNat.lowMask k - a.val + 1).toNat : ZMod (2 ^ k)) = -(toZMod a)
     rw [AzNat.toNat_add, AzNat.toNat_one, AzNat.toNat_sub, AzNat.toNat_lowMask]
     have h2 : a.val.toNat ≤ 2 ^ k := le_of_lt a.isLt

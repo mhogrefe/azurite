@@ -31,7 +31,7 @@ theorem coe_poly_order (P : F[X]) (hP : P ≠ 0) :
     (((P : PowerSeries F) : LaurentSeries F)).order = (P.natTrailingDegree : ℤ) := by
   have hcoeff : (((P : PowerSeries F) : LaurentSeries F)).coeff (P.natTrailingDegree : ℤ)
       = P.trailingCoeff := by
-    rw [coe_poly_coeff, if_neg (by simp)]; simp [Polynomial.trailingCoeff]
+    rw [coe_poly_coeff, ite_eq_right (by simp)]; simp [Polynomial.trailingCoeff]
   have hcoeff_ne : (((P : PowerSeries F) : LaurentSeries F)).coeff (P.natTrailingDegree : ℤ) ≠ 0 := by
     rw [hcoeff]; exact mt Polynomial.trailingCoeff_eq_zero.mp hP
   have hne : ((P : PowerSeries F) : LaurentSeries F) ≠ 0 :=
@@ -49,7 +49,7 @@ theorem coe_poly_order (P : F[X]) (hP : P ≠ 0) :
 coefficient.** -/
 theorem coe_poly_leadingCoeff (P : F[X]) (hP : P ≠ 0) :
     (((P : PowerSeries F) : LaurentSeries F)).leadingCoeff = P.trailingCoeff := by
-  rw [HahnSeries.leadingCoeff_eq, coe_poly_order P hP, coe_poly_coeff, if_neg (by simp)]
+  rw [HahnSeries.leadingCoeff_eq, coe_poly_order P hP, coe_poly_coeff, ite_eq_right (by simp)]
   simp [Polynomial.trailingCoeff]
 
 /-- The leading coefficient of an inverse in `LaurentSeries F` is the inverse of the leading

@@ -226,7 +226,7 @@ private theorem pir_of_squarefree :
       subst hp0
       simp
     by_cases hp : n.Prime
-    · haveI := Fact.mk hp
+    · have := Fact.mk hp
       exact inferInstance
     · obtain ⟨p, hpp, m, hm⟩ : ∃ p, p.Prime ∧ ∃ m, n = p * m :=
         ⟨n.minFac, Nat.minFac_prime hn1, n / n.minFac,
@@ -249,12 +249,12 @@ private theorem pir_of_squarefree :
         have hsq : p * p ∣ p * m := mul_dvd_mul_left p hdvd
         exact hpp.one_lt.ne' (Nat.isUnit_iff.mp (hsf p hsq))
       have hmsf : Squarefree m := hsf.squarefree_of_dvd ⟨p, by ring⟩
-      haveI hP1 : IsPrincipalIdealRing (Polynomial (ZMod p)) := by
-        haveI := Fact.mk hpp
+      have hP1 : IsPrincipalIdealRing (Polynomial (ZMod p)) := by
+        have := Fact.mk hpp
         exact inferInstance
-      haveI hP2 : IsPrincipalIdealRing (Polynomial (ZMod m)) :=
+      have hP2 : IsPrincipalIdealRing (Polynomial (ZMod m)) :=
         ih m hmlt hmsf
-      haveI : IsPrincipalIdealRing (Polynomial (ZMod p) × Polynomial (ZMod m)) :=
+      have : IsPrincipalIdealRing (Polynomial (ZMod p) × Polynomial (ZMod m)) :=
         isPrincipalIdealRing_prod _ _
       have e : Polynomial (ZMod (p * m))
           ≃+* Polynomial (ZMod p) × Polynomial (ZMod m) :=

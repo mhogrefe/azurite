@@ -58,7 +58,7 @@ theorem proposition_3_26 {M : Set (Fin k → R)} {x : Fin k → R}
     subst hk0
     refine ⟨⊥, isLittleO_of_bound fun r _ => ⟨1, one_pos, fun y _ hyne _ => ?_⟩⟩
     exact absurd (Subsingleton.elim y x) hyne
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   -- extract a chart at `x`
   obtain ⟨U, Ω, ϕ, ϕinv, hchart, h0U, hxΩ, hϕ0, hslice⟩ := hM.2 x hx
   -- partial-derivative data of `ϕ` (from `ϕ ∈ 𝒮^∞ ⊆ 𝒮¹`)

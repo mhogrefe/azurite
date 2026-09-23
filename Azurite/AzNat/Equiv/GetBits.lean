@@ -72,10 +72,10 @@ private lemma testBit_n_at_offset (n : AzNat) (i k : Nat) (hk : k < 64) :
           (n.limbs[i / 64 + 1]'h).toNat.testBit (k + i % 64 - 64) else false := by
   have hr_lt : i % 64 < 64 := Nat.mod_lt _ (by omega)
   by_cases hkr : k + i % 64 < 64
-  · simp only [hkr, if_true]
+  · simp only [hkr, ite_true]
     rw [show k + i = (k + i % 64) + 64 * (i / 64) from by omega,
         testBit_toNat_limb n (i / 64) (k + i % 64) hkr]
-  · simp only [hkr, if_false]
+  · simp only [hkr, ite_false]
     push Not at hkr
     have hkr_sub : k + i % 64 - 64 < 64 := by omega
     rw [show k + i = (k + i % 64 - 64) + 64 * (i / 64 + 1) from by omega,
@@ -92,7 +92,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
   by_cases hij : i ≥ j
   · simp [hij, show j - i = 0 from by omega]
   push Not at hij
-  rw [if_neg (by omega : ¬ i ≥ j)]
+  rw [ite_eq_right (by omega : ¬ i ≥ j)]
   have hr_lt : i % 64 < 64 := Nat.mod_lt _ (by omega)
   have hwidth_le : j - i ≤ 64 := h
   -- Helper: bound on (any UInt64).toNat
@@ -103,7 +103,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
     exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) (by omega))
   by_cases hq : i / 64 ≥ n.limbs.size
   · -- LHS = 0. Need RHS = false.
-    rw [dif_pos hq]
+    rw [dite_eq_left hq]
     change (0 : Nat).testBit k = _
     rw [Nat.zero_testBit]
     symm
@@ -113,12 +113,12 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
       have hk_lt_64 : k < 64 := lt_of_lt_of_le hkw hwidth_le
       rw [testBit_n_at_offset n i k hk_lt_64]
       by_cases hkr : k + i % 64 < 64
-      · simp only [hkr, if_true]; simp [show ¬ i / 64 < n.limbs.size from by omega]
-      · simp only [hkr, if_false]; simp [show ¬ i / 64 + 1 < n.limbs.size from by omega]
+      · simp only [hkr, ite_true]; simp [show ¬ i / 64 < n.limbs.size from by omega]
+      · simp only [hkr, ite_false]; simp [show ¬ i / 64 + 1 < n.limbs.size from by omega]
     · left; simp [hkw]
   -- Now i / 64 < n.limbs.size.
   push Not at hq
-  rw [dif_neg (by omega : ¬ i / 64 ≥ n.limbs.size)]
+  rw [dite_eq_right (by omega : ¬ i / 64 ≥ n.limbs.size)]
   -- Compute bit `k` of the (possibly cross-limb) shifted+masked expression.
   -- Step 1: bit `k` of `n.limbs[q] >>> r`.
   have h_lowBits_k : (n.limbs[i / 64] >>> UInt64.ofNat (i % 64)).toNat.testBit k =
@@ -153,13 +153,13 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
   by_cases hwidth : j - i = 64
   · -- No mask. Combined is the result.
     have hkw : k < j - i ↔ k < 64 := by rw [hwidth]
-    rw [if_pos hwidth]
+    rw [ite_eq_left hwidth]
     have hcross : i % 64 + (j - i) > 64 ↔ 0 < i % 64 := by rw [hwidth]; omega
     by_cases hr_pos : 0 < i % 64
     · -- Cross-limb branch (since r + 64 > 64 ↔ r > 0).
-      rw [if_pos (hcross.mpr hr_pos)]
+      rw [ite_eq_left (hcross.mpr hr_pos)]
       by_cases hq1 : i / 64 + 1 < n.limbs.size
-      · rw [dif_pos hq1, UInt64.toNat_or, Nat.testBit_or, h_lowBits_k, h_highBits_k hq1 hr_pos]
+      · rw [dite_eq_left hq1, UInt64.toNat_or, Nat.testBit_or, h_lowBits_k, h_highBits_k hq1 hr_pos]
         by_cases hk_64 : k < 64
         · simp only [hk_64, decide_true, Bool.true_and, Bool.and_true, hwidth,
                      decide_true]
@@ -174,7 +174,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
               apply Nat.testBit_eq_false_of_lt
               have := UInt64.toNat_lt n.limbs[i / 64]
               exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) hkr)
-            simp only [show ¬ k + i % 64 < 64 from by omega, if_false]
+            simp only [show ¬ k + i % 64 < 64 from by omega, ite_false]
             rw [h_low_false]
             simp only [Bool.false_or]
             have hs_le : 64 - i % 64 ≤ k := by omega
@@ -186,7 +186,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
           have : ¬ k < j - i := by rw [hwidth]; exact hk_64
           simp [this]
       · -- q + 1 ≥ size, only lowBits.
-        rw [dif_neg hq1, h_lowBits_k]
+        rw [dite_eq_right hq1, h_lowBits_k]
         by_cases hk_64 : k < 64
         · simp only [hk_64, decide_true, Bool.true_and, hkw.mpr hk_64]
           rw [h_target hk_64]
@@ -197,7 +197,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
               apply Nat.testBit_eq_false_of_lt
               have := UInt64.toNat_lt n.limbs[i / 64]
               exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) hkr)
-            simp only [show ¬ k + i % 64 < 64 from by omega, if_false]
+            simp only [show ¬ k + i % 64 < 64 from by omega, ite_false]
             rw [h_low_false]
             simp [show ¬ i / 64 + 1 < n.limbs.size from hq1]
         · simp only [hk_64, decide_false, Bool.false_and]
@@ -205,7 +205,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
           simp [this]
     · -- r = 0: no cross even though width = 64.
       push Not at hr_pos
-      rw [if_neg (by simp [show ¬ i % 64 + (j - i) > 64 from by omega])]
+      rw [ite_eq_right (by simp [show ¬ i % 64 + (j - i) > 64 from by omega])]
       rw [h_lowBits_k]
       have hr_eq : i % 64 = 0 := by omega
       by_cases hk_64 : k < 64
@@ -216,7 +216,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
         have : ¬ k < j - i := by rw [hwidth]; exact hk_64
         simp [this]
   · -- Mask present: width < 64.
-    rw [if_neg hwidth]
+    rw [ite_eq_right hwidth]
     have hw_lt : j - i < 64 := lt_of_le_of_ne hwidth_le hwidth
     rw [UInt64.toNat_and, Nat.testBit_and, uint64_low_mask_toNat (j - i) hw_lt,
         Nat.testBit_two_pow_sub_one]
@@ -227,14 +227,14 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
       have hk_64 : k < 64 := lt_of_lt_of_le hkw (Nat.le_of_lt hw_lt)
       -- Now compute combined.testBit k.
       by_cases hcross : i % 64 + (j - i) > 64
-      · rw [if_pos hcross]
+      · rw [ite_eq_left hcross]
         by_cases hq1 : i / 64 + 1 < n.limbs.size
-        · rw [dif_pos hq1, UInt64.toNat_or, Nat.testBit_or, h_lowBits_k,
+        · rw [dite_eq_left hq1, UInt64.toNat_or, Nat.testBit_or, h_lowBits_k,
               testBit_uint64_shiftLeft _ _ _ (by omega : 64 - i % 64 < 64)]
           rw [h_target hk_64]
           have hr_pos : 0 < i % 64 := by omega
           by_cases hkr : k + i % 64 < 64
-          · simp only [hkr, if_true, hk_64, decide_true, Bool.true_and]
+          · simp only [hkr, ite_true, hk_64, decide_true, Bool.true_and]
             have hs_not_le : ¬ (64 - i % 64 ≤ k) := by omega
             simp [hs_not_le]
           · push Not at hkr
@@ -242,7 +242,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
               apply Nat.testBit_eq_false_of_lt
               have := UInt64.toNat_lt n.limbs[i / 64]
               exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) hkr)
-            simp only [show ¬ k + i % 64 < 64 from by omega, if_false, hk_64, decide_true,
+            simp only [show ¬ k + i % 64 < 64 from by omega, ite_false, hk_64, decide_true,
                        Bool.true_and, Bool.and_true]
             rw [h_low_false]
             simp only [Bool.false_or]
@@ -250,7 +250,7 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
             simp only [hs_le, decide_true, Bool.true_and]
             simp [show i / 64 + 1 < n.limbs.size from hq1,
                   show k - (64 - i % 64) = k + i % 64 - 64 from by omega]
-        · rw [dif_neg hq1, h_lowBits_k]
+        · rw [dite_eq_right hq1, h_lowBits_k]
           rw [h_target hk_64]
           by_cases hkr : k + i % 64 < 64
           · simp [hkr, hk_64]
@@ -259,11 +259,11 @@ private lemma testBit_getBitsAsLimb (n : AzNat) (i j : Nat) (h : j - i ≤ 64) (
               apply Nat.testBit_eq_false_of_lt
               have := UInt64.toNat_lt n.limbs[i / 64]
               exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) hkr)
-            simp only [show ¬ k + i % 64 < 64 from by omega, if_false, hk_64, decide_true,
+            simp only [show ¬ k + i % 64 < 64 from by omega, ite_false, hk_64, decide_true,
                        Bool.true_and]
             rw [h_low_false]
             simp [show ¬ i / 64 + 1 < n.limbs.size from hq1]
-      · rw [if_neg hcross, h_lowBits_k]
+      · rw [ite_eq_right hcross, h_lowBits_k]
         rw [h_target hk_64]
         have hkr : k + i % 64 < 64 := by omega
         simp [hkr, hk_64]
@@ -292,7 +292,7 @@ theorem toNat_getBits (n : AzNat) (i j : Nat) :
     simp
   push Not at hij
   unfold getBits
-  rw [if_neg (by omega : ¬ i ≥ j), toNat_ofLimbs]
+  rw [ite_eq_right (by omega : ¬ i ≥ j), toNat_ofLimbs]
   set width := j - i with hwidth_def
   set numLimbs := (width + 63) / 64 with hnum_def
   set arr : Array UInt64 := (Array.range numLimbs).map fun l =>
@@ -310,7 +310,7 @@ theorem toNat_getBits (n : AzNat) (i j : Nat) :
   have h_arr_size_eq : arr.toList.length = numLimbs := by rw [Array.length_toList]; exact h_arr_size
   by_cases hsl : k / 64 < numLimbs
   · have hsl' : k / 64 < arr.toList.length := by rw [h_arr_size_eq]; exact hsl
-    simp only [hsl', dif_pos]
+    simp only [hsl', dite_eq_left]
     rw [h_arr_get (k / 64) hsl,
         testBit_getBitsAsLimb n (i + (k / 64) * 64)
           (min (i + (k / 64) * 64 + 64) j) (by omega) (k % 64)]
@@ -329,7 +329,7 @@ theorem toNat_getBits (n : AzNat) (i j : Nat) :
       simp [this, hkw]
   · -- k/64 ≥ numLimbs: no such limb; bit is 0. Also k ≥ width.
     have hsl' : ¬ k / 64 < arr.toList.length := by rw [h_arr_size_eq]; exact hsl
-    simp only [hsl', dif_neg, not_false_eq_true]
+    simp only [hsl', dite_eq_right, not_false_eq_true]
     push Not at hsl
     have h_k_ge : k ≥ width := by
       have h1 : numLimbs * 64 ≥ width := by rw [hnum_def]; omega

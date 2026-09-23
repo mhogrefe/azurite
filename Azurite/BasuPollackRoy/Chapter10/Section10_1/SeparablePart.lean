@@ -51,7 +51,7 @@ omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- **Existence.** The canonical separable part is one. -/
 theorem separablePart_isSeparablePart (P : Polynomial (Ri R)) :
     IsSeparablePart (separablePart P) P := by
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   constructor
   · rw [← Polynomial.nodup_roots_iff_of_splits (separablePart_monic P).ne_zero
       (IsAlgClosed.splits _), roots_separablePart]
@@ -64,7 +64,7 @@ times the canonical one: a separable polynomial splits into distinct linear
 factors, indexed by the common root set. -/
 theorem IsSeparablePart.eq_C_leadingCoeff_mul {S P : Polynomial (Ri R)}
     (hS : IsSeparablePart S P) : S = C S.leadingCoeff * separablePart P := by
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   have hcard : S.roots.card = S.natDegree := IsAlgClosed.card_roots_eq_natDegree
   have hroots : S.roots = P.roots.toFinset.val := by
     have hnodup : S.roots.Nodup := Polynomial.nodup_roots hS.1
@@ -79,7 +79,7 @@ omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- Being a separable part is invariant under nonzero constant multiples. -/
 theorem IsSeparablePart.C_mul_left {S P : Polynomial (Ri R)} {c : Ri R} (hc : c ≠ 0)
     (hS : IsSeparablePart S P) : IsSeparablePart (C c * S) P := by
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   have hS0 : S ≠ 0 := hS.1.ne_zero
   have hroots : (C c * S).roots = S.roots := Polynomial.roots_C_mul _ hc
   constructor

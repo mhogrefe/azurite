@@ -37,19 +37,19 @@ theorem proposition_8_52 (f : D →+* E) (P Q : D[X])
     sResP (P.map f) (Q.map f) j = (sResP P Q j).map f := by
   rw [sResP, sResP, hP, hQ]
   by_cases hjq : j ≤ Q.natDegree
-  · rw [if_pos hjq, if_pos hjq, ← pdetRing_map f]
+  · rw [ite_eq_left hjq, ite_eq_left hjq, ← pdetRing_map f]
     congr 1
     funext r
     by_cases hr : (r : ℕ) < Q.natDegree - j
-    · simp only [hr, if_true, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
-    · simp only [hr, if_false, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
-  · rw [if_neg hjq, if_neg hjq]
+    · simp only [hr, ite_true, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+    · simp only [hr, ite_false, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+  · rw [ite_eq_right hjq, ite_eq_right hjq]
     by_cases hjp : j = P.natDegree
-    · rw [if_pos hjp, if_pos hjp]
-    · rw [if_neg hjp, if_neg hjp]
+    · rw [ite_eq_left hjp, ite_eq_left hjp]
+    · rw [ite_eq_right hjp, ite_eq_right hjp]
       by_cases hjp1 : j = P.natDegree - 1
-      · rw [if_pos hjp1, if_pos hjp1]
-      · rw [if_neg hjp1, if_neg hjp1, Polynomial.map_zero]
+      · rw [ite_eq_left hjp1, ite_eq_left hjp1]
+      · rw [ite_eq_right hjp1, ite_eq_right hjp1, Polynomial.map_zero]
 
 /-- **BPR Proposition 8.52, degenerate case (the "Note").**  If `f` preserves the degree of `P`
     but strictly lowers the degree of `Q`, then for `j ≤ deg(f(Q))`,
@@ -74,7 +74,7 @@ theorem proposition_8_52_degenerate (f : D →+* E) (P Q : D[X])
   have hleadP : ∀ k : ℕ, (X ^ k * (P.map f)).coeff (P.natDegree + k) = (P.map f).leadingCoeff := by
     intro k; rw [Polynomial.coeff_X_pow_mul, Polynomial.leadingCoeff, hP]
   -- unfold the left side to a polynomial determinant of the mapped rows
-  rw [sResP, if_pos hjq, ← pdetRing_map f]
+  rw [sResP, ite_eq_left hjq, ← pdetRing_map f]
   set R : Fin (P.natDegree + Q.natDegree - 2 * j) → E[X] :=
     fun r => (if (r : ℕ) < Q.natDegree - j then X ^ (Q.natDegree - j - 1 - (r : ℕ)) * P
       else X ^ ((r : ℕ) - (Q.natDegree - j)) * Q).map f with hR
@@ -85,7 +85,7 @@ theorem proposition_8_52_degenerate (f : D →+* E) (P Q : D[X])
       (r : ℕ) < Q.natDegree - (Q.map f).natDegree →
       ∀ j', P.natDegree + Q.natDegree - j - 1 - (r : ℕ) < j' → (R r).coeff j' = 0 := by
     intro r hr j' hj'
-    simp only [hR, if_pos (show (r : ℕ) < Q.natDegree - j by omega),
+    simp only [hR, ite_eq_left (show (r : ℕ) < Q.natDegree - j by omega),
       Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
     exact hvanP _ _ (by omega)
   have hdeg2 : ∀ r : Fin (P.natDegree + Q.natDegree - 2 * j),
@@ -96,9 +96,9 @@ theorem proposition_8_52_degenerate (f : D →+* E) (P Q : D[X])
     have hrm := r.isLt
     simp only [hR]
     by_cases hrc : (r : ℕ) < Q.natDegree - j
-    · rw [if_pos hrc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+    · rw [ite_eq_left hrc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
       exact hvanP _ _ (by omega)
-    · rw [if_neg hrc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
+    · rw [ite_eq_right hrc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X]
       exact hvanQ _ _ (by omega)
   rw [pdetRing_triangular hℓm hmn R hdeg1 hdeg2]
   congr 1
@@ -110,25 +110,25 @@ theorem proposition_8_52_degenerate (f : D →+* E) (P Q : D[X])
     apply Finset.prod_congr rfl
     intro i _
     have hil := i.isLt
-    simp only [hR, if_pos (show (i : ℕ) < Q.natDegree - j by omega),
+    simp only [hR, ite_eq_left (show (i : ℕ) < Q.natDegree - j by omega),
       Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X,
       show P.natDegree + Q.natDegree - j - 1 - (i : ℕ)
         = P.natDegree + (Q.natDegree - j - 1 - (i : ℕ)) from by omega]
     exact hleadP _
   · -- the remaining determinant is `sResP_j(f(P), f(Q))`
-    rw [sResP, if_pos hj,
+    rw [sResP, ite_eq_left hj,
       show P.natDegree + Q.natDegree - j - (Q.natDegree - (Q.map f).natDegree)
         = (P.map f).natDegree + (Q.map f).natDegree - j from by rw [hP]; omega]
     refine pdetRing_congr_cast (by rw [hP]; omega) _ _ (fun i => ?_)
     have hii := i.isLt
     simp only [hR, Fin.val_cast]
     by_cases hc : (i : ℕ) < (Q.map f).natDegree - j
-    · rw [if_pos (show Q.natDegree - (Q.map f).natDegree + (i : ℕ) < Q.natDegree - j by omega),
-        if_pos hc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X,
+    · rw [ite_eq_left (show Q.natDegree - (Q.map f).natDegree + (i : ℕ) < Q.natDegree - j by omega),
+        ite_eq_left hc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X,
         show Q.natDegree - j - 1 - (Q.natDegree - (Q.map f).natDegree + (i : ℕ))
           = (Q.map f).natDegree - j - 1 - (i : ℕ) from by omega]
-    · rw [if_neg (show ¬ Q.natDegree - (Q.map f).natDegree + (i : ℕ) < Q.natDegree - j by omega),
-        if_neg hc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X,
+    · rw [ite_eq_right (show ¬ Q.natDegree - (Q.map f).natDegree + (i : ℕ) < Q.natDegree - j by omega),
+        ite_eq_right hc, Polynomial.map_mul, Polynomial.map_pow, Polynomial.map_X,
         show Q.natDegree - (Q.map f).natDegree + (i : ℕ) - (Q.natDegree - j)
           = (i : ℕ) - ((Q.map f).natDegree - j) from by omega]
 

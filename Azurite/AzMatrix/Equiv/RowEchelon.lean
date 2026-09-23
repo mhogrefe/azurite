@@ -46,7 +46,7 @@ theorem AzMatrix.findRowPivotAux_eq_none [Zero K] [DecidableEq K]
     intro start h_lt h_zero ih h_rec i h_ge
     have hrec_eq : M.findRowPivotAux k (start + 1) = none := by
       rw [AzMatrix.findRowPivotAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, if_pos h_zero] at h_rec
+      simp only [dite_eq_left h_lt, ite_eq_left h_zero] at h_rec
       exact h_rec
     by_cases h_eq : i.val = start
     · have hi : i = ⟨start, h_lt⟩ := Fin.ext h_eq
@@ -57,7 +57,7 @@ theorem AzMatrix.findRowPivotAux_eq_none [Zero K] [DecidableEq K]
     intro start h_lt h_nz h_rec
     have h_eq : M.findRowPivotAux k start = some ⟨start, h_lt⟩ := by
       rw [AzMatrix.findRowPivotAux.eq_def]
-      simp only [dif_pos h_lt, if_neg h_nz]
+      simp only [dite_eq_left h_lt, ite_eq_right h_nz]
     rw [h_eq] at h_rec
     nomatch h_rec
   · -- case 3: start ≥ n
@@ -84,21 +84,21 @@ theorem AzMatrix.findRowPivotAux_some_le [Zero K] [DecidableEq K]
   · intro start h_lt h_zero ih j h_rec
     have hrec_eq : M.findRowPivotAux k (start + 1) = some j := by
       rw [AzMatrix.findRowPivotAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, if_pos h_zero] at h_rec
+      simp only [dite_eq_left h_lt, ite_eq_left h_zero] at h_rec
       exact h_rec
     have := ih j hrec_eq
     omega
   · intro start h_lt h_nz j h_rec
     have h_eq : M.findRowPivotAux k start = some ⟨start, h_lt⟩ := by
       rw [AzMatrix.findRowPivotAux.eq_def]
-      simp only [dif_pos h_lt, if_neg h_nz]
+      simp only [dite_eq_left h_lt, ite_eq_right h_nz]
     rw [h_eq] at h_rec
     have h_eq_j : ⟨start, h_lt⟩ = j := by injection h_rec
     have : j.val = start := by rw [← h_eq_j]
     omega
   · intro start h_ge j h_rec
     rw [AzMatrix.findRowPivotAux.eq_def] at h_rec
-    simp only [dif_neg h_ge] at h_rec
+    simp only [dite_eq_right h_ge] at h_rec
     nomatch h_rec
 
 /-- If `findRowPivot M k = some j`, then `k ≤ j`. -/
@@ -139,7 +139,7 @@ theorem AzMatrix.rowEchelonAux_blockTriangular [Field K] [DecidableEq K]
     have h_step_eq : M.rowEchelonAux start s =
         M.rowEchelonAux (start + 1) s := by
       rw [AzMatrix.rowEchelonAux.eq_def]
-      simp only [dif_pos h_lt, h_none']
+      simp only [dite_eq_left h_lt, h_none']
     intro i j h_lt_ij
     rw [h_step_eq]
     exact ih h_inv' i j h_lt_ij
@@ -153,27 +153,27 @@ theorem AzMatrix.rowEchelonAux_blockTriangular [Field K] [DecidableEq K]
       intro i' j' h_lt_ij' h_bnd
       rw [AzMatrix.toFn_eliminateBelow]
       by_cases h_i'_le : i'.val ≤ (⟨start, by omega⟩ : Fin n).val
-      · rw [if_pos h_i'_le]
+      · rw [ite_eq_left h_i'_le]
         have h_j_lt_start : j'.val < start := by
           have : i'.val ≤ start := h_i'_le
           omega
         exact h_inv i' j' h_lt_ij' h_j_lt_start
-      · rw [if_neg h_i'_le]
+      · rw [ite_eq_right h_i'_le]
         by_cases h_j_lt : j'.val < (⟨start, by omega⟩ : Fin n).val
-        · rw [if_pos h_j_lt]
+        · rw [ite_eq_left h_j_lt]
           exact h_inv i' j' h_lt_ij' h_j_lt
-        · rw [if_neg h_j_lt]
+        · rw [ite_eq_right h_j_lt]
           have h_j_eq : j'.val = start := by
             have h1 : j'.val ≥ start := by
               have : ¬ j'.val < (⟨start, by omega⟩ : Fin n).val := h_j_lt
               omega
             omega
           have h_j_kp : j' = ⟨start, by omega⟩ := Fin.ext h_j_eq
-          rw [if_pos h_j_kp]
+          rw [ite_eq_left h_j_kp]
     have h_step_eq : M.rowEchelonAux start s =
         (M.eliminateBelow ⟨start, by omega⟩).rowEchelonAux (start + 1) s := by
       rw [AzMatrix.rowEchelonAux.eq_def]
-      simp only [dif_pos h_lt, h_pivot_kp', if_true]
+      simp only [dite_eq_left h_lt, h_pivot_kp', ite_true]
     intro i j h_lt_ij
     rw [h_step_eq]
     -- We have ih on (M.eliminateBelow kp), but we need it on
@@ -192,18 +192,18 @@ theorem AzMatrix.rowEchelonAux_blockTriangular [Field K] [DecidableEq K]
       intro i'' j'' h_lt_ij'' h_bnd
       rw [AzMatrix.toFn_eliminateBelow]
       by_cases h_i''_le : i''.val ≤ (⟨start, by omega⟩ : Fin n).val
-      · rw [if_pos h_i''_le]
+      · rw [ite_eq_left h_i''_le]
         rw [AzMatrix.toFn_swapRows]
         by_cases h_i_kp : i'' = ⟨start, by omega⟩
-        · rw [if_pos h_i_kp]
+        · rw [ite_eq_left h_i_kp]
           have h_j''_lt_start : j''.val < start := by
             have : i''.val ≤ start := h_i''_le
             omega
           have h_j''_lt_j : j''.val < j.val := by omega
           exact h_inv j j'' h_j''_lt_j h_j''_lt_start
-        · rw [if_neg h_i_kp]
+        · rw [ite_eq_right h_i_kp]
           by_cases h_i_j : i'' = j
-          · rw [if_pos h_i_j]
+          · rw [ite_eq_left h_i_j]
             -- M.toFn ⟨start, _⟩ j'' with j''.val < start
             have h_j''_lt_start : j''.val < start := by
               have : i''.val ≤ start := h_i''_le
@@ -211,41 +211,41 @@ theorem AzMatrix.rowEchelonAux_blockTriangular [Field K] [DecidableEq K]
             exact h_inv ⟨start, by omega⟩ j''
               (show j''.val < (⟨start, by omega⟩ : Fin n).val from h_j''_lt_start)
               h_j''_lt_start
-          · rw [if_neg h_i_j]
+          · rw [ite_eq_right h_i_j]
             have h_j''_lt_start : j''.val < start := by
               have : i''.val ≤ start := h_i''_le
               omega
             exact h_inv i'' j'' h_lt_ij'' h_j''_lt_start
-      · rw [if_neg h_i''_le]
+      · rw [ite_eq_right h_i''_le]
         by_cases h_j_lt : j''.val < (⟨start, by omega⟩ : Fin n).val
-        · rw [if_pos h_j_lt]
+        · rw [ite_eq_left h_j_lt]
           rw [AzMatrix.toFn_swapRows]
           have h_j''_lt_start : j''.val < start := h_j_lt
           by_cases h_i_kp : i'' = ⟨start, by omega⟩
-          · rw [if_pos h_i_kp]
+          · rw [ite_eq_left h_i_kp]
             have h_j''_lt_j : j''.val < j.val := by omega
             exact h_inv j j'' h_j''_lt_j h_j''_lt_start
-          · rw [if_neg h_i_kp]
+          · rw [ite_eq_right h_i_kp]
             by_cases h_i_j : i'' = j
-            · rw [if_pos h_i_j]
+            · rw [ite_eq_left h_i_j]
               exact h_inv ⟨start, by omega⟩ j''
                 (show j''.val < (⟨start, by omega⟩ : Fin n).val from h_j''_lt_start)
                 h_j''_lt_start
-            · rw [if_neg h_i_j]
+            · rw [ite_eq_right h_i_j]
               exact h_inv i'' j'' h_lt_ij'' h_j''_lt_start
-        · rw [if_neg h_j_lt]
+        · rw [ite_eq_right h_j_lt]
           have h_j_eq : j''.val = start := by
             have h1 : j''.val ≥ start := by
               have : ¬ j''.val < (⟨start, by omega⟩ : Fin n).val := h_j_lt
               omega
             omega
           have h_j_kp : j'' = ⟨start, by omega⟩ := Fin.ext h_j_eq
-          rw [if_pos h_j_kp]
+          rw [ite_eq_left h_j_kp]
     have h_step_eq : M.rowEchelonAux start s =
         ((M.swapRows ⟨start, by omega⟩ j).eliminateBelow
           ⟨start, by omega⟩).rowEchelonAux (start + 1) (s + 1) := by
       rw [AzMatrix.rowEchelonAux.eq_def]
-      simp only [dif_pos h_lt, h_pivot_j', if_neg h_neq']
+      simp only [dite_eq_left h_lt, h_pivot_j', ite_eq_right h_neq']
     intro i' j' h_lt_ij'
     rw [h_step_eq]
     exact ih h_inv' i' j' h_lt_ij'
@@ -253,7 +253,7 @@ theorem AzMatrix.rowEchelonAux_blockTriangular [Field K] [DecidableEq K]
     intro i j h_lt_ij
     have h_step_eq : M.rowEchelonAux start s = (M, s) := by
       rw [AzMatrix.rowEchelonAux.eq_def]
-      simp only [dif_neg h_no_step]
+      simp only [dite_eq_right h_no_step]
     rw [h_step_eq]
     apply h_inv i j h_lt_ij
     have h_i_lt : i.val < n := i.isLt

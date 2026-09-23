@@ -74,8 +74,8 @@ theorem exP_newtonDiagram [CharZero R] :
     · rw [coe_coeff5, single_coeff_ne_zero_iff (one_ne_zero)]; simp
   · rw [show (exP (R := R)).coeff i = 0 from by
         simp only [exP, coeff_add, coeff_monomial]
-        rw [if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega),
-          if_neg (by omega)]
+        rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega),
+          ite_eq_right (by omega)]
         ring]
     simp only [ZeroMemClass.coe_zero, HahnSeries.coeff_zero, ne_eq, not_true_eq_false, false_iff]
     rintro (⟨h, _⟩ | ⟨h, _⟩ | ⟨h, _⟩ | ⟨h, _⟩ | ⟨h, _⟩) <;> omega
@@ -188,8 +188,8 @@ theorem natDegree_exP : (exP (R := R)).natDegree = 5 := by
   · apply Polynomial.natDegree_le_iff_coeff_eq_zero.mpr
     intro m hm
     simp only [exP, coeff_add, coeff_monomial]
-    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega),
-      if_neg (by omega)]
+    rw [ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega), ite_eq_right (by omega),
+      ite_eq_right (by omega)]
     ring
   · apply Polynomial.le_natDegree_of_ne_zero
     rw [show (exP (R := R)).coeff 5 = puiseuxEps from by simp [exP, coeff_monomial]]

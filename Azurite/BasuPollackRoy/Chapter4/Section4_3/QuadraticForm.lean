@@ -2,6 +2,7 @@ import Mathlib.LinearAlgebra.QuadraticForm.Basic
 import Mathlib.LinearAlgebra.QuadraticForm.Signature
 import Mathlib.LinearAlgebra.QuadraticForm.IsometryEquiv
 import Mathlib.LinearAlgebra.Matrix.Rank
+import Mathlib.LinearAlgebra.Determinant
 
 /-!
 # BPR §4.3.1: Quadratic forms
@@ -172,7 +173,7 @@ def DiagonalExpression.neg (de : DiagonalExpression Φ) : DiagonalExpression (-�
   coeff_ne_zero i := neg_ne_zero.mpr (de.coeff_ne_zero i)
   form_indep := de.form_indep
   apply_eq f := by
-    simp only [QuadraticMap.neg_apply, de.apply_eq, neg_mul, Finset.sum_neg_distrib]
+    simp only [neg_apply, de.apply_eq, neg_mul, Finset.sum_neg_distrib]
 
 @[simp] theorem DiagonalExpression.neg_posCount (de : DiagonalExpression Φ) :
     de.neg.posCount = de.negCount := by
@@ -192,8 +193,8 @@ theorem DiagonalExpression.posCount_eq_sigPos (de : DiagonalExpression Φ) :
   classical
   -- extend the linearly independent forms to a basis of the dual space
   set B := Module.Basis.sumExtend de.form_indep with hB
-  haveI : FiniteDimensional K (Module.Dual K (Fin n → K)) := inferInstance
-  haveI : Fintype ↥(Module.Basis.sumExtendIndex de.form_indep) := by
+  have : FiniteDimensional K (Module.Dual K (Fin n → K)) := inferInstance
+  have : Fintype ↥(Module.Basis.sumExtendIndex de.form_indep) := by
     haveI : Fintype (Fin de.r ⊕ ↥(Module.Basis.sumExtendIndex de.form_indep)) :=
       FiniteDimensional.fintypeBasisIndex B
     exact Fintype.ofInjective
@@ -231,7 +232,7 @@ theorem DiagonalExpression.posCount_eq_sigPos (de : DiagonalExpression Φ) :
     | inl j => simp [hw]
     | inr c => simp [hw]
   rw [hset, Set.ncard_image_of_injective _ Sum.inl_injective,
-    Set.ncard_eq_toFinset_card', Set.toFinset_setOf, DiagonalExpression.posCount]
+    Set.ncard_eq_toFinset_card', Set.toFinset_ofPred, DiagonalExpression.posCount]
 
 theorem DiagonalExpression.negCount_eq_sigNeg (de : DiagonalExpression Φ) :
     de.negCount = sigNeg Φ := by
@@ -345,7 +346,7 @@ theorem corollary_4_40 (M : Matrix (Fin n) (Fin n) K) (hM : M.IsSymm) :
       (Finset.univ.filter (fun i => 0 < D i)).card = sigPos (quadraticForm M) ∧
       (Finset.univ.filter (fun i => D i < 0)).card = sigNeg (quadraticForm M) := by
   classical
-  haveI h2 : Invertible (2 : K) := invertibleOfNonzero (by norm_num)
+  have h2 : Invertible (2 : K) := invertibleOfNonzero (by norm_num)
   -- Diagonalize `quadraticForm M` as a weighted sum of squares, reindexed by `Fin n`.
   obtain ⟨w, ⟨e₀⟩⟩ := (quadraticForm M).equivalent_weightedSumSquares
   have hfin : Module.finrank K (Fin n → K) = n := by
@@ -378,10 +379,10 @@ theorem corollary_4_40 (M : Matrix (Fin n) (Fin n) K) (hM : M.IsSymm) :
   · rw [hcongr, Matrix.transpose_transpose]
   · -- positive count = sigPos
     have := QuadraticForm.sigPos_of_equiv_weightedSumSquares (Q := quadraticForm M) (w := D) ⟨e⟩
-    rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+    rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
   · -- negative count = sigNeg
     have := QuadraticForm.sigNeg_of_equiv_weightedSumSquares (Q := quadraticForm M) (w := D) ⟨e⟩
-    rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+    rw [this, Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
 
 /-- **The matrix rank equals `r₊ + r₋`** (matrix form of `r = Rank(Φ)`): the rank of
 a symmetric matrix is the sum of the positive and negative inertia indices of its

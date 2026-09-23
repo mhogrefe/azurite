@@ -76,7 +76,7 @@ noncomputable def discReal (P : R[X]) : R := by
 lemma aroots_map_conj (P : R[X]) :
     (P.aroots (Ri R)).map (Ri.conj R) = P.aroots (Ri R) := by
   classical
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   set ι : R →+* Ri R := algebraMap R (Ri R)
   set σ : Ri R →+* Ri R := (Ri.conj R).toRingHom with hσ_def
   have hinj : Function.Injective σ := Ri.conj_injective R
@@ -165,7 +165,7 @@ theorem algebraMap_discReal_eq_disc (P : R[X]) :
     algebraMap R (Ri R) (discReal P) = (disc P : Ri R) := by
   classical
   unfold discReal
-  rw [dif_pos (disc_mem_range_algebraMap P)]
+  rw [dite_eq_left (disc_mem_range_algebraMap P)]
   exact (disc_mem_range_algebraMap P).choose_spec
 
 end DiscReal

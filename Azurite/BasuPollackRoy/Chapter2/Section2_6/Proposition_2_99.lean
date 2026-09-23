@@ -92,7 +92,7 @@ noncomputable def puiseuxBounded (K : Type*) [Field K] : ValuationSubring (algeb
     rw [NegMemClass.coe_neg, puiseuxOrder_neg]; exact ha
   mem_or_inv_mem' := by
     intro y
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     rcases eq_or_ne y 0 with rfl | hy
     · left
       rw [ZeroMemClass.coe_zero, puiseuxOrder_zero]; exact le_top

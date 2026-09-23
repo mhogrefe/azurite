@@ -51,8 +51,8 @@ theorem Polynomial.coeff_comp_C_mul_X {R : Type _} [CommRing R] (q : R[X]) (c : 
           = Polynomial.C (a * c ^ e) * Polynomial.X ^ e by rw [map_mul]; ring,
       coeff_C_mul_X_pow]
     by_cases h : n = e
-    · subst h; rw [if_pos rfl, if_pos rfl]
-    · rw [if_neg h, if_neg (fun he : e = n => h he.symm), zero_mul]
+    · subst h; rw [ite_eq_left rfl, ite_eq_left rfl]
+    · rw [ite_eq_right h, ite_eq_right (fun he : e = n => h he.symm), zero_mul]
 
 namespace Azurite.AzPolynomial
 

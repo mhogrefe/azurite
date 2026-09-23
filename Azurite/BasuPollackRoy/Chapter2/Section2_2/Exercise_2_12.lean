@@ -82,7 +82,7 @@ theorem unique_simple_root_of_var_eq_one
   · -- rootMultiplicity r = 1
     have hcnt : Multiset.count r (P.roots.filter (fun r => a < r ∧ r ≤ b)) = 1 := by
       rw [hr_eq]; exact Multiset.count_singleton_self r
-    rw [Multiset.count_filter, if_pos hr_ioc] at hcnt
+    rw [Multiset.count_filter, ite_eq_left hr_ioc] at hcnt
     rw [← Polynomial.count_roots]; exact hcnt
   · intro r' hr' hr'_root
     have hr'_mem : r' ∈ P.roots.filter (fun r => a < r ∧ r ≤ b) :=

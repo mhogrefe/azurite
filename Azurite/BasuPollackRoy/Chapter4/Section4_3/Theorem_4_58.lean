@@ -43,7 +43,7 @@ theorem HerMatR_isSymm (P Q : R[X]) : (HerMatR P Q).IsSymm := by
 `HerMatrix P Q`. This is `herMatrix_eq_trace` instantiated at `K := R`, `C := Ri R`. -/
 theorem HerMatR_map_eq (P Q : R[X]) (hP : P.Monic) (i j : Fin P.natDegree) :
     algebraMap R (Ri R) (HerMatR P Q i j) = HerMatrix P Q i j := by
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   rw [HerMatR, Matrix.of_apply, herMatrix_eq_trace (C := Ri R) P Q hP i j]
 
 /-! ## Root data over `C = Ri R` -/
@@ -63,7 +63,7 @@ theorem herMatrix_eq_sum_herRoots (P Q : R[X]) (i j : Fin P.natDegree) :
     HerMatrix P Q i j
       = ∑ x ∈ herRoots P Q, herWeight P Q x * x ^ ((i : ℕ) + (j : ℕ)) := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   rw [HerMatrix, Matrix.of_apply, Finset.sum_multiset_map_count]
   -- group, then drop the `Q(x) = 0` terms
   rw [herRoots]
@@ -115,7 +115,7 @@ theorem algebraMap_quadraticForm_eq (P Q : R[X]) (hP : P.Monic) (f : Fin P.natDe
       = ∑ x ∈ herRoots P Q,
           herWeight P Q x * (∑ k : Fin P.natDegree, algebraMap R (Ri R) (f k) * x ^ (k : ℕ)) ^ 2 := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   -- quadraticForm M f = ∑ i ∑ j, M i j * f i * f j
   have hqf : quadraticForm (HerMatR P Q) f
       = ∑ i : Fin P.natDegree, ∑ j : Fin P.natDegree, HerMatR P Q i j * f i * f j := by
@@ -159,7 +159,7 @@ noncomputable def herSqrt (P Q : R[X]) (x : Ri R) : Ri R :=
 
 theorem herSqrt_sq (P Q : R[X]) (x : Ri R) :
     herSqrt P Q x ^ 2 = herWeight P Q x := by
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact (IsAlgClosed.exists_pow_nat_eq (herWeight P Q x) (n := 2) (by norm_num)).choose_spec
 
 /-- The coefficient attached to a root `x ∈ herRoots P Q`:
@@ -271,7 +271,7 @@ multiplicity). -/
 theorem aroots_map_conj [IsRealClosed R] (P : R[X]) :
     (P.aroots (Ri R)).map (Ri.conj R) = P.aroots (Ri R) := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   have hsplit : (P.map (algebraMap R (Ri R))).Splits := IsAlgClosed.splits _
   -- conjugation of the polynomial fixes it (coefficients lie in `R`)
   have hmapconj : (P.map (algebraMap R (Ri R))).map (Ri.conj R : Ri R →+* Ri R)
@@ -350,12 +350,12 @@ set_option linter.unusedSectionVars false in
 theorem herCoeff_conj_of_not_real (P Q : R[X]) {x : Ri R} (hx : Ri.conj R x ≠ x) :
     herCoeff P Q (Ri.conj R x) = - herCoeff P Q x := by
   have hx' : Ri.conj R (Ri.conj R x) ≠ Ri.conj R x := fun h => hx (Ri.conj_injective R h)
-  rw [herCoeff, herCoeff, if_neg hx, if_neg hx']
+  rw [herCoeff, herCoeff, ite_eq_right hx, ite_eq_right hx']
   rw [imL_conj]
   have him : Ri.imL x ≠ 0 := imL_ne_zero_of_not_real hx
   rcases lt_or_gt_of_ne him with hlt | hgt
-  · rw [if_pos (by simpa using hlt), if_neg (not_lt.mpr hlt.le)]; norm_num
-  · rw [if_neg (by simpa using hgt.le), if_pos hgt]
+  · rw [ite_eq_left (by simpa using hlt), ite_eq_right (not_lt.mpr hlt.le)]; norm_num
+  · rw [ite_eq_right (by simpa using hgt.le), ite_eq_left hgt]
 
 set_option linter.unusedSectionVars false in
 /-- **The diagonalizing identity.** `quadraticForm (HerMatR P Q) f` equals the weighted
@@ -365,7 +365,7 @@ theorem herApply_eq (P Q : R[X]) (hP : P.Monic) (f : Fin P.natDegree → R) :
       = ∑ x ∈ herRoots P Q,
           herCoeff P Q x * (herFormVec P Q P.natDegree x ⬝ᵥ f) ^ 2 := by
   classical
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   apply (algebraMap R (Ri R)).injective
   rw [algebraMap_quadraticForm_eq P Q hP f, map_sum]
   -- abbreviations
@@ -411,13 +411,13 @@ theorem herApply_eq (P Q : R[X]) (hP : P.Monic) (f : Fin P.natDegree → R) :
     have hwfix : Ri.conj R (herWeight P Q x) = herWeight P Q x := by
       rw [← hweight_conj, hxr]
     have hcoeff : ι (herCoeff P Q x) = herWeight P Q x := by
-      rw [herCoeff, if_pos hxr, hι]
+      rw [herCoeff, ite_eq_left hxr, hι]
       exact algebraMap_reL_of_conj_fixed hwfix
     -- `ι (herFormVec x ⬝ᵥ f) = lcv x`
     have hform : ι (herFormVec P Q P.natDegree x ⬝ᵥ f) = lcv x := by
       rw [hdot, hlcv]
       refine Finset.sum_congr rfl fun k _ => ?_
-      rw [herFormVec, if_pos hxr]
+      rw [herFormVec, ite_eq_left hxr]
       have hpowfix : Ri.conj R (x ^ (k : ℕ)) = x ^ (k : ℕ) := by
         rw [map_pow, hxr]
       have : ι (Ri.reL (x ^ (k : ℕ))) = x ^ (k : ℕ) := by
@@ -478,14 +478,14 @@ theorem herApply_eq (P Q : R[X]) (hP : P.Monic) (f : Fin P.natDegree → R) :
       have hlrx_pos : lrx = Ri.reL (w * lcv x) := by
         rw [hlrx, dotProduct, hreL_wlcv]
         refine Finset.sum_congr rfl fun k _ => ?_
-        rw [herFormVec, if_neg hxr, if_pos hpos, reL_mul]
+        rw [herFormVec, ite_eq_right hxr, ite_eq_left hpos, reL_mul]
       have hlrc_pos : lrc = Ri.imL (w * lcv x) := by
         rw [hlrc, dotProduct, himL_wlcv]
         refine Finset.sum_congr rfl fun k _ => ?_
-        rw [herFormVec, if_neg (by rw [hcc]; exact fun h => hxr h.symm), if_neg hcjneg]
+        rw [herFormVec, ite_eq_right (by rw [hcc]; exact fun h => hxr h.symm), ite_eq_right hcjneg]
         simp only [hcc]
         rw [hw, imL_mul]
-      rw [hlrx_pos, hlrc_pos, herCoeff, if_neg hxr, if_pos hpos]
+      rw [hlrx_pos, hlrc_pos, herCoeff, ite_eq_right hxr, ite_eq_left hpos]
       -- `reL(wL)² − imL(wL)² = reL((wL)²) = reL(A x)`
       have hsq : Ri.reL (w * lcv x) ^ 2 - Ri.imL (w * lcv x) ^ 2 = Ri.reL (A x) := by
         rw [← reL_sq, mul_pow, hwsq]
@@ -499,13 +499,13 @@ theorem herApply_eq (P Q : R[X]) (hP : P.Monic) (f : Fin P.natDegree → R) :
       have hlrx_neg : lrx = Ri.imL (w' * lcv (Ri.conj R x)) := by
         rw [hlrx, dotProduct, himL_wlcv]
         refine Finset.sum_congr rfl fun k _ => ?_
-        rw [herFormVec, if_neg hxr, if_neg hpos, imL_mul, ← hw']
+        rw [herFormVec, ite_eq_right hxr, ite_eq_right hpos, imL_mul, ← hw']
       have hlrc_neg : lrc = Ri.reL (w' * lcv (Ri.conj R x)) := by
         rw [hlrc, dotProduct, hreL_wlcv]
         refine Finset.sum_congr rfl fun k _ => ?_
-        rw [herFormVec, if_neg (by rw [hcc]; exact fun h => hxr h.symm), if_pos hcjpos, reL_mul,
+        rw [herFormVec, ite_eq_right (by rw [hcc]; exact fun h => hxr h.symm), ite_eq_left hcjpos, reL_mul,
           ← hw']
-      rw [hlrx_neg, hlrc_neg, herCoeff, if_neg hxr, if_neg hpos]
+      rw [hlrx_neg, hlrc_neg, herCoeff, ite_eq_right hxr, ite_eq_right hpos]
       -- `−2·(imL(w'L')² − reL(w'L')²) = 2·reL((w'L')²) = 2·reL(conj (A x)) = 2·reL (A x)`
       have hsq : Ri.reL (w' * lcv (Ri.conj R x)) ^ 2 - Ri.imL (w' * lcv (Ri.conj R x)) ^ 2
           = Ri.reL (A x) := by
@@ -647,17 +647,17 @@ theorem herFormVec_image_C_indep (P Q : R[X]) (hP : P.Monic) :
     dsimp only
     by_cases hxr : Ri.conj R x = x
     · -- real
-      rw [if_pos hxr, if_pos hxr]
+      rw [ite_eq_left hxr, ite_eq_left hxr]
       have hpowfix : Ri.conj R (x ^ (k : ℕ)) = x ^ (k : ℕ) := by rw [map_pow, hxr]
       have : ι (Ri.reL (x ^ (k : ℕ))) = x ^ (k : ℕ) := by
         rw [hι]; exact algebraMap_reL_of_conj_fixed hpowfix
-      rw [herFormVec, if_pos hxr, this]
+      rw [herFormVec, ite_eq_left hxr, this]
       ring
-    · rw [if_neg hxr, if_neg hxr]
+    · rw [ite_eq_right hxr, ite_eq_right hxr]
       by_cases hpos : 0 < Ri.imL x
       · -- positive imaginary part
-        rw [if_pos hpos, if_pos hpos]
-        rw [herFormVec, if_neg hxr, if_pos hpos]
+        rw [ite_eq_left hpos, ite_eq_left hpos]
+        rw [herFormVec, ite_eq_right hxr, ite_eq_left hpos]
         simp only [← hwx]
         rw [show Ri.reL (w x) * Ri.reL (x ^ (k:ℕ)) - Ri.imL (w x) * Ri.imL (x ^ (k:ℕ))
               = Ri.reL (w x * x ^ (k:ℕ)) from (reL_mul _ _).symm,
@@ -665,8 +665,8 @@ theorem herFormVec_image_C_indep (P Q : R[X]) (hP : P.Monic) :
               = ι (2 * Ri.reL (w x * x ^ (k:ℕ))) by rw [← map_ofNat ι 2, ← map_mul],
           h2reL, map_mul, map_pow]
       · -- negative imaginary part
-        rw [if_neg hpos, if_neg hpos]
-        rw [herFormVec, if_neg hxr, if_neg hpos]
+        rw [ite_eq_right hpos, ite_eq_right hpos]
+        rw [herFormVec, ite_eq_right hxr, ite_eq_right hpos]
         simp only [← hwx]
         rw [show Ri.reL (w (Ri.conj R x)) * Ri.imL ((Ri.conj R x) ^ (k:ℕ))
                 + Ri.imL (w (Ri.conj R x)) * Ri.reL ((Ri.conj R x) ^ (k:ℕ))
@@ -698,7 +698,7 @@ theorem herFormVec_image_C_indep (P Q : R[X]) (hP : P.Monic) :
   -- transport `g` to a function on `herRoots`
   set G : Ri R → Ri R := fun y => if h : y ∈ herRoots P Q then g (eqv ⟨y, h⟩) else 0 with hG
   have hGy : ∀ (y : herRoots P Q), G (y : Ri R) = g (eqv y) := by
-    intro y; rw [hG]; simp only [y.2, dif_pos]
+    intro y; rw [hG]; simp only [y.2, dite_eq_left]
   -- `hg` says `∀ k, ∑ j, g j • F (eqv.symm j) k = 0`; rewrite over `herRoots`
   have hgk : ∀ k : Fin p, ∑ y ∈ herRoots P Q, G y * F y k = 0 := by
     intro k
@@ -947,9 +947,9 @@ theorem card_pos_sub_card_neg_eq_sum_sign {α : Type*} (s : Finset α) (c : α �
   rw [Finset.card_filter, Finset.card_filter, Nat.cast_sum, Nat.cast_sum, ← Finset.sum_sub_distrib]
   refine Finset.sum_congr rfl fun x hx => ?_
   rcases lt_or_gt_of_ne (hc x hx) with hneg | hpos
-  · rw [if_neg (not_lt.mpr hneg.le), if_pos hneg, sign_neg hneg]
+  · rw [ite_eq_right (not_lt.mpr hneg.le), ite_eq_left hneg, sign_neg hneg]
     simp
-  · rw [if_pos hpos, if_neg (not_lt.mpr hpos.le), sign_pos hpos]
+  · rw [ite_eq_left hpos, ite_eq_right (not_lt.mpr hpos.le), sign_pos hpos]
     simp
 
 /-! ### Real roots correspond to roots of `P` over `R` -/
@@ -966,7 +966,7 @@ theorem sign_herCoeff_real {P Q : R[X]} {x : Ri R} (hx : x ∈ herRoots P Q)
     (hxr : Ri.conj R x = x) :
     SignType.sign (herCoeff P Q x) = SignType.sign (Q.eval (Ri.reL x)) := by
   have hmap : algebraMap R (Ri R) (Ri.reL x) = x := algebraMap_reL_of_conj_fixed hxr
-  rw [herCoeff, if_pos hxr]
+  rw [herCoeff, ite_eq_left hxr]
   -- herWeight x = count • aeval x Q = algebraMap (count • Q.eval (reL x))
   have hweight : herWeight P Q x
       = algebraMap R (Ri R) ((Multiset.count x (P.aroots (Ri R))) • Q.eval (Ri.reL x)) := by

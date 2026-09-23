@@ -37,8 +37,8 @@ private theorem istrue_transfer_to_realClosure {k : ℕ}
   -- An order-preserving `ℚ`-embedding `RC → S`, since `RC` is algebraic over `ℚ`.
   obtain ⟨φ⟩ := exists_algHom (F := ℚ) (R := RC) (R' := S)
     hasIVP_of_isRealClosed hasIVP_of_isRealClosed halg hQRC hQS
-  letI : Algebra RC S := φ.toAlgebra
-  haveI : IsScalarTower ℚ RC S := IsScalarTower.of_algebraMap_eq (fun q => (φ.commutes q).symm)
+  let : Algebra RC S := φ.toAlgebra
+  have : IsScalarTower ℚ RC S := IsScalarTower.of_algebraMap_eq (fun q => (φ.commutes q).symm)
   -- Base-change `Φ` to `RC`; Theorem 2.80 transfers across `RC ⊆ S`.
   have hsent : Formula.isSentence (Φ.mapCoeffO (D' := RC)) := Formula.isSentence_mapCoeffO hΦ
   have h80 := theorem_2_80 (R := RC) (R' := S) (Φ.mapCoeffO (D' := RC)) hsent
@@ -61,10 +61,10 @@ theorem theorem_2_81 {k : ℕ}
     (Φ : Formula (Fin k) (OrderedFieldAtom (Fin k) ℚ)) (hΦ : Formula.isSentence Φ) :
     Φ.IsTrue (C := R) ↔ Φ.IsTrue (C := R') := by
   obtain ⟨RCif, hclosed, _⟩ := RealClosure.exists_orderCompatible_realClosure_algebraic ℚ
-  letI : LinearOrder ↥RCif := IsRealClosed.toLinearOrder
-  haveI : IsOrderedRing ↥RCif := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing ↥RCif := IsOrderedRing.toIsStrictOrderedRing _
-  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
+  let : LinearOrder ↥RCif := IsRealClosed.toLinearOrder
+  have : IsOrderedRing ↥RCif := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing ↥RCif := IsOrderedRing.toIsStrictOrderedRing _
+  have : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) := AlgebraicClosure.isAlgebraic ℚ
   have halg : Algebra.IsAlgebraic ℚ ↥RCif :=
     Algebra.IsAlgebraic.tower_bot ℚ ↥RCif (AlgebraicClosure ℚ)
   have hQRC : StrictMono (algebraMap ℚ ↥RCif) := by

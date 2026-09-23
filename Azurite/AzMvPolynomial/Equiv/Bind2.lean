@@ -50,7 +50,7 @@ theorem toMvPoly_monomial_bind₂  (f : R → AzMvPolynomial n S ord)
 -- ═══════════════════════════════════════════════════════════════════
 
 omit [NoZeroDivisors R] [DecidableEq R] in
-private theorem toMvPoly_foldl_bind₂ 
+private theorem toMvPoly_foldl_bind₂
     (l : List (Monomial n R ord)) (f : R → AzMvPolynomial n S ord)
     (acc : AzMvPolynomial n S ord) :
     toMvPoly (l.foldl (fun acc m => acc + m.bind₂ f) acc) =

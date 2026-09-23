@@ -9,7 +9,7 @@ Proof outline: an algebraic subset is `Zer(poly_set)` for some finite `poly_set`
 If every polynomial in `poly_set` is zero, the zero set is all of `C`. Otherwise
 some `P₀ ∈ poly_set` is nonzero; then `Zer(poly_set) ⊆ {x | P₀(x) = 0}`, and the
 roots of a nonzero univariate polynomial are finite (Mathlib's
-`Polynomial.finite_setOf_isRoot`). The transfer from `MvPolynomial (Fin 1) C` to
+`Polynomial.finite_setOfPred_isRoot`). The transfer from `MvPolynomial (Fin 1) C` to
 `C[X]` is via `mvPolyFinOneEquiv` below.
 -/
 
@@ -57,7 +57,7 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
   · -- All polynomials are zero ⟹ Zer poly_set = Cᵏ
     right
     ext x
-    simp only [Zer, Set.mem_setOf_eq, Set.mem_univ, iff_true]
+    simp only [Zer, Set.mem_ofPred_eq, Set.mem_univ, iff_true]
     intro P hP; rw [h P hP]; simp
   · -- Some P₀ ∈ poly_set is nonzero ⟹ Zer poly_set ⊆ roots(P₀)
     push Not at h
@@ -72,7 +72,7 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
       rw [show { x : Fin 1 → C | MvPolynomial.eval x P₀ = 0} =
           e.symm '' { c : C | Polynomial.eval c (mvPolyFinOneEquiv P₀) = 0}
         from by
-        ext x; simp only [Set.mem_setOf_eq, Set.mem_image, e, Equiv.funUnique]
+        ext x; simp only [Set.mem_ofPred_eq, Set.mem_image, e, Equiv.funUnique]
         constructor
         · intro hx
           exact ⟨x 0,
@@ -83,7 +83,7 @@ theorem exercise_1_1 (V : Set (Fin 1 → C))
           show MvPolynomial.eval _ P₀ = 0
           rw [← eval_eq_polynomial_eval] at hc
           exact hc]
-      exact (Polynomial.finite_setOf_isRoot hpne).image _
+      exact (Polynomial.finite_setOfPred_isRoot hpne).image _
     · intro x hx; exact hx P₀ hP₀mem
 
 end Azurite.BPR

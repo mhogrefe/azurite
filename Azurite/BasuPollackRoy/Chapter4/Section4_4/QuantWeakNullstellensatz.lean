@@ -81,10 +81,10 @@ theorem quant_weak_nss [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algeb
       · simp
     · rw [Finset.sum_eq_single P₁]
       · show (if P₁ = P₁ then MvPolynomial.C c⁻¹ else 0) * P₁ = 1
-        rw [if_pos rfl, hP₁C, ← map_mul, inv_mul_cancel₀ hcne, map_one]
+        rw [ite_eq_left rfl, hP₁C, ← map_mul, inv_mul_cancel₀ hcne, map_one]
       · intro q _ hq
         show (if q = P₁ then MvPolynomial.C c⁻¹ else 0) * q = 0
-        rw [if_neg hq, zero_mul]
+        rw [ite_eq_right hq, zero_mul]
       · intro h
         exact absurd (List.mem_toFinset.mpr hP₁mem) h
   | succ m IH =>
@@ -264,10 +264,10 @@ theorem quant_weak_nss [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algeb
         · simp
       · rw [Finset.sum_eq_single P₁]
         · show (if P₁ = P₁ then MvPolynomial.C c₀⁻¹ else 0) * P₁ = 1
-          rw [if_pos rfl, hP₁C, ← map_mul, inv_mul_cancel₀ hc₀ne, map_one]
+          rw [ite_eq_left rfl, hP₁C, ← map_mul, inv_mul_cancel₀ hc₀ne, map_one]
         · intro q _ hq
           show (if q = P₁ then MvPolynomial.C c₀⁻¹ else 0) * q = 0
-          rw [if_neg hq, zero_mul]
+          rw [ite_eq_right hq, zero_mul]
         · intro h
           exact absurd (List.mem_toFinset.mpr hP₁mem) h
 

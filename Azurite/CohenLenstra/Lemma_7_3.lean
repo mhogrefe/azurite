@@ -55,7 +55,7 @@ theorem lemma_7_3 {R : Type _} [CommRing R] {q n : ℕ} [Fact q.Prime]
     (hn : n.Prime) (hqn : ¬ q ∣ n)
     (χ : MulChar (ZMod q) R) (ψ : AddChar (ZMod q) R) :
     (n : R) ∣ χ (n : ZMod q) ^ n * gaussSum χ ψ ^ n - gaussSum (χ ^ n) ψ := by
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   have hnq0 : (n : ZMod q) ≠ 0 := by
     rw [Ne, ZMod.natCast_eq_zero_iff]
     exact hqn
@@ -68,7 +68,7 @@ theorem lemma_7_3 {R : Type _} [CommRing R] {q n : ℕ} [Fact q.Prime]
     rw [show ((n : ℕ) : R ⧸ Ideal.span {(n : R)}) = π (n : R) from
       (map_natCast π n).symm, hπdef, Ideal.Quotient.eq_zero_iff_mem]
     exact Ideal.mem_span_singleton_self _
-  haveI : CharP (R ⧸ Ideal.span {(n : R)}) n := by
+  have : CharP (R ⧸ Ideal.span {(n : R)}) n := by
     have hdvd : ringChar (R ⧸ Ideal.span {(n : R)}) ∣ n := ringChar.dvd hnS
     rcases hn.eq_one_or_self_of_dvd _ hdvd with h1 | hcharn
     · exfalso
@@ -77,7 +77,7 @@ theorem lemma_7_3 {R : Type _} [CommRing R] {q n : ℕ} [Fact q.Prime]
       rw [h1, Nat.cast_one] at h0
       exact one_ne_zero h0
     · exact CharP.congr (ringChar (R ⧸ Ideal.span {(n : R)})) hcharn
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   -- Frobenius: `π(τ(χ,ψ))^n = π(τ(χ^n, ψ.mulShift n))`
   have hfrob : π (gaussSum χ ψ) ^ n
       = π (gaussSum (χ ^ n) (ψ.mulShift ((hnu.unit : (ZMod q)ˣ) : ZMod q))) := by

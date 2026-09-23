@@ -77,14 +77,14 @@ theorem runLengths_mem : ∀ {l : List A} {u : A} {e : ℕ},
       rw [hr] at h
       dsimp only at h
       by_cases hab : a = b
-      · rw [if_pos hab] at h
+      · rw [ite_eq_left hab] at h
         rcases List.mem_cons.mp h with heq | hmem
         · injection heq with h1 h2
           have hb := (ih (hr ▸ List.mem_cons_self)).1
           exact ⟨List.mem_cons_of_mem a (h1 ▸ hb), by omega⟩
         · have := ih (hr ▸ List.mem_cons_of_mem (b, e') hmem)
           exact ⟨List.mem_cons_of_mem a this.1, this.2⟩
-      · rw [if_neg hab] at h
+      · rw [ite_eq_right hab] at h
         rcases List.mem_cons.mp h with heq | hmem
         · injection heq with h1 h2
           exact ⟨h1 ▸ List.mem_cons_self, by omega⟩
@@ -101,8 +101,8 @@ private theorem runLengths_ne_nil {a : A} {rest : List A} :
     obtain ⟨b, e⟩ := be
     dsimp only
     by_cases hab : a = b
-    · rw [if_pos hab]; simp
-    · rw [if_neg hab]; simp
+    · rw [ite_eq_left hab]; simp
+    · rw [ite_eq_right hab]; simp
 
 /-- Run-length encoding preserves products, through any map into a
 commutative monoid: `∏ F(u)^e = ∏ F(elements)`. -/
@@ -127,11 +127,11 @@ theorem runLengths_prod_map {M : Type _} [CommMonoid M] (F : A → M) :
       rw [hr] at ih
       dsimp only
       by_cases hab : a = b
-      · rw [if_pos hab]
+      · rw [ite_eq_left hab]
         subst hab
         simp only [List.map_cons, List.prod_cons] at ih ⊢
         rw [pow_succ', mul_assoc, ih]
-      · rw [if_neg hab]
+      · rw [ite_eq_right hab]
         simp only [List.map_cons, List.prod_cons, pow_one] at ih ⊢
         rw [ih]
 
@@ -156,11 +156,11 @@ private theorem runLengths_head_mem : ∀ {l : List A} {b : A} {e : ℕ}
       rw [hr] at h
       dsimp only at h
       by_cases hac : a = c
-      · rw [if_pos hac] at h
+      · rw [ite_eq_left hac] at h
         injection h with h1 h2
         injection h1 with h3 h4
         exact List.mem_cons_of_mem a (h3 ▸ ih hr)
-      · rw [if_neg hac] at h
+      · rw [ite_eq_right hac] at h
         injection h with h1 h2
         injection h1 with h3 h4
         exact h3 ▸ List.mem_cons_self
@@ -193,9 +193,9 @@ theorem runLengths_chain'_lt {A : Type _} [DecidableEq A] [PartialOrder A] :
       rw [hr] at hihc
       dsimp only
       by_cases haeb : a = b
-      · rw [if_pos haeb]
+      · rw [ite_eq_left haeb]
         exact hihc
-      · rw [if_neg haeb]
+      · rw [ite_eq_right haeb]
         rw [List.map_cons, List.map_cons]
         rw [List.map_cons] at hihc
         exact List.IsChain.cons_cons (lt_of_le_of_ne hab haeb) hihc
@@ -223,7 +223,7 @@ theorem equalDegreeSplittingStep_isSome_of_factor {q : AzNat} {d : ℕ}
     (had : a.natDegree ≠ 0) :
     (AzPolynomial.equalDegreeSplittingStep q d g a).isSome := by
   obtain ⟨hirr, hnorm, hdvd⟩ := (GG.mem_primeFactors_iff'' hg0).mp hfac
-  rw [AzPolynomial.equalDegreeSplittingStep, if_neg had]
+  rw [AzPolynomial.equalDegreeSplittingStep, ite_eq_right had]
   simp only []
   have h1 : AzPolynomial.gcdMonic a g ≠ 1 := by
     rw [Ne, ← toPoly_inj, toPoly_one, AzPolynomial.toPoly_gcdMonic]
@@ -238,7 +238,7 @@ theorem equalDegreeSplittingStep_isSome_of_factor {q : AzNat} {d : ℕ}
         _ = AzPolynomial.toPoly a := hnorm
     rw [hgcd]
     exact hirr.ne_one
-  rw [if_pos h1]
+  rw [ite_eq_left h1]
   rfl
 
 variable [ExhaustiveGenerator K] [FiniteGenerator K]
@@ -366,10 +366,10 @@ theorem edsSearch_some_correct {q : AzNat} {d : ℕ} {g : AzPolynomial K}
       obtain rfl : h' = h := Option.some.inj hsome
       refine GG.equalDegreeSplittingStep_correct hm ?_ hstep
       by_cases hi : i < 64
-      · rw [if_pos hi]
+      · rw [ite_eq_left hi]
         exact AzPolynomial.natDegree_hybridPolyCandidate_lt K seed
           (by omega) i
-      · rw [if_neg hi]
+      · rw [ite_eq_right hi]
         have := natDegree_sweepCandidate_le (K := K) d (i - 64)
         omega
     | none =>
@@ -433,7 +433,7 @@ theorem edsSearch_isSome {q : AzNat} {d : ℕ} {g : AzPolynomial K}
       (if 64 + j < 64 then
         AzPolynomial.hybridPolyCandidate K seed g.natDegree (64 + j)
        else AzPolynomial.sweepCandidate K d (64 + j - 64))).isSome := by
-    rw [if_neg (by omega), Nat.add_sub_cancel_left]
+    rw [ite_eq_right (by omega), Nat.add_sub_cancel_left]
     exact hstep
   exact edsSearch_isSome_of hstep' _ 0 (by omega)
     (by rw [AzPolynomial.edsSearchFuel]; omega)
@@ -478,7 +478,7 @@ theorem equalDegreeFactorizationLoop_correct {q : AzNat} {d : ℕ}
     rw [AzPolynomial.equalDegreeFactorizationLoop]
     by_cases hle : g.natDegree ≤ d
     · -- leaf
-      rw [if_pos hle]
+      rw [ite_eq_left hle]
       have hge := GG.natDegree_ge_of_factors_natDegree_eq hm h1 hall
       rw [AzPolynomial.natDegree_toPoly] at hge
       have hdeg : (AzPolynomial.toPoly g).natDegree = d := by
@@ -490,7 +490,7 @@ theorem equalDegreeFactorizationLoop_correct {q : AzNat} {d : ℕ}
       rw [List.mem_singleton] at hu
       rw [hu]
       exact ⟨hm, hirr⟩
-    · rw [if_neg hle]
+    · rw [ite_eq_right hle]
       have hdg : d < g.natDegree := by omega
       -- the search succeeds, and its output is a proper factor
       have hsome := edsSearch_isSome (q := q) (seed := seed) hm h1 hd0 hall
@@ -619,11 +619,11 @@ theorem factorizationLoop_correct [Fintype K] {q : AzNat} {seed : UInt64}
     have hv0 : AzPolynomial.toPoly v ≠ 0 := hvm.ne_zero
     rw [AzPolynomial.factorizationLoop]
     by_cases hv1 : v = 1
-    · rw [if_pos hv1]
+    · rw [ite_eq_left hv1]
       refine ⟨?_, by simp⟩
       rw [hv1, toPoly_one]
       rfl
-    · rw [if_neg hv1]
+    · rw [ite_eq_right hv1]
       simp only []
       have hv1' : AzPolynomial.toPoly v ≠ 1 := by
         rw [Ne, ← toPoly_one (R := K), toPoly_inj]
@@ -643,7 +643,7 @@ theorem factorizationLoop_correct [Fintype K] {q : AzNat} {seed : UInt64}
         exact GG.gcd_X_pow_card_pow_sub_X_eq_prod_filter hvm hi hall
       by_cases hu1 : AzPolynomial.gcdMonic (h - AzPolynomial.X) v = 1
       · -- no degree-`i` factors: advance `i`
-        rw [if_pos hu1]
+        rw [ite_eq_left hu1]
         have hall' : ∀ p ∈ primeFactors (AzPolynomial.toPoly v),
             i + 1 ≤ p.natDegree := by
           intro p hp
@@ -666,7 +666,7 @@ theorem factorizationLoop_correct [Fintype K] {q : AzNat} {seed : UInt64}
           exact GG.dvd_powModByMonic_sub_pow hcong
         exact ih (i + 1) _ v hvm hvf hall' hcong' (by omega) (by omega)
       · -- extract one copy of each degree-`i` factor
-        rw [if_neg hu1]
+        rw [ite_eq_right hu1]
         have hu1' : AzPolynomial.toPoly
             (AzPolynomial.gcdMonic (h - AzPolynomial.X) v) ≠ 1 := by
           rw [Ne, ← toPoly_one (R := K), toPoly_inj]
@@ -824,11 +824,11 @@ theorem canonicalFactorization_correct [Fintype K] [LinearOrder K]
     (((canonicalFactorization q f seed).2).map Prod.fst).IsChain (· < ·) := by
   rw [canonicalFactorization]
   by_cases hf0 : f = 0
-  · rw [if_pos hf0, hf0]
+  · rw [ite_eq_left hf0, hf0]
     refine ⟨?_, by simp, by simp⟩
     rw [toPoly_zero]
     simp
-  · rw [if_neg hf0]
+  · rw [ite_eq_right hf0]
     have hf0' : AzPolynomial.toPoly f ≠ 0 := by
       rw [Ne, ← toPoly_zero (R := K), toPoly_inj]
       exact hf0

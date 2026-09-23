@@ -111,9 +111,9 @@ theorem proposition_2_40
         (a, b) ∈ ConeB) :
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     IsNormal P := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
   obtain ⟨linears, quadratics, _hqs_d, hfact⟩ := exists_factorization P
   rw [hP.leadingCoeff, map_one, one_mul] at hfact
   refine proposition_2_40_of_factorization hfact ?_ ?_

@@ -104,7 +104,7 @@ theorem IsSemialgebraicSetC.comap {a b : ℕ} (σ : Fin a → Fin b) {S : Set (F
     have key : (realEquiv.symm w) ∘ σ = realEquiv.symm (w ∘ doubleReindex σ) := by
       apply realEquiv.injective
       rw [realEquiv_comp_reindex, Equiv.apply_symm_apply, Equiv.apply_symm_apply]
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, key, Equiv.image_eq_preimage_symm]
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, key, Equiv.image_eq_preimage_symm]
   rw [hset]
   exact IsSemialgebraicSet.comap (doubleReindex σ) hS
 
@@ -138,7 +138,7 @@ theorem isSemialgebraicSetC_coord_ne_zero (a : Fin k) :
       = ({w : Fin (k + k) → R | eval w (X (Fin.castAdd k a)) = 0}
           ∩ {w | eval w (X (Fin.natAdd k a)) = 0})ᶜ := by
     ext w
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_compl_iff, Set.mem_inter_iff, eval_X,
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_compl_iff, Set.mem_inter_iff, eval_X,
       ne_eq, realEquiv_symm_apply_eq_zero_iff, not_and]
   rw [hset]
   exact ((IsSemialgebraicSet.eqZero _).inter (IsSemialgebraicSet.eqZero _)).compl

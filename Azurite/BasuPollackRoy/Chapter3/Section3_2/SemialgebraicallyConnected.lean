@@ -51,10 +51,10 @@ theorem isClosedIn_preimage {A : Set (Fin k → R)} {B : Set (Fin ℓ → R)}
     simp only [Set.mem_inter_iff, Set.mem_preimage]
     exact ⟨fun ⟨haA, hfF, _⟩ => ⟨haA, hfF⟩, fun ⟨haA, hfF⟩ => ⟨haA, hfF, hmaps haA⟩⟩
   rw [hseteq, isClosedIn_iff_isClosed_subtype Set.inter_subset_left]
-  have hcont : Continuous (A.restrict f) := continuousOn_iff_continuous_restrict.mp hf
-  have hpre : (Subtype.val ⁻¹' (A ∩ f ⁻¹' F) : Set A) = (A.restrict f) ⁻¹' F := by
+  have hcont : Continuous (A.domRestrict f) := continuousOn_iff_continuous_domRestrict.mp hf
+  have hpre : (Subtype.val ⁻¹' (A ∩ f ⁻¹' F) : Set A) = (A.domRestrict f) ⁻¹' F := by
     ext a
-    simp only [Set.mem_preimage, Set.mem_inter_iff, Set.restrict_apply]
+    simp only [Set.mem_preimage, Set.mem_inter_iff, Set.domRestrict_apply]
     exact ⟨fun h => h.2, fun h => ⟨a.2, h⟩⟩
   rw [hpre]
   exact hF.preimage hcont

@@ -41,7 +41,7 @@ square-root-free, `ℕ`-valued content of the corollary, equivalent to
 theorem corollary_8_13_sq (M : Matrix (Fin n) (Fin n) ℤ) {τ : ℕ}
     (hn : 0 < n) (hτ : ∀ i j, Int.size (M i j) ≤ τ) :
     M.det.natAbs ^ 2 < 2 ^ (n * (2 * τ + Nat.size n)) := by
-  haveI : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
+  have : Nonempty (Fin n) := ⟨⟨0, hn⟩⟩
   -- Squared Hadamard for the real matrix `M.map cast`, transferred back to `ℤ`.
   have hcore := det_sq_le_prod_dotProduct_col (M.map (Int.cast : ℤ → ℝ))
   have hdet : (M.map (Int.cast : ℤ → ℝ)).det = (M.det : ℝ) := by
@@ -79,7 +79,7 @@ theorem corollary_8_13_sq (M : Matrix (Fin n) (Fin n) ℤ) {τ : ℕ}
   have hBpos : 0 < n * 2 ^ (2 * τ) := Nat.mul_pos hn (pow_pos (by norm_num) _)
   have hprod : (∏ i, ∑ k, (M k i).natAbs ^ 2) < (n * 2 ^ (2 * τ)) ^ n := by
     calc (∏ i, ∑ k, (M k i).natAbs ^ 2) ≤ ∏ _i : Fin n, (n * 2 ^ (2 * τ) - 1) :=
-          Finset.prod_le_prod' (fun i _ => Nat.le_pred_of_lt (hcolsum i))
+          Finset.prod_le_prod (fun i _ => Nat.le_pred_of_lt (hcolsum i))
       _ = (n * 2 ^ (2 * τ) - 1) ^ n := by
           rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
       _ < (n * 2 ^ (2 * τ)) ^ n := Nat.pow_lt_pow_left (Nat.sub_lt hBpos Nat.one_pos) hn.ne'

@@ -119,7 +119,7 @@ private theorem toStringBase_head_ne_zero (b : UInt64) (hb : 2 ≤ b.toNat) (hb'
   have h_str : n.toStringBase b = String.ofList
       ((n.limbDigits b).toList.reverse.map fun d => AzNat.digitToChar d false) := by
     unfold AzNat.toStringBase AzNat.toStringBaseWith
-    rw [if_neg h_b_in]; simp [h_size]
+    rw [ite_eq_right h_b_in]; simp [h_size]
   rw [h_str, String.toList_ofList]
   have h_n_pos : 0 < n.toNat := n_toNat_pos_of_size_ne_zero n h_size
   have h_dne := limbDigits_ne_nil_of_pos b hb n h_n_pos
@@ -182,7 +182,7 @@ private theorem stripPrefix_toStringBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' 
       · show b.toNat ≤ (36 : UInt64).toNat; show b.toNat ≤ (36 : Nat); omega
     have h_str : n.toStringBase b = "0" := by
       unfold AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str]
     decide
   · have h_head := toStringBase_head_ne_zero b hb hb' n h_size
@@ -203,7 +203,7 @@ theorem parseBase_toStringBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat 
     refine ⟨?_, ?_⟩
     · show (2 : UInt64).toNat ≤ b.toNat; show (2 : Nat) ≤ b.toNat; omega
     · show b.toNat ≤ (36 : UInt64).toNat; show b.toNat ≤ (36 : Nat); omega
-  rw [if_neg h_b_in]
+  rw [ite_eq_right h_b_in]
   have h_strip := stripPrefix_toStringBase b hb hb' n
   simp only [h_strip]
   by_cases h_size : n.limbs.size = 0
@@ -215,10 +215,10 @@ theorem parseBase_toStringBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat 
       rw [h_nil]; rfl
     have h_str : n.toStringBase b = "0" := by
       unfold AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str]
     show (if ("0" : String).isEmpty then none else AzNat.buildFromChars b "0".toList) = some n
-    rw [show ("0" : String).isEmpty = false from rfl, if_neg (by decide)]
+    rw [show ("0" : String).isEmpty = false from rfl, ite_eq_right (by decide)]
     show (match AzNat.parseDigitsInto b "0".toList with
           | none => none
           | some arr => some (AzNat.ofLimbDigits b arr.reverse)) = some n
@@ -245,7 +245,7 @@ theorem parseBase_toStringBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat 
     have h_str : n.toStringBase b = String.ofList
         ((n.limbDigits b).toList.reverse.map fun d => AzNat.digitToChar d false) := by
       unfold AzNat.toStringBase AzNat.toStringBaseWith
-      rw [if_neg h_b_in]; simp [h_size]
+      rw [ite_eq_right h_b_in]; simp [h_size]
     rw [h_str]
     have h_n_pos : 0 < n.toNat := n_toNat_pos_of_size_ne_zero n h_size
     have h_dne : (n.limbDigits b).toList ≠ [] := limbDigits_ne_nil_of_pos b hb n h_n_pos
@@ -264,7 +264,7 @@ theorem parseBase_toStringBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat 
       exact this
     rw [show (if (String.ofList _).isEmpty then none
               else AzNat.buildFromChars b (String.ofList _).toList) =
-              AzNat.buildFromChars b (String.ofList _).toList from if_neg
+              AzNat.buildFromChars b (String.ofList _).toList from ite_eq_right
               (by rw [h_isEmpty]; decide)]
     rw [String.toList_ofList]
     show (match AzNat.parseDigitsInto b _ with
@@ -299,7 +299,7 @@ theorem parse_toString (n : AzNat) : AzNat.parse (AzNat.toString n) = some n := 
   simp only [stripPrefix_toStringBase 10 (by decide) (by decide) n]
   have h := parseBase_toStringBase 10 (by decide) (by decide) n
   unfold AzNat.parseBase at h
-  rw [if_neg (by decide : ¬ ((10 : UInt64) < 2 ∨ 36 < (10 : UInt64)))] at h
+  rw [ite_eq_right (by decide : ¬ ((10 : UInt64) < 2 ∨ 36 < (10 : UInt64)))] at h
   simp only [stripPrefix_toStringBase 10 (by decide) (by decide) n] at h
   exact h
 
@@ -318,7 +318,7 @@ private theorem digitToChar_digitValue (c : Char) (h_lo : '0' ≤ c) (h_hi : c �
     show (c.toNat - '0'.toNat) % 2^64 = c.toNat - '0'.toNat
     rw [h_zero_eq]; omega
   unfold AzNat.digitToChar
-  rw [h_toNat, if_pos h_k_lt]
+  rw [h_toNat, ite_eq_left h_k_lt]
   rw [h_zero_eq, show 48 + (c.toNat - 48) = c.toNat from by omega]
   exact Char.ofNat_toNat c
 
@@ -441,7 +441,7 @@ private theorem isNat_loop (l : List Char) (b : Bool)
   | nil => rfl
   | cons a t ih =>
     have ha := h a (List.mem_cons_self ..)
-    rw [List.forIn_cons, if_neg ha.2, if_pos ha.1]
+    rw [List.forIn_cons, ite_eq_right ha.2, ite_eq_left ha.1]
     rw [show (pure (ForInStep.yield (none, true)) : Id _) >>= _ =
           (forIn (m := Id) t (none, true) _) from rfl]
     rw [ih true (fun c hc => h c (List.mem_cons_of_mem _ hc))]
@@ -459,7 +459,7 @@ private theorem isNat_eq_true_of_digits (s : String) (h_ne : s ≠ "")
   simp only [Id.run, String.Slice.forIn_eq_forIn_toList, String.copy_toSlice]
   rw [isNat_loop s.toList false (fun c hc => ⟨h_isDigit c hc, by
     intro he; have := (h_digits c hc).2; rw [he] at this; exact absurd this (by decide)⟩),
-    if_neg h_ne_list]
+    ite_eq_right h_ne_list]
   rfl
 
 /-- For a string whose characters are all decimal digits with `isNat = true`, the
@@ -470,14 +470,14 @@ private theorem toNat?_eq_ofDigitChars (s : String)
     (h_isNat : s.isNat = true) :
     s.toNat? = some (Nat.ofDigitChars 10 s.toList 0) := by
   unfold String.toNat? String.Slice.toNat?
-  rw [← String.isNat, if_pos h_isNat]
+  rw [← String.isNat, ite_eq_left h_isNat]
   congr 1
   rw [String.Slice.foldl_eq_foldl_toList, String.copy_toSlice, Nat.ofDigitChars_eq_foldl]
   apply foldl_congr_mem
   intro acc c hc
   have hc' := h_digits c hc
   have hne : c ≠ '_' := by intro he; rw [he] at hc'; exact absurd hc'.2 (by decide)
-  rw [if_neg hne, Nat.mul_comm]
+  rw [ite_eq_right hne, Nat.mul_comm]
 
 theorem parse_eq_toNat? (s : String) (h_ne : s ≠ "")
     (h_digits : ∀ c ∈ s.toList, '0' ≤ c ∧ c ≤ '9') :
@@ -495,7 +495,7 @@ theorem parse_eq_toNat? (s : String) (h_ne : s ≠ "")
   simp only [h_strip]
   have h_s_ne_empty : s.isEmpty = false := by
     rw [Bool.eq_false_iff, Ne, String.isEmpty_iff]; exact h_ne
-  rw [h_s_ne_empty, if_neg (by decide)]
+  rw [h_s_ne_empty, ite_eq_right (by decide)]
   unfold AzNat.buildFromChars
   rw [parseDigitsInto_of_digits s.toList h_digits]
   rw [Option.map_some]
@@ -647,11 +647,11 @@ theorem toNat_parseBase (b : UInt64) (hb : 2 ≤ b.toNat) (hb' : b.toNat ≤ 36)
     refine ⟨?_, ?_⟩
     · show (2 : UInt64).toNat ≤ b.toNat; show (2 : Nat) ≤ b.toNat; omega
     · show b.toNat ≤ (36 : UInt64).toNat; show b.toNat ≤ (36 : Nat); omega
-  rw [if_neg h_b_in]
+  rw [ite_eq_right h_b_in]
   simp only [h_no_prefix]
   have h_s_ne_empty : s.isEmpty = false := by
     rw [Bool.eq_false_iff, Ne, String.isEmpty_iff]; exact h_ne
-  rw [h_s_ne_empty, if_neg (by decide)]
+  rw [h_s_ne_empty, ite_eq_right (by decide)]
   -- `h_valid` is `d.toNat < b.toNat` on Nat; `parseDigitsInto_eq_charToDigit` needs `d < b` on UInt64.
   have h_valid_uint : ∀ c ∈ s.toList, ∃ d, AzNat.charToDigit c = some d ∧ d < b := by
     intro c hc

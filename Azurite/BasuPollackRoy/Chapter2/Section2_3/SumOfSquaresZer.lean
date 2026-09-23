@@ -26,7 +26,7 @@ theorem zer_eq_zer_singleton_sumSq
     (poly_set : Finset (MvPolynomial (Fin k) R)) :
     Zer poly_set = Zer {∑ P ∈ poly_set, P ^ 2} := by
   ext x
-  simp only [Zer, Set.mem_setOf_eq, Finset.mem_singleton, forall_eq,
+  simp only [Zer, Set.mem_ofPred_eq, Finset.mem_singleton, forall_eq,
     map_sum, map_pow]
   constructor
   · intro h

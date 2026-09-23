@@ -46,7 +46,7 @@ theorem basicCell_nonempty_iff (s : ℕ) (P : R[X]) (Q : Fin s → R[X]) (hP : P
   · rintro ⟨x, hr, hpos⟩
     exact ⟨x, hr, fun i => sign_eq_one_iff.mpr (hpos i)⟩
   · rintro ⟨x, hx⟩
-    rw [SignCondition.realizationOver, Set.mem_setOf_eq] at hx
+    rw [SignCondition.realizationOver, Set.mem_ofPred_eq] at hx
     exact ⟨x, hx.1, fun i => sign_eq_one_iff.mp (hx.2 i)⟩
 
 variable {k : ℕ} {D : Type*} [CommRing D] [Algebra D R]
@@ -64,7 +64,7 @@ theorem cellProjection_eq_split (P : MvPolynomial (Fin (k+1)) D)
       ∀ q ∈ Q, 0 < ((splitLast q).map (MvPolynomial.aeval y).toRingHom).eval x} := by
   rw [Fin.init_image_eq_setOf_exists_snoc]
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨x, hP, hQ⟩
     refine ⟨x, ?_, fun q hq => ?_⟩
@@ -135,7 +135,7 @@ theorem stratumA_eq_matrix (P : MvPolynomial (Fin (k+1)) D)
               ((splitLast P).map (MvPolynomial.aeval y).toRingHom) : ℚ)))
           ((signEquiv Q.toList.length).symm (fun _ => SignType.pos))} := by
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   refine and_congr_right (fun hPy => ?_)
   rw [← basicCell_nonempty_iff Q.toList.length
     ((splitLast P).map (MvPolynomial.aeval y).toRingHom)

@@ -117,7 +117,7 @@ private theorem sRemStep_triple (P Q : AzPolynomial K) (i : ℕ) :
     sRemStep]
   by_cases h : sRemS P Q (i + 1) = 0
   · simp [h]
-  · simp only [if_neg h]
+  · simp only [ite_eq_right h]
     rfl
 
 /-- `sRemBuild` started at the entries of indices `i, i+1` reproduces the spec

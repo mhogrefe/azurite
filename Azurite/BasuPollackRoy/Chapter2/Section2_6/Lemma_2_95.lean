@@ -83,7 +83,7 @@ theorem charPoly_natDegree_le_natDegree (P : Polynomial (PuiseuxSeries R)) (A B 
     have hne : P.coeff k ≠ 0 := fun h0 => by
       rw [h0, puiseuxOrder_zero] at hcol; exact WithTop.top_ne_coe hcol
     exact absurd (le_natDegree_of_ne_zero hne) (by omega)
-  rw [charPoly_coeff, if_neg hnotmem]
+  rw [charPoly_coeff, ite_eq_right hnotmem]
 
 /-- **The per-column positivity (the heart of part a).** For every column `h`, the difference
 between the rescaled coefficient `ā_h ε^{h ξ − β}` and the constant `In(a_h)` of the
@@ -101,7 +101,7 @@ theorem key_term_pos {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × ℚ} {ξ �
   · have hcol' : puiseuxOrder R (P.coeff h) = ↑(lineValue A B h) := hcol
     have hmem : h ∈ (Finset.Icc A.1 B.1).filter (colOnLine P A B) :=
       Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr (honseg h hcol), hcol⟩
-    rw [charPoly_coeff, if_pos hmem]
+    rw [charPoly_coeff, ite_eq_left hmem]
     have hord : puiseuxOrder R (P.coeff h * puiseuxMonomial ((h : ℚ) * ξ - β)) = 0 := by
       rw [puiseuxOrder_mul, puiseuxOrder_puiseuxMonomial, hcol', ← WithTop.coe_add,
         show lineValue A B h + ((h : ℚ) * ξ - β) = 0 from by
@@ -111,7 +111,7 @@ theorem key_term_pos {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × ℚ} {ξ �
       rw [puiseuxInitCoeff_mul, puiseuxInitCoeff_puiseuxMonomial, mul_one]
     rw [hIn]
     exact puiseuxOrder_sub_constPuiseux_leadingCoeff_pos hord
-  · rw [charPoly_coeff, if_neg (fun hmem => hcol (Finset.mem_filter.mp hmem).2), map_zero, sub_zero,
+  · rw [charPoly_coeff, ite_eq_right (fun hmem => hcol (Finset.mem_filter.mp hmem).2), map_zero, sub_zero,
       puiseuxOrder_mul, puiseuxOrder_puiseuxMonomial]
     have hlt : (lineValue A B h : WithTop ℚ) < puiseuxOrder R (P.coeff h) :=
       lt_of_le_of_ne (hsupport h) (fun he => hcol he.symm)
@@ -171,9 +171,9 @@ theorem lemma_2_95a {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × ℚ} {x : R
     conv_lhs => rw [hQfact]
     rw [mul_comp, pow_comp, sub_comp, X_comp, C_comp, add_sub_cancel_right]
   have hM1 : ∀ i, i < r → ((charPoly P A B).comp (X + C x)).coeff i = 0 := fun i hi => by
-    rw [hQcomp, mul_comm, coeff_mul_X_pow', if_neg (by omega)]
+    rw [hQcomp, mul_comm, coeff_mul_X_pow', ite_eq_right (by omega)]
   have hM2 : ((charPoly P A B).comp (X + C x)).coeff r ≠ 0 := by
-    rw [hQcomp, mul_comm, coeff_mul_X_pow', if_pos (le_refl r), Nat.sub_self,
+    rw [hQcomp, mul_comm, coeff_mul_X_pow', ite_eq_left (le_refl r), Nat.sub_self,
       coeff_zero_eq_eval_zero, eval_comp]
     simp only [eval_add, eval_X, eval_C, zero_add]
     exact eval_divByMonic_pow_rootMultiplicity_ne_zero x hQ

@@ -43,9 +43,9 @@ variable [DecidableEq σ] {R : Type*} [Field R] [LinearOrder R] [IsStrictOrdered
   | cons a t ih =>
     ext y
     simp only [conjListO, List.foldr_cons, Formula.realization, Set.mem_inter_iff,
-      Set.mem_setOf_eq, List.forall_mem_cons]
+      Set.mem_ofPred_eq, List.forall_mem_cons]
     rw [show (List.foldr Formula.and (gtZeroO 1) t) = conjListO t from rfl, ih]
-    simp [Set.mem_setOf_eq]
+    simp [Set.mem_ofPred_eq]
 
 end Formula
 
@@ -100,16 +100,16 @@ theorem matrixFormula_realization (P_split : Polynomial (MvPolynomial (Fin k) D)
   classical
   rw [matrixFormula, Formula.realization_disjListO]
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨Φ, hΦmem, hyΦ⟩
     rw [List.mem_map] at hΦmem
     obtain ⟨c, hcmem, rfl⟩ := hΦmem
     rw [Finset.mem_toList, Finset.mem_filter] at hcmem
-    rw [Formula.realization_conjListO, Set.mem_setOf_eq] at hyΦ
+    rw [Formula.realization_conjListO, Set.mem_ofPred_eq] at hyΦ
     have hAi : ∀ i, y ∈ (tarskiFormula P_split 𝒬 (expFn s i) (c i)).realization (C := R) :=
       fun i => hyΦ _ (List.mem_map.mpr ⟨i, List.mem_finRange i, rfl⟩)
-    simp only [tarskiFormula_realization P_split 𝒬 _ _ hinj, Set.mem_setOf_eq] at hAi
+    simp only [tarskiFormula_realization P_split 𝒬 _ _ hinj, Set.mem_ofPred_eq] at hAi
     refine ⟨(hAi j₀).1, ?_⟩
     have hvc : (fun i => ((tarskiQuery
         (familyPow (fun j => (𝒬 j).map (MvPolynomial.aeval y).toRingHom) (expFn s i))
@@ -130,11 +130,11 @@ theorem matrixFormula_realization (P_split : Polynomial (MvPolynomial (Fin k) D)
           (P_split.map (MvPolynomial.aeval y).toRingHom)| ≤ (P_split.natDegree : ℤ) :=
         le_trans (abs_tarskiQuery_le_natDegree _ _) (by exact_mod_cast Polynomial.natDegree_map_le)
       exact ⟨(abs_le.mp hb).1, (abs_le.mp hb).2⟩
-    · rw [Formula.realization_conjListO, Set.mem_setOf_eq]
+    · rw [Formula.realization_conjListO, Set.mem_ofPred_eq]
       intro Ψ hΨ
       rw [List.mem_map] at hΨ
       obtain ⟨i, _, rfl⟩ := hΨ
-      rw [tarskiFormula_realization P_split 𝒬 _ _ hinj, Set.mem_setOf_eq]
+      rw [tarskiFormula_realization P_split 𝒬 _ _ hinj, Set.mem_ofPred_eq]
       exact ⟨hPy, rfl⟩
 
 /-- The **Stratum A formula** for a basic cell `(P, Q)`: `matrixFormula` specialized via
@@ -219,13 +219,13 @@ theorem signPosInftyFormula_realization (P : Polynomial (MvPolynomial (Fin k) D)
   classical
   rw [signPosInftyFormula, Formula.realization_disjListO]
   ext y
-  rw [Set.mem_setOf_eq, Set.mem_setOf_eq, signAtPosInfty_eq_sign_leadingCoeff]
+  rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq, signAtPosInfty_eq_sign_leadingCoeff]
   constructor
   · rintro ⟨Φ, hmem, hyΦ⟩
     rw [List.mem_map] at hmem
     obtain ⟨n, _, rfl⟩ := hmem
-    rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_setOf_eq,
-      Formula.realization_gtZeroO, Set.mem_setOf_eq] at hyΦ
+    rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_ofPred_eq,
+      Formula.realization_gtZeroO, Set.mem_ofPred_eq] at hyΦ
     obtain ⟨hdeg, hcpos⟩ := hyΦ
     have hnd : (P.map (MvPolynomial.aeval y).toRingHom).natDegree = n := by
       rw [Polynomial.natDegree, hdeg]; rfl
@@ -243,8 +243,8 @@ theorem signPosInftyFormula_realization (P : Polynomial (MvPolynomial (Fin k) D)
       rw [Polynomial.leadingCoeff, ← hm, Polynomial.coeff_map]; rfl
     refine ⟨_, List.mem_map.mpr ⟨m, List.mem_range.mpr ?_, rfl⟩, ?_⟩
     · have := Polynomial.natDegree_map_le (f := (MvPolynomial.aeval y).toRingHom) (p := P); omega
-    · rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_setOf_eq,
-        Formula.realization_gtZeroO, Set.mem_setOf_eq]
+    · rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_ofPred_eq,
+        Formula.realization_gtZeroO, Set.mem_ofPred_eq]
       exact ⟨Polynomial.degree_eq_natDegree hne, by rw [← hlc]; exact hpos⟩
 
 /-- `signAtNegInfty(P_y) = +` as a formula: union over `n` of `deg P_y = n ∧ 0 < (-1)^n · P.coeff n`. -/
@@ -274,13 +274,13 @@ theorem signNegInftyFormula_realization (P : Polynomial (MvPolynomial (Fin k) D)
     rw [map_mul, map_pow, map_neg, map_one]
   rw [signNegInftyFormula, Formula.realization_disjListO]
   ext y
-  rw [Set.mem_setOf_eq, Set.mem_setOf_eq]
+  rw [Set.mem_ofPred_eq, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨Φ, hmem, hyΦ⟩
     rw [List.mem_map] at hmem
     obtain ⟨n, _, rfl⟩ := hmem
-    rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_setOf_eq,
-      Formula.realization_gtZeroO, Set.mem_setOf_eq] at hyΦ
+    rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_ofPred_eq,
+      Formula.realization_gtZeroO, Set.mem_ofPred_eq] at hyΦ
     obtain ⟨hdeg, hcpos⟩ := hyΦ
     have hnd : (P.map (MvPolynomial.aeval y).toRingHom).natDegree = n := by
       rw [Polynomial.natDegree, hdeg]; rfl
@@ -300,8 +300,8 @@ theorem signNegInftyFormula_realization (P : Polynomial (MvPolynomial (Fin k) D)
       rw [Polynomial.leadingCoeff, ← hm, Polynomial.coeff_map]; rfl
     refine ⟨_, List.mem_map.mpr ⟨m, List.mem_range.mpr ?_, rfl⟩, ?_⟩
     · have := Polynomial.natDegree_map_le (f := (MvPolynomial.aeval y).toRingHom) (p := P); omega
-    · rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_setOf_eq,
-        Formula.realization_gtZeroO, Set.mem_setOf_eq]
+    · rw [Formula.realization_and, Set.mem_inter_iff, degFormulaO_realization, Set.mem_ofPred_eq,
+        Formula.realization_gtZeroO, Set.mem_ofPred_eq]
       refine ⟨Polynomial.degree_eq_natDegree hne, ?_⟩
       rw [haeval]; rw [hlc] at hsign; exact (key _ m).mp hsign
 
@@ -346,7 +346,7 @@ theorem realizabilityFormula_realization (𝒬 : Fin s → Polynomial (MvPolynom
     Formula.realization_conjListO, Formula.realization_conjListO, Formula.realization_conjListO,
     matrixFormula_realization _ _ _ _ hinj]
   ext y
-  simp only [Set.mem_inter_iff, Set.mem_union, Set.mem_setOf_eq, List.forall_mem_map,
+  simp only [Set.mem_inter_iff, Set.mem_union, Set.mem_ofPred_eq, List.forall_mem_map,
     List.mem_finRange, neZeroPolyFormula_realization, signNegInftyFormula_realization,
     signPosInftyFormula_realization]
   rw [realizable_iff_disjuncts hasIVP_of_isRealClosed
@@ -385,7 +385,7 @@ theorem stratumBFormula_realization (hinj : Function.Injective (algebraMap D R))
   rw [stratumBFormula, Formula.realization_and, degFormulaO_realization,
     realizabilityFormula_realization _ hinj]
   ext y
-  simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq]
   refine and_congr Polynomial.degree_eq_bot (exists_congr (fun x => ?_))
   exact (forall_mem_iff_forall_get Q
     (fun q => 0 < ((splitLast q).map (MvPolynomial.aeval y).toRingHom).eval x)).symm
@@ -448,7 +448,7 @@ theorem cellMerge (P₁ : MvPolynomial (Fin n) F) (Q₁ : Finset (MvPolynomial (
       cellSet (P₁, Q₁) ∩ cellSet (P₂, Q₂) := by
   classical
   ext z
-  simp only [cellSet, Set.mem_inter_iff, Set.mem_setOf_eq, Finset.mem_union, map_add, map_pow]
+  simp only [cellSet, Set.mem_inter_iff, Set.mem_ofPred_eq, Finset.mem_union, map_add, map_pow]
   constructor
   · rintro ⟨hsum, hQ⟩
     have hP₁ : (aeval z P₁ : E) ^ 2 = 0 := by
@@ -465,7 +465,7 @@ omit [LinearOrder F] [IsStrictOrderedRing F] [IsStrictOrderedRing E] in
 theorem cellsUnion_append (l₁ l₂ : List (MvPolynomial (Fin n) F × Finset (MvPolynomial (Fin n) F))) :
     (cellsUnion (l₁ ++ l₂) : Set (Fin n → E)) = cellsUnion l₁ ∪ cellsUnion l₂ := by
   ext z
-  simp only [cellsUnion, Set.mem_setOf_eq, Set.mem_union, List.mem_append, or_and_right, exists_or]
+  simp only [cellsUnion, Set.mem_ofPred_eq, Set.mem_union, List.mem_append, or_and_right, exists_or]
 
 /-- Merge two cell-lists (cartesian product, intersecting each pair via sum of squares). -/
 noncomputable def mergeCells
@@ -478,7 +478,7 @@ theorem cellsUnion_merge
     (l₁ l₂ : List (MvPolynomial (Fin n) F × Finset (MvPolynomial (Fin n) F))) :
     (cellsUnion (mergeCells l₁ l₂) : Set (Fin n → E)) = cellsUnion l₁ ∩ cellsUnion l₂ := by
   ext z
-  simp only [cellsUnion, mergeCells, Set.mem_setOf_eq, Set.mem_inter_iff, List.mem_flatMap,
+  simp only [cellsUnion, mergeCells, Set.mem_ofPred_eq, Set.mem_inter_iff, List.mem_flatMap,
     List.mem_map]
   constructor
   · rintro ⟨c, ⟨c₁, hc₁, c₂, hc₂, rfl⟩, hz⟩
@@ -507,7 +507,7 @@ theorem atomCells_realization (P : MvPolynomial (Fin n) F) (rel : OrderRel) :
       (Formula.atom (⟨P, rel⟩ : OrderedFieldAtom (Fin n) F)).realization (C := E) := by
   cases rel <;> ext z <;>
     simp only [atomCells, cellsUnion, cellSet, Formula.realization, AtomRealization.interpret,
-      List.mem_cons, List.not_mem_nil, Finset.mem_singleton, Finset.notMem_empty, Set.mem_setOf_eq,
+      List.mem_cons, List.not_mem_nil, Finset.mem_singleton, Finset.notMem_empty, Set.mem_ofPred_eq,
       map_zero, map_neg, map_pow, forall_eq, or_false, IsEmpty.forall_iff, implies_true,
       true_and, and_true, exists_eq_left, exists_eq_or_imp, neg_pos, sq_pos_iff, gt_iff_lt]
   · constructor
@@ -614,7 +614,7 @@ theorem initImage_cellsUnion {m : ℕ} (hinj : Function.Injective (algebraMap R 
         (C := E) := by
   rw [Formula.realization_disjListO]
   ext y
-  simp only [Set.mem_image, cellsUnion, Set.mem_setOf_eq]
+  simp only [Set.mem_image, cellsUnion, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨z, ⟨c, hc, hzc⟩, rfl⟩
     exact ⟨basicCellProjFormula c.1 c.2, List.mem_map.mpr ⟨c, hc, rfl⟩,

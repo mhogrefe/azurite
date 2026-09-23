@@ -31,7 +31,7 @@ theorem polyFun_isSemialgebraicFunction {n : ℕ} (P : MvPolynomial (Fin n) R) :
   have hgraph : funGraph (Set.univ : Set (Fin n → R)) (polyFun P)
       = {z : Fin (n + 1) → R | MvPolynomial.eval z Q = 0} := by
     ext z
-    simp only [mem_funGraph, Set.mem_univ, true_and, Set.mem_setOf_eq, hQeval, sub_eq_zero]
+    simp only [mem_funGraph, Set.mem_univ, true_and, Set.mem_ofPred_eq, hQeval, sub_eq_zero]
     constructor
     · intro h; simpa [polyFun] using congrFun h 0
     · intro h; funext i; rw [Subsingleton.elim i 0]; simpa [polyFun] using h

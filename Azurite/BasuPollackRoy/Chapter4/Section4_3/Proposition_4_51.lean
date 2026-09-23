@@ -153,12 +153,12 @@ theorem proposition_4_51 (P : R[X]) (hp : 0 < P.natDegree) :
     -- ⟹ : Splits → staircase
     ------------------------------------------------------------------
     intro hsplit
-    haveI hNeZero : NeZero p := ⟨by omega⟩
+    have hNeZero : NeZero p := ⟨by omega⟩
     -- Realize `P` (up to leading scalar) as the charpoly of a diagonal symmetric matrix.
     have hcardroots : P.roots.card = p := (Polynomial.splits_iff_card_roots.mp hsplit)
     set n := P.roots.toList.length with hn
     have hnp : n = p := by rw [hn, Multiset.length_toList, hcardroots]
-    haveI hNeZeroN : NeZero n := ⟨by omega⟩
+    have hNeZeroN : NeZero n := ⟨by omega⟩
     -- enumeration of the roots
     set v : Fin n → R := fun i => P.roots.toList[i] with hv
     set M : Matrix (Fin n) (Fin n) R := Matrix.diagonal v with hM
@@ -228,7 +228,7 @@ theorem proposition_4_51 (P : R[X]) (hp : 0 < P.natDegree) :
       have hposK : ∀ i, k ≤ i → i ≤ p → 0 < sDiscK P i := by
         intro i hki hip
         rcases eq_or_lt_of_le hip with h | h
-        · subst h; rw [sDiscK, if_neg (by omega)]; exact one_pos
+        · subst h; rw [sDiscK, ite_eq_right (by omega)]; exact one_pos
         · exact hpos i hki (by omega)
       have hposBlock : ∀ x ∈ (List.range m).map f, 0 < x := by
         intro x hx

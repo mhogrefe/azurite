@@ -59,7 +59,7 @@ noncomputable def puiseuxLim (K : Type*) [Field K] : puiseuxBounded K →+* K wh
   map_one' := by
     have h : limHahn (1 : puiseuxBounded K) = 1 := by simp only [limHahn, OneMemClass.coe_one]
     show (limHahn 1).coeff 0 = 1
-    rw [h, coeff_one, if_pos rfl]
+    rw [h, coeff_one, ite_eq_left rfl]
   map_mul' x y := by
     have h : limHahn (x * y) = limHahn x * limHahn y := by simp only [limHahn, MulMemClass.coe_mul]
     show (limHahn (x * y)).coeff 0 = (limHahn x).coeff 0 * (limHahn y).coeff 0

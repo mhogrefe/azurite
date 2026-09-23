@@ -34,15 +34,15 @@ namespace Azurite.AzRat
   · -- negative base: the sign of the power depends on the parity of `n`
     rcases Nat.even_or_odd n with he | ho
     · rw [show (false || (n % 2 == 0)) = true by simp [Nat.even_iff.mp he],
-        if_pos rfl, if_neg Bool.false_ne_true,
+        ite_eq_left rfl, ite_eq_right Bool.false_ne_true,
         Rat.divInt_eq_div, Rat.divInt_eq_div, div_pow]
       push_cast [Even.neg_pow he]; ring
     · rw [show (false || (n % 2 == 0)) = false by simp [Nat.odd_iff.mp ho],
-        if_neg Bool.false_ne_true, if_neg Bool.false_ne_true,
+        ite_eq_right Bool.false_ne_true, ite_eq_right Bool.false_ne_true,
         Rat.divInt_eq_div, Rat.divInt_eq_div, div_pow]
       push_cast [Odd.neg_pow ho]; ring
   · -- nonnegative base: the power is nonnegative
-    rw [show (true || (n % 2 == 0)) = true from rfl, if_pos rfl, if_pos rfl,
+    rw [show (true || (n % 2 == 0)) = true from rfl, ite_eq_left rfl, ite_eq_left rfl,
       Rat.divInt_eq_div, Rat.divInt_eq_div, div_pow]
     push_cast; ring
 
@@ -63,14 +63,14 @@ theorem zpow_negSucc (q : AzRat) (n : ℕ) :
       exact AzNat.toNat_injective (by
         rw [AzNat.toNat_pow, AzNat.toNat_zero, Nat.zero_pow (Nat.succ_pos n)])
     simp only [AzRat.zpow]
-    rw [dif_pos h, AzRat.inv, dif_pos hp]
+    rw [dite_eq_left h, AzRat.inv, dite_eq_left hp]
   · have hp : (q.pow (n + 1)).num ≠ 0 := fun h0 => by
       have h1 := congrArg AzNat.toNat (show q.num.pow (n + 1) = 0 from h0)
       rw [AzNat.toNat_pow, AzNat.toNat_zero] at h1
       exact h (AzNat.toNat_injective (by
         rw [(Nat.pow_eq_zero.mp h1).1, AzNat.toNat_zero]))
     simp only [AzRat.zpow]
-    rw [dif_neg h, AzRat.inv, dif_neg hp]
+    rw [dite_eq_right h, AzRat.inv, dite_eq_right hp]
     rfl
 
 @[simp] theorem toRat_zpow (q : AzRat) (z : ℤ) : toRat (q.zpow z) = toRat q ^ z := by

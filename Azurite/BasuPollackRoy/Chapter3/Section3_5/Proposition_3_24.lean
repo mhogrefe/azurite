@@ -222,7 +222,7 @@ theorem IsSemialgebraicFunction.mono {k ℓ : ℕ} {S T : Set (Fin k → R)}
   show IsSemialgebraicSet (funGraph T f)
   have heq : funGraph T f = funGraph S f ∩ {z | z ∘ Fin.castAdd ℓ ∈ T} := by
     ext z
-    rw [Set.mem_inter_iff, mem_funGraph, mem_funGraph, Set.mem_setOf_eq]
+    rw [Set.mem_inter_iff, mem_funGraph, mem_funGraph, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨h1, h2⟩
       exact ⟨⟨hTS h1, h2⟩, h1⟩
@@ -401,7 +401,7 @@ theorem proposition_3_24 {k : ℕ} {U' : Set (Fin k → R)}
       IsSemialgebraicHomeomorphism.refl hsa, isSemialgebraicFunction_id hsa,
       fun z _ => by rw [Matrix.det_fin_zero]; exact isUnit_one,
       ⟨1, one_pos, fun y _ y' _ => le_of_eq (by simp only [id_eq, one_mul])⟩⟩
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   -- the derivative at the origin, its transpose, and their lower bounds
   set A : Matrix (Fin k) (Fin k) R := jacobianMatrix g 0 with hAd
   have hdetT : IsUnit A.transpose.det := by rwa [Matrix.det_transpose]

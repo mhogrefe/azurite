@@ -25,7 +25,7 @@ def neg (q : AzRat) : AzRat where
   num := q.num
   den := q.den
   den_nz := q.den_nz
-  zero_sign := fun h => if_pos h
+  zero_sign := fun h => ite_eq_left h
   reduced := q.reduced
 
 instance : Neg AzRat := ⟨neg⟩

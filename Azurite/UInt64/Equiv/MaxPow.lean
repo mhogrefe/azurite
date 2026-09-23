@@ -23,7 +23,7 @@ private theorem maxPow.go_correct (b cap : UInt64) (hb : 2 ≤ b.toNat)
     simpa using h_over
   | case2 f acc e h_le ih =>
     intro h_acc h_over
-    rw [maxPow.go, if_pos h_le]
+    rw [maxPow.go, ite_eq_left h_le]
     apply ih
     · have h_acc_le : acc.toNat ≤ cap.toNat := UInt64.le_iff_toNat_le_toNat.mp h_le
       have h_acc_b_le : acc.toNat * b.toNat ≤ 2 ^ 64 - 1 := by
@@ -41,7 +41,7 @@ private theorem maxPow.go_correct (b cap : UInt64) (hb : 2 ≤ b.toNat)
       rw [this]; exact h_over
   | case3 f acc e h_gt =>
     intro h_acc _h_over
-    rw [maxPow.go, if_neg h_gt]
+    rw [maxPow.go, ite_eq_right h_gt]
     refine ⟨h_acc, ?_⟩
     have h_b_pos : 0 < b.toNat := by omega
     have h_cap_lt : cap.toNat < acc.toNat := by
@@ -67,7 +67,7 @@ theorem maxPow_correct (b : UInt64) (hb : 2 ≤ b.toNat) :
     have h2 : (2 : UInt64).toNat = 2 := rfl
     omega
   unfold maxPow
-  rw [if_neg hb_uint]
+  rw [ite_eq_right hb_uint]
   refine maxPow.go_correct b _ hb ?hcap 64 1 0 ?h_acc ?h_over
   case hcap =>
     rw [UInt64.toNat_div]

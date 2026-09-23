@@ -46,7 +46,7 @@ theorem realization_existsList (L : List σ) (Φ : Formula σ α) :
   | nil =>
     simp only [existsList, List.foldr_nil]
     ext z
-    simp only [Set.mem_setOf_eq, List.not_mem_nil, not_false_eq_true, forall_const]
+    simp only [Set.mem_ofPred_eq, List.not_mem_nil, not_false_eq_true, forall_const]
     constructor
     · intro hz; exact ⟨z, fun _ => rfl, hz⟩
     · rintro ⟨v, hv, hvΦ⟩
@@ -57,7 +57,7 @@ theorem realization_existsList (L : List σ) (Φ : Formula σ α) :
     have hstep : z ∈ (existsList (s :: L') Φ).realization (C := C) ↔
         ∃ w, Function.update z s w ∈ (existsList L' Φ).realization (C := C) := Iff.rfl
     rw [hstep]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨w, hw⟩
       rw [ih] at hw
@@ -88,7 +88,7 @@ theorem realization_forallList (L : List σ) (Φ : Formula σ α) :
   | nil =>
     simp only [forallList, List.foldr_nil]
     ext z
-    simp only [Set.mem_setOf_eq, List.not_mem_nil, not_false_eq_true, forall_const]
+    simp only [Set.mem_ofPred_eq, List.not_mem_nil, not_false_eq_true, forall_const]
     constructor
     · intro hz v hv; rwa [show v = z from funext hv]
     · intro h; exact h z (fun _ => rfl)
@@ -97,7 +97,7 @@ theorem realization_forallList (L : List σ) (Φ : Formula σ α) :
     have hstep : z ∈ (forallList (s :: L') Φ).realization (C := C) ↔
         ∀ c, Function.update z s c ∈ (forallList L' Φ).realization (C := C) := Iff.rfl
     rw [hstep]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · intro h v hv
       have hc := h (v s)
@@ -196,13 +196,13 @@ theorem realization_ltPairForm {ℓ : ℕ} (rc : Fin ℓ → σ) (i j : Fin ℓ)
     (ltPairForm (F := F) rc i j).realization (C := R) = {v | v (rc i) < v (rc j)} := by
   rw [ltPairForm, realization_ltZeroO]
   ext v
-  simp only [Set.mem_setOf_eq, map_sub, MvPolynomial.aeval_X, sub_neg]
+  simp only [Set.mem_ofPred_eq, map_sub, MvPolynomial.aeval_X, sub_neg]
 
 theorem mem_orderingForm {ℓ : ℕ} (rc : Fin ℓ → σ) (v : σ → R) :
     v ∈ (orderingForm (F := F) rc).realization (C := R) ↔
       StrictMono (fun t => v (rc t)) := by
   rw [orderingForm, realization_conjListO]
-  simp only [Set.mem_setOf_eq, List.forall_mem_map, Finset.mem_toList,
+  simp only [Set.mem_ofPred_eq, List.forall_mem_map, Finset.mem_toList,
     Finset.mem_filter, Finset.mem_univ, true_and]
   constructor
   · intro h i j hij
@@ -216,13 +216,13 @@ theorem mem_allRootsForm {ℓ : ℕ} (P : F[X]) (rc : Fin ℓ → σ) (v : σ �
     v ∈ (allRootsForm P rc).realization (C := R) ↔
       ∀ t, Polynomial.aeval (v (rc t)) P = 0 := by
   rw [allRootsForm, realization_conjListO]
-  simp only [Set.mem_setOf_eq, List.forall_mem_ofFn_iff, realization_eqZeroO,
+  simp only [Set.mem_ofPred_eq, List.forall_mem_ofFn_iff, realization_eqZeroO,
     aeval_uniSubst]
 
 theorem mem_yEqForm {ℓ : ℕ} (rc : Fin ℓ → σ) (y0 : σ) (jdx : Fin ℓ) (v : σ → R) :
     v ∈ (yEqForm (F := F) rc y0 jdx).realization (C := R) ↔ v y0 = v (rc jdx) := by
   rw [yEqForm, realization_eqZeroO]
-  simp only [Set.mem_setOf_eq, map_sub, MvPolynomial.aeval_X, sub_eq_zero]
+  simp only [Set.mem_ofPred_eq, map_sub, MvPolynomial.aeval_X, sub_eq_zero]
 
 theorem mem_exhaustForm {ℓ : ℕ} (P : F[X]) (rc : Fin ℓ → σ) (xc : σ)
     (hxc : ∀ t, rc t ≠ xc) (v : σ → R) :
@@ -236,13 +236,13 @@ theorem mem_exhaustForm {ℓ : ℕ} (P : F[X]) (rc : Fin ℓ → σ) (xc : σ)
   have hwrc : ∀ t, w (rc t) = v (rc t) := fun t => Function.update_of_ne (hxc t) ..
   have hA : w ∈ (eqZeroO (uniSubst xc P)).realization (C := R) ↔
       Polynomial.aeval c P = 0 := by
-    rw [realization_eqZeroO]; simp only [Set.mem_setOf_eq, aeval_uniSubst, hwxc]
+    rw [realization_eqZeroO]; simp only [Set.mem_ofPred_eq, aeval_uniSubst, hwxc]
   have hB : w ∈ (disjListO (List.ofFn
       (fun t => eqZeroO ((MvPolynomial.X xc : MvPolynomial σ F) -
         MvPolynomial.X (rc t))))).realization (C := R) ↔
       ∃ t, c = v (rc t) := by
     rw [realization_disjListO]
-    simp only [Set.mem_setOf_eq, List.mem_ofFn, exists_exists_eq_and,
+    simp only [Set.mem_ofPred_eq, List.mem_ofFn, exists_exists_eq_and,
       realization_eqZeroO, map_sub, MvPolynomial.aeval_X, hwxc, hwrc, sub_eq_zero]
   show w ∈ ((eqZeroO (uniSubst xc P)).implies _).realization (C := R) ↔ _
   rw [show ((eqZeroO (uniSubst xc P)).implies
@@ -291,7 +291,7 @@ theorem deltaForm_realization {ℓ : ℕ} (P : F[X]) (hP : P ≠ 0)
     simp only [realization_and, Set.mem_inter_iff, mem_orderingForm, mem_allRootsForm,
       mem_exhaustForm P rc xc hxc_rc, mem_yEqForm]
   ext z
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨v, hagree, hv⟩
     rw [hbody] at hv
@@ -307,16 +307,16 @@ theorem deltaForm_realization {ℓ : ℕ} (P : F[X]) (hP : P ≠ 0)
     refine ⟨fun s' => if h : ∃ t, rc t = s' then g h.choose else z s', ?_, ?_⟩
     · intro s' hs'
       show (if h : ∃ t, rc t = s' then g h.choose else z s') = z s'
-      rw [dif_neg]; rintro ⟨t, ht⟩
+      rw [dite_eq_right]; rintro ⟨t, ht⟩
       exact hs' (List.mem_ofFn.mpr ⟨t, ht⟩)
     · rw [hbody]
       have hvrc : ∀ t, (if h : ∃ t', rc t' = rc t then g h.choose else z (rc t)) = g t := by
         intro t
-        rw [dif_pos ⟨t, rfl⟩]
+        rw [dite_eq_left ⟨t, rfl⟩]
         congr 1
         exact hrc_inj (Exists.choose_spec (⟨t, rfl⟩ : ∃ t', rc t' = rc t))
       have hvy0 : (if h : ∃ t, rc t = y0 then g h.choose else z y0) = z y0 := by
-        rw [dif_neg]; rintro ⟨t, ht⟩; exact hy0_rc t ht
+        rw [dite_eq_right]; rintro ⟨t, ht⟩; exact hy0_rc t ht
       refine ⟨?_, ?_, ?_, ?_⟩
       · simp only [hvrc]; exact (s.orderEmbOfFin hℓ).strictMono
       · intro t; rw [hvrc]; exact (hmemroots (g t)).mp (Finset.orderEmbOfFin_mem s hℓ t)
@@ -378,7 +378,7 @@ noncomputable def polyLift (A : Finset R) (Xembed : Fin k → Fin N)
 theorem coeffLift_eval (A : Finset R) (Yembed : Fin A.card → Fin N) (w : Fin N → R)
     (hw : ∀ j, w (Yembed j) = coeffEnum A j) (r : R) (hr : r ∈ A) :
     MvPolynomial.aeval w (coeffLift (F := F) A Yembed r) = r := by
-  rw [coeffLift, dif_pos hr, MvPolynomial.aeval_X, hw, coeffEnum, Equiv.symm_apply_apply]
+  rw [coeffLift, dite_eq_left hr, MvPolynomial.aeval_X, hw, coeffEnum, Equiv.symm_apply_apply]
 
 theorem polyLift_eval (A : Finset R) (Xembed : Fin k → Fin N) (Yembed : Fin A.card → Fin N)
     (w : Fin N → R) (hw : ∀ j, w (Yembed j) = coeffEnum A j)
@@ -441,7 +441,7 @@ theorem liftForm_bridge (A : Finset R) (Xembed : Fin k → Fin N) (Yembed : Fin 
       polyLift_eval A Xembed Yembed w hw P hPA
     cases rel <;>
       simp only [liftForm, liftAtom, Formula.rename, Formula.realization,
-        AtomRealization.interpret, Set.mem_setOf_eq, heval]
+        AtomRealization.interpret, Set.mem_ofPred_eq, heval]
   | not Φ ih =>
     intro hqf hA
     simp only [liftForm, Formula.rename, Formula.realization, Set.mem_compl_iff]
@@ -549,7 +549,7 @@ theorem descForm_bridge (x : Fin k → R)
     intro _
     obtain ⟨P, rel⟩ := a
     cases rel <;>
-      simp only [descForm, Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq,
+      simp only [descForm, Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq,
         aeval_descPoly]
   | not Φ ih =>
     intro hqf
@@ -596,7 +596,7 @@ theorem proposition_2_82 (halg : Algebra.IsAlgebraic F R) (hmono : StrictMono (a
       S = Φ.realization (C := R) := by
   classical
   have hinj : Function.Injective (algebraMap F R) := hmono.injective
-  haveI : Algebra.IsIntegral F R := halg.isIntegral
+  have : Algebra.IsIntegral F R := halg.isIntegral
   -- Step A: a quantifier-free formula over `R` defining `S`.
   obtain ⟨Φ_R, hΦR_qf, hSΦ⟩ := semialgebraic_isQFRealizable S hS
   set A : Finset R := Formula.coeffSet Φ_R with hA_def
@@ -669,7 +669,7 @@ theorem proposition_2_82 (halg : Algebra.IsAlgebraic F R) (hmono : StrictMono (a
       {v : Fin N → R | ∀ j, v (Yembed j) = a j} := by
     rw [Formula.realization_conjListO]
     ext v
-    simp only [Set.mem_setOf_eq, List.forall_mem_ofFn_iff]
+    simp only [Set.mem_ofPred_eq, List.forall_mem_ofFn_iff]
     exact forall_congr' (fun j => by rw [hΔ j]; rfl)
   set body : Formula (Fin N) (OrderedFieldAtom (Fin N) F) :=
     Formula.implies (Formula.conjListO (List.ofFn Δhat)) Ψ with hbody_def
@@ -686,7 +686,7 @@ theorem proposition_2_82 (halg : Algebra.IsAlgebraic F R) (hmono : StrictMono (a
     rw [hbody_def]
     show v ∈ (_ᶜ ∪ _) ↔ _
     rw [Set.mem_union, Set.mem_compl_iff, hconj]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     tauto
   -- The big formula realizes to the cylinder over `Φ_R`.
   set zc : (Fin N → R) → (Fin N → R) :=
@@ -694,25 +694,25 @@ theorem proposition_2_82 (halg : Algebra.IsAlgebraic F R) (hmono : StrictMono (a
   have hzc_Y : ∀ z j, zc z (Yembed j) = a j := by
     intro z j
     show (if h : ∃ j', Yembed j' = Yembed j then a h.choose else z (Yembed j)) = a j
-    rw [dif_pos ⟨j, rfl⟩]
+    rw [dite_eq_left ⟨j, rfl⟩]
     congr 1
     exact hYinj (Exists.choose_spec (⟨j, rfl⟩ : ∃ j', Yembed j' = Yembed j))
   have hzc_X : ∀ z i, zc z (Xembed i) = z (Xembed i) := by
     intro z i
     show (if h : ∃ j, Yembed j = Xembed i then a h.choose else z (Xembed i)) = z (Xembed i)
-    rw [dif_neg]; rintro ⟨j, hj⟩; exact hX_notY i j hj.symm
+    rw [dite_eq_right]; rintro ⟨j, hj⟩; exact hX_notY i j hj.symm
 
   have hcyl : bigΦ.realization (C := R) =
       {z : Fin N → R | (fun i => z (Xembed i)) ∈ Φ_R.realization (C := R)} := by
     rw [hbigΦ_def, Formula.realization_forallList]
     ext z
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · intro h
       have hzcoff : ∀ s ∉ List.ofFn Yembed, zc z s = z s := by
         intro s hs
         show (if h : ∃ j, Yembed j = s then a h.choose else z s) = z s
-        rw [dif_neg]; rintro ⟨j, hj⟩; exact hs (List.mem_ofFn.mpr ⟨j, hj⟩)
+        rw [dite_eq_right]; rintro ⟨j, hj⟩; exact hs (List.mem_ofFn.mpr ⟨j, hj⟩)
       have hzcbody := h (zc z) hzcoff
       rw [hbody_mem] at hzcbody
       have := hzcbody (fun j => hzc_Y z j)
@@ -736,7 +736,7 @@ theorem proposition_2_82 (halg : Algebra.IsAlgebraic F R) (hmono : StrictMono (a
   have hext : (fun i => extendZero x (Xembed i)) = x := by
     funext i
     show (if h : (Xembed i : ℕ) < k then x ⟨Xembed i, h⟩ else 0) = x i
-    rw [dif_pos (by rw [hXval]; exact i.isLt)]
+    rw [dite_eq_left (by rw [hXval]; exact i.isLt)]
   rw [hSΦ, descForm_bridge x Ψ' hΨ'_qf, ← hΨ'_eq, hcyl]
   show x ∈ Φ_R.realization (C := R) ↔
     (fun i => extendZero x (Xembed i)) ∈ Φ_R.realization (C := R)

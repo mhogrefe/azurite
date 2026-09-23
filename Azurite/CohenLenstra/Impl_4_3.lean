@@ -88,7 +88,7 @@ for prime `n` makes the discriminant a nonsquare mod `n`. -/
 theorem not_isSquare_disc {n : ℕ} (hn : n.Prime) {u a : ℤ}
     (hJ : jacobiSym (u ^ 2 + 4 * a) n = -1) :
     ¬ IsSquare ((u : ZMod n) ^ 2 + 4 * (a : ZMod n)) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   have hleg : legendreSym n (u ^ 2 + 4 * a) = -1 := by
     rw [jacobiSym.legendreSym.to_jacobiSym]
     exact hJ
@@ -106,7 +106,7 @@ quadratic is irreducible. -/
 theorem quad_irreducible {n : ℕ} (hn : n.Prime) {u a : ZMod n}
     (hns : ¬ IsSquare (u ^ 2 + 4 * a)) :
     Irreducible (X ^ 2 - C u * X - C a : Polynomial (ZMod n)) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
   have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u * c - a = 0) := by
     intro c hc
@@ -144,12 +144,12 @@ theorem root_pow_card_eq_conj {n : ℕ} (hn : n.Prime) {u a : ZMod n}
     (AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ n
       = algebraMap (ZMod n) (QuadRing (ZMod n) u a) u
         - AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n)) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   have hn1 : 1 < n := hn.one_lt
   set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
   have hirr : Irreducible f := quad_irreducible hn hns
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : CharP (AdjoinRoot f) n :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
   have hnoroot : ∀ c : ZMod n, ¬ (c ^ 2 - u * c - a = 0) := by
@@ -243,11 +243,11 @@ theorem pow_card_succ_eq_quadNorm {n : ℕ} (hn : n.Prime) {u a : ZMod n}
         + algebraMap (ZMod n) (QuadRing (ZMod n) u a) x₁
           * AdjoinRoot.root (X ^ 2 - C u * X - C a : Polynomial (ZMod n))) ^ (n + 1)
       = algebraMap (ZMod n) (QuadRing (ZMod n) u a) (quadNorm u a x₀ x₁) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   set f : Polynomial (ZMod n) := X ^ 2 - C u * X - C a with hf
   have hirr : Irreducible f := quad_irreducible hn hns
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : CharP (AdjoinRoot f) n :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
   set ξ : AdjoinRoot f := AdjoinRoot.root f with hξ

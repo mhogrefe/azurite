@@ -28,7 +28,7 @@ private theorem ofDigits_trimTrailingZeros (b : Nat) (a : Array UInt64) :
   · have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1]'h_idx = 0
-    · simp only [h, ↓reduceDIte, h_last, if_true]
+    · simp only [h, ↓reduceDIte, h_last, ite_true]
       rw [ofDigits_trimTrailingZeros b a.pop]
       have h_ne : a.toList ≠ [] := by
         intro he
@@ -82,12 +82,12 @@ private theorem ofDigits_paddedDigitsPow2 (k : Nat) (hk : 1 ≤ k) (l : UInt64) 
       ((UInt64.digitsPow2 k l).toList.map UInt64.toNat) = l.toNat := by
     rw [UInt64.digitsPow2_eq k hk, Nat.ofDigits_digits]
   by_cases h_lt : (UInt64.digitsPow2 k l).size < 64 / k
-  · rw [if_pos h_lt, Array.toList_append, Array.toList_replicate,
+  · rw [ite_eq_left h_lt, Array.toList_append, Array.toList_replicate,
         List.map_append, List.map_replicate]
     have h0 : (0 : UInt64).toNat = 0 := rfl
     rw [h0, Nat.ofDigits_append_replicate_zero]
     exact h_dig_lt
-  · rw [if_neg h_lt]
+  · rw [ite_eq_right h_lt]
     exact h_dig_lt
 
 private theorem digit_lt_of_paddedDigitsPow2 (k : Nat) (hk : 1 ≤ k) (l : UInt64) :
@@ -100,7 +100,7 @@ private theorem digit_lt_of_paddedDigitsPow2 (k : Nat) (hk : 1 ≤ k) (l : UInt6
     calc (1 : Nat) = 2 ^ 0 := by simp
       _ < 2 ^ k := Nat.pow_lt_pow_right (by omega) (by omega)
   by_cases h_lt : (UInt64.digitsPow2 k l).size < 64 / k
-  · rw [if_pos h_lt] at hx
+  · rw [ite_eq_left h_lt] at hx
     rw [Array.toList_append, Array.toList_replicate, List.map_append,
         List.map_replicate, List.mem_append] at hx
     cases hx with
@@ -113,7 +113,7 @@ private theorem digit_lt_of_paddedDigitsPow2 (k : Nat) (hk : 1 ≤ k) (l : UInt6
       rw [this]
       show 0 < 2 ^ k
       positivity
-  · rw [if_neg h_lt] at hx
+  · rw [ite_eq_right h_lt] at hx
     rw [h_dig_eq] at hx
     exact Nat.digits_lt_base h_2k hx
 
@@ -138,10 +138,10 @@ private theorem paddedDigitsPow2_size (k : Nat) (hk : 1 ≤ k) (hk_lt : k < 64)
       rw [← Nat.pow_mul, h_k_times]
     omega
   by_cases h_lt : (UInt64.digitsPow2 k l).size < 64 / k
-  · rw [if_pos h_lt]
+  · rw [ite_eq_left h_lt]
     rw [Array.size_append, Array.size_replicate]
     omega
-  · rw [if_neg h_lt]; omega
+  · rw [ite_eq_right h_lt]; omega
 
 /-! ### Main correctness theorem -/
 
@@ -184,7 +184,7 @@ private theorem mem_of_mem_trimTrailingZeros (a : Array UInt64) :
   · have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1]'h_idx = 0
-    · simp only [h, ↓reduceDIte, h_last, if_true]
+    · simp only [h, ↓reduceDIte, h_last, ite_true]
       intro y hy
       have := mem_of_mem_trimTrailingZeros a.pop y hy
       rw [Array.toList_pop] at this
@@ -295,16 +295,16 @@ theorem limbDigitsPow2_eq (k : Nat) (hk : 1 ≤ k) (hk64 : k ≤ 64) (n : AzNat)
     (n.limbDigitsPow2 k).toList.map UInt64.toNat = Nat.digits (2 ^ k) n.toNat := by
   unfold AzNat.limbDigitsPow2
   by_cases h_64 : k = 64
-  · rw [if_pos h_64]
+  · rw [ite_eq_left h_64]
     subst h_64
     exact limbDigitsPow2_eq_of_eq_64 n
-  · rw [if_neg h_64]
+  · rw [ite_eq_right h_64]
     by_cases h_div : 1 ≤ k ∧ k < 64 ∧ 64 % k = 0
-    · rw [dif_pos h_div]
+    · rw [dite_eq_left h_div]
       exact limbDigitsPow2_eq_of_div_64 k h_div.1 h_div.2.1 h_div.2.2 n
-    · rw [dif_neg h_div]
+    · rw [dite_eq_right h_div]
       have h_lt_64 : 1 ≤ k ∧ k < 64 := ⟨hk, by omega⟩
-      rw [dif_pos h_lt_64]
+      rw [dite_eq_left h_lt_64]
       -- k ∤ 64 case: getBits path
       have h_2k : 1 < 2 ^ k := by
         calc (1 : Nat) = 2 ^ 0 := by simp

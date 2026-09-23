@@ -3,7 +3,7 @@ import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Algebra.Order.Group.Abs
 import Mathlib.Algebra.Order.Ring.Defs
 import Mathlib.Algebra.Polynomial.Eval.Degree
-import Mathlib.Data.Sign.Defs
+import Mathlib.Basic.Sign.Defs
 import Mathlib.Tactic.Positivity
 
 /-! # BPR Section 2.1 — Proposition 2.4: Sign of polynomial for large `|x|`

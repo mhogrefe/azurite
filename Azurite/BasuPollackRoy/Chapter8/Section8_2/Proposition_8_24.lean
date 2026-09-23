@@ -57,9 +57,9 @@ theorem proposition_8_24 (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
     ext x
     simp only [Multiset.count_add, Multiset.count_filter]
     rcases lt_trichotomy x 0 with h | h | h
-    · rw [if_neg (not_lt.mpr h.le), if_pos h, if_neg h.ne]; omega
+    · rw [ite_eq_right (not_lt.mpr h.le), ite_eq_left h, ite_eq_right h.ne]; omega
     · subst h; simp
-    · rw [if_pos h, if_neg (not_lt.mpr h.le), if_neg h.ne']; omega
+    · rw [ite_eq_left h, ite_eq_right (not_lt.mpr h.le), ite_eq_right h.ne']; omega
   have hcard : M.charpoly.roots.card = n := by
     conv_lhs => rw [← hmulti]
     rw [Multiset.card_add, Multiset.card_add]

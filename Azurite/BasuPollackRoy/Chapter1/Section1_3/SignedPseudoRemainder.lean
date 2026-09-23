@@ -54,7 +54,7 @@ theorem pRemExp_even (P Q : Polynomial D) : Even (pRemExp P Q) :=
 omit [IsDomain D] in
 theorem pRemExp_ge (P Q : Polynomial D) (h : Q.natDegree ≤ P.natDegree) :
     P.natDegree - Q.natDegree + 1 ≤ pRemExp P Q := by
-  rw [pRemExp, if_neg (Nat.not_lt.mpr h)]
+  rw [pRemExp, ite_eq_right (Nat.not_lt.mpr h)]
   exact le_smallestEvenGe _
 
 /-- BPR's **signed pseudo-remainder** `PRem(P, Q)`: the remainder in
@@ -127,7 +127,7 @@ theorem pRem_exists_aux (Q : Polynomial D) (hQ : Q ≠ 0) :
     have hdeg' : Q.natDegree ≤ P.natDegree := Nat.not_lt.mp hdeg
     have ha_ne : P.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hP
     have hb_ne : Q.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hQ
-    rw [if_neg hdeg] at hn
+    rw [ite_eq_right hdeg] at hn
     have hn1 : 1 ≤ n := by omega
     -- The reduced polynomial P' = C(b)*P - C(a)*X^(pP-qQ)*Q
     set P' : Polynomial D :=
@@ -171,7 +171,7 @@ theorem pRem_exists_aux (Q : Polynomial D) (hQ : Q ≠ 0) :
                 Polynomial.leadingCoeff_C, Polynomial.leadingCoeff_X_pow]
             ring
           have hP'_deg_lt : P'.degree < (Polynomial.C Q.leadingCoeff * P).degree :=
-            Polynomial.degree_sub_lt hLdeg hLne hLeadEq
+            Polynomial.degree_sub_lt_left hLdeg hLne hLeadEq
           rw [Polynomial.degree_C_mul hb_ne,
               Polynomial.degree_eq_natDegree hP',
               Polynomial.degree_eq_natDegree hP] at hP'_deg_lt

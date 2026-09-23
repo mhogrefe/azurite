@@ -138,7 +138,7 @@ theorem realization_degFormula
   match i with
   | ⊥ =>
     ext y
-    simp only [degFormula, Formula.realization_conjList, Set.mem_setOf_eq,
+    simp only [degFormula, Formula.realization_conjList, Set.mem_ofPred_eq,
       List.mem_map, List.mem_range, forall_exists_index, and_imp,
       forall_apply_eq_imp_iff₂, Formula.realization_eq_zero]
     rw [Polynomial.degree_eq_bot, map_eq_zero_iff]
@@ -148,7 +148,7 @@ theorem realization_degFormula
   | some n =>
     ext y
     simp only [degFormula, Formula.realization_and, Formula.realization_ne_zero,
-      Formula.realization_conjList, Set.mem_inter_iff, Set.mem_setOf_eq,
+      Formula.realization_conjList, Set.mem_inter_iff, Set.mem_ofPred_eq,
       List.mem_map, List.mem_range, forall_exists_index, and_imp,
       forall_apply_eq_imp_iff₂, Formula.realization_eq_zero]
     rw [show (some n : WithBot ℕ) = (↑n : WithBot ℕ) from rfl,
@@ -171,7 +171,7 @@ theorem realization_degEqFormula
       { y | (Q₁.map (MvPolynomial.aeval y).toRingHom).degree =
             (Q₂.map (MvPolynomial.aeval y).toRingHom).degree } := by
   ext y
-  simp only [degEqFormula, Formula.realization_disjList, Set.mem_setOf_eq,
+  simp only [degEqFormula, Formula.realization_disjList, Set.mem_ofPred_eq,
     List.mem_cons, List.mem_map, List.mem_range]
   constructor
   · rintro ⟨_, rfl | ⟨i, _, rfl⟩, hmem⟩ <;>
@@ -205,7 +205,7 @@ theorem realization_degNeqFormula
       { y | (Q₁.map (MvPolynomial.aeval y).toRingHom).degree ≠
             (Q₂.map (MvPolynomial.aeval y).toRingHom).degree } := by
   simp only [degNeqFormula, Formula.realization, realization_degEqFormula]
-  ext y; simp [Set.mem_compl_iff, Set.mem_setOf_eq]
+  ext y; simp [Set.mem_compl_iff, Set.mem_ofPred_eq]
 
 /-! #### Partition property -/
 
@@ -215,7 +215,7 @@ theorem degFormula_covering
     {C : Type*} [Field C] [Algebra D C]
     (Q : Polynomial (MvPolynomial (Fin k) D)) (y : Fin k → C) :
     ∃ i : WithBot ℕ, y ∈ (degFormula Q i).realization (C := C) := by
-  simp only [realization_degFormula, Set.mem_setOf_eq]
+  simp only [realization_degFormula, Set.mem_ofPred_eq]
   exact ⟨_, rfl⟩
 
 /-- The `degFormula` family partitions `C^k`: distinct degree values
@@ -226,7 +226,7 @@ theorem degFormula_disjoint
     (degFormula Q i).realization (C := C) ∩
       (degFormula Q j).realization (C := C) = ∅ := by
   simp only [realization_degFormula]
-  ext y; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_empty_iff_false,
+  ext y; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_empty_iff_false,
     iff_false, not_and]
   intro h; rw [h]; exact hij
 

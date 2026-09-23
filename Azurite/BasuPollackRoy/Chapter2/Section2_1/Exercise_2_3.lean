@@ -17,7 +17,7 @@ open Complex in
 theorem exercise_2_3 :
     ¬ ∃ (_ : LinearOrder ℂ), IsStrictOrderedRing ℂ := by
   rintro ⟨ord, hord⟩
-  letI := ord; letI := hord
+  let := ord; let := hord
   have hsq : 0 ≤ I * I := mul_self_nonneg I
   rw [I_mul_I] at hsq
   exact not_le.mpr neg_one_lt_zero hsq

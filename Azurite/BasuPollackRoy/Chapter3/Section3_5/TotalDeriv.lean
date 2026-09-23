@@ -224,7 +224,7 @@ theorem exists_slice_mvt {k : ℕ} {U : Set (Fin k → R)} {c gj : (Fin k → R)
     -- semialgebraicity of the slice
     have hSσ : IsSemialgebraicFunction (Set.Icc (constPt a) (constPt b))
         (fun w : Fin 1 → R => constPt (c (Function.update v j (w 0)))) := by
-      haveI : Nonempty (Fin k) := ⟨j⟩
+      have : Nonempty (Fin k) := ⟨j⟩
       have humap : IsSemialgebraicFunction (Set.Icc (constPt a) (constPt b))
           (fun w : Fin 1 → R => Function.update v j (w 0)) := by
         refine isSemialgebraicFunction_of_coords fun idx => ?_
@@ -233,7 +233,7 @@ theorem exists_slice_mvt {k : ℕ} {U : Set (Fin k → R)} {c gj : (Fin k → R)
           funext w m
           by_cases hidx : idx = j
           · simp [scalarFun, polyFun, constPt, hidx, Function.update_self]
-          · simp [scalarFun, polyFun, constPt, Function.update_of_ne hidx, if_neg hidx]
+          · simp [scalarFun, polyFun, constPt, Function.update_of_ne hidx, ite_eq_right hidx]
         show IsSemialgebraicFunction _
           (scalarFun (fun w : Fin 1 → R => Function.update v j (w 0) idx))
         rw [hcoord]
@@ -303,20 +303,20 @@ theorem vchain_succ {k : ℕ} [Field R] (x₀ x : Fin k → R) {m : ℕ} (hm : m
   rcases eq_or_ne i ⟨m, hm⟩ with rfl | hne
   · rw [Function.update_self]
     show x ⟨m, hm⟩ = if m < m + 1 then x ⟨m, hm⟩ else x₀ ⟨m, hm⟩
-    rw [if_pos (Nat.lt_succ_self m)]
+    rw [ite_eq_left (Nat.lt_succ_self m)]
   · rw [Function.update_of_ne hne]
     have : (i : ℕ) ≠ m := fun h => hne (Fin.ext h)
     simp only [vchain]
     rcases lt_or_ge (i : ℕ) m with h | h
-    · rw [if_pos h, if_pos (by omega)]
-    · rw [if_neg (by omega), if_neg (by omega)]
+    · rw [ite_eq_left h, ite_eq_left (by omega)]
+    · rw [ite_eq_right (by omega), ite_eq_right (by omega)]
 
 omit [Field R] [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
 theorem vchain_self {k : ℕ} [Field R] (x₀ x : Fin k → R) {m : ℕ} (hm : m < k) :
     Function.update (vchain x₀ x m) ⟨m, hm⟩ (x₀ ⟨m, hm⟩) = vchain x₀ x m := by
   refine Function.update_eq_self_iff.mpr ?_
   show x₀ ⟨m, hm⟩ = if m < m then x ⟨m, hm⟩ else x₀ ⟨m, hm⟩
-  rw [if_neg (lt_irrefl m)]
+  rw [ite_eq_right (lt_irrefl m)]
 
 omit [IsRealClosed R] in
 /-- Points obtained by updating a chain stage inside the coordinate box between `x₀` and
@@ -333,8 +333,8 @@ theorem vchain_update_normSq_le {k : ℕ} (x₀ x : Fin k → R) {m : ℕ} {jF :
   · rw [Pi.sub_apply, Function.update_of_ne hne, Pi.sub_apply]
     simp only [vchain]
     rcases lt_or_ge (i : ℕ) m with h | h
-    · rw [if_pos h]
-    · rw [if_neg (by omega), sub_self]
+    · rw [ite_eq_left h]
+    · rw [ite_eq_right (by omega), sub_self]
       simpa using sq_nonneg (x i - x₀ i)
 
 /-- **BPR §3.5 (unnumbered): first-order approximation.** Following the usual arguments
@@ -391,8 +391,8 @@ theorem isLittleO_sub_totalDeriv {k p : ℕ} {U : Set (Fin k → R)}
       rfl
     rwa [heq] at hy'
   choose δc hδcpos hδcball using hδc
-  haveI : Nonempty (Fin p) := ⟨⟨0, hppos⟩⟩
-  haveI : Nonempty (Fin k) := ⟨⟨0, hkpos⟩⟩
+  have : Nonempty (Fin p) := ⟨⟨0, hppos⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hkpos⟩⟩
   set δ₀ : R := Finset.univ.inf' Finset.univ_nonempty
     (fun lj : Fin p × Fin k => δc lj.1 lj.2) with hδ₀d
   have hδ₀pos : 0 < δ₀ := by
@@ -441,7 +441,7 @@ theorem isLittleO_sub_totalDeriv {k p : ℕ} {U : Set (Fin k → R)}
       rw [← Fin.sum_univ_eq_sum_range]
       refine Finset.sum_congr rfl fun j _ => ?_
       simp only [hGd]
-      rw [dif_pos j.isLt]
+      rw [dite_eq_left j.isLt]
       rfl
     have htele : f x l - f x₀ l
         = ∑ jn ∈ Finset.range k, (cl (vchain x₀ x (jn + 1)) - cl (vchain x₀ x jn)) := by
@@ -475,7 +475,7 @@ theorem isLittleO_sub_totalDeriv {k p : ℕ} {U : Set (Fin k → R)}
             exact lt_of_le_of_lt (vchain_update_normSq_le x₀ x hξ1 hξ2) (hSδc l jF)
           have hG : G jn = g l jF x₀ * (x jF - x₀ jF) := by
             simp only [hGd]
-            rw [dif_pos hjnk]
+            rw [dite_eq_left hjnk]
           have hterm : (cl (vchain x₀ x (jn + 1)) - cl (vchain x₀ x jn)) - G jn
               = (g l jF (Function.update (vchain x₀ x jn) jF ξ) - g l jF x₀)
                 * (x jF - x₀ jF) := by

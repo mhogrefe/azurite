@@ -95,8 +95,8 @@ private theorem termsBelow_monic_lt (i : Fin n) (coeffs : Array R) (N : ℕ) :
         MonicMonomial.ofVarPow i (k + 1) :=
       MonicMonomial.ofVarPow_strictMono i (Nat.lt_succ_self k)
     by_cases hc : (coeffs[k]?).getD 0 = 0
-    · rw [dif_pos hc] at hm; exact lt_trans (ih m hm) hstep
-    · rw [dif_neg hc] at hm
+    · rw [dite_eq_left hc] at hm; exact lt_trans (ih m hm) hstep
+    · rw [dite_eq_right hc] at hm
       rcases List.mem_cons.mp hm with rfl | hm'
       · exact hstep
       · exact lt_trans (ih m hm') hstep
@@ -109,8 +109,8 @@ private theorem termsBelow_totalDegree_lt (i : Fin n) (coeffs : Array R) (N : �
     intro m hm
     rw [termsBelow_succ] at hm
     by_cases hc : (coeffs[k]?).getD 0 = 0
-    · rw [dif_pos hc] at hm; exact lt_trans (ih m hm) (Nat.lt_succ_self k)
-    · rw [dif_neg hc] at hm
+    · rw [dite_eq_left hc] at hm; exact lt_trans (ih m hm) (Nat.lt_succ_self k)
+    · rw [dite_eq_right hc] at hm
       rcases List.mem_cons.mp hm with rfl | hm'
       · rw [term_totalDegree]; exact Nat.lt_succ_self k
       · exact lt_trans (ih m hm') (Nat.lt_succ_self k)
@@ -119,7 +119,7 @@ private theorem termsBelow_mem_top (i : Fin n) (coeffs : Array R) (k : ℕ)
     (hk : (coeffs[k]?).getD 0 ≠ 0) :
     (⟨⟨(coeffs[k]?).getD 0, hk⟩, MonicMonomial.ofVarPow i k⟩ : Monomial n R ord)
       ∈ termsBelow i coeffs (ord := ord) (k + 1) := by
-  rw [termsBelow_succ, dif_neg hk]; exact List.mem_cons_self
+  rw [termsBelow_succ, dite_eq_right hk]; exact List.mem_cons_self
 
 /-! ### `buildTermsDesc` produces `termsBelow` -/
 
@@ -153,12 +153,12 @@ private theorem buildTermsDesc_toList (i : Fin n) (coeffs : Array R)
       · next hc =>
         rw [buildTermsDesc_toList i coeffs fuel (idx - 1) acc hidx',
           show idx - 1 + 1 = idx from by omega, termsBelow_succ]
-        simp only [dif_pos hc]
+        simp only [dite_eq_left hc]
       · next hc =>
         rw [buildTermsDesc_toList i coeffs fuel (idx - 1)
             (acc.push ⟨⟨_, hc⟩, MonicMonomial.ofVarPow i idx⟩) hidx',
           Array.toList_push, show idx - 1 + 1 = idx from by omega, termsBelow_succ]
-        simp only [dif_neg hc, List.append_assoc, List.cons_append, List.nil_append]
+        simp only [dite_eq_right hc, List.append_assoc, List.cons_append, List.nil_append]
 
 theorem image_terms_toList (i : Fin n) (p : AzPolynomial R) :
     (AzPolynomial.toAzMvPolynomial i ord p).terms.toList =
@@ -207,7 +207,7 @@ theorem degreeKey_image (i : Fin n) (p : AzPolynomial R) :
     AzMvPolynomial.degreeKey (AzPolynomial.toAzMvPolynomial i ord p) = p.coeffs.size := by
   rcases Nat.eq_zero_or_pos p.coeffs.size with h | h
   · have himg : AzPolynomial.toAzMvPolynomial i ord p = (0 : AzMvPolynomial n R ord) := by
-      unfold AzPolynomial.toAzMvPolynomial; rw [dif_pos h]; rfl
+      unfold AzPolynomial.toAzMvPolynomial; rw [dite_eq_left h]; rfl
     rw [himg, h]; rfl
   · have hnil : (AzPolynomial.toAzMvPolynomial i ord p).terms.toList ≠ [] := by
       rw [image_terms_toList]
@@ -219,7 +219,7 @@ theorem degreeKey_image (i : Fin n) (p : AzPolynomial R) :
       cases hb : (AzPolynomial.toAzMvPolynomial i ord p).terms.isEmpty
       · rfl
       · exact absurd (Array.toList_eq_nil_iff.mpr (Array.isEmpty_iff.mp hb)) hnil
-    rw [AzMvPolynomial.degreeKey, if_neg (by rw [hne]; decide), totalDegree_image i p h]
+    rw [AzMvPolynomial.degreeKey, ite_eq_right (by rw [hne]; decide), totalDegree_image i p h]
     omega
 
 /-! ### The two term scans agree -/
@@ -260,21 +260,21 @@ theorem compareTerms_termsBelow (i : Fin n) (a b : Array R) (N : ℕ) :
   | succ k ih =>
     rw [AzPolynomial.compareTopDown, Array.getD_eq_getD_getElem?, Array.getD_eq_getD_getElem?]
     by_cases hca : (a[k]?).getD 0 = 0 <;> by_cases hcb : (b[k]?).getD 0 = 0
-    · rw [termsBelow_succ, termsBelow_succ, dif_pos hca, dif_pos hcb, ih, hca, hcb,
+    · rw [termsBelow_succ, termsBelow_succ, dite_eq_left hca, dite_eq_left hcb, ih, hca, hcb,
         compare_eq_iff_eq.mpr (rfl : (0 : R) = 0)]
-    · rw [termsBelow_succ, termsBelow_succ, dif_pos hca, dif_neg hcb,
+    · rw [termsBelow_succ, termsBelow_succ, dite_eq_left hca, dite_eq_right hcb,
         compareTerms_lt_all_cons _ _ _ (termsBelow_monic_lt i a k), hca]
       rcases hX : Ord.compare (0 : R) ((b[k]?).getD 0) with _ | _ | _
       · rfl
       · exact absurd (compare_eq_iff_eq.mp hX).symm hcb
       · rfl
-    · rw [termsBelow_succ, termsBelow_succ, dif_neg hca, dif_pos hcb,
+    · rw [termsBelow_succ, termsBelow_succ, dite_eq_right hca, dite_eq_left hcb,
         compareTerms_cons_lt_all _ _ _ (termsBelow_monic_lt i b k), hcb]
       rcases hX : Ord.compare ((a[k]?).getD 0) (0 : R) with _ | _ | _
       · rfl
       · exact absurd (compare_eq_iff_eq.mp hX) hca
       · rfl
-    · rw [termsBelow_succ, termsBelow_succ, dif_neg hca, dif_neg hcb, ct_cons_cons,
+    · rw [termsBelow_succ, termsBelow_succ, dite_eq_right hca, dite_eq_right hcb, ct_cons_cons,
         compare_eq_iff_eq.mpr
           (rfl : (MonicMonomial.ofVarPow i k : MonicMonomial n ord) = MonicMonomial.ofVarPow i k)]
       rcases hX : Ord.compare ((a[k]?).getD 0) ((b[k]?).getD 0) with _ | _ | _
@@ -290,10 +290,10 @@ theorem compare_image_eq (i : Fin n) (p q : AzPolynomial R) :
   rw [AzMvPolynomial.compare, AzPolynomial.compare, degreeKey_image, degreeKey_image,
     image_terms_toList, image_terms_toList]
   rcases lt_trichotomy p.coeffs.size q.coeffs.size with hs | hs | hs
-  · rw [compare_lt_iff_lt.mpr hs, if_pos hs]
-  · rw [compare_eq_iff_eq.mpr hs, if_neg (by omega), if_neg (by omega), ← hs,
+  · rw [compare_lt_iff_lt.mpr hs, ite_eq_left hs]
+  · rw [compare_eq_iff_eq.mpr hs, ite_eq_right (by omega), ite_eq_right (by omega), ← hs,
       compareTerms_termsBelow]
-  · rw [compare_gt_iff_gt.mpr hs, if_neg (by omega), if_pos hs]
+  · rw [compare_gt_iff_gt.mpr hs, ite_eq_right (by omega), ite_eq_left hs]
 
 /-- The univariate embedding is strictly monotone. -/
 theorem toAzMvPolynomial_strictMono (i : Fin n) :

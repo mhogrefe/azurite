@@ -94,7 +94,7 @@ lemma IsPrefix_get? {α : Type _} {l₁ l₂ : List α} (h : l₁ <+: l₂) (i :
   rcases h with ⟨t, ht⟩
   rw [← ht]
   rw [List.getElem?_append]
-  rw [if_pos hi]
+  rw [ite_eq_left hi]
 
 lemma dropTrailingZeros_get? (l : List R) (i : ℕ) :
   (dropTrailingZeros l)[i]? = if i < (dropTrailingZeros l).length then l[i]? else none := by
@@ -160,11 +160,11 @@ def normalize (a : Array R) : AzPolynomial R :=
     · exact h_not_zero h
   ⟩
 
-/-- 
-The polynomial 1. 
+/--
+The polynomial 1.
 
-In an arbitrary Semiring, `1` might equal `0` (the trivial ring). 
-If `1 = 0`, then returning `#[1]` violates our invariant because the last element is `0`. 
+In an arbitrary Semiring, `1` might equal `0` (the trivial ring).
+If `1 = 0`, then returning `#[1]` violates our invariant because the last element is `0`.
 Therefore, we require `[DecidableEq R]` to return `#[]` (the zero polynomial) if `1 = 0`.
 -/
 def one {R : Type _} [Semiring R] [DecidableEq R] : AzPolynomial R :=

@@ -41,12 +41,12 @@ private theorem ofDigits_digitsPaddedTo (b u : UInt64) (E : Nat) (hb : 2 ≤ b.t
   have h_dig_val : Nat.ofDigits b.toNat ((UInt64.digits b u).toList.map UInt64.toNat) = u.toNat := by
     rw [UInt64.digits_eq b u hb, Nat.ofDigits_digits]
   by_cases h_lt : (UInt64.digits b u).size < E
-  · rw [if_pos h_lt, Array.toList_append, Array.toList_replicate,
+  · rw [ite_eq_left h_lt, Array.toList_append, Array.toList_replicate,
         List.map_append, List.map_replicate]
     have h0 : (0 : UInt64).toNat = 0 := rfl
     rw [h0, Nat.ofDigits_append_replicate_zero]
     exact h_dig_val
-  · rw [if_neg h_lt]
+  · rw [ite_eq_right h_lt]
     exact h_dig_val
 
 /-- Each entry of `digitsPaddedTo b u E` is `< b.toNat`. -/
@@ -57,7 +57,7 @@ private theorem digit_lt_of_digitsPaddedTo (b u : UInt64) (E : Nat) (hb : 2 ≤ 
   have h_dig_eq : (UInt64.digits b u).toList.map UInt64.toNat =
       Nat.digits b.toNat u.toNat := UInt64.digits_eq b u hb
   by_cases h_lt : (UInt64.digits b u).size < E
-  · rw [if_pos h_lt] at hx
+  · rw [ite_eq_left h_lt] at hx
     rw [Array.toList_append, Array.toList_replicate, List.map_append,
         List.map_replicate, List.mem_append] at hx
     cases hx with
@@ -66,7 +66,7 @@ private theorem digit_lt_of_digitsPaddedTo (b u : UInt64) (E : Nat) (hb : 2 ≤ 
       rw [List.mem_replicate] at hx
       have : x = (0 : UInt64).toNat := hx.2
       rw [this]; show 0 < b.toNat; omega
-  · rw [if_neg h_lt] at hx; rw [h_dig_eq] at hx; exact Nat.digits_lt_base hb hx
+  · rw [ite_eq_right h_lt] at hx; rw [h_dig_eq] at hx; exact Nat.digits_lt_base hb hx
 
 /-- Length of `digitsPaddedTo b u E` is `max E (UInt64.digits b u).size`. In
     the typical case `(UInt64.digits b u).size ≤ E`, it equals `E`. -/
@@ -75,8 +75,8 @@ private theorem digitsPaddedTo_size_eq_of_le (b u : UInt64) (E : Nat)
     (UInt64.digitsPaddedTo b u E).size = E := by
   unfold UInt64.digitsPaddedTo
   by_cases h_lt : (UInt64.digits b u).size < E
-  · rw [if_pos h_lt, Array.size_append, Array.size_replicate]; omega
-  · rw [if_neg h_lt]; omega
+  · rw [ite_eq_left h_lt, Array.size_append, Array.size_replicate]; omega
+  · rw [ite_eq_right h_lt]; omega
 
 /-! ### `toBaseUInt64DigitsAux` — base-`P` digit extraction by repeated division -/
 
@@ -110,7 +110,7 @@ private theorem ofDigits_toBaseUInt64DigitsAux (d : UInt64) (hd : d ≠ 0)
       Nat.ofDigits d.toNat (acc.toList.map UInt64.toNat) +
         d.toNat ^ acc.size * U.toNat
     by_cases h_size : U.limbs.size = 0
-    · rw [if_pos h_size]
+    · rw [ite_eq_left h_size]
       have h_u : U.toNat = 0 := by
         show toNatLimbsList U.limbs.toList = 0
         rw [show U.limbs.toList = [] from by
@@ -118,7 +118,7 @@ private theorem ofDigits_toBaseUInt64DigitsAux (d : UInt64) (hd : d ≠ 0)
           exact List.length_eq_zero_iff.mp this]
         rfl
       rw [h_u]; ring
-    · rw [if_neg h_size]
+    · rw [ite_eq_right h_size]
       have h_u_pos : 0 < U.toNat := by
         show 0 < toNatLimbsList U.limbs.toList
         by_contra h
@@ -177,13 +177,13 @@ private theorem digit_lt_of_toBaseUInt64DigitsAux (d : UInt64) (hd : d ≠ 0) :
     by_cases h_size : U.limbs.size = 0
     · rw [show toBaseUInt64DigitsAux d hd (f + 1) U acc = acc from by
         show (if U.limbs.size = 0 then acc else _) = acc
-        rw [if_pos h_size]] at hx
+        rw [ite_eq_left h_size]] at hx
       exact h_acc x hx
     · rw [show toBaseUInt64DigitsAux d hd (f + 1) U acc =
             toBaseUInt64DigitsAux d hd f (U.divModUInt64 d hd).1
               (acc.push (U.divModUInt64 d hd).2) from by
         show (if U.limbs.size = 0 then acc else _) = _
-        rw [if_neg h_size]] at hx
+        rw [ite_eq_right h_size]] at hx
       apply ih (U.divModUInt64 d hd).1 (acc.push (U.divModUInt64 d hd).2) ?_ x hx
       intro y hy
       rw [Array.toList_push, List.map_append, List.map_singleton, List.mem_append] at hy
@@ -269,7 +269,7 @@ private theorem ofDigits_trimTrailingZeros (b : Nat) (a : Array UInt64) :
   · have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1]'h_idx = 0
-    · simp only [h, ↓reduceDIte, h_last, if_true]
+    · simp only [h, ↓reduceDIte, h_last, ite_true]
       rw [ofDigits_trimTrailingZeros b a.pop]
       have h_ne : a.toList ≠ [] := by
         intro he
@@ -296,7 +296,7 @@ private theorem mem_of_mem_trimTrailingZeros (a : Array UInt64) :
   · have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1]'h_idx = 0
-    · simp only [h, ↓reduceDIte, h_last, if_true]
+    · simp only [h, ↓reduceDIte, h_last, ite_true]
       intro y hy
       have := mem_of_mem_trimTrailingZeros a.pop y hy
       rw [Array.toList_pop] at this
@@ -331,7 +331,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
     omega
   have h_b_pos : 1 < b.toNat := by omega
   unfold AzNat.limbDigits
-  rw [if_neg hb_uint]
+  rw [ite_eq_right hb_uint]
   -- Follow the function's match on `n.limbs.size`.
   split
   · -- size = 0 branch
@@ -371,7 +371,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
     rename_i size h_size
     -- ≥ 2-limb case; dispatch on isPowerOfTwo.
     by_cases hpow : b.isPowerOfTwo
-    · rw [if_pos hpow]
+    · rw [ite_eq_left hpow]
       exact limbDigitsPow2_eq b.toBitVec.ctz.toNat
         (by
           have h_ne : b ≠ 0 := by
@@ -407,7 +407,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
           omega)
         n
       |>.trans (by rw [← UInt64.toNat_eq_two_pow_ctz b hpow])
-    · rw [if_neg hpow]
+    · rw [ite_eq_right hpow]
       -- Two sub-branches: `b = 10` (specialized via `toBase10p19DigitsAux`)
       -- and `b ≠ 10` (generic via `toBaseUInt64DigitsAux`). They produce
       -- the same array because `toBase10p19DigitsAux _ n #[]` equals
@@ -426,7 +426,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
               (AzNat.toBaseUInt64DigitsAux P_arg hP (64 * n.limbs.size) n #[]))).toList
           = Nat.digits b.toNat n.toNat by
         by_cases hb10 : b = 10
-        · rw [if_pos hb10]
+        · rw [ite_eq_left hb10]
           subst hb10
           -- Convert specialized to generic
           have h_aux := toBase10p19DigitsAux_eq_toBaseUInt64DigitsAux
@@ -444,7 +444,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
             = Nat.digits ((10 : UInt64).toNat) n.toNat
           rw [h_aux]
           exact h_gen divMod10p19_d UInt64.maxPow10Exp h_d_eq h_E_eq divMod10p19_d_ne
-        · rw [if_neg hb10]
+        · rw [ite_eq_right hb10]
           have h_correct := UInt64.maxPow_correct b hb
           have h_P_ne : (UInt64.maxPow b).1 ≠ 0 := by
             intro he
@@ -459,7 +459,7 @@ theorem limbDigits_eq (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
                  (AzNat.toBaseUInt64DigitsAux (UInt64.maxPow b).1 hP
                    (64 * n.limbs.size) n #[]))).toList
             = Nat.digits b.toNat n.toNat
-          rw [dif_neg h_P_ne]
+          rw [dite_eq_right h_P_ne]
           exact h_gen (UInt64.maxPow b).1 (UInt64.maxPow b).2 rfl rfl h_P_ne
       -- Now prove the generic-case correctness.
       intro P_arg E_arg h_P_eq h_E_eq hP

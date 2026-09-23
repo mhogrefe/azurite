@@ -56,25 +56,25 @@ theorem theorem_2_11_tfae :
      HasNoNontrivialRealAlgebraicExtension R].TFAE := by
   tfae_have 1 → 2 := fun _ => by
     refine ⟨IsRealClosed.toLinearOrder, ?_, ?_⟩
-    · letI : LinearOrder R := IsRealClosed.toLinearOrder
-      haveI : @IsOrderedRing R _ IsRealClosed.toLinearOrder.toPartialOrder :=
+    · let : LinearOrder R := IsRealClosed.toLinearOrder
+      have : @IsOrderedRing R _ IsRealClosed.toLinearOrder.toPartialOrder :=
         IsRealClosed.toIsOrderedRing
       exact inferInstance
-    · letI : LinearOrder R := IsRealClosed.toLinearOrder
+    · let : LinearOrder R := IsRealClosed.toLinearOrder
       exact isAlgClosed_Ri
   tfae_have 2 → 3 := fun ⟨lo, hlo, halgClosed⟩ => by
-    letI := lo
-    letI := hlo
-    haveI := halgClosed
+    let := lo
+    let := hlo
+    have := halgClosed
     exact ⟨lo, hlo, theorem_2_11_b_c⟩
   tfae_have 3 → 1 := fun ⟨lo, hlo, hIVP⟩ => by
-    letI := lo
-    letI := hlo
+    let := lo
+    let := hlo
     exact theorem_2_11_c_a hIVP
   tfae_have 2 → 4 := fun ⟨lo, hlo, halgClosed⟩ => by
-    letI := lo
-    letI := hlo
-    haveI := halgClosed
+    let := lo
+    let := hlo
+    have := halgClosed
     exact theorem_2_11_b_d
   tfae_have 4 → 1 := theorem_2_11_d_a
   tfae_finish

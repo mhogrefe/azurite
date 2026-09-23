@@ -104,7 +104,7 @@ private theorem digitsPow2Aux_eq (k : Nat) (hk_pos : 1 ≤ k) (hk_lt : k < 64)
     simp [Nat.digits_zero]
   | case2 u acc hu ih =>
     rw [digitsPow2Aux]
-    rw [dif_neg hu, ih, Array.toList_push, List.map_append]
+    rw [dite_eq_right hu, ih, Array.toList_push, List.map_append]
     simp only [List.map_cons, List.map_nil]
     have h_u_toNat_ne : u.toNat ≠ 0 := fun h =>
       hu (UInt64.toNat.inj (h.trans UInt64.toNat_zero.symm))
@@ -126,7 +126,7 @@ private theorem digitsGenericAux_eq (b : UInt64) (hb : 2 ≤ b.toNat) (u : UInt6
     simp [Nat.digits_zero]
   | case2 u acc hu ih =>
     rw [digitsGenericAux]
-    rw [dif_neg hu, ih, Array.toList_push, List.map_append]
+    rw [dite_eq_right hu, ih, Array.toList_push, List.map_append]
     simp only [List.map_cons, List.map_nil]
     have h_u_toNat_ne : u.toNat ≠ 0 := fun h =>
       hu (UInt64.toNat.inj (h.trans UInt64.toNat_zero.symm))
@@ -142,9 +142,9 @@ theorem digitsPow2_eq (k : Nat) (hk : 1 ≤ k) (u : UInt64) :
     (UInt64.digitsPow2 k u).toList.map UInt64.toNat = Nat.digits (2 ^ k) u.toNat := by
   unfold digitsPow2
   have hk0 : ¬ k = 0 := by omega
-  rw [dif_neg hk0]
+  rw [dite_eq_right hk0]
   by_cases hk64 : 64 ≤ k
-  · rw [dif_pos hk64]
+  · rw [dite_eq_left hk64]
     by_cases hu : u = 0
     · simp [hu, Nat.digits_zero]
     · have h_u_ne : u.toNat ≠ 0 := fun h =>
@@ -153,7 +153,7 @@ theorem digitsPow2_eq (k : Nat) (hk : 1 ≤ k) (u : UInt64) :
         have h64 : u.toNat < 2 ^ 64 := UInt64.toNat_lt u
         exact lt_of_lt_of_le h64 (Nat.pow_le_pow_right (by omega) hk64)
       simp [hu, Nat.digits_of_lt _ _ h_u_ne h_u_lt]
-  · rw [dif_neg hk64]
+  · rw [dite_eq_right hk64]
     have hs : 1 ≤ (UInt64.ofNat k).toNat ∧ (UInt64.ofNat k).toNat < 64 := by
       have : (UInt64.ofNat k).toNat = k := Nat.mod_eq_of_lt (by omega)
       omega
@@ -171,13 +171,13 @@ theorem digits_eq (b u : UInt64) (hb : 2 ≤ b.toNat) :
     rw [UInt64.lt_iff_toNat_lt] at h
     have h2 : ((2 : UInt64).toNat = 2) := rfl
     rw [h2] at h; omega
-  rw [dif_neg hb_uint]
+  rw [dite_eq_right hb_uint]
   by_cases hpow : b.isPowerOfTwo
-  · rw [if_pos hpow]
+  · rw [ite_eq_left hpow]
     have h_eq : b.toNat = 2 ^ b.toBitVec.ctz.toNat := toNat_eq_two_pow_ctz b hpow
     have h_ctz_pos : 1 ≤ b.toBitVec.ctz.toNat := ctz_pos_of_isPowerOfTwo_ge_two b hpow hb
     rw [digitsPow2_eq _ h_ctz_pos u, h_eq]
-  · rw [if_neg hpow]
+  · rw [ite_eq_right hpow]
     have := digitsGenericAux_eq b hb u #[]
     simpa using this
 

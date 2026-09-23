@@ -46,21 +46,21 @@ theorem sResP_eq_cofactor (P Q : D[X]) (_hQ : Q ≠ 0) (hpq : Q.natDegree < P.na
     intro r
     simp only [hF, hu, hw]
     by_cases hr : (r : ℕ) < Q.natDegree - j
-    · rw [if_pos hr, if_pos hr, if_pos hr, zero_mul, add_zero,
+    · rw [ite_eq_left hr, ite_eq_left hr, ite_eq_left hr, zero_mul, add_zero,
         show Q.natDegree - 1 - j - (r : ℕ) = Q.natDegree - j - 1 - (r : ℕ) from by omega]
-    · rw [if_neg hr, if_neg hr, if_neg hr, zero_mul, zero_add]
+    · rw [ite_eq_right hr, ite_eq_right hr, ite_eq_right hr, zero_mul, zero_add]
   have hFdeg : ∀ r, (F r).natDegree < n := by
     intro r
     have hr_lt : (r : ℕ) < P.natDegree + Q.natDegree - 2 * j := r.2
     simp only [hF]
     by_cases hr : (r : ℕ) < Q.natDegree - j
-    · rw [if_pos hr]
+    · rw [ite_eq_left hr]
       calc (X ^ (Q.natDegree - j - 1 - (r : ℕ)) * P).natDegree
           ≤ (X ^ (Q.natDegree - j - 1 - (r : ℕ))).natDegree + P.natDegree := Polynomial.natDegree_mul_le
         _ ≤ (Q.natDegree - j - 1 - (r : ℕ)) + P.natDegree := by
               gcongr; exact Polynomial.natDegree_X_pow_le _
         _ < n := by simp only [hn_def]; omega
-    · rw [if_neg hr]
+    · rw [ite_eq_right hr]
       calc (X ^ ((r : ℕ) - (Q.natDegree - j)) * Q).natDegree
           ≤ (X ^ ((r : ℕ) - (Q.natDegree - j))).natDegree + Q.natDegree := Polynomial.natDegree_mul_le
         _ ≤ ((r : ℕ) - (Q.natDegree - j)) + Q.natDegree := by
@@ -71,26 +71,26 @@ theorem sResP_eq_cofactor (P Q : D[X]) (_hQ : Q ≠ 0) (hpq : Q.natDegree < P.na
       (lt_of_le_of_lt Polynomial.degree_le_natDegree (by exact_mod_cast hFdeg r))⟩ with hFLT
   have hFLTeq : (fun r => (FLT r : D[X])) = F := rfl
   have hsResP : sResP P Q j = (matStar n F).det := by
-    rw [sResP, if_pos hjq, ← hFLTeq, pdetRing_eq_det_matStar hm_pos hmn FLT, hFLTeq]
+    rw [sResP, ite_eq_left hjq, ← hFLTeq, pdetRing_eq_det_matStar hm_pos hmn FLT, hFLTeq]
   have hcol : matStar n F = (matStar n F).updateCol last (P • uCol + Q • wCol) := by
     refine Matrix.ext fun r c => ?_
     rw [Matrix.updateCol_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, matStar, if_neg (by rw [hlastval]; omega), hFsplit r]
+      rw [ite_eq_left rfl, matStar, ite_eq_right (by rw [hlastval]; omega), hFsplit r]
       simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
-    · rw [if_neg hc]
+    · rw [ite_eq_right hc]
   have hU : (matStar n F).updateCol last uCol = sResUMat P Q j := by
     refine Matrix.ext fun r c => ?_
     rw [Matrix.updateCol_apply, sResUMat, Matrix.of_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, if_neg (by rw [hlastval]; omega : ¬ (last : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)]
+      rw [ite_eq_left rfl, ite_eq_right (by rw [hlastval]; omega : ¬ (last : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)]
     · have hcm : (c : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j := by
         rcases Nat.lt_or_ge ((c : ℕ) + 1) (P.natDegree + Q.natDegree - 2 * j) with h | h
         · exact h
         · exact absurd (Fin.ext (show (c : ℕ) = (last : ℕ) by rw [hlastval]; omega)) hc
-      rw [if_neg hc, matStar, if_pos hcm, if_pos hcm]
+      rw [ite_eq_right hc, matStar, ite_eq_left hcm, ite_eq_left hcm]
       simp only [hF, Chapter4.SyHa, Matrix.of_apply, Fin.val_castLE, hn_def]
       split_ifs <;> rfl
   have hV : (matStar n F).updateCol last wCol = sResVMat P Q j := by
@@ -98,12 +98,12 @@ theorem sResP_eq_cofactor (P Q : D[X]) (_hQ : Q ≠ 0) (hpq : Q.natDegree < P.na
     rw [Matrix.updateCol_apply, sResVMat, Matrix.of_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, if_neg (by rw [hlastval]; omega : ¬ (last : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)]
+      rw [ite_eq_left rfl, ite_eq_right (by rw [hlastval]; omega : ¬ (last : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)]
     · have hcm : (c : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j := by
         rcases Nat.lt_or_ge ((c : ℕ) + 1) (P.natDegree + Q.natDegree - 2 * j) with h | h
         · exact h
         · exact absurd (Fin.ext (show (c : ℕ) = (last : ℕ) by rw [hlastval]; omega)) hc
-      rw [if_neg hc, matStar, if_pos hcm, if_pos hcm]
+      rw [ite_eq_right hc, matStar, ite_eq_left hcm, ite_eq_left hcm]
       simp only [hF, Chapter4.SyHa, Matrix.of_apply, Fin.val_castLE, hn_def]
       split_ifs <;> rfl
   rw [hsResP, hcol, Matrix.det_updateCol_add, Matrix.det_updateCol_smul,
@@ -134,14 +134,14 @@ theorem sResU_natDegree_le (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
     ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩ (Q.natDegree - 1 - j) (fun i c hc => ?_)
     (fun i => ?_)
   · rw [sResUMat, Matrix.of_apply,
-      if_pos (by
+      ite_eq_left (by
         have hcv : (c : ℕ) ≠ P.natDegree + Q.natDegree - 2 * j - 1 := fun h => hc (Fin.ext h)
         have := c.isLt; omega), Polynomial.natDegree_C]
   · rw [sResUMat, Matrix.of_apply,
-      if_neg (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 + 1 < P.natDegree + Q.natDegree - 2 * j by omega)]
+      ite_eq_right (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 + 1 < P.natDegree + Q.natDegree - 2 * j by omega)]
     by_cases hi : (i : ℕ) < Q.natDegree - j
-    · rw [if_pos hi]; exact le_trans (Polynomial.natDegree_X_pow_le _) (by omega)
-    · rw [if_neg hi, Polynomial.natDegree_zero]; omega
+    · rw [ite_eq_left hi]; exact le_trans (Polynomial.natDegree_X_pow_le _) (by omega)
+    · rw [ite_eq_right hi, Polynomial.natDegree_zero]; omega
 
 /-- **BPR Proposition 8.42 (a), degree bound for `sResV`.** `deg(sResV_j(P,Q)) ≤ p - 1 - j`
     (so `deg(sResV_{j-1}) ≤ p - j`). -/
@@ -152,15 +152,15 @@ theorem sResV_natDegree_le (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
     ⟨P.natDegree + Q.natDegree - 2 * j - 1, by omega⟩ (P.natDegree - 1 - j) (fun i c hc => ?_)
     (fun i => ?_)
   · rw [sResVMat, Matrix.of_apply,
-      if_pos (by
+      ite_eq_left (by
         have hcv : (c : ℕ) ≠ P.natDegree + Q.natDegree - 2 * j - 1 := fun h => hc (Fin.ext h)
         have := c.isLt; omega), Polynomial.natDegree_C]
   · rw [sResVMat, Matrix.of_apply,
-      if_neg (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 + 1 < P.natDegree + Q.natDegree - 2 * j by omega)]
+      ite_eq_right (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 + 1 < P.natDegree + Q.natDegree - 2 * j by omega)]
     have hi_lt : (i : ℕ) < P.natDegree + Q.natDegree - 2 * j := i.2
     by_cases hi : (i : ℕ) < Q.natDegree - j
-    · rw [if_pos hi, Polynomial.natDegree_zero]; omega
-    · rw [if_neg hi]; exact le_trans (Polynomial.natDegree_X_pow_le _) (by omega)
+    · rw [ite_eq_left hi, Polynomial.natDegree_zero]; omega
+    · rw [ite_eq_right hi]; exact le_trans (Polynomial.natDegree_X_pow_le _) (by omega)
 
 /-- **BPR Proposition 8.42 (b), cofactor uniqueness.**  Over a field, if `sResP_j(P,Q) ≠ 0`
     and `U·P + V·Q = sResP_j(P,Q)` with `deg U ≤ q-j-1` and `deg V ≤ p-j-1`, then
@@ -224,8 +224,8 @@ theorem det_lastCol_expand {N : ℕ} (hN : 0 < N) (A : Matrix (Fin N) (Fin N) D)
     rw [Matrix.updateCol_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, hM, if_neg (show ¬ ((last : ℕ) + 1 < N) by rw [hlastval]; omega)]
-    · rw [if_neg hc]
+      rw [ite_eq_left rfl, hM, ite_eq_right (show ¬ ((last : ℕ) + 1 < N) by rw [hlastval]; omega)]
+    · rw [ite_eq_right hc]
   have hcol : V = ∑ r₀ : Fin N, V r₀ • Pi.single r₀ (1 : D[X]) := by
     funext r; simp [Finset.sum_apply, Pi.single_apply, smul_eq_mul, Finset.sum_ite_eq]
   rw [hMself]
@@ -239,9 +239,9 @@ theorem det_lastCol_expand {N : ℕ} (hN : 0 < N) (A : Matrix (Fin N) (Fin N) D)
     rw [Matrix.updateCol_apply, Matrix.map_apply, Matrix.updateCol_apply]
     by_cases hc : c = last
     · subst hc
-      rw [if_pos rfl, if_pos rfl, Pi.single_apply, Pi.single_apply, apply_ite C, map_one, map_zero]
-    · rw [if_neg hc, if_neg hc, hM,
-        if_pos (show (c : ℕ) + 1 < N by
+      rw [ite_eq_left rfl, ite_eq_left rfl, Pi.single_apply, Pi.single_apply, apply_ite C, map_one, map_zero]
+    · rw [ite_eq_right hc, ite_eq_right hc, hM,
+        ite_eq_left (show (c : ℕ) + 1 < N by
           have h1 := c.isLt
           have h2 : (c : ℕ) ≠ N - 1 := by rw [← hlastval]; exact Fin.val_ne_of_ne hc
           omega)]
@@ -276,13 +276,13 @@ theorem sResV_sub_one_coeff_eq_minor (P Q : D[X]) (hpq : Q.natDegree < P.natDegr
   rw [Finset.sum_eq_single last]
   · rw [Polynomial.coeff_mul_C,
       show wCol last = X ^ (P.natDegree - j) by
-        simp only [hwCol]; rw [if_neg (by simp only [hlast]; omega)]; congr 1; simp only [hlast]; omega,
-      Polynomial.coeff_X_pow, if_pos rfl, one_mul]
+        simp only [hwCol]; rw [ite_eq_right (by simp only [hlast]; omega)]; congr 1; simp only [hlast]; omega,
+      Polynomial.coeff_X_pow, ite_eq_left rfl, one_mul]
   · intro r₀ _ hr₀
     rw [Polynomial.coeff_mul_C, show (wCol r₀).coeff (P.natDegree - j) = 0 by
       simp only [hwCol]; split_ifs with hr
       · exact Polynomial.coeff_zero _
-      · rw [Polynomial.coeff_X_pow, if_neg (by
+      · rw [Polynomial.coeff_X_pow, ite_eq_right (by
           have h2 : (r₀ : ℕ) ≠ P.natDegree + Q.natDegree - 2 * (j - 1) - 1 :=
             fun h => hr₀ (Fin.ext (by simp only [hlast]; exact h))
           have := r₀.isLt; omega)], zero_mul]
@@ -319,15 +319,15 @@ theorem sResV_minor_det_eq (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
     have htb12 : Mb.toBlocks₁₂ = 0 := by
       ext i k
       simp only [hMb, Matrix.toBlocks₁₂, Matrix.submatrix_apply, Matrix.zero_apply, Matrix.of_apply]
-      rw [he1l, he1r, Matrix.updateCol_apply, if_pos rfl, Pi.single_apply, if_neg (hne i)]
+      rw [he1l, he1r, Matrix.updateCol_apply, ite_eq_left rfl, Pi.single_apply, ite_eq_right (hne i)]
     have htb11 : Mb.toBlocks₁₁ = N' := by
       ext i k
       simp only [hMb, Matrix.toBlocks₁₁, Matrix.submatrix_apply, Matrix.of_apply]
-      rw [he1l, he1l, Matrix.updateCol_apply, if_neg (hne k)]
+      rw [he1l, he1l, Matrix.updateCol_apply, ite_eq_right (hne k)]
     have htb22 : Mb.toBlocks₂₂.det = 1 := by
       rw [Matrix.det_fin_one]
       simp only [hMb, Matrix.toBlocks₂₂, Matrix.submatrix_apply, Matrix.of_apply]
-      rw [he1r, Matrix.updateCol_apply, if_pos rfl, Pi.single_apply, if_pos rfl]
+      rw [he1r, Matrix.updateCol_apply, ite_eq_left rfl, Pi.single_apply, ite_eq_left rfl]
     rw [show (A.updateCol last (Pi.single last 1)).det = Mb.det from
         (Matrix.det_submatrix_equiv_self e1 _).symm]
     conv_lhs => rw [← Matrix.fromBlocks_toBlocks Mb]
@@ -362,13 +362,13 @@ theorem sResV_minor_det_eq (P Q : D[X]) (hpq : Q.natDegree < P.natDegree) {j : �
     simp only [hMb2, Matrix.toBlocks₁₁, Matrix.of_apply, Matrix.submatrix_apply]
     rw [he2l]
     simp only [hN', hA, Fin.castLE_mk, Chapter4.SyHa, Matrix.of_apply]
-    rw [if_pos (by omega), Polynomial.leadingCoeff,
+    rw [ite_eq_left (by omega), Polynomial.leadingCoeff,
       show Q.natDegree - (j - 1) - 1 - 0 = Q.natDegree - j from by omega,
       show P.natDegree + Q.natDegree - (j - 1) - 1 - 0 = P.natDegree + (Q.natDegree - j) from by omega,
       Polynomial.coeff_X_pow_mul]
   have hmcast : m - 2 = P.natDegree + Q.natDegree - 2 * j := by simp only [hm_def]; omega
   have htb22 : Mb2.toBlocks₂₂.det = Azurite.BPR.Chapter4.sRes P Q j := by
-    rw [Chapter4.sRes, if_pos hjq,
+    rw [Chapter4.sRes, ite_eq_left hjq,
       show Mb2.toBlocks₂₂ = (Chapter4.SyHaSquare P Q j).submatrix (finCongr hmcast) (finCongr hmcast) from ?_,
       Matrix.det_submatrix_equiv_self]
     ext a b

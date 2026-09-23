@@ -34,6 +34,6 @@ theorem exercise_2_8 (k : ℕ) :
     WellFounded (fun α β : Fin k →₀ ℕ => LexOrder k ℕ α β) := by
   unfold LexOrder
   exact InvImage.wf (fun (x : Fin k →₀ ℕ) => (x : Fin k → ℕ))
-    (Pi.Lex.wellFounded _ (fun _ => Nat.lt_wfRel.wf))
+    (Pi.Lex.wellFounded (r := (· < ·)) (s := fun _ : Fin k => (· < ·)))
 
 end Azurite.BPR

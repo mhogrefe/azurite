@@ -133,44 +133,44 @@ section StepAccessors
 variable {σ : LenstraState}
 
 private theorem lstep_frozen (h0 : σ.a0 = 0) : lstep σ = σ := by
-  rw [lstep, if_pos h0]
+  rw [lstep, ite_eq_left h0]
 
 private theorem lstep_a0_term (h0 : σ.a0 ≠ 0) (hγ : σ.a0 % σ.a1 = 0) :
     (lstep σ).a0 = 0 := by
-  rw [lstep, if_neg h0, if_pos hγ]
+  rw [lstep, ite_eq_right h0, ite_eq_left hγ]
 
 private theorem lstep_a0 (h0 : σ.a0 ≠ 0) (hγ : σ.a0 % σ.a1 ≠ 0) :
     (lstep σ).a0 = σ.a0 % σ.a1 := by
-  rw [lstep, if_neg h0, if_neg hγ]
+  rw [lstep, ite_eq_right h0, ite_eq_right hγ]
 
 private theorem lstep_a1 (h0 : σ.a0 ≠ 0) (hγ : σ.a0 % σ.a1 ≠ 0) :
     (lstep σ).a1
       = σ.a1 - (σ.a1 - 1) / (σ.a0 % σ.a1) * (σ.a0 % σ.a1) := by
-  rw [lstep, if_neg h0, if_neg hγ]
+  rw [lstep, ite_eq_right h0, ite_eq_right hγ]
 
 private theorem lstep_b0 (h0 : σ.a0 ≠ 0) :
     (lstep σ).b0 = σ.b0 - (σ.a0 / σ.a1 : ℕ) * σ.b1 := by
-  rw [lstep, if_neg h0]
+  rw [lstep, ite_eq_right h0]
   by_cases hγ : σ.a0 % σ.a1 = 0
-  · rw [if_pos hγ]
-  · rw [if_neg hγ]
+  · rw [ite_eq_left hγ]
+  · rw [ite_eq_right hγ]
 
 private theorem lstep_b1 (h0 : σ.a0 ≠ 0) (hγ : σ.a0 % σ.a1 ≠ 0) :
     (lstep σ).b1 = σ.b1 - ((σ.a1 - 1) / (σ.a0 % σ.a1) : ℕ)
       * (σ.b0 - (σ.a0 / σ.a1 : ℕ) * σ.b1) := by
-  rw [lstep, if_neg h0, if_neg hγ]
+  rw [lstep, ite_eq_right h0, ite_eq_right hγ]
 
 private theorem lstep_c0 (h0 : σ.a0 ≠ 0) :
     (lstep σ).c0 = σ.c0 - (σ.a0 / σ.a1 : ℕ) * σ.c1 := by
-  rw [lstep, if_neg h0]
+  rw [lstep, ite_eq_right h0]
   by_cases hγ : σ.a0 % σ.a1 = 0
-  · rw [if_pos hγ]
-  · rw [if_neg hγ]
+  · rw [ite_eq_left hγ]
+  · rw [ite_eq_right hγ]
 
 private theorem lstep_c1 (h0 : σ.a0 ≠ 0) (hγ : σ.a0 % σ.a1 ≠ 0) :
     (lstep σ).c1 = σ.c1 - ((σ.a1 - 1) / (σ.a0 % σ.a1) : ℕ)
       * (σ.c0 - (σ.a0 / σ.a1 : ℕ) * σ.c1) := by
-  rw [lstep, if_neg h0, if_neg hγ]
+  rw [lstep, ite_eq_right h0, ite_eq_right hγ]
 
 end StepAccessors
 
@@ -244,8 +244,8 @@ private theorem lchain_reaches_zero (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
     intro k hk
     rw [lKAux]
     by_cases h0 : (lchain s a₁ c₁ k).a0 = 0
-    · rwa [if_pos h0]
-    · rw [if_neg h0]
+    · rwa [ite_eq_left h0]
+    · rw [ite_eq_right h0]
       exact ih (k + 1) (by have := lchain_dec h1 h1s k h0; omega)
 
 /-- The step count `lK` reaches a zero and is minimal. -/
@@ -266,9 +266,9 @@ private theorem lK_spec (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
         intro k₀ hk₀ k hk
         rw [lKAux] at hk
         by_cases h0 : (lchain s a₁ c₁ k₀).a0 = 0
-        · rw [if_pos h0] at hk
+        · rw [ite_eq_left h0] at hk
           exact hk₀ k hk
-        · rw [if_neg h0] at hk
+        · rw [ite_eq_right h0] at hk
           refine ih (k₀ + 1) ?_ k hk
           intro j hj
           rcases Nat.lt_or_ge j k₀ with h | h
@@ -346,18 +346,18 @@ private theorem alternating_identity (hA0 : A 0 = (s : ℤ))
   induction i with
   | zero =>
     intro _
-    rw [hA0, hB0, hB1, if_pos rfl]
+    rw [hA0, hB0, hB1, ite_eq_left rfl]
     ring
   | succ i ih =>
     intro hit
     obtain ⟨q, _, hArec, hBrec⟩ := hrec i (by omega)
     have h0 := ih (by omega)
     rcases Nat.even_or_odd i with ⟨m, hm⟩ | ⟨m, hm⟩
-    · rw [if_pos (by omega)] at h0
-      rw [if_neg (by omega), hArec, hBrec]
+    · rw [ite_eq_left (by omega)] at h0
+      rw [ite_eq_right (by omega), hArec, hBrec]
       linear_combination -h0
-    · rw [if_neg (by omega)] at h0
-      rw [if_pos (by omega), hArec, hBrec]
+    · rw [ite_eq_right (by omega)] at h0
+      rw [ite_eq_left (by omega), hArec, hBrec]
       linear_combination -h0
 
 /-- **The window lemma** (the heart of Theorem 4.2.12): for any
@@ -434,11 +434,11 @@ private theorem window_walk (hs : 0 < s) (hA0 : A 0 = (s : ℤ))
   have halt_i : B (2 * k + 1) * A (2 * k) - A (2 * k + 1) * B (2 * k)
       = s := by
     have h0 := halt (2 * k) (by omega)
-    rwa [if_pos (by omega)] at h0
+    rwa [ite_eq_left (by omega)] at h0
   have halt_i1 : B (2 * k + 2) * A (2 * k + 1)
       - A (2 * k + 2) * B (2 * k + 1) = -s := by
     have h0 := halt (2 * k + 1) (by omega)
-    rwa [if_neg (by omega)] at h0
+    rwa [ite_eq_right (by omega)] at h0
   -- `x ≥ b_{i+1}` and `y ≥ a_{i+1}`
   have hxB : B (2 * k + 1) ≤ x := by
     have h1 : y * B (2 * k) ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hy hBi
@@ -473,22 +473,22 @@ section Bridge
 variable {s a₁ : ℕ} {c₁ : ℤ}
 
 private theorem lA_zero : lA s a₁ c₁ 0 = s := by
-  rw [lA, if_pos (by norm_num), lchain]
+  rw [lA, ite_eq_left (by norm_num), lchain]
 
 private theorem lA_one : lA s a₁ c₁ 1 = a₁ := by
-  rw [lA, if_neg (by norm_num), lchain]
+  rw [lA, ite_eq_right (by norm_num), lchain]
 
 private theorem lB_zero : lB s a₁ c₁ 0 = 0 := by
-  rw [lB, if_pos (by norm_num), lchain]
+  rw [lB, ite_eq_left (by norm_num), lchain]
 
 private theorem lB_one : lB s a₁ c₁ 1 = 1 := by
-  rw [lB, if_neg (by norm_num), lchain]
+  rw [lB, ite_eq_right (by norm_num), lchain]
 
 private theorem lC_zero : lC s a₁ c₁ 0 = 0 := by
-  rw [lC, if_pos (by norm_num), lchain]
+  rw [lC, ite_eq_left (by norm_num), lchain]
 
 private theorem lC_one : lC s a₁ c₁ 1 = c₁ := by
-  rw [lC, if_neg (by norm_num), lchain]
+  rw [lC, ite_eq_right (by norm_num), lchain]
 
 private theorem lT_even : lT s a₁ c₁ % 2 = 0 := by
   rw [lT]
@@ -507,7 +507,7 @@ private theorem lT_pos (hs : 0 < s) (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
 
 private theorem lA_T (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
     lA s a₁ c₁ (lT s a₁ c₁) = 0 := by
-  rw [lA, lT, if_pos (by omega)]
+  rw [lA, lT, ite_eq_left (by omega)]
   have h2 : 2 * lK s a₁ c₁ / 2 = lK s a₁ c₁ := by omega
   rw [h2, (lK_spec h1 h1s).1]
   norm_num
@@ -519,10 +519,10 @@ private theorem lA_pos (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
   have hne : (lchain s a₁ c₁ (i / 2)).a0 ≠ 0 :=
     (lK_spec h1 h1s).2 (i / 2) (by omega)
   rcases Nat.even_or_odd i with he | ho
-  · rw [lA, if_pos (Nat.even_iff.mp he)]
+  · rw [lA, ite_eq_left (Nat.even_iff.mp he)]
     have := Nat.pos_of_ne_zero hne
     exact_mod_cast this
-  · rw [lA, if_neg (by have := Nat.odd_iff.mp ho; omega)]
+  · rw [lA, ite_eq_right (by have := Nat.odd_iff.mp ho; omega)]
     have := (lchain_inv h1 h1s (i / 2) hne).1
     exact_mod_cast this
 
@@ -549,7 +549,7 @@ private theorem l_rec (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
       have hidx0 : (k + k) % 2 = 0 := by omega
       have hidx1 : (k + k + 1) % 2 = 1 := by omega
       have hidx2 : (k + k + 2) % 2 = 0 := by omega
-      rw [lA, lA, lA, if_pos hidx2, if_pos hidx0, if_neg (by omega),
+      rw [lA, lA, lA, ite_eq_left hidx2, ite_eq_left hidx0, ite_eq_right (by omega),
         show (k + k + 2) / 2 = k + 1 by omega,
         show (k + k) / 2 = k by omega,
         show (k + k + 1) / 2 = k by omega, lchain]
@@ -568,14 +568,14 @@ private theorem l_rec (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
     · -- `b`-recurrence
       have hidx0 : (k + k) % 2 = 0 := by omega
       have hidx2 : (k + k + 2) % 2 = 0 := by omega
-      rw [lB, lB, lB, if_pos hidx2, if_pos hidx0, if_neg (by omega),
+      rw [lB, lB, lB, ite_eq_left hidx2, ite_eq_left hidx0, ite_eq_right (by omega),
         show (k + k + 2) / 2 = k + 1 by omega,
         show (k + k) / 2 = k by omega,
         show (k + k + 1) / 2 = k by omega, lchain, lstep_b0 h0]
     · -- `c`-recurrence
       have hidx0 : (k + k) % 2 = 0 := by omega
       have hidx2 : (k + k + 2) % 2 = 0 := by omega
-      rw [lC, lC, lC, if_pos hidx2, if_pos hidx0, if_neg (by omega),
+      rw [lC, lC, lC, ite_eq_left hidx2, ite_eq_left hidx0, ite_eq_right (by omega),
         show (k + k + 2) / 2 = k + 1 by omega,
         show (k + k) / 2 = k by omega,
         show (k + k + 1) / 2 = k by omega, lchain, lstep_c0 h0]
@@ -603,8 +603,8 @@ private theorem l_rec (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
       exact_mod_cast hq1, ?_, ?_, ?_⟩
     · have hidx1 : (2 * k + 1) % 2 = 1 := by omega
       have hidx3 : (2 * k + 1 + 2) % 2 = 1 := by omega
-      rw [lA, lA, lA, if_neg (by omega), if_neg (by omega),
-        if_pos (by omega),
+      rw [lA, lA, lA, ite_eq_right (by omega), ite_eq_right (by omega),
+        ite_eq_left (by omega),
         show (2 * k + 1 + 2) / 2 = k + 1 by omega,
         show (2 * k + 1) / 2 = k by omega,
         show (2 * k + 1 + 1) / 2 = k + 1 by omega, lchain,
@@ -622,14 +622,14 @@ private theorem l_rec (h1 : 0 < a₁) (h1s : a₁ ≤ s) :
       rw [hQ] at hdm
       rw [hQ, hQz]
       omega
-    · rw [lB, lB, lB, if_neg (by omega), if_neg (by omega),
-        if_pos (by omega),
+    · rw [lB, lB, lB, ite_eq_right (by omega), ite_eq_right (by omega),
+        ite_eq_left (by omega),
         show (2 * k + 1 + 2) / 2 = k + 1 by omega,
         show (2 * k + 1) / 2 = k by omega,
         show (2 * k + 1 + 1) / 2 = k + 1 by omega, lchain,
         lstep_b1 h0 hγ, lstep_b0 h0]
-    · rw [lC, lC, lC, if_neg (by omega), if_neg (by omega),
-        if_pos (by omega),
+    · rw [lC, lC, lC, ite_eq_right (by omega), ite_eq_right (by omega),
+        ite_eq_left (by omega),
         show (2 * k + 1 + 2) / 2 = k + 1 by omega,
         show (2 * k + 1) / 2 = k by omega,
         show (2 * k + 1 + 1) / 2 = k + 1 by omega, lchain,
@@ -1001,23 +1001,23 @@ private theorem solveSystem_sound {n r r' s : ℕ} {a b c : ℤ} {d : ℕ}
     (hd : d ∈ solveSystem n r r' s a b c) : d ∣ n ∧ d % s = r := by
   rw [solveSystem] at hd
   by_cases ha : a = 0
-  · rw [if_pos ha] at hd
+  · rw [ite_eq_left ha] at hd
     by_cases hb : b = 0
-    · rw [if_pos hb] at hd
+    · rw [ite_eq_left hb] at hd
       exact absurd hd List.not_mem_nil
-    · rw [if_neg hb] at hd
+    · rw [ite_eq_right hb] at hd
       by_cases hbc : b ∣ c ∧ 0 ≤ c / b
-      · rw [if_pos hbc] at hd
+      · rw [ite_eq_left hbc] at hd
         by_cases hv : 0 < c / b * (s : ℤ) + r'
             ∧ (c / b * (s : ℤ) + r').toNat ∣ n
-        · rw [if_pos hv] at hd
+        · rw [ite_eq_left hv] at hd
           obtain ⟨⟨-, h5, h6⟩, rfl⟩ := mem_reportIfDivisor.mp hd
           exact ⟨h5, h6⟩
-        · rw [if_neg hv] at hd
+        · rw [ite_eq_right hv] at hd
           exact absurd hd List.not_mem_nil
-      · rw [if_neg hbc] at hd
+      · rw [ite_eq_right hbc] at hd
         exact absurd hd List.not_mem_nil
-  · rw [if_neg ha] at hd
+  · rw [ite_eq_right ha] at hd
     rcases hmatch : intSqrt? ((c * s + a * r + b * r') ^ 2
         - 4 * a * b * n) with - | w
     · rw [hmatch] at hd
@@ -1046,7 +1046,7 @@ private theorem intSqrt_sq (z : ℤ) : intSqrt? (z ^ 2) = some |z| := by
     have h1 : ((z.natAbs * z.natAbs : ℕ) : ℤ) = z * z :=
       Int.natAbs_mul_self
     rw [sq, ← h1, Int.toNat_natCast]
-  rw [if_neg (not_lt.mpr (sq_nonneg z)), h0, nat_sqrt_sq, if_pos rfl]
+  rw [ite_eq_right (not_lt.mpr (sq_nonneg z)), h0, nat_sqrt_sq, ite_eq_left rfl]
   congr 1
   rw [Int.abs_eq_natAbs]
 
@@ -1067,13 +1067,13 @@ private theorem solveSystem_complete {n r r' s : ℕ} {a b c : ℤ}
       Int.toNat_natCast]
   rw [solveSystem]
   by_cases ha0 : a = 0
-  · rw [if_pos ha0, if_neg (hab ha0)]
+  · rw [ite_eq_left ha0, ite_eq_right (hab ha0)]
     have hyb : (y : ℤ) * b = c := by
       rw [← hlin, ha0]
       ring
     have hcb : c / b = y := by
       rw [← hyb, Int.mul_ediv_cancel _ (hab ha0)]
-    rw [if_pos ⟨⟨y, by rw [← hyb]; ring⟩, by rw [hcb]; positivity⟩, hcb]
+    rw [ite_eq_left ⟨⟨y, by rw [← hyb]; ring⟩, by rw [hcb]; positivity⟩, hcb]
     have hv : ((y : ℤ) * s + r').toNat = y * s + r' := by
       rw [show (y : ℤ) * s + r' = ((y * s + r' : ℕ) : ℤ) by push_cast; ring,
         Int.toNat_natCast]
@@ -1081,7 +1081,7 @@ private theorem solveSystem_complete {n r r' s : ℕ} {a b c : ℤ}
     have hvdvd : ((y : ℤ) * s + r').toNat ∣ n := by
       rw [hv]
       exact ⟨x * s + r, by rw [← hprod]; ring⟩
-    rw [if_pos ⟨hvpos, hvdvd⟩, hv]
+    rw [ite_eq_left ⟨hvpos, hvdvd⟩, hv]
     have hquot : n / (y * s + r') = x * s + r := by
       rw [← hprod, Nat.mul_comm]
       exact Nat.mul_div_cancel_left _ (by positivity)
@@ -1090,7 +1090,7 @@ private theorem solveSystem_complete {n r r' s : ℕ} {a b c : ℤ}
       Int.toNat_natCast _
     exact ⟨⟨by positivity, by rw [htn]; exact hdvd,
       by rw [htn]; exact hmod⟩, htn.symm⟩
-  · rw [if_neg ha0]
+  · rw [ite_eq_right ha0]
     have hapos : 0 < a := lt_of_le_of_ne ha (Ne.symm ha0)
     have hprodz : ((x : ℤ) * s + r) * ((y : ℤ) * s + r') = n := by
       exact_mod_cast hprod
@@ -1116,7 +1116,7 @@ private theorem solveSystem_complete {n r r' s : ℕ} {a b c : ℤ}
       have hRw : c * s + a * r + b * r'
           + (2 * a * ((x : ℤ) * s + r) - (c * s + a * r + b * r'))
           = 2 * a * ((x : ℤ) * s + r) := by ring
-      rw [if_pos (by rw [hRw]; exact ⟨(x : ℤ) * s + r, by ring⟩)]
+      rw [ite_eq_left (by rw [hRw]; exact ⟨(x : ℤ) * s + r, by ring⟩)]
       rw [hRw, Int.mul_ediv_cancel_left _ (by omega : (2 : ℤ) * a ≠ 0)]
       rw [hutoNat] at humem
       exact humem
@@ -1129,7 +1129,7 @@ private theorem solveSystem_complete {n r r' s : ℕ} {a b c : ℤ}
       have hRw : c * s + a * r + b * r'
           - (c * s + a * r + b * r' - 2 * a * ((x : ℤ) * s + r))
           = 2 * a * ((x : ℤ) * s + r) := by ring
-      rw [if_pos (by rw [hRw]; exact ⟨(x : ℤ) * s + r, by ring⟩)]
+      rw [ite_eq_left (by rw [hRw]; exact ⟨(x : ℤ) * s + r, by ring⟩)]
       rw [hRw, Int.mul_ediv_cancel_left _ (by omega : (2 : ℤ) * a ≠ 0)]
       rw [hutoNat] at humem
       exact humem
@@ -1178,7 +1178,7 @@ private theorem mem_evenWindow {s : ℕ} (hs : 0 < s) {cᵢ S : ℤ}
       intro h
       rw [h] at hS
       omega
-    rw [if_neg hr₀]
+    rw [ite_eq_right hr₀]
     simp [hS]
 
 /-- Completeness of the odd-window enumeration. -/
@@ -1231,7 +1231,7 @@ private theorem mem_oddWindow {n s : ℕ} (hs : 0 < s) {a b cᵢ S : ℤ}
   have hkc : (k.toNat : ℤ) = k := Int.toNat_of_nonneg hk0
   rw [show 2 * (a * b) + (cᵢ - 2 * (a * b)) % s + (k.toNat : ℤ) * s = S by
     rw [hkc]; omega]
-  rw [if_pos hup]
+  rw [ite_eq_left hup]
 
 /-- **Correctness of the computable Algorithm 4.2.11**: under the
 hypotheses of Theorem 4.2.12, the list `lenstraDivisors n r s rs`
@@ -1298,9 +1298,9 @@ theorem mem_lenstraDivisors {n r s rs : ℕ} (hr : 0 < r) (hrs : r < s)
       + y * lB s (n * rs % s * rs % s)
         ((rs : ℤ) * (((n : ℤ) - r * ((n * rs % s : ℕ) : ℤ)) / s)) i, ?_, ?_⟩
     · rcases hwin with ⟨hev, habs⟩ | ⟨hodd, hlow, hup⟩
-      · rw [if_pos hev]
+      · rw [ite_eq_left hev]
         exact mem_evenWindow hs0 hcong habs
-      · rw [if_neg (by omega)]
+      · rw [ite_eq_right (by omega)]
         have hApos : 0 < lA s (n * rs % s * rs % s)
             ((rs : ℤ) * (((n : ℤ) - r * ((n * rs % s : ℕ) : ℤ)) / s)) i := by
           refine lA_pos ha₁pos ha₁lt.le i ?_

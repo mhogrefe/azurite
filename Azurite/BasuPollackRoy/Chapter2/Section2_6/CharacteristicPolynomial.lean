@@ -59,7 +59,7 @@ theorem charPoly_natDegree_le (P : Polynomial (PuiseuxSeries R)) (A B : ℕ × �
   classical
   apply Polynomial.natDegree_le_iff_coeff_eq_zero.mpr
   intro k hk
-  rw [charPoly_coeff, if_neg]
+  rw [charPoly_coeff, ite_eq_right]
   rintro hmem
   exact absurd (Finset.mem_Icc.mp (Finset.mem_filter.mp hmem).1).2 (by omega)
 

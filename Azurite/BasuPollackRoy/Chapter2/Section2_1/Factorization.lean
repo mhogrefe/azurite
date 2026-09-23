@@ -62,8 +62,8 @@ theorem exists_factorization [IsRealClosed R] [DecidableEq R] (P : R[X]) :
       P = C P.leadingCoeff *
           (linears.map linearFactor).prod *
           (quadratics.map quadraticFactor).prod := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
   by_cases hP : P = 0
   · refine ⟨0, 0, by simp, ?_⟩
     rw [hP, leadingCoeff_zero, map_zero, zero_mul, zero_mul]

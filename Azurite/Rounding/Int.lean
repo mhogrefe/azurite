@@ -130,25 +130,25 @@ noncomputable instance intSymmetricRoundingTarget : SymmetricRoundingTarget intS
     by_cases h1 : Even za ∧ ¬ Even zb
     · -- LHS branch 1 fires (picks -a.val); RHS branch 2 fires (picks a, negated).
       have h2 : ¬ (Even zb ∧ ¬ Even za) := fun h => h.2 h1.1
-      simp only [if_pos h1, if_neg h2]
+      simp only [ite_eq_left h1, ite_eq_right h2]
     · by_cases h3 : Even zb ∧ ¬ Even za
       · -- LHS branch 2 fires (picks -b.val); RHS branch 1 fires (picks b, negated).
-        simp only [if_neg h1, if_pos h3]
+        simp only [ite_eq_right h1, ite_eq_left h3]
       · -- Same parity: fall through to natAbs comparison on both sides.
-        simp only [if_neg h1, if_neg h3]
+        simp only [ite_eq_right h1, ite_eq_right h3]
         by_cases h_lt : za.natAbs < zb.natAbs
         · have h_gt : ¬ zb.natAbs < za.natAbs :=
             fun h => absurd (h.trans h_lt) (lt_irrefl _)
-          simp only [if_pos h_lt, if_neg h_gt]
+          simp only [ite_eq_left h_lt, ite_eq_right h_gt]
         · by_cases h_gt : zb.natAbs < za.natAbs
-          · simp only [if_neg h_lt, if_pos h_gt]
+          · simp only [ite_eq_right h_lt, ite_eq_left h_gt]
           · -- Equal natAbs: za = zb (since za = -zb is excluded by hzne).
             have h_abs_eq : za.natAbs = zb.natAbs := by omega
             have h_za_eq : za = zb := by
               rcases Int.natAbs_eq_natAbs_iff.mp h_abs_eq with heq | heq
               · exact heq
               · exact absurd heq hzne
-            simp only [if_neg h_lt, if_neg h_gt]
+            simp only [ite_eq_right h_lt, ite_eq_right h_gt]
             show (-a.val : EReal) = -b.val
             rw [val_eq_coe_toInt a, val_eq_coe_toInt b, ← hza_def, ← hzb_def, h_za_eq]
 

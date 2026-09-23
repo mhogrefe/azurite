@@ -23,7 +23,7 @@ theorem Monomial.toMvPoly_mul (a b : Monomial n R ord) :
     (a * b).toMvPoly = a.toMvPoly * b.toMvPoly := by
   show monomial (a.monic * b.monic).toFinsupp (a.coeff.val * b.coeff.val) =
     monomial a.monic.toFinsupp a.coeff.val * monomial b.monic.toFinsupp b.coeff.val
-  rw [MvPolynomial.monomial_mul, MonicMonomial.toFinsupp_mul]
+  rw [MvPolynomial.monomial_mul_monomial, MonicMonomial.toFinsupp_mul]
 
 /-! ### Normalization preserves toMvPoly sum -/
 
@@ -36,13 +36,13 @@ theorem toMvPoly_combineSorted (l : List (Monomial n R ord)) :
   | case1 => simp [combineSorted]
   | case2 _ => simp [combineSorted]
   | case3 m₁ m₂ rest heq hcz ih =>
-    simp only [combineSorted, if_pos heq, dif_pos hcz, List.map_cons, List.sum_cons]; rw [ih]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_left hcz, List.map_cons, List.sum_cons]; rw [ih]
     have : m₁.toMvPoly + m₂.toMvPoly = 0 := by
       simp only [Monomial.toMvPoly, heq]
       rw [← map_add (monomial m₂.monic.toFinsupp), hcz, monomial_zero]
     rw [← add_assoc, this, zero_add]
   | case4 m₁ m₂ rest heq hcnz ih =>
-    simp only [combineSorted, if_pos heq, dif_neg hcnz, List.map_cons, List.sum_cons]
+    simp only [combineSorted, ite_eq_left heq, dite_eq_right hcnz, List.map_cons, List.sum_cons]
     rw [ih, List.map_cons, List.sum_cons]
     have : (⟨⟨m₁.coeff.val + m₂.coeff.val, hcnz⟩, m₁.monic⟩ : Monomial n R ord).toMvPoly =
         m₁.toMvPoly + m₂.toMvPoly := by
@@ -50,7 +50,7 @@ theorem toMvPoly_combineSorted (l : List (Monomial n R ord)) :
       exact map_add (monomial m₂.monic.toFinsupp) m₁.coeff.val m₂.coeff.val
     rw [this, add_assoc]
   | case5 _ _ _ hneq ih =>
-    simp only [combineSorted, if_neg hneq, List.map_cons, List.sum_cons]; congr 1
+    simp only [combineSorted, ite_eq_right hneq, List.map_cons, List.sum_cons]; congr 1
 
 omit [NoZeroDivisors R] [DecidableEq R] in
 /-- `sortDescending` preserves the `toMvPoly` sum (via permutation). -/

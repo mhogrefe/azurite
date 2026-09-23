@@ -49,7 +49,7 @@ noncomputable instance algebraQuotPolysExtLocalizationAtPoint :
 /-- **`Ā_x` is a local ring.** It is a localization of `Ā` at a prime ideal (the kernel of
 evaluation at `x`). -/
 theorem isLocalRing_localizationAtPoint : IsLocalRing (localizationAtPoint C Ps x hx) := by
-  letI := RingHom.ker_isPrime (evalBar C Ps x hx)
+  let := RingHom.ker_isPrime (evalBar C Ps x hx)
   show IsLocalRing (Localization (RingHom.ker (evalBar C Ps x hx)).primeCompl)
   infer_instance
 

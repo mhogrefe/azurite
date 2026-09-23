@@ -1,6 +1,6 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.BasicSemialgebraicSets
 import Azurite.BasuPollackRoy.Chapter2.Section2_3.OrderedFieldFormula
-import Mathlib.Data.Sign.Defs
+import Mathlib.Basic.Sign.Defs
 
 /-!
 # BPR Section 2.3 — Semialgebraic ↔ QF-Realizable
@@ -61,11 +61,11 @@ theorem conjEqZeroO_realization [DecidableEq σ] :
   | P :: Q :: Ps => by
     ext y
     simp only [conjEqZeroO, realization, Set.mem_inter_iff,
-      Set.mem_setOf_eq, List.mem_cons]
+      Set.mem_ofPred_eq, List.mem_cons]
     rw [show (conjEqZeroO (Q :: Ps)).realization (C := R) =
       { y | ∀ P ∈ (Q :: Ps), MvPolynomial.aeval y P = 0}
       from conjEqZeroO_realization (Q :: Ps)]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨hP, hrest⟩ R hR
       rcases hR with rfl | hR
@@ -227,12 +227,12 @@ theorem signCondFormula_realization [DecidableEq σ]
   | cons head rest ih =>
     ext y
     simp only [signCondFormula, realization, Set.mem_inter_iff,
-      Set.mem_setOf_eq, List.mem_cons]
+      Set.mem_ofPred_eq, List.mem_cons]
     rw [realization_signAtom]
     rw [show (signCondFormula rest).realization (C := R) =
       { y | ∀ ps ∈ rest, SignType.sign (MvPolynomial.aeval y ps.1) = ps.2 }
       from ih]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨hhead, hrest⟩ ps hps
       rcases hps with rfl | hps
@@ -282,7 +282,7 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
             Φ.realization (C := R) ∪ (disjListO Φs).realization (C := R)
             from rfl, ih]
     ext y
-    simp only [Set.mem_union, Set.mem_setOf_eq, List.mem_cons]
+    simp only [Set.mem_union, Set.mem_ofPred_eq, List.mem_cons]
     constructor
     · rintro (h | ⟨φ, hφ_mem, hφ⟩)
       · exact ⟨Φ, Or.inl rfl, h⟩
@@ -380,13 +380,13 @@ them. -/
     change {y : σ → R | ∃ c : R, Function.update y x c ∈
               (Φ.mapAtom _).realization} = _
     ext y
-    simp only [Set.mem_setOf_eq, ih]
+    simp only [Set.mem_ofPred_eq, ih]
     rfl
   | forall_ x Φ ih =>
     change {y : σ → R | ∀ c : R, Function.update y x c ∈
               (Φ.mapAtom _).realization} = _
     ext y
-    simp only [Set.mem_setOf_eq, ih]
+    simp only [Set.mem_ofPred_eq, ih]
     rfl
 
 /-- A sign-condition realisation over `D` is semialgebraic over `D`. -/

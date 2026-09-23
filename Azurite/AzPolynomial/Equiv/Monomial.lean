@@ -95,17 +95,17 @@ variable {R : Type _} [Semiring R] [DecidableEq R]
   split
   · next h =>
     by_cases h_eq : i = n
-    · rw [if_pos h_eq]
+    · rw [ite_eq_left h_eq]
       rw [h_eq]
       dsimp [coeff]
       have ht : p.coeffs[n]? = none := Array.getElem?_eq_none_iff.mpr h
       rw [ht]
       rfl
-    · rw [if_neg h_eq]
+    · rw [ite_eq_right h_eq]
       rw [coeff_toPoly_eq]
   · next hc =>
     by_cases h_eq : i = n
-    · rw [if_pos h_eq]
+    · rw [ite_eq_left h_eq]
       rw [h_eq]
       rw [coeff_normalize]
       have h_lt : n < p.coeffs.size := by omega
@@ -113,7 +113,7 @@ variable {R : Type _} [Semiring R] [DecidableEq R]
         exact Array.getElem?_setIfInBounds_self_of_lt h_lt
       rw [ht]
       rfl
-    · rw [if_neg h_eq]
+    · rw [ite_eq_right h_eq]
       rw [coeff_normalize]
       have h_lt : n < p.coeffs.size := by omega
       have ht : (p.coeffs.setIfInBounds n 0)[i]? = p.coeffs[i]? := by

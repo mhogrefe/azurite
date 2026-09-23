@@ -69,12 +69,12 @@ negation in `ZMod m.toNat`. -/
   show toZMod (neg a) = -(toZMod a)
   unfold neg
   by_cases h : a.val.limbs.size = 0
-  · rw [dif_pos h]
+  · rw [dite_eq_left h]
     have hz : toZMod a = 0 := by
       show ((a.val.toNat : ℕ) : ZMod m.toNat) = 0
       rw [(AzNat.toNat_eq_zero_iff a.val).mpr h, Nat.cast_zero]
     rw [toZMod_zero, hz, neg_zero]
-  · rw [dif_neg h]
+  · rw [dite_eq_right h]
     show ((m - a.val).toNat : ZMod m.toNat) = -(toZMod a)
     rw [AzNat.toNat_sub, Nat.cast_sub (le_of_lt a.isLt), ZMod.natCast_self, zero_sub]
     rfl

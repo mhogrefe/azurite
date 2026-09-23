@@ -127,7 +127,7 @@ theorem exists_common_eventual_bound {m : ℕ} (a' : R) (ha' : 0 < a') (Q : Fin 
   choose δ hδpos Hδ using h
   rcases isEmpty_or_nonempty (Fin m) with he | hne
   · exact ⟨a', ha', le_refl _, fun s _ _ j => (he.false j).elim⟩
-  · haveI := hne
+  · have := hne
     set δ0 : R := Finset.univ.inf' Finset.univ_nonempty δ ⊓ a' with hδ0
     have hδ0pos : 0 < δ0 :=
       lt_inf_iff.mpr ⟨(Finset.lt_inf'_iff _).mpr fun j _ => hδpos j, ha'⟩

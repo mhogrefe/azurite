@@ -208,7 +208,7 @@ theorem eq_4_23_char (hp : p.Prime) (hr : r.Prime)
     MulChar.ofRootOfUnity hζmem hg ((r : ℕ) : ZMod q)
       = (ζp : R) ^ (l * a) := by
   have hq := Fact.out (p := q.Prime)
-  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have : NeZero q := ⟨hq.ne_zero⟩
   have hunit : IsUnit ((r : ℕ) : ZMod q) := by
     rw [ZMod.isUnit_iff_coprime]
     exact Nat.Coprime.coprime_dvd_right (dvd_mul_left q p) hgcd.symm

@@ -29,13 +29,13 @@ theorem chartOverlap_eq (i j : Fin (k + 1)) :
   constructor
   · intro hx
     simp only [chartOverlap, Set.mem_preimage, Set.mem_inter_iff, chartSet_eq,
-      Set.mem_setOf_eq] at hx
+      Set.mem_ofPred_eq] at hx
     have h2 := hx.2
     rw [chartMap, hrep, Pi.smul_apply, smul_eq_mul, ne_eq, mul_eq_zero, not_or] at h2
     exact h2.2
   · intro hx
-    simp only [Set.mem_setOf_eq] at hx
-    simp only [chartOverlap, Set.mem_preimage, Set.mem_inter_iff, chartSet_eq, Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq] at hx
+    simp only [chartOverlap, Set.mem_preimage, Set.mem_inter_iff, chartSet_eq, Set.mem_ofPred_eq]
     rw [chartMap, hrep]
     refine ⟨?_, ?_⟩
     · rw [Pi.smul_apply, smul_eq_mul, Fin.insertNth_apply_same, mul_one]; exact hc
@@ -55,7 +55,7 @@ theorem isSemialgebraicSetC_chartOverlap (i j : Fin (k + 1)) :
   · obtain ⟨b, hb⟩ := Fin.exists_succAbove_eq hji
     have hcoord : {x : Fin k → Ri R | (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j ≠ 0}
         = {x : Fin k → Ri R | x b ≠ 0} := by
-      ext x; simp only [Set.mem_setOf_eq, ← hb, Fin.insertNth_apply_succAbove]
+      ext x; simp only [Set.mem_ofPred_eq, ← hb, Fin.insertNth_apply_succAbove]
     rw [hcoord]; exact isSemialgebraicSetC_coord_ne_zero b
 
 end Azurite.BPR.Chapter4

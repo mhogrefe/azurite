@@ -75,7 +75,7 @@ theorem mod_smul_smul (A B : K[X]) (α : K) {β : K} (hβ : β ≠ 0) :
     signed subresultant of the first polynomial is its leading coefficient). -/
 theorem sRes_top_eq_leadingCoeff (P Q : K[X]) (hqp : Q.natDegree < P.natDegree) :
     Azurite.BPR.Chapter4.sRes P Q P.natDegree = P.leadingCoeff := by
-  rw [Azurite.BPR.Chapter4.sRes, if_neg (by omega), if_pos hqp, if_pos rfl]
+  rw [Azurite.BPR.Chapter4.sRes, ite_eq_right (by omega), ite_eq_left hqp, ite_eq_left rfl]
 
 /-- **Boundary value for the swapped pair.** For `R ≠ 0` with `deg R < deg Q`, the
     `(q-1)`-st signed subresultant of `Q, -R` is `-R`: it is `-R` by the
@@ -298,18 +298,18 @@ end DvdPdetRing
 theorem gcd_dvd_sResP (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     (hpq : Q.natDegree < P.natDegree) {ℓ : ℕ} (hℓ : ℓ ≤ Q.natDegree) :
     gcd P Q ∣ sResP P Q ℓ := by
-  rw [sResP, if_pos hℓ]
+  rw [sResP, ite_eq_left hℓ]
   refine dvd_pdetRing (by omega) (by omega) _ ?_ (gcd P Q) ?_
   · -- each row has degree `< P.natDegree + Q.natDegree - ℓ`
     intro r
     have hr2 := r.isLt
     by_cases hr : (r : ℕ) < Q.natDegree - ℓ
-    · rw [if_pos hr,
+    · rw [ite_eq_left hr,
         Polynomial.degree_eq_natDegree (mul_ne_zero (pow_ne_zero _ Polynomial.X_ne_zero) hP),
         natDegree_X_pow_mul _ hP]
       exact_mod_cast
         (show P.natDegree + (Q.natDegree - ℓ - 1 - (r : ℕ)) < P.natDegree + Q.natDegree - ℓ from by omega)
-    · rw [if_neg hr,
+    · rw [ite_eq_right hr,
         Polynomial.degree_eq_natDegree (mul_ne_zero (pow_ne_zero _ Polynomial.X_ne_zero) hQ),
         natDegree_X_pow_mul _ hQ]
       exact_mod_cast
@@ -317,8 +317,8 @@ theorem gcd_dvd_sResP (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
   · -- `gcd P Q` divides each row
     intro r
     by_cases hr : (r : ℕ) < Q.natDegree - ℓ
-    · rw [if_pos hr]; exact (gcd_dvd_left P Q).mul_left _
-    · rw [if_neg hr]; exact (gcd_dvd_right P Q).mul_left _
+    · rw [ite_eq_left hr]; exact (gcd_dvd_left P Q).mul_left _
+    · rw [ite_eq_right hr]; exact (gcd_dvd_right P Q).mul_left _
 
 /-- **Theorem 8.34, gcd branch — vanishing below the gcd degree.** For `ℓ < deg(gcd)`,
     `sResP P Q ℓ = 0` (it is divisible by `gcd` yet has degree `≤ ℓ < deg gcd`). -/
@@ -1063,11 +1063,11 @@ theorem theorem_8_34_monolithic (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
     · -- k = 0: BPR's terminus convention `sResP_{-1} = 0`.  `sResP_{j-1}` is then a nonzero
       -- constant (a unit), so the LHS is `0` and the remainder on the RHS also vanishes.
       subst hk0'
-      rw [if_pos rfl, mul_zero]
+      rw [ite_eq_left rfl, mul_zero]
       have hunit : IsUnit (sResP P Q (j - 1)) := Polynomial.isUnit_iff_degree_eq_zero.mpr (by
         rw [Polynomial.degree_eq_natDegree hk0, hkdeg]; simp)
       rw [EuclideanDomain.mod_eq_zero.mpr hunit.dvd, neg_zero]
-    rw [if_neg hk0']
+    rw [ite_eq_right hk0']
     have hk1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk0'
     by_cases hip2 : i - 1 = P.natDegree
     · -- i-1 = p: base case (s_p = t_p = 1), with terminal sub-case `Q ∣ P`
@@ -1075,10 +1075,10 @@ theorem theorem_8_34_monolithic (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
       have hQj : sResP P Q (j - 1) = Q := by rw [hjp, sResP_pm1_eq_Q P Q hQ hpq]
       have hkq : k = Q.natDegree := by rw [hQj] at hkdeg; exact hkdeg.symm
       have hsk : sBPR P Q k = Azurite.BPR.Chapter4.sRes P Q k := by
-        rw [sBPR, if_neg (show k ≠ P.natDegree by omega)]
+        rw [sBPR, ite_eq_right (show k ≠ P.natDegree by omega)]
       have htj : tBPR P Q (j - 1) = (sResP P Q (j - 1)).leadingCoeff := by
-        rw [tBPR, if_neg (show j - 1 ≠ P.natDegree by omega)]
-      rw [sBPR, if_pos hjp, tBPR, if_pos hip2, hsk, htj, hip2]
+        rw [tBPR, ite_eq_right (show j - 1 ≠ P.natDegree by omega)]
+      rw [sBPR, ite_eq_left hjp, tBPR, ite_eq_left hip2, hsk, htj, hip2]
       simp only [map_one, one_mul]
       by_cases hR0 : P % Q = 0
       · -- terminal: both sides vanish
@@ -1110,8 +1110,8 @@ theorem theorem_8_34_monolithic (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
       have hkle : k ≤ j - 1 := by
         rw [← hkdeg]
         exact Polynomial.natDegree_le_iff_degree_le.mpr (sResP_degree_le P Q hpq (by omega))
-      rw [sBPR, if_neg (show j ≠ P.natDegree by omega), tBPR, if_neg (show i - 1 ≠ P.natDegree by omega),
-        sBPR, if_neg (show k ≠ P.natDegree by omega), tBPR, if_neg (show j - 1 ≠ P.natDegree by omega)]
+      rw [sBPR, ite_eq_right (show j ≠ P.natDegree by omega), tBPR, ite_eq_right (show i - 1 ≠ P.natDegree by omega),
+        sBPR, ite_eq_right (show k ≠ P.natDegree by omega), tBPR, ite_eq_right (show j - 1 ≠ P.natDegree by omega)]
       by_cases hiq2 : i - 1 ≤ Q.natDegree - 1
       · -- i-1 ≤ q-1 ⟹ P % Q ≠ 0
         have hR0 : P % Q ≠ 0 := by
@@ -1145,10 +1145,10 @@ theorem theorem_8_34_monolithic (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
             (by rw [natDegree_neg]; exact hrq) (by rw [natDegree_neg]; omega)
             (Polynomial.natDegree_neg _) i j hj1 hji (by omega) hsi hsdeg
           obtain ⟨hrec, _⟩ := hih2.2 k hQk hQkdeg
-          rw [if_neg hk0', sBPR, if_neg (show j ≠ Q.natDegree by omega),
-            tBPR, if_neg (show i - 1 ≠ Q.natDegree by omega),
-            sBPR, if_neg (show k ≠ Q.natDegree by omega),
-            tBPR, if_neg (show j - 1 ≠ Q.natDegree by omega)] at hrec
+          rw [ite_eq_right hk0', sBPR, ite_eq_right (show j ≠ Q.natDegree by omega),
+            tBPR, ite_eq_right (show i - 1 ≠ Q.natDegree by omega),
+            sBPR, ite_eq_right (show k ≠ Q.natDegree by omega),
+            tBPR, ite_eq_right (show j - 1 ≠ Q.natDegree by omega)] at hrec
           exact general_recurrence_transport P Q hQ hR0 hpq (by omega) (by omega)
             (by omega) (by omega) (by omega) hrec
         · -- i-1 = q-1: boundary, transport (Q,-R)'s top recurrence via the IH
@@ -1191,10 +1191,10 @@ theorem theorem_8_34_monolithic (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
               natDegree_sResP_natDegree_sub_one Q (-(P % Q)) (neg_ne_zero.mpr hR0) hR'0
                 (by rw [natDegree_neg]; exact hrq) (by rw [natDegree_neg]; omega), hk_eq]
           obtain ⟨hrec, _⟩ := hih2.2 k hQk hQkdeg
-          rw [if_neg hk0', sBPR, if_neg (show (P % Q).natDegree ≠ Q.natDegree by omega),
-            tBPR, if_neg (show Q.natDegree - 1 ≠ Q.natDegree by omega),
-            sBPR, if_neg (show k ≠ Q.natDegree by omega),
-            tBPR, if_neg (show (P % Q).natDegree - 1 ≠ Q.natDegree by omega)] at hrec
+          rw [ite_eq_right hk0', sBPR, ite_eq_right (show (P % Q).natDegree ≠ Q.natDegree by omega),
+            tBPR, ite_eq_right (show Q.natDegree - 1 ≠ Q.natDegree by omega),
+            sBPR, ite_eq_right (show k ≠ Q.natDegree by omega),
+            tBPR, ite_eq_right (show (P % Q).natDegree - 1 ≠ Q.natDegree by omega)] at hrec
           rw [hjr, hi1eq, hk_eq, show (P % Q).natDegree - 1 = (P % Q).natDegree - 1 from rfl]
           exact recurrence_transport P Q hQ hR0 hpq (by omega) (by omega) (by omega) (by omega)
             (by rw [← hk_eq]; exact hrec)
@@ -1345,10 +1345,10 @@ theorem theorem_8_34 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
       (i := P.natDegree) (j := Q.natDegree) hq1 hpq (by omega)
       (by rw [hQpm1]; exact hQ) (by rw [hQpm1])).2 (P % Q).natDegree hk0 hkdeg
     refine ⟨?_, ?_, ?_⟩
-    · rw [sBPR, if_neg (show Q.natDegree ≠ P.natDegree by omega),
-        tBPR, if_neg (show P.natDegree - 1 ≠ P.natDegree by omega),
-        sBPR, if_neg (show (P % Q).natDegree ≠ P.natDegree by omega),
-        tBPR, if_neg (show Q.natDegree - 1 ≠ P.natDegree by omega)] at heq
+    · rw [sBPR, ite_eq_right (show Q.natDegree ≠ P.natDegree by omega),
+        tBPR, ite_eq_right (show P.natDegree - 1 ≠ P.natDegree by omega),
+        sBPR, ite_eq_right (show (P % Q).natDegree ≠ P.natDegree by omega),
+        tBPR, ite_eq_right (show Q.natDegree - 1 ≠ P.natDegree by omega)] at heq
       exact heq
     · exact fun ℓ h1 h2 => (hprop (by omega)).1 ℓ h1 h2
     · by_cases hrq1 : (P % Q).natDegree < Q.natDegree - 1

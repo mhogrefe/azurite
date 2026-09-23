@@ -58,7 +58,7 @@ theorem isSemialgebraicFunction_translate_univ {k : ℕ} (c : Fin k → R) :
       exact Subsingleton.elim _ _
     rw [heq]
     exact isSemialgebraicFunction_id isSemialgebraicSet_univ
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   refine isSemialgebraicFunction_of_coords fun j => ?_
   have heq : (fun z : Fin k → R => fun _ : Fin 1 => (z + c) j)
       = polyFun (X j + C (c j)) := by

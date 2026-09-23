@@ -207,7 +207,7 @@ theorem theorem_4_104_chartV {k ℓ : ℕ} (m : ℕ)
   have hmemU : ∀ p : complexProjectiveSpace R k,
       p ∈ U ↔ p ∈ chartSet i₀ ∧ realEquiv (chartInv i₀ p) ∈ Ua := by
     intro p
-    rw [hUdef, chartImageP, Set.mem_setOf_eq, hU₀]
+    rw [hUdef, chartImageP, Set.mem_ofPred_eq, hU₀]
     refine and_congr_right (fun _ => ?_)
     constructor
     · rintro ⟨w, hwU, hwp⟩; rw [← hwp, Equiv.apply_symm_apply]; exact hwU
@@ -215,7 +215,7 @@ theorem theorem_4_104_chartV {k ℓ : ℕ} (m : ℕ)
   have hmemV : ∀ q : complexProjectiveSpace R ℓ,
       q ∈ V ↔ q ∈ chartSet j₀ ∧ realEquiv (chartInv j₀ q) ∈ Va := by
     intro q
-    rw [hVdef, chartImageP, Set.mem_setOf_eq, hV₀]
+    rw [hVdef, chartImageP, Set.mem_ofPred_eq, hV₀]
     refine and_congr_right (fun _ => ?_)
     constructor
     · rintro ⟨w, hwV, hwq⟩; rw [← hwq, Equiv.apply_symm_apply]; exact hwV
@@ -274,7 +274,7 @@ theorem theorem_4_104_chartV {k ℓ : ℕ} (m : ℕ)
             z ∈ A ∧ ϕ₀ (transitionMap i i₀ z) ∈ (chartOverlap j₀ j : Set (Fin ℓ → Ri R))} := by
       rw [chartMap_preimage_chartImageP]
       ext z
-      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq, hA]
+      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_ofPred_eq, hA]
       have hrep : liftProjMap i₀ j₀ ϕ₀ (chartMap i z)
           = chartMap j₀ (ϕ₀ (transitionMap i i₀ z)) := by
         rw [liftProjMap, ← transitionMap_eq_chartInv_chartMap]

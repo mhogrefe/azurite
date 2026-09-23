@@ -51,7 +51,7 @@ theorem isSemialgebraicFunction_of_coords {k ℓ : ℕ} [Nonempty (Fin ℓ)] {A 
     · rintro ⟨hA, hf⟩
       rw [Set.mem_iInter₂]
       intro j _
-      rw [Set.mem_setOf_eq, memcoord]
+      rw [Set.mem_ofPred_eq, memcoord]
       exact ⟨hA, congrFun hf j⟩
     · intro H
       rw [Set.mem_iInter₂] at H

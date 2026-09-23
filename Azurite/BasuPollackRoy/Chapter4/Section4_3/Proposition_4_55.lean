@@ -37,8 +37,8 @@ theorem trace_gen_pow_eq_newtonSum (P : K[X]) (hP : P.Monic) (j : ℕ) :
   classical
   have hP0 : P ≠ 0 := hP.ne_zero
   set pb := AdjoinRoot.powerBasis hP0 with hpb
-  haveI : Module.Finite K (AdjoinRoot P) := pb.finite
-  haveI : Module.Free K (AdjoinRoot P) := Module.Free.of_basis pb.basis
+  have : Module.Finite K (AdjoinRoot P) := pb.finite
+  have : Module.Free K (AdjoinRoot P) := Module.Free.of_basis pb.basis
   set M := Algebra.leftMulMatrix pb.basis (AdjoinRoot.root P) with hM
   -- The charpoly of `M` is `P`.
   have hgen : pb.gen = AdjoinRoot.root P := AdjoinRoot.powerBasis_gen hP0

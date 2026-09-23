@@ -128,7 +128,7 @@ theorem isSemialgebraicSet_funGraph_realTransition {k : ℕ} (m i : Fin (k + 1))
   rw [hCimg, ← Set.image_comp]
   -- comap of `(· ∘ σ) '' A` is `A` when `(· ∘ σ)` injective
   ext q
-  simp only [Set.mem_image, Set.mem_setOf_eq, Function.comp_apply]
+  simp only [Set.mem_image, Set.mem_ofPred_eq, Function.comp_apply]
   constructor
   · intro hq
     exact ⟨q, hq, rfl⟩
@@ -213,7 +213,7 @@ theorem isSemialgebraicSetRP_chartMap_comp {k : ℕ} (i : Fin (k + 1))
     refine Fin.addCases (fun a => ?_) (fun a => ?_) p
     · simp only [hσg, Function.comp_apply, Fin.addCases_left, Fin.append_left, hwv]
     · simp only [hσg, Function.comp_apply, Fin.addCases_right, Fin.append_right]
-  simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+  simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
   constructor
   · rintro ⟨htmem, hval⟩
     -- the chart equality
@@ -249,7 +249,7 @@ theorem IsSemialgebraicSetRP.union {k p : ℕ}
       = {w : Fin (p + (k + k)) → R |
           (w ∘ Fin.castAdd (k + k), chartMap i (realEquiv.symm (w ∘ Fin.natAdd p))) ∈ S}
         ∪ {w | (w ∘ Fin.castAdd (k + k), chartMap i (realEquiv.symm (w ∘ Fin.natAdd p))) ∈ T} := by
-    ext w; simp only [Set.mem_setOf_eq, Set.mem_union]
+    ext w; simp only [Set.mem_ofPred_eq, Set.mem_union]
   rw [heq]
   exact (hS i).union (hT i)
 
@@ -302,7 +302,7 @@ theorem isSemialgebraicSet_funGraph_reparam {ℓ : ℕ} {S D : Set (Fin 1 → R)
       = (Set.univ ∩ M ⁻¹' funGraph S ϕ) ∩ {z : Fin (1 + ℓ) → R | z ∘ Fin.castAdd ℓ ∈ D} := by
     ext z
     simp only [mem_funGraph, Set.mem_inter_iff, Set.mem_univ, true_and, Set.mem_preimage,
-      Set.mem_setOf_eq]
+      Set.mem_ofPred_eq]
     have hcast0 : (z ∘ Fin.castAdd ℓ) 0 = z (Fin.castAdd ℓ 0) := rfl
     have hMcast : M z ∘ Fin.castAdd ℓ = (fun _ : Fin 1 => 2 * z (Fin.castAdd ℓ 0) + e) := by
       funext s; simp only [hM, Function.comp_apply, Fin.append_left]
@@ -339,7 +339,7 @@ theorem infinite_chartOverlap {k : ℕ} {i j : Fin (k + 1)} (hij : i ≠ j) :
   rw [chartOverlap_eq]
   have hset : {x : Fin k → Ri R | (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j ≠ 0}
       = {x : Fin k → Ri R | x b ≠ 0} := by
-    ext x; simp only [Set.mem_setOf_eq, ← hb, Fin.insertNth_apply_succAbove]
+    ext x; simp only [Set.mem_ofPred_eq, ← hb, Fin.insertNth_apply_succAbove]
   rw [hset]
   have halg : Function.Injective (algebraMap R (Ri R)) :=
     FaithfulSMul.algebraMap_injective R (Ri R)
@@ -362,7 +362,7 @@ theorem infinite_chartOverlap {k : ℕ} {i j : Fin (k + 1)} (hij : i ≠ j) :
     simp only [Function.update_self] at this
     exact hcastinj this
   · intro n
-    simp only [Set.mem_setOf_eq, Function.update_self]
+    simp only [Set.mem_ofPred_eq, Function.update_self]
     exact hne0 n
 
 set_option linter.unusedSectionVars false in
@@ -524,7 +524,7 @@ theorem isSemialgebraicSet_Icc_local (a b : R) :
       = {y : Fin 1 → R | eval y (X 0 - C a) ≥ 0} ∩ {y | eval y (X 0 - C b) ≤ 0} := by
     ext y
     rw [mem_Icc_fin_one_local]
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, map_sub, eval_X, eval_C, ge_iff_le,
+    simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, map_sub, eval_X, eval_C, ge_iff_le,
       sub_nonneg, sub_nonpos]
   rw [heq]
   exact (IsSemialgebraicSet.geZero _).inter (IsSemialgebraicSet.leZero _)
@@ -653,14 +653,14 @@ theorem crossChart_path {k : ℕ} (hk : 1 ≤ k) (Δ : Finset (complexProjective
   have hγeq₁ : ∀ u ∈ H₁, γ u = γ₁ u := by
     intro u hu
     show (if u 0 ≤ 1 / 2 then γ₁ u else γ₂ u) = γ₁ u
-    exact if_pos ((hH₁mem u).mp hu).2
+    exact ite_eq_left ((hH₁mem u).mp hu).2
   have hγeq₂ : ∀ u ∈ H₂, γ u = γ₂ u := by
     intro u hu
     show (if u 0 ≤ 1 / 2 then γ₁ u else γ₂ u) = γ₂ u
     rcases le_or_gt (u 0) (1 / 2) with h | h
     · have hhalf : u 0 = 1 / 2 := le_antisymm h ((hH₂mem u).mp hu).1
-      rw [if_pos h, hγ₁z u hhalf, ← hγ₂z u hhalf]
-    · rw [if_neg (not_le.mpr h)]
+      rw [ite_eq_left h, hγ₁z u hhalf, ← hγ₂z u hhalf]
+    · rw [ite_eq_right (not_le.mpr h)]
   -- continuity of each half
   have hsymm : Continuous (realEquiv.symm : (Fin (k + k) → R) → (Fin k → Ri R)) :=
     realEquivₜ.symm.continuous
@@ -741,7 +741,7 @@ theorem crossChart_path {k : ℕ} (hk : 1 ≤ k) (Δ : Finset (complexProjective
       {tp | tp.1 ∈ H₂ ∧ tp.2 = chartMap j (realEquiv.symm (ψ₂ tp.1))} with hT₂
     have hTeq : T = T₁ ∪ T₂ := by
       ext ⟨u, p⟩
-      simp only [hT, hT₁, hT₂, Set.mem_setOf_eq, Set.mem_union]
+      simp only [hT, hT₁, hT₂, Set.mem_ofPred_eq, Set.mem_union]
       constructor
       · rintro ⟨huI, hp⟩
         rw [hunion, Set.mem_union] at huI

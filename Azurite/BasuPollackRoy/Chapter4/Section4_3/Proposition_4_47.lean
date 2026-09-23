@@ -52,7 +52,7 @@ private lemma traceBilin_eq_repr
   conv_lhs => rw [hSsum]
   rw [map_sum, LinearMap.sum_apply]
   simp only [map_smul, LinearMap.smul_apply, smul_eq_mul, horth, mul_ite, mul_one, mul_zero]
-  rw [Finset.sum_ite_eq' Finset.univ q c, if_pos (Finset.mem_univ q)]
+  rw [Finset.sum_ite_eq' Finset.univ q c, ite_eq_left (Finset.mem_univ q)]
 
 /-- Parseval's identity: the inner product of two symmetric matrices equals the sum of
 products of their coordinates in the orthonormal basis `E`. -/

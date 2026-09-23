@@ -35,14 +35,14 @@ lemma coeff_mulXPow (n : ℕ) (p : AzPolynomial R) (i : ℕ) :
     next hp =>
       dsimp [coeff]
       by_cases hni : n ≤ i
-      · rw [if_pos hni]
+      · rw [ite_eq_left hni]
         rw [Array.getElem?_append_right (by simp; omega)]
         congr 2
         simp
-      · rw [if_neg hni]
+      · rw [ite_eq_right hni]
         rw [Array.getElem?_append_left (by simp; omega)]
         simp only [Array.getElem?_replicate]
-        rw [if_pos (by omega)]
+        rw [ite_eq_left (by omega)]
         rfl
 
 omit [DecidableEq R] in

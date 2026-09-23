@@ -109,7 +109,7 @@ def divMod (U V : AzNat) : AzNat × AzNat :=
         have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
           show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
           rw [Array.getElem_set]
-          rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+          rw [ite_eq_left (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
         rw [h_eq]; exact h_d_top_ge
       let res :=
         recursiveDivModLimbsArr 32 UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
@@ -217,7 +217,7 @@ def div (U V : AzNat) : AzNat :=
         have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
           show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
           rw [Array.getElem_set]
-          rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+          rw [ite_eq_left (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
         rw [h_eq]; exact h_d_top_ge
       let res :=
         recursiveDivModLimbsArr 32 UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
@@ -321,7 +321,7 @@ def mod (U V : AzNat) : AzNat :=
         have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
           show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
           rw [Array.getElem_set]
-          rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+          rw [ite_eq_left (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
         rw [h_eq]; exact h_d_top_ge
       let res :=
         recursiveDivModLimbsArr 32 UBuf VBuf 0 0 n m h_n_pos h_loA h_loB h_VBuf_norm
@@ -415,7 +415,7 @@ def recursiveDivModFast (threshold : Nat) (U V : AzNat) : AzNat × AzNat :=
       have h_eq : VBuf[0 + n - 1]'(by rw [h_VBuf_size]; omega) = d_top := by
         show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
         rw [Array.getElem_set]
-        rw [if_pos (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
+        rw [ite_eq_left (show (n - 1 : Nat) = 0 + n - 1 from by omega)]
       rw [h_eq]; exact h_d_top_ge
     -- Call the slice-style D&C divrem.
     let res :=

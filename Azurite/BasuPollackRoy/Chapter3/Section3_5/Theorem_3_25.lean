@@ -144,13 +144,13 @@ theorem det_eq_det_lower_block {k ℓ : ℕ} (M : Matrix (Fin (k + ℓ)) (Fin (k
     · rw [Matrix.submatrix_apply, finSumFinEquiv_apply_left, finSumFinEquiv_apply_left,
         Matrix.fromBlocks_apply₁₁, htop, Matrix.one_apply]
       by_cases h : i' = j'
-      · rw [if_pos h, if_pos (by rw [h])]
-      · rw [if_neg h, if_neg (fun hc => h (by
+      · rw [ite_eq_left h, ite_eq_left (by rw [h])]
+      · rw [ite_eq_right h, ite_eq_right (fun hc => h (by
           have := congrArg Fin.val hc
           simp only [Fin.val_castAdd] at this
           exact Fin.ext this))]
     · rw [Matrix.submatrix_apply, finSumFinEquiv_apply_left, finSumFinEquiv_apply_right,
-        Matrix.fromBlocks_apply₁₂, htop, Matrix.zero_apply, if_neg]
+        Matrix.fromBlocks_apply₁₂, htop, Matrix.zero_apply, ite_eq_right]
       intro hc
       have := congrArg Fin.val hc
       simp only [Fin.val_castAdd, Fin.val_natAdd] at this
@@ -248,8 +248,8 @@ theorem theorem_3_25 {k ℓ : ℕ} {W' : Set (Fin (k + ℓ) → R)}
       intro x _ y _
       exact iff_of_true (fun l => l.elim0) (Subsingleton.elim _ _)
   -- the main case `ℓ > 0`
-  haveI : Nonempty (Fin ℓ) := ⟨⟨0, hl⟩⟩
-  haveI : Nonempty (Fin (k + ℓ)) := ⟨⟨0, by omega⟩⟩
+  have : Nonempty (Fin ℓ) := ⟨⟨0, hl⟩⟩
+  have : Nonempty (Fin (k + ℓ)) := ⟨⟨0, by omega⟩⟩
   set z₀ : Fin (k + ℓ) → R := Fin.append x₀ y₀ with hz0
   -- the auxiliary map `F(z) = (z ∘ castAdd, f(z))` and its partial-derivative data
   set F : (Fin (k + ℓ) → R) → (Fin (k + ℓ) → R) :=

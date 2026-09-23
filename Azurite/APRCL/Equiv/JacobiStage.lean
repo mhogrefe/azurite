@@ -113,7 +113,7 @@ theorem j2k2_eq_one (hpk : 2 ^ 2 ∣ q - 1) (hn4 : n.toNat % 4 = 1) :
         * ((q : ℕ) : CycM (2 ^ 2)) ^ ((n.toNat - 1) / 4))) := by
   unfold j2k2
   dsimp only
-  rw [vRem_eq, if_pos hn4]
+  rw [vRem_eq, ite_eq_left hn4]
   congr 1
   have hJ := jacobiSumT_eq_reduce n Nat.prime_two two_pos hpk hg hf 1 1
   rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat Nat.prime_two two_pos,
@@ -129,7 +129,7 @@ theorem j2k2_eq_three (hpk : 2 ^ 2 ∣ q - 1) (hn4 : n.toNat % 4 = 3) :
         * ((q : ℕ) : CycM (2 ^ 2)) ^ ((n.toNat - 3) / 4))) := by
   unfold j2k2
   dsimp only
-  rw [vRem_eq, if_neg (by omega)]
+  rw [vRem_eq, ite_eq_right (by omega)]
   congr 1
   have hJ := jacobiSumT_eq_reduce n Nat.prime_two two_pos hpk hg hf 1 1
   rw [map_mul, map_pow, map_pow, map_natCast, hJ, cycT_pow_azNat Nat.prime_two two_pos,
@@ -189,7 +189,7 @@ theorem j2k3_eq_low (hk3 : 3 ≤ k) (hn8 : n.toNat % 8 = 1 ∨ n.toNat % 8 = 3) 
               (chiT Nat.prime_two hpk hg ^ (2 * minv 2 k x))) ^ αc n.toNat 2 k x)) := by
   unfold j2k3
   dsimp only
-  rw [vRem_eq, if_pos hn8, j2k3_core hg hf hpk (by omega)]
+  rw [vRem_eq, ite_eq_left hn8, j2k3_core hg hf hpk (by omega)]
 
 /-- **`j2k3`, `n ≡ 5, 7 (mod 8)`**, is Algorithm (6.2) on the reduced (9.20) product. -/
 theorem j2k3_eq_high (hk3 : 3 ≤ k) (hn8 : n.toNat % 8 = 5 ∨ n.toNat % 8 = 7) :
@@ -201,7 +201,7 @@ theorem j2k3_eq_high (hk3 : 3 ≤ k) (hn8 : n.toNat % 8 = 5 ∨ n.toNat % 8 = 7)
             ((chiT Nat.prime_two hpk hg ^ 2 ^ (k - 3)) ^ 3) ^ 2)) := by
   unfold j2k3
   dsimp only
-  rw [vRem_eq, if_neg (by omega)]
+  rw [vRem_eq, ite_eq_right (by omega)]
   congr 1
   rw [map_mul, ← j2k3_core hg hf hpk (by omega), map_pow, ← pow_mul, mul_comm (2 ^ (k - 3)) 3,
     ← jacobiSumT_eq_reduce n Nat.prime_two (by omega) hpk hg hf (2 ^ (k - 3)) (3 * 2 ^ (k - 3)),

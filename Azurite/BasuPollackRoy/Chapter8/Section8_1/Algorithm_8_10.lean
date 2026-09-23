@@ -144,7 +144,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
 
     rw [Finset.sum_eq_single_of_mem m (mem_range.mpr (by omega))]
     · -- j = m term
-      simp only [if_true, mul_one]
+      simp only [ite_true, mul_one]
       unfold Int.size at *
       -- bitsize(c^m · (-b)^{n-m} · choose(n,m)) ≤ n·τ' + n = n·(1+τ')
       have hprod : (c ^ m * (-b) ^ (n - m)).natAbs.size ≤ n * τ' := by
@@ -173,7 +173,7 @@ private theorem bitsize_coeff_cX_sub_b_pow (b c : ℤ) (n m τ' : ℕ)
         _ ≤ n * τ' + n := Nat.add_le_add hprod hchoose
         _ = n * (1 + τ') := by ring
     · intro j _ hjm
-      simp only [if_neg (Ne.symm hjm), mul_zero, zero_mul]
+      simp only [ite_eq_right (Ne.symm hjm), mul_zero, zero_mul]
 
 /-- The bitsize of the coefficient of `X^m` in the `k`-th summand
     `C(aₚ₋ₖ · cᵏ) · (cX − b)^{i−k}` is at most `τ + i(1 + τ')`. -/

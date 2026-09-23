@@ -158,7 +158,7 @@ theorem parseChars_toChars (v : AzVector R n) : parseChars (toChars v) = some v 
     exact h
   rw [hpn]
   show (if h : v.toList.length = n then some (AzVector.ofList v.toList h) else none) = some v
-  rw [dif_pos hlen]
+  rw [dite_eq_left hlen]
   rfl
 
 end AzVector

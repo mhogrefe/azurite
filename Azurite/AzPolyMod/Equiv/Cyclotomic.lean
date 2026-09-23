@@ -40,7 +40,7 @@ theorem toPoly_cyclotomicPrimePow {R : Type _} [CommRing R] [DecidableEq R]
   simp only [Polynomial.coeff_X_pow]
   have hP : 0 < p ^ (k - 1) := pow_pos hp.pos _
   by_cases h : i ≤ (p - 1) * p ^ (k - 1) ∧ i % p ^ (k - 1) = 0
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     obtain ⟨hle, hmod⟩ := h
     have hi : i = i / p ^ (k - 1) * p ^ (k - 1) := by
       have := Nat.div_add_mod i (p ^ (k - 1))
@@ -54,11 +54,11 @@ theorem toPoly_cyclotomicPrimePow {R : Type _} [CommRing R] [DecidableEq R]
     have hiff : ∀ j, (i = j * p ^ (k - 1)) = (i / p ^ (k - 1) = j) := fun j =>
       propext ⟨fun h => by rw [h, Nat.mul_div_cancel _ hP], fun h => by rw [← h]; exact hi⟩
     simp_rw [hiff]
-    rw [Finset.sum_ite_eq, if_pos (Finset.mem_range.mpr hlt)]
-  · rw [if_neg h]
+    rw [Finset.sum_ite_eq, ite_eq_left (Finset.mem_range.mpr hlt)]
+  · rw [ite_eq_right h]
     symm
     refine Finset.sum_eq_zero fun j hj => ?_
-    rw [if_neg]
+    rw [ite_eq_right]
     intro hij
     apply h
     have hj' := Finset.mem_range.mp hj
@@ -85,8 +85,8 @@ theorem toPoly_eq_sum_coeff {R : Type _} [Semiring R] (q : AzPolynomial R)
   simp only [Polynomial.coeff_C_mul_X_pow]
   rw [Finset.sum_ite_eq]
   by_cases hj : j < m
-  · rw [if_pos (Finset.mem_range.mpr hj)]
-  · rw [if_neg (by simpa using hj)]
+  · rw [ite_eq_left (Finset.mem_range.mpr hj)]
+  · rw [ite_eq_right (by simpa using hj)]
     exact coeff_eq_zero_of_size_le q (by omega)
 
 /-- `AzPolynomial.toPoly (normalize (ofFn c)) = Σ_{i<m} c_i x^i`. -/
@@ -100,8 +100,8 @@ theorem toPoly_normalize_ofFn {R : Type _} [Semiring R] [DecidableEq R] (m : ℕ
   simp only [Polynomial.coeff_C_mul_X_pow, Array.getElem?_ofFn]
   rw [Finset.sum_ite_eq]
   by_cases hj : j < m
-  · rw [dif_pos hj, Option.getD_some, if_pos (Finset.mem_range.mpr hj)]
-  · rw [dif_neg hj, Option.getD_none, if_neg (by simpa using hj)]
+  · rw [dite_eq_left hj, Option.getD_some, ite_eq_left (Finset.mem_range.mpr hj)]
+  · rw [dite_eq_right hj, Option.getD_none, ite_eq_right (by simpa using hj)]
 
 end AzPolynomial
 

@@ -251,7 +251,7 @@ conversely a producing `k` is `Valid` (from the `gen` shape) with each
         rw [(fairPairCappedAssignment sA.bits sB.bits).deinterleave_interleave ![iA, iB] hcap 1]
         exact hiB
       beta_reduce
-      rw [if_pos ((fairPairCappedAssignment sA.bits sB.bits).interleave_valid ![iA, iB]),
+      rw [ite_eq_left ((fairPairCappedAssignment sA.bits sB.bits).interleave_valid ![iA, iB]),
         h0, h1]
       rfl
     · -- Uniqueness: a producing position is valid with pinned components.
@@ -263,7 +263,7 @@ conversely a producing `k` is `Valid` (from the `gen` shape) with each
                   (a', b')
           else none) = some (a, b) := hk
       by_cases hv : (fairPairCappedAssignment sA.bits sB.bits).Valid k
-      · rw [if_pos hv] at hk'
+      · rw [ite_eq_left hv] at hk'
         rcases hga : gA.gen ((fairPairCappedAssignment sA.bits sB.bits).deinterleave 0 k)
           with _ | a'
         · rw [hga] at hk'
@@ -286,7 +286,7 @@ conversely a producing `k` is `Valid` (from the `gen` shape) with each
               ((fairPairCappedAssignment sA.bits sB.bits).deinterleaveTuple k) :=
               ((fairPairCappedAssignment sA.bits sB.bits).interleave_deinterleave k hv).symm
           _ = (fairPairCappedAssignment sA.bits sB.bits).interleave ![iA, iB] := by rw [htup]
-      · rw [if_neg hv] at hk'
+      · rw [ite_eq_right hv] at hk'
         exact absurd hk' (by simp)
 
 /-- **The capped fair triple generator (builder form).** The 3-slot analogue of
@@ -340,7 +340,7 @@ themselves and counter validity by the `Valid` guard. The unique index of
           ![iA, iB, iC] hcap 2]
         exact hiC
       beta_reduce
-      rw [if_pos ((fairTripleCappedAssignment sA.bits sB.bits sC.bits).interleave_valid
+      rw [ite_eq_left ((fairTripleCappedAssignment sA.bits sB.bits sC.bits).interleave_valid
         ![iA, iB, iC]), h0, h1, h2]
       rfl
     · -- Uniqueness: a producing position is valid with pinned components.
@@ -354,7 +354,7 @@ themselves and counter validity by the `Valid` guard. The unique index of
                       sA.bits sB.bits sC.bits).deinterleave 2 k)).map fun c' => (a', b', c')
           else none) = some (a, b, c) := hk
       by_cases hv : (fairTripleCappedAssignment sA.bits sB.bits sC.bits).Valid k
-      · rw [if_pos hv] at hk'
+      · rw [ite_eq_left hv] at hk'
         rcases hga : gA.gen ((fairTripleCappedAssignment
             sA.bits sB.bits sC.bits).deinterleave 0 k) with _ | a'
         · rw [hga] at hk'
@@ -385,7 +385,7 @@ themselves and counter validity by the `Valid` guard. The unique index of
                 sA.bits sB.bits sC.bits).interleave_deinterleave k hv).symm
           _ = (fairTripleCappedAssignment sA.bits sB.bits sC.bits).interleave ![iA, iB, iC] :=
               by rw [htup]
-      · rw [if_neg hv] at hk'
+      · rw [ite_eq_right hv] at hk'
         exact absurd hk' (by simp)
 
 /-- **The capped fair quadruple generator (builder form).** The 4-slot analogue
@@ -450,7 +450,7 @@ of `fairPairGenCapped`. The unique index of `(a, b, c, d)` is
           sA.bits sB.bits sC.bits sD.bits).deinterleave_interleave ![iA, iB, iC, iD] hcap 3]
         exact hiD
       beta_reduce
-      rw [if_pos ((fairQuadrupleCappedAssignment
+      rw [ite_eq_left ((fairQuadrupleCappedAssignment
         sA.bits sB.bits sC.bits sD.bits).interleave_valid ![iA, iB, iC, iD]), h0, h1, h2, h3]
       rfl
     · -- Uniqueness: a producing position is valid with pinned components.
@@ -468,7 +468,7 @@ of `fairPairGenCapped`. The unique index of `(a, b, c, d)` is
                             (a', b', c', d')
           else none) = some (a, b, c, d) := hk
       by_cases hv : (fairQuadrupleCappedAssignment sA.bits sB.bits sC.bits sD.bits).Valid k
-      · rw [if_pos hv] at hk'
+      · rw [ite_eq_left hv] at hk'
         rcases hga : gA.gen ((fairQuadrupleCappedAssignment
             sA.bits sB.bits sC.bits sD.bits).deinterleave 0 k) with _ | a'
         · rw [hga] at hk'
@@ -506,7 +506,7 @@ of `fairPairGenCapped`. The unique index of `(a, b, c, d)` is
                 sA.bits sB.bits sC.bits sD.bits).interleave_deinterleave k hv).symm
           _ = (fairQuadrupleCappedAssignment sA.bits sB.bits sC.bits sD.bits).interleave
               ![iA, iB, iC, iD] := by rw [htup]
-      · rw [if_neg hv] at hk'
+      · rw [ite_eq_right hv] at hk'
         exact absurd hk' (by simp)
 
 end ExhaustiveGenerator
@@ -554,7 +554,7 @@ theorem fairPairGenCapped_gen_isSome_iff {A B : Type*} (gA : ExhaustiveGenerator
         else none := rfl
   rw [hgen]
   by_cases hv : (fairPairCappedAssignment sA.bits sB.bits).Valid k
-  · rw [if_pos hv]
+  · rw [ite_eq_left hv]
     constructor
     · intro hs
       refine ⟨hv, ?_⟩
@@ -581,7 +581,7 @@ theorem fairPairGenCapped_gen_isSome_iff {A B : Type*} (gA : ExhaustiveGenerator
       obtain ⟨b, hgb⟩ := Option.isSome_iff_exists.mp hb
       rw [hga, hgb]
       rfl
-  · rw [if_neg hv]
+  · rw [ite_eq_right hv]
     exact iff_of_false (by simp) fun hlive => hv hlive.1
 
 /-- **The raw capped triple builder's liveness is `Live`**: the 3-slot clone
@@ -602,7 +602,7 @@ theorem fairTripleGenCapped_gen_isSome_iff {A B C : Type*} (gA : ExhaustiveGener
         else none := rfl
   rw [hgen]
   by_cases hv : (fairTripleCappedAssignment sA.bits sB.bits sC.bits).Valid k
-  · rw [if_pos hv]
+  · rw [ite_eq_left hv]
     constructor
     · intro hs
       refine ⟨hv, ?_⟩
@@ -641,7 +641,7 @@ theorem fairTripleGenCapped_gen_isSome_iff {A B C : Type*} (gA : ExhaustiveGener
       obtain ⟨c, hgc⟩ := Option.isSome_iff_exists.mp hc
       rw [hga, hgb, hgc]
       rfl
-  · rw [if_neg hv]
+  · rw [ite_eq_right hv]
     exact iff_of_false (by simp) fun hlive => hv hlive.1
 
 /-- **The raw capped quadruple builder's liveness is `Live`**: the 4-slot
@@ -666,7 +666,7 @@ theorem fairQuadrupleGenCapped_gen_isSome_iff {A B C D : Type*}
         else none := rfl
   rw [hgen]
   by_cases hv : (fairQuadrupleCappedAssignment sA.bits sB.bits sC.bits sD.bits).Valid k
-  · rw [if_pos hv]
+  · rw [ite_eq_left hv]
     constructor
     · intro hs
       refine ⟨hv, ?_⟩
@@ -715,7 +715,7 @@ theorem fairQuadrupleGenCapped_gen_isSome_iff {A B C D : Type*}
       obtain ⟨d, hgd⟩ := Option.isSome_iff_exists.mp hd
       rw [hga, hgb, hgc, hgd]
       rfl
-  · rw [if_neg hv]
+  · rw [ite_eq_right hv]
     exact iff_of_false (by simp) fun hlive => hv hlive.1
 
 end CompressFast
@@ -928,7 +928,7 @@ but through the guarded round-trips. -/
         rw [hd j, hidx j]
         rfl
       beta_reduce
-      rw [dif_pos hcond, Option.some.injEq]
+      rw [dite_eq_left hcond, Option.some.injEq]
       apply List.Vector.ext
       intro j
       rw [List.Vector.get_ofFn]
@@ -944,7 +944,7 @@ but through the guarded round-trips. -/
         else none) = some v := hk
       by_cases hc : (fairVecCappedAssignment m s.bits).Valid k ∧
           ∀ j, (g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)).isSome
-      · rw [dif_pos hc] at hk'
+      · rw [dite_eq_left hc] at hk'
         have hg : ∀ j, g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)
             = some (v.get j) := by
           intro j
@@ -957,7 +957,7 @@ but through the guarded round-trips. -/
               ((fairVecCappedAssignment m s.bits).deinterleaveTuple k) :=
               ((fairVecCappedAssignment m s.bits).interleave_deinterleave k hc.1).symm
           _ = (fairVecCappedAssignment m s.bits).interleave idxf := by rw [htup]
-      · rw [dif_neg hc] at hk'
+      · rw [dite_eq_right hc] at hk'
         exact absurd hk' (by simp)
 
 end ExhaustiveGenerator
@@ -983,9 +983,9 @@ theorem fairVecGenCapped_gen_isSome_iff {T : Type*} (g : ExhaustiveGenerator T)
   rw [hgen]
   by_cases hc : (fairVecCappedAssignment m s.bits).Valid k ∧
       ∀ j, (g.gen ((fairVecCappedAssignment m s.bits).deinterleave j k)).isSome
-  · rw [dif_pos hc]
+  · rw [dite_eq_left hc]
     exact iff_of_true rfl ⟨hc.1, fun j b hj => (s.gen_isSome_iff _).mp (hc.2 j) b hj⟩
-  · rw [dif_neg hc]
+  · rw [dite_eq_right hc]
     refine iff_of_false (by simp) fun hlive => hc ⟨hlive.1, fun j => ?_⟩
     exact (s.gen_isSome_iff _).mpr fun b hb => hlive.2 j b hb
 

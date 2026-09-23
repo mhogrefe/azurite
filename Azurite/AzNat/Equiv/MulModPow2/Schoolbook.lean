@@ -199,7 +199,7 @@ private lemma schoolbookMulLowRow_toList_drop (a : Array UInt64) (loA lenA : Nat
       = if h2 : j + rowLen < L then r.1.set (j + rowLen) r.2 (by rw [h_r_size]; omega) else r.1 := rfl
   rw [heqRow]
   split
-  · rw [Array.toList_set, List.drop_set, if_pos (by omega : j + rowLen < j + lenA + 1)]
+  · rw [Array.toList_set, List.drop_set, ite_eq_left (by omega : j + rowLen < j + lenA + 1)]
     exact h_drop'
   · exact h_drop'
 
@@ -221,7 +221,7 @@ private lemma schoolbookMulLowLimbs.go_correct (a : Array UInt64) (loA lenA : Na
   | zero =>
     have hjge : L ≤ j := by omega
     have h_eq : schoolbookMulLowLimbs.go a loA lenA b loB lenB L acc j hA hB hAccEq.ge = acc := by
-      rw [schoolbookMulLowLimbs.go, dif_neg (by omega : ¬ (j < lenB ∧ j < L))]
+      rw [schoolbookMulLowLimbs.go, dite_eq_right (by omega : ¬ (j < lenB ∧ j < L))]
     rw [h_eq]
     obtain ⟨c, hc⟩ := Nat.pow_dvd_pow 2 (show 64 * L ≤ 64 * j from by omega)
     set X := toNatLimbsList ((a.toList.drop loA).take lenA)
@@ -238,7 +238,7 @@ private lemma schoolbookMulLowLimbs.go_correct (a : Array UInt64) (loA lenA : Na
       have h_eq : schoolbookMulLowLimbs.go a loA lenA b loB lenB L acc j hA hB hAccEq.ge
           = schoolbookMulLowLimbs.go a loA lenA b loB lenB L acc' (j + 1) hA hB hAcc'Eq.ge := by
         conv_lhs => rw [schoolbookMulLowLimbs.go]
-        rw [dif_pos (⟨hjb, hjlt⟩ : j < lenB ∧ j < L)]
+        rw [dite_eq_left (⟨hjb, hjlt⟩ : j < lenB ∧ j < L)]
       have h_zero' : ∀ (i : Nat) (hi : i < acc'.size), (j + 1) + lenA ≤ i → i < L → acc'[i]'hi = 0 := by
         intro i hi hge hlt
         have hi_acc : i < acc.size := by rw [hAccEq]; rw [hAcc'Eq] at hi; exact hi
@@ -272,7 +272,7 @@ private lemma schoolbookMulLowLimbs.go_correct (a : Array UInt64) (loA lenA : Na
       rw [hRHS]
       exact ih'.trans (Nat.ModEq.add_right _ hrow)
     · have h_eq : schoolbookMulLowLimbs.go a loA lenA b loB lenB L acc j hA hB hAccEq.ge = acc := by
-        rw [schoolbookMulLowLimbs.go, dif_neg (by omega : ¬ (j < lenB ∧ j < L))]
+        rw [schoolbookMulLowLimbs.go, dite_eq_right (by omega : ¬ (j < lenB ∧ j < L))]
       have hzero_slice : toNatLimbsList ((b.toList.drop (loB + j)).take (lenB - j)) = 0 := by
         rw [show lenB - j = 0 from by omega]; rfl
       rw [h_eq, hzero_slice, Nat.mul_zero, Nat.zero_mul, Nat.add_zero]

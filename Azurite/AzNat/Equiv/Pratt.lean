@@ -42,9 +42,9 @@ theorem checkPrattLink_sound {certified : List AzNat} {p a : AzNat}
     Nat.Prime p.toNat := by
   rw [checkPrattLink] at h
   by_cases h1 : 1 < p.toNat
-  case neg => rw [dif_neg h1] at h; exact Bool.noConfusion h
-  rw [dif_pos h1] at h
-  haveI : NeZero p.toNat := ⟨by omega⟩
+  case neg => rw [dite_eq_right h1] at h; exact Bool.noConfusion h
+  rw [dite_eq_left h1] at h
+  have : NeZero p.toNat := ⟨by omega⟩
   simp only [Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.or_eq_true] at h
   obtain ⟨⟨hprod, hfac⟩, hferm, hord⟩ := h

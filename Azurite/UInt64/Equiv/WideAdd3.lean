@@ -92,12 +92,12 @@ theorem toNat_wideAdd3 (x y : UInt64 × UInt64 × UInt64) :
       = (X2 * 2 ^ 128 + X1 * 2 ^ 64 + X0 + (Y2 * 2 ^ 128 + Y1 * 2 ^ 64 + Y0)) % 2 ^ 192
   rw [hfull]
   by_cases hc2 : r2.2
-  · rw [if_pos hc2]
+  · rw [ite_eq_left hc2]
     have : (1 * 2 ^ 192 + (r2.1.toNat * 2 ^ 128 + r1.1.toNat * 2 ^ 64 + r0.1.toNat))
         % 2 ^ 192 = r2.1.toNat * 2 ^ 128 + r1.1.toNat * 2 ^ 64 + r0.1.toNat := by
       rw [Nat.one_mul, Nat.add_mod_left, Nat.mod_eq_of_lt hresult_lt]
     linarith [this]
-  · rw [if_neg hc2]
+  · rw [ite_eq_right hc2]
     have : (0 * 2 ^ 192 + (r2.1.toNat * 2 ^ 128 + r1.1.toNat * 2 ^ 64 + r0.1.toNat))
         % 2 ^ 192 = r2.1.toNat * 2 ^ 128 + r1.1.toNat * 2 ^ 64 + r0.1.toNat := by
       rw [Nat.zero_mul, Nat.zero_add, Nat.mod_eq_of_lt hresult_lt]

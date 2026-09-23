@@ -32,12 +32,12 @@ theorem homogeneousComponent_mul_homogeneous {k : ℕ} {R : Type*} [CommRing R]
     have hh : (homogeneousComponent (m - e) B * Q).IsHomogeneous m := by
       have := (homogeneousComponent_isHomogeneous (m - e) B).mul hQ
       rwa [Nat.sub_add_cancel hm] at this
-    rw [homogeneousComponent_of_mem hh, if_pos rfl]
+    rw [homogeneousComponent_of_mem hh, ite_eq_left rfl]
   · -- terms `j ≠ m - e` vanish
     intro j _ hjne
     have hh : (homogeneousComponent j B * Q).IsHomogeneous (j + e) :=
       (homogeneousComponent_isHomogeneous j B).mul hQ
-    rw [homogeneousComponent_of_mem hh, if_neg (by omega)]
+    rw [homogeneousComponent_of_mem hh, ite_eq_right (by omega)]
   · -- `m - e ∉ range` means `homogeneousComponent (m - e) B = 0`
     intro hnot
     rw [Finset.mem_range, not_lt] at hnot
@@ -87,7 +87,7 @@ theorem corollary_4_80 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algeb
   · -- `P^n` is its own degree-`np` component; project the sum.
     have hLHS : homogeneousComponent (n * p) (P ^ n) = P ^ n := by
       have hPn : (P ^ n).IsHomogeneous (n * p) := by rw [mul_comm]; exact hPhom.pow n
-      rw [homogeneousComponent_of_mem hPn, if_pos rfl]
+      rw [homogeneousComponent_of_mem hPn, ite_eq_left rfl]
     calc P ^ n = homogeneousComponent (n * p) (P ^ n) := hLHS.symm
       _ = homogeneousComponent (n * p) (∑ i, B' i * Ps i) := by rw [hsum]
       _ = ∑ i, homogeneousComponent (n * p) (B' i * Ps i) := by rw [map_sum]

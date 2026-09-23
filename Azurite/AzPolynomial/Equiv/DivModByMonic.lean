@@ -91,11 +91,11 @@ private theorem modStep_size_lt {f : AzPolynomial R} (hf : (AzPolynomial.toPoly 
   have hdeg_rem : (AzPolynomial.toPoly rem).degree = (rem.natDegree : WithBot ℕ) := by
     rw [AzPolynomial.degree_toPoly]
     show (if rem.coeffs = #[] then (⊥ : WithBot ℕ) else ↑rem.natDegree) = ↑rem.natDegree
-    rw [if_neg (by intro h; rw [h] at hrs; simp at hrs)]
+    rw [ite_eq_right (by intro h; rw [h] at hrs; simp at hrs)]
   have hdeg_f : (AzPolynomial.toPoly f).degree = (f.natDegree : WithBot ℕ) := by
     rw [AzPolynomial.degree_toPoly]
     show (if f.coeffs = #[] then (⊥ : WithBot ℕ) else ↑f.natDegree) = ↑f.natDegree
-    rw [if_neg (by intro h; rw [h] at hfs; simp at hfs)]
+    rw [ite_eq_right (by intro h; rw [h] at hfs; simp at hfs)]
   have hdeg_prod : (Polynomial.monomial k c * AzPolynomial.toPoly f).degree
       = (rem.natDegree : WithBot ℕ) := by
     rw [hf.degree_mul, Polynomial.degree_monomial k hc_ne, hdeg_f, ← Nat.cast_add]
@@ -106,7 +106,7 @@ private theorem modStep_size_lt {f : AzPolynomial R} (hf : (AzPolynomial.toPoly 
     omega
   have hlc_prod : (Polynomial.monomial k c * AzPolynomial.toPoly f).leadingCoeff = c := by
     rw [Polynomial.leadingCoeff_mul_monic hf, Polynomial.leadingCoeff_monomial]
-  have hd := Polynomial.degree_sub_lt (hdeg_rem.trans hdeg_prod.symm) hrem0
+  have hd := Polynomial.degree_sub_lt_left (hdeg_rem.trans hdeg_prod.symm) hrem0
     (by rw [leadingCoeff_toPoly, ← hc, hlc_prod])
   have key : ∀ i, i ≥ rem.natDegree →
       (AzPolynomial.toPoly rem - Polynomial.monomial k c * AzPolynomial.toPoly f).coeff i = 0 := by
@@ -187,10 +187,10 @@ theorem degree_toPoly_lt_of_size_lt {P Q : AzPolynomial R} (h : P.coeffs.size < 
   have hqs : 0 < Q.coeffs.size := size_pos_of_toPoly_ne_zero hQ0
   rw [AzPolynomial.degree_toPoly, AzPolynomial.degree_toPoly]
   simp only [AzPolynomial.degree]
-  rw [if_neg (show Q.coeffs ≠ #[] by intro hh; rw [hh] at hqs; simp at hqs)]
+  rw [ite_eq_right (show Q.coeffs ≠ #[] by intro hh; rw [hh] at hqs; simp at hqs)]
   by_cases hP : P.coeffs = #[]
-  · rw [if_pos hP]; exact WithBot.bot_lt_coe _
-  · rw [if_neg hP]
+  · rw [ite_eq_left hP]; exact WithBot.bot_lt_coe _
+  · rw [ite_eq_right hP]
     have hPs : 0 < P.coeffs.size := by
       rcases Nat.eq_zero_or_pos P.coeffs.size with h' | h'
       · exact absurd (Array.eq_empty_of_size_eq_zero h') hP

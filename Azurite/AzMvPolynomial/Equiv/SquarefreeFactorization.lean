@@ -148,9 +148,9 @@ theorem insertMult_prodPow (acc : List (AzMvPolynomial n AzInt ord × ℕ))
     obtain ⟨g', e'⟩ := a
     rw [insertMult]
     by_cases he : e' = e
-    · rw [if_pos he, he]
+    · rw [ite_eq_left he, he]
       simp only [prodPow, List.map_cons, List.prod_cons, mul_pow]; ring
-    · rw [if_neg he]
+    · rw [ite_eq_right he]
       simp only [prodPow, List.map_cons, List.prod_cons] at ih ⊢
       rw [ih]; ring
 
@@ -247,7 +247,7 @@ theorem finSuccEquivSymm_C (g : AzMvPolynomial n AzInt ord) :
   · unfold AzMvPolynomial.finSuccEquivSymm
     rw [show AzPolynomial.C g
         = (⟨#[g], by simp [hg]⟩ : AzPolynomial (AzMvPolynomial n AzInt ord)) from by
-        rw [AzPolynomial.C, dif_neg hg]]
+        rw [AzPolynomial.C, dite_eq_right hg]]
     show (#[g] : Array (AzMvPolynomial n AzInt ord)).foldr _ 0 = _
     rw [← Array.foldr_toList, show (#[g] : Array (AzMvPolynomial n AzInt ord)).toList = [g] from rfl]
     simp only [List.foldr_cons, List.foldr_nil, zero_mul, add_zero]
@@ -310,7 +310,7 @@ theorem base_isUnit (P : AzMvPolynomial 0 AzInt ord) (hP : intContent P = 1) : I
   have hunit_c : IsUnit c := by
     rw [Int.isUnit_iff_natAbs_eq, Nat.eq_one_iff_not_exists_prime_dvd]
     intro p hp hpd
-    haveI : Fact p.Prime := ⟨hp⟩
+    have : Fact p.Prime := ⟨hp⟩
     apply hP p hp
     rw [hPC, redp, MvPolynomial.map_C, MvPolynomial.C_eq_zero]
     have hdvd : (p : ℤ) ∣ c := (Int.natCast_dvd_natCast.mpr hpd).trans (Int.natAbs_dvd.mpr dvd_rfl)

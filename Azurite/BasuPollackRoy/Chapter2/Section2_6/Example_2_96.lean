@@ -50,12 +50,13 @@ theorem cf2 :
     (puiseuxMonomial (-1) * -(2 * (puiseuxMonomial 1 : PuiseuxSeries R) ^ 2)
       * puiseuxMonomial (2 / 3)) = -(2 * puiseuxMonomial (5 / 3)) := by
   rw [mono_pow, show ((2 : ℕ) : ℚ) * 1 = 2 by norm_num,
-    show puiseuxMonomial (-1) * -(2 * puiseuxMonomial (2 : ℚ)) * puiseuxMonomial (2 / 3)
+    show (puiseuxMonomial (-1) * -(2 * puiseuxMonomial (2 : ℚ)) * puiseuxMonomial (2 / 3)
+        : PuiseuxSeries R)
       = -(2 * (puiseuxMonomial (-1) * puiseuxMonomial 2 * puiseuxMonomial (2 / 3))) by ring,
     puiseuxMonomial_mul, puiseuxMonomial_mul, show (-1 : ℚ) + 2 + 2 / 3 = 5 / 3 by norm_num]
 
 theorem cf3 : (puiseuxMonomial (-1) * -1 * puiseuxMonomial 1 : PuiseuxSeries R) = -1 := by
-  rw [show puiseuxMonomial (-1) * -1 * puiseuxMonomial 1
+  rw [show (puiseuxMonomial (-1) * -1 * puiseuxMonomial 1 : PuiseuxSeries R)
     = -(puiseuxMonomial (-1) * puiseuxMonomial 1) by ring, cf0]
 
 /-- **The explicit expansion of `P₁`** (BPR Example 2.96). -/
@@ -88,7 +89,7 @@ theorem exP1_coeff0 :
 theorem exP1_coeff1 :
     (exP1 : Polynomial (PuiseuxSeries R)).coeff 1
       = puiseuxMonomial (5 / 3) - 3 + 4 * puiseuxMonomial (4 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]; norm_num
 
 /-- The order of a Puiseux series is unchanged by negation. -/
 theorem puiseuxOrder_neg (a : PuiseuxSeries R) : puiseuxOrder R (-a) = puiseuxOrder R a := by
@@ -138,18 +139,18 @@ theorem order_exP1_coeff1 [CharZero R] : puiseuxOrder R (exP1.coeff 1) = 0 := by
 
 theorem exP1_coeff2 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 2
     = -3 + 8 * puiseuxMonomial (5 / 3) + 6 * puiseuxMonomial (4 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]; norm_num
 
 theorem exP1_coeff3 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 3
     = -1 + 4 * puiseuxMonomial (4 / 3) + 10 * puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]; norm_num
 
 theorem exP1_coeff4 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 4
     = puiseuxMonomial (4 / 3) + 5 * puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]; norm_num
 
 theorem exP1_coeff5 : (exP1 : Polynomial (PuiseuxSeries R)).coeff 5 = puiseuxMonomial (5 / 3) := by
-  rw [exP1_eq]; simp [add_mul, sub_mul, mul_assoc, coeff_C_mul, coeff_X_pow]
+  rw [exP1_eq]; simp only [coeff_add, coeff_C_mul_X_pow, coeff_C_mul_X, coeff_C]; norm_num
 
 /-- The Laurent coercion of an `OfNat` constant is the corresponding single term at exponent `0`. -/
 theorem coe_ofNat (n : ℕ) [n.AtLeastTwo] :
@@ -211,29 +212,29 @@ theorem exP1_newtonDiagram [CharZero R] :
     · rw [coe_b0, HahnSeries.coeff_add, HahnSeries.coeff_neg, HahnSeries.coeff_single,
         HahnSeries.coeff_single]; norm_num
       constructor
-      · intro h; by_contra hc; push Not at hc; rw [if_neg (by tauto), if_neg (by tauto)] at h; simp at h
+      · intro h; by_contra hc; push Not at hc; rw [ite_eq_right (by tauto), ite_eq_right (by tauto)] at h; simp at h
       · rintro (rfl | rfl) <;> norm_num
     · rw [coe_b1, HahnSeries.coeff_add, HahnSeries.coeff_sub, HahnSeries.coeff_single,
         HahnSeries.coeff_single, HahnSeries.coeff_single]; norm_num
       constructor
       · intro h; by_contra hc; push Not at hc
-        rw [if_neg (by tauto), if_neg (by tauto), if_neg (by tauto)] at h; simp at h
+        rw [ite_eq_right (by tauto), ite_eq_right (by tauto), ite_eq_right (by tauto)] at h; simp at h
       · rintro (rfl | rfl | rfl) <;> norm_num
     · rw [coe_b2, HahnSeries.coeff_add, HahnSeries.coeff_add, HahnSeries.coeff_single,
         HahnSeries.coeff_single, HahnSeries.coeff_single]; norm_num
       constructor
       · intro h; by_contra hc; push Not at hc
-        rw [if_neg (by tauto), if_neg (by tauto), if_neg (by tauto)] at h; simp at h
+        rw [ite_eq_right (by tauto), ite_eq_right (by tauto), ite_eq_right (by tauto)] at h; simp at h
       · rintro (rfl | rfl | rfl) <;> norm_num
     · rw [coe_b3, HahnSeries.coeff_add, HahnSeries.coeff_add, HahnSeries.coeff_single,
         HahnSeries.coeff_single, HahnSeries.coeff_single]; norm_num
       constructor
       · intro h; by_contra hc; push Not at hc
-        rw [if_neg (by tauto), if_neg (by tauto), if_neg (by tauto)] at h; simp at h
+        rw [ite_eq_right (by tauto), ite_eq_right (by tauto), ite_eq_right (by tauto)] at h; simp at h
       · rintro (rfl | rfl | rfl) <;> norm_num
     · rw [coe_b4, HahnSeries.coeff_add, HahnSeries.coeff_single, HahnSeries.coeff_single]; norm_num
       constructor
-      · intro h; by_contra hc; push Not at hc; rw [if_neg (by tauto), if_neg (by tauto)] at h; simp at h
+      · intro h; by_contra hc; push Not at hc; rw [ite_eq_right (by tauto), ite_eq_right (by tauto)] at h; simp at h
       · rintro (rfl | rfl) <;> norm_num
     · rw [coe_b5, HahnSeries.coeff_single]; norm_num
   · rw [show (exP1 (R := R)).coeff i = 0 from Polynomial.coeff_eq_zero_of_natDegree_lt (by

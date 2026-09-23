@@ -82,12 +82,12 @@ theorem SemialgGermRep.trichotomy (f : SemialgGermRep R) :
   have hmemPos : ∀ s : R, s ∈ constPt ⁻¹' (rightNbhd f.bound ∩
       (scalarFun f.toFun) ⁻¹' {v : Fin 1 → R | 0 < MvPolynomial.eval v (MvPolynomial.X 0)}) ↔
       (0 < s ∧ s < f.bound) ∧ 0 < f.toFun (constPt s) := fun s => by
-    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_setOf_eq,
+    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_ofPred_eq,
       MvPolynomial.eval_X, scalarFun, constPt]
   have hmemNeg : ∀ s : R, s ∈ constPt ⁻¹' (rightNbhd f.bound ∩
       (scalarFun f.toFun) ⁻¹' {v : Fin 1 → R | MvPolynomial.eval v (MvPolynomial.X 0) < 0}) ↔
       (0 < s ∧ s < f.bound) ∧ f.toFun (constPt s) < 0 := fun s => by
-    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_setOf_eq,
+    simp only [Set.mem_preimage, Set.mem_inter_iff, rightNbhd, Set.mem_ofPred_eq,
       MvPolynomial.eval_X, scalarFun, constPt]
   rcases FUOC_dichotomy_at_zero (semialgebraic_sect_FUOC hApos) with ⟨t, ht, hsub⟩ | ⟨t, ht, hdisj⟩
   · exact Or.inl ⟨t, ht, fun s hs hst => ((hmemPos s).mp (hsub ⟨hs, hst⟩)).2⟩

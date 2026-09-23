@@ -137,7 +137,7 @@ theorem fusc_two_mul (n : ℕ) : fusc (2 * n) = fusc n := by
   | k + 1 =>
     have he : 2 * (k + 1) = (2 * k) + 2 := by ring
     rw [he, fusc]
-    rw [dif_pos (by omega)]
+    rw [dite_eq_left (by omega)]
     congr 1
     omega
 
@@ -148,7 +148,7 @@ theorem fusc_two_mul_add_one (n : ℕ) : fusc (2 * n + 1) = fusc n + fusc (n + 1
   | k + 1 =>
     have he : 2 * (k + 1) + 1 = (2 * k + 1) + 2 := by ring
     rw [he, fusc]
-    rw [dif_neg (by omega)]
+    rw [dite_eq_right (by omega)]
     have h1 : (2 * k + 1 + 2) / 2 = k + 1 := by omega
     rw [h1]
 
@@ -470,10 +470,10 @@ theorem ofAzNats_num_den {a b : AzNat} (ha : a ≠ 0) (hb : b ≠ 0)
     rw [AzNat.toNat_div, hg1, AzNat.toNat_one, Nat.div_one]
   constructor
   · show (AzRat.ofSignAzNats true a b).num = a
-    rw [AzRat.ofSignAzNats, dif_neg hb, dif_neg ha]
+    rw [AzRat.ofSignAzNats, dite_eq_right hb, dite_eq_right ha]
     exact hdiv a
   · show (AzRat.ofSignAzNats true a b).den = b
-    rw [AzRat.ofSignAzNats, dif_neg hb, dif_neg ha]
+    rw [AzRat.ofSignAzNats, dite_eq_right hb, dite_eq_right ha]
     exact hdiv b
 
 /-- `positiveRationalsFun` is a bijection onto the positive `AzRat`s — the
@@ -632,21 +632,21 @@ theorem nonnegativeRationalsFun_bijective : Function.Bijective nonnegativeRation
     -- case on the two `if`s
     by_cases hm0 : m = 0 <;> by_cases hn0 : n = 0
     · omega
-    · exfalso; rw [if_pos hm0, if_neg hn0] at hv
+    · exfalso; rw [ite_eq_left hm0, ite_eq_right hn0] at hv
       exact absurd (positiveRationals_pos (n - 1)) (by rw [← hv]; exact lt_irrefl 0)
-    · exfalso; rw [if_neg hm0, if_pos hn0] at hv
+    · exfalso; rw [ite_eq_right hm0, ite_eq_left hn0] at hv
       exact absurd (positiveRationals_pos (m - 1)) (by rw [hv]; exact lt_irrefl 0)
-    · rw [if_neg hm0, if_neg hn0] at hv
+    · rw [ite_eq_right hm0, ite_eq_right hn0] at hv
       have : m - 1 = n - 1 :=
         positiveRationalsFun_bijective.injective (Subtype.ext hv)
       omega
   · rintro ⟨q, hq⟩
     rcases eq_or_lt_of_le hq with h0 | h0
-    · exact ⟨0, Subtype.ext (by show nonnegativeRationals 0 = q; rw [nonnegativeRationals, if_pos rfl]; exact h0)⟩
+    · exact ⟨0, Subtype.ext (by show nonnegativeRationals 0 = q; rw [nonnegativeRationals, ite_eq_left rfl]; exact h0)⟩
     · obtain ⟨n, hn⟩ := positiveRationalsFun_bijective.surjective ⟨q, h0⟩
       refine ⟨n + 1, Subtype.ext ?_⟩
       show nonnegativeRationals (n + 1) = q
-      rw [nonnegativeRationals, if_neg (by omega), Nat.add_sub_cancel]
+      rw [nonnegativeRationals, ite_eq_right (by omega), Nat.add_sub_cancel]
       exact congrArg Subtype.val hn
 
 instance nonnegativeRationalsGen : ExhaustiveGenerator {q : AzRat // 0 ≤ q} :=
@@ -678,10 +678,10 @@ theorem nonzeroRationalsFun_bijective : Function.Bijective nonzeroRationalsFun :
     have hv : nonzeroRationals m = nonzeroRationals n := congrArg Subtype.val h
     rw [nonzeroRationals, nonzeroRationals] at hv
     by_cases hm : m % 2 = 0 <;> by_cases hn : n % 2 = 0
-    · rw [if_pos hm, if_pos hn] at hv
+    · rw [ite_eq_left hm, ite_eq_left hn] at hv
       have : m / 2 = n / 2 := positiveRationalsFun_bijective.injective (Subtype.ext hv)
       omega
-    · exfalso; rw [if_pos hm, if_neg hn] at hv
+    · exfalso; rw [ite_eq_left hm, ite_eq_right hn] at hv
       -- positive = negative, impossible
       have hp := positiveRationals_pos (m / 2)
       have hp2 := positiveRationals_pos (n / 2)
@@ -689,14 +689,14 @@ theorem nonzeroRationalsFun_bijective : Function.Bijective nonzeroRationalsFun :
       have := congrArg AzRat.toRat hv
       rw [AzRat.toRat_neg] at this
       linarith
-    · exfalso; rw [if_neg hm, if_pos hn] at hv
+    · exfalso; rw [ite_eq_right hm, ite_eq_left hn] at hv
       have hp := positiveRationals_pos (m / 2)
       have hp2 := positiveRationals_pos (n / 2)
       rw [AzRat.lt_iff_toRat_lt, AzRat.toRat_zero] at hp hp2
       have := congrArg AzRat.toRat hv
       rw [AzRat.toRat_neg] at this
       linarith
-    · rw [if_neg hm, if_neg hn] at hv
+    · rw [ite_eq_right hm, ite_eq_right hn] at hv
       have hneg : positiveRationals (m / 2) = positiveRationals (n / 2) := by
         have := congrArg AzRat.toRat hv
         rw [AzRat.toRat_neg, AzRat.toRat_neg] at this
@@ -711,7 +711,7 @@ theorem nonzeroRationalsFun_bijective : Function.Bijective nonzeroRationalsFun :
         rw [AzRat.lt_iff_toRat_lt, AzRat.toRat_zero] at hlt; linarith⟩
       refine ⟨2 * n + 1, Subtype.ext ?_⟩
       show nonzeroRationals (2 * n + 1) = q
-      rw [nonzeroRationals, if_neg (by omega),
+      rw [nonzeroRationals, ite_eq_right (by omega),
           show (2 * n + 1) / 2 = n from by omega]
       have : positiveRationals n = -q := congrArg Subtype.val hn
       rw [this]
@@ -721,7 +721,7 @@ theorem nonzeroRationalsFun_bijective : Function.Bijective nonzeroRationalsFun :
       obtain ⟨n, hn⟩ := positiveRationalsFun_bijective.surjective ⟨q, hgt⟩
       refine ⟨2 * n, Subtype.ext ?_⟩
       show nonzeroRationals (2 * n) = q
-      rw [nonzeroRationals, if_pos (by omega), show (2 * n) / 2 = n from by omega]
+      rw [nonzeroRationals, ite_eq_left (by omega), show (2 * n) / 2 = n from by omega]
       exact congrArg Subtype.val hn
 
 instance nonzeroRationalsGen : ExhaustiveGenerator {q : AzRat // q ≠ 0} :=
@@ -738,19 +738,19 @@ theorem rationals_bijective : Function.Bijective rationals := by
     rw [rationals, rationals] at h
     by_cases hm0 : m = 0 <;> by_cases hn0 : n = 0
     · omega
-    · exfalso; rw [if_pos hm0, if_neg hn0] at h
+    · exfalso; rw [ite_eq_left hm0, ite_eq_right hn0] at h
       exact nonzeroRationals_ne_zero (n - 1) h.symm
-    · exfalso; rw [if_neg hm0, if_pos hn0] at h
+    · exfalso; rw [ite_eq_right hm0, ite_eq_left hn0] at h
       exact nonzeroRationals_ne_zero (m - 1) h
-    · rw [if_neg hm0, if_neg hn0] at h
+    · rw [ite_eq_right hm0, ite_eq_right hn0] at h
       have : m - 1 = n - 1 := nonzeroRationalsFun_bijective.injective (Subtype.ext h)
       omega
   · intro q
     by_cases hq0 : q = 0
-    · exact ⟨0, by rw [rationals, if_pos rfl]; exact hq0.symm⟩
+    · exact ⟨0, by rw [rationals, ite_eq_left rfl]; exact hq0.symm⟩
     · obtain ⟨n, hn⟩ := nonzeroRationalsFun_bijective.surjective ⟨q, hq0⟩
       refine ⟨n + 1, ?_⟩
-      rw [rationals, if_neg (by omega), Nat.add_sub_cancel]
+      rw [rationals, ite_eq_right (by omega), Nat.add_sub_cancel]
       exact congrArg Subtype.val hn
 
 instance rationalsGen : ExhaustiveGenerator AzRat :=

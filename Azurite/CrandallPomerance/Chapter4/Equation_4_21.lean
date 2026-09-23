@@ -161,7 +161,7 @@ theorem eq_4_21_of_forall_ne {w u N j₀ : ℕ} (hp : p.Prime)
   have hvalp : h.factorization p = w := by
     have hub : h.factorization p ≤ w := by
       have := hle p
-      rw [hvexp w p, if_pos rfl, hvu] at this
+      rw [hvexp w p, ite_eq_left rfl, hvu] at this
       omega
     by_contra hne
     refine hndvd ((Nat.factorization_le_iff_dvd hpos.ne' hpw10).mp ?_)
@@ -169,11 +169,11 @@ theorem eq_4_21_of_forall_ne {w u N j₀ : ℕ} (hp : p.Prime)
     rw [hvexp (w - 1) q]
     by_cases hq : q = p
     · subst hq
-      rw [if_pos rfl, hvu]
+      rw [ite_eq_left rfl, hvu]
       omega
     · have := hle q
-      rw [hvexp w q, if_neg (Ne.symm hq)] at this
-      rw [if_neg (Ne.symm hq)]
+      rw [hvexp w q, ite_eq_right (Ne.symm hq)] at this
+      rw [ite_eq_right (Ne.symm hq)]
       omega
   have hpwh : p ^ w ∣ h :=
     (Nat.Prime.pow_dvd_iff_le_factorization hp hpos.ne').mpr hvalp.ge
@@ -206,12 +206,12 @@ theorem eq_4_21_of_forall_ne {w u N j₀ : ℕ} (hp : p.Prime)
       rw [hvexp (w - 1) q]
       by_cases hq : q = p
       · subst hq
-        rw [if_pos rfl] at hgq
-        rw [if_pos rfl, hvu]
+        rw [ite_eq_left rfl] at hgq
+        rw [ite_eq_left rfl, hvu]
         rw [hvalp] at hgq
         omega
-      · rw [if_neg (Ne.symm hq)] at hlq ⊢
-        rw [if_neg (Ne.symm hq)] at hgq
+      · rw [ite_eq_right (Ne.symm hq)] at hlq ⊢
+        rw [ite_eq_right (Ne.symm hq)] at hgq
         omega
     obtain ⟨k, hk⟩ := exists_mul_modEq h N (p ^ (w - 1) * u) hpos
       (by rw [Nat.gcd_comm]; exact hdc)

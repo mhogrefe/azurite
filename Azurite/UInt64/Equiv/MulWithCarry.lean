@@ -25,14 +25,14 @@ private lemma mulWithCarry_aux (hi lo c : UInt64)
   have h_cmp : (lo + c < lo) ↔ lo.toNat + c.toNat ≥ 2^64 := by
     rw [_root_.UInt64.lt_iff_toNat_lt, h_add_lo]; omega
   by_cases hcarry : lo + c < lo
-  · rw [if_pos hcarry]
+  · rw [ite_eq_left hcarry]
     have hge : lo.toNat + c.toNat ≥ 2^64 := h_cmp.mp hcarry
     have hlo' : (lo + c).toNat = lo.toNat + c.toNat - 2^64 := by
       rw [h_add_lo, Nat.mod_eq_sub_mod hge, Nat.mod_eq_of_lt (by omega)]
     have hhi' : (hi + 1).toNat = hi.toNat + 1 := by
       rw [h_add_hi, Nat.mod_eq_of_lt (by omega)]
     omega
-  · rw [if_neg hcarry]
+  · rw [ite_eq_right hcarry]
     have hlt : lo.toNat + c.toNat < 2^64 := by
       by_contra h; exact hcarry (h_cmp.mpr (Nat.not_lt.mp h))
     rw [h_add_lo, Nat.mod_eq_of_lt hlt]; ring

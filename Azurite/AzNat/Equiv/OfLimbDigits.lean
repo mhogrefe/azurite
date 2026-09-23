@@ -259,10 +259,10 @@ theorem toNat_ofLimbDigits (b : UInt64) (hb : 2 ≤ b.toNat) (digits : Array UIn
     show ¬ b.toNat < (2 : UInt64).toNat
     show ¬ b.toNat < 2
     omega
-  rw [if_neg hb_uint]
+  rw [ite_eq_right hb_uint]
   by_cases hpow : b.isPowerOfTwo
   · -- Power-of-two branch: delegate to `ofLimbDigitsPow2`.
-    rw [if_pos hpow]
+    rw [ite_eq_left hpow]
     have h_b_ne : b ≠ 0 := by
       intro he; unfold UInt64.isPowerOfTwo at hpow; rw [he] at hpow; simp at hpow
     have h_bv_ne : b.toBitVec ≠ 0#64 := fun hb' =>
@@ -282,14 +282,14 @@ theorem toNat_ofLimbDigits (b : UInt64) (hb : 2 ≤ b.toNat) (digits : Array UIn
     have h_digits_lt : ∀ x ∈ digits.toList.map UInt64.toNat, x < 2 ^ b.toBitVec.ctz.toNat := by
       intro x hx; rw [← h_b_eq]; exact hd x hx
     rw [toNat_ofLimbDigitsPow2 _ h_ctz_ge h_ctz_le digits h_digits_lt, ← h_b_eq]
-  · rw [if_neg hpow]
+  · rw [ite_eq_right hpow]
     by_cases hb10 : b = 10
     · -- Base-10 branch.
-      rw [if_pos hb10]
+      rw [ite_eq_left hb10]
       subst hb10
       exact toNat_ofBase10Digits digits hd
     · -- Generic Horner branch.
-      rw [if_neg hb10]
+      rw [ite_eq_right hb10]
       have h_correct := UInt64.maxPow_correct b hb
       have h_P_val : (UInt64.maxPow b).1.toNat = b.toNat ^ (UInt64.maxPow b).2 := h_correct.1
       have h_overflow : 2 ^ 64 ≤ b.toNat ^ ((UInt64.maxPow b).2 + 1) := h_correct.2

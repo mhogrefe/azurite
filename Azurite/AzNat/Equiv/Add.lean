@@ -527,7 +527,7 @@ theorem addGeqLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
                         (by rw [h_lo_size]; exact hA) else (lo.1, false))
           = (lo.1, lo.2) := by
       by_cases hc : lo.2 = true
-      · rw [if_pos hc, h_addLimb_empty, hc]
+      · rw [ite_eq_left hc, h_addLimb_empty, hc]
       · have hcf : lo.2 = false := by cases h : lo.2 <;> simp_all
         rw [hcf]; rfl
     rw [h_result]
@@ -628,11 +628,11 @@ theorem addLimbs_toNat (a b : Array UInt64) (loA lenA loB lenB : Nat)
   unfold addLimbs
   by_cases h : lenB ≤ lenA
   · rw [show (max lenA lenB) = lenA from Nat.max_eq_left h,
-        show (if lenB ≤ lenA then loA else loB) = loA from if_pos h]
+        show (if lenB ≤ lenA then loA else loB) = loA from ite_eq_left h]
     simp only [h, ↓reduceDIte]
     exact addGeqLimbs_toNat a b loA lenA loB lenB hA hB h h_posA h_posB
   · rw [show (max lenA lenB) = lenB from Nat.max_eq_right (Nat.le_of_lt (Nat.lt_of_not_le h)),
-        show (if lenB ≤ lenA then loA else loB) = loB from if_neg h]
+        show (if lenB ≤ lenA then loA else loB) = loB from ite_eq_right h]
     simp only [h, ↓reduceDIte]
     have := addGeqLimbs_toNat b a loB lenB loA lenA hB hA (by omega) h_posB h_posA
     simp only at this ⊢

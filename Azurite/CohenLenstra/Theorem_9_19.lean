@@ -85,7 +85,7 @@ theorem div_add_div_of_add_eq {N A B m : ℕ} (hN : 0 < N)
       omega
   have hdiv : (A + B) / N = m := by
     rw [hAB, Nat.mul_div_cancel _ hN]
-  rw [Nat.add_div hN, hmod, if_pos le_rfl] at hdiv
+  rw [Nat.add_div hN, hmod, ite_eq_left le_rfl] at hdiv
   omega
 
 /-- **The coefficient-wise form of the (9.13)-analogue for
@@ -98,7 +98,7 @@ theorem eq_9_13_coeff_neg {k n nneg y : ℕ} (hk : 0 < k)
     n * αc 3 2 k y + αc 3 2 k (mAct 2 k nneg y)
         + αc n 2 k (mAct 2 k 3 y)
       = 3 * αc n 2 k y + 2 := by
-  haveI : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
+  have : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
   have hN0 : (0 : ℕ) < 2 ^ k := pow_pos (by norm_num) k
   have hact : ∀ c z : ℕ, mAct 2 k c z = (c * z) % 2 ^ k := fun c z => by
     rw [mAct]
@@ -545,7 +545,7 @@ theorem eq_9_22 (hψ : ψ.IsPrimitive) (hq0 : ((q : ℕ) : R) ≠ 0)
           (mem_M2set.mp hx).1.2)
         (fun x hx => ?_)
       have hcong : mAct 2 (k + 1) y x ≡ y * x [MOD 2 ^ (k + 1)] := by
-        haveI : NeZero ((2 : ℕ) ^ (k + 1)) :=
+        have : NeZero ((2 : ℕ) ^ (k + 1)) :=
           ⟨pow_ne_zero _ two_ne_zero⟩
         rw [mAct, ZMod.val_natCast]
         exact Nat.mod_modEq _ _

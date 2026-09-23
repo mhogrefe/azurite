@@ -594,7 +594,7 @@ private theorem AzMvPolynomial.isUnit_map_coeffToRat_iff {n : ℕ}
       intro m hm
       have h0 : (MvPolynomial.map φ p).coeff m = 0 := by
         rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp htd, MvPolynomial.coeff_C,
-          if_neg (Ne.symm hm)]
+          ite_eq_right (Ne.symm hm)]
       rw [MvPolynomial.coeff_map] at h0
       exact hφinj (by rw [h0, map_zero])
     refine ⟨?_, ?_⟩
@@ -811,8 +811,8 @@ theorem AzMvPolynomial.gcdGcdFreePart_spec' {n : ℕ}
   rw [hpair]
   by_cases hg : AzMvPolynomial.gcd P Q = 0
   · have hP0 : P = 0 := zero_dvd_iff.mp (hg ▸ gcd_dvd_left P Q)
-    rw [if_pos hg, hg, hP0, mul_zero]
-  · rw [if_neg hg]
+    rw [ite_eq_left hg, hg, hP0, mul_zero]
+  · rw [ite_eq_right hg]
     exact Azurite.ExactDiv.exactDiv_mul_self P _ (gcd_dvd_left P Q) hg
 
 /-- **The canonical pair, image form**: `gcd(P,Q)-image · snd-image =
@@ -877,8 +877,8 @@ theorem MvPolynomial.totalDegree_eq_zero_of_forall_pderiv_eq_zero
     rw [hd, tsub_add_cancel_of_le]; rw [Finsupp.single_le_iff]; omega
   have hmiN : d i + 1 = m i := by rw [hd, Finsupp.tsub_apply, Finsupp.single_eq_same]; omega
   have hmi : (d i : K) + 1 = (m i : K) := by rw [← hmiN]; push_cast; ring
-  rw [hadd, hmi, h i, coeff_zero] at hcoeff
-  have hcm : coeff m q ≠ 0 := by rwa [← MvPolynomial.mem_support_iff]
+  rw [hadd, hmi, h i, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply] at hcoeff
+  have hcm : q.coeff m ≠ 0 := by rwa [← MvPolynomial.mem_support_iff]
   have hne0 : (m i : K) ≠ 0 := by exact_mod_cast (by omega : m i ≠ 0)
   exact (mul_ne_zero hcm hne0) hcoeff.symm
 
@@ -888,7 +888,7 @@ theorem MvPolynomial.totalDegree_pderiv_lt (q : MvPolynomial σ K) (i : σ)
     (hq : pderiv i q ≠ 0) : (pderiv i q).totalDegree < q.totalDegree := by
   have key : ∀ m ∈ (pderiv i q).support, (m.sum fun _ e => e) < q.totalDegree := by
     intro m hm
-    have hcm : coeff m (pderiv i q) ≠ 0 := MvPolynomial.mem_support_iff.mp hm
+    have hcm : (pderiv i q).coeff m ≠ 0 := MvPolynomial.mem_support_iff.mp hm
     rw [coeff_pderiv] at hcm
     have hmem : (m + single i 1) ∈ q.support :=
       MvPolynomial.mem_support_iff.mpr (left_ne_zero_of_mul hcm)
@@ -924,8 +924,8 @@ theorem MvPolynomial.sq_dvd_of_prime_dvd_pderiv (p q : MvPolynomial σ K)
       exact absurd (MvPolynomial.totalDegree_le_of_dvd_of_isDomain (hqd j) hnz)
         (by have := MvPolynomial.totalDegree_pderiv_lt q j hnz; omega))
   rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at htd
-  have hc0 : coeff 0 q ≠ 0 := fun h => hq.ne_zero (by rw [htd, h, map_zero])
-  exact hq.not_unit (htd ▸ ((isUnit_iff_ne_zero.mpr hc0).map MvPolynomial.C))
+  have hc0 : q.coeff 0 ≠ 0 := fun h => hq.ne_zero (by rw [htd, h, map_zero])
+  exact hq.not_isUnit (htd ▸ ((isUnit_iff_ne_zero.mpr hc0).map MvPolynomial.C))
 
 end GeneralDerivative
 
@@ -1019,7 +1019,7 @@ theorem AzMvPolynomial.isSquarefree_of_squarefree {n : ℕ}
     have hsq : q * q ∣ AzMvPolynomial.ratImg P :=
       MvPolynomial.sq_dvd_of_prime_dvd_pderiv (AzMvPolynomial.ratImg P) q hqp
         (hqdvd.trans hgdvdP) (fun j => (hqdvd.trans (hgdvdD j)))
-    exact hqp.not_unit (hPsf q hsq)
+    exact hqp.not_isUnit (hPsf q hsq)
   rw [AzMvPolynomial.isSquarefree_iff]
   exact hgU
 

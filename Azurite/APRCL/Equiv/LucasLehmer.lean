@@ -92,12 +92,12 @@ theorem two_adic_c1 {n r : ℕ} (hn4 : n % 4 = 1) (hn1 : 1 < n) (hr : r.Prime) (
       + 4 * ZMod.castHom hrn (ZMod r) ((a : ℤ) : ZMod n)) then 0 else 1) [MOD 2 ^ (v + 1)] := by
     by_cases hsq : IsSquare ((ZMod.castHom hrn (ZMod r) (0 : ZMod n)) ^ 2
       + 4 * ZMod.castHom hrn (ZMod r) ((a : ℤ) : ZMod n))
-    · rw [if_pos hsq, pow_zero]
+    · rw [ite_eq_left hsq, pow_zero]
       have h1 : 2 ^ (v + 1) ∣ r - 1 := by
         by_contra h
         exact hiff.mp h hsq
       exact ((Nat.modEq_iff_dvd' hr.one_lt.le).mpr h1).symm
-    · rw [if_neg hsq, pow_one]
+    · rw [ite_eq_right hsq, pow_one]
       exact modEq_two_pow_succ_of_not_dvd hr.one_lt.le hn1.le hdvd (hiff.mpr hsq)
         (Nat.ordProj_dvd (n - 1) 2) (Nat.pow_succ_factorization_not_dvd (by omega) Nat.prime_two)
   -- `e ≤ v + 1`
@@ -129,9 +129,9 @@ theorem two_adic_c2 {n r : ℕ} (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n)
   have hstrong : r ≡ n ^ (if IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) then 0 else 1)
       [MOD 2 ^ (v + 1)] := by
     by_cases hsq : IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4)
-    · rw [if_pos hsq, pow_zero]
+    · rw [ite_eq_left hsq, pow_zero]
       exact ((Nat.modEq_iff_dvd' hr.one_lt.le).mpr (hsplit hsq)).symm
-    · rw [if_neg hsq, pow_one]
+    · rw [ite_eq_right hsq, pow_one]
       exact hinert hsq
   have hev : e ≤ v + 1 := by
     rcases e with _ | e
@@ -226,11 +226,11 @@ theorem factorization_prodPow_of_mem {L : List (ℕ × ℕ)} (hp : ∀ pe ∈ L,
     rw [prodPow_cons, Nat.factorization_mul (pow_pos hp'.pos _).ne' hpos.ne', Finsupp.add_apply,
       hp'.factorization_pow, Finsupp.single_apply]
     rcases List.mem_cons.mp hmem with rfl | hmem'
-    · rw [if_pos rfl, factorization_prodPow_of_not_mem hpL hp' fun x hx hxe => hnd.1 ?_]
+    · rw [ite_eq_left rfl, factorization_prodPow_of_not_mem hpL hp' fun x hx hxe => hnd.1 ?_]
       · simp
       · rw [← hxe]
         exact List.mem_map_of_mem hx
-    · rw [ih hpL hnd.2 hmem', if_neg fun hxe => hnd.1 ?_, zero_add]
+    · rw [ih hpL hnd.2 hmem', ite_eq_right fun hxe => hnd.1 ?_, zero_add]
       rw [hxe]
       exact List.mem_map_of_mem hmem'
 
@@ -341,7 +341,7 @@ theorem prime_of_ll {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1) {U A : ZMod N}
       factorization_prodPow_of_not_mem hLp Nat.prime_two hL2, add_zero]
   have hfactp : ∀ pe ∈ L, F.factorization pe.1 = pe.2 := fun pe hpe => by
     rw [hF, Nat.factorization_mul (pow_pos two_pos _).ne' hP0.ne', Finsupp.add_apply,
-      Nat.prime_two.factorization_pow, Finsupp.single_apply, if_neg (hL2 pe hpe).symm, zero_add,
+      Nat.prime_two.factorization_pow, Finsupp.single_apply, ite_eq_right (hL2 pe hpe).symm, zero_add,
       factorization_prodPow_of_mem hLp hnd hpe]
   -- the confinement of every prime factor of `N`
   have hconf : ∀ r, r ∣ N → ∃ i < 2, r ≡ N ^ i [MOD F * 1] := by
@@ -513,7 +513,7 @@ theorem test42_pass {p x : ℕ} (h : test42 n p x = .pass ()) :
 /-- **Test (4.2) `composite` verdicts are sound.** -/
 theorem test42_composite {p x : ℕ} (h : test42 n p x = .composite) : ¬ n.toNat.Prime := by
   intro hN
-  haveI : Fact n.toNat.Prime := ⟨hN⟩
+  have : Fact n.toNat.Prime := ⟨hN⟩
   unfold test42 at h
   dsimp only at h
   split_ifs at h with h1 h2 h3 h4
@@ -543,9 +543,9 @@ theorem test43_pass {u a : AzZMod n} {p c : ℕ} (h : test43 n u a p c = .pass (
     CL.isUnit_of_val_coprime (by rw [toZMod_val]; exact (gcd_eq_one_iff_coprime y).mp hy)
   have h1 : (NormOne.powAzNat x (n + 1)).1 = 1 := by
     by_contra h1
-    rw [if_pos h1] at h
+    rw [ite_eq_left h1] at h
     cases h
-  rw [if_neg (not_not.mpr h1)] at h
+  rw [ite_eq_right (not_not.mpr h1)] at h
   refine ⟨toZMod x.1.x₀, toZMod x.1.x₁, NormOne.quadNorm_toQuad x, ?_,
     toZMod ((NormOne.powAzNat x ((n + 1) / AzNat.ofNat p)).1 - 1).x₀,
     toZMod ((NormOne.powAzNat x ((n + 1) / AzNat.ofNat p)).1 - 1).x₁, ?_, ?_⟩
@@ -629,7 +629,7 @@ theorem ringParams_pass (hodd : n.toNat % 2 = 1) {w : ℕ} {u a : AzZMod n}
 theorem ringParams_composite [Fact (1 < n.toNat)] (hodd : n.toNat % 2 = 1) {w : ℕ}
     (h : ringParams n w = .composite) : ¬ n.toNat.Prime := by
   intro hN
-  haveI : Fact n.toNat.Prime := ⟨hN⟩
+  have : Fact n.toNat.Prime := ⟨hN⟩
   unfold ringParams at h
   dsimp only at h
   split_ifs at h with h1 h2 h3 h4 h5 h6
@@ -764,7 +764,7 @@ theorem llCheck_true {cert : LLCert} (h : llCheck n cert = some true) : n.toNat.
   unfold llCheck at h
   split_ifs at h with h2 hodd hstruct heq
   · cases h
-  · haveI : NeZero n.toNat := ⟨by omega⟩
+  · have : NeZero n.toNat := ⟨by omega⟩
     simp only [Bool.not_eq_true', Bool.not_eq_false] at hodd hstruct
     have hodd' : n.toNat % 2 = 1 := Nat.odd_iff.mp ((AzNat.isOdd_iff n).mp hodd)
     obtain ⟨hnd, hm, hp, he2, he2d⟩ := structOK_eq_true hstruct
@@ -842,8 +842,8 @@ theorem llCheck_false {cert : LLCert} (h : llCheck n cert = some false) : ¬ n.t
     have h2d : 2 ∣ n.toNat := Nat.dvd_of_mod_eq_zero (by have := Nat.odd_iff.not.mp hnodd; omega)
     have := hN.eq_one_or_self_of_dvd 2 h2d
     omega
-  · haveI : NeZero n.toNat := ⟨by omega⟩
-    haveI : Fact (1 < n.toNat) := ⟨by omega⟩
+  · have : NeZero n.toNat := ⟨by omega⟩
+    have : Fact (1 < n.toNat) := ⟨by omega⟩
     simp only [Bool.not_eq_true', Bool.not_eq_false] at hodd hstruct
     have hodd' : n.toNat % 2 = 1 := Nat.odd_iff.mp ((AzNat.isOdd_iff n).mp hodd)
     split at h <;> try cases h

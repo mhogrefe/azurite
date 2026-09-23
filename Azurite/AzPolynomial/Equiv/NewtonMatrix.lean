@@ -29,7 +29,7 @@ theorem newtonSumStep_eq (P : AzPolynomial R) (prev : Array R)
     show newtonSumStep P prev = _
     unfold newtonSumStep
     rw [h_size]
-    simp only [Nat.succ_ne_zero, if_neg, not_false_eq_true]
+    simp only [Nat.succ_ne_zero, ite_eq_right, not_false_eq_true]
     simp only [newtonSumMonic]
     congr 1
     apply Finset.sum_congr rfl
@@ -73,14 +73,14 @@ theorem newtonSumsMonicIter_getElem (P : AzPolynomial R) (n : ℕ) :
     rcases lt_or_eq_of_le (Nat.lt_succ_iff.mp h') with h_lt | h_eq
     · have h_iter : i < (P.newtonSumsMonicIter n).size := by
         rw [P.newtonSumsMonicIter_size]; exact h_lt
-      rw [Array.getElem_push, dif_pos h_iter]
+      rw [Array.getElem_push, dite_eq_left h_iter]
       exact ih i h_iter
     · -- i = n
       have h_iter_size : (P.newtonSumsMonicIter n).size = n :=
         P.newtonSumsMonicIter_size n
       have h_not_lt : ¬ i < (P.newtonSumsMonicIter n).size := by
         rw [h_iter_size]; omega
-      rw [Array.getElem_push, dif_neg h_not_lt]
+      rw [Array.getElem_push, dite_eq_right h_not_lt]
       have h_size_eq_i : (P.newtonSumsMonicIter n).size = i := by
         rw [h_iter_size]; exact h_eq.symm
       rw [← h_size_eq_i]

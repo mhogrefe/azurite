@@ -34,8 +34,8 @@ theorem epsilonSign_eq {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactD
     (epsilonSign n : R) = (-1) ^ (n * (n - 1) / 2) := by
   unfold epsilonSign
   rcases Nat.even_or_odd (n * (n - 1) / 2) with he | ho
-  · rw [if_pos (Nat.even_iff.mp he), he.neg_one_pow]
-  · rw [if_neg (by rw [Nat.odd_iff.mp ho]; decide), ho.neg_one_pow]
+  · rw [ite_eq_left (Nat.even_iff.mp he), he.neg_one_pow]
+  · rw [ite_eq_right (by rw [Nat.odd_iff.mp ho]; decide), ho.neg_one_pow]
 
 /-- Over a field, `divByRingElt c` is scalar multiplication by `c⁻¹`. -/
 theorem divByRingElt_eq_smul {K : Type _} [Field K] [DecidableEq K] (c : K) (p : AzPolynomial K) :
@@ -442,7 +442,7 @@ theorem sResP_km1_eq {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P
           * ((Polynomial.C (sBPR P Q k) * Polynomial.C (tBPR P Q (j - 1)) * sResP P Q (i - 1))
               % sResP P Q (j - 1))) := by
   obtain ⟨hrec, _⟩ := (theorem_8_34_monolithic P Q hP hQ hpq hq1 hj1 hji hip hne hdeg).2 k hk0 hkdeg
-  rw [if_neg (show ¬ k = 0 by omega)] at hrec
+  rw [ite_eq_right (show ¬ k = 0 by omega)] at hrec
   have hsjti : sBPR P Q j * tBPR P Q (i - 1) ≠ 0 := mul_ne_zero hsj hti
   have hrec' : Polynomial.C (sBPR P Q j * tBPR P Q (i - 1)) * sResP P Q (k - 1)
       = -((Polynomial.C (sBPR P Q k) * Polynomial.C (tBPR P Q (j - 1)) * sResP P Q (i - 1))
@@ -724,7 +724,7 @@ theorem sBPR_eq_leadingCoeff {K : Type _} [Field K] [DecidableEq K] (P Q : K[X])
     (hpq : Q.natDegree < P.natDegree) {m : ℕ} (hmp : m < P.natDegree)
     (hnd : (sResP P Q m).natDegree = m) :
     sBPR P Q m = (sResP P Q m).leadingCoeff := by
-  rw [sBPR, if_neg (by omega), ← coeff_sResP P Q hpq (by omega), Polynomial.leadingCoeff, hnd]
+  rw [sBPR, ite_eq_right (by omega), ← coeff_sResP P Q hpq (by omega), Polynomial.leadingCoeff, hnd]
 
 open Azurite.BPR.Chapter8 in
 /-- **Defective step facts.**  For a defective transition (`k = deg sResP_{j-1} < j-1`), the
@@ -751,16 +751,16 @@ theorem def_step {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P ≠
     rcases hjcase with hjq | hjp
     · exact sBPR_ne_of_nondef P Q hpq hjq
         (by intro h; rw [h, Polynomial.natDegree_zero] at hjnd; omega) hjnd
-    · rw [hjp, sBPR, if_pos rfl]; exact one_ne_zero
+    · rw [hjp, sBPR, ite_eq_left rfl]; exact one_ne_zero
   have hjk1 : 1 ≤ j - k := by omega
   have hSpk : AzPolynomial.toPoly (divByRingElt Sj.leadingCoeff (sk • Sj)) = sResP P Q k := by
     rcases hjcase with hjq | hjp
     · exact toPoly_Spk_eq_of_le_q P Q hP hQ hpq hq1 hjq hj1 hjnd Sj hSj hsResPne hkdeg hjk1
-        (by rw [hsj, sBPR, if_neg (by omega)]) hsjne
+        (by rw [hsj, sBPR, ite_eq_right (by omega)]) hsjne
     · have hkq : k = Q.natDegree := by
         have h := hkdeg; rw [hjp, sResP_pm1_eq_Q P Q hQ hpq] at h; omega
       exact toPoly_Spk_eq_of_eq_p P Q hpq hQ hjp hkq Sj hSj
-        (by rw [hsj, hjp, sBPR, if_pos rfl]) hjk1
+        (by rw [hsj, hjp, sBPR, ite_eq_left rfl]) hjk1
   have hSpk_form : AzPolynomial.toPoly (divByRingElt Sj.leadingCoeff (sk • Sj))
       = Polynomial.C (sk * Sj.leadingCoeff⁻¹) * AzPolynomial.toPoly Sj := by
     rw [toPoly_divByRingElt, toPoly_smul, Polynomial.smul_eq_C_mul, ← mul_assoc, ← Polynomial.C_mul,
@@ -774,7 +774,7 @@ theorem def_step {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P ≠
     rw [← hSpk, hSpk_form, Polynomial.natDegree_C_mul (mul_ne_zero hskne (inv_ne_zero htj)),
       AzPolynomial.natDegree_toPoly, ← AzPolynomial.natDegree_toPoly, hSj, hkdeg]
   have hsksRes : sk = Azurite.BPR.Chapter4.sRes P Q k := by
-    rw [show Azurite.BPR.Chapter4.sRes P Q k = sBPR P Q k from by rw [sBPR, if_neg (by omega)],
+    rw [show Azurite.BPR.Chapter4.sRes P Q k = sBPR P Q k from by rw [sBPR, ite_eq_right (by omega)],
       sBPR_eq_leadingCoeff P Q hpq (by omega) hndk, ← hSpk, hSpk_form, Polynomial.leadingCoeff_mul,
       Polynomial.leadingCoeff_C, leadingCoeff_toPoly, mul_assoc, inv_mul_cancel₀ htj, mul_one]
   exact ⟨hSpk, hsksRes, hndk⟩
@@ -872,12 +872,12 @@ theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P �
     rw [ssAux]
     by_cases hSj0 : Sj = 0
     · -- gcd termination: `sResP_{j-1} = 0`
-      rw [if_pos hSj0]
+      rw [ite_eq_left hSj0]
       have hzero : sResP P Q (j - 1) = 0 := by rw [← hSj, hSj0, toPoly_zero]
       obtain ⟨_, hzeros⟩ := (theorem_8_34_monolithic P Q hP hQ hpq hq1 hj1 hji hip hne hdeg).1 hzero
       rw [targetList_eq_replicate P Q hpq (by omega) hzeros, List.map_replicate]
       simp [Prod.map, toPoly_zero]
-    · rw [if_neg hSj0]
+    · rw [ite_eq_right hSj0]
       have hkdeg : (sResP P Q (j - 1)).natDegree = Sj.natDegree := by
         rw [← hSj, AzPolynomial.natDegree_toPoly]
       have hsResPne : sResP P Q (j - 1) ≠ 0 := by
@@ -889,12 +889,12 @@ theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P �
       have hsjne : sBPR P Q j ≠ 0 := by
         rcases hjcase with hjq | hjp
         · exact sBPR_ne_of_nondef P Q hpq hjq hsResP_j_ne hjnd
-        · rw [hjp, sBPR, if_pos rfl]; exact one_ne_zero
+        · rw [hjp, sBPR, ite_eq_left rfl]; exact one_ne_zero
       dsimp only
       split_ifs with hkj hk0 hk0'
       · -- non-defective, `k = 0` ⟹ `j = 1`
         have hlc : Sj.leadingCoeff = Azurite.BPR.Chapter4.sRes P Q (j - 1) := by
-          rw [htj, ← sBPR_eq_leadingCoeff P Q hpq (by omega) (hkdeg.trans hkj), sBPR, if_neg (by omega)]
+          rw [htj, ← sBPR_eq_leadingCoeff P Q hpq (by omega) (hkdeg.trans hkj), sBPR, ite_eq_right (by omega)]
         simp only [List.map_cons, List.map_nil, Prod.map_apply, id_eq]
         rw [hSj, hlc, show j = (j - 1) + 1 from by omega, targetList_succ, show j - 1 = 0 from by omega]
         rfl
@@ -908,9 +908,9 @@ theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P �
             rw [hkdeg, hkj] at hq; omega
         have hsbpr : sBPR P Q (j - 1) = Sj.leadingCoeff := by
           rw [sBPR_eq_leadingCoeff P Q hpq (by omega) (hkdeg.trans hkj), htj]
-        have htbpr : tBPR P Q (j - 1) = Sj.leadingCoeff := by rw [tBPR, if_neg (by omega), htj]
+        have htbpr : tBPR P Q (j - 1) = Sj.leadingCoeff := by rw [tBPR, ite_eq_right (by omega), htj]
         have hlc : Sj.leadingCoeff = Azurite.BPR.Chapter4.sRes P Q (j - 1) := by
-          rw [← hsbpr, sBPR, if_neg (by omega)]
+          rw [← hsbpr, sBPR, ite_eq_right (by omega)]
         have htail := ih j (j - 1) Sj
           (divByRingElt (sj * ti) (-((Sj.leadingCoeff ^ 2 • Si).remExact Sj)))
           Sj.leadingCoeff Sj.leadingCoeff (by omega) hk1 (by omega) (by omega) (Or.inl hjm1q) hSj
@@ -967,9 +967,9 @@ theorem ssAux_spec {K : Type _} [Field K] [DecidableEq K] (P Q : K[X]) (hP : P �
         have hsRjm1 : Azurite.BPR.Chapter4.sRes P Q (j - 1) = 0 := by
           rw [← coeff_sResP P Q hpq (by omega),
             Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hkdeg]; omega)]
-        have htbpr : tBPR P Q (j - 1) = Sj.leadingCoeff := by rw [tBPR, if_neg (by omega), htj]
+        have htbpr : tBPR P Q (j - 1) = Sj.leadingCoeff := by rw [tBPR, ite_eq_right (by omega), htj]
         have hsbprk : Azurite.BPR.Chapter4.sRes P Q Sj.natDegree = sBPR P Q Sj.natDegree := by
-          rw [sBPR, if_neg (by omega)]
+          rw [sBPR, ite_eq_right (by omega)]
         have htail := ih j Sj.natDegree Sj
           (divByRingElt (sj * ti) (-((Sj.leadingCoeff * sk) • Si).remExact Sj)) sk Sj.leadingCoeff
           (by omega) (by omega) (by omega) (by omega) (Or.inl hkq) hSj
@@ -1019,8 +1019,8 @@ theorem signedSubresultant_toPoly {K : Type _} [Field K] [DecidableEq K] (P Q : 
         (by rw [Nat.add_sub_cancel, ← hpdm]; exact (sResP_eq_self _ _ hpqm).symm)
         (by rw [← hpdm]; exact (sResP_pm1_eq_Q _ _ hQm hpqm).symm)
         (by rw [Nat.add_sub_cancel, ← hpdm, sResP_eq_self _ _ hpqm])
-        (by rw [← hpdm, sResP_eq_self _ _ hpqm]) (by rw [sBPR, if_pos (by rw [hpdm])])
-        (by rw [Nat.add_sub_cancel, tBPR, if_pos (by rw [hpdm])])
+        (by rw [← hpdm, sResP_eq_self _ _ hpqm]) (by rw [sBPR, ite_eq_left (by rw [hpdm])])
+        (by rw [Nat.add_sub_cancel, tBPR, ite_eq_left (by rw [hpdm])])
   have hcond : ¬ (Q = 0 ∨ P.natDegree ≤ Q.natDegree) := not_or.mpr ⟨hQ, by omega⟩
   have key : (((P, P.leadingCoeff) :: ssAux (P.natDegree + 1) P.natDegree P Q 1 1).reverse).map
       (Prod.map AzPolynomial.toPoly id)
@@ -1029,13 +1029,13 @@ theorem signedSubresultant_toPoly {K : Type _} [Field K] [DecidableEq K] (P Q : 
             Azurite.BPR.Chapter4.sRes (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) ℓ)) := by
     rw [List.map_reverse, hlst, targetList_reverse]
   constructor
-  · rw [signedSubresultant, if_neg hcond]
+  · rw [signedSubresultant, ite_eq_right hcond]
     simp only [List.map_map]
     rw [show (AzPolynomial.toPoly ∘ Prod.fst :
         AzPolynomial K × K → Polynomial K) = Prod.fst ∘ Prod.map AzPolynomial.toPoly id from rfl,
       ← List.map_map, key, List.map_map]
     rfl
-  · rw [signedSubresultant, if_neg hcond]
+  · rw [signedSubresultant, ite_eq_right hcond]
     dsimp only
     rw [show (Prod.snd : AzPolynomial K × K → K) = Prod.snd ∘ Prod.map AzPolynomial.toPoly id
         from rfl, ← List.map_map, key, List.map_map]
@@ -1066,12 +1066,12 @@ theorem ssAux_spec_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.Exa
     have htine : ti ≠ 0 := by rw [hti]; exact Polynomial.leadingCoeff_ne_zero.mpr hne
     rw [ssAux]
     by_cases hSj0 : Sj = 0
-    · rw [if_pos hSj0]
+    · rw [ite_eq_left hSj0]
       have hzero : sResP P Q (j - 1) = 0 := by rw [← hSj, hSj0, toPoly_zero]
       have hzeros := theorem_8_34_gcd_zeros_domain P Q hP hQ hpq hq1 hj1 hji hip hne hdeg hzero
       rw [targetList_eq_replicate P Q hpq (by omega) hzeros, List.map_replicate]
       simp [Prod.map, toPoly_zero]
-    · rw [if_neg hSj0]
+    · rw [ite_eq_right hSj0]
       have hkdeg : (sResP P Q (j - 1)).natDegree = Sj.natDegree := by
         rw [← hSj, AzPolynomial.natDegree_toPoly]
       have hsResPne : sResP P Q (j - 1) ≠ 0 := by
@@ -1274,7 +1274,7 @@ theorem ssAux_first_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.Ex
       = AzPolynomial.toPoly Q := by
     rw [show P.natDegree - 1 = (AzPolynomial.toPoly P).natDegree - 1 from by rw [hpd]]
     exact sResP_pm1_eq_Q_domain _ _ hQm hpqm
-  rw [ssAux, if_neg hQ]
+  rw [ssAux, ite_eq_right hQ]
   dsimp only
   split_ifs with hkj hk0 hk0'
   · exact absurd hk0 (by omega)
@@ -1403,8 +1403,8 @@ theorem signedSubresultant_toPoly_domain {D : Type _} [CommRing D] [DecidableEq 
     · rw [Prod.map_apply, id_eq, ← hpdm, sResP_eq_self _ _ hpqm,
         show P.leadingCoeff = Azurite.BPR.Chapter4.sRes (AzPolynomial.toPoly P)
             (AzPolynomial.toPoly Q) (AzPolynomial.toPoly P).natDegree from by
-          rw [← leadingCoeff_toPoly, Azurite.BPR.Chapter4.sRes, if_neg (by omega), if_pos hpqm,
-            if_pos rfl]]
+          rw [← leadingCoeff_toPoly, Azurite.BPR.Chapter4.sRes, ite_eq_right (by omega), ite_eq_left hpqm,
+            ite_eq_left rfl]]
     · exact ssAux_first_domain P Q hP hQ hpq hq1
   have hcond : ¬ (Q = 0 ∨ P.natDegree ≤ Q.natDegree) := not_or.mpr ⟨hQ, by omega⟩
   have key : (((P, P.leadingCoeff) :: ssAux (P.natDegree + 1) P.natDegree P Q 1 1).reverse).map
@@ -1414,13 +1414,13 @@ theorem signedSubresultant_toPoly_domain {D : Type _} [CommRing D] [DecidableEq 
             Azurite.BPR.Chapter4.sRes (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) ℓ)) := by
     rw [List.map_reverse, hlst, targetList_reverse]
   refine ⟨?_, ?_⟩
-  · rw [signedSubresultant, if_neg hcond]
+  · rw [signedSubresultant, ite_eq_right hcond]
     simp only [List.map_map]
     rw [show (AzPolynomial.toPoly ∘ Prod.fst :
         AzPolynomial D × D → Polynomial D) = Prod.fst ∘ Prod.map AzPolynomial.toPoly id from rfl,
       ← List.map_map, key, List.map_map]
     rfl
-  · rw [signedSubresultant, if_neg hcond]
+  · rw [signedSubresultant, ite_eq_right hcond]
     dsimp only
     rw [show (Prod.snd : AzPolynomial D × D → D) = Prod.snd ∘ Prod.map AzPolynomial.toPoly id
         from rfl, ← List.map_map, key, List.map_map]
@@ -1729,9 +1729,9 @@ theorem ssAuxExt_proj {R : Type _} [CommRing R] [DecidableEq R] [Azurite.ExactDi
     by_cases hSj : Sj = 0
     · by_cases hj : j = 0
       · simp [hSj, hj]
-      · simp only [if_pos hSj, if_neg hj, List.map_cons, List.map_replicate]
+      · simp only [ite_eq_left hSj, ite_eq_right hj, List.map_cons, List.map_replicate]
         conv_rhs => rw [show j = (j - 1) + 1 from by omega, List.replicate_succ]
-    · rw [if_neg hSj, if_neg hSj]
+    · rw [ite_eq_right hSj, ite_eq_right hSj]
       dsimp only
       split_ifs with hkj hk0 hk0' <;>
         simp only [List.map_cons, List.map_append, List.map_replicate, ih] <;> rfl
@@ -1801,14 +1801,14 @@ theorem ssAuxExt_spec_domain {D : Type _} [CommRing D] [DecidableEq D] [Azurite.
     have htine : ti ≠ 0 := by rw [hti]; exact Polynomial.leadingCoeff_ne_zero.mpr hne
     rw [ssAuxExt]
     by_cases hSj0 : Sj = 0
-    · rw [if_pos hSj0, if_neg (show ¬j = 0 by omega)]
+    · rw [ite_eq_left hSj0, ite_eq_right (show ¬j = 0 by omega)]
       intro t ht
       rcases List.mem_cons.mp ht with rfl | ht'
       · refine ⟨?_, fun h => absurd rfl h⟩
         rw [hhead, hSj0]
       · rw [List.eq_of_mem_replicate ht']
         exact ⟨by simp [toPoly_zero], fun h => absurd rfl h⟩
-    · rw [if_neg hSj0]
+    · rw [ite_eq_right hSj0]
       have hkdeg : (sResP P Q (j - 1)).natDegree = Sj.natDegree := by
         rw [← hSj, AzPolynomial.natDegree_toPoly]
       have hsResPne : sResP P Q (j - 1) ≠ 0 := by
@@ -2125,7 +2125,7 @@ theorem ssAuxExt_bezout_first_domain {D : Type _} [CommRing D] [DecidableEq D] [
   have hheadQ : AzPolynomial.toPoly (0 : AzPolynomial D) * AzPolynomial.toPoly P
       + AzPolynomial.toPoly (1 : AzPolynomial D) * AzPolynomial.toPoly Q = AzPolynomial.toPoly Q := by
     rw [toPoly_zero, toPoly_one]; ring
-  rw [ssAuxExt, if_neg hQ]
+  rw [ssAuxExt, ite_eq_right hQ]
   dsimp only
   split_ifs with hkj hk0 hk0'
   · exact absurd hk0 (by omega)
@@ -2262,7 +2262,7 @@ theorem extendedSignedSubresultant_tuples_eq {R : Type _} [CommRing R] [Decidabl
           :: ssAuxExt (P.natDegree + 1) P.natDegree P Q 1 1 1 0 0 1).reverse := by
   have hcond : ¬ (Q = 0 ∨ P.natDegree ≤ Q.natDegree) := not_or.mpr ⟨hQ, by omega⟩
   unfold extendedSignedSubresultant
-  rw [if_neg hcond]
+  rw [ite_eq_right hcond]
   simp only [List.zip_map']
   exact List.map_id _
 

@@ -21,7 +21,7 @@ theorem theorem_4_79 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algebra
     ((idealOfPolys Ps).radical : Set (MvPolynomial (Fin k) K)) =
       {P | ∀ x ∈ zerOfFinset C Ps, MvPolynomial.aeval x P = 0} := by
   ext P
-  simp only [SetLike.mem_coe, Set.mem_setOf_eq]
+  simp only [SetLike.mem_coe, Set.mem_ofPred_eq]
   constructor
   · -- `P ∈ √I ⟹ P^n ∈ I ⟹ (P(x))^n = 0 ⟹ P(x) = 0` on `Zer(𝒫)`.
     intro hP x hx

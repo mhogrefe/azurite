@@ -39,7 +39,7 @@ theorem realization_eq_of_agree_on_freeVars_ordered [DecidableEq σ]
       simp only [freeVars, AtomVars.vars_orderedFieldAtom, OrderedFieldAtom.vars]
       rw [MvPolynomial.mem_vars_iff_mem_support]
       exact ⟨c, MvPolynomial.mem_support_iff.mpr hc, hi⟩
-    cases rel <;> simp only [realization, AtomRealization.interpret, Set.mem_setOf_eq, hval]
+    cases rel <;> simp only [realization, AtomRealization.interpret, Set.mem_ofPred_eq, hval]
   | not _ ih => simp only [realization, Set.mem_compl_iff]; rw [ih _ _ h]
   | and _ _ ih₁ ih₂ =>
     simp only [realization, Set.mem_inter_iff, freeVars] at *
@@ -50,7 +50,7 @@ theorem realization_eq_of_agree_on_freeVars_ordered [DecidableEq σ]
     rw [ih₁ _ _ (fun x hx => h x (Finset.mem_union_left _ hx)),
         ih₂ _ _ (fun x hx => h x (Finset.mem_union_right _ hx))]
   | exists_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq]
+    simp only [realization, Set.mem_ofPred_eq]
     constructor <;> rintro ⟨c, hc⟩ <;> refine ⟨c, ?_⟩
     · exact (ih _ _ (fun x hx => by
         simp only [Function.update]; split
@@ -65,7 +65,7 @@ theorem realization_eq_of_agree_on_freeVars_ordered [DecidableEq σ]
           exact h x (by
             simp only [freeVars, Finset.mem_sdiff, Finset.mem_singleton]; exact ⟨hx, hne⟩))).mpr hc
   | forall_ z _ ih =>
-    simp only [realization, Set.mem_setOf_eq]
+    simp only [realization, Set.mem_ofPred_eq]
     constructor <;> intro hc <;> intro c
     · exact (ih _ _ (fun x hx => by
         simp only [Function.update]; split
@@ -167,7 +167,7 @@ since a sentence's realization is `∅` (false) or all of `Cᵏ` (true). -/
 theorem isTrue_iff_nonempty_of_isSentence [DecidableEq σ]
     (Φ : Formula σ (OrderedFieldAtom σ D)) (hΦ : isSentence Φ) :
     Φ.IsTrue (C := C) ↔ (Φ.realization (C := C)).Nonempty := by
-  haveI : Nonempty (σ → C) := ⟨fun _ => 0⟩
+  have : Nonempty (σ → C) := ⟨fun _ => 0⟩
   rcases sentence_trivial_realization_ordered (C := C) Φ hΦ with h | h <;>
     rw [Formula.IsTrue, h] <;> simp [Set.empty_ne_univ]
 

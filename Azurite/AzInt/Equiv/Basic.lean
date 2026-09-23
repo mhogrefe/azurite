@@ -49,14 +49,14 @@ lemma ofInt_toInt (z : AzInt) : ofInt z.toInt = z := by
 @[simp] lemma toInt_zero : (0 : AzInt).toInt = 0 := by
   change (if (0 : AzInt).sign then _ else _) = 0
   have hs : (0 : AzInt).sign = true := rfl
-  rw [if_pos hs]
+  rw [ite_eq_left hs]
   change ↑(0 : AzNat).toNat = (0 : Int)
   rfl
 
 @[simp] lemma toInt_one : (1 : AzInt).toInt = 1 := by
   change (if (1 : AzInt).sign then _ else _) = 1
   have hs : (1 : AzInt).sign = true := rfl
-  rw [if_pos hs]
+  rw [ite_eq_left hs]
   change ↑(1 : AzNat).toNat = (1 : Int)
   rfl
 

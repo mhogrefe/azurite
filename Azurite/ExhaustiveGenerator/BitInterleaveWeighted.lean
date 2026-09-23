@@ -66,7 +66,7 @@ theorem revWeightSum_succ (w : Fin m → ℕ) (r : ℕ) :
 weight of slot `m - 1 - b`. -/
 theorem revWeightSum_succ_of_lt (w : Fin m → ℕ) {b : ℕ} (hb : b < m) :
     revWeightSum w (b + 1) = revWeightSum w b + w ⟨m - 1 - b, by omega⟩ := by
-  rw [revWeightSum_succ, dif_pos hb]
+  rw [revWeightSum_succ, dite_eq_left hb]
 
 theorem revWeightSum_mono (w : Fin m → ℕ) : Monotone (revWeightSum w) :=
   fun _ _ hab => Finset.sum_le_sum_of_subset (Finset.range_subset_range.mpr hab)
@@ -97,7 +97,7 @@ theorem revWeightSum_eq_sum_filter (w : Fin m → ℕ) {r : ℕ} (hr : r ≤ m) 
     exact Fin.ext (show m - 1 - (m - 1 - b.val) = b.val by omega)
   · intro a ha
     have ha' := Finset.mem_range.mp ha
-    rw [dif_pos (show a < m by omega)]
+    rw [dite_eq_left (show a < m by omega)]
 
 /-- The whole period: `revWeightSum w m = ∑ j, w j = W`. -/
 theorem revWeightSum_total (w : Fin m → ℕ) : revWeightSum w m = ∑ j, w j := by
@@ -140,7 +140,7 @@ exactly `w j`. -/
 theorem revWeightSum_reflect_succ (w : Fin m → ℕ) (j : Fin m) :
     revWeightSum w (m - 1 - j.val + 1) = weightBlockStart w j + w j := by
   have hj := j.isLt
-  rw [revWeightSum_succ, dif_pos (show m - 1 - j.val < m by omega)]
+  rw [revWeightSum_succ, dite_eq_left (show m - 1 - j.val < m by omega)]
   congr 1
   exact congrArg w (Fin.ext (show m - 1 - (m - 1 - j.val) = j.val by omega))
 
@@ -349,7 +349,7 @@ theorem revWeightSum_one {r : ℕ} (hr : r ≤ m) :
   calc revWeightSum (fun _ : Fin m => 1) r
       = ∑ _i ∈ Finset.range r, 1 :=
         Finset.sum_congr rfl fun i hi =>
-          dif_pos (lt_of_lt_of_le (Finset.mem_range.mp hi) hr)
+          dite_eq_left (lt_of_lt_of_le (Finset.mem_range.mp hi) hr)
     _ = r := by simp
 
 theorem weightBlockIdx_one {t : ℕ} (ht : t < m) :

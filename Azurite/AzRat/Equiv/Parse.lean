@@ -25,7 +25,7 @@ theorem splitAtSlash_no_slash (l : List Char) (h : ∀ c ∈ l, c ≠ '/') :
   induction l with
   | nil => rfl
   | cons c cs ih =>
-    rw [splitAtSlash, if_neg (h c (List.mem_cons_self ..)),
+    rw [splitAtSlash, ite_eq_right (h c (List.mem_cons_self ..)),
         ih fun x hx => h x (List.mem_cons_of_mem _ hx)]
 
 /-- `splitAtSlash` splits at the first `'/'`: a slash-free prefix is returned whole,
@@ -35,7 +35,7 @@ theorem splitAtSlash_append (l₁ l₂ : List Char) (h : ∀ c ∈ l₁, c ≠ '
   induction l₁ with
   | nil => simp [splitAtSlash]
   | cons c cs ih =>
-    rw [List.cons_append, splitAtSlash, if_neg (h c (List.mem_cons_self ..)),
+    rw [List.cons_append, splitAtSlash, ite_eq_right (h c (List.mem_cons_self ..)),
         ih fun x hx => h x (List.mem_cons_of_mem _ hx)]
 
 /-- No character of `AzInt.toString` is a `'/'`: the characters are a possible
@@ -50,9 +50,9 @@ theorem _root_.Azurite.AzInt.toString_ne_slash (z : AzInt) :
     revert this; decide
   unfold AzInt.toString at hc
   by_cases hs : z.sign
-  · rw [if_pos hs] at hc
+  · rw [ite_eq_left hs] at hc
     exact hdigit c hc
-  · rw [if_neg hs, String.toList_append] at hc
+  · rw [ite_eq_right hs, String.toList_append] at hc
     rcases List.mem_append.mp hc with hdash | hrest
     · have : c = '-' := List.mem_singleton.mp hdash
       subst this; decide
@@ -65,13 +65,13 @@ theorem parse_toString (q : AzRat) : parse (toString q) = some q := by
   rw [String.toList_ofList]
   by_cases hden : q.den = 1
   · -- Integer form: no slash anywhere, so `splitAtSlash` returns everything.
-    rw [if_pos hden,
+    rw [ite_eq_left hden,
         splitAtSlash_no_slash _ (AzInt.toString_ne_slash q.numInt)]
     simp only [String.ofList_toList, AzInt.parse_toString, Option.map_some]
     -- `toAzRat` of the signed numerator is exactly `q`, since `q.den = 1`.
     exact congrArg some (AzRat.ext rfl rfl hden.symm)
   · -- Fraction form: split at the rendered slash, round-trip both components.
-    rw [if_neg hden,
+    rw [ite_eq_right hden,
         splitAtSlash_append _ _ (AzInt.toString_ne_slash q.numInt)]
     simp only [String.ofList_toList, AzInt.parse_toString, AzNat.parse_toString]
     exact congrArg some (ofSignAzNats_self q)

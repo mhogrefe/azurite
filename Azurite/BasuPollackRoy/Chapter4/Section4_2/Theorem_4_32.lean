@@ -58,7 +58,7 @@ theorem sRes_eq_zero_of_rem_zero (P Q : K[X]) {j : ℕ} (hQ : Q ≠ 0)
   · omega
   · intro k
     simp only [MpMatrix, Matrix.of_apply]
-    rw [if_pos (show (0 : ℕ) < Q.natDegree - j by omega), hR, mul_zero, Polynomial.coeff_zero]
+    rw [ite_eq_left (show (0 : ℕ) < Q.natDegree - j by omega), hR, mul_zero, Polynomial.coeff_zero]
 
 /-- **The `p → q` bridge term equals `sign(a_p b_q)`.** Using `sRes_p = a_p` and
 `sRes_q = ε_{p-q} b_q^{p-q}`, the bridge contribution
@@ -72,12 +72,12 @@ theorem eps_sign_sResp_sResq (P Q : K[X]) (hQ : Q ≠ 0) (hqp : Q.natDegree < P.
           then (SignType.sign (P.leadingCoeff * Q.leadingCoeff) : ℤ) else 0) := by
   have hbq : Q.leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hQ
   have hsp : sRes P Q P.natDegree = P.leadingCoeff := by
-    rw [sRes, if_neg (by omega), if_pos hqp, if_pos rfl]
+    rw [sRes, ite_eq_right (by omega), ite_eq_left hqp, ite_eq_left rfl]
   have hsq : sRes P Q Q.natDegree
       = ((ε (P.natDegree - Q.natDegree) : ℤ) : K) * Q.leadingCoeff ^ (P.natDegree - Q.natDegree) :=
     sRes_q_eq P Q hQ hqp
   by_cases hodd : Odd (P.natDegree - Q.natDegree)
-  · rw [if_pos hodd, if_pos hodd, hsp, hsq,
+  · rw [ite_eq_left hodd, ite_eq_left hodd, hsp, hsq,
       show P.leadingCoeff * (((ε (P.natDegree - Q.natDegree) : ℤ) : K) *
           Q.leadingCoeff ^ (P.natDegree - Q.natDegree))
         = ((ε (P.natDegree - Q.natDegree) : ℤ) : K) *
@@ -85,7 +85,7 @@ theorem eps_sign_sResp_sResq (P Q : K[X]) (hQ : Q ≠ 0) (hqp : Q.natDegree < P.
       sign_mul, SignType.coe_mul, sign_eps, ← mul_assoc, ε_mul_self, one_mul,
       sign_mul, SignType.coe_mul, sign_pow_odd Q.leadingCoeff hbq hodd,
       ← SignType.coe_mul, ← sign_mul]
-  · rw [if_neg hodd, if_neg hodd]
+  · rw [ite_eq_right hodd, ite_eq_right hodd]
 
 variable [IsRealClosed K]
 

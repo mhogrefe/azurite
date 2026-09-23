@@ -60,7 +60,7 @@ theorem proposition_2_84 {k ℓ m : ℕ}
       {p : Fin (k + m) → R | ∃ y : Fin ℓ → R, Fin.append p y ∈
         ({v | v ∘ gF ∈ funGraph A f} ∩ {v | v ∘ gG ∈ funGraph B g})} := by
     ext p
-    simp only [mem_funGraph, Set.mem_setOf_eq, Set.mem_inter_iff, hcF, hcG,
+    simp only [mem_funGraph, Set.mem_ofPred_eq, Set.mem_inter_iff, hcF, hcG,
       append_comp_castAdd, append_comp_natAdd, Function.comp_apply]
     constructor
     · rintro ⟨hA, hw⟩

@@ -221,7 +221,7 @@ theorem pCheck_pass {llPrimes : List ℕ} {hs : List (ℕ × List (ℕ × ℕ))}
     {p : ℕ} (hp2 : p ≠ 2) (h : pCheck n llPrimes hs aux p = .pass ()) :
     ¬ p ∣ n.toNat ∧ ¬ 2 ^ p ≡ 2 [MOD p ^ 2] ∧ sixFourOK n llPrimes hs aux p = true := by
   unfold pCheck at h
-  rw [if_neg hp2] at h
+  rw [ite_eq_right hp2] at h
   split_ifs at h with h1 h2 h3 h4
   rw [Bool.and_eq_true] at h3
   exact ⟨not_dvd_of_mod_ne_zero h1, wieferichFree_eq_true h3.1, h3.2⟩
@@ -360,7 +360,7 @@ theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
   set L := Lm ++ Lp with hL
   set s₂ := prodPow Qs with hs₂
   set L' := L.map (fun pe => (pe.1, pe.2 + padicValNat pe.1 t')) with hL'
-  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   have hv2 : 1 ≤ padicValNat 2 t' := one_le_padicValNat_of_dvd ht0.ne' ht2
   -- the Lucas–Lehmer list facts
   have hLp : ∀ pe ∈ L, pe.1.Prime := fun pe hpe => by
@@ -455,7 +455,7 @@ theorem prime_of_aprcl {N : ℕ} (hN : 2 < N) (hodd : N % 2 = 1)
     · exact hLn pe hpe hkN
   have hfactp : ∀ pe ∈ L, S₁.factorization pe.1 = pe.2 + padicValNat pe.1 t' := fun pe hpe => by
     rw [hS₁, Nat.factorization_mul (pow_pos two_pos _).ne' hP0.ne', Finsupp.add_apply,
-      Nat.prime_two.factorization_pow, Finsupp.single_apply, if_neg (hL2 pe hpe).symm, zero_add]
+      Nat.prime_two.factorization_pow, Finsupp.single_apply, ite_eq_right (hL2 pe hpe).symm, zero_add]
     exact factorization_prodPow_of_mem hL'p hL'nd (List.mem_map_of_mem hpe :
       (pe.1, pe.2 + padicValNat pe.1 t') ∈ L')
   have hpdvd : ∀ pe ∈ L, pe.1 ∣ N ^ 2 - 1 := fun pe hpe =>
@@ -574,7 +574,7 @@ theorem Yfam_eq {cert : Cert} (hnd : (cert.qs.map (·.q)).Nodup) {d : QCert} (hd
   unfold Yfam
   rw [find?_eq_some_of_nodup hnd hd]
   simp only
-  rw [dif_pos ⟨hq, hp, hchk⟩]
+  rw [dite_eq_left ⟨hq, hp, hchk⟩]
 
 /-! ### The per-`(p, q)` chains, in `ℂ` -/
 
@@ -593,7 +593,7 @@ theorem indexTable_spec_gen :
       ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod d.q)ˣ) : ZMod d.q)
           ^ CL.indexTableOf (CL.indexTableArr d.q d.g) x
         = 1 - ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod d.q)ˣ) : ZMod d.q) ^ x := by
-  haveI : Fact d.q.Prime := ⟨hq⟩
+  have : Fact d.q.Prime := ⟨hq⟩
   have hval := (Classical.choose_spec (CL.checkGenerator_spec hchk)).1
   rw [hval]
   exact CL.checkIndexTable_spec hidx
@@ -608,12 +608,12 @@ theorem chain_odd_complex {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hW : ¬ 2 ^ p 
         ∣ (r : ℤ) ^ (p - 1) - (n.toNat : ℤ) ^ ((p - 1) * m)) →
       Yc hp (Nat.ordProj_dvd _ _) (Classical.choose_spec (CL.checkGenerator_spec hchk)).2 r
         = embC hp (zP d.q p ((d.q - 1).factorization p)) ^ (f₀ * m) := by
-  haveI : Fact d.q.Prime := ⟨hq⟩
+  have : Fact d.q.Prime := ⟨hq⟩
   have hq1 : d.q - 1 ≠ 0 := by have := hq.two_le; omega
   have hk : 0 < (d.q - 1).factorization p :=
     Nat.Prime.factorization_pos_of_dvd hp hq1 hpq
   have hn1 : 1 < n.toNat := Fact.out
-  rw [jTest, if_neg hp3.ne', ← Nat.factorization_def _ hp] at hh
+  rw [jTest, ite_eq_right hp3.ne', ← Nat.factorization_def _ hp] at hh
   have h88 := jOdd_spec hp hk (Nat.ordProj_dvd _ _) (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
     (indexTable_spec_gen hq hchk hidx) hh
   obtain ⟨f₀, hf₀⟩ := chiR_eq_of_odd hp hk (Nat.ordProj_dvd _ _)
@@ -636,7 +636,7 @@ theorem indexTable_spec_gen' :
     ∀ x ∈ Finset.Icc 1 (q - 2),
       ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod q)ˣ) : ZMod q) ^ CL.indexTableOf (CL.indexTableArr q g) x
         = 1 - ((Classical.choose (CL.checkGenerator_spec hchk) : (ZMod q)ˣ) : ZMod q) ^ x := by
-  haveI : Fact q.Prime := ⟨hq⟩
+  have : Fact q.Prime := ⟨hq⟩
   have hval := (Classical.choose_spec (CL.checkGenerator_spec hchk)).1
   rw [hval]
   exact CL.checkIndexTable_spec hidx
@@ -648,7 +648,7 @@ theorem sixFour_of_jOdd {p k : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hk : 0 < k) (h
     (hh : jOdd n p k q (CL.indexTableOf (CL.indexTableArr q g)) = some h) (hph : ¬ p ∣ h) :
     ∀ r, r.Prime → r ∣ n.toNat → ∀ D, ∃ l,
       r ^ (p - 1) ≡ (n.toNat ^ (p - 1)) ^ l [MOD p ^ D] := by
-  haveI : Fact q.Prime := ⟨hq⟩
+  have : Fact q.Prime := ⟨hq⟩
   have hn1 : 1 < n.toNat := Fact.out
   have h88 := jOdd_spec hp hk hpk (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
     (indexTable_spec_gen' hq hchk hidx) hh
@@ -671,12 +671,12 @@ theorem sixFour_odd_of_h {p : ℕ} (hp : p.Prime) (hp3 : 2 < p) (hpn : ¬ p ∣ 
     (hh : jTest n p (padicValNat p (d.q - 1)) d.q (CL.indexTableOf (CL.indexTableArr d.q d.g)) = some h) (hph : ¬ p ∣ h) :
     ∀ r, r.Prime → r ∣ n.toNat → ∀ D, ∃ l,
       r ^ (p - 1) ≡ (n.toNat ^ (p - 1)) ^ l [MOD p ^ D] := by
-  haveI : Fact d.q.Prime := ⟨hq⟩
+  have : Fact d.q.Prime := ⟨hq⟩
   have hq1 : d.q - 1 ≠ 0 := by have := hq.two_le; omega
   have hk : 0 < (d.q - 1).factorization p :=
     Nat.Prime.factorization_pos_of_dvd hp hq1 hpq
   have hn1 : 1 < n.toNat := Fact.out
-  rw [jTest, if_neg hp3.ne', ← Nat.factorization_def _ hp] at hh
+  rw [jTest, ite_eq_right hp3.ne', ← Nat.factorization_def _ hp] at hh
   have h88 := jOdd_spec hp hk (Nat.ordProj_dvd _ _) (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
     (indexTable_spec_gen hq hchk hidx) hh
   exact sixFour_of_odd hp hk (Nat.ordProj_dvd _ _) (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
@@ -691,7 +691,7 @@ theorem chain_two_complex (hodd : n.toNat % 2 = 1) (hqn : ¬ d.q ∣ n.toNat) (h
         ∣ (r : ℤ) ^ (2 - 1) - (n.toNat : ℤ) ^ ((2 - 1) * m)) →
       Yc Nat.prime_two (Nat.ordProj_dvd _ _) (Classical.choose_spec (CL.checkGenerator_spec hchk)).2 r
         = embC Nat.prime_two (zP d.q 2 ((d.q - 1).factorization 2)) ^ (f₀ * m) := by
-  haveI : Fact d.q.Prime := ⟨hq⟩
+  have : Fact d.q.Prime := ⟨hq⟩
   have hq1 : d.q - 1 ≠ 0 := by have := hq.two_le; omega
   have h2q : 2 ∣ d.q - 1 := by
     have := hq.eq_one_or_self_of_dvd 2
@@ -700,7 +700,7 @@ theorem chain_two_complex (hodd : n.toNat % 2 = 1) (hqn : ¬ d.q ∣ n.toNat) (h
     exact ⟨w, by omega⟩
   have hk : 0 < (d.q - 1).factorization 2 := Nat.Prime.factorization_pos_of_dvd Nat.prime_two hq1 h2q
   have hn1 : 1 < n.toNat := Fact.out
-  rw [jTest, if_pos rfl, ← Nat.factorization_def _ Nat.prime_two] at hh
+  rw [jTest, ite_eq_left rfl, ← Nat.factorization_def _ Nat.prime_two] at hh
   have hf := indexTable_spec_gen hq hchk hidx
   set hg := (Classical.choose_spec (CL.checkGenerator_spec hchk)).2
   set hpk : 2 ^ (d.q - 1).factorization 2 ∣ d.q - 1 := Nat.ordProj_dvd _ _
@@ -709,12 +709,12 @@ theorem chain_two_complex (hodd : n.toNat % 2 = 1) (hqn : ¬ d.q ∣ n.toNat) (h
   rcases Nat.lt_or_ge k 3 with hk3 | hk3
   · interval_cases k
     · -- `k = 1`
-      rw [if_pos rfl] at hh
+      rw [ite_eq_left rfl] at hh
       have h92 := j2k1_spec (n := n) (q := d.q) hh
       obtain ⟨f₀, hf₀⟩ := chiR_eq_of_k1 hg hn1 hodd hqn hpk h92
       exact ⟨f₀, fun r hr hrn m hm => Yc_eq_of_chiR Nat.prime_two _ _ (hf₀ r hr hrn m hm)⟩
     · -- `k = 2`
-      rw [if_neg (by norm_num), if_pos rfl] at hh
+      rw [ite_eq_right (by norm_num), ite_eq_left rfl] at hh
       rcases Nat.lt_or_ge (n.toNat % 4) 2 with h4 | h4
       · have hn4 : n.toNat % 4 = 1 := by omega
         have h94 := j2k2_spec_one hg hf hpk hn4 hh
@@ -724,7 +724,7 @@ theorem chain_two_complex (hodd : n.toNat % 2 = 1) (hqn : ¬ d.q ∣ n.toNat) (h
         have h96 := j2k2_spec_three hg hf hpk hn4 hh
         obtain ⟨f₀, hf₀⟩ := chiR_eq_of_k2_three hg hn1 hodd hqn hpk hn4 h96
         exact ⟨f₀, fun r hr hrn m hm => Yc_eq_of_chiR Nat.prime_two _ _ (hf₀ r hr hrn m hm)⟩
-  · rw [if_neg (by omega), if_neg (by omega)] at hh
+  · rw [ite_eq_right (by omega), ite_eq_right (by omega)] at hh
     rcases Nat.lt_or_ge (n.toNat % 8) 4 with h8 | h8
     · have hn8 : n.toNat % 8 = 1 ∨ n.toNat % 8 = 3 := by omega
       have h911 := j2k3_spec_low hg hf hpk hk3 hn8 hh
@@ -760,8 +760,8 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
   split_ifs at h with h2 hodd hstruct hts
   · cases h
   · split at h <;> cases h
-  · haveI : NeZero n.toNat := ⟨by omega⟩
-    haveI : Fact (1 < n.toNat) := ⟨by omega⟩
+  · have : NeZero n.toNat := ⟨by omega⟩
+    have : Fact (1 < n.toNat) := ⟨by omega⟩
     simp only [Bool.not_eq_true', Bool.not_eq_false] at hodd hstruct
     have hodd' : n.toNat % 2 = 1 := Nat.odd_iff.mp ((AzNat.isOdd_iff n).mp hodd)
     have hn1 : 1 < n.toNat := by omega
@@ -790,7 +790,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
     set Lm := cert.ll.minus.map (fun t => (t.1, t.2.1)) with hLm
     set Lp := cert.ll.plus.map (fun t => (t.1, t.2.1)) with hLp
     set Qs := cert.qs.map (fun d => (d.q, d.e)) with hQs
-    haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+    have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
     set F := (liftedS1 cert.ll cert.t').toNat with hFdef
     have hF : F = 2 ^ (cert.ll.e2 + padicValNat 2 cert.t' - 1)
         * prodPow ((Lm ++ Lp).map fun pe => (pe.1, pe.2 + padicValNat pe.1 cert.t')) :=
@@ -830,14 +830,14 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
           (N - 1).factorization 2, fun r hr hrn l hl => ?_⟩
         have := CL.c1_parity (Nat.odd_iff.mpr hodd') hr hrn ha
           (Nat.Prime.factorization_pos_of_dvd Nat.prime_two (by omega) (by omega)) hl
-        simp only [ε, dif_pos hrn]
+        simp only [ε, dite_eq_left hrn]
         rw [this, hUdef, hAdef, hU, hA, Int.cast_natCast]
       · refine ⟨CL.cond_6_4_two_of_c2 hn3 hα, (N + 1).factorization 2, fun r hr hrn l hl => ?_⟩
         have hv : 2 ≤ (N + 1).factorization 2 :=
           (Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two (by omega)).mp
             (by rw [show (2 : ℕ) ^ 2 = 4 by norm_num]; omega)
         have := CL.c2_parity hn3 hr hrn hα hv (Nat.ordProj_dvd _ _) hl
-        simp only [ε, dif_pos hrn]
+        simp only [ε, dite_eq_left hrn]
         rw [this, hUdef, hAdef, hU, hA, map_one, mul_one]
     obtain ⟨hS64₂, v₂, hpar₂⟩ := hS2
     -- the Lucas–Lehmer confinements with the coherent `ε`
@@ -852,7 +852,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
       obtain ⟨x₀, x₁, hN, hx1, hunit⟩ := test43_pass (h43 t ht)
       have := CL.test_4_3_confinement hn2 hr hrn (hp _ hpe).1 (hp _ hpe).2.1
         (hp _ hpe).2.2.1 (hp _ hpe).2.2.2 hN hx1 hunit
-      simpa only [ε, dif_pos hrn] using this
+      simpa only [ε, dite_eq_left hrn] using this
     -- the (6.4) sources at odd `p ∣ t'`
     have hS64 : ∀ p ∈ cert.t'.primeFactors, p ≠ 2 → ¬ p ∣ N ∧ ¬ 2 ^ p ≡ 2 [MOD p ^ 2] ∧
         ∀ r, r.Prime → r ∣ N → ∀ D, ∃ l, r ^ (p - 1) ≡ (N ^ (p - 1)) ^ l [MOD p ^ D] := by
@@ -914,7 +914,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
         (fun q hq => by
           obtain ⟨d, hd, rfl, -⟩ := mem_qsFor.mp hq
           have hqp := (hQd d hd).1
-          rw [dif_pos hqp]
+          rw [dite_eq_left hqp]
           exact @isPrimitiveRoot_embC_zP d.q p _ ⟨hqp⟩ hpp)
         (fun q hq => by
           obtain ⟨d, hd, rfl, hpq⟩ := mem_qsFor.mp hq
@@ -922,7 +922,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
           obtain ⟨hh, hjt⟩ := a10 p (Nat.mem_primeFactors.mpr ⟨hpp, hpq, by have := a1.two_le; omega⟩)
           obtain ⟨f₀, hf₀⟩ := chain_odd_complex a1 a8 a9 hpp hp3 hW hpn a6 hpq hjt
           refine ⟨f₀, fun r hr hrn m hm => ?_⟩
-          rw [Yfam_eq hQnd hd a1 hpp a8, dif_pos a1]
+          rw [Yfam_eq hQnd hd a1 hpp a8, dite_eq_left a1]
           exact hf₀ r hr hrn m hm)
         ((F * prodPow Qs).factorization p)
       intro r hr
@@ -953,7 +953,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
         (fun q hq => by
           obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hq
           have hqp := (hQd d hd).1
-          rw [dif_pos hqp]
+          rw [dite_eq_left hqp]
           exact @isPrimitiveRoot_embC_zP d.q 2 _ ⟨hqp⟩ Nat.prime_two)
         (fun q hq => by
           obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hq
@@ -964,7 +964,7 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
           obtain ⟨hh, hjt⟩ := a10 2 (Nat.mem_primeFactors.mpr ⟨Nat.prime_two, h2q, by have := a1.two_le; omega⟩)
           obtain ⟨f₀, hf₀⟩ := chain_two_complex a1 a8 a9 hodd' a6 (hQ2 d hd) hjt
           refine ⟨f₀, fun r hr hrn m hm => ?_⟩
-          rw [Yfam_eq hQnd hd a1 Nat.prime_two a8, dif_pos a1]
+          rw [Yfam_eq hQnd hd a1 Nat.prime_two a8, dite_eq_left a1]
           exact hf₀ r hr hrn m hm)
         ((F * prodPow Qs).factorization 2)
       intro r hr
@@ -1031,8 +1031,8 @@ theorem aprclCheck_false {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some
     have h2d : 2 ∣ n.toNat := Nat.dvd_of_mod_eq_zero (by have := Nat.odd_iff.not.mp hnodd; omega)
     have := hN.eq_one_or_self_of_dvd 2 h2d
     omega
-  · haveI : NeZero n.toNat := ⟨by omega⟩
-    haveI : Fact (1 < n.toNat) := ⟨by omega⟩
+  · have : NeZero n.toNat := ⟨by omega⟩
+    have : Fact (1 < n.toNat) := ⟨by omega⟩
     simp only [Bool.not_eq_true', Bool.not_eq_false] at hodd hstruct
     have hodd' : n.toNat % 2 = 1 := Nat.odd_iff.mp ((AzNat.isOdd_iff n).mp hodd)
     split at h <;> try cases h
@@ -1041,8 +1041,8 @@ theorem aprclCheck_false {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some
     · exact ringParams_composite hodd' hring hN
     · exact test42_composite h42 hN
     · exact test43_composite (not_isSquare_of_ringParams hN hodd' hring) h43 hN
-  · haveI : NeZero n.toNat := ⟨by omega⟩
-    haveI : Fact (1 < n.toNat) := ⟨by omega⟩
+  · have : NeZero n.toNat := ⟨by omega⟩
+    have : Fact (1 < n.toNat) := ⟨by omega⟩
     simp only [Bool.not_eq_true', Bool.not_eq_false] at hodd hstruct
     have hodd' : n.toNat % 2 = 1 := Nat.odd_iff.mp ((AzNat.isOdd_iff n).mp hodd)
     split at h <;> try cases h

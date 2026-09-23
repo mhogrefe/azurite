@@ -55,7 +55,7 @@ theorem Remark_4_29 (P : K[X]) (hP : 0 < P.natDegree) (i : ℕ)
       h_a_ne.isUnit
   unfold sDiscK
   by_cases h_i : i < P.natDegree
-  · rw [if_pos h_i, map_div₀]
+  · rw [ite_eq_left h_i, map_div₀]
     have h_prop28 := proposition_4_28 (C := C) P hP (P.natDegree - i)
       (by omega) (by omega)
     rw [show P.natDegree - (P.natDegree - i) = i from by omega] at h_prop28
@@ -63,7 +63,7 @@ theorem Remark_4_29 (P : K[X]) (hP : 0 < P.natDegree) (i : ℕ)
       (map_ne_zero (algebraMap K C)).mpr h_a_ne
     field_simp
     linear_combination -h_prop28
-  · rw [if_neg h_i]
+  · rw [ite_eq_right h_i]
     push Not at h_i
     have h_i_eq : i = P.natDegree := by omega
     subst h_i_eq

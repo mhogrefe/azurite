@@ -74,7 +74,7 @@ theorem DjMatrix_det_eq_zero (P Q : K[X]) (j : ℕ)
   have hrow : P.natDegree - j < P.natDegree + Q.natDegree - 2 * j := by omega
   refine Matrix.det_eq_zero_of_row_eq_zero ⟨P.natDegree - j, hrow⟩ (fun k => ?_)
   have hk : k.val < P.natDegree + Q.natDegree - 2 * j := k.isLt
-  simp only [DjMatrix, Matrix.of_apply, lt_irrefl, if_false, Nat.sub_self, pow_zero,
+  simp only [DjMatrix, Matrix.of_apply, lt_irrefl, ite_false, Nat.sub_self, pow_zero,
     one_mul, Polynomial.coeff_neg, neg_eq_zero]
   exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
 
@@ -124,11 +124,11 @@ theorem DjMatrix_det_eq (P Q : K[X]) (j : ℕ)
     · -- (inl, inl): the `b_q`-triangular corner `A`
       simp only [Matrix.submatrix_apply, Matrix.fromBlocks_apply₁₁, DjMatrix, Matrix.of_apply,
         he_inl, hA]
-      rw [if_pos (by have := i.isLt; omega)]
+      rw [ite_eq_left (by have := i.isLt; omega)]
     · -- (inl, inr): the corner-coupling block `B`
       simp only [Matrix.submatrix_apply, Matrix.fromBlocks_apply₁₂, DjMatrix, Matrix.of_apply,
         he_inl, he_inr, hB]
-      rw [if_pos (by have := i.isLt; omega)]
+      rw [ite_eq_left (by have := i.isLt; omega)]
     · -- (inr, inl): the vanishing block
       simp only [Matrix.submatrix_apply, Matrix.fromBlocks_apply₂₁, Matrix.zero_apply,
         DjMatrix, Matrix.of_apply, he_inr, he_inl]
@@ -149,12 +149,12 @@ theorem DjMatrix_det_eq (P Q : K[X]) (j : ℕ)
         SyHa, Matrix.of_apply, he_inr, id_eq, Fin.val_castLE]
       have hin := i.isLt; have hkn := k.isLt
       by_cases hc : i.val < (-(P % Q)).natDegree - j
-      · rw [if_pos (show m + i.val < P.natDegree - j by omega), if_pos hc,
+      · rw [ite_eq_left (show m + i.val < P.natDegree - j by omega), ite_eq_left hc,
           show P.natDegree - j - 1 - (m + i.val) = (-(P % Q)).natDegree - j - 1 - i.val by
             rw [hrneg]; omega,
           show P.natDegree + Q.natDegree - j - 1 - (m + k.val)
             = Q.natDegree + (-(P % Q)).natDegree - j - 1 - k.val by rw [hrneg]; omega]
-      · rw [if_neg (show ¬ m + i.val < P.natDegree - j by omega), if_neg hc, mul_neg,
+      · rw [ite_eq_right (show ¬ m + i.val < P.natDegree - j by omega), ite_eq_right hc, mul_neg,
           show m + i.val - (P.natDegree - j) = i.val - ((-(P % Q)).natDegree - j) by
             rw [hrneg]; omega,
           show P.natDegree + Q.natDegree - j - 1 - (m + k.val)
@@ -164,7 +164,7 @@ theorem DjMatrix_det_eq (P Q : K[X]) (j : ℕ)
     Matrix.det_fromBlocks_zero₂₁]
   -- `A` is upper-triangular with diagonal `b_q`, so `det A = b_q^m`
   have hAdet : A.det = Q.leadingCoeff ^ m := by
-    rw [Matrix.det_of_upperTriangular (M := A) (fun i k hki => ?_)]
+    rw [Matrix.det_of_isUpperTriangular (M := A) (fun i k hki => ?_)]
     · rw [Finset.prod_congr rfl (g := fun _ => Q.leadingCoeff) (fun i _ => ?_),
         Finset.prod_const, Finset.card_univ, Fintype.card_fin]
       · -- diagonal entry `A i i = b_q`
@@ -183,7 +183,7 @@ theorem DjMatrix_det_eq (P Q : K[X]) (j : ℕ)
       omega
   -- `D = SyHaSquare(Q, −R, j)` and `sRes_j(Q,−R)` is its determinant for `j ≤ r`
   have hsRes : sRes Q (-(P % Q)) j = D.det := by
-    rw [hD, sRes, if_pos (by rw [hrneg]; exact hjr)]
+    rw [hD, sRes, ite_eq_left (by rw [hrneg]; exact hjr)]
   rw [hAdet, hsRes]
 
 /-! ### L1b: reversal and negation — `det(D_j) = ε_{p-q} · det(M')` -/
@@ -215,8 +215,8 @@ private theorem prod_ite_one_neg_one (m N : ℕ) :
       rw [← ih]; exact Finset.prod_congr rfl (fun x _ => by rw [Fin.val_castSucc])
     rw [hcong]
     by_cases h : n < m
-    · rw [if_pos h, mul_one]; congr 1; omega
-    · rw [if_neg h, show n + 1 - m = (n - m) + 1 by omega, pow_succ]
+    · rw [ite_eq_left h, mul_one]; congr 1; omega
+    · rw [ite_eq_right h, show n + 1 - m = (n - m) + 1 by omega, pow_succ]
 
 /-- **BPR Proposition 4.37, the reversal–negation step.** `det(D_j) = ε_{p-q} · det(M')`:
 reversing the `p+q-2j` rows (signature `ε_{p+q-2j}`) and negating the `q-j` `R`-rows
@@ -236,15 +236,15 @@ theorem DjMatrix_det_eq_eps_mul (P Q : K[X]) (j : ℕ)
       rw [show (Fin.revPerm i) = Fin.rev i from rfl, Fin.val_rev]; omega
     have hi := i.isLt
     by_cases hc : i.val < P.natDegree - j
-    · rw [if_pos hc]
+    · rw [ite_eq_left hc]
       simp only [DjMatrix, MpMatrix, Matrix.of_apply, hrev]
-      rw [if_pos hc, if_neg (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 - i.val
+      rw [ite_eq_left hc, ite_eq_right (show ¬ P.natDegree + Q.natDegree - 2 * j - 1 - i.val
         < Q.natDegree - j by omega), one_mul,
         show P.natDegree + Q.natDegree - 2 * j - 1 - i.val - (Q.natDegree - j)
           = P.natDegree - j - 1 - i.val by omega]
-    · rw [if_neg hc]
+    · rw [ite_eq_right hc]
       simp only [DjMatrix, MpMatrix, Matrix.of_apply, hrev]
-      rw [if_neg hc, if_pos (show P.natDegree + Q.natDegree - 2 * j - 1 - i.val
+      rw [ite_eq_right hc, ite_eq_left (show P.natDegree + Q.natDegree - 2 * j - 1 - i.val
         < Q.natDegree - j by omega), neg_one_mul, Polynomial.coeff_neg,
         show Q.natDegree - j - 1 - (P.natDegree + Q.natDegree - 2 * j - 1 - i.val)
           = i.val - (P.natDegree - j) by omega]
@@ -317,7 +317,7 @@ theorem MpMatrix_det_eq_sRes (P Q : K[X]) (j : ℕ)
     (if i.val < Q.natDegree - j ∧ Q.natDegree - j ≤ l.val then
       (X ^ (Q.natDegree - j - 1 - i.val) * (P / Q)).coeff (l.val - (Q.natDegree - j)) else 0)
     with hE
-  have hsRes : sRes P Q j = (SyHaSquare P Q j).det := by rw [sRes, if_pos hjq]
+  have hsRes : sRes P Q j = (SyHaSquare P Q j).det := by rw [sRes, ite_eq_left hjq]
   -- `M' = E · SyHaSquare`
   have hME : MpMatrix P Q j = E * SyHaSquare P Q j := by
     ext i k
@@ -327,7 +327,7 @@ theorem MpMatrix_det_eq_sRes (P Q : K[X]) (j : ℕ)
     -- first sum picks out row `i`
     have hfirst : (∑ l, (if l = i then (1 : K) else 0) * (SyHaSquare P Q j) l k)
         = (SyHaSquare P Q j) i k := by
-      simp only [ite_mul, one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, if_true]
+      simp only [ite_mul, one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
     rw [hfirst]
     -- unfold the `SyHaSquare` entries
     have hSyEntry : ∀ l : Fin (P.natDegree + Q.natDegree - 2 * j),
@@ -342,7 +342,7 @@ theorem MpMatrix_det_eq_sRes (P Q : K[X]) (j : ℕ)
       simp only [SyHaSquare, SyHa, Matrix.submatrix_apply, Matrix.of_apply, id_eq, Fin.val_castLE]
     by_cases hi : i.val < Q.natDegree - j
     · -- `P`-row: subtract the `Q`-combination
-      rw [hSyEntry i, if_pos hi]
+      rw [hSyEntry i, ite_eq_left hi]
       have hsecond : (∑ l, (if i.val < Q.natDegree - j ∧ Q.natDegree - j ≤ l.val then
             (X ^ (Q.natDegree - j - 1 - i.val) * (P / Q)).coeff (l.val - (Q.natDegree - j))
             else 0) * (SyHaSquare P Q j) l k)
@@ -357,8 +357,8 @@ theorem MpMatrix_det_eq_sRes (P Q : K[X]) (j : ℕ)
                   (P.natDegree + Q.natDegree - j - 1 - k.val) else 0 := by
           refine Finset.sum_congr rfl (fun l _ => ?_)
           by_cases hl : Q.natDegree - j ≤ l.val
-          · rw [if_pos ⟨hi, hl⟩, if_pos hl, hSyEntry l, if_neg (by omega)]
-          · rw [if_neg (fun h => hl h.2), if_neg hl, zero_mul]
+          · rw [ite_eq_left ⟨hi, hl⟩, ite_eq_left hl, hSyEntry l, ite_eq_right (by omega)]
+          · rw [ite_eq_right (fun h => hl h.2), ite_eq_right hl, zero_mul]
         rw [hstep]
         trans (∑ ℓ ∈ Finset.range (P.natDegree - j),
             (X ^ (Q.natDegree - j - 1 - i.val) * (P / Q)).coeff ℓ *
@@ -372,29 +372,29 @@ theorem MpMatrix_det_eq_sRes (P Q : K[X]) (j : ℕ)
             Polynomial.natDegree_X_pow, hnd]
           omega
       rw [hsecond, ← Polynomial.coeff_sub, mul_assoc, ← mul_sub, ← hmod]
-      simp only [MpMatrix, Matrix.of_apply, hi, if_true]
+      simp only [MpMatrix, Matrix.of_apply, hi, ite_true]
     · -- `Q`-row: unchanged
-      rw [hSyEntry i, if_neg hi]
+      rw [hSyEntry i, ite_eq_right hi]
       have hsecond : (∑ l, (if i.val < Q.natDegree - j ∧ Q.natDegree - j ≤ l.val then
             (X ^ (Q.natDegree - j - 1 - i.val) * (P / Q)).coeff (l.val - (Q.natDegree - j))
             else 0) * (SyHaSquare P Q j) l k) = 0 := by
         apply Finset.sum_eq_zero
         intro l _
-        rw [if_neg (fun h => hi h.1), zero_mul]
+        rw [ite_eq_right (fun h => hi h.1), zero_mul]
       rw [hsecond, sub_zero]
-      simp only [MpMatrix, Matrix.of_apply, hi, if_false]
+      simp only [MpMatrix, Matrix.of_apply, hi, ite_false]
   -- conclude
   rw [hME, Matrix.det_mul, hsRes]
   have hEdet : E.det = 1 := by
-    rw [Matrix.det_of_upperTriangular (M := E) (fun i l hil => ?_)]
+    rw [Matrix.det_of_isUpperTriangular (M := E) (fun i l hil => ?_)]
     · refine (Finset.prod_congr rfl (fun i _ => ?_)).trans (Finset.prod_const_one)
       show (if i = i then (1 : K) else 0) -
         (if i.val < Q.natDegree - j ∧ Q.natDegree - j ≤ i.val then _ else 0) = 1
-      rw [if_pos rfl, if_neg (by rintro ⟨h1, h2⟩; omega), sub_zero]
+      rw [ite_eq_left rfl, ite_eq_right (by rintro ⟨h1, h2⟩; omega), sub_zero]
     · show (if l = i then (1 : K) else 0) -
         (if i.val < Q.natDegree - j ∧ Q.natDegree - j ≤ l.val then _ else 0) = 0
       have hlt : l.val < i.val := hil
-      rw [if_neg (fun h => by rw [h] at hlt; omega), if_neg (by rintro ⟨h1, h2⟩; omega), sub_zero]
+      rw [ite_eq_right (fun h => by rw [h] at hlt; omega), ite_eq_right (by rintro ⟨h1, h2⟩; omega), sub_zero]
   rw [hEdet, one_mul]
 
 /-! ### Assembly: BPR Proposition 4.37 -/
@@ -439,9 +439,9 @@ theorem proposition_4_37_part2 (P Q : K[X]) (j : ℕ) (hQ : Q ≠ 0)
     have hεne : ((ε (P.natDegree - Q.natDegree) : ℤ) : K) ≠ 0 := fun h => by
       rw [h, mul_zero] at hε2; exact one_ne_zero hε2.symm
     exact (mul_eq_zero.mp hL1b.symm).resolve_left hεne
-  · rw [sRes, if_neg (show ¬ j ≤ (-(P % Q)).natDegree by
+  · rw [sRes, ite_eq_right (show ¬ j ≤ (-(P % Q)).natDegree by
         rw [Polynomial.natDegree_neg]; omega),
-      if_pos (show (-(P % Q)).natDegree < Q.natDegree by rw [Polynomial.natDegree_neg]; omega),
-      if_neg (show j ≠ Q.natDegree by omega)]
+      ite_eq_left (show (-(P % Q)).natDegree < Q.natDegree by rw [Polynomial.natDegree_neg]; omega),
+      ite_eq_right (show j ≠ Q.natDegree by omega)]
 
 end Azurite.BPR.Chapter4

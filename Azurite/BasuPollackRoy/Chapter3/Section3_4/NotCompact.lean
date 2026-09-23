@@ -25,12 +25,12 @@ def unitIcc : Set (Fin 1 → R) := {u | 0 ≤ u 0 ∧ u 0 ≤ 1}
 theorem isOpen_setOf_coord_lt (r : R) : IsOpen {u : Fin 1 → R | u 0 < r} := by
   rw [isOpen_iff]
   intro x hx
-  refine ⟨x, r - x 0, by simp only [Set.mem_setOf_eq] at hx; linarith,
-    mem_openBall_self x (by simp only [Set.mem_setOf_eq] at hx; linarith), ?_⟩
+  refine ⟨x, r - x 0, by simp only [Set.mem_ofPred_eq] at hx; linarith,
+    mem_openBall_self x (by simp only [Set.mem_ofPred_eq] at hx; linarith), ?_⟩
   intro u hu
-  rw [mem_openBall_iff_norm (by simp only [Set.mem_setOf_eq] at hx; linarith),
+  rw [mem_openBall_iff_norm (by simp only [Set.mem_ofPred_eq] at hx; linarith),
     euclideanNorm_fin_one, Pi.sub_apply] at hu
-  simp only [Set.mem_setOf_eq] at hx ⊢
+  simp only [Set.mem_ofPred_eq] at hx ⊢
   have := (abs_lt.mp hu).2
   linarith
 
@@ -38,12 +38,12 @@ theorem isOpen_setOf_coord_lt (r : R) : IsOpen {u : Fin 1 → R | u 0 < r} := by
 theorem isOpen_setOf_coord_gt (s : R) : IsOpen {u : Fin 1 → R | s < u 0} := by
   rw [isOpen_iff]
   intro x hx
-  refine ⟨x, x 0 - s, by simp only [Set.mem_setOf_eq] at hx; linarith,
-    mem_openBall_self x (by simp only [Set.mem_setOf_eq] at hx; linarith), ?_⟩
+  refine ⟨x, x 0 - s, by simp only [Set.mem_ofPred_eq] at hx; linarith,
+    mem_openBall_self x (by simp only [Set.mem_ofPred_eq] at hx; linarith), ?_⟩
   intro u hu
-  rw [mem_openBall_iff_norm (by simp only [Set.mem_setOf_eq] at hx; linarith),
+  rw [mem_openBall_iff_norm (by simp only [Set.mem_ofPred_eq] at hx; linarith),
     euclideanNorm_fin_one, Pi.sub_apply] at hu
-  simp only [Set.mem_setOf_eq] at hx ⊢
+  simp only [Set.mem_ofPred_eq] at hx ⊢
   have := (abs_lt.mp hu).1
   linarith
 
@@ -65,7 +65,7 @@ theorem not_isCompact_unitIcc_of_cover (C : Set (R × R))
     intro p
     rw [hU]
     show IsOpen {u : Fin 1 → R | u 0 < p.val.1 ∨ p.val.2 < u 0}
-    rw [Set.setOf_or]
+    rw [Set.ofPred_or]
     exact (isOpen_setOf_coord_lt _).union (isOpen_setOf_coord_gt _)
   have hUcover : (unitIcc : Set (Fin 1 → R)) ⊆ ⋃ p, U p := by
     intro u hu

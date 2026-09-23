@@ -36,8 +36,8 @@ theorem Polynomial.coeff_comp_neg_X {R : Type _} [CommRing R] (q : R[X]) (n : 鈩
         rw [map_mul, map_pow, map_neg, map_one]; ring,
       coeff_C_mul_X_pow]
     by_cases h : n = e
-    路 subst h; rw [if_pos rfl, if_pos rfl]
-    路 rw [if_neg h, if_neg (fun he : e = n => h he.symm), mul_zero]
+    路 subst h; rw [ite_eq_left rfl, ite_eq_left rfl]
+    路 rw [ite_eq_right h, ite_eq_right (fun he : e = n => h he.symm), mul_zero]
 
 namespace Azurite.AzPolynomial
 

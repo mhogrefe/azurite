@@ -63,7 +63,7 @@ witnessed failure proves `n` composite. -/
 theorem euler_verdict_of_prime {n : ℕ} (hn : n.Prime)
     (hodd : n % 2 = 1) {a : ℤ} (hJ : jacobiSym a n = -1) :
     ((a : ZMod n)) ^ ((n - 1) / 2) = (-1 : ZMod n) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   have hleg : legendreSym n a = -1 := by
     rw [jacobiSym.legendreSym.to_jacobiSym]
     exact hJ
@@ -84,9 +84,9 @@ theorem xi_pow_eq_neg_one_of_prime {n : ℕ} (hn : n.Prime)
     (hn3 : n % 4 = 3) {u : ℤ} (hJ : jacobiSym (u ^ 2 + 4) n = -1) :
     (X ^ 2 - C ((u : ZMod n)) * X - 1 : Polynomial (ZMod n))
       ∣ X ^ (n + 1) + 1 := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   have hn1 : 1 < n := hn.one_lt
-  haveI : Fact (1 < n) := ⟨hn1⟩
+  have : Fact (1 < n) := ⟨hn1⟩
   have hn3le : 3 ≤ n := by omega
   set u' : ZMod n := ((u : ℤ) : ZMod n) with hu'
   set f : Polynomial (ZMod n) := X ^ 2 - C u' * X - 1 with hf
@@ -138,8 +138,8 @@ theorem xi_pow_eq_neg_one_of_prime {n : ℕ} (hn : n.Prime)
   have hirr : Irreducible f :=
     (hfmonic.irreducible_iff_roots_eq_zero_of_degree_le_three
       (by omega) (by omega)).mpr hroots0
-  haveI : Fact (Irreducible f) := ⟨hirr⟩
-  haveI : CharP (AdjoinRoot f) n :=
+  have : Fact (Irreducible f) := ⟨hirr⟩
+  have : CharP (AdjoinRoot f) n :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod n) (AdjoinRoot f)).injective n
   set ξ : AdjoinRoot f := AdjoinRoot.root f with hξ

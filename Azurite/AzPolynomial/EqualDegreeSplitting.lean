@@ -127,7 +127,7 @@ theorem hybridPolyCandidate_hits (K : Type _) [Semiring K] [DecidableEq K]
   obtain ⟨j, hj, -⟩ :=
     (azPolynomialDegreeLtGen (R := K) n).occurs_exactly_once ⟨p, hp⟩
   refine ⟨2 ^ 64 + j, ?_⟩
-  rw [hybridPolyCandidate, if_neg (by omega), Nat.add_sub_cancel_left, hj]
+  rw [hybridPolyCandidate, ite_eq_right (by omega), Nat.add_sub_cancel_left, hj]
   rfl
 
 /-- Every stream element has degree `< n` (for `n > 0`). -/
@@ -139,9 +139,9 @@ theorem natDegree_hybridPolyCandidate_lt (K : Type _) [Semiring K]
     (hybridPolyCandidate K seed n i).natDegree < n := by
   rw [hybridPolyCandidate]
   by_cases hi : i < 2 ^ 64
-  · rw [if_pos hi]
+  · rw [ite_eq_left hi]
     exact natDegree_randomPolyDegreeLt_lt K seed hn i
-  · rw [if_neg hi]
+  · rw [ite_eq_right hi]
     cases hgen : (azPolynomialDegreeLtGen (R := K) n).gen (i - 2 ^ 64) with
     | none =>
       show (0 : AzPolynomial K).natDegree < n

@@ -1,6 +1,6 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_20
 import Azurite.BasuPollackRoy.Chapter2.Section2_1.Proposition_2_4
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 
 /-!
 # Sign of a Polynomial to the Right / Left of a Point and at ±∞
@@ -128,28 +128,28 @@ noncomputable def signAtNegInfty (P : R[X]) : SignType :=
 theorem signRight_eq {P : R[X]} {a : R} {s : SignType}
     (h : HasSignRight P a s) : signRight P a = s := by
   unfold signRight
-  rw [dif_pos ⟨s, h⟩]
+  rw [dite_eq_left ⟨s, h⟩]
   exact HasSignRight.unique (Exists.choose_spec ⟨s, h⟩) h
 
 /-- Characterization of `signLeft`. -/
 theorem signLeft_eq {P : R[X]} {a : R} {s : SignType}
     (h : HasSignLeft P a s) : signLeft P a = s := by
   unfold signLeft
-  rw [dif_pos ⟨s, h⟩]
+  rw [dite_eq_left ⟨s, h⟩]
   exact HasSignLeft.unique (Exists.choose_spec ⟨s, h⟩) h
 
 /-- Characterization of `signAtPosInfty`. -/
 theorem signAtPosInfty_eq {P : R[X]} {s : SignType}
     (h : HasSignAtPosInfty P s) : signAtPosInfty P = s := by
   unfold signAtPosInfty
-  rw [dif_pos ⟨s, h⟩]
+  rw [dite_eq_left ⟨s, h⟩]
   exact HasSignAtPosInfty.unique (Exists.choose_spec ⟨s, h⟩) h
 
 /-- Characterization of `signAtNegInfty`. -/
 theorem signAtNegInfty_eq {P : R[X]} {s : SignType}
     (h : HasSignAtNegInfty P s) : signAtNegInfty P = s := by
   unfold signAtNegInfty
-  rw [dif_pos ⟨s, h⟩]
+  rw [dite_eq_left ⟨s, h⟩]
   exact HasSignAtNegInfty.unique (Exists.choose_spec ⟨s, h⟩) h
 
 /-! ## Sign at `±∞` via the leading coefficient

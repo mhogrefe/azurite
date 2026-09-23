@@ -86,7 +86,7 @@ theorem chartSet_eq (i : Fin (k + 1)) :
   constructor
   · rintro ⟨x, rfl⟩
     obtain ⟨c, hc, hrep⟩ := exists_rep_smul (Fin.insertNth i 1 x) (insertNth_one_ne_zero i x)
-    rw [Set.mem_setOf_eq, chartMap, hrep, Pi.smul_apply, Fin.insertNth_apply_same, smul_eq_mul,
+    rw [Set.mem_ofPred_eq, chartMap, hrep, Pi.smul_apply, Fin.insertNth_apply_same, smul_eq_mul,
       mul_one]
     exact hc
   · intro h

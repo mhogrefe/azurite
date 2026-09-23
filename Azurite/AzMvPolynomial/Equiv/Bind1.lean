@@ -137,7 +137,7 @@ theorem toMvPoly_monomial_bind₁  (m : Monomial n R ord)
 -- Full AzMvPolynomial.bind₁
 -- ═══════════════════════════════════════════════════════════════════
 
-private theorem toMvPoly_foldl_bind₁ 
+private theorem toMvPoly_foldl_bind₁
     (l : List (Monomial n R ord)) (f : Fin n → AzMvPolynomial n R ord)
     (acc : AzMvPolynomial n R ord) :
     toMvPoly (l.foldl (fun acc m => acc + m.bind₁ f) acc) =

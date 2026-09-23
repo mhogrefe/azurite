@@ -147,7 +147,7 @@ theorem roots_exhausted_by_branches {t₁ : R} {Q : Polynomial ((Fin 1 → R) �
       rw [Multiset.mem_toFinset, Polynomial.mem_roots']; exact ⟨hnz w hw, hz⟩
     rw [Finset.card_eq_zero.mp (hcount w hw)] at this
     exact absurd this (Finset.notMem_empty z)
-  · haveI : NeZero r := ⟨Nat.pos_iff_ne_zero.mp hrpos⟩
+  · have : NeZero r := ⟨Nat.pos_iff_ne_zero.mp hrpos⟩
     have hune : (Finset.univ : Finset (Fin r)).Nonempty := Finset.univ_nonempty
     have hunep : (Finset.univ : Finset (Fin r × Fin r)).Nonempty := Finset.univ_nonempty
     set m : R := min (Finset.univ.inf' hune δint) (Finset.univ.inf' hunep δord) with hmdef
@@ -165,7 +165,7 @@ theorem roots_exhausted_by_branches {t₁ : R} {Q : Polynomial ((Fin 1 → R) �
     have hUopen : IsOpenIn (rightNbhd t₁) U := by
       refine ⟨openBall x m, isOpen_openBall x hmpos, ?_⟩
       ext w
-      simp only [hUdef, Set.mem_setOf_eq, Set.mem_inter_iff, mem_openBall_iff_norm hmpos]
+      simp only [hUdef, Set.mem_ofPred_eq, Set.mem_inter_iff, mem_openBall_iff_norm hmpos]
       tauto
     refine ⟨U, hUopen, hxU, hUsub_nbhd, F, fun j => (hFcont j).mono (hUsub j), ?_, ?_, ?_⟩
     · exact fun w hw j => (hFsimple j w (hUsub j hw)).1
@@ -224,7 +224,7 @@ theorem smallestRootIn_spec {Q : Polynomial ((Fin 1 → R) → R)} {f₁ f₂ : 
     · rintro ⟨hr, hb⟩; exact ⟨⟨hnz, hr⟩, hb⟩
   have hne : S.Nonempty := ⟨x₀, (hmem_iff x₀).mpr ⟨hx₀e, hx₀a, hx₀b⟩⟩
   have hc : smallestRootIn Q f₁ f₂ w = S.min' hne := by
-    rw [smallestRootIn]; rw [dif_pos hne]
+    rw [smallestRootIn]; rw [dite_eq_left hne]
   rw [hc]
   obtain ⟨he, ha, hb⟩ := (hmem_iff _).mp (S.min'_mem hne)
   exact ⟨he, ha, hb, fun z hz hza hzb => S.min'_le z ((hmem_iff z).mpr ⟨hz, hza, hzb⟩)⟩
@@ -285,7 +285,7 @@ theorem continuousOn_smallestRootIn {t₁ : R} {Q : Polynomial ((Fin 1 → R) �
     · exact ⟨1, one_pos, fun h => absurd h hk⟩
   choose δC hδCpos hδC using hCk
   have hrpos : 0 < r := lt_of_le_of_lt (Nat.zero_le jstar) jstar.isLt
-  haveI : NeZero r := ⟨Nat.pos_iff_ne_zero.mp hrpos⟩
+  have : NeZero r := ⟨Nat.pos_iff_ne_zero.mp hrpos⟩
   have hune : (Finset.univ : Finset (Fin r)).Nonempty := Finset.univ_nonempty
   have hFjcont := (hFcont jstar)
   rw [continuousOn_fin_one_iff] at hFjcont
@@ -365,7 +365,7 @@ theorem mem_fiberZero {t₁ : R} {Q : Polynomial ((Fin 1 → R) → R)} (z : Fin
       bivariateEval Q ⁻¹' {y : Fin 1 → R | MvPolynomial.eval y (MvPolynomial.X 0) = 0}) ↔
       (z ∘ Fin.castAdd 1) ∈ rightNbhd t₁ ∧
         (specializeAt Q (z ∘ Fin.castAdd 1)).eval (z (Fin.natAdd 1 (0 : Fin 1))) = 0 := by
-  simp only [Set.mem_inter_iff, setProd, Set.mem_setOf_eq, Set.mem_preimage, Set.mem_univ, and_true,
+  simp only [Set.mem_inter_iff, setProd, Set.mem_ofPred_eq, Set.mem_preimage, Set.mem_univ, and_true,
     bivariateEval, constPt, MvPolynomial.eval_X]
 
 /-- **The selected root is a semialgebraic function.** Combined with `continuousOn_smallestRootIn`,
@@ -467,13 +467,13 @@ theorem isSemialgebraicFunction_smallestRootIn {t₁ : R} {Q : Polynomial ((Fin 
       have ha3 : Fin.append (Fin.append z y) (fun _ : Fin 1 => v') (3 : Fin (4 + 1)) = y 1 := rfl
       have ha4 : Fin.append (Fin.append z y) (fun _ : Fin 1 => v') (4 : Fin (4 + 1)) = v' := rfl
       have hcv : (![z 0, v'] : Fin 2 → R) (Fin.natAdd 1 (0 : Fin 1)) = v' := rfl
-      simp only [hInnerdef, Set.mem_inter_iff, Set.mem_setOf_eq, hZc, hZmem, hcast1, hcv,
+      simp only [hInnerdef, Set.mem_inter_iff, Set.mem_ofPred_eq, hZc, hZmem, hcast1, hcv,
         MvPolynomial.eval_sub, MvPolynomial.eval_X, gt_iff_lt, ha1, ha2, ha3, ha4, sub_pos]
       tauto
     have hb1 : Fin.append z y (1 : Fin (2 + 2)) = z (Fin.natAdd 1 0) := rfl
     have hb2 : Fin.append z y (2 : Fin (2 + 2)) = y 0 := rfl
     have hb3 : Fin.append z y (3 : Fin (2 + 2)) = y 1 := rfl
-    simp only [hW4def, Set.mem_inter_iff, Set.mem_setOf_eq, Set.mem_compl_iff,
+    simp only [hW4def, Set.mem_inter_iff, Set.mem_ofPred_eq, Set.mem_compl_iff,
       append_comp_castAdd, hZmem, hB, hC, hBmem, hCmem, hExBridge, hInnerMem,
       MvPolynomial.eval_sub, MvPolynomial.eval_X, gt_iff_lt, hb1, hb2, hb3, sub_pos]
     tauto
@@ -481,7 +481,7 @@ theorem isSemialgebraicFunction_smallestRootIn {t₁ : R} {Q : Polynomial ((Fin 
       = {z : Fin (1 + 1) → R | ∃ y : Fin 2 → R, Fin.append z y ∈ W4} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_setOf_eq, hW4mem]
+    simp only [Set.mem_ofPred_eq, hW4mem]
     constructor
     · rintro ⟨hwR, hvc⟩
       have hv : z (Fin.natAdd 1 0) = smallestRootIn Q f₁ f₂ (z ∘ Fin.castAdd 1) := by

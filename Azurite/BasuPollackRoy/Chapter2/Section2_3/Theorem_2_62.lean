@@ -85,7 +85,7 @@ theorem IsAlgebraicSetOver.exists_singleton
   obtain ⟨poly_set, rfl⟩ := h
   refine ⟨∑ P ∈ poly_set, P ^ 2, ?_⟩
   ext x
-  simp only [Set.mem_setOf_eq, map_sum, map_pow]
+  simp only [Set.mem_ofPred_eq, map_sum, map_pow]
   constructor
   · intro h
     apply Finset.sum_eq_zero
@@ -105,7 +105,7 @@ theorem Fin.init_image_eq_exists_aeval
     (Fin.init '' ({z : Fin (k+1) → R | aeval z P = 0})) =
       {y : Fin k → R | ∃ x : R, aeval (Fin.snoc y x) P = 0} := by
   ext y
-  simp only [Set.mem_image, Set.mem_setOf_eq]
+  simp only [Set.mem_image, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨z, hz, rfl⟩
     refine ⟨z (Fin.last k), ?_⟩
@@ -125,7 +125,7 @@ theorem fiber_nonempty_isSemialgebraicSetOver_zero :
       ∃ x : R, aeval (Fin.snoc y x) (0 : MvPolynomial (Fin (k+1)) D) = 0} : Set _) =
         Set.univ := by
     ext y
-    simp only [Set.mem_setOf_eq, map_zero, Set.mem_univ, iff_true]
+    simp only [Set.mem_ofPred_eq, map_zero, Set.mem_univ, iff_true]
     exact ⟨(0 : R), trivial⟩
   rw [heq]
   exact IsSemialgebraicSetOver.algebraic ⟨∅, by ext y; simp⟩
@@ -162,7 +162,7 @@ theorem fiber_nonempty_isSemialgebraicSetOver_degx_one
   have hset : ({y : Fin k → R | ∃ x : R, aeval (Fin.snoc y x) P = 0} : Set _) =
               {y | aeval y a ≠ 0} ∪ {y | aeval y b = 0} := by
     ext y
-    simp only [Set.mem_setOf_eq, Set.mem_union]
+    simp only [Set.mem_ofPred_eq, Set.mem_union]
     constructor
     · rintro ⟨x, hx⟩
       rw [heval y x] at hx

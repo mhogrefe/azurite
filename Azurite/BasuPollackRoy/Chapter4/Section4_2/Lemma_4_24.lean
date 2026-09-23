@@ -62,7 +62,7 @@ theorem SyHa.encodeU_coeff (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
     have h_eq : q - j - 1 - (⟨q - j - 1 - m, by omega⟩ : Fin (q - j)).val = m := by
       show q - j - 1 - (q - j - 1 - m) = m
       omega
-    rw [if_pos h_eq.symm, mul_one]
+    rw [ite_eq_left h_eq.symm, mul_one]
   · intro k _ h_ne
     rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
     have h_neq : q - j - 1 - k.val ≠ m := by
@@ -72,7 +72,7 @@ theorem SyHa.encodeU_coeff (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
       show k.val = q - j - 1 - m
       have := k.isLt
       omega
-    rw [if_neg (Ne.symm h_neq), mul_zero]
+    rw [ite_eq_right (Ne.symm h_neq), mul_zero]
   · intro h_not_mem
     exact absurd (Finset.mem_univ _) h_not_mem
 
@@ -84,14 +84,14 @@ theorem SyHa.encodeV_coeff (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
   rw [Polynomial.finsetSum_coeff]
   rw [Finset.sum_eq_single (⟨m, by omega⟩ : Fin (p - j))]
   · rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
-    rw [if_pos rfl, mul_one]
+    rw [ite_eq_left rfl, mul_one]
   · intro ℓ _ h_ne
     rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
     have h_neq : ℓ.val ≠ m := by
       intro h_eq
       apply h_ne
       apply Fin.ext h_eq
-    rw [if_neg (Ne.symm h_neq), mul_zero]
+    rw [ite_eq_right (Ne.symm h_neq), mul_zero]
   · intro h_not_mem
     exact absurd (Finset.mem_univ _) h_not_mem
 
@@ -106,7 +106,7 @@ theorem SyHa.encodeU_coeff_of_ge (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
   have h_neq : q - j - 1 - k.val ≠ m := by
     have := k.isLt
     omega
-  rw [if_neg (Ne.symm h_neq), mul_zero]
+  rw [ite_eq_right (Ne.symm h_neq), mul_zero]
 
 theorem SyHa.encodeV_coeff_of_ge (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
     (uv : Fin (p + q - 2 * j) → D) (m : ℕ) (hm : p - j ≤ m) :
@@ -119,7 +119,7 @@ theorem SyHa.encodeV_coeff_of_ge (p q j : ℕ) (hj_q : j ≤ q) (hj_p : j ≤ p)
   have h_neq : ℓ.val ≠ m := by
     have := ℓ.isLt
     omega
-  rw [if_neg (Ne.symm h_neq), mul_zero]
+  rw [ite_eq_right (Ne.symm h_neq), mul_zero]
 
 /-! ### `Fin (p + q - 2 j)` sum split at `q - j` -/
 
@@ -234,7 +234,7 @@ theorem SyHa.mulMap_eq_pair (P Q : D[X]) (j : ℕ)
               Fin (P.natDegree + Q.natDegree - 2 * j)).val -
             (Q.natDegree - j)) * Q).coeff n =
       _
-    rw [if_pos h_lt]
+    rw [ite_eq_left h_lt]
     rw [Polynomial.coeff_C_mul]
   · apply Finset.sum_congr rfl
     intro ℓ _
@@ -254,7 +254,7 @@ theorem SyHa.mulMap_eq_pair (P Q : D[X]) (j : ℕ)
               Fin (P.natDegree + Q.natDegree - 2 * j)).val -
             (Q.natDegree - j)) * Q).coeff n =
       _
-    rw [if_neg h_not_lt]
+    rw [ite_eq_right h_not_lt]
     rw [Polynomial.coeff_C_mul]
     have h_idx :
         (⟨(Q.natDegree - j) + ℓ.val, by have := ℓ.isLt; omega⟩ :
@@ -407,7 +407,7 @@ theorem Lemma_4_24 (P Q : D[X]) (j : ℕ)
   -- Unfold sRes for the `j ≤ q` branch.
   have h_sRes : sRes P Q j = (SyHaSquare P Q j).det := by
     unfold sRes
-    rw [if_pos hj_q]
+    rw [ite_eq_left hj_q]
   rw [h_sRes]
   have hjp_le : j ≤ p := Nat.le_of_lt hj_p
   have hpq_pos : 0 < p + q - 2 * j := by omega
@@ -569,7 +569,7 @@ theorem Lemma_4_24 (P Q : D[X]) (j : ℕ)
         show U.coeff m = 0
         have h_uv_val : uv ⟨q - j - 1 - m, by omega⟩ = U.coeff m := by
           show (if h : _ < q - j then _ else _) = _
-          rw [dif_pos h_idx]
+          rw [dite_eq_left h_idx]
           congr 1
           show q - j - 1 - (q - j - 1 - m) = m; omega
         rw [← h_uv_val, h]
@@ -590,7 +590,7 @@ theorem Lemma_4_24 (P Q : D[X]) (j : ℕ)
               Fin (p + q - 2 * j)).val < q - j := by
             show q - j - 1 - m < q - j; omega
           show (if h : _ < q - j then _ else _) = U.coeff m
-          rw [dif_pos h_idx]
+          rw [dite_eq_left h_idx]
           congr 1
           show q - j - 1 - (q - j - 1 - m) = m; omega
         · rw [SyHa.encodeU_coeff_of_ge p q j hj_q hjp_le uv m (by omega)]
@@ -608,7 +608,7 @@ theorem Lemma_4_24 (P Q : D[X]) (j : ℕ)
               Fin (p + q - 2 * j)).val < q - j := by
             show ¬ (q - j) + m < q - j; omega
           show (if h : _ < q - j then _ else _) = V.coeff m
-          rw [dif_neg h_idx]
+          rw [dite_eq_right h_idx]
           congr 1
           show ((q - j) + m) - (q - j) = m; omega
         · rw [SyHa.encodeV_coeff_of_ge p q j hj_q hjp_le uv m (by omega)]

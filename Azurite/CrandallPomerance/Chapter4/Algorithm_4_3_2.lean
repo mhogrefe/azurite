@@ -92,7 +92,7 @@ monic polynomial. -/
 private theorem monic_inverse_mul {R : Type*} [CommRing R]
     {f : R[X]} (hf : f ≠ 0) (hc : IsUnit f.leadingCoeff) :
     (C (Ring.inverse f.leadingCoeff) * f).Monic := by
-  haveI : Nontrivial R :=
+  have : Nontrivial R :=
     ⟨f.leadingCoeff, 0, fun h => hf (leadingCoeff_eq_zero.mp h)⟩
   rw [Monic, leadingCoeff_mul']
   · rw [leadingCoeff_C]
@@ -133,8 +133,8 @@ noncomputable def gcdOrFactor (n : ℕ) (f g : Polynomial (ZMod n)) :
 termination_by (if f = 0 then 0 else f.natDegree + 1 : ℕ)
 decreasing_by
   have hmono := monic_inverse_mul _hf (isUnit_of_val_gcd_eq_one _hc)
-  haveI : Nontrivial (Polynomial (ZMod n)) := nontrivial_of_ne f 0 _hf
-  haveI : Nontrivial (ZMod n) := Polynomial.nontrivial_iff.mp inferInstance
+  have : Nontrivial (Polynomial (ZMod n)) := nontrivial_of_ne f 0 _hf
+  have : Nontrivial (ZMod n) := Polynomial.nontrivial_iff.mp inferInstance
   have hdeg : (g %ₘ (C (Ring.inverse f.leadingCoeff) * f)).degree
       < f.degree := by
     calc (g %ₘ (C (Ring.inverse f.leadingCoeff) * f)).degree
@@ -144,11 +144,11 @@ decreasing_by
         refine le_trans (degree_mul_le _ _) ?_
         refine le_trans (add_le_add degree_C_le le_rfl) ?_
         rw [zero_add]
-  rw [if_neg _hf]
+  rw [ite_eq_right _hf]
   by_cases hr : g %ₘ (C (Ring.inverse f.leadingCoeff) * f) = 0
-  · rw [if_pos hr]
+  · rw [ite_eq_left hr]
     omega
-  · rw [if_neg hr]
+  · rw [ite_eq_right hr]
     have := Polynomial.natDegree_lt_natDegree hr hdeg
     omega
 
@@ -159,16 +159,16 @@ decreasing_by
 theorem gcdOrFactor_factor {n : ℕ} (hn : 1 < n)
     {f g : Polynomial (ZMod n)} {d : ℕ}
     (hd : gcdOrFactor n f g = .inl d) : d ∣ n ∧ 1 < d ∧ d < n := by
-  haveI : NeZero n := ⟨by omega⟩
+  have : NeZero n := ⟨by omega⟩
   induction f, g using gcdOrFactor.induct n with
   | case1 g =>
-    rw [gcdOrFactor, dif_pos rfl] at hd
+    rw [gcdOrFactor, dite_eq_left rfl] at hd
     exact absurd hd (by simp)
   | case2 f g hf hc ih =>
-    rw [gcdOrFactor, dif_neg hf, dif_pos hc] at hd
+    rw [gcdOrFactor, dite_eq_right hf, dite_eq_left hc] at hd
     exact ih hd
   | case3 f g hf hc =>
-    rw [gcdOrFactor, dif_neg hf, dif_neg hc] at hd
+    rw [gcdOrFactor, dite_eq_right hf, dite_eq_right hc] at hd
     obtain rfl : Nat.gcd f.leadingCoeff.val n = d := by simpa using hd
     have hc0 : f.leadingCoeff ≠ 0 := fun h => hf (leadingCoeff_eq_zero.mp h)
     have hval0 : f.leadingCoeff.val ≠ 0 := fun h =>
@@ -191,11 +191,11 @@ theorem gcdOrFactor_gcd {n : ℕ} {f g : Polynomial (ZMod n)}
     h.Monic ∧ Ideal.span {f, g} = Ideal.span {h} := by
   induction f, g using gcdOrFactor.induct n with
   | case1 g =>
-    rw [gcdOrFactor, dif_pos rfl] at hh
+    rw [gcdOrFactor, dite_eq_left rfl] at hh
     obtain rfl : g = h := by simpa using hh
     exact ⟨hg, Submodule.span_insert_zero⟩
   | case2 f g hf hc ih =>
-    rw [gcdOrFactor, dif_neg hf, dif_pos hc] at hh
+    rw [gcdOrFactor, dite_eq_right hf, dite_eq_left hc] at hh
     obtain ⟨hmono, hspan⟩ := ih
       (monic_inverse_mul hf (isUnit_of_val_gcd_eq_one hc)) hh
     refine ⟨hmono, ?_⟩
@@ -204,7 +204,7 @@ theorem gcdOrFactor_gcd {n : ℕ} {f g : Polynomial (ZMod n)}
         (IsUnit.of_mul_eq_one f.leadingCoeff
           (Ring.inverse_mul_cancel _ (isUnit_of_val_gcd_eq_one hc))))]
   | case3 f g hf hc =>
-    rw [gcdOrFactor, dif_neg hf, dif_neg hc] at hh
+    rw [gcdOrFactor, dite_eq_right hf, dite_eq_right hc] at hh
     exact absurd hh (by simp)
 
 /-- Definition 4.3.1 through the algorithm: `f` and `g` are coprime in
@@ -221,13 +221,13 @@ leading coefficient is invertible. -/
 theorem gcdOrFactor_ne_inl_of_prime {p : ℕ} (hp : p.Prime)
     (f g : Polynomial (ZMod p)) (d : ℕ) :
     gcdOrFactor p f g ≠ .inl d := by
-  haveI := Fact.mk hp
+  have := Fact.mk hp
   induction f, g using gcdOrFactor.induct p with
   | case1 g =>
-    rw [gcdOrFactor, dif_pos rfl]
+    rw [gcdOrFactor, dite_eq_left rfl]
     simp
   | case2 f g hf hc ih =>
-    rw [gcdOrFactor, dif_neg hf, dif_pos hc]
+    rw [gcdOrFactor, dite_eq_right hf, dite_eq_left hc]
     exact ih
   | case3 f g hf hc =>
     exfalso

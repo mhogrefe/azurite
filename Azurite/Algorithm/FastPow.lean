@@ -114,7 +114,7 @@ theorem map_fastPowAux {M N : Type*} [Mul M] [Square M] [Monoid N]
         rename_i hd
         have hn1 : n = 1 := by omega
         subst hn1
-        rw [if_neg (show ¬ ((1 : ℕ) % 2 = 0) from by decide), hmul, pow_one]
+        rw [ite_eq_right (show ¬ ((1 : ℕ) % 2 = 0) from by decide), hmul, pow_one]
       · rename_i hd
         split
         · -- n even

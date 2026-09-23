@@ -1,5 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter4.Section4_4.FiniteMapping
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 
 /-!
 # BPR §4.6: the Tarski-query

@@ -42,7 +42,7 @@ theorem mulVec_isSemialgebraicFunction {m n : ℕ} (M : Matrix (Fin m) (Fin n) R
   refine IsSemialgebraicSet.algebraic ⟨Finset.univ.image Q, ?_⟩
   ext z
   rw [mem_funGraph]
-  simp only [Set.mem_univ, true_and, Zer, Set.mem_setOf_eq, Finset.mem_image, Finset.mem_univ,
+  simp only [Set.mem_univ, true_and, Zer, Set.mem_ofPred_eq, Finset.mem_image, Finset.mem_univ,
     forall_exists_index, forall_apply_eq_imp_iff, hQeval, sub_eq_zero]
   constructor
   · intro h j; exact congrFun h j

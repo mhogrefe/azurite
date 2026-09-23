@@ -1,5 +1,6 @@
 import Azurite.BasuPollackRoy.Chapter1.Section1_3.Theorem1_22
 import Azurite.BasuPollackRoy.Chapter1.Section1_4.Theorem1_23
+import Mathlib.Algebra.MvPolynomial.CommRing
 
 /-! # BPR Section 1.4 — Sentence preservation through QE
 
@@ -273,8 +274,8 @@ theorem PolyConst.of_mem_Tru
     {Q R : Polynomial (MvPolynomial (Fin k) D)}
     (hQ : PolyConst Q) (hR : R ∈ Tru Q) : PolyConst R := by
   by_cases hQ0 : Q = 0
-  · subst hQ0; rw [Tru, if_pos rfl] at hR; exact hR.elim
-  rw [Tru, if_neg hQ0] at hR
+  · subst hQ0; rw [Tru, ite_eq_left rfl] at hR; exact hR.elim
+  rw [Tru, ite_eq_right hQ0] at hR
   split_ifs at hR with hbase
   · -- {Q}
     rw [Set.mem_singleton_iff] at hR; subst hR; exact hQ
@@ -346,7 +347,7 @@ theorem pRem_exists_polyConst_aux
     have hdeg' : Q.natDegree ≤ P.natDegree := Nat.not_lt.mp hdeg
     have ha_ne : P.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hP
     have hb_ne : Q.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hQ
-    rw [if_neg hdeg] at hn
+    rw [ite_eq_right hdeg] at hn
     have hn1 : 1 ≤ n := by omega
     set P' : Polynomial (MvPolynomial (Fin k) D) :=
       Polynomial.C Q.leadingCoeff * P -
@@ -396,7 +397,7 @@ theorem pRem_exists_polyConst_aux
                 Polynomial.leadingCoeff_C, Polynomial.leadingCoeff_X_pow]
             ring
           have hP'_deg_lt : P'.degree < (Polynomial.C Q.leadingCoeff * P).degree :=
-            Polynomial.degree_sub_lt hLdeg hLne hLeadEq
+            Polynomial.degree_sub_lt_left hLdeg hLne hLeadEq
           rw [Polynomial.degree_C_mul hb_ne,
               Polynomial.degree_eq_natDegree hP',
               Polynomial.degree_eq_natDegree hP] at hP'_deg_lt
@@ -571,12 +572,12 @@ theorem PolyConst.mkTRemsNode_all
   intro path hpath Q hQ
   by_cases hcur0 : curPol = 0
   · -- curPol = 0: tree is .node curPol []
-    rw [mkTRemsNode, if_pos hcur0] at hpath
+    rw [mkTRemsNode, ite_eq_left hcur0] at hpath
     simp only [RoseTree.leafPaths, List.mem_singleton] at hpath
     subst hpath
     exact absurd hQ (List.not_mem_nil)
   · -- curPol ≠ 0
-    rw [mkTRemsNode, if_neg hcur0] at hpath
+    rw [mkTRemsNode, ite_eq_right hcur0] at hpath
     dsimp only at hpath
     set R := -(pRemMv parentPol curPol) with R_def
     have hRc : PolyConst R := PolyConst.neg (pRemMv_polyConst hp hc)
@@ -622,7 +623,7 @@ decreasing_by
   by_cases h4 : pRemMv parentPol curPol = 0
   · have hn0 : R = 0 :=
       show -(pRemMv parentPol curPol) = 0 by rw [h4, neg_zero]
-    rw [hn0, Tru, if_pos rfl] at hmem_tru; exact hmem_tru.elim
+    rw [hn0, Tru, ite_eq_left rfl] at hmem_tru; exact hmem_tru.elim
   · have h1 := natDegree_mem_Tru_le hmem_tru
     have h5 := Polynomial.natDegree_lt_natDegree h4
       (degree_pRemMv_lt parentPol curPol hcur0)
@@ -1412,7 +1413,7 @@ theorem C_X_castSucc {k : ℕ} {T : Finset (Fin k)} {j : Fin k} (hj : j ∈ T) :
   classical
   apply C_const
   by_cases hN : Nontrivial D
-  · letI := hN
+  · let := hN
     rw [MvPolynomial.vars_X]
     exact Finset.singleton_subset_iff.mpr hj
   · -- D is subsingleton, so MvPolynomial.X j = 0.
@@ -1626,8 +1627,8 @@ theorem PolyVarsSubset.of_mem_Tru {T : Finset (Fin k)}
     {Q R : Polynomial (MvPolynomial (Fin k) D)}
     (hQ : PolyVarsSubset T Q) (hR : R ∈ Tru Q) : PolyVarsSubset T R := by
   by_cases hQ0 : Q = 0
-  · subst hQ0; rw [Tru, if_pos rfl] at hR; exact hR.elim
-  rw [Tru, if_neg hQ0] at hR
+  · subst hQ0; rw [Tru, ite_eq_left rfl] at hR; exact hR.elim
+  rw [Tru, ite_eq_right hQ0] at hR
   split_ifs at hR with hbase
   · rw [Set.mem_singleton_iff] at hR; subst hR; exact hQ
   · rw [Set.mem_union, Set.mem_singleton_iff] at hR
@@ -1686,7 +1687,7 @@ theorem pRem_exists_polyVarsSubset_aux {T : Finset (Fin k)}
     have hdeg' : Q.natDegree ≤ P.natDegree := Nat.not_lt.mp hdeg
     have ha_ne : P.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hP
     have hb_ne : Q.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hQ
-    rw [if_neg hdeg] at hn
+    rw [ite_eq_right hdeg] at hn
     have hn1 : 1 ≤ n := by omega
     set P' : Polynomial (MvPolynomial (Fin k) D) :=
       Polynomial.C Q.leadingCoeff * P -
@@ -1738,7 +1739,7 @@ theorem pRem_exists_polyVarsSubset_aux {T : Finset (Fin k)}
                 Polynomial.leadingCoeff_C, Polynomial.leadingCoeff_X_pow]
             ring
           have hP'_deg_lt : P'.degree < (Polynomial.C Q.leadingCoeff * P).degree :=
-            Polynomial.degree_sub_lt hLdeg hLne hLeadEq
+            Polynomial.degree_sub_lt_left hLdeg hLne hLeadEq
           rw [Polynomial.degree_C_mul hb_ne,
               Polynomial.degree_eq_natDegree hP',
               Polynomial.degree_eq_natDegree hP] at hP'_deg_lt
@@ -1899,11 +1900,11 @@ theorem PolyVarsSubset.mkTRemsNode_all {T : Finset (Fin k)}
       ∀ Q ∈ path, PolyVarsSubset T Q := by
   intro path hpath Q hQ
   by_cases hcur0 : curPol = 0
-  · rw [mkTRemsNode, if_pos hcur0] at hpath
+  · rw [mkTRemsNode, ite_eq_left hcur0] at hpath
     simp only [RoseTree.leafPaths, List.mem_singleton] at hpath
     subst hpath
     exact absurd hQ (List.not_mem_nil)
-  · rw [mkTRemsNode, if_neg hcur0] at hpath
+  · rw [mkTRemsNode, ite_eq_right hcur0] at hpath
     dsimp only at hpath
     set R := -(pRemMv parentPol curPol) with R_def
     have hRc : PolyVarsSubset T R := PolyVarsSubset.neg (pRemMv_polyVarsSubset hp hc)
@@ -1946,7 +1947,7 @@ decreasing_by
   by_cases h4 : pRemMv parentPol curPol = 0
   · have hn0 : R = 0 :=
       show -(pRemMv parentPol curPol) = 0 by rw [h4, neg_zero]
-    rw [hn0, Tru, if_pos rfl] at hmem_tru; exact hmem_tru.elim
+    rw [hn0, Tru, ite_eq_left rfl] at hmem_tru; exact hmem_tru.elim
   · have h1 := natDegree_mem_Tru_le hmem_tru
     have h5 := Polynomial.natDegree_lt_natDegree h4
       (degree_pRemMv_lt parentPol curPol hcur0)

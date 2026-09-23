@@ -16,7 +16,7 @@ theorem two_pow_63_le_toNat_shiftLeft_leadingZeros (d : UInt64) (hd : d ≠ 0) :
   set L := d.toNat.log2 with hL_def
   have hk_def : leadingZeros d = 63 - L := by
     show (if d = 0 then 64 else 63 - d.toNat.log2) = 63 - L
-    rw [if_neg hd]
+    rw [ite_eq_right hd]
   set k := leadingZeros d with hk_eq
   have hk_le : k ≤ 63 := by rw [hk_def]; exact Nat.sub_le _ _
   have hLk : L + k = 63 := by rw [hk_def]; omega

@@ -128,7 +128,7 @@ theorem theorem_4_3_3 {n I F : ℕ} (hn : 1 < n) (hI : 0 < I) (hF : 0 < F)
       f ∣ ((Multiset.range I).map fun j => g ^ n ^ j).esymm k - C c)
     {p : ℕ} (hp : p.Prime) (hpn : p ∣ n) :
     ∃ j < I, p ≡ n ^ j [MOD F] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hN0 : 0 < n ^ I - 1 := by
     have h2n : 2 ≤ n ^ I := le_trans hn (Nat.le_self_pow hI.ne' n)
     omega
@@ -142,8 +142,8 @@ theorem theorem_4_3_3 {n I F : ℕ} (hn : 1 < n) (hI : 0 < I) (hF : 0 < F)
     omega
   obtain ⟨f₁, hf₁irr, hf₁dvd⟩ :=
     WfDvdMonoid.exists_irreducible_factor hfpnu hfp.ne_zero
-  haveI : Fact (Irreducible f₁) := ⟨hf₁irr⟩
-  haveI : CharP (AdjoinRoot f₁) p :=
+  have : Fact (Irreducible f₁) := ⟨hf₁irr⟩
+  have : CharP (AdjoinRoot f₁) p :=
     charP_of_injective_algebraMap
       (algebraMap (ZMod p) (AdjoinRoot f₁)).injective p
   -- the projection `Z_n[x] → K` and the image of `g`
@@ -262,7 +262,7 @@ example (p : ℕ) (hp : p.Prime) (hpn : p ∣ 7) : p % 6 = 1 := by
     (by norm_num) one_pos (by norm_num) (by norm_num)
     (f := (X : Polynomial (ZMod 7))) (g := C 3)
     monic_X (by
-      haveI : Fact (1 < 7) := ⟨by norm_num⟩
+      have : Fact (1 < 7) := ⟨by norm_num⟩
       rw [natDegree_X]
       exact one_pos)
     (by

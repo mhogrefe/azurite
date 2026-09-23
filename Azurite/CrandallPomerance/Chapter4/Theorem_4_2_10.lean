@@ -56,7 +56,7 @@ theorem theorem_4_2_10 {a b : ℤ} {n F₁ R₁ F₂ : ℕ} (hn : 0 < n)
       omega
     · exact h
   intro p hp hpn
-  haveI : NeZero n := ⟨by omega⟩
+  have : NeZero n := ⟨by omega⟩
   have hp2 : 2 ≤ p := hp.two_le
   have hple : p ≤ n := Nat.le_of_dvd (by omega) hpn
   -- the two single-sided congruences

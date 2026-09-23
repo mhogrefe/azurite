@@ -49,7 +49,7 @@ private lemma varNonzero_append_neg_pos :
       have hb : 0 < b := hpos b List.mem_cons_self
       rw [List.singleton_append, varNonzero_cons_cons]
       have hab : a * b < 0 := mul_neg_of_neg_of_pos ha hb
-      rw [if_pos hab]
+      rw [ite_eq_left hab]
       have htail : varNonzero (b :: prest) = 0 :=
         varNonzero_eq_zero_of_forall_nonneg
           (fun x hx => (hpos x hx).le)
@@ -61,7 +61,7 @@ private lemma varNonzero_append_neg_pos :
         hneg c (List.mem_cons_of_mem _ List.mem_cons_self)
       have hac : ¬ a * c < 0 :=
         not_lt.mpr (mul_nonneg_of_nonpos_of_nonpos ha.le hc.le)
-      rw [if_neg hac, zero_add]
+      rw [ite_eq_right hac, zero_add]
       exact varNonzero_append_neg_pos (neg := c :: nrest) (pos := pos)
         (by simp) hpos_ne
         (fun x hx => hneg x (List.mem_cons_of_mem _ hx))

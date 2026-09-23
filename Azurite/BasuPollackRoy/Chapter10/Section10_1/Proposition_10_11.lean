@@ -31,7 +31,7 @@ and `P ≠ 0`, `Mea(Q) ≤ Mea(P)`. -/
 theorem proposition_10_11_measure {P Q : ℤ[X]} (hP : P ≠ 0) (hQP : Q ∣ P) :
     polyMeasure (Q.map (Int.castRingHom (Ri R)))
       ≤ polyMeasure (P.map (Int.castRingHom (Ri R))) := by
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective R (Ri R))
   have hcast : Function.Injective (Int.castRingHom (Ri R)) := fun a b h => by simpa using h
   have hQ0 : Q ≠ 0 := by
@@ -74,7 +74,7 @@ Propositions 10.8 and 10.9 through the first part. -/
 theorem proposition_10_11_length {P Q : ℤ[X]} (hP : P ≠ 0) (hQP : Q ∣ P) :
     polyLength (Q.map (Int.castRingHom (Ri R)))
       ≤ 2 ^ Q.natDegree * polyNorm (P.map (Int.castRingHom (Ri R))) := by
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (FaithfulSMul.algebraMap_injective R (Ri R))
   have hcast : Function.Injective (Int.castRingHom (Ri R)) := fun a b h => by simpa using h
   have hdeg : (Q.map (Int.castRingHom (Ri R))).natDegree = Q.natDegree :=

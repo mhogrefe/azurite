@@ -29,11 +29,11 @@ private def padCoeff (P : R[X]) (i : ℤ) : R :=
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 private lemma padCoeff_of_nonneg (P : R[X]) {i : ℤ} (hi : 0 ≤ i) :
-    padCoeff P i = P.coeff i.toNat := if_pos hi
+    padCoeff P i = P.coeff i.toNat := ite_eq_left hi
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 private lemma padCoeff_of_neg (P : R[X]) {i : ℤ} (hi : i < 0) :
-    padCoeff P i = 0 := if_neg (not_le.mpr hi)
+    padCoeff P i = 0 := ite_eq_right (not_le.mpr hi)
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 private lemma padCoeff_natCast (P : R[X]) (n : ℕ) : padCoeff P (n : ℤ) = P.coeff n := by

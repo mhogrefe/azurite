@@ -34,8 +34,8 @@ theorem AzInt.toChars_eq (z : AzInt) :
       else '-' :: AzNat.toChars z.abs := by
   unfold AzInt.toChars AzInt.toString AzNat.toChars
   by_cases h_sign : z.sign
-  · rw [if_pos h_sign, if_pos h_sign]
-  · rw [if_neg h_sign, if_neg h_sign, String.toList_append]
+  · rw [ite_eq_left h_sign, ite_eq_left h_sign]
+  · rw [ite_eq_right h_sign, ite_eq_right h_sign, String.toList_append]
     rfl
 
 theorem AzInt.toChars_nonempty (z : AzInt) : AzInt.toChars z ≠ [] := by
@@ -115,7 +115,7 @@ theorem AzInt.toChars_minus_next_syntax (z : AzInt) (t : List Char)
 
 theorem AzInt.toChars_zero : AzInt.toChars (0 : AzInt) = ['0'] := by
   rw [AzInt.toChars_eq]
-  rw [show (0 : AzInt).sign = true from rfl, if_pos rfl]
+  rw [show (0 : AzInt).sign = true from rfl, ite_eq_left rfl]
   exact AzNat.toString_zero
 
 private theorem AzInt.toChars_no_comma (z : AzInt) : ',' ∉ AzInt.toChars z := by

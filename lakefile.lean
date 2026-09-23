@@ -34,7 +34,6 @@ extern_lib timerLib pkg := do
   let oJob   ← buildO oFile srcJob #[s!"-I{leanInclude}"] #["-O2"] "cc"
   buildStaticLib aFile #[oJob]
 
-@[default_target]
 lean_exe «benchmark» where
   root := `Azurite.Benchmark.Main
 
@@ -47,4 +46,4 @@ require «doc-gen4» from git
 -- Mathlib goes last so its transitive dependency pins (e.g. plausible)
 -- take precedence over doc-gen4's, keeping `lake exe cache get` valid.
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "master-2026-07-17"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.34.0"

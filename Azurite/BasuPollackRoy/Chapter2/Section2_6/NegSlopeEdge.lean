@@ -40,7 +40,7 @@ theorem exists_neg_slope_odd_edge {P₁ : Polynomial (PuiseuxSeries R)} {r : ℕ
     rw [hgdef, finsetSum_coeff]
     simp only [coeff_monomial, Finset.sum_ite_eq', Finset.mem_range]
   have hgcoeff_le : ∀ j, j ≤ r → g.coeff j = P₁.coeff j :=
-    fun j hj => by rw [hgcoeff, if_pos (by omega)]
+    fun j hj => by rw [hgcoeff, ite_eq_left (by omega)]
   have hbr_ne : P₁.coeff r ≠ 0 := by
     intro h; rw [h, puiseuxOrder_zero] at hbr; simp at hbr
   have hgr : g.coeff r ≠ 0 := by rw [hgcoeff_le r (le_refl r)]; exact hbr_ne
@@ -48,7 +48,7 @@ theorem exists_neg_slope_odd_edge {P₁ : Polynomial (PuiseuxSeries R)} {r : ℕ
   have hgdeg : g.natDegree = r := by
     apply le_antisymm
     · apply natDegree_le_iff_coeff_eq_zero.mpr
-      intro k hk; rw [hgcoeff, if_neg (by omega)]
+      intro k hk; rw [hgcoeff, ite_eq_right (by omega)]
     · exact le_natDegree_of_ne_zero hgr
   obtain ⟨Mg, hMg, hhonMg⟩ := exists_isNewtonPolygon_honseg g hg0
   obtain ⟨A, B, hAB_zip, hABodd⟩ := exists_odd_length_edge hMg (by rw [hgdeg]; exact hr_odd)

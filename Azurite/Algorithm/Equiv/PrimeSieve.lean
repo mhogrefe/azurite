@@ -63,7 +63,7 @@ theorem testBit_sieveMark {n d : Nat} (hd : 0 < d) :
     intro j₀ s k hfuel
     rw [sieveMark]
     by_cases hj : j₀ ≤ n
-    · rw [if_pos hj,
+    · rw [ite_eq_left hj,
         ih (j₀ + d) (s.clearBit j₀) k (by
           have h1 : j₀ + (fuel + 1) * d = j₀ + d + fuel * d := by ring
           omega),
@@ -91,7 +91,7 @@ theorem testBit_sieveMark {n d : Nat} (hd : 0 < d) :
           refine hnot ⟨by omega, h2, ⟨t + 1, ?_⟩⟩
           have h3 : d * (t + 1) = d * t + d := by ring
           omega
-    · rw [if_neg hj]
+    · rw [ite_eq_right hj]
       exact ⟨fun h => ⟨h, fun ⟨h1, h2, _⟩ => by omega⟩, fun h => h.1⟩
 
 /-- The sieve-loop invariant after all rounds `d' < d`: bit `j ≤ n` is
@@ -148,7 +148,7 @@ theorem sieveInv_step {n d : Nat} {s : AzNat} (h2 : 2 ≤ d)
       have hpne : d.minFac ≠ d := fun h => hnp (h ▸ hp)
       have := hcond _ hp (by omega) (Nat.minFac_dvd d)
       omega
-    rw [if_pos hbit]
+    rw [ite_eq_left hbit]
     intro j hj
     rw [testBit_sieveMark (by omega) (n + 1) (d * d) s j
       (by
@@ -198,7 +198,7 @@ theorem sieveInv_step {n d : Nat} {s : AzNat} (h2 : 2 ≤ d)
       intro p hpp hplt hpdvd
       obtain rfl : p = d := (Nat.prime_dvd_prime_iff_eq hpp hp).mp hpdvd
       omega
-    rw [if_neg hbit]
+    rw [ite_eq_right hbit]
     intro j hj
     rw [hinv j hj]
     constructor
@@ -230,10 +230,10 @@ theorem testBit_sieveLoop (n : Nat) :
     intro d s h2 hfuel hinv j hj
     rw [sieveLoop]
     by_cases hdd : d * d ≤ n
-    · rw [if_pos hdd]
+    · rw [ite_eq_left hdd]
       exact ih (d + 1) _ (by omega) (by omega)
         (sieveInv_step h2 hdd hinv) j hj
-    · rw [if_neg hdd]
+    · rw [ite_eq_right hdd]
       exact sieveInv_final (by omega) hinv j hj
 
 /-- **Correctness of the sieve**: bit `j` is set iff `j` is prime. -/

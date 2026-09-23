@@ -175,10 +175,10 @@ theorem proposition_2_22_of_isRealClosed
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     a < b → P.eval a = 0 → P.eval b = 0 →
     ∃ c ∈ Set.Ioo a b, (derivative P).eval c = 0 := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact proposition_2_22 theorem_2_11_b_c P
 
 end Azurite.BPR.Proposition2_22

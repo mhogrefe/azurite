@@ -23,10 +23,10 @@ variable {R : Type*} [Field R] [LinearOrder R] [IsStrictOrderedRing R]
 def pt (x y : R) : Fin 2 → R := fun i => if i = 0 then x else y
 
 omit [Field R] [LinearOrder R] [IsStrictOrderedRing R] in
-@[simp] theorem pt_zero (x y : R) : pt x y 0 = x := if_pos rfl
+@[simp] theorem pt_zero (x y : R) : pt x y 0 = x := ite_eq_left rfl
 
 omit [Field R] [LinearOrder R] [IsStrictOrderedRing R] in
-@[simp] theorem pt_one (x y : R) : pt x y 1 = y := if_neg (by decide)
+@[simp] theorem pt_one (x y : R) : pt x y 1 = y := ite_eq_right (by decide)
 
 /-- The univariate slice `q(x, ·) ∈ R[Y]` of a bivariate polynomial at `X = x`. -/
 noncomputable def slice (q : MvPolynomial (Fin 2) R) (x : R) : Polynomial R :=

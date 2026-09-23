@@ -1,5 +1,5 @@
 import Mathlib.Algebra.Order.Ring.Defs
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 import Mathlib.Tactic.Linarith
 
 /-!

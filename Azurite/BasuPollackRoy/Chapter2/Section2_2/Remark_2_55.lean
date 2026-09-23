@@ -277,10 +277,10 @@ private lemma filter_lt_erase_self (s : Multiset R) (r : R) :
   ext a
   rw [Multiset.count_filter, Multiset.count_filter]
   by_cases h : r < a
-  · simp only [if_pos h]
+  · simp only [ite_eq_left h]
     have h_ne : a ≠ r := fun heq => absurd h (heq ▸ lt_irrefl r)
     exact Multiset.count_erase_of_ne h_ne s
-  · simp only [if_neg h]
+  · simp only [ite_eq_right h]
 
 /-- For nonzero `P` with all simple real roots, the sign of `P'(r)` at a
     root `r` is `sign(lc_P) · (−1)^|{r' ∈ P.roots : r < r'}|`. -/
@@ -470,13 +470,13 @@ private lemma card_filter_gt_Q_eq_P
     apply Finset.card_le_card_of_injOn f'
     · intro r' hr'
       show f' r' ∈ Qgt
-      have : f' r' = f r' hr' := dif_pos hr'
+      have : f' r' = f r' hr' := dite_eq_left hr'
       rw [this]
       exact hf_into_Qgt r' hr'
     · intro r₁' h₁ r₂' h₂ h_eq
       simp only [Finset.mem_coe] at h₁ h₂
-      have e₁ : f' r₁' = f r₁' h₁ := dif_pos h₁
-      have e₂ : f' r₂' = f r₂' h₂ := dif_pos h₂
+      have e₁ : f' r₁' = f r₁' h₁ := dite_eq_left h₁
+      have e₂ : f' r₂' = f r₂' h₂ := dite_eq_left h₂
       rw [e₁, e₂] at h_eq
       exact hf_inj r₁' h₁ r₂' h₂ h_eq
   -- The dual side: build a parallel injection `g : Plt → Qle` where
@@ -569,13 +569,13 @@ private lemma card_filter_gt_Q_eq_P
     apply Finset.card_le_card_of_injOn g'
     · intro r' hr'
       show g' r' ∈ Qle
-      have : g' r' = g r' hr' := dif_pos hr'
+      have : g' r' = g r' hr' := dite_eq_left hr'
       rw [this]
       exact hg_into_Qle r' hr'
     · intro r₁' h₁ r₂' h₂ h_eq
       simp only [Finset.mem_coe] at h₁ h₂
-      have e₁ : g' r₁' = g r₁' h₁ := dif_pos h₁
-      have e₂ : g' r₂' = g r₂' h₂ := dif_pos h₂
+      have e₁ : g' r₁' = g r₁' h₁ := dite_eq_left h₁
+      have e₂ : g' r₂' = g r₂' h₂ := dite_eq_left h₂
       rw [e₁, e₂] at h_eq
       exact hg_inj r₁' h₁ r₂' h₂ h_eq
   -- Total counts force equality: `|Pgt| + |Plt| + 1 = p` (Nodup, r ∈ P.roots),
@@ -742,12 +742,12 @@ private lemma P_root_not_Q_root
     apply Finset.card_le_card_of_injOn f'
     · intro r' hr'
       show f' r' ∈ Qgt
-      have : f' r' = f r' hr' := dif_pos hr'
+      have : f' r' = f r' hr' := dite_eq_left hr'
       rw [this]; exact hf_into_Qgt r' hr'
     · intro r₁' h₁ r₂' h₂ h_eq
       simp only [Finset.mem_coe] at h₁ h₂
-      rw [show f' r₁' = f r₁' h₁ from dif_pos h₁,
-        show f' r₂' = f r₂' h₂ from dif_pos h₂] at h_eq
+      rw [show f' r₁' = f r₁' h₁ from dite_eq_left h₁,
+        show f' r₂' = f r₂' h₂ from dite_eq_left h₂] at h_eq
       exact hf_inj r₁' h₁ r₂' h₂ h_eq
   -- Dual injection g : Plt → Qlt (strict — image is < r).
   have hPgt_gt_nonempty : ∀ {r'}, r' ∈ Plt →
@@ -816,12 +816,12 @@ private lemma P_root_not_Q_root
     apply Finset.card_le_card_of_injOn g'
     · intro r' hr'
       show g' r' ∈ Qlt
-      have : g' r' = g r' hr' := dif_pos hr'
+      have : g' r' = g r' hr' := dite_eq_left hr'
       rw [this]; exact hg_into_Qlt r' hr'
     · intro r₁' h₁ r₂' h₂ h_eq
       simp only [Finset.mem_coe] at h₁ h₂
-      rw [show g' r₁' = g r₁' h₁ from dif_pos h₁,
-        show g' r₂' = g r₂' h₂ from dif_pos h₂] at h_eq
+      rw [show g' r₁' = g r₁' h₁ from dite_eq_left h₁,
+        show g' r₂' = g r₂' h₂ from dite_eq_left h₂] at h_eq
       exact hg_inj r₁' h₁ r₂' h₂ h_eq
   -- Cardinality contradiction.
   have hP_total : Pgt.card + Plt.card + 1 = P.natDegree := by
@@ -1248,12 +1248,12 @@ theorem remark_2_55_a
         apply Finset.card_le_card_of_injOn φ'
         · intro r' hr'
           show φ' r' ∈ Q.roots.toFinset
-          have : φ' r' = φ r' hr' := dif_pos hr'
+          have : φ' r' = φ r' hr' := dite_eq_left hr'
           rw [this]; exact hφ_mem r' hr'
         · intro r₁ h₁ r₂ h₂ h_eq
           simp only [Finset.mem_coe] at h₁ h₂
-          rw [show φ' r₁ = φ r₁ h₁ from dif_pos h₁,
-            show φ' r₂ = φ r₂ h₂ from dif_pos h₂] at h_eq
+          rw [show φ' r₁ = φ r₁ h₁ from dite_eq_left h₁,
+            show φ' r₂ = φ r₂ h₂ from dite_eq_left h₂] at h_eq
           exact hφ_inj r₁ h₁ r₂ h₂ h_eq
       -- |Q.roots.toFinset| ≤ Q.natDegree.
       have hQ_card_le_natDeg : Q.roots.toFinset.card ≤ Q.natDegree :=
@@ -1309,14 +1309,14 @@ theorem remark_2_55_a
           NonMax.image φ' ⊆ Q.roots.toFinset := by
         intro q hq
         obtain ⟨r', hr', heq⟩ := Finset.mem_image.mp hq
-        rw [show φ' r' = φ r' hr' from dif_pos hr'] at heq
+        rw [show φ' r' = φ r' hr' from dite_eq_left hr'] at heq
         rw [← heq]; exact hφ_mem r' hr'
       have h_image_card : (NonMax.image φ').card = NonMax.card := by
         apply Finset.card_image_of_injOn
         intro r₁ h₁ r₂ h₂ heq
         simp only [Finset.mem_coe] at h₁ h₂
-        rw [show φ' r₁ = φ r₁ h₁ from dif_pos h₁,
-          show φ' r₂ = φ r₂ h₂ from dif_pos h₂] at heq
+        rw [show φ' r₁ = φ r₁ h₁ from dite_eq_left h₁,
+          show φ' r₂ = φ r₂ h₂ from dite_eq_left h₂] at heq
         exact hφ_inj r₁ h₁ r₂ h₂ heq
       have h_φ'_image_eq : NonMax.image φ' = Q.roots.toFinset := by
         apply Finset.eq_of_subset_of_card_le h_φ'_image_subset
@@ -1333,7 +1333,7 @@ theorem remark_2_55_a
           rw [← h_φ'_image_eq] at hq_F
           obtain ⟨r', hr', heq⟩ := Finset.mem_image.mp hq_F
           have heq' : φ r' hr' = q := by
-            rw [show φ' r' = φ r' hr' from dif_pos hr'] at heq
+            rw [show φ' r' = φ r' hr' from dite_eq_left hr'] at heq
             exact heq
           have hq_lt_next : q < next_P r' hr' := heq' ▸ (hφ_spec r' hr').2.2
           have hnext_le_max : next_P r' hr' ≤ max_P :=
@@ -1415,7 +1415,7 @@ theorem remark_2_55_a
         rw [← h_φ'_image_eq] at hs_F
         obtain ⟨r', hr', heq⟩ := Finset.mem_image.mp hs_F
         have heq' : φ r' hr' = s := by
-          rw [show φ' r' = φ r' hr' from dif_pos hr'] at heq
+          rw [show φ' r' = φ r' hr' from dite_eq_left hr'] at heq
           exact heq
         have hr'_lt_s : r' < s := heq' ▸ (hφ_spec r' hr').2.1
         have hs_lt_next : s < next_P r' hr' := heq' ▸ (hφ_spec r' hr').2.2
@@ -1478,7 +1478,7 @@ theorem remark_2_55_a
           rw [← h_φ'_image_eq] at hq_F
           obtain ⟨r', hr'_NonMax, heq⟩ := Finset.mem_image.mp hq_F
           have heq' : φ r' hr'_NonMax = q := by
-            rw [show φ' r' = φ r' hr'_NonMax from dif_pos hr'_NonMax] at heq
+            rw [show φ' r' = φ r' hr'_NonMax from dite_eq_left hr'_NonMax] at heq
             exact heq
           have hr'_lt_q : r' < q := heq' ▸ (hφ_spec r' hr'_NonMax).2.1
           have hq_lt_next_r' : q < next_P r' hr'_NonMax :=

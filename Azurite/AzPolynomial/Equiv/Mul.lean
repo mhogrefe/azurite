@@ -127,7 +127,7 @@ lemma mulBasecaseFold_eq_mulBasecase (p q : AzPolynomial R) :
 @[simp] lemma coeff_mul (p q : AzPolynomial R) (n : ℕ) :
     coeff (p * q) n = ∑ x ∈ Finset.antidiagonal n, coeff p x.1 * coeff q x.2 := by
   have h := toPoly_mul p q
-  have hc := congr_fun (congr_arg Polynomial.coeff h) n
+  have hc := congrArg (fun p => Polynomial.coeff p n) h
   rw [Polynomial.coeff_mul] at hc
   simp_rw [coeff_toPoly] at hc
   exact hc

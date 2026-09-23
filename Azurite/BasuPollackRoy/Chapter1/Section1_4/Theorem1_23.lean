@@ -76,7 +76,7 @@ theorem realization_exists_last {k : ℕ}
             ∈ Φ.realization (C := C) } := by
   show { y | ∃ c : C, Function.update y (Fin.last k) c ∈ Φ.realization (C := C) } = _
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   refine ⟨fun ⟨c, hc⟩ => ⟨c, ?_⟩, fun ⟨c, hc⟩ => ⟨c, ?_⟩⟩
   · rwa [update_last_eq_snoc_castSucc] at hc
   · rwa [update_last_eq_snoc_castSucc]
@@ -125,7 +125,7 @@ theorem realization_conjNeZero {σ : Type*} [DecidableEq σ]
   unfold conjNeZero
   rw [Formula.realization_conjList]
   ext y
-  simp only [Set.mem_setOf_eq, List.forall_mem_map]
+  simp only [Set.mem_ofPred_eq, List.forall_mem_map]
   refine ⟨fun h Q hQ => ?_, fun h Q hQ => ?_⟩
   · have := h Q hQ
     simpa [Formula.ne_zero, realization, FieldAtom.neZero] using this
@@ -142,7 +142,7 @@ theorem realization_conjFormFormula {σ : Type*} [DecidableEq σ]
   rw [Formula.realization_and, conjEqZero_realization,
       realization_conjNeZero]
   ext y
-  simp only [Set.mem_inter_iff, Set.mem_setOf_eq,
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq,
     MvPolynomial.aeval_def]
 
 /-!
@@ -171,7 +171,7 @@ theorem realization_exists_last_conjFormFormula {k : ℕ}
       Formula.rename_realization Fin.castSucc (Fin.castSucc_injective k),
       realization_projBasic hinj]
   ext y
-  simp only [Set.mem_setOf_eq, Set.mem_preimage]
+  simp only [Set.mem_ofPred_eq, Set.mem_preimage]
   refine ⟨fun ⟨c, hc⟩ => ?_, fun ⟨c, hc⟩ => ?_⟩
   · refine ⟨c, ?_, ?_⟩
     · intro P hP
@@ -247,7 +247,7 @@ theorem realization_conjFormFormula_append {σ : Type*} [DecidableEq σ]
   rw [realization_conjFormFormula, realization_conjFormFormula,
       realization_conjFormFormula]
   ext y
-  simp only [Set.mem_setOf_eq, Set.mem_inter_iff, List.mem_append]
+  simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, List.mem_append]
   constructor
   · rintro ⟨hP, hQ⟩
     refine ⟨⟨fun P hP₁ => hP P (Or.inl hP₁),
@@ -326,13 +326,13 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
     -- Split on b and a.isEq
     rcases hb : b with _ | _ <;> rcases hisEq : a.isEq with _ | _
     all_goals simp only [Bool.false_eq_true, Bool.not_false, Bool.not_true,
-      if_true, if_false, hSingle]
+      ite_true, ite_false, hSingle]
     all_goals
       rw [realization_conjFormFormula]
       ext y
       show _ ↔ _
       simp only [Formula.realization, interpret_fieldAtom, hisEq,
-        Bool.false_eq_true, if_true, if_false, Set.mem_setOf_eq, Set.mem_compl_iff,
+        Bool.false_eq_true, ite_true, ite_false, Set.mem_ofPred_eq, Set.mem_compl_iff,
         List.mem_singleton, List.not_mem_nil, IsEmpty.forall_iff, forall_eq,
         implies_true, and_true, true_and]
       try tauto
@@ -341,14 +341,14 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
     simp only [qfDNFAux, Formula.realization]
     rcases b with _ | _
     · -- b = false: want (Φ.realization)ᶜᶜ = Φ.realization = ⋃ qfDNFAux true Φ
-      simp only [Bool.false_eq_true, if_false, compl_compl, Bool.not_false]
+      simp only [Bool.false_eq_true, ite_false, compl_compl, Bool.not_false]
       have := ih true hQF'
-      simp only [if_true] at this
+      simp only [ite_true] at this
       exact this
     · -- b = true: want (Φ.realization)ᶜ = ⋃ qfDNFAux false Φ
-      simp only [if_true, Bool.not_true]
+      simp only [ite_true, Bool.not_true]
       have := ih false hQF'
-      simp only [Bool.false_eq_true, if_false] at this
+      simp only [Bool.false_eq_true, ite_false] at this
       exact this
   | and Φ₁ Φ₂ ih₁ ih₂ =>
     obtain ⟨hQF₁, hQF₂⟩ := hQF
@@ -356,18 +356,18 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
     rcases b with _ | _
     · -- b = false: want (Φ₁.realization ∩ Φ₂.realization)ᶜ
       --   = (Φ₁.realization)ᶜ ∪ (Φ₂.realization)ᶜ
-      simp only [Bool.false_eq_true, if_false, Set.compl_inter]
+      simp only [Bool.false_eq_true, ite_false, Set.compl_inter]
       rw [iUnion_conjFormFormula_append]
       have h₁ := ih₁ false hQF₁
       have h₂ := ih₂ false hQF₂
-      simp only [Bool.false_eq_true, if_false] at h₁ h₂
+      simp only [Bool.false_eq_true, ite_false] at h₁ h₂
       rw [h₁, h₂]
     · -- b = true: want Φ₁.realization ∩ Φ₂.realization
-      simp only [if_true]
+      simp only [ite_true]
       rw [iUnion_conjFormFormula_flatMap_map]
       have h₁ := ih₁ true hQF₁
       have h₂ := ih₂ true hQF₂
-      simp only [if_true] at h₁ h₂
+      simp only [ite_true] at h₁ h₂
       rw [h₁, h₂]
   | or Φ₁ Φ₂ ih₁ ih₂ =>
     obtain ⟨hQF₁, hQF₂⟩ := hQF
@@ -375,18 +375,18 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
     rcases b with _ | _
     · -- b = false: want (Φ₁.realization ∪ Φ₂.realization)ᶜ
       --   = (Φ₁.realization)ᶜ ∩ (Φ₂.realization)ᶜ
-      simp only [Bool.false_eq_true, if_false, Set.compl_union]
+      simp only [Bool.false_eq_true, ite_false, Set.compl_union]
       rw [iUnion_conjFormFormula_flatMap_map]
       have h₁ := ih₁ false hQF₁
       have h₂ := ih₂ false hQF₂
-      simp only [Bool.false_eq_true, if_false] at h₁ h₂
+      simp only [Bool.false_eq_true, ite_false] at h₁ h₂
       rw [h₁, h₂]
     · -- b = true: want Φ₁.realization ∪ Φ₂.realization
-      simp only [if_true]
+      simp only [ite_true]
       rw [iUnion_conjFormFormula_append]
       have h₁ := ih₁ true hQF₁
       have h₂ := ih₂ true hQF₂
-      simp only [if_true] at h₁ h₂
+      simp only [ite_true] at h₁ h₂
       rw [h₁, h₂]
   | implies Φ₁ Φ₂ ih₁ ih₂ =>
     obtain ⟨hQF₁, hQF₂⟩ := hQF
@@ -394,18 +394,18 @@ theorem qfDNFAux_realization {σ : Type*} [DecidableEq σ]
     rcases b with _ | _
     · -- b = false: want ((Φ₁.realization)ᶜ ∪ Φ₂.realization)ᶜ
       --   = Φ₁.realization ∩ (Φ₂.realization)ᶜ
-      simp only [Bool.false_eq_true, if_false, Set.compl_union, compl_compl]
+      simp only [Bool.false_eq_true, ite_false, Set.compl_union, compl_compl]
       rw [iUnion_conjFormFormula_flatMap_map]
       have h₁ := ih₁ true hQF₁
       have h₂ := ih₂ false hQF₂
-      simp only [if_true, Bool.false_eq_true, if_false] at h₁ h₂
+      simp only [ite_true, Bool.false_eq_true, ite_false] at h₁ h₂
       rw [h₁, h₂]
     · -- b = true: want (Φ₁.realization)ᶜ ∪ Φ₂.realization
-      simp only [if_true]
+      simp only [ite_true]
       rw [iUnion_conjFormFormula_append]
       have h₁ := ih₁ false hQF₁
       have h₂ := ih₂ true hQF₂
-      simp only [Bool.false_eq_true, if_false, if_true] at h₁ h₂
+      simp only [Bool.false_eq_true, ite_false, ite_true] at h₁ h₂
       rw [h₁, h₂]
   | exists_ _ _ _ => exact absurd hQF id
   | forall_ _ _ _ => exact absurd hQF id
@@ -536,7 +536,7 @@ theorem realization_exists_disjList {k : ℕ} (i : Fin (k+1))
   show (∃ c : C, Function.update y i c ∈
       (Formula.disjList Φs).realization (C := C)) ↔ _
   rw [Formula.realization_disjList]
-  simp only [Set.mem_setOf_eq, Set.mem_iUnion]
+  simp only [Set.mem_ofPred_eq, Set.mem_iUnion]
   constructor
   · rintro ⟨c, Φ, hΦ, hc⟩
     refine ⟨Φ, hΦ, c, ?_⟩
@@ -575,7 +575,7 @@ theorem realization_exists_last_qfDNF
   rw [realization_exists_disjList]
   rw [Formula.realization_disjList]
   ext y
-  simp only [Set.mem_iUnion, List.mem_map, Set.mem_setOf_eq]
+  simp only [Set.mem_iUnion, List.mem_map, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨Φ, ⟨PQ, hPQ, rfl⟩, hy⟩
     refine ⟨_, ⟨PQ, hPQ, rfl⟩, ?_⟩
@@ -647,7 +647,7 @@ theorem existsQE
           conjFormFormula PQ.1 PQ.2)).realization (C := C) := by
       rw [qfDNF_realization _ hQF_tilde, Formula.realization_disjList]
       ext y
-      simp only [Set.mem_iUnion, Set.mem_setOf_eq, List.mem_map]
+      simp only [Set.mem_iUnion, Set.mem_ofPred_eq, List.mem_map]
       constructor
       · rintro ⟨PQ, hPQ, hy⟩
         exact ⟨_, ⟨PQ, hPQ, rfl⟩, hy⟩

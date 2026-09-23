@@ -42,7 +42,7 @@ theorem proposition_3_24_at_sClass {k : ℕ} {U' : Set (Fin k → R)} {z₀ : Fi
     hhomeo, hFinvSa, ?_⟩
   rcases Nat.eq_zero_or_pos k with hk0 | hk
   · subst hk0; intro a; exact a.elim0
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   have hfinvMaps : Set.MapsTo finv V U := by
     intro y hy
     obtain ⟨x, hxU, hfx⟩ := hhomeo.bijOn.surjOn hy

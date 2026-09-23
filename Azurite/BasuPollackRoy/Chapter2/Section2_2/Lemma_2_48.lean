@@ -69,28 +69,28 @@ lemma jump_diff_formula {ν : ℕ} {a b : R} (hb : b ≠ 0)
     ((if a < 0 then (1 : ℤ) else 0) - (if b < 0 then 1 else 0)) =
       if Even ν then 0 else if 0 < b then 1 else -1 := by
   rcases Nat.even_or_odd ν with hν | hν
-  · rw [if_pos hν]
+  · rw [ite_eq_left hν]
     have hpow : ((-1 : SignType))^ν = 1 := Even.neg_one_pow hν
     rw [hpow, one_mul] at hsign
     have hiff : (a < 0) ↔ (b < 0) := by
       rw [← sign_eq_neg_one_iff, ← sign_eq_neg_one_iff, hsign]
     by_cases h : b < 0
-    · rw [if_pos (hiff.mpr h), if_pos h]; ring
-    · rw [if_neg (fun hh => h (hiff.mp hh)), if_neg h]; ring
-  · rw [if_neg (Nat.not_even_iff_odd.mpr hν)]
+    · rw [ite_eq_left (hiff.mpr h), ite_eq_left h]; ring
+    · rw [ite_eq_right (fun hh => h (hiff.mp hh)), ite_eq_right h]; ring
+  · rw [ite_eq_right (Nat.not_even_iff_odd.mpr hν)]
     have hpow : ((-1 : SignType))^ν = -1 := Odd.neg_one_pow hν
     rw [hpow, neg_one_mul] at hsign
     rcases lt_or_gt_of_ne hb with hb_neg | hb_pos
     · have ha_pos : 0 < a := by
         apply sign_eq_one_iff.mp
         rw [hsign, sign_eq_neg_one_iff.mpr hb_neg]; decide
-      rw [if_neg (not_lt.mpr ha_pos.le), if_pos hb_neg,
-        if_neg (not_lt.mpr hb_neg.le)]
+      rw [ite_eq_right (not_lt.mpr ha_pos.le), ite_eq_left hb_neg,
+        ite_eq_right (not_lt.mpr hb_neg.le)]
       ring
     · have ha_neg : a < 0 := by
         apply sign_eq_neg_one_iff.mp
         rw [hsign, sign_eq_one_iff.mpr hb_pos]
-      rw [if_pos ha_neg, if_neg (not_lt.mpr hb_pos.le), if_pos hb_pos]
+      rw [ite_eq_left ha_neg, ite_eq_right (not_lt.mpr hb_pos.le), ite_eq_left hb_pos]
       ring
 
 /-! ## Key equation (root case)
@@ -195,7 +195,7 @@ lemma varBetween_der_succ_of_root_at_c_add_one
   have hvar_d : varAt (der P) (.finite d) =
       1 + varAt (der (derivative P)) (.finite d) := by
     rw [hderP_cons, varAt_cons_der_eq P (derivative P) hPd hdP,
-      hmult_d, Function.iterate_zero_apply, if_pos hPdP'd_neg]
+      hmult_d, Function.iterate_zero_apply, ite_eq_left hPdP'd_neg]
   unfold varBetween
   rw [hvar_c, hvar_d]
   push_cast

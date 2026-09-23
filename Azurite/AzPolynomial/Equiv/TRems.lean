@@ -154,12 +154,12 @@ private theorem Tru_eq_empty_iff
   constructor
   · intro h; by_contra hne
     have : Q ∈ BPR.Tru Q := by
-      rw [BPR.Tru, if_neg hne]
+      rw [BPR.Tru, ite_eq_right hne]
       split_ifs
       · exact Set.mem_singleton_iff.mpr rfl
       · exact Set.mem_union_left _ (Set.mem_singleton_iff.mpr rfl)
     rw [h] at this; exact this
-  · rintro rfl; rw [BPR.Tru, if_pos rfl]
+  · rintro rfl; rw [BPR.Tru, ite_eq_left rfl]
 
 /-! ### Surjectivity: elements of `Tru(liftPoly p)` have preimages -/
 
@@ -177,13 +177,13 @@ private theorem Tru_liftPoly_subset_range
   intro p hpn x hx
   rw [BPR.Tru] at hx
   by_cases h0 : liftPoly p = 0
-  · rw [if_pos h0] at hx; exact hx.elim
-  · rw [if_neg h0] at hx
+  · rw [ite_eq_left h0] at hx; exact hx.elim
+  · rw [ite_eq_right h0] at hx
     by_cases hbase : (∃ d, (liftPoly p).leadingCoeff = MvPolynomial.C d) ∨
         (liftPoly p).natDegree = 0
-    · rw [if_pos hbase, Set.mem_singleton_iff] at hx
+    · rw [ite_eq_left hbase, Set.mem_singleton_iff] at hx
       exact ⟨p, hx.symm⟩
-    · rw [if_neg hbase, Set.mem_union, Set.mem_singleton_iff] at hx
+    · rw [ite_eq_right hbase, Set.mem_union, Set.mem_singleton_iff] at hx
       rcases hx with rfl | hx
       · exact ⟨p, rfl⟩
       · rw [liftPoly_natDegree, ← liftPoly_truncate] at hx
@@ -241,11 +241,11 @@ private theorem mkTRemsLeafParentsAux_to_isLeafParent
   by_cases h0 : cc = 0
   · -- cc = 0: mkTRemsLeafParentsAux returns [], contradiction
     have : (cc == 0) = true := beq_iff_eq.mpr h0
-    rw [dif_pos this] at hmem
+    rw [dite_eq_left this] at hmem
     simp at hmem
   · -- cc ≠ 0
     have hbeq : ¬(cc == 0) = true := by simp [beq_iff_eq, h0]
-    rw [dif_neg hbeq] at hmem; dsimp only at hmem
+    rw [dite_eq_right hbeq] at hmem; dsimp only at hmem
     -- hmem : q ∈ cc :: (tru ...).attach.flatMap (...)
     rw [List.mem_cons] at hmem
     rcases hmem with rfl | hmem
@@ -279,7 +279,7 @@ private theorem isLeafParent_to_mkTRemsLeafParentsAux
     have hqcc : q = cc := liftPoly_injective (by rw [hR, ← hQ])
     rw [hqcc]
     rw [AzPolynomial.mkTRemsLeafParentsAux]
-    rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
+    rw [dite_eq_right (by simp [beq_iff_eq, hcc_ne])]
     exact List.mem_cons_self ..
   | child h hc hq_inner ih =>
     have hcc_ne : cc ≠ 0 := fun h0 => h (by rw [← hQ, h0, liftPoly_zero])
@@ -288,7 +288,7 @@ private theorem isLeafParent_to_mkTRemsLeafParentsAux
     obtain ⟨c_az, hc_tru, hc_eq⟩ := exists_tru_preimage _ _ hc
     have hq_mem := ih cc c_az q hQ hc_eq hR
     rw [AzPolynomial.mkTRemsLeafParentsAux]
-    rw [dif_neg (by simp [beq_iff_eq, hcc_ne])]
+    rw [dite_eq_right (by simp [beq_iff_eq, hcc_ne])]
     exact List.mem_cons_of_mem _ (by
       simp only [List.mem_flatMap, List.mem_attach, true_and, Subtype.exists]
       exact ⟨c_az, hc_tru, hq_mem⟩)

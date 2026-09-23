@@ -216,7 +216,7 @@ lemma parseCoeffAndOptionalMonic_coeff_only (cs : List Char) (r : R) (hr : r ≠
   simp only [List.span_eq_takeWhile_dropWhile]
   rw [(List.takeWhile_eq_self_iff).mpr hall, (List.dropWhile_eq_nil_iff).mpr hall]
   rw [hparse]
-  simp only [Option.bind_some, dif_neg hr]
+  simp only [Option.bind_some, dite_eq_right hr]
 
 /-- Parsing a char list of the form `coeffCs ++ '*' :: monicCs` where the
     coefficient part parses correctly and the monic part parses correctly. -/
@@ -243,7 +243,7 @@ lemma parseCoeffAndOptionalMonic_coeff_times
     simp [hc, List.dropWhile_append, (List.dropWhile_eq_nil_iff).mpr hall_t]
   rw [htw, hdw]
   rw [← hct, hparse_coeff]
-  simp only [Option.bind_some, dif_neg hr, hparse_monic, Option.map_some]
+  simp only [Option.bind_some, dite_eq_right hr, hparse_monic, Option.map_some]
 
 theorem toCharsWith_ne_nil (m : Monomial n R ord) : m.toCharsWith F ≠ [] := by
   unfold toCharsWith
@@ -366,7 +366,7 @@ private lemma Monomial.parseWith_cons_eq_helper
   | nil => rfl
   | cons c' t' =>
     dsimp only
-    rw [dif_neg]
+    rw [dite_eq_right]
     rintro ⟨rfl, hnot⟩
     obtain ⟨_, _, hcons, hsyn⟩ := hmns rfl
     simp only [List.cons.injEq] at hcons
@@ -460,7 +460,7 @@ theorem Monomial.parseWith_toCharsWith {R : Type _} [Semiring R]
         rw [show decide (¬ isPolySyntaxChar '-') = false by
               simp only [decide_eq_false_iff_not, not_not]; exact his_syntax_minus]
         simp only [Bool.false_eq_true, ↓reduceIte]
-        rw [dif_pos (show True ∧ ¬ isPolySyntaxChar c from ⟨trivial, hnot_syntax⟩)]
+        rw [dite_eq_left (show True ∧ ¬ isPolySyntaxChar c from ⟨trivial, hnot_syntax⟩)]
         simp only [hn]
         rw [← hct, MonicMonomial.parseWith_toCharsWith, Option.map_some]
         obtain ⟨mc, mm⟩ := m

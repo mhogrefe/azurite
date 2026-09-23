@@ -69,7 +69,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
   | .Down =>
     rw [show round natBotSet RoundingMode.Down x =
       (if 0 ≤ x then roundFloor natBotSet x else roundCeiling natBotSet x) from rfl]
-    rw [if_pos hx_nonneg]
+    rw [ite_eq_left hx_nonneg]
     exact hfloor_side
   | .Ceiling =>
     rw [show round natBotSet RoundingMode.Ceiling x = roundCeiling natBotSet x from rfl]
@@ -80,7 +80,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
   | .Up =>
     rw [show round natBotSet RoundingMode.Up x =
       (if 0 ≤ x then roundCeiling natBotSet x else roundFloor natBotSet x) from rfl]
-    rw [if_pos hx_nonneg]
+    rw [ite_eq_left hx_nonneg]
     rw [isMultipleOfPow2_eq]
     by_cases h : 2 ^ sh ∣ n.toNat
     · simp [h, hceil_side_of_dvd h]
@@ -138,10 +138,10 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
           else n.shiftRight sh).toNat : EReal) = ((q : ℝ) : EReal) := by
         by_cases hsh0 : sh = 0
         · subst hsh0
-          rw [if_pos rfl]
+          rw [ite_eq_left rfl]
           have hq_n : q = n.toNat := by simp [hq_def]
           rw [hq_n]; push_cast; rfl
-        · rw [if_neg hsh0]
+        · rw [ite_eq_right hsh0]
           have hsh_pos : 0 < sh := Nat.pos_of_ne_zero hsh0
           -- testBit (sh-1) of n.toNat is false since 2^sh ∣ n.toNat and sh-1 < sh.
           have hbit_false : n.testBit (sh - 1) = false := by
@@ -152,7 +152,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
             simp [show sh - 1 < sh from by omega]
           have hcond_false : ¬ (n.testBit (sh - 1) = true) := by
             rw [hbit_false]; exact Bool.false_ne_true
-          rw [if_neg hcond_false]
+          rw [ite_eq_right hcond_false]
           rw [AzNat.toNat_shiftRight]
           push_cast; rfl
       rw [hLHS_q]
@@ -165,7 +165,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
           rw [pow_zero]; exact one_dvd _
         · exact h
       have hsh_ne : sh ≠ 0 := Nat.pos_iff_ne_zero.mp hsh_pos
-      rw [if_neg hsh_ne]
+      rw [ite_eq_right hsh_ne]
       -- Arithmetic setup.
       set r := n.toNat % 2 ^ sh with hr_def
       have hr_bound : r < 2 ^ sh := Nat.mod_lt _ (Nat.two_pow_pos _)
@@ -241,7 +241,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
       rw [AzNat.testBit_eq_toNat_testBit]
       by_cases hbit : n.toNat.testBit (sh - 1) = true
       · -- testBit = true: r ≥ 2^(sh-1).
-        rw [if_pos hbit]
+        rw [ite_eq_left hbit]
         have hr_bit : r.testBit (sh - 1) = true := hr_testBit ▸ hbit
         have hr_ge : 2 ^ (sh - 1) ≤ r :=
           (testBit_top_true_iff_half_le r sh hsh_pos hr_bound).mp hr_bit
@@ -249,7 +249,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
         · -- r = 2^(sh-1): tie, tiebreak decides.
           have hmult_bool : n.isMultipleOfPow2 (sh - 1) = true := by
             rw [AzNat.isMultipleOfPow2_eq]; exact decide_eq_true hmult
-          rw [if_pos hmult_bool]
+          rw [ite_eq_left hmult_bool]
           -- Show r = 2^(sh-1).
           have hr_dvd : 2 ^ (sh - 1) ∣ r := by
             rw [hr_def]
@@ -273,14 +273,14 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
             have hq_not_even : ¬ Even q := Nat.not_even_iff_odd.mpr hq_odd
             have hisOdd_true : (n.shiftRight sh).isOdd = true := by
               rw [AzNat.isOdd_iff, AzNat.toNat_shiftRight]; exact hq_odd
-            rw [if_pos hisOdd_true]
+            rw [ite_eq_left hisOdd_true]
             rw [AzNat.toNat_addUInt64, AzNat.toNat_shiftRight]
             show ((q + (1 : UInt64).toNat : ℕ) : EReal) = (RoundingTarget.tiebreak F C).val
             show ((q + (1 : UInt64).toNat : ℕ) : EReal) = (natBotTiebreak F C).val
             unfold natBotTiebreak
             rw [hF_nat, hC_nat]
             have hq1_even : Even (q + 1) := Odd.add_one hq_odd
-            rw [if_neg hq_not_even, if_pos hq1_even, hC_val]
+            rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]
             rw [show (1 : UInt64).toNat = 1 from rfl]
             push_cast; ring_nf
           · -- q even ⇒ LHS = q.
@@ -289,20 +289,20 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
             have hisOdd_false : ¬ ((n.shiftRight sh).isOdd = true) := by
               rw [AzNat.isOdd_iff, AzNat.toNat_shiftRight, Nat.not_odd_iff_even]
               exact hq_even
-            rw [if_neg hisOdd_false]
+            rw [ite_eq_right hisOdd_false]
             rw [AzNat.toNat_shiftRight]
             show ((q : ℕ) : EReal) = (RoundingTarget.tiebreak F C).val
             show ((q : ℕ) : EReal) = (natBotTiebreak F C).val
             unfold natBotTiebreak
             rw [hF_nat, hC_nat]
-            rw [if_pos hq_even, hF_val]
+            rw [ite_eq_left hq_even, hF_val]
             push_cast; rfl
         · -- r > 2^(sh-1): dC < dF, returns C.
           have hmult_cond_false : ¬ (n.isMultipleOfPow2 (sh - 1) = true) := by
             rw [AzNat.isMultipleOfPow2_eq]
             intro heq
             exact hmult (of_decide_eq_true heq)
-          rw [if_neg hmult_cond_false]
+          rw [ite_eq_right hmult_cond_false]
           -- r > 2^(sh-1).
           have hr_gt : 2 ^ (sh - 1) < r := by
             rcases lt_or_eq_of_le hr_ge with h | h
@@ -324,7 +324,7 @@ theorem AzNat.toNat_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat)
           rw [show (1 : UInt64).toNat = 1 from rfl]
           push_cast; rfl
       · -- testBit = false: r < 2^(sh-1), dF < dC, returns F.
-        rw [if_neg hbit]
+        rw [ite_eq_right hbit]
         have hbit_false : n.toNat.testBit (sh - 1) = false := by
           cases h : n.toNat.testBit (sh - 1)
           · rfl
@@ -395,18 +395,18 @@ theorem AzNat.compare_shiftRight_mul (n : AzNat) (sh : Nat) :
     refine ⟨fun ⟨k, hk⟩ => ?_, Nat.dvd_of_mod_eq_zero⟩
     rw [hk]; exact Nat.mul_mod_right _ _
   by_cases hm : n.isMultipleOfPow2 sh = true
-  · rw [if_pos hm]
+  · rw [ite_eq_left hm]
     have hr0 : n.toNat % 2 ^ sh = 0 := hmult_iff.mp hm
     have heq : n.toNat / 2 ^ sh * 2 ^ sh = n.toNat := by omega
     rw [heq]
     show compareOfLessAndEq n.toNat n.toNat = Ordering.eq
     simp [compareOfLessAndEq]
-  · rw [if_neg hm]
+  · rw [ite_eq_right hm]
     have hr_ne : n.toNat % 2 ^ sh ≠ 0 := fun h => hm (hmult_iff.mpr h)
     have hr_pos : 0 < n.toNat % 2 ^ sh := Nat.pos_of_ne_zero hr_ne
     have hlt : n.toNat / 2 ^ sh * 2 ^ sh < n.toNat := by omega
     show compareOfLessAndEq _ n.toNat = Ordering.lt
-    rw [compareOfLessAndEq, if_pos hlt]
+    rw [compareOfLessAndEq, ite_eq_left hlt]
 
 /-- When we return `(n.shiftRight sh).addUInt64 1`, the scaled-back comparison is
 always `.gt` (note `AzNat` is unbounded, so no overflow side-condition is needed —
@@ -423,8 +423,8 @@ theorem AzNat.compare_shiftRight_addUInt64_one_mul (n : AzNat) (sh : Nat) :
         n.toNat / 2 ^ sh * 2 ^ sh + 2 ^ sh := by ring
     omega
   show compareOfLessAndEq _ n.toNat = Ordering.gt
-  rw [compareOfLessAndEq, if_neg (Nat.not_lt.mpr (Nat.le_of_lt hgt)),
-      if_neg (Nat.ne_of_gt hgt)]
+  rw [compareOfLessAndEq, ite_eq_right (Nat.not_lt.mpr (Nat.le_of_lt hgt)),
+      ite_eq_right (Nat.ne_of_gt hgt)]
 
 /-- When `n.testBit (sh - 1) = true` with `sh > 0`, `n` is not a multiple of `2^sh`. -/
 private theorem AzNat.not_isMultipleOfPow2_of_testBit {n : AzNat} {sh : Nat}
@@ -458,8 +458,8 @@ theorem AzNat.snd_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat) :
   | .Ceiling =>
     simp only []
     by_cases hm : n.isMultipleOfPow2 sh = true
-    · rw [if_pos hm, if_pos hm, AzNat.compare_shiftRight_mul, if_pos hm]
-    · rw [if_neg hm, if_neg hm]
+    · rw [ite_eq_left hm, ite_eq_left hm, AzNat.compare_shiftRight_mul, ite_eq_left hm]
+    · rw [ite_eq_right hm, ite_eq_right hm]
       have hsh_pos : 0 < sh := by
         rcases Nat.eq_zero_or_pos sh with hsh0 | hsh0
         · subst hsh0
@@ -470,8 +470,8 @@ theorem AzNat.snd_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat) :
   | .Up =>
     simp only []
     by_cases hm : n.isMultipleOfPow2 sh = true
-    · rw [if_pos hm, if_pos hm, AzNat.compare_shiftRight_mul, if_pos hm]
-    · rw [if_neg hm, if_neg hm]
+    · rw [ite_eq_left hm, ite_eq_left hm, AzNat.compare_shiftRight_mul, ite_eq_left hm]
+    · rw [ite_eq_right hm, ite_eq_right hm]
       have hsh_pos : 0 < sh := by
         rcases Nat.eq_zero_or_pos sh with hsh0 | hsh0
         · subst hsh0
@@ -483,24 +483,24 @@ theorem AzNat.snd_shiftRightRound (n : AzNat) (mode : RoundingMode) (sh : Nat) :
     simp only []
     by_cases hsh0 : sh = 0
     · subst hsh0
-      rw [if_pos rfl, if_pos rfl]
+      rw [ite_eq_left rfl, ite_eq_left rfl]
       simp only [pow_zero, Nat.mul_one]
       show Ordering.eq = compareOfLessAndEq n.toNat n.toNat
       simp [compareOfLessAndEq]
-    · rw [if_neg hsh0, if_neg hsh0]
+    · rw [ite_eq_right hsh0, ite_eq_right hsh0]
       have hsh_pos : 0 < sh := Nat.pos_of_ne_zero hsh0
       by_cases htb : n.testBit (sh - 1) = true
-      · rw [if_pos htb, if_pos htb]
+      · rw [ite_eq_left htb, ite_eq_left htb]
         have hnot_mult : ¬ n.isMultipleOfPow2 sh = true :=
           AzNat.not_isMultipleOfPow2_of_testBit hsh_pos htb
         by_cases hm1 : n.isMultipleOfPow2 (sh - 1) = true
-        · rw [if_pos hm1, if_pos hm1]
+        · rw [ite_eq_left hm1, ite_eq_left hm1]
           by_cases hodd : (n.shiftRight sh).isOdd = true
-          · rw [if_pos hodd, if_pos hodd,
+          · rw [ite_eq_left hodd, ite_eq_left hodd,
               AzNat.compare_shiftRight_addUInt64_one_mul n sh]
-          · rw [if_neg hodd, if_neg hodd, AzNat.compare_shiftRight_mul, if_neg hnot_mult]
-        · rw [if_neg hm1, if_neg hm1,
+          · rw [ite_eq_right hodd, ite_eq_right hodd, AzNat.compare_shiftRight_mul, ite_eq_right hnot_mult]
+        · rw [ite_eq_right hm1, ite_eq_right hm1,
             AzNat.compare_shiftRight_addUInt64_one_mul n sh]
-      · rw [if_neg htb, if_neg htb, AzNat.compare_shiftRight_mul]
+      · rw [ite_eq_right htb, ite_eq_right htb, AzNat.compare_shiftRight_mul]
 
 end Azurite

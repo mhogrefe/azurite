@@ -29,7 +29,7 @@ theorem proposition_4_93 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Alg
     (hex : evalBar C Ps x hx e = 1)
     (hey : ∀ (y : Fin k → C) (hy : y ∈ zerOfFinset C Ps), y ≠ x → evalBar C Ps y hy e = 0) :
     Nonempty (he.Corner ≃+* localizationAtPoint C Ps x hx) := by
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   -- Work with the explicit `Localization` type so the localization type-class machinery applies
   -- (`localizationAtPoint` is definitionally `Localization (evalAtPointSubmonoid …)`).
   show Nonempty (he.Corner ≃+* Localization (evalAtPointSubmonoid C Ps x hx))
@@ -129,7 +129,8 @@ theorem proposition_4_93 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Alg
     obtain ⟨u, hu⟩ := hunitinv
     obtain ⟨w, hw⟩ := hunitprod
     refine ⟨u⁻¹ * w, ?_⟩
-    rw [Units.val_mul, hw, ← hu, ← mul_assoc, Units.inv_mul, one_mul]
+    rw [Units.val_mul, hw, ← hu]
+    exact Units.inv_mul_cancel_left u (π Q)
   -- ============ Step 3: `φ : Āx →+* R'` via universal property ============
   let φ : Localization (evalAtPointSubmonoid C Ps x hx) →+* he.Corner :=
     IsLocalization.lift (S := Localization (evalAtPointSubmonoid C Ps x hx))

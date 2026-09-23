@@ -149,15 +149,15 @@ instance : LinearOrder (AzMvRationalFunction n ord) where
   compare_eq_compareOfLessAndEq r s := by
     rw [compareOfLessAndEq]
     rcases h : compare r s with _ | _ | _
-    · rw [if_pos (show r < s from h)]
-    · rw [if_neg (show ¬ r < s from fun h2 => by
+    · rw [ite_eq_left (show r < s from h)]
+    · rw [ite_eq_right (show ¬ r < s from fun h2 => by
             rw [show compare r s = .lt from h2] at h
             exact absurd h (by simp)),
-        if_pos (eq_of_compare_eq' h)]
-    · rw [if_neg (show ¬ r < s from fun h2 => by
+        ite_eq_left (eq_of_compare_eq' h)]
+    · rw [ite_eq_right (show ¬ r < s from fun h2 => by
             rw [show compare r s = .lt from h2] at h
             exact absurd h (by simp)),
-        if_neg (fun h2 => by
+        ite_eq_right (fun h2 => by
           subst h2
           rw [compare_self'] at h
           exact absurd h (by simp))]
@@ -166,12 +166,12 @@ instance : LinearOrder (AzMvRationalFunction n ord) where
 
 private theorem sic_one : signedIntContent (1 : AzMvPolynomial n AzInt ord) = 1 := by
   rw [signedIntContent,
-    if_pos (by rw [show leadingCoeff (1 : AzMvPolynomial n AzInt ord) = 1 from rfl]; decide)]
+    ite_eq_left (by rw [show leadingCoeff (1 : AzMvPolynomial n AzInt ord) = 1 from rfl]; decide)]
   rfl
 
 private theorem signNorm_one : signNorm (1 : AzMvPolynomial n AzInt ord) = 1 := by
   rw [signNorm,
-    if_pos (by rw [show leadingCoeff (1 : AzMvPolynomial n AzInt ord) = 1 from rfl]; decide)]
+    ite_eq_left (by rw [show leadingCoeff (1 : AzMvPolynomial n AzInt ord) = 1 from rfl]; decide)]
 
 private theorem exactDiv_one (X : AzMvPolynomial n AzInt ord) :
     Azurite.ExactDiv.exactDiv X 1 = X := by
@@ -208,7 +208,7 @@ private theorem ofAzInts_one_eq_toAzRat {a : AzInt} (ha : a ≠ 0) :
     simp only at h hs; subst h; subst hs; rfl
   rw [AzRat.ofAzInts]
   show AzRat.ofSignAzNats (a.sign == (1 : AzInt).sign) a.abs (1 : AzInt).abs = a.toAzRat
-  rw [AzRat.ofSignAzNats, dif_neg (show (1 : AzInt).abs ≠ 0 by decide), dif_neg habs]
+  rw [AzRat.ofSignAzNats, dite_eq_right (show (1 : AzInt).abs ≠ 0 by decide), dite_eq_right habs]
   apply AzRat.ext
   · show (a.sign == true) = a.sign
     cases a.sign <;> rfl
@@ -232,7 +232,7 @@ private theorem display_ofMvPolynomial (p : AzMvPolynomial n AzInt ord) :
     subst hp
     have h0 : ofMvPolynomial (0 : AzMvPolynomial n AzInt ord) = 0 := by
       show ofNumDen 0 1 = 0
-      rw [ofNumDen, if_pos (Or.inl rfl)]
+      rw [ofNumDen, ite_eq_left (Or.inl rfl)]
     rw [h0]
     refine ⟨?_, ?_⟩
     · show (⟨(0 : AzRat).sign, (0 : AzRat).num, (0 : AzRat).zero_sign⟩ : AzInt)

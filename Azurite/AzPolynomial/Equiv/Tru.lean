@@ -57,7 +57,7 @@ theorem AzMvPolynomial.isConstant_iff
       have hC : AzMvPolynomial.ofMonomial m =
           (AzMvPolynomial.C m.coeff.val : AzMvPolynomial k D ord) := by
         unfold AzMvPolynomial.C
-        rw [dif_neg m.coeff.property]
+        rw [dite_eq_right m.coeff.property]
         unfold AzMvPolynomial.ofMonomial; congr 1
         cases m with | mk c mc =>
         simp only at h; subst h; rfl
@@ -166,7 +166,7 @@ theorem mem_tru_iff_mem_Tru (p q : AzPolynomial (AzMvPolynomial k D ord)) :
         rcases hbase with hc | hd
         · exact Or.inl (isConstant_leadingCoeff_iff p |>.mp hc)
         · exact Or.inr (by rw [liftPoly_natDegree]; exact hd)
-      rw [if_pos hbase, if_pos hbase']
+      rw [ite_eq_left hbase, ite_eq_left hbase']
       simp only [List.mem_singleton, Set.mem_singleton_iff]
       exact ⟨fun h => congrArg liftPoly h, fun h => liftPoly_injective h⟩
     -- Recursive case
@@ -176,7 +176,7 @@ theorem mem_tru_iff_mem_Tru (p q : AzPolynomial (AzMvPolynomial k D ord)) :
         rintro (⟨d, hd⟩ | hd)
         · exact hbase.1 ((isConstant_leadingCoeff_iff p).mpr ⟨d, hd⟩)
         · rw [liftPoly_natDegree] at hd; exact hbase.2 hd
-      rw [if_neg (not_or.mpr hbase), if_neg hbase']
+      rw [ite_eq_right (not_or.mpr hbase), ite_eq_right hbase']
       rw [List.mem_cons, Set.mem_union, Set.mem_singleton_iff]
       rw [liftPoly_natDegree]
       have hlt : (AzPolynomial.truncate (p.natDegree - 1) p).natDegree < p.natDegree := by

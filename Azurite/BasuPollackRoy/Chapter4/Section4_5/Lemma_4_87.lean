@@ -77,11 +77,10 @@ theorem mem_idealOfPolys_of_map_mem {Ps : Finset (MvPolynomial (Fin k) K)}
       Finsupp.mapRange.linearMap π ∘ₗ
       (AddMonoidAlgebra.coeffLinearEquiv (R := K)).toLinearMap
   have prjcoeff : ∀ (p : MvPolynomial (Fin k) C) (m : Fin k →₀ ℕ),
-      MvPolynomial.coeff m (prj p) = π (MvPolynomial.coeff m p) := fun p m => by
-    show MvPolynomial.coeff m ((AddMonoidAlgebra.coeffLinearEquiv (R := K)).symm
+      (prj p).coeff m = π (p.coeff m) := fun p m => by
+    show ((AddMonoidAlgebra.coeffLinearEquiv (R := K)).symm
       (Finsupp.mapRange π (map_zero π)
-        ((AddMonoidAlgebra.coeffLinearEquiv (R := K)) p))) = π (MvPolynomial.coeff m p)
-    rw [MvPolynomial.coeff, MvPolynomial.coeff]
+        ((AddMonoidAlgebra.coeffLinearEquiv (R := K)) p))).coeff m = π (p.coeff m)
     simp [AddMonoidAlgebra.coeffLinearEquiv_apply, AddMonoidAlgebra.coeffLinearEquiv_symm_apply]
   -- `prj` is a retraction of base change: `prj(map g) = g`.
   have prjmap : ∀ g : MvPolynomial (Fin k) K,

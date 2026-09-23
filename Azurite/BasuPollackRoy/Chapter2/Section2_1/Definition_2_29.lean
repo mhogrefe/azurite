@@ -39,10 +39,10 @@ theorem isThomEncoding_of_mem_of_isRealClosed
     (hx : letI : LinearOrder R := IsRealClosed.toLinearOrder; x ∈ derReali P n σ) :
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     IsThomEncoding P n σ x := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   exact isThomEncoding_of_mem Theorem2_11.theorem_2_11_b_c P hP n σ hn hσ0 x hx
 
 end Azurite.BPR.Proposition2_28

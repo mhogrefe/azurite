@@ -425,7 +425,7 @@ private theorem mem_foldr_azToConjDisjForms
       · rintro ⟨heq, hne⟩ b hb
         rcases hb with rfl | hb
         · simp only [azFieldAtomInterpret, ha, Bool.false_eq_true, ↓reduceIte,
-            Set.mem_setOf_eq]
+            Set.mem_ofPred_eq]
           exact hne _ (Or.inl rfl)
         · exact (ih.mp ⟨heq, fun Q hQ => hne Q (Or.inr hQ)⟩) b hb
       · intro h
@@ -436,7 +436,7 @@ private theorem mem_foldr_azToConjDisjForms
           rcases hQ with rfl | hQ
           · have := h a (Or.inl rfl)
             simp only [azFieldAtomInterpret, ha, Bool.false_eq_true, ↓reduceIte,
-              Set.mem_setOf_eq] at this
+              Set.mem_ofPred_eq] at this
             exact this
           · exact (ih.mpr (fun b hb => h b (Or.inr hb))).2 Q hQ
     · -- a.isEq = true: eqs gets a.poly prepended
@@ -444,7 +444,7 @@ private theorem mem_foldr_azToConjDisjForms
       constructor
       · rintro ⟨heq, hne⟩ b hb
         rcases hb with rfl | hb
-        · simp only [azFieldAtomInterpret, ha, ↓reduceIte, Set.mem_setOf_eq]
+        · simp only [azFieldAtomInterpret, ha, ↓reduceIte, Set.mem_ofPred_eq]
           exact heq _ (Or.inl rfl)
         · exact (ih.mp ⟨fun P hP => heq P (Or.inr hP), hne⟩) b hb
       · intro h
@@ -452,7 +452,7 @@ private theorem mem_foldr_azToConjDisjForms
         · intro P hP
           rcases hP with rfl | hP
           · have := h a (Or.inl rfl)
-            simp only [azFieldAtomInterpret, ha, ↓reduceIte, Set.mem_setOf_eq] at this
+            simp only [azFieldAtomInterpret, ha, ↓reduceIte, Set.mem_ofPred_eq] at this
             exact this
           · exact (ih.mpr (fun b hb => h b (Or.inr hb))).1 P hP
         · intro Q hQ
@@ -469,7 +469,7 @@ theorem azRealization_azToConjDisjForms
               (∀ Q ∈ cl.2, MvPolynomial.aeval y Q.toMvPoly ≠ 0) } := by
   rw [← gRealization_eq_azRealization, toDNF_gRealization (K := C) Φ hqf]
   ext y
-  simp only [azToConjDisjForms, Set.mem_setOf_eq, List.mem_map]
+  simp only [azToConjDisjForms, Set.mem_ofPred_eq, List.mem_map]
   constructor
   · rintro ⟨cl, hcl, hatom⟩
     refine ⟨_, ⟨cl, hcl, rfl⟩, ?_⟩
@@ -526,7 +526,7 @@ theorem azRealization_azProjBasic
         (azDegNeqFormula (azPathLeafParent extra_az path) QC₁.1)))) = _
   rw [azRealization_azDisjList]
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   rw [exists_cons_iff_exists_eval_finSuccEquiv y Ps Qs]
   -- Unfold the mapped list structure in the RHS
   show (∃ Φ ∈ _, y ∈ azRealization Φ (C := C)) ↔ _
@@ -538,7 +538,7 @@ theorem azRealization_azProjBasic
     subst hΦ_eq
     simp only [azRealization_azSmartAnd, Set.mem_inter_iff,
       azRealization_azLeafFormula, azRealization_azDegNeqFormula,
-      BPR.realization_degNeqFormula, Set.mem_setOf_eq] at hy_Φ
+      BPR.realization_degNeqFormula, Set.mem_ofPred_eq] at hy_Φ
     obtain ⟨hy_C, hy_leaf, hy_deg⟩ := hy_Φ
     -- Transfer to BPR via azPosgcd_forward
     obtain ⟨G', C', hmem', hG_eq, hR⟩ :=
@@ -616,7 +616,7 @@ theorem azRealization_azProjBasic
       exact ⟨G, 𝒞, h_mem_posgcd, path, hpath_mem, rfl⟩
     · simp only [azRealization_azSmartAnd, Set.mem_inter_iff,
         azRealization_azLeafFormula, azRealization_azDegNeqFormula,
-        BPR.realization_degNeqFormula, Set.mem_setOf_eq]
+        BPR.realization_degNeqFormula, Set.mem_ofPred_eq]
       rw [azRealization_azLeafFormula] at hy_leaf
       refine ⟨hy_C, hy_leaf, ?_⟩
       rw [liftPoly_azPathLeafParent, hpath_eq, hG_eq]
@@ -644,7 +644,7 @@ theorem azRealization_azProjectQF
       gRealization_eq_azRealization, azRealization_azDisjList,
       azRealization_azToConjDisjForms (C := C) Φ hqf]
   ext y
-  simp only [List.mem_map, Prod.exists, Set.mem_setOf_eq]
+  simp only [List.mem_map, Prod.exists, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨Ψ, ⟨Ps', Qs', h_cl, rfl⟩, hy⟩
     rw [azRealization_azProjBasic hinj Ps' Qs'] at hy
@@ -676,7 +676,7 @@ theorem azRealization_azProjectQFAt
   rw [azRealization_azProjectQF hinj (renameFormulaEquiv (Equiv.swap 0 i) Φ)
     (Formula.rename_isQF _ _ Φ hqf)]
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨x, hx⟩
     refine ⟨x, ?_⟩

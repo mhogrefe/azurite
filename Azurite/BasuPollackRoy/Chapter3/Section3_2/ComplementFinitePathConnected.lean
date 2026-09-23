@@ -199,7 +199,7 @@ private theorem isSemialgebraicSet_Icc' (a b : R) :
       = {y : Fin 1 → R | eval y (X 0 - C a) ≥ 0} ∩ {y | eval y (X 0 - C b) ≤ 0} := by
     ext y
     rw [mem_Icc_fin_one']
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq, map_sub, eval_X, eval_C, ge_iff_le,
+    simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, map_sub, eval_X, eval_C, ge_iff_le,
       sub_nonneg, sub_nonpos]
   rw [heq]
   exact (IsSemialgebraicSet.geZero _).inter (IsSemialgebraicSet.leZero _)
@@ -234,7 +234,7 @@ private theorem funGraph_union' {ℓ : ℕ} {S T : Set (Fin 1 → R)}
     (f : (Fin 1 → R) → (Fin ℓ → R)) :
     funGraph (S ∪ T) f = funGraph S f ∪ funGraph T f := by
   ext z
-  simp only [funGraph, Set.mem_union, Set.mem_setOf_eq]
+  simp only [funGraph, Set.mem_union, Set.mem_ofPred_eq]
   tauto
 
 set_option linter.unusedSectionVars false in
@@ -243,7 +243,7 @@ private theorem funGraph_congr' {ℓ : ℕ} {S : Set (Fin 1 → R)}
     {f g : (Fin 1 → R) → (Fin ℓ → R)} (h : ∀ u ∈ S, f u = g u) :
     funGraph S f = funGraph S g := by
   ext z
-  simp only [funGraph, Set.mem_setOf_eq]
+  simp only [funGraph, Set.mem_ofPred_eq]
   constructor <;> rintro ⟨h1, h2⟩
   · exact ⟨h1, by rw [h2, h _ h1]⟩
   · exact ⟨h1, by rw [h2, ← h _ h1]⟩
@@ -299,17 +299,17 @@ theorem isSemialgebraicallyPathConnected_compl_finite (hk : 2 ≤ k) (Δ : Finse
   -- `ϕ` equals `polynomialMap P₁` on `H₁` and `polynomialMap P₂` on `H₂`.
   have hϕ₁ : ∀ u ∈ H₁, ϕ u = polynomialMap P₁ u := by
     intro u hu
-    simp only [hϕ]; exact if_pos ((hH₁mem u).mp hu).2
+    simp only [hϕ]; exact ite_eq_left ((hH₁mem u).mp hu).2
   have hϕ₂ : ∀ u ∈ H₂, ϕ u = polynomialMap P₂ u := by
     intro u hu
     simp only [hϕ]
     rcases le_or_gt (u 0) (1 / 2) with h | h
     · -- on the overlap `u 0 = 1/2`, both pieces coincide (value `w`).
       have hhalf : u 0 = 1 / 2 := le_antisymm h ((hH₂mem u).mp hu).1
-      rw [if_pos h]
+      rw [ite_eq_left h]
       rw [hev₁, hev₂, hhalf]
       norm_num
-    · rw [if_neg (not_le.mpr h)]
+    · rw [ite_eq_right (not_le.mpr h)]
   refine ⟨ϕ, ?_, ?_, ?_, ?_, ?_⟩
   · -- semialgebraic: split the graph along `unitIntervalPt = H₁ ∪ H₂`.
     show IsSemialgebraicSet (funGraph unitIntervalPt ϕ)
@@ -342,14 +342,14 @@ theorem isSemialgebraicallyPathConnected_compl_finite (hk : 2 ≤ k) (Δ : Finse
       exact hwy _ hmem (2 * u 0 - 1) ⟨by linarith, by linarith⟩ rfl
   · -- source: `ϕ (constPt 0) = x`.
     have h0 : (constPt (0 : R)) 0 ≤ 1 / 2 := by show (0 : R) ≤ 1 / 2; norm_num
-    simp only [hϕ, if_pos h0]
+    simp only [hϕ, ite_eq_left h0]
     rw [hev₁]
     have : (constPt (0 : R)) 0 = 0 := rfl
     rw [this]
     ext i; simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
   · -- target: `ϕ (constPt 1) = y`.
     have h1 : ¬ (constPt (1 : R)) 0 ≤ 1 / 2 := by show ¬ (1 : R) ≤ 1 / 2; norm_num
-    simp only [hϕ, if_neg h1]
+    simp only [hϕ, ite_eq_right h1]
     rw [hev₂]
     have : (constPt (1 : R)) 0 = 1 := rfl
     rw [this]

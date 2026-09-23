@@ -74,12 +74,12 @@ theorem equalDegreeSplittingStep_correct {q : AzNat} {d : ℕ}
     AzPolynomial.toPoly g ≠ AzPolynomial.toPoly f := by
   rw [AzPolynomial.equalDegreeSplittingStep] at h
   by_cases ha : a.natDegree = 0
-  · rw [if_pos ha] at h
+  · rw [ite_eq_left ha] at h
     exact absurd h (by simp)
-  rw [if_neg ha] at h
+  rw [ite_eq_right ha] at h
   simp only [] at h
   by_cases hg1 : AzPolynomial.gcdMonic a f ≠ 1
-  · rw [if_pos hg1] at h
+  · rw [ite_eq_left hg1] at h
     obtain rfl : AzPolynomial.gcdMonic a f = g := Option.some.inj h
     have ha0 : AzPolynomial.toPoly a ≠ 0 := ne_zero_of_natDegree_ne_zero ha
     have hgmonic : (AzPolynomial.toPoly (AzPolynomial.gcdMonic a f)).Monic := by
@@ -104,12 +104,12 @@ theorem equalDegreeSplittingStep_correct {q : AzNat} {d : ℕ}
       rw [heq, AzPolynomial.natDegree_toPoly, AzPolynomial.natDegree_toPoly]
         at hle
       omega
-  · rw [if_neg hg1] at h
+  · rw [ite_eq_right hg1] at h
     by_cases hg2 : AzPolynomial.gcdMonic
         (AzPolynomial.powModByMonic a (AzPolynomial.czExponent q d) f - 1) f ≠ 1
         ∧ AzPolynomial.gcdMonic
         (AzPolynomial.powModByMonic a (AzPolynomial.czExponent q d) f - 1) f ≠ f
-    · rw [if_pos hg2] at h
+    · rw [ite_eq_left hg2] at h
       obtain rfl : AzPolynomial.gcdMonic
           (AzPolynomial.powModByMonic a (AzPolynomial.czExponent q d) f - 1) f
           = g := Option.some.inj h
@@ -120,7 +120,7 @@ theorem equalDegreeSplittingStep_correct {q : AzNat} {d : ℕ}
         exact hg2.1
       · rw [Ne, toPoly_inj]
         exact hg2.2
-    · rw [if_neg hg2] at h
+    · rw [ite_eq_right hg2] at h
       exact absurd h (by simp)
 
 /-- **The output contract of the driver**: any success on the hybrid

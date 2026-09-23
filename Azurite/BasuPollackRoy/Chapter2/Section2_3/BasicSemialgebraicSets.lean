@@ -91,7 +91,7 @@ theorem IsBasicSemialgebraicSet.isSemialgebraicSet
     have h_inter := ih.inter (IsSemialgebraicSet.pos_locus q')
     convert h_inter using 1
     ext x
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff,
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff,
       Finset.forall_mem_insert]
     tauto
 
@@ -120,7 +120,7 @@ theorem IsBasicSemialgebraicSet.inter
   obtain ⟨P₂, Q₂, rfl⟩ := hW
   refine ⟨P₁ ^ 2 + P₂ ^ 2, Q₁ ∪ Q₂, ?_⟩
   ext x
-  simp only [Set.mem_inter_iff, Set.mem_setOf_eq, Finset.mem_union,
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, Finset.mem_union,
     map_add, map_pow]
   constructor
   · rintro ⟨⟨hp₁, hQ₁⟩, hp₂, hQ₂⟩
@@ -186,7 +186,7 @@ private theorem isFinUnionOfBasic_le_zero (P : MvPolynomial (Fin k) R) :
   have h := h_lt.union h_eq
   convert h using 1
   ext x
-  simp only [Set.mem_setOf_eq, Set.mem_union]
+  simp only [Set.mem_ofPred_eq, Set.mem_union]
   exact le_iff_lt_or_eq
 
 private theorem isFinUnionOfBasic_ne_zero (P : MvPolynomial (Fin k) R) :
@@ -198,7 +198,7 @@ private theorem isFinUnionOfBasic_ne_zero (P : MvPolynomial (Fin k) R) :
   have h := h_pos.union h_neg
   convert h using 1
   ext x
-  simp only [Set.mem_setOf_eq, Set.mem_union]
+  simp only [Set.mem_ofPred_eq, Set.mem_union]
   exact ⟨fun h => (lt_or_gt_of_ne h).symm,
          fun h => h.elim ne_of_gt ne_of_lt⟩
 
@@ -219,7 +219,7 @@ private theorem complementOfBasic_isFUB
     have h := ih.union h_le
     convert h using 1
     ext x
-    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_union,
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, Set.mem_union,
       Finset.forall_mem_insert]
     constructor
     · intro hn
@@ -303,7 +303,7 @@ theorem IsBasicSemialgebraicSet.of_eqZero_neZeroes
   classical
   refine ⟨P, Q.image (· ^ 2), ?_⟩
   ext x
-  simp only [Set.mem_setOf_eq, Finset.mem_image]
+  simp only [Set.mem_ofPred_eq, Finset.mem_image]
   refine ⟨?_, ?_⟩
   · rintro ⟨hP, hQ⟩
     refine ⟨hP, ?_⟩
@@ -334,7 +334,7 @@ theorem IsBasicSemialgebraicSet.of_isBasicConstructibleSet
     refine ⟨0, {(∑ P ∈ S, P ^ 2) ^ 2}, ?_⟩
     rw [zer_eq_zer_singleton_sumSq S]
     ext x
-    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Zer,
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, Zer,
       Finset.mem_singleton, forall_eq, map_zero,
       true_and, map_pow]
     exact (sq_pos_iff_ne_zero _).symm

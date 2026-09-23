@@ -343,7 +343,7 @@ theorem proposition_3_16_mem (t : R) (ht : 0 < t) (c : Fin k → semialgContSubr
     (S : Set (Fin k → R)) (hS : IsSemialgebraicSet S) :
     (fun i => germHom t ht (c i)) ∈ extension (R' := SemialgGerm R) S hS
       ↔ EvNhd (fun s => (fun i => (c i : (Fin 1 → R) → R) (constPt s)) ∈ S) := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   obtain ⟨Φ, hqf, hSeq⟩ := semialgebraic_isQFRealizable S hS
   rw [ext_eq hS hSeq, realization_bridge t ht c Φ hqf, ← hSeq]
 

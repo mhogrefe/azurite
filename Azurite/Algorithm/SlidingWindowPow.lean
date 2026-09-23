@@ -161,9 +161,9 @@ theorem oddShift_spec :
     intro hm
     rw [oddShift]
     by_cases h2 : m % 2 = 1
-    · rw [if_pos h2]
+    · rw [ite_eq_left h2]
       exact ⟨by simp, h2⟩
-    · rw [if_neg h2, if_neg (show m ≠ 0 by omega)]
+    · rw [ite_eq_right h2, ite_eq_right (show m ≠ 0 by omega)]
       have hhalf : 1 ≤ m / 2 := by omega
       obtain ⟨heq, hodd⟩ := ih (m / 2) (by omega) hhalf
       refine ⟨?_, hodd⟩
@@ -180,7 +180,7 @@ theorem oddPowersGo_getD [Monoid M] (asq : M) :
   induction k with
   | zero =>
     intro i cur acc v hi
-    rw [oddPowersGo, dif_pos (show i < acc.size by omega)]
+    rw [oddPowersGo, dite_eq_left (show i < acc.size by omega)]
     exact (Array.getElem_eq_getD v).symm
   | succ k ih =>
     intro i cur acc v hi
@@ -190,12 +190,12 @@ theorem oddPowersGo_getD [Monoid M] (asq : M) :
     rw [ih i (cur * asq) (acc.push (cur * asq)) v hi']
     simp only [hpush]
     by_cases hlt : i < acc.size
-    · rw [dif_pos hlt, dif_pos (show i < acc.size + 1 by omega), Array.getElem_push_lt]
+    · rw [dite_eq_left hlt, dite_eq_left (show i < acc.size + 1 by omega), Array.getElem_push_lt]
     · by_cases heq : i = acc.size
       · subst heq
-        rw [dif_neg hlt, dif_pos (show acc.size < acc.size + 1 by omega), Array.getElem_push_eq]
+        rw [dite_eq_right hlt, dite_eq_left (show acc.size < acc.size + 1 by omega), Array.getElem_push_eq]
         simp
-      · rw [dif_neg hlt, dif_neg (show ¬ i < acc.size + 1 by omega), mul_assoc, ← pow_succ']
+      · rw [dite_eq_right hlt, dite_eq_right (show ¬ i < acc.size + 1 by omega), mul_assoc, ← pow_succ']
         congr 2
         omega
 
@@ -205,20 +205,20 @@ theorem mkOddPowerTable_getD [Monoid M] [Square M] (a : M) (w : ℕ) (j : ℕ)
     (mkOddPowerTable a w).getD j v = a ^ (2 * j + 1) := by
   rw [mkOddPowerTable]
   by_cases hk : 2 ^ (w - 1) ≤ 1
-  · rw [if_pos hk]
+  · rw [ite_eq_left hk]
     have hj0 : j = 0 := by omega
     subst hj0
     simp [Array.getD]
-  · rw [if_neg hk, Square.square_eq, ← pow_two]
+  · rw [ite_eq_right hk, Square.square_eq, ← pow_two]
     have hsize : (#[a] : Array M).size = 1 := rfl
     have hi : j < (#[a] : Array M).size + (2 ^ (w - 1) - 1) := by rw [hsize]; omega
     rw [oddPowersGo_getD (a ^ 2) (2 ^ (w - 1) - 1) j a #[a] v hi]
     by_cases hj0 : j < 1
     · have : j = 0 := by omega
       subst this
-      rw [dif_pos (by rw [hsize]; omega)]
+      rw [dite_eq_left (by rw [hsize]; omega)]
       simp
-    · rw [dif_neg (by rw [hsize]; omega), hsize, show j - 1 + 1 = j from by omega, ← pow_mul,
+    · rw [dite_eq_right (by rw [hsize]; omega), hsize, show j - 1 + 1 = j from by omega, ← pow_mul,
         ← pow_succ']
 
 /-- The sliding-window loop invariant, with the accumulator a power of `a` (so no commutativity
@@ -237,12 +237,12 @@ theorem swPowAux_eq [Monoid M] [Square M] (a : M) (w : ℕ) (hw : 1 ≤ w) (tabl
       subst this; simp
     · rw [swPowAux]
       by_cases htop : n < 2 ^ len
-      · rw [if_pos htop,
+      · rw [ite_eq_left htop,
           show Square.square (a ^ h) = a ^ (h * 2) by rw [Square.square_eq, ← pow_two, ← pow_mul],
           ih len (by omega) (h * 2) n htop]
         congr 1
         rw [pow_succ, mul_assoc, mul_comm 2 (2 ^ len)]
-      · rw [if_neg htop]
+      · rw [ite_eq_right htop]
         extract_lets L0 winRaw p L d
         have hL0 : L0 = min w (len + 1) := rfl
         have hwinRaw : winRaw = n / 2 ^ (len + 1 - L0) := rfl
@@ -299,7 +299,7 @@ theorem slidingWindowPow_eq_pow [Monoid M] [Square M] (a : M) (n : ℕ) :
   rw [slidingWindowPow]
   by_cases hn0 : n = 0
   · subst hn0; simp
-  · rw [if_neg hn0]
+  · rw [ite_eq_right hn0]
     extract_lets w table s L0 winRaw p L d
     have hw : 1 ≤ w := one_le_slidingWindowSize n
     have hn1 : 1 ≤ n := by omega
@@ -399,8 +399,8 @@ theorem map_mkOddPowerTable [Mul M] [Square M] [Mul N] [Square N] (f : M → N)
   rw [mkOddPowerTable, mkOddPowerTable]
   have hsing : (#[a] : Array M).map f = #[f a] := by simp
   by_cases hk : 2 ^ (w - 1) ≤ 1
-  · rw [if_pos hk, if_pos hk, hsing]
-  · rw [if_neg hk, if_neg hk, map_oddPowersGo f hmul, hsq, hsing]
+  · rw [ite_eq_left hk, ite_eq_left hk, hsing]
+  · rw [ite_eq_right hk, ite_eq_right hk, map_oddPowersGo f hmul, hsq, hsing]
 
 /-- `f` commutes with the sliding-window loop (mapping the table). -/
 theorem map_swPowAux [Mul M] [Square M] [Mul N] [Square N] (f : M → N)
@@ -415,8 +415,8 @@ theorem map_swPowAux [Mul M] [Square M] [Mul N] [Square N] (f : M → N)
     · simp [swPowAux]
     · rw [swPowAux, swPowAux]
       by_cases htop : n < 2 ^ len
-      · rw [if_pos htop, if_pos htop, ih len (by omega) (Square.square result) n, hsq]
-      · rw [if_neg htop, if_neg htop]
+      · rw [ite_eq_left htop, ite_eq_left htop, ih len (by omega) (Square.square result) n, hsq]
+      · rw [ite_eq_right htop, ite_eq_right htop]
         simp only []
         have hL : 1 ≤ max 1 (min w (len + 1) - (oddShift (n / 2 ^ (len + 1 - min w (len + 1)))).fst) :=
           le_max_left _ _
@@ -438,7 +438,7 @@ theorem map_slidingWindowPow [Mul M] [One M] [Square M] [Monoid N] [Square N]
   rw [← slidingWindowPow_eq_pow (f a) n]
   by_cases hn : n = 0
   · subst hn; simp [slidingWindowPow, hone]
-  · rw [slidingWindowPow, slidingWindowPow, if_neg hn, if_neg hn]
+  · rw [slidingWindowPow, slidingWindowPow, ite_eq_right hn, ite_eq_right hn]
     simp only []
     rw [map_swPowAux f hmul hsq, map_getD f]
     simp only [map_mkOddPowerTable f hmul hsq]

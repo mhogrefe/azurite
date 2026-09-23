@@ -36,10 +36,10 @@ theorem exists_lift_of_root (x : Lifts F E K) {s : E} (h1 : IsIntegral x.carrier
     (β : K) (hβ : ((minpoly x.carrier s).map x.emb.toRingHom).IsRoot β) :
     ∃ y, x ≤ y ∧ ∃ hs : s ∈ y.carrier, y.emb ⟨s, hs⟩ = β ∧
       ∀ z : ↥y.carrier, (z : E) ∈ Algebra.adjoin x.carrier ({s} : Set E) := by
-  letI : Algebra x.carrier K := x.emb.toRingHom.toAlgebra
+  let : Algebra x.carrier K := x.emb.toRingHom.toAlgebra
   let carrier := x.carrier⟮s⟯.restrictScalars F
-  letI : Algebra x.carrier carrier := x.carrier⟮s⟯.toSubalgebra.algebra
-  letI hts : IsScalarTower F x.carrier carrier := IsScalarTower.of_algebraMap_eq fun _ ↦ rfl
+  let : Algebra x.carrier carrier := x.carrier⟮s⟯.toSubalgebra.algebra
+  let hts : IsScalarTower F x.carrier carrier := IsScalarTower.of_algebraMap_eq fun _ ↦ rfl
   let φ : carrier →ₐ[x.carrier] K := (algHomAdjoinIntegralEquiv x.carrier h1).symm
     ⟨β, by
       rw [mem_aroots, and_iff_right (minpoly.ne_zero h1), aeval_def, eval₂_eq_eval_map]
@@ -171,7 +171,7 @@ omit [LinearOrder F] [IsStrictOrderedRing F] [IsStrictOrderedRing R] [IsStrictOr
 /-- A chain of sign-preserving lifts has a sign-preserving union. -/
 theorem signPreserving_union {c : Set (Lifts F R R')} (hc : IsChain (· ≤ ·) c)
     (hne : c.Nonempty) (hsp : ∀ i ∈ c, SignPreserving i) : SignPreserving (union c hc) := by
-  haveI : Nonempty ↥c := hne.to_subtype
+  have : Nonempty ↥c := hne.to_subtype
   intro w
   have hmem : (w : R) ∈ ⨆ i : c, i.1.carrier := by rw [← carrier_union]; exact w.2
   have hdir : Directed (· ≤ ·) (fun i : c => i.1.carrier) :=
@@ -276,14 +276,14 @@ theorem realClosure_unique
     (hR_ext : ∀ p : F, 0 ≤ p → IsSquare (algebraMap F R p))
     (hR'_ext : ∀ p : F, 0 ≤ p → IsSquare (algebraMap F R' p)) :
     Nonempty (R ≃ₐ[F] R') := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  haveI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
-  letI : LinearOrder R' := IsRealClosed.toLinearOrder
-  haveI : IsOrderedRing R' := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R' := IsOrderedRing.toIsStrictOrderedRing R'
-  haveI : IsAlgClosed (Ri R') := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  have : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R' := IsRealClosed.toLinearOrder
+  have : IsOrderedRing R' := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R' := IsOrderedRing.toIsStrictOrderedRing R'
+  have : IsAlgClosed (Ri R') := isAlgClosed_Ri
   exact realClosure_equiv theorem_2_11_b_c theorem_2_11_b_c halg halg'
     (strictMono_algebraMap_of_isSquare hR_ext) (strictMono_algebraMap_of_isSquare hR'_ext)
 

@@ -142,16 +142,16 @@ theorem map_gcdOrFactorAux (fuel : ℕ) :
     simp only [gcdOrFactorAux]
     rw [CP.gcdOrFactor]
     by_cases hf : f = 0
-    · rw [if_pos hf, dif_pos (toZModPoly_eq_zero_iff.mpr hf)]
+    · rw [ite_eq_left hf, dite_eq_left (toZModPoly_eq_zero_iff.mpr hf)]
       rfl
-    · rw [if_neg hf,
-        dif_neg (fun h => hf (toZModPoly_eq_zero_iff.mp h))]
+    · rw [ite_eq_right hf,
+        dite_eq_right (fun h => hf (toZModPoly_eq_zero_iff.mp h))]
       have hgcd : Nat.gcd ((toZModPoly f).leadingCoeff).val m.toNat
           = ((AzInt.egcd f.leadingCoeff.val m).1).toNat := by
         rw [leadingCoeff_toZModPoly, val_toZMod, AzInt.egcd_gcd]
       by_cases hc : (AzInt.egcd f.leadingCoeff.val m).1 = 1
-      · rw [if_pos hc,
-          dif_pos (show Nat.gcd ((toZModPoly f).leadingCoeff).val m.toNat
+      · rw [ite_eq_left hc,
+          dite_eq_left (show Nat.gcd ((toZModPoly f).leadingCoeff).val m.toNat
             = 1 by rw [hgcd, hc, AzNat.toNat_one])]
         -- the leading coefficient is nonzero, so `Z_m` is nontrivial
         have hlc0 : f.leadingCoeff ≠ 0 := by
@@ -160,7 +160,7 @@ theorem map_gcdOrFactorAux (fuel : ℕ) :
           rw [← toPoly_inj, toPoly_zero]
           refine Polynomial.leadingCoeff_eq_zero.mp ?_
           rw [leadingCoeff_toPoly, h0]
-        haveI : Nontrivial (AzZMod m) := nontrivial_of_ne _ _ hlc0
+        have : Nontrivial (AzZMod m) := nontrivial_of_ne _ _ hlc0
         -- the Bézout coefficient is the modular inverse
         have hcop : Nat.Coprime f.leadingCoeff.val.toNat m.toNat := by
           unfold Nat.Coprime
@@ -223,8 +223,8 @@ theorem map_gcdOrFactorAux (fuel : ℕ) :
             (AzZMod.ofAzInt m (AzInt.egcd f.leadingCoeff.val m).2.1) f
           omega
         rw [ih _ _ hsz, hr, hf']
-      · rw [if_neg hc,
-          dif_neg (fun h1 => hc (AzNat.toNat_injective
+      · rw [ite_eq_right hc,
+          dite_eq_right (fun h1 => hc (AzNat.toNat_injective
             ((hgcd.symm.trans h1).trans AzNat.toNat_one.symm)))]
         show Sum.inl ((AzInt.egcd f.leadingCoeff.val m).1).toNat = _
         rw [← hgcd]

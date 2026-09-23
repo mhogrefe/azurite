@@ -72,7 +72,7 @@ private lemma DkPrime_blockTriangular (P : K[X]) (k : ℕ) :
     (DkPrime (C := C) P k).BlockTriangular id := by
   intro i j h_ji
   unfold DkPrime
-  rw [Matrix.of_apply, if_neg]
+  rw [Matrix.of_apply, ite_eq_right]
   intro h
   exact absurd h.1 (not_le_of_gt h_ji)
 
@@ -80,14 +80,14 @@ omit [CharZero K] [IsAlgClosed C] in
 private lemma DkPrime_diag (P : K[X]) (k : ℕ) (i : Fin (2 * k - 1)) :
     (DkPrime (C := C) P k) i i = algebraMap K C P.leadingCoeff := by
   unfold DkPrime
-  rw [Matrix.of_apply, if_pos ⟨le_rfl, Nat.le_add_right _ _⟩, Nat.add_sub_cancel]
+  rw [Matrix.of_apply, ite_eq_left ⟨le_rfl, Nat.le_add_right _ _⟩, Nat.add_sub_cancel]
   rfl
 
 omit [CharZero K] [IsAlgClosed C] in
 private theorem DkPrime_det (P : K[X]) (k : ℕ) :
     (DkPrime (C := C) P k).det =
       algebraMap K C P.leadingCoeff ^ (2 * k - 1) := by
-  rw [Matrix.det_of_upperTriangular (DkPrime_blockTriangular P k)]
+  rw [Matrix.det_of_isUpperTriangular (DkPrime_blockTriangular P k)]
   simp_rw [DkPrime_diag]
   rw [Finset.prod_const, Finset.card_univ, Fintype.card_fin]
 
@@ -105,13 +105,13 @@ private lemma splitFin_symm_apply (k : ℕ) (h : 1 ≤ k) (m : Fin (2 * k - 1)) 
   unfold splitFin
   simp only [Equiv.symm_trans_apply, finCongr_symm]
   by_cases h_m : m.val < k - 1
-  · rw [dif_pos h_m]
+  · rw [dite_eq_left h_m]
     have h_cast :
         (finCongr (show 2 * k - 1 = k - 1 + k from by omega)) m =
           Fin.castAdd k ⟨m.val, h_m⟩ := by
       apply Fin.ext; simp [finCongr_apply, Fin.castAdd, Fin.castLE]
     rw [h_cast, finSumFinEquiv_symm_apply_castAdd]
-  · rw [dif_neg h_m]
+  · rw [dite_eq_right h_m]
     have h_ge : k - 1 ≤ m.val := Nat.le_of_not_lt h_m
     have h_lt : m.val - (k - 1) < k := by have := m.isLt; omega
     have h_cast :
@@ -141,35 +141,35 @@ private theorem Dk_eq_fromBlocks (P : K[X]) (k : ℕ) (h : 1 ≤ k) :
   unfold Dk
   rw [Matrix.of_apply]
   by_cases h_i : i.val < k - 1
-  · rw [dif_pos h_i, if_pos h_i]
+  · rw [dite_eq_left h_i, ite_eq_left h_i]
     by_cases h_l : l.val < k - 1
-    · rw [dif_pos h_l, Matrix.fromBlocks_apply₁₁]
+    · rw [dite_eq_left h_l, Matrix.fromBlocks_apply₁₁]
       show (if l.val = i.val then (1 : C) else 0) =
         (1 : Matrix (Fin (k - 1)) (Fin (k - 1)) C) ⟨i.val, h_i⟩ ⟨l.val, h_l⟩
       rw [Matrix.one_apply]
       by_cases h_eq : i.val = l.val
-      · rw [if_pos h_eq.symm]
-        rw [if_pos]
+      · rw [ite_eq_left h_eq.symm]
+        rw [ite_eq_left]
         exact Fin.ext h_eq
-      · rw [if_neg fun h => h_eq h.symm]
-        rw [if_neg]
+      · rw [ite_eq_right fun h => h_eq h.symm]
+        rw [ite_eq_right]
         intro h
         exact h_eq (Fin.mk.inj_iff.mp h)
-    · rw [dif_neg h_l, Matrix.fromBlocks_apply₁₂]
+    · rw [dite_eq_right h_l, Matrix.fromBlocks_apply₁₂]
       show (if l.val = i.val then (1 : C) else 0) = (0 : Matrix _ _ _) _ _
       rw [Matrix.zero_apply]
-      rw [if_neg (by omega)]
-  · rw [dif_neg h_i, if_neg h_i]
+      rw [ite_eq_right (by omega)]
+  · rw [dite_eq_right h_i, ite_eq_right h_i]
     have h_i_ge : k - 1 ≤ i.val := Nat.le_of_not_lt h_i
     by_cases h_l : l.val < k - 1
-    · rw [dif_pos h_l, Matrix.fromBlocks_apply₂₁, Matrix.of_apply]
+    · rw [dite_eq_left h_l, Matrix.fromBlocks_apply₂₁, Matrix.of_apply]
       have h_simp : (i.val - (k - 1)) + (k - 1) = i.val := by omega
       rw [h_simp]
-    · rw [dif_neg h_l, Matrix.fromBlocks_apply₂₂]
+    · rw [dite_eq_right h_l, Matrix.fromBlocks_apply₂₂]
       have h_l_ge : k - 1 ≤ l.val := Nat.le_of_not_lt h_l
       have h_ile : 2 * k - 2 - i.val ≤ l.val := by
         have := i.isLt; have := l.isLt; omega
-      rw [if_pos h_ile]
+      rw [ite_eq_left h_ile]
       unfold newtMat
       rw [Matrix.of_apply]
       congr 1
@@ -251,7 +251,7 @@ private lemma SyHa_P_prime_row_coeff_eq_j_aj (P : K[X]) (k : ℕ)
   have hi_lt := i.isLt
   have hl_lt := l.isLt
   by_cases h_shift : i.val - (k - 1) ≤ P.natDegree + k - 2 - l.val
-  · rw [if_pos h_shift, Polynomial.coeff_derivative]
+  · rw [ite_eq_left h_shift, Polynomial.coeff_derivative]
     have h_pos : P.natDegree + k - 2 - l.val - (i.val - (k - 1)) + 1 =
         P.natDegree + 2 * k - 2 - i.val - l.val := by omega
     have h_cast : ((P.natDegree + k - 2 - l.val - (i.val - (k - 1)) : ℕ) : K) + 1 =
@@ -263,7 +263,7 @@ private lemma SyHa_P_prime_row_coeff_eq_j_aj (P : K[X]) (k : ℕ)
     -- LHS: P.coeff (a + 1) * (↑a + 1) where a = p+k-2-l-(i-(k-1))
     -- We have a + 1 = p+2k-2-i-l in Nat, and ↑a + 1 = ↑(p+2k-2-i-l) in K.
     rw [h_pos, h_cast, mul_comm]
-  · rw [if_neg h_shift]
+  · rw [ite_eq_right h_shift]
     push Not at h_shift
     have h_j_zero : P.natDegree + 2 * k - 2 - i.val - l.val = 0 := by omega
     rw [h_j_zero, Nat.cast_zero, zero_mul]
@@ -288,27 +288,27 @@ private lemma SyHa_P_row_eq_coeff (P : K[X]) (k : ℕ) (hk_pos : 0 < k)
       have : k - 2 - i.val ≤ P.natDegree + k - 2 - l.val := by omega
       have : k - 1 - 1 = k - 2 := by omega
       omega
-    rw [if_pos h_shift_le]
-    rw [if_pos ⟨h_il_le, h_il_bd⟩]
+    rw [ite_eq_left h_shift_le]
+    rw [ite_eq_left ⟨h_il_le, h_il_bd⟩]
     congr 1; omega
-  · rw [if_neg h_il]
+  · rw [ite_eq_right h_il]
     rw [not_and_or] at h_il
     rcases h_il with h_not_le | h_not_bd
     · push Not at h_not_le
       by_cases h_shift : k - 1 - 1 - i.val ≤ P.natDegree + k - 2 - l.val
-      · rw [if_pos h_shift]
+      · rw [ite_eq_left h_shift]
         apply Polynomial.coeff_eq_zero_of_natDegree_lt
         have hp_ge_k : P.natDegree ≥ k := hk_le
         have h_simp : k - 1 - 1 = k - 2 := by omega
         omega
-      · rw [if_neg h_shift]
+      · rw [ite_eq_right h_shift]
     · push Not at h_not_bd
       have h_simp : k - 1 - 1 - i.val = k - 2 - i.val := by omega
       rw [h_simp]
       have h_shift_gt : ¬ k - 2 - i.val ≤ P.natDegree + k - 2 - l.val := by
         have hp_ge_k : P.natDegree ≥ k := hk_le
         omega
-      rw [if_neg h_shift_gt]
+      rw [ite_eq_right h_shift_gt]
 
 omit [CharZero K] in
 /-- **Key entry-wise identity.** With `D_k`, `D_k'` defined over the
@@ -330,29 +330,29 @@ private theorem Dk_mul_DkPrime_eq_SyHaSquare_map (P : K[X])
   by_cases h_i : i.val < k - 1
   · -- P-row case: D_k row i is the identity row at column i, so the
     -- sum collapses to DkPrime i l.
-    rw [if_pos h_i]
+    rw [ite_eq_left h_i]
     rw [SyHa_P_row_eq_coeff P k hk_pos hk_le i l h_i]
     have h_collapse :
         ∑ m : Fin (2 * k - 1), (Dk P k i m) * (DkPrime (C := C) P k m l) =
           DkPrime P k i l := by
       rw [Finset.sum_eq_single i]
       · unfold Dk
-        rw [Matrix.of_apply, if_pos h_i, if_pos rfl, one_mul]
+        rw [Matrix.of_apply, ite_eq_left h_i, ite_eq_left rfl, one_mul]
       · intro m _ h_ne
         unfold Dk
-        rw [Matrix.of_apply, if_pos h_i]
-        rw [if_neg (fun h => h_ne (Fin.ext h))]
+        rw [Matrix.of_apply, ite_eq_left h_i]
+        rw [ite_eq_right (fun h => h_ne (Fin.ext h))]
         rw [zero_mul]
       · intro h_no; exact absurd (Finset.mem_univ i) h_no
     rw [h_collapse]
     unfold DkPrime
     rw [Matrix.of_apply]
     by_cases h_il : i.val ≤ l.val ∧ l.val ≤ i.val + P.natDegree
-    · rw [if_pos h_il, if_pos h_il]
-    · rw [if_neg h_il, if_neg h_il, RingHom.map_zero]
+    · rw [ite_eq_left h_il, ite_eq_left h_il]
+    · rw [ite_eq_right h_il, ite_eq_right h_il, RingHom.map_zero]
   · -- P'-row case: use Prop 4.8 Newton recurrence at
     -- j := P.natDegree + 2k - 2 - i.val - l.val.
-    rw [if_neg h_i]
+    rw [ite_eq_right h_i]
     push Not at h_i
     rw [SyHa_P_prime_row_coeff_eq_j_aj P k hk_pos hk_le i l h_i]
     rw [(algebraMap K C).map_mul]
@@ -370,18 +370,18 @@ private theorem Dk_mul_DkPrime_eq_SyHaSquare_map (P : K[X])
       intro m
       unfold Dk DkPrime
       rw [Matrix.of_apply, Matrix.of_apply]
-      rw [if_neg (not_lt_of_ge h_i)]
+      rw [ite_eq_right (not_lt_of_ge h_i)]
       by_cases h_c1 : 2 * k - 2 - i.val ≤ m.val
-      · rw [if_pos h_c1]
+      · rw [ite_eq_left h_c1]
         by_cases h_c2 : m.val ≤ l.val ∧ l.val ≤ m.val + P.natDegree
-        · rw [if_pos h_c2]
-          rw [if_pos ⟨h_c1, h_c2.1, h_c2.2⟩]
-        · rw [if_neg h_c2, mul_zero]
-          rw [if_neg]
+        · rw [ite_eq_left h_c2]
+          rw [ite_eq_left ⟨h_c1, h_c2.1, h_c2.2⟩]
+        · rw [ite_eq_right h_c2, mul_zero]
+          rw [ite_eq_right]
           intro h
           exact h_c2 ⟨h.2.1, h.2.2⟩
-      · rw [if_neg h_c1, zero_mul]
-        rw [if_neg]
+      · rw [ite_eq_right h_c1, zero_mul]
+        rw [ite_eq_right]
         intro h; exact h_c1 h.1
     rw [Finset.sum_congr rfl (fun m _ => h_inner m)]
     -- Convert the Fin sum to a Finset.range sum.
@@ -538,7 +538,7 @@ private lemma algebraMap_sRes_eq_det_map (P : K[X])
         (algebraMap K C)).det := by
   unfold sRes
   have h_le : P.natDegree - k ≤ P.derivative.natDegree := by rw [hp_deriv]; omega
-  rw [if_pos h_le]
+  rw [ite_eq_left h_le]
   exact (algebraMap K C).map_det _
 
 /-- **BPR Proposition 4.28.** For `P : K[X]` with positive `natDegree`

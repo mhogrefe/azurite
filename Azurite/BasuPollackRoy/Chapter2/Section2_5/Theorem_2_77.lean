@@ -46,7 +46,7 @@ theorem IsSemialgebraicSetOver.comap {a b : ℕ} (g : Fin a → Fin b)
   | algebraic h =>
     obtain ⟨ps, rfl⟩ := h
     refine .algebraic ⟨ps.image (MvPolynomial.rename g), ?_⟩
-    ext y; simp only [Set.mem_setOf_eq, Finset.mem_image]
+    ext y; simp only [Set.mem_ofPred_eq, Finset.mem_image]
     constructor
     · rintro hy Q ⟨P, hP, rfl⟩
       rw [MvPolynomial.aeval_rename]; exact hy P hP
@@ -56,7 +56,7 @@ theorem IsSemialgebraicSetOver.comap {a b : ℕ} (g : Fin a → Fin b)
   | pos_locus P =>
     have heq : {y : Fin b → R | y ∘ g ∈ {z | MvPolynomial.aeval z P > 0}}
         = {y : Fin b → R | MvPolynomial.aeval y (MvPolynomial.rename g P) > 0} := by
-      ext y; simp only [Set.mem_setOf_eq, MvPolynomial.aeval_rename]
+      ext y; simp only [Set.mem_ofPred_eq, MvPolynomial.aeval_rename]
     rw [heq]; exact .pos_locus _
   | compl _ ih => exact ih.compl
   | inter _ _ ih1 ih2 => exact ih1.inter ih2
@@ -91,7 +91,7 @@ theorem IsSemialgebraicSetOver.exists_update {k : ℕ}
       (IsSemialgebraicSetOver.comap (⇑e) hV)))
   convert hFin using 1
   ext y
-  simp only [Set.mem_setOf_eq, Fin.init_image_eq_setOf_exists_snoc]
+  simp only [Set.mem_ofPred_eq, Fin.init_image_eq_setOf_exists_snoc]
   exact exists_congr (fun c => by rw [key y c])
 
 /-- **The realization of every formula is semialgebraic over `D`.** The substantive
@@ -121,7 +121,7 @@ theorem formula_realization_isSemialgebraicSetOver {k : ℕ}
     have h := (IsSemialgebraicSetOver.exists_update hinj x ih.compl).compl
     convert h using 1
     ext y
-    simp only [Formula.realization, Set.mem_setOf_eq, Set.mem_compl_iff, not_exists, not_not]
+    simp only [Formula.realization, Set.mem_ofPred_eq, Set.mem_compl_iff, not_exists, not_not]
 
 /-- **BPR Theorem 2.77 (Quantifier Elimination over Real Closed Fields).** Every
 formula `Φ(Y)` in the language of ordered fields with coefficients in `D ⊆ R` (a real

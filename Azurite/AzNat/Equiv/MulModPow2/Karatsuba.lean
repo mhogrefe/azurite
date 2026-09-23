@@ -37,7 +37,7 @@ theorem karatsubaMulLowLimbs_modEq (threshold : Nat) :
   | _ len ih =>
   intro a b loA loB hA hB
   by_cases h_base : len < 2 ∨ len < threshold
-  · rw [karatsubaMulLowLimbs, dif_pos h_base, toNat_ofLimbs]
+  · rw [karatsubaMulLowLimbs, dite_eq_left h_base, toNat_ofLimbs]
     exact schoolbookMulLowLimbs_modEq a b loA len loB len len hA hB
   · have hlen : 2 ≤ len := by omega
     set k := min ((11 * len + 15) / 16) (len - 1) with hk_def

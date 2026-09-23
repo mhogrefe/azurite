@@ -256,7 +256,7 @@ theorem proposition_4_9 (P : K[X]) (k : ℕ)
           (fun ab : C × C => ab.1 - ab.2)).prod := by
     intro I hI
     have h : I.card = k := (Finset.mem_powersetCard.mp hI).2
-    rw [dif_pos h]
+    rw [dite_eq_left h]
     -- Transpose-submatrix identity
     have h_eq : (vandermondeRect P k).transpose.submatrix (I.orderEmbOfFin h) id =
                 ((vandermondeRect P k).submatrix id (I.orderEmbOfFin h)).transpose := by

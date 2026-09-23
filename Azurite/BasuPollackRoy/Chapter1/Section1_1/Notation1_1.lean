@@ -33,7 +33,7 @@ omit [IsAlgClosed C] in
 theorem zer_eq_zeroLocus (poly_set : Finset (MvPolynomial (Fin k) C)) :
     Zer poly_set = MvPolynomial.zeroLocus C (Ideal.span (↑poly_set : Set (MvPolynomial (Fin k) C))) := by
   ext x
-  simp only [Zer, Set.mem_setOf_eq, MvPolynomial.mem_zeroLocus_iff]
+  simp only [Zer, Set.mem_ofPred_eq, MvPolynomial.mem_zeroLocus_iff]
   constructor
   · intro h p hp
     have eval_eq : ∀ q : MvPolynomial (Fin k) C,

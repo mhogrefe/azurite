@@ -41,12 +41,12 @@ theorem isMultihomogeneous_X [Nontrivial A] (s : (i : Fin m) × Fin (k i + 1)) :
   dsimp only
   by_cases hi : i = si
   · subst hi
-    rw [if_pos rfl, Finset.sum_eq_single sj]
+    rw [ite_eq_left rfl, Finset.sum_eq_single sj]
     · exact Finsupp.single_eq_same
     · intro j _ hj
       exact Finsupp.single_eq_of_ne fun h => hj (eq_of_heq (Sigma.mk.inj_iff.mp h).2)
     · intro h; exact absurd (Finset.mem_univ sj) h
-  · rw [if_neg hi]
+  · rw [ite_eq_right hi]
     refine Finset.sum_eq_zero fun j _ => ?_
     exact Finsupp.single_eq_of_ne fun h => hi (Sigma.mk.inj_iff.mp h).1
 

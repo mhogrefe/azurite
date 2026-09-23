@@ -209,7 +209,7 @@ theorem Ri.conj_fixed_mem_range [IsRealClosed R] (c : Ri R) (hc : (Ri.conj R) c 
       have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
       have hf_deg : f.degree = 2 := by
         have hnat : f.natDegree = 2 := by
-          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+          simp [f]
         rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)), hnat]
         norm_num
       rw [hf_deg] at hrd
@@ -514,7 +514,7 @@ theorem Q_eval_coeff_in_R [IsRealClosed R]
       · exact lt_of_le_of_ne (not_lt.mp h) (fun heq => hij.ne (σ.injective heq.symm))
     · -- Injective
       intro ij₁ hij₁ ij₂ hij₂ heq
-      simp only [strictPairs, Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hij₁ hij₂
+      simp only [strictPairs, Finset.coe_filter, Set.mem_ofPred_eq, Finset.mem_univ, true_and] at hij₁ hij₂
       have heq' : (if σ ij₁.1 < σ ij₁.2 then (σ ij₁.1, σ ij₁.2) else (σ ij₁.2, σ ij₁.1)) =
                   (if σ ij₂.1 < σ ij₂.2 then (σ ij₂.1, σ ij₂.2) else (σ ij₂.2, σ ij₂.1)) := heq
       split_ifs at heq' with h₁ h₂ h₂
@@ -527,17 +527,17 @@ theorem Q_eval_coeff_in_R [IsRealClosed R]
       · exact Prod.ext (σ.injective hb) (σ.injective ha)
     · -- Surjective onto strictPairs
       intro ij hij
-      simp only [strictPairs, Finset.coe_filter, Set.mem_setOf_eq, Set.mem_image,
+      simp only [strictPairs, Finset.coe_filter, Set.mem_ofPred_eq, Set.mem_image,
         Finset.mem_univ, true_and] at hij ⊢
       by_cases hord : σ.symm ij.1 < σ.symm ij.2
       · refine ⟨(σ.symm ij.1, σ.symm ij.2), hord, ?_⟩
         simp only [Equiv.apply_symm_apply]
-        rw [if_pos hij]
+        rw [ite_eq_left hij]
       · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
           lt_of_le_of_ne (not_lt.mp hord) (fun h => hij.ne (σ.symm.injective h).symm)
         refine ⟨(σ.symm ij.2, σ.symm ij.1), hord', ?_⟩
         simp only [Equiv.apply_symm_apply]
-        rw [if_neg (not_lt.mpr hij.le)]
+        rw [ite_eq_right (not_lt.mpr hij.le)]
     · -- Values agree after sorting
       intro ij hij
       split_ifs with h
@@ -560,7 +560,7 @@ theorem Q_coeff_mem_R [IsRealClosed R]
   -- We need each Z-coefficient of f := (QPolynomial x).coeff n to be in R.
   -- Q_eval_coeff_in_R shows f.eval(algebraMap r) ∈ range for all r.
   -- eval_range_implies_coeff_range then gives all f.coeff in range.
-  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (Q_eval_coeff_in_R P x hx n) m
 
 /-- The n-th Y-coefficient of G(Z,Y), evaluated at z = algebraMap r, lies in R.
@@ -668,12 +668,12 @@ theorem G_eval_coeff_in_R [IsRealClosed R]
       by_cases hord : σ.symm ij.1 < σ.symm ij.2
       · refine ⟨(σ.symm ij.1, σ.symm ij.2),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_left hij_lt]
       · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
           lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
         refine ⟨(σ.symm ij.2, σ.symm ij.1),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_right (not_lt.mpr hij_lt.le)]
     -- φ preserves γMv values (up to commutativity)
     have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
       intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
@@ -721,7 +721,7 @@ theorem G_coeff_mem_R [IsRealClosed R]
     (n : ℕ) :
     ∃ q : R[X], q.map (algebraMap R L) = (GPoly x).coeff n := by
   rw [poly_in_image_iff_coeffs_in_range]; intro m
-  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (G_eval_coeff_in_R P x hx n) m
 
 /-- The n-th Y-coefficient of H(Z,Y), evaluated at z = algebraMap r, lies in R.
@@ -822,12 +822,12 @@ theorem H_eval_coeff_in_R [IsRealClosed R]
       by_cases hord : σ.symm ij.1 < σ.symm ij.2
       · refine ⟨(σ.symm ij.1, σ.symm ij.2),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_left hij_lt]
       · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
           lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
         refine ⟨(σ.symm ij.2, σ.symm ij.1),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_right (not_lt.mpr hij_lt.le)]
     have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
       intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
     have hφ_p : ∀ ij, pMv (σ ij.1, σ ij.2) = pMv (φ ij) := by
@@ -866,7 +866,7 @@ theorem H_coeff_mem_R [IsRealClosed R]
     (n : ℕ) :
     ∃ q : R[X], q.map (algebraMap R L) = (HPoly x).coeff n := by
   rw [poly_in_image_iff_coeffs_in_range]; intro m
-  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (H_eval_coeff_in_R P x hx n) m
 
 /-! ### Evaluation at roots of Q -/
@@ -1038,7 +1038,7 @@ theorem exists_discPoly_eval_ne_zero [IsRealClosed R]
     {p : ℕ} (x : Fin p → L)
     (hx_inj : Function.Injective x) :
     ∃ z : R, Polynomial.eval (algebraMap R L z) (discPoly x) ≠ 0 := by
-  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   have hD : discPoly x ≠ 0 := discPoly_ne_zero x hx_inj
   by_contra h; push Not at h
   classical
@@ -1146,12 +1146,12 @@ theorem D_eval_in_R [IsRealClosed R]
       by_cases hord : σ.symm ij.1 < σ.symm ij.2
       · refine ⟨(σ.symm ij.1, σ.symm ij.2),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_pos hij_lt]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_left hij_lt]
       · have hord' : σ.symm ij.2 < σ.symm ij.1 :=
           lt_of_le_of_ne (not_lt.mp hord) (fun h => hij_lt.ne (σ.symm.injective h).symm)
         refine ⟨(σ.symm ij.2, σ.symm ij.1),
             Finset.mem_filter.mpr ⟨Finset.mem_univ _, hord'⟩, ?_⟩
-        simp only [φ, Equiv.apply_symm_apply, if_neg (not_lt.mpr hij_lt.le)]
+        simp only [φ, Equiv.apply_symm_apply, ite_eq_right (not_lt.mpr hij_lt.le)]
     have hφ_γ : ∀ ij, γMv (σ ij.1, σ ij.2) = γMv (φ ij) := by
       intro ij; simp only [φ]; split_ifs <;> [rfl; exact hγ_comm _ _]
     -- Now build bijection on offDiag
@@ -1191,7 +1191,7 @@ theorem D_coeff_mem_R [IsRealClosed R]
     (hx : P.map (algebraMap R L) = ∏ j : Fin p, (X - Polynomial.C (x j)))
     (n : ℕ) :
     (discPoly x).coeff n ∈ Set.range (algebraMap R L) := by
-  haveI : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
+  have : Infinite R := Infinite.of_injective (Nat.cast : ℕ → R) Nat.cast_injective
   exact eval_range_implies_coeff_range _ (D_eval_in_R P x hx) n
 
 /-! ### Square roots in R[i] -/
@@ -1257,7 +1257,7 @@ theorem sqrt_exists_Ri [IsRealClosed R] (w : Ri R) : ∃ v : Ri R, v * v = w := 
       have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
       have hf_deg : f.degree = 2 := by
         have hnat : f.natDegree = 2 := by
-          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+          simp [f]
         rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)), hnat]
         norm_num
       rw [hf_deg] at hrd

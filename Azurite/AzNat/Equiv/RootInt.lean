@@ -209,11 +209,11 @@ theorem toNat_rootInt_loop (m : AzNat) (k : ℕ) :
     by_cases hlt : (ofNat (k - 1) * s + m / s.pow (k - 1)) / ofNat k < s
     · have hlt' := (lt_iff_toNat_lt _ _).mp hlt
       rw [toNat_step] at hlt'
-      rw [if_pos hlt, if_pos hlt', ih, toNat_step]
+      rw [ite_eq_left hlt, ite_eq_left hlt', ih, toNat_step]
     · have hlt' : ¬ ((k - 1) * s.toNat + m.toNat / s.toNat ^ (k - 1)) / k < s.toNat := by
         rw [← toNat_step]
         exact mt (lt_iff_toNat_lt _ _).mpr hlt
-      rw [if_neg hlt, if_neg hlt']
+      rw [ite_eq_right hlt, ite_eq_right hlt']
 
 private theorem toNat_initialGuess (m : AzNat) (k : ℕ) :
     (rootInt.initialGuess m k).toNat = 2 ^ ((m.size + k - 1) / k) := by

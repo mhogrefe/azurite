@@ -214,9 +214,9 @@ theorem discover_not_xsDone (origI : ℕ) (st : State X)
     (h : (discover origI st).xsDone = false) :
     st.xsDone = false ∧ origI < st.live.length := by
   by_cases hc : st.xsDone = false ∧ st.live.length ≤ origI
-  · rw [discover, if_pos hc] at h
+  · rw [discover, ite_eq_left hc] at h
     exact absurd h (by simp)
-  · rw [discover, if_neg hc] at h
+  · rw [discover, ite_eq_right hc] at h
     refine ⟨h, ?_⟩
     by_contra hlt
     exact hc ⟨h, by omega⟩
@@ -386,7 +386,7 @@ theorem phases_trichotomy {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → O
   | true =>
     -- No pull, no discovery change; everything persists.
     have hpp : pullPhase xs origI st = st := by
-      unfold pullPhase; rw [if_pos hxd]
+      unfold pullPhase; rw [ite_eq_left hxd]
     refine Or.inl ⟨rfl, ?_, ?_⟩
     · rw [discover_live, hpp]
     · rw [hpp]; exact discover_xsDone_latch origI st hxd
@@ -403,7 +403,7 @@ theorem phases_trichotomy {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → O
           rw [pullPhase_xsDone]; exact hxd
         rw [discover_live] at hlong
         unfold discover at hxd2
-        rw [if_neg (fun hc => hlong (by omega))] at hxd2
+        rw [ite_eq_right (fun hc => hlong (by omega))] at hxd2
         rw [hxd1] at hxd2
         exact Bool.false_ne_true hxd2
       | false =>
@@ -412,11 +412,11 @@ theorem phases_trichotomy {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → O
         obtain ⟨hxd1, hlt1⟩ := discover_not_xsDone origI _ hxd2
         have hidx : targetIdx origI (discover origI (pullPhase xs origI st)) = origI := by
           unfold targetIdx
-          rw [if_neg (by rw [hxd2]; exact Bool.false_ne_true)]
+          rw [ite_eq_right (by rw [hxd2]; exact Bool.false_ne_true)]
         rw [hidx, discover_live] at h2
         -- The entry sits in the appended tail: its cursor is `0`.
         unfold pullPhase at h2
-        rw [if_neg (by rw [hxd]; exact Bool.false_ne_true), if_pos hlen] at h2
+        rw [ite_eq_right (by rw [hxd]; exact Bool.false_ne_true), ite_eq_left hlen] at h2
         obtain ⟨d, -, -, hlive, -⟩ := pull_spec xs (origI - st.live.length + 1) st
         rw [hlive, List.getElem?_append_right hlen] at h2
         have hmem := List.mem_of_getElem? h2
@@ -434,11 +434,11 @@ theorem phases_trichotomy {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → O
     · -- No pull was needed; nothing changes.
       have hpp : pullPhase xs origI st = st := by
         unfold pullPhase
-        rw [if_neg (by rw [hxd]; exact Bool.false_ne_true), if_neg hlen]
+        rw [ite_eq_right (by rw [hxd]; exact Bool.false_ne_true), ite_eq_right hlen]
       have hdis : discover origI (pullPhase xs origI st) = st := by
         rw [hpp]
         unfold discover
-        rw [if_neg (fun hc => hlen hc.2)]
+        rw [ite_eq_right (fun hc => hlen hc.2)]
       refine Or.inr (Or.inl ⟨?_, ?_, by omega, rfl⟩)
       · rw [hdis]; exact hxd
       · rw [hdis]
@@ -457,14 +457,14 @@ theorem fuelLB_le_of_erase {st st₂ : State X} {origI fuel i : ℕ}
   rw [List.length_eraseIdx_of_lt hi]
   unfold fuelLB at hfuel
   rcases hcases with ⟨h1, h2, h3⟩ | ⟨h1, h2, h3, h4⟩ | ⟨h1, h2, h3⟩
-  · rw [h1, if_pos rfl] at hfuel
-    rw [h3, if_pos rfl]
+  · rw [h1, ite_eq_left rfl] at hfuel
+    rw [h3, ite_eq_left rfl]
     omega
-  · rw [h4, if_neg (by simp)] at hfuel
-    rw [h1, if_neg (by simp)]
+  · rw [h4, ite_eq_right (by simp)] at hfuel
+    rw [h1, ite_eq_right (by simp)]
     omega
-  · rw [h3, if_neg (by simp)] at hfuel
-    rw [h1, if_pos rfl]
+  · rw [h3, ite_eq_right (by simp)] at hfuel
+    rw [h1, ite_eq_left rfl]
     omega
 
 /-! ### Per-call monotonicity (fuel induction over the retry loop) -/
@@ -485,9 +485,9 @@ theorem next_mono {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (B
     have hdc := discover_xsCursor origI (pullPhase xs origI st)
     have hdd := discover_done origI (pullPhase xs origI st)
     by_cases hlen0 : (pullPhase xs origI st).live.length = 0
-    · rw [if_pos hlen0]
+    · rw [ite_eq_left hlen0]
       exact ⟨hpc, fun h => by rw [hpd]; exact h, fun _ => rfl⟩
-    · rw [if_neg hlen0]
+    · rw [ite_eq_right hlen0]
       split
       · -- defensive `getElem? = none` branch
         exact ⟨by rw [hdc]; exact hpc,
@@ -545,9 +545,9 @@ theorem next_WF {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (B x
     simp only [next]
     have h₂ := h.phases (origI := origI)
     by_cases hlen0 : (pullPhase xs origI st).live.length = 0
-    · rw [if_pos hlen0]
+    · rw [ite_eq_left hlen0]
       exact ⟨(h.pullPhase origI).sub, (h.pullPhase origI).xsdone_none⟩
-    · rw [if_neg hlen0]
+    · rw [ite_eq_right hlen0]
       split
       · exact ⟨h₂.sub, h₂.xsdone_none⟩
       · rename_i heq
@@ -592,7 +592,7 @@ theorem next_entry {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
     have hlen0 : ¬(pullPhase xs origI st).live.length = 0 := by
       rw [htail, List.length_append]
       omega
-    rw [if_neg hlen0]
+    rw [ite_eq_right hlen0]
     have hWF₂ := hWF.phases (origI := origI)
     have hdd := discover_done origI (pullPhase xs origI st)
     have hpdn := pullPhase_done xs origI st
@@ -635,10 +635,10 @@ theorem next_entry {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
               if t < i then i - 1 else i]? = some (a, c) := by
             rw [List.getElem?_eraseIdx]
             by_cases htc : t < i
-            · rw [if_pos htc, if_neg (by omega)]
+            · rw [ite_eq_left htc, ite_eq_right (by omega)]
               rw [show (i - 1) + 1 = i from by omega]
               exact hent₂
-            · rw [if_neg htc, if_pos (by omega)]
+            · rw [ite_eq_right htc, ite_eq_left (by omega)]
               exact hent₂
           have hne3 : ¬((discover origI (pullPhase xs origI st)).live.eraseIdx t).isEmpty
               = true := by
@@ -647,7 +647,7 @@ theorem next_entry {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
             rw [List.isEmpty_iff] at hemp
             rw [hemp] at hlt
             simp at hlt
-          rw [if_neg (fun hcond => hne3 hcond.2)]
+          rw [ite_eq_right (fun hcond => hne3 hcond.2)]
           -- recurse on the erased state
           have hrec := next_entry hne fuel origI
             ⟨(discover origI (pullPhase xs origI st)).live.eraseIdx t,
@@ -686,7 +686,7 @@ theorem phases_created {xs : ℕ → Option X} (origI : ℕ) (st : State X) (hWF
     · by_cases hlen1 : (pullPhase xs origI st).live.length ≤ origI
       · refine Or.inr ?_
         unfold discover
-        rw [if_pos ⟨by rw [pullPhase_xsDone]; simpa using hxd, hlen1⟩]
+        rw [ite_eq_left ⟨by rw [pullPhase_xsDone]; simpa using hxd, hlen1⟩]
       · refine Or.inl ?_
         rw [discover_xsCursor]
         have := (hWF.pullPhase origI).length_le
@@ -721,10 +721,10 @@ theorem next_created {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option
       = (discover origI (pullPhase xs origI st)).xsCursor :=
     (discover_xsCursor origI _).symm
   by_cases hlen0 : (pullPhase xs origI st).live.length = 0
-  · rw [if_pos hlen0]
+  · rw [ite_eq_left hlen0]
     show origI < (pullPhase xs origI st).xsCursor
     omega
-  · rw [if_neg hlen0]
+  · rw [ite_eq_right hlen0]
     split
     · exact hkey
     · rename_i heq
@@ -762,7 +762,7 @@ theorem next_hit {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (B 
   have hdis : discover origI (pullPhase xs origI st) = st := by
     rw [hpp]
     unfold discover
-    rw [if_neg (fun hc => by omega)]
+    rw [ite_eq_right (fun hc => by omega)]
   have htgt : targetIdx origI (discover origI (pullPhase xs origI st)) = origI := by
     rw [hdis]
     unfold targetIdx
@@ -770,7 +770,7 @@ theorem next_hit {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (B 
     · exact Nat.mod_eq_of_lt hilt
     · rfl
   simp only [next]
-  rw [if_neg (by rw [hpp]; omega)]
+  rw [ite_eq_right (by rw [hpp]; omega)]
   split
   · rename_i heq0
     rw [htgt, hdis, hent] at heq0
@@ -853,9 +853,9 @@ theorem next_Iwit {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (B
       · exact h.pull huniq _
       · exact h
     by_cases hlen0 : (pullPhase xs origI st).live.length = 0
-    · rw [if_pos hlen0]
+    · rw [ite_eq_left hlen0]
       exact ⟨h₁.1, h₁.2⟩
-    · rw [if_neg hlen0]
+    · rw [ite_eq_right hlen0]
       split
       · exact ⟨h₂.1, h₂.2⟩
       · rename_i heq
@@ -898,7 +898,7 @@ theorem WF.fst_index_inj {xs : ℕ → Option X} {st : State X} (hWF : WF xs st)
   have hlt : i < (st.live.map Prod.fst).length := by
     rw [List.length_map]
     exact (List.getElem?_eq_some_iff.mp h1).1
-  exact (List.getElem?_inj hlt hnd).mp (g1.trans g2.symm)
+  exact (List.Nodup.getElem?_inj hlt hnd).mp (g1.trans g2.symm)
 
 /-- A live value was read: its unique `xs` index is already consumed. -/
 theorem WF.created_of_mem {xs : ℕ → Option X} {st : State X} (hWF : WF xs st)
@@ -946,7 +946,7 @@ theorem next_emit_inv {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Optio
           = (none, ⟨(pullPhase xs origI st).live, (pullPhase xs origI st).xsCursor,
               (pullPhase xs origI st).xsDone, true⟩) := by
         simp only [next]
-        rw [if_pos hlen0]
+        rw [ite_eq_left hlen0]
       rw [hstep]
       simp
     · rcases heq : (discover origI (pullPhase xs origI st)).live[
@@ -957,7 +957,7 @@ theorem next_emit_inv {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Optio
                 (discover origI (pullPhase xs origI st)).xsCursor,
                 (discover origI (pullPhase xs origI st)).xsDone, true⟩) := by
           simp only [next]
-          rw [if_neg hlen0]
+          rw [ite_eq_right hlen0]
           simp only [heq]
         rw [hstep]
         simp
@@ -973,9 +973,9 @@ theorem next_emit_inv {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Optio
                     (discover origI (pullPhase xs origI st)).xsCursor,
                     (discover origI (pullPhase xs origI st)).xsDone, true⟩) := by
               simp only [next]
-              rw [if_neg hlen0]
+              rw [ite_eq_right hlen0]
               simp only [heq, hy]
-              rw [if_pos hdone]
+              rw [ite_eq_left hdone]
             rw [hstep]
             simp
           · have hstep : next xs ysGen (fuel + 1) origI st
@@ -986,9 +986,9 @@ theorem next_emit_inv {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Optio
                       (discover origI (pullPhase xs origI st)).xsDone,
                       (discover origI (pullPhase xs origI st)).done⟩ := by
               simp only [next]
-              rw [if_neg hlen0]
+              rw [ite_eq_right hlen0]
               simp only [heq, hy]
-              rw [if_neg hdone]
+              rw [ite_eq_right hdone]
             rw [hstep] at hem ⊢
             exact next_emit_inv P hphases herase fuel origI _ (herase _ _ hP₂) hem
         · -- emit: the source is the phase image
@@ -1000,7 +1000,7 @@ theorem next_emit_inv {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Optio
                     (discover origI (pullPhase xs origI st)).xsDone,
                     (discover origI (pullPhase xs origI st)).done⟩) := by
             simp only [next]
-            rw [if_neg hlen0]
+            rw [ite_eq_right hlen0]
             simp only [heq, hy]
           rw [hstep] at hem ⊢
           have hv : (⟨x, y⟩ : (x : X) × B x) = v := Option.some.inj hem
@@ -1035,10 +1035,10 @@ theorem next_Iwit_establish {xs : ℕ → Option X} {ysGen : (x : X) → ℕ →
     have hlt2 : t < st₂.live.length := (List.getElem?_eq_some_iff.mp hent).1
     rw [List.getElem?_set] at hie
     by_cases hit : t = i_e
-    · rw [if_pos hit, if_pos hlt2] at hie
+    · rw [ite_eq_left hit, ite_eq_left hlt2] at hie
       have hje := Option.some.inj hie
       rw [← hje]
-    · rw [if_neg hit] at hie
+    · rw [ite_eq_right hit] at hie
       -- a second live entry with value `a`: impossible by index-uniqueness
       exfalso
       have hea' : e = (a, e.2) := by
@@ -1099,9 +1099,9 @@ theorem mem_erase_of_ne_target {ysGen : (x : X) → ℕ → Option (B x)}
     exact hne x (hj0 ▸ hy)
   rw [List.mem_iff_getElem?]
   by_cases hlt : i_a < t
-  · exact ⟨i_a, by rw [List.getElem?_eraseIdx, if_pos hlt]; exact hia⟩
+  · exact ⟨i_a, by rw [List.getElem?_eraseIdx, ite_eq_left hlt]; exact hia⟩
   · refine ⟨i_a - 1, ?_⟩
-    rw [List.getElem?_eraseIdx, if_neg (by omega),
+    rw [List.getElem?_eraseIdx, ite_eq_right (by omega),
       show i_a - 1 + 1 = i_a from by omega]
     exact hia
 
@@ -1146,7 +1146,7 @@ theorem next_notDone_uncreated {xs : ℕ → Option X} {ysGen : (x : X) → ℕ 
           rw [contig_closure hcontig hlo hnone] at hiA
           exact Option.some_ne_none a hiA.symm
       · omega
-    · rw [if_neg hlen0]
+    · rw [ite_eq_right hlen0]
       have hlen2ne : (discover origI (pullPhase xs origI st)).live.length ≠ 0 := by
         rw [discover_live]
         exact hlen0
@@ -1229,7 +1229,7 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
             = (none, ⟨(pullPhase xs origI st).live, (pullPhase xs origI st).xsCursor,
                 (pullPhase xs origI st).xsDone, true⟩) := by
           simp only [next]
-          rw [if_pos hlen0]
+          rw [ite_eq_left hlen0]
         rw [hstep] at hhi
         have hhi' : iA < (pullPhase xs origI st).xsCursor := hhi
         rw [discover_xsCursor] at hcm
@@ -1246,7 +1246,7 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
                   (discover origI (pullPhase xs origI st)).xsCursor,
                   (discover origI (pullPhase xs origI st)).xsDone, true⟩) := by
             simp only [next]
-            rw [if_neg hlen0]
+            rw [ite_eq_right hlen0]
             simp only [heq]
           rw [hstep] at hhi
           have hhi' : iA < (discover origI (pullPhase xs origI st)).xsCursor := hhi
@@ -1262,9 +1262,9 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
                       (discover origI (pullPhase xs origI st)).xsCursor,
                       (discover origI (pullPhase xs origI st)).xsDone, true⟩) := by
                 simp only [next]
-                rw [if_neg hlen0]
+                rw [ite_eq_right hlen0]
                 simp only [heq, hy]
-                rw [if_pos hdd]
+                rw [ite_eq_left hdd]
               rw [hstep] at hhi
               have hhi' : iA < (discover origI (pullPhase xs origI st)).xsCursor := hhi
               omega
@@ -1276,9 +1276,9 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
                         (discover origI (pullPhase xs origI st)).xsDone,
                         (discover origI (pullPhase xs origI st)).done⟩ := by
                 simp only [next]
-                rw [if_neg hlen0]
+                rw [ite_eq_right hlen0]
                 simp only [heq, hy]
-                rw [if_neg hdd]
+                rw [ite_eq_right hdd]
               rw [hstep] at hhi ⊢
               have hrec := next_fresh hne hiA fuel origI
                 ⟨(discover origI (pullPhase xs origI st)).live.eraseIdx
@@ -1301,7 +1301,7 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
                       (discover origI (pullPhase xs origI st)).xsDone,
                       (discover origI (pullPhase xs origI st)).done⟩) := by
               simp only [next]
-              rw [if_neg hlen0]
+              rw [ite_eq_right hlen0]
               simp only [heq, hy]
             rw [hstep] at hhi
             have hhi' : iA < (discover origI (pullPhase xs origI st)).xsCursor := hhi
@@ -1316,7 +1316,7 @@ theorem next_fresh {xs : ℕ → Option X} {ysGen : (x : X) → ℕ → Option (
         have := (List.getElem?_eq_some_iff.mp hia).1
         rw [discover_live] at this
         omega
-      · rw [if_neg hlen0]
+      · rw [ite_eq_right hlen0]
         have hlen2ne : (discover origI (pullPhase xs origI st)).live.length ≠ 0 := by
           rw [discover_live]
           exact hlen0
@@ -1393,14 +1393,14 @@ theorem runState_succ_of_not_done {n : ℕ}
       = (next xs ysGen (stepFuel (runState xs ysGen s n) (s n)) (s n)
           (runState xs ysGen s n)).2 := by
   simp only [runState]
-  rw [if_neg (by rw [h]; exact Bool.false_ne_true)]
+  rw [ite_eq_right (by rw [h]; exact Bool.false_ne_true)]
 
 theorem emitAt_of_not_done {n : ℕ} (h : (runState xs ysGen s n).done = false) :
     emitAt xs ysGen s n
       = (next xs ysGen (stepFuel (runState xs ysGen s n) (s n)) (s n)
           (runState xs ysGen s n)).1 := by
   simp only [emitAt]
-  rw [if_neg (by rw [h]; exact Bool.false_ne_true)]
+  rw [ite_eq_right (by rw [h]; exact Bool.false_ne_true)]
 
 theorem runState_cursor_mono {n m : ℕ} (h : n ≤ m) :
     (runState xs ysGen s n).xsCursor ≤ (runState xs ysGen s m).xsCursor := by
@@ -1617,11 +1617,11 @@ theorem emit_unique
   -- the emissions force live steps
   have hndm : (runState xs ysGen s m).done = false := by
     by_contra hd
-    rw [emitAt, if_pos (by simpa using hd)] at hemm
+    rw [emitAt, ite_eq_left (by simpa using hd)] at hemm
     exact Option.some_ne_none _ hemm.symm
   have hndm' : (runState xs ysGen s m').done = false := by
     by_contra hd
-    rw [emitAt, if_pos (by simpa using hd)] at hemm'
+    rw [emitAt, ite_eq_left (by simpa using hd)] at hemm'
     exact Option.some_ne_none _ hemm'.symm
   rw [emitAt_of_not_done hndm] at hemm
   rw [emitAt_of_not_done hndm'] at hemm'

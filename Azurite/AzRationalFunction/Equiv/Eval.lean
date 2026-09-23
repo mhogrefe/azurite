@@ -121,9 +121,9 @@ theorem evalAzRat_eq_none_iff (r : AzRationalFunction) (x : AzRat) :
     rw [toRat_evalAzRat, toPolyQ]
   rw [evalAzRat, hval]
   by_cases h : AzPolynomial.evalAzRat r.den x = 0
-  · rw [if_pos h, h, Azurite.AzRat.toRat_zero]
+  · rw [ite_eq_left h, h, Azurite.AzRat.toRat_zero]
     simp
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     simp only [reduceCtorEq, false_iff]
     intro h0
     exact h (Azurite.AzRat.toRat_injective (by rw [h0, Azurite.AzRat.toRat_zero]))
@@ -138,9 +138,9 @@ theorem toRat_evalAzRat_rf (r : AzRationalFunction) (x : AzRat) (v : AzRat)
               / (toPolyQ r.den).eval (Azurite.AzRat.toRat x)) := by
   rw [evalAzRat] at h
   by_cases hd : AzPolynomial.evalAzRat r.den x = 0
-  · rw [if_pos hd] at h
+  · rw [ite_eq_left hd] at h
     exact absurd h (by simp)
-  · rw [if_neg hd, Option.some_inj] at h
+  · rw [ite_eq_right hd, Option.some_inj] at h
     rw [← h, Azurite.AzRat.toRat_mul, Azurite.AzRat.toRat_div, toRat_evalAzRat,
       toRat_evalAzRat, toPolyQ, toPolyQ]
 
@@ -171,8 +171,8 @@ theorem evalAzInt_eq_evalAzRat (r : AzRationalFunction) (z : AzInt) :
       exact Azurite.AzInt.ringEquivInt.injective (by simpa using h2)
   rw [evalAzInt, evalAzRat]
   by_cases hd : AzPolynomial.eval r.den z = 0
-  · rw [if_pos hd, if_pos (hzero.mp hd)]
-  · rw [if_neg hd, if_neg (fun h0 => hd (hzero.mpr h0))]
+  · rw [ite_eq_left hd, ite_eq_left (hzero.mp hd)]
+  · rw [ite_eq_right hd, ite_eq_right (fun h0 => hd (hzero.mpr h0))]
     congr 1
     apply Azurite.AzRat.toRat_injective
     rw [Azurite.AzRat.toRat_mul, Azurite.AzRat.toRat_mul, Azurite.AzRat.toRat_div,

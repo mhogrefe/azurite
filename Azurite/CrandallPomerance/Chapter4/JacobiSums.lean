@@ -106,24 +106,24 @@ def bValue (p : ℕ) : ℕ :=
   else 0
 
 theorem bValue_pos {p : ℕ} (hp : p.Prime) : 0 < bValue p := by
-  rw [bValue, dif_pos hp]
+  rw [bValue, dite_eq_left hp]
   exact (Nat.find_spec (p := fun b => 0 < b ∧ bCond p b) _).1
 
 theorem bValue_spec {p : ℕ} (hp : p.Prime) : bCond p (bValue p) := by
-  rw [bValue, dif_pos hp]
+  rw [bValue, dite_eq_left hp]
   exact (Nat.find_spec (p := fun b => 0 < b ∧ bCond p b) _).2
 
 /-- Minimality: no smaller positive `b` satisfies the condition. -/
 theorem bValue_min {p : ℕ} (hp : p.Prime) {b : ℕ} (hb : 0 < b)
     (hlt : b < bValue p) : ¬bCond p b := by
-  rw [bValue, dif_pos hp] at hlt
+  rw [bValue, dite_eq_left hp] at hlt
   intro hc
   exact Nat.find_min (p := fun b => 0 < b ∧ bCond p b) _ hlt ⟨hb, hc⟩
 
 theorem bValue_lt {p : ℕ} (hp : p.Prime) : bValue p < p := by
   obtain ⟨b, hb0, hbp, hbc⟩ := exists_bCond hp
   calc bValue p ≤ b := by
-        rw [bValue, dif_pos hp]
+        rw [bValue, dite_eq_left hp]
         exact Nat.find_le ⟨hb0, hbc⟩
     _ < p := hbp
 

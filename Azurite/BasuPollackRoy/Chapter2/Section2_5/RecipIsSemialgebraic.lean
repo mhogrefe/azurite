@@ -27,7 +27,7 @@ theorem recipFun_isSemialgebraicFunction :
       = {z : Fin 2 → R | MvPolynomial.eval z (X 1 * X 0 - 1) = 0} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_setOf_eq, map_sub, map_mul, MvPolynomial.eval_X, map_one, sub_eq_zero]
+    simp only [Set.mem_ofPred_eq, map_sub, map_mul, MvPolynomial.eval_X, map_one, sub_eq_zero]
     constructor
     · rintro ⟨ha, hb⟩
       have ha0 : z 0 ≠ 0 := by

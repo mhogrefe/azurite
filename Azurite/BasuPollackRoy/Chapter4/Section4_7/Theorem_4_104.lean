@@ -349,7 +349,7 @@ theorem isSFunctionCC_transitionMap_coord {m : ℕ} (i j : Fin (k + 1)) (b : Fin
   have hdenne : ∀ x ∈ (chartOverlap i j : Set (Fin k → Ri R)),
       (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j ≠ 0 := by
     intro x hx
-    rw [chartOverlap_eq, Set.mem_setOf_eq] at hx
+    rw [chartOverlap_eq, Set.mem_ofPred_eq] at hx
     exact hx
   have heq : (fun x : Fin k → Ri R => transitionMap i j x b)
       = fun x => (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) (j.succAbove b)
@@ -428,7 +428,7 @@ theorem IsSemialgebraicSetC.exists_append {k ℓ : ℕ} {W : Set (Fin (k + ℓ) 
           Fin.append w v ∈ {u : Fin ((k + k) + (ℓ + ℓ)) → R |
             u ∘ appendReindex k ℓ ∈ realEquiv '' W}} := by
     ext w
-    simp only [Set.mem_image, Set.mem_setOf_eq]
+    simp only [Set.mem_image, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨x, ⟨y, hxy⟩, rfl⟩
       refine ⟨realEquiv y, ?_⟩
@@ -476,7 +476,7 @@ theorem IsSemialgebraicFunctionC.preimage {k ℓ : ℕ} {D : Set (Fin k → Ri R
       = {x : Fin k → Ri R | ∃ y : Fin ℓ → Ri R,
           Fin.append x y ∈ (complexFunGraph D f ∩ {p | p ∘ Fin.natAdd k ∈ S})} := by
     ext x
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, mem_complexFunGraph]
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, mem_complexFunGraph]
     constructor
     · rintro ⟨hxD, hfxS⟩
       refine ⟨f x, ⟨?_, ?_⟩, ?_⟩
@@ -517,7 +517,7 @@ theorem chartMap_preimage_chartImageP (i₀ m : Fin (k + 1)) (U₀ : Set (Fin k 
       = {x : Fin k → Ri R |
           x ∈ (chartOverlap m i₀ : Set (Fin k → Ri R)) ∧ transitionMap m i₀ x ∈ U₀} := by
   ext x
-  simp only [Set.mem_preimage, Set.mem_inter_iff, chartImageP, Set.mem_setOf_eq]
+  simp only [Set.mem_preimage, Set.mem_inter_iff, chartImageP, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨⟨hi₀, hU₀⟩, _⟩
     refine ⟨(chartMap_mem_chartSet_iff m i₀ x).mp hi₀, ?_⟩
@@ -608,7 +608,7 @@ theorem isOpen_chartImageP (i₀ : Fin (k + 1)) {U₀ : Set (Fin k → Ri R)}
         x ∈ (chartOverlap m i₀ : Set (Fin k → Ri R)) ∧ transitionMap m i₀ x ∈ U₀}
       = Dov ∩ (fun w => realEquiv (transitionMap m i₀ (realEquiv.symm w))) ⁻¹' (realEquiv '' U₀) := by
     ext w
-    simp only [Set.mem_image, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_preimage]
+    simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_preimage]
     constructor
     · rintro ⟨x, ⟨hov, hU⟩, rfl⟩
       refine ⟨⟨x, hov, rfl⟩, ?_⟩
@@ -754,7 +754,7 @@ theorem isSClassMapP_liftProjMap {k ℓ : ℕ} (i₀ : Fin (k + 1)) (j₀ : Fin 
     IsSClassMapP m (chartImageP i₀ U₀) V (liftProjMap i₀ j₀ ϕ₀) := by
   classical
   refine ⟨hmaps, fun i j b => ?_⟩
-  haveI : Nonempty (Fin (ℓ + ℓ)) := ⟨⟨b.val, by have := b.isLt; omega⟩⟩
+  have : Nonempty (Fin (ℓ + ℓ)) := ⟨⟨b.val, by have := b.isLt; omega⟩⟩
   set ϕ := liftProjMap i₀ j₀ ϕ₀ with hϕ
   set Dom := chartMap i ⁻¹' (chartImageP i₀ U₀ ∩ chartSet i)
     ∩ (fun z => ϕ (chartMap i z)) ⁻¹' chartSet j with hDomdef
@@ -784,7 +784,7 @@ theorem isSClassMapP_liftProjMap {k ℓ : ℕ} (i₀ : Fin (k + 1)) (j₀ : Fin 
         funext w; exact w.elim0
       rw [hconst]
       exact isSFunctionCC_const hDomSA _
-    · haveI : Nonempty (Fin (k + k)) := ⟨⟨0, by omega⟩⟩
+    · have : Nonempty (Fin (k + k)) := ⟨⟨0, by omega⟩⟩
       exact IsSFunctionCC.comp hDomSA hU₀open hmaps1 htrans1 hϕ₀
   -- MapsTo `ϕ₀ ∘ transition i i₀` into `chartOverlap j₀ j`
   have hmaps2 : Set.MapsTo (fun z => ϕ₀ (transitionMap i i₀ z)) Dom
@@ -859,7 +859,7 @@ theorem IsSemialgebraicFunctionC.comp {k ℓ m : ℕ}
       {p : Fin (k + m) → Ri R | ∃ y : Fin ℓ → Ri R, Fin.append p y ∈
         ({v | v ∘ gF ∈ complexFunGraph A f} ∩ {v | v ∘ gG ∈ complexFunGraph B g})} := by
     ext p
-    simp only [mem_complexFunGraph, Set.mem_setOf_eq, Set.mem_inter_iff, hcF, hcG,
+    simp only [mem_complexFunGraph, Set.mem_ofPred_eq, Set.mem_inter_iff, hcF, hcG,
       append_comp_castAdd', append_comp_natAdd', Function.comp_apply]
     constructor
     · rintro ⟨hA, hw⟩
@@ -882,7 +882,7 @@ theorem IsSemialgebraicFunctionC.mono {k ℓ : ℕ} {A A' : Set (Fin k → Ri R)
   have hset : complexFunGraph A' f
       = complexFunGraph A f ∩ {p : Fin (k + ℓ) → Ri R | p ∘ Fin.castAdd ℓ ∈ A'} := by
     ext p
-    simp only [mem_complexFunGraph, Set.mem_inter_iff, Set.mem_setOf_eq]
+    simp only [mem_complexFunGraph, Set.mem_inter_iff, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨hA'p, hfp⟩; exact ⟨⟨hsub hA'p, hfp⟩, hA'p⟩
     · rintro ⟨⟨_, hfp⟩, hA'p⟩; exact ⟨hA'p, hfp⟩
@@ -950,7 +950,7 @@ theorem isSemialgebraicFunctionC_realEquiv_symm {k ℓ : ℕ} {U_aff : Set (Fin 
         rw [hpapp, realEquiv_append]
         funext i
         rw [Function.comp_apply, Function.comp_apply, appendReindex_appendUnreindex]
-      rw [Set.mem_setOf_eq, hkey, mem_funGraph]
+      rw [Set.mem_ofPred_eq, hkey, mem_funGraph]
       refine ⟨?_, ?_⟩
       · -- `realEquiv x ∈ U_aff`
         rw [Azurite.BPR.append_comp_castAdd]
@@ -962,7 +962,7 @@ theorem isSemialgebraicFunctionC_realEquiv_symm {k ℓ : ℕ} {U_aff : Set (Fin 
         have hyval : y = ϕ₀ x := hpf
         rw [hyval, hϕ₀, Equiv.apply_symm_apply]
     · intro hu
-      rw [Set.mem_setOf_eq, mem_funGraph] at hu
+      rw [Set.mem_ofPred_eq, mem_funGraph] at hu
       refine ⟨realEquiv.symm u, ?_, by rw [Equiv.apply_symm_apply]⟩
       rw [mem_complexFunGraph]
       set p : Fin (k + ℓ) → Ri R := realEquiv.symm u with hp
@@ -1059,7 +1059,7 @@ theorem theorem_4_104 {k ℓ : ℕ} (m : ℕ)
   have hmemU : ∀ p : complexProjectiveSpace R k,
       p ∈ U ↔ p ∈ chartSet i₀ ∧ realEquiv (chartInv i₀ p) ∈ Ua := by
     intro p
-    rw [hUdef, chartImageP, Set.mem_setOf_eq, hU₀]
+    rw [hUdef, chartImageP, Set.mem_ofPred_eq, hU₀]
     refine and_congr_right (fun _ => ?_)
     constructor
     · rintro ⟨w, hwU, hwp⟩; rw [← hwp, Equiv.apply_symm_apply]; exact hwU
@@ -1067,7 +1067,7 @@ theorem theorem_4_104 {k ℓ : ℕ} (m : ℕ)
   have hmemV : ∀ q : complexProjectiveSpace R ℓ,
       q ∈ V ↔ q ∈ chartSet j₀ ∧ realEquiv (chartInv j₀ q) ∈ Va := by
     intro q
-    rw [hVdef, chartImageP, Set.mem_setOf_eq, hV₀]
+    rw [hVdef, chartImageP, Set.mem_ofPred_eq, hV₀]
     refine and_congr_right (fun _ => ?_)
     constructor
     · rintro ⟨w, hwV, hwq⟩; rw [← hwq, Equiv.apply_symm_apply]; exact hwV
@@ -1134,7 +1134,7 @@ theorem theorem_4_104 {k ℓ : ℕ} (m : ℕ)
             z ∈ A ∧ ϕ₀ (transitionMap i i₀ z) ∈ (chartOverlap j₀ j : Set (Fin ℓ → Ri R))} := by
       rw [chartMap_preimage_chartImageP]
       ext z
-      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq, hA]
+      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_ofPred_eq, hA]
       have hrep : liftProjMap i₀ j₀ ϕ₀ (chartMap i z)
           = chartMap j₀ (ϕ₀ (transitionMap i i₀ z)) := by
         rw [liftProjMap, ← transitionMap_eq_chartInv_chartMap]

@@ -6,7 +6,7 @@ namespace UInt64
 theorem toNat_setBit (u : UInt64) (i : Nat) (hi : i < 64) :
     (u.setBit i).toNat = u.toNat ||| (1 <<< i) := by
   unfold setBit
-  rw [if_pos hi]
+  rw [ite_eq_left hi]
   rw [_root_.UInt64.toNat_or, _root_.UInt64.toNat_shiftLeft,
       show ((1 : UInt64).toNat = 1) from rfl]
   have hi_eq : (_root_.UInt64.ofNat i).toNat = i := by
@@ -20,6 +20,6 @@ theorem toNat_setBit (u : UInt64) (i : Nat) (hi : i < 64) :
 
 theorem setBit_of_ge (u : UInt64) (i : Nat) (hi : 64 ≤ i) : u.setBit i = u := by
   unfold setBit
-  rw [if_neg (by omega)]
+  rw [ite_eq_right (by omega)]
 
 end UInt64

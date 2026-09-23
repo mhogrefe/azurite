@@ -169,7 +169,7 @@ theorem stabilized_coeff_order {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × 
   -- column r−1 is on the edge
   have hcol : colOnLine P A B (r - 1) := by
     by_contra hn
-    rw [charPoly_coeff, if_neg (fun hm => hn (Finset.mem_filter.mp hm).2)] at hcoeff
+    rw [charPoly_coeff, ite_eq_right (fun hm => hn (Finset.mem_filter.mp hm).2)] at hcoeff
     exact hcoeff rfl
   have hcoleq : puiseuxOrder R (P.coeff (r - 1)) = (lineValue A B (r - 1) : WithTop ℚ) := hcol
   rw [hcoleq]; congr 1

@@ -11,7 +11,7 @@
   * `swapCols` is a column transposition, which flips `Matrix.det`.
   * Hence `(-1)^s · Matrix.det M` is invariant under each step, and the
     output's determinant is the product of its diagonal (either via
-    `Matrix.det_of_upperTriangular` in the no-abort case or via
+    `Matrix.det_of_isUpperTriangular` in the no-abort case or via
     `Matrix.det_eq_zero_of_row_eq_zero` when the algorithm aborts on a zero
     pivot row).
 -/
@@ -50,7 +50,7 @@ theorem AzMatrix.findPivotAux_eq_none [Zero K]
   · intro start h_lt h_zero ih h_rec j h_ge
     have hrec_eq : M.findPivotAux k (start + 1) = none := by
       rw [AzMatrix.findPivotAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, if_pos h_zero] at h_rec
+      simp only [dite_eq_left h_lt, ite_eq_left h_zero] at h_rec
       exact h_rec
     by_cases h_eq : j.val = start
     · have hj : j = ⟨start, h_lt⟩ := Fin.ext h_eq
@@ -59,7 +59,7 @@ theorem AzMatrix.findPivotAux_eq_none [Zero K]
   · intro start h_lt h_nz h_rec
     have h_eq : M.findPivotAux k start = some ⟨start, h_lt⟩ := by
       rw [AzMatrix.findPivotAux.eq_def]
-      simp only [dif_pos h_lt, if_neg h_nz]
+      simp only [dite_eq_left h_lt, ite_eq_right h_nz]
     rw [h_eq] at h_rec
     nomatch h_rec
   · intro start h_ge _ j _
@@ -84,21 +84,21 @@ theorem AzMatrix.findPivotAux_some_le [Zero K]
   · intro start h_lt h_zero ih j h_rec
     have hrec_eq : M.findPivotAux k (start + 1) = some j := by
       rw [AzMatrix.findPivotAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, if_pos h_zero] at h_rec
+      simp only [dite_eq_left h_lt, ite_eq_left h_zero] at h_rec
       exact h_rec
     have := ih j hrec_eq
     omega
   · intro start h_lt h_nz j h_rec
     have h_eq : M.findPivotAux k start = some ⟨start, h_lt⟩ := by
       rw [AzMatrix.findPivotAux.eq_def]
-      simp only [dif_pos h_lt, if_neg h_nz]
+      simp only [dite_eq_left h_lt, ite_eq_right h_nz]
     rw [h_eq] at h_rec
     have h_eq_j : ⟨start, h_lt⟩ = j := by injection h_rec
     have : j.val = start := by rw [← h_eq_j]
     omega
   · intro start h_ge j h_rec
     rw [AzMatrix.findPivotAux.eq_def] at h_rec
-    simp only [dif_neg h_ge] at h_rec
+    simp only [dite_eq_right h_ge] at h_rec
     nomatch h_rec
 
 omit [Field K] in
@@ -119,20 +119,20 @@ theorem AzMatrix.findPivotAux_some_nonzero [Zero K]
   · intro start h_lt h_zero ih j h_rec
     have hrec_eq : M.findPivotAux k (start + 1) = some j := by
       rw [AzMatrix.findPivotAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, if_pos h_zero] at h_rec
+      simp only [dite_eq_left h_lt, ite_eq_left h_zero] at h_rec
       exact h_rec
     exact ih j hrec_eq
   · intro start h_lt h_nz j h_rec
     have h_eq : M.findPivotAux k start = some ⟨start, h_lt⟩ := by
       rw [AzMatrix.findPivotAux.eq_def]
-      simp only [dif_pos h_lt, if_neg h_nz]
+      simp only [dite_eq_left h_lt, ite_eq_right h_nz]
     rw [h_eq] at h_rec
     have h_j_eq : j = ⟨start, h_lt⟩ := (Option.some.inj h_rec).symm
     rw [h_j_eq]
     exact h_nz
   · intro start h_ge j h_rec
     rw [AzMatrix.findPivotAux.eq_def] at h_rec
-    simp only [dif_neg h_ge] at h_rec
+    simp only [dite_eq_right h_ge] at h_rec
     nomatch h_rec
 
 omit [Field K] in
@@ -155,23 +155,23 @@ theorem AzMatrix.det_eliminateBelow
   · intro i j
     rw [AzMatrix.toFn_eliminateBelow]
     by_cases h_i_le : i.val ≤ k.val
-    · rw [if_pos h_i_le]
+    · rw [ite_eq_left h_i_le]
       have h_not_lt : ¬ k.val < i.val := by omega
-      rw [if_neg h_not_lt]
+      rw [ite_eq_right h_not_lt]
       ring
-    · rw [if_neg h_i_le]
+    · rw [ite_eq_right h_i_le]
       have h_i_gt : k.val < i.val := by omega
-      rw [if_pos h_i_gt]
+      rw [ite_eq_left h_i_gt]
       by_cases h_j_lt : j.val < k.val
-      · rw [if_pos h_j_lt]
+      · rw [ite_eq_left h_j_lt]
         rw [h_row j h_j_lt]
         ring
-      · rw [if_neg h_j_lt]
+      · rw [ite_eq_right h_j_lt]
         by_cases h_j_eq : j = k
-        · rw [if_pos h_j_eq, h_j_eq]
+        · rw [ite_eq_left h_j_eq, h_j_eq]
           field_simp
           ring
-        · rw [if_neg h_j_eq]
+        · rw [ite_eq_right h_j_eq]
           ring
 
 /-! ### Det of `swapCols` -/
@@ -185,10 +185,10 @@ theorem AzMatrix.toFn_swapCols_eq_submatrix
   rw [AzMatrix.toFn_swapCols]
   show _ = M.toFn i ((Equiv.swap j₁ j₂) j)
   by_cases h₁ : j = j₁
-  · rw [if_pos h₁, h₁, Equiv.swap_apply_left]
+  · rw [ite_eq_left h₁, h₁, Equiv.swap_apply_left]
   · by_cases h₂ : j = j₂
-    · rw [if_neg h₁, if_pos h₂, h₂, Equiv.swap_apply_right]
-    · rw [if_neg h₁, if_neg h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
+    · rw [ite_eq_right h₁, ite_eq_left h₂, h₂, Equiv.swap_apply_right]
+    · rw [ite_eq_right h₁, ite_eq_right h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
 
 omit [DecidableEq K] in
 theorem AzMatrix.det_swapCols
@@ -232,7 +232,7 @@ theorem AzMatrix.swapCols_preservesPartialZero
     intro h_eq
     have : j.val = jₚ.val := by rw [h_eq]
     omega
-  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
+  rw [ite_eq_right h_j_neq_kp, ite_eq_right h_j_neq_jₚ]
   exact h_inv i j h_lt_ij h_bnd
 
 /-- Row `⟨start, _⟩` of the swap-result has zeros to the left of column
@@ -252,7 +252,7 @@ theorem AzMatrix.swapCols_row_zeros
     intro h_eq
     have : j.val = jₚ.val := by rw [h_eq]
     omega
-  rw [if_neg h_j_neq_kp, if_neg h_j_neq_jₚ]
+  rw [ite_eq_right h_j_neq_kp, ite_eq_right h_j_neq_jₚ]
   exact h_inv ⟨start, h_lt⟩ j h_j_lt h_j_lt
 
 end Azurite
@@ -271,17 +271,17 @@ theorem AzMatrix.eliminateBelow_preservesPartialZero
   intro i j h_lt_ij h_bnd
   rw [AzMatrix.toFn_eliminateBelow]
   by_cases h_i_le : i.val ≤ start
-  · rw [if_pos h_i_le]
+  · rw [ite_eq_left h_i_le]
     have h_j_lt_start : j.val < start := by omega
     exact h_inv i j h_lt_ij h_j_lt_start
-  · rw [if_neg h_i_le]
+  · rw [ite_eq_right h_i_le]
     by_cases h_j_lt : j.val < start
-    · rw [if_pos h_j_lt]
+    · rw [ite_eq_left h_j_lt]
       exact h_inv i j h_lt_ij h_j_lt
-    · rw [if_neg h_j_lt]
+    · rw [ite_eq_right h_j_lt]
       have h_j_eq : j.val = start := by omega
       have h_j_kp : j = ⟨start, h_lt⟩ := Fin.ext h_j_eq
-      rw [if_pos h_j_kp]
+      rw [ite_eq_left h_j_kp]
 
 /-! ### Per-step det invariant -/
 
@@ -298,7 +298,7 @@ theorem AzMatrix.gaussAux_det_eq
     have h_findPivot' : M.findPivot ⟨start, by omega⟩ = none := h_findPivot
     have h_step_eq : M.gaussAux start s = (M, s) := by
       rw [AzMatrix.gaussAux.eq_def]
-      simp only [dif_pos h_lt, h_findPivot']
+      simp only [dite_eq_left h_lt, h_findPivot']
     rw [h_step_eq]
     have h_start_lt : start < n := by omega
     have h_start_zero : ∀ j : Fin n, M.toFn ⟨start, h_start_lt⟩ j = 0 := by
@@ -336,7 +336,7 @@ theorem AzMatrix.gaussAux_det_eq
     have h_step_eq : M.gaussAux start s =
         (M.eliminateBelow ⟨start, h_start_lt⟩).gaussAux (start + 1) s := by
       rw [AzMatrix.gaussAux.eq_def]
-      simp only [dif_pos h_lt, h_pivot_kp', if_true]
+      simp only [dite_eq_left h_lt, h_pivot_kp', ite_true]
     rw [h_step_eq]
     rw [← h_det_eq]
     exact ih h_inv_next
@@ -352,7 +352,7 @@ theorem AzMatrix.gaussAux_det_eq
     have h_swap_pivot_nz :
         (M.swapCols ⟨start, h_start_lt⟩ j).toFn
           ⟨start, h_start_lt⟩ ⟨start, h_start_lt⟩ ≠ 0 := by
-      rw [AzMatrix.toFn_swapCols, if_pos rfl]
+      rw [AzMatrix.toFn_swapCols, ite_eq_left rfl]
       exact h_orig_nz
     have h_swap_row_zeros : ∀ j' : Fin n,
         j'.val < (⟨start, h_start_lt⟩ : Fin n).val →
@@ -380,7 +380,7 @@ theorem AzMatrix.gaussAux_det_eq
         ((M.swapCols ⟨start, h_start_lt⟩ j).eliminateBelow
           ⟨start, h_start_lt⟩).gaussAux (start + 1) (s + 1) := by
       rw [AzMatrix.gaussAux.eq_def]
-      simp only [dif_pos h_lt, h_pivot_j', if_neg h_neq']
+      simp only [dite_eq_left h_lt, h_pivot_j', ite_eq_right h_neq']
     rw [h_step_eq]
     have h_ih := ih h_inv_next
     rw [h_det_elim_eq, h_det_swap_eq] at h_ih
@@ -390,7 +390,7 @@ theorem AzMatrix.gaussAux_det_eq
   | case4 M start s h_no_step =>
     have h_step_eq : M.gaussAux start s = (M, s) := by
       rw [AzMatrix.gaussAux.eq_def]
-      simp only [dif_neg h_no_step]
+      simp only [dite_eq_right h_no_step]
     rw [h_step_eq]
     have h_upper : Matrix.BlockTriangular M.toFn id := by
       intro i j h_lt_ij
@@ -398,7 +398,7 @@ theorem AzMatrix.gaussAux_det_eq
       have h_i_lt : i.val < n := i.isLt
       have h_j_lt_start : j.val < start := by omega
       exact h_inv i j h_lt' h_j_lt_start
-    rw [Matrix.det_of_upperTriangular h_upper]
+    rw [Matrix.det_of_isUpperTriangular h_upper]
     ring
 
 /-! ### Main theorem -/

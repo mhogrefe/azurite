@@ -32,7 +32,7 @@ theorem isOpen_coord_ne_zero {n : ℕ} (i : Fin n) :
   refine ⟨x, |x i|, abs_pos.mpr hx, mem_openBall_self x (abs_pos.mpr hx), ?_⟩
   intro y hy
   rw [mem_openBall] at hy
-  rw [Set.mem_setOf_eq]
+  rw [Set.mem_ofPred_eq]
   intro hy0
   have h1 : (y - x) i ^ 2 ≤ euclideanNormSq (y - x) := coord_sq_le_euclideanNormSq _ i
   rw [Pi.sub_apply, hy0, zero_sub, neg_sq] at h1
@@ -51,11 +51,11 @@ theorem isOpen_coordC_ne_zero (a : Fin k) :
   refine ⟨{w : Fin (k + k) → R | w (Fin.castAdd k a) ≠ 0 ∨ w (Fin.natAdd k a) ≠ 0}, ?_, ?_⟩
   · have hunion : {w : Fin (k + k) → R | w (Fin.castAdd k a) ≠ 0 ∨ w (Fin.natAdd k a) ≠ 0}
         = {w | w (Fin.castAdd k a) ≠ 0} ∪ {w | w (Fin.natAdd k a) ≠ 0} := by
-      ext w; simp only [Set.mem_setOf_eq, Set.mem_union]
+      ext w; simp only [Set.mem_ofPred_eq, Set.mem_union]
     rw [hunion]
     exact (isOpen_coord_ne_zero _).union (isOpen_coord_ne_zero _)
   · ext x
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, realEquiv_apply_castAdd, realEquiv_apply_natAdd,
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, realEquiv_apply_castAdd, realEquiv_apply_natAdd,
       reL_eq_zero_and_imL_eq_zero_iff, not_and_or, ne_eq]
 
 /-- **BPR §4.7 (Note, part 4 — open).** The chart overlap `φᵢ⁻¹(𝒰ᵢ ∩ 𝒰ⱼ)` is open in `Cᵏ = R^{2k}`. -/
@@ -71,7 +71,7 @@ theorem isOpen_chartOverlap (i j : Fin (k + 1)) :
   · obtain ⟨b, hb⟩ := Fin.exists_succAbove_eq hji
     have hcoord : {x : Fin k → Ri R | (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j ≠ 0}
         = {x : Fin k → Ri R | x b ≠ 0} := by
-      ext x; simp only [Set.mem_setOf_eq, ← hb, Fin.insertNth_apply_succAbove]
+      ext x; simp only [Set.mem_ofPred_eq, ← hb, Fin.insertNth_apply_succAbove]
     rw [hcoord]; exact isOpen_coordC_ne_zero b
 
 end Azurite.BPR.Chapter4

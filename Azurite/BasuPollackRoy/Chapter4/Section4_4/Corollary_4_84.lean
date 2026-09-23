@@ -110,7 +110,7 @@ theorem corollary_4_84 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algeb
   · -- `P^n` is its own degree-`np` component; project the sum.
     have hLHS : homogeneousComponent (n * p) (P ^ n) = P ^ n := by
       have hPn : (P ^ n).IsHomogeneous (n * p) := by rw [mul_comm]; exact hPhom.pow n
-      rw [homogeneousComponent_of_mem hPn, if_pos rfl]
+      rw [homogeneousComponent_of_mem hPn, ite_eq_left rfl]
     calc P ^ n = homogeneousComponent (n * p) (P ^ n) := hLHS.symm
       _ = homogeneousComponent (n * p) (∑ i, B'' i * Ps i) := by rw [hsum]
       _ = ∑ i, homogeneousComponent (n * p) (B'' i * Ps i) := by rw [map_sum]

@@ -117,7 +117,7 @@ theorem aeval_pderiv_affineFactor_ne_zero (d : ℕ) (i : Fin k) (g : Fin k → R
     {n₀ : ℕ} (hn₀ : n₀ ∈ Finset.Icc 1 d) (hgi : g i = (n₀ : Ri R)) :
     aeval g (pderiv i (affineFactor (R := R) d i)) ≠ 0 := by
   classical
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   set rest : MvPolynomial (Fin k) (Ri R) :=
     ∏ n ∈ Finset.Icc 1 d \ {n₀}, (X i - C ((n : ℕ) : Ri R)) with hrest
@@ -168,8 +168,8 @@ theorem isNonsingularZero_affineSystem (d : Fin k → ℕ) (g : Fin k → Ri R)
     ext i j
     rw [jacobian, Matrix.of_apply, Matrix.diagonal_apply]
     by_cases hij : j = i
-    · subst hij; rw [if_pos rfl]; rfl
-    · rw [if_neg (fun h => hij h.symm), affineSystem,
+    · subst hij; rw [ite_eq_left rfl]; rfl
+    · rw [ite_eq_right (fun h => hij h.symm), affineSystem,
         pderiv_affineFactor_of_ne (d i) i j hij, map_zero]
   rw [hdiag, Matrix.det_diagonal, Finset.prod_ne_zero_iff]
   intro i _
@@ -296,7 +296,7 @@ theorem affineSystem_common_zero_eq_piFinset (d : Fin k → ℕ) :
       = ↑(Fintype.piFinset
           (fun i => (Finset.Icc 1 (d i)).image (fun n : ℕ => (n : Ri R)))) := by
   ext g
-  rw [Set.mem_setOf_eq, Fintype.coe_piFinset, Set.mem_univ_pi]
+  rw [Set.mem_ofPred_eq, Fintype.coe_piFinset, Set.mem_univ_pi]
   refine forall_congr' fun i => ?_
   rw [affineSystem, aeval_affineFactor_eq_zero_iff, Finset.coe_image, Set.mem_image]
   constructor
@@ -310,7 +310,7 @@ theorem diagSystem_nonsingularZero_ncard (d : Fin k → ℕ) (hd : ∀ i, 1 ≤ 
     {x : complexProjectiveSpace R k | IsNonsingularProjectiveZero (diagSystem d) x}.ncard
       = ∏ i, d i := by
   classical
-  haveI : CharZero (Ri R) :=
+  have : CharZero (Ri R) :=
     charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   -- The projective nonsingular-zero set is the image of the affine grid.
   set Aff : Set (Fin k → Ri R) :=
@@ -320,7 +320,7 @@ theorem diagSystem_nonsingularZero_ncard (d : Fin k → ℕ) (hd : ∀ i, 1 ≤ 
   have himg : {x : complexProjectiveSpace R k | IsNonsingularProjectiveZero (diagSystem d) x}
       = f '' Aff := by
     ext x
-    rw [Set.mem_setOf_eq, Set.mem_image]
+    rw [Set.mem_ofPred_eq, Set.mem_image]
     rw [isNonsingularProjectiveZero_diagSystem_iff d hd]
     exact ⟨fun ⟨g, hg, hx⟩ => ⟨g, hg, hx⟩, fun ⟨g, hg, hx⟩ => ⟨g, hg, hx⟩⟩
   rw [himg, Set.ncard_image_of_injective Aff mkLine_cons_one_injective, hAff,

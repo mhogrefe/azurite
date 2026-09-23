@@ -87,17 +87,17 @@ theorem isClosed_sphere {k : ℕ} (x : Fin k → R) (ρ : R) : IsClosed (sphere 
   have hpre : sphere x ρ
       = polynomialMap ![ballPoly x ρ] ⁻¹' {w : Fin 1 → R | w 0 = 0} := by
     ext y
-    rw [mem_sphere, Set.mem_preimage, Set.mem_setOf_eq]
+    rw [mem_sphere, Set.mem_preimage, Set.mem_ofPred_eq]
     show euclideanNormSq (y - x) = ρ ^ 2 ↔ eval y (ballPoly x ρ) = 0
     rw [eval_ballPoly, sub_eq_zero]
   have hclosed : IsClosed {w : Fin 1 → R | w 0 = 0} := by
     rw [isClosed_iff, isOpen_iff]
     intro w hw
-    rw [Set.mem_compl_iff, Set.mem_setOf_eq] at hw
+    rw [Set.mem_compl_iff, Set.mem_ofPred_eq] at hw
     refine ⟨w, |w 0|, abs_pos.mpr hw, mem_openBall_self w (abs_pos.mpr hw),
       fun z hz => ?_⟩
     rw [mem_openBall, euclideanNormSq_fin_one, Pi.sub_apply, sq_abs] at hz
-    rw [Set.mem_compl_iff, Set.mem_setOf_eq]
+    rw [Set.mem_compl_iff, Set.mem_ofPred_eq]
     intro hz0
     rw [hz0] at hz
     nlinarith
@@ -115,9 +115,9 @@ theorem sphere_one_nonempty {k : ℕ} (hk : 0 < k) :
     (sphere (0 : Fin k → R) 1).Nonempty := by
   refine ⟨fun i => if i = ⟨0, hk⟩ then 1 else 0, ?_⟩
   rw [mem_sphere, sub_zero, one_pow, euclideanNormSq, Finset.sum_eq_single ⟨0, hk⟩]
-  · rw [if_pos rfl, one_pow]
+  · rw [ite_eq_left rfl, one_pow]
   · intro j _ hj
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
     ring
   · intro h
     exact absurd (Finset.mem_univ _) h
@@ -160,7 +160,7 @@ Theorem 3.20): the supremum over the unit sphere is attained, and `opNorm` reali
 theorem opNorm_isGreatest {k p : ℕ} (hk : 0 < k) (A : Matrix (Fin p) (Fin k) R) :
     IsGreatest {r : R | ∃ x : Fin k → R,
       euclideanNormSq x = 1 ∧ r = euclideanNorm (A.mulVec x)} (opNorm A) := by
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   -- maximize the squared norm of `A.mulVec x` on the unit sphere
   have hmax : ∃ y ∈ sphere (0 : Fin k → R) 1, ∀ z ∈ sphere (0 : Fin k → R) 1,
       polyFun (mulVecNormSqPoly A) z 0 ≤ polyFun (mulVecNormSqPoly A) y 0 := by
@@ -192,7 +192,7 @@ theorem opNorm_isGreatest {k p : ℕ} (hk : 0 < k) (A : Matrix (Fin p) (Fin k) R
       rw [h1, h2] at h
       exact h
   classical
-  rw [opNorm, dif_pos ⟨_, hgreat⟩]
+  rw [opNorm, dite_eq_left ⟨_, hgreat⟩]
   exact Exists.choose_spec _
 
 theorem opNorm_nonneg {k p : ℕ} (hk : 0 < k) (A : Matrix (Fin p) (Fin k) R) :

@@ -53,27 +53,27 @@ theorem exists_germPoly_rep (P : Polynomial (SemialgGerm R)) :
     intro j
     rw [hcoeff j]
     by_cases hj : j ∈ P.support
-    · rw [if_pos hj]
+    · rw [ite_eq_left hj]
       exact (Quotient.out (P.coeff j)).isSemialgContinuous.mono
         (isSemialgebraicSet_rightNbhd _) (rightNbhd_subset (ht₀le j hj))
-    · rw [if_neg hj]
+    · rw [ite_eq_right hj]
       exact isSemialgContinuousOn_zero (isSemialgebraicSet_rightNbhd _)
   refine ⟨t₀, ht₀, Q, hQcont, fun j => ?_, ?_⟩
   · by_cases hj : j ∈ P.support
     · -- the lifted coefficient agrees with the canonical representative, hence the same germ
-      have hcj : Q.coeff j = (Quotient.out (P.coeff j)).toFun := by rw [hcoeff j, if_pos hj]
+      have hcj : Q.coeff j = (Quotient.out (P.coeff j)).toFun := by rw [hcoeff j, ite_eq_left hj]
       have heqv : (⟨t₀, ht₀, Q.coeff j, hQcont j⟩ : SemialgGermRep R) ≈ Quotient.out (P.coeff j) :=
         ⟨t₀, ht₀, fun s _ _ => congrFun hcj (constPt s)⟩
       rw [Quotient.sound heqv, Quotient.out_eq]
     · -- outside the support both sides are zero
-      have hcj : Q.coeff j = 0 := by rw [hcoeff j, if_neg hj]
+      have hcj : Q.coeff j = 0 := by rw [hcoeff j, ite_eq_right hj]
       rw [Polynomial.notMem_support_iff.mp hj]
       exact Quotient.sound ⟨t₀, ht₀, fun s _ _ => by
         simp only [hcj, SemialgGermRep.zero_toFun]⟩
   · -- the lift has degree at most that of `P`
     rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
     intro m hm
-    rw [hcoeff m, if_neg]
+    rw [hcoeff m, ite_eq_right]
     rw [Polynomial.mem_support_iff, not_not]
     exact Polynomial.coeff_eq_zero_of_natDegree_lt hm
 

@@ -66,8 +66,8 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
       Matrix.of_apply, Matrix.of_apply]
     rcases Nat.lt_or_ge ((k : ℕ) + 1) ((P.map f).natDegree + (Q.map f).natDegree - 2 * j)
       with hk1 | hk1
-    · rw [if_pos hk1,
-        if_pos (show (((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j
+    · rw [ite_eq_left hk1,
+        ite_eq_left (show (((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j
           from by show (k : ℕ) + 1 < _; omega),
         Polynomial.coe_mapRingHom, Polynomial.map_C]
       congr 1
@@ -75,8 +75,8 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
       rw [Azurite.BPR.Chapter4.SyHa, Azurite.BPR.Chapter4.SyHa,
         Matrix.of_apply, Matrix.of_apply]
       rcases Nat.lt_or_ge (i : ℕ) ((Q.map f).natDegree - j) with hib | hib
-      · rw [if_pos hib,
-          if_pos (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
+      · rw [ite_eq_left hib,
+          ite_eq_left (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
             from by show (i : ℕ) < _; omega)]
         rw [show Polynomial.X ^ ((Q.map f).natDegree - j - 1 - (i : ℕ)) * P.map f
             = (Polynomial.X ^ (Q.natDegree - j - 1 - (i : ℕ)) * P).map f from by
@@ -87,9 +87,9 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
         congr 1
         simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
         congr 2
-        all_goals first | rfl | omega
-      · rw [if_neg (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
-          if_neg (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
+        all_goals first | rfl | omega | (congr 1; omega)
+      · rw [ite_eq_right (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
+          ite_eq_right (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
             from by show ¬ ((i : ℕ) < _); omega)]
         rw [show Polynomial.X ^ ((i : ℕ) - ((Q.map f).natDegree - j)) * Q.map f
             = (Polynomial.X ^ ((i : ℕ) - (Q.natDegree - j)) * Q).map f from by
@@ -100,21 +100,22 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
         congr 1
         simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
         congr 2
-        all_goals first | rfl | omega
-    · rw [if_neg (show ¬ ((k : ℕ) + 1
+        all_goals first | rfl | omega | (congr 1; omega)
+    · rw [ite_eq_right (show ¬ ((k : ℕ) + 1
             < (P.map f).natDegree + (Q.map f).natDegree - 2 * j) from by omega),
-        if_neg (show ¬ ((((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)
+        ite_eq_right (show ¬ ((((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)
           from by show ¬ ((k : ℕ) + 1 < _); omega)]
       rcases Nat.lt_or_ge (i : ℕ) ((Q.map f).natDegree - j) with hib | hib
-      · rw [if_pos hib,
-          if_pos (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
+      · rw [ite_eq_left hib,
+          ite_eq_left (show (((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j
             from by show (i : ℕ) < _; omega),
           Polynomial.coe_mapRingHom, Polynomial.map_zero]
-      · rw [if_neg (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
-          if_neg (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
+      · rw [ite_eq_right (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
+          ite_eq_right (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
             from by show ¬ ((i : ℕ) < _); omega),
           Polynomial.coe_mapRingHom, Polynomial.map_pow, Polynomial.map_X]
         congr 2
+        congr 1
         show (i : ℕ) - ((Q.map f).natDegree - j) = (((finCongr hm) i : Fin _) : ℕ) - (Q.natDegree - j)
         simp only [finCongr_apply, Fin.val_cast]
         omega
@@ -398,7 +399,7 @@ theorem sResP_mod_eq {K : Type*} [Field K] (P Q : K[X]) (hP : P ≠ 0) (hQ : Q �
           * sResP P Q (k - 1)) := by
   obtain ⟨hrec, _⟩ :=
     (theorem_8_34_monolithic P Q hP hQ hpq hq1 hj1 hji hip hne hdeg).2 k hk0 hkdeg
-  rw [if_neg (show ¬ k = 0 by omega)] at hrec
+  rw [ite_eq_right (show ¬ k = 0 by omega)] at hrec
   simp only [← Polynomial.C_mul] at hrec
   rw [rem_C_mul] at hrec
   -- hrec : C(s_j t_{i-1}) sResP_{k-1} = -(C(s_k t_{j-1}) (sResP_{i-1} % sResP_{j-1}))
@@ -493,11 +494,11 @@ theorem sBPR_eq_cast {j : ℕ} (hpq : Q₀.natDegree < P₀.natDegree)
     Polynomial.natDegree_map_eq_of_injective Int.cast_injective Q₀
   rw [sBPR, hpm, Sℤ]
   rcases hjq with hjq | hjp
-  · rw [if_neg (by omega), if_neg (by omega),
+  · rw [ite_eq_right (by omega), ite_eq_right (by omega),
       ← coeff_sResP _ _ (by rw [hpm, hqm]; exact hpq) (by rw [hpm]; omega),
       sResP_map Int.cast_injective, Polynomial.coeff_map]
     rfl
-  · rw [if_pos hjp, if_pos hjp, Int.cast_one]
+  · rw [ite_eq_left hjp, ite_eq_left hjp, Int.cast_one]
 
 /-- Over `ℚ`, `t_m = tBPR` is the integer `Tℤ` (cast), for all `m`. -/
 theorem tBPR_eq_cast (m : ℕ) :
@@ -506,8 +507,8 @@ theorem tBPR_eq_cast (m : ℕ) :
     Polynomial.natDegree_map_eq_of_injective Int.cast_injective P₀
   rw [tBPR, hpm, Tℤ]
   by_cases hm : m = P₀.natDegree
-  · rw [if_pos hm, if_pos hm, Int.cast_one]
-  · rw [if_neg hm, if_neg hm, sResP_map Int.cast_injective, Polynomial.leadingCoeff,
+  · rw [ite_eq_left hm, ite_eq_left hm, Int.cast_one]
+  · rw [ite_eq_right hm, ite_eq_right hm, sResP_map Int.cast_injective, Polynomial.leadingCoeff,
       Polynomial.leadingCoeff, Polynomial.coeff_map,
       Polynomial.natDegree_map_eq_of_injective Int.cast_injective]
     rfl
@@ -524,10 +525,10 @@ theorem Sℤ_size_le {j : ℕ} (hjq : j ≤ Q₀.natDegree ∨ j = P₀.natDegre
     Int.size (Sℤ P₀ Q₀ j) ≤ B := by
   rw [Sℤ]
   rcases hjq with hjq | hjp
-  · rw [if_neg (by omega)]
+  · rw [ite_eq_right (by omega)]
     refine le_trans (sResP_coeff_size_le P₀ Q₀ hP hQ hpq hjq j) ?_
     exact Nat.mul_le_mul (by omega) (Nat.add_le_add_left (Nat.size_le_size (by omega)) _)
-  · rw [if_pos hjp]
+  · rw [ite_eq_left hjp]
     have hpq1 : 1 ≤ P₀.natDegree + Q₀.natDegree := by omega
     have hsz1 : 1 ≤ τ + Nat.size (P₀.natDegree + Q₀.natDegree) := by
       have : Nat.size (P₀.natDegree + Q₀.natDegree) ≠ 0 := by rw [Ne, Nat.size_eq_zero]; omega
@@ -550,8 +551,8 @@ theorem Tℤ_size_le (m : ℕ) : Int.size (Tℤ P₀ Q₀ m) ≤ B := by
     _ ≤ B := Nat.mul_le_mul hpq1 le_rfl
   rw [Tℤ]
   by_cases hm : m = P₀.natDegree
-  · rw [if_pos hm]; simpa [Int.size] using hB1
-  · rw [if_neg hm]
+  · rw [ite_eq_left hm]; simpa [Int.size] using hB1
+  · rw [ite_eq_right hm]
     by_cases hmq : m ≤ Q₀.natDegree
     · -- determinant range: leadingCoeff is a coefficient, use Prop 8.48
       rw [Polynomial.leadingCoeff]
@@ -620,7 +621,7 @@ theorem SRemS_eq_divInt (ℓ : ℕ) (hℓne : SRemS (mapQ P₀) (mapQ Q₀) ℓ 
   rcases N with _ | _ | m
   · -- N = 0 : S₀ = P = sResP_p
     refine ⟨1, 1, one_ne_zero, by simp [Int.size], by simp [Int.size], ?_⟩
-    rw [if_pos rfl, SRemS_fst, show P₀.natDegree = (mapQ P₀).natDegree from hpdm.symm,
+    rw [ite_eq_left rfl, SRemS_fst, show P₀.natDegree = (mapQ P₀).natDegree from hpdm.symm,
       sResP_eq_self _ _ hpqm, Int.cast_one, div_one, map_one, one_mul]
   · -- N = 1 : S₁ = Q = C(lcof Q / lcof sResP_{p-1}) · sResP_{p-1}
     have hb_idx : ((SRemS (mapQ P₀) (mapQ Q₀) (1 - 1)).natDegree - 1)
@@ -631,7 +632,7 @@ theorem SRemS_eq_divInt (ℓ : ℕ) (hℓne : SRemS (mapQ P₀) (mapQ Q₀) ℓ 
       intro h; apply hNne; rw [heq, h, mul_zero]
     refine ⟨Q₀.leadingCoeff, Tℤ P₀ Q₀ (P₀.natDegree - 1), ?_, ?_, ?_, ?_⟩
     · -- D ≠ 0
-      rw [Tℤ, if_neg (by omega), Ne, Polynomial.leadingCoeff_eq_zero]
+      rw [Tℤ, ite_eq_right (by omega), Ne, Polynomial.leadingCoeff_eq_zero]
       intro h; apply hbne
       rw [hpdm, sResP_map Int.cast_injective, h, Polynomial.map_zero]
     · have h1 : Int.size Q₀.leadingCoeff ≤ τ := by rw [Polynomial.leadingCoeff]; exact hQ _
@@ -643,13 +644,13 @@ theorem SRemS_eq_divInt (ℓ : ℕ) (hℓne : SRemS (mapQ P₀) (mapQ Q₀) ℓ 
         simp only [Polynomial.leadingCoeff]; rw [Polynomial.coeff_map, hqdm]; rfl
       have e2 : (sResP (mapQ P₀) (mapQ Q₀) ((mapQ P₀).natDegree - 1)).leadingCoeff
           = (Tℤ P₀ Q₀ (P₀.natDegree - 1) : ℚ) := by
-        rw [Tℤ, if_neg (show P₀.natDegree - 1 ≠ P₀.natDegree by omega), hpdm,
+        rw [Tℤ, ite_eq_right (show P₀.natDegree - 1 ≠ P₀.natDegree by omega), hpdm,
           sResP_map Int.cast_injective, Polynomial.leadingCoeff, Polynomial.leadingCoeff,
           Polynomial.coeff_map, Polynomial.natDegree_map_eq_of_injective Int.cast_injective]
         rfl
-      rw [if_neg (by omega), heq, SRemS_snd, e1, e2]
+      rw [ite_eq_right (by omega), heq, SRemS_snd, e1, e2]
   · -- N = m + 2 (inductive step)
-    rw [if_neg (by omega)]
+    rw [ite_eq_right (by omega)]
     simp only [Nat.add_sub_cancel]
     -- predecessors nonzero
     have hSm1ne : SRemS (mapQ P₀) (mapQ Q₀) (m + 1) ≠ 0 := SRemS_ne_pred _ _ hPm hNne
@@ -718,8 +719,8 @@ theorem SRemS_eq_divInt (ℓ : ℕ) (hℓne : SRemS (mapQ P₀) (mapQ Q₀) ℓ 
       rw [SRemS_ss (mapQ P₀) (mapQ Q₀) m hSm1ne, EuclideanDomain.mod_eq_zero.mpr hunit.dvd, neg_zero]
     have ha_le_J : J ≤ a := by
       rcases Nat.eq_zero_or_pos m with hm0 | hmpos
-      · rw [ha_def, hm0, if_pos rfl, hJ_def, hm0, SRemS_fst, hpdm]
-      · rw [ha_def, if_neg (by omega)]
+      · rw [ha_def, hm0, ite_eq_left rfl, hJ_def, hm0, SRemS_fst, hpdm]
+      · rw [ha_def, ite_eq_right (by omega)]
         have hSm_1ne : SRemS (mapQ P₀) (mapQ Q₀) (m - 1) ≠ 0 :=
           SRemS_ne_of_le (mapQ P₀) (mapQ Q₀) hPm hSmne (by omega)
         have hlt := SRemS_natDegree_lt (mapQ P₀) (mapQ Q₀) hpqm
@@ -728,8 +729,8 @@ theorem SRemS_eq_divInt (ℓ : ℕ) (hℓne : SRemS (mapQ P₀) (mapQ Q₀) ℓ 
         rw [hJ_def]; omega
     have ha_le_p : a ≤ P₀.natDegree := by
       rcases Nat.eq_zero_or_pos m with hm0 | hmpos
-      · rw [ha_def, hm0, if_pos rfl]
-      · rw [ha_def, if_neg (by omega)]
+      · rw [ha_def, hm0, ite_eq_left rfl]
+      · rw [ha_def, ite_eq_right (by omega)]
         have hSm_1ne : SRemS (mapQ P₀) (mapQ Q₀) (m - 1) ≠ 0 :=
           SRemS_ne_of_le (mapQ P₀) (mapQ Q₀) hPm hSmne (by omega)
         have := SRemS_natDegree_le_p (mapQ P₀) (mapQ Q₀) hpqm hPm hSm_1ne
@@ -835,7 +836,7 @@ theorem theorem_8_51 (ℓ : ℕ) (hℓ : ℓ ≤ Q₀.natDegree + 1) (a : ℕ) :
     · -- ℓ = ℓ' + 2
       obtain ⟨N, D, hDne, hNsz, hDsz, hSeq⟩ :=
         SRemS_eq_divInt P₀ Q₀ hP hQ hpq0 hq1 (ℓ' + 1 + 1) hℓne
-      rw [if_neg (by omega)] at hSeq
+      rw [ite_eq_right (by omega)] at hSeq
       simp only [Nat.add_sub_cancel] at hSeq
       have hSm1ne : SRemS (mapQ P₀) (mapQ Q₀) (ℓ' + 1) ≠ 0 :=
         SRemS_ne_of_le (mapQ P₀) (mapQ Q₀) hPm hℓne (by omega)

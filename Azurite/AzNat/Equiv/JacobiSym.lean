@@ -32,7 +32,7 @@ open Nat
 /-- The odd part `a / 2^(v₂ a)` is odd. -/
 theorem odd_div_pow_padicValNat_two {a : ℕ} (ha : a ≠ 0) :
     (a / 2 ^ padicValNat 2 a) % 2 = 1 := by
-  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   set t := padicValNat 2 a with ht
   have hdvd : 2 ^ t ∣ a := pow_padicValNat_dvd
   obtain ⟨c, hc⟩ := hdvd
@@ -50,14 +50,14 @@ theorem odd_div_pow_padicValNat_two {a : ℕ} (ha : a ≠ 0) :
 theorem chi8_pow (n t : ℕ) (hn : n % 2 = 1) :
     (ZMod.χ₈ (n : ZMod 8)) ^ t
       = if t % 2 = 0 then 1 else if n % 8 = 1 ∨ n % 8 = 7 then (1 : ℤ) else -1 := by
-  rw [ZMod.χ₈_nat_eq_if_mod_eight, if_neg (by omega)]
+  rw [ZMod.χ₈_nat_eq_if_mod_eight, ite_eq_right (by omega)]
   by_cases h8 : n % 8 = 1 ∨ n % 8 = 7
-  · rw [if_pos h8, one_pow]
+  · rw [ite_eq_left h8, one_pow]
     split_ifs <;> rfl
-  · rw [if_neg h8]
+  · rw [ite_eq_right h8]
     rcases Nat.even_or_odd t with ht | ht
-    · rw [ht.neg_one_pow, if_pos (Nat.even_iff.mp ht)]
-    · rw [ht.neg_one_pow, if_neg (by rw [Nat.odd_iff.mp ht]; omega)]
+    · rw [ht.neg_one_pow, ite_eq_left (Nat.even_iff.mp ht)]
+    · rw [ht.neg_one_pow, ite_eq_right (by rw [Nat.odd_iff.mp ht]; omega)]
 
 /-- **The ℕ reference computes Mathlib's Jacobi symbol** for odd `n`. -/
 theorem jacobiNat_eq (a n : ℕ) (hn : n % 2 = 1) : jacobiNat a n = jacobiSym a n := by
@@ -65,20 +65,20 @@ theorem jacobiNat_eq (a n : ℕ) (hn : n % 2 = 1) : jacobiNat a n = jacobiSym a 
   | _ n ih =>
     rw [jacobiNat]
     by_cases hn1 : n ≤ 1
-    · rw [if_pos hn1]
+    · rw [ite_eq_left hn1]
       have : n = 1 := by omega
       subst this
       exact (jacobiSym.one_right _).symm
-    · rw [if_neg hn1]
+    · rw [ite_eq_right hn1]
       have hn1' : 1 < n := by omega
       have hmod : jacobiSym (a : ℤ) n = jacobiSym ((a % n : ℕ) : ℤ) n := by
         rw [jacobiSym.mod_left]
         push_cast
         rfl
       by_cases h0 : a % n = 0
-      · rw [if_pos h0, hmod, h0, Nat.cast_zero, jacobiSym.zero_left hn1']
-      · rw [if_neg h0]
-        haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+      · rw [ite_eq_left h0, hmod, h0, Nat.cast_zero, jacobiSym.zero_left hn1']
+      · rw [ite_eq_right h0]
+        have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
         set a₁ := a % n with ha₁
         set t := padicValNat 2 a₁ with ht
         set a' := a₁ / 2 ^ t with ha'
@@ -94,8 +94,8 @@ theorem jacobiNat_eq (a n : ℕ) (hn : n % 2 = 1) : jacobiNat a n = jacobiSym a 
             jacobiSym.pow_left, jacobiSym.at_two (Nat.odd_iff.mpr hn)]
         rw [hfac, chi8_pow n t hn]
         by_cases h1 : a' = 1
-        · rw [if_pos h1, h1, Nat.cast_one, jacobiSym.one_left, mul_one]
-        · rw [if_neg h1]
+        · rw [ite_eq_left h1, h1, Nat.cast_one, jacobiSym.one_left, mul_one]
+        · rw [ite_eq_right h1]
           have hrec := jacobiSym.quadratic_reciprocity_if hodd hn
           have hih : jacobiNat (n % a') a' = jacobiSym ((n % a' : ℕ) : ℤ) a' :=
             ih a' ha'lt (n % a') hodd
@@ -132,24 +132,24 @@ theorem jacobi_loop_eq (a n : AzNat) :
     have h0 : n.toNat = 0 := by omega
     rw [jacobi.loop, jacobiNat]
     dsimp only
-    rw [if_pos (show n.toNat ≤ 1 by omega)]
+    rw [ite_eq_left (show n.toNat ≤ 1 by omega)]
   | succ fuel ih =>
     intro hf
     rw [jacobi.loop, jacobiNat]
     dsimp only
     by_cases hn1 : n ≤ 1
     · have hn1n : n.toNat ≤ 1 := (le_iff_toNat_le n 1).mp hn1
-      rw [if_pos hn1, if_pos hn1n]
+      rw [ite_eq_left hn1, ite_eq_left hn1n]
     · have hn1' : ¬ n.toNat ≤ 1 := fun h => hn1 ((le_iff_toNat_le n 1).mpr h)
-      rw [if_neg hn1, if_neg hn1']
+      rw [ite_eq_right hn1, ite_eq_right hn1']
       by_cases h0 : a % n = 0
       · have h0' : a.toNat % n.toNat = 0 := by
           have := (eq_zero_iff_toNat _).mp h0
           rwa [toNat_mod] at this
-        rw [if_pos h0, if_pos h0']
+        rw [ite_eq_left h0, ite_eq_left h0']
       · have h0' : ¬ a.toNat % n.toNat = 0 := fun h =>
           h0 ((eq_zero_iff_toNat _).mpr (by rw [toNat_mod]; exact h))
-        rw [if_neg h0, if_neg h0']
+        rw [ite_eq_right h0, ite_eq_right h0']
         rw [trailingZeros_eq_padicValNat _ h0, toNat_mod]
         dsimp only
         have hsh : ((a % n) >>> padicValNat 2 (a.toNat % n.toNat)).toNat
@@ -164,10 +164,10 @@ theorem jacobi_loop_eq (a n : AzNat) :
         by_cases h1 : (a % n) >>> padicValNat 2 (a.toNat % n.toNat) = 1
         · have h1' := (eq_one_iff_toNat _).mp h1
           rw [hsh] at h1'
-          rw [if_pos h1, if_pos h1']
+          rw [ite_eq_left h1, ite_eq_left h1']
         · have h1' : ¬ a.toNat % n.toNat / 2 ^ padicValNat 2 (a.toNat % n.toNat) = 1 :=
             fun h => h1 ((eq_one_iff_toNat _).mpr (by rw [hsh]; exact h))
-          rw [if_neg h1, if_neg h1']
+          rw [ite_eq_right h1, ite_eq_right h1']
           have hcond : (((a % n) >>> padicValNat 2 (a.toNat % n.toNat)).modPow2 2 = ofNat 3
                 ∧ n.modPow2 2 = ofNat 3)
               ↔ (a.toNat % n.toNat / 2 ^ padicValNat 2 (a.toNat % n.toNat) % 4 = 3

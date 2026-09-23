@@ -209,7 +209,7 @@ theorem subMulLimbs_toList_drop (a b : Array UInt64) (loA loB n : Nat) (q : UInt
       = a.toList.drop (loA + n + 1) := by
   unfold subMulLimbs
   simp only []
-  rw [Array.toList_set, List.drop_set, if_pos (Nat.lt_succ_self _)]
+  rw [Array.toList_set, List.drop_set, ite_eq_left (Nat.lt_succ_self _)]
   have h_go_drop := subMulLimbs.go_toList_drop b loB n q a loA 0 0 false (by omega) hB
   have h_drop_split : ∀ (l : List UInt64),
       l.drop (loA + n + 1) = (l.drop (loA + n)).drop 1 := fun l => by

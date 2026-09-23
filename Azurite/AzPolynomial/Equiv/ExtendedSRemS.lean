@@ -37,12 +37,12 @@ theorem toPoly_sRemU (P Q : AzPolynomial K) (n : ℕ) :
       by_cases hprev : sRemS P Q (n + 1) = 0
       · have hs0 : Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (n + 1) = 0 := by
           rw [← toPoly_sRemS, hprev, toPoly_zero]
-        rw [if_pos hprev, toPoly_zero, Azurite.BPR.SRemU, if_pos hs0]
+        rw [ite_eq_left hprev, toPoly_zero, Azurite.BPR.SRemU, ite_eq_left hs0]
       · have hsne : AzPolynomial.toPoly (sRemS P Q (n + 1)) ≠ 0 := by
           rw [Ne, ← toPoly_zero (R := K), toPoly_inj]; exact hprev
         have hs0' : Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (n + 1) ≠ 0 := by
           rw [← toPoly_sRemS]; exact hsne
-        rw [if_neg hprev, Azurite.BPR.SRemU_ss _ _ _ hs0', toPoly_add, toPoly_neg,
+        rw [ite_eq_right hprev, Azurite.BPR.SRemU_ss _ _ _ hs0', toPoly_add, toPoly_neg,
           toPoly_mul, toPoly_quo _ _ hsne, hu_n, hu_succ, toPoly_sRemS, toPoly_sRemS]
 
 /-- `toPoly (sRemV P Q n) = BPR.SRemV (toPoly P) (toPoly Q) n`. -/
@@ -61,12 +61,12 @@ theorem toPoly_sRemV (P Q : AzPolynomial K) (n : ℕ) :
       by_cases hprev : sRemS P Q (n + 1) = 0
       · have hs0 : Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (n + 1) = 0 := by
           rw [← toPoly_sRemS, hprev, toPoly_zero]
-        rw [if_pos hprev, toPoly_zero, Azurite.BPR.SRemV, if_pos hs0]
+        rw [ite_eq_left hprev, toPoly_zero, Azurite.BPR.SRemV, ite_eq_left hs0]
       · have hsne : AzPolynomial.toPoly (sRemS P Q (n + 1)) ≠ 0 := by
           rw [Ne, ← toPoly_zero (R := K), toPoly_inj]; exact hprev
         have hs0' : Azurite.BPR.SRemS (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) (n + 1) ≠ 0 := by
           rw [← toPoly_sRemS]; exact hsne
-        rw [if_neg hprev, Azurite.BPR.SRemV_ss _ _ _ hs0', toPoly_add, toPoly_neg,
+        rw [ite_eq_right hprev, Azurite.BPR.SRemV_ss _ _ _ hs0', toPoly_add, toPoly_neg,
           toPoly_mul, toPoly_quo _ _ hsne, hv_n, hv_succ, toPoly_sRemS, toPoly_sRemS]
 
 /-- `sRemUList`/`sRemVList` mapped through `toPoly` match the abstract sequences. -/

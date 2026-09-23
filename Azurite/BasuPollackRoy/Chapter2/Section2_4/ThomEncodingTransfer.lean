@@ -52,7 +52,7 @@ lemma derReali_eq_realizationOver (P : R[X]) (n : ℕ) (σ : ℕ → SignType) (
     derReali P n σ = SignCondition.realizationOver (thomSC n σ) P (thomFamily P n) := by
   ext x
   rw [SignCondition.mem_realizationOver]
-  simp only [derReali, Set.mem_setOf_eq, thomFamily, thomSC]
+  simp only [derReali, Set.mem_ofPred_eq, thomFamily, thomSC]
   constructor
   · intro h
     refine ⟨?_, fun i => h ((i : ℕ) + 1) (by omega)⟩

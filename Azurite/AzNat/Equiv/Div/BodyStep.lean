@@ -74,7 +74,7 @@ theorem schoolbookDivModLimbs.bodyStep_toList_drop_ge
     (schoolbookDivModLimbs.bodyStep a b loA loB n j q_init hSub hB).toList.drop m0
       = a.toList.drop m0 := by
   unfold schoolbookDivModLimbs.bodyStep
-  rw [Array.toList_set, List.drop_set, if_pos (by omega : loA + n + j < m0),
+  rw [Array.toList_set, List.drop_set, ite_eq_left (by omega : loA + n + j < m0),
     schoolbookDivModLimbs.addback_toList_drop_ge _ _ _ _ _ _ _ _ _ _ m0 (by omega)]
   -- Lift `subMulLimbs_toList_drop` (exact offset `(loA+j)+n+1`) to general `m0`.
   have h_split : ∀ (l : List UInt64),

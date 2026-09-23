@@ -140,8 +140,8 @@ theorem lemma_3_21 [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)]
         ⊆ {x : Fin (k + ℓ) → R | x ∘ Fin.natAdd k ∈ openBall (g b) r} := by
       rintro x ⟨hxg, hxz⟩
       rw [mem_funGraph] at hxg
-      rw [Set.mem_setOf_eq, mem_openBall_iff_norm hη] at hxz
-      rw [Set.mem_setOf_eq, mem_openBall_iff_norm hr, hxg.2]
+      rw [Set.mem_ofPred_eq, mem_openBall_iff_norm hη] at hxz
+      rw [Set.mem_ofPred_eq, mem_openBall_iff_norm hr, hxg.2]
       exact hηc (x ∘ Fin.castAdd ℓ) hxg.1 hxz
     have hsemiZ : IsSemialgebraicSet {x : Fin (k + ℓ) → R | x ∘ Fin.castAdd ℓ ∈ openBall b η} :=
       IsSemialgebraicSet.comap (Fin.castAdd ℓ) (isSemialgebraicSet_openBall b η)
@@ -154,12 +154,12 @@ theorem lemma_3_21 [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)]
       rw [ext_inter hsemiG hsemiZ]
       refine ⟨hcomp, ?_⟩
       rw [ext_comap (Fin.castAdd ℓ) (Fin.castAdd_injective k ℓ) (isSemialgebraicSet_openBall b η),
-        Set.mem_setOf_eq, ext_openBall,
+        Set.mem_ofPred_eq, ext_openBall,
         show Fin.append ϕ gϕ ∘ Fin.castAdd ℓ = ϕ from funext (fun i => Fin.append_left ϕ gϕ i)]
       rw [mem_openBall]; exact infinitesimal_normSq_lt hϕinf η hη
     have hPW := ext_mono (hsemiG.inter hsemiZ) hsemiW hincl hPmem
     rw [ext_comap (Fin.natAdd k) (Fin.natAdd_injective ℓ k) (isSemialgebraicSet_openBall (g b) r),
-      Set.mem_setOf_eq, ext_openBall,
+      Set.mem_ofPred_eq, ext_openBall,
       show Fin.append ϕ gϕ ∘ Fin.natAdd k = gϕ from funext (fun j => Fin.append_right ϕ gϕ j),
       mem_openBall] at hPW
     have hcomp_j : (gϕ j - A (g b j)) ^ 2

@@ -66,7 +66,7 @@ theorem MonicMonomial.toFinsupp_eq_single_exponent
     rw [MonicMonomial.vars_eq_toFinsupp_support] at hwv
     rw [Finsupp.notMem_support_iff] at hwv
     simp only [MonicMonomial.toFinsupp, Finsupp.onFinset_apply] at hwv
-    rw [hwv, if_neg (Ne.symm hw)]
+    rw [hwv, ite_eq_right (Ne.symm hw)]
 
 /-! ### eval₂ of a single monomial at a variable -/
 
@@ -130,7 +130,7 @@ private theorem foldl_set_getElem_at (i : Fin n)
     have hdegs' : ∀ m ∈ ts, m.monic.exponent i < acc.size :=
       fun m hm => hdegs m (List.mem_cons_of_mem _ hm)
     have ht_lt : t.monic.exponent i < acc.size := hdegs t (List.mem_cons_self ..)
-    simp only [dif_pos ht_lt]
+    simp only [dite_eq_left ht_lt]
     have hk' : k < (acc.set (t.monic.exponent i) t.coeff.val).size := by simp; exact hk
     have hdegs'' : ∀ m ∈ ts, m.monic.exponent i <
         (acc.set (t.monic.exponent i) t.coeff.val).size :=
@@ -232,7 +232,7 @@ theorem toPoly_toAzPolynomialAt
     simp [AzMvPolynomial.toAzPolynomialAt, AzPolynomial.toPoly, AzPolynomial.zero,
       List.toPoly, hterms]
   · unfold AzMvPolynomial.toAzPolynomialAt
-    rw [dif_neg h]; simp only; rw [toPoly_normalize]
+    rw [dite_eq_right h]; simp only; rw [toPoly_normalize]
     ext k; rw [coeff_toPoly]
     have hcoeff_sum :
         (p.terms.toList.map

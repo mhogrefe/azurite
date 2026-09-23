@@ -22,7 +22,7 @@ variable (e : SemialgGerm R ≃ₐ[RatFunc R] algebraicPuiseux R)
 /-- An `R(ε)`-algebra isomorphism of the two real closed fields preserves nonnegativity: it preserves
 squares, and nonnegativity is being a square. -/
 theorem algEquiv_nonneg_iff (x : SemialgGerm R) : 0 ≤ e x ↔ 0 ≤ x := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   rw [IsRealClosed.nonneg_iff_isSquare, IsRealClosed.nonneg_iff_isSquare]
   constructor
   · rintro ⟨s, hs⟩; exact ⟨e.symm s, by rw [← e.symm_apply_apply x, hs, map_mul]⟩
@@ -38,7 +38,7 @@ theorem algEquiv_lt_iff (x y : SemialgGerm R) : e x < e y ↔ x < y := by
 /-- The isomorphism fixes `R` (it is an `R(ε)`-algebra map, and `R ⊆ R(ε)`). -/
 theorem algEquiv_algebraMap (a : R) :
     e (algebraMap R (SemialgGerm R) a) = algebraMap R (algebraicPuiseux R) a := by
-  haveI : IsScalarTower R (RatFunc R) (algebraicPuiseux R) :=
+  have : IsScalarTower R (RatFunc R) (algebraicPuiseux R) :=
     IsScalarTower.of_algebraMap_eq fun _ => rfl
   rw [IsScalarTower.algebraMap_apply R (RatFunc R) (SemialgGerm R), e.commutes,
     ← IsScalarTower.algebraMap_apply R (RatFunc R) (algebraicPuiseux R)]

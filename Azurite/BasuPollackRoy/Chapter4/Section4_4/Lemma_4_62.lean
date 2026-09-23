@@ -29,7 +29,7 @@ theorem lemma_4_62 (B : Set (Fin k →₀ ℕ)) (_hB : ∀ a ∈ B, ∀ b, a ≤
   -- The minimal elements form an antichain: two distinct minimal elements are incomparable.
   have hanti : IsAntichain (· ≤ ·) {a | Minimal (· ∈ B) a} := by
     intro a ha b hb hne hle
-    simp only [Set.mem_setOf_eq] at ha hb
+    simp only [Set.mem_ofPred_eq] at ha hb
     exact hne (le_antisymm hle (hb.2 ha.1 hle))
   -- `ℕ^k` is partially well-ordered (Dickson / well-quasi-order), hence so is any subset.
   have hpwo : {a | Minimal (· ∈ B) a}.IsPWO :=

@@ -159,8 +159,8 @@ theorem proposition_10_8 {n : ℕ} {u : ZMod n} (hn3 : n % 4 = 3)
   intro r hr hrn
   have hn1 : 1 < n := by omega
   have hnodd : ¬ 2 ∣ n := by omega
-  haveI : Fact (1 < n) := ⟨hn1⟩
-  haveI : NeZero n := ⟨by omega⟩
+  have : Fact (1 < n) := ⟨hn1⟩
+  have : NeZero n := ⟨by omega⟩
   obtain ⟨w, hw⟩ : ∃ w, n = 2 * w + 1 := ⟨n / 2, by omega⟩
   have hwodd : ¬ 2 ∣ w := by omega
   set fq : Polynomial (ZMod n) := X ^ 2 - C u * X - 1 with hfq

@@ -111,7 +111,7 @@ theorem AzRat.toChars_minus_next_syntax (q : AzRat) (t : List Char)
     exact ⟨c1, t1 ++ '/' :: AzNat.toChars q.den, by rw [← ht, h1, List.cons_append], hsyn⟩
 
 theorem AzRat.toChars_zero : (0 : AzRat).toChars = ['0'] := by
-  rw [AzRat.toChars_eq, if_pos (show (0 : AzRat).den = 1 from rfl)]
+  rw [AzRat.toChars_eq, ite_eq_left (show (0 : AzRat).den = 1 from rfl)]
   exact AzInt.toChars_zero
 
 theorem AzRat.toChars_no_comma (q : AzRat) : ',' ∉ q.toChars := by

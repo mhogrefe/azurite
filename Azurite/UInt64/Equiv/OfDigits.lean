@@ -78,7 +78,7 @@ theorem ofDigits_eq (b : UInt64) (ds : Array UInt64) :
       = Nat.ofDigits b.toNat (ds.toList.map UInt64.toNat) % 2 ^ 64 := by
   unfold ofDigits
   by_cases hpow : b.isPowerOfTwo
-  · rw [if_pos hpow]
+  · rw [ite_eq_left hpow]
     have h_b_ne : b ≠ 0 := by
       intro he
       unfold UInt64.isPowerOfTwo at hpow
@@ -92,7 +92,7 @@ theorem ofDigits_eq (b : UInt64) (ds : Array UInt64) :
       omega
     have h_b_eq : b.toNat = 2 ^ b.toBitVec.ctz.toNat := toNat_eq_two_pow_ctz b hpow
     rw [ofDigitsPow2_eq _ h_ctz_lt, h_b_eq]
-  · rw [if_neg hpow]
+  · rw [ite_eq_right hpow]
     exact ofDigitsGeneric_eq b ds
 
 /-- **Round-trip.** For `b.toNat ≥ 2`, `ofDigits b (digits b u) = u`.

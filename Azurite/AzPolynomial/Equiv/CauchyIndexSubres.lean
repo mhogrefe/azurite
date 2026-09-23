@@ -119,7 +119,7 @@ theorem snd_toList_deg0 (P Q : AzPolynomial R) (hQ : Q ≠ 0) (hq0 : Q.natDegree
       = Azurite.ExactDiv.exactDiv (epsilonSign P.natDegree * Q.leadingCoeff ^ P.natDegree)
           ((1 : R) ^ (P.natDegree - 1)) :: List.replicate (P.natDegree - 1) 0 ++ [P.leadingCoeff] := by
   have hcond : ¬ (Q = 0 ∨ P.natDegree ≤ Q.natDegree) := not_or.mpr ⟨hQ, by omega⟩
-  rw [signedSubresultant, if_neg hcond]
+  rw [signedSubresultant, ite_eq_right hcond]
   simp only [List.map_reverse, List.map_cons]
   rcases Nat.lt_or_ge 1 P.natDegree with hp2 | hp1
   · have hss : ssAux (P.natDegree + 1) P.natDegree P Q 1 1
@@ -130,8 +130,8 @@ theorem snd_toList_deg0 (P Q : AzPolynomial R) (hQ : Q ≠ 0) (hq0 : Q.natDegree
                  Azurite.ExactDiv.exactDiv (epsilonSign P.natDegree * Q.leadingCoeff ^ P.natDegree)
                    ((1 : R) ^ (P.natDegree - 1)))]) := by
       conv_lhs => rw [ssAux]
-      rw [if_neg hQ]; simp only [hq0, Nat.sub_zero]
-      rw [if_neg (by omega : ¬ (0 = P.natDegree - 1)), if_true]
+      rw [ite_eq_right hQ]; simp only [hq0, Nat.sub_zero]
+      rw [ite_eq_right (by omega : ¬ (0 = P.natDegree - 1)), ite_true]
     rw [hss]
     simp only [List.map_cons, List.map_append, List.map_replicate, List.reverse_cons,
       List.reverse_append, List.reverse_replicate, List.map_nil, List.reverse_nil, List.nil_append]
@@ -139,7 +139,7 @@ theorem snd_toList_deg0 (P Q : AzPolynomial R) (hQ : Q ≠ 0) (hq0 : Q.natDegree
     simp
   · have hp1' : P.natDegree = 1 := by omega
     have hss : ssAux (P.natDegree + 1) P.natDegree P Q 1 1 = [(Q, Q.leadingCoeff)] := by
-      conv_lhs => rw [ssAux]; rw [if_neg hQ]; simp only [hq0, hp1']; norm_num
+      conv_lhs => rw [ssAux]; rw [ite_eq_right hQ]; simp only [hq0, hp1']; norm_num
     rw [hss, hp1']
     simp only [List.map_cons, List.map_nil, List.reverse_cons, List.reverse_nil, List.nil_append]
     have he1 : (epsilonSign 1 : R) = 1 := by rw [epsilonSign_eq]; norm_num
@@ -173,7 +173,7 @@ theorem snd_toList_deg0_sRes (P Q : AzPolynomial R) (hQ : Q ≠ 0)
     rw [h, one_pow, exactDiv_one', hpd, Nat.sub_zero, epsilonSign_eq, leadingCoeff_toPoly]
     simp only [ε]; push_cast; ring
   have hsp : sRes (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) P.natDegree = P.leadingCoeff := by
-    rw [← hpd, sRes, if_neg (by omega), if_pos hqpm, if_pos rfl, leadingCoeff_toPoly]
+    rw [← hpd, sRes, ite_eq_right (by omega), ite_eq_left hqpm, ite_eq_left rfl, leadingCoeff_toPoly]
   rw [snd_toList_deg0 P Q hQ hq0 hp]
   apply List.ext_getElem
   · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_nil,
@@ -243,9 +243,9 @@ theorem cauchyIndex_eq_BPR_of_lt (Q P : AzPolynomial R)
   have hexpand : cauchyIndex Q P = PmV (signedSubresultant P Q).2.toList.reverse := by
     show PmV (signedSubresultant P
       (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse = _
-    rw [if_neg (by omega)]
+    rw [ite_eq_right (by omega)]
   rcases eq_or_ne Q 0 with rfl | hQ
-  · rw [hexpand, signedSubresultant, if_pos (Or.inl rfl), toPoly_zero,
+  · rw [hexpand, signedSubresultant, ite_eq_left (Or.inl rfl), toPoly_zero,
       Azurite.BPR.cauchyIndex_eq_cauchyIndexOn_negInf_posInf, Azurite.BPR.cauchyIndexOn_zero_left]
     simp [Azurite.BPR.Chapter4.PmV_nil]
   · have hQm : AzPolynomial.toPoly Q ≠ 0 := fun h => hQ (toPoly_inj.mp (h.trans toPoly_zero.symm))
@@ -285,7 +285,7 @@ theorem cauchyIndex_eq_BPR (Q P : AzPolynomial R) :
     have hLHS : cauchyIndex Q P = 0 := by
       show PmV (signedSubresultant P
         (if P.natDegree ≤ Q.natDegree then pRem Q P else Q)).2.toList.reverse = 0
-      rw [signedSubresultant, if_pos (Or.inr (by rw [hP0]; exact Nat.zero_le _))]
+      rw [signedSubresultant, ite_eq_left (Or.inr (by rw [hP0]; exact Nat.zero_le _))]
       simp [Azurite.BPR.Chapter4.PmV_nil]
     have hroots : (AzPolynomial.toPoly P).roots = 0 := by
       obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.mp
@@ -312,7 +312,7 @@ theorem cauchyIndex_eq_BPR (Q P : AzPolynomial R) :
         = PmV (signedSubresultant P
           (if P.natDegree ≤ (pRem Q P).natDegree then pRem (pRem Q P) P
             else pRem Q P)).2.toList.reverse
-      rw [if_pos hge, if_neg (by omega)]
+      rw [ite_eq_left hge, ite_eq_right (by omega)]
     rw [hstep, cauchyIndex_eq_BPR_of_lt (pRem Q P) P hprlt,
       cauchyIndex_toPoly_pRem Q P hP]
 

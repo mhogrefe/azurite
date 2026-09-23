@@ -29,12 +29,12 @@ theorem ext_empty {k : ℕ} (h : IsSemialgebraicSet (∅ : Set (Fin k → R))) :
   have hfalse : (∅ : Set (Fin k → R))
       = (Formula.atom (⟨1, OrderRel.eq⟩ : OrderedFieldAtom (Fin k) R)).realization (C := R) := by
     ext y
-    simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, map_one,
+    simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, map_one,
       Set.mem_empty_iff_false, false_iff]
     exact one_ne_zero
   rw [ext_eq h hfalse]
   ext y'
-  simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, map_one,
+  simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, map_one,
     Set.mem_empty_iff_false, iff_false]
   exact one_ne_zero
 
@@ -49,10 +49,10 @@ theorem ext_comap {a b : ℕ} (g : Fin a → Fin b) (hg : Function.Injective g)
   have h1 : {y : Fin b → R | y ∘ g ∈ W}
       = (Θ.rename g (OrderedFieldAtom.renameVars g)).realization (C := R) := by
     rw [Formula.rename_realization_ordered g hg]
-    ext y; simp only [Set.mem_setOf_eq, Set.mem_preimage, hWeq]
+    ext y; simp only [Set.mem_ofPred_eq, Set.mem_preimage, hWeq]
   rw [ext_eq (IsSemialgebraicSet.comap g hW) h1, Formula.rename_realization_ordered g hg]
   ext y'
-  simp only [Set.mem_preimage, Set.mem_setOf_eq]
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq]
   rw [ext_eq hW hWeq]
 
 /-- Peeling one coordinate off the block projection: forgetting the last `ℓ+1` coordinates is
@@ -114,7 +114,7 @@ private theorem append_castAdd_natAdd {k ℓ : ℕ} {α : Type*} (z : Fin (k + �
 private theorem projImage_eq_exists {k ℓ : ℕ} {α : Type*} (W : Set (Fin (k + ℓ) → α)) :
     (· ∘ Fin.castAdd ℓ) '' W = {x : Fin k → α | ∃ y : Fin ℓ → α, Fin.append x y ∈ W} := by
   ext x
-  simp only [Set.mem_image, Set.mem_setOf_eq]
+  simp only [Set.mem_image, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨z, hzW, rfl⟩
     exact ⟨z ∘ Fin.natAdd k, by rw [append_castAdd_natAdd]; exact hzW⟩
@@ -148,7 +148,7 @@ theorem mem_eqBlockFormOn {N m : ℕ} {K : Type*} [Field K] [LinearOrder K] [IsS
     have hunfold : eqBlockFormOn (R := R) ([] : List (Fin m)) p q
         = Formula.atom (⟨0, OrderRel.eq⟩ : OrderedFieldAtom (Fin N) R) := rfl
     rw [hunfold]
-    simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, map_zero,
+    simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, map_zero,
       List.not_mem_nil, false_implies, implies_true]
   | cons j M' ih =>
     have hunfold : eqBlockFormOn (R := R) (j :: M') p q
@@ -156,7 +156,7 @@ theorem mem_eqBlockFormOn {N m : ℕ} {K : Type*} [Field K] [LinearOrder K] [IsS
             (eqBlockFormOn (R := R) M' p q) := rfl
     rw [hunfold]
     simp only [Formula.realization, Set.mem_inter_iff, AtomRealization.interpret,
-      Set.mem_setOf_eq, map_sub, aeval_X, sub_eq_zero, ih, List.forall_mem_cons]
+      Set.mem_ofPred_eq, map_sub, aeval_X, sub_eq_zero, ih, List.forall_mem_cons]
 
 omit [IsRealClosed R] in
 /-- The equality-block set `{w | ∀ j, w (p j) = w (q j)}` is semialgebraic. -/
@@ -198,7 +198,7 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
   -- **Domain.** `S = π_X(G)`, and the extension commutes with this projection.
   have hSeq : S = {x : Fin k → R | ∃ y : Fin ℓ → R, Fin.append x y ∈ funGraph S f} := by
     ext x
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · intro hx; exact ⟨f x, (append_mem_funGraph S f x (f x)).mpr ⟨hx, rfl⟩⟩
     · rintro ⟨y, hy⟩; exact ((append_mem_funGraph S f x y).mp hy).1
@@ -212,7 +212,7 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
     have hsub : funGraph S f ⊆ {p : Fin (k + ℓ) → R | p ∘ Fin.natAdd k ∈ T} := by
       intro p hp
       rw [mem_funGraph] at hp
-      simp only [Set.mem_setOf_eq, hp.2]; exact hmaps hp.1
+      simp only [Set.mem_ofPred_eq, hp.2]; exact hmaps hp.1
     have hmono := ext_mono (R' := R') hf (IsSemialgebraicSet.comap (Fin.natAdd k) hT) hsub
     rw [ext_comap (Fin.natAdd k) (Fin.natAdd_injective ℓ k) hT] at hmono
     exact fun p' hp' => hmono hp'
@@ -231,7 +231,7 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
         ∩ {w : Fin ((k+ℓ)+(k+ℓ)) → R | ∀ a, w (px a) = w (qx a)})
         ⊆ {w : Fin ((k+ℓ)+(k+ℓ)) → R | ∀ j, w (py j) = w (qy j)} := by
       rintro w ⟨⟨hwz, hwz'⟩, hwx⟩ j
-      simp only [Set.mem_setOf_eq] at hwz hwz'
+      simp only [Set.mem_ofPred_eq] at hwz hwz'
       rw [mem_funGraph] at hwz hwz'
       have hxeq : (w ∘ gz) ∘ Fin.castAdd ℓ = (w ∘ gz') ∘ Fin.castAdd ℓ := by
         funext a; exact hwx a
@@ -263,8 +263,8 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
         ∩ {w' | w' ∘ gz' ∈ extension (R' := R') (funGraph S f) hf})
       ∩ {w' : Fin ((k+ℓ)+(k+ℓ)) → R' | ∀ a, w' (px a) = w' (qx a)}) := by
       refine ⟨⟨?_, ?_⟩, ?_⟩
-      · rw [Set.mem_setOf_eq, hgzval]; exact hz
-      · rw [Set.mem_setOf_eq, hgz'val]; exact hz'
+      · rw [Set.mem_ofPred_eq, hgzval]; exact hz
+      · rw [Set.mem_ofPred_eq, hgz'val]; exact hz'
       · intro a
         show Fin.append z z' (px a) = Fin.append z z' (qx a)
         rw [hpx, hqx]
@@ -293,7 +293,7 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
       refine ⟨hx, ?_⟩
       have hex : ∃ y' : Fin ℓ → R', Fin.append (z ∘ Fin.castAdd ℓ) y' ∈ ExtG :=
         ⟨z ∘ Fin.natAdd k, by rw [append_castAdd_natAdd]; exact hz⟩
-      simp only [dif_pos hex]
+      simp only [dite_eq_left hex]
       have hmem : Fin.append (z ∘ Fin.castAdd ℓ) hex.choose ∈ ExtG := hex.choose_spec
       have h1 := hsv z hz (Fin.append (z ∘ Fin.castAdd ℓ) hex.choose) hmem (by
         rw [append_comp_castAdd])
@@ -301,13 +301,13 @@ theorem proposition_2_89 {k ℓ : ℕ} {S : Set (Fin k → R)} {T : Set (Fin ℓ
     · rintro ⟨hx, hval⟩
       have hex : ∃ y' : Fin ℓ → R', Fin.append (z ∘ Fin.castAdd ℓ) y' ∈ ExtG := by
         rw [hdom] at hx; exact hx
-      rw [dif_pos hex] at hval
+      rw [dite_eq_left hex] at hval
       have : z = Fin.append (z ∘ Fin.castAdd ℓ) hex.choose := by
         rw [← hval, append_castAdd_natAdd]
       rw [this]; exact hex.choose_spec
   · intro x' hx'
     have hex : ∃ y' : Fin ℓ → R', Fin.append x' y' ∈ ExtG := by rw [hdom] at hx'; exact hx'
-    simp only [dif_pos hex]
+    simp only [dite_eq_left hex]
     have hmem : Fin.append x' hex.choose ∈ ExtG := hex.choose_spec
     have := hcod (Fin.append x' hex.choose) hmem
     rwa [append_comp_natAdd] at this

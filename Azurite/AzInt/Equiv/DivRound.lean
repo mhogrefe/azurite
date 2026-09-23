@@ -145,7 +145,7 @@ theorem AzInt.snd_divRound (a b : AzInt) (mode : RoundingMode) (hb : 0 < b.abs.t
     · -- (T, T): same sign, mode unchanged, ord unchanged
       have hsame : (a.sign == b.sign) = true := by rw [hsa, hsb]; rfl
       rw [hsame]
-      simp only [if_true]
+      simp only [ite_true]
       have h_az := AzNat.snd_divRound a.abs b.abs mode hb
       rw [h_az]
       have h_int : (((mkNorm true (a.abs.divRound b.abs mode).1).toInt : ℤ) : ℝ) =
@@ -159,7 +159,7 @@ theorem AzInt.snd_divRound (a b : AzInt) (mode : RoundingMode) (hb : 0 < b.abs.t
       have hsb_f : b.sign = false := by cases h : b.sign <;> simp_all
       have hsame_f : (a.sign == b.sign) = false := by rw [hsa, hsb_f]; rfl
       rw [hsame_f]
-      simp only [Bool.false_eq_true, if_false]
+      simp only [Bool.false_eq_true, ite_false]
       have h_az := AzNat.snd_divRound a.abs b.abs (-mode) hb
       rw [h_az]
       have h_int : (((mkNorm false (a.abs.divRound b.abs (-mode)).1).toInt : ℤ) : ℝ) =
@@ -179,7 +179,7 @@ theorem AzInt.snd_divRound (a b : AzInt) (mode : RoundingMode) (hb : 0 < b.abs.t
     · -- (F, T): different sign, mode flipped, ord swapped
       have hsame_f : (a.sign == b.sign) = false := by rw [hsa_f, hsb]; rfl
       rw [hsame_f]
-      simp only [Bool.false_eq_true, if_false]
+      simp only [Bool.false_eq_true, ite_false]
       have h_az := AzNat.snd_divRound a.abs b.abs (-mode) hb
       rw [h_az]
       have h_int : (((mkNorm false (a.abs.divRound b.abs (-mode)).1).toInt : ℤ) : ℝ) =
@@ -198,7 +198,7 @@ theorem AzInt.snd_divRound (a b : AzInt) (mode : RoundingMode) (hb : 0 < b.abs.t
       have hsb_f : b.sign = false := by cases h : b.sign <;> simp_all
       have hsame : (a.sign == b.sign) = true := by rw [hsa_f, hsb_f]; rfl
       rw [hsame]
-      simp only [if_true]
+      simp only [ite_true]
       have h_az := AzNat.snd_divRound a.abs b.abs mode hb
       rw [h_az]
       have h_int : (((mkNorm true (a.abs.divRound b.abs mode).1).toInt : ℤ) : ℝ) =

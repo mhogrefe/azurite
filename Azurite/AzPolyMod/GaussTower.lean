@@ -42,8 +42,8 @@ instance neZero_of_fact_one_lt {k : ℕ} [hk : Fact (1 < k)] : NeZero k :=
 /-- `AzZMod m` is nontrivial for `m > 1`. -/
 instance azZMod_nontrivial {m : AzNat} [hm : Fact (1 < m.toNat)] :
     Nontrivial (AzZMod m) := by
-  haveI : NeZero m.toNat := ⟨by have := hm.out; omega⟩
-  haveI : Fact (1 < m.toNat) := hm
+  have : NeZero m.toNat := ⟨by have := hm.out; omega⟩
+  have : Fact (1 < m.toNat) := hm
   refine ⟨0, 1, fun h => ?_⟩
   have h2 := congrArg (AzZMod.ringEquivZMod (m := m)) h
   rw [map_zero, map_one] at h2

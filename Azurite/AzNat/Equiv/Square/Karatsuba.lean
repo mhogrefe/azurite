@@ -112,12 +112,12 @@ theorem karatsubaSquareLimbsRec_toNat (threshold : Nat) :
       -- middle = D0 + D2 - C = 2 A0 A1.
       have h_middle_value : toNatLimbsList middle.1.toList = 2 * A0 * A1 := by
         rw [h_middle_toNat, h_D0_toNat, h_D2_toNat, h_C_value_mul, sq, sq]
-        simp only [if_true]
+        simp only [ite_true]
         have h_cross := middle_equals_cross_terms A0 A1 A0 A1 absA.2 absA.2 hsignA hsignA
           _ rfl _ rfl
         have h_same : (absA.2 == absA.2) = true := by simp
         rw [h_same] at h_cross
-        simp only [if_true] at h_cross
+        simp only [ite_true] at h_cross
         -- h_cross : A0 * A0 + A1 * A1 − (…)·(…) = A0 * A1 + A1 * A0
         -- Goal:    A0 * A0 + A1 * A1 − (…)·(…) = 2 * A0 * A1
         have h_eq : A0 * A1 + A1 * A0 = 2 * A0 * A1 := by ring

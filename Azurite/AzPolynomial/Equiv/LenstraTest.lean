@@ -47,8 +47,8 @@ theorem mk_toZModPoly_modByMonic (hm : 1 < m.toNat) (hf : f.Monic)
     (p : AzPolynomial (AzZMod m)) :
     AdjoinRoot.mk (toZModPoly f) (toZModPoly (modByMonic p f))
       = AdjoinRoot.mk (toZModPoly f) (toZModPoly p) := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
-  haveI : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+  have : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
   rw [AdjoinRoot.mk_eq_mk]
   have h := toPoly_f_dvd_sub_modByMonic ((Monic_toPoly f).mpr hf)
     ((Monic_toPoly f).mpr hf).ne_zero p
@@ -64,9 +64,9 @@ theorem mk_toZModPoly_powModByMonic' (hm : 1 < m.toNat) (hf : f.Monic)
     (a : AzPolynomial (AzZMod m)) (q : AzNat) :
     AdjoinRoot.mk (toZModPoly f) (toZModPoly (powModByMonic a q f))
       = AdjoinRoot.mk (toZModPoly f) (toZModPoly a) ^ q.toNat := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
-  haveI : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
-  haveI : Fact ((AzPolynomial.toPoly f).Monic) := ⟨(Monic_toPoly f).mpr hf⟩
+  have : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+  have : Fact ((AzPolynomial.toPoly f).Monic) := ⟨(Monic_toPoly f).mpr hf⟩
   have hpow : AzPolyMod.ofPoly (f := f) a ^ q
       = AzPolyMod.ofPoly (f := f) a ^ q.toNat :=
     AzPolyMod.powAzNat_eq_pow _ q
@@ -124,8 +124,8 @@ theorem degree_toZModPoly_lt (hm : 1 < m.toNat) (hf : f.Monic)
     {p : AzPolynomial (AzZMod m)}
     (hsize : p.coeffs.size < f.coeffs.size) :
     (toZModPoly p).degree < (toZModPoly f).degree := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
-  haveI : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+  have : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
   have hfm := (Monic_toPoly f).mpr hf
   have h1 : (AzPolynomial.toPoly p).degree
       < (AzPolynomial.toPoly f).degree :=
@@ -140,8 +140,8 @@ theorem degree_toZModPoly_lt (hm : 1 < m.toNat) (hf : f.Monic)
 theorem powModByMonic_size (hm : 1 < m.toNat) (hf : f.Monic)
     (a : AzPolynomial (AzZMod m)) (q : AzNat) :
     (powModByMonic a q f).coeffs.size < f.coeffs.size := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
-  haveI : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+  have : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
   have hf0 : 0 < f.coeffs.size := by
     rcases Nat.eq_zero_or_pos f.coeffs.size with h0 | h
     · exfalso
@@ -363,8 +363,8 @@ theorem symCoeffs_class (hm : 1 < m.toNat) (hf : f.Monic)
 private theorem symCoeffs_size (hm : 1 < m.toNat) (hf : f.Monic)
     (hdeg : 0 < f.natDegree) (g : AzPolynomial (AzZMod m)) (I : ℕ) :
     ∀ c ∈ symCoeffs f g I, c.coeffs.size < f.coeffs.size := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
-  haveI : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+  have : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Nontrivial (AzZMod m) := nontrivial_of_ne 1 0 (NeZero.ne 1)
   have hf0 : 0 < f.coeffs.size := by
     rcases Nat.eq_zero_or_pos f.coeffs.size with h0 | h
     · exfalso
@@ -378,7 +378,7 @@ private theorem symCoeffs_size (hm : 1 < m.toNat) (hf : f.Monic)
   have honesize : (1 : AzPolynomial (AzZMod m)).coeffs.size = 1 := by
     show (AzPolynomial.one).coeffs.size = 1
     unfold AzPolynomial.one
-    rw [dif_neg (one_ne_zero (α := AzZMod m))]
+    rw [dite_eq_right (one_ne_zero (α := AzZMod m))]
     rfl
   have haux : ∀ (a : AzPolynomial (AzZMod m))
       (prev : AzPolynomial (AzZMod m)) cs,
@@ -459,9 +459,9 @@ private theorem primitiveLoop_factor (hm : 1 < m.toNat) {N d : AzNat} :
       rw [hgo] at h
       dsimp only at h
       by_cases hw : w = 1
-      · rw [if_pos hw] at h
+      · rw [ite_eq_left hw] at h
         exact ih h
-      · rw [if_neg hw] at h
+      · rw [ite_eq_right hw] at h
         exact absurd h (by simp)
 
 private theorem primitiveLoop_pass {N : AzNat} :
@@ -485,11 +485,11 @@ private theorem primitiveLoop_pass {N : AzNat} :
       rw [hgo] at h
       dsimp only at h
       by_cases hw : w = 1
-      · rw [if_pos hw] at h
+      · rw [ite_eq_left hw] at h
         rcases List.mem_cons.mp hq with rfl | hmem
         · exact ⟨w, hgo, hw⟩
         · exact ih h q hmem
-      · rw [if_neg hw] at h
+      · rw [ite_eq_right hw] at h
         exact absurd h (by simp)
 
 end Loops
@@ -598,7 +598,7 @@ private theorem natDegree_prod_le (b : AdjoinRoot (toZModPoly f)) (I : ℕ) :
       ≤ I := by
   refine le_trans (Polynomial.natDegree_list_prod_le _) ?_
   rw [List.map_map]
-  refine le_trans (List.sum_le_card_nsmul _ 1 ?_) ?_
+  refine le_trans (List.sum_le_length_nsmul _ 1 ?_) ?_
   · intro x hx
     rw [List.mem_map] at hx
     obtain ⟨j, _, rfl⟩ := hx
@@ -626,7 +626,7 @@ private theorem powModByMonic_eq_one (hm : 1 < m.toNat) (hf : f.Monic)
     (hfdeg : 0 < f.natDegree) {e : AzNat}
     (h1 : toZModPoly f ∣ toZModPoly g ^ e.toNat - 1) :
     powModByMonic g e f = 1 := by
-  haveI : Fact (1 < m.toNat) := ⟨hm⟩
+  have : Fact (1 < m.toNat) := ⟨hm⟩
   have hclass := mk_toZModPoly_powModByMonic' hm hf g e
   have hone : AdjoinRoot.mk (toZModPoly f) (toZModPoly g) ^ e.toNat
       = AdjoinRoot.mk (toZModPoly f) 1 := by
@@ -667,7 +667,7 @@ private theorem primitiveLoop_eq_inr_true (hp : Nat.Prime m.toNat)
         refine (isCoprime_congr ?_).mpr (hall q List.mem_cons_self)
         simp only [map_sub, map_pow, map_one]
         rw [mk_toZModPoly_powModByMonic' hp.one_lt hf]
-      rw [if_pos hw]
+      rw [ite_eq_left hw]
       exact ih fun q' hq' => hall q' (List.mem_cons_of_mem _ hq')
 
 /-- Condition (3) — automatic for a prime modulus and irreducible
@@ -676,7 +676,7 @@ private theorem symCoeffs_all_const (hp : Nat.Prime m.toNat) {I : ℕ}
     (hI : 0 < I) (hfm : f.Monic) (hfdeg : f.natDegree = I)
     (hirr : Irreducible (toZModPoly f)) (g : AzPolynomial (AzZMod m)) :
     (symCoeffs f g I).all (fun c => c.natDegree == 0) = true := by
-  haveI := Fact.mk hp
+  have := Fact.mk hp
   have hn1' : 1 < m.toNat := hp.one_lt
   have hdegZ : (toZModPoly f).natDegree = f.natDegree :=
     natDegree_toZModPoly_eq f
@@ -763,9 +763,9 @@ theorem lenstraTest_eq_some_true
       ∧ qs.foldl (· * ·) (AzNat.ofNat 1) = F
       ∧ (n.pow I - 1) % F = 0 ∧ n ≤ F * F)
   case neg =>
-    rw [if_pos hval] at h
+    rw [ite_eq_left hval] at h
     exact absurd h (by simp)
-  rw [if_neg (not_not_intro hval)] at h
+  rw [ite_eq_right (not_not_intro hval)] at h
   obtain ⟨hn1, hI0, hfm, hfdeg, hg0, hgdeg, hqsp, hqsF, hFdvd, hnF2⟩ := hval
   have hn1' : 1 < n.toNat := by
     have := (AzNat.lt_iff_toNat_lt _ _).mp hn1
@@ -782,9 +782,9 @@ theorem lenstraTest_eq_some_true
       dsimp only at h
       by_cases hG : powModByMonic g (n.pow I - 1) f = 1
       case neg =>
-        rw [if_pos hG] at h
+        rw [ite_eq_left hG] at h
         exact absurd h (by simp)
-      rw [if_neg (not_not_intro hG)] at h
+      rw [ite_eq_right (not_not_intro hG)] at h
       cases hloop : primitiveLoop f g (n.pow I - 1) qs with
       | inl d =>
         rw [hloop] at h
@@ -798,14 +798,14 @@ theorem lenstraTest_eq_some_true
           by_cases h1 : ((symCoeffs f g I).all
               (fun c => c.natDegree == 0) : Bool) = true
           case neg =>
-            rw [if_pos h1] at h
+            rw [ite_eq_left h1] at h
             exact absurd h (by simp)
-          rw [if_neg (not_not_intro h1)] at h
+          rw [ite_eq_right (not_not_intro h1)] at h
           by_cases hdv : (divisorSearch n F I : Bool) = true
           case pos =>
-            rw [if_pos hdv] at h
+            rw [ite_eq_left hdv] at h
             exact absurd h (by simp)
-          rw [if_neg hdv] at h
+          rw [ite_eq_right hdv] at h
           have hdiv : divisorSearch n F I = false := by
             cases hd : divisorSearch n F I
             · rfl
@@ -928,9 +928,9 @@ theorem lenstraTest_eq_some_false
       ∧ qs.foldl (· * ·) (AzNat.ofNat 1) = F
       ∧ (n.pow I - 1) % F = 0 ∧ n ≤ F * F)
   case neg =>
-    rw [if_pos hval] at h
+    rw [ite_eq_left hval] at h
     exact absurd h (by simp)
-  rw [if_neg (not_not_intro hval)] at h
+  rw [ite_eq_right (not_not_intro hval)] at h
   obtain ⟨hn1, hI0, hfm, hfdeg, hg0, hgdeg, hqsp, hqsF, hFdvd, hnF2⟩ := hval
   have hn1' : 1 < n.toNat := by
     have := (AzNat.lt_iff_toNat_lt _ _).mp hn1
@@ -955,8 +955,8 @@ theorem lenstraTest_eq_some_false
         intro hp
         exact (irreducibleOrFactor_eq_inr_true_iff hp hfm (by omega)).mp hio
       have hfnotdvd : ¬toZModPoly f ∣ toZModPoly g := by
-        haveI : Fact (1 < n.toNat) := ⟨hn1'⟩
-        haveI : Nontrivial (AzZMod n) := nontrivial_of_ne 1 0 (NeZero.ne 1)
+        have : Fact (1 < n.toNat) := ⟨hn1'⟩
+        have : Nontrivial (AzZMod n) := nontrivial_of_ne 1 0 (NeZero.ne 1)
         intro hdvd
         have hgZ0 : toZModPoly g ≠ 0 := by
           intro h0
@@ -990,14 +990,14 @@ theorem lenstraTest_eq_some_false
         exact absurd hlt (not_lt.mpr hge)
       by_cases hG : powModByMonic g (n.pow I - 1) f = 1
       case neg =>
-        rw [if_pos hG] at h
+        rw [ite_eq_left hG] at h
         intro hp
-        haveI : Fact (Nat.Prime n.toNat) := ⟨hp⟩
+        have : Fact (Nat.Prime n.toNat) := ⟨hp⟩
         have hcond1 := CP.cond1_of_prime (hirr hp)
           (by rw [hdegZ, hfdeg]) hfnotdvd
         exact hG (powModByMonic_eq_one hn1' hfm (by omega)
           (by rw [hNexp]; exact hcond1))
-      rw [if_neg (not_not_intro hG)] at h
+      rw [ite_eq_right (not_not_intro hG)] at h
       cases hloop : primitiveLoop f g (n.pow I - 1) qs with
       | inl d =>
         obtain ⟨hdvd, hd1, hdn⟩ := primitiveLoop_factor hn1' qs hloop
@@ -1012,14 +1012,14 @@ theorem lenstraTest_eq_some_false
           by_cases h1 : ((symCoeffs f g I).all
               (fun c => c.natDegree == 0) : Bool) = true
           case pos =>
-            rw [if_neg (not_not_intro h1)] at h
+            rw [ite_eq_right (not_not_intro h1)] at h
             by_cases hdv : (divisorSearch n F I : Bool) = true
             case pos => exact divisorSearch_eq_true hdv
-            rw [if_neg hdv] at h
+            rw [ite_eq_right hdv] at h
             exact absurd h (by simp)
           -- a step-3 coefficient is nonconstant: composite by
           -- the contrapositive of `cond3_of_prime`
-          rw [if_pos h1] at h
+          rw [ite_eq_left h1] at h
           intro hp
           exact h1 (symCoeffs_all_const hp hI0 hfm hfdeg (hirr hp) g)
 
@@ -1045,21 +1045,21 @@ theorem lenstraTest_eq_some_true_of (hp : Nat.Prime n.toNat)
   have hNexp : (n.pow I - 1).toNat = n.toNat ^ I - 1 := by
     rw [AzNat.toNat_sub, AzNat.toNat_pow, AzNat.toNat_one]
   rw [lenstraTest,
-    if_neg (not_not_intro
+    ite_eq_right (not_not_intro
       ⟨hn1, hI, hfm, hfdeg, hg0, hgdeg, hqsp, hqsF, hFdvd, hnF2⟩),
     (irreducibleOrFactor_eq_inr_true_iff hp hfm (by omega)).mpr hirr]
   dsimp only
   have hG : powModByMonic g (n.pow I - 1) f = 1 :=
     powModByMonic_eq_one hp.one_lt hfm (by omega)
       (by rw [hNexp]; exact h1)
-  rw [if_neg (not_not_intro hG),
+  rw [ite_eq_right (not_not_intro hG),
     primitiveLoop_eq_inr_true hp hfm qs (fun q hq => by
       rw [AzNat.toNat_div, hNexp]
       exact h2 q hq)]
   dsimp only
-  rw [if_neg (not_not_intro
+  rw [ite_eq_right (not_not_intro
       (symCoeffs_all_const hp hI hfm hfdeg hirr g)),
-    if_neg (show ¬((divisorSearch n F I : Bool) = true) from by
+    ite_eq_right (show ¬((divisorSearch n F I : Bool) = true) from by
       rw [divisorSearch_eq_false_of_prime hp]
       simp)]
 

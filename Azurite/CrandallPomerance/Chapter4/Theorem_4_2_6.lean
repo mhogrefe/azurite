@@ -162,7 +162,7 @@ theorem s_of_mersenne_prime (hM : (mersenne p).Prime) :
     · exact h
   have hMsucc : mersenne p + 1 = 2 ^ p := succ_mersenne p
   set M := mersenne p with hMdef
-  haveI : Fact M.Prime := ⟨hM⟩
+  have : Fact M.Prime := ⟨hM⟩
   -- `(12/M) = −1`, hence `12` is a nonsquare mod `M`
   have hleg : legendreSym M 12 = -1 := by
     rw [jacobiSym.legendreSym.to_jacobiSym]
@@ -197,15 +197,15 @@ theorem s_of_mersenne_prime (hM : (mersenne p).Prime) :
   have hgirr : Irreducible g :=
     irreducible_of_degree_le_three_of_not_isRoot
       (by rw [hgdeg]; decide) hnoroot
-  haveI : Fact (Irreducible g) := ⟨hgirr⟩
+  have : Fact (Irreducible g) := ⟨hgirr⟩
   -- the field `K = GF(M²)`
   set K := AdjoinRoot g with hK
-  haveI : Module.Finite (ZMod M) K :=
+  have : Module.Finite (ZMod M) K :=
     (AdjoinRoot.powerBasis hgirr.ne_zero).finite
-  haveI : Finite K := Module.finite_of_finite (ZMod M)
-  haveI : Fintype K := Fintype.ofFinite K
-  haveI : DecidableEq K := Classical.decEq K
-  haveI : CharP K M :=
+  have : Finite K := Module.finite_of_finite (ZMod M)
+  have : Fintype K := Fintype.ofFinite K
+  have : DecidableEq K := Classical.decEq K
+  have : CharP K M :=
     charP_of_injective_algebraMap (algebraMap (ZMod M) K).injective M
   set α : K := AdjoinRoot.root g with hαdef
   -- the root identity in numeral form

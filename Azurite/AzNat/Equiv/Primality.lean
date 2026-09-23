@@ -33,7 +33,7 @@ theorem trialDivideOdd_eq_true_iff (n s d : AzNat) :
   induction d using trialDivideOdd.induct (n := n) (s := s) with
   | case1 d hgt =>
     -- compare d s = gt, returns true; RHS vacuous
-    rw [trialDivideOdd, dif_pos hgt]
+    rw [trialDivideOdd, dite_eq_left hgt]
     have hlt : s.toNat < d.toNat := by
       rw [compare_eq_compare_toNat] at hgt
       exact Nat.compare_eq_gt.mp hgt
@@ -42,7 +42,7 @@ theorem trialDivideOdd_eq_true_iff (n s d : AzNat) :
     omega
   | case2 d hgt hmod =>
     -- not gt, n % d == 0, returns false; RHS false at k = 0
-    rw [trialDivideOdd, dif_neg hgt, if_pos hmod]
+    rw [trialDivideOdd, dite_eq_right hgt, ite_eq_left hmod]
     have hle : d.toNat ≤ s.toNat := by
       rw [compare_eq_compare_toNat] at hgt
       exact Nat.le_of_not_lt (fun h => hgt (Nat.compare_eq_gt.mpr h))
@@ -57,7 +57,7 @@ theorem trialDivideOdd_eq_true_iff (n s d : AzNat) :
     exact ⟨hle, hdvd⟩
   | case3 d hgt hmod ih =>
     -- not gt, n % d != 0, recurse on d+2
-    rw [trialDivideOdd, dif_neg hgt, if_neg hmod]
+    rw [trialDivideOdd, dite_eq_right hgt, ite_eq_right hmod]
     have hndvd : ¬ (d.toNat ∣ n.toNat) := by
       intro hd
       apply hmod
@@ -97,35 +97,35 @@ theorem isPrimeNaive_eq_true_iff (n : AzNat) : isPrimeNaive n = true ↔ Nat.Pri
     · intro h; apply toNat_injective; rw [toNat_two]; exact h
   by_cases hc1 : compare n (2 : UInt64).toAzNat = Ordering.lt
   · -- n < 2: not prime
-    rw [if_pos hc1]
+    rw [ite_eq_left hc1]
     have : n.toNat < 2 := hlt2.mp hc1
     simp only [Bool.false_eq_true, false_iff]
     intro hp
     have := hp.two_le
     omega
-  · rw [if_neg hc1]
+  · rw [ite_eq_right hc1]
     have hge2 : 2 ≤ n.toNat := by
       have := hlt2.not.mp hc1
       omega
     by_cases hc2 : (n == (2 : UInt64).toAzNat) = true
     · -- n = 2: prime
-      rw [if_pos hc2]
+      rw [ite_eq_left hc2]
       have h2 : n.toNat = 2 := heq2.mp hc2
       rw [h2]
       simp only [true_iff]
       exact Nat.prime_two
-    · rw [if_neg hc2]
+    · rw [ite_eq_right hc2]
       have hne2 : n.toNat ≠ 2 := fun h => hc2 (heq2.mpr h)
       by_cases hc3 : n.isEven = true
       · -- even and > 2: composite
-        rw [if_pos hc3]
+        rw [ite_eq_left hc3]
         have heven : Even n.toNat := (isEven_iff n).mp hc3
         simp only [Bool.false_eq_true, false_iff]
         intro hp
         have := (Nat.Prime.even_iff hp).mp heven
         exact hne2 this
       · -- odd and > 2: trial divide
-        rw [if_neg hc3]
+        rw [ite_eq_right hc3]
         have hodd : ¬ Even n.toNat := fun h => hc3 ((isEven_iff n).mpr h)
         have hoddn : Odd n.toNat := Nat.not_even_iff_odd.mp hodd
         rw [trialDivideOdd_eq_true_iff, toNat_three, toNat_sqrt]

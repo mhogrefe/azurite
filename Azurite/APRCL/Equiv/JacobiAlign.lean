@@ -35,7 +35,7 @@ theorem isPrimitiveRoot_zetaC : IsPrimitiveRoot (zetaC q p k) (q * p ^ k) :=
 /-- **The embedding `ℤ[ζ_{q·p^k}] → ℂ`.** -/
 noncomputable def embC (hp : p.Prime) : CR q p k →+* ℂ :=
   AdjoinRoot.lift (Int.castRingHom ℂ) (zetaC q p k) (by
-    haveI : NeZero ((q * p ^ k : ℕ) : ℂ) := ⟨Nat.cast_ne_zero.mpr (cr_pos hp).ne'⟩
+    have : NeZero ((q * p ^ k : ℕ) : ℂ) := ⟨Nat.cast_ne_zero.mpr (cr_pos hp).ne'⟩
     have hroot : IsRoot (cyclotomic (q * p ^ k) ℂ) (zetaC q p k) :=
       isRoot_cyclotomic_iff.mpr (isPrimitiveRoot_zetaC hp)
     rw [eval₂_eq_eval_map, map_cyclotomic]
@@ -89,7 +89,7 @@ end ToComplex
 /-- Fermat: `n^(p−1) ≡ 1 (mod p)` for `p ∤ n`. -/
 theorem pow_sub_one_modEq_one_of_not_dvd {N p : ℕ} (hp : p.Prime) (hpn : ¬ p ∣ N) :
     N ^ (p - 1) ≡ 1 [MOD p] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have h : ((N : ℕ) : ZMod p) ≠ 0 := by
     rw [Ne, ZMod.natCast_eq_zero_iff]
     exact hpn
@@ -151,7 +151,7 @@ theorem clause_odd {N p : ℕ} (hp : p.Prime) (hp2 : p ≠ 2) (hn1 : 1 < N) (hpn
   have hx1 : 1 < N ^ (p - 1) := Nat.one_lt_pow (by have := hp.two_le; omega) hn1
   -- per `q`: the alignment
   have hal : ∀ q ∈ Qs, ∀ r ∈ N.primeFactors, Y q r = Y q N ^ m r := fun q hq => by
-    haveI : Fact q.Prime := ⟨hQ q hq⟩
+    have : Fact q.Prime := ⟨hQ q hq⟩
     refine chi_eq_chi_pow (hkq q hq) hn1 hpn hp (hζ q hq) ?_ (f := f₀ q) hmF fun r hr => ?_
     · intro j hj
       exact pow_dvd_of_pow_modEq_one_odd hp hp2 hx1 (pow_sub_one_modEq_one_of_not_dvd hp hpn)
@@ -207,7 +207,7 @@ theorem clause_two {N : ℕ} (hn1 : 1 < N) (hodd : N % 2 = 1)
   have hmF : ∀ r ∈ N.primeFactors, r ^ (2 - 1) ≡ (N ^ (2 - 1)) ^ m r [MOD 2 ^ D] := fun r hr => by
     simpa using hm r (Nat.prime_of_mem_primeFactors hr) (Nat.dvd_of_mem_primeFactors hr)
   have hal : ∀ q ∈ Qs, ∀ r ∈ N.primeFactors, Y q r = Y q N ^ m r := fun q hq => by
-    haveI : Fact q.Prime := ⟨hQ q hq⟩
+    have : Fact q.Prime := ⟨hQ q hq⟩
     refine chi_eq_chi_pow (hkq q hq) hn1 (by omega) Nat.prime_two (hζ q hq) ?_ (f := f₀ q) hmF
       fun r hr => ?_
     · intro j hj

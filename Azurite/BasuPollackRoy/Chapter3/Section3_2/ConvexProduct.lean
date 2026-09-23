@@ -45,7 +45,7 @@ def openCube (k : ℕ) (R : Type*) [Field R] [LinearOrder R] [IsStrictOrderedRin
 /-- **The open cube `(0,1)^k` is convex.** -/
 theorem isConvex_openCube : IsConvex (openCube k R) := by
   intro x hx y hy l hl
-  simp only [openCube, Set.mem_setOf_eq] at hx hy ⊢
+  simp only [openCube, Set.mem_ofPred_eq] at hx hy ⊢
   intro i
   have hconv : Convex R (Set.Ioo (0 : R) 1) := convex_iff_ordConnected.mpr Set.ordConnected_Ioo
   rw [Pi.add_apply, Pi.smul_apply, Pi.smul_apply]

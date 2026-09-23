@@ -59,13 +59,13 @@ private theorem hcond_of_mem (hp : p ∈ (q - 1).primeFactors) :
 
 theorem val_zetaPQUnit (hp : p ∈ (q - 1).primeFactors) :
     ((zetaPQUnit p q : (CycPQ p q)ˣ) : CycPQ p q) = zetaP p q := by
-  rw [zetaPQUnit, dif_pos (hcond_of_mem hp)]
+  rw [zetaPQUnit, dite_eq_left (hcond_of_mem hp)]
   exact IsUnit.unit_spec _
 
 theorem isPrimitiveRoot_zetaPQUnit (hp : p ∈ (q - 1).primeFactors) :
     IsPrimitiveRoot (zetaPQUnit p q) p := by
   rw [← IsPrimitiveRoot.coe_units_iff, val_zetaPQUnit hp]
-  haveI : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
+  have : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
   exact isPrimitiveRoot_zetaP p q (hcond_of_mem hp).2.2
 
 theorem zetaPQUnit_mem (hp : p ∈ (q - 1).primeFactors) :
@@ -74,12 +74,12 @@ theorem zetaPQUnit_mem (hp : p ∈ (q - 1).primeFactors) :
     (Nat.dvd_of_mem_primeFactors hp)
   ext
   rw [Units.val_pow_eq_pow_val, val_zetaPQUnit hp, Units.val_one]
-  haveI : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
+  have : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
   exact (isPrimitiveRoot_zetaP p q (hcond_of_mem hp).2.2).pow_eq_one
 
 theorem isPrimitiveRoot_zetaQPQ (hp : p ∈ (q - 1).primeFactors) :
     IsPrimitiveRoot (zetaQ p q) q := by
-  haveI : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
+  have : Fact p.Prime := ⟨(hcond_of_mem hp).1⟩
   exact isPrimitiveRoot_zetaQ p q (hcond_of_mem hp).2.2
 
 private theorem eval₂_cyclotomic_int' {R : Type _} [CommRing R] [IsDomain R]
@@ -94,7 +94,7 @@ noncomputable def towerToCycMP (hp : p ∈ (q - 1).primeFactors) :
     CycP p →+* CycM ((q - 1) * q) :=
   AdjoinRoot.lift (Int.castRingHom _)
     ((zetaPFam q p : (CycM ((q - 1) * q))ˣ) : CycM ((q - 1) * q)) (by
-      haveI := isDomain_cycM (hm_pos' (q := q))
+      have := isDomain_cycM (hm_pos' (q := q))
       exact eval₂_cyclotomic_int' (hcond_of_mem hp).1.pos
         (IsPrimitiveRoot.coe_units_iff.mpr (isPrimitiveRoot_zetaPFam hp)))
 
@@ -110,7 +110,7 @@ noncomputable def towerToCycM (hp : p ∈ (q - 1).primeFactors) :
       eval₂_map,
       Subsingleton.elim ((towerToCycMP hp).comp (Int.castRingHom (CycP p)))
         (Int.castRingHom _)]
-    haveI := isDomain_cycM (hm_pos' (q := q))
+    have := isDomain_cycM (hm_pos' (q := q))
     exact eval₂_cyclotomic_int' (Fact.out (p := q.Prime)).pos
       isPrimitiveRoot_zetaQFam)
 
@@ -216,12 +216,12 @@ theorem theorem_4_4_6_composite_tower
     intro p hp
     obtain ⟨hq₀mem, hq₀dvd⟩ := hq₀ p hp
     have hq'prime : (q₀ p).Prime := Nat.prime_of_mem_primeFactors hq₀mem
-    haveI : Fact (q₀ p).Prime := ⟨hq'prime⟩
+    have : Fact (q₀ p).Prime := ⟨hq'prime⟩
     have hpmem : p ∈ (q₀ p - 1).primeFactors :=
       Nat.mem_primeFactors.mpr ⟨Nat.prime_of_mem_primeFactors hp, hq₀dvd,
         by have := hq'prime.two_le; omega⟩
-    haveI : Fact p.Prime := ⟨(hcond_of_mem hpmem).1⟩
-    haveI : IsDomain (CycPQ p (q₀ p)) :=
+    have : Fact p.Prime := ⟨(hcond_of_mem hpmem).1⟩
+    have : IsDomain (CycPQ p (q₀ p)) :=
       isDomain_cycPQ p (q₀ p) (hcond_of_mem hpmem).2.2
     have hco : Nat.Coprime (p * q₀ p) n.minFac :=
       hpq_co p (q₀ p) (Nat.dvd_of_mem_primeFactors hp)
@@ -253,10 +253,10 @@ theorem theorem_4_4_6_composite_tower
   have hqmod : ∀ q ∈ F.primeFactors, n.minFac ≡ l ^ a [MOD q] := by
     intro q hq
     have hqprime : q.Prime := Nat.prime_of_mem_primeFactors hq
-    haveI : Fact q.Prime := ⟨hqprime⟩
+    have : Fact q.Prime := ⟨hqprime⟩
     have hsqf : Squarefree (q - 1) :=
       Squarefree.squarefree_of_dvd (hqI q hq) hI
-    haveI : IsDomain (CycM ((q - 1) * q)) := isDomain_cycM (hm_pos' (q := q))
+    have : IsDomain (CycM ((q - 1) * q)) := isDomain_cycM (hm_pos' (q := q))
     refine eq_4_23_mod_q (r := n.minFac) (l := l) (a := a) (lq := lq q)
       (e := fun p => lTab p q * aTab p) hsqf zetaPFam_mem
       (fun p hp => isPrimitiveRoot_zetaPFam hp) (hgen q hq) ?_ ?_
@@ -264,8 +264,8 @@ theorem theorem_4_4_6_composite_tower
     · -- the character values, per pair: pinned in the tower, then
       -- transferred along `towerToCycM`
       intro p hpmem
-      haveI : Fact p.Prime := ⟨(hcond_of_mem hpmem).1⟩
-      haveI : IsDomain (CycPQ p q) :=
+      have : Fact p.Prime := ⟨(hcond_of_mem hpmem).1⟩
+      have : IsDomain (CycPQ p q) :=
         isDomain_cycPQ p q (hcond_of_mem hpmem).2.2
       have hpI : p ∈ I.primeFactors :=
         Nat.mem_primeFactors.mpr ⟨Nat.prime_of_mem_primeFactors hpmem,
@@ -316,7 +316,7 @@ theorem theorem_4_4_6_composite_tower
         (Nat.dvd_of_mem_primeFactors hq) I)).coprime_dvd_right hrdvd).symm
   have hlunit : ∀ q ∈ F.primeFactors, IsUnit ((l : ℕ) : ZMod q) := by
     intro q hq
-    haveI : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
+    have : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
     rw [hl q hq]
     exact (g q ^ lq q).isUnit
   exact step6_finds_factor hn1 hncomp hIpos hnF

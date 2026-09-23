@@ -58,7 +58,7 @@ lemma mulXPow_coeffs_size_of_ne_zero (n : ℕ) (p : AzPolynomial R)
     (hp : p.coeffs.size ≠ 0) :
     (mulXPow n p).coeffs.size = n + p.coeffs.size := by
   unfold mulXPow
-  rw [dif_neg hp]
+  rw [dite_eq_right hp]
   simp
 
 /-! ### Tests -/

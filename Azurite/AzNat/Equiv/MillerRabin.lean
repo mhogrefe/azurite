@@ -46,8 +46,8 @@ private theorem mrChain_eq_true [NeZero n.toNat] {negOne : AzZMod n}
     intro x i hi hx
     rw [mrChain]
     by_cases hxn : x = negOne
-    · rw [if_pos hxn]
-    · rw [if_neg hxn]
+    · rw [ite_eq_left hxn]
+    · rw [ite_eq_right hxn]
       cases i with
       | zero =>
         exfalso
@@ -63,9 +63,9 @@ private theorem mrChain_eq_true [NeZero n.toNat] {negOne : AzZMod n}
 theorem millerRabinBase_eq_true_of_prime (hp : Nat.Prime n.toNat)
     (a : AzNat) : millerRabinBase n a = true := by
   have h1 : 1 < n.toNat := hp.one_lt
-  haveI : NeZero n.toNat := ⟨by omega⟩
-  haveI : Fact (Nat.Prime n.toNat) := ⟨hp⟩
-  rw [millerRabinBase, dif_pos h1]
+  have : NeZero n.toNat := ⟨by omega⟩
+  have : Fact (Nat.Prime n.toNat) := ⟨hp⟩
+  rw [millerRabinBase, dite_eq_left h1]
   set s := ((n - 1).trailingZeros).getD 0 with hs
   set d := (n - 1).shiftRight s with hd
   set a' := AzZMod.ofAzNat n a with ha'
@@ -77,8 +77,8 @@ theorem millerRabinBase_eq_true_of_prime (hp : Nat.Prime n.toNat)
     rw [hneg, AzZMod.toZMod_ofAzNat, hM1, Nat.cast_sub (by omega),
       ZMod.natCast_self, Nat.cast_one, zero_sub]
   by_cases htriv : a' = 0 ∨ a' = 1 ∨ a' = negOne
-  · rw [if_pos htriv]
-  rw [if_neg htriv]
+  · rw [ite_eq_left htriv]
+  rw [ite_eq_right htriv]
   -- the arithmetic of the `2^s·d` split
   have hM0 : (n - 1).toNat ≠ 0 := by omega
   have hsval : s = padicValNat 2 (n - 1).toNat := by
@@ -119,7 +119,7 @@ theorem millerRabinBase_eq_true_of_prime (hp : Nat.Prime n.toNat)
         apply AzZMod.toZMod_injective
         rw [AzZMod.toZMod_one]
         simpa using hone
-      rw [if_pos (Or.inl hx1)]
+      rw [ite_eq_left (Or.inl hx1)]
     | succ j ih =>
       intro hj hone
       -- the predecessor is a square root of `1`
@@ -132,8 +132,8 @@ theorem millerRabinBase_eq_true_of_prime (hp : Nat.Prime n.toNat)
       · exact ih (by omega) hy1
       · -- a genuine `−1` in the chain
         by_cases hx1 : x = 1 ∨ x = negOne
-        · rw [if_pos hx1]
-        rw [if_neg hx1]
+        · rw [ite_eq_left hx1]
+        rw [ite_eq_right hx1]
         cases j with
         | zero =>
           exfalso

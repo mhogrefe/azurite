@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Formula
+import Mathlib.Algebra.MvPolynomial.Variables
 
 /-!
 # Atoms and Formulas for the Language of Fields
@@ -56,7 +57,7 @@ def neZero (P : MvPolynomial σ D) : FieldAtom σ D := ⟨P, false⟩
 
 /-- Free variables of a field atom. -/
 noncomputable def vars [DecidableEq σ] (a : FieldAtom σ D) : Finset σ :=
-  a.poly.vars
+  MvPolynomial.vars a.poly
 
 /-- Rename variables in a field atom. -/
 noncomputable def renameVars (f : σ → τ) (a : FieldAtom σ D) :

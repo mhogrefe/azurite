@@ -25,7 +25,7 @@ theorem charPoly_ne_zero {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × ℚ} (
     Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨le_of_lt hABlt, le_refl _⟩,
       colOnLine_right hABlt.ne hcolB⟩
   have hBne : (charPoly P A B).coeff B.1 ≠ 0 := by
-    rw [charPoly_coeff, if_pos hBmem]
+    rw [charPoly_coeff, ite_eq_left hBmem]
     exact initCoeff_ne_zero_of_colOnLine (colOnLine_right hABlt.ne hcolB)
   exact fun h => hBne (by rw [h, coeff_zero])
 
@@ -38,7 +38,7 @@ theorem charPoly_natDegree_eq {P : Polynomial (PuiseuxSeries R)} {A B : ℕ × �
     Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨le_of_lt hABlt, le_refl _⟩,
       colOnLine_right hABlt.ne hcolB⟩
   have hBne : (charPoly P A B).coeff B.1 ≠ 0 := by
-    rw [charPoly_coeff, if_pos hBmem]
+    rw [charPoly_coeff, ite_eq_left hBmem]
     exact initCoeff_ne_zero_of_colOnLine (colOnLine_right hABlt.ne hcolB)
   exact le_antisymm (charPoly_natDegree_le P A B) (le_natDegree_of_ne_zero hBne)
 
@@ -51,12 +51,12 @@ theorem charPoly_natTrailingDegree_eq {P : Polynomial (PuiseuxSeries R)} {A B : 
   have hAmem : A.1 ∈ (Finset.Icc A.1 B.1).filter (colOnLine P A B) :=
     Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨le_refl _, le_of_lt hABlt⟩, colOnLine_left hcolA⟩
   have hAne : (charPoly P A B).coeff A.1 ≠ 0 := by
-    rw [charPoly_coeff, if_pos hAmem]
+    rw [charPoly_coeff, ite_eq_left hAmem]
     exact initCoeff_ne_zero_of_colOnLine (colOnLine_left (B := B) hcolA)
   refine le_antisymm (natTrailingDegree_le_of_ne_zero hAne)
     (le_natTrailingDegree (charPoly_ne_zero hABlt hcolB) ?_)
   intro m hm
-  rw [charPoly_coeff, if_neg]
+  rw [charPoly_coeff, ite_eq_right]
   intro hmem
   exact absurd (Finset.mem_Icc.mp (Finset.mem_filter.mp hmem).1).1 (by omega)
 

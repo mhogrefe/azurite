@@ -73,7 +73,7 @@ include hk3 in
 `c ≡ 1, 3 (mod 8)` — the subgroup remark under (9.9). -/
 theorem mAct2_mem {c x : ℕ} (hc : c % 8 = 1 ∨ c % 8 = 3)
     (hx : x ∈ M2set k) : mAct 2 k c x ∈ M2set k := by
-  haveI : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
+  have : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
   obtain ⟨⟨hx1, hxlt⟩, hx8⟩ := mem_M2set.mp hx
   have hval : mAct 2 k c x = (c * x) % 2 ^ k := by
     rw [mAct]
@@ -119,7 +119,7 @@ two Euclidean decompositions, no guards. -/
 theorem eq_9_13_coeff {n y : ℕ} :
     n * αc 3 2 k y + αc n 2 k (mAct 2 k 3 y)
       = 3 * αc n 2 k y + αc 3 2 k (mAct 2 k n y) := by
-  haveI : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
+  have : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
   have hN0 : (0 : ℕ) < 2 ^ k := pow_pos (by norm_num) k
   have hact : ∀ c z : ℕ, mAct 2 k c z = (c * z) % 2 ^ k := fun c z => by
     rw [mAct]
@@ -204,7 +204,7 @@ Euclidean decompositions `3x = 2^k·[3x/2^k] + (3x mod 2^k)` over
 `M` and reindexing `Σ (3x mod 2^k) = Σ x` along the action of `3`
 (the paper's homomorphism `σ_x ↦ 1` applied to (9.16)). -/
 theorem eq_9_18 : ∑ x ∈ M2set k, αc 3 2 k x = 2 ^ (k - 2) - 1 := by
-  haveI : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
+  have : NeZero ((2 : ℕ) ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
   have hact : ∀ z : ℕ, mAct 2 k 3 z = (3 * z) % 2 ^ k := fun z => by
     rw [mAct]
     exact ZMod.val_natCast (n := 2 ^ k) _

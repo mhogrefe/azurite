@@ -61,7 +61,7 @@ private lemma offdiag_eq_gt_plus_lt (s : Multiset R) (hs : s.Nodup) :
   by_cases hab : a = b
   · subst hab
     rw [count_diag_map]
-    simp only [lt_irrefl, if_false, add_zero]
+    simp only [lt_irrefl, ite_false, add_zero]
     have ha := hs a
     interval_cases (s.count a) <;> simp
   · have hdiag_zero : (s.map (fun y : R => (y, y))).count (a, b) = 0 := by
@@ -72,9 +72,9 @@ private lemma offdiag_eq_gt_plus_lt (s : Multiset R) (hs : s.Nodup) :
       exact hab (heq.1.trans heq.2.symm)
     rw [hdiag_zero, Nat.sub_zero]
     rcases lt_trichotomy a b with hlt | heq | hgt
-    · simp only [if_neg (asymm hlt), if_pos hlt, zero_add]
+    · simp only [ite_eq_right (asymm hlt), ite_eq_left hlt, zero_add]
     · exact absurd heq hab
-    · simp only [if_pos hgt, if_neg (asymm hgt), add_zero]
+    · simp only [ite_eq_left hgt, ite_eq_right (asymm hgt), add_zero]
 
 omit [Field R] [IsStrictOrderedRing R] in
 /-- The strict-less part of `s ×ˢ s` is the strict-greater part with each

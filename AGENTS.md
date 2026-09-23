@@ -27,13 +27,33 @@ You can search the Mathlib source code locally in the project workspace at:
 or (preferred) through a Lean language-server integration such as the lean-lsp MCP server.
 
 ### ⚠️ IMPORTANT: Avoid Blanket Imports
-**NEVER** do a blanket `import Mathlib` at the top of a file. 
+**NEVER** do a blanket `import Mathlib` at the top of a file.
 Importing all of Mathlib adds immense overhead to compile times and significantly slows down the build process.
 
 Instead:
 1. Find the specific file in Mathlib that contains the theorem or definition you need.
 2. Import only that specific module (e.g., `import Mathlib.Algebra.Polynomial.Basic` or `import Mathlib.Data.List.Basic`).
 3. If a theorem is available natively in Lean 4 Core (e.g., in `Init.Data`), you do not need to import anything from Mathlib or Batteries at all! Always check if Core has what you need first.
+
+# Conventions
+
+Where Azurite has no rule of its own, **follow the Lean core and Mathlib conventions**
+(the [Mathlib style guide](https://leanprover-community.github.io/contribute/style.html) and
+[naming conventions](https://leanprover-community.github.io/contribute/naming.html)). In
+particular:
+
+- **Namespaces** follow the type of the main argument, as in Mathlib: lemmas about `AzNat` live
+  in `Azurite.AzNat`, and lemmas about core types such as `UInt64` live in that type's own
+  namespace (`UInt64.toNat_add`), not under `Azurite`.
+- **Lemma names** use Mathlib's `snake_case` grammar (`toNat_add`, `mul_comm`, `_iff`, `_of_`);
+  file and directory names are `UpperCamelCase`. Textbook chapters keep their
+  `Theorem_4_33.lean`-style statement files.
+- **Layout**: computable code at the top level of a type directory, its correctness proofs (the
+  equivalences with the Mathlib objects) in the `Equiv/` subdirectory next to it.
+- **Tests**: `#guard` tests for a new module go in the `AzuriteTests` library (`Azurite/*/Tests/`)
+  rather than inline in library files; existing inline guards are being moved there over time.
+- **Whitespace**: no trailing whitespace (CI rejects it; `scripts/check_and_build.sh` strips it),
+  lines at most 100 characters as in Mathlib, LF line endings.
 
 # Lean 4 Tips
 

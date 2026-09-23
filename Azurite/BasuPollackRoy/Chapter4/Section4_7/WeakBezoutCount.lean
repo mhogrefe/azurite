@@ -47,7 +47,7 @@ theorem diagSystem_commonZero_eq_nonsingular (d : Fin k → ℕ) (hd : ∀ i, 1 
     {x : complexProjectiveSpace R k | ∀ i, aeval x.rep (diagSystem (R := R) d i) = 0}
       = {x : complexProjectiveSpace R k | IsNonsingularProjectiveZero (diagSystem d) x} := by
   ext x
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · exact fun hx => diagSystem_common_zero_isNonsingular d hd x hx
   · exact fun hx => hx.1
@@ -82,7 +82,7 @@ theorem IsSemialgebraicSetRP.inter {k p : ℕ}
       = {w : Fin (p + (k + k)) → R |
           (w ∘ Fin.castAdd (k + k), chartMap i (realEquiv.symm (w ∘ Fin.natAdd p))) ∈ S}
         ∩ {w | (w ∘ Fin.castAdd (k + k), chartMap i (realEquiv.symm (w ∘ Fin.natAdd p))) ∈ T} := by
-    ext w; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+    ext w; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
   rw [heq]
   exact (hS i).inter (hT i)
 
@@ -102,7 +102,7 @@ theorem IsSemialgebraicSetRP.proj {k p : ℕ}
       = ⋃ i : Fin (k + 1),
           {w : Fin p → R | ∃ z : Fin k → Ri R, (w, chartMap i z) ∈ T} := by
     ext w
-    simp only [Set.mem_setOf_eq, Set.mem_iUnion]
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion]
     constructor
     · rintro ⟨q, hq⟩
       -- `q` lies in some chart `i`.
@@ -122,7 +122,7 @@ theorem IsSemialgebraicSetRP.proj {k p : ℕ}
   -- Massage the projection to the chart-`i` slice of the cover.
   convert hproj using 1
   ext w
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   have hcappend : ∀ v : Fin (k + k) → R,
       (Fin.append w v ∘ Fin.castAdd (k + k) : Fin p → R) = w := by
     intro v; funext a; rw [Function.comp_apply, Fin.append_left]
@@ -149,7 +149,7 @@ theorem isSemialgebraicSetRP_cylinder {k p : ℕ} {S : Set (Fin p → R)}
         (w ∘ Fin.castAdd (k + k), chartMap i (realEquiv.symm (w ∘ Fin.natAdd p)))
           ∈ {tp : (Fin p → R) × complexProjectiveSpace R k | tp.1 ∈ S}}
       = {w : Fin (p + (k + k)) → R | w ∘ Fin.castAdd (k + k) ∈ S} := by
-    ext w; simp only [Set.mem_setOf_eq]
+    ext w; simp only [Set.mem_ofPred_eq]
   rw [heq]
   exact IsSemialgebraicSet.comap (Fin.castAdd (k + k)) hS
 
@@ -174,7 +174,7 @@ theorem isSemialgebraicSet_intervalSet :
       = {x | MvPolynomial.eval x (X 0 : MvPolynomial (Fin 1) R) > 0}
         ∩ {x | MvPolynomial.eval x (1 - X 0 : MvPolynomial (Fin 1) R) ≥ 0} := by
     ext w
-    simp only [intervalSet, Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_Ioc, map_sub, eval_X,
+    simp only [intervalSet, Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_Ioc, map_sub, eval_X,
       map_one, gt_iff_lt, ge_iff_le, sub_nonneg]
   rw [h]
   exact (IsSemialgebraicSet.pos_locus _).inter (IsSemialgebraicSet.geZero _)
@@ -283,7 +283,7 @@ theorem isSemialgebraicSetC_jointZeroLocus (P : Fin k → MvPolynomial (Fin (k +
       = ⋂ i' ∈ (Finset.univ : Finset (Fin k)),
           {u : Fin (2 + (k + 1)) → Ri R | aeval u (homotopyJointPoly P d i') = 0} := by
     ext u
-    simp only [Set.mem_setOf_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left]
+    simp only [Set.mem_ofPred_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left]
   rw [heq]
   exact IsSemialgebraicSetC.biInter_finset Finset.univ
     (fun i' _ => isSemialgebraicSetC_complexPolyZero (homotopyJointPoly P d i'))
@@ -318,7 +318,7 @@ theorem isSemialgebraicSet_Pm_of_atLeastZerosRP (P : Fin k → MvPolynomial (Fin
   -- Identify the projection with `Pm`.
   have heq : {w : Fin 1 → R | ∃ q : complexProjectiveSpace R 1, (w, q) ∈ T} = Pm P d γ m := by
     ext w
-    simp only [Set.mem_setOf_eq, hT, Set.mem_inter_iff, atLeastZerosRP, mem_Pm]
+    simp only [Set.mem_ofPred_eq, hT, Set.mem_inter_iff, atLeastZerosRP, mem_Pm]
     constructor
     · rintro ⟨q, ⟨⟨hint, _, hq⟩, haz⟩⟩
       refine ⟨hint, ?_⟩

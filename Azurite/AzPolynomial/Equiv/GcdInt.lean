@@ -187,7 +187,7 @@ theorem primPos_spec {g : AzPolynomial AzInt} (hg : g ≠ 0) :
         · rw [hiff.mp h] at hsgn; exact absurd hsgn (by simp)
       have hsneg : s.toInt < 0 := by
         rw [hsZ, hsgn]
-        simp only [Bool.false_eq_true, if_false]
+        simp only [Bool.false_eq_true, ite_false]
         omega
       by_contra hcon
       push Not at hcon
@@ -196,7 +196,7 @@ theorem primPos_spec {g : AzPolynomial AzInt} (hg : g ≠ 0) :
       have hpos : 0 < g.leadingCoeff.toInt := (toInt_pos_iff_sign hlcg).mpr hsgn
       have hspos : 0 < s.toInt := by
         rw [hsZ, hsgn]
-        simp only [if_true]
+        simp only [ite_true]
         omega
       by_contra hcon
       push Not at hcon
@@ -220,7 +220,7 @@ theorem map_toPoly_signNorm {p : AzPolynomial AzInt} (hp : p ≠ 0) :
   rw [signNorm]
   rcases hsgn : p.leadingCoeff.sign with _ | _
   · -- negative: output `-p`, i.e. `-pZ`, which has positive lcof
-    simp only [Bool.false_eq_true, if_false]
+    simp only [Bool.false_eq_true, ite_false]
     have hneg : pZ.leadingCoeff < 0 := by
       rw [leadingCoeff_map_toPoly]
       have h0 := toInt_ne_zero hlcp
@@ -489,19 +489,19 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
   set B : ℤ[X] := (AzPolynomial.toPoly Q).map AzInt.toIntRingHom with hB
   rw [gcdNormalizedInt]
   by_cases hP0 : P = 0
-  · rw [if_pos hP0]
+  · rw [ite_eq_left hP0]
     have hA0 : A = 0 := by rw [hA, hP0, toPoly_zero, Polynomial.map_zero]
     by_cases hQ0 : Q = 0
     · have hB0 : B = 0 := by rw [hB, hQ0, toPoly_zero, Polynomial.map_zero]
       rw [hQ0, signNorm_zero, toPoly_zero, Polynomial.map_zero, hA0, hB0,
         gcd_zero_right, normalize_zero]
     · rw [map_toPoly_signNorm hQ0, hA0, gcd_zero_left, hB]
-  rw [if_neg hP0]
+  rw [ite_eq_right hP0]
   by_cases hQ0 : Q = 0
-  · rw [if_pos hQ0]
+  · rw [ite_eq_left hQ0]
     have hB0 : B = 0 := by rw [hB, hQ0, toPoly_zero, Polynomial.map_zero]
     rw [map_toPoly_signNorm hP0, hB0, gcd_zero_right, hA]
-  rw [if_neg hQ0]
+  rw [ite_eq_right hQ0]
   have hA0 : A ≠ 0 := hA ▸ map_toPoly_ne_zero hP0
   have hB0 : B ≠ 0 := hB ▸ map_toPoly_ne_zero hQ0
   have hd : (contentGcdInt P Q).toInt = GCDMonoid.gcd A.content B.content := by
@@ -542,7 +542,7 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
       exact ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
     exact h1.trans hassoc
   by_cases hdeg0 : P.natDegree = 0 ∨ Q.natDegree = 0
-  · rw [if_pos hdeg0]
+  · rw [ite_eq_left hdeg0]
     -- constant case: the gcd is the content gcd
     rw [map_toPoly_smul, toPoly_one, Polynomial.map_one, mul_one,
       show Polynomial.C (contentGcdInt P Q).toInt
@@ -558,7 +558,7 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
     rcases hunit with h | h
     · rw [gcd_isUnit_left h]
     · rw [gcd_isUnit_right h]
-  rw [if_neg hdeg0]
+  rw [ite_eq_right hdeg0]
   push Not at hdeg0
   obtain ⟨hPd0, hQd0⟩ := hdeg0
   -- common: apply `int_gcd_eq` after producing `(G, hGq)` per branch
@@ -573,7 +573,7 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
     obtain ⟨c, hc0, hkey, hprim, hpos⟩ := primPos_spec hg
     exact int_gcd_eq hA0 hB0 hd hprim hpos (hGq_of g hg hassoc)
   by_cases hdeq : P.natDegree = Q.natDegree
-  · rw [if_pos hdeq]
+  · rw [ite_eq_left hdeq]
     set T := preStep P Q with hT
     have hlcPq : ((P.leadingCoeff.toInt : ℤ) : ℚ) ≠ 0 := by
       have h1 : A.leadingCoeff = P.leadingCoeff.toInt := hA ▸ leadingCoeff_map_toPoly P
@@ -593,7 +593,7 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
       rw [hTq]
       exact gcd_pre_step _ _ hlcPq
     by_cases hT0 : T = 0
-    · rw [if_pos hT0]
+    · rw [ite_eq_left hT0]
       -- proportional: `Aq ∣ Bq`, so the gcd is `normalize Aq ~ Aq`
       have hprop : Polynomial.C ((P.leadingCoeff.toInt : ℤ) : ℚ)
             * (B.map (Int.castRingHom ℚ))
@@ -614,9 +614,9 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
       refine happly P hP0 ?_
       rw [hA, gcd_eq_normalize_left hdvd]
       exact (associated_normalize _)
-    rw [if_neg hT0]
+    rw [ite_eq_right hT0]
     by_cases hTd : T.natDegree = 0
-    · rw [if_pos hTd]
+    · rw [ite_eq_left hTd]
       -- the pre-step output is a nonzero rational unit: the gcd is `1`
       rw [map_toPoly_smul, toPoly_one, Polynomial.map_one, mul_one,
         show Polynomial.C (contentGcdInt P Q).toInt
@@ -634,7 +634,7 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
           natDegree_map_toPoly]
         exact hTd
       rw [gcd_isUnit_right (isUnit_Q_of_natDegree_eq_zero hTq0 hTdq)]
-    rw [if_neg hTd]
+    rw [ite_eq_right hTd]
     -- main equal-degree branch: core on `(P, T)`, pre-step invisible over `ℚ`
     have hlt : T.natDegree < P.natDegree := by
       rw [hT, preStep]
@@ -647,16 +647,16 @@ theorem map_toPoly_gcdNormalizedInt (P Q : AzPolynomial AzInt) :
     rw [← map_map_fuse, ← map_map_fuse, ← map_map_fuse, ← hA] at h1
     rw [← hstepq]
     exact h1
-  rw [if_neg hdeq]
+  rw [ite_eq_right hdeq]
   by_cases hdlt : P.natDegree < Q.natDegree
-  · rw [if_pos hdlt]
+  · rw [ite_eq_left hdlt]
     obtain ⟨hcore, hne⟩ := subresGcd_int_qassoc Q P hQ0 hP0 hdlt (by omega)
     refine happly _ hne ?_
     have h1 := hcore
     rw [← map_map_fuse, ← map_map_fuse, ← map_map_fuse, ← hA, ← hB] at h1
     rw [gcd_comm]
     exact h1
-  · rw [if_neg hdlt]
+  · rw [ite_eq_right hdlt]
     obtain ⟨hcore, hne⟩ := subresGcd_int_qassoc P Q hP0 hQ0 (by omega) (by omega)
     refine happly _ hne ?_
     have h1 := hcore
@@ -695,9 +695,9 @@ theorem gcdGcdFreePart_int_spec (P Q : AzPolynomial AzInt) :
     have hgcd0 : GCDMonoid.gcd A ((AzPolynomial.toPoly Q).map AzInt.toIntRingHom) = 0 := by
       rw [← hgcd, hg0, toPoly_zero, Polynomial.map_zero]
     have hA0 : A = 0 := ((gcd_eq_zero_iff _ _).mp hgcd0).1
-    simp only [hg0, if_true]
+    simp only [hg0, ite_true]
     rw [hgcd0, hA0, zero_mul]
-  · simp only [if_neg hg0]
+  · simp only [ite_eq_right hg0]
     -- the gcd divides `A`; identify the computable quotient with the cofactor
     have hGz : (AzPolynomial.toPoly g).map AzInt.toIntRingHom ∣ A := by
       rw [hgcd]
@@ -962,7 +962,7 @@ theorem gcdGcdFreePartInt_snd_gcdFree (P Q : AzPolynomial AzInt)
   have hsnd : (gcdGcdFreePartInt P Q).2
       = divByRingElt ((extendedSignedSubresultant P Q).2.2.2[j₀ - 1]!).leadingCoeff
           (P.leadingCoeff • (extendedSignedSubresultant P Q).2.2.2[j₀ - 1]!) := by
-    rw [gcdGcdFreePartInt, if_neg hQ, if_neg (by omega)]
+    rw [gcdGcdFreePartInt, ite_eq_right hQ, ite_eq_right (by omega)]
     show (gcdGcdFreePartIntCore P Q).2 = _
     rw [gcdGcdFreePartIntCore]
     split
@@ -1205,7 +1205,7 @@ theorem gcdGcdFreePartInt_fst_gcd (P Q : AzPolynomial AzInt)
   have hfstval : (gcdGcdFreePartInt P Q).1
       = divByRingElt ((extendedSignedSubresultant P Q).2.1[j₀]!)
           (P.leadingCoeff • (extendedSignedSubresultant P Q).1[j₀]!) := by
-    rw [gcdGcdFreePartInt, if_neg hQ, if_neg (by omega)]
+    rw [gcdGcdFreePartInt, ite_eq_right hQ, ite_eq_right (by omega)]
     show (gcdGcdFreePartIntCore P Q).1 = _
     rw [gcdGcdFreePartIntCore]
     split

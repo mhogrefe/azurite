@@ -81,7 +81,7 @@ theorem irred_degree_eq_two [IsAlgClosed (Ri R)]
 theorem adjoinRoot_irred_sq_neg_one [IsAlgClosed (Ri R)]
     {p : R[X]} (hp : Irreducible p) (hdeg : p.natDegree = 2) :
     ∃ j : AdjoinRoot p, j ^ 2 = -1 := by
-  haveI : Fact (Irreducible p) := ⟨hp⟩
+  have : Fact (Irreducible p) := ⟨hp⟩
   -- p has a root α in R[i]
   obtain ⟨α, hα⟩ := IsAlgClosed.exists_root (p.map (algebraMap R (Ri R))) (by
     rw [Polynomial.degree_map_eq_of_injective (algebraMap R (Ri R)).injective]
@@ -149,7 +149,7 @@ theorem algebraMap_surjective_of_real_algebraic [IsAlgClosed (Ri R)]
   -- AdjoinRoot p has j² = -1
   obtain ⟨j, hj_sq⟩ := adjoinRoot_irred_sq_neg_one hp_irred hp_deg2
   -- Map j into R₁ via ψ : AdjoinRoot p →ₐ[R] R₁
-  haveI : Fact (Irreducible p) := ⟨hp_irred⟩
+  have : Fact (Irreducible p) := ⟨hp_irred⟩
   let ψ : AdjoinRoot p →ₐ[R] R₁ :=
     AdjoinRoot.liftAlgHom p (Algebra.ofId R R₁) x (minpoly.aeval R x)
   -- ψ(j)² = ψ(j²) = ψ(-1) = -1 in R₁

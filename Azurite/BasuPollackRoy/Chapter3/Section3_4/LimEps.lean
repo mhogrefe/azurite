@@ -89,7 +89,7 @@ theorem limEps_apply (x : (boundedGerms : Subring (SemialgGerm R))) :
 /-- **`lim_ε(x) = a` ⟹ `x − a` is infinitesimal.** (Proposition 3.18's estimate, intrinsic form.) -/
 theorem limEps_infinitesimal (x : (boundedGerms : Subring (SemialgGerm R))) :
     IsInfinitesimal ((x : SemialgGerm R) - algebraMap R (SemialgGerm R) (limEps x)) := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   intro r hr
   set e := germPuiseuxEquiv (R := R)
   set hmem := (mem_boundedGerms_iff_mem_puiseuxBounded e x.1).mp x.2 with hmem_def
@@ -108,7 +108,7 @@ theorem limEps_infinitesimal (x : (boundedGerms : Subring (SemialgGerm R))) :
 theorem limEps_eq_of_infinitesimal (x : (boundedGerms : Subring (SemialgGerm R))) (a : R)
     (hinf : IsInfinitesimal ((x : SemialgGerm R) - algebraMap R (SemialgGerm R) a)) :
     limEps x = a := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   set e := germPuiseuxEquiv (R := R)
   set hmem := (mem_boundedGerms_iff_mem_puiseuxBounded e x.1).mp x.2 with hmem_def
   rw [limEps_apply, puiseuxLim_eq_iff]

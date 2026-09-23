@@ -36,9 +36,9 @@ transcendental over `R`, then `R(t) ≅ RatFunc R` embeds into the ordered (henc
 theorem algebraicOfMaximal {C : Type*} [Field C] [CharZero C] (R : IntermediateField ℚ C) [IsRealClosed ↥R]
     (hmax : ∀ S : IntermediateField ℚ C, IsSemireal ↥S → R ≤ S → S = R) :
     Algebra.IsAlgebraic ↥R C := by
-  letI : LinearOrder ↥R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing ↥R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing ↥R := IsOrderedRing.toIsStrictOrderedRing _
+  let : LinearOrder ↥R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing ↥R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing ↥R := IsOrderedRing.toIsStrictOrderedRing _
   rw [Algebra.isAlgebraic_def]
   intro c
   by_contra hc
@@ -78,12 +78,12 @@ Puiseux series `C⟨⟨ε⟩⟩` is algebraically closed. -/
 theorem isAlgClosed_puiseuxSeries (C : Type*) [Field C] [IsAlgClosed C] [CharZero C] :
     IsAlgClosed (PuiseuxSeries C) := by
   obtain ⟨R, hRrc, hmax⟩ := Theorem2_31.theorem_2_31_maximal C
-  haveI := hRrc
-  letI : LinearOrder ↥R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing ↥R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing ↥R := IsOrderedRing.toIsStrictOrderedRing _
-  haveI : IsRealClosed (PuiseuxSeries ↥R) := isRealClosed_puiseuxSeries
-  haveI : IsAlgClosed (Ri (PuiseuxSeries ↥R)) := Theorem2_11.isAlgClosed_Ri
+  have := hRrc
+  let : LinearOrder ↥R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing ↥R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing ↥R := IsOrderedRing.toIsStrictOrderedRing _
+  have : IsRealClosed (PuiseuxSeries ↥R) := isRealClosed_puiseuxSeries
+  have : IsAlgClosed (Ri (PuiseuxSeries ↥R)) := Theorem2_11.isAlgClosed_Ri
   have eC : C ≃+* Ri ↥R := (cEquivRi R hmax).toRingEquiv
   have e1 : PuiseuxSeries C ≃+* PuiseuxSeries (Ri ↥R) := puiseuxCongr eC
   have e2 : PuiseuxSeries (Ri ↥R) ≃+* Ri (PuiseuxSeries ↥R) := riPuiseuxEquiv.symm

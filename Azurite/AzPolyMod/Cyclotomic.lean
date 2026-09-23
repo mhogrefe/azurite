@@ -43,8 +43,8 @@ def cyclotomicPrimePow (p k : ℕ) : AzPolynomial R :=
       if (i : ℕ) % p ^ (k - 1) = 0 then (1 : R) else 0), by
     intro h
     rw [Array.back?_eq_getElem?, Array.size_ofFn, Nat.add_sub_cancel,
-      Array.getElem?_ofFn, dif_pos (Nat.lt_succ_self _)] at h
-    simp only [Nat.mul_mod_left, if_true] at h
+      Array.getElem?_ofFn, dite_eq_left (Nat.lt_succ_self _)] at h
+    simp only [Nat.mul_mod_left, ite_true] at h
     exact one_ne_zero (α := R) (Option.some.inj h)⟩
 
 omit [DecidableEq R] in
@@ -59,21 +59,21 @@ theorem coeff_cyclotomicPrimePow (p k i : ℕ) :
   unfold coeff cyclotomicPrimePow
   simp only [Array.getElem?_ofFn]
   by_cases hi : i < (p - 1) * p ^ (k - 1) + 1
-  · rw [dif_pos hi]
+  · rw [dite_eq_left hi]
     simp only [Option.getD_some]
     by_cases hm : i % p ^ (k - 1) = 0
-    · rw [if_pos hm, if_pos ⟨by omega, hm⟩]
-    · rw [if_neg hm, if_neg (fun h => hm h.2)]
-  · rw [dif_neg hi]
+    · rw [ite_eq_left hm, ite_eq_left ⟨by omega, hm⟩]
+    · rw [ite_eq_right hm, ite_eq_right (fun h => hm h.2)]
+  · rw [dite_eq_right hi]
     simp only [Option.getD_none]
-    rw [if_neg (fun h => hi (by omega))]
+    rw [ite_eq_right (fun h => hi (by omega))]
 
 omit [DecidableEq R] in
 theorem leadingCoeff_cyclotomicPrimePow (p k : ℕ) :
     (cyclotomicPrimePow R p k).leadingCoeff = 1 := by
   rw [leadingCoeff, natDegree, cyclotomicPrimePow_coeffs_size, Nat.add_sub_cancel,
     coeff_cyclotomicPrimePow]
-  rw [if_pos ⟨le_refl _, Nat.mul_mod_left _ _⟩]
+  rw [ite_eq_left ⟨le_refl _, Nat.mul_mod_left _ _⟩]
 
 omit [DecidableEq R] in
 /-- `Φ_{p^k}` is monic (as a Mathlib polynomial) for every `p, k`. -/

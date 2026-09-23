@@ -67,7 +67,7 @@ theorem isSemialgebraicFunctionC_transitionMap (i j : Fin (k + 1)) :
         = (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j := aeval_hcoord i j p
     have hoverlap : x ∈ chartOverlap i j
         ↔ aeval p (hcoord i j : MvPolynomial (Fin (k + k)) (Ri R)) ≠ 0 := by
-      rw [chartOverlap_eq, Set.mem_setOf_eq, hdenom]
+      rw [chartOverlap_eq, Set.mem_ofPred_eq, hdenom]
     -- the cleared-denominator value
     have hE : ∀ b : Fin k, aeval p (transPoly i j b : MvPolynomial (Fin (k + k)) (Ri R))
         = y b * (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j
@@ -75,13 +75,13 @@ theorem isSemialgebraicFunctionC_transitionMap (i j : Fin (k + 1)) :
       intro b
       rw [transPoly, map_sub, map_mul, aeval_X, aeval_hcoord, aeval_hcoord]
       rfl
-    rw [mem_complexFunGraph, Set.mem_inter_iff, Set.mem_compl_iff, Set.mem_setOf_eq,
+    rw [mem_complexFunGraph, Set.mem_inter_iff, Set.mem_compl_iff, Set.mem_ofPred_eq,
       Set.mem_iInter₂]
     constructor
     · rintro ⟨hxS, hfun⟩
       have hd : aeval p (hcoord i j) ≠ 0 := hoverlap.mp hxS
       refine ⟨hd, fun b _ => ?_⟩
-      rw [Set.mem_setOf_eq, hE b]
+      rw [Set.mem_ofPred_eq, hE b]
       have hyb : y b = (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) (j.succAbove b)
           / (Fin.insertNth i (1 : Ri R) x : Fin (k + 1) → Ri R) j := by
         have := congrFun hfun b
@@ -96,7 +96,7 @@ theorem isSemialgebraicFunctionC_transitionMap (i j : Fin (k + 1)) :
       funext b
       rw [transitionMap]
       have hEb := (hb b (Finset.mem_univ b))
-      rw [Set.mem_setOf_eq, hE b, sub_eq_zero] at hEb
+      rw [Set.mem_ofPred_eq, hE b, sub_eq_zero] at hEb
       rw [eq_div_iff hdne]
       exact hEb
   rw [hgraph]
@@ -132,7 +132,7 @@ set_option linter.unusedSectionVars false in
 theorem chartMap_rep_ne_zero_of_mem_overlap (i j : Fin (k + 1)) {x : Fin k → Ri R}
     (hx : x ∈ chartOverlap i j) : (chartMap i x).rep j ≠ 0 := by
   obtain ⟨c, hc, hrep⟩ := exists_rep_smul (Fin.insertNth i 1 x) (insertNth_one_ne_zero i x)
-  rw [chartOverlap_eq, Set.mem_setOf_eq] at hx
+  rw [chartOverlap_eq, Set.mem_ofPred_eq] at hx
   rw [chartMap, hrep, Pi.smul_apply, smul_eq_mul, ne_eq, mul_eq_zero, not_or]
   exact ⟨hc, hx⟩
 
@@ -149,7 +149,7 @@ theorem transitionMap_mapsTo (i j : Fin (k + 1)) :
     chartMap_chartInv j (chartMap i x) hj
   -- membership via the preimage definition of `chartOverlap`
   show chartMap j (chartInv j (chartMap i x)) ∈ chartSet j ∩ chartSet i
-  rw [hround, Set.mem_inter_iff, chartSet_eq, chartSet_eq, Set.mem_setOf_eq, Set.mem_setOf_eq]
+  rw [hround, Set.mem_inter_iff, chartSet_eq, chartSet_eq, Set.mem_ofPred_eq, Set.mem_ofPred_eq]
   exact ⟨hj, hi⟩
 
 set_option linter.unusedSectionVars false in

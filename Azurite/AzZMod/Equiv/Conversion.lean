@@ -10,7 +10,7 @@ viewing it in `ZMod m.toNat` is the same as casting its integer value. -/
     toZMod (ofAzInt m z) = (z.toInt : ZMod m.toNat) := by
   unfold ofAzInt AzInt.toInt
   by_cases h : z.sign = true
-  · rw [if_pos h, if_pos h, toZMod_ofAzNat]; norm_cast
-  · rw [if_neg h, if_neg h, toZMod_neg, toZMod_ofAzNat, Int.cast_neg, Int.cast_natCast]
+  · rw [ite_eq_left h, ite_eq_left h, toZMod_ofAzNat]; norm_cast
+  · rw [ite_eq_right h, ite_eq_right h, toZMod_neg, toZMod_ofAzNat, Int.cast_neg, Int.cast_natCast]
 
 end Azurite.AzZMod

@@ -72,7 +72,7 @@ theorem exists_isRoot_of_odd_algClosure {f : (algebraicClosure F R)[X]} (hf : Od
 over `F` form a real closed field (the real closure of `F` inside `R`). -/
 theorem isRealClosed_algebraicClosure (F R : Type*) [Field F] [Field R] [Algebra F R]
     [IsRealClosed R] : IsRealClosed (algebraicClosure F R) := by
-  haveI : IsSemireal (algebraicClosure F R) := by
+  have : IsSemireal (algebraicClosure F R) := by
     apply IsSemireal.of_not_isSumSq_neg_one
     intro h
     have hmap : ∀ {z : algebraicClosure F R}, IsSumSq z →

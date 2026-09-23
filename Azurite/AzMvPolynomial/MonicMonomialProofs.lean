@@ -83,10 +83,10 @@ private theorem parseFactorListWith_toCharsAuxWith
     (hhigh : ∀ j, (hj : j < n) → j ≥ k → exps[j]'hj = 0) :
     parseFactorListWith (n := n) F (toCharsAuxWith F m k) exps = some m.exponents := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     have h0 : exps.get ⟨k, hkn⟩ = 0 := hhigh k hkn (by omega)
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]
+    · rw [ite_eq_left he]
       exact parseFactorListWith_toCharsAuxWith m (k + 1) (by omega) exps
         (fun j hj hjk => by
           by_cases hjk' : j < k
@@ -95,9 +95,9 @@ private theorem parseFactorListWith_toCharsAuxWith
             subst hjk''
             rw [hhigh j hj (by omega)]; exact he.symm)
         (fun j hj hjk => hhigh j hj (by omega))
-    · rw [if_neg he]
+    · rw [ite_eq_right he]
       by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1, parseFactorListWith, parseFactorWith_exp1 F ⟨k, hkn⟩ exps h0]
+      · rw [ite_eq_left he1, parseFactorListWith, parseFactorWith_exp1 F ⟨k, hkn⟩ exps h0]
         exact parseFactorListWith_toCharsAuxWith m (k + 1) (by omega) _
           (fun j hj hjk => by
             by_cases hjk' : j < k
@@ -109,7 +109,7 @@ private theorem parseFactorListWith_toCharsAuxWith
           (fun j hj hjk => by
             rw [Vector.getElem_set_ne hkn hj (show k ≠ j by omega)]
             exact hhigh j hj (by omega))
-      · rw [if_neg he1, parseFactorListWith, parseFactorWith_expN F ⟨k, hkn⟩ _ (by omega) exps h0]
+      · rw [ite_eq_right he1, parseFactorListWith, parseFactorWith_expN F ⟨k, hkn⟩ _ (by omega) exps h0]
         exact parseFactorListWith_toCharsAuxWith m (k + 1) (by omega) _
           (fun j hj hjk => by
             by_cases hjk' : j < k
@@ -121,7 +121,7 @@ private theorem parseFactorListWith_toCharsAuxWith
           (fun j hj hjk => by
             rw [Vector.getElem_set_ne hkn hj (show k ≠ j by omega)]
             exact hhigh j hj (by omega))
-  · rw [toCharsAuxWith, dif_neg hkn]; simp only [parseFactorListWith]
+  · rw [toCharsAuxWith, dite_eq_right hkn]; simp only [parseFactorListWith]
     congr 1; exact Vector.ext (fun j hj => hlow j hj (by omega))
 termination_by n - k
 
@@ -130,22 +130,22 @@ termination_by n - k
 private theorem toCharsAuxWith_eq (m : MonicMonomial n ord) (k : ℕ) (hk : k ≤ n) :
     toCharsAuxWith F m k = ((List.finRange n).drop k).filterMap (mkFactorWith F m) := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn,
+  · rw [toCharsAuxWith, dite_eq_left hkn,
       List.drop_eq_getElem_cons (show k < (List.finRange n).length by simp; exact hkn),
       List.filterMap_cons]
     simp only [List.getElem_finRange, Fin.cast_mk]
     by_cases he : m.exponents[k]'hkn = 0
     · have hmk : mkFactorWith F m ⟨k, hkn⟩ = none := by simp [mkFactorWith, he]
-      rw [if_pos he, hmk]; dsimp; exact toCharsAuxWith_eq m (k + 1) (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
+      rw [ite_eq_left he, hmk]; dsimp; exact toCharsAuxWith_eq m (k + 1) (by omega)
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
       · have hmk : mkFactorWith F m ⟨k, hkn⟩ = some (pv.toChars (pv.ofFin ⟨k, hkn⟩)) := by
           simp [mkFactorWith, he1]
-        rw [if_pos he1, hmk]; dsimp; congr 1; exact toCharsAuxWith_eq m (k + 1) (by omega)
+        rw [ite_eq_left he1, hmk]; dsimp; congr 1; exact toCharsAuxWith_eq m (k + 1) (by omega)
       · have hmk : mkFactorWith F m ⟨k, hkn⟩ =
             some (pv.toChars (pv.ofFin ⟨k, hkn⟩) ++ '^' :: natToChars (m.exponents[k]'hkn)) := by
           simp [mkFactorWith, he, he1]
-        rw [if_neg he1, hmk]; dsimp; congr 1; exact toCharsAuxWith_eq m (k + 1) (by omega)
-  · rw [toCharsAuxWith, dif_neg hkn, List.drop_eq_nil_of_le (by simp; omega)]; simp
+        rw [ite_eq_right he1, hmk]; dsimp; congr 1; exact toCharsAuxWith_eq m (k + 1) (by omega)
+  · rw [toCharsAuxWith, dite_eq_right hkn, List.drop_eq_nil_of_le (by simp; omega)]; simp
 termination_by n - k
 
 private theorem toCharsWith_eq_intercalate (m : MonicMonomial n ord) :
@@ -157,14 +157,14 @@ private theorem toCharsWith_eq_intercalate (m : MonicMonomial n ord) :
 private theorem star_notin_toCharsAuxWith (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ factor ∈ toCharsAuxWith F m k, '*' ∉ factor := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; exact star_notin_toCharsAuxWith m (k + 1) (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+    · rw [ite_eq_left he]; exact star_notin_toCharsAuxWith m (k + 1) (by omega)
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · exact fun h => pv.toChars_no_syntax _ '*' h (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
         · exact star_notin_toCharsAuxWith m (k + 1) (by omega) f hf
-      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+      · rw [ite_eq_right he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · intro h
           rcases List.mem_append.mp h with h | h
           · exact pv.toChars_no_syntax _ '*' h (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
@@ -172,49 +172,49 @@ private theorem star_notin_toCharsAuxWith (m : MonicMonomial n ord) (k : ℕ) (_
             | inl h => exact absurd h (by decide)
             | inr h => exact absurd h (not_mem_natToChars_of_not_digit '*' (by decide) _)
         · exact star_notin_toCharsAuxWith m (k + 1) (by omega) f hf
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ h; simp at h
 termination_by n - k
 
 private theorem toCharsAuxWith_nil_of_zero (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n)
     (hall : ∀ j, (hj : j < n) → j ≥ k → m.exponents[j]'hj = 0) :
     toCharsAuxWith F m k = [] := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn, if_pos (hall k hkn (by omega))]
+  · rw [toCharsAuxWith, dite_eq_left hkn, ite_eq_left (hall k hkn (by omega))]
     exact toCharsAuxWith_nil_of_zero m (k + 1) (by omega) (fun j hj hjk => hall j hj (by omega))
-  · rw [toCharsAuxWith, dif_neg hkn]
+  · rw [toCharsAuxWith, dite_eq_right hkn]
 termination_by n - k
 
 private theorem toCharsAuxWith_nil_imp (m : MonicMonomial n ord) (k : ℕ) (hk : k ≤ n) :
     toCharsAuxWith F m k = [] → ∀ j, (hj : j < n) → j ≥ k → m.exponents[j]'hj = 0 := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; intro h j hj hjk
+    · rw [ite_eq_left he]; intro h j hj hjk
       by_cases hjk' : j = k
       · subst hjk'; exact he
       · exact toCharsAuxWith_nil_imp m (k + 1) (by omega) h j hj (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro h; simp at h
-      · rw [if_neg he1]; intro h; simp at h
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ j hj hjk; omega
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro h; simp at h
+      · rw [ite_eq_right he1]; intro h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ j hj hjk; omega
 termination_by n - k
 
 private theorem toCharsAuxWith_factors_nonempty (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ f ∈ toCharsAuxWith F m k, f ≠ [] := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; exact toCharsAuxWith_factors_nonempty m (k + 1) (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+    · rw [ite_eq_left he]; exact toCharsAuxWith_factors_nonempty m (k + 1) (by omega)
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · exact pv.toChars_nonempty _
         · exact toCharsAuxWith_factors_nonempty m (k + 1) (by omega) f hf
-      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+      · rw [ite_eq_right he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · intro h; cases hl : pv.toChars (pv.ofFin ⟨k, hkn⟩) with
           | nil => exact absurd hl (pv.toChars_nonempty _)
           | cons => simp at h
         · exact toCharsAuxWith_factors_nonempty m (k + 1) (by omega) f hf
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ h; simp at h
 termination_by n - k
 
 /-! ### Nonemptiness of `toCharsWith` -/
@@ -241,23 +241,23 @@ theorem toCharsWith_ne_nil (m : MonicMonomial n ord) (hm : m ≠ 1) :
 private theorem toCharsAuxWith_factors_head_not_syntax (m : MonicMonomial n ord) (k : ℕ) :
     ∀ f ∈ toCharsAuxWith F m k, ∀ hf : f ≠ [], ¬ Azurite.isPolySyntaxChar (f.head hf) := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; exact toCharsAuxWith_factors_head_not_syntax m (k + 1)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro f hf hfne
+    · rw [ite_eq_left he]; exact toCharsAuxWith_factors_head_not_syntax m (k + 1)
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro f hf hfne
         simp only [List.mem_cons] at hf
         rcases hf with rfl | hf
         · exact pv.toChars_no_syntax _ _ (List.head_mem hfne)
         · exact toCharsAuxWith_factors_head_not_syntax m (k + 1) f hf hfne
-      · rw [if_neg he1]; intro f hf hfne
+      · rw [ite_eq_right he1]; intro f hf hfne
         simp only [List.mem_cons] at hf
         rcases hf with rfl | hf
         · have hne' := pv.toChars_nonempty (pv.ofFin ⟨k, hkn⟩)
           rw [List.head_append_of_ne_nil hne']
           exact pv.toChars_no_syntax _ _ (List.head_mem hne')
         · exact toCharsAuxWith_factors_head_not_syntax m (k + 1) f hf hfne
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ h; simp at h
 termination_by n - k
 
 theorem toCharsWith_head_not_syntax (m : MonicMonomial n ord) (hm : m ≠ 1) :
@@ -320,15 +320,15 @@ private lemma not_mem_intercalate {c : α} [BEq α] {sep : List α} {parts : Lis
 private theorem plus_minus_notin_toCharsAuxWith (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ factor ∈ toCharsAuxWith F m k, '+' ∉ factor ∧ '-' ∉ factor := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]; exact plus_minus_notin_toCharsAuxWith m (k + 1) (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+    · rw [ite_eq_left he]; exact plus_minus_notin_toCharsAuxWith m (k + 1) (by omega)
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · exact ⟨fun h => pv.toChars_no_syntax _ '+' h (Or.inr (Or.inl rfl)),
                  fun h => pv.toChars_no_syntax _ '-' h (Or.inr (Or.inr (Or.inl rfl)))⟩
         · exact plus_minus_notin_toCharsAuxWith m (k + 1) (by omega) f hf
-      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+      · rw [ite_eq_right he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · constructor
           · intro h; rcases List.mem_append.mp h with h | h
             · exact pv.toChars_no_syntax _ '+' h (Or.inr (Or.inl rfl))
@@ -341,7 +341,7 @@ private theorem plus_minus_notin_toCharsAuxWith (m : MonicMonomial n ord) (k : �
               | inl h => exact absurd h (by decide)
               | inr h => exact absurd h (not_mem_natToChars_of_not_digit '-' (by decide) _)
         · exact plus_minus_notin_toCharsAuxWith m (k + 1) (by omega) f hf
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ h; simp at h
 termination_by n - k
 
 theorem plus_notin_toCharsWith (m : MonicMonomial n ord) : '+' ∉ m.toCharsWith F := by
@@ -363,22 +363,22 @@ private theorem char_notin_toCharsAuxWith (c : Char)
     (m : MonicMonomial n ord) (k : ℕ) (_hk : k ≤ n) :
     ∀ factor ∈ toCharsAuxWith F m k, c ∉ factor := by
   by_cases hkn : k < n
-  · rw [toCharsAuxWith, dif_pos hkn]
+  · rw [toCharsAuxWith, dite_eq_left hkn]
     by_cases he : m.exponents[k]'hkn = 0
-    · rw [if_pos he]
+    · rw [ite_eq_left he]
       exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega)
-    · rw [if_neg he]; by_cases he1 : m.exponents[k]'hkn = 1
-      · rw [if_pos he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+    · rw [ite_eq_right he]; by_cases he1 : m.exponents[k]'hkn = 1
+      · rw [ite_eq_left he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · exact hvar _
         · exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega) f hf
-      · rw [if_neg he1]; intro f hf; simp at hf; rcases hf with rfl | hf
+      · rw [ite_eq_right he1]; intro f hf; simp at hf; rcases hf with rfl | hf
         · intro h; rcases List.mem_append.mp h with h | h
           · exact hvar _ h
           · cases List.mem_cons.mp h with
             | inl h => exact hnot_caret h
             | inr h => exact hdig _ h
         · exact char_notin_toCharsAuxWith c hvar hdig hnot_caret m (k + 1) (by omega) f hf
-  · rw [toCharsAuxWith, dif_neg hkn]; intro _ h; simp at h
+  · rw [toCharsAuxWith, dite_eq_right hkn]; intro _ h; simp at h
 termination_by n - k
 
 /-- Generic exclusion: a character `c` that doesn't occur in any variable name,

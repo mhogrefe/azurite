@@ -75,7 +75,7 @@ private theorem gs_mem_span (v : Fin n → (Fin n → R)) (j : Fin n) :
   apply wellFounded_lt.induction j
   intro j ih
   rw [gs_def v j]
-  refine Submodule.sub_mem _ (subset_span (mem_image_of_mem _ (Set.mem_setOf_eq.mpr le_rfl)))
+  refine Submodule.sub_mem _ (subset_span (mem_image_of_mem _ (Set.mem_ofPred_eq.mpr le_rfl)))
     (Submodule.sum_mem _ fun k hk => ?_)
   have hkj : k < j := Finset.mem_Iio.1 hk
   refine smul_mem _ _ ?_
@@ -112,7 +112,7 @@ private theorem gs_sub_mem_span_gs (v : Fin n → (Fin n → R)) (i : Fin n) :
   rw [this]
   refine Submodule.neg_mem _ (Submodule.sum_mem _ fun k hk => ?_)
   have hki : k < i := Finset.mem_Iio.1 hk
-  exact smul_mem _ _ (subset_span (mem_image_of_mem _ (Set.mem_setOf_eq.mpr hki)))
+  exact smul_mem _ _ (subset_span (mem_image_of_mem _ (Set.mem_ofPred_eq.mpr hki)))
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- Gram–Schmidt produces nonzero vectors from independent input. -/

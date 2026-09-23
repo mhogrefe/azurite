@@ -35,7 +35,7 @@ open Finset
 theorem pow_dvd_of_pow_modEq_one_odd {p x j k D : ℕ} (hp : p.Prime) (hp2 : p ≠ 2) (hx1 : 1 < x)
     (hxp : x ≡ 1 [MOD p]) (hD : padicValNat p (x - 1) + k ≤ D) (hj : x ^ j ≡ 1 [MOD p ^ D]) :
     p ^ k ∣ j := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rcases Nat.eq_zero_or_pos j with hj0 | hj0
   · rw [hj0]
     exact dvd_zero _
@@ -63,7 +63,7 @@ theorem pow_dvd_of_pow_modEq_one_odd {p x j k D : ℕ} (hp : p.Prime) (hp2 : p �
 theorem pow_dvd_of_pow_modEq_one_two {x j k D : ℕ} (hx1 : 1 < x) (hxodd : x % 2 = 1)
     (hD : padicValNat 2 (x + 1) + padicValNat 2 (x - 1) + k ≤ D) (hj : x ^ j ≡ 1 [MOD 2 ^ D]) :
     2 ^ k ∣ j := by
-  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   rcases Nat.eq_zero_or_pos j with hj0 | hj0
   · rw [hj0]
     exact dvd_zero _

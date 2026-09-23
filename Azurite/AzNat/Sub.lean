@@ -241,8 +241,8 @@ theorem subGeqLimbs_size (a b : Array UInt64) (loA lenA loB lenB : Nat)
     (subGeqLimbs a b loA lenA loB lenB hA hB h_ge h_posA h_posB).1.size = a.size := by
   unfold subGeqLimbs
   by_cases h : (subSameLengthLimbs a b loA loB lenB (by omega) hB).2 = true
-  · rw [if_pos h, subLimb_size, subSameLengthLimbs_size]
-  · rw [if_neg h, subSameLengthLimbs_size]
+  · rw [ite_eq_left h, subLimb_size, subSameLengthLimbs_size]
+  · rw [ite_eq_right h, subSameLengthLimbs_size]
 
 /-- `subGeqLimbs` preserves positions outside `[loA, loA + lenA)`. -/
 theorem subGeqLimbs_get_outside (a b : Array UInt64) (loA lenA loB lenB : Nat)

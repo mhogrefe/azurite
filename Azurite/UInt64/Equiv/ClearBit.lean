@@ -6,7 +6,7 @@ namespace UInt64
 theorem toNat_clearBit (u : UInt64) (i : Nat) (hi : i < 64) :
     (u.clearBit i).toNat = u.toNat &&& (2 ^ 64 - 1 - 2 ^ i) := by
   unfold clearBit
-  rw [if_pos hi]
+  rw [ite_eq_left hi]
   rw [_root_.UInt64.toNat_and, _root_.UInt64.toNat_not, _root_.UInt64.toNat_shiftLeft,
       show ((1 : UInt64).toNat = 1) from rfl]
   have hi_eq : (_root_.UInt64.ofNat i).toNat = i := by
@@ -21,7 +21,7 @@ theorem toNat_clearBit (u : UInt64) (i : Nat) (hi : i < 64) :
 
 theorem clearBit_of_ge (u : UInt64) (i : Nat) (hi : 64 ≤ i) : u.clearBit i = u := by
   unfold clearBit
-  rw [if_neg (by omega)]
+  rw [ite_eq_right (by omega)]
 
 private lemma testBit_compl64 (i j : Nat) (hi : i < 64) (hj : j < 64) :
     Nat.testBit (2 ^ 64 - 1 - 2 ^ i) j = !decide (i = j) := by

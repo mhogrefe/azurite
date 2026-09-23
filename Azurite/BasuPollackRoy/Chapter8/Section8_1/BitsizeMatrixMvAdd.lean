@@ -43,7 +43,7 @@ theorem Matrix.bitsize_coeff_mvAdd_le {σ m n : Type _}
     (hN : ∀ i j k, ((N i j).coeff k).natAbs.size ≤ τ) :
     ∀ i j k, (((M + N) i j).coeff k).natAbs.size ≤ τ + 1 := by
   intro i j k
-  rw [_root_.Matrix.add_apply, MvPolynomial.coeff_add]
+  rw [_root_.Matrix.add_apply, AddMonoidAlgebra.coeff_add, Finsupp.add_apply]
   exact Int.size_add_le _ _ τ (hM i j k) (hN i j k)
 
 end Azurite.BPR

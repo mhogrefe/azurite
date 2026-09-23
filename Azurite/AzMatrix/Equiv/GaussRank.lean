@@ -38,10 +38,10 @@ theorem AzMatrix.toFn_swapRows_eq_submatrix
         else if i = i₂ then M.toFn i₁ j
         else M.toFn i j) = M.toFn ((Equiv.swap i₁ i₂) i) j
   by_cases h₁ : i = i₁
-  · rw [if_pos h₁, h₁, Equiv.swap_apply_left]
+  · rw [ite_eq_left h₁, h₁, Equiv.swap_apply_left]
   · by_cases h₂ : i = i₂
-    · rw [if_neg h₁, if_pos h₂, h₂, Equiv.swap_apply_right]
-    · rw [if_neg h₁, if_neg h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
+    · rw [ite_eq_right h₁, ite_eq_left h₂, h₂, Equiv.swap_apply_right]
+    · rw [ite_eq_right h₁, ite_eq_right h₂, Equiv.swap_apply_of_ne_of_ne h₁ h₂]
 
 /-! ### Rank invariance under row/column swaps -/
 
@@ -77,14 +77,14 @@ def AzMatrix.elimMatrix (M : AzMatrix K n n) (k : Fin n) :
 theorem AzMatrix.elimMatrix_apply_diag (M : AzMatrix K n n) (k : Fin n)
     (i : Fin n) : M.elimMatrix k i i = 1 := by
   unfold AzMatrix.elimMatrix
-  rw [if_pos rfl]
+  rw [ite_eq_left rfl]
 
 theorem AzMatrix.elimMatrix_apply_of_ne (M : AzMatrix K n n) (k : Fin n)
     (i l : Fin n) (h : i ≠ l) :
     M.elimMatrix k i l =
       (if k.val < i.val ∧ l = k then -(M.toFn i k / M.toFn k k) else 0) := by
   unfold AzMatrix.elimMatrix
-  rw [if_neg h]
+  rw [ite_eq_right h]
 
 /-! ### `det` of the elimination matrix is `1` -/
 
@@ -106,32 +106,32 @@ theorem AzMatrix.det_elimMatrix (M : AzMatrix K n n) (k : Fin n) :
     rw [Matrix.one_apply, Matrix.one_apply]
     by_cases h_ij : i = j
     · -- Diagonal of A; RHS = 1 + c i * (1 k j)
-      rw [if_pos h_ij, if_pos h_ij]
+      rw [ite_eq_left h_ij, ite_eq_left h_ij]
       by_cases h_jk : j = k
       · -- j = k, so 1 k j = 1; RHS = 1 + c i. With i = j = k, c i = c k = 0.
-        rw [if_pos h_jk.symm]
+        rw [ite_eq_left h_jk.symm]
         subst h_ij; subst h_jk
-        rw [if_neg (Nat.lt_irrefl _)]
+        rw [ite_eq_right (Nat.lt_irrefl _)]
         ring
-      · rw [if_neg (Ne.symm h_jk)]
+      · rw [ite_eq_right (Ne.symm h_jk)]
         ring
     · -- Off-diagonal of A: A i j = if (k < i ∧ j = k) then c_term else 0
-      rw [if_neg h_ij, if_neg h_ij]
+      rw [ite_eq_right h_ij, ite_eq_right h_ij]
       by_cases h_jk : j = k
       · -- j = k, so 1 k j = 1, RHS = 0 + c i * 1 = c i
         have h_kj : k = j := h_jk.symm
-        rw [if_pos h_kj]
+        rw [ite_eq_left h_kj]
         by_cases h_ki : k.val < i.val
-        · rw [if_pos (And.intro h_ki h_jk), if_pos h_ki]
+        · rw [ite_eq_left (And.intro h_ki h_jk), ite_eq_left h_ki]
           ring
         · have h_neg : ¬ (k.val < i.val ∧ j = k) := fun ⟨h, _⟩ => h_ki h
-          rw [if_neg h_neg, if_neg h_ki]
+          rw [ite_eq_right h_neg, ite_eq_right h_ki]
           ring
       · -- j ≠ k, so 1 k j = 0, RHS = 0 + c i * 0 = 0
         have h_kj_ne : k ≠ j := fun h => h_jk h.symm
-        rw [if_neg h_kj_ne]
+        rw [ite_eq_right h_kj_ne]
         have h_neg : ¬ (k.val < i.val ∧ j = k) := fun ⟨_, h⟩ => h_jk h
-        rw [if_neg h_neg]
+        rw [ite_eq_right h_neg]
         ring
 
 theorem AzMatrix.isUnit_det_elimMatrix (M : AzMatrix K n n) (k : Fin n) :
@@ -158,7 +158,7 @@ theorem AzMatrix.toFn_eliminateBelow_eq_elimMatrix_mul
   -- contribution `(-M[i][k]/M[k][k]) * M[k][j]`. All other terms vanish.
   by_cases h_ile : i.val ≤ k.val
   · -- i ≤ k: only the diagonal term contributes (since `k < i` is false).
-    rw [if_pos h_ile]
+    rw [ite_eq_left h_ile]
     rw [Finset.sum_eq_single i]
     · rw [M.elimMatrix_apply_diag k i, one_mul]
     · intro l _ h_li
@@ -166,11 +166,11 @@ theorem AzMatrix.toFn_eliminateBelow_eq_elimMatrix_mul
       have h_neg : ¬ (k.val < i.val ∧ l = k) := by
         intro ⟨h, _⟩
         omega
-      rw [if_neg h_neg, zero_mul]
+      rw [ite_eq_right h_neg, zero_mul]
     · intro h
       exact absurd (Finset.mem_univ _) h
   · -- i > k: diagonal `M[i][j]` plus column-`k` term `c * M[k][j]`.
-    rw [if_neg h_ile]
+    rw [ite_eq_right h_ile]
     have h_ki : k.val < i.val := by omega
     have h_ik_ne : i ≠ k := by
       intro h; rw [h] at h_ki; exact Nat.lt_irrefl _ h_ki
@@ -186,7 +186,7 @@ theorem AzMatrix.toFn_eliminateBelow_eq_elimMatrix_mul
       rw [M.elimMatrix_apply_of_ne k i k h_ik_ne]
       have h_elim_k : (if k.val < i.val ∧ k = k then
             -(M.toFn i k / M.toFn k k) else 0) =
-          -(M.toFn i k / M.toFn k k) := if_pos ⟨h_ki, rfl⟩
+          -(M.toFn i k / M.toFn k k) := ite_eq_left ⟨h_ki, rfl⟩
       rw [h_elim_k]
       have h_rest :
           ∑ l ∈ (Finset.univ.erase i).erase k,
@@ -197,19 +197,19 @@ theorem AzMatrix.toFn_eliminateBelow_eq_elimMatrix_mul
         obtain ⟨h_lk, h_li, _⟩ := h_l
         rw [M.elimMatrix_apply_of_ne k i l (Ne.symm h_li)]
         have h_neg : ¬ (k.val < i.val ∧ l = k) := fun ⟨_, h⟩ => h_lk h
-        rw [if_neg h_neg, zero_mul]
+        rw [ite_eq_right h_neg, zero_mul]
       rw [h_rest, add_zero]
     rw [h_sum]
     -- Goal: (case-split on j) = M[i][j] + (-M[i][k]/M[k][k]) * M[k][j].
     by_cases h_jk_lt : j.val < k.val
-    · rw [if_pos h_jk_lt]
+    · rw [ite_eq_left h_jk_lt]
       rw [h_row j h_jk_lt]; ring
-    · rw [if_neg h_jk_lt]
+    · rw [ite_eq_right h_jk_lt]
       by_cases h_jk : j = k
-      · rw [if_pos h_jk]
+      · rw [ite_eq_left h_jk]
         subst h_jk
         field_simp; ring
-      · rw [if_neg h_jk]; ring
+      · rw [ite_eq_right h_jk]; ring
 
 /-! ### Rank invariance under `eliminateBelow` -/
 
@@ -259,7 +259,7 @@ theorem AzMatrix.det_leadingBlock_ne_zero
     (h_partial : M.PartialZero start)
     (h_diag : ∀ i : Fin n, i.val < start → M.toFn i i ≠ 0) :
     Matrix.det (M.leadingBlock start h) ≠ 0 := by
-  rw [Matrix.det_of_upperTriangular
+  rw [Matrix.det_of_isUpperTriangular
         (M.leadingBlock_blockTriangular start h h_partial)]
   apply Finset.prod_ne_zero_iff.mpr
   intro i _
@@ -375,7 +375,7 @@ theorem AzMatrix.findFirstNonzeroAux_eq_none
       M.findPivotAux_eq_none ⟨i, h_lt⟩ c_start h_match j' h_j'_ge
     have h_rec_eq : M.findFirstNonzeroAux (i + 1) c_start = none := by
       rw [AzMatrix.findFirstNonzeroAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, h_match] at h_rec
+      simp only [dite_eq_left h_lt, h_match] at h_rec
       exact h_rec
     by_cases h_i'_eq : i'.val = i
     · have : i' = ⟨i, h_lt⟩ := Fin.ext h_i'_eq
@@ -406,7 +406,7 @@ theorem AzMatrix.findFirstNonzeroAux_some_mem
   · -- case: i < n, findPivotAux returns `some j`, output is `some (⟨i, _⟩, j)`
     intro i h_lt j h_match i' j' h_rec
     rw [AzMatrix.findFirstNonzeroAux.eq_def] at h_rec
-    simp only [dif_pos h_lt, h_match, Option.some.injEq, Prod.mk.injEq] at h_rec
+    simp only [dite_eq_left h_lt, h_match, Option.some.injEq, Prod.mk.injEq] at h_rec
     obtain ⟨h_i', h_j'⟩ := h_rec
     refine ⟨?_, ?_, ?_⟩
     · rw [← h_i']
@@ -418,7 +418,7 @@ theorem AzMatrix.findFirstNonzeroAux_some_mem
     intro i h_lt h_match ih i' j' h_rec
     have h_rec_eq : M.findFirstNonzeroAux (i + 1) c_start = some (i', j') := by
       rw [AzMatrix.findFirstNonzeroAux.eq_def] at h_rec
-      simp only [dif_pos h_lt, h_match] at h_rec
+      simp only [dite_eq_left h_lt, h_match] at h_rec
       exact h_rec
     obtain ⟨h_a, h_b, h_c⟩ := ih i' j' h_rec_eq
     exact ⟨by omega, h_b, h_c⟩
@@ -472,7 +472,7 @@ theorem AzMatrix.swapRows_preservesPartialZero
   rw [AzMatrix.toFn_swapRows]
   by_cases h_i_kp : i = ⟨start, h_lt⟩
   · -- i = kp; new row is old row iₚ. Apply PartialZero at iₚ.
-    rw [if_pos h_i_kp]
+    rw [ite_eq_left h_i_kp]
     apply h_inv iₚ j
     · -- j.val < iₚ.val: j.val < start ≤ iₚ.val.
       have h_j_lt : j.val < start := h_bnd
@@ -480,10 +480,10 @@ theorem AzMatrix.swapRows_preservesPartialZero
     · exact h_bnd
   · by_cases h_i_iₚ : i = iₚ
     · -- i = iₚ; new row is old row kp. Apply PartialZero at kp.
-      rw [if_neg h_i_kp, if_pos h_i_iₚ]
+      rw [ite_eq_right h_i_kp, ite_eq_left h_i_iₚ]
       apply h_inv ⟨start, h_lt⟩ j h_bnd h_bnd
     · -- Other rows are unchanged.
-      rw [if_neg h_i_kp, if_neg h_i_iₚ]
+      rw [ite_eq_right h_i_kp, ite_eq_right h_i_iₚ]
       exact h_inv i j h_lt_ij h_bnd
 
 /-! ### Main correctness theorem: `gaussRank = Matrix.rank`
@@ -508,7 +508,7 @@ theorem AzMatrix.swapRows_preservesDiag
     intro h; rw [h] at h_i_lt; exact Nat.lt_irrefl _ h_i_lt
   have h_i_neq_iₚ : i ≠ iₚ := by
     intro h; rw [h] at h_i_lt; omega
-  rw [if_neg h_i_neq_kp, if_neg h_i_neq_iₚ]
+  rw [ite_eq_right h_i_neq_kp, ite_eq_right h_i_neq_iₚ]
 
 theorem AzMatrix.swapCols_preservesDiag
     (M : AzMatrix K n n) (kp : Fin n) (jₚ : Fin n)
@@ -520,14 +520,14 @@ theorem AzMatrix.swapCols_preservesDiag
     intro h; rw [h] at h_i_lt; exact Nat.lt_irrefl _ h_i_lt
   have h_i_neq_jₚ : i ≠ jₚ := by
     intro h; rw [h] at h_i_lt; omega
-  rw [if_neg h_i_neq_kp, if_neg h_i_neq_jₚ]
+  rw [ite_eq_right h_i_neq_kp, ite_eq_right h_i_neq_jₚ]
 
 theorem AzMatrix.eliminateBelow_preservesDiag
     (M : AzMatrix K n n) (kp : Fin n) (i : Fin n) (h_i_lt : i.val < kp.val) :
     (M.eliminateBelow kp).toFn i i = M.toFn i i := by
   rw [AzMatrix.toFn_eliminateBelow]
   have h_i_le_kp : i.val ≤ kp.val := Nat.le_of_lt h_i_lt
-  rw [if_pos h_i_le_kp]
+  rw [ite_eq_left h_i_le_kp]
 
 /-! ### Main correctness: inductive proof -/
 
@@ -568,27 +568,27 @@ theorem AzMatrix.gaussRankAux_eq_rank
             Matrix.rank (Matrix.of M_row.toFn) =
               Matrix.rank (Matrix.of M.toFn) := by
           by_cases h_eq : i_p = kp
-          · rw [hM_row, if_pos h_eq]
-          · rw [hM_row, if_neg h_eq]; exact M.rank_swapRows kp i_p
+          · rw [hM_row, ite_eq_left h_eq]
+          · rw [hM_row, ite_eq_right h_eq]; exact M.rank_swapRows kp i_p
         have h_rank_swapped :
             Matrix.rank (Matrix.of M_swapped.toFn) =
               Matrix.rank (Matrix.of M.toFn) := by
           by_cases h_eq : j_p = kp
-          · rw [hM_swapped, if_pos h_eq]; exact h_rank_row
-          · rw [hM_swapped, if_neg h_eq]
+          · rw [hM_swapped, ite_eq_left h_eq]; exact h_rank_row
+          · rw [hM_swapped, ite_eq_right h_eq]
             rw [M_row.rank_swapCols kp j_p]
             exact h_rank_row
         -- PartialZero is preserved by both swaps (since i_p, j_p ≥ start).
         have h_partial_row : M_row.PartialZero start := by
           by_cases h_eq : i_p = kp
-          · rw [hM_row, if_pos h_eq]; exact h_partial
-          · rw [hM_row, if_neg h_eq]
+          · rw [hM_row, ite_eq_left h_eq]; exact h_partial
+          · rw [hM_row, ite_eq_right h_eq]
             exact M.swapRows_preservesPartialZero start (by omega) h_partial
               i_p h_i_ge
         have h_partial_swapped : M_swapped.PartialZero start := by
           by_cases h_eq : j_p = kp
-          · rw [hM_swapped, if_pos h_eq]; exact h_partial_row
-          · rw [hM_swapped, if_neg h_eq]
+          · rw [hM_swapped, ite_eq_left h_eq]; exact h_partial_row
+          · rw [hM_swapped, ite_eq_right h_eq]
             exact M_row.swapCols_preservesPartialZero start (by omega)
               h_partial_row j_p h_j_ge
         -- The new diagonal pivot: M_swapped[kp][kp] = M[i_p][j_p] ≠ 0.
@@ -597,19 +597,19 @@ theorem AzMatrix.gaussRankAux_eq_rank
           show M_swapped.toFn kp kp = M.toFn i_p j_p
           by_cases h_jp_kp : j_p = kp
           · -- No column swap.
-            rw [hM_swapped, if_pos h_jp_kp]
+            rw [hM_swapped, ite_eq_left h_jp_kp]
             -- M_swapped = M_row; check M_row[kp][kp].
             by_cases h_ip_kp : i_p = kp
-            · rw [hM_row, if_pos h_ip_kp, h_ip_kp, h_jp_kp]
-            · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-              rw [if_pos rfl, h_jp_kp]
+            · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp, h_jp_kp]
+            · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+              rw [ite_eq_left rfl, h_jp_kp]
           · -- Column swap applies.
-            rw [hM_swapped, if_neg h_jp_kp, AzMatrix.toFn_swapCols]
-            rw [if_pos rfl]
+            rw [hM_swapped, ite_eq_right h_jp_kp, AzMatrix.toFn_swapCols]
+            rw [ite_eq_left rfl]
             by_cases h_ip_kp : i_p = kp
-            · rw [hM_row, if_pos h_ip_kp, h_ip_kp]
-            · rw [hM_row, if_neg h_ip_kp, AzMatrix.toFn_swapRows]
-              rw [if_pos rfl]
+            · rw [hM_row, ite_eq_left h_ip_kp, h_ip_kp]
+            · rw [hM_row, ite_eq_right h_ip_kp, AzMatrix.toFn_swapRows]
+              rw [ite_eq_left rfl]
         have h_M_swapped_kp_kp_nz : M_swapped.toFn kp kp ≠ 0 := by
           rw [h_M_swapped_kp_kp]; exact h_pivot_nz
         -- Diagonal of M_swapped: for i.val < start, M_swapped[i][i] = M[i][i].
@@ -618,14 +618,14 @@ theorem AzMatrix.gaussRankAux_eq_rank
           intro i h_i_lt
           have h_row_eq : M_row.toFn i i = M.toFn i i := by
             by_cases h_eq : i_p = kp
-            · rw [hM_row, if_pos h_eq]
-            · rw [hM_row, if_neg h_eq]
+            · rw [hM_row, ite_eq_left h_eq]
+            · rw [hM_row, ite_eq_right h_eq]
               exact M.swapRows_preservesDiag kp i_p h_i_ge i
                 (by show i.val < kp.val; exact h_i_lt)
           have h_swapped_eq : M_swapped.toFn i i = M_row.toFn i i := by
             by_cases h_eq : j_p = kp
-            · rw [hM_swapped, if_pos h_eq]
-            · rw [hM_swapped, if_neg h_eq]
+            · rw [hM_swapped, ite_eq_left h_eq]
+            · rw [hM_swapped, ite_eq_right h_eq]
               exact M_row.swapCols_preservesDiag kp j_p h_j_ge i
                 (by show i.val < kp.val; exact h_i_lt)
           rw [h_swapped_eq, h_row_eq]
@@ -647,7 +647,7 @@ theorem AzMatrix.gaussRankAux_eq_rank
         -- Diagonal of M_new at index start = kp.val.
         have h_M_new_kp_kp : M_new.toFn kp kp = M_swapped.toFn kp kp := by
           rw [hM_new, AzMatrix.toFn_eliminateBelow]
-          rw [if_pos (le_refl _)]
+          rw [ite_eq_left (le_refl _)]
         have h_diag_new : ∀ i : Fin n, i.val < start + 1 →
             M_new.toFn i i ≠ 0 := by
           intro i h_i_lt

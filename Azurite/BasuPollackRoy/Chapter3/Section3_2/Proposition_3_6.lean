@@ -130,7 +130,7 @@ theorem isSemialgebraicallyConnected_interval {I : Set R} (hI : I.OrdConnected) 
     IsSemialgebraicallyConnected {v : Fin 1 → R | v 0 ∈ I} := by
   refine isSemialgebraicallyConnected_of_ordConnected_sect ?_
   have hpre : constPt ⁻¹' {v : Fin 1 → R | v 0 ∈ I} = I := by
-    ext t; simp only [Set.mem_preimage, Set.mem_setOf_eq, constPt]
+    ext t; simp only [Set.mem_preimage, Set.mem_ofPred_eq, constPt]
   rw [hpre]; exact hI
 
 end Azurite.BPR

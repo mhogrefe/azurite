@@ -231,7 +231,7 @@ theorem isSemialgebraicSetC_packR_ne_zero (a : Fin m) :
             aeval u (X (Fin.natAdd 1 (finProdFinEquiv (a, j)))
               : MvPolynomial (Fin (1 + m * (k + 1))) (Ri R)) = 0})ᶜ := by
     ext u
-    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, Set.mem_iInter, Finset.mem_univ,
+    simp only [Set.mem_ofPred_eq, Set.mem_compl_iff, Set.mem_iInter, Finset.mem_univ,
       forall_true_left, aeval_X, ne_eq, not_forall]
     constructor
     · intro hne
@@ -261,7 +261,7 @@ theorem isSemialgebraicSetC_minor_ne (a b : Fin m) :
                   * X (Fin.natAdd 1 (finProdFinEquiv (b, jl.1)))
               : MvPolynomial (Fin (1 + m * (k + 1))) (Ri R)) = 0})ᶜ := by
     ext u
-    simp only [Set.mem_setOf_eq, Set.mem_compl_iff, Set.mem_iInter, Finset.mem_univ,
+    simp only [Set.mem_ofPred_eq, Set.mem_compl_iff, Set.mem_iInter, Finset.mem_univ,
       forall_true_left, map_sub, map_mul, aeval_X, Prod.forall, not_forall]
     constructor
     · rintro ⟨j, l, hjl⟩
@@ -290,7 +290,7 @@ theorem isSemialgebraicSetC_jointZero (P : Fin k → MvPolynomial (Fin (k + 1)) 
           {u : Fin (1 + m * (k + 1)) → Ri R |
             aeval u (bind₁ (jointSubstMap m i a) (homotopyJointPoly P d i')) = 0} := by
     ext u
-    simp only [Set.mem_setOf_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left]
+    simp only [Set.mem_ofPred_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left]
   rw [heq]
   exact IsSemialgebraicSetC.biInter_finset _
     (fun i' _ => isSemialgebraicSetC_complexPolyZero _)
@@ -379,7 +379,7 @@ theorem isSemialgebraicSetC_predC (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri 
         ∩ (⋂ a ∈ (Finset.univ : Finset (Fin m)),
             {u | ∀ i' : Fin k, aeval u (bind₁ (jointSubstMap m i a) (homotopyJointPoly P d i')) = 0}) := by
     ext u
-    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_iInter, Finset.mem_univ,
+    simp only [Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_iInter, Finset.mem_univ,
       forall_true_left, Finset.mem_filter, Prod.forall, true_and]
     constructor
     · rintro ⟨h1, h2, h3⟩
@@ -412,7 +412,7 @@ theorem isSemialgebraicSet_chartT (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri 
   -- Step 4: identify the projection with `T_i`.
   convert hproj using 1
   ext ζ
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   rw [atLeastZeros_chartMap_iff_exists_rep P d hP i (realEquiv.symm ζ) m]
   constructor
   · rintro ⟨r, hne, hminor, hzero⟩
@@ -488,7 +488,7 @@ theorem isSemialgebraicSetRP_atLeastZerosRP
           (w ∘ Fin.natAdd 1) ∈
             {ζ : Fin 2 → R | AtLeastZeros P d (chartMap i (realEquiv.symm ζ)) m}} := by
     ext w
-    simp only [Set.mem_setOf_eq, atLeastZerosRP]
+    simp only [Set.mem_ofPred_eq, atLeastZerosRP]
   rw [heq]
   exact IsSemialgebraicSet.comap (Fin.natAdd 1) (isSemialgebraicSet_chartT m P d hP i)
 

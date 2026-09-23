@@ -39,7 +39,8 @@ and it is fast enough to use.
   `sorry` are rejected by CI.
 
 The detailed per-module catalog, equivalence-proof tables and algorithm list are
-in [`docs/module_map.md`](docs/module_map.md).
+in [`docs/module_map.md`](docs/module_map.md); the sources are listed in
+[`docs/bibliography.md`](docs/bibliography.md).
 
 ## Getting started
 

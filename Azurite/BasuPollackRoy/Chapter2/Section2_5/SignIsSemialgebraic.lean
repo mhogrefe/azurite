@@ -1,5 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter2.Section2_5.SemialgebraicFunction
-import Mathlib.Data.Sign.Defs
+import Mathlib.Basic.Sign.Defs
 
 /-! # The sign function is semialgebraic
 
@@ -27,7 +27,7 @@ theorem signFun_isSemialgebraicFunction :
       = {z : Fin 2 → R | z 1 = (SignType.sign (z 0) : R)} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_univ, true_and, Set.mem_setOf_eq]
+    simp only [Set.mem_univ, true_and, Set.mem_ofPred_eq]
     constructor
     · intro hb; simpa [signFun, Function.comp_apply, hcidx, hnidx] using congrFun hb 0
     · intro hz1; funext i; rw [Subsingleton.elim i 0]
@@ -38,7 +38,7 @@ theorem signFun_isSemialgebraicFunction :
           (({z | MvPolynomial.eval z (X 0) = 0} ∩ {z | MvPolynomial.eval z (X 1) = 0}) ∪
            ({z | MvPolynomial.eval z (X 0) > 0} ∩ {z | MvPolynomial.eval z (X 1 - 1) = 0})) := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_union, Set.mem_inter_iff, MvPolynomial.eval_X,
+      simp only [Set.mem_ofPred_eq, Set.mem_union, Set.mem_inter_iff, MvPolynomial.eval_X,
         map_add, map_sub, map_one, sub_eq_zero, gt_iff_lt]
       constructor
       · intro h

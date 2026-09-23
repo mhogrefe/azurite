@@ -50,7 +50,7 @@ theorem associated_neg (a : K[X]) : Associated (-a) a := by
 theorem sBPR_ne_of_nondef (P Q : K[X]) (hpq : Q.natDegree < P.natDegree) {j : ℕ}
     (hjq : j ≤ Q.natDegree) (hne : sResP P Q j ≠ 0) (hnd : (sResP P Q j).natDegree = j) :
     sBPR P Q j ≠ 0 := by
-  rw [sBPR, if_neg (by omega : j ≠ P.natDegree),
+  rw [sBPR, ite_eq_right (by omega : j ≠ P.natDegree),
     ← leadingCoeff_sResP_eq_sRes P Q hpq hjq
       (show (sResP P Q j).degree = (j : WithBot ℕ) from by
         rw [Polynomial.degree_eq_natDegree hne, hnd])]
@@ -59,7 +59,7 @@ theorem sBPR_ne_of_nondef (P Q : K[X]) (hpq : Q.natDegree < P.natDegree) {j : �
 /-- For `j ≠ p` with `sResP_j ≠ 0`, the leading coefficient `t_j` is nonzero. -/
 theorem tBPR_ne_of_ne (P Q : K[X]) {j : ℕ} (hjp : j ≠ P.natDegree) (hne : sResP P Q j ≠ 0) :
     tBPR P Q j ≠ 0 := by
-  rw [tBPR, if_neg hjp]; exact Polynomial.leadingCoeff_ne_zero.mpr hne
+  rw [tBPR, ite_eq_right hjp]; exact Polynomial.leadingCoeff_ne_zero.mpr hne
 
 /-- **BPR Corollary 8.38.**  If `SRemS_{ℓ-1}(P,Q)` and `SRemS_ℓ(P,Q)` are two successive
     nonzero polynomials of the signed remainder sequence, of degrees `d(ℓ-1)` and `d(ℓ)`,
@@ -184,7 +184,7 @@ theorem corollary_8_38 (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
       (by omega) (by omega) (by omega) hne_i hdeg_i).2
       (SRemS P Q (m + 2)).natDegree hne_j hdeg_j
     obtain ⟨hmono, _⟩ := hmono
-    rw [if_neg (by omega : ¬ (SRemS P Q (m + 2)).natDegree = 0), ← C_mul, ← C_mul, rem_C_mul,
+    rw [ite_eq_right (by omega : ¬ (SRemS P Q (m + 2)).natDegree = 0), ← C_mul, ← C_mul, rem_C_mul,
       ← mul_neg] at hmono
     have hαβ1 : sBPR P Q (SRemS P Q (m + 1)).natDegree
         * tBPR P Q ((SRemS P Q m).natDegree - 1) ≠ 0 :=

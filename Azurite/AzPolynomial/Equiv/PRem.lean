@@ -95,7 +95,7 @@ private lemma pRem_fold_exists (P Q : AzPolynomial D) (q : ℕ) (b : D)
               Polynomial.C rem_n.leadingCoeff *
               AzPolynomial.toPoly Q := by
         unfold pRemStep
-        rw [if_pos hsize]
+        rw [ite_eq_left hsize]
         rw [toPoly_sub, toPoly_smul, toPoly_mulXPow, toPoly_smul]
         rw [Polynomial.smul_eq_C_mul, Polynomial.smul_eq_C_mul]
         ring
@@ -110,7 +110,7 @@ private lemma pRem_fold_exists (P Q : AzPolynomial D) (q : ℕ) (b : D)
       have hstep : AzPolynomial.toPoly (pRemStep q b Q rem_n) =
           Polynomial.C b * AzPolynomial.toPoly rem_n := by
         unfold pRemStep
-        rw [if_neg hsize]
+        rw [ite_eq_right hsize]
         rw [toPoly_smul, Polynomial.smul_eq_C_mul]
       rw [hstep]
       have hb_pow : Polynomial.C (b ^ (n + 1)) =
@@ -199,7 +199,7 @@ private lemma pRem_fold_coeff_zero (P Q : AzPolynomial D)
         rw [h_k_eq]
         have he_eq : rem_n.coeffs.size - 1 - (rem_n.coeffs.size - 1 - q) = q := by omega
         have h_idx : rem_n.coeffs.size - 1 ≥ rem_n.coeffs.size - 1 - q := by omega
-        rw [if_pos h_idx]
+        rw [ite_eq_left h_idx]
         have h_lead : rem_n.coeff (rem_n.coeffs.size - 1) = rem_n.leadingCoeff := by
           unfold leadingCoeff natDegree; rfl
         rw [h_lead, he_eq]
@@ -243,7 +243,7 @@ theorem degree_toPoly_pRem_lt (P Q : AzPolynomial D)
   by_cases hPQ : P.coeffs.size < Q.coeffs.size
   · -- deg P < deg Q: pRem = P
     have h_pRem : pRem P Q = P := by
-      unfold pRem; rw [if_neg hQsize, if_pos hPQ]
+      unfold pRem; rw [ite_eq_right hQsize, ite_eq_left hPQ]
     rw [h_pRem]
     exact coeff_eq_zero_of_size_le' P n (by omega)
   · push Not at hPQ
@@ -254,7 +254,7 @@ theorem degree_toPoly_pRem_lt (P Q : AzPolynomial D)
     have h_pRem : pRem P Q =
         if numSteps % 2 = 1 then Q.leadingCoeff • R else R := by
       unfold pRem
-      rw [if_neg hQsize, if_neg (by omega : ¬ P.coeffs.size < Q.coeffs.size)]
+      rw [ite_eq_right hQsize, ite_eq_right (by omega : ¬ P.coeffs.size < Q.coeffs.size)]
     have h_threshold : P.coeffs.size - numSteps = Q.coeffs.size - 1 := by
       simp only [h_numSteps]; omega
     have h_fold_coeff : R.coeff n = 0 := by
@@ -291,9 +291,9 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
     -- pRem 0 Q = 0
     have : pRem (0 : AzPolynomial D) Q = 0 := by
       unfold pRem
-      rw [if_neg hQsize]
+      rw [ite_eq_right hQsize]
       have : (0 : AzPolynomial D).coeffs.size = 0 := rfl
-      rw [if_pos (by rw [this]; exact Nat.pos_of_ne_zero hQsize)]
+      rw [ite_eq_left (by rw [this]; exact Nat.pos_of_ne_zero hQsize)]
     rw [this, toPoly_zero]
   · -- P ≠ 0
     by_cases hPQ_deg : (AzPolynomial.toPoly P).natDegree <
@@ -303,7 +303,7 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
       have hexp : Azurite.BPR.pRemExp (AzPolynomial.toPoly P)
           (AzPolynomial.toPoly Q) = 0 := by
         unfold Azurite.BPR.pRemExp Azurite.BPR.smallestEvenGe
-        rw [if_pos hPQ_deg]
+        rw [ite_eq_left hPQ_deg]
       rw [hexp, pow_zero, map_one, one_mul, zero_mul, zero_add]
       have hPne : P ≠ 0 := fun h => hP (by rw [h]; exact toPoly_zero)
       have hPsize : P.coeffs.size > 0 := by
@@ -321,7 +321,7 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
         have hQs : Q.coeffs.size > 0 := Nat.pos_of_ne_zero hQsize
         omega
       unfold pRem
-      rw [if_neg hQsize, if_pos hPQ_size]
+      rw [ite_eq_right hQsize, ite_eq_left hPQ_size]
     · -- deg P ≥ deg Q
       push Not at hPQ_deg
       have hPne : P ≠ 0 := fun h => hP (by rw [h]; exact toPoly_zero)
@@ -343,7 +343,7 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
       have hexp_eq : Azurite.BPR.pRemExp (AzPolynomial.toPoly P)
           (AzPolynomial.toPoly Q) = numSteps + numSteps % 2 := by
         unfold Azurite.BPR.pRemExp Azurite.BPR.smallestEvenGe
-        rw [if_neg (by
+        rw [ite_eq_right (by
           rw [hP_nd, hQ_nd]
           unfold AzPolynomial.natDegree
           omega)]
@@ -364,11 +364,11 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
       have h_pRem_eq :
           pRem P Q = if numSteps % 2 = 1 then Q.leadingCoeff • R else R := by
         unfold pRem
-        rw [if_neg hQsize]
-        rw [if_neg (by omega : ¬ P.coeffs.size < Q.coeffs.size)]
+        rw [ite_eq_right hQsize]
+        rw [ite_eq_right (by omega : ¬ P.coeffs.size < Q.coeffs.size)]
       rw [h_pRem_eq]
       by_cases hparity : numSteps % 2 = 1
-      · rw [if_pos hparity]
+      · rw [ite_eq_left hparity]
         have h_exp : numSteps + numSteps % 2 = numSteps + 1 := by rw [hparity]
         rw [h_exp]
         refine ⟨Polynomial.C Q.leadingCoeff * A_fold, ?_⟩
@@ -379,7 +379,7 @@ lemma toPoly_pRem_div_eq (P Q : AzPolynomial D)
           rw [pow_succ, mul_comm (Q.leadingCoeff^numSteps) _, Polynomial.C_mul]
         rw [h_pow_succ]
         linear_combination Polynomial.C Q.leadingCoeff * hA_fold
-      · rw [if_neg hparity]
+      · rw [ite_eq_right hparity]
         have h_mod : numSteps % 2 = 0 := by omega
         rw [h_mod, Nat.add_zero]
         exact ⟨A_fold, hA_fold⟩

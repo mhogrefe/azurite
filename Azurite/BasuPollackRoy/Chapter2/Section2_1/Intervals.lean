@@ -1,5 +1,5 @@
 import Mathlib.Order.Interval.Set.Defs
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 
 /-! # BPR Section 2.1 — Notation: Intervals
 

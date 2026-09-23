@@ -599,7 +599,7 @@ theorem contrib_one (cap : Fin m → Option ℕ) (t : ℕ) (j : Fin m) :
       = if CappedRoundRobin.ActiveIn cap t j then 1 else 0 := by
   rcases hc : cap j with _ | b
   · rw [contrib_none hc,
-      if_pos (show CappedRoundRobin.ActiveIn cap t j from fun b hb => nomatch hc.symm.trans hb)]
+      ite_eq_left (show CappedRoundRobin.ActiveIn cap t j from fun b hb => nomatch hc.symm.trans hb)]
   · rw [contrib_some hc]
     show min 1 (b - t * 1) = _
     split_ifs with h

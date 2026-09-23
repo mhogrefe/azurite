@@ -176,7 +176,7 @@ theorem c2_parity {n r : ℕ} (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {
   · by_contra hcon
     have hl0 : l % 2 = 0 := by omega
     have hr1 := hpar.mp hl0
-    rw [if_neg hsq, pow_one] at hbase
+    rw [ite_eq_right hsq, pow_one] at hbase
     -- `r ≡ n (mod 2^v)` and `r ≡ 1 (mod 2^(v+1))` force `2^v ∣ 2`
     have h1 : n ≡ 1 [MOD 2 ^ v] :=
       hbase.symm.trans (Nat.ModEq.of_dvd (pow_dvd_pow 2 (Nat.le_succ v)) hr1)

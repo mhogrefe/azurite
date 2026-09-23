@@ -76,7 +76,7 @@ theorem proposition_8_15 (M : Matrix (Fin n) (Fin n) (MvPolynomial (Fin k) ℤ))
     have key : ((Equiv.Perm.sign σ • ∏ i, M (σ i) i).coeff r).natAbs
         = ((∏ i, M (σ i) i).coeff r).natAbs := by
       rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with h | h <;>
-        simp [h, MvPolynomial.coeff_neg, Int.natAbs_neg]
+        simp [h, Int.natAbs_neg]
     rw [key]
     exact hper σ
   · rw [Finset.card_univ, Fintype.card_perm, Fintype.card_fin]

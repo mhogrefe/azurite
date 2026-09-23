@@ -42,7 +42,7 @@ theorem theorem_4_2_5 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     ∀ p : ℕ, p.Prime → p ∣ n →
       (F : ℤ) ∣ (p : ℤ) - jacobiSym (a ^ 2 - 4 * b) p := by
   intro p hp hpn
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rw [← jacobiSym.legendreSym.to_jacobiSym]
   have hF2 : 2 ≤ F := by
     have hF0 : F ≠ 0 := by
@@ -55,7 +55,7 @@ theorem theorem_4_2_5 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     IsCoprime.of_isCoprime_of_dvd_left hcop hpz
   have hpΔ : ¬((p : ℕ) : ℤ) ∣ (a ^ 2 - 4 * b) := by
     intro hd
-    haveI : NeZero n := ⟨by omega⟩
+    have : NeZero n := ⟨by omega⟩
     have hgcd : (a ^ 2 - 4 * b).gcd n = 1 := by
       by_contra hne
       have h0 : jacobiSym (a ^ 2 - 4 * b) n = 0 :=
@@ -72,7 +72,7 @@ theorem theorem_4_2_5 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     intro hd
     have hpz' : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
     rcases hpz'.dvd_mul.mp hd with hd1 | hd1
-    · exact hpz'.not_unit (hp2b.isUnit_of_dvd' dvd_rfl hd1)
+    · exact hpz'.not_isUnit (hp2b.isUnit_of_dvd' dvd_rfl hd1)
     · exact hpΔ hd1
   have hpprime : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
   -- `U_F = U_{F/2} · V_{F/2}`, so `n ∣ U_F`
@@ -98,9 +98,9 @@ theorem theorem_4_2_5 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
         have := hpprime.dvd_of_dvd_pow (n := 2)
           (by rwa [show (4 : ℤ) = 2 ^ 2 by norm_num] at h4)
         exact this
-      exact hpprime.not_unit (hp2b.isUnit_of_dvd' dvd_rfl
+      exact hpprime.not_isUnit (hp2b.isUnit_of_dvd' dvd_rfl
         (hp2.mul_right b))
-    · exact hpprime.not_unit (hpb.isUnit_of_dvd' dvd_rfl
+    · exact hpprime.not_isUnit (hpb.isUnit_of_dvd' dvd_rfl
         (hpprime.dvd_of_dvd_pow hbm))
   -- the rank equals `F`
   have hex : ∃ r : ℕ, 0 < r ∧ ((p : ℕ) : ℤ) ∣ lucasU a b r :=
@@ -142,7 +142,7 @@ theorem theorem_4_2_5 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     · -- contradicts the second condition of (4.15)
       have hcop' := IsCoprime.of_isCoprime_of_dvd_left
         (hq q hqp hq2 hqF) hpz
-      exact hpprime.not_unit (hcop'.isUnit_of_dvd' dvd_rfl hVc)
+      exact hpprime.not_isUnit (hcop'.isUnit_of_dvd' dvd_rfl hVc)
   have hrEq : r = F := by
     by_contra hne
     obtain ⟨s, hs⟩ := hrF
@@ -190,7 +190,7 @@ theorem morrison_test_V (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
   by_contra hcomp
   set p := n.minFac with hpdef
   have hp : p.Prime := Nat.minFac_prime (by omega)
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hple : p ^ 2 ≤ n := Nat.minFac_sq_le_self (by omega) hcomp
   have hdvd := theorem_4_2_5 hn hcop hjac hF hFeven hV hq p hp
     (Nat.minFac_dvd n)
@@ -199,7 +199,7 @@ theorem morrison_test_V (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     (a := a ^ 2 - 4 * b) (by
       rw [Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
       intro hd
-      haveI : NeZero n := ⟨by omega⟩
+      have : NeZero n := ⟨by omega⟩
       have hgcd : (a ^ 2 - 4 * b).gcd n = 1 := by
         by_contra hne
         have h0 : jacobiSym (a ^ 2 - 4 * b) n = 0 :=

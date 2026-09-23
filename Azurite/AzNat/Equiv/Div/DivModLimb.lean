@@ -46,7 +46,7 @@ theorem divModLimb.go_toList_drop (d' inv : UInt64) (k : Nat) (hk : k ≤ 63)
       rw [List.drop_drop]; congr 1
     rw [h_eq, h_eq, ih]
     rw [Array.toList_set, List.drop_set]
-    rw [if_neg (lt_irrefl _)]
+    rw [ite_eq_right (lt_irrefl _)]
     rw [show lo + j - (lo + j) = 0 from by omega]
     exact List.drop_set_of_lt (by decide : 0 < 1)
 
@@ -102,16 +102,16 @@ private lemma top_bits_eq_u_carry (a : Array UInt64) (lo j k : Nat) (hk : k ≤ 
         _ ≤ 2 ^ (64 * j) := Nat.pow_le_pow_right (by decide) (by omega)
   by_cases hk0 : k = 0
   · subst hk0
-    rw [if_pos rfl, show (2 : Nat) ^ 0 = 1 from rfl, Nat.mul_one]
+    rw [ite_eq_left rfl, show (2 : Nat) ^ 0 = 1 from rfl, Nat.mul_one]
     show toNatLimbsList _ / _ = (0 : UInt64).toNat
     exact Nat.div_eq_of_lt h_A_lt
-  · rw [if_neg hk0]
+  · rw [ite_eq_right hk0]
     by_cases hj0 : j = 0
     · subst hj0
-      rw [dif_pos rfl]
+      rw [dite_eq_left rfl]
       show toNatLimbsList _ * _ / _ = (0 : UInt64).toNat
       simp [toNatLimbsList]
-    · rw [dif_neg hj0]
+    · rw [dite_eq_right hj0]
       have hj_pos : 0 < j := Nat.pos_of_ne_zero hj0
       have hk_pos : 0 < k := Nat.pos_of_ne_zero hk0
       have hk_lt : k < 64 := by omega
@@ -306,12 +306,12 @@ private theorem divModLimb.go_correct (d' inv : UInt64) (k : Nat) (hk : k ≤ 63
       left
       refine ⟨Nat.pos_of_ne_zero hk0, ?_⟩
       rw [hu_carry_def]
-      rw [if_neg hk0]
+      rw [ite_eq_right hk0]
       by_cases hj0 : j = 0
-      · rw [dif_pos hj0]
+      · rw [dite_eq_left hj0]
         show 0 < 2 ^ k
         exact Nat.two_pow_pos _
-      · rw [dif_neg hj0]
+      · rw [dite_eq_right hj0]
         rw [_root_.UInt64.toNat_shiftRight]
         have h_ofNat : (UInt64.ofNat (64 - k)).toNat = 64 - k := by
           show (64 - k) % 2 ^ 64 = 64 - k
@@ -545,7 +545,7 @@ theorem divModLimb_toNat (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d �
       -- which by definition gives d.toNat * 2^k < 2^64. Look at proof.
       -- Let me extract this fact.
       have hk_def : k = if d = 0 then 64 else 63 - d.toNat.log2 := rfl
-      have hk_eq' : k = 63 - d.toNat.log2 := by rw [hk_def]; rw [if_neg hd]
+      have hk_eq' : k = 63 - d.toNat.log2 := by rw [hk_def]; rw [ite_eq_right hd]
       have hL_lt_64 : d.toNat.log2 < 64 := (Nat.log2_lt (by omega)).mpr (UInt64.toNat_lt _)
       have hL_le_63 : d.toNat.log2 ≤ 63 := by omega
       have hpow_hi : d.toNat < 2 ^ (d.toNat.log2 + 1) :=
@@ -613,7 +613,7 @@ theorem divModLimb_toNat (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d �
   have h_r0_eq : r0.toNat = toNatLimbsList ((a.toList.drop lo).take len) * 2 ^ k / 2 ^ (64 * len) := by
     rw [hr0_def]
     by_cases hk0 : k = 0
-    · rw [if_pos hk0]
+    · rw [ite_eq_left hk0]
       show (0 : Nat) = _ * 2 ^ k / _
       rw [hk0, show (2 : Nat) ^ 0 = 1 from rfl, Nat.mul_one]
       have h_A_lt : toNatLimbsList ((a.toList.drop lo).take len) < 2 ^ (64 * len) := by
@@ -624,13 +624,13 @@ theorem divModLimb_toNat (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d �
               < 2 ^ (64 * ((a.toList.drop lo).take len).length) := hL
             _ ≤ 2 ^ (64 * len) := Nat.pow_le_pow_right (by decide) (by omega)
       rw [Nat.div_eq_of_lt h_A_lt]
-    · rw [if_neg hk0]
+    · rw [ite_eq_right hk0]
       by_cases hlen0 : len = 0
-      · rw [dif_pos hlen0]
+      · rw [dite_eq_left hlen0]
         show (0 : Nat) = _
         rw [hlen0]
         simp [toNatLimbsList]
-      · rw [dif_neg hlen0]
+      · rw [dite_eq_right hlen0]
         dsimp only
         have h_top_idx : lo + (len - 1) < a.size := by rw [hlen_def]; omega
         have h_idx_alt : hi - 1 < a.size := by omega
@@ -639,7 +639,7 @@ theorem divModLimb_toNat (a : Array UInt64) (lo hi : Nat) (d : UInt64) (hd : d �
           omega
         rw [h_eq_arr]
         have h_top := top_bits_eq_u_carry a lo len k hk_le (by rw [hlen_def]; omega)
-        rw [if_neg hk0, dif_neg hlen0] at h_top
+        rw [ite_eq_right hk0, dite_eq_right hlen0] at h_top
         have h_arr_eq : a[lo + (len - 1)]'h_top_idx = a[lo + len - 1]'(by omega) := by
           congr 1; omega
         rw [h_arr_eq, ← h_top]

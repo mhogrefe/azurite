@@ -75,7 +75,7 @@ theorem elimVacuousQuantifiers_realization
       -- Goal: (elimVacuousQuantifiers Ψ).realization = (∃x, Ψ).realization
       -- Strategy: show both are equal to (elimVacuousQuantifiers Ψ).realization
       -- since the quantifier is vacuous for the simplified formula
-      ext y; simp only [realization, Set.mem_setOf_eq]
+      ext y; simp only [realization, Set.mem_ofPred_eq]
       constructor
       · -- (elimVacuousQuantifiers Ψ).realization → (∃x, Ψ).realization
         intro hy
@@ -94,7 +94,7 @@ theorem elimVacuousQuantifiers_realization
     · rename_i hx
       have hx' : x ∉ (elimVacuousQuantifiers Ψ).freeVars := by
         rwa [freeVarsOf_eq_freeVars_fieldAtom] at hx
-      ext y; simp only [realization, Set.mem_setOf_eq]
+      ext y; simp only [realization, Set.mem_ofPred_eq]
       constructor
       · intro hy c
         have : y ∈ (elimVacuousQuantifiers Ψ).realization := hy

@@ -84,11 +84,11 @@ private theorem toNNF_gRealization_aux (Φ : Formula σ α) :
   | exists_ x Ψ ih =>
     refine ⟨by simp only [toNNFPos, gRealization, ih.1], ?_⟩
     simp only [toNNFPos.toNNFNeg, gRealization, ih.2]
-    ext y; simp [Set.mem_compl_iff, Set.mem_setOf_eq, not_exists]
+    ext y; simp [Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists]
   | forall_ x Ψ ih =>
     refine ⟨by simp only [toNNFPos, gRealization, ih.1], ?_⟩
     simp only [toNNFPos.toNNFNeg, gRealization, ih.2]
-    ext y; simp [Set.mem_compl_iff, Set.mem_setOf_eq, not_forall]
+    ext y; simp [Set.mem_compl_iff, Set.mem_ofPred_eq, not_forall]
 
 theorem toNNF_gRealization (Φ : Formula σ α) :
     gRealization (K := K) (toNNF Φ) = gRealization Φ :=
@@ -122,7 +122,7 @@ theorem rename_gRealization_equiv (e : σ ≃ σ) (Φ : Formula σ α) :
   | exists_ x Φ ih =>
     unfold renameFormulaEquiv at ih ⊢
     simp only [Formula.rename, gRealization]
-    ext y; simp only [Set.mem_setOf_eq, Set.mem_preimage]
+    ext y; simp only [Set.mem_ofPred_eq, Set.mem_preimage]
     constructor
     · rintro ⟨c, hc⟩; rw [ih] at hc; simp only [Set.mem_preimage] at hc
       exact ⟨c, (update_comp_equiv_simp e y x c) ▸ hc⟩
@@ -131,7 +131,7 @@ theorem rename_gRealization_equiv (e : σ ≃ σ) (Φ : Formula σ α) :
   | forall_ x Φ ih =>
     unfold renameFormulaEquiv at ih ⊢
     simp only [Formula.rename, gRealization]
-    ext y; simp only [Set.mem_setOf_eq, Set.mem_preimage]
+    ext y; simp only [Set.mem_ofPred_eq, Set.mem_preimage]
     constructor
     · intro h c; have := h c; rw [ih] at this; simp only [Set.mem_preimage] at this
       exact (update_comp_equiv_simp e y x c) ▸ this
@@ -173,7 +173,7 @@ theorem gRealization_invariant_update
                             (.inr ∘ (ih₂ hx.2 y c).mpr)
   | exists_ z Φ ih =>
     simp only [freeVarsOf, Finset.mem_sdiff, Finset.mem_singleton, not_and, not_not] at hx
-    intro y c; simp only [gRealization, Set.mem_setOf_eq]
+    intro y c; simp only [gRealization, Set.mem_ofPred_eq]
     by_cases hxz : x = z
     · subst hxz
       constructor
@@ -185,7 +185,7 @@ theorem gRealization_invariant_update
       · rintro ⟨d, hd⟩; rw [Function.update_comm hxz] at hd; exact ⟨d, (ih hxfv _ c).mpr hd⟩
   | forall_ z Φ ih =>
     simp only [freeVarsOf, Finset.mem_sdiff, Finset.mem_singleton, not_and, not_not] at hx
-    intro y c; simp only [gRealization, Set.mem_setOf_eq]
+    intro y c; simp only [gRealization, Set.mem_ofPred_eq]
     by_cases hxz : x = z
     · subst hxz
       constructor
@@ -290,10 +290,10 @@ theorem mergePrenex_gRealization
         · exact hfl.1 (h2 ▸ hw_mem)
         · exact hv_left.1 (hw_eq ▸ hw_mem)
       · exact hv_fresh.2
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     rw [ih h_rest_fresh h_nodup_rest]
     rcases h_op with rfl | rfl
-    · simp only [gRealization, Set.mem_inter_iff, Set.mem_setOf_eq]
+    · simp only [gRealization, Set.mem_inter_iff, Set.mem_ofPred_eq]
       constructor
       · rintro ⟨c, hb, hr⟩
         exact ⟨⟨c, (rename_swap_update_mem body x fresh hxf hfresh_body y c).mp hb⟩,
@@ -301,7 +301,7 @@ theorem mergePrenex_gRealization
       · rintro ⟨⟨c, hb⟩, hr⟩
         exact ⟨c, (rename_swap_update_mem body x fresh hxf hfresh_body y c).mpr hb,
               (gRealization_invariant_update right fresh hfresh_right y c).mp hr⟩
-    · simp only [gRealization, Set.mem_union, Set.mem_setOf_eq]
+    · simp only [gRealization, Set.mem_union, Set.mem_ofPred_eq]
       constructor
       · rintro ⟨c, hb | hr⟩
         · exact .inl ⟨c, (rename_swap_update_mem body x fresh hxf hfresh_body y c).mp hb⟩
@@ -335,11 +335,11 @@ theorem mergePrenex_gRealization
         · exact hfresh_not_rest (hw_eq ▸ hv)
         · exact hfl.1 (h2 ▸ hw_mem)
         · exact hv_left.1 (hw_eq ▸ hw_mem), hv_fresh.2⟩
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     rw [ih h_rest_fresh h_nodup_rest]
     rcases h_op with rfl | rfl
     · -- op = ∧: (∀c, body'[fresh↦c] ∧ right[fresh↦c]) ↔ (∀c, body[x↦c]) ∧ right
-      simp only [gRealization, Set.mem_inter_iff, Set.mem_setOf_eq]
+      simp only [gRealization, Set.mem_inter_iff, Set.mem_ofPred_eq]
       constructor
       · intro h
         exact ⟨fun c => (rename_swap_update_mem body x fresh hxf hfresh_body y c).mp (h c).1,
@@ -348,7 +348,7 @@ theorem mergePrenex_gRealization
         exact ⟨(rename_swap_update_mem body x fresh hxf hfresh_body y c).mpr (hb c),
               (gRealization_invariant_update right fresh hfresh_right y c).mp hr⟩
     · -- op = ∨: (∀c, body'[fresh↦c] ∨ right[fresh↦c]) ↔ (∀c, body[x↦c]) ∨ right
-      simp only [gRealization, Set.mem_union, Set.mem_setOf_eq]
+      simp only [gRealization, Set.mem_union, Set.mem_ofPred_eq]
       constructor
       · intro h
         by_cases hr : y ∈ gRealization right
@@ -386,10 +386,10 @@ theorem mergePrenex_gRealization
         · exact hfresh_not_rest (hw_eq ▸ hv)
         · exact hfr.1 (h2 ▸ hw_mem)
         · exact hv_right.1 (hw_eq ▸ hw_mem)⟩
-    ext z; simp only [Set.mem_setOf_eq]
+    ext z; simp only [Set.mem_ofPred_eq]
     rw [ih_inner h_rest_fresh h_nodup_rest]
     rcases h_op with rfl | rfl
-    · simp only [gRealization, Set.mem_inter_iff, Set.mem_setOf_eq]
+    · simp only [gRealization, Set.mem_inter_iff, Set.mem_ofPred_eq]
       constructor
       · rintro ⟨c, hl, hb⟩
         exact ⟨(gRealization_invariant_update left fresh hfresh_left z c).mpr hl,
@@ -397,7 +397,7 @@ theorem mergePrenex_gRealization
       · rintro ⟨hl, c, hb⟩
         exact ⟨c, (gRealization_invariant_update left fresh hfresh_left z c).mp hl,
               (rename_swap_update_mem body y fresh hyf hfresh_body z c).mpr hb⟩
-    · simp only [gRealization, Set.mem_union, Set.mem_setOf_eq]
+    · simp only [gRealization, Set.mem_union, Set.mem_ofPred_eq]
       constructor
       · rintro ⟨c, hl | hb⟩
         · exact .inl ((gRealization_invariant_update left fresh hfresh_left z c).mpr hl)
@@ -432,11 +432,11 @@ theorem mergePrenex_gRealization
         · exact hfresh_not_rest (hw_eq ▸ hv)
         · exact hfr.1 (h2 ▸ hw_mem)
         · exact hv_right.1 (hw_eq ▸ hw_mem)⟩
-    ext z; simp only [Set.mem_setOf_eq]
+    ext z; simp only [Set.mem_ofPred_eq]
     rw [ih_inner h_rest_fresh h_nodup_rest]
     rcases h_op with rfl | rfl
     · -- op = ∧
-      simp only [gRealization, Set.mem_inter_iff, Set.mem_setOf_eq]
+      simp only [gRealization, Set.mem_inter_iff, Set.mem_ofPred_eq]
       constructor
       · intro h
         exact ⟨(gRealization_invariant_update left fresh hfresh_left z (z fresh)).mpr (h (z fresh)).1,
@@ -445,7 +445,7 @@ theorem mergePrenex_gRealization
         exact ⟨(gRealization_invariant_update left fresh hfresh_left z c).mp hl,
               (rename_swap_update_mem body y fresh hyf hfresh_body z c).mpr (hb c)⟩
     · -- op = ∨
-      simp only [gRealization, Set.mem_union, Set.mem_setOf_eq]
+      simp only [gRealization, Set.mem_union, Set.mem_ofPred_eq]
       constructor
       · intro h
         by_cases hl : z ∈ gRealization left
@@ -731,14 +731,14 @@ theorem toPrenexNNF_gRealization
   | not Φ _ => simp [toPrenexNNF]
   | exists_ x Φ ih =>
     simp only [toPrenexNNF, gRealization]
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     have h_sub : ∀ v ∈ fv, v ∉ allVarsOf Φ := by
       intro v hv h
       exact h_fresh v hv (Finset.mem_union.mpr (.inl h))
     rw [ih fv h_sub h_nodup]
   | forall_ x Φ ih =>
     simp only [toPrenexNNF, gRealization]
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     have h_sub : ∀ v ∈ fv, v ∉ allVarsOf Φ := by
       intro v hv h
       exact h_fresh v hv (Finset.mem_union.mpr (.inl h))
@@ -858,19 +858,19 @@ noncomputable instance azFieldAtomRealization
   neg_interpret := by
     intro a
     simp only [AtomNeg.neg, azFieldAtomInterpret]
-    cases a.isEq <;> simp [Set.compl_setOf, ne_eq, not_not]
+    cases a.isEq <;> simp [Set.compl_ofPred, ne_eq, not_not]
   rename_interpret := by
     intro e a
     simp only [AtomRename.renameEquiv, azFieldAtomInterpret, AzFieldAtom.renameVarsInjective]
     ext y
     simp_rw [AzMvPolynomial.toMvPoly_renameInjective, MvPolynomial.aeval_rename]
-    cases a.isEq <;> simp [Set.mem_setOf_eq]
+    cases a.isEq <;> simp [Set.mem_ofPred_eq]
   interpret_invariant := by
     intro a x hx y c
     simp only [azFieldAtomInterpret]
     suffices h : MvPolynomial.aeval (Function.update y x c) a.poly.toMvPoly =
         MvPolynomial.aeval y a.poly.toMvPoly by
-      cases a.isEq <;> simp [Set.mem_setOf_eq, h]
+      cases a.isEq <;> simp [Set.mem_ofPred_eq, h]
     simp only [MvPolynomial.aeval_def]
     apply MvPolynomial.eval₂_congr (algebraMap R' K)
     intro i ci hi hci
@@ -1133,7 +1133,7 @@ theorem nnfToDNF_gRealization (Φ : Formula σ α) (hnnf : IsNNF Φ)
       obtain ⟨hqf₁, hqf₂⟩ := hqf
       simp only [nnfToDNF, gRealization, ih₁ h₁ hqf₁, ih₂ h₂ hqf₂]
       ext y
-      simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.mem_flatMap, List.mem_map]
+      simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, List.mem_flatMap, List.mem_map]
       constructor
       · rintro ⟨⟨cl₁, hcl₁, h₁⟩, ⟨cl₂, hcl₂, h₂⟩⟩
         refine ⟨cl₁ ++ cl₂, ⟨cl₁, hcl₁, cl₂, hcl₂, rfl⟩, ?_⟩
@@ -1150,7 +1150,7 @@ theorem nnfToDNF_gRealization (Φ : Formula σ α) (hnnf : IsNNF Φ)
       obtain ⟨hqf₁, hqf₂⟩ := hqf
       simp only [nnfToDNF, gRealization, ih₁ h₁ hqf₁, ih₂ h₂ hqf₂]
       ext y
-      simp only [Set.mem_union, Set.mem_setOf_eq, List.mem_append]
+      simp only [Set.mem_union, Set.mem_ofPred_eq, List.mem_append]
       constructor
       · rintro (⟨cl, hcl, h⟩ | ⟨cl, hcl, h⟩)
         · exact ⟨cl, .inl hcl, h⟩
@@ -1420,14 +1420,14 @@ theorem mergePrenex_fst_quantifierDepth [DecidableEq σ] [AtomRename α σ]
     rw [ih, show body' = renameFormulaEquiv _ body from rfl,
         renameFormulaEquiv_quantifierDepth]; omega
   | case4 left y body fresh rest h_not_ex h_not_all h_qd =>
-    simp only [mergePrenex, if_neg h_qd, hop, quantifierDepth]
+    simp only [mergePrenex, ite_eq_right h_qd, hop, quantifierDepth]
   | case5 left y body fresh rest h_not_ex h_not_all h_qd_eq =>
     simp only [mergePrenex, h_qd_eq, ↓reduceIte, quantifierDepth]
     rename_i body' _ _ _ ih
     rw [ih, show body' = renameFormulaEquiv _ body from rfl,
         renameFormulaEquiv_quantifierDepth]; omega
   | case6 left y body fresh rest h_not_ex h_not_all h_qd =>
-    simp only [mergePrenex, if_neg h_qd, hop, quantifierDepth]
+    simp only [mergePrenex, ite_eq_right h_qd, hop, quantifierDepth]
   | case7 => simp only [mergePrenex, hop]
 
 omit [DecidableEq σ] [AtomNeg α] [AtomRename α σ] [AtomVars α σ] in

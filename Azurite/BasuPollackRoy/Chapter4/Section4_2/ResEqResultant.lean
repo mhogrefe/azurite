@@ -47,7 +47,7 @@ private theorem Syl_eq_sylvester_T_submatrix_rev (P Q : D[X]) :
       (Fin.rev j).val = P.natDegree + Q.natDegree - 1 - j.val := by
     rw [Fin.val_rev]; omega
   by_cases hi : i.val < Q.natDegree
-  · rw [if_pos hi, Polynomial.coeff_X_pow_mul']
+  · rw [ite_eq_left hi, Polynomial.coeff_X_pow_mul']
     have h_natAdd :
         Fin.rev i = Fin.natAdd P.natDegree
           ⟨Q.natDegree - 1 - i.val, by omega⟩ := by
@@ -68,7 +68,7 @@ private theorem Syl_eq_sylvester_T_submatrix_rev (P Q : D[X]) :
     · exfalso; omega
     · rfl
   · push Not at hi
-    rw [if_neg (not_lt.mpr hi), Polynomial.coeff_X_pow_mul']
+    rw [ite_eq_right (not_lt.mpr hi), Polynomial.coeff_X_pow_mul']
     have h_revi_lt : P.natDegree + Q.natDegree - 1 - i.val < P.natDegree := by
       omega
     have h_castAdd :

@@ -133,12 +133,12 @@ theorem landau_aux : ∀ (k : ℕ) (P : Polynomial (Ri R)), P ≠ 0 →
       have h1 : (P.roots.filter (fun z => 1 < Ri.abs z)).card
           = 1 + (Q.roots.filter (fun z => 1 < Ri.abs z)).card := by
         rw [hrootsP, Multiset.filter_add, Multiset.card_add,
-          Multiset.filter_singleton, if_pos hα1]
+          Multiset.filter_singleton, ite_eq_left hα1]
         simp
       have h2 : (P'.roots.filter (fun z => 1 < Ri.abs z)).card
           = (Q.roots.filter (fun z => 1 < Ri.abs z)).card := by
         rw [hrootsP', Multiset.filter_add, Multiset.card_add,
-          Multiset.filter_singleton, if_neg (by
+          Multiset.filter_singleton, ite_eq_right (by
             push Not
             exact habsinv)]
         simp

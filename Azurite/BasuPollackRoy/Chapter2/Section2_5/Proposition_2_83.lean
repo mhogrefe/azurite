@@ -50,7 +50,7 @@ theorem IsSemialgebraicSetOver.exists_update_list (hinj : Function.Injective (al
   | [], V, hV => by
     convert hV using 1
     ext w
-    simp only [Set.mem_setOf_eq, List.not_mem_nil, not_false_eq_true, forall_const]
+    simp only [Set.mem_ofPred_eq, List.not_mem_nil, not_false_eq_true, forall_const]
     constructor
     · rintro ⟨g, hg, hgV⟩; rwa [show g = w from funext hg] at hgV
     · intro hw; exact ⟨w, fun _ => rfl, hw⟩
@@ -59,7 +59,7 @@ theorem IsSemialgebraicSetOver.exists_update_list (hinj : Function.Injective (al
     have hu := IsSemialgebraicSetOver.exists_update hinj x ih
     convert hu using 1
     ext w
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨g, hg, hgV⟩
       refine ⟨g x, g, fun i hi => ?_, hgV⟩
@@ -99,7 +99,7 @@ theorem IsSemialgebraicSet.exists_append_left {k ℓ : ℕ} {W : Set (Fin (k + �
     apply IsSemialgebraicSet.of_definedOver (D := R)
     convert hcomap using 1
     ext y
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨x, hxW⟩
       refine ⟨Fin.append x y, fun i hi => ?_, hxW⟩
@@ -147,7 +147,7 @@ theorem IsSemialgebraicSet.exists_append_right {k ℓ : ℕ} {W : Set (Fin (k + 
     apply IsSemialgebraicSet.of_definedOver (D := R)
     convert hcomap using 1
     ext x
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     constructor
     · rintro ⟨y, hyW⟩
       refine ⟨Fin.append x y, fun i hi => ?_, hyW⟩
@@ -208,7 +208,7 @@ theorem proposition_2_83 {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → R
     have heq : f '' S' = {y : Fin ℓ → R | ∃ x : Fin k → R,
         Fin.append x y ∈ funGraph S f ∩ {z | z ∘ Fin.castAdd ℓ ∈ S'}} := by
       ext y
-      simp only [Set.mem_image, Set.mem_setOf_eq, Set.mem_inter_iff, append_mem_funGraph,
+      simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_inter_iff, append_mem_funGraph,
         append_comp_castAdd]
       constructor
       · rintro ⟨x, hxS', rfl⟩
@@ -223,7 +223,7 @@ theorem proposition_2_83 {k ℓ : ℕ} {S : Set (Fin k → R)} {f : (Fin k → R
     have heq : S ∩ f ⁻¹' T' = {x : Fin k → R | ∃ y : Fin ℓ → R,
         Fin.append x y ∈ funGraph S f ∩ {z | z ∘ Fin.natAdd k ∈ T'}} := by
       ext x
-      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_setOf_eq, append_mem_funGraph,
+      simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_ofPred_eq, append_mem_funGraph,
         append_comp_natAdd]
       constructor
       · rintro ⟨hxS, hfx⟩

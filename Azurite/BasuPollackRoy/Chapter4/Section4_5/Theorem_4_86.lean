@@ -79,7 +79,7 @@ theorem finiteDimensional_ext_iff_isIntegral (Ps : Finset (MvPolynomial (Fin k) 
     FiniteDimensional C (quotPolysExt C Ps) ↔ ∀ i, IsIntegral C (xiExt C Ps i) := by
   constructor
   · intro hfd i
-    haveI : Module.Finite C (quotPolysExt C Ps) := hfd
+    have : Module.Finite C (quotPolysExt C Ps) := hfd
     exact IsIntegral.of_finite C _
   · intro hint
     have hfin : Module.Finite C (Algebra.adjoin C (Set.range (fun i => xiExt C Ps i))) :=
@@ -188,20 +188,20 @@ theorem theorem_4_86 [CharZero K] (Ps : Finset (MvPolynomial (Fin k) K)) :
   refine ⟨⟨?_, ?_⟩, ?_⟩
   · -- forward: fin-dim + positive ⟹ zero-dimensional
     rintro ⟨hfindim, hpos⟩
-    haveI := hfindim
+    have := hfindim
     refine ⟨?_, hfd.mp hfindim⟩
     rw [nonempty_iff_nontrivial (C := C)]
     exact Module.finrank_pos_iff.mp hpos
   · -- backward: zero-dimensional ⟹ fin-dim + positive
     rintro ⟨hne, hfin⟩
     have hfindim : FiniteDimensional K (quotPolys Ps) := hfd.mpr hfin
-    haveI := hfindim
+    have := hfindim
     refine ⟨hfindim, ?_⟩
     rw [Module.finrank_pos_iff, ← nonempty_iff_nontrivial (C := C)]
     exact hne
   · -- bound: #Zer ≤ dim_K A
     intro hfin
-    haveI : FiniteDimensional K (quotPolys Ps) := hfd.mpr hfin
+    have : FiniteDimensional K (quotPolys Ps) := hfd.mpr hfin
     obtain ⟨i, _, hsep⟩ := lemma_4_90 C Ps hfin
     have hli := lemma_4_91 C Ps _ hsep hfin
     have := hli.fintype_card_le_finrank

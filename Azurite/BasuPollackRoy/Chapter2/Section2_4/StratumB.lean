@@ -67,7 +67,7 @@ theorem realizable_iff_disjuncts (hIVP : HasIntermediateValueProperty R) (q : Fi
   have hReeq : (∃ x, ∀ i, 0 < (q i).eval x) ↔
       (SignCondition.realization (signFn s jp) (fun i x => (q i).eval x)).Nonempty := by
     simp only [Set.Nonempty, SignCondition.realization, SignCondition.IsRealizedBy,
-      Set.mem_setOf_eq, hsf]
+      Set.mem_ofPred_eq, hsf]
     exact exists_congr (fun x => forall_congr' (fun i => sign_eq_one_iff.symm))
   constructor
   · intro hreal
@@ -146,9 +146,9 @@ theorem realizabilityLocus_isSemialgebraicSetOver
                   (((∏ i, 𝒬 i).derivative).map (MvPolynomial.aeval y).toRingHom) : ℚ)))
               ((signEquiv s).symm (fun _ => SignType.pos))}) := by
     ext y
-    rw [Set.mem_setOf_eq, realizable_iff_disjuncts hasIVP_of_isRealClosed
+    rw [Set.mem_ofPred_eq, realizable_iff_disjuncts hasIVP_of_isRealClosed
       (fun i => (𝒬 i).map (MvPolynomial.aeval y).toRingHom), hCeq y]
-    simp only [Set.mem_inter_iff, Set.mem_union, Set.mem_iInter, Set.mem_setOf_eq,
+    simp only [Set.mem_inter_iff, Set.mem_union, Set.mem_iInter, Set.mem_ofPred_eq,
       Finset.mem_univ, forall_true_left]
     tauto
   rw [hset]
@@ -183,7 +183,7 @@ theorem stratumB_isSemialgebraicSetOver
       {y : Fin k → R | ∃ x : R, ∀ i : Fin Q.toList.length,
         0 < ((splitLast (Q.toList.get i)).map (MvPolynomial.aeval y).toRingHom).eval x} := by
     ext y
-    simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
+    simp only [Set.mem_inter_iff, Set.mem_ofPred_eq]
     refine and_congr_right (fun _ => exists_congr (fun x => ?_))
     exact forall_mem_iff_forall_get Q
       (fun q => 0 < ((splitLast q).map (MvPolynomial.aeval y).toRingHom).eval x)

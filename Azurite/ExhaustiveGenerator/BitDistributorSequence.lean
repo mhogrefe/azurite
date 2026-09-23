@@ -57,14 +57,14 @@ theorem infinite_setOf_deinterleave_eq {m : ℕ} (A : BitAssignment m) {i j : Fi
         (fun l => if l = i then a else if l = j then k else 0) i
       have hb := A.deinterleave_interleave
         (fun l => if l = i then b else if l = j then k else 0) i
-      rw [show (if i = i then a else if i = j then k else 0) = a from if_pos rfl] at ha
-      rw [show (if i = i then b else if i = j then k else 0) = b from if_pos rfl] at hb
+      rw [show (if i = i then a else if i = j then k else 0) = a from ite_eq_left rfl] at ha
+      rw [show (if i = i then b else if i = j then k else 0) = b from ite_eq_left rfl] at hb
       rw [← ha, ← hb, hab'])
     (fun a => by
       show A.deinterleave j (A.interleave _) = k
       rw [A.deinterleave_interleave]
       show (if j = i then a else if j = j then k else 0) = k
-      rw [if_neg (Ne.symm hij), if_pos rfl])
+      rw [ite_eq_right (Ne.symm hij), ite_eq_left rfl])
 
 end BitAssignment
 

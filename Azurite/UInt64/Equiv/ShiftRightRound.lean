@@ -13,12 +13,12 @@ theorem toNat_shiftRightSat (u : UInt64) (sh : Nat) :
     (shiftRightSat u sh).toNat = u.toNat / 2 ^ sh := by
   unfold shiftRightSat
   by_cases hsh : sh < 64
-  · rw [if_pos hsh, _root_.UInt64.toNat_shiftRight]
+  · rw [ite_eq_left hsh, _root_.UInt64.toNat_shiftRight]
     have hofNat : (_root_.UInt64.ofNat sh).toNat = sh := by
       show sh % 2 ^ 64 = sh
       exact Nat.mod_eq_of_lt (by omega)
     rw [hofNat, Nat.mod_eq_of_lt hsh, Nat.shiftRight_eq_div_pow]
-  · rw [if_neg hsh]
+  · rw [ite_eq_right hsh]
     show (0 : Nat) = u.toNat / 2 ^ sh
     push Not at hsh
     have hu_lt : u.toNat < 2 ^ sh :=
@@ -121,24 +121,24 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
   | .Down =>
     rw [show round natBotSet RoundingMode.Down x =
       (if 0 ≤ x then roundFloor natBotSet x else roundCeiling natBotSet x) from rfl]
-    rw [if_pos hx_nonneg]
+    rw [ite_eq_left hx_nonneg]
     exact hfloor_side
   | .Ceiling =>
     rw [show round natBotSet RoundingMode.Ceiling x = roundCeiling natBotSet x from rfl]
     by_cases h : 2 ^ sh ∣ u.toNat
     · have hb : u.isMultipleOfPow2 sh = true := (isMultipleOfPow2_iff _ _).mpr h
-      rw [if_pos hb]; exact hceil_side_of_dvd h
+      rw [ite_eq_left hb]; exact hceil_side_of_dvd h
     · have hb : ¬ (u.isMultipleOfPow2 sh = true) := fun he => h ((isMultipleOfPow2_iff _ _).mp he)
-      rw [if_neg hb]; exact hceil_side_of_not_dvd h (hsh_pos_of_not_dvd h)
+      rw [ite_eq_right hb]; exact hceil_side_of_not_dvd h (hsh_pos_of_not_dvd h)
   | .Up =>
     rw [show round natBotSet RoundingMode.Up x =
       (if 0 ≤ x then roundCeiling natBotSet x else roundFloor natBotSet x) from rfl]
-    rw [if_pos hx_nonneg]
+    rw [ite_eq_left hx_nonneg]
     by_cases h : 2 ^ sh ∣ u.toNat
     · have hb : u.isMultipleOfPow2 sh = true := (isMultipleOfPow2_iff _ _).mpr h
-      rw [if_pos hb]; exact hceil_side_of_dvd h
+      rw [ite_eq_left hb]; exact hceil_side_of_dvd h
     · have hb : ¬ (u.isMultipleOfPow2 sh = true) := fun he => h ((isMultipleOfPow2_iff _ _).mp he)
-      rw [if_neg hb]; exact hceil_side_of_not_dvd h (hsh_pos_of_not_dvd h)
+      rw [ite_eq_right hb]; exact hceil_side_of_not_dvd h (hsh_pos_of_not_dvd h)
   | .Nearest =>
     -- Abbreviations for the roundFloor/roundCeiling candidates.
     set F := roundFloor natBotSet x with hF_def
@@ -185,10 +185,10 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
       -- LHS computes to q (in either sh = 0 or sh > 0 branch).
       by_cases hsh0 : sh = 0
       · subst hsh0
-        rw [if_pos rfl]
+        rw [ite_eq_left rfl]
         have hq_n : q = u.toNat := by simp [hq_def]
         rw [hq_n]; push_cast; rfl
-      · rw [if_neg hsh0]
+      · rw [ite_eq_right hsh0]
         have hsh_pos : 0 < sh := Nat.pos_of_ne_zero hsh0
         -- testBit (sh-1) of u.toNat is false since 2^sh ∣ u.toNat and sh-1 < sh.
         have hbit_false : u.testBit (sh - 1) = false := by
@@ -199,13 +199,13 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
           simp [show sh - 1 < sh from by omega]
         have hcond_false : ¬ (u.testBit (sh - 1) = true) := by
           rw [hbit_false]; exact Bool.false_ne_true
-        rw [if_neg hcond_false]
+        rw [ite_eq_right hcond_false]
         rw [toNat_shiftRightSat]
         push_cast; rfl
     · -- 2^sh ∤ u.toNat: sh > 0, and ⌈x⌉₊ = q + 1.
       have hsh_pos : 0 < sh := hsh_pos_of_not_dvd hdvd
       have hsh_ne : sh ≠ 0 := Nat.pos_iff_ne_zero.mp hsh_pos
-      rw [if_neg hsh_ne]
+      rw [ite_eq_right hsh_ne]
       -- Arithmetic setup.
       set r := u.toNat % 2 ^ sh with hr_def
       have hr_bound : r < 2 ^ sh := Nat.mod_lt _ (Nat.two_pow_pos _)
@@ -281,7 +281,7 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
       rw [testBit_eq_toNat_testBit]
       by_cases hbit : u.toNat.testBit (sh - 1) = true
       · -- testBit = true: r ≥ 2^(sh-1).
-        rw [if_pos hbit]
+        rw [ite_eq_left hbit]
         have hr_bit : r.testBit (sh - 1) = true := hr_testBit ▸ hbit
         have hr_ge : 2 ^ (sh - 1) ≤ r :=
           (testBit_top_true_iff_half_le r sh hsh_pos hr_bound).mp hr_bit
@@ -289,7 +289,7 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
         · -- r = 2^(sh-1): tie, tiebreak decides.
           have hmult_bool : u.isMultipleOfPow2 (sh - 1) = true :=
             (isMultipleOfPow2_iff _ _).mpr hmult
-          rw [if_pos hmult_bool]
+          rw [ite_eq_left hmult_bool]
           -- Show r = 2^(sh-1).
           have hr_dvd : 2 ^ (sh - 1) ∣ r := by
             rw [hr_def]
@@ -319,14 +319,14 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
               rw [beq_iff_eq]
               apply _root_.UInt64.eq_of_toNat_eq
               rw [hbit0, hqodd]; rfl
-            rw [if_pos hcheck_true]
+            rw [ite_eq_left hcheck_true]
             rw [toNat_shiftRightSat_add_one u sh hsh_pos]
             show ((q + 1 : ℕ) : EReal) = (RoundingTarget.tiebreak F C).val
             show ((q + 1 : ℕ) : EReal) = (natBotTiebreak F C).val
             unfold natBotTiebreak
             rw [hF_nat, hC_nat]
             have hq1_even : Even (q + 1) := Odd.add_one hq_odd
-            rw [if_neg hq_not_even, if_pos hq1_even, hC_val]
+            rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]
             push_cast; rfl
           · -- q even ⇒ LHS = q.
             have hq_mod : q % 2 = 0 := by omega
@@ -340,18 +340,18 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
               have := congrArg _root_.UInt64.toNat hcheck
               rw [hbit0, show ((1 : UInt64).toNat = 1) from rfl] at this
               omega
-            rw [if_neg hcheck_false]
+            rw [ite_eq_right hcheck_false]
             rw [toNat_shiftRightSat]
             show ((q : ℕ) : EReal) = (RoundingTarget.tiebreak F C).val
             show ((q : ℕ) : EReal) = (natBotTiebreak F C).val
             unfold natBotTiebreak
             rw [hF_nat, hC_nat]
-            rw [if_pos hq_even, hF_val]
+            rw [ite_eq_left hq_even, hF_val]
             push_cast; rfl
         · -- r > 2^(sh-1): dC < dF, returns C.
           have hmult_cond_false : ¬ (u.isMultipleOfPow2 (sh - 1) = true) :=
             fun he => hmult ((isMultipleOfPow2_iff _ _).mp he)
-          rw [if_neg hmult_cond_false]
+          rw [ite_eq_right hmult_cond_false]
           -- r > 2^(sh-1).
           have hr_gt : 2 ^ (sh - 1) < r := by
             rcases lt_or_eq_of_le hr_ge with h | h
@@ -369,7 +369,7 @@ theorem toNat_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
                 compare_gt_iff_gt.mpr hdC_lt]
           exact hceil_side_of_not_dvd hdvd hsh_pos
       · -- testBit = false: r < 2^(sh-1), dF < dC, returns F.
-        rw [if_neg hbit]
+        rw [ite_eq_right hbit]
         have hbit_false : u.toNat.testBit (sh - 1) = false := by
           cases h : u.toNat.testBit (sh - 1)
           · rfl
@@ -442,18 +442,18 @@ theorem compare_shiftRightSat_mul (u : UInt64) (sh : Nat) :
     refine ⟨fun ⟨k, hk⟩ => ?_, Nat.dvd_of_mod_eq_zero⟩
     rw [hk]; exact Nat.mul_mod_right _ _
   by_cases hm : u.isMultipleOfPow2 sh = true
-  · rw [if_pos hm]
+  · rw [ite_eq_left hm]
     have hr0 : u.toNat % 2 ^ sh = 0 := hmult_iff.mp hm
     have heq : u.toNat / 2 ^ sh * 2 ^ sh = u.toNat := by omega
     rw [heq]
     show compareOfLessAndEq u.toNat u.toNat = Ordering.eq
     simp [compareOfLessAndEq]
-  · rw [if_neg hm]
+  · rw [ite_eq_right hm]
     have hr_ne : u.toNat % 2 ^ sh ≠ 0 := fun h => hm (hmult_iff.mpr h)
     have hr_pos : 0 < u.toNat % 2 ^ sh := Nat.pos_of_ne_zero hr_ne
     have hlt : u.toNat / 2 ^ sh * 2 ^ sh < u.toNat := by omega
     show compareOfLessAndEq _ u.toNat = Ordering.lt
-    rw [compareOfLessAndEq, if_pos hlt]
+    rw [compareOfLessAndEq, ite_eq_left hlt]
 
 /-- When we return `shiftRightSat u sh + 1` (with `sh > 0`, so no overflow), the
 scaled-back comparison is always `.gt`. -/
@@ -469,8 +469,8 @@ theorem compare_shiftRightSat_add_one_mul (u : UInt64) (sh : Nat) (hsh : 0 < sh)
         u.toNat / 2 ^ sh * 2 ^ sh + 2 ^ sh := by ring
     omega
   show compareOfLessAndEq _ u.toNat = Ordering.gt
-  rw [compareOfLessAndEq, if_neg (Nat.not_lt.mpr (Nat.le_of_lt hgt)),
-      if_neg (Nat.ne_of_gt hgt)]
+  rw [compareOfLessAndEq, ite_eq_right (Nat.not_lt.mpr (Nat.le_of_lt hgt)),
+      ite_eq_right (Nat.ne_of_gt hgt)]
 
 /-- When `u.testBit (sh - 1) = true` with `sh > 0`, `u` is not a multiple of `2^sh`
 (bit `sh - 1` would have to be zero in a multiple of `2^sh`). -/
@@ -504,8 +504,8 @@ theorem snd_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
   | .Ceiling =>
     simp only []
     by_cases hm : u.isMultipleOfPow2 sh = true
-    · rw [if_pos hm, if_pos hm, compare_shiftRightSat_mul, if_pos hm]
-    · rw [if_neg hm, if_neg hm]
+    · rw [ite_eq_left hm, ite_eq_left hm, compare_shiftRightSat_mul, ite_eq_left hm]
+    · rw [ite_eq_right hm, ite_eq_right hm]
       have hsh_pos : 0 < sh := by
         rcases Nat.eq_zero_or_pos sh with hsh0 | hsh0
         · subst hsh0
@@ -515,8 +515,8 @@ theorem snd_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
   | .Up =>
     simp only []
     by_cases hm : u.isMultipleOfPow2 sh = true
-    · rw [if_pos hm, if_pos hm, compare_shiftRightSat_mul, if_pos hm]
-    · rw [if_neg hm, if_neg hm]
+    · rw [ite_eq_left hm, ite_eq_left hm, compare_shiftRightSat_mul, ite_eq_left hm]
+    · rw [ite_eq_right hm, ite_eq_right hm]
       have hsh_pos : 0 < sh := by
         rcases Nat.eq_zero_or_pos sh with hsh0 | hsh0
         · subst hsh0
@@ -527,22 +527,22 @@ theorem snd_shiftRightRound (u : UInt64) (mode : RoundingMode) (sh : Nat) :
     simp only []
     by_cases hsh0 : sh = 0
     · subst hsh0
-      rw [if_pos rfl, if_pos rfl]
+      rw [ite_eq_left rfl, ite_eq_left rfl]
       simp only [pow_zero, Nat.mul_one]
       show Ordering.eq = compareOfLessAndEq u.toNat u.toNat
       simp [compareOfLessAndEq]
-    · rw [if_neg hsh0, if_neg hsh0]
+    · rw [ite_eq_right hsh0, ite_eq_right hsh0]
       have hsh_pos : 0 < sh := Nat.pos_of_ne_zero hsh0
       by_cases htb : u.testBit (sh - 1) = true
-      · rw [if_pos htb, if_pos htb]
+      · rw [ite_eq_left htb, ite_eq_left htb]
         have hnot_mult : ¬ u.isMultipleOfPow2 sh = true :=
           not_isMultipleOfPow2_of_testBit hsh_pos htb
         by_cases hm1 : u.isMultipleOfPow2 (sh - 1) = true
-        · rw [if_pos hm1, if_pos hm1]
+        · rw [ite_eq_left hm1, ite_eq_left hm1]
           by_cases hodd : (shiftRightSat u sh &&& 1 == 1) = true
-          · rw [if_pos hodd, if_pos hodd, compare_shiftRightSat_add_one_mul u sh hsh_pos]
-          · rw [if_neg hodd, if_neg hodd, compare_shiftRightSat_mul, if_neg hnot_mult]
-        · rw [if_neg hm1, if_neg hm1, compare_shiftRightSat_add_one_mul u sh hsh_pos]
-      · rw [if_neg htb, if_neg htb, compare_shiftRightSat_mul]
+          · rw [ite_eq_left hodd, ite_eq_left hodd, compare_shiftRightSat_add_one_mul u sh hsh_pos]
+          · rw [ite_eq_right hodd, ite_eq_right hodd, compare_shiftRightSat_mul, ite_eq_right hnot_mult]
+        · rw [ite_eq_right hm1, ite_eq_right hm1, compare_shiftRightSat_add_one_mul u sh hsh_pos]
+      · rw [ite_eq_right htb, ite_eq_right htb, compare_shiftRightSat_mul]
 
 end UInt64

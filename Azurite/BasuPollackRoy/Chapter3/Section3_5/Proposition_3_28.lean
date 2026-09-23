@@ -87,7 +87,7 @@ theorem proposition_3_28a {i : ℕ} {V W : Set (Fin k → R)}
     obtain ⟨U, Ω, ϕ, ϕinv, hchart, h0U, hxΩ, hϕ0, hslice⟩ := hV.2 x (hWV hx)
     have hWeqV : W = V := le_antisymm hWV fun z _ => (Subsingleton.elim x z) ▸ hx
     exact ⟨U, Ω, ϕ, ϕinv, hchart, h0U, hxΩ, hϕ0, by rw [hWeqV]; exact hslice⟩
-  haveI : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
+  have : Nonempty (Fin k) := ⟨⟨0, hk⟩⟩
   obtain ⟨U, Ω, ϕ, ϕinv, hchart, h0U, hxΩ, hϕ0, hslice⟩ := hV.2 x (hWV hx)
   obtain ⟨r, hr, hball⟩ := hWopen x hx
   set Ω' : Set (Fin k → R) := Ω ∩ openBall x r with hΩ'def

@@ -46,9 +46,9 @@ theorem exercise_2_9 {R : Type*} [Field R] [IsRealClosed R]
     ((∀ x : R, 0 < a * x ^ 2 + b * x + c) ∨
      (∀ x : R, a * x ^ 2 + b * x + c < 0)) ↔
       b ^ 2 - 4 * a * c < 0 := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
   -- Key completing-the-square identity.
   have key : ∀ x : R, 4 * a * (a * x ^ 2 + b * x + c) =
       (2 * a * x + b) ^ 2 - (b ^ 2 - 4 * a * c) := fun x => by ring

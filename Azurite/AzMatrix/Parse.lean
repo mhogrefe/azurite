@@ -185,25 +185,25 @@ private lemma eq_emptyCols (hn : n = 0) (M : AzMatrix R m n) :
 private lemma toChars_of_degenerate (M : AzMatrix R m n) (h : m = 0 ∨ n = 0) :
     toChars M = ['[', ']'] := by
   unfold toChars
-  rw [if_pos h]
+  rw [ite_eq_left h]
 
 /-- Round-trip: `parseChars` is a left inverse of `toChars`. -/
 theorem parseChars_toChars (M : AzMatrix R m n) : parseChars (toChars M) = some M := by
   by_cases hm : m = 0
   · rw [toChars_of_degenerate M (Or.inl hm)]
     unfold parseChars
-    rw [dif_pos hm, if_pos rfl]
+    rw [dite_eq_left hm, ite_eq_left rfl]
     congr 1
     exact (eq_emptyRows hm M).symm
   · by_cases hn : n = 0
     · rw [toChars_of_degenerate M (Or.inr hn)]
       unfold parseChars
-      rw [dif_neg hm, dif_pos hn, if_pos rfl]
+      rw [dite_eq_right hm, dite_eq_left hn, ite_eq_left rfl]
       congr 1
       exact (eq_emptyCols hn M).symm
     · -- Non-degenerate case: m > 0, n > 0
       unfold parseChars toChars
-      rw [if_neg (by tauto : ¬(m = 0 ∨ n = 0))]
+      rw [ite_eq_right (by tauto : ¬(m = 0 ∨ n = 0))]
       set body := List.intercalate [';', ' '] (M.toLists.map (fun row =>
           List.intercalate [',', ' '] (row.map ParsableElement.toChars))) with hbody
       show (if hm' : m = 0 then _
@@ -220,7 +220,7 @@ theorem parseChars_toChars (M : AzMatrix R m n) : parseChars (toChars M) = some 
                     else none)
                 | _ => none
               | _ => none) = some M
-      rw [dif_neg hm, dif_neg hn]
+      rw [dite_eq_right hm, dite_eq_right hn]
       show (match (body ++ [']']).reverse with
         | ']' :: body_rev =>
           (parseRowsN n m body_rev.reverse).bind (fun rows =>
@@ -252,7 +252,7 @@ theorem parseChars_toChars (M : AzMatrix R m n) : parseChars (toChars M) = some 
                 some (AzMatrix.ofLists M.toLists hrl hcl)
               else none
             else none) = some M
-      rw [dif_pos hlen, dif_pos hrowlen]
+      rw [dite_eq_left hlen, dite_eq_left hrowlen]
       congr 1
       exact AzMatrix.ofLists_toLists M
 

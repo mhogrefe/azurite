@@ -74,7 +74,7 @@ theorem qf_realization_transfer {k : ℕ}
   | atom a =>
     obtain ⟨P, rel⟩ := a
     cases rel <;>
-      simp only [Formula.realization, AtomRealization.interpret, Set.mem_setOf_eq, ← haeval]
+      simp only [Formula.realization, AtomRealization.interpret, Set.mem_ofPred_eq, ← haeval]
     · exact (map_eq_zero_iff _ hinj).symm
     · exact (map_eq_zero_iff _ hinj).not.symm
     · rw [hz]; exact hmono.lt_iff_lt.symm
@@ -169,16 +169,16 @@ theorem uniform_qe_of_proj {k : ℕ}
     obtain ⟨Ψ, hqf, hR, hR'⟩ := ih
     obtain ⟨Ψ', hqf', hpR, hpR'⟩ := huproj Ψ x hqf
     refine ⟨Ψ', hqf', ?_, ?_⟩
-    · rw [← hpR]; ext y; simp only [Formula.realization, Set.mem_setOf_eq, hR]
-    · rw [← hpR']; ext y; simp only [Formula.realization, Set.mem_setOf_eq, hR']
+    · rw [← hpR]; ext y; simp only [Formula.realization, Set.mem_ofPred_eq, hR]
+    · rw [← hpR']; ext y; simp only [Formula.realization, Set.mem_ofPred_eq, hR']
   | forall_ x Φ ih =>
     obtain ⟨Ψ, hqf, hR, hR'⟩ := ih
     obtain ⟨Ψ', hqf', hpR, hpR'⟩ := huproj (.not Ψ) x (by simp [Formula.IsQuantifierFree, hqf])
     refine ⟨.not Ψ', hqf', ?_, ?_⟩
     · rw [Formula.realization, ← hpR]; ext y
-      simp only [Formula.realization, Set.mem_compl_iff, Set.mem_setOf_eq, not_exists, hR, not_not]
+      simp only [Formula.realization, Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists, hR, not_not]
     · rw [Formula.realization, ← hpR']; ext y
-      simp only [Formula.realization, Set.mem_compl_iff, Set.mem_setOf_eq, not_exists, hR', not_not]
+      simp only [Formula.realization, Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists, hR', not_not]
 
 /-- **BPR Theorem 2.80 (Tarski–Seidenberg), modulo the uniform projection formula.**
 Given the uniform projection formula (`huproj`), a sentence `Φ` (coefficients in `R`,
@@ -231,12 +231,12 @@ theorem Formula.rename_realization_ordered [DecidableEq σ] [DecidableEq τ]
     simp [Formula.rename, Formula.realization, ih₁, ih₂, Set.preimage_union, Set.preimage_compl]
   | exists_ x _ ih =>
     ext y
-    simp only [Formula.rename, Formula.realization, Set.mem_setOf_eq, Set.mem_preimage, ih]
+    simp only [Formula.rename, Formula.realization, Set.mem_ofPred_eq, Set.mem_preimage, ih]
     constructor <;> rintro ⟨c, hc⟩ <;> refine ⟨c, ?_⟩ <;>
     · convert hc using 1; ext i; simp [Function.update, hf.eq_iff]
   | forall_ x _ ih =>
     ext y
-    simp only [Formula.rename, Formula.realization, Set.mem_setOf_eq, Set.mem_preimage, ih]
+    simp only [Formula.rename, Formula.realization, Set.mem_ofPred_eq, Set.mem_preimage, ih]
     constructor <;> intro hc <;> intro c <;>
     · have := hc c; convert this using 1; ext i; simp [Function.update, hf.eq_iff]
 
@@ -268,7 +268,7 @@ theorem exists_update_eq {k : ℕ} (x : Fin (k + 1)) (V : Set (Fin (k + 1) → R
     have h3 : e.symm (Fin.last k) = x := by simp [he, Equiv.symm_swap, Equiv.swap_apply_right]
     rw [h2, h3]
   ext y
-  simp only [Set.mem_setOf_eq, Set.mem_preimage, Fin.init_image_eq_setOf_exists_snoc]
+  simp only [Set.mem_ofPred_eq, Set.mem_preimage, Fin.init_image_eq_setOf_exists_snoc]
   exact exists_congr (fun c => by rw [key y c])
 
 section TransferReduction

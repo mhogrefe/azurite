@@ -128,7 +128,7 @@ theorem isSemialgebraicSetC_complexPolyZero (P : MvPolynomial (Fin m) (Ri R)) :
   have hset : (realEquiv.symm ⁻¹' {z : Fin m → Ri R | aeval z P = 0})
       = {w : Fin (m + m) → R | eval w Qre = 0} ∩ {w | eval w Qim = 0} := by
     ext w
-    simp only [Set.mem_preimage, Set.mem_setOf_eq, Set.mem_inter_iff,
+    simp only [Set.mem_preimage, Set.mem_ofPred_eq, Set.mem_inter_iff,
       reL_eq_zero_and_imL_eq_zero_iff]
     rw [(hQ w).1, (hQ w).2]
   rw [hset]
@@ -150,7 +150,7 @@ theorem isSemialgebraicFunctionC_complexPolyMap {n : ℕ}
           {p : Fin (m + n) → Ri R |
             aeval p (X (Fin.natAdd m b) - rename (Fin.castAdd n) (P b)) = 0} := by
     ext p
-    simp only [complexFunGraph, Set.mem_setOf_eq, Set.mem_univ, true_and, Set.mem_iInter,
+    simp only [complexFunGraph, Set.mem_ofPred_eq, Set.mem_univ, true_and, Set.mem_iInter,
       Finset.mem_univ, forall_true_left, map_sub, aeval_X, aeval_rename, sub_eq_zero,
       funext_iff, Function.comp_apply]
   rw [hgraph]

@@ -114,9 +114,9 @@ theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C)
         · ext a; have := Finsupp.ext_iff.mp h (Sum.inl a); simpa [Finsupp.sumElim_inl] using this
         · ext b; have := Finsupp.ext_iff.mp h (Sum.inr b); simpa [Finsupp.sumElim_inr] using this
       · rintro ⟨h1, h2⟩; subst h1; subst h2; ext x; cases x <;> simp
-    simp only [sumRingEquiv_C, coeff_C, apply_ite (coeff γ₁), coeff_zero]
+    simp only [sumRingEquiv_C, coeff_C, apply_ite (fun q => AddMonoidAlgebra.coeff q γ₁), AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
     split_ifs with h0 h1 h2 <;> simp_all
-  | add p q hp hq => rw [map_add, coeff_add, coeff_add, coeff_add, hp, hq]
+  | add p q hp hq => simp only [map_add, AddMonoidAlgebra.coeff_add, Finsupp.add_apply, hp, hq]
   | mul_X p i hp =>
     cases i with
     | inl b =>
@@ -128,7 +128,7 @@ theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C)
         cases x with
         | inl a => simp [Finsupp.sumElim_inl, Finsupp.single_apply, Sum.inl.injEq]
         | inr a => simp [Finsupp.sumElim_inr]
-      rw [map_mul, sumRingEquiv_X_inl, coeff_mul_X', coeff_mul_X', apply_ite (coeff γ₁), coeff_zero]
+      rw [map_mul, sumRingEquiv_X_inl, coeff_mul_X', coeff_mul_X', apply_ite (fun q => AddMonoidAlgebra.coeff q γ₁), AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]
       split_ifs with h1 h2 h2
       · rw [hp, hsub]
       · exact absurd (hmem.1 h1) h2
@@ -136,8 +136,8 @@ theorem coeff_sumToIter {S₁ S₂ : Type*} (P : MvPolynomial (S₁ ⊕ S₂) C)
       · rfl
     | inr c =>
       rw [map_mul, sumRingEquiv_X_inr]
-      have e : coeff γ₀ ((sumRingEquiv C S₁ S₂) p * MvPolynomial.C (X c))
-          = coeff γ₀ ((sumRingEquiv C S₁ S₂) p) * X c := by rw [mul_comm, coeff_C_mul, mul_comm]
+      have e : ((sumRingEquiv C S₁ S₂) p * MvPolynomial.C (X c)).coeff γ₀
+          = ((sumRingEquiv C S₁ S₂) p).coeff γ₀ * X c := by rw [mul_comm, coeff_C_mul, mul_comm]
       have hmem : c ∈ γ₁.support ↔ (Sum.inr c : S₁ ⊕ S₂) ∈ (γ₀.sumElim γ₁).support := by
         simp [Finsupp.mem_support_iff]
       have hsub : γ₀.sumElim (γ₁ - Finsupp.single c 1)
@@ -187,14 +187,14 @@ theorem mapDomain_symm_inl (k : Fin 2 → ℕ) (γ₀ : Fin (k 0 + 1) →₀ ℕ
     (j : Fin (k 0 + 1)) :
     Finsupp.mapDomain (σequiv k).symm (γ₀.sumElim γ₁) ⟨0, j⟩ = γ₀ j := by
   have h : (σequiv k).symm (Sum.inl j) = ⟨0, j⟩ := σequiv_symm_inl k j
-  rw [← h, Finsupp.mapDomain_apply (σequiv k).symm.injective, Finsupp.sumElim_inl]
+  rw [← h, Finsupp.mapDomain_apply_of_injective (σequiv k).symm.injective, Finsupp.sumElim_inl]
 
 /-- The block-1 exponent of the relabeled sigma-monomial recovers `γ₁`. -/
 theorem mapDomain_symm_inr (k : Fin 2 → ℕ) (γ₀ : Fin (k 0 + 1) →₀ ℕ) (γ₁ : Fin (k 1 + 1) →₀ ℕ)
     (j : Fin (k 1 + 1)) :
     Finsupp.mapDomain (σequiv k).symm (γ₀.sumElim γ₁) ⟨1, j⟩ = γ₁ j := by
   have h : (σequiv k).symm (Sum.inr j) = ⟨1, j⟩ := σequiv_symm_inr k j
-  rw [← h, Finsupp.mapDomain_apply (σequiv k).symm.injective, Finsupp.sumElim_inr]
+  rw [← h, Finsupp.mapDomain_apply_of_injective (σequiv k).symm.injective, Finsupp.sumElim_inr]
 
 omit [IsRealClosed R] in
 /-- **Block-0 homogeneity of `split P`.** If `P` is multihomogeneous of multidegree `dd`, then
@@ -207,7 +207,7 @@ theorem split_isHomogeneous {k : Fin 2 → ℕ}
   obtain ⟨γ₁, hγ₁⟩ : ∃ γ₁, ((split k P).coeff γ₀).coeff γ₁ ≠ 0 := by
     by_contra h
     push Not at h
-    exact hγ₀ (MvPolynomial.ext _ _ (fun γ₁ => by rw [h γ₁, coeff_zero]))
+    exact hγ₀ (MvPolynomial.ext _ _ (fun γ₁ => by rw [h γ₁, AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply]))
   rw [coeff_coeff_split] at hγ₁
   set c := Finsupp.mapDomain (σequiv k).symm (γ₀.sumElim γ₁) with hc
   have hcmem : c ∈ P.support := MvPolynomial.mem_support_iff.mpr hγ₁
@@ -266,7 +266,7 @@ theorem rename_e1_isMultihomogeneous {n m : ℕ} {Q : MvPolynomial (Fin (n + 1))
   rw [show (∑ j : Fin (n + 1), Finsupp.mapDomain (e1 n) γ' ⟨0, j⟩) = ∑ j : Fin (n + 1), γ' j from
     Finset.sum_congr rfl fun j _ => by
       rw [show (⟨0, j⟩ : (i : Fin 1) × Fin (n + 1)) = e1 n j from rfl,
-        Finsupp.mapDomain_apply (e1 n).injective]]
+        Finsupp.mapDomain_apply_of_injective (e1 n).injective]]
   exact hdeg
 
 /-- `ProjVanishes` of the single-block renamed polynomial reduces to ordinary evaluation at the
@@ -383,9 +383,9 @@ theorem projection_isAlgebraic {k : Fin 2 → ℕ}
           projZerOfFinset Ps
         = projZerOfFinset (k := fun _ : Fin 1 => k 1) Qs := by
   classical
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
-  haveI : CharZero R := inferInstance
-  haveI : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : CharZero R := inferInstance
+  have : CharZero (Ri R) := charZero_of_injective_algebraMap (algebraMap R (Ri R)).injective
   -- index the finite family `Ps`
   set s := Ps.card with hs
   set enum : Fin s ≃ Ps := Ps.equivFin.symm with henum
@@ -415,7 +415,7 @@ theorem projection_isAlgebraic {k : Fin 2 → ℕ}
     exact ⟨fun _ => m, rename_e1_isMultihomogeneous hm⟩
   · -- the set equality
     ext y
-    simp only [Set.mem_image, projZerOfFinset, Set.mem_setOf_eq]
+    simp only [Set.mem_image, projZerOfFinset, Set.mem_ofPred_eq]
     constructor
     · rintro ⟨x, hxvan, rfl⟩
       intro Q hQ

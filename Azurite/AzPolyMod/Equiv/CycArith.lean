@@ -28,15 +28,15 @@ theorem zetaCoeff_eq_sub {R : Type _} [CommRing R] {i l : ℕ} (hi : i < (p - 1)
   unfold CL.zetaCoeff
   by_cases hl : l < (p - 1) * p ^ (k - 1)
   · have h2 : ¬ ((p - 1) * p ^ (k - 1) ≤ l ∧ l % p ^ (k - 1) = i % p ^ (k - 1)) := fun h => by omega
-    rw [if_pos hl, if_neg h2, sub_zero]
+    rw [ite_eq_left hl, ite_eq_right h2, sub_zero]
     by_cases h : l = i
-    · rw [if_pos h.symm, if_pos h]; simp
-    · rw [if_neg (Ne.symm h), if_neg h]; simp
+    · rw [ite_eq_left h.symm, ite_eq_left h]; simp
+    · rw [ite_eq_right (Ne.symm h), ite_eq_right h]; simp
   · have h1 : ¬ l = i := by omega
-    rw [if_neg hl, if_neg h1, zero_sub]
+    rw [ite_eq_right hl, ite_eq_right h1, zero_sub]
     by_cases h : i % p ^ (k - 1) = l % p ^ (k - 1)
-    · rw [if_pos h, if_pos ⟨by omega, h.symm⟩]; simp
-    · rw [if_neg h, if_neg (fun h' => h h'.2.symm)]; simp
+    · rw [ite_eq_left h, ite_eq_left ⟨by omega, h.symm⟩]; simp
+    · rw [ite_eq_right h, ite_eq_right (fun h' => h h'.2.symm)]; simp
 
 include hp hk in
 /-- **The additive reduction lands in the residue class of its input.** -/
@@ -132,7 +132,7 @@ include hp hk in
 include hp hk in
 /-- **`cycPow` is the monoid power.** -/
 theorem cycPow_eq (a : CycT n p k) (u : AzNat) : cycPow n p k a u = a ^ u.toNat := by
-  letI := cycFMonoid (n := n) hp hk
+  let := cycFMonoid (n := n) hp hk
   exact Azurite.windowPowAzNat_eq_pow (toF n p k a) u
 
 end AzPolyMod

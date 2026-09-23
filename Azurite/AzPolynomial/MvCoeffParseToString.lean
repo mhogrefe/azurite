@@ -115,8 +115,8 @@ private theorem AzPolynomial.splitTermsAux_cons_neutral
   rw [splitTermsAux_cons]
   by_cases h_plus : c = '+'
   · have hd : d ≠ 0 := htop h_plus
-    rw [if_neg (fun ⟨_, hd0⟩ => hd hd0), if_neg (h_plus ▸ hlp), if_neg (h_plus ▸ hrp)]
-  · rw [if_neg (fun ⟨hp, _⟩ => h_plus hp), if_neg hlp, if_neg hrp]
+    rw [ite_eq_right (fun ⟨_, hd0⟩ => hd hd0), ite_eq_right (h_plus ▸ hlp), ite_eq_right (h_plus ▸ hrp)]
+  · rw [ite_eq_right (fun ⟨hp, _⟩ => h_plus hp), ite_eq_right hlp, ite_eq_right hrp]
 
 /-- Consuming a paren-free, non-top-plus prefix just prepends (in reverse) to
     `curRev`.  The depth is preserved because there are no parens. -/
@@ -156,16 +156,16 @@ private theorem AzPolynomial.splitTermsAux_consume_paren_wrapped
   rw [hrewrite]
   -- Step 1: consume '('
   rw [splitTermsAux_cons]
-  rw [if_neg (fun ⟨hp, _⟩ => absurd hp (by decide : ('(' : Char) ≠ '+'))]
-  rw [if_pos rfl]
+  rw [ite_eq_right (fun ⟨hp, _⟩ => absurd hp (by decide : ('(' : Char) ≠ '+'))]
+  rw [ite_eq_left rfl]
   -- Step 2: consume `inner` (paren-free, depth = d+1 > 0 so `+` is fine)
   rw [splitTermsAux_consume_neutral inner (')' :: cs) (d + 1) accRev h1 h2
       (fun hd => by omega) ('(' :: curRev)]
   -- Step 3: consume ')'
   rw [splitTermsAux_cons]
-  rw [if_neg (fun ⟨hp, _⟩ => absurd hp (by decide : (')' : Char) ≠ '+'))]
-  rw [if_neg (by decide : ¬(')' : Char) = '(')]
-  rw [if_pos rfl]
+  rw [ite_eq_right (fun ⟨hp, _⟩ => absurd hp (by decide : (')' : Char) ≠ '+'))]
+  rw [ite_eq_right (by decide : ¬(')' : Char) = '(')]
+  rw [ite_eq_left rfl]
   show AzPolynomial.splitTermsAux cs (d + 1 - 1) _ _ = _
   rw [show d + 1 - 1 = d from by omega]
 
@@ -222,8 +222,8 @@ private theorem AzPolynomial.termCharsMvCoeffWith_isTerm
     AzPolynomial.IsTerm (AzPolynomial.termCharsMvCoeffWith F c i) := by
   unfold AzPolynomial.termCharsMvCoeffWith
   by_cases h1 : c = 1 ∧ i ≠ 0
-  · rw [if_pos h1]; exact AzPolynomial.xPowerChars_isTerm i
-  · rw [if_neg h1]
+  · rw [ite_eq_left h1]; exact AzPolynomial.xPowerChars_isTerm i
+  · rw [ite_eq_right h1]
     by_cases h2 : i = 0
     · -- wrapped, i = 0: '(' :: c.toCharsWith F ++ [')']
       rw [show (if i = 0 then ('(' :: c.toCharsWith F ++ [')'] : List Char)
@@ -237,7 +237,7 @@ private theorem AzPolynomial.termCharsMvCoeffWith_isTerm
       rw [show (if i = 0 then ('(' :: c.toCharsWith F ++ [')'] : List Char)
             else '(' :: c.toCharsWith F ++ [')'] ++ '*' :: AzPolynomial.xPowerChars i)
           = '(' :: c.toCharsWith F ++ ')' :: ('*' :: AzPolynomial.xPowerChars i) from by
-            rw [if_neg h2]; simp]
+            rw [ite_eq_right h2]; simp]
       refine AzPolynomial.IsTerm.ofWrapped
         (AzMvPolynomial.toCharsWith_no_lparen F c)
         (AzMvPolynomial.toCharsWith_no_rparen F c)
@@ -265,20 +265,20 @@ end TermShapes
 private theorem AzPolynomial.parseBareX_xPowerChars (i : ℕ) (hi : i ≠ 0) :
     AzPolynomial.parseBareX (AzPolynomial.xPowerChars i) = some i := by
   unfold AzPolynomial.xPowerChars
-  rw [if_neg hi]
+  rw [ite_eq_right hi]
   by_cases h1 : i = 1
-  · rw [if_pos h1, h1]; rfl
-  · rw [if_neg h1]
+  · rw [ite_eq_left h1, h1]; rfl
+  · rw [ite_eq_right h1]
     show AzPolynomial.parseBareX ('x' :: '^' :: natToChars i) = some i
     simp [AzPolynomial.parseBareX, parseNatChars_natToChars]
 
 private theorem AzPolynomial.parseCoeffSuffix_mul_xPowerChars (i : ℕ) (hi : i ≠ 0) :
     AzPolynomial.parseCoeffSuffix ('*' :: AzPolynomial.xPowerChars i) = some i := by
   unfold AzPolynomial.xPowerChars
-  rw [if_neg hi]
+  rw [ite_eq_right hi]
   by_cases h1 : i = 1
-  · rw [if_pos h1, h1]; rfl
-  · rw [if_neg h1]
+  · rw [ite_eq_left h1, h1]; rfl
+  · rw [ite_eq_right h1]
     show AzPolynomial.parseCoeffSuffix ('*' :: 'x' :: '^' :: natToChars i) = some i
     simp [AzPolynomial.parseCoeffSuffix, parseNatChars_natToChars]
 
@@ -315,22 +315,22 @@ private theorem AzPolynomial.parseOneTermMvCoeff_termCharsMvCoeffWith
       some (c, i) := by
   unfold AzPolynomial.termCharsMvCoeffWith
   by_cases h1 : c = 1 ∧ i ≠ 0
-  · rw [if_pos h1]
+  · rw [ite_eq_left h1]
     obtain ⟨hc, hi⟩ := h1
     subst hc
     -- xPowerChars i; parseOneTerm goes through the bare-x branch.
     have hx : ∃ rest, AzPolynomial.xPowerChars i = 'x' :: rest := by
       unfold AzPolynomial.xPowerChars
-      rw [if_neg hi]
+      rw [ite_eq_right hi]
       by_cases h1' : i = 1
-      · rw [if_pos h1']; exact ⟨[], rfl⟩
-      · rw [if_neg h1']; exact ⟨_, rfl⟩
+      · rw [ite_eq_left h1']; exact ⟨[], rfl⟩
+      · rw [ite_eq_right h1']; exact ⟨_, rfl⟩
     obtain ⟨rest, hrest⟩ := hx
     rw [hrest]
     show ((AzPolynomial.parseBareX ('x' :: rest)).map (fun i => (1, i))) = some (1, i)
     rw [← hrest, parseBareX_xPowerChars i hi]
     rfl
-  · rw [if_neg h1]
+  · rw [ite_eq_right h1]
     by_cases h2 : i = 0
     · subst h2
       simp only
@@ -339,7 +339,7 @@ private theorem AzPolynomial.parseOneTermMvCoeff_termCharsMvCoeffWith
           '(' :: (c.toCharsWith F ++ ')' :: []) := by simp
       rw [this]
       exact parseOneTermMvCoeff_wrapped F c [] 0 rfl
-    · rw [if_neg h2]
+    · rw [ite_eq_right h2]
       -- Goal: parseOneTerm ('(' :: c.toCharsWith F ++ [')'] ++ '*' :: xPowerChars i) = some (c, i)
       have : ('(' :: c.toCharsWith F ++ [')'] ++ '*' :: AzPolynomial.xPowerChars i) =
           '(' :: (c.toCharsWith F ++ ')' :: ('*' :: AzPolynomial.xPowerChars i)) := by simp
@@ -389,7 +389,7 @@ private theorem AzPolynomial.splitTermsAux_joinWithPlus
       rw [h1]
       -- Consume the top-level `+`.
       rw [splitTermsAux_cons]
-      rw [if_pos ⟨rfl, rfl⟩]
+      rw [ite_eq_left ⟨rfl, rfl⟩]
       simp only [List.append_nil, List.reverse_reverse]
       -- Apply induction hypothesis.
       have hts' : ∀ s ∈ (t' :: rest'), AzPolynomial.IsTerm s :=
@@ -468,12 +468,12 @@ private theorem AzPolynomial.sum_filterMap_eq_sum_range
     | cons i L' ih =>
       by_cases h : p.coeff i = 0
       · rw [List.filterMap_cons]
-        simp only [h, if_true]
+        simp only [h, ite_true]
         rw [ih]
         simp only [List.map_cons, List.sum_cons]
         rw [h, Polynomial.monomial_zero_right, zero_add]
       · rw [List.filterMap_cons]
-        simp only [h, if_false]
+        simp only [h, ite_false]
         rw [List.map_cons, List.sum_cons, List.sum_cons, ih]
   rw [step2]
   -- Step 3: reverse preserves sum in a comm monoid.
@@ -531,17 +531,17 @@ private theorem AzPolynomial.termCharsMvCoeffWith_head_ne_zero
     ∃ ch t, AzPolynomial.termCharsMvCoeffWith F c i = ch :: t ∧ ch ≠ '0' := by
   unfold AzPolynomial.termCharsMvCoeffWith
   by_cases h1 : c = 1 ∧ i ≠ 0
-  · rw [if_pos h1]
+  · rw [ite_eq_left h1]
     unfold AzPolynomial.xPowerChars
-    rw [if_neg h1.2]
+    rw [ite_eq_right h1.2]
     by_cases h2 : i = 1
-    · rw [if_pos h2]; exact ⟨'x', [], rfl, by decide⟩
-    · rw [if_neg h2]; exact ⟨'x', _, rfl, by decide⟩
-  · rw [if_neg h1]
+    · rw [ite_eq_left h2]; exact ⟨'x', [], rfl, by decide⟩
+    · rw [ite_eq_right h2]; exact ⟨'x', _, rfl, by decide⟩
+  · rw [ite_eq_right h1]
     by_cases h2 : i = 0
-    · rw [if_pos h2]
+    · rw [ite_eq_left h2]
       exact ⟨'(', c.toCharsWith F ++ [')'], by simp, by decide⟩
-    · rw [if_neg h2]
+    · rw [ite_eq_right h2]
       refine ⟨'(', c.toCharsWith F ++ [')'] ++ '*' :: AzPolynomial.xPowerChars i, ?_, by decide⟩
       simp
 
@@ -584,7 +584,7 @@ private theorem AzPolynomial.terms_ne_nil
   have hlast := AzPolynomial.coeff_size_sub_one_ne_zero p hp
   rw [AzPolynomial.reverse_range_cons hpos]
   simp only [List.filterMap_cons]
-  rw [if_neg hlast]
+  rw [ite_eq_right hlast]
   simp
 
 omit [ParenFreeCoeff R] [ParenFreeVar F n] in
@@ -593,12 +593,12 @@ private theorem AzPolynomial.toCharsMvCoeffWith_ne_zeroChar
     (p : AzPolynomial (AzMvPolynomial n R ord)) (hp : p.coeffs.size ≠ 0) :
     AzPolynomial.toCharsMvCoeffWith F p ≠ ['0'] := by
   unfold AzPolynomial.toCharsMvCoeffWith
-  rw [if_neg hp]
+  rw [ite_eq_right hp]
   have hpos : 0 < p.coeffs.size := Nat.pos_of_ne_zero hp
   have hlast := AzPolynomial.coeff_size_sub_one_ne_zero p hp
   rw [AzPolynomial.reverse_range_cons hpos]
   simp only [List.filterMap_cons]
-  rw [if_neg hlast]
+  rw [ite_eq_right hlast]
   -- Get the head character of the first term.
   obtain ⟨ch, tl, heq, hch⟩ :=
     AzPolynomial.termCharsMvCoeffWith_head_ne_zero F
@@ -642,7 +642,7 @@ theorem AzPolynomial.parseMvCoeffWith_toCharsMvCoeffWith
     have hne : AzPolynomial.toCharsMvCoeffWith F p ≠ ['0'] :=
       AzPolynomial.toCharsMvCoeffWith_ne_zeroChar F p hp0
     unfold AzPolynomial.parseMvCoeffWith
-    rw [if_neg hne]
+    rw [ite_eq_right hne]
     -- The terms list and pairs list (both filterMap'd over the reversed range).
     let indices := (List.range p.coeffs.size).reverse
     let terms : List (List Char) := indices.filterMap (fun i =>
@@ -653,7 +653,7 @@ theorem AzPolynomial.parseMvCoeffWith_toCharsMvCoeffWith
     -- Step 1: toCharsMvCoeffWith F p = joinWithPlus terms (using `hp0`).
     have htoCs : AzPolynomial.toCharsMvCoeffWith F p = AzPolynomial.joinWithPlus terms := by
       unfold AzPolynomial.toCharsMvCoeffWith
-      rw [if_neg hp0]
+      rw [ite_eq_right hp0]
     rw [htoCs]
     -- Step 2: splitTerms inverts joinWithPlus because each term is `IsTerm`.
     have hterms_isTerm : ∀ t ∈ terms, AzPolynomial.IsTerm t := by
@@ -661,8 +661,8 @@ theorem AzPolynomial.parseMvCoeffWith_toCharsMvCoeffWith
       simp only [terms, List.mem_filterMap] at ht
       obtain ⟨i, _, hi⟩ := ht
       by_cases hc : p.coeff i = 0
-      · rw [if_pos hc] at hi; exact absurd hi (by simp)
-      · rw [if_neg hc] at hi
+      · rw [ite_eq_left hc] at hi; exact absurd hi (by simp)
+      · rw [ite_eq_right hc] at hi
         rw [Option.some.injEq] at hi
         rw [← hi]
         exact AzPolynomial.termCharsMvCoeffWith_isTerm F (p.coeff i) i

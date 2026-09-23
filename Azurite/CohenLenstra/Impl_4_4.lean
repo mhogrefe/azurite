@@ -83,7 +83,7 @@ theorem isUnit_of_val_coprime {n : ℕ} [NeZero n] {x : ZMod n}
 theorem jacobiSym_c1_of_euler {n : ℕ} (hn : n.Prime) (hn1 : n % 4 = 1)
     {a : ℤ} (ha : ((a : ZMod n)) ^ ((n - 1) / 2) = -1) :
     jacobiSym ((0 : ℤ) ^ 2 + 4 * a) n = -1 := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   have hn5 : 5 ≤ n := by
     have := hn.two_le
     omega

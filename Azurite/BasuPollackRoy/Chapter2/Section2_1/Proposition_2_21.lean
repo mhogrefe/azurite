@@ -180,10 +180,10 @@ theorem proposition_2_21_right_of_isRealClosed
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     HasSignRight P r
       (SignType.sign (((⇑derivative)^[P.rootMultiplicity r] P).eval r)) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact proposition_2_21_right theorem_2_11_b_c hP r
 
 /-- **Proposition 2.21 (left side), real closed form.** -/
@@ -194,10 +194,10 @@ theorem proposition_2_21_left_of_isRealClosed
     HasSignLeft P r
       ((-1) ^ P.rootMultiplicity r *
         SignType.sign (((⇑derivative)^[P.rootMultiplicity r] P).eval r)) := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact proposition_2_21_left theorem_2_11_b_c hP r
 
 end Azurite.BPR.Proposition2_21

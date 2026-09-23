@@ -80,7 +80,7 @@ private lemma zDeg_add_le (p q : MvPolynomial (Fin ℓ) (MvPolynomial (Fin m) �
   unfold zDeg
   apply Finset.sup_le
   intro y hy
-  rw [MvPolynomial.coeff_add]
+  rw [AddMonoidAlgebra.coeff_add, Finsupp.add_apply]
   refine (MvPolynomial.totalDegree_add _ _).trans ?_
   refine max_le_max ?_ ?_
   · exact le_zDeg p y
@@ -522,7 +522,7 @@ theorem bitsize_substitute_le
             · rw [Int.mul_one]
               exact (h_τ1 0 uv.1).trans (Nat.le_add_right _ _)
             · rw [Int.mul_zero]; simp
-          · rw [MvPolynomial.coeff_zero, Int.mul_zero]; simp
+          · rw [AddMonoidAlgebra.coeff_zero, Finsupp.zero_apply, Int.mul_zero]; simp
         · -- α ≠ 0: use h_inner_bound (without +1) and Int.size_mul_le.
           have h_P_bound : ((P.coeff α).coeff uv.1).natAbs.size ≤ τ_1 := h_τ1 _ _
           exact Int.size_mul_le _ _ τ_1 (d_X * B_in) h_P_bound

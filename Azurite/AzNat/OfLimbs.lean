@@ -31,9 +31,9 @@ theorem back?_trimTrailingZeros (a : Array UInt64) :
     have h_idx : a.size - 1 < a.size :=
       Nat.sub_lt (Nat.pos_of_ne_zero h) Nat.zero_lt_one
     by_cases h_last : a[a.size - 1] = 0
-    · rw [if_pos h_last]
+    · rw [ite_eq_left h_last]
       exact back?_trimTrailingZeros a.pop
-    · rw [if_neg h_last]
+    · rw [ite_eq_right h_last]
       rw [Array.back?_eq_getElem?, Array.getElem?_eq_getElem h_idx]
       intro heq
       exact h_last (Option.some.inj heq)

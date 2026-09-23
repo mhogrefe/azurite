@@ -33,7 +33,7 @@ private theorem syhaEntry_eq_lt {R : Type _} [CommRing R] [DecidableEq R]
     (P Q : AzPolynomial R) {j i : ℕ} (d : ℕ) (h : i < Q.natDegree - j) :
     syhaEntry P Q j i d
       = (Polynomial.X ^ (Q.natDegree - j - 1 - i) * AzPolynomial.toPoly P).coeff d := by
-  rw [syhaEntry, if_pos h, mul_comm, Polynomial.coeff_mul_X_pow']
+  rw [syhaEntry, ite_eq_left h, mul_comm, Polynomial.coeff_mul_X_pow']
   split <;> simp
 
 /-- `syhaEntry`, `Q`-block rows. -/
@@ -41,7 +41,7 @@ private theorem syhaEntry_eq_ge {R : Type _} [CommRing R] [DecidableEq R]
     (P Q : AzPolynomial R) {j i : ℕ} (d : ℕ) (h : ¬ i < Q.natDegree - j) :
     syhaEntry P Q j i d
       = (Polynomial.X ^ (i - (Q.natDegree - j)) * AzPolynomial.toPoly Q).coeff d := by
-  rw [syhaEntry, if_neg h, mul_comm, Polynomial.coeff_mul_X_pow']
+  rw [syhaEntry, ite_eq_right h, mul_comm, Polynomial.coeff_mul_X_pow']
   split <;> simp
 
 open Azurite.BPR.Chapter8 in
@@ -56,10 +56,10 @@ private theorem pdetRing_coeff {R : Type _} [CommRing R] {m : ℕ} (n : ℕ)
   simp only [Polynomial.coeff_smul, Polynomial.coeff_X_pow, smul_eq_mul,
     mul_ite, mul_one, mul_zero]
   rcases Nat.lt_or_ge k (n - m + 1) with hk | hk
-  · rw [if_pos hk, Finset.sum_eq_single (⟨k, hk⟩ : Fin (n - m + 1))
-      (fun b _ hb => if_neg (fun h => hb (Fin.ext h.symm)))
-      (fun h => absurd (Finset.mem_univ _) h), if_pos rfl]
-  · rw [if_neg (by omega), Finset.sum_eq_zero (fun i _ => if_neg (by
+  · rw [ite_eq_left hk, Finset.sum_eq_single (⟨k, hk⟩ : Fin (n - m + 1))
+      (fun b _ hb => ite_eq_right (fun h => hb (Fin.ext h.symm)))
+      (fun h => absurd (Finset.mem_univ _) h), ite_eq_left rfl]
+  · rw [ite_eq_right (by omega), Finset.sum_eq_zero (fun i _ => ite_eq_right (by
       have := i.isLt
       omega))]
 
@@ -72,14 +72,14 @@ theorem toPoly_sResPDet {R : Type _} [CommRing R] [DecidableEq R]
       = sResP (AzPolynomial.toPoly P) (AzPolynomial.toPoly Q) j := by
   rw [sResPDet, sResP, AzPolynomial.natDegree_toPoly, AzPolynomial.natDegree_toPoly]
   by_cases hj : j ≤ Q.natDegree
-  · rw [if_pos hj, if_pos hj]
+  · rw [ite_eq_left hj, ite_eq_left hj]
     apply Polynomial.ext
     intro k
     rw [toPoly_normalize, coeff_list_toPoly, pdetRing_coeff]
     rw [List.getCoeff, Array.toList_ofFn, List.getElem?_ofFn]
     rcases Nat.lt_or_ge k (P.natDegree + Q.natDegree - j
         - (P.natDegree + Q.natDegree - 2 * j) + 1) with hk | hk
-    · rw [dif_pos hk, if_pos hk]
+    · rw [dite_eq_left hk, ite_eq_left hk]
       simp only [Option.getD_some]
       -- the `detFn` minor is the abstract minor
       rw [pdetMinorRing]
@@ -94,19 +94,19 @@ theorem toPoly_sResPDet {R : Type _} [CommRing R] [DecidableEq R]
             else k := rfl
       rw [hcol]
       by_cases hrblock : r < Q.natDegree - j
-      · rw [syhaEntry_eq_lt _ _ _ hrblock, if_pos (show ((⟨r, hr⟩ : Fin _) : ℕ)
+      · rw [syhaEntry_eq_lt _ _ _ hrblock, ite_eq_left (show ((⟨r, hr⟩ : Fin _) : ℕ)
           < Q.natDegree - j from hrblock)]
-      · rw [syhaEntry_eq_ge _ _ _ hrblock, if_neg (show ¬ ((⟨r, hr⟩ : Fin _) : ℕ)
+      · rw [syhaEntry_eq_ge _ _ _ hrblock, ite_eq_right (show ¬ ((⟨r, hr⟩ : Fin _) : ℕ)
           < Q.natDegree - j from hrblock)]
-    · rw [dif_neg (by omega), if_neg (by omega)]
+    · rw [dite_eq_right (by omega), ite_eq_right (by omega)]
       rfl
-  · rw [if_neg hj, if_neg hj]
+  · rw [ite_eq_right hj, ite_eq_right hj]
     by_cases hp : j = P.natDegree
-    · rw [if_pos hp, if_pos hp]
-    · rw [if_neg hp, if_neg hp]
+    · rw [ite_eq_left hp, ite_eq_left hp]
+    · rw [ite_eq_right hp, ite_eq_right hp]
       by_cases hp1 : j = P.natDegree - 1
-      · rw [if_pos hp1, if_pos hp1]
-      · rw [if_neg hp1, if_neg hp1, toPoly_zero]
+      · rw [ite_eq_left hp1, ite_eq_left hp1]
+      · rw [ite_eq_right hp1, ite_eq_right hp1, toPoly_zero]
 
 open Azurite.BPR.Chapter8 in
 /-- **`sResVDet` represents the abstract `V`-cofactor** — over any
@@ -134,29 +134,29 @@ theorem toPoly_sResVDet {R : Type _} [CommRing R] [DecidableEq R]
   rw [Matrix.of_apply]
   rcases Nat.lt_or_ge (k + 1) ((AzPolynomial.toPoly P).natDegree
       + (AzPolynomial.toPoly Q).natDegree - 2 * j) with hk1 | hk1
-  · rw [if_pos hk1, if_pos (show ((⟨k, hk⟩ : Fin _) : ℕ) + 1 < _ from hk1)]
+  · rw [ite_eq_left hk1, ite_eq_left (show ((⟨k, hk⟩ : Fin _) : ℕ) + 1 < _ from hk1)]
     rw [toPoly_monomial, Polynomial.monomial_zero_left]
     congr 1
     rw [Azurite.BPR.Chapter4.SyHa, Matrix.of_apply]
     rcases Nat.lt_or_ge i (Q.natDegree - j) with hib | hib
     · rw [syhaEntry_eq_lt _ _ _ hib,
-        if_pos (show ((⟨i, hi⟩ : Fin _) : ℕ)
+        ite_eq_left (show ((⟨i, hi⟩ : Fin _) : ℕ)
           < (AzPolynomial.toPoly Q).natDegree - j from by
             simp only [AzPolynomial.natDegree_toPoly]; exact hib)]
       simp [AzPolynomial.natDegree_toPoly]
     · rw [syhaEntry_eq_ge _ _ _ (by omega),
-        if_neg (show ¬ ((⟨i, hi⟩ : Fin _) : ℕ)
+        ite_eq_right (show ¬ ((⟨i, hi⟩ : Fin _) : ℕ)
           < (AzPolynomial.toPoly Q).natDegree - j from by
             simp only [AzPolynomial.natDegree_toPoly]; omega)]
       simp [AzPolynomial.natDegree_toPoly]
-  · rw [if_neg (by omega), if_neg (show ¬ ((⟨k, hk⟩ : Fin _) : ℕ) + 1 < _ from by
+  · rw [ite_eq_right (by omega), ite_eq_right (show ¬ ((⟨k, hk⟩ : Fin _) : ℕ) + 1 < _ from by
       show ¬ k + 1 < _
       omega)]
     rcases Nat.lt_or_ge i (Q.natDegree - j) with hib | hib
-    · rw [if_pos hib, if_pos (show ((⟨i, hi⟩ : Fin _) : ℕ)
+    · rw [ite_eq_left hib, ite_eq_left (show ((⟨i, hi⟩ : Fin _) : ℕ)
         < (AzPolynomial.toPoly Q).natDegree - j from by
           simp only [AzPolynomial.natDegree_toPoly]; exact hib), toPoly_zero]
-    · rw [if_neg (by omega), if_neg (show ¬ ((⟨i, hi⟩ : Fin _) : ℕ)
+    · rw [ite_eq_right (by omega), ite_eq_right (show ¬ ((⟨i, hi⟩ : Fin _) : ℕ)
         < (AzPolynomial.toPoly Q).natDegree - j from by
           simp only [AzPolynomial.natDegree_toPoly]; omega),
         toPoly_monomial]
@@ -228,7 +228,7 @@ theorem gcdGcdFreePartDet_spec {K : Type _} [Field K] [DecidableEq K]
       simp [hne]
   -- reduce the wrapper: unequal degrees, scan hits `some j` with `j ≥ 1`
   have hpair : gcdGcdFreePartDet P Q = (sResPDet P Q j, sResVDet P Q (j - 1)) := by
-    rw [gcdGcdFreePartDet, if_neg hQ, if_neg (by omega), hfind]
+    rw [gcdGcdFreePartDet, ite_eq_right hQ, ite_eq_right (by omega), hfind]
     match j, hj1 with
     | jj + 1, _ => rfl
   rw [hpair]

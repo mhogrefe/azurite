@@ -89,7 +89,7 @@ theorem MulEquiv.transfer_normalize
     [StrongNormalizationMonoid β] (e : α ≃* β) (h0 : e 0 = 0) (a : α) :
     letI := e.transferNormalizationMonoid h0
     normalize a = e.symm (normalize (e a)) := by
-  letI := e.transferNormalizationMonoid h0
+  let := e.transferNormalizationMonoid h0
   rw [normalize_apply, normalize_apply]
   show a * ↑((Units.mapEquiv e.symm) (normUnit (e a)))
       = e.symm (e a * ↑(normUnit (e a)))

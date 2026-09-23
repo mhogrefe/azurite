@@ -87,7 +87,7 @@ theorem isMultihomogeneous_one :
   intro i c hc
   rw [MvPolynomial.mem_support_iff, MvPolynomial.coeff_one] at hc
   obtain rfl : (0 : (i : Fin m) × Fin (κ i + 1) →₀ ℕ) = c := by
-    by_contra h; rw [if_neg h] at hc; exact hc rfl
+    by_contra h; rw [ite_eq_right h] at hc; exact hc rfl
   simp
 
 theorem IsMultihomogeneous.sum {ι : Type*} (s : Finset ι)
@@ -163,7 +163,7 @@ theorem rename_emb0_isMultihomogeneous {n : ℕ} {Q : MvPolynomial (Fin (k + 1))
     rw [show (∑ j : Fin (k + 1), Finsupp.mapDomain (emb0 k) c' ⟨0, j⟩) = ∑ j : Fin (k + 1), c' j from
       Finset.sum_congr rfl fun j _ => by
         rw [show (⟨0, j⟩ : Sig k) = emb0 k j from rfl,
-          Finsupp.mapDomain_apply (emb0_injective k)]]
+          Finsupp.mapDomain_apply_of_injective (emb0_injective k)]]
     exact hdeg
   · -- block 1
     show ∑ j : Fin (1 + 1), Finsupp.mapDomain (emb0 k) c' ⟨1, j⟩ = 0
@@ -319,7 +319,7 @@ theorem singularLocus_eq_projZerOfFinset (P : Fin k → MvPolynomial (Fin (k + 1
     (d : Fin k → ℕ) (hP : ∀ i, (P i).IsHomogeneous (d i)) :
     singularLocus P d = projZerOfFinset (Ps P d) := by
   ext xp
-  simp only [singularLocus, Set.mem_setOf_eq, projZerOfFinset, Ps]
+  simp only [singularLocus, Set.mem_ofPred_eq, projZerOfFinset, Ps]
   constructor
   · rintro ⟨hzero, hrank⟩ Q hQ
     rw [Finset.mem_union] at hQ

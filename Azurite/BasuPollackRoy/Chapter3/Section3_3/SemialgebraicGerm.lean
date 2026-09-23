@@ -26,7 +26,7 @@ theorem isSemialgebraicSet_rightNbhd (t : R) : IsSemialgebraicSet (rightNbhd t) 
       = {u | 0 < MvPolynomial.eval u (MvPolynomial.X 0)}
         ∩ {u | MvPolynomial.eval u (MvPolynomial.X 0 - MvPolynomial.C t) < 0} := by
     ext u
-    simp only [rightNbhd, Set.mem_setOf_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
+    simp only [rightNbhd, Set.mem_ofPred_eq, Set.mem_inter_iff, MvPolynomial.eval_X, map_sub,
       MvPolynomial.eval_C, sub_lt_zero]
   rw [he]; exact (IsSemialgebraicSet.gtZero _).inter (IsSemialgebraicSet.ltZero _)
 

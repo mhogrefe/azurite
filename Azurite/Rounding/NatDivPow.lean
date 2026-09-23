@@ -60,7 +60,7 @@ lemma natBotToNat_eq_of_nat_val (q : ℕ) (s : ↥natBotSet)
     (hs : s.val = ((q : ℝ) : EReal)) : natBotToNat s = q := by
   unfold natBotToNat
   have hex : ∃ n : ℕ, ((n : ℝ) : EReal) = s.val := ⟨q, hs.symm⟩
-  rw [dif_pos hex]
+  rw [dite_eq_left hex]
   have h1 := hex.choose_spec
   have h2 : ((hex.choose : ℝ) : EReal) = ((q : ℝ) : EReal) := h1.trans hs
   exact_mod_cast h2

@@ -32,7 +32,7 @@ theorem isConvex_of_ordConnected_sect {I : Set R} (hI : I.OrdConnected) :
     IsConvex {v : Fin 1 → R | v 0 ∈ I} := by
   have hIconv : Convex R I := convex_iff_ordConnected.mpr hI
   intro x hx y hy l hl
-  simp only [Set.mem_setOf_eq] at hx hy ⊢
+  simp only [Set.mem_ofPred_eq] at hx hy ⊢
   rw [Pi.add_apply, Pi.smul_apply, Pi.smul_apply]
   exact hIconv hx hy (by linarith [hl.2]) hl.1 (by ring)
 

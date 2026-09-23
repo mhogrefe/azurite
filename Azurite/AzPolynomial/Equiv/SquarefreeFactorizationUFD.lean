@@ -54,7 +54,7 @@ noncomputable def edivExact {S : Type _} [CommRing S] (w g : S) : S :=
 
 theorem edivExact_mul {S : Type _} [CommRing S] {w g : S} (h : g ∣ w) :
     edivExact w g * g = w := by
-  rw [edivExact, dif_pos h, mul_comm]; exact h.choose_spec.symm
+  rw [edivExact, dite_eq_left h, mul_comm]; exact h.choose_spec.symm
 
 theorem edivExact_eq_of_mul {S : Type _} [CommRing S] [IsDomain S] {w g q : S}
     (hg0 : g ≠ 0) (h : w = g * q) : edivExact w g = q := by
@@ -269,7 +269,7 @@ theorem yunLoopPoly_zero (i : ℕ) (w z : R[X]) (acc : List (R[X] × ℕ)) :
 
 theorem yunLoopPoly_succ_zero (fuel i : ℕ) (w : R[X]) (acc : List (R[X] × ℕ)) :
     yunLoopPoly (fuel + 1) i w 0 acc = acc ++ [(w, i)] := by
-  rw [yunLoopPoly, if_pos rfl]
+  rw [yunLoopPoly, ite_eq_left rfl]
 
 theorem yunLoopPoly_succ_ne_zero (fuel i : ℕ) (w z : R[X])
     (acc : List (R[X] × ℕ)) (hz : z ≠ 0) :
@@ -279,7 +279,7 @@ theorem yunLoopPoly_succ_ne_zero (fuel i : ℕ) (w z : R[X])
           - Polynomial.derivative (edivExact w (GCDMonoid.gcd w z)))
         (if (GCDMonoid.gcd w z).natDegree = 0 then acc
           else acc ++ [(GCDMonoid.gcd w z, i)]) := by
-  rw [yunLoopPoly, if_neg hz]
+  rw [yunLoopPoly, ite_eq_right hz]
 
 /-- The terminal emission `(A m, m)` in closed list form. -/
 theorem YunFamily.out_top {A : ℕ → R[X]} {m : ℕ} (hF : YunFamily A m)
@@ -354,8 +354,8 @@ theorem YunFamily.yunLoopPoly_eq {A : ℕ → R[X]} {m : ℕ} (hF : YunFamily A 
       have hn2 : m + 1 - (i + 1) = m - i := by omega
       rw [hn1, hn2, List.range'_succ]
       by_cases hAi : (A i).natDegree = 0
-      · rw [if_pos hAi, List.filter_cons_of_neg (by simp [hAi])]
-      · rw [if_neg hAi, List.filter_cons_of_pos (by simp [hAi]), List.map_cons]
+      · rw [ite_eq_left hAi, List.filter_cons_of_neg (by simp [hAi])]
+      · rw [ite_eq_right hAi, List.filter_cons_of_pos (by simp [hAi]), List.map_cons]
         simp
 
 /-! ### Existence of the squarefree class decomposition -/
@@ -526,7 +526,7 @@ theorem yunPoly_closed_form {a : R[X]} (hprim : a.IsPrimitive)
           (edivExact (Polynomial.derivative a) (GCDMonoid.gcd a (Polynomial.derivative a))
             - Polynomial.derivative
                 (edivExact a (GCDMonoid.gcd a (Polynomial.derivative a)))) [] := by
-    rw [yunPoly, if_neg h0]
+    rw [yunPoly, ite_eq_right h0]
   by_cases hCC0 : CC.natDegree = 0
   · -- `m = 1`: the input is already squarefree
     have hCC1 : CC = 1 := primitive_normalized_natDegree_zero_eq_one hCCprim hCCnorm hCC0
@@ -544,7 +544,7 @@ theorem yunPoly_closed_form {a : R[X]} (hprim : a.IsPrimitive)
       rw [hprodid, Finset.Icc_self, Finset.prod_singleton, pow_one]
     have hd1 : (A 1).natDegree ≠ 0 := by
       rw [ha1]; exact h0
-    rw [hyun, hc, if_pos hCC0, show List.range' 1 1 = [1] from rfl,
+    rw [hyun, hc, ite_eq_left hCC0, show List.range' 1 1 = [1] from rfl,
       List.filter_cons_of_pos (by simp [hd1]), List.filter_nil, List.map_cons, List.map_nil,
       ha1]
   · -- the loop runs: feed the invariant
@@ -552,7 +552,7 @@ theorem yunPoly_closed_form {a : R[X]} (hprim : a.IsPrimitive)
       edivExact_eq_of_mul hCCne hsplit
     have hdq : edivExact (Polynomial.derivative a) CC = ysum A (Finset.Icc 1 m) fun j => j :=
       edivExact_eq_of_mul hCCne hderiv
-    rw [hyun, hc, if_neg hCC0, haq, hdq,
+    rw [hyun, hc, ite_eq_right hCC0, haq, hdq,
       ysum_sub_derivative (c' := fun j => j - 1)
         (fun j hj => (Finset.mem_Icc.mp hj).1) (fun j hj => rfl),
       hF.yunLoopPoly_eq a.natDegree 1 [] hF.one_le (by omega),
@@ -584,7 +584,7 @@ back to the primitive normalized input. -/
 theorem yunPoly_prod {a : R[X]} (hprim : a.IsPrimitive) (hnorm : _root_.normalize a = a) :
     ((yunPoly a).map fun gi => gi.1 ^ gi.2).prod = a := by
   by_cases h0 : a.natDegree = 0
-  · rw [yunPoly, if_pos h0, primitive_normalized_natDegree_zero_eq_one hprim hnorm h0]
+  · rw [yunPoly, ite_eq_left h0, primitive_normalized_natDegree_zero_eq_one hprim hnorm h0]
     simp
   · obtain ⟨m, A, hF, hprodid, hclosed⟩ := yunPoly_closed_form hprim hnorm h0
     rw [hclosed, List.map_map,
@@ -683,7 +683,7 @@ theorem yunPoly_C_mul_prod_assoc {c : R} (hc : IsUnit c) (a : R[X]) :
   have huC : IsUnit (Polynomial.C c : R[X]) := hc.map Polynomial.C
   have hnd : (Polynomial.C c * a).natDegree = a.natDegree := Polynomial.natDegree_C_mul hc.ne_zero
   by_cases h0 : a.natDegree = 0
-  · rw [yunPoly, yunPoly, hnd, if_pos h0, if_pos h0]
+  · rw [yunPoly, yunPoly, hnd, ite_eq_left h0, ite_eq_left h0]
     simp only [Pm, List.map_nil, List.prod_nil, mul_one]
     exact (associated_one_iff_isUnit.mpr huC).symm
   · have ha0 : a ≠ 0 := fun h => h0 (by rw [h, Polynomial.natDegree_zero])
@@ -692,15 +692,15 @@ theorem yunPoly_C_mul_prod_assoc {c : R} (hc : IsUnit c) (a : R[X]) :
     have hcda : c0 ∣ a := gcd_dvd_left _ _
     have hcdd : c0 ∣ Polynomial.derivative a := gcd_dvd_right _ _
     by_cases hcz : c0.natDegree = 0
-    · rw [yunPoly, hnd, if_neg h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
-        ← hc0def, if_pos hcz, yunPoly, if_neg h0, ← hc0def, if_pos hcz]
+    · rw [yunPoly, hnd, ite_eq_right h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
+        ← hc0def, ite_eq_left hcz, yunPoly, ite_eq_right h0, ← hc0def, ite_eq_left hcz]
       simp only [Pm, List.map_cons, List.map_nil, List.prod_cons, List.prod_nil, mul_one, pow_one]
       exact Associated.refl _
     · have hya : yunPoly a = yunLoopPoly a.natDegree 1 (edivExact a c0)
           (edivExact (Polynomial.derivative a) c0 - Polynomial.derivative (edivExact a c0)) [] := by
-        rw [yunPoly, if_neg h0, ← hc0def, if_neg hcz]
-      rw [yunPoly, hnd, if_neg h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
-        ← hc0def, if_neg hcz,
+        rw [yunPoly, ite_eq_right h0, ← hc0def, ite_eq_right hcz]
+      rw [yunPoly, hnd, ite_eq_right h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
+        ← hc0def, ite_eq_right hcz,
         edivExact_left_mul (Polynomial.C c) hcda hc0ne,
         edivExact_left_mul (Polynomial.C c) hcdd hc0ne,
         Polynomial.derivative_C_mul,
@@ -751,7 +751,7 @@ theorem yunPoly_squarefree {a : R[X]} (hprim : a.IsPrimitive) (hnorm : _root_.no
     ∀ gi ∈ yunPoly a, Squarefree gi.1 ∧ gi.1.IsPrimitive ∧ gi.1.natDegree ≠ 0 := by
   intro gi hgi
   by_cases h0 : a.natDegree = 0
-  · rw [yunPoly, if_pos h0] at hgi
+  · rw [yunPoly, ite_eq_left h0] at hgi
     simp at hgi
   · obtain ⟨m, A, hF, -, hclosed⟩ := yunPoly_closed_form hprim hnorm h0
     rw [hclosed] at hgi
@@ -766,7 +766,7 @@ theorem yunPoly_pairwise_coprime {a : R[X]} (hprim : a.IsPrimitive)
     (hnorm : _root_.normalize a = a) :
     (yunPoly a).Pairwise (fun gi gj => IsRelPrime gi.1 gj.1) := by
   by_cases h0 : a.natDegree = 0
-  · rw [yunPoly, if_pos h0]
+  · rw [yunPoly, ite_eq_left h0]
     exact List.Pairwise.nil
   · obtain ⟨m, A, hF, -, hclosed⟩ := yunPoly_closed_form hprim hnorm h0
     rw [hclosed, List.pairwise_map]
@@ -855,8 +855,8 @@ theorem yunLoopPoly_C_mul_forall2 {c : R} (hc : IsUnit c) :
             - Polynomial.derivative (edivExact w (GCDMonoid.gcd w z))) from by ring]
       apply ih
       by_cases hgd : (GCDMonoid.gcd w z).natDegree = 0
-      · rw [if_pos hgd, if_pos hgd]; exact hacc
-      · rw [if_neg hgd, if_neg hgd]
+      · rw [ite_eq_left hgd, ite_eq_left hgd]; exact hacc
+      · rw [ite_eq_right hgd, ite_eq_right hgd]
         exact List.rel_append hacc (List.Forall₂.cons (Associated.refl _) List.Forall₂.nil)
 
 /-- **`yunPoly`-level positional-associate invariance**: `yunPoly (C c · a)` is
@@ -871,21 +871,21 @@ theorem yunPoly_C_mul_forall2 {c : R} (hc : IsUnit c) (a : R[X]) :
     rwa [one_mul] at h1
   have hnd : (Polynomial.C c * a).natDegree = a.natDegree := Polynomial.natDegree_C_mul hc.ne_zero
   by_cases h0 : a.natDegree = 0
-  · rw [yunPoly, yunPoly, hnd, if_pos h0, if_pos h0]; exact List.Forall₂.nil
+  · rw [yunPoly, yunPoly, hnd, ite_eq_left h0, ite_eq_left h0]; exact List.Forall₂.nil
   · have ha0 : a ≠ 0 := fun h => h0 (by rw [h, Polynomial.natDegree_zero])
     set c0 := GCDMonoid.gcd a (Polynomial.derivative a) with hc0def
     have hc0ne : c0 ≠ 0 := fun h => ha0 ((gcd_eq_zero_iff _ _).mp h).1
     have hcda : c0 ∣ a := gcd_dvd_left _ _
     have hcdd : c0 ∣ Polynomial.derivative a := gcd_dvd_right _ _
     by_cases hcz : c0.natDegree = 0
-    · rw [yunPoly, hnd, if_neg h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
-        ← hc0def, if_pos hcz, yunPoly, if_neg h0, ← hc0def, if_pos hcz]
+    · rw [yunPoly, hnd, ite_eq_right h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
+        ← hc0def, ite_eq_left hcz, yunPoly, ite_eq_right h0, ← hc0def, ite_eq_left hcz]
       exact List.Forall₂.cons (hCw a) List.Forall₂.nil
     · have hya : yunPoly a = yunLoopPoly a.natDegree 1 (edivExact a c0)
           (edivExact (Polynomial.derivative a) c0 - Polynomial.derivative (edivExact a c0)) [] := by
-        rw [yunPoly, if_neg h0, ← hc0def, if_neg hcz]
-      rw [yunPoly, hnd, if_neg h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
-        ← hc0def, if_neg hcz,
+        rw [yunPoly, ite_eq_right h0, ← hc0def, ite_eq_right hcz]
+      rw [yunPoly, hnd, ite_eq_right h0, Polynomial.derivative_C_mul, gcd_C_mul hc a _,
+        ← hc0def, ite_eq_right hcz,
         edivExact_left_mul (Polynomial.C c) hcda hc0ne,
         edivExact_left_mul (Polynomial.C c) hcdd hc0ne,
         Polynomial.derivative_C_mul,
@@ -963,10 +963,10 @@ theorem toPoly_yunLoop
     rw [yunLoop, yunLoopPoly]
     by_cases hz : z = 0
     · have hz' : AzPolynomial.toPoly z = 0 := by rw [hz, toPoly_zero]
-      rw [if_pos hz, if_pos hz']
+      rw [ite_eq_left hz, ite_eq_left hz']
       simp
     · have hzt : AzPolynomial.toPoly z ≠ 0 := toPoly_ne_zero hz
-      rw [if_neg hz, if_neg hzt]
+      rw [ite_eq_right hz, ite_eq_right hzt]
       have hgcd : AzPolynomial.toPoly (gcd w z)
           = GCDMonoid.gcd (AzPolynomial.toPoly w) (AzPolynomial.toPoly z) := hgcd_law w z
       have hg0 : AzPolynomial.toPoly (gcd w z) ≠ 0 := by
@@ -985,8 +985,8 @@ theorem toPoly_yunLoop
               (AzPolynomial.natDegree_toPoly _).symm, hgcd]
         by_cases hdeg : (GCDMonoid.gcd (AzPolynomial.toPoly w)
             (AzPolynomial.toPoly z)).natDegree = 0
-        · rw [if_pos hdeg, if_pos hdeg]
-        · rw [if_neg hdeg, if_neg hdeg]
+        · rw [ite_eq_left hdeg, ite_eq_left hdeg]
+        · rw [ite_eq_right hdeg, ite_eq_right hdeg]
           simp [hgcd]
 
 /-- **Bridge for Yun's algorithm**: the represented output of the computable core
@@ -999,8 +999,8 @@ theorem toPoly_squarefreeFactorizationCore
       = yunPoly (AzPolynomial.toPoly a) := by
   rw [squarefreeFactorizationCore, yunPoly, AzPolynomial.natDegree_toPoly]
   by_cases h0 : a.natDegree = 0
-  · rw [if_pos h0, if_pos h0]; rfl
-  · rw [if_neg h0, if_neg h0]
+  · rw [ite_eq_left h0, ite_eq_left h0]; rfl
+  · rw [ite_eq_right h0, ite_eq_right h0]
     have hgcd : AzPolynomial.toPoly (gcd a (derivative a))
         = GCDMonoid.gcd (AzPolynomial.toPoly a)
             (Polynomial.derivative (AzPolynomial.toPoly a)) := by
@@ -1013,11 +1013,11 @@ theorem toPoly_squarefreeFactorizationCore
     · have hcd' : (GCDMonoid.gcd (AzPolynomial.toPoly a)
           (Polynomial.derivative (AzPolynomial.toPoly a))).natDegree = 0 := by
         rw [← hc]; exact hcd
-      rw [if_pos hcd, if_pos hcd']; rfl
+      rw [ite_eq_left hcd, ite_eq_left hcd']; rfl
     · have hcd' : ¬ (GCDMonoid.gcd (AzPolynomial.toPoly a)
           (Polynomial.derivative (AzPolynomial.toPoly a))).natDegree = 0 := by
         rw [← hc]; exact hcd
-      rw [if_neg hcd, if_neg hcd']
+      rw [ite_eq_right hcd, ite_eq_right hcd']
       have ha0 : AzPolynomial.toPoly a ≠ 0 := by
         intro h; apply h0
         rw [← AzPolynomial.natDegree_toPoly, h, Polynomial.natDegree_zero]

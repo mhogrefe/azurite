@@ -116,7 +116,7 @@ theorem proposition_10_8 (P : Polynomial (Ri R)) :
   rcases eq_or_ne P 0 with rfl | hP
   · rw [polyLength, polyMeasure]
     simp [Ri.abs_zero]
-  haveI : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
+  have : IsAlgClosed (Ri R) := Theorem2_11.isAlgClosed_Ri
   have hcard : P.roots.card = P.natDegree := IsAlgClosed.card_roots_eq_natDegree
   set p := P.natDegree with hp
   set M := (P.roots.map (fun z => max 1 (Ri.abs z))).prod with hM

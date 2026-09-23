@@ -1,4 +1,5 @@
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.Realization
+import Mathlib.Algebra.MvPolynomial.CommRing
 
 /-!
 # Example 1.2
@@ -42,9 +43,9 @@ theorem freeVars_Φ : Φ_ex.freeVars = {0} := by
             simp only [MvPolynomial.coeff_sub, MvPolynomial.coeff_one]
             rw [show MvPolynomial.X (0 : Fin 2) * MvPolynomial.X 1 =
               MvPolynomial.monomial (Finsupp.single 0 1 + Finsupp.single 1 1) (1 : ℤ)
-              from by simp [MvPolynomial.X, MvPolynomial.monomial_mul]]
+              from by simp [MvPolynomial.X, MvPolynomial.monomial_mul_monomial]]
             simp only [MvPolynomial.coeff_monomial,
-              if_neg (show (0 : (Fin 2) →₀ ℕ) ≠ Finsupp.single 0 1 + Finsupp.single 1 1
+              ite_eq_right (show (0 : (Fin 2) →₀ ℕ) ≠ Finsupp.single 0 1 + Finsupp.single 1 1
                 from by intro h; have := DFunLike.congr_fun h 0; simp at this)]
             norm_num),
           by simp [Finsupp.mem_support_iff]⟩, by decide⟩⟩
@@ -67,26 +68,26 @@ theorem example_1_2 :
     Formula.CEquiv (C := C) Φ_ex Ψ_ex := by
   unfold CEquiv Φ_ex Ψ_ex ne_zero realization
   ext y
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨c, hc⟩
-    simp only [realization_eq_zero, Set.mem_setOf_eq] at *
+    simp only [realization_eq_zero, Set.mem_ofPred_eq] at *
     simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)] at hc
     intro h0
     simp only [interpret_fieldAtom, FieldAtom.neZero, MvPolynomial.aeval_X,
-      Set.mem_setOf_eq, if_false] at h0
+      Set.mem_ofPred_eq, ite_false] at h0
     rw [h0, zero_mul, zero_sub] at hc
     exact one_ne_zero (neg_eq_zero.mp hc)
   · intro h
-    simp only [realization_eq_zero, Set.mem_setOf_eq] at *
+    simp only [realization_eq_zero, Set.mem_ofPred_eq] at *
     simp only [map_sub, map_mul, map_one, MvPolynomial.aeval_X] at *
     refine ⟨(y 0)⁻¹, ?_⟩
     simp only [Function.update_self,
       Function.update_of_ne (by decide : (0 : Fin 2) ≠ 1)]
     simp only [interpret_fieldAtom, FieldAtom.neZero, MvPolynomial.aeval_X,
-      Set.mem_setOf_eq, if_false] at h
+      Set.mem_ofPred_eq, ite_false] at h
     rw [mul_inv_cancel₀ h, sub_self]
 
 end Example_1_2

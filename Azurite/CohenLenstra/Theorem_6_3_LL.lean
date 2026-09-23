@@ -57,7 +57,7 @@ theorem pow_sub_one_pow_modEq {n p m H l l' : ℕ} (hm : 1 ≤ m)
 theorem modEq_pow_of_modEq_of_pow_modEq {r N p m : ℕ} (hp : p.Prime) (hm : 1 ≤ m)
     (hr : r.Coprime p) (hN : N.Coprime p) (hmod : r ≡ N [MOD p])
     (hc : r ^ (p - 1) ≡ N ^ (p - 1) [MOD p ^ m]) : r ≡ N [MOD p ^ m] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hrM : r.Coprime (p ^ m) := hr.pow_right m
   have hNM : N.Coprime (p ^ m) := hN.pow_right m
   set RU := ZMod.unitOfCoprime r hrM with hRU
@@ -99,7 +99,7 @@ theorem modEq_pow_of_modEq_of_pow_modEq {r N p m : ℕ} (hp : p.Prime) (hm : 1 �
 /-- Fermat for `n` coprime to the prime `p`. -/
 theorem pow_sub_one_modEq_one {n p : ℕ} (hp : p.Prime) (hco : n.Coprime p) :
     n ^ (p - 1) ≡ 1 [MOD p] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hz : ((n : ℕ) : ZMod p) ≠ 0 := fun h0 =>
     hp.one_lt.ne' (hco.symm.eq_one_of_dvd ((ZMod.natCast_eq_zero_iff n p).mp h0))
   refine (ZMod.natCast_eq_natCast_iff _ _ _).mp ?_
@@ -202,7 +202,7 @@ theorem theorem_6_3_LL_prime {n s₁ s₂ t' : ℕ} (hn1 : 1 < n) (hs₁ : 0 < s
   have key : ∀ p ∈ s.primeFactors, r ≡ n ^ l [MOD p ^ s.factorization p] := by
     intro p hp
     have hp' : p.Prime := Nat.prime_of_mem_primeFactors hp
-    haveI : Fact p.Prime := ⟨hp'⟩
+    have : Fact p.Prime := ⟨hp'⟩
     have hps : p ∣ s := Nat.dvd_of_mem_primeFactors hp
     have hcopn : n.Coprime p := Nat.Coprime.coprime_dvd_right hps hns
     have hcopr : r.Coprime p := Nat.Coprime.coprime_dvd_right hps hrs

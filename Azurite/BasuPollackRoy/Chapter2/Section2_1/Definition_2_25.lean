@@ -1,4 +1,4 @@
-import Mathlib.Data.Sign.Basic
+import Mathlib.Basic.Sign.Basic
 
 /-!
 # BPR Definition 2.25: Sign Conditions

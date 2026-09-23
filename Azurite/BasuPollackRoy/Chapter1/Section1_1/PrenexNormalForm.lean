@@ -45,7 +45,7 @@ private theorem not_prenex [DecidableEq σ]
       rw [show (Φ.realization (C := C))ᶜ = (Formula.not Φ).realization (C := C) from rfl]
       exact hE.symm
     simp only [realization]
-    ext y; simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_exists]
+    ext y; simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists]
     exact forall_congr' fun c => by rw [hΦ']; simp
   | @forall_ x Φ _ ih =>
     obtain ⟨Φ', hP, hE⟩ := ih
@@ -55,7 +55,7 @@ private theorem not_prenex [DecidableEq σ]
       rw [show (Φ.realization (C := C))ᶜ = (Formula.not Φ).realization (C := C) from rfl]
       exact hE.symm
     simp only [realization]
-    ext y; simp only [Set.mem_setOf_eq, Set.mem_compl_iff, not_forall]
+    ext y; simp only [Set.mem_ofPred_eq, Set.mem_compl_iff, not_forall]
     exact exists_congr fun c => by rw [hΦ']; simp
 
 /-- Renaming the bound variable of ∃x, Φ via a swap preserves realization. -/
@@ -63,7 +63,7 @@ private theorem exists_swap_equiv [DecidableEq σ]
     (Φ : Formula σ (FieldAtom σ D)) (x z : σ) (hz : z ∉ Φ.freeVars) :
     CEquiv (C := C) (.exists_ x Φ) (.exists_ z (Φ.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z)))) := by
   unfold CEquiv; simp only [realization]
-  ext y; simp only [Set.mem_setOf_eq]
+  ext y; simp only [Set.mem_ofPred_eq]
   by_cases hxz : x = z
   · subst hxz
     simp only [Equiv.swap_self]
@@ -95,7 +95,7 @@ private theorem forall_swap_equiv [DecidableEq σ]
     (Φ : Formula σ (FieldAtom σ D)) (x z : σ) (hz : z ∉ Φ.freeVars) :
     CEquiv (C := C) (.forall_ x Φ) (.forall_ z (Φ.rename (Equiv.swap x z) (FieldAtom.renameVars (Equiv.swap x z)))) := by
   unfold CEquiv; simp only [realization]
-  ext y; simp only [Set.mem_setOf_eq]
+  ext y; simp only [Set.mem_ofPred_eq]
   by_cases hxz : x = z
   · subst hxz
     simp only [Equiv.swap_self]
@@ -155,7 +155,7 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
         unfold CEquiv at hswap hΨE ⊢
         simp only [realization] at hswap hΨE ⊢
         rw [hswap]
-        ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+        ext y; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
         constructor
         · rintro ⟨hΨ₁, ⟨c, hc⟩⟩
           exact ⟨c, hΨE ▸ ⟨(realization_invariant_update Ψ₁ w hwΨ₁ y c).mp hΨ₁, hc⟩⟩
@@ -178,7 +178,7 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
         unfold CEquiv at hswap hΨE ⊢
         simp only [realization] at hswap hΨE ⊢
         rw [hswap]
-        ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+        ext y; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
         constructor
         · rintro ⟨hΨ₁, hB⟩ c
           rw [← hΨE]; simp only [Set.mem_inter_iff]
@@ -207,7 +207,7 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
       unfold CEquiv at hswap hΨE ⊢
       simp only [realization] at hswap hΨE ⊢
       rw [hswap]
-      ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+      ext y; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
       constructor
       · rintro ⟨⟨c, hc⟩, hΨ₂⟩
         exact ⟨c, hΨE ▸ ⟨hc, (realization_invariant_update Ψ₂ z hzΨ y c).mp hΨ₂⟩⟩
@@ -230,7 +230,7 @@ private theorem and_prenex [Infinite σ] [DecidableEq σ]
       unfold CEquiv at hswap hΨE ⊢
       simp only [realization] at hswap hΨE ⊢
       rw [hswap]
-      ext y; simp only [Set.mem_setOf_eq, Set.mem_inter_iff]
+      ext y; simp only [Set.mem_ofPred_eq, Set.mem_inter_iff]
       constructor
       · rintro ⟨hA, hΨ₂⟩ c
         rw [← hΨE]; simp only [Set.mem_inter_iff]
@@ -292,13 +292,13 @@ theorem prenex_normal_form [Infinite σ] [DecidableEq σ]
     obtain ⟨Ψ, hP, hE⟩ := ih
     refine ⟨.exists_ x Ψ, .exists_ hP, ?_⟩
     unfold CEquiv at hE ⊢; simp only [realization]
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     exact exists_congr fun c => by rw [← hE]
   | forall_ x Φ ih =>
     obtain ⟨Ψ, hP, hE⟩ := ih
     refine ⟨.forall_ x Ψ, .forall_ hP, ?_⟩
     unfold CEquiv at hE ⊢; simp only [realization]
-    ext y; simp only [Set.mem_setOf_eq]
+    ext y; simp only [Set.mem_ofPred_eq]
     exact forall_congr' fun c => by rw [← hE]
   | implies Φ₁ Φ₂ ih₁ ih₂ =>
     -- Φ₁ → Φ₂ has realization Φ₁ᶜ ∪ Φ₂ = ¬(Φ₁ ∧ ¬Φ₂)

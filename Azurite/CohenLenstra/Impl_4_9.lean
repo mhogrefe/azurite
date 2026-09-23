@@ -179,7 +179,7 @@ were a square.  Contrapositive: a non-unit denominator convicts `n`. -/
 theorem norm_one_denominator_isUnit {n : ℕ} (hn : n.Prime) {u a : ZMod n}
     (hns : ¬ IsSquare (u ^ 2 + 4 * a)) (m : ZMod n) :
     IsUnit (m * (m + u) - a) := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   rw [isUnit_iff_ne_zero]
   intro h0
   apply hns

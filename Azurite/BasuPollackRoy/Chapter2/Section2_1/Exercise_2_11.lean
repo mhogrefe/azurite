@@ -157,7 +157,7 @@ private theorem exists_root_real_of_odd_natDegree (f : ℝ[X]) (hf : f ≠ 0)
 private theorem mem_R_alg_of_root {f : R_alg[X]} (hf : f ≠ 0) {r : ℝ}
     (hr : (f.map (algebraMap ↥R_alg ℝ)).IsRoot r) : r ∈ R_alg := by
   rw [mem_algebraicClosure_iff]
-  haveI : Algebra.IsAlgebraic ℚ ↥R_alg := algebraicClosure.isAlgebraic ℚ ℝ
+  have : Algebra.IsAlgebraic ℚ ↥R_alg := algebraicClosure.isAlgebraic ℚ ℝ
   have halg_r : IsAlgebraic (↥R_alg) r := ⟨f, hf, by rwa [aeval_def, ← eval_map]⟩
   exact (isAlgebraic_iff_isIntegral.mp halg_r).trans_isAlgebraic ℚ
 

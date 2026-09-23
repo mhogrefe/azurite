@@ -52,6 +52,6 @@ theorem Mat_basisB : Mat n (basisB (K := K) n) = 1 := by
   · subst h; simp
   · have hne : ¬ (n - 1 - (j : ℕ) = n - 1 - (i : ℕ)) := by
       rw [Fin.ext_iff] at h; omega
-    rw [if_neg hne, if_neg h]
+    rw [ite_eq_right hne, ite_eq_right h]
 
 end Azurite.BPR.Chapter8

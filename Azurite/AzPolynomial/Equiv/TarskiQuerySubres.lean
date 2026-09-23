@@ -87,7 +87,7 @@ private theorem q1_deg_bound {R : Type _} [Field R] [LinearOrder R] [IsStrictOrd
     rw [natDegree_mul hP' hQ, natDegree_derivative (R := R) P, hq]; omega
   have hd2 : (C ((P.natDegree : R) * Q.leadingCoeff) * P).natDegree = P.natDegree :=
     natDegree_C_mul hpb1
-  have hsub := degree_sub_lt
+  have hsub := degree_sub_lt_left
     (show (P.derivative * Q).degree = (C ((P.natDegree : R) * Q.leadingCoeff) * P).degree by
       rw [degree_eq_natDegree hne, degree_eq_natDegree hCP_ne, hd1, hd2]) hne
     (show (P.derivative * Q).leadingCoeff
@@ -117,7 +117,7 @@ theorem pmvSubres_eq (A B : AzPolynomial R) (hlt : B.natDegree < A.natDegree) :
   show PmV (signedSubresultant A B).2.toList.reverse
     = PmV (signedSubresultant A
         (if A.natDegree ≤ B.natDegree then pRem B A else B)).2.toList.reverse
-  rw [if_neg (by omega)]
+  rw [ite_eq_right (by omega)]
 
 omit [DecidableEq R] [Azurite.ExactDiv R] in
 /-- `TaQ(Q, P) = Ind(P'·Q / P)` (whole-line Proposition 2.57). -/
@@ -161,13 +161,13 @@ private theorem sigma_diff (A P : R[X]) (hPm : P ≠ 0) (b : R) (qd : ℕ)
       show (SignType.sign (Azurite.BPR.ExtendedPoint.evalPoly (-A) .negInf
           * Azurite.BPR.ExtendedPoint.evalPoly P .negInf) : ℤ) = _
       rw [hνprod, he.neg_one_pow, one_mul, Left.sign_neg]; push_cast; linarith [hs]
-    rw [if_neg (by rw [Nat.even_iff] at he; omega), hπ, hνe]; ring
+    rw [ite_eq_right (by rw [Nat.even_iff] at he; omega), hπ, hνe]; ring
   · have hνo : Azurite.BPR.sigmaPQ (-A) P .negInf = (SignType.sign b : ℤ) := by
       show (SignType.sign (Azurite.BPR.ExtendedPoint.evalPoly (-A) .negInf
           * Azurite.BPR.ExtendedPoint.evalPoly P .negInf) : ℤ) = _
       rw [hνprod, ho.neg_one_pow, show (-1 : R) * -(A.leadingCoeff * P.leadingCoeff)
             = A.leadingCoeff * P.leadingCoeff by ring, hs]
-    rw [if_pos (by rw [Nat.odd_iff] at ho; omega), hπ, hνo]; ring
+    rw [ite_eq_left (by rw [Nat.odd_iff] at ho; omega), hπ, hνo]; ring
 
 /-- **Correctness of `tarskiQuery` (BPR Algorithm 9.5).** For non-constant
 `P` (`1 ≤ deg P`) over a real closed coefficient field,
@@ -186,7 +186,7 @@ theorem tarskiQuery_eq_BPR (Q P : AzPolynomial R) (hP1 : 1 ≤ P.natDegree) :
   rcases Nat.lt_trichotomy Q.natDegree 1 with hq | hq | hq
   · -- q = 0
     have h0 : Q.natDegree = 0 := by omega
-    rw [tarskiQuery, if_pos h0, pmvSubres_eq P (derivative P) hdP', toPoly_derivative]
+    rw [tarskiQuery, ite_eq_left h0, pmvSubres_eq P (derivative P) hdP', toPoly_derivative]
     have hDQ : AzPolynomial.toPoly Q = Polynomial.C (Q.coeff 0) := by
       have hz : (AzPolynomial.toPoly Q).natDegree = 0 := by rw [hqd]; exact h0
       rw [Polynomial.eq_C_of_natDegree_eq_zero hz, AzPolynomial.coeff_toPoly]
@@ -194,7 +194,7 @@ theorem tarskiQuery_eq_BPR (Q P : AzPolynomial R) (hP1 : 1 ≤ P.natDegree) :
           = Polynomial.C (Q.coeff 0) * (AzPolynomial.toPoly P).derivative by ring,
       Azurite.BPR.cauchyIndex_C_mul_left_sign]
   · -- q = 1
-    rw [tarskiQuery, if_neg (by omega : ¬ Q.natDegree = 0), if_pos hq]
+    rw [tarskiQuery, ite_eq_right (by omega : ¬ Q.natDegree = 0), ite_eq_left hq]
     have hdR : (derivative P * Q - ((P.natDegree : R) * Q.coeff 1) • P).natDegree < P.natDegree := by
       have key : (AzPolynomial.toPoly
             (derivative P * Q - ((P.natDegree : R) * Q.coeff 1) • P)).natDegree
@@ -223,8 +223,8 @@ theorem tarskiQuery_eq_BPR (Q P : AzPolynomial R) (hP1 : 1 ≤ P.natDegree) :
     --     `σ(+∞) − σ(−∞) = if (q−1) odd then −2·sign(b_q) else 0`,
     --   which by `omega`/`linarith` (÷2 over ℤ) matches the algorithm's
     --   `alg0 + [q−1 odd]·sign(b_q) = Ind(A/B) = TaQ`.
-    rw [tarskiQuery, if_neg (by omega : ¬ Q.natDegree = 0),
-      if_neg (by omega : ¬ Q.natDegree = 1)]
+    rw [tarskiQuery, ite_eq_right (by omega : ¬ Q.natDegree = 0),
+      ite_eq_right (by omega : ¬ Q.natDegree = 1)]
     have hQ : Q ≠ 0 := fun h => by rw [h, show (0 : AzPolynomial R).natDegree = 0 from rfl] at hq; omega
     have hDQ_ne : AzPolynomial.toPoly Q ≠ 0 := fun h => hQ (toPoly_inj.mp (h.trans toPoly_zero.symm))
     have hlcP : (AzPolynomial.toPoly P).leadingCoeff ≠ 0 := leadingCoeff_ne_zero.mpr hPm

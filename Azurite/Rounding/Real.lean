@@ -55,8 +55,8 @@ noncomputable instance realRoundingTarget : RoundingTarget realSet where
   tiebreak_mem a b := by
     unfold realTiebreak
     by_cases h : 0 ≤ toReal a + toReal b
-    · exact Or.inl (if_pos h)
-    · exact Or.inr (if_neg h)
+    · exact Or.inl (ite_eq_left h)
+    · exact Or.inr (ite_eq_right h)
 
 noncomputable instance realSymmetricRoundingTarget : SymmetricRoundingTarget realSet where
   zero_mem := ⟨0, by push_cast; rfl⟩
@@ -74,11 +74,11 @@ noncomputable instance realSymmetricRoundingTarget : SymmetricRoundingTarget rea
     rcases lt_trichotomy (toReal a + toReal b) 0 with hlt | heq | hgt
     · have hL : 0 ≤ -toReal a + -toReal b := by linarith
       have hR : ¬ 0 ≤ toReal b + toReal a := by linarith
-      rw [if_pos hL, if_neg hR]
+      rw [ite_eq_left hL, ite_eq_right hR]
     · exfalso; apply hne'; linarith
     · have hL : ¬ 0 ≤ -toReal a + -toReal b := by linarith
       have hR : 0 ≤ toReal b + toReal a := by linarith
-      rw [if_neg hL, if_pos hR]
+      rw [ite_eq_right hL, ite_eq_left hR]
 
 end RoundingTarget
 end Azurite

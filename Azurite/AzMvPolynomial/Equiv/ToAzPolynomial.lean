@@ -239,7 +239,7 @@ theorem toPoly_toAzPolynomial
   · have hterms : p.terms = #[] := Array.eq_empty_of_size_eq_zero h
     simp [AzMvPolynomial.toAzPolynomial, AzPolynomial.toPoly, AzPolynomial.zero,
       List.toPoly, hterms]
-  · unfold AzMvPolynomial.toAzPolynomial; rw [dif_neg h]; simp only; rw [toPoly_normalize]
+  · unfold AzMvPolynomial.toAzPolynomial; rw [dite_eq_right h]; simp only; rw [toPoly_normalize]
     ext i; rw [coeff_toPoly]
     have hcoeff_sum :
         (p.terms.toList.map

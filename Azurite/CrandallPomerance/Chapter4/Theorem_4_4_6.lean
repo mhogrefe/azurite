@@ -47,7 +47,7 @@ theorem l_pow_I_modEq_one {F I l : ℕ} (hFsq : Squarefree F)
     l ^ I ≡ 1 [MOD F] := by
   refine modEq_of_forall_primeFactor hFsq fun q hq => ?_
   have hqprime : q.Prime := Nat.prime_of_mem_primeFactors hq
-  haveI : Fact q.Prime := ⟨hqprime⟩
+  have : Fact q.Prime := ⟨hqprime⟩
   obtain ⟨u, hu⟩ := hunit q hq
   obtain ⟨t, ht⟩ := hqI q hq
   rw [← ZMod.natCast_eq_natCast_iff]
@@ -181,8 +181,8 @@ theorem theorem_4_4_6_composite
     intro p hp
     obtain ⟨hq₀mem, hq₀dvd⟩ := hq₀ p hp
     have hq'prime : (q₀ p).Prime := Nat.prime_of_mem_primeFactors hq₀mem
-    haveI : Fact (q₀ p).Prime := ⟨hq'prime⟩
-    haveI : IsDomain (R (q₀ p)) := hdom (q₀ p) hq₀mem
+    have : Fact (q₀ p).Prime := ⟨hq'prime⟩
+    have : IsDomain (R (q₀ p)) := hdom (q₀ p) hq₀mem
     obtain ⟨hζq, hmem, hgen, hprim, hfaith, hstep, h5, -, -⟩ :=
       hdata (q₀ p) hq₀mem
     have hpmem : p ∈ (q₀ p - 1).primeFactors :=
@@ -211,8 +211,8 @@ theorem theorem_4_4_6_composite
   have hqmod : ∀ q ∈ F.primeFactors, n.minFac ≡ l ^ a [MOD q] := by
     intro q hq
     have hqprime : q.Prime := Nat.prime_of_mem_primeFactors hq
-    haveI : Fact q.Prime := ⟨hqprime⟩
-    haveI : IsDomain (R q) := hdom q hq
+    have : Fact q.Prime := ⟨hqprime⟩
+    have : IsDomain (R q) := hdom q hq
     obtain ⟨hζq, hmem, hgen, hprim, hfaith, hstep, -, hlq, hl⟩ :=
       hdata q hq
     have hsqf : Squarefree (q - 1) :=
@@ -252,7 +252,7 @@ theorem theorem_4_4_6_composite
   -- combine over `F` and catch the factor
   have hlunit : ∀ q ∈ F.primeFactors, IsUnit ((l : ℕ) : ZMod q) := by
     intro q hq
-    haveI : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
+    have : Fact q.Prime := ⟨Nat.prime_of_mem_primeFactors hq⟩
     obtain ⟨-, -, -, -, -, -, -, -, hl⟩ := hdata q hq
     rw [hl]
     exact (g q ^ lq q).isUnit

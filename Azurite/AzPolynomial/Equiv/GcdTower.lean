@@ -312,7 +312,7 @@ private theorem normalize_mul' (a b : M) :
 /-! ### `leadNormalize` represents `normalize` -/
 
 theorem leadNormalize_zero : leadNormalize (0 : AzPolynomial D) = 0 := by
-  rw [leadNormalize, if_pos rfl]
+  rw [leadNormalize, ite_eq_left rfl]
 
 /-- **`leadNormalize` represents Mathlib's `normalize`** (the generalization
 of `map_toPoly_signNorm`): dividing out the unit part of the leading
@@ -332,7 +332,7 @@ theorem map_toPoly_leadNormalize (hρ : Function.Injective ρ)
     fun i => hrefl _ _ (huu.dvd)
   have hkey : Polynomial.C (NormalizedGcd.unitPart p.leadingCoeff)
       * AzPolynomial.toPoly (leadNormalize p) = AzPolynomial.toPoly p := by
-    rw [leadNormalize, if_neg hp]
+    rw [leadNormalize, ite_eq_right hp]
     exact C_mul_toPoly_divByRingElt _ hu0 p hudvd
   have hkeyM : Polynomial.C (ρ (NormalizedGcd.unitPart p.leadingCoeff))
       * ((AzPolynomial.toPoly (leadNormalize p)).map ρ)
@@ -396,7 +396,7 @@ theorem primNormalized_spec (hρ : Function.Injective ρ)
   -- the exact-division identity, mapped to `M[X]`
   have hkey : Polynomial.C s * AzPolynomial.toPoly (primNormalized g)
       = AzPolynomial.toPoly g := by
-    rw [primNormalized, if_neg hg]
+    rw [primNormalized, ite_eq_right hg]
     exact C_mul_toPoly_divByRingElt s hs0 g hdvd
   have hkeyM : Polynomial.C (ρ s)
       * ((AzPolynomial.toPoly (primNormalized g)).map ρ) = gM := by
@@ -682,19 +682,19 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
     IsFractionRing.injective M (FractionRing M)
   rw [ngcdPoly]
   by_cases hP0 : P = 0
-  · rw [if_pos hP0]
+  · rw [ite_eq_left hP0]
     have hA0 : A = 0 := by rw [hA, hP0, toPoly_zero, Polynomial.map_zero]
     by_cases hQ0 : Q = 0
     · have hB0 : B = 0 := by rw [hB, hQ0, toPoly_zero, Polynomial.map_zero]
       rw [hQ0, leadNormalize_zero, toPoly_zero, Polynomial.map_zero, hA0, hB0,
         gcd_zero_right, normalize_zero]
     · rw [map_toPoly_leadNormalize hρ hrefl hgcd hQ0, hA0, gcd_zero_left, hB]
-  rw [if_neg hP0]
+  rw [ite_eq_right hP0]
   by_cases hQ0 : Q = 0
-  · rw [if_pos hQ0]
+  · rw [ite_eq_left hQ0]
     have hB0 : B = 0 := by rw [hB, hQ0, toPoly_zero, Polynomial.map_zero]
     rw [map_toPoly_leadNormalize hρ hrefl hgcd hP0, hB0, gcd_zero_right, hA]
-  rw [if_neg hQ0]
+  rw [ite_eq_right hQ0]
   have hA0 : A ≠ 0 := hA ▸ map_toPoly_ne_zero' hρ hP0
   have hB0 : B ≠ 0 := hB ▸ map_toPoly_ne_zero' hρ hQ0
   have hd : ρ (contentGcdGen P Q) = GCDMonoid.gcd A.content B.content := by
@@ -743,7 +743,7 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
       exact ⟨hu.unit, by rw [IsUnit.unit_spec, mul_comm]⟩
     exact h1.trans hassoc
   by_cases hdeg0 : P.natDegree = 0 ∨ Q.natDegree = 0
-  · rw [if_pos hdeg0]
+  · rw [ite_eq_left hdeg0]
     -- constant case: the gcd is the content gcd
     rw [map_toPoly_smul', toPoly_one, Polynomial.map_one, mul_one,
       show Polynomial.C (ρ (contentGcdGen P Q))
@@ -761,11 +761,11 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
     rcases hunit with h | h
     · rw [gcd_isUnit_left h]
     · rw [gcd_isUnit_right h]
-  rw [if_neg hdeg0]
+  rw [ite_eq_right hdeg0]
   push Not at hdeg0
   obtain ⟨hPd0, hQd0⟩ := hdeg0
   by_cases hdeq : P.natDegree = Q.natDegree
-  · rw [if_pos hdeq]
+  · rw [ite_eq_left hdeq]
     set T := preStep P Q with hT
     have hlcP : P.leadingCoeff ≠ 0 := leadingCoeff_ne_zero' hP0
     have hlcPq : algebraMap M (FractionRing M) (ρ P.leadingCoeff) ≠ 0 :=
@@ -787,7 +787,7 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
       rw [hTq]
       exact gcd_pre_step _ _ hlcPq
     by_cases hT0 : T = 0
-    · rw [if_pos hT0]
+    · rw [ite_eq_left hT0]
       -- proportional: `A ∣ B` over the fraction field, gcd = normalize A
       have hprop : Polynomial.C (algebraMap M (FractionRing M)
               (ρ P.leadingCoeff))
@@ -813,9 +813,9 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
       refine happly P hP0 ?_
       rw [← hA, gcd_eq_normalize_left hdvd]
       exact (associated_normalize _)
-    rw [if_neg hT0]
+    rw [ite_eq_right hT0]
     by_cases hTd : T.natDegree = 0
-    · rw [if_pos hTd]
+    · rw [ite_eq_left hTd]
       -- the pre-step output is a fraction-field unit: the gcd is `1`
       rw [map_toPoly_smul', toPoly_one, Polynomial.map_one, mul_one,
         show Polynomial.C (ρ (contentGcdGen P Q))
@@ -833,7 +833,7 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
           natDegree_map_toPoly' hρ]
         exact hTd
       rw [gcd_isUnit_right (isUnit_frac_of_natDegree_eq_zero hTq0 hTdq)]
-    rw [if_neg hTd]
+    rw [ite_eq_right hTd]
     -- main equal-degree branch: core on `(P, T)`, pre-step invisible
     have hlt : T.natDegree < P.natDegree := by
       rw [hT, preStep]
@@ -846,16 +846,16 @@ theorem map_toPoly_ngcdPoly (hρ : Function.Injective ρ)
     rw [← map_map_fuse', ← map_map_fuse', ← map_map_fuse', ← hA] at h1
     rw [← hstepq]
     exact h1
-  rw [if_neg hdeq]
+  rw [ite_eq_right hdeq]
   by_cases hdlt : P.natDegree < Q.natDegree
-  · rw [if_pos hdlt]
+  · rw [ite_eq_left hdlt]
     obtain ⟨hcore, hne⟩ := subresGcd_frac_assoc hρ Q P hQ0 hP0 hdlt (by omega)
     refine happly _ hne ?_
     have h1 := hcore
     rw [← map_map_fuse', ← map_map_fuse', ← map_map_fuse', ← hA, ← hB] at h1
     rw [gcd_comm]
     exact h1
-  · rw [if_neg hdlt]
+  · rw [ite_eq_right hdlt]
     obtain ⟨hcore, hne⟩ := subresGcd_frac_assoc hρ P Q hP0 hQ0 (by omega)
       (by omega)
     refine happly _ hne ?_

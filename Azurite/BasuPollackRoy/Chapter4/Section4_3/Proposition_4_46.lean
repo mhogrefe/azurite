@@ -114,16 +114,16 @@ private lemma trace_Fsm_mul (a b c d : Fin p) :
     rw [Matrix.single_mul_single_same, mul_one]
     by_cases had : a = d
     · subst had
-      rw [Matrix.trace_single_eq_same, if_pos ⟨rfl, rfl⟩]
-    · rw [Matrix.trace_single_eq_of_ne a d 1 had, if_neg (by simp [had])]
-  · rw [Matrix.single_mul_single_of_ne 1 a b c hbc 1, Matrix.trace_zero, if_neg (by simp [hbc])]
+      rw [Matrix.trace_single_eq_same, ite_eq_left ⟨rfl, rfl⟩]
+    · rw [Matrix.trace_single_eq_of_ne a d 1 had, ite_eq_right (by simp [had])]
+  · rw [Matrix.single_mul_single_of_ne 1 a b c hbc 1, Matrix.trace_zero, ite_eq_right (by simp [hbc])]
 
 /-- `Esm j ℓ` is a symmetric matrix. -/
 private lemma Esm_isSymm (j ℓ : Fin p) : (Esm (R := R) j ℓ).IsSymm := by
   rw [Matrix.IsSymm, Esm]
   by_cases h : j = ℓ
-  · subst h; rw [if_pos rfl, Fsm, Matrix.transpose_single]
-  · rw [if_neg h, transpose_smul, transpose_add, Fsm, Fsm, Matrix.transpose_single,
+  · subst h; rw [ite_eq_left rfl, Fsm, Matrix.transpose_single]
+  · rw [ite_eq_right h, transpose_smul, transpose_add, Fsm, Fsm, Matrix.transpose_single,
       Matrix.transpose_single, add_comm]
 
 /-- Bilinear expansion: `traceBilin` of `Esm` matrices. -/
@@ -145,17 +145,17 @@ private lemma trace_Esm (j ℓ j' ℓ' : Fin p) (hjl : j ≤ ℓ) (hj'l' : j' �
   by_cases hd : j = ℓ <;> by_cases hd' : j' = ℓ'
   · -- diag, diag
     subst hd; subst hd'
-    rw [Esm, if_pos rfl, Esm, if_pos rfl, trace_Fsm_mul]
+    rw [Esm, ite_eq_left rfl, Esm, ite_eq_left rfl, trace_Fsm_mul]
   · -- diag, off-diag
     subst hd
-    rw [Esm, if_pos rfl, Esm, if_neg hd', hsmulR, haddR, trace_Fsm_mul, trace_Fsm_mul]
+    rw [Esm, ite_eq_left rfl, Esm, ite_eq_right hd', hsmulR, haddR, trace_Fsm_mul, trace_Fsm_mul]
     split_ifs <;> first | (exfalso; omega) | ring
   · -- off-diag, diag
     subst hd'
-    rw [Esm, if_neg hd, Esm, if_pos rfl, hsmulL, haddL, trace_Fsm_mul, trace_Fsm_mul]
+    rw [Esm, ite_eq_right hd, Esm, ite_eq_left rfl, hsmulL, haddL, trace_Fsm_mul, trace_Fsm_mul]
     split_ifs <;> first | (exfalso; omega) | ring
   · -- off-diag, off-diag
-    rw [Esm, if_neg hd, Esm, if_neg hd', hsmulL, hsmulR, haddL, haddR, haddR,
+    rw [Esm, ite_eq_right hd, Esm, ite_eq_right hd', hsmulL, hsmulR, haddL, haddR, haddR,
       trace_Fsm_mul, trace_Fsm_mul, trace_Fsm_mul, trace_Fsm_mul]
     -- terms: (ℓ=j'∧j=ℓ'), (ℓ=ℓ'∧j=j'), (j=j'∧ℓ=ℓ'), (j=ℓ'∧ℓ=j')
     have hlt : j < ℓ := lt_of_le_of_ne hjl hd
@@ -180,8 +180,8 @@ private lemma Esm_apply (j ℓ r s : Fin p) :
           * ((if j = r ∧ ℓ = s then (1 : R) else 0) + (if ℓ = r ∧ j = s then 1 else 0)) := by
   rw [Esm]
   by_cases h : j = ℓ
-  · subst h; rw [if_pos rfl, if_pos rfl, Fsm, Matrix.single_apply]
-  · rw [if_neg h, if_neg h, Matrix.smul_apply, smul_eq_mul, Matrix.add_apply,
+  · subst h; rw [ite_eq_left rfl, ite_eq_left rfl, Fsm, Matrix.single_apply]
+  · rw [ite_eq_right h, ite_eq_right h, Matrix.smul_apply, smul_eq_mul, Matrix.add_apply,
       Fsm, Fsm, Matrix.single_apply, Matrix.single_apply]
 
 /-- A symmetric matrix expands as `∑ q, Ecoeff X q • E q`. -/
@@ -202,13 +202,13 @@ private lemma symm_eq_sum_Ecoeff (X : Matrix (Fin p) (Fin p) R) (hX : X.IsSymm) 
       simp only [min_eq_left hrs, max_eq_right hrs]
       by_cases h : r = s
       · subst h; simp
-      · simp only [h, if_false, and_false, if_true, and_true, mul_one, add_zero]
+      · simp only [h, ite_false, and_false, ite_true, and_true, mul_one, add_zero]
         field_simp
     · -- s ≤ r : min = s, max = r
       simp only [min_eq_right hrs, max_eq_left hrs]
       by_cases h : s = r
       · subst h; simp
-      · simp only [h, if_false, false_and, if_true, and_true, mul_one, zero_add, hX.apply s r]
+      · simp only [h, ite_false, false_and, ite_true, and_true, mul_one, zero_add, hX.apply s r]
         field_simp
   · -- other terms vanish
     intro q _ hq
@@ -217,15 +217,15 @@ private lemma symm_eq_sum_Ecoeff (X : Matrix (Fin p) (Fin p) R) (hX : X.IsSymm) 
     simp only at hq ⊢
     by_cases hd : j = ℓ
     · subst hd
-      rw [if_pos rfl, if_neg ?_, mul_zero]
+      rw [ite_eq_left rfl, ite_eq_right ?_, mul_zero]
       rintro ⟨rfl, rfl⟩
       exact hq (by rw [hq₀, Subtype.ext_iff]; simp [min_self, max_self])
-    · rw [if_neg hd]
+    · rw [ite_eq_right hd]
       have e1 : (if j = r ∧ ℓ = s then (1:R) else 0) = 0 := by
-        rw [if_neg]; rintro ⟨rfl, rfl⟩
+        rw [ite_eq_right]; rintro ⟨rfl, rfl⟩
         exact hq (by rw [hq₀, Subtype.ext_iff]; simp [min_eq_left hjl, max_eq_right hjl])
       have e2 : (if ℓ = r ∧ j = s then (1:R) else 0) = 0 := by
-        rw [if_neg]; rintro ⟨rfl, rfl⟩
+        rw [ite_eq_right]; rintro ⟨rfl, rfl⟩
         exact hq (by rw [hq₀, Subtype.ext_iff]; simp [min_eq_right hjl, max_eq_left hjl])
       rw [e1, e2, add_zero, mul_zero, mul_zero]
   · intro h; exact absurd (Finset.mem_univ q₀) h
@@ -290,7 +290,7 @@ theorem proposition_4_46 :
       rw [map_sum, LinearMap.sum_apply] at key
       simp only [map_smul, LinearMap.smul_apply, smul_eq_mul, traceBilin_E, mul_ite, mul_one,
         mul_zero] at key
-      rwa [Finset.sum_ite_eq' Finset.univ b c, if_pos (Finset.mem_univ b)] at key
+      rwa [Finset.sum_ite_eq' Finset.univ b c, ite_eq_left (Finset.mem_univ b)] at key
     -- spanning
     have hsp : ⊤ ≤ Submodule.span R (Set.range v) := by
       rintro ⟨X, hX⟩ -

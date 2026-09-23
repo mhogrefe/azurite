@@ -29,7 +29,7 @@ noncomputable def toMvPolyRingHom :
   map_mul' := toMvPoly_mul
 
 /-- Forward: `toMvPoly (join₂ p) = bind₂ toMvPolyRingHom (toMvPoly p)`. -/
-@[simp] theorem toMvPoly_join₂ 
+@[simp] theorem toMvPoly_join₂
     (p : AzMvPolynomial n (AzMvPolynomial n R ord) ord) :
     toMvPoly (p.join₂) =
     (MvPolynomial.bind₂ toMvPolyRingHom) (toMvPoly p) := by
@@ -39,7 +39,7 @@ noncomputable def toMvPolyRingHom :
     ext r; simp [toMvPolyRingHom, ofMvPoly_toMvPoly]]
   exact toMvPoly_bind₂  (R := AzMvPolynomial n R ord) (S := R) toMvPolyRingHom p
 
-@[simp] theorem ofMvPoly_join₂ 
+@[simp] theorem ofMvPoly_join₂
     (p : MvPolynomial (Fin n) (AzMvPolynomial n R ord)) :
     (AzMvPolynomial.ofMvPoly p :
       AzMvPolynomial n (AzMvPolynomial n R ord) ord).join₂ =

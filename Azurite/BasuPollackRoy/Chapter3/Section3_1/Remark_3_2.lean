@@ -38,7 +38,7 @@ theorem isSemialgebraicSet_remarkT : IsSemialgebraicSet (remarkT (R := R)) :=
 omit [IsRealClosed R] in
 /-- `S = (1, ∞)`: `x³ − x² > 0` iff `x > 1`. -/
 theorem mem_remarkS {x : Fin 1 → R} : x ∈ remarkS ↔ 1 < x 0 := by
-  rw [remarkS, Set.mem_setOf_eq, eval_remarkPoly]
+  rw [remarkS, Set.mem_ofPred_eq, eval_remarkPoly]
   constructor
   · intro h; nlinarith [sq_nonneg (x 0), h]
   · intro h
@@ -68,13 +68,13 @@ theorem mem_closure_remarkS {x : Fin 1 → R} : x ∈ closure remarkS ↔ 1 ≤ 
 theorem closure_remarkS_eq :
     closure remarkS = {x : Fin 1 → R | eval x remarkPoly ≥ 0 ∧ 1 ≤ x 0} := by
   ext x
-  rw [mem_closure_remarkS, Set.mem_setOf_eq, eval_remarkPoly]
+  rw [mem_closure_remarkS, Set.mem_ofPred_eq, eval_remarkPoly]
   exact ⟨fun hx => ⟨by nlinarith [sq_nonneg (x 0), hx], hx⟩, fun hx => hx.2⟩
 
 omit [IsStrictOrderedRing R] [IsRealClosed R] in
 /-- `0 ∈ T` (the relaxed set contains the origin). -/
 theorem zero_mem_remarkT : (0 : Fin 1 → R) ∈ remarkT := by
-  rw [remarkT, Set.mem_setOf_eq, eval_remarkPoly]; simp
+  rw [remarkT, Set.mem_ofPred_eq, eval_remarkPoly]; simp
 
 /-- `0 ∉ S̄`: the origin is not in the closure. -/
 theorem zero_not_mem_closure_remarkS : (0 : Fin 1 → R) ∉ closure remarkS := by

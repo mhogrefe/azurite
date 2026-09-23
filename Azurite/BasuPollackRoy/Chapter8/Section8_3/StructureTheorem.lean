@@ -30,7 +30,7 @@ theorem pdetRing_eq_zero_of_degree_lt {m n : ℕ} (hm : 2 ≤ m) (P : Fin m → 
   rw [pdetMinorRing]
   have hzero : ∀ r, pdetMinorMatRing n P (i : ℕ) r (⟨0, by omega⟩ : Fin m) = 0 := by
     intro r
-    rw [pdetMinorMatRing, pdetColIdx, if_pos (by show 0 + 1 < m; omega)]
+    rw [pdetMinorMatRing, pdetColIdx, ite_eq_left (by show 0 + 1 < m; omega)]
     exact Polynomial.coeff_eq_zero_of_degree_lt (hdeg r)
   rw [Matrix.det_eq_zero_of_column_eq_zero _ hzero, zero_smul]
 

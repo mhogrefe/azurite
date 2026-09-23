@@ -81,7 +81,7 @@ theorem isFiniteMapping_fiber_finite {Ps : Finset (MvPolynomial (Fin (n + 1)) K)
     exact hcne ((map_eq_zero_iff _ (algebraMap K C).injective).mp hcoeff.symm)
   -- The fiber injects (via `x ↦ x 0`) into the finite root set of `Py`.
   refine Set.Finite.of_finite_image (f := fun x => x 0) ?_ ?_
-  · refine Set.Finite.subset (Polynomial.finite_setOf_isRoot hPyne) ?_
+  · refine Set.Finite.subset (Polynomial.finite_setOfPred_isRoot hPyne) ?_
     rintro _ ⟨x, ⟨hxtail, hxzer⟩, rfl⟩
     have hxy : Fin.cons (x 0) y = x := by
       rw [← Set.mem_singleton_iff.mp (Set.mem_preimage.mp hxtail)]

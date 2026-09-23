@@ -53,18 +53,18 @@ or lies in the degree gap below `p` (for `0 < m < p`). -/
 theorem sRes_right_zero_eq_zero (P : K[X]) {m : ℕ} (hm : m < P.natDegree) :
     sRes P 0 m = 0 := by
   rcases Nat.eq_zero_or_pos m with rfl | hmpos
-  · rw [sRes, if_pos (Nat.zero_le _)]
+  · rw [sRes, ite_eq_left (Nat.zero_le _)]
     have hzero : SyHaSquare P (0 : K[X]) 0 = 0 := by
       ext i k
       simp only [SyHaSquare, Matrix.submatrix_apply, id_eq, SyHa, Matrix.of_apply,
         Matrix.zero_apply]
-      rw [if_neg (by simp [Polynomial.natDegree_zero]), mul_zero, Polynomial.coeff_zero]
+      rw [ite_eq_right (by simp [Polynomial.natDegree_zero]), mul_zero, Polynomial.coeff_zero]
     rw [hzero]
-    haveI : Nonempty (Fin (P.natDegree + Polynomial.natDegree (0 : K[X]) - 2 * 0)) :=
+    have : Nonempty (Fin (P.natDegree + Polynomial.natDegree (0 : K[X]) - 2 * 0)) :=
       ⟨⟨0, by simp only [Polynomial.natDegree_zero]; omega⟩⟩
     exact Matrix.det_zero
-  · rw [sRes, if_neg (by rw [Polynomial.natDegree_zero]; omega),
-      if_pos (by rw [Polynomial.natDegree_zero]; omega), if_neg (by omega)]
+  · rw [sRes, ite_eq_right (by rw [Polynomial.natDegree_zero]; omega),
+      ite_eq_left (by rw [Polynomial.natDegree_zero]; omega), ite_eq_right (by omega)]
 
 omit [IsStrictOrderedRing K] in
 /-- `PmV(sRes(P, 0)) = 0` for `P ≠ 0`: the sequence is `a_p, 0, …, 0` (or a
@@ -168,7 +168,7 @@ theorem map_sRes {D R : Type*} [CommRing D] [CommRing R] {f : D →+* R}
     Polynomial.natDegree_map_eq_of_injective hf Q
   unfold sRes
   by_cases hm : m ≤ Q.natDegree
-  · rw [if_pos hm, if_pos (show m ≤ (Q.map f).natDegree by rw [hQd]; exact hm)]
+  · rw [ite_eq_left hm, ite_eq_left (show m ≤ (Q.map f).natDegree by rw [hQd]; exact hm)]
     rw [RingHom.map_det]
     have hdim : P.natDegree + Q.natDegree - 2 * m
         = (P.map f).natDegree + (Q.map f).natDegree - 2 * m := by rw [hPd, hQd]
@@ -181,21 +181,21 @@ theorem map_sRes {D R : Type*} [CommRing D] [CommRing R] {f : D →+* R}
         Fin.val_cast, Fin.val_castLE]
       rw [hPd, hQd]
       by_cases hc : i.val < Q.natDegree - m
-      · rw [if_pos hc, if_pos hc, ← Polynomial.coeff_map, Polynomial.map_mul,
+      · rw [ite_eq_left hc, ite_eq_left hc, ← Polynomial.coeff_map, Polynomial.map_mul,
           Polynomial.map_pow, Polynomial.map_X]
-      · rw [if_neg hc, if_neg hc, ← Polynomial.coeff_map, Polynomial.map_mul,
+      · rw [ite_eq_right hc, ite_eq_right hc, ← Polynomial.coeff_map, Polynomial.map_mul,
           Polynomial.map_pow, Polynomial.map_X]
     rw [RingHom.mapMatrix_apply, hsub, Matrix.det_submatrix_equiv_self]
-  · rw [if_neg hm, if_neg (show ¬ m ≤ (Q.map f).natDegree by rw [hQd]; exact hm)]
+  · rw [ite_eq_right hm, ite_eq_right (show ¬ m ≤ (Q.map f).natDegree by rw [hQd]; exact hm)]
     by_cases hqp : Q.natDegree < P.natDegree
-    · rw [if_pos hqp, if_pos (show (Q.map f).natDegree < (P.map f).natDegree by
+    · rw [ite_eq_left hqp, ite_eq_left (show (Q.map f).natDegree < (P.map f).natDegree by
         rw [hQd, hPd]; exact hqp)]
       by_cases hmp : m = P.natDegree
-      · rw [if_pos hmp, if_pos (show m = (P.map f).natDegree by rw [hPd]; exact hmp)]
+      · rw [ite_eq_left hmp, ite_eq_left (show m = (P.map f).natDegree by rw [hPd]; exact hmp)]
         exact (Polynomial.leadingCoeff_map_of_injective hf P).symm
-      · rw [if_neg hmp, if_neg (show ¬ m = (P.map f).natDegree by rw [hPd]; exact hmp),
+      · rw [ite_eq_right hmp, ite_eq_right (show ¬ m = (P.map f).natDegree by rw [hPd]; exact hmp),
           map_zero]
-    · rw [if_neg hqp, if_neg (show ¬ (Q.map f).natDegree < (P.map f).natDegree by
+    · rw [ite_eq_right hqp, ite_eq_right (show ¬ (Q.map f).natDegree < (P.map f).natDegree by
         rw [hQd, hPd]; exact hqp), map_zero]
 
 /-- **The subresultant sequence commutes with an injective ring hom.** -/

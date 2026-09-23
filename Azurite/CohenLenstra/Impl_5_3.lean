@@ -326,7 +326,7 @@ theorem test_4_3_confinement (hn2 : ¬ 2 ∣ n) (hr : r.Prime) (hrn : r ∣ n) (
       ∧ (IsUnit c₀ ∨ IsUnit c₁)) :
     r ≡ n ^ (if IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4 * ZMod.castHom hrn (ZMod r) a)
       then 0 else 1) [MOD p ^ v] := by
-  haveI : Fact r.Prime := ⟨hr⟩
+  have : Fact r.Prime := ⟨hr⟩
   have hr2 : r ≠ 2 := by
     rintro rfl
     exact hn2 hrn
@@ -367,14 +367,14 @@ theorem test_4_3_confinement (hn2 : ¬ 2 ∣ n) (hr : r.Prime) (hrn : r ∣ n) (
   rcases normOne_pow_cases (ZMod.castHom hrn (ZMod r) u) (ZMod.castHom hrn (ZMod r) a) hr2 hNr
     with ⟨hns, hpow⟩ | ⟨hsq, -, hpow⟩ | ⟨hΔ, hpow⟩
   · -- inert: `ord ∣ r + 1`, so `p^v ∣ r + 1` and `r ≡ n`
-    rw [if_neg hns, pow_one]
+    rw [ite_eq_right hns, pow_one]
     rw [← hyE] at hpow
     have h1 : p ^ v ∣ r + 1 := hord.trans (orderOf_dvd_of_pow_eq_one hpow)
     have h2 : r + 1 ≡ n + 1 [MOD p ^ v] :=
       (Nat.modEq_zero_iff_dvd.mpr h1).trans (Nat.modEq_zero_iff_dvd.mpr hpn1).symm
     exact Nat.ModEq.add_right_cancel' 1 h2
   · -- split: `ord ∣ r − 1`, so `r ≡ 1`
-    rw [if_pos hsq, pow_zero]
+    rw [ite_eq_left hsq, pow_zero]
     rw [← hyE] at hpow
     have h1 : p ^ v ∣ r - 1 := hord.trans (orderOf_dvd_of_pow_eq_one hpow)
     exact ((Nat.modEq_iff_dvd' hr.one_lt.le).mpr h1).symm
@@ -421,7 +421,7 @@ theorem c1_two_adic (hn : Odd n) (hr : r.Prime) (hrn : r ∣ n) {a : ℤ}
       ∧ (¬ 2 ^ ((n - 1).factorization 2 + 1) ∣ r - 1
           ↔ ¬ IsSquare ((ZMod.castHom hrn (ZMod r) (0 : ZMod n)) ^ 2
               + 4 * ZMod.castHom hrn (ZMod r) ((a : ℤ) : ZMod n))) := by
-  haveI : Fact r.Prime := ⟨hr⟩
+  have : Fact r.Prime := ⟨hr⟩
   have hr2 : r ≠ 2 := by
     rintro rfl
     exact (Nat.not_even_iff_odd.mpr hn) (even_iff_two_dvd.mpr hrn)
@@ -440,7 +440,7 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
     r ≡ n ^ (if IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) then 0 else 1) [MOD 2 ^ v]
       ∧ (IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) → 2 ^ (v + 1) ∣ r - 1)
       ∧ (¬ IsSquare ((ZMod.castHom hrn (ZMod r) u) ^ 2 + 4) → r ≡ n [MOD 2 ^ (v + 1)]) := by
-  haveI : Fact r.Prime := ⟨hr⟩
+  have : Fact r.Prime := ⟨hr⟩
   have hn2 : ¬ 2 ∣ n := by omega
   have hr2 : r ≠ 2 := by
     rintro rfl
@@ -535,7 +535,7 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
           ZMod.pow_card_sub_one_eq_one hc₂0, sub_self]
     have h1 : 2 ^ (v + 1) ∣ r - 1 := hord.trans (orderOf_dvd_of_pow_eq_one hpow)
     refine ⟨?_, fun _ => h1, fun h => absurd ⟨δ, hδ⟩ h⟩
-    rw [if_pos ⟨δ, hδ⟩, pow_zero]
+    rw [ite_eq_left ⟨δ, hδ⟩, pow_zero]
     exact ((Nat.modEq_iff_dvd' hr.one_lt.le).mpr ((pow_dvd_pow 2 (by omega)).trans h1)).symm
   · -- inert: `y^(r+1) = −1`, so `y^(2(r+1)) = 1` and `2^v ∣ r + 1`
     have hsq' : ¬ IsSquare (ū ^ 2 + 4 * 1) := by rw [mul_one]; exact hsq
@@ -551,7 +551,7 @@ theorem c2_two_adic (hn3 : n % 4 = 3) (hr : r.Prime) (hrn : r ∣ n) {u : ZMod n
       rw [pow_succ, mul_comm] at h1
       exact Nat.dvd_of_mul_dvd_mul_left (by norm_num) h1
     refine ⟨?_, fun h => absurd h hsq, fun _ => ?_⟩
-    · rw [if_neg hsq, pow_one]
+    · rw [ite_eq_right hsq, pow_one]
       have h3 : r + 1 ≡ n + 1 [MOD 2 ^ v] :=
         (Nat.modEq_zero_iff_dvd.mpr h2).trans (Nat.modEq_zero_iff_dvd.mpr h2v).symm
       exact Nat.ModEq.add_right_cancel' 1 h3

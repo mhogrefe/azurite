@@ -120,10 +120,10 @@ private theorem Finset.antidiag_filter_snd_le (l q : ℕ) :
     using `MvPolynomial.finSuccEquiv`. -/
 theorem MvPolynomial.bitsize_coeff_mul_le :
     ∀ (k : ℕ) (P Q : MvPolynomial (Fin k) ℤ) (τ σ q : ℕ),
-    (∀ m, (MvPolynomial.coeff m P).natAbs.size ≤ τ) →
-    (∀ m, (MvPolynomial.coeff m Q).natAbs.size ≤ σ) →
+    (∀ m, (P.coeff m).natAbs.size ≤ τ) →
+    (∀ m, (Q.coeff m).natAbs.size ≤ σ) →
     MvPolynomial.totalDegree Q ≤ q →
-    ∀ m, (MvPolynomial.coeff m (P * Q)).natAbs.size ≤ τ + σ + k * Nat.size (q + 1) := by
+    ∀ m, ((P * Q).coeff m).natAbs.size ≤ τ + σ + k * Nat.size (q + 1) := by
   intro k; induction k with
   | zero =>
     intro P Q τ σ q hP hQ _hq m
@@ -146,11 +146,11 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
       exact le_trans (MvPolynomial.degreeOf_le_totalDegree Q 0) hq
     -- Filter sum to x.2 ≤ q: terms with x.2 > q have Q-coeff = 0
     rw [show ∑ x ∈ Finset.antidiagonal l,
-          MvPolynomial.coeff m' (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
-            ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2)
+          (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
+            ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2).coeff m'
         = ∑ x ∈ (Finset.antidiagonal l).filter (fun x => x.2 ≤ q),
-          MvPolynomial.coeff m' (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
-            ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2) from by
+          (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
+            ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2).coeff m' from by
       symm; apply Finset.sum_filter_of_ne
       intro x _ hne; by_contra hgt; push Not at hgt
       have : ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2 = 0 :=
@@ -158,9 +158,8 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
       exact hne (by simp [this])]
     set s := (Finset.antidiagonal l).filter (fun x : ℕ × ℕ => x.2 ≤ q)
     -- Each term bounded by IH
-    have hB : ∀ x ∈ s, (MvPolynomial.coeff m'
-        (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
-         ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2)).natAbs.size
+    have hB : ∀ x ∈ s, ((((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
+         ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2).coeff m').natAbs.size
         ≤ τ + σ + k * Nat.size (q + 1) := by
       intro x _hx
       apply ih _ _ τ σ q
@@ -169,9 +168,8 @@ theorem MvPolynomial.bitsize_coeff_mul_le :
       · by_cases hne : ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2 = 0
         · simp [hne]
         · have := MvPolynomial.totalDegree_coeff_finSuccEquiv_add_le Q x.2 hne; omega
-    calc (∑ x ∈ s, MvPolynomial.coeff m'
-            (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
-             ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2)).natAbs.size
+    calc (∑ x ∈ s, (((MvPolynomial.finSuccEquiv ℤ k) P).coeff x.1 *
+             ((MvPolynomial.finSuccEquiv ℤ k) Q).coeff x.2).coeff m').natAbs.size
         ≤ (τ + σ + k * Nat.size (q + 1)) + Nat.size s.card :=
           Int.size_finset_sum_le hB
       _ ≤ (τ + σ + k * Nat.size (q + 1)) + Nat.size (q + 1) :=

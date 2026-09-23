@@ -93,7 +93,7 @@ theorem sum_antidiagonal_symm {M : Type _} [AddCommMonoid M] (f : ℕ → ℕ �
         exact hf _ _
     · -- the diagonal
       by_cases hd : d % 2 = 0
-      · rw [if_pos hd]
+      · rw [ite_eq_left hd]
         rw [Finset.sum_eq_single (d / 2, d / 2)]
         · intro x hx hne
           exfalso
@@ -105,7 +105,7 @@ theorem sum_antidiagonal_symm {M : Type _} [AddCommMonoid M] (f : ℕ → ℕ �
           apply h
           simp only [Finset.mem_filter, Finset.mem_antidiagonal]
           omega
-      · rw [if_neg hd]
+      · rw [ite_eq_right hd]
         apply Finset.sum_eq_zero
         intro x hx
         exfalso

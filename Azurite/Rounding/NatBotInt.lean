@@ -85,27 +85,27 @@ private lemma natBot_int_tiebreak_value_agree {x : ℝ} (hx : 0 ≤ x)
             rw [hCi_int, hsucc, Int.even_add_one]; exact not_not.mpr (hFi_int ▸ hFE)
           exact absurd hCE hCnotE
         · exact heq
-      rw [if_pos (hF_parity.mpr hFE)]
+      rw [ite_eq_left (hF_parity.mpr hFE)]
       have h1 : ¬ (Even (toInt Fi) ∧ ¬ Even (toInt Ci)) := fun ⟨_, h⟩ => h hCE
       have h2 : ¬ (Even (toInt Ci) ∧ ¬ Even (toInt Fi)) := fun ⟨_, h⟩ => h hFE
-      rw [if_neg h1, if_neg h2]
+      rw [ite_eq_right h1, ite_eq_right h2]
       have h_int_eq : toInt Fi = toInt Ci := by rw [hFi_int, hCi_int, hFC_eq]
       have h3 : ¬ (toInt Fi).natAbs < (toInt Ci).natAbs := by
         rw [h_int_eq]; exact lt_irrefl _
       have h4 : ¬ (toInt Ci).natAbs < (toInt Fi).natAbs := by
         rw [h_int_eq]; exact lt_irrefl _
-      rw [if_neg h3, if_neg h4]
+      rw [ite_eq_right h3, ite_eq_right h4]
       rw [hFn_val, hFi_val]
     · -- Fi even, Ci not even: int branch 1 fires (returns Fi).
-      rw [if_pos (hF_parity.mpr hFE)]
-      rw [if_pos ⟨hFE, hCE⟩]
+      rw [ite_eq_left (hF_parity.mpr hFE)]
+      rw [ite_eq_left ⟨hFE, hCE⟩]
       rw [hFn_val, hFi_val]
   · by_cases hCE : Even (toInt Ci)
     · -- Fi not even, Ci even: int branch 2 fires (returns Ci).
       have hFn_not : ¬ Even (natBotToNat Fn) := fun h => hFE (hF_parity.mp h)
-      rw [if_neg hFn_not, if_pos (hC_parity.mpr hCE)]
+      rw [ite_eq_right hFn_not, ite_eq_left (hC_parity.mpr hCE)]
       have h1 : ¬ (Even (toInt Fi) ∧ ¬ Even (toInt Ci)) := fun ⟨h, _⟩ => hFE h
-      rw [if_neg h1, if_pos ⟨hCE, hFE⟩]
+      rw [ite_eq_right h1, ite_eq_left ⟨hCE, hFE⟩]
       rw [hCn_val, hCi_val]
     · -- Both not even: only possible when ⌊x⌋ = ⌈x⌉ (else parities differ).
       have hFC_eq : ⌊x⌋ = ⌈x⌉ := by
@@ -119,16 +119,16 @@ private lemma natBot_int_tiebreak_value_agree {x : ℝ} (hx : 0 ≤ x)
         · exact heq
       have hFn_not : ¬ Even (natBotToNat Fn) := fun h => hFE (hF_parity.mp h)
       have hCn_not : ¬ Even (natBotToNat Cn) := fun h => hCE (hC_parity.mp h)
-      rw [if_neg hFn_not, if_neg hCn_not]
+      rw [ite_eq_right hFn_not, ite_eq_right hCn_not]
       have h1 : ¬ (Even (toInt Fi) ∧ ¬ Even (toInt Ci)) := fun ⟨h, _⟩ => hFE h
       have h2 : ¬ (Even (toInt Ci) ∧ ¬ Even (toInt Fi)) := fun ⟨h, _⟩ => hCE h
-      rw [if_neg h1, if_neg h2]
+      rw [ite_eq_right h1, ite_eq_right h2]
       have h_int_eq : toInt Fi = toInt Ci := by rw [hFi_int, hCi_int, hFC_eq]
       have h3 : ¬ (toInt Fi).natAbs < (toInt Ci).natAbs := by
         rw [h_int_eq]; exact lt_irrefl _
       have h4 : ¬ (toInt Ci).natAbs < (toInt Fi).natAbs := by
         rw [h_int_eq]; exact lt_irrefl _
-      rw [if_neg h3, if_neg h4]
+      rw [ite_eq_right h3, ite_eq_right h4]
       rw [hFn_val, hFi_val]
 
 /-- For `x ≥ 0`, rounding against `natBotSet` and `intSet` give the same value. -/
@@ -142,11 +142,11 @@ theorem val_round_natBotSet_eq_intSet (mode : RoundingMode) (x : ℝ) (hx : 0 �
   | Down =>
     show (if 0 ≤ x then roundFloor natBotSet x else roundCeiling natBotSet x).val =
          (if 0 ≤ x then roundFloor intSet x else roundCeiling intSet x).val
-    rw [if_pos hx, if_pos hx]; exact hF
+    rw [ite_eq_left hx, ite_eq_left hx]; exact hF
   | Up =>
     show (if 0 ≤ x then roundCeiling natBotSet x else roundFloor natBotSet x).val =
          (if 0 ≤ x then roundCeiling intSet x else roundFloor intSet x).val
-    rw [if_pos hx, if_pos hx]; exact hC
+    rw [ite_eq_left hx, ite_eq_left hx]; exact hC
   | Nearest =>
     show (let F := roundFloor natBotSet x
           let C := roundCeiling natBotSet x

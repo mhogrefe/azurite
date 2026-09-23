@@ -125,7 +125,7 @@ private lemma trailingZerosLimbsAux_eq (a : AzNat) (start : Nat) (hstart : start
         subst this
         rw [show a.limbs.toList[k] = a.limbs[k] from Array.getElem_toList (by omega)]
         exact h
-    rw [dif_pos hi2]
+    rw [dite_eq_left hi2]
     exact trailingZerosLimbsAux_eq a (start + 1) hi2 h_zeros'
   case isFalse h =>
     -- limbs[start] ≠ 0, first nonzero limb
@@ -189,11 +189,11 @@ theorem trailingZeros_eq_padicValNat (n : AzNat) (hn : n ≠ 0) :
     simp only at h_empty
     subst h_empty
     rfl
-  rw [if_neg h_ne]
+  rw [ite_eq_right h_ne]
   congr 1
   show trailingZerosLimbs n.limbs = _
   unfold trailingZerosLimbs
-  rw [dif_pos (by omega : 0 < n.limbs.size)]
+  rw [dite_eq_left (by omega : 0 < n.limbs.size)]
   exact trailingZerosLimbsAux_eq n 0 (by omega) (fun _ hk => absurd hk (Nat.not_lt_zero _))
 
 theorem trailingZeros_ofNat (n : Nat) (hn : n ≠ 0) :

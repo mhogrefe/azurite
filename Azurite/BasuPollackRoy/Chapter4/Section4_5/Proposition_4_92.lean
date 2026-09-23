@@ -67,7 +67,7 @@ theorem proposition_4_92 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Alg
       (∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps), evalBar C Ps x hx (e x) = 1) ∧
       (∀ (x : Fin k → C) (_hx : x ∈ zerOfFinset C Ps) (y : Fin k → C) (hy : y ∈ zerOfFinset C Ps),
         x ≠ y → evalBar C Ps y hy (e x) = 0) := by
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   classical
   set T := hfin.toFinset with hT
   have memT : ∀ {x : Fin k → C}, x ∈ T ↔ x ∈ zerOfFinset C Ps := by
@@ -83,7 +83,7 @@ theorem proposition_4_92 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Alg
   let val : (Fin k → C) → C := fun x =>
     if h : x ∈ zerOfFinset C Ps then evalBar C Ps x h b else 0
   have val_eq : ∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps), val x = evalBar C Ps x hx b := by
-    intro x hx; simp only [val, dif_pos hx]
+    intro x hx; simp only [val, dite_eq_left hx]
   -- injectivity of `val` on zeros via separation.
   have valinj : ∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps) (y : Fin k → C)
       (hy : y ∈ zerOfFinset C Ps), val x = val y → x = y := by
@@ -151,7 +151,7 @@ theorem proposition_4_92 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Alg
       (s x * s y) ^ (expOf (x, y)) = 0 := by
     intro x hxT y hyT hxy
     have hdif : expOf (x, y) = Classical.choose (nilp x hxT y hyT hxy) := by
-      simp only [expOf, dif_pos (⟨hxT, hyT, hxy⟩ : (x, y).1 ∈ T ∧ (x, y).2 ∈ T ∧ (x, y).1 ≠ (x, y).2)]
+      simp only [expOf, dite_eq_left (⟨hxT, hyT, hxy⟩ : (x, y).1 ∈ T ∧ (x, y).2 ∈ T ∧ (x, y).1 ≠ (x, y).2)]
     rw [hdif]
     exact Classical.choose_spec (nilp x hxT y hyT hxy)
   let M : ℕ := 1 + (T ×ˢ T).sup expOf

@@ -54,13 +54,13 @@ lemma compare_eq_compareOfLessAndEq (q r : AzRat) :
   change cmp q r = (if q < r then Ordering.lt else if q = r then Ordering.eq else Ordering.gt)
   rw [cmp_eq_compare]
   rcases lt_trichotomy (toRat q) (toRat r) with h | h | h
-  · rw [if_pos ((lt_iff_toRat_lt q r).mpr h)]
+  · rw [ite_eq_left ((lt_iff_toRat_lt q r).mpr h)]
     exact compare_lt_iff_lt.mpr h
-  · rw [if_neg (by rw [lt_iff_toRat_lt, h]; exact lt_irrefl _),
-        if_pos (toRat_injective h)]
+  · rw [ite_eq_right (by rw [lt_iff_toRat_lt, h]; exact lt_irrefl _),
+        ite_eq_left (toRat_injective h)]
     exact compare_eq_iff_eq.mpr h
-  · rw [if_neg (by rw [lt_iff_toRat_lt]; exact not_lt_of_gt h),
-        if_neg (fun he => absurd (congrArg toRat he) (by simpa using ne_of_gt h))]
+  · rw [ite_eq_right (by rw [lt_iff_toRat_lt]; exact not_lt_of_gt h),
+        ite_eq_right (fun he => absurd (congrArg toRat he) (by simpa using ne_of_gt h))]
     exact compare_gt_iff_gt.mpr h
 
 /-- The verified linear order on `AzRat`: `≤`, `<`, `min`, `max`, and

@@ -51,7 +51,7 @@ theorem iter_sq_le (n guess : Nat) : Nat.sqrt.iter n guess * Nat.sqrt.iter n gue
   unfold Nat.sqrt.iter
   let next := (guess + n / guess) / 2
   if h : next < guess then
-    simpa only [next, dif_pos h] using iter_sq_le n next
+    simpa only [next, dite_eq_left h] using iter_sq_le n next
   else
     apply Nat.mul_le_of_le_div
     simp only
@@ -64,7 +64,7 @@ theorem lt_iter_succ_sq (n guess : Nat) (hn : n < (guess + 1) * (guess + 1)) :
   dsimp
   split <;> rename_i h
   · suffices n < (m + 1) * (m + 1) by
-      simpa only [dif_pos h] using lt_iter_succ_sq n m this
+      simpa only [dite_eq_left h] using lt_iter_succ_sq n m this
     refine Nat.lt_of_mul_lt_mul_left ?_ (a := 4 * (guess * guess))
     apply Nat.lt_of_le_of_lt AM_GM
     rw [show (4 : Nat) = 2 * 2 from rfl]
@@ -158,27 +158,27 @@ private theorem toNat_loop_eq_iter (m : AzNat) :
     intro s hfuel
     rw [basecaseSqrtRem.loop]
     by_cases hs0 : s = 0
-    · rw [if_pos hs0]
+    · rw [ite_eq_left hs0]
       rw [(eq_zero_iff_toNat_zero s).mp hs0, Nat.sqrt.iter.eq_1]
       simp
-    · rw [if_neg hs0]
+    · rw [ite_eq_right hs0]
       have hs_pos : 0 < s.toNat := by
         have : s.toNat ≠ 0 := fun h => hs0 ((eq_zero_iff_toNat_zero s).mpr h)
         omega
       have hu_toNat : ((s + m / s) >>> 1).toNat = (s.toNat + m.toNat / s.toNat) / 2 :=
         toNat_newton_step m s
       by_cases huge : (s + m / s) >>> 1 ≥ s
-      · rw [if_pos huge, Nat.sqrt.iter.eq_1]
+      · rw [ite_eq_left huge, Nat.sqrt.iter.eq_1]
         have h_ge_nat : (s.toNat + m.toNat / s.toNat) / 2 ≥ s.toNat := by
           rw [← hu_toNat]; exact (ge_iff_toNat_ge _ _).mp huge
         have h_nlt : ¬ (s.toNat + m.toNat / s.toNat) / 2 < s.toNat := by omega
-        rw [dif_neg h_nlt]
-      · rw [if_neg huge]
+        rw [dite_eq_right h_nlt]
+      · rw [ite_eq_right huge]
         rw [Nat.sqrt.iter.eq_1]
         have h_nge_nat : ¬ (s.toNat + m.toNat / s.toNat) / 2 ≥ s.toNat := by
           rw [← hu_toNat]; exact mt (ge_iff_toNat_ge _ _).mpr huge
         have h_lt_nat : (s.toNat + m.toNat / s.toNat) / 2 < s.toNat := by omega
-        rw [dif_pos h_lt_nat]
+        rw [dite_eq_left h_lt_nat]
         have h_rec : (basecaseSqrtRem.loop m ((s + m / s) >>> 1) fuel').toNat
                    = Nat.sqrt.iter m.toNat ((s + m / s) >>> 1).toNat :=
           ih _ (by rw [hu_toNat]; omega)
@@ -198,16 +198,16 @@ private theorem toNat_zero_of_size_zero (m : AzNat) (hm : m.limbs.size = 0) :
     (basecaseSqrt m).toNat = Nat.sqrt m.toNat := by
   unfold basecaseSqrt
   by_cases hm0 : m.limbs.size = 0
-  · rw [if_pos hm0, toNat_zero_of_size_zero m hm0]; rfl
-  · rw [if_neg hm0]
+  · rw [ite_eq_left hm0, toNat_zero_of_size_zero m hm0]; rfl
+  · rw [ite_eq_right hm0]
     by_cases hm1 : m.limbs.size = 1
     · -- Single-limb: delegated to UInt64.sqrt.
-      rw [dif_pos hm1]
+      rw [dite_eq_left hm1]
       show (Azurite.UInt64.sqrt _).toAzNat.toNat = _
       rw [_root_.UInt64.toNat_toAzNat, Azurite.UInt64.toNat_sqrt]
       rw [toNat_of_size_one m hm1]
     · -- Multi-limb: Newton iteration.
-      rw [dif_neg hm1]
+      rw [dite_eq_right hm1]
       set u₀ := basecaseSqrtRem.initialGuess m
       set fuel := (1 : Nat) <<< ((m.size + 1) / 2) + 1
       show (basecaseSqrtRem.loop m u₀ fuel).toNat = _

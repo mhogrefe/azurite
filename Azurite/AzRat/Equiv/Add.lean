@@ -27,54 +27,54 @@ theorem combineSigned_int_spec (sx sy : Bool) (u v : AzNat) :
   unfold combineSigned
   cases sx <;> cases sy
   · -- false, false: -(u + v) = -u + -v
-    rw [if_pos (show ((false : Bool) == false) = true by decide)]
+    rw [ite_eq_left (show ((false : Bool) == false) = true by decide)]
     dsimp only
-    rw [if_neg Bool.false_ne_true, if_neg Bool.false_ne_true,
-        if_neg Bool.false_ne_true, AzNat.toNat_add]
+    rw [ite_eq_right Bool.false_ne_true, ite_eq_right Bool.false_ne_true,
+        ite_eq_right Bool.false_ne_true, AzNat.toNat_add]
     push_cast
     ring
   · -- false, true
-    rw [if_neg (show ¬(((false : Bool) == true) = true) by decide)]
+    rw [ite_eq_right (show ¬(((false : Bool) == true) = true) by decide)]
     have hc := AzNat.compare_eq_compare_toNat u v
     rcases hcc : AzNat.compare u v with _ | _ | _ <;> rw [hcc] at hc
     · -- u < v: result (true, v - u)
       have hlt : u.toNat < v.toNat := compare_lt_iff_lt.mp hc.symm
-      rw [if_pos rfl, if_neg Bool.false_ne_true, if_pos rfl, AzNat.toNat_sub,
+      rw [ite_eq_left rfl, ite_eq_right Bool.false_ne_true, ite_eq_left rfl, AzNat.toNat_sub,
           Int.ofNat_sub (Nat.le_of_lt hlt)]
       ring
     · -- u = v: result (true, 0)
       have heq : u.toNat = v.toNat := compare_eq_iff_eq.mp hc.symm
-      rw [if_pos rfl, if_neg Bool.false_ne_true, if_pos rfl, AzNat.toNat_zero, heq]
+      rw [ite_eq_left rfl, ite_eq_right Bool.false_ne_true, ite_eq_left rfl, AzNat.toNat_zero, heq]
       push_cast
       ring
     · -- u > v: result (false, u - v)
       have hgt : v.toNat < u.toNat := compare_gt_iff_gt.mp hc.symm
-      rw [if_neg Bool.false_ne_true, if_neg Bool.false_ne_true, if_pos rfl,
+      rw [ite_eq_right Bool.false_ne_true, ite_eq_right Bool.false_ne_true, ite_eq_left rfl,
           AzNat.toNat_sub, Int.ofNat_sub (Nat.le_of_lt hgt)]
       ring
   · -- true, false
-    rw [if_neg (show ¬(((true : Bool) == false) = true) by decide)]
+    rw [ite_eq_right (show ¬(((true : Bool) == false) = true) by decide)]
     have hc := AzNat.compare_eq_compare_toNat u v
     rcases hcc : AzNat.compare u v with _ | _ | _ <;> rw [hcc] at hc
     · -- u < v: result (false, v - u)
       have hlt : u.toNat < v.toNat := compare_lt_iff_lt.mp hc.symm
-      rw [if_neg Bool.false_ne_true, if_pos rfl, if_neg Bool.false_ne_true,
+      rw [ite_eq_right Bool.false_ne_true, ite_eq_left rfl, ite_eq_right Bool.false_ne_true,
           AzNat.toNat_sub, Int.ofNat_sub (Nat.le_of_lt hlt)]
       ring
     · -- u = v: result (true, 0)
       have heq : u.toNat = v.toNat := compare_eq_iff_eq.mp hc.symm
-      rw [if_pos rfl, if_pos rfl, if_neg Bool.false_ne_true, AzNat.toNat_zero, heq]
+      rw [ite_eq_left rfl, ite_eq_left rfl, ite_eq_right Bool.false_ne_true, AzNat.toNat_zero, heq]
       push_cast
       ring
     · -- u > v: result (true, u - v)
       have hgt : v.toNat < u.toNat := compare_gt_iff_gt.mp hc.symm
-      rw [if_pos rfl, if_pos rfl, if_neg Bool.false_ne_true, AzNat.toNat_sub,
+      rw [ite_eq_left rfl, ite_eq_left rfl, ite_eq_right Bool.false_ne_true, AzNat.toNat_sub,
           Int.ofNat_sub (Nat.le_of_lt hgt)]
       ring
   · -- true, true: u + v
-    rw [if_pos (show ((true : Bool) == true) = true by decide)]
+    rw [ite_eq_left (show ((true : Bool) == true) = true by decide)]
     dsimp only
-    rw [if_pos rfl, if_pos rfl, if_pos rfl, AzNat.toNat_add]
+    rw [ite_eq_left rfl, ite_eq_left rfl, ite_eq_left rfl, AzNat.toNat_add]
     push_cast
     ring
 
@@ -87,26 +87,26 @@ private lemma ite_neg_mul {P : Prop} [Decidable P] (a k : ℤ) :
 @[simp] theorem toRat_add (x y : AzRat) : toRat (x + y) = toRat x + toRat y := by
   show toRat (AzRat.add x y) = _
   by_cases hx : x.num = 0
-  · rw [AzRat.add, dif_pos hx, toRat_of_num_zero x hx, zero_add]
+  · rw [AzRat.add, dite_eq_left hx, toRat_of_num_zero x hx, zero_add]
   by_cases hy : y.num = 0
-  · rw [AzRat.add, dif_neg hx, dif_pos hy, toRat_of_num_zero y hy, add_zero]
+  · rw [AzRat.add, dite_eq_right hx, dite_eq_left hy, toRat_of_num_zero y hy, add_zero]
   have hxdN : x.den.toNat ≠ 0 :=
     fun h => x.den_nz (AzNat.toNat_injective (h.trans AzNat.toNat_zero.symm))
   have hydN : y.den.toNat ≠ 0 :=
     fun h => y.den_nz (AzNat.toNat_injective (h.trans AzNat.toNat_zero.symm))
-  rw [AzRat.add, dif_neg hx, dif_neg hy, toRat_eq_divInt x, toRat_eq_divInt y,
+  rw [AzRat.add, dite_eq_right hx, dite_eq_right hy, toRat_eq_divInt x, toRat_eq_divInt y,
       Rat.divInt_add_divInt _ _ (Int.natCast_ne_zero.mpr hxdN)
         (Int.natCast_ne_zero.mpr hydN)]
   by_cases hg : AzNat.gcd x.den y.den = 1
   · -- Coprime-denominator path.
-    rw [dif_pos hg]
+    rw [dite_eq_left hg]
     have hspec := combineSigned_int_spec x.sign y.sign (x.num * y.den) (x.den * y.num)
     rw [AzNat.toNat_mul, AzNat.toNat_mul] at hspec
     simp only [Nat.cast_mul] at hspec
     rw [mul_comm ((x.den.toNat : ℤ)) ((y.num.toNat : ℤ)), ite_neg_mul, ite_neg_mul]
       at hspec
     by_cases hm : (combineSigned x.sign y.sign (x.num * y.den) (x.den * y.num)).2 = 0
-    · rw [dif_pos hm, toRat_zero]
+    · rw [dite_eq_left hm, toRat_zero]
       rw [hm, AzNat.toNat_zero] at hspec
       simp only [Nat.cast_zero, neg_zero, ite_self] at hspec
       symm
@@ -115,7 +115,7 @@ private lemma ite_neg_mul {P : Prop} [Decidable P] (a k : ℤ) :
             (if y.sign = true then (y.num.toNat : ℤ) else -(y.num.toNat : ℤ)) *
             (x.den.toNat : ℤ)) = (0 : ℤ) from by linear_combination -hspec,
           Rat.zero_divInt]
-    · rw [dif_neg hm, toRat_eq_divInt]
+    · rw [dite_eq_right hm, toRat_eq_divInt]
       dsimp only
       have hz1 : (((x.den * y.den).toNat : ℤ)) ≠ 0 := by
         rw [AzNat.toNat_mul]
@@ -126,7 +126,7 @@ private lemma ite_neg_mul {P : Prop} [Decidable P] (a k : ℤ) :
       simp only [AzNat.toNat_mul, Nat.cast_mul]
       linear_combination ((x.den.toNat : ℤ) * (y.den.toNat : ℤ)) * hspec
   · -- Common-factor path.
-    rw [dif_neg hg]
+    rw [dite_eq_right hg]
     have hspec := combineSigned_int_spec x.sign y.sign
       (x.num * (y.den / AzNat.gcd x.den y.den))
       (x.den / AzNat.gcd x.den y.den * y.num)
@@ -148,7 +148,7 @@ private lemma ite_neg_mul {P : Prop} [Decidable P] (a k : ℤ) :
     by_cases hm : (combineSigned x.sign y.sign
         (x.num * (y.den / AzNat.gcd x.den y.den))
         (x.den / AzNat.gcd x.den y.den * y.num)).2 = 0
-    · rw [dif_pos hm, toRat_zero]
+    · rw [dite_eq_left hm, toRat_zero]
       rw [hm, AzNat.toNat_zero] at hspec
       simp only [Nat.cast_zero, neg_zero, ite_self] at hspec
       symm
@@ -159,7 +159,7 @@ private lemma ite_neg_mul {P : Prop} [Decidable P] (a k : ℤ) :
               rw [hBs, hDs]
               linear_combination (-(↑(Nat.gcd x.den.toNat y.den.toNat) : ℤ)) * hspec,
           Rat.zero_divInt]
-    · rw [dif_neg hm, toRat_eq_divInt]
+    · rw [dite_eq_right hm, toRat_eq_divInt]
       dsimp only
       have hg2pos : 0 < Nat.gcd (combineSigned x.sign y.sign
           (x.num * (y.den / AzNat.gcd x.den y.den))

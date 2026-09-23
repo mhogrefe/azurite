@@ -108,14 +108,14 @@ theorem proposition_4_10 {n m : ℕ} (A : Matrix (Fin n) (Fin m) R)
     intro I hI
     rw [Finset.mem_powersetCard] at hI
     have h : I.card = n := hI.2
-    rw [dif_pos h]
+    rw [dite_eq_left h]
     rw [show (B.submatrix (I.orderEmbOfFin h) id).det =
         ∑ τ : Equiv.Perm (Fin n), Equiv.Perm.sign τ •
           ∏ i, B (I.orderEmbOfFin h (τ i)) i from Matrix.det_apply _]
     rw [Finset.mul_sum]
     apply Finset.sum_congr rfl
     intro τ _
-    rw [dif_pos h]
+    rw [dite_eq_left h]
     -- A.submatrix id ((I.orderEmbOfFin h) ∘ τ) = (A.submatrix id (I.orderEmbOfFin h)).submatrix id τ
     rw [show (A.submatrix id ((I.orderEmbOfFin h : Fin n → Fin m) ∘ τ)) =
         (A.submatrix id (I.orderEmbOfFin h)).submatrix id τ from rfl]
@@ -221,7 +221,7 @@ theorem proposition_4_10 {n m : ℕ} (A : Matrix (Fin n) (Fin m) R)
     intro x hx
     have hI : x.1.card = n :=
       (Finset.mem_powersetCard.mp (Finset.mem_sigma.mp hx).1).2
-    rw [dif_pos hI]
+    rw [dite_eq_left hI]
     rfl
 
 end Azurite.BPR.Chapter4

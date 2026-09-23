@@ -66,7 +66,7 @@ private lemma testBit_toNat_limb (n : AzNat) (j : Nat) (h : j / 64 < n.limbs.siz
     n.toNat.testBit j = Nat.testBit (n.limbs[j / 64]'h).toNat (j % 64) := by
   rw [testBit_toNat_limbs]
   have h' : j / 64 < n.limbs.toList.length := h
-  rw [dif_pos h', ← Array.getElem_toList]
+  rw [dite_eq_left h', ← Array.getElem_toList]
 
 /-- In case B (`k / 64 ≥ n.limbs.size`), `n.toNat < 2 ^ k`. -/
 private lemma toNat_lt_two_pow_of_size_le (n : AzNat) (k : Nat)
@@ -86,7 +86,7 @@ theorem isMultipleOfPow2_eq (n : AzNat) (k : Nat) :
   have hr_lt : k % 64 < 64 := Nat.mod_lt _ (by omega)
   by_cases h_in_range : k / 64 < n.limbs.size
   · -- Case A: the boundary bit lives inside an existing limb.
-    rw [dif_pos h_in_range]
+    rw [dite_eq_left h_in_range]
     simp only [Bool.and_eq_true, Bool.or_eq_true]
     rw [allZeroLoop_eq_true_iff, beq_iff_eq, uint64_lowMask_eq_zero_iff _ _ hr_lt]
     constructor
@@ -159,7 +159,7 @@ theorem isMultipleOfPow2_eq (n : AzNat) (k : Nat) :
           have hk_decomp : k = k % 64 + 64 * (k / 64) := by omega
           omega
   · -- Case B: all of `n` sits strictly below 2^k.
-    rw [dif_neg h_in_range]
+    rw [dite_eq_right h_in_range]
     push Not at h_in_range
     have hbounded : n.toNat < 2 ^ k :=
       toNat_lt_two_pow_of_size_le n k h_in_range

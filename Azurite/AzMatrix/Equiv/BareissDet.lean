@@ -71,17 +71,17 @@ theorem AzMatrix.bareissEliminate_preservesPartialZero
   intro i j h_lt_ij h_bnd
   rw [AzMatrix.toFn_bareissEliminate]
   by_cases h_i_le : i.val ≤ start
-  · rw [if_pos h_i_le]
+  · rw [ite_eq_left h_i_le]
     have h_j_lt_start : j.val < start := by omega
     exact h_inv i j h_lt_ij h_j_lt_start
-  · rw [if_neg h_i_le]
+  · rw [ite_eq_right h_i_le]
     by_cases h_j_lt : j.val < start
-    · rw [if_pos h_j_lt]
+    · rw [ite_eq_left h_j_lt]
       exact h_inv i j h_lt_ij h_j_lt
-    · rw [if_neg h_j_lt]
+    · rw [ite_eq_right h_j_lt]
       have h_j_eq : j.val = start := by omega
       have h_j_kp : j = ⟨start, h_lt⟩ := Fin.ext h_j_eq
-      rw [if_pos h_j_kp]
+      rw [ite_eq_left h_j_kp]
 
 /-! ### Determinant flips sign under a column swap (Domain version) -/
 
@@ -132,7 +132,7 @@ theorem AzMatrix.principalMinor_swapCols_low_level
     intro h_eq
     have : j'_lift.val = j.val := congrArg Fin.val h_eq
     rw [h_j'_val] at this; have := j'.isLt; omega
-  rw [if_neg h_neq_kp, if_neg h_neq_j]
+  rw [ite_eq_right h_neq_kp, ite_eq_right h_neq_j]
 
 /-! ### `bareissMinor` under column swap
 
@@ -351,12 +351,12 @@ theorem AzMatrix.bareissEliminate_advances_level
       M_ref.bareissMinor (k + 1) hk.le i j := by
   rw [AzMatrix.toFn_bareissEliminate]
   have h_not_i_le : ¬ i.val ≤ k := by omega
-  rw [if_neg h_not_i_le]
+  rw [ite_eq_right h_not_i_le]
   have h_not_j_lt : ¬ j.val < k := by omega
-  rw [if_neg h_not_j_lt]
+  rw [ite_eq_right h_not_j_lt]
   have h_j_neq_kp : j ≠ ⟨k, by omega⟩ := by
     intro h_eq; have : j.val = k := congrArg Fin.val h_eq; omega
-  rw [if_neg h_j_neq_kp]
+  rw [ite_eq_right h_j_neq_kp]
   have h_kk := h_inv ⟨k, by omega⟩ ⟨k, by omega⟩ (le_refl _) (le_refl _)
   have h_ij := h_inv i j (by omega) (by omega)
   have h_ik := h_inv i ⟨k, by omega⟩ (by omega) (le_refl _)
@@ -565,7 +565,7 @@ theorem AzMatrix.BareissInv.step_swap
   -- The new pivot value.
   have h_new_pivot_val : M'.toFn kp kp = M_curr.toFn kp j := by
     rw [hM']
-    rw [AzMatrix.toFn_swapCols, if_pos rfl]
+    rw [AzMatrix.toFn_swapCols, ite_eq_left rfl]
   -- The new M_curr matches bareissMinor of M_ref' at level start.
   have h_bareiss_new :
       ∀ i j' : Fin n, start ≤ i.val → start ≤ j'.val →
@@ -576,20 +576,20 @@ theorem AzMatrix.BareissInv.step_swap
     -- Case-split on j' vs the swap targets.
     by_cases h_j'_eq_kp : j' = kp
     · -- j' = kp; swap sends kp → j.
-      rw [if_pos h_j'_eq_kp, h_j'_eq_kp]
+      rw [ite_eq_left h_j'_eq_kp, h_j'_eq_kp]
       have h_swap_kp : (Equiv.swap kp j) kp = j := Equiv.swap_apply_left _ _
       rw [M_ref.bareissMinor_swapCols start h_inv.start_le j h_j_gt i kp]
       rw [h_swap_kp]
       exact h_inv.bareiss i j hi h_j_ge
     · by_cases h_j'_eq_j : j' = j
       · -- j' = j; swap sends j → kp.
-        rw [if_neg h_j'_eq_kp, if_pos h_j'_eq_j, h_j'_eq_j]
+        rw [ite_eq_right h_j'_eq_kp, ite_eq_left h_j'_eq_j, h_j'_eq_j]
         have h_swap_j : (Equiv.swap kp j) j = kp := Equiv.swap_apply_right _ _
         rw [M_ref.bareissMinor_swapCols start h_inv.start_le j h_j_gt i j]
         rw [h_swap_j]
         exact h_inv.bareiss i kp hi (le_refl _)
       · -- j' ≠ kp and j' ≠ j; swap fixes j'.
-        rw [if_neg h_j'_eq_kp, if_neg h_j'_eq_j]
+        rw [ite_eq_right h_j'_eq_kp, ite_eq_right h_j'_eq_j]
         rw [M_ref.bareissMinor_swapCols start h_inv.start_le j h_j_gt i j']
         rw [Equiv.swap_apply_of_ne_of_ne h_j'_eq_kp h_j'_eq_j]
         exact h_inv.bareiss i j' hi hj'
@@ -617,9 +617,9 @@ theorem AzMatrix.BareissInv.step_swap
       b_prev = M_ref'.principalMinor (start - 1) (by omega)
     else b_prev = 1 := by
     by_cases hs : 0 < start
-    · simp only [dif_pos hs]
+    · simp only [dite_eq_left hs]
       have h_bp := h_inv.b_prev_eq
-      simp only [dif_pos hs] at h_bp
+      simp only [dite_eq_left hs] at h_bp
       rw [h_bp]
       -- principalMinor (start - 1) is unchanged because the swap is at columns
       -- ≥ start, both outside the top-left start × start block.
@@ -648,10 +648,10 @@ theorem AzMatrix.BareissInv.step_swap
         intro h_eq
         have : (Fin.castLE _ j').val = j.val := congrArg Fin.val h_eq
         omega
-      rw [if_neg h_neq_kp, if_neg h_neq_j]
-    · simp only [dif_neg hs]
+      rw [ite_eq_right h_neq_kp, ite_eq_right h_neq_j]
+    · simp only [dite_eq_right hs]
       have h_bp := h_inv.b_prev_eq
-      simp only [dif_neg hs] at h_bp
+      simp only [dite_eq_right hs] at h_bp
       exact h_bp
   refine ⟨by omega, ?_, ?_, ?_, ?_⟩
   · exact M'.bareissEliminate_preservesPartialZero start (by omega) b_prev h_pz_M'
@@ -804,7 +804,7 @@ theorem AzMatrix.bareissAux_eq_det
     have h_det_zero : Matrix.det M_ref.toFn = 0 :=
       h_inv.det_eq_zero_of_findPivot_none h_lt h_find
     rw [AzMatrix.bareissAux.eq_def]
-    simp only [dif_pos h_lt]
+    simp only [dite_eq_left h_lt]
     rw [show M.findPivot ⟨start, by omega⟩ = none from h_find]
     rw [h_det_zero, mul_zero]
   | case2 M start s b_prev h_lt _kp h_find ih =>
@@ -814,9 +814,9 @@ theorem AzMatrix.bareissAux_eq_det
         M_ref (start + 1) (M.get ⟨start, by omega⟩ ⟨start, by omega⟩) :=
       h_inv.step_no_swap h_lt h_find
     rw [AzMatrix.bareissAux.eq_def]
-    simp only [dif_pos h_lt]
+    simp only [dite_eq_left h_lt]
     rw [show M.findPivot ⟨start, by omega⟩ = some ⟨start, by omega⟩ from h_find]
-    simp only [if_true]
+    simp only [ite_true]
     exact ih M_ref h_n_pos h_inv_next
   | case3 M start s b_prev h_lt _kp j h_find h_neq _M' ih =>
     intro M_ref h_n_pos h_inv
@@ -824,10 +824,10 @@ theorem AzMatrix.bareissAux_eq_det
     -- with new s = s + 1.
     have h_inv_next := h_inv.step_swap h_lt j h_find h_neq
     rw [AzMatrix.bareissAux.eq_def]
-    simp only [dif_pos h_lt]
+    simp only [dite_eq_left h_lt]
     rw [show M.findPivot ⟨start, by omega⟩ = some j from h_find]
     show (if j = ⟨start, _⟩ then _ else _) = _
-    rw [if_neg h_neq]
+    rw [ite_eq_right h_neq]
     -- The IH applied at the swapped M_ref gives the result; then det flips sign.
     have h_ih := ih (M_ref.swapCols ⟨start, by omega⟩ j) h_n_pos h_inv_next
     rw [h_ih]
@@ -839,7 +839,7 @@ theorem AzMatrix.bareissAux_eq_det
     intro M_ref _ h_inv
     -- Base case n ≥ 1: M_curr[n-1][n-1] = det(M_ref).
     rw [AzMatrix.bareissAux.eq_def]
-    simp only [dif_neg h_no_step, dif_pos h_n_pos']
+    simp only [dite_eq_right h_no_step, dite_eq_left h_n_pos']
     show (-1 : D) ^ s * M.toFn ⟨n - 1, _⟩ ⟨n - 1, _⟩ = _
     rw [h_inv.last_entry_eq_det h_no_step h_n_pos']
   | case5 _ _ _ _ _ h_n_zero =>
@@ -858,8 +858,8 @@ theorem AzMatrix.bareissDet_eq_Matrix_det (M : AzMatrix D n n) :
     subst hn
     unfold AzMatrix.bareissDet
     rw [AzMatrix.bareissAux.eq_def]
-    rw [dif_neg (show ¬ (0 + 1 < 0) from by omega)]
-    rw [dif_neg (show ¬ (0 < 0) from by omega)]
+    rw [dite_eq_right (show ¬ (0 + 1 < 0) from by omega)]
+    rw [dite_eq_right (show ¬ (0 < 0) from by omega)]
     show (1 : D) = (Matrix.of M.toFn).det
     rw [Matrix.det_isEmpty]
   · -- n ≥ 1: apply the inductive theorem at start = 0, s = 0, b_prev = 1,

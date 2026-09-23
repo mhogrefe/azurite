@@ -190,7 +190,7 @@ theorem factorization_eq_succ_of_dvd_mul_prime {ω M p : ℕ}
     rw [Nat.factorization_mul hM0 hp.pos.ne'] at h3
     have h4 : p.factorization ℓ = 0 := by
       rw [Nat.Prime.factorization hp, Finsupp.single_apply,
-        if_neg (fun h => hℓ h.symm)]
+        ite_eq_right (fun h => hℓ h.symm)]
     simp only [Finsupp.coe_add, Pi.add_apply] at h3
     omega
 
@@ -213,7 +213,7 @@ private theorem exists_pow_modEq_core {p a b c : ℕ} (hp : p.Prime)
       ∧ ¬ (p : ℤ) ^ (c + j + 1) ∣ (a : ℤ) ^ p ^ j - 1)
     (hb : (p : ℤ) ^ c ∣ (b : ℤ) - 1) :
     ∀ D, ∃ l, b ≡ a ^ l [MOD p ^ D] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   intro D
   induction D with
   | zero => exact ⟨0, by simpa using Nat.modEq_one⟩
@@ -389,7 +389,7 @@ theorem proposition_7_18 {p n r : ℕ} (hp : p.Prime) (hp3 : 2 < p)
     (hpn : ¬ p ∣ n) (hn2 : ¬ n ^ (p - 1) ≡ 1 [MOD p ^ 2])
     (hpr : ¬ p ∣ r) :
     ∀ D, ∃ l, r ^ (p - 1) ≡ (n ^ (p - 1)) ^ l [MOD p ^ D] := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hfermat : ∀ {x : ℕ}, ¬ p ∣ x → (p : ℤ) ^ 1 ∣ (x : ℤ) ^ (p - 1) - 1 := by
     intro x hx
     have hz : ((x : ℕ) : ZMod p) ≠ 0 := by

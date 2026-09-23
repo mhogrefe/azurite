@@ -121,7 +121,7 @@ lemma size_toNat (n : AzNat) : n.toNat.size = n.size := by
     have h_log2 := uint64_size_eq_log2_add_one (n.limbs[s]) hx2
     unfold AzNat.size
     dsimp only
-    rw [dif_pos hsz_pos]
+    rw [dite_eq_left hsz_pos]
     rw [h_size, h_log2]
     rfl
   · unfold toNat
@@ -132,7 +132,7 @@ lemma size_toNat (n : AzNat) : n.toNat.size = n.size := by
     rw [hl]
     unfold AzNat.size
     dsimp only
-    rw [dif_neg (by omega)]
+    rw [dite_eq_right (by omega)]
     rfl
 
 lemma size_ofNat (n : Nat) : (ofNat n).size = n.size := by

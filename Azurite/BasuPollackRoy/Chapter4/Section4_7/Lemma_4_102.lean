@@ -120,10 +120,10 @@ theorem support_eq_lineMonom {P : MvPolynomial LineVar (Ri R)} {d : Fin 1 → �
   rw [lineMonom, Finsupp.add_apply, Finsupp.single_apply, Finsupp.single_apply]
   fin_cases j
   · simp only [Sigma.mk.injEq, heq_eq_eq, true_and, Fin.zero_eta,
-      one_ne_zero, if_false, if_true, add_zero]
+      one_ne_zero, ite_false, ite_true, add_zero]
     omega
   · simp only [Sigma.mk.injEq, heq_eq_eq, true_and, Fin.mk_one,
-      zero_ne_one, if_false, if_true, zero_add]
+      zero_ne_one, ite_false, ite_true, zero_add]
 
 omit [LinearOrder R] [IsStrictOrderedRing R] in
 /-- The `j`-th coefficient of the dehomogenization equals the coefficient of `P` at the unique
@@ -138,15 +138,15 @@ theorem dehomPoly_coeff {P : MvPolynomial LineVar (Ri R)} {d : Fin 1 → ℕ}
     · have : (lineMonom (d 0) j) ⟨0, 1⟩ = j := by
         rw [lineMonom, Finsupp.add_apply, Finsupp.single_eq_of_ne (by decide),
           Finsupp.single_eq_same, zero_add]
-      rw [this, if_pos rfl]
+      rw [this, ite_eq_left rfl]
     · intro u hu hne
-      rw [if_neg]
+      rw [ite_eq_right]
       intro heq
       exact hne (by rw [support_eq_lineMonom hP hu, heq])
     · intro h; exact absurd hj h
   · rw [Finset.sum_eq_zero, MvPolynomial.notMem_support_iff.mp hj]
     intro u hu
-    rw [if_neg]
+    rw [ite_eq_right]
     intro heq
     apply hj
     rw [heq, ← support_eq_lineMonom hP hu]
@@ -159,7 +159,7 @@ theorem dehomPoly_ne_zero {P : MvPolynomial LineVar (Ri R)} {d : Fin 1 → ℕ}
   intro h
   apply hP0
   ext v
-  rw [MvPolynomial.coeff_zero]
+  rw [AddMonoidAlgebra.coeff_zero]
   by_cases hv : v ∈ P.support
   · have hcoeff := dehomPoly_coeff hP (v ⟨0, 1⟩)
     rw [h, Polynomial.coeff_zero, ← support_eq_lineMonom hP hv] at hcoeff
@@ -188,10 +188,10 @@ theorem lemma_4_102
     set A : Set (Ri R) := {t | ∀ P ∈ Ps, evalCoords (k := fun _ => 1) P (fun _ => ![1, t]) = 0}
       with hA
     have hAfin : A.Finite := by
-      apply Set.Finite.subset (dehomPoly_ne_zero hd hP₀ne |> Polynomial.finite_setOf_isRoot)
+      apply Set.Finite.subset (dehomPoly_ne_zero hd hP₀ne |> Polynomial.finite_setOfPred_isRoot)
       intro t ht
       have := ht P₀ hP₀mem
-      rw [Set.mem_setOf_eq, Polynomial.IsRoot.def, ← evalCoords_eq_eval_dehomPoly P₀ t]
+      rw [Set.mem_ofPred_eq, Polynomial.IsRoot.def, ← evalCoords_eq_eval_dehomPoly P₀ t]
       exact this
     -- The finite superset of the zero set.
     refine Set.Finite.subset

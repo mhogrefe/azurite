@@ -81,9 +81,9 @@ private theorem benOrLoop_factor (hm : 1 < m.toNat)
       rw [hgo] at hd
       dsimp only at hd
       by_cases hw : w = 1
-      · rw [if_pos hw] at hd
+      · rw [ite_eq_left hw] at hd
         exact ih _ hd
-      · rw [if_neg hw] at hd
+      · rw [ite_eq_right hw] at hd
         exact absurd hd (by simp)
 
 /-- **A factor verdict of the irreducibility test is a nontrivial
@@ -94,9 +94,9 @@ theorem irreducibleOrFactor_factor (hm : 1 < m.toNat)
     d.toNat ∣ m.toNat ∧ 1 < d.toNat ∧ d.toNat < m.toNat := by
   rw [irreducibleOrFactor] at hd
   by_cases h0 : f.natDegree = 0
-  · rw [if_pos h0] at hd
+  · rw [ite_eq_left h0] at hd
     exact absurd hd (by simp)
-  · rw [if_neg h0] at hd
+  · rw [ite_eq_right h0] at hd
     exact benOrLoop_factor hm _ _ hd
 
 /-- **Over a prime modulus the test never reports a factor.** -/
@@ -105,9 +105,9 @@ theorem irreducibleOrFactor_ne_inl_of_prime (hm : Nat.Prime m.toNat)
     irreducibleOrFactor m f ≠ .inl d := by
   rw [irreducibleOrFactor]
   by_cases h0 : f.natDegree = 0
-  · rw [if_pos h0]
+  · rw [ite_eq_left h0]
     simp
-  · rw [if_neg h0]
+  · rw [ite_eq_right h0]
     generalize powModByMonic X m f = h
     generalize f.natDegree / 2 = steps
     induction steps generalizing h with
@@ -119,9 +119,9 @@ theorem irreducibleOrFactor_ne_inl_of_prime (hm : Nat.Prime m.toNat)
       | inr w =>
         dsimp only
         by_cases hw : w = 1
-        · rw [if_pos hw]
+        · rw [ite_eq_left hw]
           exact ih _
-        · rw [if_neg hw]
+        · rw [ite_eq_right hw]
           simp
 
 /-! ### The irreducibility verdict, over a prime modulus -/
@@ -137,7 +137,7 @@ private theorem toZModPoly_powModByMonic (hm : Nat.Prime m.toNat)
     (hf : f.Monic) (a : AzPolynomial (AzZMod m)) (q : AzNat) :
     toZModPoly (powModByMonic a q f)
       = (toZModPoly a %ₘ toZModPoly f) ^ q.toNat %ₘ toZModPoly f := by
-  haveI := Fact.mk hm
+  have := Fact.mk hm
   have h1 := GG.toPoly_powModByMonic (K := AzZMod m)
     ((Monic_toPoly f).mpr hf) a q
   unfold toZModPoly
@@ -179,7 +179,7 @@ private theorem benOrLoop_eq_inr_true_iff (hm : Nat.Prime m.toNat)
         ∀ k, i ≤ k → k < i + steps →
           IsCoprime (Polynomial.X ^ m.toNat ^ k - Polynomial.X)
             (toZModPoly f)) := by
-  haveI := Fact.mk hm
+  have := Fact.mk hm
   intro steps
   induction steps with
   | zero =>
@@ -214,7 +214,7 @@ private theorem benOrLoop_eq_inr_true_iff (hm : Nat.Prime m.toNat)
           = AdjoinRoot.mk (toZModPoly f) Polynomial.X ^ m.toNat ^ (i + 1) := by
         rw [mk_toZModPoly_powModByMonic hm hf, hinv, ← pow_mul, ← pow_succ]
       by_cases hw : w = 1
-      · rw [if_pos hw, ih (i + 1) _ (by omega) hnext]
+      · rw [ite_eq_left hw, ih (i + 1) _ (by omega) hnext]
         constructor
         · intro hall k hk1 hk2
           rcases Nat.eq_or_lt_of_le hk1 with rfl | hklt
@@ -222,7 +222,7 @@ private theorem benOrLoop_eq_inr_true_iff (hm : Nat.Prime m.toNat)
           · exact hall k (by omega) (by omega)
         · intro hall k hk1 hk2
           exact hall k (by omega) (by omega)
-      · rw [if_neg hw]
+      · rw [ite_eq_right hw]
         constructor
         · intro habs
           simp at habs
@@ -236,8 +236,8 @@ computed by the sweep. -/
 theorem irreducibleOrFactor_eq_inr_true_iff (hm : Nat.Prime m.toNat)
     (hf : f.Monic) (hdeg : 0 < f.natDegree) :
     irreducibleOrFactor m f = .inr true ↔ Irreducible (toZModPoly f) := by
-  haveI := Fact.mk hm
-  rw [irreducibleOrFactor, if_neg hdeg.ne']
+  have := Fact.mk hm
+  rw [irreducibleOrFactor, ite_eq_right hdeg.ne']
   have hinit : AdjoinRoot.mk (toZModPoly f)
       (toZModPoly (powModByMonic X m f))
       = AdjoinRoot.mk (toZModPoly f) Polynomial.X ^ m.toNat ^ 1 := by

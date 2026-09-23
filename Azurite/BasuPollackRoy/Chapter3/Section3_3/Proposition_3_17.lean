@@ -98,7 +98,7 @@ theorem reify_realization (Φ : Formula (Fin k) (OrderedFieldAtom (Fin k) (Polyn
       ↔ (v ∘ Fin.succ) ∈ AtomRealization.interpret (substAtom (v 0) ⟨P, rel⟩)
     rw [substAtom]
     cases rel <;>
-      simp only [AtomRealization.interpret, Set.mem_setOf_eq, reifyPoly_aeval]
+      simp only [AtomRealization.interpret, Set.mem_ofPred_eq, reifyPoly_aeval]
   | not Φ ih =>
     show v ∈ ((reifyFormula Φ).realization)ᶜ ↔ _
     rw [Set.mem_compl_iff, ih]
@@ -218,7 +218,7 @@ theorem proposition_3_17 (Φ : Formula (Fin k) (OrderedFieldAtom (Fin k) (Polyno
     (hΦ : Formula.isSentence Φ) :
     Φ.IsTrue (C := SemialgGerm R)
       ↔ ∃ t₀ : R, 0 < t₀ ∧ ∀ t : R, 0 < t → t < t₀ → (Φ.mapAtom (substAtom t)).IsTrue (C := R) := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   obtain ⟨Ψ, hΨqf, hΨR⟩ := theorem_2_77 (D := R) (R := R) Function.injective_id (reifyFormula Φ)
   have hΨgerm : (reifyFormula Φ).realization (C := SemialgGerm R)
       = Ψ.realization (C := SemialgGerm R) :=

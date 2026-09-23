@@ -170,7 +170,7 @@ theorem azRealization_elimVacuousQuantifiers
     · rename_i hx
       have hx' : x ∉ (azFormulaToFieldFormula (elimVacuousQuantifiers Ψ)).freeVars := by
         rwa [← freeVarsOf_eq_freeVars_azFieldAtom]
-      ext y; simp only [azRealization_exists_, Set.mem_setOf_eq]
+      ext y; simp only [azRealization_exists_, Set.mem_ofPred_eq]
       constructor
       · intro hy
         exact ⟨y x, by rw [Function.update_eq_self, ← ih]; exact hy⟩
@@ -184,7 +184,7 @@ theorem azRealization_elimVacuousQuantifiers
     · rename_i hx
       have hx' : x ∉ (azFormulaToFieldFormula (elimVacuousQuantifiers Ψ)).freeVars := by
         rwa [← freeVarsOf_eq_freeVars_azFieldAtom]
-      ext y; simp only [azRealization_forall_, Set.mem_setOf_eq]
+      ext y; simp only [azRealization_forall_, Set.mem_ofPred_eq]
       constructor
       · intro hy c
         exact ih ▸ (realization_invariant_update _ x hx' y c).mp hy
@@ -357,7 +357,7 @@ theorem azRealization_azSimplify [FaithfulSMul D C]
     · rename_i hx
       have hx' : x ∉ (azFormulaToFieldFormula (azSimplify Φ)).freeVars := by
         rwa [← freeVarsOf_eq_freeVars_azFieldAtom]
-      ext y; simp only [azRealization_exists_, Set.mem_setOf_eq]
+      ext y; simp only [azRealization_exists_, Set.mem_ofPred_eq]
       constructor
       · intro hy
         exact ⟨y x, by rw [Function.update_eq_self, ← ih]; exact hy⟩
@@ -371,7 +371,7 @@ theorem azRealization_azSimplify [FaithfulSMul D C]
     · rename_i hx
       have hx' : x ∉ (azFormulaToFieldFormula (azSimplify Φ)).freeVars := by
         rwa [← freeVarsOf_eq_freeVars_azFieldAtom]
-      ext y; simp only [azRealization_forall_, Set.mem_setOf_eq]
+      ext y; simp only [azRealization_forall_, Set.mem_ofPred_eq]
       constructor
       · intro hy c
         exact ih ▸ (realization_invariant_update _ x hx' y c).mp hy

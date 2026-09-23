@@ -489,14 +489,14 @@ theorem absSubLimbsKM_toNat (a : Array UInt64) (loA k m : Nat)
       rw [h_cs_val]; omega
     have h_neg_toNat := absSubLimbsKM.negPart_toNat cs.1.1 k h_cs_size h_cs_pos
     refine ⟨?_, ?_⟩
-    · rw [if_pos h_borrow]
+    · rw [ite_eq_left h_borrow]
       simp only
       constructor
       · intro h; exact absurd h Bool.false_ne_true
       · intro h; omega
-    · rw [if_pos h_borrow]
+    · rw [ite_eq_left h_borrow]
       simp only
-      rw [if_neg (by omega : ¬ A1 ≤ A0)]
+      rw [ite_eq_right (by omega : ¬ A1 ≤ A0)]
       rw [h_neg_toNat, h_cs_val]
       omega
   · -- No borrow; A₀ ≥ A₁.
@@ -515,11 +515,11 @@ theorem absSubLimbsKM_toNat (a : Array UInt64) (loA k m : Nat)
     have h_cs_val : toNatLimbsList cs.1.1.toList = A0 - A1 := by
       have := h_cs_eq; rw [h_z] at this; omega
     refine ⟨?_, ?_⟩
-    · rw [if_neg h_borrow]
+    · rw [ite_eq_right h_borrow]
       refine ⟨fun _ => h_le_le, fun _ => ?_⟩
       rfl
-    · rw [if_neg h_borrow]
-      rw [if_pos h_le_le]
+    · rw [ite_eq_right h_borrow]
+      rw [ite_eq_left h_le_le]
       exact h_cs_val
 
 /-! ### Correctness of `karatsubaMulLimbsRec` stages -/
@@ -680,7 +680,7 @@ theorem karatsubaMulLimbsRec.middleBuf_toNat (k m : Nat)
     rw [← toNat_full_eq_slice _ _ hC₂]
   by_cases h_ss : sameSign = true
   · -- sameSign = true: subtract C₂.
-    simp only [if_pos h_ss]
+    simp only [ite_eq_left h_ss]
     set sub := subGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
                  h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos with hsub_def
     have h_sub_size : sub.1.size = 2 * k + 1 := by
@@ -713,7 +713,7 @@ theorem karatsubaMulLimbsRec.middleBuf_toNat (k m : Nat)
     show toNatLimbsList sub.1.toList = _
     omega
   · -- sameSign = false: add C₂.
-    simp only [if_neg h_ss]
+    simp only [ite_eq_right h_ss]
     set add := addGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
                  h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos with hadd_def
     have h_add_size : add.1.size = 2 * k + 1 := by
@@ -784,7 +784,7 @@ private lemma addGeqLimbs_toList_take_le (a b : Array UInt64) (loA lenA loB lenB
     exact addSameLengthLimbs.go_toList_take_le b loA loB lenB a 0 false (by omega) hB i
             (by omega)
   by_cases h : lo.2 = true
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     show (addLimb lo.1 (loA + lenB) (loA + lenA) 1 (by omega)
             (by rw [h_lo_size]; exact hA)).1.toList.take i = a.toList.take i
     have h_addLimb_take :
@@ -807,7 +807,7 @@ private lemma addGeqLimbs_toList_take_le (a b : Array UInt64) (loA lenA loB lenB
       rw [eq1, h_addLimb_take, List.take_take, Nat.min_eq_left (by omega)]
     rw [h_combine]
     exact h_lo_take
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     exact h_lo_take
 
 /-- `2 ^ (64 * (a + b)) = 2 ^ (64 * a) · 2 ^ (64 * b)`. -/
@@ -1069,7 +1069,7 @@ lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
       have h_sgnB : sgnB = true := hsgnB.mpr hB'
       rw [h_sgnA, h_sgnB]
       simp only [beq_self_eq_true, ↓reduceIte]
-      rw [if_pos hA'] at h_absA; rw [if_pos hB'] at h_absB
+      rw [ite_eq_left hA'] at h_absA; rw [ite_eq_left hB'] at h_absB
       subst h_absA; subst h_absB
       have h_expand : (A0 - A1) * (B0 - B1) = A0*B0 + A1*B1 - A0*B1 - A1*B0 := by
         rw [Nat.sub_mul, Nat.mul_sub, Nat.mul_sub]
@@ -1084,8 +1084,8 @@ lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
         cases hb : sgnB
         · rfl
         · exact absurd (hsgnB.mp hb) hB'
-      rw [h_sgnA, h_sgnB, if_neg (by decide : ¬ ((true : Bool) == false) = true)]
-      rw [if_pos hA'] at h_absA; rw [if_neg hB'] at h_absB
+      rw [h_sgnA, h_sgnB, ite_eq_right (by decide : ¬ ((true : Bool) == false) = true)]
+      rw [ite_eq_left hA'] at h_absA; rw [ite_eq_right hB'] at h_absB
       subst h_absA; subst h_absB
       have hB_le : B0 ≤ B1 := by omega
       have h_expand : (A0 - A1) * (B1 - B0) = A0*B1 + A1*B0 - A0*B0 - A1*B1 := by
@@ -1104,8 +1104,8 @@ lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
     by_cases hB' : B1 ≤ B0
     · -- A0 < A1, B1 ≤ B0; sgnA = false, sgnB = true; add.
       have h_sgnB : sgnB = true := hsgnB.mpr hB'
-      rw [h_sgnA, h_sgnB, if_neg (by decide : ¬ ((false : Bool) == true) = true)]
-      rw [if_neg hA'] at h_absA; rw [if_pos hB'] at h_absB
+      rw [h_sgnA, h_sgnB, ite_eq_right (by decide : ¬ ((false : Bool) == true) = true)]
+      rw [ite_eq_right hA'] at h_absA; rw [ite_eq_left hB'] at h_absB
       subst h_absA; subst h_absB
       have hA_le : A0 ≤ A1 := by omega
       have h_expand : (A1 - A0) * (B0 - B1) = A1*B0 + A0*B1 - A0*B0 - A1*B1 := by
@@ -1123,7 +1123,7 @@ lemma middle_equals_cross_terms (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
         · exact absurd (hsgnB.mp hb) hB'
       rw [h_sgnA, h_sgnB]
       simp only [beq_self_eq_true, ↓reduceIte]
-      rw [if_neg hA'] at h_absA; rw [if_neg hB'] at h_absB
+      rw [ite_eq_right hA'] at h_absA; rw [ite_eq_right hB'] at h_absB
       subst h_absA; subst h_absB
       have hA_le : A0 ≤ A1 := by omega
       have hB_le : B0 ≤ B1 := by omega
@@ -1149,7 +1149,7 @@ lemma C2_le_C0_plus_C1 (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
   · have h_sgnA : sgnA = true := hsgnA.mpr hA'
     by_cases hB' : B1 ≤ B0
     · have h_sgnB : sgnB = true := hsgnB.mpr hB'
-      rw [if_pos hA'] at h_absA; rw [if_pos hB'] at h_absB
+      rw [ite_eq_left hA'] at h_absA; rw [ite_eq_left hB'] at h_absB
       subst h_absA; subst h_absB
       have h_expand : (A0 - A1) * (B0 - B1) = A0*B0 + A1*B1 - A0*B1 - A1*B0 := by
         rw [Nat.sub_mul, Nat.mul_sub, Nat.mul_sub]
@@ -1171,7 +1171,7 @@ lemma C2_le_C0_plus_C1 (A0 A1 B0 B1 : Nat) (sgnA sgnB : Bool)
     by_cases hB' : B1 ≤ B0
     · have h_sgnB : sgnB = true := hsgnB.mpr hB'
       rw [h_sgnA, h_sgnB] at h_same; exact absurd h_same (by decide)
-    · rw [if_neg hA'] at h_absA; rw [if_neg hB'] at h_absB
+    · rw [ite_eq_right hA'] at h_absA; rw [ite_eq_right hB'] at h_absB
       subst h_absA; subst h_absB
       have hA_le : A0 ≤ A1 := by omega
       have hB_le : B0 ≤ B1 := by omega

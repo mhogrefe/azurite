@@ -97,10 +97,10 @@ theorem toNat_computeD63 (d : UInt64) :
   unfold computeD63
   rw [shiftRightRound_fst]
   by_cases h : d.isMultipleOfPow2 1 = true
-  · rw [if_pos h, toNat_shiftRightSat]
+  · rw [ite_eq_left h, toNat_shiftRightSat]
     have hdvd : 2 ^ 1 ∣ d.toNat := (isMultipleOfPow2_iff d 1).mp h
     omega
-  · rw [if_neg h, toNat_shiftRightSat_add_one d 1 (by omega)]
+  · rw [ite_eq_right h, toNat_shiftRightSat_add_one d 1 (by omega)]
     have hndvd : ¬ (2 ^ 1 ∣ d.toNat) :=
       fun hdvd => h ((isMultipleOfPow2_iff d 1).mpr hdvd)
     omega
@@ -1156,14 +1156,14 @@ theorem computeV4_add_mod_eq (v3 d : UInt64) :
         have hmod : ((wideMul v3 d).2.toNat + d.toNat) % 2 ^ 64
             = (wideMul v3 d).2.toNat + d.toNat - 2 ^ 64 := by omega
         rw [hmod]; omega
-      rw [if_pos hlt, if_pos h]; rfl
+      rw [ite_eq_left hlt, ite_eq_left h]; rfl
     · have hsum_lt : (wideMul v3 d).2.toNat + d.toNat < 2 ^ 64 := by
         push Not at h; exact h
       have hLO'_eq : ((wideMul v3 d).2 + d).toNat = (wideMul v3 d).2.toNat + d.toNat := by
         rw [hLO'_toNat, Nat.mod_eq_of_lt hsum_lt]
       have hnlt : ¬ (wideMul v3 d).2 + d < d := by
         rw [_root_.UInt64.lt_iff_toNat_lt, hLO'_eq]; omega
-      rw [if_neg hnlt, if_neg h]; rfl
+      rw [ite_eq_right hnlt, ite_eq_right h]; rfl
   rw [_root_.UInt64.toNat_sub, _root_.UInt64.toNat_sub, _root_.UInt64.toNat_sub, hcarry_eq]
   set V3N : ℕ := v3.toNat
   set DN : ℕ := d.toNat
@@ -1252,7 +1252,7 @@ private lemma e4_core
         have hh : (2 ^ 64 : ℕ) ≤ LON + D := by exact_mod_cast this
         exact hh
       exact h_nat
-    have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [if_pos hLON_ge]
+    have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [ite_eq_left hLON_ge]
     -- Now V4N + D + HI + 1 = V3N + kN * 2^64.
     -- D + HI = 2^64 - 1, so V4N + 2^64 = V3N + kN * 2^64.
     -- With 0 ≤ V4N < 2^64 and 0 ≤ V3N < 2^64, kN = 1 and V4N = V3N.
@@ -1307,7 +1307,7 @@ private lemma e4_core
         have hLON_bound : LON ≤ 2 ^ 64 - D - 1 := by
           rw [h] at hV3D_le_nat; omega
         have hnot : ¬ 2 ^ 64 ≤ LON + D := by omega
-        have hcarryN_val : carryN = 0 := by rw [hcarryN_def]; rw [if_neg hnot]
+        have hcarryN_val : carryN = 0 := by rw [hcarryN_def]; rw [ite_eq_right hnot]
         omega
       · -- D + HI = 2^64 - 2: then LON ≥ 2^64 + ... and LON + D ≥ 2^64, carryN = 1.
         -- hV3D_gt_nat: 2^128 < 2^64*(D+HI) + LON + 2*D = 2^128 - 2*2^64 + LON + 2*D, so LON > 2*2^64 - 2*D.
@@ -1320,7 +1320,7 @@ private lemma e4_core
         have hLON_plus_D : 2 ^ 64 ≤ LON + D := by
           -- LON ≥ 2*2^64 - 2*D + 1, so LON + D ≥ 2*2^64 - D + 1 ≥ 2^64 + 1 (since D ≤ 2^64 - 1).
           omega
-        have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [if_pos hLON_plus_D]
+        have hcarryN_val : carryN = 1 := by rw [hcarryN_def]; rw [ite_eq_left hLON_plus_D]
         omega
     -- hk_eq: V4N + D + HI + carryN = V3N + kN * 2^64, with HI + D + carryN = 2^64 - 1.
     -- So V4N + 2^64 - 1 = V3N + kN * 2^64, V4N = V3N + 1 + (kN - 1)*2^64.

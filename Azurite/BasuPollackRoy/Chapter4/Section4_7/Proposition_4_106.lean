@@ -40,7 +40,7 @@ theorem pm_isClosedIn_zero (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d 
     IsClosedIn (intervalSet (R := R)) (Pm P d γ 0) := by
   have heq : Pm P d γ 0 = intervalSet (R := R) := by
     ext w
-    simp only [Pm, intervalSet, Set.mem_setOf_eq, and_iff_left_iff_imp]
+    simp only [Pm, intervalSet, Set.mem_ofPred_eq, and_iff_left_iff_imp]
     exact fun _ => atLeastZeros_zero P d (γ w)
   rw [heq]
   exact isClosedIn_self _
@@ -241,7 +241,7 @@ theorem exists_branch_limit
       intro h0
       rw [h0, hermNormSq_eq_zero_iff.mpr rfl] at hunitc
       exact one_ne_zero hunitc.symm
-    rw [branchCurve, dif_pos hne, momentMap_mkLine, ← eq_constPt_self w]
+    rw [branchCurve, dite_eq_left hne, momentMap_mkLine, ← eq_constPt_self w]
   -- discharge `projective_curve_limit`'s hypothesis
   have hcont : ∀ idx : MomentIndex k,
       IsSemialgContinuousOn (Azurite.BPR.rightNbhd (1 : R))
@@ -695,7 +695,7 @@ theorem branchLimit_isCommonZero
           exact one_ne_zero hunit.symm
         have hbranch_eq : branchCurve m σ a s
             = mkLine (repsFromY m (σ (Azurite.BPR.constPt s) ∘ Fin.natAdd 1) a) hrepne := by
-          rw [branchCurve, dif_pos hrepne]
+          rw [branchCurve, dite_eq_left hrepne]
         -- the projective parameter `p := γ(w(s))`; `aeval (repsFromY a) (homotopyPoly p) = 0`
         have hzeroP : ∀ i', aeval (branchCurve m σ a s).rep
             (homotopyPoly P d ((γ (projW m (σ (Azurite.BPR.constPt s)))).rep 0)
@@ -818,7 +818,7 @@ theorem pm_isClosedIn (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : Fin
       intro h0
       have hunit := ((mem_Wb_iff m P d γ (σ (Azurite.BPR.constPt s))).mp hmem).2 a
       rw [h0, hermNormSq_eq_zero_iff.mpr rfl] at hunit; exact one_ne_zero hunit.symm
-    exact ⟨hrepne, by rw [branchCurve, dif_pos hrepne]⟩
+    exact ⟨hrepne, by rw [branchCurve, dite_eq_left hrepne]⟩
   -- **Step (D): injectivity of `a ↦ zfn a`.**
   have hinj : Function.Injective zfn := by
     intro a b hzab

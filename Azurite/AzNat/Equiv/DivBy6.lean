@@ -43,7 +43,7 @@ theorem divBy6_eq_divModUInt64 (U : AzNat) :
                  show (64 - 61 : Nat) = 3 from rfl,
                  Nat.sub_zero,
                  show ((61 : Nat) = 0) ↔ False from ⟨by decide, fun h => h.elim⟩,
-                 if_false]
+                 ite_false]
       simp only [h0, dite_false]
       rfl
 

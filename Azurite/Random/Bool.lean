@@ -1,6 +1,6 @@
 import Azurite.Random.Gen
 import Azurite.Random.Nat
-import Batteries.Data.Rat
+import Batteries.Data.Float.Rat
 
 namespace Azurite.Random
 

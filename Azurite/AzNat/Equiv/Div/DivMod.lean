@@ -421,7 +421,7 @@ theorem divMod_toNat (U V : AzNat) :
                         h_top_idx)[0 + n - 1]'(by rw [h_VBuf_size_eq]; omega)
                     = topB <<< UInt64.ofNat topB.leadingZeros ||| 0 := by
                   conv_lhs => rw [Array.getElem_set]
-                  rw [if_pos h_idx_eq.symm]
+                  rw [ite_eq_left h_idx_eq.symm]
                 rw [h_get_eq, h_dtop_eq]
                 exact h_topB_norm
               exact divMod_size_ge3_finish U V topB.leadingZeros hk_le
@@ -499,7 +499,7 @@ theorem divMod_toNat (U V : AzNat) :
                     VBuf[0 + n - 1]'(by rw [h_VBuf_size_eq]; omega) = d_top := by
                   show (VBufRaw.set (n - 1) d_top h_top_in_raw)[0 + n - 1] = d_top
                   rw [Array.getElem_set]
-                  rw [if_pos h_idx_eq.symm]
+                  rw [ite_eq_left h_idx_eq.symm]
                 rw [h_get_eq]; exact h_dtop_norm
               -- UBuf representation.
               have h_UBuf_size_dyn :
@@ -647,7 +647,7 @@ private lemma divMod_of_toNat_zero (U V : AzNat) (hV : V.toNat = 0) :
     divMod U V = (0, U) := by
   have h_size : V.limbs.size = 0 := (toNat_eq_zero_iff V).mp hV
   unfold divMod
-  rw [dif_pos h_size]
+  rw [dite_eq_left h_size]
 
 /-- The specialised `div` returns the same value as `(divMod U V).1`.
     Holds structurally: `div` mirrors `divMod`'s branch-by-branch

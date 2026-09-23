@@ -235,14 +235,14 @@ theorem halfOpenChartPath_affine {k : ℕ} (hk : 1 ≤ k) (Δ : Finset (complexP
       · exact ⟨by linarith, h1⟩
   have hϕ₁ : ∀ u ∈ H₁, ϕ u = polynomialMap P₁ u := by
     intro u hu
-    simp only [hϕ]; exact if_pos ((hH₁mem u).mp hu).2
+    simp only [hϕ]; exact ite_eq_left ((hH₁mem u).mp hu).2
   have hϕ₂ : ∀ u ∈ H₂, ϕ u = polynomialMap P₂ u := by
     intro u hu
     simp only [hϕ]
     rcases le_or_gt (u 0) (1 / 2) with h | h
     · have hhalf : u 0 = 1 / 2 := le_antisymm h ((hH₂mem u).mp hu).1
-      rw [if_pos h, hev₁, hev₂, hhalf]; norm_num
-    · rw [if_neg (not_le.mpr h)]
+      rw [ite_eq_left h, hev₁, hev₂, hhalf]; norm_num
+    · rw [ite_eq_right (not_le.mpr h)]
   refine ⟨ϕ, ?_, ?_, ?_, ?_, ?_⟩
   · -- semialgebraic graph
     rw [hunion, funGraph_union]
@@ -317,7 +317,7 @@ theorem pencilPt10_mem_chartSet0 :
     pencilPt10 (R := R) ∈ (chartSet 0 : Set (complexProjectiveSpace R 1)) := by
   obtain ⟨c, hc, hrep⟩ :=
     exists_rep_smul (![1, 0] : Fin 2 → Ri R) (vec1t_ne_zero 0)
-  rw [chartSet_eq, Set.mem_setOf_eq]
+  rw [chartSet_eq, Set.mem_ofPred_eq]
   show (pencilPt10 (R := R)).rep 0 ≠ 0
   rw [pencilPt10, hrep]
   simpa using hc
@@ -328,7 +328,7 @@ theorem pencilPt01_mem_chartSet1 :
     pencilPt01 (R := R) ∈ (chartSet 1 : Set (complexProjectiveSpace R 1)) := by
   obtain ⟨c, hc, hrep⟩ :=
     exists_rep_smul (![0, 1] : Fin 2 → Ri R) vec01_ne_zero
-  rw [chartSet_eq, Set.mem_setOf_eq]
+  rw [chartSet_eq, Set.mem_ofPred_eq]
   show (pencilPt01 (R := R)).rep 1 ≠ 0
   rw [pencilPt01, hrep]
   simpa using hc
@@ -439,14 +439,14 @@ theorem exists_halfopen_gammaPath (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri 
   have hγeq₁ : ∀ u ∈ H₁, γ u = γ₁ u := by
     intro u hu
     show (if u 0 ≤ 1 / 2 then γ₁ u else γ₂ u) = γ₁ u
-    exact if_pos ((hH₁mem u).mp hu).2
+    exact ite_eq_left ((hH₁mem u).mp hu).2
   have hγeq₂ : ∀ u ∈ H₂, γ u = γ₂ u := by
     intro u hu
     show (if u 0 ≤ 1 / 2 then γ₁ u else γ₂ u) = γ₂ u
     rcases le_or_gt (u 0) (1 / 2) with h | h
     · have hhalf : u 0 = 1 / 2 := le_antisymm h ((hH₂mem u).mp hu).1
-      rw [if_pos h, hγ₁z u hhalf, ← hγ₂z u hhalf]
-    · rw [if_neg (not_le.mpr h)]
+      rw [ite_eq_left h, hγ₁z u hhalf, ← hγ₂z u hhalf]
+    · rw [ite_eq_right (not_le.mpr h)]
   -- continuity machinery
   have hsymm : Continuous (realEquiv.symm : (Fin (1 + 1) → R) → (Fin 1 → Ri R)) :=
     realEquivₜ.symm.continuous
@@ -533,7 +533,7 @@ theorem exists_halfopen_gammaPath (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri 
       {tp | tp.1 ∈ H₂ ∧ tp.2 = chartMap 1 (realEquiv.symm (ψ₂ tp.1))} with hT₂
     have hTeq : T = T₁ ∪ T₂ := by
       ext ⟨u, p⟩
-      simp only [hT, hT₁, hT₂, Set.mem_setOf_eq, Set.mem_union]
+      simp only [hT, hT₁, hT₂, Set.mem_ofPred_eq, Set.mem_union]
       constructor
       · rintro ⟨huI, hp⟩
         rw [hunion, Set.mem_union] at huI
@@ -702,7 +702,7 @@ theorem pm_isOpenIn (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : Fin k
       have hwO' : w ∈ O' (a, b) ∩ intervalSet (R := R) :=
         ⟨(Set.mem_iInter₂.mp hwV.2) (a, b) hpbad, hwI⟩
       have := hO'sub (a, b) hpbad hwO'
-      simp only [Set.mem_setOf_eq] at this
+      simp only [Set.mem_ofPred_eq] at this
       exact this hcontra
   · -- each `ϕ a (γ w)` is a common zero of `S₍γ w₎`
     intro a i
@@ -891,7 +891,7 @@ theorem pm_local_inject (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : F
       have hpbad : (a, b) ∈ bad := by
         rw [hbad, Finset.mem_filter]; exact ⟨Finset.mem_univ _, hab'⟩
       have := hO'sub (a, b) hpbad ⟨(Set.mem_iInter₂.mp hwOfin.2) (a, b) hpbad, hwIcc⟩
-      simp only [Set.mem_setOf_eq] at this
+      simp only [Set.mem_ofPred_eq] at this
       exact this hcontra
   · -- each `ϕ a (γ w)` is a common zero of `S₍γ w₎`
     set j := j₀ a with hjdef

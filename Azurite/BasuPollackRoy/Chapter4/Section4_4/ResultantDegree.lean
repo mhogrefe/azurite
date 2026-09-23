@@ -418,7 +418,7 @@ theorem quant_proj_mem (d : ℕ) {P₁ : MvPolynomial (Fin (n + 1)) K}
       · -- First piece: only `P = P₁` contributes.
         rw [Finset.sum_eq_single P₁]
         · simp
-        · intro P _ hP'; rw [if_neg hP', zero_mul]
+        · intro P _ hP'; rw [ite_eq_right hP', zero_mul]
         · intro h; exact absurd (Finset.mem_insert_self _ _) h
       · -- Second piece: fiberwise regrouping.
         rw [show (∑ P ∈ insert P₁ rest.toFinset,
@@ -455,7 +455,7 @@ theorem quant_proj_mem (d : ℕ) {P₁ : MvPolynomial (Fin (n + 1)) K}
             intro l hl hlf
             rw [Finset.mem_filter, Finset.mem_range] at hlf
             rw [Finset.mem_range] at hl
-            rw [if_neg (fun h => hlf ⟨hl, h⟩), zero_mul]
+            rw [ite_eq_right (fun h => hlf ⟨hl, h⟩), zero_mul]
         · -- Inside each fiber, `rest_l = P` so we may replace `P` by `rest_l`.
           apply Finset.sum_congr rfl
           intro P _
@@ -464,6 +464,6 @@ theorem quant_proj_mem (d : ℕ) {P₁ : MvPolynomial (Fin (n + 1)) K}
           intro l hl
           rw [Finset.mem_filter] at hl
           obtain ⟨_, hlP, hlj⟩ := hl
-          rw [if_pos hlj, hlP]
+          rw [ite_eq_left hlj, hlP]
 
 end Azurite.BPR.Chapter4

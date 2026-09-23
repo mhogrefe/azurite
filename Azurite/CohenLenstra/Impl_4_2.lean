@@ -48,7 +48,7 @@ of nonzero residues is nonzero — so `prod = 0` proves `n`
 composite (the old `prod` shared a factor with `n`). -/
 theorem zmod_mul_ne_zero_of_prime {n : ℕ} (hn : n.Prime)
     {a b : ZMod n} (ha : a ≠ 0) (hb : b ≠ 0) : a * b ≠ 0 := by
-  haveI : Fact n.Prime := ⟨hn⟩
+  have : Fact n.Prime := ⟨hn⟩
   exact mul_ne_zero ha hb
 
 /-- **The (4.2) → (i2a) hand-off**: the data certified by

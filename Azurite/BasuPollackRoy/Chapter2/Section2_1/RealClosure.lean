@@ -125,7 +125,7 @@ theorem adjoin_compatible {R : Type*} [Field R] {a : R} (C : Subsemiring R)
     (-1 : AdjoinRoot (sqSubC a)) ∉ Subsemiring.closure
       ((algebraMap R (AdjoinRoot (sqSubC a)) '' (C : Set R)) ∪ {x | IsSquare x}) := by
   intro hmem
-  haveI : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha_sq⟩
+  have : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha_sq⟩
   rw [Subsemiring.mem_closure_iff] at hmem
   obtain ⟨n, γ, w, hγ, hsum⟩ := add_closure_form C _ hmem
   obtain ⟨x, y, hxy⟩ := weighted_decompose γ w hsum
@@ -301,7 +301,7 @@ theorem square_property (R : IntermediateField F C)
     (T : RingCone ↥R) (hTsub : (genCone R : Set ↥R) ⊆ T) {a : ↥R} (ha : a ∈ T) :
     IsSquare a := by
   by_contra ha_sq
-  haveI : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha_sq⟩
+  have : Fact (Irreducible (sqSubC a)) := ⟨irred_X_sq_sub_C ha_sq⟩
   have halg := adjoinRoot_isAlgebraic (R := ↥R) (monic_sq_sub_C a)
   have hTsq : ∀ x : ↥R, x * x ∈ T.toSubsemiring :=
     fun x => hTsub (Subsemiring.subset_closure (Or.inr ⟨x, rfl⟩))
@@ -365,8 +365,8 @@ theorem exists_orderCompatible_realClosure :
   have hreal : IsRealField ↥R := compatible_isRealField R hcomp
   have hnoext : HasNoNontrivialRealAlgebraicExtension ↥R := by
     refine ⟨hreal, fun F₁ _ _ halg hreal₁ => ?_⟩
-    letI : Algebra F F₁ := ((algebraMap (↥R) F₁).comp (algebraMap F ↥R)).toAlgebra
-    haveI : IsScalarTower F (↥R) F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    let : Algebra F F₁ := ((algebraMap (↥R) F₁).comp (algebraMap F ↥R)).toAlgebra
+    have : IsScalarTower F (↥R) F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
     obtain ⟨Q, hQ⟩ := theorem_2_7_b_of_c (theorem_2_7_a_of_b hreal₁)
     have hcompatF1 : (-1 : F₁) ∉ genConeAlg (F := F) F₁ := by
       intro hmem
@@ -461,8 +461,8 @@ private lemma maximal_hasNoNontrivialRealAlgebraicExtension
   constructor
   · exact hR
   · intro F₁ _ _ halg hreal x
-    letI : Algebra F F₁ := (algebraMap ↥R F₁).comp (algebraMap F ↥R) |>.toAlgebra
-    haveI : IsScalarTower F ↥R F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    let : Algebra F F₁ := (algebraMap ↥R F₁).comp (algebraMap F ↥R) |>.toAlgebra
+    have : IsScalarTower F ↥R F₁ := IsScalarTower.of_algebraMap_eq fun _ => rfl
     let f : F₁ →ₐ[↥R] C := IsAlgClosed.lift
     let S : IntermediateField F C := f.fieldRange.restrictScalars F
     have hRS : R ≤ S := by

@@ -31,10 +31,10 @@ private lemma cross_assoc {A B C D G1 G2 A' B' C' D' : ℕ}
 @[simp] theorem toRat_mul (x y : AzRat) : toRat (x * y) = toRat x * toRat y := by
   show toRat (AzRat.mul x y) = toRat x * toRat y
   by_cases hx : x.num = 0
-  · rw [AzRat.mul, dif_pos hx, toRat_zero, toRat_of_num_zero x hx, zero_mul]
+  · rw [AzRat.mul, dite_eq_left hx, toRat_zero, toRat_of_num_zero x hx, zero_mul]
   by_cases hy : y.num = 0
-  · rw [AzRat.mul, dif_neg hx, dif_pos hy, toRat_zero, toRat_of_num_zero y hy, mul_zero]
-  rw [AzRat.mul, dif_neg hx, dif_neg hy,
+  · rw [AzRat.mul, dite_eq_right hx, dite_eq_left hy, toRat_zero, toRat_of_num_zero y hy, mul_zero]
+  rw [AzRat.mul, dite_eq_right hx, dite_eq_right hy,
       toRat_eq_divInt, toRat_eq_divInt x, toRat_eq_divInt y, Rat.divInt_mul_divInt]
   dsimp only
   -- Notation: A/B are x's numerator/denominator, C/D are y's, G1 = gcd A D,

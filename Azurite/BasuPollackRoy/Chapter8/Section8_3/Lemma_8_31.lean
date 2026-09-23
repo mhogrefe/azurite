@@ -72,7 +72,7 @@ theorem pdetRing_triangular {m n ℓ : ℕ} (hℓm : ℓ < m) (hmn : m ≤ n) (P
     ext i j
     simp only [hMb, Matrix.toBlocks₂₁, Matrix.submatrix_apply, Matrix.of_apply, Matrix.zero_apply,
       matStar]
-    rw [he_l j, if_pos (by have := j.isLt; omega)]
+    rw [he_l j, ite_eq_left (by have := j.isLt; omega)]
     rw [show (P (e' (Sum.inr i))).coeff (n - 1 - (j : ℕ)) = 0 from
       hdeg2 _ (by rw [he_r i]; omega) _ (by have := j.isLt; omega), map_zero]
   -- bottom-right block is `matStar (n-ℓ) Q`
@@ -81,28 +81,28 @@ theorem pdetRing_triangular {m n ℓ : ℕ} (hℓm : ℓ < m) (hmn : m ≤ n) (P
     simp only [hMb, Matrix.toBlocks₂₂, Matrix.submatrix_apply, Matrix.of_apply, matStar]
     rw [he_rf i, he_r j, hQ]
     by_cases hc : (j : ℕ) + 1 < m - ℓ
-    · rw [if_pos (by omega), if_pos hc, sub_sub_add_aux n ℓ (j : ℕ)]
-    · rw [if_neg (by omega), if_neg hc]
+    · rw [ite_eq_left (by omega), ite_eq_left hc, sub_sub_add_aux n ℓ (j : ℕ)]
+    · rw [ite_eq_right (by omega), ite_eq_right hc]
   -- leading `ℓ × ℓ` block is upper triangular with leading coefficients on the diagonal
   have htri : Matrix.BlockTriangular Mb.toBlocks₁₁ id := by
     intro i j hji
     simp only [hMb, Matrix.toBlocks₁₁, Matrix.submatrix_apply, Matrix.of_apply, matStar]
     have hji' : (j : ℕ) < (i : ℕ) := hji
-    rw [he_l j, if_pos (by have := j.isLt; omega)]
+    rw [he_l j, ite_eq_left (by have := j.isLt; omega)]
     rw [show (P (e' (Sum.inl i))).coeff (n - 1 - (j : ℕ)) = 0 from
       hdeg1 _ (by rw [he_l i]; exact i.isLt) _ (by rw [he_l i]; omega), map_zero]
   have hdiag : ∀ i : Fin ℓ,
       Mb.toBlocks₁₁ i i = C ((P ⟨(i : ℕ), by omega⟩).coeff (n - 1 - (i : ℕ))) := by
     intro i
     simp only [hMb, Matrix.toBlocks₁₁, Matrix.submatrix_apply, Matrix.of_apply, matStar]
-    rw [he_l i, if_pos (by have := i.isLt; omega), he_lf i]
+    rw [he_l i, ite_eq_left (by have := i.isLt; omega), he_lf i]
   calc pdetRing n P = Mb.det := by rw [hP, hMb, det_submatrix_equiv_self]
     _ = Mb.toBlocks₁₁.det * Mb.toBlocks₂₂.det := by
         conv_lhs => rw [← Matrix.fromBlocks_toBlocks Mb]
         rw [htb21, Matrix.det_fromBlocks_zero₂₁]
     _ = C (∏ i : Fin ℓ, (P ⟨(i : ℕ), by omega⟩).coeff (n - 1 - (i : ℕ)))
           * pdetRing (n - ℓ) Q := by
-        rw [htb22, Matrix.det_of_upperTriangular htri,
+        rw [htb22, Matrix.det_of_isUpperTriangular htri,
           Finset.prod_congr rfl (fun i _ => hdiag i), ← map_prod, ← hQeq]
 
 end Azurite.BPR.Chapter8

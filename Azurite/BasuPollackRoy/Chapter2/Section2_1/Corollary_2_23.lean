@@ -45,10 +45,10 @@ theorem corollary_2_23_of_isRealClosed
     letI : LinearOrder R := IsRealClosed.toLinearOrder
     a < b →
     ∃ c ∈ Set.Ioo a b, P.eval b - P.eval a = (b - a) * (derivative P).eval c := by
-  letI : LinearOrder R := IsRealClosed.toLinearOrder
-  letI : IsOrderedRing R := IsRealClosed.toIsOrderedRing
-  haveI : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
-  haveI : IsAlgClosed (Ri R) := isAlgClosed_Ri
+  let : LinearOrder R := IsRealClosed.toLinearOrder
+  let : IsOrderedRing R := IsRealClosed.toIsOrderedRing
+  have : IsStrictOrderedRing R := IsOrderedRing.toIsStrictOrderedRing R
+  have : IsAlgClosed (Ri R) := isAlgClosed_Ri
   exact corollary_2_23 theorem_2_11_b_c P
 
 end Azurite.BPR.Corollary2_23

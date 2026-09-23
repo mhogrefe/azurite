@@ -46,7 +46,7 @@ theorem theorem_4_2_3 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     ∀ p : ℕ, p.Prime → p ∣ n →
       (F : ℤ) ∣ (p : ℤ) - jacobiSym (a ^ 2 - 4 * b) p := by
   intro p hp hpn
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rw [← jacobiSym.legendreSym.to_jacobiSym]
   have hpz : ((p : ℕ) : ℤ) ∣ (n : ℤ) := Int.natCast_dvd_natCast.mpr hpn
   -- `p ∤ 2b` and `p ∤ Δ`
@@ -54,7 +54,7 @@ theorem theorem_4_2_3 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     IsCoprime.of_isCoprime_of_dvd_left hcop hpz
   have hpΔ : ¬((p : ℕ) : ℤ) ∣ (a ^ 2 - 4 * b) := by
     intro hd
-    haveI : NeZero n := ⟨by omega⟩
+    have : NeZero n := ⟨by omega⟩
     have hgcd : (a ^ 2 - 4 * b).gcd n = 1 := by
       by_contra hne
       have h0 : jacobiSym (a ^ 2 - 4 * b) n = 0 :=
@@ -71,7 +71,7 @@ theorem theorem_4_2_3 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     intro hd
     have hpz' : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
     rcases hpz'.dvd_mul.mp hd with hd1 | hd1
-    · exact hpz'.not_unit (hp2b.isUnit_of_dvd' dvd_rfl hd1)
+    · exact hpz'.not_isUnit (hp2b.isUnit_of_dvd' dvd_rfl hd1)
     · exact hpΔ hd1
   -- the rank exists and divides `n + 1`
   have hpU : ((p : ℕ) : ℤ) ∣ lucasU a b (n + 1) := hpz.trans hU
@@ -129,7 +129,7 @@ theorem theorem_4_2_3 (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
     have hcop' : IsCoprime ((p : ℕ) : ℤ) (lucasU a b ((n + 1) / q)) :=
       IsCoprime.of_isCoprime_of_dvd_left (hq q hqprime hqF) hpz
     have hpunit := hcop'.isUnit_of_dvd' dvd_rfl hUdvd
-    exact (Nat.prime_iff_prime_int.mp hp).not_unit hpunit
+    exact (Nat.prime_iff_prime_int.mp hp).not_isUnit hpunit
   -- conclude via Theorem 4.2.2
   have h422 := theorem_4_2_2 (p := p) (a := a) (b := b) hp2bΔ
   exact (Int.natCast_dvd_natCast.mpr hFr : (F : ℤ) ∣ (r : ℤ)).trans h422
@@ -154,7 +154,7 @@ theorem morrison_test (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
   -- a composite `n` has a prime factor `p` with `p² ≤ n`
   set p := n.minFac with hpdef
   have hp : p.Prime := Nat.minFac_prime (by omega)
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hple : p ^ 2 ≤ n := Nat.minFac_sq_le_self (by omega) hcomp
   -- but `p ≡ (Δ/p) (mod F)` forces `p ≥ F − 1`
   have hdvd := theorem_4_2_3 hn hcop hjac hF hU hq p hp (Nat.minFac_dvd n)
@@ -164,7 +164,7 @@ theorem morrison_test (hn : 0 < n) (hcop : IsCoprime (n : ℤ) (2 * b))
       rw [Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
       intro hd
       -- `p ∣ Δ` contradicts `gcd(Δ, n) = 1` (from the Jacobi symbol)
-      haveI : NeZero n := ⟨by omega⟩
+      have : NeZero n := ⟨by omega⟩
       have hgcd : (a ^ 2 - 4 * b).gcd n = 1 := by
         by_contra hne
         have h0 : jacobiSym (a ^ 2 - 4 * b) n = 0 :=

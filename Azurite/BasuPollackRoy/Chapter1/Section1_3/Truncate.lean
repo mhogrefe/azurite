@@ -40,6 +40,6 @@ theorem natDegree_truncate_le {R : Type*} [Semiring R] (i : ℕ)
     (Q : Polynomial R) : (truncate i Q).natDegree ≤ i := by
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
   intro j hj
-  rw [coeff_truncate, if_neg (Nat.not_le.mpr hj)]
+  rw [coeff_truncate, ite_eq_right (Nat.not_le.mpr hj)]
 
 end Azurite.BPR

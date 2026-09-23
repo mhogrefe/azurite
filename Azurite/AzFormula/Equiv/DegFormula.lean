@@ -210,7 +210,7 @@ omit [IsDomain D] in
     | nil => simp [azConjList]
     | cons Φ' Φs' =>
       simp only [azConjList, azRealization_azSmartAnd, ih]
-      ext y; simp only [Set.mem_inter_iff, Set.mem_setOf_eq, List.forall_mem_cons]
+      ext y; simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, List.forall_mem_cons]
 
 omit [IsDomain D] in
 @[simp] theorem azRealization_azDisjList [FaithfulSMul D C]
@@ -241,7 +241,7 @@ theorem azRealization_azDegFormula [FaithfulSMul D C]
     ext y
     simp only [azRealization_azConjList, azRealization_azEqZero,
       Formula.realization_conjList, Formula.realization_eq_zero,
-      Set.mem_setOf_eq, List.mem_map, List.mem_range,
+      Set.mem_ofPred_eq, List.mem_map, List.mem_range,
       forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
       liftPoly_coeff, liftPoly_natDegree]
   | some n =>
@@ -250,7 +250,7 @@ theorem azRealization_azDegFormula [FaithfulSMul D C]
       azRealization_azConjList, azRealization_azEqZero,
       Formula.realization_and, Formula.realization_ne_zero,
       Formula.realization_conjList, Formula.realization_eq_zero,
-      Set.mem_inter_iff, Set.mem_setOf_eq,
+      Set.mem_inter_iff, Set.mem_ofPred_eq,
       List.mem_map, List.mem_range,
       forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
       liftPoly_coeff, liftPoly_natDegree]
@@ -272,7 +272,7 @@ theorem azRealization_azDegEqFormula [FaithfulSMul D C]
   simp only [azDegEqFormula, BPR.degEqFormula, liftPoly_natDegree]
   ext y
   simp only [azRealization_azDisjList, Formula.realization_disjList,
-    Set.mem_setOf_eq, List.mem_cons, List.mem_map, List.mem_range]
+    Set.mem_ofPred_eq, List.mem_cons, List.mem_map, List.mem_range]
   constructor
   · rintro ⟨_, rfl | ⟨i, hi, rfl⟩, hmem⟩
     · exact ⟨_, Or.inl rfl, (key _ y).mp hmem⟩

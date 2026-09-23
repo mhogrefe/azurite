@@ -77,7 +77,7 @@ theorem units_pow_prime_pow_eq_one {q m : ℕ} (hq : q.Prime) (hm : m ≠ 0)
     (h1 : Units.map (ZMod.castHom (dvd_pow_self q hm) (ZMod q)).toMonoidHom
       u = 1) :
     u ^ q ^ (m - 1) = 1 := by
-  haveI : NeZero (q ^ m) := ⟨pow_ne_zero _ hq.pos.ne'⟩
+  have : NeZero (q ^ m) := ⟨pow_ne_zero _ hq.pos.ne'⟩
   have hval : (u : ZMod (q ^ m)).val ≡ 1 [MOD q] := by
     have hv := congrArg Units.val h1
     simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_coe,
@@ -102,7 +102,7 @@ paper's remark that `χ_{p,q} ∈ Y_s` forces `p ∣ t`. -/
 theorem sub_one_dvd_of_dvd_e {t q : ℕ} (ht : t ≠ 0) (hq : q.Prime)
     (h : q ∣ e t) : q - 1 ∣ t := by
   by_cases ht2 : Odd t
-  · rw [e, if_pos ht2] at h
+  · rw [e, ite_eq_left ht2] at h
     have hq2 : q = 2 := (Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp h
     simp [hq2]
   · by_cases hq2 : q = 2
@@ -111,14 +111,14 @@ theorem sub_one_dvd_of_dvd_e {t q : ℕ} (ht : t ≠ 0) (hq : q.Prime)
         ((Nat.Prime.factorization_pos_of_dvd hq (e_ne_zero t) h).ne')
       rw [factorization_e_odd_prime ht2 ht hq hq2] at hpos
       by_contra hnd
-      rw [if_neg hnd] at hpos
+      rw [ite_eq_right hnd] at hpos
       exact hpos rfl
 /-- Primes appearing at least squared in `e t` divide `t` — the fact
 behind the paper's step "`m(q) ≥ 2` implies `q ∣ t`". -/
 theorem dvd_of_two_le_factorization_e {t q : ℕ} (ht : t ≠ 0)
     (hq : q.Prime) (h2 : 2 ≤ (e t).factorization q) : q ∣ t := by
   by_cases ht2 : Odd t
-  · rw [e, if_pos ht2] at h2
+  · rw [e, ite_eq_left ht2] at h2
     have hle : (2 : ℕ).factorization q ≤ 1 := by
       rw [Nat.Prime.factorization Nat.prime_two, Finsupp.single_apply]
       split <;> omega
@@ -128,9 +128,9 @@ theorem dvd_of_two_le_factorization_e {t q : ℕ} (ht : t ≠ 0)
       exact (Nat.not_odd_iff_even.mp ht2).two_dvd
     · rw [factorization_e_odd_prime ht2 ht hq hq2] at h2
       by_cases hd : q - 1 ∣ t
-      · rw [if_pos hd] at h2
+      · rw [ite_eq_left hd] at h2
         exact Nat.dvd_of_factorization_pos (by omega)
-      · rw [if_neg hd] at h2
+      · rw [ite_eq_right hd] at h2
         omega
 
 /-- A congruence holding modulo each member of a pairwise-coprime
@@ -202,7 +202,7 @@ private theorem theorem_6_3_prime {n s t : ℕ} (hs : 0 < s) (ht : 0 < t)
   have key : ∀ q ∈ s.primeFactors, r ≡ n ^ l [MOD q ^ s.factorization q] := by
     intro q hq
     have hq' : q.Prime := Nat.prime_of_mem_primeFactors hq
-    haveI : Fact q.Prime := ⟨hq'⟩
+    have : Fact q.Prime := ⟨hq'⟩
     have hqs : q ∣ s := Nat.dvd_of_mem_primeFactors hq
     have hq1t : q - 1 ∣ t := sub_one_dvd_of_dvd_e ht.ne' hq' (hqs.trans hset)
     have hcoqn : n.Coprime q := Nat.Coprime.coprime_dvd_right hqs hns

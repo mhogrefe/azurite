@@ -30,12 +30,12 @@ private theorem testBit_ofDigits_pow2 (k : Nat) (hk : 1 ≤ k) :
           = 2 ^ k * Nat.ofDigits (2 ^ k : Nat) L + d from by ring]
     rw [Nat.testBit_two_pow_mul_add _ h_d_lt]
     by_cases hb : b < k
-    · rw [if_pos hb]
+    · rw [ite_eq_left hb]
       have h_div : b / k = 0 := Nat.div_eq_of_lt hb
       have h_mod : b % k = b := Nat.mod_eq_of_lt hb
       rw [h_div, h_mod]
       simp
-    · rw [if_neg hb]
+    · rw [ite_eq_right hb]
       push Not at hb
       rw [ih h_L_lt (b - k)]
       have h_div : b / k = (b - k) / k + 1 := by
@@ -89,7 +89,7 @@ private theorem toNat_ofLimbDigitsPow2_of_64 (digits : Array UInt64) :
     (AzNat.ofLimbDigitsPow2 64 digits).toNat =
       Nat.ofDigits (2 ^ 64 : Nat) (digits.toList.map UInt64.toNat) := by
   unfold AzNat.ofLimbDigitsPow2
-  rw [if_pos rfl, toNat_ofLimbs, toNatLimbsList_eq_ofDigits']
+  rw [ite_eq_left rfl, toNat_ofLimbs, toNatLimbsList_eq_ofDigits']
 
 /-! ### `k | 64`, `k < 64` branch: OR-fold builds the limb value bit-by-bit
 
@@ -329,7 +329,7 @@ private theorem toNat_ofLimbDigitsPow2_of_div_64 (k : Nat) (hk : 1 ≤ k) (hk_lt
   unfold AzNat.ofLimbDigitsPow2
   have h64 : ¬ k = 64 := by omega
   have h_div_dec : 1 ≤ k ∧ k < 64 ∧ 64 % k = 0 := ⟨hk, hk_lt, hk_div⟩
-  rw [if_neg h64, dif_pos h_div_dec]
+  rw [ite_eq_right h64, dite_eq_left h_div_dec]
   rw [testBit_toNat_ofLimbs]
   set perLimb := 64 / k with h_perLimb_def
   set numLimbs := (digits.size + perLimb - 1) / perLimb with h_numLimbs_def
@@ -504,7 +504,7 @@ private theorem testBit_foldl_cross_limb
         exact ⟨digits[i]'h_i_in, List.getElem_mem h_i_in, rfl⟩
       by_cases h_shift : i * k ≥ q * 64
       · -- Left shift
-        rw [if_pos h_shift, UInt64.toNat_or, Nat.testBit_or, h_prev_bit]
+        rw [ite_eq_left h_shift, UInt64.toNat_or, Nat.testBit_or, h_prev_bit]
         -- Compute (digits[i] <<< (i*k - q*64)).toNat.testBit r
         have h_s_lt : i * k - q * 64 < 64 := by
           have h_iHi := Nat.div_add_mod (q * 64 + 63) k
@@ -618,7 +618,7 @@ private theorem testBit_foldl_cross_limb
             rw [h_dec_succ, Bool.false_and]
       · -- Right shift (i*k < q*64, only happens when i = iLo with iLo*k < q*64, so n = 0)
         push Not at h_shift
-        rw [if_neg (by omega : ¬ i * k ≥ q * 64)]
+        rw [ite_eq_right (by omega : ¬ i * k ≥ q * 64)]
         rw [UInt64.toNat_or, Nat.testBit_or, h_prev_bit]
         -- Compute (digits[i] >>> (q*64 - i*k)).toNat.testBit r
         have h_n_zero : n = 0 := by
@@ -749,7 +749,7 @@ private theorem toNat_ofLimbDigitsPow2_of_not_div_64 (k : Nat) (hk : 1 ≤ k) (h
   unfold AzNat.ofLimbDigitsPow2
   have h64 : ¬ k = 64 := by omega
   have h_lt_64 : 1 ≤ k ∧ k < 64 := ⟨hk, hk_lt⟩
-  rw [if_neg h64, dif_neg hk_not_div, dif_pos h_lt_64]
+  rw [ite_eq_right h64, dite_eq_right hk_not_div, dite_eq_left h_lt_64]
   rw [testBit_toNat_ofLimbs]
   set totalBits := digits.size * k with h_totalBits_def
   set numLimbs := (totalBits + 63) / 64 with h_numLimbs_def

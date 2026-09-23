@@ -43,13 +43,13 @@ theorem toRatFunc_inv (r : AzRationalFunction) :
   show toRatFunc (inv r) = _
   rw [inv]
   by_cases h : r.factor = 0
-  · rw [dif_pos h]
+  · rw [dite_eq_left h]
     have hr : toRatFunc r = 0 := by
       rw [toRatFunc, h]
       have h0 : Azurite.AzRat.toRat 0 = 0 := rfl
       rw [h0, map_zero, zero_mul]
     rw [hr, inv_zero, toRatFunc_zero]
-  · rw [dif_neg h, toRatFunc, toRatFunc]
+  · rw [dite_eq_right h, toRatFunc, toRatFunc]
     show algebraMap ℚ (RatFunc ℚ) (Azurite.AzRat.toRat r.factor⁻¹)
         * (algebraMap ℚ[X] (RatFunc ℚ) (toPolyQ r.den)
             / algebraMap ℚ[X] (RatFunc ℚ) (toPolyQ r.num)) = _
@@ -156,7 +156,7 @@ private theorem cofactor_mul (a b : Azurite.AzPolynomial AzInt)
     show (if Azurite.AzPolynomial.gcdNormalizedInt a b = 0 then 0
       else (Azurite.AzPolynomial.exactDivQuoRem a
         (Azurite.AzPolynomial.gcdNormalizedInt a b)).1) = _
-    rw [if_neg hg]
+    rw [ite_eq_right hg]
   rw [hsnd, ← Azurite.AzPolynomial.map_toPoly_gcdNormalizedInt] at hspec
   exact hspec
 
@@ -331,8 +331,8 @@ private theorem mul_eq_of_guard (r s : AzRationalFunction)
         * (Azurite.AzPolynomial.exactDivQuoRem s.den
           (Azurite.AzPolynomial.gcdNormalizedInt r.num s.den)).1,
       h1, h2, h3, h4, h5, h6⟩ := by
-  simp only [mul, if_neg hrs]
-  rw [dif_pos (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+  simp only [mul, ite_eq_right hrs]
+  rw [dite_eq_left (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
 
 set_option maxHeartbeats 1600000 in
 /-- **Multiplication is correct**:
@@ -344,12 +344,12 @@ theorem toRatFunc_mul (r s : AzRationalFunction) :
   classical
   show toRatFunc (mul r s) = _
   by_cases hr : r.factor = 0
-  · have hmz : mul r s = 0 := by rw [mul, if_pos (Or.inl hr)]
+  · have hmz : mul r s = 0 := by rw [mul, ite_eq_left (Or.inl hr)]
     have hr0 : toRatFunc r = 0 := by
       rw [toRatFunc, hr, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [hmz, toRatFunc_zero, hr0, zero_mul]
   by_cases hs : s.factor = 0
-  · have hmz : mul r s = 0 := by rw [mul, if_pos (Or.inr hs)]
+  · have hmz : mul r s = 0 := by rw [mul, ite_eq_left (Or.inr hs)]
     have hs0 : toRatFunc s = 0 := by
       rw [toRatFunc, hs, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [hmz, toRatFunc_zero, hs0, mul_zero]
@@ -846,7 +846,7 @@ private theorem primPos_spec {g : Azurite.AzPolynomial AzInt} (hg : g ≠ 0) :
           exact absurd hsgn (by simp)
       have hsneg : s.toInt < 0 := by
         rw [hsZ, hsgn]
-        simp only [Bool.false_eq_true, if_false]
+        simp only [Bool.false_eq_true, ite_false]
         omega
       by_contra hcon
       push Not at hcon
@@ -855,7 +855,7 @@ private theorem primPos_spec {g : Azurite.AzPolynomial AzInt} (hg : g ≠ 0) :
       have hpos : 0 < g.leadingCoeff.toInt := (toInt_pos_iff_sign hlcg).mpr hsgn
       have hspos : 0 < s.toInt := by
         rw [hsZ, hsgn]
-        simp only [if_true]
+        simp only [ite_true]
         omega
       by_contra hcon
       push Not at hcon
@@ -870,9 +870,9 @@ private theorem scalar_eq {p : Azurite.AzPolynomial AzInt} (hp : p ≠ 0) :
     rw [Azurite.AzInt.lt_iff_toInt_lt, toInt_zero]
     exact toInt_pos_iff_sign (lc_ne_zero_az hp)
   by_cases h : (0 : AzInt) < p.leadingCoeff
-  · rw [if_pos h, if_pos (hiff.mp h)]
+  · rw [ite_eq_left h, ite_eq_left (hiff.mp h)]
     rfl
-  · rw [if_neg h, if_neg (fun hs => h (hiff.mpr hs))]
+  · rw [ite_eq_right h, ite_eq_right (fun hs => h (hiff.mpr hs))]
     rfl
 
 /-- The `primPos` key identity, at the `ℚ[X]` level. -/
@@ -1121,12 +1121,12 @@ theorem toRatFunc_add (r s : AzRationalFunction) :
   classical
   show toRatFunc (add r s) = _
   by_cases hr : r.factor = 0
-  · have h0 : add r s = s := by rw [add, if_pos hr]
+  · have h0 : add r s = s := by rw [add, ite_eq_left hr]
     have hr0 : toRatFunc r = 0 := by
       rw [toRatFunc, hr, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [h0, hr0, zero_add]
   by_cases hs : s.factor = 0
-  · have h0 : add r s = r := by rw [add, if_neg hr, if_pos hs]
+  · have h0 : add r s = r := by rw [add, ite_eq_right hr, ite_eq_left hs]
     have hs0 : toRatFunc s = 0 := by
       rw [toRatFunc, hs, Azurite.AzRat.toRat_zero, map_zero, zero_mul]
     rw [h0, hs0, add_zero]
@@ -1169,9 +1169,9 @@ theorem toRatFunc_add (r s : AzRationalFunction) :
     by_cases hT : fastT r s = 0
     · -- the combination vanishes: both sides are `0`
       have hres : add r s = 0 := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, fastT_def,
-          if_pos hdeg]
-        rw [if_pos hT]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, fastT_def,
+          ite_eq_left hdeg]
+        rw [ite_eq_left hT]
       rw [hres, toRatFunc_zero, sum_eq r s, ← toPolyQ_fastT r s, hT, toPolyQ_zero,
         map_zero, zero_div]
     · -- guard discharge and value
@@ -1250,9 +1250,9 @@ theorem toRatFunc_add (r s : AzRationalFunction) :
           (ratDen r.factor * ratDen s.factor),
           Azurite.AzPolynomial.primPos (fastT r s), r.den * s.den,
           h1g, h2g, h3g, h4g, hcop, h6g⟩ := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, fastT_def,
-          if_pos hdeg]
-        rw [if_neg hT, dif_pos (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, fastT_def,
+          ite_eq_left hdeg]
+        rw [ite_eq_right hT, dite_eq_left (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩
           : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
       have hφL : algebraMap ℚ[X] (RatFunc ℚ)
           (Polynomial.C (((ratDen r.factor * ratDen s.factor).toInt : ℚ))
@@ -1350,9 +1350,9 @@ theorem toRatFunc_add (r s : AzRationalFunction) :
     by_cases hT₀ : slowT₀ r s = 0
     · -- the combination vanishes: both sides are `0`
       have hres : add r s = 0 := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, slowD₁_def,
-          slowD₂_def, slowT₀_def, if_neg hdeg, if_pos hT₀]
-        rw [if_pos trivial]
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, slowD₁_def,
+          slowD₂_def, slowT₀_def, ite_eq_right hdeg, ite_eq_left hT₀]
+        rw [ite_eq_left trivial]
       rw [hres, toRatFunc_zero, sum_eq r s, hPfac, hT₀, toPolyQ_zero, mul_zero,
         map_zero, zero_div]
     · -- guard discharge and value
@@ -1573,10 +1573,10 @@ theorem toRatFunc_add (r s : AzRationalFunction) :
           (ratDen r.factor * ratDen s.factor),
           Azurite.AzPolynomial.primPos (slowT r s), slowD₁ r s * slowD₂H r s,
           h1g, h2g, h3g, h4g, hcop, h6g⟩ := by
-        simp only [add, if_neg hr, if_neg hs, ratNum_def, ratDen_def, slowD₁_def,
-          slowD₂_def, slowT₀_def, slowH_def, slowT_def, slowD₂H_def, if_neg hdeg,
-          if_neg hT₀]
-        rw [if_neg hT'0, dif_pos (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩
+        simp only [add, ite_eq_right hr, ite_eq_right hs, ratNum_def, ratDen_def, slowD₁_def,
+          slowD₂_def, slowT₀_def, slowH_def, slowT_def, slowD₂H_def, ite_eq_right hdeg,
+          ite_eq_right hT₀]
+        rw [ite_eq_right hT'0, dite_eq_left (⟨h1g, h2g, h3g, h4g, hcop, h6g⟩
           : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
       have hφL : algebraMap ℚ[X] (RatFunc ℚ)
           (Polynomial.C (((ratDen r.factor * ratDen s.factor).toInt : ℚ))
@@ -1716,7 +1716,7 @@ theorem toRatFunc_pow (r : AzRationalFunction) (n : ℕ) :
   have hres : pow r n = ⟨r.factor.pow n, Azurite.AzPolynomial.pow r.num n,
       Azurite.AzPolynomial.pow r.den n, h1g, h2g, h3g, h4g, h5g, h6g⟩ := by
     simp only [pow]
-    rw [dif_pos (⟨h1g, h2g, h3g, h4g, h5g, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+    rw [dite_eq_left (⟨h1g, h2g, h3g, h4g, h5g, h6g⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
   rw [hres]
   show algebraMap ℚ (RatFunc ℚ) (Azurite.AzRat.toRat (r.factor.pow n))
       * (algebraMap ℚ[X] (RatFunc ℚ) (toPolyQ (Azurite.AzPolynomial.pow r.num n))
@@ -1731,8 +1731,8 @@ theorem toRatFunc_zpow (r : AzRationalFunction) (z : ℤ) :
     toRatFunc (zpow r z) = toRatFunc r ^ z := by
   rw [zpow]
   by_cases hz : 0 ≤ z
-  · rw [if_pos hz, toRatFunc_pow, ← zpow_natCast, Int.toNat_of_nonneg hz]
-  · rw [if_neg hz, toRatFunc_inv, toRatFunc_pow, ← zpow_natCast,
+  · rw [ite_eq_left hz, toRatFunc_pow, ← zpow_natCast, Int.toNat_of_nonneg hz]
+  · rw [ite_eq_right hz, toRatFunc_inv, toRatFunc_pow, ← zpow_natCast,
       Int.toNat_of_nonneg (by omega), ← zpow_neg, neg_neg]
 
 /-- `ofRatFunc` version: pulling back a `ℕ`-power. -/
@@ -2076,15 +2076,15 @@ the rational factor.) -/
 theorem signTop_eq_zero_iff (r : AzRationalFunction) : signTop r = 0 ↔ r = 0 := by
   rw [signTop]
   by_cases hf : r.factor = 0
-  · rw [if_pos hf]
+  · rw [ite_eq_left hf]
     exact ⟨fun _ => eq_zero_of_factor_eq_zero hf, fun _ => rfl⟩
-  · rw [if_neg hf]
+  · rw [ite_eq_right hf]
     constructor
     · intro h0
       by_cases hs : r.factor.sign = true
-      · rw [if_pos hs] at h0
+      · rw [ite_eq_left hs] at h0
         exact absurd h0 (by decide)
-      · rw [if_neg hs] at h0
+      · rw [ite_eq_right hs] at h0
         exact absurd h0 (by decide)
     · intro h0
       rw [h0] at hf
@@ -2096,18 +2096,18 @@ theorem signTop_eq_one_iff (r : AzRationalFunction) :
     signTop r = 1 ↔ 0 < Azurite.AzRat.toRat r.factor := by
   rw [signTop]
   by_cases hf : r.factor = 0
-  · rw [if_pos hf, hf, Azurite.AzRat.toRat_zero]
+  · rw [ite_eq_left hf, hf, Azurite.AzRat.toRat_zero]
     constructor
     · intro h0
       exact absurd h0 (by decide)
     · intro h0
       exact absurd h0 (lt_irrefl 0)
-  · rw [if_neg hf, show (0 < Azurite.AzRat.toRat r.factor) = (r.factor.sign = true) from
+  · rw [ite_eq_right hf, show (0 < Azurite.AzRat.toRat r.factor) = (r.factor.sign = true) from
       propext (toRat_pos_iff hf)]
     by_cases hs : r.factor.sign = true
-    · rw [if_pos hs]
+    · rw [ite_eq_left hs]
       simp [hs]
-    · rw [if_neg hs]
+    · rw [ite_eq_right hs]
       constructor
       · intro h0
         exact absurd h0 (by decide)
@@ -2120,7 +2120,7 @@ theorem signTop_eq_neg_one_iff (r : AzRationalFunction) :
     signTop r = -1 ↔ Azurite.AzRat.toRat r.factor < 0 := by
   rw [signTop]
   by_cases hf : r.factor = 0
-  · rw [if_pos hf, hf, Azurite.AzRat.toRat_zero]
+  · rw [ite_eq_left hf, hf, Azurite.AzRat.toRat_zero]
     constructor
     · intro h0
       exact absurd h0 (by decide)
@@ -2128,15 +2128,15 @@ theorem signTop_eq_neg_one_iff (r : AzRationalFunction) :
       exact absurd h0 (lt_irrefl 0)
   · have htr0 : Azurite.AzRat.toRat r.factor ≠ 0 := fun h =>
       hf (Azurite.AzRat.toRat_injective (by rw [h, Azurite.AzRat.toRat_zero]))
-    rw [if_neg hf]
+    rw [ite_eq_right hf]
     by_cases hs : r.factor.sign = true
-    · rw [if_pos hs]
+    · rw [ite_eq_left hs]
       constructor
       · intro h0
         exact absurd h0 (by decide)
       · intro h0
         exact absurd ((toRat_pos_iff hf).mpr hs) (by linarith)
-    · rw [if_neg hs]
+    · rw [ite_eq_right hs]
       constructor
       · intro _
         rcases lt_trichotomy (Azurite.AzRat.toRat r.factor) 0 with h | h | h
@@ -2200,7 +2200,7 @@ theorem toPolynomial_ofPolynomial (p : Azurite.AzPolynomial AzInt) :
     apply Azurite.AzNat.toNat_injective
     rw [h2]
     rfl
-  rw [toPolynomial, if_pos ⟨hden1, hfden1⟩, displayNum_ofPolynomial]
+  rw [toPolynomial, ite_eq_left ⟨hden1, hfden1⟩, displayNum_ofPolynomial]
 
 /-- **`toPolynomial` only hits polynomials**: a `some`-value pins `r` down
 as the canonical form of that polynomial (with `toPolynomial_ofPolynomial`,
@@ -2210,7 +2210,7 @@ theorem eq_ofPolynomial_of_toPolynomial {r : AzRationalFunction}
     r = ofPolynomial p := by
   rw [toPolynomial] at h
   by_cases hc : r.den = 1 ∧ r.factor.den = 1
-  · rw [if_pos hc] at h
+  · rw [ite_eq_left hc] at h
     have hp : displayNum r = p := Option.some_injective _ h
     apply toRatFunc_injective
     rw [toRatFunc_ofPolynomial, ← hp, displayNum, ratNum_def, toPolyQ_smul, map_mul,
@@ -2222,7 +2222,7 @@ theorem eq_ofPolynomial_of_toPolynomial {r : AzRationalFunction}
     have hD1 : toPolyQ r.den = 1 := by
       rw [hc.1, toPolyQ_one]
     rw [hβ1, hD1, div_one, map_one, div_one]
-  · rw [if_neg hc] at h
+  · rw [ite_eq_right hc] at h
     simp at h
 
 /-! ### The Mathlib `num`/`denom` identification and the `RatFunc.eval`

@@ -57,16 +57,16 @@ theorem mem_farChainSet {k : ℕ} {S : Set (Fin k → C)} (x : Fin k → C) (rv 
     Fin.append x rv ∈ farChainSet S ↔
       (0 < rv 0 ∧ ∀ y ∈ S, (rv 0) ^ 2 ≤ euclideanNormSq (y - x)) := by
   have hSm : ∀ y : Fin k → C, (Fin.append (Fin.append x rv) y ∈ sliftChainSet S) ↔ y ∈ S := by
-    intro y; rw [sliftChainSet, Set.mem_setOf_eq, append_comp_natAdd]
+    intro y; rw [sliftChainSet, Set.mem_ofPred_eq, append_comp_natAdd]
   have hCm : ∀ y : Fin k → C,
       (Fin.append (Fin.append x rv) y ∈ closeChainSet k) ↔ euclideanNormSq (y - x) < (rv 0) ^ 2 := by
     intro y
-    rw [closeChainSet, Set.mem_setOf_eq, eval_distPoly]
+    rw [closeChainSet, Set.mem_ofPred_eq, eval_distPoly]
     simp only [Fin.append_left, Fin.append_right]
     rw [show (∑ i, (y i - x i) ^ 2) = euclideanNormSq (y - x) from by
           simp only [euclideanNormSq, Pi.sub_apply], sub_lt_zero]
-  rw [farChainSet, Set.mem_inter_iff, posChainSet, Set.mem_setOf_eq, eval_X, Fin.append_right,
-    Set.mem_compl_iff, existsCloseChainSet, Set.mem_setOf_eq, not_exists]
+  rw [farChainSet, Set.mem_inter_iff, posChainSet, Set.mem_ofPred_eq, eval_X, Fin.append_right,
+    Set.mem_compl_iff, existsCloseChainSet, Set.mem_ofPred_eq, not_exists]
   refine and_congr_right (fun _ => forall_congr' (fun y => ?_))
   rw [Set.mem_inter_iff, hSm y, hCm y, not_and, not_lt]
 
@@ -74,7 +74,7 @@ omit [IsRealClosed C] in
 theorem notClosureChainSet_eq_farSet {k : ℕ} {S : Set (Fin k → C)} :
     notClosureChainSet S = farSet S := by
   ext x
-  simp only [notClosureChainSet, farSet, Set.mem_setOf_eq]
+  simp only [notClosureChainSet, farSet, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨rv, hrv⟩; rw [mem_farChainSet] at hrv; exact ⟨rv 0, hrv.1, hrv.2⟩
   · rintro ⟨r, hr, hall⟩
@@ -82,7 +82,7 @@ theorem notClosureChainSet_eq_farSet {k : ℕ} {S : Set (Fin k → C)} :
 
 theorem closure_eq_compl_farSet {k : ℕ} {S : Set (Fin k → C)} : closure S = (farSet S)ᶜ := by
   ext x
-  rw [Set.mem_compl_iff, mem_closure_iff_ball, farSet, Set.mem_setOf_eq]
+  rw [Set.mem_compl_iff, mem_closure_iff_ball, farSet, Set.mem_ofPred_eq]
   constructor
   · rintro hcl ⟨r, hr, hall⟩
     obtain ⟨y, hyS, hlt⟩ := hcl r hr
@@ -132,10 +132,10 @@ theorem ext_closeChainSet (k : ℕ) :
   have hΦ : closeChainSet (C := R) k
       = (Formula.ltZeroO (distPoly k : MvPolynomial (Fin ((k + 1) + k)) R)).realization (C := R) := by
     rw [Formula.realization_ltZeroO]
-    ext w; simp only [closeChainSet, Set.mem_setOf_eq, aeval_eq_eval_self]
+    ext w; simp only [closeChainSet, Set.mem_ofPred_eq, aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_ltZeroO]
-  ext w'; simp only [closeChainSet, Set.mem_setOf_eq, aeval_distPoly]
+  ext w'; simp only [closeChainSet, Set.mem_ofPred_eq, aeval_distPoly]
 
 /-- **Atom locus `r > 0` extends to its `R'`-counterpart**. -/
 theorem ext_posChainSet (k : ℕ) :
@@ -145,10 +145,10 @@ theorem ext_posChainSet (k : ℕ) :
       = (Formula.gtZeroO (X (Fin.natAdd k (0 : Fin 1)) : MvPolynomial (Fin (k + 1)) R)).realization
           (C := R) := by
     rw [Formula.realization_gtZeroO]
-    ext xr; simp only [posChainSet, Set.mem_setOf_eq, aeval_eq_eval_self]
+    ext xr; simp only [posChainSet, Set.mem_ofPred_eq, aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_gtZeroO]
-  ext xr'; simp only [posChainSet, Set.mem_setOf_eq, aeval_X, eval_X]
+  ext xr'; simp only [posChainSet, Set.mem_ofPred_eq, aeval_X, eval_X]
 
 /-- **The cylinder over `S` extends to the cylinder over `Ext S`** (via `ext_comap`). -/
 theorem ext_sliftChainSet {k : ℕ} {S : Set (Fin k → R)} (hS : IsSemialgebraicSet S) :
@@ -296,8 +296,8 @@ theorem mem_inner {G : Set (Fin (k + ℓ) → C)} (x : Fin k → C) (u : Fin ℓ
         ∈ graphBlockSet G ∩ ball1Set ∩ ball2Set ↔
       (yv ∈ G ∧ euclideanNormSq (yv ∘ Fin.castAdd ℓ - x) < (dlt 0) ^ 2
         ∧ (rr 0) ^ 2 ≤ euclideanNormSq (yv ∘ Fin.natAdd k - u)) := by
-  rw [Set.mem_inter_iff, Set.mem_inter_iff, graphBlockSet, Set.mem_setOf_eq, ball1Set,
-    Set.mem_setOf_eq, ball2Set, Set.mem_setOf_eq, eval_distSqPoly, eval_distSqPoly,
+  rw [Set.mem_inter_iff, Set.mem_inter_iff, graphBlockSet, Set.mem_ofPred_eq, ball1Set,
+    Set.mem_ofPred_eq, ball2Set, Set.mem_ofPred_eq, eval_distSqPoly, eval_distSqPoly,
     append_comp_natAdd]
   simp only [xIdx, uIdx, rIdx, dltIdx, yIdx, vIdx, Fin.append_left, Fin.append_right]
   rw [show (∑ i, (yv (Fin.castAdd ℓ i) - x i) ^ 2) = euclideanNormSq (yv ∘ Fin.castAdd ℓ - x) from by
@@ -311,29 +311,29 @@ theorem mem_dscGraph {G : Set (Fin (k + ℓ) → C)} (x : Fin k → C) :
     x ∈ dscGraph G ↔ ∃ u : Fin ℓ → C, Fin.append x u ∈ G ∧ ∃ r, 0 < r ∧ ∀ d, 0 < d →
       ∃ yv : Fin (k + ℓ) → C, yv ∈ G ∧ euclideanNormSq (yv ∘ Fin.castAdd ℓ - x) < d ^ 2
         ∧ r ^ 2 ≤ euclideanNormSq (yv ∘ Fin.natAdd k - u) := by
-  rw [dscGraph, Set.mem_setOf_eq]
+  rw [dscGraph, Set.mem_ofPred_eq]
   refine exists_congr (fun u => ?_)
   rw [Set.mem_inter_iff]
   refine and_congr_right (fun _ => ?_)
-  rw [dscPointSet, Set.mem_setOf_eq]
+  rw [dscPointSet, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨rr, hrr⟩
-    rw [Set.mem_inter_iff, posRSet, Set.mem_setOf_eq, eval_X, Fin.append_right, allDltSet,
-      Set.mem_compl_iff, Set.mem_setOf_eq, not_exists] at hrr
+    rw [Set.mem_inter_iff, posRSet, Set.mem_ofPred_eq, eval_X, Fin.append_right, allDltSet,
+      Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists] at hrr
     refine ⟨rr 0, hrr.1, fun d hd => ?_⟩
     have := hrr.2 (fun _ => d)
-    rw [Set.mem_inter_iff, posDltSet, Set.mem_setOf_eq, eval_X, Fin.append_right,
-      Set.mem_compl_iff, existsQSet, Set.mem_setOf_eq, not_and, not_not] at this
+    rw [Set.mem_inter_iff, posDltSet, Set.mem_ofPred_eq, eval_X, Fin.append_right,
+      Set.mem_compl_iff, existsQSet, Set.mem_ofPred_eq, not_and, not_not] at this
     obtain ⟨yv, hyv⟩ := this hd
     rw [mem_inner] at hyv
     exact ⟨yv, hyv.1, hyv.2.1, hyv.2.2⟩
   · rintro ⟨r, hr, hall⟩
     refine ⟨fun _ => r, ?_⟩
-    rw [Set.mem_inter_iff, posRSet, Set.mem_setOf_eq, eval_X, Fin.append_right, allDltSet,
-      Set.mem_compl_iff, Set.mem_setOf_eq, not_exists]
+    rw [Set.mem_inter_iff, posRSet, Set.mem_ofPred_eq, eval_X, Fin.append_right, allDltSet,
+      Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists]
     refine ⟨hr, fun dlt => ?_⟩
-    rw [Set.mem_inter_iff, posDltSet, Set.mem_setOf_eq, eval_X, Fin.append_right,
-      Set.mem_compl_iff, existsQSet, Set.mem_setOf_eq, not_and, not_not]
+    rw [Set.mem_inter_iff, posDltSet, Set.mem_ofPred_eq, eval_X, Fin.append_right,
+      Set.mem_compl_iff, existsQSet, Set.mem_ofPred_eq, not_and, not_not]
     intro hdlt
     obtain ⟨yv, hyv1, hyv2, hyv3⟩ := hall (dlt 0) hdlt
     exact ⟨yv, (mem_inner x u (fun _ => r) dlt yv).mpr ⟨hyv1, hyv2, hyv3⟩⟩
@@ -434,21 +434,21 @@ theorem ext_ball1Set :
       = ball1Set (C := R') := by
   have hΦ : ball1Set (C := R) (k := k) (ℓ := ℓ) = (Formula.ltZeroO
       (distSqPoly (xIdx k ℓ) (yIdx k ℓ) (dltIdx k ℓ) : MvPolynomial _ R)).realization (C := R) := by
-    rw [Formula.realization_ltZeroO]; ext w; simp only [ball1Set, Set.mem_setOf_eq, aeval_eq_eval_self]
+    rw [Formula.realization_ltZeroO]; ext w; simp only [ball1Set, Set.mem_ofPred_eq, aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_ltZeroO]
-  ext w'; simp only [ball1Set, Set.mem_setOf_eq, aeval_distSqPoly]
+  ext w'; simp only [ball1Set, Set.mem_ofPred_eq, aeval_distSqPoly]
 
 theorem ext_ball2Set :
     extension (R' := R') (ball2Set (C := R) (k := k) (ℓ := ℓ)) (IsSemialgebraicSet.geZero _)
       = ball2Set (C := R') := by
   have hΦ : ball2Set (C := R) (k := k) (ℓ := ℓ) = (Formula.geZeroO
       (distSqPoly (uIdx k ℓ) (vIdx k ℓ) (rIdx k ℓ) : MvPolynomial _ R)).realization (C := R) := by
-    rw [Formula.realization_geZeroO]; ext w; simp only [ball2Set, Set.mem_setOf_eq, ge_iff_le,
+    rw [Formula.realization_geZeroO]; ext w; simp only [ball2Set, Set.mem_ofPred_eq, ge_iff_le,
       aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_geZeroO]
-  ext w'; simp only [ball2Set, Set.mem_setOf_eq, ge_iff_le, aeval_distSqPoly]
+  ext w'; simp only [ball2Set, Set.mem_ofPred_eq, ge_iff_le, aeval_distSqPoly]
 
 theorem ext_graphBlockSet {G : Set (Fin (k + ℓ) → R)} (hG : IsSemialgebraicSet G) :
     extension (R' := R') (graphBlockSet G) (IsSemialgebraicSet.comap (Fin.natAdd (k + ℓ + 1 + 1)) hG)
@@ -461,10 +461,10 @@ theorem ext_posDltSet :
   have hΦ : posDltSet (C := R) (k := k) (ℓ := ℓ) = (Formula.gtZeroO
       (X (Fin.natAdd (k + ℓ + 1) (0 : Fin 1)) : MvPolynomial (Fin (k + ℓ + 1 + 1)) R)).realization
         (C := R) := by
-    rw [Formula.realization_gtZeroO]; ext p; simp only [posDltSet, Set.mem_setOf_eq, aeval_eq_eval_self]
+    rw [Formula.realization_gtZeroO]; ext p; simp only [posDltSet, Set.mem_ofPred_eq, aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_gtZeroO]
-  ext p'; simp only [posDltSet, Set.mem_setOf_eq, aeval_X, eval_X]
+  ext p'; simp only [posDltSet, Set.mem_ofPred_eq, aeval_X, eval_X]
 
 theorem ext_posRSet :
     extension (R' := R') (posRSet (C := R) (k := k) (ℓ := ℓ)) (IsSemialgebraicSet.gtZero _)
@@ -472,10 +472,10 @@ theorem ext_posRSet :
   have hΦ : posRSet (C := R) (k := k) (ℓ := ℓ) = (Formula.gtZeroO
       (X (Fin.natAdd (k + ℓ) (0 : Fin 1)) : MvPolynomial (Fin (k + ℓ + 1)) R)).realization
         (C := R) := by
-    rw [Formula.realization_gtZeroO]; ext q; simp only [posRSet, Set.mem_setOf_eq, aeval_eq_eval_self]
+    rw [Formula.realization_gtZeroO]; ext q; simp only [posRSet, Set.mem_ofPred_eq, aeval_eq_eval_self]
   refine (ext_eq _ hΦ).trans ?_
   rw [Formula.realization_gtZeroO]
-  ext q'; simp only [posRSet, Set.mem_setOf_eq, aeval_X, eval_X]
+  ext q'; simp only [posRSet, Set.mem_ofPred_eq, aeval_X, eval_X]
 
 /-- **`Ext(dscGraph G) = dscGraph(Ext G)`** — pushing the extension through the locus. -/
 theorem ext_dscGraph {G : Set (Fin (k + ℓ) → R)} (hG : IsSemialgebraicSet G) :

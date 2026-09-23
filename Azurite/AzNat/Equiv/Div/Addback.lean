@@ -289,7 +289,7 @@ theorem schoolbookDivModLimbs.addback_toNat_two_strong
         schoolbookDivModLimbs.addback a b loA loB n q true 2 hA hB
           = schoolbookDivModLimbs.addback r.1 b loA loB n (q - 1) (!r.2) 1 h_r_hyp hB := by
       conv_lhs => rw [schoolbookDivModLimbs.addback]
-      simp only [if_true, ← hr_def]
+      simp only [ite_true, ← hr_def]
     -- The (n)-limb slice bound for any array.
     have h_r_low_lt :
         toNatLimbsList ((r.1.toList.drop loA).take n) < 2 ^ (64 * n) := by
@@ -364,7 +364,7 @@ theorem schoolbookDivModLimbs.addback_toNat_two_strong
           rw [hr2_false]
           simp only [Bool.not_false]
           conv_lhs => rw [schoolbookDivModLimbs.addback]
-          simp only [if_true, ← hr'_def]
+          simp only [ite_true, ← hr'_def]
         have h_inner_inner :
             schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
               = (r'.1, q - 1 - 1) := by
@@ -461,7 +461,7 @@ theorem schoolbookDivModLimbs.addback_toNat_two_strong
         rw [hr2_false]
         simp only [Bool.not_false]
         conv_lhs => rw [schoolbookDivModLimbs.addback]
-        simp only [if_true, ← hr'_def]
+        simp only [ite_true, ← hr'_def]
       have h_inner_inner :
           schoolbookDivModLimbs.addback r'.1 b loA loB n (q - 1 - 1) (!r'.2) 0 h_r'_hyp hB
             = (r'.1, q - 1 - 1) := by
@@ -555,7 +555,7 @@ theorem schoolbookDivModLimbs.go_toList_drop (a b : Array UInt64) (loA loB n j :
     rw [h_split, ih, ← h_split]
     -- a' = (addback (subMulLimbs ...).1 ...).1.set (loA + n + j) ...
     rw [Array.toList_set, List.drop_set,
-        if_pos (by omega : loA + n + j < loA + n + (j + 1))]
+        ite_eq_left (by omega : loA + n + j < loA + n + (j + 1))]
     rw [schoolbookDivModLimbs.addback_toList_drop_ge _ _ (loA + j) _ _ _ _ _ _ _
           (loA + n + (j + 1)) (by omega)]
     rw [show loA + n + (j + 1) = (loA + j) + n + 1 from by ring]

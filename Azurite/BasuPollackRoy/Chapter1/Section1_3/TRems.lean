@@ -70,11 +70,11 @@ omit [IsDomain D] in
 theorem natDegree_mem_Tru_le {Q Q' : Polynomial (MvPolynomial (Fin k) D)}
     (hQ' : Q' ∈ Tru Q) : Q'.natDegree ≤ Q.natDegree := by
   by_cases h0 : Q = 0
-  · subst h0; rw [Tru, if_pos rfl] at hQ'; exact hQ'.elim
-  · rw [Tru, if_neg h0] at hQ'
+  · subst h0; rw [Tru, ite_eq_left rfl] at hQ'; exact hQ'.elim
+  · rw [Tru, ite_eq_right h0] at hQ'
     by_cases hbase : (∃ d : D, Q.leadingCoeff = MvPolynomial.C d) ∨ Q.natDegree = 0
-    · rw [if_pos hbase, Set.mem_singleton_iff] at hQ'; subst hQ'; exact le_refl _
-    · rw [if_neg hbase, Set.mem_union, Set.mem_singleton_iff] at hQ'
+    · rw [ite_eq_left hbase, Set.mem_singleton_iff] at hQ'; subst hQ'; exact le_refl _
+    · rw [ite_eq_right hbase, Set.mem_union, Set.mem_singleton_iff] at hQ'
       rcases hQ' with rfl | hQ'
       · exact le_refl _
       · have := natDegree_mem_Tru_le hQ'
@@ -102,7 +102,7 @@ theorem pRemMv_spec
     (pRemMv P Q).map (algebraMap (MvPolynomial (Fin k) D)
       (FractionRing (MvPolynomial (Fin k) D))) =
       PRem (FractionRing (MvPolynomial (Fin k) D)) P Q := by
-  unfold pRemMv; rw [dif_neg hQ]
+  unfold pRemMv; rw [dite_eq_right hQ]
   exact (@PRem_descends (MvPolynomial (Fin k) D) _ _
     (FractionRing (MvPolynomial (Fin k) D)) _ _ _ P Q hQ).choose_spec
 
@@ -111,7 +111,7 @@ divisor when the divisor is nonzero. -/
 theorem degree_pRemMv_lt
     (P Q : Polynomial (MvPolynomial (Fin k) D)) (hQ : Q ≠ 0) :
     (pRemMv P Q).degree < Q.degree := by
-  unfold pRemMv; rw [dif_neg hQ]
+  unfold pRemMv; rw [dite_eq_right hQ]
   have hinj := IsFractionRing.injective (MvPolynomial (Fin k) D)
     (FractionRing (MvPolynomial (Fin k) D))
   have hspec := (@PRem_descends (MvPolynomial (Fin k) D) _ _
@@ -193,7 +193,7 @@ decreasing_by
   by_cases h4 : pRemMv parentPol curPol = 0
   · -- next = 0 ⇒ Tru next = ∅, contradicting hmem_tru
     have hn0 : next = 0 := show -(pRemMv parentPol curPol) = 0 by rw [h4, neg_zero]
-    rw [hn0, Tru, if_pos rfl] at hmem_tru; exact hmem_tru.elim
+    rw [hn0, Tru, ite_eq_left rfl] at hmem_tru; exact hmem_tru.elim
   · have h1 := natDegree_mem_Tru_le hmem_tru
     have h5 := Polynomial.natDegree_lt_natDegree h4
       (degree_pRemMv_lt parentPol curPol h_ne)

@@ -343,7 +343,7 @@ private theorem primPos_spec {g : Azurite.AzPolynomial AzInt} (hg : g ≠ 0) :
           exact absurd hsgn (by simp)
       have hsneg : s.toInt < 0 := by
         rw [hsZ, hsgn]
-        simp only [Bool.false_eq_true, if_false]
+        simp only [Bool.false_eq_true, ite_false]
         omega
       by_contra hcon
       push Not at hcon
@@ -352,7 +352,7 @@ private theorem primPos_spec {g : Azurite.AzPolynomial AzInt} (hg : g ≠ 0) :
       have hpos : 0 < g.leadingCoeff.toInt := (toInt_pos_iff_sign hlcg).mpr hsgn
       have hspos : 0 < s.toInt := by
         rw [hsZ, hsgn]
-        simp only [if_true]
+        simp only [ite_true]
         omega
       by_contra hcon
       push Not at hcon
@@ -367,9 +367,9 @@ private theorem scalar_eq {p : Azurite.AzPolynomial AzInt} (hp : p ≠ 0) :
     rw [Azurite.AzInt.lt_iff_toInt_lt, toInt_zero]
     exact toInt_pos_iff_sign (lc_ne_zero_az hp)
   by_cases h : (0 : AzInt) < p.leadingCoeff
-  · rw [if_pos h, if_pos (hiff.mp h)]
+  · rw [ite_eq_left h, ite_eq_left (hiff.mp h)]
     rfl
-  · rw [if_neg h, if_neg (fun hs => h (hiff.mpr hs))]
+  · rw [ite_eq_right h, ite_eq_right (fun hs => h (hiff.mpr hs))]
     rfl
 
 /-! ### The normalizing constructor's gcd and cofactors in `ℤ[X]` -/
@@ -400,7 +400,7 @@ private theorem cofactor_mul (a b : Azurite.AzPolynomial AzInt)
     show (if Azurite.AzPolynomial.gcdNormalizedInt a b = 0 then 0
       else (Azurite.AzPolynomial.exactDivQuoRem a
         (Azurite.AzPolynomial.gcdNormalizedInt a b)).1) = _
-    rw [if_neg hg]
+    rw [ite_eq_right hg]
   rw [hsnd, ← Azurite.AzPolynomial.map_toPoly_gcdNormalizedInt] at hspec
   exact hspec
 
@@ -567,8 +567,8 @@ private theorem ofNumDen_eq_of_guard (n d : Azurite.AzPolynomial AzInt)
         (Azurite.AzPolynomial.gcdNormalizedInt (Azurite.AzPolynomial.primPos n)
           (Azurite.AzPolynomial.primPos d))).1,
       h1, h2, h3, h4, h5, h6⟩ := by
-  simp only [ofNumDen, if_neg hnd]
-  rw [dif_pos (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
+  simp only [ofNumDen, ite_eq_right hnd]
+  rw [dite_eq_left (⟨h1, h2, h3, h4, h5, h6⟩ : _ ∧ _ ∧ _ ∧ _ ∧ _ ∧ _)]
 
 set_option maxHeartbeats 1600000 in
 /-- **Correctness of `ofNumDen`.** For a nonzero denominator, the constructor
@@ -581,7 +581,7 @@ theorem toRatFunc_ofNumDen (n d : Azurite.AzPolynomial AzInt) (hd : d ≠ 0) :
   classical
   by_cases hn : n = 0
   · subst hn
-    have h0 : ofNumDen 0 d = 0 := by rw [ofNumDen, if_pos (Or.inl rfl)]
+    have h0 : ofNumDen 0 d = 0 := by rw [ofNumDen, ite_eq_left (Or.inl rfl)]
     have hz : toPolyQ (0 : Azurite.AzPolynomial AzInt) = 0 := by
       rw [toPolyQ, toPoly_zero, Polynomial.map_zero]
     rw [h0, toRatFunc_zero, hz, map_zero, zero_div]

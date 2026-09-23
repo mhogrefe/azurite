@@ -1241,21 +1241,21 @@ theorem toNat_div3By2 (u2 u1 u0 d1 d0 v : UInt64)
       rw [hR_FINAL_Rt, hRtilde_def]; ring
     by_cases hcase_hi : r1 ≥ ql
     · -- Case A-HI: output (qh0 + 1 - 1 + 1, x1, x0).
-      rw [if_pos hcase_hi]
+      rw [ite_eq_left hcase_hi]
       obtain ⟨htest, hcorr, hrem⟩ := toNat_div3By2_case_A_HI
         hD_def hQ_HI0_def hD_Z_pos hD_lo hR_FINAL_def hR_FINAL_lt hR_FINAL_Rt
         hMain_Z hr1_ge_ql_iff hS_val hX_val hRtildeHi_disj hDIV_ub_Z hcase_hi
-      rw [if_pos htest]; exact ⟨hcorr, hrem⟩
+      rw [ite_eq_left htest]; exact ⟨hcorr, hrem⟩
     · -- Case A-LO.
-      rw [if_neg hcase_hi]
+      rw [ite_eq_right hcase_hi]
       by_cases hcase_ge_D : r1 > d1 ∨ (r1 = d1 ∧ r0 ≥ d0)
       · -- Case A-LO-ge: output (qh0 + 1 + 1, w1, w0).
-        rw [if_pos hcase_ge_D]
+        rw [ite_eq_left hcase_ge_D]
         exact toNat_div3By2_case_A_LO_ge
           hD_def hQ_HI0_def hD_Z_pos hD_lo hR_FINAL_def hR_FINAL_lt hMain_Z
           hW_val hDIV_ub_Z hcase_ge_D
       · -- Case A-LO-lt: output (qh0 + 1, r1, r0).
-        rw [if_neg hcase_ge_D]
+        rw [ite_eq_right hcase_ge_D]
         exact toNat_div3By2_case_A_LO_lt
           hD_def hQ_HI0_def hD_Z_pos hR_FINAL_def hMain_Z hDIV_ub_Z hcase_ge_D
   · -- Case B: Rtilde < 0 → R_FINAL = Rtilde + 2^128.
@@ -1263,10 +1263,10 @@ theorem toNat_div3By2 (u2 u1 u0 d1 d0 v : UInt64)
     have hR_FINAL_Rt : (R_FINAL : ℤ) = Rtilde + 2 ^ 128 := hR_FINAL_Rtilde.2 hrt_sign
     by_cases hcase_hi : r1 ≥ ql
     · -- Case B-HI: output (qh0 + 1 - 1, s1, s0).
-      rw [if_pos hcase_hi]
+      rw [ite_eq_left hcase_hi]
       obtain ⟨hnot_test, hcorr, hrem⟩ := toNat_div3By2_case_B_HI
         hD_def hD_hi hQ_HI0_def hR_FINAL_lt hR_FINAL_Rt hRtilde_def hRt_ge_neg_D hS_val
-      rw [if_neg hnot_test]; exact ⟨hcorr, hrem⟩
+      rw [ite_eq_right hnot_test]; exact ⟨hcorr, hrem⟩
     · -- Case B-LO: impossible.
       exact (toNat_div3By2_case_B_LO hR_FINAL_def hR_FINAL_Rt hRt_ge_QLO_shift
         hr1_ge_ql_iff hcase_hi).elim

@@ -53,7 +53,7 @@ theorem isRealClosedField_iff :
     (∀ f : R[X], Odd f.natDegree → ∃ x, f.IsRoot x) := by
   constructor
   · intro h
-    haveI : IsRealClosed R := h
+    have : IsRealClosed R := h
     exact ⟨fun _ => IsRealClosed.nonneg_iff_isSquare,
            fun f hf => IsRealClosed.exists_isRoot_of_odd_natDegree hf⟩
   · intro ⟨hcone, hroots⟩

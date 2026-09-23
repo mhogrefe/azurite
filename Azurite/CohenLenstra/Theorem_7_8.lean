@@ -259,7 +259,7 @@ theorem theorem_7_8 {R : Type _} [CommRing R] [IsDomain R]
     {f : ℕ} (hf : p ^ k ∣ e₀ + n * (∑ x ∈ S, ν x * x) * f) :
     χ ((r : ℕ) : ZMod q) = ζ ^ (f * m) := by
   classical
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   have hn0 : n ≠ 0 := by omega
   have hS0 : ∀ x ∈ S, x ≠ 0 := fun x hx h0 => hSp x hx (h0 ▸ dvd_zero p)
   have hrq : ¬ q ∣ r := fun hd => hqn (hd.trans hrn)
@@ -287,7 +287,7 @@ theorem theorem_7_8 {R : Type _} [CommRing R] [IsDomain R]
     omega
   -- Fermat and the lower bound `v_p(N) ≥ k + 1`
   have hfermat : n ^ (p - 1) ≡ 1 [MOD p] := by
-    haveI : Fact p.Prime := ⟨hp⟩
+    have : Fact p.Prime := ⟨hp⟩
     have hz : ((n : ℕ) : ZMod p) ≠ 0 := by
       rw [Ne, ZMod.natCast_eq_zero_iff]; exact hpn
     refine (ZMod.natCast_eq_natCast_iff _ _ _).mp ?_
@@ -658,7 +658,7 @@ theorem theorem_7_19 {R : Type _} [CommRing R] [IsDomain R]
     {r : ℕ} (hr : r.Prime) (hrn : r ∣ n) :
     ∀ D, ∃ l, r ^ (p - 1) ≡ (n ^ (p - 1)) ^ l [MOD p ^ D] := by
   classical
-  haveI : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
+  have : NeZero q := ⟨(Fact.out (p := q.Prime)).pos.ne'⟩
   obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
   have hn0 : n ≠ 0 := by omega
   have hS0 : ∀ x ∈ S, x ≠ 0 := fun x hx h0 => hSp x hx (h0 ▸ dvd_zero p)
@@ -951,7 +951,7 @@ theorem theorem_7_19 {R : Type _} [CommRing R] [IsDomain R]
   set cr := (r ^ (p - 1) - 1).factorization p with hcr
   -- Fermat: c₀, cr ≥ 1
   have hfermatn : p ∣ n ^ (p - 1) - 1 := by
-    haveI : Fact p.Prime := ⟨hp⟩
+    have : Fact p.Prime := ⟨hp⟩
     have hz : ((n : ℕ) : ZMod p) ≠ 0 := by
       rw [Ne, ZMod.natCast_eq_zero_iff]; exact hpn
     have h1 : ((n : ℕ) : ZMod p) ^ (p - 1) = 1 :=
@@ -962,7 +962,7 @@ theorem theorem_7_19 {R : Type _} [CommRing R] [IsDomain R]
       rw [h1]
     exact (Nat.modEq_iff_dvd' hnp1).mp h2.symm
   have hfermatr : p ∣ r ^ (p - 1) - 1 := by
-    haveI : Fact p.Prime := ⟨hp⟩
+    have : Fact p.Prime := ⟨hp⟩
     have hz : ((r : ℕ) : ZMod p) ≠ 0 := by
       rw [Ne, ZMod.natCast_eq_zero_iff]; exact hpr
     have h1 : ((r : ℕ) : ZMod p) ^ (p - 1) = 1 :=

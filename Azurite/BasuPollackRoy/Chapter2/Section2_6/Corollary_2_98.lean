@@ -15,7 +15,7 @@ namespace Azurite.BPR
 real closed. -/
 theorem isRealClosed_algebraicPuiseux (R : Type*) [Field R] [LinearOrder R]
     [IsStrictOrderedRing R] [IsRealClosed R] : IsRealClosed (algebraicPuiseux R) := by
-  haveI : IsRealClosed (PuiseuxSeries R) := isRealClosed_puiseuxSeries
+  have : IsRealClosed (PuiseuxSeries R) := isRealClosed_puiseuxSeries
   exact isRealClosed_algebraicClosure (RatFunc R) (PuiseuxSeries R)
 
 end Azurite.BPR

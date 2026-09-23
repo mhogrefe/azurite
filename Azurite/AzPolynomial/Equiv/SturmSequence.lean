@@ -48,17 +48,17 @@ theorem toPoly_sRemS (P Q : AzPolynomial K) (n : ℕ) :
       simp only [sRemS, Azurite.BPR.SRemS]
       by_cases hprev : sRemS P Q (n + 1) = 0
       · -- The AzPolynomial side reduces to 0.
-        rw [if_pos hprev]
+        rw [ite_eq_left hprev]
         rw [hprev] at h_succ
         rw [toPoly_zero] at h_succ ⊢
-        rw [if_pos h_succ.symm]
+        rw [ite_eq_left h_succ.symm]
       · -- The AzPolynomial side reduces to `-((sRemS P Q n).rem prev)`.
-        rw [if_neg hprev]
+        rw [ite_eq_right hprev]
         have hprev_poly : AzPolynomial.toPoly (sRemS P Q (n + 1)) ≠ 0 := by
           rw [Ne, ← toPoly_zero (R := K), toPoly_inj]
           exact hprev
         rw [h_succ] at hprev_poly
-        rw [if_neg hprev_poly]
+        rw [ite_eq_right hprev_poly]
         rw [toPoly_neg, toPoly_rem _ _ (by rw [h_succ]; exact hprev_poly), h_succ, h_n]
 
 theorem toPoly_sturmSequence (P : AzPolynomial K) (n : ℕ) :

@@ -73,14 +73,14 @@ theorem theorem_4_100 (Ps : Finset (MvPolynomial (Fin k) K))
     (f : MvPolynomial (Fin k) K) :
     Ideal.Quotient.mk (idealOfPolys Ps) f ∈ radHermite Ps
       ↔ f ∈ (idealOfPolys Ps).radical := by
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   -- abbreviations
   set fA : quotPolys Ps := Ideal.Quotient.mk (idealOfPolys Ps) f with hfA
   -- multiplicities are positive: `Ā_x` is a nonzero finite-dimensional `C`-space (local ring)
   have hmu_pos : ∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps),
       0 < multiplicityOfZero C Ps x hx := by
     intro x hx
-    haveI : Nontrivial (localizationAtPoint C Ps x hx) :=
+    have : Nontrivial (localizationAtPoint C Ps x hx) :=
       (isLocalRing_localizationAtPoint C Ps x hx).toNontrivial
     exact Module.finrank_pos
   have hmu_ne : ∀ (x : Fin k → C) (hx : x ∈ zerOfFinset C Ps),

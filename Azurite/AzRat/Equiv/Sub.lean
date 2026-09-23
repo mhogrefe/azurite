@@ -24,16 +24,16 @@ materializing the intermediate `-y`. -/
 theorem sub_eq_add_neg (x y : AzRat) : x - y = x + -y := by
   show AzRat.sub x y = AzRat.add x (AzRat.neg y)
   by_cases hx : x.num = 0
-  · rw [AzRat.sub, dif_pos hx, AzRat.add, dif_pos hx]
+  · rw [AzRat.sub, dite_eq_left hx, AzRat.add, dite_eq_left hx]
     rfl
   · by_cases hy : y.num = 0
-    · rw [AzRat.sub, dif_neg hx, dif_pos hy, AzRat.add, dif_neg hx,
-          dif_pos (show (AzRat.neg y).num = 0 from hy)]
+    · rw [AzRat.sub, dite_eq_right hx, dite_eq_left hy, AzRat.add, dite_eq_right hx,
+          dite_eq_left (show (AzRat.neg y).num = 0 from hy)]
     · have hneg : AzRat.neg y = ⟨!y.sign, y.num, y.den, y.den_nz,
           fun h => absurd h hy, y.reduced⟩ :=
-        AzRat.ext (if_neg hy) rfl rfl
-      rw [AzRat.sub, dif_neg hx, dif_neg hy, hneg, AzRat.add, dif_neg hx,
-          dif_neg (show ¬((⟨!y.sign, y.num, y.den, y.den_nz,
+        AzRat.ext (ite_eq_right hy) rfl rfl
+      rw [AzRat.sub, dite_eq_right hx, dite_eq_right hy, hneg, AzRat.add, dite_eq_right hx,
+          dite_eq_right (show ¬((⟨!y.sign, y.num, y.den, y.den_nz,
             fun h => absurd h hy, y.reduced⟩ : AzRat).num = 0) from hy)]
 
 @[simp] theorem toRat_sub (x y : AzRat) : toRat (x - y) = toRat x - toRat y := by

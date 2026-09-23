@@ -64,12 +64,12 @@ theorem testBit_add_two_pow_of_testBit_false (rest p : ℕ) (h : rest.testBit p 
   rw [hsum]; conv_rhs => rw [hsplit]
   rw [Nat.testBit_two_pow_mul_add _ hlo, Nat.testBit_two_pow_mul_add _ hlo]
   by_cases hqp : q < p
-  · simp only [if_pos hqp, if_neg (show q ≠ p by omega)]
-  · simp only [if_neg hqp]
+  · simp only [ite_eq_left hqp, ite_eq_right (show q ≠ p by omega)]
+  · simp only [ite_eq_right hqp]
     by_cases hq0 : q = p
-    · subst hq0; rw [Nat.sub_self, if_pos rfl, Nat.testBit_zero]
+    · subst hq0; rw [Nat.sub_self, ite_eq_left rfl, Nat.testBit_zero]
       simp only [decide_eq_true_eq]; omega
-    · rw [if_neg hq0]
+    · rw [ite_eq_right hq0]
       obtain ⟨d, hd⟩ : ∃ d, q - p = d + 1 := ⟨q - p - 1, by omega⟩
       rw [hd, Nat.testBit_add_one, Nat.testBit_add_one]; congr 1; omega
 
@@ -89,7 +89,7 @@ theorem testBit_sum_pow {α : Type*} [DecidableEq α] (s : Finset α) (e : α �
     have hinj' : Set.InjOn e s := hinj.mono (Finset.subset_insert _ _)
     by_cases hba : b a = true
     · -- The `a`-term is `2 ^ (e a)`, and the rest has bit `e a` clear (injectivity).
-      simp only [hba, if_true]
+      simp only [hba, ite_true]
       have hrest_ea :
           (∑ a' ∈ s, (if b a' then 2 ^ (e a') else 0)).testBit (e a) = false := by
         rw [ih hinj']
@@ -99,10 +99,10 @@ theorem testBit_sum_pow {α : Type*} [DecidableEq α] (s : Finset α) (e : α �
       rw [Nat.add_comm, testBit_add_two_pow_of_testBit_false _ _ hrest_ea, ih hinj']
       by_cases hi : i = e a
       · subst hi
-        rw [if_pos rfl]
+        rw [ite_eq_left rfl]
         symm; simp only [decide_eq_true_eq]
         exact ⟨a, Finset.mem_insert_self _ _, rfl, hba⟩
-      · rw [if_neg (by omega)]
+      · rw [ite_eq_right (by omega)]
         congr 1
         simp only [eq_iff_iff]
         constructor
@@ -113,7 +113,7 @@ theorem testBit_sum_pow {α : Type*} [DecidableEq α] (s : Finset α) (e : α �
           · exact ⟨a', h1, hea', hba'⟩
     · -- The `a`-term is `0`; the sum is just the rest.
       simp only [Bool.not_eq_true] at hba
-      simp only [hba, Bool.false_eq_true, if_false, Nat.zero_add, ih hinj']
+      simp only [hba, Bool.false_eq_true, ite_false, Nat.zero_add, ih hinj']
       congr 1
       simp only [eq_iff_iff]
       constructor

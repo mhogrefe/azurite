@@ -96,7 +96,7 @@ theorem Ri.conj_fixed_mem_range_ordered (c : Ri R) (hc : (Ri.conj R) c = c) :
       have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
       have hf_deg : f.degree = 2 := by
         have hnat : f.natDegree = 2 := by
-          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+          simp [f]
         rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)),
           hnat]; norm_num
       rw [hf_deg] at hrd
@@ -177,7 +177,7 @@ theorem Ri.repr_exists (z : Ri R) :
       have hrd : r.degree < f.degree := degree_modByMonic_lt p hfm
       have hf_deg : f.degree = 2 := by
         have hnat : f.natDegree = 2 := by
-          simp [f]; rw [show (1 : R[X]) = C 1 from rfl]; exact natDegree_X_pow_add_C
+          simp [f]
         rw [Polynomial.degree_eq_natDegree (Irreducible.ne_zero (Fact.out : Irreducible f)),
           hnat]; norm_num
       rw [hf_deg] at hrd

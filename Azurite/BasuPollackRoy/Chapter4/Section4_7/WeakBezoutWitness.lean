@@ -110,7 +110,7 @@ theorem mem_predReal_iff (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : 
           (∀ a (i' : Fin k), aeval u (bind₁ (jointSubstMap m i a) (homotopyJointPoly P d i')) = 0)}}
       ↔ RepsValid m P d i (realEquiv.symm ζ) (repsFromY m y) := by
   classical
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   rw [append_comp_packReindex, realEquiv.injective.mem_set_image]
   set u : Fin (1 + m * (k + 1)) → Ri R :=
     Fin.append (realEquiv.symm ζ) (realEquiv.symm y) with hu
@@ -166,7 +166,7 @@ theorem isSemialgebraicSetRP_comap_param {n p q : ℕ}
   have hcomap := IsSemialgebraicSet.comap G' (hT i)
   convert hcomap using 1
   ext w
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   have hcast : (w ∘ Fin.castAdd (n + n)) ∘ g = (w ∘ G') ∘ Fin.castAdd (n + n) := by
     funext a; simp only [Function.comp_apply, G', Fin.addCases_left]
   have hnat : w ∘ Fin.natAdd p = (w ∘ G') ∘ Fin.natAdd q := by
@@ -254,7 +254,7 @@ theorem isSemialgebraicSetRP_repsValidAt (P : Fin k → MvPolynomial (Fin (k + 1
                 ∃ j l : Fin (k + 1), packR m u a j * packR m u b l ≠ packR m u a l * packR m u b j) ∧
               (∀ a (i' : Fin k), aeval u (bind₁ (jointSubstMap m i a) (homotopyJointPoly P d i')) = 0)}}} := by
     ext v
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     rw [repsValidAt_chartMap_iff,
       ← mem_predReal_iff m P d i (v ∘ Fin.natAdd (1 + (m * (k + 1) + m * (k + 1))))
         ((v ∘ Fin.castAdd (1 + 1)) ∘ Fin.natAdd 1),
@@ -286,7 +286,7 @@ theorem isSemialgebraicSetRP_witnessRP (P : Fin k → MvPolynomial (Fin (k + 1))
       ∩ {tp : (Fin (1 + (m * (k + 1) + m * (k + 1))) → R) × complexProjectiveSpace R 1 |
           RepsValidAt m P d tp.2 (repsFromY m (tp.1 ∘ Fin.natAdd 1))} := by
     ext tp
-    simp only [witnessRP, Set.mem_setOf_eq, Set.mem_inter_iff]
+    simp only [witnessRP, Set.mem_ofPred_eq, Set.mem_inter_iff]
     constructor
     · rintro ⟨h1, h2, h3⟩
       refine ⟨⟨?_, ?_⟩, h3⟩
@@ -476,7 +476,7 @@ theorem isSemialgebraicSet_unitLocus :
       = ⋂ a ∈ (Finset.univ : Finset (Fin m)),
           {z : Fin (1 + (m * (k + 1) + m * (k + 1))) → R | eval z (unitPoly m a) = 0} := by
     ext z
-    simp only [Set.mem_setOf_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left, eval_unitPoly,
+    simp only [Set.mem_ofPred_eq, Set.mem_iInter, Finset.mem_univ, forall_true_left, eval_unitPoly,
       sub_eq_zero]
   rw [heq]
   exact IsSemialgebraicSet.iInter_finset _ (fun a _ => IsSemialgebraicSet.eqZero _)
@@ -499,7 +499,7 @@ theorem mem_Wb_iff (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : Fin k 
       ↔ (witW m z ∈ Set.Icc (0 : Fin 1 → R) 1 ∧
           RepsValidAt m P d (γ (witW m z)) (repsFromY m (z ∘ Fin.natAdd 1)))
         ∧ (∀ a : Fin m, hermNormSq (repsFromY m (z ∘ Fin.natAdd 1) a) = 1) := by
-  rw [Wb, Set.mem_inter_iff, mem_witnessReal_iff, Set.mem_setOf_eq]
+  rw [Wb, Set.mem_inter_iff, mem_witnessReal_iff, Set.mem_ofPred_eq]
 
 theorem isSemialgebraicSet_Wb (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d : Fin k → ℕ)
     (γ : (Fin 1 → R) → complexProjectiveSpace R 1)
@@ -676,8 +676,8 @@ theorem exists_closurePt_Wb (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R)) (d
     {t₀ : Fin 1 → R} (ht₀ : t₀ ∈ closure (Pm P d γ m)) :
     ∃ ζ : Fin (1 + (m * (k + 1) + m * (k + 1))) → R, ζ ∈ closure (Wb m P d γ) ∧ projW m ζ = t₀ := by
   classical
-  haveI : Nonempty (Fin (1 + (m * (k + 1) + m * (k + 1)))) := ⟨0⟩
-  haveI : Nonempty (Fin 1) := ⟨0⟩
+  have : Nonempty (Fin (1 + (m * (k + 1) + m * (k + 1)))) := ⟨0⟩
+  have : Nonempty (Fin 1) := ⟨0⟩
   -- `closure Wb` is semialgebraic, closed, bounded.
   have hWbsa : IsSemialgebraicSet (Wb m P d γ) := isSemialgebraicSet_Wb m P d γ hgraphRP
   have hclsa : IsSemialgebraicSet (closure (Wb m P d γ)) := isSemialgebraicSet_closure hWbsa
@@ -716,7 +716,7 @@ theorem unit_of_mem_closure_Wb (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R))
           ∀ a : Fin m, hermNormSq (repsFromY m (z ∘ Fin.natAdd 1) a) = 1}
         = ⋂ a : Fin m, {z | eval z (unitPoly m a) = 0} := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_iInter, eval_unitPoly, sub_eq_zero]
+      simp only [Set.mem_ofPred_eq, Set.mem_iInter, eval_unitPoly, sub_eq_zero]
     rw [heq]
     refine isClosed_iInter fun a => ?_
     have hcont : Continuous (fun z : Fin (1 + (m * (k + 1) + m * (k + 1))) → R =>
@@ -725,7 +725,7 @@ theorem unit_of_mem_closure_Wb (P : Fin k → MvPolynomial (Fin (k + 1)) (Ri R))
     have heq2 : {z : Fin (1 + (m * (k + 1) + m * (k + 1))) → R | eval z (unitPoly m a) = 0}
         = (fun z => (fun _ : Fin 1 => eval z (unitPoly m a))) ⁻¹' {(0 : Fin 1 → R)} := by
       ext z
-      simp only [Set.mem_setOf_eq, Set.mem_preimage, Set.mem_singleton_iff]
+      simp only [Set.mem_ofPred_eq, Set.mem_preimage, Set.mem_singleton_iff]
       constructor
       · intro h; funext s; exact h
       · intro h; exact congrFun h 0

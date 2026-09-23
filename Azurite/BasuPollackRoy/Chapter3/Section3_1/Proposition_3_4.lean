@@ -110,7 +110,7 @@ theorem constOnGaps_zero_locus (q : R[X]) : ConstOnGaps {t : R | q.eval t = 0} :
       Multiset.mem_toFinset.mpr ((Polynomial.mem_roots').mpr ⟨hq, ht⟩)
     have hx0 : q.eval x ≠ 0 := fun h => by rcases hz x (key x h) with h' | h' <;> linarith
     have hy0 : q.eval y ≠ 0 := fun h => by rcases hz y (key y h) with h' | h' <;> linarith
-    simp only [Set.mem_setOf_eq]; exact ⟨fun h => absurd h hx0, fun h => absurd h hy0⟩
+    simp only [Set.mem_ofPred_eq]; exact ⟨fun h => absurd h hx0, fun h => absurd h hy0⟩
 
 /-- A univariate polynomial positivity locus is constant on the gaps between the roots. -/
 theorem constOnGaps_pos_locus (q : R[X]) : ConstOnGaps {t : R | 0 < q.eval t} := by
@@ -124,7 +124,7 @@ theorem constOnGaps_pos_locus (q : R[X]) : ConstOnGaps {t : R | 0 < q.eval t} :=
       rcases hz t this with h' | h' <;> linarith
     have hxC : x ∈ Set.Icc x y := ⟨le_refl x, le_of_lt hxy⟩
     have hyC : y ∈ Set.Icc x y := ⟨le_of_lt hxy, le_refl y⟩
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     rcases const_sign_ordConnected Set.ordConnected_Icc q hrf with hpos | hneg
     · exact ⟨fun _ => hpos y hyC, fun _ => hpos x hxC⟩
     · exact ⟨fun h => absurd h (not_lt.mpr (le_of_lt (hneg x hxC))),
@@ -144,7 +144,7 @@ theorem constOnGaps_forall_zero (pset : Finset (MvPolynomial (Fin 1) R)) :
         = {t : R | Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) P) = 0} ∩
           {t : R | ∀ Q ∈ pset,
             Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) Q) = 0} := by
-      ext t; simp only [Finset.forall_mem_insert, Set.mem_inter_iff, Set.mem_setOf_eq]
+      ext t; simp only [Finset.forall_mem_insert, Set.mem_inter_iff, Set.mem_ofPred_eq]
     rw [heq]; exact (constOnGaps_zero_locus _).inter ih
 
 /-- **Every semialgebraic section is constant on gaps** (the constructive content of Cor. 2.79). -/
@@ -156,13 +156,13 @@ theorem isSemialgebraicSet_sect_constOnGaps {S : Set (Fin 1 → R)} (hS : IsSemi
     have hset : (constPt ⁻¹' Zer pset) = {t : R | ∀ P ∈ pset,
         Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) P) = 0} := by
       ext t
-      simp only [Set.mem_preimage, Zer, Set.mem_setOf_eq]
+      simp only [Set.mem_preimage, Zer, Set.mem_ofPred_eq]
       exact forall_congr' fun P => imp_congr_right fun _ => by rw [eval_constPt_eq_eval_toPoly]
     rw [hset]; exact constOnGaps_forall_zero pset
   | pos_locus P =>
     have hset : (constPt ⁻¹' {x : Fin 1 → R | MvPolynomial.eval x P > 0})
         = {t : R | 0 < Polynomial.eval t (MvPolynomial.aeval (fun _ : Fin 1 => Polynomial.X) P)} := by
-      ext t; simp only [Set.mem_preimage, Set.mem_setOf_eq, gt_iff_lt]
+      ext t; simp only [Set.mem_preimage, Set.mem_ofPred_eq, gt_iff_lt]
       rw [eval_constPt_eq_eval_toPoly]
     rw [hset]; exact constOnGaps_pos_locus _
   | compl _ ih => rw [Set.preimage_compl]; exact ih.compl
@@ -191,7 +191,7 @@ theorem ivt_pos {f : (Fin 1 → R) → (Fin 1 → R)} {a b : R} (hab : a < b)
     (Set.Icc (constPt a) (constPt b) ∩ f ⁻¹' {y : Fin 1 → R | 0 < y 0}) with hA'd
   have hmemA' : ∀ t : R, t ∈ A' ↔ (a ≤ t ∧ t ≤ b) ∧ 0 < f (constPt t) 0 := fun t => by
     rw [hA'd, Set.mem_preimage, Set.mem_inter_iff, mem_Icc_constPt, Set.mem_preimage,
-      Set.mem_setOf_eq]
+      Set.mem_ofPred_eq]
   have hCOG : ConstOnGaps A' := isSemialgebraicSet_sect_constOnGaps hA
   have haA : a ∈ A' := (hmemA' a).mpr ⟨⟨le_refl a, le_of_lt hab⟩, hfa⟩
   obtain ⟨c, hc⟩ := hCOG.exists_isLUB ⟨a, haA⟩ ⟨b, fun t ht => ((hmemA' t).mp ht).1.2⟩

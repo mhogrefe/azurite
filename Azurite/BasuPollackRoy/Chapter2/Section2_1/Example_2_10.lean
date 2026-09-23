@@ -1,4 +1,4 @@
-import Mathlib.Data.Real.Basic
+import Mathlib.Basic.Real.Basic
 import Mathlib.RingTheory.Algebraic.Basic
 import Mathlib.FieldTheory.IsRealClosed.Basic
 import Mathlib.Analysis.Real.Sqrt

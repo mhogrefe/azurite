@@ -110,7 +110,7 @@ theorem exists_mulChar_orderOf_eq {q p : ℕ} [Fact q.Prime]
   obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (ZMod q)ˣ)
   have hpk : (0 : ℕ) < p ^ (q - 1).factorization p :=
     pow_pos (Nat.prime_of_mem_primeFactors hp).pos _
-  haveI : NeZero ((p ^ (q - 1).factorization p : ℕ) : ℂ) :=
+  have : NeZero ((p ^ (q - 1).factorization p : ℕ) : ℂ) :=
     ⟨Nat.cast_ne_zero.mpr hpk.ne'⟩
   obtain ⟨ζ₀, hζ₀⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot ℂ
     (p ^ (q - 1).factorization p)

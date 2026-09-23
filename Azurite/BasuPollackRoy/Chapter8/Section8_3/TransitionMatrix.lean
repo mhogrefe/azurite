@@ -52,7 +52,7 @@ theorem transC_spec (P Q : K[X]) (hP : P ≠ 0) (hQ : Q ≠ 0)
         + transC P Q i j k * sResP P Q (j - 1) := by
   obtain ⟨hmono, _⟩ :=
     (theorem_8_34_monolithic P Q hP hQ hpq hq1 hj1 hji (by omega) hne hdeg).2 k hk0 hkdeg
-  rw [if_neg (show ¬ k = 0 by omega)] at hmono
+  rw [ite_eq_right (show ¬ k = 0 by omega)] at hmono
   simp only [← Polynomial.C_mul] at hmono
   rw [hmono, EuclideanDomain.mod_eq_sub_mul_div]
   simp only [transC]

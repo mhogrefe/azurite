@@ -184,7 +184,7 @@ theorem continuous_iff_components {f : (Fin k → R) → (Fin ℓ → R)} :
       have : euclideanNorm (f y - f x) = 0 := by
         have := euclideanNorm_sq (f y - f x); rw [h0] at this; nlinarith [euclideanNorm_nonneg (f y - f x)]
       rw [this]; exact hε
-    · haveI : Nonempty (Fin ℓ) := ⟨⟨0, hℓ⟩⟩
+    · have : Nonempty (Fin ℓ) := ⟨⟨0, hℓ⟩⟩
       choose δ hδ0 hδ using fun j => hf j x t ht
       refine ⟨Finset.univ.inf' Finset.univ_nonempty δ,
         (Finset.lt_inf'_iff _).2 (fun j _ => hδ0 j), fun y hy => ?_⟩

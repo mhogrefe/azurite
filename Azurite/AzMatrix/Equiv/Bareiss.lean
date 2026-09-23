@@ -130,16 +130,16 @@ theorem AzMatrix.gaussSteps_bareissBlock_toFn [Field K]
           omega
     -- Use the iffs to split on the conditions
     by_cases h_l'_le : l'.val ≤ ℓ
-    · rw [if_pos h_l'_le, if_pos (h_l'_le_iff.mp h_l'_le)]
+    · rw [ite_eq_left h_l'_le, ite_eq_left (h_l'_le_iff.mp h_l'_le)]
       exact ih' l' m'
-    · rw [if_neg h_l'_le, if_neg (fun h => h_l'_le ((h_l'_le_iff.mpr h)))]
+    · rw [ite_eq_right h_l'_le, ite_eq_right (fun h => h_l'_le ((h_l'_le_iff.mpr h)))]
       by_cases h_m'_lt : m'.val < ℓ
-      · rw [if_pos h_m'_lt, if_pos (h_m'_lt_iff.mp h_m'_lt)]
+      · rw [ite_eq_left h_m'_lt, ite_eq_left (h_m'_lt_iff.mp h_m'_lt)]
         exact ih' l' m'
-      · rw [if_neg h_m'_lt, if_neg (fun h => h_m'_lt (h_m'_lt_iff.mpr h))]
+      · rw [ite_eq_right h_m'_lt, ite_eq_right (fun h => h_m'_lt (h_m'_lt_iff.mpr h))]
         by_cases h_m'_eq : m' = ⟨ℓ, hℓ_lt_succk⟩
-        · rw [if_pos h_m'_eq, if_pos (h_m'_eq_iff.mp h_m'_eq)]
-        · rw [if_neg h_m'_eq, if_neg (fun h => h_m'_eq (h_m'_eq_iff.mpr h))]
+        · rw [ite_eq_left h_m'_eq, ite_eq_left (h_m'_eq_iff.mp h_m'_eq)]
+        · rw [ite_eq_right h_m'_eq, ite_eq_right (fun h => h_m'_eq (h_m'_eq_iff.mpr h))]
           -- Formula case: both sides have the same algebraic form
           rw [ih' l' m']
           rw [ih' l' ⟨ℓ, hℓ_lt_succk⟩]
@@ -162,16 +162,16 @@ theorem AzMatrix.gaussSteps_partialZero [Field K] (M : AzMatrix K n n) (ℓ : Na
     · rw [AzMatrix.gaussSteps_succ _ _ h_ℓ_lt]
       rw [AzMatrix.toFn_eliminateBelow]
       by_cases h_i_le : i.val ≤ ℓ
-      · rw [if_pos h_i_le]
+      · rw [ite_eq_left h_i_le]
         exact ih i j h_lt_ij (by omega)
-      · rw [if_neg h_i_le]
+      · rw [ite_eq_right h_i_le]
         by_cases h_j_lt : j.val < ℓ
-        · rw [if_pos h_j_lt]
+        · rw [ite_eq_left h_j_lt]
           exact ih i j h_lt_ij h_j_lt
-        · rw [if_neg h_j_lt]
+        · rw [ite_eq_right h_j_lt]
           have h_j_eq : j.val = ℓ := by omega
           have h_j_kp : j = ⟨ℓ, h_ℓ_lt⟩ := Fin.ext h_j_eq
-          rw [if_pos h_j_kp]
+          rw [ite_eq_left h_j_kp]
     · rw [AzMatrix.gaussSteps_of_ge _ _ h_ℓ_lt]
       exact ih i j h_lt_ij (by omega)
 
@@ -200,7 +200,7 @@ theorem AzMatrix.gaussSteps_row_unchanged [Field K] (M : AzMatrix K n n)
       · rw [AzMatrix.gaussSteps_succ _ _ hk_lt]
         rw [AzMatrix.toFn_eliminateBelow]
         have hle : (⟨ℓ, hℓ⟩ : Fin n).val ≤ k := h_le_k
-        rw [if_pos hle]
+        rw [ite_eq_left hle]
         exact ih h_le_k j
       · rw [AzMatrix.gaussSteps_of_ge _ _ hk_lt]
         exact ih h_le_k j
@@ -301,12 +301,12 @@ theorem AzMatrix.bareissMinor_eq_prod_pivots_times_gaussSteps
     B.det_gaussSteps k h_block_pivots
   rw [← h_det_block]
   -- Step 3: det of upper triangular = ∏ diagonal.
-  rw [Matrix.det_of_upperTriangular B.gaussSteps_blockTriangular]
+  rw [Matrix.det_of_isUpperTriangular B.gaussSteps_blockTriangular]
   -- Step 4: identify each diagonal entry.
   apply Finset.prod_congr rfl
   intro ℓ _
   by_cases hℓ : ℓ.val < k
-  · rw [dif_pos hℓ]
+  · rw [dite_eq_left hℓ]
     have hℓ_n : ℓ.val < n := lt_of_lt_of_le hℓ (le_of_lt hk)
     have h_corr := M.gaussSteps_bareissBlock_toFn k (le_of_lt hk) i j hi hj
       k (le_refl k) ⟨ℓ.val, ℓ.isLt⟩ ⟨ℓ.val, ℓ.isLt⟩
@@ -317,7 +317,7 @@ theorem AzMatrix.bareissMinor_eq_prod_pivots_times_gaussSteps
     -- Need (gaussSteps M k).toFn ⟨ℓ, _⟩ ⟨ℓ, _⟩ = (gaussSteps M ℓ).toFn ⟨ℓ, _⟩ ⟨ℓ, _⟩.
     -- These are equal: row ℓ is unchanged by steps ℓ, ℓ+1, …, k-1.
     exact M.gaussSteps_diag_stable ℓ.val k hℓ.le hℓ_n
-  · rw [dif_neg hℓ]
+  · rw [dite_eq_right hℓ]
     have h_ℓ_eq : ℓ.val = k := by
       have := ℓ.isLt
       omega
@@ -365,10 +365,10 @@ theorem AzMatrix.bareissMinor_eq_pivotProd_mul_gaussSteps
   · apply Finset.prod_congr rfl
     intro ℓ _
     have h_lt : ℓ.castSucc.val < k := ℓ.isLt
-    rw [dif_pos h_lt]
+    rw [dite_eq_left h_lt]
     rfl
   · have h_not_lt : ¬ (Fin.last k).val < k := by simp
-    rw [dif_neg h_not_lt]
+    rw [dite_eq_right h_not_lt]
 
 /-- The principal `(k+1)`-th minor equals the product of the first `k+1`
     Gauss pivots (under the nonzero-pivot hypothesis). -/
@@ -399,14 +399,14 @@ theorem AzMatrix.gaussSteps_succ_apply [Field K]
   rw [AzMatrix.gaussSteps_succ _ _ hk]
   rw [AzMatrix.toFn_eliminateBelow]
   have h_not_i_le : ¬ i.val ≤ k := by omega
-  rw [if_neg h_not_i_le]
+  rw [ite_eq_right h_not_i_le]
   have h_not_j_lt : ¬ j.val < k := by omega
-  rw [if_neg h_not_j_lt]
+  rw [ite_eq_right h_not_j_lt]
   have h_j_ne : j ≠ ⟨k, hk⟩ := by
     intro heq
     have h : j.val = k := by rw [heq]
     omega
-  rw [if_neg h_j_ne]
+  rw [ite_eq_right h_j_ne]
 
 /-! ### BPR Proposition 8.20 (Sylvester-Bareiss recurrence) -/
 

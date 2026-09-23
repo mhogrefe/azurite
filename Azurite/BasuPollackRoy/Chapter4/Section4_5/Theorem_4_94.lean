@@ -28,7 +28,7 @@ theorem theorem_4_94 [CharZero K] {C : Type*} [Field C] [IsAlgClosed C] [Algebra
     Nonempty (quotPolysExt C Ps ≃+*
       Π i : hfin.toFinset, localizationAtPoint C Ps i.1 (hfin.mem_toFinset.mp i.2)) := by
   classical
-  haveI : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
+  have : CharZero C := charZero_of_injective_algebraMap (algebraMap K C).injective
   obtain ⟨e, hsum, horth, hidem, hval1, hval0⟩ := proposition_4_92 (C := C) Ps hfin
   -- the idempotents `(e_x)` form a complete orthogonal family
   have hCOI : CompleteOrthogonalIdempotents (fun i : hfin.toFinset => e i.1) := by

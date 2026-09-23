@@ -64,7 +64,7 @@ theorem pointAtomFormula_realization {k : ℕ} (y : Fin k → D) (i : Fin k) :
     (pointAtomFormula y i).realization (C := K) =
       { z : Fin k → K | z i = algebraMap D K (y i) } := by
   ext z
-  simp only [pointAtomFormula, realization_eq_zero, Set.mem_setOf_eq,
+  simp only [pointAtomFormula, realization_eq_zero, Set.mem_ofPred_eq,
     map_sub, MvPolynomial.aeval_X, MvPolynomial.aeval_C, sub_eq_zero]
 
 /-- The realization of `pointFormula y` over `K` is the singleton
@@ -73,7 +73,7 @@ theorem pointFormula_realization {k : ℕ} (y : Fin k → D) :
     (pointFormula y).realization (C := K) =
       { algebraMap D K ∘ y } := by
   ext z
-  simp only [pointFormula, realization_conjList, Set.mem_setOf_eq,
+  simp only [pointFormula, realization_conjList, Set.mem_ofPred_eq,
     List.mem_ofFn, Set.mem_singleton_iff]
   constructor
   · intro h
@@ -121,7 +121,7 @@ theorem finsetFormula_realization {k : ℕ} (T : Finset (Fin k → D)) :
     (finsetFormula T).realization (C := K) =
       (fun y : Fin k → D => algebraMap D K ∘ y) '' (T : Set (Fin k → D)) := by
   ext z
-  simp only [finsetFormula, realization_disjList, Set.mem_setOf_eq,
+  simp only [finsetFormula, realization_disjList, Set.mem_ofPred_eq,
     List.mem_map, Finset.mem_toList, Set.mem_image, Finset.mem_coe]
   constructor
   · rintro ⟨Φ, ⟨y, hy_mem, rfl⟩, hz⟩

@@ -45,7 +45,7 @@ theorem proposition_3_18 (a : R) (ha : 0 < a) (f : (Fin 1 → R) → R)
     (hbdd : ∀ s : R, 0 < s → s < a → |f (constPt s)| < M) :
     ∃ b : R, ∀ r : R, 0 < r → ∃ δ : R, 0 < δ ∧
       ∀ s : R, 0 < s → s < δ → |f (constPt s) - b| < r := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   let fRep : SemialgGermRep R := ⟨a, ha, f, hf⟩
   have hbound : IsBoundedGerm fRep.germ :=
     (isBoundedGerm_germ_iff fRep).mpr ⟨M, a, ha, hbdd⟩

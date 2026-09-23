@@ -60,9 +60,9 @@ private theorem linearIndependent_of_pairwise_orthogonal {m : ℕ}
     Finset.sum_congr rfl fun j _ => by
       rw [smul_dotProduct, smul_eq_mul]
       by_cases hji : j = i
-      · subst hji; rw [if_pos rfl]
-      · rw [if_neg hji, horth j i hji, mul_zero]
-  rw [hstep, Finset.sum_ite_eq', if_pos (Finset.mem_univ i)] at hdot
+      · subst hji; rw [ite_eq_left rfl]
+      · rw [ite_eq_right hji, horth j i hji, mul_zero]
+  rw [hstep, Finset.sum_ite_eq', ite_eq_left (Finset.mem_univ i)] at hdot
   exact (mul_eq_zero.mp hdot).resolve_right (hne i)
 
 omit [LinearOrder R] [IsStrictOrderedRing R] [IsRealClosed R] in
@@ -238,35 +238,35 @@ theorem corollary_4_44 (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
         induction j using Fin.addCases with
         | left j' =>
           show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) = 0
-          rw [hcoeff_left, hcoeff_left, hcc, hortho, if_neg, mul_zero]
+          rw [hcoeff_left, hcoeff_left, hcc, hortho, ite_eq_right, mul_zero]
           intro h; exact hij (by rw [pe.injective h])
         | right j' =>
           show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) = 0
-          rw [hcoeff_left, hcoeff_right, hcc, hortho, if_neg, mul_zero]
+          rw [hcoeff_left, hcoeff_right, hcc, hortho, ite_eq_right, mul_zero]
           intro h
           exact (Finset.disjoint_left.mp hPN_disj (hpe_mem i')) (h ▸ hne_mem j')
       | right i' =>
         induction j using Fin.addCases with
         | left j' =>
           show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) = 0
-          rw [hcoeff_right, hcoeff_left, hcc, hortho, if_neg, mul_zero]
+          rw [hcoeff_right, hcoeff_left, hcc, hortho, ite_eq_right, mul_zero]
           intro h
           exact (Finset.disjoint_left.mp hPN_disj (hpe_mem j')) (h.symm ▸ hne_mem i')
         | right j' =>
           show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) = 0
-          rw [hcoeff_right, hcoeff_right, hcc, hortho, if_neg, mul_zero]
+          rw [hcoeff_right, hcoeff_right, hcc, hortho, ite_eq_right, mul_zero]
           intro h; exact hij (by rw [ne'.injective h])
     have hne_coeff : ∀ i, coeff i ⬝ᵥ coeff i ≠ 0 := by
       intro i
       induction i using Fin.addCases with
       | left i' =>
         show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) ≠ 0
-        rw [hcoeff_left, hcc, hortho, if_pos rfl, mul_one]
+        rw [hcoeff_left, hcc, hortho, ite_eq_left rfl, mul_one]
         have hsi : s (pe i') ≠ 0 := hs_ne _ (Finset.mem_union_left _ (hpe_mem i'))
         exact mul_ne_zero hsi hsi
       | right i' =>
         show linearFormCoeffs (L _) ⬝ᵥ linearFormCoeffs (L _) ≠ 0
-        rw [hcoeff_right, hcc, hortho, if_pos rfl, mul_one]
+        rw [hcoeff_right, hcc, hortho, ite_eq_left rfl, mul_one]
         have hsi : s (ne' i') ≠ 0 := hs_ne _ (Finset.mem_union_right _ (hne_mem i'))
         exact mul_ne_zero hsi hsi
     -- transfer to L via dotLM ∘ linearFormCoeffs
@@ -297,20 +297,20 @@ theorem corollary_4_44 (M : Matrix (Fin n) (Fin n) R) (hM : M.IsSymm) :
     | left i' =>
       induction j using Fin.addCases with
       | left j' =>
-        rw [hcoeff_left, hcoeff_left, hcc, hortho, if_neg, mul_zero]
+        rw [hcoeff_left, hcoeff_left, hcc, hortho, ite_eq_right, mul_zero]
         intro h; exact hij (by rw [pe.injective h])
       | right j' =>
-        rw [hcoeff_left, hcoeff_right, hcc, hortho, if_neg, mul_zero]
+        rw [hcoeff_left, hcoeff_right, hcc, hortho, ite_eq_right, mul_zero]
         intro h
         exact (Finset.disjoint_left.mp hPN_disj (hpe_mem i')) (h ▸ hne_mem j')
     | right i' =>
       induction j using Fin.addCases with
       | left j' =>
-        rw [hcoeff_right, hcoeff_left, hcc, hortho, if_neg, mul_zero]
+        rw [hcoeff_right, hcoeff_left, hcc, hortho, ite_eq_right, mul_zero]
         intro h
         exact (Finset.disjoint_left.mp hPN_disj (hpe_mem j')) (h.symm ▸ hne_mem i')
       | right j' =>
-        rw [hcoeff_right, hcoeff_right, hcc, hortho, if_neg, mul_zero]
+        rw [hcoeff_right, hcoeff_right, hcc, hortho, ite_eq_right, mul_zero]
         intro h; exact hij (by rw [ne'.injective h])
   · -- (5) sum identity
     intro f

@@ -33,13 +33,8 @@ variable (C : Type*) [Field C] [Algebra K C]
 theorem algEquivExt_one_tmul (Ps : Finset (MvPolynomial (Fin k) K)) (a : quotPolys Ps) :
     algEquivExt C Ps (1 ⊗ₜ[K] a) = inclExt C Ps a := by
   obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective a
-  rw [inclExt_mk]
-  show (Algebra.TensorProduct.tensorQuotientEquiv (R := K) C (MvPolynomial (Fin k) K) C
-      (idealOfPolys Ps)).trans
-    (Ideal.quotientEquivAlg (Ideal.map (Algebra.TensorProduct.includeRight) (idealOfPolys Ps))
-      (idealOfPolysExt C Ps) (algebraTensorAlgEquiv K C) _)
-      (1 ⊗ₜ[K] (Ideal.Quotient.mk _ p)) = _
-  rw [AlgEquiv.trans_apply, Algebra.TensorProduct.tensorQuotientEquiv_apply_tmul]
+  rw [inclExt_mk, algEquivExt, AlgEquiv.trans_apply,
+    Algebra.TensorProduct.tensorQuotientEquiv_apply_tmul]
   refine (Ideal.quotientEquivAlg_mk _ _ _ _).trans ?_
   congr 1
   rw [MvPolynomial.algebraTensorAlgEquiv_tmul, one_smul]
@@ -53,11 +48,13 @@ instance moduleFinite_quotPolysExt (Ps : Finset (MvPolynomial (Fin k) K))
 /-- Bridge B: base change of `L_f` (over `K`) is `L_{1 ⊗ f}` (over `C`) on `C ⊗_K A`. -/
 theorem baseChange_mulMap (Ps : Finset (MvPolynomial (Fin k) K)) (f : quotPolys Ps) :
     (mulMap Ps f).baseChange C = LinearMap.mulLeft C ((1 : C) ⊗ₜ[K] f) := by
-  refine LinearMap.ext fun z => z.induction_on ?_ (fun c a => ?_) (fun x y hx hy => ?_)
-  · rw [map_zero, map_zero]
-  · rw [LinearMap.baseChange_tmul, mulMap_apply, LinearMap.mulLeft_apply,
+  refine LinearMap.ext fun z => ?_
+  induction z with
+  | tmul c a =>
+    rw [LinearMap.baseChange_tmul, mulMap_apply, LinearMap.mulLeft_apply,
       Algebra.TensorProduct.tmul_mul_tmul, one_mul]
-  · rw [map_add, hx, hy, LinearMap.mulLeft_apply, LinearMap.mulLeft_apply, LinearMap.mulLeft_apply,
+  | add x y hx hy =>
+    rw [map_add, hx, hy, LinearMap.mulLeft_apply, LinearMap.mulLeft_apply, LinearMap.mulLeft_apply,
       mul_add]
 
 /-- Bridge C: conjugating `baseChange C (L_f)` by `algEquivExt` gives `L_f` on `Ā` (`mulMapBaseExt`). -/

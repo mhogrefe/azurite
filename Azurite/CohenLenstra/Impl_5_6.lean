@@ -104,7 +104,7 @@ the exponent at `p`. -/
 theorem padicValNat_prod_pow {p : ℕ} (hp : p.Prime) {S : Finset ℕ}
     (hS : ∀ q ∈ S, q.Prime) (e : ℕ → ℕ) (hpS : p ∈ S) :
     padicValNat p (∏ q ∈ S, q ^ e q) = e p := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rw [← Finset.mul_prod_erase S _ hpS]
   have hrest0 : ∏ q ∈ S.erase p, q ^ e q ≠ 0 :=
     Finset.prod_ne_zero_iff.mpr fun q hq =>
@@ -149,7 +149,7 @@ theorem padicValNat_s2 {t' n s2bar q : ℕ} (hq : q ∈ s2bar.primeFactors) :
 theorem padicValNat_pow_sub_one_eq_sq {p n : ℕ} (hp : p.Prime) (hp2 : p ≠ 2)
     (hn : 1 < n) (hpn : p ∣ n ^ 2 - 1) :
     padicValNat p (n ^ (p - 1) - 1) = padicValNat p (n ^ 2 - 1) := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   have hp3 : 3 ≤ p := by
     have := hp.two_le
     omega
@@ -193,12 +193,12 @@ theorem remark_5_7 {n t' F s2bar p : ℕ} (hn : 1 < n) (hp : p.Prime)
     (hcase : p ∣ F ∨ p ∣ s2bar) :
     padicValNat p (s1 t' F * s2 t' n s2bar)
       = padicValNat p t' + padicValNat p (n ^ (p - 1) - 1) := by
-  haveI : Fact p.Prime := ⟨hp⟩
+  have : Fact p.Prime := ⟨hp⟩
   rw [padicValNat.mul s1_ne_zero s2_ne_zero]
   rcases hcase with hpF | hps
   · have hmem : p ∈ F.primeFactors := Nat.mem_primeFactors.mpr ⟨hp, hpF, hF0⟩
     have h1 := padicValNat_s1 (t' := t') hmem
-    rw [s1Exp, if_neg hp2, Nat.sub_zero, hFp,
+    rw [s1Exp, ite_eq_right hp2, Nat.sub_zero, hFp,
       ← padicValNat_pow_sub_one_eq_sq hp hp2 hn (hpF.trans hF)] at h1
     have h2 : padicValNat p (s2 t' n s2bar) = 0 := by
       apply padicValNat.eq_zero_of_not_dvd
@@ -208,7 +208,7 @@ theorem remark_5_7 {n t' F s2bar p : ℕ} (hn : 1 < n) (hp : p.Prime)
     omega
   · have hmem : p ∈ s2bar.primeFactors := Nat.mem_primeFactors.mpr ⟨hp, hps, hs0⟩
     have h2 := padicValNat_s2 (t' := t') (n := n) hmem
-    rw [if_pos hpt] at h2
+    rw [ite_eq_left hpt] at h2
     have h1 : padicValNat p (s1 t' F) = 0 := by
       apply padicValNat.eq_zero_of_not_dvd
       intro hd

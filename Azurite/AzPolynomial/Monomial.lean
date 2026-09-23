@@ -52,42 +52,42 @@ lemma coeff_normalize (a : Array R) (i : ℕ) :
         have ht : dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse = a.toList := eq_dropTrailingZeros_append_takeWhile a.toList
         have ht_get : (dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse)[i]? = a.toList[i]? := by rw [ht]
         rw [List.getElem?_append] at ht_get
-        rw [if_neg (by omega)] at ht_get
+        rw [ite_eq_right (by omega)] at ht_get
         have ht2 : ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = a.toList[i]? := ht_get
-        
+
         have ht3 : a.toList[i]? = ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? := ht2.symm
         rw [ht3]
-        
+
         have h_len_sum : (dropTrailingZeros a.toList).length + (a.toList.reverse.takeWhile (· = 0)).reverse.length = a.toList.length := by
           have h_len_eq : (dropTrailingZeros a.toList ++ (a.toList.reverse.takeWhile (· = 0)).reverse).length = a.toList.length := by rw [ht]
           rw [List.length_append] at h_len_eq
           exact h_len_eq
-        
+
         have h_len_rev : (a.toList.reverse.takeWhile (· = 0)).reverse.length = (a.toList.reverse.takeWhile (·=0)).length := by
           exact List.length_reverse
-        
+
         have h_idx_lt : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).reverse.length := by
           omega
-        
+
         have h_idx_lt2 : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).length := by
           omega
-          
+
         have h_get_rev : ∃ x, ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = some x := by
           exact ⟨_, List.getElem?_eq_some_iff.mpr ⟨h_idx_lt, rfl⟩⟩
-        
+
         rcases h_get_rev with ⟨x, hx⟩
         rw [hx]
-        
+
         have hx_rev : (a.toList.reverse.takeWhile (· = 0))[ (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) ]? = some x := by
           have h_rev_idx : i - (dropTrailingZeros a.toList).length < (a.toList.reverse.takeWhile (· = 0)).length := by omega
           have h_rev_get : ((a.toList.reverse.takeWhile (· = 0)).reverse)[i - (dropTrailingZeros a.toList).length]? = (a.toList.reverse.takeWhile (· = 0))[ (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) ]? := by
             exact List.getElem?_reverse h_rev_idx
           rw [h_rev_get] at hx
           exact hx
-        
+
         have h_idx_lt_3 : (a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length) < (a.toList.reverse.takeWhile (· = 0)).length := by
           omega
-          
+
         have hp : (fun x : R => decide (x = 0)) x = true := takeWhile_getElem?_eq_some (a.toList.reverse) ((a.toList.reverse.takeWhile (· = 0)).length - 1 - (i - (dropTrailingZeros a.toList).length)) h_idx_lt_3 x hx_rev
         have hp2 : x = 0 := by exact of_decide_eq_true hp
         rw [hp2]

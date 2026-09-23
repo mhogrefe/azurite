@@ -558,7 +558,7 @@ lemma varNonzero_insert_between_opposite
   show (if a * c < 0 then 1 else 0) +
       ((if c * b < 0 then 1 else 0) + varNonzero (b :: rest)) =
     (if a * b < 0 then 1 else 0) + varNonzero (b :: rest)
-  rw [if_pos h_opp]
+  rw [ite_eq_left h_opp]
   ring_nf
   -- Goal: (if a*c < 0 then 1 else 0) + (if c*b < 0 then 1 else 0) = 1
   -- (modulo placement of varNonzero (b :: rest) which cancels via add_comm).
@@ -568,7 +568,7 @@ lemma varNonzero_insert_between_opposite
     -- Exactly one of a*c, c*b is negative (since c is nonzero).
     rcases lt_trichotomy (a * c) 0 with hac_lt | hac_eq | hac_gt
     · -- a*c < 0. Show c*b ≥ 0.
-      rw [if_pos hac_lt]
+      rw [ite_eq_left hac_lt]
       -- a*c < 0 means a, c have opposite signs.
       -- a*b < 0 means a, b have opposite signs.
       -- So c, b have the same sign (both opposite of a).
@@ -586,7 +586,7 @@ lemma varNonzero_insert_between_opposite
           · assumption
           · linarith [h_csq_pos]
         linarith
-      rw [if_neg h_cb]
+      rw [ite_eq_right h_cb]
     · -- a*c = 0. Since c ≠ 0, a = 0. But then a*b = 0, contradicting h_opp < 0.
       have h_a_zero : a = 0 := by
         rcases mul_eq_zero.mp hac_eq with ha | hc'
@@ -596,7 +596,7 @@ lemma varNonzero_insert_between_opposite
       rw [h_a_zero, zero_mul] at h_opp
       exact lt_irrefl 0 h_opp
     · -- a*c > 0. Show c*b < 0.
-      rw [if_neg (not_lt.mpr (le_of_lt hac_gt))]
+      rw [ite_eq_right (not_lt.mpr (le_of_lt hac_gt))]
       have h_cb_neg : c * b < 0 := by
         -- a, c same sign; a, b opposite; so c, b opposite. Hence c*b < 0.
         by_contra h_not_neg
@@ -611,7 +611,7 @@ lemma varNonzero_insert_between_opposite
         -- h_prod : 0 ≤ a * b * (c * c). a*b < 0, c*c > 0. So a*b*(c*c) < 0. Contradiction.
         have h_ab_csq_neg : a * b * (c * c) < 0 := mul_neg_of_neg_of_pos h_opp h_csq_pos
         linarith
-      rw [if_pos h_cb_neg]
+      rw [ite_eq_left h_cb_neg]
   linarith [h_sum]
 
 omit [IsStrictOrderedRing R] in
@@ -622,7 +622,7 @@ lemma varNonzero_cons_same_sign
     varNonzero (a :: b :: rest) = varNonzero (b :: rest) := by
   show (if a * b < 0 then 1 else 0) + varNonzero (b :: rest) =
     varNonzero (b :: rest)
-  rw [if_neg (not_lt.mpr (le_of_lt h_same))]
+  rw [ite_eq_right (not_lt.mpr (le_of_lt h_same))]
   simp
 
 /-- **VarNonzero insertion at any position.** Inserting a nonzero
@@ -722,14 +722,14 @@ private lemma Var_cons_three_cascade
     have h_filter1 : ((p :: (0 : R) :: r :: L).filter (· ≠ 0) : List R) =
         p :: r :: (L.filter (· ≠ 0)) := by
       simp [hp, hr]
-    rw [h_filter1, varNonzero_cons_cons, if_pos hpr]
+    rw [h_filter1, varNonzero_cons_cons, ite_eq_left hpr]
   · have h_filter1 : ((p :: q :: r :: L).filter (· ≠ 0) : List R) =
         p :: q :: r :: (L.filter (· ≠ 0)) := by
       simp [hp, hq, hr]
     rw [h_filter1]
     rw [varNonzero_insert_between_opposite p q r
       (L.filter (· ≠ 0)) hq hpr]
-    rw [varNonzero_cons_cons, if_pos hpr]
+    rw [varNonzero_cons_cons, ite_eq_left hpr]
 
 /-- **`varAt` cascade triple lemma.** Polynomial form of
     `Var_cons_three_cascade`. For polynomials `P, Q, S` and an extended

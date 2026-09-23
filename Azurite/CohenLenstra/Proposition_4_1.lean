@@ -61,7 +61,7 @@ private theorem factorization_e_eq (t : ℕ) (ht2 : ¬ Odd t) {p : ℕ}
       = (if p = 2 then 1 else 0)
         + ∑ d ∈ t.divisors.filter (fun d => (d + 1).Prime),
             if d + 1 = p then t.factorization (d + 1) + 1 else 0 := by
-  rw [e, if_neg ht2,
+  rw [e, ite_eq_right ht2,
     Nat.factorization_mul two_ne_zero (Finset.prod_ne_zero_iff.mpr
       fun d _ => pow_ne_zero _ (Nat.succ_ne_zero d)),
     Nat.factorization_prod fun d _ => pow_ne_zero _ (Nat.succ_ne_zero d)]
@@ -79,17 +79,17 @@ theorem factorization_e_odd_prime {t p : ℕ} (ht2 : ¬ Odd t) (ht0 : t ≠ 0)
     (hp : p.Prime) (hp2 : p ≠ 2) :
     (e t).factorization p
       = if (p - 1) ∣ t then t.factorization p + 1 else 0 := by
-  rw [factorization_e_eq t ht2 hp, if_neg hp2, zero_add]
+  rw [factorization_e_eq t ht2 hp, ite_eq_right hp2, zero_add]
   by_cases hdvd : (p - 1) ∣ t
-  · rw [if_pos hdvd,
+  · rw [ite_eq_left hdvd,
       Finset.sum_eq_single_of_mem (p - 1)
         (Finset.mem_filter.mpr ⟨Nat.mem_divisors.mpr ⟨hdvd, ht0⟩, by
           rw [Nat.sub_add_cancel hp.one_lt.le]; exact hp⟩)
-        (fun d _ hd => if_neg fun h => hd (by omega)),
-      if_pos (Nat.sub_add_cancel hp.one_lt.le),
+        (fun d _ hd => ite_eq_right fun h => hd (by omega)),
+      ite_eq_left (Nat.sub_add_cancel hp.one_lt.le),
       Nat.sub_add_cancel hp.one_lt.le]
-  · rw [if_neg hdvd]
-    refine Finset.sum_eq_zero fun d hd => if_neg fun h => hdvd ?_
+  · rw [ite_eq_right hdvd]
+    refine Finset.sum_eq_zero fun d hd => ite_eq_right fun h => hdvd ?_
     have hdt := (Nat.mem_divisors.mp (Finset.mem_filter.mp hd).1).1
     have hdp : d = p - 1 := by omega
     rwa [← hdp]
@@ -98,12 +98,12 @@ theorem factorization_e_odd_prime {t p : ℕ} (ht2 : ¬ Odd t) (ht0 : t ≠ 0)
 `q = 2` factor, present since `1 = 2 − 1` always divides `t`). -/
 theorem factorization_e_two {t : ℕ} (ht2 : ¬ Odd t) (ht0 : t ≠ 0) :
     (e t).factorization 2 = t.factorization 2 + 2 := by
-  rw [factorization_e_eq t ht2 Nat.prime_two, if_pos rfl,
+  rw [factorization_e_eq t ht2 Nat.prime_two, ite_eq_left rfl,
     Finset.sum_eq_single_of_mem 1
       (Finset.mem_filter.mpr ⟨Nat.one_mem_divisors.mpr ht0,
         show ((1 : ℕ) + 1).Prime from Nat.prime_two⟩)
-      (fun d _ hd => if_neg fun h => hd (by omega)),
-    if_pos rfl, show (1 : ℕ) + 1 = 2 from rfl]
+      (fun d _ hd => ite_eq_right fun h => hd (by omega)),
+    ite_eq_left rfl, show (1 : ℕ) + 1 = 2 from rfl]
   omega
 
 /-! ### An upper bound for `e(t)` -/
@@ -117,7 +117,7 @@ product divides `t`, while the second parts are among the `d + 1` for
 theorem e_le {t : ℕ} (ht : 0 < t) :
     e t ≤ 2 * t * ∏ d ∈ t.divisors, (d + 1) := by
   have hone : (1 : ℕ) ≤ ∏ d ∈ t.divisors, (d + 1) :=
-    Finset.one_le_prod' fun d _ => Nat.le_add_left 1 d
+    Finset.one_le_prod fun d _ => Nat.le_add_left 1 d
   rw [e]
   split_ifs with h
   · calc (2 : ℕ) = 2 * 1 * 1 := by ring
@@ -156,7 +156,7 @@ theorem e_le {t : ℕ} (ht : 0 < t) :
       _ ≤ 2 * t * ∏ d ∈ t.divisors, (d + 1) :=
           Nat.mul_le_mul
             (Nat.mul_le_mul_left 2 (Nat.le_of_dvd ht hdvd))
-            (Finset.prod_le_prod_of_subset_of_one_le'
+            (Finset.prod_le_prod_of_subset_of_one_le
               (Finset.filter_subset _ _) fun d _ _ => Nat.le_add_left 1 d)
 
 /-! ### The unit-group condition at prime powers -/
@@ -173,12 +173,12 @@ private theorem pow_eq_one_of_card_dvd {G : Type _} [Group G] [Fintype G]
 theorem forall_units_pow_eq_one_prime_pow_iff {p k t : ℕ} (hp : p.Prime)
     (hp2 : p ≠ 2) (hk : 0 < k) :
     (∀ u : (ZMod (p ^ k))ˣ, u ^ t = 1) ↔ p ^ (k - 1) * (p - 1) ∣ t := by
-  haveI : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
+  have : NeZero (p ^ k) := ⟨pow_ne_zero _ hp.pos.ne'⟩
   have hcard : Fintype.card (ZMod (p ^ k))ˣ = p ^ (k - 1) * (p - 1) := by
     rw [ZMod.card_units_eq_totient, Nat.totient_prime_pow hp hk]
   constructor
   · intro h
-    haveI := ZMod.isCyclic_units_of_prime_pow p hp hp2 k
+    have := ZMod.isCyclic_units_of_prime_pow p hp hp2 k
     obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (ZMod (p ^ k))ˣ)
     have hord : orderOf g = p ^ (k - 1) * (p - 1) := by
       rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card,
@@ -213,7 +213,7 @@ private theorem two_pow_dvd_pow_sub_one {m : ℕ} (hm : 1 ≤ m) (a : ℤ)
 `u^(2^(k−2)) = 1`. -/
 private theorem units_two_pow_pow_eq_one {k : ℕ} (hk : 3 ≤ k)
     (u : (ZMod (2 ^ k))ˣ) : u ^ 2 ^ (k - 2) = 1 := by
-  haveI : NeZero (2 ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
+  have : NeZero (2 ^ k) := ⟨pow_ne_zero _ two_ne_zero⟩
   have hodd : Odd (((u : ZMod (2 ^ k)).val : ℤ)) := by
     have hco := ZMod.val_coe_unit_coprime u
     rw [Int.odd_iff]
@@ -268,7 +268,7 @@ theorem forall_units_pow_eq_one_two_pow_iff {k t : ℕ} (ht2 : ¬ Odd t)
     · intro h
       -- the unit `5` has order `2^(k−2)`
       obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by omega⟩
-      haveI : NeZero (2 ^ (m + 2)) := ⟨pow_ne_zero _ two_ne_zero⟩
+      have : NeZero (2 ^ (m + 2)) := ⟨pow_ne_zero _ two_ne_zero⟩
       have h5 : IsUnit (5 : ZMod (2 ^ (m + 2))) := by
         have h5c : ((5 : ℕ) : ZMod (2 ^ (m + 2))) = 5 := by push_cast; ring
         rw [← h5c, ZMod.isUnit_iff_coprime]
@@ -356,7 +356,7 @@ theorem proposition_4_1 {s t : ℕ} (hs : 0 < s) (ht : 0 < t) :
     (∀ u : (ZMod s)ˣ, u ^ t = 1) ↔ s ∣ e t := by
   rcases Nat.even_or_odd t with hte | hto
   case inr =>
-    rw [e, if_pos hto]
+    rw [e, ite_eq_left hto]
     exact forall_units_pow_eq_one_iff_of_odd hto
   have ht2 : ¬ Odd t := Nat.not_odd_iff_even.mpr hte
   have ht0 : t ≠ 0 := ht.ne'
@@ -382,16 +382,16 @@ theorem proposition_4_1 {s t : ℕ} (hs : 0 < s) (ht : 0 < t) :
       · intro h
         have h1 : p ^ (k - 1) ∣ t := (dvd_mul_right _ _).trans h
         have h2 : (p - 1) ∣ t := (dvd_mul_left _ _).trans h
-        rw [if_pos h2]
+        rw [ite_eq_left h2]
         have := (Nat.Prime.pow_dvd_iff_le_factorization hp' ht0).mp h1
         omega
       · intro h
         by_cases h2 : (p - 1) ∣ t
-        · rw [if_pos h2] at h
+        · rw [ite_eq_left h2] at h
           refine hcop.mul_dvd_of_dvd_of_dvd ?_ h2
           exact (Nat.Prime.pow_dvd_iff_le_factorization hp' ht0).mpr
             (by omega)
-        · rw [if_neg h2] at h
+        · rw [ite_eq_right h2] at h
           omega
   | coprime a b ha hb hab iha ihb =>
     have iha' := iha (by omega)
@@ -409,7 +409,7 @@ positive `t` and `s`, `a^t ≡ 1 (mod s)` for every natural `a` coprime
 to `s` iff `s ∣ e(t)`. -/
 theorem proposition_4_1' {s t : ℕ} (hs : 0 < s) (ht : 0 < t) :
     (∀ a : ℕ, a.Coprime s → a ^ t ≡ 1 [MOD s]) ↔ s ∣ e t := by
-  haveI : NeZero s := ⟨hs.ne'⟩
+  have : NeZero s := ⟨hs.ne'⟩
   rw [← proposition_4_1 hs ht]
   constructor
   · intro h u

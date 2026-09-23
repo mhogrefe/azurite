@@ -61,7 +61,7 @@ theorem oddRoot_isSemialgebraicFunction {k : ℕ} (hodd : Odd k) :
       = {z : Fin 2 → R | MvPolynomial.eval z Q = 0} := by
     ext z
     rw [mem_funGraph]
-    simp only [Set.mem_univ, true_and, Set.mem_setOf_eq, hQeval, sub_eq_zero]
+    simp only [Set.mem_univ, true_and, Set.mem_ofPred_eq, hQeval, sub_eq_zero]
     have hkey : (z ∘ Fin.natAdd 1 = oddRoot hodd (z ∘ Fin.castAdd 1)) ↔
         z 1 = (oddPowEquiv hodd).symm (z 0) := by
       constructor

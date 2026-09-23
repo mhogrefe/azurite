@@ -444,7 +444,7 @@ theorem toNat_div2By1 (hi lo d inv : UInt64)
     have hMain_Z : ((Q1N : ℤ)) * D + R1N = HI * 2 ^ 64 + LO := by
       rw [hQ1N_Z, hR1N_Rt, hRtilde_def]; ring
     by_cases hcase1 : R1 > ql
-    · rw [if_pos hcase1]
+    · rw [ite_eq_left hcase1]
       have hQLO_lt_R1N : Q_LO < R1N := hR1_gt_ql_iff.mp hcase1
       have hQLO_lt_Rt : (Q_LO : ℤ) < Rtilde := by
         have h : ((Q_LO : ℤ)) < ((R1N : ℤ)) := by exact_mod_cast hQLO_lt_R1N
@@ -462,18 +462,18 @@ theorem toNat_div2By1 (hi lo d inv : UInt64)
       have hc2 : D ≤ (R1N + D) % 2 ^ 64 := by
         rw [hR1plusD_val]; exact Nat.le_add_left _ _
       have hcase2 : R1 + d ≥ d := hR1d_ge_d_iff.mpr hc2
-      rw [if_pos hcase2, hQ1sub1add1_toNat, hR1plusdsubd_toNat]
+      rw [ite_eq_left hcase2, hQ1sub1add1_toNat, hR1plusdsubd_toNat]
       refine ⟨?_, ?_⟩
       · have hZ : ((Q1N * D + R1N : ℕ) : ℤ) = ((HI * 2 ^ 64 + LO : ℕ) : ℤ) := by
           push_cast; exact hMain_Z
         exact_mod_cast hZ
       · have h : (R1N : ℤ) < D := by linarith only [hR1N_Rt, hRt_lt_D]
         exact_mod_cast h
-    · rw [if_neg hcase1]
+    · rw [ite_eq_right hcase1]
       have hR1N_le_QLO : R1N ≤ Q_LO :=
         Nat.le_of_not_lt (fun h => hcase1 (hR1_gt_ql_iff.mpr h))
       by_cases hcase3 : R1 ≥ d
-      · rw [if_pos hcase3]
+      · rw [ite_eq_left hcase3]
         have hD_le_R1N : D ≤ R1N := hR1_ge_d_iff.mp hcase3
         have hD_le_Rt : (D : ℤ) ≤ Rtilde := by
           have h : (D : ℤ) ≤ R1N := by exact_mod_cast hD_le_R1N
@@ -500,7 +500,7 @@ theorem toNat_div2By1 (hi lo d inv : UInt64)
             linarith only [hR1N_Rt, hRtilde_bound_hi, hD_Z_lo]
           have h1 : R1N < D + D := by exact_mod_cast h
           exact Nat.sub_lt_left_of_lt_add hD_le_R1N h1
-      · rw [if_neg hcase3]
+      · rw [ite_eq_right hcase3]
         have hR1N_lt_D : R1N < D :=
           Nat.lt_of_not_le (fun h => hcase3 (hR1_ge_d_iff.mpr h))
         show Q1.toNat * D + R1.toNat = HI * 2 ^ 64 + LO ∧ R1.toNat < D
@@ -517,14 +517,14 @@ theorem toNat_div2By1 (hi lo d inv : UInt64)
         rw [hR1N_Rt]; linarith only [hRt_ge_QLO_shift]
       exact Nat.cast_lt.mp h
     have hcase1 : R1 > ql := hR1_gt_ql_iff.mpr hR1N_gt_QLO
-    rw [if_pos hcase1]
+    rw [ite_eq_left hcase1]
     -- R1N + D ≥ 2^64, and (R1N + D) % 2^64 = R1N + D - 2^64 = Rtilde + D < D.
     obtain ⟨hR1ND_ge, hR1ND_val, hR1ND_lt_D⟩ :=
       div2By1_neg_branch hD_lt hR1N_lt hrt_sign hR1N_Rt hRtilde_bound_lo
     have hnot_c2 : ¬ D ≤ (R1N + D) % 2 ^ 64 := by
       rw [hR1ND_val]; exact Nat.not_le_of_lt hR1ND_lt_D
     have hcase2 : ¬ (R1 + d ≥ d) := fun h => hnot_c2 (hR1d_ge_d_iff.mp h)
-    rw [if_neg hcase2, hQ1sub1_toNat, hR1plusd_toNat]
+    rw [ite_eq_right hcase2, hQ1sub1_toNat, hR1plusd_toNat]
     -- (2^64 - 1 + Q1N) % 2^64 = Q_HI0.
     have hQ1sub1_val : (2 ^ 64 - 1 + Q1N) % 2 ^ 64 = Q_HI0 := by
       rw [hQ1N']; omega

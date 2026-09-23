@@ -23,7 +23,7 @@ algebraic over `C(ε) = RatFunc C`. This is the relative algebraic closure of `C
 algebraically closed field `C⟨⟨ε⟩⟩` (Theorem 2.92). -/
 theorem isAlgClosure_algebraicPuiseux (C : Type*) [Field C] [IsAlgClosed C] [CharZero C] :
     IsAlgClosure (RatFunc C) (algebraicClosure (RatFunc C) (PuiseuxSeries C)) := by
-  haveI : IsAlgClosed (PuiseuxSeries C) := isAlgClosed_puiseuxSeries C
+  have : IsAlgClosed (PuiseuxSeries C) := isAlgClosed_puiseuxSeries C
   infer_instance
 
 /-- **`C⟨ε⟩` is algebraically closed.** When `C` is algebraically closed of characteristic zero, the
@@ -32,7 +32,7 @@ Corollary 2.98). Together with the fact that `C⟨ε⟩` is algebraic over `C(ε
 exhibits `C⟨ε⟩` as an algebraic closure of `C(ε)`. -/
 theorem isAlgClosed_algebraicPuiseux (C : Type*) [Field C] [IsAlgClosed C] [CharZero C] :
     IsAlgClosed (algebraicPuiseux C) := by
-  haveI : IsAlgClosed (PuiseuxSeries C) := isAlgClosed_puiseuxSeries C
+  have : IsAlgClosed (PuiseuxSeries C) := isAlgClosed_puiseuxSeries C
   exact (algebraicClosure.isAlgClosure (RatFunc C) (PuiseuxSeries C)).isAlgClosed
 
 end Azurite.BPR

@@ -43,7 +43,7 @@ theorem sqrt_nonneg (a : R) : 0 ≤ sqrt a := by
   rw [sqrt]; split <;> [exact abs_nonneg _; exact le_refl 0]
 
 theorem sq_sqrt {a : R} (ha : 0 ≤ a) : sqrt a ^ 2 = a := by
-  rw [sqrt, dif_pos ha, sq_abs, sq]
+  rw [sqrt, dite_eq_left ha, sq_abs, sq]
   exact (IsRealClosed.isSquare_of_nonneg ha).choose_spec.symm
 
 @[simp] theorem sqrt_zero : sqrt (0 : R) = 0 :=
@@ -90,15 +90,15 @@ def sphere (x : Fin k → R) (r : R) : Set (Fin k → R) :=
 
 theorem mem_openBall {x : Fin k → R} {r : R} {y : Fin k → R} :
     y ∈ openBall x r ↔ euclideanNormSq (y - x) < r ^ 2 := by
-  rw [openBall, Set.mem_setOf_eq, euclideanNorm_sq]
+  rw [openBall, Set.mem_ofPred_eq, euclideanNorm_sq]
 
 theorem mem_closedBall {x : Fin k → R} {r : R} {y : Fin k → R} :
     y ∈ closedBall x r ↔ euclideanNormSq (y - x) ≤ r ^ 2 := by
-  rw [closedBall, Set.mem_setOf_eq, euclideanNorm_sq]
+  rw [closedBall, Set.mem_ofPred_eq, euclideanNorm_sq]
 
 theorem mem_sphere {x : Fin k → R} {r : R} {y : Fin k → R} :
     y ∈ sphere x r ↔ euclideanNormSq (y - x) = r ^ 2 := by
-  rw [sphere, Set.mem_setOf_eq, euclideanNorm_sq]
+  rw [sphere, Set.mem_ofPred_eq, euclideanNorm_sq]
 
 /-! ### The balls and spheres are semialgebraic -/
 
@@ -115,21 +115,21 @@ theorem eval_ballPoly (x : Fin k → R) (r : R) (y : Fin k → R) :
 theorem isSemialgebraicSet_openBall (x : Fin k → R) (r : R) :
     IsSemialgebraicSet (openBall x r) := by
   have h : openBall x r = {y | eval y (ballPoly x r) < 0} := by
-    ext y; simp only [Set.mem_setOf_eq, mem_openBall, eval_ballPoly, sub_lt_zero]
+    ext y; simp only [Set.mem_ofPred_eq, mem_openBall, eval_ballPoly, sub_lt_zero]
   rw [h]; exact IsSemialgebraicSet.ltZero _
 
 /-- **The closed ball is semialgebraic.** -/
 theorem isSemialgebraicSet_closedBall (x : Fin k → R) (r : R) :
     IsSemialgebraicSet (closedBall x r) := by
   have h : closedBall x r = {y | eval y (ballPoly x r) ≤ 0} := by
-    ext y; simp only [Set.mem_setOf_eq, mem_closedBall, eval_ballPoly, sub_nonpos]
+    ext y; simp only [Set.mem_ofPred_eq, mem_closedBall, eval_ballPoly, sub_nonpos]
   rw [h]; exact IsSemialgebraicSet.leZero _
 
 /-- **The sphere is semialgebraic.** -/
 theorem isSemialgebraicSet_sphere (x : Fin k → R) (r : R) :
     IsSemialgebraicSet (sphere x r) := by
   have h : sphere x r = {y | eval y (ballPoly x r) = 0} := by
-    ext y; simp only [Set.mem_setOf_eq, mem_sphere, eval_ballPoly, sub_eq_zero]
+    ext y; simp only [Set.mem_ofPred_eq, mem_sphere, eval_ballPoly, sub_eq_zero]
   rw [h]; exact IsSemialgebraicSet.eqZero _
 
 /-! ### Unit ball and sphere centred at the origin -/

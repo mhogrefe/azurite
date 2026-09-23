@@ -60,7 +60,7 @@ theorem SRemS_map (σ : K →+* K') (P Q : K[X]) (n : ℕ) :
       · simp [h1, hz]
       · have : SRemS (P.map σ) (Q.map σ) (m + 1) ≠ 0 := by
           rw [h1]; simpa [Polynomial.map_eq_zero_iff σ.injective] using hz
-        simp only [this, hz, if_false]
+        simp only [this, hz, ite_false]
         rw [h0, h1, ← map_mod, Polynomial.map_neg]
 
 /-- The list form of `SRemS_map`. -/

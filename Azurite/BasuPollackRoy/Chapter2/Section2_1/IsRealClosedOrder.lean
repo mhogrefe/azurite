@@ -73,8 +73,8 @@ private lemma isRealClosed_characterize_le
     (lo : LinearOrder R) (hlo : @IsStrictOrderedRing R _ lo.toPartialOrder)
     {a b : R} :
     @LE.le R lo.toLE a b ↔ IsSquare (b - a) := by
-  letI : LinearOrder R := lo
-  letI : IsStrictOrderedRing R := hlo
+  let : LinearOrder R := lo
+  let : IsStrictOrderedRing R := hlo
   exact sub_nonneg.symm.trans IsRealClosed.nonneg_iff_isSquare
 
 /-- **Uniqueness of the order on a real closed field.**

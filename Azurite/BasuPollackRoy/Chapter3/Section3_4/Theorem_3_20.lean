@@ -52,7 +52,7 @@ theorem theorem_3_20 [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)]
     (S : Set (Fin k → R)) (hS : IsSemialgebraicSet S) (hScl : IsClosed S) (hSb : IsBoundedSet S)
     (g : (Fin k → R) → (Fin ℓ → R)) (hg : ∀ j, IsSemialgContinuousOn S (fun y => g y j)) :
     IsClosed (g '' S) ∧ IsBoundedSet (g '' S) := by
-  haveI : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
+  have : IsRealClosed (SemialgGerm R) := isRealClosed_semialgGerm
   have hgf : IsSemialgebraicFunction S g := isSemialgebraicFunction_of_coords (fun j => (hg j).1)
   have hgS : IsSemialgebraicSet (g '' S) := (proposition_2_83 hgf).1 hS (subset_refl S)
   have hmaps_g : Set.MapsTo g S (g '' S) := fun x hx => Set.mem_image_of_mem g hx
@@ -123,7 +123,7 @@ theorem theorem_3_20 [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)]
       refine and_congr_right fun _ => ?_
       show 0 < aeval z ((normPolyEps k ℓ R).map (Polynomial.aeval t).toRingHom)
         ↔ z ∈ {z | 1 < t * ∑ j : Fin ℓ, (z (Fin.natAdd k j)) ^ 2}
-      rw [aeval_substAtom_normPolyEps, Set.mem_setOf_eq]
+      rw [aeval_substAtom_normPolyEps, Set.mem_ofPred_eq]
       constructor <;> intro h <;> linarith
     -- discharge over `R`: for `t ∈ (0, 1)`, `‖g x‖² > 1/t` for some `x ∈ S`.
     have hRtrue : ∀ t : R, 0 < t → t < 1 → (Φ.mapAtom (substAtom t)).IsTrue (C := R) := by
@@ -131,7 +131,7 @@ theorem theorem_3_20 [Nonempty (Fin k)] {ℓ : ℕ} [Nonempty (Fin ℓ)]
       rw [hΦ, mapAtom_existsList, isTrue_existsList_finRange_iff, hreal t]
       obtain ⟨xx, hxS, hN⟩ := hunb (1 / t)
       refine ⟨Fin.append xx (g xx), by rw [append_mem_funGraph]; exact ⟨hxS, rfl⟩, ?_⟩
-      rw [Set.mem_setOf_eq]
+      rw [Set.mem_ofPred_eq]
       have hsum : (∑ j : Fin ℓ, ((Fin.append xx (g xx)) (Fin.natAdd k j)) ^ 2)
           = euclideanNormSq (g xx) := by
         rw [euclideanNormSq]
