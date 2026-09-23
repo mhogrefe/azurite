@@ -15,6 +15,15 @@ counterpart.  On top of these it formalizes the algorithms of several standard
 texts and runs them: the computable code is the code that is proven correct,
 and it is fast enough to use.
 
+Lean's built-in `Nat`, `Int` and `Rat` are implemented by the runtime on top of
+GMP, and Mathlib's polynomials, matrices and residue rings are noncomputable
+abstractions built over them.  The `Az*` types replace both: their limbs are
+`UInt64` arrays, every operation is written in Lean, and each is proven to agree
+with the corresponding `Nat`, `Int`, `ℚ` or Mathlib value.  Large-number
+computation therefore never leaves verified Lean code, and the built-in and
+Mathlib types appear only in specifications and as the baseline the benchmarks
+compare against.
+
 ## Highlights
 
 - **Verified arithmetic.** Multi-limb naturals with proven Karatsuba, Toom–Cook,
