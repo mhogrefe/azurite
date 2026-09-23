@@ -1,3 +1,5 @@
+# DISABLED: the blueprint (blueprint/) is developed locally and is not tracked in this
+# repository yet.  Move this file back to .github/workflows/ when the blueprint is published.
 name: Compile blueprint
 
 on:

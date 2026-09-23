@@ -2,15 +2,17 @@
 
 Welcome! When working on the Azurite project, please adhere to the following guidelines to ensure high-performance compilation and idiomatic Lean 4 code.
 
-## README and Project Orientation
+## Project Orientation
 
-**Always consult `README.md` first** when orienting yourself in the project. It contains:
+**Start with `README.md`** for the overview, build instructions and directory layout, then
+**`docs/module_map.md`** for the detailed catalog:
 - A module map describing every directory and its purpose
 - A table of all equivalence proofs (the `Equiv/` subdirectories)
-- A catalog of implemented algorithms with BPR cross-references
-- The project structure overview
+- A catalog of implemented algorithms with textbook cross-references
 
-**Keep the README updated.** When you add a new module, algorithm, equivalence proof, or BPR formalization, update the relevant section of `README.md` so that future agents and contributors can discover it.
+**Keep the module map updated.** When you add a new module, algorithm, equivalence proof, or
+textbook formalization, update the relevant section of `docs/module_map.md` so that future
+contributors can discover it.
 
 ## Mathlib Usage
 
@@ -22,10 +24,7 @@ When implementing new functions, keep provability in mind. For example, avoid le
 You can search the Mathlib source code locally in the project workspace at:
 `.lake/packages/mathlib`
 
-or (preferred) by using the lean-lsp MCP server.
-
-### ⚠️ If the LSP / MCP Server Is Down
-If the lean-lsp MCP server returns connection errors or is unavailable, **stop and ask the user to restart it**. It only takes a few seconds to restart, and working without LSP feedback is much slower due to stale diagnostics and inability to check proof states. Do not try to power through without it.
+or (preferred) through a Lean language-server integration such as the lean-lsp MCP server.
 
 ### ⚠️ IMPORTANT: Avoid Blanket Imports
 **NEVER** do a blanket `import Mathlib` at the top of a file. 
@@ -35,14 +34,6 @@ Instead:
 1. Find the specific file in Mathlib that contains the theorem or definition you need.
 2. Import only that specific module (e.g., `import Mathlib.Algebra.Polynomial.Basic` or `import Mathlib.Data.List.Basic`).
 3. If a theorem is available natively in Lean 4 Core (e.g., in `Init.Data`), you do not need to import anything from Mathlib or Batteries at all! Always check if Core has what you need first.
-
-# Crash guidance
-
-If the user just messages "c", that means "You crashed. Try to not write so much text all at once." This typically happens after a context truncation or interruption.
-
-To reduce the risk of crashes and improve reliability:
-1. **Don't promise to "write everything at once."** Long conversations accumulate context, and a large generation near the end is more likely to hit limits. Break work into pieces.
-2. **When resuming after "c"**, re-read the relevant files to regain context before continuing.
 
 # Lean 4 Tips
 

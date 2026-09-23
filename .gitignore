@@ -33,3 +33,10 @@ chart*.svg
 # Claude Code session-local state (memory lives in ~/.claude, never in-repo)
 .claude/projects/
 .claude/settings.local.json
+
+# The blueprint is developed locally and is not yet published; the whole
+# directory is untracked until it is ready for public viewing.
+/blueprint/
+
+# Claude Code session-local files
+.claude/*.lock
