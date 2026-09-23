@@ -241,4 +241,9 @@ C2 to get a shippable two-sided test early while B proceeds.
   characters at `s₂`-primes.  Remaining in B: B3 (feed the per-(p,q) Jacobi checks and the
   (6.4) sources — flags, LL via (10.7) lifting, (i3)/(j)(k) — into `theorem_6_3_LL`'s
   hypotheses; completeness halves).
+* **2026-09-22 (B3 done at the theorem level)** — `Impl_5_3_Lift.lean` (f⁺ (6.4) via (10.7);
+  2-adic parity = ε(r)) and `Alignment.lean` (`chi_eq_chi_pow`: (7.8) outputs → (6.3) inputs
+  with one exponent per (r,p)).  What remains of B is glue that belongs with the certificate
+  in Phase C: per (p,q), `theorem_8_5`/(9.10)/(9.19) → `theorem_7_8` → `chi_eq_chi_pow`, the
+  (6.4) sources by case, and the completeness halves.
 

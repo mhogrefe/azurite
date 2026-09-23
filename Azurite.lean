@@ -1200,6 +1200,7 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
 import Azurite.CohenLenstra.Algorithm_11_1
 import Azurite.CohenLenstra.Algorithm_12_1
+import Azurite.CohenLenstra.Alignment
 import Azurite.CohenLenstra.Characters
 import Azurite.CohenLenstra.Corollary_7_5
 import Azurite.CohenLenstra.Equation_8_2
@@ -1214,6 +1215,7 @@ import Azurite.CohenLenstra.Impl_4_9
 import Azurite.CohenLenstra.Impl_5_1
 import Azurite.CohenLenstra.Impl_5_2
 import Azurite.CohenLenstra.Impl_5_3
+import Azurite.CohenLenstra.Impl_5_3_Lift
 import Azurite.CohenLenstra.Impl_5_6
 import Azurite.CohenLenstra.Impl_6
 import Azurite.CohenLenstra.Impl_6_1
