@@ -111,7 +111,12 @@ directories follow these sources statement by statement.
   128–138. — `AzNat/MillerRabin.lean`.
 - Jon Sorenson, Jonathan Webster. Strong pseudoprimes to twelve prime bases.
   *Mathematics of Computation* 86 (2017), no. 304, 985–1003. — the source of the
-  pseudoprime 3317044064679887385961981 used as a guard in `AzNat/IsPrime.lean`.
+  pseudoprime 3317044064679887385961981 used as a guard in `AzNat/IsPrime.lean` and in
+  `Examples.lean`.
+- François Arnault. Constructing Carmichael numbers which are strong pseudoprimes to
+  several bases. *Journal of Symbolic Computation* 20 (1995), no. 2, 151–161. — the
+  construction behind `scripts/arnault_pseudoprime.py` and the large composites that
+  Miller–Rabin accepts in `Examples.lean` and `Examples/Main.lean`.
 - Robert Solovay, Volker Strassen. A fast Monte-Carlo test for primality. *SIAM
   Journal on Computing* 6 (1977), no. 1, 84–85. — Euler liars, in the completeness
   discussion of the Lucas–Lehmer stage (`docs/aprcl_implementation_plan.md`).

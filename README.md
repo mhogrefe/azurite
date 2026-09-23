@@ -63,7 +63,14 @@ lake build            # build the library
 lake test             # run the #guard test suites (AzuriteTests)
 lake build benchmark  # build the benchmark executable
 lake env .lake/build/bin/benchmark   # run it
+lake exe examples     # certify a 247-digit prime, factor polynomials (compiled)
 ```
+
+[`Examples.lean`](Examples.lean) is a guided tour: primality of large numbers,
+factorization over finite fields, squarefree factorization in `ℤ[x, y, z]` and
+exact linear algebra, each paired with the theorem that makes it correct.  Its
+`#guard`s run when the library is built; `lake exe examples` runs the same
+computations at compiled speed on inputs too large for the interpreter.
 
 CI ([`.github/workflows/lean.yml`](.github/workflows/lean.yml)) builds the
 library, runs the tests, and checks with
@@ -75,7 +82,7 @@ uses an axiom beyond the standard three.
 ```
 Azurite.lean          root import file (all library modules)
 AzuriteTests.lean     root import file for the #guard test suites (lake test)
-Examples.lean         usage examples
+Examples.lean         guided tour (#guard-checked); Examples/Basics.lean, Examples/Main.lean (lake exe examples)
 Azurite/
   UInt64/                        limb-level helpers with toNat semantics
   AzNat/ AzInt/ AzRat/           multi-precision naturals, integers, rationals

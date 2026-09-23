@@ -22,9 +22,14 @@ package «azurite» where
 lean_lib «Azurite» where
   -- add any library configuration options here
 
+/-- `Examples.lean` and `Examples/`: a guided tour whose `#guard`s run at build time. -/
 @[default_target]
 lean_lib «Examples» where
   -- add any library configuration options here
+
+/-- `lake exe examples`: the tour's large inputs (a 247-digit prime, …) at compiled speed. -/
+lean_exe «examples» where
+  root := `Examples.Main
 
 /-- `#guard`-based test suites. Kept out of the `Azurite` library target;
 built (and thereby run, since `#guard` checks at elaboration time) by
