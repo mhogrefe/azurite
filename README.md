@@ -90,7 +90,7 @@ subdirectory.
 ## AI usage
 
 Azurite is written using Claude. I have manually verified that the statements of key theorems are formalized correctly. The statements of Az* equivalence are generally simple to understand: for example, the equivalence of `AzPolynomial` multiplication with Mathlib's `Polynomial` multiplication is
-lean```
+```lean
 ofPoly_mul (p q : Polynomial R) :
     AzPolynomial.ofPoly (p * q) = AzPolynomial.ofPoly p * AzPolynomial.ofPoly q
 ```
