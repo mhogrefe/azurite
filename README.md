@@ -112,7 +112,7 @@ ofPoly_mul (p q : Polynomial R) :
     AzPolynomial.ofPoly (p * q) = AzPolynomial.ofPoly p * AzPolynomial.ofPoly q
 ```
 
-## Project Status
+## Project status
 
 Azurite is in active development and is very incomplete. A several-hundred-page blueprint exists, but I'm not releasing it yet because it isn't polished. Some major goals of the project include
 - Formalizing the rest of Basu-Pollack-Roy
