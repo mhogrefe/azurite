@@ -73,6 +73,17 @@ directories follow these sources statement by statement.
   multiplication of integers. *Soviet Mathematics Doklady* 3 (1963), 714–716; and
   Stephen A. Cook. *On the Minimum Computation Time of Functions*. PhD thesis, Harvard
   University, 1966. — `AzNat/Mul/ToomCook3.lean`.
+- Marco Bodrato, Alberto Zanoni. Integer and polynomial multiplication: towards optimal
+  Toom–Cook matrices. *Proceedings of ISSAC 2007*, ACM, 2007, 17–24; Marco Bodrato.
+  Towards optimal Toom–Cook multiplication for univariate and multivariate polynomials
+  in characteristic 2 and 0. *WAIFI 2007*, Lecture Notes in Computer Science 4547,
+  Springer, 2007, 116–133; Marco Bodrato. High degree Toom'n'half for balanced and
+  unbalanced multiplication. *Proceedings of ARITH 20*, IEEE, 2011, 15–22. — the
+  evaluation-point sets and interpolation strategy of the planned Toom-4, unbalanced and
+  Toom-6.5/8.5 variants (`docs/toom_cook_plan.md`, `scripts/ToomInterpolation.lean`).
+- Tudor Jebelean. An algorithm for exact division. *Journal of Symbolic Computation* 15
+  (1993), no. 2, 169–180. — exact division by a single limb via the modular inverse
+  (Brent–Zimmermann Algorithm 1.10), planned for the Toom interpolation divisions.
 - Christoph Burnikel, Joachim Ziegler. Fast recursive division. Research Report
   MPI-I-98-1-022, Max-Planck-Institut für Informatik, Saarbrücken, 1998. — the
   divide-and-conquer division in `AzNat/Div/`.

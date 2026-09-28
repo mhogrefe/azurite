@@ -40,8 +40,12 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Conversion` | `UInt64.toNat_toAzNat` and friends: conversions from every fixed-width unsigned type (and `Int64.toNat_toAzNatClampNeg`) agree with `toNat`. |
 | `Equiv/Mul/Basic` | `schoolbookMulLimbs_toNat` / `toNat_mulUInt64`: schoolbook multiplication agrees with `Nat` multiplication. |
 | `Equiv/Mul/Karatsuba` | `karatsubaMulLimbs_toNat`: Karatsuba limb multiplication agrees with `Nat` multiplication. |
-| `Equiv/Mul/ToomCook3` | `toomCook3MulLimbs_toNat` and the top-level `toNat_mul` / `ofNat_mul`: Toom-Cook 3 multiplication and the dispatching `mul` agree with `Nat` multiplication. |
-| `Equiv/Square`, `Equiv/Square/*` | `toNat_square` via `schoolbookSquareLimbs_toNat`, `karatsubaSquareLimbs_toNat`, `toomCook3SquareLimbs_toNat`: all three squaring strategies agree with `n * n`. |
+| `Equiv/Mul/ToomCook3` | `toomCook3MulLimbs_toNat`: Toom-Cook 3 multiplication agrees with `Nat` multiplication. |
+| `Equiv/Mul/ToomEval` | `polyEvalInt`/`polyEvalNat` specs; `toInt_hornerInt64`, the triangle bound `natAbs_polyEvalInt_le`, `toInt_signedMulWith` (given the multiplier's spec and `n`-limb bounds), `AzInt.toInt_exactDivOdd`, `toNat_assemble`, and the block decomposition `sliceVal_eq_polyEval_blocks` (`len ≤ r·k`). A variant's algebra reduces to a `ring` identity between `polyEvalInt` values. |
+| `Equiv/Mul/ToomCook4`, `Equiv/Square/ToomCook4` | `toomCook4MulLimbs_toNat` / `toNat_mulToomCook4` and `toomCook4SquareLimbs_toNat` / `toNat_squareToomCook4`: Toom-4 agrees with `Nat` multiplication and squaring. Three layers: `toomCook4Interpolate_toInt` (the interpolation is exact — each step a `ring` identity plus one exact division), the array-free `toomCook4_core_toNat` (eight block values below `β^k` and any multiplier correct on `(k+1)`-limb buffers), and the strong induction on `len` supplying the recursive call as that multiplier. |
+| `Equiv/Mul/ToomUnbalanced` | `toom32MulLimbs_toNat`, `toom42MulLimbs_toNat`, `mulChunksLimbs_toNat`: the unbalanced Toom-(3,2) and Toom-(4,2) variants and the chunk loop agree with `Nat` multiplication, given any balanced multiplier correct on every size (`hbal`). Interpolations `toomInterp4_toInt`/`toomInterp5_toInt`; the length-generic Horner bound `hornerInt64_abs_lt` (any `|c| ≤ 2`, up to 64 blocks). |
+| `Equiv/Mul/Dispatch` | `balancedMulLimbs_toNat`, `mulLimbsOrdered_toNat`, `mulLimbsWith_toNat`, `mulLimbs_toNat` and the top-level `toNat_mul` / `ofNat_mul`: the thresholds-driven dispatcher (`MulThresholds`) agrees with `Nat` multiplication on every branch (schoolbook, padded balanced ladder, Toom-(3,2), Toom-(4,2), chunk loop). |
+| `Equiv/Square`, `Equiv/Square/*` | `toNat_square` (in `Equiv/Square/Dispatch`) via `schoolbookSquareLimbs_toNat`, `karatsubaSquareLimbs_toNat`, `toomCook3SquareLimbs_toNat`, `toomCook4SquareLimbs_toNat`: all four squaring strategies agree with `n * n`. |
 | `Equiv/Div/*` | Staged correctness of schoolbook division: per-phase lemmas (`subMulLimbs_toNat`, `bodyStep_toNat`, `addback_toNat`), single-/double-limb divisor fast paths (`divModLimb_toNat`, `divModLimb2_toNat`), the full algorithm (`schoolbookDivModLimbs_toNat`), and the top-level `divMod_toNat` / `ofNat_div` / `ofNat_mod`. |
 | `Equiv/DivRecursiveLimbs` | `recursiveDivModLimbsAux_spec`: the recursive (divide-and-conquer) divmod satisfies the division specification. |
 | `Equiv/DivRound` | `toNat_divRound` (+ `divRound_fst`/`divRound_snd`): rounded division agrees with `round natBotSet mode (x / y)` from the abstract `Rounding/` spec. |
@@ -71,6 +75,8 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/OfLimbDigits` | `toNat_horner_foldr` / `toNat_ofLimbs_single`: digit-sequence reconstruction via Horner evaluation. |
 | `Equiv/OfLimbDigitsPow2` | `testBit_ofDigits_pow2`: bit-level characterization of power-of-two-base reconstruction. |
 | `Equiv/DivBy6` | Correctness of the precomputed normalized-divisor/reciprocal constants used by `divBy6` (`divBy6_dNorm_toNat`, `divBy6_inv_eq`, …). |
+| `ExactDivOdd` | Exact division by an odd limb `d` given its inverse `dinv = d⁻¹ mod 2^64` (Jebelean's algorithm, Brent–Zimmermann Alg. 1.10): quotient limbs low to high, one `wideMul` and one borrow subtraction per limb; inverse constants `inv3`/`inv5`/`inv9`/`inv45` checked by `decide`. For the Toom–Cook interpolation divisions. |
+| `Equiv/ExactDivOdd` | `exactDivOdd_toNat`: `d * dinv = 1 → d ∣ n → (exactDivOdd d dinv n).toNat = n.toNat / d.toNat`, by the loop invariant `T_i = hi + borrow + d · (Q / β^i)` on the unprocessed limbs. |
 | `Equiv/DivMod10p19` | Correctness of the precomputed base-10¹⁹ divisor constants used for decimal conversion (`divMod10p19_d_toNat`, `divMod10p19_inv_eq`, …). |
 | `Equiv/ParseBase` | Base-`b` parsing helpers: `charToDigit_digitToChar` round-trip and the `parseDigitsInto` fold characterization. |
 | `Equiv/ToStringBase` | `toStringBase_toNat`: base-`b` string rendering agrees with `Nat.toDigits`. |
@@ -84,7 +90,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Conversion` | `toInt_toAzInt` / `toInt_toAzInt = toNat` for every fixed-width `UInt*`/`Int*`/`USize`/`ISize` and `AzNat`, and the reverse `toInt_toUInt*` / `toInt_toInt*` direction. |
 | `Equiv/Add` | `toInt_add`: sign-magnitude addition agrees with `Int` addition. |
 | `Equiv/Sub` | `toInt_sub`: sign-magnitude subtraction agrees with `Int` subtraction. |
-| `Equiv/Mul` | `toInt_mul`: sign-magnitude multiplication agrees with `Int` multiplication. |
+| `Equiv/MulSmall`, `Equiv/Mul` | `toInt_mulUInt64` / `toInt_mulInt64` (multiplication by one limb, used by the Toom–Cook evaluation framework and kept free of the `AzNat` dispatcher's imports) and `toInt_mul`: sign-magnitude multiplication agrees with `Int` multiplication. |
 | `Equiv/DivMod` | `toInt_edivMod`: `edivMod` agrees with `Int`'s Euclidean division and modulus. |
 | `Equiv/DivRound` | `toInt_divRound`: rounded signed division agrees with `round intSet mode (x / y)` from the abstract `Rounding/` spec. |
 | `Equiv/ShiftLeft` | `toInt_shiftLeft`: left shift agrees with `Int` semantics. |
@@ -320,6 +326,9 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Karatsuba multiplication (polynomial) | — | `AzPolynomial/Karatsuba` | O(n^1.585) |
 | Karatsuba multiplication (multi-limb Nat) | — | `AzNat/Mul/Karatsuba` | O(n^1.585) |
 | Toom-Cook 3-way multiplication & squaring (multi-limb Nat) | — | `AzNat/Mul/ToomCook3`, `AzNat/Square/ToomCook3` | O(n^1.465) |
+| Toom-Cook 4-way multiplication & squaring (multi-limb Nat) | Bodrato–Zanoni points `0, ±1, ±2, 1/2, ∞`; interpolation derived in-house (divisions by 2, 3, 5, 9 only) | `AzNat/Mul/ToomCook4`, `AzNat/Square/ToomCook4` | O(n^1.404) |
+| Unbalanced Toom-Cook multiplication (multi-limb Nat): Toom-(3,2), Toom-(4,2), and the chunk loop for extreme ratios | Bodrato–Zanoni unbalanced splitting: common block size, points `0, ±1, ∞` and `0, ±1, 2, ∞`; products handed to the balanced ladder | `AzNat/Mul/ToomUnbalanced`, dispatcher in `AzNat/Mul` (`MulThresholds`; ratio bands 5/4, 15/8, 21/8 from the milestone 5 sweeps) | 4 resp. 5 balanced products of ⌈lenA/r⌉ limbs |
+| Toom–Cook evaluation framework (signed `k`-limb blocks as `AzInt`, Horner evaluation at `±1`, `±2`, `±1/2`, signed pointwise products, exact division by an odd limb, coefficient assembly) | Bodrato–Zanoni point sets; Jebelean / MCA Alg. 1.10 for the exact division | `AzNat/Mul/ToomEval`, `AzNat/ExactDivOdd` | O(n) per evaluation or interpolation pass |
 | Schoolbook multi-limb division (Möller–Granlund reciprocal steps) | MCA Alg. 1.6; Möller–Granlund Algs. 4, 5, 7 | `AzNat/Div/Schoolbook`, `UInt64/Div2By1`, `UInt64/Div3By2` | O(n²) |
 | Recursive (divide-and-conquer) multi-limb division | MCA Alg. 1.8 | `AzNat/Div/Recursive` | O(M(n) log n) |
 | Integer square root with remainder | MCA Alg. 1.13 | `AzNat/SqrtRem`, `UInt64/SqrtRem` | — |

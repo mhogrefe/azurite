@@ -27,7 +27,7 @@ import Azurite.AzNat.LenstraDivisors
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_12
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Sub
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzInt.Equiv.DivMod

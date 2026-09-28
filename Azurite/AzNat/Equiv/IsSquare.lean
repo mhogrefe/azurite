@@ -25,7 +25,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 import Azurite.AzNat.IsSquare
 import Azurite.AzNat.Equiv.SqrtRem
-import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.Square.Dispatch
 
 namespace Azurite.AzNat
 

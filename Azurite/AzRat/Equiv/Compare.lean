@@ -11,7 +11,7 @@ import Azurite.AzRat.Compare
 import Azurite.AzRat.Equiv.Basic
 import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzNat.Equiv.Compare
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Mathlib.Data.Rat.Cast.Lemmas
 
 /-!

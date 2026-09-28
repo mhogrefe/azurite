@@ -13,7 +13,7 @@ import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.DivModLimb2
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 
 namespace Azurite.AzNat
 
@@ -100,10 +100,6 @@ lemma quotient_low_times_le_4B (Q B₀ B a b c : Nat)
     rw [Nat.pow_succ]; ring
   have h_4B : (4 : Nat) * 2 ^ (c - 1) ≤ 4 * B := Nat.mul_le_mul_left _ h_B_ge
   omega
-
-/-- Shorthand: limb-list value of the slice `a[lo, lo+len)`. -/
-@[reducible] def sliceVal (a : Array UInt64) (lo len : Nat) : Nat :=
-  toNatLimbsList ((a.toList.drop lo).take len)
 
 /-- Spec for `recursiveDivModLimbsAux`.  See file docstring for the
     informal statement. -/

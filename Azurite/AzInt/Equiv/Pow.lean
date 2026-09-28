@@ -26,12 +26,6 @@ is a case split on `z.sign` and the parity of `n` (an even exponent makes the re
 
 namespace Azurite.AzInt
 
-private lemma toInt_mkNorm_zero (s : Bool) : (mkNorm s 0).toInt = 0 := by
-  unfold mkNorm
-  split_ifs
-  · rfl
-  · contradiction
-
 /-- Forward direction: `toInt` preserves `pow`. -/
 @[simp] theorem toInt_pow (z : AzInt) (n : ℕ) : (z.pow n).toInt = z.toInt ^ n := by
   show (mkNorm (z.sign || (n % 2 == 0)) (z.abs.pow n)).toInt = z.toInt ^ n

@@ -17,7 +17,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.Divisors
 import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.Div.DivMod
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Compare
 

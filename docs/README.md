@@ -7,6 +7,9 @@
   formalizes, implements or builds on, with pointers to where each is used.
 - [`aprcl_implementation_plan.md`](aprcl_implementation_plan.md): the plan and
   status log of the APR-CL primality-test implementation.
+- [`toom_cook_plan.md`](toom_cook_plan.md): the plan for the full Toom–Cook ladder
+  (Toom-4, unbalanced variants, Toom-6.5/8.5) toward FFT multiplication, with the
+  interpolation data derived by `scripts/ToomInterpolation.lean`.
 - [`formula-simplification.md`](formula-simplification.md): design notes on
   simplifying computable first-order formulas (`AzFormula`).
 - `archive/`: completed design plans, kept as a record of the decisions

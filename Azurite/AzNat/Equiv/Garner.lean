@@ -26,7 +26,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.Garner
 import Azurite.AzNat.Equiv.InvMod
 import Azurite.AzNat.Equiv.Sub
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.RingEquiv
 

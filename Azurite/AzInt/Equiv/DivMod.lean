@@ -20,19 +20,6 @@ namespace Azurite.AzInt
 
 /-! ### Helpers. -/
 
-/-- Unified `toInt` formula for `mkNorm`. -/
-private lemma toInt_mkNorm (s : Bool) (a : AzNat) :
-    (mkNorm s a).toInt = if s then (a.toNat : Int) else -(a.toNat : Int) := by
-  by_cases h : a = 0
-  · subst h
-    have hm : mkNorm s (0 : AzNat) = 0 := by
-      unfold mkNorm; simp only [↓reduceDIte]; rfl
-    rw [hm, toInt_zero, AzNat.toNat_zero]
-    cases s <;> simp
-  · cases s
-    · rw [toInt_mkNorm_false a h]; simp
-    · rw [toInt_mkNorm_true a]; simp
-
 /-- Unified `toInt` formula for `mkNonzero`. -/
 private lemma toInt_mkNonzero (s : Bool) (a : AzNat) (h : a ≠ 0) :
     (mkNonzero s a h).toInt = if s then (a.toNat : Int) else -(a.toNat : Int) := by
@@ -45,11 +32,6 @@ private lemma abs_ne_zero_of_sign_false {z : AzInt} (h : z.sign = false) : z.abs
   intro h0
   rw [z.zero_sign h0] at h
   exact (Bool.false_ne_true h.symm).elim
-
-/-- `z.toInt.natAbs = z.abs.toNat`. -/
-private lemma natAbs_toInt (z : AzInt) : z.toInt.natAbs = z.abs.toNat := by
-  show (if z.sign then ((z.abs.toNat : Int)) else -((z.abs.toNat : Int))).natAbs = z.abs.toNat
-  cases z.sign <;> simp
 
 /-- `|z.toInt| = (z.abs.toNat : Int)`. -/
 private lemma abs_toInt (z : AzInt) : |z.toInt| = (z.abs.toNat : Int) := by

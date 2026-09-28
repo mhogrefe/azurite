@@ -25,7 +25,7 @@ import Azurite.AzNat.LucasLehmerTest
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Pow2
-import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.Square.Dispatch
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_2_6
 

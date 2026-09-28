@@ -432,4 +432,8 @@ theorem toNat_lt_of_size_lt (U V : AzNat) (h : U.limbs.size < V.limbs.size) :
     omega
   omega
 
+/-- Shorthand: limb-list value of the slice `a[lo, lo+len)`. -/
+@[reducible] def sliceVal (a : Array UInt64) (lo len : Nat) : Nat :=
+  toNatLimbsList ((a.toList.drop lo).take len)
+
 end Azurite.AzNat

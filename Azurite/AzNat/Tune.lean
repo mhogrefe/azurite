@@ -284,7 +284,8 @@ def benchAzNatSquareDispatch (minThreshold : Nat) (inputs : Array AzNat) :
   let t0 ← monoNanos
   let mut checksum : Nat := 0
   for a in inputs do
-    let r := AzNat.squareDispatchParam minThreshold AzNat.squareDispatchToomCook3Cutoff a
+    let r := AzNat.squareDispatchParam minThreshold AzNat.squareDispatchToomCook3Cutoff
+      AzNat.squareDispatchToomCook4Cutoff a
     checksum := checksum + r.limbs.size
   let t1 ← monoNanos
   return (t1 - t0, checksum)
@@ -512,3 +513,352 @@ def tuneAzNatSquareToomCook3
   IO.eprintln ""
   IO.eprintln s!"[AzNat-SquareToom3] Best: toomCook3Cutoff = {bestCutoff} ({bestTime}ns)"
   return bestCutoff
+
+-- ── Milestone 5 (`docs/toom_cook_plan.md`): Toom-4 crossovers and the unbalanced bands ──
+
+/-- An `AzNat` of exactly `n` random limbs (the top limb has its high bit set). -/
+def randomAzNatLimbs (n : Nat) (g : SplitMix64) : AzNat × SplitMix64 := Id.run do
+  let mut g := g
+  let mut limbs : Array UInt64 := #[]
+  for _ in List.range n do
+    let (x, g') := SplitMix64.next g
+    g := g'
+    limbs := limbs.push x
+  if 0 < n then
+    limbs := limbs.set! (n - 1) (limbs[n - 1]! ||| ((1 : UInt64) <<< 63))
+  return (AzNat.ofLimbs limbs, g)
+
+/-- `reps` random pairs of exactly `lenA` and `lenB` limbs. -/
+def randomLimbPairs (reps lenA lenB : Nat) (g : SplitMix64) :
+    Array (AzNat × AzNat) × SplitMix64 := Id.run do
+  let mut g := g
+  let mut pairs : Array (AzNat × AzNat) := #[]
+  for _ in List.range reps do
+    let (a, g1) := randomAzNatLimbs lenA g
+    let (b, g2) := randomAzNatLimbs lenB g1
+    g := g2
+    pairs := pairs.push (a, b)
+  return (pairs, g)
+
+/-- Time `f` over all inputs once (the checksum keeps the results live). -/
+@[noinline]
+def timeAzNatOnce {α : Type} (f : α → AzNat) (inputs : Array α) : IO (UInt64 × Nat) := do
+  let t0 ← monoNanos
+  let mut checksum : Nat := 0
+  for x in inputs do
+    let r := f x
+    checksum := checksum + r.limbs.size
+  let t1 ← monoNanos
+  return (t1 - t0, checksum)
+
+/-- Median-of-three timing of `f` over all inputs, in nanoseconds. -/
+def timeAzNatMedian3 {α : Type} (f : α → AzNat) (inputs : Array α) : IO UInt64 := do
+  let (t1, _) ← timeAzNatOnce f inputs
+  let (t2, _) ← timeAzNatOnce f inputs
+  let (t3, _) ← timeAzNatOnce f inputs
+  return max (min t1 t2) (min (max t1 t2) t3)
+
+/-- Microseconds per input from a total in nanoseconds. -/
+private def usPer (ns : UInt64) (count : Nat) : Nat := ns.toNat / (1000 * max count 1)
+
+/-- Multiplication with explicit thresholds (the production `mul` with `th` in place of the
+defaults). -/
+def mulWithThresholds (th : MulThresholds) (a b : AzNat) : AzNat :=
+  AzNat.ofLimbs (mulLimbsWith th a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
+    (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+
+/-- **Toom-4 multiplication crossover.**  For each size `n`, on pairs of exactly `n` limbs,
+Toom-3 all the way down against Toom-4 at the top level only (its recursive calls on
+`⌈n/4⌉ + 1` limbs fall back to Toom-3).  The crossover is the first size at which Toom-4
+wins; that is the value for `MulThresholds.toomCook4`. -/
+def tuneAzNatMulToomCook4 (th : MulThresholds := defaultMulThresholds)
+    (sizes : Array Nat := #[256, 320, 384, 448, 512, 640, 768, 896, 1024, 1280, 1536, 2048, 3072,
+      4096])
+    (workLimbs : Nat := 16384) (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-MulToom4] Toom-3 (cutoff {th.toomCook3}, Karatsuba below {th.schoolbook}) vs Toom-4 at the top level; µs per product"
+  IO.eprintln (padLeft 6 "limbs" ++ padLeft 7 "pairs" ++ padLeft 12 "toom3" ++ padLeft 12 "toom4"
+    ++ padLeft 10 "t4/t3 %")
+  let mut g := mkSplitMix64 seed
+  for n in sizes do
+    let reps := max 4 (workLimbs / n)
+    let (pairs, g') := randomLimbPairs reps n n g
+    g := g'
+    let t3 ← timeAzNatMedian3 (fun p : AzNat × AzNat => mulToomCook3 th.toomCook3 th.schoolbook p.1 p.2)
+      pairs
+    let t4 ← timeAzNatMedian3 (fun p : AzNat × AzNat => mulToomCook4 n th.toomCook3 th.schoolbook p.1 p.2)
+      pairs
+    let pct := (100 * t4.toNat) / max t3.toNat 1
+    let marker := if t4 < t3 then "  <- toom4 wins" else ""
+    IO.eprintln (padLeft 6 s!"{n}" ++ padLeft 7 s!"{reps}" ++ padLeft 12 s!"{usPer t3 reps}"
+      ++ padLeft 12 s!"{usPer t4 reps}" ++ padLeft 10 s!"{pct}" ++ marker)
+
+/-- **Toom-4 squaring crossover**, as `tuneAzNatMulToomCook4` for squaring. -/
+def tuneAzNatSquareToomCook4 (toomCook3Cutoff : Nat := squareDispatchToomCook3Cutoff)
+    (karatsubaCutoff : Nat := squareDispatchThreshold)
+    (sizes : Array Nat := #[128, 192, 256, 320, 384, 448, 512, 640, 768, 1024, 1280, 1536, 2048,
+      3072, 4096])
+    (workLimbs : Nat := 16384) (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-SquareToom4] Toom-3 squaring (cutoff {toomCook3Cutoff}, Karatsuba below {karatsubaCutoff}) vs Toom-4 at the top level; µs per square"
+  IO.eprintln (padLeft 6 "limbs" ++ padLeft 7 "inputs" ++ padLeft 12 "toom3" ++ padLeft 12 "toom4"
+    ++ padLeft 10 "t4/t3 %")
+  let mut g := mkSplitMix64 seed
+  for n in sizes do
+    let reps := max 4 (workLimbs / n)
+    let mut inputs : Array AzNat := #[]
+    for _ in List.range reps do
+      let (a, g') := randomAzNatLimbs n g
+      g := g'
+      inputs := inputs.push a
+    let t3 ← timeAzNatMedian3 (fun a => squareToomCook3 toomCook3Cutoff karatsubaCutoff a) inputs
+    let t4 ← timeAzNatMedian3 (fun a => squareToomCook4 n toomCook3Cutoff karatsubaCutoff a) inputs
+    let pct := (100 * t4.toNat) / max t3.toNat 1
+    let marker := if t4 < t3 then "  <- toom4 wins" else ""
+    IO.eprintln (padLeft 6 s!"{n}" ++ padLeft 7 s!"{reps}" ++ padLeft 12 s!"{usPer t3 reps}"
+      ++ padLeft 12 s!"{usPer t4 reps}" ++ padLeft 10 s!"{pct}" ++ marker)
+
+/-- The five strategies `mulLimbsOrdered` chooses between, on `AzNat`s with
+`b.limbs.size ≤ a.limbs.size`: schoolbook, the balanced ladder on `b` padded to `a`'s length,
+Toom-(3,2), Toom-(4,2), and the chunk loop. -/
+def unbalancedStrategy (th : MulThresholds) (which : Nat) (a b : AzNat) : AzNat :=
+  match which with
+  | 0 => AzNat.ofLimbs (schoolbookMulLimbs a.limbs b.limbs 0 a.limbs.size 0 b.limbs.size
+      (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+  | 1 => AzNat.ofLimbs (balancedMulLimbs th a.limbs (truncatePad b.limbs a.limbs.size) 0 0
+      a.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _) (by rw [truncatePad_size]; omega))
+  | 2 => AzNat.ofLimbs (toom32MulLimbs (balancedMul th) a.limbs b.limbs 0 a.limbs.size 0
+      b.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+  | 3 => AzNat.ofLimbs (toom42MulLimbs (balancedMul th) a.limbs b.limbs 0 a.limbs.size 0
+      b.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+  | _ => AzNat.ofLimbs (mulChunksLimbs (balancedMul th) a.limbs b.limbs 0 a.limbs.size 0
+      b.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _) (Nat.zero_add _ ▸ Nat.le_refl _))
+
+/-- **The unbalanced bands.**  For each shorter length `lenB` and ratio `r/8`, pairs of exactly
+`lenA = lenB·r/8` and `lenB` limbs, timed under each of the five strategies.  The winners
+determine the ratio bands of `mulLimbsOrdered` and `MulThresholds.unbalanced`. -/
+def tuneAzNatUnbalanced (th : MulThresholds := defaultMulThresholds)
+    (lenBs : Array Nat := #[32, 48, 64, 96, 128, 192, 256, 512])
+    (ratios8 : Array Nat := #[8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 32])
+    (workLimbs : Nat := 8192) (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-Unbalanced] thresholds schoolbook {th.schoolbook}, toom3 {th.toomCook3}, toom4 {th.toomCook4}; µs per product"
+  let names := #["school", "padded", "toom32", "toom42", "chunks"]
+  IO.eprintln (padLeft 6 "lenB" ++ padLeft 6 "lenA" ++ padLeft 7 "ratio" ++ padLeft 6 "pairs"
+    ++ String.join (names.toList.map (padLeft 10 ·)) ++ "  winner")
+  let mut g := mkSplitMix64 seed
+  for lenB in lenBs do
+    for r in ratios8 do
+      let lenA := lenB * r / 8
+      let reps := max 4 (workLimbs / lenA)
+      let (pairs, g') := randomLimbPairs reps lenA lenB g
+      g := g'
+      let mut times : Array UInt64 := #[]
+      for which in List.range names.size do
+        let t ← timeAzNatMedian3 (fun p : AzNat × AzNat => unbalancedStrategy th which p.1 p.2)
+          pairs
+        times := times.push t
+      let mut best := 0
+      for i in List.range names.size do
+        if times[i]! < times[best]! then best := i
+      let ratioStr := s!"{r / 8}.{(r % 8) * 125}"
+      IO.eprintln (padLeft 6 s!"{lenB}" ++ padLeft 6 s!"{lenA}" ++ padLeft 7 ratioStr
+        ++ padLeft 6 s!"{reps}"
+        ++ String.join (times.toList.map fun t => padLeft 10 s!"{usPer t reps}")
+        ++ "  " ++ names[best]!)
+
+/-- **Old against new dispatcher** on the geometric random distribution: the pre-milestone-4
+`mulDispatchParam 16 1 4 256` (pad to the longer length, schoolbook below ratio 1/4) against
+`mulWithThresholds th`. -/
+def tuneAzNatMulDispatchCompare (th : MulThresholds := defaultMulThresholds)
+    (meanBitLengths : Array Rat := #[4096, 16384, 65536, 262144]) (nPairs : Nat := 100)
+    (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-Dispatch] old `mulDispatchParam 16 1 4 256` vs new dispatcher (schoolbook {th.schoolbook}, toom3 {th.toomCook3}, toom4 {th.toomCook4}, unbalanced {th.unbalanced}); µs per product"
+  IO.eprintln (padLeft 10 "mean bits" ++ padLeft 7 "pairs" ++ padLeft 12 "old" ++ padLeft 12 "new"
+    ++ padLeft 10 "new/old %")
+  for m in meanBitLengths do
+    let pairs := generateAzNatPairsUnfiltered nPairs m seed
+    let tOld ← timeAzNatMedian3 (fun p : AzNat × AzNat => mulDispatchParam 16 1 4 256 p.1 p.2) pairs
+    let tNew ← timeAzNatMedian3 (fun p : AzNat × AzNat => mulWithThresholds th p.1 p.2) pairs
+    let pct := (100 * tNew.toNat) / max tOld.toNat 1
+    IO.eprintln (padLeft 10 s!"{m.floor}" ++ padLeft 7 s!"{pairs.size}"
+      ++ padLeft 12 s!"{usPer tOld pairs.size}" ++ padLeft 12 s!"{usPer tNew pairs.size}"
+      ++ padLeft 10 s!"{pct}")
+
+/-- **Toom-4 cutoff sweep on the production multiplication dispatcher**, over the geometric
+random distribution of balanced pairs (limb ratio at least `balanceRatio/100`).  The last
+cutoff should be larger than any input, so it measures the ladder without Toom-4. -/
+def tuneAzNatMulToomCook4Dispatch (th : MulThresholds := defaultMulThresholds)
+    (cutoffs : Array Nat := #[256, 320, 384, 448, 512, 640, 768, 1024, 1536, 2048, 1000000])
+    (nPairs : Nat := 200) (meanBitLength : Rat := 65536) (balanceRatio : Nat := 75)
+    (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-MulToom4Dispatch] {nPairs} balanced pairs, mean bit length {meanBitLength}; total ms per cutoff"
+  let pairs := generateBalancedAzNatPairs nPairs meanBitLength balanceRatio seed
+  let mut line := ""
+  let mut best := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  let mut times : Array UInt64 := #[]
+  for c in cutoffs do
+    let t ← timeAzNatMedian3 (fun p : AzNat × AzNat =>
+      mulWithThresholds { th with toomCook4 := c } p.1 p.2) pairs
+    times := times.push t
+    if t < bestTime then
+      bestTime := t
+      best := c
+  IO.eprintln ("  cutoff  " ++ String.join (cutoffs.toList.map fun c => padLeft 10 s!"{c}"))
+  for i in List.range cutoffs.size do
+    let marker := if cutoffs[i]! == best then "*" else " "
+    line := line ++ padLeft 10 (s!"{times[i]!.toNat / 1000000}" ++ marker)
+  IO.eprintln ("  ms      " ++ line)
+  IO.eprintln s!"[AzNat-MulToom4Dispatch] Best: toomCook4 = {best}"
+
+/-- **Toom-4 cutoff sweep on the production squaring dispatcher**, over the geometric random
+distribution. -/
+def tuneAzNatSquareToomCook4Dispatch (schoolbook : Nat := squareDispatchThreshold)
+    (toomCook3 : Nat := squareDispatchToomCook3Cutoff)
+    (cutoffs : Array Nat := #[128, 192, 256, 320, 384, 448, 512, 640, 768, 1024, 1536, 2048,
+      1000000])
+    (nInputs : Nat := 400) (meanBitLength : Rat := 65536) (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-SquareToom4Dispatch] {nInputs} inputs, mean bit length {meanBitLength}, schoolbook {schoolbook}, toomCook3 {toomCook3}; total ms per cutoff"
+  let inputs := generateAzNatSingles nInputs meanBitLength seed
+  let mut line := ""
+  let mut best := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  let mut times : Array UInt64 := #[]
+  for c in cutoffs do
+    let t ← timeAzNatMedian3 (fun a => squareDispatchParam schoolbook toomCook3 c a) inputs
+    times := times.push t
+    if t < bestTime then
+      bestTime := t
+      best := c
+  IO.eprintln ("  cutoff  " ++ String.join (cutoffs.toList.map fun c => padLeft 10 s!"{c}"))
+  for i in List.range cutoffs.size do
+    let marker := if cutoffs[i]! == best then "*" else " "
+    line := line ++ padLeft 10 (s!"{times[i]!.toNat / 1000000}" ++ marker)
+  IO.eprintln ("  ms      " ++ line)
+  IO.eprintln s!"[AzNat-SquareToom4Dispatch] Best: toomCook4 = {best}"
+
+/-- Per-size A/B table for two multiplication strategies, each given the size `n` (so a
+strategy can be "the variant at the top level only": pass `n` as its cutoff). -/
+def crossoverTableMul (tag nameA nameB : String) (fA fB : Nat → AzNat → AzNat → AzNat)
+    (sizes : Array Nat) (workLimbs : Nat) (seed : UInt64) : IO Unit := do
+  IO.eprintln s!"[{tag}] {nameA} vs {nameB}; µs per product"
+  IO.eprintln (padLeft 6 "limbs" ++ padLeft 7 "pairs" ++ padLeft 12 nameA ++ padLeft 12 nameB
+    ++ padLeft 10 "B/A %")
+  let mut g := mkSplitMix64 seed
+  for n in sizes do
+    let reps := max 4 (workLimbs / n)
+    let (pairs, g') := randomLimbPairs reps n n g
+    g := g'
+    let tA ← timeAzNatMedian3 (fun p : AzNat × AzNat => fA n p.1 p.2) pairs
+    let tB ← timeAzNatMedian3 (fun p : AzNat × AzNat => fB n p.1 p.2) pairs
+    let pct := (100 * tB.toNat) / max tA.toNat 1
+    let marker := if tB < tA then s!"  <- {nameB} wins" else ""
+    IO.eprintln (padLeft 6 s!"{n}" ++ padLeft 7 s!"{reps}" ++ padLeft 12 s!"{usPer tA reps}"
+      ++ padLeft 12 s!"{usPer tB reps}" ++ padLeft 10 s!"{pct}" ++ marker)
+
+/-- Per-size A/B table for two squaring strategies. -/
+def crossoverTableSquare (tag nameA nameB : String) (fA fB : Nat → AzNat → AzNat)
+    (sizes : Array Nat) (workLimbs : Nat) (seed : UInt64) : IO Unit := do
+  IO.eprintln s!"[{tag}] {nameA} vs {nameB}; µs per square"
+  IO.eprintln (padLeft 6 "limbs" ++ padLeft 7 "inputs" ++ padLeft 12 nameA ++ padLeft 12 nameB
+    ++ padLeft 10 "B/A %")
+  let mut g := mkSplitMix64 seed
+  for n in sizes do
+    let reps := max 4 (workLimbs / n)
+    let mut inputs : Array AzNat := #[]
+    for _ in List.range reps do
+      let (a, g') := randomAzNatLimbs n g
+      g := g'
+      inputs := inputs.push a
+    let tA ← timeAzNatMedian3 (fA n) inputs
+    let tB ← timeAzNatMedian3 (fB n) inputs
+    let pct := (100 * tB.toNat) / max tA.toNat 1
+    let marker := if tB < tA then s!"  <- {nameB} wins" else ""
+    IO.eprintln (padLeft 6 s!"{n}" ++ padLeft 7 s!"{reps}" ++ padLeft 12 s!"{usPer tA reps}"
+      ++ padLeft 12 s!"{usPer tB reps}" ++ padLeft 10 s!"{pct}" ++ marker)
+
+/-- **Karatsuba crossover**: schoolbook against Karatsuba at the top level only (its halves
+schoolbook). -/
+def tuneAzNatKaratsubaCrossover (th : MulThresholds := defaultMulThresholds)
+    (sizes : Array Nat := #[8, 12, 16, 24, 32, 48, 64, 80, 96, 112, 128, 160, 192, 256])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableMul "AzNat-KaraCross" "school" "kara-top"
+    (fun _ a b => unbalancedStrategy th 0 a b) (fun n a b => mulKaratsuba n a b)
+    sizes workLimbs seed
+
+/-- **Toom-3 crossover**: recursive Karatsuba (schoolbook below `th.schoolbook`) against Toom-3
+at the top level only (its five products by that Karatsuba). -/
+def tuneAzNatToomCook3Crossover (th : MulThresholds := defaultMulThresholds)
+    (sizes : Array Nat := #[48, 64, 96, 128, 160, 192, 256, 320, 384, 512, 768, 1024])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableMul "AzNat-Toom3Cross" "kara" "toom3-top"
+    (fun _ a b => mulKaratsuba th.schoolbook a b) (fun n a b => mulToomCook3 n th.schoolbook a b)
+    sizes workLimbs seed
+
+/-- **Karatsuba squaring crossover**: schoolbook squaring against Karatsuba squaring at the top
+level only. -/
+def tuneAzNatSquareKaratsubaCrossover
+    (sizes : Array Nat := #[8, 12, 16, 24, 32, 48, 64, 80, 96, 112, 128, 160, 192, 256])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableSquare "AzNat-SqKaraCross" "school" "kara-top"
+    (fun n a => squareKaratsuba (n + 1) a) (fun n a => squareKaratsuba n a) sizes workLimbs seed
+
+/-- **Toom-3 squaring crossover**: recursive Karatsuba squaring (schoolbook below
+`karatsubaCutoff`) against Toom-3 squaring at the top level only. -/
+def tuneAzNatSquareToomCook3Crossover (karatsubaCutoff : Nat := squareDispatchThreshold)
+    (sizes : Array Nat := #[48, 64, 96, 128, 160, 192, 256, 320, 384, 512, 768, 1024])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableSquare "AzNat-SqToom3Cross" "kara" "toom3-top"
+    (fun _ a => squareKaratsuba karatsubaCutoff a)
+    (fun n a => squareToomCook3 n karatsubaCutoff a) sizes workLimbs seed
+
+/-- Render a 2-D grid of total milliseconds with the minimum starred. -/
+private def printGrid (rowLabel colLabel : String) (rows cols : Array Nat)
+    (times : Array (Array UInt64)) : IO Unit := do
+  let mut best : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  for r in times do
+    for t in r do
+      if t < best then best := t
+  IO.eprintln (padLeft 10 s!"{rowLabel}\\{colLabel}"
+    ++ String.join (cols.toList.map fun c => padLeft 9 s!"{c}"))
+  for i in List.range rows.size do
+    let mut line := padLeft 10 s!"{rows[i]!}"
+    for j in List.range cols.size do
+      let t := times[i]![j]!
+      let marker := if t == best then "*" else " "
+      line := line ++ padLeft 9 (s!"{t.toNat / 1000000}" ++ marker)
+    IO.eprintln line
+
+/-- **The balanced ladder's lower cutoffs**: a 2-D sweep of `(schoolbook, toomCook3)` on the
+production multiplication dispatcher over balanced random pairs. -/
+def tuneAzNatMulLadder2D (th : MulThresholds := defaultMulThresholds)
+    (schoolbooks : Array Nat := #[16, 32, 48, 64, 80, 96, 128])
+    (toomCook3s : Array Nat := #[128, 192, 256, 320, 384, 512])
+    (nPairs : Nat := 200) (meanBitLength : Rat := 16384) (balanceRatio : Nat := 75)
+    (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-MulLadder2D] {nPairs} balanced pairs, mean bit length {meanBitLength}, toomCook4 {th.toomCook4}; total ms"
+  let pairs := generateBalancedAzNatPairs nPairs meanBitLength balanceRatio seed
+  let mut times : Array (Array UInt64) := #[]
+  for s in schoolbooks do
+    let mut row : Array UInt64 := #[]
+    for t3 in toomCook3s do
+      let t ← timeAzNatMedian3 (fun p : AzNat × AzNat =>
+        mulWithThresholds { th with schoolbook := s, toomCook3 := t3 } p.1 p.2) pairs
+      row := row.push t
+    times := times.push row
+  printGrid "school" "toom3" schoolbooks toomCook3s times
+
+/-- **The squaring ladder's lower cutoffs**: a 2-D sweep of `(schoolbook, toomCook3)` on the
+production squaring dispatcher. -/
+def tuneAzNatSquareLadder2D (toomCook4Cutoff : Nat := squareDispatchToomCook4Cutoff)
+    (schoolbooks : Array Nat := #[16, 32, 48, 64, 80, 96, 128])
+    (toomCook3s : Array Nat := #[64, 96, 128, 192, 256, 320, 384])
+    (nInputs : Nat := 400) (meanBitLength : Rat := 16384) (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-SquareLadder2D] {nInputs} inputs, mean bit length {meanBitLength}, toomCook4 {toomCook4Cutoff}; total ms"
+  let inputs := generateAzNatSingles nInputs meanBitLength seed
+  let mut times : Array (Array UInt64) := #[]
+  for s in schoolbooks do
+    let mut row : Array UInt64 := #[]
+    for t3 in toomCook3s do
+      let t ← timeAzNatMedian3 (fun a => squareDispatchParam s t3 toomCook4Cutoff a) inputs
+      row := row.push t
+    times := times.push row
+  printGrid "school" "toom3" schoolbooks toomCook3s times

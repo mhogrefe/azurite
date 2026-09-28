@@ -16,8 +16,8 @@ import Azurite.AzNat.Compare
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Sub
-import Azurite.AzNat.Equiv.Mul.ToomCook3
-import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
+import Azurite.AzNat.Equiv.Square.Dispatch
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Basic
 import Azurite.Algorithm.FastPow

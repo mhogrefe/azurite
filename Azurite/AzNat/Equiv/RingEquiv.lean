@@ -9,7 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Compare
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Instances
 import Mathlib.Algebra.Ring.Equiv
 import Mathlib.Order.Hom.Basic

@@ -18,7 +18,7 @@ import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Mul.ToomCook3
-import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.Square.Dispatch
 import Azurite.UInt64.Equiv.SqrtRem
 import Mathlib.Data.Nat.Size
 import Mathlib.Data.Nat.Sqrt

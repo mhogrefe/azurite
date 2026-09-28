@@ -67,7 +67,22 @@ def validBenchmarks : List String :=
    "az_nat_pow_algorithms", "aprcl",
    "tune_karatsuba", "tune_karatsuba_rat", "tune_karatsuba_zmod", "tune_karatsuba_all",
    "tune_karatsuba_aznat", "tune_karatsuba_aznat_2d",
-   "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3"]
+   "tune_aznat_square", "tune_aznat_mul_toomcook3", "tune_aznat_square_toomcook3",
+   "tune_aznat_mul_toomcook4", "tune_aznat_square_toomcook4", "tune_aznat_unbalanced",
+   "tune_aznat_mul_dispatch_compare", "tune_aznat_mul_toomcook4_dispatch",
+   "tune_aznat_square_toomcook4_dispatch", "tune_aznat_karatsuba_crossover",
+   "tune_aznat_toomcook3_crossover", "tune_aznat_square_karatsuba_crossover",
+   "tune_aznat_square_toomcook3_crossover", "tune_aznat_mul_ladder_2d",
+   "tune_aznat_square_ladder_2d"]
+
+/-- `MulThresholds` from the config keys `schoolbook`, `toomCook3`, `toomCook4`, `unbalanced`
+(defaults: the production values). -/
+def mulThresholdsFromConfig (cfg : Std.HashMap String String) : Azurite.AzNat.MulThresholds :=
+  let d := Azurite.AzNat.defaultMulThresholds
+  { schoolbook := configGetNat cfg "schoolbook" d.schoolbook,
+    toomCook3 := configGetNat cfg "toomCook3" d.toomCook3,
+    toomCook4 := configGetNat cfg "toomCook4" d.toomCook4,
+    unbalanced := configGetNat cfg "unbalanced" d.unbalanced }
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -166,6 +181,66 @@ def main (args : List String) : IO Unit := do
         let nInputs := configGetNat cfg "nInputs" 400
         let _ ← tuneAzNatSquareToomCook3 (nInputs := nInputs)
                   (meanBitLength := meanBitLength) (seed := seed)
+      | "tune_aznat_mul_toomcook4" =>
+        -- Per-size Toom-3 vs top-level Toom-4 table (milestone 5 of the Toom ladder).
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let workLimbs := configGetNat cfg "workLimbs" 16384
+        tuneAzNatMulToomCook4 (th := th) (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_square_toomcook4" =>
+        let workLimbs := configGetNat cfg "workLimbs" 16384
+        tuneAzNatSquareToomCook4 (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_unbalanced" =>
+        -- Ratio-band table for the unbalanced strategies.
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let workLimbs := configGetNat cfg "workLimbs" 8192
+        tuneAzNatUnbalanced (th := th) (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_mul_toomcook4_dispatch" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let meanBitLength := configGetRat cfg "meanBitLength" 65536
+        let nPairs := configGetNat cfg "nPairs" 200
+        let balanceRatio := configGetNat cfg "balanceRatio" 75
+        tuneAzNatMulToomCook4Dispatch (th := th) (nPairs := nPairs) (meanBitLength := meanBitLength)
+          (balanceRatio := balanceRatio) (seed := seed)
+      | "tune_aznat_square_toomcook4_dispatch" =>
+        let meanBitLength := configGetRat cfg "meanBitLength" 65536
+        let nInputs := configGetNat cfg "nInputs" 400
+        let sb := configGetNat cfg "squareSchoolbook" Azurite.AzNat.squareDispatchThreshold
+        let t3 := configGetNat cfg "squareToomCook3" Azurite.AzNat.squareDispatchToomCook3Cutoff
+        tuneAzNatSquareToomCook4Dispatch (schoolbook := sb) (toomCook3 := t3) (nInputs := nInputs)
+          (meanBitLength := meanBitLength) (seed := seed)
+      | "tune_aznat_karatsuba_crossover" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        tuneAzNatKaratsubaCrossover (th := th) (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_toomcook3_crossover" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        tuneAzNatToomCook3Crossover (th := th) (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_square_karatsuba_crossover" =>
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        tuneAzNatSquareKaratsubaCrossover (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_square_toomcook3_crossover" =>
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        let kara := configGetNat cfg "squareSchoolbook" Azurite.AzNat.squareDispatchThreshold
+        tuneAzNatSquareToomCook3Crossover (karatsubaCutoff := kara) (workLimbs := workLimbs)
+          (seed := seed)
+      | "tune_aznat_mul_ladder_2d" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let meanBitLength := configGetRat cfg "meanBitLength" 16384
+        let nPairs := configGetNat cfg "nPairs" 200
+        let balanceRatio := configGetNat cfg "balanceRatio" 75
+        tuneAzNatMulLadder2D (th := th) (nPairs := nPairs) (meanBitLength := meanBitLength)
+          (balanceRatio := balanceRatio) (seed := seed)
+      | "tune_aznat_square_ladder_2d" =>
+        let meanBitLength := configGetRat cfg "meanBitLength" 16384
+        let nInputs := configGetNat cfg "nInputs" 400
+        let t4 := configGetNat cfg "squareToomCook4" Azurite.AzNat.squareDispatchToomCook4Cutoff
+        tuneAzNatSquareLadder2D (toomCook4Cutoff := t4) (nInputs := nInputs)
+          (meanBitLength := meanBitLength) (seed := seed)
+      | "tune_aznat_mul_dispatch_compare" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let nPairs := configGetNat cfg "nPairs" 100
+        tuneAzNatMulDispatchCompare (th := th) (nPairs := nPairs) (seed := seed)
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

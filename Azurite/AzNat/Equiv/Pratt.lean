@@ -24,7 +24,7 @@ import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.Div.DivMod
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzZMod.Instances
 import Mathlib.NumberTheory.LucasPrimality
 

@@ -7,6 +7,12 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+/-
+Copyright © 2026 Mikhail Hogrefe
+This file is part of Azurite.
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
 
 import Azurite.APRCL.Equiv.Complete
 import Azurite.APRCL.Equiv.JacobiAlign
@@ -63,6 +69,7 @@ import Azurite.AzInt.Equiv.DivRound
 import Azurite.AzInt.Equiv.ExtendedGcd
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
+import Azurite.AzInt.Equiv.MulSmall
 import Azurite.AzInt.Equiv.NormalizedGcd
 import Azurite.AzInt.Equiv.Parity
 import Azurite.AzInt.Equiv.Parse
@@ -80,6 +87,7 @@ import Azurite.AzInt.ExtendedGcd
 import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Mul
+import Azurite.AzInt.MulSmall
 import Azurite.AzInt.NormalizedGcd
 import Azurite.AzInt.Parity
 import Azurite.AzInt.ParsableElement
@@ -282,6 +290,7 @@ import Azurite.AzNat.Equiv.DivMod10p19
 import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.Divisors
+import Azurite.AzNat.Equiv.ExactDivOdd
 import Azurite.AzNat.Equiv.Garner
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.GetBits
@@ -298,8 +307,12 @@ import Azurite.AzNat.Equiv.LucasLehmerTest
 import Azurite.AzNat.Equiv.MillerRabin
 import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Mul.Karatsuba
 import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.ToomCook4
+import Azurite.AzNat.Equiv.Mul.ToomEval
+import Azurite.AzNat.Equiv.Mul.ToomUnbalanced
 import Azurite.AzNat.Equiv.MulModPow2.Dispatch
 import Azurite.AzNat.Equiv.MulModPow2.Karatsuba
 import Azurite.AzNat.Equiv.MulModPow2.Schoolbook
@@ -323,8 +336,10 @@ import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.Square
+import Azurite.AzNat.Equiv.Square.Dispatch
 import Azurite.AzNat.Equiv.Square.Karatsuba
 import Azurite.AzNat.Equiv.Square.ToomCook3
+import Azurite.AzNat.Equiv.Square.ToomCook4
 import Azurite.AzNat.Equiv.SquareModPow2.Dispatch
 import Azurite.AzNat.Equiv.SquareModPow2.Karatsuba
 import Azurite.AzNat.Equiv.SquareModPow2.ToomCook3
@@ -333,6 +348,7 @@ import Azurite.AzNat.Equiv.SubModPow2
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.ExactDivOdd
 import Azurite.AzNat.Garner
 import Azurite.AzNat.Gcd
 import Azurite.AzNat.GetBits
@@ -353,6 +369,9 @@ import Azurite.AzNat.Mul
 import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.Mul.ToomCook3
+import Azurite.AzNat.Mul.ToomCook4
+import Azurite.AzNat.Mul.ToomEval
+import Azurite.AzNat.Mul.ToomUnbalanced
 import Azurite.AzNat.MulModPow2.Dispatch
 import Azurite.AzNat.MulModPow2.Karatsuba
 import Azurite.AzNat.MulModPow2.Schoolbook
@@ -380,6 +399,7 @@ import Azurite.AzNat.Square
 import Azurite.AzNat.Square.Karatsuba
 import Azurite.AzNat.Square.Schoolbook
 import Azurite.AzNat.Square.ToomCook3
+import Azurite.AzNat.Square.ToomCook4
 import Azurite.AzNat.SquareModPow2.Dispatch
 import Azurite.AzNat.SquareModPow2.Karatsuba
 import Azurite.AzNat.SquareModPow2.Schoolbook

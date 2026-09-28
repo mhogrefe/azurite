@@ -16,7 +16,7 @@ import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.Size
-import Azurite.AzNat.Equiv.Mul.ToomCook3
+import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.SqrtRem
 import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Algebra.Order.Field.Rat

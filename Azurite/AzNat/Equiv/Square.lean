@@ -114,8 +114,8 @@ lemma toNatLimbsList_sq_eq (s : List UInt64) :
         have h_take_pref : (xs ++ [x]).take k = xs.take k :=
           List.take_append_of_le_length (by omega)
         rw [h_get', h_take_pref]
-    rw [h_len, h_diag, h_diag_pref _ (le_refl _),
-        h_offdiag, h_offdiag_pref _ (le_refl _)]
+    rw [h_len, h_diag, h_diag_pref _ (Nat.le_refl _),
+        h_offdiag, h_offdiag_pref _ (Nat.le_refl _)]
     rw [h_toNat_append]
     have h_ih : (toNatLimbsList xs) ^ 2 = diagSumAux xs xs.length + 2 * offDiagSumAux xs xs.length := ih
     have h_pow2 : (2 : Nat) ^ (128 * xs.length) = (2 ^ (64 * xs.length)) ^ 2 := by
@@ -921,7 +921,7 @@ private lemma partialOffDiagSum_eq_offDiagSumAux (a : Array UInt64) (lo len : Na
         offDiagSumAux ((a.toList.drop lo).take (n + 1)) n
           = offDiagSumAux ((a.toList.drop lo).take n) n := by
       have h1 := offDiagSumAux_take_eq (a.toList.drop lo) n (n + 1) (by omega)
-      have h2 := offDiagSumAux_take_eq (a.toList.drop lo) n n (le_refl _)
+      have h2 := offDiagSumAux_take_eq (a.toList.drop lo) n n (Nat.le_refl _)
       linarith
     rw [h_inner]
 
