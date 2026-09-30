@@ -35,6 +35,10 @@ import Azurite.Algorithm.PrimeSieve
 import Azurite.Algorithm.SlidingWindowPow
 import Azurite.Algorithm.SlidingWindowPowAzNat
 import Azurite.Algorithm.WindowPowAzNat
+import Azurite.AzFermat.Basic
+import Azurite.AzFermat.Equiv.Basic
+import Azurite.AzFermat.Equiv.FFT
+import Azurite.AzFermat.FFT
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula
@@ -309,6 +313,7 @@ import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.Mul.SchonhageStrassen
 import Azurite.AzNat.Equiv.Mul.ToomCook3
 import Azurite.AzNat.Equiv.Mul.ToomCook4
 import Azurite.AzNat.Equiv.Mul.ToomEval
@@ -367,6 +372,7 @@ import Azurite.AzNat.MillerRabin
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Mul.Karatsuba
+import Azurite.AzNat.Mul.SchonhageStrassen
 import Azurite.AzNat.Mul.Schoolbook
 import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.Mul.ToomCook4
@@ -1241,6 +1247,9 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.StructureTheorem
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_34
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.Theorem_8_51
 import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
+import Azurite.BrentZimmermann.Chapter2.DFT
+import Azurite.BrentZimmermann.Chapter2.FFT
+import Azurite.BrentZimmermann.Chapter2.FFTMulMod
 import Azurite.CohenLenstra.Algorithm_11_1
 import Azurite.CohenLenstra.Algorithm_12_1
 import Azurite.CohenLenstra.Alignment

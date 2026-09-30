@@ -13,9 +13,13 @@ the only material taken from Malachite is the author's own original Malachite co
 (the `RationalSequence` and exhaustive-generation designs); the parts of Malachite that
 are themselves derived from GMP or FLINT are not used. Algorithms such as Karatsuba and
 Toom–Cook multiplication, divide-and-conquer division, division by invariant integers
-and binary GCD are implemented from the papers and textbooks listed here. References
-to GMP in the library are to Lean's built-in `Nat`, whose runtime is GMP-backed and
-which serves as the benchmark baseline.
+and binary GCD are implemented from the papers and textbooks listed here. Nor is the
+design informed by the internals of such libraries: the structure of each algorithm,
+the evaluation points and the interpolation sequences come from the cited papers, the
+interpolation formulas are derived in-house (`scripts/ToomInterpolation.lean`), and
+every threshold and dispatch band is measured on this library (`Azurite/AzNat/Tune.lean`).
+References to GMP in the library are to Lean's built-in `Nat`, whose runtime is
+GMP-backed and which serves as the benchmark baseline.
 
 ## Texts formalized
 
@@ -53,7 +57,9 @@ directories follow these sources statement by statement.
 - **(MCA)** Richard P. Brent, Paul Zimmermann. *Modern Computer Arithmetic*.
   Cambridge Monographs on Applied and Computational Mathematics 18. Cambridge
   University Press, 2010. — `AzNat/`: binary GCD (Algorithm 1.18), Toom–Cook
-  multiplication (§1.3), divide-and-conquer division, integer roots (§1.5).
+  multiplication (§1.3), divide-and-conquer division, integer roots (§1.5);
+  `BrentZimmermann/Chapter2`: the discrete Fourier transform over a ring (§2.3.1),
+  toward the Schönhage–Strassen multiplication (§2.3.3).
 - Niels Möller, Torbjörn Granlund. Improved division by invariant integers. *IEEE
   Transactions on Computers* 60 (2011), no. 2, 165–175. — `UInt64/Reciprocal.lean`,
   `UInt64/Div2By1.lean`, `UInt64/Div3By2.lean`, `AzNat/Div/Schoolbook.lean`

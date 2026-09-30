@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Equiv.Mul.ToomCook4
 import Azurite.AzNat.Equiv.Mul.ToomUnbalanced
+import Azurite.AzNat.Equiv.Mul.SchonhageStrassen
 
 /-!
 # Correctness of the multiplication dispatcher
@@ -21,6 +22,30 @@ Toom-(3,2), Toom-(4,2), or the chunk loop).
 
 namespace Azurite.AzNat
 
+/-- The Toom ladder is correct at every size. -/
+theorem toomLadderLimbs_toNat (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
+    toNatLimbsList (toomLadderLimbs th a b loA loB len hA hB).toList
+      = sliceVal a loA len * sliceVal b loB len := by
+  unfold toomLadderLimbs
+  split_ifs
+  · exact toomCook4MulLimbs_toNat _ _ _ _ _ _ _ _ _ _
+  · exact toomCook3MulLimbs_toNat _ _ _ _ _ _ _ _ _
+  · exact karatsubaMulLimbs_toNat _ _ _ _ _ _ _ _
+  · exact schoolbookMulLimbs_toNat _ _ _ _ _ _ _ _
+
+/-- The Toom ladder on `AzNat`s multiplies. -/
+theorem toomLadderMul_toNat (th : MulThresholds) (x y : AzNat) :
+    (toomLadderMul th x y).toNat = x.toNat * y.toNat := by
+  unfold toomLadderMul
+  rw [toNat_ofLimbs, toomLadderLimbs_toNat, sliceVal_self _ _ (truncatePad_size _ _),
+    sliceVal_self _ _ (truncatePad_size _ _), truncatePad_toNat, truncatePad_toNat]
+  · rfl
+  · exact Nat.lt_of_lt_of_le (toNat_lt_pow y) (Nat.pow_le_pow_right (by norm_num)
+      (Nat.mul_le_mul_left _ (Nat.le_max_right _ _)))
+  · exact Nat.lt_of_lt_of_le (toNat_lt_pow x) (Nat.pow_le_pow_right (by norm_num)
+      (Nat.mul_le_mul_left _ (Nat.le_max_left _ _)))
+
 /-- The balanced ladder is correct at every size. -/
 theorem balancedMulLimbs_toNat (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
@@ -28,10 +53,8 @@ theorem balancedMulLimbs_toNat (th : MulThresholds) (a b : Array UInt64) (loA lo
       = sliceVal a loA len * sliceVal b loB len := by
   unfold balancedMulLimbs
   split_ifs
-  · exact toomCook4MulLimbs_toNat _ _ _ _ _ _ _ _ _ _
-  · exact toomCook3MulLimbs_toNat _ _ _ _ _ _ _ _ _
-  · exact karatsubaMulLimbs_toNat _ _ _ _ _ _ _ _
-  · exact schoolbookMulLimbs_toNat _ _ _ _ _ _ _ _
+  · exact fftMulLimbs_toNat _ (toomLadderMul_toNat th) _ _ _ _ _ _ _
+  · exact toomLadderLimbs_toNat _ _ _ _ _ _ _ _
 
 theorem balancedMul_spec (th : MulThresholds) :
     ∀ n x y hx hy, toNatLimbsList (balancedMul th n x y hx hy).toList

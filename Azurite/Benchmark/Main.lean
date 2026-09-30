@@ -73,7 +73,8 @@ def validBenchmarks : List String :=
    "tune_aznat_square_toomcook4_dispatch", "tune_aznat_karatsuba_crossover",
    "tune_aznat_toomcook3_crossover", "tune_aznat_square_karatsuba_crossover",
    "tune_aznat_square_toomcook3_crossover", "tune_aznat_mul_ladder_2d",
-   "tune_aznat_square_ladder_2d"]
+   "tune_aznat_square_ladder_2d", "tune_aznat_fft_crossover", "tune_aznat_square_fft_crossover",
+   "tune_aznat_fft_dispatch", "az_nat_fft_profile"]
 
 /-- `MulThresholds` from the config keys `schoolbook`, `toomCook3`, `toomCook4`, `unbalanced`
 (defaults: the production values). -/
@@ -82,7 +83,15 @@ def mulThresholdsFromConfig (cfg : Std.HashMap String String) : Azurite.AzNat.Mu
   { schoolbook := configGetNat cfg "schoolbook" d.schoolbook,
     toomCook3 := configGetNat cfg "toomCook3" d.toomCook3,
     toomCook4 := configGetNat cfg "toomCook4" d.toomCook4,
-    unbalanced := configGetNat cfg "unbalanced" d.unbalanced }
+    unbalanced := configGetNat cfg "unbalanced" d.unbalanced,
+    fft := configGetNat cfg "fft" d.fft }
+
+/-- A `/`-separated list of naturals from the config, e.g. `sizes:1024/2048/4096`. -/
+def configGetNatList (cfg : Std.HashMap String String) (key : String) (default : Array Nat) :
+    Array Nat :=
+  match cfg[key]? with
+  | some v => ((v.splitOn "/").filterMap fun t => t.trimAscii.toString.toNat?).toArray
+  | none => default
 
 def main (args : List String) : IO Unit := do
   -- Usage: benchmark <name> <limit> [config]
@@ -241,6 +250,38 @@ def main (args : List String) : IO Unit := do
         let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
         let nPairs := configGetNat cfg "nPairs" 100
         tuneAzNatMulDispatchCompare (th := th) (nPairs := nPairs) (seed := seed)
+      | "tune_aznat_fft_crossover" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        let kAdj := configGetNat cfg "kAdj" Azurite.AzNat.ssKAdjust
+        let sizes := configGetNatList cfg "sizes"
+          #[1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 32768]
+        tuneAzNatFFTCrossover (th := th) (kAdj := kAdj) (sizes := sizes) (workLimbs := workLimbs)
+          (seed := seed)
+      | "az_nat_fft_profile" =>
+        -- Stage-by-stage profile of `fftMul` at one size and digit-count adjustment.
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let n := configGetNat cfg "n" 32768
+        let kAdj := configGetNat cfg "kAdj" Azurite.AzNat.ssKAdjust
+        let reps := configGetNat cfg "reps" 4
+        profileAzNatFFT n kAdj th reps seed
+      | "tune_aznat_square_fft_crossover" =>
+        let workLimbs := configGetNat cfg "workLimbs" 65536
+        let sb := configGetNat cfg "squareSchoolbook" Azurite.AzNat.squareDispatchThreshold
+        let t3 := configGetNat cfg "squareToomCook3" Azurite.AzNat.squareDispatchToomCook3Cutoff
+        let t4 := configGetNat cfg "squareToomCook4" Azurite.AzNat.squareDispatchToomCook4Cutoff
+        let sizes := configGetNatList cfg "sizes"
+          #[1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 32768]
+        let kAdj := configGetNat cfg "kAdj" Azurite.AzNat.ssKAdjust
+        tuneAzNatSquareFFTCrossover (schoolbook := sb) (toomCook3 := t3) (toomCook4 := t4)
+          (kAdj := kAdj) (sizes := sizes) (workLimbs := workLimbs) (seed := seed)
+      | "tune_aznat_fft_dispatch" =>
+        let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg
+        let meanBitLength := configGetRat cfg "meanBitLength" 524288
+        let nPairs := configGetNat cfg "nPairs" 40
+        let balanceRatio := configGetNat cfg "balanceRatio" 75
+        tuneAzNatFFTDispatch (th := th) (nPairs := nPairs) (meanBitLength := meanBitLength)
+          (balanceRatio := balanceRatio) (seed := seed)
       | _ =>
         IO.eprintln s!"Unknown benchmark: '{name}'"
         IO.eprintln s!"Valid benchmarks: {validBenchmarks}"

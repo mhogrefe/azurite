@@ -24,7 +24,7 @@ divisors are precisely the exact divisions the Lean implementation of the varian
 A point `p/q` is realized in integers as the scaled evaluation `q^d · P(p/q)`, so its row is
 `c_i ↦ p^i · q^(d−i)`; `∞` selects the leading coefficient.
 
-Toom-6.5 and Toom-8.5 (`toom6h`, `toom8h`) are the balanced-as-possible variants with 12 and 16
+Toom-6.5 and Toom-8.5 (`toom65`, `toom85`) are the balanced-as-possible variants with 12 and 16
 points: 7 × 6 and 9 × 8 blocks.
 
 Run with `lake env lean --run scripts/ToomInterpolation.lean [variant ...]`.
@@ -61,8 +61,8 @@ def variants : List Variant :=
     ⟨"toom53", 5, 3, [.fin 0 1] ++ pm 1 ++ pm 2 ++ [.fin 1 2, .inf]⟩,
     ⟨"toom54", 5, 4, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ [.inf]⟩,
     ⟨"toom63", 6, 3, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ [.inf]⟩,
-    ⟨"toom6h", 7, 6, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ pm 4 ++ pm 1 4 ++ [.inf]⟩,
-    ⟨"toom8h", 9, 8, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ pm 4 ++ pm 1 4 ++ pm 8 ++ pm 1 8
+    ⟨"toom65", 7, 6, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ pm 4 ++ pm 1 4 ++ [.inf]⟩,
+    ⟨"toom85", 9, 8, [.fin 0 1] ++ pm 1 ++ pm 2 ++ pm 1 2 ++ pm 4 ++ pm 1 4 ++ pm 8 ++ pm 1 8
         ++ [.inf]⟩ ]
 
 /-- Entry `(pt, i)` of the (scaled) Vandermonde matrix for degree `d`. -/

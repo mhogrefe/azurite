@@ -12,6 +12,7 @@ import Azurite.AzNat.Mul.Karatsuba
 import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.Mul.ToomCook4
 import Azurite.AzNat.Mul.ToomUnbalanced
+import Azurite.AzNat.Mul.SchonhageStrassen
 
 namespace Azurite.AzNat
 
@@ -99,13 +100,18 @@ structure MulThresholds where
   /-- The shorter operand needs at least this many limbs for the unbalanced Toom variants; below
   it schoolbook beats every variant except padding at ratios up to `9/8`. -/
   unbalanced : Nat := 96
+  /-- From this many limbs (balanced), the Schönhage–Strassen FFT multiplication instead of
+  Toom-4.  Measured (`tune_aznat_fft_crossover`, `docs/fft_plan.md`): the FFT ties Toom-4 at
+  24576 limbs and wins by 7 % at 32768, 15 % at 49152 and 19 % at 65536. -/
+  fft : Nat := 24576
 
 /-- The default thresholds. -/
 def defaultMulThresholds : MulThresholds := {}
 
-/-- **The balanced ladder**: two `len`-limb slices to their `2·len`-limb product, choosing
-schoolbook, Karatsuba, Toom-3 or Toom-4 by size. -/
-def balancedMulLimbs (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
+/-- **The Toom ladder**: two `len`-limb slices to their `2·len`-limb product, choosing
+schoolbook, Karatsuba, Toom-3 or Toom-4 by size.  It multiplies the pointwise products of the FFT
+stage above it. -/
+def toomLadderLimbs (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) : Array UInt64 :=
   if th.toomCook4 ≤ len then
     toomCook4MulLimbs th.toomCook4 th.toomCook3 th.schoolbook a b loA loB len hA hB
@@ -116,15 +122,37 @@ def balancedMulLimbs (th : MulThresholds) (a b : Array UInt64) (loA loB len : Na
   else
     schoolbookMulLimbs a b loA len loB len hA hB
 
-theorem balancedMulLimbs_size (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
+theorem toomLadderLimbs_size (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
-    (balancedMulLimbs th a b loA loB len hA hB).size = 2 * len := by
-  unfold balancedMulLimbs
+    (toomLadderLimbs th a b loA loB len hA hB).size = 2 * len := by
+  unfold toomLadderLimbs
   split_ifs
   · exact toomCook4MulLimbs_size _ _ _ _ _ _ _ _ _ _
   · exact toomCook3MulLimbs_size _ _ _ _ _ _ _ _ _
   · exact karatsubaMulLimbs_size _ _ _ _ _ _ _ _
   · rw [schoolbookMulLimbs_size]; ring
+
+/-- The Toom ladder on two `AzNat`s (padded to a common length): the multiplier handed to the
+FFT stage for its pointwise products. -/
+def toomLadderMul (th : MulThresholds) (x y : AzNat) : AzNat :=
+  let n := max x.limbs.size y.limbs.size
+  ofLimbs (toomLadderLimbs th (truncatePad x.limbs n) (truncatePad y.limbs n) 0 0 n
+    (by rw [truncatePad_size]; omega) (by rw [truncatePad_size]; omega))
+
+/-- **The balanced ladder**: the Schönhage–Strassen multiplication from `th.fft` limbs (with the
+Toom ladder for its pointwise products), the Toom ladder below. -/
+def balancedMulLimbs (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) : Array UInt64 :=
+  if th.fft ≤ len then fftMulLimbs (toomLadderMul th) a b loA loB len hA hB
+  else toomLadderLimbs th a b loA loB len hA hB
+
+theorem balancedMulLimbs_size (th : MulThresholds) (a b : Array UInt64) (loA loB len : Nat)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
+    (balancedMulLimbs th a b loA loB len hA hB).size = 2 * len := by
+  unfold balancedMulLimbs
+  split_ifs
+  · exact fftMulLimbs_size _ _ _ _ _ _ _ _
+  · exact toomLadderLimbs_size _ _ _ _ _ _ _ _
 
 /-- The balanced ladder as a `BalancedMul` (fresh `n`-limb buffers). -/
 def balancedMul (th : MulThresholds) : BalancedMul :=

@@ -253,7 +253,7 @@ def tuneAzNatDispatch2D
     let t := thresholds[i]!
     let mut line := padLeft 10 s!"{t}" ++ "  "
     for j in List.range kPercents.size do
-      let ns := timings[i]![j]!
+      let ns := (timings[i]!)[j]!
       -- Show in microseconds (rounded) to keep the table narrow.
       let us := ns.toNat / 1000
       let marker := if t == bestThreshold && kPercents[j]! == bestKPercent then "*" else " "
@@ -285,7 +285,7 @@ def benchAzNatSquareDispatch (minThreshold : Nat) (inputs : Array AzNat) :
   let mut checksum : Nat := 0
   for a in inputs do
     let r := AzNat.squareDispatchParam minThreshold AzNat.squareDispatchToomCook3Cutoff
-      AzNat.squareDispatchToomCook4Cutoff a
+      AzNat.squareDispatchToomCook4Cutoff AzNat.squareDispatchFFTCutoff a
     checksum := checksum + r.limbs.size
   let t1 ← monoNanos
   return (t1 - t0, checksum)
@@ -723,7 +723,7 @@ def tuneAzNatSquareToomCook4Dispatch (schoolbook : Nat := squareDispatchThreshol
   let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
   let mut times : Array UInt64 := #[]
   for c in cutoffs do
-    let t ← timeAzNatMedian3 (fun a => squareDispatchParam schoolbook toomCook3 c a) inputs
+    let t ← timeAzNatMedian3 (fun a => squareDispatchParam schoolbook toomCook3 c squareDispatchFFTCutoff a) inputs
     times := times.push t
     if t < bestTime then
       bestTime := t
@@ -822,7 +822,7 @@ private def printGrid (rowLabel colLabel : String) (rows cols : Array Nat)
   for i in List.range rows.size do
     let mut line := padLeft 10 s!"{rows[i]!}"
     for j in List.range cols.size do
-      let t := times[i]![j]!
+      let t := (times[i]!)[j]!
       let marker := if t == best then "*" else " "
       line := line ++ padLeft 9 (s!"{t.toNat / 1000000}" ++ marker)
     IO.eprintln line
@@ -858,7 +858,132 @@ def tuneAzNatSquareLadder2D (toomCook4Cutoff : Nat := squareDispatchToomCook4Cut
   for s in schoolbooks do
     let mut row : Array UInt64 := #[]
     for t3 in toomCook3s do
-      let t ← timeAzNatMedian3 (fun a => squareDispatchParam s t3 toomCook4Cutoff a) inputs
+      let t ← timeAzNatMedian3 (fun a => squareDispatchParam s t3 toomCook4Cutoff squareDispatchFFTCutoff a) inputs
       row := row.push t
     times := times.push row
   printGrid "school" "toom3" schoolbooks toomCook3s times
+
+-- ── The FFT stage (`docs/fft_plan.md`, item 4): crossover against the Toom ladder ──
+
+/-- **FFT multiplication crossover**: the Toom ladder against `fftMul` (with that ladder for the
+pointwise products) on pairs of exactly `n` limbs. -/
+def tuneAzNatFFTCrossover (th : MulThresholds := defaultMulThresholds) (kAdj : Nat := ssKAdjust)
+    (sizes : Array Nat := #[1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 32768])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableMul "AzNat-FFTCross" "toom" s!"fft(k+{kAdj})"
+    (fun _ a b => toomLadderMul th a b) (fun _ a b => fftMulWith kAdj (toomLadderMul th) a b)
+    sizes workLimbs seed
+
+/-- **FFT squaring crossover**: the Toom squaring ladder against `fftSquare`. -/
+def tuneAzNatSquareFFTCrossover (schoolbook : Nat := squareDispatchThreshold)
+    (toomCook3 : Nat := squareDispatchToomCook3Cutoff)
+    (toomCook4 : Nat := squareDispatchToomCook4Cutoff) (kAdj : Nat := ssKAdjust)
+    (sizes : Array Nat := #[1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 32768])
+    (workLimbs : Nat := 65536) (seed : UInt64 := 42) : IO Unit :=
+  crossoverTableSquare "AzNat-SqFFTCross" "toom" s!"fft(k+{kAdj})"
+    (fun _ a => toomSquareLadder schoolbook toomCook3 toomCook4 a)
+    (fun _ a => fftSquareWith kAdj (toomSquareLadder schoolbook toomCook3 toomCook4) a)
+    sizes workLimbs seed
+
+/-- **FFT cutoff sweep on the production multiplication dispatcher** over balanced random
+pairs; the last cutoff disables the FFT. -/
+def tuneAzNatFFTDispatch (th : MulThresholds := defaultMulThresholds)
+    (cutoffs : Array Nat := #[1024, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 1000000])
+    (nPairs : Nat := 40) (meanBitLength : Rat := 524288) (balanceRatio : Nat := 75)
+    (seed : UInt64 := 42) : IO Unit := do
+  IO.eprintln s!"[AzNat-FFTDispatch] {nPairs} balanced pairs, mean bit length {meanBitLength}; total ms per cutoff"
+  let pairs := generateBalancedAzNatPairs nPairs meanBitLength balanceRatio seed
+  let mut line := ""
+  let mut best := 0
+  let mut bestTime : UInt64 := UInt64.ofNat (Nat.pow 2 63)
+  let mut times : Array UInt64 := #[]
+  for c in cutoffs do
+    let t ← timeAzNatMedian3 (fun p : AzNat × AzNat =>
+      mulWithThresholds { th with fft := c } p.1 p.2) pairs
+    times := times.push t
+    if t < bestTime then
+      bestTime := t
+      best := c
+  IO.eprintln ("  cutoff  " ++ String.join (cutoffs.toList.map fun c => padLeft 10 s!"{c}"))
+  for i in List.range cutoffs.size do
+    let marker := if cutoffs[i]! == best then "*" else " "
+    line := line ++ padLeft 10 (s!"{(times[i]!).toNat / 1000000}" ++ marker)
+  IO.eprintln ("  ms      " ++ line)
+  IO.eprintln s!"[AzNat-FFTDispatch] Best: fft = {best}"
+
+/-- Time one stage over all pairs (median of three), in microseconds per pair. -/
+private def stageUs {α β : Type} (f : α → β) (touch : β → Nat) (inputs : Array α) : IO Nat := do
+  let once : IO UInt64 := do
+    let t0 ← monoNanos
+    let mut acc : Nat := 0
+    for x in inputs do
+      acc := acc + touch (f x)
+    let t1 ← monoNanos
+    if acc == 0 then IO.eprintln "" else pure ()
+    return t1 - t0
+  let t1 ← once
+  let t2 ← once
+  let t3 ← once
+  let med := max (min t1 t2) (min (max t1 t2) t3)
+  return med.toNat / (1000 * max inputs.size 1)
+
+open Azurite.AzFermat in
+/-- **Stage profile of `fftMul`** on pairs of exactly `n` limbs with the digit-count
+adjustment `kAdj`: weighting, the two forward transforms, the pointwise products, the backward
+transform, and coefficient recovery plus assembly, each in µs per product, next to the whole
+`fftMulWith` and the Toom ladder. -/
+def profileAzNatFFT (n : Nat) (kAdj : Nat) (th : MulThresholds := defaultMulThresholds)
+    (reps : Nat := 4) (seed : UInt64 := 42) : IO Unit := do
+  let p := ssParamsWith kAdj (2 * n)
+  let k := p.1
+  let w := p.2
+  have hw0 : 0 < w := ssParamsWith_pos kAdj (2 * n)
+  let N := ssFermatExponent k w
+  have hN : 2 * (64 * w) + (k + 1) ≤ N := ssFermatExponent_ge k w
+  have : NeZero N := ⟨by omega⟩
+  have : NeZero (64 * w * 2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
+  let eθ := N / 2 ^ (k + 1)
+  IO.eprintln s!"[AzNat-FFTProfile] n = {n} limbs, kAdj = {kAdj}: K = 2^{k + 1} = {2 ^ (k + 1)} digits of w = {w} limbs (M = {64 * w} bits), N = {N} bits ({N / 64 + 1} limbs), {reps} pairs"
+  let (pairs, _) := randomLimbPairs reps n n (mkSplitMix64 seed)
+  let mulFn := toomLadderMul th
+  -- the stages, on arrays that carry their size
+  let V := { a : Array (AzFermat N) // a.size = 2 ^ (k + 1) }
+  let weightV : AzNat → V := fun a => ⟨ssWeighted k w N eθ a, ssWeighted_size k w N eθ a⟩
+  let fwdV : V → V := fun v => ⟨forwardFFT (2 * eθ) (k + 1) v.1 v.2, forwardFFT_size _ _ _ _⟩
+  let prodV : V → V → V := fun fa fb =>
+    ⟨Array.ofFn fun r : Fin (2 ^ (k + 1)) =>
+      mulWith mulFn (fa.1[r.val]'(by rw [fa.2]; exact r.isLt)) (fb.1[r.val]'(by rw [fb.2]; exact r.isLt)),
+     Array.size_ofFn⟩
+  let bwdV : V → V := fun v => ⟨backwardFFT (2 * eθ) (k + 1) v.1 v.2, backwardFFT_size _ _ _ _⟩
+  let finishV : V → AzNat := fun v =>
+    (ssAssemble (64 * w) (64 * w * 2 ^ (k + 1)) (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
+      (ssCoefficients k w N (64 * w * 2 ^ (k + 1)) eθ v.1 v.2)).val
+  let touchV : V → Nat := fun v => v.1.size + (v.1[0]?.map fun x => x.val.limbs.size).getD 0
+  -- stage inputs
+  let weighted : Array (V × V) := pairs.map fun q => (weightV q.1, weightV q.2)
+  let transformed : Array (V × V) := weighted.map fun q => (fwdV q.1, fwdV q.2)
+  let products : Array V := transformed.map fun q => prodV q.1 q.2
+  let back : Array V := products.map bwdV
+  let tWeight ← stageUs (fun q : AzNat × AzNat => (weightV q.1, weightV q.2))
+    (fun q => touchV q.1 + touchV q.2) pairs
+  let tForward ← stageUs (fun q : V × V => (fwdV q.1, fwdV q.2))
+    (fun q => touchV q.1 + touchV q.2) weighted
+  let tProducts ← stageUs (fun q : V × V => prodV q.1 q.2) touchV transformed
+  let tBackward ← stageUs bwdV touchV products
+  let tFinish ← stageUs finishV (fun x => x.limbs.size) back
+  let tAll ← stageUs (fun q : AzNat × AzNat => fftMulWith kAdj mulFn q.1 q.2)
+    (fun x => x.limbs.size) pairs
+  let tToom ← stageUs (fun q : AzNat × AzNat => toomLadderMul th q.1 q.2)
+    (fun x => x.limbs.size) pairs
+  let sum := tWeight + tForward + tProducts + tBackward + tFinish
+  IO.eprintln (padLeft 22 "stage" ++ padLeft 12 "µs" ++ padLeft 8 "%")
+  let row := fun (name : String) (t : Nat) =>
+    IO.eprintln (padLeft 22 name ++ padLeft 12 s!"{t}" ++ padLeft 8 s!"{100 * t / max sum 1}")
+  row "weighting" tWeight
+  row "forward FFTs (2)" tForward
+  row "pointwise products" tProducts
+  row "backward FFT" tBackward
+  row "coefficients+assembly" tFinish
+  row "(sum of stages)" sum
+  IO.eprintln (padLeft 22 "fftMulWith total" ++ padLeft 12 s!"{tAll}")
+  IO.eprintln (padLeft 22 "Toom ladder" ++ padLeft 12 s!"{tToom}")

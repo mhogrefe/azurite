@@ -11,6 +11,7 @@ import Azurite.AzNat.Square.Schoolbook
 import Azurite.AzNat.Square.Karatsuba
 import Azurite.AzNat.Square.ToomCook3
 import Azurite.AzNat.Square.ToomCook4
+import Azurite.AzNat.Mul.SchonhageStrassen
 
 namespace Azurite.AzNat
 
@@ -38,15 +39,15 @@ def squareDispatchToomCook3Cutoff : Nat := 320
     448 to 1024 limbs with its minimum at 512–768. -/
 def squareDispatchToomCook4Cutoff : Nat := 512
 
-/-- Parametrized limb-level square dispatcher (used directly by `Tune`).
-    Four-way dispatch:
+/-- Default cutoff (in limbs) for the Schönhage–Strassen squaring over Toom-4
+    squaring.  Measured (`tune_aznat_square_fft_crossover`, `docs/fft_plan.md`):
+    the FFT ties Toom-4 squaring at 32768 limbs and wins by 10 % at 49152 and
+    14 % at 65536. -/
+def squareDispatchFFTCutoff : Nat := 32768
 
-    * `len < minThreshold` → `schoolbookSquareLimbs`;
-    * `minThreshold ≤ len < toomCook3Cutoff` → `karatsubaSquareLimbs`;
-    * `toomCook3Cutoff ≤ len < toomCook4Cutoff` → `toomCook3SquareLimbs`;
-    * `toomCook4Cutoff ≤ len` → `toomCook4SquareLimbs`. -/
-def squareLimbsParam (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat) (a : Array UInt64)
-    (lo len : Nat) (hA : lo + len ≤ a.size) : Array UInt64 :=
+/-- The Toom squaring ladder: schoolbook, Karatsuba, Toom-3 or Toom-4 by size. -/
+def toomSquareLadderLimbs (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat)
+    (a : Array UInt64) (lo len : Nat) (hA : lo + len ≤ a.size) : Array UInt64 :=
   if toomCook4Cutoff ≤ len then
     toomCook4SquareLimbs toomCook4Cutoff toomCook3Cutoff minThreshold a lo len hA
   else if toomCook3Cutoff ≤ len then
@@ -56,21 +57,42 @@ def squareLimbsParam (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat) (a : A
   else
     schoolbookSquareLimbs a lo len hA
 
+/-- The Toom squaring ladder on an `AzNat`: the squarer handed to the FFT stage for its
+    pointwise squares. -/
+def toomSquareLadder (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat) (x : AzNat) : AzNat :=
+  ofLimbs (toomSquareLadderLimbs minThreshold toomCook3Cutoff toomCook4Cutoff x.limbs 0
+    x.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _))
+
+/-- Parametrized limb-level square dispatcher (used directly by `Tune`).
+    Five-way dispatch:
+
+    * `len < minThreshold` → `schoolbookSquareLimbs`;
+    * `minThreshold ≤ len < toomCook3Cutoff` → `karatsubaSquareLimbs`;
+    * `toomCook3Cutoff ≤ len < toomCook4Cutoff` → `toomCook3SquareLimbs`;
+    * `toomCook4Cutoff ≤ len < fftCutoff` → `toomCook4SquareLimbs`;
+    * `fftCutoff ≤ len` → `fftSquareLimbs` with the Toom ladder for the pointwise squares. -/
+def squareLimbsParam (minThreshold toomCook3Cutoff toomCook4Cutoff fftCutoff : Nat)
+    (a : Array UInt64) (lo len : Nat) (hA : lo + len ≤ a.size) : Array UInt64 :=
+  if fftCutoff ≤ len then
+    fftSquareLimbs (toomSquareLadder minThreshold toomCook3Cutoff toomCook4Cutoff) a lo len hA
+  else
+    toomSquareLadderLimbs minThreshold toomCook3Cutoff toomCook4Cutoff a lo len hA
+
 /-- Limb-level squaring using the default dispatch parameters. -/
 def squareLimbs (a : Array UInt64) (lo len : Nat)
     (hA : lo + len ≤ a.size) : Array UInt64 :=
   squareLimbsParam squareDispatchThreshold squareDispatchToomCook3Cutoff
-    squareDispatchToomCook4Cutoff a lo len hA
+    squareDispatchToomCook4Cutoff squareDispatchFFTCutoff a lo len hA
 
 /-- AzNat wrapper for `squareLimbsParam`; lets the tuner sweep the
     dispatch parameters. -/
-def squareDispatchParam (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat) (a : AzNat) :
-    AzNat :=
-  ofLimbs (squareLimbsParam minThreshold toomCook3Cutoff toomCook4Cutoff a.limbs 0 a.limbs.size
-    (Nat.zero_add _ ▸ Nat.le_refl _))
+def squareDispatchParam (minThreshold toomCook3Cutoff toomCook4Cutoff fftCutoff : Nat)
+    (a : AzNat) : AzNat :=
+  ofLimbs (squareLimbsParam minThreshold toomCook3Cutoff toomCook4Cutoff fftCutoff a.limbs 0
+    a.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _))
 
-/-- Square an `AzNat`.  Dispatches four-way between schoolbook, Karatsuba,
-    Toom-Cook 3 and Toom-Cook 4 via `squareLimbs`. -/
+/-- Square an `AzNat`.  Dispatches five-way between schoolbook, Karatsuba,
+    Toom-Cook 3, Toom-Cook 4 and the FFT via `squareLimbs`. -/
 def square (a : AzNat) : AzNat :=
   ofLimbs (squareLimbs a.limbs 0 a.limbs.size (Nat.zero_add _ ▸ Nat.le_refl _))
 

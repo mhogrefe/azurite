@@ -4,11 +4,14 @@ Status: plan written 2026-09-26; progress is recorded in the status log at the e
 
 ## Goal
 
-Follow the standard strategy of production bignum libraries for integer multiplication: a
-basecase for small operands, a ladder of Toom–Cook variants of increasing order for medium sizes,
-and FFT multiplication for the largest ones, with dedicated variants for unbalanced operands and
-for squaring. Every algorithm is written from its published description and proven equal to `Nat`
-multiplication, as the existing Karatsuba and Toom-3 are.
+Follow the textbook ladder for integer multiplication (Brent–Zimmermann, *Modern Computer
+Arithmetic*, §1.3): a basecase for small operands, Toom–Cook variants of increasing order for
+medium sizes, and FFT multiplication for the largest ones, with the unbalanced variants of
+§1.3.5 and squaring versions. Every algorithm is written from its published description (the
+sources are listed at the end) and proven equal to `Nat` multiplication, as the existing
+Karatsuba and Toom-3 are; the interpolation formulas are derived in-house
+(`scripts/ToomInterpolation.lean`) and every threshold is measured on this library. No
+implementation code of any other library is consulted.
 
 The ladder we are aiming at, in the order it should be built:
 
@@ -47,14 +50,15 @@ Toom-3 is written in the style we should generalize from:
 
 Two facts about our cost model matter for everything below. First, from the benchmark notes:
 `Array UInt64` is boxed, so every limb store allocates, and the linear-time passes of an
-evaluation/interpolation stage are relatively far more expensive than in C. That is why our
-Toom-3 crossover is 256 limbs where GMP's is near 100, and it will push every higher crossover up
-by a similar factor. Second, `AzNat` is currently 30–70× slower than the GMP-backed `Nat` at a few
-thousand bits. Higher Toom variants shrink the number of limb products but add linear passes, so
-their payoff here is smaller than in GMP and only appears at sizes of thousands of limbs. The
-ladder is still the right structure to build, and it is a prerequisite for the FFT stage, but
-constant-factor work on limb arithmetic remains the larger lever for the sizes the library uses
-today (APR-CL at 247 digits is 13 limbs and never leaves schoolbook).
+evaluation/interpolation stage are relatively far more expensive than in a C implementation with
+unboxed limbs. That is why our Toom-3 crossover is as high as 256 limbs, and it will push every
+higher crossover up by a similar factor. Second, `AzNat` is currently 30–70× slower than Lean's
+built-in `Nat` at a few thousand bits. Higher Toom variants shrink the number of limb products
+but add linear passes, so their payoff here is smaller than with unboxed limbs and only appears
+at sizes of thousands of limbs. The ladder is still the right structure to build, and it is a
+prerequisite for the FFT stage, but constant-factor work on limb arithmetic remains the larger
+lever for the sizes the library uses today (APR-CL at 247 digits is 13 limbs and never leaves
+schoolbook).
 
 ## Design changes before adding variants
 
@@ -115,9 +119,9 @@ drops the point 2. Toom-(4,3) and Toom-(5,3) similarly reuse the six- and seven-
 
 The dispatcher then chooses by the ratio `lenA / lenB`: near 1 balanced, near 3/2 Toom-(3,2),
 near 2 Toom-(4,2), near 4/3 Toom-(4,3), near 5/3 Toom-(5,3), near 2 with large operands Toom-(6,3),
-and for ratios beyond what any variant covers, the standard fallback of splitting the longer
-operand into pieces the size of the shorter and adding the partial products (the "toom42 loop"
-that GMP also uses), which we can prove once generically.
+and for ratios beyond what any variant covers, the standard treatment of unbalanced operands
+(Brent–Zimmermann §1.3.5): split the longer operand into pieces the size of the shorter and add
+the partial products, which we can prove once generically.
 
 ### 5. Squaring
 
@@ -143,11 +147,11 @@ Derived by `lake env lean --run scripts/ToomInterpolation.lean` (Vandermonde inv
 | toom53 | 5 × 3 | `0, ±1, ±2, 1/2, ∞` | 7 | same as toom44 |
 | toom54 | 5 × 4 | `0, ±1, ±2, ±1/2, ∞` | 8 | powers of 2 to 8; 9, 45 |
 | toom63 | 6 × 3 | `0, ±1, ±2, ±1/2, ∞` | 8 | same as toom54 |
-| toom6h | 7 × 6 | `0, ±1, ±2, ±1/2, ±4, ±1/4, ∞` | 12 | powers of 2 to 128; primes 3, 5, 7, 17 |
-| toom8h | 9 × 8 | `0, ±1, ±2, ±1/2, ±4, ±1/4, ±8, ±1/8, ∞` | 16 | powers of 2 to 8192; primes 3, 5, 7, 11, 13, 17, 31 |
+| toom65 | 7 × 6 | `0, ±1, ±2, ±1/2, ±4, ±1/4, ∞` | 12 | powers of 2 to 128; primes 3, 5, 7, 17 |
+| toom85 | 9 × 8 | `0, ±1, ±2, ±1/2, ±4, ±1/4, ±8, ±1/8, ∞` | 16 | powers of 2 to 8192; primes 3, 5, 7, 11, 13, 17, 31 |
 
 The closed-form rows for the two high variants have denominators in the millions (for example
-`3⁵·5²·7·17 = 722925` for toom6h), which is why an operation sequence is required there: the
+`3⁵·5²·7·17 = 722925` for toom65), which is why an operation sequence is required there: the
 Toom-6.5 and Toom-8.5 sequences in the literature divide only by small products of these primes
 (such as 3, 9, 15, 45 and 255 = 3·5·17), one at a time. The prime sets, however, are exactly what
 the table says, so the exact-division primitive must support at least 3, 5, 7, 11, 13, 17 and 31,
@@ -175,8 +179,9 @@ The Toom-3 row reproduces the formulas in `toomCook3Interpolate`:
    unbalanced variants. Needs a quiet machine; expect the Toom-4 crossover in the 600–1000 limb
    range given the Toom-3 experience.
 6. **Toom-6.5 and Toom-8.5**, only if the Toom-4 measurements suggest they will win before the FFT
-   crossover in our cost model. In GMP they occupy roughly 350–3000 limbs; with our allocation
-   overhead that window may not exist, in which case Toom-4 hands over to the FFT directly.
+   crossover in our cost model. Whether such a window exists between Toom-4 and the FFT is an
+   empirical question; with our allocation overhead it may not, in which case Toom-4 hands over
+   to the FFT directly.
 7. **Schönhage–Strassen FFT**: the user will walk through the textbook description
    (Brent–Zimmermann §2.3, or von zur Gathen–Gerhard §8.3). It needs modular arithmetic in
    `ℤ/(2^N + 1)` on limb arrays, which is a natural extension of `AzZModPow2`.
