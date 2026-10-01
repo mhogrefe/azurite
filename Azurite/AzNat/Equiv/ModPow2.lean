@@ -14,7 +14,7 @@ import Azurite.AzNat.Equiv.ShiftRight
 namespace Azurite.AzNat
 
 /-- `toNatLimbsList (l.take k)` is the low-`64k`-bit chunk of `toNatLimbsList l`. -/
-private lemma toNatLimbsList_take (l : List UInt64) (k : Nat) :
+lemma toNatLimbsList_take (l : List UInt64) (k : Nat) :
     toNatLimbsList (l.take k) = toNatLimbsList l % 2 ^ (64 * k) := by
   by_cases hk : k ≤ l.length
   · have h_app := toNatLimbsList_append (l.take k) (l.drop k)

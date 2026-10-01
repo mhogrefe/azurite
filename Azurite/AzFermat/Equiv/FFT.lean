@@ -78,10 +78,10 @@ theorem toZMod_forwardFFTRec (e : Nat) : ∀ (k : Nat) (a : Array (AzFermat N)) 
     simp only [forwardFFTRec, Array.getElem_ofFn]
     have hω2 : ((2 : ZMod (2 ^ N + 1)) ^ e) ^ 2 = 2 ^ (2 * e) := by rw [← pow_mul, mul_comm]
     split_ifs with hpar
-    · rw [toZMod_add, toZMod_mulPow2, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, heven, hodd, hω2,
+    · rw [toZMod_butterfly_fst, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, heven, hodd, hω2,
         ← pow_mul]
       ring
-    · rw [toZMod_sub, toZMod_mulPow2, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, heven, hodd, hω2,
+    · rw [toZMod_butterfly_snd, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, heven, hodd, hω2,
         ← pow_mul]
       ring
 
@@ -144,11 +144,11 @@ theorem toZMod_backwardFFTRec (e : Nat) : ∀ (k : Nat) (a : Array (AzFermat N))
         = BZ.backwardFFT ((2 : ZMod (2 ^ N + 1)) ^ (2 * e)) k (fun s => toZModFun a (2 ^ k + s)) j :=
       fun j hj => hread _ _ j hj (fun s hs => by rw [ite_eq_left hs])
     split_ifs with hlt
-    · rw [toZMod_add, toZMod_mulPow2, ih (2 * e) _ _ _ hlt, ih (2 * e) _ _ _ hlt, hlo, hhi, hω2,
+    · rw [toZMod_butterfly_fst, ih (2 * e) _ _ _ hlt, ih (2 * e) _ _ _ hlt, hlo, hhi, hω2,
         ← pow_mul, hlo' r hlt, hhi' r hlt]
       ring
     · have hj : r - 2 ^ k < 2 ^ k := by omega
-      rw [toZMod_sub, toZMod_mulPow2, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, hlo, hhi, hω2,
+      rw [toZMod_butterfly_snd, ih (2 * e) _ _ _ hj, ih (2 * e) _ _ _ hj, hlo, hhi, hω2,
         ← pow_mul, hlo' _ hj, hhi' _ hj]
       ring
 

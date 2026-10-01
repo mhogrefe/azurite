@@ -74,7 +74,7 @@ def validBenchmarks : List String :=
    "tune_aznat_toomcook3_crossover", "tune_aznat_square_karatsuba_crossover",
    "tune_aznat_square_toomcook3_crossover", "tune_aznat_mul_ladder_2d",
    "tune_aznat_square_ladder_2d", "tune_aznat_fft_crossover", "tune_aznat_square_fft_crossover",
-   "tune_aznat_fft_dispatch", "az_nat_fft_profile"]
+   "tune_aznat_fft_dispatch", "az_nat_fft_profile", "az_fermat_ops_profile"]
 
 /-- `MulThresholds` from the config keys `schoolbook`, `toomCook3`, `toomCook4`, `unbalanced`
 (defaults: the production values). -/
@@ -258,6 +258,11 @@ def main (args : List String) : IO Unit := do
           #[1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 32768]
         tuneAzNatFFTCrossover (th := th) (kAdj := kAdj) (sizes := sizes) (workLimbs := workLimbs)
           (seed := seed)
+      | "az_fermat_ops_profile" =>
+        -- Micro-profile of the Fermat-ring primitives at `N` bits.
+        let n := configGetNat cfg "N" 8704
+        let count := configGetNat cfg "count" 2000
+        profileAzFermatOps n count seed
       | "az_nat_fft_profile" =>
         -- Stage-by-stage profile of `fftMul` at one size and digit-count adjustment.
         let th : Azurite.AzNat.MulThresholds := mulThresholdsFromConfig cfg

@@ -87,12 +87,13 @@ def mulLimbsParam (minThreshold kNum kDen toomCook3Cutoff : Nat)
 /-- The size thresholds of the production multiplication ladder (limb counts), from the
 milestone 5 sweeps of `docs/toom_cook_plan.md` (`tune_aznat_*` in `Benchmark/Main.lean`). -/
 structure MulThresholds where
-  /-- Below this many limbs (balanced), schoolbook.  Schoolbook and top-level Karatsuba tie at
-  48 limbs; the 2-D ladder sweep is flattest at 48. -/
-  schoolbook : Nat := 48
+  /-- Below this many limbs (balanced), schoolbook.  With the two-row schoolbook
+  (2026-10-01), schoolbook and top-level Karatsuba tie at 64–80 limbs; the 2-D ladder sweeps
+  are best at 64 (mean 16384 and 65536 bits) and flat from 64 to 80 at 4096 bits. -/
+  schoolbook : Nat := 64
   /-- From this many limbs (balanced), Toom-3 instead of Karatsuba.  Top-level Toom-3 ties with
-  Karatsuba at 192–256 limbs and wins from 320; the ladder sweep is flat from 128 to 256. -/
-  toomCook3 : Nat := 256
+  Karatsuba at 320 limbs (3 % slower at 256); the ladder sweeps are flat from 256 to 384. -/
+  toomCook3 : Nat := 320
   /-- From this many limbs (balanced), Toom-4 instead of Toom-3.  Top-level Toom-4 stops losing
   to Toom-3 at 512 limbs and wins by 3–6 % above 1024; the dispatcher sweep is flat from 384 to
   1024. -/
@@ -101,9 +102,10 @@ structure MulThresholds where
   it schoolbook beats every variant except padding at ratios up to `9/8`. -/
   unbalanced : Nat := 96
   /-- From this many limbs (balanced), the Schönhage–Strassen FFT multiplication instead of
-  Toom-4.  Measured (`tune_aznat_fft_crossover`, `docs/fft_plan.md`): the FFT ties Toom-4 at
-  24576 limbs and wins by 7 % at 32768, 15 % at 49152 and 19 % at 65536. -/
-  fft : Nat := 24576
+  Toom-4.  Measured (`tune_aznat_fft_crossover`, `docs/fft_plan.md`): with the two-row
+  schoolbook the FFT is 3 % slower than the Toom ladder at 5120 limbs, 3 % faster at 6144 and
+  10 % faster at 8192, 21 % at 12288. -/
+  fft : Nat := 6144
 
 /-- The default thresholds. -/
 def defaultMulThresholds : MulThresholds := {}

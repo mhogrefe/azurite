@@ -21,8 +21,11 @@ The algorithm has three phases:
 
 1. **Off-diagonal accumulation.** For each `i ∈ [0, len - 1)`, fuse-add
    `a[lo+i+1 .. lo+len) * a[lo+i]` into the accumulator at offset
-   `2i + 1`, using the existing `mulAddLimbs`. After this phase the
-   accumulator holds `Σ_{i < j} a_i · a_j · 2^{64·(i+j)}`.
+   `2i + 1`.  Rows are taken two at a time (`offDiag.go2`, the fused
+   two-row pass `mulAdd2Limbs.go` of `Mul/Schoolbook.lean`, which halves
+   the accumulator writes); a lone last row uses `mulAddLimbs`
+   (`offDiag.go`).  After this phase the accumulator holds
+   `Σ_{i < j} a_i · a_j · 2^{64·(i+j)}`.
 
 2. **Doubling.** Shift the accumulator left by `1` bit, giving
    `2 · Σ_{i < j} a_i · a_j · 2^{64·(i+j)}`. The carry-out is `0`
@@ -203,12 +206,43 @@ def schoolbookSquareLimbs.offDiag.go (a : Array UInt64) (lo len : Nat)
     acc
   termination_by len - i
 
+/-- Two off-diagonal rows at once.  For `i + 2 < len`, rows `i` and `i + 1` share the slice
+    `a[lo+i+2 .. lo+len)`: the lone product `a[lo+i+1] · a[lo+i]` is added at `acc[2i+1]`,
+    its carry seeds the fused pass `mulAdd2Limbs.go` with `b₀ = a[lo+i]`, `b₁ = a[lo+i+1]`
+    over the shared slice at offset `2i+2`, and the two-limb carry lands at `acc[i+len]`,
+    `acc[i+len+1]` — exactly where the two single rows would have deposited theirs.  Fewer
+    than two remaining rows go through `schoolbookSquareLimbs.offDiag.go`. -/
+def schoolbookSquareLimbs.offDiag.go2 (a : Array UInt64) (lo len : Nat)
+    (acc : Array UInt64) (i : Nat)
+    (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size) : Array UInt64 :=
+  if h : i + 2 < len then
+    have h_i : lo + i < a.size := by omega
+    have h_i1 : lo + i + 1 < a.size := by omega
+    have h_2i1 : 2 * i + 1 < acc.size := by omega
+    let m := UInt64.mulAddWithCarry a[lo + i + 1] a[lo + i] acc[2 * i + 1] 0
+    let acc₁ := acc.set (2 * i + 1) m.2
+    have h_inner_len : (lo + i + 2) + (len - i - 2) ≤ a.size := by omega
+    have h_acc_row : (2 * i + 2) + (len - i - 2) ≤ acc₁.size := by
+      rw [Array.size_set]; omega
+    let r := mulAdd2Limbs.go a (lo + i + 2) (len - i - 2) (2 * i + 2) a[lo + i] a[lo + i + 1]
+      acc₁ 0 m.1 0 h_inner_len h_acc_row
+    have h_r_size : r.1.size = acc.size := by rw [mulAdd2Limbs.go_size, Array.size_set]
+    have h_c0 : i + len < r.1.size := by rw [h_r_size]; omega
+    have h_c1 : i + len + 1 < (r.1.set (i + len) r.2.1).size := by
+      rw [Array.size_set, h_r_size]; omega
+    schoolbookSquareLimbs.offDiag.go2 a lo len
+      ((r.1.set (i + len) r.2.1).set (i + len + 1) r.2.2) (i + 2) hA
+      (by rw [Array.size_set, Array.size_set, h_r_size]; exact hAcc)
+  else
+    schoolbookSquareLimbs.offDiag.go a lo len acc i hA hAcc
+  termination_by len - i
+
 /-- Accumulate the off-diagonal contribution `Σ_{i < j} a[lo+i] · a[lo+j]
     · 2^{64·(i+j)}` into `acc`. -/
 def schoolbookSquareLimbs.offDiag (a : Array UInt64) (lo len : Nat)
     (acc : Array UInt64)
     (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size) : Array UInt64 :=
-  schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc
+  schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc
 
 theorem schoolbookSquareLimbs.offDiag.go_size (a : Array UInt64) (lo len : Nat)
     (acc : Array UInt64) (i : Nat)
@@ -229,11 +263,23 @@ theorem schoolbookSquareLimbs.offDiag.go_size (a : Array UInt64) (lo len : Nat)
       rw [Array.size_set, mulAddLimbs_size]
     · simp [h_lt]
 
+theorem schoolbookSquareLimbs.offDiag.go2_size (a : Array UInt64) (lo len : Nat)
+    (acc : Array UInt64) (i : Nat)
+    (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size) :
+    (schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc).size = acc.size := by
+  induction h_sub : len - i using Nat.strong_induction_on generalizing acc i with
+  | _ n ih =>
+    rw [schoolbookSquareLimbs.offDiag.go2]
+    split_ifs with h
+    · rw [ih (len - (i + 2)) (by omega) _ _ _ rfl, Array.size_set, Array.size_set,
+        mulAdd2Limbs.go_size, Array.size_set]
+    · exact schoolbookSquareLimbs.offDiag.go_size _ _ _ _ _ _ _
+
 theorem schoolbookSquareLimbs.offDiag_size (a : Array UInt64) (lo len : Nat)
     (acc : Array UInt64)
     (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size) :
     (schoolbookSquareLimbs.offDiag a lo len acc hA hAcc).size = acc.size :=
-  schoolbookSquareLimbs.offDiag.go_size a lo len acc 0 hA hAcc
+  schoolbookSquareLimbs.offDiag.go2_size a lo len acc 0 hA hAcc
 
 /-! ### Top-level: `schoolbookSquareLimbs` -/
 

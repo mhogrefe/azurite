@@ -1223,6 +1223,244 @@ private lemma schoolbookSquareLimbs.offDiag.go_correct
       rw [partialOffDiagSum_terminal a lo len i (by omega)]
       ring
 
+/-- `schoolbookSquareLimbs.offDiag.go2` preserves the suffix from `2 * len`. -/
+private lemma schoolbookSquareLimbs.offDiag.go2_toList_drop
+    (a : Array UInt64) (lo len : Nat) (acc : Array UInt64) (i : Nat)
+    (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size) :
+    (schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc).toList.drop (2 * len)
+      = acc.toList.drop (2 * len) := by
+  induction h_sub : len - i using Nat.strong_induction_on generalizing acc i with
+  | _ n ih =>
+  by_cases h_lt : i + 2 < len
+  · have h_i : lo + i < a.size := by omega
+    have h_i1 : lo + i + 1 < a.size := by omega
+    have h_2i1 : 2 * i + 1 < acc.size := by omega
+    set m := UInt64.mulAddWithCarry a[lo + i + 1] a[lo + i] acc[2 * i + 1] 0 with hm_def
+    set acc₁ := acc.set (2 * i + 1) m.2 with hacc₁_def
+    have h_inner_len : (lo + i + 2) + (len - i - 2) ≤ a.size := by omega
+    have h_acc_row : (2 * i + 2) + (len - i - 2) ≤ acc₁.size := by
+      rw [hacc₁_def, Array.size_set]; omega
+    set r := mulAdd2Limbs.go a (lo + i + 2) (len - i - 2) (2 * i + 2) a[lo + i] a[lo + i + 1]
+      acc₁ 0 m.1 0 h_inner_len h_acc_row with hr_def
+    have h_r_size : r.1.size = acc.size := by
+      rw [hr_def, mulAdd2Limbs.go_size, hacc₁_def, Array.size_set]
+    have h_c0 : i + len < r.1.size := by rw [h_r_size]; omega
+    set acc₂ := r.1.set (i + len) r.2.1 with hacc₂_def
+    have h_c1 : i + len + 1 < acc₂.size := by rw [hacc₂_def, Array.size_set, h_r_size]; omega
+    set acc' := acc₂.set (i + len + 1) r.2.2 with hacc'_def
+    have hAcc' : 2 * len ≤ acc'.size := by
+      rw [hacc'_def, Array.size_set, hacc₂_def, Array.size_set, h_r_size]; exact hAcc
+    have h_eq_go : schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc
+        = schoolbookSquareLimbs.offDiag.go2 a lo len acc' (i + 2) hA hAcc' := by
+      conv_lhs => rw [schoolbookSquareLimbs.offDiag.go2]
+      simp [h_lt, hm_def, hacc₁_def, hr_def, hacc₂_def, hacc'_def]
+    rw [h_eq_go, ih (len - (i + 2)) (by omega) acc' (i + 2) hAcc' rfl]
+    rw [hacc'_def, Array.toList_set, List.drop_set, hacc₂_def, Array.toList_set, List.drop_set]
+    simp only [show i + len + 1 < 2 * len from by omega, show i + len < 2 * len from by omega,
+      ↓reduceIte]
+    have h_drop_r : r.1.toList.drop (i + len) = acc₁.toList.drop (i + len) := by
+      have h := mulAdd2Limbs.go_toList_drop a (lo + i + 2) (len - i - 2) (2 * i + 2) a[lo + i]
+        a[lo + i + 1] acc₁ 0 m.1 0 h_inner_len h_acc_row
+      rw [← hr_def, show 2 * i + 2 + (len - i - 2) = i + len from by omega] at h
+      exact h
+    have h_drop_acc₁ : acc₁.toList.drop (i + len) = acc.toList.drop (i + len) := by
+      rw [hacc₁_def, Array.toList_set, List.drop_set]
+      simp only [show 2 * i + 1 < i + len from by omega, ↓reduceIte]
+    calc r.1.toList.drop (2 * len)
+        = (r.1.toList.drop (i + len)).drop (2 * len - (i + len)) := by
+          rw [List.drop_drop]; congr 1; omega
+      _ = (acc.toList.drop (i + len)).drop (2 * len - (i + len)) := by
+          rw [h_drop_r, h_drop_acc₁]
+      _ = acc.toList.drop (2 * len) := by rw [List.drop_drop]; congr 1; omega
+  · rw [schoolbookSquareLimbs.offDiag.go2]
+    simp only [h_lt, ↓reduceDIte]
+    exact schoolbookSquareLimbs.offDiag.go_toList_drop a lo len acc i hA hAcc
+
+/-- Invariant of `schoolbookSquareLimbs.offDiag.go2`, the same statement as for
+    `schoolbookSquareLimbs.offDiag.go`: one fused step contributes rows `i` and `i + 1` of
+    `partialOffDiagSum`; the tail step is `schoolbookSquareLimbs.offDiag.go`. -/
+private lemma schoolbookSquareLimbs.offDiag.go2_correct
+    (a : Array UInt64) (lo len : Nat) (acc : Array UInt64) (i : Nat)
+    (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size)
+    (h_zero : ∀ (k : Nat) (hk : k < acc.size), i + len ≤ k → k < 2 * len →
+        acc[k]'hk = (0 : UInt64)) :
+    toNatLimbsList
+        ((schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc).toList.take (2 * len))
+      = toNatLimbsList (acc.toList.take (2 * len))
+        + partialOffDiagSum a lo len i := by
+  induction h_sub : len - i using Nat.strong_induction_on generalizing acc i with
+  | _ n ih =>
+  by_cases h_lt : i + 2 < len
+  · have h_i : lo + i < a.size := by omega
+    have h_i1 : lo + i + 1 < a.size := by omega
+    have h_2i1 : 2 * i + 1 < acc.size := by omega
+    set m := UInt64.mulAddWithCarry a[lo + i + 1] a[lo + i] acc[2 * i + 1] 0 with hm_def
+    set acc₁ := acc.set (2 * i + 1) m.2 with hacc₁_def
+    have h_acc₁_size : acc₁.size = acc.size := by rw [hacc₁_def, Array.size_set]
+    have h_inner_len : (lo + i + 2) + (len - i - 2) ≤ a.size := by omega
+    have h_acc_row : (2 * i + 2) + (len - i - 2) ≤ acc₁.size := by
+      rw [h_acc₁_size]; omega
+    set r := mulAdd2Limbs.go a (lo + i + 2) (len - i - 2) (2 * i + 2) a[lo + i] a[lo + i + 1]
+      acc₁ 0 m.1 0 h_inner_len h_acc_row with hr_def
+    have h_r_size : r.1.size = acc.size := by
+      rw [hr_def, mulAdd2Limbs.go_size, h_acc₁_size]
+    have h_c0 : i + len < r.1.size := by rw [h_r_size]; omega
+    set acc₂ := r.1.set (i + len) r.2.1 with hacc₂_def
+    have h_acc₂_size : acc₂.size = acc.size := by rw [hacc₂_def, Array.size_set, h_r_size]
+    have h_c1 : i + len + 1 < acc₂.size := by rw [h_acc₂_size]; omega
+    set acc' := acc₂.set (i + len + 1) r.2.2 with hacc'_def
+    have h_acc'_size : acc'.size = acc.size := by rw [hacc'_def, Array.size_set, h_acc₂_size]
+    have hAcc' : 2 * len ≤ acc'.size := by rw [h_acc'_size]; exact hAcc
+    have h_eq_go : schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc
+        = schoolbookSquareLimbs.offDiag.go2 a lo len acc' (i + 2) hA hAcc' := by
+      conv_lhs => rw [schoolbookSquareLimbs.offDiag.go2]
+      simp [h_lt, hm_def, hacc₁_def, hr_def, hacc₂_def, hacc'_def]
+    have h_len_acc : acc.toList.length = acc.size := Array.length_toList
+    have h_len_acc₁ : acc₁.toList.length = acc.size := by rw [Array.length_toList, h_acc₁_size]
+    have h_len_r : r.1.toList.length = acc.size := by rw [Array.length_toList, h_r_size]
+    have h_len_acc' : acc'.toList.length = acc.size := by rw [Array.length_toList, h_acc'_size]
+    set W := len - i - 2 with hW_def
+    -- Prefix below `2i+1` and suffix from `i + len + 2` are untouched.
+    have h_pre_r : r.1.toList.take (2 * i + 2) = acc₁.toList.take (2 * i + 2) := by
+      have h := mulAdd2Limbs.go_toList_take_le a (lo + i + 2) W (2 * i + 2) a[lo + i]
+        a[lo + i + 1] acc₁ 0 m.1 0 h_inner_len h_acc_row (2 * i + 2) (by omega)
+      rw [← hr_def] at h; exact h
+    have h_pre : acc'.toList.take (2 * i + 1) = acc.toList.take (2 * i + 1) := by
+      rw [hacc'_def, Array.toList_set, List.take_set_of_le (by omega),
+        hacc₂_def, Array.toList_set, List.take_set_of_le (by omega)]
+      have h := congrArg (List.take (2 * i + 1)) h_pre_r
+      simp only [List.take_take, show min (2 * i + 1) (2 * i + 2) = 2 * i + 1 from by omega] at h
+      rw [h, hacc₁_def, Array.toList_set, List.take_set_of_le (Nat.le_refl _)]
+    have h_drop_r : r.1.toList.drop (i + len) = acc₁.toList.drop (i + len) := by
+      have h := mulAdd2Limbs.go_toList_drop a (lo + i + 2) W (2 * i + 2) a[lo + i]
+        a[lo + i + 1] acc₁ 0 m.1 0 h_inner_len h_acc_row
+      rw [← hr_def, show 2 * i + 2 + W = i + len from by omega] at h
+      exact h
+    have h_suf : acc'.toList.drop (2 * i + 1 + (W + 3)) = acc.toList.drop (2 * i + 1 + (W + 3)) := by
+      rw [show 2 * i + 1 + (W + 3) = i + len + 2 from by omega]
+      rw [hacc'_def, Array.toList_set, List.drop_set, hacc₂_def, Array.toList_set, List.drop_set]
+      simp only [show i + len + 1 < i + len + 2 from by omega,
+        show i + len < i + len + 2 from by omega, ↓reduceIte]
+      have h := congrArg (List.drop 2) h_drop_r
+      simp only [List.drop_drop] at h
+      rw [h, hacc₁_def, Array.toList_set, List.drop_set]
+      simp only [show 2 * i + 1 < i + len + 2 from by omega, ↓reduceIte]
+    -- The window `[2i+1, i+len+2)` of `acc'`: `m.2`, the fused slice, the two carry limbs.
+    have h_get_m : acc'[2 * i + 1]'(by rw [h_acc'_size]; omega) = m.2 := by
+      have h1 : 2 * i + 1 < r.1.toList.length := by rw [h_len_r]; omega
+      have h2 : 2 * i + 1 < acc₁.toList.length := by rw [h_len_acc₁]; omega
+      have h := getElem_eq_of_take_eq acc₁.toList r.1.toList (2 * i + 2) (2 * i + 1) h_pre_r
+        (by omega) h1 h2
+      rw [Array.getElem_toList, Array.getElem_toList] at h
+      simp only [hacc'_def]
+      rw [Array.getElem_set_ne _ (by rw [h_acc₂_size]; omega) (by omega)]
+      simp only [hacc₂_def]
+      rw [Array.getElem_set_ne _ (by rw [h_r_size]; omega) (by omega), h]
+      simp only [hacc₁_def, Array.getElem_set_self]
+    have h_get0 : acc'[i + len]'(by rw [h_acc'_size]; omega) = r.2.1 := by
+      simp only [hacc'_def]
+      rw [Array.getElem_set_ne _ (by rw [h_acc₂_size]; omega) (by omega)]
+      simp only [hacc₂_def, Array.getElem_set_self]
+    have h_get1 : acc'[i + len + 1]'(by rw [h_acc'_size]; omega) = r.2.2 := by
+      simp only [hacc'_def, Array.getElem_set_self]
+    have h_mid : (acc'.toList.drop (2 * i + 2)).take W = (r.1.toList.drop (2 * i + 2)).take W := by
+      rw [hacc'_def, Array.toList_set, List.drop_set]
+      simp only [show ¬ i + len + 1 < 2 * i + 2 from by omega, ↓reduceIte]
+      rw [List.take_set_of_le (by omega)]
+      rw [hacc₂_def, Array.toList_set, List.drop_set]
+      simp only [show ¬ i + len < 2 * i + 2 from by omega, ↓reduceIte]
+      rw [List.take_set_of_le (by omega)]
+    have h_c : (acc'.toList.drop (i + len)).take 2 = [r.2.1, r.2.2] := by
+      have h1 : i + len < acc'.toList.length := by rw [h_len_acc']; omega
+      have h2 : i + len + 1 < acc'.toList.length := by rw [h_len_acc']; omega
+      rw [List.drop_eq_getElem_cons h1, List.take_succ_cons, List.drop_eq_getElem_cons h2,
+        List.take_succ_cons, List.take_zero, Array.getElem_toList, Array.getElem_toList,
+        h_get0, h_get1]
+    have h_nil : toNatLimbsList ([] : List UInt64) = 0 := rfl
+    have h_win_acc' : toNatLimbsList ((acc'.toList.drop (2 * i + 1)).take (W + 3))
+        = m.2.toNat + (toNatLimbsList ((r.1.toList.drop (2 * i + 2)).take W)
+            + (r.2.1.toNat + r.2.2.toNat * 2 ^ 64) * 2 ^ (64 * W)) * 2 ^ 64 := by
+      have h1 : 2 * i + 1 < acc'.toList.length := by rw [h_len_acc']; omega
+      rw [List.drop_eq_getElem_cons h1, List.take_succ_cons, toNatLimbsList_cons,
+        Array.getElem_toList, h_get_m]
+      rw [toNatLimbsList_take_add (acc'.toList.drop (2 * i + 1 + 1)) W 2
+        (by rw [List.length_drop, h_len_acc']; omega)]
+      rw [List.drop_drop, show 2 * i + 1 + 1 + W = i + len from by omega,
+        show 2 * i + 1 + 1 = 2 * i + 2 from rfl, h_mid, h_c, toNatLimbsList_cons,
+        toNatLimbsList_cons, h_nil]
+      ring
+    have h_win_acc : toNatLimbsList ((acc.toList.drop (2 * i + 1)).take (W + 3))
+        = acc[2 * i + 1].toNat
+          + toNatLimbsList ((acc.toList.drop (2 * i + 2)).take W) * 2 ^ 64 := by
+      have h1 : 2 * i + 1 < acc.toList.length := by rw [h_len_acc]; omega
+      rw [List.drop_eq_getElem_cons h1, List.take_succ_cons, toNatLimbsList_cons,
+        Array.getElem_toList]
+      rw [toNatLimbsList_take_add (acc.toList.drop (2 * i + 1 + 1)) W 2
+        (by rw [List.length_drop, h_len_acc]; omega)]
+      rw [List.drop_drop, show 2 * i + 1 + 1 + W = i + len from by omega,
+        show 2 * i + 1 + 1 = 2 * i + 2 from rfl,
+        toNatLimbsList_drop_take_eq_zero acc (i + len) 2 (2 * len) (by omega) h_zero]
+      ring
+    have h_window := toNatLimbsList_take_window acc.toList acc'.toList (2 * i + 1) (W + 3)
+      (2 * len) (by omega) (by rw [h_len_acc]; exact hAcc) (by rw [h_len_acc']; exact hAcc)
+      h_pre h_suf
+    rw [h_win_acc, h_win_acc'] at h_window
+    -- The fused pass and the lone product.
+    have h_mac := mulAdd2Limbs.go_correct a (lo + i + 2) W (2 * i + 2) a[lo + i] a[lo + i + 1]
+      acc₁ 0 m.1 0 h_inner_len h_acc_row
+    rw [← hr_def] at h_mac
+    have h0 : (0 : UInt64).toNat = 0 := rfl
+    simp only [h0, Nat.zero_mul, Nat.add_zero, Nat.sub_zero] at h_mac
+    have h_drop_acc₁ : acc₁.toList.drop (2 * i + 2) = acc.toList.drop (2 * i + 2) := by
+      rw [hacc₁_def, Array.toList_set, List.drop_set]
+      simp only [show 2 * i + 1 < 2 * i + 2 from by omega, ↓reduceIte]
+    rw [h_drop_acc₁] at h_mac
+    have h_m := UInt64.mulAddWithCarry_eq a[lo + i + 1] a[lo + i] acc[2 * i + 1] 0
+    rw [← hm_def, h0, Nat.add_zero] at h_m
+    -- The zero tail persists from `i + 2 + len`.
+    have h_zero' : ∀ (k : Nat) (hk : k < acc'.size), (i + 2) + len ≤ k → k < 2 * len →
+        acc'[k]'hk = (0 : UInt64) := by
+      intro k hk hlo hhi
+      have hk_acc : k < acc.size := by rw [← h_acc'_size]; exact hk
+      have hk_l' : k < acc'.toList.length := by rw [h_len_acc']; exact hk_acc
+      have hk_l : k < acc.toList.length := by rw [h_len_acc]; exact hk_acc
+      have h := toList_getElem_eq_of_drop_eq acc.toList acc'.toList (2 * i + 1 + (W + 3)) k h_suf
+        (by omega) hk_l' hk_l
+      rw [Array.getElem_toList, Array.getElem_toList] at h
+      rw [h]; exact h_zero k hk_acc (by omega) hhi
+    have h_ih := ih (len - (i + 2)) (by omega) acc' (i + 2) hAcc' h_zero' rfl
+    rw [h_eq_go, h_ih]
+    -- Two rows of `partialOffDiagSum`.
+    rw [partialOffDiagSum_step a lo len i (by omega),
+      partialOffDiagSum_step a lo len (i + 1) (by omega),
+      drop_headD_eq a lo i (by omega), drop_headD_eq a lo (i + 1) (by omega)]
+    rw [show len - i - 1 = W + 1 from by omega, drop_take_succ_cons a (lo + i + 1) W h_i1,
+      toNatLimbsList_cons]
+    simp only [show lo + (i + 1) = lo + i + 1 from by ring,
+      show lo + i + 1 + 1 = lo + i + 2 from rfl, show len - (i + 1) - 1 = W from by omega,
+      show 2 * (i + 1) + 1 = 2 * i + 3 from by ring, show i + 1 + 1 = i + 2 from rfl]
+    have h_pow : (2 : Nat) ^ (64 * (2 * i + 3)) = 2 ^ (64 * (2 * i + 1)) * 2 ^ 64 * 2 ^ 64 := by
+      rw [show 64 * (2 * i + 3) = 64 * (2 * i + 1) + 64 + 64 from by ring, Nat.pow_add,
+        Nat.pow_add]
+    rw [h_pow]
+    set S₂ := toNatLimbsList ((a.toList.drop (lo + i + 2)).take W) with hS₂_def
+    set Mid := toNatLimbsList ((acc.toList.drop (2 * i + 2)).take W) with hMid_def
+    set Wnd := toNatLimbsList ((r.1.toList.drop (2 * i + 2)).take W) with hWnd_def
+    set N := toNatLimbsList (acc.toList.take (2 * len)) with hN_def
+    set N' := toNatLimbsList (acc'.toList.take (2 * len)) with hN'_def
+    set P₂ := partialOffDiagSum a lo len (i + 2) with hP₂_def
+    set C := r.2.1.toNat + r.2.2.toNat * 2 ^ 64 with hC_def
+    set β := (2 : Nat) ^ 64 with hβ_def
+    set E := (2 : Nat) ^ (64 * (2 * i + 1)) with hE_def
+    set βW := (2 : Nat) ^ (64 * W) with hβW_def
+    zify at h_window h_mac h_m ⊢
+    linear_combination h_window - ((β : ℤ) * E) * h_mac + (E : ℤ) * h_m
+  · have h_eq : schoolbookSquareLimbs.offDiag.go2 a lo len acc i hA hAcc
+        = schoolbookSquareLimbs.offDiag.go a lo len acc i hA hAcc := by
+      rw [schoolbookSquareLimbs.offDiag.go2]; simp [h_lt]
+    rw [h_eq]
+    exact schoolbookSquareLimbs.offDiag.go_correct a lo len acc i hA hAcc h_zero
+
 theorem schoolbookSquareLimbs_offDiag_toNat (a : Array UInt64) (lo len : Nat)
     (acc : Array UInt64) (hA : lo + len ≤ a.size) (hAcc : 2 * len ≤ acc.size)
     (h_zero : ∀ k (hk : k < acc.size), acc[k]'hk = (0 : UInt64)) :
@@ -1231,10 +1469,10 @@ theorem schoolbookSquareLimbs_offDiag_toNat (a : Array UInt64) (lo len : Nat)
   unfold schoolbookSquareLimbs.offDiag
   have h_zero' : ∀ (k : Nat) (hk : k < acc.size), 0 + len ≤ k → k < 2 * len →
       acc[k]'hk = (0 : UInt64) := fun k hk _ _ => h_zero k hk
-  have h_go := schoolbookSquareLimbs.offDiag.go_correct a lo len acc 0 hA hAcc h_zero'
+  have h_go := schoolbookSquareLimbs.offDiag.go2_correct a lo len acc 0 hA hAcc h_zero'
   -- Connect the take(2*len) result to the full result via the size invariant.
-  have h_go_size : (schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc).size = acc.size :=
-    schoolbookSquareLimbs.offDiag.go_size a lo len acc 0 hA hAcc
+  have h_go_size : (schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc).size = acc.size :=
+    schoolbookSquareLimbs.offDiag.go2_size a lo len acc 0 hA hAcc
   -- The result's toNat over all positions ≥ toNat over first 2*len positions;
   -- but positions beyond 2*len in the result are the unchanged trailing tail of `acc`.
   -- Since the algorithm only touches [0, 2*len), the toNat of the full list
@@ -1268,9 +1506,9 @@ theorem schoolbookSquareLimbs_offDiag_toNat (a : Array UInt64) (lo len : Nat)
   -- Show the algorithm only modifies positions in [0, 2*len).
   -- For now, we use the take(2*len) form of h_go and convert.
   have h_result_eq_take :
-      (schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc).toList
-        = ((schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc).toList.take (2 * len))
-          ++ ((schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc).toList.drop (2 * len)) := by
+      (schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc).toList
+        = ((schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc).toList.take (2 * len))
+          ++ ((schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc).toList.drop (2 * len)) := by
     rw [List.take_append_drop]
   -- toNatLimbsList of full = toNatLimbsList of take(2*len) + toNatLimbsList of drop(2*len) * 2^(64*2*len),
   -- and the drop(2*len) part is all zero (since acc was zero there and the algorithm doesn't touch it).
@@ -1282,9 +1520,9 @@ theorem schoolbookSquareLimbs_offDiag_toNat (a : Array UInt64) (lo len : Nat)
   rw [partialOffDiagSum_eq_offDiagSumAux a lo len hA]
   -- Trailing zeros from the drop(2*len) tail.
   have h_drop_zero :
-      toNatLimbsList ((schoolbookSquareLimbs.offDiag.go a lo len acc 0 hA hAcc).toList.drop (2 * len))
+      toNatLimbsList ((schoolbookSquareLimbs.offDiag.go2 a lo len acc 0 hA hAcc).toList.drop (2 * len))
         = 0 := by
-    rw [schoolbookSquareLimbs.offDiag.go_toList_drop a lo len acc 0 hA hAcc]
+    rw [schoolbookSquareLimbs.offDiag.go2_toList_drop a lo len acc 0 hA hAcc]
     have h_aux : ∀ (l : List UInt64), (∀ x ∈ l, x = 0) → toNatLimbsList l = 0 := by
       intro l h
       induction l with

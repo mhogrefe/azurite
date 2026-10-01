@@ -21,18 +21,20 @@ namespace Azurite.AzNat
     Below this size the `squareLimbs` dispatcher picks `schoolbookSquareLimbs`;
     above it, `karatsubaSquareLimbs`. Unlike `mulDispatchThreshold` there is
     no balance ratio because squaring takes a single operand — the recursive
-    split's two halves always differ in length by at most one.  Retuned in the
-    milestone 5 sweep (`tune_aznat_square_karatsuba_crossover`,
-    `tune_aznat_square_ladder_2d`): schoolbook squaring and top-level Karatsuba
-    squaring tie at 96 limbs, and the 2-D ladder sweep is best at 96. -/
-def squareDispatchThreshold : Nat := 96
+    split's two halves always differ in length by at most one.  Retuned on
+    2026-10-01 after the two-row off-diagonal pass
+    (`tune_aznat_square_karatsuba_crossover`, `tune_aznat_square_ladder_2d`):
+    schoolbook squaring and top-level Karatsuba squaring tie at 160 limbs, and
+    the 2-D ladder sweeps are best at 96–128. -/
+def squareDispatchThreshold : Nat := 128
 
 /-- Default cutoff (in limbs) for switching Karatsuba squaring → Toom-Cook 3
-    squaring.  Retuned in the milestone 5 sweep
+    squaring.  Retuned on 2026-10-01
     (`tune_aznat_square_toomcook3_crossover`, `tune_aznat_square_ladder_2d`):
-    top-level Toom-3 squaring ties with Karatsuba squaring at 192–256 limbs and
-    wins from 320; the 2-D ladder sweep is best at 320. -/
-def squareDispatchToomCook3Cutoff : Nat := 320
+    top-level Toom-3 squaring loses to Karatsuba squaring by 3–8 % at 192–320
+    limbs and wins by 5 % from 384; the 2-D ladder sweeps are flat from 256 to
+    384. -/
+def squareDispatchToomCook3Cutoff : Nat := 384
 
 /-- Default cutoff (in limbs) for Toom-4 squaring over Toom-3 squaring
     (`tune_aznat_square_toomcook4_dispatch`): the dispatcher sweep is flat from
@@ -41,9 +43,9 @@ def squareDispatchToomCook4Cutoff : Nat := 512
 
 /-- Default cutoff (in limbs) for the Schönhage–Strassen squaring over Toom-4
     squaring.  Measured (`tune_aznat_square_fft_crossover`, `docs/fft_plan.md`):
-    the FFT ties Toom-4 squaring at 32768 limbs and wins by 10 % at 49152 and
-    14 % at 65536. -/
-def squareDispatchFFTCutoff : Nat := 32768
+    the FFT ties Toom-4 squaring at 4096 limbs and wins by 17 % at 8192, 32 % at
+    16384 and 36 % at 24576. -/
+def squareDispatchFFTCutoff : Nat := 4096
 
 /-- The Toom squaring ladder: schoolbook, Karatsuba, Toom-3 or Toom-4 by size. -/
 def toomSquareLadderLimbs (minThreshold toomCook3Cutoff toomCook4Cutoff : Nat)

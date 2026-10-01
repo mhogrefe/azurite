@@ -24,10 +24,10 @@ Brent–Zimmermann §2.3.3:
 3. pointwise products (the `AzFermat` product: the production multiplication ladder, reduced);
 4. `backwardFFT`, natural order;
 5. division by `K θ^j` (`divPow2`), then recovery of the signed coefficient `c_j` from its
-   residue: `c_j ≥ (j+1) 2^{2M}` means the true value is negative (steps 12–13 of MCA); the
-   coefficient is produced directly as a residue modulo `2^n + 1` (`AzFermat n`);
-6. `∑ c_j 2^{jM}` by Horner's rule in `AzFermat n`, whose canonical representative is the
-   result.
+   residue: `c_j ≥ (j+1) 2^{2M}` means the true value is negative (steps 12–13 of MCA);
+6. `∑ c_j 2^{jM}` by a linear-time digit sweep (`ssSweep`) for the positive and the negative
+   coefficients separately, combined modulo `2^n + 1` in `AzFermat n`, whose canonical
+   representative is the result.
 
 `fftMulMod k w` picks the smallest admissible `N` (`ssFermatExponent`); `fftMul` chooses `k` and
 `w` from the operand sizes (`ssParams`) so that the product is below `2^n` and the residue is the
@@ -45,11 +45,17 @@ digit is below `2^{64 w} ≤ 2^N`, so `ofAzNat` is one comparison and no arithme
 def ssDigit (N w : Nat) [NeZero N] (A : AzNat) (j : Nat) : AzFermat N :=
   ofAzNat N (block A.limbs 0 A.limbs.size w j)
 
+/-- A signed coefficient of the product polynomial: a magnitude and a sign. -/
+structure SSCoeff where
+  /-- `true` for a negative coefficient. -/
+  neg : Bool
+  /-- The absolute value. -/
+  mag : AzNat
+
 /-- The signed coefficient from its residue `r` modulo `2^N + 1` (MCA steps 12–13): `r` itself
-unless `r ≥ U = (j+1) 2^{2M}`, in which case `r − (2^N + 1)`; delivered as a residue modulo
-`2^n + 1`. -/
-def ssRecover (N n : Nat) [NeZero n] (U : AzNat) (r : AzFermat N) : AzFermat n :=
-  if U ≤ r.val then AzFermat.neg (reduceAny (modulus N - r.val)) else reduceAny r.val
+unless `r ≥ U = (j+1) 2^{2M}`, in which case `r − (2^N + 1)`, i.e. `−(2^N + 1 − r)`. -/
+def ssRecover (N : Nat) (U : AzNat) (r : AzFermat N) : SSCoeff :=
+  if U ≤ r.val then ⟨true, modulus N - r.val⟩ else ⟨false, r.val⟩
 
 /-- Step 1 and step 5 of Algorithm 2.4: the `K = 2^(k+1)` digits of `A`, weighted by
 `θ^j = 2^{eθ·j}`. -/
@@ -86,25 +92,39 @@ theorem ssSquares_size (k N : Nat) [NeZero N] (eθ : Nat) (sqFn : AzNat → AzNa
     (ssSquares k N eθ sqFn a ha).size = 2 ^ (k + 1) := Array.size_ofFn
 
 /-- Steps 10–13: divide the `j`-th entry of the backward transform by `K θ^j` and recover the
-signed coefficient, as a residue modulo `2^n + 1`. -/
-def ssCoefficients (k w N : Nat) [NeZero N] (n : Nat) [NeZero n] (eθ : Nat)
-    (bc : Array (AzFermat N)) (hbc : bc.size = 2 ^ (k + 1)) : Array (AzFermat n) :=
+signed coefficient. -/
+def ssCoefficients (k w N : Nat) [NeZero N] (eθ : Nat) (bc : Array (AzFermat N))
+    (hbc : bc.size = 2 ^ (k + 1)) : Array SSCoeff :=
   Array.ofFn fun j : Fin (2 ^ (k + 1)) =>
-    ssRecover N n (AzNat.ofNat (j.val + 1) <<< (2 * (64 * w)))
+    ssRecover N (AzNat.ofNat (j.val + 1) <<< (2 * (64 * w)))
       (divPow2 (k + 1 + eθ * j.val) (bc[j.val]'(by rw [hbc]; exact j.isLt)))
 
-/-- Step 14: `∑_j c_j 2^{jM}` by Horner's rule modulo `2^n + 1` (`M ≤ n`). -/
-def ssAssemble (M n : Nat) (hM : M ≤ n) (coeffs : Array (AzFermat n)) : AzFermat n :=
-  coeffs.toList.foldr (fun c acc => AzFermat.add c (mulPow2Le M hM acc)) 0
+/-- The digit sweep behind step 14: `∑_j c_j 2^{64 w j}` for nonnegative `c_j`, as the low
+`w · K` limbs plus the carry out of the top.  Each step works on a number of about the size of
+one coefficient (`c_j` plus the incoming carry), so the whole sweep is linear in the output,
+where Horner's rule modulo `2^n + 1` would shift the full accumulator `K` times. -/
+def ssSweep (w : Nat) : List AzNat → AzNat → Array UInt64 → Array UInt64 × AzNat
+  | [], carry, acc => (acc, carry)
+  | c :: cs, carry, acc =>
+    let t := c + carry
+    ssSweep w cs (t >>> (64 * w)) (acc ++ truncatePad (t.modPow2 (64 * w)).limbs w)
+
+/-- Step 14: `∑_j c_j 2^{jM}` modulo `2^n + 1` (`n = 64 w · 2^(k+1)`): one sweep for the positive
+coefficients and one for the negative ones, each giving `low + high · 2^n ≡ low − high`, then
+`(P_low − P_high) − (Q_low − Q_high)`. -/
+def ssAssemble (k w : Nat) (hw0 : 0 < w) (cs : Array SSCoeff) : AzFermat (64 * w * 2 ^ (k + 1)) :=
+  haveI : NeZero (64 * w * 2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
+  let pos := ssSweep w (cs.toList.map fun c => if c.neg then 0 else c.mag) 0 #[]
+  let neg := ssSweep w (cs.toList.map fun c => if c.neg then c.mag else 0) 0 #[]
+  AzFermat.sub (AzFermat.add (ofAzNat _ (ofLimbs pos.1)) (ofAzNat _ neg.2))
+    (AzFermat.add (ofAzNat _ (ofLimbs neg.1)) (ofAzNat _ pos.2))
 
 /-- Steps 9–14 from the array of pointwise products: backward transform, coefficients, assembly
 modulo `2^n + 1`. -/
 def ssFinish (k w N : Nat) [NeZero N] (hw0 : 0 < w) (eθ : Nat) (c : Array (AzFermat N))
     (hc : c.size = 2 ^ (k + 1)) : AzNat :=
-  haveI : NeZero (64 * w * 2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
   let bc := backwardFFT (2 * eθ) (k + 1) c hc
-  (ssAssemble (64 * w) (64 * w * 2 ^ (k + 1)) (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
-    (ssCoefficients k w N (64 * w * 2 ^ (k + 1)) eθ bc (backwardFFT_size _ _ _ _))).val
+  (ssAssemble k w hw0 (ssCoefficients k w N eθ bc (backwardFFT_size _ _ _ _))).val
 
 /-- Algorithm 2.4 with explicit parameters (see the module docstring); `mulFn` multiplies the
 pointwise products. -/
@@ -191,9 +211,11 @@ theorem ssParamsWith_le (kAdj L : Nat) :
   · rw [Nat.max_eq_right hq]
     omega
 
-/-- The digit-count adjustment used by `fftMul` and `fftSquare` (`ssParamsWith`); tuned by
-`az_nat_fft_profile`. -/
-def ssKAdjust : Nat := 0
+/-- The digit-count adjustment used by `fftMul` and `fftSquare` (`ssParamsWith`).  Measured with
+`az_nat_fft_profile` (`docs/fft_plan.md`): with `K ≈ 4√L` digits the whole multiplication is
+10 % faster than with `K ≈ 2√L` at 16384 limbs and 12 % faster at 65536, while `K ≈ 8√L` is
+slower again because the transforms then dominate. -/
+def ssKAdjust : Nat := 1
 
 /-- The default parameters: `ssParamsWith ssKAdjust`. -/
 def ssParams (L : Nat) : Nat × Nat := ssParamsWith ssKAdjust L

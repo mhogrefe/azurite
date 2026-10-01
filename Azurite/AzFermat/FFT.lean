@@ -22,7 +22,8 @@ position by position through `toZMod`, is in `Equiv/FFT.lean`.
 
 The arrays carry their size in the type (`{ b // b.size = 2^k }`) so that every index is
 checked; the recursion copies the even/odd (resp. lower/upper) halves into fresh arrays, which
-is `O(K log K)` pointer copies against the same number of big-number operations.
+is `O(K log K)` pointer copies against the same number of big-number operations.  Each butterfly
+computes its twiddle product once and produces both outputs from it.
 -/
 
 namespace Azurite.AzFermat
@@ -40,11 +41,14 @@ def forwardFFTRec (e : Nat) : (k : Nat) → (a : Array (AzFermat N)) → a.size 
       a[2 * i.val + 1]'(by have := i.isLt; rw [ha]; have hK := pow_succ 2 k; omega)
     let b := forwardFFTRec (2 * e) k evens Array.size_ofFn
     let c := forwardFFTRec (2 * e) k odds Array.size_ofFn
+    -- one twiddle product per butterfly, shared by its two outputs
+    let pairs : Array (AzFermat N × AzFermat N) := Array.ofFn fun j : Fin (2 ^ k) =>
+      butterfly (e * BZ.bitrev k j.val) (b.1[j.val]'(Nat.lt_of_lt_of_eq j.isLt b.2.symm))
+        (c.1[j.val]'(Nat.lt_of_lt_of_eq j.isLt c.2.symm))
     ⟨Array.ofFn fun r : Fin (2 ^ (k + 1)) =>
       have hj : r.val / 2 < 2 ^ k := by have := r.isLt; have hK := pow_succ 2 k; omega
-      let t := mulPow2 (e * BZ.bitrev k (r.val / 2)) (c.1[r.val / 2]'(Nat.lt_of_lt_of_eq hj c.2.symm))
-      if r.val % 2 = 0 then b.1[r.val / 2]'(Nat.lt_of_lt_of_eq hj b.2.symm) + t
-      else b.1[r.val / 2]'(Nat.lt_of_lt_of_eq hj b.2.symm) - t,
+      if r.val % 2 = 0 then (pairs[r.val / 2]'(by rw [Array.size_ofFn]; exact hj)).1
+      else (pairs[r.val / 2]'(by rw [Array.size_ofFn]; exact hj)).2,
      Array.size_ofFn⟩
 
 /-- Algorithm 2.3 on `2^k` residues in bit-reversed order with root `2^e`: the backward
@@ -59,15 +63,15 @@ def backwardFFTRec (e : Nat) : (k : Nat) → (a : Array (AzFermat N)) → a.size
       a[2 ^ k + i.val]'(by have := i.isLt; rw [ha]; have hK := pow_succ 2 k; omega)
     let b := backwardFFTRec (2 * e) k lo Array.size_ofFn
     let c := backwardFFTRec (2 * e) k hi Array.size_ofFn
+    -- one twiddle product per butterfly, shared by its two outputs
+    let pairs : Array (AzFermat N × AzFermat N) := Array.ofFn fun j : Fin (2 ^ k) =>
+      butterfly (e * (2 ^ (k + 1) - j.val)) (b.1[j.val]'(Nat.lt_of_lt_of_eq j.isLt b.2.symm))
+        (c.1[j.val]'(Nat.lt_of_lt_of_eq j.isLt c.2.symm))
     ⟨Array.ofFn fun r : Fin (2 ^ (k + 1)) =>
-      if hr : r.val < 2 ^ k then
-        b.1[r.val]'(Nat.lt_of_lt_of_eq hr b.2.symm)
-          + mulPow2 (e * (2 ^ (k + 1) - r.val)) (c.1[r.val]'(Nat.lt_of_lt_of_eq hr c.2.symm))
+      if hr : r.val < 2 ^ k then (pairs[r.val]'(by rw [Array.size_ofFn]; exact hr)).1
       else
         have hj : r.val - 2 ^ k < 2 ^ k := by have := r.isLt; have hK := pow_succ 2 k; omega
-        b.1[r.val - 2 ^ k]'(Nat.lt_of_lt_of_eq hj b.2.symm)
-          - mulPow2 (e * (2 ^ (k + 1) - (r.val - 2 ^ k)))
-              (c.1[r.val - 2 ^ k]'(Nat.lt_of_lt_of_eq hj c.2.symm)),
+        (pairs[r.val - 2 ^ k]'(by rw [Array.size_ofFn]; exact hj)).2,
      Array.size_ofFn⟩
 
 /-- The forward transform (bit-reversed order) of an array of `2^k` residues. -/

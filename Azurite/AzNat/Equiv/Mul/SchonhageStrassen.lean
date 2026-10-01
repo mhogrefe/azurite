@@ -24,10 +24,10 @@ is `A · B mod (2^n + 1)`.  The proof follows the stages of the implementation:
 * `toZModFun_ssWeighted`: the weighted array is `extendZero (weight θ a)` over `ZMod (2^N+1)`;
 * `toZMod_backwardFFT_ssProducts`: after the two forward transforms, the pointwise products and
   the backward transform, entry `j` is `K θ^j c_j` (`BZ.backwardFFT_forwardFFT_weight_mul`);
-* `toZMod_ssCoefficients_getElem`: dividing by `K θ^j` (a unit) and recovering from the window
-  (`BZ.negacyclicConv_bounds`, `BZ.int_recover_of_mem_window`) gives the integer `c_j`, as a
-  residue modulo `2^n + 1`;
-* `toZMod_ssAssemble`: the Horner sum in `AzFermat n` is `∑_j c_j 2^{jM}`;
+* `toInt_ssCoefficients_getElem`: dividing by `K θ^j` (a unit) and recovering from the window
+  (`BZ.negacyclicConv_bounds`, `BZ.int_recover_of_mem_window`) gives the integer `c_j`;
+* `ssSweep_spec` and `toZMod_ssAssemble`: the digit sweeps and their combination in
+  `AzFermat n` give `∑_j c_j 2^{jM}` modulo `2^n + 1`;
 * finally `BZ.sum_weight_mul_sum_weight` at `θ = 2^M` in `ZMod (2^n + 1)` identifies
   `∑_j c_j 2^{jM}` with `A · B` modulo `2^n + 1`.
 -/
@@ -49,24 +49,100 @@ theorem polyEvalInt_range_map (c : Int) (g : Nat → Int) : ∀ K : Nat,
       rw [Function.comp, pow_succ, mul_assoc]
     · rw [pow_zero, mul_one]
 
-/-- Horner's rule in `AzFermat n`: `∑_j c_j (2^M)^j`. -/
-theorem toZMod_foldr_horner {n : Nat} (M : Nat) (hM : M ≤ n) :
-    ∀ {K : Nat} (f : Fin K → AzFermat n),
-      toZMod ((List.ofFn f).foldr (fun c acc => AzFermat.add c (mulPow2Le M hM acc)) 0)
-        = ∑ j : Fin K, toZMod (f j) * ((2 : ZMod (2 ^ n + 1)) ^ M) ^ j.val
-  | 0, f => by simp
-  | K + 1, f => by
-    rw [List.ofFn_succ, List.foldr_cons, toZMod_add', toZMod_mulPow2Le,
-      toZMod_foldr_horner M hM (fun i => f i.succ), Fin.sum_univ_succ, Finset.sum_mul]
+theorem polyEvalNat_ofFn (c : Nat) : ∀ {K : Nat} (g : Fin K → Nat),
+    polyEvalNat c (List.ofFn g) = ∑ j : Fin K, g j * c ^ j.val
+  | 0, g => by simp [polyEvalNat]
+  | K + 1, g => by
+    rw [List.ofFn_succ, polyEvalNat_cons, polyEvalNat_ofFn c (fun i => g i.succ),
+      Fin.sum_univ_succ, Finset.sum_mul, add_comm]
     congr 1
     · rw [Fin.val_zero, pow_zero, mul_one]
     · refine Finset.sum_congr rfl fun i _ => ?_
       rw [Fin.val_succ, pow_succ, mul_assoc]
 
-theorem toZMod_ssAssemble {n K : Nat} (M : Nat) (hM : M ≤ n) (f : Fin K → AzFermat n) :
-    toZMod (ssAssemble M n hM (Array.ofFn f))
-      = ∑ j : Fin K, toZMod (f j) * ((2 : ZMod (2 ^ n + 1)) ^ M) ^ j.val := by
-  rw [ssAssemble, Array.toList_ofFn, toZMod_foldr_horner]
+/-- The value of a signed coefficient. -/
+def SSCoeff.toInt (c : SSCoeff) : Int := if c.neg then -(c.mag.toNat : Int) else c.mag.toNat
+
+/-- **The digit sweep**: on input coefficients `cs`, an incoming carry and an accumulator of
+`acc.size` limbs, `ssSweep` appends `w · |cs|` limbs and returns the carry out, with
+`low + carry_out · 2^{64 (acc.size + w |cs|)} = acc + 2^{64 acc.size} (carry_in + ∑_j cs_j 2^{64 w j})`. -/
+theorem ssSweep_spec (w : Nat) : ∀ (cs : List AzNat) (carry : AzNat) (acc : Array UInt64),
+    (ssSweep w cs carry acc).1.size = acc.size + w * cs.length ∧
+    toNatLimbsList (ssSweep w cs carry acc).1.toList
+        + (ssSweep w cs carry acc).2.toNat * 2 ^ (64 * (acc.size + w * cs.length))
+      = toNatLimbsList acc.toList
+        + 2 ^ (64 * acc.size) * (carry.toNat + polyEvalNat (2 ^ (64 * w)) (cs.map AzNat.toNat))
+  | [], carry, acc => by
+    simp [ssSweep, polyEvalNat, Nat.mul_comm]
+  | c :: cs, carry, acc => by
+    have ih := ssSweep_spec w cs ((c + carry) >>> (64 * w))
+      (acc ++ truncatePad ((c + carry).modPow2 (64 * w)).limbs w)
+    simp only [ssSweep]
+    have hdig : toNatLimbsList ((c + carry).modPow2 (64 * w)).limbs.toList < 2 ^ (64 * w) := by
+      change AzNat.toNat _ < _
+      rw [AzNat.toNat_modPow2]
+      exact Nat.mod_lt _ (Nat.two_pow_pos _)
+    refine ⟨?_, ?_⟩
+    · rw [ih.1, Array.size_append, truncatePad_size, List.length_cons]
+      ring
+    · have hl : acc.toList.length = acc.size := Array.length_toList
+      rw [Array.size_append, truncatePad_size, Array.toList_append, toNatLimbsList_append, hl,
+        truncatePad_toNat _ _ hdig] at ih
+      rw [show 64 * (acc.size + w * (c :: cs).length) = 64 * (acc.size + w + w * cs.length) by
+          rw [List.length_cons]; ring, ih.2, List.map_cons, polyEvalNat_cons]
+      change AzNat.toNat ((c + carry).modPow2 (64 * w)) * 2 ^ (64 * acc.size) + toNatLimbsList acc.toList
+          + 2 ^ (64 * (acc.size + w)) * (((c + carry) >>> (64 * w)).toNat
+            + polyEvalNat (2 ^ (64 * w)) (cs.map AzNat.toNat)) = _
+      rw [AzNat.toNat_modPow2, AzNat.toNat_hShiftRight, Nat.shiftRight_eq_div_pow, AzNat.toNat_add]
+      have hdiv := Nat.div_add_mod (c.toNat + carry.toNat) (2 ^ (64 * w))
+      rw [show 64 * (acc.size + w) = 64 * acc.size + 64 * w by ring, pow_add]
+      generalize (c.toNat + carry.toNat) / 2 ^ (64 * w) = q at hdiv ⊢
+      generalize (c.toNat + carry.toNat) % 2 ^ (64 * w) = r at hdiv ⊢
+      generalize (2 : ℕ) ^ (64 * w) = B at hdiv ⊢
+      generalize (2 : ℕ) ^ (64 * acc.size) = A
+      generalize polyEvalNat B (cs.map AzNat.toNat) = P
+      have key : A * (carry.toNat + (P * B + c.toNat)) = A * (B * q + r + P * B) := by
+        rw [hdiv]; ring
+      rw [key]
+      ring
+
+/-- **The assembled value**: `∑_j c_j (2^{64 w})^j` modulo `2^n + 1`, `n = 64 w · 2^(k+1)`. -/
+theorem toZMod_ssAssemble (k w : Nat) (hw0 : 0 < w) (f : Fin (2 ^ (k + 1)) → SSCoeff) :
+    toZMod (ssAssemble k w hw0 (Array.ofFn f))
+      = ∑ j : Fin (2 ^ (k + 1)), ((f j).toInt : ZMod (2 ^ (64 * w * 2 ^ (k + 1)) + 1))
+          * ((2 : ZMod (2 ^ (64 * w * 2 ^ (k + 1)) + 1)) ^ (64 * w)) ^ j.val := by
+  have : NeZero (64 * w * 2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
+  set n := 64 * w * 2 ^ (k + 1) with hn
+  unfold ssAssemble
+  dsimp only
+  rw [Array.toList_ofFn, List.map_ofFn, List.map_ofFn]
+  set pos := ssSweep w (List.ofFn ((fun c : SSCoeff => if c.neg then 0 else c.mag) ∘ f)) 0 #[]
+    with hpos
+  set neg := ssSweep w (List.ofFn ((fun c : SSCoeff => if c.neg then c.mag else 0) ∘ f)) 0 #[]
+    with hneg
+  have hP := (ssSweep_spec w (List.ofFn ((fun c : SSCoeff => if c.neg then 0 else c.mag) ∘ f)) 0 #[]).2
+  have hQ := (ssSweep_spec w (List.ofFn ((fun c : SSCoeff => if c.neg then c.mag else 0) ∘ f)) 0 #[]).2
+  rw [← hpos] at hP
+  rw [← hneg] at hQ
+  simp only [Array.size_empty, List.length_ofFn, Nat.zero_add, Nat.mul_zero, pow_zero, one_mul,
+    AzNat.toNat_zero] at hP hQ
+  rw [show 64 * (w * 2 ^ (k + 1)) = n by rw [hn]; ring] at hP hQ
+  rw [List.map_ofFn, polyEvalNat_ofFn] at hP hQ
+  have hPz := congrArg (fun m : ℕ => (m : ZMod (2 ^ n + 1))) hP
+  have hQz := congrArg (fun m : ℕ => (m : ZMod (2 ^ n + 1))) hQ
+  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat, Nat.cast_sum,
+    two_pow_eq_neg_one] at hPz hQz
+  have htoNat : ∀ c : SSCoeff, ((c.toInt : Int) : ZMod (2 ^ n + 1))
+      = ((if c.neg then 0 else c.mag).toNat : ZMod (2 ^ n + 1))
+        - ((if c.neg then c.mag else 0).toNat : ZMod (2 ^ n + 1)) := by
+    intro c
+    unfold SSCoeff.toInt
+    split_ifs <;> simp
+  rw [toZMod_sub', toZMod_add', toZMod_add', toZMod_ofAzNat, toZMod_ofAzNat, toZMod_ofAzNat,
+    toZMod_ofAzNat, toNat_ofLimbs, toNat_ofLimbs]
+  simp only [Function.comp_apply] at hPz hQz
+  simp only [htoNat, sub_mul, Finset.sum_sub_distrib]
+  linear_combination hPz - hQz
 
 /-- `A < 2^{64 w K}` has at most `w K` limbs. -/
 theorem limbs_size_le_of_toNat_lt (A : AzNat) (L : Nat) (hA : A.toNat < 2 ^ (64 * L)) :
@@ -183,12 +259,12 @@ theorem isUnit_two : IsUnit (2 : ZMod (2 ^ N + 1)) := by
 
 omit [NeZero N] in
 /-- **Recovery**: if `toZMod d` is the residue of an integer `c` in the window
-`[(j+1) 2^{2M} − (2^N + 1), (j+1) 2^{2M})`, `ssRecover` returns `c` (modulo `2^n + 1`). -/
-theorem toZMod_ssRecover {n : Nat} [NeZero n] (M j : Nat) (d : AzFermat N) (c : Int)
+`[(j+1) 2^{2M} − (2^N + 1), (j+1) 2^{2M})`, `ssRecover` returns `c`. -/
+theorem toInt_ssRecover (M j : Nat) (d : AzFermat N) (c : Int)
     (hc : (c : ZMod (2 ^ N + 1)) = toZMod d)
     (hlo : ((j + 1 : ℕ) : ℤ) * 2 ^ (2 * M) - (2 ^ N + 1) ≤ c)
     (hhi : c < ((j + 1 : ℕ) : ℤ) * 2 ^ (2 * M)) (hU : (j + 1) * 2 ^ (2 * M) ≤ 2 ^ N + 1) :
-    toZMod (ssRecover N n (AzNat.ofNat (j + 1) <<< (2 * M)) d) = (c : ZMod (2 ^ n + 1)) := by
+    (ssRecover N (AzNat.ofNat (j + 1) <<< (2 * M)) d).toInt = c := by
   have hd := d.isLe
   -- the residue of `c` is `d.val.toNat`
   have hres : c % ((2 ^ N + 1 : ℕ) : ℤ) = (d.val.toNat : ℤ) := by
@@ -208,7 +284,7 @@ theorem toZMod_ssRecover {n : Nat} [NeZero n] (M j : Nat) (d : AzFermat N) (c : 
       have := (AzNat.le_iff_toNat_le _ _).mp h
       rwa [hUval] at this
     have h'' : ((j + 1 : ℕ) : ℤ) * 2 ^ (2 * M) ≤ (d.val.toNat : ℤ) := by exact_mod_cast h'
-    rw [toZMod_neg', toZMod_reduceAny, AzNat.toNat_sub, toNat_modulus, hwin, ite_eq_left h'',
+    rw [SSCoeff.toInt, ite_eq_left rfl, AzNat.toNat_sub, toNat_modulus, hwin, ite_eq_left h'',
       Nat.cast_sub (by omega)]
     push_cast
     ring
@@ -216,12 +292,11 @@ theorem toZMod_ssRecover {n : Nat} [NeZero n] (M j : Nat) (d : AzFermat N) (c : 
       have := Nat.not_le.mp (fun hle => h ((AzNat.le_iff_toNat_le _ _).mpr (by rwa [hUval])))
       exact this
     have h'' : (d.val.toNat : ℤ) < ((j + 1 : ℕ) : ℤ) * 2 ^ (2 * M) := by exact_mod_cast h'
-    rw [toZMod_reduceAny, hwin, ite_eq_right (not_le.mpr h''), Int.cast_natCast]
+    rw [SSCoeff.toInt, ite_eq_right Bool.false_ne_true, hwin, ite_eq_right (not_le.mpr h'')]
 
 /-- **The recovered coefficients are the negacyclic convolution of the digits**, for any array
 `c` of pointwise products of the transforms of the weighted digits. -/
-theorem toZMod_ssCoefficients_getElem {n : Nat} [NeZero n] (k w : Nat)
-    (hN : 2 * (64 * w) + (k + 1) ≤ N)
+theorem toInt_ssCoefficients_getElem (k w : Nat) (hN : 2 * (64 * w) + (k + 1) ≤ N)
     (hK : 2 ^ (k + 1) ∣ N) (A B : AzNat) (c : Array (AzFermat N)) (hc : c.size = 2 ^ (k + 1))
     (hcr : ∀ (r : Nat) (hr : r < 2 ^ (k + 1)), toZMod (c[r]'(by rw [hc]; exact hr))
       = BZ.forwardFFT ((2 : ZMod (2 ^ N + 1)) ^ (2 * (N / 2 ^ (k + 1)))) (k + 1)
@@ -230,13 +305,13 @@ theorem toZMod_ssCoefficients_getElem {n : Nat} [NeZero n] (k w : Nat)
           (toZModFun (ssWeighted k w N (N / 2 ^ (k + 1)) B)) r)
     (j : Nat) (hj : j < 2 ^ (k + 1)) :
     haveI : NeZero (2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (Nat.two_pow_pos _)⟩
-    toZMod ((ssCoefficients k w N n (N / 2 ^ (k + 1))
+    ((ssCoefficients k w N (N / 2 ^ (k + 1))
         (backwardFFT (2 * (N / 2 ^ (k + 1))) (k + 1) c hc)
-        (backwardFFT_size _ _ _ _))[j]'(by rw [ssCoefficients, Array.size_ofFn]; exact hj))
-      = ((negacyclicConv
+        (backwardFFT_size _ _ _ _))[j]'(by rw [ssCoefficients, Array.size_ofFn]; exact hj)).toInt
+      = negacyclicConv
           (fun i : Fin (2 ^ (k + 1)) => ((block A.limbs 0 A.limbs.size w i.val).toNat : Int))
           (fun i : Fin (2 ^ (k + 1)) => ((block B.limbs 0 B.limbs.size w i.val).toNat : Int))
-          ⟨j, hj⟩ : Int) : ZMod (2 ^ n + 1)) := by
+          ⟨j, hj⟩ := by
   have : NeZero (2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (Nat.two_pow_pos _)⟩
   set eθ := N / 2 ^ (k + 1) with heθ
   have hNe : N = eθ * 2 ^ (k + 1) := (Nat.div_mul_cancel hK).symm
@@ -261,7 +336,7 @@ theorem toZMod_ssCoefficients_getElem {n : Nat} [NeZero n] (k w : Nat)
     rw [← pow_add]
     exact_mod_cast Nat.pow_le_pow_right (by norm_num) (by omega : k + 1 + 2 * (64 * w) ≤ N)
   have hentry := toZMod_backwardFFT_of_products k w eθ hθ A B c hc hcr j hj
-  refine toZMod_ssRecover (64 * w) j _ cZ ?_ ?_ hbounds.2 ?_
+  refine toInt_ssRecover (64 * w) j _ cZ ?_ ?_ hbounds.2 ?_
   · -- the residue is `c_j`: divide `K θ^j c_j` by the unit `K θ^j`
     have hu : IsUnit ((2 : ZMod (2 ^ N + 1)) ^ (k + 1 + eθ * j)) := isUnit_two.pow _
     apply hu.mul_left_cancel
@@ -303,21 +378,19 @@ theorem ssFinish_toNat (k w : Nat) (hw0 : 0 < w) (hN : 2 * (64 * w) + (k + 1) �
       = (A.toNat * B.toNat) % (2 ^ (64 * w * 2 ^ (k + 1)) + 1) := by
   have : NeZero (2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (Nat.two_pow_pos _)⟩
   set n := 64 * w * 2 ^ (k + 1) with hn
-  have hn0 : NeZero n := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
   set dA : Fin (2 ^ (k + 1)) → Int := fun i => ((block A.limbs 0 A.limbs.size w i.val).toNat : Int)
     with hdA
   set dB : Fin (2 ^ (k + 1)) → Int := fun i => ((block B.limbs 0 B.limbs.size w i.val).toNat : Int)
     with hdB
-  -- the Horner sum is `∑ c_j 2^{jM}`
-  have hS : toZMod (ssAssemble (64 * w) n (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
-      (ssCoefficients k w N n (N / 2 ^ (k + 1))
+  -- the assembled value is `∑ c_j 2^{jM}`
+  have hS : toZMod (ssAssemble k w hw0 (ssCoefficients k w N (N / 2 ^ (k + 1))
         (backwardFFT (2 * (N / 2 ^ (k + 1))) (k + 1) c hc) (backwardFFT_size _ _ _ _)))
       = ∑ j : Fin (2 ^ (k + 1)),
           ((negacyclicConv dA dB j : Int) : ZMod (2 ^ n + 1)) * ((2 : ZMod (2 ^ n + 1)) ^ (64 * w)) ^ j.val := by
     unfold ssCoefficients
     rw [toZMod_ssAssemble]
     refine Finset.sum_congr rfl fun j _ => ?_
-    have := toZMod_ssCoefficients_getElem (n := n) k w hN hK A B c hc hcr j.val j.isLt
+    have := toInt_ssCoefficients_getElem k w hN hK A B c hc hcr j.val j.isLt
     unfold ssCoefficients at this
     rw [Array.getElem_ofFn] at this
     rw [this]

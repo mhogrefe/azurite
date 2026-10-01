@@ -318,3 +318,80 @@ Items 1–3 need no benchmarking; item 4's cutoff does.
   one flat limb buffer, shift-with-wraparound and add/sub written at limb level for the Fermat
   ring, and the recursive pointwise products of item 5. None of them changes a proof
   statement.
+
+* **2026-09-30 — Profiling, the linear assembly, and the digit count.**  `az_nat_fft_profile`
+  (in `Tune.lean`) times the stages of `fftMul` separately.  At 32768 limbs with `K = 512` the
+  first profile read: pointwise products 44 %, coefficients + assembly 25 %, forward transforms
+  17 %, backward transform 11 %; the assembly share doubled with every doubling of `K` (16 → 29
+  → 42 % at 16384 limbs).  Cause: Horner's rule in `AzFermat n` shifts the whole `n`-bit
+  accumulator once per digit, `K·n` work.  Replaced by the digit sweep `ssSweep` (place each
+  coefficient, propagate the carry on numbers of about `2M` bits, one sweep for the positive and
+  one for the negative coefficients, one reduction at the end; `ssSweep_spec`,
+  `toZMod_ssAssemble`).  The recovered coefficients are now a sign and a magnitude (`SSCoeff`)
+  with no reduction.  After the change the stage is 2 % everywhere, and a larger digit count
+  pays: `ssKAdjust = 1` (`K ≈ 4√L`) is the fastest of `0, 1, 2` at 16384, 32768 and 65536 limbs.
+  µs per product, `fftMul` at `kAdj = 1` against the Toom ladder: 16384: 108565 vs 135119;
+  32768: 250960 vs 367286; 65536: 570313 vs 991439.  Remaining split at 32768 limbs, `K = 1024`:
+  pointwise products 44 % (1024 products of 145 limbs, Karatsuba territory), forward transforms
+  31 %, backward 20 %.  Next: the FFT cutoffs move down (tables below), then the fused Fermat
+  butterflies for the transform half.
+
+* **2026-09-30 — Cutoffs re-measured after the linear assembly** (`kAdj = 1`, µs per product,
+  Toom ladder vs `fftMul`): 4096: 18143 / 22682; 6144: 32388 / 35614; 8192: 50112 / 52881;
+  12288: 90045 / 80054; 16384: 137254 / 110435; 24576: 242471 / 182567; 32768: 372603 / 255444.
+  Squaring: 4096: 12791 / 15556; 6144: 23159 / 24481; 8192: 36120 / 36221; 12288: 73647 / 58193;
+  16384: 98345 / 75744; 24576: 173417 / 124647; 32768: 272569 / 175630.  Constants:
+  `MulThresholds.fft = 10240`, `squareDispatchFFTCutoff = 8192` (down from 24576 and 32768).
+
+* **2026-09-30 — Transform round 1.**  Two allocation cuts, both invisible to the proofs: each
+  butterfly of `forwardFFTRec`/`backwardFFTRec` now computes its twiddle product `ω^j c_j` once
+  and produces both outputs from it (the per-position closure had recomputed it for each of the
+  two positions, doubling the transforms' multiplications), and `AzFermat.add` decides `s ≤ 2^N`
+  from the bit size (`s.size ≤ N`, or `s.size = N + 1` with `s` a power of two:
+  `toNat_le_two_pow_of_size`, `toNat_eq_two_pow_of_size`, `two_pow_lt_toNat_of_not`) instead of
+  building `2^N` for a comparison on every addition.  Remaining per-butterfly cost: one
+  `mulPow2` (shift, mask, shift, subtraction: four fresh arrays), one `add`, one `sub`.  The next
+  step, if the transforms still weigh, is a fused limb-level `mulPow2` (the shifted-low and
+  shifted-high parts subtracted in one pass) and fused `add`/`sub` with their corrections.
+
+* **2026-09-30 — After transform round 1** (µs per product, Toom ladder vs `fftMul`): 4096:
+  17540 / 18660; 6144: 31030 / 29399; 8192: 47997 / 42144; 10240: 66277 / 53626; 12288:
+  86627 / 66623; 16384: 131097 / 92988; 24576: 232396 / 155397.  Squaring: 4096: 12566 / 12666;
+  6144: 22448 / 20772; 8192: 34777 / 29101; 12288: 62897 / 45570; 16384: 94553 / 64458; 24576:
+  169718 / 108879.  Constants: `MulThresholds.fft = 5120`, `squareDispatchFFTCutoff = 4096`.
+  Profile at 16384 limbs (`K = 512`, `N = 137` limbs): pointwise products 52 %, forward
+  transforms 26 %, backward 17 %, assembly 3 %; `fftMul` 94878 µs against 134688 for Toom-4
+  (it was 138846 at the start of the day).
+
+* **2026-09-30 — Transform round 2 and the ring micro-profile.**  `az_fermat_ops_profile` times
+  the ring primitives on random residues.  At `N = 8704` bits (137 limbs), ns per operation:
+  `add` 2848, `sub` 2033, `AzNat <<<` at a bit offset 1123 (limb-aligned 311), `>>>` 910,
+  `mulPow2` 1953 (limb-aligned 1155), `compare ≤` 18, `ofLimbs (extract …)` 184, a whole
+  butterfly 5841.  Reading: every arithmetic pass over `n` limbs costs about 10–14 ns per limb
+  (each result limb is a fresh boxed `UInt64`), while pointer-copying passes (`extract`,
+  `ofLimbs`) and comparisons are almost free.  So the butterfly's cost is its six arithmetic
+  passes: `mulPow2` = shift + subtraction (2), `add` = sum + correction half the time (≈2), `sub`
+  likewise (≈2).  Changes this round, all invisible to the proofs: `butterfly t b c` swaps its
+  two outputs instead of negating the twiddle when `N < t mod 2N` (`mulPow2Split`,
+  `toZMod_butterfly_fst/snd`; saves a correction pass on half the twiddles); `add`'s correction
+  is `(s − 2^N) − 1` and `sub`'s `(a + 2^N − b) + 1` (no `2^N + 1` to build; but the pass count
+  is what matters, so these gained little); `lowPart`/`highPart` are limb slices when `64 ∣ N`.
+  Net: forward + backward transforms 40.7 → 38.2 ms at 16384 limbs, `fftMul` 94.5 → 90.7 ms
+  (Toom ladder 132 ms); crossovers unchanged (multiplication 99 % at 5120, squaring 98 % at
+  4096).  Where the time is now, at 16384 limbs: pointwise products 54 % (512 products of
+  137-limb numbers by Karatsuba), forward transforms 26 %, backward 14 %.
+  Options from here, with estimated effect on `fftMul`: (a) fused limb loops for the butterfly
+  (`a + t`, `a − t` with the modular correction as an `O(1)` fix-up on the fresh array, and the
+  shift-and-split subtraction as one pass): 6 → 4 passes per butterfly, about 13 % of `fftMul`,
+  several hundred lines of limb-level proof; (b) constant-factor work on schoolbook and Karatsuba
+  (the pointwise products, and every other multiplication in the library) — the larger lever,
+  outside the FFT arc; (c) item 5 (recursive pointwise products) only matters once `N` itself
+  passes the FFT cutoff, i.e. for operands of millions of limbs.
+
+* **2026-10-01 — Option (b) taken: two-row schoolbook passes (`docs/toom_cook_plan.md`,
+  2026-09-30 and 2026-10-01 entries).**  `fftMul` at 16384 limbs 90.5 → 76.7 ms, with the
+  pointwise products 49.0 → 34.5 ms (now 45 %) and the transforms unchanged (49 %).  The Toom
+  ladder gained more (132 → 105 ms), so the multiplication crossover moved up:
+  `MulThresholds.fft = 6144` (FFT 3 % slower at 5120, 3 % faster at 6144, 10 % at 8192, 21 % at
+  12288); `squareDispatchFFTCutoff` stays at 4096.  The transforms are now the larger half, so
+  option (a), fused butterfly limb loops, is the next FFT-specific lever.

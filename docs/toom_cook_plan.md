@@ -279,3 +279,45 @@ no implementation code is consulted.
     `< 15/8` Toom-(3,2), `≤ 21/8` Toom-(4,2), else chunks; squaring 96 / 320 / 512.
   * Against the pre-milestone-4 dispatcher on the geometric random distribution the new one
     takes 69 % of the time at 4096 mean bits, 73 % at 16384, 61 % at 65536, 47 % at 262144.
+
+* **2026-09-30 — Constant-factor work on schoolbook: two-row blocking (benchmark pending).**
+  The FFT profiling (`docs/fft_plan.md`, 2026-09-29 entry) put the cost of a schoolbook limb
+  product at roughly 60–70 % software `wideMul` and the rest boxing of the fresh accumulator limb,
+  with every arithmetic pass over `n` limbs costing 10–14 ns per limb.  `schoolbookMulLimbs`
+  now consumes two limbs of `b` per pass (`mulAdd2Limbs`, outer loop `schoolbookMulLimbs.go2`):
+  each step does two `mulAddWithCarry`s against one `a` limb, keeps a two-limb running carry and
+  stores one accumulator limb, so accumulator writes (and the per-row `set` of the carry limb,
+  now two limbs per fused row) are halved against two single rows; an odd final row goes through
+  the old `schoolbookMulLimbs.go`.  Correctness: `mulAdd2Limbs_toNat` (two uses of
+  `UInt64.mulAddWithCarry_eq` per step) and `schoolbookMulLimbs.go2_correct`, which reduces the
+  fused step to a window lemma (`toNatLimbsList_take_window`: lists agreeing outside
+  `[j, j + lenA + 2)` differ in value only by that window) and the zero-tail invariant of the
+  single-row proof; `schoolbookMulLimbs_toNat` is unchanged in statement.  Not yet benchmarked
+  (the machine was busy); the schoolbook / Karatsuba crossover (48) and the squaring constant
+  may move once it is.  The remaining lever per the cost model, an `@[extern]` 64×64→128
+  multiply, is a policy decision for the user, not taken here.
+
+* **2026-10-01 — Two-row passes measured and extended to squaring; thresholds retuned.**  The
+  user ruled out `@[extern]` primitives: Azurite stays pure Lean.  Measured against the
+  pre-change binary on a quiet machine (µs per operation, top level only):
+  * Schoolbook multiplication: 7 → 4 at 32 limbs, 27 → 16 at 64, 106 → 63 at 128,
+    416 → 244 at 256 (about 40 % less).  Top-level Karatsuba, whose base case is schoolbook,
+    88 → 55 at 128 and 330 → 202 at 256.  The schoolbook / Karatsuba tie moved from 48 limbs to
+    64–80 (the 2-D ladder sweeps are best at 64 at mean 16384 and 65536 bits, flat 64–80 at
+    4096); top-level Toom-3 now ties Karatsuba at 320 (3 % slower at 256); the FFT is 3 %
+    slower than the Toom ladder at 5120 limbs and 3 % faster at 6144.  `fftMul` at 16384 limbs:
+    90.5 → 76.7 ms (pointwise products 49.0 → 34.5 ms), Toom ladder 132 → 105 ms.
+  * Squaring did not move in that run (`schoolbookSquareLimbs` has its own loop), so the
+    off-diagonal accumulation got the same treatment: `schoolbookSquareLimbs.offDiag.go2`
+    takes rows `i` and `i + 1` together (the lone product `a_{i+1} a_i` seeds the two-row pass
+    `mulAdd2Limbs.go` over the shared slice `a[i+2 ..]`, with the two-limb carry landing where
+    the single rows would have put theirs); proof `offDiag.go2_correct` via the window lemma
+    and two `partialOffDiagSum_step`s.  Schoolbook squaring: 5 → 3 at 32 limbs, 16 → 10 at 64,
+    57 → 37 at 128, 218 → 133 at 256 (about 35 % less); the schoolbook / Karatsuba tie moved
+    from 96 to 160 limbs (2-D sweeps best at 96–128), Toom-3 squaring wins from 384 (loses by
+    3–8 % at 192–320).  The squaring FFT crossover table is noisy around 4096 (FFT wins at
+    3072 and 5120, loses at 4096); the cutoff stays.
+  * New constants: `MulThresholds {schoolbook 64, toomCook3 320, toomCook4 512, unbalanced 96,
+    fft 6144}`; squaring 128 / 384 / 512 / 4096.  The unbalanced bands were not re-measured;
+    they depend on ratios of the same ladder and should be re-swept with `tune_aznat_unbalanced`
+    when convenient.

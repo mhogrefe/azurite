@@ -927,6 +927,22 @@ private def stageUs {α β : Type} (f : α → β) (touch : β → Nat) (inputs 
   let med := max (min t1 t2) (min (max t1 t2) t3)
   return med.toNat / (1000 * max inputs.size 1)
 
+/-- As `stageUs`, in nanoseconds per input. -/
+private def stageNs {α β : Type} (f : α → β) (touch : β → Nat) (inputs : Array α) : IO Nat := do
+  let once : IO UInt64 := do
+    let t0 ← monoNanos
+    let mut acc : Nat := 0
+    for x in inputs do
+      acc := acc + touch (f x)
+    let t1 ← monoNanos
+    if acc == 0 then IO.eprintln "" else pure ()
+    return t1 - t0
+  let t1 ← once
+  let t2 ← once
+  let t3 ← once
+  let med := max (min t1 t2) (min (max t1 t2) t3)
+  return med.toNat / max inputs.size 1
+
 open Azurite.AzFermat in
 /-- **Stage profile of `fftMul`** on pairs of exactly `n` limbs with the digit-count
 adjustment `kAdj`: weighting, the two forward transforms, the pointwise products, the backward
@@ -941,7 +957,6 @@ def profileAzNatFFT (n : Nat) (kAdj : Nat) (th : MulThresholds := defaultMulThre
   let N := ssFermatExponent k w
   have hN : 2 * (64 * w) + (k + 1) ≤ N := ssFermatExponent_ge k w
   have : NeZero N := ⟨by omega⟩
-  have : NeZero (64 * w * 2 ^ (k + 1)) := ⟨Nat.pos_iff_ne_zero.mp (by positivity)⟩
   let eθ := N / 2 ^ (k + 1)
   IO.eprintln s!"[AzNat-FFTProfile] n = {n} limbs, kAdj = {kAdj}: K = 2^{k + 1} = {2 ^ (k + 1)} digits of w = {w} limbs (M = {64 * w} bits), N = {N} bits ({N / 64 + 1} limbs), {reps} pairs"
   let (pairs, _) := randomLimbPairs reps n n (mkSplitMix64 seed)
@@ -955,9 +970,7 @@ def profileAzNatFFT (n : Nat) (kAdj : Nat) (th : MulThresholds := defaultMulThre
       mulWith mulFn (fa.1[r.val]'(by rw [fa.2]; exact r.isLt)) (fb.1[r.val]'(by rw [fb.2]; exact r.isLt)),
      Array.size_ofFn⟩
   let bwdV : V → V := fun v => ⟨backwardFFT (2 * eθ) (k + 1) v.1 v.2, backwardFFT_size _ _ _ _⟩
-  let finishV : V → AzNat := fun v =>
-    (ssAssemble (64 * w) (64 * w * 2 ^ (k + 1)) (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _))
-      (ssCoefficients k w N (64 * w * 2 ^ (k + 1)) eθ v.1 v.2)).val
+  let finishV : V → AzNat := fun v => (ssAssemble k w hw0 (ssCoefficients k w N eθ v.1 v.2)).val
   let touchV : V → Nat := fun v => v.1.size + (v.1[0]?.map fun x => x.val.limbs.size).getD 0
   -- stage inputs
   let weighted : Array (V × V) := pairs.map fun q => (weightV q.1, weightV q.2)
@@ -987,3 +1000,59 @@ def profileAzNatFFT (n : Nat) (kAdj : Nat) (th : MulThresholds := defaultMulThre
   row "(sum of stages)" sum
   IO.eprintln (padLeft 22 "fftMulWith total" ++ padLeft 12 s!"{tAll}")
   IO.eprintln (padLeft 22 "Toom ladder" ++ padLeft 12 s!"{tToom}")
+
+open Azurite.AzFermat in
+/-- **Micro-profile of the Fermat ring** at a given `N` (bits): time per operation for the
+primitives the transforms use, on random residues. -/
+def profileAzFermatOps (N : Nat) (count : Nat := 2000) (seed : UInt64 := 42) : IO Unit := do
+  if hN : N = 0 then IO.eprintln "[AzFermat-Ops] N must be positive" else
+  have : NeZero N := ⟨hN⟩
+  IO.eprintln s!"[AzFermat-Ops] N = {N} bits ({N / 64 + 1} limbs), {count} elements, ns per operation"
+  let mut g := mkSplitMix64 seed
+  let mut xs : Array (AzFermat N) := #[]
+  for _ in List.range count do
+    let (x, g') := randomAzNatLimbs (N / 64) g
+    g := g'
+    xs := xs.push (ofAzNat N x)
+  let pairs : Array (AzFermat N × AzFermat N) := Array.ofFn fun i : Fin count =>
+    (xs[i.val]!, xs[(i.val + 1) % count]!)
+  let touch : AzFermat N → Nat := fun x => x.val.limbs.size
+  let touchN : AzNat → Nat := fun x => x.limbs.size
+  let per (t : Nat) : Nat := t
+  let tAdd ← stageNs (fun q : AzFermat N × AzFermat N => q.1 + q.2) touch pairs
+  let tSub ← stageNs (fun q : AzFermat N × AzFermat N => q.1 - q.2) touch pairs
+  let tShift ← stageNs (fun x : AzFermat N => x.val <<< (N / 3)) touchN xs
+  let tShiftLimb ← stageNs (fun x : AzFermat N => x.val <<< (64 * (N / 192))) touchN xs
+  let tMod ← stageNs (fun x : AzFermat N => x.val.modPow2 N) touchN xs
+  let tShr ← stageNs (fun x : AzFermat N => x.val >>> (N / 3)) touchN xs
+  let tLow ← stageNs (fun x : AzFermat N => lowPart (N := N) (x.val <<< (N / 3))) touch xs
+  let tHigh ← stageNs (fun x : AzFermat N =>
+    highPart (N := N) (x.val <<< (N / 3)) (by
+      rw [AzNat.toNat_hShiftLeft, Nat.shiftLeft_eq]
+      exact Nat.div_le_of_le_mul (Nat.mul_le_mul x.isLe (Nat.pow_le_pow_right (by norm_num)
+        (Nat.div_le_self _ _))))) touch xs
+  let tMulPow2 ← stageNs (fun x : AzFermat N => mulPow2 (N / 3) x) touch xs
+  let tMulPow2Limb ← stageNs (fun x : AzFermat N => mulPow2 (64 * (N / 192)) x) touch xs
+  let tMulPow2Neg ← stageNs (fun x : AzFermat N => mulPow2 (N + N / 3) x) touch xs
+  let tExtract ← stageNs (fun x : AzFermat N => AzNat.ofLimbs (x.val.limbs.extract 0 (N / 128))) touchN xs
+  let tCompare ← stageNs (fun q : AzFermat N × AzFermat N => if q.1.val ≤ q.2.val then q.1 else q.2)
+    touch pairs
+  let tButterfly ← stageNs (fun q : AzFermat N × AzFermat N =>
+    let t := mulPow2 (N / 3) q.2
+    (q.1 + t, q.1 - t)) (fun r => touch r.1 + touch r.2) pairs
+  let row := fun (name : String) (t : Nat) =>
+    IO.eprintln (padLeft 30 name ++ padLeft 12 s!"{per t}")
+  row "add" tAdd
+  row "sub" tSub
+  row "AzNat <<< (bit offset)" tShift
+  row "AzNat <<< (limb-aligned)" tShiftLimb
+  row "AzNat.modPow2 N" tMod
+  row "AzNat >>> (bit offset)" tShr
+  row "lowPart (of a shifted value)" tLow
+  row "highPart (of a shifted value)" tHigh
+  row "mulPow2 (bit offset)" tMulPow2
+  row "mulPow2 (limb-aligned)" tMulPow2Limb
+  row "mulPow2 (negated half)" tMulPow2Neg
+  row "ofLimbs (extract half)" tExtract
+  row "compare ≤" tCompare
+  row "butterfly (mulPow2, add, sub)" tButterfly
