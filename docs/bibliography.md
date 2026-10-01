@@ -10,7 +10,8 @@ Azurite is released under the Apache License 2.0, and its code is written from t
 published descriptions cited below, not derived from existing implementations. In
 particular, no code is derived from GMP or from other copyleft-licensed libraries, and
 the only material taken from Malachite is the author's own original Malachite code
-(the `RationalSequence` and exhaustive-generation designs); the parts of Malachite that
+(the `RationalSequence` and exhaustive-generation designs, and `Rational::to_sci` with its
+options and test vectors); the parts of Malachite that
 are themselves derived from GMP or FLINT are not used. Algorithms such as Karatsuba and
 Toom–Cook multiplication, divide-and-conquer division, division by invariant integers
 and binary GCD are implemented from the papers and textbooks listed here. Nor is the

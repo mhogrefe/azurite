@@ -574,6 +574,8 @@ import Azurite.AzRat.Equiv.Compare
 import Azurite.AzRat.Equiv.Construct
 import Azurite.AzRat.Equiv.Conversion
 import Azurite.AzRat.Equiv.Div
+import Azurite.AzRat.Equiv.LengthAfterPoint
+import Azurite.AzRat.Equiv.LogBase
 import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Mul
 import Azurite.AzRat.Equiv.Order
@@ -583,8 +585,11 @@ import Azurite.AzRat.Equiv.RingEquiv
 import Azurite.AzRat.Equiv.Round
 import Azurite.AzRat.Equiv.Shift
 import Azurite.AzRat.Equiv.Sub
+import Azurite.AzRat.Equiv.ToSci
 import Azurite.AzRat.Equiv.Unary
 import Azurite.AzRat.Instances
+import Azurite.AzRat.LengthAfterPoint
+import Azurite.AzRat.LogBase
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Mul
 import Azurite.AzRat.ParsableElement
@@ -593,6 +598,7 @@ import Azurite.AzRat.Pow
 import Azurite.AzRat.Round
 import Azurite.AzRat.Shift
 import Azurite.AzRat.Sub
+import Azurite.AzRat.ToSci
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
 import Azurite.AzRationalFunction.Arithmetic
@@ -1393,7 +1399,11 @@ import Azurite.Rounding.NatBotInt
 import Azurite.Rounding.NatDivPow
 import Azurite.Rounding.Rat
 import Azurite.Rounding.Real
+import Azurite.Rounding.Sci
+import Azurite.Rounding.SciPrecision
 import Azurite.Rounding.Symmetric
+import Azurite.Sci.Number
+import Azurite.Sci.Options
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits
