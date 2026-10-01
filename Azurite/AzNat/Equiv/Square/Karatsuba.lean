@@ -17,7 +17,7 @@ import Azurite.AzNat.Equiv.Square
 `karatsubaSquareLimbsRec_toNat` mirrors `karatsubaMulLimbsRec_toNat` in
 `Equiv/Mul/Karatsuba.lean`, with the simplification that `A = B`: all four
 slice values `(A₀, A₁, B₀, B₁)` collapse to `(A₀, A₁, A₀, A₁)`, both signs
-are computed from the same `|A₀ − A₁|`, and the `middleBuf` `sameSign`
+are computed from the same `|A₀ − A₁|`, and the `assemble` `sameSign`
 branch is forced to `true`. The cross-term simplifies algebraically:
 
   `D₀ + D₂ − C = A₀² + A₁² − (A₀ − A₁)² = 2 A₀ A₁`,
@@ -67,8 +67,6 @@ theorem karatsubaSquareLimbsRec_toNat (threshold : Nat) :
       set absA := absSubLimbsKM a lo k m hAabs hm_le hk_pos hm_pos with habsA_def
       have hAabs_lim : 0 + k ≤ absA.1.1.size := by rw [absA.1.2]; omega
       set C := karatsubaSquareLimbsRec threshold absA.1.1 0 k hAabs_lim with hC_def
-      set middle := karatsubaMulLimbsRec.middleBuf k m D0.1 D2.1 C.1 true
-                      D0.2 D2.2 C.2 hk_pos hm_pos hm_le with hmiddle_def
       -- Slice values.
       set A0 := toNatLimbsList ((a.toList.drop lo).take k) with hA0_val
       set A1 := toNatLimbsList ((a.toList.drop (lo + k)).take m) with hA1_val
@@ -114,46 +112,45 @@ theorem karatsubaSquareLimbsRec_toNat (threshold : Nat) :
         have h := C2_le_C0_plus_C1 A0 A1 A0 A1 absA.2 absA.2 hsignA hsignA
           _ _ rfl rfl (by simp)
         exact h
-      have h_middle_toNat := karatsubaMulLimbsRec.middleBuf_toNat k m D0.1 D2.1 C.1 true
-        D0.2 D2.2 C.2 hk_pos hm_pos hm_le h_sub_ok
-      rw [show karatsubaMulLimbsRec.middleBuf k m D0.1 D2.1 C.1 true
-                 D0.2 D2.2 C.2 hk_pos hm_pos hm_le = middle from rfl] at h_middle_toNat
-      -- middle = D0 + D2 - C = 2 A0 A1.
-      have h_middle_value : toNatLimbsList middle.1.toList = 2 * A0 * A1 := by
-        rw [h_middle_toNat, h_D0_toNat, h_D2_toNat, h_C_value_mul, sq, sq]
+      -- The middle term `D0 + D2 - C = 2 A0 A1`.
+      have h_middle_value :
+          (if (true : Bool) then
+            toNatLimbsList D0.1.toList + toNatLimbsList D2.1.toList - toNatLimbsList C.1.toList
+          else
+            toNatLimbsList D0.1.toList + toNatLimbsList D2.1.toList + toNatLimbsList C.1.toList)
+          = 2 * A0 * A1 := by
+        rw [h_D0_toNat, h_D2_toNat, h_C_value_mul, sq, sq]
         simp only [ite_true]
         have h_cross := middle_equals_cross_terms A0 A1 A0 A1 absA.2 absA.2 hsignA hsignA
           _ rfl _ rfl
         have h_same : (absA.2 == absA.2) = true := by simp
         rw [h_same] at h_cross
         simp only [ite_true] at h_cross
-        -- h_cross : A0 * A0 + A1 * A1 − (…)·(…) = A0 * A1 + A1 * A0
-        -- Goal:    A0 * A0 + A1 * A1 − (…)·(…) = 2 * A0 * A1
         have h_eq : A0 * A1 + A1 * A0 = 2 * A0 * A1 := by ring
         linarith [h_cross, h_eq]
-      -- Bounds for assemble_toNat.
-      have h_mid_bound : toNatLimbsList middle.1.toList < 2 ^ (64 * (2 * len - k)) := by
-        rw [h_middle_value, show 2 * len - k = k + m + m from by omega]
-        have h := mid_value_lt A0 A1 A0 A1 k m hA0_lt hA1_lt hA0_lt hA1_lt hm_pos
-        -- mid_value_lt: A0*A1 + A1*A0 < 2^(64*(k+m+m)).  Same as 2*A0*A1.
-        linarith
       have h_2k_eq : 2 ^ (64 * (2 * k)) = 2 ^ (64 * k) * 2 ^ (64 * k) := pow_double_factor k
       have h_total_bound :
           toNatLimbsList D0.1.toList
-          + toNatLimbsList middle.1.toList * 2 ^ (64 * k)
+          + (if (true : Bool) then
+              toNatLimbsList D0.1.toList + toNatLimbsList D2.1.toList
+                - toNatLimbsList C.1.toList
+            else
+              toNatLimbsList D0.1.toList + toNatLimbsList D2.1.toList
+                + toNatLimbsList C.1.toList) * 2 ^ (64 * k)
           + toNatLimbsList D2.1.toList * 2 ^ (64 * (2 * k))
           < 2 ^ (64 * (2 * len)) := by
-        rw [h_D0_toNat, h_middle_value, h_D2_toNat]
+        rw [h_middle_value, h_D0_toNat, h_D2_toNat]
         have h_factor : A0 ^ 2 + 2 * A0 * A1 * 2 ^ (64 * k)
                           + A1 ^ 2 * 2 ^ (64 * (2 * k))
                        = (A0 + A1 * 2 ^ (64 * k)) * (A0 + A1 * 2 ^ (64 * k)) := by
           rw [h_2k_eq]; ring
         rw [h_factor]
         exact total_lt A0 A1 A0 A1 k m len hA0_lt hA1_lt hA0_lt hA1_lt hkm
-      have h_assemble := karatsubaMulLimbsRec.assemble_toNat k m len D0.1 D2.1 middle.1
-        D0.2 D2.2 middle.2 hkm hk_pos hm_pos hm_le h_mid_bound h_total_bound
+      have hk2m : k ≤ 2 * m := by omega
+      have h_assemble := karatsubaMulLimbsRec.assemble_toNat k m len D0.1 D2.1 C.1 true
+        D0.2 D2.2 C.2 hkm hk_pos hm_pos hm_le hk2m h_sub_ok h_total_bound
       -- Combine.
-      rw [h_assemble, h_D0_toNat, h_middle_value, h_D2_toNat]
+      rw [h_assemble, h_middle_value, h_D0_toNat, h_D2_toNat]
       -- Final algebra: A² = A0² + 2·A0·A1·β^k + A1²·β^(2k).
       have h_slice_a : toNatLimbsList ((a.toList.drop lo).take len)
                          = A0 + A1 * 2 ^ (64 * k) := by

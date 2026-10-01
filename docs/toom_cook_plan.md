@@ -321,3 +321,70 @@ no implementation code is consulted.
     fft 6144}`; squaring 128 / 384 / 512 / 4096.  The unbalanced bands were not re-measured;
     they depend on ratios of the same ladder and should be re-swept with `tune_aznat_unbalanced`
     when convenient.
+
+* **2026-10-01 — Karatsuba assembly in two passes (not yet benchmarked).**  Per level, the old
+  assembly allocated a `(2k+1)`-limb middle buffer and ran three passes into it
+  (`+C₀`, `+C₁`, `∓C₂`), then a fourth pass adding it into `C₀ ++ C₁`.  The new
+  `karatsubaMulLimbsRec.assemble` works in place in `C₀ ++ C₁` over the region `[k, 2 len)`:
+  one fused three-input pass adds `C₀ + C₁` (`add3SameLengthLimbs.go` over the `2m`-limb
+  overlap with two carry bits of equal weight, `addSameLengthLimbs.go` for the remaining
+  `2k − 2m` limbs of `C₀`, then the two carry bits by the early-exit `addLimb`), and
+  `subGeqLimbs` / `addGeqLimbs` applies `∓C₂`.  The intermediate `C₀ + C₁` can exceed the
+  final `A·B`, so carries out of the top limb are dropped and the proof works modulo
+  `β^(2 len)`: `toNat_update` lifts each slice equation to the whole array
+  (`whole' + e β^(lo+L) = whole + X β^lo`), the chain is closed by `linear_combination`, and
+  `eq_of_add_mul_eq_add_mul` recovers equality from `T + aP = V + bP` with both below `P`.
+  `middleBuf` and its lemma are gone; `assemble_toNat` now takes `C₂` and the sign and states
+  the `if`-middle directly; Karatsuba squaring uses the same assembly with `sameSign = true`.
+  Expected gain: two linear passes of `2k` limbs and one `(2k+1)`-limb allocation per level,
+  roughly a quarter of Karatsuba's linear work; to be measured together with the remaining
+  option, fused FFT butterflies.
+
+* **2026-10-01 — Measurements: Karatsuba assembly, and a limb-width experiment.**  Quiet
+  machine, same binary for both tables (the schoolbook column, unchanged code, is the control).
+  * The two-pass assembly changed top-level Karatsuba by 0–3 %: multiplication 55 → 55 µs at
+    128 limbs, 202 → 202 at 256, 87 → 85 at 160, 123 → 120 at 192; squaring 38 → 36 at 128,
+    122 → 118 at 256.  `fftMul` at 16384 limbs 76.7 → 73.8 ms (pointwise products
+    34.5 → 33.6 ms).  All thresholds re-checked and unchanged (schoolbook 64, Toom-3 320,
+    FFT 6144; squaring 128 / 384).  The change stays (one allocation fewer per level, simpler
+    proof surface), but the lesson is that Karatsuba's linear passes were not where its
+    overhead over three schoolbook products lives.
+  * `limb_width_experiment` (`Azurite/Benchmark/LimbWidth.lean`): the same values held as
+    boxed 64-bit limbs and as tagged 32-bit limbs (`lean_box_uint64` allocates a 16-byte box
+    per stored limb; `lean_box_uint32` is a tagged pointer on 64-bit platforms), timing one
+    carry-chain addition pass and a naive row-by-row schoolbook product.  Per 64 bits of value:
+
+    | limbs (64-bit) | add, 64-bit | add, 32-bit | mul, 64-bit | mul, 32-bit |
+    |---:|---:|---:|---:|---:|
+    | 16 | 7.3 ns | 4.4 ns (60 %) | 7.4 ns | 6.6 ns (89 %) |
+    | 64 | 6.6 | 4.0 (60 %) | 6.8 | 6.3 (92 %) |
+    | 256 | 6.3 | 3.7 (57 %) | 6.6 | 6.1 (92 %) |
+    | 1024 | 6.5 | 3.5 (54 %) | 6.7 | 6.0 (89 %) |
+
+    (add in ns per 64-bit limb of one pass; mul in ns per 64×64 limb product, the 32-bit
+    column normalised to four 32×32 products.)  So unboxed limbs would make linear passes
+    about 1.7–1.8× cheaper and schoolbook about 1.1×, not the 4× the allocation-only model
+    predicted: at ~1.8 ns per 32-bit iteration the remaining cost is loop overhead (boxed `Nat`
+    index arithmetic, the array exclusivity check and element release on every `set`), and
+    the four 32×32 native products cost about what the software `wideMul` already costs.
+    The 32-bit-limb representation is therefore a real but moderate lever (roughly 1.5× on
+    Toom/FFT-heavy workloads, little on schoolbook) against a rewrite of the whole limb layer;
+    not pursued.  Benchmark-writing lesson recorded in `project_aznat_codegen_performance`:
+    Lean's compiler hoists pure, argument-independent calls out of timing loops and IO
+    lambdas — the timed call must depend on the start timestamp and be consumed before the
+    stop timestamp.
+
+* **2026-10-01 — Schoolbook inner loop unrolled by two (not yet benchmarked).**  The
+  limb-width experiment showed the per-iteration overhead (boxed `Nat` index arithmetic, the
+  bounds test, the exclusivity check and element release on every `set`) outweighs both the
+  multiply and the boxing, which is also why the two-row pass gained 40 % while the Karatsuba
+  pass fusion gained nothing.  So the two-row pass now processes two limbs of `a` per iteration:
+  `mulAdd2Limbs.go` does four `mulAddWithCarry`s and two stores per loop test, and hands a lone
+  last limb to the one-limb reference pass, renamed `mulAdd2Limbs.go1`.  The body is textually
+  two consecutive `go1` steps, so the correctness proof is a function equality,
+  `mulAdd2Limbs.go_eq_go1`, by strong induction (unfold `go1` twice on the right; the sides
+  then agree up to proof terms), and every `go` lemma (`go_size`, `go_toList_take_le`,
+  `go_toList_drop`, `go_correct`) is the `go1` lemma after one rewrite.  Nothing downstream
+  changed: `schoolbookMulLimbs.go2` and `schoolbookSquareLimbs.offDiag.go2` call `go` as before.
+  Expected: a further 15–25 % on schoolbook (and on everything built on it) if the overhead
+  model is right; to be measured on a quiet machine.

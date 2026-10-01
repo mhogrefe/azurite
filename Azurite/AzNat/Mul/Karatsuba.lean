@@ -117,76 +117,65 @@ def absSubLimbsKM (a : Array UInt64) (loA k m : Nat)
 
 namespace karatsubaMulLimbsRec
 
-/-- Combine `C₀`, `C₁`, `C₂` into the middle term `C₀ + C₁ ± C₂` in a
-    `(2k+1)`-limb buffer.  When `sameSign = true` we subtract `C₂`, otherwise
-    we add `C₂`. -/
-def middleBuf (k m : Nat) (C₀ C₁ C₂ : Array UInt64) (sameSign : Bool)
+/-- Assemble `C₀ + (C₀ + C₁ ∓ C₂) · β^k + C₁ · β^(2k)` in place in the buffer `C₀ ++ C₁`
+    (`−` when `sameSign`, `+` otherwise), in two passes over the middle region `[k, 2 len)`:
+    one fused three-input pass adds `C₀ + C₁` (the `2m`-limb overlap by
+    `add3SameLengthLimbs.go`, the remaining `2k − 2m` limbs of `C₀` by
+    `addSameLengthLimbs.go`, then the two carry bits), and `subGeqLimbs` / `addGeqLimbs`
+    applies `C₂`.  Carries out of the top limb are dropped: every step is exact modulo
+    `β^(2 len)`, and the final value `A · B` lies below that bound (`assemble_toNat`). -/
+def assemble (k m len : Nat) (C₀ C₁ C₂ : Array UInt64) (sameSign : Bool)
     (hC₀ : C₀.size = 2 * k) (hC₁ : C₁.size = 2 * m) (hC₂ : C₂.size = 2 * k)
-    (h_kpos : 0 < k) (h_mpos : 0 < m) (h_le : m ≤ k) :
-    { mid : Array UInt64 // mid.size = 2 * k + 1 } :=
-  let mid₀ : Array UInt64 := Array.replicate (2 * k + 1) 0
-  have hmid₀_sz : mid₀.size = 2 * k + 1 := Array.size_replicate
-  have h_2k_pos : 0 < 2 * k := by omega
-  have h_2k1_pos : 0 < 2 * k + 1 := by omega
-  have h_2k_le_2k1 : 2 * k ≤ 2 * k + 1 := by omega
-  have h_2m_pos : 0 < 2 * m := by omega
-  have h_2m_le_2k1 : 2 * m ≤ 2 * k + 1 := by omega
-  have h_addC0_dst : 0 + (2 * k + 1) ≤ mid₀.size := by rw [hmid₀_sz]; omega
-  have h_addC0_src : 0 + 2 * k ≤ C₀.size := by rw [hC₀]; omega
-  let mid₁ := addGeqLimbs mid₀ C₀ 0 (2 * k + 1) 0 (2 * k)
-                h_addC0_dst h_addC0_src h_2k_le_2k1 h_2k1_pos h_2k_pos
-  have hmid₁_sz : mid₁.1.size = 2 * k + 1 := by
-    show (addGeqLimbs mid₀ C₀ 0 (2 * k + 1) 0 (2 * k)
-            h_addC0_dst h_addC0_src h_2k_le_2k1 h_2k1_pos h_2k_pos).1.size = 2 * k + 1
-    rw [addGeqLimbs_size, hmid₀_sz]
-  have h_addC1_dst : 0 + (2 * k + 1) ≤ mid₁.1.size := by rw [hmid₁_sz]; omega
-  have h_addC1_src : 0 + 2 * m ≤ C₁.size := by rw [hC₁]; omega
-  let mid₂ := addGeqLimbs mid₁.1 C₁ 0 (2 * k + 1) 0 (2 * m)
-                h_addC1_dst h_addC1_src h_2m_le_2k1 h_2k1_pos h_2m_pos
-  have hmid₂_sz : mid₂.1.size = 2 * k + 1 := by
-    show (addGeqLimbs mid₁.1 C₁ 0 (2 * k + 1) 0 (2 * m)
-            h_addC1_dst h_addC1_src h_2m_le_2k1 h_2k1_pos h_2m_pos).1.size = 2 * k + 1
-    rw [addGeqLimbs_size, hmid₁_sz]
-  have h_C2_dst : 0 + (2 * k + 1) ≤ mid₂.1.size := by rw [hmid₂_sz]; omega
-  have h_C2_src : 0 + 2 * k ≤ C₂.size := by rw [hC₂]; omega
-  if sameSign then
-    ⟨(subGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-        h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos).1,
-      by rw [subGeqLimbs_size, hmid₂_sz]⟩
-  else
-    ⟨(addGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-        h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos).1,
-      by rw [addGeqLimbs_size, hmid₂_sz]⟩
-
-/-- Assemble the final result: append `C₀ ++ C₁` and add `middle · β^k`.
-    The high limbs of `middle` past `min(2k+1, 2*len − k)` are mathematically
-    zero (provable from `middle = A₀B₁ + A₁B₀ < 2β^(k+m)`); the truncation is
-    safe in `assemble_toNat`. -/
-def assemble (k m len : Nat) (C₀ C₁ middle : Array UInt64)
-    (hC₀ : C₀.size = 2 * k) (hC₁ : C₁.size = 2 * m) (hMid : middle.size = 2 * k + 1)
-    (hkm : k + m = len) (h_kpos : 0 < k) (h_mpos : 0 < m) (_h_le : m ≤ k) :
+    (hkm : k + m = len) (h_kpos : 0 < k) (_h_mpos : 0 < m) (h_le : m ≤ k)
+    (h_k2m : k ≤ 2 * m) :
     { c : Array UInt64 // c.size = 2 * len } :=
   let acc₀ := C₀ ++ C₁
-  have hacc₀_sz : acc₀.size = 2 * len := by
+  have hacc₀ : acc₀.size = 2 * len := by
     show (C₀ ++ C₁).size = 2 * len
     rw [Array.size_append, hC₀, hC₁]; omega
-  have hlen : 2 ≤ len := by omega
-  let addLen := min (2 * k + 1) (2 * len - k)
-  have h_addLen_le_lenA : addLen ≤ 2 * len - k := by
-    show min (2 * k + 1) (2 * len - k) ≤ 2 * len - k; omega
-  have _h_addLen_le_mid : addLen ≤ 2 * k + 1 := by
-    show min (2 * k + 1) (2 * len - k) ≤ 2 * k + 1; omega
-  have h_lenA_pos : 0 < 2 * len - k := by omega
-  have h_addLen_pos : 0 < addLen := by
-    show 0 < min (2 * k + 1) (2 * len - k); omega
-  have h_acc_dst : k + (2 * len - k) ≤ acc₀.size := by rw [hacc₀_sz]; omega
-  have h_mid_src : 0 + addLen ≤ middle.size := by rw [hMid]; omega
-  let acc := addGeqLimbs acc₀ middle k (2 * len - k) 0 addLen
-               h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos
-  ⟨acc.1, by
-    show (addGeqLimbs acc₀ middle k (2 * len - k) 0 addLen
-            h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos).1.size = 2 * len
-    rw [addGeqLimbs_size, hacc₀_sz]⟩
+  -- Pass 1a: the `2m`-limb overlap of `C₀` and `C₁`, fused.
+  have h1A : k + 2 * m ≤ acc₀.size := by rw [hacc₀]; omega
+  have h1B : 0 + 2 * m ≤ C₀.size := by rw [hC₀]; omega
+  have h1C : 0 + 2 * m ≤ C₁.size := by rw [hC₁]; omega
+  let r₁ := add3SameLengthLimbs.go C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false h1A h1B h1C
+  have hr₁ : r₁.1.size = 2 * len := by
+    show (add3SameLengthLimbs.go C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false h1A h1B h1C).1.size
+      = 2 * len
+    rw [add3SameLengthLimbs.go_size, hacc₀]
+  -- Pass 1b: the remaining `2k − 2m` limbs of `C₀`, continuing the first carry.
+  have h2A : (k + 2 * m) + (2 * k - 2 * m) ≤ r₁.1.size := by rw [hr₁]; omega
+  have h2B : 2 * m + (2 * k - 2 * m) ≤ C₀.size := by rw [hC₀]; omega
+  let r₂ := addSameLengthLimbs.go C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0 r₁.2.1 h2A h2B
+  have hr₂ : r₂.1.size = 2 * len := by
+    show (addSameLengthLimbs.go C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0 r₁.2.1
+      h2A h2B).1.size = 2 * len
+    rw [addSameLengthLimbs.go_size, hr₁]
+  -- Pass 1c, 1d: the second carry of pass 1a and the carry of pass 1b (early-exit loops).
+  have h3lo : k + 2 * m ≤ 2 * len := by omega
+  have h3hi : 2 * len ≤ r₂.1.size := by rw [hr₂]
+  let r₃ := addLimb r₂.1 (k + 2 * m) (2 * len) (if r₁.2.2 then 1 else 0) h3lo h3hi
+  have hr₃ : r₃.1.size = 2 * len := by
+    show (addLimb r₂.1 (k + 2 * m) (2 * len) (if r₁.2.2 then 1 else 0) h3lo h3hi).1.size
+      = 2 * len
+    rw [addLimb_size, hr₂]
+  have h4lo : 3 * k ≤ 2 * len := by omega
+  have h4hi : 2 * len ≤ r₃.1.size := by rw [hr₃]
+  let r₄ := addLimb r₃.1 (3 * k) (2 * len) (if r₂.2 then 1 else 0) h4lo h4hi
+  have hr₄ : r₄.1.size = 2 * len := by
+    show (addLimb r₃.1 (3 * k) (2 * len) (if r₂.2 then 1 else 0) h4lo h4hi).1.size = 2 * len
+    rw [addLimb_size, hr₃]
+  -- Pass 2: `∓ C₂`.
+  have h5A : k + (2 * len - k) ≤ r₄.1.size := by rw [hr₄]; omega
+  have h5B : 0 + 2 * k ≤ C₂.size := by rw [hC₂]; omega
+  have h5ge : 2 * k ≤ 2 * len - k := by omega
+  have h5posA : 0 < 2 * len - k := by omega
+  have h5posB : 0 < 2 * k := by omega
+  if sameSign then
+    ⟨(subGeqLimbs r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB).1,
+      by rw [subGeqLimbs_size, hr₄]⟩
+  else
+    ⟨(addGeqLimbs r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB).1,
+      by rw [addGeqLimbs_size, hr₄]⟩
 
 end karatsubaMulLimbsRec
 
@@ -204,7 +193,9 @@ Algorithm 1.3 (Karatsuba):
   C₁ := A₁ · B₁  (m × m → 2m limbs)
   C₂ := |A₀ − A₁| · |B₀ − B₁|  (k × k → 2k limbs)
   result := C₀ + (C₀ + C₁ − s · C₂) · β^k + C₁ · β^{2k}
-where `s = +1` if `sign(A₀−A₁) = sign(B₀−B₁)`, else `s = −1`.
+where `s = +1` if `sign(A₀−A₁) = sign(B₀−B₁)`, else `s = −1`.  The assembly
+(`karatsubaMulLimbsRec.assemble`) works in place in `C₀ ++ C₁` with two passes over the
+middle region.
 -/
 def karatsubaMulLimbsRec (threshold : Nat) (a b : Array UInt64)
     (loA loB len : Nat)
@@ -237,10 +228,9 @@ def karatsubaMulLimbsRec (threshold : Nat) (a b : Array UInt64)
     have hAabs_lim : 0 + k ≤ absA.1.1.size := by rw [absA.1.2]; omega
     have hBabs_lim : 0 + k ≤ absB.1.1.size := by rw [absB.1.2]; omega
     let C2 := karatsubaMulLimbsRec threshold absA.1.1 absB.1.1 0 0 k hAabs_lim hBabs_lim
-    let middle := karatsubaMulLimbsRec.middleBuf k m C0.1 C1.1 C2.1
-                    (absA.2 == absB.2) C0.2 C1.2 C2.2 hk_pos hm_pos hm_le
-    karatsubaMulLimbsRec.assemble k m len C0.1 C1.1 middle.1
-      C0.2 C1.2 middle.2 hkm hk_pos hm_pos hm_le
+    have hk2m : k ≤ 2 * m := by show (len + 1) / 2 ≤ 2 * (len - (len + 1) / 2); omega
+    karatsubaMulLimbsRec.assemble k m len C0.1 C1.1 C2.1 (absA.2 == absB.2)
+      C0.2 C1.2 C2.2 hkm hk_pos hm_pos hm_le hk2m
   termination_by len
   decreasing_by
     all_goals simp_wf

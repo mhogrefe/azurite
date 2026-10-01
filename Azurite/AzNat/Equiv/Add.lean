@@ -12,6 +12,8 @@ import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.UInt64.Equiv.AddWithCarry
+import Mathlib.Tactic.Zify
+import Mathlib.Tactic.LinearCombination
 
 namespace Azurite.AzNat
 
@@ -109,7 +111,7 @@ lemma limb_add_step (x carry : UInt64) :
     modified slice `[i, hi)` together with the final carry bit at position
     `hi` equals the original slice plus the incoming `carry` at position `i`.
     Valid whenever `carry ≤ 1` or the loop can still advance. -/
-private lemma addLimb.go_correct (hi : Nat) (a : Array UInt64) (i : Nat)
+theorem addLimb.go_correct (hi : Nat) (a : Array UInt64) (i : Nat)
     (carry : UInt64) (h_size : hi ≤ a.size)
     (hcarry : carry.toNat ≤ 1 ∨ i < hi) :
     toNatLimbsList (((addLimb.go hi a i carry h_size).1.toList.drop i).take (hi - i))
@@ -329,7 +331,7 @@ theorem addSameLengthLimbs.go_toList_drop (b : Array UInt64) (loA loB len : Nat)
     omega
 
 /-- Invariant of `addSameLengthLimbs.go` at step `k`. -/
-private lemma addSameLengthLimbs.go_correct (b : Array UInt64) (loA loB len : Nat)
+theorem addSameLengthLimbs.go_correct (b : Array UInt64) (loA loB len : Nat)
     (a : Array UInt64) (k : Nat) (carry : Bool)
     (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) :
     toNatLimbsList
@@ -460,6 +462,148 @@ theorem addSameLengthLimbs_toNat (a b : Array UInt64) (loA loB len : Nat)
         + toNatLimbsList ((b.toList.drop loB).take len) := by
   have h := addSameLengthLimbs.go_correct b loA loB len a 0 false hA hB
   simpa [addSameLengthLimbs] using h
+
+/-! ### Correctness of `add3SameLengthLimbs.go` -/
+
+/-- `add3SameLengthLimbs.go` preserves any prefix of `a` up to `loA + k`. -/
+theorem add3SameLengthLimbs.go_toList_take_le (b c : Array UInt64) (loA loB loC len : Nat)
+    (a : Array UInt64) (k : Nat) (c₁ c₂ : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (hC : loC + len ≤ c.size)
+    (m : Nat) (hm : m ≤ loA + k) :
+    (add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).1.toList.take m
+      = a.toList.take m := by
+  induction h_sub : len - k generalizing a k c₁ c₂ with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    rw [add3SameLengthLimbs.go]
+    simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    have h_rec : len - (k + 1) = n := by omega
+    rw [add3SameLengthLimbs.go]
+    simp only [h_lt, ↓reduceDIte]
+    rw [ih _ _ _ _ _ (by omega) h_rec]
+    rw [Array.toList_set, List.take_set_of_le (by omega)]
+
+/-- `add3SameLengthLimbs.go` preserves the suffix of `a` from `loA + len`. -/
+theorem add3SameLengthLimbs.go_toList_drop (b c : Array UInt64) (loA loB loC len : Nat)
+    (a : Array UInt64) (k : Nat) (c₁ c₂ : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (hC : loC + len ≤ c.size) :
+    (add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).1.toList.drop (loA + len)
+      = a.toList.drop (loA + len) := by
+  induction h_sub : len - k generalizing a k c₁ c₂ with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    rw [add3SameLengthLimbs.go]
+    simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    rw [add3SameLengthLimbs.go]
+    simp only [h_lt, ↓reduceDIte]
+    have h_rec : len - (k + 1) = n := by omega
+    rw [ih _ _ _ _ _ h_rec]
+    rw [Array.toList_set, List.drop_set]
+    simp
+    omega
+
+/-- Invariant of `add3SameLengthLimbs.go` at step `k`: the two carries out have equal weight. -/
+theorem add3SameLengthLimbs.go_correct (b c : Array UInt64) (loA loB loC len : Nat)
+    (a : Array UInt64) (k : Nat) (c₁ c₂ : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (hC : loC + len ≤ c.size) :
+    toNatLimbsList
+        (((add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).1.toList.drop
+          (loA + k)).take (len - k))
+      + ((add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).2.1.toNat
+          + (add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).2.2.toNat)
+        * 2 ^ (64 * (len - k))
+      = toNatLimbsList ((a.toList.drop (loA + k)).take (len - k))
+        + toNatLimbsList ((b.toList.drop (loB + k)).take (len - k))
+        + toNatLimbsList ((c.toList.drop (loC + k)).take (len - k))
+        + c₁.toNat + c₂.toNat := by
+  induction h_sub : len - k generalizing a k c₁ c₂ with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    have h_eq : add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC = (a, c₁, c₂) := by
+      rw [add3SameLengthLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+    rw [h_eq]; simp [toNatLimbsList]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    have h_iA : loA + k < a.size := by omega
+    have h_iB : loB + k < b.size := by omega
+    have h_iC : loC + k < c.size := by omega
+    set s₁ := UInt64.addWithCarry a[loA + k] b[loB + k] c₁ with hs₁_def
+    set s₂ := UInt64.addWithCarry s₁.1 c[loC + k] c₂ with hs₂_def
+    set acc' := a.set (loA + k) s₂.1 with hacc'_def
+    have hA' : loA + len ≤ acc'.size := by rw [hacc'_def, Array.size_set]; exact hA
+    have h_eq : add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC
+        = add3SameLengthLimbs.go b c loA loB loC len acc' (k + 1) s₁.2 s₂.2 hA' hB hC := by
+      conv_lhs => rw [add3SameLengthLimbs.go]
+      simp [h_lt, hs₁_def, hs₂_def, hacc'_def]
+    have h_rec : len - (k + 1) = n := by omega
+    have h_ih := ih acc' (k + 1) s₁.2 s₂.2 hA' h_rec
+    have hite : ∀ x : Bool, (if x then (1 : Nat) else 0) = x.toNat := by
+      intro x; cases x <;> rfl
+    have h₁ := UInt64.addWithCarry_eq a[loA + k] b[loB + k] c₁
+    have h₂ := UInt64.addWithCarry_eq s₁.1 c[loC + k] c₂
+    rw [← hs₁_def] at h₁
+    rw [← hs₂_def] at h₂
+    simp only [hite] at h₁ h₂
+    set res := add3SameLengthLimbs.go b c loA loB loC len acc' (k + 1) s₁.2 s₂.2 hA' hB hC
+      with hres_def
+    have h_res_size : res.1.size = a.size := by
+      rw [hres_def, add3SameLengthLimbs.go_size, hacc'_def, Array.size_set]
+    have h_res_iA : loA + k < res.1.size := by rw [h_res_size]; exact h_iA
+    have h_res_i : res.1[loA + k]'h_res_iA = s₂.1 := by
+      have h_prefix := add3SameLengthLimbs.go_toList_take_le b c loA loB loC len acc' (k + 1)
+        s₁.2 s₂.2 hA' hB hC (loA + (k + 1)) (Nat.le_refl _)
+      rw [← hres_def] at h_prefix
+      have h_len_L : res.1.toList.length = a.size := by rw [Array.length_toList]; exact h_res_size
+      have h_lt_L : loA + k < (res.1.toList.take (loA + (k + 1))).length := by
+        rw [List.length_take, h_len_L]; omega
+      have h_lt_R : loA + k < (acc'.toList.take (loA + (k + 1))).length := by
+        rw [List.length_take, Array.length_toList, hacc'_def, Array.size_set]; omega
+      have h_get_eq : (res.1.toList.take (loA + (k + 1)))[loA + k]'h_lt_L
+          = (acc'.toList.take (loA + (k + 1)))[loA + k]'h_lt_R := by
+        congr 1
+      rw [List.getElem_take, List.getElem_take] at h_get_eq
+      rw [← Array.getElem_toList h_res_iA, h_get_eq]
+      have h_i_lt : loA + k < (a.set (loA + k) s₂.1 h_iA).toList.length := by
+        rw [Array.length_toList, Array.size_set]; exact h_iA
+      show (a.set (loA + k) s₂.1 h_iA).toList[loA + k]'h_i_lt = s₂.1
+      simp [Array.toList_set, List.getElem_set_self]
+    have h_drop_acc' : acc'.toList.drop (loA + (k + 1)) = a.toList.drop (loA + (k + 1)) := by
+      rw [hacc'_def, Array.toList_set, List.drop_set]; simp
+    rw [h_eq]
+    have split_arr : ∀ (A : Array UInt64) (i m : Nat) (hi_size : i < A.size),
+        toNatLimbsList ((A.toList.drop i).take (m + 1))
+          = A[i].toNat + toNatLimbsList ((A.toList.drop (i + 1)).take m) * 2 ^ 64 := by
+      intro A i m hi_size
+      have h_lt_list : i < A.toList.length := hi_size
+      rw [List.drop_eq_getElem_cons h_lt_list, List.take_succ_cons, toNatLimbsList_cons]
+      rw [show A.toList[i] = A[i] from (Array.getElem_toList hi_size).symm]
+      ring
+    have h_len_split : len - k = (len - (k + 1)) + 1 := by omega
+    rw [show (n + 1) = len - k from h_sub.symm, h_len_split]
+    rw [split_arr a (loA + k) (len - (k + 1)) h_iA, split_arr b (loB + k) (len - (k + 1)) h_iB,
+      split_arr c (loC + k) (len - (k + 1)) h_iC,
+      split_arr res.1 (loA + k) (len - (k + 1)) h_res_iA, h_res_i]
+    have h_pow : (2 : Nat) ^ (64 * ((len - (k + 1)) + 1))
+        = 2 ^ (64 * (len - (k + 1))) * 2 ^ 64 := by
+      rw [show 64 * ((len - (k + 1)) + 1) = 64 * (len - (k + 1)) + 64 from by ring, Nat.pow_add]
+    rw [h_pow, show loA + k + 1 = loA + (k + 1) from by ring,
+      show loB + k + 1 = loB + (k + 1) from by ring, show loC + k + 1 = loC + (k + 1) from by ring,
+      ← h_drop_acc']
+    rw [← h_rec] at h_ih
+    set A' := toNatLimbsList ((acc'.toList.drop (loA + (k + 1))).take (len - (k + 1)))
+    set B' := toNatLimbsList ((b.toList.drop (loB + (k + 1))).take (len - (k + 1)))
+    set C' := toNatLimbsList ((c.toList.drop (loC + (k + 1))).take (len - (k + 1)))
+    set Q := toNatLimbsList ((res.1.toList.drop (loA + (k + 1))).take (len - (k + 1)))
+    set K₁ := res.2.1.toNat
+    set K₂ := res.2.2.toNat
+    set β := (2 : Nat) ^ 64
+    set W := (2 : Nat) ^ (64 * (len - (k + 1)))
+    zify at h₁ h₂ h_ih ⊢
+    linear_combination -h₁ - h₂ + (β : ℤ) * h_ih
 
 /-! ### Correctness of `addGeqLimbs` -/
 

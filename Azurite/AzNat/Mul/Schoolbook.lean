@@ -99,7 +99,8 @@ theorem mulAddLimbs_size (a : Array UInt64) (offA lenA offAcc : Nat) (b : UInt64
     `mulAddWithCarry`s (`a_k b₀ + acc_k + c₀ = h₀ β + lo`, then
     `a_k b₁ + h₀ + c₁ = h₁ β + mid`) and stores one accumulator limb, so the number
     of accumulator writes (each a fresh boxed limb) is halved against two single
-    rows.  Returns the updated accumulator and the final two-limb carry. -/
+    rows.  Returns the updated accumulator and the final two-limb carry.
+    (Unrolling this by two limbs of `a` was measured 2–4 % slower, 2026-10-01.) -/
 def mulAdd2Limbs.go (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UInt64)
     (acc : Array UInt64) (k : Nat) (c₀ c₁ : UInt64)
     (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
@@ -115,13 +116,6 @@ def mulAdd2Limbs.go (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UIn
     (acc, c₀, c₁)
   termination_by lenA - k
 
-/-- Entry point for `mulAdd2Limbs.go`: starts with `k = 0` and zero carries. -/
-def mulAdd2Limbs (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UInt64)
-    (acc : Array UInt64)
-    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
-    Array UInt64 × UInt64 × UInt64 :=
-  mulAdd2Limbs.go a offA lenA offAcc b₀ b₁ acc 0 0 0 hA hAcc
-
 /-- Size preservation of `mulAdd2Limbs.go`. -/
 theorem mulAdd2Limbs.go_size (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UInt64)
     (acc : Array UInt64) (k : Nat) (c₀ c₁ : UInt64)
@@ -136,6 +130,13 @@ theorem mulAdd2Limbs.go_size (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b
     rw [mulAdd2Limbs.go]
     simp only [h_lt, ↓reduceDIte]
     rw [ih _ _ _ _ _ (by omega), Array.size_set]
+
+/-- Entry point for `mulAdd2Limbs.go`: starts with `k = 0` and zero carries. -/
+def mulAdd2Limbs (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UInt64)
+    (acc : Array UInt64)
+    (hA : offA + lenA ≤ a.size) (hAcc : offAcc + lenA ≤ acc.size) :
+    Array UInt64 × UInt64 × UInt64 :=
+  mulAdd2Limbs.go a offA lenA offAcc b₀ b₁ acc 0 0 0 hA hAcc
 
 /-- Size preservation of `mulAdd2Limbs`. -/
 theorem mulAdd2Limbs_size (a : Array UInt64) (offA lenA offAcc : Nat) (b₀ b₁ : UInt64)

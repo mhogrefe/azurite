@@ -538,221 +538,6 @@ private lemma pow_succ_factor (j : Nat) :
     2 ^ (64 * (j + 1)) = 2 ^ (64 * j) * 2 ^ 64 := by
   rw [show 64 * (j + 1) = 64 * j + 64 from by ring, Nat.pow_add]
 
-/-- The middle term `C₀ + C₁ ± C₂` in a `(2k+1)`-limb buffer.
-    When `sameSign = true` (the cross-product `(A₀-A₁)(B₀-B₁)` is non-negative
-    in the ℤ sense), we subtract `C₂`, which requires the precondition
-    `toNat C₂ ≤ toNat C₀ + toNat C₁` to avoid ℕ-truncation.  When
-    `sameSign = false`, we add `C₂`; the result fits in `2k+1` limbs because
-    `toNat C₀ + toNat C₁ + toNat C₂ < 3 · β^{2k} ≤ β^{2k+1}` (using `β ≥ 3`). -/
-theorem karatsubaMulLimbsRec.middleBuf_toNat (k m : Nat)
-    (C₀ C₁ C₂ : Array UInt64) (sameSign : Bool)
-    (hC₀ : C₀.size = 2 * k) (hC₁ : C₁.size = 2 * m) (hC₂ : C₂.size = 2 * k)
-    (h_kpos : 0 < k) (h_mpos : 0 < m) (h_le : m ≤ k)
-    (h_sub_ok : sameSign = true →
-      toNatLimbsList C₂.toList ≤ toNatLimbsList C₀.toList + toNatLimbsList C₁.toList) :
-    toNatLimbsList (karatsubaMulLimbsRec.middleBuf k m C₀ C₁ C₂ sameSign
-                      hC₀ hC₁ hC₂ h_kpos h_mpos h_le).1.toList
-      = if sameSign then
-          toNatLimbsList C₀.toList + toNatLimbsList C₁.toList - toNatLimbsList C₂.toList
-        else
-          toNatLimbsList C₀.toList + toNatLimbsList C₁.toList + toNatLimbsList C₂.toList := by
-  -- Bounds.
-  have hC₀_lt : toNatLimbsList C₀.toList < 2 ^ (64 * (2 * k)) := by
-    rw [toNat_full_eq_slice C₀ (2 * k) hC₀]; exact slice_lt_pow C₀ 0 (2 * k)
-  have hC₁_lt : toNatLimbsList C₁.toList < 2 ^ (64 * (2 * m)) := by
-    rw [toNat_full_eq_slice C₁ (2 * m) hC₁]; exact slice_lt_pow C₁ 0 (2 * m)
-  have hC₂_lt : toNatLimbsList C₂.toList < 2 ^ (64 * (2 * k)) := by
-    rw [toNat_full_eq_slice C₂ (2 * k) hC₂]; exact slice_lt_pow C₂ 0 (2 * k)
-  have hC₁_lt_2k : toNatLimbsList C₁.toList < 2 ^ (64 * (2 * k)) := by
-    have hp : 2 ^ (64 * (2 * m)) ≤ 2 ^ (64 * (2 * k)) := by
-      apply Nat.pow_le_pow_right (by decide); omega
-    omega
-  have h_pow_step : 2 ^ (64 * (2 * k + 1)) = 2 ^ (64 * (2 * k)) * 2 ^ 64 :=
-    pow_succ_factor (2 * k)
-  -- Sum of three < β^(2k+1) using β = 2^64 ≥ 3.
-  have h_three_lt :
-      toNatLimbsList C₀.toList + toNatLimbsList C₁.toList + toNatLimbsList C₂.toList
-        < 2 ^ (64 * (2 * k + 1)) := by
-    rw [h_pow_step]
-    have h_β : 3 ≤ 2 ^ 64 := by decide
-    have h_pos : 0 < 2 ^ (64 * (2 * k)) := Nat.two_pow_pos _
-    have h_mul : 3 * 2 ^ (64 * (2 * k)) ≤ 2 ^ (64 * (2 * k)) * 2 ^ 64 := by
-      have := Nat.mul_le_mul_left (2 ^ (64 * (2 * k))) h_β
-      linarith
-    omega
-  -- Sum of two < β^(2k+1).
-  have h_two_lt :
-      toNatLimbsList C₀.toList + toNatLimbsList C₁.toList < 2 ^ (64 * (2 * k + 1)) := by
-    rw [h_pow_step]
-    have h_β : 2 ≤ 2 ^ 64 := by decide
-    have h_mul : 2 * 2 ^ (64 * (2 * k)) ≤ 2 ^ (64 * (2 * k)) * 2 ^ 64 := by
-      have := Nat.mul_le_mul_left (2 ^ (64 * (2 * k))) h_β
-      linarith
-    omega
-  -- Single < β^(2k+1).
-  have hC₀_lt_2k1 : toNatLimbsList C₀.toList < 2 ^ (64 * (2 * k + 1)) := by
-    have hp : 2 ^ (64 * (2 * k)) ≤ 2 ^ (64 * (2 * k + 1)) := by
-      apply Nat.pow_le_pow_right (by decide); omega
-    omega
-  unfold karatsubaMulLimbsRec.middleBuf
-  -- mid₀ = zero buffer
-  set mid₀ : Array UInt64 := Array.replicate (2 * k + 1) 0 with hmid₀_def
-  have hmid₀_sz : mid₀.size = 2 * k + 1 := by rw [hmid₀_def]; exact Array.size_replicate
-  have h_mid₀_zero : toNatLimbsList ((mid₀.toList.drop 0).take (2 * k + 1)) = 0 := by
-    rw [← toNat_full_eq_slice _ _ hmid₀_sz, hmid₀_def]
-    exact toNat_replicate_zero (2 * k + 1)
-  -- Sizes for addGeqLimbs.
-  have h_2k_pos : 0 < 2 * k := by omega
-  have h_2k1_pos : 0 < 2 * k + 1 := by omega
-  have h_2k_le_2k1 : 2 * k ≤ 2 * k + 1 := by omega
-  have h_2m_pos : 0 < 2 * m := by omega
-  have h_2m_le_2k1 : 2 * m ≤ 2 * k + 1 := by omega
-  have h_addC0_dst : 0 + (2 * k + 1) ≤ mid₀.size := by rw [hmid₀_sz]; omega
-  have h_addC0_src : 0 + 2 * k ≤ C₀.size := by rw [hC₀]; omega
-  -- Stage 1: mid₁ = mid₀ + C₀.
-  set mid₁ := addGeqLimbs mid₀ C₀ 0 (2 * k + 1) 0 (2 * k)
-                h_addC0_dst h_addC0_src h_2k_le_2k1 h_2k1_pos h_2k_pos with hmid₁_def
-  have hmid₁_sz : mid₁.1.size = 2 * k + 1 := by
-    rw [hmid₁_def, addGeqLimbs_size, hmid₀_sz]
-  have h_mid₁_eq := addGeqLimbs_toNat mid₀ C₀ 0 (2 * k + 1) 0 (2 * k)
-                      h_addC0_dst h_addC0_src h_2k_le_2k1 h_2k1_pos h_2k_pos
-  rw [show addGeqLimbs mid₀ C₀ 0 (2 * k + 1) 0 (2 * k)
-            h_addC0_dst h_addC0_src h_2k_le_2k1 h_2k1_pos h_2k_pos = mid₁ from rfl]
-    at h_mid₁_eq
-  simp only at h_mid₁_eq
-  rw [h_mid₀_zero] at h_mid₁_eq
-  have h_C₀_slice : toNatLimbsList ((C₀.toList.drop 0).take (2 * k))
-                      = toNatLimbsList C₀.toList := by
-    rw [← toNat_full_eq_slice _ _ hC₀]
-  rw [h_C₀_slice] at h_mid₁_eq
-  have h_mid₁_slice_lt :
-      toNatLimbsList ((mid₁.1.toList.drop 0).take (2 * k + 1)) < 2 ^ (64 * (2 * k + 1)) :=
-    slice_lt_pow mid₁.1 0 (2 * k + 1)
-  have h_mid₁_carry : mid₁.2 = false := by
-    match h : mid₁.2 with
-    | false => rfl
-    | true =>
-      exfalso
-      have h_one : mid₁.2.toNat = 1 := by rw [h]; rfl
-      rw [h_one] at h_mid₁_eq; omega
-  rw [h_mid₁_carry] at h_mid₁_eq
-  simp at h_mid₁_eq
-  have h_mid₁_full :
-      toNatLimbsList mid₁.1.toList = toNatLimbsList C₀.toList := by
-    rw [toNat_full_eq_slice _ _ hmid₁_sz]; exact h_mid₁_eq
-  -- Stage 2: mid₂ = mid₁ + C₁.
-  have h_addC1_dst : 0 + (2 * k + 1) ≤ mid₁.1.size := by rw [hmid₁_sz]; omega
-  have h_addC1_src : 0 + 2 * m ≤ C₁.size := by rw [hC₁]; omega
-  set mid₂ := addGeqLimbs mid₁.1 C₁ 0 (2 * k + 1) 0 (2 * m)
-                h_addC1_dst h_addC1_src h_2m_le_2k1 h_2k1_pos h_2m_pos with hmid₂_def
-  have hmid₂_sz : mid₂.1.size = 2 * k + 1 := by
-    rw [hmid₂_def, addGeqLimbs_size, hmid₁_sz]
-  have h_mid₂_eq := addGeqLimbs_toNat mid₁.1 C₁ 0 (2 * k + 1) 0 (2 * m)
-                      h_addC1_dst h_addC1_src h_2m_le_2k1 h_2k1_pos h_2m_pos
-  rw [show addGeqLimbs mid₁.1 C₁ 0 (2 * k + 1) 0 (2 * m)
-            h_addC1_dst h_addC1_src h_2m_le_2k1 h_2k1_pos h_2m_pos = mid₂ from rfl]
-    at h_mid₂_eq
-  simp only at h_mid₂_eq
-  have h_mid₁_slice_eq :
-      toNatLimbsList ((mid₁.1.toList.drop 0).take (2 * k + 1))
-        = toNatLimbsList mid₁.1.toList := by
-    rw [← toNat_full_eq_slice _ _ hmid₁_sz]
-  have h_C₁_slice : toNatLimbsList ((C₁.toList.drop 0).take (2 * m))
-                      = toNatLimbsList C₁.toList := by
-    rw [← toNat_full_eq_slice _ _ hC₁]
-  rw [h_mid₁_slice_eq, h_mid₁_full, h_C₁_slice] at h_mid₂_eq
-  have h_mid₂_slice_lt :
-      toNatLimbsList ((mid₂.1.toList.drop 0).take (2 * k + 1)) < 2 ^ (64 * (2 * k + 1)) :=
-    slice_lt_pow mid₂.1 0 (2 * k + 1)
-  have h_mid₂_carry : mid₂.2 = false := by
-    match h : mid₂.2 with
-    | false => rfl
-    | true =>
-      exfalso
-      have h_one : mid₂.2.toNat = 1 := by rw [h]; rfl
-      rw [h_one] at h_mid₂_eq; omega
-  rw [h_mid₂_carry] at h_mid₂_eq
-  simp at h_mid₂_eq
-  have h_mid₂_full :
-      toNatLimbsList mid₂.1.toList
-        = toNatLimbsList C₀.toList + toNatLimbsList C₁.toList := by
-    rw [toNat_full_eq_slice _ _ hmid₂_sz]; exact h_mid₂_eq
-  -- Stage 3: case split on sameSign.
-  have h_C2_dst : 0 + (2 * k + 1) ≤ mid₂.1.size := by rw [hmid₂_sz]; omega
-  have h_C2_src : 0 + 2 * k ≤ C₂.size := by rw [hC₂]; omega
-  have h_mid₂_slice_eq :
-      toNatLimbsList ((mid₂.1.toList.drop 0).take (2 * k + 1))
-        = toNatLimbsList mid₂.1.toList := by
-    rw [← toNat_full_eq_slice _ _ hmid₂_sz]
-  have h_C₂_slice : toNatLimbsList ((C₂.toList.drop 0).take (2 * k))
-                      = toNatLimbsList C₂.toList := by
-    rw [← toNat_full_eq_slice _ _ hC₂]
-  by_cases h_ss : sameSign = true
-  · -- sameSign = true: subtract C₂.
-    simp only [ite_eq_left h_ss]
-    set sub := subGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-                 h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos with hsub_def
-    have h_sub_size : sub.1.size = 2 * k + 1 := by
-      rw [hsub_def, subGeqLimbs_size, hmid₂_sz]
-    have h_sub_eq := subGeqLimbs_toNat mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-                       h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos
-    rw [show subGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-              h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos = sub from rfl]
-      at h_sub_eq
-    simp only at h_sub_eq
-    rw [h_mid₂_slice_eq, h_C₂_slice, h_mid₂_full] at h_sub_eq
-    -- The subtraction doesn't underflow: toNat C₂ ≤ toNat C₀ + toNat C₁ from h_sub_ok.
-    have h_sub_ok' := h_sub_ok h_ss
-    have h_sub_carry : sub.2 = false := by
-      match h : sub.2 with
-      | false => rfl
-      | true =>
-        exfalso
-        have h_one : sub.2.toNat = 1 := by rw [h]; rfl
-        rw [h_one] at h_sub_eq
-        have h_sub_slice_lt :
-            toNatLimbsList ((sub.1.toList.drop 0).take (2 * k + 1)) < 2 ^ (64 * (2 * k + 1)) :=
-          slice_lt_pow sub.1 0 (2 * k + 1)
-        omega
-    rw [h_sub_carry] at h_sub_eq
-    simp at h_sub_eq
-    have h_sub_take_full : sub.1.toList.take (2 * k + 1) = sub.1.toList := by
-      rw [List.take_of_length_le]; rw [Array.length_toList, h_sub_size]
-    rw [h_sub_take_full] at h_sub_eq
-    show toNatLimbsList sub.1.toList = _
-    omega
-  · -- sameSign = false: add C₂.
-    simp only [ite_eq_right h_ss]
-    set add := addGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-                 h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos with hadd_def
-    have h_add_size : add.1.size = 2 * k + 1 := by
-      rw [hadd_def, addGeqLimbs_size, hmid₂_sz]
-    have h_add_eq := addGeqLimbs_toNat mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-                       h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos
-    rw [show addGeqLimbs mid₂.1 C₂ 0 (2 * k + 1) 0 (2 * k)
-              h_C2_dst h_C2_src h_2k_le_2k1 h_2k1_pos h_2k_pos = add from rfl]
-      at h_add_eq
-    simp only at h_add_eq
-    rw [h_mid₂_slice_eq, h_C₂_slice, h_mid₂_full] at h_add_eq
-    have h_add_carry : add.2 = false := by
-      match h : add.2 with
-      | false => rfl
-      | true =>
-        exfalso
-        have h_one : add.2.toNat = 1 := by rw [h]; rfl
-        rw [h_one] at h_add_eq
-        have h_add_slice_lt :
-            toNatLimbsList ((add.1.toList.drop 0).take (2 * k + 1)) < 2 ^ (64 * (2 * k + 1)) :=
-          slice_lt_pow add.1 0 (2 * k + 1)
-        omega
-    rw [h_add_carry] at h_add_eq
-    simp at h_add_eq
-    have h_add_take_full : add.1.toList.take (2 * k + 1) = add.1.toList := by
-      rw [List.take_of_length_le]; rw [Array.length_toList, h_add_size]
-    rw [h_add_take_full] at h_add_eq
-    show toNatLimbsList add.1.toList = _
-    omega
-
 /-- If `toNat l < 2^(64·n)`, then taking the first `n` limbs is enough: the
     high zero limbs contribute 0. -/
 private lemma toNat_take_eq_full_of_lt_pow (l : List UInt64) (n : Nat)
@@ -889,125 +674,287 @@ private lemma toNat_array_split (a : Array UInt64) (k n : Nat)
     rw [List.length_take, Array.length_toList, h_size]; omega
   rw [h_take_len] at h_split; exact h_split
 
-/-- The `addLen = min (2k+1) (2*len-k)` always satisfies `toNat middle < β^addLen`,
-    given `middle.size = 2k+1` and `toNat middle < β^(2*len-k)`. -/
-private lemma middle_lt_addLen (middle : Array UInt64) (k _m len : Nat)
-    (hMid : middle.size = 2 * k + 1)
-    (h_mid_bound : toNatLimbsList middle.toList < 2 ^ (64 * (2 * len - k))) :
-    toNatLimbsList middle.toList < 2 ^ (64 * min (2 * k + 1) (2 * len - k)) := by
-  by_cases h : 2 * k + 1 ≤ 2 * len - k
-  · rw [Nat.min_eq_left h]
-    have := toNatLimbsList_lt_pow middle.toList
-    rw [Array.length_toList, hMid] at this
-    exact this
-  · have h' : 2 * len - k < 2 * k + 1 := Nat.lt_of_not_ge h
-    rw [Nat.min_eq_right (le_of_lt h')]; exact h_mid_bound
+/-- `toNat` of a list split at `lo` and `lo + L`. -/
+private lemma toNat_split3 (l : List UInt64) (lo L : Nat) (h : lo + L ≤ l.length) :
+    toNatLimbsList l
+      = toNatLimbsList (l.take lo) + toNatLimbsList ((l.drop lo).take L) * 2 ^ (64 * lo)
+        + toNatLimbsList (l.drop (lo + L)) * 2 ^ (64 * (lo + L)) := by
+  conv_lhs => rw [← List.take_append_drop (lo + L) l]
+  rw [toNatLimbsList_append, List.length_take, Nat.min_eq_left h, List.take_add,
+    toNatLimbsList_append, List.length_take, Nat.min_eq_left (by omega)]
+  ring
 
-set_option maxHeartbeats 800000 in
-/-- Correctness of `assemble`. -/
+/-- An in-place update of the slice `[lo, lo + L)` lifts to the whole array: the slice
+    equation `slice' + e β^L = slice + X` becomes `whole' + e β^(lo+L) = whole + X β^lo`. -/
+private lemma toNat_update (a a' : Array UInt64) (lo L X e : Nat)
+    (h_size : a'.size = a.size) (hL : lo + L ≤ a.size)
+    (h_pre : a'.toList.take lo = a.toList.take lo)
+    (h_suf : a'.toList.drop (lo + L) = a.toList.drop (lo + L))
+    (h_slice : toNatLimbsList ((a'.toList.drop lo).take L) + e * 2 ^ (64 * L)
+      = toNatLimbsList ((a.toList.drop lo).take L) + X) :
+    toNatLimbsList a'.toList + e * 2 ^ (64 * (lo + L))
+      = toNatLimbsList a.toList + X * 2 ^ (64 * lo) := by
+  rw [toNat_split3 a.toList lo L (by rw [Array.length_toList]; exact hL),
+    toNat_split3 a'.toList lo L (by rw [Array.length_toList, h_size]; exact hL), h_pre, h_suf]
+  have h_pow : (2 : Nat) ^ (64 * (lo + L)) = 2 ^ (64 * lo) * 2 ^ (64 * L) := by
+    rw [show 64 * (lo + L) = 64 * lo + 64 * L from by ring, Nat.pow_add]
+  rw [h_pow]
+  zify at h_slice ⊢
+  linear_combination (2 : ℤ) ^ (64 * lo) * h_slice
+
+/-- Equal entries below `lo` give equal `take lo` prefixes. -/
+private lemma take_eq_of_getElem (a a' : Array UInt64) (lo : Nat)
+    (h_size : a'.size = a.size) (hlo : lo ≤ a.size)
+    (h : ∀ (j : Nat) (hj : j < a.size), j < lo → a'[j]'(by rw [h_size]; exact hj) = a[j]'hj) :
+    a'.toList.take lo = a.toList.take lo := by
+  apply List.ext_getElem
+  · rw [List.length_take, List.length_take, Array.length_toList, Array.length_toList, h_size]
+  · intro i h₁ h₂
+    have hi : i < a.size := by rw [List.length_take, Array.length_toList] at h₂; omega
+    have hi_lo : i < lo := by rw [List.length_take] at h₂; omega
+    rw [List.getElem_take, List.getElem_take, Array.getElem_toList, Array.getElem_toList]
+    exact h i hi hi_lo
+
+/-- `T + a P = V + b P` with `T, V < P` forces `T = V`. -/
+private lemma eq_of_add_mul_eq_add_mul (T V a b P : Nat) (hT : T < P) (hV : V < P)
+    (h : T + a * P = V + b * P) : T = V := by
+  have h' := congrArg (· % P) h
+  simp only [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hT, Nat.mod_eq_of_lt hV] at h'
+  exact h'
+
+/-- Drop past the end is empty. -/
+private lemma drop_size_eq_nil (a : Array UInt64) (n : Nat) (h : a.size ≤ n) :
+    a.toList.drop n = [] :=
+  List.drop_eq_nil_of_le (by rw [Array.length_toList]; exact h)
+
+/-- Correctness of `assemble`: the assembled buffer holds
+    `C₀ + (C₀ + C₁ ∓ C₂) β^k + C₁ β^(2k)`, given that this value fits in `2 len` limbs (every
+    pass is exact modulo `β^(2 len)`). -/
 theorem karatsubaMulLimbsRec.assemble_toNat (k m len : Nat)
-    (C₀ C₁ middle : Array UInt64)
-    (hC₀ : C₀.size = 2 * k) (hC₁ : C₁.size = 2 * m) (hMid : middle.size = 2 * k + 1)
-    (hkm : k + m = len) (h_kpos : 0 < k) (h_mpos : 0 < m) (h_le : m ≤ k)
-    (h_mid_bound : toNatLimbsList middle.toList < 2 ^ (64 * (2 * len - k)))
+    (C₀ C₁ C₂ : Array UInt64) (sameSign : Bool)
+    (hC₀ : C₀.size = 2 * k) (hC₁ : C₁.size = 2 * m) (hC₂ : C₂.size = 2 * k)
+    (hkm : k + m = len) (h_kpos : 0 < k) (h_mpos : 0 < m) (h_le : m ≤ k) (h_k2m : k ≤ 2 * m)
+    (h_sub_ok : sameSign = true →
+      toNatLimbsList C₂.toList ≤ toNatLimbsList C₀.toList + toNatLimbsList C₁.toList)
     (h_total_bound :
       toNatLimbsList C₀.toList
-        + toNatLimbsList middle.toList * 2 ^ (64 * k)
+        + (if sameSign then
+            toNatLimbsList C₀.toList + toNatLimbsList C₁.toList - toNatLimbsList C₂.toList
+          else
+            toNatLimbsList C₀.toList + toNatLimbsList C₁.toList + toNatLimbsList C₂.toList)
+          * 2 ^ (64 * k)
         + toNatLimbsList C₁.toList * 2 ^ (64 * (2 * k))
         < 2 ^ (64 * (2 * len))) :
-    toNatLimbsList (karatsubaMulLimbsRec.assemble k m len C₀ C₁ middle
-                      hC₀ hC₁ hMid hkm h_kpos h_mpos h_le).1.toList
+    toNatLimbsList (karatsubaMulLimbsRec.assemble k m len C₀ C₁ C₂ sameSign
+                      hC₀ hC₁ hC₂ hkm h_kpos h_mpos h_le h_k2m).1.toList
       = toNatLimbsList C₀.toList
-        + toNatLimbsList middle.toList * 2 ^ (64 * k)
+        + (if sameSign then
+            toNatLimbsList C₀.toList + toNatLimbsList C₁.toList - toNatLimbsList C₂.toList
+          else
+            toNatLimbsList C₀.toList + toNatLimbsList C₁.toList + toNatLimbsList C₂.toList)
+          * 2 ^ (64 * k)
         + toNatLimbsList C₁.toList * 2 ^ (64 * (2 * k)) := by
   unfold karatsubaMulLimbsRec.assemble
+  dsimp only
   -- Names matching the function body.
-  have hlen : 2 ≤ len := by omega
-  have hacc₀_sz : (C₀ ++ C₁).size = 2 * len := by
-    rw [Array.size_append, hC₀, hC₁]; omega
-  set addLen := min (2 * k + 1) (2 * len - k) with haddLen_def
-  have h_addLen_le_lenA : addLen ≤ 2 * len - k := by rw [haddLen_def]; omega
-  have h_addLen_pos : 0 < addLen := by rw [haddLen_def]; omega
-  have h_lenA_pos : 0 < 2 * len - k := by omega
-  have h_acc_dst : k + (2 * len - k) ≤ (C₀ ++ C₁).size := by rw [hacc₀_sz]; omega
-  have h_mid_src : 0 + addLen ≤ middle.size := by rw [hMid]; omega
-  set acc := addGeqLimbs (C₀ ++ C₁) middle k (2 * len - k) 0 addLen
-               h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos with hacc_def
-  have h_acc_size : acc.1.size = 2 * len := by
-    rw [hacc_def, addGeqLimbs_size, hacc₀_sz]
-  -- addGeqLimbs equation, post-rewrites.
-  have h_acc_eq : toNatLimbsList ((acc.1.toList.drop k).take (2 * len - k))
-                    + acc.2.toNat * 2 ^ (64 * (2 * len - k))
-                  = toNatLimbsList (((C₀ ++ C₁).toList.drop k).take (2 * len - k))
-                    + toNatLimbsList ((middle.toList.drop 0).take addLen) := by
-    have h := addGeqLimbs_toNat (C₀ ++ C₁) middle k (2 * len - k) 0 addLen
-                h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos
-    simp only at h
-    rw [show addGeqLimbs (C₀ ++ C₁) middle k (2 * len - k) 0 addLen
-              h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos = acc from rfl] at h
+  set acc₀ := C₀ ++ C₁ with hacc₀_def
+  have hacc₀ : acc₀.size = 2 * len := by rw [hacc₀_def, Array.size_append, hC₀, hC₁]; omega
+  have h1A : k + 2 * m ≤ acc₀.size := by rw [hacc₀]; omega
+  have h1B : 0 + 2 * m ≤ C₀.size := by rw [hC₀]; omega
+  have h1C : 0 + 2 * m ≤ C₁.size := by rw [hC₁]; omega
+  set r₁ := add3SameLengthLimbs.go C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false h1A h1B h1C
+    with hr₁_def
+  have hr₁ : r₁.1.size = 2 * len := by rw [hr₁_def, add3SameLengthLimbs.go_size, hacc₀]
+  have h2A : (k + 2 * m) + (2 * k - 2 * m) ≤ r₁.1.size := by rw [hr₁]; omega
+  have h2B : 2 * m + (2 * k - 2 * m) ≤ C₀.size := by rw [hC₀]; omega
+  set r₂ := addSameLengthLimbs.go C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0 r₁.2.1 h2A h2B
+    with hr₂_def
+  have hr₂ : r₂.1.size = 2 * len := by rw [hr₂_def, addSameLengthLimbs.go_size, hr₁]
+  have h3lo : k + 2 * m ≤ 2 * len := by omega
+  have h3hi : 2 * len ≤ r₂.1.size := by rw [hr₂]
+  set b₃ : UInt64 := if r₁.2.2 then 1 else 0 with hb₃_def
+  set r₃ := addLimb r₂.1 (k + 2 * m) (2 * len) b₃ h3lo h3hi with hr₃_def
+  have hr₃ : r₃.1.size = 2 * len := by rw [hr₃_def, addLimb_size, hr₂]
+  have h4lo : 3 * k ≤ 2 * len := by omega
+  have h4hi : 2 * len ≤ r₃.1.size := by rw [hr₃]
+  set b₄ : UInt64 := if r₂.2 then 1 else 0 with hb₄_def
+  set r₄ := addLimb r₃.1 (3 * k) (2 * len) b₄ h4lo h4hi with hr₄_def
+  have hr₄ : r₄.1.size = 2 * len := by rw [hr₄_def, addLimb_size, hr₃]
+  have h5A : k + (2 * len - k) ≤ r₄.1.size := by rw [hr₄]; omega
+  have h5B : 0 + 2 * k ≤ C₂.size := by rw [hC₂]; omega
+  have h5ge : 2 * k ≤ 2 * len - k := by omega
+  have h5posA : 0 < 2 * len - k := by omega
+  have h5posB : 0 < 2 * k := by omega
+  -- Whole-array values.
+  set T₀ := toNatLimbsList acc₀.toList with hT₀_def
+  set T₁ := toNatLimbsList r₁.1.toList with hT₁_def
+  set T₂ := toNatLimbsList r₂.1.toList with hT₂_def
+  set T₃ := toNatLimbsList r₃.1.toList with hT₃_def
+  set T₄ := toNatLimbsList r₄.1.toList with hT₄_def
+  set N₀ := toNatLimbsList C₀.toList with hN₀_def
+  set N₁ := toNatLimbsList C₁.toList with hN₁_def
+  set N₂ := toNatLimbsList C₂.toList with hN₂_def
+  set c₁ := r₁.2.1.toNat with hc₁_def
+  set c₂ := r₁.2.2.toNat with hc₂_def
+  set d := r₂.2.toNat with hd_def
+  have hb₃ : b₃.toNat = c₂ := by rw [hb₃_def, hc₂_def]; cases r₁.2.2 <;> rfl
+  have hb₄ : b₄.toNat = d := by rw [hb₄_def, hd_def]; cases r₂.2 <;> rfl
+  have hT₀ : T₀ = N₀ + N₁ * 2 ^ (64 * (2 * k)) := toNat_acc₀_append C₀ C₁ k hC₀
+  -- `C₀` split at `2m`.
+  have hC₀_split : N₀ = toNatLimbsList (C₀.toList.take (2 * m))
+      + toNatLimbsList ((C₀.toList.drop (2 * m)).take (2 * k - 2 * m)) * 2 ^ (64 * (2 * m)) := by
+    have h := toNat_split3 C₀.toList (2 * m) (2 * k - 2 * m)
+      (by rw [Array.length_toList, hC₀]; omega)
+    rw [drop_size_eq_nil C₀ (2 * m + (2 * k - 2 * m)) (by rw [hC₀]; omega)] at h
+    have h0 : toNatLimbsList ([] : List UInt64) = 0 := rfl
+    rw [h0, Nat.zero_mul, Nat.add_zero] at h
     exact h
-  -- Reduce slice forms to full toNats.
-  have h_acc₀_drop_take :
-      ((C₀ ++ C₁).toList.drop k).take (2 * len - k) = (C₀ ++ C₁).toList.drop k := by
-    apply List.take_of_length_le
-    rw [List.length_drop, Array.length_toList, hacc₀_sz]
-  have h_acc_drop_take :
-      (acc.1.toList.drop k).take (2 * len - k) = acc.1.toList.drop k := by
-    apply List.take_of_length_le
-    rw [List.length_drop, Array.length_toList, h_acc_size]
-  have h_mid_take :
-      toNatLimbsList ((middle.toList.drop 0).take addLen) = toNatLimbsList middle.toList := by
-    rw [List.drop_zero]
-    exact toNat_take_eq_full_of_lt_pow middle.toList addLen
-            (by rw [haddLen_def]; exact middle_lt_addLen middle k m len hMid h_mid_bound)
-  rw [h_acc₀_drop_take, h_acc_drop_take, h_mid_take] at h_acc_eq
-  rw [toNat_acc₀_drop_k C₀ C₁ k hC₀] at h_acc_eq
-  -- Now h_acc_eq : toNat (acc.1.drop k) + acc.2 * β^(2*len-k)
-  --              = toNat C₁ * β^k + toNat (C₀.drop k) + toNat middle.
-  -- Total decomposition.
-  have h_acc_full :=
-    toNat_array_split acc.1 k (2 * len) h_acc_size (by omega)
-  have h_take_k_eq : acc.1.toList.take k = (C₀ ++ C₁).toList.take k := by
-    rw [hacc_def]
-    exact addGeqLimbs_toList_take_le (C₀ ++ C₁) middle k (2 * len - k) 0 addLen
-            h_acc_dst h_mid_src h_addLen_le_lenA h_lenA_pos h_addLen_pos k (Nat.le_refl _)
-  have h_take_C₀ : acc.1.toList.take k = C₀.toList.take k := by
-    rw [h_take_k_eq, take_k_acc₀_eq C₀ C₁ k hC₀]
-  rw [h_take_C₀] at h_acc_full
-  -- h_acc_full : toNat acc.1 = toNat (acc.1.drop k) * β^k + toNat (C₀.take k).
-  -- Carry zero by total bound.
-  have h_pow_2len : 2 ^ (64 * (2 * len)) = 2 ^ (64 * (2 * len - k)) * 2 ^ (64 * k) :=
-    pow_split_factor (2 * len) k (by omega)
-  have h_pow_2k : 2 ^ (64 * (2 * k)) = 2 ^ (64 * k) * 2 ^ (64 * k) :=
-    pow_double_factor k
-  have h_acc_carry : acc.2 = false := by
-    match h : acc.2 with
-    | false => rfl
-    | true =>
-      exfalso
-      have h_one : acc.2.toNat = 1 := by rw [h]; rfl
-      rw [h_one] at h_acc_eq
-      -- Multiply both sides of h_acc_eq by β^k.
-      have h_mul : (toNatLimbsList (acc.1.toList.drop k) + 1 * 2 ^ (64 * (2 * len - k)))
-                     * 2 ^ (64 * k)
-                   = (toNatLimbsList C₁.toList * 2 ^ (64 * k)
-                     + toNatLimbsList (C₀.toList.drop k)
-                     + toNatLimbsList middle.toList) * 2 ^ (64 * k) := by
-        rw [h_acc_eq]
-      -- Add toNat (C₀.take k).
-      have h_acc_total :
-          toNatLimbsList acc.1.toList + 2 ^ (64 * (2 * len))
-            = toNatLimbsList C₀.toList
-              + toNatLimbsList middle.toList * 2 ^ (64 * k)
-              + toNatLimbsList C₁.toList * 2 ^ (64 * (2 * k)) := by
-        rw [h_acc_full, toNat_C₀_split C₀ k hC₀, h_pow_2k, h_pow_2len]
-        nlinarith [h_mul]
-      omega
-  rw [h_acc_carry] at h_acc_eq
-  simp at h_acc_eq
-  -- h_acc_eq : toNat (acc.1.drop k) = toNat C₁ * β^k + toNat (C₀.drop k) + toNat middle.
-  rw [h_acc_full, h_acc_eq, toNat_C₀_split C₀ k hC₀, h_pow_2k]
-  ring
+  -- Pass 1a.
+  have h₁ : T₁ + (c₁ + c₂) * 2 ^ (64 * (k + 2 * m))
+      = T₀ + (toNatLimbsList (C₀.toList.take (2 * m)) + N₁) * 2 ^ (64 * k) := by
+    apply toNat_update acc₀ r₁.1 k (2 * m) _ _ (by rw [hr₁, hacc₀]) (by rw [hacc₀]; omega)
+    · exact add3SameLengthLimbs.go_toList_take_le C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false
+        h1A h1B h1C k (by omega)
+    · exact add3SameLengthLimbs.go_toList_drop C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false h1A h1B h1C
+    · have h := add3SameLengthLimbs.go_correct C₀ C₁ k 0 0 (2 * m) acc₀ 0 false false h1A h1B h1C
+      rw [← hr₁_def] at h
+      simp only [Nat.add_zero, Nat.sub_zero, List.drop_zero, Bool.toNat_false] at h
+      have h_C₁_take : C₁.toList.take (2 * m) = C₁.toList :=
+        List.take_of_length_le (by rw [Array.length_toList, hC₁])
+      rw [h_C₁_take] at h
+      linarith [h]
+  -- Pass 1b.
+  have h₂ : T₂ + d * 2 ^ (64 * (3 * k))
+      = T₁ + (toNatLimbsList ((C₀.toList.drop (2 * m)).take (2 * k - 2 * m)) + c₁)
+          * 2 ^ (64 * (k + 2 * m)) := by
+    have h := toNat_update r₁.1 r₂.1 (k + 2 * m) (2 * k - 2 * m)
+      (toNatLimbsList ((C₀.toList.drop (2 * m)).take (2 * k - 2 * m)) + c₁) d
+      (by rw [hr₂, hr₁]) (by rw [hr₁]; omega)
+      (addSameLengthLimbs.go_toList_take_le C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0 r₁.2.1
+        h2A h2B (k + 2 * m) (by omega))
+      (addSameLengthLimbs.go_toList_drop C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0 r₁.2.1
+        h2A h2B)
+      (by
+        have h := addSameLengthLimbs.go_correct C₀ (k + 2 * m) (2 * m) (2 * k - 2 * m) r₁.1 0
+          r₁.2.1 h2A h2B
+        rw [← hr₂_def] at h
+        simp only [Nat.add_zero, Nat.sub_zero] at h
+        linarith [h])
+    rw [show k + 2 * m + (2 * k - 2 * m) = 3 * k from by omega] at h
+    exact h
+  -- Pass 1c.
+  have h₃ : ∃ e₃, T₃ + e₃ * 2 ^ (64 * (2 * len)) = T₂ + c₂ * 2 ^ (64 * (k + 2 * m)) := by
+    refine ⟨r₃.2.toNat, ?_⟩
+    have h := toNat_update r₂.1 r₃.1 (k + 2 * m) (2 * len - (k + 2 * m)) c₂ r₃.2.toNat
+      (by rw [hr₃, hr₂]) (by rw [hr₂]; omega)
+      (addLimb_toList_take r₂.1 (k + 2 * m) (2 * len) b₃ h3lo h3hi)
+      (by rw [drop_size_eq_nil r₃.1 _ (by rw [hr₃]; omega),
+        drop_size_eq_nil r₂.1 _ (by rw [hr₂]; omega)])
+      (by
+        have h := addLimb_toNat r₂.1 (k + 2 * m) (2 * len) b₃ h3lo h3hi (by omega)
+        simp only at h
+        rw [← hr₃_def, hb₃] at h
+        exact h)
+    rw [show k + 2 * m + (2 * len - (k + 2 * m)) = 2 * len from by omega] at h
+    exact h
+  -- Pass 1d.
+  have h₄ : ∃ e₄, T₄ + e₄ * 2 ^ (64 * (2 * len)) = T₃ + d * 2 ^ (64 * (3 * k)) := by
+    refine ⟨r₄.2.toNat, ?_⟩
+    have h := toNat_update r₃.1 r₄.1 (3 * k) (2 * len - 3 * k) d r₄.2.toNat
+      (by rw [hr₄, hr₃]) (by rw [hr₃]; omega)
+      (addLimb_toList_take r₃.1 (3 * k) (2 * len) b₄ h4lo h4hi)
+      (by rw [drop_size_eq_nil r₄.1 _ (by rw [hr₄]; omega),
+        drop_size_eq_nil r₃.1 _ (by rw [hr₃]; omega)])
+      (by
+        have h := addLimb.go_correct (2 * len) r₃.1 (3 * k) b₄ h4hi
+          (Or.inl (by rw [hb₄, hd_def]; cases r₂.2 <;> decide))
+        change toNatLimbsList ((r₄.1.toList.drop (3 * k)).take (2 * len - 3 * k))
+          + r₄.2.toNat * 2 ^ (64 * (2 * len - 3 * k))
+          = toNatLimbsList ((r₃.1.toList.drop (3 * k)).take (2 * len - 3 * k)) + b₄.toNat at h
+        rw [hb₄] at h
+        exact h)
+    rw [show 3 * k + (2 * len - 3 * k) = 2 * len from by omega] at h
+    exact h
+  obtain ⟨e₃, h₃⟩ := h₃
+  obtain ⟨e₄, h₄⟩ := h₄
+  -- Through pass 1: `T₄ ≡ T₀ + (N₀ + N₁) β^k`.
+  have h_pow_k2m : (2 : Nat) ^ (64 * (k + 2 * m)) = 2 ^ (64 * k) * 2 ^ (64 * (2 * m)) := by
+    rw [show 64 * (k + 2 * m) = 64 * k + 64 * (2 * m) from by ring, Nat.pow_add]
+  have h_pass1 : T₄ + (e₃ + e₄) * 2 ^ (64 * (2 * len)) = T₀ + (N₀ + N₁) * 2 ^ (64 * k) := by
+    rw [hC₀_split, h_pow_k2m] at *
+    zify at h₁ h₂ h₃ h₄ ⊢
+    linear_combination h₁ + h₂ + h₃ + h₄
+  have hT₄_lt : T₄ < 2 ^ (64 * (2 * len)) := by
+    have := toNatLimbsList_lt_pow r₄.1.toList
+    rw [Array.length_toList, hr₄] at this; exact this
+  -- Pass 2 and the final value.
+  cases sameSign with
+  | true =>
+    simp only [↓reduceIte] at h_total_bound ⊢
+    have h_le := h_sub_ok rfl
+    set r₅ := subGeqLimbs r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB
+      with hr₅_def
+    have hr₅ : r₅.1.size = 2 * len := by rw [hr₅_def, subGeqLimbs_size, hr₄]
+    have h₅ : T₄ + r₅.2.toNat * 2 ^ (64 * (2 * len))
+        = toNatLimbsList r₅.1.toList + N₂ * 2 ^ (64 * k) := by
+      have h := toNat_update r₅.1 r₄.1 k (2 * len - k) N₂ r₅.2.toNat (by rw [hr₅, hr₄])
+        (by rw [hr₅]; omega)
+        (by
+          symm
+          apply take_eq_of_getElem r₄.1 r₅.1 k (by rw [hr₅, hr₄]) (by rw [hr₄]; omega)
+          intro j hj hjk
+          exact subGeqLimbs_get_outside r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA
+            h5posB j (Or.inl hjk) hj)
+        (by rw [drop_size_eq_nil r₅.1 _ (by rw [hr₅]; omega),
+          drop_size_eq_nil r₄.1 _ (by rw [hr₄]; omega)])
+        (by
+          have h := subGeqLimbs_toNat r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB
+          simp only at h
+          have h_C₂_take : C₂.toList.take (2 * k) = C₂.toList :=
+            List.take_of_length_le (by rw [Array.length_toList, hC₂])
+          rw [← hr₅_def, List.drop_zero, h_C₂_take] at h
+          exact h)
+      rw [show k + (2 * len - k) = 2 * len from by omega] at h
+      exact h
+    have hT₅_lt : toNatLimbsList r₅.1.toList < 2 ^ (64 * (2 * len)) := by
+      have := toNatLimbsList_lt_pow r₅.1.toList
+      rw [Array.length_toList, hr₅] at this; exact this
+    apply eq_of_add_mul_eq_add_mul _ _ (e₃ + e₄) (r₅.2.toNat) _ hT₅_lt h_total_bound
+    rw [hT₀] at h_pass1
+    zify [h_le] at h_pass1 h₅ ⊢
+    linear_combination h_pass1 - h₅
+  | false =>
+    simp only [Bool.false_eq_true, ↓reduceIte] at h_total_bound ⊢
+    set r₅ := addGeqLimbs r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB
+      with hr₅_def
+    have hr₅ : r₅.1.size = 2 * len := by rw [hr₅_def, addGeqLimbs_size, hr₄]
+    have h₅ : toNatLimbsList r₅.1.toList + r₅.2.toNat * 2 ^ (64 * (2 * len))
+        = T₄ + N₂ * 2 ^ (64 * k) := by
+      have h := toNat_update r₄.1 r₅.1 k (2 * len - k) N₂ r₅.2.toNat (by rw [hr₅, hr₄])
+        (by rw [hr₄]; omega)
+        (by
+          apply take_eq_of_getElem r₄.1 r₅.1 k (by rw [hr₅, hr₄]) (by rw [hr₄]; omega)
+          intro j hj hjk
+          exact addGeqLimbs_get_outside r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA
+            h5posB j (Or.inl hjk) hj)
+        (by rw [drop_size_eq_nil r₅.1 _ (by rw [hr₅]; omega),
+          drop_size_eq_nil r₄.1 _ (by rw [hr₄]; omega)])
+        (by
+          have h := addGeqLimbs_toNat r₄.1 C₂ k (2 * len - k) 0 (2 * k) h5A h5B h5ge h5posA h5posB
+          simp only at h
+          have h_C₂_take : C₂.toList.take (2 * k) = C₂.toList :=
+            List.take_of_length_le (by rw [Array.length_toList, hC₂])
+          rw [← hr₅_def, List.drop_zero, h_C₂_take] at h
+          exact h)
+      rw [show k + (2 * len - k) = 2 * len from by omega] at h
+      exact h
+    have hT₅_lt : toNatLimbsList r₅.1.toList < 2 ^ (64 * (2 * len)) := by
+      have := toNatLimbsList_lt_pow r₅.1.toList
+      rw [Array.length_toList, hr₅] at this; exact this
+    apply eq_of_add_mul_eq_add_mul _ _ (e₃ + e₄ + r₅.2.toNat) 0 _ hT₅_lt h_total_bound
+    rw [hT₀] at h_pass1
+    zify at h_pass1 h₅ ⊢
+    linear_combination h_pass1 + h₅
 
 /-! ### Correctness of `karatsubaMulLimbsRec` and `karatsubaMulLimbs` -/
 
@@ -1237,8 +1184,6 @@ theorem karatsubaMulLimbsRec_toNat (threshold : Nat) :
       have hBabs_lim : 0 + k ≤ absB.1.1.size := by rw [absB.1.2]; omega
       set C2 := karatsubaMulLimbsRec threshold absA.1.1 absB.1.1 0 0 k
                   hAabs_lim hBabs_lim with hC2_def
-      set middle := karatsubaMulLimbsRec.middleBuf k m C0.1 C1.1 C2.1 (absA.2 == absB.2)
-                      C0.2 C1.2 C2.2 hk_pos hm_pos hm_le with hmiddle_def
       -- Slice values.
       set A0 := toNatLimbsList ((a.toList.drop loA).take k) with hA0_val
       set A1 := toNatLimbsList ((a.toList.drop (loA + k)).take m) with hA1_val
@@ -1285,36 +1230,39 @@ theorem karatsubaMulLimbsRec_toNat (threshold : Nat) :
         rw [h_C2_value, h_C0_toNat, h_C1_toNat]
         exact C2_le_C0_plus_C1 A0 A1 B0 B1 absA.2 absB.2 hsignA hsignB
           _ _ rfl rfl h_same
-      have h_middle_toNat := karatsubaMulLimbsRec.middleBuf_toNat k m C0.1 C1.1 C2.1
-        (absA.2 == absB.2) C0.2 C1.2 C2.2 hk_pos hm_pos hm_le h_sub_ok
-      rw [show karatsubaMulLimbsRec.middleBuf k m C0.1 C1.1 C2.1 (absA.2 == absB.2)
-                 C0.2 C1.2 C2.2 hk_pos hm_pos hm_le = middle from rfl] at h_middle_toNat
-      -- toNat middle = A0*B1 + A1*B0.
-      have h_middle_value : toNatLimbsList middle.1.toList = A0 * B1 + A1 * B0 := by
-        rw [h_middle_toNat, h_C0_toNat, h_C1_toNat, h_C2_value]
+      -- The middle term `C0 + C1 ∓ C2 = A0*B1 + A1*B0`.
+      have h_middle_value :
+          (if (absA.2 == absB.2) then
+            toNatLimbsList C0.1.toList + toNatLimbsList C1.1.toList - toNatLimbsList C2.1.toList
+          else
+            toNatLimbsList C0.1.toList + toNatLimbsList C1.1.toList + toNatLimbsList C2.1.toList)
+          = A0 * B1 + A1 * B0 := by
+        rw [h_C0_toNat, h_C1_toNat, h_C2_value]
         exact middle_equals_cross_terms A0 A1 B0 B1 absA.2 absB.2 hsignA hsignB
           _ rfl _ rfl
-      -- Bounds for assemble_toNat.
-      have h_mid_bound : toNatLimbsList middle.1.toList < 2 ^ (64 * (2 * len - k)) := by
-        rw [h_middle_value, show 2 * len - k = k + m + m from by omega]
-        exact mid_value_lt A0 A1 B0 B1 k m hA0_lt hA1_lt hB0_lt hB1_lt hm_pos
       have h_2k_eq : 2 ^ (64 * (2 * k)) = 2 ^ (64 * k) * 2 ^ (64 * k) := pow_double_factor k
       have h_total_bound :
           toNatLimbsList C0.1.toList
-          + toNatLimbsList middle.1.toList * 2 ^ (64 * k)
+          + (if (absA.2 == absB.2) then
+              toNatLimbsList C0.1.toList + toNatLimbsList C1.1.toList
+                - toNatLimbsList C2.1.toList
+            else
+              toNatLimbsList C0.1.toList + toNatLimbsList C1.1.toList
+                + toNatLimbsList C2.1.toList) * 2 ^ (64 * k)
           + toNatLimbsList C1.1.toList * 2 ^ (64 * (2 * k))
           < 2 ^ (64 * (2 * len)) := by
-        rw [h_C0_toNat, h_middle_value, h_C1_toNat]
+        rw [h_middle_value, h_C0_toNat, h_C1_toNat]
         have h_factor : A0 * B0 + (A0 * B1 + A1 * B0) * 2 ^ (64 * k)
                           + A1 * B1 * 2 ^ (64 * (2 * k))
                        = (A0 + A1 * 2 ^ (64 * k)) * (B0 + B1 * 2 ^ (64 * k)) := by
           rw [h_2k_eq]; ring
         rw [h_factor]
         exact total_lt A0 A1 B0 B1 k m len hA0_lt hA1_lt hB0_lt hB1_lt hkm
-      have h_assemble := karatsubaMulLimbsRec.assemble_toNat k m len C0.1 C1.1 middle.1
-        C0.2 C1.2 middle.2 hkm hk_pos hm_pos hm_le h_mid_bound h_total_bound
+      have hk2m : k ≤ 2 * m := by omega
+      have h_assemble := karatsubaMulLimbsRec.assemble_toNat k m len C0.1 C1.1 C2.1
+        (absA.2 == absB.2) C0.2 C1.2 C2.2 hkm hk_pos hm_pos hm_le hk2m h_sub_ok h_total_bound
       -- Combine.
-      rw [h_assemble, h_C0_toNat, h_middle_value, h_C1_toNat]
+      rw [h_assemble, h_middle_value, h_C0_toNat, h_C1_toNat]
       -- Final algebra: A * B = A0*B0 + (A0*B1 + A1*B0)*β^k + A1*B1*β^(2k).
       have h_slice_a : toNatLimbsList ((a.toList.drop loA).take len)
                          = A0 + A1 * 2 ^ (64 * k) := by

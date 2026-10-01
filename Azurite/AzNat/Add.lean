@@ -83,6 +83,41 @@ theorem addSameLengthLimbs_size (a b : Array UInt64) (loA loB len : Nat)
     (addSameLengthLimbs a b loA loB len hA hB).1.size = a.size :=
   addSameLengthLimbs.go_size b loA loB len a 0 false hA hB
 
+/-- Fused three-input in-place addition: adds `b[loB + k'] + c[loC + k']` into
+    `a[loA + k']` for `k' ∈ [k, len)`, carrying two bits (`c₁` out of the first
+    addition, `c₂` out of the second).  One pass over the accumulator where two
+    `addSameLengthLimbs` passes would write every limb twice. -/
+def add3SameLengthLimbs.go (b c : Array UInt64) (loA loB loC len : Nat)
+    (a : Array UInt64) (k : Nat) (c₁ c₂ : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (hC : loC + len ≤ c.size) :
+    Array UInt64 × Bool × Bool :=
+  if h : k < len then
+    have h_iA : loA + k < a.size := by omega
+    have h_iB : loB + k < b.size := by omega
+    have h_iC : loC + k < c.size := by omega
+    let s₁ := UInt64.addWithCarry a[loA + k] b[loB + k] c₁
+    let s₂ := UInt64.addWithCarry s₁.1 c[loC + k] c₂
+    add3SameLengthLimbs.go b c loA loB loC len (a.set (loA + k) s₂.1) (k + 1) s₁.2 s₂.2
+      (by rw [Array.size_set]; exact hA) hB hC
+  else
+    (a, c₁, c₂)
+  termination_by len - k
+
+/-- Size preservation of `add3SameLengthLimbs.go`. -/
+theorem add3SameLengthLimbs.go_size (b c : Array UInt64) (loA loB loC len : Nat)
+    (a : Array UInt64) (k : Nat) (c₁ c₂ : Bool)
+    (hA : loA + len ≤ a.size) (hB : loB + len ≤ b.size) (hC : loC + len ≤ c.size) :
+    (add3SameLengthLimbs.go b c loA loB loC len a k c₁ c₂ hA hB hC).1.size = a.size := by
+  induction h_sub : len - k generalizing a k c₁ c₂ with
+  | zero =>
+    have h_ge : len ≤ k := by omega
+    rw [add3SameLengthLimbs.go]; simp [Nat.not_lt.mpr h_ge]
+  | succ n ih =>
+    have h_lt : k < len := by omega
+    rw [add3SameLengthLimbs.go]
+    simp only [h_lt, ↓reduceDIte]
+    rw [ih _ _ _ _ _ (by omega), Array.size_set]
+
 /-- Add the slice `b[loB : loB + lenB)` into `a[loA : loA + lenA)` where
     `lenA ≥ lenB` and both slices are nonempty.  Low `lenB` limbs are summed
     via `addSameLengthLimbs`; any outgoing carry is propagated into the upper

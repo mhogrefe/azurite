@@ -30,8 +30,8 @@ need a sign for `C₂` — the middle term `D₀ + D₂ − C` is always non-neg
 because it equals `2 a₀ a₁ ≥ 0`. This is the main simplification vs.
 `karatsubaMulLimbsRec`.
 
-The implementation reuses `absSubLimbsKM`, `middleBuf` (with the subtract
-branch always taken), and `assemble` from `AzNat.Mul.Karatsuba`.
+The implementation reuses `absSubLimbsKM` and `assemble` (with the subtract
+branch always taken) from `AzNat.Mul.Karatsuba`.
 -/
 
 /-- Karatsuba squaring of an `n`-limb slice `a[lo, lo + n)`. Returns a fresh
@@ -69,11 +69,10 @@ def karatsubaSquareLimbsRec (threshold : Nat) (a : Array UInt64)
     have hAabs_lim : 0 + k ≤ absA.1.1.size := by rw [absA.1.2]; omega
     let C := karatsubaSquareLimbsRec threshold absA.1.1 0 k hAabs_lim
     -- middle = D₀ + D₂ − C  (always ≥ 0 since it equals 2 a₀ a₁)
-    let middle := karatsubaMulLimbsRec.middleBuf k m D0.1 D2.1 C.1
-                    true D0.2 D2.2 C.2 hk_pos hm_pos hm_le
-    -- Assemble: D₀ in [0, 2k), D₂ in [2k, 2n), add middle · β^k on top.
-    karatsubaMulLimbsRec.assemble k m len D0.1 D2.1 middle.1
-      D0.2 D2.2 middle.2 hkm hk_pos hm_pos hm_le
+    -- Assemble: D₀ in [0, 2k), D₂ in [2k, 2n), add (D₀ + D₂ − C) · β^k on top.
+    have hk2m : k ≤ 2 * m := by show (len + 1) / 2 ≤ 2 * (len - (len + 1) / 2); omega
+    karatsubaMulLimbsRec.assemble k m len D0.1 D2.1 C.1 true
+      D0.2 D2.2 C.2 hkm hk_pos hm_pos hm_le hk2m
   termination_by len
   decreasing_by
     all_goals simp_wf
