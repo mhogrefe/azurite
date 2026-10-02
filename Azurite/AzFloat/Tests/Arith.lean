@@ -36,6 +36,8 @@ private def Sq (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat 
   sqrPrecRound x p m
 private def D (x y : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
   divPrecRound x y p m
+private def R (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
+  sqrtPrecRound x p m
 
 /-! ## Exact cases -/
 
@@ -187,3 +189,25 @@ private def D (x y : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat
 #guard toString (one / F "3" 2) == "0.4"
 #guard toString (F "1" 53 / F "3" 53) == "0.3333333333333333"
 #guard toString (F "22" 53 / F "7" 53) == "3.142857142857143"
+
+/-! ## Square root -/
+
+#guard (R one 1) == (one, .eq)
+#guard (R (F "4" 3) 2) == (F "2" 2, .eq)
+#guard (R (F "9/4" 4) 2) == (F "3/2" 2, .eq)
+#guard (R (F "2" 2) 2) == (F "3/2" 2, .gt)                                          -- √2 → 1.5
+#guard (R (F "2" 2) 2 .Floor) == (F "1" 2, .lt)
+#guard (R (F "2" 2) 53) == (F "6369051672525773/4503599627370496" 53, .gt)
+#guard (R (F "1/4" 2) 1) == (oneHalf, .eq)
+#guard (R (one <<< 100) 1) == (one <<< 50, .eq)
+#guard (R (one <<< 101) 1) == (one <<< 50, .lt)                                     -- √2·2^50
+#guard (R (one <<< 101) 1 .Ceiling) == (one <<< 51, .gt)
+#guard (R (F "9/4" 4) 1) == (two, .gt)                                              -- tie 1.5 → 2
+#guard (R (F "25/4" 5) 2) == (F "2" 2, .lt)                                         -- tie 2.5 → 2
+#guard (R nan 3) == (nan, .eq)
+#guard (R (infinity true) 3) == (infinity true, .eq)
+#guard (R (infinity false) 3) == (nan, .eq)
+#guard (R zero 3) == (zero, .eq)
+#guard (R negOne 3) == (nan, .eq)
+#guard toString (sqrt (F "2" 53)) == "1.4142135623730951"
+#guard toString (sqrt (F "1/10" 53)) == "0.31622776601683794"

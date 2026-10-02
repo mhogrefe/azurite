@@ -71,8 +71,7 @@ Status: started 2026-10-01; see the status log at the end.
    (`Equiv/Arith.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
    x y p mode` and `subPrecRound_eq_liftVal₂`, where `Spec.add a b` is `EReal` addition with
    `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Arith.lean`.
-4. **Multiplication, squaring, division (done); square root** (MCA §3.3–§3.4 as supplied;
-   §3.5 pending): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
+4. **Multiplication, squaring, division, square root (done)** (MCA §3.3–§3.5 as supplied): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
    `roundScaled` on the scale `(e₁ − p₁) + (e₂ − p₂)` (MCA Algorithm FPmultiply without the
    `n + g` truncation; the short product of Algorithm 3.4 is only an approximation and is left
    for a later performance pass); `sqrPrecRound` uses `AzNat.square`; `0 · (±∞)` is `NaN`, the
@@ -90,8 +89,16 @@ Status: started 2026-10-01; see the status log at the end.
    reciprocal with the wrap-around trick, DivideNewton, ShortDivision, Barrett) all need a
    correction step before they round correctly and were not used; the truncated division of
    Lemma 3.10 with a full-width remainder correction is the planned fast path for operands much
-   wider than the result.  Square root: one exact integer root of the significand, then one
-   rounding; `Spec.sqrt`.
+   wider than the result.  `sqrtPrecRound x p mode` (MCA §3.5 Algorithm FPSqrt, extended to
+   nearest per Exercise 3.14): with `e − q = t + 2w`, `t = 2p − q − (e mod 2)`, the scaled
+   significand `M = n · 2^t` lies in `[2^(2p−2), 2^(2p))`, so `s = ⌊√⌊M⌋⌋` (`AzNat.sqrtRem`) has
+   `p` bits; exactness is "remainder zero and no bits shifted out", the midpoint test is the
+   exact integer comparison of `4M` with `(2s + 1)²`, and `roundFromFloor` turns the three facts
+   into the rounded integer and the tag in every mode; negatives (and `−∞`) give `NaN`,
+   `√∞ = ∞`; `sqrt` at the operand's precision.  Proven `sqrtPrecRound_eq_liftVal` with
+   `Spec.sqrt` (`EReal` square root, undefined on negatives), through the reusable
+   `roundFromFloor_spec` (integer rounding of a real from its floor, exactness and midpoint
+   position) and `scaled_floor`.
 4b. **Hexadecimal debug format (done).**  `AzFloat/HexString.lean`: `toHexString`/`ofHexString`,
    the author's Malachite `{:#x}` of a `ComparableFloat` (`0x0.8#5`); proven
    `ofHexString_toHexString : ofHexString (toHexString x) = some x` for every float.
@@ -192,3 +199,12 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `divPrecRound_eq_liftVal₂`.  Lean note: `set` variables had to be made opaque with
   `clear_value` once their defining facts were recorded, otherwise unification unfolded the
   symbolic `AzInt.divRound` and timed out.
+* **2026-10-02 — square root.**  Source: the author's reformatted MCA §3.5 (Algorithm FPSqrt,
+  Theorem 3.13).  FPSqrt covers directed modes only; round-to-nearest (Exercise 3.14) was derived
+  from first principles: `√M` lies in `(s, s+1)` with `s = ⌊√⌊M⌋⌋`, is exactly `s` iff the
+  remainder vanishes and nothing was shifted out, and sits below, at or above the midpoint
+  `s + 1/2` according to the exact comparison `4M ⋚ (2s+1)²` (ties are real: `√(9/4) = 3/2`).
+  The general decision procedure `roundFromFloor` and its spec `roundFromFloor_spec` (against
+  `round intSet`, all five modes, including the even tiebreak) are reusable for any future
+  irrational-valued operation computed through a floor and a midpoint test.  Proofs:
+  `compareScaled_eq`, `scaled_floor`, `sqrtCore_eq`, `sqrtPrecRound_eq_liftVal`.
