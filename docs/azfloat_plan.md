@@ -71,9 +71,17 @@ Status: started 2026-10-01; see the status log at the end.
    (`Equiv/Arith.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
    x y p mode` and `subPrecRound_eq_liftVal₂`, where `Spec.add a b` is `EReal` addition with
    `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Arith.lean`.
-4. **Multiplication, squaring, division, square root** (MCA §3.3–§3.5 as supplied): one exact
-   integer product or quotient of the significands, then one rounding; `Spec.mul`, `Spec.div`,
-   `Spec.sqrt`.
+4. **Multiplication, squaring (done), division, square root** (MCA §3.3 as supplied; §3.4–§3.5
+   pending): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
+   `roundScaled` on the scale `(e₁ − p₁) + (e₂ − p₂)` (MCA Algorithm FPmultiply without the
+   `n + g` truncation; the short product of Algorithm 3.4 is only an approximation and is left
+   for a later performance pass); `sqrPrecRound` uses `AzNat.square`; `0 · (±∞)` is `NaN`, the
+   sign of an infinite product is the product of the signs; `Mul` instance at the larger
+   operand precision, `sqr` at the operand's.  Proven: `mulPrecRound_eq_liftVal₂` with
+   `Spec.mul` (`EReal` multiplication, `0 · (±∞)` undefined) and
+   `sqrPrecRound_eq_liftE : sqrPrecRound x p mode = liftE (fun v => v * v) x p mode`.
+   Division and square root: one exact integer quotient or root of the significands, then one
+   rounding; `Spec.div`, `Spec.sqrt`.
 4b. **Hexadecimal debug format (done).**  `AzFloat/HexString.lean`: `toHexString`/`ofHexString`,
    the author's Malachite `{:#x}` of a `ComparableFloat` (`0x0.8#5`); proven
    `ofHexString_toHexString : ofHexString (toHexString x) = some x` for every float.
@@ -155,3 +163,10 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `addMagnitudes_eq`/`subMagnitudes_eq`, `addPrecRound_eq_liftVal₂`, `subPrecRound_eq_liftVal₂`.
   Test expectations were computed by hand (e.g. `1 + 2^−100` at 53 bits rounds to `1` with tag
   `.lt`, Floor gives `0x0.fffffffffffff8#53` for the difference).
+* **2026-10-02 — multiplication and squaring.**  Source: the author's reformatted MCA §3.3
+  (FPmultiply, the short-product error analysis of Theorem 3.5, the middle product, Payne–Hanek).
+  Only FPmultiply is used: a full product of the cores and one `roundScaled`.  The short
+  product (error up to `3(n − 1)` units) would need a fallback to decide the rounding and the
+  tag, so it is deferred; the middle product is noted for Newton division (§4.2).  Proofs are
+  short on top of `roundScaled_eq_roundVal`: `mul_cores_scaled`, `Spec.mul_inf_coe`/`mul_coe_inf`
+  (sign of an infinite product), `mulPrecRound_eq_liftVal₂`, `sqrPrecRound_eq_liftE`.
