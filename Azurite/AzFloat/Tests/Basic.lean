@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Shift
 import Azurite.AzNat.Pow2
 import Azurite.AzRat.Parse
 import Azurite.AzRat.ToString
@@ -136,3 +137,20 @@ private def E (z : Int) : Option AzInt := some (AzInt.ofInt z)
 #guard (ofAzRat ((Q "1") <<< 1000) 5).exponent? == E 1001
 #guard (ofAzRat ((Q "1") >>> 1000) 5).exponent? == E (-999)
 #guard R (ofAzRat ((Q "1") >>> 1000) 5) == toString ((Q "1") >>> 1000)
+
+/-! ## Shifts -/
+
+#guard R (one <<< (10 : Nat)) == "1024"
+#guard R (one >>> (10 : Nat)) == "1/1024"
+#guard (one <<< (10 : Nat)).exponent? == E 11
+#guard (one <<< (10 : Nat)).precision? == some 1
+#guard R ((F "1/3" 10).1 <<< (11 : Nat)) == "683"
+#guard R ((F "1/3" 10).1 >>> (3 : Nat)) == "683/16384"
+#guard R ((F "-22/7" 10).1 <<< AzInt.ofInt (-8)) == "-805/65536"
+#guard R ((F "-22/7" 10).1 >>> AzInt.ofInt (-8)) == "-805"
+#guard ((F "1" 5).1 <<< (1000 : Nat)).exponent? == E 1001
+#guard R ((F "1" 5).1 <<< (100 : Nat)) == toString ((Q "1") <<< 100)
+#guard (nan <<< (3 : Nat)).isNaN
+#guard (posInfinity <<< (3 : Nat)) == posInfinity
+#guard (negInfinity >>> (3 : Nat)) == negInfinity
+#guard (zero <<< (3 : Nat)) == zero

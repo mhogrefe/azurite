@@ -47,7 +47,9 @@ import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Rounding
+import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.Shift
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula

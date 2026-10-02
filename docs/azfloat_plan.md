@@ -55,6 +55,9 @@ Status: started 2026-10-01; see the status log at the end.
    values, `none` iff a `NaN` is involved).  Structural `=` keeps seeing the precision; no
    `LT`/`LE` instances, since `NaN` makes the relations irreflexive.  `min`/`max` deferred to
    the arithmetic milestone.  Tests `AzFloat/Tests/Precision.lean`.
+2b. **Shifts (done).**  `AzFloat/Shift.lean`: `shiftLeft`/`shiftRight` by an `AzInt` (and `Nat`)
+   move the exponent only — exact with an unbounded exponent; proven `toVal_shiftLeft` and
+   `shiftLeft_eq_liftE`.
 3. **Addition and subtraction** (MCA §3.1–§3.2 as supplied, plus first principles): exact
    sum of two finite values aligned by exponent, then one rounding; the far-apart case handled
    by a sticky bit without materializing the shift; special values by the IEEE rules spelled
@@ -105,3 +108,6 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `ofAzRatRound` and `setPrecRound` (and by the coming arithmetic); `log_abs_finiteVal` turns
   the exponent convention into `Int.log`.  The hand-computed test for `1/3` at `64` bits caught
   a wrong expectation (the `63`-bit value) — the tests are doing their job.
+* **2026-10-02 — shifts.**  `shiftLeft x k`/`shiftRight x k` (`k : AzInt`, `<<<`/`>>>` also with a
+  `Nat`): exponent arithmetic only.  `toVal_shiftLeft : (x <<< k).toVal = x.toVal.map (· * 2^k)`
+  (`EReal.top_mul_of_pos` handles the infinities) and `shiftLeft_eq_liftE`.
