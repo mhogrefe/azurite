@@ -46,10 +46,15 @@ Status: started 2026-10-01; see the status log at the end.
    `snd_ofAzRatRound`.  Tests `AzFloat/Tests/Basic.lean`.  `AzFloat/Equiv/Rounding.lean`: the
    target `floatSet p` with its `RoundingTarget` instance and `val_round_floatSet`, the
    noncomputable `ofEReal`/`ofVal`, `toVal_injective`, `ofAzRatRound_eq_ofEReal`, `ofVal_toVal`.
-2. **Precision and comparison.**  `setPrecRound x p mode` (re-round to another precision; the
-   same target theorem), `ulp`, exactness predicates; `partialCompare : Option Ordering`
-   (`none` iff a `NaN` is involved), IEEE-style `==` versus structural equality, `min`/`max`;
-   `toVal` injectivity on non-`NaN` values up to precision.
+2. **Precision and comparison (done).**  `AzFloat/Precision.lean`: `setPrecRound x p mode`
+   (raising the precision re-aligns the padding-free significand; lowering it is one signed
+   `AzInt.shiftRightRound`, carry to `2^p` halved), `setPrec`, `ulp?`; proven
+   `setPrecRound_eq_liftE : setPrecRound x p mode = liftE id x p mode` through the reusable
+   `normalize_spec`.  `AzFloat/Compare.lean`: `partialCompare` (exponents, then limb-padded
+   significands), `eqIEEE`/`lt`/`le`/`gt`/`ge`; proven `partialCompare_eq` (comparison of the
+   values, `none` iff a `NaN` is involved).  Structural `=` keeps seeing the precision; no
+   `LT`/`LE` instances, since `NaN` makes the relations irreflexive.  `min`/`max` deferred to
+   the arithmetic milestone.  Tests `AzFloat/Tests/Precision.lean`.
 3. **Addition and subtraction** (MCA §3.1–§3.2 as supplied, plus first principles): exact
    sum of two finite values aligned by exponent, then one rounding; the far-apart case handled
    by a sticky bit without materializing the shift; special values by the IEEE rules spelled
@@ -94,3 +99,9 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `lift₂`, `liftE` (total `EReal → EReal` functions) with `roundVal_coe`, `roundVal_of_toVal`,
   `lift_coe`, and `neg_eq_lift` (`liftE (fun v => -v) x p mode = (-x, .eq)` at the float's
   precision; `EReal`'s own negation supplies `-(±∞) = ∓∞`, at the author's suggestion).
+* **2026-10-02 — milestone 2.**  `setPrecRound`/`setPrec`/`ulp?` and `partialCompare` with the
+  Boolean relations, each specified by a lift or by the values: `setPrecRound_eq_liftE`,
+  `partialCompare_eq`, `eqIEEE_iff`.  `normalize_spec` factors the carry normalization shared by
+  `ofAzRatRound` and `setPrecRound` (and by the coming arithmetic); `log_abs_finiteVal` turns
+  the exponent convention into `Int.log`.  The hand-computed test for `1/3` at `64` bits caught
+  a wrong expectation (the `63`-bit value) — the tests are doing their job.
