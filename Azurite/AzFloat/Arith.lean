@@ -217,6 +217,17 @@ def divPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
 
 instance : Div AzFloat := ⟨fun x y => (divPrecRound x y (combinedPrecision x y) .Nearest).1⟩
 
+/-- The rounding of the fraction `±num / den` to precision `p`, for any numerator and denominator
+(no reduction to lowest terms, hence no gcd): the quotient machinery of division applied to the
+raw integers.  `den = 0` is unspecified. -/
+def ofFractionRound (s : Bool) (num den : AzNat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  if p = 0 then (nan, .eq)
+  else if num = 0 then (zero, .eq)
+  else
+    divCores s (AzNat.ofNat num.size).toAzInt num num.size (AzNat.ofNat den.size).toAzInt den
+      den.size (compare (num.shiftLeft den.size) (den.shiftLeft num.size) != .lt) p mode
+
 /-! ### Square root
 
 MCA §3.5, Algorithm FPSqrt, extended to round-to-nearest (Exercise 3.14): for `x = n · 2^(e − q)`

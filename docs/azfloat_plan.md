@@ -208,3 +208,18 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `round intSet`, all five modes, including the even tiebreak) are reusable for any future
   irrational-valued operation computed through a floor and a midpoint test.  Proofs:
   `compareScaled_eq`, `scaled_floor`, `sqrtCore_eq`, `sqrtPrecRound_eq_liftVal`.
+* **2026-10-02 — fast shortest-decimal output.**  The author observed that printing a
+  10,000-bit square root took seconds under `#eval`.  Measured compiled (`az_float_to_string`):
+  the square root itself is 0.02 ms; the print was 39 ms, of which a round-trip probe's `toSci`
+  and `ofAzRat` were 0.04 and 0.03 ms but `SciNumber.toAzRat` was 9.5 ms — the gcd that reduces
+  the fraction `mantissa / 10^scale` to lowest terms dominated everything.  Two changes:
+  (1) `shortestDecimalPrecision` gallops down from the digit bound (`hi − 1, hi − 3, hi − 7, …`)
+  and bisects the last step (`searchLeastFromTop`, same three lemmas as `searchLeast`), since the
+  answer is almost always within a few digits of `⌈P·log₁₀ 2⌉ + 1`; (2) the probe rounds the
+  unreduced fraction directly with the division machinery (`ofFractionRound`, proven equal to
+  rounding the reduced rational by `ofFractionRound_eq` and `fst_ofFractionRound`, with
+  `SciNumber.value_eq_fraction`), so no gcd is computed.  `decimalRoundTrips_iff` keeps its old
+  statement, so `toDecimalString_spec` is unchanged.  Result (compiled, ms): 53 bits 0.115 →
+  0.004; 1,000 bits 3.6 → 0.018; 10,000 bits 39 → 0.37; 100,000 bits 722 → 20; the interpreted
+  `#eval` of the 10,000-bit print went from 3.8 s to 1.15 s (the rest is interpretation).  The
+  interval test considered earlier is not needed.

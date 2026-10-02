@@ -211,3 +211,12 @@ private def R (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat Ã
 #guard (R negOne 3) == (nan, .eq)
 #guard toString (sqrt (F "2" 53)) == "1.4142135623730951"
 #guard toString (sqrt (F "1/10" 53)) == "0.31622776601683794"
+
+/-! ## Rounding an unreduced fraction -/
+
+#guard (ofFractionRound true (AzNat.ofNat 2) (AzNat.ofNat 6) 53 .Nearest).1 == F "1/3" 53
+#guard (ofFractionRound false (AzNat.ofNat 10) (AzNat.ofNat 30) 2 .Nearest).1 == F "-1/3" 2
+#guard (ofFractionRound true (AzNat.ofNat 12) (AzNat.ofNat 4) 5 .Nearest) == (F "3" 5, .eq)
+#guard (ofFractionRound true (AzNat.ofNat 0) (AzNat.ofNat 4) 5 .Nearest) == (zero, .eq)
+#guard (ofFractionRound true (AzNat.ofNat 1) (AzNat.ofNat 10) 53 .Nearest).1 == F "1/10" 53
+#guard (ofFractionRound true (AzNat.ofNat 7) (AzNat.ofNat 5) 3 .Floor) == (F "5/4" 3, .lt)

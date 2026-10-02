@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Arith
 import Azurite.AzFloat.Conversion
 import Azurite.AzNat.OfLimbDigits
 import Azurite.AzRat.FromSci
@@ -26,8 +27,11 @@ not MPFR's or Malachite's rule (those print a digit count that depends on the pr
 
 The predicate "the `p`-digit rounding round-trips" is monotone in `p` (the nearest `p`-digit
 decimal is also a `(p+1)`-digit decimal), so `p` is found by a search: an upper bound from
-`p ≤ ⌈precision · log₁₀ 2⌉ + 2` (checked, and doubled if it ever failed), then a binary search
-below it (`searchLeast`).  Each probe is one `toSci` and one `ofAzRat`.
+`p ≤ ⌈precision · log₁₀ 2⌉ + 2` (checked, and doubled if it ever failed), then a search below
+it that gallops down from the bound and bisects the last step (`searchLeastFromTop`), since the
+answer is almost always within a few digits of the bound.  Each probe is one `toSci` and one
+rounding of the resulting fraction (`ofFractionRound`, on the unreduced numerator and
+denominator: building a reduced `AzRat` would cost a gcd that dominates everything else).
 
 Layout follows `toSci` with its defaults (exponent notation below `10^-6` or when the digits do
 not reach the point, lowercase `e`), with the float convention that the fractional part is never
@@ -45,6 +49,13 @@ def toAzRat (x : SciNumber) : AzRat :=
   let v := m * x.base.toAzRat.zpow (-x.scale)
   if x.negative then -v else v
 
+/-- The value of a `SciNumber`, `± n · base^(−scale)`, as a numerator and a denominator (natural
+numbers, not reduced: the round-trip test rounds this fraction directly, with no gcd). -/
+def fraction (x : SciNumber) : AzNat × AzNat :=
+  let m := AzNat.ofLimbDigits x.base x.digits.reverse
+  if x.scale < 0 then (m * x.base.toAzNat.pow (-x.scale).toNat, 1)
+  else (m, x.base.toAzNat.pow x.scale.toNat)
+
 end SciNumber
 
 namespace AzFloat
@@ -57,6 +68,18 @@ def searchLeast (pred : Nat → Bool) (lo hi : Nat) : Nat :=
     if pred mid then searchLeast pred lo mid else searchLeast pred (mid + 1) hi
   else hi
 termination_by hi - lo
+decreasing_by all_goals omega
+
+/-- The least `p ∈ [1, hi]` with `pred p = true`, assuming `pred hi = true` and that `pred` is
+monotone: gallop down from `hi`, probing `hi − 1, hi − 3, hi − 7, …` until the predicate fails,
+then bisect the last step with `searchLeast`.  The answer is usually within a few units of the
+top, so this takes two or three probes where a bisection of `[1, hi]` takes `log₂ hi`. -/
+def searchLeastFromTop (pred : Nat → Bool) (step hi : Nat) : Nat :=
+  if _h : step + 1 < hi then
+    if pred (hi - (step + 1)) then searchLeastFromTop pred (2 * step + 1) (hi - (step + 1))
+    else searchLeast pred (hi - step) hi
+  else searchLeast pred 1 hi
+termination_by hi
 decreasing_by all_goals omega
 
 /-- Double `p` until `pred p` holds (at most `fuel` times). -/
@@ -72,7 +95,9 @@ def decimalOptions (p : Nat) : SciOptions :=
 /-- Does rounding `q` (the value of `x`, of precision `P`) to `p` decimal digits round-trip? -/
 def decimalRoundTrips (x : AzFloat) (q : AzRat) (P p : Nat) : Bool :=
   match q.toSciNumber (decimalOptions p) with
-  | some sn => ofAzRat sn.toAzRat P == x
+  | some sn =>
+    let f := sn.fraction
+    (ofFractionRound (!sn.negative) f.1 f.2 P .Nearest).1 == x
   | none => false
 
 /-- The shortest round-tripping decimal precision of a finite nonzero float (`0` otherwise). -/
@@ -82,7 +107,7 @@ def shortestDecimalPrecision (x : AzFloat) : Nat :=
     let pred := decimalRoundTrips x q P
     -- `⌈P · log₁₀ 2⌉ + 2` digits always suffice; the doubling only guards the estimate
     let hi := expandUntil pred (P * 30103 / 100000 + 2) 64
-    searchLeast pred 1 hi
+    searchLeastFromTop pred 0 hi
   | _, _ => 0
 
 /-- Insert `".0"` when there is no point: after the digits, before an exponent marker. -/

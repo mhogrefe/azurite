@@ -1106,34 +1106,29 @@ theorem quotient_scale_bounds (N₁ N₂ : ℝ) (p₁ p₂ p : ℕ)
       apply mul_lt_mul_of_pos_left _ (zpow_pos (by norm_num) _)
       rw [div_lt_iff₀ ha]; exact hlt
 
-/-- `divCores` with the comparison flag from the aligned significands rounds the exact quotient. -/
-theorem divCores_eq (s : Bool) (e₁ : AzInt) {p₁ : ℕ} {m₁ : AzNat} (h₁ : FiniteValid p₁ m₁)
-    (e₂ : AzInt) {p₂ : ℕ} {m₂ : AzNat} (h₂ : FiniteValid p₂ m₂) (p : ℕ) [NeZero p]
-    (mode : RoundingMode) :
-    divCores s e₁ (coreSignificand p₁ m₁) p₁ e₂ (coreSignificand p₂ m₂) p₂
-        (compareMagnitude 0 m₁ 0 m₂ != .lt) p mode
+/-- `divCores` on any two nonzero integers of the stated sizes, given the comparison flag,
+rounds the exact quotient. -/
+theorem divCores_eq_gen (s : Bool) (e₁ : AzInt) (n₁ : AzNat) (p₁ : ℕ) (hn₁0 : n₁ ≠ 0)
+    (hs₁ : n₁.size = p₁) (e₂ : AzInt) (n₂ : AzNat) (p₂ : ℕ) (hn₂0 : n₂ ≠ 0) (hs₂ : n₂.size = p₂)
+    (hge : Bool)
+    (hcase : hge = true ↔
+      (n₂.toNat : ℝ) / (2 : ℝ) ^ (p₂ : ℤ) ≤ (n₁.toNat : ℝ) / (2 : ℝ) ^ (p₁ : ℤ))
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    divCores s e₁ n₁ p₁ e₂ n₂ p₂ hge p mode
       = roundVal p mode (some (((if s then 1 else -1) *
-          (finiteVal true e₁ (coreSignificand p₁ m₁) /
-            finiteVal true e₂ (coreSignificand p₂ m₂)) : ℝ) : EReal)) := by
+          (finiteVal true e₁ n₁ / finiteVal true e₂ n₂) : ℝ) : EReal)) := by
   have hp : 0 < p := Nat.pos_of_ne_zero (NeZero.ne p)
-  set n₁ := coreSignificand p₁ m₁ with hn₁
-  set n₂ := coreSignificand p₂ m₂ with hn₂
-  have hn₁0 : n₁ ≠ 0 := coreSignificand_ne_zero h₁
-  have hn₂0 : n₂ ≠ 0 := coreSignificand_ne_zero h₂
-  have hs₁ : n₁.size = p₁ := size_coreSignificand h₁
-  have hs₂ : n₂.size = p₂ := size_coreSignificand h₂
-  clear_value n₁ n₂
   have hb₁ : (2 : ℝ) ^ ((p₁ : ℤ) - 1) ≤ (n₁.toNat : ℝ) ∧ (n₁.toNat : ℝ) < (2 : ℝ) ^ (p₁ : ℤ) := by
     obtain ⟨hlo, hhi⟩ := toNat_bounds_of_ne_zero n₁ hn₁0
     rw [hs₁] at hlo hhi
-    have hp₁ : 0 < p₁ := h₁.pos
+    have hp₁ : 0 < p₁ := hs₁ ▸ size_pos_of_ne_zero hn₁0
     constructor
     · rw [show (p₁ : ℤ) - 1 = ((p₁ - 1 : ℕ) : ℤ) by omega, zpow_natCast]; exact_mod_cast hlo
     · rw [zpow_natCast]; exact_mod_cast hhi
   have hb₂ : (2 : ℝ) ^ ((p₂ : ℤ) - 1) ≤ (n₂.toNat : ℝ) ∧ (n₂.toNat : ℝ) < (2 : ℝ) ^ (p₂ : ℤ) := by
     obtain ⟨hlo, hhi⟩ := toNat_bounds_of_ne_zero n₂ hn₂0
     rw [hs₂] at hlo hhi
-    have hp₂ : 0 < p₂ := h₂.pos
+    have hp₂ : 0 < p₂ := hs₂ ▸ size_pos_of_ne_zero hn₂0
     constructor
     · rw [show (p₂ : ℤ) - 1 = ((p₂ - 1 : ℕ) : ℤ) by omega, zpow_natCast]; exact_mod_cast hlo
     · rw [zpow_natCast]; exact_mod_cast hhi
@@ -1142,14 +1137,6 @@ theorem divCores_eq (s : Bool) (e₁ : AzInt) {p₁ : ℕ} {m₁ : AzNat} (h₁ 
   clear_value N₁ N₂
   have hN₁pos : 0 < N₁ := lt_of_lt_of_le (zpow_pos (by norm_num) _) hb₁.1
   have hN₂pos : 0 < N₂ := lt_of_lt_of_le (zpow_pos (by norm_num) _) hb₂.1
-  -- the comparison flag
-  set hge := (compareMagnitude 0 m₁ 0 m₂ != .lt) with hge_def
-  have hcase : hge = true ↔ N₂ / (2 : ℝ) ^ (p₂ : ℤ) ≤ N₁ / (2 : ℝ) ^ (p₁ : ℤ) := by
-    rw [hge_def, bne_iff_ne, compareMagnitude_eq 0 h₁ 0 h₂, finiteVal_eq_core true 0 h₁,
-      finiteVal_eq_core true 0 h₂, ← hn₁, ← hn₂, finiteVal_true_eq, finiteVal_true_eq, hs₁, hs₂,
-      Ne, compare_lt_iff_lt, not_lt, show (0 : AzInt).toInt = 0 from rfl, zero_sub, zero_sub,
-      zpow_neg, zpow_neg, ← div_eq_mul_inv, ← div_eq_mul_inv, ← hN₁, ← hN₂]
-  clear_value hge
   -- unfold
   unfold divCores
   simp only []
@@ -1284,6 +1271,66 @@ theorem divCores_eq (s : Bool) (e₁ : AzInt) {p₁ : ℕ} {m₁ : AzNat} (h₁ 
     rw [(roundVal_coe p mode v).2, hround, compare_coe_coe, hqo,
       AzInt.snd_divRound _ _ _ hB0, ← hqo, ← hyq]
     conv_rhs => rw [← compare_mul_right_pos _ _ _ h2w, div_mul_cancel₀ _ h2w.ne']
+
+
+/-- `divCores` with the comparison flag from the aligned significands rounds the exact quotient. -/
+theorem divCores_eq (s : Bool) (e₁ : AzInt) {p₁ : ℕ} {m₁ : AzNat} (h₁ : FiniteValid p₁ m₁)
+    (e₂ : AzInt) {p₂ : ℕ} {m₂ : AzNat} (h₂ : FiniteValid p₂ m₂) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    divCores s e₁ (coreSignificand p₁ m₁) p₁ e₂ (coreSignificand p₂ m₂) p₂
+        (compareMagnitude 0 m₁ 0 m₂ != .lt) p mode
+      = roundVal p mode (some (((if s then 1 else -1) *
+          (finiteVal true e₁ (coreSignificand p₁ m₁) /
+            finiteVal true e₂ (coreSignificand p₂ m₂)) : ℝ) : EReal)) := by
+  apply divCores_eq_gen s e₁ _ p₁ (coreSignificand_ne_zero h₁) (size_coreSignificand h₁) e₂ _ p₂
+    (coreSignificand_ne_zero h₂) (size_coreSignificand h₂)
+  rw [bne_iff_ne, compareMagnitude_eq 0 h₁ 0 h₂, finiteVal_eq_core true 0 h₁,
+    finiteVal_eq_core true 0 h₂, finiteVal_true_eq, finiteVal_true_eq, size_coreSignificand h₁,
+    size_coreSignificand h₂, Ne, compare_lt_iff_lt, not_lt, show (0 : AzInt).toInt = 0 from rfl,
+    zero_sub, zero_sub, zpow_neg, zpow_neg, ← div_eq_mul_inv, ← div_eq_mul_inv]
+
+/-- `ofFractionRound` rounds the exact fraction. -/
+theorem ofFractionRound_eq (s : Bool) (num den : AzNat) (hden : den ≠ 0) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    ofFractionRound s num den p mode
+      = roundVal p mode (some (((if s then 1 else -1) *
+          ((num.toNat : ℝ) / (den.toNat : ℝ)) : ℝ) : EReal)) := by
+  have hp : 0 < p := Nat.pos_of_ne_zero (NeZero.ne p)
+  unfold ofFractionRound
+  rw [ite_eq_right hp.ne']
+  by_cases h0 : num = 0
+  · rw [ite_eq_left h0, h0]
+    simp only [AzNat.toNat_zero, Nat.cast_zero, zero_div, mul_zero, EReal.coe_zero]
+    exact (roundVal_zero p mode).symm
+  · rw [ite_eq_right h0]
+    have ha : (0 : ℝ) < (2 : ℝ) ^ (num.size : ℤ) := zpow_pos (by norm_num) _
+    have hb : (0 : ℝ) < (2 : ℝ) ^ (den.size : ℤ) := zpow_pos (by norm_num) _
+    have hcase : (compare (num.shiftLeft den.size) (den.shiftLeft num.size) != .lt) = true ↔
+        (den.toNat : ℝ) / (2 : ℝ) ^ (den.size : ℤ)
+          ≤ (num.toNat : ℝ) / (2 : ℝ) ^ (num.size : ℤ) := by
+      rw [bne_iff_ne,
+        show compare (num.shiftLeft den.size) (den.shiftLeft num.size)
+          = AzNat.compare (num.shiftLeft den.size) (den.shiftLeft num.size) from rfl,
+        AzNat.compare_eq_compare_toNat, ← compare_natCast, AzNat.toNat_shiftLeft,
+        AzNat.toNat_shiftLeft, Ne, compare_lt_iff_lt, not_lt, div_le_div_iff₀ hb ha]
+      push_cast
+      simp only [zpow_natCast]
+    rw [divCores_eq_gen s _ num num.size h0 rfl _ den den.size hden rfl _ hcase p mode,
+      finiteVal_true_eq, finiteVal_true_eq, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat,
+      AzNat.toNat_ofNat, sub_self, sub_self, zpow_zero, mul_one, mul_one]
+
+/-- Rounding a fraction agrees with rounding the rational it represents. -/
+theorem fst_ofFractionRound (s : Bool) (num den : AzNat) (hden : den ≠ 0) (p : ℕ)
+    (mode : RoundingMode) (q : AzRat)
+    (hq : (AzRat.toRat q : ℝ) = (if s then 1 else -1) * ((num.toNat : ℝ) / (den.toNat : ℝ))) :
+    (ofFractionRound s num den p mode).1 = (ofAzRatRound q p mode).1 := by
+  by_cases hp : p = 0
+  · subst hp
+    unfold ofFractionRound ofAzRatRound
+    rw [ite_eq_left rfl, ite_eq_left rfl]
+  · have : NeZero p := ⟨hp⟩
+    rw [ofFractionRound_eq s num den hden p mode, fst_roundVal, ofVal_some,
+      ofAzRatRound_eq_ofEReal, hq]
 
 /-- Division is the float lift of `Spec.div`. -/
 theorem divPrecRound_eq_liftVal₂ (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :

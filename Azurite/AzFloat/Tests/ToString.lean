@@ -52,6 +52,14 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard shortestDecimalPrecision (F "1/10" 53) == 1
 #guard shortestDecimalPrecision one == 1
 #guard shortestDecimalPrecision (F "1/3" 10) == 4
+
+-- the galloping search: least `p ∈ [1, hi]` with `pred p`, for thresholds near and far from the top
+#guard searchLeastFromTop (fun p => decide (5 ≤ p)) 0 100 == 5
+#guard searchLeastFromTop (fun p => decide (99 ≤ p)) 0 100 == 99
+#guard searchLeastFromTop (fun p => decide (100 ≤ p)) 0 100 == 100
+#guard searchLeastFromTop (fun p => decide (1 ≤ p)) 0 100 == 1
+#guard searchLeastFromTop (fun p => decide (1 ≤ p)) 0 1 == 1
+#guard searchLeastFromTop (fun p => decide (37 ≤ p)) 0 3000 == 37
 #guard toDecimalAt (F "1/3" 53) 3 == some "0.333"
 #guard toDecimalAt (F "1/3" 53) 20 == some "0.33333333333333331483"
 #guard toDecimalAt one 3 == some "1.0"
