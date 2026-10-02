@@ -19,7 +19,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -- via `lake test`.
 
 import Azurite.AzFloat.Tests.Basic
+import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.Precision
+import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.Conversion
 import Azurite.AzNat.Tests.Div
 import Azurite.AzNat.Tests.DivRound

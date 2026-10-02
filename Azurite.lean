@@ -45,11 +45,15 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion
+import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzFloat.Equiv.Shift
+import Azurite.AzFloat.Equiv.ToString
+import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.Shift
+import Azurite.AzFloat.ToString
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula

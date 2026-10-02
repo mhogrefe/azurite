@@ -649,7 +649,7 @@ theorem toSciExact_iff (q : AzRat) (o : SciOptions) :
 /-! ### Well-formedness of the digits -/
 
 /-- Every digit produced by `limbDigits` (reversed) is below the base. -/
-private lemma digits_rev_lt_base (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
+lemma digits_rev_lt_base (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
     ∀ d ∈ (n.limbDigits b).reverse, d.toNat < b.toNat := by
   intro d hd
   rw [Array.mem_def, Array.toList_reverse, List.mem_reverse] at hd
@@ -658,7 +658,7 @@ private lemma digits_rev_lt_base (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
   exact Nat.digits_lt_base hb this
 
 /-- The leading digit of a nonzero number is nonzero. -/
-private lemma digits_rev_head_ne_zero (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) (hn : n ≠ 0)
+lemma digits_rev_head_ne_zero (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) (hn : n ≠ 0)
     (h : 0 < (n.limbDigits b).reverse.size) : ((n.limbDigits b).reverse)[0]'h ≠ 0 := by
   have hnN : n.toNat ≠ 0 := fun hz => hn (AzNat.toNat_injective (by rw [hz]; rfl))
   have hlen : (n.limbDigits b).toList.length = (n.limbDigits b).size := Array.length_toList

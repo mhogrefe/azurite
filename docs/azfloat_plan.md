@@ -65,6 +65,14 @@ Status: started 2026-10-01; see the status log at the end.
 4. **Multiplication, squaring, division, square root** (MCA §3.3–§3.5 as supplied): one exact
    integer product or quotient of the significands, then one rounding; `Spec.mul`, `Spec.div`,
    `Spec.sqrt`.
+4b. **Hexadecimal debug format (done).**  `AzFloat/HexString.lean`: `toHexString`/`ofHexString`,
+   the author's Malachite `{:#x}` of a `ComparableFloat` (`0x0.8#5`); proven
+   `ofHexString_toHexString : ofHexString (toHexString x) = some x` for every float.
+4c. **Decimal output (done).**  `AzFloat/ToString.lean`: `toDecimalString`, the shortest
+   round-tripping decimal (smallest `p` whose nearest `p`-digit decimal converts back to the
+   float at its precision; exponential-then-binary search), with `toDecimalAt`; proofs of the
+   search and of the rendering's value in `Equiv/ToString.lean`.  The bound
+   `⌈P·log₁₀ 2⌉ + 2` is checked at run time, not formalized.
 5. **Conversions and text.**  `ofFloat64`/`toFloat64` (Lean's `Float`), `toSci` for floats via
    `AzRat` (`Sci/`), parsing, `toString`/`Repr` (a decimal rendering with enough digits to round
    trip, plus a hexadecimal rendering with `#precision`).
@@ -111,3 +119,20 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
 * **2026-10-02 — shifts.**  `shiftLeft x k`/`shiftRight x k` (`k : AzInt`, `<<<`/`>>>` also with a
   `Nat`): exponent arithmetic only.  `toVal_shiftLeft : (x <<< k).toVal = x.toVal.map (· * 2^k)`
   (`EReal.top_mul_of_pos` handles the infinities) and `shiftLeft_eq_liftE`.
+* **2026-10-02 — hexadecimal debug format.**  Writer: `E = ⌊(e−1)/4⌋`, leading digit holds
+  `m' = ((e−1) mod 4) + 1` bits, `D = ⌈(p − m')/4⌉ + 1` digits of `N = core · 2^(4(D−1)+m'−p)`;
+  scientific layout iff `E ≤ −6 ∨ E ≥ D`, never an empty fractional part, `#p` suffix; the
+  layout rules were checked against an independent Python model and Malachite's own vectors.
+  Reader: strict grammar (`NaN`, `±Infinity`, `0x0.0`, or `-?0x<digits>[E±d]#p`), rebuilding
+  `mkFinite sign (|N| + 4(E − k)) p (N >>> (|N| − p))` and rejecting inexact or zero-with-precision
+  inputs.  Proof `ofHexChars_toHexChars`: a shape lemma for the reader (`ofHexChars_shape`),
+  digit-string lemmas via `AzRat.parseMagnitude_eq`, and per layout the rebuilt exponent equals
+  `e` (`omega` over `4E + m' = e`).  No `i64` hypotheses: the exponent digits are parsed as an
+  `AzNat`.
+* **2026-10-02 — decimal output.**  Author's rule (as clarified: the literal Floor/Ceiling
+  agreement would be exactness): the smallest `p` such that the nearest `p`-digit decimal of the
+  exact value converts back to the float at its precision.  The predicate is monotone, so `p` is
+  found by `searchLeast` below `⌈P·log₁₀ 2⌉ + 2` (doubled if the estimate ever failed).  Output
+  layout is `toSci`'s with the `.0` convention: `1.0`, `0.5`, `1.0e6`, `8.0e-6`,
+  `0.3333333333333333`.  Proven: `SciNumber.toRat_toAzRat`, the search lemmas, and
+  `toDecimalString_spec`; the digit bound itself is checked at run time.
