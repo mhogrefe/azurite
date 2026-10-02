@@ -58,10 +58,19 @@ Status: started 2026-10-01; see the status log at the end.
 2b. **Shifts (done).**  `AzFloat/Shift.lean`: `shiftLeft`/`shiftRight` by an `AzInt` (and `Nat`)
    move the exponent only — exact with an unbounded exponent; proven `toVal_shiftLeft` and
    `shiftLeft_eq_liftE`.
-3. **Addition and subtraction** (MCA §3.1–§3.2 as supplied, plus first principles): exact
-   sum of two finite values aligned by exponent, then one rounding; the far-apart case handled
-   by a sticky bit without materializing the shift; special values by the IEEE rules spelled
-   out in a specification function `Spec.add : Option EReal → Option EReal → Option EReal`.
+3. **Addition and subtraction (done)** (MCA §3.2.1 Algorithm FPadd and §3.2.2 as supplied,
+   reorganized).  `AzFloat/Arith.lean`: one primitive `roundScaled s S w p mode` rounds the exact
+   `±S · 2^w` once (no round/sticky/round2 bookkeeping, no double rounding).  With `B` the larger
+   magnitude, `T = max(p_B, p)` and gap `G = e_B − e_C`: in the **near** case (`G ≤ T + 1`) the sum
+   or difference is formed exactly on the common scale `min(ulp B, ulp C)` and rounded, which
+   also covers cancellation (the exact difference is short; Sterbenz comes for free); in the
+   **far** case (`G ≥ T + 2`) `C < 2^(e_B − T − 2)`, so `B ± C` lies in an open cell of width
+   `2^(e_B − T − 2)` containing no precision-`p` grid point or midpoint (even below a power of
+   two), and the representative `8 B ± 2^(e_B − T − 3)` rounds the same way.  `addPrecRound`,
+   `subPrecRound` (`x + (−y)`), `Add`/`Sub` instances at the larger operand precision.  Proven
+   (`Equiv/Arith.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
+   x y p mode` and `subPrecRound_eq_liftVal₂`, where `Spec.add a b` is `EReal` addition with
+   `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Arith.lean`.
 4. **Multiplication, squaring, division, square root** (MCA §3.3–§3.5 as supplied): one exact
    integer product or quotient of the significands, then one rounding; `Spec.mul`, `Spec.div`,
    `Spec.sqrt`.
@@ -136,3 +145,13 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   layout is `toSci`'s with the `.0` convention: `1.0`, `0.5`, `1.0e6`, `8.0e-6`,
   `0.3333333333333333`.  Proven: `SciNumber.toRat_toAzRat`, the search lemmas, and
   `toDecimalString_spec`; the digit bound itself is checked at run time.
+* **2026-10-02 — addition and subtraction.**  Source: the author's reformatted MCA §3.2.1
+  (Algorithm FPadd, Table 3.2, Theorem 3.3) and §3.2.2 (cancellation, Sterbenz).  FPadd's
+  round/sticky bits and `round2` were replaced by a single exact rounding `roundScaled` of
+  `±S · 2^w`, with the near/far split at `G = T + 2` justified by the cell argument above; the
+  near case is exact integer arithmetic on a common scale.  Proofs: `roundScaled_eq_roundVal`
+  (via `normalize_spec`), `toInt_round_intSet_congr`/`roundVal_congr_cell` (two reals in the same
+  open half-cell round identically in every mode, with equal tags), `roundVal_far`,
+  `addMagnitudes_eq`/`subMagnitudes_eq`, `addPrecRound_eq_liftVal₂`, `subPrecRound_eq_liftVal₂`.
+  Test expectations were computed by hand (e.g. `1 + 2^−100` at 53 bits rounds to `1` with tag
+  `.lt`, Floor gives `0x0.fffffffffffff8#53` for the difference).

@@ -174,22 +174,6 @@ theorem splitHexExponent_append (pre : List Char) (sgn : Char) (hs : AzRat.isSig
   simp only [List.getLast?_concat, show AzRat.isExpChar 'E' = true from by decide, ↓reduceIte,
     parseMagnitude_decDigits n hn, Option.map_some, List.dropLast_concat]
 
-/-- `AzInt` helpers. -/
-theorem AzInt.sign_eq_true_iff (z : AzInt) : z.sign = true ↔ 0 ≤ z.toInt := by
-  unfold AzInt.toInt
-  cases hz : z.sign
-  · simp only [Bool.false_eq_true, ↓reduceIte, false_iff, not_le, Left.neg_neg_iff, Nat.cast_pos]
-    have : z.abs ≠ 0 := fun h => by have := z.zero_sign h; rw [hz] at this; cases this
-    exact Nat.pos_of_ne_zero (toNat_ne_zero_of_ne_zero this)
-  · simp
-
-theorem AzInt.mkNorm_sign_abs (z : AzInt) (h : z.abs ≠ 0) : AzInt.mkNorm z.sign z.abs = z := by
-  unfold AzInt.mkNorm
-  rw [dite_eq_right h]
-
-theorem AzInt.abs_toNat_eq (z : AzInt) : (z.abs.toNat : ℤ) = |z.toInt| := by
-  unfold AzInt.toInt; cases z.sign <;> simp
-
 /-- The reader on a string of the writer's shape. -/
 theorem ofHexChars_shape (neg : Bool) (pre post expPart : List Char) (E : AzInt) (p : ℕ)
     (hp : 0 < p)
