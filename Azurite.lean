@@ -39,6 +39,11 @@ import Azurite.AzFermat.Basic
 import Azurite.AzFermat.Equiv.Basic
 import Azurite.AzFermat.Equiv.FFT
 import Azurite.AzFermat.FFT
+import Azurite.AzFloat.Basic
+import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Equiv.Basic
+import Azurite.AzFloat.Equiv.Conversion
+import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula

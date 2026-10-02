@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.Rounding.Sci
+import Azurite.Rounding.Symmetric
 import Mathlib.Algebra.Order.Floor.Semiring
 import Mathlib.Data.Int.Log
 
@@ -331,10 +332,19 @@ lemma isLeast_precision (x : ℝ) (hx : x ≠ 0) :
     exact h'
   · exact isLeast_precision_pos x hpos
 
-/-- The tiebreak: the integer tiebreak on the coordinates at the local scale (the scale of
-the candidate closer to `0`). -/
+/-- The tiebreak: on the coordinates of the candidates' magnitudes at the local scale (the
+scale of the candidate nearer `0`), the one with the even coordinate wins; equal parities fall
+back to the candidate nearer `0`, then to the first.  Stated through absolute values so that it
+commutes with negation (`precisionSymmetricRoundingTarget`); on a genuine tie the two
+coordinates are consecutive integers and only the parity rule matters. -/
 noncomputable def precTiebreak (a c : ↥(precisionSet b p)) : ↥(precisionSet b p) :=
-  if Even ⌊precToReal a / precScale b p (min |precToReal a| |precToReal c|)⌋ then a else c
+  if Even ⌊|precToReal a| / precScale b p (min |precToReal a| |precToReal c|)⌋ ∧
+      ¬ Even ⌊|precToReal c| / precScale b p (min |precToReal a| |precToReal c|)⌋ then a
+  else if Even ⌊|precToReal c| / precScale b p (min |precToReal a| |precToReal c|)⌋ ∧
+      ¬ Even ⌊|precToReal a| / precScale b p (min |precToReal a| |precToReal c|)⌋ then c
+  else if |precToReal a| < |precToReal c| then a
+  else if |precToReal c| < |precToReal a| then c
+  else a
 
 noncomputable instance precisionRoundingTarget : RoundingTarget (precisionSet b p) where
   existsLeastGE x := by
@@ -354,9 +364,53 @@ noncomputable instance precisionRoundingTarget : RoundingTarget (precisionSet b 
   tiebreak := precTiebreak
   tiebreak_mem a c := by
     unfold precTiebreak
-    split_ifs
-    · exact Or.inl rfl
-    · exact Or.inr rfl
+    split_ifs <;> first | exact Or.inl rfl | exact Or.inr rfl
+
+omit [Fact (1 < b)] [NeZero p] in
+lemma precToReal_neg (a : ↥(precisionSet b p)) :
+    precToReal (⟨-a.val, precisionSet_neg_mem a.property⟩ : ↥(precisionSet b p))
+      = -precToReal a :=
+  precToReal_eq_of_val (by rw [EReal.coe_neg, precToReal_spec])
+
+/-- `precisionSet b p` is symmetric: it contains `0`, is closed under negation, and its tiebreak
+commutes with negation (it only looks at magnitudes, apart from the final fallback to the
+first candidate, which the side condition `a ≠ -c` makes harmless). -/
+noncomputable instance precisionSymmetricRoundingTarget :
+    SymmetricRoundingTarget (precisionSet b p) where
+  zero_mem := Or.inl rfl
+  neg_mem := precisionSet_neg_mem
+  tiebreak_neg a c hne := by
+    show (precTiebreak ⟨-a.val, precisionSet_neg_mem a.property⟩
+        ⟨-c.val, precisionSet_neg_mem c.property⟩).val = -(precTiebreak c a).val
+    have hAC : precToReal a ≠ -precToReal c := by
+      intro h
+      apply hne
+      rw [← precToReal_spec a, ← precToReal_spec c, h, EReal.coe_neg]
+    unfold precTiebreak
+    simp only [precToReal_neg, abs_neg]
+    rw [min_comm |precToReal c| |precToReal a|]
+    set A := precToReal a with hA
+    set C := precToReal c with hC
+    set u := precScale b p (min |A| |C|) with hu
+    by_cases h1 : Even ⌊|A| / u⌋ ∧ ¬ Even ⌊|C| / u⌋
+    · have h2 : ¬ (Even ⌊|C| / u⌋ ∧ ¬ Even ⌊|A| / u⌋) := fun h => h.2 h1.1
+      simp only [ite_eq_left h1, ite_eq_right h2]
+    · by_cases h3 : Even ⌊|C| / u⌋ ∧ ¬ Even ⌊|A| / u⌋
+      · simp only [ite_eq_right h1, ite_eq_left h3]
+      · simp only [ite_eq_right h1, ite_eq_right h3]
+        by_cases hlt : |A| < |C|
+        · have hgt : ¬ |C| < |A| := fun h => absurd (h.trans hlt) (lt_irrefl _)
+          simp only [ite_eq_left hlt, ite_eq_right hgt]
+        · by_cases hgt : |C| < |A|
+          · simp only [ite_eq_right hlt, ite_eq_left hgt]
+          · simp only [ite_eq_right hlt, ite_eq_right hgt]
+            have heq : |A| = |C| := le_antisymm (not_lt.mp hgt) (not_lt.mp hlt)
+            have hAC' : A = C := by
+              rcases abs_eq_abs.mp heq with h | h
+              · exact h
+              · exact absurd h hAC
+            show (-a.val : EReal) = -c.val
+            rw [← precToReal_spec a, ← precToReal_spec c, ← hA, ← hC, hAC']
 
 /-- The floor of `x ≠ 0` in `precisionSet b p`. -/
 lemma val_roundFloor_precision (x : ℝ) (hx : x ≠ 0) :
@@ -564,10 +618,29 @@ theorem val_round_precisionSet (mode : RoundingMode) (x : ℝ) (hx : x ≠ 0) :
       simp only [hFr, hCr]
       have hscale := precScale_min_floor_ceil (b := b) (p := p) x hx
       rw [← hu_def, ← hy] at hscale
-      rw [hscale, mul_div_cancel_right₀ _ hu.ne', Int.floor_intCast]
-      split_ifs with heven
-      · exact hF
-      · exact hC
+      have habs : ∀ n : ℤ, Even |n| ↔ Even n := fun n => by
+        rw [Int.abs_eq_natAbs, Int.even_coe_nat, Int.natAbs_even]
+      rw [hscale, abs_mul, abs_mul, abs_of_pos hu, mul_div_cancel_right₀ _ hu.ne',
+        mul_div_cancel_right₀ _ hu.ne', ← Int.cast_abs, ← Int.cast_abs, Int.floor_intCast,
+        Int.floor_intCast]
+      simp only [habs]
+      have h1 := Int.floor_le_ceil y
+      have h2 := Int.ceil_le_floor_add_one y
+      rcases (show ⌈y⌉ = ⌊y⌋ ∨ ⌈y⌉ = ⌊y⌋ + 1 by omega) with heq | heq
+      · rw [heq]
+        simp only [and_not_self, ↓reduceIte, lt_self_iff_false]
+        rw [heq] at hC
+        rw [hF]
+        split_ifs <;> rfl
+      · rw [heq]
+        by_cases hn : Even ⌊y⌋
+        · have hn1 : ¬ Even (⌊y⌋ + 1) := Int.not_even_iff_odd.mpr (hn.add_one)
+          simp only [hn, hn1, not_false_eq_true, and_self, ↓reduceIte]
+          exact hF
+        · have hn1 : Even (⌊y⌋ + 1) := Int.even_add_one.mpr hn
+          simp only [hn, hn1, not_true_eq_false, ↓reduceIte, not_false_eq_true, and_self]
+          rw [← heq]
+          exact hC
     · simp only []; rw [hC, hCi]
 
 end

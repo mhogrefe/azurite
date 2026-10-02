@@ -200,7 +200,7 @@ private lemma toInt_eq_zero_of_abs {r : AzInt} (h : r.abs = 0) : r.toInt = 0 := 
   cases r.sign <;> simp
 
 /-- `toRat q = 0` iff the numerator is zero. -/
-private lemma toRat_eq_zero_iff (q : AzRat) : (toRat q : ℝ) = 0 ↔ q.num = 0 := by
+lemma toRat_eq_zero_iff (q : AzRat) : (toRat q : ℝ) = 0 ↔ q.num = 0 := by
   rw [Rat.cast_eq_zero, Rat.zero_iff_num_zero]
   have hnum : (toRat q).num = if q.sign then (q.num.toNat : ℤ) else -(q.num.toNat : ℤ) := rfl
   rw [hnum]
@@ -373,7 +373,7 @@ lemma toInt_round_intSet_eq_floor_or_ceil (mode : RoundingMode) (y : ℝ) :
       · rw [h]; exact Or.inr hC
 
 /-- `|⌊y⌋| ≤ B` and `|⌈y⌉| ≤ B` when `|y| < B` for an integer `B`. -/
-private lemma floor_ceil_abs_le (y : ℝ) (B : ℤ) (hy : |y| < (B : ℝ)) :
+lemma floor_ceil_abs_le (y : ℝ) (B : ℤ) (hy : |y| < (B : ℝ)) :
     |⌊y⌋| ≤ B ∧ |⌈y⌉| ≤ B := by
   rw [abs_lt] at hy
   constructor

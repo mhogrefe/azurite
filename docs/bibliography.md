@@ -10,8 +10,9 @@ Azurite is released under the Apache License 2.0, and its code is written from t
 published descriptions cited below, not derived from existing implementations. In
 particular, no code is derived from GMP or from other copyleft-licensed libraries, and
 the only material taken from Malachite is the author's own original Malachite code
-(the `RationalSequence` and exhaustive-generation designs, and `Rational::to_sci` and
-`Rational::from_sci_string` with their options and test vectors); the parts of Malachite that
+(the `RationalSequence` and exhaustive-generation designs, `Rational::to_sci` and
+`Rational::from_sci_string` with their options and test vectors, and the *representation* of
+`Float` — not its algorithms — as the template for `AzFloat`); the parts of Malachite that
 are themselves derived from GMP or FLINT are not used. Algorithms such as Karatsuba and
 Toom–Cook multiplication, divide-and-conquer division, division by invariant integers
 and binary GCD are implemented from the papers and textbooks listed here. Nor is the
@@ -60,7 +61,9 @@ directories follow these sources statement by statement.
   University Press, 2010. — `AzNat/`: binary GCD (Algorithm 1.18), Toom–Cook
   multiplication (§1.3), divide-and-conquer division, integer roots (§1.5);
   `BrentZimmermann/Chapter2`: the discrete Fourier transform over a ring (§2.3.1),
-  toward the Schönhage–Strassen multiplication (§2.3.3).
+  toward the Schönhage–Strassen multiplication (§2.3.3); `AzFloat/`: Chapter 3
+  (floating-point arithmetic) is the designated source for the arithmetic, as the arc
+  proceeds (`docs/azfloat_plan.md`).
 - Niels Möller, Torbjörn Granlund. Improved division by invariant integers. *IEEE
   Transactions on Computers* 60 (2011), no. 2, 165–175. — `UInt64/Reciprocal.lean`,
   `UInt64/Div2By1.lean`, `UInt64/Div3By2.lean`, `AzNat/Div/Schoolbook.lean`
