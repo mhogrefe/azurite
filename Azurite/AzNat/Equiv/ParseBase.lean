@@ -594,7 +594,7 @@ private theorem parseDigitsInto_foldl_charValid (b : UInt64) :
          some ({ toList := arr0.toList ++ ((AzNat.charToDigit c).getD 0 :: _) } : Array UInt64)
     rw [hd_eq]; simp
 
-private theorem parseDigitsInto_eq_charToDigit (b : UInt64) (cs : List Char)
+theorem parseDigitsInto_eq_charToDigit (b : UInt64) (cs : List Char)
     (h_valid : ∀ c ∈ cs, ∃ d, AzNat.charToDigit c = some d ∧ d < b) :
     AzNat.parseDigitsInto b cs =
       some ⟨cs.map fun c => (AzNat.charToDigit c).getD 0⟩ := by

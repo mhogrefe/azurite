@@ -32,5 +32,6 @@ import Azurite.AzNat.Tests.SchonhageStrassen
 import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook
 import Azurite.AzNat.Tests.TrailingZeros
+import Azurite.AzRat.Tests.FromSci
 import Azurite.AzRat.Tests.ToSci
 import Azurite.Sci.Tests.Number

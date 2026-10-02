@@ -143,7 +143,7 @@ theorem snd_scaledRound (q : AzRat) (b : UInt64) (hb : 0 < b.toNat) (scale : ℤ
 /-! ### Digits -/
 
 /-- Horner over a most-significant-first list is `Nat.ofDigits` of its reverse. -/
-private lemma foldl_horner_eq_ofDigits (b : ℕ) (l : List ℕ) :
+lemma foldl_horner_eq_ofDigits (b : ℕ) (l : List ℕ) :
     l.foldl (fun acc d => acc * b + d) 0 = Nat.ofDigits b l.reverse := by
   induction l using List.reverseRecOn with
   | nil => simp
@@ -518,5 +518,233 @@ theorem toSciNumber_value_precision (q : AzRat) (o : SciOptions) (hv : o.valid =
         rw [value_of_azint o.base hb2]
         congr 3
         rw [hsc]; ring
+
+
+/-! ### Exactness -/
+
+/-- A positive precision is part of validity. -/
+lemma valid_precision {o : SciOptions} (hv : o.valid = true) {p : ℕ} (hp : o.size = .precision p) :
+    0 < p := by
+  unfold SciOptions.valid at hv
+  simp only [Bool.and_eq_true] at hv
+  have h := hv.2
+  rw [hp] at h
+  unfold SciSizeOptions.valid at h
+  simp only [bne_iff_ne, ne_eq] at h
+  omega
+
+/-- Away from `complete`, the value produced is the rounded integer times `b^(−scale)`. -/
+theorem toSciNumber_value_eq_scaledRound (q : AzRat) (o : SciOptions) (hv : o.valid = true)
+    (h0 : q.num ≠ 0) (scale prec : ℤ)
+    (hsz : sizeScale o.base q o.size (floorLogBaseAbs o.base q) = some (scale, prec))
+    (hc : o.size ≠ .complete) :
+    ∃ x, q.toSciNumber o = some x ∧
+      (x.value : ℝ) = ((scaledRound q o.base scale o.mode).1.toInt : ℝ)
+        * (o.base.toNat : ℝ) ^ (-scale) := by
+  obtain ⟨hb2, _⟩ := valid_base hv
+  have hb0 : 0 < o.base.toNat := by omega
+  have hbR0 : (0 : ℝ) < o.base.toNat := by exact_mod_cast hb0
+  have hx : (toRat q : ℝ) ≠ 0 := fun h => h0 ((toRat_eq_zero_iff q).mp h)
+  rcases hsize : o.size with _ | p | s
+  · exact absurd hsize hc
+  · -- precision
+    rw [hsize] at hsz
+    simp only [sizeScale, Option.some.injEq, Prod.mk.injEq] at hsz
+    obtain ⟨hscale, -⟩ := hsz
+    have : Fact (1 < o.base.toNat) := ⟨hb2⟩
+    have : NeZero p := ⟨(valid_precision hv hsize).ne'⟩
+    obtain ⟨x, hx_eq, hval⟩ := toSciNumber_value_precision q o hv p hsize
+    refine ⟨x, hx_eq, ?_⟩
+    rw [val_round_precisionSet o.mode _ hx] at hval
+    set e := Int.log o.base.toNat |(toRat q : ℝ)| with he
+    have hlog : floorLogBaseAbs o.base q = e := floorLogBaseAbs_eq o.base hb2 q h0
+    have hu_eq : precScale o.base.toNat p (toRat q : ℝ) = (o.base.toNat : ℝ) ^ (-scale) := by
+      unfold precScale; rw [← he, ← hscale, hlog]; congr 1; ring
+    have hpow : (o.base.toNat : ℝ) ^ scale = (precScale o.base.toNat p (toRat q : ℝ))⁻¹ := by
+      rw [hu_eq, ← zpow_neg, neg_neg]
+    have hr := toInt_scaledRound q o.base hb0 scale o.mode
+    rw [hpow, ← div_eq_mul_inv] at hr
+    have hrI := toInt_eq_of_val hr
+    rw [hrI, hu_eq] at hval
+    exact EReal.coe_eq_coe_iff.mp hval
+  · -- scale
+    rw [hsize] at hsz
+    simp only [sizeScale, Option.some.injEq, Prod.mk.injEq] at hsz
+    obtain ⟨hscale, -⟩ := hsz
+    have : NeZero o.base.toNat := ⟨hb0.ne'⟩
+    obtain ⟨x, hx_eq, hval⟩ := toSciNumber_value_scale q o hv s hsize
+    refine ⟨x, hx_eq, ?_⟩
+    rw [val_round_scaleSet] at hval
+    have hr := toInt_scaledRound q o.base hb0 scale o.mode
+    rw [← hscale, zpow_natCast] at hr
+    have hrI := toInt_eq_of_val hr
+    rw [hrI] at hval
+    rw [← hscale, zpow_neg, zpow_natCast, div_eq_mul_inv] at *
+    exact EReal.coe_eq_coe_iff.mp hval
+
+/-- **`toSciExact q o` holds exactly when the printed value is `toRat q` itself.** -/
+theorem toSciExact_iff (q : AzRat) (o : SciOptions) :
+    q.toSciExact o = true ↔ ∃ x, q.toSciNumber o = some x ∧ (x.value : ℝ) = toRat q := by
+  by_cases hv : o.valid = true
+  swap
+  · have hv' : o.valid = false := by simpa using hv
+    unfold toSciExact toSciNumber
+    rw [hv']
+    simp
+  obtain ⟨hb2, hb36⟩ := valid_base hv
+  have hb0 : 0 < o.base.toNat := by omega
+  have hbR0 : (0 : ℝ) < o.base.toNat := by exact_mod_cast hb0
+  unfold toSciExact
+  rw [hv, Bool.true_and, Bool.or_eq_true, decide_eq_true_eq]
+  by_cases h0 : q.num = 0
+  · simp only [h0, true_or, true_iff]
+    refine ⟨⟨false, o.base, #[], zeroScale o.size⟩, ?_, ?_⟩
+    · unfold toSciNumber
+      rw [hv]
+      simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte, h0]
+    · rw [value_zero_digits, (toRat_eq_zero_iff q).mpr h0]; simp
+  · simp only [h0, false_or]
+    rcases hsize : o.size with _ | p | s
+    · -- complete
+      obtain ⟨hval, hiff⟩ := toSciNumber_complete q o hv hsize
+      simp only []
+      constructor
+      · intro h
+        obtain ⟨x, hx⟩ := Option.isSome_iff_exists.mp (hiff.mpr h)
+        exact ⟨x, hx, hval x hx⟩
+      · rintro ⟨x, hx, _⟩
+        exact hiff.mp (Option.isSome_iff_exists.mpr ⟨x, hx⟩)
+    · -- precision
+      simp only [sizeScale]
+      obtain ⟨x, hx, hval⟩ := toSciNumber_value_eq_scaledRound q o hv h0
+        ((p : ℤ) - 1 - floorLogBaseAbs o.base q) p (by rw [hsize]; rfl)
+        (by rw [hsize]; exact SciSizeOptions.noConfusion)
+      rw [snd_scaledRound q o.base hb0 _ o.mode, beq_iff_eq, compare_eq_iff_eq]
+      constructor
+      · intro h
+        refine ⟨x, hx, ?_⟩
+        rw [hval, h, mul_assoc, ← zpow_add₀ hbR0.ne', add_neg_cancel, zpow_zero, mul_one]
+      · rintro ⟨y, hy, hyv⟩
+        rw [hx] at hy
+        obtain rfl := Option.some.inj hy
+        rw [hval] at hyv
+        rw [← hyv, mul_assoc, ← zpow_add₀ hbR0.ne', neg_add_cancel, zpow_zero, mul_one]
+    · -- scale
+      simp only [sizeScale]
+      obtain ⟨x, hx, hval⟩ := toSciNumber_value_eq_scaledRound q o hv h0 (s : ℤ)
+        ((s : ℤ) + floorLogBaseAbs o.base q + 1) (by rw [hsize]; rfl)
+        (by rw [hsize]; exact SciSizeOptions.noConfusion)
+      rw [snd_scaledRound q o.base hb0 (s : ℤ) o.mode, beq_iff_eq, compare_eq_iff_eq]
+      constructor
+      · intro h
+        refine ⟨x, hx, ?_⟩
+        rw [hval, h, mul_assoc, ← zpow_add₀ hbR0.ne', add_neg_cancel, zpow_zero, mul_one]
+      · rintro ⟨y, hy, hyv⟩
+        rw [hx] at hy
+        obtain rfl := Option.some.inj hy
+        rw [hval] at hyv
+        rw [← hyv, mul_assoc, ← zpow_add₀ hbR0.ne', neg_add_cancel, zpow_zero, mul_one]
+
+
+/-! ### Well-formedness of the digits -/
+
+/-- Every digit produced by `limbDigits` (reversed) is below the base. -/
+private lemma digits_rev_lt_base (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) :
+    ∀ d ∈ (n.limbDigits b).reverse, d.toNat < b.toNat := by
+  intro d hd
+  rw [Array.mem_def, Array.toList_reverse, List.mem_reverse] at hd
+  have : d.toNat ∈ (n.limbDigits b).toList.map UInt64.toNat := List.mem_map_of_mem hd
+  rw [AzNat.limbDigits_eq b hb] at this
+  exact Nat.digits_lt_base hb this
+
+/-- The leading digit of a nonzero number is nonzero. -/
+private lemma digits_rev_head_ne_zero (b : UInt64) (hb : 2 ≤ b.toNat) (n : AzNat) (hn : n ≠ 0)
+    (h : 0 < (n.limbDigits b).reverse.size) : ((n.limbDigits b).reverse)[0]'h ≠ 0 := by
+  have hnN : n.toNat ≠ 0 := fun hz => hn (AzNat.toNat_injective (by rw [hz]; rfl))
+  have hlen : (n.limbDigits b).toList.length = (n.limbDigits b).size := Array.length_toList
+  have hpos : 0 < (n.limbDigits b).toList.length := by
+    rw [hlen]; rwa [Array.size_reverse] at h
+  have hne : (n.limbDigits b).toList ≠ [] := List.ne_nil_of_length_pos hpos
+  -- the head of the reversed array is the last entry of the list
+  have hget : ((n.limbDigits b).reverse)[0]'h = (n.limbDigits b).toList.getLast hne := by
+    rw [Array.getElem_reverse, List.getLast_eq_getElem, ← Array.getElem_toList]
+    congr 1
+  rw [hget]
+  intro h0
+  have hlast := Nat.getLast_digit_ne_zero b.toNat hnN
+  have hne' : (n.limbDigits b).toList.map UInt64.toNat ≠ [] := by simpa using hne
+  have hne'' : Nat.digits b.toNat n.toNat ≠ [] := by
+    rw [← AzNat.limbDigits_eq b hb n]; exact hne'
+  have hcongr := List.getLast_congr hne' hne'' (AzNat.limbDigits_eq b hb n)
+  rw [← hcongr, List.getLast_map, h0] at hlast
+  exact hlast rfl
+
+/-- **Well-formedness of `toSciNumber`**: the base is the requested one, every digit is below
+the base, and the leading digit is nonzero. -/
+theorem toSciNumber_wellFormed (q : AzRat) (o : SciOptions) (x : SciNumber)
+    (hx : q.toSciNumber o = some x) :
+    x.base = o.base ∧ (∀ d ∈ x.digits, d.toNat < o.base.toNat) ∧
+      (∀ h : 0 < x.digits.size, x.digits[0]'h ≠ 0) := by
+  by_cases hv : o.valid = true
+  swap
+  · have hv' : o.valid = false := by simpa using hv
+    unfold toSciNumber at hx
+    rw [hv'] at hx
+    simp at hx
+  obtain ⟨hb2, _⟩ := valid_base hv
+  unfold toSciNumber at hx
+  rw [hv] at hx
+  simp only [Bool.not_true, Bool.false_eq_true, ↓reduceIte] at hx
+  -- the three shapes of a result
+  have zero_case : ∀ (neg : Bool) (sc : Int),
+      x = ⟨neg, o.base, #[], sc⟩ → x.base = o.base ∧ (∀ d ∈ x.digits, d.toNat < o.base.toNat) ∧
+        (∀ h : 0 < x.digits.size, x.digits[0]'h ≠ 0) := by
+    rintro neg sc rfl
+    refine ⟨rfl, ?_, ?_⟩
+    · intro d hd; simp at hd
+    · intro h; simp at h
+  have digits_case : ∀ (r : AzInt) (sc : Int), r.abs ≠ 0 →
+      x = ⟨!r.sign, o.base, (r.abs.limbDigits o.base).reverse, sc⟩ →
+      x.base = o.base ∧ (∀ d ∈ x.digits, d.toNat < o.base.toNat) ∧
+        (∀ h : 0 < x.digits.size, x.digits[0]'h ≠ 0) := by
+    rintro r sc hr rfl
+    exact ⟨rfl, digits_rev_lt_base o.base hb2 r.abs, digits_rev_head_ne_zero o.base hb2 r.abs hr⟩
+  have pop_case : ∀ (r : AzInt) (sc : Int) (p : ℕ), r.abs ≠ 0 →
+      (r.abs.limbDigits o.base).reverse.size = p + 1 →
+      x = ⟨!r.sign, o.base, (r.abs.limbDigits o.base).reverse.pop, sc⟩ →
+      x.base = o.base ∧ (∀ d ∈ x.digits, d.toNat < o.base.toNat) ∧
+        (∀ h : 0 < x.digits.size, x.digits[0]'h ≠ 0) := by
+    rintro r sc p hr hsz rfl
+    refine ⟨rfl, ?_, ?_⟩
+    · intro d hd
+      apply digits_rev_lt_base o.base hb2 r.abs d
+      rw [Array.mem_def, Array.toList_pop] at hd
+      rw [Array.mem_def]
+      exact List.mem_of_mem_dropLast hd
+    · intro h
+      rw [Array.getElem_pop]
+      exact digits_rev_head_ne_zero o.base hb2 r.abs hr _
+  by_cases h0 : q.num = 0
+  · rw [ite_eq_left h0] at hx
+    exact zero_case _ _ (Option.some.inj hx).symm
+  · rw [ite_eq_right h0] at hx
+    rcases hsz : sizeScale o.base q o.size (floorLogBaseAbs o.base q) with _ | ⟨scale, prec⟩
+    · rw [hsz] at hx; simp at hx
+    · rw [hsz] at hx
+      simp only [] at hx
+      by_cases hn : (scaledRound q o.base scale o.mode).1.abs = 0
+      · rw [ite_eq_left hn] at hx
+        exact zero_case _ _ (Option.some.inj hx).symm
+      · rw [ite_eq_right hn] at hx
+        revert hx
+        rcases hsize : o.size with _ | p | s <;> intro hx <;> (try simp only [] at hx)
+        · exact digits_case _ _ hn (Option.some.inj hx).symm
+        · by_cases hp : ((scaledRound q o.base scale o.mode).1.abs.limbDigits o.base).reverse.size
+              = p + 1
+          · rw [ite_eq_left hp] at hx
+            exact pop_case _ _ p hn hp (Option.some.inj hx).symm
+          · rw [ite_eq_right hp] at hx
+            exact digits_case _ _ hn (Option.some.inj hx).symm
+        · exact digits_case _ _ hn (Option.some.inj hx).symm
 
 end Azurite.AzRat

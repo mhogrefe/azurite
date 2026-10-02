@@ -574,6 +574,7 @@ import Azurite.AzRat.Equiv.Compare
 import Azurite.AzRat.Equiv.Construct
 import Azurite.AzRat.Equiv.Conversion
 import Azurite.AzRat.Equiv.Div
+import Azurite.AzRat.Equiv.FromSci
 import Azurite.AzRat.Equiv.LengthAfterPoint
 import Azurite.AzRat.Equiv.LogBase
 import Azurite.AzRat.Equiv.LogBase2
@@ -587,6 +588,7 @@ import Azurite.AzRat.Equiv.Shift
 import Azurite.AzRat.Equiv.Sub
 import Azurite.AzRat.Equiv.ToSci
 import Azurite.AzRat.Equiv.Unary
+import Azurite.AzRat.FromSci
 import Azurite.AzRat.Instances
 import Azurite.AzRat.LengthAfterPoint
 import Azurite.AzRat.LogBase

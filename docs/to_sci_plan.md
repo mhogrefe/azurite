@@ -120,8 +120,8 @@ Theorems (`Azurite/AzRat/Equiv/ToSci.lean`), with `v := (toRat q : ℝ)`:
    relies on.
 5. `toSciValid_iff`: `toSciValid q opts = true ↔ (opts.size = .complete → terminating) ∧
    (rounding at the chosen target is the identity on `v`)`; and `toSci_isSome`.
-6. Later, optional: a round-trip through a `fromSci` parser (Malachite has `from_sci_string`;
-   not in scope now).
+6. A round trip through a `fromSci` parser (Malachite's `from_sci_string`): done, see the
+   status log.
 
 The sign is handled as Malachite does: the *signed* value is rounded with the given mode
 (`Floor` of `−22/7` at precision 3 is `−3.15`), then rendered as sign plus magnitude. Both
@@ -206,6 +206,42 @@ and the `Ordering` tag. The tag is what `toSciValid` uses for the exactness chec
   option, rounding modes, negatives, bases 2–36, complete expansions, the exponent threshold,
   the bankers' tie in base 3); the `2^±1000000` cases are run at `2^±100000` (a 12-minute
   interpreter run otherwise), with expected strings from an exact independent computation that
-  reproduces Malachite's `2^±1000000` strings.  Not done: `toSciExact_iff` (exactness ↔ the
-  value equals `toRat q`), the well-formedness lemma (digits below the base, no leading zero),
-  the blueprint section, and a `fromSci` parser.
+  reproduces Malachite's `2^±1000000` strings.  Blueprint sections `rounding/sci.tex` and
+  `azrat/to_sci.tex`.  Not done: the well-formedness lemma (digits below the base, no leading
+  zero) and a `fromSci` parser.
+* **2026-10-01 — `toSciExact_iff`.**  `toSciExact q o = true ↔ ∃ x, toSciNumber q o = some x ∧
+  x.value = toRat q`, for all options (both sides false when the options are invalid).  Via
+  `toSciNumber_value_eq_scaledRound`: away from `complete` the produced value is the rounded
+  integer times `b^(−scale)` (derived from the two value theorems and `val_round_*`, so the
+  digit reasoning is not repeated), and the `Ordering` tag of the one division
+  (`snd_scaledRound`) is `.eq` exactly when that integer is `toRat q · b^scale`.
+* **2026-10-01 — `toSciNumber_wellFormed`.**  Whenever `toSciNumber q o = some x`: `x.base` is
+  the requested base, every digit is below it, and the leading digit is nonzero.  From
+  `Nat.digits_lt_base` and `Nat.getLast_digit_ne_zero` through `limbDigits_eq`; the popped
+  case keeps the leading digit because `pop` removes the last one.  The plan's remaining item
+  is a `fromSci` parser for round-trips.
+* **2026-10-01 — `fromSci` and the round trip.**  `AzRat/FromSci.lean` ports the author's
+  `Rational::from_sci_string` / `preprocess_sci_string` / `Integer::parse_int`: the exponent
+  suffix is found from the right (`e`/`E` below base 15; the last sign not at index 0, which
+  must follow an `e`/`E`, from base 15 on), parsed as a signed decimal within the `i64` range
+  (as Malachite, so a `10^28` exponent is rejected rather than attempted); then the first `.`
+  (a sign right after it is rejected, each digit after it lowers the exponent); then one
+  optional sign and at least one digit (`AzNat.buildFromChars`, so no `0x` prefix stripping);
+  the value `± n · b^e` is one `ofSignAzNats` (zero is short-circuited so `"0e9223372036854775807"`
+  does not raise `b` to that power).  Tests `AzRat/Tests/FromSci.lean`: the author's Malachite
+  vectors (accepted, rejected, bases 2–36) plus round trips through `toSci`.
+  `Equiv/FromSci.lean`: `fromSci_toString` — parsing the rendering of a well-formed `SciNumber`
+  (any `SciFormat` with a negative threshold; scale and exponent within `i64`) recovers its
+  value.  Structure: lemmas for each parser stage on the shape the renderer produces
+  (`splitExponent_append` / `splitExponent_no_exp`, `splitPoint_append` / `splitPoint_no_point`,
+  `parseSignedDigits_eq`, `toRat_ofSciParts`), composed in `fromSci_shape` (sign, digit characters
+  with at most one point, optional exponent suffix ↦ `± digits · b^(e − |after point|)`), one
+  lemma per `toChars` branch, and the arithmetic identity `sciValue_eq` (trailing zeros trimmed by
+  the renderer move into the exponent).  The `i64` bounds are needed because the parser enforces
+  them; they are hypotheses on the `SciNumber`, not derivable from the options alone.
+  Corollaries `fromSci_toSci` (`(toSci q o).bind fromSci = some (ofRat x.value)` for the
+  intermediate `x`) and `fromSci_toSci_of_exact` (`= some q` when `toSciExact`).  Gotchas: a
+  `match` in a lemma statement is a different matcher constant from the renderer's, so `rw`
+  fails — state branch lemmas match-free and `cases` the list first; `split` picks the first
+  `if`, which after the sign is `if neg then ['-'] else []` — use `by_cases` + `ite_eq_left`;
+  `(Nat.ofDigits b l : ℚ)` computes `ofDigits` *in* `ℚ` — write `((… : ℕ) : ℚ)`.
