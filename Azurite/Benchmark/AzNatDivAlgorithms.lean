@@ -21,7 +21,7 @@ Run the `az_nat_div_algorithms` benchmark.
 
 Compares schoolbook division (Algorithm 1.6 of MCA) against
 Brent–Zimmermann recursive D&C (Algorithm 1.8 of MCA) by running
-`recursiveDivModFast` with two different thresholds:
+`divModWith` with two different thresholds:
   - Schoolbook: threshold = 999999 (forces pure schoolbook).
   - Recursive: threshold = configurable (default 32).
 
@@ -54,16 +54,16 @@ def runAzNatDivAlgorithms (limit : Nat) (cfg : Std.HashMap String String)
     let azV := Azurite.AzNat.ofNat v
     let bitsU := natSignificantBits u
     let bitsV := natSignificantBits v
-    let (rSch, ns1a) ← timeNsIter iters (fun _ => Azurite.AzNat.recursiveDivModFast 999999 azU azV)
-    let (_,    ns1b) ← timeNsIter iters (fun _ => Azurite.AzNat.recursiveDivModFast 999999 azU azV)
-    let (_,    ns1c) ← timeNsIter iters (fun _ => Azurite.AzNat.recursiveDivModFast 999999 azU azV)
+    let (rSch, ns1a) ← timeNsIter iters (fun _ => Azurite.AzNat.divModWith 999999 azU azV)
+    let (_,    ns1b) ← timeNsIter iters (fun _ => Azurite.AzNat.divModWith 999999 azU azV)
+    let (_,    ns1c) ← timeNsIter iters (fun _ => Azurite.AzNat.divModWith 999999 azU azV)
     let ns1 := median3 ns1a ns1b ns1c
     let (rRec, ns2a) ← timeNsIter iters
-      (fun _ => Azurite.AzNat.recursiveDivModFast threshold azU azV)
+      (fun _ => Azurite.AzNat.divModWith threshold azU azV)
     let (_,    ns2b) ← timeNsIter iters
-      (fun _ => Azurite.AzNat.recursiveDivModFast threshold azU azV)
+      (fun _ => Azurite.AzNat.divModWith threshold azU azV)
     let (_,    ns2c) ← timeNsIter iters
-      (fun _ => Azurite.AzNat.recursiveDivModFast threshold azU azV)
+      (fun _ => Azurite.AzNat.divModWith threshold azU azV)
     let ns2 := median3 ns2a ns2b ns2c
     if Azurite.AzNat.toNat rSch.1 ≠ Azurite.AzNat.toNat rRec.1
        ∨ Azurite.AzNat.toNat rSch.2 ≠ Azurite.AzNat.toNat rRec.2 then

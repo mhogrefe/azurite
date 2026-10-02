@@ -71,8 +71,8 @@ Status: started 2026-10-01; see the status log at the end.
    (`Equiv/Arith.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
    x y p mode` and `subPrecRound_eq_liftVal₂`, where `Spec.add a b` is `EReal` addition with
    `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Arith.lean`.
-4. **Multiplication, squaring (done), division, square root** (MCA §3.3 as supplied; §3.4–§3.5
-   pending): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
+4. **Multiplication, squaring, division (done); square root** (MCA §3.3–§3.4 as supplied;
+   §3.5 pending): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
    `roundScaled` on the scale `(e₁ − p₁) + (e₂ − p₂)` (MCA Algorithm FPmultiply without the
    `n + g` truncation; the short product of Algorithm 3.4 is only an approximation and is left
    for a later performance pass); `sqrPrecRound` uses `AzNat.square`; `0 · (±∞)` is `NaN`, the
@@ -80,8 +80,18 @@ Status: started 2026-10-01; see the status log at the end.
    operand precision, `sqr` at the operand's.  Proven: `mulPrecRound_eq_liftVal₂` with
    `Spec.mul` (`EReal` multiplication, `0 · (±∞)` undefined) and
    `sqrPrecRound_eq_liftE : sqrPrecRound x p mode = liftE (fun v => v * v) x p mode`.
-   Division and square root: one exact integer quotient or root of the significands, then one
-   rounding; `Spec.div`, `Spec.sqrt`.
+   `divPrecRound x y p mode` (MCA §3.4.2, the single-division reduction): with `g = p + p₂ − p₁`,
+   or one less when `n₁ / 2^p₁ ≥ n₂ / 2^p₂` (one `compareMagnitude` of the aligned significands),
+   the quotient `n₁ · 2^g / n₂` lies in `[2^(p−1), 2^p)`, so one `AzInt.divRound` of the shifted
+   cores gives the `p`-bit significand and the comparison tag from the remainder, and
+   `normalizeCarry` handles a carry to `2^p`; `∞ / ∞` and `0 / 0` are `NaN`, `x / 0 = ±∞` with
+   the sign of `x`, `x / ∞ = 0`; `Div` instance.  Proven `divPrecRound_eq_liftVal₂` with
+   `Spec.div` (`EReal` division except `a / 0 = ±∞`).  The approximate methods of §3.4 (Newton
+   reciprocal with the wrap-around trick, DivideNewton, ShortDivision, Barrett) all need a
+   correction step before they round correctly and were not used; the truncated division of
+   Lemma 3.10 with a full-width remainder correction is the planned fast path for operands much
+   wider than the result.  Square root: one exact integer root of the significand, then one
+   rounding; `Spec.sqrt`.
 4b. **Hexadecimal debug format (done).**  `AzFloat/HexString.lean`: `toHexString`/`ofHexString`,
    the author's Malachite `{:#x}` of a `ComparableFloat` (`0x0.8#5`); proven
    `ofHexString_toHexString : ofHexString (toHexString x) = some x` for every float.
@@ -170,3 +180,15 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   tag, so it is deferred; the middle product is noted for Newton division (§4.2).  Proofs are
   short on top of `roundScaled_eq_roundVal`: `mul_cores_scaled`, `Spec.mul_inf_coe`/`mul_coe_inf`
   (sign of an infinite product), `mulPrecRound_eq_liftVal₂`, `sqrPrecRound_eq_liftE`.
+* **2026-10-02 — division.**  Source: the author's reformatted MCA §3.4 (reciprocal and Newton's
+  iteration, Lemma 3.7, Algorithm ApproximateReciprocal and Lemma 3.8, the wrap-around trick,
+  §3.4.2 with Theorem 3.9, DivideNewton, Lemma 3.10, ShortDivision and Theorem 3.11, Barrett and
+  Lemma 3.12).  Decision: the correctly rounded primitive is the direct reduction of §3.4.2 to one
+  rounded integer division of the scaled cores (`AzInt.divRound`, already proven against the
+  rounding spec), since every approximate method needs a correction before it rounds correctly;
+  the reciprocal, middle product and Lemma 3.10 truncation are recorded for later.  Proofs:
+  `quotient_scale_bounds` (the `p`-bit scaling), `divCores_eq` (via `val_round_precisionSet`,
+  `AzInt.toInt_divRound`/`snd_divRound`, `normalizeCarry_spec` = `normalize_spec`),
+  `divPrecRound_eq_liftVal₂`.  Lean note: `set` variables had to be made opaque with
+  `clear_value` once their defining facts were recorded, otherwise unification unfolded the
+  symbolic `AzInt.divRound` and timed out.

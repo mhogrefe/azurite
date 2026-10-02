@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Precision
+import Azurite.AzInt.DivRound
 import Azurite.AzNat.Add
 import Azurite.AzNat.Mul
 import Azurite.AzNat.ShiftLeft
@@ -165,5 +166,51 @@ instance : Mul AzFloat := ⟨fun x y => (mulPrecRound x y (combinedPrecision x y
 
 /-- `x²` rounded to nearest at the precision of `x`. -/
 def sqr (x : AzFloat) : AzFloat := (sqrPrecRound x (x.precision?.getD 1) .Nearest).1
+
+/-! ### Division
+
+MCA §3.4.2: `x / y = ±(n₁ / n₂) · 2^((e₁ − p₁) − (e₂ − p₂))` for cores `n₁`, `n₂`.  With
+`g = p + p₂ − p₁`, or one less when `n₁ / 2^p₁ ≥ n₂ / 2^p₂`, the quotient `n₁ · 2^g / n₂` lies in
+`[2^(p−1), 2^p)`, so one rounded integer division (`AzInt.divRound`, which decides the rounding
+and the comparison from the remainder) gives the `p`-bit significand, and only a carry to `2^p`
+remains to be normalized.  Approximate schemes (Newton reciprocal, short division, Barrett) all
+need a correction step before they round correctly and are not used. -/
+
+/-- Normalize a signed integer `r` with `2^(p−1) ≤ |r| ≤ 2^p` into the precision-`p` float of
+value `r · 2^(e − p)`: a carry to `2^p` is halved with the exponent raised. -/
+def normalizeCarry (r : AzInt) (e : AzInt) (p : Nat) : AzFloat :=
+  if r.abs.size = p + 1 then mkFinite r.sign (e + 1) p (r.abs.shiftRight 1)
+  else mkFinite r.sign e p r.abs
+
+/-- The rounded quotient of two cores (`n₁` of `p₁` bits at exponent `e₁`, `n₂` of `p₂` bits at
+`e₂`), with sign `s`; `hge` says whether `n₁ / 2^p₁ ≥ n₂ / 2^p₂`. -/
+def divCores (s : Bool) (e₁ : AzInt) (n₁ : AzNat) (p₁ : Nat) (e₂ : AzInt) (n₂ : AzNat)
+    (p₂ : Nat) (hge : Bool) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  let g : AzInt :=
+    (AzNat.ofNat (p + p₂)).toAzInt - (AzNat.ofNat (p₁ + (if hge then 1 else 0))).toAzInt
+  let A := if g.sign then n₁.shiftLeft g.abs.toNat else n₁
+  let B := if g.sign then n₂ else n₂.shiftLeft g.abs.toNat
+  let qo := AzInt.divRound (AzInt.mkNorm s A) B.toAzInt mode
+  let w := e₁ - (AzNat.ofNat p₁).toAzInt - (e₂ - (AzNat.ofNat p₂).toAzInt) - g
+  (normalizeCarry qo.1 (w + (AzNat.ofNat p).toAzInt) p, qo.2)
+
+/-- `x / y` rounded to precision `p` with `mode`, and the comparison with the exact quotient.
+`∞ / ∞` and `0 / 0` are `NaN`; `x / 0 = ±∞` with the sign of `x`; `x / ∞ = 0`. -/
+def divPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  match x, y with
+  | nan, _ => (nan, .eq)
+  | _, nan => (nan, .eq)
+  | infinity _, infinity _ => (nan, .eq)
+  | infinity s, zero => (infinity s, .eq)
+  | infinity s, finite t _ _ _ _ => (infinity (s == t), .eq)
+  | zero, zero => (nan, .eq)
+  | zero, _ => (zero, .eq)
+  | finite _ _ _ _ _, infinity _ => (zero, .eq)
+  | finite s _ _ _ _, zero => (infinity s, .eq)
+  | finite s e₁ p₁ m₁ _, finite t e₂ p₂ m₂ _ =>
+    divCores (s == t) e₁ (coreSignificand p₁ m₁) p₁ e₂ (coreSignificand p₂ m₂) p₂
+      (compareMagnitude 0 m₁ 0 m₂ != .lt) p mode
+
+instance : Div AzFloat := ⟨fun x y => (divPrecRound x y (combinedPrecision x y) .Nearest).1⟩
 
 end Azurite.AzFloat

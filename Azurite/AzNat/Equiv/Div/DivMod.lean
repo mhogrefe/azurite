@@ -21,7 +21,7 @@ namespace Azurite.AzNat
     to produce the divMod correctness identity, given the normalization facts
     that UBuf represents `U * 2^k`, VBuf represents `V * 2^k`, and VBuf's top
     limb is normalized. -/
-private theorem divMod_size_ge3_finish (U V : AzNat)
+private theorem divMod_size_ge3_finish (threshold : Nat) (U V : AzNat)
     (k : Nat) (_hk_le : k ≤ 63)
     (UBuf VBuf : Array UInt64)
     (h_n_ge_3 : 3 ≤ V.limbs.size)
@@ -33,7 +33,7 @@ private theorem divMod_size_ge3_finish (U V : AzNat)
     (h_UBuf_toNat : toNatLimbsList UBuf.toList = U.toNat * 2 ^ k)
     (h_VBuf_toNat : toNatLimbsList VBuf.toList = V.toNat * 2 ^ k)
     (_hV_pos : 0 < V.toNat) :
-    let res := recursiveDivModLimbsArr 32 UBuf VBuf 0 0 V.limbs.size
+    let res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 V.limbs.size
                   (U.limbs.size + 1 - V.limbs.size)
                   (by omega) (by rw [h_UBuf_size]; omega)
                   (by rw [h_VBuf_size]; omega) h_VBuf_norm
@@ -54,18 +54,18 @@ private theorem divMod_size_ge3_finish (U V : AzNat)
     rw [h_UBuf_size]; omega
   have h_loB : 0 + n ≤ VBuf.size := by rw [h_VBuf_size]; omega
   -- Introduce the result.
-  set res := recursiveDivModLimbsArr 32 UBuf VBuf 0 0 n m
+  set res := recursiveDivModLimbsArr threshold UBuf VBuf 0 0 n m
                h_n_pos h_loA h_loB h_VBuf_norm with hres_def
   -- Apply the spec to get rem_lt and div_eq.
   have h_spec : RecursiveDivModLimbsSpec UBuf VBuf 0 0 n m res.1 res.2 :=
-    recursiveDivModLimbsAux_spec 32 UBuf VBuf 0 0 n m
+    recursiveDivModLimbsAux_spec threshold UBuf VBuf 0 0 n m
       h_n_pos h_loA h_loB h_VBuf_norm
   obtain ⟨h_rem_lt, h_div_eq⟩ := h_spec
   -- Simplify sliceVal at loA = 0, loB = 0.
   simp only [Nat.zero_add] at h_rem_lt h_div_eq
   -- Size of res.1.
   have h_res_size : res.1.size = UBuf.size :=
-    recursiveDivModLimbsArr_size 32 UBuf VBuf 0 0 n m
+    recursiveDivModLimbsArr_size threshold UBuf VBuf 0 0 n m
       h_n_pos h_loA h_loB h_VBuf_norm
   have h_res_len : res.1.toList.length = nU + 1 := by
     rw [Array.length_toList, h_res_size, h_UBuf_size]
@@ -153,13 +153,14 @@ private theorem divMod_size_ge3_finish (U V : AzNat)
     exact Nat.lt_of_mul_lt_mul_right h_lt'
 
 set_option maxHeartbeats 800000 in
-/-- **Top-level correctness of `divMod`**: `divMod U V` returns `(Q, R)` such
-    that `Q * V + R = U`, with `R < V` whenever `V > 0`. By convention,
-    `divMod U 0 = (0, U)`, so the value identity holds (with vacuous bound). -/
-theorem divMod_toNat (U V : AzNat) :
-    (divMod U V).1.toNat * V.toNat + (divMod U V).2.toNat = U.toNat
-    ∧ (V.toNat ≠ 0 → (divMod U V).2.toNat < V.toNat) := by
-  unfold divMod
+/-- **Top-level correctness of `divModWith`**: `divModWith t U V` returns `(Q, R)` such
+    that `Q * V + R = U`, with `R < V` whenever `V > 0`, for every threshold `t`.  By
+    convention, `divModWith t U 0 = (0, U)`, so the value identity holds (with vacuous
+    bound). -/
+theorem divModWith_toNat (threshold : Nat) (U V : AzNat) :
+    (divModWith threshold U V).1.toNat * V.toNat + (divModWith threshold U V).2.toNat = U.toNat
+    ∧ (V.toNat ≠ 0 → (divModWith threshold U V).2.toNat < V.toNat) := by
+  unfold divModWith
   -- Case 1: V.limbs.size = 0 (i.e., V = 0).
   by_cases h0V : V.limbs.size = 0
   · simp only [h0V, ↓reduceDIte]
@@ -433,7 +434,7 @@ theorem divMod_toNat (U V : AzNat) :
                   rw [ite_eq_left h_idx_eq.symm]
                 rw [h_get_eq, h_dtop_eq]
                 exact h_topB_norm
-              exact divMod_size_ge3_finish U V topB.leadingZeros hk_le
+              exact divMod_size_ge3_finish threshold U V topB.leadingZeros hk_le
                       (U.limbs ++ #[0])
                       (V.limbs.set (n - 1)
                         (topB <<< UInt64.ofNat topB.leadingZeros ||| 0) h_top_idx)
@@ -641,7 +642,7 @@ theorem divMod_toNat (U V : AzNat) :
                   omega
                 rw [h_add_sub]
                 ring
-              exact divMod_size_ge3_finish U V topB.leadingZeros hk_le
+              exact divMod_size_ge3_finish threshold U V topB.leadingZeros hk_le
                       (shiftLimbsLeft (U.limbs ++ #[(0:UInt64)]) 0 (nU + 1)
                         topB.leadingZeros (Nat.zero_le _) (by rw [h_UBufRaw_size])
                         hk_pos hk_le).1
@@ -649,32 +650,67 @@ theorem divMod_toNat (U V : AzNat) :
                       h_n_ge_3 h_nU_ge_n h_UBuf_size_dyn h_VBuf_size_eq
                       h_VBuf_norm h_UBuf_toNat h_VBuf_toNat hV_toNat_pos
 
+/-- Correctness of `divMod` (the default threshold). -/
+theorem divMod_toNat (U V : AzNat) :
+    (divMod U V).1.toNat * V.toNat + (divMod U V).2.toNat = U.toNat
+    ∧ (V.toNat ≠ 0 → (divMod U V).2.toNat < V.toNat) :=
+  divModWith_toNat divDispatchThreshold U V
+
+/-- The threshold only affects the recursion schedule, not the result. -/
+theorem divModWith_eq_divMod (threshold : Nat) (U V : AzNat) :
+    divModWith threshold U V = divMod U V := by
+  obtain ⟨h1, h2⟩ := divModWith_toNat threshold U V
+  obtain ⟨h1', h2'⟩ := divMod_toNat U V
+  by_cases hV : V.toNat = 0
+  · have h_size : V.limbs.size = 0 := (toNat_eq_zero_iff V).mp hV
+    unfold divMod divModWith
+    rw [dite_eq_left h_size, dite_eq_left h_size]
+  · have hpos : 0 < V.toNat := Nat.pos_of_ne_zero hV
+    have hdiv : ∀ Q R : AzNat, Q.toNat * V.toNat + R.toNat = U.toNat → R.toNat < V.toNat →
+        Q.toNat = U.toNat / V.toNat ∧ R.toNat = U.toNat % V.toNat := by
+      intro Q R h hlt
+      have h_eq : U.toNat = R.toNat + Q.toNat * V.toNat := by omega
+      constructor
+      · rw [h_eq, Nat.add_mul_div_right _ _ hpos, Nat.div_eq_of_lt hlt, Nat.zero_add]
+      · rw [h_eq, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hlt]
+    obtain ⟨hq1, hr1⟩ := hdiv _ _ h1 (h2 hV)
+    obtain ⟨hq2, hr2⟩ := hdiv _ _ h1' (h2' hV)
+    exact Prod.ext (toNat_injective (hq1.trans hq2.symm)) (toNat_injective (hr1.trans hr2.symm))
+
 /-! ### Correctness of `div` and `mod` -/
 
 /-- When the divisor is zero, `divMod` returns `(0, U)`. -/
 private lemma divMod_of_toNat_zero (U V : AzNat) (hV : V.toNat = 0) :
     divMod U V = (0, U) := by
   have h_size : V.limbs.size = 0 := (toNat_eq_zero_iff V).mp hV
-  unfold divMod
+  unfold divMod divModWith
   rw [dite_eq_left h_size]
 
-/-- The specialised `div` returns the same value as `(divMod U V).1`.
-    Holds structurally: `div` mirrors `divMod`'s branch-by-branch
+/-- The specialised `divWith` returns the same value as `(divModWith t U V).1`.
+    Holds structurally: `divWith` mirrors `divModWith`'s branch-by-branch
     dispatch but skips the remainder-side post-processing, so each
-    branch produces the first component of the corresponding `divMod`
+    branch produces the first component of the corresponding `divModWith`
     return. -/
-theorem div_eq_divMod_fst (U V : AzNat) : div U V = (divMod U V).1 := by
-  unfold div divMod
+theorem divWith_eq_divModWith_fst (threshold : Nat) (U V : AzNat) :
+    divWith threshold U V = (divModWith threshold U V).1 := by
+  unfold divWith divModWith
   -- Push `(_).1` through both the outer 3-way dispatch and the inner
   -- `n = 2` vs `n ≥ 3` split.  Each branch then matches structurally.
   simp only [apply_dite Prod.fst, apply_ite Prod.fst]
 
-/-- The specialised `mod` agrees with the second projection of `divMod`.
-    Proof mirrors `div_eq_divMod_fst`: `mod` shares `divMod`'s outer
+/-- The specialised `modWith` agrees with the second projection of `divModWith`.
+    Proof mirrors `divWith_eq_divModWith_fst`: `modWith` shares `divModWith`'s outer
     dispatch but skips the quotient-side assembly. -/
-theorem mod_eq_divMod_snd (U V : AzNat) : mod U V = (divMod U V).2 := by
-  unfold mod divMod
+theorem modWith_eq_divModWith_snd (threshold : Nat) (U V : AzNat) :
+    modWith threshold U V = (divModWith threshold U V).2 := by
+  unfold modWith divModWith
   simp only [apply_dite Prod.snd, apply_ite Prod.snd]
+
+theorem div_eq_divMod_fst (U V : AzNat) : div U V = (divMod U V).1 :=
+  divWith_eq_divModWith_fst divDispatchThreshold U V
+
+theorem mod_eq_divMod_snd (U V : AzNat) : mod U V = (divMod U V).2 :=
+  modWith_eq_divModWith_snd divDispatchThreshold U V
 
 /-- `(U / V).toNat = U.toNat / V.toNat`. -/
 @[simp] theorem toNat_div (U V : AzNat) : (U / V).toNat = U.toNat / V.toNat := by

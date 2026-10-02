@@ -92,4 +92,15 @@ private def showQR (qr : AzNat × AzNat) : Nat × Nat :=
                        (AzNat.parse "999999999999999999999999999999").get!) =
   (1, 0)
 
+/-! ## `divModWith`: the threshold does not change the result -/
+
+#guard divModWith 2 (AzNat.ofNat (2 ^ 640 + 12345)) (AzNat.ofNat (2 ^ 320 + 1))
+  = divMod (AzNat.ofNat (2 ^ 640 + 12345)) (AzNat.ofNat (2 ^ 320 + 1))
+#guard divModWith 2 (AzNat.ofNat (2 ^ 1280 + 999)) (AzNat.ofNat (2 ^ 640 + 17))
+  = divMod (AzNat.ofNat (2 ^ 1280 + 999)) (AzNat.ofNat (2 ^ 640 + 17))
+#guard divModWith 2 (AzNat.ofNat (2 ^ 2048 - 1)) (AzNat.ofNat (2 ^ 512 + 7))
+  = divMod (AzNat.ofNat (2 ^ 2048 - 1)) (AzNat.ofNat (2 ^ 512 + 7))
+#guard divModWith 999999 (AzNat.ofNat (2 ^ 2048 - 1)) (AzNat.ofNat (2 ^ 512 + 7))
+  = divMod (AzNat.ofNat (2 ^ 2048 - 1)) (AzNat.ofNat (2 ^ 512 + 7))
+
 end Azurite.AzNat
