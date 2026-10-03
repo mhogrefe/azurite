@@ -107,9 +107,27 @@ Status: started 2026-10-01; see the status log at the end.
    float at its precision; exponential-then-binary search), with `toDecimalAt`; proofs of the
    search and of the rendering's value in `Equiv/ToString.lean`.  The bound
    `⌈P·log₁₀ 2⌉ + 2` is checked at run time, not formalized.
-5. **Conversions and text.**  `ofFloat64`/`toFloat64` (Lean's `Float`), `toSci` for floats via
-   `AzRat` (`Sci/`), parsing, `toString`/`Repr` (a decimal rendering with enough digits to round
-   trip, plus a hexadecimal rendering with `#precision`).
+5. **Conversions and text (done).**  Text input: `ofDecimalStringRound s p mode` reads the
+   language of `AzRat.fromSci` (sign, digits, optional point, optional `e` exponent) plus the
+   special spellings `NaN`, `Infinity`, `-Infinity`, and rounds the exact rational with
+   `ofAzRatRound`; `ofDecimalString` rounds to nearest.  Proven `toVal_ofDecimalStringRound` and
+   the round trip `ofDecimalString_toDecimalString` (via `fromSci_ensurePoint_toString`, the
+   parser's inverse theorem redone for the writer's `.0` convention).  Output with options:
+   `toSci x o` / `toSciNumber` render the exact value with `AzRat.toSci`'s `SciOptions` (base,
+   digit count, digit rounding, layout); proven `toSciNumber_value_precision`.  Literals:
+   `OfNat` (exact), `OfScientific` (nearest at `literalPrecision = 53`), `Repr` (the exact
+   hexadecimal debug format; `ToString` stays the shortest decimal); proven `toVal_ofNat`,
+   `toVal_ofScientific`.  Lean's `Float`: `ofFloat64` (exact, through the model's unpacked form)
+   and `toFloat64 x mode` (53-bit rounding in the normal range, rounding to a multiple of
+   `2^-1074` below it, IEEE overflow to `±∞` or the largest finite value by mode), packed with
+   the model's `pack`.  Since `Float` is a structure around `Float.Model`, these are proven end
+   to end: `toVal_ofFloat64`, `unpack_pack`/`model_unpack_pack` (the model's `pack` and `unpack`
+   are inverse on representable unpacked floats), `toUnpacked_binary64` (every result is
+   representable), hence `ofFloat64_toFloat64 : ofFloat64 (toFloat64 x mode) = ofUnpacked
+   (toUnpacked x mode)` unconditionally, and the value theorems
+   `toVal_ofFloat64_toFloat64_normal` (`= round (precisionSet 2 53) mode (toVal x)` for
+   `-1021 ≤ e ≤ 1023`) and `_subnormal` (`e ≤ -1022`).  Not formalized: the overflow rule
+   (tested), and a `binary64` rounding target unifying the three regimes.
 6. **Elementary functions** (later): `exp`, `log`, trigonometric functions, with MCA Chapter 4
    as the source.
 
@@ -223,3 +241,27 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   0.004; 1,000 bits 3.6 → 0.018; 10,000 bits 39 → 0.37; 100,000 bits 722 → 20; the interpreted
   `#eval` of the 10,000-bit print went from 3.8 s to 1.15 s (the rest is interpretation).  The
   interval test considered earlier is not needed.
+* **2026-10-02 — text input.**  `AzFloat/OfString.lean`: `ofDecimalStringRound`,
+  `ofDecimalString` (specials tested first, then `fromSci` and `ofAzRatRound`).
+  `Equiv/OfString.lean`: `ensurePoint` lemmas (`ensurePoint_of_mem`, `ensurePoint_no_e`,
+  `ensurePoint_e`, `mem_ensurePoint`, `ensurePoint_ne_special`), `sciVal_append_zero`,
+  `fromSci_ensurePoint_toString` (a copy of the `fromSci_toString` case analysis in which the
+  three point-free shapes acquire `.0`; restricted to bases at most 14 and a lowercase `e`, since
+  `ensurePoint` looks for `'e'`), `toVal_ofDecimalStringRound`, `ofDecimalString_toDecimalString`.
+  Lean notes: specials are tested before parsing so that the lemmas about them need no kernel
+  evaluation of `fromSci` on string literals; `congr 1` on `some (ofAzRatRound (ofRat …) …).1 =
+  some x` timed out (its `rfl` attempt unfolds the conversion), `Option.some.injEq` does not; the
+  base of `decimalOptions` is rewritten to the literal `10` by `rfl` before unifying with
+  `fromSci`'s default base.
+* **2026-10-02 — milestone 5 complete.**  `toSci` with options, literals and `Repr`, and the
+  `Float` conversions.  Discovery: Lean 4.34's `Float` is `structure Float where ofModel ::
+  toModel : Float.Model`, a wrapper around a logical model (a valid binary64 bit pattern with
+  `unpack`/`pack` to `UnpackedFloat`: `NaN`, signed infinity, signed zero, `± m · 2^e`), so
+  `(Float.ofModel m).toModel = m` is `rfl` and conversions can be proven end to end rather than
+  only at the bit level.  `toFloat64` rounds with our own proven `AzInt.shiftRightRound` (the
+  model's `round` is nearest-even only and has no lemmas) and packs with the model's `pack`; the
+  inverse theorem `unpack_pack` is BitVec bookkeeping (`unpackMantissa/Exponent_packComponents`
+  from core, our `unpackSign_packComponents`, `Nat.two_pow_add_eq_or_of_lt` for the hidden bit).
+  Lean notes: `rw` cannot rewrite under the `0 < mantissa` proof argument of `UnpackedFloat.finite`
+  (unfold `Binary64`/`toVal` first); `UnpackedFloat` has no `DecidableEq` (closed cases via `simp
+  +decide only`); `Int.ceil_nonpos` is an iff.

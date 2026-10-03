@@ -7,12 +7,6 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-/-
-Copyright © 2026 Mikhail Hogrefe
-This file is part of Azurite.
-Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
-License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
--/
 -- This module is the root of the `AzuriteTests` library: `#guard`-based
 -- test suites, kept out of the main `Azurite` library target.
 -- Built (and thereby run, since `#guard` checks at elaboration time)
@@ -20,7 +14,10 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Tests.Arith
 import Azurite.AzFloat.Tests.Basic
+import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.HexString
+import Azurite.AzFloat.Tests.Literals
+import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.Conversion

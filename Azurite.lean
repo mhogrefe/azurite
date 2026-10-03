@@ -7,13 +7,6 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-/-
-Copyright © 2026 Mikhail Hogrefe
-This file is part of Azurite.
-Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
-License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
--/
-
 import Azurite.APRCL.Equiv.Complete
 import Azurite.APRCL.Equiv.JacobiAlign
 import Azurite.APRCL.Equiv.JacobiChain
@@ -47,13 +40,21 @@ import Azurite.AzFloat.Equiv.Arith
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion
+import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.HexString
+import Azurite.AzFloat.Equiv.Literals
+import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Rounding
+import Azurite.AzFloat.Equiv.Sci
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.ToString
+import Azurite.AzFloat.Float64
 import Azurite.AzFloat.HexString
+import Azurite.AzFloat.Literals
+import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.ToString
 import Azurite.AzFormula.Atom
