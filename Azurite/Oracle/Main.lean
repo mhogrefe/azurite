@@ -7,17 +7,17 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.Oracle.AzNat
+import Azurite.Oracle.AzInt
 
 /-!
 # The Malachite oracle
 
 `lake exe oracle <mode> <file>` reads the lines a Malachite demo printed to `<file>`, recomputes
 each one with Azurite, and exits nonzero on the first disagreement. It is the Azurite backend of
-Malachite's differential-testing driver (`oracle-test/` in the Malachite repository), which runs each
-demo in its generator modes and hands the output here. Azurite's results are proven correct, so a
-disagreement is a bug in Malachite, in the demo's output format, or in this oracle's reading of
-Malachite's conventions.
+Malachite's differential-testing driver (`oracle-test/` in the Malachite repository), which runs
+each demo in its generator modes and hands the output here. Azurite's results are proven correct,
+so a disagreement is a bug in Malachite, in the demo's output format, or in this oracle's reading
+of Malachite's conventions.
 
 Every mode is strict: a nonempty line it does not recognize is an error, and so is an input in
 which no line was checked, so that a change in a demo's format cannot make a run pass without
@@ -41,7 +41,7 @@ def multiline (check : String → Verdict) : Mode := { check, multiline := true 
 /-- The most physical lines one multiline record may span. -/
 def maxJoinedLines : Nat := 64
 
-/-- The modes, named after the `AzNat` operation each checks. -/
+/-- The modes, named after the `AzNat` or `AzInt` operation each checks. -/
 def modes : List (String × Mode) := [
   ("az_nat_add", mode checkAdd),
   ("az_nat_sub", mode checkSub),
@@ -85,7 +85,48 @@ def modes : List (String × Mode) := [
   ("az_nat_cmp_normalized", mode checkCmpNormalized),
   ("az_nat_from_unsigned", mode checkFromUnsigned),
   ("az_nat_saturating_from_signed", mode checkSaturatingFromSigned),
-  ("az_nat_wrapping_from", mode checkWrappingFrom)]
+  ("az_nat_wrapping_from", mode checkWrappingFrom),
+  ("az_int_add", mode checkIntAdd),
+  ("az_int_sub", mode checkIntSub),
+  ("az_int_mul", mode checkIntMul),
+  ("az_int_neg", mode checkIntNeg),
+  ("az_int_div_euclidean", mode checkIntDivEuclidean),
+  ("az_int_mod_euclidean", mode checkIntModEuclidean),
+  ("az_int_div_mod_euclidean", mode checkIntDivModEuclidean),
+  ("az_int_div_mod", mode checkIntDivMod),
+  ("az_int_mod", mode checkIntMod),
+  ("az_int_div_exact", mode checkIntDivExact),
+  ("az_int_div_round", mode checkIntDivRound),
+  ("az_int_shl", mode checkIntShl),
+  ("az_int_shr", mode checkIntShr),
+  ("az_int_shr_round", mode checkIntShrRound),
+  ("az_int_pow", mode checkIntPow),
+  ("az_int_gcd", mode checkIntGcd),
+  ("az_int_extended_gcd", mode checkIntExtendedGcd),
+  ("az_int_power_of_2", mode checkIntPowerOf2),
+  ("az_int_low_mask", mode checkIntLowMask),
+  ("az_int_is_power_of_2", mode checkIntIsPowerOf2),
+  ("az_int_parity", mode checkIntParity),
+  ("az_int_sign", mode checkIntSign),
+  ("az_int_significant_bits", mode checkIntSignificantBits),
+  ("az_int_trailing_zeros", mode checkIntTrailingZeros),
+  ("az_int_from_string_base", multiline checkIntFromStringBase),
+  ("az_int_from_str", multiline checkIntFromStr),
+  ("az_int_to_string", mode checkIntToString),
+  ("az_int_cmp", mode checkIntCmp),
+  ("az_int_cmp_natural", mode checkIntCmpNatural),
+  ("az_int_cmp_unsigned", mode checkIntCmpUnsigned),
+  ("az_int_cmp_signed", mode checkIntCmpSigned),
+  ("az_int_eq", mode checkIntEq),
+  ("az_int_eq_natural", mode checkIntEqNatural),
+  ("az_int_eq_unsigned", mode checkIntEqUnsigned),
+  ("az_int_eq_signed", mode checkIntEqSigned),
+  ("az_int_from_natural", mode checkIntFromNatural),
+  ("az_int_from_unsigned", mode checkIntFromUnsigned),
+  ("az_int_from_signed", mode checkIntFromSigned),
+  ("az_int_from_sign_and_abs", mode checkIntFromSignAndAbs),
+  ("az_int_unsigned_abs", mode checkIntUnsignedAbs),
+  ("az_int_wrapping_from", mode checkIntWrappingFrom)]
 
 /-- Reports a disagreement or an unreadable record and the text it concerns. -/
 def report (name : String) (lineNumber : Nat) (msg text : String) : IO UInt32 := do

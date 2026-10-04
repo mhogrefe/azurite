@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzNat.ParseBase
+import Azurite.AzInt.Parse
 import Azurite.Rounding.Mode
 
 /-!
@@ -150,7 +151,21 @@ def parseAzNat (s : String) : Option AzNat :=
   let s := trim s
   if s.isEmpty || !(s.toList.all Char.isDigit) then none else AzNat.parse s
 
+/-- A decimal integer: an optional `-` and then digits, so that `-0` and a stray sign are
+rejected. -/
+def parseAzInt (s : String) : Option AzInt :=
+  let s := trim s
+  let digits := if s.startsWith "-" then dropChars s 1 else s
+  if digits.isEmpty || !(digits.toList.all Char.isDigit) || s == "-0" then none
+  else AzInt.parse s
+
 def parseNat (s : String) : Option Nat := (trim s).toNat?
+
+def parseBool (s : String) : Option Bool :=
+  match trim s with
+  | "true" => some true
+  | "false" => some false
+  | _ => none
 
 def parseInt (s : String) : Option Int := (trim s).toInt?
 
@@ -189,6 +204,15 @@ def parseTuple2 (s : String) : Option (String × String) :=
   if isWrapped s '(' ')' then
     match splitTopLevel (dropRightChars (dropChars s 1) 1) ',' with
     | [a, b] => some (trim a, trim b)
+    | _ => none
+  else none
+
+/-- A `(a, b, c)` triple, as three strings. -/
+def parseTuple3 (s : String) : Option (String × String × String) :=
+  let s := trim s
+  if isWrapped s '(' ')' then
+    match splitTopLevel (dropRightChars (dropChars s 1) 1) ',' with
+    | [a, b, c] => some (trim a, trim b, trim c)
     | _ => none
   else none
 
@@ -235,6 +259,7 @@ def parseLimbs (ss : List String) : Option (Array UInt64) := do
   pure (ns.map UInt64.ofNat).toArray
 
 /-- A pair rendered as Malachite renders `(value, ordering)`. -/
-def pairString (a : AzNat) (o : Ordering) : String := s!"({a}, {orderingName o})"
+def pairString {α : Type} [ToString α] (a : α) (o : Ordering) : String :=
+  s!"({a}, {orderingName o})"
 
 end Azurite.Oracle
