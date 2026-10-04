@@ -16,6 +16,8 @@
 #   * Benchmark/ and */Tune.lean     -> Azurite/Benchmark/Main.lean
 #                                       (checked only; Main.lean is the
 #                                       curated root of the benchmark exe)
+#   * Oracle/                        -> Azurite/Oracle/Main.lean
+#                                       (checked only; the oracle exe's root)
 #
 # Root-file imports are also checked to be alphabetically sorted and
 # duplicate-free.
@@ -61,6 +63,7 @@ all_modules=$(find "$SRC_DIR" -name '*.lean' -type f \
 
 lib_expected=$(echo "$all_modules" \
   | grep -v '^Azurite\.Benchmark\.' \
+  | grep -v '^Azurite\.Oracle\.' \
   | grep -v '\.Tests\.' \
   | grep -v '\.Tune$')
 
@@ -151,6 +154,24 @@ if [[ -n "$bench_missing" ]]; then
   exit 1
 fi
 echo "$BENCH_MAIN: covers all Benchmark and Tune modules."
+
+# ── 3a. Check oracle coverage (no auto-fix: Main.lean is the exe's root) ──
+
+ORACLE_MAIN="$SRC_DIR/Oracle/Main.lean"
+oracle_expected=$(echo "$all_modules" \
+  | grep '^Azurite\.Oracle\.' \
+  | grep -v '^Azurite\.Oracle\.Main$' || true)
+oracle_actual=$(cat $(find "$SRC_DIR/Oracle" -name '*.lean' -type f) \
+  | grep '^import ' | sed 's/^import //' | sort -u)
+oracle_missing=$(comm -23 <(echo "$oracle_expected") <(echo "$oracle_actual"))
+if [[ -n "$oracle_missing" ]]; then
+  echo "ERROR: $ORACLE_MAIN does not (transitively) import:"
+  while IFS= read -r m; do
+    echo "  import $m"
+  done <<< "$oracle_missing"
+  exit 1
+fi
+echo "$ORACLE_MAIN: covers all Oracle modules."
 
 # ── 3b. Trailing whitespace (auto-fixed) ──
 

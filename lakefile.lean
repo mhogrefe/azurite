@@ -51,6 +51,11 @@ extern_lib timerLib pkg := do
 lean_exe «benchmark» where
   root := `Azurite.Benchmark.Main
 
+/-- `lake exe oracle <mode> <file>`: rechecks the output of a Malachite demo against Azurite, the
+Azurite backend of Malachite's differential-testing driver. -/
+lean_exe «oracle» where
+  root := `Azurite.Oracle.Main
+
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
 meta if get_config? env = some "dev" then

@@ -23,5 +23,7 @@ jobs:
         run: lake test
       - name: Build benchmark executable
         run: lake build benchmark
+      - name: Build oracle executable
+        run: lake build oracle
       - name: Check axioms
         run: lake env lean scripts/check_axioms.lean
