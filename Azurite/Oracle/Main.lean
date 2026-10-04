@@ -8,6 +8,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.Oracle.AzInt
+import Azurite.Oracle.AzZModPow2
+import Azurite.Oracle.AzZMod
 
 /-!
 # The Malachite oracle
@@ -41,7 +43,7 @@ def multiline (check : String → Verdict) : Mode := { check, multiline := true 
 /-- The most physical lines one multiline record may span. -/
 def maxJoinedLines : Nat := 64
 
-/-- The modes, named after the `AzNat` or `AzInt` operation each checks. -/
+/-- The modes, named after the `AzNat`, `AzInt`, `AzZModPow2`, or `AzZMod` operation each checks. -/
 def modes : List (String × Mode) := [
   ("az_nat_add", mode checkAdd),
   ("az_nat_sub", mode checkSub),
@@ -126,7 +128,34 @@ def modes : List (String × Mode) := [
   ("az_int_from_signed", mode checkIntFromSigned),
   ("az_int_from_sign_and_abs", mode checkIntFromSignAndAbs),
   ("az_int_unsigned_abs", mode checkIntUnsignedAbs),
-  ("az_int_wrapping_from", mode checkIntWrappingFrom)]
+  ("az_int_wrapping_from", mode checkIntWrappingFrom),
+  ("az_zmod_pow2_add", mode checkZModAdd),
+  ("az_zmod_pow2_sub", mode checkZModSub),
+  ("az_zmod_pow2_mul", mode checkZModMul),
+  ("az_zmod_pow2_square", mode checkZModSquare),
+  ("az_zmod_pow2_neg", mode checkZModNeg),
+  ("az_zmod_pow2_pow", mode checkZModPow),
+  ("az_zmod_pow2_inverse", mode checkZModInverse),
+  ("az_zmod_pow2_shl", mode checkZModShl),
+  ("az_zmod_pow2_shr", mode checkZModShr),
+  ("az_zmod_pow2_is_reduced", mode checkZModIsReduced),
+  ("az_zmod_pow2_eq", mode checkZModEq),
+  ("az_zmod_pow2_of_int", mode checkZModOfInt),
+  ("az_zmod_add", mode checkModAdd),
+  ("az_zmod_sub", mode checkModSub),
+  ("az_zmod_mul", mode checkModMul),
+  ("az_zmod_mul_precomputed", mode checkModMulPrecomputed),
+  ("az_zmod_square", mode checkModSquare),
+  ("az_zmod_square_precomputed", mode checkModSquarePrecomputed),
+  ("az_zmod_neg", mode checkModNeg),
+  ("az_zmod_pow", mode checkModPow),
+  ("az_zmod_pow_precomputed", mode checkModPowPrecomputed),
+  ("az_zmod_inverse", mode checkModInv),
+  ("az_zmod_shl", mode checkModShl),
+  ("az_zmod_shr", mode checkModShr),
+  ("az_zmod_div", mode checkModDiv),
+  ("az_zmod_is_reduced", mode checkModIsReduced),
+  ("az_zmod_eq", mode checkModEq)]
 
 /-- Reports a disagreement or an unreadable record and the text it concerns. -/
 def report (name : String) (lineNumber : Nat) (msg text : String) : IO UInt32 := do
