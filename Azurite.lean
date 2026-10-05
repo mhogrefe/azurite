@@ -33,13 +33,13 @@ import Azurite.AzFermat.Equiv.Basic
 import Azurite.AzFermat.Equiv.FFT
 import Azurite.AzFermat.FFT
 import Azurite.AzFloat.Add
-import Azurite.AzFloat.AddRat
+import Azurite.AzFloat.AddSubRat
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.Equiv.Add
-import Azurite.AzFloat.Equiv.AddRat
+import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion

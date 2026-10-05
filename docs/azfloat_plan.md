@@ -159,7 +159,7 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   float and tag; stricter than MCA at a cell boundary, which the tag needs), `zivLoop approx exact p mode
   fuel w` (one `(y, ε)` per level with `y ≤ v ≤ y + ε`, doubling `w`, exact fallback when the fuel is
   spent — correctness never depends on the fuel), `zivGuardBits = 64`, `zivFuel p n = log₂(p+n) + 8`,
-  `truncError f = ulp? f` (or `0`).  `AddRat.lean` — `addRatApprox x q w`: `lo = ⌊q⌋_w` (the one division),
+  `truncError f = ulp? f` (or `0`).  `AddSubRat.lean` — `addRatApprox x q w`: `lo = ⌊q⌋_w` (the one division),
   `y = ⌊x + lo⌋_{w+2}`, `ε = ⌈truncError lo + truncError y⌉_2`; `zivStart q p = p + 64`, raised to
   `q.num.size` for dyadic `q` (exactness pre-test); `addRatExact` = `ofAzRatRound (x.toAzRat? + q)`;
   `addRatPrecRound`, `subRatPrecRound x q = add x (−q)`, `ratSubPrecRound q x = add (−x) q`.  Proofs:
@@ -168,9 +168,9 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   side); `Equiv/Ziv.lean` `roundVal_eq_of_between`, `roundingPossible_eq`, `zivLoop_eq`,
   `lt_add_ulp_of_floor` (`⌊x⌋_p` lies within one of its own ulps below `x`: `x − ⌊x⌋ < precScale x ≤
   precScale ⌊x⌋`, the binade of the floor being at least that of `x`), `eq_zero_of_roundFloor_eq_zero`,
-  `truncError_spec`; `Equiv/AddRat.lean` `ofAzRatRound_eq_roundVal` (pair form), `addRatExact_eq`,
+  `truncError_spec`; `Equiv/AddSubRat.lean` `ofAzRatRound_eq_roundVal` (pair form), `addRatExact_eq`,
   `addRatApprox_spec`, `addRatPrecRound_eq_liftVal`, `subRatPrecRound_eq_liftVal`,
-  `ratSubPrecRound_eq_liftVal`.  Tests `Tests/AddRat.lean` include a sum `2^-80/3` above/below the one-bit
+  `ratSubPrecRound_eq_liftVal`.  Tests `Tests/AddSubRat.lean` include a sum `2^-80/3` above/below the one-bit
   midpoint (first level fails, second succeeds) and agreement with the exact fallback.  NOT timed (user
   rule: pause before benchmarks).  `HAdd`/`HSub` instances (user decision 2026-10-05): nearest at the
   float's precision, `1` for a special float (`ratOpPrecision`), consistent with `combinedPrecision` and

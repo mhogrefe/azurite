@@ -36,7 +36,7 @@ attempt succeeds whenever `x + q` fits in `w + 2` bits — the exactness pre-tes
 `subRatPrecRound x q = addRatPrecRound x (−q)` and `ratSubPrecRound q x = addRatPrecRound
 (−x) q`.  The `+` and `−` instances between an `AzFloat` and an `AzRat` round to nearest at the
 float's precision (`1` for a special float, as `combinedPrecision` does for two floats; so
-`zero + 1/3` is `1/4`).  `Equiv/AddRat.lean` proves that all three operations are the lifts of
+`zero + 1/3` is `1/4`).  `Equiv/AddSubRat.lean` proves that all three operations are the lifts of
 `EReal` addition and subtraction with the value of `q`.
 -/
 
