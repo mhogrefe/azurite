@@ -20,15 +20,17 @@ The boundaries of rounding to precision `p` are the values of `floatSet (p + 1)`
 of precision `p` and the midpoints between neighbors.  `roundVal_congr_of_no_boundary`
 specializes the cell lemma `roundVal_congr_cell`: two reals with no boundary between them
 (inclusive) have the same `roundVal`.  `roundingPossible_eq` is then the correctness of MCA
-Algorithm 3.1 in its truncation form, and `zivLoop_eq` the correctness of the loop: whenever
-every approximation brackets the exact value, and rounding is possible from some working
-precision `W` on that the fuel reaches, the loop returns `roundVal` of the exact value.
+Algorithm 3.1 in its bracket form, and `zivLoop_eq` the correctness of the loop: whenever every
+approximation brackets the exact value (`Rounds` says that a `Roundable` is the rounding
+procedure of a given real), and rounding is possible from some working precision `W` on that
+the fuel reaches, the loop returns `roundVal` of the exact value.
 
-The approximations are truncations, whose error is one ulp of the result: `lt_add_ulp_of_floor`
-(a float whose value is the floor of `x` at its precision lies less than one of its ulps below
-`x`), `sub_roundFloor_lt_precScale` (the error is below the local scale of `x`),
-`eq_zero_of_roundFloor_eq_zero` (only `0` truncates to `0` — the exponent is unbounded), and
-`truncError_spec` packaging the facts the operations need about `truncError`.
+The approximations come from truncations, whose error is one ulp of the result:
+`lt_add_ulp_of_floor` (a float whose value is the floor of `x` at its precision lies less than
+one of its ulps below `x`), `sub_roundFloor_lt_precScale` (the error is below the local scale
+of `x`), `eq_zero_of_roundFloor_eq_zero` (only `0` truncates to `0` — the exponent is
+unbounded), and `truncError_spec` packaging the facts the operations need about `truncError`,
+including that the truncation plus its error is again a float of the working precision.
 `ofAzRatRound_eq_roundVal` is the pair form of `ofAzRatRound_eq_ofEReal`, the first
 approximation of every operation with a rational.
 
@@ -73,19 +75,6 @@ theorem mem_floatSet_mul_zpow (p : ℕ) [NeZero p] (k j : ℤ) (hk : |k| ≤ 2 ^
     · refine Or.inr ⟨-1, j + p, by norm_num, hm1, ?_⟩
       rw [h, hsplit, Int.cast_neg, Int.cast_one, neg_one_mul, Int.cast_neg, Int.cast_pow,
         Int.cast_ofNat, neg_mul]
-
-/-- More precision, more floats. -/
-theorem floatSet_mono {p p' : ℕ} [NeZero p] [NeZero p'] (h : p ≤ p') :
-    floatSet p ⊆ floatSet p' := by
-  rw [floatSet_eq, floatSet_eq]
-  intro e he
-  rcases he with he | he
-  · left
-    rcases he with he | ⟨m, k, hm, hlt, rfl⟩
-    · exact Or.inl he
-    · refine Or.inr ⟨m, k, hm, lt_of_lt_of_le hlt ?_, rfl⟩
-      exact pow_le_pow_right₀ (by norm_num) h
-  · exact Or.inr he
 
 /-- Two reals with no boundary between them (inclusive) round the same way: the specialization
 of the cell lemma to the cells cut out by the floats of precision `p + 1`. -/
@@ -191,73 +180,66 @@ theorem roundVal_congr_of_no_boundary (p : ℕ) [NeZero p] (mode : RoundingMode)
 
 /-! ### `roundingPossible` and `zivLoop` -/
 
+/-- A `Roundable` is the rounding procedure of the real `v`. -/
+def Rounds (r : Roundable) (v : ℝ) : Prop :=
+  ∀ (p : ℕ) [NeZero p] (mode : RoundingMode), r p mode = roundVal p mode (some (v : EReal))
+
 /-- When `roundingPossible` answers, it answers with the rounding of the exact value, which
-lies in `(y, y + ε]` or is `y` with `ε = 0`. -/
-theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {y ε : AzFloat}
-    {yv εv v : ℝ} (hy : y.toVal = some (yv : EReal)) (hε : ε.toVal = some (εv : EReal))
-    (h₁ : yv ≤ v) (h₂ : v ≤ yv + εv) (h₃ : yv = v → εv = 0) {r : AzFloat × Ordering}
-    (h : roundingPossible y ε p mode = some r) :
+lies in `(l, h]` or is `l = h`. -/
+theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Roundable}
+    {lv hv v : ℝ} (hl : Rounds l lv) (hh : Rounds h hv) (h₁ : lv ≤ v) (h₂ : v ≤ hv)
+    (h₃ : lv = v → hv = v) {r : AzFloat × Ordering}
+    (hr : roundingPossible l h p mode = some r) :
     r = roundVal p mode (some (v : EReal)) := by
-  unfold roundingPossible at h
-  split_ifs at h with hle
-  rw [Option.some.injEq] at h
-  have hadd : ∀ (p' : ℕ) [NeZero p'] (m : RoundingMode),
-      addPrecRound y ε p' m = roundVal p' m (some ((yv + εv : ℝ) : EReal)) := by
-    intro p' _ m
-    rw [addPrecRound_eq_liftVal₂]
-    unfold liftVal₂
-    rw [hy, hε, Option.bind_some, Option.bind_some, Spec.add_coe_coe]
-  rw [← h, hadd]
-  by_cases hv : v = yv + εv
-  · rw [hv]
-  have hlt : v < yv + εv := lt_of_le_of_ne h₂ hv
-  have hyv : yv < v := by
+  unfold roundingPossible at hr
+  split_ifs at hr with heq
+  rw [Option.some.injEq] at hr
+  rw [← hr, hh]
+  by_cases hveq : v = hv
+  · rw [hveq]
+  have hlt : v < hv := lt_of_le_of_ne h₂ hveq
+  have hlv : lv < v := by
     rcases lt_or_eq_of_le h₁ with h' | h'
     · exact h'
-    · exact absurd (by rw [h₃ h', add_zero]; exact h'.symm) hv
-  -- the `(p+1)`-bit floor of `y + ε` is at most `y`
-  rw [hadd] at hle
-  obtain ⟨hb1, _⟩ := roundVal_coe (p + 1) .Floor (yv + εv)
-  have hfl : (round (floatSet (p + 1)) .Floor (yv + εv)).val
-      = (roundFloor (floatSet (p + 1)) (yv + εv)).val := rfl
-  rw [hfl] at hb1
-  obtain ⟨bv, hbv⟩ :
-      ∃ bv : ℝ, ((bv : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) (yv + εv)).val := by
-    rw [val_roundFloor_floatSet]
-    exact precisionSet_exists_real _
-  have hble : bv ≤ yv := by
-    unfold le at hle
-    rw [partialCompare_eq, hb1, hy, ← hbv] at hle
-    simp only [compare_coe_coe] at hle
-    by_contra hcon
-    push Not at hcon
-    rw [compare_gt_iff_gt.mpr hcon] at hle
-    simp at hle
+    · exact absurd (h₃ h').symm hveq
+  -- the `(p+1)`-bit floors of the two ends agree
+  rw [hl, hh] at heq
+  have hval := congrArg toVal heq
+  rw [fst_roundVal, fst_roundVal] at hval
+  change (ofEReal (p + 1) .Floor (lv : EReal)).toVal
+    = (ofEReal (p + 1) .Floor (hv : EReal)).toVal at hval
+  rw [(ofEReal_spec (p + 1) .Floor lv).2, (ofEReal_spec (p + 1) .Floor hv).2,
+    Option.some.injEq] at hval
+  have hfl : ∀ x : ℝ, (round (floatSet (p + 1)) .Floor x).val
+      = (roundFloor (floatSet (p + 1)) x).val := fun _ => rfl
+  rw [hfl, hfl] at hval
   symm
-  apply roundVal_congr_of_no_boundary p mode v (yv + εv) hlt.le
-  intro b hb ⟨hvb, hb'⟩
-  have : (b : EReal) ≤ (roundFloor (floatSet (p + 1)) (yv + εv)).val :=
-    (isGreatest_roundFloor (floatSet (p + 1)) (yv + εv)).2 ⟨hb, EReal.coe_le_coe_iff.mpr hb'⟩
-  rw [← hbv] at this
-  have := EReal.coe_le_coe_iff.mp this
+  apply roundVal_congr_of_no_boundary p mode v hv hlt.le
+  intro b hb ⟨hvb, hbh⟩
+  have h1 : (b : EReal) ≤ (roundFloor (floatSet (p + 1)) hv).val :=
+    (isGreatest_roundFloor (floatSet (p + 1)) hv).2 ⟨hb, EReal.coe_le_coe_iff.mpr hbh⟩
+  have h2 : (roundFloor (floatSet (p + 1)) lv).val ≤ (lv : EReal) :=
+    (isGreatest_roundFloor (floatSet (p + 1)) lv).1.2
+  rw [← hval] at h1
+  have := EReal.coe_le_coe_iff.mp (le_trans h1 h2)
   linarith
 
 /-- Correctness of Ziv's loop: if every approximation at a positive working precision brackets
 the exact value `v`, rounding is possible from working precision `W` on, and the fuel reaches
 `W`, the loop returns the rounding of `v`. -/
-theorem zivLoop_eq (p : ℕ) [NeZero p] (mode : RoundingMode) (approx : Nat → AzFloat × AzFloat)
-    (v : ℝ)
-    (happrox : ∀ w, 0 < w → ∃ yv εv : ℝ, yv ≤ v ∧ v ≤ yv + εv ∧ (yv = v → εv = 0) ∧
-      (approx w).1.toVal = some (yv : EReal) ∧ (approx w).2.toVal = some (εv : EReal))
+theorem zivLoop_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (happrox : ∀ w, 0 < w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v))
     (W : ℕ) (hW : ∀ w, W ≤ w → (roundingPossible (approx w).1 (approx w).2 p mode).isSome) :
     ∀ (fuel w : Nat), 0 < w → W ≤ w * 2 ^ fuel →
       zivLoop approx p mode fuel w = roundVal p mode (some (v : EReal))
   | fuel, w, hw, hfuel => by
-    obtain ⟨yv, εv, h₁, h₂, h₃, hy, hε⟩ := happrox w hw
+    obtain ⟨lv, hv, hl, hh, h₁, h₂, h₃⟩ := happrox w hw
     rw [zivLoop.eq_def]
     split
     · rename_i r hr
-      exact roundingPossible_eq p mode hy hε h₁ h₂ h₃ hr
+      exact roundingPossible_eq p mode hl hh h₁ h₂ h₃ hr
     · rename_i hr
       cases fuel with
       | zero =>
@@ -269,6 +251,16 @@ theorem zivLoop_eq (p : ℕ) [NeZero p] (mode : RoundingMode) (approx : Nat → 
         show zivLoop approx p mode fuel (2 * w) = _
         exact zivLoop_eq p mode approx v happrox W hW fuel (2 * w) (by omega)
           (by rw [pow_succ] at hfuel; linarith)
+
+/-- The fuel `zivFuel W` reaches `W` from any positive start. -/
+theorem le_mul_two_pow_zivFuel (W w : ℕ) (hw : 0 < w) : W ≤ w * 2 ^ zivFuel W := by
+  have h : W < 2 ^ zivFuel W := by
+    unfold zivFuel
+    have h2 : (AzNat.ofNat W).size = W.size := by rw [← AzNat.size_toNat, AzNat.toNat_ofNat]
+    rw [h2]
+    exact Nat.lt_size_self W
+  calc W ≤ 2 ^ zivFuel W := h.le
+    _ ≤ w * 2 ^ zivFuel W := Nat.le_mul_of_pos_left _ hw
 
 /-! ### Arithmetic of boundaries -/
 
@@ -418,13 +410,15 @@ theorem eq_zero_of_roundFloor_eq_zero (p : ℕ) [NeZero p] (x : ℝ)
 
 /-- The truncation of `x` at precision `p` (with its tag) and its `truncError` bracket `x`:
 the result `y` and the bound `ε` are reals with `y ≤ x ≤ y + ε`, `ε = 0` when the truncation
-was exact, and otherwise `ε` is the ulp `2^(e − p)` of the result, whose exponent is `e`. -/
+was exact, and otherwise `ε` is the ulp `2^(e − p)` of the result, whose exponent is `e`; and
+`y + ε`, the next float up, is again a float of precision `p`. -/
 theorem truncError_spec (p : ℕ) [NeZero p] (x : ℝ) :
     ∃ yv εv : ℝ, (roundVal p .Floor (some (x : EReal))).1.toVal = some (yv : EReal) ∧
       (truncError (roundVal p .Floor (some (x : EReal)))).toVal = some (εv : EReal) ∧
       yv ≤ x ∧ x ≤ yv + εv ∧ (yv = x → εv = 0) ∧ 0 ≤ εv ∧
       (εv ≠ 0 → ∃ e : ℤ, εv = (2 : ℝ) ^ (e - p) ∧
-        (2 : ℝ) ^ (e - 1) ≤ |yv| ∧ |yv| < (2 : ℝ) ^ e) := by
+        (2 : ℝ) ^ (e - 1) ≤ |yv| ∧ |yv| < (2 : ℝ) ^ e) ∧
+      ((yv + εv : ℝ) : EReal) ∈ floatSet p := by
   have hpair : roundVal p .Floor (some (x : EReal))
       = (ofEReal p .Floor x, compare (round (floatSet p) .Floor x).val (x : EReal)) :=
     Prod.ext rfl (roundVal_coe p .Floor x).2
@@ -448,8 +442,9 @@ theorem truncError_spec (p : ℕ) [NeZero p] (x : ℝ) :
     rw [toVal_zero, Option.some.injEq] at hval
     have hx0 : x = 0 := eq_zero_of_roundFloor_eq_zero p x hval.symm
     subst hx0
-    refine ⟨0, 0, by simp, ?_, le_rfl, by simp, fun _ => rfl, le_rfl, fun h => absurd rfl h⟩
-    simp [truncError, ← hval]
+    refine ⟨0, 0, by simp, ?_, le_rfl, by simp, fun _ => rfl, le_rfl, fun h => absurd rfl h, ?_⟩
+    · simp [truncError, ← hval]
+    · exact ⟨zero, Or.inr rfl, by simp⟩
   | finite s e q m hv =>
     rw [toVal_finite, Option.some.injEq] at hval
     have hq : q = p := by
@@ -457,9 +452,11 @@ theorem truncError_spec (p : ℕ) [NeZero p] (x : ℝ) :
       exact hprec
     subst hq
     have hyx : finiteVal s e m ≤ x := EReal.coe_le_coe_iff.mp (hval ▸ hle)
+    have hmem : ((finiteVal s e m : ℝ) : EReal) ∈ floatSet q :=
+      ⟨finite s e q m hv, Or.inl rfl, rfl⟩
     by_cases hex : finiteVal s e m = x
     · refine ⟨finiteVal s e m, 0, rfl, ?_, hyx, by simp [hex], fun _ => rfl, le_rfl,
-        fun h => absurd rfl h⟩
+        fun h => absurd rfl h, by simpa using hmem⟩
       simp [truncError, ← hval, hex]
     · obtain ⟨y, hy, hyv, _⟩ := ulp?_spec s e q m hv
       have hx : x ≠ 0 := by
@@ -471,9 +468,45 @@ theorem truncError_spec (p : ℕ) [NeZero p] (x : ℝ) :
       have hne : compare (((finiteVal s e m : ℝ) : EReal)) (x : EReal) ≠ .eq := by
         rw [compare_coe_coe]
         exact fun h => hex (compare_eq_iff_eq.mp h)
+      -- the next float up: `(±c + 1) · 2^(e − q)` with `c` the core, `|±c + 1| ≤ 2^q`
+      have hsucc : ((finiteVal s e m + (2 : ℝ) ^ (e.toInt - q) : ℝ) : EReal) ∈ floatSet q := by
+        rw [finiteVal_eq_core s e hv]
+        set c := coreSignificand q m with hc
+        have hcs : c.size = q := size_coreSignificand hv
+        have hclt : c.toNat < 2 ^ q := by
+          have := Nat.lt_size_self c.toNat
+          rwa [AzNat.size_toNat, hcs] at this
+        have hcpos : 0 < c.toNat := by
+          have := Nat.lt_size.mp (show 0 < c.toNat.size by rw [AzNat.size_toNat, hcs]; exact hv.pos)
+          simp at this
+          omega
+        have hclt' : (c.toNat : ℤ) < 2 ^ q := by exact_mod_cast hclt
+        have hcpos' : (1 : ℤ) ≤ c.toNat := by exact_mod_cast hcpos
+        have hval' : finiteVal s e c
+            = (((if s then (c.toNat : ℤ) else -(c.toNat : ℤ)) : ℤ) : ℝ) * 2 ^ (e.toInt - q) := by
+          unfold finiteVal
+          rw [hcs]
+          cases s
+          · simp only [Bool.false_eq_true, ↓reduceIte, Int.cast_neg, Int.cast_natCast]; ring
+          · simp only [↓reduceIte, Int.cast_natCast]; ring
+        rw [hval']
+        have : (((if s then (c.toNat : ℤ) else -(c.toNat : ℤ)) : ℤ) : ℝ) * 2 ^ (e.toInt - q)
+            + (2 : ℝ) ^ (e.toInt - q)
+            = (((if s then (c.toNat : ℤ) else -(c.toNat : ℤ)) + 1 : ℤ) : ℝ)
+              * 2 ^ (e.toInt - q) := by
+          push_cast; ring
+        rw [this]
+        apply mem_floatSet_mul_zpow
+        cases s
+        · simp only [Bool.false_eq_true, ↓reduceIte]
+          rw [abs_le]
+          constructor <;> omega
+        · simp only [↓reduceIte]
+          rw [abs_le]
+          constructor <;> omega
       refine ⟨finiteVal s e m, (2 : ℝ) ^ (e.toInt - q), rfl, ?_, hyx,
         (lt_add_ulp_of_floor s e hv x hx hval).le, fun h => absurd h hex, by positivity,
-        fun _ => ⟨e.toInt, rfl, ?_, ?_⟩⟩
+        fun _ => ⟨e.toInt, rfl, ?_, ?_⟩, hsucc⟩
       · simp only [truncError, ← hval, hne, ↓reduceIte, hy, Option.getD_some, hyv]
       · exact (abs_finiteVal_bounds s e hv).1
       · exact (abs_finiteVal_bounds s e hv).2

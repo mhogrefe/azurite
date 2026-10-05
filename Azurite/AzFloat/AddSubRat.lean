@@ -21,20 +21,22 @@ computing it exactly means a shift of `q`'s numerator by the exponent gap and a 
 is wasteful for a result of `p` bits and impossible when the exponent of `x` is huge.  Instead,
 one approximation per working precision `w`:
 
-1. `lo`, the truncation of `q` toward `−∞` to `w` bits (one division, the only expensive step);
-2. `y`, the truncation of the exact dyadic sum `x + lo` toward `−∞` to `w + 2` bits;
-3. the error bound `ε`, the sum of the two truncation errors (one ulp each, or `0` for an exact
-   truncation, `truncError`), rounded up to two bits.
+1. `lo`, the truncation of `q` toward `−∞` to `w` bits (one division, the only expensive step),
+   and `hi`, the next float up (`lo` plus its `truncError`; `hi = lo` when the truncation was
+   exact), so that `lo ≤ q ≤ hi`;
+2. the bracket `x + lo ≤ x + q ≤ x + hi`, whose ends are exact dyadic numbers that are not
+   materialized but *rounded* on demand by `addPrecRound`, which is cheap in every regime
+   (`Roundable`).
 
-Then `y ≤ x + q ≤ y + ε`, with `ε = 0` when `y = x + q`, and `roundingPossible` decides from
-the `(p + 1)`-bit truncation of `y + ε` whether the result is determined.  The first working
-precision is `p + 64` bits, or the bit length of `q`'s numerator when `q` is dyadic (then
-`lo = q` exactly — the exactness pre-test of MCA §3.1.10).  The fuel `addRatFuel` is proven
-sufficient (`Equiv/AddSubRat.lean`): from a working precision of about `p` plus the bit
-lengths of `q`'s numerator, of `q`'s denominator twice and of `x`'s significand, plus twice
-the magnitude of `x`'s exponent, rounding is always possible, because `x + q` is either a
-boundary itself — then `q` is dyadic and both truncations are exact — or at a distance of at
-least `1/(den · 2^a)` from every boundary, while the error bound shrinks like `2^-w`.
+`roundingPossible` compares the `(p + 1)`-bit truncations of the two ends and, when they
+agree, returns the rounding of `x + hi`.  The first working precision is `p + 64` bits, or the
+bit length of `q`'s numerator when `q` is dyadic (then `lo = q` exactly — the exactness
+pre-test of MCA §3.1.10).  The fuel `addRatFuel` is proven sufficient
+(`Equiv/AddSubRat.lean`): from a working precision of about `p` plus the bit lengths of `q`'s
+numerator, of `q`'s denominator twice and of `x`'s significand, plus the magnitude of `x`'s
+exponent, rounding is always possible, because `x + q` is either a boundary itself — then `q`
+is dyadic and the bracket is a point — or at a distance of at least `1/(den · 2^a)` from every
+boundary, while the bracket's width `hi − lo` shrinks like `2^-w`.
 
 `subRatPrecRound x q = addRatPrecRound x (−q)` and `ratSubPrecRound q x = addRatPrecRound
 (−x) q`.  The `+` and `−` instances between an `AzFloat` and an `AzRat` round to nearest at the
@@ -51,20 +53,20 @@ that `q` is represented exactly from the start. -/
 def zivStart (q : AzRat) (p : Nat) : Nat :=
   if q.den.isPowerOfTwo then max (p + zivGuardBits) q.num.size else p + zivGuardBits
 
-/-- One approximation of `x + q` at working precision `w`: `q` truncated to `w` bits, added to
-`x` and truncated to `w + 2` bits, with the sum of the two truncation errors as the bound. -/
-def addRatApprox (x : AzFloat) (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+/-- The bracket of `x + q` at working precision `w`: `q` truncated to `w` bits and the next
+float up, each added to `x`, given by their rounding procedures. -/
+def addRatApprox (x : AzFloat) (q : AzRat) (w : Nat) : Roundable × Roundable :=
   let lo := ofAzRatRound q w .Floor
-  let y := addPrecRound x lo.1 (w + 2) .Floor
-  (y.1, (addPrecRound (truncError lo) (truncError y) 2 .Ceiling).1)
+  let hi := (addPrecRound lo.1 (truncError lo) w .Ceiling).1
+  (fun p mode => addPrecRound x lo.1 p mode, fun p mode => addPrecRound x hi p mode)
 
 /-- The fuel of Ziv's loop for `x + q` at precision `p`: enough doublings to reach the working
-precision `p + |num| + 2|den| + |m| + 2|e| + 4` (bit lengths of `q`'s numerator and
-denominator and of `x`'s significand `m`, and the magnitude of `x`'s exponent `e`), from which
-rounding is always possible (`addRatApprox_possible`). -/
+precision `p + |num| + 2|den| + |m| + |e| + 2` (bit lengths of `q`'s numerator and denominator
+and of `x`'s significand `m`, and the magnitude of `x`'s exponent `e`), from which rounding is
+always possible (`addRatApprox_possible`). -/
 def addRatFuel (x : AzFloat) (q : AzRat) (p : Nat) : Nat :=
   match x with
-  | finite _ e _ m _ => (p + q.num.size + 2 * q.den.size + m.size + 4).log2 + e.abs.size + 3
+  | finite _ e _ m _ => zivFuel (p + q.num.size + 2 * q.den.size + m.size + 2) + e.abs.size + 1
   | _ => 0
 
 /-- `x + q` rounded to precision `p` with `mode`, and the comparison with the exact sum. -/

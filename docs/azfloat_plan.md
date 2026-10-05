@@ -153,35 +153,43 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `decide_pos_finiteVal` in `Equiv/RoundScaled`) and `Tests/` files.  No statement changed.
 - 2026-10-05: **Ziv's strategy and `AzFloat ± AzRat`** (`Ziv.lean`, `AddSubRat.lean`, Equiv, tests).
   Source: the author's MCA §3.1.8–3.1.10 text (Ziv's strategy, Algorithm 3.1 RoundingPossible, Theorem 3.2,
-  Table 3.1).  Two user corrections shaped the design: (1) a first draft squeezed the result between *two*
-  approximations per level (floor and ceiling of `q`, two divisions) — Ziv computes ONE approximation and
-  tests it; (2) the user asked whether the exact fallback was needed — examining that showed the closed-
-  interval test `roundVal y = roundVal (y+ε)` fails forever when `y` is itself a boundary (e.g. `x ≫ q`
-  truncates `x + lo` to `x`), so far-apart operands silently fell through to the fallback and materialized
-  `2^|e|`.  Final design: `truncError r` is `0` for an exact truncation (tag `.eq`) else one ulp, so
-  `v ∈ (y, y+ε]` unless `v = y`; `roundingPossible y ε p mode` = MCA RoundingPossible in truncation form:
-  no boundary (float of precision `p+1` = floats and midpoints) in `(y, y+ε]`, tested as
-  `⌊y+ε⌋_{p+1} ≤ y`, result `round_p (y+ε)`; `zivLoop approx p mode fuel w` (fuel+1 attempts, doubling,
-  `(nan, .eq)` after the last — proven unreachable); NO fallback.  `addRatApprox x q w`: `lo = ⌊q⌋_w`
-  (the one division), `y = ⌊x + lo⌋_{w+2}`, `ε = ⌈truncError lo + truncError y⌉_2`; `zivStart q p =
-  p + 64` or `max (p+64) q.num.size` for dyadic `q`; `addRatFuel` = `log₂(p + |num| + 2|den| + |m| + 4) +
-  |e|.size + 3` doublings.  Proofs: `Equiv/Ziv.lean` `roundVal_congr_of_no_boundary` (from
-  `roundVal_congr_cell` with `j = ⌊log₂|v'|⌋ − p`, `k = ⌊v'/2^j⌋`), `roundingPossible_eq`, `zivLoop_eq`
-  (hypotheses: bracketing, `∀ w ≥ W` possible, `W ≤ w₀·2^fuel`), `lt_add_ulp_of_floor` (`x − ⌊x⌋_p <
-  precScale x ≤ precScale ⌊x⌋_p`), `truncError_spec`, boundary arithmetic (`boundary_repr`,
-  `exists_int_mul_sub_dyadic`, `one_div_le_abs_of_mul_eq_int`); `Equiv/AddSubRat.lean`
-  `addRatApprox_spec`, **`addRatApprox_possible`** (termination: `v` boundary ⇒ `q` dyadic
-  (`toRat_mem_precisionSet_of_dyadic`, via coprimality and `Nat.dvd_prime_pow`) ⇒ both truncations exact
-  ⇒ `ε = 0`; else `|v − b^±| ≥ 1/(den·2^a)` for the adjacent boundaries (`dist_sum_boundary`, integrality;
-  their binade is at least `v`'s, and `⌊log₂|v|⌋ ≥ −|den| − a₀` from `|v| ≥ 1/(den 2^{a₀})`), while `q − lo
-  ≤ 2^(|num|−w)`, `ε ≤ 2^(T+1−w)` with `T = |e| + |num| + 2`, and no `(p+1)`-float lies in `(y, x+lo]`
-  because `y` is the `(w+2)`-bit floor and `p+1 ≤ w+2`), `addRatBound_le`, the three lift theorems.
-  The bound is deliberately loose (it costs a few doublings of fuel, never iterations).  Tests include the
-  exponent-`10⁹` far case (which the first design could not do) and a sum `2^-80/3` above/below the
-  one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user decision): nearest at the
-  float's precision, `1` for a special float (`ratOpPrecision`), consistent with `combinedPrecision` and
-  with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷` with a rational next
-  (same loop; termination proofs follow the same pattern with `|x|·ulp` error terms).
+  Table 3.1).  Three user interventions shaped the design: (1) a first draft squeezed the result between
+  *two* approximations per level (floor and ceiling of `q`, two divisions) — Ziv computes ONE approximation
+  and tests it; (2) the user asked whether the exact fallback was needed — examining that showed the
+  closed-interval test fails forever when the truncated sum is itself a boundary (`x ≫ q`), so far-apart
+  operands silently fell through to the fallback and materialized `2^|e|`; the user chose a proven fuel
+  bound with no fallback; (3) the truncation design that followed (`y = ⌊x + lo⌋_{w+2}` plus an error
+  bound) still needed `w ≈ |e|` when the sum lies just *below* a boundary (`2^(10⁹) − 1/3`: the truncation
+  error added back overshoots the boundary), which the test suite caught as a 36-minute hang; the user
+  approved the final **exact-bracket** design.  Final design: `Roundable := Nat → RoundingMode → AzFloat ×
+  Ordering` (an exact real given by its rounding procedure); `truncError r` is `0` for an exact truncation
+  (tag `.eq`) else one ulp, and `lo + truncError lo` is the next float up (`truncError_spec` proves it is
+  again a `w`-bit float); the bracket of `x + q` at level `w` is `x + lo ≤ x + q ≤ x + hi` with
+  `lo = ⌊q⌋_w` (the one division) and `hi = lo + ulp`, both ends rounded on demand by `addPrecRound`,
+  cheap in every regime (far cases via its sticky representative); `roundingPossible l h p mode` = MCA
+  RoundingPossible in bracket form: `⌊l⌋_{p+1} = ⌊h⌋_{p+1}` (no boundary in `(l, h]`), result
+  `round_p h`; `zivLoop approx p mode fuel w` (fuel+1 attempts, doubling, `(nan, .eq)` after the last —
+  proven unreachable); NO fallback.  `zivStart q p = p + 64` or `max (p+64) q.num.size` for dyadic `q`;
+  `addRatFuel` = `zivFuel (p + |num| + 2|den| + |m| + 2) + |e|.size + 1` doublings (`zivFuel W` = bit length
+  of `W`, via `AzNat.size`, no `Nat.log2`).  Proofs: `Equiv/Ziv.lean` `roundVal_congr_of_no_boundary`
+  (from `roundVal_congr_cell` with `j = ⌊log₂|v'|⌋ − p`, `k = ⌊v'/2^j⌋`), `Rounds`, `roundingPossible_eq`,
+  `zivLoop_eq` (hypotheses: bracketing, `∀ w ≥ W` possible, `W ≤ w₀·2^fuel`), `lt_add_ulp_of_floor`
+  (`x − ⌊x⌋_p < precScale x ≤ precScale ⌊x⌋_p`), `truncError_spec`, boundary arithmetic
+  (`boundary_repr`, `exists_int_mul_sub_dyadic`, `one_div_le_abs_of_mul_eq_int`);
+  `Equiv/AddSubRat.lean` `addRatApprox_spec`, **`addRatApprox_possible`** (termination: `v` boundary ⇒ `q`
+  dyadic (`toRat_mem_precisionSet_of_dyadic`, via coprimality and `Nat.dvd_prime_pow`) ⇒ `lo = q` ⇒ bracket
+  is a point; else `|v − b^±| ≥ 1/(den·2^a)` for the adjacent boundaries (`dist_sum_boundary`, integrality;
+  their binade is at least `v`'s, and `⌊log₂|v|⌋ ≥ −|den| − a₀` from `|v| ≥ 1/(den 2^{a₀})`), while the
+  bracket width `ε ≤ 2^(|num|+1−w)`), `addRatBound_le`, the three lift theorems.  The bound is deliberately
+  loose (it costs a few doublings of fuel, never iterations: the loop stops at the first passing level,
+  level 1 in all far cases).  Lean notes: `#guard` evaluates compiled code (the interpreter), not kernel
+  reduction — a hang in a `#guard` is a runtime problem; the earlier `decide`-needs-structural-recursion
+  rule is about kernel evaluation.  Tests include the exponent-`±10⁹` far cases in both directions and a
+  sum `2^-80/3` above/below the one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user
+  decision): nearest at the float's precision, `1` for a special float (`ratOpPrecision`), consistent with
+  `combinedPrecision` and with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷`
+  with a rational next (same loop: bracket `x·lo, x·hi` ordered by the sign of `x`, or `x/hi, x/lo`;
+  termination proofs follow the same pattern).
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for
