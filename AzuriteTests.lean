@@ -11,7 +11,6 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -- test suites, kept out of the main `Azurite` library target.
 -- Built (and thereby run, since `#guard` checks at elaboration time)
 -- via `lake test`.
-
 import Azurite.AzFloat.Tests.Add
 import Azurite.AzFloat.Tests.AddSubRat
 import Azurite.AzFloat.Tests.Basic
@@ -25,6 +24,7 @@ import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Precision
+import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.ToString

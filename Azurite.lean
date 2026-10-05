@@ -7,6 +7,14 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
 import Azurite.APRCL.Equiv.Complete
 import Azurite.APRCL.Equiv.JacobiAlign
 import Azurite.APRCL.Equiv.JacobiChain
@@ -55,6 +63,7 @@ import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Precision
+import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.RoundScaled
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzFloat.Equiv.Rsqrt
@@ -70,6 +79,7 @@ import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.RoundScaled
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sci

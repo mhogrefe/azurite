@@ -231,6 +231,23 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   the 53-bit decimals, and `√2/2` against `√2 >>> 1` (an exact shift, so the two routes must agree).
   Further constants (`π`, `e`, `ln 2`, Euler's `γ`, …) need the elementary functions or dedicated series
   (MCA Ch. 4, user to supply text).
+- 2026-10-05: **Prouhet–Thue–Morse constant** (`ProuhetThueMorse.lean`, `Equiv/ProuhetThueMorse.lean`, `Tests/ProuhetThueMorse.lean`;
+  user request, "implement it efficiently: the limbs of an approximation take on only two values").
+  Definition `prouhetThueMorseConstant : ℝ := ∑' n, tₙ / 2^(n+1)` (noncomputable, in Equiv), `prouhetThueMorseSeq` by binary
+  recursion (WF on `n / 2`; equation lemma `prouhetThueMorseSeq_eq` holds at `0` too).  Key identity `t (2^k a + b) =
+  t a xor t b` (`b < 2^k`) ⇒ word `j` of 64 bits is `T₆ = 0x6996966996696996` or its complement by `t j`;
+  `prouhetThueMorseLimbs N = ofLimbs (Array.ofFn fun i => prouhetThueMorseLimb (N − 1 − i))` (no arithmetic at all).
+  Rounding: `Y = first p + 2 bits`, floor `Y >>> 1`, round bit `Y % 2`, `exact = false` and `cmpMid ≠ .eq`
+  always (the sequence is not eventually constant: `t (2^k) = 1`, `t (3·2^k) = 0`), then `roundFromFloor` +
+  `normalizeCarry` with exponent `−1` (`1/4 < τ < 1/2`).  Proof pattern = the sqrt assembly
+  (`roundFromFloor_spec`, `abs_toInt_round_bounds`, `normalizeCarry_spec`, `toVal_injective`,
+  `compare_mul_right_pos`).  Word value: `ptmWord` (`T₀ = 0`, `T_(k+1) = T_k·2^(2^k) + (2^(2^k) − 1 − T_k)`),
+  `ptmWord_eq_sum`, and `prouhetThueMorseWord.toNat = ptmWord 6` by `decide` (6 structural steps — `decide` on the
+  64-term sum with the WF `prouhetThueMorseSeq` would not reduce).  Real side: `Summable.sum_add_tsum_nat_add`,
+  `Summable.le_tsum`, `Summable.tsum_lt_tsum`, `tsum_geometric_two'`.  Lean notes: `congr 1` on an equation
+  between `Finset.sum`s hits a whnf timeout (it unfolds the sum) — use `congrArg₂ (· + ·)`; `decide` cannot
+  evaluate `Nat.sqrt`/WF functions (`¬ IsSquare 5` by `interval_cases`).  Values checked: 53 bits
+  `0x0.69969669966968`, `0.4124540336401076`; 100 bits `0.4124540336401075977833613682584`.
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for
