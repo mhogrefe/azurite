@@ -99,6 +99,14 @@ Status: started 2026-10-01; see the status log at the end.
    `Spec.sqrt` (`EReal` square root, undefined on negatives), through the reusable
    `roundFromFloor_spec` (integer rounding of a real from its floor, exactness and midpoint
    position) and `scaled_floor`.
+   Reciprocal square root (MCA §3.5.1; the Newton iteration of Algorithm 3.9 with the bound of
+   Lemma 3.15 is an approximation kept for a later performance path): `rsqrtPrecRound x p mode`
+   scales so that `√(2^D / n)` has exactly `p` bits — `D = 2p + q − 2` for even `e`, `2p + q − 1`
+   for odd `e`, `2p + q − 3` when `e` is odd and `n = 2^(q−1)` (then `x` is an even power of two
+   and the result's exponent is one higher) — takes `⌊√⌊2^D / n⌋⌋`, decides exactness by
+   `s² n = 2^D` and the midpoint by `2^(D+2) ⋚ (2s+1)² n`, and rounds with `roundFromFloor`;
+   `0 ↦ +∞`, `+∞ ↦ 0`, negatives `NaN`; `rsqrt` at the operand's precision.  Proven
+   `rsqrtPrecRound_eq_liftVal` with `Spec.rsqrt`.
 4b. **Hexadecimal debug format (done).**  `AzFloat/HexString.lean`: `toHexString`/`ofHexString`,
    the author's Malachite `{:#x}` of a `ComparableFloat` (`0x0.8#5`); proven
    `ofHexString_toHexString : ofHexString (toHexString x) = some x` for every float.
@@ -265,3 +273,11 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   Lean notes: `rw` cannot rewrite under the `0 < mantissa` proof argument of `UnpackedFloat.finite`
   (unfold `Binary64`/`toVal` first); `UnpackedFloat` has no `DecidableEq` (closed cases via `simp
   +decide only`); `Int.ceil_nonpos` is an iff.
+* **2026-10-04 — reciprocal square root.**  Source: the author's reformatted MCA §3.5.1 (Lemma
+  3.14, Algorithm ApproximateRecSquareRoot with Lemma 3.15, and the FFT-range remark).  The
+  Newton route is an approximation with error `2β^(−n)` and is recorded for later; the primitive
+  reuses the square-root method with the scaling `D` chosen per parity and the power-of-two
+  boundary case, so that no carry analysis is needed and `roundFromFloor` does the rounding.
+  Proofs: `AzInt.toInt_shiftRight_one` (floor halving of the exponent), `rsqrtCore_eq` (the three
+  `D` cases give `2^(2p−2) ≤ 2^D/n < 2^(2p)`, then the tail of `sqrtCore_eq`),
+  `rsqrtPrecRound_eq_liftVal`.
