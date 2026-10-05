@@ -13,6 +13,7 @@ import Azurite.Oracle.AzZMod
 import Azurite.Oracle.AzRat
 import Azurite.Oracle.AzFloat
 import Azurite.Oracle.AzNatExtra
+import Azurite.Oracle.AzNatFloat
 
 /-!
 # The Malachite oracle
@@ -93,6 +94,11 @@ def modes : List (String × Mode) := [
   ("az_nat_from_power_of_2_digits", mode checkFromPowerOf2Digits),
   ("az_nat_is_square", mode checkIsSquare),
   ("az_nat_primes_less_than", mode checkPrimesLessThan),
+  ("az_nat_to_float", mode checkNatToFloat),
+  ("az_nat_from_f32", mode checkNatFromF32),
+  ("az_nat_from_f64", mode checkNatFromF64),
+  ("az_nat_sci_f32", mode checkNatSciF32),
+  ("az_nat_sci_f64", mode checkNatSciF64),
   ("az_nat_eq", mode checkNatEq),
   ("az_nat_cmp_primitive", mode checkNatCmpPrimitiveFirst),
   ("az_nat_cmp_primitive_rev", mode checkNatCmpPrimitiveSecond),
@@ -237,6 +243,7 @@ def modes : List (String × Mode) := [
   ("az_float_div", mode checkFloatDiv),
   ("az_float_square", mode checkFloatSquare),
   ("az_float_sqrt", mode checkFloatSqrt),
+  ("az_float_reciprocal_sqrt", mode checkFloatReciprocalSqrt),
   ("az_float_neg", mode checkFloatNeg),
   ("az_float_abs", mode checkFloatAbs),
   ("az_float_shl", mode checkFloatShl),

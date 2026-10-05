@@ -198,6 +198,17 @@ def checkFloatSquare : String → Verdict :=
 
 def checkFloatSqrt : String → Verdict := checkFloatUnary "sqrt" sqrtLine AzFloat.sqrtPrecRound
 
+/-- `(x).reciprocal_sqrt() = z`. -/
+def reciprocalSqrtLine (line : String) : Option (String × String) := do
+  let (x, args, z) ← methodCall line "reciprocal_sqrt"
+  guard args.isEmpty
+  pure (x, z)
+
+/-- `1/√x`. A `-0.0` input, which Azurite reads as `zero`, gives `+∞` in both libraries, so no
+sign adjustment is needed. -/
+def checkFloatReciprocalSqrt : String → Verdict :=
+  checkFloatUnary "reciprocal_sqrt" reciprocalSqrtLine AzFloat.rsqrtPrecRound
+
 /-- `-(x) = z`. -/
 def checkFloatNeg (line : String) : Verdict := do
   let (lhs, rhs) ← expect "a `-(x) = z` line" (splitEquals line)

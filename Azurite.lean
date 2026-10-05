@@ -315,6 +315,8 @@ import Azurite.AzNat.Equiv.Divisors
 import Azurite.AzNat.Equiv.ExactDivOdd
 import Azurite.AzNat.Equiv.Garner
 import Azurite.AzNat.Equiv.Gcd
+import Azurite.AzNat.Equiv.Gcd.Binary
+import Azurite.AzNat.Equiv.Gcd.HalfBinary
 import Azurite.AzNat.Equiv.GetBits
 import Azurite.AzNat.Equiv.InvMod
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
@@ -374,6 +376,8 @@ import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.ExactDivOdd
 import Azurite.AzNat.Garner
 import Azurite.AzNat.Gcd
+import Azurite.AzNat.Gcd.Binary
+import Azurite.AzNat.Gcd.HalfBinary
 import Azurite.AzNat.GetBits
 import Azurite.AzNat.Instances
 import Azurite.AzNat.InvMod

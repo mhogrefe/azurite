@@ -283,7 +283,8 @@ def checkRatSign (line : String) : Verdict := do
 /-- `Rational::from_naturals(n, d) = q`; Malachite panics on a zero denominator. -/
 def checkRatFromNaturals (line : String) : Verdict := do
   let (args, res) ← expect "a `Rational::from_naturals(n, d) = q` line"
-    (functionCall line "Rational::from_naturals")
+    (functionCall line "Rational::from_naturals"
+      <|> functionCall line "Rational::from_naturals_ref")
   let (n, d) ← match args with
     | [n, d] => pure (n, d)
     | _ => fail "from_naturals takes two arguments"
@@ -295,7 +296,8 @@ def checkRatFromNaturals (line : String) : Verdict := do
 /-- `Rational::from_integers(n, d) = q`. -/
 def checkRatFromIntegers (line : String) : Verdict := do
   let (args, res) ← expect "a `Rational::from_integers(n, d) = q` line"
-    (functionCall line "Rational::from_integers")
+    (functionCall line "Rational::from_integers"
+      <|> functionCall line "Rational::from_integers_ref")
   let (n, d) ← match args with
     | [n, d] => pure (n, d)
     | _ => fail "from_integers takes two arguments"
@@ -307,7 +309,8 @@ def checkRatFromIntegers (line : String) : Verdict := do
 /-- `Rational::from_sign_and_naturals(s, n, d) = q`. -/
 def checkRatFromSignAndNaturals (line : String) : Verdict := do
   let (args, res) ← expect "a `Rational::from_sign_and_naturals(s, n, d) = q` line"
-    (functionCall line "Rational::from_sign_and_naturals")
+    (functionCall line "Rational::from_sign_and_naturals"
+      <|> functionCall line "Rational::from_sign_and_naturals_ref")
   let (s, n, d) ← match args with
     | [s, n, d] => pure (s, n, d)
     | _ => fail "from_sign_and_naturals takes three arguments"
