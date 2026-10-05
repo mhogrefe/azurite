@@ -209,6 +209,28 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   for the sum.  `HMul`/`HDiv` instances at the float's precision.  Tests: exact and rounded products and
   quotients in all modes and both signs, ties, exponents `±10⁹`, the instances.  NOT timed.  The mixed
   `AzFloat`/`AzRat` arithmetic is complete.
+- 2026-10-05: **Constants** (`Constants.lean`, `Equiv/Constants.lean`, `Tests/Constants.lean`; user request,
+  after Malachite's `Float` constants `(prec, rm) ↦ Float`).  Spec form `liftVal₀ v p mode := roundVal p
+  mode v` (nullary lift, in `Equiv/Rounding.lean`).  `sqrt2PrecRound p mode = sqrtPrecRound two p mode`,
+  `sqrt2 p`; `sqrt2PrecRound_eq_liftVal₀ : … = liftVal₀ (some √2) p mode` via `sqrtPrecRound_eq_liftVal`,
+  `toVal_two`, `Spec.sqrt_coe`.  Tests: 1, 2, 53 bits in several modes (binary64 `0x1.6a09e667f3bcd`
+  is ABOVE `√2`, tag `.gt`), shortest decimals at 53 and 100 bits.  Note: `sqrtPrecRound` at precision `0`
+  returns `(zero, .gt)` where the other operations return `NaN` — harmless (precision `0` is outside every
+  spec) but inconsistent; left as is.
+- 2026-10-05: **all quadratic-irrational constants of Malachite** (user request): `sqrt3`, `sqrt5`
+  (`sqrtPrecRound (ofAzNat 3/5)`), `sqrt2Over2`, `sqrt3Over3`, `sqrt5Over5` (`rsqrtPrecRound`; spec value
+  `√n / n`, from `(√n)⁻¹` by `Real.sqrt_div_self'`), and `phi` = `(1 + √5)/2` — the first constant that is
+  not a single primitive: Ziv's loop (`phiApprox w`: `l = ⌊√5⌋_w`, `h = l + truncError`, ends
+  `addPrecRound (l >>> 1) oneHalf` and `addPrecRound (h >>> 1) oneHalf`, exact floats plus one half; start
+  `p + 64`, fuel `zivFuel (2p + 6)`).  Termination `phiApprox_possible`: `φ ∈ (1, 2)` is irrational
+  (`irrational_sqrt_natCast_iff`, `¬ IsSquare 5` by `interval_cases` — `decide` cannot evaluate `Nat.sqrt`),
+  so not a boundary; for a boundary `b` adjacent to `φ` (`1 ≤ b < 5/2`, `b = M 2^k`, `k ≥ −p`),
+  `c = 2b − 1` is a multiple of `2^-p`, `5 − c²` a nonzero multiple of `4^-p`, hence
+  `|φ − b| = |√5 − c|/2 = |5 − c²| / (2(√5 + c)) ≥ 2^(−2p−4)`, while the bracket has width
+  `ε/2 ≤ 2^(1−w)`; `w ≥ 2p + 6` suffices.  Tests: hand-rounded low precisions for all seven constants,
+  the 53-bit decimals, and `√2/2` against `√2 >>> 1` (an exact shift, so the two routes must agree).
+  Further constants (`π`, `e`, `ln 2`, Euler's `γ`, …) need the elementary functions or dedicated series
+  (MCA Ch. 4, user to supply text).
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for

@@ -563,6 +563,12 @@ noncomputable def liftE (f : EReal → EReal) (x : AzFloat) (p : ℕ) [NeZero p]
     (mode : RoundingMode) : AzFloat × Ordering :=
   liftVal (fun v => some (f v)) x p mode
 
+/-- Lift a constant specification value to floats: a constant is specified as its correctly
+rounded value at the destination precision, with the comparison tag. -/
+noncomputable def liftVal₀ (v : Option EReal) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  roundVal p mode v
+
 /-- Lift a binary function on specification values to floats. -/
 noncomputable def liftVal₂ (f : EReal → EReal → Option EReal) (x y : AzFloat) (p : ℕ)
     [NeZero p] (mode : RoundingMode) : AzFloat × Ordering :=

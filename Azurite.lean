@@ -36,6 +36,7 @@ import Azurite.AzFloat.Add
 import Azurite.AzFloat.AddSubRat
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Compare
+import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
@@ -43,6 +44,7 @@ import Azurite.AzFloat.Equiv.Add
 import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
+import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
