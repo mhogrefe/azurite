@@ -38,7 +38,7 @@ private def M (x : AzFloat) (s : String) (p : Nat) (m : RoundingMode := .Nearest
 #guard M zero "1/3" 5 == (zero, .eq)
 #guard M one "0" 5 == (zero, .eq)
 
-/-! ## Exact products (the odd part of the denominator divides the significand) -/
+/-! ## Exact products -/
 
 #guard M (F "3" 2) "1/3" 5 == (F "1" 5, .eq)
 #guard M (F "-3" 2) "1/3" 1 == (F "-1" 1, .eq)

@@ -188,24 +188,27 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   sum `2^-80/3` above/below the one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user
   decision): nearest at the float's precision, `1` for a special float (`ratOpPrecision`), consistent with
   `combinedPrecision` and with Malachite, although `zero + 1/3 = 1/4` is a little awkward.
-- 2026-10-05: **`AzFloat × AzRat`** (`MulRat.lean`, `Equiv/MulRat.lean`, `Tests/MulRat.lean`).  Same bracket
-  (`x·lo`, `x·hi`, ordered by the sign of `x`, ends rounded by `mulPrecRound`).  New wrinkle: a product can
-  be a boundary without `q` dyadic (`3 · 1/3 = 1`), and the bracket then straddles it forever — so the
-  exact case is tested FIRST: `x·q` is dyadic iff the odd part of `den` divides the significand `m`
-  (`oddDen = den >>> trailingZeros den`, one `divMod` of `m` by `oddDen`, the remainder tested and the quotient reused), and then
-  `mulRatExact` builds `± (m / oddDen) · num · 2^(e − |m| − t)` with `mkFinite` and re-rounds with
-  `setPrecRound` (MCA §3.1.10's exactness pre-test); otherwise the product is not dyadic, hence not a
-  boundary (`oddDen_dvd_of_mem_floatSet`: `c σ 2^(e−|m|) = M od 2^(k+t)` ⇒ `od ∣ m·num·2^α` ⇒ `od ∣ m` by
-  coprimality with `2` and with `num`), and termination follows the add pattern with
-  `dist_prod_boundary` and width `|x|·ε ≤ 2^(e + |num| + 1 − w)`; fuel `mulRatFuel` = `zivFuel(p + |num| +
-  2|den| + |m| + 2) + |e|.size + 2`.  The termination geometry was factored out of the add proof into
-  `Equiv/Ziv.lean` (`adjacent_boundaries`, `no_boundary_of_dist`, `roundingPossible_isSome_of_no_boundary`,
-  `neg_le_log_of_one_div_le`, `two_zpow_lt_one_div`) and the truncation-width bound into `truncErr_le`
-  (`Equiv/AddSubRat.lean`).  `HMul` instances at the float's precision.  Tests: exact products
-  (`3·1/3`, `6·5/3`, `3·1/6`, `15·7/5`), the tie `9·1/3 = 3` at one bit (→ 4, `.gt`), rounded products
-  in all modes and both signs, exponents `±10⁹`.  NOT timed.  Open: `÷` with a rational (bracket
-  `x/hi, x/lo`, same exactness test with `num` in the role of `den`; division is `x · (1/q)` with `1/q`
-  exact in `AzRat`, so it can reuse `mulRatPrecRound x q⁻¹` directly).
+- 2026-10-05: **`AzFloat × AzRat`, `AzFloat / AzRat`, `AzRat / AzFloat`** (`MulRat.lean`, `DivRat.lean`, Equiv,
+  tests) — **without Ziv.**  A first `×` used the Ziv bracket (`x·lo`, `x·hi` by the sign of `x`) and needed
+  an exactness pre-test (`3 · 1/3 = 1` is a boundary with non-dyadic `q`, and a bracket straddles it
+  forever): product dyadic iff the odd part of `den` divides `m`, then `mulRatExact`; it was proven and
+  gate-green (commit history), then replaced.  Working out `q / x` showed the structural fact: for a product
+  or quotient the exponent of `x` factors out as a pure shift — `x·q = ±(m·num/den)·2^(e−|m|)`,
+  `x/q = ±(m·den/num)·2^(e−|m|)`, `q/x = ±(num/(den·m))·2^(|m|−e)` — so each is ONE `ofFractionRound` of a
+  small unreduced fraction (a single division, no gcd; the primitive from the decimal round-trip work)
+  followed by an exact shift: no loop, no fuel, no termination proof, no exactness test, cost at or below
+  one Ziv level.  Ziv is needed only for `±`, where the exponent enters the numerator.  (User: Malachite does
+  not use Ziv for these either.)  Proofs: `Equiv/Shift.lean` `log_abs_mul_two_zpow`, `val_round_mul_two_zpow`
+  (rounding commutes with scaling by `2^k`, via the integer-rounding form `val_round_precisionSet` and the
+  scale-covariance of `precScale`), `roundVal_mul_two_zpow` (float by `toVal_injective`, tag by
+  `compare_mul_right_pos`); `Equiv/MulRat.lean` `shift_ofFractionRound_eq`, `finiteVal_mul_toRat`,
+  `sign_eq_decide_pos`, `mulRatPrecRound_eq_liftVal`; `Equiv/DivRat.lean` `finiteVal_div_toRat`,
+  `toRat_div_finiteVal`, `divRatPrecRound_eq_liftVal`, `ratDivPrecRound_eq_liftVal` (specials by the
+  `Spec.div` lemmas: `x/0 = ±∞` by the sign of `x`, `0/0` NaN, `q/±∞ = 0`, `q/0 = ±∞` by the sign of `q`).
+  The Ziv termination geometry (`adjacent_boundaries`, `no_boundary_of_dist`, …) stays in `Equiv/Ziv.lean`
+  for the sum.  `HMul`/`HDiv` instances at the float's precision.  Tests: exact and rounded products and
+  quotients in all modes and both signs, ties, exponents `±10⁹`, the instances.  NOT timed.  The mixed
+  `AzFloat`/`AzRat` arithmetic is complete.
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for

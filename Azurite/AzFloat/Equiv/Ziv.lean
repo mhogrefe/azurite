@@ -295,22 +295,6 @@ theorem exists_int_mul_sub_dyadic (c₁ c₂ k₁ k₂ : ℤ) (a : ℕ) (h₁ : 
   push_cast
   ring
 
-/-- An equality of dyadic numbers is an equality of integers once `a` dominates both
-exponents. -/
-theorem int_eq_of_mul_zpow_eq (c₁ c₂ k₁ k₂ : ℤ) (a : ℕ) (h₁ : -k₁ ≤ a) (h₂ : -k₂ ≤ a)
-    (h : (c₁ : ℝ) * 2 ^ k₁ = c₂ * 2 ^ k₂) :
-    c₁ * 2 ^ (k₁ + a).toNat = c₂ * 2 ^ (k₂ + a).toNat := by
-  have key : ∀ k : ℤ, -k ≤ a → (2 : ℝ) ^ (k + a).toNat = 2 ^ k * 2 ^ a := by
-    intro k hk
-    rw [← zpow_natCast (2 : ℝ) (k + a).toNat, Int.toNat_of_nonneg (by omega),
-      zpow_add₀ (by norm_num), zpow_natCast]
-  have : ((c₁ * 2 ^ (k₁ + a).toNat - c₂ * 2 ^ (k₂ + a).toNat : ℤ) : ℝ) = 0 := by
-    push_cast
-    rw [key k₁ h₁, key k₂ h₂]
-    linear_combination (2 : ℝ) ^ a * h
-  have h0 : c₁ * 2 ^ (k₁ + a).toNat - c₂ * 2 ^ (k₂ + a).toNat = 0 := by exact_mod_cast this
-  linarith
-
 /-- A nonzero boundary of rounding to `p` bits is `M · 2^k` with `k ≥ ⌊log₂ |b|⌋ − p`. -/
 theorem boundary_repr (p : ℕ) [NeZero p] (b : ℝ) (hb : ((b : ℝ) : EReal) ∈ floatSet (p + 1))
     (hb0 : b ≠ 0) : ∃ M k : ℤ, b = M * 2 ^ k ∧ Int.log 2 |b| - p ≤ k := by

@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Shift
+import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzInt.Equiv.Add
 import Azurite.AzInt.Equiv.Sub
@@ -81,5 +82,71 @@ theorem shiftLeft_eq_liftE (p : ℕ) [NeZero p] (mode : RoundingMode) (x : AzFlo
     cases x <;> simp at hv
     rfl
   | some v => exact roundVal_of_toVal p mode _ v hx' hv
+
+/-! ### Rounding commutes with exact shifts -/
+
+/-- `⌊log₂ |r · 2^k|⌋ = ⌊log₂ |r|⌋ + k`. -/
+theorem log_abs_mul_two_zpow (r : ℝ) (hr : r ≠ 0) (k : ℤ) :
+    Int.log 2 |r * 2 ^ k| = Int.log 2 |r| + k := by
+  have h2k : (0 : ℝ) < 2 ^ k := zpow_pos (by norm_num) _
+  have habs : |r * 2 ^ k| = |r| * 2 ^ k := by rw [abs_mul, abs_of_pos h2k]
+  have hpos : 0 < |r| := abs_pos.mpr hr
+  have hpos' : 0 < |r * 2 ^ k| := by rw [habs]; positivity
+  apply le_antisymm
+  · apply Int.lt_add_one_iff.mp
+    apply (Int.lt_zpow_iff_log_lt (b := 2) (by norm_num) hpos').mp
+    push_cast
+    rw [habs, show Int.log 2 |r| + k + 1 = (Int.log 2 |r| + 1) + k by ring,
+      zpow_add₀ (by norm_num)]
+    exact mul_lt_mul_of_pos_right (Int.lt_zpow_succ_log_self (by norm_num) |r|) h2k
+  · apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) hpos').mp
+    push_cast
+    rw [habs, zpow_add₀ (by norm_num)]
+    exact mul_le_mul_of_nonneg_right (Int.zpow_log_le_self (by norm_num) hpos) h2k.le
+
+/-- Rounding commutes with scaling by a power of two. -/
+theorem val_round_mul_two_zpow (p : ℕ) [NeZero p] (mode : RoundingMode) (r : ℝ) (k : ℤ) :
+    (RoundingTarget.round (floatSet p) mode (r * 2 ^ k)).val
+      = (RoundingTarget.round (floatSet p) mode r).val * (((2 : ℝ) ^ k : ℝ) : EReal) := by
+  rw [val_round_floatSet, val_round_floatSet]
+  have h2k : (0 : ℝ) < 2 ^ k := zpow_pos (by norm_num) _
+  rcases eq_or_ne r 0 with rfl | hr
+  · rw [zero_mul, RoundingTarget.val_round_of_mem _ mode (Or.inl (by simp))]
+    simp
+  · rw [RoundingTarget.val_round_precisionSet mode _ (mul_ne_zero hr h2k.ne'),
+      RoundingTarget.val_round_precisionSet mode r hr]
+    have hu : RoundingTarget.precScale 2 p (r * 2 ^ k)
+        = RoundingTarget.precScale 2 p r * 2 ^ k := by
+      unfold RoundingTarget.precScale
+      rw [log_abs_mul_two_zpow r hr k]
+      push_cast
+      rw [show Int.log 2 |r| + k - p + 1 = (Int.log 2 |r| - p + 1) + k by ring,
+        zpow_add₀ (by norm_num)]
+    rw [hu, mul_div_mul_right _ _ h2k.ne', ← EReal.coe_mul]
+    congr 1
+    ring
+
+/-- `roundVal` commutes with an exact shift: rounding `r · 2^k` is rounding `r` shifted, with
+the same comparison tag. -/
+theorem roundVal_mul_two_zpow (p : ℕ) [NeZero p] (mode : RoundingMode) (r : ℝ) (k : AzInt) :
+    roundVal p mode (some ((r * 2 ^ k.toInt : ℝ) : EReal))
+      = ((roundVal p mode (some (r : EReal))).1 <<< k, (roundVal p mode (some (r : EReal))).2) := by
+  obtain ⟨h1, h2⟩ := roundVal_coe p mode (r * 2 ^ k.toInt)
+  obtain ⟨h1', h2'⟩ := roundVal_coe p mode r
+  have h2k : (0 : ℝ) < 2 ^ k.toInt := zpow_pos (by norm_num) _
+  obtain ⟨R, hR⟩ : ∃ R : ℝ, ((R : ℝ) : EReal) = (RoundingTarget.round (floatSet p) mode r).val := by
+    rw [val_round_floatSet]
+    exact RoundingTarget.precisionSet_exists_real _
+  refine Prod.ext ?_ ?_
+  · apply toVal_injective p
+    · rw [fst_roundVal]; exact (ofEReal_spec p mode _).1
+    · show (shiftLeft _ k).precision? = some p ∨ (shiftLeft _ k).precision? = none
+      rw [precision?_shiftLeft, fst_roundVal]
+      exact (ofEReal_spec p mode _).1
+    · show toVal _ = toVal (shiftLeft _ k)
+      rw [toVal_shiftLeft, h1, h1', Option.map_some, val_round_mul_two_zpow]
+  · show (roundVal p mode (some ((r * 2 ^ k.toInt : ℝ) : EReal))).2 = _
+    rw [h2, h2', val_round_mul_two_zpow, ← hR, ← EReal.coe_mul, compare_coe_coe, compare_coe_coe,
+      compare_mul_right_pos _ _ _ h2k]
 
 end Azurite.AzFloat
