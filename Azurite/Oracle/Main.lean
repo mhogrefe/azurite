@@ -10,6 +10,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.Oracle.AzInt
 import Azurite.Oracle.AzZModPow2
 import Azurite.Oracle.AzZMod
+import Azurite.Oracle.AzRat
+import Azurite.Oracle.AzFloat
 
 /-!
 # The Malachite oracle
@@ -43,7 +45,7 @@ def multiline (check : String → Verdict) : Mode := { check, multiline := true 
 /-- The most physical lines one multiline record may span. -/
 def maxJoinedLines : Nat := 64
 
-/-- The modes, named after the `AzNat`, `AzInt`, `AzZModPow2`, or `AzZMod` operation each checks. -/
+/-- The modes, named after the Azurite type and operation each checks. -/
 def modes : List (String × Mode) := [
   ("az_nat_add", mode checkAdd),
   ("az_nat_sub", mode checkSub),
@@ -155,7 +157,77 @@ def modes : List (String × Mode) := [
   ("az_zmod_shr", mode checkModShr),
   ("az_zmod_div", mode checkModDiv),
   ("az_zmod_is_reduced", mode checkModIsReduced),
-  ("az_zmod_eq", mode checkModEq)]
+  ("az_zmod_eq", mode checkModEq),
+  ("az_rat_add", mode checkRatAdd),
+  ("az_rat_sub", mode checkRatSub),
+  ("az_rat_mul", mode checkRatMul),
+  ("az_rat_div", mode checkRatDiv),
+  ("az_rat_neg", mode checkRatNeg),
+  ("az_rat_abs", mode checkRatAbs),
+  ("az_rat_reciprocal", mode checkRatReciprocal),
+  ("az_rat_pow", mode checkRatPow),
+  ("az_rat_shl", mode checkRatShl),
+  ("az_rat_shr", mode checkRatShr),
+  ("az_rat_floor", mode checkRatFloor),
+  ("az_rat_ceiling", mode checkRatCeiling),
+  ("az_rat_rounding_from", mode checkRatRoundingFrom),
+  ("az_rat_floor_log_base_2", mode checkRatFloorLogBase2),
+  ("az_rat_ceiling_log_base_2", mode checkRatCeilingLogBase2),
+  ("az_rat_floor_log_base", mode checkRatFloorLogBase),
+  ("az_rat_ceiling_log_base", mode checkRatCeilingLogBase),
+  ("az_rat_checked_log_base", mode checkRatCheckedLogBase),
+  ("az_rat_cmp", mode checkRatCmp),
+  ("az_rat_cmp_integer", mode checkRatCmpInteger),
+  ("az_rat_cmp_unsigned", mode checkRatCmpUnsigned),
+  ("az_rat_cmp_signed", mode checkRatCmpSigned),
+  ("az_rat_eq", mode checkRatEq),
+  ("az_rat_eq_integer", mode checkRatEqInteger),
+  ("az_rat_sign", mode checkRatSign),
+  ("az_rat_from_naturals", mode checkRatFromNaturals),
+  ("az_rat_from_integers", mode checkRatFromIntegers),
+  ("az_rat_from_sign_and_naturals", mode checkRatFromSignAndNaturals),
+  ("az_rat_from_integer", mode checkRatFromInteger),
+  ("az_rat_to_string", mode checkRatToString),
+  ("az_rat_from_str", multiline checkRatFromStr),
+  ("az_rat_from_sci_string", multiline checkRatFromSciString),
+  ("az_rat_to_sci", mode checkRatToSci),
+  ("az_rat_to_sci_with_options", mode checkRatToSciWithOptions),
+  ("az_rat_fmt_sci_valid", mode checkRatFmtSciValid),
+  ("az_rat_length_after_point", mode checkRatLengthAfterPoint),
+  ("az_float_add", mode checkFloatAdd),
+  ("az_float_sub", mode checkFloatSub),
+  ("az_float_mul", mode checkFloatMul),
+  ("az_float_div", mode checkFloatDiv),
+  ("az_float_square", mode checkFloatSquare),
+  ("az_float_sqrt", mode checkFloatSqrt),
+  ("az_float_neg", mode checkFloatNeg),
+  ("az_float_abs", mode checkFloatAbs),
+  ("az_float_shl", mode checkFloatShl),
+  ("az_float_shr", mode checkFloatShr),
+  ("az_float_power_of_2", mode checkFloatPowerOf2),
+  ("az_float_set_prec", mode checkFloatSetPrec),
+  ("az_float_is_nan", mode checkFloatIsNaN),
+  ("az_float_is_finite", mode checkFloatIsFinite),
+  ("az_float_is_infinite", mode checkFloatIsInfinite),
+  ("az_float_is_zero", mode checkFloatIsZero),
+  ("az_float_is_normal", mode checkFloatIsNormal),
+  ("az_float_is_power_of_2", mode checkFloatIsPowerOf2),
+  ("az_float_sign", mode checkFloatSign),
+  ("az_float_get_exponent", mode checkFloatGetExponent),
+  ("az_float_get_prec", mode checkFloatGetPrec),
+  ("az_float_to_significand", mode checkFloatToSignificand),
+  ("az_float_ulp", mode checkFloatUlp),
+  ("az_float_constant", mode checkFloatConstant),
+  ("az_float_partial_cmp", mode checkFloatPartialCmp),
+  ("az_float_comparable_partial_cmp", mode checkComparableFloatPartialCmp),
+  ("az_float_eq", mode checkFloatEq),
+  ("az_float_comparable_eq", mode checkComparableFloatEq),
+  ("az_float_partial_cmp_integer", mode checkFloatPartialCmpInteger),
+  ("az_float_partial_eq_integer", mode checkFloatPartialEqInteger),
+  ("az_float_from_natural", mode checkFloatFromNatural),
+  ("az_float_from_integer", mode checkFloatFromIntegerValue),
+  ("az_float_from_unsigned", mode checkFloatFromUnsigned),
+  ("az_float_from_rational", mode checkFloatFromRational)]
 
 /-- Reports a disagreement or an unreadable record and the text it concerns. -/
 def report (name : String) (lineNumber : Nat) (msg text : String) : IO UInt32 := do
