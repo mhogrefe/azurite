@@ -48,6 +48,7 @@ import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Literals
 import Azurite.AzFloat.Equiv.Mul
+import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.RoundScaled
@@ -62,6 +63,7 @@ import Azurite.AzFloat.Float64
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Literals
 import Azurite.AzFloat.Mul
+import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.RoundScaled

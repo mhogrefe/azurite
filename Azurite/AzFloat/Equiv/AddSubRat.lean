@@ -145,6 +145,47 @@ theorem toRat_mem_precisionSet_of_dyadic (q : AzRat) (N : ℤ) (a : ℕ)
     push_cast
     rw [zpow_neg, zpow_natCast, div_eq_mul_inv]
 
+/-- The error of the `w`-bit truncation of a rational is below `2^(|num| + 1 − w)`. -/
+theorem truncErr_le (q : AzRat) (w : ℕ) [NeZero w] (lov e₁ : ℝ)
+    (hlofl : ((lov : ℝ) : EReal) = (roundFloor (precisionSet 2 w) (AzRat.toRat q : ℝ)).val)
+    (hlo1 : lov ≤ AzRat.toRat q)
+    (hlo5 : e₁ ≠ 0 → ∃ k : ℤ, e₁ = (2 : ℝ) ^ (k - w) ∧ (2 : ℝ) ^ (k - 1) ≤ |lov| ∧
+      |lov| < (2 : ℝ) ^ k) :
+    e₁ ≤ (2 : ℝ) ^ ((q.num.size : ℤ) + 1 - w) := by
+  have hq_lo : AzRat.toRat q - lov ≤ (2 : ℝ) ^ ((q.num.size : ℤ) - w) := by
+    rcases eq_or_ne (AzRat.toRat q : ℝ) 0 with hq0 | hq0
+    · have hmem : ((AzRat.toRat q : ℝ) : EReal) ∈ precisionSet 2 w := Or.inl (by rw [hq0]; simp)
+      have h := val_roundFloor_of_mem (precisionSet 2 w) hmem
+      rw [← hlofl] at h
+      rw [EReal.coe_eq_coe_iff.mp h]
+      simp only [sub_self]
+      positivity
+    · have h := sub_roundFloor_lt_precScale w (AzRat.toRat q : ℝ) hq0 lov hlofl
+      have hsc : precScale 2 w (AzRat.toRat q : ℝ) ≤ 2 ^ ((q.num.size : ℤ) - w) := by
+        unfold precScale
+        push_cast
+        apply zpow_le_zpow_right₀ (by norm_num)
+        have := (Int.lt_zpow_iff_log_lt (b := 2) (by norm_num) (abs_pos.mpr hq0)).mp
+          (by push_cast; exact abs_toRat_lt q)
+        omega
+      linarith
+  have hlov_abs : |lov| < (2 : ℝ) ^ ((q.num.size : ℤ) + 1) := by
+    have h1 := abs_toRat_lt q
+    have h2 : (2 : ℝ) ^ ((q.num.size : ℤ) - w) ≤ 2 ^ (q.num.size : ℤ) :=
+      zpow_le_zpow_right₀ (by norm_num) (by omega)
+    have h3 : |lov| ≤ |(AzRat.toRat q : ℝ)| + (AzRat.toRat q - lov) :=
+      abs_le.mpr ⟨by linarith [neg_abs_le (AzRat.toRat q : ℝ)],
+        by linarith [le_abs_self (AzRat.toRat q : ℝ)]⟩
+    rw [zpow_add_one₀ (by norm_num)]
+    linarith
+  rcases eq_or_ne e₁ 0 with h0 | h0
+  · rw [h0]; positivity
+  · obtain ⟨k, hk, hk1, hk2⟩ := hlo5 h0
+    have : k - 1 < (q.num.size : ℤ) + 1 :=
+      (zpow_lt_zpow_iff_right₀ (by norm_num)).mp (lt_of_le_of_lt hk1 hlov_abs)
+    rw [hk]
+    exact zpow_le_zpow_right₀ (by norm_num) (by omega)
+
 /-! ### The approximation -/
 
 /-- The bracket of `x + q` at working precision `w`: `lo` truncates `q` with its one-ulp error
@@ -206,27 +247,11 @@ theorem addRatApprox_possible (s : Bool) (e : AzInt) (p' : ℕ) (m : AzNat) (hv 
     addRatApprox_spec s e p' m hv q w
   set xv := finiteVal s e m with hxv
   set v := xv + AzRat.toRat q with hvdef
-  unfold roundingPossible
-  rw [hl (p + 1) .Floor, hh (p + 1) .Floor]
-  -- it suffices that the two floors agree
-  suffices hsuff : (roundFloor (floatSet (p + 1)) (xv + lov)).val
-      = (roundFloor (floatSet (p + 1)) (xv + lov + e₁)).val by
-    have heq : (roundVal (p + 1) .Floor (some ((xv + lov : ℝ) : EReal))).1
-        = (roundVal (p + 1) .Floor (some ((xv + lov + e₁ : ℝ) : EReal))).1 := by
-      rw [fst_roundVal, fst_roundVal]
-      change ofEReal (p + 1) .Floor ((xv + lov : ℝ) : EReal)
-        = ofEReal (p + 1) .Floor ((xv + lov + e₁ : ℝ) : EReal)
-      exact toVal_injective (p + 1) (ofEReal_spec (p + 1) .Floor _).1
-        (ofEReal_spec (p + 1) .Floor _).1
-        (by rw [(ofEReal_spec (p + 1) .Floor _).2, (ofEReal_spec (p + 1) .Floor _).2]; exact
-          congrArg some hsuff)
-    rw [heq]
-    simp
-  have hden_pos : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
-  have hden_lt : (q.den.toNat : ℝ) < 2 ^ q.den.size := by
+  apply roundingPossible_isSome_of_no_boundary p mode hl hh (by linarith)
+  have hden_pos := AzRat.den_toNat_pos q
+  have hden_lt : q.den.toNat < 2 ^ q.den.size := by
     have := Nat.lt_size_self q.den.toNat
-    rw [AzNat.size_toNat] at this
-    exact_mod_cast this
+    rwa [AzNat.size_toNat] at this
   have habs_e : (e.abs.toNat : ℤ) = |e.toInt| := (AzInt.abs_toInt e).symm
   set a₀ : ℕ := m.size + e.abs.toNat with ha₀def
   have ha₀ : (m.size : ℤ) - e.toInt ≤ a₀ := by
@@ -254,25 +279,17 @@ theorem addRatApprox_possible (s : Bool) (e : AzInt) (p' : ℕ) (m : AzNat) (hv 
       rw [← hlofl] at this
       exact EReal.coe_eq_coe_iff.mp this
     rw [hlo3 hlo_exact, add_zero]
+    intro b _ ⟨h1, h2⟩
+    linarith
   · -- the exact sum is not a boundary: it is at a positive distance from the adjacent ones
     have hv0 : v ≠ 0 := fun h => hvB (by rw [h]; exact ⟨zero, Or.inr rfl, by simp⟩)
-    set L := Int.log 2 |v| with hL
     have hv_lower : 1 / (q.den.toNat * 2 ^ a₀) ≤ |v| := by
       have := dist_sum_boundary s e m q 0 0 0 (by simp) a₀ ha₀ (by simp) (by simpa using hv0)
       simpa using this
-    have hLlow : -(q.den.size : ℤ) - a₀ ≤ L := by
-      apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hv0)).mp
-      push_cast
-      calc (2 : ℝ) ^ (-(q.den.size : ℤ) - a₀) = 1 / (2 ^ q.den.size * 2 ^ a₀) := by
-            rw [zpow_sub₀ (by norm_num), zpow_neg, zpow_natCast, zpow_natCast]
-            field_simp
-        _ ≤ 1 / (q.den.toNat * 2 ^ a₀) := by
-            apply one_div_le_one_div_of_le (by positivity)
-            exact mul_le_mul_of_nonneg_right hden_lt.le (by positivity)
-        _ ≤ |v| := hv_lower
+    have hLlow := neg_le_log_of_one_div_le v hv0 _ hden_pos _ hden_lt a₀ hv_lower
     set a : ℕ := p + a₀ + q.den.size with hadef
     have hdist : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → b ≠ v →
-        (b = 0 ∨ L ≤ Int.log 2 |b|) → 1 / (q.den.toNat * 2 ^ a) ≤ |v - b| := by
+        (b = 0 ∨ Int.log 2 |v| ≤ Int.log 2 |b|) → 1 / (q.den.toNat * 2 ^ a) ≤ |v - b| := by
       intro b hb hne hlog
       obtain ⟨M, k, hMk, hk⟩ : ∃ M k : ℤ, b = M * 2 ^ k ∧ -k ≤ a := by
         rcases eq_or_ne b 0 with hb0 | hb0
@@ -285,159 +302,16 @@ theorem addRatApprox_possible (s : Bool) (e : AzInt) (p' : ℕ) (m : AzNat) (hv 
             omega
       exact dist_sum_boundary s e m q b M k hMk a (by push_cast [hadef]; omega) hk
         (fun h => hne h.symm)
-    have hpow_lt : (2 : ℝ) ^ (-(q.den.size : ℤ) - a) < 1 / (q.den.toNat * 2 ^ a) := by
-      calc (2 : ℝ) ^ (-(q.den.size : ℤ) - a) = 1 / (2 ^ q.den.size * 2 ^ a) := by
-            rw [zpow_sub₀ (by norm_num), zpow_neg, zpow_natCast, zpow_natCast]
-            field_simp
-        _ < 1 / (q.den.toNat * 2 ^ a) := by
-            apply one_div_lt_one_div_of_lt (by positivity)
-            exact mul_lt_mul_of_pos_right hden_lt (by positivity)
-    -- the adjacent boundaries
-    obtain ⟨bmv, hbm⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) v).val := by
-      rw [val_roundFloor_floatSet]; exact precisionSet_exists_real _
-    obtain ⟨bpv, hbp⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundCeiling (floatSet (p + 1)) v).val := by
-      rw [val_roundCeiling_floatSet]; exact precisionSet_exists_real _
-    have hbm_mem : ((bmv : ℝ) : EReal) ∈ floatSet (p + 1) := hbm ▸ (roundFloor _ _).property
-    have hbp_mem : ((bpv : ℝ) : EReal) ∈ floatSet (p + 1) := hbp ▸ (roundCeiling _ _).property
-    have hbm_le : bmv ≤ v := by
-      have := (isGreatest_roundFloor (floatSet (p + 1)) v).1.2
-      rw [← hbm] at this; exact EReal.coe_le_coe_iff.mp this
-    have hbp_ge : v ≤ bpv := by
-      have := (isLeast_roundCeiling (floatSet (p + 1)) v).1.2
-      rw [← hbp] at this; exact EReal.coe_le_coe_iff.mp this
-    have hbm_ne : bmv ≠ v := fun h => hvB (h ▸ hbm_mem)
-    have hbp_ne : bpv ≠ v := fun h => hvB (h ▸ hbp_mem)
-    have h2L : (2 : ℝ) ^ L ≤ |v| := Int.zpow_log_le_self (by norm_num) (abs_pos.mpr hv0)
-    have h2Lpos : (0 : ℝ) < 2 ^ L := zpow_pos (by norm_num) _
-    have hmemL : ∀ c : ℤ, |c| ≤ 1 → (((c : ℝ) * 2 ^ L : ℝ) : EReal) ∈ floatSet (p + 1) :=
-      fun c hc => mem_floatSet_mul_zpow (p + 1) c L
-        (le_trans hc (one_le_pow₀ (by norm_num)))
-    have hLbm : bmv = 0 ∨ L ≤ Int.log 2 |bmv| := by
-      right
-      rcases lt_or_gt_of_ne hv0 with hneg | hpos
-      · have hbneg : bmv < 0 := lt_of_le_of_lt hbm_le hneg
-        apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbneg.ne)).mp
-        push_cast
-        rw [abs_of_neg hbneg]
-        rw [abs_of_neg hneg] at h2L
-        linarith
-      · have hmem := hmemL 1 (by simp)
-        simp only [Int.cast_one, one_mul] at hmem
-        rw [abs_of_pos hpos] at h2L
-        have := (isGreatest_roundFloor (floatSet (p + 1)) v).2
-          ⟨hmem, EReal.coe_le_coe_iff.mpr h2L⟩
-        rw [← hbm] at this
-        have hle := EReal.coe_le_coe_iff.mp this
-        apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num)
-          (abs_pos.mpr (lt_of_lt_of_le h2Lpos hle).ne')).mp
-        push_cast
-        rw [abs_of_pos (lt_of_lt_of_le h2Lpos hle)]
-        exact hle
-    have hLbp : bpv = 0 ∨ L ≤ Int.log 2 |bpv| := by
-      right
-      rcases lt_or_gt_of_ne hv0 with hneg | hpos
-      · have hmem := hmemL (-1) (by simp)
-        simp only [Int.cast_neg, Int.cast_one, neg_one_mul] at hmem
-        rw [abs_of_neg hneg] at h2L
-        have := (isLeast_roundCeiling (floatSet (p + 1)) v).2
-          ⟨hmem, EReal.coe_le_coe_iff.mpr (by linarith : v ≤ -(2 : ℝ) ^ L)⟩
-        rw [← hbp] at this
-        have hle := EReal.coe_le_coe_iff.mp this
-        have hbneg : bpv < 0 := lt_of_le_of_lt hle (by linarith)
-        apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbneg.ne)).mp
-        push_cast
-        rw [abs_of_neg hbneg]
-        linarith
-      · rw [abs_of_pos hpos] at h2L
-        have hbpos : 0 < bpv := lt_of_lt_of_le hpos hbp_ge
-        apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbpos.ne')).mp
-        push_cast
-        rw [abs_of_pos hbpos]
-        linarith
-    have hDm : (2 : ℝ) ^ (-(q.den.size : ℤ) - a) < v - bmv := by
-      have h := hdist bmv hbm_mem hbm_ne hLbm
-      rw [abs_of_pos (sub_pos.mpr (lt_of_le_of_ne hbm_le hbm_ne))] at h
-      exact lt_of_lt_of_le hpow_lt h
-    have hDp : (2 : ℝ) ^ (-(q.den.size : ℤ) - a) < bpv - v := by
-      have h := hdist bpv hbp_mem hbp_ne hLbp
-      rw [abs_of_neg (sub_neg.mpr (lt_of_le_of_ne hbp_ge hbp_ne.symm))] at h
-      linarith [lt_of_lt_of_le hpow_lt h]
-    -- the bracket is narrow: `ε ≤ 2^(|num| + 1 − w)`
-    have hq_lo : AzRat.toRat q - lov ≤ (2 : ℝ) ^ ((q.num.size : ℤ) - w) := by
-      rcases eq_or_ne (AzRat.toRat q : ℝ) 0 with hq0 | hq0
-      · have hmem : ((AzRat.toRat q : ℝ) : EReal) ∈ precisionSet 2 w := Or.inl (by rw [hq0]; simp)
-        have h := val_roundFloor_of_mem (precisionSet 2 w) hmem
-        rw [← hlofl] at h
-        rw [EReal.coe_eq_coe_iff.mp h]
-        simp only [sub_self]
-        positivity
-      · have h := sub_roundFloor_lt_precScale w (AzRat.toRat q : ℝ) hq0 lov hlofl
-        have hsc : precScale 2 w (AzRat.toRat q : ℝ) ≤ 2 ^ ((q.num.size : ℤ) - w) := by
-          unfold precScale
-          push_cast
-          apply zpow_le_zpow_right₀ (by norm_num)
-          have := (Int.lt_zpow_iff_log_lt (b := 2) (by norm_num) (abs_pos.mpr hq0)).mp
-            (by push_cast; exact abs_toRat_lt q)
-          omega
-        linarith
-    have hlov_abs : |lov| < (2 : ℝ) ^ ((q.num.size : ℤ) + 1) := by
-      have h1 := abs_toRat_lt q
-      have h2 : (2 : ℝ) ^ ((q.num.size : ℤ) - w) ≤ 2 ^ (q.num.size : ℤ) :=
-        zpow_le_zpow_right₀ (by norm_num) (by omega)
-      have h3 : |lov| ≤ |(AzRat.toRat q : ℝ)| + (AzRat.toRat q - lov) :=
-        abs_le.mpr ⟨by linarith [neg_abs_le (AzRat.toRat q : ℝ)],
-          by linarith [le_abs_self (AzRat.toRat q : ℝ)]⟩
-      rw [zpow_add_one₀ (by norm_num)]
-      linarith
-    have he₁ : e₁ ≤ (2 : ℝ) ^ ((q.num.size : ℤ) + 1 - w) := by
-      rcases eq_or_ne e₁ 0 with h0 | h0
-      · rw [h0]; positivity
-      · obtain ⟨k, hk, hk1, hk2⟩ := hlo5 h0
-        have : k - 1 < (q.num.size : ℤ) + 1 :=
-          (zpow_lt_zpow_iff_right₀ (by norm_num)).mp (lt_of_le_of_lt hk1 hlov_abs)
-        rw [hk]
-        exact zpow_le_zpow_right₀ (by norm_num) (by omega)
+    have he₁ := truncErr_le q w lov e₁ hlofl hlo1 hlo5
     have hgap : (2 : ℝ) ^ ((q.num.size : ℤ) + 1 - w) ≤ 2 ^ (-(q.den.size : ℤ) - a) := by
       apply zpow_le_zpow_right₀ (by norm_num)
       push_cast [hadef, ha₀def]
       omega
-    -- no boundary lies in `(x + lo, x + lo + ε]`
-    have hnob : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) →
-        ¬ (xv + lov < b ∧ b ≤ xv + lov + e₁) := by
-      intro b hb ⟨hb1, hb2⟩
-      rcases le_or_gt b v with hbv | hbv
-      · have hbv_le_bm : b ≤ bmv := by
-          have := (isGreatest_roundFloor (floatSet (p + 1)) v).2
-            ⟨hb, EReal.coe_le_coe_iff.mpr hbv⟩
-          rw [← hbm] at this
-          exact EReal.coe_le_coe_iff.mp this
-        linarith
-      · have hbp_le : bpv ≤ b := by
-          have := (isLeast_roundCeiling (floatSet (p + 1)) v).2
-            ⟨hb, EReal.coe_le_coe_iff.mpr hbv.le⟩
-          rw [← hbp] at this
-          exact EReal.coe_le_coe_iff.mp this
-        linarith
-    -- hence the two floors agree
-    obtain ⟨fh, hfh⟩ : ∃ r : ℝ,
-        ((r : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) (xv + lov + e₁)).val := by
-      rw [val_roundFloor_floatSet]; exact precisionSet_exists_real _
-    have hfh_mem : ((fh : ℝ) : EReal) ∈ floatSet (p + 1) := hfh ▸ (roundFloor _ _).property
-    have hfh_le : fh ≤ xv + lov + e₁ := by
-      have := (isGreatest_roundFloor (floatSet (p + 1)) (xv + lov + e₁)).1.2
-      rw [← hfh] at this; exact EReal.coe_le_coe_iff.mp this
-    have hfh_le' : fh ≤ xv + lov := by
-      by_contra hcon
-      push Not at hcon
-      exact hnob fh hfh_mem ⟨hcon, hfh_le⟩
-    apply le_antisymm
-    · exact (isGreatest_roundFloor (floatSet (p + 1)) (xv + lov + e₁)).2
-        ⟨(roundFloor _ _).property,
-          le_trans (isGreatest_roundFloor (floatSet (p + 1)) (xv + lov)).1.2
-            (EReal.coe_le_coe_iff.mpr (by linarith))⟩
-    · rw [← hfh]
-      exact (isGreatest_roundFloor (floatSet (p + 1)) (xv + lov)).2
-        ⟨hfh_mem, EReal.coe_le_coe_iff.mpr hfh_le'⟩
+    have hwidth : xv + lov + e₁ - (xv + lov) < 1 / (q.den.toNat * 2 ^ a) := by
+      have := two_zpow_lt_one_div _ hden_pos _ hden_lt a
+      linarith
+    exact no_boundary_of_dist p v (xv + lov) (xv + lov + e₁) _ hv0 hvB (by linarith) (by linarith)
+      hdist hwidth
 
 /-! ### The lifts -/
 

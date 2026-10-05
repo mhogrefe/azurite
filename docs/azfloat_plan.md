@@ -187,9 +187,25 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   rule is about kernel evaluation.  Tests include the exponent-`±10⁹` far cases in both directions and a
   sum `2^-80/3` above/below the one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user
   decision): nearest at the float's precision, `1` for a special float (`ratOpPrecision`), consistent with
-  `combinedPrecision` and with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷`
-  with a rational next (same loop: bracket `x·lo, x·hi` ordered by the sign of `x`, or `x/hi, x/lo`;
-  termination proofs follow the same pattern).
+  `combinedPrecision` and with Malachite, although `zero + 1/3 = 1/4` is a little awkward.
+- 2026-10-05: **`AzFloat × AzRat`** (`MulRat.lean`, `Equiv/MulRat.lean`, `Tests/MulRat.lean`).  Same bracket
+  (`x·lo`, `x·hi`, ordered by the sign of `x`, ends rounded by `mulPrecRound`).  New wrinkle: a product can
+  be a boundary without `q` dyadic (`3 · 1/3 = 1`), and the bracket then straddles it forever — so the
+  exact case is tested FIRST: `x·q` is dyadic iff the odd part of `den` divides the significand `m`
+  (`oddDen = den >>> trailingZeros den`, one `divMod` of `m` by `oddDen`, the remainder tested and the quotient reused), and then
+  `mulRatExact` builds `± (m / oddDen) · num · 2^(e − |m| − t)` with `mkFinite` and re-rounds with
+  `setPrecRound` (MCA §3.1.10's exactness pre-test); otherwise the product is not dyadic, hence not a
+  boundary (`oddDen_dvd_of_mem_floatSet`: `c σ 2^(e−|m|) = M od 2^(k+t)` ⇒ `od ∣ m·num·2^α` ⇒ `od ∣ m` by
+  coprimality with `2` and with `num`), and termination follows the add pattern with
+  `dist_prod_boundary` and width `|x|·ε ≤ 2^(e + |num| + 1 − w)`; fuel `mulRatFuel` = `zivFuel(p + |num| +
+  2|den| + |m| + 2) + |e|.size + 2`.  The termination geometry was factored out of the add proof into
+  `Equiv/Ziv.lean` (`adjacent_boundaries`, `no_boundary_of_dist`, `roundingPossible_isSome_of_no_boundary`,
+  `neg_le_log_of_one_div_le`, `two_zpow_lt_one_div`) and the truncation-width bound into `truncErr_le`
+  (`Equiv/AddSubRat.lean`).  `HMul` instances at the float's precision.  Tests: exact products
+  (`3·1/3`, `6·5/3`, `3·1/6`, `15·7/5`), the tie `9·1/3 = 3` at one bit (→ 4, `.gt`), rounded products
+  in all modes and both signs, exponents `±10⁹`.  NOT timed.  Open: `÷` with a rational (bracket
+  `x/hi, x/lo`, same exactness test with `num` in the role of `den`; division is `x · (1/q)` with `1/q`
+  exact in `AzRat`, so it can reuse `mulRatPrecRound x q⁻¹` directly).
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for

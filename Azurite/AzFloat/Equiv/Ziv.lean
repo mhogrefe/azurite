@@ -38,7 +38,10 @@ The termination arguments of the operations share the arithmetic of boundaries: 
 boundary is `M · 2^k` with `k ≥ ⌊log₂ |b|⌋ − p` (`boundary_repr`), two dyadic numbers differ by
 a multiple of `2^-a` once `a` dominates both exponents (`exists_int_mul_sub_dyadic`), and a
 real whose product with `D` is a nonzero integer has magnitude at least `1/D`
-(`one_div_le_abs_of_mul_eq_int`).
+(`one_div_le_abs_of_mul_eq_int`).  They also share the geometry: the boundaries adjacent to a
+non-boundary `v` have at least its binade (`adjacent_boundaries`), a bracket of `v` narrower
+than the distance to them contains no boundary (`no_boundary_of_dist`), and such a bracket is
+accepted (`roundingPossible_isSome_of_no_boundary`).
 -/
 
 namespace Azurite.AzFloat
@@ -292,6 +295,22 @@ theorem exists_int_mul_sub_dyadic (c₁ c₂ k₁ k₂ : ℤ) (a : ℕ) (h₁ : 
   push_cast
   ring
 
+/-- An equality of dyadic numbers is an equality of integers once `a` dominates both
+exponents. -/
+theorem int_eq_of_mul_zpow_eq (c₁ c₂ k₁ k₂ : ℤ) (a : ℕ) (h₁ : -k₁ ≤ a) (h₂ : -k₂ ≤ a)
+    (h : (c₁ : ℝ) * 2 ^ k₁ = c₂ * 2 ^ k₂) :
+    c₁ * 2 ^ (k₁ + a).toNat = c₂ * 2 ^ (k₂ + a).toNat := by
+  have key : ∀ k : ℤ, -k ≤ a → (2 : ℝ) ^ (k + a).toNat = 2 ^ k * 2 ^ a := by
+    intro k hk
+    rw [← zpow_natCast (2 : ℝ) (k + a).toNat, Int.toNat_of_nonneg (by omega),
+      zpow_add₀ (by norm_num), zpow_natCast]
+  have : ((c₁ * 2 ^ (k₁ + a).toNat - c₂ * 2 ^ (k₂ + a).toNat : ℤ) : ℝ) = 0 := by
+    push_cast
+    rw [key k₁ h₁, key k₂ h₂]
+    linear_combination (2 : ℝ) ^ a * h
+  have h0 : c₁ * 2 ^ (k₁ + a).toNat - c₂ * 2 ^ (k₂ + a).toNat = 0 := by exact_mod_cast this
+  linarith
+
 /-- A nonzero boundary of rounding to `p` bits is `M · 2^k` with `k ≥ ⌊log₂ |b|⌋ − p`. -/
 theorem boundary_repr (p : ℕ) [NeZero p] (b : ℝ) (hb : ((b : ℝ) : EReal) ∈ floatSet (p + 1))
     (hb0 : b ≠ 0) : ∃ M k : ℤ, b = M * 2 ^ k ∧ Int.log 2 |b| - p ≤ k := by
@@ -330,6 +349,163 @@ theorem ofAzRatRound_eq_roundVal (q : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
       rw [← ofAzRatRound_eq_ofEReal p q mode, hv, Option.some.injEq] at h1
       exact h1
     rw [← hval, compare_coe_coe]
+
+/-! ### Termination: brackets away from the boundaries -/
+
+/-- The boundaries adjacent to a real `v ≠ 0` that is not a boundary itself: the greatest below
+and the least above `v`, which have at least the binade of `v` (unless `0`). -/
+theorem adjacent_boundaries (p : ℕ) [NeZero p] (v : ℝ) (hv0 : v ≠ 0)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) :
+    ∃ bm bp : ℝ, ((bm : ℝ) : EReal) ∈ floatSet (p + 1) ∧ ((bp : ℝ) : EReal) ∈ floatSet (p + 1) ∧
+      bm < v ∧ v < bp ∧
+      (∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → b ≤ v → b ≤ bm) ∧
+      (∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → v ≤ b → bp ≤ b) ∧
+      (bm = 0 ∨ Int.log 2 |v| ≤ Int.log 2 |bm|) ∧ (bp = 0 ∨ Int.log 2 |v| ≤ Int.log 2 |bp|) := by
+  set L := Int.log 2 |v| with hL
+  obtain ⟨bmv, hbm⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) v).val := by
+    rw [val_roundFloor_floatSet]; exact precisionSet_exists_real _
+  obtain ⟨bpv, hbp⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundCeiling (floatSet (p + 1)) v).val := by
+    rw [val_roundCeiling_floatSet]; exact precisionSet_exists_real _
+  have hbm_mem : ((bmv : ℝ) : EReal) ∈ floatSet (p + 1) := hbm ▸ (roundFloor _ _).property
+  have hbp_mem : ((bpv : ℝ) : EReal) ∈ floatSet (p + 1) := hbp ▸ (roundCeiling _ _).property
+  have hbm_le : bmv ≤ v := by
+    have := (isGreatest_roundFloor (floatSet (p + 1)) v).1.2
+    rw [← hbm] at this; exact EReal.coe_le_coe_iff.mp this
+  have hbp_ge : v ≤ bpv := by
+    have := (isLeast_roundCeiling (floatSet (p + 1)) v).1.2
+    rw [← hbp] at this; exact EReal.coe_le_coe_iff.mp this
+  have hbm_ne : bmv ≠ v := fun h => hvB (h ▸ hbm_mem)
+  have hbp_ne : bpv ≠ v := fun h => hvB (h ▸ hbp_mem)
+  have hgreatest : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → b ≤ v → b ≤ bmv := by
+    intro b hb hbv
+    have := (isGreatest_roundFloor (floatSet (p + 1)) v).2 ⟨hb, EReal.coe_le_coe_iff.mpr hbv⟩
+    rw [← hbm] at this
+    exact EReal.coe_le_coe_iff.mp this
+  have hleast : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → v ≤ b → bpv ≤ b := by
+    intro b hb hbv
+    have := (isLeast_roundCeiling (floatSet (p + 1)) v).2 ⟨hb, EReal.coe_le_coe_iff.mpr hbv⟩
+    rw [← hbp] at this
+    exact EReal.coe_le_coe_iff.mp this
+  have h2L : (2 : ℝ) ^ L ≤ |v| := Int.zpow_log_le_self (by norm_num) (abs_pos.mpr hv0)
+  have h2Lpos : (0 : ℝ) < 2 ^ L := zpow_pos (by norm_num) _
+  have hmemL : ∀ c : ℤ, |c| ≤ 1 → (((c : ℝ) * 2 ^ L : ℝ) : EReal) ∈ floatSet (p + 1) :=
+    fun c hc => mem_floatSet_mul_zpow (p + 1) c L (le_trans hc (one_le_pow₀ (by norm_num)))
+  refine ⟨bmv, bpv, hbm_mem, hbp_mem, lt_of_le_of_ne hbm_le hbm_ne,
+    lt_of_le_of_ne hbp_ge hbp_ne.symm, hgreatest, hleast, Or.inr ?_, Or.inr ?_⟩
+  · rcases lt_or_gt_of_ne hv0 with hneg | hpos
+    · have hbneg : bmv < 0 := lt_of_le_of_lt hbm_le hneg
+      apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbneg.ne)).mp
+      push_cast
+      rw [abs_of_neg hbneg]
+      rw [abs_of_neg hneg] at h2L
+      linarith
+    · have hmem := hmemL 1 (by simp)
+      simp only [Int.cast_one, one_mul] at hmem
+      rw [abs_of_pos hpos] at h2L
+      have hle := hgreatest _ hmem h2L
+      apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num)
+        (abs_pos.mpr (lt_of_lt_of_le h2Lpos hle).ne')).mp
+      push_cast
+      rw [abs_of_pos (lt_of_lt_of_le h2Lpos hle)]
+      exact hle
+  · rcases lt_or_gt_of_ne hv0 with hneg | hpos
+    · have hmem := hmemL (-1) (by simp)
+      simp only [Int.cast_neg, Int.cast_one, neg_one_mul] at hmem
+      rw [abs_of_neg hneg] at h2L
+      have hle := hleast _ hmem (by linarith)
+      have hbneg : bpv < 0 := lt_of_le_of_lt hle (by linarith)
+      apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbneg.ne)).mp
+      push_cast
+      rw [abs_of_neg hbneg]
+      linarith
+    · rw [abs_of_pos hpos] at h2L
+      have hbpos : 0 < bpv := lt_of_lt_of_le hpos hbp_ge
+      apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hbpos.ne')).mp
+      push_cast
+      rw [abs_of_pos hbpos]
+      linarith
+
+/-- No boundary lies in a bracket `(lv, hv]` of `v` narrower than the distance from `v` to its
+adjacent boundaries. -/
+theorem no_boundary_of_dist (p : ℕ) [NeZero p] (v lv hv D : ℝ) (hv0 : v ≠ 0)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (hl : lv ≤ v) (hh : v ≤ hv)
+    (hdist : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → b ≠ v →
+      (b = 0 ∨ Int.log 2 |v| ≤ Int.log 2 |b|) → D ≤ |v - b|)
+    (hwidth : hv - lv < D) :
+    ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → ¬ (lv < b ∧ b ≤ hv) := by
+  obtain ⟨bm, bp, hbm_mem, hbp_mem, hbm_lt, hbp_gt, hgreatest, hleast, hLbm, hLbp⟩ :=
+    adjacent_boundaries p v hv0 hvB
+  have hDm : D ≤ v - bm := by
+    have h := hdist bm hbm_mem hbm_lt.ne hLbm
+    rwa [abs_of_pos (sub_pos.mpr hbm_lt)] at h
+  have hDp : D ≤ bp - v := by
+    have h := hdist bp hbp_mem hbp_gt.ne' hLbp
+    rw [abs_of_neg (sub_neg.mpr hbp_gt)] at h
+    linarith
+  intro b hb ⟨hb1, hb2⟩
+  rcases le_or_gt b v with hbv | hbv
+  · have := hgreatest b hb hbv
+    linarith
+  · have := hleast b hb hbv.le
+    linarith
+
+/-- `roundingPossible` accepts a bracket that contains no boundary. -/
+theorem roundingPossible_isSome_of_no_boundary (p : ℕ) [NeZero p] (mode : RoundingMode)
+    {l h : Roundable} {lv hv : ℝ} (hl : Rounds l lv) (hh : Rounds h hv) (hle : lv ≤ hv)
+    (hnob : ∀ b : ℝ, ((b : ℝ) : EReal) ∈ floatSet (p + 1) → ¬ (lv < b ∧ b ≤ hv)) :
+    (roundingPossible l h p mode).isSome = true := by
+  unfold roundingPossible
+  rw [hl (p + 1) .Floor, hh (p + 1) .Floor]
+  suffices hsuff : (roundFloor (floatSet (p + 1)) lv).val
+      = (roundFloor (floatSet (p + 1)) hv).val by
+    have heq : (roundVal (p + 1) .Floor (some (lv : EReal))).1
+        = (roundVal (p + 1) .Floor (some (hv : EReal))).1 := by
+      rw [fst_roundVal, fst_roundVal]
+      change ofEReal (p + 1) .Floor (lv : EReal) = ofEReal (p + 1) .Floor (hv : EReal)
+      exact toVal_injective (p + 1) (ofEReal_spec (p + 1) .Floor _).1
+        (ofEReal_spec (p + 1) .Floor _).1
+        (by rw [(ofEReal_spec (p + 1) .Floor _).2, (ofEReal_spec (p + 1) .Floor _).2]
+            exact congrArg some hsuff)
+    rw [heq]
+    simp
+  obtain ⟨fh, hfh⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) hv).val := by
+    rw [val_roundFloor_floatSet]; exact precisionSet_exists_real _
+  have hfh_mem : ((fh : ℝ) : EReal) ∈ floatSet (p + 1) := hfh ▸ (roundFloor _ _).property
+  have hfh_le : fh ≤ hv := by
+    have := (isGreatest_roundFloor (floatSet (p + 1)) hv).1.2
+    rw [← hfh] at this; exact EReal.coe_le_coe_iff.mp this
+  have hfh_le' : fh ≤ lv := by
+    by_contra hcon
+    push Not at hcon
+    exact hnob fh hfh_mem ⟨hcon, hfh_le⟩
+  apply le_antisymm
+  · exact (isGreatest_roundFloor (floatSet (p + 1)) hv).2
+      ⟨(roundFloor _ _).property,
+        le_trans (isGreatest_roundFloor (floatSet (p + 1)) lv).1.2
+          (EReal.coe_le_coe_iff.mpr hle)⟩
+  · rw [← hfh]
+    exact (isGreatest_roundFloor (floatSet (p + 1)) lv).2
+      ⟨hfh_mem, EReal.coe_le_coe_iff.mpr hfh_le'⟩
+
+/-- `2^(−ds − a) < 1/(d · 2^a)` when `d < 2^ds`. -/
+theorem two_zpow_lt_one_div (d : ℕ) (hd : 0 < d) (ds : ℕ) (hds : d < 2 ^ ds) (a : ℕ) :
+    (2 : ℝ) ^ (-(ds : ℤ) - a) < 1 / ((d : ℝ) * 2 ^ a) := by
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  have hds' : (d : ℝ) < 2 ^ ds := by exact_mod_cast hds
+  calc (2 : ℝ) ^ (-(ds : ℤ) - a) = 1 / (2 ^ ds * 2 ^ a) := by
+        rw [zpow_sub₀ (by norm_num), zpow_neg, zpow_natCast, zpow_natCast]
+        field_simp
+    _ < 1 / ((d : ℝ) * 2 ^ a) := by
+        apply one_div_lt_one_div_of_lt (by positivity)
+        exact mul_lt_mul_of_pos_right hds' (by positivity)
+
+/-- A real of magnitude at least `1/(d · 2^a)` with `d < 2^ds` has `⌊log₂ |v|⌋ ≥ −ds − a`. -/
+theorem neg_le_log_of_one_div_le (v : ℝ) (hv0 : v ≠ 0) (d : ℕ) (hd : 0 < d) (ds : ℕ)
+    (hds : d < 2 ^ ds) (a : ℕ) (h : 1 / ((d : ℝ) * 2 ^ a) ≤ |v|) :
+    -(ds : ℤ) - a ≤ Int.log 2 |v| := by
+  apply (Int.zpow_le_iff_le_log (b := 2) (by norm_num) (abs_pos.mpr hv0)).mp
+  push_cast
+  exact le_trans (two_zpow_lt_one_div d hd ds hds a).le h
 
 /-! ### The error of a truncation -/
 
