@@ -106,13 +106,27 @@ def gcdLimbs (buf : Array UInt64) (loA lenA loB lenB : Nat)
 
 /-! ### AzNat-level entry point -/
 
-/-- Binary GCD of two `AzNat`s.  Returns `gcd(a, b)`.
+/-- Euclid's algorithm on single limbs with a fuel counter, so that it is structurally recursive
+and evaluates under `decide` and `rfl`.  Two consecutive steps at least halve the second argument,
+so `2 * 64 + 2` units of fuel always suffice for `UInt64` inputs. -/
+def gcdUInt64.go : Nat → UInt64 → UInt64 → UInt64
+  | 0, a, _ => a
+  | fuel + 1, a, b => if b = 0 then a else gcdUInt64.go fuel b (a % b)
+
+/-- Euclid's algorithm on single limbs, with hardware division: the base case and the fast path
+for operands of at most one limb (`gcdUInt64 a 0 = a`). -/
+def gcdUInt64 (a b : UInt64) : UInt64 := gcdUInt64.go 130 a b
+
+/-- GCD of two `AzNat`s.  Operands of at most one limb each go through Euclid's algorithm on
+`UInt64` (`gcdUInt64`); otherwise the binary GCD.
 
     Special cases: `gcd(0, b) = b`, `gcd(a, 0) = a`.  Otherwise extracts
     the common power-of-two factor, makes both operands odd, runs the
     limb-level binary GCD loop, and shifts the result back. -/
 def gcd (a b : AzNat) : AzNat :=
-  if a.limbs.size = 0 then b
+  if a.limbs.size ≤ 1 ∧ b.limbs.size ≤ 1 then
+    (gcdUInt64 (a.limbs.getD 0 0) (b.limbs.getD 0 0)).toAzNat
+  else if a.limbs.size = 0 then b
   else if b.limbs.size = 0 then a
   else
     let tzA := trailingZerosLimbs a.limbs

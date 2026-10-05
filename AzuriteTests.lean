@@ -23,6 +23,7 @@ import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.Conversion
 import Azurite.AzNat.Tests.Div
 import Azurite.AzNat.Tests.DivRound
+import Azurite.AzNat.Tests.Gcd
 import Azurite.AzNat.Tests.GetBits
 import Azurite.AzNat.Tests.IsMultipleOfPow2
 import Azurite.AzNat.Tests.JacobiSym

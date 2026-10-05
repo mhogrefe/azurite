@@ -1455,6 +1455,7 @@ import Azurite.UInt64.Equiv.SplitHalves
 import Azurite.UInt64.Equiv.SqrtRem
 import Azurite.UInt64.Equiv.SubWithBorrow
 import Azurite.UInt64.Equiv.TestBit
+import Azurite.UInt64.Equiv.TrailingZeros
 import Azurite.UInt64.Equiv.WideAdd
 import Azurite.UInt64.Equiv.WideAdd3
 import Azurite.UInt64.Equiv.WideMul
@@ -1475,6 +1476,7 @@ import Azurite.UInt64.SplitHalves
 import Azurite.UInt64.SqrtRem
 import Azurite.UInt64.SubWithBorrow
 import Azurite.UInt64.TestBit
+import Azurite.UInt64.TrailingZeros
 import Azurite.UInt64.WideAdd
 import Azurite.UInt64.WideAdd3
 import Azurite.UInt64.WideMul

@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.TrailingZeros
 import Azurite.AzNat.Equiv.Basic
+import Azurite.UInt64.Equiv.TrailingZeros
 import Mathlib.Data.Nat.MaxPowDiv
 import Mathlib.NumberTheory.Padics.PadicVal.Basic
 
@@ -181,9 +182,10 @@ private lemma trailingZerosLimbsAux_eq (a : AzNat) (start : Nat) (hstart : start
         rw [List.cons_head_tail h_drop_ne]
       rw [this]; exact padicValNat_toNatLimbsList_cons _ _ h_head_ne
     -- ctz = padicValNat 2 of head limb
-    have h_ctz : a.limbs[start].toBitVec.ctz.toNat =
+    have h_ctz : a.limbs[start].trailingZeros =
         padicValNat 2 ((a.limbs.toList.drop start).head h_drop_ne).toNat := by
-      rw [← h_drop_head]; exact ctz_eq_padicValNat _ h_head_ne
+      rw [← h_drop_head, UInt64.trailingZeros_eq_ctz _ h_head_ne]
+      exact ctz_eq_padicValNat _ h_head_ne
     rw [h_pv, h_inner_pv, ← h_ctz]; ring
 
 -- Main theorem

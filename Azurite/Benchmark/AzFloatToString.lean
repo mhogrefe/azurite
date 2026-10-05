@@ -40,55 +40,58 @@ private def oldShortestDecimalPrecision (x : AzFloat) : Nat :=
 private def oldToString (x : AzFloat) : String :=
   (toDecimalAt x (oldShortestDecimalPrecision x)).getD ""
 
-/-- Median-of-three timing of `f`, in ns, `iters` passes each. -/
-private def med3 {α : Type} (iters : Nat) (f : Unit → α) : IO UInt64 := do
-  let (_, a) ← timeNsIter iters f
-  let (_, b) ← timeNsIter iters f
-  let (_, c) ← timeNsIter iters f
+/-- Total ns of `f` over all `xs` (each computed once per pass, kept alive by a checksum so nothing
+is hoisted), median of three passes. -/
+@[noinline] private def timeOver {β α : Type} (xs : Array β) (f : β → α) (size : α → Nat) :
+    IO UInt64 := do
+  let pass : IO UInt64 := do
+    let t0 ← monoNanos
+    let mut acc : Nat := 0
+    for x in xs do
+      acc := acc + size (f x)
+    let t1 ← monoNanos
+    if acc = 0 then IO.eprintln "(zero checksum)"
+    return t1 - t0
+  let a ← pass
+  let b ← pass
+  let c ← pass
   return median3 a b c
 
-private def ms (ns : UInt64) (iters : Nat) : String :=
-  let us := ns.toNat / iters / 1000
+private def ms (ns : UInt64) (count : Nat) : String :=
+  let us := ns.toNat / count / 1000
   s!"{us / 1000}.{padLeft (toString (us % 1000)) 3 |>.replace " " "0"}"
 
 /-- Run the `az_float_to_string` benchmark.  Config: `bits` (`/`-separated precisions, default
-`53/1000/10000/100000`), `iters` (default `3`). -/
+`53/1000/10000/100000`), `inputs` (square roots of the first `inputs` primes, default `4`). -/
 def runAzFloatToString (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
     IO Unit := do
   let bitsList := match cfg["bits"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[53, 1000, 10000, 100000]
-  let iters := configGetNat cfg "iters" 3
-  IO.println "[AzFloat-ToString] ms per call (median of 3); probe = one round-trip test at the \
-    digit estimate"
+  let count := configGetNat cfg "inputs" 4
+  let primes : Array Nat := #[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+  IO.println s!"[AzFloat-ToString] ms per call (median of 3 passes over {count} inputs: √2, √3, …); \
+    probe = one round-trip test at the digit estimate"
   IO.println (padLeft "bits" 7 ++ padLeft "digits" 7 ++ padLeft "sqrt" 10 ++ padLeft "toString" 10
-    ++ padLeft "old search" 11 ++ padLeft "toSci" 10 ++ padLeft "toAzRat" 10 ++ padLeft "ofAzRat" 10
-    ++ padLeft "probes" 8)
+    ++ padLeft "old search" 11 ++ padLeft "toSci" 10 ++ padLeft "toAzRat" 10 ++ padLeft "ofAzRat" 10)
   for P in bitsList do
-    let two := ofAzRat ((AzRat.parse "2").get!) P
-    let nsSqrt ← med3 iters (fun _ => sqrt two)
-    let x := sqrt two
-    let nsNew ← med3 iters (fun _ => toString x)
-    let nsOld ← med3 iters (fun _ => oldToString x)
-    let digits := shortestDecimalPrecision x
-    let q := x.toAzRat?.get!
+    let ns : Array AzFloat := (primes.extract 0 (min count primes.size)).map fun n =>
+      ofAzRat ((AzRat.parse (toString n)).get!) P
+    let nsSqrt ← timeOver ns sqrt (·.precision?.getD 0)
+    let xs := ns.map sqrt
+    let nsNew ← timeOver xs toString (·.length)
+    let nsOld ← timeOver xs oldToString (·.length)
+    let digits := shortestDecimalPrecision xs[0]!
+    let qs := xs.map fun x => x.toAzRat?.get!
     let est := P * 30103 / 100000 + 2
-    let nsSci ← med3 iters (fun _ => q.toSciNumber (decimalOptions est))
-    match q.toSciNumber (decimalOptions est) with
-    | none => IO.println s!"{P}: no SciNumber at {est} digits"
-    | some sn =>
-    let nsRat ← med3 iters (fun _ => sn.toAzRat)
-    let r := sn.toAzRat
-    let nsOf ← med3 iters (fun _ => ofAzRat r P)
-    -- number of probes of the new search: count predicate evaluations
-    let counter ← IO.mkRef 0
-    let pred := fun p => decimalRoundTrips x q P p
-    let _ ← pure (searchLeastFromTop pred 0 (expandUntil pred est 64))
-    let probes := (est - digits) -- distance from the estimate, a proxy for the gallop length
-    counter.set probes
-    IO.println (padLeft s!"{P}" 7 ++ padLeft s!"{digits}" 7 ++ padLeft (ms nsSqrt iters) 10
-      ++ padLeft (ms nsNew iters) 10 ++ padLeft (ms nsOld iters) 11 ++ padLeft (ms nsSci iters) 10
-      ++ padLeft (ms nsRat iters) 10 ++ padLeft (ms nsOf iters) 10
-      ++ padLeft s!"est-{probes}" 8)
+    let nsSci ← timeOver qs (fun q => q.toSciNumber (decimalOptions est))
+      (fun o => if o.isSome then 1 else 2)
+    let sns := qs.filterMap fun q => q.toSciNumber (decimalOptions est)
+    let nsRat ← timeOver sns (fun sn => sn.toAzRat) (·.num.limbs.size)
+    let rs := sns.map fun sn => sn.toAzRat
+    let nsOf ← timeOver rs (fun r => ofAzRat r P) (·.precision?.getD 0)
+    IO.println (padLeft s!"{P}" 7 ++ padLeft s!"{digits}" 7 ++ padLeft (ms nsSqrt count) 10
+      ++ padLeft (ms nsNew count) 10 ++ padLeft (ms nsOld count) 11 ++ padLeft (ms nsSci count) 10
+      ++ padLeft (ms nsRat count) 10 ++ padLeft (ms nsOf count) 10)
 
 end Azurite.Benchmark

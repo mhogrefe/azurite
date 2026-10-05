@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Basic
 import Azurite.AzNat.OfLimbs
+import Azurite.UInt64.TrailingZeros
 
 namespace Azurite.AzNat
 
@@ -22,7 +23,7 @@ def trailingZerosLimbsAux (a : Array UInt64) (i : Nat) (h_bound : i < a.size) : 
     else
       0
   else
-    i * 64 + a[i].toBitVec.ctz.toNat
+    i * 64 + a[i].trailingZeros
   termination_by a.size - i
 
 /-- Count trailing zeros in a raw limb array.  Returns `0` for a zero or

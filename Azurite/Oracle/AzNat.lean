@@ -38,9 +38,18 @@ import Azurite.AzNat.Parity
 import Azurite.AzNat.OfLimbs
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.LimbDigits
+import Azurite.AzNat.OfLimbDigits
+import Azurite.AzNat.LimbDigitsPow2
+import Azurite.AzNat.OfLimbDigitsPow2
 import Azurite.AzNat.Compare
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.Conversion
+import Azurite.AzNat.TestBit
+import Azurite.AzNat.SetBit
+import Azurite.AzNat.ClearBit
+import Azurite.AzNat.GetBits
+import Azurite.AzNat.IsSquare
+import Azurite.AzNat.IsPrime
 
 /-!
 # Checks for Malachite's `Natural` against `AzNat`
@@ -411,6 +420,64 @@ def checkLowMask (line : String) : Verdict := do
   let n ← expect "n" (parseAzNat res)
   expectEq "low_mask" (AzNat.lowMask k) n
 
+/-! ### Shifts -/
+
+/-- `x << s = z` or `x >> s = z` for a primitive shift count `s`, the left operand possibly
+printed as `&x`; a negative count reverses the direction, and a right shift floors. -/
+def checkNatShift (op : String) (left : Bool) (line : String) : Verdict := do
+  let (x, s, z) ← expect s!"an `x {op} s = z` line" (binaryOp line op)
+  let x ← expect "x" (parseAzNat x)
+  let s ← expect "shift" (parseInt s)
+  let z ← expect "z" (parseAzNat z)
+  let shifted :=
+    if (s < 0) != left then AzNat.shiftLeft x s.natAbs else AzNat.shiftRight x s.natAbs
+  expectEq op shifted z
+
+def checkShl : String → Verdict := checkNatShift "<<" true
+
+def checkShr : String → Verdict := checkNatShift ">>" false
+
+/-! ### Bit access -/
+
+/-- `n.get_bit(i) = b`. -/
+def checkGetBit (line : String) : Verdict := do
+  let (n, args, res) ← expect "an `n.get_bit(i) = b` line" (methodCall line "get_bit")
+  let i ← match args with
+    | [i] => expect "index" (parseNat i)
+    | _ => fail "get_bit takes one argument"
+  let n ← expect "n" (parseAzNat n)
+  let b ← expect "bit" (parseBool res)
+  expectEq "get_bit" (AzNat.testBit n i) b
+
+/-- `x := n; x.op(i); x = m`, for an in-place single-bit operation. -/
+def checkBitUpdate (method : String) (f : AzNat → Nat → AzNat) (line : String) : Verdict := do
+  let (n, call, m) ← match line.splitOn "; " with
+    | [n, call, m] => pure (n, call, m)
+    | _ => fail s!"not an `x := n; x.{method}(i); x = m` line"
+  if !(n.startsWith "x := " && m.startsWith "x = ") then fail "not an `x := n … x = m` line"
+  if !(call.startsWith s!"x.{method}(" && call.endsWith ")") then fail s!"not a {method} call"
+  let i ← expect "index" (parseNat (dropRightChars (dropChars call (method.length + 3)) 1))
+  let n ← expect "n" (parseAzNat (dropChars n 5))
+  let m ← expect "m" (parseAzNat (dropChars m 4))
+  expectEq method (f n i) m
+
+def checkSetBit : String → Verdict := checkBitUpdate "set_bit" AzNat.setBit
+
+def checkClearBit : String → Verdict := checkBitUpdate "clear_bit" AzNat.clearBit
+
+/-- `n.get_bits(start, end) = m` (also `get_bits_owned`): the bits in `[start, end)`. -/
+def checkGetBits (line : String) : Verdict := do
+  let (n, args, res) ← expect "an `n.get_bits(start, end) = m` line"
+    ((methodCall line "get_bits").orElse fun _ => methodCall line "get_bits_owned")
+  let (i, j) ← match args with
+    | [i, j] => pure (i, j)
+    | _ => fail "get_bits takes two arguments"
+  let n ← expect "n" (parseAzNat n)
+  let i ← expect "start" (parseNat i)
+  let j ← expect "end" (parseNat j)
+  let m ← expect "m" (parseAzNat res)
+  expectEq "get_bits" (AzNat.getBits n i j) m
+
 /-! ### Limbs and digits -/
 
 /-- `limbs(n) = [l, …]`, least significant first. -/
@@ -523,6 +590,153 @@ def checkToStringBase (line : String) : Verdict := do
   let b ← expect "base" (parseNat b)
   if b < 2 || b > 62 then fail "the base is outside [2, 62]"
   expectEq "to_string_base" (malachiteToStringBase b n) res
+
+/-! ### Factorization -/
+
+def checkIsSquare : String → Verdict :=
+  checkPredicate " is a perfect square" " is not a perfect square" AzNat.isSquare
+
+/-- `primes_less_than(n) = [p, …]` or `primes_less_than_or_equal_to(n) = [p, …]`: the list must be
+exactly the primes in range, in increasing order, each one decided by `isPrime` (a Miller–Rabin
+filter and a proven APR-CL certificate). -/
+def checkPrimesLessThan (line : String) : Verdict := do
+  let (inclusive, call) ←
+    match functionCall line "primes_less_than",
+        functionCall line "primes_less_than_or_equal_to" with
+    | some c, _ => pure (false, c)
+    | _, some c => pure (true, c)
+    | _, _ => fail "not a primes_less_than line"
+  let (args, res) := call
+  let n ← match args with
+    | [n] => expect "n" (parseNat n)
+    | _ => fail "primes_less_than takes one argument"
+  let ps ← expect "primes" (parseList res >>= parseAzNats)
+  let bound := if inclusive then n + 1 else n
+  let computed := (List.range bound).filterMap fun k =>
+    let a := AzNat.ofNat k
+    if AzNat.isPrime a then some a else none
+  expectEq "primes_less_than" (toString computed) (toString ps)
+
+/-! ### Digits in any base -/
+
+/-- The base-`b` digits of `n`, least significant first, for any base `b ≥ 2`: `limbDigits` when
+the base fits in a limb, and repeated division otherwise (a digit count never exceeds the bit
+length of `n`). -/
+def naturalDigits (b n : AzNat) : List AzNat :=
+  if b.limbs.size ≤ 1 then
+    ((AzNat.limbDigits (b.limbs.getD 0 0) n).map UInt64.toAzNat).toList
+  else Id.run do
+    let mut ds : Array AzNat := #[]
+    let mut m := n
+    for _ in [0:n.size + 1] do
+      if m == (0 : AzNat) then break
+      let (q, r) := AzNat.divMod m b
+      ds := ds.push r
+      m := q
+    return ds.toList
+
+/-- `to_digits_asc(n, b) = [d, …]` or `to_digits_desc(n, b) = [d, …]`, for a primitive or a natural
+base and digits of the same type. -/
+def checkToDigits (line : String) : Verdict := do
+  let (desc, call) ←
+    match functionCall line "to_digits_asc", functionCall line "to_digits_desc" with
+    | some c, _ => pure (false, c)
+    | _, some c => pure (true, c)
+    | _, _ => fail "not a to_digits line"
+  let (args, res) := call
+  let (n, b) ← match args with
+    | [n, b] => pure (n, b)
+    | _ => fail "to_digits takes two arguments"
+  let n ← expect "n" (parseAzNat n)
+  let b ← expect "base" (parseAzNat b)
+  if AzNat.compare b 2 == .lt then fail "the base is below 2"
+  let ds ← expect "digits" (parseList res >>= parseAzNats)
+  let computed := naturalDigits b n
+  expectEq "to_digits" (toString (if desc then computed.reverse else computed)) (toString ds)
+
+/-- The natural with base-`b` digits `ds` (least significant first), or `none` if a digit is not
+below the base: `ofLimbDigits` for a base and digits that fit in limbs, Horner's rule otherwise. -/
+def naturalFromDigits (b : AzNat) (ds : List AzNat) : Option AzNat :=
+  if ds.any fun d => AzNat.compare d b != .lt then none
+  else if b.limbs.size ≤ 1 && ds.all (·.limbs.size ≤ 1) then
+    some (AzNat.ofLimbDigits (b.limbs.getD 0 0) (ds.map (·.limbs.getD 0 0)).toArray)
+  else some (ds.foldr (fun d acc => AzNat.add (AzNat.mul acc b) d) 0)
+
+/-- `Natural::from_digits_asc(b, &[d, …]) = Some(n)` or `None` (or a bare `n` from a targeted
+demo), and the same for `from_digits_desc`. -/
+def checkFromDigits (line : String) : Verdict := do
+  let (desc, call) ←
+    match functionCall line "Natural::from_digits_asc",
+        functionCall line "Natural::from_digits_desc" with
+    | some c, _ => pure (false, c)
+    | _, some c => pure (true, c)
+    | _, _ => fail "not a from_digits line"
+  let (args, res) := call
+  let (b, ds) ← match args with
+    | [b, ds] => pure (b, ds)
+    | _ => fail "from_digits takes two arguments"
+  let b ← expect "base" (parseAzNat b)
+  if AzNat.compare b 2 == .lt then fail "the base is below 2"
+  let ds ← expect "digits" (parseList ds >>= parseAzNats)
+  let printed ← parsedNatural res
+  let computed := naturalFromDigits b (if desc then ds.reverse else ds)
+  expectEq "from_digits" (optionString computed) (optionString printed)
+
+/-- The base-`2^k` digits of `n`, least significant first: `limbDigitsPow2` for `k ≤ 64`, and
+`modPow2` with shifts otherwise. -/
+def powerOf2Digits (k : Nat) (n : AzNat) : List AzNat :=
+  if k ≤ 64 then ((AzNat.limbDigitsPow2 k n).map UInt64.toAzNat).toList
+  else Id.run do
+    let mut ds : Array AzNat := #[]
+    let mut m := n
+    for _ in [0:n.size + 1] do
+      if m == (0 : AzNat) then break
+      ds := ds.push (AzNat.modPow2 m k)
+      m := AzNat.shiftRight m k
+    return ds.toList
+
+/-- `n.to_power_of_2_digits_asc(k) = [d, …]` or `n.to_power_of_2_digits_desc(k) = [d, …]`. -/
+def checkToPowerOf2Digits (line : String) : Verdict := do
+  let (desc, call) ← match methodCall line "to_power_of_2_digits_asc",
+      methodCall line "to_power_of_2_digits_desc" with
+    | some c, _ => pure (false, c)
+    | _, some c => pure (true, c)
+    | _, _ => fail "not a to_power_of_2_digits line"
+  let (n, args, res) := call
+  let k ← match args with
+    | [k] => expect "log base" (parseNat k)
+    | _ => fail "to_power_of_2_digits takes one argument"
+  if k == 0 then fail "the log base is zero"
+  let n ← expect "n" (parseAzNat n)
+  let ds ← expect "digits" (parseList res >>= parseAzNats)
+  let computed := powerOf2Digits k n
+  expectEq "to_power_of_2_digits" (toString (if desc then computed.reverse else computed))
+    (toString ds)
+
+/-- `Natural::from_power_of_2_digits_asc(k, [d, …]) = Some(n)` or `None` (or a bare `n`), and
+the `_desc` form; the natural-digit demo prints `Natural.` for `Natural::`. -/
+def checkFromPowerOf2Digits (line : String) : Verdict := do
+  let line := if line.startsWith "Natural.from_" then "Natural::" ++ dropChars line 8 else line
+  let (desc, call) ←
+    match functionCall line "Natural::from_power_of_2_digits_asc",
+        functionCall line "Natural::from_power_of_2_digits_desc" with
+    | some c, _ => pure (false, c)
+    | _, some c => pure (true, c)
+    | _, _ => fail "not a from_power_of_2_digits line"
+  let (args, res) := call
+  let (k, ds) ← match args with
+    | [k, ds] => pure (k, ds)
+    | _ => fail "from_power_of_2_digits takes two arguments"
+  let k ← expect "log base" (parseNat k)
+  if k == 0 then fail "the log base is zero"
+  let ds ← expect "digits" (parseList ds >>= parseAzNats)
+  let ds := if desc then ds.reverse else ds
+  let printed ← parsedNatural res
+  let computed : Option AzNat :=
+    if ds.any fun d => d.size > k then none
+    else if k ≤ 64 then some (AzNat.ofLimbDigitsPow2 k (ds.map (·.limbs.getD 0 0)).toArray)
+    else some (ds.foldr (fun d acc => AzNat.add (AzNat.shiftLeft acc k) d) 0)
+  expectEq "from_power_of_2_digits" (optionString computed) (optionString printed)
 
 /-! ### Comparison -/
 

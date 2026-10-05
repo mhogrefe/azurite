@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Gcd
 import Azurite.AzNat.Equiv.Basic
+import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.Parity
 import Azurite.AzNat.Equiv.ShiftLeft
@@ -608,9 +609,74 @@ private theorem padicValNat_div_pow (n k : Nat) (hn : n ≠ 0) (hk : k ≤ padic
         rw [padicValNat.mul (by positivity) h_ne, padicValNat.prime_pow]
     _ = padicValNat 2 n - k := by rw [← h_factor]
 
-/-- Correctness of `gcd`: the binary GCD computes `Nat.gcd`. -/
+/-- Two Euclid steps at least halve the second argument. -/
+private lemma two_mul_mod_lt (b r : ℕ) (hr : 0 < r) (hrb : r < b) : 2 * (b % r) < b := by
+  rcases Nat.lt_or_ge b (2 * r) with h | h
+  · rw [Nat.mod_eq_sub_mod (le_of_lt hrb), Nat.mod_eq_of_lt (by omega)]; omega
+  · have := Nat.mod_lt b hr; omega
+
+/-- Correctness of the single-limb Euclid loop: with `b < 2 ^ k`, `2 * k + 2` units of fuel
+suffice. -/
+theorem toNat_gcdUInt64_go (k : ℕ) :
+    ∀ (fuel : ℕ) (a b : UInt64), b.toNat < 2 ^ k → 2 * k + 2 ≤ fuel →
+      (gcdUInt64.go fuel a b).toNat = Nat.gcd a.toNat b.toNat := by
+  induction k with
+  | zero =>
+    intro fuel a b hb hf
+    have hb0 : b = 0 := UInt64.toNat_inj.mp (by rw [UInt64.toNat_zero]; omega)
+    subst hb0
+    obtain ⟨f, rfl⟩ : ∃ f, fuel = f + 1 := ⟨fuel - 1, by omega⟩
+    rw [gcdUInt64.go, ite_eq_left rfl, UInt64.toNat_zero, Nat.gcd_zero_right]
+  | succ k ih =>
+    intro fuel a b hb hf
+    obtain ⟨f, rfl⟩ : ∃ f, fuel = f + 2 := ⟨fuel - 2, by omega⟩
+    rw [gcdUInt64.go]
+    by_cases hb0 : b = 0
+    · rw [ite_eq_left hb0, hb0, UInt64.toNat_zero, Nat.gcd_zero_right]
+    · rw [ite_eq_right hb0, gcdUInt64.go]
+      have hpos : 0 < b.toNat := Nat.pos_of_ne_zero (fun h0 => hb0 (UInt64.toNat_inj.mp h0))
+      by_cases hr0 : a % b = 0
+      · rw [ite_eq_left hr0]
+        have hmod : a.toNat % b.toNat = 0 := by rw [← UInt64.toNat_mod, hr0, UInt64.toNat_zero]
+        rw [Nat.gcd_comm, Nat.gcd_rec, hmod, Nat.gcd_zero_left]
+      · rw [ite_eq_right hr0]
+        have hrpos : 0 < (a % b).toNat :=
+          Nat.pos_of_ne_zero (fun h0 => hr0 (UInt64.toNat_inj.mp h0))
+        have hrlt : (a % b).toNat < b.toNat := by rw [UInt64.toNat_mod]; exact Nat.mod_lt _ hpos
+        have hhalf := two_mul_mod_lt b.toNat (a % b).toNat hrpos hrlt
+        have hlt : (b % (a % b)).toNat < 2 ^ k := by
+          rw [UInt64.toNat_mod]; rw [Nat.pow_succ] at hb; omega
+        rw [ih f (a % b) (b % (a % b)) hlt (by omega)]
+        simp only [UInt64.toNat_mod]
+        rw [Nat.gcd_comm, ← Nat.gcd_rec, ← Nat.gcd_rec]
+        exact Nat.gcd_comm _ _
+
+theorem toNat_gcdUInt64 (a b : UInt64) : (gcdUInt64 a b).toNat = Nat.gcd a.toNat b.toNat :=
+  toNat_gcdUInt64_go 64 130 a b b.toBitVec.isLt (by norm_num)
+
+/-- The value of an `AzNat` of at most one limb is that limb. -/
+theorem toNat_eq_getD_of_size_le_one (n : AzNat) (h : n.limbs.size ≤ 1) :
+    n.toNat = (n.limbs.getD 0 0).toNat := by
+  have key : ∀ (a : Array UInt64), (a = #[] ∨ ∃ u, a = #[u]) →
+      toNatLimbsList a.toList = (a.getD 0 0).toNat := by
+    rintro _ (rfl | ⟨u, rfl⟩)
+    · rfl
+    · show toNatLimbsList [u] = u.toNat
+      simp [toNatLimbsList]
+  show toNatLimbsList n.limbs.toList = _
+  apply key
+  interval_cases hsz : n.limbs.size
+  · exact Or.inl (Array.eq_empty_of_size_eq_zero hsz)
+  · obtain ⟨u, hu⟩ : ∃ u, n.limbs.toList = [u] :=
+      List.length_eq_one_iff.mp (by rw [Array.length_toList]; exact hsz)
+    exact Or.inr ⟨u, Array.toList_inj.mp (by rw [hu])⟩
+
 theorem toNat_gcd (a b : AzNat) : (gcd a b).toNat = Nat.gcd a.toNat b.toNat := by
   unfold gcd
+  by_cases h1 : a.limbs.size ≤ 1 ∧ b.limbs.size ≤ 1
+  · rw [ite_eq_left h1, UInt64.toNat_toAzNat, toNat_gcdUInt64,
+      toNat_eq_getD_of_size_le_one a h1.1, toNat_eq_getD_of_size_le_one b h1.2]
+  rw [ite_eq_right h1]
   by_cases ha0 : a.limbs.size = 0
   · simp only [ha0, ↓reduceIte]
     rw [(toNat_eq_zero_iff a).mpr ha0, Nat.gcd_zero_left]
