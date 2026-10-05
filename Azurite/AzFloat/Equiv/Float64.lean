@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Float64
-import Azurite.AzFloat.Equiv.Arith
+import Azurite.AzFloat.Equiv.RoundScaled
 import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzRat.Equiv.ToSci
 import Mathlib.Data.Nat.Log

@@ -59,7 +59,7 @@ Status: started 2026-10-01; see the status log at the end.
    move the exponent only — exact with an unbounded exponent; proven `toVal_shiftLeft` and
    `shiftLeft_eq_liftE`.
 3. **Addition and subtraction (done)** (MCA §3.2.1 Algorithm FPadd and §3.2.2 as supplied,
-   reorganized).  `AzFloat/Arith.lean`: one primitive `roundScaled s S w p mode` rounds the exact
+   reorganized).  `AzFloat/Add.lean` (primitive in `RoundScaled.lean`): `roundScaled s S w p mode` rounds the exact
    `±S · 2^w` once (no round/sticky/round2 bookkeeping, no double rounding).  With `B` the larger
    magnitude, `T = max(p_B, p)` and gap `G = e_B − e_C`: in the **near** case (`G ≤ T + 1`) the sum
    or difference is formed exactly on the common scale `min(ulp B, ulp C)` and rounded, which
@@ -68,9 +68,9 @@ Status: started 2026-10-01; see the status log at the end.
    `2^(e_B − T − 2)` containing no precision-`p` grid point or midpoint (even below a power of
    two), and the representative `8 B ± 2^(e_B − T − 3)` rounds the same way.  `addPrecRound`,
    `subPrecRound` (`x + (−y)`), `Add`/`Sub` instances at the larger operand precision.  Proven
-   (`Equiv/Arith.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
+   (`Equiv/Add.lean`): `addPrecRound_eq_liftVal₂ : addPrecRound x y p mode = liftVal₂ Spec.add
    x y p mode` and `subPrecRound_eq_liftVal₂`, where `Spec.add a b` is `EReal` addition with
-   `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Arith.lean`.
+   `∞ + (−∞) = none`.  Tests `AzFloat/Tests/Add.lean`.
 4. **Multiplication, squaring, division, square root (done)** (MCA §3.3–§3.5 as supplied): `mulPrecRound x y p mode` multiplies the two cores in full and rounds once with
    `roundScaled` on the scale `(e₁ − p₁) + (e₂ − p₂)` (MCA Algorithm FPmultiply without the
    `n + g` truncation; the short product of Algorithm 3.4 is only an approximation and is left
@@ -146,6 +146,12 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
 `blueprint/src/azurite/azfloat.tex`, memory.
 
 ## Status log
+
+- 2026-10-05: `Arith.lean` split per operation like `AzInt`: `RoundScaled.lean` (shared `roundScaled`,
+  `normalizeCarry`, `roundFromFloor`, `combinedPrecision`), `Add.lean`, `Mul.lean`, `Div.lean`, `Sqrt.lean`,
+  `Rsqrt.lean`, with matching `Equiv/` (specs `Spec.op` next to their proofs; the cell lemma and
+  `decide_pos_finiteVal` in `Equiv/RoundScaled`) and `Tests/` files.  No statement changed.  Next: mixed
+  `AzFloat`/`AzRat` `+ − × ÷` via Ziv (ledger entry to follow).
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for

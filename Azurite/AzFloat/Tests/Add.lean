@@ -1,0 +1,110 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+import Azurite.AzFloat.Add
+import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.HexString
+import Azurite.AzFloat.Shift
+import Azurite.AzFloat.ToString
+import Azurite.AzRat.Parse
+
+/-!
+# Tests for addition and subtraction
+
+Expected values computed by hand (the exact sum or difference, then rounding to the destination
+precision).  `H` is the exact hexadecimal rendering.
+-/
+
+open Azurite Azurite.AzFloat
+
+private def Q (s : String) : AzRat := (AzRat.parse s).get!
+
+private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
+
+private def H (x : AzFloat) : String := toHexString x
+
+private def A (x y : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
+  addPrecRound x y p m
+
+private def S (x y : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) : AzFloat × Ordering :=
+  subPrecRound x y p m
+
+/-! ## Exact cases -/
+
+#guard (A one one 1) == (two, .eq)
+#guard (A one one 5) == (F "2" 5, .eq)
+#guard (A one oneHalf 2) == (F "3/2" 2, .eq)
+#guard (A (F "10" 4) (F "5" 3) 4) == (F "15" 4, .eq)
+#guard (A (F "1/3" 53) (F "1/3" 53) 53) == ((F "1/3" 53) <<< (1 : Nat), .eq)      -- doubling
+#guard (S (F "3/2" 2) one 2) == (setPrec oneHalf 2, .eq)                           -- Sterbenz
+#guard (S one one 5) == (zero, .eq)
+#guard (A one negOne 5) == (zero, .eq)
+#guard (S (F "1/3" 53) (F "1/3" 53) 53) == (zero, .eq)
+#guard (S (F "6" 3) (F "5" 3) 3) == (setPrec one 3, .eq)
+#guard (A (F "-10" 4) (F "-5" 3) 4) == (F "-15" 4, .eq)
+#guard (A (F "10" 4) (F "-5" 3) 4) == (F "5" 4, .eq)
+#guard (A (F "-10" 4) (F "5" 3) 4) == (F "-5" 4, .eq)
+#guard (A (F "5" 3) (F "-10" 4) 4) == (F "-5" 4, .eq)
+
+/-! ## Rounded cases -/
+
+#guard (A one oneHalf 1) == (two, .gt)                      -- 1.5 to 1 bit, ties to even
+#guard (A one oneHalf 1 .Floor) == (one, .lt)
+#guard (A one oneHalf 1 .Down) == (one, .lt)
+#guard (A one oneHalf 1 .Up) == (two, .gt)
+#guard (A (F "10" 4) (F "5" 3) 3) == (F "16" 3, .gt)        -- 15 to 3 bits
+#guard (A (F "10" 4) (F "5" 3) 3 .Floor) == (F "14" 3, .lt)
+#guard (A (F "-10" 4) (F "-5" 3) 3) == (F "-16" 3, .lt)
+#guard (A (F "-10" 4) (F "-5" 3) 3 .Floor) == (F "-16" 3, .lt)
+#guard (A (F "-10" 4) (F "-5" 3) 3 .Ceiling) == (F "-14" 3, .gt)
+#guard (A (F "-10" 4) (F "-5" 3) 3 .Down) == (F "-14" 3, .gt)
+#guard (S (F "16" 1) one 3) == (F "16" 3, .gt)              -- 15 to 3 bits again
+#guard (S (F "16" 1) one 3 .Floor) == (F "14" 3, .lt)
+#guard (S (F "16" 1) one 4) == (F "15" 4, .eq)
+
+/-! ## Far operands (sticky-only contribution) -/
+
+#guard (A one (one >>> (100 : Nat)) 53) == (F "1" 53, .lt)
+#guard (A one (one >>> (100 : Nat)) 53 .Up) == (F "1" 53 + (one >>> (52 : Nat)), .gt)
+#guard H (A one (one >>> (100 : Nat)) 53 .Up).1 == "0x1.0000000000001#53"
+#guard (S one (one >>> (100 : Nat)) 53) == (F "1" 53, .gt)
+#guard H (S one (one >>> (100 : Nat)) 53 .Floor).1 == "0x0.fffffffffffff8#53"   -- 1 − 2^-53
+#guard (S one (one >>> (100 : Nat)) 53 .Floor).2 == .lt
+#guard (A (one <<< (1000 : Nat)) one 5) == (setPrec (one <<< (1000 : Nat)) 5, .lt)
+#guard (A (one <<< (1000 : Nat)) one 5 .Up).1 == ((F "17" 5) <<< (996 : Nat))
+#guard (S (one <<< (1000 : Nat)) one 5) == (setPrec (one <<< (1000 : Nat)) 5, .gt)
+#guard (S (one <<< (1000 : Nat)) one 5 .Floor).1 == ((F "31" 5) <<< (995 : Nat))
+#guard (S (one <<< (1000 : Nat)) one 5 .Floor).2 == .lt
+#guard (A (one >>> (1000 : Nat)) one 5) == (F "1" 5, .lt)                       -- order swapped
+
+/-! ## Special values -/
+
+#guard (A nan one 5).1.isNaN
+#guard (A one nan 5).1.isNaN
+#guard (A posInfinity negInfinity 5).1.isNaN
+#guard (A posInfinity posInfinity 5) == (posInfinity, .eq)
+#guard (A negInfinity one 5) == (negInfinity, .eq)
+#guard (A one posInfinity 5) == (posInfinity, .eq)
+#guard (S posInfinity posInfinity 5).1.isNaN
+#guard (S posInfinity negInfinity 5) == (posInfinity, .eq)
+#guard (A zero zero 5) == (zero, .eq)
+#guard (A zero (F "1/3" 53) 10) == (F "1/3" 10, .gt)                            -- re-rounding
+#guard (A (F "1/3" 53) zero 53) == (F "1/3" 53, .eq)
+#guard (A one one 0).1.isNaN
+
+/-! ## Instances -/
+
+#guard toString (one + oneHalf) == "2.0"                    -- at precision max 1 1 = 1
+#guard toString (F "1" 2 + oneHalf) == "1.5"
+#guard toString (F "1/10" 53 + F "1/5" 53) == "0.30000000000000004"
+#guard toString (F "3/10" 53 - F "1/10" 53) == "0.19999999999999998"
+#guard (F "1" 53 + (one >>> (52 : Nat))).precision? == some 53
+#guard toString (F "1" 53 + (one >>> (52 : Nat))) == "1.0000000000000002"
+#guard (one - one) == zero
+#guard ((F "22/7" 10) + (F "-22/7" 10)) == zero

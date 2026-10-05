@@ -12,13 +12,17 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -- Built (and thereby run, since `#guard` checks at elaboration time)
 -- via `lake test`.
 
-import Azurite.AzFloat.Tests.Arith
+import Azurite.AzFloat.Tests.Add
 import Azurite.AzFloat.Tests.Basic
+import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.Literals
+import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Precision
+import Azurite.AzFloat.Tests.Rsqrt
+import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.Conversion
 import Azurite.AzNat.Tests.Div

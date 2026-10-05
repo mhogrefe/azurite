@@ -9,7 +9,11 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.Oracle.AzRat
 import Azurite.Oracle.MalachiteFloat
-import Azurite.AzFloat.Arith
+import Azurite.AzFloat.Add
+import Azurite.AzFloat.Div
+import Azurite.AzFloat.Mul
+import Azurite.AzFloat.Rsqrt
+import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.HexString

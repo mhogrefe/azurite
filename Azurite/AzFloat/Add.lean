@@ -1,0 +1,107 @@
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
+
+import Azurite.AzFloat.Compare
+import Azurite.AzFloat.RoundScaled
+import Azurite.AzNat.Add
+import Azurite.AzNat.ShiftLeft
+import Azurite.AzNat.Sub
+
+/-!
+# Addition and subtraction of `AzFloat`s
+
+Correctly rounded `x + y` and `x − y` at a destination precision `p`, in the spirit of Brent and
+Zimmermann, *Modern Computer Arithmetic*, §3.2.1–3.2.2 (Algorithm FPadd and the discussion of
+cancellation), but organized around one primitive: `roundScaled`, which rounds an exact integer
+times a power of two to `p` bits with `AzInt.shiftRightRound`.  Rounding once from the exact
+value removes FPadd's round/sticky/carry bookkeeping and its second rounding, and cancellation
+in a subtraction only makes the exact difference short.
+
+For operands of the same sign with `b` the one of larger exponent, `T = max(p_b, p)` and gap
+`G = e_b − e_c`:
+
+* **near case** (`G ≤ T + 1`): the exact sum or difference is an integer of at most
+  `T + p_c + 1` bits on the common scale `min(ulp b, ulp c)`; round it.
+* **far case** (`G ≥ T + 2`): `c` is below `2^(e_b − T − 2)`, so `b ± c` lies in an open interval
+  of that width next to `b` that contains no point or midpoint of the destination grid (even
+  when `b` is a power of two and the grid below it is finer); every value in it rounds the same
+  way, so the representative `8·b_core ± 1` at scale `2^(e_b − T − 3)` is rounded instead.  This
+  is FPadd's "the small operand only sets the sticky bit", with cost bounded by the precisions
+  rather than by the gap.
+
+`addPrecRound` dispatches the special values (`∞ + (−∞)` is `NaN`, a zero operand means
+re-rounding the other) and the signs; `subPrecRound x y = addPrecRound x (−y)`.  The `+` and
+`−` instances round to nearest at the larger of the two precisions.  `Equiv/Add.lean` proves
+`addPrecRound x y p mode = liftVal₂ Spec.add x y p mode`.
+-/
+
+namespace Azurite.AzFloat
+
+/-- The common scale of two values with ulps `2^wb` and `2^wc`, and the shifts onto it. -/
+def alignShifts (wb wc : AzInt) : AzInt × Nat × Nat :=
+  let w := min wb wc
+  (w, (wb - w).abs.toNat, (wc - w).abs.toNat)
+
+/-- `(−1)^(¬s) · (b + c)` rounded to precision `p`, for padding-free significands `nb`, `nc`
+with exponents `eb ≥ ec`. -/
+def addMagnitudes (s : Bool) (eb : AzInt) (nb : AzNat) (ec : AzInt) (nc : AzNat) (p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  let pb := nb.size
+  let T := max pb p
+  if (AzNat.ofNat (T + 2)).toAzInt ≤ eb - ec then
+    roundScaled s ((nb.shiftLeft (T - pb + 3)).addUInt64 1)
+      (eb - (AzNat.ofNat (T + 3)).toAzInt) p mode
+  else
+    let (w, kb, kc) :=
+      alignShifts (eb - (AzNat.ofNat pb).toAzInt) (ec - (AzNat.ofNat nc.size).toAzInt)
+    roundScaled s (nb.shiftLeft kb + nc.shiftLeft kc) w p mode
+
+/-- `(−1)^(¬s) · (b − c)` rounded to precision `p`, for `b > c` (as values) with exponents
+`eb ≥ ec`. -/
+def subMagnitudes (s : Bool) (eb : AzInt) (nb : AzNat) (ec : AzInt) (nc : AzNat) (p : Nat)
+    (mode : RoundingMode) : AzFloat × Ordering :=
+  let pb := nb.size
+  let T := max pb p
+  if (AzNat.ofNat (T + 2)).toAzInt ≤ eb - ec then
+    roundScaled s (nb.shiftLeft (T - pb + 3) - 1) (eb - (AzNat.ofNat (T + 3)).toAzInt) p mode
+  else
+    let (w, kb, kc) :=
+      alignShifts (eb - (AzNat.ofNat pb).toAzInt) (ec - (AzNat.ofNat nc.size).toAzInt)
+    roundScaled s (nb.shiftLeft kb - nc.shiftLeft kc) w p mode
+
+/-- `x + y` rounded to precision `p` with `mode`, and the comparison with the exact sum. -/
+def addPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  match x, y with
+  | nan, _ => (nan, .eq)
+  | _, nan => (nan, .eq)
+  | infinity s, infinity t => if s = t then (infinity s, .eq) else (nan, .eq)
+  | infinity s, _ => (infinity s, .eq)
+  | _, infinity t => (infinity t, .eq)
+  | zero, y => setPrecRound y p mode
+  | x, zero => setPrecRound x p mode
+  | finite s e₁ p₁ m₁ _, finite t e₂ p₂ m₂ _ =>
+    let n₁ := coreSignificand p₁ m₁
+    let n₂ := coreSignificand p₂ m₂
+    if s = t then
+      if AzInt.compare e₁ e₂ = .lt then addMagnitudes s e₂ n₂ e₁ n₁ p mode
+      else addMagnitudes s e₁ n₁ e₂ n₂ p mode
+    else
+      match compareMagnitude e₁ m₁ e₂ m₂ with
+      | .eq => (zero, .eq)
+      | .gt => subMagnitudes s e₁ n₁ e₂ n₂ p mode
+      | .lt => subMagnitudes t e₂ n₂ e₁ n₁ p mode
+
+/-- `x − y` rounded to precision `p` with `mode`, and the comparison with the exact difference. -/
+def subPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  addPrecRound x (-y) p mode
+
+instance : Add AzFloat := ⟨fun x y => (addPrecRound x y (combinedPrecision x y) .Nearest).1⟩
+instance : Sub AzFloat := ⟨fun x y => (subPrecRound x y (combinedPrecision x y) .Nearest).1⟩
+
+end Azurite.AzFloat

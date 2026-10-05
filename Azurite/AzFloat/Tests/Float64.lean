@@ -7,7 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Arith
+import Azurite.AzFloat.Add
+import Azurite.AzFloat.Div
+import Azurite.AzFloat.Mul
+import Azurite.AzFloat.Rsqrt
+import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.ToString

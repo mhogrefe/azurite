@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.ToString
-import Azurite.AzFloat.Equiv.Arith
+import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzNat.Equiv.Conversion
