@@ -57,8 +57,15 @@ private def ex := halfBinaryGcd 21 (N "1889826700059").toAzInt (N "421872857844"
 #guard ex.2.b = (N "1086512").toAzInt
 #guard ex.2.c = (N "349084").toAzInt
 #guard ex.2.d = (N "1023711").toAzInt
--- the driver with a tiny fallback threshold, so the recursion really runs
-private def H (a b : String) : String := toString (gcdHalfBinaryWith 8 (N a) (N b))
+-- the driver with a tiny fallback threshold, forcing the recursion (`Q`) or the quadratic word
+-- rounds (`H`)
+private def H (a b : String) : String := toString (gcdHalfBinaryWith 8 1000000 (N a) (N b))
+private def Q (a b : String) : String := toString (gcdHalfBinaryWith 8 0 (N a) (N b))
+#guard Q "1889826700059" "421872857844" == "3"
+#guard Q "935" "714" == "17"
+#guard Q "18446744073709551615" "4294967295" == "4294967295"
+#guard Q "340282366920938463463374607431768211455" "18446744073709551615"
+  == "18446744073709551615"
 #guard H "1889826700059" "421872857844" == "3"
 #guard H "935" "714" == "17"                                            -- MCA BinaryDivide example
 #guard H "19" "2" == "1"
@@ -68,8 +75,11 @@ private def H (a b : String) : String := toString (gcdHalfBinaryWith 8 (N a) (N 
 #guard H "340282366920938463463374607431768211455" "18446744073709551615"
   == "18446744073709551615"
 private def big : AzNat := (N "123456789012345678901234567890123456789") <<< 200
-#guard gcdHalfBinaryWith 8 (big * N "1000003") (big * N "1000004") = big
-#guard gcdHalfBinaryWith 8 (N "3" <<< 300) (N "9" <<< 280) = N "3" <<< 280
+#guard gcdHalfBinaryWith 8 0 (big * N "1000003") (big * N "1000004") = big
+#guard gcdHalfBinaryWith 8 0 (N "3" <<< 300) (N "9" <<< 280) = N "3" <<< 280
+#guard gcdHalfBinaryWith 8 1000000 (big * N "1000003") (big * N "1000004") = big
+#guard gcdHalfBinaryWith 8 1000000 (N "3" <<< 300) (N "9" <<< 280) = N "3" <<< 280
+#guard gcdHalfBinaryWith 64 1000000 (big * N "6") (big * N "4") = big * N "2"
 -- the dispatcher above its threshold: `gcd (n k) (n (k + 1)) = n`, powers of two, neighbours
 private def huge : AzNat := big <<< 900
 #guard gcd (huge * N "1000003") (huge * N "1000004") = huge

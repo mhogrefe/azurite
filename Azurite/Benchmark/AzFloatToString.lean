@@ -70,10 +70,12 @@ def runAzFloatToString (_limit : Nat) (cfg : Std.HashMap String String) (_seed :
     | none => #[53, 1000, 10000, 100000]
   let count := configGetNat cfg "inputs" 4
   let primes : Array Nat := #[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
-  IO.println s!"[AzFloat-ToString] ms per call (median of 3 passes over {count} inputs: √2, √3, …); \
+  IO.println s!"[AzFloat-ToString] ms per call (median of 3 passes over {count} inputs: √2, √3, \
+    …); \
     probe = one round-trip test at the digit estimate"
   IO.println (padLeft "bits" 7 ++ padLeft "digits" 7 ++ padLeft "sqrt" 10 ++ padLeft "toString" 10
-    ++ padLeft "old search" 11 ++ padLeft "toSci" 10 ++ padLeft "toAzRat" 10 ++ padLeft "ofAzRat" 10)
+    ++ padLeft "old search" 11 ++ padLeft "toSci" 10 ++ padLeft "toAzRat" 10
+    ++ padLeft "ofAzRat" 10)
   for P in bitsList do
     let ns : Array AzFloat := (primes.extract 0 (min count primes.size)).map fun n =>
       ofAzRat ((AzRat.parse (toString n)).get!) P
