@@ -15,8 +15,6 @@ import Azurite.AzRat.Parse
 # Tests for the addition of a float and a rational
 
 Expected values computed by hand (the exact sum, then rounding to the destination precision).
-The exact fallback `addRatExact` is also compared with the Ziv result, since both compute the
-same specification by different routes.
 -/
 
 open Azurite Azurite.AzFloat
@@ -30,10 +28,6 @@ private def H (x : AzFloat) : String := toHexString x
 private def A (x : AzFloat) (s : String) (p : Nat) (m : RoundingMode := .Nearest) :
     AzFloat × Ordering :=
   addRatPrecRound x (Q s) p m
-
-private def E (x : AzFloat) (s : String) (p : Nat) (m : RoundingMode := .Nearest) :
-    AzFloat × Ordering :=
-  addRatExact x (Q s) p m
 
 /-! ## Special values -/
 
@@ -89,15 +83,16 @@ private def E (x : AzFloat) (s : String) (p : Nat) (m : RoundingMode := .Nearest
 #guard A (powerOf2 (AzInt.ofInt (-1000))) "1/3" 5 == (F "1/3" 5, .lt)
 #guard A (powerOf2 (AzInt.ofInt (-1000))) "-1/3" 5 == (F "-1/3" 5, .gt)
 
-/-! ## Agreement with the exact fallback -/
+/-! ## Far apart exponents, beyond any exact computation -/
 
-#guard A one "1/3" 53 == E one "1/3" 53
-#guard A one "1/3" 53 .Ceiling == E one "1/3" 53 .Ceiling
-#guard A (F "22/7" 20) "-355/113" 30 == E (F "22/7" 20) "-355/113" 30
-#guard A (F "22/7" 20) "-355/113" 30 .Floor == E (F "22/7" 20) "-355/113" 30 .Floor
-#guard A (F "-1/7" 100) "1/11" 7 .Down == E (F "-1/7" 100) "1/11" 7 .Down
-#guard A one "1813388729421943762059265/3626777458843887524118528" 1 ==
-  E one "1813388729421943762059265/3626777458843887524118528" 1
+#guard A (powerOf2 (AzInt.ofInt 1000000000)) "1/3" 5 ==
+  (setPrec (powerOf2 (AzInt.ofInt 1000000000)) 5, .lt)
+#guard A (powerOf2 (AzInt.ofInt 1000000000)) "-1/3" 5 .Ceiling ==
+  (setPrec (powerOf2 (AzInt.ofInt 1000000000)) 5, .gt)
+#guard A (powerOf2 (AzInt.ofInt (-1000000000))) "1/3" 5 == (F "1/3" 5, .lt)
+#guard A (powerOf2 (AzInt.ofInt (-1000000000))) "1/4" 3 == (F "1/4" 3, .lt)      -- dyadic `q`
+#guard A (powerOf2 (AzInt.ofInt 1000000000)) "1/4" 3 ==
+  (setPrec (powerOf2 (AzInt.ofInt 1000000000)) 3, .lt)
 
 /-! ## Subtraction -/
 

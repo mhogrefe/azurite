@@ -1428,7 +1428,6 @@ import Azurite.Random.NatGen
 import Azurite.Random.Pair
 import Azurite.Random.Rat
 import Azurite.Rounding.Basic
-import Azurite.Rounding.Between
 import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc

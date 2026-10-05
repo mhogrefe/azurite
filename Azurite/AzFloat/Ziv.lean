@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Add
+import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Precision
 
 /-!
@@ -17,57 +18,64 @@ Correct rounding of a value that is not computed exactly, after Brent and Zimmer
 Computer Arithmetic*, §3.1.10 (Ziv's strategy) and Algorithm 3.1 (`RoundingPossible`).  An
 operation whose exact result `v` is expensive or impossible to materialize is replaced by a
 sequence of cheap approximations: at a working precision `w` it produces a float `y` and an
-error bound `ε ≥ 0` with `y ≤ v ≤ y + ε`.  Rounding is possible when the two ends of this
-interval round to the same float *with the same comparison tag* (`roundingPossible`): the
-rounding of a dyadic endpoint is a shift, so the test costs nothing compared with the
-approximation, and every value between the ends then rounds the same way
-(`Rounding/Between.lean`).  Otherwise the working precision is doubled (`zivLoop`).  The loop
-carries fuel; when it runs out, an exact fallback computes the result directly, so the result is
-correct unconditionally and the fuel only bounds the work of the approximation phase.
+error bound `ε ≥ 0` with `y ≤ v ≤ y + ε`, where moreover `ε = 0` whenever `y = v` — the
+approximations are truncations, which know whether they were exact (`truncError`), so the exact
+value lies in the half-open interval `(y, y + ε]` unless it is `y` itself.
 
-The test with both ends asks for the *closed* interval to lie in one open rounding cell, which
-is stricter than MCA's `RoundingPossible` at the cell boundaries; it is what the comparison tag
-needs (a value exactly on a boundary rounds the same way as its neighbors on one side but gets a
-different tag).
+Rounding to `p` bits is possible when that interval contains no *boundary* of the rounding —
+no float of precision `p` and no midpoint between two of them, i.e. no float of precision
+`p + 1` — because `roundVal` is constant between consecutive boundaries (the cell lemma
+`roundVal_congr_cell`).  `roundingPossible` tests this with one truncation: the greatest
+boundary at or below `y + ε` (the `(p + 1)`-bit floor of `y + ε`) must be at or below `y`.
+Both the test and the result `round_p (y + ε)` are additions of two floats, so they cost
+nothing compared with the approximation.  Otherwise the working precision is doubled
+(`zivLoop`).
 
-* `roundingPossible y ε p mode`: `some` of the rounding when the ends agree, `none` otherwise.
-* `zivLoop approx exact p mode fuel w`: Ziv's loop, doubling `w`.
-* `zivGuardBits`, `zivFuel`: the starting guard bits and the fuel.
+The loop carries fuel, and `Equiv/Ziv.lean` shows that with the fuel each operation computes
+from its inputs the loop never runs out: a sufficient working precision exists because the
+exact value, when it is not a boundary itself, is at a positive computable distance from every
+boundary, while the error bound shrinks geometrically.  No exact fallback is needed.
+
+* `truncError r`: the error of a truncation `r` (result and comparison tag), one ulp of the
+  result, `0` for an exact truncation.
+* `roundingPossible y ε p mode`: `some` of the rounding when it is determined, `none` otherwise.
+* `zivLoop approx p mode fuel w`: Ziv's loop, doubling `w`, `fuel + 1` attempts.
+* `zivGuardBits`, `zivFuel`: the starting guard bits and the fuel reaching a given precision.
 -/
 
 namespace Azurite.AzFloat
 
-/-- MCA Algorithm 3.1 in the form of two cheap roundings: when `y ≤ v ≤ y + ε`, the rounding
-of `v` to precision `p` is determined as soon as `y` and `y + ε` round to the same float with
-the same comparison tag. -/
+/-- The error of a truncation (a rounding toward `−∞`) with result `r.1` and comparison tag
+`r.2`: one ulp of the result, `0` when the truncation was exact or the result is `0`. -/
+def truncError (r : AzFloat × Ordering) : AzFloat :=
+  if r.2 = .eq then zero else (ulp? r.1).getD zero
+
+/-- MCA Algorithm 3.1: when the exact value lies in `(y, y + ε]` (or is `y` with `ε = 0`), its
+rounding to precision `p` is determined as soon as no boundary — no float of precision `p + 1`
+— lies in that interval, which is tested by truncating `y + ε` to `p + 1` bits; the rounding is
+then that of `y + ε`. -/
 def roundingPossible (y ε : AzFloat) (p : Nat) (mode : RoundingMode) :
     Option (AzFloat × Ordering) :=
-  let r := setPrecRound y p mode
-  if r = addPrecRound y ε p mode then some r else none
+  if ((addPrecRound y ε (p + 1) .Floor).1).le y then some (addPrecRound y ε p mode) else none
 
-/-- Ziv's loop: `approx w` is an approximation `(y, ε)` with `y ≤ v ≤ y + ε` computed at
-working precision `w`; the working precision doubles until rounding is possible, and after
-`fuel` attempts `exact ()` computes the result directly. -/
-def zivLoop (approx : Nat → AzFloat × AzFloat) (exact : Unit → AzFloat × Ordering) (p : Nat)
-    (mode : RoundingMode) : Nat → Nat → AzFloat × Ordering
-  | 0, _ => exact ()
-  | fuel + 1, w =>
-    let a := approx w
-    match roundingPossible a.1 a.2 p mode with
-    | some r => r
-    | none => zivLoop approx exact p mode fuel (2 * w)
+/-- Ziv's loop: `approx w` is an approximation `(y, ε)` computed at working precision `w`; the
+working precision doubles until rounding is possible, for `fuel + 1` attempts.  The `NaN` after
+the last attempt is never reached with the fuel the operations compute (`zivLoop_eq`). -/
+def zivLoop (approx : Nat → AzFloat × AzFloat) (p : Nat) (mode : RoundingMode) (fuel w : Nat) :
+    AzFloat × Ordering :=
+  match roundingPossible (approx w).1 (approx w).2 p mode with
+  | some r => r
+  | none =>
+    match fuel with
+    | 0 => (nan, .eq)
+    | fuel + 1 => zivLoop approx p mode fuel (2 * w)
 
 /-- The guard bits of the first working precision, `p + zivGuardBits`: a word, so that the
 first attempt fails with probability about `2^-64` on generic inputs. -/
 def zivGuardBits : Nat := 64
 
-/-- The fuel for `zivLoop` at destination precision `p` with inputs of `n` bits: enough
-doublings to take the working precision far beyond `(p + n)²`, after which the exact fallback
-is cheaper than another attempt. -/
-def zivFuel (p n : Nat) : Nat := (p + n).log2 + 8
-
-/-- The error of a truncation (a rounding toward `−∞`) with a given result: one ulp of the
-result, `0` for a zero result (whose truncation was exact). -/
-def truncError (f : AzFloat) : AzFloat := (ulp? f).getD zero
+/-- The fuel with which `zivLoop`, started at any positive working precision, reaches a
+working precision of at least `W` bits: `⌊log₂ W⌋ + 1` doublings. -/
+def zivFuel (W : Nat) : Nat := W.log2 + 1
 
 end Azurite.AzFloat

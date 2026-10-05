@@ -151,33 +151,37 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `normalizeCarry`, `roundFromFloor`, `combinedPrecision`), `Add.lean`, `Mul.lean`, `Div.lean`, `Sqrt.lean`,
   `Rsqrt.lean`, with matching `Equiv/` (specs `Spec.op` next to their proofs; the cell lemma and
   `decide_pos_finiteVal` in `Equiv/RoundScaled`) and `Tests/` files.  No statement changed.
-- 2026-10-05: **Ziv's strategy and `AzFloat + AzRat`.**  Source: the author's MCA §3.1.8–3.1.10 text
-  (Ziv's strategy, Algorithm 3.1 RoundingPossible, Theorem 3.2, Table 3.1).  Design (user-corrected: a first
-  draft squeezed the result between *two* approximations per level, floor and ceiling of `q`, i.e. two
-  divisions; Ziv computes one approximation and tests it): `Ziv.lean` — `roundingPossible y ε p mode`
-  (RoundingPossible in the form of two cheap roundings: `setPrecRound y p mode = addPrecRound y ε p mode`,
-  float and tag; stricter than MCA at a cell boundary, which the tag needs), `zivLoop approx exact p mode
-  fuel w` (one `(y, ε)` per level with `y ≤ v ≤ y + ε`, doubling `w`, exact fallback when the fuel is
-  spent — correctness never depends on the fuel), `zivGuardBits = 64`, `zivFuel p n = log₂(p+n) + 8`,
-  `truncError f = ulp? f` (or `0`).  `AddSubRat.lean` — `addRatApprox x q w`: `lo = ⌊q⌋_w` (the one division),
-  `y = ⌊x + lo⌋_{w+2}`, `ε = ⌈truncError lo + truncError y⌉_2`; `zivStart q p = p + 64`, raised to
-  `q.num.size` for dyadic `q` (exactness pre-test); `addRatExact` = `ofAzRatRound (x.toAzRat? + q)`;
-  `addRatPrecRound`, `subRatPrecRound x q = add x (−q)`, `ratSubPrecRound q x = add (−x) q`.  Proofs:
-  `Rounding/Between.lean` `round_between` (the squeeze, any `SymmetricRoundingTarget`, from the extremal
-  properties of floor/ceiling only — no cell geometry; `round_between_of_lt` + symmetry for the `.gt`
-  side); `Equiv/Ziv.lean` `roundVal_eq_of_between`, `roundingPossible_eq`, `zivLoop_eq`,
-  `lt_add_ulp_of_floor` (`⌊x⌋_p` lies within one of its own ulps below `x`: `x − ⌊x⌋ < precScale x ≤
-  precScale ⌊x⌋`, the binade of the floor being at least that of `x`), `eq_zero_of_roundFloor_eq_zero`,
-  `truncError_spec`; `Equiv/AddSubRat.lean` `ofAzRatRound_eq_roundVal` (pair form), `addRatExact_eq`,
-  `addRatApprox_spec`, `addRatPrecRound_eq_liftVal`, `subRatPrecRound_eq_liftVal`,
-  `ratSubPrecRound_eq_liftVal`.  Tests `Tests/AddSubRat.lean` include a sum `2^-80/3` above/below the one-bit
-  midpoint (first level fails, second succeeds) and agreement with the exact fallback.  NOT timed (user
-  rule: pause before benchmarks).  `HAdd`/`HSub` instances (user decision 2026-10-05): nearest at the
+- 2026-10-05: **Ziv's strategy and `AzFloat ± AzRat`** (`Ziv.lean`, `AddSubRat.lean`, Equiv, tests).
+  Source: the author's MCA §3.1.8–3.1.10 text (Ziv's strategy, Algorithm 3.1 RoundingPossible, Theorem 3.2,
+  Table 3.1).  Two user corrections shaped the design: (1) a first draft squeezed the result between *two*
+  approximations per level (floor and ceiling of `q`, two divisions) — Ziv computes ONE approximation and
+  tests it; (2) the user asked whether the exact fallback was needed — examining that showed the closed-
+  interval test `roundVal y = roundVal (y+ε)` fails forever when `y` is itself a boundary (e.g. `x ≫ q`
+  truncates `x + lo` to `x`), so far-apart operands silently fell through to the fallback and materialized
+  `2^|e|`.  Final design: `truncError r` is `0` for an exact truncation (tag `.eq`) else one ulp, so
+  `v ∈ (y, y+ε]` unless `v = y`; `roundingPossible y ε p mode` = MCA RoundingPossible in truncation form:
+  no boundary (float of precision `p+1` = floats and midpoints) in `(y, y+ε]`, tested as
+  `⌊y+ε⌋_{p+1} ≤ y`, result `round_p (y+ε)`; `zivLoop approx p mode fuel w` (fuel+1 attempts, doubling,
+  `(nan, .eq)` after the last — proven unreachable); NO fallback.  `addRatApprox x q w`: `lo = ⌊q⌋_w`
+  (the one division), `y = ⌊x + lo⌋_{w+2}`, `ε = ⌈truncError lo + truncError y⌉_2`; `zivStart q p =
+  p + 64` or `max (p+64) q.num.size` for dyadic `q`; `addRatFuel` = `log₂(p + |num| + 2|den| + |m| + 4) +
+  |e|.size + 3` doublings.  Proofs: `Equiv/Ziv.lean` `roundVal_congr_of_no_boundary` (from
+  `roundVal_congr_cell` with `j = ⌊log₂|v'|⌋ − p`, `k = ⌊v'/2^j⌋`), `roundingPossible_eq`, `zivLoop_eq`
+  (hypotheses: bracketing, `∀ w ≥ W` possible, `W ≤ w₀·2^fuel`), `lt_add_ulp_of_floor` (`x − ⌊x⌋_p <
+  precScale x ≤ precScale ⌊x⌋_p`), `truncError_spec`, boundary arithmetic (`boundary_repr`,
+  `exists_int_mul_sub_dyadic`, `one_div_le_abs_of_mul_eq_int`); `Equiv/AddSubRat.lean`
+  `addRatApprox_spec`, **`addRatApprox_possible`** (termination: `v` boundary ⇒ `q` dyadic
+  (`toRat_mem_precisionSet_of_dyadic`, via coprimality and `Nat.dvd_prime_pow`) ⇒ both truncations exact
+  ⇒ `ε = 0`; else `|v − b^±| ≥ 1/(den·2^a)` for the adjacent boundaries (`dist_sum_boundary`, integrality;
+  their binade is at least `v`'s, and `⌊log₂|v|⌋ ≥ −|den| − a₀` from `|v| ≥ 1/(den 2^{a₀})`), while `q − lo
+  ≤ 2^(|num|−w)`, `ε ≤ 2^(T+1−w)` with `T = |e| + |num| + 2`, and no `(p+1)`-float lies in `(y, x+lo]`
+  because `y` is the `(w+2)`-bit floor and `p+1 ≤ w+2`), `addRatBound_le`, the three lift theorems.
+  The bound is deliberately loose (it costs a few doublings of fuel, never iterations).  Tests include the
+  exponent-`10⁹` far case (which the first design could not do) and a sum `2^-80/3` above/below the
+  one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user decision): nearest at the
   float's precision, `1` for a special float (`ratOpPrecision`), consistent with `combinedPrecision` and
-  with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷` with a rational next (`mulRatApprox`: `x · ⌊q⌋_w` with `ε = |x| · ulp`;
-  division via `⌊1/q⌋_w` or `x / ⌊q⌋_w` bracketing); the `roundVal_congr_cell` bit-scan form of
-  RoundingPossible as an alternative test; a provable fuel bound (distance of `x + q` from the boundaries
-  is at least `2^-k / den`) would remove the fallback.
+  with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷` with a rational next
+  (same loop; termination proofs follow the same pattern with `|x|·ulp` error terms).
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for

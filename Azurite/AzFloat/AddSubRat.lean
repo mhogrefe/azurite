@@ -10,7 +10,6 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Ziv
 import Azurite.AzNat.Pow2
-import Azurite.AzRat.Add
 import Azurite.AzRat.Unary
 
 /-!
@@ -24,20 +23,24 @@ one approximation per working precision `w`:
 
 1. `lo`, the truncation of `q` toward `−∞` to `w` bits (one division, the only expensive step);
 2. `y`, the truncation of the exact dyadic sum `x + lo` toward `−∞` to `w + 2` bits;
-3. the error bound `ε`, the sum of the two truncation errors (one ulp each, `truncError`),
-   rounded up to two bits.
+3. the error bound `ε`, the sum of the two truncation errors (one ulp each, or `0` for an exact
+   truncation, `truncError`), rounded up to two bits.
 
-Then `y ≤ x + q ≤ y + ε`, and `roundingPossible` decides from the two cheap roundings of `y`
-and `y + ε` whether the result is determined.  The first working precision is `p + 64` bits,
-or the bit length of `q`'s numerator when `q` is dyadic (then `lo = q` exactly and the first
-attempt succeeds whenever `x + q` fits in `w + 2` bits — the exactness pre-test of MCA
-§3.1.10); the fallback after `zivFuel` doublings computes the exact rational sum.
+Then `y ≤ x + q ≤ y + ε`, with `ε = 0` when `y = x + q`, and `roundingPossible` decides from
+the `(p + 1)`-bit truncation of `y + ε` whether the result is determined.  The first working
+precision is `p + 64` bits, or the bit length of `q`'s numerator when `q` is dyadic (then
+`lo = q` exactly — the exactness pre-test of MCA §3.1.10).  The fuel `addRatFuel` is proven
+sufficient (`Equiv/AddSubRat.lean`): from a working precision of about `p` plus the bit
+lengths of `q`'s numerator, of `q`'s denominator twice and of `x`'s significand, plus twice
+the magnitude of `x`'s exponent, rounding is always possible, because `x + q` is either a
+boundary itself — then `q` is dyadic and both truncations are exact — or at a distance of at
+least `1/(den · 2^a)` from every boundary, while the error bound shrinks like `2^-w`.
 
 `subRatPrecRound x q = addRatPrecRound x (−q)` and `ratSubPrecRound q x = addRatPrecRound
 (−x) q`.  The `+` and `−` instances between an `AzFloat` and an `AzRat` round to nearest at the
 float's precision (`1` for a special float, as `combinedPrecision` does for two floats; so
-`zero + 1/3` is `1/4`).  `Equiv/AddSubRat.lean` proves that all three operations are the lifts of
-`EReal` addition and subtraction with the value of `q`.
+`zero + 1/3` is `1/4`).  `Equiv/AddSubRat.lean` proves that all three operations are the lifts
+of `EReal` addition and subtraction with the value of `q`.
 -/
 
 namespace Azurite.AzFloat
@@ -51,16 +54,18 @@ def zivStart (q : AzRat) (p : Nat) : Nat :=
 /-- One approximation of `x + q` at working precision `w`: `q` truncated to `w` bits, added to
 `x` and truncated to `w + 2` bits, with the sum of the two truncation errors as the bound. -/
 def addRatApprox (x : AzFloat) (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
-  let lo := (ofAzRatRound q w .Floor).1
-  let y := (addPrecRound x lo (w + 2) .Floor).1
-  (y, (addPrecRound (truncError lo) (truncError y) 2 .Ceiling).1)
+  let lo := ofAzRatRound q w .Floor
+  let y := addPrecRound x lo.1 (w + 2) .Floor
+  (y.1, (addPrecRound (truncError lo) (truncError y) 2 .Ceiling).1)
 
-/-- The exact fallback: the rational sum, rounded. -/
-def addRatExact (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
-  match x.toAzRat? with
-  | some r => ofAzRatRound (r + q) p mode
-  | none => (nan, .eq)
+/-- The fuel of Ziv's loop for `x + q` at precision `p`: enough doublings to reach the working
+precision `p + |num| + 2|den| + |m| + 2|e| + 4` (bit lengths of `q`'s numerator and
+denominator and of `x`'s significand `m`, and the magnitude of `x`'s exponent `e`), from which
+rounding is always possible (`addRatApprox_possible`). -/
+def addRatFuel (x : AzFloat) (q : AzRat) (p : Nat) : Nat :=
+  match x with
+  | finite _ e _ m _ => (p + q.num.size + 2 * q.den.size + m.size + 4).log2 + e.abs.size + 3
+  | _ => 0
 
 /-- `x + q` rounded to precision `p` with `mode`, and the comparison with the exact sum. -/
 def addRatPrecRound (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
@@ -69,9 +74,7 @@ def addRatPrecRound (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
   | nan => (nan, .eq)
   | infinity s => (infinity s, .eq)
   | zero => ofAzRatRound q p mode
-  | finite .. =>
-    zivLoop (addRatApprox x q) (fun _ => addRatExact x q p mode) p mode
-      (zivFuel p (q.num.size + q.den.size)) (zivStart q p)
+  | finite .. => zivLoop (addRatApprox x q) p mode (addRatFuel x q p) (zivStart q p)
 
 /-- `x − q` rounded to precision `p` with `mode`, and the comparison with the exact
 difference. -/
