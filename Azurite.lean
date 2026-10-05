@@ -33,11 +33,13 @@ import Azurite.AzFermat.Equiv.Basic
 import Azurite.AzFermat.Equiv.FFT
 import Azurite.AzFermat.FFT
 import Azurite.AzFloat.Add
+import Azurite.AzFloat.AddRat
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.Equiv.Add
+import Azurite.AzFloat.Equiv.AddRat
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion
@@ -55,6 +57,7 @@ import Azurite.AzFloat.Equiv.Sci
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Sqrt
 import Azurite.AzFloat.Equiv.ToString
+import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Literals
@@ -67,6 +70,7 @@ import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.ToString
+import Azurite.AzFloat.Ziv
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula
@@ -1424,6 +1428,7 @@ import Azurite.Random.NatGen
 import Azurite.Random.Pair
 import Azurite.Random.Rat
 import Azurite.Rounding.Basic
+import Azurite.Rounding.Between
 import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc

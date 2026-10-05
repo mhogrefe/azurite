@@ -150,8 +150,34 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
 - 2026-10-05: `Arith.lean` split per operation like `AzInt`: `RoundScaled.lean` (shared `roundScaled`,
   `normalizeCarry`, `roundFromFloor`, `combinedPrecision`), `Add.lean`, `Mul.lean`, `Div.lean`, `Sqrt.lean`,
   `Rsqrt.lean`, with matching `Equiv/` (specs `Spec.op` next to their proofs; the cell lemma and
-  `decide_pos_finiteVal` in `Equiv/RoundScaled`) and `Tests/` files.  No statement changed.  Next: mixed
-  `AzFloat`/`AzRat` `+ − × ÷` via Ziv (ledger entry to follow).
+  `decide_pos_finiteVal` in `Equiv/RoundScaled`) and `Tests/` files.  No statement changed.
+- 2026-10-05: **Ziv's strategy and `AzFloat + AzRat`.**  Source: the author's MCA §3.1.8–3.1.10 text
+  (Ziv's strategy, Algorithm 3.1 RoundingPossible, Theorem 3.2, Table 3.1).  Design (user-corrected: a first
+  draft squeezed the result between *two* approximations per level, floor and ceiling of `q`, i.e. two
+  divisions; Ziv computes one approximation and tests it): `Ziv.lean` — `roundingPossible y ε p mode`
+  (RoundingPossible in the form of two cheap roundings: `setPrecRound y p mode = addPrecRound y ε p mode`,
+  float and tag; stricter than MCA at a cell boundary, which the tag needs), `zivLoop approx exact p mode
+  fuel w` (one `(y, ε)` per level with `y ≤ v ≤ y + ε`, doubling `w`, exact fallback when the fuel is
+  spent — correctness never depends on the fuel), `zivGuardBits = 64`, `zivFuel p n = log₂(p+n) + 8`,
+  `truncError f = ulp? f` (or `0`).  `AddRat.lean` — `addRatApprox x q w`: `lo = ⌊q⌋_w` (the one division),
+  `y = ⌊x + lo⌋_{w+2}`, `ε = ⌈truncError lo + truncError y⌉_2`; `zivStart q p = p + 64`, raised to
+  `q.num.size` for dyadic `q` (exactness pre-test); `addRatExact` = `ofAzRatRound (x.toAzRat? + q)`;
+  `addRatPrecRound`, `subRatPrecRound x q = add x (−q)`, `ratSubPrecRound q x = add (−x) q`.  Proofs:
+  `Rounding/Between.lean` `round_between` (the squeeze, any `SymmetricRoundingTarget`, from the extremal
+  properties of floor/ceiling only — no cell geometry; `round_between_of_lt` + symmetry for the `.gt`
+  side); `Equiv/Ziv.lean` `roundVal_eq_of_between`, `roundingPossible_eq`, `zivLoop_eq`,
+  `lt_add_ulp_of_floor` (`⌊x⌋_p` lies within one of its own ulps below `x`: `x − ⌊x⌋ < precScale x ≤
+  precScale ⌊x⌋`, the binade of the floor being at least that of `x`), `eq_zero_of_roundFloor_eq_zero`,
+  `truncError_spec`; `Equiv/AddRat.lean` `ofAzRatRound_eq_roundVal` (pair form), `addRatExact_eq`,
+  `addRatApprox_spec`, `addRatPrecRound_eq_liftVal`, `subRatPrecRound_eq_liftVal`,
+  `ratSubPrecRound_eq_liftVal`.  Tests `Tests/AddRat.lean` include a sum `2^-80/3` above/below the one-bit
+  midpoint (first level fails, second succeeds) and agreement with the exact fallback.  NOT timed (user
+  rule: pause before benchmarks).  `HAdd`/`HSub` instances (user decision 2026-10-05): nearest at the
+  float's precision, `1` for a special float (`ratOpPrecision`), consistent with `combinedPrecision` and
+  with Malachite, although `zero + 1/3 = 1/4` is a little awkward.  Open: `×`, `÷` with a rational next (`mulRatApprox`: `x · ⌊q⌋_w` with `ε = |x| · ulp`;
+  division via `⌊1/q⌋_w` or `x / ⌊q⌋_w` bracketing); the `roundVal_congr_cell` bit-scan form of
+  RoundingPossible as an alternative test; a provable fuel bound (distance of `x + q` from the boundaries
+  is at least `2^-k / den`) would remove the fallback.
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for
