@@ -241,6 +241,8 @@ def modes : List (String × Mode) := [
   ("az_float_sub", mode checkFloatSub),
   ("az_float_mul", mode checkFloatMul),
   ("az_float_div", mode checkFloatDiv),
+  ("az_float_add_rational", mode checkFloatAddRational),
+  ("az_float_sub_rational", mode checkFloatSubRational),
   ("az_float_square", mode checkFloatSquare),
   ("az_float_sqrt", mode checkFloatSqrt),
   ("az_float_reciprocal_sqrt", mode checkFloatReciprocalSqrt),
