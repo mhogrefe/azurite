@@ -63,6 +63,7 @@ import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Precision
+import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.RoundScaled
 import Azurite.AzFloat.Equiv.Rounding
@@ -79,6 +80,7 @@ import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.RoundScaled
 import Azurite.AzFloat.Rsqrt

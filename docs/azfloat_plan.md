@@ -248,6 +248,21 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   between `Finset.sum`s hits a whnf timeout (it unfolds the sum) — use `congrArg₂ (· + ·)`; `decide` cannot
   evaluate `Nat.sqrt`/WF functions (`¬ IsSquare 5` by `interval_cases`).  Values checked: 53 bits
   `0x0.69969669966968`, `0.4124540336401076`; 100 bits `0.4124540336401075977833613682584`.
+- 2026-10-05: **prime constant** (`PrimeConstant.lean`, `Equiv/PrimeConstant.lean`, `Tests/PrimeConstant.lean`;
+  user request, "use our existing prime sieve").  `primeConstantReal : ℝ := ∑' n, [n prime] / 2^n`
+  (noncomputable, Equiv).  The bits are the sieve bitmap `primeSieve (64 N)` (bit `n` ↔ `n` prime) read
+  backwards: `primeConstantLimbs N = ofLimbs (Array.ofFn fun i => wordOfBits fun l => S.testBit (64N − (64 i +
+  l)))`, with `wordOfBits f` a 64-step `foldl` adding `1 <<< l` (`toNat_wordOfBits` by induction on the
+  prefix length with the invariant `sum < 2^j`, so no overflow; UInt64 lemmas `toNat_add/shiftLeft/ofNat'`).
+  Regrouping `sum_mul_pow_regroup` (plain, no reversal) then `Finset.sum_range_reflect` to reindex `m ↦ 64N −
+  n`.  The rounding is the Prouhet–Thue–Morse assembly verbatim (`roundFromFloor` on the first `p+1`
+  significant bits, exponent `−1`, `1/4 < ρ < 1/2`): tail in `(0, 1)` via `Nat.exists_infinite_primes
+  (E+1)` and the composite `4(E+1) = 2 · 2(E+1)` (`Nat.not_prime_mul`).  Lean notes: rewriting the condition
+  of `if Nat.Prime n` with the sieve iff timed out at whnf (the decidability instance of `Nat.Prime`
+  unfolds) — use `by_cases` + `ite_eq_left/right`; `if_pos/if_neg` are deprecated.  Values: 53 bits
+  `0.41468250985111166`, `0x0.6a28a20a08a208`; 100 bits `0.4146825098511116602481096221542`; 20000 bits
+  in well under a second (sieve + bit copy).  Together with the Thue–Morse constant these are the two
+  bit-pattern constants; the remaining Malachite constants need series.
 
 * **2026-10-01 — representation decided and core implemented.**  The first draft stored no
   precision (significand of exactly `p` bits, LSB-aligned); switched to the Malachite layout for
