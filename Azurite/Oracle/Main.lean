@@ -266,6 +266,7 @@ def modes : List (String × Mode) := [
   ("az_float_to_significand", mode checkFloatToSignificand),
   ("az_float_ulp", mode checkFloatUlp),
   ("az_float_constant", mode checkFloatConstant),
+  ("az_float_irrational_constant", mode checkFloatIrrationalConstant),
   ("az_float_partial_cmp", mode checkFloatPartialCmp),
   ("az_float_comparable_partial_cmp", mode checkComparableFloatPartialCmp),
   ("az_float_eq", mode checkFloatEq),

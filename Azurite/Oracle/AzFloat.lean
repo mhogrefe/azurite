@@ -15,9 +15,12 @@ import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
+import Azurite.AzFloat.PrimeConstant
+import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Compare
+import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Shift
@@ -475,6 +478,42 @@ def checkFloatUlp (line : String) : Verdict := do
     match computed with
     | some u => expectFloat "ulp" u z
     | none => disagree s!"ulp: Azurite has none, Malachite printed {floatString z.1 z.2}"
+
+/-- Malachite's name for each irrational constant that Azurite computes, with Azurite's
+`PrecRound` function. -/
+def irrationalConstants : List (String × (Nat → RoundingMode → AzFloat × Ordering)) :=
+  [("sqrt_2", AzFloat.sqrt2PrecRound), ("sqrt_3", AzFloat.sqrt3PrecRound),
+    ("sqrt_5", AzFloat.sqrt5PrecRound), ("sqrt_2_over_2", AzFloat.sqrt2Over2PrecRound),
+    ("sqrt_3_over_3", AzFloat.sqrt3Over3PrecRound),
+    ("sqrt_5_over_5", AzFloat.sqrt5Over5PrecRound), ("phi", AzFloat.phiPrecRound),
+    ("prime_constant", AzFloat.primeConstantPrecRound),
+    ("prouhet_thue_morse_constant", AzFloat.prouhetThueMorsePrecRound)]
+
+/-- `c_prec_round(p, rm) = (z, o)` or `c_prec(p) = (z, o)` for one of the
+`irrationalConstants` `c`. The constants lie well inside Malachite's exponent range, but the
+result still goes through `roundedResult`, so an `Exact` rounding mode is checked like any
+other. -/
+def checkFloatIrrationalConstant (line : String) : Verdict := do
+  let calls := irrationalConstants.filterMap fun (name, f) =>
+    match functionCall line s!"{name}_prec_round", functionCall line s!"{name}_prec" with
+    | some (args, res), _ => some (s!"{name}_prec_round", f, args, res, true)
+    | none, some (args, res) => some (s!"{name}_prec", f, args, res, false)
+    | none, none => none
+  let (what, f, args, res, withMode) ← match calls with
+    | [c] => pure c
+    | _ => fail "not an irrational-constant line"
+  let (p, rm) ← match args, withMode with
+    | [p, rm], true => pure (p, some rm)
+    | [p], false => pure (p, none)
+    | _, _ => fail s!"{what}: wrong number of arguments"
+  let p ← expect "precision" (parseNat p)
+  if p == 0 then fail "the precision is zero"
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let printed ← parseFloatPair res
+  let computed ← roundedResult what (f p) rm
+  expectFloatPair what computed printed
 
 /-- `min_positive_value_prec(p) = Z`, `max_finite_value_with_prec(p) = Z`, `one_prec(p) = Z`, or
 `two_prec(p) = Z`: Malachite's constants of a given precision. -/
