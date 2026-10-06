@@ -12,7 +12,9 @@ import Azurite.Oracle.MalachiteFloat
 import Azurite.AzFloat.Add
 import Azurite.AzFloat.AddSubRat
 import Azurite.AzFloat.Div
+import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Mul
+import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Compare
@@ -153,56 +155,87 @@ def checkFloatDiv : String → Verdict := checkFloatBinary "/" "div" fun x y p m
   let (r, o) := AzFloat.divPrecRound x.1 y.1 p m
   (if y.2 then AzFloat.neg r else r, o)
 
+/-- One mixed operation's line already taken apart: the float `x`, the rational `q`, the
+precision (`x`'s, `AzFloat.ratOpPrecision`, when absent), the rounding mode (`Nearest` when
+absent), and the printed `(z, o)`. -/
+def checkFloatRationalShape (what name : String)
+    (f : AzFloat × Bool → AzRat → Nat → RoundingMode → AzFloat × Ordering)
+    (x q : String) (p rm : Option String) (res : String) : Verdict := do
+  let x ← expect "x" (parseFloat x)
+  let q ← expect "q" (parseAzRat q)
+  let p ← match p with
+    | some p => expect "precision" (parseNat p)
+    | none => pure (AzFloat.ratOpPrecision x.1)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let printed ← parseFloatPair res
+  let computed ← roundedResult name (f x q p) rm
+  expectFloatPair what computed printed
+
 /-- A mixed operation's line, with a float `x` and a rational `q`, in one of its shapes:
-`x op q = z`, `q op x = z`, `(x).name_prec(q, p) = (z, o)`, `(x).name_round(q, rm) = (z, o)`, or
-`(x).name_prec_round(q, p, rm) = (z, o)`. The plain and `_round` shapes use the precision of `x`
-(`AzFloat.ratOpPrecision`). `f` computes `x op q` and `g` computes `q op x`. -/
+`x op q = z`, `q op x = z`, `(x).name_prec(q, p) = (z, o)`, `(x).name_round(q, rm) = (z, o)`,
+or `(x).name_prec_round(q, p, rm) = (z, o)`; and, when `flipped` names the functions computing
+`q op x`, `flipped_prec(q, x, p) = (z, o)` and its `_round` and `_prec_round` siblings. The plain
+and `_round` shapes use the precision of `x` (`AzFloat.ratOpPrecision`). `f` computes `x op q`
+and `g` computes `q op x`; each receives `x` with its negative-zero flag. -/
 def checkFloatRationalBinary (op name : String)
-    (f : AzFloat → AzRat → Nat → RoundingMode → AzFloat × Ordering)
-    (g : AzRat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
-    Verdict := do
+    (f : AzFloat × Bool → AzRat → Nat → RoundingMode → AzFloat × Ordering)
+    (g : AzRat → AzFloat × Bool → Nat → RoundingMode → AzFloat × Ordering)
+    (flipped : Option String) (line : String) : Verdict := do
+  let g' := fun x q => g q x
+  let call (suffix : String) : Option (List String × String) := do
+    let n ← flipped
+    functionCall line s!"{n}_{suffix}"
   match methodCall line s!"{name}_prec_round", methodCall line s!"{name}_round",
       methodCall line s!"{name}_prec" with
   | some (x, [q, p, rm], res), _, _ =>
-    let x ← expect "x" (parseFloat x)
-    let q ← expect "q" (parseAzRat q)
-    let p ← expect "precision" (parseNat p)
-    let rm ← expect "rounding mode" (parseRounding rm)
-    let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 q p) rm
-    expectFloatPair s!"{name}_prec_round" computed printed
+    checkFloatRationalShape s!"{name}_prec_round" name f x q (some p) (some rm) res
   | _, some (x, [q, rm], res), _ =>
-    let x ← expect "x" (parseFloat x)
-    let q ← expect "q" (parseAzRat q)
-    let rm ← expect "rounding mode" (parseRounding rm)
-    let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 q (AzFloat.ratOpPrecision x.1)) rm
-    expectFloatPair s!"{name}_round" computed printed
+    checkFloatRationalShape s!"{name}_round" name f x q none (some rm) res
   | _, _, some (x, [q, p], res) =>
-    let x ← expect "x" (parseFloat x)
-    let q ← expect "q" (parseAzRat q)
-    let p ← expect "precision" (parseNat p)
-    let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 q p) (.mode .Nearest)
-    expectFloatPair s!"{name}_prec" computed printed
+    checkFloatRationalShape s!"{name}_prec" name f x q (some p) none res
+  | _, _, _ =>
+  match call "prec_round", call "round", call "prec" with
+  | some ([q, x, p, rm], res), _, _ =>
+    checkFloatRationalShape s!"q {op} x prec_round" name g' x q (some p) (some rm) res
+  | _, some ([q, x, rm], res), _ =>
+    checkFloatRationalShape s!"q {op} x round" name g' x q none (some rm) res
+  | _, _, some ([q, x, p], res) =>
+    checkFloatRationalShape s!"q {op} x prec" name g' x q (some p) none res
   | _, _, _ =>
     let (a, b, z) ← expect s!"an `x {op} q` or `q {op} x` line" (binaryOp line op)
     let z ← expect "z" (parseFloat z)
     match parseFloat a, parseAzRat b, parseAzRat a, parseFloat b with
     | some x, some q, _, _ =>
-      let computed ← roundedResult name (f x.1 q (AzFloat.ratOpPrecision x.1)) (.mode .Nearest)
+      let computed ← roundedResult name (f x q (AzFloat.ratOpPrecision x.1)) (.mode .Nearest)
       expectFloat s!"x {op} q" computed.1 z
     | _, _, some q, some x =>
-      let computed ← roundedResult name (g q x.1 (AzFloat.ratOpPrecision x.1)) (.mode .Nearest)
+      let computed ← roundedResult name (g q x (AzFloat.ratOpPrecision x.1)) (.mode .Nearest)
       expectFloat s!"q {op} x" computed.1 z
     | _, _, _, _ => fail s!"could not parse a float and a rational around `{op}`"
 
 def checkFloatAddRational : String → Verdict :=
-  checkFloatRationalBinary "+" "add_rational" AzFloat.addRatPrecRound
-    fun q x => AzFloat.addRatPrecRound x q
+  checkFloatRationalBinary "+" "add_rational" (fun x => AzFloat.addRatPrecRound x.1)
+    (fun q x => AzFloat.addRatPrecRound x.1 q) none
 
 def checkFloatSubRational : String → Verdict :=
-  checkFloatRationalBinary "-" "sub_rational" AzFloat.subRatPrecRound AzFloat.ratSubPrecRound
+  checkFloatRationalBinary "-" "sub_rational" (fun x => AzFloat.subRatPrecRound x.1)
+    (fun q x => AzFloat.ratSubPrecRound q x.1) none
+
+def checkFloatMulRational : String → Verdict :=
+  checkFloatRationalBinary "*" "mul_rational" (fun x => AzFloat.mulRatPrecRound x.1)
+    (fun q x => AzFloat.mulRatPrecRound x.1 q) none
+
+/-- `x / q` and `q / x`. Malachite's `q / -0.0` is `∓∞`, with the sign of the zero, which
+Azurite, reading the zero as unsigned, gives as `±∞`; so the result is negated when `x` is
+`-0.0`, as for `checkFloatDiv`. -/
+def checkFloatDivRational : String → Verdict :=
+  checkFloatRationalBinary "/" "div_rational" (fun x => AzFloat.divRatPrecRound x.1)
+    (fun q x p m =>
+      let (r, o) := AzFloat.ratDivPrecRound q x.1 p m
+      (if x.2 then AzFloat.neg r else r, o))
+    (some "rational_div_float")
 
 /-- A unary operation's line in one of its four shapes: the plain one (`(x) ^ 2 = z` or
 `(x).sqrt() = z`), `(x).name_prec(p) = (z, o)`, `(x).name_round(rm) = (z, o)`, or
