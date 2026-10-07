@@ -121,6 +121,8 @@ import Azurite.AzInt.Equiv.Conversion
 import Azurite.AzInt.Equiv.DivMod
 import Azurite.AzInt.Equiv.DivRound
 import Azurite.AzInt.Equiv.ExtendedGcd
+import Azurite.AzInt.Equiv.ExtendedGcd.Binary
+import Azurite.AzInt.Equiv.ExtendedGcd.HalfBinary
 import Azurite.AzInt.Equiv.LowMask
 import Azurite.AzInt.Equiv.Mul
 import Azurite.AzInt.Equiv.MulSmall
@@ -138,6 +140,8 @@ import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.ExactDiv
 import Azurite.AzInt.ExtendedGcd
+import Azurite.AzInt.ExtendedGcd.Binary
+import Azurite.AzInt.ExtendedGcd.HalfBinary
 import Azurite.AzInt.Instances
 import Azurite.AzInt.LowMask
 import Azurite.AzInt.Mul

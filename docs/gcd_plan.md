@@ -108,6 +108,23 @@ only to argue progress and is not formalized.
   2048: 85; 4096: 246; 8192: 790; 16384: 2822; 32768: 10498; 65536: 39532.  `az_rat_profile`
   gcd µs at 256/1024/4096/16384/65536 bits: 5.0/26.5/187/1827/26115.
 
+- 2026-10-07 (extended GCD): `AzInt.egcd` was still the single-bit HAC 14.61 loop (now
+  `egcdBinary`, `AzInt/ExtendedGcd/Binary.lean`).  New `AzInt/ExtendedGcd/HalfBinary.lean`:
+  `egcdDriver` runs the plain driver's rounds (same checks and fallbacks) and pulls a Bézout row
+  back through each round on return — `pullBack` (`Mat2`: four products), `pullBackWord` (word
+  matrix: two `fusedCombine?` passes with `sh = 0`), `pullBackStep` (binary division: two shifts
+  and one small product) — ending in `egcdBase` (`egcdBinary` on the magnitudes, signs folded in,
+  gcd split as `2^e · odd`).  The row satisfies `s x + t y = 2^e g`; `fixUp` strips `2^e` with
+  `k ≡ −t x⁻¹ (mod 2^e)` from `AzZModPow2.invOdd` (`x` odd), two products and two exact shifts —
+  `O(M(n))`, no per-bit corrections.  `egcdHalfBinaryWith`/`egcdHalfBinary` prepare as
+  `gcdHalfBinaryWith`; `egcd` dispatches at `egcdHalfBinaryThreshold` (= 64 bits, untuned).
+  Proofs in `AzInt/Equiv/ExtendedGcd/HalfBinary.lean` (`ScaledBezout.Spec`/`GcdSpec` invariants,
+  `egcdDriver_spec`, `fixUp_spec`, `egcdHalfBinaryWith_spec`); `egcd_bezout`/`egcd_gcd` keep
+  their statements.  Cost per round relative to the plain gcd: ≈ 2× in the quadratic layer (two
+  extra passes over the growing coefficients), ≈ 1.5× in the recursion (four balanced
+  half-size products).  Not timed.  Possible follow-ups: a word-level extended Euclid base case
+  (the 64-bit `egcdBinary` call is the fixed overhead), tuning `egcdHalfBinaryThreshold`.
+
 ## Open
 
 - The round is now one fused pass per output plus a short negation half the time; the remaining
@@ -123,4 +140,5 @@ only to argue progress and is not formalized.
   which only starts at `fft := 6144` limbs.  Nothing gcd-specific to fix; any gain would come
   from the multiplication ladder itself.
 - Optional: formalize Theorem 1.9 to prove the runtime exactness checks never fail.
-- Extended / half-gcd outputs (cofactors) for rational reconstruction, if needed later.
+- (Resolved 2026-10-07.)  Extended GCD: see the status entry; half-gcd matrix outputs for rational
+  reconstruction are still not exposed (the extended driver pulls back a row, not a matrix).
