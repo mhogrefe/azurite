@@ -383,6 +383,7 @@ import Azurite.AzNat.Equiv.MulModPow2.Dispatch
 import Azurite.AzNat.Equiv.MulModPow2.Karatsuba
 import Azurite.AzNat.Equiv.MulModPow2.Schoolbook
 import Azurite.AzNat.Equiv.MulModPow2.ToomCook3
+import Azurite.AzNat.Equiv.MultiFactorial
 import Azurite.AzNat.Equiv.NMinusOneTest
 import Azurite.AzNat.Equiv.NormalizedCompare
 import Azurite.AzNat.Equiv.OfLimbDigits
@@ -446,6 +447,7 @@ import Azurite.AzNat.MulModPow2.Dispatch
 import Azurite.AzNat.MulModPow2.Karatsuba
 import Azurite.AzNat.MulModPow2.Schoolbook
 import Azurite.AzNat.MulModPow2.ToomCook3
+import Azurite.AzNat.MultiFactorial
 import Azurite.AzNat.NMinusOneTest
 import Azurite.AzNat.NormalizedCompare
 import Azurite.AzNat.OfLimbDigits
