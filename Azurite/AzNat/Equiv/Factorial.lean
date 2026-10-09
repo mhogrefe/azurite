@@ -11,6 +11,7 @@ import Azurite.AzNat.Factorial
 import Azurite.Algorithm.Equiv.PrimeSieve
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Mul.Dispatch
+import Azurite.AzNat.Equiv.SumProduct
 import Azurite.AzNat.Equiv.Square.Dispatch
 import Azurite.AzNat.Equiv.ShiftLeft
 import Mathlib.NumberTheory.Padics.PadicVal.Basic
@@ -22,7 +23,7 @@ import Mathlib.Data.Nat.Prime.Factorial
 
 `toNat_factorial : (factorial n).toNat = n.factorial`.  Legendre's exponent loop computes
 `padicValNat p n!` (`legendreExp_eq_padicValNat`, via Mathlib's `padicValNat_factorial`); the
-balanced product tree computes the list product (`toNat_prodList`); Horner's rule on the bits
+balanced product computes the list product (`toNat_product`); Horner's rule on the bits
 gives `∏ p ^ (Σ_i bit_i(e_p) 2^i)` (`toNat_hornerPow`, `sum_testBit`), which is
 `∏ p ^ e_p` over the odd primes up to `n`; and `n!` is that product times `2^{e_2}` by
 `Nat.prod_pow_prime_padicValNat`, restricted to the primes up to `n` (the others have exponent
@@ -68,36 +69,6 @@ theorem legendreExp_eq_padicValNat (p n : ℕ) (hp : Nat.Prime p) :
       (lt_of_le_of_lt (Nat.log_le_self p n) (Nat.lt_succ_self n)),
     legendreExp_eq p, Finset.sum_Ico_eq_sum_range, Nat.add_sub_cancel]
   exact Finset.sum_congr rfl (fun i _ => by rw [add_comm])
-
-/-! ### Products -/
-
-theorem toNat_mulPairs : ∀ l : List AzNat, ((mulPairs l).map toNat).prod = (l.map toNat).prod
-  | [] => rfl
-  | [_] => rfl
-  | x :: y :: rest => by
-    rw [mulPairs, List.map_cons, List.prod_cons, toNat_mul, toNat_mulPairs rest]
-    simp [mul_assoc]
-
-theorem toNat_foldl_mul (l : List AzNat) (acc : AzNat) :
-    (l.foldl (· * ·) acc).toNat = acc.toNat * (l.map toNat).prod := by
-  induction l generalizing acc with
-  | nil => simp
-  | cons x xs ih =>
-    rw [List.foldl_cons, ih, toNat_mul, List.map_cons, List.prod_cons]
-    ring
-
-theorem toNat_prodTree : ∀ (fuel : ℕ) (l : List AzNat),
-    (prodTree fuel l).toNat = (l.map toNat).prod
-  | 0, l => by rw [prodTree, toNat_foldl_mul, toNat_one, one_mul]
-  | fuel + 1, [] => by simp [prodTree, toNat_one]
-  | fuel + 1, [x] => by simp [prodTree]
-  | fuel + 1, x :: y :: rest => by
-    show (prodTree fuel (mulPairs (x :: y :: rest))).toNat = _
-    rw [toNat_prodTree fuel, toNat_mulPairs]
-
-/-- **The balanced product tree computes the product.** -/
-theorem toNat_prodList (l : List AzNat) : (prodList l).toNat = (l.map toNat).prod :=
-  toNat_prodTree _ _
 
 /-! ### Horner's rule on the exponent bits -/
 
@@ -154,10 +125,10 @@ theorem toNat_prodPrimePowers (ps : List ℕ) (e : ℕ → ℕ) (B : ℕ) (hnd :
     (prodPrimePowers (ps.map fun p => (p, e p)) B).toNat = ∏ p ∈ ps.toFinset, p ^ e p := by
   unfold prodPrimePowers
   rw [toNat_hornerPow, toNat_one, one_pow, one_mul]
-  have hP : ∀ i, (prodList (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
+  have hP : ∀ i, (product (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
       = ∏ p ∈ ps.toFinset, p ^ (if (e p).testBit i then 1 else 0) := fun i => by
-    rw [toNat_prodList, prod_primesWithBit, ← List.prod_toFinset _ hnd]
-  have h1 : ∏ i ∈ Finset.range B, (prodList (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
+    rw [toNat_product, prod_primesWithBit, ← List.prod_toFinset _ hnd]
+  have h1 : ∏ i ∈ Finset.range B, (product (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
         ^ 2 ^ i
       = ∏ i ∈ Finset.range B, ∏ p ∈ ps.toFinset,
           p ^ ((if (e p).testBit i then 1 else 0) * 2 ^ i) := by

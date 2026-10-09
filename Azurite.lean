@@ -25,6 +25,7 @@ import Azurite.APRCL.JacobiStage
 import Azurite.APRCL.LucasLehmer
 import Azurite.APRCL.Select
 import Azurite.APRCL.Test
+import Azurite.Algorithm.BalancedProduct
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.Equiv.PrimeSieve
 import Azurite.Algorithm.Equiv.SlidingWindowPowAzNat
@@ -413,6 +414,7 @@ import Azurite.AzNat.Equiv.SquareModPow2.ToomCook3
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.SubModPow2
 import Azurite.AzNat.Equiv.Subfactorial
+import Azurite.AzNat.Equiv.SumProduct
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
@@ -480,6 +482,7 @@ import Azurite.AzNat.SquareModPow2.ToomCook3
 import Azurite.AzNat.Sub
 import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.Subfactorial
+import Azurite.AzNat.SumProduct
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros

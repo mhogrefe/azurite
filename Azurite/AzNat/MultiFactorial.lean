@@ -23,7 +23,7 @@ The `AzNat` version: `m = 1` and `m = 2` are the factorial and the double factor
 write `n = q m + r` with `r < m`.  If `r = 0` the product is `∏_{i=1}^{q} i m = m^q · q!`, a power
 times a factorial (the prime-factorization factorial).  If `r ≠ 0` the terms `r, r + m, …, n`
 have no factorial structure, and their product is formed by a balanced pairing tree
-(`prodList`), i.e. binary splitting over the arithmetic progression.
+(`product`), i.e. binary splitting over the arithmetic progression.
 -/
 
 namespace Nat
@@ -44,7 +44,7 @@ def multiFactorial (m n : Nat) : AzNat :=
   else if m = 1 then factorial n
   else if m = 2 then doubleFactorial n
   else if n % m = 0 then (ofNat m).pow (n / m) * factorial (n / m)
-  else prodList ((List.range (n / m + 1)).map fun i => ofNat (i * m + n % m))
+  else product ((List.range (n / m + 1)).map fun i => ofNat (i * m + n % m))
 
 end Azurite.AzNat
 

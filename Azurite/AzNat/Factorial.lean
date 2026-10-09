@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.Algorithm.PrimeSieve
 import Azurite.AzNat.Mul
+import Azurite.AzNat.SumProduct
 import Azurite.AzNat.Square
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.Conversion
@@ -26,7 +27,7 @@ The odd part is assembled from the binary digits of the exponents.  With `P_j` t
 odd primes whose exponent has bit `j` set and `B` a bit length bounding every exponent,
 `∏ p^{e_p} = (((P_{B−1})² · P_{B−2})² ⋯)² · P_0` — Horner's rule on the binary digits, one
 squaring and one multiplication per bit (`hornerPow`).  Each `P_j` is a product of small
-numbers of similar size, computed by pairing adjacent factors until one remains (`prodList`, a
+numbers of similar size, computed by pairing adjacent factors until one remains (`product`, a
 balanced product tree).  The factor `2^{e₂}` is a shift.  Since the primes come from a sieve and
 the exponents from `O(log n)` divisions each, the cost is dominated by the big multiplications:
 `O(M(n log n))` for the Horner squarings (the sizes halve going up the bits) plus the product
@@ -63,26 +64,6 @@ def legendreExp (p : Nat) : Nat → Nat → Nat
     let q := m / p
     if q = 0 then 0 else q + legendreExp p fuel q
 
-/-! ### Balanced products -/
-
-/-- Multiply adjacent pairs. -/
-def mulPairs : List AzNat → List AzNat
-  | x :: y :: rest => (x * y) :: mulPairs rest
-  | l => l
-
-/-- The product of a list by `fuel` rounds of pairing (a balanced tree); a left fold finishes if
-the fuel runs out. -/
-def prodTree : Nat → List AzNat → AzNat
-  | 0, l => l.foldl (· * ·) 1
-  | fuel + 1, l =>
-    match l with
-    | [] => 1
-    | [x] => x
-    | _ => prodTree fuel (mulPairs l)
-
-/-- The product of a list of `AzNat`s by a balanced tree. -/
-def prodList (l : List AzNat) : AzNat := prodTree l.length l
-
 /-! ### Horner's rule on the exponent bits -/
 
 /-- The primes (given with their exponents) whose exponent has bit `j` set. -/
@@ -97,7 +78,7 @@ def hornerPow (P : Nat → AzNat) : Nat → AzNat → AzNat
 /-- `∏ p^e` over a list of `(p, e)` pairs by Horner's rule on the exponent bits, `B` a bit length
 bounding every exponent. -/
 def prodPrimePowers (pes : List (Nat × Nat)) (B : Nat) : AzNat :=
-  hornerPow (fun j => prodList (primesWithBit pes j)) B 1
+  hornerPow (fun j => product (primesWithBit pes j)) B 1
 
 /-! ### Factorial -/
 
@@ -148,7 +129,5 @@ private def naive (n : Nat) : AzNat := (List.range n).foldl (fun acc i => acc * 
 #guard legendreExp 2 10 10 == 8                    -- `v₂(10!) = 5 + 2 + 1`
 #guard legendreExp 5 100 100 == 24                 -- `v₅(100!) = 20 + 4`
 #guard legendreExp 7 6 6 == 0
-#guard AzNat.toString (prodList [ofNat 2, ofNat 3, ofNat 5, ofNat 7, ofNat 11]) == "2310"
-#guard AzNat.toString (prodList []) == "1"
 
 end Tests

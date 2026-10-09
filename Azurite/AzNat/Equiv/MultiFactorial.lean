@@ -108,7 +108,7 @@ theorem toNat_multiFactorial (m n : ℕ) : (multiFactorial m n).toNat = Nat.mult
     conv_rhs => rw [hn]
     rw [Nat.multiFactorial_mul m (by omega)]
   · have hn : n = (n / m) * m + n % m := by rw [mul_comm, Nat.div_add_mod]
-    rw [toNat_prodList, List.map_map]
+    rw [toNat_product, List.map_map]
     conv_rhs => rw [hn]
     rw [Nat.multiFactorial_mul_add m (n % m) (by omega) (Nat.mod_lt _ (by omega)).le]
     rw [show (toNat ∘ fun i => ofNat (i * m + n % m)) = fun i => i * m + n % m from
