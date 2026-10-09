@@ -423,3 +423,16 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   introduced after a `set` are not abstracted, so the bracket lemma takes the operands' values as
   hypotheses (`toVal_addPrecRound_floor`); `roundFloor` and `isGreatest_roundFloor` need
   `open RoundingTarget`.  Not timed.
+* **2026-10-09 — products of lists.**  `AzFloat/Product.lean`: `productPrecRound xs p mode`.
+  No approximation is needed: the value of a finite float is `±core · 2^scale`, so the exact
+  product is the balanced product tree of the cores (`AzNat.product`) on the summed scale, and
+  one `roundScaled` rounds it — the `n`-ary form of `mulPrecRound`.  Specials by flags (`NaN`;
+  zero with an infinity; an infinity with the sign `productSign`, the parity of the negative
+  factors; zero), the empty product is `1`.  `Equiv/Product.lean`: `Spec.product` (fold of
+  `Spec.mul` from `1`), `Spec.product_eq` (case form, proven by explicit `by_cases` on the three
+  flags of the tail rather than `split_ifs`, which also splits the `if productSign` inside the
+  value), `realProd_spec`, `realProd_eq`, `productPrecRound_eq`.  Tests include agreement with
+  a fold of exact two-operand multiplications over several lists, precisions and modes.  Lean
+  notes: `AzRat.parse` reads fractions, not decimals (`"-3/2"`, not `"-1.5"`);
+  `List.filterMap_cons_some` takes the `f a = some b` proof as its only explicit argument.
+  Not timed.
