@@ -9,9 +9,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Add
 import Azurite.AzNat.Compare
+import Azurite.AzNat.CompareDouble
 import Azurite.AzNat.Div
 import Azurite.AzNat.Parity
-import Azurite.AzNat.ShiftRight
 import Azurite.Rounding.Basic
 
 namespace Azurite
@@ -32,13 +32,10 @@ def AzNat.divRound (x y : AzNat) (mode : RoundingMode) :
     | .Floor | .Down => (quotient, .lt)
     | .Ceiling | .Up => (quotient.addUInt64 1, .gt)
     | .Nearest =>
-      match Ord.compare (y >>> 1) remainder with
+      -- `y` against `2 · remainder`, without forming either `y / 2` or `2 · remainder`
+      match cmpDouble y remainder with
       | .lt => (quotient.addUInt64 1, .gt)
       | .gt => (quotient, .lt)
-      | .eq =>
-        if y.isEven && quotient.isOdd then
-          (quotient.addUInt64 1, .gt)
-        else
-          (quotient, .lt)
+      | .eq => if quotient.isOdd then (quotient.addUInt64 1, .gt) else (quotient, .lt)
 
 end Azurite

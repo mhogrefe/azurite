@@ -10,9 +10,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.Compare
+import Azurite.AzNat.Equiv.CompareDouble
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Parity
-import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.Rounding.NatDivPow
 
 namespace Azurite.AzNat
@@ -73,15 +73,15 @@ theorem divRound_fst (x y : AzNat) (mode : RoundingMode) :
         | .Floor | .Down => (x.divMod y).1
         | .Ceiling | .Up => (x.divMod y).1.addUInt64 1
         | .Nearest =>
-          match Ord.compare (y >>> 1) (x.divMod y).2 with
+          match cmpDouble y (x.divMod y).2 with
           | .lt => (x.divMod y).1.addUInt64 1
           | .gt => (x.divMod y).1
           | .eq =>
-            if y.isEven && (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
+            if (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
             else (x.divMod y).1 := by
   unfold divRound
   cases mode <;> simp only [] <;> split_ifs <;>
-    first | rfl | (cases Ord.compare (y >>> 1) (x.divMod y).2 <;> rfl)
+    first | rfl | (cases cmpDouble y (x.divMod y).2 <;> rfl)
 
 /-- Ordering component of `divRound`. -/
 theorem divRound_snd (x y : AzNat) (mode : RoundingMode) :
@@ -92,35 +92,15 @@ theorem divRound_snd (x y : AzNat) (mode : RoundingMode) :
         | .Floor | .Down => .lt
         | .Ceiling | .Up => .gt
         | .Nearest =>
-          match Ord.compare (y >>> 1) (x.divMod y).2 with
+          match cmpDouble y (x.divMod y).2 with
           | .lt => .gt
           | .gt => .lt
-          | .eq =>
-            if y.isEven && (x.divMod y).1.isOdd then .gt
-            else .lt := by
+          | .eq => if (x.divMod y).1.isOdd then .gt else .lt := by
   unfold divRound
   cases mode <;> simp only [] <;> split_ifs <;>
-    first | rfl | (cases Ord.compare (y >>> 1) (x.divMod y).2 <;> rfl)
+    first | rfl | (cases cmpDouble y (x.divMod y).2 <;> rfl)
 
-/-- `(y >>> 1).toNat = y.toNat / 2`. -/
-private lemma toNat_shiftRight_one (y : AzNat) : (y >>> 1).toNat = y.toNat / 2 := by
-  show (y.shiftRight 1).toNat = y.toNat / 2
-  rw [toNat_shiftRight, pow_one]
-
-private lemma compare_aznat_lt {a b : AzNat} (h : a.toNat < b.toNat) :
-    Ord.compare a b = .lt := by
-  show compare a b = .lt
-  rw [compare_eq_compare_toNat]; exact compare_Nat_eq_of_lt _ _ h
-
-private lemma compare_aznat_gt {a b : AzNat} (h : b.toNat < a.toNat) :
-    Ord.compare a b = .gt := by
-  show compare a b = .gt
-  rw [compare_eq_compare_toNat]; exact compare_Nat_eq_of_gt _ _ h
-
-private lemma compare_aznat_eq {a b : AzNat} (h : a.toNat = b.toNat) :
-    Ord.compare a b = .eq := by
-  show compare a b = .eq
-  rw [compare_eq_compare_toNat, h]
+private lemma compare_Nat_eq_of_eq (a : ℕ) : Ord.compare a a = .eq := by
   show compareOfLessAndEq _ _ = _
   simp [compareOfLessAndEq]
 
@@ -278,106 +258,73 @@ theorem toNat_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
         (if 0 ≤ t then C else F).val
       rw [ite_eq_left ht_nonneg, hquot_succ_toNat, hC_val]; push_cast; rfl
     | Nearest =>
-      have hyhalf_toNat : (y >>> 1).toNat = yn / 2 := toNat_shiftRight_one y
       have hrem_toNat : (x.divMod y).2.toNat = r := by
         rw [← mod_eq_divMod_snd]; show (x % y).toNat = r; rw [toNat_mod]
-      have hhalfY_lt_iff : (y >>> 1).toNat < (x.divMod y).2.toNat ↔ yn < 2 * r := by
-        rw [hyhalf_toNat, hrem_toNat]; omega
-      have hr_lt_imp : (x.divMod y).2.toNat < (y >>> 1).toNat → 2 * r < yn := by
-        intro h
-        rw [hyhalf_toNat, hrem_toNat] at h
-        omega
-      show ((match Ord.compare (y >>> 1) (x.divMod y).2 with
+      have hcmp : cmpDouble y (x.divMod y).2 = Ord.compare yn (2 * r) := by
+        rw [cmpDouble_eq_compare_toNat, hrem_toNat]
+      show ((match cmpDouble y (x.divMod y).2 with
              | .lt => (x.divMod y).1.addUInt64 1
              | .gt => (x.divMod y).1
              | .eq =>
-               if y.isEven && (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
+               if (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
                else (x.divMod y).1).toNat : EReal) =
         (match Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) with
          | .lt => F
          | .gt => C
          | .eq => RoundingTarget.tiebreak F C).val
-      by_cases h_gt : (y >>> 1).toNat < (x.divMod y).2.toNat
-      · -- Round up
-        rw [compare_aznat_lt h_gt, hquot_succ_toNat]
-        have hreal_gt : yn < 2 * r := hhalfY_lt_iff.mp h_gt
+      rw [hcmp]
+      rcases lt_trichotomy yn (2 * r) with h_gt | h_eq | h_lt
+      · -- `y < 2r`: round up
+        rw [compare_Nat_eq_of_lt _ _ h_gt, hquot_succ_toNat]
         have hdC_lt : C.val - (t : EReal) < (t : EReal) - F.val :=
-          hdC_lt_dF_iff_real.mpr hreal_gt
+          hdC_lt_dF_iff_real.mpr h_gt
         rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .gt from
               compare_gt_iff_gt.mpr hdC_lt]
         rw [hC_val]; push_cast; rfl
-      · by_cases h_lt : (x.divMod y).2.toNat < (y >>> 1).toNat
-        · -- Round down (strict)
-          rw [compare_aznat_gt h_lt, hquot_toNat]
-          have hreal_lt : 2 * r < yn := hr_lt_imp h_lt
-          have hdF_lt : (t : EReal) - F.val < C.val - (t : EReal) :=
-            hdF_lt_dC_iff_real.mpr hreal_lt
-          rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .lt from
-                compare_lt_iff_lt.mpr hdF_lt]
-          rw [hF_val]; push_cast; rfl
-        · have h_eq : (y >>> 1).toNat = (x.divMod y).2.toNat := by omega
-          rw [compare_aznat_eq h_eq]
-          have h_half_eq_r : yn / 2 = r := by rw [← hyhalf_toNat, ← hrem_toNat]; exact h_eq
-          have hr_eq_half : r = yn / 2 := h_half_eq_r.symm
-          by_cases hyn_par : yn % 2 = 0
-          · -- yn even: tie
-            have hr_eq : 2 * r = yn := by omega
-            have hdF_eq_dC : (t : EReal) - F.val = C.val - (t : EReal) := by
-              rw [hdF_real_eq, hdC_real_eq]
-              congr 1
-              push_cast [Nat.cast_sub hyn_r_le]
-              have hyn_ne : (yn : ℝ) ≠ 0 := ne_of_gt hyn_real_pos
-              field_simp
-              have h_real : (2 : ℝ) * (r : ℝ) = (yn : ℝ) := by exact_mod_cast hr_eq
-              linarith
-            rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .eq from
-                  compare_eq_iff_eq.mpr hdF_eq_dC]
-            show ((if y.isEven && (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
-                   else (x.divMod y).1).toNat : EReal) = (natBotTiebreak F C).val
-            unfold natBotTiebreak
-            rw [hF_nat, hC_nat]
-            have hy_isEven_true : y.isEven = true := by
-              rw [isEven_iff]; exact (Nat.even_iff).mpr hyn_par
-            by_cases hq_par : q % 2 = 1
-            · -- q odd: round up
-              have hq_isOdd : (x.divMod y).1.isOdd = true := by
-                rw [isOdd_iff, hquot_toNat]; exact ⟨q / 2, by omega⟩
-              rw [show (y.isEven && (x.divMod y).1.isOdd) = true from by
-                rw [hy_isEven_true, hq_isOdd]; rfl]
-              rw [ite_eq_left rfl, hquot_succ_toNat]
-              have hq_odd : Odd q := ⟨q / 2, by omega⟩
-              have hq_not_even : ¬ Even q := Nat.not_even_iff_odd.mpr hq_odd
-              have hq1_even : Even (q + 1) := Odd.add_one hq_odd
-              rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]; push_cast; rfl
-            · -- q even: round down
-              have hq_mod : q % 2 = 0 := by omega
-              have hq_even : Even q := (Nat.even_iff).mpr hq_mod
-              have hq_isOdd_false : (x.divMod y).1.isOdd = false := by
-                cases h : (x.divMod y).1.isOdd
-                · rfl
-                · exfalso
-                  rw [isOdd_iff, hquot_toNat] at h
-                  rcases h with ⟨k, hk⟩; omega
-              rw [show (y.isEven && (x.divMod y).1.isOdd) = false from by
-                rw [hq_isOdd_false, Bool.and_false]]
-              simp only [Bool.false_eq_true, ite_false]
-              rw [hquot_toNat, ite_eq_left hq_even, hF_val]; push_cast; rfl
-          · -- yn odd
-            have hyn_odd : yn % 2 = 1 := by omega
-            have hreal_lt : 2 * r < yn := by omega
-            have hdF_lt : (t : EReal) - F.val < C.val - (t : EReal) :=
-              hdF_lt_dC_iff_real.mpr hreal_lt
-            rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .lt from
-                  compare_lt_iff_lt.mpr hdF_lt]
-            have hy_isEven_false : y.isEven = false := by
-              cases h : y.isEven
-              · rfl
-              · exfalso; rw [isEven_iff] at h
-                rcases h with ⟨k, hk⟩; omega
-            rw [show (y.isEven && (x.divMod y).1.isOdd) = false from by
-              rw [hy_isEven_false]; rfl]
-            simp only [Bool.false_eq_true, ite_false]
-            rw [hquot_toNat, hF_val]; push_cast; rfl
+      · -- `y = 2r`: a tie, round to the even quotient
+        rw [h_eq, compare_Nat_eq_of_eq]
+        have hdF_eq_dC : (t : EReal) - F.val = C.val - (t : EReal) := by
+          rw [hdF_real_eq, hdC_real_eq]
+          congr 1
+          push_cast [Nat.cast_sub hyn_r_le]
+          have hyn_ne : (yn : ℝ) ≠ 0 := ne_of_gt hyn_real_pos
+          field_simp
+          have h_real : (yn : ℝ) = 2 * (r : ℝ) := by exact_mod_cast h_eq
+          linarith
+        rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .eq from
+              compare_eq_iff_eq.mpr hdF_eq_dC]
+        show ((if (x.divMod y).1.isOdd then (x.divMod y).1.addUInt64 1
+               else (x.divMod y).1).toNat : EReal) = (natBotTiebreak F C).val
+        unfold natBotTiebreak
+        rw [hF_nat, hC_nat]
+        by_cases hq_par : q % 2 = 1
+        · -- `q` odd: round up
+          have hq_isOdd : (x.divMod y).1.isOdd = true := by
+            rw [isOdd_iff, hquot_toNat]; exact ⟨q / 2, by omega⟩
+          rw [ite_eq_left hq_isOdd, hquot_succ_toNat]
+          have hq_odd : Odd q := ⟨q / 2, by omega⟩
+          have hq_not_even : ¬ Even q := Nat.not_even_iff_odd.mpr hq_odd
+          have hq1_even : Even (q + 1) := Odd.add_one hq_odd
+          rw [ite_eq_right hq_not_even, ite_eq_left hq1_even, hC_val]; push_cast; rfl
+        · -- `q` even: round down
+          have hq_mod : q % 2 = 0 := by omega
+          have hq_even : Even q := (Nat.even_iff).mpr hq_mod
+          have hq_isOdd_false : (x.divMod y).1.isOdd = false := by
+            cases h : (x.divMod y).1.isOdd
+            · rfl
+            · exfalso
+              rw [isOdd_iff, hquot_toNat] at h
+              rcases h with ⟨k, hk⟩; omega
+          rw [hq_isOdd_false]
+          simp only [Bool.false_eq_true, ite_false]
+          rw [hquot_toNat, ite_eq_left hq_even, hF_val]; push_cast; rfl
+      · -- `y > 2r`: round down
+        rw [compare_Nat_eq_of_gt _ _ h_lt, hquot_toNat]
+        have hdF_lt : (t : EReal) - F.val < C.val - (t : EReal) :=
+          hdF_lt_dC_iff_real.mpr h_lt
+        rw [show Ord.compare ((t : EReal) - F.val) (C.val - (t : EReal)) = .lt from
+              compare_lt_iff_lt.mpr hdF_lt]
+        rw [hF_val]; push_cast; rfl
 
 /-! ### Ordering tag correctness -/
 
@@ -454,7 +401,7 @@ theorem snd_divRound (x y : AzNat) (mode : RoundingMode) (hy : 0 < y.toNat) :
     | Up => simp only []; exact h_compare_q1.symm
     | Nearest =>
       simp only []
-      cases hcmp : Ord.compare (y >>> 1) (x.divMod y).2 with
+      cases hcmp : cmpDouble y (x.divMod y).2 with
       | lt => exact h_compare_q1.symm
       | gt => exact h_compare_q.symm
       | eq =>
