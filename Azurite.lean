@@ -412,6 +412,7 @@ import Azurite.AzNat.Equiv.SquareModPow2.Karatsuba
 import Azurite.AzNat.Equiv.SquareModPow2.ToomCook3
 import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.SubModPow2
+import Azurite.AzNat.Equiv.Subfactorial
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
@@ -478,6 +479,7 @@ import Azurite.AzNat.SquareModPow2.Schoolbook
 import Azurite.AzNat.SquareModPow2.ToomCook3
 import Azurite.AzNat.Sub
 import Azurite.AzNat.SubModPow2
+import Azurite.AzNat.Subfactorial
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
