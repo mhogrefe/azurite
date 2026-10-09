@@ -147,33 +147,20 @@ theorem prod_primesWithBit (ps : List ℕ) (e : ℕ → ℕ) (j : ℕ) :
 
 /-! ### The factorial -/
 
-/-- The odd part is `∏ p ^ v_p(n!)` over the odd primes up to `n`. -/
-theorem toNat_factorialOdd (n : ℕ) :
-    (factorialOdd n).toNat
-      = ∏ p ∈ ((Finset.range (n + 1)).filter Nat.Prime).erase 2,
-          p ^ padicValNat p n.factorial := by
-  set ps := (primesUpTo n).toList.filter (· ≠ 2) with hps
-  have hnd : ps.Nodup := ((primesUpTo_sorted n).imp ne_of_lt).filter _
-  have hmem : ∀ p, p ∈ ps ↔ Nat.Prime p ∧ p ≤ n ∧ p ≠ 2 := by
-    intro p
-    rw [hps, List.mem_filter, ← Array.mem_def, mem_primesUpTo]
-    simp [and_assoc]
-  set S := ((Finset.range (n + 1)).filter Nat.Prime).erase 2 with hSdef
-  have hS : ps.toFinset = S := by
-    ext p
-    simp only [List.mem_toFinset, hmem, hSdef, Finset.mem_erase, Finset.mem_filter,
-      Finset.mem_range, Nat.lt_succ_iff]
-    tauto
-  set B := Nat.log 2 n + 1 with hB
-  set e : ℕ → ℕ := fun p => legendreExp p n n with he
-  unfold factorialOdd oddPrimeExps
-  rw [← hps, toNat_hornerPow, toNat_one, one_pow, one_mul]
-  have hP : ∀ i, (prodList (primesWithBit (ps.map fun p => (p, legendreExp p n n)) i)).toNat
-      = ∏ p ∈ S, p ^ (if (e p).testBit i then 1 else 0) := fun i => by
-    rw [toNat_prodList, prod_primesWithBit, ← List.prod_toFinset _ hnd, hS]
-  have h1 : ∏ i ∈ Finset.range B,
-      (prodList (primesWithBit (ps.map fun p => (p, legendreExp p n n)) i)).toNat ^ 2 ^ i
-      = ∏ i ∈ Finset.range B, ∏ p ∈ S, p ^ ((if (e p).testBit i then 1 else 0) * 2 ^ i) := by
+/-- **Horner's rule assembles the prime powers**: for a duplicate-free list of primes `ps` with
+exponents `e p < 2^B`, `prodPrimePowers` computes `∏ p ^ e p`. -/
+theorem toNat_prodPrimePowers (ps : List ℕ) (e : ℕ → ℕ) (B : ℕ) (hnd : ps.Nodup)
+    (hB : ∀ p ∈ ps, e p < 2 ^ B) :
+    (prodPrimePowers (ps.map fun p => (p, e p)) B).toNat = ∏ p ∈ ps.toFinset, p ^ e p := by
+  unfold prodPrimePowers
+  rw [toNat_hornerPow, toNat_one, one_pow, one_mul]
+  have hP : ∀ i, (prodList (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
+      = ∏ p ∈ ps.toFinset, p ^ (if (e p).testBit i then 1 else 0) := fun i => by
+    rw [toNat_prodList, prod_primesWithBit, ← List.prod_toFinset _ hnd]
+  have h1 : ∏ i ∈ Finset.range B, (prodList (primesWithBit (ps.map fun p => (p, e p)) i)).toNat
+        ^ 2 ^ i
+      = ∏ i ∈ Finset.range B, ∏ p ∈ ps.toFinset,
+          p ^ ((if (e p).testBit i then 1 else 0) * 2 ^ i) := by
     apply Finset.prod_congr rfl
     intro i _
     rw [hP i, ← Finset.prod_pow]
@@ -183,11 +170,39 @@ theorem toNat_factorialOdd (n : ℕ) :
   rw [h1, Finset.prod_comm]
   apply Finset.prod_congr rfl
   intro p hp
+  rw [Finset.prod_pow_eq_pow_sum, sum_testBit B (e p) (hB p (List.mem_toFinset.mp hp))]
+
+/-- The odd primes up to `n`, as a duplicate-free list and as a `Finset`. -/
+theorem oddPrimes_nodup (n : ℕ) : ((primesUpTo n).toList.filter (· ≠ 2)).Nodup :=
+  ((primesUpTo_sorted n).imp ne_of_lt).filter _
+
+theorem mem_oddPrimes (n p : ℕ) :
+    p ∈ (primesUpTo n).toList.filter (· ≠ 2) ↔ Nat.Prime p ∧ p ≤ n ∧ p ≠ 2 := by
+  rw [List.mem_filter, ← Array.mem_def, mem_primesUpTo]
+  simp [and_assoc]
+
+theorem toFinset_oddPrimes (n : ℕ) :
+    ((primesUpTo n).toList.filter (· ≠ 2)).toFinset
+      = ((Finset.range (n + 1)).filter Nat.Prime).erase 2 := by
+  ext p
+  simp only [List.mem_toFinset, mem_oddPrimes, Finset.mem_erase, Finset.mem_filter,
+    Finset.mem_range, Nat.lt_succ_iff]
+  tauto
+
+/-- The odd part is `∏ p ^ v_p(n!)` over the odd primes up to `n`. -/
+theorem toNat_factorialOdd (n : ℕ) :
+    (factorialOdd n).toNat
+      = ∏ p ∈ ((Finset.range (n + 1)).filter Nat.Prime).erase 2,
+          p ^ padicValNat p n.factorial := by
+  unfold factorialOdd oddPrimeExps
+  rw [toNat_prodPrimePowers _ _ _ (oddPrimes_nodup n) (fun p hp =>
+      lt_of_le_of_lt (legendreExp_le p ((mem_oddPrimes n p).mp hp).1.two_le n n)
+        (Nat.lt_pow_succ_log_self (by norm_num) n)),
+    toFinset_oddPrimes]
+  apply Finset.prod_congr rfl
+  intro p hp
   have hprime : Nat.Prime p := (Finset.mem_filter.mp (Finset.mem_erase.mp hp).2).2
-  have hbound : e p < 2 ^ B :=
-    lt_of_le_of_lt (legendreExp_le p hprime.two_le n n) (Nat.lt_pow_succ_log_self (by norm_num) n)
-  rw [Finset.prod_pow_eq_pow_sum, sum_testBit B (e p) hbound, he]
-  exact congrArg _ (legendreExp_eq_padicValNat p n hprime)
+  rw [legendreExp_eq_padicValNat p n hprime]
 
 /-- **Correctness of `factorial`.** -/
 theorem toNat_factorial (n : ℕ) : (factorial n).toNat = n.factorial := by

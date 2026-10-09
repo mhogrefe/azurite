@@ -94,6 +94,11 @@ def hornerPow (P : Nat → AzNat) : Nat → AzNat → AzNat
   | 0, acc => acc
   | j + 1, acc => hornerPow P j (square acc * P j)
 
+/-- `∏ p^e` over a list of `(p, e)` pairs by Horner's rule on the exponent bits, `B` a bit length
+bounding every exponent. -/
+def prodPrimePowers (pes : List (Nat × Nat)) (B : Nat) : AzNat :=
+  hornerPow (fun j => prodList (primesWithBit pes j)) B 1
+
 /-! ### Factorial -/
 
 /-- The odd primes up to `n` with their exponents in `n!`. -/
@@ -101,9 +106,7 @@ def oddPrimeExps (n : Nat) : List (Nat × Nat) :=
   ((primesUpTo n).toList.filter (· ≠ 2)).map fun p => (p, legendreExp p n n)
 
 /-- The odd part of `n!`: `∏_{p odd prime ≤ n} p^{e_p}` by Horner's rule on the exponent bits. -/
-def factorialOdd (n : Nat) : AzNat :=
-  let pes := oddPrimeExps n
-  hornerPow (fun j => prodList (primesWithBit pes j)) (Nat.log 2 n + 1) 1
+def factorialOdd (n : Nat) : AzNat := prodPrimePowers (oddPrimeExps n) (Nat.log 2 n + 1)
 
 /-- **Factorial** `n!`, from its prime factorization (Borwein / Schönhage). -/
 def factorial (n : Nat) : AzNat := factorialOdd n <<< legendreExp 2 n n

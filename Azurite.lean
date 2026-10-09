@@ -331,6 +331,7 @@ import Azurite.AzNat.DivBy6
 import Azurite.AzNat.DivMod10p19
 import Azurite.AzNat.DivRound
 import Azurite.AzNat.Divisors
+import Azurite.AzNat.DoubleFactorial
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.Equiv.Basic
@@ -350,6 +351,7 @@ import Azurite.AzNat.Equiv.DivMod10p19
 import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.Divisors
+import Azurite.AzNat.Equiv.DoubleFactorial
 import Azurite.AzNat.Equiv.ExactDivOdd
 import Azurite.AzNat.Equiv.Factorial
 import Azurite.AzNat.Equiv.Garner
