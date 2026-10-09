@@ -351,6 +351,7 @@ import Azurite.AzNat.Equiv.DivRecursiveLimbs
 import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.Divisors
 import Azurite.AzNat.Equiv.ExactDivOdd
+import Azurite.AzNat.Equiv.Factorial
 import Azurite.AzNat.Equiv.Garner
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.Gcd.Binary
@@ -412,6 +413,7 @@ import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.ExactDivOdd
+import Azurite.AzNat.Factorial
 import Azurite.AzNat.Garner
 import Azurite.AzNat.Gcd
 import Azurite.AzNat.Gcd.Binary
