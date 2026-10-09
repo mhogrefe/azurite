@@ -322,6 +322,7 @@ import Azurite.AzNat.AddModPow2
 import Azurite.AzNat.Basic
 import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
+import Azurite.AzNat.CompareDouble
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
 import Azurite.AzNat.Div.Recursive
@@ -335,6 +336,7 @@ import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
+import Azurite.AzNat.Equiv.CompareDouble
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Div.Addback
 import Azurite.AzNat.Equiv.Div.BodyStep

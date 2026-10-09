@@ -39,6 +39,7 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `Equiv/Add` | `toNat_add` / `toNat_addUInt64`: limb-level carry-chain addition agrees with `Nat` addition. |
 | `Equiv/Sub` | `toNat_sub`: limb-level borrow-chain subtraction agrees with `Nat` subtraction. |
 | `Equiv/Compare` | `compare_eq_compare_toNat`: custom limb-by-limb `compare` logic mapping equivalently to `Ord.compare` on `Nat`, providing the formally verified `LinearOrder AzNat` instance with `≤` and `<`. |
+| `Equiv/CompareDouble` | `cmpDouble_eq_compare_toNat`: `cmpDouble x y = Ord.compare x.toNat (2 * y.toNat)` for the allocation-free comparison against a doubled operand (the Malachite `cmp_double` oracle): the limbs of `2 y` formed on the fly telescope to twice the value plus a carry that vanishes past `y` (`seqVal_doubleLimb`), and the top-down sweep compares values because the lower limbs are below one unit of the position compared (`cmpDouble.go_eq`). |
 | `Equiv/Conversion` | `UInt64.toNat_toAzNat` and friends: conversions from every fixed-width unsigned type (and `Int64.toNat_toAzNatClampNeg`) agree with `toNat`. |
 | `Equiv/Mul/Basic` | `schoolbookMulLimbs_toNat` / `toNat_mulUInt64`: schoolbook multiplication agrees with `Nat` multiplication, via the single-row (`mulAddLimbs_toNat`) and fused two-row (`mulAdd2Limbs_toNat`) multiply-accumulate passes. |
 | `Equiv/Mul/Karatsuba` | `karatsubaMulLimbs_toNat`: Karatsuba limb multiplication agrees with `Nat` multiplication; `karatsubaMulLimbsRec.assemble_toNat` for the in-place two-pass assembly of `C₀ + (C₀ + C₁ ∓ C₂) β^k + C₁ β^(2k)` (exact modulo `β^(2 len)`, carries out of the top dropped). |
@@ -409,6 +410,7 @@ While formalizing *Algorithms in Real Algebraic Geometry* (Basu, Pollack, Roy), 
 | Dodgson-Jordan-Bareiss fraction-free det (`bareissDet`) | BPR Alg. 8.16 | `AzMatrix/BareissDet` | O(n³) over a field; stays in entry ring when that ring is a domain |
 | Characteristic polynomial (`charPoly`, baby-step/giant-step Newton sums; proven `= Matrix.charpoly` in `AzMatrix/Equiv/CharPoly`) | BPR Alg. 8.17 | `AzMatrix/CharPoly` | O(√n) matrix products over a field |
 | Signature of a symmetric matrix (`signature`, `Var` of charpoly coefficients minus `Var` of the negated-variable coefficients; proven `= Sign (quadraticForm (toMat M))` in `signature_eq_Sign`) | BPR Alg. 8.18 | `BasuPollackRoy/Chapter8/Section8_2/Algorithm_8_18` | one `charPoly` + two sign-variation counts |
+| Comparison with a doubled operand (`AzNat.cmpDouble`: `x` against `2 y` without forming `2 y`, the limbs of `2 y` produced on the fly; Malachite's `cmp_double`) | first principles | `AzNat/CompareDouble` | O(n), no allocation |
 | Binary GCD (Stein's algorithm) | MCA Alg. 1.18 | `AzNat/Gcd/Binary` | O(n²) |
 | Half-binary GCD (binary remainder sequence, divide and conquer) | MCA Algs. 1.21, 1.22 | `AzNat/Gcd/HalfBinary` | O(M(n) log n) |
 | Extended binary GCD (`AzInt.egcdBinary`, Bézout coefficients by shifts and subtractions only) | HAC Alg. 14.61 | `AzInt/ExtendedGcd/Binary` | O(n²) |
