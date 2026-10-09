@@ -725,11 +725,13 @@ import Azurite.AzZModPow2.Equiv.Inv
 import Azurite.AzZModPow2.Equiv.Parse
 import Azurite.AzZModPow2.Equiv.Pow
 import Azurite.AzZModPow2.Equiv.RingEquiv
+import Azurite.AzZModPow2.Equiv.Sqrt
 import Azurite.AzZModPow2.Instances
 import Azurite.AzZModPow2.Inv
 import Azurite.AzZModPow2.ParsableElement
 import Azurite.AzZModPow2.Parse
 import Azurite.AzZModPow2.Pow
+import Azurite.AzZModPow2.Sqrt
 import Azurite.AzZModPow2.ToString
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleQF
 import Azurite.BasuPollackRoy.Chapter1.Section1_1.ConstructibleSets
