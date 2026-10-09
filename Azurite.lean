@@ -138,6 +138,7 @@ import Azurite.AzInt.Equiv.ShiftRight
 import Azurite.AzInt.Equiv.ShiftRightRound
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
+import Azurite.AzInt.Equiv.SumProduct
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.ExactDiv
 import Azurite.AzInt.ExtendedGcd
@@ -158,6 +159,7 @@ import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.ShiftRightRound
 import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
+import Azurite.AzInt.SumProduct
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Bareiss
