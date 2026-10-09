@@ -659,6 +659,7 @@ import Azurite.AzRat.Equiv.RingEquiv
 import Azurite.AzRat.Equiv.Round
 import Azurite.AzRat.Equiv.Shift
 import Azurite.AzRat.Equiv.Sub
+import Azurite.AzRat.Equiv.SumProduct
 import Azurite.AzRat.Equiv.ToSci
 import Azurite.AzRat.Equiv.Unary
 import Azurite.AzRat.FromSci
@@ -673,6 +674,7 @@ import Azurite.AzRat.Pow
 import Azurite.AzRat.Round
 import Azurite.AzRat.Shift
 import Azurite.AzRat.Sub
+import Azurite.AzRat.SumProduct
 import Azurite.AzRat.ToSci
 import Azurite.AzRat.ToString
 import Azurite.AzRat.Unary
