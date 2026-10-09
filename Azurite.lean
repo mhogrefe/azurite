@@ -705,6 +705,7 @@ import Azurite.AzZMod.Equiv.Parse
 import Azurite.AzZMod.Equiv.Pow
 import Azurite.AzZMod.Equiv.Quad
 import Azurite.AzZMod.Equiv.RingEquiv
+import Azurite.AzZMod.Equiv.Sqrt
 import Azurite.AzZMod.Field
 import Azurite.AzZMod.Fintype
 import Azurite.AzZMod.Instances
@@ -714,6 +715,7 @@ import Azurite.AzZMod.ParsableElement
 import Azurite.AzZMod.Parse
 import Azurite.AzZMod.Pow
 import Azurite.AzZMod.Quad
+import Azurite.AzZMod.Sqrt
 import Azurite.AzZMod.ToString
 import Azurite.AzZModPow2.Basic
 import Azurite.AzZModPow2.Conversion
