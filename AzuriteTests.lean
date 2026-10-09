@@ -28,6 +28,7 @@ import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sqrt
+import Azurite.AzFloat.Tests.Sum
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.CompareDouble
 import Azurite.AzNat.Tests.Conversion

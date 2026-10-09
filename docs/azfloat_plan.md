@@ -398,3 +398,28 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   Proofs: `AzInt.toInt_shiftRight_one` (floor halving of the exponent), `rsqrtCore_eq` (the three
   `D` cases give `2^(2p−2) ≤ 2^D/n < 2^(2p)`, then the tail of `sqrtCore_eq`),
   `rsqrtPrecRound_eq_liftVal`.
+* **2026-10-09 — sums of lists.**  `AzFloat/Sum.lean`: `sumPrecRound xs p mode`, the correctly
+  rounded sum of a list, derived from first principles (no source text): exact accumulation of a
+  window of `W = p + ⌈log₂ n⌉ + 3 + 64` exponents below the largest term (`exactAdd` at the
+  precision `exactSumPrec`, which holds any sum of two floats exactly), the tail bounded by
+  `T = 2^(e_max(R) + ⌈log₂ |R|⌉)`, a restart on `S₁ :: R` when the window sum is below
+  `2^(p+4) T` (cancellation; the list shrinks, so the fuel is the length — a one-term window
+  cannot cancel, since its term is at least `2^(e_max − 1)` and the tail lies `W` exponents
+  lower), and otherwise the Ziv bracket `(S₁ − T, S₁ + T)` with `roundingPossible`; when a
+  boundary lies inside, it is unique (two `(p+1)`-bit floats of magnitude at least `2^(E−2)`
+  are at least `2^(E−2−p)` apart, the bracket is narrower) and equal to the `(p+1)`-bit
+  truncation of the upper end, and the side is decided by the exact sign of `(S₁ − b) + ΣR`
+  (`signSum`, the same windowing with window `⌈log₂ n⌉ + 2`), the midpoints of the two
+  half-brackets rounding like the sum.  Pitfall found by the tests: the first version computed
+  `S₁ − T` exactly, which for terms `2^(10⁹)` and `2^(−10⁹)` built `2·10⁹`-bit intermediates
+  (a 396 s test build); the ends are now rounded outward at precision `W` by `addPrecRound`
+  (error at most `2^(E+3−W)` each), which forced the cancellation threshold up to `2^(p+4) T`
+  for the uniqueness argument.  `Equiv/Sum.lean`: `Spec.sum`, `Spec.sum_eq`, `exactAdd`
+  exactness, `splitWindow_spec`, `tailBound_spec`, `signSum_eq`, `boundary_dist`,
+  `floor_err_le`, `setPrecRound_floor_spec`, `sumFinite_eq`, `sumPrecRound_eq`.  The `none`
+  answer of `roundingPossible` is never analysed: the boundary branch is correct whether or not
+  rounding was possible.  Lean notes: the equation lemma of a catch-all match arm (`| _ =>`)
+  carries the side hypothesis `l = [] → False` under `rw` — use `rw [f.eq_def]`; terms
+  introduced after a `set` are not abstracted, so the bracket lemma takes the operands' values as
+  hypotheses (`toVal_addPrecRound_floor`); `roundFloor` and `isGreatest_roundFloor` need
+  `open RoundingTarget`.  Not timed.
