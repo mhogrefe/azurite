@@ -123,6 +123,7 @@ def modes : List (String × Mode) := [
   ("az_nat_fmt_sci_valid", mode checkNatFmtSciValid),
   ("az_nat_exhaustive_indexed", mode checkExhaustiveIndexed),
   ("az_nat_exhaustive_range", mode checkExhaustiveRange),
+  ("az_nat_factorial", mode checkFactorial),
   ("az_nat_shl", mode checkShl),
   ("az_nat_shr", mode checkShr),
   ("az_nat_from_string_base", multiline checkFromStringBase),

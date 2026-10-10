@@ -14,6 +14,7 @@ import Azurite.AzNat.SqrtRem
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.PositiveNaturals
 import Azurite.ExhaustiveGenerator.AzRanges
+import Azurite.AzNat.Factorial
 
 /-!
 # More checks for Malachite's `Natural`
@@ -523,5 +524,16 @@ def checkExhaustiveRange (line : String) : Verdict := do
   if k < 20 && computed.length > k then
     disagree s!"{lhs}: Azurite's generator has more than the {k} values Malachite printed"
   expectEq lhs (toString (computed.take k)) (toString printed)
+
+/-! ### Combinatorics -/
+
+/-- `n! = f`, for Malachite's `Natural::factorial(n)`. -/
+def checkFactorial (line : String) : Verdict := do
+  let (n, f) ← match line.splitOn "! = " with
+    | [n, f] => pure (n, f)
+    | _ => fail "not an `n! = f` line"
+  let n ← expect "n" (parseNat n)
+  let f ← expect "factorial" (parseAzNat f)
+  expectEq "factorial" (AzNat.factorial n) f
 
 end Azurite.Oracle
