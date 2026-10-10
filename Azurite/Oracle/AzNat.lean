@@ -13,6 +13,7 @@ import Azurite.AzNat.Sub
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Div
 import Azurite.AzNat.DivRound
+import Azurite.AzNat.CompareDouble
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.ShiftRightRound
@@ -762,6 +763,17 @@ def checkCmpNormalized (line : String) : Verdict := do
   let y ← expect "y" (parseAzNat y)
   let o ← expect "ordering" (parseOrdering res)
   expectEq "cmp_normalized" (orderingName (AzNat.normalizedCompare x y)) (orderingName o)
+
+/-- `x.cmp_double(&y) = o`, comparing `x` with `2 y`. -/
+def checkCmpDouble (line : String) : Verdict := do
+  let (x, args, res) ← expect "a `x.cmp_double(&y) = o` line" (methodCall line "cmp_double")
+  let y ← match args with
+    | [y] => pure (stripRef y)
+    | _ => fail "cmp_double takes one argument"
+  let x ← expect "x" (parseAzNat x)
+  let y ← expect "y" (parseAzNat y)
+  let o ← expect "ordering" (parseOrdering res)
+  expectEq "cmp_double" (orderingName (AzNat.cmpDouble x y)) (orderingName o)
 
 /-! ### Conversion -/
 

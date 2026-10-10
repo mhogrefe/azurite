@@ -130,6 +130,7 @@ def modes : List (String × Mode) := [
   ("az_nat_to_string_base", mode checkToStringBase),
   ("az_nat_cmp", mode checkCmp),
   ("az_nat_cmp_normalized", mode checkCmpNormalized),
+  ("az_nat_cmp_double", mode checkCmpDouble),
   ("az_nat_from_unsigned", mode checkFromUnsigned),
   ("az_nat_saturating_from_signed", mode checkSaturatingFromSigned),
   ("az_nat_wrapping_from", mode checkWrappingFrom),
