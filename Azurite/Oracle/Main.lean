@@ -131,6 +131,8 @@ def modes : List (String × Mode) := [
   ("az_nat_product", mode checkProduct),
   ("az_int_sum", mode checkIntSum),
   ("az_int_product", mode checkIntProduct),
+  ("az_rat_sum", mode checkRatSum),
+  ("az_rat_product", mode checkRatProduct),
   ("az_nat_shl", mode checkShl),
   ("az_nat_shr", mode checkShr),
   ("az_nat_from_string_base", multiline checkFromStringBase),

@@ -26,6 +26,7 @@ import Azurite.AzRat.ToSci
 import Azurite.AzRat.LengthAfterPoint
 import Azurite.AzRat.LogBase
 import Azurite.AzRat.LogBase2
+import Azurite.AzRat.SumProduct
 
 /-!
 # Checks for Malachite's `Rational` against `AzRat`
@@ -484,5 +485,22 @@ def checkRatLengthAfterPoint (line : String) : Verdict := do
     | none => pure none
   expectEq "length_after_point_in_small_base" (optionString (AzRat.lengthAfterPoint b q))
     (optionString res)
+
+/-! ### Sums and products -/
+
+/-- `name([x, …]) = r` for a fold `f` over a list of rationals: Malachite's `Rational::sum` and
+`Rational::product`, printed with the list they consumed. -/
+def checkRatListFold (name : String) (f : List AzRat → AzRat) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}([x, …]) = r` line" (functionCall line name)
+  let xs ← match args with
+    | [xs] => pure xs
+    | _ => fail s!"{name} takes one list"
+  let xs ← expect "list" (parseList xs >>= fun l => l.mapM parseAzRat)
+  let r ← expect "result" (parseAzRat res)
+  expectEq name (f xs) r
+
+def checkRatSum : String → Verdict := checkRatListFold "sum" AzRat.sum
+
+def checkRatProduct : String → Verdict := checkRatListFold "product" AzRat.product
 
 end Azurite.Oracle
