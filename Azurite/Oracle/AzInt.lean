@@ -28,6 +28,7 @@ import Azurite.AzInt.ShiftRightRound
 import Azurite.AzInt.Compare
 import Azurite.AzInt.Conversion
 import Azurite.AzInt.ToString
+import Azurite.AzInt.SumProduct
 
 /-!
 # Checks for Malachite's `Integer` against `AzInt`
@@ -503,5 +504,22 @@ def checkIntWrappingFrom (line : String) : Verdict := do
     | "isize" => pure (toString z.toISize)
     | _ => fail s!"no AzInt conversion to {t}"
   expectEq s!"{t}::wrapping_from" computed rhs
+
+/-! ### Sums and products -/
+
+/-- `name([x, …]) = r` for a fold `f` over a list of integers: Malachite's `Integer::sum` and
+`Integer::product`, printed with the list they consumed. -/
+def checkIntListFold (name : String) (f : List AzInt → AzInt) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}([x, …]) = r` line" (functionCall line name)
+  let xs ← match args with
+    | [xs] => pure xs
+    | _ => fail s!"{name} takes one list"
+  let xs ← expect "list" (parseList xs >>= fun l => l.mapM parseAzInt)
+  let r ← expect "result" (parseAzInt res)
+  expectEq name (f xs) r
+
+def checkIntSum : String → Verdict := checkIntListFold "sum" AzInt.sum
+
+def checkIntProduct : String → Verdict := checkIntListFold "product" AzInt.product
 
 end Azurite.Oracle
