@@ -24,6 +24,8 @@ import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Shift
+import Azurite.AzFloat.Sum
+import Azurite.AzFloat.Product
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -157,6 +159,54 @@ def checkFloatMul : String → Verdict := checkFloatBinary "*" "mul" (onValues A
 def checkFloatDiv : String → Verdict := checkFloatBinary "/" "div" fun x y p m =>
   let (r, o) := AzFloat.divPrecRound x.1 y.1 p m
   (if y.2 then AzFloat.neg r else r, o)
+
+/-- The precision Malachite's `sum`, `product`, and their `_round` forms use: the largest of the
+inputs' precisions, a special value counting as 1, and 1 for an empty list. -/
+def listPrecision (xs : List AzFloat) : Nat :=
+  xs.foldl (fun p x => max p (x.precision?.getD 1)) 1
+
+/-- A list of floats as the `_debug` demos print it, `[0x1.0#1, …]`, possibly behind a `&`. -/
+def parseFloatList (s : String) : Option (List AzFloat) :=
+  (parseList (stripRef s)).bind fun l => l.mapM fun x => (parseFloat x).map (·.1)
+
+/-- A fold over a list of floats in one of its four shapes: `name([x, …]) = z`,
+`Float::name_prec(&[x, …], p) = (z, o)`, `Float::name_round(&[x, …], rm) = (z, o)`, or
+`Float::name_prec_round(&[x, …], p, rm) = (z, o)`. -/
+def checkFloatListFold (name : String) (f : List AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+    (line : String) : Verdict := do
+  match functionCall line s!"Float::{name}_prec_round", functionCall line s!"Float::{name}_round",
+      functionCall line s!"Float::{name}_prec" with
+  | some ([xs, p, rm], res), _, _ =>
+    let xs ← expect "list" (parseFloatList xs)
+    let p ← expect "precision" (parseNat p)
+    let rm ← expect "rounding mode" (parseRounding rm)
+    let printed ← parseFloatPair res
+    let computed ← roundedResult name (f xs p) rm
+    expectFloatPair s!"{name}_prec_round" computed printed
+  | _, some ([xs, rm], res), _ =>
+    let xs ← expect "list" (parseFloatList xs)
+    let rm ← expect "rounding mode" (parseRounding rm)
+    let printed ← parseFloatPair res
+    let computed ← roundedResult name (f xs (listPrecision xs)) rm
+    expectFloatPair s!"{name}_round" computed printed
+  | _, _, some ([xs, p], res) =>
+    let xs ← expect "list" (parseFloatList xs)
+    let p ← expect "precision" (parseNat p)
+    let printed ← parseFloatPair res
+    let computed ← roundedResult name (f xs p) (.mode .Nearest)
+    expectFloatPair s!"{name}_prec" computed printed
+  | _, _, _ =>
+    let (args, res) ← expect s!"a `{name}([x, …]) = z` line" (functionCall line name)
+    let xs ← match args with
+      | [xs] => expect "list" (parseFloatList xs)
+      | _ => fail s!"{name} takes one list"
+    let z ← expect "z" (parseFloat res)
+    let computed ← roundedResult name (f xs (listPrecision xs)) (.mode .Nearest)
+    expectFloat name computed.1 z
+
+def checkFloatSum : String → Verdict := checkFloatListFold "sum" AzFloat.sumPrecRound
+
+def checkFloatProduct : String → Verdict := checkFloatListFold "product" AzFloat.productPrecRound
 
 /-- One mixed operation's line already taken apart: the float `x`, the rational `q`, the
 precision (`x`'s, `AzFloat.ratOpPrecision`, when absent), the rounding mode (`Nearest` when
