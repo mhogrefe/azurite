@@ -182,6 +182,7 @@ def modes : List (String × Mode) := [
   ("az_zmod_pow2_neg", mode checkZModNeg),
   ("az_zmod_pow2_pow", mode checkZModPow),
   ("az_zmod_pow2_inverse", mode checkZModInverse),
+  ("az_zmod_pow2_sqrt", mode checkZModSqrt),
   ("az_zmod_pow2_shl", mode checkZModShl),
   ("az_zmod_pow2_shr", mode checkZModShr),
   ("az_zmod_pow2_is_reduced", mode checkZModIsReduced),

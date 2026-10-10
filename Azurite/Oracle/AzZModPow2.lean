@@ -15,6 +15,7 @@ import Azurite.AzZModPow2.Conversion
 import Azurite.AzZModPow2.Inv
 import Azurite.AzZModPow2.Pow
 import Azurite.AzZModPow2.ToString
+import Azurite.AzZModPow2.Sqrt
 
 /-!
 # Checks for Malachite's `mod_power_of_2_*` operations against `AzZModPow2`
@@ -114,6 +115,28 @@ def checkZModInverse (line : String) : Verdict :=
     let a ← residue k "x" x
     if h : a.isOdd = true then expectEq "inverse mod 2^k" (AzZModPow2.invOdd a h).val inverse
     else disagree s!"{x} is even, so it has no inverse mod 2^{k}"
+
+/-- `x.mod_power_of_2_sqrt(k) = Some(r)` or `None`. Both libraries return the least root, so the
+printed result is compared with `AzZModPow2.sqrt?` exactly. -/
+def checkZModSqrt (line : String) : Verdict := do
+  let (x, args, res) ← expect "an `x.mod_power_of_2_sqrt(k) = r` line"
+    (methodCall line "mod_power_of_2_sqrt")
+  let k ← match args with
+    | [k] => expect "k" (parseNat k)
+    | _ => fail "mod_power_of_2_sqrt takes one argument"
+  let x ← expect "x" (parseAzNat x)
+  let res ← expect "result" (parseOption res)
+  let a ← residue k "x" x
+  let printed ← match res with
+    | none => pure none
+    | some r => do
+      let r ← expect "root" (parseAzNat r)
+      pure (some r)
+  match AzZModPow2.sqrt? a, printed with
+  | none, none => pure ()
+  | some r, none => disagree s!"{x} has the root {r.val} mod 2^{k}, but Malachite printed None"
+  | none, some r => disagree s!"{x} is not a square mod 2^{k}, but Malachite printed {r}"
+  | some r, some p => expectEq "least root mod 2^k" r.val p
 
 /-! ### Shifts, reducedness, and equality -/
 
