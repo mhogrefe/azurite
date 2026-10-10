@@ -200,6 +200,7 @@ def modes : List (String × Mode) := [
   ("az_zmod_shl", mode checkModShl),
   ("az_zmod_shr", mode checkModShr),
   ("az_zmod_div", mode checkModDiv),
+  ("az_zmod_sqrt", mode checkModSqrt),
   ("az_zmod_is_reduced", mode checkModIsReduced),
   ("az_zmod_eq", mode checkModEq),
   ("az_rat_add", mode checkRatAdd),

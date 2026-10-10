@@ -16,6 +16,8 @@ import Azurite.AzZMod.Basic
 import Azurite.AzZMod.Pow
 import Azurite.AzZMod.Quad
 import Azurite.AzZMod.ToString
+import Azurite.AzZMod.Sqrt
+import Azurite.AzNat.IsPrime
 
 /-!
 # Checks for Malachite's `mod_*` operations against `AzZMod`
@@ -234,6 +236,40 @@ def checkModDiv (line : String) : Verdict := do
     let q ← expect "quotient" (parseAzNat q)
     let qr ← residueMod m "quotient" q
     expectEq "q·y mod m" (AzZMod.mul qr b).val a.val
+
+/-- `x.mod_sqrt(m) = Some(y)` or `None`. Malachite documents that for a prime modulus a root is
+returned exactly when one exists, either of the two; for other moduli it may return `None` though a
+root exists, or a value that is not a root, so there only the documented range `y < m` is checked.
+For a prime modulus (decided by the proven `AzNat.isPrime`), `AzZMod.sqrt?`, complete for primes
+and returning the smaller root, decides existence, and the printed root must be it or its
+negation. -/
+def checkModSqrt (line : String) : Verdict := do
+  let (x, args, res) ← expect "an `x.mod_sqrt(m) = r` line" (methodCall line "mod_sqrt")
+  let m ← match args with
+    | [m] => pure (stripRef m)
+    | _ => fail "mod_sqrt takes one argument"
+  let x ← expect "x" (parseAzNat x)
+  let m ← expect "m" (parseAzNat m)
+  let res ← expect "result" (parseOption res)
+  let hm ← modulus m
+  have : NeZero m.toNat := hm.down
+  let a ← residueMod m "x" x
+  let root ← match res with
+    | none => pure none
+    | some y => do
+      let y ← expect "root" (parseAzNat y)
+      let r ← residueMod m "root" y
+      pure (some r)
+  if AzNat.isPrime m then
+    match AzZMod.sqrt? a, root with
+    | none, none => pure ()
+    | some _, none => disagree s!"{x} is a square mod the prime {m}, but Malachite found no root"
+    | none, some y =>
+      disagree s!"{x} is not a square mod the prime {m}, but Malachite printed {y.val}"
+    | some r, some y =>
+      if y.val == r.val || y.val == (-r).val then pure ()
+      else disagree s!"the roots of {x} mod {m} are {r.val} and {(-r).val}, not {y.val}"
+  else pure ()
 
 /-- `x is reduced mod m` or `x is not reduced mod m`: whether `x < m`. -/
 def checkModIsReduced (line : String) : Verdict := do
