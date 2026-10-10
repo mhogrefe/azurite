@@ -127,6 +127,8 @@ def modes : List (String × Mode) := [
   ("az_nat_double_factorial", mode checkDoubleFactorial),
   ("az_nat_multifactorial", mode checkMultifactorial),
   ("az_nat_subfactorial", mode checkSubfactorial),
+  ("az_nat_sum", mode checkSum),
+  ("az_nat_product", mode checkProduct),
   ("az_nat_shl", mode checkShl),
   ("az_nat_shr", mode checkShr),
   ("az_nat_from_string_base", multiline checkFromStringBase),

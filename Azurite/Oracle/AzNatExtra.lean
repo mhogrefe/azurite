@@ -18,6 +18,7 @@ import Azurite.AzNat.Factorial
 import Azurite.AzNat.DoubleFactorial
 import Azurite.AzNat.MultiFactorial
 import Azurite.AzNat.Subfactorial
+import Azurite.AzNat.SumProduct
 
 /-!
 # More checks for Malachite's `Natural`
@@ -578,5 +579,22 @@ def checkSubfactorial (line : String) : Verdict := do
   let n ← expect "n" (parseNat (String.ofList (lhs.toList.drop 1)))
   let f ← expect "subfactorial" (parseAzNat f)
   expectEq "subfactorial" (AzNat.subfactorial n) f
+
+/-! ### Sums and products -/
+
+/-- `name([x, …]) = r` for a fold `f` over a list of naturals: Malachite's `Natural::sum` and
+`Natural::product`, which take iterators and are printed with the list they consumed. -/
+def checkListFold (name : String) (f : List AzNat → AzNat) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}([x, …]) = r` line" (functionCall line name)
+  let xs ← match args with
+    | [xs] => pure xs
+    | _ => fail s!"{name} takes one list"
+  let xs ← expect "list" (parseList xs >>= parseAzNats)
+  let r ← expect "result" (parseAzNat res)
+  expectEq name (f xs) r
+
+def checkSum : String → Verdict := checkListFold "sum" AzNat.sum
+
+def checkProduct : String → Verdict := checkListFold "product" AzNat.product
 
 end Azurite.Oracle
