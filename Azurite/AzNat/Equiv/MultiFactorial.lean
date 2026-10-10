@@ -26,7 +26,7 @@ namespace Nat
 
 open scoped Nat
 
-theorem multiFactorial_zero (m : ℕ) : multiFactorial m 0 = 1 := by
+theorem multiFactorial_zero (m : ℕ) : multiFactorial 0 m = 1 := by
   unfold multiFactorial
   rcases Nat.eq_zero_or_pos m with hm | hm
   · subst hm; rfl
@@ -34,7 +34,7 @@ theorem multiFactorial_zero (m : ℕ) : multiFactorial m 0 = 1 := by
 
 /-- The recurrence `(n + m)!⁽ᵐ⁾ = (n + m) · n!⁽ᵐ⁾`. -/
 theorem multiFactorial_add (m n : ℕ) (hm : 1 ≤ m) :
-    multiFactorial m (n + m) = (n + m) * multiFactorial m n := by
+    multiFactorial (n + m) m = (n + m) * multiFactorial n m := by
   unfold multiFactorial
   rw [show n + m + m - 1 = (n + m - 1) + m by omega, Nat.add_div_right _ hm,
     Finset.prod_range_succ', Nat.zero_mul, Nat.sub_zero, mul_comm]
@@ -43,24 +43,24 @@ theorem multiFactorial_add (m n : ℕ) (hm : 1 ≤ m) :
   intro i _
   rw [add_mul, one_mul, Nat.add_sub_add_right]
 
-theorem multiFactorial_of_le (m n : ℕ) (h1 : 1 ≤ n) (hnm : n ≤ m) : multiFactorial m n = n := by
+theorem multiFactorial_of_le (m n : ℕ) (h1 : 1 ≤ n) (hnm : n ≤ m) : multiFactorial n m = n := by
   unfold multiFactorial
   rw [show (n + m - 1) / m = 1 from Nat.div_eq_of_lt_le (by omega) (by omega),
     Finset.prod_range_one, Nat.zero_mul, Nat.sub_zero]
 
-theorem multiFactorial_one (n : ℕ) : multiFactorial 1 n = n ! := by
+theorem multiFactorial_one (n : ℕ) : multiFactorial n 1 = n ! := by
   induction n with
   | zero => rw [multiFactorial_zero]; rfl
   | succ n ih => rw [multiFactorial_add 1 n le_rfl, ih, Nat.factorial_succ]
 
-theorem multiFactorial_two (n : ℕ) : multiFactorial 2 n = n‼ := by
+theorem multiFactorial_two (n : ℕ) : multiFactorial n 2 = n‼ := by
   induction n using Nat.twoStepInduction with
   | zero => rw [multiFactorial_zero]; rfl
   | one => rw [multiFactorial_of_le 2 1 le_rfl (by norm_num)]; rfl
   | more n ih _ => rw [multiFactorial_add 2 n (by norm_num), ih, Nat.doubleFactorial_add_two]
 
 /-- `(q m)!⁽ᵐ⁾ = m^q · q!`. -/
-theorem multiFactorial_mul (m : ℕ) (hm : 1 ≤ m) : ∀ q, multiFactorial m (q * m) = m ^ q * q ! := by
+theorem multiFactorial_mul (m : ℕ) (hm : 1 ≤ m) : ∀ q, multiFactorial (q * m) m = m ^ q * q ! := by
   intro q
   induction q with
   | zero => rw [Nat.zero_mul, multiFactorial_zero]; rfl
@@ -70,7 +70,7 @@ theorem multiFactorial_mul (m : ℕ) (hm : 1 ≤ m) : ∀ q, multiFactorial m (q
 
 /-- `(q m + r)!⁽ᵐ⁾ = ∏_{i ≤ q} (i m + r)` for `1 ≤ r ≤ m`. -/
 theorem multiFactorial_mul_add (m r : ℕ) (hr1 : 1 ≤ r) (hrm : r ≤ m) :
-    ∀ q, multiFactorial m (q * m + r) = ∏ i ∈ Finset.range (q + 1), (i * m + r) := by
+    ∀ q, multiFactorial (q * m + r) m = ∏ i ∈ Finset.range (q + 1), (i * m + r) := by
   intro q
   induction q with
   | zero => rw [Nat.zero_mul, zero_add, multiFactorial_of_le m r hr1 hrm]; simp
@@ -91,7 +91,7 @@ theorem prod_map_range (g : ℕ → ℕ) :
   | succ n ih => rw [List.prod_range_succ, ih, Finset.prod_range_succ]
 
 /-- **Correctness of `multiFactorial`.** -/
-theorem toNat_multiFactorial (m n : ℕ) : (multiFactorial m n).toNat = Nat.multiFactorial m n := by
+theorem toNat_multiFactorial (n m : ℕ) : (multiFactorial n m).toNat = Nat.multiFactorial n m := by
   unfold multiFactorial
   split_ifs with h0 h1 h2 hr
   · subst h0

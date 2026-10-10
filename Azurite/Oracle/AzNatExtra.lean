@@ -15,6 +15,9 @@ import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.PositiveNaturals
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.AzNat.Factorial
+import Azurite.AzNat.DoubleFactorial
+import Azurite.AzNat.MultiFactorial
+import Azurite.AzNat.Subfactorial
 
 /-!
 # More checks for Malachite's `Natural`
@@ -535,5 +538,45 @@ def checkFactorial (line : String) : Verdict := do
   let n ← expect "n" (parseNat n)
   let f ← expect "factorial" (parseAzNat f)
   expectEq "factorial" (AzNat.factorial n) f
+
+/-- `n!! = f`, for Malachite's `Natural::double_factorial(n)`. -/
+def checkDoubleFactorial (line : String) : Verdict := do
+  let (n, f) ← match line.splitOn "!! = " with
+    | [n, f] => pure (n, f)
+    | _ => fail "not an `n!! = f` line"
+  let n ← expect "n" (parseNat n)
+  let f ← expect "double factorial" (parseAzNat f)
+  expectEq "double_factorial" (AzNat.doubleFactorial n) f
+
+/-- `n` followed by `m` exclamation marks (`m ≤ 5`), or `n[!^m]`, then ` = f`, for Malachite's
+`Natural::multifactorial(n, m)`. -/
+def checkMultifactorial (line : String) : Verdict := do
+  let (lhs, f) ← match line.splitOn " = " with
+    | [lhs, f] => pure (lhs, f)
+    | _ => fail "not an `lhs = f` line"
+  let (n, m) ← match lhs.splitOn "[!^" with
+    | [n, rest] =>
+      if rest.endsWith "]" then
+        let m ← expect "m" (parseNat (dropRightChars rest 1))
+        pure (n, m)
+      else fail "not an `n[!^m]` left-hand side"
+    | _ =>
+      let cs := lhs.toList
+      let bangs := cs.dropWhile Char.isDigit
+      if bangs.isEmpty || !bangs.all (· == '!') then fail "not an `n!…!` left-hand side"
+      pure (String.ofList (cs.takeWhile Char.isDigit), bangs.length)
+  let n ← expect "n" (parseNat n)
+  let f ← expect "multifactorial" (parseAzNat f)
+  expectEq "multifactorial" (AzNat.multiFactorial n m) f
+
+/-- `!n = f`, for Malachite's `Natural::subfactorial(n)`. -/
+def checkSubfactorial (line : String) : Verdict := do
+  let (lhs, f) ← match line.splitOn " = " with
+    | [lhs, f] => pure (lhs, f)
+    | _ => fail "not a `!n = f` line"
+  if !lhs.startsWith "!" then fail "not a `!n = f` line"
+  let n ← expect "n" (parseNat (String.ofList (lhs.toList.drop 1)))
+  let f ← expect "subfactorial" (parseAzNat f)
+  expectEq "subfactorial" (AzNat.subfactorial n) f
 
 end Azurite.Oracle
