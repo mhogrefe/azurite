@@ -327,6 +327,7 @@ import Azurite.AzMvRationalFunction.ToString
 import Azurite.AzNat.Add
 import Azurite.AzNat.AddModPow2
 import Azurite.AzNat.Basic
+import Azurite.AzNat.Binomial
 import Azurite.AzNat.ClearBit
 import Azurite.AzNat.Compare
 import Azurite.AzNat.CompareDouble
@@ -342,6 +343,7 @@ import Azurite.AzNat.DoubleFactorial
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.AddModPow2
 import Azurite.AzNat.Equiv.Basic
+import Azurite.AzNat.Equiv.Binomial
 import Azurite.AzNat.Equiv.ClearBit
 import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.CompareDouble
