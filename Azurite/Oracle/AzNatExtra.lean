@@ -19,6 +19,13 @@ import Azurite.AzNat.DoubleFactorial
 import Azurite.AzNat.MultiFactorial
 import Azurite.AzNat.Subfactorial
 import Azurite.AzNat.SumProduct
+import Azurite.AzNat.RisingFallingFactorial
+import Azurite.AzNat.Binomial
+import Azurite.AzNat.Fibonacci
+import Azurite.AzNat.Lucas
+import Azurite.AzNat.Primorial
+import Azurite.AzNat.Bell
+import Azurite.AzNat.Landau
 
 /-!
 # More checks for Malachite's `Natural`
@@ -579,6 +586,106 @@ def checkSubfactorial (line : String) : Verdict := do
   let n ← expect "n" (parseNat (String.ofList (lhs.toList.drop 1)))
   let f ← expect "subfactorial" (parseAzNat f)
   expectEq "subfactorial" (AzNat.subfactorial n) f
+
+/-- `x.rising_factorial(k) = r`, for Malachite's `Natural::rising_factorial`. -/
+def checkRisingFactorial : String → Verdict :=
+  checkMethodNat "rising_factorial" AzNat.risingFactorial
+
+/-- `x.falling_factorial(k) = r`, for Malachite's `Natural::falling_factorial`. -/
+def checkFallingFactorial : String → Verdict :=
+  checkMethodNat "falling_factorial" AzNat.fallingFactorial
+
+/-- `C(n, k) = r`, for Malachite's `Natural::binomial_coefficient(n, k)`. The second argument is a
+`Natural` in Malachite and a `Nat` here; both are printed in decimal. `AzNat.binomial` uses the
+symmetry `C(n, k) = C(n, n - k)` only when `n` fits in one limb, so the check applies it first:
+otherwise a row like `C(10^24, 10^24 - 10)` would build a falling factorial of `10^24` factors. -/
+def checkBinomial (line : String) : Verdict := do
+  let (args, res) ← expect "a `C(n, k) = r` line" (functionCall line "C")
+  let (n, k) ← match args with
+    | [n, k] => pure (n, k)
+    | _ => fail "C takes two arguments"
+  let n ← expect "n" (parseAzNat n)
+  let k ← expect "k" (parseNat k)
+  let r ← expect "result" (parseAzNat res)
+  let k := if k ≤ n.toNat then min k (n.toNat - k) else k
+  expectEq "binomial_coefficient" (AzNat.binomial n k) r
+
+/-- `name(n) = r`, for a function of a `u64` index with a natural result. -/
+def checkIndexed (name : String) (f : Nat → AzNat) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}(n) = r` line" (functionCall line name)
+  let n ← match args with
+    | [n] => pure n
+    | _ => fail s!"{name} takes one argument"
+  let n ← expect "n" (parseNat n)
+  let r ← expect "result" (parseAzNat res)
+  expectEq name (f n) r
+
+/-- `name(n) = (a, b)`, for a function of a `u64` index with a pair of naturals as its result. -/
+def checkIndexedPair (name : String) (f : Nat → AzNat × AzNat) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}(n) = (a, b)` line" (functionCall line name)
+  let n ← match args with
+    | [n] => pure n
+    | _ => fail s!"{name} takes one argument"
+  let n ← expect "n" (parseNat n)
+  let (a, b) ← expect "pair" (parseTuple2 res)
+  let a ← expect "first" (parseAzNat a)
+  let b ← expect "second" (parseAzNat b)
+  expectEq name (f n) (a, b)
+
+/-- `name(n) = [x, …]`, for a function of a `u64` length with a list of naturals as its result. -/
+def checkIndexedList (name : String) (f : Nat → List AzNat) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}(n) = [x, …]` line" (functionCall line name)
+  let n ← match args with
+    | [n] => pure n
+    | _ => fail s!"{name} takes one argument"
+  let n ← expect "n" (parseNat n)
+  let xs ← expect "list" (parseList res >>= parseAzNats)
+  expectEq name (f n) xs
+
+/-- `F(n) = f`, for Malachite's `Natural::fibonacci(n)`. -/
+def checkFibonacci : String → Verdict := checkIndexed "F" AzNat.fibonacci
+
+/-- `fibonacci_pair(n) = (F(n), F(n - 1))`, for Malachite's `Natural::fibonacci_pair(n)`. -/
+def checkFibonacciPair : String → Verdict := checkIndexedPair "fibonacci_pair" AzNat.fibonacciPair
+
+/-- `L(n) = l`, for Malachite's `Natural::lucas_number(n)`. -/
+def checkLucasNumber : String → Verdict := checkIndexed "L" AzNat.lucasNumber
+
+/-- `lucas_number_pair(n) = (L(n), L(n - 1))`, for Malachite's `Natural::lucas_number_pair(n)`.
+Malachite panics at `n = 0`, so its demo never prints that line; Azurite's pair there is `(2, 0)`. -/
+def checkLucasNumberPair : String → Verdict :=
+  checkIndexedPair "lucas_number_pair" AzNat.lucasNumberPair
+
+/-- `n# = p`, for Malachite's `Natural::primorial(n)`. -/
+def checkPrimorial (line : String) : Verdict := do
+  let (n, p) ← match line.splitOn "# = " with
+    | [n, p] => pure (n, p)
+    | _ => fail "not an `n# = p` line"
+  let n ← expect "n" (parseNat n)
+  let p ← expect "primorial" (parseAzNat p)
+  expectEq "primorial" (AzNat.primorial n) p
+
+/-- `p_n# = p`, for Malachite's `Natural::product_of_first_n_primes(n)`. -/
+def checkProductOfFirstNPrimes (line : String) : Verdict := do
+  let (n, p) ← match line.splitOn "# = " with
+    | [n, p] => pure (n, p)
+    | _ => fail "not a `p_n# = p` line"
+  if !n.startsWith "p_" then fail "not a `p_n# = p` line"
+  let n ← expect "n" (parseNat (dropChars n 2))
+  let p ← expect "product" (parseAzNat p)
+  expectEq "product_of_first_n_primes" (AzNat.productOfFirstNPrimes n) p
+
+/-- `bell_number(n) = b`, for Malachite's `Natural::bell_number(n)`. -/
+def checkBellNumber : String → Verdict := checkIndexed "bell_number" AzNat.bellNumber
+
+/-- `bell_numbers_prefix(n) = [B(0), …, B(n - 1)]`, for Malachite's `bell_numbers_prefix(n)`. -/
+def checkBellNumbersPrefix : String → Verdict :=
+  checkIndexedList "bell_numbers_prefix" AzNat.bellNumbersPrefix
+
+/-- `landau_function_prefix(n) = [g(0), …, g(n - 1)]`, for Malachite's
+`landau_function_prefix(n)`. -/
+def checkLandauFunctionPrefix : String → Verdict :=
+  checkIndexedList "landau_function_prefix" AzNat.landauFunctionPrefix
 
 /-! ### Sums and products -/
 
