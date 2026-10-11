@@ -374,6 +374,7 @@ import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.AzNat.Equiv.IsPrime
 import Azurite.AzNat.Equiv.IsSquare
 import Azurite.AzNat.Equiv.JacobiSym
+import Azurite.AzNat.Equiv.Landau
 import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
@@ -443,6 +444,7 @@ import Azurite.AzNat.IsMultipleOfPow2
 import Azurite.AzNat.IsPrime
 import Azurite.AzNat.IsSquare
 import Azurite.AzNat.JacobiSym
+import Azurite.AzNat.Landau
 import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
