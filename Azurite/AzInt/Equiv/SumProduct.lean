@@ -41,7 +41,16 @@ theorem toInt_list_prod : ∀ l : List AzInt, l.prod.toInt = (l.map toInt).prod
 
 /-- **`product` computes the product.** -/
 theorem toInt_product (l : List AzInt) : (product l).toInt = (l.map toInt).prod := by
-  rw [product, Azurite.balancedProduct_eq_prod, toInt_list_prod]
+  unfold product
+  split_ifs with h
+  · obtain ⟨x, hx, hx0⟩ := List.any_eq_true.mp h
+    rw [decide_eq_true_eq] at hx0
+    subst hx0
+    have h0 : (0 : _) ∈ l.map toInt := by
+      have := List.mem_map_of_mem (f := toInt) hx
+      rwa [toInt_zero] at this
+    rw [toInt_zero, List.prod_eq_zero h0]
+  · rw [Azurite.balancedProduct_eq_prod, toInt_list_prod]
 
 theorem toInt_sumArray (a : Array AzInt) : (sumArray a).toInt = (a.toList.map toInt).sum :=
   toInt_sum _

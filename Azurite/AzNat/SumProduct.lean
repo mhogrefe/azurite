@@ -27,8 +27,10 @@ namespace Azurite.AzNat
 /-- The sum of a list, by a left fold. -/
 def sum (l : List AzNat) : AzNat := l.foldl (· + ·) 0
 
-/-- The product of a list, by a balanced tree of pairwise products. -/
-def product (l : List AzNat) : AzNat := Azurite.balancedProduct l
+/-- The product of a list, by a balanced tree of pairwise products; a zero factor gives zero at
+once. -/
+def product (l : List AzNat) : AzNat :=
+  if l.any (fun x => decide (x = 0)) then 0 else Azurite.balancedProduct l
 
 /-- The sum of an array. -/
 def sumArray (a : Array AzNat) : AzNat := sum a.toList
@@ -57,6 +59,8 @@ private def L (xs : List Nat) : List AzNat := xs.map ofNat
 #guard AzNat.toString (product (L [2, 3, 5, 7, 11])) == "2310"
 #guard AzNat.toString (product (L [2, 3, 5, 7, 11, 13])) == "30030"
 #guard AzNat.toString (product (L [0, 3, 5])) == "0"
+#guard product ((List.range 1000).map fun i => ofNat (i * 7919)) == 0        -- `i = 0` is a factor
+#guard AzNat.toString (productArray #[N "5", N "0", N "7"]) == "0"
 #guard AzNat.toString (product [N "18446744073709551616", N "18446744073709551616"])
   == "340282366920938463463374607431768211456"
 -- the balanced tree agrees with the fold on a long list of mixed sizes

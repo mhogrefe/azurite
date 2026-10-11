@@ -26,8 +26,10 @@ namespace Azurite.AzInt
 /-- The sum of a list, by a left fold. -/
 def sum (l : List AzInt) : AzInt := l.foldl (· + ·) 0
 
-/-- The product of a list, by a balanced tree of pairwise products. -/
-def product (l : List AzInt) : AzInt := Azurite.balancedProduct l
+/-- The product of a list, by a balanced tree of pairwise products; a zero factor gives zero at
+once. -/
+def product (l : List AzInt) : AzInt :=
+  if l.any (fun x => decide (x = 0)) then 0 else Azurite.balancedProduct l
 
 /-- The sum of an array. -/
 def sumArray (a : Array AzInt) : AzInt := sum a.toList
@@ -57,6 +59,8 @@ private def L (xs : List String) : List AzInt := xs.map Z
 #guard AzInt.toString (product (L ["2", "-3", "5", "-7", "11"])) == "2310"
 #guard AzInt.toString (product (L ["2", "-3", "5", "-7", "11", "-13"])) == "-30030"
 #guard AzInt.toString (product (L ["0", "-3", "5"])) == "0"
+#guard AzInt.toString (product (L ["-3", "5", "0"])) == "0"
+#guard AzInt.toString (productArray #[Z "5", Z "0", Z "-7"]) == "0"
 #guard AzInt.toString (product (L ["-18446744073709551616", "18446744073709551616"]))
   == "-340282366920938463463374607431768211456"
 -- the balanced tree agrees with the fold on a long list of alternating signs

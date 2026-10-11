@@ -37,7 +37,16 @@ theorem toRat_sum (l : List AzRat) : (sum l).toRat = (l.map toRat).sum := by
 
 /-- **`product` computes the product.** -/
 theorem toRat_product (l : List AzRat) : (product l).toRat = (l.map toRat).prod := by
-  rw [product, Azurite.balancedProduct_eq_prod, toRat_list_prod]
+  unfold product
+  split_ifs with h
+  · obtain ⟨x, hx, hx0⟩ := List.any_eq_true.mp h
+    rw [decide_eq_true_eq] at hx0
+    subst hx0
+    have h0 : (0 : _) ∈ l.map toRat := by
+      have := List.mem_map_of_mem (f := toRat) hx
+      rwa [toRat_zero] at this
+    rw [toRat_zero, List.prod_eq_zero h0]
+  · rw [Azurite.balancedProduct_eq_prod, toRat_list_prod]
 
 theorem toRat_sumArray (a : Array AzRat) : (sumArray a).toRat = (a.toList.map toRat).sum :=
   toRat_sum _

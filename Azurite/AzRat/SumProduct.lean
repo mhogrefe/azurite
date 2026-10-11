@@ -28,8 +28,10 @@ namespace Azurite.AzRat
 /-- The sum of a list, by a balanced tree of pairwise sums. -/
 def sum (l : List AzRat) : AzRat := Azurite.balancedSum l
 
-/-- The product of a list, by a balanced tree of pairwise products. -/
-def product (l : List AzRat) : AzRat := Azurite.balancedProduct l
+/-- The product of a list, by a balanced tree of pairwise products; a zero factor gives zero at
+once. -/
+def product (l : List AzRat) : AzRat :=
+  if l.any (fun x => decide (x = 0)) then 0 else Azurite.balancedProduct l
 
 /-- The sum of an array, by a balanced tree of pairwise sums. -/
 def sumArray (a : Array AzRat) : AzRat := sum a.toList
@@ -58,6 +60,8 @@ private def L (xs : List String) : List AzRat := xs.map Q
 #guard AzRat.toString (product (L ["2/3", "3/4", "4/5", "5/6"])) == "1/3"
 #guard AzRat.toString (product (L ["-2/3", "3/4", "-4/5", "5/6", "6/7"])) == "2/7"
 #guard AzRat.toString (product (L ["0", "-3/2", "5"])) == "0"
+#guard AzRat.toString (product (L ["-3/2", "5", "0", "1/7"])) == "0"
+#guard AzRat.toString (productArray #[Q "5/2", Q "0", Q "7/5"]) == "0"
 -- the harmonic number `H_20` and the balanced trees against the folds on a long list
 #guard AzRat.toString (sum ((List.range 20).map fun i => Q s!"1/{i + 1}"))
   == "55835135/15519504"

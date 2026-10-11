@@ -41,7 +41,16 @@ theorem toNat_list_prod : ∀ l : List AzNat, l.prod.toNat = (l.map toNat).prod
 
 /-- **`product` computes the product.** -/
 theorem toNat_product (l : List AzNat) : (product l).toNat = (l.map toNat).prod := by
-  rw [product, Azurite.balancedProduct_eq_prod, toNat_list_prod]
+  unfold product
+  split_ifs with h
+  · obtain ⟨x, hx, hx0⟩ := List.any_eq_true.mp h
+    rw [decide_eq_true_eq] at hx0
+    subst hx0
+    have h0 : (0 : _) ∈ l.map toNat := by
+      have := List.mem_map_of_mem (f := toNat) hx
+      rwa [toNat_zero] at this
+    rw [toNat_zero, List.prod_eq_zero h0]
+  · rw [Azurite.balancedProduct_eq_prod, toNat_list_prod]
 
 theorem toNat_sumArray (a : Array AzNat) : (sumArray a).toNat = (a.toList.map toNat).sum :=
   toNat_sum _
