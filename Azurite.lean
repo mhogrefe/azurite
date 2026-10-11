@@ -378,6 +378,7 @@ import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
 import Azurite.AzNat.Equiv.LowMask
+import Azurite.AzNat.Equiv.Lucas
 import Azurite.AzNat.Equiv.LucasLehmerTest
 import Azurite.AzNat.Equiv.MillerRabin
 import Azurite.AzNat.Equiv.ModPow2
@@ -446,6 +447,7 @@ import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
 import Azurite.AzNat.LowMask
+import Azurite.AzNat.Lucas
 import Azurite.AzNat.LucasLehmerTest
 import Azurite.AzNat.MillerRabin
 import Azurite.AzNat.ModPow2
