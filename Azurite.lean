@@ -402,6 +402,7 @@ import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Pratt
 import Azurite.AzNat.Equiv.Primality
 import Azurite.AzNat.Equiv.RingEquiv
+import Azurite.AzNat.Equiv.RisingFallingFactorial
 import Azurite.AzNat.Equiv.RootInt
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
@@ -469,6 +470,7 @@ import Azurite.AzNat.Pow
 import Azurite.AzNat.Pow2
 import Azurite.AzNat.Pratt
 import Azurite.AzNat.Primality
+import Azurite.AzNat.RisingFallingFactorial
 import Azurite.AzNat.RootInt
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
