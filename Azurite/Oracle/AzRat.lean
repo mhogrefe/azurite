@@ -27,6 +27,8 @@ import Azurite.AzRat.LengthAfterPoint
 import Azurite.AzRat.LogBase
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.SumProduct
+import Azurite.AzRat.CompareProduct
+import Azurite.AzRat.CompareProducts
 
 /-!
 # Checks for Malachite's `Rational` against `AzRat`
@@ -234,6 +236,44 @@ def checkRatCmp (line : String) : Verdict := do
   let x ← expect "x" (parseAzRat x)
   let y ← expect "y" (parseAzRat y)
   expectEq "cmp" (orderingName (AzRat.cmp x y)) (orderingName o)
+
+/-- `Rational::cmp_product(&x, &y, &z) = o` or `Rational::cmp_product_neg(&x, &y, &z) = o`, for
+Malachite's `OrdProduct` and `OrdProductNeg`, which compare `x · y` with `z` or with `-z`. -/
+def checkRatCmpProduct (line : String) : Verdict := do
+  let (neg, args, res) ← match functionCall line "Rational::cmp_product" with
+    | some (args, res) => pure (false, args, res)
+    | none => match functionCall line "Rational::cmp_product_neg" with
+      | some (args, res) => pure (true, args, res)
+      | none => fail "not a `Rational::cmp_product(&x, &y, &z) = o` line"
+  let (x, y, z) ← match args with
+    | [x, y, z] => pure (x, y, z)
+    | _ => fail "cmp_product takes three arguments"
+  let x ← expect "x" (parseAzRat x)
+  let y ← expect "y" (parseAzRat y)
+  let z ← expect "z" (parseAzRat z)
+  let o ← expect "ordering" (parseOrdering res)
+  let z := if neg then -z else z
+  expectEq "cmp_product" (orderingName (AzRat.compareProduct x y z)) (orderingName o)
+
+/-- `Rational::cmp_products(&w, &x, &y, &z) = o` or `Rational::cmp_products_neg(&w, &x, &y, &z) = o`,
+for Malachite's `OrdProducts` and `OrdProductsNeg`, which compare `w · x` with `y · z` or with
+`-(y · z)`. -/
+def checkRatCmpProducts (line : String) : Verdict := do
+  let (neg, args, res) ← match functionCall line "Rational::cmp_products" with
+    | some (args, res) => pure (false, args, res)
+    | none => match functionCall line "Rational::cmp_products_neg" with
+      | some (args, res) => pure (true, args, res)
+      | none => fail "not a `Rational::cmp_products(&w, &x, &y, &z) = o` line"
+  let (w, x, y, z) ← match args with
+    | [w, x, y, z] => pure (w, x, y, z)
+    | _ => fail "cmp_products takes four arguments"
+  let w ← expect "w" (parseAzRat w)
+  let x ← expect "x" (parseAzRat x)
+  let y ← expect "y" (parseAzRat y)
+  let z ← expect "z" (parseAzRat z)
+  let o ← expect "ordering" (parseOrdering res)
+  let y := if neg then -y else y
+  expectEq "cmp_products" (orderingName (AzRat.compareProducts w x y z)) (orderingName o)
 
 /-- A rational compared with a natural or an integer, which both read as integers. -/
 def checkRatCmpInteger (line : String) : Verdict := do

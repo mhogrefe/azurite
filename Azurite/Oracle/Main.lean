@@ -251,6 +251,8 @@ def modes : List (String × Mode) := [
   ("az_rat_ceiling_log_base", mode checkRatCeilingLogBase),
   ("az_rat_checked_log_base", mode checkRatCheckedLogBase),
   ("az_rat_cmp", mode checkRatCmp),
+  ("az_rat_cmp_product", mode checkRatCmpProduct),
+  ("az_rat_cmp_products", mode checkRatCmpProducts),
   ("az_rat_cmp_integer", mode checkRatCmpInteger),
   ("az_rat_cmp_unsigned", mode checkRatCmpUnsigned),
   ("az_rat_cmp_signed", mode checkRatCmpSigned),
