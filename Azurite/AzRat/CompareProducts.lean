@@ -15,12 +15,13 @@ import Azurite.AzRat.CompareProduct
 `compareProducts w x y z` compares `w · x` with `y · z`.  With `w = ±nw/dw` and so on, the signs
 settle every case except nonzero products of the same sign, where the magnitudes compare as
 `nw · nx · dy · dz` against `ny · nz · dw · dx`.  As in `compareProduct`, that comparison of two
-four-factor products (`compareProductsMag`) multiplies only as a last resort: three factorwise
-screens (`screen4`) — `|w|, |x| ≤ 1` against `|y|, |z| ≥ 1` or the reverse, then the pairings
-matching `w` with `y` and `x` with `z`, and `w` with `z` and `x` with `y` — then the bit
-lengths with a surplus of four bits, and finally the products `nw · nx`, `dw · dx`, `ny · nz`,
-`dy · dz` handed to `AzNat.compareProducts`, whose own screens may still avoid the last two
-multiplications.  Neither `w · x` nor `y · z` is formed or reduced.
+four-factor products (`compareProductsMag`) multiplies only as a last resort: the bit lengths
+with a surplus of four bits (eight constant-time bit counts, before any comparison of limbs),
+then three factorwise screens (`screen4`) — `|w|, |x| ≤ 1` against `|y|, |z| ≥ 1` or the
+reverse, then the pairings matching `w` with `y` and `x` with `z`, and `w` with `z` and `x` with
+`y` — and finally the products `nw · nx`, `dw · dx`, `ny · nz`, `dy · dz` handed to
+`AzNat.compareProducts`, whose own screens may still avoid the last two multiplications.
+Neither `w · x` nor `y · z` is formed or reduced.
 
 Correctness: `Equiv/CompareProducts.lean` (`compareProducts_eq`).
 -/
@@ -38,6 +39,11 @@ def screen4 (o₁ o₂ o₃ o₄ : Ordering) : Option Ordering :=
 /-- Compare `nw · nx · dy · dz` with `ny · nz · dw · dx` (all positive), multiplying only as a
 last resort. -/
 def compareProductsMag (nw dw nx dx ny dy nz dz : AzNat) : Ordering :=
+  let s₁ := nw.size + nx.size + dy.size + dz.size
+  let s₂ := ny.size + nz.size + dw.size + dx.size
+  if s₂ + 4 ≤ s₁ then .gt
+  else if s₁ + 4 ≤ s₂ then .lt
+  else
   match screen4 (AzNat.compare nw dw) (AzNat.compare nx dx) (AzNat.compare dy ny)
       (AzNat.compare dz nz) with
   | some o => o
@@ -49,12 +55,7 @@ def compareProductsMag (nw dw nx dx ny dy nz dz : AzNat) : Ordering :=
   match screen4 (AzNat.compare nw nz) (AzNat.compare nx ny) (AzNat.compare dy dx)
       (AzNat.compare dz dw) with
   | some o => o
-  | none =>
-    let s₁ := nw.size + nx.size + dy.size + dz.size
-    let s₂ := ny.size + nz.size + dw.size + dx.size
-    if s₂ + 4 ≤ s₁ then .gt
-    else if s₁ + 4 ≤ s₂ then .lt
-    else AzNat.compareProducts (nw * nx) (dy * dz) (ny * nz) (dw * dx)
+  | none => AzNat.compareProducts (nw * nx) (dy * dz) (ny * nz) (dw * dx)
 
 /-- **Compare `w · x` with `y · z`**, multiplying only as a last resort. -/
 def compareProducts (w x y z : AzRat) : Ordering :=

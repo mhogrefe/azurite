@@ -98,7 +98,7 @@ theorem compareProducts_eq (a b c d : AzNat) :
   set y := b.toNat
   set z := c.toNat
   set w := d.toNat
-  split_ifs with hab hcd hcd' hp hp2 hp3 hq hq2 hq3 hs hs2
+  split_ifs with hab hcd hcd' hs hs2 hp hp2 hp3 hq hq2 hq3
   · -- both products are zero
     symm; rw [compare_Nat_eq_iff]
     rcases hab with h | h <;> rcases hcd with h' | h' <;> simp [h, h']
@@ -117,6 +117,10 @@ theorem compareProducts_eq (a b c d : AzNat) :
   all_goals have hy : 0 < y := Nat.pos_of_ne_zero hab.2
   all_goals have hz : 0 < z := Nat.pos_of_ne_zero hcd'.1
   all_goals have hw : 0 < w := Nat.pos_of_ne_zero hcd'.2
+  · symm; rw [compare_Nat_gt_iff]
+    exact mul_lt_mul_of_size hx hy hs
+  · symm; rw [compare_Nat_lt_iff]
+    exact mul_lt_mul_of_size hz hw hs2
   · exact (compare_mul_of_pairs hw hp).symm
   · rw [compare_Nat_eq_iff] at hp2
     rw [hp2, compare_mul_left hz]
@@ -128,9 +132,5 @@ theorem compareProducts_eq (a b c d : AzNat) :
     rw [hq2, mul_comm z w, compare_mul_left hw]
   · rw [compare_Nat_eq_iff] at hq3
     rw [hq3, mul_comm z w, compare_mul_right hz]
-  · symm; rw [compare_Nat_gt_iff]
-    exact mul_lt_mul_of_size hx hy hs
-  · symm; rw [compare_Nat_lt_iff]
-    exact mul_lt_mul_of_size hz hw hs2
 
 end Azurite.AzNat

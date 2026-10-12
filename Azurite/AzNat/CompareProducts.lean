@@ -21,11 +21,12 @@ so, as in `AzRat.cmp`, the products are formed only as a last resort, after chea
 decide most cases:
 
 1. a zero factor on either side;
-2. the pairing `(a, c), (b, d)`: if the two comparisons agree the products compare the same
+2. the bit lengths: `2^(size a + size b − 2) ≤ a · b < 2^(size a + size b)`, so a difference of
+   at least `2` between `size a + size b` and `size c + size d` decides — four constant-time
+   bit counts, so this comes before any comparison of limbs;
+3. the pairing `(a, c), (b, d)`: if the two comparisons agree the products compare the same
    way, and if one of them is an equality the other decides;
-3. the same for the other pairing `(a, d), (b, c)`;
-4. the bit lengths: `2^(size a + size b − 2) ≤ a · b < 2^(size a + size b)`, so a difference of
-   at least `2` between `size a + size b` and `size c + size d` decides;
+4. the same for the other pairing `(a, d), (b, c)`;
 5. the two multiplications and one comparison.
 
 Correctness: `Equiv/CompareProducts.lean` (`compareProducts_eq`).
@@ -38,22 +39,22 @@ def compareProducts (a b c d : AzNat) : Ordering :=
   if a = 0 ∨ b = 0 then (if c = 0 ∨ d = 0 then .eq else .lt)
   else if c = 0 ∨ d = 0 then .gt
   else
-    let ac := compare a c
-    let bd := compare b d
-    if ac == bd then ac
-    else if ac == .eq then bd
-    else if bd == .eq then ac
+    let sl := a.size + b.size
+    let sr := c.size + d.size
+    if sr + 2 ≤ sl then .gt
+    else if sl + 2 ≤ sr then .lt
     else
-      let ad := compare a d
-      let bc := compare b c
-      if ad == bc then ad
-      else if ad == .eq then bc
-      else if bc == .eq then ad
+      let ac := compare a c
+      let bd := compare b d
+      if ac == bd then ac
+      else if ac == .eq then bd
+      else if bd == .eq then ac
       else
-        let sl := a.size + b.size
-        let sr := c.size + d.size
-        if sr + 2 ≤ sl then .gt
-        else if sl + 2 ≤ sr then .lt
+        let ad := compare a d
+        let bc := compare b c
+        if ad == bc then ad
+        else if ad == .eq then bc
+        else if bc == .eq then ad
         else compare (a * b) (c * d)
 
 end Azurite.AzNat

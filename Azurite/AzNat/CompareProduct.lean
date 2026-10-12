@@ -17,11 +17,14 @@ is the last resort, after screens that decide most cases:
 
 1. a zero factor, or `c = 0`;
 2. a unit factor, `a = 1` or `b = 1`, which reduces to one comparison;
-3. a factor that is at least `c`: with the other factor at least `2`, `a · b ≥ 2c > c`;
-4. the bit lengths: `2^(size a + size b − 2) ≤ a · b < 2^(size a + size b)` against
+3. the bit lengths: `2^(size a + size b − 2) ≤ a · b < 2^(size a + size b)` against
    `2^(size c − 1) ≤ c < 2^(size c)`, so `size a + size b ≥ size c + 2` or
    `size a + size b + 1 ≤ size c` decides;
-5. the multiplication and one comparison.
+4. the multiplication and one comparison.
+
+A screen "some factor is at least `c`" would be redundant here: with both factors at least `2`,
+`c ≤ a` gives `size c ≤ size a` and `size b ≥ 2`, so the bit-length screen already answers
+`.gt`, at no cost.
 
 Correctness: `Equiv/CompareProduct.lean` (`compareProduct_eq`).
 -/
@@ -34,7 +37,6 @@ def compareProduct (a b c : AzNat) : Ordering :=
   else if c = 0 then .gt
   else if a = 1 then compare b c
   else if b = 1 then compare a c
-  else if c ≤ a ∨ c ≤ b then .gt
   else
     let s := a.size + b.size
     if c.size + 2 ≤ s then .gt
@@ -60,7 +62,7 @@ private def C (a b c : AzNat) : Ordering := compareProduct a b c
 #guard C (N "3") (N "7") (N "21") == .eq
 #guard C (N "3") (N "7") (N "20") == .gt
 #guard C (N "3") (N "7") (N "22") == .lt
-#guard C (N "3") (N "7") (N "5") == .gt                 -- a factor at least `c`
+#guard C (N "3") (N "7") (N "5") == .gt                 -- decided by the bit lengths
 #guard C (N "3") (N "7") (N "100") == .lt                -- the bit lengths
 #guard C (N "255") (N "255") (N "65025") == .eq           -- the last resort
 #guard C (N "255") (N "255") (N "65024") == .gt

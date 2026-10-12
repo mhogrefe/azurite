@@ -25,12 +25,12 @@ theorem compareProduct_eq (a b c : AzNat) :
   unfold compareProduct
   have h1 : ∀ u : AzNat, u = 1 ↔ u.toNat = 1 :=
     fun u => ⟨fun h => by rw [h, toNat_one], fun h => toNat_injective (h.trans toNat_one.symm)⟩
-  simp only [eq_zero_iff_toNat, h1, compare_eq_compare_toNat, le_iff_toNat_le, ← size_toNat,
+  simp only [eq_zero_iff_toNat, h1, compare_eq_compare_toNat, ← size_toNat,
     toNat_mul]
   set x := a.toNat
   set y := b.toNat
   set z := c.toNat
-  split_ifs with hab hc hc' ha hb hge hs hs2
+  split_ifs with hab hc hc' ha hb hs hs2
   · symm; rw [compare_Nat_eq_iff]
     rcases hab with h | h <;> simp [h, hc]
   · symm; rw [compare_Nat_lt_iff]
@@ -45,13 +45,6 @@ theorem compareProduct_eq (a b c : AzNat) :
   all_goals have hx : 2 ≤ x := by omega
   all_goals have hy : 2 ≤ y := by omega
   all_goals have hz : 0 < z := Nat.pos_of_ne_zero hc'
-  · symm; rw [compare_Nat_gt_iff]
-    rcases hge with h | h
-    · calc z < 2 * z := by omega
-        _ ≤ y * x := Nat.mul_le_mul (by omega) h
-        _ = x * y := mul_comm _ _
-    · calc z < 2 * z := by omega
-        _ ≤ x * y := Nat.mul_le_mul (by omega) h
   · symm; rw [compare_Nat_gt_iff]
     calc z < 2 ^ z.size := Nat.lt_size_self z
       _ ≤ 2 ^ (x.size - 1 + (y.size - 1)) := by

@@ -122,6 +122,17 @@ theorem compareProductsMag_eq (nw dw nx dx ny dy nz dz : AzNat) (hnw : 0 < nw.to
           (ny.toNat * nz.toNat * (dw.toNat * dx.toNat)) := by
   unfold compareProductsMag
   simp only [AzNat.compare_eq_compare_toNat, ← AzNat.size_toNat]
+  split_ifs with hs hs'
+  · symm; rw [compare_Nat_gt_iff]
+    have := mul4_lt_of_size (a₁ := ny.toNat) (a₂ := nz.toNat) (a₃ := dw.toNat)
+      (a₄ := dx.toNat) hnw hnx hdy hdz (by omega)
+    rw [mul_assoc (ny.toNat * nz.toNat), mul_assoc (nw.toNat * nx.toNat)] at this
+    exact this
+  · symm; rw [compare_Nat_lt_iff]
+    have := mul4_lt_of_size (a₁ := nw.toNat) (a₂ := nx.toNat) (a₃ := dy.toNat)
+      (a₄ := dz.toNat) hny hnz hdw hdx (by omega)
+    rw [mul_assoc (ny.toNat * nz.toNat), mul_assoc (nw.toNat * nx.toNat)] at this
+    exact this
   split
   · rename_i o h
     rw [← screen4_spec hnw hnx hdy hdz hdw hdx hny hnz h]
@@ -134,19 +145,8 @@ theorem compareProductsMag_eq (nw dw nx dx ny dy nz dz : AzNat) (hnw : 0 < nw.to
       · rename_i o h
         rw [← screen4_spec hnw hnx hdy hdz hnz hny hdx hdw h]
         congr 1 <;> ring
-      · split_ifs with hs hs'
-        · symm; rw [compare_Nat_gt_iff]
-          have := mul4_lt_of_size (a₁ := ny.toNat) (a₂ := nz.toNat) (a₃ := dw.toNat)
-            (a₄ := dx.toNat) hnw hnx hdy hdz (by omega)
-          rw [mul_assoc (ny.toNat * nz.toNat), mul_assoc (nw.toNat * nx.toNat)] at this
-          exact this
-        · symm; rw [compare_Nat_lt_iff]
-          have := mul4_lt_of_size (a₁ := nw.toNat) (a₂ := nx.toNat) (a₃ := dy.toNat)
-            (a₄ := dz.toNat) hny hnz hdw hdx (by omega)
-          rw [mul_assoc (ny.toNat * nz.toNat), mul_assoc (nw.toNat * nx.toNat)] at this
-          exact this
-        · rw [AzNat.compareProducts_eq, AzNat.toNat_mul, AzNat.toNat_mul, AzNat.toNat_mul,
-            AzNat.toNat_mul]
+      · rw [AzNat.compareProducts_eq, AzNat.toNat_mul, AzNat.toNat_mul, AzNat.toNat_mul,
+          AzNat.toNat_mul]
 
 /-- **Correctness of `compareProducts`.** -/
 theorem compareProducts_eq (w x y z : AzRat) :

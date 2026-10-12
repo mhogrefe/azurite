@@ -22,11 +22,12 @@ import Azurite.AzNat.CompareProducts
 the magnitudes compare as `nx · ny · dz` against `nz · dx · dy`.  That comparison of two
 three-factor products (`compareProductMag`) multiplies only as a last resort:
 
-1. three factorwise screens (`screen3`), each pairing the three factors of one side with the
+1. the bit lengths, `2^(s₁+s₂+s₃−3) ≤ a₁ a₂ a₃ < 2^(s₁+s₂+s₃)`, a surplus of three bits
+   deciding — six constant-time bit counts, before any comparison of limbs;
+2. three factorwise screens (`screen3`), each pairing the three factors of one side with the
    three of the other and deciding when the three comparisons all point one way: `(nx, dx)`,
    `(ny, dy)`, `(dz, nz)` — that is, `|x| ≤ 1`, `|y| ≤ 1`, `|z| ≥ 1` or the reverse — then
    `(nx, nz)`, `(ny, dy)`, `(dz, dx)` and `(nx, dx)`, `(ny, nz)`, `(dz, dy)`;
-2. the bit lengths, `2^(s₁+s₂+s₃−3) ≤ a₁ a₂ a₃ < 2^(s₁+s₂+s₃)`, a surplus of three bits deciding;
 3. the products `nx · ny` and `dx · dy`, handed with `dz` and `nz` to `AzNat.compareProducts`,
    whose own screens may still avoid the last two multiplications.
 
@@ -48,6 +49,11 @@ def screen3 (o₁ o₂ o₃ : Ordering) : Option Ordering :=
 /-- Compare `nx · ny · dz` with `nz · dx · dy` (all positive), multiplying only as a last
 resort. -/
 def compareProductMag (nx dx ny dy nz dz : AzNat) : Ordering :=
+  let s₁ := nx.size + ny.size + dz.size
+  let s₂ := nz.size + dx.size + dy.size
+  if s₂ + 3 ≤ s₁ then .gt
+  else if s₁ + 3 ≤ s₂ then .lt
+  else
   match screen3 (AzNat.compare nx dx) (AzNat.compare ny dy) (AzNat.compare dz nz) with
   | some o => o
   | none =>
@@ -56,12 +62,7 @@ def compareProductMag (nx dx ny dy nz dz : AzNat) : Ordering :=
   | none =>
   match screen3 (AzNat.compare nx dx) (AzNat.compare ny nz) (AzNat.compare dz dy) with
   | some o => o
-  | none =>
-    let s₁ := nx.size + ny.size + dz.size
-    let s₂ := nz.size + dx.size + dy.size
-    if s₂ + 3 ≤ s₁ then .gt
-    else if s₁ + 3 ≤ s₂ then .lt
-    else AzNat.compareProducts (nx * ny) dz (dx * dy) nz
+  | none => AzNat.compareProducts (nx * ny) dz (dx * dy) nz
 
 /-- **Compare `x · y` with `z`**, multiplying only as a last resort. -/
 def compareProduct (x y z : AzRat) : Ordering :=

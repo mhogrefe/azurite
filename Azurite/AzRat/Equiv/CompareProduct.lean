@@ -107,6 +107,17 @@ theorem compareProductMag_eq (nx dx ny dy nz dz : AzNat) (hnx : 0 < nx.toNat)
       = Ord.compare (nx.toNat * ny.toNat * dz.toNat) (nz.toNat * (dx.toNat * dy.toNat)) := by
   unfold compareProductMag
   simp only [AzNat.compare_eq_compare_toNat, ← AzNat.size_toNat]
+  split_ifs with hs hs'
+  · symm; rw [compare_Nat_gt_iff]
+    have := mul3_lt_of_size (a₁ := nz.toNat) (a₂ := dx.toNat) (a₃ := dy.toNat)
+      hnx hny hdz (by omega)
+    rw [mul_assoc nz.toNat] at this
+    exact this
+  · symm; rw [compare_Nat_lt_iff]
+    have := mul3_lt_of_size (a₁ := nx.toNat) (a₂ := ny.toNat) (a₃ := dz.toNat)
+      hnz hdx hdy (by omega)
+    rw [mul_assoc nz.toNat] at this
+    exact this
   split
   · rename_i o h
     rw [← screen3_spec hnx hny hdz hdx hdy hnz h]
@@ -122,19 +133,8 @@ theorem compareProductMag_eq (nx dx ny dy nz dz : AzNat) (hnx : 0 < nx.toNat)
         rw [← screen3_spec hnx hny hdz hdx hnz hdy h]
         congr 1
         ring
-      · split_ifs with hs hs'
-        · symm; rw [compare_Nat_gt_iff]
-          have := mul3_lt_of_size (a₁ := nz.toNat) (a₂ := dx.toNat) (a₃ := dy.toNat)
-            hnx hny hdz (by omega)
-          rw [mul_assoc nz.toNat] at this
-          exact this
-        · symm; rw [compare_Nat_lt_iff]
-          have := mul3_lt_of_size (a₁ := nx.toNat) (a₂ := ny.toNat) (a₃ := dz.toNat)
-            hnz hdx hdy (by omega)
-          rw [mul_assoc nz.toNat] at this
-          exact this
-        · rw [AzNat.compareProducts_eq, AzNat.toNat_mul, AzNat.toNat_mul,
-            mul_comm (dx.toNat * dy.toNat)]
+      · rw [AzNat.compareProducts_eq, AzNat.toNat_mul, AzNat.toNat_mul,
+          mul_comm (dx.toNat * dy.toNat)]
 
 /-! ### The rational layer -/
 
