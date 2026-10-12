@@ -26,6 +26,9 @@ import Azurite.AzNat.Lucas
 import Azurite.AzNat.Primorial
 import Azurite.AzNat.Bell
 import Azurite.AzNat.Landau
+import Azurite.AzVector.DotSign
+import Azurite.AzVector.DotSignInt
+import Azurite.AzVector.DotSignRat
 
 /-!
 # More checks for Malachite's `Natural`
@@ -686,6 +689,69 @@ def checkBellNumbersPrefix : String → Verdict :=
 `landau_function_prefix(n)`. -/
 def checkLandauFunctionPrefix : String → Verdict :=
   checkIndexedList "landau_function_prefix" AzNat.landauFunctionPrefix
+
+/-! ### Vectors -/
+
+/-- The elements of a vector of naturals as `stripRef` leaves Malachite's `(a, b, …)`: `a, b, …`,
+or the empty string for the 0-dimensional vector. -/
+def parseNatVectorBody (s : String) : Option (List AzNat) :=
+  if (trim s).isEmpty then some [] else (splitTopLevel s ',').mapM fun x => parseAzNat (trim x)
+
+/-- `v.dot_sign(w) = o`, for Malachite's `NaturalVector::dot_sign`. -/
+def checkNatDotSign (line : String) : Verdict := do
+  let (v, args, res) ← expect "a `v.dot_sign(w) = o` line" (methodCall line "dot_sign")
+  let w ← match args with
+    | [w] => pure w
+    | _ => fail "dot_sign takes one argument"
+  let vs ← expect "v" (parseNatVectorBody v)
+  let ws ← expect "w" (parseNatVectorBody w)
+  let o ← expect "ordering" (parseOrdering res)
+  if h : ws.length = vs.length then
+    let vv : AzVector AzNat vs.length := AzVector.ofList vs rfl
+    let wv : AzVector AzNat vs.length := AzVector.ofList ws h
+    expectEq "dot_sign" (orderingName (AzNat.dotSign vv wv)) (orderingName o)
+  else
+    disagree "the vectors have different dimensions"
+
+/-- The elements of a vector of integers as `stripRef` leaves Malachite's `(a, b, …)`. -/
+def parseIntVectorBody (s : String) : Option (List AzInt) :=
+  if (trim s).isEmpty then some [] else (splitTopLevel s ',').mapM fun x => parseAzInt (trim x)
+
+/-- `v.dot_sign(w) = o`, for Malachite's `IntegerVector::dot_sign`. -/
+def checkIntDotSign (line : String) : Verdict := do
+  let (v, args, res) ← expect "a `v.dot_sign(w) = o` line" (methodCall line "dot_sign")
+  let w ← match args with
+    | [w] => pure w
+    | _ => fail "dot_sign takes one argument"
+  let vs ← expect "v" (parseIntVectorBody v)
+  let ws ← expect "w" (parseIntVectorBody w)
+  let o ← expect "ordering" (parseOrdering res)
+  if h : ws.length = vs.length then
+    let vv : AzVector AzInt vs.length := AzVector.ofList vs rfl
+    let wv : AzVector AzInt vs.length := AzVector.ofList ws h
+    expectEq "dot_sign" (orderingName (AzInt.dotSign vv wv)) (orderingName o)
+  else
+    disagree "the vectors have different dimensions"
+
+/-- The elements of a vector of rationals as `stripRef` leaves Malachite's `(a, b, …)`. -/
+def parseRatVectorBody (s : String) : Option (List AzRat) :=
+  if (trim s).isEmpty then some [] else (splitTopLevel s ',').mapM fun x => parseAzRat (trim x)
+
+/-- `v.dot_sign(w) = o`, for Malachite's `RationalVector::dot_sign`. -/
+def checkRatDotSign (line : String) : Verdict := do
+  let (v, args, res) ← expect "a `v.dot_sign(w) = o` line" (methodCall line "dot_sign")
+  let w ← match args with
+    | [w] => pure w
+    | _ => fail "dot_sign takes one argument"
+  let vs ← expect "v" (parseRatVectorBody v)
+  let ws ← expect "w" (parseRatVectorBody w)
+  let o ← expect "ordering" (parseOrdering res)
+  if h : ws.length = vs.length then
+    let vv : AzVector AzRat vs.length := AzVector.ofList vs rfl
+    let wv : AzVector AzRat vs.length := AzVector.ofList ws h
+    expectEq "dot_sign" (orderingName (AzRat.dotSign vv wv)) (orderingName o)
+  else
+    disagree "the vectors have different dimensions"
 
 /-! ### Sums and products -/
 
