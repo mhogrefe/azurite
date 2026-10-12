@@ -51,6 +51,8 @@ import Azurite.AzNat.ClearBit
 import Azurite.AzNat.GetBits
 import Azurite.AzNat.IsSquare
 import Azurite.AzNat.IsPrime
+import Azurite.AzNat.CompareProduct
+import Azurite.AzNat.CompareProducts
 
 /-!
 # Checks for Malachite's `Natural` against `AzNat`
@@ -774,6 +776,35 @@ def checkCmpDouble (line : String) : Verdict := do
   let y ← expect "y" (parseAzNat y)
   let o ← expect "ordering" (parseOrdering res)
   expectEq "cmp_double" (orderingName (AzNat.cmpDouble x y)) (orderingName o)
+
+/-- `Natural::cmp_product(&a, &b, &c) = o`, for Malachite's `OrdProduct::cmp_product`, which
+compares `a · b` with `c`. -/
+def checkCmpProduct (line : String) : Verdict := do
+  let (args, res) ← expect "a `Natural::cmp_product(&a, &b, &c) = o` line"
+    (functionCall line "Natural::cmp_product")
+  let (a, b, c) ← match args with
+    | [a, b, c] => pure (a, b, c)
+    | _ => fail "cmp_product takes three arguments"
+  let a ← expect "a" (parseAzNat a)
+  let b ← expect "b" (parseAzNat b)
+  let c ← expect "c" (parseAzNat c)
+  let o ← expect "ordering" (parseOrdering res)
+  expectEq "cmp_product" (orderingName (AzNat.compareProduct a b c)) (orderingName o)
+
+/-- `Natural::cmp_products(&a, &b, &c, &d) = o`, for Malachite's `OrdProducts::cmp_products`,
+which compares `a · b` with `c · d`. -/
+def checkCmpProducts (line : String) : Verdict := do
+  let (args, res) ← expect "a `Natural::cmp_products(&a, &b, &c, &d) = o` line"
+    (functionCall line "Natural::cmp_products")
+  let (a, b, c, d) ← match args with
+    | [a, b, c, d] => pure (a, b, c, d)
+    | _ => fail "cmp_products takes four arguments"
+  let a ← expect "a" (parseAzNat a)
+  let b ← expect "b" (parseAzNat b)
+  let c ← expect "c" (parseAzNat c)
+  let d ← expect "d" (parseAzNat d)
+  let o ← expect "ordering" (parseOrdering res)
+  expectEq "cmp_products" (orderingName (AzNat.compareProducts a b c d)) (orderingName o)
 
 /-! ### Conversion -/
 

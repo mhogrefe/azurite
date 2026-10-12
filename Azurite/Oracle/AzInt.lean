@@ -29,6 +29,8 @@ import Azurite.AzInt.Compare
 import Azurite.AzInt.Conversion
 import Azurite.AzInt.ToString
 import Azurite.AzInt.SumProduct
+import Azurite.AzInt.CompareProduct
+import Azurite.AzInt.CompareProducts
 
 /-!
 # Checks for Malachite's `Integer` against `AzInt`
@@ -380,6 +382,44 @@ def checkIntCmp (line : String) : Verdict := do
   let x ← expect "x" (parseAzInt x)
   let y ← expect "y" (parseAzInt y)
   expectEq "cmp" (orderingName (AzInt.compare x y)) (orderingName o)
+
+/-- `Integer::cmp_product(&a, &b, &c) = o` or `Integer::cmp_product_neg(&a, &b, &c) = o`, for
+Malachite's `OrdProduct` and `OrdProductNeg`, which compare `a · b` with `c` or with `-c`. -/
+def checkIntCmpProduct (line : String) : Verdict := do
+  let (neg, args, res) ← match functionCall line "Integer::cmp_product" with
+    | some (args, res) => pure (false, args, res)
+    | none => match functionCall line "Integer::cmp_product_neg" with
+      | some (args, res) => pure (true, args, res)
+      | none => fail "not an `Integer::cmp_product(&a, &b, &c) = o` line"
+  let (a, b, c) ← match args with
+    | [a, b, c] => pure (a, b, c)
+    | _ => fail "cmp_product takes three arguments"
+  let a ← expect "a" (parseAzInt a)
+  let b ← expect "b" (parseAzInt b)
+  let c ← expect "c" (parseAzInt c)
+  let o ← expect "ordering" (parseOrdering res)
+  let c := if neg then -c else c
+  expectEq "cmp_product" (orderingName (AzInt.compareProduct a b c)) (orderingName o)
+
+/-- `Integer::cmp_products(&a, &b, &c, &d) = o` or `Integer::cmp_products_neg(&a, &b, &c, &d) = o`,
+for Malachite's `OrdProducts` and `OrdProductsNeg`, which compare `a · b` with `c · d` or with
+`-(c · d)`. -/
+def checkIntCmpProducts (line : String) : Verdict := do
+  let (neg, args, res) ← match functionCall line "Integer::cmp_products" with
+    | some (args, res) => pure (false, args, res)
+    | none => match functionCall line "Integer::cmp_products_neg" with
+      | some (args, res) => pure (true, args, res)
+      | none => fail "not an `Integer::cmp_products(&a, &b, &c, &d) = o` line"
+  let (a, b, c, d) ← match args with
+    | [a, b, c, d] => pure (a, b, c, d)
+    | _ => fail "cmp_products takes four arguments"
+  let a ← expect "a" (parseAzInt a)
+  let b ← expect "b" (parseAzInt b)
+  let c ← expect "c" (parseAzInt c)
+  let d ← expect "d" (parseAzInt d)
+  let o ← expect "ordering" (parseOrdering res)
+  let c := if neg then -c else c
+  expectEq "cmp_products" (orderingName (AzInt.compareProducts a b c d)) (orderingName o)
 
 /-- An integer compared with a natural. -/
 def checkIntCmpNatural (line : String) : Verdict := do
