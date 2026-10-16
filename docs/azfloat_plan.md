@@ -436,3 +436,20 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   notes: `AzRat.parse` reads fractions, not decimals (`"-3/2"`, not `"-1.5"`);
   `List.filterMap_cons_some` takes the `f a = some b` proof as its only explicit argument.
   Not timed.
+
+* **2026-10-16 — square root of a rational.**  `AzFloat/SqrtRat.lean`: `sqrtRatPrecRound q p
+  mode : AzFloat × Ordering`.  First principles, mirroring `sqrtCore`: `e = ⌊log₂ (n/d)⌋` from
+  the sizes and one `normalizedCompare` (as `AzRat.floorLogBase2Abs`, recomputed in `AzInt` so no
+  `ℤ → AzInt` conversion is needed), `h = ⌊e/2⌋` by `AzInt.shiftRight 1`, half shift
+  `k = p − 1 − h` applied as `2k` to `n` (k ≥ 0) or `d` (k < 0), so `√(A/D) ∈ [2^(p−1), 2^p)`;
+  floor `s = AzNat.sqrt (A / D)` (one division; `⌊√⌊x⌋⌋ = ⌊√x⌋`), exactness `s²·D = A` and
+  midpoint `4A ⋚ (2s+1)²·D` through `AzNat.compareProduct` (the swap of the product comparison
+  gives the midpoint tag), `roundFromFloor`, `normalizeCarry` at exponent `h + 1`.  No Ziv loop
+  and no reduction of the fraction.  `Equiv/SqrtRat.lean`: `roundFromFloor_normalizeCarry_eq`
+  (the tail of `sqrtCore_eq`, factored out as a reusable lemma: a `roundFromFloor` result
+  normalized at exponent `E` is `roundVal` of `y · 2^(E − p)`), `floorLog2_bounds`,
+  `toInt_shiftRight_one`, `sqrtRatCore_eq`, `sqrtRatPrecRound_eq = roundVal p mode (Spec.sqrt q)`.
+  Tests include agreement with `sqrtPrecRound` on exactly representable rationals in all modes.
+  `rsqrtRatPrecRound q p mode` (same files, same day): `1/√(n/d) = √(d/n)` exactly, so it is
+  `sqrtRatCore d n` with `0 ↦ +∞`; `rsqrtRatPrecRound_eq` via `Real.sqrt_inv` and `inv_div`.
+  Not timed.

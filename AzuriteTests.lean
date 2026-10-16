@@ -29,6 +29,7 @@ import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sqrt
+import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzNat.Tests.CompareDouble

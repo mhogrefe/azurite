@@ -73,6 +73,7 @@ import Azurite.AzFloat.Equiv.Rsqrt
 import Azurite.AzFloat.Equiv.Sci
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Sqrt
+import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
@@ -91,6 +92,7 @@ import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sqrt
+import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.Ziv
