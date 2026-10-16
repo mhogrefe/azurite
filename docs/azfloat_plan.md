@@ -453,3 +453,149 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   `rsqrtRatPrecRound q p mode` (same files, same day): `1/√(n/d) = √(d/n)` exactly, so it is
   `sqrtRatCore d n` with `0 ↦ +∞`; `rsqrtRatPrecRound_eq` via `Real.sqrt_inv` and `inv_div`.
   Not timed.
+
+## MCA Chapter 4 ledger (elementary and special functions)
+
+Theory first, algorithms later (user instruction 2026-10-16): each chunk of MCA Ch. 4 is digested
+into Lean theorem statements (proven where feasible) before anything is implemented.
+
+* **§4.1 Introduction (2026-10-16).**  No theorems.  Conventions adopted for this chapter: binary
+  radix; `n` is the target *relative* precision in bits (absolute error `2^(−n)` for values near
+  `1`); rounding is not analysed in Ch. 4 — the Ch. 3 machinery (`roundVal`, Ziv) supplies correct
+  rounding on top of the approximations.  Methods announced: Newton (§4.2, inverse functions,
+  e.g. `exp` from `ln`), power series (§4.4), asymptotic expansions (§4.5), continued fractions
+  (§4.6), recurrences (§4.7), AGM (§4.8), binary splitting (§4.9), contour integration (§4.10).
+
+* **§4.2 Newton's method via linearization (2026-10-16).**  States: Taylor at `x₀` (4.1), the
+  step `x₁ = x₀ − f(x₀)/f'(x₀)` with `x₁ − ζ = O(|x₀ − ζ|²)`, halving `|x₁ − ζ| ≤ |x₀ − ζ|/2` near
+  the zero, the iteration (4.2), order of convergence at least two (`|e_{n+1}| ≤ K|e_n|²`), and
+  (4.3) `e_{n+1} = f''(ζ)/(2f'(ζ)) e_n² + O(|e_n|³)` for `f ∈ C³`.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/Newton.lean` (namespace `Azurite.BZ`, all proven): Taylor
+  with Lagrange remainder to orders 1–3 between any two points in either order (`uIcc`/`uIoo`,
+  through the Cauchy mean value theorem rather than Mathlib's one-directional
+  `taylor_mean_remainder_lagrange`), `newtonStep`/`newtonSeq`, `newtonStep_sub_root` (= (4.1)
+  rearranged, exact), `abs_newtonStep_sub_root_le` (`K = M/(2m)` from `|f''| ≤ M`, `|f'| ≥ m` on
+  the interval of radius `r` about `ζ`), `newtonSeq_bounds` (stay in the interval, halve,
+  `K|e_n| ≤ (K|e_0|)^(2^n)` once `K|e_0| ≤ 1/2`), `abs_newtonSeq_sub_root_le`
+  (`|e_n| ≤ |e_0|/2^n`), `tendsto_newtonSeq`, and (4.3) as the explicit bound
+  `newtonStep_sub_root_cubic`: `|e₁ − f''(ζ)/(2f'(ζ)) e₀²| ≤ (7M₃/(6m) + M₂²/(2m²)) |e₀|³`
+  (the `O(·)` form follows; not stated separately).  Hypotheses are explicit `HasDerivAt`
+  derivatives, so the later concrete functions (`1/x`, `1/√x`, …) plug in directly.  Multi-
+  variable Newton (Jacobian) not formalized — not needed for the planned scalar iterations.
+  Lean notes: build `HasDerivAt` terms with a type ascription and `congr_deriv`, not `convert`
+  (Pi-operation function shapes don't match syntactically); after `field_simp`, substitute the
+  Taylor identities with `generalize … at` + `subst` before `ring`.
+
+* **§4.2.1 Newton's method for inverse roots (2026-10-16).**  States: for `f(x) = y − x^(−m)`,
+  `f'(x) = m x^(−(m+1))`, Newton's step is `x + x(1 − xᵐy)/m` (4.4), division-free apart from
+  the integer `m`, converging to `y^(−1/m)` from a close enough start; `m = 1, 2` are the
+  reciprocal and reciprocal square root (§4.2.2–4.2.3).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/InverseRoot.lean` (all proven): `inverseRootFun`/`'`/`''`
+  (as `y − 1/xᵐ`, `m/x^(m+1)`, `−m(m+1)/x^(m+2)`, `HasDerivAt` for `x ≠ 0`), `inverseRootStep`,
+  `inverseRootSeq`, `newtonStep_inverseRootFun` ((4.4) = Newton's step), `rpow_neg_inv_pow_mul`
+  and `inverseRootFun_root` (the zero), `inverseRootStep_rel` (relative-error form, the tool
+  for the exact error recurrences of the next two subsections), `exists_tendsto_inverseRootSeq`
+  (local convergence from the generic `newtonSeq_bounds`/`tendsto_newtonSeq` with `r = ζ/2`,
+  `M = m(m+1)/(ζ/2)^(m+2)`, `m_lo = m/(3ζ/2)^(m+1)`, `δ = min(r, 1/(2K))`; the iterates never
+  vanish, so they are Newton's).  Lean notes: `HasDerivAt.inv` needs
+  `Mathlib.Analysis.Calculus.Deriv.Inv` (otherwise field notation reports a missing
+  `HasFDerivAtFilter.inv`); `eq_inv_of_mul_eq_one_left` for `a * b = 1 → a = b⁻¹`.
+
+* **§4.2.2 Newton's method for reciprocals (2026-10-16).**  States: `m = 1` gives (4.5)
+  `x_{j+1} = x_j + x_j(1 − x_j y)`; with `u_j = 1 − x_j y`, `u_{j+1} = u_j²` (4.6), `u_j = u_0^(2^j)`
+  (4.7); convergence iff `|u_0| < 1` iff `x_0 y ∈ (0, 2)`; bits double per step so the iteration
+  count is predictable; hardware use with `y ∈ [1/2, 1)` and a table start.  Computational
+  issues: (4.8) `x_j(2 − x_j y)` is mathematically but not computationally equivalent — in (4.5)
+  the correction product needs only `n/2` bits, in (4.8) the product needs `n`; rule: separate
+  terms of different order (exception: Schönhage's `3M(n)/2` reciprocal, §3.8).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/Reciprocal.lean` (all proven): `reciprocalStep`/`Seq`
+  (computable, real-valued), `recipError`, (4.6), (4.7), `reciprocalSeq_sub_inv`
+  (`x_j − 1/y = −u_0^(2^j)/y`), `abs_recipError_lt_one_iff`, `tendsto_recipError_iff`,
+  `tendsto_reciprocalSeq_iff` (both directions; the "only if" via `|u_0|^(2^j) ≥ 1`),
+  `abs_recipError_reciprocalSeq_le` (`2^(−k)` → `2^(−k·2^j)`), `abs_recipError_reciprocalSeq_le_of_le`
+  (`n ≤ k·2^j`), `recipError_one_le_half`; the precision remark as exact identities for a product
+  with relative error `θ`: `recipError_reciprocalStep_perturbed` (`u² − θ·u·(xy)`) vs
+  `recipError_reciprocalStep'_perturbed` (`u² − θ(1 − u²)`), and the bound `3ε²` when
+  `|u|, |θ| ≤ ε ≤ 1`.  Not formalized: the table-lookup start (no table yet), §3.4.1's concrete
+  algorithm (already implemented exactly, `divCores`), the §3.8 exception.  Design note for the
+  implementation phase: Newton reciprocal steps must compute `x(1 − xy)` at half precision and
+  add it at full precision.
+
+* **§4.2.3 Newton's method for (reciprocal) square roots (2026-10-16).**  States: `m = 2` gives
+  (4.9) `x_{j+1} = x_j + x_j(1 − x_j² y)/2` → `y^(−1/2)`, division-free except by 2 (Ex. 3.15);
+  `y^(1/2) = y · y^(−1/2)` in one multiplication; Newton on `x² − y` gives Heron (4.10)
+  `(x_j + y/x_j)/2`, which divides by `x_j` each step, so (4.9) is expected to be cheaper
+  (division vs multiplication cost); both second order; see §3.5.1, §3.8.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/InverseSqrt.lean` (all proven; goes beyond the text with the
+  exact error recurrence): `rsqrtStep`/`rsqrtSeq`, `rsqrtError u = 1 − x²y`,
+  `rsqrtError_rsqrtStep` (`u' = u²(3 + u)/4`), `|u| ≤ 1 ⇒ |u'| ≤ u²`, `|u_j| ≤ |u_0|^(2^j)`,
+  `rsqrtStep_rel` (`ε' = −(3ε² + ε³)/2`, via `inverseRootStep_rel`), `rsqrtStep_pos`,
+  `abs_rsqrtError_lt_one_iff` (`x_0² y ∈ (0, 2)`), `rsqrtSeq_pos`, `tendsto_rsqrtSeq` (basin:
+  every `x_0 > 0` with `x_0² y < 2`), `inv_sqrt_eq_rpow`; `sqrt_eq_mul_inv_sqrt`,
+  `mul_inv_sqrt_rel` (the final multiplication preserves the relative error exactly); Heron:
+  `heronStep`/`heronSeq`, `newtonStep_sq_sub`, `heronStep_sub_sqrt` (`(x − √y)²/(2x)`),
+  `sqrt_le_heronStep`, `heronStep_le`, `heronStep_sub_sqrt_le`, `tendsto_heronSeq` (from every
+  `x_0 > 0`: one step lands above `√y`, then the error halves).  Not formalized: the cost
+  comparison (no cost model for ℝ-level iterations).  Implementation note: the library already
+  has exact `rsqrtPrecRound`/`sqrtPrecRound` (§3.5); (4.9) is the candidate for a Newton-based
+  high-precision variant later, with the correction `x(1 − x²y)/2` at half precision as for
+  reciprocals.
+
+* **§4.2.4 Newton's method for formal power series (2026-10-16).**  States (complementary view,
+  not needed for function evaluation; applications to Bernoulli numbers, Ex. 4.41–4.42): Newton
+  applies to series with `ord A = 0`; (4.5) with `y = 1 − z`, `x_0 = 1` converges quadratically to
+  `∑ zⁿ`, where quadratic means `ord e_j ~ 2^j`; `u_0 = z`, `u_j = z^(2^j)`,
+  `x_j = (1 − u_j)/(1 − z)`; formal derivative `∑ j a_j z^(j−1)` and integral `∑ a_j/(j+1) z^(j+1)`
+  have no integer analogue (Ex. 4.1).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/FormalPowerSeries.lean` (all proven): `ringReciprocalStep`/
+  `Seq`/`ringRecipError` with (4.6), (4.7) over any `CommRing` (the ℝ version of §4.2.2 is the
+  instance, `reciprocalStep_eq_ringReciprocalStep`); `ringReciprocalSeq_one_sub` (`x_j = ∑_{n<2^j} zⁿ`,
+  by induction `x_{j+1} = x_j (1 + z^(2^j))` + `Finset.sum_range_add`); in `PowerSeries R`:
+  `powerSeriesReciprocalSeq_sub_inv` (cancel the unit `1 − X`, inverse `mk 1` from
+  `mk_one_mul_one_sub_eq_one`), `order_powerSeriesReciprocalSeq_sub_inv` (`= 2^j` exactly, via
+  `order_eq_nat` + `coeff_X_pow_mul'`, needs `Nontrivial R`); `coeff_derivative'` (Mathlib's
+  `PowerSeries.derivative`, a `Derivation`, matches the text); own `integral` (Mathlib has none)
+  with `derivative_integral`, `integral_derivative` for `[Field K] [CharZero K]`.  Not formalized:
+  the Bernoulli-number application (exercises not supplied), Exercise 4.1.  Lean notes: `order_mul`
+  needs `NoZeroDivisors` — use `order_eq_nat` directly; `mk_one_mul_one_sub_eq_one` takes the ring
+  explicitly; `derivative` has the ring implicit (`derivative A`, notation `d⁄dX` is scoped).
+
+* **§4.2.5 Newton's method for functional inverses (2026-10-16).**  States: for `g` with inverse
+  `h`, Newton on `f = y − g` gives `x_{j+1} = x_j + (y − g(x_j))/g'(x_j)`, evaluating only `g`,
+  `g'`: `h` costs the same order as `g` when `g'` and division cost no more than `g`.  Example
+  `g = ln`: (4.11) `x_{j+1} = x_j + x_j(y − ln x_j)` and Algorithm 4.1 LiftExp (`t = ln x_j` to
+  `n` bits, `u = y − t`, `v = x_j u` to `n/2` bits, `x_{j+1} = x_j + v`).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/FunctionalInverse.lean` (all proven): `inverseStep`/`Seq`,
+  `inverseStep_eq_newtonStep` (`a/(−b) = −(a/b)` makes this unconditional), `inverseStep_root`,
+  `tendsto_inverseSeq` (generic Newton theorem with `f'' = −g''`); `expStep`/`expSeq`,
+  `inverseStep_log`; `abs_log_one_add_sub_le` (`|ln(1+ε) − (ε − ε²/2)| ≤ 2|ε|³`, from Mathlib's
+  `Real.abs_log_sub_add_sum_range_le` at `n = 2`, `x = −ε`); `expStep_rel`
+  (`ε' = (1+ε)(1 − ln(1+ε)) − 1`), `abs_expStep_relError_le` (`≤ (9/4)ε²`); LiftExp:
+  `liftExp_rel` (exact: `t = ln x_j + δ`, correction product with relative error `θ`, result
+  `e^y(1 + ε − (1+ε)(1+θ)(ln(1+ε) + δ))`) and `abs_liftExp_relError_le` (`|ε|, |θ| ≤ η ≤ 1/2`,
+  `|δ| ≤ η²` ⇒ `≤ 9η²`), which is the algorithm's precision claim up to the constant 9 (≈3 bits;
+  MCA ignores constants).  Not formalized: the complexity statement ("same order as `g`" — no cost
+  model), the `tan`/`arctan` example (same theorem, no specific content).  Design note: an
+  `exp` built on a fast `ln` needs the log at full precision and the correction at half
+  precision, exactly as the reciprocal; Newton-based `exp` is only worthwhile once `ln` is
+  faster than the direct series (§4.4 ff.).  Lean notes: pass `(f := fun x => y - g x)`
+  explicitly when the root hypothesis `f ζ = 0` is a beta-redex (`y − g ζ = 0` unifies the wrong
+  way); `simp only [seq_eq]` does not rewrite an unapplied sequence in `Tendsto` — use `.congr`.
+
+* **§4.2.6 Higher-order Newton-like methods (2026-10-16).**  States: a second-order Taylor
+  approximation (4.12) gives the cubic iteration `x − f/f' − f²f''/(2f'³)`; for the reciprocal
+  (4.13) `x + xε + xε²` (`ε = 1 − xy`), for `exp` by inversion (4.14) `x + xε + xε²/2`
+  (`ε = y − ln x`); systematically `1/y = x ∑ εᵐ` gives the order-`k` iteration (4.15)
+  `x ∑_{m<k} εᵐ`, and `e^y/x = exp ε` gives (4.16) `x ∑_{m<k} εᵐ/m!`; `k = 2` Newton, `k = 3`
+  the cubic ones; generalizations in Ex. 4.3, 4.6.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/HigherOrder.lean` (all proven): `cubicStep` + the two
+  instance identities (`field_simp; ring`); (4.15) `recipOrderStep`/`Seq` over any `CommRing`,
+  `ringRecipError_recipOrderStep` (`ε' = ε^k`, via `mul_neg_geom_sum`) and `ε_j = ε_0^(k^j)`,
+  `inv_eq_mul_tsum_geometric`; (4.16) `expOrderStep`/`_two`/`_three`, `exp_eq_mul_exp_sub_log`,
+  `exp_eq_mul_tsum` (`Real.exp_eq_exp_ℝ` + `NormedSpace.exp_eq_tsum_div`), and the order-`k`
+  absolute bound `abs_expOrderStep_sub_exp_le` from Mathlib's `Real.exp_bound`.  Not formalized:
+  the generic `O(e³)` claim for `cubicStep` (the (4.12) derivation neglects terms; the two
+  instances have exact error formulas instead), Exercises 4.3/4.6.  Design note: for the
+  reciprocal, order `k` costs `k − 1` extra multiplications per step for `log₂ k` bits-doublings'
+  worth of progress — the usual conclusion is that `k = 2` or `3` is best; decide when
+  implementing, with the §3.4 exact division as the oracle.
