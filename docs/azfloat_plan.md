@@ -599,3 +599,84 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   reciprocal, order `k` costs `k − 1` extra multiplications per step for `log₂ k` bits-doublings'
   worth of progress — the usual conclusion is that `k = 2` or `3` is best; decide when
   implementing, with the §3.4 exact division as the oracle.
+
+* **§4.3 Argument reduction, introduction (2026-10-16).**  States: evaluate `f x` as reduce →
+  evaluate (`f` or another `g`, e.g. `sin(x + π/2) = cos x`) → reconstruct by a functional
+  identity; addition formulae (4.17) for `exp`, `log`, `sin`, `tan`; doubling (4.18)
+  `exp 2x = (exp x)²`, tripling `sin 3x = 3 sin x − 4 sin³ x` (one function; the doubling needs
+  `cos` too — fixed in §4.3.4, §4.9.1); additive (`x − kc`, periodic, `c = 2π`) vs
+  multiplicative (`x/c^k`, `c = 2` for `exp`) reduction, both possible for `sin`; "increase"
+  for `Γ` via `xΓ(x) = Γ(x+1)` (§4.5); none known for `erf`.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ArgumentReduction.lean` (all proven): structure
+  `ArgumentReduction f` (reduce, `g`, reconstruct, spec), (4.17) incl. `tan_add'` proven directly
+  from `sin_add`/`cos_add` under `cos x ≠ 0`, `cos y ≠ 0`, `1 − tan x tan y ≠ 0` (Mathlib's
+  `Real.tan_add` has the `(2k+1)π/2` form), (4.18), tripling, `exp_eq_pow_two_pow`,
+  `sin/cos_sub_int_mul_two_pi`, four scheme instances, `Gamma_add_nat`.  Not formalized: the
+  `erf` remark; cost of reconstruction (no model).  Design note for the implementation phase:
+  multiplicative reduction of `exp` by `2^k` costs `k` squarings and loses ≈`k` bits of relative
+  accuracy (relative error doubles per squaring: `(1+ε)² ≈ 1 + 2ε`), so the working precision
+  must grow by `k` bits — to be proven when the algorithm is specified (§4.3.1).
+
+* **§4.3.1 Repeated doubling + §4.3.2 Loss of precision (2026-10-16).**  §4.3.1 states:
+  `exp x = exp(x/2^k)^(2^k)`; for `|x| = Θ(1)` the reduced argument is `O(2^(−k))` so the series
+  converges faster; cost `k` squarings; with naive series evaluation the optimal `k ~ √n` gives
+  `O(√n M(n))` (beaten in §4.4.3); optimal `k` depends on `|x|` (Ex. 4.5).  §4.3.2 states:
+  alternating series cancel — `exp(−10)` terms grow until `k > |x|`; 51 terms at 10 digits give
+  ~3 digits; use `exp x = 1/exp(−x)`; or a sign-free series for a related function (erf, (4.22)
+  vs (4.23); Ex. 4.19–4.20).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/RepeatedDoubling.lean` (all proven):
+  `abs_exp_sub_sum_div_two_pow_le` (series error at `x/2^k`, from `Real.exp_bound`); the squaring
+  error model `squareSeq t θ` with `squareSeq_eq` and `abs_squareSeq_sub_exp_le` — generic
+  perturbation lemmas `|(1+a)^e − 1| ≤ (1+|a|)^e − 1`, the product version, `∏(1+|a_i|)^(e_i) ≤
+  exp(∑ e_i|a_i|)`, `exp S − 1 ≤ 2S` (`S ≤ 1`, from `Real.exp_bound'` at `n = 1`) — REUSABLE for any
+  error analysis of products of perturbed factors; conclusion: starting relative error `ε` and
+  per-squaring relative errors `θ_i` give relative error `≤ 2(2^k|ε| + ∑ 2^(k−1−i)|θ_i|)`, i.e.
+  the working precision must carry `k + 1` extra bits (confirms the design note of §4.3);
+  `expTerm` with `expTerm_succ` (ratio `x/(m+1)`), monotonicity switch at `m + 1 = |x|`,
+  `expTerm_neg_eq` (alternation), `abs_sum_perturbed_le` (generic), `sum_abs_expTerm_le`
+  (`≤ exp|x|`, from `Real.sum_le_exp_of_nonneg`), `abs_sum_perturbed_le_of_nonneg` (relative `η`
+  for `x ≥ 0`), `relative_loss_of_neg` (`exp|x| = exp(2|x|) exp x` for `x ≤ 0`: the cancellation
+  factor), `exp_twenty_gt` (`10^8 < exp 20`, via `exp_one_gt_d9` and `2.7^20`), `exp_eq_inv_exp_neg`.
+  Not formalized: the `O(√n M(n))` / optimal-`k` cost statements, Ex. 4.5/4.19/4.20, the erf
+  series (await §4.4).  Lean notes: `Finset.prod_le_prod` for ℝ is now `prod_le_prod₀`-style —
+  `gcongr with i _` sidesteps the name; `abs_of_pos (by positivity)` needs the target typed
+  when several `|·|` are present; `set` definitions get unfolded inside `simp`/`congr` goals,
+  so state `h1 : ∀ i ∈ range k, …` and `prod_congr rfl h1` explicitly.
+
+* **§4.3.3 Guard digits (2026-10-16).**  States: guard digits = working precision beyond the
+  target; too few → inaccurate, too many → expensive.  Example `exp`, `t = x/2^k = O(2^(−k))`: `t`
+  to `n` bits gives `1 + t` to `n + k` bits, but forward summation at precision `n` keeps `n`;
+  the `k` squarings lose ≈1 bit each → `n − k` bits; backward summation at precision `n + k`
+  through the squarings → `n` bits.  Alternative: `expm1 x = exp x − 1` with a doubling formula
+  avoiding loss of significance for small `|x|` (Ex. 4.7–4.9).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/GuardDigits.lean` (all proven): `abs_one_add_mul_sub_le`
+  (`|tε| ≤ 2^(−(n+k))`), `relError_one_add_le` (relative `≤ 2^(1−(n+k))`, `k ≥ 1`),
+  `abs_mul_one_add_sub_one_le` (compounding with the rounding at `n`); from §4.3.1's
+  `abs_squareSeq_sub_exp_le`: `abs_squareSeq_sub_exp_le_of_uniform` (`|ε| ≤ 3η`, `|θ_i| ≤ η`,
+  `2^(k+2)η ≤ 1` ⇒ relative `≤ 2^(k+3)η`; uses `∑_{i<k} 2^(k−1−i) = 2^k − 1` via
+  `sum_range_reflect` + `geom_sum_eq`), `forwardSummation_bits` (`η = 2^(−n)` ⇒ `2^(−(n−k−3))`),
+  `backwardSummation_bits` (`η = 2^(−(n+k))` ⇒ `2^(−(n−3))`) — the text's `n − k` vs `n` up to the
+  constant 8; `expm1`, `expm1_two_mul`, `expm1_add_two_pos`, `expm1_two_mul_perturbed` (exact
+  relative error `ε(2(e+1) + eε)/(e+2)`), `abs_expm1_two_mul_relError_le` (`≤ 2|ε| + ε²`, `x ≥ 0`),
+  `expm1_of_exp_perturbed` (`ρ exp x` absolute), `expm1_le_mul_exp` (`exp x − 1 ≤ x exp x`),
+  `relError_expm1_of_exp_ge` (`≥ |ρ|/x` for `x > 0`: unbounded as `x → 0`).  Not formalized: a
+  rounding model of forward/backward summation itself (the bit counts are captured through the
+  start error `ε` of the squaring model; a real summation model belongs with §4.4's series
+  evaluation), Ex. 4.7–4.9.  Design note: our `AzFloat` ops are exactly rounded, so "working
+  precision" = the `p` passed to each op; the Newton/series `exp` will take `p + k + guard` as
+  working precision with `k` the reduction count, justified by `backwardSummation_bits`.
+
+* **§4.3.4 Doubling versus tripling (2026-10-16).**  States: `sinh 2x = 2 sinh x cosh x` needs
+  `cosh`; `cosh² − sinh² = 1` gives `2 sinh x √(1 + sinh²x)` (a square root); tripling (4.19)
+  `sinh 3x = sinh x(3 + 4 sinh²x)`; but reducing through `exp` with (4.18) is usually cheaper
+  (tripling = 1 mul + 1 square vs two squarings for a factor 4 > 3); drawback: cancellation in
+  `e^x − e^(−x)` for small `|x|`, cured by (4.20) `sinh x = (expm1 x − expm1(−x))/2` (Ex. 4.10);
+  more in §4.12 (FFT range).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/DoublingTripling.lean` (all proven): the three formulae
+  (`cosh_eq_sqrt`, `sinh_two_mul_sqrt`, `sinh_three_mul'` from Mathlib's `sinh_three_mul`),
+  `three_pow_lt_four_pow`, `sinh_of_exp_perturbed` (`±ρ` on the two exponentials → error
+  `ρ cosh x`), `sinh_le_mul_exp` (`sinh x ≤ x eˣ`, all `x`), `relError_sinh_of_exp_ge`
+  (`≥ |ρ|/(2x)`), `sinh_eq_expm1`, `relError_sinh_expm1_le` (`x ≥ 0`: relative `≤ η`).  Not
+  formalized: the operation-count comparison beyond `3^k < 4^k` (no cost model), Ex. 4.10, §4.12.
+  Design note: `sinh`/`cosh` will be built from `exp` (or `expm1` for `|x| < 1`), not from their
+  own doubling/tripling formulae.

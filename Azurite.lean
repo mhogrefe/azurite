@@ -1375,13 +1375,17 @@ import Azurite.BasuPollackRoy.Chapter8.Section8_3.TransitionMatrix
 import Azurite.BrentZimmermann.Chapter2.DFT
 import Azurite.BrentZimmermann.Chapter2.FFT
 import Azurite.BrentZimmermann.Chapter2.FFTMulMod
+import Azurite.BrentZimmermann.Chapter4.ArgumentReduction
+import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.FunctionalInverse
+import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.HigherOrder
 import Azurite.BrentZimmermann.Chapter4.InverseRoot
 import Azurite.BrentZimmermann.Chapter4.InverseSqrt
 import Azurite.BrentZimmermann.Chapter4.Newton
 import Azurite.BrentZimmermann.Chapter4.Reciprocal
+import Azurite.BrentZimmermann.Chapter4.RepeatedDoubling
 import Azurite.CohenLenstra.Algorithm_11_1
 import Azurite.CohenLenstra.Algorithm_12_1
 import Azurite.CohenLenstra.Alignment
