@@ -1376,8 +1376,11 @@ import Azurite.BrentZimmermann.Chapter2.DFT
 import Azurite.BrentZimmermann.Chapter2.FFT
 import Azurite.BrentZimmermann.Chapter2.FFTMulMod
 import Azurite.BrentZimmermann.Chapter4.ArgumentReduction
+import Azurite.BrentZimmermann.Chapter4.AsymptoticExamples
+import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
 import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
+import Azurite.BrentZimmermann.Chapter4.ErrorFunction
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.FunctionalInverse
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
@@ -1391,6 +1394,7 @@ import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
 import Azurite.BrentZimmermann.Chapter4.RepeatedDoubling
 import Azurite.BrentZimmermann.Chapter4.SeriesReduction
 import Azurite.BrentZimmermann.Chapter4.SplittingComplexity
+import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
 import Azurite.CohenLenstra.Algorithm_11_1
 import Azurite.CohenLenstra.Algorithm_12_1
 import Azurite.CohenLenstra.Alignment

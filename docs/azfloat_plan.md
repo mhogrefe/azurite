@@ -811,3 +811,111 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   bookkeeping via `rpow_add`/`rpow_mul` + `norm_num` on the exponents; `Real.log_lt_log_iff`
   rewrites the wrong side inside an `↔` — split with `constructor` and use
   `Real.log_lt_log` / `.mp` directly.
+
+* **§4.5 Asymptotic expansions, introduction (2026-10-16).**  States: `E₁(x) = ∫_x^∞ e^(−u)/u`
+  (4.25) (also `Ei`, `li`, principal values); power series (4.26) `E₁ + γ + ln x = ∑ (−1)^(j−1) x^j/(j!j)`
+  bad for large `x`; instead (4.27) `e^x E₁(x) = ∑_{j=1}^k (j−1)!(−1)^(j−1)/x^j + R_k(x)`,
+  (4.28) `R_k = k!(−1)^k e^x ∫_x^∞ e^(−u)/u^(k+1)`, `|R_k| < k!/x^(k+1)`; `R_k → 0` in `x`, not in
+  `k` (divergent, asymptotic (4.29)); error often ≤ first omitted term; alternating ⇒ value between
+  consecutive partial sums (true here for `x > 0`); `k = ⌊x⌋`: relative error `O(√x e^(−x))` via
+  (4.30) `|R_k(k)| ≤ k!/k^(k+1) = O(k^(−1/2) e^(−k))`; precision `n` once `x > n ln 2 + O(ln n)`;
+  two-sided Stirling with `e^(1/(12k))`; small `x`: Ex. 4.19 cancellation-free series.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/AsymptoticExpansion.lean` (all proven, Lebesgue
+  integrals on `Ioi x`): `expTail`, `expIntegral`, `integrableOn_expTail` (domination by
+  `e^(−u) x^(−(k+1))`, `Integrable.mono'`), `expTail_nonneg/pos` (`setIntegral_pos_iff_support_of_nonneg_ae`,
+  `volume (Ioi x) = ⊤`), `expTail_le`, `expTail_succ` (Mathlib's
+  `integral_Ioi_mul_deriv_eq_deriv_mul` with `u = t^(−(k+1))`, `v = −e^(−t)`; boundary terms by
+  continuity at `x` and a squeeze at `∞`), `asymptoticTerm` (indexed from 0: text's `j+1`),
+  `asymptoticRemainder`, `asymptoticRemainder_succ`, `exp_mul_expIntegral_eq` (4.27),
+  `abs_asymptoticRemainder_le` (≤, the text's < not needed), `abs_asymptoticRemainder_le_abs_term`,
+  `tendsto_asymptoticRemainder_atTop`, `not_summable_asymptoticTerm`
+  (`not_summable_of_ratio_norm_eventually_ge` with ratio `(j+1)/x ≥ 2`), `sign_asymptoticRemainder`,
+  `between_partialSums` (product of the two remainders `< 0`), `factorial_le_stirling_upper`
+  (`Stirling.stirlingSeq'_antitone` + `stirlingSeq_one`), `abs_asymptoticRemainder_self_le` (4.30
+  with constant `e`).  Not formalized: (4.26) (needs `Real.eulerMascheroniConstant` + the integral
+  representation), `Ei`/`li`/complex domain, the `e^(1/(12k))` Stirling refinement (Mathlib has
+  only the lower bound `le_factorial_stirling`), the `x > n ln 2 + O(ln n)` threshold, Ex. 4.16/4.19.
+  Design note: an `E₁`/`erfc` implementation would switch between the series and the asymptotic
+  expansion at `x ≈ p ln 2`; `between_partialSums` gives a rigorous two-sided bracket for a Ziv-style
+  correct rounding of the asymptotic branch.  Lean notes: `IntegrableOn.congr_fun` must be called
+  with the explicit name when the integrable term was built by `Integrable.const_mul` (field
+  notation resolves to `And`); `HasDerivAt` of `−exp(−t)` via a typed `have` + `congr_deriv`;
+  `abs_of_pos (by positivity)` grabs the first `|·|` — name the argument.
+
+* **§4.5 Euler–Maclaurin examples: γ and ζ (2026-10-16).**  States: asymptotic expansions for
+  erfc, Γ, Bessel; Euler–Maclaurin `∑ f(k) − ∫ f ~ (f(a)+f(b))/2 + ∑ B_{2k}/(2k)! (f^(2k−1)(b) −
+  f^(2k−1)(a))`; γ (4.31) converges slowly → split at `p`, EM on `1/x` → (4.32)
+  `γ ~ H_p − ln p + ∑ B_{2k}/(2k) p^(−2k)` (faster Bessel-based method in §4.12); ζ (4.33), EM
+  (4.34)–(4.36) with terms `T_{k,p}(s) = B_{2k}/(2k)! p^(1−s−2k) ∏(s+j)`, `|E_{m,p}| <
+  |T_{m+1,p}(s)(s+2m+1)/(σ+2m+1)|`; for polynomial time both `m, p → ∞` so Bernoulli numbers must
+  be computed on demand (§4.7); prefer expansions with known coefficients (`ln Γ` (4.38) vs
+  Stirling for Γ, Ex. 4.42).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/AsymptoticExamples.lean` (all proven):
+  `tendsto_harmonic_sub_log'` (Mathlib), `harmonic_sub_log_sub_gamma_bounds` (from Mathlib's
+  `eulerMascheroniSeq n < γ < eulerMascheroniSeq' n` and `log(1 + 1/N) ≤ 1/N`); `zetaReal`,
+  `zetaReal_eq_riemannZeta` (`zeta_eq_tsum_one_div_nat_cpow` + `Complex.ofReal_tsum`/`ofReal_cpow`),
+  `zetaTail`, `summable_zetaTail`, `zetaReal_eq_sum_add_tail`, `antitoneOn_rpow_neg`,
+  `integral_Ioi_rpow_neg`, `zetaTail_bounds` (finite `AntitoneOn.integral_le_sum`/`sum_le_integral`
+  on `[p, p+a]`, then `a → ∞` with `intervalIntegral_tendsto_integral_Ioi` and
+  `HasSum.tendsto_sum_nat`, `le_of_tendsto_of_tendsto`), `abs_zetaReal_sub_euler_maclaurin_zero_le`
+  ((4.34) with `m = 0`, error `≤ p^(−s)/2`), `zeta_tail_le_of_pow`, `zetaEMTerm`, `zetaEMTerm_one`.
+  Not formalized: Euler–Maclaurin itself (no Mathlib version), hence (4.32) and (4.34)–(4.36) for
+  `m ≥ 1`; analytic continuation; the lower bound showing (4.31)'s error is really `Θ(1/N)`.
+  Design note: computing `γ` or `ζ(s)` to `p` bits via EM needs Bernoulli numbers `B_2..B_{2m}` with
+  `m ~ p/log p` — Azurite has `AzRat`; a `bernoulli` routine (§4.7.2, tangent numbers) is the
+  prerequisite; the `m = 0` bracket is already a correct-rounding-capable two-sided bound for
+  `ζ(s)` at exponential cost.  Lean notes: `Real.rpow_le_rpow_of_nonpos` is the antitone lemma;
+  `Summable.sum_add_tsum_nat_add'` with `k := 1` plus `sum_range_one` peels the first tail term;
+  `congr 3; omega` closes `((↑(j + (p+1)))^s)⁻¹ = ((↑(j+1+p))^s)⁻¹`.
+
+* **§4.5 The error function (2026-10-16).**  States: (4.22)/(4.23) need `Ω(x²)` terms (erf 1000
+  to 6 digits: 2718279 terms); erfc (4.37) `e^(−x²)/(x√π) ∑ (−1)^j (2j)!/j! (2x)^(−2j)`, error ≤ next
+  term and of its sign; `erfc 1000 ≈ 1.86·10^(−434298)`; the sum diverges, `j`-th term
+  `~ √2 (j/(ex²))^j`, terms decrease while `j < x² + 1/2`, smallest `~ e^(−x²)`, so `x > √(n ln 2)`
+  (833 for `n = 10⁶`; confirmed by the user as `√(n ln 2)`); only
+  `m = n − λ` bits of erfc needed (`erfc ≈ 2^(−λ)`); for `j < x²`, (4.22)'s terms grow and (4.37)'s
+  shrink ⇒ prefer (4.37) when accurate enough; Algorithm 4.2 Erf (`m = ⌈n − (x² + ln x +
+  ln π/2)/ln 2⌉`, `(m + 1/2) ln 2 < x²` ⇒ asymptotic at precision `m`, else (4.22) for `x < 1`,
+  (4.23) otherwise); `j₀` root of `j(ln j − 2 ln x − 1) = n ln 2`; examples `x = 800, 589`.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/ErrorFunction.lean` (all proven):
+  `gaussTail`/`erfc`/`erf` (own definitions; Mathlib has no erf), `integrableOn_exp_neg_sq_Ioi`
+  (from `integrable_exp_neg_mul_sq`), `gaussTail_succ` (parts with `u = t^(−(2k+1))`,
+  `v = −e^(−t²)/2`; the `∞` boundary via `e^(−t²) ≤ e^(−t)` for `t ≥ 1`), `gaussTail_le`,
+  `erfcCoeff`/`_succ`/`_zero`, `erfcTerm`, `erfcRem`, `erfcRem_succ`, `erfc_eq_sum_add_rem` (4.37),
+  `abs_erfcRem_le_abs_term`, `sign_erfcRem`, `erfc_le_leading`, `leading_mul_le_erfc`,
+  `erfcTermMag_succ_lt`, `pow_div_factorial_le_succ`, `erfcCoeff_le_stirling` (upper Stirling for
+  `(2j)!`, lower for `j!`), `erfcTermMag_le`, `erfSeriesTerm_le_two_pow` (`x^(2j)/j! ≤ 2^(−n)` from
+  `j! ≥ (j/e)^j`), `erf_error_of_erfc`, `asymptotic_gives_bits` (constant `(m + 4) ln 2` instead of
+  `(m + 1/2) ln 2`: our term bound has constant `2e²/√π ≈ 8.3 ≤ 16`).  Not formalized: the link
+  to `(2/√π)∫_0^x e^(−u²)` and oddness (would use `integral_gaussian`), the series (4.22)/(4.23)
+  as series of erf (need the integral representation), the numerical examples, (4.40).
+  Design note: `erf`/`erfc` implementation = Algorithm 4.2 with our `exp`; the bracket
+  `leading_mul_le_erfc`/`erfc_le_leading` plus `sign_erfcRem` give two-sided bounds for correct
+  rounding of the asymptotic branch; the series branch needs the §4.4 machinery with
+  `j₀` from `erfSeriesTerm_le_two_pow`.  Lean notes: build `HasDerivAt (fun t => -t^2)` by
+  `(hasDerivAt_pow 2 t).neg.congr_deriv` (a `simpa` produces an instance-path mismatch);
+  `Even.pow_nonneg (even_two_mul j)` for `0 ≤ x^(2j)`; `Real.pi_gt_three` lives in
+  `Mathlib.Analysis.Real.Pi.Bounds`.
+
+* **§4.5 Stirling's asymptotic expansion of ln Γ (2026-10-16).**  States: (4.38) `ln Γ(x) =
+  (x − 1/2) ln x − x + ln(2π)/2 + ∑_{k<m} B_{2k}/(2k(2k−1)x^(2k−1)) + R_m`, `|R_m| ≤` first omitted
+  term, same sign (complex `|arg x| < π` version more delicate); ratio `t_{k+1}/t_k ≈ −(k/(πx))²`,
+  terms grow for `k > πx`, so `ln|R_m(x)| > −2πx ln x + O(x)`; shift by `Γ(x+1) = xΓ(x)` to a large
+  `x' = x + δ` (Ex. 4.21).  Formalized in `Azurite/BrentZimmermann/Chapter4/StirlingLogGamma.lean`
+  (all proven except the remainder bound, which is stated only as a definition `stirlingRem`):
+  `zetaReal_two_mul_eq` (Mathlib's `hasSum_zeta_nat`), `one_le_zetaReal_two_mul`,
+  `zetaReal_two_mul_le` (`≤ ζ(2) = π²/6` via `hasSum_zeta_two`), `bernoulli_two_mul_eq_zeta`,
+  `sign_bernoulli_two_mul` (alternation), `abs_stirlingTerm_eq`, `stirlingTerm_ratio_bounds`
+  (`(2k)(2k−1)/(2(2πx)²) ≤ |t_{k+1}/t_k| ≤ 2(2k)(2k−1)/(2πx)²`), `abs_stirlingTerm_lt_succ`,
+  `mul_log_ge_neg_inv_exp` (`y ln y ≥ −1/e`), `div_pow_self_ge` (`(u/c)^u ≥ e^(−c/e)`),
+  `abs_stirlingTerm_ge` (`|t_k| ≥ e^(−2πx)/(2π²x)` — the minimal term is `≈ e^(−2πx)`, i.e. about
+  `2πx/ln 2` bits attainable; the text's `−2πx ln x + O(x)` is the weaker form),
+  `log_Gamma_eq_log_Gamma_add_sub`.  Not formalized: (4.38) with its remainder bound (needs
+  Binet's formula / Euler–Maclaurin for ln Γ; Mathlib has neither), the complex version, Ex. 4.21.
+  Design note: a `logGamma`/`Gamma` implementation = shift by `δ ≈ p ln 2/(2π)` then (4.38) with
+  `m ≈ πx'` terms; Bernoulli numbers `B_2..B_{2m}` via §4.7.2; the sign/next-term facts give the
+  bracket for correct rounding once (4.38) is available as a theorem (external proof needed).
+  Lean notes: `zetaReal (2 * k)` elaborates with `2 * (k : ℝ)` — convert to `((2 * k : ℕ) : ℝ)` with
+  `push_cast; ring` before `Real.rpow_natCast`; `generalize hε : (-1)^(k+1) = ε` and `ε^2 = 1`
+  make the sign algebra a plain `calc`; `Summable.le_tsum` (not `le_tsum`); `Real.pi_lt_d2` for
+  `π < 3.15`.
