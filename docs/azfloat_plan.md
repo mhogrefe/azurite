@@ -680,3 +680,134 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   formalized: the operation-count comparison beyond `3^k < 4^k` (no cost model), Ex. 4.10, §4.12.
   Design note: `sinh`/`cosh` will be built from `exp` (or `expm1` for `|x| < 1`), not from their
   own doubling/tripling formulae.
+
+* **§4.4 Power series, introduction (2026-10-16).**  States: series for exp, ln(1+x), arctan,
+  sinh; notation `x`, `n`, `d`; Taylor at `c`; (4.21) `exp x = ∑_{j<d} x^j/j! + R_d`,
+  `|R_d| ≤ |x|^d e^|x|/d! ≤ e/d!` for `|x| ≤ 1`; Stirling ⇒ `d ~ n/lg n`, Horner `O(nM(n)/log n)`;
+  forward recurrence `t_j = x t_{j−1}/j`, stop when `|t_d| < 2^(−n)/e` (no `d` in advance;
+  backward/Horner needs it, Ex. 4.4); rounding model `◦(x op y) = (x op y)(1+δ)`, `|δ| ≤ ε`:
+  `|t̂_j − t_j|/|t_j| ≤ 2jε + O(ε²)`, `|Ŝ_d − S_d| ≤ (d+2)eε + O(ε²) = O(nε)` ⇒ `ε = O(2^(−n)/n)`,
+  `lg n` guard digits; backward slightly better; vary the working precision with the term size;
+  large `x > 0`: `Ω(|x|)` terms; large `x < 0`: max term `≈ e^|x|/√(2π|x|)` vs result `e^(−|x|)`,
+  `2|x|/log 2` guard digits (Lehmer's "catastrophic cancellation"), avoid via `1/exp(−x)`; erf
+  series (4.22) (alternating, no exp) vs (4.23) (positive terms, needs `e^(−x²)`), both `Ω(x²)`
+  terms for large `|x|` → asymptotic `erfc` (§4.5), continued fraction (4.40) in between.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/PowerSeriesEval.lean` (all proven):
+  `hasSum_exp_series` (via `Real.exp_eq_exp_ℝ` + `NormedSpace.expSeries_div_hasSum_exp`),
+  `hasSum_log_one_add_series` (from `Real.hasSum_pow_div_log_of_abs_lt_one` at `−x`);
+  `abs_exp_sub_sum_le` for ALL `x` (tail = `∑' x^(n+d)/(n+d)!` via
+  `Summable.sum_add_tsum_nat_add'` with `f` given explicitly; `d!n! ≤ (n+d)!` from
+  `Nat.factorial_mul_factorial_dvd_factorial_add`; `norm_tsum_le_tsum_norm`, `Summable.tsum_le_tsum`,
+  `tsum_mul_left`), `abs_exp_sub_sum_le_of_abs_le_one`, `exp_series_terms_suffice`,
+  `exp_series_stop`; `expPartial`/`expPartial_succ`; rounding: `roundedExpTerm` (one combined
+  relative error `θ_j` per term step, `|θ_j| ≤ 3ε` for mul+div), `roundedExpTerm_eq`,
+  `abs_roundedExpTerm_sub_le` (`≤ 6jε|t_j|` for `3jε ≤ 1`, via the §4.3.1 product lemmas),
+  `roundedSum` and the GENERIC `roundedSum_sub_le` (error recurrence
+  `A_{j+1} = A_j + (t̂ − t) + σ(S_j + A_j + t̂)`; REUSABLE for any forward summation),
+  `exp_roundedSum_error` (`≤ 46dε`, constants: `exp 1 ≤ 3`, `(1+ε)^d ≤ 2` from `exp_sub_one_le_two_mul`),
+  `exp_guard_digits`, `guard_digits_of_neg`.  Not formalized: Stirling and `d ~ n/lg n`, Horner
+  cost, the max-term estimate, arctan/sinh series (not in Mathlib), erf (no `Real.erf` in
+  Mathlib; (4.22)/(4.23) deferred to §4.5), variable working precision (an algorithm, later).
+  Lean notes: identifiers cannot contain combining accents (`t̂` fails to parse — use `tc`);
+  `Summable.sum_add_tsum_nat_add'` needs `(f := …)` explicitly or `isDefEq` times out;
+  `Real.logb` needs `Mathlib.Analysis.SpecialFunctions.Log.Base`.  Design note: our series
+  `exp` will stop by the `exp_series_stop` test on the current term, work at `p + lg d + c`
+  bits, and the whole error budget is `exp_guard_digits` + the §4.3 squaring loss.
+
+* **§4.4 Assumption on the coefficients; radius of convergence (2026-10-16).**  States: assume
+  `a_{j+δ}/a_j = R(j)` rational (`δ` fixed, usually 1 or 2), so the `a_j` are generated
+  sequentially (exp: `1/(j+1)`); covers hypergeometric functions (holonomic: §4.9.2); `tan`
+  fails it (tangent/Bernoulli numbers, §4.7.2) → Newton on `arctan` or `sin/cos`.  Entire
+  functions (exp, sin): `deg den > deg num`, series converges everywhere; otherwise a boundary
+  singularity: `ln(1+x)` and `arctan` have radius 1 (`arctan`: poles at `±i` despite being bounded
+  on ℝ).  Formalized in `Azurite/BrentZimmermann/Chapter4/CoefficientRatio.lean` (all proven):
+  `structure RationalRatio a δ` (num/den polynomials, `den` nonvanishing on ℕ, the ratio law),
+  `R`, `eq_mul_prod`/`eq_mul_prod_one`, `tendsto_zero_of_degree_lt`,
+  `tendsto_leadingCoeff_div_of_degree_eq` (Mathlib's `Polynomial.div_tendsto_atTop_*` composed
+  with `tendsto_natCast_atTop_atTop`), `tendsto_ratio_of_degree_eq`; instances `expRatio`,
+  `logRatio`, `arctanRatio` (zero even coefficients handled by the `if`), `arctanCompressedRatio`
+  (`y = x²`); ratio test wrappers around Mathlib's `summable_of_ratio_test_tendsto_lt_one` /
+  `not_summable_of_ratio_test_tendsto_gt_one` with `|L|` (so signed limits like `−1` work);
+  radius 1 results for log and arctan, harmonic divergence at `x = −1`
+  (`Real.not_summable_one_div_natCast` + `summable_nat_add_iff`).  Not formalized: `tan` has no
+  rational ratio (would need the tangent numbers), hypergeometric/holonomic generalities
+  (§4.9.2), the complex singularities themselves.  Lean notes: `show` cannot see through a
+  `noncomputable def` structure literal — use `have hn : S.num = … := rfl` then `rw`; ascribe
+  `(X + C 2 : ℝ[X])` and `(-1 : ℝ)` in leading-coefficient equations or the division elaborates
+  in the wrong type; `if_pos/if_neg` are deprecated for `ite_eq_left/right`.
+
+* **§4.4.1 Direct evaluation + §4.4.2 Series with argument reduction (2026-10-16).**  States:
+  with `|x| ≤ 1/2` and radius ≥ 1, `n + O(1)` terms → `O(nM(n))` (`O(nM(n)/log n)` entire);
+  reducing to `|x| < 2^(−k)` leaves `O(n/k)` terms, total `O((k + n/k)M(n))`, `k ~ √n` →
+  `O(√n M(n))`; reductions `exp x = exp(x/2)²`, `log1p x = 2 log1p(x/(1+√(1+x)))`,
+  `arctan x = 2 arctan(x/(1+√(1+x²)))` (square roots at `O(M(n))`, §3.5; Ex. 4.8–4.9);
+  symmetries: `ln((1+y)/(1−y)) = 2∑ y^(2j+1)/(2j+1)`, `y = x/(2+x)`, halves the terms and
+  `y < x/2`, usable once (Ex. 4.11).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/SeriesReduction.lean` (all proven): `abs_tail_le_of_abs_le`
+  (geometric tail, `Summable.of_nonneg_of_le` + `tsum_geometric_of_lt_one`),
+  `terms_suffice_direct`, `terms_suffice_reduced` (`A = 0` split off), `exp_terms_suffice_reduced`,
+  `two_sqrt_le_add_div` (AM–GM), `exp_eq_sq_exp_half`, `log_one_add_eq_two_mul_log_one_add`
+  (`1 + x/(1+s) = s` with `s = √(1+x)`, then `Real.log_sqrt`), `div_one_add_sqrt_lt_half`,
+  `arctan_eq_two_mul_arctan` (half-angle via `sin_two_mul`/`cos_two_mul` at `θ/2`, `sin_arctan`,
+  `cos_arctan`, `arctan_tan`), `abs_div_one_add_sqrt_sq_le_half`, `expHalf`, `arctanHalf`
+  (`log1p` needs `x > −1` so no total instance), symmetric series via
+  `Real.hasSum_log_sub_log_of_abs_lt_one` + `Real.log_div`.  Not formalized: cost statements
+  (no model), Ex. 4.8/4.9/4.11.  Design note: the planned `exp` = reduce by `2^k` (`k ≈ √p`),
+  series with `exp_series_stop`, `k` squarings at `p + k + lg d + c` bits; `log1p` and `arctan`
+  by the same scheme with `sqrtPrecRound` in the reduction; `ln(1+x)` via the symmetric series
+  as the first step.
+
+* **§4.4.3 Rectangular series splitting — classical splitting (2026-10-16).**  States: evaluate
+  `P(x) = ∑_{j<d} a_j x^j` at an `n`-bit `x`; coefficients/ratios are `O(log n)`-bit rationals, so
+  scalar products are cheap and non-scalar (two `n`-bit numbers) cost `M(n)`; `O(√n)` non-scalar +
+  `O(n)` scalar products + `O(n)` additions, `O(√n)` storage; classical splitting `d = jk`,
+  `y = x^k`, `P = ∑_ℓ y^ℓ P_ℓ(x)`, powers `x², …, x^k` (even ones by squaring), inner `P_ℓ` by
+  scalar products (NOT Horner), outer Horner in `y`; example `d = 12 = 3·4`: 5 vs `d − 2 = 10`.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/RectangularSplitting.lean` (all proven):
+  `polyEval_split` (induction on `j` with `sum_range_add`), `hornerEval` + `hornerEval_eq`
+  (induction generalizing the coefficient function), `polyEval_eq_horner`, `pow_two_mul_eq_sq`,
+  `classicalNonscalar` and its three facts (`≤ d − 2` for `j, k ≥ 2`; `3·4 ↦ 5` by `decide`;
+  `≥ 2√d − 2` via `two_sqrt_le_add_div`).  Not formalized: a scalar/non-scalar cost model for
+  the evaluation itself (the count is a definition, not derived from an evaluation trace), the
+  storage bound, hypergeometric generalization.  Design note: the series `exp` should use
+  rectangular splitting with `k ≈ √d` precomputed powers and the inner sums as
+  `AzNat`-coefficient × `AzFloat` scalar products (cheap: the coefficient is a small rational —
+  for `exp`, accumulate `∑ x^m · (k! / (kℓ+m)!)`-style with a common denominator to keep the
+  scalar products integer); modified splitting (next chunk) may change this.
+
+* **§4.4.3 Rectangular series splitting — modular splitting (2026-10-16).**  States: transpose
+  the array (generalized odd–even scheme, §1.3.5): `y = x^j`, `P(x) = ∑_{ℓ<j} x^ℓ P_ℓ(y)`,
+  `P_ℓ(y) = ∑_{m<k} a_{jm+ℓ} y^m`; compute `y, y², …, y^(k−1)`, accumulate row sums `S_ℓ` by scalar
+  products, finish with `∑ x^ℓ S_ℓ` (Horner); complexity almost the same (Ex. 4.12); example
+  `12 = 3·4`: 6 non-scalar (4 for `y` and powers, 2 for the combination).  Formalized in the same
+  file `RectangularSplitting.lean` (all proven): `modularPoly`, `polyEval_modular_split`
+  (induction on `k`, `Nat.mul_succ` + `sum_range_add`), `polyEval_eq_horner_modular`,
+  `modularNonscalar` (`(j−1) + (k−2) + (j−1)`), `modularNonscalar_example` (6),
+  `modularNonscalar_eq` (= classical + `(j − 2)`, so swapping roles makes them within a constant
+  — the "almost the same").  Not formalized: Ex. 4.12, the transposition as an explicit matrix
+  identity between `innerPoly` and `modularPoly`.  Design note: modular splitting is the natural
+  fit for our forward term recurrence (rows are strided subsequences of the same coefficient
+  stream), so prefer it when the `exp` series is implemented; the final Horner in `x` costs
+  `j − 1` non-scalar products either way.
+
+* **§4.4.3 Complexity of rectangular series splitting (2026-10-16).**  States: `O(j + k)`
+  non-scalar (`M(n)` each) + `O(jk)` scalar (`c(d)n` each, `c(d) = O(1)`, Ex. 4.13); `j ~ k ~ √d`
+  → (4.24) `O(√d M(n) + dn c(d))`; with argument reduction `T(n) = O((n/d)M(n) + √d M(n) + dn)`
+  (Ex. 4.14); case 1 `M(n) ≫ n^(4/3)` (schoolbook, Karatsuba `lg 3 > 4/3`, Toom 3–6, not Toom 7
+  as `log_7 13 < 4/3`): `d ~ n^(2/3)`, `T = O(n^(1/3) M(n)) ≫ n^(5/3)`; case 2 `M(n) ≪ n^(4/3)`:
+  balance first and last terms, `Θ(n √M(n)) ≫ n^(3/2)`; AGM's `O(n^(1+ε))` out of reach (§4.8).
+  (The first transcription read `d = M(n)`; the source says `d = √M(n)`, as formalized.)  Formalized
+  in `Azurite/BrentZimmermann/Chapter4/SplittingComplexity.lean` (all proven; costs as reals, no
+  operation-count model): `splitCost`, `splitCost_ge` (`n^(1/3) M` for all `d ≥ 1`, by cases on
+  `d ≤ n^(2/3)`), `splitCost_le_case1` (`3 n^(1/3) M`), `splitCost_le_case2` (`3 n √M`, via
+  `M^(1/4) ≤ n^(1/3)` and `√M ≤ n^(2/3)`), `rpow_three_halves_le_mul_sqrt`,
+  `four_thirds_lt_logb_iff`, `karatsuba_exponent` (27 > 16), `toom3` (125 > 81), `toom4`
+  (343 > 256), `toom5` (729 > 625), `toom6` (1331 > 1296), `toom7_exponent` (2197 < 2401).  Not
+  formalized: the `O(·)` statements as asymptotics (constants given instead), Ex. 4.13/4.14, `c(d)`.
+  Design note: Azurite's ladder is schoolbook/Karatsuba/Toom-3/Toom-4/FFT; below the FFT
+  cutoff we are in case 1 (`d ~ p^(2/3)` terms after reduction by `2^k`, `k ~ p^(1/3)`); in the
+  FFT range (`M(n) ~ n log n log log n ≪ n^(4/3)`) case 2 applies — the series `exp` should pick
+  `(k, d)` from the measured `M(p)` rather than a fixed `√p` rule.  Lean notes: `Real.rpow`
+  bookkeeping via `rpow_add`/`rpow_mul` + `norm_num` on the exponents; `Real.log_lt_log_iff`
+  rewrites the wrong side inside an `↔` — split with `constructor` and use
+  `Real.log_lt_log` / `.mp` directly.
