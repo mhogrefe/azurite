@@ -1379,6 +1379,8 @@ import Azurite.BrentZimmermann.Chapter4.ArgumentReduction
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExamples
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
 import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
+import Azurite.BrentZimmermann.Chapter4.ContinuedFraction
+import Azurite.BrentZimmermann.Chapter4.ContinuedFractionEval
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.ErrorFunction
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries

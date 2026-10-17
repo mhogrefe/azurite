@@ -919,3 +919,60 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   `push_cast; ring` before `Real.rpow_natCast`; `generalize hε : (-1)^(k+1) = ε` and `ε^2 = 1`
   make the sign algebra a plain `calc`; `Summable.le_tsum` (not `le_tsum`); `Real.pi_lt_d2` for
   `π < 3.15`.
+
+* **§4.6 Continued fractions, introduction (2026-10-16).**  States: `e^x E₁(x)` as a continued
+  fraction, shorthand `b₀ + a₁/b₁+ a₂/b₂+ …` (4.39) `1/x+ 1/1+ 1/x+ 2/1+ 2/x+ 3/1+ …`; (4.40)
+  `erfc x = (e^(−x²)/√π) 1/x+ (1/2)/x+ (2/2)/x+ …`; formal definition via `(a_j)_{j≥1}`, `(b_j)_{j≥0}`
+  in `Ĉ`, value `lim f_k`, `k`-th approximant (4.41); Euler's (4.39) converges for all `x > 0`, best
+  for `E₁` between cancellation and asymptotic regimes, slow for small `x`: use for
+  `x ∈ (c₁n, c₂n)`, `c₁ ≈ 0.1`, `c₂ = ln 2` (Ex. 4.24).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ContinuedFraction.lean` (all proven) on Mathlib's
+  `GenContFract`: `contFrac` (via `Stream'.Seq.ofStream`; `get?`/`head`/`tail` are `rfl`),
+  `approximant := convs'`, `approximant_succ` (shift lemma, `rfl` after `convs'Aux_succ_some`),
+  `HasContFracValue`, continuant initial values and recurrences re-exported from Mathlib
+  (`zeroth_num_eq_h`, `first_num_eq`, `nums_recurrence`, …), `approximant_eq_convs` (Mathlib's
+  `convs_eq_convs'` needs positive partial numerators/denominators), (4.39)/(4.40) coefficient
+  sequences (`eulerNum j = max 1 ⌊j/2⌋`; `erfcCFNum 1 = 1`, else `(j−1)/2`), first two
+  approximants (`1/x`, `1/(x+1)`; `1/x`, `1/(x + 1/(2x))`), `erfcCF_approximant_two_mem`.  Not
+  formalized: convergence of (4.39)/(4.40) to `e^x E₁`/`erfc` (needs Stieltjes/hypergeometric
+  continued-fraction theory; none in Mathlib), the `(c₁n, c₂n)` interval, Ex. 4.24, `Ĉ`.  Design
+  note: continued-fraction evaluation = either backward recurrence from `f_k` (nested, needs `k`
+  in advance) or forward continuants `A_k/B_k` (Mathlib's `nums`/`dens`, stoppable), both
+  `O(k)` divisions/multiplications — expected to be the subject of the next chunks; our `AzFloat`
+  has exact `divPrecRound` for the division steps.  Lean notes: `convs_eq_convs'` takes the
+  positivity hypothesis in the form `∀ {gp m}, m < n → g.s.get? m = some gp → 0 < gp.a ∧ 0 < gp.b`.
+* **§4.6 Evaluating continued fractions; Theorem 4.1 (2026-10-16).**  States: for the finite
+  fraction `y = a₁/b₁+ … a_k/b_k` (4.42) the backward recurrence `R_k = 1`, `R_{k−1} = b_k`,
+  `R_j = b_{j+1}R_{j+1} + a_{j+2}R_{j+2}` (4.43) gives `y = a₁R₁/R₀` via the invariant
+  `R_j/R_{j−1} = 1/b_j+ a_{j+1}/b_{j+1}+ … a_k/b_k`; the forward recurrence `P₀ = 0, P₁ = a₁, Q₀ = 1,
+  Q₁ = b₁`, `P_j = b_jP_{j−1} + a_jP_{j−2}`, `Q_j` likewise (4.44) gives `y = P_k/Q_k`; backward
+  needs `k` in advance, forward can stop when `D_k = P_k/Q_k − P_{k−1}/Q_{k−1}` (4.45) is small but
+  costs twice as much and may be less stable; strategy: forward in single precision to find `k`,
+  then backward in multiple precision; compute `D_k` by `D₁ = a₁/b₁`, `D_j = −a_jQ_{j−2}D_{j−1}/Q_j`
+  (4.46) to avoid cancellation.  Theorem 4.1: for `a_j, b_j > 0` (`j ≥ 1`), `(f_{2k})` strictly
+  increasing, `(f_{2k+1})` strictly decreasing, so `f_{2k} < f < f_{2k+1}` and
+  `|f − (f_{m−1}+f_m)/2| < |f_m − f_{m−1}|/2`.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ContinuedFractionEval.lean` (all proven), with `b₀` kept as the
+  head so (4.42) is `approximant a b k` at `b 0 = 0`: `tailFrac` (well-founded on `k + 1 − j`;
+  `tailFrac_shift`, `approximant_eq_tailFrac`, `tailFrac_nonneg`), `backR` (well-founded on
+  `k − j`; `backR_pos`, invariant in product form `backR_pred` and quotient form `backR_div`,
+  `approximant_eq_backR`), forward recurrence = Mathlib continuants (`dens_pos`), `diff` (4.45)
+  with `det_succ` (`Δ_{j+1} = −a_{j+1}Δ_j`), `diff_eq_det_div`, `diff_one`, `diff_succ` (4.46),
+  `sign_diff`, `abs_diff_succ_lt` (uses `Q_{j+2} > a_{j+2}Q_j`), `diff_odd_pos`, `diff_even_neg`,
+  `approximant_even_strictMono`, `approximant_odd_strictAnti`, `approximant_even_lt_odd` (through
+  `max k m`), and with `HasContFracValue`: `approximant_even_lt`, `lt_approximant_odd`
+  (`Monotone.ge_of_tendsto`/`Antitone.le_of_tendsto` on the subsequences), `abs_sub_midpoint_lt`.
+  Not formalized: the cost/stability remarks, the single-precision forward pass, the claim that
+  the forward recurrence is "twice as expensive".  Design note for the eventual `AzFloat`
+  implementation: evaluate backward with `R` as exact `AzRat` or as `AzFloat` with a few guard
+  bits, choosing `k` from a cheap forward pass at low precision with the (4.46) stopping rule;
+  Theorem 4.1 gives a rigorous bracket `(f_{m−1}, f_m)` for `a_j, b_j > 0`, i.e. a certified
+  error bound `|f_m − f_{m−1}|/2` from the midpoint, which fits the Ziv-style
+  `(value, Ordering)` API.  Lean notes: `induction'` is no longer available — write the
+  "strong induction on the measure" proofs as recursive theorems with `termination_by`
+  (`tailFrac_shift`, `tailFrac_nonneg`, `backR_pred`, `backR_pos`); `positivity` does not look
+  inside conjunctions — `obtain ⟨ha, hb⟩ := hpos j hj` first; index normalization
+  `show 2 * k + 1 + 1 = 2 * k + 2 by omega` is needed before `rw [abs_of_pos h]` since `rw` is
+  syntactic; `tendsto_atTop_mono (fun k => by show k ≤ _; omega) tendsto_id` for the subsequence
+  `2k` (omega does not unfold `id`); `field_simp` now closes the goals of `backR_pred`/`diff_succ`
+  outright (a trailing `ring` errors with "No goals").
