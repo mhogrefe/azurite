@@ -1391,6 +1391,7 @@ import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
 import Azurite.BrentZimmermann.Chapter4.ComplexAGM
 import Azurite.BrentZimmermann.Chapter4.ContinuedFraction
 import Azurite.BrentZimmermann.Chapter4.ContinuedFractionEval
+import Azurite.BrentZimmermann.Chapter4.ContourIntegration
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.EllipticIntegrals
 import Azurite.BrentZimmermann.Chapter4.ErrorFunction
