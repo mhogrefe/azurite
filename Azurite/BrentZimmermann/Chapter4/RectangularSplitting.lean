@@ -123,6 +123,17 @@ theorem polyEval_eq_horner_modular (a : ℕ → α) (j k : ℕ) (x : α) :
   rw [polyEval_modular_split, hornerEval_eq]
   exact sum_congr rfl fun ℓ _ => mul_comm _ _
 
+/-- The transposition behind the modular splitting: the classical scheme (inner polynomials of
+length `k`, outer sum over `j` of them) and the modular scheme with the roles of `j` and `k`
+exchanged add up the same `j × k` array `a_{kℓ+m} x^{kℓ+m}`, row by row and column by column. -/
+theorem classical_split_eq_modular_transpose (a : ℕ → α) (j k : ℕ) (x : α) :
+    ∑ ℓ ∈ range j, (x ^ k) ^ ℓ * innerPoly a k ℓ x
+      = ∑ ℓ ∈ range k, x ^ ℓ * modularPoly a k j ℓ (x ^ k) := by
+  simp only [innerPoly, modularPoly, mul_sum]
+  rw [sum_comm]
+  refine sum_congr rfl fun ℓ _ => sum_congr rfl fun m _ => ?_
+  ring
+
 end Splitting
 
 /-! ### Counting the non-scalar multiplications -/

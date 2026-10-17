@@ -1192,3 +1192,320 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   in one cast form (`2 * ((k+1 : ℕ) : ℝ)` from Mathlib lemmas versus `2 * (↑k + 1)` from a statement)
   and `push_cast` before `field_simp`/`ring`; `decide` on the `Function.update`-based model times
   out at `whnf` — derive concrete values from the correctness theorem instead.
+* **§4.8 Arithmetic-geometric mean, introduction (2026-10-17).**  States: the AGM iteration of
+  Gauss/Legendre `(a_{j+1}, b_{j+1}) = ((a_j+b_j)/2, √(a_j b_j))` gives the theoretically fastest
+  methods at very large precision, `O(M(n) log n)` with a large constant; for real positive starts
+  it converges quadratically to `AGM(a_0, b_0)`; useful because (1) quadratic convergence ⇒
+  `O(log n)` iterations, (2) each iteration `O(M(n))` (Newton square root, §3.5/§4.2.3), (3)
+  suitable starts give `log` directly, other elementary functions less directly, and `π`, `ln 2`.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/AGM.lean` (all proven, real positive starts):
+  `agmSeq` by recursion with `agmA`/`agmB`; `agm_pos`; AM–GM `b_{j+1} ≤ a_{j+1}`
+  (`Real.sqrt_le_iff` + `nlinarith`), `a` antitone / `b` monotone from index 1; the gap identity
+  `a_{j+1} − b_{j+1} = (√a_j − √b_j)²/2`; `≤ (a_j − b_j)/2` and `≤ (a_j − b_j)²/(8 b_j)`
+  (the latter by `(s−t)²·((s+t)² − 4t²) ≥ 0`), hence `a_{j+1} − b_{j+1} ≤ (a_1 − b_1)/2^j` and, via the
+  generic `quadratic_decay` (`e_{j+1} ≤ C e_j² ⇒ C e_j ≤ (C e_0)^{2^j}`), the quadratic bound
+  `a_{j+1} − b_{j+1} ≤ 8 b_1 ((a_1 − b_1)/(8 b_1))^{2^j}`; the limit `AGM a b := ⨅ j, a_{j+1}` with
+  `tendsto_atTop_ciInf`, the gap → 0 by squeezing, so `b_j → AGM` too; `b_j ≤ AGM ≤ a_j` (`j ≥ 1`),
+  `min a b ≤ AGM ≤ max a b`, `AGM_comm`, `AGM_self`, `AGM_step` (`AGM(a,b) = AGM((a+b)/2, √(ab))`, by
+  uniqueness of limits), `AGM_smul` (`AGM(ca, cb) = c·AGM(a,b)`); iteration count: once
+  `a_1 ≤ 5 b_1` (i.e. `(a_1 − b_1)/(8 b_1) ≤ 1/2`), `n ≤ 2^j ⇒ a_{j+1} − b_{j+1} ≤ 8 b_1/2^n`, so
+  `Nat.clog 2 n + 1` iterations give `n` bits (`agm_iterations`) — the `O(log n)` claim; the
+  linear phase before that costs `O(log(a/b))` halvings (`agm_gap_le_half_pow`).  Not formalized:
+  the cost model, complex starts (§4.8.5/§4.12), the applications (coming subsections).  Design
+  note: an `AzFloat` AGM would iterate `(add, sqrt)` at precision `p + guard` and stop via the
+  `a_j − b_j` gap, which the Ziv-style API can certify directly from the bracket
+  `b_j ≤ AGM ≤ a_j`; the rounding-error propagation of the iteration (each step is a contraction
+  for the gap but perturbs the common limit) is not yet analysed — the text presumably returns to
+  it.  Lean notes: `le_or_lt` is gone — use `le_or_gt`; `pow_le_pow_of_le_one` needs `(a := …)` when
+  the base is a numeral under `by norm_num`, and `gcongr` on `c * r^(2^j) ≤ c * r^n` wrongly tries
+  the exponent-monotone lemma (asks `1 ≤ r`) — apply `mul_le_mul_of_nonneg_left` by hand;
+  `simp only at h` fails with "no progress" when the lambda is already beta-reduced; convert
+  `C * e_j ≤ R` to `e_j ≤ (1/C)·R` through an explicit `calc` with `field_simp` rather than
+  `div_le_iff₀'` rewrites.
+* **§4.8.1 Elliptic integrals (2026-10-17).**  States: `K(k) = ∫_0^{π/2} dθ/√(1 − k² sin²θ) =
+  ∫_0^1 dt/√((1−t²)(1−k²t²))` (4.67), `E(k) = ∫_0^{π/2} √(1 − k² sin²θ) dθ`, modulus `k ∈ [0,1]`,
+  complementary `k' = √(1−k²)`, `K'(k) := K(k')`; Gauss: `1/AGM(1,k) = (2/π) K'(k)` (4.68) — computes
+  `K` fast and leads to logarithms; `K(k) = (π/2) ₂F₁(1/2,1/2;1;k²)`, `K(k) = (π/2)(1 + k²/4 + O(k⁴))`
+  (4.69), `K'(k) = (2/π) ln(4/k) K(k) − k²/4 + O(k⁴)` (4.70).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/EllipticIntegrals.lean` (all proven): `ellipticK`/`ellipticE` as
+  interval integrals (θ-form), `K(0) = E(0) = π/2`, `E ≤ π/2 ≤ K` (`k² < 1`), (4.69) as
+  `(π/2)(1 + k²/4) ≤ K(k) ≤ (π/2)(1 + k²/4 + 3k⁴/8)` for `k² ≤ 1/2` (from
+  `1 + x/2 ≤ (1−x)^{−1/2} ≤ 1 + x/2 + x²` on `[0, 1/2]` and `∫_0^{π/2} sin² = π/4`, `∫ sin⁴ = 3π/16`);
+  **Gauss's theorem (4.68) PROVEN**: `J(a,b) := ∫_0^∞ dt/√((t²+a²)(t²+b²))`; `J(c,c) = π/(2c)`
+  (`integral_comp_mul_left_Ioi` + `integral_Ioi_inv_one_add_sq`); kernel bounded by
+  `(t² + min(a,b)²)⁻¹` ⇒ integrable on `ℝ` (comparison with `(1+t²)⁻¹`); `J` antitone in each
+  argument (`setIntegral_mono_on`); the Landen map `u = (t − ab/t)/2` is injective on `(0,∞)` with
+  image `ℝ` (`t = u + √(u² + ab)`), and the one-dimensional change of variables
+  `integral_image_eq_integral_abs_deriv_smul` with the pointwise identity
+  `|u'| · kernel(a₁,b₁)(u) = 2 kernel(a,b)(t)` (`(a₁² + u²)(b₁² + u²) = (t²+a²)(t²+b²)((t²+ab)/(4t²))²`)
+  plus evenness (`integral_Iic_add_Ioi`, `integral_comp_neg_Iic`) gives `J((a+b)/2, √(ab)) = J(a,b)`;
+  iterating along the AGM and squeezing `π/(2a_j) ≤ J(a,b) ≤ π/(2b_j)` gives `J(a,b) = π/(2 AGM(a,b))`
+  (no continuity of `J` needed); `t = tan θ` on `(0, π/2)` (image `(0,∞)`, `Real.strictMonoOn_tan`,
+  `Real.hasDerivAt_tan`) turns `J(1,k)` into `∫_0^{π/2} dθ/√(sin²θ + k² cos²θ)`, then `θ ↦ π/2 − θ`
+  (`integral_comp_sub_left`) into `∫ dθ/√(cos²θ + k² sin²θ) = K(k')`; hence `one_div_AGM_one` and the
+  general `∫_0^{π/2} dθ/√(a²cos²θ + b²sin²θ) = π/(2 AGM(a,b))` by homogeneity (`AGM_smul`).  Not
+  formalized: the `t`-forms of (4.67) (improper at `t = 1`), the hypergeometric identification, and
+  (4.70) (asymptotics of `K` near `k = 1`; the text says "it can be shown").  Design note: (4.68) is
+  the rigorous basis for an `AzFloat` `ellipticK` via the AGM bracket, and together with (4.70) (still
+  to be proven) for `ln`; the bracket `b_j ≤ AGM ≤ a_j` certifies the error directly.  Lean notes:
+  `open Set MeasureTheory intervalIntegral` together makes `integral_const_mul` ambiguous — qualify;
+  `rw [← h]` with `h : ∫_0^{π/2} 1 = π/2` rewrites the integration limit `π/2` too — use `calc`;
+  `Continuous.intervalIntegrable` leaves the measure undetermined inside `integral_mono_on` (stuck
+  `IsLocallyFiniteMeasure ?μ`) — state the `IntervalIntegrable … volume …` facts first; `positivity`
+  cannot see `0 < min a b` for `min a b ^ 2` — use `pow_pos`; `(by positivity)` inside
+  `Real.sqrt_pos.mpr` within a `rw` term runs on a metavariable goal — ascribe the type;
+  `setIntegral_congr_fun` with an unspecified target function lets `rw` close the pointwise goal by
+  unifying the target with the source (silently useless) — state the target integral explicitly;
+  `integral_comp_sub_left` is best used forward as a `have` with `(a := 0) (b := π/2)` then
+  `rw [sub_self, sub_zero]`; `Real.cos_pos_of_mem_Ioo` needs `-(π/2) < θ` (feed `Real.pi_pos`);
+  `Real.pi_div_two_pos`; the Jacobian theorem lives in `Mathlib.MeasureTheory.Function.JacobianOneDim`.
+* **§4.8.2 First AGM algorithm for the logarithm (2026-10-17).**  States: from (4.68)–(4.70),
+  `(π/2)/AGM(1,k) = ln(4/k)(1 + O(k²))` (4.71), so `ln x = (π/2)/AGM(1, 4/x)(1 + O(1/x²))` for large
+  `x`; `x ≥ 2^{n/2}` gives precision `n` in about `2 lg n` iterations for `x ∈ [2^{n/2}, 2^n]`; `π`
+  needed (Ex. 4.44 via two evaluations, or Brent–Salamin from the Legendre relation
+  `EK' + E'K − KK' = π/2` (4.72)); argument expansion `ln(2^ℓ x) = ℓ ln 2 + ln x` (needs `ln 2`) or
+  `ln(x^{2^ℓ}) = 2^ℓ ln x` (gives `ln 2` from `π`); rigorous error `|(π/2)/AGM(1,k) − ln(4/k)| ≤
+  4k²(8 − ln k)` on `(0,1]` (4.73), `0.37k²(2.4 − ln k)` on `(0, 0.5]`; the `O(k²|ln k|)` error blocks
+  using larger `k`, motivating the exact theta-function formula (next).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/AGMLog.lean` (all proven): `agmLog x := (π/2)/AGM(1, 4/x)`, exactly
+  `= K(√(1 − (4/x)²))` for `x ≥ 4` and `= ∫_0^{π/2} dθ/√(cos²θ + (4/x)² sin²θ)` for `x > 0` (from
+  §4.8.1); `log_two_pow_mul`, `log_pow_two_pow`; error transport: shifting by `2^ℓ` keeps the absolute
+  error, squaring `ℓ` times divides it by `2^ℓ` (`abs_agmLog_pow_sub`); iteration count:
+  `√(b_j/a_j) ≤ b_{j+1}/a_{j+1}` (so `b_j/a_j ≥ (b/a)^{1/2^j}`, `agm_ratio_rpow_le`, rpow), the shifted
+  sequence `agmSeq_shift`, `agm_ratio_one_half_le` (`n ≤ 2^m`, `k ≥ 2^{−n}` ⇒ `b_{m+1}/a_{m+1} ≥ 1/2`),
+  and `agm_log_iterations`: for `2^{−n} ≤ k ≤ 1`, `a_j − b_j ≤ 8/2^n` at `j = 2⌈lg n⌉ + 1` (linear
+  phase `⌈lg n⌉ + 1` steps until the ratio is ≥ 1/2, then the quadratic phase of §4.8) — the text's
+  "about `2 lg n`".  **Not formalized at the time: (4.71) and (4.73)** (both proven later, see the §4.8.2 continued
+  bullet below) — they need the behaviour of `K(k')` as
+  `k → 0`, i.e. (4.70); a direct elementary proof (split `J(1,k) = ∫_0^∞ dt/√((1+t²)(k²+t²))` at
+  `t = 1`, `asinh(1/k) = ln(2/k) + O(k²)`, and the `O(k² ln(1/k))` piece `∫_0^1 (1 − (1+t²)^{−1/2})
+  (1/t − (k²+t²)^{−1/2}) dt`) is feasible but long; the planned route is the exact theta formula of
+  the coming subsections, from which a clean bound should follow; also not formalized: (4.72),
+  Brent–Salamin, Ex. 4.44.  Design note: an `AzFloat` `log` via AGM would use `agmLog` with
+  `x ← 2^ℓ x ≥ 2^{p/2}` (needs `ln 2` and `π` as proven constants) or repeated squaring (error
+  shrinks by `2^ℓ`, no `ln 2` needed), with the AGM bracket certifying the AGM value and a proven
+  (4.73)-type bound certifying the truncation — the latter is the missing piece.  Lean notes:
+  `(1/2 : ℝ) ^ (m + 1 : ℕ)` inside an rpow context still elaborates the exponent with a cast
+  (`↑(m+1)`, rpow) — bind the natural power to a `set e := …` variable first; `agmSeq A B 0 = agmSeq
+  a b m` for `A = a_m, B = b_m` needs `Prod.ext rfl rfl` (eta), not `rfl`; use
+  `congrArg Prod.fst (agmSeq_shift …)` for the component shifts instead of `simp only [agmA, …]`
+  (which unfolds the wrong occurrences); `mul_one_div` + `div_le_one` for `n * (1/2^m) ≤ 1`.
+* **§4.8.3 Theta functions (2026-10-17).**  States: `θ₂(q) = ∑_ℤ q^{(n+1/2)²} = 2q^{1/4}∑ q^{n(n+1)}`
+  (4.74), `θ₃(q) = ∑_ℤ q^{n²} = 1 + 2∑_{n≥1} q^{n²}` (4.75), `θ₄(q) = θ₃(−q)` (4.76), sparse series
+  (rectangular splitting does not help; AGM-based theta evaluation would be circular); identities
+  `(θ₃² + θ₄²)/2 = θ₃²(q²)`, `θ₃θ₄ = θ₄²(q²)`, so `AGM(θ₃²(q), θ₄²(q)) = AGM(θ₃²(q^{2^k}), θ₄²(q^{2^k})) = 1`
+  (limit 1 since `q^{2^k} → 0`): the AGM is parameterized by `(θ₃²(q^{2^k}), θ₄²(q^{2^k}))`; scaling:
+  `AGM(1, k') = 1/θ₃²(q)` for `k' = θ₄²/θ₃²`, equivalently `k = θ₂²/θ₃²` by Jacobi `θ₂⁴ + θ₄⁴ = θ₃⁴`, and
+  with (4.68) `K(k) = (π/2)θ₃²(q)` (4.77), `q` the nome; inverse `q = exp(−πK'/K)`, `ln(1/q) = πK'(k)/K(k)`
+  (4.78); Sasaki–Kanada `ln(1/q) = π/AGM(θ₂²(q), θ₃²(q))` (4.79).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ThetaFunctions.lean` (all proven): `theta3`/`theta4` as `ℤ`-sums
+  with `m.natAbs` exponents (keeps everything in `Monoid.npow`), `theta2` one-sided with `rpow q^{1/4}`;
+  summability via `|q|^{m²} ≤ |q|^{|m|}` and `Summable.int_rec`; one-sided forms by `tsum_int_rec` +
+  `tsum_eq_zero_add`; `θ₄(q) = θ₃(−q)`; `theta2_eq_tsum_int` (`0 < q < 1`); **both AGM identities
+  PROVEN**: the double series over `ℤ²` (`tsum_mul_tsum_of_summable_norm`) is split by the parity of
+  `m + n` (`Summable.tsum_add_tsum_compl` + explicit `Equiv`s `(a,b) ↦ (a+b, a−b)` onto the even pairs
+  and `(a,b) ↦ (a+b+1, a−b)` onto the odd pairs, proofs by `omega` on `Int` division), the odd part
+  vanishes pointwise (for `θ₃² + θ₄²`) or by the involution `(a,b) ↦ (a, −b−1)` (for `θ₃θ₄`), the even
+  part is reassembled with `(a+b)² + (a−b)² = 2(a² + b²)` (`zify` + `sq_abs`) and the parity rule
+  `(−1)^{|m|}(−1)^{|n|} = ±1` by `Even (m+n)`; bounds for `0 ≤ q < 1`: `1 ≤ θ₃ ≤ 1 + 2q/(1−q)`,
+  `1 − 2q/(1−q) ≤ θ₄ ≤ θ₃`, `θ₄ ≥ 0` (from `θ₃θ₄ = θ₄(q²)² ≥ 0`) and `θ₄ > 0` (descent along `q^{2^k}`
+  to a `q^{2^k} < 1/3` where the series bound is positive); `AGM_theta_step` via `AGM_step`,
+  `AGM_theta_pow`, and `AGM_theta : AGM(θ₃²(q), θ₄²(q)) = 1` by squeezing between
+  `(1 − 2r/(1−r))²` and `(1 + 2r/(1−r))²`, `r = q^{2^k} → 0`; `AGM_one_nomeK'` (`AGM_smul`) and (4.77)
+  as `ellipticK_nome : K(√(1 − k'²)) = (π/2)θ₃²(q)` from Gauss (4.68) — no Jacobi quartic identity
+  needed in this form.  **Not formalized: Jacobi's `θ₂⁴ + θ₄⁴ = θ₃⁴`** (so `nomeK = θ₂²/θ₃²` is a
+  definition only and `k = √(1 − k'²)` is the modulus actually used), **the inverse nome formula
+  (4.78)** and hence **Sasaki–Kanada (4.79)** — (4.78) is the Jacobi imaginary transformation
+  (Mathlib: `jacobiTheta_S_smul : jacobiTheta (−1/τ) = (−Iτ)^{1/2} jacobiTheta τ` for `θ₃`, and
+  `jacobiTheta₂_functional_equation` for the two-variable theta giving `θ₂ ↔ θ₄`); a real-`q`
+  bridge `theta3 (exp (−πs)) = jacobiTheta (I s)` plus the `θ₂/θ₄` swap would give (4.78) and then
+  (4.79) via (4.68)+(4.77)+Jacobi — the planned route to the exact log formula and to a clean (4.73).
+  Design note: `θ₃`, `θ₄`, `θ₂` at a small nome are a handful of terms (`q^{n²}`) — an `AzFloat`
+  implementation is a sparse-series loop with the tail bound `2q^{(N+1)²}/(1−q)`; the AGM then runs
+  on `(θ₃², θ₄²)` exactly as in §4.8.  Lean notes: `Int.rec f g` is the canonical two-sided sequence
+  (`tsum_int_rec`, `Summable.int_rec`, `HasSum.int_rec`), match it with `funext; rcases m with n | n <;>
+  rfl`; `Summable.tsum_add_tsum_compl` is `protected` with explicit `(hs) (hsc)` and implicit `f` —
+  never via dot notation on `hf`; `Equiv.tsum_eq` reversed pulls a subtype sum back to `ℤ × ℤ`;
+  `rw [neg_pow]` grabs `(-1)^k` first — pass the base `neg_pow q`; `Even.pow` is not available by dot
+  notation on an unfolded `Even` (use `Nat.even_pow.mpr ⟨h, two_ne_zero⟩` / `Odd.pow h`); rewriting an
+  `if Even …` condition with `rw` fails (motive/Decidable) — `by_cases` + `ite_eq_left/right`;
+  `zify` turns `(x.natAbs : ℤ)` into `|x|`, so finish with `sq_abs`, not `Int.natAbs_sq`; `omega`
+  does not take `∧` goals from `Prod.mk.injEq` — use `Prod.ext rfl (by show …; omega)`;
+  `(f / g)` (Pi) is defeq to `fun x => f x / g x`, so `exact` works where `simpa` does not.
+* **§4.8.3 continued: Jacobi's identity, nome inverse (4.78), Sasaki–Kanada (4.79) (2026-10-17).**
+  States: `θ₂⁴ + θ₄⁴ = θ₃⁴` (Jacobi), so `k = θ₂²/θ₃²`, `k' = θ₄²/θ₃²` are complementary moduli and
+  `K(k) = (π/2)θ₃²(q)` (4.77); the nome inverse `ln(1/q) = πK'(k)/K(k)` (4.78); Sasaki–Kanada
+  `ln(1/q) = π/AGM(θ₂²(q), θ₃²(q))` (4.79).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ThetaModular.lean` (all proven): `theta2Int q = ∑_ℤ q^{a(a+1)}`
+  with `θ₂ = q^{1/4}·theta2Int` (`theta2_eq_rpow_mul`, summability via `|a||a+1| ≥ |a| − 1`); two more
+  `ℤ²` parity splits `θ₃² − θ₄² = 2q θ₂Int(q²)²` (`theta3_sq_sub_theta4_sq`, odd pairs via
+  `(a+b+1, a−b)`) and `θ₂Int(q)² = 2θ₃(q²)θ₂Int(q²)` (`theta2Int_sq`, even pairs via `(c+d, c−d)`,
+  odd via `(c+d+1, c−d)`); with `(θ₃² + θ₄²)/2 = θ₃²(q²)` these give **Jacobi's identity**
+  `theta2_pow_four_add_theta4_pow_four` for `0 ≤ q < 1` by `linear_combination`, hence
+  `nomeK_sq_add_nomeK'_sq`, `theta2_le_theta3`, `sqrt_one_sub_nomeK'_sq = nomeK`, and (4.77) as
+  `ellipticK_nomeK : K(k) = (π/2)θ₃²`.  Bridge to Mathlib: for `q = nome s = exp(−πs)`, `τ = is`,
+  `(θ₃ q : ℂ) = jacobiTheta₂ 0 τ`, `θ₄ q = jacobiTheta₂ (1/2) τ`, `θ₂ q = e^{−πs/4} jacobiTheta₂ (τ/2) τ`
+  (`theta3_nome_eq`, `theta4_nome_eq`, `theta2_nome_eq`); `jacobiTheta₂_functional_equation` at
+  `z = 0` and `z = 1/2` (plus evenness in `z`, `jacobiTheta₂_neg_left'`, and `(-1/τ) = i/s`) yields
+  Jacobi's imaginary transformation `θ₃(q') = √s θ₃(q)`, `θ₂(q') = √s θ₄(q)`, `θ₄(q') = √s θ₂(q)` for
+  `q' = exp(−π/s)` (`theta3_nome_inv`, `theta2_nome_inv`, `theta4_nome_inv`), so `k'(q) = k(q')`
+  (`nomeK'_nome_eq_nomeK_inv`).  Then **(4.78)** `log_inv_nome`: `π K(k'(q))/K(k(q)) = ln(1/q)` by
+  (4.77) at `q` and `q'`, and **(4.79)** `sasaki_kanada` via `AGM_smul`, `one_div_AGM_one` (Gauss),
+  `sqrt_one_sub_nomeK_sq = nomeK'`, and (4.78).  Not formalized: nothing in this chunk; the (4.73)
+  error bound of §4.8.2 is now derivable from (4.79) (still open), as is the Legendre relation (4.72).
+  Design note: (4.79) is the exact formula an `AzFloat` log via theta functions would be certified
+  against: evaluate `θ₂²(q), θ₃²(q)` by sparse series, run the AGM, divide `π` — no asymptotic
+  `ln(4/k)` error term is needed.  Lean notes: no `jacobiTheta₂_neg_left` in Mathlib — evenness in
+  `z` is `(Equiv.neg ℤ).tsum_eq` + `ring_nf` on the term; `Complex.exp_mul` does not exist — push the
+  real `rpow` to `Real.exp (… * …)` with `← Real.exp_mul` *before* casting (`Complex.ofReal_exp`);
+  `((s:ℂ))^(1/2:ℂ) = √s` is `Complex.ofReal_cpow` + `Real.sqrt_eq_rpow`; small complex identities such
+  as `-1/(i s) = i/s` go through `div_eq_iff` + `linear_combination … * Complex.I_sq` rather than
+  `field_simp; ring` (which loops on `I`); `Equiv.tsum_eq` reversed needs the summand given
+  explicitly `(f := …)` or `rw` fails to find the pattern; after `field_simp` closes a goal, a trailing
+  `ring` is an error ("No goals") — check the goal state rather than appending finishers.
+* **§4.8.2 continued: the error bound (4.73) and (4.71) (2026-10-17).**  States:
+  `|(π/2)/AGM(1,k) − ln(4/k)| ≤ 4k²(8 − ln k)` for `k ∈ (0,1]` (4.73); `(π/2)/AGM(1,k) =
+  ln(4/k)(1 + O(k²))` (4.71).  Formalized in `Azurite/BrentZimmermann/Chapter4/AGMLogBound.lean`
+  (all proven), by an elementary argument instead of the theta route: Gauss (4.68) gives
+  `(π/2)/AGM(1,k) = ∫_0^∞ dt/√((1+t²)(k²+t²))`, split at `t = 1`.  On `[1,∞)` the integrand is
+  `1/(t√(1+t²)) − r₁` with `0 ≤ r₁ ≤ k²/(2t³)` (`inv_sub_inv_sqrt_le`), and
+  `∫_1^∞ dt/(t√(1+t²)) = arsinh 1 = ln(1+√2)` (`integral_inv_mul_sqrt_Ioi`, antiderivative
+  `−arsinh(1/t)` via `integral_Ioi_of_hasDerivAt_of_nonneg'`); on `[0,1]` it is
+  `1/√(k²+t²) − φ + r₂` with `φ = t/(√(1+t²)(1+√(1+t²))) = (1 − 1/√(1+t²))/t` (`agmLogPhi`,
+  antiderivative `ln(1+√(1+t²))`), `∫_0^1 dt/√(k²+t²) = arsinh(1/k)` (antiderivative
+  `arsinh(t/k)`), and `r₂ = (1 − 1/√(1+t²))(1/t − 1/√(k²+t²))` (`agmLogRem`, defined as the
+  difference so integrability is free) with `0 ≤ r₂ ≤ t/2` on `[0,k]`, `≤ k²/(4t)` on `[k,1]`, so
+  `0 ≤ R₂ ≤ (k²/4)(1 − ln k)`.  Summing, `(π/2)/AGM(1,k) = ln(4/k) + R₀ − R₁ + R₂` with
+  `R₀ = ln((1+√(1+k²))/2) ∈ [0, k²/4]`, giving `abs_pi_div_AGM_sub_log_le`:
+  `|(π/2)/AGM(1,k) − ln(4/k)| ≤ (k²/4)(2 − ln k)` — sixteen times sharper than (4.73), whose
+  textbook form is `abs_pi_div_AGM_sub_log_le_bz`; `abs_agmLog_sub_log_le`:
+  `|agmLog x − ln x| ≤ (4/x²)(2 + ln(x/4))` for `x ≥ 4`; and (4.71) explicitly as
+  `pi_div_AGM_eq_log_mul`: `(π/2)/AGM(1,k) = ln(4/k)(1 + ε)`, `|ε| ≤ k²/2` (uses `exp 1 < 3` for
+  `ln 4 ≥ 1`).  Not formalized: the sharper `0.37k²(2.4 − ln k)` on `(0, 0.5]` (our bound gives
+  `0.25k²(2 − ln k)` there, which is better anyway); (4.70) as an asymptotic statement about `K`;
+  the Legendre relation (4.72); Brent–Salamin; Ex. 4.44.  Design note: this is the certified error
+  term for an `AzFloat` AGM logarithm: with `x ≥ 2^{p/2+2}` the bound `(4/x²)(2 + ln(x/4))` is
+  below `2^{−p}`, so the shift `ℓ` in `agmLog (2^ℓ x)` can be chosen from `p` alone (plus the AGM
+  iteration bound `agm_log_iterations`).  Lean notes: `integral_Ioi_of_hasDerivAt_of_nonneg'`
+  needs `(a := …)` when the `have` has no expected type, else `linarith` on `mem_Ici.mp hx` sees
+  metavariables; `rw [Real.sqrt_mul (by positivity) _]` fails on the metavariable — ascribe
+  `(by positivity : (0:ℝ) ≤ …)`; `Continuous.inv₀` with a `fun t => …` goal: give the `0 < …` fact
+  via `show` first, `positivity` cannot see through the unreduced beta-redex; `continuous_id.pow 2`
+  yields `fun x => id x ^ 2`; `Integrable.const_mul` (not dot notation on `IntegrableOn`) for
+  `k²/2 · t^{−3}` on `Ioi 1`, with `Real.rpow_neg` + `Real.rpow_natCast` after `show (3:ℝ) = ((3:ℕ):ℝ)`;
+  `field_simp` often closes the goal outright — a trailing `ring` then errors; `show … by field_simp`
+  may leave `k² + 1 = 1 + k²` — append `; ring`.
+* **Deferred-proof sweep (2026-10-17)** — the items marked "not formalized" in this session's
+  chunks that are mathematical statements (not cost models or exercises) and need no later MCA
+  section.  (a) §4.4.3: the modular splitting is the transposition of the classical one —
+  `classical_split_eq_modular_transpose` (`RectangularSplitting.lean`, `Finset.sum_comm`).
+  (b) §4.5: the two-sided Stirling bound's upper half `n! ≤ √(2πn)(n/e)^n e^{1/(12n)}` for `n ≥ 1`
+  (`factorial_le_stirling_refined`, `StirlingRefinement.lean`): Mathlib's
+  `Stirling.log_stirlingSeq_sdiff_hasSum` gives `log s_{n+1} − log s_{n+2} = ∑_k r^{k+1}/(2k+3)`
+  with `r = 1/(2n+3)²`; bounding `1/(2k+3) ≤ 1/3` and summing the geometric series gives
+  `1/(12(n+1)) − 1/(12(n+2))`, telescoping to `log s_{n+1} − log √π ≤ 1/(12(n+1))` via
+  `le_of_tendsto` and `tendsto_stirlingSeq_sqrt_pi`.  (c) §4.5: (4.31)'s error is `Θ(1/N)` —
+  `harmonic_sub_log_sub_gamma_ge`: `H_N − ln N − γ ≥ 1/(8(N+1))` for `N ≥ 3`
+  (`AsymptoticExamples.lean`; `−ln(1 − x) ≥ x + x²/2 − x³/(1 − x)` from
+  `Real.abs_log_sub_add_sum_range_le`, one step `≥ 1/(8m(m+1))`, telescoping, `le_of_tendsto_of_tendsto'`).
+  (d) §4.4/§4.5: the error function as an integral — `erf_eq_integral` (`erf x = (2/√π)∫_0^x e^{−u²}`,
+  from `integral_gaussian_Ioi` and `integral_Ioi_sub_Ioi'`), `erf_neg`, `erf_zero`; (4.22)
+  `hasSum_erf_series` by `intervalIntegral.hasSum_integral_of_dominated_convergence` (bound
+  `(x²)^j/j!`, `Real.summable_pow_div_factorial`); (4.23) `hasSum_erf_exp_series`: with
+  `c_j = 2^j/(2j+1)‼` (`erfExpCoeff`, `c_{j+1}(2j+3) = 2c_j`) the series `S(x) = ∑ c_j x^{2j+1}`
+  is differentiated term by term on a ball (`hasDerivAt_tsum_of_isPreconnected`, bound
+  `c_j(2j+1)R^{2j}` summable by the ratio test), satisfies `S' = 1 + 2xS`, so
+  `e^{−x²}S(x) − ∫_0^x e^{−u²}` has zero derivative (`is_const_of_deriv_eq_zero`) and vanishes at `0`
+  (`ErrorFunctionSeries.lean`).  (e) §4.8.1: (4.70) to first order,
+  `abs_ellipticK_sqrt_sub_log_le` (`|K(k') − ln(4/k)| ≤ (k²/4)(2 − ln k)`, `AGMLogBound.lean`); the
+  second-order term `−k²/4 + (k²/4)ln(4/k)` of (4.70) is NOT formalized.  (f) §4.8.2: **the Legendre
+  relation (4.72) PROVEN** (`LegendreRelation.lean`): `hasDerivAt_ellipticK`/`hasDerivAt_ellipticE`
+  by `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le` on the interval
+  `Ioo (−m) m`, `m = (|k|+1)/2`, with constant bounds `m/√(1−m²)^3`, `m/√(1−m²)`; the identities
+  `k ∂E/∂k = E − K` (`mul_ellipticE_deriv`, pointwise `√Δ − 1/√Δ = −k² sin²θ/√Δ`) and
+  `k(1−k²) ∂K/∂k = E − (1−k²)K` (`ellipticK_deriv_identity`: `d/dθ [sin θ cos θ/√Δ] =
+  (1 − 2sin²θ + k² sin⁴θ)/√Δ³` integrates to `0`, and `k²(1−k²) sin²θ/√Δ³ = √Δ − (1−k²)/√Δ − k² ·
+  that derivative`); `legendreL k = E K' + E' K − K K'` has derivative `0` on `(0,1)`
+  (`hasDerivAt_legendreL`: chain rule through `k' = √(1−k²)` with `dk'/dk = −k/k'`, then one
+  `linear_combination` of the four identities with `k'² = 1 − k²`), is constant by
+  `exists_hasDerivAt_eq_slope`, and tends to `π/2` at `0⁺`: `K(k) → π/2` (squeeze with
+  `ellipticK_bounds`), `E(k') → 1` (`ellipticE_one`, `|E(k') − 1| ≤ (π/2)k` from
+  `√A − √B ≤ √(A − B)` via `Real.abs_le_sqrt`), `K'(k)(E − K) → 0` (`|E − K| ≤ k²K ≤ πk²` and
+  `K'(k) ≤ ln(4/k) + (k²/4)(2 − ln k)`, with `tendsto_log_mul_rpow_nhdsGT_zero` for `k² ln k → 0`);
+  `tendsto_nhds_unique` finishes.  `legendre_relation_sqrt_half`: `2EK − K² = π/2` at `k = 1/√2`.
+  Still not formalized from this session: the Brent–Salamin algorithm's `π` formula (needs `E` in
+  terms of the AGM sequence — a Landen transformation for `E`), (4.26) (γ's integral
+  representation is not in Mathlib), Euler–Maclaurin and everything resting on it ((4.32),
+  (4.34)–(4.36) for `m ≥ 1`, (4.38)), the continued-fraction convergence (4.39)/(4.40), `Y_ν`,
+  the analytic radii (4.56)/(4.57)/(4.61), and the `t`-form of (4.67).  Design note: the Legendre
+  relation plus Gauss's theorem is the certified basis for a Brent–Salamin `π`; `erf_eq_integral`
+  + (4.22)/(4.23) make the erf series branches of Algorithm 4.2 provable against the same `erf`
+  as the asymptotic branch.  Lean notes: `HasDerivAt.mul` of a Pi-product `sin * cos` leaves
+  `(sin * cos) θ` as an atom for `field_simp`/`ring` — state the product as a lambda; `set D := √…`
+  before `field_simp` keeps the square root an atom (otherwise `ring_nf` inside the argument
+  produces two spellings); find `linear_combination` cofactors by polynomial division in `D²` and
+  `cos²` (the residual that `ring` prints is `P − combination`); `rw [h] at r` with `h : b² = 1 − k²`
+  also rewrites inside an integral — `set` the integrals first; `HasDerivAt.comp` has `x` implicit
+  here (`hK'.comp k hb'`), its result is `f ∘ g`, so finish with `simp only [Function.comp_apply]`
+  and `rw [← hb]` to re-fold the `set` variable; `tendsto_one_div_add_atTop_nhds_zero_nat` needs
+  `(𝕜 := ℝ)`; `tendsto_const_nhds.mul` is ambiguous between `Tendsto.mul` and the smul version —
+  use `Tendsto.const_mul`/`const_sub`; `Ioo_mem_nhdsGT (h : a < b) : Ioo a b ∈ 𝓝[>] a`;
+  `tendsto_log_mul_rpow_nhdsGT_zero` is in the root namespace; `Summable.sum_add_tsum_nat_add'`
+  takes the summability of the *shifted* sequence (`(summable_nat_add_iff 1).mpr`); `erfExpCoeff 0`
+  needs `norm_num [Nat.doubleFactorial]`; `Even.pow_nonneg (even_two_mul j)` where `positivity`
+  fails on `R ^ (2 * j)`.
+* **§4.8.4 Second AGM algorithm for the logarithm (2026-10-17).**  States: for large `x`, `q = 1/x`,
+  compute `θ₂(q⁴)`, `θ₃(q⁴)` from (4.74)/(4.75) and `ln x = (π/4)/AGM(θ₂²(q⁴), θ₃²(q⁴))` (Sasaki–Kanada
+  with `q ↦ q⁴`, avoiding `q^{1/4}`); trade-off between enlarging `x` (squaring / `2^ℓ`) and the
+  series cost; stop when `O(q³⁶)` is negligible: `θ₂(q⁴) = 2q + 2q⁹ + 2q²⁵ + O(q⁴⁹)`,
+  `θ₃(q⁴) = 1 + 2q⁴ + 2q¹⁶ + O(q³⁶)` (the pasted text reads `2q + q⁹ + q²⁵` and `1 + 2q⁴ + q¹⁶`;
+  the exact series have coefficient 2 on every term, which is what is proven); so `x ≥ 2^{n/36}`
+  (vs `2^{n/2}`), saving about four AGM iterations; implementation: `AGM(θ₂², θ₃²) =
+  AGM(θ₂² + θ₃², 2θ₂θ₃)/2` skips the first square root, two non-scalar products suffice (Ex. 4.45),
+  squares for products (§4.12); drawbacks: not self-correcting (full precision throughout, a `log n`
+  factor lost against Newton/series), `exp` only via Newton on `ln` (§4.2.5, Ex. 4.6), trigonometric
+  functions need complex AGM or Landen for incomplete integrals (larger constants); at best `O(1)`
+  iterations saved.  Formalized in `Azurite/BrentZimmermann/Chapter4/SecondAGMLog.lean` (all
+  proven): `nome_log` (`q = e^{−πs}` with `s = −ln q/π`), hence `sasaki_kanada'` for every
+  `0 < q < 1` and `log_eq_pi_div_four_div_AGM` for `x > 1`; `theta2_pow_four` via
+  `Real.pow_rpow_inv_natCast`; `theta2Int_eq_two_mul_tsum` by cancelling `q^{1/4}`; the generic
+  tail lemma `tsum_pow_le_of_le` (`e n ≥ M + n ⇒ ∑ q^{e n} ≤ q^M/(1−q)`), `theta3_trunc`,
+  `theta2Int_trunc` (split with `Summable.sum_add_tsum_nat_add'`), the concrete
+  `theta3_pow_four_trunc`/`theta2_pow_four_trunc` with tails `2q³⁶/(1−q⁴)`, `2q⁴⁹/(1−q⁴)`;
+  `inv_pow_le_of_two_rpow_le` (`x ≥ 2^{n/36} ⇒ q³⁶ ≤ 2^{−n}`) and the two `_error_le` bounds;
+  `AGM_sq_sq` from `AGM_step` + `AGM_smul`; `sq_add_sq_eq_half_add`, `two_mul_mul_eq_half_sub`.
+  Not formalized: the "about four iterations" comparison (heuristic; `agm_log_iterations` gives
+  the first algorithm's count, the analogous count for `(θ₂², θ₃²)` would need the ratio
+  `θ₂²/θ₃² ≈ 4q²`), the cost trade-off, the drawbacks (prose), Ex. 4.45 beyond its identities,
+  §4.12.  Design note: this is the `AzFloat` `log` plan — argument expansion to `x ≥ 2^{p/36+c}`,
+  three terms of each theta series (sparse, exact tails above certify the truncation), the AGM
+  started from `(θ₂² + θ₃², 2θ₂θ₃)` without a square root, `π` from Brent–Salamin or a proven
+  constant; the error budget is the two tails + the AGM bracket `b_j ≤ AGM ≤ a_j`.  Lean notes:
+  `rw [one_div]` rewrites the *outer* `1 / (1/x)^4` first — compute `ln(1/(1/x)^4) = 4 ln x` in a
+  separate `have`; `(q^4)^{1/4} = q` is `Real.pow_rpow_inv_natCast hq (by norm_num)` after
+  `show (1/4:ℝ) = ((4:ℕ):ℝ)⁻¹`; ℕ inequalities like `(N+1)² + n ≤ (n+N+1)²` defeat `nlinarith` —
+  expand with `ring` and use `Nat.le_mul_of_pos_right`; `norm_num [← pow_mul] at h` rearranges a
+  conjunction of bounds into `a ≤ b ∧ b ≤ c + d` form — destructure and feed `linarith`.
+* **§4.8.5 The complex AGM (2026-10-17).**  States: some asymptotically fastest algorithms need
+  complex arithmetic for real results: `arctan x = ℑ ln(1 + ix)` (also `arcsin`, `arccos`),
+  `cos x + i sin x = exp(ix)` with the complex `exp` by Newton from the complex `ln` (4.11); the
+  AGM/`ln z` theory extends to `z ∉ (−∞, 0]` with the square root of positive real part; complex
+  multiplication = 3 real (Karatsuba), complex squaring = 2 real; FFT domain (1 product = 3
+  transforms): squaring `2M/3`, complex product `2M` (4 forward + 2 backward), complex square
+  `4M/3` (2 + 2); Table 4.1 (real/complex: squaring 0.666/1.333, multiplication 1/2, reciprocal
+  1.444/3.444, division 1.666/4.777, square root 1.333/5.333, AGM iteration 2/6.666, log via AGM
+  `4 lg n`/`13.333 lg n`), details in §4.12.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ComplexAGM.lean` (all proven): `arctan_eq_im_log` via
+  `Complex.log_im`, `Complex.tan_arg`, `Complex.abs_arg_lt_pi_div_two_iff`, `Real.arctan_tan`;
+  `arcsin_eq_arctan'`/`arccos_eq_arctan` (Mathlib's `Real.arcsin_eq_arctan`,
+  `arccos_eq_pi_div_two_sub_arcsin`); `exp_mul_I_eq` (`Complex.exp_mul_I`);
+  `complex_mul_three_products`, `complex_sq_two_products` (`push_cast; ring_nf; rw [I_sq]; ring`);
+  `fftCost f b = (f + b)/3` with `fftCost_real_sq/real_mul/complex_mul/complex_sq`.  Not
+  formalized: convergence of the complex AGM and the complex `ln` (complex Gauss/Landen theory —
+  a large project, only needed if trigonometric functions go through the AGM), the complex Newton
+  `exp`, the §4.12 rows of Table 4.1 (reciprocal, division, square root, AGM iteration, log), the
+  claim that complex arithmetic is "significantly slower" (cost model).  Design note: Azurite has
+  no complex float type; the plan for `sin`/`cos`/`arctan` is real argument reduction + series
+  (§4.3–§4.4), so the complex AGM is recorded, not planned.  Lean notes: `rw [← htan]` with
+  `htan : tan (arg z) = x` rewrites every `x`, including inside `z` — use `conv_lhs => rw [← htan]`;
+  `(1 + ↑x * I).re` is closed by `simp`; `Complex.tan_arg` is stated with `Real.tan`.

@@ -57,6 +57,82 @@ namespace BZ
 
 open Real Filter Topology Finset MeasureTheory Set
 
+/-- One step of the comparison between `H_N` and `ln N`: for `m ≥ 4`,
+`ln m − ln(m − 1) − 1/m ≥ 1/(8m(m+1))` (from `−ln(1 − x) ≥ x + x²/2 − x³/(1 − x)`). -/
+theorem log_sub_log_sub_inv_ge {m : ℕ} (hm : 4 ≤ m) :
+    1 / (8 * (m : ℝ) * (m + 1)) ≤ Real.log m - Real.log (m - 1) - 1 / m := by
+  have hm0 : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
+  have hm4 : (4 : ℝ) ≤ m := by exact_mod_cast hm
+  have hm1 : (0 : ℝ) < m - 1 := by linarith
+  set x : ℝ := 1 / m with hx
+  have hx0 : 0 < x := by positivity
+  have hx1 : x ≤ 1 / 4 := by rw [hx]; exact one_div_le_one_div_of_le (by norm_num) hm4
+  have habs : |x| < 1 := by rw [abs_of_pos hx0]; linarith
+  have h := Real.abs_log_sub_add_sum_range_le habs 2
+  rw [Finset.sum_range_succ, Finset.sum_range_one, abs_le, abs_of_pos hx0] at h
+  obtain ⟨-, h1⟩ := h
+  norm_num at h1
+  have hlog : Real.log m - Real.log (m - 1) = -Real.log (1 - x) := by
+    rw [hx, show (1 : ℝ) - 1 / m = (m - 1) / m by field_simp, Real.log_div hm1.ne' hm0.ne']
+    ring
+  have key : 1 / (8 * (m : ℝ) * (m + 1)) ≤ x ^ 2 / 2 - x ^ 3 / (1 - x) := by
+    have e : x ^ 2 / 2 - x ^ 3 / (1 - x) - 1 / (8 * (m : ℝ) * (m + 1))
+        = (3 * m ^ 2 - 7 * m - 12) / (8 * m ^ 2 * (m - 1) * (m + 1)) := by
+      rw [hx, show (1 : ℝ) - 1 / m = (m - 1) / m by field_simp]
+      field_simp
+      ring
+    have : 0 ≤ (3 * (m : ℝ) ^ 2 - 7 * m - 12) / (8 * m ^ 2 * (m - 1) * (m + 1)) :=
+      div_nonneg (by nlinarith) (by positivity)
+    linarith
+  linarith
+
+/-- The finite telescoping: for `N ≥ 3` and every `M`,
+`(H_N − ln N) − (H_{N+M} − ln(N+M)) ≥ (1/8)(1/(N+1) − 1/(N+M+1))`. -/
+theorem harmonic_sub_log_diff_ge {N : ℕ} (hN : 3 ≤ N) (M : ℕ) :
+    1 / 8 * (1 / ((N : ℝ) + 1) - 1 / (((N + M : ℕ) : ℝ) + 1))
+      ≤ ((harmonic N : ℝ) - Real.log N) - ((harmonic (N + M) : ℝ) - Real.log (N + M)) := by
+  induction M with
+  | zero => simp
+  | succ M ih =>
+    have hstep := log_sub_log_sub_inv_ge (m := N + M + 1) (by omega)
+    have hpos : (0 : ℝ) < (N : ℝ) + M + 1 := by positivity
+    have e : 1 / (8 * ((N : ℝ) + M + 1) * ((N : ℝ) + M + 1 + 1))
+        = 1 / 8 * (1 / ((N : ℝ) + M + 1) - 1 / ((N : ℝ) + M + 1 + 1)) := by
+      field_simp
+      ring
+    rw [show N + (M + 1) = N + M + 1 from rfl, harmonic_succ]
+    push_cast at hstep ih ⊢
+    rw [add_sub_cancel_right, e] at hstep
+    rw [show (N : ℝ) + ((M : ℝ) + 1) = N + M + 1 by ring]
+    simp only [one_div] at hstep ih ⊢
+    linarith
+
+/-- The convergence in (4.31) is genuinely `Θ(1/N)`: `H_N − ln N − γ ≥ 1/(8(N+1))` for `N ≥ 3`
+(the matching upper bound `≤ 1/N` is `harmonic_sub_log_sub_gamma_bounds`). -/
+theorem harmonic_sub_log_sub_gamma_ge {N : ℕ} (hN : 3 ≤ N) :
+    1 / (8 * ((N : ℝ) + 1)) ≤ (harmonic N : ℝ) - Real.log N - eulerMascheroniConstant := by
+  have hlim : Tendsto (fun M : ℕ =>
+      ((harmonic N : ℝ) - Real.log N) - ((harmonic (N + M) : ℝ) - Real.log (N + M))) atTop
+      (𝓝 (((harmonic N : ℝ) - Real.log N) - eulerMascheroniConstant)) := by
+    refine tendsto_const_nhds.sub ?_
+    have := Real.tendsto_harmonic_sub_log.comp (tendsto_add_atTop_nat N)
+    refine this.congr fun M => ?_
+    simp only [Function.comp_apply]
+    rw [add_comm M N]
+    push_cast
+    ring
+  have hR : Tendsto (fun M : ℕ => 1 / 8 * (1 / ((N : ℝ) + 1) - 1 / (((N + M : ℕ) : ℝ) + 1)))
+      atTop (𝓝 (1 / 8 * (1 / ((N : ℝ) + 1) - 0))) := by
+    have h0 : Tendsto (fun M : ℕ => 1 / (((N + M : ℕ) : ℝ) + 1)) atTop (𝓝 0) := by
+      have := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).comp (tendsto_add_atTop_nat N)
+      refine this.congr fun M => ?_
+      simp only [Function.comp_apply]
+      rw [add_comm M N]
+    exact (h0.const_sub (1 / ((N : ℝ) + 1))).const_mul (1 / 8)
+  have := le_of_tendsto_of_tendsto' hR hlim fun M => harmonic_sub_log_diff_ge hN M
+  rw [← one_div_mul_one_div]
+  simpa using this
+
 /-! ### Euler's constant, (4.31) -/
 
 /-- (4.31): `γ = lim (H_N − ln N)`. -/
