@@ -1378,12 +1378,15 @@ import Azurite.BrentZimmermann.Chapter2.FFTMulMod
 import Azurite.BrentZimmermann.Chapter4.AGM
 import Azurite.BrentZimmermann.Chapter4.AGMLog
 import Azurite.BrentZimmermann.Chapter4.AGMLogBound
+import Azurite.BrentZimmermann.Chapter4.ArctanBinarySplitting
 import Azurite.BrentZimmermann.Chapter4.ArgumentReduction
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExamples
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
 import Azurite.BrentZimmermann.Chapter4.BernoulliRecurrence
 import Azurite.BrentZimmermann.Chapter4.Bessel
 import Azurite.BrentZimmermann.Chapter4.BesselRecurrence
+import Azurite.BrentZimmermann.Chapter4.BinarySplitting
+import Azurite.BrentZimmermann.Chapter4.BitBurst
 import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
 import Azurite.BrentZimmermann.Chapter4.ComplexAGM
 import Azurite.BrentZimmermann.Chapter4.ContinuedFraction
@@ -1396,6 +1399,7 @@ import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.FunctionalInverse
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.HigherOrder
+import Azurite.BrentZimmermann.Chapter4.Holonomic
 import Azurite.BrentZimmermann.Chapter4.InverseRoot
 import Azurite.BrentZimmermann.Chapter4.InverseSqrt
 import Azurite.BrentZimmermann.Chapter4.LegendreRelation
@@ -1406,6 +1410,7 @@ import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
 import Azurite.BrentZimmermann.Chapter4.RepeatedDoubling
 import Azurite.BrentZimmermann.Chapter4.SecondAGMLog
 import Azurite.BrentZimmermann.Chapter4.SeriesReduction
+import Azurite.BrentZimmermann.Chapter4.SinCosBinarySplitting
 import Azurite.BrentZimmermann.Chapter4.SplittingComplexity
 import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
 import Azurite.BrentZimmermann.Chapter4.StirlingRefinement

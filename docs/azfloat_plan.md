@@ -1509,3 +1509,173 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   (§4.3–§4.4), so the complex AGM is recorded, not planned.  Lean notes: `rw [← htan]` with
   `htan : tan (arg z) = x` rewrites every `x`, including inside `z` — use `conv_lhs => rw [← htan]`;
   `(1 + ↑x * I).re` is closed by `simp`; `Complex.tan_arg` is stated with `Real.tan`.
+* **§4.9 Binary splitting, introduction (2026-10-17).**  States: AGM algorithms for `arctan`,
+  `sin`, `cos` have a large constant in `O(M(n) log n)`, so `O((log n)^α M(n))` binary-splitting
+  algorithms (`α ≥ 1` depending on the series' convergence and the multiplication algorithm) are
+  competitive; the idea: for `x = p/q` with small `p, q`, `|x| ≤ 1/2`,
+  `arctan(p/q) ≈ ∑_{j≤n/2} (−1)^j p^{2j+1}/((2j+1) q^{2j+1})` (the paste reads `q^{2k+1}`), an exact
+  rational `P/Q` with `log|Q| = O(n log n)` (`exp`: `∼ n/ln n` terms, `log|Q| = O(n)`); divide and
+  conquer `P/Q = (P₁Q₂ + P₂Q₁)/(Q₁Q₂)` recursively (useless with quadratic multiplication, the
+  balanced products profit from fast multiplication); complexity (4.80)
+  `∑_{k=1}^{⌈lg n⌉} 2^k M(2^{−k} n log n) = O((log n)^α M(n))`, `α = 2` in the FFT range, `α ≤ 2` in
+  general (Ex. 4.47); precision `n` at the top levels saves a little, still `α = 2`; in practice
+  the multiplication algorithm depends on the operand size.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/BinarySplitting.lean` (all proven): `arctanTerm`,
+  `hasSum_arctanTerm` (Mathlib has `Real.hasSum_arctan` — the §4.4 note "arctan series not in
+  Mathlib" is outdated), `abs_arctan_sub_sum_le` (tail `≤ |x|^{2N+1}/((2N+1)(1−x²))` via
+  `norm_tsum_le_tsum_norm` + geometric series), `abs_arctan_sub_sum_le_two_pow` (`|x| ≤ 1/2`, `n/2+1`
+  terms, error `≤ 2^{−n}`); `arctanDen q N = q^{2N+1}∏_{j<N}(2j+1)`, `arctanNum` (numerators
+  `(−1)^j p^{2j+1} q^{2N−2j} ∏_{i≠j}(2i+1)`), `sum_arctanTerm_div_eq` (`Finset.mul_prod_erase`,
+  `field_simp`), `log_arctanDen_le : log Q ≤ (2N+1) log q + N log(2N)` (so `O(n log n)` with
+  `N ∼ n/2`), `log_factorial_mul_pow_le(')` for `exp` (`Nat.factorial_le_pow`); `div_add_div_eq`,
+  `sum_div_eq_sum_mul_prod_erase_div`; the cost model `quasiLinearCost m = m logb 2 m` with
+  `two_pow_mul_quasiLinearCost_div_le` (`2^k M(m/2^k) = m(lg m − k) ≤ M(m)`),
+  `binary_splitting_cost_le` (each level `≤ 2 lg n · M(n)` since `lg(n lg n) ≤ 2 lg n` from
+  `lg n ≤ n`, i.e. `Nat.lt_two_pow_self`), `clog_le_logb_add_one` (`Nat.pow_pred_clog_lt_self`),
+  `binary_splitting_cost` (`≤ 4 (lg n)² M(n)`).  Not formalized: `α ≤ 2` for other multiplication
+  models (Ex. 4.47), the top-level precision saving, size-dependent algorithm choice, and the
+  recursive algorithm itself (theory first; the identities above are its correctness core).  Design
+  note: binary splitting over `AzNat`/`AzInt` is the natural first `arctan`/`exp`-at-rationals
+  engine for Azurite (exact integer arithmetic, one final division), and the constants `π` (Machin
+  formulas) and `ln 2` fall out of it; the truncation theorems certify the number of terms.  Lean
+  notes: `Finset.prod_le_prod` is the ordered-monoid version (one hypothesis) — for `ℝ` use
+  `Finset.prod_le_prod₀ (h0) (h1)`; `a / b * c⁻¹ = a / (b * c)` is `rw [← div_eq_mul_inv, div_div]`
+  (`ring` expands `(b*c)⁻¹` when `b*c` is a product of sums); `Real.log_pow` leaves `↑(2*N+1)` — `push_cast`
+  afterwards; `Nat.lt_two_pow_self` is protected with implicit `n`.
+* **§4.9 continued: repeated application, complexity, generalizations (2026-10-17).**  States: for
+  `x ∈ (0, 1/4)` take `p/q ≤ x < (p+1)/q`; by (4.17) `tan(arctan x − arctan(p/q)) = (x − p/q)/(1 + px/q)`,
+  so `arctan x = arctan(p/q) + arctan δ`, `δ = (qx − p)/(q + px)`, `|δ| < |x − p/q| < 1/q`, repeat on
+  `δ`; with about `lg n` rationals `p_i/q_i`, `q_i = 2^{2^i}`, each `arctan(p_i/q_i)` costs
+  `O((log n)^α M(n))`, total `O((log n)^{α+1} M(n))`; `0 ≤ p_i < 2^{2^{i−1}}` (`2^{i−1}` bits), value
+  `O(2^{−2^{i−1}})`, size `O(2^i)`; `α + 1 ∈ {2, 3}`; small constants, useful to `≥ 10⁶` digits;
+  generalization: Chudnovsky bit-burst for linear ODEs (§4.9.2).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/ArctanBinarySplitting.lean` (all proven): `arctan_sub_arctan`
+  (from `Real.arctan_add` at `−b`), `arctan_eq_arctan_rat_add`, `delta_nonneg_le`, `delta_lt_inv`
+  (`δ ≤ x − p/q` since the denominator is `≥ q`; `<` would fail at `p = 0`, where `δ = x`); the
+  iteration `bitBurstQ i = 2^{2^{i+1}}` (`Q₀ = 4` matches `x < 1/4`; `Q_{i+1} = Q_i²`),
+  `bitBurstRem`/`bitBurstNum` (`p_i = ⌊Q_{i+1} r_i⌋`), `bitBurstRem_bounds` by induction with
+  `Int.floor_le`/`Int.lt_floor_add_one`, `bitBurstNum_lt : p_i < Q_i` (the text's
+  `p_i < 2^{2^{i−1}} = √q_i`), `bitBurstNum_div_lt`; `arctan_eq_sum_bitBurst` (induction on `L`),
+  `arctan_le_self` (`Real.le_tan` at `arctan t`), `arctan_bitBurstRem_lt`,
+  `abs_arctan_sub_sum_bitBurst_le` (`n ≤ 2^{L+1}` ⇒ `≤ 2^{−n}`) and `_clog_le` (`L = ⌈lg n⌉` via
+  `Nat.le_pow_clog`); `repeated_binary_splitting_cost` (`⌈lg n⌉ · 4(lg n)² M(n) ≤ 8 (lg n)³ M(n)`,
+  `α + 1 = 3` in the `m lg m` model).  Not formalized: `α + 1 = 2` for other models, the size
+  `O(2^i)` as a bit count (follows from `p_i < Q_i`, `Q_{i+1} = 2^{2^{i+2}}`), the practicality
+  remark, §4.9.2.  Design note: this is exactly the `AzFloat` `arctan` plan for `|x| < 1/4` — `⌈lg p⌉`
+  exact binary splittings over `AzInt` with doubling denominators, each certified by
+  `abs_arctan_sub_sum_le_two_pow`, plus the exact remainder recurrence; `|x| ≥ 1/4` reduces by
+  `arctan x = π/4 + arctan((x−1)/(x+1))` or the halving of §4.3.  Lean notes: `Real.arctan_add`
+  needs `x * y < 1` — subtraction is `arctan_add` at `−b` with `Real.arctan_neg`; `ring` proves
+  `(a + -b)/(1 - a * -b) = (a - b)/(1 + a*b)` (it normalizes inside the inverse); a `noncomputable def`
+  by structural recursion on `ℕ` with `Int.floor` casts works directly, `rfl` gives the unfolding
+  lemmas; `Int.floor_nonneg : 0 ≤ ⌊a⌋ ↔ 0 ≤ a`.
+* **§4.9.1 A binary splitting algorithm for sin, cos (2026-10-17).**  States: Brent [45, Thm 6.2]
+  claims `O(M(n) log² n)` for `exp` and `sin` (proof only for `exp`, `sin` via complex `exp(ix)`);
+  Algorithm 4.4 SinCos avoids complex numbers: for `0 < x < 1/2`, `x ≈ ∑_{i=0}^{k} p_i 2^{−2^{i+1}}`,
+  `0 ≤ p_i < 2^{2^i}`, `k = ⌈lg n⌉ − 1`; `x_j = ∑_{i≥j}`, `x_{k+1} = 0`, `y_j = p_j 2^{−2^{j+1}}`;
+  `(S_{k+1}, C_{k+1}) = (0, 1)`; for `j = k..0`: `sin y_j, cos y_j` by binary splitting,
+  `S_j = sin y_j C_{j+1} + cos y_j S_{j+1}`, `C_j = cos y_j C_{j+1} − sin y_j S_{j+1}`; `x_j = y_j + x_{j+1}`
+  justifies step 6 by the addition formulae; `y_j` small rational so the powers stay `≤ n` bits;
+  same `O(M(n) log² n)` as Brent's `exp`; useful for `tan x` and plane rotations.  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/SinCosBinarySplitting.lean` (all proven): `floor_mul_pow_bounds`
+  (`2^m⌊y⌋ ≤ ⌊2^m y⌋ < 2^m(⌊y⌋+1)`), the digits `sinCosDigit x i = ⌊x2^{2^{i+1}}⌋ − 2^{2^i}⌊x2^{2^i}⌋`
+  with `sinCosDigit_nonneg/lt`, `sum_sinCosDigit_div` (telescoping `Finset.sum_range_sub`, `⌊2x⌋ = 0`),
+  `sub_sum_sinCosDigit_bounds`/`_lt_two_pow` (`n ≤ 2^{k+1}` ⇒ `< 2^{−n}`); `tailSum`, `tailSum_eq_add`,
+  `tailSum_top`, `sin_cos_add_step`; `sinCosProd` (the pair `(C_j, S_j)` as `C_j + iS_j`, a product of
+  rotations), `sinCosProd_top` (`(0,1)`), `sinCosProd_re/_im` (step 6 exactly), `sinCosProd_exact`
+  (`Complex.exp_sum`), `sinCosProd_exact_im/_re` (`S_j = sin x_j`, `C_j = cos x_j`);
+  `norm_prod_sub_prod_le` (`‖∏a − ∏b‖ ≤ mε(1+ε)^m`, unimodular `b`, induction with
+  `prod_range_succ`), `sinCos_error` (`ε`-accurate `sin y_i, cos y_i` ⇒ outputs within
+  `2(k+1)ε(1+2ε)^{k+1}`: the text's "error `O(2^{−n})`" needs `ε = O(2^{−n}/lg n)`, i.e. `lg lg n`
+  guard bits — the rotation structure keeps the error additive, a 1-norm argument would give
+  `(√2)^k`); `pow_lt_two_pow_of_digit` (`p^N < 2^{2^j N}`).  Not formalized: the cost accounting
+  `O(M(n) log² n)`, Brent's theorem, the remarks on `tan`/rotations, and the algorithm (theory first).
+  Design note: the `AzFloat` `sin`/`cos` plan for `|x| < 1/2`: `sinCosDigit` blocks from the significand
+  (they are literally bit slices of doubling length), exact binary splitting for each `sin y_j, cos y_j`
+  over `AzInt` (certified by the §4.4 series bounds), the rotation recurrence in working precision
+  `p + lg lg p + c`; `|x| ≥ 1/2` reduces by halving (§4.3) or mod `π/2`.  Lean notes: a floor divided by
+  a power elaborates as integer division — ascribe `(⌊…⌋ : ℝ)`; `push_cast` turns `↑(Real.cos y)` into
+  `Complex.cos ↑y`, breaking matches with `exp_mul_I_eq` — use `Complex.ofReal_sum` + `sum_mul` instead,
+  and `simp [Complex.cos_ofReal_re, Complex.sin_ofReal_re, Complex.sin_ofReal_im]` for real/imaginary
+  parts (the unused-simp-arg linter is a warning: keep only what fires); `div_add_div_same` does not
+  exist — `← add_div`; `gcongr` leaves `‖a m − b m‖ ≤ ε` side goals in unpredictable order — build the
+  `add_le_add (mul_le_mul …) …` term by hand.
+* **§4.9.2 The bit-burst algorithm — holonomic functions (2026-10-17).**  States: the previous
+  algorithms need functional equations (`tan`, `exp`, `sin` addition); the bit-burst algorithm does
+  not and applies to holonomic (D-finite) functions: a linear homogeneous ODE with polynomial
+  coefficients, equivalently a linear homogeneous recurrence with polynomial coefficients for the
+  Taylor coefficients; closed under `+`, `×`, not `/`; `exp`, `ln`, `sin`, `cos` holonomic, `tan` not;
+  hypergeometric (`u_{k+1}/u_k = R(k)`, §4.4) is the order-one case `u_{k+1}Q(k) − u_kP(k) = 0`; much
+  more general (Ex. 4.48): hypergeometric term ratios have size `O(log k)`, holonomic ones can be much
+  larger.  Formalized in `Azurite/BrentZimmermann/Chapter4/Holonomic.lean` (all proven): on `ℝ`,
+  `IsHolonomic f := ∃ r a, (∃ i, a i ≠ 0) ∧ ∀ x, ∑_{i≤r} (a i).eval x · iteratedDeriv i f x = 0` and
+  `IsPRecursive u` likewise; `isHolonomic_exp` (`−f + f′ = 0`), `isHolonomic_sin/cos` (`f + f″ = 0`),
+  `isHolonomic_log` (`f′ + x f″ = 0` — true at `x = 0` too with Lean's `0⁻¹ = 0`, `Real.deriv_log'`,
+  `deriv_inv'`); `RationalRatio.isPRecursive` (order `δ ≥ 1`, coefficients `−P` at `0`, `Q` at `δ`).
+  Algebraic theory for a differential field extension `B/A` (Mathlib's `Differential`,
+  `DifferentialAlgebra`, derivation `′`): `iterDeriv n b`, `deriv_smul_coeff` (`(c•x)′ = c′•x + c•x′`
+  via `Derivation.leibniz` + `deriv_algebraMap`), `span_deriv_closed` (`Submodule.span_induction`),
+  `derivSpan A b = span A {b^{(n)}}`, `IsDFinite A b := (derivSpan A b).FG`; **closure**
+  `IsDFinite.add` (span of `(a+b)^{(n)}` ≤ `V ⊔ W`, `Submodule.FG.sup`) and `IsDFinite.mul` (≤ `V * W`,
+  which is `′`-closed by `Submodule.mul_induction_on` + Leibniz, `Submodule.FG.mul`), with
+  `fg_of_le_fg` (over a field via `fg_iff_finiteDimensional`); the ODE characterization:
+  `IsDFinite.exists_relation` (`d + 1` derivatives in a `d`-dimensional space are dependent:
+  `LinearIndependent.fintype_card_le_finrank`, `not_linearIndependent_iff`) and
+  `isDFinite_of_relation` (induction on the order: if the top coefficient vanishes drop it via
+  `Fin.sum_univ_castSucc`/`Fin.exists_castSucc_eq`, else `b^{(r)} ∈ span{b^{(i)} : i < r}` which is
+  then `′`-closed, so every derivative lies in a span of finitely many).  Not formalized: ODE ⟺
+  coefficient recurrence for power series (both notions defined; the bookkeeping is
+  `ascPochhammer` index shifting), `tan` not holonomic, closure fails under division (example), the
+  `O(log k)` ratio size, Ex. 4.48.  Design note: the D-finite closure theorems are the licence to
+  build `AzFloat` evaluators compositionally (e.g. `exp·sin`, `erf` as holonomic) once a bit-burst
+  evaluator exists; the concrete `IsHolonomic` examples give the ODEs an evaluator would consume.
+  Lean notes: inside `theorem IsDFinite.mul`, `ha.mul hb` resolves to the theorem *being defined*
+  (recursive reference) rather than `Submodule.FG.mul` — write the Mathlib name; `IsDFinite` unfolds
+  to `FG` so `ha.sup hb` does find `Submodule.FG.sup`; `variable (A) in def …` for an explicit
+  type argument inside a `variable {A}` section; the unused-section-variable linter wants
+  `omit [Differential A] [DifferentialAlgebra A B] in` on purely linear-algebraic lemmas;
+  `Fin.coe_castSucc` is deprecated for `Fin.val_castSucc`; `if_true`/`if_false` for `ite_true`/`ite_false`;
+  `Submodule.span_induction` as `induction hx using Submodule.span_induction with | mem | zero | add | smul`.
+* **§4.9.2 Theorem 4.2, the bit-burst algorithm (2026-10-17).**  States: `f` holonomic, no singularity
+  on `[A,B] ∋ 0`, `f(0) = 0` ⇒ `f(x)` to `n` bits for `n`-bit `x ∈ (A,B)` in `O(M(n) log³ n)` (sharper:
+  Ex. 4.49; `f(0)` may be any `n`-bit-computable value).  Proof: `0 ≤ x < 1`, `x = r₁ + ⋯ + r_k`
+  with blocks of 1, 2, 4, … bits, `2^{k−1} ≤ n < 2^k`; `x_i = r₁ + ⋯ + r_i`, `f_i(t) = f(x_i + t)`,
+  `f_i^* = f_i − f_i(0)`, telescoping `f(x) = ∑_{i<k} f_i^*(r_{i+1})`; `r_{i+1}` has a `2^i`-bit numerator
+  and `0 ≤ r_{i+1} < 2^{1−2^i}`, so `n/2^i + O(log n)` terms; translate the ODE
+  `∑ c_j(x_i + t) f_i^{(j)} = 0` (inhomogeneous `E = b` ⇒ `b′E − bF`), coefficient recurrence with
+  `O(2^i)`-bit coefficients, `ℓ`-th coefficient size `O(ℓ(2^i + log ℓ)) = O(n log n)`; evaluate the
+  partial sums `s_ℓ` via `u_ℓ = (s_ℓ − s_{ℓ−1})/r^ℓ`, order `d+1` recurrence, matrix form
+  `S_ℓ = M_ℓ S_{ℓ−1}`, product (4.81) by binary splitting in `O(M(n) log² n)`; example `arctan`:
+  `f′(1+t²) = 1`, `(1+x_i²)ℓu_ℓ + 2x_i(ℓ−1)u_{ℓ−1} + (ℓ−2)u_{ℓ−2} = 0`, the `v_ℓ = u_ℓ r^ℓ` and `s_ℓ` forms,
+  3×3 matrices.  Formalized in `Azurite/BrentZimmermann/Chapter4/BitBurst.lean` (all proven; the
+  cost claims are not): `blockNum x a b = ⌊x2^b⌋ − 2^{b−a}⌊x2^a⌋` with `0 ≤ · < 2^{b−a}`,
+  `bitBlock = blockNum/2^b < 2^{−a}`, `bitBlock_eq_sub`; `burstBlock x i = bitBlock x (2^i−1) (2^{i+1}−1)`
+  (`burstBlock_num_lt : < 2^{2^i}`, `burstBlock_lt : < 2·(1/2)^{2^i}`), `sum_burstBlock` (telescoping to
+  the `2^k−1`-bit truncation), `sum_burstBlock_eq_self` (`x·2^n ∈ ℤ`, `n ≤ 2^k−1` ⇒ exact);
+  `sum_shift_sub`, `eq_sum_shift_sub` (`Finset.sum_range_sub`); `iteratedDeriv_comp_const_add`
+  (induction with `iteratedDeriv_succ'`, `deriv_comp_const_add`), `IsHolonomic.comp_const_add`
+  (coefficients `c_j.comp (X + C x_i)`, `comp_X_add_C_ne_zero_iff`); `isHolonomic_of_inhomogeneous`
+  (hypotheses: all `iteratedDeriv j f` differentiable, top coefficient `c_m ≠ 0`, `b ≠ 0`; the derivative
+  of the relation by `HasDerivAt.sum` + `Polynomial.hasDerivAt`, uniqueness, new coefficients
+  `b′c_j − b c_j′ − b c_{j−1}` built with `Fin.snoc`/`Fin.cons`, top coefficient `−b c_m`);
+  `isHolonomic_arctan` (`(1+t²)f″ + 2tf′ = 0`); `arctan_shift_coeff_recurrence` for a formal power
+  series `g` with `g′·(C(1+c²) + C(2c)X + X²) = 1` (coefficient `ℓ+1` of both sides;
+  `PowerSeries.coeff_derivative`, `coeff_mul_X_pow'`), `arctan_v_recurrence` (`× r^{ℓ+2}`),
+  `arctan_s_recurrence` (`s_{ℓ+1} = s_ℓ + v_{ℓ+1}`), `arctanStepMatrix` + `arctan_step_matrix_eq`
+  (`S_{ℓ+3} = M_{ℓ+3} S_{ℓ+2}`), `matProd`/`vec_eq_matProd_mulVec` (4.81).  Not formalized: the
+  `O(M(n) log³ n)`/`O(M(n) log² n)` costs, the term count `n/2^i + O(log n)` (needs coefficient bounds
+  for the translated series), the size estimate `O(ℓ(2^i + log ℓ))`, the general ODE → recurrence
+  translation (§4.12; done for the example), the "no singularities" hypothesis (our `IsHolonomic` on
+  `ℝ` is global and the translated recurrence is a formal identity), Ex. 4.49, the algorithm.  Design
+  note: for `AzFloat`, Theorem 4.2 is the blueprint for a *generic* evaluator — an ODE (as `IsHolonomic`
+  data) + bit-burst blocks + exact `AzInt` matrix products; `arctan` is the worked instance and
+  `arctan_step_matrix_eq` is the exact 3×3 step a Lean implementation would iterate.  Lean notes:
+  `HasDerivAt.sum` yields `HasDerivAt (∑ i, A i) …` with a Pi-sum of functions — not syntactically
+  `fun y => ∑ A i y`; convert with `congr_of_eventuallyEq` and `Finset.sum_apply` (explicit arguments,
+  the mvars do not unify through the beta-redex); `Polynomial.hasDerivAt (p) (x)` takes `p` explicitly;
+  `open scoped PowerSeries in` must precede the docstring; with both `Polynomial` and `PowerSeries`
+  open, `C`/`X`/`coeff` are ambiguous — qualify; `if_pos`/`if_neg` are deprecated for
+  `ite_eq_left`/`ite_eq_right`; `push_cast` normalizes `ℓ + 1 − 2` to `ℓ − 1` (a later `show` rewrite then
+  fails); a `rw [show 2^k − 1 = n + (2^k−1−n) …]` also rewrites inside `2^k − 1 − n` — introduce `p` with
+  `obtain ⟨p, hp⟩`; `conv_rhs => rw [hk]` to rewrite an exponent on one side only; `Matrix.dotProduct` is
+  now `dotProduct`; `arctanStepMatrix c r ℓ.mulVec` parses as `ℓ.mulVec` — parenthesize.
