@@ -1378,6 +1378,9 @@ import Azurite.BrentZimmermann.Chapter2.FFTMulMod
 import Azurite.BrentZimmermann.Chapter4.ArgumentReduction
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExamples
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
+import Azurite.BrentZimmermann.Chapter4.BernoulliRecurrence
+import Azurite.BrentZimmermann.Chapter4.Bessel
+import Azurite.BrentZimmermann.Chapter4.BesselRecurrence
 import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
 import Azurite.BrentZimmermann.Chapter4.ContinuedFraction
 import Azurite.BrentZimmermann.Chapter4.ContinuedFractionEval
@@ -1397,6 +1400,8 @@ import Azurite.BrentZimmermann.Chapter4.RepeatedDoubling
 import Azurite.BrentZimmermann.Chapter4.SeriesReduction
 import Azurite.BrentZimmermann.Chapter4.SplittingComplexity
 import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
+import Azurite.BrentZimmermann.Chapter4.TangentAlgorithm
+import Azurite.BrentZimmermann.Chapter4.TangentNumbers
 import Azurite.CohenLenstra.Algorithm_11_1
 import Azurite.CohenLenstra.Algorithm_12_1
 import Azurite.CohenLenstra.Alignment

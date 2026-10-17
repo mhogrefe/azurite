@@ -976,3 +976,219 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   syntactic; `tendsto_atTop_mono (fun k => by show k ≤ _; omega) tendsto_id` for the subsequence
   `2k` (omega does not unfold `id`); `field_simp` now closes the goals of `backR_pred`/`diff_succ`
   outright (a trailing `ring` errors with "No goals").
+* **§4.7 Recurrence relations, introduction (2026-10-16).**  States: continued fractions are a
+  special case of evaluation by recurrences; Bessel functions `J_ν(x)` (`ν ∈ ℤ`, `x ∈ ℝ` here) via
+  the generating function `exp((x/2)(t − 1/t)) = ∑_{ν∈ℤ} t^ν J_ν(x)` (4.47) or the power series
+  `J_ν(x) = (x/2)^ν ∑ (−x²/4)^j/(j! Γ(ν+j+1))` (4.48, also for `ν ∉ ℤ`); second kind
+  `Y_ν(x) = lim_{μ→ν} (J_μ cos πμ − J_{−μ})/sin πμ` (4.49); both solve
+  `x²y'' + xy' + (x² − ν²)y = 0` (4.50).  Formalized in
+  `Azurite/BrentZimmermann/Chapter4/Bessel.lean` (all proven; Mathlib has no Bessel functions):
+  `besselJTerm`/`besselJ` from (4.48) — Mathlib's `Real.Gamma` is `0` at non-positive integers,
+  so `1/Γ = 0` kills the first `−ν` terms for `ν < 0` and (4.48) literally gives the standard
+  `J_{−n} = (−1)^n J_n` (`besselJ_neg`); `abs_inv_Gamma_int_le_one`, `summable_besselJTerm`;
+  factorial form `besselJNat n x = ∑ (−1)^j/(j!(n+j)!) (x/2)^(2j+n)` (`besselJ_natCast`);
+  `besselJ_zero_left` (`J_0(0) = 1`), `besselJ_zero_of_ne`; majorant
+  `besselBound R n j = (4(R+1))^(2j+n)/j!` for the series and its first two termwise derivatives
+  on `|x| ≤ R` (`abs_besselCoeff_mul_le`, using `m^k ≤ 4^m`); (4.47) as
+  `hasSum_besselJ_generating : HasSum (fun ν : ℤ => t^ν J_ν(x)) (exp((x/2)(t − 1/t)))` for
+  `t ≠ 0`: Cauchy product of the two exponential series (`summable_mul_of_summable_norm`,
+  `tsum_mul_tsum_of_summable_norm`), regrouped along the fibers of `(a, b) ↦ a − b` through the
+  bijection `pairEquiv : ℕ × ℕ ≃ ℤ × ℕ`, `(a, b) ↦ (a − b, min a b)`, and
+  `HasSum.prod_fiberwise`, each fiber summed by `hasSum_fiber_nonneg`/`hasSum_fiber_neg`; (4.50)
+  via termwise differentiation (`hasDerivAt_tsum_of_isPreconnected` on `ball 0 (|x|+1)`, twice:
+  `hasDerivAt_besselJNat`, `hasDerivAt_besselJNat'`), the termwise identity `bessel_ode_term`
+  (`c_j (m(m−1)u^(m−2)/4 · x² + m u^(m−1)/2 · x − n² u^m) = 4j(j+n) c_j u^m`, `u = x/2`), the
+  shifted-series identity `bessel_ode_series` (`x²S₂ + xS₁ − n²S₀ = −x²S₀` by
+  `Summable.tsum_eq_zero_add` and `besselCoeff_succ`), `besselJNat_ode`, `besselJ_ode` (all
+  `ν ∈ ℤ`, with `deriv`).  `besselJReal μ x` (real order, `rpow`, `besselJReal_intCast`) and
+  `besselY ν x` as a `limUnder` of (4.49).  Not formalized: existence of the limit (4.49) and
+  `Y_ν` solving (4.50) (needs `∂J_μ/∂μ`), complex arguments.  Design note: for an `AzFloat`
+  Bessel routine the series (4.48) with `(x/2)^(2j+n)` and the exact rational coefficients
+  `(−1)^j/(j!(n+j)!)` is directly usable at small `x` (alternating, so the first omitted term
+  bounds the error once terms decrease); the recurrence/Miller's algorithm of the coming chunks
+  will be the large-order route.  Lean notes: avoid `ring` across `(x/2)^n` and `2^(2j+n)` at
+  once — it normalizes `(2^n)⁻¹` to `2⁻¹^n` and `4^j` separately from `2^(2j)` and cannot
+  cancel them; keeping everything as powers of `x/2` (and `u`) removed all such goals, with
+  `t^i (t^i)⁻¹ = 1` supplied to `linear_combination` where `t ≠ 0` matters;
+  `Summable.sum_add_tsum_nat_add'` must be called with `(f := …)` (dot notation feeds the
+  summability proof into the wrong slot and the HO unification times out);
+  `summable_nat_add_iff` likewise needs `(f := …)`; `hasDerivAt_tsum_of_isPreconnected` takes
+  the bound hypothesis as `∀ n y, y ∈ t → ‖g' n y‖ ≤ u n` and the derivative family as
+  `∀ n y, y ∈ t → HasDerivAt (g n) (g' n y) y`; `isPreconnected_ball` lives in
+  `Mathlib.Analysis.Normed.Module.Connected` (namespace `Metric`); `Int.negSucc_eq` +
+  `← Nat.cast_succ` turns `Int.negSucc n` into `-↑(n+1)` (there is no `Int.negSucc_coe`);
+  `omega` understands `Int.toNat`; `positivity` ignores conjunction hypotheses — destructure.
+* **§4.7.1 Evaluation of Bessel functions (2026-10-16).**  States: the recurrence
+  `J_{ν−1} + J_{ν+1} = (2ν/x) J_ν` (4.51); dividing by `J_ν` gives the continued fraction
+  `J_ν/J_{ν−1} = 1/(2ν/x −) 1/(2(ν+1)/x −) …` (4.52) for the ratio only; Miller's algorithm: start
+  at large `ν'` with `f_{ν'+1} = 0`, `f_{ν'} = 1`, run (4.53) (= (4.51)) backwards to `f_0 ≈ c J_0`,
+  and fix `c` from `J_0 + 2∑_{ν≥1} J_{2ν} = 1` (4.54); why it works / why forward is unstable for
+  `ν > x`: the recurrence has the two independent solutions `J_ν`, `Y_ν`, rounding gives
+  `aJ_ν + bY_ν`, and `|Y_ν|` grows exponentially for `ν > ex/2` while `J_ν` is bounded; precisely
+  `J_ν(x) ~ (ex/2ν)^ν/√(2πν)`, `Y_ν(x) ~ −√(2/πν) (2ν/ex)^ν` (4.55); Miller is best where the
+  series (4.48) cancels catastrophically but asymptotics are not yet accurate (more in §4.12).
+  Formalized in `Azurite/BrentZimmermann/Chapter4/BesselRecurrence.lean` (all proven): (4.51)
+  from the series (`bessel_rec_term`: `c^n_{j+1} + c^{n+2}_j = (n+1) c^{n+1}_{j+1}` after the
+  `(x/2)` shift; `besselJNat_recurrence` by `hasSum_nat_add_iff'`/`HasSum.unique`), extended to
+  all `ν ∈ ℤ` by `besselJ_neg` (`besselJ_recurrence`, product form; `besselJ_recurrence'` for
+  `x ≠ 0`); (4.52) as the one-step identity `besselJ_ratio_step` and the *exact* finite form
+  `besselJ_ratio_eq_cf` (the `k`-fold fraction `besselRatioCF x ν k r` closed by the true tail
+  `r = J_{ν+k}/J_{ν+k−1}`, needing `J_ν, …, J_{ν+k−1} ≠ 0`), plus the (4.52) coefficient sequences
+  in the `contFrac` framework and `approximant_besselCF` (`f_k = besselRatioCF x ν k 0`, via the
+  generic inner lemma `approximant_besselCF_inner` for all-`−1` partial numerators); (4.54) from
+  the generating function at `t = ±1`: `hasSum_besselJ_int`, `hasSum_neg_one_zpow_besselJ`,
+  `HasSum.nat_add_neg` + `Function.Injective.hasSum_iff` on `k ↦ 2k` (odd terms vanish) give
+  `hasSum_two_mul_besselJ_even` and `besselJ_even_sum`; Miller's sequence `millerSeq x N`
+  (well-founded on `N + 1 − ν`), `millerSeq_rec` (satisfies (4.53) for `1 ≤ μ ≤ N`), and the exact
+  Casoratian identity `millerSeq_casoratian`: `f_ν J_{ν+1} − f_{ν+1} J_ν = J_{N+1}(x)` for `ν ≤ N`
+  (downward induction; so `f_ν/J_ν − f_{ν+1}/J_{ν+1} = J_{N+1}/(J_ν J_{ν+1})`, `millerSeq_div_sub`
+  — the computed sequence is proportional to `J` up to a defect of size `J_{N+1}(x)`, which is
+  what Miller's algorithm relies on); the solution space of (4.53): `IsBesselRecSol`, `add`,
+  `smul`, constant `casoratian`, `eq_of_init` (`Nat.twoStepInduction`), `exists_eq_comb` (every
+  solution is `a g + b h` for two solutions with nonzero Casoratian — the "general solution"
+  statement, instantiable with `g = J_ν` by `isBesselRecSol_besselJ`, and with `h = Y_ν` once `Y`
+  is shown to solve (4.53)); the `J` half of (4.55) as inequalities: `abs_besselJNat_le`
+  (`|J_n(x)| ≤ (|x|/2)^n/n! · e^(x²/4)`, from `(n+j)! ≥ n!`), `abs_besselJNat_le_stirling`
+  (`≤ e^(x²/4)/√(2πn) · (e|x|/(2n))^n`, via `Stirling.le_factorial_stirling`), and
+  `tendsto_besselJNat_atTop`.  Not formalized: convergence of (4.52) (not claimed by the text
+  either), `Y_ν` solving (4.53) and its growth, the forward instability, the asymptotic
+  equivalences themselves, §4.12.  Design note: an `AzFloat` Bessel routine for integer order
+  would use the series for `|x|` small relative to `n`, and Miller's backward recurrence with
+  the (4.54) normalization otherwise; the Casoratian identity gives a rigorous handle on the
+  Miller defect once a lower bound on `|J_ν(x)|` is available, and `abs_besselJNat_le_stirling`
+  tells how far to start (`N` with `(e|x|/(2N))^N` below the target).  Lean notes: `rw [h]` with
+  `h : ∀ …` from `Summable.sum_add_tsum_nat_add'` — use `hasSum_nat_add_iff' 1` +
+  `sum_range_one` + `HasSum.unique` instead of tsum rewriting; `div_sub_div` yields
+  `(a d − b c)/(b d)` with `b * c` in that order; `field_simp` does not see a nonzero hypothesis
+  whose terms it has reordered (`g 0 * h 1 − g 1 * h 0`) — clear denominators by hand with
+  `div_mul_eq_mul_div`, `← add_div`, `eq_div_iff`; a `calc` whose first step is `|∑'…| = ‖∑'…‖`
+  timed out at `whnf` where the same steps as separate `have`s compile instantly;
+  `← Real.norm_eq_abs` rewrites the first `|·|` it finds (which may be `|x|`, not the sum);
+  `FloorSemiring.tendsto_pow_div_factorial_atTop`; `squeeze_zero_norm`.
+* **§4.7.2 Evaluation of Bernoulli and tangent numbers (2026-10-17).**  States: `B_{2k}` and
+  `C_k = B_{2k}/(2k)!` (needed in (4.35), (4.38)) via the generating functions
+  `∑ B_k x^k/k! = x/(e^x−1)` (4.56), `∑ C_k x^{2k} = x/(e^x−1) + x/2 = (x/2)/tanh(x/2)` (4.57);
+  multiplying by `e^x − 1` gives `B_0 = 1`, `∑_{j≤k} C(k+1,j) B_j = 0` (`k > 0`) (4.58) and
+  `∑_{j≤k} C_j/(2k+1−2j)! = 1/(2(2k)!)` (4.59); precision is not known in advance, so no table —
+  compute at runtime; forward (4.58)/(4.59) is unstable (relative error `4^k 2^{−n}`, Ex. 4.35),
+  tolerable if the `C_k` only feed an Euler–Maclaurin sum whose terms shrink by ≥ 4, or with
+  exact rationals; otherwise guard digits or the stable recurrence from (4.57) × `sinh(x/2)/x`:
+  `∑_{j≤k} C_j/((2k+1−2j)! 4^{k−j}) = 1/((2k)! 4^k)` (4.60), relative error `O(k² 2^{−n})`.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/BernoulliRecurrence.lean` (all proven, exact,
+  in `ℚ` and `ℚ⟦X⟧`): `scaledBernoulli`; (4.56) is Mathlib's `bernoulliPowerSeries_mul_exp_sub_one`
+  (Mathlib's `bernoulli` has `B_1 = −1/2`, matching the text); (4.57) as
+  `scaledBernoulliPowerSeries = bernoulliPowerSeries ℚ + C (1/2) X` with even coefficients `C_k`
+  and vanishing odd ones (`B_1 + 1/2 = 0`, `bernoulli_eq_zero_of_odd`), the identity
+  `S (e^x − 1) = X + (1/2) X (e^x − 1)`, and the real closed form `div_exp_sub_one_add_half`
+  (`tanh(x/2) = (e^x − 1)/(e^x + 1)`); (4.58) `bernoulli_recurrence` from `sum_bernoulli`;
+  (4.59) `scaledBernoulli_rec` **for `k ≥ 1` only** — at `k = 0` the left side is `C_0 = 1`, not
+  `1/2`, so the text's "for all k" needs `k ≥ 1` (like (4.58)); proof by extracting the
+  `x^{2k+1}` coefficient (`coeff_mul` → `sum_antidiagonal_eq_sum_range_succ_mk` → even/odd
+  split `sum_range_two_mul`, `coeff_scaledBernoulliPowerSeries_mul`); (4.60)
+  `scaledBernoulli_rec_stable` for all `k`, from `scaledBernoulliPowerSeries_mul_sinh`
+  (`S (E₊ − E₋) = (1/2) X (E₊ + E₋)` with `E± = rescale (±1/2) exp`, i.e. (4.57) × `2 sinh(x/2)`,
+  derived by multiplying (4.57) with `e^{−x/2}` via `exp_mul_exp_eq_exp_add`) at the `x^{2k+1}`
+  coefficient (`coeff m (E₊ − E₋) = ((1/2)^m − (−1/2)^m)/m!`); size: `scaledBernoulli_eq_zeta`
+  and `abs_scaledBernoulli_le` (`|C_k| ≤ (π²/3)/(2π)^{2k}`), which is what makes (4.59) lose
+  `≈ (2π)^{2k}` relative accuracy (the terms are `O(1)`, the result `O((2π)^{−2k})`) while in
+  (4.60) the terms are themselves `O(4^{−k})`.  Not formalized: analytic convergence of
+  (4.56)/(4.57) (radius `2π`, not in Mathlib), the rounding-error analysis (Ex. 4.35), tangent
+  numbers (later chunks).  Design note: for `AzFloat` Euler–Maclaurin/Stirling coefficients the
+  natural route is exact `AzRat` Bernoulli numbers via (4.60) (or (4.58)/(4.59) in exact
+  arithmetic, where instability is irrelevant) — `C_k` sizes from `abs_scaledBernoulli_le` give
+  the needed count; a floating `AzFloat` evaluation of (4.60) is the stable alternative.  Lean
+  notes: `Algebra.id.map_eq_id` is gone — `algebraMap ℚ ℚ q = q` is `rfl`; `ring` does NOT
+  identify `(4⁻¹)^n` (normal form `(1/4)^n`) with `(4^n)⁻¹` (normal form `4⁻¹^n`) nor `(1/2)^(2n)`
+  with `4^n` — rewrite numerals to a common base (`div_pow`, `one_pow`, `Even.neg_one_pow`,
+  `Odd.neg_one_pow`, `pow_mul`, `show (4:ℚ) = 2^2`) before `ring`; `rw [neg_div] at h` also
+  rewrites `rescale (-1/2)` inside `h`, breaking later syntactic matches — use `div_pow` +
+  `neg_one_pow` instead; `sum_eq_zero` in a `rw` list unifies with the first sum it meets — state
+  the intended sum with `show … from`; identifiers cannot contain `₊`/`₋` subscripts; the
+  antidiagonal/range conversion is `Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk`
+  (`simp only` with `Nat.succ_eq_add_one`); `C (1/2) * 2 = 1` in `ℚ⟦X⟧` needs
+  `map_ofNat C 2` + `map_mul` (ring treats `C (1/2)` as an atom).
+* **§4.7.2, tangent numbers (2026-10-17).**  States: `tan x = ∑_{j≥1} T_j x^{2j−1}/(2j−1)!` (4.61),
+  `T_j` positive integers, `T_j = (−1)^{j−1} 2^{2j}(2^{2j} − 1) B_{2j}/(2j)` (4.62) and the inverse
+  `B_j = (−1)^{j/2−1} j T_{j/2}/(4^j − 2^j)` (even `j > 0`); odd primes in `den B_{2j}` divide
+  `2^{2j} − 1` (von Staudt–Clausen: `p ∣ den B_{2j}` iff `(p−1) ∣ 2j`); with `t = tan x`,
+  `Dt = 1 + t²`, `D(tⁿ) = n tⁿ⁻¹(1 + t²)`, `Dⁿ t = P_n(t)`, `deg P_n = n + 1`,
+  `p_{n,j} = (j−1) p_{n−1,j−1} + (j+1) p_{n−1,j+1}` (4.63), `p_{n,j} = 0` for `n + j` even.
+  Formalized in `Azurite/BrentZimmermann/Chapter4/TangentNumbers.lean` (all proven):
+  `tanDerivPoly : ℕ → ℤ[X]` by `P_{n+1} = P_n'(1 + X²)`; (4.63) split as `p_{n+1,0} = p_{n,1}` and
+  `p_{n+1,j+1} = j p_{n,j} + (j+2) p_{n,j+2}` (so the text's `(j−1) p_{n−1,j−1}` term is read as `0`
+  at `j = 0`); nonnegativity, parity, `p_{n,j} = 0` for `j > n+1`, `p_{n,n+1} = n!`,
+  `natDegree = n + 1`; the Leibniz identity `P_{n+1} = [n=0] + ∑_a C(n,a) P_a P_{n−a}` by induction
+  with a standalone Pascal-reindexing lemma `pascal_sum`; the real statement
+  `iteratedDeriv n tan x = P_n(tan x)` for `cos x ≠ 0` (induction with `Filter.EventuallyEq.deriv_eq`
+  on the open set `cos ≠ 0`, `Polynomial.hasDerivAt` ∘ `Real.hasDerivAt_tan`,
+  `Real.inv_one_add_tan_sq`), hence `Dⁿ tan 0 = p_{n,0}`; `tangentNumber j := p_{2j−1,0}` (`T_1 = 1`,
+  `T_2 = 2`, `T_3 = 16` by unrolling the recurrence); (4.62) via formal power series over `ℚ`:
+  `tanDerivSeries = ∑ p_{n,0} Xⁿ/n!` solves `y' = 1 + y²` (Leibniz identity at `t = 0`), the
+  hyperbolic series `cosh = (e^x + e^{−x})/2`, `sinh`, `tanh = sinh · cosh⁻¹` (`PowerSeries.inv`,
+  `constantCoeff cosh = 1`) satisfy `tanh' = 1 − tanh²` (`Derivation.leibniz`,
+  `Derivation.leibniz_of_mul_eq_one` for the inverse), `X · tanh = S(4X) − S(2X)` from (4.57) rescaled
+  by 2 and 4 (`exp_mul_exp_eq_exp_add`, `exp_pow_eq_rescale_exp`, cancelling `e^x − e^{−x} ≠ 0` in the
+  domain `ℚ⟦X⟧`), so `coeff (2k+1) tanh = (16^{k+1} − 4^{k+1}) C_{k+1}` and even coefficients vanish;
+  the sign twist `tanSeries` (`(−1)^k` at `X^{2k+1}`, i.e. `tan x = −i tanh(ix)` made rational)
+  satisfies `y' = 1 + y²` (products of two odd coefficients pick up `−(−1)^k`), the formal ODE with
+  `y(0) = 0` has a unique solution (strong induction on coefficients), hence
+  `tanDerivSeries = tanSeries` and `T_{k+1} = (−1)^k 4^{k+1}(4^{k+1} − 1) B_{2k+2}/(2k+2)`
+  (`tangentNumber_eq_bernoulli`), the inverse `bernoulli_two_mul_eq_tangentNumber`,
+  `tangentNumber_pos` (via `sign_bernoulli_two_mul`), `bernoulli_den_dvd`
+  (`den B_{2k+2} ∣ 4^{k+1}(4^{k+1} − 1)` by `Rat.den_dvd`) and `odd_prime_dvd_den_bernoulli`.  Not
+  formalized: the analytic (4.61) (no Taylor series of `tan` in Mathlib; the Taylor coefficients
+  are identified by `iteratedDeriv_tan_zero` instead); von Staudt–Clausen is Mathlib's
+  `Bernoulli.vonStaudt_clausen`/`Bernoulli.dvd_den_bernoulli` (not restated).  Design note: this
+  is the proven bridge for an exact integer algorithm for `T_j` (the recurrence (4.63) on a row of
+  `p_{n,·}`, presumably Algorithm TangentNumbers in the next chunk) and hence for exact `B_{2j}`
+  via the inverse formula — an `AzNat`-based implementation can be verified against
+  `tangentNumber` directly.  Lean notes: never `open Polynomial` and `open PowerSeries` together
+  (`C`, `X`, `coeff_C`, `coeff_derivative`, `derivative_C` all clash) — use two sections;
+  `/.` (`Rat.divInt`) is scoped notation, write `Rat.divInt`; `Derivation.leibniz_of_mul_eq_one`
+  takes the derivation explicitly (`d⁄dX`); `exp_mul_exp_neg_eq_one` has `A` implicit
+  (`(A := ℚ)`); `evalNegHom (exp ℚ)` is defeq to `rescale (−1) (exp ℚ)`; `rescale_mul` is
+  `rescale (a*b) = (rescale b).comp (rescale a)` — use `← RingHom.comp_apply, ← rescale_mul` to
+  merge nested rescales; `ring` cannot simplify `((−1)^k)^2` — supply `hsq : ((−1)^k)^2 = 1` to
+  `linear_combination`; identifiers may not contain `₊`/`₋` (but `S₂`, `S₄` are fine); for
+  `tangentNumber_three` the `show (4:ℕ) = 3 + 1 by rfl` rewrites every `4`, so finish with
+  `simp [tanDerivPoly_zero, coeff_X]`; `Polynomial.finset_sum_coeff` → `finsetSum_coeff`.
+* **§4.7.2, Algorithm 4.3 TangentNumbers and growth (2026-10-17).**  States: using (4.63) but
+  skipping the vanishing coefficients gives the in-place Algorithm 4.3 (`T_1 ← 1`;
+  `T_k ← (k−1)T_{k−1}`; then for `k = 2..m`, for `j = k..m`: `T_j ← (j−k)T_{j−1} + (j−k+2)T_j`),
+  non-negative integers only (overflow risk in single precision; stable in floating point, no
+  cancellation); SecantNumbers is Ex. 4.40; `T_k` grows like `(2k−1)!(2/π)^{2k}` (poles of `tan` at
+  `±π/2`): `T_k/(2k−1)! = 2^{2k+1}(1 − 2^{−2k})ζ(2k)/π^{2k}` (4.64) with the odd zeta function
+  `(1 − 2^{−s})ζ(s) = 1 + 3^{−s} + 5^{−s} + …`; Bernoulli numbers grow more slowly (singularities at
+  `±2πi`): `(−1)^{k−1}B_{2k}/(2k)! = 2ζ(2k)/(2π)^{2k}` (4.65), `ζ(2k) = 1 + O(4^{−k})`, so
+  `|B_{2k}| ∼ 2(2k)!/(2π)^{2k}` (4.66); (4.64) ⟺ (4.65) via (4.62); fast Bernoulli computation is
+  Ex. 4.41, low-space in §4.10.  Formalized in `Azurite/BrentZimmermann/Chapter4/TangentAlgorithm.lean`
+  (all proven): the algorithm as a **model over `ℕ`** (not the `AzNat` implementation — per the
+  standing "theorems, no algorithms yet" instruction): `tangentInit j = (j−1)!`, `tangentStep`
+  (`Function.update`), `tangentPass k a s` (`s` inner steps), `tangentOuter m a r` (`r` passes),
+  `tangentNumbersModel m = tangentOuter m tangentInit (m−1)`; loop invariant `tangentPass_spec`:
+  before pass `k` the entry `j ≥ k` holds `p_{j+k−3, j−k+2}` and entries `j < k` hold the finished
+  `T_j`; after `s` steps the entries `k ≤ j < k+s` hold `p_{j+k−2, j−k+1}` (one application of
+  (4.63) per update, with the `j = k` step reading `(j−k) = 0` so the stale neighbour is harmless);
+  `tangentOuter_spec`; `tangentNumbersModel_eq : tangentNumbersModel m j = T_j` for `1 ≤ j ≤ m`;
+  `tangentNumbersModel_three` (1, 2, 16, derived); `oddZeta` and
+  `one_sub_two_rpow_neg_mul_zetaReal` (`HasSum.even_add_odd` on `n^{−s}`, the even half is
+  `2^{−s}ζ(s)` by `Real.mul_rpow`); (4.64) `tangentNumber_div_factorial_eq_zeta` (indexed as
+  `T_{k+1}`), from (4.62) and `bernoulli_two_mul_eq_zeta` (the sign `(−1)^k·(−1)^k` handled by
+  `hsq : ((−1)^k)^2 = 1` fed to `linear_combination` before clearing denominators) and
+  `_eq_oddZeta`; (4.65) `neg_one_pow_mul_bernoulli_div_factorial`; `ζ(2k) − 1 ≤ 8/4^k`
+  (`zetaReal_two_mul_sub_one_le`, via `n^{−2k} ≤ 4^{1−k} n^{−2}` for `n ≥ 2` and
+  `∑_{n≥2} n^{−2} ≤ ζ(2) ≤ 2`), `tendsto_zetaReal_two_mul`, (4.66) `abs_bernoulli_isEquivalent`
+  (`Asymptotics.isEquivalent_of_tendsto_one`, ratio `= ζ(2k)`), `tangentNumber_isEquivalent`
+  (`T_k ∼ 2(2k−1)!(2/π)^{2k}`, ratio `(1 − 4^{−k})ζ(2k)`).  Not formalized: floating-point
+  stability/overflow remarks, Exercises 4.40/4.41, §4.10.  Design note: the `AzNat`
+  implementation of Algorithm 4.3 should be verified against `tangentNumbersModel` (a pure
+  function on `ℕ → ℕ`) and hence `tangentNumber`; `tangentNumber_isEquivalent` with
+  `(2k−1)!(2/π)^{2k}` sizes the integers (about `2k log₂(2k/πe)` bits for `T_k`); Bernoulli numbers
+  then follow exactly from `bernoulli_two_mul_eq_tangentNumber`.  Lean notes: `HasSum.even_add_odd`,
+  `summable_nat_add_iff`, `Summable.sum_add_tsum_nat_add'` all need `(f := …)` whenever `f` would
+  be inferred by higher-order unification from a lambda (otherwise `whnf` timeouts); likewise
+  `Summable.comp_injective (i := …)`; `local notation` cannot abbreviate a lambda with projections
+  (`quotPrecheck` error) — write `(tanDerivPoly n).coeff i` out; keep `zetaReal (2 * k)` arguments
+  in one cast form (`2 * ((k+1 : ℕ) : ℝ)` from Mathlib lemmas versus `2 * (↑k + 1)` from a statement)
+  and `push_cast` before `field_simp`/`ring`; `decide` on the `Function.update`-based model times
+  out at `whnf` — derive concrete values from the correctness theorem instead.
