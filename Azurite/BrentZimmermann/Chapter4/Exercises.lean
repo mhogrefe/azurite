@@ -14,6 +14,7 @@ import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Data.Nat.Size
 import Mathlib.RingTheory.PowerSeries.Exp
 import Mathlib.RingTheory.PowerSeries.Expand
 import Mathlib.RingTheory.PowerSeries.Inverse
@@ -141,6 +142,27 @@ in all (`classicalEvalC_mul`, `classicalEvalC_sq`, `classicalEvalC_total`); modu
 `⌊(k−1)/2⌋` squarings for its powers, and `j − 1` Horner products, `j + k − 3 + ℓ(j)` in all with
 `ℓ(j) = ⌊log₂ j⌋ + popcount j − 1 ≤ j − 1` (`modularEvalC_total`, `binPowC_total_le`,
 `modularEvalC_total_le`); examples `12 = 3·4`: `5` and `6`.
+
+## Exercise 4.13
+
+When `a_{i+1}/a_i = r_i` are small rationals, evaluate each inner polynomial of the classical
+splitting by Horner's rule *in the ratio direction* with the stored powers as the coefficients,
+`P_ℓ(x)/a_{kℓ} = x⁰ + r_{kℓ}(x¹ + r_{kℓ+1}(x² + ⋯ + r_{kℓ+k−2} x^{k−1}))` (`ratioHorner`,
+`ratioHorner_eq`, `innerPoly_eq_ratioHorner`): every scalar multiplier is a single ratio of
+`O(log d)` bits instead of a coefficient of `O(d log d)` bits. The outer Horner in `y = x^k` then
+carries the block ratios `a_{k(ℓ+1)}/a_{kℓ} = ∏_{i<k} r_{kℓ+i}` (`scaledHornerC`). The whole
+scheme (`ratioEvalC`) computes `polyEval` whenever `a_{i+1} = r_i a_i` (`coeff_eq_prod_ratio`,
+`ratioEvalC_val`) at exactly the non-scalar cost of the classical splitting (`ratioEvalC_mul`,
+`ratioEvalC_sq`).
+
+## Exercise 4.14
+
+`c(d)` is the number of machine words of a scalar multiplier (`wordsOf`): with the ratios of
+Exercise 4.13 every multiplier is an integer `≤ d` (`ratio_multiplier_size`), so
+`c(d) = ⌈size(d)/w⌉` (`ratioScalarWords`), equal to `1` for `d < 2^w` (`ratioScalarWords_eq_one`),
+i.e. `O(1)` in practice and `O(log d)` in bit terms. With the raw coefficients `1/i!` instead,
+`c(d) = ⌈size(d!)/w⌉` (`naiveScalarWords`) and `size(d!) = Θ(d log d)` (`size_factorial_gt`,
+`size_factorial_le`), which is what Exercise 4.13 avoids.
 -/
 
 namespace Azurite
@@ -1404,6 +1426,177 @@ theorem splitting_example (a : ℕ → α) (x : α) :
   · rw [modularEvalC_sq, hlog]
 
 end Exercise412
+
+section Exercise413
+
+open Counted Finset
+
+variable {α : Type*} [CommSemiring α]
+
+/-- Horner's rule in the ratio direction: `ratioHorner r pw k = pw 0 + r 0 (pw 1 + r 1 (⋯ + r_{k−2}
+pw_{k−1}))`, so that with `pw m = x^m` and `r i = a_{i+1}/a_i` it is `∑_{m<k} a_m x^m / a_0` using
+only the small multipliers `r i`. -/
+def ratioHorner (r pw : ℕ → α) : ℕ → α
+  | 0 => 0
+  | k + 1 => pw 0 + r 0 * ratioHorner (fun i => r (i + 1)) (fun i => pw (i + 1)) k
+
+theorem ratioHorner_eq (r pw : ℕ → α) (k : ℕ) :
+    ratioHorner r pw k = ∑ m ∈ range k, pw m * ∏ i ∈ range m, r i := by
+  induction k generalizing r pw with
+  | zero => simp [ratioHorner]
+  | succ k ih =>
+    rw [ratioHorner, ih, sum_range_succ', prod_range_zero, mul_one, add_comm, mul_sum]
+    congr 1
+    refine sum_congr rfl fun m _ => ?_
+    rw [prod_range_succ']
+    ring
+
+/-- Coefficients with ratios `r`: `a_i = a_0 ∏_{i'<i} r_{i'}`. -/
+theorem coeff_eq_prod_ratio {a r : ℕ → α} (ha : ∀ i, a (i + 1) = r i * a i) (i : ℕ) :
+    a i = a 0 * ∏ i' ∈ range i, r i' := by
+  induction i with
+  | zero => simp
+  | succ i ih => rw [ha, ih, prod_range_succ]; ring
+
+theorem coeff_shift_eq_prod_ratio {a r : ℕ → α} (ha : ∀ i, a (i + 1) = r i * a i) (n m : ℕ) :
+    a (n + m) = a n * ∏ i ∈ range m, r (n + i) := by
+  induction m with
+  | zero => simp
+  | succ m ih => rw [← add_assoc, ha, ih, prod_range_succ]; ring
+
+/-- The inner polynomial of the classical splitting via the ratio Horner rule. -/
+theorem innerPoly_eq_ratioHorner {a r : ℕ → α} (ha : ∀ i, a (i + 1) = r i * a i) (k ℓ : ℕ)
+    (x : α) :
+    innerPoly a k ℓ x = a (k * ℓ) * ratioHorner (fun i => r (k * ℓ + i)) (fun m => x ^ m) k := by
+  rw [ratioHorner_eq, innerPoly, mul_sum]
+  refine sum_congr rfl fun m _ => ?_
+  rw [coeff_shift_eq_prod_ratio ha]; ring
+
+/-- Horner in `y` with a block ratio `R ℓ` applied at each step:
+`c 0 + R 0 · y (c 1 + R 1 · y (⋯))`; `n` non-scalar products for `n + 1` blocks. -/
+def scaledHornerC (c R : ℕ → α) (y : α) : ℕ → Counted α
+  | 0 => pure (c 0)
+  | n + 1 => do
+    let w ← scaledHornerC (fun i => c (i + 1)) (fun i => R (i + 1)) y n
+    let p ← nsMul y w
+    pure (c 0 + R 0 * p)
+
+theorem scaledHornerC_val (c R : ℕ → α) (y : α) (n : ℕ) :
+    (scaledHornerC c R y n).val = ∑ ℓ ∈ range (n + 1), c ℓ * y ^ ℓ * ∏ i ∈ range ℓ, R i := by
+  induction n generalizing c R with
+  | zero => simp [scaledHornerC]
+  | succ n ih =>
+    simp only [scaledHornerC, val_bind, val_nsMul, val_pure, ih]
+    rw [sum_range_succ' (fun ℓ => c ℓ * y ^ ℓ * ∏ i ∈ range ℓ, R i) (n + 1), pow_zero, mul_one,
+      prod_range_zero, mul_one, mul_sum, mul_sum, add_comm (c 0)]
+    congr 1
+    refine sum_congr rfl fun ℓ _ => ?_
+    rw [prod_range_succ']
+    ring
+
+theorem scaledHornerC_mul (c R : ℕ → α) (y : α) (n : ℕ) : (scaledHornerC c R y n).mul = n := by
+  induction n generalizing c R with
+  | zero => rfl
+  | succ n ih => simp [scaledHornerC, ih]
+
+theorem scaledHornerC_sq (c R : ℕ → α) (y : α) (n : ℕ) : (scaledHornerC c R y n).sq = 0 := by
+  induction n generalizing c R with
+  | zero => rfl
+  | succ n ih => simp [scaledHornerC, ih]
+
+/-- Exercise 4.13: classical splitting driven by the ratios `r`. The powers `x⁰, …, x^k` are
+computed as before; each inner value `U_ℓ = P_ℓ(x)/a_{kℓ}` is the ratio Horner rule over the stored
+powers with the single ratios `r_{kℓ+i}` as multipliers; the outer Horner in `y = x^k` multiplies by
+the block ratios `a_{k(ℓ+1)}/a_{kℓ} = ∏_{i<k} r_{kℓ+i}`, and the result is scaled by `a_0`. -/
+def ratioEvalC (r : ℕ → α) (a0 : α) (j k : ℕ) (x : α) : Counted α := do
+  let T ← powersC x k
+  let w ← scaledHornerC (fun ℓ => ratioHorner (fun i => r (k * ℓ + i)) (fun m => T.getD m 0) k)
+    (fun ℓ => ∏ i ∈ range k, r (k * ℓ + i)) (T.getD k 0) (j - 1)
+  pure (a0 * w)
+
+theorem prod_range_mul_eq (f : ℕ → α) (k ℓ : ℕ) :
+    ∏ i ∈ range ℓ, ∏ i' ∈ range k, f (k * i + i') = ∏ i' ∈ range (k * ℓ), f i' := by
+  induction ℓ with
+  | zero => simp
+  | succ ℓ ih => rw [prod_range_succ, ih, Nat.mul_succ, prod_range_add]
+
+theorem ratioEvalC_val {a r : ℕ → α} (ha : ∀ i, a (i + 1) = r i * a i) {j : ℕ} (hj : 0 < j)
+    (k : ℕ) (x : α) : (ratioEvalC r (a 0) j k x).val = polyEval a (j * k) x := by
+  simp only [ratioEvalC, val_bind, val_pure, scaledHornerC_val, powersC_getD x k k le_rfl]
+  rw [polyEval_split, show j - 1 + 1 = j by omega, mul_sum]
+  refine sum_congr rfl fun ℓ _ => ?_
+  have hU : ratioHorner (fun i => r (k * ℓ + i)) (fun m => (powersC x k).val.getD m 0) k
+      = ratioHorner (fun i => r (k * ℓ + i)) (fun m => x ^ m) k := by
+    rw [ratioHorner_eq, ratioHorner_eq]
+    exact sum_congr rfl fun m hm => by
+      rw [powersC_getD x k m (by have := mem_range.mp hm; omega)]
+  rw [hU, innerPoly_eq_ratioHorner ha, coeff_eq_prod_ratio ha (k * ℓ), prod_range_mul_eq]
+  ring
+
+/-- The ratio-driven scheme has exactly the non-scalar cost of the classical splitting. -/
+theorem ratioEvalC_mul (r : ℕ → α) (a0 : α) (j k : ℕ) (x : α) :
+    (ratioEvalC r a0 j k x).mul = (classicalEvalC (fun _ => a0) j k x).mul := by
+  simp [ratioEvalC, scaledHornerC_mul, powersC_mul, classicalEvalC_mul]
+
+theorem ratioEvalC_sq (r : ℕ → α) (a0 : α) (j k : ℕ) (x : α) :
+    (ratioEvalC r a0 j k x).sq = (classicalEvalC (fun _ => a0) j k x).sq := by
+  simp [ratioEvalC, scaledHornerC_sq, powersC_sq, classicalEvalC_sq]
+
+end Exercise413
+
+section Exercise414
+
+/-- Machine words needed for `b` bits with word size `w`: `⌈b/w⌉`. -/
+def wordsOf (w b : ℕ) : ℕ := (b + w - 1) / w
+
+theorem wordsOf_eq_one {w b : ℕ} (hw : 0 < w) (hb : 0 < b) (h : b ≤ w) : wordsOf w b = 1 := by
+  unfold wordsOf
+  refine le_antisymm (Nat.lt_succ_iff.mp ((Nat.div_lt_iff_lt_mul hw).mpr (by omega))) ?_
+  rw [Nat.le_div_iff_mul_le hw]
+  omega
+
+/-- `c(d)` for the ratio-driven splitting: the word length of the largest multiplier, an integer
+`≤ d`. A scalar product of an `n`-bit number then costs `c(d) · n/w` word products. -/
+def ratioScalarWords (w d : ℕ) : ℕ := wordsOf w (Nat.size d)
+
+/-- `c(d)` with the raw coefficients `1/i!` of the exponential series. -/
+def naiveScalarWords (w d : ℕ) : ℕ := wordsOf w (Nat.size (Nat.factorial d))
+
+/-- The multipliers of the exponential series' ratios `1/(i + 1)`, `i < d`, fit in `size d`
+bits. -/
+theorem ratio_multiplier_size {i d : ℕ} (hi : i < d) : Nat.size (i + 1) ≤ Nat.size d :=
+  Nat.size_le_size hi
+
+/-- Exercise 4.14: with ratios, `c(d) = 1` word as long as `d < 2^w` (so for every `d` that
+fits a machine word, e.g. `d < 2^64`); in bit terms `c(d) = size d = O(log d)`. -/
+theorem ratioScalarWords_eq_one {w d : ℕ} (hw : 0 < w) (hd : 0 < d) (h : d < 2 ^ w) :
+    ratioScalarWords w d = 1 :=
+  wordsOf_eq_one hw (Nat.size_pos.mpr hd) (Nat.size_le.mpr h)
+
+/-- Without ratios the coefficient `1/d!` has more than `(d/2) · log₂(d/2 + 1)` bits. -/
+theorem size_factorial_gt (d : ℕ) :
+    d / 2 * Nat.log 2 (d / 2 + 1) < Nat.size (Nat.factorial d) := by
+  rw [Nat.lt_size, pow_mul']
+  have h1 : 2 ^ Nat.log 2 (d / 2 + 1) ≤ d / 2 + 1 := Nat.pow_log_le_self 2 (by omega)
+  have h2 : (d / 2 + 1) ^ (d / 2) ≤ (d + 1 - d / 2) ^ (d / 2) :=
+    Nat.pow_le_pow_left (by omega) _
+  have h3 : (d + 1 - d / 2) ^ (d / 2) ≤ d.descFactorial (d / 2) :=
+    Nat.pow_sub_le_descFactorial d (d / 2)
+  have h4 : d.descFactorial (d / 2) ≤ Nat.factorial d := by
+    rw [← Nat.factorial_mul_descFactorial (show d / 2 ≤ d by omega)]
+    exact Nat.le_mul_of_pos_left _ (Nat.factorial_pos _)
+  calc (2 ^ Nat.log 2 (d / 2 + 1)) ^ (d / 2) ≤ (d / 2 + 1) ^ (d / 2) := Nat.pow_le_pow_left h1 _
+    _ ≤ Nat.factorial d := h2.trans (h3.trans h4)
+
+/-- …and at most `d · (log₂ d + 1)` bits: `size(d!) = Θ(d log d)`. -/
+theorem size_factorial_le {d : ℕ} (hd : 0 < d) :
+    Nat.size (Nat.factorial d) ≤ d * (Nat.log 2 d + 1) := by
+  rw [Nat.size_le, pow_mul']
+  calc Nat.factorial d ≤ d ^ d := Nat.factorial_le_pow d
+    _ < (2 ^ (Nat.log 2 d + 1)) ^ d :=
+        Nat.pow_lt_pow_left (Nat.lt_pow_succ_log_self (by norm_num) d) hd.ne'
+
+end Exercise414
 
 end BZ
 

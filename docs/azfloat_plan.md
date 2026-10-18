@@ -1984,3 +1984,42 @@ Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user 
   Optimizing: classical is minimized at `j ≈ k ≈ √d`, giving `2√d − 2`; modular at the same
   balance gives `2√d − 3 + ℓ(√d) ≈ 2√d + log₂ d`. Both evaluations are proven to compute
   `polyEval a (jk) x` (`classicalEvalC_val`, `modularEvalC_val`).
+* **Exercise 4.13** (large coefficients in rectangular splitting). **Answer.** For `exp`,
+  `a_i = 1/i!` has `log₂ i! ≈ i log₂ i` bits, so the scalar products `a_{kℓ+m} · x^m` of §4.4.3
+  are really `n`-bit by `O(d log d)`-bit products, not `O(n)` operations. Instead use the ratios
+  `r_i = a_{i+1}/a_i` (for `exp`, `1/(i+1)`), which have `O(log d)` bits. Within a block of the
+  classical splitting write `a_{kℓ+m} = a_{kℓ} ∏_{i<m} r_{kℓ+i}` and evaluate the inner
+  polynomial by Horner's rule *in the ratio direction*, with the stored powers of `x` playing the
+  role of the coefficients:
+  `P_ℓ(x)/a_{kℓ} = x⁰ + r_{kℓ}(x¹ + r_{kℓ+1}(x² + ⋯ + r_{kℓ+k−2} x^{k−1}))`
+  (`ratioHorner`, `ratioHorner_eq`, `innerPoly_eq_ratioHorner`). Each step is one multiplication
+  by a small numerator, one division by a small denominator and one addition, all `O(n)`; no
+  multiplication by `x` occurs, so nothing non-scalar is added. The outer Horner in `y = x^k`
+  then needs `a_{k(ℓ+1)}/a_{kℓ} = ∏_{i<k} r_{kℓ+i}`, a product of `k` small ratios, applied either
+  as one `O(k log d)`-bit scalar or as `k` small scalar steps (`O(kn)` per block, `O(dn)` in all):
+  `P(x) = a_0 [U_0 + y R_0 (U_1 + y R_1 (U_2 + ⋯))]` (`scaledHornerC`). The complete scheme
+  (`ratioEvalC`) is proven to compute `P(x)` whenever `a_{i+1} = r_i a_i` (`ratioEvalC_val`) and
+  uses exactly the non-scalar products of the classical splitting (`ratioEvalC_mul`,
+  `ratioEvalC_sq`), so the §4.4.3 cost model `O(√d M(n) + dn)` is restored with every scalar
+  multiplier of `O(log d)` bits. The classical splitting is the right one for this: consecutive
+  coefficients share a block, whereas in the modular splitting the row `S_ℓ = ∑_m a_{jm+ℓ} y^m`
+  links coefficients `j` apart, whose ratios are `j`-fold products of `O(j log d)` bits. For
+  integer-only arithmetic, clear the `k − 1` denominators of a block at once: the integer
+  coefficients then have `O(k log d)` bits, the compromise of Smith's and Johansson's
+  implementations. Design note for `AzFloat` `exp`: inner sums as `AzNat`-scaled `AzFloat`
+  values with `AzNat` small-divisor steps; `a_0 = 1`.
+* **Exercise 4.14** (explicit `c(d)`). **Answer.** A scalar product multiplies an `n`-bit number by
+  a coefficient of `b` bits; with word size `w` it costs `(n/w) · ⌈b/w⌉` word products, so
+  `c(d) = ⌈b/w⌉` with `b` the bit size of the largest multiplier (`wordsOf`). With the ratio
+  scheme of Exercise 4.13 the multipliers are the numerators and denominators of the ratios, for
+  `exp` the integers `i + 1 ≤ d`, of `size(d) = ⌊log₂ d⌋ + 1` bits (`ratio_multiplier_size`), so
+  `c(d) = ⌈size(d)/w⌉` (`ratioScalarWords`), which is `1` whenever `d < 2^w`
+  (`ratioScalarWords_eq_one`): `c(d) = 1` for every term count that fits a 64-bit word, and
+  `O(log d)` in bit-operation terms. Divisions by the small denominators cost the same as the
+  multiplications. For a general hypergeometric ratio `p(i)/q(i)` with `deg p, deg q ≤ δ` and
+  `O(1)`-bit polynomial coefficients, `b = O(δ log d)`, so `c(d) = O(δ log d / w)`; with a block's
+  `k − 1` denominators cleared at once, `b = O(k log d)` and `c(d) = O(√d log d / w)`. Without
+  ratios, the coefficient `1/d!` of the exponential series has
+  `(d/2) log₂(d/2 + 1) < size(d!) ≤ d (log₂ d + 1)` bits (`size_factorial_gt`,
+  `size_factorial_le`), i.e. `c(d) = Θ(d log d / w)` (`naiveScalarWords`), turning the `O(dn)`
+  scalar term of (4.24) into `O(d² n log d / w)`, which is the problem Exercise 4.13 removes.
