@@ -7,14 +7,23 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
 import Azurite.BrentZimmermann.Chapter4.ContourIntegration
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
+import Azurite.BrentZimmermann.Chapter4.ErrorFunctionSeries
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
+import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
+import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Complex.RealDeriv
+import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
+import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Data.Nat.Size
+import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.RingTheory.PowerSeries.Exp
 import Mathlib.RingTheory.PowerSeries.Expand
 import Mathlib.RingTheory.PowerSeries.Inverse
@@ -163,6 +172,78 @@ Exercise 4.13 every multiplier is an integer `≤ d` (`ratio_multiplier_size`), 
 i.e. `O(1)` in practice and `O(log d)` in bit terms. With the raw coefficients `1/i!` instead,
 `c(d) = ⌈size(d!)/w⌉` (`naiveScalarWords`) and `size(d!) = Θ(d log d)` (`size_factorial_gt`,
 `size_factorial_le`), which is what Exercise 4.13 avoids.
+
+## Exercise 4.15
+
+The remainder (4.28) of the expansion (4.27) of `E₁` was proven in `AsymptoticExpansion.lean`
+exactly along the hint: `expTail_succ` is the integration by parts
+`I_k(x) = e^(−x)/x^(k+1) − (k+1) I_{k+1}(x)`, `asymptoticRemainder_succ` turns it into
+`R_k = t_k + R_{k+1}`, and `exp_mul_expIntegral_eq` is the induction on `k`. Added here: the
+text's indexing `∑_{j=1}^k (j−1)! (−1)^(j−1)/x^j` (`exp_mul_expIntegral_eq_text`) and the strict
+bound `|R_k(x)| < k!/x^(k+1)` of (4.28) (`expTail_lt`, `abs_asymptoticRemainder_lt`), from the
+positivity of `I_{k+1}`.
+
+## Exercise 4.16
+
+`Ein z = ∑_{j≥1} (−1)^(j−1) z^j/(j! j)` (`Ein`, `EinTerm`) converges for every `z`
+(`summable_EinTerm`, dominated by the exponential series) and is differentiable everywhere with
+`Ein' z = (1 − e^(−z))/z`, `Ein' 0 = 1` (`hasDerivAt_Ein`, `EinDeriv`, `hasSum_EinDerivTerm`), so it
+is entire; it is real on the real axis (`EinR`, `Ein_ofReal`) and `EinR x = ∫_0^x (1 − e^(−t))/t dt`
+for `x ≥ 0` (`EinR_eq_integral`). Then `E₁(z) = −γ − Log z + Ein z` (`E1Ein`, `hasDerivAt_E1Ein`:
+derivative `−e^(−z)/z` off the branch cut) and `Ei(x) = γ + ln|x| − Ein(−x)` (`EiEin`,
+`hasDerivAt_EiEin`: derivative `e^x/x` for `x ≠ 0`) need no principal-value integral.
+
+## Exercise 4.17
+
+`1/x − 1/x² < e^x E₁(x) < 1/x` for `x > 0` (`exp_mul_expIntegral_bounds`): (4.27) with `k = 1`
+gives `e^x E₁(x) = 1/x + R₁(x)` where `R₁ < 0` (sign `(−1)^1`) and `|R₁| < 1/x²` (Exercise 4.15).
+
+## Exercise 4.18
+
+Exponential generating functions as formal power series over a `ℚ`-algebra (`egf`): the binomial
+transform `A_n = ∑_{j≤n} C(n,j) a_j` (`binomialTransform`) has `S(z) = e^z s(z)`
+(`egf_binomialTransform`), by comparing coefficients with `C(n,j)/n! = 1/(j! (n−j)!)`; conversely
+`s(z) = e^(−z) S(z)` (`egf_eq_exp_neg_mul`), i.e. `a_n = ∑_{j≤n} (−1)^(n−j) C(n,j) A_j`.
+
+## Exercise 4.19
+
+`Ein` is the exponential generating function of `a_j = (−1)^(j−1)/j`, whose binomial transform is
+`H_n = ∑_{j=1}^n C(n,j) (−1)^(j−1)/j` (`sum_choose_alt_div_eq_harmonic`, by induction with
+`∑_{l≤m} C(m,l)(−1)^l/(l+1) = 1/(m+1)`, `sum_choose_alt_div_succ`), so by Exercise 4.18
+`e^z Ein(z) = ∑_{j≥1} H_j z^j/j!` as formal series (`exp_mul_egf_ein`) and, by the Cauchy product
+of the two absolutely convergent series, as functions on `ℂ` (`hasSum_exp_mul_Ein`); the new
+series has positive terms for `z > 0`, so no cancellation.
+
+## Exercise 4.20
+
+(4.23) from (4.22): with `t = x²`, `erf(x)/x` is `(2/√π)` times the e.g.f. of `(−1)^j/(2j+1)`,
+whose binomial transform is `∑_{j≤n} C(n,j)(−1)^j/(2j+1) = 2^n n!/(2n+1)‼` (`altOddSum`, the
+integral `∫_0^1 u^(s−1)(1−u²)^n du` in closed form `altOddSum_eq`, via the recurrence
+`altOddSum_succ`; `prod_odd_eq_doubleFactorial`). Formally `exp · egf a = egf (2^n n!/(2n+1)‼)`
+(`exp_mul_egf_erf`); analytically the Cauchy product of (4.22) with `e^(x²)` gives
+`e^(x²) erf x = (2/√π) ∑ 2^n x^(2n+1)/(2n+1)‼` (`sum_antidiagonal_erf_exp`,
+`erf_eq_exp_mul_erfExpSum'`), which is (4.23).
+
+## Exercise 4.21
+
+`Γ(x)` for `x ≥ 1/2` by the shifted Stirling series: `Γ(x) = e^(L + R)/P` with
+`L = stirlingApprox m (x + δ)`, `R` its remainder and `P = ∏_{i<δ} (x + i)`
+(`Gamma_eq_exp_stirling_div`); dropping `R` with `|R| ≤ ε ≤ 1` costs relative error `≤ 2ε`
+(`Gamma_stirling_relError`), rounding the `δ` factors of `P` to relative `η` costs
+`≤ e^(δη) − 1` (`abs_prod_one_add_sub_one_le`), and a term of (4.38) at `x'` can only be below
+`2^(−n)` if `2πx' + ln(2π²x') ≥ n ln 2` (`shift_necessary`), so `δ ≈ n ln 2/(2π)`.
+
+## Exercise 4.22
+
+`1/Γ(z)` on `ℂ`: the shift holds for every `z`, poles included,
+`1/Γ(z) = (∏_{i<δ} (z + i)) / Γ(z + δ)` (`inv_Gamma_eq_prod_mul_inv_Gamma_add`), and for `Re z`
+small the reflection formula `1/Γ(z) = Γ(1 − z) sin(πz)/π` (`inv_Gamma_eq_Gamma_one_sub_mul_sin`)
+moves the Stirling evaluation to the right half plane; an error `ε ≤ 1` in the logarithm costs
+relative error `≤ 2ε` (`inv_Gamma_approx_relError`) and `δ` rounded complex factors cost
+`≤ e^(δη) − 1` (`norm_prod_one_add_sub_one_le`). The warning: `|Γ(iy)|² = π/(y sinh(πy))`
+(`norm_Gamma_I_mul_sq`), at most `4π e^(−πy)/y` (`norm_Gamma_I_mul_sq_le`), and
+`|Γ(1/2 + iy)|² = π/cosh(πy)` (`norm_Gamma_half_add_I_mul_sq`): `|Γ|` is exponentially small in
+`|Im z|`, which the logarithmic form handles without loss.
 -/
 
 namespace Azurite
@@ -1597,6 +1678,842 @@ theorem size_factorial_le {d : ℕ} (hd : 0 < d) :
         Nat.pow_lt_pow_left (Nat.lt_pow_succ_log_self (by norm_num) d) hd.ne'
 
 end Exercise414
+
+section Exercise415
+
+open Finset
+
+/-- (4.27) in the text's indexing: `e^x E₁(x) = ∑_{j=1}^k (j−1)! (−1)^(j−1)/x^j + R_k(x)`. -/
+theorem exp_mul_expIntegral_eq_text {x : ℝ} (hx : 0 < x) (k : ℕ) :
+    Real.exp x * expIntegral x
+      = ∑ j ∈ Icc 1 k, ((j - 1).factorial : ℝ) * (-1) ^ (j - 1) / x ^ j
+        + asymptoticRemainder k x := by
+  rw [exp_mul_expIntegral_eq hx k, ← Ico_succ_right_eq_Icc, Order.succ_eq_add_one,
+    sum_Ico_eq_sum_range, Nat.add_sub_cancel]
+  congr 1
+  refine sum_congr rfl fun j _ => ?_
+  rw [asymptoticTerm, add_comm 1 j, Nat.add_sub_cancel]
+
+/-- The strict form of `expTail_le`: `I_k(x) < e^(−x)/x^(k+1)`, since `I_{k+1}(x) > 0`. -/
+theorem expTail_lt {x : ℝ} (hx : 0 < x) (k : ℕ) : expTail k x < Real.exp (-x) / x ^ (k + 1) := by
+  rw [expTail_succ hx k]
+  have := expTail_pos hx (k + 1)
+  have hk : (0 : ℝ) < k + 1 := by positivity
+  nlinarith
+
+/-- (4.28), strict: `|R_k(x)| < k!/x^(k+1)`. -/
+theorem abs_asymptoticRemainder_lt {x : ℝ} (hx : 0 < x) (k : ℕ) :
+    |asymptoticRemainder k x| < k.factorial / x ^ (k + 1) := by
+  unfold asymptoticRemainder
+  rw [abs_mul, abs_mul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, mul_one,
+    abs_of_pos (Real.exp_pos x), abs_of_nonneg (expTail_nonneg hx k),
+    abs_of_pos (by positivity : (0 : ℝ) < k.factorial)]
+  calc (k.factorial : ℝ) * Real.exp x * expTail k x
+      < k.factorial * Real.exp x * (Real.exp (-x) / x ^ (k + 1)) := by
+        gcongr; exact expTail_lt hx k
+    _ = k.factorial / x ^ (k + 1) := by
+        have : Real.exp x * Real.exp (-x) = 1 := by rw [← Real.exp_add]; simp
+        rw [mul_assoc, ← mul_div_assoc, this, mul_one_div]
+
+end Exercise415
+
+section Exercise416
+
+open Complex Finset
+
+/-- Term `n` of `Ein`: `(−1)^n z^(n+1)/((n+1)! (n+1))` (the text's `j = n + 1`). -/
+noncomputable def EinTerm (n : ℕ) (z : ℂ) : ℂ :=
+  (-1) ^ n * z ^ (n + 1) / (((n + 1).factorial * (n + 1) : ℕ) : ℂ)
+
+/-- The entire function `Ein z = ∫_0^z (1 − e^(−t))/t dt = ∑_{j≥1} (−1)^(j−1) z^j/(j! j)`. -/
+noncomputable def Ein (z : ℂ) : ℂ := ∑' n, EinTerm n z
+
+theorem norm_EinTerm_le (n : ℕ) (z : ℂ) :
+    ‖EinTerm n z‖ ≤ ‖z‖ ^ (n + 1) / (n + 1).factorial := by
+  unfold EinTerm
+  rw [norm_div, norm_mul, norm_pow, norm_neg, norm_one, one_pow, one_mul, norm_pow,
+    Complex.norm_natCast]
+  push_cast
+  apply div_le_div_of_nonneg_left (by positivity) (by positivity)
+  exact le_mul_of_one_le_right (by positivity) (by linarith [(Nat.cast_nonneg n : (0:ℝ) ≤ n)])
+
+theorem summable_EinTerm (z : ℂ) : Summable fun n => EinTerm n z := by
+  refine Summable.of_norm_bounded (g := fun n => ‖z‖ ^ (n + 1) / (n + 1).factorial) ?_
+    fun n => norm_EinTerm_le n z
+  exact (summable_nat_add_iff 1).mpr (Real.summable_pow_div_factorial ‖z‖)
+
+theorem EinTerm_zero (n : ℕ) : EinTerm n 0 = 0 := by simp [EinTerm]
+
+theorem Ein_zero : Ein 0 = 0 := by simp [Ein, EinTerm_zero]
+
+/-- The termwise derivative `(−1)^n z^n/(n+1)!`. -/
+noncomputable def EinDerivTerm (n : ℕ) (z : ℂ) : ℂ := (-1) ^ n * z ^ n / ((n + 1).factorial : ℂ)
+
+theorem hasDerivAt_EinTerm (n : ℕ) (z : ℂ) : HasDerivAt (EinTerm n) (EinDerivTerm n z) z := by
+  have h := (((hasDerivAt_pow (n + 1) z).const_mul ((-1 : ℂ) ^ n)).div_const
+    (((n + 1).factorial * (n + 1) : ℕ) : ℂ))
+  refine h.congr_deriv ?_
+  unfold EinDerivTerm
+  rw [Nat.add_sub_cancel]
+  push_cast
+  have : ((n : ℂ) + 1) ≠ 0 := by exact_mod_cast Nat.succ_ne_zero n
+  field_simp
+
+theorem norm_EinDerivTerm_le {R : ℝ} (n : ℕ) {y : ℂ} (hy : ‖y‖ ≤ R) :
+    ‖EinDerivTerm n y‖ ≤ R ^ n / n.factorial := by
+  unfold EinDerivTerm
+  rw [norm_div, norm_mul, norm_pow, norm_neg, norm_one, one_pow, one_mul, norm_pow,
+    Complex.norm_natCast]
+  have hR : 0 ≤ R := (norm_nonneg y).trans hy
+  calc ‖y‖ ^ n / ((n + 1).factorial : ℝ) ≤ R ^ n / ((n + 1).factorial : ℝ) := by
+        gcongr
+    _ ≤ R ^ n / n.factorial := by
+        apply div_le_div_of_nonneg_left (by positivity) (by positivity)
+        exact_mod_cast Nat.factorial_le (Nat.le_succ n)
+
+/-- `Ein' z = (1 − e^(−z))/z`, with the removable value `1` at `0`. -/
+noncomputable def EinDeriv (z : ℂ) : ℂ := if z = 0 then 1 else (1 - exp (-z)) / z
+
+theorem hasSum_cexp_series (w : ℂ) : HasSum (fun n => w ^ n / (n.factorial : ℂ)) (exp w) := by
+  rw [Complex.exp_eq_exp_ℂ]
+  exact NormedSpace.expSeries_div_hasSum_exp w
+
+theorem hasSum_EinDerivTerm (z : ℂ) : HasSum (fun n => EinDerivTerm n z) (EinDeriv z) := by
+  unfold EinDeriv
+  split_ifs with hz
+  · subst hz
+    have : (fun n => EinDerivTerm n 0) = fun n => if n = 0 then (1 : ℂ) else 0 := by
+      ext n; cases n <;> simp [EinDerivTerm]
+    rw [this]
+    exact hasSum_ite_eq 0 1
+  · have h1 := (hasSum_nat_add_iff' 1).mpr (hasSum_cexp_series (-z))
+    rw [sum_range_one, pow_zero, Nat.factorial_zero, Nat.cast_one, div_one] at h1
+    have h2 := h1.div_const (-z)
+    convert h2 using 1
+    · ext n
+      unfold EinDerivTerm
+      rw [pow_succ]
+      have : (-z) ≠ 0 := neg_ne_zero.mpr hz
+      field_simp
+      ring
+    · rw [div_neg, ← neg_div, neg_sub]
+
+/-- `Ein` is differentiable everywhere, hence entire. -/
+theorem hasDerivAt_Ein (z : ℂ) : HasDerivAt Ein (EinDeriv z) z := by
+  rw [← (hasSum_EinDerivTerm z).tsum_eq]
+  set R : ℝ := ‖z‖ + 1 with hR
+  have hu : Summable fun n => R ^ n / (n.factorial : ℝ) := Real.summable_pow_div_factorial R
+  have hg' : ∀ n (y : ℂ), y ∈ Metric.ball (0 : ℂ) R →
+      ‖EinDerivTerm n y‖ ≤ R ^ n / n.factorial := by
+    intro n y hy
+    rw [Metric.mem_ball, dist_zero_right] at hy
+    exact norm_EinDerivTerm_le n hy.le
+  have hz : z ∈ Metric.ball (0 : ℂ) R := by
+    rw [Metric.mem_ball, dist_zero_right]; linarith
+  have h0 : (0 : ℂ) ∈ Metric.ball (0 : ℂ) R := Metric.mem_ball_self (by positivity)
+  show HasDerivAt (fun w => ∑' n, EinTerm n w) (∑' n, EinDerivTerm n z) z
+  exact hasDerivAt_tsum_of_isPreconnected hu Metric.isOpen_ball
+    (convex_ball (0 : ℂ) R).isPreconnected (fun n y _ => hasDerivAt_EinTerm n y) hg' h0
+    (summable_EinTerm 0) hz
+
+/-- `Ein` restricted to the real axis. -/
+noncomputable def EinR (x : ℝ) : ℝ := (Ein x).re
+
+theorem Ein_ofReal (x : ℝ) : Ein x = (EinR x : ℂ) := by
+  have : Ein x = ((∑' n, ((-1) ^ n * x ^ (n + 1) / (((n + 1).factorial * (n + 1) : ℕ) : ℝ))
+      : ℝ) : ℂ) := by
+    rw [Complex.ofReal_tsum]
+    unfold Ein EinTerm
+    congr 1; ext n; push_cast; ring
+  rw [EinR, this, Complex.ofReal_re]
+
+theorem EinR_zero : EinR 0 = 0 := by simp [EinR, Ein_zero]
+
+/-- `EinR' x = (1 − e^(−x))/x`, `EinR' 0 = 1`. -/
+noncomputable def EinDerivR (x : ℝ) : ℝ := if x = 0 then 1 else (1 - Real.exp (-x)) / x
+
+theorem EinDeriv_ofReal (x : ℝ) : EinDeriv x = (EinDerivR x : ℂ) := by
+  unfold EinDeriv EinDerivR
+  simp only [Complex.ofReal_eq_zero]
+  split_ifs <;> push_cast <;> simp
+
+theorem hasDerivAt_EinR (x : ℝ) : HasDerivAt EinR (EinDerivR x) x := by
+  have h := (hasDerivAt_Ein x).real_of_complex
+  rwa [EinDeriv_ofReal, Complex.ofReal_re] at h
+
+theorem hasDerivAt_EinR_of_ne {x : ℝ} (hx : x ≠ 0) :
+    HasDerivAt EinR ((1 - Real.exp (-x)) / x) x := by
+  have h := hasDerivAt_EinR x
+  simpa only [EinDerivR, hx, ↓reduceIte] using h
+
+/-- The integrand `(1 − e^(−t))/t` is bounded by `1` on `(0, x]`. -/
+theorem abs_one_sub_exp_neg_div_le {t : ℝ} (ht : 0 < t) : |(1 - Real.exp (-t)) / t| ≤ 1 := by
+  have h1 : Real.exp (-t) ≤ 1 := Real.exp_le_one_iff.mpr (by linarith)
+  have h2 : 1 - t ≤ Real.exp (-t) := by linarith [Real.add_one_le_exp (-t)]
+  rw [abs_div, abs_of_pos ht, abs_of_nonneg (by linarith), div_le_one ht]
+  linarith
+
+theorem intervalIntegrable_one_sub_exp_neg_div {x : ℝ} (hx : 0 ≤ x) :
+    IntervalIntegrable (fun t : ℝ => (1 - Real.exp (-t)) / t) MeasureTheory.volume 0 x := by
+  rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hx]
+  refine MeasureTheory.Measure.integrableOn_of_bounded (M := 1) measure_Ioc_lt_top.ne
+    ((measurable_const.sub (Real.measurable_exp.comp measurable_neg)).div
+      measurable_id).aestronglyMeasurable ?_
+  filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioc] with t ht
+  rw [Real.norm_eq_abs]
+  exact abs_one_sub_exp_neg_div_le ht.1
+
+/-- `Ein x = ∫_0^x (1 − e^(−t))/t dt` for real `x ≥ 0`: both sides vanish at `0` and have the
+same derivative on `(0, ∞)`; the integral from `0` is controlled by the bound `1` on the
+integrand. -/
+theorem EinR_eq_integral {x : ℝ} (hx : 0 ≤ x) :
+    EinR x = ∫ t in (0 : ℝ)..x, (1 - Real.exp (-t)) / t := by
+  rcases hx.eq_or_lt with rfl | hx
+  · simp [EinR_zero]
+  set f : ℝ → ℝ := fun t => (1 - Real.exp (-t)) / t with hf
+  have hint := intervalIntegrable_one_sub_exp_neg_div hx.le
+  -- for `0 < a ≤ x`: `∫_a^x f = EinR x − EinR a`
+  have hpart : ∀ a, 0 < a → a ≤ x → ∫ t in a..x, f t = EinR x - EinR a := by
+    intro a ha hax
+    refine intervalIntegral.integral_eq_sub_of_hasDerivAt (fun t ht => ?_) ?_
+    · rw [Set.uIcc_of_le hax] at ht
+      exact hasDerivAt_EinR_of_ne (by linarith [ht.1])
+    · have hmem : a ∈ Set.uIcc 0 x := by rw [Set.uIcc_of_le hx.le]; exact ⟨ha.le, hax⟩
+      exact hint.mono_set (Set.uIcc_subset_uIcc_right hmem)
+  -- so `|∫_0^x f − EinR x| ≤ a + |EinR a|` for all such `a`
+  have hbound : ∀ a, 0 < a → a ≤ x →
+      |(∫ t in (0 : ℝ)..x, f t) - EinR x| ≤ a + |EinR a| := by
+    intro a ha hax
+    have hmem : a ∈ Set.uIcc 0 x := by rw [Set.uIcc_of_le hx.le]; exact ⟨ha.le, hax⟩
+    have hsplit := intervalIntegral.integral_add_adjacent_intervals
+      (hint.mono_set (Set.uIcc_subset_uIcc_left hmem))
+      (hint.mono_set (Set.uIcc_subset_uIcc_right hmem))
+    have hsmall : |∫ t in (0 : ℝ)..a, f t| ≤ a := by
+      have := intervalIntegral.norm_integral_le_of_norm_le_const (a := 0) (b := a) (C := 1)
+        (f := f) fun t ht => by
+          rw [Set.uIoc_of_le ha.le] at ht
+          rw [Real.norm_eq_abs]
+          exact abs_one_sub_exp_neg_div_le ht.1
+      simpa [abs_of_pos ha] using this
+    rw [← hsplit, hpart a ha hax]
+    calc |(∫ t in (0 : ℝ)..a, f t) + (EinR x - EinR a) - EinR x|
+        = |(∫ t in (0 : ℝ)..a, f t) - EinR a| := by ring_nf
+      _ ≤ |∫ t in (0 : ℝ)..a, f t| + |EinR a| := abs_sub _ _
+      _ ≤ a + |EinR a| := by linarith
+  -- let `a → 0⁺`
+  have hlim : Filter.Tendsto (fun a : ℝ => a + |EinR a|) (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+    have h : Filter.Tendsto (fun a : ℝ => a + |EinR a|) (nhds 0) (nhds (0 + |EinR 0|)) :=
+      Filter.tendsto_id.add ((hasDerivAt_EinR 0).continuousAt.tendsto.abs)
+    rw [EinR_zero, abs_zero, add_zero] at h
+    exact h.mono_left nhdsWithin_le_nhds
+  have hle : |(∫ t in (0 : ℝ)..x, f t) - EinR x| ≤ 0 := by
+    refine ge_of_tendsto hlim ?_
+    filter_upwards [Ioo_mem_nhdsGT hx] with a ha
+    exact hbound a ha.1 ha.2.le
+  have := abs_nonneg ((∫ t in (0 : ℝ)..x, f t) - EinR x)
+  linarith [abs_eq_zero.mp (le_antisymm hle this) |> sub_eq_zero.mp]
+
+/-- `E₁(z) = −γ − Log z + Ein z`: (4.26) as a definition, with no principal value. -/
+noncomputable def E1Ein (z : ℂ) : ℂ := -(Real.eulerMascheroniConstant : ℂ) - log z + Ein z
+
+/-- `E₁' z = −e^(−z)/z` away from the branch cut of `Log`. -/
+theorem hasDerivAt_E1Ein {z : ℂ} (hz : z ∈ slitPlane) : HasDerivAt E1Ein (-exp (-z) / z) z := by
+  have hz0 : z ≠ 0 := slitPlane_ne_zero hz
+  have h := ((Complex.hasDerivAt_log hz).const_sub (-(Real.eulerMascheroniConstant : ℂ))).add
+    (hasDerivAt_Ein z)
+  refine h.congr_deriv ?_
+  simp only [EinDeriv, hz0, ↓reduceIte]
+  field_simp
+  ring
+
+/-- `Ei(x) = γ + ln|x| − Ein(−x)`: the real exponential integral without a principal value
+(`Real.log` is `ln|x|` for negative `x`). -/
+noncomputable def EiEin (x : ℝ) : ℝ := Real.eulerMascheroniConstant + Real.log x - EinR (-x)
+
+/-- `Ei' x = e^x/x` for `x ≠ 0`. -/
+theorem hasDerivAt_EiEin {x : ℝ} (hx : x ≠ 0) : HasDerivAt EiEin (Real.exp x / x) x := by
+  have h1 := (Real.hasDerivAt_log hx).const_add Real.eulerMascheroniConstant
+  have h2 : HasDerivAt (fun x : ℝ => EinR (-x)) ((1 - Real.exp (-(-x))) / (-x) * (-1)) x :=
+    (hasDerivAt_EinR_of_ne (neg_ne_zero.mpr hx)).comp x (hasDerivAt_neg x)
+  refine (h1.sub h2).congr_deriv ?_
+  rw [neg_neg]
+  field_simp
+  ring
+
+end Exercise416
+
+section Exercise417
+
+/-- Exercise 4.17: `1/x − 1/x² < e^x E₁(x) < 1/x` for `x > 0`. -/
+theorem exp_mul_expIntegral_bounds {x : ℝ} (hx : 0 < x) :
+    1 / x - 1 / x ^ 2 < Real.exp x * expIntegral x ∧ Real.exp x * expIntegral x < 1 / x := by
+  have h := exp_mul_expIntegral_eq hx 1
+  simp only [Finset.sum_range_one, asymptoticTerm, Nat.factorial_zero, Nat.cast_one, pow_zero,
+    mul_one, zero_add, pow_one] at h
+  have hsign := sign_asymptoticRemainder hx 1
+  have habs := abs_asymptoticRemainder_lt hx 1
+  simp only [pow_one, Nat.factorial_one, Nat.cast_one] at hsign habs
+  rw [abs_lt] at habs
+  constructor <;> linarith [habs.1, habs.2]
+
+end Exercise417
+
+section Exercise418
+
+open Finset
+
+variable {A : Type*} [CommRing A] [Algebra ℚ A]
+
+/-- The exponential generating function `s(z) = ∑ a_j z^j/j!` as a formal power series. -/
+noncomputable def egf (a : ℕ → A) : A⟦X⟧ :=
+  PowerSeries.mk fun j => algebraMap ℚ A (1 / j.factorial) * a j
+
+/-- The binomial transform `A_n = ∑_{j≤n} C(n, j) a_j`. -/
+def binomialTransform (a : ℕ → A) (n : ℕ) : A := ∑ j ∈ range (n + 1), (n.choose j : A) * a j
+
+theorem coeff_egf (a : ℕ → A) (n : ℕ) :
+    PowerSeries.coeff n (egf a) = algebraMap ℚ A (1 / n.factorial) * a n := by
+  simp [egf]
+
+/-- `C(n,j)/n! = 1/j! · 1/(n−j)!` in any `ℚ`-algebra. -/
+theorem algebraMap_inv_factorial_mul_choose {n j : ℕ} (hj : j ≤ n) :
+    algebraMap ℚ A (1 / n.factorial) * (n.choose j : A)
+      = algebraMap ℚ A (1 / j.factorial) * algebraMap ℚ A (1 / (n - j).factorial) := by
+  rw [← map_natCast (algebraMap ℚ A), ← map_mul, ← map_mul]
+  congr 1
+  rw [Nat.cast_choose ℚ hj]
+  have h1 : (n.factorial : ℚ) ≠ 0 := by positivity
+  have h2 : (j.factorial : ℚ) ≠ 0 := by positivity
+  have h3 : ((n - j).factorial : ℚ) ≠ 0 := by positivity
+  field_simp
+
+/-- Exercise 4.18: `S(z) = e^z s(z)`. -/
+theorem egf_binomialTransform (a : ℕ → A) : egf (binomialTransform a) = exp A * egf a := by
+  rw [mul_comm]
+  ext n
+  rw [coeff_egf, PowerSeries.coeff_mul, binomialTransform, mul_sum,
+    Finset.Nat.sum_antidiagonal_eq_sum_range_succ (fun i j => PowerSeries.coeff i (egf a) *
+      PowerSeries.coeff j (exp A))]
+  refine sum_congr rfl fun j hj => ?_
+  have hjn : j ≤ n := Nat.lt_succ_iff.mp (mem_range.mp hj)
+  rw [coeff_egf, coeff_exp, ← mul_assoc, algebraMap_inv_factorial_mul_choose hjn]
+  ring
+
+/-- The inverse transform: `s(z) = e^(−z) S(z)`, i.e. `a_n = ∑_{j≤n} (−1)^(n−j) C(n,j) A_j`. -/
+theorem egf_eq_exp_neg_mul (a : ℕ → A) :
+    egf a = evalNegHom (exp A) * egf (binomialTransform a) := by
+  rw [egf_binomialTransform, ← mul_assoc, mul_comm (evalNegHom (exp A)), exp_mul_exp_neg_eq_one,
+    one_mul]
+
+end Exercise418
+
+section Exercise419
+
+open Finset
+
+/-- `C(m,l)/(l+1) = C(m+1,l+1)/(m+1)` for `l ≤ m`. -/
+theorem choose_div_succ_eq {m l : ℕ} (hl : l ≤ m) :
+    (m.choose l : ℚ) / (l + 1) = ((m + 1).choose (l + 1) : ℚ) / (m + 1) := by
+  rw [Nat.cast_choose ℚ hl, Nat.cast_choose ℚ (by omega : l + 1 ≤ m + 1),
+    show m + 1 - (l + 1) = m - l by omega, Nat.factorial_succ, Nat.factorial_succ]
+  push_cast
+  have h1 : (m.factorial : ℚ) ≠ 0 := by positivity
+  have h2 : (l.factorial : ℚ) ≠ 0 := by positivity
+  have h3 : ((m - l).factorial : ℚ) ≠ 0 := by positivity
+  field_simp
+
+/-- `∑_{l≤m} C(m,l) (−1)^l/(l+1) = 1/(m+1)`. -/
+theorem sum_choose_alt_div_succ (m : ℕ) :
+    ∑ l ∈ range (m + 1), (m.choose l : ℚ) * (-1) ^ l / (l + 1) = 1 / (m + 1) := by
+  have h : ∀ l ∈ range (m + 1), (m.choose l : ℚ) * (-1) ^ l / (l + 1)
+      = (((m + 1).choose (l + 1) : ℚ) * (-1) ^ l) / (m + 1) := by
+    intro l hl
+    rw [mul_div_right_comm, choose_div_succ_eq (Nat.lt_succ_iff.mp (mem_range.mp hl)),
+      div_mul_eq_mul_div]
+  rw [sum_congr rfl h, ← sum_div]
+  congr 1
+  -- `∑_{l≤m} C(m+1,l+1)(−1)^l = 1 − ∑_{j≤m+1} C(m+1,j)(−1)^j = 1`
+  have halt := Int.alternating_sum_range_choose_of_ne (Nat.succ_ne_zero m)
+  have hcast : (∑ j ∈ range (m + 1 + 1), ((-1) ^ j * (m + 1).choose j : ℚ)) = 0 := by
+    exact_mod_cast halt
+  rw [sum_range_succ', pow_zero, one_mul, Nat.choose_zero_right, Nat.cast_one] at hcast
+  have : ∑ l ∈ range (m + 1), ((m + 1).choose (l + 1) : ℚ) * (-1) ^ l
+      = -∑ l ∈ range (m + 1), ((-1) ^ (l + 1) * (m + 1).choose (l + 1) : ℚ) := by
+    rw [← sum_neg_distrib]
+    exact sum_congr rfl fun l _ => by rw [pow_succ]; ring
+  rw [this]
+  linarith
+
+/-- The binomial transform of `(−1)^(j−1)/j` is the harmonic number: in the shifted form,
+`∑_{l<m} C(m,l+1) (−1)^l/(l+1) = H_m`. -/
+theorem sum_choose_alt_div_eq_harmonic (m : ℕ) :
+    ∑ l ∈ range m, (m.choose (l + 1) : ℚ) * (-1) ^ l / (l + 1) = harmonic m := by
+  induction m with
+  | zero => simp [harmonic_zero]
+  | succ m ih =>
+    rw [harmonic_succ, ← ih, ← one_div, Nat.cast_succ, ← sum_choose_alt_div_succ m]
+    have hsplit : ∀ l ∈ range (m + 1), ((m + 1).choose (l + 1) : ℚ) * (-1) ^ l / (l + 1)
+        = (m.choose (l + 1) : ℚ) * (-1) ^ l / (l + 1) + (m.choose l : ℚ) * (-1) ^ l / (l + 1) := by
+      intro l _
+      rw [Nat.choose_succ_succ, Nat.cast_add]
+      ring
+    rw [sum_congr rfl hsplit, sum_add_distrib, sum_range_succ (fun l => (m.choose (l + 1) : ℚ)
+      * (-1) ^ l / (l + 1)), Nat.choose_succ_self, Nat.cast_zero, zero_mul, zero_div, add_zero]
+
+/-- The coefficients `a_j = (−1)^(j−1)/j` of `Ein`, with `a_0 = 0`. -/
+noncomputable def einCoeff (j : ℕ) : ℚ := if j = 0 then 0 else (-1) ^ (j - 1) / j
+
+theorem binomialTransform_einCoeff (n : ℕ) : binomialTransform einCoeff n = harmonic n := by
+  rw [← sum_choose_alt_div_eq_harmonic, binomialTransform, sum_range_succ']
+  simp only [einCoeff, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte,
+    Nat.add_sub_cancel, mul_zero, add_zero, Nat.cast_add, Nat.cast_one]
+  exact sum_congr rfl fun l _ => by ring
+
+/-- Exercise 4.19 as formal power series: `e^z Ein(z) = ∑ H_j z^j/j!`. -/
+theorem exp_mul_egf_ein : exp ℚ * egf einCoeff = egf (fun n => harmonic n) := by
+  rw [← egf_binomialTransform]
+  congr 1
+  ext n
+  exact binomialTransform_einCoeff n
+
+theorem harmonic_le_self (n : ℕ) : harmonic n ≤ n := by
+  unfold harmonic
+  calc ∑ i ∈ range n, ((i + 1 : ℕ) : ℚ)⁻¹ ≤ ∑ _i ∈ range n, (1 : ℚ) :=
+        sum_le_sum fun i _ => inv_le_one_of_one_le₀ (by exact_mod_cast Nat.succ_pos i)
+    _ = n := by simp
+
+/-- The Cauchy product term: `∑_{k+l=n} z^k/k! · EinTerm l z = H_{n+1} z^(n+1)/(n+1)!`. -/
+theorem sum_antidiagonal_exp_EinTerm (z : ℂ) (n : ℕ) :
+    ∑ kl ∈ antidiagonal n, z ^ kl.1 / (kl.1.factorial : ℂ) * EinTerm kl.2 z
+      = (harmonic (n + 1) : ℂ) * z ^ (n + 1) / ((n + 1).factorial : ℂ) := by
+  have hq := sum_choose_alt_div_eq_harmonic (n + 1)
+  have hqc : ((∑ l ∈ range (n + 1), ((n + 1).choose (l + 1) : ℚ) * (-1) ^ l / (l + 1) : ℚ) : ℂ)
+      = (harmonic (n + 1) : ℂ) := by rw [hq]
+  push_cast at hqc
+  rw [← hqc, ← sum_range_reflect, Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+    (fun k l => z ^ k / (k.factorial : ℂ) * EinTerm l z), sum_mul, sum_div]
+  refine sum_congr rfl fun k hk => ?_
+  have hk' : k ≤ n := Nat.lt_succ_iff.mp (mem_range.mp hk)
+  rw [show n + 1 - 1 - k = n - k by omega]
+  unfold EinTerm
+  rw [Nat.cast_choose ℂ (by omega : n - k + 1 ≤ n + 1), show n + 1 - (n - k + 1) = k by omega,
+    Nat.cast_mul]
+  have hz : z ^ k * z ^ (n - k + 1) = z ^ (n + 1) := by
+    rw [← pow_add]; congr 1; omega
+  have h1 : (k.factorial : ℂ) ≠ 0 := by exact_mod_cast (Nat.factorial_pos _).ne'
+  have h2 : ((n - k + 1).factorial : ℂ) ≠ 0 := by exact_mod_cast (Nat.factorial_pos _).ne'
+  have h3 : ((n + 1).factorial : ℂ) ≠ 0 := by exact_mod_cast (Nat.factorial_pos _).ne'
+  have h4 : ((n - k + 1 : ℕ) : ℂ) ≠ 0 := by exact_mod_cast Nat.succ_ne_zero (n - k)
+  have h5 : ((n - k : ℕ) : ℂ) + 1 = ((n - k + 1 : ℕ) : ℂ) := by push_cast; ring
+  rw [h5, ← hz]
+  field_simp
+
+/-- Exercise 4.19 as functions: `e^z Ein(z) = ∑_{j≥1} H_j z^j/j!` for every complex `z`. -/
+theorem hasSum_exp_mul_Ein (z : ℂ) :
+    HasSum (fun n => (harmonic n : ℂ) * z ^ n / (n.factorial : ℂ)) (Complex.exp z * Ein z) := by
+  have hf : Summable fun n => ‖z ^ n / (n.factorial : ℂ)‖ := by
+    simpa [norm_div, norm_pow, Complex.norm_natCast] using Real.summable_pow_div_factorial ‖z‖
+  have hg : Summable fun n => ‖EinTerm n z‖ :=
+    Summable.of_nonneg_of_le (fun n => norm_nonneg _) (fun n => norm_EinTerm_le n z)
+      ((summable_nat_add_iff 1).mpr (Real.summable_pow_div_factorial ‖z‖))
+  have hprod := tsum_mul_tsum_eq_tsum_sum_antidiagonal_of_summable_norm hf hg
+  have hsum := summable_norm_sum_mul_antidiagonal_of_summable_norm hf hg
+  rw [(hasSum_cexp_series z).tsum_eq] at hprod
+  have h1 : HasSum
+      (fun n => ∑ kl ∈ antidiagonal n, z ^ kl.1 / (kl.1.factorial : ℂ) * EinTerm kl.2 z)
+      (Complex.exp z * Ein z) := by
+    rw [Ein, hprod]; exact hsum.of_norm.hasSum
+  simp_rw [sum_antidiagonal_exp_EinTerm] at h1
+  rw [← hasSum_nat_add_iff' 1]
+  simpa [harmonic_zero] using h1
+
+end Exercise419
+
+section Exercise420
+
+open Finset
+
+/-- `∑_{j≤n} C(n,j) (−1)^j/(2j+s)`, the integral `∫_0^1 u^(s−1) (1−u²)^n du`. -/
+noncomputable def altOddSum (n : ℕ) (s : ℚ) : ℚ :=
+  ∑ j ∈ range (n + 1), (n.choose j : ℚ) * (-1) ^ j / (2 * j + s)
+
+theorem altOddSum_zero (s : ℚ) : altOddSum 0 s = 1 / s := by simp [altOddSum]
+
+/-- The recurrence `altOddSum (n+1) s = altOddSum n s − altOddSum n (s+2)` (Pascal's rule). -/
+theorem altOddSum_succ (n : ℕ) (s : ℚ) :
+    altOddSum (n + 1) s = altOddSum n s - altOddSum n (s + 2) := by
+  unfold altOddSum
+  have h1 : ∀ j ∈ range (n + 1), ((n + 1).choose (j + 1) : ℚ) * (-1) ^ (j + 1)
+      / (2 * ((j + 1 : ℕ) : ℚ) + s)
+      = (n.choose (j + 1) : ℚ) * (-1) ^ (j + 1) / (2 * ((j + 1 : ℕ) : ℚ) + s)
+        - (n.choose j : ℚ) * (-1) ^ j / (2 * j + (s + 2)) := by
+    intro j _
+    rw [Nat.choose_succ_succ, Nat.cast_add]
+    push_cast
+    ring
+  rw [sum_range_succ' (fun j => ((n + 1).choose j : ℚ) * (-1) ^ j / (2 * j + s)),
+    sum_congr rfl h1, sum_sub_distrib,
+    sum_range_succ (fun j => (n.choose (j + 1) : ℚ) * (-1) ^ (j + 1) / (2 * ((j + 1 : ℕ) : ℚ) + s)),
+    Nat.choose_succ_self, Nat.cast_zero, zero_mul, zero_div, add_zero,
+    sum_range_succ' (fun j => (n.choose j : ℚ) * (-1) ^ j / (2 * j + s))]
+  simp only [Nat.choose_zero_right, Nat.cast_one, pow_zero, mul_one, Nat.cast_zero, mul_zero,
+    zero_add]
+  ring
+
+/-- Closed form: `altOddSum n s = 2^n n! / ∏_{i≤n} (s + 2i)` for `s > 0`. -/
+theorem altOddSum_eq (n : ℕ) {s : ℚ} (hs : 0 < s) :
+    altOddSum n s = 2 ^ n * n.factorial / ∏ i ∈ range (n + 1), (s + 2 * i) := by
+  induction n generalizing s with
+  | zero => simp [altOddSum_zero]
+  | succ n ih =>
+    rw [altOddSum_succ, ih hs, ih (by linarith)]
+    have hP : 0 < ∏ i ∈ range (n + 1), (s + 2 * (i : ℚ)) :=
+      prod_pos fun i _ => by positivity
+    have hP2 : ∏ i ∈ range (n + 1), (s + 2 + 2 * (i : ℚ))
+        = (∏ i ∈ range (n + 1 + 1), (s + 2 * i)) / s := by
+      rw [prod_range_succ' (fun i => (s + 2 * (i : ℚ))) (n + 1)]
+      rw [Nat.cast_zero, mul_zero, add_zero, mul_div_assoc, div_self hs.ne', mul_one]
+      exact prod_congr rfl fun i _ => by push_cast; ring
+    have hP1 : ∏ i ∈ range (n + 1 + 1), (s + 2 * (i : ℚ))
+        = (∏ i ∈ range (n + 1), (s + 2 * (i : ℚ))) * (s + 2 * ((n + 1 : ℕ) : ℚ)) :=
+      prod_range_succ _ _
+    rw [hP2, hP1, Nat.factorial_succ]
+    have hq : (s + 2 * ((n + 1 : ℕ) : ℚ)) ≠ 0 := by positivity
+    push_cast
+    field_simp
+    ring
+
+/-- `∏_{i≤n} (1 + 2i) = (2n+1)‼`. -/
+theorem prod_odd_eq_doubleFactorial (n : ℕ) :
+    ∏ i ∈ range (n + 1), ((1 : ℚ) + 2 * i) = ((2 * n + 1).doubleFactorial : ℚ) := by
+  induction n with
+  | zero => simp [Nat.doubleFactorial]
+  | succ n ih =>
+    rw [prod_range_succ, ih, show 2 * (n + 1) + 1 = 2 * n + 1 + 2 by ring,
+      Nat.doubleFactorial_add_two]
+    push_cast
+    ring
+
+/-- `∑_{j≤n} C(n,j)(−1)^j/(2j+1) = 2^n n!/(2n+1)‼`. -/
+theorem altOddSum_one (n : ℕ) :
+    altOddSum n 1 = 2 ^ n * n.factorial / ((2 * n + 1).doubleFactorial : ℚ) := by
+  rw [altOddSum_eq n one_pos, prod_odd_eq_doubleFactorial]
+
+/-- The formal statement: `e^t · ∑ (−1)^j t^j/(j!(2j+1)) = ∑ 2^n t^n/(2n+1)‼`. -/
+theorem exp_mul_egf_erf :
+    exp ℚ * egf (fun j : ℕ => ((-1 : ℚ) ^ j / (2 * j + 1)))
+      = egf (fun n : ℕ => (2 : ℚ) ^ n * n.factorial / ((2 * n + 1).doubleFactorial : ℚ)) := by
+  rw [← egf_binomialTransform]
+  congr 1
+  ext n
+  rw [← altOddSum_one, binomialTransform, altOddSum]
+  exact sum_congr rfl fun j _ => by ring
+
+/-- The Cauchy product coefficient: `∑_{j+k=n} (−1)^j x^(2j+1)/(j!(2j+1)) · (x²)^k/k!
+= c_n x^(2n+1)` with `c_n = 2^n/(2n+1)‼`. -/
+theorem sum_antidiagonal_erf_exp (x : ℝ) (n : ℕ) :
+    ∑ kl ∈ antidiagonal n, ((-1) ^ kl.1 * x ^ (2 * kl.1 + 1) / (kl.1.factorial * (2 * kl.1 + 1)))
+      * ((x ^ 2) ^ kl.2 / (kl.2.factorial : ℝ))
+      = erfExpCoeff n * x ^ (2 * n + 1) := by
+  have hq : ((altOddSum n 1 : ℚ) : ℝ)
+      = 2 ^ n * n.factorial / ((2 * n + 1).doubleFactorial : ℝ) := by
+    rw [altOddSum_one]; push_cast; rfl
+  have hq' : ((altOddSum n 1 : ℚ) : ℝ)
+      = ∑ j ∈ range (n + 1), (n.choose j : ℝ) * (-1) ^ j / (2 * j + 1) := by
+    rw [altOddSum]; push_cast; rfl
+  have hc : erfExpCoeff n * x ^ (2 * n + 1)
+      = ((altOddSum n 1 : ℚ) : ℝ) * x ^ (2 * n + 1) / n.factorial := by
+    rw [hq, erfExpCoeff]
+    have := Nat.doubleFactorial_pos (2 * n + 1)
+    have h0 : (n.factorial : ℝ) ≠ 0 := by positivity
+    field_simp
+  rw [hc, hq', sum_mul, sum_div, Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+    (fun j k => ((-1) ^ j * x ^ (2 * j + 1) / (j.factorial * (2 * j + 1)))
+      * ((x ^ 2) ^ k / (k.factorial : ℝ)))]
+  refine sum_congr rfl fun j hj => ?_
+  have hjn : j ≤ n := Nat.lt_succ_iff.mp (mem_range.mp hj)
+  rw [Nat.cast_choose ℝ hjn]
+  have hx : (x ^ 2) ^ (n - j) * x ^ (2 * j + 1) = x ^ (2 * n + 1) := by
+    rw [← pow_mul, ← pow_add]; congr 1; omega
+  have h1 : (j.factorial : ℝ) ≠ 0 := by positivity
+  have h2 : ((n - j).factorial : ℝ) ≠ 0 := by positivity
+  have h3 : (n.factorial : ℝ) ≠ 0 := by positivity
+  have h4 : (2 * (j : ℝ) + 1) ≠ 0 := by positivity
+  rw [← hx]
+  field_simp
+
+/-- Exercise 4.20: (4.23) derived from (4.22) by the Cauchy product with `e^(x²)`
+(no differential equation, unlike `erf_eq_exp_mul_erfExpSum`). -/
+theorem erf_eq_exp_mul_erfExpSum' (x : ℝ) :
+    erf x = 2 / Real.sqrt Real.pi * Real.exp (-x ^ 2) * erfExpSum x := by
+  set c : ℝ := 2 / Real.sqrt Real.pi with hc
+  have hcpos : 0 < c := by have := Real.sqrt_pos.mpr Real.pi_pos; positivity
+  -- (4.22) without the constant
+  have hf : HasSum (fun j : ℕ => (-1) ^ j * x ^ (2 * j + 1) / (j.factorial * (2 * j + 1)))
+      (erf x / c) := by
+    have h := (hasSum_erf_series x).div_const c
+    convert h using 1
+    funext j
+    rw [show (2 : ℝ) / Real.sqrt Real.pi = c from hc.symm, mul_div_cancel_left₀ _ hcpos.ne']
+  have hg : HasSum (fun k : ℕ => (x ^ 2) ^ k / (k.factorial : ℝ)) (Real.exp (x ^ 2)) :=
+    hasSum_exp_series (x ^ 2)
+  have hfn : Summable fun j : ℕ => ‖(-1) ^ j * x ^ (2 * j + 1) / (j.factorial * (2 * j + 1))‖ := by
+    refine Summable.of_nonneg_of_le (fun j => norm_nonneg _) (fun j => ?_)
+      ((Real.summable_pow_div_factorial (x ^ 2)).mul_left |x|)
+    rw [Real.norm_eq_abs, abs_div, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul,
+      abs_of_pos (by positivity : (0 : ℝ) < j.factorial * (2 * j + 1)), pow_succ, pow_mul,
+      abs_mul, abs_pow, abs_of_nonneg (sq_nonneg x), mul_comm ((x ^ 2) ^ j) |x|, mul_div_assoc]
+    have h1 : (x ^ 2) ^ j / (j.factorial * (2 * j + 1)) ≤ (x ^ 2) ^ j / j.factorial :=
+      div_le_div_of_nonneg_left (by positivity) (by positivity)
+        (le_mul_of_one_le_right (by positivity) (by linarith [(Nat.cast_nonneg j : (0:ℝ) ≤ j)]))
+    exact mul_le_mul_of_nonneg_left h1 (abs_nonneg x)
+  have hgn : Summable fun k : ℕ => ‖(x ^ 2) ^ k / (k.factorial : ℝ)‖ := by
+    simpa [Real.norm_eq_abs, abs_of_nonneg (sq_nonneg x)] using
+      Real.summable_pow_div_factorial (x ^ 2)
+  have hprod := tsum_mul_tsum_eq_tsum_sum_antidiagonal_of_summable_norm hfn hgn
+  rw [hf.tsum_eq, hg.tsum_eq] at hprod
+  simp_rw [sum_antidiagonal_erf_exp] at hprod
+  have hsum : erfExpSum x = erf x / c * Real.exp (x ^ 2) := by
+    rw [erfExpSum]; exact hprod.symm
+  rw [hsum, Real.exp_neg]
+  field_simp
+
+end Exercise420
+
+section Exercise421
+
+open Finset
+
+/-- The exact identity behind the algorithm: `Γ(x) = e^(L + R) / ∏_{i<δ} (x + i)` with
+`L = stirlingApprox m (x + δ)` and `R = stirlingRem m (x + δ)`. -/
+theorem Gamma_eq_exp_stirling_div {x : ℝ} (hx : 0 < x) (m δ : ℕ) :
+    Real.Gamma x = Real.exp (stirlingApprox m (x + δ) + stirlingRem m (x + δ))
+      / ∏ i ∈ range δ, (x + i) := by
+  have hG : 0 < Real.Gamma x := Real.Gamma_pos_of_pos hx
+  have hpos : ∀ i ∈ range δ, (0 : ℝ) < x + i := fun i _ => by positivity
+  have hP : 0 < ∏ i ∈ range δ, (x + (i : ℝ)) := prod_pos hpos
+  have h := log_Gamma_eq_log_Gamma_add_sub hx δ
+  rw [log_Gamma_eq_stirlingApprox_add m (x + δ),
+    ← Real.log_prod (fun i hi => (hpos i hi).ne')] at h
+  rw [eq_div_iff hP.ne']
+  conv_lhs => rw [← Real.exp_log hG, ← Real.exp_log hP, ← Real.exp_add]
+  rw [h]
+  congr 1
+  ring
+
+/-- Dropping the remainder `R` with `|R| ≤ ε ≤ 1` changes `Γ(x)` by a relative error `≤ 2ε`. -/
+theorem Gamma_stirling_relError {x : ℝ} (hx : 0 < x) (m δ : ℕ) {ε : ℝ}
+    (hR : |stirlingRem m (x + δ)| ≤ ε) (hε : ε ≤ 1) :
+    |Real.exp (stirlingApprox m (x + δ)) / (∏ i ∈ range δ, (x + i)) - Real.Gamma x|
+      ≤ 2 * ε * Real.Gamma x := by
+  have hG : 0 < Real.Gamma x := Real.Gamma_pos_of_pos hx
+  have hP : 0 < ∏ i ∈ range δ, (x + (i : ℝ)) := prod_pos fun i _ => by positivity
+  have hid := Gamma_eq_exp_stirling_div hx m δ
+  set L := stirlingApprox m (x + δ)
+  set R := stirlingRem m (x + δ)
+  set P := ∏ i ∈ range δ, (x + (i : ℝ))
+  have h1 : Real.exp L / P = Real.Gamma x * Real.exp (-R) := by
+    rw [hid, Real.exp_add, div_mul_eq_mul_div, mul_assoc, ← Real.exp_add, add_neg_cancel,
+      Real.exp_zero, mul_one]
+  have h2 := Real.abs_exp_sub_one_le (x := -R) (by rw [abs_neg]; exact hR.trans hε)
+  rw [abs_neg] at h2
+  rw [h1, show Real.Gamma x * Real.exp (-R) - Real.Gamma x
+      = Real.Gamma x * (Real.exp (-R) - 1) by ring, abs_mul, abs_of_pos hG]
+  calc Real.Gamma x * |Real.exp (-R) - 1| ≤ Real.Gamma x * (2 * |R|) := by gcongr
+    _ ≤ Real.Gamma x * (2 * ε) := by gcongr
+    _ = 2 * ε * Real.Gamma x := by ring
+
+/-- Rounding `δ` factors to relative precision `η ≤ 1` perturbs their product by a relative
+error at most `e^(δη) − 1`. -/
+theorem abs_prod_one_add_sub_one_le {δ : ℕ} {e : ℕ → ℝ} {η : ℝ} (hη : η ≤ 1)
+    (he : ∀ i ∈ range δ, |e i| ≤ η) :
+    |∏ i ∈ range δ, (1 + e i) - 1| ≤ Real.exp (δ * η) - 1 := by
+  rcases Nat.eq_zero_or_pos δ with hδ | hδ
+  · subst hδ; simp
+  have hη0 : 0 ≤ η := (abs_nonneg _).trans (he 0 (mem_range.mpr hδ))
+  have hlo : ∀ i ∈ range δ, -η ≤ e i := fun i hi => (abs_le.mp (he i hi)).1
+  have hhi : ∀ i ∈ range δ, e i ≤ η := fun i hi => (abs_le.mp (he i hi)).2
+  have hup : ∏ i ∈ range δ, (1 + e i) ≤ Real.exp (δ * η) := by
+    calc ∏ i ∈ range δ, (1 + e i) ≤ ∏ _i ∈ range δ, Real.exp η :=
+          prod_le_prod₀ (fun i hi => by linarith [hlo i hi])
+            fun i hi => by linarith [hhi i hi, Real.add_one_le_exp η]
+      _ = Real.exp (δ * η) := by rw [prod_const, card_range, ← Real.exp_nat_mul]
+  have hdown : 1 - δ * η ≤ ∏ i ∈ range δ, (1 + e i) := by
+    calc (1 : ℝ) - δ * η = 1 + δ * (-η) := by ring
+      _ ≤ (1 + -η) ^ δ := one_add_mul_le_pow (by linarith) δ
+      _ = ∏ _i ∈ range δ, (1 + -η) := by rw [prod_const, card_range]
+      _ ≤ ∏ i ∈ range δ, (1 + e i) :=
+          prod_le_prod₀ (fun i _ => by linarith) fun i hi => by linarith [hlo i hi]
+  have hexp : (δ : ℝ) * η ≤ Real.exp (δ * η) - 1 := by linarith [Real.add_one_le_exp (δ * η)]
+  rw [abs_le]
+  constructor <;> linarith
+
+/-- Necessity of the shift: a term of (4.38) at `x'` can be `≤ 2^(−n)` only if
+`n ln 2 ≤ 2πx' + ln(2π² x')`, i.e. `x' ≳ n ln 2/(2π)`; so `δ ≈ n ln 2/(2π) ≈ 0.11 n`. -/
+theorem shift_necessary {k : ℕ} (hk : 1 ≤ k) {x' : ℝ} (hx : 0 < x') {n : ℕ}
+    (h : |stirlingTerm k x'| ≤ (1 / 2) ^ n) :
+    n * Real.log 2 ≤ 2 * Real.pi * x' + Real.log (2 * Real.pi ^ 2 * x') := by
+  have h1 := abs_stirlingTerm_ge hk hx
+  have h2 : Real.exp (-(2 * Real.pi * x')) / (2 * Real.pi ^ 2 * x') ≤ (1 / 2) ^ n := h1.trans h
+  rw [div_le_iff₀ (by positivity)] at h2
+  have h3 := Real.log_le_log (Real.exp_pos _) h2
+  rw [Real.log_exp, Real.log_mul (by positivity) (by positivity), one_div, Real.log_pow,
+    Real.log_inv] at h3
+  linarith
+
+end Exercise421
+
+section Exercise422
+
+open Finset
+
+/-- The shift for the entire function `1/Γ`, valid for every `z` (at a pole both sides vanish):
+`1/Γ(z) = (∏_{i<δ} (z + i)) / Γ(z + δ)`. -/
+theorem inv_Gamma_eq_prod_mul_inv_Gamma_add (z : ℂ) (δ : ℕ) :
+    (Complex.Gamma z)⁻¹ = (∏ i ∈ range δ, (z + i)) * (Complex.Gamma (z + δ))⁻¹ := by
+  induction δ with
+  | zero => simp
+  | succ δ ih =>
+    have hz : z + ((δ + 1 : ℕ) : ℂ) = z + δ + 1 := by push_cast; ring
+    rw [ih, Complex.one_div_Gamma_eq_self_mul_one_div_Gamma_add_one (z + δ), prod_range_succ, hz]
+    ring
+
+/-- The reflection formula as a formula for `1/Γ`, for `z` not an integer (`sin(πz) ≠ 0`):
+`1/Γ(z) = Γ(1 − z) sin(πz)/π`. -/
+theorem inv_Gamma_eq_Gamma_one_sub_mul_sin {z : ℂ} (hz : Complex.sin (Real.pi * z) ≠ 0) :
+    (Complex.Gamma z)⁻¹ = Complex.Gamma (1 - z) * Complex.sin (Real.pi * z) / Real.pi := by
+  have h := Complex.Gamma_mul_Gamma_one_sub z
+  have hpi : (Real.pi : ℂ) ≠ 0 := by exact_mod_cast Real.pi_ne_zero
+  have hG : Complex.Gamma z ≠ 0 := by
+    intro h0
+    rw [h0, zero_mul, eq_comm, div_eq_zero_iff] at h
+    exact h.elim hpi hz
+  have h' : Complex.Gamma z * Complex.Gamma (1 - z) * Complex.sin (Real.pi * z) = Real.pi := by
+    rw [h, div_mul_cancel₀ _ hz]
+  rw [eq_div_iff hpi, inv_mul_eq_div, div_eq_iff hG]
+  linear_combination (-1 : ℂ) * h'
+
+/-- An error `ε ≤ 1` in the logarithm `L` of `Γ(z')` gives a relative error at most `2ε` in
+`1/Γ(z) = P e^(−L)`. -/
+theorem inv_Gamma_approx_relError (P L L' : ℂ) {ε : ℝ} (hL : ‖L' - L‖ ≤ ε) (hε : ε ≤ 1) :
+    ‖P * Complex.exp (-L') - P * Complex.exp (-L)‖ ≤ 2 * ε * ‖P * Complex.exp (-L)‖ := by
+  have h1 : P * Complex.exp (-L') - P * Complex.exp (-L)
+      = P * Complex.exp (-L) * (Complex.exp (L - L') - 1) := by
+    rw [mul_assoc, mul_sub, mul_one, ← Complex.exp_add]; ring_nf
+  have h2 := Complex.norm_exp_sub_one_le (x := L - L') (by rw [norm_sub_rev]; exact hL.trans hε)
+  rw [norm_sub_rev L L'] at h2
+  rw [h1, norm_mul]
+  calc ‖P * Complex.exp (-L)‖ * ‖Complex.exp (L - L') - 1‖
+      ≤ ‖P * Complex.exp (-L)‖ * (2 * ‖L' - L‖) := by gcongr
+    _ ≤ ‖P * Complex.exp (-L)‖ * (2 * ε) := by gcongr
+    _ = 2 * ε * ‖P * Complex.exp (-L)‖ := by ring
+
+/-- `‖∏ (1 + e_i) − 1‖ ≤ ∏ (1 + ‖e_i‖) − 1`. -/
+theorem norm_prod_one_add_sub_one_le_prod (e : ℕ → ℂ) (δ : ℕ) :
+    ‖∏ i ∈ range δ, (1 + e i) - 1‖ ≤ ∏ i ∈ range δ, (1 + ‖e i‖) - 1 := by
+  induction δ with
+  | zero => simp
+  | succ δ ih =>
+    rw [prod_range_succ, prod_range_succ]
+    have hid : (∏ i ∈ range δ, (1 + e i)) * (1 + e δ) - 1
+        = ((∏ i ∈ range δ, (1 + e i)) - 1) * (1 + e δ) + e δ := by ring
+    rw [hid]
+    calc ‖((∏ i ∈ range δ, (1 + e i)) - 1) * (1 + e δ) + e δ‖
+        ≤ ‖(∏ i ∈ range δ, (1 + e i)) - 1‖ * ‖1 + e δ‖ + ‖e δ‖ := by
+          rw [← norm_mul]; exact norm_add_le _ _
+      _ ≤ ((∏ i ∈ range δ, (1 + ‖e i‖)) - 1) * (1 + ‖e δ‖) + ‖e δ‖ := by
+          have h1e : ‖1 + e δ‖ ≤ 1 + ‖e δ‖ := by simpa using norm_add_le (1 : ℂ) (e δ)
+          exact add_le_add_right
+            (mul_le_mul ih h1e (norm_nonneg _) ((norm_nonneg _).trans ih)) ‖e δ‖ |>.trans_eq
+            rfl |> fun h => by simpa only [add_comm] using h
+      _ = (∏ i ∈ range δ, (1 + ‖e i‖)) * (1 + ‖e δ‖) - 1 := by ring
+
+/-- Rounding `δ` complex factors to relative precision `η` perturbs their product by a relative
+error at most `e^(δη) − 1`. -/
+theorem norm_prod_one_add_sub_one_le {δ : ℕ} {e : ℕ → ℂ} {η : ℝ}
+    (he : ∀ i ∈ range δ, ‖e i‖ ≤ η) :
+    ‖∏ i ∈ range δ, (1 + e i) - 1‖ ≤ Real.exp (δ * η) - 1 := by
+  refine (norm_prod_one_add_sub_one_le_prod e δ).trans ?_
+  have : ∏ i ∈ range δ, (1 + ‖e i‖) ≤ Real.exp (δ * η) := by
+    calc ∏ i ∈ range δ, (1 + ‖e i‖) ≤ ∏ _i ∈ range δ, Real.exp η :=
+          prod_le_prod₀ (fun i _ => by positivity)
+            fun i hi => by linarith [he i hi, Real.add_one_le_exp η]
+      _ = Real.exp (δ * η) := by rw [prod_const, card_range, ← Real.exp_nat_mul]
+  linarith
+
+/-- `Γ(iy) Γ(−iy) = π/(y sinh(πy))` for real `y ≠ 0`. -/
+theorem Gamma_I_mul_mul_Gamma_neg {y : ℝ} (hy : y ≠ 0) :
+    Complex.Gamma (y * Complex.I) * Complex.Gamma (-(y * Complex.I))
+      = Real.pi / (y * Real.sinh (Real.pi * y)) := by
+  have hyI : (-(y * Complex.I) : ℂ) ≠ 0 := by
+    rw [neg_ne_zero]; exact mul_ne_zero (by exact_mod_cast hy) Complex.I_ne_zero
+  have h1 := Complex.Gamma_add_one _ hyI
+  have h2 := Complex.Gamma_mul_Gamma_one_sub (y * Complex.I)
+  have hs : Complex.sin (Real.pi * (y * Complex.I)) = Real.sinh (Real.pi * y) * Complex.I := by
+    rw [← mul_assoc, Complex.sin_mul_I]; push_cast; rfl
+  rw [hs] at h2
+  have h3 : (1 : ℂ) - y * Complex.I = -(y * Complex.I) + 1 := by ring
+  rw [h3, h1] at h2
+  have hsinhR : Real.sinh (Real.pi * y) ≠ 0 := fun h =>
+    mul_ne_zero Real.pi_ne_zero hy (Real.sinh_injective (by rw [h, Real.sinh_zero]))
+  have hsinh : (Real.sinh (Real.pi * y) : ℂ) ≠ 0 := by exact_mod_cast hsinhR
+  have hyc : (y : ℂ) ≠ 0 := by exact_mod_cast hy
+  have h4 : Complex.Gamma (y * Complex.I) * Complex.Gamma (-(y * Complex.I)) * (-(y * Complex.I))
+      = Real.pi / (Real.sinh (Real.pi * y) * Complex.I) := by
+    rw [← h2]; ring
+  rw [← mul_div_cancel_right₀ (Complex.Gamma (y * Complex.I) * Complex.Gamma (-(y * Complex.I)))
+    hyI, h4, div_div]
+  congr 1
+  linear_combination (-((Real.sinh (Real.pi * y) : ℂ) * y)) * Complex.I_sq
+
+/-- `|Γ(iy)|² = π/(y sinh(πy))` for real `y ≠ 0`: `|Γ(iy)|` is exponentially small in `|y|`. -/
+theorem norm_Gamma_I_mul_sq {y : ℝ} (hy : y ≠ 0) :
+    ‖Complex.Gamma (y * Complex.I)‖ ^ 2 = Real.pi / (y * Real.sinh (Real.pi * y)) := by
+  have hconj : (starRingEnd ℂ) (Complex.Gamma (y * Complex.I))
+      = Complex.Gamma (-(y * Complex.I)) := by
+    rw [← Complex.Gamma_conj]; congr 1; simp
+  have h := Gamma_I_mul_mul_Gamma_neg hy
+  rw [← hconj, Complex.mul_conj, Complex.normSq_eq_norm_sq] at h
+  exact_mod_cast h
+
+/-- For `πy ≥ 1`: `|Γ(iy)|² ≤ 4π e^(−πy)/y`, the `≈ e^(−π|y|)` of the text. -/
+theorem norm_Gamma_I_mul_sq_le {y : ℝ} (hy : 1 ≤ Real.pi * y) :
+    ‖Complex.Gamma (y * Complex.I)‖ ^ 2 ≤ 4 * Real.pi * Real.exp (-(Real.pi * y)) / y := by
+  have hy0 : 0 < y := by nlinarith [Real.pi_pos]
+  rw [norm_Gamma_I_mul_sq hy0.ne']
+  have hsinh : Real.exp (Real.pi * y) / 4 ≤ Real.sinh (Real.pi * y) := by
+    rw [Real.sinh_eq]
+    have h1 : Real.exp (-(Real.pi * y)) ≤ 1 := Real.exp_le_one_iff.mpr (by linarith)
+    have h2 : 2 ≤ Real.exp (Real.pi * y) := by
+      have := Real.add_one_le_exp (Real.pi * y); linarith
+    linarith
+  have hE : 0 < Real.exp (Real.pi * y) := Real.exp_pos _
+  have hsp : 0 < Real.sinh (Real.pi * y) := by
+    rw [← Real.sinh_zero]; exact (Real.sinh_lt_sinh).mpr (by positivity)
+  rw [Real.exp_neg, div_le_div_iff₀ (mul_pos hy0 hsp) hy0]
+  calc Real.pi * y
+      = 4 * Real.pi * (Real.exp (Real.pi * y))⁻¹ * (y * (Real.exp (Real.pi * y) / 4)) := by
+        field_simp
+    _ ≤ 4 * Real.pi * (Real.exp (Real.pi * y))⁻¹ * (y * Real.sinh (Real.pi * y)) := by gcongr
+
+/-- `|Γ(1/2 + iy)|² = π/cosh(πy)`. -/
+theorem norm_Gamma_half_add_I_mul_sq (y : ℝ) :
+    ‖Complex.Gamma (((1 / 2 : ℝ) : ℂ) + y * Complex.I)‖ ^ 2
+      = Real.pi / Real.cosh (Real.pi * y) := by
+  have hconj : (starRingEnd ℂ) (Complex.Gamma (((1 / 2 : ℝ) : ℂ) + y * Complex.I))
+      = Complex.Gamma (1 - (((1 / 2 : ℝ) : ℂ) + y * Complex.I)) := by
+    rw [← Complex.Gamma_conj]; congr 1; apply Complex.ext <;> simp; norm_num
+  have h := Complex.Gamma_mul_Gamma_one_sub (((1 / 2 : ℝ) : ℂ) + y * Complex.I)
+  have hs : Complex.sin (Real.pi * (((1 / 2 : ℝ) : ℂ) + y * Complex.I))
+      = Real.cosh (Real.pi * y) := by
+    rw [show (Real.pi : ℂ) * (((1 / 2 : ℝ) : ℂ) + y * Complex.I)
+        = (Real.pi * y) * Complex.I + Real.pi / 2 by push_cast; ring,
+      Complex.sin_add_pi_div_two, Complex.cos_mul_I]
+    push_cast; rfl
+  rw [hs, ← hconj, Complex.mul_conj, Complex.normSq_eq_norm_sq] at h
+  exact_mod_cast h
+
+end Exercise422
 
 end BZ
 

@@ -2023,3 +2023,163 @@ Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user 
   `(d/2) log₂(d/2 + 1) < size(d!) ≤ d (log₂ d + 1)` bits (`size_factorial_gt`,
   `size_factorial_le`), i.e. `c(d) = Θ(d log d / w)` (`naiveScalarWords`), turning the `O(dn)`
   scalar term of (4.24) into `O(d² n log d / w)`, which is the problem Exercise 4.13 removes.
+* **Exercise 4.15** (the remainder (4.28) of (4.27)). **Answer.** Write
+  `I_k(x) = ∫_x^∞ e^{−u}/u^{k+1} du` (`expTail k x`), so `E₁(x) = I_0(x)`. Integration by parts
+  with `u ↦ u^{−(k+1)}` and `u ↦ −e^{−u}` gives
+  `I_k(x) = [−e^{−u}/u^{k+1}]_x^∞ − (k+1) ∫_x^∞ e^{−u}/u^{k+2} du = e^{−x}/x^{k+1} − (k+1) I_{k+1}(x)`
+  (`expTail_succ`; the boundary term at `∞` vanishes since `e^{−u}/u^{k+1} ≤ e^{−u}/x^{k+1} → 0`).
+  Multiplying by `k!(−1)^k e^x`: `R_k(x) = k!(−1)^k/x^{k+1} + R_{k+1}(x)`, i.e. `R_k = t_{k+1} + R_{k+1}`
+  with `t_{j} = (j−1)!(−1)^{j−1}/x^j` the `j`-th term of (4.27) (`asymptoticRemainder_succ`).
+  Induction on `k`: for `k = 0`, `R_0 = e^x E₁(x)` is (4.27) with an empty sum; if
+  `e^x E₁(x) = ∑_{j=1}^k t_j + R_k`, then the step gives `∑_{j=1}^{k+1} t_j + R_{k+1}`
+  (`exp_mul_expIntegral_eq`, text indexing `exp_mul_expIntegral_eq_text`). The bound: `I_{k+1} > 0`
+  (positive integrand on a set of infinite measure, `expTail_pos`), so the parts formula gives
+  `I_k(x) < e^{−x}/x^{k+1}` (`expTail_lt`) and `|R_k(x)| = k! e^x I_k(x) < k!/x^{k+1}`
+  (`abs_asymptoticRemainder_lt`), the strict inequality of (4.28); the sign of `R_k` is `(−1)^k`
+  (`sign_asymptoticRemainder`), so the value lies strictly between consecutive partial sums
+  (`between_partialSums`). All of this was already in `AsymptoticExpansion.lean` from the §4.5
+  chunk except the text indexing and the strict `<`, added in `Exercises.lean`.
+* **Exercise 4.16** (`Ei` and `E₁` via the entire function `Ein`). **Answer.** Define
+  `Ein z = ∑_{j≥1} (−1)^{j−1} z^j/(j! j)`. The terms are dominated by `|z|^j/j!`, so the series
+  converges for every complex `z` (`summable_EinTerm`), and differentiating termwise (justified on
+  every disc by the summable bound `R^n/n!`, `hasDerivAt_tsum_of_isPreconnected`) gives
+  `Ein'(z) = ∑_{n≥0} (−1)^n z^n/(n+1)! = (1 − e^{−z})/z` with `Ein'(0) = 1` (`hasDerivAt_Ein`,
+  `hasSum_EinDerivTerm`): `Ein` is entire, and since `Ein(0) = 0` it is the integral
+  `∫_0^z (1 − e^{−t})/t dt` of an entire integrand along any path (`EinR_eq_integral` proves the
+  real case `x ≥ 0` directly: the integrand is bounded by `1` on `(0, x]`, both sides vanish at `0`
+  and have the same derivative on `(0, ∞)`). `Ein` is real on the real axis (`Ein_ofReal`). Now set
+  `E₁(z) := −γ − Log z + Ein z` (`E1Ein`) and `Ei(x) := γ + ln|x| − Ein(−x)` (`EiEin`). These are
+  (4.26) and its `Ei` analogue read as definitions. Checks: `E₁'(z) = −1/z + (1 − e^{−z})/z = −e^{−z}/z`
+  off the branch cut of `Log` (`hasDerivAt_E1Ein`), which is the derivative of `∫_z^∞ e^{−u}/u du`,
+  and `E₁(x) → 0` as `x → +∞` fixes the constant `−γ` (that identification is (4.26), still not
+  formalized); `Ei'(x) = 1/x + (1 − e^{x})/x = e^x/x` for every `x ≠ 0` (`hasDerivAt_EiEin`), the
+  integrand of `∫_{−∞}^x e^t/t dt`. So `Ei` is the antiderivative of `e^x/x` on `(−∞, 0)` that
+  vanishes at `−∞` (there it equals `−E₁(−x)`), continued through the pole at `0` by the same
+  formula: the principal value `PV ∫_{−∞}^x e^t/t dt` for `x > 0` is exactly what the formula
+  `γ + ln x − Ein(−x)` produces, because `ln|x|` is itself the principal-value primitive of `1/x`
+  across `0`, and `e^t/t − 1/t = (e^t − 1)/t` is entire so needs no principal value. Hence neither
+  `Ei` nor `E₁` needs a PV integral: all singular behaviour sits in `Log`/`ln|·|`, and the only
+  branch cut of `E₁` is that of `Log`. For complex `z`, `Ei(z) = γ + Log z − Ein(−z)` likewise,
+  with `Ei(z) = −E₁(−z) ∓ iπ` across the cut.
+* **Exercise 4.17** (`1/x − 1/x² < e^x E₁(x) < 1/x`). **Answer.** Take `k = 1` in (4.27):
+  `e^x E₁(x) = 1/x + R₁(x)` with `R₁(x) = −e^x ∫_x^∞ e^{−u}/u² du`. The integral is positive, so
+  `R₁ < 0`, giving the upper bound; and `|R₁(x)| < 1!/x² = 1/x²` (Exercise 4.15, strict), giving
+  the lower bound. Equivalently, `k = 2` gives `e^x E₁(x) = 1/x − 1/x² + R₂` with `R₂ > 0`. The
+  two bounds are the partial sums with one and two terms, between which the value lies
+  (`between_partialSums`). Formalized as `exp_mul_expIntegral_bounds`.
+* **Exercise 4.18** (`S(z) = e^z s(z)` for the binomial transform). **Answer.** Compare
+  coefficients of `z^n`: in `e^z s(z) = (∑_k z^k/k!)(∑_j a_j z^j/j!)` the coefficient is
+  `∑_{j+k=n} a_j/(j! k!) = (1/n!) ∑_{j≤n} (n!/(j!(n−j)!)) a_j = (1/n!) ∑_{j≤n} C(n,j) a_j = A_n/n!`,
+  which is the coefficient of `S`. Formalized over any `ℚ`-algebra with Mathlib's
+  `PowerSeries.exp` (`egf`, `binomialTransform`, `egf_binomialTransform`, via `coeff_mul` on the
+  antidiagonal and `Nat.cast_choose`). Inverse: multiplying by `e^{−z}` (`exp_mul_exp_neg_eq_one`)
+  gives `s(z) = e^{−z} S(z)` (`egf_eq_exp_neg_mul`), i.e. `a_n = ∑_{j≤n} (−1)^{n−j} C(n,j) A_j`.
+  Used in Exercises 4.19–4.20 (series for `E₁`/`Ei` and related sums).
+* **Exercise 4.19** (cancellation-free series `e^z Ein(z) = ∑_{j≥1} H_j z^j/j!`). **Answer.**
+  `Ein` is the exponential generating function of `a_0 = 0`, `a_j = (−1)^{j−1}/j`. By Exercise
+  4.18, `e^z Ein(z)` is the e.g.f. of the binomial transform `A_n = ∑_{j=1}^n C(n,j)(−1)^{j−1}/j`,
+  and `A_n = H_n`: by induction, `A_{n+1} − A_n = ∑_{l≤n} C(n,l)(−1)^l/(l+1)` (Pascal's rule, the
+  `C(n,n+1) = 0` term dropping out) `= (1/(n+1)) ∑_{l≤n} C(n+1,l+1)(−1)^l = (1/(n+1))(1 − (1−1)^{n+1})
+  = 1/(n+1)` using `C(n,l)/(l+1) = C(n+1,l+1)/(n+1)` (`choose_div_succ_eq`,
+  `sum_choose_alt_div_succ`, `sum_choose_alt_div_eq_harmonic`). Formally `exp · egf a = egf H`
+  (`exp_mul_egf_ein`); analytically both series converge absolutely everywhere (`H_j ≤ j`,
+  `harmonic_le_self`), so the Cauchy product gives `e^z Ein(z) = ∑_{j≥1} H_j z^j/j!` for every
+  complex `z` (`hasSum_exp_mul_Ein`, via `tsum_mul_tsum_eq_tsum_sum_antidiagonal_of_summable_norm`
+  and the coefficient identity `sum_antidiagonal_exp_EinTerm`). Why it helps: for `z = x ≫ 0` the
+  terms `(−1)^{j−1} x^j/(j! j)` of `Ein` alternate and peak near `j ≈ x` at size `≈ e^x/x^{3/2}`,
+  while `Ein(x) ≈ ln x + γ`, so about `x/ln 2` bits cancel, exactly as in the series for `e^{−x}`;
+  the new series has positive terms, its sum `e^x Ein(x)` is of the size of its largest term, and
+  `Ein(x) = e^{−x} ∑ H_j x^j/j!` is then obtained to full relative precision with one
+  exponential. For `x < 0` the original series already has positive terms and the new one would
+  cancel, so choose by sign. (For `E₁(x) = Ein(x) − γ − ln x` at large `x` the subtraction itself
+  cancels; there (4.27) is the right tool, as §4.5 says; this series is for moderate `x`.)
+* **Exercise 4.20** ((4.23) from (4.22)). **Answer.** Put `t = x²`. By (4.22),
+  `erf(x) = (2/√π) x ∑_j (−1)^j t^j/(j!(2j+1))`, i.e. `(√π/2) erf(x)/x` is the exponential
+  generating function of `a_j = (−1)^j/(2j+1)`. By Exercise 4.18, `e^t` times it is the e.g.f. of
+  `A_n = ∑_{j≤n} C(n,j)(−1)^j/(2j+1)`. This is `∫_0^1 (1−u²)^n du`; in closed form, for the
+  general sum `C_n(s) = ∑_j C(n,j)(−1)^j/(2j+s)` Pascal's rule gives `C_{n+1}(s) = C_n(s) − C_n(s+2)`
+  (`altOddSum_succ`), and induction yields `C_n(s) = 2^n n!/(s(s+2)⋯(s+2n))` (`altOddSum_eq`),
+  so `A_n = C_n(1) = 2^n n!/(1·3⋯(2n+1)) = 2^n n!/(2n+1)‼` (`altOddSum_one`,
+  `prod_odd_eq_doubleFactorial`). Hence `e^{x²} (√π/2) erf(x)/x = ∑_n 2^n t^n/(2n+1)‼`, which is
+  (4.23): `erf(x) = (2/√π) e^{−x²} ∑_n 2^n x^{2n+1}/(2n+1)‼` (`exp_mul_egf_erf` formally;
+  analytically `erf_eq_exp_mul_erfExpSum'` by the Cauchy product of (4.22) with the series of
+  `e^{x²}`, both absolutely convergent, coefficient identity `sum_antidiagonal_erf_exp`). This
+  reproves `erf_eq_exp_mul_erfExpSum` of `ErrorFunctionSeries.lean`, which used the differential
+  equation `S' = 1 + 2xS` instead. As in Exercise 4.19, (4.23) has positive terms for `x > 0`
+  while (4.22) alternates and cancels about `x²/ln 2` bits for large `x`.
+* **Exercise 4.21** (`Γ(x)` for real `x ≥ 1/2` with relative error `O(2^{−n})`). **Answer.**
+  *Algorithm.* Working precision `p = n + O(log n)` bits.
+  (1) Shift: pick the integer `δ = ⌈n ln 2/(2π)⌉ + c` (so `x' = x + δ ≳ 0.11 n`; `c` a small
+  constant absorbing the `ln(2π²x')` term) and set `x' = x + δ`.
+  (2) Stirling: `L = (x' − 1/2) ln x' − x' + ln(2π)/2 + ∑_{k=1}^{m−1} B_{2k}/(2k(2k−1)x'^{2k−1})`
+  with `m ≈ πx'` (stop at the smallest term, whose size is `≈ e^{−2πx'} ≤ 2^{−n}`); the sum is a
+  polynomial in `1/x'²` evaluated by Horner from the top, using the Bernoulli numbers `B_2, …,
+  B_{2m}` (§4.7.2) to `p` bits.
+  (3) Product: `P = ∏_{i<δ} (x + i)` by `δ − 1` multiplications (or a product tree).
+  (4) `Γ(x) = e^L / P`.
+  *Correctness.* Exactly, `Γ(x) = e^{L+R}/P` where `R = R_m(x')` is the remainder of (4.38)
+  (`Gamma_eq_exp_stirling_div`, from `Γ(x+δ) = Γ(x) ∏(x+i)`). Dropping `R` with `|R| ≤ ε ≤ 1`
+  gives relative error `≤ 2ε` (`Gamma_stirling_relError`, via `|e^{−R} − 1| ≤ 2|R|`); by the
+  remainder bound of (4.38) (first omitted term, not formalized) `|R| ≤ |t_m(x')| ≈ e^{−2πx'}`,
+  and the shift makes this `≤ 2^{−n−1}`. Rounding: each term of `L` is `O(1)` and the leading
+  terms are `O(x' ln x') = O(n log n)`, so `p`-bit arithmetic gives absolute error `O(n log n ·
+  2^{−p})` in `L`, hence the same relative error in `e^L`; the `δ` factors of `P` rounded to
+  relative `η = 2^{−p}` give relative error `≤ e^{δη} − 1 ≈ δ 2^{−p}` (`abs_prod_one_add_sub_one_le`,
+  two-sided via `(1−η)^δ ≥ 1 − δη` and `(1+η)^δ ≤ e^{δη}`); with `p = n + 2 log₂ n + O(1)` the
+  total is `O(2^{−n})`. The shift is also necessary: no term of (4.38) at `x'` is below
+  `e^{−2πx'}/(2π²x')` (`abs_stirlingTerm_ge`), so accuracy `2^{−n}` forces
+  `2πx' + ln(2π²x') ≥ n ln 2` (`shift_necessary`), i.e. `δ ≥ n ln 2/(2π) − x − O(log n)`.
+  `x ≥ 1/2` keeps `x > 0` so all factors `x + i` are positive and the logarithms are real; for
+  `0 < x < 1/2` one could use the same formula, and for `x < 0` the reflection formula.
+  *Complexity.* `m ≈ πx' ≈ (ln 2/2) n ≈ 0.35 n` Horner steps and `δ ≈ 0.11 n` product
+  multiplications, each an `n`-bit multiplication: `O(n M(n))`, plus `O(M(n) log n)` for `ln x'`,
+  `e^L` and `ln(2π)`. The Bernoulli numbers `B_2..B_{2m}` do not depend on `x`: they can be
+  precomputed and cached, or computed by Algorithm TangentNumbers / the recurrence of §4.7.2 in
+  `O(m²)` integer operations on `O(m log m)`-bit integers (`O(n³ log n)` naive bit cost, which
+  then dominates; via the zeta values `B_{2k} = (−1)^{k+1} 2(2k)! ζ(2k)/(2π)^{2k}` for the large
+  `k`, where `ζ(2k) = 1 + O(4^{−k})` needs `O(n/k)` terms, `O(n M(n) log n)`). Hence `Γ(x)` costs
+  `O(n M(n)) = O(n^{2+ε})` once the Bernoulli numbers are available, not quasi-linear: unlike
+  `exp`, `ln`, `π` (§4.8) no `O(M(n) log^{O(1)} n)` algorithm for `Γ` at general real `x` is known
+  (it is known only for special arguments such as `Γ(1/4)`, through elliptic integrals and the
+  AGM). The rectangular splitting of §4.4.3 does not help here: the coefficients
+  `B_{2k}/(2k(2k−1))` are `O(k log k)`-bit rationals whose ratios are not small (they involve
+  `ζ(2k+2)/ζ(2k)`), so the scalar products are full `n`-bit multiplications.
+* **Exercise 4.22** (`1/Γ(z)` on `ℂ` with relative error `O(2^{−n})`). **Answer.**
+  *Algorithm* (working precision `p = n + O(log(n + |z|))` bits). (0) If `Re z < 1/2`, use the
+  reflection formula `1/Γ(z) = Γ(1 − z) sin(πz)/π` (`inv_Gamma_eq_Gamma_one_sub_mul_sin`): then
+  `Re(1 − z) > 1/2`, `Γ(1 − z)` is computed by steps (1)–(3) below as `e^{L}`, and `sin(πz)` by
+  the complex sine (for `|Im z|` large, `sin(πz) ≈ ∓ e^{π|Im z|}/(2i)`, computed from the
+  exponential with relative precision; the exact zeros at integers come out exactly since
+  `sin(πk)` is evaluated after reducing `z` modulo the integers, or simply because `z` integer is
+  detected and `1/Γ(k) = 1/(k−1)!`). (1) Shift: `δ = max(0, ⌈c·n − Re z⌉)` with `c ≈ 0.17`, so that
+  `z' = z + δ` has `Re z' ≥ 0` and `|z'| ≥ c n`; then `1/Γ(z) = (∏_{i<δ} (z + i)) · (1/Γ(z'))`,
+  an identity between entire functions valid for every `z`, poles included: at `z = −k`, `k < δ`,
+  the factor `z + k` is exactly `0` (`inv_Gamma_eq_prod_mul_inv_Gamma_add`, by induction from
+  Mathlib's `1/Γ(s) = s/Γ(s+1)`). (2) `L = ln Γ(z')` by the complex Stirling series (4.38) with
+  `m ≈ π|z'|` terms and the principal `Log z'`. (3) `1/Γ(z) = P · e^{−L}` with `P = ∏(z + i)`.
+  *Correctness.* The exact identity is `1/Γ(z) = P e^{−L−R}` with `R` the complex remainder of
+  (4.38); for `Re z' ≥ 0` the classical bound is `|R_m(z')| ≤ |t_m(z')| / cos^{2m}(arg z'/2)`
+  (not formalized), and with `|arg z'| ≤ π/2` the factor `sec^{2m}(π/4) = 2^m` is beaten by the
+  smallest term `≈ e^{−2π|z'|}` at `m ≈ π|z'|` (net `≈ e^{−(2π − π ln 2)|z'|} = e^{−4.1|z'|}`),
+  hence the constant `c = ln 2/4.1 ≈ 0.17` in the shift. An error `ε ≤ 1` in `L` (remainder plus
+  rounding) gives relative error `≤ 2ε` in `P e^{−L}` (`inv_Gamma_approx_relError`, via
+  `‖e^w − 1‖ ≤ 2‖w‖`); `L` has size `O(|z'| ln|z'|)`, so `p` must carry `log₂(|z'| ln |z'|)` guard
+  bits; the `δ` complex factors of `P` rounded to relative `η` give relative error
+  `≤ e^{δη} − 1` (`norm_prod_one_add_sub_one_le`, from `‖∏(1+e_i) − 1‖ ≤ ∏(1+‖e_i‖) − 1`,
+  `norm_prod_one_add_sub_one_le_prod`). Relative error is the right notion here because `1/Γ` is
+  entire with zeros: near a zero `−k` the result is small but is `P e^{−L}` with `P` containing the
+  exactly-rounded small factor `z + k`, so no cancellation occurs.
+  *The warning.* `|Γ(z)|` is tiny for large `|Im z|`: exactly, `Γ(iy)Γ(−iy) = π/(y sinh(πy))`
+  (`Gamma_I_mul_mul_Gamma_neg`, from `Γ(1 − iy) = −iy Γ(−iy)` and the reflection formula with
+  `sin(iπy) = i sinh(πy)`), so `|Γ(iy)|² = π/(y sinh(πy))` (`norm_Gamma_I_mul_sq`, using
+  `Γ(conj z) = conj Γ(z)`), which is `≤ 4π e^{−πy}/y` for `πy ≥ 1` (`norm_Gamma_I_mul_sq_le`):
+  `2 ln|Γ(iy)| ≈ −π|y|`. Likewise `|Γ(1/2 + iy)|² = π/cosh(πy)` (`norm_Gamma_half_add_I_mul_sq`),
+  and `|Γ(1 + iy)|² = πy/sinh(πy)`; these are the cases `x = 0, 1/2, 1` of the text's
+  `|Γ(x+iy)|² ≈ 2π|y|^{2x−1} e^{−π|y|}`, which in general follows from Stirling
+  (`Re ln Γ(x+iy) = (x − 1/2) ln|z| − y arg z − x + ln(2π)/2 + o(1)` with `arg z → ±π/2`). The
+  consequence for the algorithm: `1/Γ(z)` is huge (`≈ e^{π|y|/2}`), so an absolute-error target is
+  meaningless and a fixed-point or small-exponent format would overflow; in the logarithmic form
+  `P e^{−L}` the size sits in `Re L ≈ −π|y|/2`, the exponential handles it exactly through the
+  exponent, and the relative error is `2ε` as above. The complexity is as in Exercise 4.21,
+  `O(n M(n))` with complex arithmetic (a constant factor `3`–`4`), plus the `O(M(n) log n)` of one
+  complex `Log`, one `exp` and (for `Re z < 1/2`) one `sin`.
