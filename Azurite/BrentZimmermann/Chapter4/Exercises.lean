@@ -11,6 +11,7 @@ import Azurite.BrentZimmermann.Chapter4.ContourIntegration
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
+import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.RingTheory.PowerSeries.Exp
@@ -127,6 +128,19 @@ series, one square root. For `x < 0` the sum cancels; use `exp x = 1/(sinh |x| +
 `s ↦ s + √(1 + s²)` is well conditioned for `s ≥ 0` (`sinh_add_sqrt_relError_le`). Same idea for
 other even/odd pairs: `cos x = √(1 − sin² x)` on `[−π/2, π/2]` (Mathlib's
 `Real.cos_eq_sqrt_one_sub_sin_sq`), `exp x = (1 + tanh(x/2))/(1 − tanh(x/2))` (`exp_eq_tanh_half`).
+
+## Exercise 4.12
+
+A counting monad `Counted` records general non-scalar products (`nsMul`) and squarings (`nsSq`);
+scalar products and additions are free. The two variants of §4.4.3 are written in it
+(`powersC`, `hornerC`, `binPowC`, `classicalEvalC`, `modularEvalC`), proven to compute `polyEval`
+(`classicalEvalC_val`, `modularEvalC_val`), and their costs are *derived*: classical uses
+`⌈k/2⌉ − 1` products and `⌊k/2⌋` squarings for the powers plus `j − 1` Horner products, `j + k − 2`
+in all (`classicalEvalC_mul`, `classicalEvalC_sq`, `classicalEvalC_total`); modular uses
+`⌊log₂ j⌋` squarings and `popcount j − 1` products for `y = x^j`, `⌈(k−1)/2⌉ − 1` products and
+`⌊(k−1)/2⌋` squarings for its powers, and `j − 1` Horner products, `j + k − 3 + ℓ(j)` in all with
+`ℓ(j) = ⌊log₂ j⌋ + popcount j − 1 ≤ j − 1` (`modularEvalC_total`, `binPowC_total_le`,
+`modularEvalC_total_le`); examples `12 = 3·4`: `5` and `6`.
 -/
 
 namespace Azurite
@@ -1063,6 +1077,333 @@ theorem exp_eq_tanh_half (x : ℝ) :
   linear_combination (Real.cosh (x / 2) + Real.sinh (x / 2)) * h2
 
 end Exercise411
+
+section Exercise412
+
+universe u
+
+/-- A value together with the numbers of general non-scalar products and of squarings spent
+computing it. Scalar products and additions are free. -/
+structure Counted (α : Type u) where
+  /-- The computed value. -/
+  val : α
+  /-- General non-scalar products. -/
+  mul : ℕ
+  /-- Squarings. -/
+  sq : ℕ
+
+namespace Counted
+
+variable {α β : Type u}
+
+/-- Sequencing adds up the costs. -/
+protected def bind (m : Counted α) (f : α → Counted β) : Counted β :=
+  ⟨(f m.val).val, m.mul + (f m.val).mul, m.sq + (f m.val).sq⟩
+
+instance : Monad Counted where
+  pure a := ⟨a, 0, 0⟩
+  bind := Counted.bind
+
+@[simp] theorem val_pure (a : α) : (pure a : Counted α).val = a := rfl
+@[simp] theorem mul_pure (a : α) : (pure a : Counted α).mul = 0 := rfl
+@[simp] theorem sq_pure (a : α) : (pure a : Counted α).sq = 0 := rfl
+@[simp] theorem val_bind (m : Counted α) (f : α → Counted β) : (m >>= f).val = (f m.val).val := rfl
+@[simp] theorem mul_bind (m : Counted α) (f : α → Counted β) :
+    (m >>= f).mul = m.mul + (f m.val).mul := rfl
+@[simp] theorem sq_bind (m : Counted α) (f : α → Counted β) :
+    (m >>= f).sq = m.sq + (f m.val).sq := rfl
+
+/-- A general non-scalar product. -/
+def nsMul [Mul α] (a b : α) : Counted α := ⟨a * b, 1, 0⟩
+
+/-- A squaring. -/
+def nsSq [Monoid α] (a : α) : Counted α := ⟨a ^ 2, 0, 1⟩
+
+@[simp] theorem val_nsMul [Mul α] (a b : α) : (nsMul a b).val = a * b := rfl
+@[simp] theorem mul_nsMul [Mul α] (a b : α) : (nsMul a b).mul = 1 := rfl
+@[simp] theorem sq_nsMul [Mul α] (a b : α) : (nsMul a b).sq = 0 := rfl
+@[simp] theorem val_nsSq [Monoid α] (a : α) : (nsSq a).val = a ^ 2 := rfl
+@[simp] theorem mul_nsSq [Monoid α] (a : α) : (nsSq a).mul = 0 := rfl
+@[simp] theorem sq_nsSq [Monoid α] (a : α) : (nsSq a).sq = 1 := rfl
+
+end Counted
+
+open Counted Finset
+
+variable {α : Type*} [CommSemiring α]
+
+/-- The table `[x^0, x^1, …, x^k]`: even powers by squaring, odd ones by one product with `x`. -/
+def powersC (x : α) : ℕ → Counted (List α)
+  | 0 => pure [1]
+  | 1 => pure [1, x]
+  | m + 2 => do
+    let L ← powersC x (m + 1)
+    let p ← if (m + 2) % 2 = 0 then nsSq (L.getD ((m + 2) / 2) 0) else nsMul (L.getD (m + 1) 0) x
+    pure (L ++ [p])
+
+theorem powersC_length (x : α) (k : ℕ) : (powersC x k).val.length = k + 1 := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    match k with
+    | 0 => rfl
+    | 1 => rfl
+    | m + 2 =>
+      simp only [powersC, val_bind]
+      split_ifs <;> simp [List.length_append, ih (m + 1) (by omega)]
+
+theorem powersC_getD (x : α) (k : ℕ) : ∀ i ≤ k, (powersC x k).val.getD i 0 = x ^ i := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    match k with
+    | 0 => intro i hi; obtain rfl : i = 0 := (by omega); simp [powersC]
+    | 1 =>
+      intro i hi
+      interval_cases i <;> simp [powersC]
+    | m + 2 =>
+      intro i hi
+      have hlen := powersC_length x (m + 1)
+      simp only [powersC, val_bind, val_pure, apply_ite Counted.val, val_nsSq, val_nsMul]
+      rcases Nat.lt_or_ge i (m + 2) with h | h
+      · split_ifs <;>
+          (rw [List.getD_append _ _ _ _ (by omega)]; exact ih (m + 1) (by omega) i (by omega))
+      · obtain rfl : i = m + 2 := (by omega)
+        split_ifs with he
+        · rw [List.getD_eq_getElem?_getD, List.getElem?_append_right (by omega)]
+          simp only [hlen, Nat.sub_self, List.getElem?_cons_zero, Option.getD_some]
+          rw [ih (m + 1) (by omega) _ (by omega), ← pow_mul]
+          congr 1; omega
+        · rw [List.getD_eq_getElem?_getD, List.getElem?_append_right (by omega)]
+          simp only [hlen, Nat.sub_self, List.getElem?_cons_zero, Option.getD_some]
+          rw [ih (m + 1) (by omega) _ (by omega), ← pow_succ]
+
+theorem powersC_sq (x : α) (k : ℕ) : (powersC x k).sq = k / 2 := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    match k with
+    | 0 => rfl
+    | 1 => rfl
+    | m + 2 =>
+      simp only [powersC, sq_bind, sq_pure, apply_ite Counted.sq, sq_nsSq, sq_nsMul,
+        ih (m + 1) (by omega)]
+      split_ifs with he <;> omega
+
+theorem powersC_mul (x : α) (k : ℕ) : (powersC x k).mul = (k + 1) / 2 - 1 := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    match k with
+    | 0 => rfl
+    | 1 => rfl
+    | m + 2 =>
+      simp only [powersC, mul_bind, mul_pure, apply_ite Counted.mul, mul_nsSq, mul_nsMul,
+        ih (m + 1) (by omega)]
+      split_ifs with he <;> omega
+
+/-- Horner's rule on `n + 1` coefficients: `c_0 + y(c_1 + y(… + y c_n))`, `n` products. -/
+def hornerC (c : ℕ → α) (y : α) : ℕ → Counted α
+  | 0 => pure (c 0)
+  | n + 1 => do
+    let r ← hornerC (fun i => c (i + 1)) y n
+    let p ← nsMul y r
+    pure (c 0 + p)
+
+theorem hornerC_val (c : ℕ → α) (y : α) (n : ℕ) :
+    (hornerC c y n).val = ∑ i ∈ range (n + 1), c i * y ^ i := by
+  induction n generalizing c with
+  | zero => simp [hornerC]
+  | succ n ih =>
+    simp only [hornerC, val_bind, val_nsMul, val_pure, ih]
+    rw [sum_range_succ' (fun i => c i * y ^ i) (n + 1), pow_zero, mul_one, mul_sum, add_comm (c 0)]
+    congr 1
+    exact sum_congr rfl fun i _ => by ring
+
+theorem hornerC_mul (c : ℕ → α) (y : α) (n : ℕ) : (hornerC c y n).mul = n := by
+  induction n generalizing c with
+  | zero => rfl
+  | succ n ih => simp [hornerC, ih]
+
+theorem hornerC_sq (c : ℕ → α) (y : α) (n : ℕ) : (hornerC c y n).sq = 0 := by
+  induction n generalizing c with
+  | zero => rfl
+  | succ n ih => simp [hornerC, ih]
+
+/-- Binary powering `x^j`: a squaring per bit after the leading one, a product per further
+one-bit. -/
+def binPowC (x : α) : ℕ → Counted α
+  | 0 => pure 1
+  | 1 => pure x
+  | j + 2 => do
+    let h ← binPowC x ((j + 2) / 2)
+    let s ← nsSq h
+    if (j + 2) % 2 = 1 then nsMul s x else pure s
+  decreasing_by omega
+
+theorem binPowC_val (x : α) (j : ℕ) : (binPowC x j).val = x ^ j := by
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    match j with
+    | 0 => simp [binPowC]
+    | 1 => simp [binPowC]
+    | j + 2 =>
+      rw [binPowC]
+      simp only [val_bind, val_nsSq, ih ((j + 2) / 2) (by omega)]
+      split_ifs with he
+      · simp only [val_nsMul]
+        rw [← pow_mul, ← pow_succ]
+        congr 1; omega
+      · simp only [val_pure]
+        rw [← pow_mul]
+        congr 1; omega
+
+theorem binPowC_sq (x : α) (j : ℕ) : (binPowC x j).sq = Nat.log 2 j := by
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    match j with
+    | 0 => simp [binPowC]
+    | 1 => simp [binPowC]
+    | j + 2 =>
+      rw [binPowC]
+      have h1 : 0 < Nat.log 2 (j + 2) := Nat.log_pos (by norm_num) (by omega)
+      have h2 := Nat.log_div_base 2 (j + 2)
+      simp only [sq_bind, sq_nsSq, ih ((j + 2) / 2) (by omega)]
+      split_ifs <;> simp only [sq_nsMul, sq_pure] <;> omega
+
+/-- The products of binary powering: one fewer than the number of one-bits of `j`. -/
+theorem binPowC_mul (x : α) {j : ℕ} (hj : 0 < j) :
+    (binPowC x j).mul + 1 = (Nat.digits 2 j).sum := by
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    match j with
+    | 0 => omega
+    | 1 => simp [binPowC]
+    | j + 2 =>
+      rw [binPowC, Nat.digits_def' (by norm_num) (by omega), List.sum_cons]
+      have := ih ((j + 2) / 2) (by omega) (by omega)
+      simp only [mul_bind, mul_nsSq]
+      split_ifs with he <;> simp only [mul_nsMul, mul_pure] <;> omega
+
+/-- The classical splitting in the counting monad: the table `x^0, …, x^k`, the inner polynomials
+by scalar products against it, and Horner in `y = x^k` over the `j` inner values. -/
+def classicalEvalC (a : ℕ → α) (j k : ℕ) (x : α) : Counted α := do
+  let T ← powersC x k
+  hornerC (fun ℓ => ∑ m ∈ range k, a (k * ℓ + m) * T.getD m 0) (T.getD k 0) (j - 1)
+
+theorem classicalEvalC_val (a : ℕ → α) {j : ℕ} (hj : 0 < j) (k : ℕ) (x : α) :
+    (classicalEvalC a j k x).val = polyEval a (j * k) x := by
+  simp only [classicalEvalC, val_bind, hornerC_val, powersC_getD x k k le_rfl]
+  rw [polyEval_split, show j - 1 + 1 = j by omega]
+  refine sum_congr rfl fun ℓ _ => ?_
+  rw [mul_comm, innerPoly]
+  congr 1
+  refine sum_congr rfl fun m hm => ?_
+  rw [powersC_getD x k m (by simpa using (mem_range.mp hm).le)]
+
+theorem classicalEvalC_mul (a : ℕ → α) (j k : ℕ) (x : α) :
+    (classicalEvalC a j k x).mul = ((k + 1) / 2 - 1) + (j - 1) := by
+  simp [classicalEvalC, hornerC_mul, powersC_mul]
+
+theorem classicalEvalC_sq (a : ℕ → α) (j k : ℕ) (x : α) :
+    (classicalEvalC a j k x).sq = k / 2 := by
+  simp [classicalEvalC, hornerC_sq, powersC_sq]
+
+/-- Classical splitting: `j + k − 2` non-scalar products in all (`j, k ≥ 1`). -/
+theorem classicalEvalC_total (a : ℕ → α) {j k : ℕ} (hj : 0 < j) (hk : 0 < k) (x : α) :
+    (classicalEvalC a j k x).mul + (classicalEvalC a j k x).sq = j + k - 2 := by
+  rw [classicalEvalC_mul, classicalEvalC_sq]; omega
+
+/-- The modular splitting in the counting monad: `y = x^j` by binary powering, the table
+`y^0, …, y^(k−1)`, the row sums by scalar products, and Horner in `x` over the `j` rows. -/
+def modularEvalC (a : ℕ → α) (j k : ℕ) (x : α) : Counted α := do
+  let y ← binPowC x j
+  let T ← powersC y (k - 1)
+  hornerC (fun ℓ => ∑ m ∈ range k, a (j * m + ℓ) * T.getD m 0) x (j - 1)
+
+theorem modularEvalC_val (a : ℕ → α) {j k : ℕ} (hj : 0 < j) (hk : 0 < k) (x : α) :
+    (modularEvalC a j k x).val = polyEval a (j * k) x := by
+  simp only [modularEvalC, val_bind, hornerC_val, binPowC_val]
+  rw [polyEval_modular_split, show j - 1 + 1 = j by omega]
+  refine sum_congr rfl fun ℓ _ => ?_
+  rw [mul_comm, modularPoly]
+  congr 1
+  refine sum_congr rfl fun m hm => ?_
+  rw [powersC_getD _ (k - 1) m (by have := mem_range.mp hm; omega)]
+
+theorem modularEvalC_sq (a : ℕ → α) (j k : ℕ) (x : α) :
+    (modularEvalC a j k x).sq = Nat.log 2 j + (k - 1) / 2 := by
+  simp [modularEvalC, hornerC_sq, powersC_sq, binPowC_sq]
+
+theorem modularEvalC_mul (a : ℕ → α) {j : ℕ} (hj : 0 < j) (k : ℕ) (x : α) :
+    (modularEvalC a j k x).mul + 1 = (Nat.digits 2 j).sum + (k / 2 - 1) + (j - 1) := by
+  simp only [modularEvalC, mul_bind, hornerC_mul, powersC_mul]
+  have := binPowC_mul x hj
+  omega
+
+/-- Modular splitting: `j + k − 3 + ℓ(j)` non-scalar products in all (`j ≥ 1`, `k ≥ 2`), where
+`ℓ(j) = ⌊log₂ j⌋ + popcount(j) − 1` is the length of the binary addition chain for `x^j`. -/
+theorem modularEvalC_total (a : ℕ → α) {j k : ℕ} (hj : 0 < j) (hk : 2 ≤ k) (x : α) :
+    (modularEvalC a j k x).mul + (modularEvalC a j k x).sq
+      = (Nat.log 2 j + (Nat.digits 2 j).sum - 1) + (k - 2) + (j - 1) := by
+  have h1 := modularEvalC_mul a hj k x
+  have h2 := modularEvalC_sq a j k x
+  have h3 := binPowC_mul x hj
+  omega
+
+/-- The binary addition chain never beats repeated multiplication's `j − 1` by a negative
+amount: `⌊log₂ j⌋ + popcount(j) ≤ j`. -/
+theorem log_add_digits_sum_le (j : ℕ) : Nat.log 2 j + (Nat.digits 2 j).sum ≤ j := by
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    match j with
+    | 0 => simp
+    | 1 => simp
+    | j + 2 =>
+      have h1 : 0 < Nat.log 2 (j + 2) := Nat.log_pos (by norm_num) (by omega)
+      have h2 := Nat.log_div_base 2 (j + 2)
+      rw [Nat.digits_def' (by norm_num) (by omega), List.sum_cons]
+      have := ih ((j + 2) / 2) (by omega)
+      omega
+
+theorem binPowC_total_le (x : α) {j : ℕ} (hj : 0 < j) :
+    (binPowC x j).mul + (binPowC x j).sq ≤ j - 1 := by
+  have h1 := binPowC_mul x hj
+  have h2 := binPowC_sq x j
+  have h3 := log_add_digits_sum_le j
+  omega
+
+/-- The derived modular count is at most the `(j − 1) + (k − 2) + (j − 1)` of
+`modularNonscalar` (which powers `x^j` naively), and exceeds the classical count by
+`ℓ(j) − 1 ≤ 2⌊log₂ j⌋ − 1 = O(log d)`: "almost the same". -/
+theorem modularEvalC_total_le (a : ℕ → α) {j k : ℕ} (hj : 0 < j) (hk : 2 ≤ k) (x : α) :
+    (modularEvalC a j k x).mul + (modularEvalC a j k x).sq ≤ modularNonscalar j k := by
+  rw [modularEvalC_total a hj hk, modularNonscalar]
+  have := log_add_digits_sum_le j
+  omega
+
+/-- `popcount(j) ≤ ⌊log₂ j⌋ + 1`, so `ℓ(j) ≤ 2⌊log₂ j⌋`. -/
+theorem digits_sum_le_log_add_one {j : ℕ} (hj : 0 < j) :
+    (Nat.digits 2 j).sum ≤ Nat.log 2 j + 1 := by
+  have hlen : (Nat.digits 2 j).length = Nat.log 2 j + 1 :=
+    Nat.length_digits 2 j (by norm_num) hj.ne'
+  calc (Nat.digits 2 j).sum ≤ (Nat.digits 2 j).length • 1 :=
+        List.sum_le_length_nsmul _ _ fun d hd =>
+          Nat.lt_succ_iff.mp (Nat.digits_lt_base (by norm_num) hd)
+    _ = Nat.log 2 j + 1 := by rw [hlen, smul_eq_mul, mul_one]
+
+/-- The example `d = 12 = 3 · 4`: classical `5` (one product `x³`, two squarings `x², x⁴`, two
+Horner products), modular `6` (`x³`: one squaring and one product; `y², y³`: one squaring and one
+product; two Horner products). -/
+theorem splitting_example (a : ℕ → α) (x : α) :
+    (classicalEvalC a 3 4 x).mul = 3 ∧ (classicalEvalC a 3 4 x).sq = 2 ∧
+      (modularEvalC a 3 4 x).mul = 4 ∧ (modularEvalC a 3 4 x).sq = 2 := by
+  have hlog : Nat.log 2 3 = 1 := by
+    rw [Nat.log_eq_iff (by norm_num)]; norm_num
+  have hdig : (Nat.digits 2 3).sum = 2 := by norm_num
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [classicalEvalC_mul]
+  · rw [classicalEvalC_sq]
+  · have := modularEvalC_mul a (by norm_num : 0 < 3) 4 x; omega
+  · rw [modularEvalC_sq, hlog]
+
+end Exercise412
 
 end BZ
 

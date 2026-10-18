@@ -1963,3 +1963,24 @@ Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user 
   `cosh x = 1 + 2 sinh²(x/2)` and `ln(1+x)`/`artanh` via `artanh y = ½ ln((1+y)/(1−y))`, whose
   series `∑ y^{2k+1}/(2k+1)` is again odd (§4.4.2's `(1+x)/(1−x)` reduction), are the same
   idea.
+* **Exercise 4.12** (precise non-scalar counts for §4.4.3). **Answer.** Count non-scalar products
+  by writing both algorithms in a small cost-counting monad (`Counted`: a value plus the numbers
+  of general products and of squarings; scalar products and additions are free) and reading the
+  cost off the computation. *Classical* (`d = jk`, `y = x^k`): the table `x², …, x^k` costs
+  `k − 1` products, of which the `⌊k/2⌋` even powers are squarings and `⌈k/2⌉ − 1` are general
+  products; the inner polynomials are scalar; Horner in `y` over the `j` inner values costs
+  `j − 1` general products (the top coefficient is multiplied directly). Total `j + k − 2`
+  (`classicalEvalC_total`, `classicalEvalC_mul`, `classicalEvalC_sq`). *Modular* (`y = x^j`):
+  `y` by binary powering costs `⌊log₂ j⌋` squarings and `popcount(j) − 1` general products, i.e.
+  `ℓ(j) = ⌊log₂ j⌋ + popcount(j) − 1` in all (`binPowC_sq`, `binPowC_mul`), never more than the
+  `j − 1` of repeated multiplication (`log_add_digits_sum_le`) and at most `2⌊log₂ j⌋`
+  (`digits_sum_le_log_add_one`); the table `y², …, y^{k−1}` costs `k − 2` (`⌊(k−1)/2⌋` squarings,
+  `⌈(k−1)/2⌉ − 1` products); the row sums are scalar; Horner in `x` over the `j` rows costs `j − 1`.
+  Total `j + k − 3 + ℓ(j)` (`modularEvalC_total`), i.e. `ℓ(j) − 1 = O(log d)` more than classical,
+  which is the "almost the same" of §4.4.3; with naive powering of `x^j` it would be
+  `2j + k − 4 = modularNonscalar j k` (`modularEvalC_total_le`). Example `d = 12 = 3·4`:
+  classical `5` (`x³`; `x², x⁴` squarings; two Horner products), modular `6` (`x³`: one squaring,
+  one product; `y², y³`: one squaring, one product; two Horner products) (`splitting_example`).
+  Optimizing: classical is minimized at `j ≈ k ≈ √d`, giving `2√d − 2`; modular at the same
+  balance gives `2√d − 3 + ℓ(√d) ≈ 2√d + log₂ d`. Both evaluations are proven to compute
+  `polyEval a (jk) x` (`classicalEvalC_val`, `modularEvalC_val`).
