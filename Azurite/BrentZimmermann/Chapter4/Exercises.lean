@@ -8,6 +8,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
+import Azurite.BrentZimmermann.Chapter4.BernoulliRecurrence
+import Azurite.BrentZimmermann.Chapter4.ContinuedFractionEval
 import Azurite.BrentZimmermann.Chapter4.ContourIntegration
 import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.ErrorFunctionSeries
@@ -15,6 +17,8 @@ import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
 import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
+import Azurite.BrentZimmermann.Chapter4.TangentAlgorithm
+import Azurite.BrentZimmermann.Chapter4.TangentNumbers
 import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -23,10 +27,12 @@ import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
 import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Data.Nat.Size
+import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 import Mathlib.RingTheory.PowerSeries.Exp
 import Mathlib.RingTheory.PowerSeries.Expand
 import Mathlib.RingTheory.PowerSeries.Inverse
+import Mathlib.RingTheory.PowerSeries.NoZeroDivisors
 
 /-!
 # Brent–Zimmermann Chapter 4: exercises
@@ -244,6 +250,172 @@ relative error `≤ 2ε` (`inv_Gamma_approx_relError`) and `δ` rounded complex 
 (`norm_Gamma_I_mul_sq`), at most `4π e^(−πy)/y` (`norm_Gamma_I_mul_sq_le`), and
 `|Γ(1/2 + iy)|² = π/cosh(πy)` (`norm_Gamma_half_add_I_mul_sq`): `|Γ|` is exponentially small in
 `|Im z|`, which the logarithmic form handles without loss.
+
+## Exercise 4.23
+
+The convergent Stirling series (4.88): unsigned Stirling numbers of the first kind by the
+three-term recurrence (`stirling1`, generating function `sum_stirling1_mul_pow`, `sum_stirling1`
+`= n!`), the coefficients `c_k` (`stirlingC`, `stirlingC_one = 1/12`, lower bound
+`stirlingC_ge`: `c_k ≥ k!/(4k(k+2))`) and the terms `c_k/((N+1)⋯(N+k))` (`convergentTerm`,
+positive). Why it is no improvement: for `1 ≤ K ≤ N` the `K`-th term is at least
+`e^(−2N)/(4K(K+2))` (`convergentTerm_ge`), which exceeds the floor `e^(−2πN)` that the divergent
+series reaches at the same argument with `⌈πN⌉` terms (`convergentTerm_gt_stirling_floor`): the
+convergent series needs far more terms (and far larger coefficients) for the same accuracy.
+
+## Exercise 4.25
+
+The backward recurrence (4.43) was proven in `ContinuedFractionEval.lean` (`backR`,
+`backR_pred`, `backR_div`, `approximant_eq_backR`), by the invariant
+`R_j/R_{j−1} = 1/b_j+ a_{j+1}/b_{j+1}+ ⋯ a_k/b_k`. Added here: the text's statement with `b₀ = 0`,
+`a₁/b₁+ ⋯ a_k/b_k = a₁ R₁/R₀` (`finiteFrac_eq_backR`), the recurrence's first two steps
+`R_{k−2} = b_{k−1} b_k + a_k` (`backR_sub_two`), and the sanity check `k = 2`
+(`finiteFrac_two_eq`).
+
+## Exercise 4.26
+
+The forward recurrence (4.44), proven along the hint: with the perturbed fraction
+`y_k(x) = a₁/b₁+ ⋯ a_k/(b_k + x)` (`tailFracX`, which peels from the back:
+`y_{k+1}(x) = y_k(a_{k+1}/(b_{k+1} + x))`, `tailFracX_succ`), induction on `k` gives
+`b₀ + y_k(x) = (P_k + P_{k−1} x)/(Q_k + Q_{k−1} x)` for Mathlib's continuants `P = nums`, `Q = dens`
+(`tailFracX_eq_nums_dens`), and `x = 0` is (4.44): `f_k = P_k/Q_k` (`approximant_eq_nums_div_dens`),
+an independent proof of `approximant_eq_convs`.
+
+## Exercise 4.27
+
+The matrix form of (4.44): with `M_j = [[b_j, 1], [a_j, 0]]` (`cfStep`) and the ordered product
+`M_1 M_2 ⋯ M_k` (`cfProd`, built from the segment products `cfProdRange`),
+`M_1 ⋯ M_k = [[Q_k, Q_{k−1}], [P_k, P_{k−1}]]` for `k ≥ 1` when `b₀ = 0` (`cfProd_eq`), and for
+`k = 0` with `P_{−1} = 1`, `Q_{−1} = 0` (`cfProd_zero`); so `f_k` is the ratio of the first-column
+entries (`approximant_eq_cfProd`). The segments compose,
+`∏_{i<j≤i+m+n} = (∏_{i<j≤i+m})(∏_{i+m<j≤i+m+n})` (`cfProdRange_add`), which is the parallel (or
+binary-splitting) evaluation of the remark.
+
+## Exercise 4.28
+
+`det [[Q_k, Q_{k−1}], [P_k, P_{k−1}]] = (−1)^k a_1 ⋯ a_k`: each `M_j` has determinant `−a_j`
+(`det_cfStep`), determinants multiply (`det_cfProdRange`, `det_cfProd`), and Exercise 4.27
+identifies the product (`det_continuants`, the determinant formula behind (4.45)–(4.46)).
+
+## Exercise 4.29
+
+The identity (4.46), `D₁ = a₁/b₁`, `D_j = −a_j Q_{j−2} D_{j−1}/Q_j`, was proven in
+`ContinuedFractionEval.lean` (`diff_one`, `diff_succ`, from `D_j = Δ_j/(Q_j Q_{j−1})` and
+`Δ_{j} = −a_j Δ_{j−1}`). Added here: the closed form `D_k = (−1)^{k−1} a_1 ⋯ a_k/(Q_k Q_{k−1})`
+(`diff_eq_prod_div`, from Exercise 4.28) and (4.46) rederived from it by taking the ratio of
+consecutive closed forms (`diff_succ'`).
+
+## Exercise 4.30
+
+Theorem 4.1 was proven in `ContinuedFractionEval.lean` (`approximant_even_strictMono`,
+`approximant_odd_strictAnti`, `approximant_even_lt`, `lt_approximant_odd`,
+`abs_sub_midpoint_lt`); here it is packaged as one statement (`theorem_4_1`), together with the
+bracket between consecutive approximants it rests on (`approximant_between_consecutive`).
+
+## Exercise 4.31
+
+The continued fraction (4.40) for `erfc`: its coefficients are positive (`erfcCF_pos`), so Theorem
+4.1 applies; `a₁⋯a_{k+1} = k!/2^k` (`erfcCF_prod_num`), `Q_k ≥ x^k` (`erfcCF_dens_ge`), hence the
+`(k+1)`-th step `|D_{k+1}| ≤ k!/(2^k x^(2k+1))` (`erfcCF_abs_diff_le`), which is at most the `k`-th
+term of the asymptotic series (4.37) (`factorial_sq_mul_two_pow_le_factorial`,
+`erfcCF_abs_diff_le_erfcTermMag`): the fraction converges at least as fast as (4.37) wherever
+the latter is usable, and keeps converging where (4.37) stalls (`abs_diff_succ_lt`) — the region
+just below the asymptotic threshold `x ≈ √(n ln 2/2)` where Algorithm Erf has to fall back to the
+`Ω(x²)`-term series.
+
+## Exercise 4.32
+
+Binary splitting for continued fractions with bounded integer coefficients: the entries of a
+product of `n` step matrices with `|a_j|, |b_j| ≤ B` are at most `(2B)^n` (`cfStep_entry_le`,
+`cfProdRange_entry_le`), i.e. `O(n log B)` bits, so the product tree of Exercise 4.27 has, at each
+of its `⌈lg k⌉` levels, `2^ℓ` products of `O(k/2^ℓ)`-bit matrices; in the quasi-linear model each
+level costs `≤ 8 M(ck)` (`splitting_levels_cost_le`), giving `O(M(k) log k)` in all, plus one
+division `P_k/Q_k`.
+
+## Exercise 4.33
+
+Normalizing Miller's algorithm by (4.54) `J₀ + 2∑ J_{2ν} = 1` or by (4.89) `J₀² + 2∑ J_ν² = 1`:
+a linear normalization sum with terms carrying relative errors `≤ ε` has absolute error
+`≤ ε ∑|t_ν|`, amplification `κ₁ = ∑|t_ν|/|∑ t_ν|` (`abs_sum_perturbed_sub_le`); a sum of squares
+of nonnegative terms has relative error `≤ 2ε + ε²` with no amplification
+(`abs_sum_sq_perturbed_sub_le`); and by Cauchy–Schwarz `∑|t_ν| ≤ √(N ∑ t_ν²)`
+(`sum_abs_le_sqrt_card_mul_sum_sq`), so given (4.89) the amplification of (4.54) is at most
+`√N ≈ √x`, a loss of `≤ ½ log₂ x` bits.
+
+## Exercise 4.34
+
+The model recurrence `f_{ν−1} + f_{ν+1} = 2K f_ν` (`IsConstRecSol`): `λ^ν` solves it iff
+`λ² − 2Kλ + 1 = 0` (`isConstRecSol_pow`), solutions form a vector space and are determined by two
+initial values (`IsConstRecSol.eq_of_init`), so for distinct roots `λ ≠ μ` every solution is
+`A λ^ν + B μ^ν` with `A = (f₁ − μ f₀)/(λ − μ)`, `B = (λ f₀ − f₁)/(λ − μ)`
+(`IsConstRecSol.exists_eq_comb`). The roots: for `K > 1` they are real, `K ± √(K² − 1)`, with
+`λμ = 1`, `λ > 1 > μ > 0` (`roots_of_one_lt`); for `0 < K < 1` they are `K ± i√(1 − K²)`,
+complex conjugates on the unit circle (`roots_of_lt_one`).
+
+## Exercise 4.35
+
+Error propagation in the Bernoulli recurrences. The forward recurrence (4.59) solves
+`C ∗ T = R` with `T_m = 1/(2m+1)!` (the series `sinh x/x`), so a perturbation `ρ` of the right
+sides propagates as `e = ρ ∗ κ` where `κ` is the inverse of `T`: the coefficients of `x/sinh x`,
+`κ_k = (2 − 4^k) C_k` (`bernoulliKernel`, `kernel_mul_sinh`: `(2S(x) − S(2x))(e^x − e^(−x)) = 2x`,
+`kernel_conv_eq`, `error_propagation`). Since `|C_k| ≍ (2π)^(−2k)` (`abs_scaledBernoulli_ge`,
+`abs_scaledBernoulli_le`) while `|κ_k| ≍ π^(−2k)`, an initial relative error is amplified by
+`≥ (4^k − 2)·6/π²` (`kernel_amplification_ge`): (a) `4^k 2^(−n)`. The stable recurrence (4.60)
+is the same convolution for `D_k = 4^k C_k ≍ π^(−2k)`, and `|κ_m| ≤ |D_m|`
+(`abs_bernoulliKernel_le`), so each step's error reaches `D_k` with amplification `≤ π⁴/18`
+(`kernel_amplification_le`): `k` steps of `k` roundings each give (b) `O(k² 2^(−n))`.
+
+## Exercise 4.36
+
+(4.57) from (4.56): `x/(e^x − 1) + x/2` is an even function (`div_exp_sub_one_add_half_even`), so
+in `∑ B_k x^k/k! + x/2` the odd coefficients vanish, `B_1 = −1/2` and `B_{2j+1} = 0`
+(`bernoulli_odd_eq_zero'`), leaving `∑ C_k x^(2k)` with `C_k = B_{2k}/(2k)!`
+(`scaledBernoulliPowerSeries_eq`, re-exporting the §4.7.2 coefficient lemmas); its closed form
+`(x/2)/tanh(x/2)` is `div_exp_sub_one_add_half`. (4.62) in the text's indexing,
+`T_j = (−1)^(j−1) 2^(2j) (2^(2j) − 1) B_{2j}/(2j)` for `j ≥ 1` (`tangentNumber_eq_bernoulli'`),
+follows from `tan x = tanh(ix)/i` and `tanh(x/2) = 2S(x)/x − …` as in `TangentNumbers.lean`
+(`tangentNumber_eq_bernoulli`).
+
+## Exercise 4.37
+
+Sizes: `|T_k| = 2(4^k − 1)(2k−1)! ζ(2k)/π^(2k)` (`abs_tangentNumber_eq`), so
+`(4/π²)^k (2k−1)! ≤ |T_k| ≤ (π²/3)(2k−1)!` (`abs_tangentNumber_bounds`) and, with Stirling
+(`log_factorial_bounds`), `2k ln k − 4k − ln(2k) ≤ ln|T_k| ≤ 2k ln k + 3`
+(`log_abs_tangentNumber_bounds`): (a) `lg|T_k| ∼ 2k lg k`. (b) `den B_{2k} ∣ 4^k(4^k − 1)` gives
+`ln den ≤ 4k ln 2` (`log_bernoulli_den_le`), and `|B_{2k}| = |num|/den` with
+`|B_{2k}| = 2(2k)! ζ(2k)/(2π)^(2k)` gives `2k ln k − 8k ≤ ln|num| + ln den ≤ 2k ln k + 6k + 3`
+(`log_bernoulli_num_den_bounds`): the rational `B_{2k}` also needs `∼ 2k lg k` bits, almost all
+of them in the numerator.
+
+## Exercise 4.38
+
+Correctness of Algorithm TangentNumbers from (4.63): one update `T_j ← (j−k) T_{j−1} + (j−k+2) T_j`
+on a row holding `T_{j−1} = p_{j+k−3, j−k}` (already updated in this pass) and
+`T_j = p_{j+k−3, j−k+2}` (not yet) produces `p_{j+k−2, j−k+1}`, which is exactly (4.63) at
+`n = j+k−2` (`tangentStep_eq_coeff`); the loop
+invariant that pass `k` turns the row `p_{·+k−3, ·−k+2}` into `p_{·+k−2, ·−k+1}` and leaves `T_k =
+p_{2k−1,0}` behind was proven in `TangentAlgorithm.lean` (`tangentPass_spec`, `tangentOuter_spec`),
+giving `tangentNumbersModel_eq`, packaged here as `algorithm_tangentNumbers_correct`.
+
+## Exercise 4.39
+
+Cost of Algorithm TangentNumbers: every intermediate entry is a coefficient `p_{n,i}` with
+`n ≤ 2m − 3`, and `p_{n,i} ≤ P_n(1) ≤ 2^n (n+1)!` (`coeff_tanDerivPoly_le_eval_one`,
+`eval_one_tanDerivPoly_le`, from `P_{n+1}(1) = 2 P_n'(1) ≤ 2(n+1) P_n(1)`), so each entry has at
+most `2m(lg(2m) + 2) = O(m log m)` bits (`size_coeff_tanDerivPoly_le`); the `≈ m²/2` updates, each
+`O(log T)` by assumption, cost at most `m² · 2m(lg(2m) + 2) = O(m³ log m)` bits in all
+(`tangentAlgorithmBits`, `tangentAlgorithmBits_le`). By Exercise 4.37 the output alone has
+`Θ(m² log m)` bits, so the bound is tight up to the factor `m` of passes.
+
+## Exercise 4.40
+
+Algorithm SecantNumbers: with `Dⁿ sec x = Q_n(tan x) sec x`, `Q_0 = 1`,
+`Q_{n+1} = X Q_n + (1 + X²) Q_n'` (`secDerivPoly`, `iteratedDeriv_sec`), the coefficients satisfy
+`q_{n+1,j+1} = (j+1) q_{n,j} + (j+2) q_{n,j+2}`, `q_{n+1,0} = q_{n,1}`, `q_{n,n} = n!`
+(`coeff_secDerivPoly_succ`, `_succ_zero`, `_top`), and `S_k = D^(2k) sec 0 = q_{2k,0}`
+(`secantNumber`, `iteratedDeriv_sec_zero`; `S = 1, 1, 5, 61, …`). The in-place algorithm
+(`secantInit`, `secantStep`, `secantPass`, `secantOuter`, `secantNumbersModel`) keeps the
+invariant "before pass `k`: `S_0, …, S_{k−1}` finished, position `j ≥ k` holds `q_{j+k−1, j−k+1}`"
+(`secantPass_spec`, `secantOuter_spec`), so it returns `S_0, …, S_m` (`secantNumbersModel_eq`).
 -/
 
 namespace Azurite
@@ -2514,6 +2686,1630 @@ theorem norm_Gamma_half_add_I_mul_sq (y : ℝ) :
   exact_mod_cast h
 
 end Exercise422
+
+section Exercise423
+
+open Finset
+
+/-- Unsigned Stirling numbers of the first kind `|s(n, j)|`, by the three-term recurrence
+`|s(n+1, j+1)| = |s(n, j)| + n |s(n, j+1)|`; `∑_j |s(n,j)| x^j = x(x+1)⋯(x+n−1)`. -/
+def stirling1 : ℕ → ℕ → ℕ
+  | 0, 0 => 1
+  | 0, _ + 1 => 0
+  | n + 1, 0 => n * stirling1 n 0
+  | n + 1, j + 1 => stirling1 n j + n * stirling1 n (j + 1)
+
+theorem stirling1_eq_zero_of_lt : ∀ {n j : ℕ}, n < j → stirling1 n j = 0
+  | 0, 0, h => absurd h (lt_irrefl 0)
+  | 0, _ + 1, _ => rfl
+  | _ + 1, 0, h => absurd h (Nat.not_lt_zero _)
+  | n + 1, j + 1, h => by
+    rw [stirling1, stirling1_eq_zero_of_lt (by omega : n < j),
+      stirling1_eq_zero_of_lt (by omega : n < j + 1)]
+    simp
+
+theorem stirling1_zero_right : ∀ {n : ℕ}, 1 ≤ n → stirling1 n 0 = 0
+  | 0, h => absurd h (by norm_num)
+  | 1, _ => rfl
+  | n + 2, _ => by rw [stirling1, stirling1_zero_right (by omega : 1 ≤ n + 1), mul_zero]
+
+/-- The generating function: `∑_{j≤n} |s(n,j)| x^j = ∏_{i<n} (x + i)`. -/
+theorem sum_stirling1_mul_pow {R : Type*} [CommSemiring R] (n : ℕ) (x : R) :
+    ∑ j ∈ range (n + 1), (stirling1 n j : R) * x ^ j = ∏ i ∈ range n, (x + i) := by
+  induction n with
+  | zero => simp [stirling1]
+  | succ n ih =>
+    rw [prod_range_succ, ← ih, sum_range_succ' (fun j => (stirling1 (n + 1) j : R) * x ^ j)]
+    simp only [stirling1, Nat.cast_add, Nat.cast_mul, pow_zero, mul_one, add_mul,
+      sum_add_distrib]
+    -- the shifted part: `∑_{j≤n} n |s(n,j+1)| x^(j+1) + n |s(n,0)| = n ∑_{j≤n} |s(n,j)| x^j`
+    have hshift : ∑ j ∈ range (n + 1), (n : R) * stirling1 n (j + 1) * x ^ (j + 1)
+        + (n : R) * stirling1 n 0 = (n : R) * ∑ j ∈ range (n + 1), (stirling1 n j : R) * x ^ j := by
+      have h2 : ∑ j ∈ range (n + 1 + 1), (stirling1 n j : R) * x ^ j
+          = ∑ j ∈ range (n + 1), (stirling1 n j : R) * x ^ j := by
+        rw [sum_range_succ, stirling1_eq_zero_of_lt (Nat.lt_succ_self n)]; simp
+      rw [← h2, sum_range_succ' (fun j => (stirling1 n j : R) * x ^ j), mul_add, mul_sum]
+      simp only [pow_zero, mul_one]
+      congr 1
+      exact sum_congr rfl fun j _ => by ring
+    rw [add_assoc, hshift, mul_add, sum_mul]
+    congr 1
+    · exact sum_congr rfl fun j _ => by ring
+    · ring
+
+theorem prod_one_add_range_eq_factorial (n : ℕ) : ∏ i ∈ range n, (1 + i) = n.factorial := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [prod_range_succ, ih, Nat.factorial_succ]; ring
+
+/-- `∑_j |s(n,j)| = n!`. -/
+theorem sum_stirling1 (n : ℕ) : ∑ j ∈ range (n + 1), stirling1 n j = n.factorial := by
+  have h := sum_stirling1_mul_pow n (1 : ℕ)
+  simp only [one_pow, mul_one, Nat.cast_id] at h
+  rw [h, prod_one_add_range_eq_factorial]
+
+/-- The coefficients of (4.88): `c_k = (1/(2k)) ∑_{j=1}^k j |s(k,j)| / ((j+1)(j+2))` (the `j = 0`
+term vanishes, so the sum may run from `0`). -/
+def stirlingC (k : ℕ) : ℚ :=
+  1 / (2 * k) * ∑ j ∈ range (k + 1), (j : ℚ) * stirling1 k j / ((j + 1) * (j + 2))
+
+/-- `c_1 = 1/12`, matching the first term `B_2/2 = 1/12` of (4.38). -/
+theorem stirlingC_one : stirlingC 1 = 1 / 12 := by
+  simp [stirlingC, stirling1, sum_range_succ]
+  norm_num
+
+/-- `c_k ≥ k!/(4k(k+2))`: the coefficients grow factorially, like the Bernoulli numbers. -/
+theorem stirlingC_ge {k : ℕ} (hk : 1 ≤ k) :
+    (k.factorial : ℚ) / (4 * k * (k + 2)) ≤ stirlingC k := by
+  have hterm : ∀ j ∈ range (k + 1),
+      (stirling1 k j : ℚ) / (2 * (k + 2)) ≤ (j : ℚ) * stirling1 k j / ((j + 1) * (j + 2)) := by
+    intro j hj
+    rcases Nat.eq_zero_or_pos j with rfl | hj0
+    · rw [stirling1_zero_right hk]; simp
+    · have hjk : j ≤ k := Nat.lt_succ_iff.mp (mem_range.mp hj)
+      have hj1 : (1 : ℚ) ≤ j := by exact_mod_cast hj0
+      have hjk' : (j : ℚ) ≤ k := by exact_mod_cast hjk
+      rw [div_le_div_iff₀ (by positivity) (by positivity)]
+      have hs : (0 : ℚ) ≤ stirling1 k j := by positivity
+      nlinarith [mul_nonneg hs (sub_nonneg.mpr hj1), mul_nonneg hs (sub_nonneg.mpr hjk'),
+        mul_nonneg (mul_nonneg hs (sub_nonneg.mpr hj1)) (sub_nonneg.mpr hjk')]
+  have hsum : ∑ j ∈ range (k + 1), (stirling1 k j : ℚ) / (2 * (k + 2))
+      = (k.factorial : ℚ) / (2 * (k + 2)) := by
+    rw [← sum_div, ← Nat.cast_sum, sum_stirling1]
+  calc (k.factorial : ℚ) / (4 * k * (k + 2))
+      = 1 / (2 * k) * ((k.factorial : ℚ) / (2 * (k + 2))) := by
+        have : (k : ℚ) ≠ 0 := by positivity
+        field_simp
+        norm_num
+    _ ≤ stirlingC k := by
+        unfold stirlingC
+        rw [← hsum]
+        exact mul_le_mul_of_nonneg_left (sum_le_sum hterm) (by positivity)
+
+/-- The `k`-th term of (4.88) at the integer argument `N`: `c_k / ((N+1)(N+2)⋯(N+k))`. -/
+noncomputable def convergentTerm (k N : ℕ) : ℝ :=
+  (stirlingC k : ℝ) / ∏ i ∈ range k, ((N : ℝ) + i + 1)
+
+theorem convergentTerm_pos {k : ℕ} (hk : 1 ≤ k) (N : ℕ) : 0 < convergentTerm k N := by
+  unfold convergentTerm
+  have h := stirlingC_ge hk
+  have hc : (0 : ℚ) < stirlingC k := lt_of_lt_of_le (by positivity) h
+  have : (0 : ℝ) < (stirlingC k : ℝ) := by exact_mod_cast hc
+  positivity
+
+/-- `(K/(2eN))^K ≥ e^(−2N)` for every `K ≥ 1`: `K ln(2eN/K) ≤ 2N`, since `1 + ln u ≤ u`. -/
+theorem pow_div_ge_exp_neg {K : ℕ} (hK : 1 ≤ K) {N : ℝ} (hN : 0 < N) :
+    Real.exp (-(2 * N)) ≤ ((K : ℝ) / (2 * Real.exp 1 * N)) ^ K := by
+  have hK0 : (0 : ℝ) < K := by exact_mod_cast hK
+  have hu : 0 < 2 * N / K := by positivity
+  have hlog : Real.log (2 * N / K) ≤ 2 * N / K - 1 := Real.log_le_sub_one_of_pos hu
+  have hbase : (K : ℝ) / (2 * Real.exp 1 * N) = Real.exp (-(1 + Real.log (2 * N / K))) := by
+    rw [Real.exp_neg, Real.exp_add, Real.exp_log hu]
+    field_simp
+  rw [hbase, ← Real.exp_nat_mul, Real.exp_le_exp]
+  have h1 : (K : ℝ) * (1 + Real.log (2 * N / K)) ≤ K * (2 * N / K) :=
+    mul_le_mul_of_nonneg_left (by linarith) hK0.le
+  have h2 : (K : ℝ) * (2 * N / K) = 2 * N := by field_simp
+  linarith
+
+/-- For `1 ≤ K ≤ N` the `K`-th term of (4.88) at `N` is at least `e^(−2N)/(4K(K+2))`. -/
+theorem convergentTerm_ge {K N : ℕ} (hK : 1 ≤ K) (hKN : K ≤ N) :
+    Real.exp (-(2 * N)) / (4 * K * (K + 2)) ≤ convergentTerm K N := by
+  unfold convergentTerm
+  have hN : (0 : ℝ) < N := by exact_mod_cast (hK.trans hKN)
+  have hA : (0 : ℝ) < 4 * K * (K + 2) := by positivity
+  have hB : (0 : ℝ) < (2 * N) ^ K := by positivity
+  have hP : ∏ i ∈ range K, ((N : ℝ) + i + 1) ≤ (2 * N) ^ K := by
+    calc ∏ i ∈ range K, ((N : ℝ) + i + 1) ≤ ∏ _i ∈ range K, (2 * (N : ℝ)) :=
+          prod_le_prod₀ (fun i _ => by positivity) fun i hi => by
+            have h1 : (i : ℝ) + 1 ≤ K := by exact_mod_cast mem_range.mp hi
+            have h2 : (K : ℝ) ≤ N := by exact_mod_cast hKN
+            linarith
+      _ = (2 * N) ^ K := by rw [prod_const, card_range]
+  have hPpos : 0 < ∏ i ∈ range K, ((N : ℝ) + i + 1) := prod_pos fun i _ => by positivity
+  have hK0 : (0 : ℝ) < K := by exact_mod_cast hK
+  have hc : (K.factorial : ℝ) / (4 * K * (K + 2)) ≤ (stirlingC K : ℝ) := by
+    have h := (Rat.cast_le (K := ℝ)).mpr (stirlingC_ge hK)
+    push_cast at h
+    exact h
+  have hc0 : (0 : ℝ) ≤ (stirlingC K : ℝ) := le_trans (by positivity) hc
+  have hfac : ((K : ℝ) / Real.exp 1) ^ K ≤ K.factorial := by
+    have h := Stirling.le_factorial_stirling K
+    have hs : 1 ≤ Real.sqrt (2 * Real.pi * K) := by
+      rw [Real.le_sqrt (by norm_num) (by positivity)]
+      have : (1 : ℝ) ≤ K := by exact_mod_cast hK
+      nlinarith [Real.pi_gt_three]
+    nlinarith [pow_pos (div_pos hK0 (Real.exp_pos 1)) K]
+  have hpow := pow_div_ge_exp_neg hK hN
+  have hsplit : ((K : ℝ) / (2 * Real.exp 1 * N)) ^ K
+      = ((K : ℝ) / Real.exp 1) ^ K / (2 * N) ^ K := by
+    rw [← div_pow, div_div]; ring_nf
+  calc Real.exp (-(2 * N)) / (4 * K * (K + 2))
+      ≤ ((K : ℝ) / (2 * Real.exp 1 * N)) ^ K / (4 * K * (K + 2)) :=
+        div_le_div_of_nonneg_right hpow hA.le
+    _ = ((K : ℝ) / Real.exp 1) ^ K / (4 * K * (K + 2)) / (2 * N) ^ K := by
+        rw [hsplit, div_right_comm]
+    _ ≤ (K.factorial : ℝ) / (4 * K * (K + 2)) / (2 * N) ^ K := by gcongr
+    _ ≤ (stirlingC K : ℝ) / (2 * N) ^ K := by gcongr
+    _ ≤ (stirlingC K : ℝ) / ∏ i ∈ range K, ((N : ℝ) + i + 1) :=
+        div_le_div_of_nonneg_left hc0 hPpos hP
+
+/-- Exercise 4.23: with `K ≤ N` terms the convergent series at `N` cannot reach the floor
+`e^(−2πN)` that the divergent series (4.38) reaches at the same argument with `⌈πN⌉` terms. -/
+theorem convergentTerm_gt_stirling_floor {K N : ℕ} (hK : 1 ≤ K) (hKN : K ≤ N) :
+    Real.exp (-(2 * Real.pi * N)) < convergentTerm K N := by
+  refine lt_of_lt_of_le ?_ (convergentTerm_ge hK hKN)
+  have hN : (1 : ℝ) ≤ N := by exact_mod_cast hK.trans hKN
+  have hKr : (K : ℝ) ≤ N := by exact_mod_cast hKN
+  have hA : (4 : ℝ) * K * (K + 2) ≤ 4 * N * (N + 2) := by
+    have : (0 : ℝ) ≤ K := by positivity
+    nlinarith
+  have hquad : 1 + 2 * (N : ℝ) + 2 * N ^ 2 ≤ Real.exp (2 * N) := by
+    have := Real.quadratic_le_exp_of_nonneg (x := 2 * (N : ℝ)) (by positivity)
+    nlinarith
+  have hexp4 : 4 * (N : ℝ) * (N + 2) < Real.exp (4 * N) := by
+    have h : Real.exp (4 * N) = Real.exp (2 * N) ^ 2 := by
+      rw [← Real.exp_nat_mul]; congr 1; push_cast; ring
+    rw [h]
+    nlinarith [hquad, hN]
+  have hpi : Real.exp (4 * N) ≤ Real.exp ((2 * Real.pi - 2) * N) := by
+    apply Real.exp_le_exp.mpr
+    nlinarith [Real.pi_gt_three]
+  rw [lt_div_iff₀ (by positivity)]
+  calc Real.exp (-(2 * Real.pi * N)) * (4 * K * (K + 2))
+      ≤ Real.exp (-(2 * Real.pi * N)) * (4 * N * (N + 2)) := by gcongr
+    _ < Real.exp (-(2 * Real.pi * N)) * Real.exp ((2 * Real.pi - 2) * N) :=
+        mul_lt_mul_of_pos_left (hexp4.trans_le hpi) (Real.exp_pos _)
+    _ = Real.exp (-(2 * N)) := by rw [← Real.exp_add]; congr 1; ring
+
+end Exercise423
+
+section Exercise425
+
+/-- (4.43) in the text's form: for `b₀ = 0` and positive `a_j, b_j`,
+`a₁/b₁+ a₂/b₂+ ⋯ a_k/b_k = a₁ R₁ / R₀`. -/
+theorem finiteFrac_eq_backR {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (hb0 : b 0 = 0)
+    {k : ℕ} (hk : 1 ≤ k) : approximant a b k = a 1 * backR a b k 1 / backR a b k 0 := by
+  rw [approximant_eq_backR hpos hk, hb0, zero_add]
+
+/-- The first genuine step of the recurrence:
+`R_{k−2} = b_{k−1} R_{k−1} + a_k R_k = b_{k−1} b_k + a_k`. -/
+theorem backR_sub_two (a b : ℕ → ℝ) {k : ℕ} (hk : 2 ≤ k) :
+    backR a b k (k - 2) = b (k - 1) * b k + a k := by
+  rw [backR_of_lt a b (by omega), show k - 2 + 1 = k - 1 by omega, show k - 2 + 2 = k by omega,
+    backR_pred_self a b (by omega), backR_self, mul_one]
+
+/-- Sanity check at `k = 2`: `a₁/(b₁ + a₂/b₂) = a₁ b₂/(b₁ b₂ + a₂) = a₁ R₁/R₀`. -/
+theorem finiteFrac_two_eq {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (hb0 : b 0 = 0) :
+    approximant a b 2 = a 1 * b 2 / (b 1 * b 2 + a 2) := by
+  have h := backR_sub_two a b (k := 2) le_rfl
+  rw [finiteFrac_eq_backR hpos hb0 (by norm_num), backR_pred_self a b (by norm_num)]
+  simp only [Nat.sub_self] at h
+  rw [h]
+
+end Exercise425
+
+section Exercise426
+
+/-- The tail with terminal value `x`: `a_j/b_j+ ⋯ a_k/(b_k + x)`, and `x` itself if `j > k`. -/
+noncomputable def tailFracX (a b : ℕ → ℝ) (k : ℕ) (x : ℝ) (j : ℕ) : ℝ :=
+  if k < j then x else a j / (b j + tailFracX a b k x (j + 1))
+termination_by k + 1 - j
+
+theorem tailFracX_of_lt (a b : ℕ → ℝ) (k : ℕ) (x : ℝ) {j : ℕ} (h : k < j) :
+    tailFracX a b k x j = x := by
+  rw [tailFracX, ite_eq_left h]
+
+theorem tailFracX_of_le (a b : ℕ → ℝ) (k : ℕ) (x : ℝ) {j : ℕ} (h : j ≤ k) :
+    tailFracX a b k x j = a j / (b j + tailFracX a b k x (j + 1)) := by
+  rw [tailFracX, ite_eq_right (not_lt.mpr h)]
+
+/-- `x = 0` recovers the plain tail. -/
+theorem tailFracX_zero (a b : ℕ → ℝ) (k j : ℕ) : tailFracX a b k 0 j = tailFrac a b k j := by
+  by_cases h : k < j
+  · rw [tailFracX_of_lt _ _ _ _ h, tailFrac_of_lt _ _ h]
+  · rw [tailFracX_of_le _ _ _ _ (not_lt.mp h), tailFrac_of_le _ _ (not_lt.mp h),
+      tailFracX_zero a b k (j + 1)]
+termination_by k + 1 - j
+
+/-- Peeling from the back: `y_{k+1}(x) = y_k(a_{k+1}/(b_{k+1} + x))`, at every start index
+`j ≤ k + 1`. -/
+theorem tailFracX_succ (a b : ℕ → ℝ) (k : ℕ) (x : ℝ) {j : ℕ} (hj : j ≤ k + 1) :
+    tailFracX a b (k + 1) x j = tailFracX a b k (a (k + 1) / (b (k + 1) + x)) j := by
+  rcases eq_or_lt_of_le hj with rfl | hlt
+  · rw [tailFracX_of_le _ _ _ _ le_rfl, tailFracX_of_lt _ _ _ _ (Nat.lt_succ_self _),
+      tailFracX_of_lt _ _ _ _ (Nat.lt_succ_self _)]
+  · rw [tailFracX_of_le a b (k + 1) x (j := j) (by omega),
+      tailFracX_of_le a b k (a (k + 1) / (b (k + 1) + x)) (j := j) (by omega),
+      tailFracX_succ a b k x (j := j + 1) (by omega)]
+termination_by k + 1 - j
+
+theorem tailFracX_nonneg {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (k : ℕ) {x : ℝ}
+    (hx : 0 ≤ x) {j : ℕ} (hj : 1 ≤ j) : 0 ≤ tailFracX a b k x j := by
+  by_cases h : k < j
+  · rw [tailFracX_of_lt _ _ _ _ h]; exact hx
+  · rw [tailFracX_of_le _ _ _ _ (not_lt.mp h)]
+    have hT := tailFracX_nonneg hpos k hx (j := j + 1) (by omega)
+    obtain ⟨ha, hb⟩ := hpos j hj
+    positivity
+termination_by k + 1 - j
+
+/-- The hint: `b₀ + y_{k+1}(x) = (P_{k+1} + P_k x)/(Q_{k+1} + Q_k x)` for `x ≥ 0`, by induction
+on `k`, where `P = nums`, `Q = dens` are the continuants of (4.44). -/
+theorem tailFracX_eq_nums_dens {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (k : ℕ)
+    {x : ℝ} (hx : 0 ≤ x) :
+    b 0 + tailFracX a b (k + 1) x 1
+      = ((contFrac a b).nums (k + 1) + (contFrac a b).nums k * x)
+        / ((contFrac a b).dens (k + 1) + (contFrac a b).dens k * x) := by
+  induction k generalizing x with
+  | zero =>
+    rw [tailFracX_of_le _ _ _ _ le_rfl, tailFracX_of_lt _ _ _ _ (by norm_num), nums_one, nums_zero,
+      dens_one, dens_zero]
+    have hb1 := (hpos 1 le_rfl).2
+    have : 0 < b 1 + x := by linarith
+    field_simp
+    ring
+  | succ k ih =>
+    obtain ⟨ha, hb⟩ := hpos (k + 2) (by omega)
+    have hd : 0 < b (k + 2) + x := by linarith
+    have hx' : 0 ≤ a (k + 2) / (b (k + 2) + x) := by positivity
+    rw [tailFracX_succ a b (k + 1) x (by omega), ih hx', nums_recurrence', dens_recurrence']
+    have hQ1 := dens_pos hpos (k + 1)
+    have hQ0 := dens_pos hpos k
+    have hden1 : 0 < (contFrac a b).dens (k + 1) + (contFrac a b).dens k
+        * (a (k + 2) / (b (k + 2) + x)) := by positivity
+    have hden2 : 0 < b (k + 2) * (contFrac a b).dens (k + 1) + a (k + 2) * (contFrac a b).dens k
+        + (contFrac a b).dens (k + 1) * x := by positivity
+    rw [div_eq_div_iff hden1.ne' hden2.ne']
+    field_simp
+    ring
+
+/-- (4.44): `f_k = P_k / Q_k`, the forward recurrence, from the hint at `x = 0`. -/
+theorem approximant_eq_nums_div_dens {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j)
+    (k : ℕ) : approximant a b k = (contFrac a b).nums k / (contFrac a b).dens k := by
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · rw [approximant_zero, nums_zero, dens_zero, div_one]
+  · obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+    rw [approximant_eq_tailFrac, ← tailFracX_zero, tailFracX_eq_nums_dens hpos m le_rfl]
+    simp
+
+end Exercise426
+
+section Exercise427
+
+/-- The step matrix `M_j = [[b_j, 1], [a_j, 0]]` of the forward recurrence. -/
+noncomputable def cfStep (a b : ℕ → ℝ) (j : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := !![b j, 1; a j, 0]
+
+/-- The ordered product `M_{i+1} M_{i+2} ⋯ M_{i+n}` of `n` consecutive step matrices. -/
+noncomputable def cfProdRange (a b : ℕ → ℝ) (i : ℕ) : ℕ → Matrix (Fin 2) (Fin 2) ℝ
+  | 0 => 1
+  | n + 1 => cfProdRange a b i n * cfStep a b (i + n + 1)
+
+/-- `M_1 M_2 ⋯ M_k`. -/
+noncomputable def cfProd (a b : ℕ → ℝ) (k : ℕ) : Matrix (Fin 2) (Fin 2) ℝ := cfProdRange a b 0 k
+
+/-- Segments compose: the product over `(i, i+m+n]` is the product over `(i, i+m]` times the
+product over `(i+m, i+m+n]` — the basis of a parallel or binary-splitting evaluation. -/
+theorem cfProdRange_add (a b : ℕ → ℝ) (i m n : ℕ) :
+    cfProdRange a b i (m + n) = cfProdRange a b i m * cfProdRange a b (i + m) n := by
+  induction n with
+  | zero => simp [cfProdRange]
+  | succ n ih =>
+    rw [show m + (n + 1) = m + n + 1 by ring, cfProdRange, ih, cfProdRange, mul_assoc,
+      show i + m + n + 1 = i + (m + n) + 1 by ring]
+
+/-- `k = 0`: the empty product is the identity, `[[Q₀, Q_{−1}], [P₀, P_{−1}]]` with the
+convention `P_{−1} = 1`, `Q_{−1} = 0` (and `P₀ = b₀ = 0`, `Q₀ = 1`). -/
+theorem cfProd_zero (a b : ℕ → ℝ) (hb0 : b 0 = 0) :
+    cfProd a b 0 = !![(contFrac a b).dens 0, 0; (contFrac a b).nums 0, 1] := by
+  rw [cfProd, cfProdRange, dens_zero, nums_zero, hb0]
+  ext i j
+  fin_cases i <;> fin_cases j <;> rfl
+
+/-- Exercise 4.27: `M_1 ⋯ M_k = [[Q_k, Q_{k−1}], [P_k, P_{k−1}]]` for `k ≥ 1` (with `b₀ = 0`). -/
+theorem cfProd_eq (a b : ℕ → ℝ) (hb0 : b 0 = 0) (k : ℕ) :
+    cfProd a b (k + 1) = !![(contFrac a b).dens (k + 1), (contFrac a b).dens k;
+      (contFrac a b).nums (k + 1), (contFrac a b).nums k] := by
+  induction k with
+  | zero =>
+    rw [cfProd, cfProdRange, cfProdRange, one_mul, cfStep, dens_one, dens_zero, nums_one,
+      nums_zero, hb0]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp
+  | succ k ih =>
+    rw [cfProd, cfProdRange, ← cfProd, ih, cfStep, nums_recurrence', dens_recurrence']
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [Matrix.mul_apply, Fin.sum_univ_two] <;> ring
+
+/-- `f_k` is the ratio of the first-column entries of the product. -/
+theorem approximant_eq_cfProd {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j)
+    (hb0 : b 0 = 0) (k : ℕ) :
+    approximant a b (k + 1) = cfProd a b (k + 1) 1 0 / cfProd a b (k + 1) 0 0 := by
+  rw [approximant_eq_nums_div_dens hpos, cfProd_eq a b hb0 k]
+  simp
+
+end Exercise427
+
+section Exercise428
+
+open Finset
+
+theorem det_cfStep (a b : ℕ → ℝ) (j : ℕ) : (cfStep a b j).det = -a j := by
+  rw [cfStep, Matrix.det_fin_two_of]; ring
+
+theorem det_cfProdRange (a b : ℕ → ℝ) (i n : ℕ) :
+    (cfProdRange a b i n).det = ∏ j ∈ range n, (-a (i + j + 1)) := by
+  induction n with
+  | zero => simp [cfProdRange]
+  | succ n ih => rw [cfProdRange, Matrix.det_mul, ih, det_cfStep, prod_range_succ]
+
+/-- `det (M_1 ⋯ M_k) = (−1)^k a_1 a_2 ⋯ a_k`. -/
+theorem det_cfProd (a b : ℕ → ℝ) (k : ℕ) :
+    (cfProd a b k).det = (-1) ^ k * ∏ j ∈ range k, a (j + 1) := by
+  rw [cfProd, det_cfProdRange, prod_neg, card_range]
+  simp
+
+/-- Exercise 4.28: `Q_k P_{k−1} − P_k Q_{k−1} = (−1)^k a_1 ⋯ a_k` for `k ≥ 1` (with `b₀ = 0`). -/
+theorem det_continuants (a b : ℕ → ℝ) (hb0 : b 0 = 0) (k : ℕ) :
+    (contFrac a b).dens (k + 1) * (contFrac a b).nums k
+      - (contFrac a b).dens k * (contFrac a b).nums (k + 1)
+      = (-1) ^ (k + 1) * ∏ j ∈ range (k + 1), a (j + 1) := by
+  have h := det_cfProd a b (k + 1)
+  rw [cfProd_eq a b hb0 k, Matrix.det_fin_two_of] at h
+  exact h
+
+end Exercise428
+
+section Exercise429
+
+open Finset
+
+/-- The closed form of (4.45): `D_{k+1} = (−1)^k a_1 ⋯ a_{k+1} / (Q_{k+1} Q_k)` (positive
+coefficients, `b₀ = 0`). -/
+theorem diff_eq_prod_div {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (hb0 : b 0 = 0)
+    (k : ℕ) :
+    diff a b (k + 1) = (-1) ^ k * (∏ j ∈ range (k + 1), a (j + 1))
+      / ((contFrac a b).dens (k + 1) * (contFrac a b).dens k) := by
+  rw [diff_eq_det_div hpos k]
+  congr 1
+  have h := det_continuants a b hb0 k
+  rw [pow_succ] at h
+  linear_combination -h
+
+/-- (4.46) rederived from the closed form: `D_{k+2}/D_{k+1} = −a_{k+2} Q_k / Q_{k+2}`. -/
+theorem diff_succ' {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) (hb0 : b 0 = 0)
+    (k : ℕ) :
+    diff a b (k + 2)
+      = -a (k + 2) * (contFrac a b).dens k * diff a b (k + 1) / (contFrac a b).dens (k + 2) := by
+  rw [diff_eq_prod_div hpos hb0 (k + 1), diff_eq_prod_div hpos hb0 k, prod_range_succ _ (k + 1),
+    pow_succ]
+  have h0 := dens_pos hpos k
+  have h1 := dens_pos hpos (k + 1)
+  have h2 := dens_pos hpos (k + 2)
+  field_simp
+
+end Exercise429
+
+section Exercise430
+
+/-- The value lies strictly between any two consecutive approximants. -/
+theorem approximant_between_consecutive {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j)
+    {f : ℝ} (hf : HasContFracValue a b f) (m : ℕ) :
+    min (approximant a b m) (approximant a b (m + 1)) < f ∧
+      f < max (approximant a b m) (approximant a b (m + 1)) := by
+  rcases Nat.even_or_odd m with ⟨k, hk⟩ | ⟨k, hk⟩
+  · have h1 := approximant_even_lt hpos hf k
+    have h2 := lt_approximant_odd hpos hf k
+    rw [show m = 2 * k by omega, show 2 * k + 1 = 2 * k + 1 from rfl]
+    exact ⟨lt_of_le_of_lt (min_le_left _ _) h1, lt_of_lt_of_le h2 (le_max_right _ _)⟩
+  · have h1 := approximant_even_lt hpos hf (k + 1)
+    have h2 := lt_approximant_odd hpos hf k
+    rw [show m = 2 * k + 1 by omega, show 2 * k + 1 + 1 = 2 * (k + 1) by ring]
+    exact ⟨lt_of_le_of_lt (min_le_right _ _) h1, lt_of_lt_of_le h2 (le_max_left _ _)⟩
+
+/-- Theorem 4.1 (Exercise 4.30): for positive `a_j, b_j`, the even approximants increase
+strictly, the odd ones decrease strictly, the value `f` lies strictly between every even and
+every odd approximant, and the midpoint of two consecutive approximants is within half their
+distance of `f`. -/
+theorem theorem_4_1 {a b : ℕ → ℝ} (hpos : ∀ j, 1 ≤ j → 0 < a j ∧ 0 < b j) {f : ℝ}
+    (hf : HasContFracValue a b f) :
+    StrictMono (fun k => approximant a b (2 * k)) ∧
+      StrictAnti (fun k => approximant a b (2 * k + 1)) ∧
+      (∀ k, approximant a b (2 * k) < f) ∧
+      (∀ k, f < approximant a b (2 * k + 1)) ∧
+      ∀ m, 1 ≤ m → |f - (approximant a b (m - 1) + approximant a b m) / 2|
+        < |approximant a b m - approximant a b (m - 1)| / 2 :=
+  ⟨approximant_even_strictMono hpos, approximant_odd_strictAnti hpos,
+    approximant_even_lt hpos hf, lt_approximant_odd hpos hf,
+    fun _ hm => abs_sub_midpoint_lt hpos hf hm⟩
+
+end Exercise430
+
+section Exercise431
+
+open Finset
+
+/-- The coefficients of (4.40) are positive for `x > 0`. -/
+theorem erfcCF_pos {x : ℝ} (hx : 0 < x) : ∀ j, 1 ≤ j → 0 < erfcCFNum j ∧ 0 < erfcCFDen x j := by
+  intro j hj
+  refine ⟨?_, ?_⟩
+  · unfold erfcCFNum
+    split_ifs with h
+    · exact one_pos
+    · have : (2 : ℝ) ≤ j := by exact_mod_cast (show 2 ≤ j by omega)
+      linarith
+  · unfold erfcCFDen
+    rw [ite_eq_right (by omega)]
+    exact hx
+
+theorem erfcCFDen_zero (x : ℝ) : erfcCFDen x 0 = 0 := by simp [erfcCFDen]
+
+/-- `a₁ a₂ ⋯ a_{k+1} = 1 · (1/2) · (2/2) ⋯ (k/2) = k!/2^k`. -/
+theorem erfcCF_prod_num (k : ℕ) :
+    ∏ j ∈ range (k + 1), erfcCFNum (j + 1) = (k.factorial : ℝ) / 2 ^ k := by
+  induction k with
+  | zero => simp [erfcCFNum]
+  | succ k ih =>
+    rw [prod_range_succ, ih, erfcCFNum, ite_eq_right (by omega), Nat.factorial_succ]
+    push_cast
+    field_simp
+    ring
+
+/-- `Q_j ≥ x^j`: each step multiplies by at least `x`. -/
+theorem erfcCF_dens_ge {x : ℝ} (hx : 0 < x) (j : ℕ) :
+    x ^ j ≤ (contFrac erfcCFNum (erfcCFDen x)).dens j := by
+  induction j using Nat.strong_induction_on with
+  | _ j ih =>
+    match j with
+    | 0 => rw [dens_zero, pow_zero]
+    | 1 => rw [dens_one, erfcCFDen, ite_eq_right one_ne_zero, pow_one]
+    | j + 2 =>
+      rw [dens_recurrence', erfcCFDen, ite_eq_right (by omega)]
+      have h1 := ih (j + 1) (by omega)
+      have h0 := dens_pos (erfcCF_pos hx) j
+      have ha := (erfcCF_pos hx (j + 2) (by omega)).1
+      calc x ^ (j + 2) = x * x ^ (j + 1) := by ring
+        _ ≤ x * (contFrac erfcCFNum (erfcCFDen x)).dens (j + 1) := by gcongr
+        _ ≤ _ := by nlinarith
+
+/-- The step `|D_{k+1}| = |f_{k+1} − f_k| ≤ k!/(2^k x^(2k+1))` of the normalized fraction (4.40). -/
+theorem erfcCF_abs_diff_le {x : ℝ} (hx : 0 < x) (k : ℕ) :
+    |diff erfcCFNum (erfcCFDen x) (k + 1)| ≤ k.factorial / (2 ^ k * x ^ (2 * k + 1)) := by
+  rw [diff_eq_prod_div (erfcCF_pos hx) (erfcCFDen_zero x) k, erfcCF_prod_num, abs_div, abs_mul,
+    abs_pow, abs_neg, abs_one, one_pow, one_mul,
+    abs_of_pos (by positivity : (0:ℝ) < k.factorial / 2 ^ k),
+    abs_of_pos (mul_pos (dens_pos (erfcCF_pos hx) (k + 1)) (dens_pos (erfcCF_pos hx) k))]
+  have h1 := erfcCF_dens_ge hx (k + 1)
+  have h0 := erfcCF_dens_ge hx k
+  have hprod : x ^ (2 * k + 1) ≤ (contFrac erfcCFNum (erfcCFDen x)).dens (k + 1)
+      * (contFrac erfcCFNum (erfcCFDen x)).dens k := by
+    calc x ^ (2 * k + 1) = x ^ (k + 1) * x ^ k := by ring
+      _ ≤ _ := mul_le_mul h1 h0 (by positivity) (by linarith [pow_pos hx (k + 1)])
+  rw [div_div]
+  exact div_le_div_of_nonneg_left (by positivity) (by positivity)
+    (mul_le_mul_of_nonneg_left hprod (by positivity))
+
+/-- `(k!)² 2^k ≤ (2k)!`, i.e. `k!/2^k ≤ (2k)!/(k! 4^k)`: the fraction's step is below the
+asymptotic series' term coefficient. -/
+theorem factorial_sq_mul_two_pow_le_factorial (k : ℕ) :
+    k.factorial ^ 2 * 2 ^ k ≤ (2 * k).factorial := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have h1 : (k + 1).factorial = (k + 1) * k.factorial := Nat.factorial_succ k
+    have h2 : (2 * (k + 1)).factorial = (2 * k + 2) * ((2 * k + 1) * (2 * k).factorial) := by
+      rw [show 2 * (k + 1) = 2 * k + 1 + 1 by ring, Nat.factorial_succ, Nat.factorial_succ]
+    rw [h1, h2, pow_succ]
+    calc ((k + 1) * k.factorial) ^ 2 * (2 ^ k * 2)
+        = (k + 1) * (k + 1) * 2 * (k.factorial ^ 2 * 2 ^ k) := by ring
+      _ ≤ (k + 1) * (2 * k + 1) * 2 * (2 * k).factorial :=
+          Nat.mul_le_mul (Nat.mul_le_mul_right 2 (Nat.mul_le_mul_left (k + 1) (by omega))) ih
+      _ = (2 * k + 2) * ((2 * k + 1) * (2 * k).factorial) := by ring
+
+/-- The `(k+1)`-th step of (4.40) is at most the `k`-th term of the asymptotic series (4.37),
+both normalized by the common prefactor `e^(−x²)/√π`. -/
+theorem erfcCF_abs_diff_le_erfcTermMag {x : ℝ} (hx : 0 < x) (k : ℕ) :
+    |diff erfcCFNum (erfcCFDen x) (k + 1)| ≤ erfcTermMag k x / x := by
+  refine (erfcCF_abs_diff_le hx k).trans ?_
+  unfold erfcTermMag erfcCoeff
+  have h := factorial_sq_mul_two_pow_le_factorial k
+  have hc : (k.factorial : ℝ) ^ 2 * 2 ^ k ≤ (2 * k).factorial := by exact_mod_cast h
+  rw [div_div, div_div, pow_succ, pow_mul, ← mul_assoc]
+  have hk0 : (0 : ℝ) < k.factorial := by positivity
+  rw [div_le_div_iff₀ (by positivity) (by positivity)]
+  have : (4 : ℝ) ^ k = 2 ^ k * 2 ^ k := by rw [← mul_pow]; norm_num
+  rw [this]
+  have hX : 0 < (x ^ 2) ^ k * x := by positivity
+  have h2k : (0 : ℝ) < 2 ^ k := by positivity
+  calc _ = (k.factorial ^ 2 * 2 ^ k) * (2 ^ k * ((x ^ 2) ^ k * x)) := by ring
+    _ ≤ ((2 * k).factorial : ℝ) * (2 ^ k * ((x ^ 2) ^ k * x)) := by gcongr
+    _ = _ := by ring
+
+end Exercise431
+
+section Exercise432
+
+open Finset
+
+/-- The entries of a step matrix are bounded by `B ≥ 1` when `|a_j|, |b_j| ≤ B`. -/
+theorem cfStep_entry_le {a b : ℕ → ℝ} {B : ℝ} (hB : 1 ≤ B) {j : ℕ} (ha : |a j| ≤ B)
+    (hb : |b j| ≤ B) (r s : Fin 2) : |cfStep a b j r s| ≤ B := by
+  fin_cases r <;> fin_cases s <;> simp [cfStep] <;> linarith
+
+/-- The entries of a product of `n` step matrices are bounded by `(2B)^n`: they have
+`O(n log B)` bits. -/
+theorem cfProdRange_entry_le {a b : ℕ → ℝ} {B : ℝ} (hB : 1 ≤ B) (i : ℕ)
+    (ha : ∀ j, |a j| ≤ B) (hb : ∀ j, |b j| ≤ B) (n : ℕ) (r s : Fin 2) :
+    |cfProdRange a b i n r s| ≤ (2 * B) ^ n := by
+  induction n generalizing r s with
+  | zero => fin_cases r <;> fin_cases s <;> simp [cfProdRange]
+  | succ n ih =>
+    rw [cfProdRange, Matrix.mul_apply, Fin.sum_univ_two, pow_succ]
+    have h0 := cfStep_entry_le hB (ha (i + n + 1)) (hb (i + n + 1)) 0 s
+    have h1 := cfStep_entry_le hB (ha (i + n + 1)) (hb (i + n + 1)) 1 s
+    have hP0 := ih r 0
+    have hP1 := ih r 1
+    have hpow : (0 : ℝ) ≤ (2 * B) ^ n := by positivity
+    calc |cfProdRange a b i n r 0 * cfStep a b (i + n + 1) 0 s
+          + cfProdRange a b i n r 1 * cfStep a b (i + n + 1) 1 s|
+        ≤ |cfProdRange a b i n r 0| * |cfStep a b (i + n + 1) 0 s|
+          + |cfProdRange a b i n r 1| * |cfStep a b (i + n + 1) 1 s| := by
+          rw [← abs_mul, ← abs_mul]; exact abs_add_le _ _
+      _ ≤ (2 * B) ^ n * B + (2 * B) ^ n * B := by
+          gcongr
+      _ = (2 * B) ^ n * (2 * B) := by ring
+
+/-- The product tree: level `ℓ` of the splitting forms `2^ℓ` products of matrices whose entries
+have `m/2^ℓ` bits (`m = O(k log B)` at the root); in the quasi-linear model `M(x) = x lg x` each
+level costs at most `8 M(m)` (eight multiplications per `2×2` product), so `L` levels cost at most
+`8 L M(m)`. -/
+theorem splitting_levels_cost_le {m : ℝ} (hm : 1 ≤ m) (L : ℕ) :
+    ∑ ℓ ∈ range L, 2 ^ ℓ * (8 * quasiLinearCost (m / 2 ^ ℓ)) ≤ L * (8 * quasiLinearCost m) := by
+  have hterm : ∀ ℓ ∈ range L,
+      2 ^ ℓ * (8 * quasiLinearCost (m / 2 ^ ℓ)) ≤ 8 * quasiLinearCost m := by
+    intro ℓ _
+    have := two_pow_mul_quasiLinearCost_div_le hm ℓ
+    linarith
+  calc _ ≤ ∑ _ℓ ∈ range L, 8 * quasiLinearCost m := sum_le_sum hterm
+    _ = _ := by rw [sum_const, card_range, nsmul_eq_mul]
+
+end Exercise432
+
+section Exercise433
+
+open Finset
+
+/-- A linear normalization sum whose terms carry relative errors `|e_i| ≤ ε` is off by at most
+`ε ∑|t_i|`: the error is amplified by `κ₁ = ∑|t_i| / |∑ t_i|` relative to the sum. -/
+theorem abs_sum_perturbed_sub_le {ι : Type*} (s : Finset ι) (t e : ι → ℝ) {ε : ℝ}
+    (he : ∀ i ∈ s, |e i| ≤ ε) :
+    |∑ i ∈ s, t i * (1 + e i) - ∑ i ∈ s, t i| ≤ ε * ∑ i ∈ s, |t i| := by
+  rw [← sum_sub_distrib]
+  calc |∑ i ∈ s, (t i * (1 + e i) - t i)| ≤ ∑ i ∈ s, |t i * (1 + e i) - t i| :=
+        abs_sum_le_sum_abs _ _
+    _ = ∑ i ∈ s, |t i| * |e i| := sum_congr rfl fun i _ => by
+        rw [show t i * (1 + e i) - t i = t i * e i by ring, abs_mul]
+    _ ≤ ∑ i ∈ s, |t i| * ε :=
+        sum_le_sum fun i hi => mul_le_mul_of_nonneg_left (he i hi) (abs_nonneg _)
+    _ = ε * ∑ i ∈ s, |t i| := by rw [← sum_mul, mul_comm]
+
+/-- A sum of squares of nonnegative terms with relative errors `|e_i| ≤ ε` has relative error at
+most `2ε + ε²`: no amplification. -/
+theorem abs_sum_sq_perturbed_sub_le {ι : Type*} (s : Finset ι) (t e : ι → ℝ)
+    (ht : ∀ i ∈ s, 0 ≤ t i) {ε : ℝ} (he : ∀ i ∈ s, |e i| ≤ ε) :
+    |∑ i ∈ s, t i * (1 + e i) ^ 2 - ∑ i ∈ s, t i| ≤ (2 * ε + ε ^ 2) * ∑ i ∈ s, t i := by
+  rcases s.eq_empty_or_nonempty with rfl | ⟨i₀, hi₀⟩
+  · simp
+  have hε : 0 ≤ ε := (abs_nonneg _).trans (he i₀ hi₀)
+  rw [← sum_sub_distrib]
+  calc |∑ i ∈ s, (t i * (1 + e i) ^ 2 - t i)| ≤ ∑ i ∈ s, |t i * (1 + e i) ^ 2 - t i| :=
+        abs_sum_le_sum_abs _ _
+    _ ≤ ∑ i ∈ s, t i * (2 * ε + ε ^ 2) := by
+        refine sum_le_sum fun i hi => ?_
+        rw [show t i * (1 + e i) ^ 2 - t i = t i * (e i * (2 + e i)) by ring, abs_mul,
+          abs_of_nonneg (ht i hi), abs_mul]
+        have h1 := he i hi
+        have h2 : |2 + e i| ≤ 2 + ε := (abs_add_le _ _).trans (by rw [abs_two]; linarith)
+        have h3 : |e i| * |2 + e i| ≤ ε * (2 + ε) :=
+          mul_le_mul h1 h2 (abs_nonneg _) hε
+        nlinarith [ht i hi]
+    _ = (2 * ε + ε ^ 2) * ∑ i ∈ s, t i := by rw [← sum_mul, mul_comm]
+
+/-- Cauchy–Schwarz: `∑|t_i| ≤ √(N ∑ t_i²)` over `N` terms; so when `∑ t_i² ≤ 1` (as in (4.89))
+the amplification of a linear normalization sum is at most `√N`. -/
+theorem sum_abs_le_sqrt_card_mul_sum_sq {ι : Type*} (s : Finset ι) (t : ι → ℝ) :
+    ∑ i ∈ s, |t i| ≤ Real.sqrt (s.card * ∑ i ∈ s, t i ^ 2) := by
+  rw [Real.le_sqrt (sum_nonneg fun i _ => abs_nonneg _) (by positivity)]
+  have h := sum_mul_sq_le_sq_mul_sq s (fun i => |t i|) fun _ => (1 : ℝ)
+  simp only [mul_one, one_pow, sum_const, nsmul_eq_mul, sq_abs] at h
+  linarith
+
+end Exercise433
+
+section Exercise434
+
+/-- The constant-coefficient model `f_ν + f_{ν+2} = 2K f_{ν+1}` of (4.53) near `ν ≈ Kx`. -/
+def IsConstRecSol (K : ℂ) (f : ℕ → ℂ) : Prop := ∀ ν, f ν + f (ν + 2) = 2 * K * f (ν + 1)
+
+/-- `λ^ν` is a solution iff `λ² − 2Kλ + 1 = 0`. -/
+theorem isConstRecSol_pow {K lam : ℂ} (h : lam ^ 2 - 2 * K * lam + 1 = 0) :
+    IsConstRecSol K (fun ν => lam ^ ν) := by
+  intro ν
+  simp only
+  linear_combination lam ^ ν * h
+
+theorem IsConstRecSol.add {K : ℂ} {f g : ℕ → ℂ} (hf : IsConstRecSol K f) (hg : IsConstRecSol K g) :
+    IsConstRecSol K (fun ν => f ν + g ν) := by
+  intro ν; simp only; linear_combination hf ν + hg ν
+
+theorem IsConstRecSol.smul {K : ℂ} {f : ℕ → ℂ} (hf : IsConstRecSol K f) (c : ℂ) :
+    IsConstRecSol K (fun ν => c * f ν) := by
+  intro ν; simp only; linear_combination c * hf ν
+
+/-- A solution is determined by its two initial values. -/
+theorem IsConstRecSol.eq_of_init {K : ℂ} {f g : ℕ → ℂ} (hf : IsConstRecSol K f)
+    (hg : IsConstRecSol K g) (h0 : f 0 = g 0) (h1 : f 1 = g 1) : ∀ ν, f ν = g ν := by
+  intro ν
+  induction ν using Nat.twoStepInduction with
+  | zero => exact h0
+  | one => exact h1
+  | more ν ih0 ih1 =>
+    have hfν := hf ν
+    have hgν := hg ν
+    linear_combination hfν - hgν - ih0 + 2 * K * ih1
+
+/-- Exercise 4.34: for distinct roots `λ ≠ μ` of `x² − 2Kx + 1`, every solution is
+`A λ^ν + B μ^ν` with `A = (f₁ − μ f₀)/(λ − μ)`, `B = (λ f₀ − f₁)/(λ − μ)`. -/
+theorem IsConstRecSol.exists_eq_comb {K lam mu : ℂ} (hl : lam ^ 2 - 2 * K * lam + 1 = 0)
+    (hm : mu ^ 2 - 2 * K * mu + 1 = 0) (hne : lam ≠ mu) {f : ℕ → ℂ} (hf : IsConstRecSol K f) :
+    ∃ A B : ℂ, ∀ ν, f ν = A * lam ^ ν + B * mu ^ ν := by
+  have hd : lam - mu ≠ 0 := sub_ne_zero.mpr hne
+  refine ⟨(f 1 - mu * f 0) / (lam - mu), (lam * f 0 - f 1) / (lam - mu), ?_⟩
+  have hg : IsConstRecSol K fun ν => (f 1 - mu * f 0) / (lam - mu) * lam ^ ν
+      + (lam * f 0 - f 1) / (lam - mu) * mu ^ ν :=
+    ((isConstRecSol_pow hl).smul _).add ((isConstRecSol_pow hm).smul _)
+  exact hf.eq_of_init hg (by simp; field_simp; ring) (by simp; field_simp; ring)
+
+/-- `K > 1`: two real roots `K ± √(K² − 1)`, with product `1` and `λ > 1 > μ > 0`. -/
+theorem roots_of_one_lt {K : ℝ} (hK : 1 < K) :
+    let s := Real.sqrt (K ^ 2 - 1)
+    (K + s) ^ 2 - 2 * K * (K + s) + 1 = 0 ∧ (K - s) ^ 2 - 2 * K * (K - s) + 1 = 0 ∧
+      (K + s) * (K - s) = 1 ∧ 1 < K + s ∧ 0 < K - s ∧ K - s < 1 := by
+  intro s
+  have hs2 : s ^ 2 = K ^ 2 - 1 := Real.sq_sqrt (by nlinarith)
+  have hs : 0 < s := Real.sqrt_pos.mpr (by nlinarith)
+  have hsK : s < K := by
+    rw [show s = Real.sqrt (K ^ 2 - 1) from rfl, Real.sqrt_lt' (by linarith)]; linarith
+  refine ⟨by linear_combination hs2, by linear_combination hs2, by linear_combination -hs2,
+    by linarith, by linarith, ?_⟩
+  nlinarith
+
+/-- `0 < K < 1`: the roots `K ± i√(1 − K²)` are complex conjugates of modulus `1`. -/
+theorem roots_of_lt_one {K : ℝ} (hK0 : 0 < K) (hK : K < 1) :
+    let lam : ℂ := K + Real.sqrt (1 - K ^ 2) * Complex.I
+    lam ^ 2 - 2 * (K : ℂ) * lam + 1 = 0 ∧
+      (starRingEnd ℂ) lam ^ 2 - 2 * (K : ℂ) * (starRingEnd ℂ) lam + 1 = 0 ∧
+      lam * (starRingEnd ℂ) lam = 1 ∧ ‖lam‖ = 1 ∧ lam ≠ (starRingEnd ℂ) lam := by
+  intro lam
+  have hs2 : Real.sqrt (1 - K ^ 2) ^ 2 = 1 - K ^ 2 := Real.sq_sqrt (by nlinarith)
+  have hs : 0 < Real.sqrt (1 - K ^ 2) := Real.sqrt_pos.mpr (by nlinarith)
+  have hconj : (starRingEnd ℂ) lam = K - Real.sqrt (1 - K ^ 2) * Complex.I := by
+    simp [lam, Complex.conj_ofReal]; ring
+  set sC : ℂ := ((Real.sqrt (1 - K ^ 2) : ℝ) : ℂ) with hsC
+  have hs2c : sC ^ 2 = 1 - (K : ℂ) ^ 2 := by rw [hsC]; exact_mod_cast hs2
+  have hmul : lam * (starRingEnd ℂ) lam = 1 := by
+    rw [hconj]; linear_combination hs2c - sC ^ 2 * Complex.I_sq
+  refine ⟨?_, ?_, hmul, ?_, ?_⟩
+  · linear_combination (-1 : ℂ) * hs2c + sC ^ 2 * Complex.I_sq
+  · rw [hconj]
+    linear_combination (-1 : ℂ) * hs2c + sC ^ 2 * Complex.I_sq
+  · have h := congrArg Complex.re hmul
+    rw [Complex.mul_conj, Complex.normSq_eq_norm_sq] at h
+    simp only [Complex.ofReal_re, Complex.one_re] at h
+    have h' : ‖lam‖ ^ 2 = 1 := by exact_mod_cast h
+    nlinarith [norm_nonneg lam]
+  · rw [hconj]
+    intro h
+    have := congrArg Complex.im h
+    simp [lam, hsC] at this
+    linarith
+
+end Exercise434
+
+section Exercise435
+
+open Finset PowerSeries
+
+/-- The propagation kernel of the forward recurrence (4.59): `κ_k = (2 − 4^k) C_k`, the
+coefficient of `x^(2k)` in `x/sinh x = 2S(x) − S(2x)`. -/
+def bernoulliKernel (k : ℕ) : ℚ := (2 - 4 ^ k) * scaledBernoulli k
+
+theorem exp_ne_zero' : (exp ℚ : ℚ⟦X⟧) ≠ 0 := fun h => by
+  have := congrArg (coeff 0) h
+  rw [coeff_exp, map_zero] at this
+  simp at this
+
+/-- `x/sinh x = 2S(x) − S(2x)`: `(2S − S(2x))(e^x − e^(−x)) = 2x` in `ℚ⟦X⟧`. -/
+theorem kernel_mul_sinh :
+    (2 * scaledBernoulliPowerSeries - rescale (2 : ℚ) scaledBernoulliPowerSeries)
+      * (exp ℚ - evalNegHom (exp ℚ)) = 2 * X := by
+  set S := scaledBernoulliPowerSeries
+  set E := exp ℚ
+  have h1 : S * (E - 1) = X + C (1 / 2 : ℚ) * X * (E - 1) :=
+    scaledBernoulliPowerSeries_mul_exp_sub_one
+  have hE2 : rescale (2 : ℚ) E = E * E := by
+    have := exp_pow_eq_rescale_exp (A := ℚ) 2
+    push_cast at this
+    rw [← this, sq]
+  have h2 : rescale (2 : ℚ) S * (E * E - 1)
+      = C (2 : ℚ) * X + C (1 / 2 : ℚ) * (C (2 : ℚ) * X) * (E * E - 1) := by
+    have := congrArg (rescale (2 : ℚ)) h1
+    rwa [map_mul, map_sub, map_one, map_add, map_mul, map_mul, map_sub, map_one, rescale_X,
+      rescale_C', hE2] at this
+  have hEi : E * evalNegHom E = 1 := exp_mul_exp_neg_eq_one
+  have hc2 : (C (2 : ℚ) : ℚ⟦X⟧) = 2 := map_ofNat C 2
+  apply mul_right_cancel₀ exp_ne_zero'
+  linear_combination (2 * (E + 1)) * h1 - h2 - (X + C (1 / 2 : ℚ) * X * (E * E - 1)) * hc2
+    - (2 * S - rescale (2 : ℚ) S) * hEi
+
+theorem coeff_kernelSeries_even (j : ℕ) :
+    coeff (2 * j) (2 * scaledBernoulliPowerSeries - rescale (2 : ℚ) scaledBernoulliPowerSeries)
+      = bernoulliKernel j := by
+  rw [map_sub, coeff_rescale, coeff_scaledBernoulliPowerSeries_even, bernoulliKernel,
+    show (2 : ℚ⟦X⟧) = C 2 from (map_ofNat C 2).symm, coeff_C_mul,
+    coeff_scaledBernoulliPowerSeries_even, pow_mul]
+  norm_num
+  ring
+
+theorem coeff_kernelSeries_odd (j : ℕ) :
+    coeff (2 * j + 1) (2 * scaledBernoulliPowerSeries - rescale (2 : ℚ) scaledBernoulliPowerSeries)
+      = 0 := by
+  rw [map_sub, coeff_rescale, coeff_scaledBernoulliPowerSeries_odd,
+    show (2 : ℚ⟦X⟧) = C 2 from (map_ofNat C 2).symm, coeff_C_mul,
+    coeff_scaledBernoulliPowerSeries_odd]
+  ring
+
+/-- The coefficient of `x^(2k+1)` in `φ ψ` for an even series `φ`. -/
+theorem coeff_even_mul (φ ψ : ℚ⟦X⟧) (hodd : ∀ j, coeff (2 * j + 1) φ = 0) (k : ℕ) :
+    coeff (2 * k + 1) (φ * ψ)
+      = ∑ j ∈ range (k + 1), coeff (2 * j) φ * coeff (2 * k + 1 - 2 * j) ψ := by
+  simp only [coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk, Nat.succ_eq_add_one]
+  rw [show 2 * k + 1 + 1 = 2 * (k + 1) by ring, sum_range_two_mul,
+    show ∑ j ∈ range (k + 1), coeff (2 * j + 1) φ * coeff (2 * k + 1 - (2 * j + 1)) ψ = 0 from
+      sum_eq_zero fun j _ => by rw [hodd, zero_mul], add_zero]
+
+theorem coeff_sinhSeries (m : ℕ) :
+    coeff (2 * m + 1) (exp ℚ - evalNegHom (exp ℚ)) = 2 / ((2 * m + 1).factorial : ℚ) := by
+  rw [map_sub, coeff_exp, algebraMap_rat_rat, show evalNegHom (exp ℚ) = rescale (-1 : ℚ) (exp ℚ)
+    from rfl, coeff_rescale, coeff_exp, algebraMap_rat_rat, Odd.neg_one_pow ⟨m, rfl⟩]
+  ring
+
+/-- The kernel inverts `T_m = 1/(2m+1)!` under convolution:
+`∑_{j≤k} κ_j/(2(k−j)+1)! = [k = 0]`. -/
+theorem kernel_conv_eq (k : ℕ) :
+    ∑ j ∈ range (k + 1), bernoulliKernel j / ((2 * (k - j) + 1).factorial : ℚ)
+      = if k = 0 then 1 else 0 := by
+  have h := congrArg (coeff (2 * k + 1)) kernel_mul_sinh
+  have hR : coeff (2 * k + 1) (2 * X : ℚ⟦X⟧) = if k = 0 then 2 else 0 := by
+    rw [show (2 : ℚ⟦X⟧) = C 2 from (map_ofNat C 2).symm, coeff_C_mul, coeff_X]
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp
+    · rw [ite_eq_right (by omega), ite_eq_right (by omega), mul_zero]
+  rw [coeff_even_mul _ _ coeff_kernelSeries_odd, hR] at h
+  have h2 : ∑ j ∈ range (k + 1), coeff (2 * j)
+        (2 * scaledBernoulliPowerSeries - rescale (2 : ℚ) scaledBernoulliPowerSeries)
+        * coeff (2 * k + 1 - 2 * j) (exp ℚ - evalNegHom (exp ℚ))
+      = 2 * ∑ j ∈ range (k + 1), bernoulliKernel j / ((2 * (k - j) + 1).factorial : ℚ) := by
+    rw [mul_sum]
+    refine sum_congr rfl fun j hj => ?_
+    have := mem_range.mp hj
+    rw [coeff_kernelSeries_even, show 2 * k + 1 - 2 * j = 2 * (k - j) + 1 by omega,
+      coeff_sinhSeries]
+    ring
+  rw [h2] at h
+  rcases Nat.eq_zero_or_pos k with rfl | hk
+  · rw [ite_eq_left rfl] at h ⊢; linarith
+  · rw [ite_eq_right (by omega)] at h ⊢; linarith
+
+/-- Error propagation through (4.59): if the computed `e_k` satisfy the perturbed recurrence
+`e_k + ∑_{j<k} e_j/(2(k−j)+1)! = ρ_k`, then `e_k = ∑_{j≤k} ρ_j κ_{k−j}`. -/
+theorem error_propagation (e ρ : ℕ → ℚ)
+    (h : ∀ k, e k + ∑ j ∈ range k, e j / ((2 * (k - j) + 1).factorial : ℚ) = ρ k) (k : ℕ) :
+    e k = ∑ j ∈ range (k + 1), ρ j * bernoulliKernel (k - j) := by
+  have hET : mk e * mk (fun m => 1 / ((2 * m + 1).factorial : ℚ)) = mk ρ := by
+    ext n
+    rw [coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk, sum_range_succ]
+    simp only [coeff_mk, Nat.sub_self, mul_zero, zero_add, Nat.factorial_one, Nat.cast_one,
+      div_one, mul_one]
+    rw [← h n, add_comm]
+    congr 1
+    exact sum_congr rfl fun j _ => by ring
+  have hKT : mk bernoulliKernel * mk (fun m => 1 / ((2 * m + 1).factorial : ℚ)) = 1 := by
+    ext n
+    rw [coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk, coeff_one]
+    simp only [coeff_mk]
+    rw [← kernel_conv_eq n]
+    exact sum_congr rfl fun j _ => by ring
+  have hE : mk e = mk ρ * mk bernoulliKernel := by
+    calc mk e = mk e * (mk bernoulliKernel * mk (fun m => 1 / ((2 * m + 1).factorial : ℚ))) := by
+          rw [hKT, mul_one]
+      _ = (mk e * mk (fun m => 1 / ((2 * m + 1).factorial : ℚ))) * mk bernoulliKernel := by ring
+      _ = mk ρ * mk bernoulliKernel := by rw [hET]
+  have := congrArg (coeff k) hE
+  rw [coeff_mk, coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ_mk] at this
+  simpa only [coeff_mk, Nat.succ_eq_add_one] using this
+
+/-- `|C_k| ≥ 2/(2π)^(2k)` for `k ≥ 1` (from `ζ(2k) ≥ 1`). -/
+theorem abs_scaledBernoulli_ge {k : ℕ} (hk : 1 ≤ k) :
+    2 / (2 * Real.pi) ^ (2 * k) ≤ |(scaledBernoulli k : ℝ)| := by
+  rw [scaledBernoulli_eq_zeta hk, abs_div, abs_mul, abs_mul, abs_pow, abs_neg, abs_one, one_pow,
+    one_mul, abs_two, abs_of_pos (by positivity : (0 : ℝ) < (2 * Real.pi) ^ (2 * k)),
+    abs_of_nonneg (by linarith [one_le_zetaReal_two_mul hk] : (0 : ℝ) ≤ zetaReal (2 * k))]
+  have hζ := one_le_zetaReal_two_mul hk
+  have hp : (0 : ℝ) < (2 * Real.pi) ^ (2 * k) := by positivity
+  rw [div_le_div_iff_of_pos_right hp]
+  linarith
+
+theorem abs_bernoulliKernel_eq {k : ℕ} (hk : 1 ≤ k) :
+    |(bernoulliKernel k : ℝ)| = (4 ^ k - 2) * |(scaledBernoulli k : ℝ)| := by
+  have h4 : (4 : ℝ) ≤ 4 ^ k := by
+    calc (4 : ℝ) = 4 ^ 1 := by norm_num
+      _ ≤ 4 ^ k := pow_le_pow_right₀ (by norm_num) hk
+  rw [bernoulliKernel]
+  push_cast
+  rw [abs_mul, abs_of_neg (by linarith), neg_sub]
+
+/-- (a): the kernel amplifies a relative perturbation of `C_0` into `C_k` by at least
+`(4^k − 2)·6/π²`, i.e. `≍ 4^k`. -/
+theorem kernel_amplification_ge {k : ℕ} (hk : 1 ≤ k) :
+    (4 ^ k - 2) * (6 / Real.pi ^ 2) * |(scaledBernoulli k : ℝ)| ≤ |(bernoulliKernel k : ℝ)| := by
+  rw [abs_bernoulliKernel_eq hk]
+  have h4 : (4 : ℝ) ≤ 4 ^ k := by
+    calc (4 : ℝ) = 4 ^ 1 := by norm_num
+      _ ≤ 4 ^ k := pow_le_pow_right₀ (by norm_num) hk
+  have hC := abs_scaledBernoulli_le hk
+  have hC' := abs_scaledBernoulli_ge hk
+  have hp : (0 : ℝ) < (2 * Real.pi) ^ (2 * k) := by positivity
+  -- `(6/π²)|C_k| ≤ (6/π²)(π²/3)/(2π)^(2k) = 2/(2π)^(2k) ≤ |C_k|`
+  have h6 : 6 / Real.pi ^ 2 * |(scaledBernoulli k : ℝ)| ≤ |(scaledBernoulli k : ℝ)| := by
+    calc 6 / Real.pi ^ 2 * |(scaledBernoulli k : ℝ)|
+        ≤ 6 / Real.pi ^ 2 * ((Real.pi ^ 2 / 3) / (2 * Real.pi) ^ (2 * k)) := by gcongr
+      _ = 2 / (2 * Real.pi) ^ (2 * k) := by field_simp; ring
+      _ ≤ |(scaledBernoulli k : ℝ)| := hC'
+  calc (4 ^ k - 2) * (6 / Real.pi ^ 2) * |(scaledBernoulli k : ℝ)|
+      = (4 ^ k - 2) * (6 / Real.pi ^ 2 * |(scaledBernoulli k : ℝ)|) := by ring
+    _ ≤ (4 ^ k - 2) * |(scaledBernoulli k : ℝ)| := mul_le_mul_of_nonneg_left h6 (by linarith)
+
+/-- `|κ_m| ≤ 4^m |C_m| = |D_m|`, the size of the terms of the stable recurrence (4.60). -/
+theorem abs_bernoulliKernel_le (m : ℕ) :
+    |(bernoulliKernel m : ℝ)| ≤ 4 ^ m * |(scaledBernoulli m : ℝ)| := by
+  rw [bernoulliKernel]
+  push_cast
+  rw [abs_mul]
+  have h1 : (1 : ℝ) ≤ 4 ^ m := one_le_pow₀ (by norm_num)
+  have : |(2 : ℝ) - 4 ^ m| ≤ 4 ^ m := by
+    rw [abs_le]; constructor <;> linarith
+  exact mul_le_mul_of_nonneg_right this (abs_nonneg _)
+
+/-- (b): in the stable recurrence, a relative perturbation of `D_j = 4^j C_j` reaches `D_k`
+through `κ_{k−j}` with amplification at most `π⁴/18 = O(1)` (`1 ≤ j < k`). -/
+theorem kernel_amplification_le {j k : ℕ} (hj : 1 ≤ j) (hjk : j < k) :
+    |(bernoulliKernel (k - j) : ℝ)| * (4 ^ j * |(scaledBernoulli j : ℝ)|)
+      ≤ Real.pi ^ 4 / 18 * (4 ^ k * |(scaledBernoulli k : ℝ)|) := by
+  have hkj : 1 ≤ k - j := by omega
+  have h1 := abs_bernoulliKernel_le (k - j)
+  have hCkj := abs_scaledBernoulli_le hkj
+  have hCj := abs_scaledBernoulli_le hj
+  have hCk := abs_scaledBernoulli_ge (by omega : 1 ≤ k)
+  have hp : (0 : ℝ) < (2 * Real.pi) ^ (2 * k) := by positivity
+  have hsplit : (4 : ℝ) ^ (k - j) * 4 ^ j = 4 ^ k := by rw [← pow_add]; congr 1; omega
+  have hsplit' : ((2 * Real.pi) ^ (2 * (k - j)) * (2 * Real.pi) ^ (2 * j) : ℝ)
+      = (2 * Real.pi) ^ (2 * k) := by rw [← pow_add]; congr 1; omega
+  calc |(bernoulliKernel (k - j) : ℝ)| * (4 ^ j * |(scaledBernoulli j : ℝ)|)
+      ≤ (4 ^ (k - j) * |(scaledBernoulli (k - j) : ℝ)|) * (4 ^ j * |(scaledBernoulli j : ℝ)|) := by
+        gcongr
+    _ ≤ (4 ^ (k - j) * ((Real.pi ^ 2 / 3) / (2 * Real.pi) ^ (2 * (k - j))))
+        * (4 ^ j * ((Real.pi ^ 2 / 3) / (2 * Real.pi) ^ (2 * j))) := by gcongr
+    _ = Real.pi ^ 4 / 18 * (4 ^ k * (2 / (2 * Real.pi) ^ (2 * k))) := by
+        rw [← hsplit, ← hsplit']
+        field_simp
+        ring
+    _ ≤ Real.pi ^ 4 / 18 * (4 ^ k * |(scaledBernoulli k : ℝ)|) := by gcongr
+
+end Exercise435
+
+section Exercise436
+
+open PowerSeries
+
+/-- The function `x/(e^x − 1) + x/2` of (4.57) is even: this is why the odd Bernoulli numbers
+beyond `B_1 = −1/2` vanish. -/
+theorem div_exp_sub_one_add_half_even (x : ℝ) :
+    (-x) / (Real.exp (-x) - 1) + (-x) / 2 = x / (Real.exp x - 1) + x / 2 := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · simp
+  have h1 : Real.exp x - 1 ≠ 0 := by
+    rw [sub_ne_zero]; exact fun h => hx (Real.exp_eq_one_iff x |>.mp h)
+  have hE : 0 < Real.exp x := Real.exp_pos x
+  have h3 : (1 : ℝ) - Real.exp x ≠ 0 := by
+    rw [sub_ne_zero]; exact fun h => hx (Real.exp_eq_one_iff x |>.mp h.symm)
+  have hexp : (Real.exp x)⁻¹ - 1 = (1 - Real.exp x) / Real.exp x := by field_simp
+  rw [Real.exp_neg, hexp]
+  field_simp
+  ring
+
+/-- The odd Bernoulli numbers beyond `B_1` vanish (Mathlib's `bernoulli_eq_zero_of_odd`). -/
+theorem bernoulli_odd_eq_zero' (j : ℕ) : bernoulli (2 * j + 3) = 0 :=
+  bernoulli_eq_zero_of_odd ⟨j + 1, by ring⟩ (by omega)
+
+/-- (4.57) as a formal power series: `x/(e^x − 1) + x/2 = ∑_k C_k x^(2k)`, i.e. the series has
+coefficient `C_k = B_{2k}/(2k)!` at `x^(2k)` and `0` at `x^(2k+1)`. -/
+theorem scaledBernoulliPowerSeries_eq :
+    scaledBernoulliPowerSeries = bernoulliPowerSeries ℚ + C (1 / 2 : ℚ) * X ∧
+      (∀ k, coeff (2 * k) scaledBernoulliPowerSeries = bernoulli (2 * k) / (2 * k).factorial) ∧
+      ∀ k, coeff (2 * k + 1) scaledBernoulliPowerSeries = 0 :=
+  ⟨rfl, fun k => coeff_scaledBernoulliPowerSeries_even k,
+    fun k => coeff_scaledBernoulliPowerSeries_odd k⟩
+
+/-- (4.62) in the text's indexing: `T_j = (−1)^(j−1) 2^(2j) (2^(2j) − 1) B_{2j} / (2j)` for
+`j ≥ 1`. -/
+theorem tangentNumber_eq_bernoulli' {j : ℕ} (hj : 1 ≤ j) :
+    (tangentNumber j : ℚ)
+      = (-1) ^ (j - 1) * 2 ^ (2 * j) * (2 ^ (2 * j) - 1) * bernoulli (2 * j) / (2 * j) := by
+  obtain ⟨k, rfl⟩ : ∃ k, j = k + 1 := ⟨j - 1, by omega⟩
+  rw [tangentNumber_eq_bernoulli k, Nat.add_sub_cancel,
+    show (2 : ℚ) ^ (2 * (k + 1)) = 4 ^ (k + 1) by rw [pow_mul]; norm_num]
+  push_cast
+  ring
+
+end Exercise436
+
+section Exercise437
+
+/-- `|B_{2k}| = 2 (2k)! ζ(2k) / (2π)^(2k)` for `k ≥ 1`. -/
+theorem abs_bernoulli_two_mul_eq {k : ℕ} (hk : 1 ≤ k) :
+    |(bernoulli (2 * k) : ℝ)|
+      = 2 * (2 * k).factorial * zetaReal (2 * k) / (2 * Real.pi) ^ (2 * k) := by
+  rw [bernoulli_two_mul_eq_zeta hk, abs_div, abs_mul, abs_mul, abs_mul, abs_pow, abs_neg,
+    abs_one, one_pow, one_mul, abs_two,
+    abs_of_pos (by positivity : (0 : ℝ) < (2 * k).factorial),
+    abs_of_pos (by positivity : (0 : ℝ) < (2 * Real.pi) ^ (2 * k)),
+    abs_of_nonneg (by linarith [one_le_zetaReal_two_mul hk] : (0 : ℝ) ≤ zetaReal (2 * k))]
+
+/-- `|T_k| = 2 (4^k − 1) (2k−1)! ζ(2k) / π^(2k)` for `k ≥ 1`. -/
+theorem abs_tangentNumber_eq {k : ℕ} (hk : 1 ≤ k) :
+    |(tangentNumber k : ℝ)|
+      = 2 * (4 ^ k - 1) * (2 * k - 1).factorial * zetaReal (2 * k) / Real.pi ^ (2 * k) := by
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+  have hT : (tangentNumber (m + 1) : ℝ) = (-1) ^ m * 4 ^ (m + 1) * (4 ^ (m + 1) - 1)
+      * (bernoulli (2 * (m + 1)) : ℝ) / (2 * (m + 1)) := by
+    have := congrArg (fun q : ℚ => (q : ℝ)) (tangentNumber_eq_bernoulli m)
+    push_cast at this
+    exact this
+  have h4 : (1 : ℝ) < 4 ^ (m + 1) := one_lt_pow₀ (by norm_num) (by omega)
+  rw [hT, abs_div, abs_mul, abs_mul, abs_mul, abs_pow, abs_neg, abs_one, one_pow, one_mul,
+    abs_of_pos (by positivity : (0 : ℝ) < 4 ^ (m + 1)), abs_of_pos (by linarith),
+    abs_of_pos (by positivity : (0 : ℝ) < 2 * ((m : ℝ) + 1)), abs_bernoulli_two_mul_eq hk,
+    show (2 * (m + 1)).factorial = (2 * (m + 1)) * (2 * m + 1).factorial by
+      rw [show 2 * (m + 1) = 2 * m + 1 + 1 by ring, Nat.factorial_succ],
+    show 2 * (m + 1) - 1 = 2 * m + 1 by omega, mul_pow,
+    show (2 : ℝ) ^ (2 * (m + 1)) = 4 ^ (m + 1) by rw [pow_mul]; norm_num]
+  push_cast
+  have hπ : (0 : ℝ) < Real.pi ^ (2 * (m + 1)) := by positivity
+  field_simp
+
+/-- `(4/π²)^k (2k−1)! ≤ |T_k| ≤ (π²/3)(2k−1)!`. -/
+theorem abs_tangentNumber_bounds {k : ℕ} (hk : 1 ≤ k) :
+    (4 / Real.pi ^ 2) ^ k * (2 * k - 1).factorial ≤ |(tangentNumber k : ℝ)| ∧
+      |(tangentNumber k : ℝ)| ≤ Real.pi ^ 2 / 3 * (2 * k - 1).factorial := by
+  rw [abs_tangentNumber_eq hk]
+  have hζ1 := one_le_zetaReal_two_mul hk
+  have hζ2 := zetaReal_two_mul_le hk
+  have hF : (0 : ℝ) < (2 * k - 1).factorial := by positivity
+  have hπ : (0 : ℝ) < Real.pi ^ (2 * k) := by positivity
+  have h4 : (4 : ℝ) ≤ 4 ^ k := by
+    calc (4 : ℝ) = 4 ^ 1 := by norm_num
+      _ ≤ 4 ^ k := pow_le_pow_right₀ (by norm_num) hk
+  have hπ2 : (4 : ℝ) ^ k ≤ Real.pi ^ (2 * k) := by
+    rw [pow_mul]; exact pow_le_pow_left₀ (by norm_num) (by nlinarith [Real.pi_gt_three]) k
+  constructor
+  · rw [div_pow, ← pow_mul, div_mul_eq_mul_div, div_le_div_iff_of_pos_right hπ]
+    nlinarith [mul_nonneg hF.le (sub_nonneg.mpr hζ1), mul_pos hF (by linarith : (0:ℝ) < 4 ^ k - 1)]
+  · rw [div_le_iff₀ hπ]
+    have hA : (0 : ℝ) ≤ 2 * (4 ^ k - 1) * (2 * k - 1).factorial := by
+      have := hF.le; nlinarith
+    have hB : (0 : ℝ) ≤ ((2 * k - 1).factorial : ℝ) * (Real.pi ^ 2 / 3) := by positivity
+    nlinarith [mul_le_mul_of_nonneg_left hζ2 hA, mul_le_mul_of_nonneg_right hπ2 hB]
+
+/-- Stirling: `m ln m − m ≤ ln m! ≤ m ln m − m + 1 + (ln m)/2` for `m ≥ 1`. -/
+theorem log_factorial_bounds {m : ℕ} (hm : 1 ≤ m) :
+    m * Real.log m - m ≤ Real.log m.factorial ∧
+      Real.log m.factorial ≤ m * Real.log m - m + 1 + Real.log m / 2 := by
+  have hm0 : (0 : ℝ) < m := by exact_mod_cast hm
+  have hF : (0 : ℝ) < m.factorial := by positivity
+  have hpow : (0 : ℝ) < ((m : ℝ) / Real.exp 1) ^ m := by positivity
+  have hlogpow : Real.log (((m : ℝ) / Real.exp 1) ^ m) = m * Real.log m - m := by
+    rw [Real.log_pow, Real.log_div hm0.ne' (Real.exp_pos 1).ne', Real.log_exp]; ring
+  constructor
+  · have h := Stirling.le_factorial_stirling m
+    have hs : 1 ≤ Real.sqrt (2 * Real.pi * m) := by
+      rw [Real.le_sqrt (by norm_num) (by positivity)]
+      have : (1 : ℝ) ≤ m := by exact_mod_cast hm
+      nlinarith [Real.pi_gt_three]
+    have h' : ((m : ℝ) / Real.exp 1) ^ m ≤ m.factorial := by nlinarith
+    rw [← hlogpow]
+    exact Real.log_le_log hpow h'
+  · have h := factorial_le_stirling_upper hm
+    calc Real.log m.factorial ≤ Real.log (Real.exp 1 * Real.sqrt m * ((m : ℝ) / Real.exp 1) ^ m) :=
+          Real.log_le_log hF h
+      _ = m * Real.log m - m + 1 + Real.log m / 2 := by
+          rw [Real.log_mul (by positivity) hpow.ne', Real.log_mul (Real.exp_pos 1).ne'
+            (Real.sqrt_pos.mpr hm0).ne', Real.log_exp, Real.log_sqrt hm0.le, hlogpow]
+          ring
+
+/-- (a): `2k ln k − 4k − ln(2k) ≤ ln|T_k| ≤ 2k ln k + 3`, so the bit size of `T_k` is
+`∼ 2k lg k`. -/
+theorem log_abs_tangentNumber_bounds {k : ℕ} (hk : 1 ≤ k) :
+    2 * k * Real.log k - 4 * k - Real.log (2 * k) ≤ Real.log |(tangentNumber k : ℝ)| ∧
+      Real.log |(tangentNumber k : ℝ)| ≤ 2 * k * Real.log k + 3 := by
+  obtain ⟨hlo, hhi⟩ := abs_tangentNumber_bounds hk
+  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
+  have hF : (0 : ℝ) < (2 * k - 1).factorial := by positivity
+  have hT : 0 < |(tangentNumber k : ℝ)| := lt_of_lt_of_le (by positivity) hlo
+  -- `(2k−1)! = (2k)!/(2k)`
+  have hfac : ((2 * k - 1).factorial : ℝ) = (2 * k).factorial / (2 * k) := by
+    have : (2 * k).factorial = 2 * k * (2 * k - 1).factorial := by
+      rw [show 2 * k = 2 * k - 1 + 1 by omega, Nat.factorial_succ,
+        show 2 * k - 1 + 1 = 2 * k by omega]
+    rw [this]; push_cast; field_simp
+  have h2k : 1 ≤ 2 * k := by omega
+  obtain ⟨hs1, hs2⟩ := log_factorial_bounds h2k
+  have hlogF : Real.log ((2 * k - 1).factorial : ℝ)
+      = Real.log ((2 * k).factorial : ℝ) - Real.log (2 * k) := by
+    rw [hfac, Real.log_div (by positivity) (by positivity)]
+  have hlog2k : Real.log (2 * (k : ℝ)) = Real.log 2 + Real.log k :=
+    Real.log_mul two_ne_zero hk0.ne'
+  have hlog2 : Real.log 2 ≤ 1 := by
+    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0:ℝ) < 2)]
+  have hlog2' : 0 < Real.log 2 := Real.log_pos one_lt_two
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have hlog2k0 : 0 ≤ Real.log (2 * (k : ℝ)) := Real.log_nonneg (by linarith)
+  have e1 : 2 * (k : ℝ) * Real.log (2 * k) = 2 * (k * Real.log 2) + 2 * (k * Real.log k) := by
+    rw [hlog2k]; ring
+  have e4 : 2 * (k : ℝ) * Real.log k = 2 * (k * Real.log k) := by ring
+  have p1 : (k : ℝ) * Real.log 2 ≤ k * 1 := mul_le_mul_of_nonneg_left hlog2 hk0.le
+  push_cast at hs1 hs2
+  constructor
+  · -- `ln|T| ≥ k ln(4/π²) + ln(2k−1)!`, `ln(4/π²) ≥ −2`
+    have hlog4 : -2 ≤ Real.log (4 / Real.pi ^ 2) := by
+      have h1 : Real.log (4 / Real.pi ^ 2) = Real.log 4 - 2 * Real.log Real.pi := by
+        rw [Real.log_div (by norm_num) (by positivity), Real.log_pow]; push_cast; ring
+      have h2 : Real.log Real.pi ≤ Real.log 4 := Real.log_le_log Real.pi_pos Real.pi_lt_four.le
+      have h3 : Real.log 4 ≤ 2 := by
+        rw [show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]; push_cast; linarith
+      linarith
+    calc 2 * k * Real.log k - 4 * k - Real.log (2 * k)
+        ≤ k * Real.log (4 / Real.pi ^ 2)
+            + (Real.log ((2 * k).factorial : ℝ) - Real.log (2 * k)) := by
+          nlinarith [hlog4, hs1, hlog2k, hlog2]
+      _ = Real.log ((4 / Real.pi ^ 2) ^ k * (2 * k - 1).factorial) := by
+          rw [Real.log_mul (by positivity) hF.ne', Real.log_pow, hlogF]
+      _ ≤ Real.log |(tangentNumber k : ℝ)| := Real.log_le_log (by positivity) hlo
+  · have hpi23 : Real.log (Real.pi ^ 2 / 3) ≤ 2 := by
+      rw [Real.log_le_iff_le_exp (by positivity)]
+      have he : (2.7 : ℝ) < Real.exp 1 := by linarith [Real.exp_one_gt_d9]
+      have : Real.exp 2 = Real.exp 1 * Real.exp 1 := by rw [← Real.exp_add]; norm_num
+      rw [this]
+      nlinarith [Real.pi_lt_four, Real.pi_pos]
+    calc Real.log |(tangentNumber k : ℝ)|
+        ≤ Real.log (Real.pi ^ 2 / 3 * (2 * k - 1).factorial) := Real.log_le_log hT hhi
+      _ = Real.log (Real.pi ^ 2 / 3) + (Real.log ((2 * k).factorial : ℝ) - Real.log (2 * k)) := by
+          rw [Real.log_mul (by positivity) hF.ne', hlogF]
+      _ ≤ 2 * k * Real.log k + 3 := by linarith [hpi23, hs2, e1, e4, p1, hlog2k0]
+
+/-- (b), the denominator: `ln den B_{2k} ≤ 4k ln 2` (from `den ∣ 4^k (4^k − 1)`). -/
+theorem log_bernoulli_den_le {k : ℕ} (hk : 1 ≤ k) :
+    Real.log ((bernoulli (2 * k)).den : ℝ) ≤ 4 * k * Real.log 2 := by
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 1 := ⟨k - 1, by omega⟩
+  have hdvd := bernoulli_den_dvd m
+  have h4 : (1 : ℤ) < 4 ^ (m + 1) := one_lt_pow₀ (by norm_num) (by omega)
+  have hle : ((bernoulli (2 * (m + 1))).den : ℤ) ≤ 4 ^ (m + 1) * (4 ^ (m + 1) - 1) :=
+    Int.le_of_dvd (by nlinarith) hdvd
+  have hle' : ((bernoulli (2 * (m + 1))).den : ℝ) ≤ 16 ^ (m + 1) := by
+    have : ((bernoulli (2 * (m + 1))).den : ℝ) ≤ 4 ^ (m + 1) * (4 ^ (m + 1) - 1) := by
+      exact_mod_cast hle
+    have h16 : (16 : ℝ) ^ (m + 1) = 4 ^ (m + 1) * 4 ^ (m + 1) := by rw [← mul_pow]; norm_num
+    nlinarith [pow_pos (by norm_num : (0:ℝ) < 4) (m + 1)]
+  have hden : (0 : ℝ) < (bernoulli (2 * (m + 1))).den := by exact_mod_cast Rat.den_pos _
+  calc Real.log ((bernoulli (2 * (m + 1))).den : ℝ) ≤ Real.log (16 ^ (m + 1)) :=
+        Real.log_le_log hden hle'
+    _ = 4 * ((m + 1 : ℕ) : ℝ) * Real.log 2 := by
+        rw [Real.log_pow, show (16 : ℝ) = 2 ^ 4 by norm_num, Real.log_pow]; push_cast; ring
+
+/-- (b): the exact rational `B_{2k} = num/den` has
+`2k ln k − 8k ≤ ln|num| + ln den ≤ 2k ln k + 6k + 3`, so it also needs `∼ 2k lg k` bits (almost
+all of them in the numerator, the denominator having only `O(k)` bits). -/
+theorem log_bernoulli_num_den_bounds {k : ℕ} (hk : 1 ≤ k) :
+    2 * k * Real.log k - 8 * k
+        ≤ Real.log |((bernoulli (2 * k)).num : ℝ)| + Real.log ((bernoulli (2 * k)).den : ℝ) ∧
+      Real.log |((bernoulli (2 * k)).num : ℝ)| + Real.log ((bernoulli (2 * k)).den : ℝ)
+        ≤ 2 * k * Real.log k + 6 * k + 3 := by
+  have hk0 : (0 : ℝ) < k := by exact_mod_cast hk
+  have hB := abs_bernoulli_two_mul_eq hk
+  have hζ1 := one_le_zetaReal_two_mul hk
+  have hζ2 := zetaReal_two_mul_le hk
+  have hden : (0 : ℝ) < (bernoulli (2 * k)).den := by exact_mod_cast Rat.den_pos _
+  have hBpos : 0 < |(bernoulli (2 * k) : ℝ)| := by rw [hB]; positivity
+  -- `|B| = |num|/den`, so `ln|num| = ln|B| + ln den`
+  have hnum : Real.log |((bernoulli (2 * k)).num : ℝ)|
+      = Real.log |(bernoulli (2 * k) : ℝ)| + Real.log ((bernoulli (2 * k)).den : ℝ) := by
+    have hcast : ((bernoulli (2 * k) : ℚ) : ℝ)
+        = ((bernoulli (2 * k)).num : ℝ) / (bernoulli (2 * k)).den := Rat.cast_def _
+    have hnum0 : ((bernoulli (2 * k)).num : ℝ) ≠ 0 := by
+      intro h0; rw [hcast, h0, zero_div, abs_zero] at hBpos; exact lt_irrefl _ hBpos
+    rw [hcast, abs_div, abs_of_pos hden, Real.log_div (abs_ne_zero.mpr hnum0) hden.ne']
+    ring
+  have hden0 : 0 ≤ Real.log ((bernoulli (2 * k)).den : ℝ) :=
+    Real.log_nonneg (by exact_mod_cast Rat.den_pos _)
+  have hdenle := log_bernoulli_den_le hk
+  have h2k : 1 ≤ 2 * k := by omega
+  obtain ⟨hs1, hs2⟩ := log_factorial_bounds h2k
+  push_cast at hs1 hs2
+  have hlog2k : Real.log (2 * (k : ℝ)) = Real.log 2 + Real.log k :=
+    Real.log_mul two_ne_zero hk0.ne'
+  have hlog2 : Real.log 2 ≤ 1 := by
+    linarith [Real.log_le_sub_one_of_pos (by norm_num : (0:ℝ) < 2)]
+  have hlog2' : 0 < Real.log 2 := Real.log_pos one_lt_two
+  have hlogpi : Real.log Real.pi ≤ 3 := by
+    linarith [Real.log_le_sub_one_of_pos Real.pi_pos, Real.pi_lt_four]
+  have hlogpi0 : 0 < Real.log Real.pi := Real.log_pos (by linarith [Real.pi_gt_three])
+  have hlogB : Real.log |(bernoulli (2 * k) : ℝ)|
+      = Real.log 2 + Real.log ((2 * k).factorial : ℝ) + Real.log (zetaReal (2 * k))
+        - 2 * k * (Real.log 2 + Real.log Real.pi) := by
+    rw [hB, Real.log_div (by positivity) (by positivity), Real.log_mul (by positivity)
+      (by linarith), Real.log_mul (by norm_num) (by positivity), Real.log_pow,
+      Real.log_mul two_ne_zero Real.pi_pos.ne']
+    push_cast; ring
+  have hζlog0 : 0 ≤ Real.log (zetaReal (2 * k)) := Real.log_nonneg hζ1
+  have hζlog : Real.log (zetaReal (2 * k)) ≤ 2 := by
+    rw [Real.log_le_iff_le_exp (by linarith)]
+    have he : (2.7 : ℝ) < Real.exp 1 := by linarith [Real.exp_one_gt_d9]
+    have : Real.exp 2 = Real.exp 1 * Real.exp 1 := by rw [← Real.exp_add]; norm_num
+    rw [this]
+    nlinarith [Real.pi_lt_four, Real.pi_pos]
+  have hk1 : (1 : ℝ) ≤ k := by exact_mod_cast hk
+  have e1 : 2 * (k : ℝ) * Real.log (2 * k) = 2 * (k * Real.log 2) + 2 * (k * Real.log k) := by
+    rw [hlog2k]; ring
+  have e2 : 2 * (k : ℝ) * (Real.log 2 + Real.log Real.pi)
+      = 2 * (k * Real.log 2) + 2 * (k * Real.log Real.pi) := by ring
+  have e3 : 4 * (k : ℝ) * Real.log 2 = 4 * (k * Real.log 2) := by ring
+  have e4 : 2 * (k : ℝ) * Real.log k = 2 * (k * Real.log k) := by ring
+  have p1 : (k : ℝ) * Real.log 2 ≤ k * 0.6931471808 :=
+    mul_le_mul_of_nonneg_left Real.log_two_lt_d9.le hk0.le
+  have p2 : 0 ≤ (k : ℝ) * Real.log Real.pi := mul_nonneg hk0.le hlogpi0.le
+  have p3 : (k : ℝ) * Real.log Real.pi ≤ k * 3 := mul_le_mul_of_nonneg_left hlogpi hk0.le
+  have p4 : 0 ≤ (k : ℝ) * Real.log 2 := mul_nonneg hk0.le hlog2'.le
+  constructor
+  · rw [hnum]
+    linarith [hlogB, hs1, e1, e2, e4, p3, p4, hζlog0, hden0]
+  · rw [hnum]
+    have hlog2k' : Real.log (2 * (k : ℝ)) ≤ 2 * k - 1 := by
+      linarith [Real.log_le_sub_one_of_pos (by positivity : (0:ℝ) < 2 * k)]
+    linarith [hlogB, hs2, e1, e2, e3, e4, p1, p2, hζlog, hdenle, hlog2k', hlog2]
+
+end Exercise437
+
+section Exercise438
+
+/-- One update of Algorithm TangentNumbers is one instance of (4.63): if the row holds
+`a_{j−1} = p_{j+k−3, j−k}` (the entry just updated in this pass) and `a_j = p_{j+k−3, j−k+2}`
+(not yet updated), `2 ≤ k ≤ j`, then `(j−k) a_{j−1} + (j−k+2) a_j = p_{j+k−2, j−k+1}`. -/
+theorem tangentStep_eq_coeff {k j : ℕ} (hk : 2 ≤ k) (hkj : k ≤ j) (a : ℕ → ℕ)
+    (h1 : (a (j - 1) : ℤ) = (tanDerivPoly (j + k - 3)).coeff (j - k))
+    (h2 : (a j : ℤ) = (tanDerivPoly (j + k - 3)).coeff (j - k + 2)) :
+    (tangentStep k j a j : ℤ) = (tanDerivPoly (j + k - 2)).coeff (j - k + 1) := by
+  rw [tangentStep, Function.update_self]
+  push_cast
+  rw [h1, h2, show j + k - 2 = j + k - 3 + 1 by omega, coeff_tanDerivPoly_succ]
+
+/-- Exercise 4.38: Algorithm TangentNumbers is correct — after the passes `k = 2, …, m` the row
+holds `T_1, …, T_m`. -/
+theorem algorithm_tangentNumbers_correct {m : ℕ} (hm : 1 ≤ m) :
+    ∀ j, 1 ≤ j → j ≤ m → (tangentNumbersModel m j : ℤ) = tangentNumber j :=
+  fun _ h1 hjm => tangentNumbersModel_eq hm h1 hjm
+
+end Exercise438
+
+section Exercise439
+
+open Finset Polynomial
+
+theorem eval_one_tanDerivPoly_nonneg (n : ℕ) : 0 ≤ (tanDerivPoly n).eval 1 := by
+  have hdeg : (tanDerivPoly n).natDegree < n + 2 := by rw [natDegree_tanDerivPoly]; omega
+  rw [eval_eq_sum_range' hdeg]
+  exact sum_nonneg fun i _ => by simpa using coeff_tanDerivPoly_nonneg n i
+
+/-- `P_n(1) ≤ 2^n (n+1)!`: from `P_{n+1} = P_n' (1 + X²)`, `P_{n+1}(1) = 2 P_n'(1)`, and
+`P_n'(1) = ∑ i p_{n,i} ≤ (n+1) P_n(1)`. -/
+theorem eval_one_tanDerivPoly_le (n : ℕ) :
+    (tanDerivPoly n).eval 1 ≤ 2 ^ n * ((n + 1).factorial : ℤ) := by
+  induction n with
+  | zero => simp [tanDerivPoly_zero]
+  | succ n ih =>
+    rw [tanDerivPoly_succ, eval_mul, eval_add, eval_one, eval_pow, eval_X, one_pow]
+    have hder : (tanDerivPoly n).derivative.eval 1 ≤ (n + 1) * (tanDerivPoly n).eval 1 := by
+      rw [derivative_eval, eval_eq_sum, Polynomial.sum_def, Polynomial.sum_def, mul_sum]
+      refine sum_le_sum fun i hi => ?_
+      have hi' : i ≤ n + 1 := by
+        have := le_natDegree_of_mem_supp i hi
+        rwa [natDegree_tanDerivPoly] at this
+      have hnn := coeff_tanDerivPoly_nonneg n i
+      have hic : (i : ℤ) ≤ n + 1 := by exact_mod_cast hi'
+      simp only [one_pow, mul_one]
+      nlinarith
+    have hP := eval_one_tanDerivPoly_nonneg n
+    have h0 : (0 : ℤ) ≤ 2 ^ n * ((n + 1).factorial : ℤ) := by positivity
+    calc (tanDerivPoly n).derivative.eval 1 * (1 + 1)
+        ≤ (n + 1) * (tanDerivPoly n).eval 1 * 2 := by linarith
+      _ ≤ (n + 1) * (2 ^ n * ((n + 1).factorial : ℤ)) * 2 := by
+          have : (0 : ℤ) ≤ n + 1 := by positivity
+          nlinarith
+      _ ≤ 2 ^ (n + 1) * ((n + 1 + 1).factorial : ℤ) := by
+          rw [Nat.factorial_succ (n + 1), pow_succ]
+          push_cast
+          nlinarith [h0]
+
+/-- Every coefficient is at most the value at `1` (all coefficients are nonnegative). -/
+theorem coeff_tanDerivPoly_le_eval_one (n i : ℕ) :
+    (tanDerivPoly n).coeff i ≤ (tanDerivPoly n).eval 1 := by
+  have hdeg : (tanDerivPoly n).natDegree < n + 2 := by rw [natDegree_tanDerivPoly]; omega
+  rw [eval_eq_sum_range' hdeg]
+  simp only [one_pow, mul_one]
+  rcases Nat.lt_or_ge i (n + 2) with hi | hi
+  · exact single_le_sum (fun j _ => coeff_tanDerivPoly_nonneg n j) (mem_range.mpr hi)
+  · rw [coeff_eq_zero_of_natDegree_lt (by rw [natDegree_tanDerivPoly]; omega)]
+    exact sum_nonneg fun j _ => coeff_tanDerivPoly_nonneg n j
+
+/-- The intermediate entries `p_{n,i}`, `n + 1 ≤ 2m`, of Algorithm TangentNumbers have at most
+`2m (lg(2m) + 2)` bits. -/
+theorem size_coeff_tanDerivPoly_le {m n i : ℕ} (hn : n + 1 ≤ 2 * m) :
+    Nat.size ((tanDerivPoly n).coeff i).toNat ≤ 2 * m * (Nat.log 2 (2 * m) + 2) := by
+  have hnn := coeff_tanDerivPoly_nonneg n i
+  have h1 : ((tanDerivPoly n).coeff i).toNat ≤ 2 ^ n * (n + 1).factorial := by
+    have h := (coeff_tanDerivPoly_le_eval_one n i).trans (eval_one_tanDerivPoly_le n)
+    have ht : ((((tanDerivPoly n).coeff i).toNat : ℕ) : ℤ) = (tanDerivPoly n).coeff i :=
+      Int.toNat_of_nonneg hnn
+    exact_mod_cast ht ▸ h
+  have hfac : (n + 1).factorial < 2 ^ ((n + 1) * (Nat.log 2 (n + 1) + 1)) :=
+    lt_of_lt_of_le (Nat.lt_size_self _)
+      (Nat.pow_le_pow_right (by norm_num) (size_factorial_le (Nat.succ_pos n)))
+  have hlog : Nat.log 2 (n + 1) ≤ Nat.log 2 (2 * m) := Nat.log_mono_right hn
+  have hexp : n + (n + 1) * (Nat.log 2 (n + 1) + 1) ≤ 2 * m * (Nat.log 2 (2 * m) + 2) := by
+    have := Nat.mul_le_mul hn (Nat.add_le_add_right hlog 1)
+    nlinarith
+  rw [Nat.size_le]
+  calc ((tanDerivPoly n).coeff i).toNat ≤ 2 ^ n * (n + 1).factorial := h1
+    _ < 2 ^ n * 2 ^ ((n + 1) * (Nat.log 2 (n + 1) + 1)) :=
+        Nat.mul_lt_mul_of_pos_left hfac (by positivity)
+    _ = 2 ^ (n + (n + 1) * (Nat.log 2 (n + 1) + 1)) := by rw [← pow_add]
+    _ ≤ 2 ^ (2 * m * (Nat.log 2 (2 * m) + 2)) := Nat.pow_le_pow_right (by norm_num) hexp
+
+/-- The bit cost of Algorithm TangentNumbers: pass `k = 2, …, m`, step `j = k, …, m`, each
+charged the bit length of the entry `p_{j+k−3, j−k+2}` it rewrites (the `O(log T_j)` of the
+exercise's cost model). -/
+noncomputable def tangentAlgorithmBits (m : ℕ) : ℕ :=
+  ∑ k ∈ Icc 2 m, ∑ j ∈ Icc k m, Nat.size ((tanDerivPoly (j + k - 3)).coeff (j - k + 2)).toNat
+
+/-- Exercise 4.39: the algorithm costs at most `m² · 2m (lg(2m) + 2) = O(m³ log m)`. -/
+theorem tangentAlgorithmBits_le (m : ℕ) :
+    tangentAlgorithmBits m ≤ m ^ 2 * (2 * m * (Nat.log 2 (2 * m) + 2)) := by
+  unfold tangentAlgorithmBits
+  set B := 2 * m * (Nat.log 2 (2 * m) + 2)
+  have hB : ∀ k ∈ Icc 2 m, ∀ j ∈ Icc k m,
+      Nat.size ((tanDerivPoly (j + k - 3)).coeff (j - k + 2)).toNat ≤ B := by
+    intro k hk j hj
+    have hk' := mem_Icc.mp hk
+    have hj' := mem_Icc.mp hj
+    exact size_coeff_tanDerivPoly_le (by omega)
+  calc ∑ k ∈ Icc 2 m, ∑ j ∈ Icc k m, Nat.size ((tanDerivPoly (j + k - 3)).coeff (j - k + 2)).toNat
+      ≤ ∑ k ∈ Icc 2 m, ∑ _j ∈ Icc k m, B :=
+        sum_le_sum fun k hk => sum_le_sum fun j hj => hB k hk j hj
+    _ = ∑ k ∈ Icc 2 m, (Icc k m).card * B := by simp [sum_const]
+    _ ≤ ∑ _k ∈ Icc 2 m, m * B :=
+        sum_le_sum fun k hk => by
+          have := (mem_Icc.mp hk).1
+          rw [Nat.card_Icc]; exact Nat.mul_le_mul_right _ (by omega)
+    _ = (Icc 2 m).card * (m * B) := by rw [sum_const, smul_eq_mul]
+    _ ≤ m * (m * B) := by rw [Nat.card_Icc]; exact Nat.mul_le_mul_right _ (by omega)
+    _ = m ^ 2 * B := by ring
+
+end Exercise439
+
+section Exercise440
+
+open Finset Polynomial
+
+/-- The secant polynomials: `Dⁿ sec x = Q_n(tan x) sec x`, with `Q_0 = 1` and
+`Q_{n+1} = X Q_n + (1 + X²) Q_n'` (from `D sec = sec tan`, `D tan = 1 + tan²`). -/
+noncomputable def secDerivPoly : ℕ → ℤ[X]
+  | 0 => 1
+  | n + 1 => Polynomial.X * secDerivPoly n
+    + (1 + Polynomial.X ^ 2) * Polynomial.derivative (secDerivPoly n)
+
+theorem secDerivPoly_zero : secDerivPoly 0 = 1 := rfl
+
+theorem secDerivPoly_succ (n : ℕ) :
+    secDerivPoly (n + 1) = Polynomial.X * secDerivPoly n
+      + (1 + Polynomial.X ^ 2) * Polynomial.derivative (secDerivPoly n) := rfl
+
+/-- `q_{n+1,0} = q_{n,1}`. -/
+theorem coeff_secDerivPoly_succ_zero (n : ℕ) :
+    (secDerivPoly (n + 1)).coeff 0 = (secDerivPoly n).coeff 1 := by
+  rw [secDerivPoly_succ, coeff_add, coeff_X_mul_zero, add_mul, one_mul, coeff_add,
+    Polynomial.coeff_derivative, Polynomial.coeff_X_pow_mul']
+  simp
+
+/-- The secant analogue of (4.63): `q_{n+1,j+1} = (j+1) q_{n,j} + (j+2) q_{n,j+2}`. -/
+theorem coeff_secDerivPoly_succ (n j : ℕ) :
+    (secDerivPoly (n + 1)).coeff (j + 1)
+      = (j + 1) * (secDerivPoly n).coeff j + (j + 2) * (secDerivPoly n).coeff (j + 2) := by
+  rw [secDerivPoly_succ, coeff_add, coeff_X_mul, add_mul, one_mul, coeff_add,
+    Polynomial.coeff_derivative, Polynomial.coeff_X_pow_mul']
+  rcases j with _ | j
+  · simp
+    ring
+  · rw [ite_eq_left (by omega), show j + 1 + 1 - 2 = j by omega, Polynomial.coeff_derivative,
+      show j + 1 + 2 = j + 1 + 1 + 1 from rfl]
+    push_cast
+    ring
+
+theorem coeff_secDerivPoly_nonneg (n j : ℕ) : 0 ≤ (secDerivPoly n).coeff j := by
+  induction n generalizing j with
+  | zero =>
+    rw [secDerivPoly_zero, Polynomial.coeff_one]
+    split_ifs <;> norm_num
+  | succ n ih =>
+    rcases j with _ | j
+    · rw [coeff_secDerivPoly_succ_zero]; exact ih 1
+    · rw [coeff_secDerivPoly_succ]
+      have h1 := ih j
+      have h2 := ih (j + 2)
+      positivity
+
+theorem coeff_secDerivPoly_eq_zero_of_lt (n : ℕ) : ∀ j, n < j → (secDerivPoly n).coeff j = 0 := by
+  induction n with
+  | zero =>
+    intro j hj
+    rw [secDerivPoly_zero, Polynomial.coeff_one, ite_eq_right (by omega)]
+  | succ n ih =>
+    intro j hj
+    rcases j with _ | j
+    · omega
+    · rw [coeff_secDerivPoly_succ, ih j (by omega), ih (j + 2) (by omega)]
+      ring
+
+/-- The leading coefficient `q_{n,n} = n!`: the initial row of the algorithm. -/
+theorem coeff_secDerivPoly_top (n : ℕ) : (secDerivPoly n).coeff n = n.factorial := by
+  induction n with
+  | zero => simp [secDerivPoly_zero]
+  | succ n ih =>
+    rw [coeff_secDerivPoly_succ, ih, coeff_secDerivPoly_eq_zero_of_lt n (n + 2) (by omega),
+      Nat.factorial_succ]
+    push_cast
+    ring
+
+/-- `Dⁿ sec x = Q_n(tan x) sec x` wherever `cos x ≠ 0`. -/
+theorem iteratedDeriv_sec (n : ℕ) : ∀ x : ℝ, Real.cos x ≠ 0 →
+    iteratedDeriv n (fun y => (Real.cos y)⁻¹) x
+      = ((secDerivPoly n).map (Int.castRingHom ℝ)).eval (Real.tan x) * (Real.cos x)⁻¹ := by
+  induction n with
+  | zero => intro x _; simp [secDerivPoly_zero]
+  | succ n ih =>
+    intro x hx
+    have hU : IsOpen {y : ℝ | Real.cos y ≠ 0} := isOpen_ne_fun Real.continuous_cos continuous_const
+    have heq : iteratedDeriv n (fun y => (Real.cos y)⁻¹) =ᶠ[nhds x]
+        fun y => ((secDerivPoly n).map (Int.castRingHom ℝ)).eval (Real.tan y) * (Real.cos y)⁻¹ :=
+      Filter.eventuallyEq_of_mem (hU.mem_nhds hx) fun y hy => ih y hy
+    rw [iteratedDeriv_succ, heq.deriv_eq]
+    have hd1 : HasDerivAt (fun y => ((secDerivPoly n).map (Int.castRingHom ℝ)).eval (Real.tan y))
+        ((derivative ((secDerivPoly n).map (Int.castRingHom ℝ))).eval (Real.tan x)
+          * (1 / Real.cos x ^ 2)) x :=
+      (Polynomial.hasDerivAt _ (Real.tan x)).comp x (Real.hasDerivAt_tan hx)
+    have hd2 : HasDerivAt (fun y => (Real.cos y)⁻¹) (-(-Real.sin x) / Real.cos x ^ 2) x :=
+      (Real.hasDerivAt_cos x).inv hx
+    have hd : HasDerivAt
+        (fun y => ((secDerivPoly n).map (Int.castRingHom ℝ)).eval (Real.tan y) * (Real.cos y)⁻¹)
+        ((derivative ((secDerivPoly n).map (Int.castRingHom ℝ))).eval (Real.tan x)
+            * (1 / Real.cos x ^ 2) * (Real.cos x)⁻¹
+          + ((secDerivPoly n).map (Int.castRingHom ℝ)).eval (Real.tan x)
+            * (-(-Real.sin x) / Real.cos x ^ 2)) x := hd1.mul hd2
+    rw [hd.deriv, secDerivPoly_succ, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_mul, Polynomial.map_add, Polynomial.map_one, Polynomial.map_pow,
+      Polynomial.map_X, derivative_map, eval_add, eval_mul, eval_mul, eval_add, eval_one,
+      eval_pow, eval_X,
+      show (1 : ℝ) + Real.tan x ^ 2 = (Real.cos x ^ 2)⁻¹ by
+        rw [← Real.inv_one_add_tan_sq hx, inv_inv],
+      ← Real.tan_mul_cos hx]
+    field_simp
+    ring
+
+/-- `Dⁿ sec 0 = q_{n,0}`. -/
+theorem iteratedDeriv_sec_zero (n : ℕ) :
+    iteratedDeriv n (fun y => (Real.cos y)⁻¹) 0 = ((secDerivPoly n).coeff 0 : ℝ) := by
+  rw [iteratedDeriv_sec n 0 (by simp), Real.tan_zero, Real.cos_zero, inv_one, mul_one,
+    ← coeff_zero_eq_eval_zero, Polynomial.coeff_map, eq_intCast]
+
+/-- The secant numbers `S_k = D^(2k) sec 0 = q_{2k,0}`: `∑ S_k x^(2k)/(2k)! = sec x`. -/
+noncomputable def secantNumber (k : ℕ) : ℤ := (secDerivPoly (2 * k)).coeff 0
+
+theorem iteratedDeriv_sec_zero_eq (k : ℕ) :
+    iteratedDeriv (2 * k) (fun y => (Real.cos y)⁻¹) 0 = (secantNumber k : ℝ) :=
+  iteratedDeriv_sec_zero _
+
+theorem secantNumber_zero : secantNumber 0 = 1 := by simp [secantNumber, secDerivPoly_zero]
+
+theorem secantNumber_one : secantNumber 1 = 1 := by
+  have h11 := coeff_secDerivPoly_top 1
+  have h20 := coeff_secDerivPoly_succ_zero 1
+  norm_num [h11] at h20
+  rw [secantNumber]
+  norm_num [h20]
+
+theorem secantNumber_two : secantNumber 2 = 5 := by
+  have h11 := coeff_secDerivPoly_top 1
+  have h20 := coeff_secDerivPoly_succ_zero 1
+  norm_num [h11] at h20
+  have h22 := coeff_secDerivPoly_top 2
+  norm_num [Nat.factorial] at h22
+  have h31 := coeff_secDerivPoly_succ 2 0
+  norm_num [h20, h22] at h31
+  have h40 := coeff_secDerivPoly_succ_zero 3
+  norm_num [h31] at h40
+  rw [secantNumber]
+  norm_num [h40]
+
+/-! The in-place algorithm. -/
+
+/-- The initial row: `S_j ← j!` (`S_0 = 1`, `S_k = k S_{k−1}`). -/
+def secantInit (j : ℕ) : ℕ := j.factorial
+
+/-- One update `S_j ← (j − k) S_{j−1} + (j − k + 1) S_j`. -/
+def secantStep (k j : ℕ) (a : ℕ → ℕ) : ℕ → ℕ :=
+  Function.update a j ((j - k) * a (j - 1) + (j - k + 1) * a j)
+
+/-- The inner loop of pass `k` after `s` steps (`j = k + 1, …, k + s`). -/
+def secantPass (k : ℕ) (a : ℕ → ℕ) : ℕ → (ℕ → ℕ)
+  | 0 => a
+  | s + 1 => secantStep k (k + 1 + s) (secantPass k a s)
+
+/-- The outer loop after `r` passes (`k = 1, …, r`) on a row `S_0, …, S_m`. -/
+def secantOuter (m : ℕ) (a : ℕ → ℕ) : ℕ → (ℕ → ℕ)
+  | 0 => a
+  | r + 1 => secantPass (r + 1) (secantOuter m a r) (m - (r + 1))
+
+/-- Algorithm SecantNumbers: the row after the passes `k = 1, …, m`. -/
+def secantNumbersModel (m : ℕ) : ℕ → ℕ := secantOuter m secantInit m
+
+/-- One update is one instance of the secant recurrence: if `a_{j−1} = q_{j+k−1, j−k−1}` and
+`a_j = q_{j+k−1, j−k+1}` (`k + 1 ≤ j`), then `(j−k) a_{j−1} + (j−k+1) a_j = q_{j+k, j−k}`. -/
+theorem secantStep_eq_coeff {k j : ℕ} (hkj : k + 1 ≤ j) (a : ℕ → ℕ)
+    (h1 : (a (j - 1) : ℤ) = (secDerivPoly (j + k - 1)).coeff (j - k - 1))
+    (h2 : (a j : ℤ) = (secDerivPoly (j + k - 1)).coeff (j - k + 1)) :
+    (secantStep k j a j : ℤ) = (secDerivPoly (j + k)).coeff (j - k) := by
+  obtain ⟨i, hi⟩ : ∃ i, j - k = i + 1 := ⟨j - k - 1, by omega⟩
+  rw [secantStep, Function.update_self]
+  push_cast
+  rw [h1, h2, show j + k = j + k - 1 + 1 by omega, hi, coeff_secDerivPoly_succ,
+    show j + k - 1 + 1 - 1 = j + k - 1 by omega, show i + 1 - 1 = i by omega,
+    show i + 1 + 1 = i + 2 by omega]
+  push_cast
+  ring
+
+/-- The invariant of pass `k ≥ 1`: positions `j < k` hold `S_j`, position `k` holds
+`q_{2k−1,1} = S_k`, positions `k < j ≤ k + s` already hold `q_{j+k, j−k}`, positions `j > k + s`
+still hold `q_{j+k−1, j−k+1}`. -/
+theorem secantPass_spec {k m : ℕ} (hk : 1 ≤ k) (hkm : k ≤ m) (a : ℕ → ℕ)
+    (hfin : ∀ j, j < k → (a j : ℤ) = secantNumber j)
+    (hrow : ∀ j, k ≤ j → j ≤ m → (a j : ℤ) = (secDerivPoly (j + k - 1)).coeff (j - k + 1))
+    (s : ℕ) :
+    (∀ j, j < k → (secantPass k a s j : ℤ) = secantNumber j)
+      ∧ (secantPass k a s k : ℤ) = (secDerivPoly (2 * k - 1)).coeff 1
+      ∧ (∀ j, k + 1 ≤ j → j < k + 1 + s → j ≤ m →
+          (secantPass k a s j : ℤ) = (secDerivPoly (j + k)).coeff (j - k))
+      ∧ (∀ j, k + 1 + s ≤ j → j ≤ m →
+          (secantPass k a s j : ℤ) = (secDerivPoly (j + k - 1)).coeff (j - k + 1)) := by
+  induction s with
+  | zero =>
+    refine ⟨hfin, ?_, fun j _ hj _ => absurd hj (by omega), fun j hj hjm => hrow j (by omega) hjm⟩
+    simp only [secantPass]
+    rw [hrow k le_rfl hkm, show k + k - 1 = 2 * k - 1 by omega, Nat.sub_self]
+  | succ s ih =>
+    obtain ⟨ih1, ih2, ih3, ih4⟩ := ih
+    simp only [secantPass]
+    refine ⟨fun j hj => ?_, ?_, fun j hkj hj hjm => ?_, fun j hj hjm => ?_⟩
+    · rw [secantStep, Function.update_of_ne (by omega)]
+      exact ih1 j hj
+    · rw [secantStep, Function.update_of_ne (by omega)]
+      exact ih2
+    · rcases eq_or_ne j (k + 1 + s) with rfl | hne
+      · have h4 := ih4 (k + 1 + s) le_rfl hjm
+        have h1 : (secantPass k a s (k + 1 + s - 1) : ℤ)
+            = (secDerivPoly (k + 1 + s + k - 1)).coeff (k + 1 + s - k - 1) := by
+          rcases Nat.eq_zero_or_pos s with rfl | hs
+          · rw [show k + 1 + 0 - 1 = k by omega, show k + 1 + 0 + k - 1 = 2 * k - 1 + 1 by omega,
+              show k + 1 + 0 - k - 1 = 0 by omega, coeff_secDerivPoly_succ_zero]
+            exact ih2
+          · rw [ih3 (k + 1 + s - 1) (by omega) (by omega) (by omega),
+              show k + 1 + s - 1 + k = k + 1 + s + k - 1 by omega,
+              show k + 1 + s - 1 - k = k + 1 + s - k - 1 by omega]
+        exact secantStep_eq_coeff (by omega) _ h1 h4
+      · rw [secantStep, Function.update_of_ne hne]
+        exact ih3 j hkj (by omega) hjm
+    · rw [secantStep, Function.update_of_ne (by omega)]
+      exact ih4 j (by omega) hjm
+
+/-- After the passes `k = 1, …, r` (`r ≤ m`): positions `j ≤ r` hold `S_j`, the rest hold
+`q_{j+r, j−r}`. -/
+theorem secantOuter_spec (m : ℕ) : ∀ r, r ≤ m →
+    (∀ j, j < r + 1 → (secantOuter m secantInit r j : ℤ) = secantNumber j)
+      ∧ (∀ j, r + 1 ≤ j → j ≤ m →
+          (secantOuter m secantInit r j : ℤ) = (secDerivPoly (j + r)).coeff (j - r)) := by
+  intro r
+  induction r with
+  | zero =>
+    intro _
+    refine ⟨fun j hj => ?_, fun j _ _ => ?_⟩
+    · obtain rfl : j = 0 := by omega
+      simp [secantOuter, secantInit, secantNumber_zero]
+    · simp only [secantOuter, secantInit]
+      rw [add_zero, Nat.sub_zero, coeff_secDerivPoly_top]
+  | succ r ih =>
+    intro hr
+    obtain ⟨ih1, ih2⟩ := ih (by omega)
+    have hs := secantPass_spec (k := r + 1) (m := m) (by omega) hr (secantOuter m secantInit r)
+      ih1 (fun j hj hjm => by
+        rw [ih2 j hj hjm, show j + (r + 1) - 1 = j + r by omega,
+          show j - (r + 1) + 1 = j - r by omega]) (m - (r + 1))
+    obtain ⟨h1, h2, h3, _⟩ := hs
+    simp only [secantOuter]
+    refine ⟨fun j hj => ?_, fun j hj hjm => h3 j hj (by omega) hjm⟩
+    rcases Nat.lt_or_ge j (r + 1) with hlt | hge
+    · exact h1 j hlt
+    · obtain rfl : j = r + 1 := by omega
+      rw [h2, secantNumber, show 2 * (r + 1) = 2 * (r + 1) - 1 + 1 by omega,
+        coeff_secDerivPoly_succ_zero, Nat.add_sub_cancel]
+
+/-- Exercise 4.40: Algorithm SecantNumbers computes `S_0, …, S_m` in place. -/
+theorem secantNumbersModel_eq {m j : ℕ} (hjm : j ≤ m) :
+    (secantNumbersModel m j : ℤ) = secantNumber j :=
+  (secantOuter_spec m m le_rfl).1 j (by omega)
+
+theorem secantNumbersModel_three :
+    secantNumbersModel 3 0 = 1 ∧ secantNumbersModel 3 1 = 1 ∧ secantNumbersModel 3 2 = 5 ∧
+      secantNumbersModel 3 3 = 61 := by
+  decide
+
+end Exercise440
 
 end BZ
 

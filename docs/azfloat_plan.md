@@ -2183,3 +2183,454 @@ Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user 
   exponent, and the relative error is `2ε` as above. The complexity is as in Exercise 4.21,
   `O(n M(n))` with complex arithmetic (a constant factor `3`–`4`), plus the `O(M(n) log n)` of one
   complex `Log`, one `exp` and (for `Re z < 1/2`) one `sin`.
+* **Exercise 4.23** (the convergent Stirling series (4.88) is no improvement). **Answer.**
+  Write `t_k(z) = c_k/((z+1)⋯(z+k))`. *Size of the coefficients.* Since
+  `∑_j |s(k,j)| x^j = x(x+1)⋯(x+k−1)` (`sum_stirling1_mul_pow`, from the three-term recurrence
+  `|s(n+1,j+1)| = |s(n,j)| + n|s(n,j+1)|`), `∑_j |s(k,j)| = k!` (`sum_stirling1`), and as
+  `j/((j+1)(j+2)) ≥ 1/(2(k+2))` for `1 ≤ j ≤ k`, `c_k ≥ k!/(4k(k+2))` (`stirlingC_ge`); in fact
+  `1/((j+1)(j+2)) = ∫_0^1 x^j(1−x) dx` gives `c_k = (1/2k) ∫_0^1 x(1−x) (x(x+1)⋯(x+k−1))' dx
+  ≈ (k−1)!/(2 ln k)`. So the `c_k` are as large as the Bernoulli numbers (`O(k log k)` bits) and
+  the recurrence for the `|s(k,j)|`, `k ≤ K`, costs `O(K²)` additions of such integers, the same
+  order as computing `B_2, …, B_{2K}`; nothing is gained on the coefficient side.
+  *Rate of convergence.* `t_{k+1}/t_k = (c_{k+1}/c_k)/(z+k+1) ≈ k/(z+k+1)`: the terms shrink
+  geometrically only while `k ≪ z` (about one bit per term up to `k ≈ z/2`, giving
+  `t_{z/2} ≈ (2e)^{−z/2} ≈ e^{−0.85 z}`), and for `k ≳ z` they decay like `Γ(z+1)/(2k^{z+1} ln k)`,
+  a power law. Rigorously, at an integer `z = N` and for `1 ≤ K ≤ N`,
+  `t_K(N) ≥ (K!/(4K(K+2)))/(2N)^K ≥ (K/(2eN))^K/(4K(K+2)) ≥ e^{−2N}/(4K(K+2))`
+  (`convergentTerm_ge`, using `K! ≥ (K/e)^K` and `K ln(2eN/K) ≤ 2N`, `pow_div_ge_exp_neg`),
+  whereas the divergent series (4.38) at the same `N` reaches the floor `e^{−2πN}` with `⌈πN⌉`
+  terms (`abs_stirlingTerm_ge`, §4.5); since `4N(N+2) < e^{4N} ≤ e^{(2π−2)N}`,
+  `t_K(N) > e^{−2πN}` for every `K ≤ N` (`convergentTerm_gt_stirling_floor`): with as many terms
+  as the argument, the convergent series has not even reached the accuracy the divergent one
+  attains with `πN` terms. Pushing the general estimate: with `K ≤ aN` terms,
+  `t_K(N) ≳ e^{−N(1 + ln(1+a))}/(4K(K+2))`, which stays above `e^{−2πN}` until
+  `1 + ln(1+a) ≥ 2π`, i.e. `a ≈ e^{2π−1} − 1 ≈ 196`: matching the accuracy `2^{−n}` of
+  Exercise 4.21 at the same shifted argument `z' ≈ 0.11n` would take `≈ 200 z' ≈ 22n` terms
+  instead of `πz' ≈ 0.35n`; alternatively one can enlarge the shift so that `K ≈ z'/2` terms
+  suffice (`e^{−0.85 z'} ≤ 2^{−n}`, `z' ≈ 0.8n`), which multiplies the shift and the product
+  `∏(z+i)` by `7`. Either way the cost is a constant factor larger, with the same `O(n M(n))`
+  order and the same kind of coefficients, so (4.88) is not an improvement; its only merit is
+  that the truncation error is a genuine tail of a convergent series rather than an asymptotic
+  remainder estimate. (The identity (4.88) itself is not formalized; only its terms are
+  analysed.)
+* **Exercise 4.24** (`E₁(x)` to high precision, four methods; **PLAN ONLY**, 2026-10-18, nothing
+  implemented). Target: `AzFloat` `expIntegralPrecRound (x : AzFloat) (p) (mode) : AzFloat × Ordering`
+  for `x > 0` with *relative* error `≤ 2^{−p}` (so absolute error `≈ 2^{−p} e^{−x}/x` for large `x`),
+  in the Ziv `(value, Ordering)` style of the existing operations, with a dispatcher choosing among
+  four kernels by `(x, p)`.
+  *Prerequisites (missing today).* `AzFloat` has only algebraic constants (`√2`, `φ`, …): the
+  kernels need `exp`, `ln` and the constant `γ` as `AzFloat` operations, none of which exist yet;
+  `exp`/`ln` are the subject of §4.3–§4.4 (argument reduction + rectangular splitting with the
+  ratio scheme of Ex. 4.13, or the AGM of §4.8), and `γ` needs its own algorithm (Brent–McMillan
+  via Bessel functions, or the `E₁` relation itself at a convenient point) — plan them first; (b)
+  and (d) only need `exp`.
+  *(a) Power series (4.26).* `E₁(x) = −γ − ln x + ∑_{j≥1} (−1)^{j−1} x^j/(j! j)`. Alternating terms
+  peaking near `j ≈ x` at size `≈ e^x/x^{3/2}` against a sum `≈ ln x + γ`: `≈ x/ln 2` bits cancel in
+  the sum, and the final subtraction `Ein(x) − γ − ln x` (result `≈ e^{−x}/x`) cancels another
+  `x/ln 2 + log₂ x` bits when relative precision is required, so work at `p' = p + 2x/ln 2 +
+  O(log(p + x))` bits; terms until `x^j/(j! j) < 2^{−p'}`, `j ≈ e x + p'/log₂(p'/(ex))`, each a
+  scalar step `t_j = t_{j−1} · x/j` (one `p'`-bit multiplication by `x` — non-scalar — and a small
+  division) plus the running sum; `O((x + p/log p) M(p + 3x))`. Rectangular splitting (§4.4.3 with
+  Ex. 4.13 ratios `r_j = −x·j/((j+1)²)`… the ratio `a_{j+1}/a_j = −j/((j+1)²)` is a small rational, so
+  the ratio-Horner scheme applies and cuts the non-scalar count to `O(√d)`). Region: small `x`
+  (`x ≲ 1`), where the extra precision is negligible and no `e^{−x}` is needed.
+  *(c) Exercise 4.19.* `E₁(x) = e^{−x} ∑_{j≥1} H_j x^j/j! − γ − ln x`: positive terms, so no
+  cancellation in the sum; `H_j` by `H_j = H_{j−1} + 1/j` in floating point (relative errors only
+  add); still the final subtraction costs `x/ln 2 + log₂ x` extra bits for relative precision, so
+  `p' = p + x/ln 2 + O(log)`, half of (a)'s surplus; terms until `H_j x^j/j! e^{−x} < 2^{−p'}`,
+  `j ≈ e x + p'/log₂(p'/(ex))`; one `exp` of `−x`. Ratio `a_{j+1}/a_j = H_{j+1}/((j+1) H_j)` is not a
+  small rational, so plain Horner/forward summation, `O((x + p/log p) M(p + 1.5x))`. Region:
+  `1 ≲ x ≲ c₁ p` (expected `c₁ ≈ 0.1`), always preferable to (a) except for tiny `x`.
+  *(b) Asymptotic expansion (4.27).* `e^x E₁(x) = ∑_{j<k} (−1)^j j!/x^{j+1} + R_k`,
+  `|R_k| < k!/x^{k+1}` (`abs_asymptoticRemainder_lt`), terms decreasing while `j < x`, smallest
+  `≈ √(2π/x) e^{−x}` (4.30): relative precision `2^{−p}` attainable iff `x > p ln 2 + ½ log₂(2πx) +
+  O(1)` (`abs_asymptoticRemainder_self_le`, `shift_necessary`-style). Terms by `t_j = t_{j−1} · j · x⁻¹`
+  with `x⁻¹` precomputed: one `p`-bit multiplication each, no cancellation (alternating with
+  decreasing terms, sum `≈ t_0`), stop at the first `j` with `t_j < 2^{−p} t_0`, i.e. `k ≈ x` near the
+  threshold and `k ≈ p ln 2/ln(x/(p ln 2))` far above it; certified bracket from
+  `between_partialSums` (value strictly between consecutive partial sums). Cost `O(k M(p))`, plus one
+  `exp(−x)`. Region: `x > ln 2 · p` (plus the `½ log₂ x` margin); below it the method cannot reach
+  the precision and is skipped.
+  *(d) Continued fraction (4.39).* `e^x E₁(x) = 1/x+ 1/1+ 1/x+ 2/1+ 2/x+ 3/1+ ⋯` (`eulerNum`,
+  `eulerDen`; all `a_j, b_j > 0`). Convergence of the `k`-th approximant like `exp(−4√(kx))`
+  (Stieltjes fraction), so `k ≈ (p ln 2)²/(16x) ≈ 0.03 p²/x` terms: `0.3p` at `x = 0.1p`, `0.04p` at
+  `x = 0.7p`. Evaluation exactly as §4.6 prescribes: a *forward* pass at low precision (64-bit
+  `Float` or a 64-bit `AzFloat`) with the continuants `P_j, Q_j` and the difference recurrence (4.46)
+  `D_j = −a_j Q_{j−2} D_{j−1}/Q_j` to find the first `k` with `|D_k| < 2^{−p−2}|f_k|`, then the
+  *backward* recurrence (4.43) `R_k = 1, R_{k−1} = b_k, R_j = b_{j+1}R_{j+1} + a_{j+2}R_{j+2}` at
+  `p + ⌈log₂ k⌉ + 2` bits (all quantities positive, relative error `O(k 2^{−p'})`), value
+  `a₁R₁/R₀`; evaluate `f_{k−1}` and `f_k` both (or `f_k, f_{k+1}`), return the midpoint with the
+  rigorous bound `|f_k − f_{k−1}|/2` from Theorem 4.1 (`abs_sub_midpoint_lt`, which needs the
+  limit to be `e^x E₁(x)`: unproven, see below). Cost `O(k M(p))` with `k ≈ 0.03p²/x`, plus one
+  `exp(−x)`. Region: `c₁ p < x < ln 2 · p`, `c₁ ≈ 0.1` (where `0.03p²/x` drops below the `≈ 0.3p`
+  terms of (c)).
+  *Empirical determination.* Harness in `benchmarks/` (reuse the tuner's single comma-separated
+  config argument): for `p ∈ {64, 128, 256, 512, 1024, 4096, 16384}` and `x = 2^{e}`, `e ∈ [−10, 16]`
+  in quarter steps, time each applicable kernel (skip (b) below its threshold; cap (d) at
+  `k ≤ 10p`), compare against a cross-check (two methods agreeing to `p` bits), and record the two
+  crossovers `x_{ac}(p)` ((a) vs (c), expected `≈ 1` and nearly independent of `p`), `x_{cd}(p)`
+  ((c) vs (d), expected `≈ c₁ p` with `c₁ ≈ 0.1`; check the predicted scaling `x_{cd} ∝ p`) and
+  `x_{db}(p)` ((d) vs (b), expected `= p ln 2 + O(log p)`: (b) wins as soon as it is applicable since
+  `k ≈ x` terms beat `0.03p²/x ≈ 0.04p` only for `x ≲ 0.2p`… so measure whether (d) stays faster
+  slightly above the (b) threshold). Store the fitted thresholds as named constants in the
+  dispatcher, with the `p`-dependence explicit. Follow the benchmarking rules (quiet machine, go-ahead
+  first, keep the old binary for A/B).
+  *Proof status for a later certified implementation.* (b): fully proven bounds, certifiable now.
+  (d): the bracket theorems are proven but convergence of (4.39) to `e^x E₁` is not (Stieltjes
+  theory, not in Mathlib) — a conditional statement is available. (a)/(c): `hasSum_exp_mul_Ein` is
+  proven, but (4.26) `E₁ = Ein − γ − ln x` with Mathlib's `γ` is not — implement after (4.26) or
+  state the spec relative to `Ein`. Suggested order: `exp`/`ln` first; then (b) with proofs, (d),
+  then `γ` and (a)/(c).
+* **Exercise 4.25** (prove the backward recurrence (4.43)). **Answer.** Let
+  `T_j = a_j/b_j+ a_{j+1}/b_{j+1}+ ⋯ a_k/b_k` be the tail fraction (`tailFrac`), so
+  `T_j = a_j/(b_j + T_{j+1})` and `T_{k+1} = 0`. Claim: `R_{j−1} = (b_j + T_{j+1}) R_j` for
+  `1 ≤ j ≤ k` (`backR_pred`). Backward induction on `j`: for `j = k`, `R_{k−1} = b_k = (b_k + 0) R_k`
+  by the initial values; for `j < k`, (4.43) gives `R_{j−1} = b_j R_j + a_{j+1} R_{j+1}` and the
+  induction hypothesis `R_j = (b_{j+1} + T_{j+2}) R_{j+1}` gives
+  `a_{j+1} R_{j+1} = a_{j+1} R_j/(b_{j+1} + T_{j+2}) = T_{j+1} R_j`, hence
+  `R_{j−1} = (b_j + T_{j+1}) R_j`. Since all `R_j > 0` (`backR_pos`, for positive `a_j, b_j`) this is
+  the text's invariant `R_j/R_{j−1} = 1/(b_j + T_{j+1}) = 1/b_j+ a_{j+1}/b_{j+1}+ ⋯ a_k/b_k`
+  (`backR_div`), and at `j = 1`: `R_1/R_0 = 1/(b_1 + T_2)`, so `a_1 R_1/R_0 = a_1/(b_1 + T_2) = T_1 = y`
+  (`approximant_eq_backR`, restated with `b₀ = 0` as `finiteFrac_eq_backR`; `k = 2` check
+  `finiteFrac_two_eq`). Positivity is only used to keep denominators nonzero; the identity holds
+  whenever no `b_j + T_{j+1}` vanishes. All of this was formalized in the §4.6 chunk
+  (`ContinuedFractionEval.lean`); the exercise adds only the restatements.
+* **Exercise 4.26** (prove the forward recurrence (4.44)). **Answer.** Following the hint, let
+  `y_k(x) = a₁/b₁+ ⋯ a_{k−1}/b_{k−1}+ a_k/(b_k + x)` (`tailFracX a b k x 1`; the general
+  `tailFracX a b k x j` starts at index `j` and returns `x` when `j > k`). Peeling the innermost
+  level, `y_{k+1}(x) = y_k(a_{k+1}/(b_{k+1} + x))` (`tailFracX_succ`, by recursion on the start
+  index). Claim: `b₀ + y_k(x) = (P_k + P_{k−1}x)/(Q_k + Q_{k−1}x)` for `k ≥ 1`, with `P, Q` the
+  continuants of (4.44), `P₀ = b₀, P₁ = b₁b₀ + a₁, Q₀ = 1, Q₁ = b₁`, `P_j = b_jP_{j−1} + a_jP_{j−2}`
+  (Mathlib's `nums`/`dens`; the text's `P₀ = 0, P₁ = a₁` is the case `b₀ = 0`). Induction on `k`:
+  `k = 1`: `b₀ + a₁/(b₁ + x) = (b₁b₀ + a₁ + b₀x)/(b₁ + x)`. Step: `b₀ + y_{k+1}(x) = b₀ + y_k(x')`
+  with `x' = a_{k+1}/(b_{k+1} + x)`, `= (P_k + P_{k−1}x')/(Q_k + Q_{k−1}x')` by the hypothesis,
+  and multiplying numerator and denominator by `b_{k+1} + x`:
+  `= (P_k(b_{k+1} + x) + a_{k+1}P_{k−1})/(Q_k(b_{k+1} + x) + a_{k+1}Q_{k−1}) = (P_{k+1} + P_kx)/(Q_{k+1} + Q_kx)`
+  by the recurrence (`tailFracX_eq_nums_dens`; positivity of `a_j, b_j` and `x ≥ 0` keeps all
+  denominators nonzero). At `x = 0`, `y_k(0) = a₁/b₁+ ⋯ a_k/b_k` (`tailFracX_zero`), so
+  `f_k = b₀ + y_k(0) = P_k/Q_k` (`approximant_eq_nums_div_dens`), which is (4.44) — an
+  independent proof of `approximant_eq_convs` (previously imported from Mathlib's
+  `convs_eq_convs'`). The same identity with `x = a_{k+1}/b_{k+1}+ ⋯` explains why the
+  continuants can be extended one step at a time: the fraction is a Möbius transformation
+  `x ↦ (P_k + P_{k−1}x)/(Q_k + Q_{k−1}x)` of its tail.
+* **Exercise 4.27** (matrix form of the forward recurrence). **Answer.** Let
+  `M_j = [[b_j, 1], [a_j, 0]]` and `N_k = [[Q_k, Q_{k−1}], [P_k, P_{k−1}]]` with the text's initial
+  values `P₀ = 0, P₁ = a₁, Q₀ = 1, Q₁ = b₁` (Mathlib's continuants with `b₀ = 0`). Then
+  `N_k M_{k+1} = [[Q_k b_{k+1} + Q_{k−1} a_{k+1}, Q_k], [P_k b_{k+1} + P_{k−1} a_{k+1}, P_k]] = N_{k+1}`
+  by (4.44), and `N_1 = M_1`, so by induction `M_1 M_2 ⋯ M_k = N_k` for `k ≥ 1` (`cfProd_eq`). For
+  `k = 0` the empty product is the identity, which is `N_0` once `P_{−1} := 1`, `Q_{−1} := 0`
+  (`cfProd_zero`); these values are exactly what the recurrence needs to start, since then
+  `P₁ = b₁P₀ + a₁P_{−1} = a₁` and `Q₁ = b₁Q₀ + a₁Q_{−1} = b₁`. Hence `f_k = P_k/Q_k` is the ratio of
+  the two first-column entries of the product (`approximant_eq_cfProd`). *Remark (parallelism).*
+  Matrix multiplication is associative, so the product over any segment of indices can be formed
+  independently and the segments combined afterwards: `∏_{(i, i+m+n]} = ∏_{(i, i+m]} · ∏_{(i+m, i+m+n]}`
+  (`cfProdRange_add`). With `p` processors each forms the product of `k/p` consecutive `M_j` and
+  the `p` partial products are multiplied in a tree of depth `log₂ p`; with exact integer or
+  rational `a_j, b_j` this is also the binary-splitting evaluation of §4.9 (the entries of a
+  segment product of length `n` have `O(n log n)` bits, and the tree costs `O(M(k log k) log k)`
+  instead of the `k` sequential full-precision operations of (4.44)); the final division `P_k/Q_k`
+  is done once. Order matters: the `M_j` do not commute, so the segment products must be
+  multiplied in index order.
+* **Exercise 4.28** (`det [[Q_k, Q_{k−1}], [P_k, P_{k−1}]] = (−1)^k a_1 ⋯ a_k`). **Answer.** By
+  Exercise 4.27 the matrix is `M_1 M_2 ⋯ M_k` with `M_j = [[b_j, 1], [a_j, 0]]`, and
+  `det M_j = b_j · 0 − 1 · a_j = −a_j` (`det_cfStep`); the determinant is multiplicative, so
+  `det (M_1 ⋯ M_k) = ∏_{j≤k} (−a_j) = (−1)^k a_1 ⋯ a_k` (`det_cfProdRange`, `det_cfProd`), i.e.
+  `Q_k P_{k−1} − P_k Q_{k−1} = (−1)^k a_1 ⋯ a_k` (`det_continuants`; for `k = 0` with the convention
+  of Exercise 4.27 the determinant of the identity is `1`, the empty product). Equivalently, by
+  induction straight from (4.44): `Δ_k := P_k Q_{k−1} − P_{k−1} Q_k` satisfies `Δ_{k+1} = −a_{k+1} Δ_k`
+  (`det_succ` in `ContinuedFractionEval.lean`), `Δ_1 = a_1`. Consequence: the difference of
+  consecutive approximants is `f_k − f_{k−1} = Δ_k/(Q_k Q_{k−1}) = (−1)^{k−1} a_1 ⋯ a_k/(Q_k Q_{k−1})`,
+  which is (4.45)–(4.46) (`diff_eq_det_div`, `diff_succ`): the sign alternates and the magnitude
+  is computed without cancellation, the basis of the stopping rule and of Theorem 4.1.
+* **Exercise 4.29** (prove (4.46)). **Answer.** `D_j = f_j − f_{j−1} = P_j/Q_j − P_{j−1}/Q_{j−1}
+  = Δ_j/(Q_j Q_{j−1})` with `Δ_j = P_j Q_{j−1} − P_{j−1} Q_j` (`diff_eq_det_div`), and `D_1 = f_1 − f_0
+  = a_1/b_1` (`diff_one`). By Exercise 4.28 (or directly from (4.44), `det_succ`),
+  `Δ_j = −a_j Δ_{j−1}`, so `D_j/D_{j−1} = (Δ_j/Δ_{j−1}) · (Q_{j−1}Q_{j−2})/(Q_j Q_{j−1}) = −a_j Q_{j−2}/Q_j`,
+  which is (4.46): `D_j = −a_j Q_{j−2} D_{j−1}/Q_j` (`diff_succ`). Equivalently, the closed form
+  `D_k = (−1)^{k−1} a_1 a_2 ⋯ a_k/(Q_k Q_{k−1})` (`diff_eq_prod_div`) and the ratio of two
+  consecutive closed forms (`diff_succ'`). Division by `Q_j` is harmless since `Q_j > 0` for
+  positive coefficients (`dens_pos`). Why (4.46) matters: computing `D_j` as `P_j/Q_j − P_{j−1}/Q_{j−1}`
+  subtracts two nearly equal numbers and loses `≈ log₂(|f|/|D_j|)` bits, whereas (4.46) builds
+  `D_j` multiplicatively from positive quantities with a known sign `(−1)^{j−1}`, so the stopping
+  test `|D_j| < ε` of §4.6 is reliable at low working precision.
+* **Exercise 4.30** (prove Theorem 4.1). **Answer.** With `a_j, b_j > 0`: (i) `Q_j > 0` for all
+  `j` (induction with (4.44), `dens_pos`); (ii) `D_1 = a_1/b_1 > 0` and, by (4.46),
+  `D_j = −a_j Q_{j−2} D_{j−1}/Q_j`, so `D_j` has sign `(−1)^{j−1}` (`sign_diff`) and
+  `|D_j| < |D_{j−1}|` because `Q_j = b_j Q_{j−1} + a_j Q_{j−2} > a_j Q_{j−2}` (`abs_diff_succ_lt`);
+  (iii) hence `f_{2k+2} − f_{2k} = D_{2k+2} + D_{2k+1} > 0` since the positive `D_{2k+1}` dominates
+  the negative `D_{2k+2}` (`approximant_even_lt_succ`), and symmetrically
+  `f_{2k+3} − f_{2k+1} = D_{2k+3} + D_{2k+2} < 0` (`approximant_odd_succ_lt`): `(f_{2k})` is strictly
+  increasing and `(f_{2k+1})` strictly decreasing (`approximant_even_strictMono`,
+  `approximant_odd_strictAnti`); (iv) `f_{2k} < f_{2k+1}` (`D_{2k+1} > 0`), and comparing through
+  `n = max(k, m)`, `f_{2k} ≤ f_{2n} < f_{2n+1} ≤ f_{2m+1}`: every even approximant is below every
+  odd one (`approximant_even_lt_odd`); (v) if the fraction converges to `f`, the even
+  subsequence increases to `f` and the odd one decreases to `f`, so `f_{2k} < f < f_{2m+1}`
+  strictly (a strictly monotone sequence never attains its limit: `approximant_even_lt`,
+  `lt_approximant_odd`); (vi) therefore `f` lies strictly between any two consecutive
+  approximants `f_{m−1}, f_m` (one even, one odd; `approximant_between_consecutive`), and a point
+  strictly inside an interval is within half its length of the midpoint:
+  `|f − (f_{m−1} + f_m)/2| < |f_m − f_{m−1}|/2` (`abs_sub_midpoint_lt`). Packaged as `theorem_4_1`.
+  The hypothesis that the fraction converges (`HasContFracValue`) is genuinely needed for (v)–(vi)
+  and is proven here only in the sense of Mathlib's general theory (for (4.39)/(4.40) it is the
+  unformalized Stieltjes result); (i)–(iv) are unconditional. Use: the midpoint of two consecutive
+  backward-recurrence evaluations gives a certified error bound, the `(value, Ordering)` bracket of
+  the `AzFloat` design.
+* **Exercise 4.31** (the continued fraction (4.40) for `erfc`/`erf`). **Answer.** (4.40) is
+  `erfc x = (e^{−x²}/√π) · 1/x+ (1/2)/x+ (2/2)/x+ (3/2)/x+ ⋯`, with `a₁ = 1`, `a_j = (j−1)/2`,
+  `b_j = x`: positive coefficients for `x > 0` (`erfcCF_pos`), so Theorem 4.1 applies and
+  consecutive approximants bracket the value. *How fast does it converge?* By (4.45)–(4.46),
+  `|D_{k+1}| = a₁⋯a_{k+1}/(Q_{k+1}Q_k)` with `a₁⋯a_{k+1} = k!/2^k` (`erfcCF_prod_num`) and
+  `Q_j = x Q_{j−1} + a_j Q_{j−2} ≥ x^j` (`erfcCF_dens_ge`), so `|D_{k+1}| ≤ k!/(2^k x^{2k+1})`
+  (`erfcCF_abs_diff_le`). Compare with the asymptotic series (4.37), whose `k`-th normalized term
+  is `(2k)!/(k! 4^k x^{2k}) · (1/x)`: since `(k!)² 2^k ≤ (2k)!` (`factorial_sq_mul_two_pow_le_factorial`),
+  `|D_{k+1}| ≤ t_k` (`erfcCF_abs_diff_le_erfcTermMag`) — for `k ≪ x²` the fraction converges at
+  least as fast as the asymptotic series, in fact with an extra factor `≈ 2^{−k}` (its steps are
+  `≈ k!/2^k` against `(2k−1)‼/2^k`), and each backward-recurrence step `R_j = x R_{j+1} + a_{j+2} R_{j+2}`
+  costs the same as a series term (one full multiplication by `x`, one small scalar). For
+  `k ≳ x²` the asymptotic terms start to grow and (4.37) stalls at accuracy `≈ e^{−x²}`, whereas
+  the fraction's steps keep shrinking (`abs_diff_succ_lt`), with the Stieltjes-type rate
+  `|D_k| ≈ exp(−2√2 x√k)` for `k ≫ x²`, i.e. `k ≈ (m ln 2)²/(8x²)` terms for `m` bits.
+  *Comparison with Algorithm Erf (4.2).* To get `erf x` to `n` bits one needs `erfc x` to
+  `m = n − λ` bits, `λ ≈ x²/ln 2`; the asymptotic branch is usable iff `(m + ½) ln 2 < x²`, i.e.
+  `x ≳ √(n ln 2/2) ≈ 0.59√n`, and just above that threshold it needs its full `≈ x² ≈ 0.35 n`
+  terms; below it Algorithm Erf falls back to the series (4.22)/(4.23), which need `≈ e x²`
+  terms (plus `≈ x²/ln 2` guard bits for (4.22) and for `erfc` itself). The fraction at the same
+  `x` needs about `(m ln 2)²/(8x²) ≈ 0.06 n²/x² · (m/n)²` terms: at the threshold `x² ≈ 0.35n`,
+  `m ≈ n/2`, this is `≈ 0.04n` terms against `0.35n` for the asymptotic series and `≈ 0.95n` for
+  (4.23); somewhat below the threshold, say `x² ≈ 0.2n`, it is `≈ 0.15n` against `≈ 0.55n` series
+  terms with extra precision, and the asymptotic branch is unavailable. So **yes**: there is a
+  region, roughly `0.3√n ≲ x ≲ 0.6√n` (shrinking towards `x ≈ 1` as the series take over for
+  small `x`, where `k ≈ 0.06 n²/x²` explodes), in which (4.40) beats every branch of Algorithm Erf,
+  and above the threshold it remains at least as good as the asymptotic branch per term (the
+  asymptotic branch keeps a small constant-factor edge only because its stopping index is known
+  in advance and it needs no final division/bracket). For `erfc` itself (relative precision), the
+  picture is the same with `m = n`: the asymptotic branch needs `x > √(n ln 2)` and the fraction
+  fills the gap `√(n ln 2)/3 ≲ x ≲ √(n ln 2)` where the series would need `Ω(x²)` terms *and*
+  `x²/ln 2` extra bits to beat the cancellation in `1 − erf`. Caveat: convergence of (4.40) to
+  `erfc` (and the rate) is the unformalized Stieltjes theory; what is proven is the term-by-term
+  comparison with (4.37) and the monotone shrinking of the steps.
+* **Exercise 4.32** (evaluating (4.41) in `O(M(k) log k)` for bounded integer coefficients).
+  **Answer.** By Exercise 4.27, `[[Q_k, Q_{k−1}], [P_k, P_{k−1}]] = M_1 M_2 ⋯ M_k` with
+  `M_j = [[b_j, 1], [a_j, 0]]`, and `f_k = P_k/Q_k`. If `|a_j|, |b_j| ≤ B` are integers, every
+  product of `n` consecutive `M_j` has integer entries bounded by `(2B)^n` (`cfStep_entry_le`,
+  `cfProdRange_entry_le`: each multiplication by an `M_j` at most doubles the entry bound and
+  multiplies it by `B`), so a segment product of length `n` has entries of at most
+  `n log₂(2B) = O(n)` bits. Evaluate the product by binary splitting (`cfProdRange_add`): split
+  the index range in half, form the two halves recursively, multiply the two `2×2` matrices.
+  At depth `ℓ` of the recursion there are `2^ℓ` products of matrices with `O(k/2^ℓ)`-bit entries,
+  each costing `8` integer multiplications of that size (`4` with Strassen, or `7`; the constant is
+  irrelevant). In the quasi-linear model `M(m) = m lg m` the level costs `2^ℓ · 8M(ck/2^ℓ) ≤ 8M(ck)`
+  (`two_pow_mul_quasiLinearCost_div_le`, `c = log₂(2B)`), so the `⌈lg k⌉` levels cost at most
+  `8 ⌈lg k⌉ M(ck) = O(M(k) log k)` (`splitting_levels_cost_le`); in general the bound holds for any
+  `M` with `M(2m) ≥ 2M(m)` (`sum_cost_le`, Exercise 4.1), the usual binary-splitting argument of
+  §4.9. The leaves cost `O(k)` in all. Finally one division `P_k/Q_k` of `O(k)`-bit integers,
+  `O(M(k))`, gives `f_k` exactly as a rational, or to any precision `n ≤ O(k)` bits by one
+  floating-point division. Total `O(M(k) log k)`, against the `O(k M(k))` of the sequential forward
+  or backward recurrence at `k`-bit precision (or `O(k M(n))` at a fixed working precision `n`).
+  Rational coefficients with bounded numerators and denominators: clear the denominator of each
+  `M_j` (multiply `M_j` by `d_j = lcm` of its two denominators, which scales `P_k, Q_k` by the same
+  `∏ d_j` and leaves `f_k = P_k/Q_k` unchanged), giving integer matrices with entries `≤ B'` and the
+  same analysis. For (4.39)/(4.40) the coefficients are not bounded (`a_j ≈ j/2`), but they have
+  `O(log k)` bits, so the entries have `O(k log k)` bits and the cost is `O(M(k log k) log k)` — the
+  same conclusion up to the logarithmic factor, as for the series in §4.9; with `x` an `n`-bit
+  number (not a small rational) the entries of `M_j` carry `n` bits and the method reverts to
+  `O(M(n) k)`-type costs, which is why §4.6 evaluates (4.39) by the backward recurrence instead.
+* **Exercise 4.33** (normalizing Miller's algorithm by (4.54) or by (4.89)). **Answer.** Miller's
+  backward recurrence produces `y_ν = c J_ν(x)(1 + ε_ν)` for `0 ≤ ν ≤ N` with `|ε_ν| ≤ ε` (the
+  relative errors from the start-up defect and the rounding of the recurrence), and `c` is fixed
+  from a normalization sum. *(4.54)* `J₀ + 2∑_{ν≥1} J_{2ν} = 1` (proven: `besselJ_even_sum`) gives
+  `c ≈ y₀ + 2∑ y_{2ν}`, a linear sum whose terms, for `2ν < x`, are of size `≈ √(2/(πx))` and of
+  *alternating, irregular signs* (the `J_{2ν}(x)` oscillate for `ν < x`), while the sum is `1`:
+  the absolute error is `≤ ε ∑|t_ν|` (`abs_sum_perturbed_sub_le`), amplified by
+  `κ₁ = ∑|t_ν|/|∑ t_ν| = ∑|t_ν|`. By Cauchy–Schwarz (`sum_abs_le_sqrt_card_mul_sum_sq`) and the
+  identity (4.89) itself, `∑_{2ν≤N}|2J_{2ν}| ≤ √(2N ∑ 2J_{2ν}²)·… ≤ √(2(N+1))`, so `κ₁ ≤ √(2N) ≈ √x`
+  (the terms beyond `ν ≈ x` are negligible): (4.54) loses at most `½ log₂ x + 1` bits, not more.
+  *(4.89)* `J₀² + 2∑_{ν≥1} J_ν² = 1` gives `c² ≈ y₀² + 2∑ y_ν²`, a sum of *nonnegative* terms, whose
+  relative error is `≤ 2ε + ε²` with no amplification at all (`abs_sum_sq_perturbed_sub_le`); the
+  sign of `c` is not lost, because the recurrence is started with `y_N = 1 > 0` at `N > x`, where
+  `J_N(x) > 0` (the first zero `j_{N,1}` exceeds `N`), so `c > 0`. Its tail also decays faster
+  (`J_ν²` against `J_{2ν}`), though both sums are dominated by `ν ≲ x` and the start index `N`
+  must anyway exceed `x` by `O(n^{…})` for the recurrence itself. *Costs.* (4.54) uses only the
+  even indices, `N/2` additions and no multiplications; (4.89) needs `N` squarings, each a full
+  `p`-bit multiplication, i.e. about as much work again as the recurrence (`y_{ν−1} = (2ν/x)y_ν −
+  y_{ν+1}`: one multiplication by the precomputed `1/x` and a scalar multiplication per step).
+  *Verdict.* Numerically (4.89) is preferable — positive terms, no cancellation, relative error
+  `2ε + O(ε²)`, a bound that needs no knowledge of the sign pattern of the `J_{2ν}` — and it is
+  the right choice at fixed (machine) precision or when a rigorous, assumption-free error bound is
+  wanted. In arbitrary precision, however, (4.54)'s loss is provably at most `≈ ½ log₂ x` bits,
+  which `⌈½ log₂ x⌉ + 2` guard bits absorb at negligible cost, while (4.89) roughly doubles the
+  multiplication count; so for high-precision Bessel evaluation (4.54) with guard bits is the
+  cheaper normalization, and (4.89) is the safer one. (4.89) itself follows from the generating
+  function `e^{(x/2)(t − 1/t)} = ∑ J_ν t^ν` multiplied by its value at `1/t`: the constant term of
+  the product is `∑_ν J_ν(x)² = 1`, i.e. `J₀² + 2∑_{ν≥1} J_ν² = 1` as `J_{−ν} = (−1)^ν J_ν`; this
+  two-sided Cauchy product is not formalized (only `t = ±1`, i.e. (4.54), is).
+* **Exercise 4.34** (the model recurrence `f_{ν−1} + f_{ν+1} = 2K f_ν`). **Answer.** `λ^ν` solves
+  the recurrence iff `λ^{ν−1}(λ² − 2Kλ + 1) = 0`, i.e. iff `λ` is a root of `x² − 2Kx + 1`
+  (`isConstRecSol_pow`). Solutions form a vector space (`IsConstRecSol.add`, `.smul`), and a
+  solution is determined by `f₀, f₁` (two-step induction, `IsConstRecSol.eq_of_init`). For distinct
+  roots `λ ≠ μ` the system `A + B = f₀`, `Aλ + Bμ = f₁` has the unique solution
+  `A = (f₁ − μf₀)/(λ − μ)`, `B = (λf₀ − f₁)/(λ − μ)`, and `Aλ^ν + Bμ^ν` agrees with `f` at `0, 1`,
+  hence everywhere (`IsConstRecSol.exists_eq_comb`). Vieta: `λμ = 1` and `λ + μ = 2K` in both
+  cases; the discriminant is `4(K² − 1)`, nonzero as `K ≠ 1` (for `K = 1` the double root `1` gives
+  the solutions `A + Bν`, excluded here). *Case `K > 1`:* `λ, μ = K ± √(K² − 1)` are real,
+  `λμ = 1`, `λ > 1 > μ > 0` (`roots_of_one_lt`): one solution grows and the other decays
+  geometrically. *Case `0 < K < 1`:* `λ, μ = K ± i√(1 − K²)` are complex conjugates with
+  `|λ|² = K² + (1 − K²) = 1` (`roots_of_lt_one`): `λ = e^{±iθ}`, `cos θ = K`, and every real solution
+  is `C cos(νθ + φ)`, bounded and oscillatory. *Insight for (4.53).* Near `ν ≈ Kx` the Bessel
+  recurrence `f_{ν−1} + f_{ν+1} = (2ν/x) f_ν` has the slowly varying coefficient `2K`, so locally
+  it behaves like the model: for `ν < x` (`K < 1`) both `J_ν` and `Y_ν` oscillate with comparable
+  amplitude (`≈ √(2/(πx))`) and neither direction of the recurrence is unstable; for `ν > x`
+  (`K > 1`) the solutions split into a geometrically decaying one (`J_ν ≈ μ^ν` direction) and a
+  growing one (`Y_ν ≈ λ^ν`), so the forward recurrence loses `J_ν` to rounding (any admixture of
+  `Y` is amplified by `λ ≈ 2K` per step) while the backward recurrence damps it — exactly the
+  mechanism behind Miller's algorithm and the growth rates (4.55) (`λ = K + √(K² − 1) ≈ 2K` for
+  large `K`, matching `Y_ν ~ (2ν/(ex))^ν` after accounting for the varying `K`).
+* **Exercise 4.35** (rounding errors in the Bernoulli recurrences (4.59) and (4.60)). **Answer.**
+  Write (4.59) as a convolution: `∑_{j≤k} C_j T_{k−j} = r_k` with `T_m = 1/(2m+1)!` (the
+  coefficients of `sinh x/x`) and `r_k = 1/(2(2k)!)`. Computing `C_k = r_k − ∑_{j<k} C_j T_{k−j}` in
+  precision `n`, the computed values `C̃_k` satisfy the same recurrence with perturbed right
+  sides `r_k + ρ_k`, `|ρ_k| ≲ (k+1) 2^{−n} max_j |C̃_j T_{k−j}|` (each of the `k+1` terms rounded
+  once; the terms are `O(|C_k|)` since `T_m ≤ 1/6` for `m ≥ 1`). The errors `e_k = C̃_k − C_k` then
+  satisfy `∑_{j≤k} e_j T_{k−j} = ρ_k`, a linear recurrence whose solution is the convolution
+  `e_k = ∑_{j≤k} ρ_j κ_{k−j}` with `κ` the convolution inverse of `T`: `κ(x²) · sinh x/x = 1`, i.e.
+  `κ` has generating function `x/sinh x` (`error_propagation`, proven in `ℚ⟦X⟧` with `X` standing
+  for `x²`: `mk e · mk T = mk ρ`, `mk κ · mk T = 1`, so `mk e = mk ρ · mk κ`). Explicitly
+  `x/sinh x = x/tanh(x/2) − x/tanh x = 2S(x) − S(2x)`, so `κ_k = (2 − 4^k) C_k` (`bernoulliKernel`,
+  `kernel_mul_sinh`: `(2S(x) − S(2x))(e^x − e^{−x}) = 2x`, obtained by rescaling (4.57) by `2`,
+  multiplying through by `e^x` and cancelling `e^x` in the domain `ℚ⟦X⟧`; the coefficient of
+  `x^{2k+1}` gives `∑_{j≤k} κ_j T_{k−j} = [k = 0]`, `kernel_conv_eq`). *(a)* The solution decays like
+  `|C_k| ≍ (2π)^{−2k}` (`2/(2π)^{2k} ≤ |C_k| ≤ (π²/3)/(2π)^{2k}`, `abs_scaledBernoulli_ge/le`, from
+  `1 ≤ ζ(2k) ≤ π²/6`), but the kernel only like `|κ_k| = (4^k − 2)|C_k| ≍ π^{−2k}`
+  (`abs_bernoulliKernel_eq`): the radius of convergence of the propagation operator `x/sinh x` is
+  `π`, that of the solution `2π`. Hence the rounding error `ρ_0 ≈ 2^{−n}` made at the first step
+  (and the error of any early step `j`, `≈ 2^{−n}(2π)^{−2j}`) arrives in `C_k` as
+  `ρ_0 κ_k`, whose size relative to `C_k` is `(4^k − 2)·6/π² ≈ 0.6 · 4^k` at least
+  (`kernel_amplification_ge`): the relative error of `C_k` is of order `4^k 2^{−n}`, growing by two
+  bits per step; summing over `j`, `∑_j 2^{−n}(2π)^{−2j} π^{−2(k−j)} (2π)^{2k} = 2^{−n} 4^k ∑_j 4^{−j}
+  ≈ (4/3) 4^k 2^{−n}`, dominated by the first steps. *(b)* (4.60) reads, after multiplying by `4^k`,
+  `∑_{j≤k} D_j T_{k−j} = 1/(2k)!` with `D_j = 4^j C_j`: the *same* convolution and the same kernel
+  `κ`, but now for the sequence `D_k ≍ π^{−2k}` which decays exactly as fast as `κ`. A rounding
+  error at step `j`, `|ρ_j| ≲ (j+1) 2^{−n} |D_j|`, reaches `D_k` as `ρ_j κ_{k−j}` with
+  `|κ_{k−j}| |D_j| ≤ 4^{k−j}|C_{k−j}| 4^j |C_j| ≤ (π²/3)² 4^k/(2π)^{2k} ≤ (π⁴/18) |D_k|`
+  (`abs_bernoulliKernel_le`, `kernel_amplification_le`): relative amplification `≤ π⁴/18 ≈ 5.4`,
+  a constant. Summing the `k` steps, each contributing `O(j 2^{−n})`, the relative error of
+  `D_k = 4^k C_k` (and of `C_k`, an exact power of two away) is `O(k² 2^{−n})`. In the
+  generating-function picture: (4.59) inverts `sinh x/x` (radius `π`) to produce a series of
+  radius `2π`, so noise at radius `π` is magnified by `(2π/π)^{2k} = 4^k`; (4.60) inverts
+  `sinh(x/2)/(x/2)` (radius `2π`), the same radius as the solution, so the noise is only
+  amplified polynomially — the general principle for choosing a numerically stable recurrence.
+* **Exercise 4.36** ((4.57) from (4.56), and (4.62)). **Answer.** *(4.57).* Let
+  `f(x) = x/(e^x − 1) + x/2`. Then `f(−x) = −x/(e^{−x} − 1) − x/2 = x e^x/(e^x − 1) − x/2`, and
+  `f(−x) − f(x) = x(e^x − 1)/(e^x − 1) − x = 0`: `f` is even (`div_exp_sub_one_add_half_even`). By
+  (4.56), `f(x) = ∑_k B_k x^k/k! + x/2 = 1 + (B_1 + 1/2) x + ∑_{k≥2} B_k x^k/k!`; evenness forces
+  the odd coefficients to vanish, so `B_1 = −1/2` and `B_{2j+1} = 0` for `j ≥ 1`
+  (`bernoulli_odd_eq_zero'`, Mathlib's `bernoulli_eq_zero_of_odd`), and what remains is
+  `f(x) = ∑_k B_{2k} x^{2k}/(2k)! = ∑_k C_k x^{2k}`, which is (4.57) (`scaledBernoulliPowerSeries_eq`:
+  the series `S = B(x) + x/2` has coefficient `C_k` at `x^{2k}` and `0` at `x^{2k+1}`). The closed
+  form: `x/(e^x − 1) + x/2 = (x/2)(e^x + 1)/(e^x − 1) = (x/2)/tanh(x/2)` since
+  `tanh(x/2) = (e^x − 1)/(e^x + 1)` (`div_exp_sub_one_add_half`, `tanh_half_eq`). *(4.62).* From
+  (4.57), `x/tanh x = ∑ C_k (2x)^{2k} = ∑ 4^k C_k x^{2k}`, so
+  `tanh x = 1/tanh x − 2/tanh(2x)` … more directly `tanh x = coth x − 2 coth 2x` gives
+  `x tanh x = ∑_k (4^k − 16^k) C_k x^{2k}`, i.e. `tanh x = ∑_{k≥1} (4^k − 16^k) C_k x^{2k−1}`
+  (`X_mul_tanhSeries`, `coeff_tanhSeries_odd`), and `tan x = tanh(ix)/i` flips the sign of every
+  other coefficient: `tan x = ∑_{k≥1} (−1)^{k−1}(16^k − 4^k) C_k x^{2k−1}`. Comparing with (4.61),
+  `T_k/(2k−1)! = (−1)^{k−1}(16^k − 4^k) B_{2k}/(2k)!`, hence
+  `T_k = (−1)^{k−1} 4^k (4^k − 1) B_{2k}/(2k) = (−1)^{k−1} 2^{2k}(2^{2k} − 1) B_{2k}/(2k)`, which is
+  (4.62) (`tangentNumber_eq_bernoulli'`, the text's indexing of `tangentNumber_eq_bernoulli`). In
+  `TangentNumbers.lean` the step `tan x = tanh(ix)/i` is replaced by a formal argument: the
+  sign-twisted series satisfies the same ODE `y' = 1 + y²` with `y(0) = 0` as the series of
+  Taylor coefficients of `tan`, and such a solution is unique (`eq_of_derivative_eq_one_add_sq`).
+* **Exercise 4.37** (bit sizes of `T_k` and of `B_{2k}`). **Answer.** *(a)* From (4.62) and
+  `|B_{2k}| = 2(2k)! ζ(2k)/(2π)^{2k}` (`abs_bernoulli_two_mul_eq`),
+  `|T_k| = 4^k(4^k − 1)|B_{2k}|/(2k) = 2(4^k − 1)(2k−1)! ζ(2k)/π^{2k}` (`abs_tangentNumber_eq`), and
+  as `1 ≤ ζ(2k) ≤ π²/6`, `4^k/2 ≤ 4^k − 1` and `4^k ≤ π^{2k}`:
+  `(4/π²)^k (2k−1)! ≤ |T_k| ≤ (π²/3)(2k−1)!` (`abs_tangentNumber_bounds`). Stirling in the form
+  `m ln m − m ≤ ln m! ≤ m ln m − m + 1 + ½ ln m` (`log_factorial_bounds`, from
+  `√(2πm)(m/e)^m ≤ m! ≤ e√m (m/e)^m`) with `m = 2k` and `(2k−1)! = (2k)!/(2k)` gives
+  `2k ln k − 4k − ln(2k) ≤ ln|T_k| ≤ 2k ln k + 3` (`log_abs_tangentNumber_bounds`; the constants
+  come from `−2 ≤ ln(4/π²)` and `ln(π²/3) ≤ 2`). Dividing by `2k ln k`, both sides tend to `1`:
+  the number of bits `lg|T_k| ∼ 2k lg k`, i.e. `T_k` has about as many bits as `(2k)!` — the
+  factor `(4/π²)^k ≈ 2^{−1.3k}` only shifts the count by `O(k)`. *(b)* Write `B_{2k} = N/D` in
+  lowest terms. The denominator is small: `D ∣ 4^k(4^k − 1)` (`bernoulli_den_dvd`, from (4.62) with
+  `T_k ∈ ℤ`; by von Staudt–Clausen `D = ∏_{(p−1)∣2k} p` is in fact much smaller still), so
+  `ln D ≤ 4k ln 2` (`log_bernoulli_den_le`), `O(k)` bits. The numerator carries the size:
+  `|N| = |B_{2k}| D`, so `ln|N| = ln|B_{2k}| + ln D` with `ln|B_{2k}| = ln 2 + ln(2k)! + ln ζ(2k)
+  − 2k ln(2π) = 2k ln k − 2k(1 + ln π) + O(ln k)`; altogether
+  `2k ln k − 8k ≤ ln|N| + ln D ≤ 2k ln k + 6k + 3` (`log_bernoulli_num_den_bounds`). Hence the
+  exact rational `B_{2k}` also needs `∼ 2k lg k` bits, essentially all in the numerator, and the
+  same holds for the scaled `C_k = B_{2k}/(2k)!`'s *denominator* (`(2k)! D/gcd`, `∼ 2k lg k` bits)
+  while its numerator is tiny — which is why §4.7.2 prefers the integer tangent numbers (one
+  `∼ 2k lg k`-bit integer, computed by an integer-only recurrence) to rational Bernoulli numbers
+  (a `∼ 2k lg k`-bit numerator plus a denominator needing a gcd), and why either representation
+  of `B_2, …, B_{2m}` costs `Θ(m² log m)` bits in total.
+* **Exercise 4.38** (correctness of Algorithm TangentNumbers from (4.63)). **Answer.** The
+  algorithm is the recurrence (4.63) `p_{n,j} = (j−1) p_{n−1,j−1} + (j+1) p_{n−1,j+1}` run on the
+  nonzero coefficients only, stored diagonally in one array. Since `p_{n,j} = 0` when `n + j` is
+  even, `P_n` has only the coefficients `p_{n,j}` with `j ≡ n + 1 (mod 2)`, and the ones we want are
+  `T_j = p_{2j−1,0}`. *Invariant.* Before pass `k` (`k = 2, …, m`) the array holds
+  `T_1, …, T_{k−1}` in positions `1, …, k−1` and `A_j = p_{j+k−3, j−k+2}` in positions
+  `j = k, …, m` (the coefficients on the diagonal `n − j = 2k − 5`); initially (`k = 2`)
+  `A_j = p_{j−1, j} = (j−1)!` by `p_{n,n+1} = n!` (`coeff_tanDerivPoly_top`), which is the first
+  loop `T_1 = 1`, `T_k = (k−1) T_{k−1}`. Pass `k` runs `j = k, …, m` in increasing order and sets
+  `A_j ← (j−k) A_{j−1} + (j−k+2) A_j`; when position `j` is reached, `A_{j−1}` has already been
+  replaced by `p_{j+k−3, j−k}` (for `j = k` this is `T_{k−1} = p_{2k−3,0}`, untouched) while `A_j`
+  still holds `p_{j+k−3, j−k+2}`, so by (4.63) with `n = j+k−2` and index `j−k+1`:
+  `(j−k) p_{j+k−3, j−k} + (j−k+2) p_{j+k−3, j−k+2} = p_{j+k−2, j−k+1}` (`tangentStep_eq_coeff`).
+  After the pass the array holds `p_{j+k−2, j−k+1}` in positions `j ≥ k`, i.e. the diagonal
+  `n − j = 2k − 3`, which is the invariant for `k + 1`; and position `k` now holds
+  `p_{2k−2, 1} = p_{2k−1, 0} = T_k` by the `j = 0` case of (4.63) (`p_{n+1,0} = p_{n,1}`,
+  `coeff_tanDerivPoly_succ_zero`), so it is finished and never touched again (`tangentPass_spec`,
+  `tangentOuter_spec`). After pass `m` all positions hold `T_1, …, T_m`
+  (`tangentNumbersModel_eq`, `algorithm_tangentNumbers_correct`). Each pass therefore advances the
+  stored diagonal by one `n`-step for all `j` at once, using the in-place order of evaluation to
+  supply the already-updated left neighbour, which is why the inner loop must run upwards in
+  `j`. All quantities are nonnegative integers (`coeff_tanDerivPoly_nonneg`), so there is no
+  cancellation and the algorithm is also usable in floating point with the stated relative
+  accuracy. Cost: `∑_{k=2}^m (m − k + 1) ≈ m²/2` updates on integers of up to `∼ 2m lg m` bits
+  (Exercise 4.37).
+* **Exercise 4.39** (Algorithm TangentNumbers costs `O(m³ log m)`). **Answer.** The algorithm
+  performs `∑_{k=2}^{m} (m − k + 1) = m(m−1)/2 ≈ m²/2` updates `T_j ← (j−k)T_{j−1} + (j−k+2)T_j`,
+  each two multiplications of an array entry by a small integer (`< 2m`) and one addition, hence
+  `O(log T)` bit operations by the exercise's assumption, where `T` is the size of the entries
+  involved. Those entries are the intermediate coefficients `p_{n,i}` with `n = j + k − 3 ≤ 2m − 3`
+  (Exercise 4.38), and they are bounded by the final sizes: `p_{n,i} ≤ P_n(1) = ∑_i p_{n,i}`
+  (nonnegative coefficients, `coeff_tanDerivPoly_le_eval_one`), and `P_{n+1}(1) = P_n'(1)·2 ≤
+  2(n+1)P_n(1)` because `P_n'(1) = ∑ i p_{n,i} ≤ (n+1)P_n(1)` (`deg P_n = n+1`), so
+  `P_n(1) ≤ 2^n (n+1)!` (`eval_one_tanDerivPoly_le`). With Exercise 4.37's `size((n+1)!) ≤
+  (n+1)(lg(n+1) + 1)` this gives every entry at most `n + (n+1)(lg(n+1) + 1) ≤ 2m(lg(2m) + 2)`
+  bits (`size_coeff_tanDerivPoly_le`), i.e. `O(m log m)` — the same order as the final `T_m`
+  (`∼ 2m lg m` bits, Exercise 4.37), as expected since `P_n(1) = (d/dx)^n tan(x)|_{x=π/4} ≈ n!(4/π)^n`
+  and `T_j = p_{2j−1,0}` is the largest-order entry. Summing, the bit cost is at most
+  `m² · 2m(lg(2m) + 2) = O(m³ log m)` (`tangentAlgorithmBits`, `tangentAlgorithmBits_le`). It is
+  also `Ω(m³ log m)`: the last `≈ m²/8` updates (`j, k ≥ m/2`) act on entries of `Θ(m log m)` bits
+  (`p_{n,i} ≥ p_{n,0}`-type lower bounds from `T_k ≥ (2k−1)!(4/π²)^k`), so the bound is tight; the
+  output itself has `∑_j 2j lg j ≈ m² lg m` bits, and the factor `m` is the number of passes
+  each entry goes through. (Faster: Exercise 4.47 / §4.12 mention `O(m² log^{2+ε} m)` methods via
+  the zeta values or `B_{2k}` modulo primes; our `AzNat` implementation would use this `O(m³ log m)`
+  algorithm since `m` is small, `≈ 0.35 n` for `Γ` at `n` bits, Exercise 4.21.)
+* **Exercise 4.40** (Algorithm SecantNumbers). **Answer.** With `s = sec x`, `t = tan x`:
+  `Ds = st`, `Dt = 1 + t²`, so `Dⁿ sec x = Q_n(tan x) sec x` with `Q_0 = 1` and
+  `Q_{n+1} = t Q_n + (1 + t²) Q_n'` (`secDerivPoly`, `iteratedDeriv_sec`, proven like
+  `iteratedDeriv_tan` with the product rule and `D(1/cos) = sin/cos²`), hence
+  `S_k = D^{2k} sec(0) = Q_{2k}(0) = q_{2k,0}` (`secantNumber`, `iteratedDeriv_sec_zero`), the
+  secant (Euler) numbers `1, 1, 5, 61, 1385, …`. Coefficients: `q_{n+1,j} = j q_{n,j−1} + (j+1) q_{n,j+1}`
+  (the `t Q_n` term contributes `q_{n,j−1}`, `Q_n'` contributes `(j+1) q_{n,j+1}`, `t² Q_n'`
+  contributes `(j−1) q_{n,j−1}`; `coeff_secDerivPoly_succ`, `_succ_zero`), nonnegative, `q_{n,j} = 0`
+  for `j > n` and `q_{n,n} = n!` (`coeff_secDerivPoly_top`), `q_{n,j} = 0` for `n + j` odd. Compared
+  with the tangent recurrence `p_{n+1,j} = (j−1) p_{n,j−1} + (j+1) p_{n,j+1}`, the first coefficient
+  is `j` instead of `j−1`, which is exactly the difference between the two algorithms' inner
+  updates (`(j−k) S_{j−1} + (j−k+1) S_j` against `(j−k) T_{j−1} + (j−k+2) T_j`). *Verification.*
+  Invariant before pass `k` (`k = 1, …, m`): positions `j < k` hold `S_j`, position `j ≥ k` holds
+  `q_{j+k−1, j−k+1}`, the diagonal `n − j = 2k − 2`. Initially (`k = 1`) `A_j = j! = q_{j,j}`, which
+  is the first loop `S_0 = 1`, `S_k = k S_{k−1}`. Pass `k` runs `j = k+1, …, m` upwards and sets
+  `A_j ← (j−k) A_{j−1} + (j−k+1) A_j`, where `A_{j−1}` already holds `q_{j+k−1, j−k−1}` (for
+  `j = k+1` this is the untouched `A_k = q_{2k−1,1} = q_{2k,0} = S_k`) and `A_j` still holds
+  `q_{j+k−1, j−k+1}`, so the update is the recurrence at `n = j+k−1`, index `j−k`:
+  `(j−k) q_{n, j−k−1} + (j−k+1) q_{n, j−k+1} = q_{n+1, j−k}` (`secantStep_eq_coeff`). After the pass
+  position `j ≥ k+1` holds `q_{j+k, j−k}`, the diagonal `n − j = 2k`, i.e. the invariant for
+  `k + 1`, and position `k` holds `q_{2k−1,1} = q_{2k,0} = S_k` without needing an update — which
+  is why the inner loop starts at `j = k+1`, one later than in Algorithm TangentNumbers
+  (`secantPass_spec`, `secantOuter_spec`). After pass `m`, positions `0, …, m` hold `S_0, …, S_m`
+  (`secantNumbersModel_eq`; `secantNumbersModel_three` checks `1, 1, 5, 61` by `decide`). As for
+  the tangent numbers, everything is a nonnegative integer, `S_k ∼ 2(2k)!(2/π)^{2k+1}` has
+  `∼ 2k lg k` bits (poles of `sec` at `±π/2`), and the algorithm costs `O(m³ log m)`.
