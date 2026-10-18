@@ -58,9 +58,11 @@ lean_exe «oracle» where
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 
+-- Local documentation builds only (`lake -R -Kenv=dev build Azurite:docs`); the published docs
+-- are built by .github/workflows/docs.yml, which picks the doc-gen4 tag from lean-toolchain.
 meta if get_config? env = some "dev" then
 require «doc-gen4» from git
-  "https://github.com/leanprover/doc-gen4" @ "main"
+  "https://github.com/leanprover/doc-gen4" @ "v4.34.1"
 
 -- Mathlib goes last so its transitive dependency pins (e.g. plausible)
 -- take precedence over doc-gen4's, keeping `lake exe cache get` valid.

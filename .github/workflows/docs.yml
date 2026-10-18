@@ -1,0 +1,60 @@
+# Builds the doc-gen4 API documentation and the Jekyll home page (home_page/) and deploys them to
+# GitHub Pages: https://mhogrefe.github.io/azurite/ with the API docs under /docs/.
+#
+# The action builds its own `docbuild` project with doc-gen4 at the tag matching lean-toolchain,
+# so the `-Kenv=dev` doc-gen4 dependency in lakefile.lean is used only for local doc builds.
+# API docs are generated on `push` events only (a manual run builds just the home page).
+# Mathlib's generated documentation is cached between runs, keyed on lake-manifest.json.
+name: Publish documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel previous runs if a new commit is pushed to the same branch
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    name: Build and deploy documentation
+    steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout project
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Build project
+        uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6 # v1
+        with:
+          build: true
+          lint: false
+          test: false
+          mk_all-check: false
+
+      - name: Build API documentation and home page, deploy to GitHub Pages
+        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
+        with:
+          blueprint: false
+          homepage: home_page

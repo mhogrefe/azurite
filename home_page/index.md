@@ -6,10 +6,12 @@
 usemathjax: true
 ---
 
+Azurite is a Lean 4 library of computable, formally verified arithmetic: arbitrary-precision
+naturals, integers, rationals and floats, modular arithmetic, polynomials, and the algorithms of
+real algebraic geometry, each proven equal to its Mathlib specification.
+
 Useful links:
 
-* [Zulip chat for Lean](https://leanprover.zulipchat.com/) for coordination
-* [Blueprint]({{ site.url }}/blueprint/)
-* [Blueprint as pdf]({{ site.url }}/blueprint.pdf)
-* [Dependency graph]({{ site.url }}/blueprint/dep_graph_document.html)
-* [Doc pages for this repository]({{ site.url }}/docs/)
+* [Source repository](https://github.com/mhogrefe/azurite)
+* [API documentation]({{ site.url }}/docs/)
+* [Zulip chat for Lean](https://leanprover.zulipchat.com/)
