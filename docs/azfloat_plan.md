@@ -2634,3 +2634,364 @@ Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user 
   (`secantNumbersModel_eq`; `secantNumbersModel_three` checks `1, 1, 5, 61` by `decide`). As for
   the tangent numbers, everything is a nonnegative integer, `S_k ∼ 2(2k)!(2/π)^{2k+1}` has
   `∼ 2k lg k` bits (poles of `sec` at `±π/2`), and the algorithm costs `O(m³ log m)`.
+* **Exercise 4.41** (Harvey: Bernoulli numbers by a power-series reciprocal in
+  `O(n² (log n)^{2+ε})`). **Answer.** *Identity.* `x/(e^x − 1) = 1/E(x)` with
+  `E(x) = (e^x − 1)/x = ∑_{k≥0} x^k/(k+1)!`, so `∑ B_k x^k/k! = E(x)^{−1}`
+  (`bernoulliPowerSeries_mul_recipSeries`, from Mathlib's `B(x)(e^x − 1) = x` by cancelling `x`).
+  *Algorithm.* Let `R(x) = ∑_{k≤n} r_k x^k` be `E^{−1} mod x^{n+1}`, `r_k = B_k/k!`.
+  (1) Compute `R` by Newton's iteration for the reciprocal, `R_0 = 1`,
+  `R_{j+1} = R_j (2 − E R_j) mod x^{2^{j+1}}`: if `R_j ≡ E^{−1} mod x^{2^j}` then
+  `1 − E R_{j+1} = (1 − E R_j)²` is divisible by `x^{2^{j+1}}` (`newton_reciprocal_step`,
+  `newton_reciprocal_step_dvd`), so `⌈lg(n+1)⌉` steps give `R`, and since each `R_j` is the exact
+  truncation of `E^{−1}`, every intermediate coefficient is a true `r_k`. (2) Do the arithmetic on
+  integers: the coefficients of `E` are `1/(k+1)!`, i.e. `E_int := (n+1)!·E mod x^{n+1} ∈ ℤ[x]` with
+  coefficients `(n+1)!/(k+1)! = (k+2)⋯(n+1)` of `O(n log n)` bits; the coefficients of `R` have
+  `den(B_k/k!) ∣ k!·den B_k` with `den B_k ∣ 4^k(4^k − 1)` (Ex. 4.37) — in fact
+  `(B_k/k!)·k!·den B_k = num B_k` (`scaled_coeff_eq_num`) — so with `L := n!·4^n·(4^n − 1)` (or
+  simply `L := n!(n+1)!`, as `den B_k` is squarefree with primes `≤ k+1`) the series
+  `S := L·R mod x^{n+1}` is in `ℤ[x]` with coefficients `|s_k| ≤ L` of `O(n log n)` bits. The
+  Newton step in scaled form is `S_{j+1} = (2 L S_j − E_int S_j²) / ((n+1)!·L)` truncated to
+  `2^{j+1}` terms, where the division is exact (the result is the integer `L R_{j+1}`); it costs
+  two polynomial products of length `≤ 2^{j+1} ≤ 2n` with `O(n log n)`-bit coefficients plus
+  `O(n)` exact divisions of `O(n log n)`-bit integers. (3) Recover `B_k = k!·s_k/L`, `n` exact
+  divisions. *Cost.* A product of two polynomials of length `≤ 2n` with `b = O(n log n)`-bit
+  coefficients is one integer multiplication of `O(n·b) = O(n² log n)` bits by Kronecker
+  substitution (pack the coefficients at `2b + lg n` bits), i.e. `M(n² log n)`; the Newton steps
+  have geometrically growing lengths so their total is `O(M(n² log n))`; the `O(n)` exact
+  divisions and the final `k!·s_k/L` cost `O(n M(n log n)) = O(n² log n · polylog)`, dominated. With
+  `M(m) = O(m log m · 2^{O(log* m)})` (or `m log m log log m`), `M(n² log n) = O(n² log n · log(n² log n)
+  · loglog) = O(n² (log n)^{2+ε})`; in the quasi-linear model exactly `M(n² lg n) ≤ 3 n² (lg n)²`
+  (`quasiLinearCost_sq_log_le`, using `lg(n² lg n) = 2 lg n + lg lg n ≤ 3 lg n`). This beats the
+  `O(n³ log n)` of the recurrences (4.58)–(4.60) and Algorithm TangentNumbers (Ex. 4.39) and is
+  quasi-optimal, since the output `B_0, …, B_n` itself has `Θ(n² log n)` bits (Ex. 4.37). *Remarks.*
+  (i) Numerically the scaled Newton iteration is exact integer arithmetic, so there is no stability
+  issue, unlike (4.59). (ii) Only the even `B_{2k}` are nonzero (`B_1 = −1/2`), so one may instead
+  invert `∑ x^k/(2k+1)!` (the series `sinh(√x)/√x`) in the variable `x²`, halving the lengths, which
+  is (4.60)'s generating function `(x/2)/tanh(x/2)` in disguise. (iii) The same reciprocal gives
+  the tangent numbers through (4.62), or directly from `tan = sin/cos` by one series division.
+  (iv) Harvey's own multimodular algorithm computes a single `B_n` in `O(n² (log n)^{2+ε})` with
+  `O(n log n)` space by working modulo many word-size primes with the `(4.59)`-type sum over
+  `ℤ/p` and CRT; the power-series version above computes all of `B_0, …, B_n` in the same time.
+* **Exercise 4.42** (Algorithm SeriesExponential; Stirling's series for `n!`). **Answer.**
+  *(a)* Let `A = ∑_{k≥1} a_k x^k` and let `B = ∑ b_k x^k` be the output. The recurrence
+  `k b_k = ∑_{j=1}^k j a_j b_{k−j}` is exactly the coefficient of `x^{k−1}` in `B' = A' B`
+  (`derivative_mk_seriesExp`): `(k b_k) = [x^{k−1}](A'B) = ∑_{j} (j a_j)(b_{k−j})`. Together with
+  `b_0 = 1` this is the ODE `B' = A'B`, `B(0) = 1`, whose unique formal solution is `exp A`
+  — indeed `(log B)' = B'/B = A'` and `log B` has zero constant term, so `log B = A` in the sense
+  of Exercise 4.1 (`logSeries_mk_seriesExp`, from `logSeries_unique`). Since `b_k` involves only
+  `a_1, …, a_k`, the first `m+1` output coefficients depend only on `a_1, …, a_m`, so
+  `B = exp(A) + O(x^{m+1})`. Cost: `∑_k k = O(m²)` multiplications (or `O(M(m))` by a Newton
+  iteration for the exponential, Exercise 4.1 / §4.2.3, when `m` is large). Numerically the
+  algorithm is the same forward recurrence as for the reciprocal and inherits its stability only
+  when the coefficients do not alternate wildly; here (b) the `a_j` alternate and grow, so the
+  `b_k` suffer the same `4^k`-type amplification as (4.59) if computed in floating point —
+  compute them exactly as rationals.
+  *(b)* From (4.38), `ln Γ(z) = (z − ½) ln z − z + ½ ln(2π) + ∑_{k≥1} B_{2k}/(2k(2k−1)) z^{−(2k−1)}`,
+  so `Γ(z) = √(2π) z^{z−½} e^{−z} exp(A(1/z))` with `A(x) = ∑_{k≥1} a_{2k−1} x^{2k−1}`,
+  `a_{2k−1} = B_{2k}/(2k(2k−1))`, `a_{2k} = 0` (`stirlingLogCoeff`; `stirlingTerm_eq_stirlingLogCoeff`
+  identifies the terms of (4.38) with `a_j/x^j`), and `n! = n Γ(n) = (n/e)^n √(2πn) exp(A(1/n))`.
+  Hence the `b_k` of `n! ∼ (n/e)^n √(2πn) ∑ b_k/n^k` are produced by SeriesExponential applied to
+  `a_1 = 1/12, a_2 = 0, a_3 = −1/360, a_4 = 0, a_5 = 1/1260, …` (`stirlingCoeff`):
+  `b_0 = 1`, `b_1 = 1/12`, `b_2 = 1/288`, `b_3 = −139/51840`, `b_4 = −571/2488320`, …
+  (`stirlingCoeff_zero/one/two/three`), the classical Stirling coefficients. The Bernoulli inputs
+  come from §4.7.2 (tangent numbers and (4.62)) or Exercise 4.41, and the `O(m²)` rational
+  operations of the exponential are negligible next to computing them; as an asymptotic series
+  the result is again divergent, with the same `k ≈ πn` optimal truncation and `≈ e^{−2πn}`
+  accuracy floor as (4.38), because `exp` of the asymptotic series is the asymptotic series of
+  `exp` (`b_k ∼ (−1)^{…}(2k−2)!/(2π)^{2k} ·` const, from the nearest singularities).
+  *(c)* Not for high precision. (i) The series `∑ b_k/x^k` is no more accurate than (4.38): its
+  attainable precision is still `≈ 2πx` bits at the same number of terms, so the argument shift
+  `x ↦ x + δ` of Exercise 4.21 is needed anyway, and the shift is natural for `ln Γ` (a sum of
+  `δ` logarithms, or one product `∏(x+i)` followed by one `ln`) but not for `Γ` directly. (ii) What
+  it saves is one `exp` evaluation, `O(M(n) log n)`, which is negligible next to the
+  `O(n M(n))` of the `≈ 0.35n` series terms (Exercise 4.21); in exchange the `b_k` are harder to
+  obtain than the `B_{2k}` (one more `O(m²)` pass over `O(m log m)`-bit rationals, with
+  denominators `12, 288, 51840, 2488320, …` growing like `(2k)!·2^{O(k)}`), they have no closed
+  form or integer recurrence like (4.62)/(4.63), and the series in `1/x` has all powers (odd and
+  even), twice as many terms as (4.38) for the same accuracy. (iii) Error control is worse: in
+  the `ln Γ` form the remainder bound of (4.38) (first omitted term, same sign) translates
+  directly into a relative error of `Γ` (Exercise 4.21), while the exponentiated series has no
+  such simple remainder estimate. (iv) The exponentiated form offers nothing for the
+  cancellation-free evaluation of `1/Γ` or for complex `z` (Exercise 4.22). Where it *is* useful:
+  fixed low precision (double/quad), where a handful of precomputed `b_k` evaluate `Γ` or `n!`
+  with one Horner scheme and no `exp`/`ln` call (the classical Stirling formula with correction
+  terms), and for exact combinatorial asymptotics of `n!` where the rational `b_k` are wanted as
+  such. For `AzFloat` the `ln Γ` route of Exercise 4.21 stays the plan.
+* **Exercise 4.43** (second-order AGM logarithm, `x ≥ 2^{n/4}`). **Answer.** *Expansion.* Write
+  `L = ln(4/k)`, `K = K(k)`, `K' = K(k') = (π/2)/AGM(1,k)` (4.68). From (4.69)
+  `K = (π/2)(1 + k²/4) + ε₁`, `|ε₁| ≤ A k⁴`, and (4.70) `K' = (2/π) L K − k²/4 + ε₂`,
+  `|ε₂| ≤ B k⁴`: `K' = L(1 + k²/4) − k²/4 + (2/π)Lε₁ + ε₂`, and solving for `L` to second order,
+  `L = (1 − k²/4) K' + k²/4 + E`, exactly `E = (L − 1)k⁴/16 − (1 − k²/4)((2/π)Lε₁ + ε₂)`, so
+  `|E| ≤ k⁴((1/16 + 2A/π) L + 1/16 + B) = O(k⁴ ln(4/k))` (`second_order_deduction`). The proven
+  (4.69) bound `(π/2)(1 + k²/4) ≤ K ≤ (π/2)(1 + k²/4 + 3k⁴/8)` (`ellipticK_bounds`, `k² ≤ 1/2`) gives
+  `A = 3π/16`, hence `|E| ≤ k⁴((7/16) L + 1/16 + B)` (`second_order_expansion`); the second-order
+  constant `B` of (4.70) is not proven (only the first order is, `abs_ellipticK_sqrt_sub_log_le`),
+  so it enters as a hypothesis; the classical expansion `K' = (2/π)K ln(4/k) − k²/4 − 21k⁴/128 − …`
+  gives `B ≈ 21/128`. *Effective bound ("any means").* Numerically, with double-precision AGM:
+
+  | `k` | `E/k⁴` | `−(5/64) ln(4/k) + 13/128` |
+  |---|---|---|
+  | `1/2` | `−0.0767` | `−0.061` |
+  | `1/8` | `−0.1714` | `−0.169` |
+  | `1/32` | `−0.2777` | `−0.278` |
+  | `1/128` | `−0.3858` | `−0.386` |
+  | `1/256` | `−0.4400` | `−0.440` |
+
+  so `E = −(5/64) k⁴ ln(4/k) + (13/128) k⁴ + O(k⁶ ln k)`, in agreement with the series
+  (`−k⁴/16 + Lk⁴/16 − (9/64)Lk⁴ + 21k⁴/128 = (−5L/64 + 13/128)k⁴` from `ε₁ ≈ (9π/128)k⁴`,
+  `ε₂ ≈ −21k⁴/128`), and the effective bound `|E| ≤ (5/64) k⁴ ln(4/k)` holds for `0 < k ≤ 1/2`
+  (the two terms have opposite signs and `13/128 < (5/64) ln 8`). *Algorithm.* With `k = 4/x`:
+  `ln x = (1 − 4/x²)·(π/2)/AGM(1, 4/x) + 4/x² + E`, `|E| ≤ (5/64)(4/x)⁴ ln x = 20 ln x/x⁴`
+  (`agmLog2`, `abs_agmLog2_sub_log_le` with `c₁ = 5/64`, `c₂ = 0`, for `x ≥ 8`); the correction costs
+  one extra multiplication and two cheap operations on top of the first-order formula (4.71), and
+  the AGM itself is unchanged. For `n` bits one needs `20 ln x / x⁴ ≤ 2^{−n}`, i.e.
+  `x⁴ ≥ 20 (ln x) 2^n` (`agmLog2_precision`: `256(c₁ ln x + c₂)2^n ≤ x⁴`), which holds as soon as
+  `x ≥ 2^{n/4} (20 ln x)^{1/4}`, e.g. `x ≥ 2^{n/4 + 2}` for all `x ≤ 2^{2^{8}}`: **`x ≳ 2^{n/4}`**
+  instead of the `x ≳ 2^{n/2}` of (4.71). So: scale `x ← 2^ℓ x` (or square `ℓ` times) only up to
+  `2^{n/4}` rather than `2^{n/2}`, run the AGM with `k = 4/x ≥ 2^{2−n/4}` (`≈ lg(n/4) + lg n`
+  iterations instead of `lg(n/2) + lg n`, one fewer, by `agm_log_iterations`), and finish with
+  the second-order correction; the saving is one AGM iteration and half the shift, i.e. a few
+  percent — the real gain of the next step, the exact theta formula of §4.8.3/§4.8.4
+  (`sasaki_kanada`), is that *no* truncation error remains and `k` can be `O(1)`, which is why
+  that is the planned `AzFloat` route. (In the same way (4.69)/(4.70) to order `k^{2m}` would give
+  `x ≥ 2^{n/(2m)}`, at the price of the full expansions of `K` and `K'`.)
+* **Exercise 4.44** (`π` and `ln 2` from (4.71)). **Answer.** (4.71) in its proven form is
+  `|(π/2)/AGM(1,k) − ln(4/k)| ≤ (k²/4)(2 − ln k)` for `0 < k ≤ 1` (`abs_pi_div_AGM_sub_log_le`,
+  (4.73)). Two evaluations of the *same* kind do not separate `π` from `ln 2`: at `x = 2^m` and
+  `x = 2^{2m}` both sides are proportional to `(2/π) ln 2`, and the ratio is exactly `2`. One of
+  the two logarithms must be known exactly, and the natural choice is `ln e^j = j`: `e^j` for an
+  integer `j` is cheap (the exponential series by binary splitting, §4.9, `O(M(n) log² n)`, or
+  `e` once and `j` squarings/multiplications). *`π`.* Turn (4.71) around: `π ≈ 2 ln(4/k)·AGM(1,k)`
+  with `|2 ln(4/k) AGM(1,k) − π| ≤ 2 AGM(1,k)·(k²/4)(2 − ln k) ≤ (k²/2)(2 − ln k)` (as `AGM(1,k) ≤ 1`,
+  `abs_two_mul_log_mul_AGM_sub_pi`); with `k = 4e^{−j}`, i.e. `x = e^j`, this is
+  `|2j · AGM(1, 4e^{−j}) − π| ≤ 8 e^{−2j}(j + 2 − ln 4)` (`abs_pi_approx_exp`), so `j ≈ (n ln 2)/2 +
+  ½ lg j ≈ 0.35n` gives `π` to `n` bits with one AGM of `≈ 2 lg n` iterations (`agm_log_iterations`)
+  and one exponential; the error of `e^j` enters linearly (a relative error `δ` in `e^j` is an
+  absolute error `δ` in the "known" logarithm, hence `≤ 2δ` in `π`). *`ln 2`.* With `π` in hand,
+  (4.71) at `x = 2^m` gives `|(π/2)/(m·AGM(1, 2^{2−m})) − ln 2| ≤ 4^{2−m}(2 + (m − 2) ln 2)/(4m)`
+  (`abs_log_two_approx`), so `m ≈ n/2 + 2` suffices; an approximate `π̃` with `|π̃ − π| ≤ δ`
+  adds `δ/(2m·AGM(1, 2^{2−m}))` (`abs_log_two_approx_of_pi`), and since
+  `AGM(1,k) ≥ (π/2)/(ln(4/k) + (k²/4)(2 − ln k))` (`pi_div_two_div_le_AGM`) this is
+  `≈ δ·(m ln 2)/(π m) = 0.22 δ`: no loss. Both constants therefore cost two AGMs plus one
+  exponential, `O(M(n) log n)` each (the exponential by binary splitting is `O(M(n) log² n)` but
+  with a small constant), the same order as Brent–Salamin for `π` (which needs no exponential and
+  no truncation error, via the Legendre relation (4.72), `legendre_relation`) — the exercise's
+  method is mainly of interest because the AGM logarithm code then provides its own constants.
+  Alternatives: `ln 2` directly from `x = 2^m` once `π` is known by any means; or `π` from
+  `ln 2` by the same formula if `ln 2` is known (e.g. from the series `∑ 1/(k 2^k)` or
+  Machin-like formulas, §4.9); the second-order formula of Exercise 4.43 halves the required `j`
+  and `m`. For `AzFloat` the plan is Brent–Salamin for `π` (proven Legendre relation) and the
+  exact theta-function logarithm (§4.8.3) for `ln 2`, with these (4.71)-based formulas as
+  cross-checks.
+* **Exercise 4.45** ((A) or (B) for `2θ₂θ₃` and `θ₂² + θ₃²`). **Answer.** Both methods are
+  algebraically correct (`methodA_eq`, `methodB_eq`: `(θ₂+θ₃)² − 2θ₂θ₃ = θ₂² + θ₃²`,
+  `((θ₂+θ₃)² ± (θ₂−θ₃)²)/2`), and both use two non-scalar products — (A) one squaring and one
+  general product, (B) two squarings, so (B) is marginally cheaper (a squaring is `≈ 2/3` of a
+  product). Numerically they differ sharply. In the second AGM algorithm (§4.8.4) `q` is small
+  (`q = 1/x`, or `q^4` after the `q ↦ q^4` trick, down to `2^{−n/36}`), so `θ₃(q) = 1 + 2q + ⋯ ≈ 1`
+  while `θ₂(q) = 2q^{1/4}(1 + q² + ⋯) ≪ 1` (`one_le_theta3`, `theta2_le_two_rpow_div`:
+  `θ₂ ≤ 2q^{1/4}/(1 − q)`). *(A).* `2v = 2θ₂θ₃` is a product of positive numbers, exact to relative
+  precision; `u − 2v = θ₂² + θ₃²` subtracts `2θ₂θ₃ ≤ θ₂² + θ₃²` from `u = θ₂² + θ₃² + 2θ₂θ₃ ≤ 2(θ₂² +
+  θ₃²)`, so relative errors `ε` in `u, v` give an absolute error `≤ 3ε(θ₂² + θ₃²)`
+  (`methodA_relError_le`): at most `lg 3 < 2` bits lost, and in the regime `θ₂ ≪ θ₃` essentially
+  none. *(B).* `(u + w)/2 = θ₂² + θ₃²` is a sum of positive terms, fine; but
+  `(u − w)/2 = 2θ₂θ₃` is the difference of two nearly equal squares `u ≈ w ≈ θ₃²`: with relative
+  errors `±ε` the absolute error is `ε(θ₂² + θ₃²)` exactly (`methodB_amplification`), a relative
+  error `ε(θ₂² + θ₃²)/(2θ₂θ₃) ≥ ε θ₃/(2θ₂) ≥ ε(1 − q)/(4q^{1/4})`, i.e. a loss of
+  `¼ lg(1/q) − 2` bits — for `q ≈ 2^{−n/36}` that is `n/144` bits, and for the unshifted
+  `q = 1/x ≈ 2^{−n}` a quarter of the precision. Since `2θ₂θ₃` is precisely the geometric mean
+  `b₁` of the AGM started at `(θ₃², θ₂²)` (the pair `((θ₂²+θ₃²)/2, θ₂θ₃)` is the first AGM step done
+  without a square root, which is the point of the remark), and the AGM then converges
+  quadratically from these values, an error in `b₁` is carried through to `ln(1/q) =
+  π/AGM(θ₂², θ₃²)` undamped. **Method (A) is preferable**; its one extra general product (instead
+  of a squaring) costs `≈ M(n)/3`, far less than the `¼ lg(1/q)` guard bits (B) would need, and the
+  `AzFloat` implementation of `sasaki_kanada'` should compute `v = θ₂θ₃` directly and
+  `θ₂² + θ₃² = u − 2v` (or, equally well, `θ₂² + θ₃²` directly as two squarings plus `v`, three
+  non-scalar products, if the `≤ 2`-bit loss of (A) is to be avoided too).
+* **Exercise 4.46** (improving the constants of Table 4.1). **Answer.** Table 4.1 counts, in the
+  FFT model where a real product is three transforms of cost `M(n)/3` each (`fftCost`): real
+  squaring `2/3`, product `1`, reciprocal `13/9 ≈ 1.444`, division `5/3 ≈ 1.666`, square root
+  `4/3 ≈ 1.333`, AGM iteration `2`, `ln` via AGM `4 lg n`; complex squaring `4/3`, product `2`,
+  reciprocal `31/9 ≈ 3.444`, division `43/9 ≈ 4.777`, square root `16/3 ≈ 5.333`, AGM iteration
+  `20/3 ≈ 6.666`, `ln` via AGM `(40/3) lg n`. *Real column.* The reciprocal and square-root
+  constants are Harvey's (2011: `1.444` from Bernstein's `1.5`, `1.333` from `1.833`) and the
+  division `5/3 = 13/9 + 2/9` (one extra wrapped product) follows; improving them further is a
+  research question (they rest on which transforms a Newton step can share), and we do not
+  attempt it here. The entries that *can* be sharpened by bookkeeping are the ones below the
+  line, but note first how the complex column was obtained: through `|z|² = a² + b²`. Complex
+  reciprocal: `a² + b²` with the transforms of `a, b` shared (`2 + 1` transforms, cost `1`), a real
+  reciprocal `r` (`13/9`), then `a r` and `b r` from the stored transforms and one transform of
+  `r` (`1 + 2`, cost `1`): total `31/9` (`complex_reciprocal_via_norm`); complex division
+  `= reciprocal + complex product = 31/9 + 2 = 43/9 ... ` with the shared transforms; complex square
+  root through `x = √((|z| + a)/2)`, `y = b/(2x)`: `|z|²` (`1`) + three square roots or two plus a
+  division (`4/3 + 4/3 + 5/3`) `= 16/3` (`complex_sqrt_via_norm`); AGM iteration = complex product
+  + complex square root `= 2 + 16/3 − 2/3` (sharing) `≈ 20/3`; `ln z` = `2 lg n` iterations
+  `= (40/3) lg n`. *Improvement: do Newton over `ℂ` directly.* In the transform model a complex
+  product costs exactly twice a real one (`4 + 2` against `2 + 1` transforms,
+  `fftCost_complex_mul_eq_two_mul`) and a complex squaring exactly twice a real squaring (`2 + 2`
+  against `1 + 1`, `fftCost_complex_sq_eq_two_mul`; both via `(a+b)(a−b) + 2abi`). A Newton
+  iteration is a fixed pattern of products, squarings and additions with the same transform
+  reuse in `ℂ` as in `ℝ` (the complex transform of `a + ib` is the pair of real transforms of
+  `a` and `b`), so every real Newton constant doubles and nothing else changes: complex reciprocal
+  `2 · 13/9 = 26/9 ≈ 2.889` (against `3.444`, `complex_reciprocal_improved`), complex division
+  `2 · 5/3 = 10/3 ≈ 3.333` (against `4.777`, `complex_division_improved`), complex square root
+  `2 · 4/3 = 8/3 ≈ 2.667` (against `5.333`, exactly half, `complex_sqrt_improved`), complex AGM
+  iteration `2 · 2 = 4` (against `6.666`, `complex_agm_iteration_improved`), and `ln z` via the
+  complex AGM `4 · 2 lg n = 8 lg n` (against `13.333 lg n`, `complex_log_improved`), i.e. the
+  complex column becomes exactly twice the real column throughout, and the complex square root
+  and AGM-based logarithm run in `60 %` of the table's time. (The complex Newton iterations
+  converge for the principal branch, `z ∉ (−∞, 0]`, from the standard starting values, and the
+  square root of positive real part is what the complex AGM needs, §4.8.5.) Further small gains:
+  the `|z|²` route for the reciprocal can reuse the transforms of `a, b` in the final products
+  *and* in `a² + b²`, already counted; a complex squaring inside Newton can use the three-real-
+  product form when transforms cannot be cached; and for `arctan x = ℑ ln(1 + ix)` only the
+  imaginary part of the result is needed, which saves the last backward transform (`1/3`). None
+  of this changes the asymptotic `O(M(n) log n)`; the point of the table is the constant factor,
+  and the doubling principle is the clean statement: `complex = 2 × real` once one stops going
+  through `|z|²`.
+* **Exercise 4.47** (justify (4.80); bound `α` when `M(n) = Θ(n^c)`, `c ∈ (1,2]`) — section
+  `Exercise447` of `Exercises.lean`. **Answer.** Binary splitting of a sum of `n` terms whose
+  partial products have `O(n lg n)`-bit numerators/denominators (`log_arctanDen_le`) is a tree of
+  depth `⌈lg n⌉`; level `k` performs `2^k` products of `≈ n lg n/2^k`-bit numbers, so the total
+  cost is `∑_{k=1}^{⌈lg n⌉} 2^k M(n lg n/2^k)`, which is (4.80). For quasi-linear `M` each level
+  costs at most `2 lg n · M(n)` and there are `≤ lg n + 1` levels, giving `≤ 4 (lg n)² M(n)`,
+  i.e. `α = 2` (`binary_splitting_cost`, already in `BinarySplitting.lean`). For
+  `M(m) = m^c` with `1 < c ≤ 2` the level cost is `2^k (N/2^k)^c = N^c (2^(1−c))^k`
+  (`two_pow_mul_div_rpow`), a geometric series with ratio `2^(1−c) < 1`, so the whole sum is
+  `≤ N^c · 2^(1−c)/(1 − 2^(1−c))` for every depth (`binary_splitting_cost_pow`, via Mathlib's
+  `geom_sum_Ico_le_of_lt_one`); with `N = n lg n` this is `(lg n)^c · n^c · 2^(1−c)/(1 − 2^(1−c))
+  = O((lg n)^c M(n))` (`binary_splitting_cost_pow_eq`). Hence `α = c`, and `α ≤ 2` since
+  `(lg n)^c ≤ (lg n)²` for `n ≥ 2` (`rpow_logb_le_sq`); the top level dominates (the
+  constant is `2^(1−c)/(1 − 2^(1−c))`, e.g. `1` for Karatsuba-free `c = 2`, `≈ 1.4` for `c = lg 3`).
+  Not formalized: `Θ` rather than exact `n^c`, and the `⌈lg n⌉`-level tree shape itself (the
+  bound holds for any depth `L`).
+* **Exercise 4.48** (Salvy: is `exp(x²) + x/(1 − x²)` holonomic?) — section `Exercise448` of
+  `Exercises.lean`. **Answer.** Yes. A function is holonomic (D-finite) when it satisfies a
+  linear ODE with polynomial coefficients (`IsHolonomicOn`, on an open set, leading coefficient
+  nonzero). Both summands are: `f = exp(x²)` satisfies `f' − 2x f = 0` (`exp_sq_ode`) and the
+  rational `g = x/(1 − x²)` satisfies `x(1 − x²) g' − (1 + x²) g = 0` (`ratPart_ode`), and
+  holonomic functions form a vector space (the derivatives of `f + g` lie in the `ℝ(x)`-span of
+  `f, …, f^{(r−1)}, g, …, g^{(s−1)}`, so `r + s + 1` of them are dependent). Concretely, with
+  `f'' = (2 + 4x²) f`, `g' = (1 + x²)/(1 − x²)²`, `g'' = 2x(3 + x²)/(1 − x²)³`, eliminating gives
+  the order-2 annihilator `(1−x²)(1−x²+2x⁴) h'' − 2x(2+x²+3x⁴−2x⁶) h' + 2(2x⁶+3x⁴+4x²−1) h = 0`
+  on `{x | x² ≠ 1}` (`salvyFun_ode`, packaged as `salvyFun_isHolonomicOn` with
+  `iteratedDeriv`; `deriv_deriv_salvyFun` uses eventual equality on the open set
+  `isOpen_sq_ne_one`). The point of the exercise: the Taylor coefficients are `1/m!` at even
+  index `2m` and `1` at odd index — two interleaved sequences with no hypergeometric ratio
+  `u_{k+1}/u_k` — yet they satisfy a linear recurrence with polynomial coefficients (read off the
+  ODE), so the function is in the §4.9.2 binary-splitting class even though no §4.9.1 ratio form
+  exists. Not formalized: the general closure of holonomic functions under addition and the
+  coefficient recurrence.
+* **Exercise 4.49** (van der Hoeven, Mezzarobba: improve Theorem 4.2 to `O(M(n) log² n)`) —
+  section `Exercise449` of `Exercises.lean`. **Answer.** Theorem 4.2's proof charges each of the
+  `⌈lg n⌉ + 1` bit-burst steps the full (4.80) cost `O(M(n) log² n)`, using the uniform size
+  estimate `O(ℓ(2^i + log ℓ)) = O(n log n)` bits at the root of every product tree. The
+  improvement is a sharper per-step accounting. Step `i` sums `N_i ≈ n/2^i` terms (precisely
+  `(n + O(log n))/(2^i − O(1)) + 1`, since `|r_{i+1}| < 2^{1−2^i}` and the translated Taylor
+  coefficients grow at most geometrically with a polynomial factor), and its recurrence
+  coefficients have `2^i + O(log N_i)` bits, so the root of the tree has `S_i = N_i(2^i + lg N_i)
+  = O(n + (n/2^i) lg n)` bits (`burstStepSize n i = n + n lg n/2^i`), and the binary splitting
+  costs `≤ (lg n + 1) M(S_i)` (`binary_splitting_levels_le`, from
+  `two_pow_mul_quasiLinearCost_div_le`). Only the first `lg lg n` steps have `S_i ≫ n`, and
+  their sizes halve: with `M(a + b) ≤ 4(M(a) + M(b))` for `a ≥ 2, b ≥ 1`
+  (`quasiLinearCost_add_le`: `a + b ≤ 2 max`, `M(2m) ≤ 4M(m)`), `M(m/2^i) ≤ M(m)/2^i`
+  (`quasiLinearCost_div_two_pow_le`) and `M(n lg n) ≤ 2 lg n M(n)`
+  (`quasiLinearCost_natCast_mul_logb_le`), `∑_{i≤L} M(S_i) ≤ (4(L+1) + 16 lg n) M(n)` when
+  `2^L ≤ n lg n` (`sum_quasiLinearCost_burstStepSize_le`, via Mathlib's `sum_geometric_two_le`),
+  hence the total `∑_{i≤⌈lg n⌉} (lg n + 1) M(S_i) ≤ 56 (lg n)² M(n)` for `n ≥ 4`
+  (`bit_burst_cost`), i.e. `O(M(n) log² n)`. (The first step, the plain Taylor series at `0`, is
+  exactly (4.80) and is the dominant one; the last steps have `2^i`-bit coefficients but only
+  `O(1 + log n/2^i)` terms each.) Not formalized: the term count `N_i` and the coefficient-size
+  estimate themselves (recorded as the cost model), and the exact cost of the initial-value
+  multiplications (`O(M(n))` per step, absorbed).
+* **Exercise 4.50** (partial fractions for `1/(z^k − 1)`; `S_{j,k}` as a contour integral;
+  deduce (4.85)) — section `Exercise450` of `Exercises.lean`. **Answer.** With `w = e^(2πi/k)`
+  and `z^k ≠ 1`: `z^k − 1 = (z − w^m) ∑_{i<k} z^i w^(m(k−1−i))` for every `m`, so
+  `∑_m w^m/(z − w^m) = (1/(z^k − 1)) ∑_{i<k} z^i ∑_m (w^(k−i))^m`, and by orthogonality of the
+  roots of unity only `i = 0` survives, giving `k/(z^k − 1)` (`sum_primitiveRoot_div_eq`, via
+  Mathlib's `geom_sum₂_mul` and the module's `sum_zpow_primitiveRoot`). For `f` holomorphic on
+  `|z| ≤ R` with `R > 1` (the contour `C'` of §4.10 is `|z| = R`, inside the disc of analyticity
+  and enclosing the `k`-th roots of unity) and `j < k`, write `z^(k−j−1)/(z^k − 1) · f(z) = (1/k)
+  ∑_m w^m · z^(k−j−1) f(z)/(z − w^m)`; Cauchy's formula gives `(2πi)⁻¹ ∮ z^(k−j−1) f(z)/(z − w^m)
+  dz = w^(m(k−j−1)) f(w^m)` (Mathlib `DifferentiableOn.circleIntegral_sub_inv_smul`), and
+  `w^m · w^(m(k−j−1)) = w^(−jm)` since `w^(mk) = 1`, so `S_{j,k} = (1/k) ∑_m f(w^m) w^(−jm) =
+  (2πi)⁻¹ ∮_{C'} z^(k−j−1)/(z^k − 1) f(z) dz` (`aliasSumFun_eq_circleIntegral`; `aliasSumFun` is
+  (4.84) for a function and `aliasSum_eq_aliasSumFun` relates it to the series form of
+  `ContourIntegration.lean`). Equivalently: the residues of `z^(k−j−1) f(z)/(z^k − 1)` at the
+  simple poles `w^m` are `w^(m(k−j−1)) f(w^m)/(k w^(m(k−1))) = w^(−jm) f(w^m)/k`. Subtracting
+  (4.83) `a_j = (2πi)⁻¹ ∮_{C'} f(z) z^(−j−1) dz` (`cauchyCoeff`; `hasSum_cauchyCoeff` shows these
+  are the Taylor coefficients, generalizing the module's `hasSum_cauchy_coeff` to radius `R`):
+  `z^(k−j−1)/(z^k − 1) − z^(−j−1) = z^(−j−1)/(z^k − 1)`, so `S_{j,k} − a_j = (2πi)⁻¹ ∮_{C'}
+  f(z)/(z^(j+1)(z^k − 1)) dz` (`aliasSumFun_sub_cauchyCoeff`). On `|z| = R > 1`, `1/(z^k − 1) =
+  ∑_{l≥1} z^(−lk)` uniformly, and dominated convergence (bound `R·max|f|·(R^(−k))^l`,
+  `intervalIntegral.hasSum_integral_of_dominated_convergence`) exchanges sum and integral
+  (`hasSum_circleIntegral_div_pow`), giving (4.85) `S_{j,k} − a_j = ∑_{l≥1} a_{j+lk}`
+  (`aliasSumFun_sub_cauchyCoeff_eq_tsum`): `k` sample points cannot distinguish `a_j` from
+  `a_{j+k}, a_{j+2k}, …` (aliasing). Everything is formalized; `R` is any radius in `(1, R_f)`.
+* **Exercise 4.51** (`S_{2j,k}` with about `k/4` evaluations of `f` for even `k`, `k/2` for odd
+  `k`; improved error for odd `k`) — section `Exercise451` of `Exercises.lean`. **Answer.** The
+  function `f(z) = z/(e^z − 1) + z/2` of (4.86) is even and has real Taylor coefficients, so
+  `f(conj z) = conj f(z)` and `f(−z) = f(z)`. With `w = e^(2πi/k)`: `conj w = w⁻¹`
+  (`conj_exp_two_pi_div`), so `f(w^(k−m)) = conj f(w^m)` and every sample value `f(w^m)`,
+  `m < k`, is `f(w^r)` or `conj f(w^r)` for some `r ≤ k/2` (`sample_reduce_conj`; this uses only
+  the conjugation symmetry and holds for every `k`): about `k/2` evaluations, the rest by
+  conjugation, and `S_{2j,k} = (1/k)(f(1) + 2 ∑_{0<m<k/2} Re(f(w^m) w^(−2jm)))` for odd `k`. For
+  even `k`, `w^(k/2) = −1` (`exp_two_pi_div_pow_half`) so `f(w^(m+k/2)) = f(−w^m) = f(w^m)`
+  halves the range to `m < k/2`, and then conjugation `f(w^(k/2−m)) = conj f(w^(k/2+m))
+  = conj f(w^m)` folds `[0, k/2)` onto `[0, k/4]`: every sample is `f(w^r)` or `conj f(w^r)`
+  with `r ≤ k/4` (`sample_reduce_even`), about `k/4` evaluations (the values at `m = 0, k/2`
+  and, for `4 ∣ k`, `m = k/4` are real). Improved error for odd `k`: by (4.87),
+  `S_{2j,k} − B_{2j}/(2j)! = ∑_{l≥1} a_{2j+lk}`, and for odd `k` the index `2j + lk` is odd
+  exactly when `l` is odd, where `a_{2j+lk} = 0` (`bernoulliCoeff_odd`); the surviving terms
+  `l = 2i` are `∑_{i≥1} a_{2j+i·2k}`, i.e. `S_{2j,k} = S_{2j,2k}` (`bernoulli_aliasSum_odd`,
+  by Mathlib's `tsum_even_add_odd`; conceptually the `2k`-th roots of unity are the `k`-th roots
+  and their negatives, on which the even `f` takes the same values). Hence the error is
+  `O((2π)^(−2k))`: `‖S_{2j,k} − B_{2j}/(2j)!‖ ≤ (π²/6)(2π)^(−2k)/(1 − (2π)^(−2k)) ·
+  ‖B_{2j}/(2j)!‖` (`norm_bernoulli_aliasSum_sub_le_odd`). So an odd `k` with about `k/2`
+  evaluations gives the accuracy of `2k` points, which is as good per evaluation as the even
+  case (`k/4` evaluations for `(2π)^(−k)`). `bernoulliCoeff_conj` records that the coefficients
+  are real. Not formalized: the explicit real-part form of the sum (a direct rewrite of
+  `sample_reduce_conj`), and the symmetries of the analytic function `f` itself (the module works
+  with the coefficient series, where they are `bernoulliCoeff_odd`/`bernoulliCoeff_conj`).
+
+## Brent–Salamin for `π` (started 2026-10-18)
+
+Plan (six items, see the session of 2026-10-18): (1) Gauss's formula for `E` along the AGM;
+(2) Salamin's formula `π = 4 AGM(1, 1/√2)²/(1 − ∑_{j≥1} 2^(j+1) c_j²)` (algebra from (1),
+`legendre_relation_sqrt_half`, `one_div_AGM_one`); (3) the iterate `π_N` and an explicit error
+bound in terms of the computed gap `a_N − b_N`; (4) directed-rounding enclosure lemmas for
+`AzFloat` add/sub/mul/sqrt; (5) correct rounding via the Ziv bracket; (6) termination via
+`Nat.find` + `irrational_pi` (no effective irrationality measure is available).
+
+* **Item 1 DONE (2026-10-18): Gauss's formula for `E` via the AGM** — `EllipticEAGM.lean`.
+  **Statement.** For `0 < b ≤ a`, with `(a_j, b_j)` the AGM iteration and `c_j² = a_j² − b_j²`,
+  `J(a, b) := ∫_0^{π/2} √(a² cos²θ + b² sin²θ) dθ = (a² − ∑_{j≥0} 2^(j−1) c_j²) · π/(2 AGM(a, b))`
+  (`agmJ_eq_tsum`); for `0 < k < 1`, `E(k) = (1 − ∑_{j≥0} 2^(j−1) c_j²) K(k)` with the AGM
+  started at `(1, √(1 − k²))` (`ellipticE_eq_AGM_sum`). **Proof route** (no new change of
+  variables): one-parameter `f(x) = I(1, x) = π/(2 AGM(1, x))` (`agmK`, `agmK_eq_pi_div_AGM`)
+  and `g(x) = J(1, x)` (`agmE`); on `(0, 1)` they are `K(√(1−x²))`, `E(√(1−x²))`
+  (`agmK_eq_ellipticK`, `agmE_eq_ellipticE`), and `ellipticK_deriv_identity` becomes
+  `g(x) = x² f(x) − (1 − x²) x f'(x)` with `f` differentiable there (`agmE_eq_sub_deriv`, chain
+  rule through `√(1 − x²)` + `hasDerivAt_ellipticK`). Landen for `f`: `f(x) = (2/(1+x))
+  f(2√x/(1+x))` from `AGM_step` + `AGM_smul` (`agmK_landen`, `landenMap`). Differentiating the
+  Landen identity (`HasDerivAt.congr_of_eventuallyEq` on `Ioi 0`) and substituting both
+  expressions for `g` gives `g(x) = (1+x) g(ℓ(x)) − x f(x)` (`agmE_landen`; after `x = s²` the
+  final step is `field_simp; ring`). Scaling `J(a, b) = a g(b/a)` (`agmJ_eq_mul_agmE`) gives the
+  Landen step `J(a, b) = 2 J((a+b)/2, √(ab)) − ab·π/(2 AGM(a, b))` (`agmJ_landen`; `a = b`
+  separately via `agmJ_self`). Telescoping: `E_n := J(a_n, b_n) − a_n² π/(2 AGM)` satisfies
+  `E_n = 2E_{n+1} − (c_n²/2) π/(2 AGM)` (`agmDeficit_succ`, using `a_n b_n = 2a_{n+1}² − a_n² +
+  c_n²/2` and `AGM_agmSeq`), so `E_0 = 2^n E_n − (∑_{j<n} 2^(j−1) c_j²) π/(2 AGM)`
+  (`agmDeficit_zero_eq`). Limit: `−(π/2)(1 + a_1/b_1)(a_n − b_n) ≤ E_n ≤ 0` (`agmDeficit_bounds`
+  from `(π/2) b_n ≤ J(a_n,b_n) ≤ (π/2) a_n`, `agmJ_bounds`, and `b_n ≤ AGM ≤ a_n`), and
+  `2^n (a_n − b_n) → 0`: once `a_m − b_m ≤ 2 b_1` (some `m ≥ 1`, `exists_agm_gap_le` via
+  `agm_gap_le_half_pow`) the quadratic bound `agm_gap_succ_le_sq` gives a factor `1/4` per step
+  (`agm_gap_succ_le_quarter`, `agm_gap_add_le`), so `2^(m+k) g_{m+k} ≤ 2^m g_m (1/2)^k`
+  (`two_pow_mul_agm_gap_le`), whence `tendsto_two_pow_mul_agm_gap`, `summable_two_pow_mul_agm_gap`
+  and `summable_agm_c_sq` (`c_j² ≤ 2a (a_j − b_j)`). `tendsto_nhds_unique` on the two limits of
+  `2^n E_n − S_n I` finishes `agmJ_eq_tsum`. Lean notes: `Continuous.intervalIntegrable` needs
+  the measure fixed by an expected type (else `IsLocallyFiniteMeasure ?μ` is stuck); after `rw`
+  with `π/(2AGM) = agmK x / a`, `ring` cannot cancel `a * a⁻¹` — rewrite the whole product
+  `a b (π/(2AGM)) = b agmK x` instead; `nlinarith` failed on a goal that is linear in the product
+  atoms after one explicit `calc … = _ := by ring` restatement of the hint — restate hints in the
+  goal's monomials and use `linarith`; `set C := …` then `linarith` needs `rw [hC]` or the
+  equation in context. Not formalized: `J(a, b)` for `b > a` (symmetry), `f'` at `x ≥ 1` (unused).

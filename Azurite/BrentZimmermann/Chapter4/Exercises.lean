@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.BrentZimmermann.Chapter4.AGMLogBound
 import Azurite.BrentZimmermann.Chapter4.AsymptoticExpansion
 import Azurite.BrentZimmermann.Chapter4.BernoulliRecurrence
 import Azurite.BrentZimmermann.Chapter4.ContinuedFractionEval
@@ -16,9 +17,11 @@ import Azurite.BrentZimmermann.Chapter4.ErrorFunctionSeries
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.GuardDigits
 import Azurite.BrentZimmermann.Chapter4.RectangularSplitting
+import Azurite.BrentZimmermann.Chapter4.SecondAGMLog
 import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
 import Azurite.BrentZimmermann.Chapter4.TangentAlgorithm
 import Azurite.BrentZimmermann.Chapter4.TangentNumbers
+import Mathlib.Algebra.Order.Field.GeomSum
 import Mathlib.Analysis.Calculus.SmoothSeries
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.Complex.ExponentialBounds
@@ -416,6 +419,125 @@ Algorithm SecantNumbers: with `Dⁿ sec x = Q_n(tan x) sec x`, `Q_0 = 1`,
 (`secantInit`, `secantStep`, `secantPass`, `secantOuter`, `secantNumbersModel`) keeps the
 invariant "before pass `k`: `S_0, …, S_{k−1}` finished, position `j ≥ k` holds `q_{j+k−1, j−k+1}`"
 (`secantPass_spec`, `secantOuter_spec`), so it returns `S_0, …, S_m` (`secantNumbersModel_eq`).
+
+## Exercise 4.41
+
+Harvey's reciprocal method: `∑ B_k x^k/k! = (∑ x^k/(k+1)!)⁻¹` (`recipSeries`,
+`bernoulliPowerSeries_mul_recipSeries`), the Newton step for a power-series reciprocal doubles
+the number of correct coefficients (`newton_reciprocal_step`: `1 − E·R(2 − ER) = (1 − ER)²`), the
+scaled coefficients `(B_k/k!) · k! · den B_k = num B_k` are integers of `O(k log k)` bits
+(`scaled_coeff_eq_num`, Exercise 4.37), and `M(n² lg n) ≤ 3 n² (lg n)²` in the quasi-linear model
+(`quasiLinearCost_sq_log_le`): the `n + 1` Bernoulli numbers cost `O(n² (log n)^(2+ε))`.
+
+## Exercise 4.42
+
+Algorithm SeriesExponential (`seriesExp`: `b_0 = 1`, `k b_k = ∑_{j=1}^k j a_j b_{k−j}`) solves
+`B' = A' B`, `B(0) = 1` (`derivative_mk_seriesExp`), hence `log B = A` in the sense of Exercise
+4.1 (`logSeries_mk_seriesExp`): (a). (b) With `a_{2k−1} = B_{2k}/(2k(2k−1))`, `a_{2k} = 0`
+(`stirlingLogCoeff`, the coefficients of (4.38) in `1/z`: `stirlingTerm_eq_stirlingLogCoeff`),
+`seriesExp` gives the Stirling coefficients `b = 1, 1/12, 1/288, −139/51840, …`
+(`stirlingCoeff`, `stirlingCoeff_one/two/three`) of `n! ∼ (n/e)^n √(2πn) ∑ b_k/n^k`. (c) is prose.
+
+## Exercise 4.43
+
+Second-order AGM logarithm: from (4.69) `|K − (π/2)(1 + k²/4)| ≤ A k⁴` and (4.70)
+`|K' − ((2/π) ln(4/k) K − k²/4)| ≤ B k⁴`, pure algebra gives
+`|ln(4/k) − ((1 − k²/4) K' + k²/4)| ≤ k⁴ ((1/16 + 2A/π) ln(4/k) + 1/16 + B)`
+(`second_order_deduction`), and with the proven (4.69) constant `A = 3π/16` for `k² ≤ 1/2`,
+`k⁴ ((7/16) ln(4/k) + 1/16 + B)` (`second_order_expansion`; `B` is the still-unproven second-order
+constant of (4.70), numerically `21/128`). With `k = 4/x` this is `agmLog2 x := (1 − 4/x²) agmLog x
++ 4/x²` and `|agmLog2 x − ln x| ≤ (4/x)⁴ (c₁ ln x + c₂)` (`abs_agmLog2_sub_log_le`), so `x⁴ ≥
+(c₁ ln x + c₂) 256 · 2^n`, i.e. `x ≳ 2^(n/4)`, gives `n` bits (`agmLog2_precision`).
+
+## Exercise 4.44
+
+`π` and `ln 2` from (4.71): `(π/2)/AGM(1,k) ≈ ln(4/k)` turned around gives
+`π ≈ 2 ln(4/k) AGM(1,k)` with error `≤ (k²/2)(2 − ln k)` (`abs_two_mul_log_mul_AGM_sub_pi`); at
+`4/k = e^j` the logarithm is known exactly, so `π ≈ 2j AGM(1, 4e^(−j))` with error
+`≤ 8 e^(−2j)(j + 2 − ln 4)` (`abs_pi_approx_exp`), and then `ln 2 ≈ (π/2)/(m AGM(1, 2^(2−m)))`
+(`abs_log_two_approx`), with an approximate `π` propagating linearly (`abs_log_two_approx_of_pi`,
+using `AGM(1,k) ≥ (π/2)/(ln(4/k) + (k²/4)(2 − ln k))`, `pi_div_two_div_le_AGM`).
+
+## Exercise 4.45
+
+Computing `2θ₂θ₃` and `θ₂² + θ₃²` with two non-scalar products: (A) `u = (θ₂+θ₃)²`, `v = θ₂θ₃`,
+outputs `2v`, `u − 2v` (`methodA_eq`); (B) `u`, `w = (θ₂−θ₃)²`, outputs `(u ± w)/2` (`methodB_eq`).
+Relative errors `ε` in the products give `|Δ(u − 2v)| ≤ 3ε(θ₂² + θ₃²)` for (A)
+(`methodA_relError_le`), but `|Δ((u − w)/2)|` up to `ε(θ₂² + θ₃²)`, i.e. a relative error
+`ε(θ₂² + θ₃²)/(2θ₂θ₃) ≥ ε θ₃/(2θ₂)` for (B) (`methodB_amplification`), and since
+`θ₂(q) ≤ 2q^(1/4)/(1 − q)` (`theta2_le_two_rpow_div`) while `θ₃ ≥ 1`, this loses about
+`¼ lg(1/q)` bits for small `q`: (A) is preferable.
+
+## Exercise 4.46
+
+Improving Table 4.1's complex column in the transform-count model: a complex product or squaring
+costs exactly twice its real counterpart (`fftCost_complex_mul_eq_two_mul`,
+`fftCost_complex_sq_eq_two_mul`), so running the *real* Newton iterations for reciprocal
+(`13/9`), division (`5/3`) and square root (`4/3`) over `ℂ` costs `26/9`, `10/3`, `8/3` instead of
+the table's `31/9`, `43/9`, `16/3` obtained by reducing to real operations through `|z|²`
+(`complex_reciprocal_improved`, `complex_division_improved`, `complex_sqrt_improved`), the AGM
+iteration drops from `20/3` to `4` and `ln z` via the AGM from `(40/3) lg n` to `8 lg n`
+(`complex_agm_iteration_improved`, `complex_log_improved`); the table's `|z|²`-based counts are
+re-derived (`complex_reciprocal_via_norm`, `complex_sqrt_via_norm`).
+
+## Exercise 4.47
+
+(4.80), `∑_{k=1}^{⌈lg n⌉} 2^k M(2^(−k) n lg n) = O((lg n)^α M(n))`: for `M(m) = m^c`, `1 < c ≤ 2`,
+the level costs form a geometric series with ratio `2^(1−c) < 1`
+(`two_pow_mul_div_rpow`, `binary_splitting_cost_pow`: `∑_{k=1}^{L} 2^k (N/2^k)^c ≤ N^c ·
+2^(1−c)/(1 − 2^(1−c))`), and with `N = n lg n`, `(n lg n)^c = (lg n)^c M(n)`
+(`binary_splitting_cost_pow_eq`), so `α = c ≤ 2` (`rpow_logb_le_sq`); the quasi-linear case
+`α = 2` is `binary_splitting_cost` in `BinarySplitting.lean`.
+
+## Exercise 4.48
+
+Yes: `exp(x²) + x/(1 − x²)` is holonomic (`IsHolonomicOn`, a linear ODE with polynomial
+coefficients and nonzero leading coefficient, here on `{x | x² ≠ 1}`).  Both summands are
+(`exp_sq_ode`, `ratPart_ode`), holonomic functions are closed under addition, and the explicit
+annihilator is the second-order operator `(1−x²)(1−x²+2x⁴) D² − 2x(2+x²+3x⁴−2x⁶) D +
+2(2x⁶+3x⁴+4x²−1)` (`salvyFun_ode`, `salvyFun_isHolonomicOn`), obtained by eliminating `f`
+and `g` from `f'' = (2+4x²) f` and `x(1−x²) g' = (1+x²) g`.  Its Taylor coefficients `1/m!`
+(even index `2m`) and `1` (odd index) are interleaved and not hypergeometric, which is the
+point of the exercise.
+
+## Exercise 4.49
+
+Theorem 4.2's `O(M(n) log³ n)` comes from charging every one of the `⌈lg n⌉ + 1` bit-burst
+steps the full binary-splitting cost `O(M(n) log² n)` of (4.80).  Step `i` evaluates about
+`n/2^i` terms whose recurrence coefficients have `2^i + O(lg n)` bits, so its product tree has
+root size `S_i = n + n lg n/2^i` (`burstStepSize`), not `n lg n`, and costs at most
+`(lg n + 1) · M(S_i)` (`binary_splitting_levels_le`).  Since `M(a + b) ≤ 4(M(a) + M(b))`
+(`quasiLinearCost_add_le`) and `M(m/2^i) ≤ M(m)/2^i` (`quasiLinearCost_div_two_pow_le`), the
+sizes `n lg n/2^i` contribute a geometric series: `∑_i M(S_i) ≤ (4(L+1) + 16 lg n) M(n)`
+(`sum_quasiLinearCost_burstStepSize_le`, using `M(n lg n) ≤ 2 lg n · M(n)`,
+`quasiLinearCost_natCast_mul_logb_le`), and the whole algorithm costs at most `56 (lg n)² M(n)`
+(`bit_burst_cost`), i.e. `O(M(n) log² n)` (van der Hoeven; Mezzarobba).
+
+## Exercise 4.50
+
+Partial fractions for `w = e^(2πi/k)`: `1/(z^k − 1) = (1/k) ∑_{m<k} w^m/(z − w^m)`
+(`sum_primitiveRoot_div_eq`, via `z^k − 1 = (z − w^m) ∑_i z^i w^(m(k−1−i))` and orthogonality
+`sum_zpow_primitiveRoot`).  Hence for `f` holomorphic on `|z| ≤ R`, `R > 1`, and `j < k`, the
+discrete sum (4.84) `S_{j,k} = (1/k) ∑_{m<k} f(w^m) w^(−jm)` (`aliasSumFun`; `aliasSum` of
+`ContourIntegration.lean` is the special case of a series) is the contour integral
+`(2πi)⁻¹ ∮_{|z|=R} z^(k−j−1)/(z^k − 1) f(z) dz` (`aliasSumFun_eq_circleIntegral`: each partial
+fraction contributes a Cauchy integral `(2πi)⁻¹ ∮ z^(k−j−1) f(z)/(z − w^m) dz = w^(m(k−j−1))
+f(w^m)`).  Subtracting (4.83) for `a_j` (`cauchyCoeff`, with `hasSum_cauchyCoeff` identifying
+it with the Taylor coefficient) gives `S_{j,k} − a_j = (2πi)⁻¹ ∮ f(z)/(z^(j+1)(z^k − 1)) dz`
+(`aliasSumFun_sub_cauchyCoeff`), and expanding `1/(z^k − 1) = ∑_{l≥1} z^(−lk)` on `|z| = R`
+(dominated convergence, `hasSum_circleIntegral_div_pow`) yields (4.85)
+`S_{j,k} − a_j = ∑_{l≥1} a_{j+lk}` (`aliasSumFun_sub_cauchyCoeff_eq_tsum`): aliasing.
+
+## Exercise 4.51
+
+For `f(z) = z/(e^z − 1) + z/2`, which is even with real coefficients: conjugation
+`f(conj z) = conj f(z)` pairs the sample `w^m` with `w^(k−m)`, so every sample value is one of
+`f(w^r)`, `r ≤ k/2`, or its conjugate (`sample_reduce_conj`, about `k/2` evaluations for odd
+`k`); for even `k`, evenness `w^(m + k/2) = −w^m` (`exp_two_pi_div_pow_half`) folds further to
+`r ≤ k/4` (`sample_reduce_even`, about `k/4` evaluations).  For odd `k`, the aliased
+coefficients `a_{2j+lk}` with `l` odd have odd index and vanish, so `S_{2j,k} = S_{2j,2k}`
+(`bernoulli_aliasSum_odd`) and the error (4.87) improves from `O((2π)^(−k))` to `O((2π)^(−2k))`
+(`norm_bernoulli_aliasSum_sub_le_odd`).
 -/
 
 namespace Azurite
@@ -4310,6 +4432,1187 @@ theorem secantNumbersModel_three :
   decide
 
 end Exercise440
+
+section Exercise441
+
+open PowerSeries
+
+/-- `E(x) = ∑ x^k/(k+1)! = (e^x − 1)/x`, the series whose reciprocal is `∑ B_k x^k/k!`. -/
+noncomputable def recipSeries : ℚ⟦X⟧ := mk fun k => 1 / ((k + 1).factorial : ℚ)
+
+theorem X_mul_recipSeries : X * recipSeries = exp ℚ - 1 := by
+  ext n
+  rcases n with _ | n
+  · rw [coeff_zero_X_mul, coeff_exp_sub_one]; simp
+  · rw [coeff_succ_X_mul, recipSeries, coeff_mk, coeff_exp_sub_one, ite_eq_right (by omega)]
+
+/-- (4.56) as a reciprocal: `∑ B_k x^k/k! · ∑ x^k/(k+1)! = 1`. -/
+theorem bernoulliPowerSeries_mul_recipSeries : bernoulliPowerSeries ℚ * recipSeries = 1 := by
+  apply mul_right_cancel₀ (X_ne_zero (R := ℚ))
+  rw [mul_assoc, mul_comm recipSeries, X_mul_recipSeries, bernoulliPowerSeries_mul_exp_sub_one,
+    one_mul]
+
+/-- One Newton step for a reciprocal: `R' = R(2 − ER)` satisfies `1 − ER' = (1 − ER)²`, so if
+`R` is correct modulo `x^m` then `R'` is correct modulo `x^(2m)`. -/
+theorem newton_reciprocal_step (E R : ℚ⟦X⟧) :
+    1 - E * (R * (2 - E * R)) = (1 - E * R) ^ 2 := by ring
+
+theorem newton_reciprocal_step_dvd {E R : ℚ⟦X⟧} {m : ℕ} (h : X ^ m ∣ 1 - E * R) :
+    X ^ (2 * m) ∣ 1 - E * (R * (2 - E * R)) := by
+  rw [newton_reciprocal_step, pow_two, two_mul, pow_add]
+  exact mul_dvd_mul h h
+
+/-- The coefficients `B_k/k!` of the reciprocal become the integers `num B_k` after scaling by
+`k! · den B_k`: the series can be handled over `ℤ` with `O(k log k)`-bit coefficients
+(Exercise 4.37). -/
+theorem scaled_coeff_eq_num (k : ℕ) :
+    bernoulli k / k.factorial * (k.factorial * (bernoulli k).den) = (bernoulli k).num := by
+  have hf : (k.factorial : ℚ) ≠ 0 := by positivity
+  rw [div_mul_eq_mul_div, mul_comm (k.factorial : ℚ), ← mul_assoc, mul_div_assoc, div_self hf,
+    mul_one, Rat.mul_den_eq_num]
+
+/-- `lg y ≤ y` for real `y ≥ 1` (via `y < ⌊y⌋ + 1 ≤ 2^⌊y⌋`). -/
+theorem logb_two_le_self {y : ℝ} (hy : 1 ≤ y) : Real.logb 2 y ≤ y := by
+  rw [Real.logb_le_iff_le_rpow one_lt_two (by linarith)]
+  have hm : (⌊y⌋₊ : ℝ) ≤ y := Nat.floor_le (by linarith)
+  have hm' : y < ⌊y⌋₊ + 1 := Nat.lt_floor_add_one y
+  have h2 : ((⌊y⌋₊ : ℕ) : ℝ) + 1 ≤ (2 : ℝ) ^ (⌊y⌋₊ : ℕ) := by
+    have := Nat.lt_two_pow_self (n := ⌊y⌋₊)
+    exact_mod_cast this
+  calc y ≤ ⌊y⌋₊ + 1 := hm'.le
+    _ ≤ (2 : ℝ) ^ (⌊y⌋₊ : ℕ) := h2
+    _ = (2 : ℝ) ^ ((⌊y⌋₊ : ℕ) : ℝ) := (Real.rpow_natCast 2 _).symm
+    _ ≤ (2 : ℝ) ^ y := Real.rpow_le_rpow_of_exponent_le one_le_two hm
+
+/-- In the quasi-linear model, one multiplication of `n² lg n`-bit integers (the Kronecker
+substitution of two length-`n` polynomials with `O(n lg n)`-bit coefficients) costs at most
+`3 n² (lg n)²`. -/
+theorem quasiLinearCost_sq_log_le {n : ℝ} (hn : 2 ≤ n) :
+    quasiLinearCost (n ^ 2 * Real.logb 2 n) ≤ 3 * n ^ 2 * Real.logb 2 n ^ 2 := by
+  have hlg : 1 ≤ Real.logb 2 n := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]; exact hn
+  have hlglg : Real.logb 2 (Real.logb 2 n) ≤ Real.logb 2 n :=
+    Real.logb_le_logb_of_le one_lt_two (by linarith) (logb_two_le_self (by linarith))
+  unfold quasiLinearCost
+  rw [Real.logb_mul (by positivity) (by linarith), Real.logb_pow]
+  have h0 : 0 ≤ n ^ 2 * Real.logb 2 n := by positivity
+  push_cast
+  nlinarith [mul_le_mul_of_nonneg_left hlglg h0]
+
+end Exercise441
+
+section Exercise442
+
+open Finset PowerSeries
+
+/-- Algorithm SeriesExponential: `b_0 = 1`, `k b_k = ∑_{j=1}^k j a_j b_{k−j}` (written with
+`j = i + 1`). -/
+noncomputable def seriesExp (a : ℕ → ℚ) : ℕ → ℚ
+  | 0 => 1
+  | k + 1 => (∑ i ∈ range (k + 1), ((i + 1 : ℕ) : ℚ) * a (i + 1) * seriesExp a (k - i)) / (k + 1)
+termination_by k => k
+decreasing_by omega
+
+theorem seriesExp_zero (a : ℕ → ℚ) : seriesExp a 0 = 1 := by rw [seriesExp]
+
+theorem seriesExp_succ (a : ℕ → ℚ) (k : ℕ) :
+    seriesExp a (k + 1)
+      = (∑ i ∈ range (k + 1), ((i + 1 : ℕ) : ℚ) * a (i + 1) * seriesExp a (k - i)) / (k + 1) := by
+  rw [seriesExp]
+
+theorem constantCoeff_mk_seriesExp (a : ℕ → ℚ) : constantCoeff (mk (seriesExp a)) = 1 := by
+  rw [← coeff_zero_eq_constantCoeff_apply, coeff_mk, seriesExp_zero]
+
+/-- The recurrence is the coefficient form of `B' = A' B`. -/
+theorem derivative_mk_seriesExp (a : ℕ → ℚ) :
+    d⁄dX (mk (seriesExp a)) = d⁄dX (mk a) * mk (seriesExp a) := by
+  ext k
+  rw [coeff_derivative, coeff_mk, seriesExp_succ, coeff_mul,
+    Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+      (fun i j => coeff i (d⁄dX (mk a)) * coeff j (mk (seriesExp a)))]
+  have hk : ((k : ℚ) + 1) ≠ 0 := by positivity
+  rw [div_mul_cancel₀ _ hk]
+  refine sum_congr rfl fun i _ => ?_
+  rw [coeff_derivative, coeff_mk, coeff_mk]
+  push_cast
+  ring
+
+/-- (a): the output `B = ∑ b_k x^k` is the exponential of the input `A = ∑ a_k x^k` (`a_0 = 0`),
+in the sense of Exercise 4.1: `log B = A`. Since `b_k` depends only on `a_1, …, a_k`, the first
+`m + 1` coefficients are determined by `a_1, …, a_m`, i.e. `B = exp A + O(x^(m+1))`. -/
+theorem logSeries_mk_seriesExp (a : ℕ → ℚ) (ha : a 0 = 0) :
+    logSeries (mk (seriesExp a)) = mk a := by
+  symm
+  apply logSeries_unique
+  · rw [← coeff_zero_eq_constantCoeff_apply, coeff_mk, ha]
+  · rw [derivative_mk_seriesExp, mul_assoc,
+      PowerSeries.mul_inv_cancel _ (by rw [constantCoeff_mk_seriesExp]; exact one_ne_zero), mul_one]
+
+/-- (b): the coefficients of the Stirling series (4.38) as a series in `1/z`:
+`a_{2k−1} = B_{2k}/(2k(2k−1))`, `a_{2k} = 0`. -/
+noncomputable def stirlingLogCoeff (j : ℕ) : ℚ :=
+  if j % 2 = 1 then bernoulli (j + 1) / ((j + 1) * j) else 0
+
+/-- The terms of (4.38) are `a_j / x^j`. -/
+theorem stirlingTerm_eq_stirlingLogCoeff (m : ℕ) (x : ℝ) :
+    stirlingTerm (m + 1) x = (stirlingLogCoeff (2 * m + 1) : ℝ) / x ^ (2 * m + 1) := by
+  rw [stirlingTerm, stirlingLogCoeff, ite_eq_left (by omega),
+    show 2 * (m + 1) - 1 = 2 * m + 1 by omega, show 2 * m + 1 + 1 = 2 * (m + 1) by ring]
+  push_cast
+  rw [div_div]
+  congr 1
+  ring
+
+/-- The coefficients `b_k` of `n! ∼ (n/e)^n √(2πn) ∑ b_k/n^k`. -/
+noncomputable def stirlingCoeff : ℕ → ℚ := seriesExp stirlingLogCoeff
+
+theorem stirlingLogCoeff_one : stirlingLogCoeff 1 = 1 / 12 := by
+  simp [stirlingLogCoeff, bernoulli_two]; norm_num
+
+theorem stirlingLogCoeff_two : stirlingLogCoeff 2 = 0 := by simp [stirlingLogCoeff]
+
+theorem bernoulli_four' : bernoulli 4 = -1 / 30 := by
+  rw [bernoulli_eq_bernoulli'_of_ne_one (by norm_num), bernoulli'_four]
+
+theorem stirlingLogCoeff_three : stirlingLogCoeff 3 = -1 / 360 := by
+  simp [stirlingLogCoeff, bernoulli_four']; norm_num
+
+theorem stirlingCoeff_zero : stirlingCoeff 0 = 1 := seriesExp_zero _
+
+theorem stirlingCoeff_one : stirlingCoeff 1 = 1 / 12 := by
+  rw [stirlingCoeff, seriesExp_succ]
+  simp [stirlingLogCoeff_one, seriesExp_zero]
+
+theorem stirlingCoeff_two : stirlingCoeff 2 = 1 / 288 := by
+  have h1 := stirlingCoeff_one
+  rw [stirlingCoeff] at h1 ⊢
+  rw [seriesExp_succ]
+  simp [sum_range_succ, stirlingLogCoeff_one, stirlingLogCoeff_two, seriesExp_zero, h1]
+  norm_num
+
+theorem stirlingCoeff_three : stirlingCoeff 3 = -139 / 51840 := by
+  have h1 := stirlingCoeff_one
+  have h2 := stirlingCoeff_two
+  rw [stirlingCoeff] at h1 h2 ⊢
+  rw [seriesExp_succ]
+  simp [sum_range_succ, stirlingLogCoeff_one, stirlingLogCoeff_two, stirlingLogCoeff_three,
+    seriesExp_zero, h1, h2]
+  norm_num
+
+end Exercise442
+
+section Exercise443
+
+/-- The algebraic deduction: if `K = (π/2)(1 + k²/4) + ε₁`, `|ε₁| ≤ A k⁴` (4.69), and
+`K' = (2/π) ln(4/k) K − k²/4 + ε₂`, `|ε₂| ≤ B k⁴` (4.70), then
+`ln(4/k) = (1 − k²/4) K' + k²/4 + E` with `|E| ≤ k⁴ ((1/16 + 2A/π) ln(4/k) + 1/16 + B)`.
+Exactly, `E = (ln(4/k) − 1) k⁴/16 − (1 − k²/4)((2/π) ln(4/k) ε₁ + ε₂)`. -/
+theorem second_order_deduction {k K K' A B : ℝ} (hk : 0 < k) (hk1 : k ≤ 1)
+    (h69 : |K - Real.pi / 2 * (1 + k ^ 2 / 4)| ≤ A * k ^ 4)
+    (h70 : |K' - (2 / Real.pi * Real.log (4 / k) * K - k ^ 2 / 4)| ≤ B * k ^ 4) :
+    |Real.log (4 / k) - ((1 - k ^ 2 / 4) * K' + k ^ 2 / 4)|
+      ≤ k ^ 4 * ((1 / 16 + 2 * A / Real.pi) * Real.log (4 / k) + 1 / 16 + B) := by
+  set L := Real.log (4 / k) with hL
+  have hL1 : 1 ≤ L := by
+    rw [hL, Real.le_log_iff_exp_le (by positivity)]
+    have : Real.exp 1 ≤ 4 := by linarith [Real.exp_one_lt_d9]
+    calc Real.exp 1 ≤ 4 := this
+      _ ≤ 4 / k := by rw [le_div_iff₀ hk]; nlinarith
+  set ε₁ := K - Real.pi / 2 * (1 + k ^ 2 / 4) with hε₁
+  set ε₂ := K' - (2 / Real.pi * L * K - k ^ 2 / 4) with hε₂
+  have hπ : (0 : ℝ) < Real.pi := Real.pi_pos
+  have hE : L - ((1 - k ^ 2 / 4) * K' + k ^ 2 / 4)
+      = (L - 1) * k ^ 4 / 16 - (1 - k ^ 2 / 4) * (2 / Real.pi * L * ε₁ + ε₂) := by
+    rw [hε₁, hε₂]
+    field_simp
+    ring
+  have hk4 : 0 ≤ k ^ 4 := by positivity
+  have hone : 0 ≤ 1 - k ^ 2 / 4 := by nlinarith
+  have hone' : 1 - k ^ 2 / 4 ≤ 1 := by nlinarith
+  have hA : 0 ≤ A := by
+    have := (abs_nonneg _).trans h69
+    nlinarith [pow_pos hk 4]
+  have hB : 0 ≤ B := by
+    have := (abs_nonneg _).trans h70
+    nlinarith [pow_pos hk 4]
+  rw [hE]
+  calc |(L - 1) * k ^ 4 / 16 - (1 - k ^ 2 / 4) * (2 / Real.pi * L * ε₁ + ε₂)|
+      ≤ |(L - 1) * k ^ 4 / 16| + |(1 - k ^ 2 / 4) * (2 / Real.pi * L * ε₁ + ε₂)| := abs_sub _ _
+    _ ≤ (L + 1) * k ^ 4 / 16 + 1 * (2 / Real.pi * L * (A * k ^ 4) + B * k ^ 4) := by
+        gcongr
+        · rw [abs_div, abs_mul, abs_of_nonneg hk4, abs_of_nonneg (by linarith : (0:ℝ) ≤ L - 1),
+            abs_of_pos (by norm_num : (0:ℝ) < 16)]
+          exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right (by linarith) hk4)
+            (by norm_num)
+        · rw [abs_mul, abs_of_nonneg hone]
+          gcongr
+          calc |2 / Real.pi * L * ε₁ + ε₂| ≤ |2 / Real.pi * L * ε₁| + |ε₂| := abs_add_le _ _
+            _ ≤ 2 / Real.pi * L * (A * k ^ 4) + B * k ^ 4 := by
+                gcongr
+                rw [abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ 2 / Real.pi * L)]
+                gcongr
+    _ = k ^ 4 * ((1 / 16 + 2 * A / Real.pi) * L + 1 / 16 + B) := by field_simp; ring
+
+/-- The expansion with the proven (4.69) constant `A = 3π/16` (`ellipticK_bounds`, `k² ≤ 1/2`):
+`ln(4/k) = (1 − k²/4) (π/2)/AGM(1,k) + k²/4 + O(k⁴ ln(4/k))`, with
+`|O(·)| ≤ k⁴ ((7/16) ln(4/k) + 1/16 + B)` where `B` is the second-order constant of (4.70)
+(an assumption here; numerically `B ≈ 21/128`). -/
+theorem second_order_expansion {k B : ℝ} (hk : 0 < k) (hk2 : k ^ 2 ≤ 1 / 2)
+    (h70 : |Real.pi / 2 / AGM 1 k
+      - (2 / Real.pi * Real.log (4 / k) * ellipticK k - k ^ 2 / 4)| ≤ B * k ^ 4) :
+    |Real.log (4 / k) - ((1 - k ^ 2 / 4) * (Real.pi / 2 / AGM 1 k) + k ^ 2 / 4)|
+      ≤ k ^ 4 * (7 / 16 * Real.log (4 / k) + 1 / 16 + B) := by
+  have hk1 : k ≤ 1 := by nlinarith
+  obtain ⟨hlo, hhi⟩ := ellipticK_bounds hk2
+  have h69 : |ellipticK k - Real.pi / 2 * (1 + k ^ 2 / 4)| ≤ 3 * Real.pi / 16 * k ^ 4 := by
+    rw [abs_le]; constructor <;> nlinarith [Real.pi_pos]
+  have h := second_order_deduction hk hk1 h69 h70
+  have hπ : Real.pi ≠ 0 := Real.pi_ne_zero
+  calc _ ≤ _ := h
+    _ = k ^ 4 * (7 / 16 * Real.log (4 / k) + 1 / 16 + B) := by
+        congr 1
+        field_simp
+        ring
+
+/-- The second-order AGM logarithm: `ln x ≈ (1 − 4/x²) (π/2)/AGM(1, 4/x) + 4/x²`. -/
+noncomputable def agmLog2 (x : ℝ) : ℝ := (1 - 4 / x ^ 2) * agmLog x + 4 / x ^ 2
+
+/-- Transport of an effective bound `|ln(4/k) − ((1 − k²/4) K' + k²/4)| ≤ k⁴ (c₁ ln(4/k) + c₂)`
+(valid for `0 < k ≤ 1/2`) to `agmLog2`: `|agmLog2 x − ln x| ≤ (4/x)⁴ (c₁ ln x + c₂)` for `x ≥ 8`.
+Numerically (see the ledger) `c₁ = 5/64`, `c₂ = 0` work. -/
+theorem abs_agmLog2_sub_log_le {c₁ c₂ : ℝ}
+    (hE : ∀ k : ℝ, 0 < k → k ≤ 1 / 2 →
+      |Real.log (4 / k) - ((1 - k ^ 2 / 4) * (Real.pi / 2 / AGM 1 k) + k ^ 2 / 4)|
+        ≤ k ^ 4 * (c₁ * Real.log (4 / k) + c₂))
+    {x : ℝ} (hx : 8 ≤ x) :
+    |agmLog2 x - Real.log x| ≤ (4 / x) ^ 4 * (c₁ * Real.log x + c₂) := by
+  have hx0 : 0 < x := by linarith
+  have hk : 0 < 4 / x := by positivity
+  have hk2 : 4 / x ≤ 1 / 2 := by rw [div_le_div_iff₀ hx0 (by norm_num)]; linarith
+  have h := hE (4 / x) hk hk2
+  rw [show (4 : ℝ) / (4 / x) = x by field_simp] at h
+  have e1 : (1 - 4 / x ^ 2) * (Real.pi / 2 / AGM 1 (4 / x)) + 4 / x ^ 2
+      = (1 - (4 / x) ^ 2 / 4) * (Real.pi / 2 / AGM 1 (4 / x)) + (4 / x) ^ 2 / 4 := by ring
+  rw [agmLog2, agmLog, abs_sub_comm, e1]
+  exact h
+
+/-- Sufficient condition for `n` bits: `x⁴ ≥ 256 (c₁ ln x + c₂) 2^n` (so `x ≳ 2^(n/4)`), given
+the transported bound. -/
+theorem agmLog2_precision {c₁ c₂ x : ℝ} {n : ℕ} (hx : 8 ≤ x)
+    (hbound : |agmLog2 x - Real.log x| ≤ (4 / x) ^ 4 * (c₁ * Real.log x + c₂))
+    (hn : 256 * (c₁ * Real.log x + c₂) * 2 ^ n ≤ x ^ 4) :
+    |agmLog2 x - Real.log x| ≤ (1 / 2) ^ n := by
+  have hx0 : 0 < x := by linarith
+  refine hbound.trans ?_
+  rw [div_pow, show (4 : ℝ) ^ 4 = 256 by norm_num, div_mul_eq_mul_div, div_le_iff₀ (by positivity),
+    one_div, inv_pow, ← div_eq_inv_mul, le_div_iff₀ (by positivity)]
+  exact hn
+
+end Exercise443
+
+section Exercise444
+
+/-- (4.71) turned around: `|2 ln(4/k) AGM(1,k) − π| ≤ (k²/2)(2 − ln k)` for `0 < k ≤ 1`. -/
+theorem abs_two_mul_log_mul_AGM_sub_pi {k : ℝ} (hk : 0 < k) (hk1 : k ≤ 1) :
+    |2 * Real.log (4 / k) * AGM 1 k - Real.pi| ≤ k ^ 2 / 2 * (2 - Real.log k) := by
+  have hA : 0 < AGM 1 k := lt_of_lt_of_le (lt_min one_pos hk) (min_le_AGM one_pos hk)
+  have hA1 : AGM 1 k ≤ 1 :=
+    (AGM_le_max one_pos hk).trans (by rw [max_le_iff]; exact ⟨le_rfl, hk1⟩)
+  have h := abs_pi_div_AGM_sub_log_le hk hk1
+  have e : 2 * Real.log (4 / k) * AGM 1 k - Real.pi
+      = -(2 * AGM 1 k) * (Real.pi / 2 / AGM 1 k - Real.log (4 / k)) := by
+    field_simp
+    ring
+  rw [e, abs_mul, abs_neg, abs_of_pos (by positivity)]
+  have hlogk : Real.log k ≤ 0 := Real.log_nonpos hk.le hk1
+  calc 2 * AGM 1 k * |Real.pi / 2 / AGM 1 k - Real.log (4 / k)|
+      ≤ 2 * 1 * (k ^ 2 / 4 * (2 - Real.log k)) := by
+        gcongr
+    _ = k ^ 2 / 2 * (2 - Real.log k) := by ring
+
+/-- `π` from (4.71) with a logarithm known exactly: at `4/k = e^j`,
+`|2j · AGM(1, 4e^(−j)) − π| ≤ 8 e^(−2j) (j + 2 − ln 4)` for `j ≥ ln 4`. -/
+theorem abs_pi_approx_exp {j : ℝ} (hj : Real.log 4 ≤ j) :
+    |2 * j * AGM 1 (4 * Real.exp (-j)) - Real.pi|
+      ≤ 8 * Real.exp (-(2 * j)) * (j + 2 - Real.log 4) := by
+  set k := 4 * Real.exp (-j) with hk
+  have hk0 : 0 < k := by positivity
+  have hk1 : k ≤ 1 := by
+    rw [hk, Real.exp_neg, ← div_eq_mul_inv, div_le_one (Real.exp_pos j),
+      ← Real.exp_log (by norm_num : (0 : ℝ) < 4)]
+    exact Real.exp_le_exp.mpr hj
+  have hlog : Real.log (4 / k) = j := by
+    rw [hk, show (4 : ℝ) / (4 * Real.exp (-j)) = Real.exp j by
+      rw [Real.exp_neg]; field_simp, Real.log_exp]
+  have hlogk : Real.log k = Real.log 4 - j := by
+    rw [hk, Real.log_mul (by norm_num) (Real.exp_pos _).ne', Real.log_exp]; ring
+  have h := abs_two_mul_log_mul_AGM_sub_pi hk0 hk1
+  rw [hlog, hlogk] at h
+  calc |2 * j * AGM 1 k - Real.pi| ≤ k ^ 2 / 2 * (2 - (Real.log 4 - j)) := h
+    _ = 8 * Real.exp (-(2 * j)) * (j + 2 - Real.log 4) := by
+        rw [hk, mul_pow, ← Real.exp_nat_mul]
+        push_cast
+        ring_nf
+
+/-- `ln 2` from (4.71) at `x = 2^m`:
+`|(π/2)/(m AGM(1, 2^(2−m))) − ln 2| ≤ 4^(2−m)(2 + (m−2) ln 2)/(4m)` for `m ≥ 2`. -/
+theorem abs_log_two_approx {m : ℕ} (hm : 2 ≤ m) :
+    |Real.pi / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2|
+      ≤ (4 / 2 ^ m) ^ 2 / 4 * (2 + (m - 2) * Real.log 2) / m := by
+  have hm0 : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
+  have h2m : (4 : ℝ) ≤ 2 ^ m := by
+    calc (4 : ℝ) = 2 ^ 2 := by norm_num
+      _ ≤ 2 ^ m := pow_le_pow_right₀ (by norm_num) hm
+  have hk0 : (0 : ℝ) < 4 / 2 ^ m := by positivity
+  have hk1 : (4 : ℝ) / 2 ^ m ≤ 1 := by rw [div_le_one (by positivity)]; exact h2m
+  have h := abs_pi_div_AGM_sub_log_le hk0 hk1
+  have hlog : Real.log (4 / (4 / 2 ^ m)) = m * Real.log 2 := by
+    rw [show (4 : ℝ) / (4 / 2 ^ m) = 2 ^ m by field_simp, Real.log_pow]
+  have hlogk : Real.log (4 / 2 ^ m) = 2 * Real.log 2 - m * Real.log 2 := by
+    rw [Real.log_div (by norm_num) (by positivity), Real.log_pow,
+      show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    push_cast; ring
+  rw [hlog, hlogk] at h
+  have e : Real.pi / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2
+      = (Real.pi / 2 / AGM 1 (4 / 2 ^ m) - m * Real.log 2) / m := by
+    field_simp
+  rw [e, abs_div, abs_of_pos hm0]
+  gcongr
+  calc _ ≤ _ := h
+    _ = (4 / 2 ^ m) ^ 2 / 4 * (2 + (m - 2) * Real.log 2) := by ring
+
+/-- The lower bound `AGM(1,k) ≥ (π/2)/(ln(4/k) + (k²/4)(2 − ln k))` used to propagate an error
+in `π` through `ln 2 ≈ (π/2)/(m AGM)`. -/
+theorem pi_div_two_div_le_AGM {k : ℝ} (hk : 0 < k) (hk1 : k ≤ 1) :
+    Real.pi / 2 / (Real.log (4 / k) + k ^ 2 / 4 * (2 - Real.log k)) ≤ AGM 1 k := by
+  have hA : 0 < AGM 1 k := lt_of_lt_of_le (lt_min one_pos hk) (min_le_AGM one_pos hk)
+  have h := (abs_le.mp (abs_pi_div_AGM_sub_log_le hk hk1)).2
+  have hL : 0 < Real.log (4 / k) := Real.log_pos (by rw [lt_div_iff₀ hk]; linarith)
+  have hlogk : Real.log k ≤ 0 := Real.log_nonpos hk.le hk1
+  have hden : 0 < Real.log (4 / k) + k ^ 2 / 4 * (2 - Real.log k) := by
+    have := mul_nonneg (by positivity : (0:ℝ) ≤ k ^ 2 / 4) (by linarith : (0:ℝ) ≤ 2 - Real.log k)
+    linarith
+  rw [div_le_iff₀ hden]
+  have : Real.pi / 2 / AGM 1 k * AGM 1 k = Real.pi / 2 := by field_simp
+  nlinarith [this]
+
+/-- An approximate `π̃` with `|π̃ − π| ≤ δ` gives `ln 2` to within the (4.71) error plus
+`δ/(2m AGM(1, 2^(2−m)))`; the `AGM` is bounded below by `pi_div_two_div_le_AGM`, so this is
+`≈ δ (m ln 2)/(π m) = O(δ)`. -/
+theorem abs_log_two_approx_of_pi {m : ℕ} (hm : 2 ≤ m) {p δ : ℝ} (hp : |p - Real.pi| ≤ δ) :
+    |p / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2|
+      ≤ δ / (2 * AGM 1 (4 / 2 ^ m) * m)
+        + (4 / 2 ^ m) ^ 2 / 4 * (2 + (m - 2) * Real.log 2) / m := by
+  have hm0 : (0 : ℝ) < m := by exact_mod_cast (by omega : 0 < m)
+  have hk0 : (0 : ℝ) < 4 / 2 ^ m := by positivity
+  have hA : 0 < AGM 1 (4 / 2 ^ m) := lt_of_lt_of_le (lt_min one_pos hk0) (min_le_AGM one_pos hk0)
+  have h := abs_log_two_approx hm
+  have e : p / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2
+      = (p - Real.pi) / (2 * AGM 1 (4 / 2 ^ m) * m)
+        + (Real.pi / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2) := by
+    field_simp
+    ring
+  rw [e]
+  have hden : 0 < 2 * AGM 1 (4 / 2 ^ m) * m := by positivity
+  have h1 : |(p - Real.pi) / (2 * AGM 1 (4 / 2 ^ m) * m)| ≤ δ / (2 * AGM 1 (4 / 2 ^ m) * m) := by
+    rw [abs_div, abs_of_pos hden]
+    exact div_le_div_of_nonneg_right hp hden.le
+  calc _ ≤ |(p - Real.pi) / (2 * AGM 1 (4 / 2 ^ m) * m)|
+        + |Real.pi / 2 / AGM 1 (4 / 2 ^ m) / m - Real.log 2| := abs_add_le _ _
+    _ ≤ δ / (2 * AGM 1 (4 / 2 ^ m) * m)
+        + (4 / 2 ^ m) ^ 2 / 4 * (2 + (m - 2) * Real.log 2) / m := add_le_add h1 h
+
+end Exercise444
+
+section Exercise445
+
+/-- Method (A): `2θ₂θ₃ = 2v`, `θ₂² + θ₃² = u − 2v` with `u = (θ₂+θ₃)²`, `v = θ₂θ₃`. -/
+theorem methodA_eq (a b : ℝ) :
+    2 * a * b = 2 * (a * b) ∧ a ^ 2 + b ^ 2 = (a + b) ^ 2 - 2 * (a * b) := ⟨by ring, by ring⟩
+
+/-- Method (B): `θ₂² + θ₃² = (u + w)/2`, `2θ₂θ₃ = (u − w)/2` with `w = (θ₂−θ₃)²`. -/
+theorem methodB_eq (a b : ℝ) :
+    a ^ 2 + b ^ 2 = ((a + b) ^ 2 + (a - b) ^ 2) / 2 ∧
+      2 * a * b = ((a + b) ^ 2 - (a - b) ^ 2) / 2 :=
+  ⟨sq_add_sq_eq_half_add a b, two_mul_mul_eq_half_sub a b⟩
+
+/-- (A) is well conditioned: with relative errors `|ε₁|, |ε₂| ≤ ε` in `u` and `v` (`a, b ≥ 0`),
+the computed `u(1+ε₁) − 2v(1+ε₂)` is within `3ε(a² + b²)` of `a² + b²`. -/
+theorem methodA_relError_le {a b ε ε₁ ε₂ : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (h₁ : |ε₁| ≤ ε)
+    (h₂ : |ε₂| ≤ ε) :
+    |(a + b) ^ 2 * (1 + ε₁) - 2 * (a * b) * (1 + ε₂) - (a ^ 2 + b ^ 2)|
+      ≤ 3 * ε * (a ^ 2 + b ^ 2) := by
+  have hε : 0 ≤ ε := (abs_nonneg _).trans h₁
+  have e : (a + b) ^ 2 * (1 + ε₁) - 2 * (a * b) * (1 + ε₂) - (a ^ 2 + b ^ 2)
+      = (a + b) ^ 2 * ε₁ - 2 * (a * b) * ε₂ := by ring
+  have hab : 2 * (a * b) ≤ a ^ 2 + b ^ 2 := by nlinarith [sq_nonneg (a - b)]
+  have hab' : (a + b) ^ 2 ≤ 2 * (a ^ 2 + b ^ 2) := by nlinarith [sq_nonneg (a - b)]
+  rw [e]
+  calc |(a + b) ^ 2 * ε₁ - 2 * (a * b) * ε₂|
+      ≤ |(a + b) ^ 2 * ε₁| + |2 * (a * b) * ε₂| := abs_sub _ _
+    _ = (a + b) ^ 2 * |ε₁| + 2 * (a * b) * |ε₂| := by
+        rw [abs_mul, abs_mul, abs_of_nonneg (by positivity : (0:ℝ) ≤ (a + b) ^ 2),
+          abs_of_nonneg (by positivity : (0:ℝ) ≤ 2 * (a * b))]
+    _ ≤ 2 * (a ^ 2 + b ^ 2) * ε + (a ^ 2 + b ^ 2) * ε := by gcongr
+    _ = 3 * ε * (a ^ 2 + b ^ 2) := by ring
+
+/-- (B) is ill conditioned for `2ab = (u − w)/2`: relative errors `ε` in `u` and `w` give an
+absolute error up to `ε(a² + b²)` (attained for `ε₁ = ε = −ε₂`), i.e. a relative error
+`ε (a² + b²)/(2ab) ≥ ε · b/(2a)` — unbounded as `a/b → 0`. -/
+theorem methodB_amplification {a b ε : ℝ} (ha : 0 < a) (hb : 0 < b) (hε : 0 ≤ ε) :
+    |((a + b) ^ 2 * (1 + ε) - (a - b) ^ 2 * (1 - ε)) / 2 - 2 * a * b| = ε * (a ^ 2 + b ^ 2) ∧
+      ε * (a ^ 2 + b ^ 2) / (2 * a * b) ≥ ε * b / (2 * a) := by
+  constructor
+  · rw [show ((a + b) ^ 2 * (1 + ε) - (a - b) ^ 2 * (1 - ε)) / 2 - 2 * a * b
+        = ε * (a ^ 2 + b ^ 2) by ring, abs_of_nonneg (by positivity)]
+  · rw [ge_iff_le, div_le_div_iff₀ (by positivity) (by positivity)]
+    have : 0 ≤ ε * a ^ 2 * (2 * a) := by positivity
+    nlinarith
+
+/-- `θ₂(q) ≤ 2 q^(1/4)/(1 − q)` for `0 < q < 1`: the small factor in (B)'s amplification
+`θ₃/(2θ₂) ≥ (1 − q)/(4 q^(1/4))`. -/
+theorem theta2_le_two_rpow_div {q : ℝ} (hq0 : 0 < q) (hq1 : q < 1) :
+    theta2 q ≤ 2 * q ^ (1 / 4 : ℝ) / (1 - q) := by
+  rw [theta2_eq_rpow_mul hq0.le hq1, theta2Int_eq_two_mul_tsum hq0 hq1]
+  have hr : 0 ≤ q ^ (1 / 4 : ℝ) := (Real.rpow_pos_of_pos hq0 _).le
+  have ht : ∑' n : ℕ, q ^ (n * (n + 1)) ≤ q ^ 0 / (1 - q) :=
+    tsum_pow_le_of_le hq0.le hq1 (M := 0) fun n => by nlinarith
+  rw [pow_zero] at ht
+  calc q ^ (1 / 4 : ℝ) * (2 * ∑' n : ℕ, q ^ (n * (n + 1)))
+      ≤ q ^ (1 / 4 : ℝ) * (2 * (1 / (1 - q))) := by gcongr
+    _ = 2 * q ^ (1 / 4 : ℝ) / (1 - q) := by ring
+
+end Exercise445
+
+section Exercise446
+
+/-- The doubling principle: a complex product costs exactly twice a real one in transforms
+(`4 + 2` against `2 + 1`). -/
+theorem fftCost_complex_mul_eq_two_mul : fftCost 4 2 = 2 * fftCost 2 1 := by norm_num [fftCost]
+
+/-- …and a complex squaring exactly twice a real one (`2 + 2` against `1 + 1`). -/
+theorem fftCost_complex_sq_eq_two_mul : fftCost 2 2 = 2 * fftCost 1 1 := by norm_num [fftCost]
+
+/-- Table 4.1's complex reciprocal through `1/z = z̄/|z|²`: `|z|² = a² + b²` with the transforms
+of `a, b` shared (`2` forward, `1` backward, `1`), a real reciprocal (`13/9`), then `a r`, `b r`
+with the stored transforms and one transform of `r` (`1` forward, `2` backward, `1`): `31/9`. -/
+theorem complex_reciprocal_via_norm : fftCost 2 1 + 13 / 9 + fftCost 1 2 = 31 / 9 := by
+  norm_num [fftCost]
+
+/-- Table 4.1's complex square root through `x = √((|z| + a)/2)`, `y = b/(2x)`: `|z|² (1)`, three
+real square roots or two square roots and a division: `1 + 4/3 + 4/3 + 5/3 = 16/3`. -/
+theorem complex_sqrt_via_norm : (1 : ℚ) + 4 / 3 + 4 / 3 + 5 / 3 = 16 / 3 := by norm_num
+
+/-- Improved: the real Newton reciprocal (`13/9 M`) run over `ℂ` costs twice, `26/9 < 31/9`. -/
+theorem complex_reciprocal_improved : (2 : ℚ) * (13 / 9) < 31 / 9 := by norm_num
+
+/-- Improved: complex division as a complex Newton iteration, `2 · 5/3 = 10/3 < 43/9`. -/
+theorem complex_division_improved : (2 : ℚ) * (5 / 3) < 43 / 9 := by norm_num
+
+/-- Improved: the complex square root as a complex Newton iteration, `2 · 4/3 = 8/3 < 16/3`. -/
+theorem complex_sqrt_improved : (2 : ℚ) * (4 / 3) < 16 / 3 := by norm_num
+
+/-- Improved: a complex AGM iteration (one complex product and one complex square root, with the
+same transform reuse as the real `2M` iteration) costs `2 · 2 = 4 < 20/3`. -/
+theorem complex_agm_iteration_improved : (2 : ℚ) * 2 < 20 / 3 := by norm_num
+
+/-- Improved: `ln z` by the complex AGM, `2 lg n` iterations of cost `4`, `8 lg n < (40/3) lg n`. -/
+theorem complex_log_improved {n : ℝ} (hn : 0 < Real.logb 2 n) :
+    2 * 2 * (2 * Real.logb 2 n) < 40 / 3 * Real.logb 2 n := by linarith
+
+end Exercise446
+
+section Exercise447
+
+open Finset
+
+/-- One level of the splitting tree under `M(m) = m^c`: `2^k (N/2^k)^c = N^c (2^(1−c))^k`. -/
+theorem two_pow_mul_div_rpow {N c : ℝ} (hN : 0 ≤ N) (k : ℕ) :
+    (2 : ℝ) ^ k * (N / 2 ^ k) ^ c = N ^ c * ((2 : ℝ) ^ (1 - c)) ^ k := by
+  have h2k : (0 : ℝ) < 2 ^ k := by positivity
+  rw [Real.div_rpow hN h2k.le, ← Real.rpow_natCast 2 k, ← Real.rpow_mul (by norm_num),
+    ← Real.rpow_natCast ((2 : ℝ) ^ (1 - c)) k, ← Real.rpow_mul (by norm_num),
+    show (1 - c) * (k : ℝ) = (k : ℝ) - k * c by ring, Real.rpow_sub (by norm_num)]
+  ring
+
+/-- (4.80) for `M(m) = m^c`, `c > 1`: the level costs are geometric, so
+`∑_{k=1}^{L} 2^k (N/2^k)^c ≤ N^c · 2^(1−c)/(1 − 2^(1−c))` for every `L`. -/
+theorem binary_splitting_cost_pow {N c : ℝ} (hN : 0 ≤ N) (hc : 1 < c) (L : ℕ) :
+    ∑ k ∈ Icc 1 L, (2 : ℝ) ^ k * (N / 2 ^ k) ^ c
+      ≤ N ^ c * ((2 : ℝ) ^ (1 - c) / (1 - 2 ^ (1 - c))) := by
+  set r : ℝ := (2 : ℝ) ^ (1 - c) with hr
+  have hr0 : 0 ≤ r := by positivity
+  have hr1 : r < 1 := Real.rpow_lt_one_of_one_lt_of_neg one_lt_two (by linarith)
+  have hgeom : ∑ k ∈ Icc 1 L, r ^ k ≤ r / (1 - r) := by
+    have h := geom_sum_Ico_le_of_lt_one hr0 hr1 (m := 1) (n := L + 1)
+    rwa [pow_one, ← Order.succ_eq_add_one, Finset.Ico_succ_right_eq_Icc] at h
+  calc ∑ k ∈ Icc 1 L, (2 : ℝ) ^ k * (N / 2 ^ k) ^ c
+      = ∑ k ∈ Icc 1 L, N ^ c * r ^ k := sum_congr rfl fun k _ => two_pow_mul_div_rpow hN k
+    _ = N ^ c * ∑ k ∈ Icc 1 L, r ^ k := by rw [mul_sum]
+    _ ≤ N ^ c * (r / (1 - r)) := by gcongr
+
+/-- With `N = n lg n` and `M(n) = n^c`: the bound is `(lg n)^c · M(n) · 2^(1−c)/(1 − 2^(1−c))`,
+i.e. `α = c`. -/
+theorem binary_splitting_cost_pow_eq {n c : ℝ} (hn : 1 ≤ n) (hc : 1 < c) (L : ℕ) :
+    ∑ k ∈ Icc 1 L, (2 : ℝ) ^ k * (n * Real.logb 2 n / 2 ^ k) ^ c
+      ≤ Real.logb 2 n ^ c * n ^ c * ((2 : ℝ) ^ (1 - c) / (1 - 2 ^ (1 - c))) := by
+  have hlg : 0 ≤ Real.logb 2 n := Real.logb_nonneg one_lt_two hn
+  have h := binary_splitting_cost_pow (N := n * Real.logb 2 n) (by positivity) hc L
+  rwa [Real.mul_rpow (by linarith) hlg, mul_comm (n ^ c)] at h
+
+/-- `α = c ≤ 2`: `(lg n)^c ≤ (lg n)²` for `n ≥ 2`. -/
+theorem rpow_logb_le_sq {n c : ℝ} (hn : 2 ≤ n) (hc : c ≤ 2) :
+    Real.logb 2 n ^ c ≤ Real.logb 2 n ^ 2 := by
+  have hlg : 1 ≤ Real.logb 2 n := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]; exact hn
+  calc Real.logb 2 n ^ c ≤ Real.logb 2 n ^ (2 : ℝ) :=
+        Real.rpow_le_rpow_of_exponent_le hlg hc
+    _ = Real.logb 2 n ^ 2 := by norm_cast
+
+end Exercise447
+
+section Exercise448
+
+open Polynomial
+
+/-- `f` is holonomic (D-finite) on `s`: some linear differential operator with polynomial
+coefficients and nonzero leading coefficient annihilates `f` on `s`. -/
+def IsHolonomicOn (f : ℝ → ℝ) (s : Set ℝ) : Prop :=
+  ∃ (r : ℕ) (p : Fin (r + 1) → ℝ[X]), p (Fin.last r) ≠ 0 ∧
+    ∀ x ∈ s, ∑ i : Fin (r + 1), (p i).eval x * iteratedDeriv i f x = 0
+
+/-- Salvy's function `exp(x²) + x/(1 − x²)`. -/
+noncomputable def salvyFun (x : ℝ) : ℝ := Real.exp (x ^ 2) + x / (1 - x ^ 2)
+
+/-- Its derivative. -/
+noncomputable def salvyFun' (x : ℝ) : ℝ :=
+  2 * x * Real.exp (x ^ 2) + (1 + x ^ 2) / (1 - x ^ 2) ^ 2
+
+/-- Its second derivative. -/
+noncomputable def salvyFun'' (x : ℝ) : ℝ :=
+  (2 + 4 * x ^ 2) * Real.exp (x ^ 2) + 2 * x * (3 + x ^ 2) / (1 - x ^ 2) ^ 3
+
+/-- `exp(x²)` is holonomic: `f' − 2x f = 0`. -/
+theorem exp_sq_ode (x : ℝ) :
+    deriv (fun y => Real.exp (y ^ 2)) x - 2 * x * Real.exp (x ^ 2) = 0 := by
+  rw [((hasDerivAt_pow 2 x).exp).deriv]; ring
+
+/-- `x/(1 − x²)` is holonomic: `x(1 − x²) g' − (1 + x²) g = 0` away from `x² = 1`. -/
+theorem ratPart_ode {x : ℝ} (hx : x ^ 2 ≠ 1) :
+    x * (1 - x ^ 2) * deriv (fun y => y / (1 - y ^ 2)) x - (1 + x ^ 2) * (x / (1 - x ^ 2)) = 0 := by
+  have hne : 1 - x ^ 2 ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+  have h : HasDerivAt (fun y : ℝ => y / (1 - y ^ 2))
+      ((1 * (1 - x ^ 2) - id x * -(↑(2 : ℕ) * x ^ (2 - 1))) / (1 - x ^ 2) ^ 2) x :=
+    (hasDerivAt_id x).div ((hasDerivAt_pow 2 x).const_sub 1) hne
+  rw [h.deriv]
+  simp only [id]
+  field_simp
+  ring
+
+theorem hasDerivAt_salvyFun {x : ℝ} (hx : x ^ 2 ≠ 1) : HasDerivAt salvyFun (salvyFun' x) x := by
+  have hne : 1 - x ^ 2 ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+  have h := ((hasDerivAt_pow 2 x).exp).add
+    ((hasDerivAt_id x).div ((hasDerivAt_pow 2 x).const_sub 1) hne)
+  refine h.congr_deriv ?_
+  simp only [salvyFun', id]
+  field_simp
+  ring
+
+theorem hasDerivAt_salvyFun' {x : ℝ} (hx : x ^ 2 ≠ 1) :
+    HasDerivAt salvyFun' (salvyFun'' x) x := by
+  have hne : 1 - x ^ 2 ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+  have hne2 : (1 - x ^ 2) ^ 2 ≠ 0 := pow_ne_zero 2 hne
+  have h := (((hasDerivAt_id x).const_mul 2).mul ((hasDerivAt_pow 2 x).exp)).add
+    (((hasDerivAt_pow 2 x).const_add 1).div (((hasDerivAt_pow 2 x).const_sub 1).pow 2) hne2)
+  refine h.congr_deriv ?_
+  simp only [salvyFun'', id, Pi.pow_apply]
+  field_simp
+  ring
+
+theorem isOpen_sq_ne_one : IsOpen {x : ℝ | x ^ 2 ≠ 1} :=
+  isOpen_ne_fun (continuous_pow 2) continuous_const
+
+theorem deriv_salvyFun {x : ℝ} (hx : x ^ 2 ≠ 1) : deriv salvyFun x = salvyFun' x :=
+  (hasDerivAt_salvyFun hx).deriv
+
+theorem deriv_deriv_salvyFun {x : ℝ} (hx : x ^ 2 ≠ 1) :
+    deriv (deriv salvyFun) x = salvyFun'' x := by
+  have hev : deriv salvyFun =ᶠ[nhds x] salvyFun' :=
+    Filter.eventually_of_mem (isOpen_sq_ne_one.mem_nhds hx) fun y hy => deriv_salvyFun hy
+  rw [hev.deriv_eq, (hasDerivAt_salvyFun' hx).deriv]
+
+/-- The explicit annihilating operator of `exp(x²) + x/(1 − x²)`:
+`(1−x²)(1−x²+2x⁴) h'' − 2x(2+x²+3x⁴−2x⁶) h' + 2(2x⁶+3x⁴+4x²−1) h = 0`. -/
+theorem salvyFun_ode {x : ℝ} (hx : x ^ 2 ≠ 1) :
+    (1 - x ^ 2) * (1 - x ^ 2 + 2 * x ^ 4) * salvyFun'' x
+      - 2 * x * (2 + x ^ 2 + 3 * x ^ 4 - 2 * x ^ 6) * salvyFun' x
+      + 2 * (2 * x ^ 6 + 3 * x ^ 4 + 4 * x ^ 2 - 1) * salvyFun x = 0 := by
+  have hne : 1 - x ^ 2 ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+  simp only [salvyFun, salvyFun', salvyFun'']
+  field_simp
+  ring
+
+/-- The answer to Exercise 4.48: Salvy's function is holonomic on `{x | x² ≠ 1}`. -/
+theorem salvyFun_isHolonomicOn : IsHolonomicOn salvyFun {x | x ^ 2 ≠ 1} := by
+  refine ⟨2, ![Polynomial.C 2 * (2 * Polynomial.X ^ 6 + 3 * Polynomial.X ^ 4
+      + 4 * Polynomial.X ^ 2 - 1),
+    -(Polynomial.C 2 * Polynomial.X * (2 + Polynomial.X ^ 2 + 3 * Polynomial.X ^ 4
+      - 2 * Polynomial.X ^ 6)),
+    (1 - Polynomial.X ^ 2) * (1 - Polynomial.X ^ 2 + 2 * Polynomial.X ^ 4)], ?_, ?_⟩
+  · intro h
+    have := congrArg (Polynomial.eval 0) h
+    simp at this
+  · intro x hx
+    have hx' : x ^ 2 ≠ 1 := hx
+    rw [Fin.sum_univ_three]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two, Fin.isValue,
+      Matrix.head_cons, Matrix.tail_cons, iteratedDeriv_zero, iteratedDeriv_succ,
+      Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_neg,
+      Polynomial.eval_ofNat, Fin.val_zero, Fin.val_one, Fin.val_two]
+    rw [deriv_salvyFun hx', deriv_deriv_salvyFun hx']
+    linear_combination salvyFun_ode hx'
+
+end Exercise448
+
+section Exercise449
+
+open Finset
+
+/-- Root size (bits) of the binary-splitting tree in bit-burst step `i`: about `n/2^i` terms,
+each with `2^i + O(lg n)`-bit recurrence coefficients, so `S_i = n + n lg n/2^i`.  (The proof of
+Theorem 4.2 used the uniform bound `n lg n` for every step.) -/
+noncomputable def burstStepSize (n i : ℕ) : ℝ := n + n * Real.logb 2 n / 2 ^ i
+
+/-- Binary splitting with `L` levels on an `S`-bit product costs at most `L · M(S)`. -/
+theorem binary_splitting_levels_le {S : ℝ} (hS : 1 ≤ S) (L : ℕ) :
+    ∑ k ∈ Icc 1 L, 2 ^ k * quasiLinearCost (S / 2 ^ k) ≤ L * quasiLinearCost S := by
+  calc _ ≤ ∑ _k ∈ Icc 1 L, quasiLinearCost S :=
+        sum_le_sum fun k _ => two_pow_mul_quasiLinearCost_div_le hS k
+    _ = _ := by rw [sum_const, Nat.card_Icc, Nat.add_sub_cancel, nsmul_eq_mul]
+
+theorem quasiLinearCost_nonneg {a : ℝ} (ha : 1 ≤ a) : 0 ≤ quasiLinearCost a :=
+  mul_nonneg (by linarith) (Real.logb_nonneg one_lt_two ha)
+
+theorem logb_two_mul {a : ℝ} (ha : 0 < a) : Real.logb 2 (2 * a) = 1 + Real.logb 2 a := by
+  rw [Real.logb_mul (by norm_num) ha.ne', Real.logb_self_eq_one one_lt_two]
+
+/-- `M(a + b) ≤ 4 (M(a) + M(b))` for `a ≥ 2`, `b ≥ 1`: `a + b ≤ 2 max(a, b)` and
+`M(2m) = 2m(1 + lg m) ≤ 4 M(m)` for `m ≥ 2`. -/
+theorem quasiLinearCost_add_le {a b : ℝ} (ha : 2 ≤ a) (hb : 1 ≤ b) :
+    quasiLinearCost (a + b) ≤ 4 * quasiLinearCost a + 4 * quasiLinearCost b := by
+  unfold quasiLinearCost
+  have hlga : 1 ≤ Real.logb 2 a := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]; exact ha
+  have hlgb : 0 ≤ Real.logb 2 b := Real.logb_nonneg one_lt_two hb
+  have hMa : 0 ≤ a * Real.logb 2 a := mul_nonneg (by linarith) (by linarith)
+  have hMb : 0 ≤ b * Real.logb 2 b := mul_nonneg (by linarith) hlgb
+  rcases le_or_gt b a with hba | hab
+  · have h : Real.logb 2 (a + b) ≤ 1 + Real.logb 2 a := by
+      rw [← logb_two_mul (by linarith)]
+      exact Real.logb_le_logb_of_le one_lt_two (by linarith) (by linarith)
+    nlinarith [mul_le_mul_of_nonneg_left h (by linarith : (0 : ℝ) ≤ a + b),
+      mul_nonneg (sub_nonneg.mpr hba) (by linarith : (0 : ℝ) ≤ 1 + Real.logb 2 a),
+      mul_nonneg (by linarith : (0 : ℝ) ≤ a) (sub_nonneg.mpr hlga)]
+  · have hlgb1 : 1 ≤ Real.logb 2 b := by
+      rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]; linarith
+    have h : Real.logb 2 (a + b) ≤ 1 + Real.logb 2 b := by
+      rw [← logb_two_mul (by linarith)]
+      exact Real.logb_le_logb_of_le one_lt_two (by linarith) (by linarith)
+    nlinarith [mul_le_mul_of_nonneg_left h (by linarith : (0 : ℝ) ≤ a + b),
+      mul_nonneg (sub_nonneg.mpr hab.le) (by linarith : (0 : ℝ) ≤ 1 + Real.logb 2 b),
+      mul_nonneg (by linarith : (0 : ℝ) ≤ b) (sub_nonneg.mpr hlgb1)]
+
+/-- `M(m/2^k) ≤ M(m)/2^k` for `m ≥ 1`. -/
+theorem quasiLinearCost_div_two_pow_le {m : ℝ} (hm : 1 ≤ m) (k : ℕ) :
+    quasiLinearCost (m / 2 ^ k) ≤ quasiLinearCost m / 2 ^ k := by
+  rw [le_div_iff₀ (by positivity)]
+  linarith [two_pow_mul_quasiLinearCost_div_le hm k]
+
+/-- `M(n lg n) ≤ 2 lg n · M(n)` for `n ≥ 2`. -/
+theorem quasiLinearCost_natCast_mul_logb_le {n : ℕ} (hn : 2 ≤ n) :
+    quasiLinearCost (n * Real.logb 2 n) ≤ 2 * Real.logb 2 n * quasiLinearCost n := by
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast (by omega : 1 ≤ n)
+  have hlg : 1 ≤ Real.logb 2 n := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]
+    exact_mod_cast hn
+  unfold quasiLinearCost
+  have hlglg : Real.logb 2 (Real.logb 2 n) ≤ Real.logb 2 n :=
+    Real.logb_le_logb_of_le one_lt_two (by linarith) (logb_two_natCast_le_self (by omega))
+  rw [Real.logb_mul (by positivity) (by linarith)]
+  nlinarith [mul_le_mul_of_nonneg_left hlglg (by positivity : (0 : ℝ) ≤ n * Real.logb 2 n)]
+
+/-- The per-step sizes sum geometrically: for `2^L ≤ n lg n`,
+`∑_{i≤L} M(S_i) ≤ (4(L+1) + 16 lg n) M(n)`. -/
+theorem sum_quasiLinearCost_burstStepSize_le {n : ℕ} (hn : 2 ≤ n) {L : ℕ}
+    (hL : (2 : ℝ) ^ L ≤ n * Real.logb 2 n) :
+    ∑ i ∈ range (L + 1), quasiLinearCost (burstStepSize n i)
+      ≤ (4 * (L + 1) + 16 * Real.logb 2 n) * quasiLinearCost n := by
+  have hn2 : (2 : ℝ) ≤ n := by exact_mod_cast hn
+  have hlg : 1 ≤ Real.logb 2 n := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_one]; exact hn2
+  have hm : 1 ≤ (n : ℝ) * Real.logb 2 n := by nlinarith
+  have hb : ∀ i ∈ range (L + 1), 1 ≤ (n : ℝ) * Real.logb 2 n / 2 ^ i := by
+    intro i hi
+    rw [mem_range] at hi
+    rw [le_div_iff₀ (by positivity), one_mul]
+    exact (pow_le_pow_right₀ one_le_two (by omega)).trans hL
+  have hterm : ∀ i ∈ range (L + 1), quasiLinearCost (burstStepSize n i)
+      ≤ 4 * quasiLinearCost n + 4 * (quasiLinearCost (n * Real.logb 2 n) * (1 / 2) ^ i) := by
+    intro i hi
+    refine (quasiLinearCost_add_le hn2 (hb i hi)).trans ?_
+    have := quasiLinearCost_div_two_pow_le hm i
+    rw [one_div, inv_pow, ← div_eq_mul_inv]
+    linarith
+  have hgeom := sum_geometric_two_le (L + 1)
+  have hMm : 0 ≤ quasiLinearCost (n * Real.logb 2 n) := quasiLinearCost_nonneg hm
+  have hMn : 0 ≤ quasiLinearCost n := quasiLinearCost_nonneg (by linarith)
+  have hM2 := quasiLinearCost_natCast_mul_logb_le hn
+  calc ∑ i ∈ range (L + 1), quasiLinearCost (burstStepSize n i)
+      ≤ ∑ i ∈ range (L + 1),
+          (4 * quasiLinearCost n + 4 * (quasiLinearCost (n * Real.logb 2 n) * (1 / 2) ^ i)) :=
+        sum_le_sum hterm
+    _ = 4 * (L + 1) * quasiLinearCost n
+        + 4 * quasiLinearCost (n * Real.logb 2 n) * ∑ i ∈ range (L + 1), (1 / 2 : ℝ) ^ i := by
+        rw [sum_add_distrib, sum_const, card_range, nsmul_eq_mul, mul_sum]
+        congr 1
+        · push_cast; ring
+        · exact sum_congr rfl fun i _ => by ring
+    _ ≤ 4 * (L + 1) * quasiLinearCost n + 4 * quasiLinearCost (n * Real.logb 2 n) * 2 := by
+        gcongr
+    _ ≤ (4 * (L + 1) + 16 * Real.logb 2 n) * quasiLinearCost n := by nlinarith
+
+/-- Exercise 4.49: with the per-step sizes `S_i`, the whole bit-burst algorithm (`⌈lg n⌉ + 1`
+steps, each a binary splitting of at most `lg n + 1` levels) costs at most `56 (lg n)² M(n)`,
+i.e. `O(M(n) log² n)` instead of Theorem 4.2's `O(M(n) log³ n)`. -/
+theorem bit_burst_cost {n : ℕ} (hn : 4 ≤ n) :
+    ∑ i ∈ range (Nat.clog 2 n + 1), (Real.logb 2 n + 1) * quasiLinearCost (burstStepSize n i)
+      ≤ 56 * Real.logb 2 n ^ 2 * quasiLinearCost n := by
+  have hn2 : 2 ≤ n := by omega
+  have hn4 : (4 : ℝ) ≤ n := by exact_mod_cast hn
+  have hlg : 2 ≤ Real.logb 2 n := by
+    rw [Real.le_logb_iff_rpow_le one_lt_two (by linarith), Real.rpow_two]; norm_num
+    exact_mod_cast hn
+  have hclog := clog_le_logb_add_one hn2
+  have hL : (2 : ℝ) ^ (Nat.clog 2 n) ≤ n * Real.logb 2 n := by
+    have h1 : (2 : ℝ) ^ (Nat.clog 2 n) ≤ 2 ^ (Real.logb 2 n + 1) := by
+      rw [← Real.rpow_natCast]
+      exact Real.rpow_le_rpow_of_exponent_le one_le_two hclog
+    rw [Real.rpow_add (by norm_num), Real.rpow_logb (by norm_num) (by norm_num) (by linarith),
+      Real.rpow_one] at h1
+    nlinarith
+  have hS := sum_quasiLinearCost_burstStepSize_le hn2 hL
+  have hMn : 0 ≤ quasiLinearCost n := quasiLinearCost_nonneg (by linarith)
+  rw [← mul_sum]
+  calc (Real.logb 2 n + 1) * ∑ i ∈ range (Nat.clog 2 n + 1), quasiLinearCost (burstStepSize n i)
+      ≤ (Real.logb 2 n + 1) * ((4 * (Nat.clog 2 n + 1) + 16 * Real.logb 2 n) * quasiLinearCost n) :=
+        mul_le_mul_of_nonneg_left hS (by linarith)
+    _ ≤ (2 * Real.logb 2 n) * (28 * Real.logb 2 n * quasiLinearCost n) := by
+        apply mul_le_mul (by linarith) _ (mul_nonneg (by linarith) hMn) (by linarith)
+        exact mul_le_mul_of_nonneg_right (by linarith) hMn
+    _ = 56 * Real.logb 2 n ^ 2 * quasiLinearCost n := by ring
+
+end Exercise449
+
+section Exercise450
+
+open Finset Complex
+
+/-- Partial fractions: for a primitive `k`-th root of unity `ζ` and `z^k ≠ 1`,
+`∑_{m<k} ζ^m/(z − ζ^m) = k/(z^k − 1)`. -/
+theorem sum_primitiveRoot_div_eq {ζ : ℂ} {k : ℕ} (hζ : IsPrimitiveRoot ζ k) (hk : 0 < k) {z : ℂ}
+    (hz : z ^ k ≠ 1) : ∑ m ∈ range k, ζ ^ m / (z - ζ ^ m) = k / (z ^ k - 1) := by
+  have hzk : z ^ k - 1 ≠ 0 := sub_ne_zero.mpr hz
+  have hne : ∀ m, z - ζ ^ m ≠ 0 := fun m h => by
+    apply hz
+    rw [sub_eq_zero.mp h, ← pow_mul, mul_comm, pow_mul, hζ.pow_eq_one, one_pow]
+  have hterm : ∀ m ∈ range k, ζ ^ m / (z - ζ ^ m)
+      = (∑ i ∈ range k, z ^ i * (ζ ^ (k - i)) ^ m) / (z ^ k - 1) := by
+    intro m _
+    rw [div_eq_div_iff (hne m) hzk]
+    have h := geom_sum₂_mul z (ζ ^ m) k
+    rw [← pow_mul, mul_comm m k, pow_mul, hζ.pow_eq_one, one_pow] at h
+    rw [← h, ← mul_assoc, mul_sum]
+    congr 1
+    refine sum_congr rfl fun i hi => ?_
+    rw [mem_range] at hi
+    have e : k - i = (k - 1 - i) + 1 := by omega
+    rw [e, ← pow_mul, ← pow_mul, mul_left_comm, ← pow_add]
+    congr 2
+    ring
+  rw [sum_congr rfl hterm, ← sum_div, sum_comm]
+  congr 1
+  have horth : ∀ i ∈ range k, ∑ m ∈ range k, z ^ i * (ζ ^ (k - i)) ^ m
+      = if i = 0 then (k : ℂ) else 0 := by
+    intro i hi
+    rw [mem_range] at hi
+    have h := sum_zpow_primitiveRoot hζ ((k - i : ℕ) : ℤ)
+    rw [zpow_natCast] at h
+    rw [← mul_sum, h]
+    split_ifs with hd hi0 hi0
+    · subst hi0; simp
+    · exfalso
+      have := Nat.le_of_dvd (by omega) (Int.natCast_dvd_natCast.mp hd)
+      omega
+    · exfalso; apply hd; subst hi0; simp
+    · simp
+  rw [sum_congr rfl horth]
+  simp [hk]
+
+/-- `S_{j,k} = (1/k) ∑_{m<k} f(ζ^m) ζ^(−jm)` (4.84) for a function `f`, `ζ = e^(2πi/k)`. -/
+noncomputable def aliasSumFun (f : ℂ → ℂ) (j k : ℕ) : ℂ :=
+  (1 / k : ℂ) * ∑ m ∈ range k,
+    f (exp (2 * Real.pi * I / k) ^ m) * (exp (2 * Real.pi * I / k))⁻¹ ^ (j * m)
+
+/-- `aliasSum` (the series form of `ContourIntegration.lean`) is `aliasSumFun` of the sum. -/
+theorem aliasSum_eq_aliasSumFun (a : ℕ → ℂ) (j k : ℕ) :
+    aliasSum a j k = aliasSumFun (fun z => ∑' l : ℕ, a l * z ^ l) j k := rfl
+
+/-- A finite sum of circle integrals. -/
+theorem circleIntegral_sum {ι : Type*} (s : Finset ι) (F : ι → ℂ → ℂ) (c : ℂ) (R : ℝ)
+    (hF : ∀ i ∈ s, CircleIntegrable (F i) c R) :
+    (∮ z in C(c, R), ∑ i ∈ s, F i z) = ∑ i ∈ s, ∮ z in C(c, R), F i z := by
+  simp only [circleIntegral, smul_sum]
+  exact intervalIntegral.integral_finsetSum fun i hi => (hF i hi).out
+
+/-- `S_{j,k} = (2πi)⁻¹ ∮_{|z|=R} z^(k−j−1)/(z^k − 1) f(z) dz` for `j < k`, `f` holomorphic on
+`|z| ≤ R`, `R > 1`: each partial fraction `ζ^m/(z − ζ^m)` contributes `ζ^m · ζ^(m(k−j−1)) f(ζ^m)`
+by Cauchy's integral formula. -/
+theorem aliasSumFun_eq_circleIntegral {f : ℂ → ℂ} {R : ℝ} (hR : 1 < R)
+    (hf : DifferentiableOn ℂ f (Metric.closedBall 0 R)) {j k : ℕ} (hjk : j < k) :
+    aliasSumFun f j k
+      = (2 * Real.pi * I)⁻¹ * ∮ z in C(0, R), z ^ (k - j - 1) / (z ^ k - 1) * f z := by
+  have hk : 0 < k := by omega
+  have hk0 : (k : ℂ) ≠ 0 := by exact_mod_cast hk.ne'
+  have hR0 : 0 ≤ R := by linarith
+  set ζ : ℂ := exp (2 * Real.pi * I / k) with hζdef
+  have hζ : IsPrimitiveRoot ζ k := Complex.isPrimitiveRoot_exp k hk.ne'
+  have hζ0 : ζ ≠ 0 := hζ.ne_zero hk.ne'
+  have hnorm : ‖ζ‖ = 1 := hζ.norm'_eq_one hk.ne'
+  have hζm : ∀ m : ℕ, ζ ^ m ∈ Metric.ball (0 : ℂ) R := fun m => by
+    rw [Metric.mem_ball, dist_zero_right, norm_pow, hnorm, one_pow]; exact hR
+  have hsph : ∀ z ∈ Metric.sphere (0 : ℂ) R, z ^ k ≠ 1 := by
+    intro z hz h1
+    rw [Metric.mem_sphere, dist_zero_right] at hz
+    have : ‖z ^ k‖ = 1 := by rw [h1, norm_one]
+    rw [norm_pow, hz] at this
+    exact absurd this (one_lt_pow₀ hR hk.ne').ne'
+  have hne : ∀ m, ∀ z ∈ Metric.sphere (0 : ℂ) R, z - ζ ^ m ≠ 0 := by
+    intro m z hz h
+    rw [Metric.mem_sphere, dist_zero_right, sub_eq_zero.mp h, norm_pow, hnorm, one_pow] at hz
+    linarith
+  have hg : DifferentiableOn ℂ (fun z => z ^ (k - j - 1) * f z) (Metric.closedBall 0 R) :=
+    (differentiableOn_id.pow _).mul hf
+  have hfc : ContinuousOn f (Metric.sphere 0 R) :=
+    hf.continuousOn.mono Metric.sphere_subset_closedBall
+  have hEq : Set.EqOn (fun z => z ^ (k - j - 1) / (z ^ k - 1) * f z)
+      (fun z => ∑ m ∈ range k, (1 / k : ℂ) * ζ ^ m * ((z - ζ ^ m)⁻¹ * (z ^ (k - j - 1) * f z)))
+      (Metric.sphere 0 R) := by
+    intro z hz
+    have hzk : z ^ k - 1 ≠ 0 := sub_ne_zero.mpr (hsph z hz)
+    have h := sum_primitiveRoot_div_eq hζ hk (hsph z hz)
+    have e : ∑ m ∈ range k, (1 / k : ℂ) * ζ ^ m * ((z - ζ ^ m)⁻¹ * (z ^ (k - j - 1) * f z))
+        = (1 / k : ℂ) * (z ^ (k - j - 1) * f z) * ∑ m ∈ range k, ζ ^ m / (z - ζ ^ m) := by
+      rw [mul_sum]; exact sum_congr rfl fun m _ => by ring
+    simp only
+    rw [e, h]
+    field_simp
+  have hint : ∀ m ∈ range k, CircleIntegrable
+      (fun z => (1 / k : ℂ) * ζ ^ m * ((z - ζ ^ m)⁻¹ * (z ^ (k - j - 1) * f z))) 0 R := by
+    intro m _
+    refine ContinuousOn.circleIntegrable hR0 ?_
+    exact continuousOn_const.mul (((continuousOn_id.sub continuousOn_const).inv₀ (hne m)).mul
+      ((continuous_pow _).continuousOn.mul hfc))
+  rw [circleIntegral.integral_congr hR0 hEq, circleIntegral_sum _ _ _ _ hint]
+  have hterm : ∀ m ∈ range k,
+      (∮ z in C(0, R), (1 / k : ℂ) * ζ ^ m * ((z - ζ ^ m)⁻¹ * (z ^ (k - j - 1) * f z)))
+        = (1 / k : ℂ) * ζ ^ m * ((2 * Real.pi * I) * ((ζ ^ m) ^ (k - j - 1) * f (ζ ^ m))) := by
+    intro m _
+    rw [circleIntegral.integral_const_mul]
+    congr 1
+    simpa only [smul_eq_mul] using hg.circleIntegral_sub_inv_smul (hζm m)
+  rw [sum_congr rfl hterm]
+  unfold aliasSumFun
+  rw [← hζdef, mul_sum, mul_sum]
+  refine sum_congr rfl fun m _ => ?_
+  have hpow : ζ ^ m * (ζ ^ m) ^ (k - j - 1) = ζ⁻¹ ^ (j * m) := by
+    rw [inv_pow]
+    apply eq_inv_of_mul_eq_one_left
+    rw [← pow_succ', ← pow_mul, ← pow_add]
+    have e : m * (k - j - 1 + 1) + j * m = k * m := by
+      have : k - j - 1 + 1 = k - j := by omega
+      rw [this, mul_comm j m, ← mul_add, Nat.sub_add_cancel hjk.le, mul_comm]
+    rw [e, pow_mul, hζ.pow_eq_one, one_pow]
+  have h2π : (2 * Real.pi * I) ≠ 0 := by simp [Real.pi_ne_zero, I_ne_zero]
+  have e : (2 * Real.pi * I)⁻¹ * ((1 / k : ℂ) * ζ ^ m
+      * ((2 * Real.pi * I) * ((ζ ^ m) ^ (k - j - 1) * f (ζ ^ m))))
+      = (1 / k : ℂ) * (f (ζ ^ m) * (ζ ^ m * (ζ ^ m) ^ (k - j - 1))) := by
+    field_simp
+  rw [e, hpow]
+
+/-- The Cauchy coefficient `a_i = (2πi)⁻¹ ∮_{|z|=R} f(z) z^(−i−1) dz` (4.83). -/
+noncomputable def cauchyCoeff (f : ℂ → ℂ) (R : ℝ) (i : ℕ) : ℂ :=
+  (2 * Real.pi * I)⁻¹ * ∮ z in C(0, R), f z / z ^ (i + 1)
+
+/-- The Cauchy coefficients are the Taylor coefficients: `f(z) = ∑ a_i z^i` on `|z| < R`. -/
+theorem hasSum_cauchyCoeff {f : ℂ → ℂ} {R : ℝ} (hR : 0 < R)
+    (hf : DifferentiableOn ℂ f (Metric.closedBall 0 R)) {z : ℂ} (hz : ‖z‖ < R) :
+    HasSum (fun i : ℕ => cauchyCoeff f R i * z ^ i) (f z) := by
+  lift R to NNReal using hR.le
+  have hR' : (0 : NNReal) < R := by exact_mod_cast hR
+  have h := hf.hasFPowerSeriesOnBall hR'
+  have hz' : z ∈ Metric.eball (0 : ℂ) (R : ENNReal) := by
+    rw [Metric.mem_eball, edist_dist, dist_zero_right, ← ENNReal.ofReal_coe_nnreal]
+    exact (ENNReal.ofReal_lt_ofReal_iff hR).mpr hz
+  have h2 := h.hasSum hz'
+  rw [zero_add] at h2
+  convert h2 using 1
+  funext n
+  rw [cauchyPowerSeries_apply, cauchyCoeff]
+  simp only [sub_zero, smul_eq_mul]
+  have e' : (∮ w in C(0, R), (z / w) ^ n * (w⁻¹ * f w))
+      = z ^ n * ∮ w in C(0, R), f w / w ^ (n + 1) := by
+    rw [← circleIntegral.integral_const_mul]
+    congr 1
+    funext w
+    rw [div_pow, pow_succ]
+    ring
+  rw [e']
+  ring
+
+/-- `S_{j,k} − a_j = (2πi)⁻¹ ∮_{|z|=R} f(z)/(z^(j+1)(z^k − 1)) dz` for `j < k`. -/
+theorem aliasSumFun_sub_cauchyCoeff {f : ℂ → ℂ} {R : ℝ} (hR : 1 < R)
+    (hf : DifferentiableOn ℂ f (Metric.closedBall 0 R)) {j k : ℕ} (hjk : j < k) :
+    aliasSumFun f j k - cauchyCoeff f R j
+      = (2 * Real.pi * I)⁻¹ * ∮ z in C(0, R), f z / (z ^ (j + 1) * (z ^ k - 1)) := by
+  have hk : 0 < k := by omega
+  have hR0 : 0 ≤ R := by linarith
+  have hfc : ContinuousOn f (Metric.sphere 0 R) :=
+    hf.continuousOn.mono Metric.sphere_subset_closedBall
+  have hsph : ∀ z ∈ Metric.sphere (0 : ℂ) R, z ^ k - 1 ≠ 0 := by
+    intro z hz h1
+    rw [Metric.mem_sphere, dist_zero_right] at hz
+    have : ‖z ^ k‖ = 1 := by rw [sub_eq_zero.mp h1, norm_one]
+    rw [norm_pow, hz] at this
+    exact absurd this (one_lt_pow₀ hR hk.ne').ne'
+  have hz0 : ∀ z ∈ Metric.sphere (0 : ℂ) R, z ≠ 0 := by
+    intro z hz h
+    rw [Metric.mem_sphere, dist_zero_right, h, norm_zero] at hz
+    linarith
+  have h1 : CircleIntegrable (fun z => z ^ (k - j - 1) / (z ^ k - 1) * f z) 0 R :=
+    ContinuousOn.circleIntegrable hR0 (((continuous_pow _).continuousOn.div
+      ((continuous_pow _).continuousOn.sub continuousOn_const) hsph).mul hfc)
+  have h2 : CircleIntegrable (fun z => f z / z ^ (j + 1)) 0 R :=
+    ContinuousOn.circleIntegrable hR0
+      (hfc.div (continuous_pow _).continuousOn fun z hz => pow_ne_zero _ (hz0 z hz))
+  rw [aliasSumFun_eq_circleIntegral hR hf hjk, cauchyCoeff, ← mul_sub,
+    ← circleIntegral.integral_sub h1 h2]
+  congr 1
+  apply circleIntegral.integral_congr hR0
+  intro z hz
+  have hzk := hsph z hz
+  have hz0' := hz0 z hz
+  have e : z ^ (k - j - 1) * z ^ (j + 1) = z ^ k := by
+    rw [← pow_add]; congr 1; omega
+  simp only
+  rw [← e] at hzk ⊢
+  field_simp
+  ring
+
+/-- Expanding `1/(z^k − 1) = ∑_{l≥1} z^(−lk)` on `|z| = R > 1` under the integral sign
+(dominated convergence): `∮ f/(z^(j+1)(z^k − 1)) = ∑_{l≥0} ∮ f/z^(j+(l+1)k+1)`. -/
+theorem hasSum_circleIntegral_div_pow {f : ℂ → ℂ} {R : ℝ} (hR : 1 < R)
+    (hf : DifferentiableOn ℂ f (Metric.closedBall 0 R)) (j : ℕ) {k : ℕ} (hk : 0 < k) :
+    HasSum (fun l : ℕ => ∮ z in C(0, R), f z / z ^ (j + (l + 1) * k + 1))
+      (∮ z in C(0, R), f z / (z ^ (j + 1) * (z ^ k - 1))) := by
+  have hR0 : 0 < R := by linarith
+  have hfc : ContinuousOn f (Metric.sphere 0 R) :=
+    hf.continuousOn.mono Metric.sphere_subset_closedBall
+  have hcont : Continuous (f ∘ circleMap 0 R) :=
+    hfc.comp_continuous (continuous_circleMap 0 R) (circleMap_mem_sphere 0 hR0.le)
+  obtain ⟨Mf, hMf⟩ : ∃ Mf, ∀ θ, ‖f (circleMap 0 R θ)‖ ≤ Mf := by
+    obtain ⟨C, hC⟩ := (isCompact_sphere (0 : ℂ) R).exists_bound_of_continuousOn hfc
+    exact ⟨C, fun θ => hC _ (circleMap_mem_sphere 0 hR0.le θ)⟩
+  have hcm : ∀ θ, ‖circleMap 0 R θ‖ = R := fun θ => by
+    rw [norm_circleMap_zero, abs_of_pos hR0]
+  have hcm0 : ∀ θ, circleMap 0 R θ ≠ 0 := fun θ h => by
+    have := hcm θ; rw [h, norm_zero] at this; linarith
+  have hMf0 : 0 ≤ Mf := (norm_nonneg _).trans (hMf 0)
+  have hr : (R⁻¹) ^ k < 1 := pow_lt_one₀ (by positivity) (inv_lt_one_of_one_lt₀ hR) hk.ne'
+  have hRk : 1 < R ^ k := one_lt_pow₀ hR hk.ne'
+  simp only [circleIntegral]
+  refine intervalIntegral.hasSum_integral_of_dominated_convergence
+    (fun l _ => R * Mf * ((R⁻¹) ^ k) ^ l) ?_ ?_ ?_ ?_ ?_
+  · intro l
+    refine Continuous.aestronglyMeasurable ?_
+    simp only [deriv_circleMap]
+    exact ((continuous_circleMap 0 R).mul continuous_const).smul
+      (hcont.div ((continuous_circleMap 0 R).pow _) fun θ => pow_ne_zero _ (hcm0 θ))
+  · intro l
+    refine Filter.Eventually.of_forall fun θ _ => ?_
+    rw [deriv_circleMap, smul_eq_mul, norm_mul, norm_mul, norm_I, mul_one, norm_div, norm_pow,
+      hcm]
+    have hle : l * k ≤ j + (l + 1) * k + 1 :=
+      (Nat.mul_le_mul_right _ (Nat.le_succ l)).trans ((Nat.le_add_left _ _).trans (Nat.le_succ _))
+    calc R * (‖f (circleMap 0 R θ)‖ / R ^ (j + (l + 1) * k + 1))
+        ≤ R * (Mf / R ^ (l * k)) :=
+          mul_le_mul_of_nonneg_left
+            (div_le_div₀ hMf0 (hMf θ) (by positivity) (pow_le_pow_right₀ hR.le hle)) hR0.le
+      _ = R * Mf * ((R⁻¹) ^ k) ^ l := by
+          rw [← pow_mul, inv_pow, mul_comm k l, div_eq_mul_inv]; ring
+  · exact Filter.Eventually.of_forall fun θ _ =>
+      (summable_geometric_of_lt_one (by positivity) hr).mul_left _
+  · exact intervalIntegrable_const
+  · refine Filter.Eventually.of_forall fun θ _ => ?_
+    set z := circleMap 0 R θ with hz
+    have hz0 : z ≠ 0 := hcm0 θ
+    have hzk : ‖(z ^ k)⁻¹‖ < 1 := by
+      rw [norm_inv, norm_pow, hcm]; exact inv_lt_one_of_one_lt₀ hRk
+    have hzk1 : z ^ k - 1 ≠ 0 := by
+      intro h
+      have : ‖z ^ k‖ = 1 := by rw [sub_eq_zero.mp h, norm_one]
+      rw [norm_pow, hcm] at this
+      exact absurd this hRk.ne'
+    have hzk2 : 1 - (z ^ k)⁻¹ ≠ 0 := by
+      intro h
+      apply hzk1
+      have h1 : (z ^ k)⁻¹ = 1 := (sub_eq_zero.mp h).symm
+      rw [inv_eq_one] at h1
+      rw [h1, sub_self]
+    have hgeom := (hasSum_geometric_of_norm_lt_one hzk).mul_left
+      (deriv (circleMap 0 R) θ • (f z / z ^ (j + 1) * (z ^ k)⁻¹))
+    convert hgeom using 1
+    · funext l
+      rw [smul_eq_mul, smul_eq_mul,
+        show j + (l + 1) * k + 1 = (j + 1) + k + k * l by ring, pow_add, pow_add, pow_mul]
+      simp only [div_eq_mul_inv, mul_inv, inv_pow]
+      ring
+    · rw [smul_eq_mul, smul_eq_mul]
+      field_simp
+
+/-- (4.85) from the contour integral: `S_{j,k} − a_j = ∑_{l≥1} a_{j+lk}` for `j < k` — the
+observations at `k` points alias the coefficients `a_j, a_{j+k}, a_{j+2k}, …`. -/
+theorem aliasSumFun_sub_cauchyCoeff_eq_tsum {f : ℂ → ℂ} {R : ℝ} (hR : 1 < R)
+    (hf : DifferentiableOn ℂ f (Metric.closedBall 0 R)) {j k : ℕ} (hjk : j < k) :
+    aliasSumFun f j k - cauchyCoeff f R j = ∑' l : ℕ, cauchyCoeff f R (j + (l + 1) * k) := by
+  rw [aliasSumFun_sub_cauchyCoeff hR hf hjk,
+    ← (hasSum_circleIntegral_div_pow hR hf j (by omega : 0 < k)).tsum_eq, ← tsum_mul_left]
+  rfl
+
+end Exercise450
+
+section Exercise451
+
+open Finset Complex ComplexConjugate
+
+variable {g : ℂ → ℂ}
+
+/-- `conj (e^(2πi/k)) = (e^(2πi/k))⁻¹`. -/
+theorem conj_exp_two_pi_div (k : ℕ) :
+    conj (exp (2 * Real.pi * I / k)) = (exp (2 * Real.pi * I / k))⁻¹ := by
+  rw [← Complex.exp_conj, ← Complex.exp_neg]
+  congr 1
+  simp only [map_div₀, map_mul, map_ofNat, Complex.conj_ofReal, Complex.conj_I, map_natCast]
+  ring
+
+/-- For even `k`, `(e^(2πi/k))^(k/2) = −1`. -/
+theorem exp_two_pi_div_pow_half {k : ℕ} (hk : k % 2 = 0) (hk0 : 0 < k) :
+    exp (2 * Real.pi * I / k) ^ (k / 2) = -1 := by
+  have hk2 : ((k / 2 : ℕ) : ℂ) * 2 = (k : ℂ) := by
+    exact_mod_cast Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero hk)
+  have hk2' : ((k / 2 : ℕ) : ℂ) ≠ 0 := by exact_mod_cast (by omega : k / 2 ≠ 0)
+  rw [← Complex.exp_nat_mul, ← Complex.exp_pi_mul_I]
+  congr 1
+  rw [← hk2]
+  field_simp
+
+/-- Conjugation symmetry alone: if `g(conj z) = conj g(z)`, every sample `g(w^m)`, `m < k`, is
+`g(w^r)` or `conj g(w^r)` for some `r ≤ k/2` — about `k/2` evaluations suffice. -/
+theorem sample_reduce_conj (hg : ∀ z, g (conj z) = conj (g z)) {k : ℕ} (hk0 : 0 < k) {m : ℕ}
+    (hm : m < k) :
+    ∃ r ≤ k / 2, g (exp (2 * Real.pi * I / k) ^ m) = g (exp (2 * Real.pi * I / k) ^ r)
+      ∨ g (exp (2 * Real.pi * I / k) ^ m) = conj (g (exp (2 * Real.pi * I / k) ^ r)) := by
+  have hζ : IsPrimitiveRoot (exp (2 * Real.pi * I / k)) k := Complex.isPrimitiveRoot_exp k hk0.ne'
+  by_cases h : m ≤ k / 2
+  · exact ⟨m, h, Or.inl rfl⟩
+  · refine ⟨k - m, by omega, Or.inr ?_⟩
+    rw [← hg, map_pow, conj_exp_two_pi_div, inv_pow]
+    congr 1
+    apply eq_inv_of_mul_eq_one_left
+    rw [← pow_add, Nat.add_sub_cancel' hm.le, hζ.pow_eq_one]
+
+/-- Even `k`, `g` even and conjugation-symmetric: every sample `g(w^m)` is `g(w^r)` or
+`conj g(w^r)` for some `r ≤ k/4` — about `k/4` evaluations suffice. -/
+theorem sample_reduce_even (hg : ∀ z, g (conj z) = conj (g z)) (hge : ∀ z, g (-z) = g z)
+    {k : ℕ} (hk : k % 2 = 0) (hk0 : 0 < k) {m : ℕ} (hm : m < k) :
+    ∃ r ≤ k / 4, g (exp (2 * Real.pi * I / k) ^ m) = g (exp (2 * Real.pi * I / k) ^ r)
+      ∨ g (exp (2 * Real.pi * I / k) ^ m) = conj (g (exp (2 * Real.pi * I / k) ^ r)) := by
+  have hk2 : 0 < k / 2 := by omega
+  obtain ⟨m₁, q, hm₁, hq, rfl⟩ : ∃ m₁ q, m₁ < k / 2 ∧ q ≤ 1 ∧ m = m₁ + k / 2 * q := by
+    refine ⟨m % (k / 2), m / (k / 2), Nat.mod_lt _ hk2, ?_, (Nat.mod_add_div m (k / 2)).symm⟩
+    have := (Nat.div_lt_iff_lt_mul hk2).mpr (show m < 2 * (k / 2) by omega)
+    omega
+  have hval : g (exp (2 * Real.pi * I / k) ^ (m₁ + k / 2 * q))
+      = g (exp (2 * Real.pi * I / k) ^ m₁) := by
+    rw [pow_add, pow_mul, exp_two_pi_div_pow_half hk hk0]
+    interval_cases q <;> simp [hge]
+  by_cases h : m₁ ≤ k / 4
+  · exact ⟨m₁, h, Or.inl hval⟩
+  · refine ⟨k / 2 - m₁, by omega, Or.inr ?_⟩
+    rw [hval, ← hg, map_pow, conj_exp_two_pi_div, inv_pow, ← hge]
+    congr 1
+    apply eq_inv_of_mul_eq_one_left
+    rw [neg_mul, ← pow_add, show m₁ + (k / 2 - m₁) = k / 2 by omega,
+      exp_two_pi_div_pow_half hk hk0, neg_neg]
+
+/-- The function (4.86) is even and conjugation-symmetric, so both reductions apply; in the
+series form this is `bernoulliCoeff_odd` (odd coefficients vanish) and the coefficients are real
+(`bernoulliCoeff` is a rational cast). -/
+theorem bernoulliCoeff_conj (l : ℕ) : conj (bernoulliCoeff l) = bernoulliCoeff l := by
+  rw [bernoulliCoeff, ← Complex.ofReal_ratCast, Complex.conj_ofReal]
+
+/-- For odd `k`, the aliased coefficients `a_{2j+lk}` with `l` odd vanish, so the `k`-point sum
+equals the `2k`-point sum: `S_{2j,k} = S_{2j,2k}`. -/
+theorem bernoulli_aliasSum_odd {j k : ℕ} (hk : k % 2 = 1) (hjk : 2 * j < k) :
+    aliasSum bernoulliCoeff (2 * j) k = aliasSum bernoulliCoeff (2 * j) (2 * k) := by
+  have ha : Summable fun l => ‖bernoulliCoeff l‖ :=
+    summable_norm_of_le (by positivity)
+      (by rw [div_lt_one (by positivity)]; linarith [Real.pi_gt_three]) norm_bernoulliCoeff_le
+  have h1 := aliasSum_sub_eq ha hjk
+  have h2 := aliasSum_sub_eq ha (by omega : 2 * j < 2 * k)
+  have hs : ∀ φ : ℕ → ℕ, Function.Injective φ → Summable fun l => bernoulliCoeff (φ l) :=
+    fun φ hφ => ha.of_norm.comp_injective hφ
+  have hk0 : 0 < k := by omega
+  have hsplit := tsum_even_add_odd (f := fun l => bernoulliCoeff (2 * j + (l + 1) * k))
+    (hs (fun i => 2 * j + (2 * i + 1) * k) fun i₁ i₂ h => by
+      have : (2 * i₁ + 1) * k = (2 * i₂ + 1) * k := by simpa using h
+      have := Nat.eq_of_mul_eq_mul_right hk0 this
+      omega)
+    (hs (fun i => 2 * j + (2 * i + 1 + 1) * k) fun i₁ i₂ h => by
+      have : (2 * i₁ + 1 + 1) * k = (2 * i₂ + 1 + 1) * k := by simpa using h
+      have := Nat.eq_of_mul_eq_mul_right hk0 this
+      omega)
+  obtain ⟨t, rfl⟩ : ∃ t, k = 2 * t + 1 := ⟨k / 2, by omega⟩
+  have hz : ∀ i : ℕ, bernoulliCoeff (2 * j + (2 * i + 1) * (2 * t + 1)) = 0 := fun i => by
+    rw [show 2 * j + (2 * i + 1) * (2 * t + 1) = 2 * (j + 2 * i * t + i + t) + 1 by ring]
+    exact bernoulliCoeff_odd _
+  have hodd : ∑' i : ℕ, bernoulliCoeff (2 * j + (2 * i + 1 + 1) * (2 * t + 1))
+      = ∑' i : ℕ, bernoulliCoeff (2 * j + (i + 1) * (2 * (2 * t + 1))) :=
+    tsum_congr fun i => by congr 1; ring
+  rw [hodd] at hsplit
+  simp only [hz, tsum_zero, zero_add] at hsplit
+  linear_combination h1 - h2 - hsplit
+
+/-- The improved error bound for odd `k`: `O((2π)^(−2k))` instead of `O((2π)^(−k))`. -/
+theorem norm_bernoulli_aliasSum_sub_le_odd {j k : ℕ} (hj : 1 ≤ j) (hk : k % 2 = 1)
+    (hjk : 2 * j < k) :
+    ‖aliasSum bernoulliCoeff (2 * j) k - (scaledBernoulli j : ℂ)‖
+      ≤ Real.pi ^ 2 / 6 * (1 / (2 * Real.pi)) ^ (2 * k) / (1 - (1 / (2 * Real.pi)) ^ (2 * k))
+        * ‖(scaledBernoulli j : ℂ)‖ := by
+  rw [bernoulli_aliasSum_odd hk hjk]
+  exact norm_bernoulli_aliasSum_sub_le hj (by omega)
+
+end Exercise451
 
 end BZ
 
