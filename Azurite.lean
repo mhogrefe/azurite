@@ -1396,6 +1396,7 @@ import Azurite.BrentZimmermann.Chapter4.DoublingTripling
 import Azurite.BrentZimmermann.Chapter4.EllipticIntegrals
 import Azurite.BrentZimmermann.Chapter4.ErrorFunction
 import Azurite.BrentZimmermann.Chapter4.ErrorFunctionSeries
+import Azurite.BrentZimmermann.Chapter4.Exercises
 import Azurite.BrentZimmermann.Chapter4.FormalPowerSeries
 import Azurite.BrentZimmermann.Chapter4.FunctionalInverse
 import Azurite.BrentZimmermann.Chapter4.GuardDigits

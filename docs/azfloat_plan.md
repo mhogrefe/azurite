@@ -1716,3 +1716,250 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   — grep for the multiplicative name); `Function.Injective.tsum_eq (hg) (hf : support f ⊆ range g)`
   reindexes a sum over an arithmetic progression; `ring_nf` can normalize bound variables in two
   `tsum`s differently — prefer `ring` when the atoms already match.
+
+## MCA Chapter 4 exercises
+
+Answers to the exercises of Brent–Zimmermann Chapter 4, one bullet each (user instruction
+2026-10-17: proofs and/or prose, so the answer can be looked up here).  Formal content lives in
+`Azurite/BrentZimmermann/Chapter4/Exercises.lean`.
+
+* **Exercise 4.1** (`ln A` for a formal power series `A = ∑ a_j x^j`, `a₀ = 1`, with error
+  `O(xⁿ)` in time `O(M(n))`; hint `(ln A)′ = A′/A`; and whether the same holds for `n`-bit numbers
+  with `x = 1/2`).  **Answer.**  Define `ln A := ∫ A′/A` (the formal integral of §4.2.4 applied to
+  `A′ · A⁻¹`); it is the unique series with constant term `0` and derivative `A′/A`
+  (`logSeries`, `derivative_logSeries`, `logSeries_unique`; sanity checks `logSeries_exp : ln(exp x)
+  = x`, `logSeries_mul : ln(AB) = ln A + ln B`).  *Algorithm modulo `xⁿ`*: (1) `A′` — `O(n)`
+  coefficient operations; (2) `B := 1/A mod xⁿ` by Newton's iteration `x_{j+1} = x_j + x_j(1 − x_j A)`
+  (§4.2.4, `ringReciprocalSeq`, error of order `2^j`), doubling the precision `1, 2, 4, …, n`, each
+  step one or two products at the current precision; (3) `C := A′B mod xⁿ` — one product `M(n)`;
+  (4) `ln A := ∫ C` — `n` divisions by `j + 1`, `O(n)`.  Correctness of working modulo `xⁿ`
+  throughout: `X_pow_dvd_logSeries_sub` — if `A ≡ B (mod x^{n+1})` then `ln A ≡ ln B (mod x^{n+1})`
+  (the numerator `A′B − AB′` of `A′/A − B′/B` is divisible by `xⁿ`, and integration raises the
+  order by one, `X_pow_dvd_integral`), so only `A mod xⁿ` matters and the truncated reciprocal
+  and product lose nothing.  *Cost*: the "reasonable smoothness condition" is `M(2m) ≥ 2M(m)`
+  (equivalently `M(m)/m` nondecreasing); then `∑_{k<L} M(2^k) ≤ M(2^L)` (`sum_cost_le`, by
+  induction: `S_L + M(2^L) ≤ 2M(2^L) ≤ M(2^{L+1})`), so Newton costs `O(M(n))`, and the total is
+  `O(M(n)) + O(n) = O(M(n))`.  (Alternative: Newton for `exp` applied to `ln`, §4.2.4/§4.2.5,
+  same bound.)  *The numerical question*: **no** such transfer is known.  Substituting `x = 1/2`
+  turns the series into a number and the coefficient-wise steps lose their meaning: the integration
+  `c_j ↦ c_j/(j+1)` is not a ring operation on the number (carries mix the "coefficients"), and
+  `A′` is likewise meaningless; what survives is only the identity `(ln y)′ = 1/y` as a real
+  function.  For an `n`-bit real the best known bounds are `O(M(n) log n)`, via the AGM (§4.8.2,
+  our `agmLog`/`log_eq_pi_div_four_div_AGM` + `agm_log_iterations`) or Newton on `exp` with the
+  series/bit-burst evaluation (§4.4, §4.9.2); no `O(M(n))` algorithm for `ln` of a number is known,
+  in contrast to the formal case, which is a genuine difference between power series and numbers.
+* **Exercise 4.2** (Schönhage, Schost: `1/s(x) mod xⁿ` by an odd–even scheme, §1.3.5, and its
+  complexity in the FFT range).  **Answer.**  *Identity*: `s(x)s(−x)` is an even series (the odd
+  coefficients `∑_{i+k odd} a_i a_k (−1)^k` cancel in pairs `(i,k) ↔ (k,i)`, `coeff_odd_mul_rescale_neg_one`),
+  so `s(x)s(−x) = t(x²)` with `t_j = [x^{2j}] s(x)s(−x)` (`oddEvenT`, `mul_rescale_neg_one_eq_expand`),
+  `t₀ = a₀² ≠ 0`, and `1/s(x) = s(−x) · (1/t)(x²)` (`inv_eq_rescale_mul_expand_inv`).  *Algorithm*
+  `OddEvenRecip(s, n)`: (1) if `n = 1` return `1/a₀`; (2) `t := ` even part of `s(x)s(−x) mod xⁿ`
+  (`⌈n/2⌉` coefficients); (3) `u := OddEvenRecip(t, ⌈n/2⌉)`; (4) return `s(−x) · u(x²) mod xⁿ`.
+  Correctness of the truncations: `u ≡ 1/t (mod x^m)` ⇒ `s(−x)u(x²) ≡ 1/s (mod x^{2m})`
+  (`X_pow_dvd_inv_sub_oddEven`), so with `m = ⌈n/2⌉` the result is `1/s mod xⁿ`.  The scheme is
+  the §1.3.5 odd–even trick (`s(x) = s_e(x²) + x s_o(x²)`) applied to division: it halves the
+  *size* instead of doubling the *precision* as Newton does, and needs no starting approximation.
+  *Complexity in the FFT model* (§4.8.5: one product of two `n`-term series = three transforms of
+  length `2n`, each `M(n)/3`; a transform of half length costs `M(n)/6`): per level, one forward
+  transform of `s` (`M(n)/3`; the transform of `s(−x)` is the same list of values permuted — `s(−ω^k)
+  = s(ω^{k+n})` for a `2n`-th root of unity — so free), one pointwise product, one *half-length*
+  inverse transform for the even part `t` (the even coefficients of a convolution come from the
+  averages `(P_k + P_{k+n})/2`, `M(n)/6`), the recursive call, one half-length forward transform
+  of `u(x²)` (its values at the `2n`-th roots repeat those of `u` at the `n`-th roots, `M(n)/6`),
+  the pointwise product with the stored transform of `s(−x)`, and one full inverse transform
+  (`M(n)/3`): `T(n) ≤ T(n/2) + M(n)`, hence `T(n) ≤ T(1) + 2M(n)` when `M(2m) ≥ 2M(m)`
+  (`cost_recurrence_le` with `c = 1`); i.e. about `2M(n)`, the same order as Newton's reciprocal
+  and without the self-correction requirement.  MCA's Table 4.1 lists `1.444 M(n)` for the
+  reciprocal in the FFT range; the extra saving over our `2M(n)` (reusing transforms across levels,
+  a cheaper bottom of the recursion, wrapped transforms) is the §4.12 material we do not have —
+  what is recorded here is the scheme and the `≤ 2M(n)` analysis.  Formal content:
+  `Exercises.lean`, section `Exercise42`.
+* **Exercise 4.3** (`g(h(x)) = x`, `y_j = h(x_j)`: show that `x_{j+1} = x_j + ∑_{m=1}^{k−1} (y − y_j)^m
+  g^{(m)}(y_j)/m!` is a `k`-th order iteration converging to `x = g(y)`; generalize (4.16)).
+  **Answer.**  Since `g(h(x_j)) = x_j`, the right-hand side is the degree-`(k−1)` Taylor polynomial of
+  `g` at `y_j`, evaluated at `y` (its constant term `g(y_j)` *is* `x_j`; `taylorInverseStep_eq_taylor`).
+  Taylor's theorem with Lagrange remainder gives `g(y) − x_{j+1} = g^{(k)}(ξ)(y − y_j)^k/k!` for some
+  `ξ` strictly between `y_j` and `y` (`taylorInverseStep_sub`, from Mathlib's
+  `taylor_mean_remainder_lagrange_iteratedDeriv`), so with `|g^{(k)}| ≤ M` there,
+  `|x − x_{j+1}| ≤ M|y − y_j|^k/k!` (`abs_sub_taylorInverseStep_le`; the degenerate case `y_j = y`
+  gives `x_{j+1} = x_j = x`).  Since `y − y_j = h(x) − h(x_j)`, if `h` is Lipschitz with constant `L`
+  (e.g. `|h′| ≤ L`), `|x − x_{j+1}| ≤ (M L^k/k!)\,|x − x_j|^k` (`taylorInverseStep_order`): the
+  iteration has order `k`.  For `k = 2` this is Newton's method (`x_{j+1} = x_j + (y − y_j)g′(y_j)`,
+  §4.2.5 with `g′(y_j) = 1/h′(x_j)`), for `k = 3` the cubic iteration of §4.2.6 whose error
+  derivation is (4.16) — the exercise replaces the explicit expansion there by the general
+  Lagrange remainder.  *Convergence* ("suitable conditions"): the smoothness of `g` near `y`, the
+  Lipschitz bound on `h` near `x`, and a starting point close enough that `C|x₀ − x|^{k−1} ≤ 1/2`
+  with `C = ML^k/k!`; then `e_{j+1} ≤ C e_j^k ≤ (1/2) e_j`, so `|x_j − x| ≤ |x₀ − x|/2^j → 0`
+  (`iterate_le_of_order`, by induction; the iterates stay in the region where the bounds hold
+  because the error is decreasing), and in fact `e_{j+1} ≤ C e_j^k` is the `k`-th order statement.
+  Formal content: `Exercises.lean`, section `Exercise43`.
+* **Exercise 4.4** (a Horner-like algorithm evaluating `∑_{j≤k} a_j x^j` in the *forward*
+  direction, deciding dynamically where to stop; `|a_j|` monotonic decreasing, `|x| < 1/2`; hint
+  `y = 1/x`).  **Answer.**  Horner's rule proper runs from the top coefficient down
+  (`s ← s·x + a_j`) and so needs `k` in advance.  With `y = 1/x` run Horner in `y` from the bottom
+  up: `T₀ = a₀`, `T_{j+1} = T_j·y + a_{j+1}`, so that `T_j = ∑_{i≤j} a_i y^{j−i}` and the partial sum
+  is `S_j = ∑_{i≤j} a_i x^i = x^j T_j` (`forwardHorner`, `forwardHorner_eq_sum`,
+  `sum_eq_pow_mul_forwardHorner`): one multiplication and one addition per coefficient, in the
+  order the coefficients are produced.  *Stopping*: for decreasing `|a_i|` and `|x| < 1/2` the tail
+  is dominated by a geometric series, `|∑_{i>j} a_i x^i| ≤ |a_{j+1}||x|^{j+1}/(1−|x|) ≤
+  2|a_{j+1}||x|^{j+1} ≤ |a_j x^j|` — the tail never exceeds the last term added
+  (`abs_tsum_sub_sum_le_two_mul`, `abs_tsum_sub_sum_le_term`).  Hence: maintain `z_j = ε|y|^j`
+  (`z_{j+1} = z_j·|y|`, one more multiplication) and stop as soon as `|a_j| ≤ z_j`, which is exactly
+  `|a_j x^j| ≤ ε` (`stop_criterion_iff`); return `x^j·T_j` (`x^j` by binary powering, `O(log j)`
+  products, or carried along).  Then `|∑ a_i x^i − x^j T_j| ≤ ε` (`abs_tsum_sub_forwardHorner_le`).
+  *Algorithm* `ForwardHorner(a, x, ε)`: `y ← 1/x; T ← a₀; z ← ε; j ← 0; while |a_j| > z: j ← j+1;
+  T ← T·y + a_j; z ← z·|y|; return x^j·T`.  Remarks: (i) the test is on the *coefficient* against a
+  growing threshold, so no power of `x` is formed in the loop; (ii) compared with the plain forward
+  recurrence `t_j = t_{j−1}x`, `S += t_j` (§4.4, stop when `|t_j| < ε`) the cost per term is the
+  same (two products, one addition), but all coefficients enter through additions to `T` whose
+  magnitude grows like `|y|^j` — in floating point the relative error of `T_j` is `O(jε)` as in the
+  §4.4 analysis (`roundedSum_sub_le`), and the final `x^j T_j` scales it back; (iii) for a finite
+  sum (`a_j = 0` for `j > k`) the loop stops at `j ≤ k` automatically; (iv) the hypothesis
+  `|x| < 1/2` is what makes "tail ≤ last term" true — for `1/2 ≤ |x| < 1` the same argument gives
+  tail `≤ |a_j x^j|·|x|/(1−|x|)`, i.e. the test must be scaled by `(1−|x|)/|x|`.  Formal content:
+  `Exercises.lean`, section `Exercise44`.
+* **Exercise 4.5** (`n` bits of `exp x`, `x` of order `2^j`, by repeated doubling (§4.3.1) and the
+  naive series: the best reduced argument `x/2^k` in terms of `n` and `j`, for `j ≥ 0` and `j < 0`).
+  **Answer.**  Reduce by `k` halvings to `r = x/2^k` of size `2^{j−k} = 2^{−m}`, `m := k − j`; sum
+  the series for `exp r` with `d` terms; square `k` times.  *Terms needed*: with `|r| ≤ 2^{−m}`,
+  `|exp r − ∑_{i<d} r^i/i!| ≤ 3·2^{−md}/d! ≤ 2^{−n}` as soon as `m·d ≥ n + 2`
+  (`exp_series_terms_of_small`, from `abs_exp_sub_sum_le`; the `1/d!` is a further gain, see below),
+  so `d ≈ n/m`.  *Cost*: the naive evaluation costs one multiplication per term (`d`) and the
+  doublings `k` squarings, all at precision `≈ n` (plus guard bits): `(d + k) M(n) ≈ (n/m + m + j)
+  M(n)`.  Minimizing `n/m + m` over `m > 0`: `n/m + m ≥ 2√n` with equality at `m = √n`
+  (`doubling_cost_ge`, `doubling_cost_sqrt`, AM–GM).  Hence the **optimal reduced argument is
+  `|x|/2^k ≈ 2^{−√n}`**, i.e. `k = j + √n` (rounded), giving `d ≈ √n` terms, `k ≈ j + √n` squarings
+  and total cost `≈ (2√n + j) M(n)` — the `O(√n M(n))` of §4.3.1.  *Case `j ≥ 0`*: `k = j + √n`
+  doublings, of which the first `j` only bring `x` below `1` and the remaining `√n` are the real
+  trade-off.  *Case `j < 0`*: `x` is already small; if `|j| < √n` the same choice `k = j + √n > 0`
+  applies (fewer doublings, `√n − |j|`), and if `|j| ≥ √n` no reduction is needed at all (`k = 0`,
+  `m = |j| ≥ √n`, `d ≤ n/|j| ≤ √n` terms): the reduced argument is `x` itself.  *Precision loss*:
+  each squaring doubles the relative error (§4.3.2, `abs_squareSeq_sub_exp_le`: the final error is
+  `≈ 2^k ε + ∑ 2^{k−1−i}θ_i`), so `k = O(√n + j)` guard bits are needed — `O(√n)` for `j = O(√n)`,
+  negligible against `n`, but for very large `j` the guard bits `≈ j` and the `j` extra squarings
+  dominate, which is why §4.3 reduces `x ≥ 1` by `ln 2` (or `exp(x) = exp(x − ⌊x/ln2⌋ ln 2) 2^{⌊·⌋}`)
+  rather than by halving.  *Refinement with `d!`*: the exact condition `2^{−md}·3/d! ≤ 2^{−n}` is
+  `md + log₂(d!/3) ≥ n`, i.e. `d(m + log₂ d − 1.44…) ≳ n`; with `d ≈ √n` this shifts the optimum to
+  `m ≈ √n − (1/2)log₂ n`, a lower-order correction — the reduced argument stays `2^{−√n(1 + o(1))}`.
+  Formal content: `Exercises.lean`, section `Exercise45`.
+* **Exercise 4.6** (given `ln x` to `n` bits in time `T(n)` with `n ≪ M(n) = o(T(n))`, compute
+  `exp x` to `n` bits in time `∼ T(n)`; smoothness of `T`, `M` assumed).  **Answer.**  Invert `ln`
+  by the order-`k` iteration of Exercise 4.3 with `g = exp`, `h = ln` (target `exp x`, so "`y`" is
+  `x` and `y_j = ln z_j`).  Because `exp^{(m)} = exp` and `exp(ln z_j) = z_j`, the step collapses to
+  `z_{j+1} = z_j · ∑_{m<k} (x − ln z_j)^m/m!` (`expViaLogStep`, `expViaLogStep_eq_taylorInverseStep`):
+  one evaluation of `ln` plus a truncated exponential series of the *small* number `x − ln z_j`,
+  i.e. `O(k)` multiplications.  *Error*: with `ρ_j = |exp x − z_j|/exp x ≤ 1/2`, Exercise 4.3's
+  bound (Lipschitz constant `2/exp x` for `ln` on `[exp x/2, 3exp x/2]`, `abs_log_sub_log_le`, and
+  `|exp^{(k)}| ≤ (3/2)exp x` on the relevant interval) gives `ρ_{j+1} ≤ (3·2^{k−1}/k!) ρ_j^k`
+  (`expViaLogStep_relative_error`): a `k`-th order iteration, so the precision is multiplied by
+  about `k` per step (`−log₂ ρ_{j+1} ≥ k(−log₂ ρ_j) − log₂(3·2^{k−1}/k!)`, and `2^{k−1}/k! < 1` for
+  `k ≥ 4`).  *Why Newton alone gives only `∼ 2T(n)`*: with `k = 2` the precisions `n, n/2, n/4, …`
+  cost `∑ T(n/2^i) ≈ T(n)(1 + 1/2 + ⋯) = 2T(n)` when `T` is linear, and more precisely
+  `≤ T(n)·k/(k−1)` for the factor-`k` schedule under the smoothness `k·T(m/k) ≤ T(m)`
+  (`geometric_cost_le`; this holds when `T(m)/m` is nondecreasing).  *The `∼ T(n)` algorithm*: run
+  the order-`k` iteration at precisions `n, n/k, n/k², …` down to a constant, starting from a
+  double-precision `exp`; the `ln` evaluations cost `≤ T(n)·k/(k−1) = T(n)(1 + 1/(k−1))`, and the
+  series steps cost `O(k) M(n_i)` each, in total `O(k M(n))` (same geometric sum).  Choose
+  `k = k(n) → ∞` so slowly that `k·M(n) = o(T(n))` — possible because `M(n) = o(T(n))`, e.g.
+  `k = ⌊(T(n)/M(n))^{1/2}⌋`; then the total is `T(n)(1 + 1/(k−1)) + o(T(n)) = T(n)(1 + o(1)) ∼ T(n)`.
+  The hypothesis `n ≪ M(n)` makes the `O(n)`-bit bookkeeping (truncations, additions) negligible,
+  and the smoothness conditions are those used above (`T(m)/m` nondecreasing, the same for `M`).
+  Remark: this is exactly the §4.8.4 recipe "`exp` by Newton's method from the complex/real AGM
+  logarithm" — with the AGM, `T(n) = O(M(n) log n)`, so `k ≈ √(log n)` already gives `∼ T(n)`.
+  Formal content: `Exercises.lean`, section `Exercise46`.
+* **Exercise 4.7** (`exp x = exp(x/2^k)^{2^k}`, `x` of order unity, `k` reduction steps: show that
+  about `k` bits of precision are lost, so about `k` guard bits are needed).  **Answer.**  Write the
+  computed value of the reduced exponential as `exp(x/2^k)(1 + ε)`, `|ε| ≲ 2^{−p}` at working
+  precision `p` (series truncation + rounding).  Squaring is *exact* in relative error:
+  `(e(1+ε))^2 = e^2(1+ε)^2`, so after `k` squarings the relative error is `(1+ε)^{2^k} − 1`.
+  Bernoulli's inequality gives `(1+ε)^{2^k} − 1 ≥ 2^k ε` (`two_pow_mul_le_one_add_pow_sub_one`),
+  and conversely `(1+ε)^{2^k} − 1 ≤ e^{2^k ε} − 1 ≤ 2·2^k ε` while `2^k ε ≤ 1`
+  (`one_add_pow_sub_one_le_two_mul`): the relative error is multiplied by a factor between `2^k`
+  and `2^{k+1}`, i.e. `log₂(1/error)` drops by at least `k` (`logb_one_add_pow_sub_one_ge`:
+  `log₂((1+ε)^{2^k} − 1) ≥ k + log₂ ε`) and at most `k + 1` bits — "about `k` bits are lost".  The
+  rounding of the squarings themselves adds the same amount: with relative perturbations `θ_i` at
+  squaring `i`, §4.3.1's `abs_squareSeq_sub_exp_le` gives the final relative error
+  `≤ 2(2^k|ε| + ∑_{i<k} 2^{k−1−i}|θ_i|) ≤ 2(2^k + 2^k − 1)·2^{−p} < 2^{k+2−p}` — the first squaring's
+  rounding is amplified `2^{k−1}` times, the last one not at all, and the sum is again `≈ 2^k 2^{−p}`.
+  Hence to deliver `n` correct bits one must work with `p ≈ n + k + O(1)` bits: about `k` guard
+  bits (the `x` of order unity matters only in that `exp x` itself is of order unity, so relative
+  and absolute error agree up to a constant; for `x ≈ 2^j` the same count holds for the relative
+  error, cf. Exercise 4.5).  With the optimal `k ≈ √n` of Exercise 4.5 this is `O(√n)` guard bits —
+  negligible against `n`, but not against the `O(lg n)` guard bits of the series itself (§4.4).
+  Formal content: `Exercises.lean`, section `Exercise47`.
+* **Exercise 4.8** (the loss of Exercise 4.7 is avoided with `expm1 x = exp x − 1 = ∑_{j≥1} x^j/j!`
+  and its doubling formula `expm1(2x) = expm1 x (2 + expm1 x)`).  **Answer.**  Two effects.
+  (1) *Cancellation at the start*: for the reduced argument `r = x/2^k` the series for `exp r` is
+  `1 + r + ⋯`, and forming `exp r − 1` from a rounded `exp r` costs the `k` leading bits (absolute
+  error `ρ exp r` on a quantity of size `r ≈ 2^{−k}`, §4.3.3's `expm1_of_exp_perturbed`); summing
+  the series for `expm1 r` directly (no constant term) keeps the *relative* error at `2^{−p}`.
+  (2) *No amplification by the doublings*: writing the computed value as `expm1 r (1 + ε)`, one
+  step gives `expm1 (2r)(1 + ε′)` with `ε′ = ε(2(e+1) + eε)/(e+2)`, `e = expm1 r` (§4.3.3's
+  `expm1_two_mul_perturbed`), and for `r ≥ 0`, `|ε| ≤ 1`: `|ε′| ≤ |ε|(1 + e)`
+  (`abs_expm1_relError_step_le`; the §4.3.3 bound `2|ε| + ε²` is the crude version, the true factor
+  is `1 + e/(e+2)·(…) ≈ 1 + e/2`).  Since `e_i = expm1(r 2^i) ≈ x/2^{k−i}` is tiny in the early steps
+  and only `≈ expm1 x` at the end, the `k` factors multiply to
+  `∏_{i<k}(1 + e_i) ≤ exp(∑ e_i) ≤ exp(x eˣ)` (`prod_one_add_le_exp_sum`, `sum_expm1_two_pow_le`,
+  using `expm1 y ≤ y e^y` and `∑ r 2^i ≤ x`): for `x` of order unity a *constant* — e.g. `≤ e^e ≈ 15`
+  for `x ≤ 1`, i.e. at most four bits — independent of `k`, against the `2^k` of Exercise 4.7
+  (`expm1DoublingSeq_relError`: relative error after `k` exact doublings `≤ |ε| ∏(1 + e_i)`).  The
+  reason is structural: squaring `e^x(1+ε)` doubles `ε` because the relative error of a square is
+  twice that of its base, whereas `expm1(2y) = e(2 + e)` is *linear* in `e` to first order
+  (`2e + e²`), so the relative error passes through essentially unchanged while `e ≪ 1`.  The
+  rounding errors `θ_i` of the doubling steps are then also not amplified (each enters with factor
+  `∏_{i'>i}(1 + e_{i'}) = O(1)`), so the working precision is `n + O(1)` bits instead of `n + k`.
+  Finally `exp x = 1 + expm1 x` with a single addition.  (For `x < 0` use `expm1 x = −expm1(−x)/
+  (1 + expm1(−x))`, or `exp x = 1/exp(−x)`, §4.4.)  Formal content: `Exercises.lean`, section
+  `Exercise48`.
+* **Exercise 4.9** (`log1p` reduction formula). **Answer.** For `x > −1` put `s = √(1+x) > 0`;
+  then `x/(1+s) = (s² − 1)/(s + 1) = s − 1`, so `1 + x/(1+s) = s` and
+  `2 log1p(x/(1+s)) = 2 ln s = ln s² = ln(1+x) = log1p x` (`log1p_reduction`,
+  `div_one_add_sqrt_eq`). Why `log1p`: for tiny `x` (say `|x| < 2^{−n/2}`) the sum `1 + x` is
+  rounded to `n` bits before `ln` sees it, so `ln(1+x) = x − x²/2 + …` carries only the bits of
+  `x` that survived the rounding, a loss of `−log₂|x|` bits (`relError_sub_one`: perturbing
+  `y = 1 + x` by relative `ε` perturbs `y − 1` by relative `ε·y/(y−1)`). Argument reduction for
+  `ln` has the same defect: `ln y = 2 ln √y` drives `y → 1`, and anything that then forms
+  `√y − 1` (series in `y − 1`, or the AGM input `4/√y`'s complement) cancels. With `log1p` the
+  reduction `x ↦ x/(1 + √(1+x)) = √(1+x) − 1` is computed as a *division* with no subtraction:
+  the new argument is ≈ `x/2` (`sqrt_sub_one_le_half`), is obtained to full relative precision,
+  and the map does not amplify relative errors (`reduced_relError_le`, condition number
+  `(1+s)/(2s) ≤ 1` for `x ≥ 0`). After `k` steps the argument is ≈ `x/2^k` and the
+  reconstruction `2^k · log1p(r)` is an exact scaling, so (unlike Exercise 4.7's repeated
+  squaring) nothing is lost on the way back. Cost: each `expm1` reduction is a halving (free),
+  each `log1p` reduction needs a square root of an `n`-bit number, ≈ `O(M(n))`, so `k`
+  reductions cost `O(k M(n))` versus `O(k n)`.
+* **Exercise 4.10** (`sinh` from one `expm1`). **Answer.** Let `u = expm1 |x| ≥ 0`, so
+  `e^{|x|} = 1 + u` and `e^{−|x|} = 1/(1+u)`. Then
+  `sinh |x| = ((1+u) − 1/(1+u))/2 = u(2+u)/(2(1+u)) = (u + u/(1+u))/2`, and
+  `sinh x = sign(x) · sinh |x|` (`sinh_eq_sinhExpm1`, `sinhExpm1_eq`, `sinh_eq_sign_mul_sinh_abs`).
+  Cost beyond the one `expm1`: one division, two additions, one halving (and a sign flip).
+  Stability: every intermediate quantity is nonnegative and the only subtraction, the `−1` hidden
+  in `expm1`, is done inside `expm1` without cancellation, so for `|x|` small the result
+  `≈ u ≈ |x|` keeps full relative precision; the map `u ↦ u(2+u)/(2(1+u))` has condition number
+  `1 − u/((1+u)(2+u)) ≤ 1`, so relative errors in `u` are not amplified
+  (`sinhExpm1_relError_le`). Taking `|x|` matters: for `x ≪ 0` we would have `u ≈ −1` and
+  `1 + u = e^x` would be formed with cancellation. Compared with (4.20),
+  `sinh x = (expm1 x − expm1(−x))/2`, which is also cancellation-free but needs two `expm1`
+  evaluations, this uses one. `cosh x = 1 + u²/(2(1+u))` comes from the same `u`
+  (`cosh_eq_expm1`).
+* **Exercise 4.11** (White: `exp` via `sinh`). **Answer.** `cosh² − sinh² = 1` and `cosh > 0`
+  give `cosh x = √(1 + sinh² x)`, so `exp x = sinh x + cosh x = sinh x + √(1 + sinh² x)`
+  (`exp_eq_sinh_add_sqrt`). The odd part of the exponential series is
+  `sinh x = ∑_{k≥0} x^{2k+1}/(2k+1)! = x ∑_k (x²)^k/(2k+1)!` (`hasSum_sinh_series`,
+  `hasSum_sinh_series'`): a series in `x²` with the same convergence rate as the full series, so
+  about half the terms (and half the multiplications, after one squaring) for the price of one
+  square root, which is `O(M(n))`, i.e. a constant number of terms' worth of work. Negative
+  arguments: for `x < 0`, `sinh x < 0` and `sinh x + √(1 + sinh² x) = 1/(|sinh x| + √(1 + sinh² x))`
+  is a difference of nearly equal numbers (`sqrt_sub_eq_inv`), losing about `−2x/ln 2` bits for
+  `x ≪ 0`; so compute with `|x|` and invert: `exp x = 1/(sinh |x| + √(1 + sinh² |x|))`
+  (`exp_eq_inv_sinh_abs_add_sqrt`), where every term is nonnegative and the map
+  `s ↦ s + √(1 + s²)` has relative condition number `s/√(1 + s²) ≤ 1`
+  (`sinh_add_sqrt_relError_le`). Other functions: the same trick works whenever the even and odd
+  parts `f_e, f_o` of `f` are related algebraically. `cos x = √(1 − sin² x)` on `[−π/2, π/2]`
+  (Mathlib `Real.cos_eq_sqrt_one_sub_sin_sq`; use `cos x = 1 − 2 sin²(x/2)` to avoid the loss near
+  `|x| = π/2`), so `exp(ix) = cos x + i sin x` needs only the `sin` series; likewise
+  `exp x = (1 + tanh(x/2))/(1 − tanh(x/2))` (`exp_eq_tanh_half`) uses only the odd function
+  `tanh`, whose (Bernoulli-number) series is however less convenient than `sinh`'s;
+  `cosh x = 1 + 2 sinh²(x/2)` and `ln(1+x)`/`artanh` via `artanh y = ½ ln((1+y)/(1−y))`, whose
+  series `∑ y^{2k+1}/(2k+1)` is again odd (§4.4.2's `(1+x)/(1−x)` reduction), are the same
+  idea.
