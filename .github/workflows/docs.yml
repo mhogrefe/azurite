@@ -1,10 +1,12 @@
 # Builds the doc-gen4 API documentation and the Jekyll home page (home_page/) and deploys them to
 # GitHub Pages: https://mhogrefe.github.io/azurite/ with the API docs under /docs/.
 #
-# The action builds its own `docbuild` project with doc-gen4 at the tag matching lean-toolchain,
-# so the `-Kenv=dev` doc-gen4 dependency in lakefile.lean is used only for local doc builds.
-# API docs are generated on `push` events only (a manual run builds just the home page).
-# Mathlib's generated documentation is cached between runs, keyed on lake-manifest.json.
+# The steps follow leanprover-community/docgen-action, which cannot be used directly because it
+# reads the package metadata from a `lakefile.toml` and this project needs `lakefile.lean` (the
+# `extern_lib` for the benchmark timer has no TOML form). A throwaway `docbuild` package depends on
+# this one and on doc-gen4 at the tag matching lean-toolchain, so the `-Kenv=dev` doc-gen4
+# dependency in lakefile.lean is used only for local doc builds. The generated documentation of the
+# dependencies (Mathlib above all) is cached between runs, keyed on lake-manifest.json.
 name: Publish documentation
 
 on:
@@ -53,8 +55,100 @@ jobs:
           test: false
           mk_all-check: false
 
-      - name: Build API documentation and home page, deploy to GitHub Pages
-        uses: leanprover-community/docgen-action@dacc1acc2a3f532cc577266979ba9c36c7593f7c # 2026-10-05
+      - name: Cache the documentation of the dependencies
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          blueprint: false
-          homepage: home_page
+          key: Docs-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            docbuild/.lake/build/doc/Mathlib
+            docbuild/.lake/build/doc/Archive
+            docbuild/.lake/build/doc/Counterexamples
+            docbuild/.lake/build/doc/Batteries
+            docbuild/.lake/build/doc/Aesop
+            docbuild/.lake/build/doc/Qq
+            docbuild/.lake/build/doc/ProofWidgets
+            docbuild/.lake/build/doc/ImportGraph
+            docbuild/.lake/build/doc/LeanSearchClient
+            docbuild/.lake/build/doc/Plausible
+            docbuild/.lake/build/doc/Cli
+            docbuild/.lake/build/doc/Checkdecls
+            docbuild/.lake/build/doc/Init
+            docbuild/.lake/build/doc/Lake
+            docbuild/.lake/build/doc/Lean
+            docbuild/.lake/build/doc/Std
+            docbuild/.lake/build/doc-data
+            docbuild/.lake/build/doc/declarations/declaration-data.bmp
+            docbuild/.lake/build/api-docs.db
+            docbuild/.lake/build/doc-manifest.json
+            docbuild/.lake/build/doc/style.css
+            docbuild/.lake/build/doc/favicon.svg
+            docbuild/.lake/build/doc/declaration-data.js
+            docbuild/.lake/build/doc/color-scheme.js
+            docbuild/.lake/build/doc/nav.js
+            docbuild/.lake/build/doc/jump-src.js
+            docbuild/.lake/build/doc/expand-nav.js
+            docbuild/.lake/build/doc/how-about.js
+            docbuild/.lake/build/doc/search.js
+            docbuild/.lake/build/doc/mathjax-config.js
+            docbuild/.lake/build/doc/instances.js
+            docbuild/.lake/build/doc/importedBy.js
+            docbuild/.lake/build/doc/index.html
+            docbuild/.lake/build/doc/404.html
+            docbuild/.lake/build/doc/navbar.html
+            docbuild/.lake/build/doc/search.html
+            docbuild/.lake/build/doc/foundational_types.html
+            docbuild/.lake/build/doc/references.html
+            docbuild/.lake/build/doc/references.bib
+            docbuild/.lake/build/doc/tactics.html
+            docbuild/.lake/build/doc/find/index.html
+            docbuild/.lake/build/doc/find/find.js
+
+      - name: Build API documentation
+        run: |
+          set -euo pipefail
+          DOC_GEN_REV=$(cut -f2 -d: lean-toolchain)
+          mkdir -p docbuild
+          cat > docbuild/lakefile.toml <<TOML
+          name = "docbuild"
+          reservoir = false
+          version = "0.1.0"
+          packagesDir = "../.lake/packages"
+
+          [[require]]
+          name = "azurite"
+          path = "../"
+
+          [[require]]
+          scope = "leanprover"
+          name = "doc-gen4"
+          rev = "$DOC_GEN_REV"
+          TOML
+          cp lean-toolchain docbuild/
+          cd docbuild
+          MATHLIB_NO_CACHE_ON_UPDATE=1 ~/.elan/bin/lake update azurite
+          ~/.elan/bin/lake build Azurite:docs Examples:docs
+          cd ..
+          mkdir -p home_page/docs
+          cp -r docbuild/.lake/build/doc/. home_page/docs/
+
+      - name: Bundle the home page's dependencies
+        uses: ruby/setup-ruby@eaecf785f6a34567a6d97f686bbb7bccc1ac1e5c # v1.237.0
+        with:
+          working-directory: home_page
+          ruby-version: "3.1"
+          bundler-cache: true
+
+      - name: Build the website with Jekyll
+        working-directory: home_page
+        env:
+          JEKYLL_GITHUB_TOKEN: ${{ github.token }}
+        run: JEKYLL_ENV=production bundle exec jekyll build
+
+      - name: Upload the website
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: home_page/_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
