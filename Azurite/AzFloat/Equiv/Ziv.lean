@@ -12,6 +12,8 @@ import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Ziv
+import Mathlib.NumberTheory.Real.Irrational
+import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # Correctness of Ziv's loop
@@ -741,5 +743,60 @@ theorem zivLoop_eq_of_ne_nan (p : ℕ) [NeZero p] (mode : RoundingMode)
       | zero => exact absurd rfl hne
       | succ fuel =>
         exact zivLoop_eq_of_ne_nan p mode approx v happrox fuel (2 * w) (by omega) hne
+
+end Azurite.AzFloat
+
+namespace Azurite.AzFloat
+
+/-- Rounding boundaries are rational, so an irrational real is never one. -/
+theorem not_mem_floatSet_of_irrational (p : ℕ) [NeZero p] {x : ℝ} (hx : Irrational x) :
+    ((x : ℝ) : EReal) ∉ floatSet (p + 1) := by
+  intro hB
+  obtain ⟨M, k, hMk, -⟩ := boundary_repr p x hB hx.ne_zero
+  exact hx ⟨M * (2 : ℚ) ^ k, by push_cast; exact hMk.symm⟩
+
+/-- **Ziv's certificate for an irrational value**: if the brackets at working precision `w`
+have width at most `C (1/2)^w`, rounding becomes possible at some `w₀ · 2^f`, because the
+irrational value is at positive distance from the nearest boundaries. -/
+theorem exists_isSome_of_irrational (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) {v : ℝ} (hv : Irrational v) {C : ℝ} (hC : 0 ≤ C)
+    (happrox : ∀ w, 0 < w → ∃ lv hv' : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv' ∧
+      lv ≤ v ∧ v ≤ hv' ∧ hv' - lv ≤ C * (1 / 2 : ℝ) ^ w)
+    (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p
+      mode).isSome = true := by
+  have hv0 : v ≠ 0 := hv.ne_zero
+  have hvB := not_mem_floatSet_of_irrational p hv
+  obtain ⟨bm, bp, hbm, hbp, hbmv, hvbp, hgreatest, hleast, -, -⟩ :=
+    adjacent_boundaries p v hv0 hvB
+  set D := min (v - bm) (bp - v) with hD
+  have hD0 : 0 < D := lt_min (by linarith) (by linarith)
+  have hC1 : (0 : ℝ) < C + 1 := by linarith
+  obtain ⟨f, hf⟩ := exists_pow_lt_of_lt_one (div_pos hD0 hC1) (by norm_num : (1 / 2 : ℝ) < 1)
+  rw [lt_div_iff₀ hC1] at hf
+  refine ⟨f, ?_⟩
+  have hw : 0 < w₀ * 2 ^ f := by positivity
+  have hfw : (1 / 2 : ℝ) ^ (w₀ * 2 ^ f) ≤ (1 / 2 : ℝ) ^ f := by
+    refine pow_le_pow_of_le_one (by norm_num) (by norm_num) ?_
+    calc f ≤ 2 ^ f := Nat.lt_two_pow_self.le
+      _ ≤ w₀ * 2 ^ f := Nat.le_mul_of_pos_left _ hw₀
+  obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := happrox _ hw
+  have hCw : C * (1 / 2 : ℝ) ^ (w₀ * 2 ^ f) < D := by
+    have h1 : C * (1 / 2 : ℝ) ^ (w₀ * 2 ^ f) ≤ C * (1 / 2 : ℝ) ^ f :=
+      mul_le_mul_of_nonneg_left hfw hC
+    have h2 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ f := by positivity
+    nlinarith
+  apply roundingPossible_isSome_of_no_boundary p mode hl hh (by linarith)
+  refine no_boundary_of_dist p v _ _ D hv0 hvB hlo hhi ?_ (by linarith)
+  intro b hb hbne _
+  rcases le_or_gt b v with hble | hbgt
+  · have := hgreatest b hb hble
+    rw [abs_of_nonneg (by linarith)]
+    calc D ≤ v - bm := min_le_left _ _
+      _ ≤ v - b := by linarith
+  · have := hleast b hb hbgt.le
+    rw [abs_of_neg (by linarith)]
+    calc D ≤ bp - v := min_le_right _ _
+      _ ≤ -(v - b) := by linarith
 
 end Azurite.AzFloat

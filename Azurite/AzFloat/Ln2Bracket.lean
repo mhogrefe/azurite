@@ -13,6 +13,7 @@ import Azurite.AzNat.AtanhSplit
 import Azurite.AzNat.Pow
 import Azurite.AzRat.Add
 import Azurite.AzRat.Construct
+import Azurite.AzRat.Div
 import Azurite.AzRat.Mul
 import Azurite.AzRat.Sub
 
@@ -26,6 +27,8 @@ side gives exact rationals `lo ≤ ln 2 ≤ hi` (`ln2Bracket`), of width below `
 `(2N_q+1)⌊lg q⌋ ≥ w + 6` (`ln2N₁`, `ln2N₂`, `ln2N₃`, with `⌊lg 26⌋ = 4`, `⌊lg 4801⌋ = 12`,
 `⌊lg 8749⌋ = 13`).  `ln2Approx w` rounds the two ends at any requested precision — the bracket
 Ziv's loop tests (`Azurite/AzFloat/Ln2.lean`).  One evaluation of the three series per level.
+The reciprocal bracket `log2EBracket w = (1/hi, 1/lo)` encloses `log₂ e = 1/ln 2` at no extra
+cost (`log2EApprox`).
 
 The theory is `Azurite/BrentZimmermann/Chapter4/Ln2BinarySplitting.lean`; the proofs are in
 `Azurite/AzFloat/Equiv/Ln2Bracket.lean`.
@@ -73,6 +76,17 @@ def ln2Bracket (w : Nat) : AzRat × AzRat :=
 /-- The two ends of the bracket, rounded at any requested precision. -/
 def ln2Approx (w : Nat) : Roundable × Roundable :=
   let b := ln2Bracket w
+  (fun p mode => ofAzRatRound b.1 p mode, fun p mode => ofAzRatRound b.2 p mode)
+
+/-- The exact rational bracket `[1/hi, 1/lo] ∋ log₂ e = 1/ln 2`: the reciprocal of the bracket
+of `ln 2`. -/
+def log2EBracket (w : Nat) : AzRat × AzRat :=
+  let b := ln2Bracket w
+  ((1 : AzRat) / b.2, (1 : AzRat) / b.1)
+
+/-- The two ends of the `log₂ e` bracket, rounded at any requested precision. -/
+def log2EApprox (w : Nat) : Roundable × Roundable :=
+  let b := log2EBracket w
   (fun p mode => ofAzRatRound b.1 p mode, fun p mode => ofAzRatRound b.2 p mode)
 
 end Azurite.AzFloat

@@ -13,9 +13,11 @@ import Azurite.AzNat.Equiv.AtanhSplit
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzRat.Equiv.Add
 import Azurite.AzRat.Equiv.Construct
+import Azurite.AzRat.Equiv.Div
 import Azurite.AzRat.Equiv.Mul
 import Azurite.AzRat.Equiv.Sub
 import Azurite.Transcendental.Exp
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # Equivalence: the bracket of `ln 2`
@@ -180,5 +182,77 @@ theorem ln2Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (w₀
     rw [abs_of_neg (by linarith)]
     calc D ≤ bp - Real.log 2 := min_le_right _ _
       _ ≤ -(Real.log 2 - b) := by linarith
+
+/-! ### The reciprocal bracket for `log₂ e` -/
+
+/-- The lower end of the `ln 2` bracket is positive from `w = 1` on
+(`lo ≥ hi − 2^(−w) ≥ ln 2 − 1/2`). -/
+theorem ln2Bracket_fst_pos {w : ℕ} (hw : 1 ≤ w) : 0 < ((AzRat.toRat (ln2Bracket w).1 : ℚ) : ℝ) := by
+  have hwidth := ln2Bracket_width w
+  have hmem := ln2Bracket_mem w
+  have hpow : (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 1 :=
+    pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+  have := Real.log_two_gt_d9
+  norm_num at hpow
+  linarith
+
+theorem log2EBracket_fst (w : ℕ) : ((AzRat.toRat (log2EBracket w).1 : ℚ) : ℝ)
+    = 1 / ((AzRat.toRat (ln2Bracket w).2 : ℚ) : ℝ) := by
+  simp only [log2EBracket, AzRat.toRat_div, AzRat.toRat_one]
+  push_cast
+  ring
+
+theorem log2EBracket_snd (w : ℕ) : ((AzRat.toRat (log2EBracket w).2 : ℚ) : ℝ)
+    = 1 / ((AzRat.toRat (ln2Bracket w).1 : ℚ) : ℝ) := by
+  simp only [log2EBracket, AzRat.toRat_div, AzRat.toRat_one]
+  push_cast
+  ring
+
+/-- `1/hi ≤ log₂ e ≤ 1/lo` for `w ≥ 1`. -/
+theorem log2EBracket_mem {w : ℕ} (hw : 1 ≤ w) :
+    ((AzRat.toRat (log2EBracket w).1 : ℚ) : ℝ) ≤ (Real.log 2)⁻¹ ∧
+      (Real.log 2)⁻¹ ≤ ((AzRat.toRat (log2EBracket w).2 : ℚ) : ℝ) := by
+  rw [log2EBracket_fst, log2EBracket_snd, one_div, one_div]
+  obtain ⟨hlo, hhi⟩ := ln2Bracket_mem w
+  exact ⟨inv_anti₀ (Real.log_pos one_lt_two) hhi, inv_anti₀ (ln2Bracket_fst_pos hw) hlo⟩
+
+/-- The width of the reciprocal bracket: `1/lo − 1/hi ≤ 8 (1/2)^w` for `w ≥ 1`. -/
+theorem log2EBracket_width {w : ℕ} (hw : 1 ≤ w) :
+    ((AzRat.toRat (log2EBracket w).2 : ℚ) : ℝ) - ((AzRat.toRat (log2EBracket w).1 : ℚ) : ℝ)
+      ≤ 8 * (1 / 2 : ℝ) ^ w := by
+  rw [log2EBracket_fst, log2EBracket_snd]
+  have hlo0 := ln2Bracket_fst_pos hw
+  have hwidth := ln2Bracket_width w
+  obtain ⟨hlo, hhi⟩ := ln2Bracket_mem w
+  have hl2 := Real.log_two_gt_d9
+  have hpow : (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 1 :=
+    pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+  norm_num at hpow
+  set lo := ((AzRat.toRat (ln2Bracket w).1 : ℚ) : ℝ) with hlodef
+  set hi := ((AzRat.toRat (ln2Bracket w).2 : ℚ) : ℝ) with hhidef
+  have hhi0 : 0 < hi := by linarith
+  have hlo' : (0.19 : ℝ) < lo := by linarith
+  have hhi' : (0.69 : ℝ) < hi := by linarith
+  have hprod : (0.19 : ℝ) * 0.69 ≤ lo * hi := mul_le_mul hlo'.le hhi'.le (by norm_num) hlo0.le
+  have hp0 : (0 : ℝ) ≤ 8 * (1 / 2 : ℝ) ^ w := by positivity
+  rw [div_sub_div _ _ hlo0.ne' hhi0.ne', div_le_iff₀ (by positivity)]
+  nlinarith [mul_le_mul_of_nonneg_left hprod hp0]
+
+theorem log2EApprox_spec (w : ℕ) :
+    Rounds (log2EApprox w).1 ((AzRat.toRat (log2EBracket w).1 : ℚ) : ℝ) ∧
+      Rounds (log2EApprox w).2 ((AzRat.toRat (log2EBracket w).2 : ℚ) : ℝ) :=
+  ⟨fun p _ mode => ofAzRatRound_eq_roundVal _ p mode,
+    fun p _ mode => ofAzRatRound_eq_roundVal _ p mode⟩
+
+/-- The termination certificate for `log₂ e`: `1/ln 2` is irrational. -/
+theorem log2EApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2EApprox (w₀ * 2 ^ f)).1 (log2EApprox (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_irrational p mode log2EApprox irrational_log_two.inv (by norm_num : (0 : ℝ) ≤ 8)
+    (fun w hw => by
+      obtain ⟨hl, hh⟩ := log2EApprox_spec w
+      obtain ⟨hlo, hhi⟩ := log2EBracket_mem hw
+      exact ⟨_, _, hl, hh, hlo, hhi, log2EBracket_width hw⟩) w₀ hw₀
 
 end Azurite.AzFloat

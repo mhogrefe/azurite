@@ -35,4 +35,16 @@ def ln2PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
 /-- `ln 2` rounded to nearest at precision `p`. -/
 def ln2 (p : Nat) : AzFloat := (ln2PrecRound p .Nearest).1
 
+/-- `log₂ e = 1/ln 2` rounded to precision `p` with `mode`, and the comparison with the exact
+value: the certified Ziv loop over the reciprocal brackets of `ln 2`. -/
+def log2EPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  if hp : p = 0 then (zero, .lt)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopCertified log2EApprox p mode (p + zivGuardBits)
+      (log2EApprox_isSome_exists p mode (p + zivGuardBits) (by unfold zivGuardBits; omega))
+
+/-- `log₂ e` rounded to nearest at precision `p`. -/
+def log2E (p : Nat) : AzFloat := (log2EPrecRound p .Nearest).1
+
 end Azurite.AzFloat

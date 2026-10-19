@@ -40,3 +40,20 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard ln2PrecRound 100 .Up
   == (F "878668439483319573618263538049/1267650600228229401496703205376" 100, .gt)
 #guard toString (ln2 53) == "0.6931471805599453"
+
+/-! ## `log₂ e = 1/ln 2 = 1.4426950408889634073992468100189213742664595415298…`
+
+`log₂ e · 2^52 = 6497320848556798.0916…`, `log₂ e · 2^99 = 914416617264592211221101407494.5696…`. -/
+
+#guard log2EPrecRound 1 .Nearest == (F "1" 1, .lt)
+#guard log2EPrecRound 1 .Ceiling == (F "2" 1, .gt)
+#guard log2EPrecRound 2 .Nearest == (F "3/2" 2, .gt)
+#guard log2EPrecRound 3 .Nearest == (F "3/2" 3, .gt)
+#guard log2EPrecRound 3 .Floor == (F "5/4" 3, .lt)
+#guard log2EPrecRound 53 .Nearest == (F "6497320848556798/4503599627370496" 53, .lt)
+#guard log2EPrecRound 53 .Ceiling == (F "6497320848556799/4503599627370496" 53, .gt)
+#guard log2EPrecRound 100 .Nearest
+  == (F "914416617264592211221101407495/633825300114114700748351602688" 100, .gt)
+#guard log2EPrecRound 100 .Floor
+  == (F "914416617264592211221101407494/633825300114114700748351602688" 100, .lt)
+#guard toString (log2E 53) == "1.4426950408889634"

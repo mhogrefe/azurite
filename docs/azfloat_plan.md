@@ -3334,3 +3334,15 @@ lemmas (`agm_top_of_pos (h)`) are best passed instantiated; `if_pos`/`if_neg` de
   unfolded) — use `fun h => hz (iff.mpr h)`; `subst hz` on `q = 0` simplifies `if 0 < 0` with the
   hypothesis `¬ 0 < 0`; lemmas used by a later section must be defined before it (moved the
   `finiteVal_*_ereal` sign lemmas).
+* **`log₂ e = 1/ln 2` DONE (2026-10-18)** — `log2EPrecRound`/`log2E` in `Ln2.lean`. The reciprocal of
+  the exact `ln 2` bracket is an exact bracket: `log2EBracket w = (1/hi, 1/lo)` (`AzRat` division),
+  `1/hi ≤ 1/ln 2 ≤ 1/lo` (`log2EBracket_mem`, `inv_anti₀`), width `(hi − lo)/(lo·hi) ≤ 8·(1/2)^w`
+  (`log2EBracket_width`: `lo ≥ ln 2 − 1/2 > 0.19` for `w ≥ 1` via `Real.log_two_gt_d9`,
+  `hi > 0.69`, so `1/(lo·hi) < 8`), certificate from `irrational_log_two.inv`. The Ziv certificate
+  argument is now generic: `exists_isSome_of_irrational` in `Equiv/Ziv.lean` (irrational `v`,
+  brackets of width `≤ C (1/2)^w` ⇒ `∃ f`, via `adjacent_boundaries` + `no_boundary_of_dist`) with
+  `not_mem_floatSet_of_irrational`; new constants of this shape need only `Rounds`, containment,
+  a width bound and an irrationality proof. Tests at 1, 2, 3, 53, 100 bits
+  (`6497320848556798/2^52` below, `914416617264592211221101407495/2^99` above),
+  `toString (log2E 53) = "1.4426950408889634"`. Spec also stated as `Real.logb 2 (Real.exp 1)`.
+  Naming: `log2E` — base-2 logarithm of `e` (the `ln`/`log2` convention).
