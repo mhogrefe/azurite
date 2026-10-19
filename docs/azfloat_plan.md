@@ -2995,3 +2995,48 @@ bound in terms of the computed gap `a_N − b_N`; (4) directed-rounding enclosur
   atoms after one explicit `calc … = _ := by ring` restatement of the hint — restate hints in the
   goal's monomials and use `linarith`; `set C := …` then `linarith` needs `rw [hC]` or the
   equation in context. Not formalized: `J(a, b)` for `b > a` (symmetry), `f'` at `x ≥ 1` (unused).
+* **Item 2 DONE (2026-10-18): Salamin's formula** — `BrentSalamin.lean`. **Statement.**
+  `π = 4 AGM(1, 1/√2)² / (1 − ∑_{j≥1} 2^(j+1) c_j²)` with `c_j² = a_j² − b_j²` along the AGM
+  started at `(1, 1/√2)` (`salamin_formula`; the series is `salaminSum := ∑_{j≥0} 2^(j+2)
+  c_{j+1}²`, summable by `summable_salaminSum`). **Proof.** `k = k' = 1/√2`
+  (`sqrt_one_sub_salaminB0_sq`), so `ellipticE_eq_AGM_sum` gives `E = (1 − S)K` with `S = ∑_{j≥0}
+  2^(j−1) c_j²`; splitting off `j = 0` (`Summable.tsum_eq_zero_add`, `c_0² = 1/2`) and
+  reindexing (`tsum_div_const`) gives `S = 1/4 + T/4`, `T = salaminSum`; the Legendre relation
+  `2EK − K² = π/2` (`legendre_relation_sqrt_half`) becomes `K²(1 − T)/2 = π/2`, and Gauss's
+  theorem `K = π/(2 AGM)` (`ellipticK_salaminB0` from `one_div_AGM_one`) turns it into
+  `π(1 − T) = 4 AGM²` (`salamin_identity`, a `linear_combination (1/4) * hL` after
+  `field_simp`); `1 − T = 4AGM²/π > 0` (`salamin_denominator_pos`) and `eq_div_iff` finish. Also
+  `agmCsq_succ`: `c_{j+1}² = ((a_j − b_j)/2)²`, the cancellation-free form the algorithm uses.
+  Sanity values: `AGM(1, 1/√2) ≈ 0.847213`, `4AGM² ≈ 2.87103`, `T ≈ 0.08611`, `c_1² ≈ 0.021447`.
+* **Item 3 DONE (2026-10-18): the iterate and its error bound** — `BrentSalamin.lean`.
+  **Definitions.** `salaminS N = 1/2 − ∑_{j<N} 2^(j+1) c_{j+1}²` (= `1/2 − ∑_{j=1}^{N} 2^j c_j²`;
+  `salaminS_zero`, `salaminS_succ`: `s_{N+1} = s_N − 2^(N+1)((a_N − b_N)/2)²`, the recurrence
+  the algorithm runs), `salaminApprox N = 2 a_{N+1}²/s_N`, `salaminTail N = ∑_{i≥0} 2^(i+N+1)
+  c_{i+N+1}²`. **Facts.** `s_N = (1 − T)/2 + r_N` (`salaminS_eq`, via
+  `Summable.sum_add_tsum_nat_add'` with explicit `f`/`k` — implicit higher-order unification
+  timed out); `s_∞ = (1 − T)/2 > 1/3` (`salaminS_limit_gt`: `AGM² ≥ b_1² = b₀ > 2/3` and `π < 4`
+  on `salamin_identity`); `π = 2 AGM²/s_∞` (`pi_eq_div_salaminS_limit`); `s_N > 1/3`
+  (`salaminS_gt`). Start-specific bounds: `b₀ > 2/3` (`salaminB0_gt`), `a_n ≤ 1`
+  (`salamin_agmA_le_one`), `b_n > 2/3` (`salamin_agmB_gt`), `a_n − b_n ≤ 2 b_1` for `n ≥ 1`
+  (`salamin_gap_le_two_mul`: the quarter-decay regime from the first step). **Tail bound**
+  (`salaminTail_le`, `N ≥ 1`): `c_{i+N+1}² = ((a_{i+N} − b_{i+N})/2)²` and `g_{i+N} ≤ g_N/4^i`
+  (`agm_gap_add_le`) give terms `≤ 2^(N−1) g_N² (1/8)^i`, summing to `(4/7) 2^N g_N²`
+  (`Summable.tsum_le_tsum`, `tsum_geometric_of_lt_one`). **Error.** Upper: `π_N − π ≤
+  2(a_{N+1}² − AGM²)/s_N` (as `s_N ≥ s_∞`), and `a_{N+1}² − AGM² ≤ 2 g_{N+1} ≤ g_N²/(4 b_N) ≤
+  (3/8) g_N²` (`agm_gap_succ_le_sq`, `b_N > 2/3`), so `π_N − π ≤ (9/4) g_N²`
+  (`salaminApprox_sub_pi_le`). Lower: `π_N − π ≥ 2AGM²/s_N − 2AGM²/s_∞ = −π r_N/s_N ≥ −(48/7)
+  2^N g_N²` (`le_salaminApprox_sub_pi`; `π < 4`, `1/s_N < 3`). Combined:
+  `|π_N − π| ≤ 7 · 2^N (a_N − b_N)²` for `N ≥ 1` (`abs_salaminApprox_sub_pi_le`) — self-validating:
+  the bound is computable from the iterate's own gap; `π_N → π` (`tendsto_salaminApprox`, via
+  `tendsto_two_pow_mul_agm_gap` and `squeeze_zero'`). Sanity (60-digit decimal): `N = 1`: `g_1 ≈ 1.27e−2`, `|π_1 − π| ≈ 1.01e−3`, bound
+  `7·2·g_1² ≈ 2.24e−3`; `N = 2`: `g_2 ≈ 2.36e−5`, error `≈ 7.4e−9`, bound `≈ 1.56e−8`; `N = 3`:
+  `g_3 ≈ 8.2e−11`, error `≈ 1.8e−19`, bound `≈ 3.8e−19`; `N = 4`: `g_4 ≈ 1.0e−21`, error
+  `≈ 5.5e−41`, bound `≈ 1.1e−40` — the bound is within a factor `2.1–2.2` of the true error at
+  every step; each step squares the gap, so `N ≈ lg p` steps for `p` bits.
+  Lean notes: `∞` is not an identifier character (`hs∞` fails to parse); `rw [← lemma]` where the
+  lemma's LHS is `salaminB0` rewrites inside `AGM 1 salaminB0` too — rewrite at the hypothesis
+  instead; `field_simp` on `2M²/(u + r) − 2M²/u` needs `u`, `u + r` as atoms (`set u`) with their
+  `≠ 0` facts in context. Implementation plan for `AzFloat` (items 4–6): run the recurrence with
+  Floor/Ceiling enclosures `[a⁻, a⁺]`, `[b⁻, b⁺]`, `[s⁻, s⁺]`; `π_N ∈ [2(a⁻)²/s⁺, 2(a⁺)²/s⁻]`
+  (monotone in each), widen by `7·2^N (a⁺ − b⁻)²`; stop when the gap bound is below the target;
+  then Ziv bracket + `Nat.find` termination from `irrational_pi`.

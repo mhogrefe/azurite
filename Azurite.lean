@@ -1387,6 +1387,7 @@ import Azurite.BrentZimmermann.Chapter4.Bessel
 import Azurite.BrentZimmermann.Chapter4.BesselRecurrence
 import Azurite.BrentZimmermann.Chapter4.BinarySplitting
 import Azurite.BrentZimmermann.Chapter4.BitBurst
+import Azurite.BrentZimmermann.Chapter4.BrentSalamin
 import Azurite.BrentZimmermann.Chapter4.CoefficientRatio
 import Azurite.BrentZimmermann.Chapter4.ComplexAGM
 import Azurite.BrentZimmermann.Chapter4.ContinuedFraction
