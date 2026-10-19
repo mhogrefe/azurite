@@ -76,4 +76,16 @@ def lnApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
   let b := lnBracket x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
+/-- The bracket of `ln q` for a positive rational `q` at working precision `w`: `ln` of the float
+`x = ⌊q⌋_w` by `lnBracket` (one AGM run), the upper end widened by `2^(2−w) ≥ ln (q/x)`.  (For
+`q ≤ 0` or `w = 0` the floor is not a positive finite float and the ends are `NaN`;
+`lnRatPrecRound` never asks.) -/
+def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  match (ofAzRatRound q w .Floor).1 with
+  | x@(finite true e _ _ _) =>
+    let b := lnBracket x e w
+    let hi := (addPrecRound b.2 (powerOf2 (((2 : Nat) : AzInt) - (w : AzInt))) w .Ceiling).1
+    (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound hi p mode)
+  | _ => (fun _ _ => (nan, .eq), fun _ _ => (nan, .eq))
+
 end Azurite.AzFloat

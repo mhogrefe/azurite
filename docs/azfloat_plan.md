@@ -3601,3 +3601,37 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   **(b) DONE 2026-10-19**: the float bracket of `ln 2` (ledger of the `ln 2` section, Step 4) —
   `ln` at 20000 bits 429 → 145 ms (`ln2Bracket` 236 → 57 ms, now comparable to the AGM's 52 ms),
   at 5000 bits 37 → 14 ms, at 1000 bits 4.0 → 1.7 ms.
+
+## `ln` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
+
+Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.lean`; the bracket
+`lnRatApprox` and its proofs live in `AzFloat/LnBracket.lean` / `Equiv/LnBracket.lean`.
+
+* **Design.** One AGM run, not two: `ln q` for `q = n/d > 0` is bracketed by `ln` of the single
+  float `x = ⌊q⌋_w` (`ofAzRatRound q w .Floor`, one division) through `lnBracket x e w`, the
+  upper end widened by the exact float `2^(2−w)`: `0 ≤ ln q − ln x = ln (q/x) ≤ q/x − 1 ≤
+  2·2^(−w)/(1 − 2·2^(−w)) ≤ 4·2^(−w)`.  (`ln n − ln d` or `ln ⌊q⌋ / ln ⌈q⌉` would double the
+  AGM work.)  The float is matched as `x@(finite true e _ _ _)` so that the exponent `e` is the one
+  `lnBracket_spec` wants (`eq_finite_true_of_toVal_pos`: a float of positive value has this form).
+* **Width.** `lnEps e w` depends on the exponent `e` of `⌊q⌋_w`, which depends on `w`; the Ziv
+  certificate needs a width `ε w` depending on `q` only.  From `2^(e−1) ≤ x ≤ q` and
+  `q/2 ≤ x < 2^e`: `(e − 1) ln 2 ≤ ln q < (e + 1) ln 2`, so `|e| ≤ |ln q|/ln 2 + 1 ≤ 2|ln q| + 1 ≤
+  E := ⌊2|ln q|⌋₊ + 2`, and `lnEps` is monotone in `|e|` (`lnEps_mono`).  The widened end adds
+  `4u + 2|hv + 4u| u` with `|hv| ≤ |ln q| + lnEps E w + 4u`; `lnRatEps E |ln q| w` collects
+  this and tends to `0` (`tendsto_lnRatEps`, products of limits).  Strictness from
+  `irrational_log_rat` on `q` itself.
+* **Driver.** `lnRatPrecRound`: `num = 0 ↦ (−∞, .eq)`; `sign = false ↦ (NaN, .eq)`;
+  `num = den ↦ (zero, .eq)` (the fraction is reduced, so this is `q = 1`;
+  `toRat_eq_one_of_num_eq_den`/`toRat_ne_one_of_num_ne_den`); `p = 0 ↦ (NaN, .eq)`; otherwise
+  `zivLoopCertified (lnRatApprox q) p mode (p + 64)` with the certificate from
+  `toRat_pos_of_sign`.  Spec `lnRatPrecRound_eq … = roundVal p mode (Spec.log q)` (`Spec.log`
+  from `Equiv/Ln`).  Cost: `lnBracket` at `w = p + 64` plus one `AzRat → AzFloat` division.
+* **Tests.** Special values; agreement with `ln2` (53/200 bits) and with the float `ln` on
+  representable inputs (`10`, `3/2`, `1/2`, also the `Floor` pair); `ln (1/3)`, `ln (22/7)`,
+  `ln (3/2)`, `ln (123456789/1000)`, `ln 10^(−12)` at 53 bits; floor/ceiling tags; `ln (1/3)`,
+  `ln (22/7)`, `ln (123456789/1000)` at 200 bits against independent 80-digit expansions.
+* **Lean notes.** `(2 : AzInt).toInt = 2` is not `rfl` (the `OfNat` instance) — use
+  `((2 : ℕ) : AzInt)` and `AzInt.toInt_natCast`; a cast fact about a `set` variable must be
+  stated *before* the `set` (`exact_mod_cast` does not see through the local definition);
+  `Rat.cast_zero` was not needed after `rw [toRat_eq_zero_iff]` (the coercion chain simplifies
+  with `EReal.coe_zero` alone).
