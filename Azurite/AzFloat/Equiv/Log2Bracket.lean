@@ -11,6 +11,8 @@ import Azurite.AzFloat.Log2Bracket
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Size
+import Azurite.AzNat.Equiv.Gcd
+import Azurite.AzRat.Equiv.Pow2
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Data.Nat.Factorization.Basic
 
@@ -21,9 +23,11 @@ import Mathlib.Data.Nat.Factorization.Basic
   `n^q = 2^p`, impossible by parity); `irrational_logb_two_finiteVal`: hence `log₂ x` is
   irrational for a positive float whose significand is not a power of two.
 * `finiteVal_true_of_isPowerOfTwo`: a float with a power-of-two significand is `2^(e−1)`.
-* `log2Lower_spec`/`log2Upper_spec`: the sign-dependent directed quotients bound `ln x / ln 2`.
+* `log2Lower_spec`/`log2Upper_spec`, `log2Quotients_spec`: the sign-dependent directed quotients
+  bound `L / ln 2` for any bracket `[a, b] ∋ L` of width `ε`, within `5ε + 140 (|L| + ε) 2^(−w)`.
 * `log2Approx_spec`, `log2Approx_isSome_exists`: enclosure, width `≤ log2Eps e |ln x| w`, and the
-  Ziv certificate.
+  Ziv certificate, for a float; `irrational_logb_two_of_odd_div`, `irrational_logb_two_toRat`,
+  `toRat_of_isPowerOfTwo`, `log2RatApprox_spec`, `log2RatApprox_isSome_exists` for a rational.
 -/
 
 namespace Azurite.AzFloat
@@ -204,21 +208,16 @@ theorem tendsto_log2Eps (e : ℤ) (A : ℝ) :
   simp only [mul_zero, add_zero] at this
   exact this
 
-/-- `log2Approx x e w` encloses `ln x / ln 2` strictly (the significand of `x` not a power of two),
-with width at most `log2Eps e |ln x| w` (`w ≥ 64`). -/
-theorem log2Approx_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
-    (hv : FiniteValid q m) (hnp : m.isPowerOfTwo = false) :
-    ∃ lv hv' : ℝ, Rounds (log2Approx (finite true e q m hv) e w).1 lv ∧
-      Rounds (log2Approx (finite true e q m hv) e w).2 hv' ∧
-      lv < Real.log (finiteVal true e m) / Real.log 2 ∧
-      Real.log (finiteVal true e m) / Real.log 2 < hv' ∧
-      hv' - lv ≤ log2Eps e.toInt |Real.log (finiteVal true e m)| w := by
+/-- `log2Quotients b w` for a bracket `[a, bv] ∋ L` of width `≤ ε` encloses `L / ln 2`, within
+`5ε + 140 (|L| + ε) 2^(−w)` (`w ≥ 64`). -/
+theorem log2Quotients_spec {w : ℕ} (hw : 64 ≤ w) {b : AzFloat × AzFloat} {a bv L ε : ℝ}
+    (ha : b.1.toVal = some (a : EReal)) (hb : b.2.toVal = some (bv : EReal)) (haL : a ≤ L)
+    (hLb : L ≤ bv) (hwid : bv - a ≤ ε) :
+    ∃ lo hi : ℝ, (log2Quotients b w).1.toVal = some (lo : EReal) ∧
+      (log2Quotients b w).2.toVal = some (hi : EReal) ∧
+      lo ≤ L / Real.log 2 ∧ L / Real.log 2 ≤ hi ∧
+      hi - lo ≤ 5 * ε + 140 * (|L| + ε) * (1 / 2 : ℝ) ^ w := by
   have : NeZero w := ⟨by omega⟩
-  have hirr : Irrational (Real.log (finiteVal true e m) / Real.log 2) := by
-    rw [Real.log_div_log]
-    exact irrational_logb_two_finiteVal e m (ne_zero_of_finiteValid e hv)
-      (fun h => by rw [← AzNat.isPowerOfTwo_iff] at h; rw [h] at hnp; cases hnp)
-  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnBracket_spec hw e hv
   obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hcpos⟩ := ln2Bracket_spec w
   set u := (1 / 2 : ℝ) ^ w with hu
   have hu0 : 0 < u := by positivity
@@ -226,13 +225,11 @@ theorem log2Approx_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzN
   have hL1 := Real.log_two_gt_d9
   have hc0 : 0 < c := by linarith
   have hM0 : 0 < Real.log 2 := by linarith
-  set L := Real.log (finiteVal true e m) with hL
-  set ε := lnEps e.toInt w with hε
-  have hε0 : 0 ≤ ε := by rw [hε]; unfold lnEps; positivity
+  have hε0 : 0 ≤ ε := by linarith
   have hLa : L ≤ |L| := le_abs_self L
   have hLa' : -|L| ≤ L := neg_abs_le L
   have habs_a : |a| ≤ |L| + ε := by rw [abs_le]; constructor <;> linarith
-  have habs_b : |b| ≤ |L| + ε := by rw [abs_le]; constructor <;> linarith
+  have habs_b : |bv| ≤ |L| + ε := by rw [abs_le]; constructor <;> linarith
   have hcd' : 1 / c - 1 / d ≤ 60 * u := by
     have hd0 : 0 < d := by linarith
     rw [div_sub_div _ _ hc0.ne' hd0.ne', div_le_iff₀ (by positivity)]
@@ -243,22 +240,39 @@ theorem log2Approx_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzN
   obtain ⟨lo, hlo, hlo1, hlo2⟩ := log2Lower_spec w ha hc hd hc0 hcM hMd haL
   obtain ⟨hi, hhi, hhi1, hhi2⟩ := log2Upper_spec w hb hc hd hc0 hcM hMd hLb
   rw [← hu] at hlo2 hhi2
-  -- `|a|/c ≤ 5 |a|`, `(b − a)/c ≤ 5 (b − a)`
   have h5a : |a| / c ≤ 5 * |a| := by
     rw [div_le_iff₀ hc0]; nlinarith [abs_nonneg a]
-  have h5b : |b| / c ≤ 5 * |b| := by
-    rw [div_le_iff₀ hc0]; nlinarith [abs_nonneg b]
-  have h5ab : b / c - a / c ≤ 5 * (b - a) := by
+  have h5b : |bv| / c ≤ 5 * |bv| := by
+    rw [div_le_iff₀ hc0]; nlinarith [abs_nonneg bv]
+  have h5ab : bv / c - a / c ≤ 5 * (bv - a) := by
     rw [← sub_div, div_le_iff₀ hc0]; nlinarith
   have hqa : |a| * (1 / c - 1 / d) ≤ |a| * (60 * u) := mul_le_mul_of_nonneg_left hcd' (abs_nonneg a)
-  have hqb : |b| * (1 / c - 1 / d) ≤ |b| * (60 * u) := mul_le_mul_of_nonneg_left hcd' (abs_nonneg b)
+  have hqb : |bv| * (1 / c - 1 / d) ≤ |bv| * (60 * u) :=
+    mul_le_mul_of_nonneg_left hcd' (abs_nonneg bv)
   have hra : 2 * (|a| / c) * u ≤ 2 * (5 * |a|) * u := by
     have := mul_le_mul_of_nonneg_right h5a hu0.le; linarith
-  have hrb : 2 * (|b| / c) * u ≤ 2 * (5 * |b|) * u := by
+  have hrb : 2 * (|bv| / c) * u ≤ 2 * (5 * |bv|) * u := by
     have := mul_le_mul_of_nonneg_right h5b hu0.le; linarith
   have hau : |a| * u ≤ (|L| + ε) * u := mul_le_mul_of_nonneg_right habs_a hu0.le
-  have hbu : |b| * u ≤ (|L| + ε) * u := mul_le_mul_of_nonneg_right habs_b hu0.le
-  refine ⟨lo, hi, ?_, ?_, ?_, ?_, ?_⟩
+  have hbu : |bv| * u ≤ (|L| + ε) * u := mul_le_mul_of_nonneg_right habs_b hu0.le
+  exact ⟨lo, hi, hlo, hhi, hlo1, hhi1, by linarith⟩
+
+/-- `log2Approx x e w` encloses `ln x / ln 2` strictly (the significand of `x` not a power of two),
+with width at most `log2Eps e |ln x| w` (`w ≥ 64`). -/
+theorem log2Approx_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hnp : m.isPowerOfTwo = false) :
+    ∃ lv hv' : ℝ, Rounds (log2Approx (finite true e q m hv) e w).1 lv ∧
+      Rounds (log2Approx (finite true e q m hv) e w).2 hv' ∧
+      lv < Real.log (finiteVal true e m) / Real.log 2 ∧
+      Real.log (finiteVal true e m) / Real.log 2 < hv' ∧
+      hv' - lv ≤ log2Eps e.toInt |Real.log (finiteVal true e m)| w := by
+  have hirr : Irrational (Real.log (finiteVal true e m) / Real.log 2) := by
+    rw [Real.log_div_log]
+    exact irrational_logb_two_finiteVal e m (ne_zero_of_finiteValid e hv)
+      (fun h => by rw [← AzNat.isPowerOfTwo_iff] at h; rw [h] at hnp; cases hnp)
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnBracket_spec hw e hv
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := log2Quotients_spec hw ha hb haL hLb hwid
+  refine ⟨lo, hi, ?_, ?_, ?_, ?_, hwidth⟩
   · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
     rw [fval_of_toVal_coe hlo] at hR
     exact hR
@@ -269,9 +283,6 @@ theorem log2Approx_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzN
     exact lt_of_le_of_ne hlo1 fun h => hirr.ne_rat r (h.symm.trans hr)
   · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
     exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r (h.trans hr)
-  · unfold log2Eps
-    rw [← hε, ← hu]
-    linarith
 
 /-- The Ziv certificate for `log₂ x`. -/
 theorem log2Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (e : AzInt) {q : ℕ}
@@ -287,5 +298,177 @@ theorem log2Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (e :
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := log2Approx_spec hw e hv hnp
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The rational input -/
+
+/-- `log₂ (n/d)` is irrational for odd coprime `n`, `d` not both `1`. -/
+theorem irrational_logb_two_of_odd_div {n d : ℕ} (hn : Odd n) (hd : Odd d)
+    (hcop : Nat.Coprime n d) (hne : ¬ (n = 1 ∧ d = 1)) :
+    Irrational (Real.logb 2 ((n : ℝ) / d)) := by
+  have hnpos : (0 : ℝ) < n := by exact_mod_cast hn.pos
+  have hdpos : (0 : ℝ) < d := by exact_mod_cast hd.pos
+  rintro ⟨r, hr⟩
+  have h2 : (2 : ℝ) ^ (r : ℝ) = n / d := by
+    rw [hr]; exact Real.rpow_logb (by norm_num) (by norm_num) (div_pos hnpos hdpos)
+  have hq0 : (r.den : ℝ) ≠ 0 := by exact_mod_cast r.den_nz
+  have hrq : (r : ℝ) * r.den = r.num := by rw [Rat.cast_def]; field_simp
+  have h3 : ((n : ℝ) / d) ^ r.den = (2 : ℝ) ^ r.num := by
+    rw [← h2, ← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), hrq, Real.rpow_intCast]
+  have h4 : (n : ℝ) ^ r.den = (2 : ℝ) ^ r.num * (d : ℝ) ^ r.den := by
+    rw [div_pow] at h3
+    rw [← h3]
+    field_simp
+  have hqpos : r.den ≠ 0 := r.den_nz
+  rcases le_or_gt 0 r.num with hp0 | hp0
+  · obtain ⟨k, hk⟩ := Int.eq_ofNat_of_zero_le hp0
+    rw [hk, zpow_natCast] at h4
+    have h5 : n ^ r.den = 2 ^ k * d ^ r.den := by exact_mod_cast h4
+    rcases Nat.eq_zero_or_pos k with hk0 | hkpos
+    · rw [hk0, pow_zero, one_mul] at h5
+      have hnd : n = d := Nat.pow_left_injective hqpos h5
+      subst hnd
+      have := (Nat.coprime_self n).mp hcop
+      exact hne ⟨this, this⟩
+    · have heven : Even (n ^ r.den) := by
+        rw [h5]; exact (Nat.even_pow.mpr ⟨even_two, hkpos.ne'⟩).mul_right _
+      rw [Nat.even_pow] at heven
+      exact (Nat.not_even_iff_odd.mpr hn) heven.1
+  · obtain ⟨k, hk⟩ : ∃ k : ℕ, r.num = -(k : ℤ) := ⟨(-r.num).toNat, by omega⟩
+    have hk1 : 0 < k := by omega
+    rw [hk, zpow_neg, zpow_natCast] at h4
+    have h6 : (n : ℝ) ^ r.den * 2 ^ k = (d : ℝ) ^ r.den := by rw [h4]; field_simp
+    have h7 : n ^ r.den * 2 ^ k = d ^ r.den := by exact_mod_cast h6
+    have heven : Even (d ^ r.den) := by
+      rw [← h7]; exact (Nat.even_pow.mpr ⟨even_two, hk1.ne'⟩).mul_left _
+    rw [Nat.even_pow] at heven
+    exact (Nat.not_even_iff_odd.mpr hd) heven.1
+
+/-- `log₂ (N/D)` is irrational for coprime `N`, `D` unless both are powers of two. -/
+theorem irrational_logb_two_div {N D : ℕ} (hN : N ≠ 0) (hD : D ≠ 0) (hcop : Nat.Coprime N D)
+    (hnp : ¬ (N.isPowerOfTwo ∧ D.isPowerOfTwo)) : Irrational (Real.logb 2 ((N : ℝ) / D)) := by
+  obtain ⟨a, n, hn, hNn⟩ := Nat.exists_eq_two_pow_mul_odd hN
+  obtain ⟨b, d, hd, hDd⟩ := Nat.exists_eq_two_pow_mul_odd hD
+  have hcop' : Nat.Coprime n d :=
+    Nat.Coprime.coprime_dvd_right (Dvd.intro_left _ hDd.symm)
+      (Nat.Coprime.coprime_dvd_left (Dvd.intro_left _ hNn.symm) hcop)
+  have hne : ¬ (n = 1 ∧ d = 1) := by
+    rintro ⟨rfl, rfl⟩
+    exact hnp ⟨⟨a, by rw [hNn, mul_one]⟩, ⟨b, by rw [hDd, mul_one]⟩⟩
+  have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast hn.pos.ne'
+  have hd0 : (d : ℝ) ≠ 0 := by exact_mod_cast hd.pos.ne'
+  rw [hNn, hDd]
+  push_cast
+  have e : (2 : ℝ) ^ a * n / (2 ^ b * d) = (n / d) * 2 ^ ((a : ℤ) - b) := by
+    rw [zpow_sub₀ (by norm_num), zpow_natCast, zpow_natCast]
+    field_simp
+  rw [e, Real.logb_mul (div_ne_zero hn0 hd0) (zpow_ne_zero _ (by norm_num)), logb_two_zpow]
+  exact (irrational_logb_two_of_odd_div hn hd hcop' hne).add_intCast _
+
+/-- The value of a positive rational as a quotient of naturals. -/
+theorem coe_toRat_eq_div_of_sign (q : AzRat) (hs : q.sign = true) :
+    (AzRat.toRat q : ℝ) = (q.num.toNat : ℝ) / q.den.toNat := by
+  rw [coe_toRat_eq, hs]; simp
+
+/-- `log₂ q` is irrational for a positive rational `q` that is not a power of two. -/
+theorem irrational_logb_two_toRat (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
+    (hnp : q.isPowerOfTwo = false) : Irrational (Real.logb 2 (AzRat.toRat q : ℝ)) := by
+  have hqr : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  have h0 : q.num ≠ 0 := fun h => by
+    rw [(AzRat.toRat_eq_zero_iff q).mpr h] at hqr; exact lt_irrefl _ hqr
+  have hs : q.sign = true := by
+    by_contra hs
+    have := toRat_neg_of_sign q (Bool.eq_false_iff.mpr hs) h0
+    linarith
+  rw [coe_toRat_eq_div_of_sign q hs]
+  have hcop : Nat.Coprime q.num.toNat q.den.toNat := (AzNat.coprime_iff _ _).mp q.reduced
+  have hnp' : ¬ (q.num.toNat.isPowerOfTwo ∧ q.den.toNat.isPowerOfTwo) := by
+    rintro ⟨h1, h2⟩
+    have : q.isPowerOfTwo = true := (AzRat.isPowerOfTwo_iff q).mpr ⟨hs, h1, h2⟩
+    rw [this] at hnp; cases hnp
+  exact irrational_logb_two_div (toNat_ne_zero_of_ne_zero h0) (toNat_ne_zero_of_ne_zero q.den_nz)
+    hcop hnp'
+
+/-- A rational power of two is `2^(powerOfTwoExponent q)`. -/
+theorem toRat_of_isPowerOfTwo (q : AzRat) (h : q.isPowerOfTwo = true) :
+    (AzRat.toRat q : ℝ) = (2 : ℝ) ^ q.powerOfTwoExponent.toInt := by
+  obtain ⟨hs, ⟨a, ha⟩, ⟨b, hb⟩⟩ := (AzRat.isPowerOfTwo_iff q).mp h
+  have hsa : q.num.size = a + 1 := by rw [← AzNat.size_toNat, ha, Nat.size_pow]
+  have hsb : q.den.size = b + 1 := by rw [← AzNat.size_toNat, hb, Nat.size_pow]
+  rw [coe_toRat_eq_div_of_sign q hs, ha, hb, AzRat.powerOfTwoExponent, AzInt.toInt_sub,
+    toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat, hsa, hsb]
+  push_cast
+  rw [show ((a : ℤ) + 1 - ((b : ℤ) + 1)) = (a : ℤ) - b by ring, zpow_sub₀ (by norm_num),
+    zpow_natCast, zpow_natCast]
+
+/-- A positive rational power of two is nonzero as a rational; a positive rational that is not
+a power of two is not `1`. -/
+theorem toRat_ne_one_of_not_isPowerOfTwo (q : AzRat) (hs : q.sign = true)
+    (hnp : q.isPowerOfTwo = false) : AzRat.toRat q ≠ 1 := by
+  intro h1
+  have hden : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
+  have h1' : (AzRat.toRat q : ℝ) = 1 := by exact_mod_cast h1
+  rw [coe_toRat_eq_div_of_sign q hs, div_eq_one_iff_eq hden.ne'] at h1'
+  have heq : q.num.toNat = q.den.toNat := by exact_mod_cast h1'
+  have hcop : Nat.Coprime q.num.toNat q.den.toNat := (AzNat.coprime_iff _ _).mp q.reduced
+  rw [heq, Nat.coprime_self] at hcop
+  have : q.isPowerOfTwo = true :=
+    (AzRat.isPowerOfTwo_iff q).mpr
+      ⟨hs, ⟨0, by rw [heq, hcop, pow_zero]⟩, ⟨0, by rw [hcop, pow_zero]⟩⟩
+  rw [this] at hnp; cases hnp
+
+/-- The width bound of `log2RatApprox`. -/
+noncomputable def log2RatEps (E : ℕ) (A : ℝ) (w : ℕ) : ℝ :=
+  5 * lnRatEps E A w + 140 * (A + lnRatEps E A w) * (1 / 2 : ℝ) ^ w
+
+theorem tendsto_log2RatEps (E : ℕ) (A : ℝ) :
+    Filter.Tendsto (log2RatEps E A) Filter.atTop (nhds 0) := by
+  have hL := tendsto_lnRatEps E A
+  have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+  have hA : Filter.Tendsto (fun _ : ℕ => A) Filter.atTop (nhds A) := tendsto_const_nhds
+  have := (hL.const_mul 5).add (((hA.add hL).const_mul 140).mul hu)
+  simp only [mul_zero, add_zero] at this
+  exact this
+
+/-- `log2RatApprox q w` encloses `log₂ q` strictly (`q > 0` not a power of two), with width at most
+`log2RatEps E |ln q| w` (`w ≥ 64`). -/
+theorem log2RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
+    (hnp : q.isPowerOfTwo = false) :
+    ∃ lv hv : ℝ, Rounds (log2RatApprox q w).1 lv ∧ Rounds (log2RatApprox q w).2 hv ∧
+      lv < Real.logb 2 (AzRat.toRat q : ℝ) ∧ Real.logb 2 (AzRat.toRat q : ℝ) < hv ∧
+      hv - lv ≤ log2RatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hirr := irrational_logb_two_toRat q hq hnp
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hqv0 hr1 hr2
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := log2Quotients_spec hw ha hb haL hLb hwid
+  rw [Real.log_div_log] at hlo1 hhi1
+  refine ⟨lo, hi, ?_, ?_, ?_, ?_, hwidth⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR
+    exact hR
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hlo
+    exact lt_of_le_of_ne hlo1 fun h => hirr.ne_rat r' (h.symm.trans hr')
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hhi
+    exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r' (h.trans hr')
+
+/-- The Ziv certificate for `log₂ q`. -/
+theorem log2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (hnp : q.isPowerOfTwo = false) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2RatApprox q (w₀ * 2 ^ f)).1 (log2RatApprox q (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (log2RatApprox q)
+    (irrational_logb_two_toRat q hq hnp)
+    (log2RatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2) |Real.log (AzRat.toRat q : ℝ)|)
+    (tendsto_log2RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2RatApprox_spec hw q hq hnp
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
 end Azurite.AzFloat

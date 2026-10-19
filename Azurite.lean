@@ -74,6 +74,7 @@ import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.LnRat
 import Azurite.AzFloat.Equiv.Log2
 import Azurite.AzFloat.Equiv.Log2Bracket
+import Azurite.AzFloat.Equiv.Log2Rat
 import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
@@ -106,6 +107,7 @@ import Azurite.AzFloat.LnBracket
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Log2Bracket
+import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
@@ -725,6 +727,7 @@ import Azurite.AzRat.Equiv.Mul
 import Azurite.AzRat.Equiv.Order
 import Azurite.AzRat.Equiv.Parse
 import Azurite.AzRat.Equiv.Pow
+import Azurite.AzRat.Equiv.Pow2
 import Azurite.AzRat.Equiv.RingEquiv
 import Azurite.AzRat.Equiv.Round
 import Azurite.AzRat.Equiv.Shift
@@ -741,6 +744,7 @@ import Azurite.AzRat.Mul
 import Azurite.AzRat.ParsableElement
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Pow
+import Azurite.AzRat.Pow2
 import Azurite.AzRat.Round
 import Azurite.AzRat.Shift
 import Azurite.AzRat.Sub

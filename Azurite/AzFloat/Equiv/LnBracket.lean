@@ -1110,13 +1110,14 @@ theorem tendsto_lnRatEps (E : ℕ) (A : ℝ) :
   simp only [mul_zero, add_zero] at this
   exact this
 
-/-- `lnFloorApprox y w` for a float `y` with `y ≤ q ≤ y (1 + 2·2^(−w))` encloses `ln q` strictly
-(`ln q` irrational), with width at most `lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2` (`w ≥ 64`). -/
-theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+/-- `lnFloorBracket y w` for a float `y` with `y ≤ q ≤ y (1 + 2·2^(−w))` encloses `ln q`, with
+width at most `lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2` (`w ≥ 64`). -/
+theorem lnFloorBracket_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
     (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
-    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) (hirr : Irrational (Real.log qv)) :
-    ∃ lv hv : ℝ, Rounds (lnFloorApprox y w).1 lv ∧ Rounds (lnFloorApprox y w).2 hv ∧
-      lv < Real.log qv ∧ Real.log qv < hv ∧
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) :
+    ∃ lv hv : ℝ, (lnFloorBracket y w).1.toVal = some (lv : EReal) ∧
+      (lnFloorBracket y w).2.toVal = some (hv : EReal) ∧
+      lv ≤ Real.log qv ∧ Real.log qv ≤ hv ∧
       hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w := by
   have : NeZero w := ⟨by omega⟩
   set u := (1 / 2 : ℝ) ^ w with hu
@@ -1129,7 +1130,7 @@ theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
   have hr0 : 0 < r := by linarith
   obtain ⟨e, q', m, hv, hx, hrv⟩ := eq_finite_true_of_toVal_pos hr hr0
   subst hx
-  simp only [lnFloorApprox]
+  simp only [lnFloorBracket]
   obtain ⟨lv, hv', hlv, hhv, hlo, hhi, hwid⟩ := lnBracket_spec hw e hv
   rw [hrv] at hlo hhi
   obtain ⟨hlow, hhigh⟩ := abs_finiteVal_bounds true e hv
@@ -1192,22 +1193,29 @@ theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
     rw [abs_le]; constructor <;> linarith
   have hprod : 2 * |hv' + 4 * u| * u ≤ 2 * (|L| + (lnEps (E : ℤ) w + 8 * u)) * u :=
     mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hbound (by norm_num)) hu0.le
-  -- strictness
-  have hlt1 : lv < L := by
-    obtain ⟨r', hr'⟩ := exists_rat_of_toVal hlv
-    exact lt_of_le_of_ne (hlo.trans hlogq_lo) fun h => hirr.ne_rat r' (h.symm.trans hr')
-  have hlt2 : L < hv2 := by
-    obtain ⟨r', hr'⟩ := exists_rat_of_toVal hhv2
-    exact lt_of_le_of_ne (by linarith) fun h => hirr.ne_rat r' (h.trans hr')
-  refine ⟨lv, hv2, ?_, ?_, hlt1, hlt2, ?_⟩
+  refine ⟨lv, hv2, hlv, hhv2, hlo.trans hlogq_lo, by linarith, ?_⟩
+  unfold lnRatEps
+  linarith
+
+/-- `lnFloorApprox y w` encloses `ln q` strictly when `ln q` is irrational. -/
+theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+    (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) (hirr : Irrational (Real.log qv)) :
+    ∃ lv hv : ℝ, Rounds (lnFloorApprox y w).1 lv ∧ Rounds (lnFloorApprox y w).2 hv ∧
+      lv < Real.log qv ∧ Real.log qv < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w := by
+  obtain ⟨lv, hv, hlv, hhv, hlo, hhi, hwid⟩ := lnFloorBracket_spec hw hr hqv0 hr1 hr2
+  refine ⟨lv, hv, ?_, ?_, ?_, ?_, hwid⟩
   · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlv)
     rw [fval_of_toVal_coe hlv] at hR
     exact hR
-  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhv2)
-    rw [fval_of_toVal_coe hhv2] at hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhv)
+    rw [fval_of_toVal_coe hhv] at hR
     exact hR
-  · unfold lnRatEps
-    linarith
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hlv
+    exact lt_of_le_of_ne hlo fun h => hirr.ne_rat r' (h.symm.trans hr')
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hhv
+    exact lt_of_le_of_ne hhi fun h => hirr.ne_rat r' (h.trans hr')
 
 /-- `lnRatApprox q w` encloses `ln q` strictly, with width at most `lnRatEps E |ln q| w`
 (`w ≥ 64`, `q > 0`, `q ≠ 1`). -/

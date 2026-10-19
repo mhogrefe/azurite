@@ -79,13 +79,17 @@ def lnApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
 /-- The bracket of `ln q` from a float `y = ⌊q⌋_w` below `q` (within a relative `2·2^(−w)`):
 `ln y` by `lnBracket` (one AGM run), the upper end widened by `2^(2−w) ≥ ln (q/y)`.  (If `y` is
 not a positive finite float the ends are `NaN`; the callers never ask.) -/
-def lnFloorApprox (y : AzFloat) (w : Nat) : Roundable × Roundable :=
+def lnFloorBracket (y : AzFloat) (w : Nat) : AzFloat × AzFloat :=
   match y with
   | y@(finite true e _ _ _) =>
     let b := lnBracket y e w
-    let hi := (addPrecRound b.2 (powerOf2 (((2 : Nat) : AzInt) - (w : AzInt))) w .Ceiling).1
-    (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound hi p mode)
-  | _ => (fun _ _ => (nan, .eq), fun _ _ => (nan, .eq))
+    (b.1, (addPrecRound b.2 (powerOf2 (((2 : Nat) : AzInt) - (w : AzInt))) w .Ceiling).1)
+  | _ => (nan, nan)
+
+/-- `lnFloorBracket` as a pair of `Roundable`s. -/
+def lnFloorApprox (y : AzFloat) (w : Nat) : Roundable × Roundable :=
+  let b := lnFloorBracket y w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The bracket of `ln q` for a positive rational `q` at working precision `w`: `lnFloorApprox`
 of `⌊q⌋_w`. -/

@@ -28,6 +28,7 @@ import Azurite.AzFloat.Tests.Ln1p
 import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.Log2
+import Azurite.AzFloat.Tests.Log2Rat
 import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
@@ -60,5 +61,6 @@ import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook
 import Azurite.AzNat.Tests.TrailingZeros
 import Azurite.AzRat.Tests.FromSci
+import Azurite.AzRat.Tests.Pow2
 import Azurite.AzRat.Tests.ToSci
 import Azurite.Sci.Tests.Number

@@ -3706,3 +3706,35 @@ Files: `AzFloat/Log2Bracket.lean`, `AzFloat/Log2.lean`, `AzFloat/Equiv/Log2Brack
 * **Lean notes.** `le_or_lt` is gone (`le_or_gt`); the implicit `v` of
   `exists_isSome_of_irrational_threshold` must be fixed by a `have hirr` before `exact`, or the
   `rw [Real.log_div_log]` inside its argument sees a metavariable.
+
+## `log₂` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
+
+Files: `AzRat/Pow2.lean` (+ `Equiv`, `Tests`), `AzFloat/Log2Rat.lean`, `AzFloat/Equiv/Log2Rat.lean`,
+`AzFloat/Tests/Log2Rat.lean`; brackets and proofs in `AzFloat/Log2Bracket.lean` /
+`Equiv/Log2Bracket.lean` (refactored: `log2Quotients` is the shared quotient step, `lnFloorBracket`
+the shared float-level `ln` bracket of `⌊q⌋_w`).
+
+* **Power-of-two test for `AzRat`** (new, `AzRat.isPowerOfTwo`): positive with numerator and
+  denominator powers of two (`AzNat.isPowerOfTwo`); since the fraction is reduced one of them is
+  `1`, so `q = 2^k` with `k = powerOfTwoExponent q = size num − size den`
+  (`toRat_of_isPowerOfTwo`, from `Nat.size_pow`).  The exact branch returns
+  `setPrecRound (ofAzInt k)`.
+* **Irrationality.** `log₂ q` for a positive rational that is not a power of two: with
+  `num = 2^a n`, `den = 2^b d` (`n, d` odd, coprime since `num, den` are), `log₂ q = log₂ (n/d) +
+  (a − b)`, and `log₂ (n/d) = p/q'` would give `n^q' = 2^p d^q'`: for `p > 0` the right side is
+  even and the left odd, for `p < 0` symmetrically (`n^q' 2^(−p) = d^q'`), and for `p = 0`
+  `n^q' = d^q'` forces `n = d` (`Nat.pow_left_injective`), hence `n = d = 1` by coprimality
+  (`Nat.coprime_self`) — but then `num, den` were powers of two (`irrational_logb_two_of_odd_div`,
+  `irrational_logb_two_div`, `irrational_logb_two_toRat`).
+* **Bracket.** `log2Quotients (lnFloorBracket ⌊q⌋_w w) w`: one AGM run and three divisions
+  (`4/y` inside `lnBracket`, two for the quotient) plus the `ln 2` bracket.  Width
+  `log2RatEps E |ln q| w = 5 lnRatEps E |ln q| w + 140 (|ln q| + lnRatEps …) 2^(−w)` with
+  `E = ⌊2 |ln q|⌋ + 2` (`log2Quotients_spec` applied to `lnFloorBracket_spec`).
+* **Spec.** `log2RatPrecRound_eq … = roundVal p mode (Spec.log2 q)`.
+* **Tests.** `AzRat.isPowerOfTwo` on `1, 2, 8, 1/8, 2^100` (true) and `0, −8, −1/8, 3, 6, 3/4, 1/6`
+  (false) with the exponents through `toInt64`; `log2Rat`: special values, exact powers
+  (`1, 8, 1/8, 2^(−100)`, `2^100` at 3 bits), agreement with `log2` on representable inputs,
+  `log₂ (1/3), (22/7), (3/2), (10^6/7)` at 53 bits (here `1/3` is exact, so `…56`), tags, and
+  `log₂ 10`, `log₂ (1/3)` at 200 bits against 80-digit rational references.
+* **Lean note.** `AzRat.toRat_eq_zero_iff` is stated over the *real* cast
+  `((toRat q : ℚ) : ℝ) = 0`, not the rational — rewrite the real-valued hypothesis.
