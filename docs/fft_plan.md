@@ -395,3 +395,21 @@ Items 1–3 need no benchmarking; item 4's cutoff does.
   `MulThresholds.fft = 6144` (FFT 3 % slower at 5120, 3 % faster at 6144, 10 % at 8192, 21 % at
   12288); `squareDispatchFFTCutoff` stays at 4096.  The transforms are now the larger half, so
   option (a), fused butterfly limb loops, is the next FFT-specific lever.
+
+* **2026-10-19 — Cached transforms and products in the Fermat ring for Newton–Barrett division
+  (`Azurite/AzNat/Mul/SSCached.lean`, `Equiv/Mul/SSCached.lean`).**  `ssTransform` (steps 1–6
+  for one operand), `ssProductsCached` (pointwise products against a stored transform),
+  `ssFinishF` (steps 9–14 with the result kept in `AzFermat (64 w K)`), `fftMulModCachedF`, and
+  `SSPlan` (`ofLimbs L`: parameters with `64 L ≤ bits`; `transform`, `mulModF`, `mulModF'`).
+  All definitional rearrangements of `fftMulModWith`, so correctness is `fftMulModWith_toNat`
+  restated (`SSPlan.mulModF_transform_toNat`).  Users: the wrap-around product of the reciprocal
+  (MCA §3.4.1, `AzNat/Div/Newton.lean`: `wrapProduct`, a product modulo `2^m + 1` with
+  `m ≥ 64(n+1)` recovered exactly from a window of length `4β^n < 2^m`) and Barrett's step with
+  the transforms of the reciprocal and the divisor stored across blocks (MCA §2.4.1:
+  `barrettQuotientFFT`, `barrettRemainderFFT` = `A − Q V mod (2^m + 1)`, exact since
+  `0 ≤ A − Q V < 5V`).  Measured effect on division (`az_nat_div_newton`): 8192 limbs ×8
+  dividend 88 % → 56 % of the classical time, 32768 ×2 117 % → 83 %, 65536 ×2 → 75 %.  Not
+  done: the wrap-around trick for Barrett's trial-quotient product (the high part is not known
+  in advance), short products, the transforms' forward FFTs of the varying operand are still
+  full size.
+

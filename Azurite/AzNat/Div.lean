@@ -24,45 +24,56 @@ FFT range.  `divWith`/`modWith` are the quotient-only and remainder-only variant
 
 namespace Azurite.AzNat
 
-/-- Divisor limb count from which Newton–Barrett division is considered.  Measured 2026-10-19
-(`az_nat_div_newton`, exact sizes, µs per division, Newton as % of the classical path): with a
-2× dividend Newton is slower at every size (212 % at 1024 limbs, 149 % at 8192, 116 % at 32768,
-107 % at 65536); the gain comes from amortizing the reciprocal over the blocks of a long
-dividend: 8192 limbs ×5 94 %, ×8 86 %; 16384 ×4 82 %, ×6 72 %; 32768 ×3 87 %; 4096 ×12 only
-94 %.  Cost model at these sizes: one Barrett block ≈ 0.8 and the reciprocal ≈ 0.7 of a
-classical `2n/n` division (full products; the wrap-around trick and cached transforms of MCA
-§2.4.1/§3.4.1 would cut the block cost to ≈ M(n)). -/
-def divNewtonThreshold : Nat := 8192
+/-- Divisor limb count from which Newton–Barrett division is considered (with the FFT-range
+tricks, see `useNewtonDiv`).  Measured 2026-10-19 with `az_nat_div_newton` (exact sizes, Newton
+as % of the classical time; dividend = ratio × divisor): 4096 limbs ×2 157 %, ×4 89 %; 8192 ×2
+118 %, ×3 82 %, ×8 56 %; 16384 ×2 96 %, ×3 66 %; 32768 ×2 83 %; 65536 ×2 75 %.  Without the FFT
+tricks (full products everywhere) the figures were 8192 ×8 86 %, 16384 ×6 72 %, 32768 ×2 117 %.
+Below the FFT range, Barrett's step with Mulders' short products (`shortProductBase`): 1024 ×8
+91 %, 2048 ×8 90 %, 4096 ×8 86 %, ×4 100–107 %, ×2 147–154 % (full products: 4096 ×8 96 %,
+×2 160 %). -/
+def divNewtonThreshold : Nat := 1024
 
-/-- Quotient limbs (dividend minus divisor limbs) from which the Newton path is taken, together
-with `divNewtonThreshold` and a quotient of at least twice the divisor.  Measured as above. -/
-def divNewtonQuotientLimbs : Nat := 49152
+/-- Divisor limb count from which the Newton path uses the FFT-range tricks (wrap-around
+product in the reciprocal, cached transforms and modular remainder in Barrett's step).
+Measured 2026-10-19: 2048, 4096 and 8192 are indistinguishable at 8192–32768 divisor limbs (the
+lower levels of the reciprocal recursion cost little), and forcing the tricks at every level
+loses at 2048-limb divisors. -/
+def newtonFFTThreshold : Nat := 4096
 
 /-- Below this many limbs the approximate reciprocal is computed exactly by the classical
 division (`reciprocalBase`).  128 and 512 were indistinguishable (the top levels of the
 recursion dominate). -/
 def reciprocalBaseThreshold : Nat := 512
 
-/-- Newton–Barrett division is used for divisors of at least `divNewtonThreshold` limbs when the
-quotient has at least `divNewtonQuotientLimbs` limbs and at least twice the divisor's. -/
+/-- The base-case size of the short products in Barrett's step (`Mul/ShortProduct`): below this
+many limbs the full product is truncated.  Measured 2026-10-19: 8 to 128 are indistinguishable
+at 2048 and 4096 divisor limbs. -/
+def shortProductBase : Nat := 32
+
+/-- Newton–Barrett division is used when the quotient is long enough for the reciprocal to pay
+off: divisor `≥ 32768` limbs and dividend `≥ 2×`, divisor `≥ 8192` and dividend `≥ 3×`, divisor
+`≥ 4096` and dividend `≥ 4×`, or divisor `≥ 1024` and dividend `≥ 8×` (measurements under
+`divNewtonThreshold`). -/
 def useNewtonDiv (U V : AzNat) : Bool :=
-  divNewtonThreshold ≤ V.limbs.size &&
-    V.limbs.size + divNewtonQuotientLimbs ≤ U.limbs.size &&
-    3 * V.limbs.size ≤ U.limbs.size
+  let n := V.limbs.size
+  let m := U.limbs.size
+  (32768 ≤ n && 2 * n ≤ m) || (8192 ≤ n && 3 * n ≤ m) || (4096 ≤ n && 4 * n ≤ m) ||
+    (divNewtonThreshold ≤ n && 8 * n ≤ m)
 
 /-- Divide `U` by `V`, returning `(quotient, remainder)`; `divModWith t U 0 = (0, U)`. -/
 def divModWith (threshold : Nat) (U V : AzNat) : AzNat × AzNat :=
-  if useNewtonDiv U V then divModNewton reciprocalBaseThreshold U V
+  if useNewtonDiv U V then divModNewton reciprocalBaseThreshold newtonFFTThreshold shortProductBase U V
   else divModClassic threshold U V
 
 /-- The quotient only. -/
 def divWith (threshold : Nat) (U V : AzNat) : AzNat :=
-  if useNewtonDiv U V then (divModNewton reciprocalBaseThreshold U V).1
+  if useNewtonDiv U V then (divModNewton reciprocalBaseThreshold newtonFFTThreshold shortProductBase U V).1
   else divClassic threshold U V
 
 /-- The remainder only. -/
 def modWith (threshold : Nat) (U V : AzNat) : AzNat :=
-  if useNewtonDiv U V then (divModNewton reciprocalBaseThreshold U V).2
+  if useNewtonDiv U V then (divModNewton reciprocalBaseThreshold newtonFFTThreshold shortProductBase U V).2
   else modClassic threshold U V
 
 /-- `divModWith` at the default threshold. -/

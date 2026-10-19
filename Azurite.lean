@@ -420,7 +420,9 @@ import Azurite.AzNat.Equiv.ModPow2
 import Azurite.AzNat.Equiv.Mul.Basic
 import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.Mul.Karatsuba
+import Azurite.AzNat.Equiv.Mul.SSCached
 import Azurite.AzNat.Equiv.Mul.SchonhageStrassen
+import Azurite.AzNat.Equiv.Mul.ShortProduct
 import Azurite.AzNat.Equiv.Mul.ToomCook3
 import Azurite.AzNat.Equiv.Mul.ToomCook4
 import Azurite.AzNat.Equiv.Mul.ToomEval
@@ -490,8 +492,10 @@ import Azurite.AzNat.MillerRabin
 import Azurite.AzNat.ModPow2
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Mul.Karatsuba
+import Azurite.AzNat.Mul.SSCached
 import Azurite.AzNat.Mul.SchonhageStrassen
 import Azurite.AzNat.Mul.Schoolbook
+import Azurite.AzNat.Mul.ShortProduct
 import Azurite.AzNat.Mul.ToomCook3
 import Azurite.AzNat.Mul.ToomCook4
 import Azurite.AzNat.Mul.ToomEval

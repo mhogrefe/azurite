@@ -28,14 +28,15 @@ theorem divModWith_toNat (threshold : Nat) (U V : AzNat) :
     ∧ (V.toNat ≠ 0 → (divModWith threshold U V).2.toNat < V.toNat) := by
   unfold divModWith
   split_ifs with h
-  · exact divModNewton_toNat reciprocalBaseThreshold (by decide) U V
+  · exact divModNewton_toNat reciprocalBaseThreshold newtonFFTThreshold shortProductBase (by decide)
+      (by decide) U V
   · exact divModClassic_toNat threshold U V
 
 /-- The Newton path is never taken for a zero divisor. -/
 theorem useNewtonDiv_of_size_zero (U V : AzNat) (h : V.limbs.size = 0) :
     useNewtonDiv U V = false := by
   unfold useNewtonDiv
-  rw [h]
+  simp only [h]
   have : ¬ divNewtonThreshold ≤ 0 := by unfold divNewtonThreshold; omega
   simp [this]
 
