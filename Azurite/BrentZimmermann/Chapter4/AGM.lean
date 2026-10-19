@@ -331,6 +331,33 @@ theorem AGM_smul {c : ℝ} (hc : 0 < c) (ha : 0 < a) (hb : 0 < b) :
     simp only [agmA, agmSeq_smul hc.le]
   exact tendsto_nhds_unique (tendsto_agmA (by positivity) (by positivity)) h1
 
+/-! ### Strictness for distinct starting values -/
+
+/-- `a_n ≠ b_n` for all `n` when `a ≠ b`: the gap `(√a_n − √b_n)²/2` never vanishes. -/
+theorem agmA_ne_agmB (ha : 0 < a) (hb : 0 < b) (hab : a ≠ b) : ∀ n, agmA a b n ≠ agmB a b n
+  | 0 => hab
+  | n + 1 => by
+    intro h
+    have hg := agm_gap_succ ha hb n
+    rw [sub_eq_zero.mpr h] at hg
+    obtain ⟨hA, hB⟩ := agm_pos ha hb n
+    have hsq : (Real.sqrt (agmA a b n) - Real.sqrt (agmB a b n)) ^ 2 = 0 := by linarith
+    have := sub_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hsq)
+    exact agmA_ne_agmB ha hb hab n ((Real.sqrt_inj hA.le hB.le).mp this)
+
+theorem agmB_lt_agmA (ha : 0 < a) (hb : 0 < b) (hab : a ≠ b) {n : ℕ} (hn : 1 ≤ n) :
+    agmB a b n < agmA a b n :=
+  lt_of_le_of_ne (agmB_le_agmA ha hb hn) (agmA_ne_agmB ha hb hab n).symm
+
+/-- `b_n < AGM(a, b)` strictly for `n ≥ 1` when `a ≠ b`. -/
+theorem agmB_lt_AGM (ha : 0 < a) (hb : 0 < b) (hab : a ≠ b) {n : ℕ} (hn : 1 ≤ n) :
+    agmB a b n < AGM a b := by
+  obtain ⟨hA, hB⟩ := agm_pos ha hb n
+  have h1 : agmB a b n < agmB a b (n + 1) := by
+    rw [agmB_succ, Real.lt_sqrt hB.le]
+    nlinarith [agmB_lt_agmA ha hb hab hn]
+  exact h1.trans_le (agmB_le_AGM ha hb (by omega))
+
 /-! ### The number of iterations -/
 
 /-- Once `a_1 ≤ 5 b_1`, `n ≤ 2^j` gives `a_{j+1} − b_{j+1} ≤ 8 b_1 / 2^n`: the number of correct

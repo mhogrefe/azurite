@@ -719,3 +719,27 @@ theorem zivLoopCertified_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
   zivLoopCertified_go_eq p mode approx v happrox w₀ hw₀ h _ 0 _ rfl
 
 end Azurite.AzFloat
+
+namespace Azurite.AzFloat
+
+/-- Ziv's loop with fuel is correct whenever it does not give up: if the result is not the
+`NaN` fallback, it is the rounding of the exact value. -/
+theorem zivLoop_eq_of_ne_nan (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (happrox : ∀ w, 0 < w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v)) :
+    ∀ (fuel w : Nat), 0 < w → zivLoop approx p mode fuel w ≠ (nan, .eq) →
+      zivLoop approx p mode fuel w = roundVal p mode (some (v : EReal))
+  | fuel, w, hw, hne => by
+    obtain ⟨lv, hv, hl, hh, h₁, h₂, h₃⟩ := happrox w hw
+    rw [zivLoop.eq_def] at hne ⊢
+    split at hne
+    · rename_i r hr
+      exact roundingPossible_eq p mode hl hh h₁ h₂ h₃ hr
+    · rename_i hr
+      cases fuel with
+      | zero => exact absurd rfl hne
+      | succ fuel =>
+        exact zivLoop_eq_of_ne_nan p mode approx v happrox fuel (2 * w) (by omega) hne
+
+end Azurite.AzFloat

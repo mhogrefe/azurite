@@ -3262,3 +3262,75 @@ algebraic, `isAlgebraic_algebraMap`), `irrational_log_two`. Uses: termination of
 (and of any `ln r` constant for rational `r`) via `Nat.find`. Lean notes: `mem_aroots` needs
 `Module.IsTorsionFree ℤ ℂ` (found by inference); the bound `hbound` is on `nₚ • exp r − p • aeval r gₚ`
 with `zsmul`/`nsmul` — convert with `zsmul_eq_mul`, `nsmul_eq_mul`, `← norm_neg, neg_sub`.
+
+## The AGM for `AzFloat` (DONE 2026-10-18)
+
+`Azurite/AzFloat/Agm.lean` (+ `Equiv/Agm.lean`, `Tests/Agm.lean`). **Question answered:** is there
+a theorem that `AGM(a, b)` of distinct positive dyadic (or rational) numbers is irrational, which
+would make Ziv's loop provably terminating? Yes, a deep one: `AGM(1, k') = π/(2K(k))` with
+`K(k) = (π/2)·₂F₁(1/2,1/2;1;k²)`, so `AGM(a, b)` for algebraic `a ≠ b` is algebraic iff a period of
+an elliptic curve over `ℚ̄` is an algebraic multiple of `π`; for non-CM curves this contradicts
+the `ℚ̄`-linear independence of the periods and `2πi` (Wüstholz's analytic subgroup theorem, 1989;
+Masser), and for CM curves Chudnovsky (1976) proved `ω` and `π` algebraically independent — so the
+AGM of two distinct positive algebraic numbers is transcendental (Schneider 1937 already gave the
+transcendence of `K(k)` itself). Nothing of this is in Mathlib and it is far beyond reach, so the
+implementation uses fuel: **"correctly rounded or `NaN`"** (`agmPrecRound_eq_or`), `NaN` only
+when four doublings of the working precision (`agmFuel p = zivFuel (16(p + 64))`) all fail —
+which the theorem says never happens for distinct inputs; `AGM(x, x) = x` is handled exactly
+(`setPrecRound`), since there the loop could not terminate (`x` may be a boundary).
+**Algorithm.** Interval iteration: `AgmBounds = (aLo, aHi, bLo, bHi)`, `agmStep w` computes
+`aLo' = ⌊(aLo + bLo)/2⌋_w`, `aHi' = ⌈(aHi + bHi)/2⌉_w` (the halving is an exact shift),
+`bLo' = ⌊√⌊aLo·bLo⌋_w⌋_w`, `bHi' = ⌈√⌈aHi·bHi⌉_w⌉_w`; since the step is monotone in both
+arguments, `aLo ≤ a_n ≤ aHi`, `bLo ≤ b_n ≤ bHi` exactly (`Encloses`, `encloses_agmStep`; the
+lower bounds stay `≥ 0` because `0` is a float, `roundVal_floor_spec`); after `≥ 1` step
+`bLo ≤ b_m < AGM ≤ a_m ≤ aHi` (`agmB_le_AGM`, `AGM_le_agmA`, strictness `agmB_lt_AGM` new in
+`AGM.lean`), the two ends re-rounded at `p`/`p+1` are the Ziv `Roundable` pair (`rounds_setPrecRound`);
+`agmConverged` stops the iteration once `aHi − bLo ≤ aHi·2^(8−w)` (speed only — any number of
+steps is a valid bracket), fuel `w + |e_x| + |e_y| + 2` steps. (First version compared with half an
+ulp, `aHi >>> (w+1)`, which the rounding noise alone — the bounds drift apart by about `2` ulps
+per step, converging to a bracket about `8` ulps wide — never satisfies, so the loop always ran its
+full step fuel: correct but slow; fixed the same day.) **Fuel exhaustion likelihood.** An attempt
+at working precision `w` fails iff the bracket, of relative width `≈ 2^(8−w)`, contains a
+`(p+1)`-bit boundary (relative spacing `≈ 2^(−p−1)`): for a value with "random" low-order bits
+the probability is `≈ 2^(9+p−w)`, i.e. `≈ 2^(−55)` at `w = p + 64`; the failures are nested
+(each is "the AGM is within `c·2^(−w)` of a boundary"), so the fuel runs out only when the AGM
+is within `≈ 2^(8−16(p+64))` of a boundary — probability `≈ 2^(−15p−1015)`, `< 2^(−1800)` already
+at `p = 53`. The transcendence theorem forbids exact hits; an astronomically close miss would be
+a Diophantine coincidence no known result excludes (no effective irrationality measure), but
+nothing suggests it. Raising `agmFuel` costs nothing unless the extra levels are used. Cost: `O(lg w + lg|e_x − e_y|)` steps,
+each two adds, two muls, two sqrts at precision `w` (the interval approach doubles the work of a
+plain iteration but needs no rounding-error analysis). **Proofs.** `Spec.agm` and nine special-value
+lemmas (`agm_coe_coe`, `agm_of_neg_left/right`, `agm_zero_of_nonneg_ne_top`, `agm_zero_top`,
+`agm_top_of_pos`, …), `roundVal_floor_spec`/`roundVal_ceiling_spec` (from `roundVal_coe`,
+`val_roundFloor_floatSet`, `isGreatest_roundFloor`/`isLeast_roundCeiling`, `precisionSet_exists_real`),
+`addFloor_spec` … `sqrtCeiling_spec` (one `rw` chain each through `*_eq_liftVal₂`/`Spec.*_coe_coe`),
+`toVal_half`, `encloses_init/agmStep/agmIter`, `agmApprox_spec`, `zivLoop_eq_of_ne_nan` (new, in
+`Equiv/Ziv.lean`), and the 16-case `agmPrecRound_eq_or` (`cases x <;> cases y`, `simp` with the
+special-value lemmas and `finiteVal_true_pos_ereal`/`finiteVal_false_neg_ereal`; the finite–finite
+case splits on `eqIEEE` via `eqIEEE_iff`). Tests: `AGM(1,2)`, `AGM(24,6)` (Gauss), homogeneity
+`AGM(1,1/2)`, `AGM(3,1/8)` at 53 and 100 bits with 80-digit references, `AGM(x,x)`, all special
+values. Lean notes: `roundFloor`/`isGreatest_roundFloor` need `open RoundingTarget`;
+`finiteVal_true_pos'` already exists (`RoundScaled.lean`) — pick distinct names; conditional simp
+lemmas (`agm_top_of_pos (h)`) are best passed instantiated; `if_pos`/`if_neg` deprecated —
+`simp only [heq, ↓reduceIte]`; `split at hne` on a shared `match` also splits the goal.
+* **Variants (2026-10-18): `agmRatPrecRound q₁ q₂` and `agmFloatRatPrecRound x q`.** The engine
+  was generalized to `agmApproxFrom s₀ fuel w` (any initial enclosure `Encloses a b 0 s₀`,
+  `agmApproxFrom_spec`); a rational is seeded by `ratBounds q w = ((ofAzRatRound q w .Floor).1,
+  (… .Ceiling).1)` with `ratBounds_spec` (floor `≤ q ≤` ceiling, floor `≥ 0` when `q ≥ 0`, from
+  `ofAzRatRound_eq_roundVal` + `roundVal_floor/ceiling_spec`). Rational–rational: negatives →
+  `NaN`, zero → `0`, `q₁ = q₂` (structural, `DecidableEq`; = value equality by `toRat_injective`)
+  → `ofAzRatRound q₁ p mode`, else Ziv; spec `agmRatPrecRound_eq_or` against `liftVal₀ (Spec.agm
+  q₁ q₂)`. Float–rational: the special values as for floats; the exact case `x = q` cannot use
+  `toAzRat?` (it materializes `x`, infeasible for huge exponents) and is detected instead by
+  `(subRatPrecRound x q 1 .Floor).1.isZero` — the proven correctly rounded `x − q` (its Ziv loop
+  has an explicit fuel certificate) at one bit is zero iff `x − q = 0` (`subRat_isZero_iff`,
+  via `eq_zero_of_roundFloor_eq_zero`: no underflow, so a nonzero real never rounds to zero);
+  spec `agmFloatRatPrecRound_eq_or` against `roundVal p mode (x.toVal.bind fun a => Spec.agm a q)`.
+  Order facts for `AzRat`: `q < 0 ↔ (toRat q : ℝ) < 0` (`azRat_lt_zero_iff`, the `LT` instance is
+  `cmp q r = .lt` + `cmp_eq_compare`), `q = 0 ↔ toRat q = 0`. Tests: the same reference values
+  through all three entry points (`AGM(1,2)`, `AGM(3,1/8)`), consistency of rational vs mixed on
+  the non-dyadic `AGM(1, 1/3)`, exactness of equal arguments (`3/4` is a 2-bit float: `.eq`; `7/4`
+  rounds), special values. Lean notes: `hz : q ≠ 0` does not `rw` with an iff (`Ne` is not
+  unfolded) — use `fun h => hz (iff.mpr h)`; `subst hz` on `q = 0` simplifies `if 0 < 0` with the
+  hypothesis `¬ 0 < 0`; lemmas used by a later section must be defined before it (moved the
+  `finiteVal_*_ereal` sign lemmas).
