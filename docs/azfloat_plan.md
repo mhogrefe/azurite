@@ -3771,3 +3771,15 @@ bracket `log2p1Approx`, the exactness test `onePlusPow2Exponent?` and their proo
   with tags; `log₂ 3`, `log₂ 10` at 200 bits via `x = 2, 9` against the rational references.
 * **Lean notes.** `rcases h : e with … | ⟨a, b, c, d, e⟩` — constructor fields need the anonymous-
   constructor brackets, and `rcases h : e` already substitutes `e` in the context (no `rw [h]` later).
+
+## Reciprocal (DONE 2026-10-19, thin wrapper)
+
+`AzFloat/Recip.lean`, `Equiv/Recip.lean`, `Tests/Recip.lean`: `recipPrecRound y p mode =
+divPrecRound one y p mode`, `recip y`; spec `recipPrecRound_eq_liftVal` (`liftVal (fun a =>
+Spec.div 1 a)`) is the division spec with `toVal_one'`.  Assessment of a dedicated routine: the
+integer division takes the Newton path for a `2n`-by-`n` quotient only from 32768 limbs, so a
+reciprocal built on `approxReciprocal` (`A X < β^(2n) < A (X + 2)`) plus one exact remainder
+product and a one-unit fix could be dispatched from a few thousand limbs and skip the Barrett
+multiplication by the dividend — an estimated 1.3–2× there, nothing at small precision; not done
+because divisions are a negligible share of the transcendental functions' cost (1.1 of 99 ms in
+`ln` at 20000 bits).

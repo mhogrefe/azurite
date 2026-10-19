@@ -38,6 +38,7 @@ import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
+import Azurite.AzFloat.Tests.Recip
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
