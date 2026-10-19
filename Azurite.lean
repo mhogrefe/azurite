@@ -64,6 +64,7 @@ import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.HexString
+import Azurite.AzFloat.Equiv.Lemniscate
 import Azurite.AzFloat.Equiv.Literals
 import Azurite.AzFloat.Equiv.Ln2
 import Azurite.AzFloat.Equiv.Ln2Bracket
@@ -89,6 +90,7 @@ import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.HexString
+import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.Literals
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Ln2Bracket
@@ -1423,6 +1425,7 @@ import Azurite.BrentZimmermann.Chapter4.Holonomic
 import Azurite.BrentZimmermann.Chapter4.InverseRoot
 import Azurite.BrentZimmermann.Chapter4.InverseSqrt
 import Azurite.BrentZimmermann.Chapter4.LegendreRelation
+import Azurite.BrentZimmermann.Chapter4.Lemniscate
 import Azurite.BrentZimmermann.Chapter4.Ln2BinarySplitting
 import Azurite.BrentZimmermann.Chapter4.Newton
 import Azurite.BrentZimmermann.Chapter4.PowerSeriesEval

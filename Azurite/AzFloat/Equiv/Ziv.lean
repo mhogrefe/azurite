@@ -759,6 +759,26 @@ end Azurite.AzFloat
 
 namespace Azurite.AzFloat
 
+/-- `zivLoop_eq_of_ne_nan` when the bracket is only known to be valid from the starting
+precision on (the loop only doubles the precision). -/
+theorem zivLoop_eq_of_ne_nan_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ) (w₀ : ℕ)
+    (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v)) :
+    ∀ (fuel w : Nat), w₀ ≤ w → zivLoop approx p mode fuel w ≠ (nan, .eq) →
+      zivLoop approx p mode fuel w = roundVal p mode (some (v : EReal))
+  | fuel, w, hw, hne => by
+    obtain ⟨lv, hv, hl, hh, h₁, h₂, h₃⟩ := happrox w hw
+    rw [zivLoop.eq_def] at hne ⊢
+    split at hne
+    · rename_i r hr
+      exact roundingPossible_eq p mode hl hh h₁ h₂ h₃ hr
+    · rename_i hr
+      cases fuel with
+      | zero => exact absurd rfl hne
+      | succ fuel =>
+        exact zivLoop_eq_of_ne_nan_threshold p mode approx v w₀ happrox fuel (2 * w) (by omega) hne
+
 /-- Rounding boundaries are rational, so an irrational real is never one. -/
 theorem not_mem_floatSet_of_irrational (p : ℕ) [NeZero p] {x : ℝ} (hx : Irrational x) :
     ((x : ℝ) : EReal) ∉ floatSet (p + 1) := by

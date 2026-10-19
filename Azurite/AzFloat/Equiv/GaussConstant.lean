@@ -78,11 +78,11 @@ theorem sqrtFloor_ge (hu : u.toVal = some (uv : EReal)) (h0 : 0 ≤ uv) (w : ℕ
 
 theorem divFloor_spec (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
     (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
-    ∃ r : ℝ, (divPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv / vv := by
+    ∃ r : ℝ, (divPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv / vv ∧
+      (0 ≤ uv / vv → 0 ≤ r) := by
   rw [divPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
     Spec.div_coe_coe uv vv hv0]
-  obtain ⟨r, hr, hle, -⟩ := roundVal_floor_spec w _
-  exact ⟨r, hr, hle⟩
+  exact roundVal_floor_spec w _
 
 theorem divCeiling_spec (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
     (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
@@ -126,11 +126,12 @@ theorem sqrt_two_ne_one : Real.sqrt 2 ≠ 1 := by
   rw [h] at this
   norm_num at this
 
-/-- The bracket encloses `G = 1/AGM(1, √2)`, with the lower end strictly below it. -/
-theorem gaussApprox_spec (w : ℕ) [NeZero w] :
-    ∃ lv hv : ℝ, Rounds (gaussApprox w).1 lv ∧ Rounds (gaussApprox w).2 hv ∧
-      lv ≤ (AGM 1 (Real.sqrt 2))⁻¹ ∧ (AGM 1 (Real.sqrt 2))⁻¹ ≤ hv ∧
-      (lv = (AGM 1 (Real.sqrt 2))⁻¹ → hv = (AGM 1 (Real.sqrt 2))⁻¹) := by
+/-- The bracket encloses `G = 1/AGM(1, √2)`, with the lower end nonnegative and strictly
+below it. -/
+theorem gaussBracket_spec (w : ℕ) [NeZero w] :
+    ∃ lv hv : ℝ, (gaussBracket w).1.toVal = some (lv : EReal) ∧
+      (gaussBracket w).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv < (AGM 1 (Real.sqrt 2))⁻¹ ∧ (AGM 1 (Real.sqrt 2))⁻¹ ≤ hv := by
   have hs2 : (0 : ℝ) < Real.sqrt 2 := by positivity
   have hs2ge : (1 : ℝ) ≤ Real.sqrt 2 := by
     rw [Real.le_sqrt' one_pos]; norm_num
@@ -162,18 +163,26 @@ theorem gaussApprox_spec (w : ℕ) [NeZero w] :
     (AGM_lt_agmA one_pos hs2 sqrt_two_ne_one.symm hm).trans_le hahge
   have hblpos : 0 < bl' := by linarith
   have hblAGM : bl' ≤ AGM 1 (Real.sqrt 2) := hblle.trans (agmB_le_AGM one_pos hs2 hm)
-  obtain ⟨lo, hlo, hlole⟩ := divFloor_spec toVal_one' hah (by linarith) w
+  obtain ⟨lo, hlo, hlole, hlo0⟩ := divFloor_spec toVal_one' hah (by linarith) w
   obtain ⟨hi, hhi, hhige⟩ := divCeiling_spec toVal_one' hbl' hblpos.ne' w
   have hlolt : lo < (AGM 1 (Real.sqrt 2))⁻¹ := by
     rw [one_div] at hlole
     exact hlole.trans_lt (inv_strictAnti₀ hM hahgt)
-  refine ⟨lo, hi, ?_, ?_, hlolt.le, ?_, fun h => absurd h hlolt.ne⟩
+  refine ⟨lo, hi, hlo, hhi, hlo0 (div_nonneg zero_le_one (by linarith)), hlolt, ?_⟩
+  rw [one_div] at hhige
+  exact (inv_anti₀ hblpos hblAGM).trans hhige
+
+/-- The bracket encloses `G = 1/AGM(1, √2)`, with the lower end strictly below it. -/
+theorem gaussApprox_spec (w : ℕ) [NeZero w] :
+    ∃ lv hv : ℝ, Rounds (gaussApprox w).1 lv ∧ Rounds (gaussApprox w).2 hv ∧
+      lv ≤ (AGM 1 (Real.sqrt 2))⁻¹ ∧ (AGM 1 (Real.sqrt 2))⁻¹ ≤ hv ∧
+      (lv = (AGM 1 (Real.sqrt 2))⁻¹ → hv = (AGM 1 (Real.sqrt 2))⁻¹) := by
+  obtain ⟨lo, hi, hlo, hhi, -, hlolt, hGhi⟩ := gaussBracket_spec w
+  refine ⟨lo, hi, ?_, ?_, hlolt.le, hGhi, fun h => absurd h hlolt.ne⟩
   · have := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
     rwa [fval_of_toVal_coe hlo] at this
   · have := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
     rwa [fval_of_toVal_coe hhi] at this
-  · rw [one_div] at hhige
-    exact (inv_anti₀ hblpos hblAGM).trans hhige
 
 /-- **Gauss's constant is correctly rounded, unless the fuel runs out.** -/
 theorem gaussConstantPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :

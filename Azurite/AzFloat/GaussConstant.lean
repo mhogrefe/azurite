@@ -30,14 +30,17 @@ runs out only if `G` is within about `2^(−16(p+64))` of a rounding boundary.
 
 namespace Azurite.AzFloat
 
-/-- The bracket of `G = 1/AGM(1, √2)` at working precision `w`. -/
-def gaussApprox (w : Nat) : Roundable × Roundable :=
+/-- The two ends of the bracket of `G = 1/AGM(1, √2)` at working precision `w`. -/
+def gaussBracket (w : Nat) : AzFloat × AzFloat :=
   let s2lo := (sqrt2PrecRound w .Floor).1
   let s2hi := (sqrt2PrecRound w .Ceiling).1
   let s := agmIter w (w + 4) (agmStep w ⟨one, one, s2lo, s2hi⟩)
-  let lo := (divPrecRound one s.aHi w .Floor).1
-  let hi := (divPrecRound one s.bLo w .Ceiling).1
-  (fun p mode => setPrecRound lo p mode, fun p mode => setPrecRound hi p mode)
+  ((divPrecRound one s.aHi w .Floor).1, (divPrecRound one s.bLo w .Ceiling).1)
+
+/-- The bracket of `G` at working precision `w`, as a pair of `Roundable`s. -/
+def gaussApprox (w : Nat) : Roundable × Roundable :=
+  (fun p mode => setPrecRound (gaussBracket w).1 p mode,
+    fun p mode => setPrecRound (gaussBracket w).2 p mode)
 
 /-- **Gauss's constant** `G = 1/AGM(1, √2)` rounded to precision `p` with `mode`, and the
 comparison with the exact value (`NaN` if the fuel runs out). -/

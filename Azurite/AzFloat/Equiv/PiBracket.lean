@@ -459,10 +459,11 @@ theorem piEncloses_iter {w : ℕ} [NeZero w] (hw : 64 ≤ w) :
 
 /-! ### The final bracket -/
 
-/-- `piApprox w` brackets `π`, strictly from below, with width at most `piEps w`. -/
-theorem piApprox_spec {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lv hv : ℝ, Rounds (piApprox w).1 lv ∧ Rounds (piApprox w).2 hv ∧
-      lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ piEps w := by
+/-- `piBracket w` brackets `π`, strictly from below, with width at most `piEps w`. -/
+theorem piBracket_spec {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, (piBracket w).1.toVal = some (lv : EReal) ∧
+      (piBracket w).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ piEps w := by
   have : NeZero w := ⟨by omega⟩
   have hN1 : 1 ≤ piSteps w := one_le_piSteps w
   obtain ⟨al, ah, bl, bh, sl, sh, hal, hah, hbl, hbh, hsl, hsh, hal0, hala, hahA, hbl0, hblb,
@@ -600,16 +601,23 @@ theorem piApprox_spec {w : ℕ} (hw : 64 ≤ w) :
   have hhvle := hchv.le_of_le (B := 12) (by linarith only [hp2le, hq2le, hu4096])
   have hflvle := hflv.le
   have hchvge := hchv.ge
-  refine ⟨lv, hv, ?_, ?_, by linarith only [hflvle, hfp1le, hq1, hpi2, hu],
+  refine ⟨lv, hv, hlv, hhv, hflv.nonneg, by linarith only [hflvle, hfp1le, hq1, hpi2, hu],
     by linarith only [hchvge, hcp2ge, hq2, hpi1, hu.le], ?_⟩
+  have := two_pow_le_piEps (w := w) (by omega)
+  linarith only [hhvle, hlvge, hp21, hYu, hbig, this, hXpos, hu.le]
+
+/-- `piApprox w` brackets `π`, strictly from below, with width at most `piEps w`. -/
+theorem piApprox_spec {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, Rounds (piApprox w).1 lv ∧ Rounds (piApprox w).2 hv ∧
+      lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ piEps w := by
+  obtain ⟨lv, hv, hlv, hhv, -, hlo, hhi, hwidth⟩ := piBracket_spec hw
+  refine ⟨lv, hv, ?_, ?_, hlo, hhi, hwidth⟩
   · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlv)
     rw [fval_of_toVal_coe hlv] at hR
     exact hR
   · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhv)
     rw [fval_of_toVal_coe hhv] at hR
     exact hR
-  · have := two_pow_le_piEps (w := w) (by omega)
-    linarith only [hhvle, hlvge, hp21, hYu, hbig, this, hXpos, hu.le]
 
 /-- The Ziv certificate: at some working precision `(p + 64) · 2^f`, rounding is possible. -/
 theorem piApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (w₀ : ℕ)

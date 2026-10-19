@@ -21,6 +21,7 @@ import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.GaussConstant
 import Azurite.AzFloat.Tests.HexString
+import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
 import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.Mul

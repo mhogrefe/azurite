@@ -67,16 +67,20 @@ def piInit (w : Nat) : PiBounds :=
   { aLo := one, aHi := one, bLo := (sqrt2Over2PrecRound w .Floor).1,
     bHi := (sqrt2Over2PrecRound w .Ceiling).1, sLo := oneHalf, sHi := oneHalf }
 
-/-- The bracket of `π` at working precision `w`. -/
-def piApprox (w : Nat) : Roundable × Roundable :=
+/-- The two ends of the bracket of `π` at working precision `w`. -/
+def piBracket (w : Nat) : AzFloat × AzFloat :=
   let s := piIter w (BZ.piSteps w) (piInit w)
   let aLo := (addPrecRound s.aLo s.bLo w .Floor).1 >>> (1 : Nat)
   let aHi := (addPrecRound s.aHi s.bHi w .Ceiling).1 >>> (1 : Nat)
   let nLo := (sqrPrecRound aLo w .Floor).1 <<< (1 : Nat)
   let nHi := (sqrPrecRound aHi w .Ceiling).1 <<< (1 : Nat)
   let e := powerOf2 (1 - (w : AzInt))
-  let lo := (subPrecRound (divPrecRound nLo s.sHi w .Floor).1 e w .Floor).1
-  let hi := (addPrecRound (divPrecRound nHi s.sLo w .Ceiling).1 e w .Ceiling).1
-  (fun p mode => setPrecRound lo p mode, fun p mode => setPrecRound hi p mode)
+  ((subPrecRound (divPrecRound nLo s.sHi w .Floor).1 e w .Floor).1,
+    (addPrecRound (divPrecRound nHi s.sLo w .Ceiling).1 e w .Ceiling).1)
+
+/-- The bracket of `π` at working precision `w`, as a pair of `Roundable`s. -/
+def piApprox (w : Nat) : Roundable × Roundable :=
+  (fun p mode => setPrecRound (piBracket w).1 p mode,
+    fun p mode => setPrecRound (piBracket w).2 p mode)
 
 end Azurite.AzFloat

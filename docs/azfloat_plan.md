@@ -3432,3 +3432,31 @@ to `Chapter4/BrentSalamin.lean` and `AzFloat/Equiv/Ziv.lean`.
   linear steps use `linarith only [...]`. `mul_le_one₀` is deprecated (lint warning) — a local
   `mul_le_one_of` replaces it.
 
+## The lemniscate constant `ϖ` for `AzFloat` (DONE 2026-10-19)
+
+`ϖ = 2.62205755429211981046483958989111941368275495143162316281682170380079058707041425023…`
+
+* **Definition** (`Chapter4/Lemniscate.lean`): `lemniscate = 2 ∫₀¹ dt/√(1 − t⁴)` (the integrand
+  is `(√(1 − t⁴))⁻¹`, zero at `t = 1` by Lean's conventions). Integrability by comparison with
+  `(1 − t)^(−1/2)` (`intervalIntegrable_rpow'` + `comp_sub_left`, `mono_fun'`). The
+  substitution `t = cos φ` uses Mathlib's `integral_comp_mul_deriv'''` (continuity of the
+  integrand only on the image of the *open* interval, integrability on the closed one): since
+  `1 − cos⁴φ = sin²φ (1 + cos²φ)`, `g(cos φ) sin φ = 1/√(1 + cos²φ) = (1/√2)/√(1 − sin²φ/2)` on
+  `(0, π/2]`, so `∫₀¹ g = K(1/√2)/√2` and `ϖ = √2 K(1/√2)` (`lemniscate_eq_sqrt_two_mul_ellipticK`);
+  with `ellipticK_salaminB0` and `AGM(1, √2) = √2 AGM(1, 1/√2)`: `ϖ = π/AGM(1, √2) = π · G`.
+* **Algorithm** (`AzFloat/Lemniscate.lean`), as requested: `ϖ = π · G`. `piApprox` and
+  `gaussApprox` were split into the float pairs `piBracket w`/`gaussBracket w` plus the
+  `setPrecRound` wrappers; `lemniscateBracket w = (⌊π⁻ G⁻⌋_w, ⌈π⁺ G⁺⌉_w)`. Two AGMs per Ziv
+  level (one for `π`, one for `G`). Fuel `agmFuel p` (irrationality of `ϖ` is Schneider's
+  theorem, unavailable); spec `lemniscateConstantPrecRound_eq_or`.
+* **Proof** (`Equiv/Lemniscate.lean`): `piBracket_spec` (now also `0 ≤ lv`) and
+  `gaussBracket_spec` (now with `0 ≤ lv`, `lv < G`) give `π⁻ G⁻ < π G ≤ π⁺ G⁺`; the strictness
+  (`lv = ϖ → hv = ϖ` vacuous) comes from `π⁻ < π` and `G⁻ < G` with `G⁻ ≥ 0`. New Ziv lemma
+  `zivLoop_eq_of_ne_nan_threshold` (bracket valid only for `w ≥ w₀`, as `piBracket_spec` needs
+  `w ≥ 64`).
+* **Alternative not taken**: one AGM via `ϖ_N = √2 a_{N+1}/s_N` from the Brent–Salamin
+  quantities (`ϖ = √2 M'/s_∞`, error `≤ 9·2^N (a_N − b_N)²`); would halve the cost.
+* **Tests** (`Tests/Lemniscate.lean`): precisions 1, 2, 3, 53, 100 with exact comparisons
+  (`ϖ·2^51 = 5904348712226992.4357…`, `ϖ·2^98 = …072.3447…`), `toString … 53 =
+  "2.6220575542921196"`.
+
