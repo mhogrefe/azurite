@@ -43,4 +43,22 @@ def log2RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
   let b := log2Quotients (lnFloorBracket (ofAzRatRound q w .Floor).1 w) w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
+/-- The bracket of `log₂ (1 + x)` for a float `x > −1` at working precision `w`: the quotient of
+the bracket of `ln (1 + x)` from the float `⌊1 + x⌋_w` (`lnFloorBracket`) by the bracket of
+`ln 2`. -/
+def log2p1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+  let b := log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- Whether `1 + x` is exactly a power of two `2^k`, and then `k`: the floor and the ceiling of
+`1 + x` at precision `w` coincide (so the sum is exact) and the significand is a power of two
+(so the sum is `2^(e−1)`).  A power of two is representable at every precision `w ≥ 1`, so `none`
+means that `1 + x` is not a power of two (`onePlusPow2Exponent?_none`). -/
+def onePlusPow2Exponent? (x : AzFloat) (w : Nat) : Option AzInt :=
+  let sLo := (addPrecRound one x w .Floor).1
+  let sHi := (addPrecRound one x w .Ceiling).1
+  match sLo with
+  | finite true e _ m _ => if eqIEEE sLo sHi && m.isPowerOfTwo then some (e - 1) else none
+  | _ => none
+
 end Azurite.AzFloat

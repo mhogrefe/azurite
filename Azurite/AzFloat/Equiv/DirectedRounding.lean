@@ -307,6 +307,14 @@ theorem subCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (
     Spec.sub_coe_coe]
   exact roundVal_ceiling_abs w _
 
+theorem addFloor_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (addPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv + vv ∧
+      uv + vv ≤ r + 2 * |uv + vv| * (1 / 2 : ℝ) ^ w := by
+  rw [addPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.add_coe_coe]
+  exact roundVal_floor_abs w _
+
 theorem addCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
     (w : ℕ) [NeZero w] :
     ∃ r : ℝ, (addPrecRound u v w .Ceiling).1.toVal = some (r : EReal) ∧ uv + vv ≤ r ∧

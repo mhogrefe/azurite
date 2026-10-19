@@ -3738,3 +3738,36 @@ the shared float-level `ln` bracket of `⌊q⌋_w`).
   `log₂ 10`, `log₂ (1/3)` at 200 bits against 80-digit rational references.
 * **Lean note.** `AzRat.toRat_eq_zero_iff` is stated over the *real* cast
   `((toRat q : ℚ) : ℝ) = 0`, not the rational — rewrite the real-valued hypothesis.
+
+## `log₂ (1 + x)` for `AzFloat` (DONE 2026-10-19, fuel-free; C23 `log2p1`)
+
+Files: `AzFloat/Log2p1.lean`, `AzFloat/Equiv/Log2p1.lean`, `AzFloat/Tests/Log2p1.lean`; the
+bracket `log2p1Approx`, the exactness test `onePlusPow2Exponent?` and their proofs in
+`AzFloat/Log2Bracket.lean` / `Equiv/Log2Bracket.lean`.
+
+* **Exact case `1 + x = 2^k`** (`x = 2^k − 1`: `1, 3, 7, …, −1/2, −3/4, …`).  Computable test
+  without forming the sum exactly: `sLo = ⌊1 + x⌋_w₀`, `sHi = ⌈1 + x⌉_w₀` at the starting precision;
+  if `eqIEEE sLo sHi` the sum is exact (`lo ≤ 1 + x ≤ hi = lo`), and if the significand of `sLo` is
+  a power of two the sum is `2^(e−1)` — return `e − 1` (`onePlusPow2Exponent?_some`).  Conversely a
+  power of two `2^j` lies in `floatSet w` for every `w ≥ 1` (`mem_floatSet_mul_zpow` with `k = 1`),
+  so both roundings return it (`val_round_of_mem`), `eqIEEE` holds and the significand is a power
+  of two (`isPowerOfTwo_of_finiteVal_eq_zpow`); hence `none` means `1 + x ≠ 2^j` for all `j`
+  (`onePlusPow2Exponent?_none`).
+* **Irrationality for the loop.** `irrational_logb_two_of_rat`: a positive rational `v = r` with
+  `v ≠ 2^j` for all `j` has irrational `log₂ v` — `r = N/D` reduced (`Rat.reduced`, `Rat.num_pos`,
+  `Nat.cast_natAbs`), not both powers of two, then `irrational_logb_two_div`.  Applied to
+  `1 + x = 1 + r_x` (`exists_rat_of_toVal`).
+* **Bracket.** `log2Quotients (lnFloorBracket ⌊1 + x⌋_w w) w`: the `ln1p` bracket divided by the
+  `ln 2` bracket; width `log2RatEps E |ln (1 + x)| w` (`log2p1Approx_spec` from
+  `lnFloorBracket_spec` and `log2Quotients_spec`).  The Ziv loop starts at
+  `p + 64 + leadingZeroBits e` as `ln1p` does, for the same reason (small `|x|`).
+* **Driver and spec.** As `ln1pPrecRound` (sign/exponent tests `finiteVal_false_le_neg_one`,
+  `finiteVal_false_gt_neg_one`, `eqIEEE x (−one)`), with `match h : onePlusPow2Exponent? x w₀ with`
+  before the loop; the certificate uses `h` through `irrational_logb_two_one_add_of_none`.  The
+  common finite case is `log2p1_finite_eq` (`split` on the `match`, `rename_i`), so the main
+  theorem handles only the special values.  New `addFloor_abs` in `Equiv/DirectedRounding`.
+* **Tests.** Special values; exact `x = 1, 3, 7, −1/2, −3/4, −7/8` and `2^100 − 1` at 110 bits;
+  agreement with `log2` on `1 + x = 10, 3, 3/4`; `log₂ (3/2)`, `log₂ (1 + 2^(−30))` at 53 bits
+  with tags; `log₂ 3`, `log₂ 10` at 200 bits via `x = 2, 9` against the rational references.
+* **Lean notes.** `rcases h : e with … | ⟨a, b, c, d, e⟩` — constructor fields need the anonymous-
+  constructor brackets, and `rcases h : e` already substitutes `e` in the context (no `rw [h]` later).

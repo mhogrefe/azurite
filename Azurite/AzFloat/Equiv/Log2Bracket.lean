@@ -471,4 +471,160 @@ theorem log2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2RatApprox_spec hw q hq hnp
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### `log₂ (1 + x)` -/
+
+/-- A positive rational that is not a power of two has an irrational `log₂`. -/
+theorem irrational_logb_two_of_rat {v : ℝ} (hv : 0 < v) {r : ℚ} (hr : v = r)
+    (hnp : ∀ j : ℤ, v ≠ 2 ^ j) : Irrational (Real.logb 2 v) := by
+  have hr0 : 0 < r := by
+    have : (0 : ℝ) < (r : ℝ) := hr ▸ hv
+    exact_mod_cast this
+  have hnum : 0 < r.num := Rat.num_pos.mpr hr0
+  have hNeq : (r.num : ℝ) = (r.num.natAbs : ℝ) := by
+    rw [Nat.cast_natAbs, abs_of_pos (by exact_mod_cast hnum)]
+  have hv' : v = (r.num.natAbs : ℝ) / r.den := by rw [hr, Rat.cast_def, hNeq]
+  have hN0 : r.num.natAbs ≠ 0 := (Int.natAbs_pos.mpr hnum.ne').ne'
+  rw [hv']
+  apply irrational_logb_two_div hN0 r.den_nz r.reduced
+  rintro ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
+  apply hnp ((a : ℤ) - b)
+  rw [hv', ha, hb]
+  push_cast
+  rw [zpow_sub₀ (by norm_num), zpow_natCast, zpow_natCast]
+
+/-- A float whose value is a power of two has a power-of-two significand. -/
+theorem isPowerOfTwo_of_finiteVal_eq_zpow (e : AzInt) (m : AzNat) (j : ℤ)
+    (h : finiteVal true e m = (2 : ℝ) ^ j) : m.isPowerOfTwo = true := by
+  rw [finiteVal_true_eq] at h
+  have hE : (2 : ℝ) ^ (e.toInt - m.size) ≠ 0 := zpow_ne_zero _ (by norm_num)
+  have hm : (m.toNat : ℝ) = (2 : ℝ) ^ (j - (e.toInt - m.size)) := by
+    rw [zpow_sub₀ (by norm_num), eq_div_iff hE, h]
+  have ht : 0 ≤ j - (e.toInt - m.size) := by
+    by_contra hlt
+    have h1 : (2 : ℝ) ^ (j - (e.toInt - m.size)) < 1 := zpow_lt_one_of_neg₀ (by norm_num) (by omega)
+    have h2 : (0 : ℝ) < (2 : ℝ) ^ (j - (e.toInt - m.size)) := zpow_pos (by norm_num) _
+    have h3 : m.toNat < 1 := by exact_mod_cast (hm ▸ h1 : (m.toNat : ℝ) < 1)
+    have h4 : (m.toNat : ℝ) = 0 := by exact_mod_cast Nat.lt_one_iff.mp h3
+    linarith
+  obtain ⟨n, hn⟩ := Int.eq_ofNat_of_zero_le ht
+  rw [hn, zpow_natCast] at hm
+  exact (AzNat.isPowerOfTwo_iff m).mpr ⟨n, by exact_mod_cast hm⟩
+
+/-- The floor of `1 + x` at precision `w`, as a rounding of its value. -/
+theorem toVal_onePlus_floor {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (w : ℕ)
+    [NeZero w] :
+    (addPrecRound one x w .Floor).1.toVal
+      = some (RoundingTarget.round (floatSet w) .Floor (1 + xv)).val := by
+  rw [addPrecRound_eq_liftVal₂, liftVal₂, toVal_one', hx, Option.bind_some, Option.bind_some,
+    Spec.add_coe_coe]
+  exact (roundVal_coe w .Floor _).1
+
+theorem toVal_onePlus_ceiling {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (w : ℕ)
+    [NeZero w] :
+    (addPrecRound one x w .Ceiling).1.toVal
+      = some (RoundingTarget.round (floatSet w) .Ceiling (1 + xv)).val := by
+  rw [addPrecRound_eq_liftVal₂, liftVal₂, toVal_one', hx, Option.bind_some, Option.bind_some,
+    Spec.add_coe_coe]
+  exact (roundVal_coe w .Ceiling _).1
+
+/-- `onePlusPow2Exponent? x w = some k` means `1 + x = 2^k`. -/
+theorem onePlusPow2Exponent?_some {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (w : ℕ) [NeZero w] {k : AzInt} (h : onePlusPow2Exponent? x w = some k) :
+    1 + xv = (2 : ℝ) ^ k.toInt := by
+  obtain ⟨lo, hlo, hlo1, -⟩ := addFloor_abs toVal_one' hx w
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs toVal_one' hx w
+  rcases hs : (addPrecRound one x w .Floor).1 with _ | s | _ | ⟨s, e', q', m', hv'⟩ <;>
+    simp only [onePlusPow2Exponent?, hs] at h
+  · cases h
+  · cases h
+  · cases h
+  · cases s with
+    | false => simp at h
+    | true =>
+      simp only at h
+      split_ifs at h with hc
+      rw [Option.some.injEq] at h
+      subst h
+      rw [Bool.and_eq_true] at hc
+      obtain ⟨v, hv1, hv2⟩ := (eqIEEE_iff _ _).mp hc.1
+      rw [hs, toVal_finite, Option.some.injEq] at hlo
+      rw [toVal_finite, Option.some.injEq] at hv1
+      rw [hhi, Option.some.injEq, ← hv1, EReal.coe_eq_coe_iff] at hv2
+      rw [EReal.coe_eq_coe_iff] at hlo
+      have h1 : 1 + xv = finiteVal true e' m' := by linarith
+      rw [h1, finiteVal_true_of_isPowerOfTwo e' m' hc.2, AzInt.toInt_sub]
+      rfl
+
+/-- `onePlusPow2Exponent? x w = none` (with `w ≥ 2`, `1 + x > 0`) means `1 + x` is not a power of
+two: a power of two is representable at precision `w`, so its floor and ceiling coincide and its
+significand is a power of two. -/
+theorem onePlusPow2Exponent?_none {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    {w : ℕ} (hw : 2 ≤ w) (hpos : 0 < 1 + xv) (h : onePlusPow2Exponent? x w = none) (j : ℤ) :
+    1 + xv ≠ (2 : ℝ) ^ j := by
+  intro hj
+  have : NeZero w := ⟨by omega⟩
+  have hmem : ((1 + xv : ℝ) : EReal) ∈ floatSet w := by
+    have := mem_floatSet_mul_zpow w 1 j (by rw [abs_one]; exact_mod_cast Nat.one_le_two_pow)
+    rw [hj]
+    simpa using this
+  have hlo : (addPrecRound one x w .Floor).1.toVal = some ((1 + xv : ℝ) : EReal) := by
+    rw [toVal_onePlus_floor hx w, RoundingTarget.val_round_of_mem _ _ hmem]
+  have hhi : (addPrecRound one x w .Ceiling).1.toVal = some ((1 + xv : ℝ) : EReal) := by
+    rw [toVal_onePlus_ceiling hx w, RoundingTarget.val_round_of_mem _ _ hmem]
+  obtain ⟨e', q', m', hv', hs, hval⟩ := eq_finite_true_of_toVal_pos hlo hpos
+  have heq : eqIEEE (addPrecRound one x w .Floor).1 (addPrecRound one x w .Ceiling).1 = true :=
+    (eqIEEE_iff _ _).mpr ⟨_, hlo, hhi⟩
+  have hpow : m'.isPowerOfTwo = true :=
+    isPowerOfTwo_of_finiteVal_eq_zpow e' m' j (by rw [hval, hj])
+  rw [hs] at heq
+  simp only [onePlusPow2Exponent?, hs, heq, hpow, Bool.and_self, ↓reduceIte] at h
+  exact absurd h (Option.some_ne_none _)
+
+/-- `log₂ (1 + x)` is irrational when the exactness test fails. -/
+theorem irrational_logb_two_one_add_of_none {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal))
+    {w : ℕ} (hw : 2 ≤ w) (hpos : 0 < 1 + xv) (h : onePlusPow2Exponent? x w = none) :
+    Irrational (Real.logb 2 (1 + xv)) := by
+  obtain ⟨rx, hrx⟩ := exists_rat_of_toVal hx
+  exact irrational_logb_two_of_rat hpos (r := 1 + rx) (by push_cast; rw [hrx])
+    (onePlusPow2Exponent?_none hx hw hpos h)
+
+/-- `log2p1Approx x w` encloses `log₂ (1 + x)` strictly (given its irrationality), with width at
+most `log2RatEps E |ln (1 + x)| w` (`w ≥ 64`, `x > −1`). -/
+theorem log2p1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
+    (hirr : Irrational (Real.logb 2 (1 + xv))) :
+    ∃ lv hv : ℝ, Rounds (log2p1Approx x w).1 lv ∧ Rounds (log2p1Approx x w).2 hv ∧
+      lv < Real.logb 2 (1 + xv) ∧ Real.logb 2 (1 + xv) < hv ∧
+      hv - lv ≤ log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := log2Quotients_spec hw ha hb haL hLb hwid
+  rw [Real.log_div_log] at hlo1 hhi1
+  refine ⟨lo, hi, ?_, ?_, ?_, ?_, hwidth⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR
+    exact hR
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hlo
+    exact lt_of_le_of_ne hlo1 fun h => hirr.ne_rat r' (h.symm.trans hr')
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hhi
+    exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r' (h.trans hr')
+
+/-- The Ziv certificate for `log₂ (1 + x)`. -/
+theorem log2p1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat}
+    {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
+    (hirr : Irrational (Real.logb 2 (1 + xv))) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2p1Approx x (w₀ * 2 ^ f)).1 (log2p1Approx x (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (log2p1Approx x) hirr
+    (log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_log2RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2p1Approx_spec hw hx hx1 hirr
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
 end Azurite.AzFloat
