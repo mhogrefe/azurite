@@ -383,7 +383,14 @@ middle layer**: each driver round runs only the word-level base case
 word-by-operand products — the LSB analogue of MCA Algorithm 1.17 (DoubleDigitGcd).  Above it the
 rounds use `k = n / 2`, i.e. the subquadratic recursion.  Tuned 2026-10-05 (`az_nat_gcd`) with the
 two-word base case and the fused two-pass round: the word rounds beat the recursion up to about
-80000 operand bits (11.8 ms against 13.7 ms at 44000 bits) and tie with it at 87000. -/
+80000 operand bits (11.8 ms against 13.7 ms at 44000 bits) and tie with it at 87000.  Re-tuned
+2026-10-19 after the normalization case was added to the quadratic round, on random operands both
+with a planted common factor of a third of the size and without one: at 65536 operand bits the
+word rounds win (39.5 against 41.5 ms, 24.9 against 29.5 ms), at 131072 bits the recursion wins
+(126.5 against 130.2 ms, 89.5 against 90.9 ms), so the crossover stays between them and the value
+is unchanged.  Before that fix the word rounds stalled on operands whose even member carries a
+large power of two (as the binary-splitting fractions of `ln 2` do) and fell back to the binary
+GCD: 192 ms instead of 12.5 ms at 51000 bits. -/
 def halfBinaryGcdQuadraticThreshold : Nat := 65536
 
 /-- The odd part of `gcd a b`, for signed `a`, `b`, by repeated reduction rounds.  Above
@@ -391,7 +398,9 @@ def halfBinaryGcdQuadraticThreshold : Nat := 65536
 application of its matrix, one binary division, and recursion on the two new half-size remainders.
 Up to `quadThreshold` bits (the quadratic middle layer): the word base case on the low 127 bits,
 applied with two fused limb passes per output (`fusedCombine?`), removing up to about 60 bits
-per round.  Every step
+per round; when the base case cannot progress (the low window of `b` is divisible by `2^62`, as
+for operands with a large power of two, or both operands are odd) the powers of two are stripped
+and the pair re-formed as (odd, even) instead of falling back to the binary GCD.  Every step
 preserves the odd part of the GCD, and the divisions by powers of two are checked, so the result
 is exact whatever the inputs; the binary GCD finishes operands of at most `threshold` bits and
 serves as the fallback. -/
@@ -404,7 +413,20 @@ def halfBinaryGcdDriver (threshold quadThreshold : Nat) : Nat → AzInt → AzIn
       -- quadratic round: the word base case on the low 127 bits, applied with two fused passes
       let jM := halfBinaryGcdWord (a.lowWord2 (2 * halfBinaryWordThreshold + 1))
         (b.lowWord2 (2 * halfBinaryWordThreshold + 1)) halfBinaryWordThreshold
-      if jM.1 = 0 then oddPart (gcdBinary a.abs b.abs)
+      if jM.1 = 0 then
+        -- no progress in the low window: `b` has valuation above 61 there (`ν(b) ≤ 61` with `a`
+        -- odd always progresses), or both operands are odd.  Strip the powers of two — the odd
+        -- part of the GCD is unchanged — and re-pair as (odd, even); the binary GCD is only the
+        -- formal fallback.
+        match a.trailingZeros, b.trailingZeros with
+        | none, _ => oddPart b.abs
+        | _, none => oddPart a.abs
+        | some ta, some tb =>
+          if ta = 0 ∧ 1 ≤ tb ∧ tb ≤ 61 then oddPart (gcdBinary a.abs b.abs)
+          else
+            let a₁ := AzInt.mkNorm a.sign (a.abs >>> ta)
+            let b₁ := AzInt.mkNorm b.sign (b.abs >>> tb)
+            halfBinaryGcdDriver threshold quadThreshold fuel a₁ (a₁ + b₁)
       else
         match fusedCombine? jM.2.m₁₁ jM.2.m₁₂ a b (2 * jM.1),
             fusedCombine? jM.2.m₂₁ jM.2.m₂₂ a b (2 * jM.1) with

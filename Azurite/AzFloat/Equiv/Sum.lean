@@ -1094,4 +1094,8 @@ theorem sumPrecRound_eq (xs : List AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
   · rw [sumFinite_eq p mode _ _ (fun x hx => (List.mem_filter.mp hx).2) (Nat.lt_succ_self _),
       realSum_filter_isNormal]
 
+/-- The value of `one`. -/
+theorem toVal_one' : one.toVal = some ((1 : ℝ) : EReal) := by
+  rw [one, toVal_powerOf2]; simp
+
 end Azurite.AzFloat

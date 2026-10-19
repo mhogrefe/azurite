@@ -26,9 +26,6 @@ namespace Azurite.AzFloat
 
 open Azurite.BZ RoundingTarget
 
-theorem toVal_one' : one.toVal = some ((1 : ℝ) : EReal) := by
-  rw [one, toVal_powerOf2]; simp
-
 theorem one_mem_floatSet (w : ℕ) [NeZero w] : ((1 : ℝ) : EReal) ∈ floatSet w := by
   have := mem_floatSet_mul_zpow w 1 0 (by rw [abs_one]; exact_mod_cast Nat.one_le_two_pow)
   simpa using this

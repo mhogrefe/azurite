@@ -25,10 +25,10 @@ theorem ln2PrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
   · exact absurd hp (NeZero.ne p)
   apply zivLoopCertified_eq p mode ln2Approx (Real.log 2) ?_ (p + zivGuardBits)
     (by unfold zivGuardBits; omega)
-  intro w _
-  obtain ⟨hl, hh⟩ := ln2Approx_spec w
-  obtain ⟨hlo, hhi⟩ := ln2Bracket_mem w
-  exact ⟨_, _, hl, hh, hlo, hhi, fun h => absurd h (lo_lt_log_two w).ne⟩
+  intro w hw
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -, -⟩ := ln2Approx_spec w
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
 
 /-- **`log₂ e` is correctly rounded.** -/
 theorem log2EPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
@@ -36,12 +36,12 @@ theorem log2EPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) 
   unfold log2EPrecRound liftVal₀
   split_ifs with hp
   · exact absurd hp (NeZero.ne p)
-  apply zivLoopCertified_eq p mode log2EApprox (Real.log 2)⁻¹ ?_ (p + zivGuardBits)
+  apply zivLoopCertified_eq_threshold p mode log2EApprox (Real.log 2)⁻¹ (p + zivGuardBits)
     (by unfold zivGuardBits; omega)
   intro w hw
-  obtain ⟨hl, hh⟩ := log2EApprox_spec w
-  obtain ⟨hlo, hhi⟩ := log2EBracket_mem hw
-  exact ⟨_, _, hl, hh, hlo, hhi, fun h => absurd h fun h' => irrational_log_two.inv ⟨_, h'⟩⟩
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
+    log2EApprox_spec (w := w) (by unfold zivGuardBits at hw; omega)
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
 
 /-- `log₂ e = 1/ln 2`. -/
 theorem logb_two_exp_one : Real.logb 2 (Real.exp 1) = (Real.log 2)⁻¹ := by

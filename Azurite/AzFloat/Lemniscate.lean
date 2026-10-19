@@ -35,8 +35,8 @@ def lemniscateBracket (w : Nat) : AzFloat × AzFloat :=
 
 /-- The bracket of `ϖ` at working precision `w`, as a pair of `Roundable`s. -/
 def lemniscateApprox (w : Nat) : Roundable × Roundable :=
-  (fun p mode => setPrecRound (lemniscateBracket w).1 p mode,
-    fun p mode => setPrecRound (lemniscateBracket w).2 p mode)
+  let b := lemniscateBracket w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- **The lemniscate constant** `ϖ` rounded to precision `p` with `mode`, and the comparison
 with the exact value (`NaN` if the fuel runs out). -/

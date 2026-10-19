@@ -125,6 +125,25 @@ only to argue progress and is not formalized.
   half-size products).  Not timed.  Possible follow-ups: a word-level extended Euclid base case
   (the 64-bit `egcdBinary` call is the fixed overhead), tuning `egcdHalfBinaryThreshold`.
 
+- 2026-10-19 (quadratic round, found by the AzFloat `ln` benchmark): the `AzRat` reductions of
+  the binary-splitting fractions of `ln 2` took 190 ms per GCD at 51000 bits where random
+  operands take 12 ms.  Cause: the word base case stops with `j = 0` when the low 127-bit window
+  of `b` is divisible by `2^62` (or both operands are odd), and the quadratic round then fell back
+  to the *binary* GCD on the whole operands; `gcdHalfBinaryWith` strips only the *common* power of
+  two, so an operand like `B · q^(2N)` with `q` even enters with thousands of trailing zeros.  The
+  recursion was unaffected (its binary division handles `ν(b')`).  Fix: when `j = 0` the round
+  strips the powers of two of both operands (the odd part of the GCD is unchanged) and continues
+  with `(a₁, a₁ + b₁)` — odd, even — so the next round progresses; the binary GCD remains a formal
+  fallback for `a` odd and `1 ≤ ν(b) ≤ 61`, where the base case always progresses.  Proof: the
+  new branch of `toNat_halfBinaryGcdDriver` chains `oddEquiv_gcd_div_pow` twice and
+  `oddEquiv_gcd_binaryStep` with `q = 1, j = 0`.  `az_float_ln2_breakdown`: the 51000-bit GCD
+  192 → 12.5 ms (forced recursion: 14.7 ms); the `ln 2` bracket at 20000 bits 875 → 235 ms.
+  Re-tune of `halfBinaryGcdQuadraticThreshold` (`az_nat_gcd`, 3 pairs, thresholds 8192 …
+  524288 bits, random operands with the planted factor and — new config `factor:0` — without):
+  the word rounds win up to 65536 operand bits (39.5 vs 41.5 ms planted, 24.9 vs 29.5 coprime) and
+  lose at 131072 (126.5 vs 130.2, 89.5 vs 90.9), so 65536 stays.  Tests: `Tests/Gcd.lean` gains
+  three pairs with `2^300`, `2^500`, `2^800` in the even operand.
+
 ## Open
 
 - The round is now one fused pass per output plus a short negation half the time; the remaining

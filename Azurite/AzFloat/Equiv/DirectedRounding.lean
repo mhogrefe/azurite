@@ -109,7 +109,8 @@ theorem roundVal_ceiling_err (w : ℕ) [NeZero w] {x : ℝ} (hx : 0 ≤ x) :
 
 variable {u v : AzFloat} {uv vv : ℝ}
 
-theorem Spec.sub_coe_coe (x y : ℝ) : Spec.sub (x : EReal) (y : EReal) = some ((x - y : ℝ) : EReal) := by
+theorem Spec.sub_coe_coe (x y : ℝ) :
+    Spec.sub (x : EReal) (y : EReal) = some ((x - y : ℝ) : EReal) := by
   unfold Spec.sub
   rw [← EReal.coe_neg, Spec.add_coe_coe, sub_eq_add_neg]
 
@@ -312,6 +313,36 @@ theorem addCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (
       r ≤ uv + vv + 2 * |uv + vv| * (1 / 2 : ℝ) ^ w := by
   rw [addPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
     Spec.add_coe_coe]
+  exact roundVal_ceiling_abs w _
+
+/-- Changing the precision of a nonnegative float with `Floor`: within `2x·2^(−k)` below. -/
+theorem setPrecFloor_err {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : 0 ≤ xv)
+    (k : ℕ) [NeZero k] :
+    ∃ r : ℝ, (setPrecRound x k .Floor).1.toVal = some (r : EReal) ∧ FloorOf k xv r := by
+  rw [setPrecRound_eq_roundVal hx]
+  exact roundVal_floor_err k hx0
+
+/-- Changing the precision of a nonnegative float with `Ceiling`: within `2x·2^(−k)` above. -/
+theorem setPrecCeiling_err {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hx0 : 0 ≤ xv) (k : ℕ) [NeZero k] :
+    ∃ r : ℝ, (setPrecRound x k .Ceiling).1.toVal = some (r : EReal) ∧ CeilOf k xv r := by
+  rw [setPrecRound_eq_roundVal hx]
+  exact roundVal_ceiling_err k hx0
+
+theorem divFloor_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (divPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv / vv ∧
+      uv / vv ≤ r + 2 * |uv / vv| * (1 / 2 : ℝ) ^ w := by
+  rw [divPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.div_coe_coe uv vv hv0]
+  exact roundVal_floor_abs w _
+
+theorem divCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (hv0 : vv ≠ 0) (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (divPrecRound u v w .Ceiling).1.toVal = some (r : EReal) ∧ uv / vv ≤ r ∧
+      r ≤ uv / vv + 2 * |uv / vv| * (1 / 2 : ℝ) ^ w := by
+  rw [divPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.div_coe_coe uv vv hv0]
   exact roundVal_ceiling_abs w _
 
 theorem ofAzRatRound_floor_abs (q : AzRat) (w : ℕ) [NeZero w] :

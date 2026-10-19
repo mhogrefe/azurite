@@ -39,8 +39,8 @@ def gaussBracket (w : Nat) : AzFloat × AzFloat :=
 
 /-- The bracket of `G` at working precision `w`, as a pair of `Roundable`s. -/
 def gaussApprox (w : Nat) : Roundable × Roundable :=
-  (fun p mode => setPrecRound (gaussBracket w).1 p mode,
-    fun p mode => setPrecRound (gaussBracket w).2 p mode)
+  let b := gaussBracket w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- **Gauss's constant** `G = 1/AGM(1, √2)` rounded to precision `p` with `mode`, and the
 comparison with the exact value (`NaN` if the fuel runs out). -/

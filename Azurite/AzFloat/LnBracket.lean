@@ -12,7 +12,6 @@ import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.Conversion
-import Azurite.AzRat.Compare
 
 /-!
 ## The natural logarithm
@@ -24,7 +23,8 @@ import Azurite.AzRat.Compare
 then `ln x = π/(2 AGM(1, k)) − ℓ ln 2` up to that error.  Everything runs on enclosures: `k` by
 directed division, the AGM by the interval iteration of `Agm.lean` for a fixed number of steps
 (`lnSteps w = 2 ⌈lg 2h⌉ + 3`, after which `a − b ≤ 2^(3 − 5h)` by `agm_log_iterations` and two
-quadratic steps), `π` from `piBracket`, `ℓ ln 2` from the exact rational `ln2Bracket`.
+quadratic steps), `π` from `piBracket`, `ℓ ln 2` from the float bracket `ln2Bracket` (`|ℓ|` times
+the ends, outward, the signs restored by negation).
 
 The bracket's width is at most `2^40 (w + |e| + 8)^5 2^(−w)` (`Equiv/LnBracket.lean`,
 `lnBracket_spec`: the interval AGM keeps *relative*
@@ -63,15 +63,17 @@ def lnBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
   let eps := powerOf2 ((AzNat.ofNat (Nat.size (2 * h + 2))).toAzInt
     - (AzNat.ofNat (4 * h)).toAzInt)
   let lb := ln2Bracket w
-  let lq := l.toAzRat
-  let LLo := (ofAzRatRound (min (lq * lb.1) (lq * lb.2)) w .Floor).1
-  let LHi := (ofAzRatRound (max (lq * lb.1) (lq * lb.2)) w .Ceiling).1
+  let m := ofAzNat l.abs
+  let A := (mulPrecRound m lb.1 w .Floor).1
+  let B := (mulPrecRound m lb.2 w .Ceiling).1
+  let LLo := if l.sign then A else -B
+  let LHi := if l.sign then B else -A
   ((subPrecRound (subPrecRound qLo eps w .Floor).1 LHi w .Floor).1,
     (subPrecRound (addPrecRound qHi eps w .Ceiling).1 LLo w .Ceiling).1)
 
 /-- The bracket as a pair of `Roundable`s. -/
 def lnApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
-  (fun p mode => setPrecRound (lnBracket x e w).1 p mode,
-    fun p mode => setPrecRound (lnBracket x e w).2 p mode)
+  let b := lnBracket x e w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

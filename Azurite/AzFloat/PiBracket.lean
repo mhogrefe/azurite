@@ -80,7 +80,7 @@ def piBracket (w : Nat) : AzFloat × AzFloat :=
 
 /-- The bracket of `π` at working precision `w`, as a pair of `Roundable`s. -/
 def piApprox (w : Nat) : Roundable × Roundable :=
-  (fun p mode => setPrecRound (piBracket w).1 p mode,
-    fun p mode => setPrecRound (piBracket w).2 p mode)
+  let b := piBracket w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

@@ -3236,6 +3236,60 @@ brackets) instead of fuel.
   `atanhTerm_le_half_pow` takes `2^b ≤ q` and `(2N+1) b ≥ w + 6`. Reuse: `ln 3`, `ln 5`, `ln 10`
   by their own Machin-like formulas with the same bracket/loop; `π` (Brent–Salamin items 4–6) with
   `zivLoopCertified` and `irrational_pi`.
+* **Step 4 DONE (2026-10-19): float bracket, no `AzRat`.** Benchmarking `ln` showed `ln2Bracket`
+  at 887 ms of 1082 at 20000 bits — not the series (6 ms) but the `AzRat` reductions (GCDs of the
+  50000-bit fractions; a GCD pathology fixed the same day brought it to 236 ms, still dominant).
+  Now `ln2Fractions w` forms the two exact ends as *unreduced* fractions over a common denominator
+  (`AzInt` numerator `18 n₁ (d₂E₂) d₃ + 8 n₃ d₁ (d₂E₂) − 2 (n₂E₂ + 4d₂) d₁ d₃` over
+  `d₁ (d₂E₂) d₃`, `E_i = atanhTailDen = 3(2N+1)q^(2N+1)` so the tail `(4/3) t_N = 4/E_i`; the
+  upper end likewise) and `ln2Bracket w = (⌊lo⌋_w, ⌈hi⌉_w)` divides each once with directed
+  rounding (`divFloor_abs`/`divCeiling_abs`, new signed lemmas — no positivity needed).
+  `ln2Bracket_spec`: `lv ≤ ln 2 ≤ hv`, `hv − lv ≤ 8·2^(−w)` (exact width `u` plus `2·lo·u +
+  2·hi·u` with `lo ≤ 1`, `hi ≤ 2`), `lv ≥ 1/5` for `w ≥ 2`; strictness from `exists_rat_of_toVal`
+  (moved here from `Equiv/LnBracket`) + `irrational_log_two`; the certificate is the generic
+  `exists_isSome_of_irrational` with `C = 8` (the ad-hoc `adjacent_boundaries` proof is gone).
+  `log2EBracket = (⌊1/hi⌋_w, ⌈1/lo⌉_w)` for `w ≥ 2` (width `≤ 80·2^(−w)`, threshold certificate
+  `W₀ = 2`). In `lnBracket` the term `ℓ ln 2` is now `|ℓ|` times the float ends (`mulFloor/
+  Ceiling_err` on `ofAzNat ℓ.abs`), negated when `ℓ < 0` (`ln_L_spec`: width `≤ 12|ℓ|u`;
+  `ln_final_bounds` adjusted). Timings (ms): `ln2Bracket` at 1000/5000/20000 bits 1.85/19/236 →
+  0.29/4.6/57; `ln2` 2.1/20/250 → 0.29/5.9/59; `ln` 4.0/37/429 → 1.7/14/145. Breakdown at
+  20000 bits: splittings 6 ms, products of the fractions 29 ms, the two divisions 23 ms; at
+  100000 bits 97 / 394 / 480 ms — the divisions acted on the full ≈ 950000-bit operands.
+  **Truncation DONE (same day):** `ln2Bracket` first rounds the numerator down and the
+  denominator up to `w + 8` bits (`setPrecRound … .Floor/.Ceiling`, new `setPrecFloor_err`/
+  `setPrecCeiling_err` in `Equiv/DirectedRounding`; the other way for the upper end), then
+  divides: each division is `O(M(w))`.  Proof: `n'/d' ≤ N/D` by `div_le_div₀`, and
+  `lo (1 − 4u') ≤ n'/d'` from `(1 − 4u')(1 + 2u') ≤ 1 − 2u'` (`u' = 2^(−w−8) = u/256`), likewise
+  `n''/d'' ≤ hi (1 + 5u')` from `(1 + 5u')(1 − 2u') ≥ 1 + 2u'` for `u' ≤ 1/10`; the total width
+  `≤ u + 14u' + 6.2u ≤ 8u` keeps the stated bound, and `lv ≥ 0.437/2 ≥ 1/5` for `w ≥ 2`.
+  Positivity of the numerators needs `w ≥ 1` (`lo ≥ ln 2 − 1/2 > 0`), which `[NeZero w]` gives.
+  Timings: the two divisions 23 → 1.1 ms at 20000 bits, 480 → 20 ms at 100000; `ln2Bracket`
+  57 → 36 ms, `ln2` 59 → 36 ms, `ln` 145 → 125 ms at 20000 bits (`ln2Bracket` now ≈ 30 % of
+  `ln`, the AGM 42 %).
+* **Trimming the products DONE (same day).** The common-denominator combination (exact products
+  of 50000–170000-bit numbers, 35 of the bracket's 36 ms at 20000 bits, 493 of 513 at 100000) is
+  gone: each series fraction `n/d` becomes a float pair on its own (`seriesBracket`: `n`, `d`
+  rounded to `k = w + 8` bits — down/up for the lower end, up/down for the upper — and one
+  directed division each; `seriesBracket_spec`: `S (1 − 6·2^(−k)) ≤ lv ≤ S ≤ hv ≤ S (1 + 8·2^(−k))`
+  for `k ≥ 4`), the tail bounds `(4/3) t_N ≤ (4/3)·2^(−w−6)` are replaced by the single float
+  `2^(−w−5)` (`toVal_tail`; width cost `28·2^(−w−5) < 2^(−w)`), and the Machin combination
+  `18 S₁ − 2 (S₂ + t) + 8 S₃` / `18 (S₁ + t) − 2 S₂ + 8 (S₃ + t)` is evaluated on floats at `k`
+  bits, every operation rounded away from `ln 2` (the subtracted parts the other way); the ends
+  keep precision `k`.  Proof budget: with `S₁ ≤ 1/25`, `S₂ ≤ 1/4800`, `S₃ ≤ 1/8748`
+  (`sum_atanhTerm_le`, from `sum_le_atanhInv`, `atanhInv_eq` and `log x ≤ x − 1`) all
+  magnitudes are `≤ 2`, so each rounding costs `≤ 4·2^(−k)` (`FloorOf.ge_of_le`/`CeilOf.le_of_le`
+  with the bound `2`) and the series errors `≤ 2^(−k)` each; total width
+  `≤ 2^(−w) + 28·2^(−w−5) + 208·2^(−w−8) < 2·2^(−w)`, far inside the stated `8·2^(−w)`.  Six
+  divisions at `k` bits instead of ≈ 12 products and 2 divisions.  Timings (ms): `ln2Bracket` at
+  1000/5000/20000/100000 bits 0.27/3.6/36/513 → 0.16/1.2/10.5/143 (the splittings alone are
+  0.08/0.65/6.7/100); `ln2` 36 → 9.9 and `ln` 125 → 99 at 20000 bits (`ln2Bracket` now 10 % of
+  `ln`, the AGM 55 %).  Lean notes: `simp only [ln2Bracket]` on the goal timed out (huge unfolded
+  term with many `set` variables) — `refine ⟨lo, hi, hlo', hhi', …⟩` unifies by `rfl`; the
+  theorem needs `maxHeartbeats 400000` (≈ 60 `linarith` calls in a 100-hypothesis context);
+  `unfold f g at h₁ h₂` fails when one hypothesis lacks `g` — unfold per hypothesis. Lean notes: casts `atanhTerm (↑26) k` vs `atanhTerm 26 k` need
+  `push_cast at` before `rw [← h]`; hypotheses obtained after `set u := (1/2)^w` keep the literal
+  `(1/2)^w` — `rw [← hu] at` them, or `linarith` treats `2·x·(1/2)^w` and `2·x·u` as unrelated
+  monomials; `haveI` on a `Prop` is a lint warning (`have`).
 
 ## Transcendence of `e` (DONE 2026-10-18)
 
@@ -3509,3 +3563,41 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
 * **Tests** (`Tests/Ln.lean`): special values, `ln 2 = ln2` at 53/200 bits in three modes,
   `ln 10`, `ln 3`, `ln ½`, `ln 1.5`, `ln 10^±12`, `ln 2^100` at 53 bits, floor/ceiling tags,
   `ln 10` and `ln 3` at 200 bits.
+* **Timings (2026-10-19, `az_float_ln`, ms per call, median of 3 over `ln 10, ln 3, ln ½, ln 1.5`;
+  bracket pieces at `w = P + 64`).**
+
+  | bits | `ln` | `lnBracket` | AGM only | `piBracket` | `ln2Bracket` | `sqrt` | `pi` | `ln2` |
+  |---:|---:|---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 0.54 | 0.56 | 0.19 | 0.12 | 0.14 | 0.002 | 0.13 | 0.14 |
+  | 200 | 1.20 | 1.18 | 0.32 | 0.20 | 0.49 | 0.006 | 0.20 | 0.51 |
+  | 1000 | 6.3 | 6.3 | 0.81 | 0.52 | 3.7 | 0.012 | 0.52 | 3.7 |
+  | 5000 | 88 | 88 | 5.7 | 3.6 | 59 | 0.069 | 3.7 | 60 |
+  | 20000 | 1077 | 1082 | 52 | 33 | 887 | 0.53 | 33 | 905 |
+
+  After the GCD fix below (same day): `ln` 0.57 / 1.0 / 4.0 / 37 / 429 ms at 53 / 200 / 1000 /
+  5000 / 20000 bits; `ln2Bracket` 0.15 / 0.34 / 1.8 / 19 / 236 ms; `ln2` 250 ms at 20000 bits.
+
+  The Ziv loop succeeds at the first level (`ln ≈ lnBracket`). **Fix found by the benchmark:**
+  `lnApprox`, `piApprox`, `gaussApprox`, `lemniscateApprox` built the bracket *inside* the two
+  `Roundable` closures, and `roundingPossible` calls them three times (`l (p+1)`, `h (p+1)`,
+  `h p`), so every bracket was computed three times (`ln` and `pi` were 3× `lnBracket`/`piBracket`);
+  the bracket is now a `let` outside the closures (as `ln2Approx` already did). The proofs were
+  unaffected.
+* **Where the time goes.** Above 1000 bits `ln2Bracket` dominates (887 of 1082 ms at 20000 bits):
+  not the binary splitting (6 ms for the three series) but the `AzRat` reductions — each GCD of
+  the ≈ 51000-bit numerator/denominator takes 190 ms (`az_float_ln2_breakdown`), and the bracket
+  does about five of them (`ofAzNatPair` ×3, the `+`/`−`/`·` of the combination). The GCD
+  dispatch is the culprit: the *quadratic middle layer* (`halfBinaryGcdQuadraticThreshold =
+  65536` bits, tuned on random operands with a planted common factor of a third of the size)
+  takes 190 ms on these operands where the forced recursion (`gcdHalfBinaryWith 64 0`) takes
+  15 ms (11.4 vs 1.6 ms at 11600 bits); on the `az_nat_gcd` random operands the quadratic layer is
+  still slightly faster (25.7 vs 28.5 ms at 50000 bits, 1.5 vs 3.0 ms at 12000).
+  **(a) FIXED 2026-10-19** (`docs/gcd_plan.md`): the word base case stalled on a low window
+  divisible by `2^62` (the `ln 2` denominators carry `2^(2N)`) and the round fell back to the
+  binary GCD; the quadratic round now strips the powers of two and re-pairs, the 51000-bit GCD is
+  12.5 ms, and the threshold (re-tuned on planted-factor and coprime operands) stays at 65536
+  bits.  `ln` at 20000 bits: 1077 → 429 ms; `ln2Bracket` 887 → 236 ms — the remaining `ln 2`
+  cost is the `AzRat` combination of the three fractions (GCDs of 100k–400k-bit numbers).
+  **(b) DONE 2026-10-19**: the float bracket of `ln 2` (ledger of the `ln 2` section, Step 4) —
+  `ln` at 20000 bits 429 → 145 ms (`ln2Bracket` 236 → 57 ms, now comparable to the AGM's 52 ms),
+  at 5000 bits 37 → 14 ms, at 1000 bits 4.0 → 1.7 ms.

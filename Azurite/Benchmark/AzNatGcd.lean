@@ -57,6 +57,7 @@ def runAzNatGcd (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64)
     | none => #[128, 256, 512, 1024, 2048, 4096, 16384, 65536]
   let count := configGetNat cfg "inputs" 4
   let skipBinary := configGetNat cfg "skipBinary" 1000000
+  let factorOpt := cfg["factor"]?.bind String.toNat?
   let thresholds : Array (Nat × Nat) := match cfg["thresholds"]? with
     | some s => ((s.splitOn "/").filterMap fun t : String =>
         match (t.trimAscii.toString.splitOn "-").map String.toNat? with
@@ -64,7 +65,7 @@ def runAzNatGcd (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64)
         | _ => none).toArray
     | none => #[]
   IO.println s!"[AzNat-GCD] µs per call (median of 3 passes over {count} random pairs per size, \
-    common factor ≈ bits/3)"
+    common factor of {match factorOpt with | some f => s!"{f} limbs" | none => "≈ bits/3"})"
   IO.println (padLeft "bits" 7 ++ padLeft "gcdBinary" 12 ++ padLeft "gcdHalfBin" 12
     ++ padLeft "gcd" 12 ++ String.join (thresholds.toList.map fun t => padLeft s!"{t.1}-{t.2}" 12))
   let mut g := mkSplitMix64 seed
@@ -74,7 +75,8 @@ def runAzNatGcd (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64)
     for _ in List.range count do
       let (a, g₁) := randomAzNatOfLimbs limbs g
       let (b, g₂) := randomAzNatOfLimbs limbs g₁
-      let (f, g₃) := randomAzNatOfLimbs (limbs / 3 + 1) g₂
+      let fl := factorOpt.getD (limbs / 3 + 1)
+      let (f, g₃) := if fl = 0 then (AzNat.ofNat 1, g₂) else randomAzNatOfLimbs fl g₂
       g := g₃
       pairs := pairs.push (a * f, b * f)
     let nsBin ← if bits ≤ skipBinary then

@@ -1334,7 +1334,37 @@ theorem toNat_halfBinaryGcdDriver (threshold quadThreshold fuel : ℕ) :
     by_cases hq : max a.size b.size ≤ quadThreshold
     · rw [ite_eq_left hq]
       split_ifs with hj
-      · exact toNat_oddPart_gcdBinary a b
+      · -- the normalization round
+        have hzero : ∀ z : AzInt, z.trailingZeros = none → z = 0 := fun z hz => by
+          by_contra hne
+          rw [AzInt.trailingZeros_eq_padicValInt z hne] at hz
+          cases hz
+        rcases hta : a.trailingZeros with _ | ta <;> rcases htb : b.trailingZeros with _ | tb <;>
+          dsimp only
+        · rw [hzero a hta, toNat_oddPart, toInt_zero, Int.gcd_zero_left, ← AzInt.toNat_natAbs b]
+          rfl
+        · rw [hzero a hta, toNat_oddPart, toInt_zero, Int.gcd_zero_left, ← AzInt.toNat_natAbs b]
+          rfl
+        · rw [hzero b htb, toNat_oddPart, toInt_zero, Int.gcd_zero_right, ← AzInt.toNat_natAbs a]
+          rfl
+        · split_ifs with hcase
+          · exact toNat_oddPart_gcdBinary a b
+          rw [ih, AzInt.toInt_add]
+          have ha₁ := toInt_mkNorm_shift_of_trailingZeros a ta hta
+          have hb₁ := toInt_mkNorm_shift_of_trailingZeros b tb htb
+          symm
+          apply oddPartNat_eq_of_oddEquiv
+          have h1 : OddEquiv (Int.gcd a.toInt b.toInt)
+              (Int.gcd a.toInt (AzInt.mkNorm b.sign (b.abs >>> tb)).toInt) := by
+            rw [← hb₁]; exact oddEquiv_gcd_div_pow _ _ _
+          have h2 : OddEquiv (Int.gcd a.toInt (AzInt.mkNorm b.sign (b.abs >>> tb)).toInt)
+              (Int.gcd (AzInt.mkNorm b.sign (b.abs >>> tb)).toInt
+                (AzInt.mkNorm a.sign (a.abs >>> ta)).toInt) := by
+            rw [Int.gcd_comm, ← ha₁]; exact oddEquiv_gcd_div_pow _ _ _
+          have h3 := oddEquiv_gcd_binaryStep (AzInt.mkNorm b.sign (b.abs >>> tb)).toInt
+            (AzInt.mkNorm a.sign (a.abs >>> ta)).toInt 1 0
+          rw [pow_zero, mul_one, one_mul, add_comm] at h3
+          exact h1.trans (h2.trans h3)
       split
       · rename_i a' b' ha' hb'
         rw [ih]

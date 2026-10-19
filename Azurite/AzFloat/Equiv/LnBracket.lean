@@ -28,7 +28,8 @@ import Azurite.Transcendental.Exp
   `8 · 2^(−5h)` (`agm_log_iterations`, then two quadratic steps).
 * `lnBracket_spec`: for a positive float `x` with exponent `e`, `lnBracket x e w` encloses
   `ln x` with width at most `lnEps e w = 2^40 (w + |e| + 8)^5 2^(−w)` (`w ≥ 64`), using
-  `abs_pi_div_AGM_sub_log_le` (MCA's AGM–logarithm error), `piBracket_spec` and `ln2Bracket_mem`.
+  `abs_pi_div_AGM_sub_log_le` (MCA's AGM–logarithm error), `piBracket_spec` and `ln2Bracket_spec`
+  (the term `ℓ ln 2`, `ln_L_spec`).
 * `lnApprox_isSome_exists`: the Ziv certificate, from `irrational_log_rat`.
 -/
 
@@ -329,16 +330,6 @@ theorem toVal_four : (one <<< (2 : Nat)).toVal = some ((4 : ℝ) : EReal) := by
   rw [toVal_shiftLeft_nat (isFinite_of_toVal_coe toVal_one'), fval_of_toVal_coe toVal_one']
   norm_num
 
-/-- The value of a finite positive float is a positive rational. -/
-theorem exists_rat_of_toVal {x : AzFloat} {v : ℝ} (hx : x.toVal = some (v : EReal)) :
-    ∃ r : ℚ, v = r := by
-  have hfin : x.isFinite = true := isFinite_of_toVal_coe hx
-  have hs : x.toAzRat?.isSome = true := by rw [isSome_toAzRat?]; exact hfin
-  obtain ⟨r, hr⟩ := Option.isSome_iff_exists.mp hs
-  have := toVal_of_toAzRat? x r hr
-  rw [hx, Option.some.injEq, EReal.coe_eq_coe_iff] at this
-  exact ⟨AzRat.toRat r, this⟩
-
 /-! ### The width of the final bracket -/
 
 set_option maxHeartbeats 800000 in
@@ -354,7 +345,7 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
     (hpl0 : 0 ≤ pl) (hplπ : pl < Real.pi) (hπph : Real.pi ≤ ph) (hpw : ph - pl ≤ piEps w)
     (hfq : FloorOf w ((pl / 2) / ah) qLo) (hcq : CeilOf w ((ph / 2) / bl) qHi)
     (hEv0 : 0 ≤ Ev) (hEv_le : Ev ≤ (4 * h + 4) * (1 / 2 : ℝ) ^ (4 * h))
-    (hLw : LHi - LLo ≤ 5 * |ℓz| * (1 / 2 : ℝ) ^ w) (hLLo_abs : |LLo| ≤ 2 * |ℓz|)
+    (hLw : LHi - LLo ≤ 12 * |ℓz| * (1 / 2 : ℝ) ^ w) (hLLo_abs : |LLo| ≤ 2 * |ℓz|)
     (hLHi_abs : |LHi| ≤ 2 * |ℓz|)
     (hlo1a : lo1 ≤ qLo - Ev) (hlo1b : qLo - Ev ≤ lo1 + 2 * |qLo - Ev| * (1 / 2 : ℝ) ^ w)
     (hlob : lo1 - LHi ≤ lo + 2 * |lo1 - LHi| * (1 / 2 : ℝ) ^ w)
@@ -485,8 +476,8 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
     have h4 : W * u ≤ W ^ 5 * u := mul_le_mul_of_nonneg_right hW1' hu0.le
     linarith
   have hWu : W * u ≤ W ^ 5 * u := mul_le_mul_of_nonneg_right hW1' hu0.le
-  have hLw' : LHi - LLo ≤ 5 * (W ^ 5 * u) := by
-    have : 5 * |ℓz| * u ≤ 5 * W * u := by
+  have hLw' : LHi - LLo ≤ 12 * (W ^ 5 * u) := by
+    have : 12 * |ℓz| * u ≤ 12 * W * u := by
       apply mul_le_mul_of_nonneg_right _ hu0.le
       linarith
     linarith
@@ -532,14 +523,14 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
   have htotal : hi - lo ≤ (Qp - Qm) + 32 * (W * u) + 2 * Ev + (LHi - LLo) + 108 * (W * u) := by
     linarith
   have hfin : (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
-      + 5 * (W ^ 5 * u) ≤ 2 ^ 40 * (W ^ 5 * u) := by
-    calc (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u + 5 * (W ^ 5 * u)
-        = (9 * 2 ^ 19 + 3600 + 140 + 1 + 5) * (W ^ 5 * u) := by ring
+      + 12 * (W ^ 5 * u) ≤ 2 ^ 40 * (W ^ 5 * u) := by
+    calc (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u + 12 * (W ^ 5 * u)
+        = (9 * 2 ^ 19 + 3600 + 140 + 1 + 12) * (W ^ 5 * u) := by ring
       _ ≤ 2 ^ 40 * (W ^ 5 * u) := mul_le_mul_of_nonneg_right (by norm_num) hP0
   unfold lnEps
   rw [← hW]
   have : hi - lo ≤ (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
-      + 5 * (W ^ 5 * u) := by linarith
+      + 12 * (W ^ 5 * u) := by linarith
   calc hi - lo ≤ _ := this
     _ ≤ 2 ^ 40 * (W ^ 5 * u) := hfin
     _ = 2 ^ 40 * W ^ 5 * u := by ring
@@ -764,130 +755,86 @@ theorem lnAgm_spec {w : ℕ} (hw : 64 ≤ w) {k : ℝ} (h : ℕ) (hh : 2 ≤ h) 
 
 /-! ### The term `ℓ ln 2` -/
 
-/-- The float bracket of `ℓ ln 2` from the exact rational bracket of `ln 2`. -/
+/-- The bracket of `ℓ ln 2`: `|ℓ|` times the float bracket of `ln 2`, rounded outward, the signs
+restored by negation when `ℓ < 0`. -/
 theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) (ℓ : AzInt) :
     ∃ LLo LHi : ℝ,
-      (ofAzRatRound (min (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) w
-        .Floor).1.toVal = some (LLo : EReal) ∧
-      (ofAzRatRound (max (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) w
-        .Ceiling).1.toVal = some (LHi : EReal) ∧
+      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).1 w .Floor).1
+        else -(mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).2 w .Ceiling).1).toVal
+          = some (LLo : EReal) ∧
+      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).2 w .Ceiling).1
+        else -(mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).1 w .Floor).1).toVal
+          = some (LHi : EReal) ∧
       LLo ≤ (ℓ.toInt : ℝ) * Real.log 2 ∧ (ℓ.toInt : ℝ) * Real.log 2 ≤ LHi ∧
-      LHi - LLo ≤ 5 * |(ℓ.toInt : ℝ)| * (1 / 2 : ℝ) ^ w ∧
+      LHi - LLo ≤ 12 * |(ℓ.toInt : ℝ)| * (1 / 2 : ℝ) ^ w ∧
       |LLo| ≤ 2 * |(ℓ.toInt : ℝ)| ∧ |LHi| ≤ 2 * |(ℓ.toInt : ℝ)| := by
   have : NeZero w := ⟨by omega⟩
   set u := (1 / 2 : ℝ) ^ w with hu_def
   have hu0 : 0 < u := by positivity
-  have hu8 : u ≤ 1 / 8 := by
+  have hu1 : u ≤ 1 / 1000 := by
     calc u ≤ (1 / 2 : ℝ) ^ 64 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
-      _ ≤ 1 / 8 := by norm_num
-  set l1 : ℝ := ((AzRat.toRat (ln2Bracket w).1 : ℚ) : ℝ) with hl1
-  set l2 : ℝ := ((AzRat.toRat (ln2Bracket w).2 : ℚ) : ℝ) with hl2
-  obtain ⟨hm1, hm2⟩ := ln2Bracket_mem w
-  have hwid := ln2Bracket_width w
-  have hl1pos := ln2Bracket_fst_pos (by omega : 1 ≤ w)
-  have hlog2 : Real.log 2 < 0.7 := Real.log_two_lt_d9.trans (by norm_num)
-  have hl2le : l2 ≤ 1 := by linarith
-  set L : ℝ := (ℓ.toInt : ℝ) with hL
-  have hval1 : ((AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).1) : ℚ) : ℝ) = L * l1 := by
-    rw [AzRat.toRat_mul, AzRat.toRat_toAzRat_int]; push_cast; rfl
-  have hval2 : ((AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).2) : ℚ) : ℝ) = L * l2 := by
-    rw [AzRat.toRat_mul, AzRat.toRat_toAzRat_int]; push_cast; rfl
-  -- the rational ends
-  set mq := AzRat.toRat (min (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) with hmq
-  set Mq := AzRat.toRat (max (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) with hMq
-  have hmq_le1 : (mq : ℝ) ≤ L * l1 := by
-    rw [← hval1, hmq, AzRat.toRat_min]; exact_mod_cast min_le_left _ _
-  have hmq_le2 : (mq : ℝ) ≤ L * l2 := by
-    rw [← hval2, hmq, AzRat.toRat_min]; exact_mod_cast min_le_right _ _
-  have hMq_ge1 : L * l1 ≤ (Mq : ℝ) := by
-    rw [← hval1, hMq, AzRat.toRat_max]; exact_mod_cast le_max_left _ _
-  have hMq_ge2 : L * l2 ≤ (Mq : ℝ) := by
-    rw [← hval2, hMq, AzRat.toRat_max]; exact_mod_cast le_max_right _ _
-  have hmq_eq : (mq : ℝ) = L * l1 ∨ (mq : ℝ) = L * l2 := by
-    rw [hmq, AzRat.toRat_min]
-    rcases min_choice (AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).1))
-      (AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).2)) with h | h
-    · left; rw [h, hval1]
-    · right; rw [h, hval2]
-  have hMq_eq : (Mq : ℝ) = L * l1 ∨ (Mq : ℝ) = L * l2 := by
-    rw [hMq, AzRat.toRat_max]
-    rcases max_choice (AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).1))
-      (AzRat.toRat (ℓ.toAzRat * (ln2Bracket w).2)) with h | h
-    · left; rw [h, hval1]
-    · right; rw [h, hval2]
-  -- `mq ≤ L ln 2 ≤ Mq`, `Mq − mq ≤ |L| u`, `|mq|, |Mq| ≤ |L|`
-  have hkey : (mq : ℝ) ≤ L * Real.log 2 ∧ L * Real.log 2 ≤ (Mq : ℝ) ∧
-      (Mq : ℝ) - (mq : ℝ) ≤ |L| * u ∧ |(mq : ℝ)| ≤ |L| ∧ |(Mq : ℝ)| ≤ |L| := by
-    rcases le_or_gt 0 L with hL0 | hL0
-    · have h1 : L * l1 ≤ L * Real.log 2 := mul_le_mul_of_nonneg_left hm1 hL0
-      have h2 : L * Real.log 2 ≤ L * l2 := mul_le_mul_of_nonneg_left hm2 hL0
-      have h3 : L * l2 - L * l1 ≤ L * u := by
-        rw [← mul_sub]; exact mul_le_mul_of_nonneg_left hwid hL0
-      have hmqv : (mq : ℝ) = L * l1 := by
-        rcases hmq_eq with h | h
-        · exact h
-        · have : L * l2 ≤ L * l1 := h ▸ hmq_le1
-          have : L * l1 ≤ L * l2 := mul_le_mul_of_nonneg_left (by linarith) hL0
-          rw [h]; linarith
-      have hMqv : (Mq : ℝ) = L * l2 := by
-        rcases hMq_eq with h | h
-        · have : L * l2 ≤ L * l1 := h ▸ hMq_ge2
-          have : L * l1 ≤ L * l2 := mul_le_mul_of_nonneg_left (by linarith) hL0
-          rw [h]; linarith
-        · exact h
-      rw [hmqv, hMqv, abs_of_nonneg hL0]
-      refine ⟨h1, h2, h3, ?_, ?_⟩
-      · rw [abs_of_nonneg (mul_nonneg hL0 hl1pos.le)]
-        exact mul_le_of_le_one_right hL0 (by linarith)
-      · rw [abs_of_nonneg (mul_nonneg hL0 (by linarith))]
-        exact mul_le_of_le_one_right hL0 hl2le
-    · have hL0' : L ≤ 0 := hL0.le
-      have h1 : L * l2 ≤ L * Real.log 2 := mul_le_mul_of_nonpos_left hm2 hL0'
-      have h2 : L * Real.log 2 ≤ L * l1 := mul_le_mul_of_nonpos_left hm1 hL0'
-      have h3 : L * l1 - L * l2 ≤ -L * u := by
-        have : L * (l1 - l2) ≤ (-L) * (l2 - l1) := by nlinarith
-        have : (-L) * (l2 - l1) ≤ (-L) * u := mul_le_mul_of_nonneg_left hwid (by linarith)
-        nlinarith
-      have hmqv : (mq : ℝ) = L * l2 := by
-        rcases hmq_eq with h | h
-        · have : L * l1 ≤ L * l2 := h ▸ hmq_le2
-          have : L * l2 ≤ L * l1 := mul_le_mul_of_nonpos_left (by linarith) hL0'
-          rw [h]; linarith
-        · exact h
-      have hMqv : (Mq : ℝ) = L * l1 := by
-        rcases hMq_eq with h | h
-        · exact h
-        · have : L * l1 ≤ L * l2 := h ▸ hMq_ge1
-          have : L * l2 ≤ L * l1 := mul_le_mul_of_nonpos_left (by linarith) hL0'
-          rw [h]; linarith
-      rw [hmqv, hMqv, abs_of_neg hL0]
-      refine ⟨h1, h2, h3, ?_, ?_⟩
-      · rw [abs_of_nonpos (mul_nonpos_of_nonpos_of_nonneg hL0' (by linarith))]
-        nlinarith
-      · rw [abs_of_nonpos (mul_nonpos_of_nonpos_of_nonneg hL0' hl1pos.le)]
-        nlinarith
-  obtain ⟨hk1, hk2, hk3, hk4, hk5⟩ := hkey
-  obtain ⟨LLo, hLLo, hlo1, hlo2⟩ := ofAzRatRound_floor_abs
-    (min (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) w
-  obtain ⟨LHi, hLHi, hhi1, hhi2⟩ := ofAzRatRound_ceiling_abs
-    (max (ℓ.toAzRat * (ln2Bracket w).1) (ℓ.toAzRat * (ln2Bracket w).2)) w
-  rw [← hmq] at hlo1 hlo2
-  rw [← hMq] at hhi1 hhi2
-  have hu1 : 2 * u ≤ 1 := by linarith
-  refine ⟨LLo, LHi, hLLo, hLHi, hlo1.trans hk1, hk2.trans hhi1, ?_, ?_, ?_⟩
-  · have h1 : 2 * |(mq : ℝ)| * u ≤ 2 * |L| * u := by
-      have := mul_le_mul_of_nonneg_right hk4 hu0.le
-      linarith
-    have h2 : 2 * |(Mq : ℝ)| * u ≤ 2 * |L| * u := by
-      have := mul_le_mul_of_nonneg_right hk5 hu0.le
-      linarith
-    linarith
-  · rw [abs_le]
-    have := abs_le.mp hk4
-    constructor <;> nlinarith [abs_nonneg L]
-  · rw [abs_le]
-    have := abs_le.mp hk5
-    constructor <;> nlinarith [abs_nonneg L]
+      _ ≤ 1 / 1000 := by norm_num
+  obtain ⟨a, b, ha, hb, haL, hLb, hab, hapos⟩ := ln2Bracket_spec w
+  rw [← hu_def] at hab
+  have ha5 : 1 / 5 ≤ a := hapos (by omega)
+  have hL1 := Real.log_two_gt_d9
+  have hL2 := Real.log_two_lt_d9
+  have ha0 : 0 < a := by linarith
+  have hb0 : 0 < b := by linarith
+  have hb1 : b ≤ 71 / 100 := by linarith
+  set M : ℝ := (ℓ.abs.toNat : ℝ) with hM_def
+  have hM0 : 0 ≤ M := by positivity
+  have hM : (ofAzNat ℓ.abs).toVal = some (M : EReal) := toVal_ofAzNat _
+  obtain ⟨A, hA, hfA⟩ := mulFloor_err hM ha w (mul_nonneg hM0 ha0.le)
+  obtain ⟨B, hB, hcB⟩ := mulCeiling_err hM hb w (mul_nonneg hM0 hb0.le)
+  have hA1 := hfA.le
+  have hA2 := hfA.ge
+  have hA0 := hfA.nonneg
+  have hB1 := hcB.ge
+  have hB2 := hcB.le
+  rw [← hu_def] at hA2 hB2
+  have hMa : M * a ≤ M * Real.log 2 := mul_le_mul_of_nonneg_left haL hM0
+  have hMb : M * Real.log 2 ≤ M * b := mul_le_mul_of_nonneg_left hLb hM0
+  have hMb7 : M * b ≤ M * (71 / 100) := mul_le_mul_of_nonneg_left hb1 hM0
+  have hMa7 : M * a ≤ M * (71 / 100) := mul_le_mul_of_nonneg_left (by linarith) hM0
+  have hMab : M * (b - a) ≤ M * (8 * u) := mul_le_mul_of_nonneg_left hab hM0
+  have hMbu : 2 * (M * b) * u ≤ 2 * (M * (71 / 100)) * u := by
+    have := mul_le_mul_of_nonneg_right hMb7 hu0.le; linarith
+  have hMau : 2 * (M * a) * u ≤ 2 * (M * (71 / 100)) * u := by
+    have := mul_le_mul_of_nonneg_right hMa7 hu0.le; linarith
+  have hMu : M * (71 / 100) * u ≤ M * (71 / 100) * (1 / 1000) :=
+    mul_le_mul_of_nonneg_left hu1 (by positivity)
+  have hwidth : B - A ≤ 12 * M * u := by linarith
+  have hBle : B ≤ 2 * M := by linarith
+  have hAle : A ≤ 2 * M := by linarith
+  have hB0 : 0 ≤ B := by linarith
+  have hℓabs : |(ℓ.toInt : ℝ)| = M := by
+    unfold AzInt.toInt
+    split_ifs <;> push_cast <;> rw [← hM_def]
+    · exact abs_of_nonneg hM0
+    · rw [abs_neg]; exact abs_of_nonneg hM0
+  rw [hℓabs]
+  by_cases hs : ℓ.sign = true
+  · have hℓ : (ℓ.toInt : ℝ) = M := by
+      simp only [AzInt.toInt, hs, ↓reduceIte, Int.cast_natCast]
+      rw [hM_def]
+    simp only [hs, ↓reduceIte]
+    rw [hℓ]
+    refine ⟨A, B, hA, hB, hA1.trans hMa, hMb.trans hB1, hwidth, ?_, ?_⟩
+    · rw [abs_of_nonneg hA0]; exact hAle
+    · rw [abs_of_nonneg hB0]; exact hBle
+  · have hs' : ℓ.sign = false := by simpa using hs
+    have hℓ : (ℓ.toInt : ℝ) = -M := by
+      simp only [AzInt.toInt, hs', Bool.false_eq_true, ↓reduceIte, Int.cast_neg, Int.cast_natCast]
+      rw [hM_def]
+    simp only [hs', Bool.false_eq_true, ↓reduceIte]
+    rw [hℓ]
+    refine ⟨-B, -A, by rw [toVal_neg, hB]; rfl, by rw [toVal_neg, hA]; rfl, ?_, ?_, ?_, ?_, ?_⟩
+    · linarith
+    · linarith
+    · linarith
+    · rw [abs_neg, abs_of_nonneg hB0]; exact hBle
+    · rw [abs_neg, abs_of_nonneg hA0]; exact hAle
 
 /-! ### The bracket -/
 

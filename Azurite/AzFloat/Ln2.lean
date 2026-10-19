@@ -14,9 +14,10 @@ import Azurite.AzFloat.Equiv.Ln2Bracket
 
 `ln2PrecRound p mode` is `ln 2` correctly rounded to precision `p` in `mode`, with the comparison
 against the exact value; `ln2 p` rounds to nearest.  It is the certified Ziv loop
-(`zivLoopCertified`) over the exact rational brackets of `Ln2Bracket.lean`, started at the
-working precision `p + 64`: each level computes the three `atanh` series once by binary splitting,
-brackets `ln 2` exactly, and tests whether the rounding is determined; the certificate
+(`zivLoopCertified`) over the float brackets of `Ln2Bracket.lean`, started at the working
+precision `p + 64`: each level computes the three `atanh` series once by binary splitting, forms
+the two exact ends as unreduced fractions, divides each once with directed rounding, and tests
+whether the rounding is determined; the certificate
 `ln2Approx_isSome_exists` (from the irrationality of `ln 2`, Hermite's theorem) guarantees that
 some level succeeds, so there is no fuel and no `NaN` fallback.  The specification
 `ln2PrecRound_eq_liftVal₀` is in `Equiv/Ln2.lean`.
