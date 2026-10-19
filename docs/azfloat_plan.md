@@ -3061,3 +3061,105 @@ bound in terms of the computed gap `a_N − b_N`; (4) directed-rounding enclosur
   (Mathlib `Mathlib/Analysis/Real/Pi/Irrational.lean`) + bracket width `→ 0` + a generalization
   of `roundingPossible_isSome_of_no_boundary` ("a non-boundary real with a shrinking bracket
   eventually rounds"). `Nat.find` is computable, so `piPrecRound` stays total without fuel.
+
+## Airy functions `Ai`, `Bi` (plan started 2026-10-18)
+
+**Goal.** `Ai`, `Bi` (and, almost for free, `Ai′`, `Bi′`) for every real `AzFloat` argument,
+correctly rounded in every mode, with proven error bounds; then a port to Malachite. MPFR has only
+`mpfr_ai` (Taylor series only, documented as slow/incomplete for large `|x|`) and no `Bi`, `Ai′`,
+`Bi′`; covering the four functions on the whole line is the "strictly better" target.
+
+**Facts (DLMF §9).** `Ai = c₁ f − c₂ g`, `Bi = √3(c₁ f + c₂ g)` with the series `f`, `g` of
+`Azurite/Airy/Series.lean`; `ζ = (2/3)|x|^(3/2)`, `u_k = (2k+1)(2k+3)⋯(6k−1)/(216^k k!)`.
+Large `x > 0` (9.7.5–9.7.8): `Ai(x) ~ e^(−ζ)/(2√π x^(1/4)) ∑ (−1)^k u_k ζ^(−k)`,
+`Bi(x) ~ e^(ζ)/(√π x^(1/4)) ∑ u_k ζ^(−k)`; large `x < 0` (9.7.9–9.7.11): `Ai(−x) ~ (1/(√π x^(1/4)))
+[sin(ζ+π/4) ∑(−1)^k u_{2k} ζ^(−2k) − cos(ζ+π/4) ∑(−1)^k u_{2k+1} ζ^(−2k−1)]`, `Bi(−x)` with
+`cos`/`sin` swapped and `+`. Integral representations behind the rigorous remainders: for `x > 0`,
+`Ai(x) = (1/π)√(x/3) K_{1/3}(ζ)`, `Bi(x) = √(x/3)(I_{−1/3}(ζ) + I_{1/3}(ζ))`, and termwise
+`√(x/3) I_{−1/3}(ζ) = √3 c₁ f(x)`, `√(x/3) I_{1/3}(ζ) = √3 c₂ g(x)` (Gauss's multiplication
+`(3k)! = 27^k k! (1/3)_k (2/3)_k`), with the Laplace-type integrals `I_ν(z) = (z/2)^ν/(√π Γ(ν+½))
+∫_{−1}^{1} (1−t²)^(ν−½) e^(zt) dt` and `K_ν(z) = √π (z/2)^ν/Γ(ν+½) ∫_1^∞ e^(−zt) (t²−1)^(ν−½) dt`
+(valid for `ν = ±1/3 > −1/2`).
+
+**Strategy by region** (`x = m·2^e` exact dyadic, target precision `p`, rounding mode `mode`).
+
+* *Series region* `|x| ≤ X_a(p)`, `X_a(p) := ((3/4) p ln 2)^(2/3)` (≈ 10 at `p = 64`, ≈ 65 at
+  `p = 1000`, ≈ 6500 at `p = 10⁶`): choose `K ≥ |x|^(3/2)` (`halving_of_le`) large enough that the
+  tail bound `2|t_K|`, `2|u_K|` (`abs_f_sub_sum_le`, `abs_g_sub_sum_le`) is below `2^(−w)` times
+  the magnitude of the sum; compute `∑_{k<K} t_k` and `∑_{k<K} u_k` **exactly** as rationals by
+  binary splitting (`sum_fTerm_div_eq`: `fPartialNum/fPartialDen` with `fPartialDen = q^(3K) d_K`;
+  product trees over `AzNat`/`AzInt` as in `Algorithm/BalancedProduct`; MCA §4.9.1) — no rounding
+  error and no internal cancellation at all, cost `O(M(K (lg K + 3|e|)) lg K)`; round each to `w`
+  bits (one rounding, `AzRat → AzFloat` exists), multiply by the constants `c₁`, `c₂` at `w` bits,
+  and combine with `sumPrecRound`/a bracket. The only cancellation is between `c₁ f` and `c₂ g` for
+  `Ai` at `x > 0` (both ≈ `e^ζ`, `Ai ≈ e^(−ζ)`): relative error `2^(−w) e^(2ζ)`, so the working
+  precision is `w = p + 64 + guard(x)` with `guard(x) = ⌈2ζ lg e⌉ = ⌈(4/3) x^(3/2) · 1.4427⌉` for
+  `Ai`, `x > 0` (a heuristic for the first attempt; correctness comes from the bracket and Ziv's
+  loop, which doubles `w` on failure); `guard = 0` for `Bi` at `x ≥ 0` (all terms positive) and
+  `O(1)` for `x < 0` (where `f`, `g`, `Ai`, `Bi` all have amplitude `≍ |x|^(−1/4)`; near zeros of
+  `Ai(−x)`, `Bi(−x)` Ziv raises `w`, as for any function). The number of terms is `K ≍ max(|x|^(3/2),
+  p/lg p)`, so with `|x| ≤ X_a(p)` the cost is quasi-linear in `p`.
+* *Asymptotic region* `x ≥ X_a(p)`: truncate the expansions at `n ≈ ζ` (optimal truncation,
+  remainder `≍ e^(−2ζ) ≤ 2^(−p)`), `Ai` from 9.7.5 with remainder `≤` first neglected term,
+  `Bi` from 9.7.7 with remainder `≤ 2 ×` first neglected term `+ O(e^(−2ζ))` (theory items T4,
+  T5 below); evaluate `∑ u_k ζ^(−k)` by Horner (or rectangular splitting, MCA §4.4.3, since the
+  `u_k` are rationals: `O(√n M(w) + n w)`), needs `e^(±ζ)` (`exp`), `x^(1/4) = √√x` (have),
+  `√π` (have `sqrt`, `π` from Brent–Salamin). Cost `O(n M(w))`, `n ≤ p/2`.
+* *Asymptotic region* `x ≤ −X_a(p)`: 9.7.9–9.7.11 with `sin`, `cos` of `ζ + π/4` and the
+  remainder bounds of theory item T6 (the hardest piece); **interim fallback**: the series region
+  works for every `x` (cost `O(|x|^(3/2))` terms, like MPFR's `mpfr_ai`, but with `Bi` and with
+  proven bounds).
+* `Ai′`, `Bi′`: the same with the derivative series `fD`, `gD` (`fDTerm_succ`, `gDTerm_succ` give
+  the exact rational partial sums and tail bounds by the same argument) and 9.7.6/9.7.8.
+* Correct rounding: Ziv bracket `[lo, hi]` → `roundingPossible`, doubling `w`. No irrationality or
+  non-dyadicity theorem for `Ai(x)`, `Bi(x)` at dyadic `x` is available (not even for `Ai(0) = c₁`),
+  so termination cannot be proven; the implementation takes fuel and returns `NaN`/`none` on
+  exhaustion, with the specification "`some r ⇒ r` is the correctly rounded value" (MPFR's loop
+  simply never terminates on an exact case; Malachite can expose the fallible form).
+
+**Dependencies on other `AzFloat` functions.** Have: `+ − × ÷ √ 1/√`, `AzRat → AzFloat` rounding,
+`sumPrecRound`, `productPrecRound`, Ziv (`Ziv.lean`), `AzNat`/`AzInt`/`AzRat` big arithmetic and
+`BalancedProduct`. Needed: (1) the constants `c₁ = 3^(−2/3)/Γ(2/3)`, `c₂ = 3^(−1/3)/Γ(1/3)` —
+i.e. `Γ(1/3)` (then `Γ(2/3) = 2π/(√3 Γ(1/3))`), `3^(±1/3)` (a cube root: `rootN`/`cbrt` for
+`AzFloat` by Newton, new), and `π` (Brent–Salamin items 4–6). `Γ(1/3)` options: (a) the generic
+`Γ` algorithm (Stirling + argument shift, theory Ex. 4.21; needs `exp`, `log`) — the natural
+default once `exp`/`log` exist; (b) Borwein–Zucker (1992): `Γ(1/3) = 2^(7/9) 3^(−1/12) π^(2/3)
+K(k₃)^(1/3)` with `K(k₃) = π/(2 AGM(1, cos(π/12)))`, `cos(π/12) = (√6 + √2)/4` — only `√`, AGM,
+`π`, cube roots, quasi-linear; its proof (singular values of `K`) is deep and not planned;
+(c) bootstrap from the asymptotic region: with T4/T5 and `exp`, `c₁ = (Bi(x₀)/√3 + Ai(x₀))/(2
+f(x₀))`, `c₂ = (Bi(x₀)/√3 − Ai(x₀))/(2 g(x₀))` at `x₀ = X_a(p)` (no cancellation; `f(x₀)`,
+`g(x₀)` by exact binary splitting) — no separate `Γ` code, and `Γ(1/3)` comes out as a by-product.
+(2) `exp` — for the asymptotic regions only. (3) `sin`, `cos` — for `x ≤ −X_a(p)` only. So the
+series method on the whole line is unblocked as soon as `Γ(1/3)` (and `π`, cube root) exist; the
+large-`|x|` acceleration additionally needs `exp` (and `sin`/`cos` for `x < 0`).
+
+**Theory status.** DONE (2026-10-18, `Azurite/Airy/Series.lean`, all proven): the series,
+`d_k ≥ (2k)!`, growth bounds, truncation with the halving criterion, exact rational partial sums,
+termwise derivatives, `f″ = xf`, `g″ = xg`, `W(f,g) = 1`, `c₁ c₂ = 1/(2√3π)`, `Ai`, `Bi`, `Ai′`,
+`Bi′`, `Ai″ = x Ai`, `Bi″ = x Bi`, `W(Ai,Bi) = 1/π`. TODO: **T3** the Bessel representations —
+`I_{±1/3}` Laplace integral `=` series (termwise integration, Beta integrals `∫_{−1}^1 t^(2k)
+(1−t²)^(ν−½) dt = B(k+½, ν+½)`, Gauss's multiplication formula), hence `Bi(x) = √(x/3)(I_{−1/3} +
+I_{1/3})(ζ)` for `x > 0`; **T4** `Bi` asymptotics with remainder: Laplace's method on
+`∫_{−1}^1 (1−t²)^(ν−½) e^(zt) dt` (`t = 1 − u/z`, binomial series of `(1 − u/(2z))^(ν−½)` whose
+coefficients `|C(ν−½, k)|` decrease since `−1 < ν−½ < 0`, so the remainder on `u ≤ z` is at most
+twice the first neglected term; the `[−1, 0]` part is `O(e^(−z))` relative), giving `Bi(x) =
+e^ζ/(√π x^(1/4)) (∑_{k<n} u_k ζ^(−k) + R_n)`, `|R_n| ≤ 2 u_n ζ^(−n) + C e^(−2ζ)`; **T5** `Ai`
+asymptotics: `G(x) := (1/π)√(x/3) K_{1/3}(ζ)` via the `∫_1^∞ e^(−zt)(t²−1)^(−1/6) dt` form;
+`G″ = xG` (differentiation under the integral), `G = W(G,g) f − W(G,f) g` with constant Wronskians
+(the uniqueness-free "Wronskian trick": `d/dx W(G,f) = G f″ − G″ f = 0`), `W(G,g) = lim_{0⁺} G = c₁`
+and `W(G,f) = −lim_{0⁺} G′ = c₂` from the `ζ → 0` behaviour of the Laplace integrals (`t = s/ζ`,
+`ζ^(2/3) ∫ → Γ(2/3)`, and `G′ = −(x/(π√3)) K_{2/3}(ζ)` by integration by parts; the constants match
+through Legendre's duplication `Γ(1/3)Γ(5/6) = 2^(1/3)√π Γ(2/3)` and reflection), hence `Ai = G`
+on `x > 0`, and then the binomial expansion of `(1 + u/(2z))^(−1/6)` (alternating, decreasing
+derivatives) gives `Ai(x) = e^(−ζ)/(2√π x^(1/4)) (∑_{k<n} (−1)^k u_k ζ^(−k) + R_n)`, `|R_n| ≤
+u_n ζ^(−n)` (remainder bounded by the first neglected term); **T6** `x < 0`: rigorous remainders
+for the oscillatory expansions (Hankel/Poisson integral analysis; alternatively `Ai² + Bi²` has the
+Laplace integral `(1/π^(3/2)) ∫_0^∞ e^(xt − t³/12) t^(−½) dt` with a Watson's-lemma remainder,
+which bounds the modulus but not the phase) — deferred, series fallback meanwhile; **T7** `Ai′`,
+`Bi′` truncation lemmas for `fD`, `gD` (routine); **T8** implementation proofs: the binary-splitting
+recurrences equal `fPartialNum/Den`, the enclosure of the roundings, the Ziv specification.
+
+**Comparison with MPFR.** `mpfr_ai`: Taylor series (two variants), no asymptotics, no `Bi`/`Ai′`/
+`Bi′`, documented as slow and incomplete for large `|x|`. This plan: four functions, exact
+binary-splitting series with proven tails everywhere, asymptotic acceleration for `x ≥ X_a(p)`
+(and later `x ≤ −X_a(p)`), correct rounding with proven brackets.

@@ -25,6 +25,7 @@ import Azurite.APRCL.JacobiStage
 import Azurite.APRCL.LucasLehmer
 import Azurite.APRCL.Select
 import Azurite.APRCL.Test
+import Azurite.Airy.Series
 import Azurite.Algorithm.BalancedProduct
 import Azurite.Algorithm.DetExpansion
 import Azurite.Algorithm.Equiv.PrimeSieve
