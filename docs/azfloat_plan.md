@@ -3040,7 +3040,8 @@ bound in terms of the computed gap `a_N − b_N`; (4) directed-rounding enclosur
   Floor/Ceiling enclosures `[a⁻, a⁺]`, `[b⁻, b⁺]`, `[s⁻, s⁺]`; `π_N ∈ [2(a⁻)²/s⁺, 2(a⁺)²/s⁻]`
   (monotone in each), widen by `7·2^N (a⁺ − b⁻)²`; stop when the gap bound is below the target;
   then Ziv bracket + `Nat.find` termination from `irrational_pi`.
-* **REMAINING (items 4–6, not started) — the `AzFloat` implementation of `π`.**
+* **Items 4–6 DONE (2026-10-18) — the `AzFloat` implementation of `π`; see the section
+  "`π` for `AzFloat`" below. The original plan, for the record:**
   (4) Directed-rounding enclosure lemmas: for `mode = Floor`/`Ceiling`, `addPrecRound`,
   `subPrecRound`, `mulPrecRound`/`sqrPrecRound`, `sqrtPrecRound` return a float below/above the
   exact value (none exist yet; the `Equiv/*.lean` `liftVal` specs + `roundVal` monotonicity are
@@ -3377,4 +3378,57 @@ lemmas (`agm_top_of_pos (h)`) are best passed instantiated; `if_pos`/`if_neg` de
   "0.8346268416740732"`.
 * **Fuel.** Same analysis as the AGM: exhaustion only if `G` is within `≈ 2^(−16(p+64))` of a
   rounding boundary at precision `p`, probability `≈ 2^(−15p−1015)` per call.
+
+## `π` for `AzFloat` (DONE 2026-10-18, fuel-free)
+
+Files: `AzFloat/PiBracket.lean`, `AzFloat/Pi.lean`, `AzFloat/Equiv/DirectedRounding.lean`,
+`AzFloat/Equiv/PiBracket.lean`, `AzFloat/Equiv/Pi.lean`, `AzFloat/Tests/Pi.lean`; theory added
+to `Chapter4/BrentSalamin.lean` and `AzFloat/Equiv/Ziv.lean`.
+
+* **Fuel.** None. The AGM needed fuel because the *target value* might be a rounding boundary
+  (not formalizable); `π` is irrational (`irrational_pi`), so once the bracket width tends to
+  zero the certified loop terminates: `piPrecRound` is total and `piPrecRound_eq_liftVal₀` is
+  unconditional. The price is a quantitative width analysis of the interval iteration, which the
+  fuel version of the AGM skipped.
+* **Steps.** `piSteps w = ⌊lg w⌋ + 1`. Theory (`BrentSalamin.lean`): `a₁ − b₁ ≤ 1/64`
+  (`salamin_gap_one_le`, from `0.7071 < 1/√2 < 0.70711`), so by `agm_gap_le`
+  `a_n − b_n ≤ 8·2^(−8·2^(n−1))` (`salamin_gap_le_pow`), and `|π_N − π| ≤ 7·2^N (a_N − b_N)² ≤
+  2^(9+N−8·2^N) ≤ 2^(−w)` when `w + N + 9 ≤ 8·2^N` (`abs_salaminApprox_sub_pi_le_pow`), which
+  `piSteps` satisfies (`piSteps_spec`, from `w < 2^(⌊lg w⌋+1)` and `⌊lg w⌋ < w`).
+* **Algorithm** (`PiBracket.lean`). Enclosures `[a⁻, a⁺]`, `[b⁻, b⁺]`, `[s⁻, s⁺]` at precision
+  `w`; `a' = ⌊a⁻+b⁻⌋/2, ⌈a⁺+b⁺⌉/2`; `b' = ⌊√⌊a⁻b⁻⌋⌋, ⌈√⌈a⁺b⁺⌉⌉`; `d = max(⌊a⁻−b⁺⌋, 0), ⌈a⁺−b⁻⌉`
+  (the clamp matters once the AGM has converged below the enclosure width);
+  `t = ⌊d⁻²⌋·2^(n−1), ⌈d⁺²⌉·2^(n−1)` (exact shifts; `2^(n+1)((a−b)/2)² = 2^(n−1)(a−b)²`);
+  `s' = ⌊s⁻ − t⁺⌋, ⌈s⁺ − t⁻⌉`. Seed `a₀ = 1` exactly, `b₀ = ⌊1/√2⌋_w, ⌈1/√2⌉_w`
+  (`sqrt2Over2PrecRound`), `s₀ = 1/2` exactly. Then `a_{N+1}` by one more mean,
+  `n = 2a² ∈ [2⌊a⁻²⌋, 2⌈a⁺²⌉]`, `π_N ∈ [⌊n⁻/s⁺⌋, ⌈n⁺/s⁻⌉]`, widened by `2^(1−w)` on both sides
+  (`powerOf2 (1 − w)`; `2^(1−w) > 2^(−w)` makes the lower end *strictly* below `π`, as
+  `zivLoopCertified_eq` needs). Cost: `⌊lg w⌋ + 1` steps of one mul, one sqrt, one square, three
+  add/sub at precision `w`, then a division — the standard Brent–Salamin cost, twice (two ends).
+* **Width analysis** (`Equiv/PiBracket.lean`, for `w ≥ 64`; Ziv starts at `p + 64`). Generic
+  tool (`Equiv/DirectedRounding.lean`): rounding `x ≥ 0` down/up at precision `w` moves it by at
+  most `2x·2^(−w)` (`roundVal_floor_err`/`roundVal_ceiling_err`, from `truncError_spec`:
+  `ulp = 2^(e−w) ≤ 2·|y|·2^(−w)`), lifted to every operation (`addFloor_err`, …). Invariant
+  `PiEncloses w n`: with `W_n = (a⁺−a⁻)+(b⁺−b⁻)` and `u = 2^(−w)`, `W_n ≤ 2^(2n+4) u` and
+  `s⁺−s⁻ ≤ 2^(3n+7) u`. Step: `W' ≤ 2.5 W + 21u` (mean: `W/2 + 5u`; geometric mean:
+  `√m⁺ − √m⁻ ≤ (m⁺−m⁻)/(3/5)` since `m⁻ ≥ (29/48)² − 2u ≥ 9/25`, giving `2W + 16u`);
+  `d⁺ − d⁻ ≤ 2W + 4u` in both clamp cases (if `a⁻ − b⁺ < 0` then `a − b < W`);
+  `e⁺ − e⁻ ≤ 4W + 12u`; `t⁺ − t⁻ ≤ 2^(n−1)(4W + 12u) ≤ 2^(3n+6) u`; `s` adds `t`-width plus `4u`.
+  All true values stay in `[2/3, 1]` (`salamin_facts`), `s_n ∈ (1/3, 1/2]`, so the ends are
+  bounded and the lower ends positive once `2^(3N+16) u ≤ 1/16`, which holds for `w ≥ 64` via
+  `2^N ≤ 2w` and `w³·2^30 ≤ 2^w` (`cube_mul_le_two_pow`). Final bracket width
+  `≤ 2^(3N+16) u ≤ piEps w = 2^19 w³ 2^(−w) → 0` (`tendsto_piEps`, Mathlib's
+  `tendsto_pow_const_mul_const_pow_of_abs_lt_one`).
+* **Ziv.** Two generalizations in `Equiv/Ziv.lean`: `exists_isSome_of_irrational_threshold`
+  (bracket valid only for `w ≥ W₀`, width `ε w → 0` instead of `C (1/2)^w`) and
+  `zivLoopCertified_eq_threshold` (bracket valid only for `w ≥ w₀`; the loop never looks below
+  `w₀`; the old `zivLoopCertified_eq` is now a corollary).
+* **Tests** (`Tests/Pi.lean`): precisions 1, 2, 3, 53, 100 with the exact comparisons (`π·2^51 =
+  7074237752028440.4506…` so nearest at 53 bits rounds down, `.lt`; `π·2^98 = …488.8396…` so
+  nearest at 100 bits rounds down, `.lt`), `toString (pi 53) = "3.141592653589793"`, and 200 bits.
+* **Proof-engineering notes.** The step lemma was split into three building blocks
+  (`mean_step`, `geo_step`, `diffsq_step`) with small contexts: `nlinarith` in a 40-hypothesis
+  context timed out. Products of hypotheses are formed explicitly with `mul_le_mul`; the big
+  linear steps use `linarith only [...]`. `mul_le_one₀` is deprecated (lint warning) — a local
+  `mul_le_one_of` replaces it.
 

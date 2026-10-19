@@ -679,10 +679,10 @@ namespace Azurite.AzFloat
 
 /-- The certified loop returns the rounding of the exact value, at every stage. -/
 theorem zivLoopCertified_go_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
-    (approx : Nat → Roundable × Roundable) (v : ℝ)
-    (happrox : ∀ w, 0 < w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+    (approx : Nat → Roundable × Roundable) (v : ℝ) (w₀ : ℕ)
+    (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
       lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v))
-    (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (hw₀ : 0 < w₀)
     (h : ∃ f : Nat,
       (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
     ∀ (n f : ℕ) (hf : ∀ g < f,
@@ -690,7 +690,7 @@ theorem zivLoopCertified_go_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
       Nat.find h - f = n →
       zivLoopCertified.go approx p mode w₀ h f hf = roundVal p mode (some (v : EReal))
   | n, f, hf, hn => by
-    have hw : 0 < w₀ * 2 ^ f := by positivity
+    have hw : w₀ ≤ w₀ * 2 ^ f := Nat.le_mul_of_pos_right _ (by positivity)
     obtain ⟨lv, hv, hl, hh, h₁, h₂, h₃⟩ := happrox _ hw
     rw [zivLoopCertified.go.eq_def]
     split
@@ -707,7 +707,7 @@ theorem zivLoopCertified_go_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
       cases n with
       | zero => omega
       | succ m =>
-        exact zivLoopCertified_go_eq p mode approx v happrox w₀ hw₀ h m (f + 1) _ (by omega)
+        exact zivLoopCertified_go_eq p mode approx v w₀ happrox hw₀ h m (f + 1) _ (by omega)
 
 /-- **The certified Ziv loop is the correctly rounded value.** -/
 theorem zivLoopCertified_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
@@ -718,7 +718,18 @@ theorem zivLoopCertified_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
     (h : ∃ f : Nat,
       (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
     zivLoopCertified approx p mode w₀ h = roundVal p mode (some (v : EReal)) :=
-  zivLoopCertified_go_eq p mode approx v happrox w₀ hw₀ h _ 0 _ rfl
+  zivLoopCertified_go_eq p mode approx v w₀ (fun w hw => happrox w (by omega)) hw₀ h _ 0 _ rfl
+
+/-- The certified loop is correct when the bracket is only known to be valid from the starting
+precision `w₀` on (the loop never looks below `w₀`). -/
+theorem zivLoopCertified_eq_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ) (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v))
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    zivLoopCertified approx p mode w₀ h = roundVal p mode (some (v : EReal)) :=
+  zivLoopCertified_go_eq p mode approx v w₀ happrox hw₀ h _ 0 _ rfl
 
 end Azurite.AzFloat
 
@@ -786,6 +797,42 @@ theorem exists_isSome_of_irrational (p : ℕ) [NeZero p] (mode : RoundingMode)
       mul_le_mul_of_nonneg_left hfw hC
     have h2 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ f := by positivity
     nlinarith
+  apply roundingPossible_isSome_of_no_boundary p mode hl hh (by linarith)
+  refine no_boundary_of_dist p v _ _ D hv0 hvB hlo hhi ?_ (by linarith)
+  intro b hb hbne _
+  rcases le_or_gt b v with hble | hbgt
+  · have := hgreatest b hb hble
+    rw [abs_of_nonneg (by linarith)]
+    calc D ≤ v - bm := min_le_left _ _
+      _ ≤ v - b := by linarith
+  · have := hleast b hb hbgt.le
+    rw [abs_of_neg (by linarith)]
+    calc D ≤ bp - v := min_le_right _ _
+      _ ≤ -(v - b) := by linarith
+
+/-- The certificate from a bracket that is only valid above a threshold `W₀` and whose width
+`ε w` tends to zero: Ziv's loop still reaches a working precision where rounding is possible. -/
+theorem exists_isSome_of_irrational_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) {v : ℝ} (hv : Irrational v) (ε : ℕ → ℝ)
+    (hε : Filter.Tendsto ε Filter.atTop (nhds 0)) (W₀ : ℕ)
+    (happrox : ∀ w, W₀ ≤ w → ∃ lv hv' : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv' ∧
+      lv ≤ v ∧ v ≤ hv' ∧ hv' - lv ≤ ε w)
+    (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p
+      mode).isSome = true := by
+  have hv0 : v ≠ 0 := hv.ne_zero
+  have hvB := not_mem_floatSet_of_irrational p hv
+  obtain ⟨bm, bp, hbm, hbp, hbmv, hvbp, hgreatest, hleast, -, -⟩ :=
+    adjacent_boundaries p v hv0 hvB
+  set D := min (v - bm) (bp - v) with hD
+  have hD0 : 0 < D := lt_min (by linarith) (by linarith)
+  obtain ⟨W₁, hW₁⟩ := (hε.eventually (gt_mem_nhds hD0)).exists_forall_of_atTop
+  refine ⟨W₀ + W₁, ?_⟩
+  have hf : W₀ + W₁ ≤ w₀ * 2 ^ (W₀ + W₁) :=
+    calc W₀ + W₁ ≤ 2 ^ (W₀ + W₁) := Nat.lt_two_pow_self.le
+      _ ≤ w₀ * 2 ^ (W₀ + W₁) := Nat.le_mul_of_pos_left _ hw₀
+  obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := happrox (w₀ * 2 ^ (W₀ + W₁)) (by omega)
+  have hεw : ε (w₀ * 2 ^ (W₀ + W₁)) < D := hW₁ _ (by omega)
   apply roundingPossible_isSome_of_no_boundary p mode hl hh (by linarith)
   refine no_boundary_of_dist p v _ _ D hv0 hvB hlo hhi ?_ (by linarith)
   intro b hb hbne _

@@ -26,6 +26,7 @@ import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
+import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product

@@ -58,6 +58,7 @@ import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
+import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Float64
@@ -69,6 +70,8 @@ import Azurite.AzFloat.Equiv.Ln2Bracket
 import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
+import Azurite.AzFloat.Equiv.Pi
+import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
@@ -92,6 +95,8 @@ import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
+import Azurite.AzFloat.Pi
+import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product

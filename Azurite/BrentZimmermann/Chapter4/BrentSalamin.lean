@@ -389,6 +389,90 @@ theorem abs_salaminApprox_sub_pi_le {N : ℕ} (hN : 1 ≤ N) :
   rw [abs_le]
   constructor <;> nlinarith
 
+/-! ### Explicit convergence: how many steps for `w` bits
+
+`a_1 − b_1 ≤ 1/64` and `b_1 > 2/3`, so `agm_gap_le` gives `a_n − b_n ≤ 8·2^(−8·2^(n−1))`, and
+`|π_N − π| ≤ 7·2^N (a_N − b_N)² ≤ 2^(9+N−8·2^N) ≤ 2^(−w)` as soon as `w + N + 9 ≤ 8·2^N`;
+`piSteps w = ⌊lg w⌋ + 1` steps suffice. -/
+
+theorem salaminB0_bounds : (7071 / 10000 : ℝ) < salaminB0 ∧ salaminB0 < 70711 / 100000 := by
+  have h0 := salaminB0_pos
+  have h2 := salaminB0_sq
+  constructor <;> nlinarith
+
+theorem salamin_gap_one_le : sA 1 - sB 1 ≤ 1 / 64 := by
+  obtain ⟨hlo, hhi⟩ := salaminB0_bounds
+  rw [salamin_agmA_one]
+  have hb1 : 0 ≤ sB 1 := (salamin_agm_pos 1).2.le
+  have hsq := salamin_agmB_one_sq
+  have : (8408 / 10000 : ℝ) ≤ sB 1 := by nlinarith
+  linarith
+
+/-- Quadratic convergence of the Brent–Salamin AGM: `a_n − b_n ≤ 8 · 2^(−8·2^(n−1))`. -/
+theorem salamin_gap_le_pow {n : ℕ} (hn : 1 ≤ n) :
+    sA n - sB n ≤ 8 * (1 / 2 : ℝ) ^ (8 * 2 ^ (n - 1)) := by
+  obtain ⟨j, rfl⟩ : ∃ j, n = j + 1 := ⟨n - 1, by omega⟩
+  simp only [Nat.add_sub_cancel]
+  have h := agm_gap_le one_pos salaminB0_pos j
+  have hb1 := salamin_agmB_one_gt
+  have hb1le : sB 1 ≤ 1 := (agmB_le_agmA one_pos salaminB0_pos le_rfl).trans (salamin_agmA_le_one le_rfl)
+  have hg1 := salamin_gap_one_le
+  have hg0 : 0 ≤ sA 1 - sB 1 := sub_nonneg.mpr (agmB_le_agmA one_pos salaminB0_pos le_rfl)
+  have hratio : (sA 1 - sB 1) / (8 * sB 1) ≤ 1 / 256 := by
+    rw [div_le_iff₀ (by positivity)]; nlinarith
+  have hratio0 : 0 ≤ (sA 1 - sB 1) / (8 * sB 1) := by positivity
+  calc sA (j + 1) - sB (j + 1)
+      ≤ 8 * sB 1 * ((sA 1 - sB 1) / (8 * sB 1)) ^ (2 ^ j) := h
+    _ ≤ 8 * 1 * (1 / 256 : ℝ) ^ (2 ^ j) := by gcongr
+    _ = 8 * (1 / 2 : ℝ) ^ (8 * 2 ^ j) := by
+        rw [pow_mul, mul_one]; norm_num
+
+/-- `|π_N − π| ≤ 2^(−w)` once `w + N + 9 ≤ 8·2^N`. -/
+theorem abs_salaminApprox_sub_pi_le_pow {N w : ℕ} (hN : 1 ≤ N) (h : w + N + 9 ≤ 8 * 2 ^ N) :
+    |salaminApprox N - π| ≤ (1 / 2 : ℝ) ^ w := by
+  have h1 := abs_salaminApprox_sub_pi_le hN
+  have hg := salamin_gap_le_pow hN
+  have hg0 : 0 ≤ sA N - sB N := sub_nonneg.mpr (agmB_le_agmA one_pos salaminB0_pos hN)
+  have hK : 8 * 2 ^ (N - 1) * 2 = 8 * 2 ^ N := by
+    obtain ⟨j, rfl⟩ : ∃ j, N = j + 1 := ⟨N - 1, by omega⟩
+    simp only [Nat.add_sub_cancel, pow_succ]; ring
+  have hsq : (sA N - sB N) ^ 2 ≤ 64 * (1 / 2 : ℝ) ^ (8 * 2 ^ N) := by
+    calc (sA N - sB N) ^ 2 ≤ (8 * (1 / 2 : ℝ) ^ (8 * 2 ^ (N - 1))) ^ 2 := by gcongr
+      _ = 64 * (1 / 2 : ℝ) ^ (8 * 2 ^ N) := by rw [mul_pow, ← pow_mul, hK]; norm_num
+  have hnat : (448 : ℕ) * 2 ^ (N + w) ≤ 2 ^ (8 * 2 ^ N) := by
+    calc (448 : ℕ) * 2 ^ (N + w) ≤ 2 ^ 9 * 2 ^ (N + w) := by norm_num
+      _ = 2 ^ (9 + N + w) := by rw [← pow_add]; ring_nf
+      _ ≤ 2 ^ (8 * 2 ^ N) := Nat.pow_le_pow_right two_pos (by omega)
+  have hreal : (448 : ℝ) * 2 ^ (N + w) ≤ 2 ^ (8 * 2 ^ N) := by exact_mod_cast hnat
+  calc |salaminApprox N - π| ≤ 7 * 2 ^ N * (sA N - sB N) ^ 2 := h1
+    _ ≤ 7 * 2 ^ N * (64 * (1 / 2 : ℝ) ^ (8 * 2 ^ N)) := by gcongr
+    _ = 448 * 2 ^ N / 2 ^ (8 * 2 ^ N) := by rw [one_div_pow, one_div]; ring
+    _ ≤ (1 / 2 : ℝ) ^ w := by
+        rw [one_div_pow, div_le_div_iff₀ (by positivity) (by positivity), one_mul, mul_assoc,
+          ← pow_add]
+        exact hreal
+
+/-- The number of Brent–Salamin steps for `w` bits: `⌊lg w⌋ + 1`. -/
+def piSteps (w : ℕ) : ℕ := Nat.log 2 w + 1
+
+theorem one_le_piSteps (w : ℕ) : 1 ≤ piSteps w := Nat.le_add_left 1 _
+
+theorem piSteps_le (w : ℕ) (hw : 1 ≤ w) : piSteps w ≤ w := by
+  unfold piSteps
+  have := Nat.log_lt_of_lt_pow' (b := 2) (x := w) (y := w) (by omega) Nat.lt_two_pow_self
+  omega
+
+theorem piSteps_spec (w : ℕ) (hw : 1 ≤ w) : w + piSteps w + 9 ≤ 8 * 2 ^ piSteps w := by
+  have h1 := Nat.lt_pow_succ_log_self (b := 2) one_lt_two w
+  have h2 := piSteps_le w hw
+  unfold piSteps at *
+  omega
+
+/-- `|π_{piSteps w} − π| ≤ 2^(−w)`. -/
+theorem abs_salaminApprox_piSteps_sub_pi_le (w : ℕ) (hw : 1 ≤ w) :
+    |salaminApprox (piSteps w) - π| ≤ (1 / 2 : ℝ) ^ w :=
+  abs_salaminApprox_sub_pi_le_pow (one_le_piSteps w) (piSteps_spec w hw)
+
 /-- `π_N → π`. -/
 theorem tendsto_salaminApprox : Tendsto salaminApprox atTop (𝓝 π) := by
   have h1 := tendsto_two_pow_mul_agm_gap one_pos salaminB0_pos
