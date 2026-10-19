@@ -3040,3 +3040,24 @@ bound in terms of the computed gap `a_N − b_N`; (4) directed-rounding enclosur
   Floor/Ceiling enclosures `[a⁻, a⁺]`, `[b⁻, b⁺]`, `[s⁻, s⁺]`; `π_N ∈ [2(a⁻)²/s⁺, 2(a⁺)²/s⁻]`
   (monotone in each), widen by `7·2^N (a⁺ − b⁻)²`; stop when the gap bound is below the target;
   then Ziv bracket + `Nat.find` termination from `irrational_pi`.
+* **REMAINING (items 4–6, not started) — the `AzFloat` implementation of `π`.**
+  (4) Directed-rounding enclosure lemmas: for `mode = Floor`/`Ceiling`, `addPrecRound`,
+  `subPrecRound`, `mulPrecRound`/`sqrPrecRound`, `sqrtPrecRound` return a float below/above the
+  exact value (none exist yet; the `Equiv/*.lean` `liftVal` specs + `roundVal` monotonicity are
+  the raw material). Then an enclosure loop for the recurrence of `BrentSalamin.lean`: `[a⁻,
+  a⁺]`, `[b⁻, b⁺]`, `[s⁻, s⁺]` with `a' = (a + b)/2`, `b' = √(ab)`, `s' = s − 2^(n+1)((a − b)/2)²`
+  (lower `s'` uses upper `(a⁺ − b⁻)`), started from `a = 1`, `b ∈ [sqrt2Over2 Floor, Ceiling]`,
+  `s = 1/2`; `π_N ∈ [2(a⁻)²/s⁺, 2(a⁺)²/s⁻]` (monotone in each argument), widened by the proven
+  `7·2^N (a⁺ − b⁻)²` (`abs_salaminApprox_sub_pi_le`, with `a_N − b_N ≤ a⁺ − b⁻`); stop when the
+  widening is below `2^(−w)`; the loop terminates since the gap halves per step
+  (`agm_gap_le_half_pow`) — fuel `w + O(1)` or `N = ⌈lg w⌉ + 2`.
+  (5) Correct rounding as for `phi`: feed the bracket to `roundingPossible`/`zivLoop`
+  (`Ziv.lean`), `piPrecRound p mode : AzFloat × Ordering`, `pi p`, and the spec theorem
+  `piPrecRound p mode = liftVal₀ Real.pi p mode` in `Equiv/Constants.lean` style; tests in
+  `AzFloat/Tests/` via parse(toString) and a known-digits check.
+  (6) Termination: no effective irrationality measure for `π` is available, so instead of an
+  explicit `2p + 6` bound (as `phiApprox_possible`) use `Nat.find` on the decidable predicate
+  "`roundingPossible` at working precision `w` is `some`", with existence from `irrational_pi`
+  (Mathlib `Mathlib/Analysis/Real/Pi/Irrational.lean`) + bracket width `→ 0` + a generalization
+  of `roundingPossible_isSome_of_no_boundary` ("a non-boundary real with a shrinking bracket
+  eventually rounds"). `Nat.find` is computable, so `piPrecRound` stays total without fuel.
