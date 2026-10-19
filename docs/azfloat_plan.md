@@ -3807,6 +3807,9 @@ same recipe on `AzFloat`:
   wrappers `emulate`/`emulate₂`/`emulateRat`/`emulateList`.  Emulated functions live next to the
   operations they wrap: `sumFloat64 : List Float → Float` in `AzFloat/Sum.lean`, its spec
   `toVal_sumFloat64` in `Equiv/Sum.lean`, its tests in `Tests/Sum.lean`.
+  Likewise `productFloat64` / `toVal_productFloat64` in `Product.lean` / `Equiv/Product.lean` /
+  `Tests/Product.lean` (2026-10-19); tests include intermediate over/underflow that the exact
+  product ignores (`[1e200, 1e200, 1e-300] = 1e100`) and the `maxF · (1 + 2^-53) → ∞` threshold.
 * `Equiv/Float64Emulate.lean`: `roundBinary64 v : EReal` (IEEE nearest-even to binary64),
   `roundBinary64Val`, and `toVal_emulateFinish_roundVal (w : Option EReal) :
   (emulateFinish (roundVal 53 .Nearest w)).toModel.unpack.toVal = roundBinary64Val w`.  Since

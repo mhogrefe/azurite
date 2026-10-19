@@ -260,4 +260,27 @@ theorem productPrecRound_eq (xs : List AzFloat) (p : ℕ) [NeZero p] (mode : Rou
     simp only [hN', hI', hZ', Bool.false_eq_true, Bool.and_self, and_self, ↓reduceIte]
     rw [roundScaled_eq_roundVal, realProd_eq xs (isNormal_of_any_flags hN hI hZ)]
 
+/-! ### Through `Float` -/
+
+/-- `productFloat64` is the binary64 rounding of the exact product of the `Float`s' values
+(with `NaN` and the infinities handled as in `Spec.product`). -/
+theorem toVal_productFloat64 (xs : List Float) :
+    (productFloat64 xs).toModel.unpack.toVal
+      = roundBinary64Val ((xs.map fun x => x.toModel.unpack.toVal).foldr
+          (fun a acc => a.bind fun a => acc.bind fun b => Spec.mul a b) (some 1)) := by
+  unfold productFloat64
+  rw [toVal_emulateList productPrecRound Spec.product
+    (fun xs => productPrecRound_eq xs 53 .Nearest)]
+  have hprod : ∀ xs : List Float,
+      xs.foldr (fun x acc => (ofFloat64 x).toVal.bind fun a => acc.bind fun b => Spec.mul a b)
+          (some 1)
+        = xs.foldr (fun x acc => x.toModel.unpack.toVal.bind fun a =>
+            acc.bind fun b => Spec.mul a b) (some 1) := by
+    intro xs
+    induction xs with
+    | nil => rfl
+    | cons x xs ih => rw [List.foldr_cons, List.foldr_cons, ih, toVal_ofFloat64]
+  unfold Spec.product
+  rw [List.foldr_map, List.foldr_map, hprod]
+
 end Azurite.AzFloat

@@ -100,3 +100,46 @@ private def samples : List (List AzFloat) :=
   [1, 2, 3, 7, 24, 53, 100].all fun p =>
     [RoundingMode.Nearest, .Floor, .Ceiling, .Down, .Up].all fun m =>
       Pr xs p m == naive xs p m
+
+/-! ## `productFloat64` -/
+
+private def inf : Float := 1.0 / 0.0
+private def maxF : Float := Float.ofBits 0x7FEFFFFFFFFFFFFF
+private def minSub : Float := Float.ofBits 1
+
+-- exact products
+#guard productFloat64 [] == 1.0
+#guard productFloat64 [2.0, 3.0, 4.0] == 24.0
+#guard productFloat64 [0.5, -0.25] == -0.125
+#guard productFloat64 [0.1, 0.2] == 0.1 * 0.2
+#guard productFloat64 [3.0, 0.0] == 0.0
+#guard (productFloat64 [-3.0, 0.0]).toBits == 0 -- exact zero is +0.0
+-- one rounding of the exact product
+#guard productFloat64 [1.0 + 2.0 ^ (-52.0), 1.0 + 2.0 ^ (-52.0)] == 1.0 + 2.0 ^ (-51.0)
+-- `(1 + 2^-52)^3 = 1 + 3·2^-52 + 3·2^-104 + 2^-156` rounds to `1 + 3·2^-52`
+#guard productFloat64 [1.0 + 2.0 ^ (-52.0), 1.0 + 2.0 ^ (-52.0), 1.0 + 2.0 ^ (-52.0)]
+  == 1.0 + 3.0 * 2.0 ^ (-52.0)
+-- intermediate overflow and underflow do not matter: only the exact product is rounded
+#guard productFloat64 [1.0e200, 1.0e200, 1.0e-300] == 1.0e100
+#guard productFloat64 [1.0e-200, 1.0e-200, 1.0e300] == 1.0e-100
+#guard productFloat64 [2.0 ^ 1000.0, 2.0 ^ 1000.0, 2.0 ^ (-1000.0)] == 2.0 ^ 1000.0
+-- overflow at the IEEE threshold: `2^1024` is `∞`, `maxF` stays
+#guard productFloat64 [2.0 ^ 1023.0, 2.0] == inf
+#guard productFloat64 [-(2.0 ^ 1023.0), 2.0] == -inf
+#guard productFloat64 [maxF, 1.0] == maxF
+-- `maxF · (1 + 2^-52) = maxF + (2^53 − 1)·2^919`, above the midpoint `maxF + 2^970`
+#guard productFloat64 [maxF, 1.0 + 2.0 ^ (-52.0)] == inf
+-- subnormal results through the ternary: `a · b = 2^-1075 (1 + 2^-53 − 2^-105)` rounds up
+private def a : Float := (1.0 + 2.0 ^ (-52.0)) * 2.0 ^ (-1000.0)
+private def b : Float := (1.0 - 2.0 ^ (-53.0)) * 2.0 ^ (-75.0)
+#guard (productFloat64 [a, b]).toBits == 1
+#guard productFloat64 [a, b] == a * b
+#guard productFloat64 [minSub, 0.5] == 0.0            -- a tie, to even
+#guard (productFloat64 [minSub, 1.5]).toBits == 2      -- a tie, to even
+#guard (productFloat64 [minSub, 0.75]).toBits == 1
+-- special values
+#guard (productFloat64 [1.0, 0.0 / 0.0]).isNaN
+#guard (productFloat64 [0.0, inf]).isNaN
+#guard productFloat64 [inf, -2.0] == -inf
+#guard productFloat64 [-inf, -inf] == inf
+#guard productFloat64 [inf, 1.0e-300, 1.0e-300] == inf

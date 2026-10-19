@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.RoundScaled
 import Azurite.AzNat.SumProduct
 import Azurite.AzInt.SumProduct
@@ -57,5 +58,11 @@ def productPrecRound (xs : List AzFloat) (p : Nat) (mode : RoundingMode) : AzFlo
       let parts := xs.filterMap coreParts
       roundScaled (productSign xs) (AzNat.product (parts.map fun t => t.2.1))
         (AzInt.sum (parts.map fun t => t.2.2)) p mode
+
+/-- The correctly rounded (nearest, ties to even) product of a list of `Float`s: the exact
+product, rounded once (`emulateList productPrecRound`).  `NaN` if any factor is `NaN` or a zero
+meets an infinity; otherwise an infinity if one occurs; `+0.0` for an exact zero (the IEEE sign
+of a zero product is not reproduced). -/
+def productFloat64 (xs : List Float) : Float := emulateList productPrecRound xs
 
 end Azurite.AzFloat
