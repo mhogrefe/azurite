@@ -23,6 +23,7 @@ import Azurite.AzFloat.Tests.GaussConstant
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
+import Azurite.AzFloat.Tests.Ln
 import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulRat

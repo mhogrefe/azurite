@@ -66,8 +66,10 @@ import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Lemniscate
 import Azurite.AzFloat.Equiv.Literals
+import Azurite.AzFloat.Equiv.Ln
 import Azurite.AzFloat.Equiv.Ln2
 import Azurite.AzFloat.Equiv.Ln2Bracket
+import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
@@ -92,8 +94,10 @@ import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.Literals
+import Azurite.AzFloat.Ln
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Ln2Bracket
+import Azurite.AzFloat.LnBracket
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString

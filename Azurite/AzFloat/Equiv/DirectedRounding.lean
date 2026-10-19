@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Equiv.Agm
 import Azurite.AzFloat.Equiv.GaussConstant
+import Azurite.AzFloat.Equiv.Ziv
 
 /-!
 # Quantitative directed rounding
@@ -231,5 +232,100 @@ theorem toVal_sign_of_isNegative {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (
       refine ⟨fun _ => ?_, fun h' => absurd h' (by decide)⟩
       rw [finiteVal_false]
       exact neg_neg_of_pos (finiteVal_true_pos e h)
+
+
+/-! ### Signed values: the error is at most `2|x| · 2^(−w)` on either side -/
+
+/-- The floor of `−x` is the negative of the ceiling of `x` (the float set is symmetric). -/
+theorem val_roundFloor_neg (w : ℕ) [NeZero w] (x : ℝ) :
+    (roundFloor (floatSet w) (-x)).val = -(roundCeiling (floatSet w) x).val := by
+  apply (isGreatest_roundFloor (floatSet w) (-x)).unique
+  constructor
+  · refine ⟨floatSet_neg_mem w (isLeast_roundCeiling (floatSet w) x).1.1, ?_⟩
+    have := (isLeast_roundCeiling (floatSet w) x).1.2
+    rw [EReal.coe_neg]
+    exact EReal.neg_le_neg_iff.mpr this
+  · rintro s ⟨hs, hsx⟩
+    have h1 : -s ∈ floatSet w := floatSet_neg_mem w hs
+    rw [EReal.coe_neg] at hsx
+    have h2 : (x : EReal) ≤ -s := EReal.le_neg_of_le_neg hsx
+    exact EReal.le_neg_of_le_neg ((isLeast_roundCeiling (floatSet w) x).2 ⟨h1, h2⟩)
+
+theorem roundVal_floor_abs (w : ℕ) [NeZero w] (x : ℝ) :
+    ∃ v : ℝ, (roundVal w .Floor (some (x : EReal))).1.toVal = some (v : EReal) ∧ v ≤ x ∧
+      x ≤ v + 2 * |x| * (1 / 2 : ℝ) ^ w := by
+  rcases le_or_gt 0 x with hx | hx
+  · obtain ⟨v, hv, hf⟩ := roundVal_floor_err w hx
+    exact ⟨v, hv, hf.le, by rw [abs_of_nonneg hx]; exact hf.ge⟩
+  · obtain ⟨c, hc, hcf⟩ := roundVal_ceiling_err w (neg_nonneg.mpr hx.le)
+    refine ⟨-c, ?_, ?_, ?_⟩
+    · rw [(roundVal_coe w .Floor x).1]
+      have e : (round (floatSet w) .Floor x).val = (roundFloor (floatSet w) x).val := rfl
+      have e2 : (round (floatSet w) .Ceiling (-x)).val = (roundCeiling (floatSet w) (-x)).val :=
+        rfl
+      rw [(roundVal_coe w .Ceiling (-x)).1, Option.some.injEq, e2] at hc
+      have := val_roundFloor_neg w (-x)
+      rw [neg_neg] at this
+      rw [e, this, hc, EReal.coe_neg]
+    · linarith [hcf.ge]
+    · rw [abs_of_neg hx]; linarith [hcf.le]
+
+theorem roundVal_ceiling_abs (w : ℕ) [NeZero w] (x : ℝ) :
+    ∃ v : ℝ, (roundVal w .Ceiling (some (x : EReal))).1.toVal = some (v : EReal) ∧ x ≤ v ∧
+      v ≤ x + 2 * |x| * (1 / 2 : ℝ) ^ w := by
+  rcases le_or_gt 0 x with hx | hx
+  · obtain ⟨v, hv, hc⟩ := roundVal_ceiling_err w hx
+    exact ⟨v, hv, hc.ge, by rw [abs_of_nonneg hx]; exact hc.le⟩
+  · obtain ⟨f, hf, hff⟩ := roundVal_floor_err w (neg_nonneg.mpr hx.le)
+    refine ⟨-f, ?_, ?_, ?_⟩
+    · rw [(roundVal_coe w .Ceiling x).1]
+      have e : (round (floatSet w) .Ceiling x).val = (roundCeiling (floatSet w) x).val := rfl
+      have e2 : (round (floatSet w) .Floor (-x)).val = (roundFloor (floatSet w) (-x)).val := rfl
+      rw [(roundVal_coe w .Floor (-x)).1, Option.some.injEq, e2] at hf
+      have := val_roundFloor_neg w x
+      rw [hf] at this
+      have h2 : (roundCeiling (floatSet w) x).val = -((f : ℝ) : EReal) := by
+        rw [this, neg_neg]
+      rw [e, h2, EReal.coe_neg]
+    · linarith [hff.le]
+    · rw [abs_of_neg hx]; linarith [hff.ge]
+
+theorem subFloor_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (subPrecRound u v w .Floor).1.toVal = some (r : EReal) ∧ r ≤ uv - vv ∧
+      uv - vv ≤ r + 2 * |uv - vv| * (1 / 2 : ℝ) ^ w := by
+  rw [subPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.sub_coe_coe]
+  exact roundVal_floor_abs w _
+
+theorem subCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (subPrecRound u v w .Ceiling).1.toVal = some (r : EReal) ∧ uv - vv ≤ r ∧
+      r ≤ uv - vv + 2 * |uv - vv| * (1 / 2 : ℝ) ^ w := by
+  rw [subPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.sub_coe_coe]
+  exact roundVal_ceiling_abs w _
+
+theorem addCeiling_abs (hu : u.toVal = some (uv : EReal)) (hv : v.toVal = some (vv : EReal))
+    (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (addPrecRound u v w .Ceiling).1.toVal = some (r : EReal) ∧ uv + vv ≤ r ∧
+      r ≤ uv + vv + 2 * |uv + vv| * (1 / 2 : ℝ) ^ w := by
+  rw [addPrecRound_eq_liftVal₂, liftVal₂, hu, hv, Option.bind_some, Option.bind_some,
+    Spec.add_coe_coe]
+  exact roundVal_ceiling_abs w _
+
+theorem ofAzRatRound_floor_abs (q : AzRat) (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (ofAzRatRound q w .Floor).1.toVal = some (r : EReal) ∧
+      r ≤ ((AzRat.toRat q : ℚ) : ℝ) ∧
+      ((AzRat.toRat q : ℚ) : ℝ) ≤ r + 2 * |((AzRat.toRat q : ℚ) : ℝ)| * (1 / 2 : ℝ) ^ w := by
+  rw [ofAzRatRound_eq_roundVal]
+  exact roundVal_floor_abs w _
+
+theorem ofAzRatRound_ceiling_abs (q : AzRat) (w : ℕ) [NeZero w] :
+    ∃ r : ℝ, (ofAzRatRound q w .Ceiling).1.toVal = some (r : EReal) ∧
+      ((AzRat.toRat q : ℚ) : ℝ) ≤ r ∧
+      r ≤ ((AzRat.toRat q : ℚ) : ℝ) + 2 * |((AzRat.toRat q : ℚ) : ℝ)| * (1 / 2 : ℝ) ^ w := by
+  rw [ofAzRatRound_eq_roundVal]
+  exact roundVal_ceiling_abs w _
 
 end Azurite.AzFloat

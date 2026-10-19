@@ -3460,3 +3460,52 @@ to `Chapter4/BrentSalamin.lean` and `AzFloat/Equiv/Ziv.lean`.
   (`ϖ·2^51 = 5904348712226992.4357…`, `ϖ·2^98 = …072.3447…`), `toString … 53 =
   "2.6220575542921196"`.
 
+## `ln` for `AzFloat` (DONE 2026-10-19, fuel-free, AGM)
+
+Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lean`,
+`AzFloat/Equiv/Ln.lean`, `AzFloat/Tests/Ln.lean`.
+
+* **Method.** MCA §4.8.2 (`abs_pi_div_AGM_sub_log_le`): for `0 < k ≤ 1`,
+  `|π/(2 AGM(1, k)) − ln(4/k)| ≤ (k²/4)(2 − ln k)`. At working precision `w` let
+  `h = lnH w = ⌊w/4⌋ + 2`; scale `x = m·2^e` (`m ∈ [1/2, 1)`) to `y = x·2^ℓ`,
+  `ℓ = 2h + 2 − e`, so `y ∈ [2^(2h+1), 2^(2h+2))` and `k = 4/y ∈ [2^(−2h), 2^(1−2h)]`
+  (`ln_scale`); the error is then `≤ (2h + 2) 2^(−4h) ≤ 2^(size(2h+2) − 4h)` (`agmLog_bounds`,
+  an exact power of two `eps` added on both sides). `ln x = π/(2 AGM(1, k)) − ℓ ln 2`.
+  Rejected alternative: series + repeated square roots (slower at every precision here).
+* **Fuel.** None: `ln x` is irrational for every float `x ≠ 1` (`irrational_log_rat`, since float
+  values are rational — `exists_rat_of_toVal`), and the width tends to zero, so
+  `zivLoopCertified` (threshold form, start `p + 64`) terminates; `x = 1` is caught by `eqIEEE`
+  and returns `(zero, .eq)`; `lnPrecRound_eq_liftVal` is unconditional for `p ≠ 0`.
+* **Algorithm** (`LnBracket.lean`). `kLo/kHi = ⌊4/y⌋_w, ⌈4/y⌉_w` (`4 = one <<< 2`, exact);
+  the interval AGM `agmStep` of `Agm.lean` iterated `lnSteps w = 2⌈lg 2h⌉ + 3` times from
+  `⟨1, 1, kLo, kHi⟩` (`agmIterN`); `qLo = ⌊(π⁻/2)/a⁺⌋`, `qHi = ⌈(π⁺/2)/b⁻⌉` with `piBracket w`;
+  `LLo/LHi = ⌊min(ℓ·l₁, ℓ·l₂)⌋, ⌈max(ℓ·l₁, ℓ·l₂)⌉` with the rational `ln2Bracket w` (the `min/max`
+  handle the sign of `ℓ`); result `(⌊⌊qLo − eps⌋ − LHi⌋, ⌈⌈qHi + eps⌉ − LLo⌉)`. Cost:
+  `lnSteps w ≈ 2 lg w` AGM steps (one mul, one sqrt, two add/sub at precision `w`, twice for
+  the two ends) plus `piBracket w` (`lg w` Brent–Salamin steps), `ln2Bracket w`
+  (binary splitting) and three divisions.
+* **Width analysis** (`Equiv/LnBracket.lean`, `w ≥ 64`, `u = 2^(−w)`). The AGM is
+  homogeneous, so the natural invariant is *relative*: `RelEncloses a b n δ s` says the ends of
+  `s` enclose `a_n, b_n` within factors `1 ∓ δ`; one `agmStep` adds `8u` (`relEncloses_agmStep`:
+  the mean rounds within `1 ± 2u`, the square root of a product within `(1 ± 2u)(1 ± u)`, with
+  `√(1−t) ≥ 1−t`, `√(1+2t) ≤ 1+t`), so after `S` steps `δ = 8uS` (`relEncloses_agmIterN`).
+  The exact gap after `S = lnSteps w` steps is `≤ 8·2^(−5h)` (`agm_log_gap`:
+  `agm_log_iterations` gives `≤ 8·2^(−2h)` at `2⌈lg 2h⌉ + 1` steps, then two quadratic
+  steps `gap' ≤ gap²/(8b)` with `b ≥ 1/(2h+3)`). With `AGM ∈ [1/(2h+3), 1]` the quotient
+  width is `≤ (piEps w + 2(a⁺ − b⁻))·(3W)²`, `W = w + |e| + 8`; `|ℓ| ≤ W`, so the `ℓ ln 2`
+  term has width `≤ 5|ℓ|u` (`ln_L_spec`); all magnitudes are `≤ 17W`, so the four outer
+  roundings add `≤ 108 W u`; total `≤ lnEps e w = 2^40 W^5 u` (`ln_final_bounds`, a pure
+  real lemma with ~30 hypotheses — kept separate from `lnBracket_spec` whose context holds the
+  float terms; `tendsto_lnEps` via `tendsto_pow_const_mul_const_pow_of_abs_lt_one` after
+  expanding `(w + c)^5`).
+* **Proof-engineering notes.** `set` on a real expression *after* unfolding `lnBracket` in the
+  goal (huge float terms) caused whnf timeouts — the `set`s go before the unfolding, and the
+  goal is rewritten back to the `set` variables (`rw [← hh_def, hS_eq, ← hℓ, ← heps]`) so the
+  final `refine` is syntactic. The implementation must use the exact term the value lemma
+  states (`one <<< 2`, not `powerOf2 2`): otherwise unification unfolds float arithmetic.
+  `nlinarith` was replaced by explicit `mul_le_mul_of_nonneg_*` products + `linarith` in the
+  step lemma; `ln_final_bounds` needs `maxHeartbeats 800000` (many `linarith` calls in a
+  60-hypothesis context).
+* **Tests** (`Tests/Ln.lean`): special values, `ln 2 = ln2` at 53/200 bits in three modes,
+  `ln 10`, `ln 3`, `ln ½`, `ln 1.5`, `ln 10^±12`, `ln 2^100` at 53 bits, floor/ceiling tags,
+  `ln 10` and `ln 3` at 200 bits.
