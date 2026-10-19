@@ -19,6 +19,7 @@ import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Float64
+import Azurite.AzFloat.Tests.Float64Emulate
 import Azurite.AzFloat.Tests.GaussConstant
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.Lemniscate
@@ -59,6 +60,7 @@ import Azurite.AzNat.Tests.OfLimbDigits
 import Azurite.AzNat.Tests.OfLimbDigitsPow2
 import Azurite.AzNat.Tests.RootInt
 import Azurite.AzNat.Tests.SchonhageStrassen
+import Azurite.AzNat.Tests.ShiftRightNearestTernary
 import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook
 import Azurite.AzNat.Tests.TrailingZeros

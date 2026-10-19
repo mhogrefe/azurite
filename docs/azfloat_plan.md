@@ -3783,3 +3783,48 @@ product and a one-unit fix could be dispatched from a few thousand limbs and ski
 multiplication by the dividend — an estimated 1.3–2× there, nothing at small precision; not done
 because divisions are a negligible share of the transcendental functions' cost (1.1 of 99 ms in
 `ln` at 20000 bits).
+
+## Correctly rounded `Float` functions through `AzFloat` (DONE 2026-10-19)
+
+Malachite's `malachite-float` offers primitive-float versions of its `Float` functions
+(`primitive_float_sum`, say) that compute in a `Float` at `MANTISSA_WIDTH + 1` bits in
+round-to-nearest, keep the ternary, re-round into the subnormal range with the ternary
+(`subnormalize_assign`), send results above the largest finite value to `∞`, and convert.  The
+same recipe on `AzFloat`:
+
+* `AzNat/ShiftRightNearestTernary.lean` (+ `Equiv/`, `Tests/`): `shiftRightNearestTernary n o sh`,
+  nearest right shift with an exact tie resolved by the ternary `o` (`.lt`: the true value is
+  above the stored one, round up; `.gt`: down; `.eq`: to even); `AzInt` version swaps the ternary
+  for negatives.  Spec `NearestTernary (n / 2^sh) q o`.
+* `Rounding/IntNearest.lean`: `round intSet .Nearest` is a nearest integer
+  (`abs_toInt_round_nearest_sub_le`), ties to even (`toInt_round_nearest_half`), and
+  `toInt_round_nearest_of_ternary`: if `X` is a nearest point to `w` among a grid containing the
+  integers and the half-integers, and `R` is `NearestTernary X R (compare X w)`, then `R` is the
+  nearest integer to `w`.  This is why one 53-bit rounding plus the ternary suffices below
+  `2^-1022`: the 53-bit grid contains the subnormal grid (multiples of `2^-1074`) and its midpoints.
+* `AzFloat/Float64Emulate.lean`: `toUnpackedTernary` (= `toUnpacked … .Nearest` with the subnormal
+  shift replaced by `shiftRightNearestTernary`), `emulateFinish : AzFloat × Ordering → Float`,
+  wrappers `emulate`/`emulate₂`/`emulateRat`/`emulateList`.  Emulated functions live next to the
+  operations they wrap: `sumFloat64 : List Float → Float` in `AzFloat/Sum.lean`, its spec
+  `toVal_sumFloat64` in `Equiv/Sum.lean`, its tests in `Tests/Sum.lean`.
+* `Equiv/Float64Emulate.lean`: `roundBinary64 v : EReal` (IEEE nearest-even to binary64),
+  `roundBinary64Val`, and `toVal_emulateFinish_roundVal (w : Option EReal) :
+  (emulateFinish (roundVal 53 .Nearest w)).toModel.unpack.toVal = roundBinary64Val w`.  Since
+  every proven operation equals a `roundVal`/`liftVal`, every emulated function is correctly
+  rounded with no further work (`toVal_emulate` etc.).  Proof
+  structure: `toUnpackedTernary_finite` packages the result as `finishUnpacked s r t .Nearest` with
+  `NearestTernary (x / 2^t) r o`; the input has precision 53 (`ofEReal_spec`), so in the normal
+  range `x / 2^t` is the signed core significand (exact, `eq_of_nearestTernary_intCast`), with
+  `toVal_finishUnpacked_overflow` for `e ≥ 1025`; in the subnormal range `t = −1074` and
+  `toInt_round_nearest_of_ternary` applies with `B = 2^52`, the closeness hypotheses coming from
+  the 53-bit scale `σ = 2^(⌊log₂|v|⌋ − 52) ≤ 2^-1075` (every `n · 2^-1075` is an integer multiple
+  of `σ`).
+
+Limitations: an exact zero result is `+0.0` (`AzFloat` has a single zero, so `−0.0` sums are not
+reproduced); only round-to-nearest is emulated (as in Malachite).  Tests
+(`Tests/Float64Emulate.lean`) include the double-rounding witness
+`a = (1 + 2^-52) 2^-1000`, `b = (1 − 2^-53) 2^-75`: `a·b = 2^-1075 (1 + 2^-53 − 2^-105)` rounds at 53
+bits to exactly `2^-1075` (ternary `.lt`), which `toFloat64` alone sends to `0` and
+`emulate₂ mulPrecRound` correctly to `2^-1074`; sums with cancellation (`[1e16, 1, 1]`,
+`[1e100, 1, −1e100]`), overflow at the exact IEEE threshold (`maxF + 2^970 → ∞`, `+ 2^969 → maxF`),
+`ln 2` to the correctly rounded double, and the special values.

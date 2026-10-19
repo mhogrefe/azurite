@@ -11,6 +11,7 @@ import Azurite.AzFloat.Sum
 import Azurite.AzFloat.Equiv.Add
 import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzFloat.Equiv.Compare
+import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Ziv
@@ -1097,5 +1098,27 @@ theorem sumPrecRound_eq (xs : List AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
 /-- The value of `one`. -/
 theorem toVal_one' : one.toVal = some ((1 : ℝ) : EReal) := by
   rw [one, toVal_powerOf2]; simp
+
+/-! ### Through `Float` -/
+
+/-- `sumFloat64` is the binary64 rounding of the exact sum of the `Float`s' values (with
+`NaN` and the infinities handled as in `Spec.sum`: `NaN` propagates, as does `∞ − ∞`). -/
+theorem toVal_sumFloat64 (xs : List Float) :
+    (sumFloat64 xs).toModel.unpack.toVal
+      = roundBinary64Val ((xs.map fun x => x.toModel.unpack.toVal).foldr
+          (fun a acc => a.bind fun a => acc.bind fun b => Spec.add a b) (some 0)) := by
+  unfold sumFloat64
+  rw [toVal_emulateList sumPrecRound Spec.sum (fun xs => sumPrecRound_eq xs 53 .Nearest)]
+  have hsum : ∀ xs : List Float,
+      xs.foldr (fun x acc => (ofFloat64 x).toVal.bind fun a => acc.bind fun b => Spec.add a b)
+          (some 0)
+        = xs.foldr (fun x acc => x.toModel.unpack.toVal.bind fun a =>
+            acc.bind fun b => Spec.add a b) (some 0) := by
+    intro xs
+    induction xs with
+    | nil => rfl
+    | cons x xs ih => rw [List.foldr_cons, List.foldr_cons, ih, toVal_ofFloat64]
+  unfold Spec.sum
+  rw [List.foldr_map, List.foldr_map, hsum]
 
 end Azurite.AzFloat

@@ -86,3 +86,35 @@ private def tiny : AzFloat := P (-1000000000)
 -- the sign of a cancelling remainder decides a boundary case
 #guard S [one, P (-1000), P (-500), -P (-500)] 1 == (one, .lt)
 #guard S [one, P (-1000), P (-500), -P (-500), -P (-1000)] 1 == (one, .eq)
+
+/-! ## `sumFloat64` -/
+
+private def inf : Float := 1.0 / 0.0
+private def maxF : Float := Float.ofBits 0x7FEFFFFFFFFFFFFF
+
+-- exact sums
+#guard sumFloat64 [] == 0.0
+#guard sumFloat64 [1.0, 2.0, 3.0] == 6.0
+#guard sumFloat64 [0.1, 0.2] == 0.1 + 0.2
+#guard sumFloat64 [1.0, -1.0] == 0.0
+#guard (sumFloat64 [-0.0]).toBits == 0 -- exact zero is +0.0
+-- the native sum loses the small terms; the correctly rounded sum keeps them
+#guard sumFloat64 [1.0e16, 1.0, 1.0] == 1.0e16 + 2.0
+#guard sumFloat64 [1.0e100, 1.0, -1.0e100] == 1.0
+#guard sumFloat64 [1.0, 1.0e-20, -1.0] == 1.0e-20
+-- rounding of the exact sum: 1 + 2^-53 + 2^-60 rounds up (above the midpoint)
+#guard sumFloat64 [1.0, 2.0 ^ (-53.0), 2.0 ^ (-60.0)] == 1.0 + 2.0 ^ (-52.0)
+-- an exact tie rounds to even: 1 + 2^-53 stays 1
+#guard sumFloat64 [1.0, 2.0 ^ (-53.0)] == 1.0
+-- 1 + 2^-53 + 2^-53 = 1 + 2^-52 exactly
+#guard sumFloat64 [1.0, 2.0 ^ (-53.0), 2.0 ^ (-53.0)] == 1.0 + 2.0 ^ (-52.0)
+-- special values
+#guard (sumFloat64 [1.0, 0.0 / 0.0]).isNaN
+#guard (sumFloat64 [inf, -inf]).isNaN
+#guard sumFloat64 [inf, 1.0] == inf
+#guard sumFloat64 [-inf, 1.0, -inf] == -inf
+#guard sumFloat64 [maxF, maxF] == inf
+#guard sumFloat64 [maxF, maxF, -maxF] == maxF
+-- overflow at the IEEE threshold: maxF + 2^970 is a tie, rounds to even (= 2^1024 = ∞)
+#guard sumFloat64 [maxF, 2.0 ^ 970.0] == inf
+#guard sumFloat64 [maxF, 2.0 ^ 969.0] == maxF

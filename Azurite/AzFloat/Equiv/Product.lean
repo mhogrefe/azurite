@@ -107,11 +107,6 @@ theorem productSign_cons (x : AzFloat) (xs : List AzFloat) :
   cases x.isNegative <;> cases h : decide (List.countP isNegative xs % 2 = 0) <;>
     simp only [decide_eq_true_eq, decide_eq_false_iff_not] at h <;> simp <;> omega
 
-theorem finiteVal_ne_zero_of_valid (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
-    (hv : FiniteValid q m) : finiteVal s e m ≠ 0 := by
-  rw [finiteVal_eq_core s e hv]
-  exact finiteVal_ne_zero' s e _ (coreSignificand_ne_zero hv)
-
 theorem decide_pos_finiteVal_of_valid (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) : decide (0 < finiteVal s e m) = s := by
   rw [finiteVal_eq_core s e hv, decide_pos_finiteVal s e _ (coreSignificand_ne_zero hv)]

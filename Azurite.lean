@@ -62,6 +62,7 @@ import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Float64
+import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Lemniscate
@@ -97,6 +98,7 @@ import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Float64
+import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Lemniscate
@@ -467,6 +469,7 @@ import Azurite.AzNat.Equiv.RootInt
 import Azurite.AzNat.Equiv.SetBit
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
+import Azurite.AzNat.Equiv.ShiftRightNearestTernary
 import Azurite.AzNat.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.SqrtRem
@@ -541,6 +544,7 @@ import Azurite.AzNat.RootInt
 import Azurite.AzNat.SetBit
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
+import Azurite.AzNat.ShiftRightNearestTernary
 import Azurite.AzNat.ShiftRightRound
 import Azurite.AzNat.Size
 import Azurite.AzNat.SqrtRem
@@ -1607,6 +1611,7 @@ import Azurite.Rounding.Basic
 import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc
+import Azurite.Rounding.IntNearest
 import Azurite.Rounding.Mode
 import Azurite.Rounding.Nat
 import Azurite.Rounding.NatBotInt

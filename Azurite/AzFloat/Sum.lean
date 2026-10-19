@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Add
+import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Ziv
@@ -160,5 +161,10 @@ def sumPrecRound (xs : List AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat Ã
     else
       let l := xs.filter isNormal
       sumFinite p mode (l.length + 1) l
+
+/-- The correctly rounded (nearest, ties to even) sum of a list of `Float`s: the exact sum,
+rounded once (`emulateList sumPrecRound`).  `NaN` if any term is `NaN` or both infinities
+occur; an infinity if one occurs; `+0.0` for an exact zero. -/
+def sumFloat64 (xs : List Float) : Float := emulateList sumPrecRound xs
 
 end Azurite.AzFloat
