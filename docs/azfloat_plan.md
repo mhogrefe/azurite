@@ -3163,3 +3163,102 @@ recurrences equal `fPartialNum/Den`, the enclosure of the roundings, the Ziv spe
 `Bi′`, documented as slow and incomplete for large `|x|`. This plan: four functions, exact
 binary-splitting series with proven tails everywhere, asymptotic acceleration for `x ≥ X_a(p)`
 (and later `x ≤ −X_a(p)`), correct rounding with proven brackets.
+
+## The constant `ln 2` for `AzFloat` (started 2026-10-18)
+
+**Algorithm chosen.** Machin-like `atanh` formula summed by exact binary splitting:
+`ln 2 = 18 atanh(1/26) − 2 atanh(1/4801) + 8 atanh(1/8749)`, `atanh(1/q) = ∑ 1/((2k+1) q^(2k+1))`
+(about `0.19` terms per bit; `2 atanh(1/3)` needs `0.32`; `∑ 1/(k 2^k)` needs `1.44`). Rejected:
+the AGM route (needs `π` and a `p/2`-bit argument because of the `O(k² |ln k|)` error (4.73)),
+Newton on `exp` (needs `exp`). Every partial sum is an exact rational and the tail is bracketed
+exactly, so there is no floating-point error analysis: `ln 2 ∈ [lo, hi]` with rational `lo`, `hi`,
+then `AzRat → AzFloat` rounding and `roundingPossible`. Termination of the rounding loop is not
+provable from Mathlib alone (no transcendence of `e` there); **resolved 2026-10-18**: Hermite's
+theorem is now proven in `Azurite/Transcendental/Exp.lean` (`transcendental_exp_one`, from Mathlib's
+`LindemannWeierstrass.exp_polynomial_approx`), giving `irrational_log_two`, so `ln2PrecRound` can
+use the `Nat.find` termination argument planned for `π` (existence from irrationality + shrinking
+brackets) instead of fuel.
+
+* **Step 1 DONE (2026-10-18): theory** — `Ln2BinarySplitting.lean`. `atanhTerm`, `atanhInv`;
+  `hasSum_atanhTerm`/`atanhInv_eq` from `Real.hasSum_log_one_add_inv` with `a = (q−1)/2`
+  (`2a + 1 = q`, `1 + a⁻¹ = (q+1)/(q−1)`); `atanhTerm_add_le`: `t_{N+i} ≤ t_N/4^i` for `q ≥ 2`
+  (`4^i ≤ q^(2i)`, `2N+1 ≤ 2(N+i)+1`, `gcongr`); `sum_le_atanhInv` (positive terms,
+  `Summable.sum_le_tsum`), `atanhInv_sub_sum_le` (`≤ (4/3) t_N`, geometric tail via
+  `tsum_geometric_of_lt_one`), `atanhTerm_le : t_N ≤ (1/q)^(2N+1)`; `oddProd N = ∏_{j<N}(2j+1)`,
+  `atanhDen q N = q^(2N+1) oddProd N`, `atanhNum q N = ∑_{k<N} q^(2(N−k)) (oddProd N/(2k+1))`,
+  `sum_atanhTerm_eq_div` (`Nat.cast_div` with `dvd_oddProd`); `log_two_eq_machin`
+  (`norm_num` proves `(27/25)^9 (8750/8748)^4/(4802/4800) = 2`, then `Real.log_div/mul/pow`),
+  `log_two_eq_atanh`, `log_two_mem_Icc` (two-sided bracket for arbitrary `N₁ N₂ N₃`),
+  `log_two_bracket_width = (4/3)(18 t₁ + 2 t₂ + 8 t₃)`. Choosing `N`: width `≤ 2^(−w)` once
+  `(1/q)^(2N+1) ≤ 2^(−w−6)` for each `q` (since `(4/3)·28 < 2^6`), i.e. `(2N+1)⌊lg q⌋ ≥ w + 6`
+  with `⌊lg 26⌋ = 4`, `⌊lg 4801⌋ = 12`, `⌊lg 8749⌋ = 13`. Lean notes: `Finset.sum_div` needs
+  `Mathlib.Algebra.BigOperators.Field`, `Nat.cast_div` needs `Mathlib.Data.Nat.Cast.Field` (not
+  pulled in by `Log.Deriv`).
+* **Step 2 DONE (2026-10-18): binary-splitting evaluator** — `Azurite/AzNat/AtanhSplit.lean` +
+  `Equiv/AtanhSplit.lean` + `Tests/AtanhSplit.lean`. Normalization: the state `(T, B, Q)` of the
+  range `[l, l+n)` represents `∑_{k<n} 1/((2(l+k)+1) q^(2(k+1))) = T/(B·Q)` with
+  `B = ∏_{k<n}(2(l+k)+1)`, `Q = (q²)^n` (every term carries its own `q²`, so the leaf is
+  `(1, 2l+1, q²)` and the merge is `(T₁B₂Q₂ + B₁T₂, B₁B₂, Q₁Q₂)` — the second range's terms carry
+  the extra `1/Q₁`); the full sum is `∑_{k<N} 1/((2k+1)q^(2k+1)) = q·T(0,N)/(B·Q)` (`atanhNumDen`).
+  Recursion by fuel (`atanhSplitFuel`, `fuel = n` in `atanhSplit`) with the sequential `atanhSeq`
+  as fallback, as in `BalancedProduct`. Proofs: `Spec q l n x` (the three facts above, the third
+  over `ℝ`), `spec_atanhLeaf`, `spec_splitMerge` (`prod_range_add`, `sum_range_add`, `pow_add`,
+  then `field_simp`), `spec_atanhSeq`, `spec_atanhSplitFuel` (induction on fuel, `Nat.add_sub_cancel'`
+  for `m + (n − m)`), `atanhNumDen_eq : num/den = ∑_{k<N} atanhTerm q k`, `atanhNumDen_den_pos`.
+  Tests: `#guard` on `toString` against an independent Python model of the recursion (itself checked
+  against the exact rational sum), plus tree-shape independence (fuel `0`, `1`, `2` vs full). Lean
+  notes: `ofNat : Nat → AzNat` lives in `AzNat/Equiv/Basic.lean` but is computable and is what
+  implementation files use; `toNat_ofNat` is already simp; `#guard` with `toString` avoids needing
+  `DecidableEq` on state triples.
+* **Step 3 DONE (2026-10-18): `ln2PrecRound p mode`** — `AzFloat/Ln2Bracket.lean`,
+  `AzFloat/Ln2.lean` (+ `Equiv/Ln2Bracket.lean`, `Equiv/Ln2.lean`, `Tests/Ln2.lean`) and the
+  new **certified Ziv loop** `zivLoopCertified` in `AzFloat/Ziv.lean`. Design: the working precision
+  `w` only sets the term counts `log2N_q w = (w+6)/(2⌊lg q⌋) + 1`; the bracket `ln2Bracket w =
+  (lo, hi)` is exact rational arithmetic on the three `atanhRat` sums (one binary splitting each per
+  level) with the tails `(4/3) t_N` added where they enlarge the bracket — one approximation per
+  level, the `Roundable` pair being the two ends of its error interval (true Ziv); `hi − lo ≤
+  2^(−w)` (`ln2Bracket_width`), `lo < ln 2 ≤ hi` (`ln2Bracket_mem`, `lo_lt_log_two`). Termination
+  without fuel: `zivLoopCertified approx p mode w₀ h` doubles `w` from `w₀` until `roundingPossible`
+  answers, with the certificate `h : ∃ f, isSome at w₀·2^f` and the well-founded measure
+  `Nat.find h − f` (the `where go` helper takes `h` explicitly — a `where`-local does not capture
+  outer variables used only in `termination_by`); spec `zivLoopCertified_eq` (induction on the
+  measure; `go.eq_def` + `split`). The certificate `ln2Approx_isSome_exists`: `ln 2` is not a
+  boundary (`boundary_repr` gives `M·2^k`, rational; `irrational_log_two`), `adjacent_boundaries`
+  gives the distance `D = min(ln 2 − bm, bp − ln 2) > 0`, `exists_pow_lt_of_lt_one` a level with
+  `2^(−w) < D`, then `no_boundary_of_dist` + `roundingPossible_isSome_of_no_boundary`. Spec:
+  `ln2PrecRound_eq_liftVal₀ (p) [NeZero p] (mode)` (`p = 0` returns `(zero, .lt)`). Tests
+  (`#guard`, compiled evaluation — `Nat.find`/WF recursion is fine there, but not for `decide`):
+  `p = 1, 2, 3` by hand, `p = 53` (`6243314768165359/2^53`, below `ln 2`), `p = 100`
+  (`878668439483319573618263538048/2^100`, below), `toString (ln2 53) = "0.6931471805599453"`.
+  Lean notes: `dif_neg` deprecated — `split_ifs with hp` instead; casts `((26:ℕ):ℝ)` vs the literal
+  `(26:ℝ)` are different `linarith` atoms — `simp only [Nat.cast_ofNat]`; the generic lemma
+  `atanhTerm_le_half_pow` takes `2^b ≤ q` and `(2N+1) b ≥ w + 6`. Reuse: `ln 3`, `ln 5`, `ln 10`
+  by their own Machin-like formulas with the same bracket/loop; `π` (Brent–Salamin items 4–6) with
+  `zivLoopCertified` and `irrational_pi`.
+
+## Transcendence of `e` (DONE 2026-10-18)
+
+`Azurite/Transcendental/Exp.lean`. Mathlib (pinned version) contains only the analytic part of the
+Lindemann–Weierstrass project, but that part ends with the public Hermite approximation lemma
+`LindemannWeierstrass.exp_polynomial_approx (f : ℤ[X]) (hf : f.eval 0 ≠ 0) : ∃ c, ∀ p >
+|f(0)|, p.Prime → ∃ nₚ, ¬p ∣ nₚ ∧ ∃ gₚ, deg gₚ ≤ p deg f − 1 ∧ ∀ r ∈ f.aroots ℂ, ‖nₚ e^r − p gₚ(r)‖
+≤ c^p/(p−1)!`. Hermite's theorem from it (≈ 150 lines): `rootsPoly n = ∏_{k<n}(X − (k+1))`
+(`mem_aroots_rootsPoly`); `aeval_exp_one_ne_zero`: for `Q ∈ ℤ[X]` with `Q(0) ≠ 0` and `Q(e) = 0`,
+cast the relation to `ℂ` (`aeval_eq_sum_range`, `Complex.exp_nat_mul`), split off `k = 0`
+(`sum_range_succ'`), take the prime `p ≥ max(N, |f(0)|+1, |Q(0)|+1)` (`Nat.exists_infinite_primes`)
+where `N` comes from `A c^p/(p−1)! → 0` (`FloorSemiring.tendsto_pow_div_factorial_atTop` composed
+with `tendsto_sub_atTop_nat 1`, `A = ∑ ‖a_k‖`), form `E = a₀nₚ + p ∑ a_{k+1} gₚ(k+1) ∈ ℤ`
+(`aeval_algebraMap_apply_eq_algebraMap_eval` makes `gₚ(k+1)` an integer), show `(E : ℂ) = ∑ a_{k+1}
+(p gₚ(k+1) − nₚ e^{k+1})` by `linear_combination nₚ * relation` after splitting the sum
+(`mul_sum`, `sum_sub_distrib`), bound `‖E‖ ≤ A c^p/(p−1)! < 1`, so `E = 0` (`Int.abs_lt_one_iff`)
+and `p ∣ a₀ nₚ` (`Nat.prime_iff_prime_int`, `Prime.dvd_or_dvd`), contradicting `p ∤ nₚ` and
+`p > |a₀|` (`Int.natAbs_dvd_natAbs`, `Nat.le_of_dvd`). `transcendental_exp_one_int` strips the
+power of `X` (`exists_eq_pow_rootMultiplicity_mul_and_not_dvd`, `X_dvd_iff`, `e ≠ 0`);
+`transcendental_exp_one` over `ℚ` via `IsFractionRing.isAlgebraic_iff ℤ ℚ ℝ`;
+`transcendental_exp_nat` (`IsAlgebraic.of_pow`), `transcendental_exp_rat` (`q.den`-th power to
+`e^{num}`, sign via `Int.natCast_natAbs` + `IsAlgebraic.inv_iff`); `irrational_exp_one`,
+`irrational_exp_rat`, `irrational_log_rat` (`Real.log_eq_zero` for `q ≠ 0`, then `exp (log r) = r`
+algebraic, `isAlgebraic_algebraMap`), `irrational_log_two`. Uses: termination of `ln2PrecRound`
+(and of any `ln r` constant for rational `r`) via `Nat.find`. Lean notes: `mem_aroots` needs
+`Module.IsTorsionFree ℤ ℂ` (found by inference); the bound `hbound` is on `nₚ • exp r − p • aeval r gₚ`
+with `zsmul`/`nsmul` — convert with `zsmul_eq_mul`, `nsmul_eq_mul`, `← norm_neg, neg_sub`.

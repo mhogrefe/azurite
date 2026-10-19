@@ -672,3 +672,50 @@ theorem truncError_spec (p : ℕ) [NeZero p] (x : ℝ) :
       · exact (abs_finiteVal_bounds s e hv).2
 
 end Azurite.AzFloat
+
+namespace Azurite.AzFloat
+
+/-- The certified loop returns the rounding of the exact value, at every stage. -/
+theorem zivLoopCertified_go_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (happrox : ∀ w, 0 < w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v))
+    (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    ∀ (n f : ℕ) (hf : ∀ g < f,
+        (roundingPossible (approx (w₀ * 2 ^ g)).1 (approx (w₀ * 2 ^ g)).2 p mode).isSome = false),
+      Nat.find h - f = n →
+      zivLoopCertified.go approx p mode w₀ h f hf = roundVal p mode (some (v : EReal))
+  | n, f, hf, hn => by
+    have hw : 0 < w₀ * 2 ^ f := by positivity
+    obtain ⟨lv, hv, hl, hh, h₁, h₂, h₃⟩ := happrox _ hw
+    rw [zivLoopCertified.go.eq_def]
+    split
+    · rename_i r hr
+      exact roundingPossible_eq p mode hl hh h₁ h₂ h₃ hr
+    · rename_i hr
+      have hlt : f < Nat.find h := by
+        by_contra hcon
+        push Not at hcon
+        have hspec := Nat.find_spec h
+        rcases Nat.lt_or_eq_of_le hcon with hlt' | heq
+        · rw [hf _ hlt'] at hspec; exact Bool.false_ne_true hspec
+        · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
+      cases n with
+      | zero => omega
+      | succ m =>
+        exact zivLoopCertified_go_eq p mode approx v happrox w₀ hw₀ h m (f + 1) _ (by omega)
+
+/-- **The certified Ziv loop is the correctly rounded value.** -/
+theorem zivLoopCertified_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (happrox : ∀ w, 0 < w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v))
+    (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    zivLoopCertified approx p mode w₀ h = roundVal p mode (some (v : EReal)) :=
+  zivLoopCertified_go_eq p mode approx v happrox w₀ hw₀ h _ 0 _ rfl
+
+end Azurite.AzFloat

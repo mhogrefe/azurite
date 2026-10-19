@@ -85,3 +85,42 @@ working precision of at least `W` bits: the bit length of `W` doublings. -/
 def zivFuel (W : Nat) : Nat := (AzNat.ofNat W).size
 
 end Azurite.AzFloat
+
+namespace Azurite.AzFloat
+
+/-- Ziv's loop with a **termination certificate**: `h` says that some attempt succeeds
+(`roundingPossible` answers at the working precision `w₀ · 2^f` for some `f`); the loop then
+doubles the working precision until the first success, which the certificate guarantees it
+reaches, so no fuel and no `NaN` fallback are needed.  The certificate is a proposition (erased
+at run time); it is typically derived from the irrationality of the value and the shrinking of
+the brackets.  Each level evaluates `approx` once. -/
+def zivLoopCertified (approx : Nat → Roundable × Roundable) (p : Nat) (mode : RoundingMode)
+    (w₀ : Nat)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    AzFloat × Ordering :=
+  go h 0 (fun _ hg => absurd hg (Nat.not_lt_zero _))
+where
+  go (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true)
+      (f : Nat) (hf : ∀ g < f,
+      (roundingPossible (approx (w₀ * 2 ^ g)).1 (approx (w₀ * 2 ^ g)).2 p mode).isSome = false) :
+      AzFloat × Ordering :=
+    match hr : roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode with
+    | some r => r
+    | none => go h (f + 1) (fun g hg => by
+        rcases Nat.lt_succ_iff_lt_or_eq.mp hg with hg' | rfl
+        · exact hf g hg'
+        · rw [hr]; rfl)
+  termination_by Nat.find h - f
+  decreasing_by
+    have hlt : f < Nat.find h := by
+      by_contra hcon
+      push Not at hcon
+      have hspec := Nat.find_spec h
+      rcases Nat.lt_or_eq_of_le hcon with hlt' | heq
+      · rw [hf _ hlt'] at hspec; exact Bool.false_ne_true hspec
+      · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
+    omega
+
+end Azurite.AzFloat

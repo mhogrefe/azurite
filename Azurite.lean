@@ -61,6 +61,8 @@ import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Literals
+import Azurite.AzFloat.Equiv.Ln2
+import Azurite.AzFloat.Equiv.Ln2Bracket
 import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
@@ -81,6 +83,8 @@ import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Literals
+import Azurite.AzFloat.Ln2
+import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
@@ -333,6 +337,7 @@ import Azurite.AzMvRationalFunction.Parse
 import Azurite.AzMvRationalFunction.ToString
 import Azurite.AzNat.Add
 import Azurite.AzNat.AddModPow2
+import Azurite.AzNat.AtanhSplit
 import Azurite.AzNat.Basic
 import Azurite.AzNat.Bell
 import Azurite.AzNat.Binomial
@@ -352,6 +357,7 @@ import Azurite.AzNat.Divisors
 import Azurite.AzNat.DoubleFactorial
 import Azurite.AzNat.Equiv.Add
 import Azurite.AzNat.Equiv.AddModPow2
+import Azurite.AzNat.Equiv.AtanhSplit
 import Azurite.AzNat.Equiv.Basic
 import Azurite.AzNat.Equiv.Bell
 import Azurite.AzNat.Equiv.Binomial
@@ -1408,6 +1414,7 @@ import Azurite.BrentZimmermann.Chapter4.Holonomic
 import Azurite.BrentZimmermann.Chapter4.InverseRoot
 import Azurite.BrentZimmermann.Chapter4.InverseSqrt
 import Azurite.BrentZimmermann.Chapter4.LegendreRelation
+import Azurite.BrentZimmermann.Chapter4.Ln2BinarySplitting
 import Azurite.BrentZimmermann.Chapter4.Newton
 import Azurite.BrentZimmermann.Chapter4.PowerSeriesEval
 import Azurite.BrentZimmermann.Chapter4.Reciprocal
@@ -1571,6 +1578,7 @@ import Azurite.Rounding.SciPrecision
 import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
+import Azurite.Transcendental.Exp
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits
