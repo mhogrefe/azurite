@@ -61,6 +61,7 @@ import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Float64
+import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Literals
 import Azurite.AzFloat.Equiv.Ln2
@@ -83,6 +84,7 @@ import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Float64
+import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Literals
 import Azurite.AzFloat.Ln2

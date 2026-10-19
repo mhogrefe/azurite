@@ -358,6 +358,13 @@ theorem agmB_lt_AGM (ha : 0 < a) (hb : 0 < b) (hab : a ≠ b) {n : ℕ} (hn : 1 
     nlinarith [agmB_lt_agmA ha hb hab hn]
   exact h1.trans_le (agmB_le_AGM ha hb (by omega))
 
+/-- `AGM(a, b) < a_n` strictly for `n ≥ 1` when `a ≠ b`. -/
+theorem AGM_lt_agmA (ha : 0 < a) (hb : 0 < b) (hab : a ≠ b) {n : ℕ} (hn : 1 ≤ n) :
+    AGM a b < agmA a b n := by
+  have h1 : agmA a b (n + 1) < agmA a b n := by
+    rw [agmA_succ]; linarith [agmB_lt_agmA ha hb hab hn]
+  exact (AGM_le_agmA ha hb (by omega)).trans_lt h1
+
 /-! ### The number of iterations -/
 
 /-- Once `a_1 ≤ 5 b_1`, `n ≤ 2^j` gives `a_{j+1} − b_{j+1} ≤ 8 b_1 / 2^n`: the number of correct

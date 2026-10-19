@@ -3346,3 +3346,35 @@ lemmas (`agm_top_of_pos (h)`) are best passed instantiated; `if_pos`/`if_neg` de
   (`6497320848556798/2^52` below, `914416617264592211221101407495/2^99` above),
   `toString (log2E 53) = "1.4426950408889634"`. Spec also stated as `Real.logb 2 (Real.exp 1)`.
   Naming: `log2E` — base-2 logarithm of `e` (the `ln`/`log2` convention).
+
+## Gauss's constant `G = 1/AGM(1, √2)` for `AzFloat` (DONE 2026-10-18)
+
+`G = 0.83462684167407318628142973279904680899399301349034700244982737010368…`
+`= Γ(1/4)²/(2π)^(3/2) = √2 K(1/√2)/π = ϖ/π` (lemniscate constant over `π`).
+
+* **Irrationality.** No proof simpler than the general AGM one: `G = Γ(1/4)²/(2π)^(3/2)`, so
+  irrationality of `G` is Chudnovsky's (1976) algebraic independence of `π` and `Γ(1/4)` — the CM
+  case (`k = 1/√2`, `τ = i`) of the periods argument in `reference_agm_transcendence`. Nothing in
+  Mathlib; even the irrationality of `Γ(1/4)` alone is not elementary. Hence **fuel**.
+* **Implementation** (`AzFloat/GaussConstant.lean`). `gaussApprox w`: seed `⟨one, one, ⌊√2⌋_w,
+  ⌈√2⌉_w⟩` (`sqrt2PrecRound w .Floor/.Ceiling`), one forced `agmStep` then `agmIter w (w + 4)`,
+  bracket `lo = ⌊1/aHi⌋_w`, `hi = ⌈1/bLo⌉_w` (`divPrecRound one · w .Floor/.Ceiling`), Roundables
+  by `setPrecRound`. `gaussConstantPrecRound p mode = zivLoop gaussApprox p mode (agmFuel p)
+  (p + zivGuardBits)`; `gaussConstant p` nearest. Cost: one AGM at each Ziv level (≈ lg w steps,
+  each an add, a mul and a sqrt at precision `w`) plus one division.
+* **Proofs** (`Equiv/GaussConstant.lean`). `gaussConstantPrecRound_eq_or : … = liftVal₀
+  (1/AGM(1, √2)) p mode ∨ … = (nan, .eq)` via `zivLoop_eq_of_ne_nan` and `gaussApprox_spec`
+  (`lv ≤ G ≤ hv`, `lv < G` strictly so `lv = G → hv = G` holds vacuously). Two ingredients
+  beyond `Equiv/Agm`: (a) `LowerGeOne` — both lower bounds stay `≥ 1` under `agmStep`
+  (`⌊(a+b)/2⌋ ≥ 1` since `2 ∈ floatSet w`, `⌊√⌊ab⌋⌋ ≥ 1` since `1 ∈ floatSet w`; generic
+  `roundVal_floor_ge`: rounding down a real `≥ c` with `c` a float stays `≥ c`), so `bLo > 0` and
+  `1/bLo` is a finite upper bound; (b) `AGM_lt_agmA` (new in `Chapter4/AGM.lean`): `AGM a b <
+  a_n` for `a ≠ b`, `n ≥ 1`, from `a_{n+1} = (a_n + b_n)/2 < a_n`. Also `gaussConstant_eq_ellipticK`
+  (`AGM_smul`, `AGM_comm`, `one_div_AGM_one`, `sqrt_one_sub_salaminB0_sq`).
+* **Tests** (`Tests/GaussConstant.lean`): precisions 1, 2, 3, 53, 100 with all four comparison
+  outcomes (`G·2^53 = 7517650266313539.927…` so nearest rounds up at 53 and is `.gt`;
+  `G·2^100 = …728.083…` so nearest rounds down at 100 and is `.lt`); `toString (gaussConstant 53) =
+  "0.8346268416740732"`.
+* **Fuel.** Same analysis as the AGM: exhaustion only if `G` is within `≈ 2^(−16(p+64))` of a
+  rounding boundary at precision `p`, probability `≈ 2^(−15p−1015)` per call.
+
