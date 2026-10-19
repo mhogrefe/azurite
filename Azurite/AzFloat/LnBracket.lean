@@ -76,16 +76,26 @@ def lnApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
   let b := lnBracket x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
-/-- The bracket of `ln q` for a positive rational `q` at working precision `w`: `ln` of the float
-`x = ⌊q⌋_w` by `lnBracket` (one AGM run), the upper end widened by `2^(2−w) ≥ ln (q/x)`.  (For
-`q ≤ 0` or `w = 0` the floor is not a positive finite float and the ends are `NaN`;
-`lnRatPrecRound` never asks.) -/
-def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
-  match (ofAzRatRound q w .Floor).1 with
-  | x@(finite true e _ _ _) =>
-    let b := lnBracket x e w
+/-- The bracket of `ln q` from a float `y = ⌊q⌋_w` below `q` (within a relative `2·2^(−w)`):
+`ln y` by `lnBracket` (one AGM run), the upper end widened by `2^(2−w) ≥ ln (q/y)`.  (If `y` is
+not a positive finite float the ends are `NaN`; the callers never ask.) -/
+def lnFloorApprox (y : AzFloat) (w : Nat) : Roundable × Roundable :=
+  match y with
+  | y@(finite true e _ _ _) =>
+    let b := lnBracket y e w
     let hi := (addPrecRound b.2 (powerOf2 (((2 : Nat) : AzInt) - (w : AzInt))) w .Ceiling).1
     (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound hi p mode)
   | _ => (fun _ _ => (nan, .eq), fun _ _ => (nan, .eq))
+
+/-- The bracket of `ln q` for a positive rational `q` at working precision `w`: `lnFloorApprox`
+of `⌊q⌋_w`. -/
+def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  lnFloorApprox (ofAzRatRound q w .Floor).1 w
+
+/-- The bracket of `ln (1 + x)` for a float `x > −1` at working precision `w`: `lnFloorApprox` of
+`⌊1 + x⌋_w` (one rounded addition; for `|x| < 1` the caller starts `w` high enough that the
+rounding keeps the leading bits of `x`). -/
+def ln1pApprox (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+  lnFloorApprox (addPrecRound one x w .Floor).1 w
 
 end Azurite.AzFloat

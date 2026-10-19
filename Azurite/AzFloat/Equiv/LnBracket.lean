@@ -32,9 +32,10 @@ import Azurite.Transcendental.Exp
   `abs_pi_div_AGM_sub_log_le` (MCA's AGM–logarithm error), `piBracket_spec` and `ln2Bracket_spec`
   (the term `ℓ ln 2`, `ln_L_spec`).
 * `lnApprox_isSome_exists`: the Ziv certificate, from `irrational_log_rat`.
-* `lnRatApprox_spec`/`lnRatApprox_isSome_exists`: the same for `ln q`, `q` a positive rational:
-  `ln` of the float `⌊q⌋_w`, the upper end widened by `2^(2−w) ≥ ln (q/⌊q⌋_w)`; width
-  `≤ lnRatEps E |ln q| w` with `E = ⌊2 |ln q|⌋ + 2 ≥ |exponent of ⌊q⌋_w|`.
+* `lnFloorApprox_spec`: `ln` of a float `y ≤ q ≤ y (1 + 2·2^(−w))`, the upper end widened by
+  `2^(2−w) ≥ ln (q/y)`, encloses `ln q` with width `≤ lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2 ≥
+  |exponent of y|`; hence `lnRatApprox_spec`/`lnRatApprox_isSome_exists` (`q` a positive rational,
+  `y = ⌊q⌋_w`) and `ln1pApprox_spec`/`ln1pApprox_isSome_exists` (`q = 1 + x`, `y = ⌊1 + x⌋_w`).
 -/
 
 namespace Azurite.AzFloat
@@ -1109,20 +1110,15 @@ theorem tendsto_lnRatEps (E : ℕ) (A : ℝ) :
   simp only [mul_zero, add_zero] at this
   exact this
 
-/-- `lnRatApprox q w` encloses `ln q` strictly, with width at most `lnRatEps E |ln q| w`
-(`w ≥ 64`, `q > 0`, `q ≠ 1`). -/
-theorem lnRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
-    (hq1 : AzRat.toRat q ≠ 1) :
-    ∃ lv hv : ℝ, Rounds (lnRatApprox q w).1 lv ∧ Rounds (lnRatApprox q w).2 hv ∧
-      lv < Real.log (AzRat.toRat q : ℝ) ∧ Real.log (AzRat.toRat q : ℝ) < hv ∧
-      hv - lv ≤ lnRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
-        |Real.log (AzRat.toRat q : ℝ)| w := by
+/-- `lnFloorApprox y w` for a float `y` with `y ≤ q ≤ y (1 + 2·2^(−w))` encloses `ln q` strictly
+(`ln q` irrational), with width at most `lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2` (`w ≥ 64`). -/
+theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+    (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) (hirr : Irrational (Real.log qv)) :
+    ∃ lv hv : ℝ, Rounds (lnFloorApprox y w).1 lv ∧ Rounds (lnFloorApprox y w).2 hv ∧
+      lv < Real.log qv ∧ Real.log qv < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w := by
   have : NeZero w := ⟨by omega⟩
-  have hirr : Irrational (Real.log (AzRat.toRat q : ℝ)) := irrational_log_rat hq hq1
-  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
-  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
-  set qv : ℝ := (AzRat.toRat q : ℝ) with hqv
-  rw [abs_of_pos hqv0] at hr2
   set u := (1 / 2 : ℝ) ^ w with hu
   have hu0 : 0 < u := by positivity
   have hu4 : u ≤ 1 / 16 := by
@@ -1132,7 +1128,8 @@ theorem lnRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) <
   have hrhalf : qv / 2 ≤ r := by linarith
   have hr0 : 0 < r := by linarith
   obtain ⟨e, q', m, hv, hx, hrv⟩ := eq_finite_true_of_toVal_pos hr hr0
-  simp only [lnRatApprox, hx]
+  subst hx
+  simp only [lnFloorApprox]
   obtain ⟨lv, hv', hlv, hhv, hlo, hhi, hwid⟩ := lnBracket_spec hw e hv
   rw [hrv] at hlo hhi
   obtain ⟨hlow, hhigh⟩ := abs_finiteVal_bounds true e hv
@@ -1212,6 +1209,20 @@ theorem lnRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) <
   · unfold lnRatEps
     linarith
 
+/-- `lnRatApprox q w` encloses `ln q` strictly, with width at most `lnRatEps E |ln q| w`
+(`w ≥ 64`, `q > 0`, `q ≠ 1`). -/
+theorem lnRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
+    (hq1 : AzRat.toRat q ≠ 1) :
+    ∃ lv hv : ℝ, Rounds (lnRatApprox q w).1 lv ∧ Rounds (lnRatApprox q w).2 hv ∧
+      lv < Real.log (AzRat.toRat q : ℝ) ∧ Real.log (AzRat.toRat q : ℝ) < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  exact lnFloorApprox_spec hw hr hqv0 hr1 hr2 (irrational_log_rat hq hq1)
+
 /-- The Ziv certificate for `ln q`: at some working precision `w₀ · 2^f`, rounding is possible. -/
 theorem lnRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
     (hq : (0 : ℚ) < AzRat.toRat q) (hq1 : AzRat.toRat q ≠ 1) (w₀ : ℕ) (hw₀ : 0 < w₀) :
@@ -1223,5 +1234,85 @@ theorem lnRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q 
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := lnRatApprox_spec hw q hq hq1
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The logarithm of `1 + x` -/
+
+/-- `ln (1 + x)` is irrational for a float `x ≠ 0` with `1 + x > 0`. -/
+theorem irrational_log_one_add_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hpos : 0 < 1 + xv) (hx0 : xv ≠ 0) : Irrational (Real.log (1 + xv)) := by
+  obtain ⟨rx, hrx⟩ := exists_rat_of_toVal hx
+  have e : (1 + xv) = ((1 + rx : ℚ) : ℝ) := by push_cast; rw [hrx]
+  rw [e]
+  have hrx0 : rx ≠ 0 := fun h => hx0 (by rw [hrx, h, Rat.cast_zero])
+  have hpos' : (0 : ℚ) < 1 + rx := by
+    have : (0 : ℝ) < ((1 + rx : ℚ) : ℝ) := by rw [← e]; exact hpos
+    exact_mod_cast this
+  exact irrational_log_rat hpos' fun h => hrx0 (by linarith)
+
+/-- `ln1pApprox x w` encloses `ln (1 + x)` strictly, with width at most
+`lnRatEps E |ln (1 + x)| w` (`w ≥ 64`, `x > −1`, `x ≠ 0`). -/
+theorem ln1pApprox_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0) :
+    ∃ lv hv : ℝ, Rounds (ln1pApprox x w).1 lv ∧ Rounds (ln1pApprox x w).2 hv ∧
+      lv < Real.log (1 + xv) ∧ Real.log (1 + xv) < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  exact lnFloorApprox_spec hw hr hpos hf.le hf.ge (irrational_log_one_add_of_toVal hx hpos hx0)
+
+/-- The Ziv certificate for `ln (1 + x)`. -/
+theorem ln1pApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (ln1pApprox x (w₀ * 2 ^ f)).1 (ln1pApprox x (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (ln1pApprox x)
+    (irrational_log_one_add_of_toVal hx (by linarith) hx0)
+    (lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_lnRatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := ln1pApprox_spec hw hx hx1 hx0
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### Facts about the exponent for `ln1pPrecRound` -/
+
+theorem toVal_neg_one : (-one).toVal = some ((-1 : ℝ) : EReal) := by
+  rw [toVal_neg, toVal_one']; rfl
+
+/-- A negative float with exponent `e ≤ 0` (`¬ (e.sign ∧ e.abs ≠ 0)`) lies in `(−1, 0)`. -/
+theorem finiteVal_false_gt_neg_one (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (h : ¬ (e.sign = true ∧ e.abs ≠ 0)) : -1 < finiteVal false e m := by
+  have he : e.toInt ≤ 0 := by
+    unfold AzInt.toInt
+    split_ifs with hs
+    · have h0 : e.abs = 0 := by
+        by_contra hne; exact h ⟨hs, hne⟩
+      rw [h0, AzNat.toNat_zero]; rfl
+    · omega
+  have hb := (abs_finiteVal_bounds true e hv).2
+  have hpos := finiteVal_true_pos e hv
+  rw [abs_of_pos hpos] at hb
+  have h1 : (2 : ℝ) ^ e.toInt ≤ 1 := zpow_le_one_of_nonpos₀ (by norm_num) he
+  rw [finiteVal_false]
+  linarith
+
+/-- A negative float with exponent `e ≥ 1` (`e.sign ∧ e.abs ≠ 0`) is `≤ −1`. -/
+theorem finiteVal_false_le_neg_one (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (h : e.sign = true ∧ e.abs ≠ 0) : finiteVal false e m ≤ -1 := by
+  have he : 1 ≤ e.toInt := by
+    unfold AzInt.toInt
+    rw [h.1]
+    simp only [↓reduceIte]
+    have := toNat_ne_zero_of_ne_zero h.2
+    omega
+  have hb := (abs_finiteVal_bounds true e hv).1
+  have hpos := finiteVal_true_pos e hv
+  rw [abs_of_pos hpos] at hb
+  have h1 : (1 : ℝ) ≤ (2 : ℝ) ^ (e.toInt - 1) := one_le_zpow₀ (by norm_num) (by omega)
+  rw [finiteVal_false]
+  linarith
+
+theorem finiteVal_false_ne_zero (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    finiteVal false e m ≠ 0 := by
+  rw [finiteVal_false]; exact neg_ne_zero.mpr (finiteVal_true_pos e hv).ne'
 
 end Azurite.AzFloat

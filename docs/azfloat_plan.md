@@ -3635,3 +3635,74 @@ Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.le
   stated *before* the `set` (`exact_mod_cast` does not see through the local definition);
   `Rat.cast_zero` was not needed after `rw [toRat_eq_zero_iff]` (the coercion chain simplifies
   with `EReal.coe_zero` alone).
+
+## `ln (1 + x)` for `AzFloat` (DONE 2026-10-19, fuel-free; MCA `log1p`)
+
+Files: `AzFloat/Ln1p.lean`, `AzFloat/Equiv/Ln1p.lean`, `AzFloat/Tests/Ln1p.lean`; the bracket
+`ln1pApprox` and the generic `lnFloorApprox` live in `AzFloat/LnBracket.lean` / `Equiv/LnBracket.lean`.
+
+* **Method vs MCA.** MCA §4.4.2 / Exercise 4.9 evaluate `log1p` by the reduction
+  `log1p(x) = 2 log1p(x/(1 + √(1 + x)))` and a power series, `O(√n M(n))`; the AGM logarithm is
+  `O(log n · M(n))`, so `ln (1 + x)` is `ln` of the float `y = ⌊1 + x⌋_w` with the upper end
+  widened by `2^(2−w) ≥ ln ((1 + x)/y)` — the `lnRat` construction with `ofAzRatRound q w .Floor`
+  replaced by `addPrecRound one x w .Floor`.  Refactor: `lnFloorApprox y w` is the common
+  bracket and `lnFloorApprox_spec` the common proof (`y ≤ q ≤ y (1 + 2u)`, `ln q` irrational);
+  `lnRatApprox_spec` and `ln1pApprox_spec` are two-line corollaries.
+* **Why `log1p` at all.** For `|x| < 1` with exponent `e ≤ 0`, `1 + x` at precision `w` keeps
+  only `w + e` bits of `x`, and `ln (1 + x) ≈ x` needs them all: the Ziv loop therefore starts at
+  `w₀ = p + 64 + leadingZeroBits e` (`−e`, through `toUInt64`) instead of `p + 64`, so the first
+  level determines the rounding (the plain `ln` of a float near `1` would double `w` several
+  times to reach the same point).  The certificate is indifferent to `w₀`
+  (`exists_isSome_of_irrational_threshold` takes any `w₀ > 0`), and `zivLoopCertified_eq_threshold`
+  needs the enclosure only for `w ≥ w₀ ≥ 64`.
+* **Driver.** `nan ↦ nan`, `+∞ ↦ +∞`, `−∞ ↦ nan`, `0 ↦ 0` exactly, positive `x` → the loop; negative
+  `x = finite false e …`: if `e.sign ∧ e.abs ≠ 0` (exponent `≥ 1`, so `x ≤ −1`:
+  `finiteVal_false_le_neg_one`) then `x = −1` (by `eqIEEE x (−one)`, `toVal_neg_one`) gives
+  `(−∞, .eq)` and `x < −1` gives `(nan, .eq)`; otherwise `−1 < x < 0`
+  (`finiteVal_false_gt_neg_one`, from `|x| < 2^e ≤ 1`) → the loop.  Spec
+  `ln1pPrecRound_eq_liftVal : … = liftVal (fun a => Spec.log (a + 1)) x p mode` (`⊤ + 1 = ⊤`,
+  `⊥ + 1 = ⊥` by `EReal.top_add_coe`/`EReal.bot_add`).
+* **Tests.** Special values; agreement with `ln` on exactly representable `1 + x` (`x = 3, −1/2, 1,
+  7`, also the `Floor` pair); `ln (1 ± 2^(−30))` at 53 and 200 bits, `ln (1 + 2^(−100))` at 53
+  bits (rounds to `2^(−100)` from above) and 300 bits, against independent 110-digit expansions.
+* **Lean notes.** `rw [add_comm]` on a goal containing `zivLoopCertified … (p + 64 + E) h` fails
+  (the certificate `h` depends on the start precision — "motive is not type correct"): rewrite
+  the specific real sum, `add_comm (finiteVal …) 1`.  A `match` arm `y@(finite true e _ _ _)` is
+  reduced in proofs by `subst` of the constructor equation followed by `simp only [lnFloorApprox]`.
+
+## `log₂` for `AzFloat` (DONE 2026-10-19, fuel-free)
+
+Files: `AzFloat/Log2Bracket.lean`, `AzFloat/Log2.lean`, `AzFloat/Equiv/Log2Bracket.lean`,
+`AzFloat/Equiv/Log2.lean`, `AzFloat/Tests/Log2.lean`.
+
+* **Exact powers of two first.** The significand `m` of `x = finite true e q m hv` is a power
+  of two (`AzNat.isPowerOfTwo`, `isPowerOfTwo_iff`) iff `x = 2^(e−1)` (`finiteVal_true_of_isPowerOfTwo`:
+  `m = 2^k`, `m.size = k + 1` by `Nat.size_pow`), and then `log₂ x = e − 1` is returned as
+  `setPrecRound (ofAzInt (e − 1)) p mode` — exact with `.eq` when `e − 1` fits `p` bits, correctly
+  rounded otherwise (`log₂ 2^100` at 3 bits is `96, .lt`).
+* **Irrationality for the rest.** `log₂ n` is irrational for odd `n ≠ 1`
+  (`irrational_logb_two_of_odd`): `log₂ n = p/q` gives `2^(p/q) = n` (`Real.rpow_logb`), hence
+  `n^q = 2^p` (`rpow_natCast`, `rpow_mul`, `rpow_intCast`; `(r : ℝ) · r.den = r.num` from
+  `Rat.cast_def`); for `p ≥ 0` parity (`Nat.even_pow`; `p = 0` forces `n = 1`), for `p < 0`
+  `2^p < 1 ≤ n^q`.  A float value is `(2^k n) 2^j` with `n` odd (`Nat.exists_eq_two_pow_mul_odd`),
+  `n ≠ 1` unless the significand is a power of two, and `log₂ (n 2^j) = log₂ n + j`
+  (`Real.logb_mul`, `logb_two_zpow`) is irrational by `Irrational.add_intCast`.
+* **The bracket.** `ln x / ln 2` from `lnBracket` (`[a, b]`) and `ln2Bracket` (`[c, d]`,
+  `c ≥ 1/5`): since the sign of `ln x` is unknown, the lower end is `⌊a/d⌋` for `a ≥ 0` and
+  `⌊a/c⌋` for `a < 0` (`isNegative`, `toVal_sign_of_isNegative`), symmetrically above
+  (`log2Lower_spec`, `log2Upper_spec`).  Width: `Q − q ≤ (b − a)/c + (|a| + |b|)(1/c − 1/d)` with
+  `1/c − 1/d = (d − c)/(cd) ≤ 8u/((1/5)(0.69)) ≤ 60u`, plus the two roundings `2 (|·|/c) u ≤
+  10 (|ln x| + ε) u`; `log2Eps e A w = 5 lnEps e w + 140 (A + lnEps e w) u`.  The exponent `e` of
+  `x` is fixed, so no exponent bound is needed (unlike `lnRat`).  Cost: one `lnBracket` plus the
+  `ln 2` bracket and two divisions.
+* **Spec.** `Spec.log2` as `Spec.log` with `Real.logb 2`; `log2PrecRound_eq_liftVal`.
+  `log₂ 0 = −∞`, negatives and `−∞` `NaN`, `+∞ ↦ +∞`.
+* **Tests.** Special values; exact powers (`1, 2, 8, 1/4, 2^(−30), 2^100` at 53 bits, `2^100` at
+  3 bits in three modes); `log₂ 10, 3, 1/3, 3/2, 10^6, 5` at 53 bits (the input `F "1/3" 53` is the
+  double below `1/3`, so its logarithm ends in `…563`, not `…56`); floor/ceiling tags; `log₂ 10`
+  and `log₂ 3` at 200 bits *against 80-digit rational references rounded to 200 bits* (sharper
+  than a decimal string: the shortest round-trip string of a 200-bit float can differ from the
+  correctly rounded expansion in its last digit, as `log₂ 10` showed — `…757` vs `…7563`).
+* **Lean notes.** `le_or_lt` is gone (`le_or_gt`); the implicit `v` of
+  `exists_isSome_of_irrational_threshold` must be fixed by a `have hirr` before `exact`, or the
+  `rw [Real.log_div_log]` inside its argument sees a metavariable.
