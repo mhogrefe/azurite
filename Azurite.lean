@@ -359,6 +359,8 @@ import Azurite.AzNat.CompareProduct
 import Azurite.AzNat.CompareProducts
 import Azurite.AzNat.Conversion
 import Azurite.AzNat.Div
+import Azurite.AzNat.Div.Classic
+import Azurite.AzNat.Div.Newton
 import Azurite.AzNat.Div.Recursive
 import Azurite.AzNat.Div.Schoolbook
 import Azurite.AzNat.DivBy6
@@ -380,9 +382,11 @@ import Azurite.AzNat.Equiv.CompareProducts
 import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Div.Addback
 import Azurite.AzNat.Equiv.Div.BodyStep
+import Azurite.AzNat.Equiv.Div.Classic
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Div.DivModLimb
 import Azurite.AzNat.Equiv.Div.DivModLimb2
+import Azurite.AzNat.Equiv.Div.Newton
 import Azurite.AzNat.Equiv.Div.Schoolbook
 import Azurite.AzNat.Equiv.Div.SubMulLimbs
 import Azurite.AzNat.Equiv.DivBy6

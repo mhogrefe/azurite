@@ -41,6 +41,7 @@ import Azurite.AzNat.Tests.AtanhSplit
 import Azurite.AzNat.Tests.CompareDouble
 import Azurite.AzNat.Tests.Conversion
 import Azurite.AzNat.Tests.Div
+import Azurite.AzNat.Tests.DivNewton
 import Azurite.AzNat.Tests.DivRound
 import Azurite.AzNat.Tests.Gcd
 import Azurite.AzNat.Tests.GetBits
