@@ -13,6 +13,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -- via `lake test`.
 import Azurite.AzFloat.Tests.Add
 import Azurite.AzFloat.Tests.AddMul
+import Azurite.AzFloat.Tests.AddMulRat
 import Azurite.AzFloat.Tests.AddSubRat
 import Azurite.AzFloat.Tests.Agm
 import Azurite.AzFloat.Tests.Basic

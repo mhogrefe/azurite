@@ -24,8 +24,8 @@ and the ternary says on which side the exact value lies.
 * `toUnpackedTernary x o` is `toUnpacked x .Nearest` with the subnormal shift resolved by the
   ternary `o` (`AzInt.shiftRightNearestTernary`).
 * `emulateFinish (x, o)` packs that into a `Float`; `emulate`, `emulate₂`, `emulate₃`,
-  `emulateRat` and `emulateList` wrap a 53-bit round-to-nearest computation of an `AzFloat`
-  function between `ofFloat64` and `emulateFinish`.
+  `emulate₂Rat`, `emulateRat` and `emulateList` wrap a 53-bit round-to-nearest computation of
+  an `AzFloat` function between `ofFloat64` and `emulateFinish`.
 * Each emulated function lives next to the `AzFloat` operation it wraps (`sumFloat64` in
   `AzFloat/Sum`, say); this file holds only the shared machinery.
 
@@ -75,6 +75,13 @@ def emulate₃
     (f : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering)
     (x y z : Float) : Float :=
   emulateFinish (f (ofFloat64 x) (ofFloat64 y) (ofFloat64 z) 53 .Nearest)
+
+/-- A correctly rounded `Float` function from an `AzFloat` operation on two floats and a
+rational. -/
+def emulate₂Rat
+    (f : AzFloat → AzFloat → AzRat → Nat → RoundingMode → AzFloat × Ordering)
+    (x y : Float) (z : AzRat) : Float :=
+  emulateFinish (f (ofFloat64 x) (ofFloat64 y) z 53 .Nearest)
 
 /-- A correctly rounded `Float` from an `AzFloat` operation on a rational argument. -/
 def emulateRat (f : AzRat → Nat → RoundingMode → AzFloat × Ordering) (q : AzRat) : Float :=

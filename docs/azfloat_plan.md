@@ -3850,3 +3850,19 @@ through the new `emulate₃`/`toVal_emulate₃`.  Tests: the classic fused witne
 `x = −(1 + 2^-51)`, `y = z = 1 + 2^-52` gives `2^-104` exactly (separate operations give `0`), the
 rounding tags at 3 bits, `0·∞` and `∞ − ∞` to `NaN`, and `+0.0` for an exact zero `Float` result.
 
+## Fused multiply-add and multiply-subtract with a rational factor (DONE 2026-10-20)
+
+`AzFloat/AddMulRat.lean`, `Equiv/AddMulRat.lean`, `Tests/AddMulRat.lean`.  For floats `x`, `y`
+and a rational `z`, `addMulRatPrecRound x y z p mode = x + y·z` rounded once, `subMulRatPrecRound`
+likewise for `x − y·z`.  Both are instances of `fusedMulRat opF opR`: a finite `y` is converted
+exactly to a rational (`toAzRat?`), the product `y·z` is exact in `AzRat`, and the float–rational
+operation `opR` (`addRatPrecRound`/`subRatPrecRound`, Ziv loops already proven) performs the single
+rounding; an infinite `y` becomes `infinity (s == z.sign)` (`NaN` when `z = 0`) and the float–float
+operation `opF` (`addPrecRound`/`subPrecRound`) handles it.  `fusedMulRat_eq` proves the shape
+correctly rounded from the two operation specs (`toVal_of_toAzRat?`, `sign_eq_decide_pos`,
+`Spec.mul_inf_coe`), giving `addMulRatPrecRound_eq_liftVal₂`/`subMulRatPrecRound_eq_liftVal₂` with
+`Spec.addMul a b ↑z`/`Spec.subMul`.  `Float` versions `addMulRatFloat64`/`subMulRatFloat64` through
+the new wrapper `emulate₂Rat` (two `Float`s and an `AzRat`) with `toVal_emulate₂Rat`.  Tests: agreement with `addRatPrecRound` for `y = 1`, exact results, the
+one-rounding witness `−1 + (1 + 2^-52)(1 + 2^-52) = 2^-51 + 2^-104` (tag `.lt`, where a rounded
+product would be exact), rounding tags at 3 bits, special values.
+
