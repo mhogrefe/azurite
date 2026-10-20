@@ -3831,3 +3831,22 @@ bits to exactly `2^-1075` (ternary `.lt`), which `toFloat64` alone sends to `0` 
 `emulate₂ mulPrecRound` correctly to `2^-1074`; sums with cancellation (`[1e16, 1, 1]`,
 `[1e100, 1, −1e100]`), overflow at the exact IEEE threshold (`maxF + 2^970 → ∞`, `+ 2^969 → maxF`),
 `ln 2` to the correctly rounded double, and the special values.
+
+## Fused multiply-add and multiply-subtract (DONE 2026-10-20)
+
+`AzFloat/AddMul.lean`, `Equiv/AddMul.lean`, `Tests/AddMul.lean`.  `addMulPrecRound x y z p mode`
+is `x + y·z` rounded once and `subMulPrecRound` is `x − y·z`: the product is formed exactly by
+`exactMul y z = (mulPrecRound y z (q_y + q_z) .Floor).1` and then one `addPrecRound`/`subPrecRound`
+rounds.  `toVal_exactMul` proves the product exact on every input: for finite operands
+`finiteVal_eq_int_mul_prec` writes each as `k_i · 2^(e_i − q_i)` with `|k_i| < 2^(q_i)`, so the
+product is `k₁k₂ · 2^(…)` with `|k₁k₂| < 2^(q₁+q₂)` and `mem_floatSet_mul_zpow` puts it in
+`floatSet (q₁+q₂)`, where rounding is the identity (`toVal_fst_roundVal`: `roundVal` returns a
+float of the given value when it is `NaN`, an infinity, or a real in `floatSet p`); the special
+values are `Spec.mul`'s.  Specs: `liftVal₃`, `Spec.addMul a b c = (Spec.mul b c).bind (Spec.add a)`,
+`addMulPrecRound_eq_liftVal₃`, `subMulPrecRound_eq_liftVal₃` (both one-line consequences of
+`toVal_exactMul` and the add/sub specs via `Option.bind_assoc`).  Default-precision `addMul`/`subMul`
+use the largest operand precision.  `Float` versions `addMulFloat64`/`subMulFloat64` (IEEE `fma`)
+through the new `emulate₃`/`toVal_emulate₃`.  Tests: the classic fused witness
+`x = −(1 + 2^-51)`, `y = z = 1 + 2^-52` gives `2^-104` exactly (separate operations give `0`), the
+rounding tags at 3 bits, `0·∞` and `∞ − ∞` to `NaN`, and `+0.0` for an exact zero `Float` result.
+
