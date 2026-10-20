@@ -624,6 +624,24 @@ theorem toVal_emulate₃
   unfold emulate₃
   rw [hg, toVal_emulateFinish_roundVal, toVal_ofFloat64, toVal_ofFloat64, toVal_ofFloat64]
 
+/-- The four-argument version, for operations specified by a `roundVal` of `f` over the four
+values. -/
+theorem toVal_emulate₄
+    (g : AzFloat → AzFloat → AzFloat → AzFloat → ℕ → RoundingMode →
+      AzFloat × Ordering)
+    (f : EReal → EReal → EReal → EReal → Option EReal)
+    (hg : ∀ x y z w, g x y z w 53 .Nearest = roundVal 53 .Nearest
+      (x.toVal.bind fun a => y.toVal.bind fun b => z.toVal.bind fun c =>
+        w.toVal.bind fun d => f a b c d))
+    (x y z w : Float) :
+    (emulate₄ g x y z w).toModel.unpack.toVal
+      = roundBinary64Val (x.toModel.unpack.toVal.bind fun a =>
+          y.toModel.unpack.toVal.bind fun b => z.toModel.unpack.toVal.bind fun c =>
+            w.toModel.unpack.toVal.bind fun d => f a b c d) := by
+  unfold emulate₄
+  rw [hg, toVal_emulateFinish_roundVal, toVal_ofFloat64, toVal_ofFloat64, toVal_ofFloat64,
+    toVal_ofFloat64]
+
 /-- The two-floats-and-a-rational version, for operations specified by a `roundVal` of `f` over
 the two float values and the rational. -/
 theorem toVal_emulate₂Rat

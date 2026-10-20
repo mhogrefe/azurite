@@ -82,6 +82,7 @@ import Azurite.AzFloat.Equiv.Log2Bracket
 import Azurite.AzFloat.Equiv.Log2Rat
 import Azurite.AzFloat.Equiv.Log2p1
 import Azurite.AzFloat.Equiv.Mul
+import Azurite.AzFloat.Equiv.MulAddMul
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Pi
@@ -118,6 +119,7 @@ import Azurite.AzFloat.Log2Bracket
 import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Log2p1
 import Azurite.AzFloat.Mul
+import Azurite.AzFloat.MulAddMul
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Pi

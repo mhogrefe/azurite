@@ -3866,3 +3866,16 @@ the new wrapper `emulate₂Rat` (two `Float`s and an `AzRat`) with `toVal_emulat
 one-rounding witness `−1 + (1 + 2^-52)(1 + 2^-52) = 2^-51 + 2^-104` (tag `.lt`, where a rounded
 product would be exact), rounding tags at 3 bits, special values.
 
+## Sums and differences of two products (DONE 2026-10-20)
+
+`AzFloat/MulAddMul.lean`, `Equiv/MulAddMul.lean`, `Tests/MulAddMul.lean`.
+`mulAddMulPrecRound x y z w p mode = x·y + z·w` rounded once and `mulSubMulPrecRound` for
+`x·y − z·w`: both products exact (`exactMul`), then one `addPrecRound`/`subPrecRound`.  Specs
+`liftVal₄`, `Spec.mulAddMul`/`Spec.mulSubMul`, `mulAddMulPrecRound_eq_liftVal₄`/
+`mulSubMulPrecRound_eq_liftVal₄`; the only work beyond `toVal_exactMul` is `bind_products`, which
+commutes the bind of the first (closed) product past the binds of `z` and `w` by cases.  `Float`
+versions `mulAddMulFloat64`/`mulSubMulFloat64` through the new `emulate₄`/`toVal_emulate₄`.
+Tests: the witness `x = y = 1 + 2^-52`, `z = 1 + 2^-51`, `w = 1` with `x·y − z·w = 2^-104` exactly
+(separate roundings give `0`), rounding tags at 3 bits, `0·∞`/`∞ − ∞` to `NaN`, intermediate
+overflow `(10^200)^2 − (10^200)^2 = 0`, and `+0.0` for an exact zero `Float` result.
+
