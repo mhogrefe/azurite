@@ -32,6 +32,14 @@ The specification is the rounding target `intPrecisionSet p` of `Rounding/IntPre
 float is already an integer), the `p`-bit rounding `setPrecRound` is the answer, since every
 `p`-bit value near `x` is then an integer; otherwise `|x| < 2^(p−1)`, every integer near `x` is
 representable, and the integer rounding is the rounded shift `AzInt.shiftRightRound`.
+
+`roundToIntegerThenPrecRound x irm p rm` is the composition of two roundings instead (MPFR's
+`mpfr_rint_`-prefixed functions): the exact integer rounding of `x` in `irm` first, then that
+integer correctly rounded to precision `p` in `rm`, with the comparison against the exact
+integer.  With both modes `Nearest`, `10.5` becomes `10` and then `8` at 2 bits, where the
+single rounding gives `12`.  The first step is `roundToIntegerPrecRound` at the float's own
+precision, which is always exact (`toVal_roundToIntegerPrecRound_self`); the specials pass
+through the final rounding only.
 -/
 
 namespace Azurite.AzFloat
@@ -73,5 +81,15 @@ def roundToIntegerRound (x : AzFloat) (mode : RoundingMode) : AzFloat :=
 
 /-- `x` rounded to the nearest integer (ties to even) at its own precision. -/
 def roundToInteger (x : AzFloat) : AzFloat := roundToIntegerRound x .Nearest
+
+/-- `x` rounded to an integer in `irm` (exactly), then that integer rounded to precision `p` in
+`rm`, with the comparison of the result against the exact integer. -/
+def roundToIntegerThenPrecRound (x : AzFloat) (irm : RoundingMode) (p : Nat)
+    (rm : RoundingMode) : AzFloat × Ordering :=
+  setPrecRound (roundToIntegerPrecRound x (x.precision?.getD 1) irm).1 p rm
+
+/-- `x` rounded to an integer in `irm`, then to nearest at precision `p`. -/
+def roundToIntegerThenPrec (x : AzFloat) (irm : RoundingMode) (p : Nat) : AzFloat :=
+  (roundToIntegerThenPrecRound x irm p .Nearest).1
 
 end Azurite.AzFloat

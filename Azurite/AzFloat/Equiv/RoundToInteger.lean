@@ -25,6 +25,11 @@ import Azurite.Rounding.IntPrecision
 The two branches of the implementation are the two characterizations of `intPrecisionSet`:
 from exponent `p` on, `setPrecRound` (`val_round_intPrecision_large`); below, the rounded shift
 (`val_round_intPrecision_small`).
+
+`roundToIntegerThenPrecRound_eq_liftE`: the two-step rounding is `liftE (Spec.rint irm)`, the
+`p`-bit rounding of the exact integer rounding `Spec.rint irm v = round intSet irm v` (`±∞`
+pass through), because `roundToIntegerPrecRound` at the float's own precision is exactly the
+integer rounding (`toVal_roundToIntegerPrecRound_self`).
 -/
 
 namespace Azurite.AzFloat
@@ -213,5 +218,75 @@ theorem roundToIntegerPrecRound_spec (x : AzFloat) (p : ℕ) [NeZero p] (mode : 
       · intro h; exact ⟨r.1.toInt, h.symm⟩
       · rintro ⟨n, hn⟩
         rw [hn, ← hti, hn, toInt_round_intCast]
+
+/-! ### Two roundings -/
+
+/-- At the float's own precision, `roundToIntegerPrecRound` is exactly the integer rounding. -/
+theorem toVal_roundToIntegerPrecRound_self (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (irm : RoundingMode) :
+    (roundToIntegerPrecRound (finite s e q m hv) q irm).1.toVal
+      = some (round intSet irm (finiteVal s e m)).val := by
+  have : NeZero q := ⟨hv.pos.ne'⟩
+  obtain ⟨h1, -, -⟩ := roundToIntegerPrecRound_spec (finite s e q m hv) q irm _ rfl
+  rw [h1]
+  obtain ⟨-, hhi⟩ := abs_finiteVal_bounds s e hv
+  rcases lt_or_ge |finiteVal s e m| ((2 : ℝ) ^ ((q : ℤ) - 1)) with hsmall | hlarge
+  · rw [val_round_intPrecision_small irm _ hsmall]
+  · obtain ⟨k, hk, hkb⟩ := finiteVal_eq_int_mul_prec s e hv
+    have hqe : (q : ℤ) ≤ e.toInt := by
+      have : (2 : ℝ) ^ ((q : ℤ) - 1) < 2 ^ e.toInt := hlarge.trans_lt hhi
+      have := (zpow_lt_zpow_iff_right₀ (by norm_num : (1 : ℝ) < 2)).mp this
+      omega
+    have hmem := mem_floatSet_mul_zpow q k (e.toInt - q) hkb.le
+    rw [val_round_intPrecision_large irm _ hlarge, ← val_round_floatSet, hk,
+      val_round_of_mem _ irm hmem]
+    have hint : ((k : ℝ) * (2 : ℝ) ^ (e.toInt - q) : ℝ)
+        = ((k * 2 ^ (e.toInt - q).toNat : ℤ) : ℝ) := by
+      push_cast
+      rw [← zpow_natCast, Int.toNat_of_nonneg (by omega)]
+    rw [hint, val_round_of_mem intSet irm ⟨_, rfl⟩]
+
+namespace Spec
+
+open Classical in
+/-- The exact integer rounding of a specification value in `irm`; `±∞` pass through. -/
+noncomputable def rint (irm : RoundingMode) (a : EReal) : EReal :=
+  if a = ⊤ then ⊤ else if a = ⊥ then ⊥ else (round intSet irm a.toReal).val
+
+theorem rint_coe (irm : RoundingMode) (v : ℝ) : rint irm v = (round intSet irm v).val := by
+  unfold rint
+  rw [ite_eq_right (EReal.coe_ne_top v), ite_eq_right (EReal.coe_ne_bot v), EReal.toReal_coe]
+
+end Spec
+
+/-- **The two-step rounding is correctly rounded**: `roundToIntegerThenPrecRound x irm p rm`
+is the `p`-bit rounding in `rm` of the exact integer rounding of `x` in `irm`, with the
+comparison against that integer. -/
+theorem roundToIntegerThenPrecRound_eq_liftE (x : AzFloat) (irm : RoundingMode) (p : ℕ)
+    [NeZero p] (rm : RoundingMode) :
+    roundToIntegerThenPrecRound x irm p rm = liftE (Spec.rint irm) x p rm := by
+  unfold roundToIntegerThenPrecRound
+  cases x with
+  | nan => rw [roundToIntegerPrecRound_nan, setPrecRound_eq_liftE]; rfl
+  | infinity s =>
+    rw [roundToIntegerPrecRound_infinity, setPrecRound_eq_liftE]
+    unfold liftE liftVal
+    rw [toVal_infinity]
+    cases s <;> simp [Spec.rint]
+  | zero =>
+    rw [roundToIntegerPrecRound_zero, setPrecRound_eq_liftE]
+    unfold liftE liftVal
+    rw [toVal_zero]
+    have h0 : Spec.rint irm 0 = 0 := by
+      rw [show (0 : EReal) = ((0 : ℝ) : EReal) from rfl, Spec.rint_coe,
+        val_round_of_mem intSet irm ⟨0, by simp⟩]
+    simp [h0]
+  | finite s e q m hv =>
+    show setPrecRound (roundToIntegerPrecRound (finite s e q m hv) q irm).1 p rm = _
+    rw [setPrecRound_eq_liftE]
+    unfold liftE liftVal
+    rw [toVal_roundToIntegerPrecRound_self s e hv irm, toVal_finite, Option.bind_some,
+      Option.bind_some, Spec.rint_coe]
+    rfl
 
 end Azurite.AzFloat

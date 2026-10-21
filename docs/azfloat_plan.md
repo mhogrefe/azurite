@@ -3919,3 +3919,18 @@ consecutive integers).  Implementation: exponent `≥ p` or `x` already an integ
 all five modes on `±29/4`, ties to even on `±5/2`, `7/2`, `±1/2` (to `zero`), the boundary
 `7.5 → 8` at 3 bits, `2^100 + 3/4` at 200 and 5 bits.
 
+## Rounding to an integer, then to a precision (DONE 2026-10-20)
+
+`roundToIntegerThenPrecRound x irm p rm : AzFloat × Ordering` (Malachite's
+`round_to_integer_then_prec_round`, MPFR's `mpfr_rint_*`): the exact integer rounding of `x` in
+`irm`, then that integer correctly rounded to `p` bits in `rm`, with the comparison against the
+exact integer; with both modes `Nearest`, `10.5 → 10 → 8` at 2 bits, where the single rounding
+gives `12`.  Implementation: `setPrecRound (roundToIntegerPrecRound x q irm).1 p rm` with `q` the
+float's own precision — at its own precision the single-step rounding is exactly the integer
+rounding (`toVal_roundToIntegerPrecRound_self`: below `2^(q−1)` by the small characterization,
+above it `x` is already an integer of `precisionSet 2 q`, so both roundings are the identity).
+Spec `roundToIntegerThenPrecRound_eq_liftE : = liftE (Spec.rint irm) x p rm` with
+`Spec.rint irm v = (round intSet irm v).val` (`±∞` pass through); the specials go through the
+final rounding only.  `roundToIntegerThenPrec` (nearest).  Tests contrast the two forms on `10.5`
+at 2 bits and cover the modes, small values, and integers passing through.
+

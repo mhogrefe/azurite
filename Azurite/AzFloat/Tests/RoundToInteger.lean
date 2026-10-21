@@ -101,3 +101,39 @@ private def big : AzFloat := F "1" 200 <<< 100 + F "3/4" 200   -- 2^100 + 3/4, e
 #guard roundToInteger (F "-1/3" 5) == zero
 #guard roundToInteger nan == nan
 #guard roundToInteger (infinity false) == infinity false
+
+/-! ## Two roundings: `roundToIntegerThenPrecRound` -/
+
+private def T (x : AzFloat) (irm : RoundingMode) (p : Nat) (rm : RoundingMode := .Nearest) :=
+  roundToIntegerThenPrecRound x irm p rm
+
+#guard T nan .Nearest 10 == (nan, .eq)
+#guard T (infinity true) .Floor 10 == (infinity true, .eq)
+#guard T (infinity false) .Nearest 10 .Ceiling == (infinity false, .eq)
+#guard T zero .Nearest 10 == (zero, .eq)
+-- `10.5` → `10` (nearest) → `8` at 2 bits: two roundings, where the single rounding gives `12`
+#guard T (F "21/2" 5) .Nearest 2 == (F "8" 2, .lt)
+#guard R (F "21/2" 5) 2 == (F "12" 2, .gt, false)
+#guard T (F "21/2" 5) .Floor 2 == (F "8" 2, .lt)
+#guard T (F "21/2" 5) .Ceiling 2 == (F "12" 2, .gt)
+#guard T (F "21/2" 5) .Up 5 == (F "11" 5, .eq)
+#guard T (F "21/2" 5) .Nearest 5 == (F "10" 5, .eq)
+#guard T (F "21/2" 5) .Nearest 2 .Up == (F "12" 2, .gt)
+#guard T (F "-21/2" 5) .Nearest 2 == (F "-8" 2, .gt)
+-- small values
+#guard T (F "2/5" 10) .Nearest 10 == (zero, .eq)
+#guard T (F "1/2" 10) .Nearest 10 == (zero, .eq)
+#guard T (F "1/2" 10) .Ceiling 10 == (F "1" 10, .eq)
+#guard T (F "3/2" 10) .Nearest 1 == (F "2" 1, .eq)
+#guard T (F "5/2" 10) .Nearest 1 == (F "2" 1, .eq)
+#guard T (F "7/2" 10) .Nearest 1 == (F "4" 1, .eq)
+#guard T (F "-29/4" 10) .Down 2 == (F "-8" 2, .lt)
+#guard T (F "-29/4" 10) .Down 3 == (F "-7" 3, .eq)
+#guard T (F "-29/4" 10) .Up 3 == (F "-8" 3, .eq)
+-- integers only pass through the final rounding
+#guard T (F "123456789" 53) .Floor 10 == (F "123469824" 10, .gt)
+#guard T (F "123456789" 53) .Nearest 53 == (F "123456789" 53, .eq)
+#guard T big .Nearest 5 == (F "1" 5 <<< 100, .lt)
+#guard T big .Nearest 200 == (F "1" 200 <<< 100 + F "1" 200, .eq)
+#guard roundToIntegerThenPrec (F "21/2" 5) .Nearest 2 == F "8" 2
+
