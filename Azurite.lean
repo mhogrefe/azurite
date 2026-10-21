@@ -83,6 +83,7 @@ import Azurite.AzFloat.Equiv.Log2Rat
 import Azurite.AzFloat.Equiv.Log2p1
 import Azurite.AzFloat.Equiv.Mul
 import Azurite.AzFloat.Equiv.MulAddMul
+import Azurite.AzFloat.Equiv.MulAddMulRat
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.Pi
@@ -93,6 +94,7 @@ import Azurite.AzFloat.Equiv.Product
 import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.Recip
 import Azurite.AzFloat.Equiv.RoundScaled
+import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzFloat.Equiv.Rsqrt
 import Azurite.AzFloat.Equiv.Sci
@@ -120,6 +122,7 @@ import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Log2p1
 import Azurite.AzFloat.Mul
 import Azurite.AzFloat.MulAddMul
+import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.Pi
@@ -130,6 +133,7 @@ import Azurite.AzFloat.Product
 import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.Recip
 import Azurite.AzFloat.RoundScaled
+import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
@@ -1618,6 +1622,7 @@ import Azurite.Rounding.FixedWidth
 import Azurite.Rounding.Int
 import Azurite.Rounding.IntIcc
 import Azurite.Rounding.IntNearest
+import Azurite.Rounding.IntPrecision
 import Azurite.Rounding.Mode
 import Azurite.Rounding.Nat
 import Azurite.Rounding.NatBotInt

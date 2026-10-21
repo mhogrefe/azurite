@@ -35,6 +35,7 @@ import Azurite.AzFloat.Tests.Log2Rat
 import Azurite.AzFloat.Tests.Log2p1
 import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulAddMul
+import Azurite.AzFloat.Tests.MulAddMulRat
 import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Pi
@@ -43,6 +44,7 @@ import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.Recip
+import Azurite.AzFloat.Tests.RoundToInteger
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat

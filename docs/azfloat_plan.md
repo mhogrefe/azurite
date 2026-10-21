@@ -3879,3 +3879,43 @@ Tests: the witness `x = y = 1 + 2^-52`, `z = 1 + 2^-51`, `w = 1` with `x·y − 
 (separate roundings give `0`), rounding tags at 3 bits, `0·∞`/`∞ − ∞` to `NaN`, intermediate
 overflow `(10^200)^2 − (10^200)^2 = 0`, and `+0.0` for an exact zero `Float` result.
 
+## A product plus or minus a product with a rational factor (DONE 2026-10-20)
+
+`AzFloat/MulAddMulRat.lean`, `Equiv/MulAddMulRat.lean`, `Tests/MulAddMulRat.lean`.  For floats
+`x`, `y`, `z` and a rational `w`, `mulAddMulRatPrecRound x y z w p mode = x·y + z·w` rounded once
+and `mulSubMulRatPrecRound` for `x·y − z·w`: `exactMul x y` then `addMulRatPrecRound`/
+`subMulRatPrecRound` (which forms `z·w` exactly in `AzRat` and rounds once).  Specs
+`mulAddMulRatPrecRound_eq_liftVal₃`/`mulSubMulRatPrecRound_eq_liftVal₃` with `Spec.mulAddMul a b c ↑w`,
+from `toVal_exactMul`, the `AddMulRat` specs and `bind_product_left` (the closed product bind
+commutes past the bind of `z`).  `Float` versions `mulAddMulRatFloat64`/`mulSubMulRatFloat64`
+through the new `emulate₃Rat`/`toVal_emulate₃Rat`.  Tests: the witness `x = y = 1 + 2^-52`,
+`z = −1`, `w = 1 + 2^-51` with `x·y + z·w = 2^-104` exactly, agreement with `addRatPrecRound` when
+`z = 1`, rounding tags at 3 bits, special values, `+0.0` for an exact zero `Float` result.
+
+## Rounding to an integer (DONE 2026-10-20)
+
+`Rounding/IntPrecision.lean`, `AzFloat/RoundToInteger.lean`, `Equiv/RoundToInteger.lean`,
+`Tests/RoundToInteger.lean`.  `roundToIntegerPrecRound x p mode : AzFloat × Ordering × Bool`
+rounds `x` in `mode` to an integer representable at precision `p` in a single step (`10.5` to
+nearest at 2 bits is `12`, the nearer of the 2-bit integers `8` and `12`), returning the comparison
+with `x` and whether `x` was an integer (the information of `mpfr_rint`'s ternary: `(.eq, true)`
+unchanged, `(.lt/.gt, true)` an integer rounded to fit, `(.lt/.gt, false)` a non-integer,
+`(.eq, false)` impossible); `NaN`, `±∞`, zero unchanged with `.eq`, only zero an integer.
+Specification: the new rounding target `intPrecisionSet p` (integers of `precisionSet 2 p`),
+whose floor/ceiling are the integer ones below `2^(p−1)` and the `p`-bit ones from there on, and
+whose tiebreak `ipTiebreak` is `precTiebreak`'s parity rule at the local scale floored at `1`
+(so ties below `2^(p−1)` go to the even integer, as in `intSet`, and above to the even
+coordinate, as in `precisionSet`; `precTiebreak` itself is *not* ties-to-even on integers below
+the scale).  Characterizations `val_round_intPrecision_small` (`= round intSet mode x`) and
+`val_round_intPrecision_large` (`= round (precisionSet 2 p) mode x`), proved by matching floors,
+ceilings and tiebreaks (`ipTiebreak_consecutive`/`intTiebreak_consecutive` on a tie between
+consecutive integers).  Implementation: exponent `≥ p` or `x` already an integer →
+`setPrecRound x p mode` (every `p`-bit value near `x` is an integer) with `isInteger`
+(`isMultipleOfPow2` on the fractional bits); otherwise `|x| < 2^(p−1)` and the integer rounding is
+`AzInt.shiftRightRound` of the core significand, placed at precision `p` exactly.
+`roundToIntegerPrecRound_spec` ties the three components to `round (intPrecisionSet p) mode v`,
+`compare`, and `∃ n : ℤ, v = n`.  Wrappers `roundToIntegerPrec`, `roundToIntegerRound`,
+`roundToInteger`.  Tests: the 2-bit examples (`10 → 8` as `(.lt, true)` on a tie, `10.5 → 12`),
+all five modes on `±29/4`, ties to even on `±5/2`, `7/2`, `±1/2` (to `zero`), the boundary
+`7.5 → 8` at 3 bits, `2^100 + 3/4` at 200 and 5 bits.
+
