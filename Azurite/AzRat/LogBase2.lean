@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzRat.Basic
+import Azurite.AzRat.Pow2
 import Azurite.AzNat.Size
 import Azurite.AzNat.NormalizedCompare
 
@@ -40,5 +41,10 @@ def ceilingLogBase2Abs (q : AzRat) : ℤ :=
     exponent + 1
   else
     exponent
+
+/-- `some k` if `q = 2^k` (`k ∈ ℤ`), `none` otherwise: the power-of-two test and the exponent
+of `AzRat.Pow2`. -/
+def checkedLogBase2 (q : AzRat) : Option AzInt :=
+  if q.isPowerOfTwo then some q.powerOfTwoExponent else none
 
 end Azurite.AzRat

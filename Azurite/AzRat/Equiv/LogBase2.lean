@@ -10,6 +10,11 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzRat.LogBase2
 import Azurite.AzRat.Parse
 import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Pow2
+import Azurite.AzNat.Equiv.Gcd
+import Azurite.AzNat.Equiv.Pow2
+import Azurite.AzInt.Equiv.Sub
+import Azurite.AzInt.Instances
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.NormalizedCompare
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -241,5 +246,125 @@ lemma ceilingLogBase2Abs_eq (q : AzRat) (hq : q.num ≠ 0) :
 #guard (ceilingLogBase2Abs <$> parse "22/7") == some 2
 #guard (ceilingLogBase2Abs <$> parse "100") == some 7
 #guard (ceilingLogBase2Abs <$> parse "-4294967297") == some 33
+
+
+/-! ### Checked base-2 logarithm -/
+
+theorem toRat_cast_eq (q : AzRat) :
+    (toRat q : ℝ) = (((if q.sign then (q.num.toNat : ℤ) else -(q.num.toNat : ℤ)) : ℤ) : ℝ)
+      / (q.den.toNat : ℝ) := by
+  rw [Rat.cast_def]
+  rfl
+
+theorem toInt_toAzInt' (n : AzNat) : n.toAzInt.toInt = n.toNat := rfl
+
+/-- A rational power of two is `2^(powerOfTwoExponent q)`. -/
+theorem toRat_of_isPowerOfTwo (q : AzRat) (h : q.isPowerOfTwo = true) :
+    (toRat q : ℝ) = (2 : ℝ) ^ q.powerOfTwoExponent.toInt := by
+  obtain ⟨hs, ⟨a, ha⟩, ⟨b, hb⟩⟩ := (isPowerOfTwo_iff q).mp h
+  have hsa : q.num.size = a + 1 := by rw [← AzNat.size_toNat, ha, Nat.size_pow]
+  have hsb : q.den.size = b + 1 := by rw [← AzNat.size_toNat, hb, Nat.size_pow]
+  rw [toRat_cast_eq, hs, ha, hb, powerOfTwoExponent, AzInt.toInt_sub, toInt_toAzInt',
+    toInt_toAzInt', AzNat.toNat_ofNat, AzNat.toNat_ofNat, hsa, hsb]
+  simp only [↓reduceIte]
+  push_cast
+  rw [show ((a : ℤ) + 1 - ((b : ℤ) + 1)) = (a : ℤ) - b by ring, zpow_sub₀ (by norm_num),
+    zpow_natCast, zpow_natCast]
+
+/-- Conversely, a rational equal to `2^j` passes the test, with exponent `j`. -/
+theorem isPowerOfTwo_of_toRat_eq_zpow (q : AzRat) (j : ℤ) (h : (toRat q : ℝ) = (2 : ℝ) ^ j) :
+    q.isPowerOfTwo = true ∧ q.powerOfTwoExponent.toInt = j := by
+  have h2pos : (0 : ℝ) < (2 : ℝ) ^ j := zpow_pos (by norm_num) _
+  have hden : (0 : ℝ) < q.den.toNat := by
+    have : q.den.toNat ≠ 0 := fun h0 =>
+      q.den_nz (AzNat.toNat_injective (by rw [h0, AzNat.toNat_zero]))
+    exact_mod_cast Nat.pos_of_ne_zero this
+  have hs : q.sign = true := by
+    by_contra hs
+    rw [Bool.not_eq_true] at hs
+    rw [toRat_cast_eq, hs] at h
+    simp only [Bool.false_eq_true, ↓reduceIte, Int.cast_neg, Int.cast_natCast] at h
+    have : -(q.num.toNat : ℝ) / q.den.toNat ≤ 0 :=
+      div_nonpos_of_nonpos_of_nonneg (neg_nonpos.mpr (Nat.cast_nonneg _)) hden.le
+    linarith
+  rw [toRat_cast_eq, hs] at h
+  simp only [↓reduceIte, Int.cast_natCast] at h
+  have hcop : Nat.Coprime q.num.toNat q.den.toNat := (AzNat.coprime_iff _ _).mp q.reduced
+  have hexp : q.powerOfTwoExponent.toInt = (q.num.size : ℤ) - q.den.size := by
+    rw [powerOfTwoExponent, AzInt.toInt_sub, toInt_toAzInt', toInt_toAzInt', AzNat.toNat_ofNat,
+      AzNat.toNat_ofNat]
+  rcases le_or_gt 0 j with hj | hj
+  · have hnum : q.num.toNat = q.den.toNat * 2 ^ j.toNat := by
+      have : (q.num.toNat : ℝ) = q.den.toNat * 2 ^ j.toNat := by
+        rw [div_eq_iff hden.ne'] at h
+        rw [h, ← zpow_natCast, Int.toNat_of_nonneg hj]
+        ring
+      exact_mod_cast this
+    have hden1 : q.den.toNat = 1 := Nat.eq_one_of_dvd_coprimes hcop ⟨_, hnum⟩ (dvd_refl _)
+    rw [hden1, one_mul] at hnum
+    have hsn : q.num.size = j.toNat + 1 := by rw [← AzNat.size_toNat, hnum, Nat.size_pow]
+    have hsd : q.den.size = 1 := by rw [← AzNat.size_toNat, hden1, Nat.size_one]
+    refine ⟨(isPowerOfTwo_iff q).mpr
+      ⟨hs, ⟨j.toNat, hnum⟩, ⟨0, by rw [hden1, pow_zero]⟩⟩, ?_⟩
+    rw [hexp, hsn, hsd]
+    omega
+  · have hden' : q.den.toNat = q.num.toNat * 2 ^ (-j).toNat := by
+      have : (q.den.toNat : ℝ) = q.num.toNat * 2 ^ (-j).toNat := by
+        rw [div_eq_iff hden.ne'] at h
+        rw [← zpow_natCast, Int.toNat_of_nonneg (by omega), h, mul_comm ((2 : ℝ) ^ j),
+          mul_assoc, ← zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), add_neg_cancel, zpow_zero,
+          mul_one]
+      exact_mod_cast this
+    have hnum1 : q.num.toNat = 1 :=
+      Nat.eq_one_of_dvd_coprimes hcop.symm ⟨_, hden'⟩ (dvd_refl _)
+    rw [hnum1, one_mul] at hden'
+    have hsd : q.den.size = (-j).toNat + 1 := by rw [← AzNat.size_toNat, hden', Nat.size_pow]
+    have hsn : q.num.size = 1 := by rw [← AzNat.size_toNat, hnum1, Nat.size_one]
+    refine ⟨(isPowerOfTwo_iff q).mpr
+      ⟨hs, ⟨0, by rw [hnum1, pow_zero]⟩, ⟨(-j).toNat, hden'⟩⟩, ?_⟩
+    rw [hexp, hsn, hsd]
+    omega
+
+theorem checkedLogBase2_eq_some_iff (q : AzRat) (k : AzInt) :
+    q.checkedLogBase2 = some k ↔ (toRat q : ℝ) = (2 : ℝ) ^ k.toInt := by
+  unfold checkedLogBase2
+  constructor
+  · intro h
+    split_ifs at h with hp
+    · simp only [Option.some.injEq] at h
+      rw [← h]
+      exact toRat_of_isPowerOfTwo q hp
+  · intro h
+    obtain ⟨hp, he⟩ := isPowerOfTwo_of_toRat_eq_zpow q k.toInt h
+    rw [ite_eq_left hp, Option.some.injEq]
+    rw [← AzInt.ofInt_toInt k, ← AzInt.ofInt_toInt q.powerOfTwoExponent, he]
+
+theorem checkedLogBase2_eq_none_iff (q : AzRat) :
+    q.checkedLogBase2 = none ↔ ∀ j : ℤ, (toRat q : ℝ) ≠ (2 : ℝ) ^ j := by
+  constructor
+  · intro h j hj
+    obtain ⟨hp, -⟩ := isPowerOfTwo_of_toRat_eq_zpow q j hj
+    unfold checkedLogBase2 at h
+    rw [ite_eq_left hp] at h
+    cases h
+  · intro h
+    unfold checkedLogBase2
+    rw [ite_eq_right]
+    intro hp
+    exact h _ (toRat_of_isPowerOfTwo q hp)
+
+theorem isPowerOfTwo_eq_false_of_checkedLogBase2_eq_none (q : AzRat)
+    (h : q.checkedLogBase2 = none) : q.isPowerOfTwo = false := by
+  unfold checkedLogBase2 at h
+  by_contra hp
+  rw [Bool.not_eq_false] at hp
+  rw [ite_eq_left hp] at h
+  cases h
+
+theorem checkedLogBase2_eq_some (q : AzRat) (k : AzInt) (h : q.checkedLogBase2 = some k) :
+    q.isPowerOfTwo = true ∧ k = q.powerOfTwoExponent := by
+  unfold checkedLogBase2 at h
+  split_ifs at h with hp
+  · exact ⟨hp, (Option.some.inj h).symm⟩
 
 end Azurite.AzRat

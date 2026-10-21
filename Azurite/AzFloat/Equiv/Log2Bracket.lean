@@ -12,6 +12,7 @@ import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Gcd
+import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Pow2
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Data.Nat.Factorization.Basic
@@ -27,7 +28,7 @@ import Mathlib.Data.Nat.Factorization.Basic
   bound `L / ln 2` for any bracket `[a, b] ∋ L` of width `ε`, within `5ε + 140 (|L| + ε) 2^(−w)`.
 * `log2Approx_spec`, `log2Approx_isSome_exists`: enclosure, width `≤ log2Eps e |ln x| w`, and the
   Ziv certificate, for a float; `irrational_logb_two_of_odd_div`, `irrational_logb_two_toRat`,
-  `toRat_of_isPowerOfTwo`, `log2RatApprox_spec`, `log2RatApprox_isSome_exists` for a rational.
+  `AzRat.toRat_of_isPowerOfTwo`, `log2RatApprox_spec`, `log2RatApprox_isSome_exists` for a rational.
 -/
 
 namespace Azurite.AzFloat
@@ -387,18 +388,6 @@ theorem irrational_logb_two_toRat (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
     rw [this] at hnp; cases hnp
   exact irrational_logb_two_div (toNat_ne_zero_of_ne_zero h0) (toNat_ne_zero_of_ne_zero q.den_nz)
     hcop hnp'
-
-/-- A rational power of two is `2^(powerOfTwoExponent q)`. -/
-theorem toRat_of_isPowerOfTwo (q : AzRat) (h : q.isPowerOfTwo = true) :
-    (AzRat.toRat q : ℝ) = (2 : ℝ) ^ q.powerOfTwoExponent.toInt := by
-  obtain ⟨hs, ⟨a, ha⟩, ⟨b, hb⟩⟩ := (AzRat.isPowerOfTwo_iff q).mp h
-  have hsa : q.num.size = a + 1 := by rw [← AzNat.size_toNat, ha, Nat.size_pow]
-  have hsb : q.den.size = b + 1 := by rw [← AzNat.size_toNat, hb, Nat.size_pow]
-  rw [coe_toRat_eq_div_of_sign q hs, ha, hb, AzRat.powerOfTwoExponent, AzInt.toInt_sub,
-    toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat, hsa, hsb]
-  push_cast
-  rw [show ((a : ℤ) + 1 - ((b : ℤ) + 1)) = (a : ℤ) - b by ring, zpow_sub₀ (by norm_num),
-    zpow_natCast, zpow_natCast]
 
 /-- A positive rational power of two is nonzero as a rational; a positive rational that is not
 a power of two is not `1`. -/

@@ -32,11 +32,13 @@ def log2RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      if h2 : q.isPowerOfTwo = true then setPrecRound (ofAzInt q.powerOfTwoExponent) p mode
-      else
+      match h2 : q.checkedLogBase2 with
+      | some k => setPrecRound (ofAzInt k) p mode
+      | none =>
         zivLoopCertified (log2RatApprox q) p mode (p + zivGuardBits)
           (log2RatApprox_isSome_exists p mode q (toRat_pos_of_sign q hs h0)
-            (Bool.eq_false_iff.mpr h2) (p + zivGuardBits) (by unfold zivGuardBits; omega))
+            (AzRat.isPowerOfTwo_eq_false_of_checkedLogBase2_eq_none q h2) (p + zivGuardBits)
+            (by unfold zivGuardBits; omega))
   else (nan, .eq)
 
 /-- `log₂ q` rounded to nearest at precision `p`. -/

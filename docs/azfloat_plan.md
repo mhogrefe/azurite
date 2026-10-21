@@ -3952,3 +3952,78 @@ larger precision, nearest.  No signed zero: an exact zero remainder is `zero`.  
 (`−7 mod 3 = −1`, `7 mod −3 = 1`), `2^1000000 mod 7 = 2`, `(2^100 + 2^50) mod 3 = 2`, the tie
 `37/16 mod 1 = 5/16` at 2 bits, infinite divisors, the specials.
 
+## Base-2 logarithms of naturals and rationals (DONE 2026-10-20)
+
+`AzNat.floorLogBase2`/`ceilingLogBase2 : AzNat → Option ℕ` (`none` for `0`; `size − 1`, and `size`
+unless a power of two; specs `floorLogBase2_eq = some (Nat.log 2 n)`, `ceilingLogBase2_eq =
+some (Nat.clog 2 n)` via `size_bounds`), `AzNat.checkedLogBase2 n : Option ℕ` (`AzNat/LogBase2.lean`,
+`some k` iff `n = 2^k`, from `isPowerOfTwo` and `size`; `checkedLogBase2_eq_some_iff`/`_none_iff`), the power-of-two-base
+versions `floorLogBasePowerOf2`/`ceilingLogBasePowerOf2`/`checkedLogBasePowerOf2 n k` (base `2^k`,
+`none` for `k = 0`; exponents divided by `k`, via Mathlib's `Nat.log_pow_left`/`clog_pow_left`) and
+`AzRat.checkedLogBase2 q : Option AzInt` (`AzRat/LogBase2.lean`, `some k` iff `q = 2^k`, from
+`isPowerOfTwo` and `powerOfTwoExponent`; specs in `AzRat/Equiv/LogBase2.lean`, with
+`toRat_of_isPowerOfTwo` moved there from `Equiv/Log2Bracket` and the new converse
+`isPowerOfTwo_of_toRat_eq_zpow`).  `log2RatPrecRound` now matches on `q.checkedLogBase2` for its
+exact branch (same computation as before; `checkedLogBase2_eq_some`,
+`isPowerOfTwo_eq_false_of_checkedLogBase2_eq_none` bridge the proof).  `log2PrecRound` on floats
+keeps `isPowerOfTwo` on the significand: a power-of-two float is `1000…0 · 2^(e − p)` whatever
+its precision, so a checked log of the significand would always be `p − 1` and carries nothing
+beyond the Boolean test; the exponent `e − 1` is the answer.
+
+## Logarithms of naturals in a general base (DONE 2026-10-20)
+
+`AzNat/LogBase.lean`, `Equiv/LogBase.lean`, `Tests/LogBase.lean`: `floorLogBase b n`,
+`ceilingLogBase b n`, `checkedLogBase b n : Option ℕ` (`none` for `b ≤ 1` or `n = 0`).  The
+floor is `floorLogSearch`, a binary search on the exponent maintaining `b^lo ≤ n < b^hi` (one
+`b.pow mid ≤ n` comparison per step), seeded as suggested by a `Float` estimate: `approxLog2 m` is
+`log₂` of the top 64 bits plus the bits below (`estimateLogBase b n = ⌊approxLog2 n / approxLog2
+b⌋`), the bracket `[e − 1, e + 2)` around it is checked with two power comparisons and used when
+valid, else the always-valid `[0, size n)`.  Correctness is independent of the estimate:
+`floorLogSearch_eq` holds for any valid bracket, `floorLogBase_eq : = some (Nat.log b n)`,
+`ceilingLogBase_eq : = some (Nat.clog b n)` (floor plus one unless `b^floor = n`),
+`checkedLogBase_eq_some_iff : = some e ↔ n = b^e`.  Tests: bases 10, 3, 2, 7, 1000, `2^100 ± 1`
+around powers and at `10^300`.
+
+## Rational ceiling and checked logarithms in a general base (DONE 2026-10-20)
+
+`AzRat.ceilingLogBaseAbs b q : ℤ` and `AzRat.checkedLogBaseAbs b q : Option ℤ` (`AzRat/LogBase.lean`,
+`b : UInt64 ≥ 2`): the existing `floorLogBaseAbs` plus one exact comparison `cmpPowAbs b e q` of
+`b^e` with `|q|`.  Specs `ceilingLogBaseAbs_eq : = Int.clog b |toRat q|` (for `q ≠ 0`; `0` for
+`q = 0`, the convention of the existing floor) and `checkedLogBaseAbs_eq_some_iff : = some e ↔
+|toRat q| = b^e`, from `floorLogBaseAbs_eq`, `cmpPowAbs_eq`, `Int.le_zpow_iff_clog_le`/
+`zpow_lt_iff_lt_clog`/`clog_zpow`.  Tests `AzRat/Tests/LogBase.lean` (bases 10, 3, 2; fractions,
+negatives, the powers `3^±20`, `10^18 + 1`).  Note: `floorLogBaseAbs`/`ceilingLogBaseAbs` keep the
+`ℤ`-with-`0`-at-zero convention of the pre-existing floor (used by `toSci`), unlike the new `AzNat`
+functions, which return `Option`.
+
+## Rational bases for the rational logarithms (DONE 2026-10-20)
+
+`AzRat.floorLogBaseRatAbs`/`ceilingLogBaseRatAbs`/`checkedLogBaseRatAbs b q : Option ℤ` for a
+rational base `b` (`none` unless `0 < b`, `b ≠ 1`, `q ≠ 0`).  For `b > 1`: `cmpPowRatAbs b e q`
+compares `b^e` with `|q|` by cross-multiplication (`num_b^n · den_q` vs `den_b^n · num_q`, reciprocal
+for `e < 0`); `floorLogSearchRat` is the binary search on the exponent; the bracket is the
+`Float` estimate `estimateLogBaseRat` (from `AzNat.approxLog2` of the four numerators and
+denominators) verified by two comparisons, else the doubling brackets `bracketHi`/`bracketLo` from
+`1` with fuel `size (den b) + size (num q) + size (den q)` — enough because Bernoulli gives
+`b^(2^F) ≥ 1 + 2^F/den b > max (num q, den q)` (`lt_pow_two_pow`), so the last doubling is always a
+valid bracket.  A base in `(0, 1)` goes through its reciprocal: `⌊log_b x⌋ = −⌈log_{1/b} x⌉`
+(`Real.logb_inv_base`).  Specs `floorLogBaseRatAbs_eq : = some ⌊logb b |q|⌋`,
+`ceilingLogBaseRatAbs_eq`, `checkedLogBaseRatAbs_eq_some_iff : = some e ↔ |q| = b^e` (real
+`Real.logb`, via `floor_logb_eq`/`ceil_logb_eq` from `Real.logb_le_logb`/`logb_lt_logb_iff` and
+`logb_zpow'`).  Tests: bases `3/2`, `2/3`, `1001/1000` (exponent 13822 for `10^6`), `1/10`, and
+agreement with the `UInt64` versions; `2^1000` in base `3/2` gives 1709.
+
+## Rational logarithms in power-of-two bases (DONE 2026-10-20)
+
+`AzRat.floorLogBasePowerOf2Abs`/`ceilingLogBasePowerOf2Abs`/`checkedLogBasePowerOf2Abs q k :
+Option ℤ` (base `2^k`; `none` for `q = 0` or `k = 0`): the base-2 exponents `floorLogBase2Abs`/
+`ceilingLogBase2Abs` floor- and ceiling-divided by `k`, and for the checked version the exponent
+`size num − size den` when numerator and denominator are powers of two (on `|q|`, so the sign is
+ignored) and `k` divides it.  Specs `floorLogBasePowerOf2Abs_eq : = some (Int.log (2 ^ k) |q|)` and
+`ceilingLogBasePowerOf2Abs_eq : = some (Int.clog (2 ^ k) |q|)` through `int_log_two_pow`
+(`Int.log (2^k) r = Int.log 2 r / k`) and `int_clog_two_pow` (`Int.clog (2^k) r = −((−Int.clog 2 r)
+/ k)`), both by the `zpow`/`log` characterizations and `Int.emod_add_ediv`;
+`checkedLogBasePowerOf2Abs_eq_some_iff : = some e ↔ |q| = (2^k)^e` through `abs_toRat_eq_zpow_iff`.
+Tests: bases 16, 8, 1024 on integers, fractions and negatives, `2^100 = 1024^10`.  This completes
+the non-`AzFloat` logarithm plan (1–5).
+

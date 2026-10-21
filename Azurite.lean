@@ -444,6 +444,8 @@ import Azurite.AzNat.Equiv.Landau
 import Azurite.AzNat.Equiv.LenstraDivisors
 import Azurite.AzNat.Equiv.LimbDigits
 import Azurite.AzNat.Equiv.LimbDigitsPow2
+import Azurite.AzNat.Equiv.LogBase
+import Azurite.AzNat.Equiv.LogBase2
 import Azurite.AzNat.Equiv.LowMask
 import Azurite.AzNat.Equiv.Lucas
 import Azurite.AzNat.Equiv.LucasLehmerTest
@@ -518,6 +520,8 @@ import Azurite.AzNat.Landau
 import Azurite.AzNat.LenstraDivisors
 import Azurite.AzNat.LimbDigits
 import Azurite.AzNat.LimbDigitsPow2
+import Azurite.AzNat.LogBase
+import Azurite.AzNat.LogBase2
 import Azurite.AzNat.LowMask
 import Azurite.AzNat.Lucas
 import Azurite.AzNat.LucasLehmerTest

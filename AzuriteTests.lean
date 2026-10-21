@@ -61,6 +61,8 @@ import Azurite.AzNat.Tests.Gcd
 import Azurite.AzNat.Tests.GetBits
 import Azurite.AzNat.Tests.IsMultipleOfPow2
 import Azurite.AzNat.Tests.JacobiSym
+import Azurite.AzNat.Tests.LogBase
+import Azurite.AzNat.Tests.LogBase2
 import Azurite.AzNat.Tests.ModPow2
 import Azurite.AzNat.Tests.OfLimbDigits
 import Azurite.AzNat.Tests.OfLimbDigitsPow2
@@ -71,6 +73,7 @@ import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook
 import Azurite.AzNat.Tests.TrailingZeros
 import Azurite.AzRat.Tests.FromSci
+import Azurite.AzRat.Tests.LogBase
 import Azurite.AzRat.Tests.Pow2
 import Azurite.AzRat.Tests.ToSci
 import Azurite.Sci.Tests.Number
