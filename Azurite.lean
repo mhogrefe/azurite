@@ -93,6 +93,7 @@ import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
 import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.Recip
+import Azurite.AzFloat.Equiv.Rem
 import Azurite.AzFloat.Equiv.RoundScaled
 import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzFloat.Equiv.Rounding
@@ -132,6 +133,7 @@ import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product
 import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.Recip
+import Azurite.AzFloat.Rem
 import Azurite.AzFloat.RoundScaled
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rsqrt

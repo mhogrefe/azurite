@@ -3934,3 +3934,21 @@ Spec `roundToIntegerThenPrecRound_eq_liftE : = liftE (Spec.rint irm) x p rm` wit
 final rounding only.  `roundToIntegerThenPrec` (nearest).  Tests contrast the two forms on `10.5`
 at 2 bits and cover the modes, small values, and integers passing through.
 
+## Remainder (DONE 2026-10-20)
+
+`AzFloat/Rem.lean`, `Equiv/Rem.lean`, `Tests/Rem.lean` (Malachite's `rem_prec_round`, C's
+`fmod`).  `remPrecRound x y p mode = setPrecRound (remExact x y) p mode`: the exact remainder
+`x − y·trunc(x/y)` is a float, formed exactly.  With `|x| = X·2^a`, `|y| = Y·2^b`: `|x| < |y|`
+(`absLt`) gives `x`; `b ≤ a` gives `sign x · ((X·2^(a−b)) mod Y) · 2^b` with the shift never
+formed — `AzNat.shiftLeftMod a k n = ((a mod n)(2^k mod n)) mod n` through `AzZMod.pow`, so a
+huge exponent gap (`2^1000000 mod 7`) costs `O(log k)` modular multiplications; `a < b` gives
+`sign x · (X mod (Y·2^(b−a))) · 2^a`, the shift bounded by `|y| ≤ |x|`.  Specification
+`Spec.rem a b = a − b·trunc(a/b)` with `trunc = round intSet .Down` (`toInt_round_down`), `NaN`
+for infinite `a` or `b = 0`, `a` for infinite `b`; `remPrecRound_eq_liftVal₂`.  Proof core:
+`rem_scaled` (the integer identity `X − Y·(X/Y) = X mod Y` scaled by `2^c` with signs, through
+`toInt_round_down_sign_div`: truncation of `±X/Y` is `±(X/Y)` in ℕ), `AzNat.toNat_shiftLeftMod`
+(via `toZMod_pow`/`ZMod.val_natCast`), `toInt_round_down_of_abs_lt_one`.  `%` instance at the
+larger precision, nearest.  No signed zero: an exact zero remainder is `zero`.  Tests: signs
+(`−7 mod 3 = −1`, `7 mod −3 = 1`), `2^1000000 mod 7 = 2`, `(2^100 + 2^50) mod 3 = 2`, the tie
+`37/16 mod 1 = 5/16` at 2 bits, infinite divisors, the specials.
+
