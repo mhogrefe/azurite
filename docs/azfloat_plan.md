@@ -4152,3 +4152,12 @@ mode` (`hgt : −1 < x`) started at `p + 64 + leadingZeroBits e`.  Exact branch:
 `log₈ (1 + 1) = 1/3` with tag, `log₁₀₂₄ (1 + (2^100 − 1)) = 10`), `k = 1` against
 `log2P1PrecRound`, agreement with `logBasePow2PrecRound` on the exact `1 + x` (including
 `k = −4`, `k = 1000` and `x = −3/8`), `log₁₆ (1 + 9)` at 150 bits.
+
+## Base-10 logarithms (DONE 2026-10-25)
+
+`AzFloat/Log10.lean`, `Equiv/Log10.lean`, `Tests/Log10.lean`: `log10PrecRound`/`log10`,
+`log10RatPrecRound`/`log10Rat` and `log10P1PrecRound`/`log10P1` are the natural-base functions
+at the base `10`; `Spec.log10 = Spec.logBase 10` and the three correctness theorems are the
+general ones instantiated (`toNat_ten : (10 : UInt64).toNat = 10` by `decide`).  Tests: exact
+powers of ten in all three, `log₁₀ 2`, `log₁₀ (1/2)` and `log₁₀ (1 + 2^(−30))` against the
+references, and agreement with the base-`10` calls of the general functions.

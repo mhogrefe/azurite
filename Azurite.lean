@@ -77,6 +77,7 @@ import Azurite.AzFloat.Equiv.Ln2Bracket
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.LnP1
 import Azurite.AzFloat.Equiv.LnRat
+import Azurite.AzFloat.Equiv.Log10
 import Azurite.AzFloat.Equiv.Log2
 import Azurite.AzFloat.Equiv.Log2Bracket
 import Azurite.AzFloat.Equiv.Log2P1
@@ -126,6 +127,7 @@ import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.LnBracket
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.LnRat
+import Azurite.AzFloat.Log10
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Log2Bracket
 import Azurite.AzFloat.Log2P1

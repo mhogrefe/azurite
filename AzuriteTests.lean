@@ -30,6 +30,7 @@ import Azurite.AzFloat.Tests.Ln
 import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.LnP1
 import Azurite.AzFloat.Tests.LnRat
+import Azurite.AzFloat.Tests.Log10
 import Azurite.AzFloat.Tests.Log2
 import Azurite.AzFloat.Tests.Log2P1
 import Azurite.AzFloat.Tests.Log2Rat
