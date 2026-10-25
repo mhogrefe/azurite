@@ -119,4 +119,10 @@ def logBaseRatBaseP1Approx (x : AzFloat) (b : AzRat) (w : Nat) : Roundable × Ro
   logBaseQuotWith (lnFloorBracket (addPrecRound one x w .Floor).1 w) (lnRatBaseBracket b w)
     (decide (b.den < b.num)) w
 
+/-- The bracket of `log_b q = ln q / ln b` for positive rationals `q` and `b ≠ 1`: the rational
+`ln` bracket divided by the rational bracket of `ln b`. -/
+def logBaseRatRatApprox (q b : AzRat) (w : Nat) : Roundable × Roundable :=
+  logBaseQuotWith (lnFloorBracket (ofAzRatRound q w .Floor).1 w) (lnRatBaseBracket b w)
+    (decide (b.den < b.num)) w
+
 end Azurite.AzFloat

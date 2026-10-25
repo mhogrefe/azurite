@@ -149,4 +149,41 @@ def logBaseRatBaseExact? (i : AzInt) (o : AzNat) (j : AzInt) (n d : AzNat) : Opt
   else if n = 1 then (logBaseFloatExact? i o (-j) d).map fun r => -r
   else none
 
+/-- `some (log_{n₂} n₁)` when rational, for odd integers `n₁`, `n₂ ≥ 3` (the odd-integer-base
+case of `logBaseFloatExact?`). -/
+def logOddExact? (n₁ n₂ : AzNat) : Option AzRat := logBaseFloatExact? 0 n₁ 0 n₂
+
+/-- The common value of `log_{n₂} n₁` and `log_{d₂} d₁` when both are rational and equal. -/
+def logOddPairExact? (n₁ d₁ n₂ d₂ : AzNat) : Option AzRat :=
+  match logOddExact? n₁ n₂, logOddExact? d₁ d₂ with
+  | some v₁, some v₂ => if v₁ = v₂ then some v₁ else none
+  | _, _ => none
+
+/-- The 2-adic consistency of a candidate value `v` of `log_b q` with the dyadic exponents `i`
+of `q` and `j` of `b`: `i = 0` when `j = 0`, and `v = i / j` otherwise. -/
+def dyadicOK (i j : AzInt) (v : AzRat) : Bool :=
+  if j = 0 then decide (i = 0) else decide (v = AzRat.ofAzInts i j)
+
+/-- The negative candidate: `−u` when `log_{d₂} n₁ = log_{n₂} d₁ = u` is 2-adically consistent. -/
+def logBaseRatRatNeg? (i : AzInt) (n₁ d₁ : AzNat) (j : AzInt) (n₂ d₂ : AzNat) : Option AzRat :=
+  match logOddPairExact? n₁ d₁ d₂ n₂ with
+  | some u => if dyadicOK i j (-u) then some (-u) else none
+  | none => none
+
+/-- `some (log_b q)` when it is rational, for `q = (n₁ / d₁) · 2^i` and `b = (n₂ / d₂) · 2^j`
+with odd coprime pairs.  When one of `d₂`, `n₂`, `d₁`, `n₁` is `1` this is a float-base or
+float-argument case; otherwise `log_b q = a/e` forces `log_{n₂} n₁ = log_{d₂} d₁ = a/e`
+(for `a ≥ 0`) or `log_{d₂} n₁ = log_{n₂} d₁ = −a/e` (for `a < 0`), together with the 2-adic
+condition `i e = j a` (`dyadicOK`). -/
+def logBaseRatRatExact? (i : AzInt) (n₁ d₁ : AzNat) (j : AzInt) (n₂ d₂ : AzNat) :
+    Option AzRat :=
+  if d₂ = 1 then logBaseRatFloatExact? i n₁ d₁ j n₂
+  else if n₂ = 1 then (logBaseRatFloatExact? i n₁ d₁ (-j) d₂).map fun r => -r
+  else if d₁ = 1 then logBaseRatBaseExact? i n₁ j n₂ d₂
+  else if n₁ = 1 then (logBaseRatBaseExact? (-i) d₁ j n₂ d₂).map fun r => -r
+  else
+    match logOddPairExact? n₁ d₁ n₂ d₂ with
+    | some v => if dyadicOK i j v then some v else logBaseRatRatNeg? i n₁ d₁ j n₂ d₂
+    | none => logBaseRatRatNeg? i n₁ d₁ j n₂ d₂
+
 end Azurite.AzFloat

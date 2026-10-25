@@ -1595,4 +1595,436 @@ theorem irrational_logBaseRatBaseP1_of_none (s : Bool) (e : AzInt) {q : ℕ} {m 
   exact irrational_of_logBaseRatBaseExact?_none _ _ _ _ _ hodd (oddPart_spec b.num h0).2.1
     (oddPart_spec b.den b.den_nz).2.1 hcop hb1 hx1 h
 
+/-! ### A rational argument and a rational base -/
+
+theorem logOddExact?_some (n₁ n₂ : AzNat) (h₁ : Odd n₁.toNat) (h₂ : Odd n₂.toNat)
+    (hn₂ : n₂.toNat ≠ 1) (r : AzRat) (h : logOddExact? n₁ n₂ = some r) :
+    Real.log (n₁.toNat : ℝ) / Real.log (n₂.toNat : ℝ) = (AzRat.toRat r : ℝ) := by
+  have := logBaseFloatExact?_some 0 n₁ 0 n₂ h₁ h₂
+    (by rw [AzInt.toInt_zero, zpow_zero, mul_one]; exact_mod_cast hn₂) r h
+  rwa [AzInt.toInt_zero, zpow_zero, mul_one, mul_one] at this
+
+theorem irrational_of_logOddExact?_none (n₁ n₂ : AzNat) (h₁ : Odd n₁.toNat) (h₂ : Odd n₂.toNat)
+    (hn₁ : n₁.toNat ≠ 1) (hn₂ : n₂.toNat ≠ 1) (h : logOddExact? n₁ n₂ = none) :
+    Irrational (Real.log (n₁.toNat : ℝ) / Real.log (n₂.toNat : ℝ)) := by
+  have := irrational_of_logBaseFloatExact?_none 0 n₁ 0 n₂ h₁ h₂
+    (by rw [AzInt.toInt_zero, zpow_zero, mul_one]; exact_mod_cast hn₂)
+    (by rw [AzInt.toInt_zero, zpow_zero, mul_one]; exact_mod_cast hn₁) h
+  rwa [AzInt.toInt_zero, zpow_zero, mul_one, mul_one] at this
+
+/-- A rational `log_{n₂} n₁` is found by `logOddExact?`. -/
+theorem logOddExact?_eq_some_of_rat (n₁ n₂ : AzNat) (h₁ : Odd n₁.toNat) (h₂ : Odd n₂.toNat)
+    (hn₁ : n₁.toNat ≠ 1) (hn₂ : n₂.toNat ≠ 1) (v : ℚ)
+    (hv : Real.log (n₁.toNat : ℝ) / Real.log (n₂.toNat : ℝ) = v) :
+    ∃ r, logOddExact? n₁ n₂ = some r ∧ (AzRat.toRat r : ℝ) = v := by
+  rcases hr : logOddExact? n₁ n₂ with _ | r
+  · exact absurd ⟨v, hv.symm⟩ (irrational_of_logOddExact?_none n₁ n₂ h₁ h₂ hn₁ hn₂ hr)
+  · exact ⟨r, rfl, by rw [← logOddExact?_some n₁ n₂ h₁ h₂ hn₂ r hr, hv]⟩
+
+theorem logOddPairExact?_some (n₁ d₁ n₂ d₂ : AzNat) (v : AzRat)
+    (h : logOddPairExact? n₁ d₁ n₂ d₂ = some v) :
+    logOddExact? n₁ n₂ = some v ∧ logOddExact? d₁ d₂ = some v := by
+  unfold logOddPairExact? at h
+  rcases h₁ : logOddExact? n₁ n₂ with _ | v₁ <;> rcases h₂ : logOddExact? d₁ d₂ with _ | v₂ <;>
+    simp only [h₁, h₂] at h
+  · cases h
+  · cases h
+  · cases h
+  · split_ifs at h with heq
+    rw [Option.some.injEq] at h
+    subst h
+    exact ⟨rfl, by rw [heq]⟩
+
+theorem logOddPairExact?_eq_some (n₁ d₁ n₂ d₂ : AzNat) (v : AzRat)
+    (h₁ : logOddExact? n₁ n₂ = some v) (h₂ : logOddExact? d₁ d₂ = some v) :
+    logOddPairExact? n₁ d₁ n₂ d₂ = some v := by
+  unfold logOddPairExact?
+  rw [h₁, h₂]
+  simp
+
+/-- The 2-adic condition as a statement about values. -/
+theorem dyadicOK_eq_true_iff (i j : AzInt) (v : AzRat) :
+    dyadicOK i j v = true ↔ (j = 0 ∧ i = 0) ∨ (j ≠ 0 ∧ v = AzRat.ofAzInts i j) := by
+  unfold dyadicOK
+  split_ifs with hj
+  · simp only [decide_eq_true_iff]
+    constructor
+    · intro h; exact Or.inl ⟨hj, h⟩
+    · rintro (⟨-, h⟩ | ⟨h, -⟩)
+      · exact h
+      · exact absurd hj h
+  · simp only [decide_eq_true_iff]
+    constructor
+    · intro h; exact Or.inr ⟨hj, h⟩
+    · rintro (⟨h, -⟩ | ⟨-, h⟩)
+      · exact absurd h hj
+      · exact h
+
+/-- `log_b q` from the pair values and the 2-adic condition. -/
+theorem log_div_log_of_pair (n₁ d₁ n₂ d₂ : ℕ) (i j : ℤ) (v : ℝ)
+    (hn₁ : 0 < n₁) (hd₁ : 0 < d₁) (hn₂ : 0 < n₂) (hd₂ : 0 < d₂)
+    (hlogb : Real.log ((n₂ : ℝ) / d₂ * 2 ^ j) ≠ 0)
+    (hodd : Real.log (n₁ : ℝ) - Real.log (d₁ : ℝ) = v * (Real.log (n₂ : ℝ) - Real.log (d₂ : ℝ)))
+    (hdy : (j = 0 ∧ i = 0) ∨ (j ≠ 0 ∧ v = i / j)) :
+    Real.log ((n₁ : ℝ) / d₁ * 2 ^ i) / Real.log ((n₂ : ℝ) / d₂ * 2 ^ j) = v := by
+  have hn₁' : (n₁ : ℝ) ≠ 0 := by positivity
+  have hd₁' : (d₁ : ℝ) ≠ 0 := by positivity
+  have hn₂' : (n₂ : ℝ) ≠ 0 := by positivity
+  have hd₂' : (d₂ : ℝ) ≠ 0 := by positivity
+  rw [div_eq_iff hlogb, Real.log_mul (div_ne_zero hn₁' hd₁') (zpow_ne_zero _ two_ne_zero),
+    Real.log_mul (div_ne_zero hn₂' hd₂') (zpow_ne_zero _ two_ne_zero), Real.log_div hn₁' hd₁',
+    Real.log_div hn₂' hd₂', Real.log_zpow, Real.log_zpow]
+  rcases hdy with ⟨hj, hi⟩ | ⟨hj, hv⟩
+  · subst hj; subst hi
+    push_cast
+    linear_combination hodd
+  · have hj' : (j : ℝ) ≠ 0 := by exact_mod_cast hj
+    have hvj : v * j = i := by rw [hv]; field_simp
+    linear_combination hodd - Real.log 2 * hvj
+
+/-- The 2-adic condition in terms of values. -/
+theorem dyadic_values (i j : AzInt) (v : AzRat) (h : dyadicOK i j v = true) :
+    (j.toInt = 0 ∧ i.toInt = 0) ∨ (j.toInt ≠ 0 ∧ (AzRat.toRat v : ℝ) = i.toInt / j.toInt) := by
+  rcases (dyadicOK_eq_true_iff i j v).mp h with ⟨hj, hi⟩ | ⟨hj, hv⟩
+  · subst hj; subst hi
+    exact Or.inl ⟨AzInt.toInt_zero, AzInt.toInt_zero⟩
+  · refine Or.inr ⟨toInt_ne_zero_of_ne_zero' hj, ?_⟩
+    rw [hv, AzRat.toRat_ofAzInts]
+    push_cast
+    rfl
+
+/-- Separating `q^e = b^a` for `q = (n₁/d₁) · 2^i`, `b = (n₂/d₂) · 2^j` with odd coprime pairs:
+the odd parts match pairwise (crosswise for `a < 0`) and the 2-exponents match. -/
+theorem pow_eq_zpow_sep_rat {n₁ d₁ n₂ d₂ : ℕ} (h₁ : Odd n₁) (h₂ : Odd d₁) (h₃ : Odd n₂)
+    (h₄ : Odd d₂) (hc₁ : Nat.Coprime n₁ d₁) (hc₂ : Nat.Coprime n₂ d₂) {i j : ℤ} {e : ℕ} {a : ℤ}
+    (key : ((n₁ : ℝ) / d₁ * 2 ^ i) ^ e = ((n₂ : ℝ) / d₂ * 2 ^ j) ^ a) :
+    (0 ≤ a → n₁ ^ e = n₂ ^ a.toNat ∧ d₁ ^ e = d₂ ^ a.toNat) ∧
+      (a < 0 → n₁ ^ e = d₂ ^ a.natAbs ∧ d₁ ^ e = n₂ ^ a.natAbs) ∧ i * e = j * a := by
+  have hn₁ : 0 < n₁ := h₁.pos
+  have hd₁ : 0 < d₁ := h₂.pos
+  have hn₂ : 0 < n₂ := h₃.pos
+  have hd₂ : 0 < d₂ := h₄.pos
+  have hd₁' : (d₁ : ℝ) ≠ 0 := by positivity
+  have hd₂' : (d₂ : ℝ) ≠ 0 := by positivity
+  rw [div_mul_eq_mul_div, div_mul_eq_mul_div, div_pow] at key
+  rcases le_or_gt 0 a with hn | hn
+  · obtain ⟨N, hN⟩ : ∃ N : ℕ, a = N := ⟨a.toNat, by omega⟩
+    rw [hN, zpow_natCast, div_pow,
+      div_eq_div_iff (pow_ne_zero _ hd₁') (pow_ne_zero _ hd₂')] at key
+    have hG : ((n₁ ^ e * d₂ ^ N : ℕ) : ℝ) * 2 ^ (i * e)
+        = ((n₂ ^ N * d₁ ^ e : ℕ) : ℝ) * 2 ^ (j * N) := by
+      rw [mul_pow, mul_pow] at key
+      push_cast
+      rw [zpow_mul, zpow_mul, zpow_natCast, zpow_natCast]
+      linear_combination key
+    obtain ⟨hodd, h2⟩ := odd_mul_two_zpow_inj (h₁.pow.mul h₄.pow) (h₃.pow.mul h₂.pow) hG
+    have hdd : d₁ ^ e = d₂ ^ N := by
+      apply Nat.dvd_antisymm
+      · exact (Nat.Coprime.pow e e hc₁.symm).dvd_of_dvd_mul_left
+          ⟨n₂ ^ N, by rw [hodd, mul_comm]⟩
+      · exact (Nat.Coprime.pow N N hc₂.symm).dvd_of_dvd_mul_left
+          ⟨n₁ ^ e, by rw [← hodd, mul_comm]⟩
+    have hnn : n₁ ^ e = n₂ ^ N := by
+      have hpos : 0 < d₂ ^ N := by positivity
+      rw [hdd] at hodd
+      exact Nat.eq_of_mul_eq_mul_right hpos hodd
+    refine ⟨fun _ => ⟨?_, ?_⟩, fun h => absurd h (by omega), by rw [hN]; exact h2⟩
+    · rw [hN, Int.toNat_natCast]; exact hnn
+    · rw [hN, Int.toNat_natCast]; exact hdd
+  · obtain ⟨N, hN, hN1⟩ : ∃ N : ℕ, a = -(N : ℤ) ∧ 1 ≤ N := ⟨a.natAbs, by omega, by omega⟩
+    have hb0 : ((n₂ : ℝ) * 2 ^ j) ^ N ≠ 0 := pow_ne_zero _ (by positivity)
+    rw [hN, zpow_neg, zpow_natCast, div_pow, inv_div,
+      div_eq_div_iff (pow_ne_zero _ hd₁') hb0] at key
+    have hG : ((n₁ ^ e * n₂ ^ N : ℕ) : ℝ) * 2 ^ (i * e + j * N)
+        = ((d₂ ^ N * d₁ ^ e : ℕ) : ℝ) * 2 ^ (0 : ℤ) := by
+      rw [mul_pow, mul_pow] at key
+      push_cast
+      rw [zpow_zero, mul_one, zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_mul, zpow_mul,
+        zpow_natCast, zpow_natCast]
+      linear_combination key
+    obtain ⟨hodd, h2⟩ := odd_mul_two_zpow_inj (h₁.pow.mul h₃.pow) (h₄.pow.mul h₂.pow) hG
+    have hnd : n₁ ^ e = d₂ ^ N := by
+      apply Nat.dvd_antisymm
+      · exact (Nat.Coprime.pow e e hc₁).dvd_of_dvd_mul_right ⟨n₂ ^ N, by rw [← hodd]⟩
+      · exact (Nat.Coprime.pow N N hc₂.symm).dvd_of_dvd_mul_right ⟨d₁ ^ e, by rw [hodd]⟩
+    have hdn : d₁ ^ e = n₂ ^ N := by
+      have hpos : 0 < d₂ ^ N := by positivity
+      rw [hnd] at hodd
+      exact (Nat.eq_of_mul_eq_mul_left hpos hodd).symm
+    refine ⟨fun h => absurd h (by omega), fun _ => ⟨?_, ?_⟩, by rw [hN]; linarith⟩
+    · rw [hN, Int.natAbs_neg, Int.natAbs_natCast]; exact hnd
+    · rw [hN, Int.natAbs_neg, Int.natAbs_natCast]; exact hdn
+
+/-- The rational returned by `logBaseRatRatExact?` is `ln q / ln b`. -/
+theorem logBaseRatRatExact?_some (i : AzInt) (n₁ d₁ : AzNat) (j : AzInt) (n₂ d₂ : AzNat)
+    (h₁ : Odd n₁.toNat) (h₂ : Odd d₁.toNat) (h₃ : Odd n₂.toNat) (h₄ : Odd d₂.toNat)
+    (hb1 : (n₂.toNat : ℝ) / d₂.toNat * (2 : ℝ) ^ j.toInt ≠ 1) (r : AzRat)
+    (h : logBaseRatRatExact? i n₁ d₁ j n₂ d₂ = some r) :
+    Real.log ((n₁.toNat : ℝ) / d₁.toNat * 2 ^ i.toInt)
+      / Real.log ((n₂.toNat : ℝ) / d₂.toNat * 2 ^ j.toInt) = (AzRat.toRat r : ℝ) := by
+  have hn₁ := h₁.pos
+  have hd₁ := h₂.pos
+  have hn₂ := h₃.pos
+  have hd₂ := h₄.pos
+  unfold logBaseRatRatExact? at h
+  split_ifs at h with hd₂1 hn₂1 hd₁1 hn₁1
+  · subst hd₂1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one] at hb1 ⊢
+    exact logBaseRatFloatExact?_some i n₁ d₁ j n₂ h₁ h₂ h₃ hb1 r h
+  · subst hn₂1
+    rw [Option.map_eq_some_iff] at h
+    obtain ⟨r', hr', rfl⟩ := h
+    have hinv : ((1 : AzNat).toNat : ℝ) / d₂.toNat * (2 : ℝ) ^ j.toInt
+        = ((d₂.toNat : ℝ) * (2 : ℝ) ^ (-j).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      have : (d₂.toNat : ℝ) ≠ 0 := by positivity
+      field_simp
+    rw [hinv] at hb1 ⊢
+    have hv := logBaseRatFloatExact?_some i n₁ d₁ (-j) d₂ h₁ h₂ h₄
+      (fun h1 => hb1 (by rw [h1, inv_one])) r' hr'
+    rw [AzRat.toRat_neg, Rat.cast_neg, ← hv, Real.log_inv, div_neg]
+  · subst hd₁1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one]
+    exact logBaseRatBaseExact?_some i n₁ j n₂ d₂ h₁ h₃ h₄ hb1 r h
+  · subst hn₁1
+    rw [Option.map_eq_some_iff] at h
+    obtain ⟨r', hr', rfl⟩ := h
+    have hinv : ((1 : AzNat).toNat : ℝ) / d₁.toNat * (2 : ℝ) ^ i.toInt
+        = ((d₁.toNat : ℝ) * (2 : ℝ) ^ (-i).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      have : (d₁.toNat : ℝ) ≠ 0 := by positivity
+      field_simp
+    rw [hinv]
+    have hv := logBaseRatBaseExact?_some (-i) d₁ j n₂ d₂ h₂ h₃ h₄ hb1 r' hr'
+    rw [AzRat.toRat_neg, Rat.cast_neg, ← hv, Real.log_inv, neg_div]
+  · -- all odd parts above `1`
+    have hn₂1' : n₂.toNat ≠ 1 := fun h1 => hn₂1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hd₂1' : d₂.toNat ≠ 1 := fun h1 => hd₂1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hlogb : Real.log ((n₂.toNat : ℝ) / d₂.toNat * 2 ^ j.toInt) ≠ 0 :=
+      Real.log_ne_zero_of_pos_of_ne_one (by positivity) hb1
+    have hlogn₂ : Real.log (n₂.toNat : ℝ) ≠ 0 :=
+      Real.log_ne_zero_of_pos_of_ne_one (by positivity) (by exact_mod_cast hn₂1')
+    have hlogd₂ : Real.log (d₂.toNat : ℝ) ≠ 0 :=
+      Real.log_ne_zero_of_pos_of_ne_one (by positivity) (by exact_mod_cast hd₂1')
+    have hneg : ∀ r, logBaseRatRatNeg? i n₁ d₁ j n₂ d₂ = some r →
+        Real.log ((n₁.toNat : ℝ) / d₁.toNat * 2 ^ i.toInt)
+          / Real.log ((n₂.toNat : ℝ) / d₂.toNat * 2 ^ j.toInt) = (AzRat.toRat r : ℝ) := by
+      intro r h
+      unfold logBaseRatRatNeg? at h
+      rcases hP : logOddPairExact? n₁ d₁ d₂ n₂ with _ | u
+      · rw [hP] at h; simp only [] at h; cases h
+      · rw [hP] at h
+        simp only [] at h
+        split_ifs at h with hdy
+        rw [Option.some.injEq] at h
+        subst h
+        obtain ⟨hu₁, hu₂⟩ := logOddPairExact?_some n₁ d₁ d₂ n₂ u hP
+        have e₁ := logOddExact?_some n₁ d₂ h₁ h₄ hd₂1' u hu₁
+        have e₂ := logOddExact?_some d₁ n₂ h₂ h₃ hn₂1' u hu₂
+        rw [div_eq_iff hlogd₂] at e₁
+        rw [div_eq_iff hlogn₂] at e₂
+        rw [AzRat.toRat_neg, Rat.cast_neg]
+        apply log_div_log_of_pair _ _ _ _ _ _ _ hn₁ hd₁ hn₂ hd₂ hlogb
+        · rw [e₁, e₂]; ring
+        · have := dyadic_values i j (-u) hdy
+          rwa [AzRat.toRat_neg, Rat.cast_neg] at this
+    rcases hP : logOddPairExact? n₁ d₁ n₂ d₂ with _ | v
+    · rw [hP] at h
+      simp only [] at h
+      exact hneg r h
+    · rw [hP] at h
+      simp only [] at h
+      split_ifs at h with hdy
+      · rw [Option.some.injEq] at h
+        subst h
+        obtain ⟨hv₁, hv₂⟩ := logOddPairExact?_some n₁ d₁ n₂ d₂ v hP
+        have e₁ := logOddExact?_some n₁ n₂ h₁ h₃ hn₂1' v hv₁
+        have e₂ := logOddExact?_some d₁ d₂ h₂ h₄ hd₂1' v hv₂
+        rw [div_eq_iff hlogn₂] at e₁
+        rw [div_eq_iff hlogd₂] at e₂
+        apply log_div_log_of_pair _ _ _ _ _ _ _ hn₁ hd₁ hn₂ hd₂ hlogb
+        · rw [e₁, e₂]; ring
+        · exact dyadic_values i j v hdy
+      · exact hneg r h
+
+/-- `logBaseRatRatExact? = none` for `q ≠ 1` and `b ≠ 1`: the logarithm is irrational. -/
+theorem irrational_of_logBaseRatRatExact?_none (i : AzInt) (n₁ d₁ : AzNat) (j : AzInt)
+    (n₂ d₂ : AzNat) (h₁ : Odd n₁.toNat) (h₂ : Odd d₁.toNat) (h₃ : Odd n₂.toNat)
+    (h₄ : Odd d₂.toNat) (hc₁ : Nat.Coprime n₁.toNat d₁.toNat)
+    (hc₂ : Nat.Coprime n₂.toNat d₂.toNat)
+    (hb1 : (n₂.toNat : ℝ) / d₂.toNat * (2 : ℝ) ^ j.toInt ≠ 1)
+    (hq1 : (n₁.toNat : ℝ) / d₁.toNat * (2 : ℝ) ^ i.toInt ≠ 1)
+    (h : logBaseRatRatExact? i n₁ d₁ j n₂ d₂ = none) :
+    Irrational (Real.log ((n₁.toNat : ℝ) / d₁.toNat * 2 ^ i.toInt)
+      / Real.log ((n₂.toNat : ℝ) / d₂.toNat * 2 ^ j.toInt)) := by
+  have hn₁ := h₁.pos
+  have hd₁ := h₂.pos
+  have hn₂ := h₃.pos
+  have hd₂ := h₄.pos
+  unfold logBaseRatRatExact? at h
+  split_ifs at h with hd₂1 hn₂1 hd₁1 hn₁1
+  · subst hd₂1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one] at hb1 ⊢
+    exact irrational_of_logBaseRatFloatExact?_none i n₁ d₁ j n₂ h₁ h₂ h₃ hc₁ hb1 hq1 h
+  · subst hn₂1
+    rw [Option.map_eq_none_iff] at h
+    have hinv : ((1 : AzNat).toNat : ℝ) / d₂.toNat * (2 : ℝ) ^ j.toInt
+        = ((d₂.toNat : ℝ) * (2 : ℝ) ^ (-j).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      have : (d₂.toNat : ℝ) ≠ 0 := by positivity
+      field_simp
+    rw [hinv] at hb1 ⊢
+    rw [Real.log_inv, div_neg]
+    exact (irrational_of_logBaseRatFloatExact?_none i n₁ d₁ (-j) d₂ h₁ h₂ h₄ hc₁
+      (fun h1 => hb1 (by rw [h1, inv_one])) hq1 h).neg
+  · subst hd₁1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one] at hq1 ⊢
+    exact irrational_of_logBaseRatBaseExact?_none i n₁ j n₂ d₂ h₁ h₃ h₄ hc₂ hb1 hq1 h
+  · subst hn₁1
+    rw [Option.map_eq_none_iff] at h
+    have hinv : ((1 : AzNat).toNat : ℝ) / d₁.toNat * (2 : ℝ) ^ i.toInt
+        = ((d₁.toNat : ℝ) * (2 : ℝ) ^ (-i).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      have : (d₁.toNat : ℝ) ≠ 0 := by positivity
+      field_simp
+    rw [hinv] at hq1 ⊢
+    rw [Real.log_inv, neg_div]
+    exact (irrational_of_logBaseRatBaseExact?_none (-i) d₁ j n₂ d₂ h₂ h₃ h₄ hc₂ hb1
+      (fun h1 => hq1 (by rw [h1, inv_one])) h).neg
+  · -- all odd parts above `1`
+    have hn₁1' : n₁.toNat ≠ 1 := fun h1 => hn₁1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hd₁1' : d₁.toNat ≠ 1 := fun h1 => hd₁1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hn₂1' : n₂.toNat ≠ 1 := fun h1 => hn₂1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hd₂1' : d₂.toNat ≠ 1 := fun h1 => hd₂1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hxpos : (0 : ℝ) < (n₁.toNat : ℝ) / d₁.toNat * 2 ^ i.toInt := by positivity
+    have hbpos : (0 : ℝ) < (n₂.toNat : ℝ) / d₂.toNat * 2 ^ j.toInt := by positivity
+    rintro ⟨r, hr⟩
+    have key := pow_eq_zpow_of_log_div_log hxpos hbpos hb1 r hr
+    have he : 1 ≤ r.den := r.den_pos
+    obtain ⟨hpos', hneg', h2⟩ := pow_eq_zpow_sep_rat h₁ h₂ h₃ h₄ hc₁ hc₂ key
+    -- a pair equation gives a rational logarithm
+    have hdiv : ∀ {x y N : ℕ}, 0 < x → 0 < y → y ≠ 1 → x ^ r.den = y ^ N →
+        Real.log (x : ℝ) / Real.log (y : ℝ) = (((N : ℚ) / r.den : ℚ) : ℝ) := by
+      intro x y N hx hy hy1 hxy
+      have hlogy : Real.log (y : ℝ) ≠ 0 :=
+        Real.log_ne_zero_of_pos_of_ne_one (by positivity) (by exact_mod_cast hy1)
+      have hden : (r.den : ℝ) ≠ 0 := by positivity
+      have hlog : (r.den : ℝ) * Real.log (x : ℝ) = (N : ℝ) * Real.log (y : ℝ) := by
+        have := congrArg (fun t : ℕ => Real.log (t : ℝ)) hxy
+        simp only [Nat.cast_pow, Real.log_pow] at this
+        exact this
+      rw [div_eq_iff hlogy]
+      push_cast
+      field_simp
+      linear_combination hlog
+    -- `i = 0` when `j = 0`
+    have hi0 : j = 0 → i = 0 := by
+      intro hj
+      subst hj
+      rw [AzInt.toInt_zero, zero_mul] at h2
+      have : i.toInt = 0 := by
+        rcases mul_eq_zero.mp h2 with h | h
+        · exact h
+        · omega
+      rw [← AzInt.ofInt_toInt i, this, AzInt.ofInt_zero]
+    rcases le_or_gt 0 r.num with hn | hn
+    · obtain ⟨hnn, hdd⟩ := hpos' hn
+      rcases Nat.eq_zero_or_pos r.num.toNat with hN0 | hN0
+      · rw [hN0, pow_zero] at hnn
+        exact hn₁1' ((Nat.pow_eq_one.mp hnn).resolve_right (by omega))
+      obtain ⟨v₁, hv₁, hv₁'⟩ :=
+        logOddExact?_eq_some_of_rat n₁ n₂ h₁ h₃ hn₁1' hn₂1' _ (hdiv hn₁ hn₂ hn₂1' hnn)
+      obtain ⟨v₂, hv₂, hv₂'⟩ :=
+        logOddExact?_eq_some_of_rat d₁ d₂ h₂ h₄ hd₁1' hd₂1' _ (hdiv hd₁ hd₂ hd₂1' hdd)
+      have hv : v₁ = v₂ := AzRat.toRat_injective (by exact_mod_cast hv₁'.trans hv₂'.symm)
+      subst hv
+      have hP := logOddPairExact?_eq_some n₁ d₁ n₂ d₂ v₁ hv₁ hv₂
+      have hdy : dyadicOK i j v₁ = true := by
+        rw [dyadicOK_eq_true_iff]
+        by_cases hj : j = 0
+        · exact Or.inl ⟨hj, hi0 hj⟩
+        · refine Or.inr ⟨hj, ?_⟩
+          apply AzRat.toRat_injective
+          have hj' : (j.toInt : ℚ) ≠ 0 := by exact_mod_cast toInt_ne_zero_of_ne_zero' hj
+          have hvq : AzRat.toRat v₁ = (r.num.toNat : ℚ) / r.den := by exact_mod_cast hv₁'
+          rw [hvq, AzRat.toRat_ofAzInts, div_eq_div_iff (by positivity) hj']
+          have hnum : (r.num : ℚ) = r.num.toNat := by exact_mod_cast (Int.toNat_of_nonneg hn).symm
+          have h2q : (i.toInt : ℚ) * r.den = j.toInt * r.num := by exact_mod_cast h2
+          rw [hnum] at h2q
+          linarith
+      rw [hP] at h
+      simp only [] at h
+      rw [ite_eq_left hdy] at h
+      cases h
+    · obtain ⟨hnd, hdn⟩ := hneg' hn
+      obtain ⟨u₁, hu₁, hu₁'⟩ :=
+        logOddExact?_eq_some_of_rat n₁ d₂ h₁ h₄ hn₁1' hd₂1' _ (hdiv hn₁ hd₂ hd₂1' hnd)
+      obtain ⟨u₂, hu₂, hu₂'⟩ :=
+        logOddExact?_eq_some_of_rat d₁ n₂ h₂ h₃ hd₁1' hn₂1' _ (hdiv hd₁ hn₂ hn₂1' hdn)
+      have hu : u₁ = u₂ := AzRat.toRat_injective (by exact_mod_cast hu₁'.trans hu₂'.symm)
+      subst hu
+      have hP' := logOddPairExact?_eq_some n₁ d₁ d₂ n₂ u₁ hu₁ hu₂
+      have hdy : dyadicOK i j (-u₁) = true := by
+        rw [dyadicOK_eq_true_iff]
+        by_cases hj : j = 0
+        · exact Or.inl ⟨hj, hi0 hj⟩
+        · refine Or.inr ⟨hj, ?_⟩
+          apply AzRat.toRat_injective
+          have hj' : (j.toInt : ℚ) ≠ 0 := by exact_mod_cast toInt_ne_zero_of_ne_zero' hj
+          have huq : AzRat.toRat u₁ = (r.num.natAbs : ℚ) / r.den := by exact_mod_cast hu₁'
+          rw [AzRat.toRat_neg, huq, AzRat.toRat_ofAzInts, ← neg_div,
+            div_eq_div_iff (by positivity) hj']
+          have hnum : (r.num : ℤ) = -(r.num.natAbs : ℤ) := by omega
+          have hnumq : (r.num : ℚ) = -(r.num.natAbs : ℚ) := by exact_mod_cast hnum
+          have h2q : (i.toInt : ℚ) * r.den = j.toInt * r.num := by exact_mod_cast h2
+          rw [hnumq] at h2q
+          linarith
+      have hres : logBaseRatRatNeg? i n₁ d₁ j n₂ d₂ = some (-u₁) := by
+        unfold logBaseRatRatNeg?
+        rw [hP']
+        simp only []
+        rw [ite_eq_left hdy]
+      rcases hP : logOddPairExact? n₁ d₁ n₂ d₂ with _ | v
+      · rw [hP] at h
+        simp only [] at h
+        rw [hres] at h
+        cases h
+      · rw [hP] at h
+        simp only [] at h
+        split_ifs at h with hdyv
+        rw [hres] at h
+        cases h
+
+/-- The odd parts of a reduced fraction are coprime. -/
+theorem coprime_oddParts (q : AzRat) (h0 : q.num ≠ 0) :
+    Nat.Coprime (oddPart q.num).toNat (oddPart q.den).toNat := by
+  have h := (AzNat.coprime_iff _ _).mp q.reduced
+  exact Nat.Coprime.coprime_dvd_left ⟨_, by rw [(oddPart_spec q.num h0).1, mul_comm]⟩
+    (Nat.Coprime.coprime_dvd_right ⟨_, by rw [(oddPart_spec q.den q.den_nz).1, mul_comm]⟩ h)
+
+/-- The value of `logBaseRatRatExact?` on positive rationals `q` and `b`. -/
+theorem logBaseRatRat_exact_value (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) (b : AzRat)
+    (hs' : b.sign = true) (h0' : b.num ≠ 0) (hb1 : (AzRat.toRat b : ℝ) ≠ 1) (r : AzRat)
+    (h : logBaseRatRatExact? (ratDyadicExp q) (oddPart q.num) (oddPart q.den) (ratDyadicExp b)
+      (oddPart b.num) (oddPart b.den) = some r) :
+    Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ) = (AzRat.toRat r : ℝ) := by
+  rw [toRat_eq_oddParts b hs' h0'] at hb1 ⊢
+  rw [toRat_eq_oddParts q hs h0]
+  exact logBaseRatRatExact?_some _ _ _ _ _ _ (oddPart_spec q.num h0).2.1
+    (oddPart_spec q.den q.den_nz).2.1 (oddPart_spec b.num h0').2.1
+    (oddPart_spec b.den b.den_nz).2.1 hb1 r h
+
+/-- Irrationality of `log_b q` when `logBaseRatRatExact?` finds nothing. -/
+theorem irrational_logBaseRatRat_of_none (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0)
+    (hq1 : (AzRat.toRat q : ℝ) ≠ 1) (b : AzRat) (hs' : b.sign = true) (h0' : b.num ≠ 0)
+    (hb1 : (AzRat.toRat b : ℝ) ≠ 1)
+    (h : logBaseRatRatExact? (ratDyadicExp q) (oddPart q.num) (oddPart q.den) (ratDyadicExp b)
+      (oddPart b.num) (oddPart b.den) = none) :
+    Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ)) := by
+  rw [toRat_eq_oddParts b hs' h0'] at hb1 ⊢
+  rw [toRat_eq_oddParts q hs h0] at hq1 ⊢
+  exact irrational_of_logBaseRatRatExact?_none _ _ _ _ _ _ (oddPart_spec q.num h0).2.1
+    (oddPart_spec q.den q.den_nz).2.1 (oddPart_spec b.num h0').2.1
+    (oddPart_spec b.den b.den_nz).2.1 (coprime_oddParts q h0) (coprime_oddParts b h0') hb1 hq1 h
+
 end Azurite.AzFloat

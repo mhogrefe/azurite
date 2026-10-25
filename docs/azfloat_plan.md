@@ -4285,3 +4285,34 @@ specials, exact cases with odd-denominator bases (`log_{1/3} (1 + 26) = −3`,
 power-of-two and float-base `log_b (1 + x)` and with `logBaseRatBasePrecRound` on the exact
 `1 + x`, `log₃ (1 + 6)`, `log_{3/2} (1 + 1)`, `log_{2/3} (1 + 1)`, the base `1 + 2^(−20)` and
 the tiny argument `2^(−30)` at the bases `10` and `1/10`.
+
+## `log_b q` for rationals `q` and `b` (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseRatRat.lean`, `Equiv/LogBaseRatRat.lean`, `Tests/LogBaseRatRat.lean`, with the
+exactness machinery in `LogBaseExact.lean`/`Equiv/` and `logBaseRatRatApprox` in
+`LogBaseFloatBracket.lean`/`Equiv/`.  The last member of the family:
+`logBaseRatRatPrecRound q b p mode = ln q / ln b` for `q, b : AzRat`.  **Exactness.** With
+`q = (n₁/d₁) · 2^i`, `b = (n₂/d₂) · 2^j` (odd coprime pairs), `q^e = b^a` separates
+(`pow_eq_zpow_sep_rat`, via `odd_mul_two_zpow_inj` and `Nat.Coprime.dvd_of_dvd_mul_left/right`
+with `Nat.dvd_antisymm`) into `n₁^e = n₂^a ∧ d₁^e = d₂^a` for `a ≥ 0`, crosswise
+`n₁^e = d₂^(−a) ∧ d₁^e = n₂^(−a)` for `a < 0`, and `i e = j a`.  So when all four odd parts
+exceed `1`, `log_b q` is rational iff `log_{n₂} n₁ = log_{d₂} d₁` (both found by
+`logOddExact? = logBaseFloatExact? 0 _ 0 _`, the odd-integer-base case through
+`maxRootBaseBounded`) or crosswise with the value negated, and the common value `v` satisfies the
+2-adic condition `dyadicOK i j v` (`i = 0` when `j = 0`, `v = ofAzInts i j` otherwise, compared
+with `DecidableEq AzRat`); `logBaseRatRatExact?` tries the positive pair first and the crosswise
+pair (`logBaseRatRatNeg?`) when the positive one is missing or 2-adically inconsistent, and
+reduces to `logBaseRatFloatExact?`/`logBaseRatBaseExact?` when `d₂`, `n₂`, `d₁` or `n₁` is `1`.
+Completeness (`irrational_of_logBaseRatRatExact?_none`): a rational `n/d` gives the pair
+equations, `logOddExact?_eq_some_of_rat` turns each into a found value, `AzRat.toRat_injective`
+identifies them and the 2-adic condition holds, so the search would have succeeded.
+**Bracket.** `logBaseRatRatApprox` = `logBaseQuotWith` of the rational `ln q` bracket by
+`lnRatBaseBracket b`, width `logBaseRatBaseP1Eps` (both brackets rational), Ziv from `p + 64`.
+Special values: `b = 0`/`b = 1` delegate to `logBaseRatFloatPrecRound q zero/one`, negatives are
+`NaN`, `q = 0` gives `∓∞` by `b.den < b.num`, `q = 1` gives `0`.  Tests: specials; exact cases in
+every branch (`log_{3/2} (8/27) = −3`, `log_{9/4} (27/8) = 3/2`, `log_{25/9} (125/27) = 3/2`,
+crosswise `log_{25/9} (27/125) = −3/2`, with 2-exponents `log_{50/9} (2500/81) = 2` and
+`log_{50/9} (81/2500) = −2`, `log_{125/27} (25/9) = 2/3` rounded) and the never-exact
+`log_{50/9} (250/27)` (odd parts disagree); agreement with all other versions; `log₃ 7`,
+`log_{1/3} (1/7)`, `log_{3/2} 2`, `log_{2/3} (1/2)`, `log₁₀ (1/3)`, `log_{1/10} 3` and the base
+`1 + 2^(−20)`.

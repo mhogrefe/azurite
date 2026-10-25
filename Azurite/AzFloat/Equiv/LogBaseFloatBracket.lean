@@ -717,4 +717,44 @@ theorem logBaseRatBaseP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : Roundi
         logBaseRatBaseP1Approx_spec hw hx hx1 b hb hb1 hirr
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### The bracket of `log_b q` for rationals -/
+
+/-- The bracket encloses `ln q / ln b` strictly (given irrationality), with the width bound
+`logBaseRatBaseP1Eps` (both `ln` brackets are rational ones). -/
+theorem logBaseRatRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
+    (b : AzRat) (hb : (0 : ℚ) < AzRat.toRat b) (hb1 : (AzRat.toRat b : ℝ) ≠ 1)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ))) :
+    ∃ lv hv' : ℝ, Rounds (logBaseRatRatApprox q b w).1 lv ∧
+      Rounds (logBaseRatRatApprox q b w).2 hv' ∧
+      lv < Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ) ∧
+      Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ) < hv' ∧
+      hv' - lv ≤ logBaseRatBaseP1Eps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        (⌊2 * |Real.log (AzRat.toRat b : ℝ)|⌋₊ + 2) (1 / lnRatKappa (AzRat.toRat b : ℝ))
+        |Real.log (AzRat.toRat q : ℝ)| |Real.log (AzRat.toRat b : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hqv0 hr1 hr2
+  obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hκc, hdκ⟩ := lnRatBaseBracket_spec hw b hb hb1
+  exact logBaseQuotWith_spec hw ha hb' hc hd hcM hMd hcd haL hLb hwid (lnRatKappa_pos hb1) _
+    (fun hp => hκc (decide_eq_true_iff.mp hp)) (fun hn => hdκ (of_decide_eq_false hn)) hirr
+
+/-- The Ziv certificate for `log_b q` with rationals. -/
+theorem logBaseRatRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (b : AzRat) (hb : (0 : ℚ) < AzRat.toRat b)
+    (hb1 : (AzRat.toRat b : ℝ) ≠ 1)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log (AzRat.toRat b : ℝ))) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (logBaseRatRatApprox q b (w₀ * 2 ^ f)).1
+      (logBaseRatRatApprox q b (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (logBaseRatRatApprox q b) hirr
+    (logBaseRatBaseP1Eps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+      (⌊2 * |Real.log (AzRat.toRat b : ℝ)|⌋₊ + 2) (1 / lnRatKappa (AzRat.toRat b : ℝ))
+      |Real.log (AzRat.toRat q : ℝ)| |Real.log (AzRat.toRat b : ℝ)|)
+    (tendsto_logBaseRatBaseP1Eps _ _ _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBaseRatRatApprox_spec hw q hq b hb hb1 hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
 end Azurite.AzFloat
