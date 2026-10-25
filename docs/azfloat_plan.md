@@ -4060,3 +4060,76 @@ gives `∓∞` by the sign of `k`, `q < 0` and `k = 0` give `NaN`.  Tests: exact
 every direction, `k = ±1` against `log2RatPrecRound`, `log₁₆ 10` and `log₁₆ (1/10)` at 150 bits,
 `log₈ (7/3)` at 60 bits (reference from `Decimal.ln`), `log_{2^1000} 10`.
 
+## `log_b` for `AzFloat`, natural base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseBracket.lean`, `LogBaseExact.lean`, `LogBase.lean`, `Equiv/…`, `Tests/LogBase.lean`.
+`logBasePrecRound x b p mode` for a 64-bit base `b : UInt64` (`b < 2` gives `NaN`): `ln x / ln b`.
+A power-of-two base `b = 2^k` (`AzNat.checkedLogBase2`) delegates to `logBasePow2PrecRound x k`
+(spec bridge `Spec.logBase_two_pow`).  Exact branch otherwise: `log_b x` is rational exactly when
+`x` is a positive integer `c^r` with `c` the primitive root of `b = c^s` (`s ≤ 63` maximal, found by
+`AzNat.isPow` tests downward in `maxPowExp`/`maxRootBase`), and the value `r/s` is rounded once by
+`ofAzRatRound` (`logBaseExact?`, `logBaseExact?_some`).  Irrationality for `none`
+(`irrational_of_logBaseExact?_none`): a rational `n/d` gives `x^d = b^n`
+(`pow_eq_zpow_of_log_div_log`, via `exp`/`log`); for a non-integer float `x = o · 2^j` with `o` odd
+and `j < 0`, `o^d · 2^(jd) = b^n` makes `b^n` divisible by an odd `o^d > 1` while also forcing `b`
+to be a power of two, contradiction (`odd_pow_eq_two_pow`); for an integer `N`, `N^d = c^(sn)` and
+`Nat.exists_eq_pow_of_pow_eq_pow` give `N = y^(sn/g)`, `c = y^(d/g)` with `g = gcd(sn, d)`, and
+maximality of `s` (`maxRootBase_not_pow`, using `b < 2^64`) forces `d/g = 1`, so `N` is a power
+of `c` after all, contradicting `AzNat.checkedLogBase = none`.  Ziv branch: `logBaseApprox` is
+`quotientBracket (lnBracket x) (lnBaseBracket b)`, the `ln x` bracket divided by the `ln b` bracket
+with directed rounding (lower end of the divisor clamped at `1/2` by `clampHalf`, so positivity
+holds at every working precision); `quotientBracket_spec` generalizes `log2Quotients_spec` to an
+arbitrary divisor bracket, width `2ε + 8 (|L| + ε) (δ + 2^-w)`, and `logBaseEps` tends to `0`.
+Tests: specials and bases `0`/`1`, exact cases (`log₁₀ 1000 = 3`, `log₃₆ 6 = 1/2`, `log₉ 27 = 3/2`,
+`log₂₇ 3 = 1/3` rounded with tag, `log₁₀ 1000` at 1 bit), power-of-two bases against
+`logBasePow2PrecRound` (including `2^63`), `log₁₀ 2` and `log₃ (7/4)` at 150 bits against 60-digit
+references (`Decimal.ln`), the base `2^64 − 1`.
+
+## `log_b` of a rational for `AzFloat`, natural base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseRat.lean`, `Equiv/LogBaseRat.lean`, `Tests/LogBaseRat.lean`, with the rational
+pieces added to `LogBaseBracket.lean`/`LogBaseExact.lean` and their `Equiv/` files.
+`logBaseRatPrecRound q b p mode = ln q / ln b` for `q : AzRat`, `b : UInt64 ≥ 2` (`b < 2` and
+`q < 0` give `NaN`, `q = 0` gives `−∞`); a power-of-two base delegates to
+`logBasePow2RatPrecRound`.  Exact branch: `log_b q` is rational exactly when `q = c^r` for the
+primitive root `c` of `b = c^s` and an integer `r` (negative allowed, unlike the float case where
+non-integers are never exact for a non-power-of-two base); `logBaseExactRat? q b` reuses
+`AzRat.checkedLogBaseAbs` with the base `c` (which fits in 64 bits, `maxRootBase_lt_size`) and
+returns `r/s` through `AzRat.ofAzInts`.  Irrationality for `none` (`irrational_log_div_log_of_rat`,
+over Mathlib's `ℚ`): a rational `n/d` gives `q^d = b^n`; with `q = N/D` reduced, `n ≥ 0` gives
+`N^d = b^n D^d`, so `D^d ∣ N^d` and coprimality (`Nat.Coprime.pow`, `Nat.Coprime.eq_one_of_dvd`)
+force `D = 1`, while `n < 0` gives `N^d b^(−n) = D^d` and `N = 1`; the remaining `N^d = b^n`
+(resp. `D^d = b^(−n)`) is the integer core `exists_eq_pow_maxRoot_of_pow_eq_pow`, extracted from
+the float proof, so the power is `c^k` and `q = c^(±k)`.  No power-of-two restriction on `b` is
+needed here.  Ziv branch: `logBaseRatApprox q b w = quotientBracket (lnFloorBracket
+(ofAzRatRound q w .Floor).1 w) (lnBaseBracket b w) w`, width `logBaseRatEps` from `lnRatEps` and
+`lnEps`.  Tests: specials, exact cases in both directions (`log₁₀ (1/1000) = −3`,
+`log₃₆ (1/6) = −1/2`, `log₉ (1/27) = −3/2`, `log₂₇ (1/9) = −2/3` rounded with tag), power-of-two
+bases against `logBasePow2RatPrecRound`, floats against `logBasePrecRound`, `log₁₀ 2`,
+`log₁₀ (1/3)` and `log₃ (7/4)` at 150 bits against 60-digit references, the base `2^64 − 1`.
+
+## `log_b (1 + x)` for `AzFloat`, natural base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseP1.lean`, `Equiv/LogBaseP1.lean`, `Tests/LogBaseP1.lean`, with the pieces added to
+`LogBaseBracket.lean`/`LogBaseExact.lean` and their `Equiv/` files.  `logBaseP1PrecRound x b p
+mode = ln (1 + x) / ln b` for `b : UInt64 ≥ 2`, the natural-base analogue of `log2p1`; the finite
+case `x > −1` is the proof-carrying `logBaseP1Finite s e hv hgt b hb p mode` (shared by both
+signs), started at `p + 64 + leadingZeroBits e` like `ln1p`.  Exact cases: for `b = 2^k`
+(`AzNat.checkedLogBase2`) the existing `onePlusPow2Exponent?` detects `1 + x = 2^j` and the value
+is `j/k` (`ofAzRatRound (AzRat.ofAzInts j k)`); otherwise `logBaseP1Exact? x b` tests
+`isInteger` first (so non-integers cost nothing), converts the positive integer `x` to `N` and
+runs `AzNat.checkedLogBase c (N + 1)` for the primitive root `c`, value `r/s`.  Irrationality:
+an integer `x > −1` is a positive integer (`toAzRat?_of_nat`, extracted from the float proof) and
+`irrational_log_div_log_of_int` applies to `N + 1`; a non-integer `x > −1` has `1 + x = u / 2^t`
+with `u` odd and `t ≥ 1` (`one_add_finiteVal_eq_odd_div_two_pow`, from `finiteVal_eq_odd_mul_zpow`
+and `Nat.Even.sub_odd` for the negative sign), and `1 + x = c^r` is impossible: `r ≥ 0` makes `u`
+even, `r < 0` makes `c^(−r)` divide `2^t`, so `c` and `b` are powers of two
+(`irrational_log_div_log_one_add_of_not_int`, through the `ℚ`-level
+`irrational_log_div_log_of_rat`); for `b = 2^k`, `irrational_logb_two_one_add_of_none` divided by
+`k` (`log_div_log_two_pow`).  Ziv branch: `logBaseP1Approx x b w = quotientBracket (lnFloorBracket
+(addPrecRound one x w .Floor).1 w) (lnBaseBracket b w) w`, width `logBaseRatEps` (reused).  Spec
+`= liftVal (fun a => Spec.logBase b (a + 1))`, special values as `log2p1`.  Tests: specials,
+exact cases (`log₁₀ (1 + 999) = 3`, `log₃₆ (1 + 5) = 1/2`, `log₂₇ (1 + 2) = 1/3` with tag,
+`log₁₀ (1 + (10^20 − 1)) = 20`), power-of-two bases (`log₈ (1 − 7/8) = −1`, `log₁₆ (1 + 3) = 1/2`,
+`log₁₀₂₄ (1 + (2^100 − 1)) = 10`), agreement with `log2p1PrecRound` and with `logBasePrecRound`
+on the exact `1 + x`, `log₁₀ (1 + 2^(−30))` at 100 bits against a 58-digit reference.
