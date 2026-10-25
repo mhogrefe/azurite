@@ -27,12 +27,12 @@ import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
 import Azurite.AzFloat.Tests.Ln
-import Azurite.AzFloat.Tests.Ln1p
 import Azurite.AzFloat.Tests.Ln2
+import Azurite.AzFloat.Tests.LnP1
 import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.Log2
+import Azurite.AzFloat.Tests.Log2P1
 import Azurite.AzFloat.Tests.Log2Rat
-import Azurite.AzFloat.Tests.Log2p1
 import Azurite.AzFloat.Tests.LogBase
 import Azurite.AzFloat.Tests.LogBaseP1
 import Azurite.AzFloat.Tests.LogBasePow2

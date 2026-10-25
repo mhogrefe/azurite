@@ -99,7 +99,7 @@ def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
 /-- The bracket of `ln (1 + x)` for a float `x > −1` at working precision `w`: `lnFloorApprox` of
 `⌊1 + x⌋_w` (one rounded addition; for `|x| < 1` the caller starts `w` high enough that the
 rounding keeps the leading bits of `x`). -/
-def ln1pApprox (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+def lnP1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
   lnFloorApprox (addPrecRound one x w .Floor).1 w
 
 end Azurite.AzFloat

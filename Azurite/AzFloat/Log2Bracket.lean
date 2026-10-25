@@ -46,7 +46,7 @@ def log2RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
 /-- The bracket of `log₂ (1 + x)` for a float `x > −1` at working precision `w`: the quotient of
 the bracket of `ln (1 + x)` from the float `⌊1 + x⌋_w` (`lnFloorBracket`) by the bracket of
 `ln 2`. -/
-def log2p1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+def log2P1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
   let b := log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 

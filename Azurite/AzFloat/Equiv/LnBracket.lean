@@ -35,7 +35,7 @@ import Azurite.Transcendental.Exp
 * `lnFloorApprox_spec`: `ln` of a float `y ≤ q ≤ y (1 + 2·2^(−w))`, the upper end widened by
   `2^(2−w) ≥ ln (q/y)`, encloses `ln q` with width `≤ lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2 ≥
   |exponent of y|`; hence `lnRatApprox_spec`/`lnRatApprox_isSome_exists` (`q` a positive rational,
-  `y = ⌊q⌋_w`) and `ln1pApprox_spec`/`ln1pApprox_isSome_exists` (`q = 1 + x`, `y = ⌊1 + x⌋_w`).
+  `y = ⌊q⌋_w`) and `lnP1Approx_spec`/`lnP1Approx_isSome_exists` (`q = 1 + x`, `y = ⌊1 + x⌋_w`).
 -/
 
 namespace Azurite.AzFloat
@@ -1257,11 +1257,11 @@ theorem irrational_log_one_add_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal =
     exact_mod_cast this
   exact irrational_log_rat hpos' fun h => hrx0 (by linarith)
 
-/-- `ln1pApprox x w` encloses `ln (1 + x)` strictly, with width at most
+/-- `lnP1Approx x w` encloses `ln (1 + x)` strictly, with width at most
 `lnRatEps E |ln (1 + x)| w` (`w ≥ 64`, `x > −1`, `x ≠ 0`). -/
-theorem ln1pApprox_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+theorem lnP1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
     (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0) :
-    ∃ lv hv : ℝ, Rounds (ln1pApprox x w).1 lv ∧ Rounds (ln1pApprox x w).2 hv ∧
+    ∃ lv hv : ℝ, Rounds (lnP1Approx x w).1 lv ∧ Rounds (lnP1Approx x w).2 hv ∧
       lv < Real.log (1 + xv) ∧ Real.log (1 + xv) < hv ∧
       hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
@@ -1270,18 +1270,18 @@ theorem ln1pApprox_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
   exact lnFloorApprox_spec hw hr hpos hf.le hf.ge (irrational_log_one_add_of_toVal hx hpos hx0)
 
 /-- The Ziv certificate for `ln (1 + x)`. -/
-theorem ln1pApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ}
+theorem lnP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ}
     (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (ln1pApprox x (w₀ * 2 ^ f)).1 (ln1pApprox x (w₀ * 2 ^ f)).2 p
+    ∃ f : ℕ, (roundingPossible (lnP1Approx x (w₀ * 2 ^ f)).1 (lnP1Approx x (w₀ * 2 ^ f)).2 p
       mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (ln1pApprox x)
+  exists_isSome_of_irrational_threshold p mode (lnP1Approx x)
     (irrational_log_one_add_of_toVal hx (by linarith) hx0)
     (lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_lnRatEps _ _) 64
     (fun w hw => by
-      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := ln1pApprox_spec hw hx hx1 hx0
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := lnP1Approx_spec hw hx hx1 hx0
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
-/-! ### Facts about the exponent for `ln1pPrecRound` -/
+/-! ### Facts about the exponent for `lnP1PrecRound` -/
 
 theorem toVal_neg_one : (-one).toVal = some ((-1 : ℝ) : EReal) := by
   rw [toVal_neg, toVal_one']; rfl

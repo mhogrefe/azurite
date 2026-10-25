@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Equiv.LogBasePow2Bracket
-import Azurite.AzFloat.Ln1p
+import Azurite.AzFloat.LnP1
 import Azurite.AzRat.Construct
 
 /-!
@@ -17,10 +17,10 @@ import Azurite.AzRat.Construct
 `logBasePow2P1PrecRound x k p mode` is `log_{2^k} (1 + x) = log₂ (1 + x) / k` for an integer
 `k ≠ 0` (possibly negative), correctly rounded to precision `p` in `mode`, with the comparison
 against the exact value; `logBasePow2P1 x k` rounds to nearest.  The working precision starts
-at `p + 64 + leadingZeroBits e` as `ln1p` does.  If `1 + x = 2^j` (`onePlusPow2Exponent?`) the
+at `p + 64 + leadingZeroBits e` as `lnP1` does.  If `1 + x = 2^j` (`onePlusPow2Exponent?`) the
 result is the rational `j / k`, rounded once (`ofAzRatRound`); otherwise `log₂ (1 + x) / k` is
 irrational and the certified Ziv loop runs on `logBasePow2P1Approx`, the `ln (1 + x)` bracket of
-`ln1p` turned into a `log₂` bracket and divided by `|k|`.  Special values: `NaN` for `NaN`, `−∞`,
+`lnP1` turned into a `log₂` bracket and divided by `|k|`.  Special values: `NaN` for `NaN`, `−∞`,
 `x < −1` and `k = 0`; `0 ↦ 0` exactly; `+∞ ↦ ±∞` and `−1 ↦ ∓∞` by the sign of `k`.  The
 specification `logBasePow2P1PrecRound_eq_liftVal` is in `Equiv/LogBasePow2P1.lean`.
 -/

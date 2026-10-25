@@ -3638,8 +3638,8 @@ Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.le
 
 ## `ln (1 + x)` for `AzFloat` (DONE 2026-10-19, fuel-free; MCA `log1p`)
 
-Files: `AzFloat/Ln1p.lean`, `AzFloat/Equiv/Ln1p.lean`, `AzFloat/Tests/Ln1p.lean`; the bracket
-`ln1pApprox` and the generic `lnFloorApprox` live in `AzFloat/LnBracket.lean` / `Equiv/LnBracket.lean`.
+Files: `AzFloat/LnP1.lean`, `AzFloat/Equiv/LnP1.lean`, `AzFloat/Tests/LnP1.lean`; the bracket
+`lnP1Approx` and the generic `lnFloorApprox` live in `AzFloat/LnBracket.lean` / `Equiv/LnBracket.lean`.
 
 * **Method vs MCA.** MCA §4.4.2 / Exercise 4.9 evaluate `log1p` by the reduction
   `log1p(x) = 2 log1p(x/(1 + √(1 + x)))` and a power series, `O(√n M(n))`; the AGM logarithm is
@@ -3647,7 +3647,7 @@ Files: `AzFloat/Ln1p.lean`, `AzFloat/Equiv/Ln1p.lean`, `AzFloat/Tests/Ln1p.lean`
   widened by `2^(2−w) ≥ ln ((1 + x)/y)` — the `lnRat` construction with `ofAzRatRound q w .Floor`
   replaced by `addPrecRound one x w .Floor`.  Refactor: `lnFloorApprox y w` is the common
   bracket and `lnFloorApprox_spec` the common proof (`y ≤ q ≤ y (1 + 2u)`, `ln q` irrational);
-  `lnRatApprox_spec` and `ln1pApprox_spec` are two-line corollaries.
+  `lnRatApprox_spec` and `lnP1Approx_spec` are two-line corollaries.
 * **Why `log1p` at all.** For `|x| < 1` with exponent `e ≤ 0`, `1 + x` at precision `w` keeps
   only `w + e` bits of `x`, and `ln (1 + x) ≈ x` needs them all: the Ziv loop therefore starts at
   `w₀ = p + 64 + leadingZeroBits e` (`−e`, through `toUInt64`) instead of `p + 64`, so the first
@@ -3660,7 +3660,7 @@ Files: `AzFloat/Ln1p.lean`, `AzFloat/Equiv/Ln1p.lean`, `AzFloat/Tests/Ln1p.lean`
   `finiteVal_false_le_neg_one`) then `x = −1` (by `eqIEEE x (−one)`, `toVal_neg_one`) gives
   `(−∞, .eq)` and `x < −1` gives `(nan, .eq)`; otherwise `−1 < x < 0`
   (`finiteVal_false_gt_neg_one`, from `|x| < 2^e ≤ 1`) → the loop.  Spec
-  `ln1pPrecRound_eq_liftVal : … = liftVal (fun a => Spec.log (a + 1)) x p mode` (`⊤ + 1 = ⊤`,
+  `lnP1PrecRound_eq_liftVal : … = liftVal (fun a => Spec.log (a + 1)) x p mode` (`⊤ + 1 = ⊤`,
   `⊥ + 1 = ⊥` by `EReal.top_add_coe`/`EReal.bot_add`).
 * **Tests.** Special values; agreement with `ln` on exactly representable `1 + x` (`x = 3, −1/2, 1,
   7`, also the `Floor` pair); `ln (1 ± 2^(−30))` at 53 and 200 bits, `ln (1 + 2^(−100))` at 53
@@ -3739,10 +3739,10 @@ the shared float-level `ln` bracket of `⌊q⌋_w`).
 * **Lean note.** `AzRat.toRat_eq_zero_iff` is stated over the *real* cast
   `((toRat q : ℚ) : ℝ) = 0`, not the rational — rewrite the real-valued hypothesis.
 
-## `log₂ (1 + x)` for `AzFloat` (DONE 2026-10-19, fuel-free; C23 `log2p1`)
+## `log₂ (1 + x)` for `AzFloat` (DONE 2026-10-19, fuel-free; C23 `log2P1`)
 
-Files: `AzFloat/Log2p1.lean`, `AzFloat/Equiv/Log2p1.lean`, `AzFloat/Tests/Log2p1.lean`; the
-bracket `log2p1Approx`, the exactness test `onePlusPow2Exponent?` and their proofs in
+Files: `AzFloat/Log2P1.lean`, `AzFloat/Equiv/Log2P1.lean`, `AzFloat/Tests/Log2P1.lean`; the
+bracket `log2P1Approx`, the exactness test `onePlusPow2Exponent?` and their proofs in
 `AzFloat/Log2Bracket.lean` / `Equiv/Log2Bracket.lean`.
 
 * **Exact case `1 + x = 2^k`** (`x = 2^k − 1`: `1, 3, 7, …, −1/2, −3/4, …`).  Computable test
@@ -3757,14 +3757,14 @@ bracket `log2p1Approx`, the exactness test `onePlusPow2Exponent?` and their proo
   `v ≠ 2^j` for all `j` has irrational `log₂ v` — `r = N/D` reduced (`Rat.reduced`, `Rat.num_pos`,
   `Nat.cast_natAbs`), not both powers of two, then `irrational_logb_two_div`.  Applied to
   `1 + x = 1 + r_x` (`exists_rat_of_toVal`).
-* **Bracket.** `log2Quotients (lnFloorBracket ⌊1 + x⌋_w w) w`: the `ln1p` bracket divided by the
-  `ln 2` bracket; width `log2RatEps E |ln (1 + x)| w` (`log2p1Approx_spec` from
+* **Bracket.** `log2Quotients (lnFloorBracket ⌊1 + x⌋_w w) w`: the `lnP1` bracket divided by the
+  `ln 2` bracket; width `log2RatEps E |ln (1 + x)| w` (`log2P1Approx_spec` from
   `lnFloorBracket_spec` and `log2Quotients_spec`).  The Ziv loop starts at
-  `p + 64 + leadingZeroBits e` as `ln1p` does, for the same reason (small `|x|`).
-* **Driver and spec.** As `ln1pPrecRound` (sign/exponent tests `finiteVal_false_le_neg_one`,
+  `p + 64 + leadingZeroBits e` as `lnP1` does, for the same reason (small `|x|`).
+* **Driver and spec.** As `lnP1PrecRound` (sign/exponent tests `finiteVal_false_le_neg_one`,
   `finiteVal_false_gt_neg_one`, `eqIEEE x (−one)`), with `match h : onePlusPow2Exponent? x w₀ with`
   before the loop; the certificate uses `h` through `irrational_logb_two_one_add_of_none`.  The
-  common finite case is `log2p1_finite_eq` (`split` on the `match`, `rename_i`), so the main
+  common finite case is `log2P1_finite_eq` (`split` on the `match`, `rename_i`), so the main
   theorem handles only the special values.  New `addFloor_abs` in `Equiv/DirectedRounding`.
 * **Tests.** Special values; exact `x = 1, 3, 7, −1/2, −3/4, −7/8` and `2^100 − 1` at 110 bits;
   agreement with `log2` on `1 + x = 10, 3, 3/4`; `log₂ (3/2)`, `log₂ (1 + 2^(−30))` at 53 bits
@@ -4112,9 +4112,9 @@ bases against `logBasePow2RatPrecRound`, floats against `logBasePrecRound`, `log
 
 `AzFloat/LogBaseP1.lean`, `Equiv/LogBaseP1.lean`, `Tests/LogBaseP1.lean`, with the pieces added to
 `LogBaseBracket.lean`/`LogBaseExact.lean` and their `Equiv/` files.  `logBaseP1PrecRound x b p
-mode = ln (1 + x) / ln b` for `b : UInt64 ≥ 2`, the natural-base analogue of `log2p1`; the finite
+mode = ln (1 + x) / ln b` for `b : UInt64 ≥ 2`, the natural-base analogue of `log2P1`; the finite
 case `x > −1` is the proof-carrying `logBaseP1Finite s e hv hgt b hb p mode` (shared by both
-signs), started at `p + 64 + leadingZeroBits e` like `ln1p`.  Exact cases: for `b = 2^k`
+signs), started at `p + 64 + leadingZeroBits e` like `lnP1`.  Exact cases: for `b = 2^k`
 (`AzNat.checkedLogBase2`) the existing `onePlusPow2Exponent?` detects `1 + x = 2^j` and the value
 is `j/k` (`ofAzRatRound (AzRat.ofAzInts j k)`); otherwise `logBaseP1Exact? x b` tests
 `isInteger` first (so non-integers cost nothing), converts the positive integer `x` to `N` and
@@ -4128,10 +4128,10 @@ even, `r < 0` makes `c^(−r)` divide `2^t`, so `c` and `b` are powers of two
 `irrational_log_div_log_of_rat`); for `b = 2^k`, `irrational_logb_two_one_add_of_none` divided by
 `k` (`log_div_log_two_pow`).  Ziv branch: `logBaseP1Approx x b w = quotientBracket (lnFloorBracket
 (addPrecRound one x w .Floor).1 w) (lnBaseBracket b w) w`, width `logBaseRatEps` (reused).  Spec
-`= liftVal (fun a => Spec.logBase b (a + 1))`, special values as `log2p1`.  Tests: specials,
+`= liftVal (fun a => Spec.logBase b (a + 1))`, special values as `log2P1`.  Tests: specials,
 exact cases (`log₁₀ (1 + 999) = 3`, `log₃₆ (1 + 5) = 1/2`, `log₂₇ (1 + 2) = 1/3` with tag,
 `log₁₀ (1 + (10^20 − 1)) = 20`), power-of-two bases (`log₈ (1 − 7/8) = −1`, `log₁₆ (1 + 3) = 1/2`,
-`log₁₀₂₄ (1 + (2^100 − 1)) = 10`), agreement with `log2p1PrecRound` and with `logBasePrecRound`
+`log₁₀₂₄ (1 + (2^100 − 1)) = 10`), agreement with `log2P1PrecRound` and with `logBasePrecRound`
 on the exact `1 + x`, `log₁₀ (1 + 2^(−30))` at 100 bits against a 58-digit reference.
 
 ## `log_{2^k} (1 + x)` for `AzFloat` (DONE 2026-10-25, fuel-free)
@@ -4139,16 +4139,16 @@ on the exact `1 + x`, `log₁₀ (1 + 2^(−30))` at 100 bits against a 58-digit
 `AzFloat/LogBasePow2P1.lean`, `Equiv/LogBasePow2P1.lean`, `Tests/LogBasePow2P1.lean`, with
 `logBasePow2P1Approx` and its spec added to `LogBasePow2Bracket.lean`/`Equiv/`.
 `logBasePow2P1PrecRound x k p mode = log₂ (1 + x) / k` for `k : AzInt ≠ 0`, the base-`2^k`
-analogue of `log2p1`, with the proof-carrying finite core `logBasePow2P1Finite s e hv hgt k hk p
+analogue of `log2P1`, with the proof-carrying finite core `logBasePow2P1Finite s e hv hgt k hk p
 mode` (`hgt : −1 < x`) started at `p + 64 + leadingZeroBits e`.  Exact branch: the existing
 `onePlusPow2Exponent?` detects `1 + x = 2^j` and `ofAzRatRound (AzRat.ofAzInts j k)` rounds
 `j/k` once; otherwise `irrational_logb_two_one_add_of_none` divided by `k`
 (`Irrational.div_intCast`) certifies the Ziv loop on `logBasePow2P1Approx x k w = divBracketByInt
 (log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w) k w`, width
-`logBasePow2RatEps` (reused: the `ln1p` bracket has the rational width bound `lnRatEps`).  Spec
+`logBasePow2RatEps` (reused: the `lnP1` bracket has the rational width bound `lnRatEps`).  Spec
 `= liftVal (fun a => Spec.logBasePow2 k.toInt (a + 1))`; `+∞ ↦ ±∞` and `−1 ↦ ∓∞` by the sign of
 `k`, `0 ↦ 0`, `NaN` below `−1`.  Tests: specials with both signs of `k`, exact cases
 (`log₈ (1 + 7) = 1`, `log₁₆ (1 + 3) = 1/2`, `log₄ (1 − 1/2) = −1/2`, `log_{1/8} (1 − 7/8) = 1`,
 `log₈ (1 + 1) = 1/3` with tag, `log₁₀₂₄ (1 + (2^100 − 1)) = 10`), `k = 1` against
-`log2p1PrecRound`, agreement with `logBasePow2PrecRound` on the exact `1 + x` (including
+`log2P1PrecRound`, agreement with `logBasePow2PrecRound` on the exact `1 + x` (including
 `k = −4`, `k = 1000` and `x = −3/8`), `log₁₆ (1 + 9)` at 150 bits.

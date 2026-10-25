@@ -9,7 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.LogBasePow2P1
 import Azurite.AzFloat.LogBasePow2
-import Azurite.AzFloat.Log2p1
+import Azurite.AzFloat.Log2P1
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
@@ -17,7 +17,7 @@ import Azurite.AzRat.Parse
 /-!
 # Tests for `log_{2^k} (1 + x)`
 
-Special values, exact cases `1 + x = 2^j` (value `j / k`), agreement with `log2p1` for `k = 1`
+Special values, exact cases `1 + x = 2^j` (value `j / k`), agreement with `log2P1` for `k = 1`
 and with `log_{2^k}` on the exact `1 + x`, and
 `log₁₆ (1 + 9) = 0.830482023721840586967579857372347543966207848256145153013…`.
 -/
@@ -60,10 +60,10 @@ private def L (x : AzFloat) (k : Int) (p : Nat) (m : RoundingMode := .Nearest) :
 #guard L (F "1267650600228229401496703205375" 110) 10 110 == (F "10" 110, .eq)
 #guard (L (F "1/2" 53) 4 53).2 != .eq                         -- 3/2 is not a power of two
 
--- `k = 1` agrees with `log2p1`
-#guard L (F "10" 53) 1 53 == log2p1PrecRound (F "10" 53) 53 .Nearest
-#guard L (F "-1/3" 53) 1 20 .Floor == log2p1PrecRound (F "-1/3" 53) 20 .Floor
-#guard L (F "1/1073741824" 53) 1 100 == log2p1PrecRound (F "1/1073741824" 53) 100 .Nearest
+-- `k = 1` agrees with `log2P1`
+#guard L (F "10" 53) 1 53 == log2P1PrecRound (F "10" 53) 53 .Nearest
+#guard L (F "-1/3" 53) 1 20 .Floor == log2P1PrecRound (F "-1/3" 53) 20 .Floor
+#guard L (F "1/1073741824" 53) 1 100 == log2P1PrecRound (F "1/1073741824" 53) 100 .Nearest
 
 -- agreement with `log_{2^k}` on the exact `1 + x`
 #guard L (F "9" 53) 4 150 == logBasePow2PrecRound (F "10" 53) (K 4) 150 .Nearest
@@ -86,5 +86,5 @@ private def ref16 : AzRat :=
 
 -- default precision
 #guard logBasePow2P1 (F "7" 10) (K 3) == F "1" 10
-#guard logBasePow2P1 (F "10" 53) (K 1) == log2p1 (F "10" 53)
+#guard logBasePow2P1 (F "10" 53) (K 1) == log2P1 (F "10" 53)
 #guard logBasePow2P1 (F "9" 53) (K 4) == ofAzRat ref16 53

@@ -9,7 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.LogBaseP1
 import Azurite.AzFloat.Equiv.LogBase
-import Azurite.AzFloat.Equiv.Log2p1
+import Azurite.AzFloat.Equiv.Log2P1
 
 /-!
 # Equivalence: `log_b (1 + x)`

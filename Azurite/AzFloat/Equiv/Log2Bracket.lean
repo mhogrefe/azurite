@@ -578,12 +578,12 @@ theorem irrational_logb_two_one_add_of_none {x : AzFloat} {xv : ℝ}
   exact irrational_logb_two_of_rat hpos (r := 1 + rx) (by push_cast; rw [hrx])
     (onePlusPow2Exponent?_none hx hw hpos h)
 
-/-- `log2p1Approx x w` encloses `log₂ (1 + x)` strictly (given its irrationality), with width at
+/-- `log2P1Approx x w` encloses `log₂ (1 + x)` strictly (given its irrationality), with width at
 most `log2RatEps E |ln (1 + x)| w` (`w ≥ 64`, `x > −1`). -/
-theorem log2p1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+theorem log2P1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
     (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
     (hirr : Irrational (Real.logb 2 (1 + xv))) :
-    ∃ lv hv : ℝ, Rounds (log2p1Approx x w).1 lv ∧ Rounds (log2p1Approx x w).2 hv ∧
+    ∃ lv hv : ℝ, Rounds (log2P1Approx x w).1 lv ∧ Rounds (log2P1Approx x w).2 hv ∧
       lv < Real.logb 2 (1 + xv) ∧ Real.logb 2 (1 + xv) < hv ∧
       hv - lv ≤ log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
@@ -605,15 +605,15 @@ theorem log2p1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
     exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r' (h.trans hr')
 
 /-- The Ziv certificate for `log₂ (1 + x)`. -/
-theorem log2p1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat}
+theorem log2P1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat}
     {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
     (hirr : Irrational (Real.logb 2 (1 + xv))) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (log2p1Approx x (w₀ * 2 ^ f)).1 (log2p1Approx x (w₀ * 2 ^ f)).2 p
+    ∃ f : ℕ, (roundingPossible (log2P1Approx x (w₀ * 2 ^ f)).1 (log2P1Approx x (w₀ * 2 ^ f)).2 p
       mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (log2p1Approx x) hirr
+  exists_isSome_of_irrational_threshold p mode (log2P1Approx x) hirr
     (log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_log2RatEps _ _) 64
     (fun w hw => by
-      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2p1Approx_spec hw hx hx1 hirr
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2P1Approx_spec hw hx hx1 hirr
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
 end Azurite.AzFloat

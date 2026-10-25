@@ -17,7 +17,7 @@ ends are divided by the exact float `|k|` with directed rounding, and negated (a
 `k < 0`, giving a bracket of `L / k`.  `logBasePow2Approx x e k w` applies it to the bracket of
 `log₂ x` (`log2Quotients` of `lnBracket`) for a positive finite float `x` of exponent `e`, and
 `logBasePow2RatApprox q k w` to the bracket of `log₂ q` for a positive rational `q`, and
-`logBasePow2P1Approx x k w` to the bracket of `log₂ (1 + x)` (the `ln1p` bracket) for `x > −1`.
+`logBasePow2P1Approx x k w` to the bracket of `log₂ (1 + x)` (the `lnP1` bracket) for `x > −1`.
 -/
 
 namespace Azurite.AzFloat

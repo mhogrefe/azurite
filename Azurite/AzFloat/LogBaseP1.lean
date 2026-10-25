@@ -9,22 +9,22 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Equiv.LogBaseBracket
 import Azurite.AzFloat.Equiv.LogBaseExact
-import Azurite.AzFloat.Ln1p
+import Azurite.AzFloat.LnP1
 import Azurite.AzNat.LogBase2
 
 /-!
 ## `log_b (1 + x)`
 
 `logBaseP1PrecRound x b p mode` is `log_b (1 + x)` for a 64-bit natural base `b ≥ 2` (the
-natural-base analogue of C23's `log2p1`), correctly rounded to precision `p` in `mode`, with the
+natural-base analogue of C23's `log2P1`), correctly rounded to precision `p` in `mode`, with the
 comparison against the exact value; `logBaseP1 x b` rounds to nearest.  The working precision
-starts at `p + 64 + leadingZeroBits e` as `ln1p` does, so that tiny `x` are resolved.  Exact
+starts at `p + 64 + leadingZeroBits e` as `lnP1` does, so that tiny `x` are resolved.  Exact
 cases first: for a power-of-two base `b = 2^k`, `1 + x = 2^j` (`onePlusPow2Exponent?`) gives the
 rational `j / k`; otherwise `1 + x = c^r` for the primitive root `c` of `b = c^s` and a positive
 integer `x` (`logBaseP1Exact?`) gives `r / s`; both are rounded once (`ofAzRatRound`).  Every
 other `x > −1` has an irrational `log_b (1 + x)` and the certified Ziv loop runs on
-`logBaseP1Approx`, the `ln (1 + x)` bracket of `ln1p` divided by the bracket of `ln b`.  Special
-values as for `ln1p`: `NaN ↦ NaN`, `+∞ ↦ +∞`, `−∞ ↦ NaN`, `0 ↦ 0` exactly, `−1 ↦ −∞`, `NaN`
+`logBaseP1Approx`, the `ln (1 + x)` bracket of `lnP1` divided by the bracket of `ln b`.  Special
+values as for `lnP1`: `NaN ↦ NaN`, `+∞ ↦ +∞`, `−∞ ↦ NaN`, `0 ↦ 0` exactly, `−1 ↦ −∞`, `NaN`
 below `−1` and for the bases `0` and `1`.  The specification `logBaseP1PrecRound_eq_liftVal` is
 in `Equiv/LogBaseP1.lean`.
 -/
