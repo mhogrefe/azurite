@@ -11,6 +11,8 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzNat.LogBase
 import Azurite.AzNat.RootInt
+import Azurite.AzNat.ShiftRight
+import Azurite.AzNat.TrailingZeros
 import Azurite.AzRat.Construct
 import Azurite.AzRat.LogBase
 
@@ -37,10 +39,14 @@ def maxPowExp (b : AzNat) : ℕ → ℕ
   | 1 => 1
   | s + 2 => if b.isPow (s + 2) then s + 2 else maxPowExp b (s + 1)
 
-/-- The primitive root of a 64-bit base: `b = c^s` with `s ≤ 63` maximal. -/
-def maxRootBase (b : AzNat) : AzNat × ℕ :=
-  let s := maxPowExp b 63
+/-- The primitive root of a base `b` whose perfect-power exponents are at most `t`: `b = c^s` with
+`s ≤ t` maximal. -/
+def maxRootBaseBounded (b : AzNat) (t : ℕ) : AzNat × ℕ :=
+  let s := maxPowExp b t
   (if s = 1 then b else b.rootInt s, s)
+
+/-- The primitive root of a 64-bit base: `b = c^s` with `s ≤ 63` maximal. -/
+def maxRootBase (b : AzNat) : AzNat × ℕ := maxRootBaseBounded b 63
 
 /-- `log_b x` as a rational when `x` is a positive integer power `c^r` of the primitive root `c`
 of `b` (`r / s` for `b = c^s`), `none` otherwise. -/
@@ -74,5 +80,38 @@ def logBaseP1Exact? (x : AzFloat) (b : AzNat) : Option AzRat :=
       else none
     | none => none
   else none
+
+/-! ### A float base -/
+
+/-- The 2-adic valuation of a nonzero `AzNat`. -/
+def twoAdic (m : AzNat) : ℕ := m.trailingZeros.getD 0
+
+/-- The odd part of a nonzero `AzNat`: `m = 2^(twoAdic m) · oddPart m`. -/
+def oddPart (m : AzNat) : AzNat := m >>> twoAdic m
+
+/-- The dyadic exponent of a finite float `o · 2^i` of exponent `e` and significand `m`:
+`i = e − size m + twoAdic m`. -/
+def dyadicExp (e : AzInt) (m : AzNat) : AzInt :=
+  e - (AzNat.ofNat (m.size - twoAdic m)).toAzInt
+
+/-- `some (log_b x)` when it is rational, for `x = o · 2^i` and `b = s · 2^j` with `o`, `s` odd
+and `b ≠ 1`.  For `j = 0` (`b = s` an odd integer) `x` must be an integer power of the
+primitive root of `s`; otherwise the value can only be `i / j`, and with `a / e` that fraction
+in lowest terms, `x^e = b^a` is checked through the perfect-power tests (`o = c^a` and `s = c^e`
+for a common `c` when `a > 0`, and `o = s = 1` when `a < 0`). -/
+def logBaseFloatExact? (i : AzInt) (o : AzNat) (j : AzInt) (s : AzNat) : Option AzRat :=
+  if j = 0 then
+    if i = 0 then
+      let cs := maxRootBaseBounded s s.size
+      (AzNat.checkedLogBase cs.1 o).map fun r =>
+        AzRat.ofAzInts (AzNat.ofNat r).toAzInt (AzNat.ofNat cs.2).toAzInt
+    else none
+  else
+    let r := AzRat.ofAzInts i j
+    let a := r.num.toNat
+    let e := r.den.toNat
+    if r.sign then
+      if s.isPow e ∧ o.isPow a ∧ s.rootInt e = o.rootInt a then some r else none
+    else if o = 1 ∧ s = 1 then some r else none
 
 end Azurite.AzFloat

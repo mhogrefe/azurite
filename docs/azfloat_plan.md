@@ -4161,3 +4161,34 @@ at the base `10`; `Spec.log10 = Spec.logBase 10` and the three correctness theor
 general ones instantiated (`toNat_ten : (10 : UInt64).toNat = 10` by `decide`).  Tests: exact
 powers of ten in all three, `log₁₀ 2`, `log₁₀ (1/2)` and `log₁₀ (1 + 2^(−30))` against the
 references, and agreement with the base-`10` calls of the general functions.
+
+## `log_b x` for a float base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseFloatBracket.lean`, `LogBaseFloat.lean`, `Equiv/…`, `Tests/LogBaseFloat.lean`,
+with the exactness machinery in `LogBaseExact.lean`/`Equiv/`.  `logBaseFloatPrecRound x b p mode`
+is Malachite's `log_base_float_base` (user-pasted special cases; without `−0` the zero cases
+collapse, and `log_b ∞` for `b = 0` is `NaN` as the more specific rule says).  Spec
+`Spec.logBaseFloat a b` is a table of `if`s; the main theorem is `= liftVal₂ Spec.logBaseFloat`
+by `cases x`, `cases b`.  **Exactness.** `x = o · 2^i`, `b = s · 2^j` with odd parts from
+`trailingZeros`/`>>>` (`oddPart`, `dyadicExp`; `finiteVal_eq_oddPart`).  `log_b x = n/d`
+(reduced) gives `x^d = b^n`, which separates (`pow_eq_zpow_sep`, by `odd_mul_two_zpow_inj`: odd
+times a power of two is unique) into `o^d = s^n` and `i d = j n` (or `o = s = 1` for `n < 0`).
+If `j = 0` then `i = 0` and `b = s` is an odd integer: `o` must be a power of the primitive root
+of `s`, found by `maxRootBaseBounded s s.size` (the 64-bit `maxRootBase` is now the bounded
+version at `63`; the lemmas take any bound `t` with `b < 2^(t+1)`).  If `j ≠ 0` then `n/d = i/j`,
+so `AzRat.ofAzInts i j` is the only candidate: `r.sign` true needs `s = c^e` and `o = c^a` for a
+common `c` (`isPow` and equal `rootInt`s), `r.sign` false needs `o = s = 1`; completeness uses
+`Rat.num_div_eq_of_coprime`/`den_div_eq_of_coprime` to identify the reduced fraction.
+**Bracket.** `ln b` may be negative or tiny, so `lnBaseFloatBracket` clamps the `lnBracket` ends
+by the exact-sign bounds `⌊⌊b − 1⌋ / b⌋ ≤ (b − 1)/b ≤ ln b` (`b > 1`) and
+`ln b ≤ b − 1 ≤ −⌊1 − b⌋` (`b < 1`), computed with directed rounding; the clamped end is at least
+`lnKappa b` (`(b − 1)/(4b)` or `(1 − b)/2`) in absolute value at every `w ≥ 64`, so no threshold
+is needed in the Ziv loop.  `divBracketByPosBracket` shifts the divisor bracket by `normShift`
+(`2^(−e)` for exponent `e ≤ 0`) to `[1/2, ∞)`, reuses `quotientBracket_spec`, and shifts the
+quotient back; width `divEps (1/c) |L| ε δ w = (1 + 1/c)(2ε + 8(|L| + ε)((1 + 1/c)δ + 2^−w))`, and
+`logBaseFloatEps` is it with `K = 1/lnKappa b`.  For `b < 1` the negated bracket is divided and
+the result negated and swapped.  Tests: the full special-case table, exact cases with power-of-two,
+odd-integer and fractional bases (`log₄ 8 = 3/2`, `log₉ 27 = 3/2`, `log_{3/2} (27/8) = 3`,
+`log_{1/4} (1/8) = 3/2`), agreement with `logBasePrecRound`/`logBasePow2PrecRound`/`log2PrecRound`,
+`log₃ 7` and `log_{3/2} 2` at 150 bits, and the bases `1 ± 2^(−20)` at 100 bits (values
+`±726817.…`, 75-digit references).

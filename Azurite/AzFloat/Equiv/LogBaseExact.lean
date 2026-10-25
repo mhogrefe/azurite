@@ -12,6 +12,8 @@ import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzNat.Equiv.LogBase
 import Azurite.AzNat.Equiv.RootInt
+import Azurite.AzNat.Equiv.ShiftRight
+import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzRat.Equiv.Construct
 import Azurite.AzRat.Equiv.LogBase
 import Azurite.AzRat.Equiv.LogBase2
@@ -61,15 +63,16 @@ theorem maxPowExp_spec (b : AzNat) (t : ℕ) :
           · have : u = s + 2 := by omega
             rw [this]; exact Bool.eq_false_iff.mpr h
 
-theorem maxRootBase_spec (b : AzNat) (hb : 2 ≤ b.toNat) :
-    b.toNat = (maxRootBase b).1.toNat ^ (maxRootBase b).2 ∧ 1 ≤ (maxRootBase b).2 ∧
-      2 ≤ (maxRootBase b).1.toNat ∧
-      ∀ u, (maxRootBase b).2 < u → u ≤ 63 → ¬ ∃ y, y ^ u = b.toNat := by
-  obtain ⟨h1, h2, h3⟩ := maxPowExp_spec b 63
-  unfold maxRootBase
+theorem maxRootBaseBounded_spec (b : AzNat) (t : ℕ) (hb : 2 ≤ b.toNat) :
+    b.toNat = (maxRootBaseBounded b t).1.toNat ^ (maxRootBaseBounded b t).2 ∧
+      1 ≤ (maxRootBaseBounded b t).2 ∧
+      2 ≤ (maxRootBaseBounded b t).1.toNat ∧
+      ∀ u, (maxRootBaseBounded b t).2 < u → u ≤ t → ¬ ∃ y, y ^ u = b.toNat := by
+  obtain ⟨h1, h2, h3⟩ := maxPowExp_spec b t
+  unfold maxRootBaseBounded
   simp only []
-  set s := maxPowExp b 63 with hs
-  have hmax : ∀ u, s < u → u ≤ 63 → ¬ ∃ y, y ^ u = b.toNat := by
+  set s := maxPowExp b t with hs
+  have hmax : ∀ u, s < u → u ≤ t → ¬ ∃ y, y ^ u = b.toNat := by
     intro u hu1 hu2 hy
     have := (AzNat.isPow_eq_true_iff b u (by omega)).mpr hy
     rw [h3 u hu1 hu2] at this
@@ -91,29 +94,41 @@ theorem maxRootBase_spec (b : AzNat) (hb : 2 ≤ b.toNat) :
         _ = 1 := one_pow s
     omega
 
-/-- The primitive root is not a perfect power (base below `2^64`). -/
-theorem maxRootBase_not_pow (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64) :
-    ∀ t, 2 ≤ t → ¬ ∃ d, (maxRootBase b).1.toNat = d ^ t := by
-  obtain ⟨hcs, hs1, hc2, hmax⟩ := maxRootBase_spec b hb
-  rintro t ht ⟨d, hd⟩
-  set c := (maxRootBase b).1.toNat with hc
-  set s := (maxRootBase b).2 with hs
+/-- The primitive root is not a perfect power (base below `2^(t+1)`). -/
+theorem maxRootBaseBounded_not_pow (b : AzNat) (t : ℕ) (hb : 2 ≤ b.toNat)
+    (hbt : b.toNat < 2 ^ (t + 1)) :
+    ∀ u, 2 ≤ u → ¬ ∃ d, (maxRootBaseBounded b t).1.toNat = d ^ u := by
+  obtain ⟨hcs, hs1, hc2, hmax⟩ := maxRootBaseBounded_spec b t hb
+  rintro u hu ⟨d, hd⟩
+  set c := (maxRootBaseBounded b t).1.toNat with hc
+  set s := (maxRootBaseBounded b t).2 with hs
   have hd2 : 2 ≤ d := by
     by_contra h
     push Not at h
-    have : d ^ t ≤ 1 := by
-      calc d ^ t ≤ 1 ^ t := Nat.pow_le_pow_left (by omega) t
-        _ = 1 := one_pow t
+    have : d ^ u ≤ 1 := by
+      calc d ^ u ≤ 1 ^ u := Nat.pow_le_pow_left (by omega) u
+        _ = 1 := one_pow u
     omega
-  have hbd : b.toNat = d ^ (t * s) := by rw [hcs, hd, ← pow_mul]
-  have hts : t * s ≤ 63 := by
+  have hbd : b.toNat = d ^ (u * s) := by rw [hcs, hd, ← pow_mul]
+  have hus : u * s ≤ t := by
     by_contra h
     push Not at h
-    have : 2 ^ 64 ≤ d ^ (t * s) := by
-      calc 2 ^ 64 ≤ 2 ^ (t * s) := Nat.pow_le_pow_right (by norm_num) (by omega)
-        _ ≤ d ^ (t * s) := Nat.pow_le_pow_left hd2 _
+    have : 2 ^ (t + 1) ≤ d ^ (u * s) := by
+      calc 2 ^ (t + 1) ≤ 2 ^ (u * s) := Nat.pow_le_pow_right (by norm_num) (by omega)
+        _ ≤ d ^ (u * s) := Nat.pow_le_pow_left hd2 _
     omega
-  exact hmax (t * s) (by nlinarith) hts ⟨d, hbd.symm⟩
+  exact hmax (u * s) (by nlinarith) hus ⟨d, hbd.symm⟩
+
+/-- The 64-bit instances. -/
+theorem maxRootBase_spec (b : AzNat) (hb : 2 ≤ b.toNat) :
+    b.toNat = (maxRootBase b).1.toNat ^ (maxRootBase b).2 ∧ 1 ≤ (maxRootBase b).2 ∧
+      2 ≤ (maxRootBase b).1.toNat ∧
+      ∀ u, (maxRootBase b).2 < u → u ≤ 63 → ¬ ∃ y, y ^ u = b.toNat :=
+  maxRootBaseBounded_spec b 63 hb
+
+theorem maxRootBase_not_pow (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64) :
+    ∀ t, 2 ≤ t → ¬ ∃ d, (maxRootBase b).1.toNat = d ^ t :=
+  maxRootBaseBounded_not_pow b 63 hb (by simpa using hb64)
 
 /-! ### The exact value -/
 
@@ -255,14 +270,15 @@ theorem irrational_log_div_log_of_not_int (e : AzInt) {q : ℕ} {m : AzNat} (hv 
     obtain ⟨i', -, hi'⟩ := (Nat.dvd_prime_pow Nat.prime_two).mp hbdvd
     exact hnp i' hi'
 
-/-- `N^d = b^n` with `N, d ≥ 1` forces `N` to be a power of the primitive root of `b`. -/
-theorem exists_eq_pow_maxRoot_of_pow_eq_pow (b : AzNat) (hb : 2 ≤ b.toNat)
-    (hb64 : b.toNat < 2 ^ 64) {N d n : ℕ} (hN : 1 ≤ N) (hd : 1 ≤ d)
-    (hnat : N ^ d = b.toNat ^ n) : ∃ k, N = (maxRootBase b).1.toNat ^ k := by
-  obtain ⟨hcs, hs1, hc2, -⟩ := maxRootBase_spec b hb
-  have hnotpow := maxRootBase_not_pow b hb hb64
-  set c := (maxRootBase b).1.toNat with hc
-  set s := (maxRootBase b).2 with hs
+/-- `N^d = b^n` with `N, d ≥ 1` forces `N` to be a power of the primitive root of `b` (bounded
+version). -/
+theorem exists_eq_pow_maxRootBounded_of_pow_eq_pow (b : AzNat) (t : ℕ) (hb : 2 ≤ b.toNat)
+    (hbt : b.toNat < 2 ^ (t + 1)) {N d n : ℕ} (hN : 1 ≤ N) (hd : 1 ≤ d)
+    (hnat : N ^ d = b.toNat ^ n) : ∃ k, N = (maxRootBaseBounded b t).1.toNat ^ k := by
+  obtain ⟨hcs, hs1, hc2, -⟩ := maxRootBaseBounded_spec b t hb
+  have hnotpow := maxRootBaseBounded_not_pow b t hb hbt
+  set c := (maxRootBaseBounded b t).1.toNat with hc
+  set s := (maxRootBaseBounded b t).2 with hs
   -- reduce the exponents to coprime ones
   set g := Nat.gcd d n with hg
   have hg0 : 0 < g := Nat.gcd_pos_of_pos_left _ hd
@@ -296,6 +312,12 @@ theorem exists_eq_pow_maxRoot_of_pow_eq_pow (b : AzNat) (hb : 2 ≤ b.toNat)
   have hCc : C = c ^ k := by
     rw [hCD, hcD, hk, hg'd, Nat.mul_div_cancel_left _ hd'1]
   exact ⟨n' * k, by rw [hNC, hCc, ← pow_mul, mul_comm]⟩
+
+/-- `N^d = b^n` with `N, d ≥ 1` forces `N` to be a power of the primitive root of `b`. -/
+theorem exists_eq_pow_maxRoot_of_pow_eq_pow (b : AzNat) (hb : 2 ≤ b.toNat)
+    (hb64 : b.toNat < 2 ^ 64) {N d n : ℕ} (hN : 1 ≤ N) (hd : 1 ≤ d)
+    (hnat : N ^ d = b.toNat ^ n) : ∃ k, N = (maxRootBase b).1.toNat ^ k :=
+  exists_eq_pow_maxRootBounded_of_pow_eq_pow b 63 hb (by simpa using hb64) hN hd hnat
 
 /-- An integer float that is not a power of the primitive root has an irrational `log_b`. -/
 theorem irrational_log_div_log_of_int (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64)
@@ -687,5 +709,383 @@ theorem irrational_of_logBaseP1Exact?_none (s : Bool) (e : AzInt) {q : ℕ} {m :
       rw [h10] at this
       exact this hr
   · exact irrational_log_div_log_one_add_of_not_int s e hv b hb hb64 hnp hgt hint
+
+/-! ### A float base: the odd part and the dyadic exponent -/
+
+theorem toInt_ne_zero_of_ne_zero' {k : AzInt} (hk : k ≠ 0) : k.toInt ≠ 0 := fun h =>
+  hk (by rw [← AzInt.ofInt_toInt k, h, AzInt.ofInt_zero])
+
+/-- `m = 2^(twoAdic m) · oddPart m` with `oddPart m` odd, and `twoAdic m < size m`. -/
+theorem oddPart_spec (m : AzNat) (hm : m ≠ 0) :
+    m.toNat = 2 ^ twoAdic m * (oddPart m).toNat ∧ Odd (oddPart m).toNat ∧ twoAdic m < m.size := by
+  have hk : twoAdic m = m.toNat.factorization 2 := by
+    unfold twoAdic
+    rw [AzNat.trailingZeros_eq_padicValNat m hm, Nat.factorization_def _ Nat.prime_two]
+    rfl
+  have hn : m.toNat ≠ 0 := toNat_ne_zero_of_ne_zero hm
+  have hdvd : 2 ^ m.toNat.factorization 2 ∣ m.toNat := Nat.ordProj_dvd _ _
+  have hop : (oddPart m).toNat = m.toNat / 2 ^ twoAdic m := by
+    unfold oddPart
+    exact AzNat.toNat_shiftRight m (twoAdic m)
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hop, hk, Nat.mul_div_cancel' hdvd]
+  · rw [hop, hk]
+    have := Nat.not_dvd_ordCompl Nat.prime_two hn
+    exact Nat.odd_iff.mpr (by omega)
+  · obtain ⟨-, hsz⟩ := AzNat.size_bounds m hm
+    have : 2 ^ twoAdic m ≤ m.toNat := by rw [hk]; exact Nat.le_of_dvd (Nat.pos_of_ne_zero hn) hdvd
+    by_contra hge
+    push Not at hge
+    have := Nat.pow_le_pow_right (by norm_num : 0 < 2) hge
+    omega
+
+/-- A positive finite float is `oddPart · 2^dyadicExp`. -/
+theorem finiteVal_eq_oddPart (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    finiteVal true e m = ((oddPart m).toNat : ℝ) * (2 : ℝ) ^ (dyadicExp e m).toInt := by
+  have hm : m ≠ 0 := by
+    intro h
+    have := (toNat_bounds_of_valid hv).1
+    rw [h, AzNat.toNat_zero] at this
+    have := Nat.one_le_two_pow (n := alignedBits q - 1)
+    omega
+  obtain ⟨hdec, -, hlt⟩ := oddPart_spec m hm
+  have hexp : (dyadicExp e m).toInt = e.toInt - m.size + twoAdic m := by
+    unfold dyadicExp
+    rw [AzInt.toInt_sub, toInt_toAzInt, AzNat.toNat_ofNat, Nat.cast_sub hlt.le]
+    ring
+  unfold finiteVal
+  simp only [↓reduceIte, one_mul]
+  rw [hdec, hexp, zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_natCast]
+  push_cast
+  ring
+
+/-- `o · 2^I = s · 2^J` with `o`, `s` odd forces `o = s` and `I = J`. -/
+theorem odd_mul_two_zpow_inj {o s : ℕ} (ho : Odd o) (hs : Odd s) {I J : ℤ}
+    (h : (o : ℝ) * (2 : ℝ) ^ I = (s : ℝ) * (2 : ℝ) ^ J) : o = s ∧ I = J := by
+  have key : ∀ {o s : ℕ} {I J : ℤ}, Odd o → I ≤ J →
+      (o : ℝ) * (2 : ℝ) ^ I = (s : ℝ) * (2 : ℝ) ^ J → o = s ∧ I = J := by
+    intro o s I J ho hIJ h
+    obtain ⟨k, hk⟩ : ∃ k : ℕ, J = I + k := ⟨(J - I).toNat, by omega⟩
+    have h2 : (0 : ℝ) < (2 : ℝ) ^ I := zpow_pos two_pos _
+    have hnat : o = s * 2 ^ k := by
+      have : (o : ℝ) * (2 : ℝ) ^ I = ((s * 2 ^ k : ℕ) : ℝ) * (2 : ℝ) ^ I := by
+        rw [h, hk, zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_natCast]
+        push_cast
+        ring
+      exact_mod_cast mul_right_cancel₀ h2.ne' this
+    rcases k with _ | k
+    · rw [pow_zero, mul_one] at hnat
+      exact ⟨hnat, by omega⟩
+    · exfalso
+      have : Even o := by
+        rw [hnat]; exact (Nat.even_pow.mpr ⟨even_two, by omega⟩).mul_left _
+      exact (Nat.not_even_iff_odd.mpr ho) this
+  rcases le_total I J with hIJ | hIJ
+  · exact key ho hIJ h
+  · obtain ⟨h1, h2⟩ := key hs hIJ h.symm
+    exact ⟨h1.symm, h2.symm⟩
+
+/-- Separating `x^d = b^n` for `x = o · 2^i`, `b = s · 2^j` (`o`, `s` odd): the odd parts and the
+2-exponents match. -/
+theorem pow_eq_zpow_sep {o s : ℕ} (ho : Odd o) (hs : Odd s) {i j : ℤ} {d : ℕ} (hd : 1 ≤ d)
+    {n : ℤ} (key : ((o : ℝ) * 2 ^ i) ^ d = ((s : ℝ) * 2 ^ j) ^ n) :
+    o ^ d = s ^ n.toNat ∧ (n < 0 → o = 1 ∧ s = 1) ∧ i * d = j * n := by
+  have ho0 : 0 < o := ho.pos
+  have hs0 : 0 < s := hs.pos
+  rcases le_or_gt 0 n with hn | hn
+  · obtain ⟨N, hN⟩ : ∃ N : ℕ, n = N := ⟨n.toNat, by omega⟩
+    have hG : ((o ^ d : ℕ) : ℝ) * 2 ^ (i * d) = ((s ^ N : ℕ) : ℝ) * 2 ^ (j * N) := by
+      push_cast
+      rw [zpow_mul, zpow_mul, zpow_natCast, zpow_natCast, ← mul_pow, ← mul_pow]
+      rw [hN, zpow_natCast] at key
+      exact key
+    obtain ⟨h1, h2⟩ := odd_mul_two_zpow_inj ho.pow hs.pow hG
+    refine ⟨?_, fun h => absurd h (by omega), by rw [hN]; exact h2⟩
+    rw [hN, Int.toNat_natCast]
+    exact h1
+  · obtain ⟨N, hN, hN1⟩ : ∃ N : ℕ, n = -(N : ℤ) ∧ 1 ≤ N := ⟨n.natAbs, by omega, by omega⟩
+    have hG : ((o ^ d * s ^ N : ℕ) : ℝ) * 2 ^ (i * d + j * N) = ((1 : ℕ) : ℝ) * 2 ^ (0 : ℤ) := by
+      push_cast
+      rw [zpow_zero, mul_one, zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_mul, zpow_mul,
+        zpow_natCast, zpow_natCast]
+      rw [hN, zpow_neg, zpow_natCast] at key
+      have hkey1 : ((o : ℝ) * 2 ^ i) ^ d * ((s : ℝ) * 2 ^ j) ^ N = 1 := by
+        rw [key]; exact inv_mul_cancel₀ (by positivity)
+      rw [mul_pow, mul_pow] at hkey1
+      linear_combination hkey1
+    obtain ⟨h1, h2⟩ := odd_mul_two_zpow_inj (ho.pow.mul hs.pow) odd_one hG
+    have ho1 := Nat.eq_one_of_mul_eq_one_right h1
+    have hs1 := Nat.eq_one_of_mul_eq_one_left h1
+    have ho1' : o = 1 := (Nat.pow_eq_one.mp ho1).resolve_right (by omega)
+    have hs1' : s = 1 := (Nat.pow_eq_one.mp hs1).resolve_right (by omega)
+    refine ⟨?_, fun _ => ⟨ho1', hs1'⟩, ?_⟩
+    · rw [ho1', hN, one_pow, hs1', one_pow]
+    · rw [hN]; linarith
+
+/-- The reduced fraction `n / d` of a rational: numerator and denominator. -/
+theorem num_den_of_div {n : ℤ} {d : ℕ} (hd : 1 ≤ d) (hcop : Nat.Coprime n.natAbs d) :
+    ((n : ℚ) / d).num = n ∧ ((n : ℚ) / d).den = d := by
+  have hd0 : (0 : ℤ) < d := by omega
+  have h1 := Rat.num_div_eq_of_coprime hd0 (by simpa using hcop)
+  have h2 := Rat.den_div_eq_of_coprime hd0 (by simpa using hcop)
+  push_cast at h1 h2
+  exact ⟨h1, by exact_mod_cast h2⟩
+
+theorem toRat_num (q : AzRat) :
+    (AzRat.toRat q).num = if q.sign then (q.num.toNat : ℤ) else -(q.num.toNat : ℤ) := rfl
+
+theorem toRat_den (q : AzRat) : (AzRat.toRat q).den = q.den.toNat := rfl
+
+/-- The rational returned by `logBaseFloatExact?` is `ln x / ln b`. -/
+theorem logBaseFloatExact?_some (i : AzInt) (o : AzNat) (j : AzInt) (s : AzNat)
+    (ho : Odd o.toNat) (hs : Odd s.toNat) (hb1 : (s.toNat : ℝ) * (2 : ℝ) ^ j.toInt ≠ 1) (r : AzRat)
+    (h : logBaseFloatExact? i o j s = some r) :
+    Real.log ((o.toNat : ℝ) * 2 ^ i.toInt) / Real.log ((s.toNat : ℝ) * 2 ^ j.toInt)
+      = (AzRat.toRat r : ℝ) := by
+  have ho0 : 0 < o.toNat := ho.pos
+  have hs0 : 0 < s.toNat := hs.pos
+  have hlog2 : (0 : ℝ) < Real.log 2 := Real.log_pos one_lt_two
+  have hlogb : Real.log ((s.toNat : ℝ) * 2 ^ j.toInt) ≠ 0 :=
+    Real.log_ne_zero_of_pos_of_ne_one (by positivity) hb1
+  unfold logBaseFloatExact? at h
+  simp only [] at h
+  split_ifs at h with hj hi hsign hchk hone
+  · -- an odd integer base
+    subst hj; subst hi
+    simp only [AzInt.toInt_zero, zpow_zero, mul_one] at hlogb ⊢
+    have hs2 : 2 ≤ s.toNat := by
+      rcases Nat.lt_or_ge s.toNat 2 with h2 | h2
+      · exfalso
+        have : s.toNat = 1 := by omega
+        apply hlogb
+        rw [this, Nat.cast_one, Real.log_one]
+      · exact h2
+    obtain ⟨hcs, hs1, hc2, -⟩ := maxRootBaseBounded_spec s s.size hs2
+    rw [Option.map_eq_some_iff] at h
+    obtain ⟨k, hk, rfl⟩ := h
+    have hok := (AzNat.checkedLogBase_eq_some_iff _ _ hc2
+      (fun h0 => by rw [h0, AzNat.toNat_zero] at ho0; omega) k).mp hk
+    have hlogc : 0 < Real.log (maxRootBaseBounded s s.size).1.toNat := log_pos_of_two_le hc2
+    rw [AzRat.toRat_ofAzInts, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat,
+      hok, hcs, Nat.cast_pow, Nat.cast_pow, Real.log_pow, Real.log_pow]
+    push_cast
+    field_simp
+  · -- `b = s · 2^j` with `j ≠ 0`, `a > 0`: `o = c^a`, `s = c^e`
+    rw [Option.some.injEq] at h
+    subst h
+    set r := AzRat.ofAzInts i j with hr
+    obtain ⟨hpow_s, hpow_o, hroot⟩ := hchk
+    have hj' : j.toInt ≠ 0 := toInt_ne_zero_of_ne_zero' hj
+    have hd : 1 ≤ r.den.toNat := Nat.pos_of_ne_zero (toNat_ne_zero_of_ne_zero r.den_nz)
+    -- the common root `c`
+    set c := (s.rootInt r.den.toNat).toNat with hc
+    have hsc : s.toNat = c ^ r.den.toNat := by
+      have := (AzNat.isPow_eq_true_iff s _ hd).mp hpow_s
+      rw [hc, AzNat.toNat_rootInt]
+      exact ((AzNat.rootIntNat_pow_eq_iff _ _ hd).mpr this).symm
+    have hoc : o.toNat = c ^ r.num.toNat := by
+      rcases Nat.eq_zero_or_pos r.num.toNat with h0 | h0
+      · -- `a = 0`: `o = 1`
+        rw [h0, pow_zero]
+        unfold AzNat.isPow at hpow_o
+        rw [h0, decide_eq_true_iff] at hpow_o
+        have := congrArg AzNat.toNat hpow_o
+        rw [AzNat.toNat_pow, pow_zero] at this
+        exact this.symm
+      · have := (AzNat.isPow_eq_true_iff o _ h0).mp hpow_o
+        rw [hc, hroot, AzNat.toNat_rootInt]
+        exact ((AzNat.rootIntNat_pow_eq_iff _ _ h0).mpr this).symm
+    -- the value `i / j` is `a / e`
+    have hval : (AzRat.toRat r : ℝ) = (i.toInt : ℝ) / j.toInt := by
+      rw [hr, AzRat.toRat_ofAzInts]; push_cast; rfl
+    have hval' : (AzRat.toRat r : ℝ) = (r.num.toNat : ℝ) / r.den.toNat := by
+      rw [AzRat.toRat_cast_eq, hsign]; push_cast; rfl
+    have hid : (i.toInt : ℝ) * r.den.toNat = j.toInt * r.num.toNat := by
+      have hdr : (r.den.toNat : ℝ) ≠ 0 := by positivity
+      have := hval.symm.trans hval'
+      rw [div_eq_div_iff (by exact_mod_cast hj') hdr] at this
+      linarith
+    have hc0 : (c : ℝ) ≠ 0 := by
+      intro h0
+      have : c = 0 := by exact_mod_cast h0
+      rw [this, zero_pow (by omega)] at hsc
+      omega
+    rw [hval, div_eq_div_iff hlogb (by exact_mod_cast hj'), hsc, hoc, Nat.cast_pow, Nat.cast_pow,
+      Real.log_mul (pow_ne_zero _ hc0) (zpow_ne_zero _ two_ne_zero),
+      Real.log_mul (pow_ne_zero _ hc0) (zpow_ne_zero _ two_ne_zero),
+      Real.log_pow, Real.log_pow, Real.log_zpow, Real.log_zpow]
+    linear_combination (-(Real.log (c : ℝ))) * hid
+  · -- `a < 0`: `o = s = 1`, `x = 2^i`, `b = 2^j`
+    rw [Option.some.injEq] at h
+    subst h
+    obtain ⟨ho1, hs1⟩ := hone
+    subst ho1; subst hs1
+    rw [AzRat.toRat_ofAzInts, AzNat.toNat_one, Nat.cast_one, one_mul, one_mul, Real.log_zpow,
+      Real.log_zpow]
+    push_cast
+    have hj' : (j.toInt : ℝ) ≠ 0 := by exact_mod_cast toInt_ne_zero_of_ne_zero' hj
+    field_simp
+
+/-- `logBaseFloatExact? = none` for `x ≠ 1` and `b ≠ 1`: the logarithm is irrational. -/
+theorem irrational_of_logBaseFloatExact?_none (i : AzInt) (o : AzNat) (j : AzInt) (s : AzNat)
+    (ho : Odd o.toNat) (hs : Odd s.toNat) (hb1 : (s.toNat : ℝ) * (2 : ℝ) ^ j.toInt ≠ 1)
+    (hx1 : (o.toNat : ℝ) * (2 : ℝ) ^ i.toInt ≠ 1) (h : logBaseFloatExact? i o j s = none) :
+    Irrational
+      (Real.log ((o.toNat : ℝ) * 2 ^ i.toInt) / Real.log ((s.toNat : ℝ) * 2 ^ j.toInt)) := by
+  have ho0 : 0 < o.toNat := ho.pos
+  have hs0 : 0 < s.toNat := hs.pos
+  have hxpos : (0 : ℝ) < (o.toNat : ℝ) * 2 ^ i.toInt := by positivity
+  have hbpos : (0 : ℝ) < (s.toNat : ℝ) * 2 ^ j.toInt := by positivity
+  rintro ⟨r, hr⟩
+  have key := pow_eq_zpow_of_log_div_log hxpos hbpos hb1 r hr
+  have hd : 1 ≤ r.den := r.den_pos
+  have hcop : Nat.Coprime r.num.natAbs r.den := r.reduced
+  obtain ⟨h1, hneg, h2⟩ := pow_eq_zpow_sep ho hs hd key
+  -- `x = 1` is excluded: `o = 1` and `i = 0` together
+  have hnot1 : ¬ (o.toNat = 1 ∧ i.toInt = 0) := fun ⟨h1', h2'⟩ => hx1 (by
+    rw [h1', h2', Nat.cast_one, zpow_zero, mul_one])
+  unfold logBaseFloatExact? at h
+  simp only [] at h
+  split_ifs at h with hj hi hsign hchk hone
+  · -- an odd integer base
+    subst hj; subst hi
+    rw [AzInt.toInt_zero, zpow_zero, mul_one] at hb1
+    rw [AzInt.toInt_zero] at hnot1
+    have hs2 : 2 ≤ s.toNat := by
+      rcases Nat.lt_or_ge s.toNat 2 with h2 | h2
+      · exfalso
+        have : s.toNat = 1 := by omega
+        apply hb1
+        rw [this, Nat.cast_one]
+      · exact h2
+    obtain ⟨hcs, hs1, hc2, -⟩ := maxRootBaseBounded_spec s s.size hs2
+    have hn0 : 0 ≤ r.num := by
+      by_contra hn
+      push Not at hn
+      obtain ⟨-, hs1'⟩ := hneg hn
+      omega
+    have hN1 : 1 ≤ r.num.toNat := by
+      by_contra hN
+      push Not at hN
+      have hN0 : r.num.toNat = 0 := by omega
+      rw [hN0, pow_zero] at h1
+      exact hnot1 ⟨(Nat.pow_eq_one.mp h1).resolve_right (by omega), rfl⟩
+    have hbt : s.toNat < 2 ^ (s.size + 1) := by
+      have := (AzNat.size_bounds s (fun h0 => by rw [h0, AzNat.toNat_zero] at hs0; omega)).2
+      exact lt_of_lt_of_le this (Nat.pow_le_pow_right (by norm_num) (by omega))
+    obtain ⟨k, hk⟩ := exists_eq_pow_maxRootBounded_of_pow_eq_pow s s.size hs2 hbt ho0 hd h1
+    rw [Option.map_eq_none_iff] at h
+    exact (AzNat.checkedLogBase_eq_none_iff _ _ hc2
+      (fun h0 => by rw [h0, AzNat.toNat_zero] at ho0; omega)).mp h k hk
+  · -- `j = 0`, `i ≠ 0`: impossible, `i d = j n = 0`
+    subst hj
+    rw [AzInt.toInt_zero, zero_mul] at h2
+    have : i.toInt = 0 := by
+      rcases mul_eq_zero.mp h2 with h | h
+      · exact h
+      · omega
+    exact hi (by rw [← AzInt.ofInt_toInt i, this, AzInt.ofInt_zero])
+  · -- `j ≠ 0`, the reduced fraction is positive: the check would have passed
+    set r' := AzRat.ofAzInts i j with hr'
+    have hj' : j.toInt ≠ 0 := toInt_ne_zero_of_ne_zero' hj
+    -- `toRat r' = n / d`
+    have hval : AzRat.toRat r' = (r.num : ℚ) / r.den := by
+      rw [hr', AzRat.toRat_ofAzInts, div_eq_div_iff (by exact_mod_cast hj') (by positivity)]
+      exact_mod_cast (by linarith : i.toInt * r.den = r.num * j.toInt)
+    obtain ⟨hnum, hden⟩ := num_den_of_div hd hcop
+    rw [← hval, toRat_num] at hnum
+    rw [← hval, toRat_den] at hden
+    simp only [hsign, ↓reduceIte] at hnum
+    have hN : r.num.toNat = r'.num.toNat := by omega
+    have hN1 : 1 ≤ r'.num.toNat := by
+      by_contra hN0
+      push Not at hN0
+      have : r.num.toNat = 0 := by omega
+      rw [this, pow_zero] at h1
+      have ho1 : o.toNat = 1 := (Nat.pow_eq_one.mp h1).resolve_right (by omega)
+      have : r.num = 0 := by omega
+      rw [this, mul_zero] at h2
+      rcases mul_eq_zero.mp h2 with h | h
+      · exact hnot1 ⟨ho1, h⟩
+      · omega
+    rw [hN, ← hden] at h1
+    have hcop' : Nat.Coprime r'.den.toNat r'.num.toNat := by
+      have hna : r.num.natAbs = r.num.toNat := by omega
+      rw [hden, ← hN, ← hna]; exact hcop.symm
+    obtain ⟨c, hoc, hsc⟩ := Nat.exists_eq_pow_of_exponent_coprime_of_pow_eq_pow hcop' h1
+    have hd' : 1 ≤ r'.den.toNat := by omega
+    apply hchk
+    refine ⟨(AzNat.isPow_eq_true_iff s _ hd').mpr ⟨c, hsc.symm⟩,
+      (AzNat.isPow_eq_true_iff o _ hN1).mpr ⟨c, hoc.symm⟩, ?_⟩
+    apply AzNat.toNat_injective
+    rw [AzNat.toNat_rootInt, AzNat.toNat_rootInt]
+    have e1 : AzNat.rootIntNat s.toNat r'.den.toNat = c := by
+      apply Nat.pow_left_injective (by omega : r'.den.toNat ≠ 0)
+      show AzNat.rootIntNat s.toNat r'.den.toNat ^ r'.den.toNat = c ^ r'.den.toNat
+      rw [(AzNat.rootIntNat_pow_eq_iff _ _ hd').mpr ⟨c, hsc.symm⟩, hsc]
+    have e2 : AzNat.rootIntNat o.toNat r'.num.toNat = c := by
+      apply Nat.pow_left_injective (by omega : r'.num.toNat ≠ 0)
+      show AzNat.rootIntNat o.toNat r'.num.toNat ^ r'.num.toNat = c ^ r'.num.toNat
+      rw [(AzNat.rootIntNat_pow_eq_iff _ _ hN1).mpr ⟨c, hoc.symm⟩, hoc]
+    rw [e1, e2]
+  · -- the reduced fraction is negative or zero: `o = s = 1`, or `x = 1`
+    set r' := AzRat.ofAzInts i j with hr'
+    have hj' : j.toInt ≠ 0 := toInt_ne_zero_of_ne_zero' hj
+    have hval : AzRat.toRat r' = (r.num : ℚ) / r.den := by
+      rw [hr', AzRat.toRat_ofAzInts, div_eq_div_iff (by exact_mod_cast hj') (by positivity)]
+      exact_mod_cast (by linarith : i.toInt * r.den = r.num * j.toInt)
+    obtain ⟨hnum, -⟩ := num_den_of_div hd hcop
+    rw [← hval, toRat_num] at hnum
+    simp only [hsign, Bool.false_eq_true, ↓reduceIte] at hnum
+    rcases lt_or_eq_of_le (by omega : r.num ≤ 0) with hn | hn
+    · obtain ⟨ho1, hs1⟩ := hneg hn
+      exact hone ⟨AzNat.toNat_injective (by rw [ho1]; rfl),
+        AzNat.toNat_injective (by rw [hs1]; rfl)⟩
+    · have : r.num.toNat = 0 := by omega
+      rw [this, pow_zero] at h1
+      have ho1 : o.toNat = 1 := (Nat.pow_eq_one.mp h1).resolve_right (by omega)
+      rw [hn, mul_zero] at h2
+      rcases mul_eq_zero.mp h2 with h | h
+      · exact hnot1 ⟨ho1, h⟩
+      · omega
+
+/-! ### The float forms -/
+
+theorem significand_ne_zero_of_valid {q : ℕ} {m : AzNat} (hv : FiniteValid q m) : m ≠ 0 := by
+  intro h
+  have := (toNat_bounds_of_valid hv).1
+  rw [h, AzNat.toNat_zero] at this
+  have := Nat.one_le_two_pow (n := alignedBits q - 1)
+  omega
+
+/-- `x = 1` is excluded by a failed `eqIEEE` test against `one`. -/
+theorem finiteVal_ne_one_of_not_eqIEEE (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (h : ¬ eqIEEE (finite true e q m hv) one = true) : finiteVal true e m ≠ 1 := fun h1 =>
+  h ((eqIEEE_iff _ _).mpr ⟨((1 : ℝ) : EReal), by rw [toVal_finite, h1], toVal_one'⟩)
+
+/-- The value of `logBaseFloatExact?` on the odd-part decompositions of two floats. -/
+theorem logBaseFloat_exact_value (ex : AzInt) {qx : ℕ} {mx : AzNat} (hvx : FiniteValid qx mx)
+    (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)
+    (hb1 : finiteVal true eb mb ≠ 1) (r : AzRat)
+    (h : logBaseFloatExact? (dyadicExp ex mx) (oddPart mx) (dyadicExp eb mb) (oddPart mb)
+      = some r) :
+    Real.log (finiteVal true ex mx) / Real.log (finiteVal true eb mb) = (AzRat.toRat r : ℝ) := by
+  rw [finiteVal_eq_oddPart eb hvb] at hb1 ⊢
+  rw [finiteVal_eq_oddPart ex hvx]
+  exact logBaseFloatExact?_some _ _ _ _ (oddPart_spec mx (significand_ne_zero_of_valid hvx)).2.1
+    (oddPart_spec mb (significand_ne_zero_of_valid hvb)).2.1 hb1 r h
+
+/-- Irrationality of `log_b x` when `logBaseFloatExact?` finds nothing. -/
+theorem irrational_logBaseFloat_of_none (ex : AzInt) {qx : ℕ} {mx : AzNat}
+    (hvx : FiniteValid qx mx) (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)
+    (hb1 : finiteVal true eb mb ≠ 1) (hx1 : finiteVal true ex mx ≠ 1)
+    (h : logBaseFloatExact? (dyadicExp ex mx) (oddPart mx) (dyadicExp eb mb) (oddPart mb)
+      = none) :
+    Irrational (Real.log (finiteVal true ex mx) / Real.log (finiteVal true eb mb)) := by
+  rw [finiteVal_eq_oddPart eb hvb] at hb1 ⊢
+  rw [finiteVal_eq_oddPart ex hvx] at hx1 ⊢
+  exact irrational_of_logBaseFloatExact?_none _ _ _ _
+    (oddPart_spec mx (significand_ne_zero_of_valid hvx)).2.1
+    (oddPart_spec mb (significand_ne_zero_of_valid hvb)).2.1 hb1 hx1 h
 
 end Azurite.AzFloat
