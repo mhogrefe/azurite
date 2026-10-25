@@ -1418,4 +1418,181 @@ theorem num_ne_zero_of_toRat_pos (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q) : 
     rw [h'] at hq
     exact lt_irrefl _ hq
 
+/-! ### A rational base -/
+
+/-- The rational returned by `logBaseRatBaseExact?` is `ln x / ln b`. -/
+theorem logBaseRatBaseExact?_some (i : AzInt) (o : AzNat) (j : AzInt) (n d : AzNat)
+    (ho : Odd o.toNat) (hn : Odd n.toNat) (hd : Odd d.toNat)
+    (hb1 : (n.toNat : ℝ) / d.toNat * (2 : ℝ) ^ j.toInt ≠ 1) (r : AzRat)
+    (h : logBaseRatBaseExact? i o j n d = some r) :
+    Real.log ((o.toNat : ℝ) * 2 ^ i.toInt) / Real.log ((n.toNat : ℝ) / d.toNat * 2 ^ j.toInt)
+      = (AzRat.toRat r : ℝ) := by
+  unfold logBaseRatBaseExact? at h
+  split_ifs at h with hd1 hn1
+  · subst hd1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one] at hb1 ⊢
+    exact logBaseFloatExact?_some i o j n ho hn hb1 r h
+  · subst hn1
+    rw [Option.map_eq_some_iff] at h
+    obtain ⟨r', hr', rfl⟩ := h
+    have hdr : (d.toNat : ℝ) ≠ 0 := by have := hd.pos; positivity
+    have hinv : ((1 : AzNat).toNat : ℝ) / d.toNat * (2 : ℝ) ^ j.toInt
+        = ((d.toNat : ℝ) * (2 : ℝ) ^ (-j).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      field_simp
+    rw [hinv] at hb1 ⊢
+    have hv := logBaseFloatExact?_some i o (-j) d ho hd (fun h1 => hb1 (by rw [h1, inv_one])) r' hr'
+    rw [AzRat.toRat_neg, Rat.cast_neg, ← hv, Real.log_inv, div_neg]
+
+/-- `logBaseRatBaseExact? = none` for `x ≠ 1` and `b ≠ 1`: the logarithm is irrational. -/
+theorem irrational_of_logBaseRatBaseExact?_none (i : AzInt) (o : AzNat) (j : AzInt) (n d : AzNat)
+    (ho : Odd o.toNat) (hn : Odd n.toNat) (hd : Odd d.toNat)
+    (hcop : Nat.Coprime n.toNat d.toNat)
+    (hb1 : (n.toNat : ℝ) / d.toNat * (2 : ℝ) ^ j.toInt ≠ 1)
+    (hx1 : (o.toNat : ℝ) * (2 : ℝ) ^ i.toInt ≠ 1) (h : logBaseRatBaseExact? i o j n d = none) :
+    Irrational (Real.log ((o.toNat : ℝ) * 2 ^ i.toInt)
+      / Real.log ((n.toNat : ℝ) / d.toNat * 2 ^ j.toInt)) := by
+  have ho0 : 0 < o.toNat := ho.pos
+  have hn0 : 0 < n.toNat := hn.pos
+  have hd0 : 0 < d.toNat := hd.pos
+  have hdr : (d.toNat : ℝ) ≠ 0 := by positivity
+  unfold logBaseRatBaseExact? at h
+  split_ifs at h with hd1 hn1
+  · subst hd1
+    rw [AzNat.toNat_one, Nat.cast_one, div_one] at hb1 ⊢
+    exact irrational_of_logBaseFloatExact?_none i o j n ho hn hb1 hx1 h
+  · subst hn1
+    rw [Option.map_eq_none_iff] at h
+    have hinv : ((1 : AzNat).toNat : ℝ) / d.toNat * (2 : ℝ) ^ j.toInt
+        = ((d.toNat : ℝ) * (2 : ℝ) ^ (-j).toInt)⁻¹ := by
+      rw [AzNat.toNat_one, Nat.cast_one, AzInt.toInt_neg, zpow_neg]
+      field_simp
+    rw [hinv] at hb1 ⊢
+    rw [Real.log_inv, div_neg]
+    exact (irrational_of_logBaseFloatExact?_none i o (-j) d ho hd
+      (fun h1 => hb1 (by rw [h1, inv_one])) hx1 h).neg
+  · -- `n, d > 1`
+    have hn1' : n.toNat ≠ 1 := fun h1 => hn1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hd1' : d.toNat ≠ 1 := fun h1 => hd1 (AzNat.toNat_injective (by rw [h1]; rfl))
+    have hxpos : (0 : ℝ) < (o.toNat : ℝ) * 2 ^ i.toInt := by positivity
+    have hbpos : (0 : ℝ) < (n.toNat : ℝ) / d.toNat * 2 ^ j.toInt := by positivity
+    have hnot1 : ¬ (o.toNat = 1 ∧ i.toInt = 0) := fun ⟨h1', h2'⟩ => hx1 (by
+      rw [h1', h2', Nat.cast_one, zpow_zero, mul_one])
+    rintro ⟨r, hr⟩
+    have key := pow_eq_zpow_of_log_div_log hxpos hbpos hb1 r hr
+    have he : 1 ≤ r.den := r.den_pos
+    have hmul : ∀ N : ℕ, ((n.toNat : ℝ) * 2 ^ j.toInt) ^ N
+        = ((n.toNat : ℝ) / d.toNat * 2 ^ j.toInt) ^ N * (d.toNat : ℝ) ^ N := by
+      intro N
+      rw [← mul_pow]
+      congr 1
+      field_simp
+    rcases le_or_gt 0 r.num with hnn | hnn
+    · obtain ⟨N, hN⟩ : ∃ N : ℕ, r.num = N := ⟨r.num.toNat, by omega⟩
+      rw [hN, zpow_natCast] at key
+      have hG : ((o.toNat ^ r.den * d.toNat ^ N : ℕ) : ℝ) * 2 ^ (i.toInt * r.den)
+          = ((n.toNat ^ N : ℕ) : ℝ) * 2 ^ (j.toInt * N) := by
+        push_cast
+        rw [zpow_mul, zpow_mul, zpow_natCast, zpow_natCast, ← mul_pow, hmul, ← key, mul_pow]
+        ring
+      obtain ⟨h1, h2⟩ := odd_mul_two_zpow_inj (ho.pow.mul hd.pow) hn.pow hG
+      rcases Nat.eq_zero_or_pos N with hN0 | hN0
+      · -- `a = 0`: `x = 1`
+        rw [hN0, pow_zero, pow_zero, mul_one] at h1
+        rw [hN0, Nat.cast_zero, mul_zero] at h2
+        refine hnot1 ⟨(Nat.pow_eq_one.mp h1).resolve_right (by omega), ?_⟩
+        rcases mul_eq_zero.mp h2 with h | h
+        · exact h
+        · omega
+      · have hdvd : d.toNat ^ N ∣ n.toNat ^ N := ⟨_, by rw [← h1, mul_comm]⟩
+        have := Nat.Coprime.eq_one_of_dvd (Nat.Coprime.pow _ _ hcop.symm) hdvd
+        exact hd1' ((Nat.pow_eq_one.mp this).resolve_right (by omega))
+    · obtain ⟨N, hN, hN1⟩ : ∃ N : ℕ, r.num = -(N : ℤ) ∧ 1 ≤ N := ⟨r.num.natAbs, by omega, by omega⟩
+      rw [hN, zpow_neg, zpow_natCast] at key
+      have hkey1 : ((o.toNat : ℝ) * 2 ^ i.toInt) ^ r.den * ((n.toNat : ℝ) * 2 ^ j.toInt) ^ N
+          = (d.toNat : ℝ) ^ N := by
+        rw [hmul, ← mul_assoc, key, inv_mul_cancel₀ (pow_ne_zero _ hbpos.ne'), one_mul]
+      have hG : ((o.toNat ^ r.den * n.toNat ^ N : ℕ) : ℝ) * 2 ^ (i.toInt * r.den + j.toInt * N)
+          = ((d.toNat ^ N : ℕ) : ℝ) * 2 ^ (0 : ℤ) := by
+        push_cast
+        rw [zpow_zero, mul_one, zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_mul, zpow_mul,
+          zpow_natCast, zpow_natCast, ← hkey1, mul_pow, mul_pow]
+        ring
+      obtain ⟨h1, -⟩ := odd_mul_two_zpow_inj (ho.pow.mul hn.pow) hd.pow hG
+      have hdvd : n.toNat ^ N ∣ d.toNat ^ N := ⟨_, by rw [← h1, mul_comm]⟩
+      have := Nat.Coprime.eq_one_of_dvd (Nat.Coprime.pow _ _ hcop) hdvd
+      exact hn1' ((Nat.pow_eq_one.mp this).resolve_right (by omega))
+
+/-- The value of `logBaseRatBaseExact?` on a positive float and a positive rational base. -/
+theorem logBaseRatBase_exact_value (ex : AzInt) {qx : ℕ} {mx : AzNat} (hvx : FiniteValid qx mx)
+    (b : AzRat) (hs : b.sign = true) (h0 : b.num ≠ 0) (hb1 : (AzRat.toRat b : ℝ) ≠ 1) (r : AzRat)
+    (h : logBaseRatBaseExact? (dyadicExp ex mx) (oddPart mx) (ratDyadicExp b) (oddPart b.num)
+      (oddPart b.den) = some r) :
+    Real.log (finiteVal true ex mx) / Real.log (AzRat.toRat b : ℝ) = (AzRat.toRat r : ℝ) := by
+  rw [toRat_eq_oddParts b hs h0] at hb1 ⊢
+  rw [finiteVal_eq_oddPart ex hvx]
+  exact logBaseRatBaseExact?_some _ _ _ _ _ (oddPart_spec mx (significand_ne_zero_of_valid hvx)).2.1
+    (oddPart_spec b.num h0).2.1 (oddPart_spec b.den b.den_nz).2.1 hb1 r h
+
+/-- Irrationality of `log_b x` when `logBaseRatBaseExact?` finds nothing. -/
+theorem irrational_logBaseRatBase_of_none (ex : AzInt) {qx : ℕ} {mx : AzNat}
+    (hvx : FiniteValid qx mx) (hx1 : finiteVal true ex mx ≠ 1) (b : AzRat) (hs : b.sign = true)
+    (h0 : b.num ≠ 0) (hb1 : (AzRat.toRat b : ℝ) ≠ 1)
+    (h : logBaseRatBaseExact? (dyadicExp ex mx) (oddPart mx) (ratDyadicExp b) (oddPart b.num)
+      (oddPart b.den) = none) :
+    Irrational (Real.log (finiteVal true ex mx) / Real.log (AzRat.toRat b : ℝ)) := by
+  have hcop : Nat.Coprime (oddPart b.num).toNat (oddPart b.den).toNat := by
+    have h := (AzNat.coprime_iff _ _).mp b.reduced
+    exact Nat.Coprime.coprime_dvd_left ⟨_, by rw [(oddPart_spec b.num h0).1, mul_comm]⟩
+      (Nat.Coprime.coprime_dvd_right ⟨_, by rw [(oddPart_spec b.den b.den_nz).1, mul_comm]⟩ h)
+  rw [toRat_eq_oddParts b hs h0] at hb1 ⊢
+  rw [finiteVal_eq_oddPart ex hvx] at hx1 ⊢
+  exact irrational_of_logBaseRatBaseExact?_none _ _ _ _ _
+    (oddPart_spec mx (significand_ne_zero_of_valid hvx)).2.1 (oddPart_spec b.num h0).2.1
+    (oddPart_spec b.den b.den_nz).2.1 hcop hb1 hx1 h
+
+/-- For a positive rational, `1 < q` exactly when the denominator is below the numerator. -/
+theorem one_lt_toRat_iff (q : AzRat) (hs : q.sign = true) :
+    1 < (AzRat.toRat q : ℝ) ↔ q.den < q.num := by
+  rw [AzRat.toRat_cast_eq, hs, AzNat.lt_iff_toNat_lt]
+  simp only [↓reduceIte, Int.cast_natCast]
+  have hd : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
+  rw [lt_div_iff₀ hd, one_mul]
+  exact Nat.cast_lt
+
+/-! ### `1 + x` with a rational base -/
+
+/-- The value of `logBaseRatBaseExact?` on `1 + x` and a positive rational base. -/
+theorem logBaseRatBaseP1_exact_value (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hgt : -1 < finiteVal s e m) (b : AzRat) (hs : b.sign = true)
+    (h0 : b.num ≠ 0) (hb1 : (AzRat.toRat b : ℝ) ≠ 1) (r : AzRat)
+    (h : logBaseRatBaseExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
+      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (ratDyadicExp b) (oddPart b.num)
+      (oddPart b.den) = some r) :
+    Real.log (1 + finiteVal s e m) / Real.log (AzRat.toRat b : ℝ) = (AzRat.toRat r : ℝ) := by
+  obtain ⟨hodd, hval⟩ := onePlusDyadic_spec s e hv hgt
+  rw [toRat_eq_oddParts b hs h0] at hb1 ⊢
+  rw [hval]
+  exact logBaseRatBaseExact?_some _ _ _ _ _ hodd (oddPart_spec b.num h0).2.1
+    (oddPart_spec b.den b.den_nz).2.1 hb1 r h
+
+/-- Irrationality of `log_b (1 + x)` when `logBaseRatBaseExact?` finds nothing. -/
+theorem irrational_logBaseRatBaseP1_of_none (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hgt : -1 < finiteVal s e m) (b : AzRat) (hs : b.sign = true)
+    (h0 : b.num ≠ 0) (hb1 : (AzRat.toRat b : ℝ) ≠ 1)
+    (h : logBaseRatBaseExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
+      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (ratDyadicExp b) (oddPart b.num)
+      (oddPart b.den) = none) :
+    Irrational (Real.log (1 + finiteVal s e m) / Real.log (AzRat.toRat b : ℝ)) := by
+  obtain ⟨hodd, hval⟩ := onePlusDyadic_spec s e hv hgt
+  have hx1 : 1 + finiteVal s e m ≠ 1 := fun h1 => finiteVal_ne_zero s e hv (by linarith)
+  have hcop : Nat.Coprime (oddPart b.num).toNat (oddPart b.den).toNat := by
+    have h := (AzNat.coprime_iff _ _).mp b.reduced
+    exact Nat.Coprime.coprime_dvd_left ⟨_, by rw [(oddPart_spec b.num h0).1, mul_comm]⟩
+      (Nat.Coprime.coprime_dvd_right ⟨_, by rw [(oddPart_spec b.den b.den_nz).1, mul_comm]⟩ h)
+  rw [toRat_eq_oddParts b hs h0] at hb1 ⊢
+  rw [hval] at hx1 ⊢
+  exact irrational_of_logBaseRatBaseExact?_none _ _ _ _ _ hodd (oddPart_spec b.num h0).2.1
+    (oddPart_spec b.den b.den_nz).2.1 hcop hb1 hx1 h
+
 end Azurite.AzFloat

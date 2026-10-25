@@ -4240,3 +4240,48 @@ denominators (`log₉ (1/27) = −3/2`, `log_{3/2} (4/9) = −2`, `log_{9/4} (2/
 `log₃ (1/243) = −5`) and never-exact `n, d > 1` cases, agreement with the natural,
 power-of-two and float-argument versions, `log₃ 7`, `log₃ (1/7)`, `log_{3/2} 2`, `log₁₀ (1/3)`
 and the base `1 + 2^(−20)` at 100–150 bits.
+
+## `log_b x` for a rational base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseRatBase.lean`, `Equiv/LogBaseRatBase.lean`, `Tests/LogBaseRatBase.lean`, with
+`logBaseRatBaseExact?` in `LogBaseExact.lean`/`Equiv/` and the bracket pieces in
+`LogBaseFloatBracket.lean`/`Equiv/`.  Malachite's `log_base_rational_base`:
+`logBaseRatBasePrecRound x b p mode = ln x / ln b`.  Exactness mirrors the rational-argument
+case with the roles swapped: `b = (n/d) · 2^j`, and `x^e = b^a` separates into `o^e d^a = n^a`
+(`a ≥ 0`) or `o^e n^(−a) = d^(−a)` (`a < 0`), so coprime `n, d > 1` leave only `a = 0`, i.e.
+`x = 1` (excluded); the rational cases are the float cases on the bases `n · 2^j` (`d = 1`) and
+`d · 2^(−j)` negated (`n = 1`).  **Bracket.** The quotient's sign dispatch was factored into
+`logBaseQuotCore`/`logBaseQuotWith X B pos w` with the generic specs
+`logBaseQuotCore_spec`/`logBaseQuotWith_spec` (a bracket `(c, d)` of `M` with `κ ≤ c` when
+`pos`, `d ≤ −κ` otherwise); `logBaseFloatQuot` is the instance with `lnBaseFloatBracket` and
+`decide (eb ≥ 1)`.  For a rational base, `lnRatBaseBracket b w` clamps the rational `ln`
+bracket (`lnFloorBracket` of `⌊b⌋_w`) by `⌊⌊b − 1⌋_w / ⌈b⌉_w⌋_w ≤ (b − 1)/b ≤ ln b` for `b > 1`
+(`b.den < b.num`) and `ln b ≤ b − 1 ≤ −⌊1 − b⌋_w` for `b < 1`, all rational roundings by
+`ofAzRatRound`; the clamped end is at least `lnRatKappa b` (`(b − 1)/(6b)`, from
+`⌈b⌉ ≤ 3b/2` and the floor errors, or `(1 − b)/2`).  `logBaseRatBaseApprox` divides the `ln x`
+bracket by it, width `logBaseRatBaseEps ex Eb K A Ab w = divEps K A (lnEps ex w) (lnRatEps Eb Ab
+w) w`.  Special values: `b = 0`/`b = 1` delegate to `logBaseFloatPrecRound x zero/one`, `b < 0`
+is `NaN`, `x = ∞`/`x = 0` give `±∞` by `b.den < b.num` (`one_lt_toRat_iff`, with
+`Spec.logBaseFloat_top_left`/`zero_left` and `b ≠ 1`), `x = 1` gives `0`.  Tests: specials with
+the bases `0`, `1`, `2`, `2/3`; exact cases with odd denominators (`log_{1/3} 27 = −3`,
+`log_{2/3} (9/4) = −2`, `log_{4/9} (3/2) = −1/2`, `log_{1/10} 1000 = −3`) and never-exact
+`n, d > 1` bases; agreement with the natural, power-of-two and float-base versions; `log₃ 7`,
+`log_{1/3} 7`, `log_{3/2} 2`, `log_{2/3} 2` at 150 bits and the base `1 + 2^(−20)` at 100 bits.
+
+## `log_b (1 + x)` for a rational base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseRatBaseP1.lean`, `Equiv/LogBaseRatBaseP1.lean`, `Tests/LogBaseRatBaseP1.lean`,
+with the exactness forms in `Equiv/LogBaseExact` and `logBaseRatBaseP1Approx` in
+`LogBaseFloatBracket`/`Equiv/`.  Pure recombination: `onePlusDyadic` (from the float-base P1
+arc) gives the odd part and dyadic exponent of `1 + x`, `logBaseRatBaseExact?` decides
+exactness, and the Ziv branch divides the `lnP1` bracket by `lnRatBaseBracket` through
+`logBaseQuotWith` (width `logBaseRatBaseP1Eps E Eb K A Ab w = divEps K A (lnRatEps E A w)
+(lnRatEps Eb Ab w) w`), started at `p + 64 + leadingZeroBits e`.  Special values: `b = 0`/`b = 1`
+delegate to `logBaseFloatP1PrecRound x zero/one`; for `b > 0`, `b ≠ 1`: `x = ∞` gives `±∞`
+and `x = −1` gives `∓∞` by `b.den < b.num`, `x = 0` gives `0`, below `−1` is `NaN`.  Spec
+`= roundVal p mode (x.toVal.bind fun a => Spec.logBaseFloat (a + 1) (toRat b))`.  Tests:
+specials, exact cases with odd-denominator bases (`log_{1/3} (1 + 26) = −3`,
+`log_{2/3} (1 + 19/8) = −3`, `log_{4/9} (1 + 1/2) = −1/2`), agreement with the natural,
+power-of-two and float-base `log_b (1 + x)` and with `logBaseRatBasePrecRound` on the exact
+`1 + x`, `log₃ (1 + 6)`, `log_{3/2} (1 + 1)`, `log_{2/3} (1 + 1)`, the base `1 + 2^(−20)` and
+the tiny argument `2^(−30)` at the bases `10` and `1/10`.

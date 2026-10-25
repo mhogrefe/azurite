@@ -141,4 +141,12 @@ def logBaseRatFloatExact? (i : AzInt) (n d : AzNat) (j : AzInt) (s : AzNat) : Op
   else if n = 1 then (logBaseFloatExact? (-i) d j s).map fun r => -r
   else none
 
+/-- `some (log_b x)` when it is rational, for `x = o · 2^i` and `b = (n / d) · 2^j` with `n`, `d`
+odd and coprime: only possible with `d = 1` (the float case with base `n · 2^j`) or `n = 1` (the
+float case with base `d · 2^(−j)`, negated). -/
+def logBaseRatBaseExact? (i : AzInt) (o : AzNat) (j : AzInt) (n d : AzNat) : Option AzRat :=
+  if d = 1 then logBaseFloatExact? i o j n
+  else if n = 1 then (logBaseFloatExact? i o (-j) d).map fun r => -r
+  else none
+
 end Azurite.AzFloat

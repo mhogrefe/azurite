@@ -20,15 +20,6 @@ every mode, with the exact comparison, and without fuel.
 
 namespace Azurite.AzFloat
 
-/-- For a positive rational, `1 < q` exactly when the denominator is below the numerator. -/
-theorem one_lt_toRat_iff (q : AzRat) (hs : q.sign = true) :
-    1 < (AzRat.toRat q : ℝ) ↔ q.den < q.num := by
-  rw [AzRat.toRat_cast_eq, hs, AzNat.lt_iff_toNat_lt]
-  simp only [↓reduceIte, Int.cast_natCast]
-  have hd : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
-  rw [lt_div_iff₀ hd, one_mul]
-  exact Nat.cast_lt
-
 /-- The general case rounds `ln q / ln b`. -/
 theorem logBaseRatFloatFinite_eq (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
     (hq1 : (AzRat.toRat q : ℝ) ≠ 1) (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)

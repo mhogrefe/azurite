@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.LogBaseBracket
+import Azurite.AzRat.Sub
 
 /-!
 # The bracket of `log_b x` for a float base
@@ -56,17 +57,43 @@ def divBracketByPosBracket (X B : AzFloat × AzFloat) (w : Nat) : AzFloat × AzF
   let Q := quotientBracket X (B.1 <<< l, B.2 <<< l) w
   (Q.1 <<< l, Q.2 <<< l)
 
+/-- A bracket of `L / M` from a bracket `X` of `L` and a bracket `B` of `M ≠ 0` whose ends have
+the sign of `M` (`pos`): `B` divides `X` directly when `M > 0`, and the negated `B` divides `X`
+with the quotient negated and swapped when `M < 0`. -/
+def logBaseQuotCore (X B : AzFloat × AzFloat) (pos : Bool) (w : Nat) : AzFloat × AzFloat :=
+  if pos then divBracketByPosBracket X B w
+  else
+    let Q := divBracketByPosBracket X (-B.2, -B.1) w
+    (-Q.2, -Q.1)
+
+/-- `logBaseQuotCore` as a pair of rounding procedures. -/
+def logBaseQuotWith (X B : AzFloat × AzFloat) (pos : Bool) (w : Nat) : Roundable × Roundable :=
+  let q := logBaseQuotCore X B pos w
+  (fun p mode => setPrecRound q.1 p mode, fun p mode => setPrecRound q.2 p mode)
+
 /-- A bracket of `L / ln b` from a bracket `X` of `L`, for a positive float `b ≠ 1` of exponent
-`eb`: the sign-clamped bracket of `ln b` divides `X` (negated and swapped for `b < 1`). -/
+`eb`: the sign-clamped bracket of `ln b` divides `X`. -/
 def logBaseFloatQuot (X : AzFloat × AzFloat) (b : AzFloat) (eb : AzInt) (w : Nat) :
     Roundable × Roundable :=
-  let B := lnBaseFloatBracket b eb w
-  let q :=
-    if eb.sign = true ∧ eb.abs ≠ 0 then divBracketByPosBracket X B w
-    else
-      let Q := divBracketByPosBracket X (-B.2, -B.1) w
-      (-Q.2, -Q.1)
-  (fun p mode => setPrecRound q.1 p mode, fun p mode => setPrecRound q.2 p mode)
+  logBaseQuotWith X (lnBaseFloatBracket b eb w) (decide (eb.sign = true ∧ eb.abs ≠ 0)) w
+
+/-- A bracket of `ln b` for a positive rational `b ≠ 1`, whose ends have the sign of `ln b`: the
+rational `ln` bracket (`lnFloorBracket` of `⌊b⌋_w`), with the lower end raised to
+`⌊⌊b − 1⌋ / ⌈b⌉⌋ ≤ (b − 1)/b` for `b > 1` and the upper end lowered to `−⌊1 − b⌋ ≥ b − 1` for
+`b < 1`. -/
+def lnRatBaseBracket (b : AzRat) (w : Nat) : AzFloat × AzFloat :=
+  let B := lnFloorBracket (ofAzRatRound b w .Floor).1 w
+  if b.den < b.num then
+    let t := (ofAzRatRound (b - 1) w .Floor).1
+    let bu := (ofAzRatRound b w .Ceiling).1
+    (maxOf B.1 (divPrecRound t bu w .Floor).1, B.2)
+  else (B.1, minOf B.2 (-(ofAzRatRound (1 - b) w .Floor).1))
+
+/-- The bracket of `log_b x = ln x / ln b` for a positive float `x` of exponent `ex` and a positive
+rational base `b ≠ 1`, at working precision `w`. -/
+def logBaseRatBaseApprox (x : AzFloat) (ex : AzInt) (b : AzRat) (w : Nat) :
+    Roundable × Roundable :=
+  logBaseQuotWith (lnBracket x ex w) (lnRatBaseBracket b w) (decide (b.den < b.num)) w
 
 /-- The bracket of `log_b x = ln x / ln b` for positive floats `x` and `b ≠ 1` of exponents `ex`
 and `eb`, at working precision `w`. -/
@@ -84,5 +111,12 @@ def logBaseFloatP1Approx (x b : AzFloat) (eb : AzInt) (w : Nat) : Roundable × R
 def logBaseRatFloatApprox (q : AzRat) (b : AzFloat) (eb : AzInt) (w : Nat) :
     Roundable × Roundable :=
   logBaseFloatQuot (lnFloorBracket (ofAzRatRound q w .Floor).1 w) b eb w
+
+/-- The bracket of `log_b (1 + x) = ln (1 + x) / ln b` for a float `x > −1` and a positive
+rational base `b ≠ 1`: the `ln (1 + x)` bracket of `lnP1` divided by the rational bracket of
+`ln b`. -/
+def logBaseRatBaseP1Approx (x : AzFloat) (b : AzRat) (w : Nat) : Roundable × Roundable :=
+  logBaseQuotWith (lnFloorBracket (addPrecRound one x w .Floor).1 w) (lnRatBaseBracket b w)
+    (decide (b.den < b.num)) w
 
 end Azurite.AzFloat
