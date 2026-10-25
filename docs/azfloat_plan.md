@@ -4027,3 +4027,36 @@ ignored) and `k` divides it.  Specs `floorLogBasePowerOf2Abs_eq : = some (Int.lo
 Tests: bases 16, 8, 1024 on integers, fractions and negatives, `2^100 = 1024^10`.  This completes
 the non-`AzFloat` logarithm plan (1–5).
 
+## `log_{2^k}` for `AzFloat` (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBasePow2Bracket.lean`, `LogBasePow2.lean`, `Equiv/…`, `Tests/LogBasePow2.lean`.
+`logBasePow2PrecRound x k p mode` for `k : AzInt` (possibly negative; `k = 0`, base `1`, gives
+`NaN`): `log₂ x / k`.  Exact branch: a power-of-two significand is `2^(e−1)`, so the value is the
+rational `(e − 1)/k` and `ofAzRatRound (AzRat.ofAzInts (e − 1) k)` rounds it once; otherwise
+`log₂ x / k` is irrational (`irrational_logb_two_finiteVal`, `Irrational.div_intCast`) and the
+certified Ziv loop runs on `logBasePow2Approx`: the `log₂ x` bracket (`log2Quotients (lnBracket x)`)
+divided by the exact float `|k|` with `divPrecRound … .Floor/.Ceiling`, ends negated and swapped
+for `k < 0`.  The width bound `logBasePow2Eps e A w = log2Eps e A w + 4 (2A + log2Eps e A w) 2^-w`
+(with `A = |ln x|`, `|log₂ x| ≤ 2 |ln x|` from `log 2 > 1/2`) reuses `log2Lower_spec`/`log2Upper_spec`
+with the constant divisor bracket `(|k|, |k|)`, so no new division error lemma was needed.
+Specials: `±∞` and `0` map to `±∞`/`∓∞` by the sign of `k` (`Spec.logBasePow2 k a = (log2 a).map
+(· * ↑(k⁻¹))`, with `EReal.top_mul_coe_of_pos/neg`).  Tests: exact cases (`log₁₆ 8 = 3/4`,
+`log₈ 2 = 1/3` rounded with tag), `k = ±1` against `log2PrecRound`, `log₁₆ 10` at 150 bits against
+a 57-digit reference, `log_{2^1000} 10` at 100 bits.
+
+## `log_{2^k}` of a rational for `AzFloat` (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBasePow2Rat.lean`, `Equiv/LogBasePow2Rat.lean`, `Tests/LogBasePow2Rat.lean`:
+`logBasePow2RatPrecRound q k p mode = log₂ q / k` for `q : AzRat`, `k : AzInt ≠ 0`.  Exact branch:
+`AzRat.checkedLogBase2 q = some j` gives the rational `j/k` through `ofAzRatRound (AzRat.ofAzInts
+j k)`; otherwise the Ziv loop on `logBasePow2RatApprox q k w`.  The bracket machinery was
+refactored for this: `divBracketByInt B k w` (in `LogBasePow2Bracket.lean`) divides any bracket
+`B` of a value `L` by `|k|` with directed rounding (negating and swapping for `k < 0`), and
+`divBracketByInt_spec` proves the bracket of `L / k` with width `ε + 4 (|L| + ε) 2^-w` once and for
+all; `logBasePow2Approx` (float) and `logBasePow2RatApprox` (rational, from `log2Quotients
+(lnFloorBracket ⌊q⌋_w)`) are instances with widths `logBasePow2Eps`/`logBasePow2RatEps`.  Spec
+`logBasePow2RatPrecRound_eq : = roundVal p mode (Spec.logBasePow2 k.toInt (toRat q))`; `q = 0`
+gives `∓∞` by the sign of `k`, `q < 0` and `k = 0` give `NaN`.  Tests: exact `j/k` cases in
+every direction, `k = ±1` against `log2RatPrecRound`, `log₁₆ 10` and `log₁₆ (1/10)` at 150 bits,
+`log₈ (7/3)` at 60 bits (reference from `Decimal.ln`), `log_{2^1000} 10`.
+

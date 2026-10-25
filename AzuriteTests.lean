@@ -33,6 +33,8 @@ import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.Log2
 import Azurite.AzFloat.Tests.Log2Rat
 import Azurite.AzFloat.Tests.Log2p1
+import Azurite.AzFloat.Tests.LogBasePow2
+import Azurite.AzFloat.Tests.LogBasePow2Rat
 import Azurite.AzFloat.Tests.Mul
 import Azurite.AzFloat.Tests.MulAddMul
 import Azurite.AzFloat.Tests.MulAddMulRat
