@@ -16,7 +16,8 @@ import Azurite.AzFloat.Log2Bracket
 ends are divided by the exact float `|k|` with directed rounding, and negated (and swapped) for
 `k < 0`, giving a bracket of `L / k`.  `logBasePow2Approx x e k w` applies it to the bracket of
 `log₂ x` (`log2Quotients` of `lnBracket`) for a positive finite float `x` of exponent `e`, and
-`logBasePow2RatApprox q k w` to the bracket of `log₂ q` for a positive rational `q`.
+`logBasePow2RatApprox q k w` to the bracket of `log₂ q` for a positive rational `q`, and
+`logBasePow2P1Approx x k w` to the bracket of `log₂ (1 + x)` (the `ln1p` bracket) for `x > −1`.
 -/
 
 namespace Azurite.AzFloat
@@ -36,5 +37,9 @@ def logBasePow2Approx (x : AzFloat) (e k : AzInt) (w : Nat) : Roundable × Round
 /-- The bracket of `log_{2^k} q` for a positive rational `q` at working precision `w`. -/
 def logBasePow2RatApprox (q : AzRat) (k : AzInt) (w : Nat) : Roundable × Roundable :=
   divBracketByInt (log2Quotients (lnFloorBracket (ofAzRatRound q w .Floor).1 w) w) k w
+
+/-- The bracket of `log_{2^k} (1 + x)` for a float `x > −1` at working precision `w`. -/
+def logBasePow2P1Approx (x : AzFloat) (k : AzInt) (w : Nat) : Roundable × Roundable :=
+  divBracketByInt (log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w) k w
 
 end Azurite.AzFloat

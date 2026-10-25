@@ -249,4 +249,43 @@ theorem logBasePow2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : Rounding
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBasePow2RatApprox_spec hw q hq hnp k hk
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### The bracket of `log_{2^k} (1 + x)` -/
+
+/-- `logBasePow2P1Approx x k w` encloses `log₂ (1 + x) / k` strictly (given its irrationality),
+with width at most `logBasePow2RatEps E |ln (1 + x)| w` (`w ≥ 64`, `x > −1`). -/
+theorem logBasePow2P1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (k : AzInt) (hk : k ≠ 0)
+    (hirr : Irrational (Real.logb 2 (1 + xv) / k.toInt)) :
+    ∃ lv hv' : ℝ, Rounds (logBasePow2P1Approx x k w).1 lv ∧
+      Rounds (logBasePow2P1Approx x k w).2 hv' ∧
+      lv < Real.logb 2 (1 + xv) / k.toInt ∧ Real.logb 2 (1 + xv) / k.toInt < hv' ∧
+      hv' - lv ≤ logBasePow2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := log2Quotients_spec hw ha hb haL hLb hwid
+  rw [Real.log_div_log] at hlo1 hhi1
+  obtain ⟨lv, hv', hl, hh, hlo', hhi', hw'⟩ :=
+    divBracketByInt_spec (w := w) hlo hhi hlo1 hhi1 hwidth k hk hirr
+  refine ⟨lv, hv', hl, hh, hlo', hhi', hw'.trans ?_⟩
+  unfold logBasePow2RatEps log2RatEps
+  have hu : (0 : ℝ) < (1 / 2 : ℝ) ^ w := by positivity
+  have := abs_log_div_log_two_le (1 + xv)
+  rw [Real.log_div_log] at this
+  nlinarith
+
+/-- The Ziv certificate for `log_{2^k} (1 + x)`. -/
+theorem logBasePow2P1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode)
+    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (k : AzInt)
+    (hk : k ≠ 0) (hirr : Irrational (Real.logb 2 (1 + xv) / k.toInt)) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (logBasePow2P1Approx x k (w₀ * 2 ^ f)).1
+      (logBasePow2P1Approx x k (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (logBasePow2P1Approx x k) hirr
+    (logBasePow2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|)
+    (tendsto_logBasePow2RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBasePow2P1Approx_spec hw hx hx1 k hk hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
 end Azurite.AzFloat
