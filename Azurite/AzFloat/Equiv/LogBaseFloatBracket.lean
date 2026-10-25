@@ -460,4 +460,44 @@ theorem logBaseFloatP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : Rounding
         logBaseFloatP1Approx_spec hw hx hx1 eb hvb hb1 hirr
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### The bracket of `log_b q` -/
+
+/-- The bracket encloses `ln q / ln b` strictly (given irrationality), with the width bound
+`logBaseFloatP1Eps` (the rational `ln` bracket has the same width as the `lnP1` one). -/
+theorem logBaseRatFloatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q)
+    (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log (finiteVal true eb mb))) :
+    ∃ lv hv' : ℝ, Rounds (logBaseRatFloatApprox q (finite true eb qb mb hvb) eb w).1 lv ∧
+      Rounds (logBaseRatFloatApprox q (finite true eb qb mb hvb) eb w).2 hv' ∧
+      lv < Real.log (AzRat.toRat q : ℝ) / Real.log (finiteVal true eb mb) ∧
+      Real.log (AzRat.toRat q : ℝ) / Real.log (finiteVal true eb mb) < hv' ∧
+      hv' - lv ≤ logBaseFloatP1Eps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2) eb.toInt
+        (1 / lnKappa (finiteVal true eb mb)) |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hqv0 hr1 hr2
+  exact logBaseFloatQuot_spec hw ha hb' haL hLb hwid eb hvb hb1 hirr
+
+/-- The Ziv certificate for `log_b q` with a float base. -/
+theorem logBaseRatFloatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)
+    (hb1 : finiteVal true eb mb ≠ 1)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log (finiteVal true eb mb))) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible
+      (logBaseRatFloatApprox q (finite true eb qb mb hvb) eb (w₀ * 2 ^ f)).1
+      (logBaseRatFloatApprox q (finite true eb qb mb hvb) eb (w₀ * 2 ^ f)).2 p mode).isSome
+        = true :=
+  exists_isSome_of_irrational_threshold p mode
+    (logBaseRatFloatApprox q (finite true eb qb mb hvb) eb) hirr
+    (logBaseFloatP1Eps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2) eb.toInt
+      (1 / lnKappa (finiteVal true eb mb)) |Real.log (AzRat.toRat q : ℝ)|)
+    (tendsto_logBaseFloatP1Eps _ _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ :=
+        logBaseRatFloatApprox_spec hw q hq eb hvb hb1 hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
 end Azurite.AzFloat

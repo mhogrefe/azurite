@@ -4217,3 +4217,26 @@ table at `1 + x`, exact cases (`log₄ (1 + 7) = 3/2`, `log₉ (1 + 26) = 3/2`,
 with `logBaseP1PrecRound`, `logBasePow2P1PrecRound` and `logBaseFloatPrecRound` on the exact
 `1 + x`, `log₃ (1 + 6)`, `log_{3/2} (1 + 1)`, the base `1 + 2^(−20)` and the tiny argument
 `2^(−30)` at base `10` against the existing references.
+
+## `log_b q` for a rational `q` and a float base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseRatFloat.lean`, `Equiv/LogBaseRatFloat.lean`, `Tests/LogBaseRatFloat.lean`, with
+`ratDyadicExp`/`logBaseRatFloatExact?` in `LogBaseExact.lean`/`Equiv/` and
+`logBaseRatFloatApprox` in `LogBaseFloatBracket.lean`/`Equiv/`.  Malachite's
+`log_base_rational_float_base`: `logBaseRatFloatPrecRound q b p mode = ln q / ln b`.  Exactness:
+`q = (n/d) · 2^i` with `n`, `d` the odd parts of the reduced numerator and denominator
+(`toRat_eq_oddParts`); `q^e = b^a` separates into odd parts and 2-exponents as in the float case,
+and the odd-part equation `n^e = s^a d^e` (or `n^e s^(−a) = d^e`) with coprime `n`, `d` forces
+`d = 1` (or `n = 1`), so the only rational cases are the float cases on `n · 2^i` and on
+`d · 2^(−i)` (negated, `Real.log_inv`); `logBaseRatFloatExact?` dispatches on `d = 1` / `n = 1`
+and returns `none` otherwise, with `irrational_of_logBaseRatFloatExact?_none` proving the
+`n, d > 1` case directly through `odd_mul_two_zpow_inj` and `Nat.Coprime.eq_one_of_dvd`.  The
+bracket `logBaseRatFloatApprox` is `logBaseFloatQuot` of the rational `ln` bracket
+(`lnFloorBracket` of `⌊q⌋_w`), width `logBaseFloatP1Eps` (reused), Ziv from `p + 64`.  Special
+values: `q = 0` and `q = 1` delegate to `logBaseFloatPrecRound` at `zero` and `one`
+(`toRat_eq_one_iff : toRat q = 1 ↔ q.num = 1 ∧ q.den = 1`), `q < 0` is `NaN`, `b = 1` gives
+`±∞` by `q.den < q.num` (`one_lt_toRat_iff`).  Tests: specials, exact cases including odd
+denominators (`log₉ (1/27) = −3/2`, `log_{3/2} (4/9) = −2`, `log_{9/4} (2/3) = −1/2`,
+`log₃ (1/243) = −5`) and never-exact `n, d > 1` cases, agreement with the natural,
+power-of-two and float-argument versions, `log₃ 7`, `log₃ (1/7)`, `log_{3/2} 2`, `log₁₀ (1/3)`
+and the base `1 + 2^(−20)` at 100–150 bits.

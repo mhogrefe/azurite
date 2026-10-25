@@ -129,4 +129,16 @@ def onePlusDyadic (s : Bool) (i : AzInt) (o : AzNat) : AzNat × AzInt :=
     let u := ((1 : AzNat) <<< i.abs.toNat) - o
     (oddPart u, (AzNat.ofNat (twoAdic u)).toAzInt - (AzNat.ofNat i.abs.toNat).toAzInt)
 
+/-- The dyadic exponent of a rational: `twoAdic num − twoAdic den`. -/
+def ratDyadicExp (q : AzRat) : AzInt :=
+  (AzNat.ofNat (twoAdic q.num)).toAzInt - (AzNat.ofNat (twoAdic q.den)).toAzInt
+
+/-- `some (log_b q)` when it is rational, for `q = (n / d) · 2^i` with `n`, `d` odd and coprime
+and `b = s · 2^j`: only possible with `d = 1` (the float case on `n · 2^i`) or `n = 1` (the float
+case on `d · 2^(−i)`, negated). -/
+def logBaseRatFloatExact? (i : AzInt) (n d : AzNat) (j : AzInt) (s : AzNat) : Option AzRat :=
+  if d = 1 then logBaseFloatExact? i n j s
+  else if n = 1 then (logBaseFloatExact? (-i) d j s).map fun r => -r
+  else none
+
 end Azurite.AzFloat
