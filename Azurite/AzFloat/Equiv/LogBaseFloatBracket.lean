@@ -18,8 +18,11 @@ import Azurite.AzFloat.Equiv.LogBaseBracket
   `b < 1`), at every working precision `w ≥ 64`.
 * `divBracketByPosBracket_spec`: dividing a bracket of `L` by a bracket `(c, d)` of `M` with
   `0 < c` gives a bracket of `L / M` of width `divEps (1/c) |L| ε δ w`.
-* `logBaseFloatApprox_spec`, `logBaseFloatApprox_isSome_exists`: the bracket of `log_b x` is
-  strict (given irrationality) with width `logBaseFloatEps`, and certifies the Ziv loop.
+* `logBaseFloatQuot_spec`: dividing any bracket of `L` by the clamped bracket of `ln b` gives a
+  strict bracket of `L / ln b` (given irrationality); `logBaseFloatApprox_spec` (width
+  `logBaseFloatEps`) and `logBaseFloatP1Approx_spec` (width `logBaseFloatP1Eps`) are its
+  instances, with the Ziv certificates `logBaseFloatApprox_isSome_exists` and
+  `logBaseFloatP1Approx_isSome_exists`.
 -/
 
 namespace Azurite.AzFloat
@@ -254,6 +257,97 @@ theorem lnBaseFloatBracket_spec {w : ℕ} (hw : 64 ≤ w) (eb : AzInt) {qb : ℕ
         nlinarith [mul_le_mul_of_nonneg_left hu hx]
       linarith
 
+/-! ### The bracket of `L / ln b` -/
+
+/-- Dividing a bracket of `L` by the clamped bracket of `ln b` encloses `L / ln b` strictly (given
+irrationality), with width `divEps (1 / lnKappa b) |L| ε (lnEps eb w) w`. -/
+theorem logBaseFloatQuot_spec {w : ℕ} (hw : 64 ≤ w) {X : AzFloat × AzFloat} {a bv L ε : ℝ}
+    (ha : X.1.toVal = some (a : EReal)) (hb' : X.2.toVal = some (bv : EReal)) (haL : a ≤ L)
+    (hLb : L ≤ bv) (hwid : bv - a ≤ ε) (eb : AzInt) {qb : ℕ} {mb : AzNat}
+    (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1)
+    (hirr : Irrational (L / Real.log (finiteVal true eb mb))) :
+    ∃ lv hv' : ℝ, Rounds (logBaseFloatQuot X (finite true eb qb mb hvb) eb w).1 lv ∧
+      Rounds (logBaseFloatQuot X (finite true eb qb mb hvb) eb w).2 hv' ∧
+      lv < L / Real.log (finiteVal true eb mb) ∧ L / Real.log (finiteVal true eb mb) < hv' ∧
+      hv' - lv ≤ divEps (1 / lnKappa (finiteVal true eb mb)) |L| ε (lnEps eb.toInt w) w := by
+  set M := Real.log (finiteVal true eb mb) with hM
+  have hκ := lnKappa_pos hb1
+  set κ := lnKappa (finiteVal true eb mb) with hκ_def
+  obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hκc, hdκ⟩ := lnBaseFloatBracket_spec hw eb hvb hb1
+  rw [← hM] at hcM hMd
+  rw [← hκ_def] at hκc hdκ
+  have hε0 : 0 ≤ ε := by linarith
+  have hδ0 : 0 ≤ lnEps eb.toInt w := by linarith
+  unfold logBaseFloatQuot
+  simp only []
+  -- the two sign cases give a bracket `(lo, hi)` with the same width bound
+  suffices h : ∃ lo hi : ℝ,
+      (if eb.sign = true ∧ eb.abs ≠ 0 then
+        divBracketByPosBracket X (lnBaseFloatBracket (finite true eb qb mb hvb) eb w) w
+      else
+        (-(divBracketByPosBracket X
+          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2,
+         -(divBracketByPosBracket X
+          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1)).1.toVal
+        = some (lo : EReal) ∧
+      (if eb.sign = true ∧ eb.abs ≠ 0 then
+        divBracketByPosBracket X (lnBaseFloatBracket (finite true eb qb mb hvb) eb w) w
+      else
+        (-(divBracketByPosBracket X
+          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2,
+         -(divBracketByPosBracket X
+          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1)).2.toVal
+        = some (hi : EReal) ∧
+      lo ≤ L / M ∧ L / M ≤ hi ∧ hi - lo ≤ divEps (1 / κ) |L| ε (lnEps eb.toInt w) w by
+    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := h
+    refine ⟨lo, hi, ?_, ?_, ?_, ?_, hwidth⟩
+    · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+      rw [fval_of_toVal_coe hlo] at hR
+      exact hR
+    · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+      rw [fval_of_toVal_coe hhi] at hR
+      exact hR
+    · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlo
+      exact lt_of_le_of_ne hlo1 fun h => hirr.ne_rat r (h.symm.trans hr)
+    · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
+      exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r (h.trans hr)
+  split_ifs with hge
+  · -- `ln b > 0`
+    have hκc' := hκc hge
+    have hc0 : 0 < c := lt_of_lt_of_le hκ hκc'
+    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+      divBracketByPosBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
+    refine ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth.trans ?_⟩
+    exact divEps_mono w (one_div_le_one_div_of_le hκ hκc') (by positivity) (abs_nonneg L) hε0 hδ0
+  · -- `ln b < 0`: divide by the negated bracket
+    have hdκ' := hdκ hge
+    have hd0 : 0 < -d := by linarith
+    have hnc : (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1).toVal
+        = some ((-c : ℝ) : EReal) := by rw [toVal_neg, hc, Option.map_some, EReal.coe_neg]
+    have hnd : (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2).toVal
+        = some ((-d : ℝ) : EReal) := by rw [toVal_neg, hd, Option.map_some, EReal.coe_neg]
+    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+      divBracketByPosBracket_spec hw ha hb' (B := (_, _)) (M := -M) (δ := lnEps eb.toInt w) hnd hnc
+        hd0 (by linarith) (by linarith) (by linarith) haL hLb hwid
+    have hnlo : (-(divBracketByPosBracket X
+        (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+          -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2).toVal
+        = some ((-hi : ℝ) : EReal) := by rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
+    have hnhi : (-(divBracketByPosBracket X
+        (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
+          -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1).toVal
+        = some ((-lo : ℝ) : EReal) := by rw [toVal_neg, hlo, Option.map_some, EReal.coe_neg]
+    refine ⟨-hi, -lo, hnlo, hnhi, ?_, ?_, ?_⟩
+    · rw [div_neg] at hhi1; linarith
+    · rw [div_neg] at hlo1; linarith
+    · have := hwidth.trans (divEps_mono w (one_div_le_one_div_of_le hκ (by linarith))
+        (by positivity) (abs_nonneg L) hε0 hδ0)
+      linarith
+
 /-! ### The bracket of `log_b x` -/
 
 /-- The width bound of `logBaseFloatApprox` (`K = 1 / lnKappa b`, `A = |ln x|`). -/
@@ -286,92 +380,8 @@ theorem logBaseFloatApprox_spec {w : ℕ} (hw : 64 ≤ w) (ex : AzInt) {qx : ℕ
       Real.log (finiteVal true ex mx) / Real.log (finiteVal true eb mb) < hv' ∧
       hv' - lv ≤ logBaseFloatEps ex.toInt eb.toInt (1 / lnKappa (finiteVal true eb mb))
         |Real.log (finiteVal true ex mx)| w := by
-  set L := Real.log (finiteVal true ex mx) with hL
-  set M := Real.log (finiteVal true eb mb) with hM
-  have hκ := lnKappa_pos hb1
-  set κ := lnKappa (finiteVal true eb mb) with hκ_def
   obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnBracket_spec hw ex hvx
-  obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hκc, hdκ⟩ := lnBaseFloatBracket_spec hw eb hvb hb1
-  rw [← hL] at haL hLb
-  rw [← hM] at hcM hMd
-  rw [← hκ_def] at hκc hdκ
-  have hε0 : 0 ≤ lnEps ex.toInt w := by linarith
-  have hδ0 : 0 ≤ lnEps eb.toInt w := by linarith
-  unfold logBaseFloatApprox
-  simp only []
-  -- the two sign cases give a bracket `(lo, hi)` with the same width bound
-  suffices h : ∃ lo hi : ℝ,
-      (if eb.sign = true ∧ eb.abs ≠ 0 then
-        divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (lnBaseFloatBracket (finite true eb qb mb hvb) eb w) w
-      else
-        (-(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2,
-         -(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1)).1.toVal
-        = some (lo : EReal) ∧
-      (if eb.sign = true ∧ eb.abs ≠ 0 then
-        divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (lnBaseFloatBracket (finite true eb qb mb hvb) eb w) w
-      else
-        (-(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2,
-         -(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-          (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-            -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1)).2.toVal
-        = some (hi : EReal) ∧
-      lo ≤ L / M ∧ L / M ≤ hi ∧
-      hi - lo ≤ logBaseFloatEps ex.toInt eb.toInt (1 / κ) |L| w by
-    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := h
-    refine ⟨lo, hi, ?_, ?_, ?_, ?_, hwidth⟩
-    · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
-      rw [fval_of_toVal_coe hlo] at hR
-      exact hR
-    · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
-      rw [fval_of_toVal_coe hhi] at hR
-      exact hR
-    · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlo
-      exact lt_of_le_of_ne hlo1 fun h => hirr.ne_rat r (h.symm.trans hr)
-    · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
-      exact lt_of_le_of_ne hhi1 fun h => hirr.ne_rat r (h.trans hr)
-  split_ifs with hge
-  · -- `ln b > 0`
-    have hκc' := hκc hge
-    have hc0 : 0 < c := lt_of_lt_of_le hκ hκc'
-    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
-      divBracketByPosBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
-    refine ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth.trans ?_⟩
-    unfold logBaseFloatEps
-    exact divEps_mono w (one_div_le_one_div_of_le hκ hκc') (by positivity) (abs_nonneg L) hε0 hδ0
-  · -- `ln b < 0`: divide by the negated bracket
-    have hdκ' := hdκ hge
-    have hd0 : 0 < -d := by linarith
-    have hnc : (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1).toVal
-        = some ((-c : ℝ) : EReal) := by rw [toVal_neg, hc, Option.map_some, EReal.coe_neg]
-    have hnd : (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2).toVal
-        = some ((-d : ℝ) : EReal) := by rw [toVal_neg, hd, Option.map_some, EReal.coe_neg]
-    obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
-      divBracketByPosBracket_spec hw ha hb' (B := (_, _)) (M := -M) (δ := lnEps eb.toInt w) hnd hnc
-        hd0 (by linarith) (by linarith) (by linarith) haL hLb hwid
-    have hnlo : (-(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-        (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-          -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).2).toVal
-        = some ((-hi : ℝ) : EReal) := by rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
-    have hnhi : (-(divBracketByPosBracket (lnBracket (finite true ex qx mx hvx) ex w)
-        (-(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).2,
-          -(lnBaseFloatBracket (finite true eb qb mb hvb) eb w).1) w).1).toVal
-        = some ((-lo : ℝ) : EReal) := by rw [toVal_neg, hlo, Option.map_some, EReal.coe_neg]
-    refine ⟨-hi, -lo, hnlo, hnhi, ?_, ?_, ?_⟩
-    · rw [div_neg] at hhi1; linarith
-    · rw [div_neg] at hlo1; linarith
-    · have : hi - lo ≤ divEps (1 / κ) |L| (lnEps ex.toInt w) (lnEps eb.toInt w) w :=
-        hwidth.trans (divEps_mono w (one_div_le_one_div_of_le hκ (by linarith)) (by positivity)
-          (abs_nonneg L) hε0 hδ0)
-      unfold logBaseFloatEps
-      linarith
+  exact logBaseFloatQuot_spec hw ha hb' haL hLb hwid eb hvb hb1 hirr
 
 /-- The Ziv certificate for `log_b x` with a float base. -/
 theorem logBaseFloatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (ex : AzInt)
@@ -391,6 +401,63 @@ theorem logBaseFloatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMo
     (tendsto_logBaseFloatEps _ _ _ _) 64
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBaseFloatApprox_spec hw ex hvx eb hvb hb1 hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The bracket of `log_b (1 + x)` -/
+
+/-- The width bound of `logBaseFloatP1Approx` (`E` bounds the exponent of `ln (1 + x)`,
+`K = 1 / lnKappa b`, `A = |ln (1 + x)|`). -/
+noncomputable def logBaseFloatP1Eps (E : ℕ) (eb : ℤ) (K A : ℝ) (w : ℕ) : ℝ :=
+  divEps K A (lnRatEps E A w) (lnEps eb w) w
+
+theorem tendsto_logBaseFloatP1Eps (E : ℕ) (eb : ℤ) (K A : ℝ) :
+    Filter.Tendsto (logBaseFloatP1Eps E eb K A) Filter.atTop (nhds 0) := by
+  have hx := tendsto_lnRatEps E A
+  have hb := tendsto_lnEps eb
+  have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+  have hA : Filter.Tendsto (fun _ : ℕ => A) Filter.atTop (nhds A) := tendsto_const_nhds
+  have := (((hx.const_mul 2).add (((hA.add hx).const_mul 8).mul
+    ((hb.const_mul (1 + K)).add hu)))).const_mul (1 + K)
+  simp only [mul_zero, add_zero] at this
+  exact this
+
+/-- The bracket encloses `ln (1 + x) / ln b` strictly (given irrationality), with the width
+bound. -/
+theorem logBaseFloatP1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (eb : AzInt) {qb : ℕ} {mb : AzNat}
+    (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1)
+    (hirr : Irrational (Real.log (1 + xv) / Real.log (finiteVal true eb mb))) :
+    ∃ lv hv' : ℝ, Rounds (logBaseFloatP1Approx x (finite true eb qb mb hvb) eb w).1 lv ∧
+      Rounds (logBaseFloatP1Approx x (finite true eb qb mb hvb) eb w).2 hv' ∧
+      lv < Real.log (1 + xv) / Real.log (finiteVal true eb mb) ∧
+      Real.log (1 + xv) / Real.log (finiteVal true eb mb) < hv' ∧
+      hv' - lv ≤ logBaseFloatP1Eps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) eb.toInt
+        (1 / lnKappa (finiteVal true eb mb)) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  exact logBaseFloatQuot_spec hw ha hb' haL hLb hwid eb hvb hb1 hirr
+
+/-- The Ziv certificate for `log_b (1 + x)` with a float base. -/
+theorem logBaseFloatP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode)
+    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (eb : AzInt)
+    {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1)
+    (hirr : Irrational (Real.log (1 + xv) / Real.log (finiteVal true eb mb))) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible
+      (logBaseFloatP1Approx x (finite true eb qb mb hvb) eb (w₀ * 2 ^ f)).1
+      (logBaseFloatP1Approx x (finite true eb qb mb hvb) eb (w₀ * 2 ^ f)).2 p mode).isSome
+        = true :=
+  exists_isSome_of_irrational_threshold p mode
+    (logBaseFloatP1Approx x (finite true eb qb mb hvb) eb) hirr
+    (logBaseFloatP1Eps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) eb.toInt
+      (1 / lnKappa (finiteVal true eb mb)) |Real.log (1 + xv)|)
+    (tendsto_logBaseFloatP1Eps _ _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ :=
+        logBaseFloatP1Approx_spec hw hx hx1 eb hvb hb1 hirr
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
 end Azurite.AzFloat

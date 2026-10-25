@@ -1088,4 +1088,148 @@ theorem irrational_logBaseFloat_of_none (ex : AzInt) {qx : ℕ} {mx : AzNat}
     (oddPart_spec mx (significand_ne_zero_of_valid hvx)).2.1
     (oddPart_spec mb (significand_ne_zero_of_valid hvb)).2.1 hb1 hx1 h
 
+/-! ### `1 + x` -/
+
+theorem abs_toNat_eq_natAbs (k : AzInt) : k.abs.toNat = k.toInt.natAbs := by
+  unfold AzInt.toInt
+  cases k.sign <;> simp
+
+theorem toNat_hShiftLeft (a : AzNat) (k : ℕ) : (a <<< k).toNat = a.toNat * 2 ^ k :=
+  AzNat.toNat_shiftLeft a k
+
+/-- `u · 2^(k − t) = (1 + x)` from `u = (1 + x) · 2^t` and `u = 2^k · o'`. -/
+theorem one_add_eq_of_scaled {v : ℝ} {u o' k t : ℕ} (hdec : u = 2 ^ k * o')
+    (huv : (u : ℝ) = (1 + v) * 2 ^ t) :
+    1 + v = (o' : ℝ) * (2 : ℝ) ^ ((k : ℤ) - t) := by
+  have h2 : (0 : ℝ) < 2 ^ t := by positivity
+  have key : (1 + v) * 2 ^ t = (o' : ℝ) * 2 ^ k := by
+    rw [← huv, hdec]; push_cast; ring
+  calc 1 + v = (1 + v) * 2 ^ t / 2 ^ t := by field_simp
+    _ = (o' : ℝ) * 2 ^ k / 2 ^ t := by rw [key]
+    _ = (o' : ℝ) * (2 : ℝ) ^ ((k : ℤ) - t) := by
+        rw [zpow_sub₀ (two_ne_zero : (2 : ℝ) ≠ 0), zpow_natCast, zpow_natCast]; ring
+
+/-- `onePlusDyadic` decomposes `1 + x` into an odd part and a dyadic exponent. -/
+theorem onePlusDyadic_spec (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hgt : -1 < finiteVal s e m) :
+    Odd (onePlusDyadic s (dyadicExp e m) (oddPart m)).1.toNat ∧
+      1 + finiteVal s e m
+        = ((onePlusDyadic s (dyadicExp e m) (oddPart m)).1.toNat : ℝ)
+          * (2 : ℝ) ^ (onePlusDyadic s (dyadicExp e m) (oddPart m)).2.toInt := by
+  have hm := significand_ne_zero_of_valid hv
+  obtain ⟨-, hodd, -⟩ := oddPart_spec m hm
+  have hval := finiteVal_eq_oddPart e hv
+  set o := oddPart m with ho
+  set i := dyadicExp e m with hi
+  have hab : (i.abs.toNat : ℤ) = |i.toInt| := by
+    rw [abs_toNat_eq_natAbs]; exact Int.natCast_natAbs _
+  have ho0 : 0 < o.toNat := hodd.pos
+  have hcancel : i.toInt < 0 → (2 : ℝ) ^ i.toInt * 2 ^ i.abs.toNat = 1 := by
+    intro hneg
+    rw [← zpow_natCast, ← zpow_add₀ (two_ne_zero : (2 : ℝ) ≠ 0),
+      show i.toInt + (i.abs.toNat : ℤ) = 0 by rw [hab, abs_of_neg hneg]; ring, zpow_zero]
+  unfold onePlusDyadic
+  cases s with
+  | true =>
+    simp only [↓reduceIte]
+    split_ifs with hsg
+    · -- `i ≥ 0`: the integer `o · 2^i + 1`
+      rw [AzInt.sign_eq_true_iff] at hsg
+      have hi' : (i.abs.toNat : ℤ) = i.toInt := by rw [hab, abs_of_nonneg hsg]
+      set n := (o <<< i.abs.toNat) + 1 with hn
+      have hn0 : n ≠ 0 := by
+        intro h0
+        have := congrArg AzNat.toNat h0
+        rw [hn, AzNat.toNat_add, AzNat.toNat_one, AzNat.toNat_zero] at this
+        omega
+      obtain ⟨hdec, hodd', -⟩ := oddPart_spec n hn0
+      refine ⟨hodd', ?_⟩
+      rw [toInt_toAzInt, AzNat.toNat_ofNat, zpow_natCast]
+      have hnv : (n.toNat : ℝ) = 1 + finiteVal true e m := by
+        rw [hval, hn, AzNat.toNat_add, AzNat.toNat_one, toNat_hShiftLeft]
+        push_cast
+        rw [← hi', zpow_natCast]
+        ring
+      rw [← hnv, hdec]
+      push_cast
+      ring
+    · -- `i < 0`: `(2^t + o) / 2^t`
+      rw [AzInt.sign_eq_true_iff] at hsg
+      push Not at hsg
+      set u := ((1 : AzNat) <<< i.abs.toNat) + o with hu
+      have huN : u.toNat = 2 ^ i.abs.toNat + o.toNat := by
+        rw [hu, AzNat.toNat_add, toNat_hShiftLeft, AzNat.toNat_one, one_mul]
+      have hu0 : u ≠ 0 := by
+        intro h0
+        have := congrArg AzNat.toNat h0
+        have h2 : 0 < 2 ^ i.abs.toNat := by positivity
+        rw [huN, AzNat.toNat_zero] at this
+        omega
+      obtain ⟨hdec, hodd', -⟩ := oddPart_spec u hu0
+      refine ⟨hodd', ?_⟩
+      rw [AzInt.toInt_sub, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat]
+      apply one_add_eq_of_scaled hdec
+      rw [huN, hval]
+      push_cast
+      linear_combination (-(o.toNat : ℝ)) * hcancel hsg
+  | false =>
+    -- `x < 0` above `−1`: `i < 0` and `o < 2^t`, the sum is `(2^t − o) / 2^t`
+    simp only [Bool.false_eq_true, ↓reduceIte]
+    rw [finiteVal_false, hval] at hgt
+    have hneg : i.toInt < 0 := by
+      by_contra h
+      push Not at h
+      have h1 : (1 : ℝ) ≤ (2 : ℝ) ^ i.toInt := one_le_zpow₀ one_le_two h
+      have h2 : (1 : ℝ) ≤ o.toNat := by exact_mod_cast ho0
+      nlinarith
+    have hlt : o.toNat < 2 ^ i.abs.toNat := by
+      have h2 : (0 : ℝ) < 2 ^ i.abs.toNat := by positivity
+      have : (o.toNat : ℝ) * (2 : ℝ) ^ i.toInt * 2 ^ i.abs.toNat < 1 * 2 ^ i.abs.toNat :=
+        mul_lt_mul_of_pos_right (by linarith) h2
+      rw [mul_assoc, hcancel hneg, mul_one, one_mul] at this
+      exact_mod_cast this
+    set u := ((1 : AzNat) <<< i.abs.toNat) - o with hu
+    have huN : u.toNat = 2 ^ i.abs.toNat - o.toNat := by
+      rw [hu, AzNat.toNat_sub, toNat_hShiftLeft, AzNat.toNat_one, one_mul]
+    have hu0 : u ≠ 0 := by
+      intro h0
+      have := congrArg AzNat.toNat h0
+      rw [huN, AzNat.toNat_zero] at this
+      omega
+    obtain ⟨hdec, hodd', -⟩ := oddPart_spec u hu0
+    refine ⟨hodd', ?_⟩
+    rw [AzInt.toInt_sub, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat,
+      finiteVal_false, hval]
+    apply one_add_eq_of_scaled hdec
+    rw [huN, Nat.cast_sub hlt.le]
+    push_cast
+    linear_combination (o.toNat : ℝ) * hcancel hneg
+
+/-- The value of `logBaseFloatExact?` on `1 + x` and the base. -/
+theorem logBaseFloatP1_exact_value (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hgt : -1 < finiteVal s e m) (eb : AzInt) {qb : ℕ} {mb : AzNat}
+    (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1) (r : AzRat)
+    (h : logBaseFloatExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
+      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (dyadicExp eb mb) (oddPart mb) = some r) :
+    Real.log (1 + finiteVal s e m) / Real.log (finiteVal true eb mb) = (AzRat.toRat r : ℝ) := by
+  obtain ⟨hodd, hval⟩ := onePlusDyadic_spec s e hv hgt
+  rw [finiteVal_eq_oddPart eb hvb] at hb1 ⊢
+  rw [hval]
+  exact logBaseFloatExact?_some _ _ _ _ hodd
+    (oddPart_spec mb (significand_ne_zero_of_valid hvb)).2.1 hb1 r h
+
+/-- Irrationality of `log_b (1 + x)` when `logBaseFloatExact?` finds nothing. -/
+theorem irrational_logBaseFloatP1_of_none (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hgt : -1 < finiteVal s e m) (eb : AzInt) {qb : ℕ} {mb : AzNat}
+    (hvb : FiniteValid qb mb) (hb1 : finiteVal true eb mb ≠ 1)
+    (h : logBaseFloatExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
+      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (dyadicExp eb mb) (oddPart mb) = none) :
+    Irrational (Real.log (1 + finiteVal s e m) / Real.log (finiteVal true eb mb)) := by
+  obtain ⟨hodd, hval⟩ := onePlusDyadic_spec s e hv hgt
+  have hx1 : 1 + finiteVal s e m ≠ 1 := fun h1 => finiteVal_ne_zero s e hv (by linarith)
+  rw [finiteVal_eq_oddPart eb hvb] at hb1 ⊢
+  rw [hval] at hx1 ⊢
+  exact irrational_of_logBaseFloatExact?_none _ _ _ _ hodd
+    (oddPart_spec mb (significand_ne_zero_of_valid hvb)).2.1 hb1 hx1 h
+
 end Azurite.AzFloat

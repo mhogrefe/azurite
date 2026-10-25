@@ -114,4 +114,19 @@ def logBaseFloatExact? (i : AzInt) (o : AzNat) (j : AzInt) (s : AzNat) : Option 
       if s.isPow e ∧ o.isPow a ∧ s.rootInt e = o.rootInt a then some r else none
     else if o = 1 ∧ s = 1 then some r else none
 
+/-- The odd part and dyadic exponent of `1 + x` for a float `x = ±o · 2^i > −1` of sign `s`:
+`1 + x = o' · 2^i'`.  For `x ≥ 0` with `i ≥ 0` the sum is the integer `o · 2^i + 1`; otherwise
+`1 + x = (2^t ± o) / 2^t` with `t = −i`. -/
+def onePlusDyadic (s : Bool) (i : AzInt) (o : AzNat) : AzNat × AzInt :=
+  if s then
+    if i.sign then
+      let n := (o <<< i.abs.toNat) + 1
+      (oddPart n, (AzNat.ofNat (twoAdic n)).toAzInt)
+    else
+      let u := ((1 : AzNat) <<< i.abs.toNat) + o
+      (oddPart u, (AzNat.ofNat (twoAdic u)).toAzInt - (AzNat.ofNat i.abs.toNat).toAzInt)
+  else
+    let u := ((1 : AzNat) <<< i.abs.toNat) - o
+    (oddPart u, (AzNat.ofNat (twoAdic u)).toAzInt - (AzNat.ofNat i.abs.toNat).toAzInt)
+
 end Azurite.AzFloat

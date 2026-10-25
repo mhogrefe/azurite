@@ -4192,3 +4192,28 @@ odd-integer and fractional bases (`log₄ 8 = 3/2`, `log₉ 27 = 3/2`, `log_{3/2
 `log_{1/4} (1/8) = 3/2`), agreement with `logBasePrecRound`/`logBasePow2PrecRound`/`log2PrecRound`,
 `log₃ 7` and `log_{3/2} 2` at 150 bits, and the bases `1 ± 2^(−20)` at 100 bits (values
 `±726817.…`, 75-digit references).
+
+## `log_b (1 + x)` for a float base (DONE 2026-10-25, fuel-free)
+
+`AzFloat/LogBaseFloatP1.lean`, `Equiv/LogBaseFloatP1.lean`, `Tests/LogBaseFloatP1.lean`, with
+`onePlusDyadic` in `LogBaseExact.lean`/`Equiv/` and `logBaseFloatP1Approx` in
+`LogBaseFloatBracket.lean`/`Equiv/`.  `logBaseFloatP1PrecRound x b p mode = ln (1 + x) / ln b`.
+The exactness test needs the odd part and dyadic exponent of `1 + x`, computed from those of `x`
+without a big rational (`onePlusDyadic s i o`: `x = ±o · 2^i`; for `x ≥ 0`, `i ≥ 0` the integer
+`o · 2^i + 1`, else `u = 2^t ± o` with `t = −i` and `1 + x = u / 2^t`; `onePlusDyadic_spec` by
+`oddPart_spec`, with `o < 2^t` from `x > −1` for the minus sign), then `logBaseFloatExact?` and
+its two lemmas apply verbatim (`1 + x ≠ 1` since `x ≠ 0`).  The bracket machinery was refactored:
+`logBaseFloatQuot X b eb w` divides any bracket `X` by the clamped `ln b` bracket (sign dispatch,
+negate and swap for `b < 1`), with `logBaseFloatQuot_spec` the former `logBaseFloatApprox_spec`
+body; `logBaseFloatApprox` (`lnBracket`) and `logBaseFloatP1Approx` (`lnFloorBracket` of the
+floor-rounded `1 + x`) are instances with widths `logBaseFloatEps`/`logBaseFloatP1Eps`.
+Special values reuse `logBaseFloatPrecRound` at `∞`, `one` and `zero` for `x = ∞`, `x = 0` and
+`x = −1`, so the spec `fun a bv => Spec.logBaseFloat (a + 1) bv` is matched through
+`logBaseFloatPrecRound_eq_liftVal₂` with `⊤ + 1 = ⊤`, `0 + 1 = 1`, `−1 + 1 = 0`; the finite
+`x > −1` case is `logBaseFloatP1Pos` (dispatch on `b`, `b = 1` gives `infinity s`) and
+`logBaseFloatP1Finite` (exact or Ziv at `p + 64 + leadingZeroBits e`).  Tests: the special-value
+table at `1 + x`, exact cases (`log₄ (1 + 7) = 3/2`, `log₉ (1 + 26) = 3/2`,
+`log_{3/2} (1 + 19/8) = 3`, `log_{3/4} (1 − 7/16) = 2`, `log_{1/4} (1 − 7/8) = 3/2`), agreement
+with `logBaseP1PrecRound`, `logBasePow2P1PrecRound` and `logBaseFloatPrecRound` on the exact
+`1 + x`, `log₃ (1 + 6)`, `log_{3/2} (1 + 1)`, the base `1 + 2^(−20)` and the tiny argument
+`2^(−30)` at base `10` against the existing references.

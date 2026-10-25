@@ -18,8 +18,9 @@ its bracket is `lnBaseFloatBracket`: the `lnBracket` ends clamped by the exact-s
 rounding, so that both ends have the sign of `ln b` at every working precision.
 `divBracketByPosBracket` divides a bracket by a bracket with positive ends: the divisor is
 shifted by a power of two to `[1/2, ∞)` (`normShift`), `quotientBracket` is applied, and the
-quotient is shifted back exactly.  `logBaseFloatApprox` assembles the bracket of `log_b x`,
-negating and swapping for `b < 1`.
+quotient is shifted back exactly.  `logBaseFloatQuot` divides any bracket by the bracket of
+`ln b`, negating and swapping for `b < 1`; `logBaseFloatApprox` (the `ln x` bracket) and
+`logBaseFloatP1Approx` (the `ln (1 + x)` bracket of `lnP1`) are its instances.
 -/
 
 namespace Azurite.AzFloat
@@ -55,11 +56,10 @@ def divBracketByPosBracket (X B : AzFloat × AzFloat) (w : Nat) : AzFloat × AzF
   let Q := quotientBracket X (B.1 <<< l, B.2 <<< l) w
   (Q.1 <<< l, Q.2 <<< l)
 
-/-- The bracket of `log_b x = ln x / ln b` for positive floats `x` and `b ≠ 1` of exponents `ex`
-and `eb`, at working precision `w`. -/
-def logBaseFloatApprox (x : AzFloat) (ex : AzInt) (b : AzFloat) (eb : AzInt) (w : Nat) :
+/-- A bracket of `L / ln b` from a bracket `X` of `L`, for a positive float `b ≠ 1` of exponent
+`eb`: the sign-clamped bracket of `ln b` divides `X` (negated and swapped for `b < 1`). -/
+def logBaseFloatQuot (X : AzFloat × AzFloat) (b : AzFloat) (eb : AzInt) (w : Nat) :
     Roundable × Roundable :=
-  let X := lnBracket x ex w
   let B := lnBaseFloatBracket b eb w
   let q :=
     if eb.sign = true ∧ eb.abs ≠ 0 then divBracketByPosBracket X B w
@@ -67,5 +67,16 @@ def logBaseFloatApprox (x : AzFloat) (ex : AzInt) (b : AzFloat) (eb : AzInt) (w 
       let Q := divBracketByPosBracket X (-B.2, -B.1) w
       (-Q.2, -Q.1)
   (fun p mode => setPrecRound q.1 p mode, fun p mode => setPrecRound q.2 p mode)
+
+/-- The bracket of `log_b x = ln x / ln b` for positive floats `x` and `b ≠ 1` of exponents `ex`
+and `eb`, at working precision `w`. -/
+def logBaseFloatApprox (x : AzFloat) (ex : AzInt) (b : AzFloat) (eb : AzInt) (w : Nat) :
+    Roundable × Roundable :=
+  logBaseFloatQuot (lnBracket x ex w) b eb w
+
+/-- The bracket of `log_b (1 + x) = ln (1 + x) / ln b` for a float `x > −1` and a positive float
+`b ≠ 1` of exponent `eb`: the `ln (1 + x)` bracket of `lnP1` divided by the bracket of `ln b`. -/
+def logBaseFloatP1Approx (x b : AzFloat) (eb : AzInt) (w : Nat) : Roundable × Roundable :=
+  logBaseFloatQuot (lnFloorBracket (addPrecRound one x w .Floor).1 w) b eb w
 
 end Azurite.AzFloat
