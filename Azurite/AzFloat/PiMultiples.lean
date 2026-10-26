@@ -9,14 +9,16 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
+import Azurite.AzFloat.Equiv.OneDivPiBracket
 
 /-!
-## The constants `τ = 2π`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`
+## The constants `τ = 2π`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π`
 
 `τ`, `π/2`, `π/4` and `π/8` are exact shifts of the correctly rounded `π` (the float set is
 scale-invariant, so the rounding and its comparison carry over: `roundVal_mul_two_zpow`).  `π/3`
-is a certified Ziv loop (no fuel) over `piDiv3Approx`, and `π/6` is its exact shift.  All return
-`(zero, .lt)` at precision `0`, like `pi`.  The specifications are in `Equiv/PiMultiples.lean`.
+is a certified Ziv loop (no fuel) over `piDiv3Approx`, and `π/6` is its exact shift; likewise
+`1/π` over `oneDivPiApprox` and `2/π` its exact shift.  All return `(zero, .lt)` at precision
+`0`, like `pi`.  The specifications are in `Equiv/PiMultiples.lean`.
 -/
 
 namespace Azurite.AzFloat
@@ -71,5 +73,24 @@ def piDiv6PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
 
 /-- `π/6` rounded to nearest at precision `p`. -/
 def piDiv6 (p : Nat) : AzFloat := (piDiv6PrecRound p .Nearest).1
+
+/-- `1/π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def oneDivPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  if hp : p = 0 then (zero, .lt)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopCertified oneDivPiApprox p mode (p + zivGuardBits)
+      (oneDivPiApprox_isSome_exists p mode (p + zivGuardBits) (by unfold zivGuardBits; omega))
+
+/-- `1/π` rounded to nearest at precision `p`. -/
+def oneDivPi (p : Nat) : AzFloat := (oneDivPiPrecRound p .Nearest).1
+
+/-- `2/π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def twoDivPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  let r := oneDivPiPrecRound p mode
+  (r.1 <<< AzInt.ofInt 1, r.2)
+
+/-- `2/π` rounded to nearest at precision `p`. -/
+def twoDivPi (p : Nat) : AzFloat := (twoDivPiPrecRound p .Nearest).1
 
 end Azurite.AzFloat

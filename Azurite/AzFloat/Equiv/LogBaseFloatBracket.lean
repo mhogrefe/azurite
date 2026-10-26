@@ -119,6 +119,36 @@ theorem divEps_mono {K K' A ε δ : ℝ} (w : ℕ) (hK : K ≤ K') (hK0 : 0 ≤ 
     mul_le_mul_of_nonneg_left (by linarith) (by positivity)
   exact mul_le_mul (by linarith) (by linarith) (by positivity) (by linarith)
 
+/-- `divEps` tends to `0` with its two widths. -/
+theorem tendsto_divEps (K A : ℝ) {ε δ : ℕ → ℝ} (hε : Filter.Tendsto ε Filter.atTop (nhds 0))
+    (hδ : Filter.Tendsto δ Filter.atTop (nhds 0)) :
+    Filter.Tendsto (fun w => divEps K A (ε w) (δ w) w) Filter.atTop (nhds 0) := by
+  have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+  have hA : Filter.Tendsto (fun _ : ℕ => A) Filter.atTop (nhds A) := tendsto_const_nhds
+  have := (((hε.const_mul 2).add (((hA.add hε).const_mul 8).mul
+    ((hδ.const_mul (1 + K)).add hu)))).const_mul (1 + K)
+  simp only [mul_zero, add_zero] at this
+  exact this
+
+/-- The `Roundable` pair of a bracket is a strict enclosure of an irrational value. -/
+theorem rounds_of_bracket {b : AzFloat × AzFloat} {lo hi v : ℝ}
+    (hlo : b.1.toVal = some (lo : EReal)) (hhi : b.2.toVal = some (hi : EReal))
+    (h1 : lo ≤ v) (h2 : v ≤ hi) (hirr : Irrational v) :
+    Rounds (fun p mode => setPrecRound b.1 p mode) lo ∧
+      Rounds (fun p mode => setPrecRound b.2 p mode) hi ∧ lo < v ∧ v < hi := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR
+    exact hR
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlo
+    exact lt_of_le_of_ne h1 fun h => hirr.ne_rat r (h.symm.trans hr)
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
+    exact lt_of_le_of_ne h2 fun h => hirr.ne_rat r (h.trans hr)
+
 theorem divBracketByPosBracket_spec {w : ℕ} (hw : 64 ≤ w) {X B : AzFloat × AzFloat}
     {a bv c d L M ε δ : ℝ} (ha : X.1.toVal = some (a : EReal)) (hb : X.2.toVal = some (bv : EReal))
     (hc : B.1.toVal = some (c : EReal)) (hd : B.2.toVal = some (d : EReal))

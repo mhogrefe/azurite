@@ -13,7 +13,7 @@ import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
 /-!
-# Tests for `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`
+# Tests for `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π`
 
 The correctly rounded values at 1, 2, 3, 53 and 100 bits in the nearest, floor and ceiling
 modes (exact rationals from a 100-digit `π`), precision `0`, the shift relations with `pi` and
@@ -134,6 +134,43 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard piDiv8PrecRound 100 .Ceiling
   == (F "995610453248924340922087778489/2535301200456458802993406410752" 100, .gt)
 
+#guard oneDivPiPrecRound 1 .Nearest == (F "1/4" 1, .lt)
+#guard oneDivPiPrecRound 1 .Floor == (F "1/4" 1, .lt)
+#guard oneDivPiPrecRound 1 .Ceiling == (F "1/2" 1, .gt)
+#guard oneDivPiPrecRound 2 .Nearest == (F "3/8" 2, .gt)
+#guard oneDivPiPrecRound 2 .Floor == (F "1/4" 2, .lt)
+#guard oneDivPiPrecRound 2 .Ceiling == (F "3/8" 2, .gt)
+#guard oneDivPiPrecRound 3 .Nearest == (F "5/16" 3, .lt)
+#guard oneDivPiPrecRound 3 .Floor == (F "5/16" 3, .lt)
+#guard oneDivPiPrecRound 3 .Ceiling == (F "3/8" 3, .gt)
+#guard oneDivPiPrecRound 53 .Nearest == (F "5734161139222659/18014398509481984" 53, .gt)
+#guard oneDivPiPrecRound 53 .Floor == (F "2867080569611329/9007199254740992" 53, .lt)
+#guard oneDivPiPrecRound 53 .Ceiling == (F "5734161139222659/18014398509481984" 53, .gt)
+#guard oneDivPiPrecRound 100 .Nearest
+  == (F "807011436558923259726928379167/2535301200456458802993406410752" 100, .lt)
+#guard oneDivPiPrecRound 100 .Floor
+  == (F "807011436558923259726928379167/2535301200456458802993406410752" 100, .lt)
+#guard oneDivPiPrecRound 100 .Ceiling
+  == (F "25219107392466351866466511849/79228162514264337593543950336" 100, .gt)
+#guard twoDivPiPrecRound 1 .Nearest == (F "1/2" 1, .lt)
+#guard twoDivPiPrecRound 1 .Floor == (F "1/2" 1, .lt)
+#guard twoDivPiPrecRound 1 .Ceiling == (F "1" 1, .gt)
+#guard twoDivPiPrecRound 2 .Nearest == (F "3/4" 2, .gt)
+#guard twoDivPiPrecRound 2 .Floor == (F "1/2" 2, .lt)
+#guard twoDivPiPrecRound 2 .Ceiling == (F "3/4" 2, .gt)
+#guard twoDivPiPrecRound 3 .Nearest == (F "5/8" 3, .lt)
+#guard twoDivPiPrecRound 3 .Floor == (F "5/8" 3, .lt)
+#guard twoDivPiPrecRound 3 .Ceiling == (F "3/4" 3, .gt)
+#guard twoDivPiPrecRound 53 .Nearest == (F "5734161139222659/9007199254740992" 53, .gt)
+#guard twoDivPiPrecRound 53 .Floor == (F "2867080569611329/4503599627370496" 53, .lt)
+#guard twoDivPiPrecRound 53 .Ceiling == (F "5734161139222659/9007199254740992" 53, .gt)
+#guard twoDivPiPrecRound 100 .Nearest
+  == (F "807011436558923259726928379167/1267650600228229401496703205376" 100, .lt)
+#guard twoDivPiPrecRound 100 .Floor
+  == (F "807011436558923259726928379167/1267650600228229401496703205376" 100, .lt)
+#guard twoDivPiPrecRound 100 .Ceiling
+  == (F "25219107392466351866466511849/39614081257132168796771975168" 100, .gt)
+
 -- precision `0`
 #guard tauPrecRound 0 .Nearest == (zero, .lt)
 #guard piDiv2PrecRound 0 .Nearest == (zero, .lt)
@@ -141,6 +178,8 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard piDiv4PrecRound 0 .Nearest == (zero, .lt)
 #guard piDiv6PrecRound 0 .Nearest == (zero, .lt)
 #guard piDiv8PrecRound 0 .Nearest == (zero, .lt)
+#guard oneDivPiPrecRound 0 .Nearest == (zero, .lt)
+#guard twoDivPiPrecRound 0 .Nearest == (zero, .lt)
 
 -- shift relations
 #guard tau 200 == pi 200 <<< AzInt.ofInt 1
@@ -150,6 +189,9 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard piDiv6 200 == piDiv3 200 <<< AzInt.ofInt (-1)
 #guard (piDiv3PrecRound 200 .Floor).2 == .lt
 #guard (piDiv3PrecRound 200 .Ceiling).2 == .gt
+#guard twoDivPi 200 == oneDivPi 200 <<< AzInt.ofInt 1
+#guard (oneDivPiPrecRound 200 .Floor).2 == .lt
+#guard (oneDivPiPrecRound 200 .Ceiling).2 == .gt
 
 -- decimal strings at 53 bits
 #guard toString (tau 53) == "6.283185307179586"
@@ -158,3 +200,5 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard toString (piDiv4 53) == "0.7853981633974483"
 #guard toString (piDiv6 53) == "0.5235987755982989"
 #guard toString (piDiv8 53) == "0.39269908169872414"
+#guard toString (oneDivPi 53) == "0.3183098861837907"
+#guard toString (twoDivPi 53) == "0.6366197723675814"

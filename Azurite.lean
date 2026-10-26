@@ -111,6 +111,7 @@ import Azurite.AzFloat.Equiv.MulAddMul
 import Azurite.AzFloat.Equiv.MulAddMulRat
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
+import Azurite.AzFloat.Equiv.OneDivPiBracket
 import Azurite.AzFloat.Equiv.Pi
 import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
@@ -178,6 +179,7 @@ import Azurite.AzFloat.MulAddMul
 import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
+import Azurite.AzFloat.OneDivPiBracket
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.PiDiv3Bracket

@@ -4453,3 +4453,15 @@ shift of `π/3`.  Irrationality: `irrational_pi.div_natCast`.  Tests: correctly 
 precision `0`, the shift relations, 53-bit decimal strings (the 53-bit `π/3` is
 `1.0471975511965979`, one ulp above the double `math.pi/3`: dividing the rounded `π` by `3`
 is not the correctly rounded `π/3`).
+
+## Constants `1/π`, `2/π` (DONE 2026-10-25, fuel-free)
+
+User request.  `AzFloat/OneDivPiBracket.lean` + `Equiv/`; drivers `oneDivPiPrecRound`/`oneDivPi`,
+`twoDivPiPrecRound`/`twoDivPi` in `PiMultiples.lean` (+ `Equiv/`, `Tests/`).  `1/π` is the
+reciprocal of the `π` bracket by `divBracketByPosBracket (one, one) …`, the lower end first
+raised to `2` by `maxOf` (`piBracket_spec` only gives `0 ≤ lo`; `Real.pi_gt_three`); `2/π` is
+the exact shift of `1/π` (`shift_liftVal₀`, `inv_mul_eq_div`).  The generic `tendsto_divEps` and
+`rounds_of_bracket` moved from `Equiv/Ln10Bracket` to `Equiv/LogBaseFloatBracket` (next to
+`divEps`) so that bracket files need not import the `ln` machinery.  Tests: correctly rounded
+values at 1, 2, 3, 53, 100 bits in nearest/floor/ceiling, precision `0`, the shift relation,
+53-bit decimal strings.

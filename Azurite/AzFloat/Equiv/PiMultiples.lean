@@ -11,7 +11,7 @@ import Azurite.AzFloat.PiMultiples
 import Azurite.AzFloat.Equiv.Pi
 
 /-!
-# Equivalence: `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8` are correctly rounded
+# Equivalence: `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π` are correctly rounded
 
 Each `…PrecRound p mode` equals `liftVal₀ (some v) p mode` for its exact value `v`, for every
 `p ≠ 0` and every mode.  The shifted constants follow from `roundVal_mul_two_zpow`.
@@ -73,6 +73,26 @@ theorem piDiv6PrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode)
   have h := shift_liftVal₀ p mode (piDiv3PrecRound_eq_liftVal₀ p mode) (AzInt.ofInt (-1))
   rw [AzInt.toInt_ofInt, zpow_neg_one, ← div_eq_mul_inv, div_div] at h
   norm_num at h
+  exact h
+
+/-- **`1/π` is correctly rounded.** -/
+theorem oneDivPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    oneDivPiPrecRound p mode = liftVal₀ (some ((Real.pi⁻¹ : ℝ) : EReal)) p mode := by
+  unfold oneDivPiPrecRound liftVal₀
+  split_ifs with hp
+  · exact absurd hp (NeZero.ne p)
+  apply zivLoopCertified_eq_threshold p mode oneDivPiApprox Real.pi⁻¹ (p + zivGuardBits)
+    (by unfold zivGuardBits; omega)
+  intro w hw
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
+    oneDivPiApprox_spec (w := w) (by unfold zivGuardBits at hw; omega)
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
+
+/-- **`2/π` is correctly rounded.** -/
+theorem twoDivPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    twoDivPiPrecRound p mode = liftVal₀ (some ((2 / Real.pi : ℝ) : EReal)) p mode := by
+  have h := shift_liftVal₀ p mode (oneDivPiPrecRound_eq_liftVal₀ p mode) (AzInt.ofInt 1)
+  rw [AzInt.toInt_ofInt, zpow_one, inv_mul_eq_div] at h
   exact h
 
 end Azurite.AzFloat
