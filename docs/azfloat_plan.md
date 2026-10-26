@@ -4495,3 +4495,53 @@ User: precision `0` was never meant to be valid.  It is outside every specificat
 today) returned `(zero, .lt)`.  Now every constant returns `(nan, .eq)` too; no proof changes.
 `PiMultiples.lean` (+ `Equiv/`, `Tests/`) renamed to `PiConstants.lean`, since it holds the
 reciprocals and square roots of `π` as well.
+
+## Pending irrationality proofs (ledger, 2026-10-25)
+
+A `…PrecRound` is fuel-free (`zivLoopCertified`, specification `= liftVal …`) only when its
+value is proven irrational, since a rounding boundary at precision `p` is a dyadic rational.
+The remaining fuel-based loops, with specification "correctly rounded or `NaN`":
+
+- **`e^π`** (`gelfondPrecRound`, `AzFloat/Gelfond.lean`): needs Gelfond's theorem (1929) or
+  Gelfond–Schneider.  Not in Mathlib; Lindemann–Weierstrass does not apply since `π` is not
+  algebraic.  Estimate: the general theorem is comparable to the Lindemann formalization
+  (5–8k lines: Siegel's lemma is in Mathlib; missing are the size/house of algebraic numbers
+  with the Liouville-type lower bound, a Schwarz-lemma estimate for functions with many zeros,
+  and the nonvanishing of the auxiliary exponential polynomial); Gelfond's special case for
+  `e^π` (interpolation at the Gaussian integers, `e^{π(a+bi)} = ±e^{πa}`) is 3–4k lines but
+  shares the hard parts.  A multi-week arc.
+- **AGM values** (`agmPrecRound`, `agmRatPrecRound`, `agmFloatRatPrecRound`), hence
+  **Gauss's constant** and the **lemniscate constant**: need the transcendence of `AGM(a, b)`
+  for distinct algebraic `a, b` (Masser–Wüstholz period transcendence; Chudnovsky in the CM
+  case; Schneider's `K(k)` or Wolfart's hypergeometric values as weaker forms).  Far out of
+  reach; a long-term theory arc.
+
+When a theorem lands, the swap is local: `zivLoop … fuel` →
+`zivLoopCertified` with an `…Approx_isSome_exists` certificate from
+`exists_isSome_of_irrational_threshold`, and `…_eq_or` → `…_eq_liftVal₀`; brackets and width
+functions are unchanged.
+
+## Gelfond's constant `e^π` (DONE 2026-10-25, fuel-based)
+
+User request.  `AzFloat/Gelfond.lean`, `Equiv/Gelfond.lean`, `Tests/Gelfond.lean`.
+`gelfondBracket w`: `expBracketAt` at the lower end `lo` of `piBracket w` (a strict lower end,
+since `lo < π`), upper end `b + ⌈b · (2 ⌈hi − lo⌉)⌉` from `exp π ≤ exp lo · (1 + 2 (π − lo))`
+(`exp_le_exp_mul_one_add`, `π − lo ≤ piEps w ≤ 1/16` by `piEps_le`).  The loop is `zivLoop` with
+fuel `gelfondFuel p = zivFuel (16 (p + 64))` (as the AGM), specification
+`gelfondPrecRound_eq_or`: correctly rounded or `(nan, .eq)`.  No width bound was proven (not
+needed for the fuel version); it would be `expEps π w + O(exp π · piEps w)` when a certificate
+becomes available (Gelfond's theorem — see the pending-irrationality ledger above).  Tests:
+1, 2, 3, 53, 100 bits in nearest/floor/ceiling (120-digit reference), precision `0`, agreement
+with `exp (pi 300)` at 100 bits, the 53-bit decimal string.
+
+## `phi` on the certified Ziv loop (2026-10-25)
+
+User: the bespoke `phi` is not faster than computing `(1 + √5)/2` — it *is* that computation
+(one `sqrtPrecRound` of `5` per level, `truncError` for the next float up, exact halving, one
+`addPrecRound` at the target precision per end); only the termination proof was bespoke
+(`phiApprox_possible`: an explicit distance `≥ 2^(−2p−4)` to every boundary, with `zivLoop` and
+fuel).  Replaced by `zivLoopCertified` with `phiApprox_isSome_exists` from
+`exists_isSome_of_irrational_threshold`, `irrational_phi` (`irrational_sqrt5.ratCast_add` and
+`.div_natCast`) and the width `2^(1 − w)` (`phiApprox_encloses`); the driver moved to
+`AzFloat/Phi.lean` (+ `Equiv/Phi.lean`) since it needs the certificate from `Equiv/Constants`;
+`(nan, .eq)` at precision `0`.  `phiApprox` and its spec stay in `Constants`.

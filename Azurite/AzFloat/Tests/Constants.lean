@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Constants
+import Azurite.AzFloat.Phi
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
@@ -71,6 +72,8 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard sqrt5Over5PrecRound 3 .Ceiling == (F "1/2" 3, .gt)
 
 /-! ## The golden ratio -/
+
+#guard phiPrecRound 0 .Nearest == (nan, .eq)
 
 #guard phiPrecRound 1 .Nearest == (two, .gt)
 #guard phiPrecRound 1 .Floor == (one, .lt)

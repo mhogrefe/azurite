@@ -26,9 +26,8 @@ The quadratic irrationals: `√2`, `√3`, `√5` are square roots of exact floa
 `φ = (1 + √5)/2` is the one constant that is not a single correctly rounded primitive, and goes
 through Ziv's loop (`Ziv.lean`) with the bracket `(1 + l)/2 ≤ φ ≤ (1 + h)/2`, where `l ≤ √5 ≤ h`
 are a truncation of `√5` at the working precision and the next float up; both ends are exact
-floats plus one half, rounded by `addPrecRound`.  Rounding is always possible from the working
-precision `2p + 6` on, because `φ` is irrational and so at distance at least `2^(−2p−4)` from
-every boundary at precision `p` (`phiApprox_possible`).
+floats plus one half, rounded by `addPrecRound` (`phiApprox` here; the loop itself, certified
+by the irrationality of `φ`, is `phiPrecRound` in `Phi.lean`).
 
 Each `cPrecRound p mode` has a companion `c p` rounding to nearest.
 -/
@@ -88,13 +87,5 @@ def phiApprox (w : Nat) : Roundable × Roundable :=
   let hi := (addPrecRound lo.1 (truncError lo) w .Ceiling).1
   (fun p mode => addPrecRound (lo.1 >>> (1 : Nat)) oneHalf p mode,
     fun p mode => addPrecRound (hi >>> (1 : Nat)) oneHalf p mode)
-
-/-- The golden ratio `φ = (1 + √5)/2` rounded to precision `p` with `mode`, and the comparison
-with the exact value. -/
-def phiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  zivLoop phiApprox p mode (zivFuel (2 * p + 6)) (p + zivGuardBits)
-
-/-- The golden ratio rounded to nearest at precision `p`. -/
-def phi (p : Nat) : AzFloat := (phiPrecRound p .Nearest).1
 
 end Azurite.AzFloat

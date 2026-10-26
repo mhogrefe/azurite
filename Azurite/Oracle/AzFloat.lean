@@ -21,6 +21,7 @@ import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Constants
+import Azurite.AzFloat.Phi
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Shift

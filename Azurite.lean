@@ -75,6 +75,7 @@ import Azurite.AzFloat.Equiv.ExpRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.GaussConstant
+import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Lemniscate
 import Azurite.AzFloat.Equiv.Literals
@@ -112,6 +113,7 @@ import Azurite.AzFloat.Equiv.MulAddMulRat
 import Azurite.AzFloat.Equiv.MulRat
 import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.OneDivPiBracket
+import Azurite.AzFloat.Equiv.Phi
 import Azurite.AzFloat.Equiv.Pi
 import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.PiConstants
@@ -144,6 +146,7 @@ import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.GaussConstant
+import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.Literals
@@ -181,6 +184,7 @@ import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.MulRat
 import Azurite.AzFloat.OfString
 import Azurite.AzFloat.OneDivPiBracket
+import Azurite.AzFloat.Phi
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.PiConstants
