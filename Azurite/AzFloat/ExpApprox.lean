@@ -21,6 +21,8 @@ grows with the exponent of `x`, so that the bracket of `r` (`expReduce`) has wid
 the distance `d` to the upper end; a negative `r` goes through `exp (−r)` and a reciprocal,
 and a bracket straddling `0` (width `≤ 2^(−w−10)`) uses `1 + r ≤ exp r ≤ 1 + 2r` directly.
 Finally the shift by `k` is exact, and `expApprox` is the pair of `Roundable`s for the Ziv loop.
+`expRatBracket` handles a rational argument through the float `⌊q⌋_W` below it, the upper end
+widened by `exp (q − ⌊q⌋_W) ≤ 1 + 2^(−w−14)`.
 -/
 
 namespace Azurite.AzFloat
@@ -90,6 +92,27 @@ def expBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
 /-- `expBracket` as a pair of `Roundable`s for the Ziv loop. -/
 def expApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
   let b := expBracket x e w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- `expBracket` at the float's own exponent (`(one, one)` at zero; the callers never ask for
+`NaN` or the infinities). -/
+def expBracketAt (x : AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  match x with
+  | x@(finite _ e _ _ _) => expBracket x e w
+  | zero => (one, one)
+  | _ => (nan, nan)
+
+/-- The bracket of `exp q` for a rational `q`: `exp` of the float `y = ⌊q⌋_W` below `q` at
+`W = w + 16 + size (num q)` (so `q − y ≤ 2^(−w−15)`), the upper end widened by the factor
+`1 + 2^(−w−14) ≥ exp (q − y)`. -/
+def expRatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+  let W := w + 16 + q.num.size
+  let b := expBracketAt (ofAzRatRound q W .Floor).1 w
+  (b.1, (addPrecRound b.2 (b.2 >>> (w + 14 : Nat)) (w + 8) .Ceiling).1)
+
+/-- `expRatBracket` as a pair of `Roundable`s for the Ziv loop. -/
+def expRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let b := expRatBracket q w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

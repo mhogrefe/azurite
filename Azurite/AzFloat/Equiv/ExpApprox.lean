@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.ExpApprox
 import Azurite.AzFloat.Equiv.ExpBracket
+import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzNat.Equiv.LogBase2
 
@@ -21,6 +22,8 @@ import Azurite.AzNat.Equiv.LogBase2
   side, `K = expK w ≤ w + 8`.
 * `expApprox_spec`: the `Roundable` pair encloses `exp x` with width at most `expEps x w`, and
   `expApprox_isSome_exists` is the Ziv certificate (`exp x` is irrational for a finite `x ≠ 0`).
+* `expRatApprox_spec`, `expRatApprox_isSome_exists`: the same for a rational argument, width
+  `expRatEps q w = 2 expEps q w`.
 -/
 
 namespace Azurite.AzFloat
@@ -915,6 +918,169 @@ theorem expApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : 
     (irrational_exp_finiteVal s e hv) (expEps (finiteVal s e m)) (tendsto_expEps _) 64
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := expApprox_spec hw s e hv
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-! ### A rational argument -/
+
+/-- `expBracketAt` encloses `exp x` for a finite float or zero `x`. -/
+theorem expBracketAt_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) {w : ℕ}
+    (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (expBracketAt x w).1.toVal = some (lo : EReal) ∧
+      (expBracketAt x w).2.toVal = some (hi : EReal) ∧
+      lo ≤ Real.exp xv ∧ Real.exp xv ≤ hi ∧ hi - lo ≤ expEps xv w := by
+  cases x with
+  | nan => simp at hx
+  | infinity s => cases s <;> simp at hx
+  | zero =>
+    simp only [toVal_zero, Option.some.injEq] at hx
+    have h0 : xv = 0 := by exact_mod_cast hx.symm
+    subst h0
+    refine ⟨1, 1, toVal_one', toVal_one', by rw [Real.exp_zero], by rw [Real.exp_zero], ?_⟩
+    unfold expEps
+    have : (0 : ℝ) ≤ Real.exp 0 * (80 * ((w : ℝ) + 9)) * (1 / 2 : ℝ) ^ w := by positivity
+    linarith
+  | finite s e q m hv =>
+    rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at hx
+    subst hx
+    exact expBracket_spec (toVal_finite s e q m hv) e (abs_finiteVal_bounds s e hv).2 hw
+
+/-- The width bound of `expRatBracket`. -/
+noncomputable def expRatEps (qv : ℝ) (w : ℕ) : ℝ := 2 * expEps qv w
+
+theorem tendsto_expRatEps (qv : ℝ) :
+    Filter.Tendsto (expRatEps qv) Filter.atTop (nhds 0) := by
+  have h := (tendsto_expEps qv).const_mul 2
+  rw [mul_zero] at h
+  exact h
+
+/-- `expRatBracket q w` encloses `exp q` with width at most `expRatEps q w`. -/
+theorem expRatBracket_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) :
+    ∃ lo hi : ℝ, (expRatBracket q w).1.toVal = some (lo : EReal) ∧
+      (expRatBracket q w).2.toVal = some (hi : EReal) ∧
+      lo ≤ Real.exp (AzRat.toRat q : ℝ) ∧ Real.exp (AzRat.toRat q : ℝ) ≤ hi ∧
+      hi - lo ≤ expRatEps (AzRat.toRat q : ℝ) w := by
+  obtain ⟨W, hW⟩ : ∃ W : ℕ, W = w + 16 + q.num.size := ⟨_, rfl⟩
+  have : NeZero W := ⟨by omega⟩
+  have : NeZero (w + 8) := ⟨by omega⟩
+  simp only [expRatBracket]
+  rw [← hW]
+  obtain ⟨qv, hqv⟩ : ∃ qv : ℝ, qv = (AzRat.toRat q : ℝ) := ⟨_, rfl⟩
+  rw [← hqv]
+  obtain ⟨y, hy, hy1, hy2⟩ := ofAzRatRound_floor_abs q W
+  rw [← hqv] at hy1 hy2
+  generalize (ofAzRatRound q W .Floor).1 = Y at hy
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := expBracketAt_spec hy hw
+  -- `q − y ≤ 2^(−w−15)`
+  obtain ⟨u, hu⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+  have hu0 : 0 < u := by rw [hu]; positivity
+  have hus : u ≤ 1 / 10 ^ 18 := hu ▸ half_pow_small hw
+  have hu1 : u ≤ 1 := by linarith
+  have hqs : |qv| < (2 : ℝ) ^ q.num.size := by
+    have h := abs_toRat_lt q
+    rw [zpow_natCast, ← hqv] at h
+    exact h
+  have hs0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ q.num.size := by positivity
+  have hs1 : (2 : ℝ) ^ q.num.size * (1 / 2 : ℝ) ^ q.num.size = 1 := by
+    rw [one_div_pow, mul_one_div, div_self (by positivity)]
+  have hqs1 : |qv| * (1 / 2 : ℝ) ^ q.num.size ≤ 1 := by
+    have := mul_le_mul_of_nonneg_right hqs.le hs0
+    rw [hs1] at this
+    exact this
+  have hWu : (1 / 2 : ℝ) ^ W = u * (1 / 65536) * (1 / 2 : ℝ) ^ q.num.size := by
+    rw [hW, pow_add, pow_add, hu, show ((1 : ℝ) / 2) ^ 16 = 1 / 65536 by norm_num]
+  have hd : qv - y ≤ u / 32768 := by
+    have e1 : 2 * |qv| * (1 / 2 : ℝ) ^ W = u / 32768 * (|qv| * (1 / 2 : ℝ) ^ q.num.size) := by
+      rw [hWu]; ring
+    have e2 : u / 32768 * (|qv| * (1 / 2 : ℝ) ^ q.num.size) ≤ u / 32768 * 1 :=
+      mul_le_mul_of_nonneg_left hqs1 (by positivity)
+    linarith
+  have hd0 : 0 ≤ qv - y := by linarith
+  -- the widened upper end
+  have hEy := Real.exp_pos y
+  have hhi0 : 0 < hi := lt_of_lt_of_le hEy h2
+  have hshift : ((expBracketAt Y w).2 >>> (w + 14 : ℕ)).toVal
+      = some ((hi * (1 / 2 : ℝ) ^ (w + 14) : ℝ) : EReal) := by
+    show (shiftRight _ (AzNat.ofNat (w + 14)).toAzInt).toVal = _
+    rw [toVal_shiftRight, hhi, Option.map_some, toInt_toAzInt, AzNat.toNat_ofNat,
+      ← EReal.coe_mul, zpow_neg, zpow_natCast, one_div_pow, one_div]
+  have h14 : (1 / 2 : ℝ) ^ (w + 14) = u / 16384 := by
+    rw [pow_add, hu, show ((1 : ℝ) / 2) ^ 14 = 1 / 16384 by norm_num]; ring
+  have h8 : (1 / 2 : ℝ) ^ (w + 8) = u / 256 := by
+    rw [pow_add, hu, show ((1 : ℝ) / 2) ^ 8 = 1 / 256 by norm_num]; ring
+  rw [h14] at hshift
+  obtain ⟨hi', hhi', hc⟩ := addCeiling_err hhi hshift (w + 8) (by positivity)
+  refine ⟨lo, hi', hlo, hhi', h1.trans (Real.exp_le_exp.mpr hy1), ?_, ?_⟩
+  · have e1 : Real.exp qv ≤ Real.exp y * (1 + 2 * (qv - y)) :=
+      exp_le_exp_mul_one_add hy1 (by linarith)
+    have e2 : Real.exp y * (1 + 2 * (qv - y)) ≤ hi * (1 + u / 16384) :=
+      mul_le_mul h2 (by linarith) (by linarith) hhi0.le
+    have e3 := hc.ge
+    linarith
+  · have e1 := hc.le
+    rw [h8] at e1
+    -- `hi ≤ 3 exp y` from the width bound at `y`
+    have hf := forty_mul_half_pow_le hw
+    rw [← hu] at hf
+    have hhi3 : hi ≤ 3 * Real.exp y := by
+      unfold expEps at h3
+      rw [← hu] at h3
+      have : Real.exp y * (80 * ((w : ℝ) + 9)) * u ≤ Real.exp y * 2 := by
+        rw [mul_assoc]
+        exact mul_le_mul_of_nonneg_left (by linarith) hEy.le
+      linarith
+    have hw0 : (0 : ℝ) ≤ (w : ℝ) + 9 := by positivity
+    have hEq : Real.exp y ≤ Real.exp qv := Real.exp_le_exp.mpr hy1
+    unfold expRatEps expEps
+    rw [← hu]
+    unfold expEps at h3
+    rw [← hu] at h3
+    have hmono : Real.exp y * (80 * ((w : ℝ) + 9)) * u ≤ Real.exp qv * (80 * ((w : ℝ) + 9)) * u :=
+      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hEq (by positivity)) hu0.le
+    have hsmall : 3 * Real.exp y * (u / 64) ≤ Real.exp qv * (80 * ((w : ℝ) + 9)) * u := by
+      have : Real.exp y * (3 / 64) ≤ Real.exp qv * (80 * ((w : ℝ) + 9)) :=
+        mul_le_mul hEq (by linarith) (by norm_num) (Real.exp_pos _).le
+      nlinarith
+    have hhuu : hi * u * u ≤ hi * u * 1 := mul_le_mul_of_nonneg_left hu1 (by positivity)
+    have hhi4 : hi' ≤ hi + hi * (u / 64) := by nlinarith
+    have hhi5 : hi * (u / 64) ≤ 3 * Real.exp y * (u / 64) :=
+      mul_le_mul_of_nonneg_right hhi3 (by positivity)
+    linarith
+
+/-- `exp q` is irrational for a rational `q ≠ 0`. -/
+theorem irrational_exp_toRat (q : AzRat) (h0 : q.num ≠ 0) :
+    Irrational (Real.exp (AzRat.toRat q : ℝ)) :=
+  irrational_exp_rat (q := AzRat.toRat q)
+    (fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp (by rw [h, Rat.cast_zero])))
+
+/-- `expRatApprox` is a strict enclosure of `exp q` with width at most `expRatEps q w`. -/
+theorem expRatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0) :
+    ∃ lv hv : ℝ, Rounds (expRatApprox q w).1 lv ∧ Rounds (expRatApprox q w).2 hv ∧
+      lv < Real.exp (AzRat.toRat q : ℝ) ∧ Real.exp (AzRat.toRat q : ℝ) < hv ∧
+      hv - lv ≤ expRatEps (AzRat.toRat q : ℝ) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := expRatBracket_spec hw q
+  have hirr := irrational_exp_toRat q h0
+  refine ⟨lo, hi, ?_, ?_, ?_, ?_, h3⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR
+    exact hR
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlo
+    exact lt_of_le_of_ne h1 (by rw [hr]; exact (hirr.ne_rat r).symm)
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
+    exact lt_of_le_of_ne h2 (by rw [hr]; exact hirr.ne_rat r)
+
+/-- The Ziv certificate for `exp q`: at some working precision `w₀ · 2^f`, rounding is
+possible. -/
+theorem expRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (h0 : q.num ≠ 0) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (expRatApprox q (w₀ * 2 ^ f)).1 (expRatApprox q (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (expRatApprox q) (irrational_exp_toRat q h0)
+    (expRatEps (AzRat.toRat q : ℝ)) (tendsto_expRatEps _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := expRatApprox_spec hw q h0
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 end Azurite.AzFloat

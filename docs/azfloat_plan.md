@@ -4359,3 +4359,17 @@ too — use `rw [neg_mul_eq_neg_mul, ← hkr0]`.  `ring_nf` under `|·|` is slow
 digits minus the integer digits — the first draft was off by `10`); `exp 0` and tiny arguments
 compare with `F "1" 53`, not `one` (precision `1`); `e^(7/3)` with a 100-bit argument is tested
 at 60 bits only (the argument is not exact).
+
+## `exp` of a rational (DONE 2026-10-25, fuel-free)
+
+`AzFloat/ExpRat.lean`, `Equiv/ExpRat.lean`, `Tests/ExpRat.lean`; the bracket `expRatBracket`/
+`expRatApprox` in `ExpApprox.lean`/`Equiv/` (next to `expBracketAt`, `expBracket` at the float's
+own exponent, `(one, one)` at zero).  Same recipe as `lnRat`: one float `y = ⌊q⌋_W` below `q`
+(`ofAzRatRound q W .Floor`) at `W = w + 16 + size (num q)`, so `q − y ≤ 2|q| 2^(−W) ≤ 2^(−w−15)`
+(`abs_toRat_lt`), one run of `expBracket` at `y`, and the upper end widened by the exact factor
+`1 + 2^(−w−14) ≥ exp (q − y)` (`exp d ≤ 1 + 2d`) as `⌈hi + (hi >>> (w + 14))⌉_{w+8}` — no second
+`exp`.  Width `≤ expRatEps q w = 2 expEps q w` (`hi ≤ 3 exp y` from `40 (w + 9) 2^(−w) ≤ 1`).
+Irrationality `irrational_exp_toRat` (`q.num ≠ 0`); `exp 0 = setPrecRound one p mode`; `p = 0`
+first.  Tests: specials, agreement with the float `exp` on dyadic rationals, `e^(1/3)`,
+`e^(22/7)`, `e^(−7/3)`, `e^(−1/5)` at 150 bits in several modes, `e^(123456.789)` (a 53617-digit
+reference, exponent `≈ 2^178104`; the reduction works at `W ≈ w + 43` bits) and `exp (ln q)`.
