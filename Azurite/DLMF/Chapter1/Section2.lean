@@ -34,6 +34,12 @@ import Mathlib.LinearAlgebra.Matrix.IsDiag
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.LinearAlgebra.Matrix.Symmetric
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Mathlib.Analysis.Calculus.Deriv.Mul
+import Mathlib.Analysis.Calculus.Deriv.Prod
+import Mathlib.Analysis.Calculus.FDeriv.Analytic
+import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Topology.Instances.Matrix
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.Analysis.SpecialFunctions.Exponential
@@ -147,7 +153,9 @@ thin restatement of a Mathlib lemma (named in the docstring) or proven here.  Th
   similarity), `dlmf_1_2_74_roots`, `dlmf_1_2_75_roots` (for every `A`, with multiplicities;
   `Matrix.det_eq_prod_roots_charpoly`, `trace_eq_sum_roots_charpoly`).
 * 1.2.76–1.2.77 `dlmf_1_2_76`, `dlmf_1_2_76_apply` (the exponential series, in norm and
-  entrywise), `etr`, `dlmf_1_2_77` (`det(exp A) = exp(tr A)` for non-defective `A`).
+  entrywise), `etr`, `dlmf_1_2_77` (`det(exp A) = exp(tr A)` for non-defective `A`),
+  `dlmf_1_2_77_general` (for every square matrix, by Jacobi's formula along `t ↦ exp(tA)`:
+  `detCML`, `hasDerivAt_det_of_hasDerivAt`, `hasDerivAt_exp_smul_pi`, `hasDerivAt_det_exp_smul`).
 
 Mathlib's `Ring.choose z k` agrees with `Nat.choose` on the natural numbers
 (`Ring.choose_natCast`), so the complex-argument statements specialize to the integer ones.
@@ -1432,7 +1440,7 @@ noncomputable def etr {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : ℂ := Comple
 /-- **DLMF 1.2.77**: for a non-defective matrix, `det(exp A) = exp(tr A) = etr(A)`
 (from 1.2.73–1.2.75: `Matrix.exp_conj`, `Matrix.exp_diagonal`, `Matrix.det_conj`,
 `Complex.exp_sum`).  The DLMF remarks that the formula holds for every square matrix
-(Hall 2015, Thm 2.12); that general case is not formalized here. -/
+(Hall 2015, Thm 2.12): that is `dlmf_1_2_77_general` below. -/
 theorem dlmf_1_2_77 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsNonDefective A) :
     (NormedSpace.exp A).det = Complex.exp A.trace ∧ Complex.exp A.trace = etr A := by
   refine ⟨?_, rfl⟩
@@ -1446,5 +1454,90 @@ theorem dlmf_1_2_77 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsNonDefect
     ← hΛ.diagonal_diag, Matrix.exp_diagonal, det_diagonal, trace_diagonal, Complex.exp_sum]
   refine prod_congr rfl fun i _ => ?_
   rw [Pi.coe_exp, Complex.exp_eq_exp_ℂ]
+
+/-! #### `det(exp A) = exp(tr A)` for every square matrix
+
+Jacobi's formula along the curve `t ↦ exp(tA)`: the determinant is a continuous multilinear
+function of the rows, so `d/dt det M(t) = ∑ᵢ det(M with row i replaced by M'ᵢ)`; with
+`M' = A M` each term is `aᵢᵢ det M` (`Matrix.det_updateRow_sum`), hence
+`f(t) = det(exp(tA))` solves `f' = tr(A) f`, `f(0) = 1`, and `f(t) exp(−t tr A)` is constant. -/
+
+/-- The determinant as a continuous multilinear map of the rows (`Matrix.detRowAlternating`). -/
+noncomputable def detCML (n : ℕ) : ContinuousMultilinearMap ℂ (fun _ : Fin n => Fin n → ℂ) ℂ :=
+  { ((detRowAlternating : (Fin n → ℂ) [⋀^Fin n]→ₗ[ℂ] ℂ).toMultilinearMap :
+      MultilinearMap ℂ (fun _ : Fin n => Fin n → ℂ) ℂ) with
+    cont := Continuous.matrix_det continuous_id }
+
+theorem detCML_apply {n : ℕ} (M : Matrix (Fin n) (Fin n) ℂ) : detCML n M = M.det :=
+  rfl
+
+/-- The row `i` of `A * M` is the combination `∑ₖ aᵢₖ Mₖ` of the rows of `M`. -/
+theorem mul_row_eq_sum {n : ℕ} (A M : Matrix (Fin n) (Fin n) ℂ) (i : Fin n) :
+    (A * M) i = ∑ k, A i k • M k := by
+  funext j
+  rw [Matrix.mul_apply, Finset.sum_apply]
+  rfl
+
+/-- Jacobi's formula for `M' = A M`: if the rows of `M` move with velocity `A M`, the
+determinant moves with velocity `tr(A) det M`. -/
+theorem hasDerivAt_det_of_hasDerivAt {n : ℕ} {M : ℂ → Fin n → Fin n → ℂ}
+    (A : Matrix (Fin n) (Fin n) ℂ) {t : ℂ}
+    (hM : HasDerivAt M (Matrix.of.symm (A * Matrix.of (M t))) t) :
+    HasDerivAt (fun u => Matrix.det (Matrix.of (M u)))
+      (A.trace * Matrix.det (Matrix.of (M t))) t := by
+  have h := ((detCML n).hasFDerivAt (M t)).comp_hasDerivAt t hM
+  refine h.congr_deriv ?_
+  rw [ContinuousMultilinearMap.linearDeriv_apply]
+  change ∑ i, (Matrix.updateRow (Matrix.of (M t)) i ((A * Matrix.of (M t)) i)).det = _
+  simp_rw [mul_row_eq_sum, det_updateRow_sum, smul_eq_mul, ← Finset.sum_mul]
+  rfl
+
+section L2OpNorm
+
+open scoped Matrix.Norms.L2Operator
+
+/-- `t ↦ exp(tA)` is differentiable entrywise with derivative `A exp(tA)`
+(`hasDerivAt_exp_smul_const'` under the `ℓ²` operator norm, projected to each entry). -/
+theorem hasDerivAt_exp_smul_pi {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (t : ℂ) :
+    HasDerivAt (fun u : ℂ => Matrix.of.symm (NormedSpace.exp (u • A)))
+      (Matrix.of.symm (A * NormedSpace.exp (t • A))) t := by
+  have h : HasDerivAt (fun u : ℂ => NormedSpace.exp (u • A)) (A * NormedSpace.exp (t • A)) t :=
+    hasDerivAt_exp_smul_const' A t
+  refine hasDerivAt_pi.mpr fun i => hasDerivAt_pi.mpr fun j => ?_
+  let p : Matrix (Fin n) (Fin n) ℂ →ₗ[ℂ] ℂ :=
+    { toFun := fun M => M i j, map_add' := fun _ _ => rfl, map_smul' := fun _ _ => rfl }
+  exact (LinearMap.toContinuousLinearMap p).hasFDerivAt.comp_hasDerivAt t h
+
+end L2OpNorm
+
+/-- `f(t) = det(exp(tA))` satisfies `f' = tr(A) f`. -/
+theorem hasDerivAt_det_exp_smul {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (t : ℂ) :
+    HasDerivAt (fun u : ℂ => (NormedSpace.exp (u • A)).det)
+      (A.trace * (NormedSpace.exp (t • A)).det) t :=
+  hasDerivAt_det_of_hasDerivAt A (hasDerivAt_exp_smul_pi A t)
+
+/-- **DLMF 1.2.77**, the remark: `det(exp A) = exp(tr A)` holds for every square matrix, not
+only the non-defective ones (Hall 2015, Thm 2.12).  Proof by Jacobi's formula:
+`t ↦ det(exp(tA)) exp(−t tr A)` has zero derivative, so it is constant (`is_const_of_deriv_eq_zero`)
+and equal to its value `1` at `t = 0`. -/
+theorem dlmf_1_2_77_general {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    (NormedSpace.exp A).det = Complex.exp A.trace := by
+  set g : ℂ → ℂ := fun t => (NormedSpace.exp (t • A)).det * Complex.exp (-(t * A.trace)) with hg
+  have hd : ∀ t, HasDerivAt g 0 t := by
+    intro t
+    have h1 := hasDerivAt_det_exp_smul A t
+    have h2 : HasDerivAt (fun u : ℂ => Complex.exp (-(u * A.trace)))
+        (Complex.exp (-(t * A.trace)) * -A.trace) t := by
+      have := ((hasDerivAt_id t).mul_const A.trace).neg.cexp
+      simpa using this
+    have := h1.mul h2
+    refine this.congr_deriv ?_
+    ring
+  have hconst := is_const_of_deriv_eq_zero (fun t => (hd t).differentiableAt)
+    (fun t => (hd t).deriv) 1 0
+  simp only [hg, one_smul, zero_smul, NormedSpace.exp_zero, det_one, zero_mul, neg_zero,
+    Complex.exp_zero, mul_one, one_mul] at hconst
+  rw [Complex.exp_neg, mul_inv_eq_one₀ (Complex.exp_ne_zero _)] at hconst
+  exact hconst
 
 end Azurite.DLMF
