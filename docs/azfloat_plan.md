@@ -4513,6 +4513,8 @@ The remaining fuel-based loops, with specification "correctly rounded or `NaN`":
 - **`e^(π √163)`** (`ramanujanPrecRound`, `AzFloat/Ramanujan.lean`): the same theorem
   (Gelfond–Schneider).  `Transcendental/Ramanujan.lean` proves it is not an integer, which is
   weaker than irrationality.
+- **`2^√2`** (`gelfondSchneiderPrecRound`, `AzFloat/GelfondSchneider.lean`, 2026-10-26): the
+  Gelfond–Schneider theorem itself (`α = 2`, `β = √2`); the same missing formalization.
 - **AGM values** (`agmPrecRound`, `agmRatPrecRound`, `agmFloatRatPrecRound`), hence
   **Gauss's constant** and the **lemniscate constant**: need the transcendence of `AGM(a, b)`
   for distinct algebraic `a, b` (Masser–Wüstholz period transcendence; Chudnovsky in the CM
@@ -4741,3 +4743,18 @@ certified loop (`irrational_two_rpow_sub_one_toRat` from `irrational_two_rpow_to
 exact `2^n − 1`, agreement with `exp2M1PrecRound` on six dyadics, ten non-dyadic arguments at 150
 bits against 200-digit references including `±10^(−6)` and `±10^(−60)` (the compensation at
 `e = −199`), directed modes.
+
+## The Gelfond–Schneider constant `2^√2` (DONE 2026-10-26, fuel-based)
+
+User: add `2^√2`.  `AzFloat/GelfondSchneider.lean` + `Equiv/` + `Tests/`.  `sqrt2Ln2Bracket w`
+= `[⌊√2⌋_w · lo₂, ⌈√2⌉_w · hi₂]` with `[lo₂, hi₂] = ln2Bracket w` (`sqrtFloor_err`/
+`sqrtCeiling_err` at `two`, `mulFloor_err`/`mulCeiling_err`), and `gelfondSchneiderBracket =
+expOfBracket` of it, as for `e^π`.  The fuel-based pattern needs only a strict enclosure of
+width `≤ 1` (`expOfBracket_spec`): the lower end is strict because the float below `√2` is a
+rational (`exists_rat_of_toVal`) and `√2` is irrational (`irrational_sqrt_two`); the width bound
+uses `7/5 < √2 < 3/2`, `ln 2` within `10^(−9)`, and `2^(−w) ≤ 10^(−18)`, giving ends in
+`[0.88, 1.13]`.  Spec `gelfondSchneiderPrecRound_eq_or` (`= liftVal₀ (some (2^√2))` or
+`(nan, .eq)`) through `two_rpow_eq_exp` and `zivLoop_eq_of_ne_nan_threshold`.  Irrationality
+pending: the Gelfond–Schneider theorem itself (ledger entry added).  Tests: 1, 2, 3, 53, 100
+bits in three modes against a 130-digit evaluation, agreement with `exp2 (sqrt2 300)`, decimal
+string.
