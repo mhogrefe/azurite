@@ -4373,3 +4373,28 @@ Irrationality `irrational_exp_toRat` (`q.num ≠ 0`); `exp 0 = setPrecRound one 
 first.  Tests: specials, agreement with the float `exp` on dyadic rationals, `e^(1/3)`,
 `e^(22/7)`, `e^(−7/3)`, `e^(−1/5)` at 150 bits in several modes, `e^(123456.789)` (a 53617-digit
 reference, exponent `≈ 2^178104`; the reduction works at `W ≈ w + 43` bits) and `exp (ln q)`.
+
+## `exp x − 1` for `AzFloat` (DONE 2026-10-25, fuel-free)
+
+`AzFloat/ExpM1.lean`, `Equiv/ExpM1.lean`, `Tests/ExpM1.lean`; `expM1Comp`/`expM1Bracket`/
+`expM1Approx` in `ExpApprox.lean`/`Equiv/`.  **Cancellation.** `exp x − 1 ≈ x` for small `x`,
+so a bracket of `exp x` of width `≈ 2^(−w)` loses `−e` bits for an argument of exponent
+`e ≤ 0`; `expM1Bracket` runs `expBracket` at `w + c`, `c = expM1Comp e = max(−e, 0)`, and
+subtracts `one` with `subFloor_abs`/`subCeiling_abs` (the ends may be negative).  Width
+`≤ 2D + |exp x − 1| 2^(−w)`, `D = exp x · 80 (w + c + 9) 2^(−w)` — the eps function
+`expM1Eps x c w` carries `|exp x − 1|` and `|x|` as constants, which is fine for `tendsto`.
+**Tiny arguments** (`w ≤ c`, i.e. `|x| < 2^e ≤ 2^(−w)`): no series, no `ln 2`: the bracket is
+`[x, ⌈x + |x| <<< e⌉_{w+8}]` from `x ≤ exp x − 1 ≤ x + x² ≤ x + |x| 2^e`
+(`Real.add_one_le_exp`, `Real.abs_exp_sub_one_sub_id_le`), width `≤ 2|x| 2^(−w)`; the lower end
+is `x` itself (strict since `exp x − 1` is irrational).  At `53` bits `exp (±2^(−200)) − 1`
+rounds to the argument from below in one Ziv level; `2^(−200)` at `300` bits (`w = 364 > c =
+200`) takes the compensated path.  Irrationality: `(irrational_exp_finiteVal …).sub_intCast 1`.
+Special values: `NaN`, `+∞ ↦ +∞`, `−∞ ↦ setPrecRound (−one) p mode` (= `−1` at precision `p`),
+`0 ↦ (zero, .eq)` (no precision check needed).  Proof note: `rw [toVal_abs, hx, Option.map_some,
+← EReal.coe_neg]; congr 1` proves `x.abs.toVal = some |xv|` (the `max`/`abs` forms are defeq);
+`abs_of_nonneg (by linarith)` picks the first `|·|` in the goal — give the term explicitly.
+Tests: specials; `e − 1`, `1/e − 1`, `exp (±2^(−30)) − 1`, `exp (1/1024) − 1`,
+`exp (±100) − 1`, `exp (±2^(−200)) − 1` at 150/300 bits in several modes (200-digit decimal
+references); tiny path at 53 bits with the `.lt` orderings; agreement with `exp x − 1` at a
+higher precision; `expM1 (lnP1 x) ≈ x` (for a non-dyadic `x` compare with the 53-bit argument
+re-rounded, not with the exact rational).

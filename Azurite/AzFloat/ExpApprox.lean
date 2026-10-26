@@ -22,7 +22,9 @@ the distance `d` to the upper end; a negative `r` goes through `exp (−r)` and 
 and a bracket straddling `0` (width `≤ 2^(−w−10)`) uses `1 + r ≤ exp r ≤ 1 + 2r` directly.
 Finally the shift by `k` is exact, and `expApprox` is the pair of `Roundable`s for the Ziv loop.
 `expRatBracket` handles a rational argument through the float `⌊q⌋_W` below it, the upper end
-widened by `exp (q − ⌊q⌋_W) ≤ 1 + 2^(−w−14)`.
+widened by `exp (q − ⌊q⌋_W) ≤ 1 + 2^(−w−14)`.  `expM1Bracket` brackets `exp x − 1`: the
+working precision is raised by `max(−e, 0)` against the cancellation, and a tiny `x`
+(`|x| < 2^(−w)`) is enclosed by `[x, x + |x| 2^e]` without any series.
 -/
 
 namespace Azurite.AzFloat
@@ -113,6 +115,25 @@ def expRatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
 /-- `expRatBracket` as a pair of `Roundable`s for the Ziv loop. -/
 def expRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
   let b := expRatBracket q w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The compensation `max(−e, 0)` for the cancellation in `exp x − 1` at exponent `e`. -/
+def expM1Comp (e : AzInt) : Nat := if e.sign then 0 else e.abs.toNat
+
+/-- The bracket of `exp x − 1` for a finite float `x` of exponent `e`: when `w ≤ max(−e, 0)`
+(so `|x| < 2^e ≤ 2^(−w)`) the bracket `[x, ⌈x + |x| · 2^e⌉]` from `x ≤ exp x − 1 ≤ x + x²`;
+otherwise `expBracket` at the compensated working precision `w + max(−e, 0)` with `1`
+subtracted outward. -/
+def expM1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+  let c := expM1Comp e
+  if w ≤ c then (x, (addPrecRound x (x.abs <<< e) (w + 8) .Ceiling).1)
+  else
+    let b := expBracket x e (w + c)
+    ((subPrecRound b.1 one (w + c + 8) .Floor).1, (subPrecRound b.2 one (w + c + 8) .Ceiling).1)
+
+/-- `expM1Bracket` as a pair of `Roundable`s for the Ziv loop. -/
+def expM1Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  let b := expM1Bracket x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat
