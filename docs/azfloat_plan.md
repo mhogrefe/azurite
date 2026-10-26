@@ -4439,3 +4439,17 @@ unifies); generic `tendsto_divEps` and `rounds_of_bracket` added.  Irrationality
 `.inv` for the reciprocals.  Tests: the correctly rounded values at 1, 2, 53, 100 bits in
 nearest/floor/ceiling (exact rationals from an 80-digit decimal evaluation), precision `0`,
 agreement with `exp`, `lnRat`, `ln`, `logBase`, `log2`, and the 53-bit decimal strings.
+
+## Constants `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8` (DONE 2026-10-25, fuel-free)
+
+User request.  `AzFloat/PiDiv3Bracket.lean` + `Equiv/`, `AzFloat/PiMultiples.lean` + `Equiv/` +
+`Tests/`.  `τ`, `π/2`, `π/4`, `π/8` are exact shifts of `piPrecRound p mode` (both the float and
+the comparison): `shift_liftVal₀` from `roundVal_mul_two_zpow` (the float set is scale-invariant),
+with the shifts written as `<<< AzInt.ofInt k` so that `AzInt.toInt_ofInt` gives the exponent
+directly.  `π/3` divides the `π` bracket by `3` with `divBracketByInt` (its spec needs `(w := w)`
+pinned, otherwise the `NeZero` instance is stuck) and runs the Ziv loop; `π/6` is the exact
+shift of `π/3`.  Irrationality: `irrational_pi.div_natCast`.  Tests: correctly rounded values at
+1, 2, 3, 53, 100 bits in nearest/floor/ceiling (exact rationals from a 100-digit `π`),
+precision `0`, the shift relations, 53-bit decimal strings (the 53-bit `π/3` is
+`1.0471975511965979`, one ulp above the double `math.pi/3`: dividing the rounded `π` by `3`
+is not the correctly rounded `π/3`).
