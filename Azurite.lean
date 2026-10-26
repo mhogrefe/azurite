@@ -65,6 +65,9 @@ import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
+import Azurite.AzFloat.Equiv.Exp
+import Azurite.AzFloat.Equiv.ExpApprox
+import Azurite.AzFloat.Equiv.ExpBracket
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.GaussConstant
@@ -122,6 +125,9 @@ import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
+import Azurite.AzFloat.Exp
+import Azurite.AzFloat.ExpApprox
+import Azurite.AzFloat.ExpBracket
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.GaussConstant
@@ -462,6 +468,7 @@ import Azurite.AzNat.Equiv.DivRound
 import Azurite.AzNat.Equiv.Divisors
 import Azurite.AzNat.Equiv.DoubleFactorial
 import Azurite.AzNat.Equiv.ExactDivOdd
+import Azurite.AzNat.Equiv.ExpSplit
 import Azurite.AzNat.Equiv.Factorial
 import Azurite.AzNat.Equiv.Fibonacci
 import Azurite.AzNat.Equiv.Garner
@@ -537,6 +544,7 @@ import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
 import Azurite.AzNat.ExactDivOdd
+import Azurite.AzNat.ExpSplit
 import Azurite.AzNat.Factorial
 import Azurite.AzNat.Fibonacci
 import Azurite.AzNat.Garner

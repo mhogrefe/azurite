@@ -20,6 +20,7 @@ import Azurite.AzFloat.Tests.Basic
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
+import Azurite.AzFloat.Tests.Exp
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.Float64Emulate
 import Azurite.AzFloat.Tests.GaussConstant
@@ -70,6 +71,7 @@ import Azurite.AzNat.Tests.Conversion
 import Azurite.AzNat.Tests.Div
 import Azurite.AzNat.Tests.DivNewton
 import Azurite.AzNat.Tests.DivRound
+import Azurite.AzNat.Tests.ExpSplit
 import Azurite.AzNat.Tests.Gcd
 import Azurite.AzNat.Tests.GetBits
 import Azurite.AzNat.Tests.IsMultipleOfPow2

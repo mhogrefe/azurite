@@ -4316,3 +4316,46 @@ crosswise `log_{25/9} (27/125) = −3/2`, with 2-exponents `log_{50/9} (2500/81)
 `log_{50/9} (250/27)` (odd parts disagree); agreement with all other versions; `log₃ 7`,
 `log_{1/3} (1/7)`, `log_{3/2} 2`, `log_{2/3} (1/2)`, `log₁₀ (1/3)`, `log_{1/10} 3` and the base
 `1 + 2^(−20)`.
+
+## `exp` for `AzFloat` (DONE 2026-10-25, fuel-free)
+
+`AzNat/ExpSplit.lean` + `Equiv/` + `Tests/`, `AzFloat/ExpBracket.lean` + `Equiv/`,
+`AzFloat/ExpApprox.lean` + `Equiv/`, `AzFloat/Exp.lean` + `Equiv/Exp.lean` + `Tests/Exp.lean`.
+**Strategy** (user approved; MCA §4.3.1 argument reduction + §4.9 bit-burst): `x = k ln 2 + r`
+with `k = ⌊⌊x / ln 2⌋⌋` (`divPrecRound x (ln2Bracket W).1 W .Floor` truncated by
+`truncToAzInt`, itself `floorScaled x 0`: shifts of the significand) at
+`W = expWork e w = w + 16 + max(e, 0)`; `|k − x/ln 2| < 1.01` (the `ln 2` bracket has width
+`8·2^(−W)`, lower end `≥ 1/5`, and `|x| < 2^e`), so `|r| ≤ 0.71 < 3/4`; the bracket of `r` is
+`x ∓ [⌊|k| lo₂⌋, ⌈|k| hi₂⌉]` by the sign of `k`, width `≤ 2^(−w−10)` (`expReduce_spec`, the
+numeric part in `reduce_bounds` with `δ ≤ 1/10000` — `1/1000` was too loose for the `3/4`
+margin).  **Small argument** `0 ≤ rl ≤ rh ≤ 3/4`: `M = floorScaled rl (2^K)`, `K = expK w =
+size (w + 8)` (so `2^K > w + 8`), `expDyadicBracket M K w` on `t = M/2^(2^K)` — chunks of `2^i`
+bits at scale `2^(−2^(i+1))`, each `exp (p/2^s)` with `p/2^s ≤ 2^(−2^i)` summed exactly by
+`AzNat.expNumDen` with `expTermCount` terms (tail `≤ 2^(−w−1)` from `n! ≥ (n/2)^(n/2)`,
+`Real.exp_bound`), bracketed by `natQuotBracket` (= `seriesBracket`: directed division, no GCD),
+shifted and widened by the tail; the chunk brackets multiplied with directed rounding
+(`(1 ± 8u)^(K+1)`, `u = 2^(−w)`); the upper end times `⌈1 + 2⌈rh − t⌉⌉` since `exp d ≤ 1 + 2d`
+(`Real.abs_exp_sub_one_sub_id_le`).  **Signs** (`expSignedBracket`): `rl ≥ 0` directly; `rh ≤ 0`
+through `exp (−r)` and `⌊1/hi⌋`, `⌈1/lo⌉` (`divFloor_err`/`divCeiling_err` with `one`;
+`one_div_ge_of_le`, `one_div_le_of_ge`); straddling `0` (width `≤ 2^(−w−10)`) through
+`⌊1 + rl⌋ ≤ exp r ≤ ⌈1 + 2 rh⌉`.  Uniform result: relative errors `40 (K + 1) u` either side.
+**Shift** by `k` exact (`toVal_shiftLeft_of_toVal`, `2^k = exp (k ln 2)` by
+`Real.rpow_def_of_pos`), width `≤ expEps x w = exp x · 80 (w + 9) · 2^(−w)` (`tendsto_expEps`).
+**Ziv**: `exp x` is irrational for every finite `x` (`irrational_exp_rat` on the rational value,
+`x ≠ 0` by `finiteVal_ne_zero`), strict enclosure from `lv ≤ exp x` and `lv` rational
+(`exists_rat_of_toVal`, `Irrational.ne_rat`); `expApprox_isSome_exists`; `expPrecRound` from
+`p + 64`.  Special values: `exp NaN = NaN`, `exp ∞ = ∞`, `exp (−∞) = 0`, `exp 0 = setPrecRound one
+p mode` (`= 1` exactly, at precision `p`; `(nan, .eq)` for `p = 0`).
+**Proof notes.** The per-declaration heartbeat budget (not any single step) ran out in the long
+real-arithmetic proofs: `set_option maxHeartbeats 1000000 in` on `expReduce_spec`,
+`expSmallBracket_spec`, `expSignedBracket_spec`.  Avoid `set` for abbreviations in goals that
+mention `expReduce x (expWork e w)` (defeq abstraction is slow) — use `obtain ⟨u, hu⟩ : ∃ u, u =
+… := ⟨_, rfl⟩` and `generalize`.  `rw [hkr0]` with `hkr0 : kr = −|kr|` rewrites inside `|kr|`
+too — use `rw [neg_mul_eq_neg_mul, ← hkr0]`.  `ring_nf` under `|·|` is slow: `sub_add_sub_cancel`.
+`CeilOf`/`FloorOf` are defs — rewrite `(1/2)^(w+8)` only after `.le`/`.ge`.  Products like
+`(1 − u/1024)(1 − 9(K+1)u) ≥ 1 − 10(K+1)u` go through `nlinarith` given the monomial facts
+`0 ≤ K u`, `0 ≤ K u u`, `K u u ≤ K u`, `u u ≤ u` stated once.  Tests: references from a 90-digit
+`decimal` evaluation in Python (the `R digits zeros` helper; the zero count is the number of
+digits minus the integer digits — the first draft was off by `10`); `exp 0` and tiny arguments
+compare with `F "1" 53`, not `one` (precision `1`); `e^(7/3)` with a 100-bit argument is tested
+at 60 bits only (the argument is not exact).
