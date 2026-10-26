@@ -21,13 +21,21 @@ import Azurite.AzFloat.Equiv.Exp2Rat
   rational `y`.
 * `lnBaseMulBracket_spec` (width `mulLnEps e eb w = lnEps (|eb| + 16 + max(e, 0)) w + 2^(−w)`:
   the `|x| ≤ 2^max(e, 0)` factor is absorbed by the `expWork` precision), `mulLnEps_le_one` from
-  `128 + max(e, 0) + |eb|` bits (`two_pow_46_mul_pow5_le`), `powBaseBracket_spec` (width
+  `136 + max(e, 0) + |eb|` bits (`two_pow_54_mul_pow5_le`, `mulLnEps_le_inv256`),
+  `powBaseBracket_spec` (width
   `powBaseEps`).
 * `powBaseExact?_some` (`u^x = r^n`) and `irrational_of_powBaseExact?_none`,
   `powBaseApprox_spec`, `powBaseApprox_isSome_exists`; and the rational versions
   `lnBaseMulRatBracket_spec`, `powBaseRatBracket_spec`, `powBaseRatExact?_some`,
   `irrational_of_powBaseRatExact?_none`, `powBaseRatApprox_spec`,
   `powBaseRatApprox_isSome_exists`.
+* `u^x − 1`: `mulLnEps_comp_le` (the compensated bracket of `x ln u` has width `≤ 2^e / 4`),
+  `powBaseM1Bracket_spec` (through `expM1OfBracket_spec_of_bounds` at the exponent `e + 6`,
+  width `powBaseM1Eps`), `powBaseM1Approx_spec`, `powBaseM1Approx_isSome_exists`,
+  `irrational_sub_one_of_powBaseExact?_none`; and for `u^q − 1`: `powBaseM1RatBracket_spec`
+  (the exponent `exp2M1RatExp q + 6`, `mulLnEps_comp_le_of` with `B = |e| + size (num q)`),
+  `powBaseM1RatApprox_spec`, `powBaseM1RatApprox_isSome_exists`,
+  `irrational_sub_one_of_powBaseRatExact?_none`.
 -/
 
 namespace Azurite.AzFloat
@@ -310,8 +318,8 @@ theorem lnBaseMulBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv 
 
 /-! ### The width bound below `1` -/
 
-/-- `2^46 w^5 ≤ 2^w` from `w = 128`. -/
-theorem two_pow_46_mul_pow5_le {w : ℕ} (hw : 128 ≤ w) : 2 ^ 46 * w ^ 5 ≤ 2 ^ w := by
+/-- `2^54 w^5 ≤ 2^w` from `w = 136`. -/
+theorem two_pow_54_mul_pow5_le {w : ℕ} (hw : 136 ≤ w) : 2 ^ 54 * w ^ 5 ≤ 2 ^ w := by
   induction w, hw using Nat.le_induction with
   | base => norm_num
   | succ n hn ih =>
@@ -323,21 +331,21 @@ theorem two_pow_46_mul_pow5_le {w : ℕ} (hw : 128 ≤ w) : 2 ^ 46 * w ^ 5 ≤ 2
       have e : (n + 1) ^ 5 = n ^ 5 + 5 * n ^ 4 + 10 * n ^ 3 + 10 * n ^ 2 + 5 * n + 1 := by ring
       rw [e]
       linarith
-    calc 2 ^ 46 * (n + 1) ^ 5 ≤ 2 ^ 46 * (2 * n ^ 5) := Nat.mul_le_mul_left _ hstep
-      _ = 2 * (2 ^ 46 * n ^ 5) := by ring
+    calc 2 ^ 54 * (n + 1) ^ 5 ≤ 2 ^ 54 * (2 * n ^ 5) := Nat.mul_le_mul_left _ hstep
+      _ = 2 * (2 ^ 54 * n ^ 5) := by ring
       _ ≤ 2 * 2 ^ n := Nat.mul_le_mul_left _ ih
       _ = 2 ^ (n + 1) := by ring
 
-/-- From `128 + max(e, 0) + |eb|` bits the width bound is below `1`. -/
-theorem mulLnEps_le_one (e eb : ℤ) (w : ℕ) (hw : 128 + max e 0 + |eb| ≤ (w : ℤ)) :
-    mulLnEps e eb w ≤ 1 := by
+/-- From `136 + max(e, 0) + |eb|` bits the width bound is below `1/256`. -/
+theorem mulLnEps_le_inv256 (e eb : ℤ) (w : ℕ) (hw : 136 + max e 0 + |eb| ≤ (w : ℤ)) :
+    mulLnEps e eb w ≤ 1 / 256 := by
   unfold mulLnEps lnEps
-  have hw128 : 128 ≤ w := by
+  have hw136 : 136 ≤ w := by
     have h1 : (0 : ℤ) ≤ max e 0 := le_max_right _ _
     have h2 : (0 : ℤ) ≤ |eb| := abs_nonneg _
     omega
-  have hwR : (128 : ℝ) + max (e : ℝ) 0 + |(eb : ℝ)| ≤ w := by
-    have : ((128 + max e 0 + |eb| : ℤ) : ℝ) ≤ ((w : ℤ) : ℝ) := by exact_mod_cast hw
+  have hwR : (136 : ℝ) + max (e : ℝ) 0 + |(eb : ℝ)| ≤ w := by
+    have : ((136 + max e 0 + |eb| : ℤ) : ℝ) ≤ ((w : ℤ) : ℝ) := by exact_mod_cast hw
     push_cast at this
     exact this
   have hE : ((|eb| + 16 + max e 0 : ℤ) : ℝ) = |(eb : ℝ)| + 16 + max (e : ℝ) 0 := by push_cast; ring
@@ -347,18 +355,23 @@ theorem mulLnEps_le_one (e eb : ℤ) (w : ℕ) (hw : 128 + max e 0 + |eb| ≤ (w
   have h1 : (2 : ℝ) ^ 40 * ((w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8) ^ 5
       ≤ 2 ^ 40 * (2 * w) ^ 5 := by gcongr
   have h2 : (2 : ℝ) ^ 40 * (2 * (w : ℝ)) ^ 5 = 2 ^ 45 * (w : ℝ) ^ 5 := by ring
-  have h3 : (2 : ℝ) ^ 46 * (w : ℝ) ^ 5 ≤ 2 ^ w := by exact_mod_cast two_pow_46_mul_pow5_le hw128
+  have h3 : (2 : ℝ) ^ 54 * (w : ℝ) ^ 5 ≤ 2 ^ w := by exact_mod_cast two_pow_54_mul_pow5_le hw136
   have hp : (0 : ℝ) < 2 ^ w := by positivity
   have hhalf : (1 / 2 : ℝ) ^ w = 1 / 2 ^ w := by rw [one_div_pow]
-  have hhw : (1 / 2 : ℝ) ^ w ≤ 1 / 2 := by
-    calc (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 1 :=
+  have hhw : (1 / 2 : ℝ) ^ w ≤ 1 / 512 := by
+    calc (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 9 :=
           pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
-      _ = 1 / 2 := by norm_num
+      _ = 1 / 512 := by norm_num
   have h4 : (2 : ℝ) ^ 40 * ((w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8) ^ 5 * (1 / 2 : ℝ) ^ w
-      ≤ 1 / 2 := by
+      ≤ 1 / 512 := by
     rw [hhalf, ← div_eq_mul_one_div, div_le_iff₀ hp]
     linarith
   linarith
+
+/-- From `136 + max(e, 0) + |eb|` bits the width bound is below `1`. -/
+theorem mulLnEps_le_one (e eb : ℤ) (w : ℕ) (hw : 136 + max e 0 + |eb| ≤ (w : ℤ)) :
+    mulLnEps e eb w ≤ 1 :=
+  (mulLnEps_le_inv256 e eb w hw).trans (by norm_num)
 
 /-! ### The bracket of `u^x` -/
 
@@ -384,7 +397,7 @@ theorem natCast_rpow_eq_exp {u : ℕ} (hu : 0 < u) (xv : ℝ) :
 
 /-- `powBaseW₀ e u` as an integer. -/
 theorem powBaseW₀_eq (e : AzInt) (u : UInt64) :
-    ((powBaseW₀ e u : ℕ) : ℤ) = 128 + max e.toInt 0 + |((baseFloat u).exponent?.getD 0).toInt| := by
+    ((powBaseW₀ e u : ℕ) : ℤ) = 136 + max e.toInt 0 + |((baseFloat u).exponent?.getD 0).toInt| := by
   unfold powBaseW₀
   rw [Nat.cast_add, Nat.cast_add, expPos_eq_max, AzInt.abs_toNat_eq]
   push_cast
@@ -402,7 +415,7 @@ theorem powBaseBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : 
         w := by
   have hw64 : 64 ≤ w := by unfold powBaseW₀ at hw; omega
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnBaseMulBracket_spec hx e hxe u hu w hw64
-  have hwZ : 128 + max e.toInt 0 + |((baseFloat u).exponent?.getD 0).toInt| ≤ (w : ℤ) := by
+  have hwZ : 136 + max e.toInt 0 + |((baseFloat u).exponent?.getD 0).toInt| ≤ (w : ℤ) := by
     rw [← powBaseW₀_eq]; exact_mod_cast hw
   have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
@@ -675,7 +688,7 @@ theorem lnBaseMulRatBracket_spec (q : AzRat) (u : UInt64) (hu : 2 ≤ u.toNat) (
 /-- `powBaseRatW₀ q u` as an integer. -/
 theorem powBaseRatW₀_eq (q : AzRat) (u : UInt64) :
     ((powBaseRatW₀ q u : ℕ) : ℤ)
-      = 128 + max (q.num.size : ℤ) 0 + |((baseFloat u).exponent?.getD 0).toInt| := by
+      = 136 + max (q.num.size : ℤ) 0 + |((baseFloat u).exponent?.getD 0).toInt| := by
   unfold powBaseRatW₀
   rw [Nat.cast_add, Nat.cast_add, AzInt.abs_toNat_eq, max_eq_left (by positivity)]
   push_cast
@@ -692,7 +705,7 @@ theorem powBaseRatBracket_spec (q : AzRat) (u : UInt64) (hu : 2 ≤ u.toNat) {w 
         ((AzRat.toRat q : ℝ) * Real.log u.toNat) w := by
   have hw64 : 64 ≤ w := by unfold powBaseRatW₀ at hw; omega
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnBaseMulRatBracket_spec q u hu w hw64
-  have hwZ : 128 + max (q.num.size : ℤ) 0 + |((baseFloat u).exponent?.getD 0).toInt|
+  have hwZ : 136 + max (q.num.size : ℤ) 0 + |((baseFloat u).exponent?.getD 0).toInt|
       ≤ (w : ℤ) := by
     rw [← powBaseRatW₀_eq]; exact_mod_cast hw
   have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
@@ -785,5 +798,379 @@ theorem powBaseRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := powBaseRatApprox_spec q u hu hirr hw
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-! ### `u^x − 1` -/
+
+/-- The exponent `e + 6` as an integer. -/
+theorem powBaseM1Exp_toInt (e : AzInt) : (powBaseM1Exp e).toInt = e.toInt + 6 := by
+  unfold powBaseM1Exp
+  rw [AzInt.toInt_add, AzInt.toInt_ofInt]
+
+/-- The compensation `max(−e − 6, 0)` at the exponent `e + 6` satisfies
+`c + max(e, 0) ≤ |e|`. -/
+theorem expM1Comp_powBaseM1Exp_le (e : AzInt) :
+    ((expM1Comp (powBaseM1Exp e) : ℕ) : ℤ) + max e.toInt 0 ≤ |e.toInt| := by
+  have htoInt : (powBaseM1Exp e).toInt = e.toInt + 6 := powBaseM1Exp_toInt e
+  have hsign : (powBaseM1Exp e).sign = true ↔ 0 ≤ (powBaseM1Exp e).toInt :=
+    AzInt.sign_eq_true_iff _
+  unfold expM1Comp
+  split_ifs with hs
+  · simp only [Nat.cast_zero, zero_add]
+    exact max_le (le_abs_self _) (abs_nonneg _)
+  · have h0 := (hsign.not.mp hs)
+    push Not at h0
+    rw [htoInt] at h0
+    rw [AzInt.abs_toNat_eq, htoInt, abs_of_neg h0, max_eq_right (by omega),
+      abs_of_neg (by omega)]
+    omega
+
+/-- The compensated width of a bracket of `x ln u` is at most `2^e / 4` from `136 + B + |eb|`
+bits, where `B` bounds the compensation plus the exponent argument `E` of the width bound:
+`(1/2)^(max(−e − 6, 0)) ≤ 64 · 2^e` and `2^53 w^5 + 2^8 ≤ 2^w`. -/
+theorem mulLnEps_comp_le_of (E : ℤ) (e : AzInt) (eb : ℤ) (w : ℕ) (B : ℤ)
+    (hcm : ((expM1Comp (powBaseM1Exp e) : ℕ) : ℤ) + max E 0 ≤ B)
+    (hw : 136 + B + |eb| ≤ (w : ℤ)) :
+    mulLnEps E eb (w + expM1Comp (powBaseM1Exp e)) ≤ (2 : ℝ) ^ e.toInt / 4 := by
+  obtain ⟨c, hc⟩ : ∃ c : ℕ, c = expM1Comp (powBaseM1Exp e) := ⟨_, rfl⟩
+  have htoInt : (powBaseM1Exp e).toInt = e.toInt + 6 := powBaseM1Exp_toInt e
+  have hsign : (powBaseM1Exp e).sign = true ↔ 0 ≤ (powBaseM1Exp e).toInt :=
+    AzInt.sign_eq_true_iff _
+  have h2e : (0 : ℝ) < (2 : ℝ) ^ e.toInt := by positivity
+  -- `(1/2)^c ≤ 64 · 2^e` and `c + max(E, 0) ≤ B`
+  have hcz1 : (1 / 2 : ℝ) ^ c ≤ 64 * (2 : ℝ) ^ e.toInt := by
+    rw [hc]
+    unfold expM1Comp
+    split_ifs with hs
+    · have h0 := hsign.mp hs
+      rw [htoInt] at h0
+      have : (2 : ℝ) ^ (-6 : ℤ) ≤ (2 : ℝ) ^ e.toInt :=
+        zpow_le_zpow_right₀ (by norm_num) (by omega)
+      have h6 : (2 : ℝ) ^ (-6 : ℤ) = 1 / 64 := by norm_num
+      rw [h6] at this
+      rw [pow_zero]
+      linarith
+    · have h0 := (hsign.not.mp hs)
+      push Not at h0
+      rw [htoInt] at h0
+      have habs : ((powBaseM1Exp e).abs.toNat : ℤ) = -(e.toInt + 6) := by
+        rw [AzInt.abs_toNat_eq, htoInt, abs_of_neg h0]
+      have hpow : (1 / 2 : ℝ) ^ (powBaseM1Exp e).abs.toNat
+          = (2 : ℝ) ^ (-((powBaseM1Exp e).abs.toNat : ℤ)) := by
+        rw [zpow_neg, zpow_natCast, one_div_pow, one_div]
+      have h6 : (2 : ℝ) ^ (6 : ℤ) = 64 := by norm_num
+      rw [hpow, habs, neg_neg, zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0), h6, mul_comm]
+  have hcz2 : (c : ℤ) + max E 0 ≤ B := by rw [hc]; exact hcm
+  rw [← hc]
+  unfold mulLnEps lnEps
+  have hw136 : 136 ≤ w := by
+    have h1 : (0 : ℤ) ≤ (c : ℤ) + max E 0 := add_nonneg (by positivity) (le_max_right _ _)
+    have h2 : (0 : ℤ) ≤ |eb| := abs_nonneg _
+    omega
+  have hwR : (136 : ℝ) + B + |(eb : ℝ)| ≤ w := by
+    have : ((136 + B + |eb| : ℤ) : ℝ) ≤ ((w : ℤ) : ℝ) := by exact_mod_cast hw
+    push_cast at this
+    exact this
+  have hcR : (c : ℝ) + max (E : ℝ) 0 ≤ B := by
+    have := hcz2
+    exact_mod_cast this
+  have hE : ((|eb| + 16 + max E 0 : ℤ) : ℝ) = |(eb : ℝ)| + 16 + max (E : ℝ) 0 := by
+    push_cast; ring
+  rw [hE, abs_of_nonneg (by positivity : (0 : ℝ) ≤ |(eb : ℝ)| + 16 + max (E : ℝ) 0)]
+  have hpoly : ((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8 ≤ 2 * w := by
+    push_cast; linarith
+  have hpoly0 : (0 : ℝ) ≤ ((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8 := by
+    positivity
+  have h1 : (2 : ℝ) ^ 40 * (((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8) ^ 5
+      ≤ 2 ^ 40 * (2 * w) ^ 5 := by gcongr
+  have h2 : (2 : ℝ) ^ 40 * (2 * (w : ℝ)) ^ 5 = 2 ^ 45 * (w : ℝ) ^ 5 := by ring
+  have h3 : (2 : ℝ) ^ 54 * (w : ℝ) ^ 5 ≤ 2 ^ w := by exact_mod_cast two_pow_54_mul_pow5_le hw136
+  have hp : (0 : ℝ) < 2 ^ w := by positivity
+  have hw1 : (1 : ℝ) ≤ (w : ℝ) ^ 5 := one_le_pow₀ (by exact_mod_cast (by omega : 1 ≤ w))
+  have hsplit : (1 / 2 : ℝ) ^ (w + c) = (1 / 2 : ℝ) ^ w * (1 / 2 : ℝ) ^ c := pow_add _ _ _
+  have hhalf : (1 / 2 : ℝ) ^ w = 1 / 2 ^ w := by rw [one_div_pow]
+  have hc0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ c := by positivity
+  -- `(2^45 w^5 + 1) · 64 / 2^w ≤ 1/4`
+  have hkey : ((2 : ℝ) ^ 45 * (w : ℝ) ^ 5 + 1) * (1 / 2 : ℝ) ^ w * 64 ≤ 1 / 4 := by
+    rw [hhalf, ← div_eq_mul_one_div, div_mul_eq_mul_div, div_le_iff₀ hp]
+    nlinarith
+  have hP : (2 : ℝ) ^ 40 * (((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8) ^ 5
+      ≤ 2 ^ 45 * (w : ℝ) ^ 5 := h1.trans h2.le
+  have hP0 : (0 : ℝ) ≤ 2 ^ 40
+      * (((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8) ^ 5 := by positivity
+  rw [hsplit]
+  have hu0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
+  calc 2 ^ 40 * (((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8) ^ 5
+        * ((1 / 2 : ℝ) ^ w * (1 / 2 : ℝ) ^ c) + (1 / 2 : ℝ) ^ w * (1 / 2 : ℝ) ^ c
+      = (2 ^ 40 * (((w + c : ℕ) : ℝ) + (|(eb : ℝ)| + 16 + max (E : ℝ) 0) + 8) ^ 5 + 1)
+        * (1 / 2 : ℝ) ^ w * (1 / 2 : ℝ) ^ c := by ring
+    _ ≤ (2 ^ 45 * (w : ℝ) ^ 5 + 1) * (1 / 2 : ℝ) ^ w * (64 * (2 : ℝ) ^ e.toInt) := by
+      apply mul_le_mul _ hcz1 hc0 (by positivity)
+      exact mul_le_mul_of_nonneg_right (by linarith) hu0
+    _ = ((2 ^ 45 * (w : ℝ) ^ 5 + 1) * (1 / 2 : ℝ) ^ w * 64) * (2 : ℝ) ^ e.toInt := by ring
+    _ ≤ 1 / 4 * (2 : ℝ) ^ e.toInt := mul_le_mul_of_nonneg_right hkey h2e.le
+    _ = (2 : ℝ) ^ e.toInt / 4 := by ring
+
+/-- The compensated width of the `x ln u` bracket is at most `2^e / 4` from
+`136 + |e| + |eb|` bits. -/
+theorem mulLnEps_comp_le (e : AzInt) (eb : ℤ) (w : ℕ) (hw : 136 + |e.toInt| + |eb| ≤ (w : ℤ)) :
+    mulLnEps e.toInt eb (w + expM1Comp (powBaseM1Exp e)) ≤ (2 : ℝ) ^ e.toInt / 4 :=
+  mulLnEps_comp_le_of e.toInt e eb w |e.toInt| (expM1Comp_powBaseM1Exp_le e) hw
+
+/-- The width bound of `powBaseM1Bracket` at compensation `c` and the value `v = x ln u`. -/
+noncomputable def powBaseM1Eps (e eb : ℤ) (c : ℕ) (v : ℝ) (w : ℕ) : ℝ :=
+  expM1RatEps v c w + 32 * Real.exp v * mulLnEps e eb (w + c)
+
+theorem tendsto_powBaseM1Eps (e eb : ℤ) (c : ℕ) (v : ℝ) :
+    Filter.Tendsto (powBaseM1Eps e eb c v) Filter.atTop (nhds 0) := by
+  unfold powBaseM1Eps
+  have h1 := tendsto_expM1RatEps v c
+  have h2 := ((tendsto_mulLnEps e eb).comp (Filter.tendsto_add_atTop_nat c)).const_mul
+    (32 * Real.exp v)
+  rw [mul_zero] at h2
+  have := h1.add h2
+  rwa [add_zero] at this
+
+/-- `powBaseM1W₀ e u` as an integer. -/
+theorem powBaseM1W₀_eq (e : AzInt) (u : UInt64) :
+    ((powBaseM1W₀ e u : ℕ) : ℤ)
+      = 136 + |e.toInt| + |((baseFloat u).exponent?.getD 0).toInt| := by
+  unfold powBaseM1W₀
+  rw [Nat.cast_add, Nat.cast_add, AzInt.abs_toNat_eq, AzInt.abs_toNat_eq]
+  push_cast
+  ring
+
+set_option maxHeartbeats 1000000 in
+/-- `powBaseM1Bracket x e u w` encloses `u^x − 1` for `2^(e−1) ≤ |x| < 2^e`, `2 ≤ u` and
+`w ≥ powBaseM1W₀ e u`, with width at most `powBaseM1Eps`. -/
+theorem powBaseM1Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (e : AzInt) (hxe : |xv| < (2 : ℝ) ^ e.toInt) (hxe1 : (2 : ℝ) ^ e.toInt ≤ 2 * |xv|)
+    (u : UInt64) (hu : 2 ≤ u.toNat) {w : ℕ} (hw : powBaseM1W₀ e u ≤ w) :
+    ∃ lo hi : ℝ, (powBaseM1Bracket x e u w).1.toVal = some (lo : EReal) ∧
+      (powBaseM1Bracket x e u w).2.toVal = some (hi : EReal) ∧
+      lo ≤ (u.toNat : ℝ) ^ xv - 1 ∧ (u.toNat : ℝ) ^ xv - 1 ≤ hi ∧
+      hi - lo ≤ powBaseM1Eps e.toInt ((baseFloat u).exponent?.getD 0).toInt
+        (expM1Comp (powBaseM1Exp e)) (xv * Real.log u.toNat) w := by
+  have hw64 : 64 ≤ w := by unfold powBaseM1W₀ at hw; omega
+  obtain ⟨c, hc⟩ : ∃ c : ℕ, c = expM1Comp (powBaseM1Exp e) := ⟨_, rfl⟩
+  obtain ⟨eb, heb⟩ : ∃ eb : ℤ, eb = ((baseFloat u).exponent?.getD 0).toInt := ⟨_, rfl⟩
+  have hwZ : 136 + |e.toInt| + |eb| ≤ (w : ℤ) := by
+    rw [heb, ← powBaseM1W₀_eq]; exact_mod_cast hw
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnBaseMulBracket_spec hx e hxe u hu (w + c) (by omega)
+  rw [← heb] at hwid
+  obtain ⟨δ, hδ⟩ : ∃ δ : ℝ, δ = mulLnEps e.toInt eb (w + c) := ⟨_, rfl⟩
+  rw [← hδ] at hwid
+  have hδ0 : 0 ≤ δ := by rw [hδ]; unfold mulLnEps lnEps; positivity
+  have hδ1 : δ ≤ 1 / 64 := by
+    rw [hδ]
+    refine (mulLnEps_le_inv256 e.toInt eb (w + c) ?_).trans (by norm_num)
+    have h1 : max e.toInt 0 ≤ |e.toInt| := by
+      rcases le_or_gt e.toInt 0 with h | h
+      · rw [max_eq_right h]; positivity
+      · rw [max_eq_left h.le]; exact le_abs_self _
+    push_cast
+    omega
+  have hδe : δ ≤ (2 : ℝ) ^ e.toInt / 4 := by rw [hδ, hc]; exact mulLnEps_comp_le e eb w hwZ
+  -- the value and its size: `0.69 |x| ≤ |v| < 45 |x|`
+  obtain ⟨v, hv⟩ : ∃ v : ℝ, v = xv * Real.log u.toNat := ⟨_, rfl⟩
+  rw [← hv] at h1 h2
+  have hlog45 : Real.log u.toNat < 45 := log_lt_45_of_lt_two_pow_64 u.toBitVec.isLt
+  have hlog2 : Real.log 2 ≤ Real.log u.toNat :=
+    Real.log_le_log (by norm_num) (by exact_mod_cast hu)
+  have hln1 := Real.log_two_gt_d9
+  have habsv : |v| = |xv| * Real.log u.toNat := by
+    rw [hv, abs_mul, abs_of_pos (by linarith : (0 : ℝ) < Real.log u.toNat)]
+  have h2e : (0 : ℝ) < (2 : ℝ) ^ e.toInt := by positivity
+  have hxv0 := abs_nonneg xv
+  have hlo_e : |lo| < (2 : ℝ) ^ (powBaseM1Exp e).toInt := by
+    rw [powBaseM1Exp_toInt, zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0)]
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |v| ≤ |xv| * 45 := by rw [habsv]; nlinarith
+    have h4 : (2 : ℝ) ^ (6 : ℤ) = 64 := by norm_num
+    rw [h4]
+    nlinarith
+  have hlo_v : |lo| ≤ 2 * |v| := by
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |xv| * (6 / 10) ≤ |v| := by rw [habsv]; nlinarith
+    linarith
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expM1OfBracket_spec_of_bounds (powBaseM1Exp e) hlo hhi
+    h1 h2 hwid hδ0 hδ1 hlo_e hlo_v hw64
+  simp only [powBaseM1Bracket]
+  rw [natCast_rpow_eq_exp (by omega), ← hv, ← hc, ← heb]
+  rw [← hc] at hab
+  refine ⟨a, b, ha, hb, ha1, hb1, hab.trans ?_⟩
+  unfold powBaseM1Eps
+  rw [← hδ]
+  have hslack := expM1RatEps_slack v c w
+  have hEvp := Real.exp_pos v
+  have hu0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
+  have := mul_nonneg hEvp.le hu0
+  linarith
+
+/-- `powBaseM1Approx` is a strict enclosure of `u^x − 1` (given its irrationality), with width
+at most `powBaseM1Eps`. -/
+theorem powBaseM1Approx_spec {w : ℕ} (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (u : UInt64) (hu : 2 ≤ u.toNat)
+    (hirr : Irrational ((u.toNat : ℝ) ^ finiteVal s e m - 1)) (hw : powBaseM1W₀ e u ≤ w) :
+    ∃ lv hv' : ℝ, Rounds (powBaseM1Approx (finite s e q m hv) e u w).1 lv ∧
+      Rounds (powBaseM1Approx (finite s e q m hv) e u w).2 hv' ∧
+      lv < (u.toNat : ℝ) ^ finiteVal s e m - 1 ∧ (u.toNat : ℝ) ^ finiteVal s e m - 1 < hv' ∧
+      hv' - lv ≤ powBaseM1Eps e.toInt ((baseFloat u).exponent?.getD 0).toInt
+        (expM1Comp (powBaseM1Exp e)) (finiteVal s e m * Real.log u.toNat) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := powBaseM1Bracket_spec (toVal_finite s e q m hv) e
+    (abs_finiteVal_bounds s e hv).2 (two_zpow_le_two_mul_abs_finiteVal s e hv) u hu hw
+  obtain ⟨r1, r2, r3, r4⟩ := rounds_of_bracket hlo hhi h1 h2 hirr
+  exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
+
+/-- The Ziv certificate for `u^x − 1`. -/
+theorem powBaseM1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool)
+    (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (u : UInt64) (hu : 2 ≤ u.toNat)
+    (hirr : Irrational ((u.toNat : ℝ) ^ finiteVal s e m - 1)) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (powBaseM1Approx (finite s e q m hv) e u (w₀ * 2 ^ f)).1
+      (powBaseM1Approx (finite s e q m hv) e u (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (powBaseM1Approx (finite s e q m hv) e u) hirr
+    (powBaseM1Eps e.toInt ((baseFloat u).exponent?.getD 0).toInt (expM1Comp (powBaseM1Exp e))
+      (finiteVal s e m * Real.log u.toNat))
+    (tendsto_powBaseM1Eps _ _ _ _) (powBaseM1W₀ e u)
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := powBaseM1Approx_spec s e hv u hu hirr hw
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-- `u^x − 1` is irrational when `powBaseExact? = none`. -/
+theorem irrational_sub_one_of_powBaseExact?_none (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (u : AzNat) (hu : 2 ≤ u.toNat) (hu64 : u.toNat < 2 ^ 64)
+    (h : powBaseExact? (finite s e q m hv) u = none) :
+    Irrational ((u.toNat : ℝ) ^ finiteVal s e m - 1) := by
+  have h' := (irrational_of_powBaseExact?_none s e hv u hu hu64 h).sub_intCast 1
+  rwa [Int.cast_one] at h'
+
+/-! ### `u^q − 1` -/
+
+/-- `powBaseM1RatW₀ q u` as an integer. -/
+theorem powBaseM1RatW₀_eq (q : AzRat) (u : UInt64) :
+    ((powBaseM1RatW₀ q u : ℕ) : ℤ) = 136 + (|(exp2M1RatExp q).toInt| + q.num.size)
+      + |((baseFloat u).exponent?.getD 0).toInt| := by
+  unfold powBaseM1RatW₀
+  rw [Nat.cast_add, Nat.cast_add, Nat.cast_add, AzInt.abs_toNat_eq, AzInt.abs_toNat_eq]
+  push_cast
+  ring
+
+set_option maxHeartbeats 1000000 in
+/-- `powBaseM1RatBracket q u w` encloses `u^q − 1` for `q ≠ 0`, `2 ≤ u` and
+`w ≥ powBaseM1RatW₀ q u`, with width at most `powBaseM1Eps`. -/
+theorem powBaseM1RatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) (u : UInt64) (hu : 2 ≤ u.toNat)
+    {w : ℕ} (hw : powBaseM1RatW₀ q u ≤ w) :
+    ∃ lo hi : ℝ, (powBaseM1RatBracket q u w).1.toVal = some (lo : EReal) ∧
+      (powBaseM1RatBracket q u w).2.toVal = some (hi : EReal) ∧
+      lo ≤ (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧
+      (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ≤ hi ∧
+      hi - lo ≤ powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
+        (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
+        w := by
+  have hw64 : 64 ≤ w := by unfold powBaseM1RatW₀ at hw; omega
+  obtain ⟨e, he⟩ : ∃ e : AzInt, e = exp2M1RatExp q := ⟨_, rfl⟩
+  obtain ⟨hxe, hxe1⟩ := exp2M1RatExp_bounds q h0
+  rw [← he] at hxe hxe1
+  obtain ⟨xv, hxv⟩ : ∃ xv : ℝ, xv = (AzRat.toRat q : ℝ) := ⟨_, rfl⟩
+  rw [← hxv] at hxe hxe1
+  obtain ⟨c, hc⟩ : ∃ c : ℕ, c = expM1Comp (powBaseM1Exp e) := ⟨_, rfl⟩
+  obtain ⟨eb, heb⟩ : ∃ eb : ℤ, eb = ((baseFloat u).exponent?.getD 0).toInt := ⟨_, rfl⟩
+  have hwZ : 136 + (|e.toInt| + q.num.size) + |eb| ≤ (w : ℤ) := by
+    rw [heb, he, ← powBaseM1RatW₀_eq]; exact_mod_cast hw
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnBaseMulRatBracket_spec q u hu (w + c) (by omega)
+  rw [← heb] at hwid
+  rw [← hxv] at h1 h2
+  obtain ⟨δ, hδ⟩ : ∃ δ : ℝ, δ = mulLnEps (q.num.size : ℤ) eb (w + c) := ⟨_, rfl⟩
+  rw [← hδ] at hwid
+  have hδ0 : 0 ≤ δ := by rw [hδ]; unfold mulLnEps lnEps; positivity
+  have hδ1 : δ ≤ 1 / 64 := by
+    rw [hδ]
+    refine (mulLnEps_le_inv256 (q.num.size : ℤ) eb (w + c) ?_).trans (by norm_num)
+    have h1 : max (q.num.size : ℤ) 0 = q.num.size := max_eq_left (by positivity)
+    have h2 : (0 : ℤ) ≤ |e.toInt| := abs_nonneg _
+    push_cast
+    omega
+  have hcm := expM1Comp_powBaseM1Exp_le e
+  have hδe : δ ≤ (2 : ℝ) ^ e.toInt / 4 := by
+    rw [hδ, hc]
+    refine mulLnEps_comp_le_of (q.num.size : ℤ) e eb w (|e.toInt| + q.num.size) ?_ hwZ
+    have h1 : max (q.num.size : ℤ) 0 = q.num.size := max_eq_left (by positivity)
+    have h2 : (0 : ℤ) ≤ max e.toInt 0 := le_max_right _ _
+    omega
+  -- the value and its size: `0.69 |q| ≤ |v| < 45 |q|`
+  obtain ⟨v, hv⟩ : ∃ v : ℝ, v = xv * Real.log u.toNat := ⟨_, rfl⟩
+  rw [← hv] at h1 h2
+  have hlog45 : Real.log u.toNat < 45 := log_lt_45_of_lt_two_pow_64 u.toBitVec.isLt
+  have hlog2 : Real.log 2 ≤ Real.log u.toNat :=
+    Real.log_le_log (by norm_num) (by exact_mod_cast hu)
+  have hln1 := Real.log_two_gt_d9
+  have habsv : |v| = |xv| * Real.log u.toNat := by
+    rw [hv, abs_mul, abs_of_pos (by linarith : (0 : ℝ) < Real.log u.toNat)]
+  have h2e : (0 : ℝ) < (2 : ℝ) ^ e.toInt := by positivity
+  have hxv0 := abs_nonneg xv
+  have hlo_e : |lo| < (2 : ℝ) ^ (powBaseM1Exp e).toInt := by
+    rw [powBaseM1Exp_toInt, zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0)]
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |v| ≤ |xv| * 45 := by rw [habsv]; nlinarith
+    have h4 : (2 : ℝ) ^ (6 : ℤ) = 64 := by norm_num
+    rw [h4]
+    nlinarith
+  have hlo_v : |lo| ≤ 2 * |v| := by
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |xv| * (6 / 10) ≤ |v| := by rw [habsv]; nlinarith
+    linarith
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expM1OfBracket_spec_of_bounds (powBaseM1Exp e) hlo hhi
+    h1 h2 hwid hδ0 hδ1 hlo_e hlo_v hw64
+  simp only [powBaseM1RatBracket]
+  rw [natCast_rpow_eq_exp (by omega), ← hxv, ← hv, ← he, ← hc, ← heb]
+  rw [← hc] at hab
+  refine ⟨a, b, ha, hb, ha1, hb1, hab.trans ?_⟩
+  unfold powBaseM1Eps
+  rw [← hδ]
+  have hslack := expM1RatEps_slack v c w
+  have hEvp := Real.exp_pos v
+  have hu0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
+  have := mul_nonneg hEvp.le hu0
+  linarith
+
+/-- `powBaseM1RatApprox` is a strict enclosure of `u^q − 1` (given its irrationality), with
+width at most `powBaseM1Eps`. -/
+theorem powBaseM1RatApprox_spec {w : ℕ} (q : AzRat) (h0 : q.num ≠ 0) (u : UInt64)
+    (hu : 2 ≤ u.toNat) (hirr : Irrational ((u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1))
+    (hw : powBaseM1RatW₀ q u ≤ w) :
+    ∃ lv hv : ℝ, Rounds (powBaseM1RatApprox q u w).1 lv ∧
+      Rounds (powBaseM1RatApprox q u w).2 hv ∧
+      lv < (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧
+      (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 < hv ∧
+      hv - lv ≤ powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
+        (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
+        w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := powBaseM1RatBracket_spec q h0 u hu hw
+  obtain ⟨r1, r2, r3, r4⟩ := rounds_of_bracket hlo hhi h1 h2 hirr
+  exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
+
+/-- The Ziv certificate for `u^q − 1`. -/
+theorem powBaseM1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (h0 : q.num ≠ 0) (u : UInt64) (hu : 2 ≤ u.toNat)
+    (hirr : Irrational ((u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1)) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (powBaseM1RatApprox q u (w₀ * 2 ^ f)).1
+      (powBaseM1RatApprox q u (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (powBaseM1RatApprox q u) hirr
+    (powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
+      (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat))
+    (tendsto_powBaseM1Eps _ _ _ _) (powBaseM1RatW₀ q u)
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := powBaseM1RatApprox_spec q h0 u hu hirr hw
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-- `u^q − 1` is irrational when `powBaseRatExact? = none`. -/
+theorem irrational_sub_one_of_powBaseRatExact?_none (q : AzRat) (u : AzNat) (hu : 2 ≤ u.toNat)
+    (hu64 : u.toNat < 2 ^ 64) (h : powBaseRatExact? q u = none) :
+    Irrational ((u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1) := by
+  have h' := (irrational_of_powBaseRatExact?_none q u hu hu64 h).sub_intCast 1
+  rwa [Int.cast_one] at h'
 
 end Azurite.AzFloat

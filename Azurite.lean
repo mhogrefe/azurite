@@ -126,6 +126,8 @@ import Azurite.AzFloat.Equiv.PiConstants
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
 import Azurite.AzFloat.Equiv.PowBase
 import Azurite.AzFloat.Equiv.PowBaseBracket
+import Azurite.AzFloat.Equiv.PowBaseM1
+import Azurite.AzFloat.Equiv.PowBaseM1Rat
 import Azurite.AzFloat.Equiv.PowBaseRat
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.PrimeConstant
@@ -207,6 +209,8 @@ import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.PiDiv3Bracket
 import Azurite.AzFloat.PowBase
 import Azurite.AzFloat.PowBaseBracket
+import Azurite.AzFloat.PowBaseM1
+import Azurite.AzFloat.PowBaseM1Rat
 import Azurite.AzFloat.PowBaseRat
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.PrimeConstant

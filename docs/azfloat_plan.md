@@ -4809,3 +4809,51 @@ Tests: specials, exact powers (`8^(−2/3) = 1/4`, `27^(4/3) = 81`, `1000^(±1/3
 `1024^(1/11)` not exact, `3^(±40)` at 20 bits), agreement with `powBasePrecRound` on dyadics and
 with `exp2RatPrecRound` for `u = 2`, nine irrational powers at 150 bits against 200-digit
 references (`(2^64 − 1)^(1/7)`, `6^(301/3)`, `10^(−401/6)`, …), directed modes.
+
+## `u^x − 1` for a natural base `u` (DONE 2026-10-26, fuel-free)
+
+User: `(u, x) ↦ u^x − 1`, `u : UInt64`, `x : AzFloat`.  `AzFloat/PowBaseM1.lean` + `Equiv/` +
+`Tests/`, bracket in `PowBaseBracket`.  Design: `expM1OfBracket` on the bracket of `x ln u`.
+Two obstacles versus `2^x − 1`: (1) `expM1OfBracket_spec` was specific to `x ln 2` (it derived
+`|lo| < 2^e` and `|lo| ≤ 2|v|` from `ln 2 < 1`), and `ln u < 45` can exceed `2^e`; (2) its
+bracket width had to be `≤ 2^(−w−c)`, while `lnBaseMulBracket` only gives `mulLnEps` (the
+polynomial `lnEps`).  **Refactor**: `expM1OfBracket_width` now takes any `δ ≤ 1/64` (width
+`≤ 2D + 32 exp lo · δ + |exp lo − 1| u`), and the generic `expM1OfBracket_spec_of_bounds` takes
+the two bounds on `lo` and a width `δ ≤ 1/64` as hypotheses, giving width
+`(2/3) expM1RatEps v c w + (|exp v − 1| + exp v) 2^(−w) + 32 exp v · δ` (`expM1RatEps_slack`
+absorbs the middle term into the first); the old `expM1OfBracket_spec` is now a corollary, so
+`exp2M1`/`exp2M1Rat` are unchanged.  **`u^x − 1`**: the exponent of `x ln u` is `e + 6`
+(`powBaseM1Exp`, `45 < 64`); the `x ln u` bracket is computed at `w + max(−e − 6, 0)` bits; its
+width is `≤ 2^e / 4` from `136 + |e| + |eb|` bits (`mulLnEps_comp_le`: `(1/2)^c ≤ 64 · 2^e`,
+`c + max(e, 0) ≤ |e|`, `2^53 w^5 + 2^8 ≤ 2^w`), which gives `|lo| < 64 · 2^e` and
+`|lo| ≤ 2|v|` (`|v| ≥ 0.69 |x| ≥ 2^e / 4`); the loop starts at `powBaseM1Start`.  The start
+precisions of `powBase`/`powBaseRat` moved from `128` to `136` (`two_pow_54_mul_pow5_le`,
+`mulLnEps_le_inv256`).  Eps `powBaseM1Eps e eb c v w = expM1RatEps v c w + 32 exp v ·
+mulLnEps e eb (w + c)` (`tendsto` through `Filter.tendsto_add_atTop_nat`).  **Exact case**:
+`r^n − 1` by `subPrecRound (ofAzNat (r^n)) one`, or `divPrecRound (ofAzInt (1 − r^|n|))
+(ofAzNat (r^|n|))` for `n < 0`.  Spec `Spec.powBaseM1 u = (Spec.powBase u ·).map (· − 1)`,
+`powBaseM1PrecRound_eq_liftVal`.  Tests: specials, seven exact values, agreement with
+`exp2M1PrecRound` and with `u^x` at higher precision, eight irrational values at 150 bits
+against 200-digit references, the small arguments `10^(±2^(−30)) − 1`, `10^(1/1024) − 1` and
+the tiny `10^(±2^(−200)) − 1 ≈ ±ln 10 · 2^(−200)` (checked against `tiny × ln10Bracket`),
+directed modes.
+
+## `u^q − 1` for a natural base and a rational `q` (DONE 2026-10-26, fuel-free)
+
+User: the `AzRat`-exponent variant of `u^x − 1`.  `AzFloat/PowBaseM1Rat.lean` + `Equiv/` +
+`Tests/`, bracket in `PowBaseBracket`.  `powBaseM1RatBracket q u w = expM1OfBracket
+(lnBaseMulRatBracket q u (w + c)) e' w` with `e' = exp2M1RatExp q + 6` (`2^(e−1) ≤ |q| < 2^e`
+for `e = exp2M1RatExp q`, `exp2M1RatExp_bounds`) and `c = expM1Comp e'`.  The width lemma
+`mulLnEps_comp_le` was generalized to `mulLnEps_comp_le_of E e eb w B`: the width argument `E`
+(here `size (num q)`) and the compensation exponent `e` are separate, with a bound
+`B ≥ c + max(E, 0)` and the precision `136 + B + |eb|`; the float version is the instance
+`E = e`, `B = |e|` (`expM1Comp_powBaseM1Exp_le`), the rational one `B = |e| + size (num q)`
+(`c ≤ |e|`), so `powBaseM1RatW₀ q u = 136 + |e| + size (num q) + |eb|`.  The rest of the
+proof is the float one with `lnBaseMulRatBracket_spec`.  Driver: `u = 0` by the sign of `q`
+(`negOneRound`), `u = 1` and `q = 0` give `0`, exact powers through `powBaseRatExact?`, else
+the certified loop (`irrational_sub_one_of_powBaseRatExact?_none`).  Spec
+`powBaseM1RatPrecRound_eq` (`= roundVal p mode (Spec.powBaseM1 u (toRat q))`).  Tests:
+specials, exact values (`8^(−2/3) − 1 = −3/4`, `27^(4/3) − 1 = 80`, `1024^(±…/10) − 1`,
+`3^(±40) − 1` at 20 bits), agreement with `powBaseM1PrecRound` on dyadics and with
+`exp2M1RatPrecRound` for `u = 2`, seven irrational values at 150 bits against 200-digit
+references, the small `10^(±10^(−6)) − 1` and tiny `10^(±10^(−60)) − 1`, directed modes.

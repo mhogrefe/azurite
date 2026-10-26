@@ -65,6 +65,8 @@ import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.PiConstants
 import Azurite.AzFloat.Tests.PowBase
+import Azurite.AzFloat.Tests.PowBaseM1
+import Azurite.AzFloat.Tests.PowBaseM1Rat
 import Azurite.AzFloat.Tests.PowBaseRat
 import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.PrimeConstant
