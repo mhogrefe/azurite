@@ -26,7 +26,7 @@ namespace Azurite.AzFloat
 
 /-- `π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
 def piPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if hp : p = 0 then (zero, .lt)
+  if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
     zivLoopCertified piApprox p mode (p + zivGuardBits)

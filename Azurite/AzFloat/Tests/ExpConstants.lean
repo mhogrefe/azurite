@@ -112,11 +112,11 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
   == (F "763201709380294112488717654721/2535301200456458802993406410752" 100, .gt)
 
 -- precision `0`
-#guard ePrecRound 0 .Nearest == (zero, .lt)
-#guard ln10PrecRound 0 .Nearest == (zero, .lt)
-#guard log10EPrecRound 0 .Nearest == (zero, .lt)
-#guard log2TenPrecRound 0 .Nearest == (zero, .lt)
-#guard log10TwoPrecRound 0 .Nearest == (zero, .lt)
+#guard ePrecRound 0 .Nearest == (nan, .eq)
+#guard ln10PrecRound 0 .Nearest == (nan, .eq)
+#guard log10EPrecRound 0 .Nearest == (nan, .eq)
+#guard log2TenPrecRound 0 .Nearest == (nan, .eq)
+#guard log10TwoPrecRound 0 .Nearest == (nan, .eq)
 
 -- agreement with the general functions
 #guard e 200 == exp (F "1" 200)

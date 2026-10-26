@@ -10,15 +10,20 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
 import Azurite.AzFloat.Equiv.OneDivPiBracket
+import Azurite.AzFloat.Equiv.SqrtPiBracket
 
 /-!
-## The constants `τ = 2π`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π`
+## The constants `τ = 2π`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π`, `√π`, `1/√π`,
+`1/√τ`, `2/√π`
 
 `τ`, `π/2`, `π/4` and `π/8` are exact shifts of the correctly rounded `π` (the float set is
 scale-invariant, so the rounding and its comparison carry over: `roundVal_mul_two_zpow`).  `π/3`
 is a certified Ziv loop (no fuel) over `piDiv3Approx`, and `π/6` is its exact shift; likewise
-`1/π` over `oneDivPiApprox` and `2/π` its exact shift.  All return `(zero, .lt)` at precision
-`0`, like `pi`.  The specifications are in `Equiv/PiMultiples.lean`.
+`1/π` over `oneDivPiApprox` and `2/π` its exact shift, `√π` over `sqrtPiApprox` (square roots
+of the ends), `1/√π` over `oneDivSqrtPiApprox` and `1/√τ` over `oneDivSqrtTauApprox`
+(reciprocal square roots of the ends, one `rsqrtPrecRound` each), and `2/√π` the exact shift
+of `1/√π`.  All return `(nan, .eq)` at precision `0` (no float set to round into), like every
+`…PrecRound`.  The specifications are in `Equiv/PiConstants.lean`.
 -/
 
 namespace Azurite.AzFloat
@@ -57,7 +62,7 @@ def piDiv8 (p : Nat) : AzFloat := (piDiv8PrecRound p .Nearest).1
 
 /-- `π/3` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
 def piDiv3PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if hp : p = 0 then (zero, .lt)
+  if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
     zivLoopCertified piDiv3Approx p mode (p + zivGuardBits)
@@ -76,7 +81,7 @@ def piDiv6 (p : Nat) : AzFloat := (piDiv6PrecRound p .Nearest).1
 
 /-- `1/π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
 def oneDivPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
-  if hp : p = 0 then (zero, .lt)
+  if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
     zivLoopCertified oneDivPiApprox p mode (p + zivGuardBits)
@@ -92,5 +97,46 @@ def twoDivPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
 
 /-- `2/π` rounded to nearest at precision `p`. -/
 def twoDivPi (p : Nat) : AzFloat := (twoDivPiPrecRound p .Nearest).1
+
+/-- `√π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def sqrtPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopCertified sqrtPiApprox p mode (p + zivGuardBits)
+      (sqrtPiApprox_isSome_exists p mode (p + zivGuardBits) (by unfold zivGuardBits; omega))
+
+/-- `√π` rounded to nearest at precision `p`. -/
+def sqrtPi (p : Nat) : AzFloat := (sqrtPiPrecRound p .Nearest).1
+
+/-- `1/√π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def oneDivSqrtPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopCertified oneDivSqrtPiApprox p mode (p + zivGuardBits)
+      (oneDivSqrtPiApprox_isSome_exists p mode (p + zivGuardBits) (by unfold zivGuardBits; omega))
+
+/-- `1/√π` rounded to nearest at precision `p`. -/
+def oneDivSqrtPi (p : Nat) : AzFloat := (oneDivSqrtPiPrecRound p .Nearest).1
+
+/-- `2/√π` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def twoDivSqrtPiPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  let r := oneDivSqrtPiPrecRound p mode
+  (r.1 <<< AzInt.ofInt 1, r.2)
+
+/-- `2/√π` rounded to nearest at precision `p`. -/
+def twoDivSqrtPi (p : Nat) : AzFloat := (twoDivSqrtPiPrecRound p .Nearest).1
+
+/-- `1/√τ` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def oneDivSqrtTauPrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  if hp : p = 0 then (nan, .eq)
+  else
+    haveI : NeZero p := ⟨hp⟩
+    zivLoopCertified oneDivSqrtTauApprox p mode (p + zivGuardBits)
+      (oneDivSqrtTauApprox_isSome_exists p mode (p + zivGuardBits) (by unfold zivGuardBits; omega))
+
+/-- `1/√τ` rounded to nearest at precision `p`. -/
+def oneDivSqrtTau (p : Nat) : AzFloat := (oneDivSqrtTauPrecRound p .Nearest).1
 
 end Azurite.AzFloat

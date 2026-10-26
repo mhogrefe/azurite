@@ -15,7 +15,7 @@ import Azurite.AzFloat.LogBasePow2Bracket
 
 `piDiv3Approx w` divides the bracket of `π` (`piBracket w`) by `3` with directed rounding
 (`divBracketByInt`), as a pair of `Roundable`s for the Ziv loop.  The other multiples of `π`
-by powers of two are exact shifts (`AzFloat/PiMultiples`).
+by powers of two are exact shifts (`AzFloat/PiConstants`).
 -/
 
 namespace Azurite.AzFloat

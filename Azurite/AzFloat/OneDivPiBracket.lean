@@ -16,7 +16,7 @@ import Azurite.AzFloat.LogBaseFloatBracket
 `oneDivPiBracket w` is the reciprocal of the bracket of `π` (`piBracket w`) by
 `divBracketByPosBracket`, the lower end of the `π` bracket first raised to `2 < π` so that the
 proven width bound never pushes it to zero; `oneDivPiApprox` is the pair of `Roundable`s for the
-Ziv loop.  `2/π` is an exact shift (`AzFloat/PiMultiples`).
+Ziv loop.  `2/π` is an exact shift (`AzFloat/PiConstants`).
 -/
 
 namespace Azurite.AzFloat

@@ -114,8 +114,8 @@ import Azurite.AzFloat.Equiv.OfString
 import Azurite.AzFloat.Equiv.OneDivPiBracket
 import Azurite.AzFloat.Equiv.Pi
 import Azurite.AzFloat.Equiv.PiBracket
+import Azurite.AzFloat.Equiv.PiConstants
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
-import Azurite.AzFloat.Equiv.PiMultiples
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
@@ -129,6 +129,7 @@ import Azurite.AzFloat.Equiv.Rsqrt
 import Azurite.AzFloat.Equiv.Sci
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Sqrt
+import Azurite.AzFloat.Equiv.SqrtPiBracket
 import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
@@ -182,8 +183,8 @@ import Azurite.AzFloat.OfString
 import Azurite.AzFloat.OneDivPiBracket
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.PiBracket
+import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.PiDiv3Bracket
-import Azurite.AzFloat.PiMultiples
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product
@@ -196,6 +197,7 @@ import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sqrt
+import Azurite.AzFloat.SqrtPiBracket
 import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.ToString

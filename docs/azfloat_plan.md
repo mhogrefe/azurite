@@ -3227,7 +3227,7 @@ brackets) instead of fuel.
   boundary (`boundary_repr` gives `M·2^k`, rational; `irrational_log_two`), `adjacent_boundaries`
   gives the distance `D = min(ln 2 − bm, bp − ln 2) > 0`, `exists_pow_lt_of_lt_one` a level with
   `2^(−w) < D`, then `no_boundary_of_dist` + `roundingPossible_isSome_of_no_boundary`. Spec:
-  `ln2PrecRound_eq_liftVal₀ (p) [NeZero p] (mode)` (`p = 0` returns `(zero, .lt)`). Tests
+  `ln2PrecRound_eq_liftVal₀ (p) [NeZero p] (mode)` (`p = 0` returns `(nan, .eq)` since 2026-10-25; it was `(zero, .lt)` before). Tests
   (`#guard`, compiled evaluation — `Nat.find`/WF recursion is fine there, but not for `decide`):
   `p = 1, 2, 3` by hand, `p = 53` (`6243314768165359/2^53`, below `ln 2`), `p = 100`
   (`878668439483319573618263538048/2^100`, below), `toString (ln2 53) = "0.6931471805599453"`.
@@ -4442,7 +4442,7 @@ agreement with `exp`, `lnRat`, `ln`, `logBase`, `log2`, and the 53-bit decimal s
 
 ## Constants `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8` (DONE 2026-10-25, fuel-free)
 
-User request.  `AzFloat/PiDiv3Bracket.lean` + `Equiv/`, `AzFloat/PiMultiples.lean` + `Equiv/` +
+User request.  `AzFloat/PiDiv3Bracket.lean` + `Equiv/`, `AzFloat/PiConstants.lean` + `Equiv/` +
 `Tests/`.  `τ`, `π/2`, `π/4`, `π/8` are exact shifts of `piPrecRound p mode` (both the float and
 the comparison): `shift_liftVal₀` from `roundVal_mul_two_zpow` (the float set is scale-invariant),
 with the shifts written as `<<< AzInt.ofInt k` so that `AzInt.toInt_ofInt` gives the exponent
@@ -4457,7 +4457,7 @@ is not the correctly rounded `π/3`).
 ## Constants `1/π`, `2/π` (DONE 2026-10-25, fuel-free)
 
 User request.  `AzFloat/OneDivPiBracket.lean` + `Equiv/`; drivers `oneDivPiPrecRound`/`oneDivPi`,
-`twoDivPiPrecRound`/`twoDivPi` in `PiMultiples.lean` (+ `Equiv/`, `Tests/`).  `1/π` is the
+`twoDivPiPrecRound`/`twoDivPi` in `PiConstants.lean` (+ `Equiv/`, `Tests/`).  `1/π` is the
 reciprocal of the `π` bracket by `divBracketByPosBracket (one, one) …`, the lower end first
 raised to `2` by `maxOf` (`piBracket_spec` only gives `0 ≤ lo`; `Real.pi_gt_three`); `2/π` is
 the exact shift of `1/π` (`shift_liftVal₀`, `inv_mul_eq_div`).  The generic `tendsto_divEps` and
@@ -4465,3 +4465,33 @@ the exact shift of `1/π` (`shift_liftVal₀`, `inv_mul_eq_div`).  The generic `
 `divEps`) so that bracket files need not import the `ln` machinery.  Tests: correctly rounded
 values at 1, 2, 3, 53, 100 bits in nearest/floor/ceiling, precision `0`, the shift relation,
 53-bit decimal strings.
+
+## Constants `√π`, `1/√π`, `2/√π`, `1/√τ` (DONE 2026-10-25, fuel-free)
+
+User request (and the user's suggestion to use `rsqrt`).  `AzFloat/SqrtPiBracket.lean` +
+`Equiv/`; drivers `sqrtPi`, `oneDivSqrtPi`, `twoDivSqrtPi`, `oneDivSqrtTau` (+ `…PrecRound`) in
+`PiConstants.lean` (+ `Equiv/`, `Tests/`).  **No fuel needed**: a rational `√π` would make
+`π = (√π)²` rational (`irrational_sqrt_of_irrational`), likewise `√(2π)`; the reciprocals by
+`.inv`.  No transcendence of `π` is used.  **Brackets**: generic `sqrtBracket` (square roots of
+the ends with `sqrtFloor_err`/`sqrtCeiling_err`) and `rsqrtBracket` (reciprocal square roots of
+the swapped ends with the new `rsqrtFloor_err`/`rsqrtCeiling_err`, derived from
+`rsqrtPrecRound_eq_liftVal` + `Spec.rsqrt_coe`), both for a bracket with lower end `≥ 2`
+(`piBracket2` = the `π` bracket clamped at `2`): widths `(hi − lo)/2 + 4 hi 2^(−w)` and
+`(hi − lo)/4 + 4 · 2^(−w)` (`sqrt_facts`: `7/5 ≤ √lo`, `√hi − √lo ≤ (hi − lo)/2` from
+`(√hi − √lo)(√hi + √lo − 2) ≥ 0`, `√lo √hi ≥ 2`).  `1/√π = rsqrtBracket (piBracket2 w)`,
+`1/√τ = rsqrtBracket` of the bracket shifted by one bit, `2/√π` = shift of `1/√π`.  Gotchas:
+`√lo ≥ 1` is not enough for `⌊√lo⌋ ≥ 1` (use `7/5 ≤ √lo`); `rsqrtBracket_spec` on a shifted
+bracket needs `(B := …) (lo := …) (hi := …) (M := …)` pinned; `field_simp` closes
+`a⁻¹ − b⁻¹ = (b − a)(a⁻¹ b⁻¹)` without `ring`.  Tests: correctly rounded values at 1, 2, 3, 53,
+100 bits in nearest/floor/ceiling (110-digit decimal square roots), precision `0`, the shift
+relation, 53-bit decimal strings.
+
+## Precision `0` convention for constants, and the `PiConstants` rename (2026-10-25)
+
+User: precision `0` was never meant to be valid.  It is outside every specification
+(`roundVal p mode` needs `[NeZero p]`, so all `…_eq_liftVal`/`…_eq_liftVal₀` theorems assume
+`p ≠ 0`); the drivers only need a total answer.  The functions of an argument always returned
+`(nan, .eq)`, while the constants `pi`, `ln2`, `log2E` (and, following them, all constants added
+today) returned `(zero, .lt)`.  Now every constant returns `(nan, .eq)` too; no proof changes.
+`PiMultiples.lean` (+ `Equiv/`, `Tests/`) renamed to `PiConstants.lean`, since it holds the
+reciprocals and square roots of `π` as well.

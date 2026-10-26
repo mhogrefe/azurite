@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.PiMultiples
+import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.Equiv.Pi
 
 /-!
-# Equivalence: `τ`, `π/2`, `π/3`, `π/4`, `π/6`, `π/8`, `1/π`, `2/π` are correctly rounded
+# Equivalence: the multiples, reciprocals and square roots of `π` are correctly rounded
 
 Each `…PrecRound p mode` equals `liftVal₀ (some v) p mode` for its exact value `v`, for every
 `p ≠ 0` and every mode.  The shifted constants follow from `roundVal_mul_two_zpow`.
@@ -94,5 +94,56 @@ theorem twoDivPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMod
   have h := shift_liftVal₀ p mode (oneDivPiPrecRound_eq_liftVal₀ p mode) (AzInt.ofInt 1)
   rw [AzInt.toInt_ofInt, zpow_one, inv_mul_eq_div] at h
   exact h
+
+/-- **`√π` is correctly rounded.** -/
+theorem sqrtPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    sqrtPiPrecRound p mode = liftVal₀ (some ((Real.sqrt Real.pi : ℝ) : EReal)) p mode := by
+  unfold sqrtPiPrecRound liftVal₀
+  split_ifs with hp
+  · exact absurd hp (NeZero.ne p)
+  apply zivLoopCertified_eq_threshold p mode sqrtPiApprox (Real.sqrt Real.pi) (p + zivGuardBits)
+    (by unfold zivGuardBits; omega)
+  intro w hw
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
+    sqrtPiApprox_spec (w := w) (by unfold zivGuardBits at hw; omega)
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
+
+/-- **`1/√π` is correctly rounded.** -/
+theorem oneDivSqrtPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    oneDivSqrtPiPrecRound p mode
+      = liftVal₀ (some (((Real.sqrt Real.pi)⁻¹ : ℝ) : EReal)) p mode := by
+  unfold oneDivSqrtPiPrecRound liftVal₀
+  split_ifs with hp
+  · exact absurd hp (NeZero.ne p)
+  apply zivLoopCertified_eq_threshold p mode oneDivSqrtPiApprox ((Real.sqrt Real.pi)⁻¹)
+    (p + zivGuardBits)
+    (by unfold zivGuardBits; omega)
+  intro w hw
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
+    oneDivSqrtPiApprox_spec (w := w) (by unfold zivGuardBits at hw; omega)
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
+
+/-- **`2/√π` is correctly rounded.** -/
+theorem twoDivSqrtPiPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    twoDivSqrtPiPrecRound p mode
+      = liftVal₀ (some ((2 / Real.sqrt Real.pi : ℝ) : EReal)) p mode := by
+  have h := shift_liftVal₀ p mode (oneDivSqrtPiPrecRound_eq_liftVal₀ p mode) (AzInt.ofInt 1)
+  rw [AzInt.toInt_ofInt, zpow_one, inv_mul_eq_div] at h
+  exact h
+
+/-- **`1/√τ` is correctly rounded.** -/
+theorem oneDivSqrtTauPrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    oneDivSqrtTauPrecRound p mode
+      = liftVal₀ (some (((Real.sqrt (2 * Real.pi))⁻¹ : ℝ) : EReal)) p mode := by
+  unfold oneDivSqrtTauPrecRound liftVal₀
+  split_ifs with hp
+  · exact absurd hp (NeZero.ne p)
+  apply zivLoopCertified_eq_threshold p mode oneDivSqrtTauApprox ((Real.sqrt (2 * Real.pi))⁻¹)
+    (p + zivGuardBits)
+    (by unfold zivGuardBits; omega)
+  intro w hw
+  obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
+    oneDivSqrtTauApprox_spec (w := w) (by unfold zivGuardBits at hw; omega)
+  exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩
 
 end Azurite.AzFloat
