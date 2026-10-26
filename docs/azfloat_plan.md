@@ -4871,3 +4871,23 @@ specials.  **Rename**: the files `Exp2*.lean` (`Exp2`, `Exp2Bracket`, `Exp2Rat`,
 (`pow2PrecRound`, `pow2`, `pow2Rat…`, `pow2M1…`, `pow2M1Rat…`, `pow2Bracket`, `pow2Approx`,
 `pow2Eps`, `Spec.pow2`, `Spec.pow2M1`, their lemmas) is `pow2…`; the ledger sections above
 keep their original titles (`2^x`, …) but the identifiers in them were renamed too.
+
+## `x^n` for an `AzInt` exponent (DONE 2026-10-26)
+
+User: raise an `AzFloat` to an `AzInt` power.  `AzFloat/PowInt.lean` + `Equiv/` + `Tests/`.
+A finite `x = ±m 2^(e − size m)` (`finiteVal`) has the exact dyadic power
+`x^n = (±1)^n m^n 2^((e − size m) n)`, so no Ziv loop: for `n = k ≥ 0` the exact floats `±m^k`
+(`ofAzNat (m.pow k)`, negated for `s = false` and odd `k`: `AzNat.isOdd`) and `powerOf2 t`,
+`t = (e − size m) · k` in `AzInt`, are multiplied with one rounding (`mulPrecRound`); for
+`n < 0` the exact `±2^(−t)` is divided by `m^k` (`divPrecRound`), one rounding.  Proof:
+`finiteVal_pow` (`mul_pow`, `zpow_mul`), `sign_pow_eq` (`Odd.neg_one_pow`/`Even.neg_one_pow`),
+`abs_isOdd_iff`, the `liftVal₂` specs of `mulPrecRound`/`divPrecRound` with
+`Spec.mul_coe_coe`/`Spec.div_coe_coe`, and `σ⁻¹ = σ` for the sign.  Gotcha: `rw [ite_eq_right
+(fun h => …)]` with an inferred condition rewrote the *first* `ite` in the goal (the Boolean
+`if n.sign` of the definition, under `let`s), silently taking its else branch — pin the
+condition with `(c := …)` whenever the proof term does not fix it.  Spec `Spec.powInt n`:
+`a^0 = 1`, `0^n = +∞` for `n < 0` (Mathlib's `zpow` gives `0`), `(±∞)^n` by sign and parity,
+`NaN` propagates (so `NaN^0 = NaN`); `powIntPrecRound_eq_liftVal`.  Tests: specials, exact
+dyadic powers (`(3/2)^10`, `2^(±100)`, `(−1/2)^(−3) = −8`, `3^40` at 20 bits), inexact ones
+(`(±3/2)^(−3) = ±8/27`, the 53-bit `x ≈ 1/3` to the powers `5` and `−7` against exact
+rationals), directed modes and comparison results.

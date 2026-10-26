@@ -130,6 +130,7 @@ import Azurite.AzFloat.Equiv.PowBaseBracket
 import Azurite.AzFloat.Equiv.PowBaseM1
 import Azurite.AzFloat.Equiv.PowBaseM1Rat
 import Azurite.AzFloat.Equiv.PowBaseRat
+import Azurite.AzFloat.Equiv.PowInt
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
@@ -214,6 +215,7 @@ import Azurite.AzFloat.PowBaseBracket
 import Azurite.AzFloat.PowBaseM1
 import Azurite.AzFloat.PowBaseM1Rat
 import Azurite.AzFloat.PowBaseRat
+import Azurite.AzFloat.PowInt
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product

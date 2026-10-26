@@ -69,6 +69,7 @@ import Azurite.AzFloat.Tests.PowBase
 import Azurite.AzFloat.Tests.PowBaseM1
 import Azurite.AzFloat.Tests.PowBaseM1Rat
 import Azurite.AzFloat.Tests.PowBaseRat
+import Azurite.AzFloat.Tests.PowInt
 import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product
