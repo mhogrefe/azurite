@@ -66,6 +66,9 @@ import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
 import Azurite.AzFloat.Equiv.Exp
+import Azurite.AzFloat.Equiv.Exp2
+import Azurite.AzFloat.Equiv.Exp2Bracket
+import Azurite.AzFloat.Equiv.Exp2Rat
 import Azurite.AzFloat.Equiv.ExpApprox
 import Azurite.AzFloat.Equiv.ExpBracket
 import Azurite.AzFloat.Equiv.ExpConstants
@@ -138,6 +141,9 @@ import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Exp
+import Azurite.AzFloat.Exp2
+import Azurite.AzFloat.Exp2Bracket
+import Azurite.AzFloat.Exp2Rat
 import Azurite.AzFloat.ExpApprox
 import Azurite.AzFloat.ExpBracket
 import Azurite.AzFloat.ExpConstants

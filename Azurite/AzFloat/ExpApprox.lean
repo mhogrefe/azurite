@@ -26,6 +26,8 @@ widened by `exp (q − ⌊q⌋_W) ≤ 1 + 2^(−w−14)`.  `expM1Bracket` bracke
 working precision is raised by `max(−e, 0)` against the cancellation, and a tiny `x`
 (`|x| < 2^(−w)`) is enclosed by `[x, x + |x| 2^e]` without any series.  `expM1RatBracket` is the
 rational version: `expM1Bracket` at `⌊q⌋_W`, the upper end widened by `⌈exp y⌉ · 2^(e + 2 − W)`.
+`expOfBracket X w` encloses `exp v` for a bracket `X` of `v` of width at most `1`: `expBracketAt`
+at the lower end, the upper end widened by `exp (hi − lo) ≤ 1 + 2 (hi − lo)`.
 -/
 
 namespace Azurite.AzFloat
@@ -152,5 +154,15 @@ def expM1RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
 def expM1RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
   let b := expM1RatBracket q w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The bracket of `exp v` from a bracket `X` of `v` (of width at most `1`): `expBracketAt` at
+the lower end `lo` gives `[a, b] ∋ exp lo`, and the upper end is widened to `b + ⌈b · 2d⌉` for
+`d = ⌈hi − lo⌉`, since `exp v ≤ exp lo · exp (v − lo) ≤ exp lo · (1 + 2d)`. -/
+def expOfBracket (X : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  let b := expBracketAt X.1 w
+  let d := (subPrecRound X.2 X.1 (w + 8) .Ceiling).1
+  let corr := (mulPrecRound b.2 (d <<< AzInt.ofInt 1) (w + 8) .Ceiling).1
+  (b.1, (addPrecRound b.2 corr (w + 8) .Ceiling).1)
+
 
 end Azurite.AzFloat

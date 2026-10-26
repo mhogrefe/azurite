@@ -4659,3 +4659,45 @@ reflective tactic: one semantics `eval`, one soundness interface per sub-procedu
 optimization-based cases, where the certificate may be found by untrusted compiled search and
 only checked in the kernel), composed by a dispatcher whose own soundness is trivial.
 
+
+## `2^x` for `AzFloat` (DONE 2026-10-26, fuel-free)
+
+User: continue matching Malachite's exp/pow functions.  `AzFloat/Exp2Bracket.lean` + `Equiv/`,
+`AzFloat/Exp2.lean` + `Equiv/` + `Tests/`.  `2^x = exp (x ln 2)`: `ln2MulBracket x e w` = `|x|`
+times the ends of `ln2Bracket` at `expWork e w = w + 16 + max(e, 0)` (`mulFloor_err`/
+`mulCeiling_err` on the nonnegative products, ends swapped and negated for `x < 0`), width
+`≤ 12 |x| 2^(−W) ≤ 2^(−w)` (the `E · (1/2)^emax = 1` trick of `expReduce_spec`; the lower end
+of the `ln 2` bracket `≥ 1/5` and `(1/2)^W ≤ 1/64` give `0 ≤ lo₂`, `hi₂ ≤ 1`); then
+`expOfBracket`, now in `ExpApprox` with the new width bound `expOfBracket_spec_width`
+(`expOfBracketEps v δ w = expEps v w + exp v (24 δ + 2^(−w)/4)`, from `b ≤ 3 exp lo`,
+`corr ≤ 8 δ b`, `hi' ≤ (b + corr)(1 + 2^(−w)/128)`).  **Exact case**: `isInteger x` →
+`setPrecRound (powerOf2 (truncToAzInt x)) p mode` (`truncToAzInt_of_isInteger`:
+`|k − n| < 1` for integers forces `k = n`, `Int.abs_lt_one_iff`).  **Irrationality**
+(`irrational_two_rpow_of_dyadic`): for `x = N/2^J` not an integer, `f = fract x ∈ (0, 1)` with
+`f = (N % 2^J)/2^J` (`Int.fract_div_intCast_eq_div_intCast_mod`), `(2^f)^(2^J) = 2^(N % 2^J)`
+an integer and `1 < 2^f < 2`, so `2^f` is irrational by `irrational_nrt_of_notint_nrt`, and
+`2^x = (2^⌊x⌋ : ℚ) · 2^f` (`Real.rpow_add`, `rpow_intCast`, `Rat.cast_zpow`, `.ratCast_mul`);
+`exists_dyadic_of_finiteVal` gives `N`, `J = size m + |e|`.  Spec `Spec.exp2`
+(`rpow`), `exp2PrecRound_eq_liftVal`.  Tests: specials, exact powers at precision 1 (`2^100`,
+`2^(−100)`), `2^(1/2)` against `sqrt2PrecRound` in three modes, seven dyadic arguments at 150
+bits against 120-digit references, directed modes, agreement with `exp (x · ln2 300)`.
+
+## `2^q` for a rational `q` (DONE 2026-10-26, fuel-free)
+
+User: the `AzRat → AzFloat` variant of `2^x`.  `AzFloat/Exp2Rat.lean` + `Equiv/` + `Tests/`,
+with the bracket in `Exp2Bracket`: `ln2MulRatBracket q w` = the floats below and above `|q|`
+(`ofAzRatRound q.abs W .Floor/.Ceiling`, relative error `≤ 2 · 2^(−W)`) times the ends of
+`ln2Bracket W` at `W = w + 16 + size (num q)`, ends swapped and negated for `sign q = false`
+(then `num q ≠ 0` by `zero_sign`, so `q < 0`).  Width `b hi − a lo = b (hi − lo) + (b − a) lo
+≤ 2 |q| · 8 δ + 4 |q| δ ≤ 20 |q| 2^(−W) ≤ 2^(−w)` by `|q| < 2^(size (num q))` (`abs_toRat_lt`)
+and the `2^s · (1/2)^s = 1` trick.  Then `expOfBracket` as for `2^x`, so the same `exp2Eps`.
+**Exact case**: `den q = 1` → `setPrecRound (powerOf2 (AzInt.mkNorm (sign q) (num q))) p mode`
+(`toInt_mkNorm`, `toRat_cast_eq` with the denominator `1`, `Real.rpow_intCast`).
+**Irrationality**: `irrational_two_rpow_of_dyadic` generalized to `irrational_two_rpow_of_rat`
+(`x · D = N`, `0 < D`, same proof with `D` for `2^J`; the dyadic lemma is now its instance),
+and `irrational_two_rpow_toRat`: a rational `2^q` with `den q ≠ 1` would make `q` an integer
+(`Rat.den_intCast`, `(toRat q).den = (den q).toNat` by `rfl`).  Spec `exp2RatPrecRound_eq`
+(`= roundVal p mode (Spec.exp2 (toRat q))`, `p ≠ 0`; `(nan, .eq)` at `p = 0`).  Tests: exact
+powers (`2^0`, `2^10`, `2^(−3)` at precision 1, `2^(±100)`), agreement with `exp2PrecRound` on
+dyadics and with `sqrt2PrecRound` at `1/2`, `2^(1/3)`, `2^(10/3)`, `2^(−1/3)`, `2^(1/10)`,
+`2^(22/7)`, `2^(123.456)` at 150 bits against 120-digit references, directed modes.

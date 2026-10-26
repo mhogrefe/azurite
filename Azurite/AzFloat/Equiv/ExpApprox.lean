@@ -28,6 +28,8 @@ import Azurite.AzNat.Equiv.LogBase2
   `expM1Eps x c w` (`c = max(−e, 0)`).
 * `expM1RatApprox_spec`, `expM1RatApprox_isSome_exists`: `exp q − 1` for a rational `q`, width
   `expM1RatEps q c w`.
+* `expOfBracket_spec` (strict lower end) and `expOfBracket_spec_width` (width
+  `expOfBracketEps v (hi − lo) w`): the exponential of a bracket of width `≤ 1`.
 -/
 
 namespace Azurite.AzFloat
@@ -1523,5 +1525,116 @@ theorem expM1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) 
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := expM1RatApprox_spec hw q h0
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-- `expOfBracket X w` encloses `exp v` for a bracket `X = [lo, hi]` of `v` with `hi − lo ≤ 1`,
+strictly from below when `lo < v`. -/
+theorem expOfBracket_spec {X : AzFloat × AzFloat} {lo hi v : ℝ}
+    (hlo : X.1.toVal = some (lo : EReal)) (hhi : X.2.toVal = some (hi : EReal)) (h1 : lo < v)
+    (h2 : v ≤ hi) (hw1 : hi - lo ≤ 1) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ a b : ℝ, (expOfBracket X w).1.toVal = some (a : EReal) ∧
+      (expOfBracket X w).2.toVal = some (b : EReal) ∧ a < Real.exp v ∧ Real.exp v ≤ b := by
+  have : NeZero (w + 8) := ⟨by omega⟩
+  obtain ⟨a, b, ha, hb, ha1, hb1, -⟩ := expBracketAt_spec hlo hw
+  simp only [expOfBracket]
+  obtain ⟨dv, hd, hd1, -⟩ := subCeiling_abs hhi hlo (w + 8)
+  have hd0 : 0 ≤ dv := by linarith
+  have h2d : ((subPrecRound X.2 X.1 (w + 8) .Ceiling).1 <<< AzInt.ofInt 1).toVal
+      = some ((2 * dv : ℝ) : EReal) := by
+    have h := toVal_shiftLeft_of_toVal hd (AzInt.ofInt 1)
+    rw [AzInt.toInt_ofInt, zpow_one, mul_comm] at h
+    exact h
+  have hb0 : 0 < b := lt_of_lt_of_le (Real.exp_pos lo) hb1
+  obtain ⟨corr, hcorr, hc⟩ := mulCeiling_err hb h2d (w + 8) (by positivity)
+  have hbd : 0 ≤ b * (2 * dv) := by positivity
+  obtain ⟨hi', hhi', hh⟩ := addCeiling_err hb hcorr (w + 8) (by linarith [hc.ge])
+  refine ⟨a, hi', ha, hhi', lt_of_le_of_lt ha1 (Real.exp_lt_exp.mpr h1), ?_⟩
+  have e1 : Real.exp v ≤ Real.exp lo * (1 + 2 * (v - lo)) :=
+    exp_le_exp_mul_one_add h1.le (by linarith)
+  have e2 : Real.exp lo * (1 + 2 * (v - lo)) ≤ b * (1 + 2 * dv) :=
+    mul_le_mul hb1 (by linarith) (by linarith) hb0.le
+  have e3 := hc.ge
+  have e4 := hh.ge
+  nlinarith
+
+
+/-- The width bound of `expOfBracket` at a bracket of width `δ`. -/
+noncomputable def expOfBracketEps (v δ : ℝ) (w : ℕ) : ℝ :=
+  expEps v w + Real.exp v * (24 * δ + (1 / 2 : ℝ) ^ w / 4)
+
+/-- `expOfBracket X w` encloses `exp v` for a bracket `X = [lo, hi]` of `v` with `hi − lo ≤ 1`,
+with width at most `expOfBracketEps v (hi − lo) w`. -/
+theorem expOfBracket_spec_width {X : AzFloat × AzFloat} {lo hi v : ℝ}
+    (hlo : X.1.toVal = some (lo : EReal)) (hhi : X.2.toVal = some (hi : EReal)) (h1 : lo ≤ v)
+    (h2 : v ≤ hi) (hw1 : hi - lo ≤ 1) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ a b : ℝ, (expOfBracket X w).1.toVal = some (a : EReal) ∧
+      (expOfBracket X w).2.toVal = some (b : EReal) ∧ a ≤ Real.exp v ∧ Real.exp v ≤ b ∧
+      b - a ≤ expOfBracketEps v (hi - lo) w := by
+  have : NeZero (w + 8) := ⟨by omega⟩
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expBracketAt_spec hlo hw
+  simp only [expOfBracket]
+  obtain ⟨u, hu⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+  have hu0 : 0 < u := by rw [hu]; positivity
+  have hus : u ≤ 1 / 10 ^ 18 := hu ▸ half_pow_small hw
+  have hu1 : u ≤ 1 := by linarith
+  have h8 : (1 / 2 : ℝ) ^ (w + 8) = u / 256 := by
+    rw [pow_add, hu, show ((1 : ℝ) / 2) ^ 8 = 1 / 256 by norm_num]; ring
+  obtain ⟨dv, hd, hd1, hd2⟩ := subCeiling_abs hhi hlo (w + 8)
+  have hd0 : 0 ≤ dv := by linarith
+  rw [abs_of_nonneg (by linarith : 0 ≤ hi - lo), h8] at hd2
+  have hdv : dv ≤ 2 * (hi - lo) := by nlinarith
+  have h2d : ((subPrecRound X.2 X.1 (w + 8) .Ceiling).1 <<< AzInt.ofInt 1).toVal
+      = some ((2 * dv : ℝ) : EReal) := by
+    have h := toVal_shiftLeft_of_toVal hd (AzInt.ofInt 1)
+    rw [AzInt.toInt_ofInt, zpow_one, mul_comm] at h
+    exact h
+  have hElo := Real.exp_pos lo
+  have hb0 : 0 < b := lt_of_lt_of_le hElo hb1
+  obtain ⟨corr, hcorr, hc⟩ := mulCeiling_err hb h2d (w + 8) (by positivity)
+  have hbd : 0 ≤ b * (2 * dv) := by positivity
+  have hc1 := hc.ge
+  have hc2 := hc.le
+  rw [h8] at hc2
+  obtain ⟨hi', hhi', hh⟩ := addCeiling_err hb hcorr (w + 8) (by linarith)
+  have hh1 := hh.ge
+  have hh2 := hh.le
+  rw [h8] at hh2
+  refine ⟨a, hi', ha, hhi', ha1.trans (Real.exp_le_exp.mpr h1), ?_, ?_⟩
+  · have e1 : Real.exp v ≤ Real.exp lo * (1 + 2 * (v - lo)) :=
+      exp_le_exp_mul_one_add h1 (by linarith)
+    have e2 : Real.exp lo * (1 + 2 * (v - lo)) ≤ b * (1 + 2 * dv) :=
+      mul_le_mul hb1 (by linarith) (by linarith) hb0.le
+    nlinarith
+  · -- `b ≤ 3 exp lo`, `corr ≤ 8 (hi − lo) b`, `hi' ≤ b + corr + (b + corr) u/128`
+    have hf := forty_mul_half_pow_le hw
+    rw [← hu] at hf
+    unfold expEps at hab
+    rw [← hu] at hab
+    have hb3 : b ≤ 3 * Real.exp lo := by
+      have : Real.exp lo * (80 * ((w : ℝ) + 9)) * u ≤ Real.exp lo * 2 := by
+        rw [mul_assoc]
+        exact mul_le_mul_of_nonneg_left (by linarith) hElo.le
+      linarith
+    have hcorr2 : corr ≤ 8 * (hi - lo) * b := by
+      have h3 : b * (2 * dv) ≤ b * (4 * (hi - lo)) := mul_le_mul_of_nonneg_left (by linarith) hb0.le
+      have h4 : 2 * (b * (2 * dv)) * (u / 256) ≤ 2 * (b * (4 * (hi - lo))) * (u / 256) :=
+        mul_le_mul_of_nonneg_right (by linarith) (by positivity)
+      nlinarith
+    have hcorr0 : 0 ≤ corr := by linarith
+    have hhi3 : hi' ≤ b + corr + (b + corr) * (u / 128) := by linarith
+    have hEv : Real.exp lo ≤ Real.exp v := Real.exp_le_exp.mpr h1
+    unfold expOfBracketEps expEps
+    rw [← hu]
+    have hmono : Real.exp lo * (80 * ((w : ℝ) + 9)) * u ≤ Real.exp v * (80 * ((w : ℝ) + 9)) * u :=
+      mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right hEv (by positivity)) hu0.le
+    have hδ0 : 0 ≤ hi - lo := by linarith
+    have hcu : corr * u ≤ corr := mul_le_of_le_one_right hcorr0 hu1
+    have hbu : b * u ≤ 3 * Real.exp lo * u := mul_le_mul_of_nonneg_right hb3 hu0.le
+    have hcl : corr ≤ 24 * (hi - lo) * Real.exp lo := by
+      have := mul_le_mul_of_nonneg_left hb3 (by positivity : (0 : ℝ) ≤ 8 * (hi - lo))
+      linarith
+    have hEvδ : (hi - lo) * Real.exp lo ≤ (hi - lo) * Real.exp v :=
+      mul_le_mul_of_nonneg_left hEv hδ0
+    have hEvu : Real.exp lo * u ≤ Real.exp v * u := mul_le_mul_of_nonneg_right hEv hu0.le
+    nlinarith
 
 end Azurite.AzFloat
