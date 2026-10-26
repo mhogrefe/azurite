@@ -43,6 +43,18 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 
 /-! ## `√3`, `√5` -/
 
+#guard cbrt2PrecRound 1 .Nearest == (one, .lt)
+#guard cbrt2PrecRound 1 .Ceiling == (two, .gt)
+#guard cbrt2PrecRound 2 .Nearest == (F "3/2" 2, .gt)
+#guard cbrt2PrecRound 2 .Floor == (F "1" 2, .lt)
+#guard cbrt2PrecRound 3 .Nearest == (F "5/4" 3, .lt)
+#guard cbrt2PrecRound 53 .Nearest == (F "5674179970822795/4503599627370496" 53, .gt)
+#guard cbrt2PrecRound 53 .Ceiling == (F "5674179970822795/4503599627370496" 53, .gt)
+#guard cbrt2PrecRound 53 .Floor == (F "2837089985411397/2251799813685248" 53, .lt)
+#guard cbrt2PrecRound 0 .Nearest == (nan, .eq)
+#guard toHexString (cbrt2 53) == "0x1.428a2f98d728b#53"
+#guard toString (cbrt2 53) == "1.2599210498948732"
+#guard cbrt2 100 == cbrt (F "2" 100)
 #guard sqrt3PrecRound 2 .Nearest == (F "3/2" 2, .lt)
 #guard sqrt3PrecRound 3 .Nearest == (F "7/4" 3, .gt)
 #guard sqrt3PrecRound 3 .Floor == (F "3/2" 3, .lt)

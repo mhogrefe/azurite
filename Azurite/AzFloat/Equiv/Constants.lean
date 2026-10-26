@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Constants
+import Azurite.AzFloat.Equiv.Cbrt
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Rsqrt
 import Azurite.AzFloat.Equiv.Shift
@@ -67,6 +68,14 @@ theorem sqrt2PrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) 
   rw [sqrtPrecRound_eq_liftVal]
   unfold liftVal
   rw [toVal_two, Option.bind_some, Spec.sqrt_coe 2 (by norm_num)]
+
+/-- `∛2` is the lift of its value. -/
+theorem cbrt2PrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    cbrt2PrecRound p mode = liftVal₀ (some ((realCbrt 2 : ℝ) : EReal)) p mode := by
+  unfold cbrt2PrecRound liftVal₀
+  rw [cbrtPrecRound_eq_liftVal]
+  unfold liftVal
+  rw [toVal_two, Option.bind_some, Spec.cbrt_coe]
 
 /-- `√3` is the lift of its value. -/
 theorem sqrt3PrecRound_eq_liftVal₀ (p : ℕ) [NeZero p] (mode : RoundingMode) :

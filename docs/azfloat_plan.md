@@ -4936,3 +4936,12 @@ one pass from `sqrtRatCore_eq` and `cbrtCore_eq`.  Tests: exact cubes (`∛(−1
 with `10^(±1/3)`, `7^(±1/3)` from the `powBaseRat` family at 150 bits, `∛(±1/3)` in the
 directed modes, ties at precision 1, the symmetry with `Floor`/`Ceiling` exchanged, zero and
 precision `0`.
+
+## The constant `∛2` (DONE 2026-10-26)
+
+User: `∛2` as an `AzFloat` constant.  `cbrt2PrecRound p mode = cbrtPrecRound two p mode` and
+`cbrt2 p` in `AzFloat/Constants.lean` (next to `sqrt2`), spec `cbrt2PrecRound_eq_liftVal₀`
+(`= liftVal₀ (some (realCbrt 2))`) in `Equiv/Constants.lean`, tests in `Tests/Constants.lean`
+(1, 2, 3 and 53 bits in the three modes, the hexadecimal and decimal strings at 53 bits,
+precision `0`, agreement with `cbrt (F "2" 100)`).  No Ziv loop and no irrationality proof are
+needed: the cube root is rounded directly.

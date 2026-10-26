@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Cbrt
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Shift
@@ -40,6 +41,13 @@ def sqrt2PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
 
 /-- `√2` rounded to nearest at precision `p`. -/
 def sqrt2 (p : Nat) : AzFloat := (sqrt2PrecRound p .Nearest).1
+
+/-- `∛2` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
+def cbrt2PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  cbrtPrecRound two p mode
+
+/-- `∛2` rounded to nearest at precision `p`. -/
+def cbrt2 (p : Nat) : AzFloat := (cbrt2PrecRound p .Nearest).1
 
 /-- `√3` rounded to precision `p` with `mode`, and the comparison with the exact value. -/
 def sqrt3PrecRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
