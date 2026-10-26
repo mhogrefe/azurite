@@ -4701,3 +4701,43 @@ and `irrational_two_rpow_toRat`: a rational `2^q` with `den q ≠ 1` would make 
 powers (`2^0`, `2^10`, `2^(−3)` at precision 1, `2^(±100)`), agreement with `exp2PrecRound` on
 dyadics and with `sqrt2PrecRound` at `1/2`, `2^(1/3)`, `2^(10/3)`, `2^(−1/3)`, `2^(1/10)`,
 `2^(22/7)`, `2^(123.456)` at 150 bits against 120-digit references, directed modes.
+
+## `2^x − 1` for `AzFloat` (DONE 2026-10-26, fuel-free)
+
+User: `x ↦ 2^x − 1`.  `AzFloat/Exp2M1.lean` + `Equiv/` + `Tests/`, bracket in `Exp2Bracket`.
+`expM1OfBracket X e w` is the `exp v − 1` analogue of `expOfBracket`: `expM1Bracket` at the lower
+end `lo` of a bracket `[lo, hi]` of `v` (with `|lo| < 2^e`, so its own tiny path and compensation
+`max(−e, 0)` apply) gives `[a, b] ∋ exp lo − 1`; the upper end is `b + ⌈E · 2d⌉` with
+`E = ⌈b + 1⌉ ≥ exp lo` and `d = ⌈hi − lo⌉`, since `exp v − 1 ≤ (exp lo − 1) + 2 exp lo (v − lo)`.
+`exp2M1Bracket x e w = expM1OfBracket (ln2MulBracket x e (w + max(−e, 0))) e w`: the bracket of
+`x ln 2` is computed at the compensated precision so that its width `δ ≤ 2^(−w−c) ≤ 2^(−64) 2^e`
+(`half_pow_comp_le`) is a `2^(−w)` fraction of `|x ln 2|` (`2^e ≤ 2 |x|`,
+`two_zpow_le_two_mul_abs_finiteVal`); this gives `|lo| < 2^e` and `|lo| ≤ 2 |x ln 2|`, the
+hypotheses of `expM1Bracket_spec` and `expM1Eps_le`.  Width (`expM1OfBracket_width`, pure real
+arithmetic): `≤ 2 D + (33 exp lo + |exp lo − 1|) u` with `D = expM1Eps lo c w`, `u = 2^(−w)`,
+hence `≤ expM1RatEps (x ln 2) c w` (the existing `3 ×` bound of the rational `exp q − 1`), reused
+as `exp2M1Eps`.  **Exact case**: `isInteger x` → `subPrecRound (powerOf2 (truncToAzInt x)) one`
+(`subPrecRound_eq_liftVal₂`, `Spec.sub` unfolded to `Spec.add_coe_coe`).  **Irrationality**:
+`irrational_two_rpow_sub_one_finiteVal` from the dyadic `2^x` lemma and `.sub_intCast 1`.  Spec
+`Spec.exp2M1`, `exp2M1PrecRound_eq_liftVal`.  Tests: specials, exact `2^n − 1` (precision 1,
+`2^100 − 1` at 150 and 10 bits, `2^(−100) − 1` rounding to `−1` from above), `√2 − 1`, eleven
+arguments at 150 bits against 200-digit references including `±2^(−30)` and `±2^(−200)` (the
+tiny path: `2^(±2^(−200)) − 1 ≈ ±ln 2 · 2^(−200)`, checked against `tiny × ln2`), directed modes.
+
+## `2^q − 1` for a rational `q` (DONE 2026-10-26, fuel-free)
+
+User: the `AzRat → AzFloat` variant of `2^x − 1`.  `AzFloat/Exp2M1Rat.lean` + `Equiv/` +
+`Tests/`, bracket in `Exp2Bracket`.  The float proof was first factored into the generic
+`expM1OfBracket_spec`: for any bracket `X` of `x ln 2` of width `≤ 2^(−w−c)`, `c = expM1Comp e`,
+with `2^(e−1) ≤ |x| < 2^e`, `expM1OfBracket X e w` encloses `exp (x ln 2) − 1` with width
+`≤ expM1RatEps (x ln 2) c w`; `exp2M1Bracket_spec` is now five lines.  The rational bracket
+`exp2M1RatBracket q w = expM1OfBracket (ln2MulRatBracket q (w + c)) e w` at the exponent
+`e = exp2M1RatExp q = ⌊log₂ |q|⌋ + 1` (`AzRat.floorLogBaseAbs`; `exp2M1RatExp_bounds` from
+`Int.zpow_log_le_self`/`Int.lt_zpow_succ_log_self`), so the same generic lemma applies with
+`ln2MulRatBracket_spec`.  Driver: `num q = 0 → (zero, .eq)`; `den q = 1 →
+subPrecRound (powerOf2 (AzInt.mkNorm (sign q) (num q))) one` (`toInt_mkNorm`); otherwise the
+certified loop (`irrational_two_rpow_sub_one_toRat` from `irrational_two_rpow_toRat`).  Spec
+`exp2M1RatPrecRound_eq` (`= roundVal p mode (Spec.exp2M1 (toRat q))`, `p ≠ 0`).  Tests: zero,
+exact `2^n − 1`, agreement with `exp2M1PrecRound` on six dyadics, ten non-dyadic arguments at 150
+bits against 200-digit references including `±10^(−6)` and `±10^(−60)` (the compensation at
+`e = −199`), directed modes.

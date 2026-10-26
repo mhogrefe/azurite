@@ -22,6 +22,8 @@ import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Exp
 import Azurite.AzFloat.Tests.Exp2
+import Azurite.AzFloat.Tests.Exp2M1
+import Azurite.AzFloat.Tests.Exp2M1Rat
 import Azurite.AzFloat.Tests.Exp2Rat
 import Azurite.AzFloat.Tests.ExpConstants
 import Azurite.AzFloat.Tests.ExpM1

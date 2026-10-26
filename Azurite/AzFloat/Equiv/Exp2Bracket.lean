@@ -14,14 +14,19 @@ import Azurite.AzFloat.Equiv.LogBaseFloatBracket
 import Azurite.AzRat.Equiv.Unary
 
 /-!
-# Equivalence: the brackets of `2^x` and `2^q`
+# Equivalence: the brackets of `2^x`, `2^q`, `2^x − 1` and `2^q − 1`
 
 `ln2MulBracket_spec` (an enclosure of `x ln 2` of width at most `2^(−w)`), `exp2Bracket_spec`
 (width `exp2Eps x w`, `tendsto_exp2Eps`), the irrationality of `2^x` for a dyadic non-integer `x`
 (`irrational_two_rpow_of_dyadic`: `2^x = 2^⌊x⌋ · 2^f` with `(2^f)^(2^J)` an integer and
 `1 < 2^f < 2`, by `irrational_nrt_of_notint_nrt`), `exp2Approx_spec` and the Ziv certificate
 `exp2Approx_isSome_exists`; the rational versions `ln2MulRatBracket_spec`, `exp2RatBracket_spec`,
-`irrational_two_rpow_toRat`, `exp2RatApprox_spec`, `exp2RatApprox_isSome_exists`.
+`irrational_two_rpow_toRat`, `exp2RatApprox_spec`, `exp2RatApprox_isSome_exists`; and for
+`2^x − 1`: `expM1OfBracket_width` (the real arithmetic), the generic `expM1OfBracket_spec`
+(width `expM1RatEps (x ln 2) c w`), `exp2M1Bracket_spec` (width `exp2M1Eps x c w`),
+`irrational_two_rpow_sub_one_finiteVal`, `exp2M1Approx_spec`, `exp2M1Approx_isSome_exists`;
+and for `2^q − 1`: `exp2M1RatExp_bounds`, `exp2M1RatBracket_spec`,
+`irrational_two_rpow_sub_one_toRat`, `exp2M1RatApprox_spec`, `exp2M1RatApprox_isSome_exists`.
 -/
 
 namespace Azurite.AzFloat
@@ -446,5 +451,315 @@ theorem exp2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := exp2RatApprox_spec hw q hd
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-! ### The bracket of `2^x − 1` -/
+
+/-- The real arithmetic of the width of `expM1OfBracket`: the upper end encloses `exp v − 1`,
+and the width is at most twice that of the inner bracket plus `(33 exp lo + |exp lo − 1|) u`. -/
+theorem expM1OfBracket_width {lo hi v a b dv E corr hi' u δ D : ℝ} (hu0 : 0 < u)
+    (hu1 : u ≤ 1 / 1024) (hδ : 0 ≤ δ) (hδu : δ ≤ u) (h1 : lo ≤ v) (h2 : v ≤ hi)
+    (hwid : hi - lo ≤ δ) (ha : a ≤ Real.exp lo - 1) (hb : Real.exp lo - 1 ≤ b) (hab : b - a ≤ D)
+    (hd1 : hi - lo ≤ dv) (hd2 : dv ≤ hi - lo + 2 * |hi - lo| * (u / 256))
+    (hE1 : b + 1 ≤ E) (hE2 : E ≤ b + 1 + 2 * (b + 1) * (u / 256))
+    (hc1 : E * (2 * dv) ≤ corr) (hc2 : corr ≤ E * (2 * dv) + 2 * (E * (2 * dv)) * (u / 256))
+    (hh1 : b + corr ≤ hi') (hh2 : hi' ≤ b + corr + 2 * |b + corr| * (u / 256)) :
+    Real.exp v - 1 ≤ hi' ∧ hi' - a ≤ 2 * D + (33 * Real.exp lo + |Real.exp lo - 1|) * u := by
+  have hEl := Real.exp_pos lo
+  have hD0 : 0 ≤ D := by linarith
+  have hhl : 0 ≤ hi - lo := by linarith
+  rw [abs_of_nonneg hhl] at hd2
+  have hdv0 : 0 ≤ dv := by linarith
+  have hdv2 : dv ≤ 2 * δ := by nlinarith
+  have hb1 : 0 < b + 1 := by linarith
+  have hE0 : 0 < E := by linarith
+  have hE3 : E ≤ 2 * (b + 1) := by nlinarith
+  have hbD : b + 1 ≤ Real.exp lo + D := by linarith
+  have hEd : 0 ≤ E * (2 * dv) := by positivity
+  have hcorr0 : 0 ≤ corr := by linarith
+  have hcorr2 : corr ≤ 2 * (E * (2 * dv)) := by nlinarith
+  have hcorr3 : corr ≤ 16 * (Real.exp lo + D) * δ := by
+    have : E * (2 * dv) ≤ 2 * (b + 1) * (2 * (2 * δ)) :=
+      mul_le_mul hE3 (by linarith) (by linarith) (by linarith)
+    nlinarith
+  constructor
+  · have e1 : Real.exp v ≤ Real.exp lo * (1 + 2 * (v - lo)) :=
+      exp_le_exp_mul_one_add h1 (by linarith)
+    have e2 : Real.exp lo * (2 * (v - lo)) ≤ (b + 1) * (2 * dv) :=
+      mul_le_mul (by linarith) (by linarith) (by linarith) hb1.le
+    have e3 : (b + 1) * (2 * dv) ≤ E * (2 * dv) :=
+      mul_le_mul_of_nonneg_right hE1 (by linarith)
+    nlinarith
+  · have habs : |b + corr| ≤ |Real.exp lo - 1| + D + corr := by
+      calc |b + corr| ≤ |b| + |corr| := abs_add_le _ _
+        _ ≤ |Real.exp lo - 1| + D + corr := by
+          rw [abs_of_nonneg hcorr0]
+          have : |b| ≤ |Real.exp lo - 1| + D :=
+            abs_le.mpr ⟨by linarith [neg_abs_le (Real.exp lo - 1)],
+              by linarith [le_abs_self (Real.exp lo - 1)]⟩
+          linarith
+    have h3 : 2 * |b + corr| * (u / 256) ≤ 2 * (|Real.exp lo - 1| + D + corr) * (u / 256) :=
+      mul_le_mul_of_nonneg_right (by linarith) (by positivity)
+    have h4 : corr * u ≤ corr := mul_le_of_le_one_right hcorr0 (by linarith)
+    have h5 : D * u ≤ D := mul_le_of_le_one_right hD0 (by linarith)
+    have h6 : 16 * (Real.exp lo + D) * δ ≤ 16 * (Real.exp lo + D) * u :=
+      mul_le_mul_of_nonneg_left hδu (by positivity)
+    have h7 : 0 ≤ |Real.exp lo - 1| * u := by positivity
+    have h8 : 16 * D * u ≤ D := by nlinarith
+    nlinarith
+
+/-- The width bound of `exp2M1Bracket` at compensation `c`. -/
+noncomputable def exp2M1Eps (xv : ℝ) (c w : ℕ) : ℝ := expM1RatEps (xv * Real.log 2) c w
+
+theorem tendsto_exp2M1Eps (xv : ℝ) (c : ℕ) :
+    Filter.Tendsto (exp2M1Eps xv c) Filter.atTop (nhds 0) :=
+  tendsto_expM1RatEps (xv * Real.log 2) c
+
+/-- `2^e ≤ 2 |x|` for a finite float `x` of exponent `e`. -/
+theorem two_zpow_le_two_mul_abs_finiteVal (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) : (2 : ℝ) ^ e.toInt ≤ 2 * |finiteVal s e m| := by
+  have h := (abs_finiteVal_bounds s e hv).1
+  rw [zpow_sub_one₀ (by norm_num : (2 : ℝ) ≠ 0)] at h
+  linarith
+
+/-- The compensated width `2^(−w−c)` is at most `2^(−64) · 2^e` for `c = expM1Comp e`. -/
+theorem half_pow_comp_le (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
+    (1 / 2 : ℝ) ^ (w + expM1Comp e) ≤ (1 / 2 : ℝ) ^ 64 * (2 : ℝ) ^ e.toInt := by
+  have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
+  have h64 : (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 64 :=
+    pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+  unfold expM1Comp
+  rw [htoInt]
+  split_ifs with hs
+  · rw [add_zero, zpow_natCast]
+    have : (1 : ℝ) ≤ 2 ^ e.abs.toNat := one_le_pow₀ (by norm_num)
+    nlinarith [pow_nonneg (by norm_num : (0 : ℝ) ≤ 1 / 2) w]
+  · have h2c : (1 / 2 : ℝ) ^ e.abs.toNat = (2 : ℝ) ^ (-(e.abs.toNat : ℤ)) := by
+      rw [zpow_neg, zpow_natCast, one_div_pow, one_div]
+    rw [pow_add, ← h2c]
+    exact mul_le_mul_of_nonneg_right h64 (by positivity)
+
+set_option maxHeartbeats 1000000 in
+/-- `expM1OfBracket X e w` encloses `exp (x ln 2) − 1` for a bracket `X` of `x ln 2` of width at
+most `2^(−w−c)`, `c = expM1Comp e`, where `2^(e−1) ≤ |x| < 2^e`; the width is at most
+`expM1RatEps (x ln 2) c w`. -/
+theorem expM1OfBracket_spec {X : AzFloat × AzFloat} {lo hi xv : ℝ} (e : AzInt) {w : ℕ}
+    (hlo : X.1.toVal = some (lo : EReal)) (hhi : X.2.toVal = some (hi : EReal))
+    (h1 : lo ≤ xv * Real.log 2) (h2 : xv * Real.log 2 ≤ hi)
+    (hwid : hi - lo ≤ (1 / 2 : ℝ) ^ (w + expM1Comp e)) (hxe : |xv| < (2 : ℝ) ^ e.toInt)
+    (hxe1 : (2 : ℝ) ^ e.toInt ≤ 2 * |xv|) (hw : 64 ≤ w) :
+    ∃ a b : ℝ, (expM1OfBracket X e w).1.toVal = some (a : EReal) ∧
+      (expM1OfBracket X e w).2.toVal = some (b : EReal) ∧
+      a ≤ Real.exp (xv * Real.log 2) - 1 ∧ Real.exp (xv * Real.log 2) - 1 ≤ b ∧
+      b - a ≤ expM1RatEps (xv * Real.log 2) (expM1Comp e) w := by
+  have : NeZero (w + 8) := ⟨by omega⟩
+  obtain ⟨c, hc⟩ : ∃ c : ℕ, c = expM1Comp e := ⟨_, rfl⟩
+  have hδe := half_pow_comp_le e hw
+  rw [← hc] at hδe
+  obtain ⟨u, hu⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+  obtain ⟨δ, hδ⟩ : ∃ δ : ℝ, δ = (1 / 2 : ℝ) ^ (w + c) := ⟨_, rfl⟩
+  have hu0 : 0 < u := by rw [hu]; positivity
+  have hu1 : u ≤ 1 / 1024 := by
+    rw [hu]; exact (half_pow_small hw).trans (by norm_num)
+  have hδ0 : 0 ≤ δ := by rw [hδ]; positivity
+  have hδu : δ ≤ u := by
+    rw [hδ, hu]; exact pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+  have hδe' : δ ≤ (1 / 2 : ℝ) ^ 64 * (2 : ℝ) ^ e.toInt := by rw [hδ]; exact hδe
+  have h2e : (0 : ℝ) < (2 : ℝ) ^ e.toInt := by positivity
+  have hδx : δ ≤ |xv| / 2 ^ 63 := by
+    have := mul_le_mul_of_nonneg_left hxe1 (by norm_num : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ 64)
+    norm_num at this ⊢
+    linarith
+  have hln1 := Real.log_two_gt_d9
+  have hln2 := Real.log_two_lt_d9
+  obtain ⟨v, hv'⟩ : ∃ v : ℝ, v = xv * Real.log 2 := ⟨_, rfl⟩
+  have habsv : |v| = |xv| * Real.log 2 := by
+    rw [hv', abs_mul, abs_of_pos (by linarith : (0 : ℝ) < Real.log 2)]
+  -- the bracket of `x ln 2`
+  rw [← hv'] at h1 h2
+  rw [← hc, ← hδ] at hwid
+  have hlo_e : |lo| < (2 : ℝ) ^ e.toInt := by
+    have hxv0 := abs_nonneg xv
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |v| ≤ |xv| * (7 / 10) := by rw [habsv]; nlinarith
+    have h4 : |xv| / 2 ^ 63 ≤ |xv| * (1 / 10) := by nlinarith
+    linarith
+  have hlo_v : |lo| ≤ 2 * |v| := by
+    have : |lo| ≤ |v| + δ := by
+      rw [abs_le]; constructor <;> linarith [neg_abs_le v, le_abs_self v]
+    have h3 : |xv| * (6 / 10) ≤ |v| := by rw [habsv]; nlinarith [abs_nonneg xv]
+    have h4 : |xv| / 2 ^ 63 ≤ |xv| * (1 / 10) := by nlinarith [abs_nonneg xv]
+    linarith
+  -- `exp lo − 1`
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expM1Bracket_spec hlo e hlo_e hw
+  rw [← hc] at hab
+  simp only [expM1OfBracket]
+  -- the correction
+  obtain ⟨dv, hd, hd1, hd2⟩ := subCeiling_abs hhi hlo (w + 8)
+  have hb1' : 0 ≤ b + 1 := by linarith [Real.exp_pos lo]
+  obtain ⟨E, hE, hEc⟩ := addCeiling_err hb toVal_one' (w + 8) hb1'
+  have h2d : ((subPrecRound X.2 X.1 (w + 8) .Ceiling).1 <<< AzInt.ofInt 1).toVal
+      = some ((2 * dv : ℝ) : EReal) := by
+    have h := toVal_shiftLeft_of_toVal hd (AzInt.ofInt 1)
+    rw [AzInt.toInt_ofInt, zpow_one, mul_comm] at h
+    exact h
+  have hdv0 : 0 ≤ dv := by linarith
+  have hE0 : 0 ≤ E := by linarith [hEc.ge]
+  obtain ⟨corr, hcorr, hcc⟩ := mulCeiling_err hE h2d (w + 8) (mul_nonneg hE0 (by linarith))
+  obtain ⟨hi', hhi', hh1, hh2⟩ := addCeiling_abs hb hcorr (w + 8)
+  have h256 : (1 / 2 : ℝ) ^ (w + 8) = u / 256 := by
+    rw [pow_add, hu]; ring
+  rw [h256] at hd2 hh2
+  have hE1 := hEc.ge
+  have hE2 := hEc.le
+  rw [h256] at hE2
+  have hc1 := hcc.ge
+  have hc2 := hcc.le
+  rw [h256] at hc2
+  obtain ⟨hup, hwidth⟩ := expM1OfBracket_width hu0 hu1 hδ0 hδu h1 h2 hwid ha1 hb1 hab hd1 hd2
+    hE1 hE2 hc1 hc2 hh1 hh2
+  refine ⟨a, hi', ha, hhi', ?_, ?_, ?_⟩
+  · rw [← hv']
+    exact ha1.trans (by linarith [Real.exp_le_exp.mpr h1])
+  · rw [← hv']
+    exact hup
+  · unfold expM1RatEps
+    rw [← hc, ← hv', ← hu]
+    have hD := expM1Eps_le h1 hlo_v c w
+    rw [← hu] at hD
+    have hEv : Real.exp lo ≤ Real.exp v := Real.exp_le_exp.mpr h1
+    have hEv1 : |Real.exp lo - 1| ≤ |Real.exp v - 1| + Real.exp v := by
+      calc |Real.exp lo - 1| = |(Real.exp v - 1) - (Real.exp v - Real.exp lo)| := by ring_nf
+        _ ≤ |Real.exp v - 1| + |Real.exp v - Real.exp lo| := abs_sub _ _
+        _ ≤ |Real.exp v - 1| + Real.exp v := by
+          rw [abs_of_nonneg (by linarith : 0 ≤ Real.exp v - Real.exp lo)]
+          linarith [Real.exp_pos lo]
+    have hwc : (9 : ℝ) ≤ (w : ℝ) + c + 9 := by
+      linarith [(Nat.cast_nonneg w : (0 : ℝ) ≤ w), (Nat.cast_nonneg c : (0 : ℝ) ≤ c)]
+    have hEvp := Real.exp_pos v
+    have hkey : 33 * Real.exp lo + |Real.exp lo - 1|
+        ≤ 2 * Real.exp v * (80 * ((w : ℝ) + c + 9)) + |Real.exp v - 1| + Real.exp v + 4 * |v| := by
+      have : 2 * Real.exp v * (80 * 9) ≤ 2 * Real.exp v * (80 * ((w : ℝ) + c + 9)) :=
+        mul_le_mul_of_nonneg_left (by linarith) (by positivity)
+      linarith [abs_nonneg v]
+    have hkey' := mul_le_mul_of_nonneg_right hkey hu0.le
+    linarith
+
+/-- `exp2M1Bracket x e w` encloses `2^x − 1` for a finite float `x` of exponent `e`, with width
+at most `exp2M1Eps x (expM1Comp e) w`. -/
+theorem exp2M1Bracket_spec (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (exp2M1Bracket (finite s e q m hv) e w).1.toVal = some (lo : EReal) ∧
+      (exp2M1Bracket (finite s e q m hv) e w).2.toVal = some (hi : EReal) ∧
+      lo ≤ (2 : ℝ) ^ finiteVal s e m - 1 ∧ (2 : ℝ) ^ finiteVal s e m - 1 ≤ hi ∧
+      hi - lo ≤ exp2M1Eps (finiteVal s e m) (expM1Comp e) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := ln2MulBracket_spec (toVal_finite s e q m hv) e
+    (abs_finiteVal_bounds s e hv).2 (w + expM1Comp e) (by omega)
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expM1OfBracket_spec e hlo hhi h1 h2 hwid
+    (abs_finiteVal_bounds s e hv).2 (two_zpow_le_two_mul_abs_finiteVal s e hv) hw
+  unfold exp2M1Bracket
+  rw [two_rpow_eq_exp]
+  exact ⟨a, b, ha, hb, ha1, hb1, hab⟩
+
+/-- `2^x − 1` is irrational for a non-integer finite float `x`. -/
+theorem irrational_two_rpow_sub_one_finiteVal (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hni : ¬ isInteger (finite s e q m hv) = true) :
+    Irrational ((2 : ℝ) ^ finiteVal s e m - 1) := by
+  have hni' : ¬ ∃ n : ℤ, finiteVal s e m = n := fun h => hni ((isInteger_finite s e hv).mpr h)
+  have h := (irrational_two_rpow_of_dyadic
+    (exists_dyadic_of_finiteVal s e m).choose_spec.choose_spec hni').sub_intCast 1
+  rwa [Int.cast_one] at h
+
+/-- `exp2M1Approx` is a strict enclosure of `2^x − 1` for a non-integer float `x`, with width at
+most `exp2M1Eps x (expM1Comp e) w`. -/
+theorem exp2M1Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hni : ¬ isInteger (finite s e q m hv) = true) :
+    ∃ lv hv' : ℝ, Rounds (exp2M1Approx (finite s e q m hv) e w).1 lv ∧
+      Rounds (exp2M1Approx (finite s e q m hv) e w).2 hv' ∧
+      lv < (2 : ℝ) ^ finiteVal s e m - 1 ∧ (2 : ℝ) ^ finiteVal s e m - 1 < hv' ∧
+      hv' - lv ≤ exp2M1Eps (finiteVal s e m) (expM1Comp e) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := exp2M1Bracket_spec s e hv hw
+  obtain ⟨r1, r2, r3, r4⟩ :=
+    rounds_of_bracket hlo hhi h1 h2 (irrational_two_rpow_sub_one_finiteVal s e hv hni)
+  exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
+
+/-- The Ziv certificate for `2^x − 1`. -/
+theorem exp2M1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool)
+    (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hni : ¬ isInteger (finite s e q m hv) = true) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (exp2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).1
+      (exp2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (exp2M1Approx (finite s e q m hv) e)
+    (irrational_two_rpow_sub_one_finiteVal s e hv hni) (exp2M1Eps (finiteVal s e m) (expM1Comp e))
+    (tendsto_exp2M1Eps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := exp2M1Approx_spec hw s e hv hni
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-! ### The bracket of `2^q − 1` for a rational `q` -/
+
+/-- `2^(e−1) ≤ |q| < 2^e` for the exponent `e = exp2M1RatExp q` of a rational `q ≠ 0`. -/
+theorem exp2M1RatExp_bounds (q : AzRat) (h0 : q.num ≠ 0) :
+    |(AzRat.toRat q : ℝ)| < (2 : ℝ) ^ (exp2M1RatExp q).toInt ∧
+      (2 : ℝ) ^ (exp2M1RatExp q).toInt ≤ 2 * |(AzRat.toRat q : ℝ)| := by
+  have hqpos : 0 < |(AzRat.toRat q : ℝ)| := AzRat.abs_toRat_pos q h0
+  obtain ⟨L, hL⟩ : ∃ L : ℤ, L = Int.log 2 |(AzRat.toRat q : ℝ)| := ⟨_, rfl⟩
+  have he : (exp2M1RatExp q).toInt = L + 1 := by
+    unfold exp2M1RatExp
+    rw [AzInt.toInt_ofInt, AzRat.floorLogBaseAbs_eq 2 (by decide) q h0, hL]; rfl
+  have h2L : (2 : ℝ) ^ L ≤ |(AzRat.toRat q : ℝ)| := by
+    rw [hL]; exact_mod_cast Int.zpow_log_le_self (by norm_num : 1 < 2) hqpos
+  have hqL : |(AzRat.toRat q : ℝ)| < (2 : ℝ) ^ (L + 1) := by
+    rw [hL]; exact_mod_cast Int.lt_zpow_succ_log_self (by norm_num : 1 < 2) |(AzRat.toRat q : ℝ)|
+  rw [he]
+  refine ⟨hqL, ?_⟩
+  rw [zpow_add_one₀ (by norm_num : (2 : ℝ) ≠ 0)]
+  linarith
+
+/-- `exp2M1RatBracket q w` encloses `2^q − 1` for a rational `q ≠ 0`, with width at most
+`exp2M1Eps q (expM1Comp (exp2M1RatExp q)) w`. -/
+theorem exp2M1RatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (exp2M1RatBracket q w).1.toVal = some (lo : EReal) ∧
+      (exp2M1RatBracket q w).2.toVal = some (hi : EReal) ∧
+      lo ≤ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ≤ hi ∧
+      hi - lo ≤ exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q)) w := by
+  obtain ⟨hxe, hxe1⟩ := exp2M1RatExp_bounds q h0
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ :=
+    ln2MulRatBracket_spec q (w + expM1Comp (exp2M1RatExp q)) (by omega)
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ :=
+    expM1OfBracket_spec (exp2M1RatExp q) hlo hhi h1 h2 hwid hxe hxe1 hw
+  unfold exp2M1RatBracket
+  rw [two_rpow_eq_exp]
+  exact ⟨a, b, ha, hb, ha1, hb1, hab⟩
+
+/-- `2^q − 1` is irrational for a rational `q` that is not an integer (`den ≠ 1`). -/
+theorem irrational_two_rpow_sub_one_toRat (q : AzRat) (hd : q.den.toNat ≠ 1) :
+    Irrational ((2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1) := by
+  have h := (irrational_two_rpow_toRat q hd).sub_intCast 1
+  rwa [Int.cast_one] at h
+
+/-- `exp2M1RatApprox` is a strict enclosure of `2^q − 1` for a non-integer rational `q`, with
+width at most `exp2M1Eps q (expM1Comp (exp2M1RatExp q)) w`. -/
+theorem exp2M1RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0)
+    (hd : q.den.toNat ≠ 1) :
+    ∃ lv hv : ℝ, Rounds (exp2M1RatApprox q w).1 lv ∧ Rounds (exp2M1RatApprox q w).2 hv ∧
+      lv < (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 < hv ∧
+      hv - lv ≤ exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q)) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := exp2M1RatBracket_spec q h0 hw
+  obtain ⟨r1, r2, r3, r4⟩ :=
+    rounds_of_bracket hlo hhi h1 h2 (irrational_two_rpow_sub_one_toRat q hd)
+  exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
+
+/-- The Ziv certificate for `2^q − 1`. -/
+theorem exp2M1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (h0 : q.num ≠ 0) (hd : q.den.toNat ≠ 1) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (exp2M1RatApprox q (w₀ * 2 ^ f)).1
+      (exp2M1RatApprox q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (exp2M1RatApprox q)
+    (irrational_two_rpow_sub_one_toRat q hd)
+    (exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q))) (tendsto_exp2M1Eps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := exp2M1RatApprox_spec hw q h0 hd
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 end Azurite.AzFloat
