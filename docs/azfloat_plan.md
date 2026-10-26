@@ -4603,3 +4603,59 @@ kernel-evaluable code: never decide `=` between computed structures; use Bool co
 the kernel (≈ 4 min each) and derive the enclosure from the specification — the `π`-digit
 certificates and the big `norm_num` sums are gone.  Also: run `lake env lean` only from the
 project root (running from elsewhere made elan download a stray toolchain, since deleted).
+
+## Continuation notes: proofs by kernel evaluation (2026-10-26)
+
+Where to pick this up:
+1. **Helpers**: `ratData r` + `toVal_of_ratData` (now local to `Transcendental/Ramanujan`) belong
+   in `AzFloat/Equiv/`, with a lemma pair "`ratData (f p .Floor) = some (true, n, d)` and
+   `f p .Floor = roundVal p .Floor (some x)` give `n/d ≤ x`" (and the ceiling twin), so that a
+   concrete enclosure is three lines: two `decide +kernel`, one `linarith`.
+2. **Certified loops in the kernel**: `zivLoopCertified` cannot reduce.  Either prove
+   `zivLoop approx p mode fuel w₀ ≠ (nan, .eq) → zivLoop … = zivLoopCertified … h` (both equal
+   `roundVal p mode (some v)` by the two correctness theorems — a two-line lemma once stated with
+   the bracket hypothesis), and evaluate the fuel loop in proofs, or give every certified driver a
+   `…PrecRoundFuel` twin.  The former needs no new definitions.
+3. **Kernel-facing rules** (found the hard way): no well-founded recursion on the evaluation path;
+   never decide `=` between computed structures (`eqIEEE`/`partialCompare`/`Nat` projections
+   instead); `decide +kernel`, not `decide`; `set_option maxRecDepth`.  Audit the remaining
+   drivers for `DecidableEq`-on-computed-values uses (grep `if .* = .* then` in `AzFloat/`).
+4. **Timings on a quiet machine**: the 54 s vs 8 min spread for the two 110-bit roundings was
+   machine load; measure cost per bit (`w = 100 … 1000`) for `piBracket`, `expBracket`,
+   `sqrtPrecRound`, `divPrecRound` to know what precision a proof can afford.
+5. **Reflection as a tactic**: the pattern reify → soundness theorem → `decide +kernel` is the
+   skeleton of any Azurite-powered tactic (see the QE note below).
+
+## Towards a quantifier-elimination tactic (vision note, 2026-10-26)
+
+User question: once polynomial arithmetic is beefed up, BPR is finished and QE is implemented,
+can a tactic prove formulas about polynomials by executing Azurite's QE?  Assessment: yes in
+principle, as **proof by reflection**: (a) a deep embedding of first-order formulas over ordered
+fields (the `AzFormula/` layer), (b) a semantics `eval φ ρ : Prop` over `ℝ` (or any RCF),
+(c) an executable `qe : Formula → Formula` (BPR Ch. 11 cylindrical decomposition or the Ch. 13/14
+algorithms, structural recursion only), (d) the soundness theorem `eval (qe φ) ρ ↔ eval φ ρ`
+(this is the formalization target of the BPR arc; the abstract Tarski–Seidenberg/QE theorems of
+Ch. 2 are done, the executable versions are the remaining work), (e) a tactic that reifies the
+goal (`Qq`-style, as `linarith`/`polyrith` do), rewrites by soundness and closes the
+quantifier-free result by `decide +kernel`.  Requirements that this investigation established:
+the whole executable path must be kernel-reducible (fuel/structural recursion, Bool tests, no
+`DecidableEq` on computed polynomials — compare coefficient lists by `Nat`/`Int` projections).
+Risks: QE is doubly exponential (CAD) or singly exponential in the number of variables with
+large constants (BPR's algorithms are designed for complexity bounds, not practice); in the
+kernel expect `10²–10³×` slower than compiled, so the tactic will handle small instances
+(univariate and bivariate, low degree, few quantifier alternations) — which is what a tactic is
+typically asked for.  `native_decide` could be a user-selectable fast path for larger instances
+at the cost of the trust goal.  Precedents: Coq's `micromega` (certificates), Isabelle's
+reflective QE for linear arithmetic (Ferrante–Rackoff, Nipkow), Cohen–Mahboubi's formalized but
+non-executable Tarski QE in Coq; none executes a full real QE in a kernel at useful sizes, so this
+would be new.  Cheaper companions worth having first: a Positivstellensatz/sum-of-squares
+certificate checker for universal positivity goals, and root isolation (Sturm/Descartes, already
+in the signed-subresultant arc) for univariate existence/counting goals.
+User (2026-10-26): the doubly-exponential bound is the worst case only; the planned QE will be
+an elaborate algorithm dispatching to much better special cases (linear, convex, semidefinite
+programming) and probably novel optimization techniques.  Design implication for the
+reflective tactic: one semantics `eval`, one soundness interface per sub-procedure
+(`eval (proc φ) ρ ↔ eval φ ρ`, or a certificate checker `check c φ = true → eval φ ρ` for the
+optimization-based cases, where the certificate may be found by untrusted compiled search and
+only checked in the kernel), composed by a dispatcher whose own soundness is trivial.
+
