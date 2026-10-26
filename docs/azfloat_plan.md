@@ -4398,3 +4398,44 @@ Tests: specials; `e − 1`, `1/e − 1`, `exp (±2^(−30)) − 1`, `exp (1/1024
 references); tiny path at 53 bits with the `.lt` orderings; agreement with `exp x − 1` at a
 higher precision; `expM1 (lnP1 x) ≈ x` (for a non-dyadic `x` compare with the 53-bit argument
 re-rounded, not with the exact rational).
+
+## `exp q − 1` for a rational `q` (DONE 2026-10-25, fuel-free)
+
+`AzFloat/ExpM1Rat.lean`, `Equiv/ExpM1Rat.lean`, `Tests/ExpM1Rat.lean`; `expM1RatBracket`/
+`expM1RatApprox` in `ExpApprox.lean`/`Equiv/`.  `expM1Bracket` at `y = ⌊q⌋_W` below `q`
+(`W = w + 16 + size (num q)`) with the exponent `e = ⌊log₂ |q|⌋ + 2` of `q` itself
+(`AzRat.floorLogBaseAbs 2 q`, `|y| ≤ 2|q| < 2^e`), so the cancellation compensation
+`max(−e, 0)` and the tiny path are driven by `q`; the upper end is widened by
+`corr = E <<< (e − (W − 2))` with `E = ⌈hi + 1⌉ ≥ exp y`: `exp q − 1 ≤ (exp y − 1) + 2(q − y) exp y`
+and `2 (q − y) ≤ 4|q| 2^(−W) < 2^(e + 2 − W)`.  The correction is proportional to `|q|`
+(`2^(e+2−W) ≤ 16 |q| 2^(−W)`), so no cancellation is reintroduced — unlike a correction by the
+absolute bound `2^(−w−14)` of `expRat`, which would lose `−e` bits.  Width
+`≤ expM1RatEps q c w = 3 (2 exp q · 80 (w + c + 9) + |exp q − 1| + exp q + 4|q|) 2^(−w)` via
+the real-arithmetic lemma `expM1Rat_width` (`hi' − lo ≤ 2 Dy + (exp y + |exp y − 1|) u`) and
+`expM1Eps_le` (`expM1Eps y c w` in terms of `q`).  Gotchas: `q − y ≤ |q|` needs the relative
+form `q − y ≤ 2|q| 2^(−W)` (the absolute `u/32768` is not below `|q|` for tiny `q`);
+`abs_of_nonneg (by linarith)` must name its term; a Python `'\\n'` inside a quoted heredoc is
+a literal backslash-n.  Tests: specials, agreement with `expM1` on dyadic rationals (incl.
+`2^(−200)` at 53 bits), `exp (±1/3) − 1`, `exp (22/7) − 1`, `exp (−7/3) − 1`,
+`exp (±1/(3·10^30)) − 1` at 150 bits (200-digit decimal references), agreement with
+`expRat q − 1` at a higher precision, directed modes, `expM1 (ln q) ≈ q − 1`.
+
+## Constants `e`, `ln 10`, `log₁₀ e`, `log₂ 10`, `log₁₀ 2` (DONE 2026-10-25, fuel-free)
+
+User request: the missing Malachite constants.  `AzFloat/Ln10Bracket.lean` + `Equiv/`,
+`AzFloat/ExpConstants.lean` + `Equiv/` + `Tests/`.  Names: `e`, `ln10`, `log10E`, `log2Ten`,
+`log10Two` (with `…PrecRound p mode`).  `e = expPrecRound one p mode` (correct by
+`expPrecRound_eq_liftVal`).  `ln10Bracket w = lnFloorBracket tenF w` with the lower end raised to
+`2` (`maxOf b.1 two`): the proven `lnRatEps` width is far too loose at `w ≈ 64` to show the lower
+end positive, which `divBracketByPosBracket_spec` needs (`0 < c`); `2 < ln 10` from
+`exp 2 = (exp 1)² < 2.72² < 10`.  The three quotients reuse `divBracketByPosBracket` (one, one),
+`ln10Bracket`, `ln2Bracket` (lower end `≥ 1/5`), widths `divEps K A ε δ w` with `K` relaxed to
+`1/2` or `5` by `divEps_mono` (`K` is implicit — the spec must be called with `(X := …) (B := …)
+(L := …) (M := …) (ε := …) (δ := …)`, and `|1|` must be rewritten to `1` before `divEps_mono`
+unifies); generic `tendsto_divEps` and `rounds_of_bracket` added.  Irrationality:
+`irrational_log_rat` for `ln 10`, `irrational_log_div_log_of_rat (ofNat 2) … 10` for `log₂ 10`
+(`maxRootBase (ofNat 2) = 2` from `Nat.le_self_pow`; `10 ≠ 2^r` by `r ≤ 3`/`r ≥ 4` with
+`zpow_le_zpow_right₀`; careful: `rw [h1 : 2 = s^k]` also rewrites the `2` inside `ofNat 2`),
+`.inv` for the reciprocals.  Tests: the correctly rounded values at 1, 2, 53, 100 bits in
+nearest/floor/ceiling (exact rationals from an 80-digit decimal evaluation), precision `0`,
+agreement with `exp`, `lnRat`, `ln`, `logBase`, `log2`, and the 53-bit decimal strings.

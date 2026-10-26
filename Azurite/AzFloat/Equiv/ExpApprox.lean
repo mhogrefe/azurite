@@ -26,6 +26,8 @@ import Azurite.AzNat.Equiv.LogBase2
   `expRatEps q w = 2 expEps q w`.
 * `expM1Approx_spec`, `expM1Approx_isSome_exists`: the same for `exp x − 1`, width
   `expM1Eps x c w` (`c = max(−e, 0)`).
+* `expM1RatApprox_spec`, `expM1RatApprox_isSome_exists`: `exp q − 1` for a rational `q`, width
+  `expM1RatEps q c w`.
 -/
 
 namespace Azurite.AzFloat
@@ -1169,7 +1171,8 @@ theorem expM1Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ER
         mul_le_mul_of_nonneg_left h2e (abs_nonneg _)
       have hv0 : 0 ≤ |xv| * (2 : ℝ) ^ e.toInt := by positivity
       have hab : |xv + |xv| * (2 : ℝ) ^ e.toInt| ≤ 2 * |xv| := by
-        calc |xv + |xv| * (2 : ℝ) ^ e.toInt| ≤ |xv| + |(|xv| * (2 : ℝ) ^ e.toInt)| := abs_add_le _ _
+        calc |xv + |xv| * (2 : ℝ) ^ e.toInt|
+            ≤ |xv| + |(|xv| * (2 : ℝ) ^ e.toInt)| := abs_add_le _ _
           _ ≤ 2 * |xv| := by rw [abs_of_nonneg hv0]; nlinarith [abs_nonneg xv]
       have h3 : 2 * |xv + |xv| * (2 : ℝ) ^ e.toInt| * (u / 256) ≤ 2 * (2 * |xv|) * (u / 256) :=
         mul_le_mul_of_nonneg_right (by linarith) (by positivity)
@@ -1207,9 +1210,11 @@ theorem expM1Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ER
         _ ≤ |Real.exp xv - 1| + |hi - Real.exp xv| := abs_add_le _ _
         _ ≤ |Real.exp xv - 1| + D := by
           rw [abs_of_nonneg (by linarith : 0 ≤ hi - Real.exp xv)]; linarith
-    have hA' : 2 * |lo - 1| * (1 / 2 : ℝ) ^ (w + c + 8) ≤ 2 * (|Real.exp xv - 1| + D) * (u / 256) :=
+    have hA' : 2 * |lo - 1| * (1 / 2 : ℝ) ^ (w + c + 8)
+        ≤ 2 * (|Real.exp xv - 1| + D) * (u / 256) :=
       mul_le_mul (by linarith) hq (by positivity) (by positivity)
-    have hB' : 2 * |hi - 1| * (1 / 2 : ℝ) ^ (w + c + 8) ≤ 2 * (|Real.exp xv - 1| + D) * (u / 256) :=
+    have hB' : 2 * |hi - 1| * (1 / 2 : ℝ) ^ (w + c + 8)
+        ≤ 2 * (|Real.exp xv - 1| + D) * (u / 256) :=
       mul_le_mul (by linarith) hq (by positivity) (by positivity)
     have hDu : D * u ≤ D * 1 := mul_le_mul_of_nonneg_left hu1 hD0
     have hEu : |Real.exp xv - 1| * u ≤ |Real.exp xv - 1| * 1 :=
@@ -1256,6 +1261,267 @@ theorem expM1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s 
     (tendsto_expM1Eps _ _) 64
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := expM1Approx_spec hw s e hv
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-! ### `exp q − 1` for a rational -/
+
+/-- The real arithmetic of the width of `expM1RatBracket`. -/
+theorem expM1Rat_width {yv lo hi E corr hi' u Dy pw : ℝ} (hu0 : 0 < u) (hu1 : u ≤ 1)
+    (hlo : lo ≤ Real.exp yv - 1) (hhi : Real.exp yv - 1 ≤ hi) (hwid : hi - lo ≤ Dy)
+    (hE1 : hi + 1 ≤ E) (hE2 : E ≤ hi + 1 + 2 * |hi + 1| * (u / 256))
+    (hcorr : corr = E * pw) (hpw0 : 0 ≤ pw) (hpw : pw ≤ u / 8192)
+    (hh2 : hi' ≤ hi + corr + 2 * |hi + corr| * (u / 256)) :
+    hi' - lo ≤ 2 * Dy + (Real.exp yv + |Real.exp yv - 1|) * u := by
+  have hEy := Real.exp_pos yv
+  have hDy0 : 0 ≤ Dy := by linarith
+  have hhi1 : 0 < hi + 1 := by linarith
+  rw [abs_of_pos hhi1] at hE2
+  have hE3 : E ≤ 2 * (hi + 1) := by nlinarith
+  have hhi2 : hi + 1 ≤ Real.exp yv + Dy := by linarith
+  have hcorr2 : corr ≤ 2 * (Real.exp yv + Dy) * (u / 8192) := by
+    rw [hcorr]
+    calc E * pw ≤ 2 * (hi + 1) * (u / 8192) := mul_le_mul hE3 hpw hpw0 (by linarith)
+      _ ≤ 2 * (Real.exp yv + Dy) * (u / 8192) := by
+        apply mul_le_mul_of_nonneg_right _ (by positivity)
+        linarith
+  have hcorr0 : 0 ≤ corr := by rw [hcorr]; exact mul_nonneg (by linarith) hpw0
+  have hhiabs : |hi| ≤ |Real.exp yv - 1| + Dy :=
+    abs_le.mpr ⟨by linarith [neg_abs_le (Real.exp yv - 1)],
+      by linarith [le_abs_self (Real.exp yv - 1)]⟩
+  have habs : |hi + corr| ≤ |Real.exp yv - 1| + Dy + corr := by
+    calc |hi + corr| ≤ |hi| + |corr| := abs_add_le _ _
+      _ ≤ |Real.exp yv - 1| + Dy + corr := by rw [abs_of_nonneg hcorr0]; linarith
+  have h3 : 2 * |hi + corr| * (u / 256) ≤ 2 * (|Real.exp yv - 1| + Dy + corr) * (u / 256) :=
+    mul_le_mul_of_nonneg_right (by linarith) (by positivity)
+  have h4 : Dy * u ≤ Dy := mul_le_of_le_one_right hDy0 hu1
+  have h5 : corr * u ≤ corr := mul_le_of_le_one_right hcorr0 hu1
+  have h6 : 0 ≤ |Real.exp yv - 1| * u := by positivity
+  nlinarith
+
+/-- `expM1Eps` at `y ≤ q` with `|y| ≤ 2|q|` is bounded in terms of `q`. -/
+theorem expM1Eps_le {yv qv : ℝ} (hle : yv ≤ qv) (hy : |yv| ≤ 2 * |qv|)
+    (c w : ℕ) :
+    expM1Eps yv c w ≤ (2 * Real.exp qv * (80 * ((w : ℝ) + c + 9)) + |Real.exp qv - 1|
+      + Real.exp qv + 4 * |qv|) * (1 / 2 : ℝ) ^ w := by
+  unfold expM1Eps
+  apply mul_le_mul_of_nonneg_right _ (by positivity)
+  have h1 : Real.exp yv ≤ Real.exp qv := Real.exp_le_exp.mpr hle
+  have h2 : |Real.exp yv - 1| ≤ |Real.exp qv - 1| + Real.exp qv := by
+    calc |Real.exp yv - 1| = |(Real.exp qv - 1) - (Real.exp qv - Real.exp yv)| := by ring_nf
+      _ ≤ |Real.exp qv - 1| + |Real.exp qv - Real.exp yv| := abs_sub _ _
+      _ ≤ |Real.exp qv - 1| + Real.exp qv := by
+        rw [abs_of_nonneg (by linarith : 0 ≤ Real.exp qv - Real.exp yv)]; linarith [Real.exp_pos yv]
+  have h3 : 2 * Real.exp yv * (80 * ((w : ℝ) + c + 9))
+      ≤ 2 * Real.exp qv * (80 * ((w : ℝ) + c + 9)) :=
+    mul_le_mul_of_nonneg_right (by linarith) (by positivity)
+  linarith
+
+/-- The width bound of `expM1RatBracket`. -/
+noncomputable def expM1RatEps (qv : ℝ) (c w : ℕ) : ℝ :=
+  3 * ((2 * Real.exp qv * (80 * ((w : ℝ) + c + 9)) + |Real.exp qv - 1| + Real.exp qv + 4 * |qv|)
+    * (1 / 2 : ℝ) ^ w)
+
+theorem tendsto_expM1RatEps (qv : ℝ) (c : ℕ) :
+    Filter.Tendsto (expM1RatEps qv c) Filter.atTop (nhds 0) := by
+  have h := (tendsto_pow_const_mul_const_pow_of_abs_lt_one 1
+    (by norm_num : |(1 / 2 : ℝ)| < 1)).const_mul
+    (3 * (2 * Real.exp qv * 160 + |Real.exp qv - 1| + Real.exp qv + 4 * |qv|))
+  rw [mul_zero] at h
+  refine squeeze_zero' ?_ ?_ h
+  · exact Filter.Eventually.of_forall fun w => by unfold expM1RatEps; positivity
+  · refine Filter.eventually_atTop.mpr ⟨c + 9, fun w hw => ?_⟩
+    unfold expM1RatEps
+    have hw1 : (c : ℝ) + 9 ≤ w := by exact_mod_cast hw
+    have hw0 : (1 : ℝ) ≤ w := by linarith [(Nat.cast_nonneg c : (0 : ℝ) ≤ c)]
+    have hu : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
+    have hE := (Real.exp_pos qv).le
+    have h1 : 2 * Real.exp qv * (80 * ((w : ℝ) + c + 9)) ≤ 2 * Real.exp qv * 160 * w := by
+      have : 80 * ((w : ℝ) + c + 9) ≤ 160 * w := by linarith
+      nlinarith
+    have h2 : |Real.exp qv - 1| ≤ |Real.exp qv - 1| * w :=
+      le_mul_of_one_le_right (abs_nonneg _) hw0
+    have h3 : Real.exp qv ≤ Real.exp qv * w := le_mul_of_one_le_right hE hw0
+    have h4 : 4 * |qv| ≤ 4 * |qv| * w := le_mul_of_one_le_right (by positivity) hw0
+    rw [pow_one]
+    have h5 : (2 * Real.exp qv * (80 * ((w : ℝ) + c + 9)) + |Real.exp qv - 1| + Real.exp qv
+        + 4 * |qv|)
+        ≤ (2 * Real.exp qv * 160 + |Real.exp qv - 1| + Real.exp qv + 4 * |qv|) * w := by
+      linarith
+    have := mul_le_mul_of_nonneg_right h5 hu
+    linarith
+
+/-- `expM1RatBracket q w` encloses `exp q − 1` for `q ≠ 0`, with width at most
+`expM1RatEps q (expM1Comp (ofInt (⌊log₂ |q|⌋ + 2))) w`. -/
+theorem expM1RatBracket_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0) :
+    ∃ lo hi : ℝ, (expM1RatBracket q w).1.toVal = some (lo : EReal) ∧
+      (expM1RatBracket q w).2.toVal = some (hi : EReal) ∧
+      lo ≤ Real.exp (AzRat.toRat q : ℝ) - 1 ∧ Real.exp (AzRat.toRat q : ℝ) - 1 ≤ hi ∧
+      hi - lo ≤ expM1RatEps (AzRat.toRat q : ℝ)
+        (expM1Comp (AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 2))) w := by
+  obtain ⟨W, hW⟩ : ∃ W : ℕ, W = w + 16 + q.num.size := ⟨_, rfl⟩
+  have : NeZero W := ⟨by omega⟩
+  have : NeZero (w + 8) := ⟨by omega⟩
+  obtain ⟨e, he⟩ : ∃ e : AzInt, e = AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 2) := ⟨_, rfl⟩
+  simp only [expM1RatBracket]
+  rw [← hW, ← he]
+  obtain ⟨qv, hqv⟩ : ∃ qv : ℝ, qv = (AzRat.toRat q : ℝ) := ⟨_, rfl⟩
+  rw [← hqv]
+  obtain ⟨L, hL⟩ : ∃ L : ℤ, L = Int.log 2 |qv| := ⟨_, rfl⟩
+  have heL : e.toInt = L + 2 := by
+    rw [he, AzInt.toInt_ofInt, AzRat.floorLogBaseAbs_eq 2 (by decide) q h0, hL, hqv]; rfl
+  have hq0 : qv ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp (by rw [← hqv]; exact h))
+  have hqpos : 0 < |qv| := abs_pos.mpr hq0
+  have h2L : (2 : ℝ) ^ L ≤ |qv| := by
+    rw [hL]; exact_mod_cast Int.zpow_log_le_self (by norm_num : 1 < 2) hqpos
+  have hqL : |qv| < (2 : ℝ) ^ (L + 1) := by
+    rw [hL]; exact_mod_cast Int.lt_zpow_succ_log_self (by norm_num : 1 < 2) |qv|
+  have hqs : |qv| < (2 : ℝ) ^ (q.num.size : ℤ) := by
+    have h := abs_toRat_lt q
+    rw [← hqv] at h
+    exact h
+  have hLs : L ≤ (q.num.size : ℤ) - 1 := by
+    by_contra h
+    push Not at h
+    have : (2 : ℝ) ^ (q.num.size : ℤ) ≤ (2 : ℝ) ^ L := zpow_le_zpow_right₀ (by norm_num) (by omega)
+    linarith
+  -- the float `y`
+  obtain ⟨y, hy, hy1, hy2⟩ := ofAzRatRound_floor_abs q W
+  rw [← hqv] at hy1 hy2
+  generalize (ofAzRatRound q W .Floor).1 = Y at hy
+  obtain ⟨u, hu⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+  have hu0 : 0 < u := by rw [hu]; positivity
+  have hus : u ≤ 1 / 10 ^ 18 := hu ▸ half_pow_small hw
+  have hu1 : u ≤ 1 := by linarith
+  have hs0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ q.num.size := by positivity
+  have hs1 : (2 : ℝ) ^ q.num.size * (1 / 2 : ℝ) ^ q.num.size = 1 := by
+    rw [one_div_pow, mul_one_div, div_self (by positivity)]
+  have hqs1 : |qv| * (1 / 2 : ℝ) ^ q.num.size ≤ 1 := by
+    have h := mul_le_mul_of_nonneg_right (zpow_natCast (2 : ℝ) q.num.size ▸ hqs).le hs0
+    rw [hs1] at h
+    exact h
+  have hWu : (1 / 2 : ℝ) ^ W = u * (1 / 65536) * (1 / 2 : ℝ) ^ q.num.size := by
+    rw [hW, pow_add, pow_add, hu, show ((1 : ℝ) / 2) ^ 16 = 1 / 65536 by norm_num]
+  have hd : qv - y ≤ u / 32768 := by
+    have e1 : 2 * |qv| * (1 / 2 : ℝ) ^ W = u / 32768 * (|qv| * (1 / 2 : ℝ) ^ q.num.size) := by
+      rw [hWu]; ring
+    have e2 : u / 32768 * (|qv| * (1 / 2 : ℝ) ^ q.num.size) ≤ u / 32768 * 1 :=
+      mul_le_mul_of_nonneg_left hqs1 (by positivity)
+    linarith
+  have hd0 : 0 ≤ qv - y := by linarith
+  have hdq : qv - y ≤ |qv| := by
+    have hW12 : (1 / 2 : ℝ) ^ W ≤ 1 / 2 := by
+      have := pow_le_pow_of_le_one (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num) (by omega : 1 ≤ W)
+      rwa [pow_one] at this
+    have := mul_le_mul_of_nonneg_left hW12 (by positivity : (0 : ℝ) ≤ 2 * |qv|)
+    linarith
+  have hy2q : |y| ≤ 2 * |qv| := by
+    calc |y| = |qv - (qv - y)| := by ring_nf
+      _ ≤ |qv| + |qv - y| := abs_sub _ _
+      _ ≤ 2 * |qv| := by rw [abs_of_nonneg hd0]; linarith
+  have hye : |y| < (2 : ℝ) ^ e.toInt := by
+    rw [heL]
+    calc |y| ≤ 2 * |qv| := hy2q
+      _ < 2 * (2 : ℝ) ^ (L + 1) := by linarith
+      _ = (2 : ℝ) ^ (L + 2) := by
+        rw [zpow_add₀ (by norm_num) L 2, zpow_add₀ (by norm_num) L 1]; ring
+  -- the bracket at `y`
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := expM1Bracket_spec hy e hye hw
+  have hDy := expM1Eps_le hy1 hy2q (expM1Comp e) w
+  rw [← hu] at hDy
+  -- the correction
+  obtain ⟨E, hE, hE1, hE2⟩ := addCeiling_abs hhi toVal_one' (w + 8)
+  have h8 : (1 / 2 : ℝ) ^ (w + 8) = u / 256 := by
+    rw [pow_add, hu, show ((1 : ℝ) / 2) ^ 8 = 1 / 256 by norm_num]; ring
+  rw [h8] at hE2
+  have hsh := toVal_shiftLeft_of_toVal hE (e - (AzNat.ofNat (W - 2)).toAzInt)
+  obtain ⟨pw, hpw⟩ : ∃ pw : ℝ, pw = (2 : ℝ) ^ (e - (AzNat.ofNat (W - 2)).toAzInt).toInt :=
+    ⟨_, rfl⟩
+  rw [← hpw] at hsh
+  have hexp : (e - (AzNat.ofNat (W - 2)).toAzInt).toInt = L + 4 - W := by
+    rw [AzInt.toInt_sub, toInt_toAzInt, AzNat.toNat_ofNat, heL, Nat.cast_sub (by omega)]
+    push_cast
+    ring
+  have hpw0 : 0 ≤ pw := by rw [hpw]; positivity
+  have hpwu : pw ≤ u / 8192 := by
+    have e1 : (2 : ℝ) ^ (-((w + 13 : ℕ) : ℤ)) = u / 8192 := by
+      rw [zpow_neg, zpow_natCast, ← one_div, ← one_div_pow, pow_add, hu,
+        show ((1 : ℝ) / 2) ^ 13 = 1 / 8192 by norm_num]
+      ring
+    rw [hpw, hexp, ← e1]
+    exact zpow_le_zpow_right₀ (by norm_num) (by push_cast; omega)
+  have hpw1 : 2 * (qv - y) * Real.exp y ≤ pw * Real.exp y := by
+    apply mul_le_mul_of_nonneg_right _ (Real.exp_pos y).le
+    have e1 : 4 * (2 : ℝ) ^ (L + 1) * (1 / 2 : ℝ) ^ W ≤ pw := by
+      rw [hpw, hexp, one_div_pow, one_div, ← zpow_natCast, ← zpow_neg,
+        show (4 : ℝ) = (2 : ℝ) ^ (2 : ℤ) by norm_num, ← zpow_add₀ (by norm_num),
+        ← zpow_add₀ (by norm_num)]
+      exact zpow_le_zpow_right₀ (by norm_num) (by omega)
+    have e2 : 2 * (qv - y) ≤ 4 * |qv| * (1 / 2 : ℝ) ^ W := by linarith
+    have e3 : 4 * |qv| * (1 / 2 : ℝ) ^ W ≤ 4 * (2 : ℝ) ^ (L + 1) * (1 / 2 : ℝ) ^ W :=
+      mul_le_mul_of_nonneg_right (by linarith) (by positivity)
+    linarith
+  obtain ⟨hi', hhi', hh1, hh2⟩ := addCeiling_abs hhi hsh (w + 8)
+  rw [h8] at hh2
+  refine ⟨lo, hi', hlo, hhi', h1.trans (by linarith [Real.exp_le_exp.mpr hy1]), ?_, ?_⟩
+  · -- `exp q − 1 ≤ hi'`
+    have e1 : Real.exp qv ≤ Real.exp y * (1 + 2 * (qv - y)) :=
+      exp_le_exp_mul_one_add hy1 (by linarith)
+    have e2 : pw * Real.exp y ≤ E * pw := by
+      have : Real.exp y ≤ E := by linarith [Real.exp_pos y]
+      nlinarith
+    linarith
+  · have hw' := expM1Rat_width hu0 hu1 h1 h2 h3 (by linarith) hE2 rfl hpw0 hpwu hh2
+    unfold expM1RatEps
+    rw [← hu]
+    have hEq : Real.exp y ≤ Real.exp qv := Real.exp_le_exp.mpr hy1
+    have hab : |Real.exp y - 1| ≤ |Real.exp qv - 1| + Real.exp qv := by
+      calc |Real.exp y - 1| = |(Real.exp qv - 1) - (Real.exp qv - Real.exp y)| := by ring_nf
+        _ ≤ |Real.exp qv - 1| + |Real.exp qv - Real.exp y| := abs_sub _ _
+        _ ≤ |Real.exp qv - 1| + Real.exp qv := by
+          rw [abs_of_nonneg (by linarith : 0 ≤ Real.exp qv - Real.exp y)]; linarith [Real.exp_pos y]
+    have h5 : (Real.exp y + |Real.exp y - 1|) * u ≤ (|Real.exp qv - 1| + 2 * Real.exp qv) * u :=
+      mul_le_mul_of_nonneg_right (by linarith) hu0.le
+    have h6 : 0 ≤ (2 * Real.exp qv * (80 * ((w : ℝ) + expM1Comp e + 9)) + 4 * |qv|) * u := by
+      positivity
+    nlinarith
+
+/-- `exp q − 1` is irrational for a rational `q ≠ 0`. -/
+theorem irrational_exp_sub_one_toRat (q : AzRat) (h0 : q.num ≠ 0) :
+    Irrational (Real.exp (AzRat.toRat q : ℝ) - 1) := by
+  have h := (irrational_exp_toRat q h0).sub_intCast 1
+  rwa [Int.cast_one] at h
+
+/-- `expM1RatApprox` is a strict enclosure of `exp q − 1` with width at most `expM1RatEps`. -/
+theorem expM1RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0) :
+    ∃ lv hv : ℝ, Rounds (expM1RatApprox q w).1 lv ∧ Rounds (expM1RatApprox q w).2 hv ∧
+      lv < Real.exp (AzRat.toRat q : ℝ) - 1 ∧ Real.exp (AzRat.toRat q : ℝ) - 1 < hv ∧
+      hv - lv ≤ expM1RatEps (AzRat.toRat q : ℝ)
+        (expM1Comp (AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 2))) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := expM1RatBracket_spec hw q h0
+  have hirr := irrational_exp_sub_one_toRat q h0
+  refine ⟨lo, hi, ?_, ?_, ?_, ?_, h3⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR
+    exact hR
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlo
+    exact lt_of_le_of_ne h1 (by rw [hr]; exact (hirr.ne_rat r).symm)
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhi
+    exact lt_of_le_of_ne h2 (by rw [hr]; exact hirr.ne_rat r)
+
+/-- The Ziv certificate for `exp q − 1`. -/
+theorem expM1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+    (h0 : q.num ≠ 0) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (expM1RatApprox q (w₀ * 2 ^ f)).1
+      (expM1RatApprox q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (expM1RatApprox q)
+    (irrational_exp_sub_one_toRat q h0)
+    (expM1RatEps (AzRat.toRat q : ℝ) (expM1Comp (AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 2))))
+    (tendsto_expM1RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := expM1RatApprox_spec hw q h0
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 end Azurite.AzFloat

@@ -24,7 +24,8 @@ Finally the shift by `k` is exact, and `expApprox` is the pair of `Roundable`s f
 `expRatBracket` handles a rational argument through the float `⌊q⌋_W` below it, the upper end
 widened by `exp (q − ⌊q⌋_W) ≤ 1 + 2^(−w−14)`.  `expM1Bracket` brackets `exp x − 1`: the
 working precision is raised by `max(−e, 0)` against the cancellation, and a tiny `x`
-(`|x| < 2^(−w)`) is enclosed by `[x, x + |x| 2^e]` without any series.
+(`|x| < 2^(−w)`) is enclosed by `[x, x + |x| 2^e]` without any series.  `expM1RatBracket` is the
+rational version: `expM1Bracket` at `⌊q⌋_W`, the upper end widened by `⌈exp y⌉ · 2^(e + 2 − W)`.
 -/
 
 namespace Azurite.AzFloat
@@ -134,6 +135,22 @@ def expM1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
 /-- `expM1Bracket` as a pair of `Roundable`s for the Ziv loop. -/
 def expM1Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
   let b := expM1Bracket x e w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The bracket of `exp q − 1` for a rational `q`: `expM1Bracket` at the float `y = ⌊q⌋_W` below
+`q` (`W = w + 16 + size (num q)`) with the exponent `e = ⌊log₂ |q|⌋ + 2` of `q` itself, the
+upper end widened by `E · 2^(e + 2 − W) ≥ 2 (q − y) exp y` where `E = ⌈hi + 1⌉ ≥ exp y`. -/
+def expM1RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+  let e : AzInt := AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 2)
+  let W := w + 16 + q.num.size
+  let b := expM1Bracket (ofAzRatRound q W .Floor).1 e w
+  let E := (addPrecRound b.2 one (w + 8) .Ceiling).1
+  let corr := E <<< (e - (AzNat.ofNat (W - 2)).toAzInt)
+  (b.1, (addPrecRound b.2 corr (w + 8) .Ceiling).1)
+
+/-- `expM1RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
+def expM1RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let b := expM1RatBracket q w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat
