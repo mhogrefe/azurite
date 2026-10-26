@@ -95,3 +95,20 @@ at the natural generality.
 Conventions: the partial-fraction identities (§1.2(iii)) are stated between elements of a field `K` (the DLMF has complex constants) at points `x` different from the poles, with `Polynomial.eval` for `f(x)`, `Fin n`-indexed poles and `Finset.univ` sums/products; `Fⱼ^{(k)}` is `derivative^[k]`.  Vectors (§1.2(v)) are `Fin n → ℂ`; the DLMF scalar product is linear in the first argument, the opposite of Mathlib's `inner`, hence `scalarProduct u v = inner ℂ (toE v) (toE u)`.  Matrices (§1.2(v)) are `Matrix (Fin m) (Fin n) ℂ` with `Aᵀ`, `Aᴴ` (`Matrix.conjTranspose`) and the entrywise conjugate `A.map (starRingEnd ℂ)`.  The means (§1.2(iv)) are real-valued functions of `a : Fin n → ℝ` (`n ≥ 1` as `[NeZero n]` where a maximum, minimum or `1/n` is involved); the limit `r → 0` of 1.2.26 is along `𝓝[≠] 0` since `M(0)` is undefined.  The generalized binomial coefficient `C(z, k)` of the DLMF is Mathlib's
 `Ring.choose z k` (`BinomialRing`), which agrees with `Nat.choose` on the natural numbers
 (`Ring.choose_natCast`); the rising factorial `(z)_k` is `(ascPochhammer ℂ k).eval z`.
+
+### §1.3 Determinants, Linear Operators, and Spectral Expansions (`Azurite/DLMF/Chapter1/Section3.lean`)
+
+Prose statements (no equation number) are named `dlmf_1_3_i_<topic>` after their subsection.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.3.1 | `dlmf_1_3_1` (`2 × 2`) | `Matrix.det_fin_two` |
+| 1.3.2 | `dlmf_1_3_2` (`3 × 3`: first-row expansion in `2 × 2` minors, and the full expansion) | `Matrix.det_fin_three`, `det_fin_two_of` |
+| 1.3.3 | `minor` (delete row `j`, column `k`: `submatrix` along `Fin.succAbove`), `cofactor`, `dlmf_1_3_3`, `dlmf_1_3_3_adjugate` (`adjugate A k j = cofactor A j k`) | `Matrix.adjugate_fin_succ_eq_det_submatrix` |
+| 1.3.4 | `dlmf_1_3_4` (expansion by the `j`-th row) | `Matrix.det_succ_row` |
+| §1.3(i) prose | `dlmf_1_3_i_swap_rows`, `dlmf_1_3_i_swap_cols` (interchange changes sign), `dlmf_1_3_i_row_eq`, `dlmf_1_3_i_col_eq` (identical rows/columns give `0`), `dlmf_1_3_i_smul_row`, `dlmf_1_3_i_smul_col` (factor `μ`), `dlmf_1_3_i_add_smul_row`, `dlmf_1_3_i_add_smul_col` (adding `μ` times another row/column) | `Matrix.det_permute`, `det_permute'`, `Equiv.Perm.sign_swap`, `det_zero_of_row_eq`, `det_zero_of_column_eq`, `det_updateRow_smul`, `det_updateCol_smul`, `det_updateRow_add_smul_self`, `det_updateCol_add_smul_self` |
+| 1.3.5 | `dlmf_1_3_5` | `Matrix.det_transpose` |
+| 1.3.6 | `dlmf_1_3_6` (`det A⁻¹ = 1 / det A`, every `A` with Mathlib's inverse) | `Matrix.det_nonsing_inv`, `Ring.inverse_eq_inv'` |
+| 1.3.7 | `dlmf_1_3_7` | `Matrix.det_mul` |
+| §1.3(i) prose | `dlmf_1_3_i_isUpperTriangular`, `dlmf_1_3_i_isLowerTriangular` (definitions), `dlmf_1_3_i_det_upperTriangular`, `dlmf_1_3_i_det_lowerTriangular`, `dlmf_1_3_i_det_diagonal` (`det A = ∏ aᵢᵢ`) | `Matrix.IsUpperTriangular`, `IsLowerTriangular`, `det_of_isUpperTriangular`, `det_of_isLowerTriangular`, `IsDiag.diagonal_diag`, `det_diagonal` |
+| 1.3.8–1.3.21 | — | not yet |
