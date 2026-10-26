@@ -122,6 +122,7 @@ import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.PrimeConstant
 import Azurite.AzFloat.Equiv.Product
 import Azurite.AzFloat.Equiv.ProuhetThueMorse
+import Azurite.AzFloat.Equiv.Ramanujan
 import Azurite.AzFloat.Equiv.Recip
 import Azurite.AzFloat.Equiv.Rem
 import Azurite.AzFloat.Equiv.RoundScaled
@@ -193,6 +194,7 @@ import Azurite.AzFloat.Precision
 import Azurite.AzFloat.PrimeConstant
 import Azurite.AzFloat.Product
 import Azurite.AzFloat.ProuhetThueMorse
+import Azurite.AzFloat.Ramanujan
 import Azurite.AzFloat.Recip
 import Azurite.AzFloat.Rem
 import Azurite.AzFloat.RoundScaled
@@ -1705,6 +1707,7 @@ import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
 import Azurite.Transcendental.Exp
+import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits

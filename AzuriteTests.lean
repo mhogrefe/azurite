@@ -63,6 +63,7 @@ import Azurite.AzFloat.Tests.Precision
 import Azurite.AzFloat.Tests.PrimeConstant
 import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
+import Azurite.AzFloat.Tests.Ramanujan
 import Azurite.AzFloat.Tests.Recip
 import Azurite.AzFloat.Tests.Rem
 import Azurite.AzFloat.Tests.RoundToInteger

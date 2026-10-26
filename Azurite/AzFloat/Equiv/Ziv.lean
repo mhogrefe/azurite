@@ -209,7 +209,8 @@ theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Ro
     · exact absurd (h₃ h').symm hveq
   -- the `(p+1)`-bit floors of the two ends agree
   rw [hl, hh] at heq
-  have hval := congrArg toVal heq
+  obtain ⟨vv, hv1, hv2⟩ := (eqIEEE_iff _ _).mp heq
+  have hval := hv1.trans hv2.symm
   rw [fst_roundVal, fst_roundVal] at hval
   change (ofEReal (p + 1) .Floor (lv : EReal)).toVal
     = (ofEReal (p + 1) .Floor (hv : EReal)).toVal at hval
@@ -444,14 +445,14 @@ theorem roundingPossible_isSome_of_no_boundary (p : ℕ) [NeZero p] (mode : Roun
   rw [hl (p + 1) .Floor, hh (p + 1) .Floor]
   suffices hsuff : (roundFloor (floatSet (p + 1)) lv).val
       = (roundFloor (floatSet (p + 1)) hv).val by
-    have heq : (roundVal (p + 1) .Floor (some (lv : EReal))).1
-        = (roundVal (p + 1) .Floor (some (hv : EReal))).1 := by
+    have heq : eqIEEE (roundVal (p + 1) .Floor (some (lv : EReal))).1
+        (roundVal (p + 1) .Floor (some (hv : EReal))).1 = true := by
       rw [fst_roundVal, fst_roundVal]
-      change ofEReal (p + 1) .Floor (lv : EReal) = ofEReal (p + 1) .Floor (hv : EReal)
-      exact toVal_injective (p + 1) (ofEReal_spec (p + 1) .Floor _).1
-        (ofEReal_spec (p + 1) .Floor _).1
-        (by rw [(ofEReal_spec (p + 1) .Floor _).2, (ofEReal_spec (p + 1) .Floor _).2]
-            exact congrArg some hsuff)
+      change eqIEEE (ofEReal (p + 1) .Floor (lv : EReal)) (ofEReal (p + 1) .Floor (hv : EReal))
+        = true
+      rw [eqIEEE_iff]
+      exact ⟨_, (ofEReal_spec (p + 1) .Floor _).2,
+        by rw [(ofEReal_spec (p + 1) .Floor _).2]; exact congrArg some hsuff.symm⟩
     rw [heq]
     simp
   obtain ⟨fh, hfh⟩ : ∃ r : ℝ, ((r : ℝ) : EReal) = (roundFloor (floatSet (p + 1)) hv).val := by

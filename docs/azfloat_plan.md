@@ -4510,6 +4510,9 @@ The remaining fuel-based loops, with specification "correctly rounded or `NaN`":
   and the nonvanishing of the auxiliary exponential polynomial); Gelfond's special case for
   `e^π` (interpolation at the Gaussian integers, `e^{π(a+bi)} = ±e^{πa}`) is 3–4k lines but
   shares the hard parts.  A multi-week arc.
+- **`e^(π √163)`** (`ramanujanPrecRound`, `AzFloat/Ramanujan.lean`): the same theorem
+  (Gelfond–Schneider).  `Transcendental/Ramanujan.lean` proves it is not an integer, which is
+  weaker than irrationality.
 - **AGM values** (`agmPrecRound`, `agmRatPrecRound`, `agmFloatRatPrecRound`), hence
   **Gauss's constant** and the **lemniscate constant**: need the transcendence of `AGM(a, b)`
   for distinct algebraic `a, b` (Masser–Wüstholz period transcendence; Chudnovsky in the CM
@@ -4545,3 +4548,58 @@ fuel).  Replaced by `zivLoopCertified` with `phiApprox_isSome_exists` from
 `.div_natCast`) and the width `2^(1 − w)` (`phiApprox_encloses`); the driver moved to
 `AzFloat/Phi.lean` (+ `Equiv/Phi.lean`) since it needs the certificate from `Equiv/Constants`;
 `(nan, .eq)` at precision `0`.  `phiApprox` and its spec stay in `Constants`.
+
+## Ramanujan's constant `e^(π √163)` (DONE 2026-10-25, fuel-based) and its near-integrality
+
+User request.  `AzFloat/Ramanujan.lean`, `Equiv/Ramanujan.lean`, `Tests/Ramanujan.lean`.
+`expOfBracket X w` factored out of `Gelfond.lean` (the exponential of a bracket of width `≤ 1`,
+`expOfBracket_spec`); `piSqrt163Bracket w` multiplies the `π` bracket by `sqrtBracket` at the
+exact float `163` with directed rounding (width `≤ 1` from `piEps_le`, `√163 < 13`,
+`π < 3.15` — `π < 4` is too weak once the bracket width is added); `ramanujanBracket =
+expOfBracket (piSqrt163Bracket w) w`; `zivLoop` with fuel, spec `ramanujanPrecRound_eq_or`
+(irrationality = Gelfond–Schneider, pending).  The constant is `640320³ + 744 − 7.5·10^(−13)`,
+so the Ziv loop's first level fails below precision about 100 and the loop doubles; tests at
+60 bits check that the nearest value is the integer itself, from above.
+
+**Near-integrality (user request), `Transcendental/Ramanujan.lean`**: certified enclosure
+`N − 10^(−12) < e^(π √163) < N`, `N = 262537412640768744`, hence `ramanujan_not_integer`,
+`floor_ramanujan`, `ramanujan_near_integer`.  Recipe (reusable for other constants):
+(1) `π` to 35 digits with Mathlib's `pi_lower_bound [...]`/`pi_upper_bound [...]`: witnesses
+`r_i = ⌈√(2 + r_{i−1})⌉` (resp. `⌊…⌋`) at 80 digits for 60 iterations (error `1/4^n`), written
+as `k/10^80` so that lines stay under 100 columns; the final checks `r_n ≤ 2 − (a/2^(n+1))²`
+and `2 − ((a − 4^(−n))/2^(n+1))² ≤ r_n` need the witness precision `P` with
+`2π (π − a)/4^(n+1) ≥ 1.34 · 10^(−P)` (Python cross-checks everything with `Fraction` before
+emitting); the tactics take seconds.  (2) `√163` by `Real.lt_sqrt`/`Real.sqrt_lt'`.
+(3) `x = π√163 ∈ (64 yₗ, 64 yᵤ)` with 45-digit `y ≤ 1`; `exp (64 y) = exp y ^ 64`
+(`Real.exp_nat_mul`); `exp y` enclosed by `Real.sum_le_exp_of_nonneg` and `Real.exp_bound'`
+with 40 terms, the sums evaluated by `norm_num [Finset.sum_range_succ, Nat.factorial]`, rounded
+to 45 digits (`expLo`, `expHi`) before `pow_le_pow_left₀ … 64`; the final comparisons by
+`norm_num` (64th powers of 46-digit rationals are fine).  Name the rationals as
+`noncomputable def`s and `unfold` them in the `norm_num` calls.  Gotcha: Python `Fraction`
+reduces denominators — emit explicit integer numerators over `10^k`, never `.numerator`.
+No transcendence shortcut exists for "not an integer"; the "why" (the `j`-invariant) is not
+formalized.
+
+## Proofs that compute: kernel evaluation of Azurite (2026-10-26)
+
+User: Azurite's purpose is to enable such proofs without trusting GMP's multi-limb algorithms;
+kernel-checking limb code only exercises the kernel's `Nat` on `≤ 2`-word operands, while
+`norm_num` certificates over 4000-digit rationals (the first `Transcendental/Ramanujan`) do
+not.  **Measurements** (`decide +kernel`; plain `decide` stops at `Nat.beq` in `Meta.whnf`):
+2-limb add and 2/4/8/16-limb mul, 4/8-limb div: 2–6 s each including imports; `piBracket 80`:
+20 s, `piBracket 200`: 22 s; `sqrtPrecRound two 100`: 8 s; `expBracket one 200`: 10 s; the AGM
+and Gauss brackets at 84 bits: 4–5 s.  **Blockers**: (1) `zivLoopCertified` (well-founded
+recursion) cannot reduce — for concrete evaluation the fuel `zivLoop` + `…_eq_or` is exactly as
+good (the kernel also decides the result is not `NaN`); (2) the structural `DecidableEq AzFloat`
+in `roundingPossible` between the two bracket ends: `> 300 s` even at 21 bits (while
+`partialCompare` on the same ends takes 6 s and equality of cheap equal floats is fine) — the
+derived `isTrue` branches carry `Eq.rec` casts whose reduction makes the kernel unify the two
+unevaluated computations symbolically.  **Fixed**: `roundingPossible` now compares the two
+`(p + 1)`-bit floors with the Boolean `eqIEEE` (proofs via `eqIEEE_iff`); afterwards
+`gaussConstantPrecRound 20`: 4 s (was `> 900 s`), a fuel `π` loop at 20 bits: 7 s.  Rule for
+kernel-evaluable code: never decide `=` between computed structures; use Bool comparisons
+(`eqIEEE`, `partialCompare`, `Nat`/`Bool` projections).  **Result**:
+`Transcendental/Ramanujan.lean` rewritten to evaluate `ramanujanPrecRound 110` in both modes in
+the kernel (≈ 4 min each) and derive the enclosure from the specification — the `π`-digit
+certificates and the big `norm_num` sums are gone.  Also: run `lake env lean` only from the
+project root (running from elsewhere made elan download a stray toolchain, since deleted).

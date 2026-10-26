@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Add
 import Azurite.AzFloat.Precision
+import Azurite.AzFloat.Compare
 
 /-!
 # Ziv's strategy
@@ -58,11 +59,13 @@ def truncError (r : AzFloat × Ordering) : AzFloat :=
 
 /-- MCA Algorithm 3.1: when the exact value lies in `(l, h]` (or is `l = h`), its rounding to
 precision `p` is determined as soon as no boundary — no float of precision `p + 1` — lies in
-that interval, which holds exactly when the two ends have the same `(p + 1)`-bit truncation;
-the rounding is then that of `h`. -/
+that interval, which holds exactly when the two ends have the same `(p + 1)`-bit truncation
+(compared by value with the Boolean `eqIEEE`: a structural `DecidableEq` test between two
+expensive computations makes kernel evaluation unify them symbolically instead of evaluating
+them); the rounding is then that of `h`. -/
 def roundingPossible (l h : Roundable) (p : Nat) (mode : RoundingMode) :
     Option (AzFloat × Ordering) :=
-  if (l (p + 1) .Floor).1 = (h (p + 1) .Floor).1 then some (h p mode) else none
+  if eqIEEE (l (p + 1) .Floor).1 (h (p + 1) .Floor).1 then some (h p mode) else none
 
 /-- Ziv's loop: `approx w` brackets the exact value at working precision `w`; the working
 precision doubles until rounding is possible, for `fuel + 1` attempts.  The `NaN` after the
