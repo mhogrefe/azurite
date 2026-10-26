@@ -23,6 +23,27 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Matrix.Mul
 import Mathlib.LinearAlgebra.Matrix.ConjTranspose
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.MeanInequalities
+import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.LinearAlgebra.Matrix.Notation
+import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Matrix.Hermitian
+import Mathlib.LinearAlgebra.Matrix.IsDiag
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+import Mathlib.LinearAlgebra.Matrix.Symmetric
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Mathlib.LinearAlgebra.Matrix.Trace
+import Mathlib.Analysis.Normed.Algebra.MatrixExponential
+import Mathlib.Analysis.SpecialFunctions.Exponential
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+import Mathlib.LinearAlgebra.Eigenspace.Charpoly
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Basic
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 
 /-!
 # DLMF §1.2: Elementary Algebra
@@ -83,6 +104,50 @@ thin restatement of a Mathlib lemma (named in the docstring) or proven here.  Th
 * 1.2.34–1.2.37 `dlmf_1_2_34`–`dlmf_1_2_37`: the row-times-column rule (`Matrix.mul_apply`),
   associativity (`Matrix.mul_assoc`), distributivity (`Matrix.mul_add`), the transpose of a
   product (`Matrix.transpose_mul`).
+* 1.2.38–1.2.39 `dlmf_1_2_38`, `dlmf_1_2_39`: column and row vectors (`replicateCol`,
+  `replicateRow`).
+* 1.2.40–1.2.44 `scalarProduct` (`⟨u, v⟩ = ∑ uᵢ v̅ᵢ = vᴴ u`), `dlmf_1_2_41` (conjugate symmetry),
+  `dlmf_1_2_42` (sesquilinearity), `dlmf_1_2_43` (`⟨v, v⟩ = 0 ↔ v = 0`), `Orthogonal`
+  (`dlmf_1_2_44`).
+* 1.2.45–1.2.48 `lpNorm` (`dlmf_1_2_45`), `dlmf_1_2_46` (`‖v‖₂ = √⟨v, v⟩`), `dlmf_1_2_47` (`ℓ¹`),
+  `linfNorm` (`dlmf_1_2_48`).
+* 1.2.49 `dlmf_1_2_49` (conjugate exponents, `Real.HolderConjugate`), 1.2.50 `dlmf_1_2_50`
+  (Hölder, `Real.inner_le_Lp_mul_Lq_of_nonneg`), 1.2.51 `dlmf_1_2_51` and `dlmf_1_2_51_eq`
+  (Cauchy–Schwarz and its equality case, `norm_inner_eq_norm_iff`), 1.2.52 `dlmf_1_2_52`
+  (the triangle inequality, `norm_add_le`); the bridge `toE`, `scalarProduct_eq_inner`,
+  `lpNorm_two_eq_norm` to `EuclideanSpace ℂ (Fin n)`.
+
+## §1.2(vi) Square matrices
+
+* 1.2.53–1.2.57 `dlmf_1_2_53` (the identity `[δᵢⱼ]`, `Matrix.one_apply`), `dlmf_1_2_54`
+  (diagonal, `Matrix.IsDiag`), `dlmf_1_2_55` (real symmetric, `Matrix.IsSymm`), `dlmf_1_2_56`
+  (Hermitian, `Matrix.IsHermitian`), `IsTridiagonal` (`dlmf_1_2_57`).
+* 1.2.58–1.2.59 `dlmf_1_2_58` (the determinant in index form for orders `1`–`3`), `dlmf_1_2_59`
+  (the Leibniz formula, `Matrix.det_apply'`).
+* 1.2.60 `dlmf_1_2_60` (`A A⁻¹ = A⁻¹ A = I` for `det A ≠ 0`), `dlmf_1_2_60_unique`,
+  `dlmf_1_2_60_cancel`, `dlmf_1_2_60_singular` (uniqueness, cancellation, and its failure for
+  singular `A`).
+* 1.2.61 `dlmf_1_2_61`, `dlmf_1_2_61_unique` (`A b = c ↔ b = A⁻¹ c`), `dlmf_1_2_61_singular`
+  (no or infinitely many solutions), `dlmf_1_2_61_particular` (particular plus homogeneous).
+* 1.2.62–1.2.66 `dlmf_1_2_62`–`dlmf_1_2_65` (the trace and its linearity, `tr(AB) = tr(BA)`),
+  `dlmf_1_2_66` (the commutator `⁅A, B⁆`, `Ring.lie_def`).
+* 1.2.67–1.2.69 `dlmf_1_2_67` (the `ℓ²` operator norm as the two maxima, via
+  `Matrix.l2_opNorm_def`, the bridge `toCLM`, `lpNorm_mulVec_le` and the attainment
+  `exists_lpNorm_eq_one_norm_mulVec_eq` on the compact unit sphere), `dlmf_1_2_68`
+  (`‖AB‖ ≤ ‖A‖ ‖B‖`, `Matrix.l2_opNorm_mul`), `dlmf_1_2_69` (`norm_add_le`).
+* 1.2.70–1.2.72 `dlmf_1_2_70` (eigenpairs, `Module.End.HasEigenvector (toLin' A)`),
+  `dlmf_1_2_70_real` (a real matrix with only complex eigenvalues), `dlmf_1_2_71`,
+  `dlmf_1_2_71_charpoly` (eigenvalues as roots of `det(A − λI) = 0` and of the characteristic
+  polynomial), `dlmf_1_2_72` (`(A − λI) a = 0`).
+* 1.2.73 `dlmf_1_2_73_linearIndependent`, `IsNonDefective`, `dlmf_1_2_73` (non-defective iff
+  diagonalizable `Λ = S⁻¹ A S`), `dlmf_1_2_73_columns` (columns of `S` are eigenvectors),
+  `dlmf_1_2_73_multiplicity`, `dlmf_1_2_73_sum_multiplicity` (multiplicities of the diagonal
+  entries, summing to `n`).
+* 1.2.74–1.2.75 `dlmf_1_2_74`, `dlmf_1_2_75` (`det A = ∏ λᵢ`, `tr A = ∑ λᵢ` through the
+  similarity), `dlmf_1_2_74_roots`, `dlmf_1_2_75_roots` (for every `A`, with multiplicities;
+  `Matrix.det_eq_prod_roots_charpoly`, `trace_eq_sum_roots_charpoly`).
+* 1.2.76–1.2.77 `dlmf_1_2_76`, `dlmf_1_2_76_apply` (the exponential series, in norm and
+  entrywise), `etr`, `dlmf_1_2_77` (`det(exp A) = exp(tr A)` for non-defective `A`).
 
 Mathlib's `Ring.choose z k` agrees with `Nat.choose` on the natural numbers
 (`Ring.choose_natCast`), so the complex-argument statements specialize to the integer ones.
@@ -743,5 +808,643 @@ theorem dlmf_1_2_36 {m n p : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B C : Matrix
 theorem dlmf_1_2_37 {m n p : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin p) ℂ) :
     (A * B)ᵀ = Bᵀ * Aᵀ :=
   transpose_mul A B
+
+/-! #### Vectors, scalar products and norms
+
+A vector of length `n` is `v : Fin n → ℂ`; the column vector of 1.2.38 is the `n × 1` matrix
+`replicateCol (Fin 1) v`.  The DLMF scalar product `⟨u, v⟩ = ∑ uᵢ v̅ᵢ` is linear in its first
+argument; Mathlib's `inner ℂ x y` is conjugate-linear in the first, so `⟨u, v⟩ = inner ℂ v u`
+on `EuclideanSpace ℂ (Fin n)` (`scalarProduct_eq_inner`), which gives the Cauchy–Schwarz and
+triangle inequalities. -/
+
+/-- **DLMF 1.2.38**: a column vector of length `n` is an `n × 1` matrix
+(`replicateCol (Fin 1) v`, entries `vᵢ`). -/
+theorem dlmf_1_2_38 {n : ℕ} (v : Fin n → ℂ) (i : Fin n) (j : Fin 1) :
+    replicateCol (Fin 1) v i j = v i :=
+  replicateCol_apply v i j
+
+/-- **DLMF 1.2.39**: its transpose is the row vector `vᵀ = [v₁ v₂ ⋯ vₙ]`, a `1 × n` matrix
+(`Matrix.transpose_replicateCol`). -/
+theorem dlmf_1_2_39 {n : ℕ} (v : Fin n → ℂ) :
+    (replicateCol (Fin 1) v)ᵀ = replicateRow (Fin 1) v ∧
+      ∀ (i : Fin 1) (j : Fin n), replicateRow (Fin 1) v i j = v j :=
+  ⟨transpose_replicateCol v, fun i j => replicateRow_apply v i j⟩
+
+/-- **DLMF 1.2.40**: the scalar product `⟨u, v⟩ = ∑ᵢ uᵢ v̅ᵢ` of two column vectors. -/
+noncomputable def scalarProduct {n : ℕ} (u v : Fin n → ℂ) : ℂ :=
+  ∑ i, u i * starRingEnd ℂ (v i)
+
+/-- **DLMF 1.2.40**: `⟨u, v⟩ = ∑ᵢ uᵢ v̅ᵢ = vᴴ u` (the `1 × 1` matrix product). -/
+theorem dlmf_1_2_40 {n : ℕ} (u v : Fin n → ℂ) :
+    scalarProduct u v = ∑ i, u i * starRingEnd ℂ (v i) ∧
+      scalarProduct u v = ((replicateCol (Fin 1) v)ᴴ * replicateCol (Fin 1) u) 0 0 := by
+  refine ⟨rfl, ?_⟩
+  unfold scalarProduct
+  rw [Matrix.mul_apply]
+  refine sum_congr rfl fun i _ => ?_
+  rw [conjTranspose_apply, replicateCol_apply, replicateCol_apply, mul_comm]
+  rfl
+
+/-- The vector `v` as an element of `EuclideanSpace ℂ (Fin n)`. -/
+noncomputable def toE {n : ℕ} (v : Fin n → ℂ) : EuclideanSpace ℂ (Fin n) := WithLp.toLp 2 v
+
+/-- The DLMF scalar product is Mathlib's inner product with the arguments exchanged. -/
+theorem scalarProduct_eq_inner {n : ℕ} (u v : Fin n → ℂ) :
+    scalarProduct u v = inner ℂ (toE v) (toE u) := by
+  rw [EuclideanSpace.inner_eq_star_dotProduct]
+  unfold toE scalarProduct dotProduct
+  simp only [Pi.star_apply, Complex.star_def]
+
+theorem toE_ne_zero {n : ℕ} {v : Fin n → ℂ} (hv : v ≠ 0) : toE v ≠ 0 := fun h =>
+  hv (by simpa [toE] using congrArg WithLp.ofLp h)
+
+/-- **DLMF 1.2.41**: `⟨u, v⟩ = ⟨v, u⟩̅`. -/
+theorem dlmf_1_2_41 {n : ℕ} (u v : Fin n → ℂ) :
+    scalarProduct u v = starRingEnd ℂ (scalarProduct v u) := by
+  unfold scalarProduct
+  rw [map_sum]
+  refine sum_congr rfl fun i _ => ?_
+  rw [map_mul, Complex.conj_conj, mul_comm]
+
+/-- **DLMF 1.2.42**: `⟨αu, βv⟩ = α β̅ ⟨u, v⟩` for `α, β ∈ ℂ`. -/
+theorem dlmf_1_2_42 {n : ℕ} (α β : ℂ) (u v : Fin n → ℂ) :
+    scalarProduct (α • u) (β • v) = α * starRingEnd ℂ β * scalarProduct u v := by
+  unfold scalarProduct
+  rw [mul_sum]
+  refine sum_congr rfl fun i _ => ?_
+  simp only [Pi.smul_apply, smul_eq_mul, map_mul]
+  ring
+
+/-- **DLMF 1.2.43**: `⟨v, v⟩ = 0` iff `v = 0` (`inner_self_eq_zero`). -/
+theorem dlmf_1_2_43 {n : ℕ} (v : Fin n → ℂ) : scalarProduct v v = 0 ↔ v = 0 := by
+  rw [scalarProduct_eq_inner, inner_self_eq_zero]
+  constructor
+  · intro h
+    simpa [toE] using congrArg WithLp.ofLp h
+  · rintro rfl
+    rfl
+
+/-- **DLMF 1.2.44**: two vectors are orthogonal when `⟨u, v⟩ = 0`. -/
+def Orthogonal {n : ℕ} (u v : Fin n → ℂ) : Prop := scalarProduct u v = 0
+
+theorem dlmf_1_2_44 {n : ℕ} (u v : Fin n → ℂ) : Orthogonal u v ↔ scalarProduct u v = 0 :=
+  Iff.rfl
+
+/-- **DLMF 1.2.45**: the `ℓᵖ` norm `‖v‖ₚ = (∑ᵢ |vᵢ|^p)^(1/p)`, `p ≥ 1`. -/
+noncomputable def lpNorm {n : ℕ} (p : ℝ) (v : Fin n → ℂ) : ℝ := (∑ i, ‖v i‖ ^ p) ^ (1 / p)
+
+theorem dlmf_1_2_45 {n : ℕ} (p : ℝ) (v : Fin n → ℂ) :
+    lpNorm p v = (∑ i, ‖v i‖ ^ p) ^ (1 / p) :=
+  rfl
+
+/-- The `ℓ²` norm is the Euclidean norm of `toE v` (`EuclideanSpace.norm_eq`). -/
+theorem lpNorm_two_eq_norm {n : ℕ} (v : Fin n → ℂ) : lpNorm 2 v = ‖toE v‖ := by
+  rw [EuclideanSpace.norm_eq, Real.sqrt_eq_rpow]
+  unfold lpNorm toE
+  simp only [Real.rpow_two]
+
+/-- **DLMF 1.2.46**: the Euclidean length `‖v‖ = ‖v‖₂ = √⟨v, v⟩` (the `ℓ²` norm, implied when no
+index is given; `⟨v, v⟩` is a nonnegative real). -/
+theorem dlmf_1_2_46 {n : ℕ} (v : Fin n → ℂ) :
+    lpNorm 2 v = Real.sqrt (scalarProduct v v).re ∧
+      scalarProduct v v = ((∑ i, ‖v i‖ ^ 2 : ℝ) : ℂ) := by
+  have h : scalarProduct v v = ((∑ i, ‖v i‖ ^ 2 : ℝ) : ℂ) := by
+    unfold scalarProduct
+    rw [Complex.ofReal_sum]
+    refine sum_congr rfl fun i _ => ?_
+    rw [Complex.mul_conj, Complex.normSq_eq_norm_sq, Complex.ofReal_pow]
+  refine ⟨?_, h⟩
+  rw [h, Complex.ofReal_re, Real.sqrt_eq_rpow]
+  unfold lpNorm
+  simp only [Real.rpow_two]
+
+/-- **DLMF 1.2.47**: the `ℓ¹` norm `‖v‖₁ = ∑ᵢ |vᵢ|`. -/
+theorem dlmf_1_2_47 {n : ℕ} (v : Fin n → ℂ) : lpNorm 1 v = ∑ i, ‖v i‖ := by
+  unfold lpNorm
+  simp only [Real.rpow_one, div_one]
+
+/-- **DLMF 1.2.48**: the `ℓ^∞` norm `‖v‖_∞ = max(|v₁|, …, |vₙ|)` (`n ≥ 1`). -/
+noncomputable def linfNorm {n : ℕ} [NeZero n] (v : Fin n → ℂ) : ℝ :=
+  univ.sup' univ_nonempty fun i => ‖v i‖
+
+theorem dlmf_1_2_48 {n : ℕ} [NeZero n] (v : Fin n → ℂ) :
+    linfNorm v = univ.sup' univ_nonempty fun i => ‖v i‖ :=
+  rfl
+
+/-- **DLMF 1.2.49**: conjugate exponents, `1/p + 1/q = 1` (for `p > 1`; Mathlib's
+`Real.HolderConjugate`, `Real.holderConjugate_iff`). -/
+theorem dlmf_1_2_49 {p q : ℝ} (hp : 1 < p) : Real.HolderConjugate p q ↔ 1 / p + 1 / q = 1 := by
+  rw [Real.holderConjugate_iff, one_div, one_div]
+  exact ⟨fun h => h.2, fun h => ⟨hp, h⟩⟩
+
+/-- **DLMF 1.2.50**, Hölder's inequality: `|⟨u, v⟩| ≤ ‖u‖ₚ ‖v‖_q` for conjugate exponents
+(`Real.inner_le_Lp_mul_Lq_of_nonneg` on the moduli). -/
+theorem dlmf_1_2_50 {n : ℕ} {p q : ℝ} (hpq : Real.HolderConjugate p q) (u v : Fin n → ℂ) :
+    ‖scalarProduct u v‖ ≤ lpNorm p u * lpNorm q v := by
+  unfold scalarProduct lpNorm
+  calc ‖∑ i, u i * starRingEnd ℂ (v i)‖ ≤ ∑ i, ‖u i * starRingEnd ℂ (v i)‖ := norm_sum_le _ _
+    _ = ∑ i, ‖u i‖ * ‖v i‖ := by
+        refine sum_congr rfl fun i _ => ?_
+        rw [norm_mul, Complex.norm_conj]
+    _ ≤ (∑ i, ‖u i‖ ^ p) ^ (1 / p) * (∑ i, ‖v i‖ ^ q) ^ (1 / q) :=
+        Real.inner_le_Lp_mul_Lq_of_nonneg univ hpq (fun i _ => norm_nonneg _)
+          (fun i _ => norm_nonneg _)
+
+/-- **DLMF 1.2.51**, the Cauchy–Schwarz inequality `|⟨u, v⟩| ≤ ‖u‖ ‖v‖` (Hölder with
+`p = q = 2`). -/
+theorem dlmf_1_2_51 {n : ℕ} (u v : Fin n → ℂ) :
+    ‖scalarProduct u v‖ ≤ lpNorm 2 u * lpNorm 2 v :=
+  dlmf_1_2_50 Real.HolderConjugate.two_two u v
+
+/-- **DLMF 1.2.51**, the equality case: for nonzero `u, v`, `|⟨u, v⟩| = ‖u‖ ‖v‖` iff `v` is a
+scalar multiple of `u` (`norm_inner_eq_norm_iff`). -/
+theorem dlmf_1_2_51_eq {n : ℕ} {u v : Fin n → ℂ} (hu : u ≠ 0) (hv : v ≠ 0) :
+    ‖scalarProduct u v‖ = lpNorm 2 u * lpNorm 2 v ↔ ∃ c : ℂ, c ≠ 0 ∧ v = c • u := by
+  rw [dlmf_1_2_41, Complex.norm_conj, scalarProduct_eq_inner, lpNorm_two_eq_norm,
+    lpNorm_two_eq_norm, norm_inner_eq_norm_iff (toE_ne_zero hu) (toE_ne_zero hv)]
+  constructor
+  · rintro ⟨c, hc, h⟩
+    refine ⟨c, hc, ?_⟩
+    have := congrArg WithLp.ofLp h
+    simpa [toE] using this
+  · rintro ⟨c, hc, h⟩
+    exact ⟨c, hc, by rw [h]; rfl⟩
+
+/-- **DLMF 1.2.52**, the triangle inequality `‖u + v‖ ≤ ‖u‖ + ‖v‖` (`norm_add_le`). -/
+theorem dlmf_1_2_52 {n : ℕ} (u v : Fin n → ℂ) :
+    lpNorm 2 (u + v) ≤ lpNorm 2 u + lpNorm 2 v := by
+  rw [lpNorm_two_eq_norm, lpNorm_two_eq_norm, lpNorm_two_eq_norm]
+  exact norm_add_le (toE u) (toE v)
+
+/-! ### §1.2(vi) Square matrices
+
+A square matrix of order `n` is `Matrix (Fin n) (Fin n) ℂ`.  Mathlib's `1` is the identity
+matrix, `A⁻¹` the inverse (the adjugate divided by the determinant, so defined for every `A` and
+a two-sided inverse exactly when `det A ≠ 0`), `A.det` the determinant, `A.trace` the trace and
+`⁅A, B⁆` the commutator. -/
+
+/-- **DLMF 1.2.53**: the identity matrix `I = [δᵢⱼ]` (`Matrix.one_apply`). -/
+theorem dlmf_1_2_53 {n : ℕ} (i j : Fin n) :
+    (1 : Matrix (Fin n) (Fin n) ℂ) i j = if i = j then 1 else 0 :=
+  Matrix.one_apply
+
+/-- **DLMF 1.2.54**: `A` is a diagonal matrix if `aᵢⱼ = 0` for `i ≠ j` (`Matrix.IsDiag`). -/
+theorem dlmf_1_2_54 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    A.IsDiag ↔ ∀ i j, i ≠ j → A i j = 0 :=
+  ⟨fun h _ _ hij => h hij, fun h _ _ hij => h _ _ hij⟩
+
+/-- **DLMF 1.2.55**: a real matrix is symmetric if `aⱼᵢ = aᵢⱼ` (`Matrix.IsSymm.ext_iff`). -/
+theorem dlmf_1_2_55 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
+    A.IsSymm ↔ ∀ i j, A j i = A i j :=
+  IsSymm.ext_iff
+
+/-- **DLMF 1.2.56**: `A` is Hermitian if `aⱼᵢ = conj aᵢⱼ` (`Matrix.IsHermitian.ext_iff`). -/
+theorem dlmf_1_2_56 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    A.IsHermitian ↔ ∀ i j, A j i = starRingEnd ℂ (A i j) := by
+  rw [IsHermitian.ext_iff]
+  simp only [Complex.star_def]
+  exact forall₂_congr fun i j =>
+    ⟨fun h => by rw [← h, Complex.conj_conj], fun h => by rw [h, Complex.conj_conj]⟩
+
+/-- **DLMF 1.2.57**: `A` is tridiagonal if `aᵢⱼ = 0` for `|i − j| > 1`. -/
+def IsTridiagonal {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+  ∀ i j : Fin n, 1 < |(i : ℤ) - j| → A i j = 0
+
+theorem dlmf_1_2_57 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    IsTridiagonal A ↔ ∀ i j : Fin n, 1 < |(i : ℤ) - j| → A i j = 0 :=
+  Iff.rfl
+
+/-- **DLMF 1.2.58**: the determinant `|A| = det(A)`, Mathlib's `Matrix.det`, in full index form
+for orders `1`, `2` and `3` (`Matrix.det_fin_one_of`, `Matrix.det_fin_two_of`,
+`Matrix.det_fin_three`); the general index form is the Leibniz formula 1.2.59. -/
+theorem dlmf_1_2_58 (a b c d : ℂ) (B : Matrix (Fin 3) (Fin 3) ℂ) :
+    !![a].det = a ∧ !![a, b; c, d].det = a * d - b * c ∧
+      B.det = B 0 0 * B 1 1 * B 2 2 - B 0 0 * B 1 2 * B 2 1 - B 0 1 * B 1 0 * B 2 2 +
+        B 0 1 * B 1 2 * B 2 0 + B 0 2 * B 1 0 * B 2 1 - B 0 2 * B 1 1 * B 2 0 :=
+  ⟨det_fin_one_of a, det_fin_two_of a b c d, det_fin_three B⟩
+
+/-- **DLMF 1.2.59**, the Leibniz formula `det A = ∑_{σ ∈ 𝔖ₙ} sign σ ∏ᵢ a_{i,σ(i)}`
+(`Matrix.det_apply'` applied to the transpose, `Matrix.det_transpose`). -/
+theorem dlmf_1_2_59 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    A.det = ∑ σ : Equiv.Perm (Fin n), ((Equiv.Perm.sign σ : ℤ) : ℂ) * ∏ i, A i (σ i) := by
+  rw [← det_transpose, det_apply']
+  rfl
+
+/-- **DLMF 1.2.60**: if `det A ≠ 0` then `A A⁻¹ = A⁻¹ A = I` (`Matrix.mul_nonsing_inv`,
+`Matrix.nonsing_inv_mul`; Mathlib's `A⁻¹` is the adjugate divided by the determinant). -/
+theorem dlmf_1_2_60 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.det ≠ 0) :
+    A * A⁻¹ = 1 ∧ A⁻¹ * A = 1 :=
+  ⟨mul_nonsing_inv A (isUnit_iff_ne_zero.mpr hA), nonsing_inv_mul A (isUnit_iff_ne_zero.mpr hA)⟩
+
+/-- **DLMF 1.2.60**, uniqueness of the inverse: `A B = I` or `B A = I` forces `B = A⁻¹`
+(`Matrix.inv_eq_right_inv`, `Matrix.inv_eq_left_inv`). -/
+theorem dlmf_1_2_60_unique {n : ℕ} {A B : Matrix (Fin n) (Fin n) ℂ} :
+    (A * B = 1 → B = A⁻¹) ∧ (B * A = 1 → B = A⁻¹) :=
+  ⟨fun h => (inv_eq_right_inv h).symm, fun h => (inv_eq_left_inv h).symm⟩
+
+/-- **DLMF 1.2.60**, the remark on cancellation: if `det A ≠ 0` then `A B = A C` implies
+`B = C`, as both sides may be multiplied by `A⁻¹` (`Matrix.nonsing_inv_mul_cancel_left`). -/
+theorem dlmf_1_2_60_cancel {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.det ≠ 0)
+    {B C : Matrix (Fin n) (Fin n) ℂ} (h : A * B = A * C) : B = C := by
+  have hu := isUnit_iff_ne_zero.mpr hA
+  rw [← nonsing_inv_mul_cancel_left A B hu, h, nonsing_inv_mul_cancel_left A C hu]
+
+/-- **DLMF 1.2.60**, the remark on singular matrices: if `det A = 0` then `A B = A C` does not
+imply `B = C` (`A = 0`, `B = 0`, `C = I`, for `n ≥ 1`). -/
+theorem dlmf_1_2_60_singular {n : ℕ} [NeZero n] :
+    ∃ A B C : Matrix (Fin n) (Fin n) ℂ, A.det = 0 ∧ A * B = A * C ∧ B ≠ C :=
+  ⟨0, 0, 1, by have : Nonempty (Fin n) := ⟨0⟩; exact det_zero, by simp,
+    fun h => by simpa using congrFun (congrFun h 0) 0⟩
+
+/-- **DLMF 1.2.61**: if `det A ≠ 0`, the system of `n` linear equations in `n` unknowns
+`A b = c` has the unique solution `b = A⁻¹ c` (`Matrix.mulVec_mulVec`, `Matrix.one_mulVec`). -/
+theorem dlmf_1_2_61 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.det ≠ 0) (b c : Fin n → ℂ) :
+    A *ᵥ b = c ↔ b = A⁻¹ *ᵥ c := by
+  obtain ⟨h₁, h₂⟩ := dlmf_1_2_60 hA
+  constructor
+  · intro h
+    rw [← h, mulVec_mulVec, h₂, one_mulVec]
+  · intro h
+    rw [h, mulVec_mulVec, h₁, one_mulVec]
+
+theorem dlmf_1_2_61_unique {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.det ≠ 0)
+    (c : Fin n → ℂ) : ∃! b, A *ᵥ b = c :=
+  ⟨A⁻¹ *ᵥ c, (dlmf_1_2_61 hA _ c).mpr rfl, fun b hb => (dlmf_1_2_61 hA b c).mp hb⟩
+
+/-- **DLMF 1.2.61**, the singular case: if `det A = 0` then, depending on `c`, there is either
+no solution or there are infinitely many (`Matrix.exists_mulVec_eq_zero_iff` gives a nonzero
+`z` with `A z = 0`, and `b₀ + t z` solves the system for every `t`). -/
+theorem dlmf_1_2_61_singular {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.det = 0)
+    (c : Fin n → ℂ) :
+    (¬ ∃ b, A *ᵥ b = c) ∨ {b | A *ᵥ b = c}.Infinite := by
+  by_cases hex : ∃ b, A *ᵥ b = c
+  · right
+    obtain ⟨b₀, hb₀⟩ := hex
+    obtain ⟨z, hz, hAz⟩ := exists_mulVec_eq_zero_iff.mpr hA
+    have hinj : Function.Injective fun t : ℂ => b₀ + t • z := by
+      intro s t hst
+      exact smul_left_injective ℂ hz (add_left_cancel hst)
+    refine (Set.infinite_range_of_injective hinj).mono ?_
+    rintro _ ⟨t, rfl⟩
+    show A *ᵥ (b₀ + t • z) = c
+    rw [mulVec_add, mulVec_smul, hAz, hb₀, smul_zero, add_zero]
+  · exact Or.inl hex
+
+/-- **DLMF 1.2.61**, the structure of the solutions: every solution is the sum of a particular
+solution `b₀` and a solution of `A b = 0`. -/
+theorem dlmf_1_2_61_particular {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) {b₀ c : Fin n → ℂ}
+    (hb₀ : A *ᵥ b₀ = c) (b : Fin n → ℂ) :
+    A *ᵥ b = c ↔ ∃ z, A *ᵥ z = 0 ∧ b = b₀ + z := by
+  constructor
+  · intro h
+    exact ⟨b - b₀, by rw [mulVec_sub, h, hb₀, sub_self], by abel⟩
+  · rintro ⟨z, hz, rfl⟩
+    rw [mulVec_add, hb₀, hz, add_zero]
+
+/-- **DLMF 1.2.62**: the trace `tr A = ∑ᵢ aᵢᵢ` (`Matrix.trace`). -/
+theorem dlmf_1_2_62 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : A.trace = ∑ i, A i i :=
+  rfl
+
+/-- **DLMF 1.2.63**: `tr(αA) = α tr A` (`Matrix.trace_smul`). -/
+theorem dlmf_1_2_63 {n : ℕ} (α : ℂ) (A : Matrix (Fin n) (Fin n) ℂ) :
+    (α • A).trace = α * A.trace := by
+  rw [trace_smul, smul_eq_mul]
+
+/-- **DLMF 1.2.64**: `tr(A + B) = tr A + tr B` (`Matrix.trace_add`). -/
+theorem dlmf_1_2_64 {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ) :
+    (A + B).trace = A.trace + B.trace :=
+  trace_add A B
+
+/-- **DLMF 1.2.65**: `tr(AB) = tr(BA)` (`Matrix.trace_mul_comm`). -/
+theorem dlmf_1_2_65 {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ) :
+    (A * B).trace = (B * A).trace :=
+  trace_mul_comm A B
+
+/-- **DLMF 1.2.66**: the commutator `[A, B] = −[B, A] = AB − BA` (the Lie bracket of the matrix
+ring, `Ring.lie_def`). -/
+theorem dlmf_1_2_66 {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ) :
+    ⁅A, B⁆ = -⁅B, A⁆ ∧ ⁅A, B⁆ = A * B - B * A :=
+  ⟨by rw [Ring.lie_def, Ring.lie_def, neg_sub], Ring.lie_def A B⟩
+
+/-! #### Norms of square matrices
+
+`‖A‖` is the `ℓ²` operator norm (Mathlib's scoped instance `Matrix.Norms.L2Operator`,
+`Matrix.l2_opNorm_def`): the norm of the continuous linear map `x ↦ A x` on
+`EuclideanSpace ℂ (Fin n)`.  DLMF's two maxima are 1.2.67. -/
+
+section L2OpNorm
+
+open scoped Matrix.Norms.L2Operator
+
+/-- The continuous linear map `x ↦ A x` on `EuclideanSpace ℂ (Fin n)`. -/
+noncomputable def toCLM {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    EuclideanSpace ℂ (Fin n) →L[ℂ] EuclideanSpace ℂ (Fin n) :=
+  (toEuclideanLin ≪≫ₗ LinearMap.toContinuousLinearMap) A
+
+theorem toCLM_toE {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (x : Fin n → ℂ) :
+    toCLM A (toE x) = toE (A *ᵥ x) :=
+  rfl
+
+theorem norm_eq_norm_toCLM {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : ‖A‖ = ‖toCLM A‖ :=
+  l2_opNorm_def A
+
+/-- `‖A x‖ ≤ ‖A‖ ‖x‖` (`ContinuousLinearMap.le_opNorm`). -/
+theorem lpNorm_mulVec_le {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (x : Fin n → ℂ) :
+    lpNorm 2 (A *ᵥ x) ≤ ‖A‖ * lpNorm 2 x := by
+  rw [lpNorm_two_eq_norm, lpNorm_two_eq_norm, norm_eq_norm_toCLM, ← toCLM_toE]
+  exact (toCLM A).le_opNorm (toE x)
+
+/-- The operator norm is attained on the unit sphere (`n ≥ 1`): the sphere is compact
+(`isCompact_sphere`) and `x ↦ ‖A x‖` is continuous. -/
+theorem exists_lpNorm_eq_one_norm_mulVec_eq {n : ℕ} [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
+    ∃ x : Fin n → ℂ, lpNorm 2 x = 1 ∧ lpNorm 2 (A *ᵥ x) = ‖A‖ := by
+  have hne : (Metric.sphere (0 : EuclideanSpace ℂ (Fin n)) 1).Nonempty :=
+    ⟨EuclideanSpace.single 0 1, by rw [mem_sphere_zero_iff_norm, PiLp.norm_single, norm_one]⟩
+  obtain ⟨x₀, hx₀, hmax⟩ := (isCompact_sphere (0 : EuclideanSpace ℂ (Fin n)) 1).exists_isMaxOn
+    hne (toCLM A).continuous.norm.continuousOn
+  rw [mem_sphere_zero_iff_norm] at hx₀
+  have hx : toE x₀.ofLp = x₀ := rfl
+  refine ⟨x₀.ofLp, by rw [lpNorm_two_eq_norm, hx, hx₀], ?_⟩
+  rw [lpNorm_two_eq_norm, norm_eq_norm_toCLM, ← toCLM_toE, hx]
+  apply le_antisymm
+  · calc ‖toCLM A x₀‖ ≤ ‖toCLM A‖ * ‖x₀‖ := (toCLM A).le_opNorm x₀
+      _ = ‖toCLM A‖ := by rw [hx₀, mul_one]
+  · refine (toCLM A).opNorm_le_bound (norm_nonneg _) fun y => ?_
+    by_cases hy : y = 0
+    · simp [hy]
+    · have hypos : 0 < ‖y‖ := norm_pos_iff.mpr hy
+      have h2 : ‖toCLM A ((‖y‖⁻¹ : ℂ) • y)‖ ≤ ‖toCLM A x₀‖ :=
+        hmax (mem_sphere_zero_iff_norm.mpr (norm_smul_inv_norm (𝕜 := ℂ) hy))
+      rw [map_smul, norm_smul, norm_inv, Complex.norm_real,
+        Real.norm_of_nonneg (norm_nonneg y)] at h2
+      rw [inv_mul_le_iff₀ hypos] at h2
+      rw [mul_comm]
+      exact h2
+
+/-- **DLMF 1.2.67**: the norm of a square matrix of order `n ≥ 1`,
+`‖A‖ = max_{x ≠ 0} ‖A x‖ / ‖x‖ = max_{‖x‖ = 1} ‖A x‖` with the `ℓ²` vector norm: `‖A‖` is the
+greatest value of each expression. -/
+theorem dlmf_1_2_67 {n : ℕ} [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
+    IsGreatest ((fun x : Fin n → ℂ => lpNorm 2 (A *ᵥ x) / lpNorm 2 x) '' {x | x ≠ 0}) ‖A‖ ∧
+      IsGreatest ((fun x : Fin n → ℂ => lpNorm 2 (A *ᵥ x)) '' {x | lpNorm 2 x = 1}) ‖A‖ := by
+  obtain ⟨x₀, hx₀, hAx₀⟩ := exists_lpNorm_eq_one_norm_mulVec_eq A
+  have hx₀ne : x₀ ≠ 0 := by
+    rintro rfl
+    rw [lpNorm_two_eq_norm, show toE (0 : Fin n → ℂ) = 0 from rfl, norm_zero] at hx₀
+    exact zero_ne_one hx₀
+  refine ⟨⟨⟨x₀, hx₀ne, by simp only [hAx₀, hx₀, div_one]⟩, ?_⟩, ⟨⟨x₀, hx₀, hAx₀⟩, ?_⟩⟩
+  · rintro _ ⟨x, hx, rfl⟩
+    have hpos : 0 < lpNorm 2 x := by
+      rw [lpNorm_two_eq_norm]
+      exact norm_pos_iff.mpr (toE_ne_zero hx)
+    exact div_le_of_le_mul₀ hpos.le (norm_nonneg _) (lpNorm_mulVec_le A x)
+  · rintro _ ⟨x, hx, rfl⟩
+    have := lpNorm_mulVec_le A x
+    rwa [hx, mul_one] at this
+
+/-- **DLMF 1.2.68**: `‖AB‖ ≤ ‖A‖ ‖B‖` (`Matrix.l2_opNorm_mul`). -/
+theorem dlmf_1_2_68 {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ) : ‖A * B‖ ≤ ‖A‖ * ‖B‖ :=
+  l2_opNorm_mul A B
+
+/-- **DLMF 1.2.69**: `‖A + B‖ ≤ ‖A‖ + ‖B‖` (`norm_add_le`). -/
+theorem dlmf_1_2_69 {n : ℕ} (A B : Matrix (Fin n) (Fin n) ℂ) : ‖A + B‖ ≤ ‖A‖ + ‖B‖ :=
+  norm_add_le A B
+
+end L2OpNorm
+
+/-! #### Eigenvectors and eigenvalues of square matrices
+
+An eigenvector `a` of `A` for the eigenvalue `λ` is Mathlib's
+`Module.End.HasEigenvector (Matrix.toLin' A) λ a`, and `Module.End.HasEigenvalue (toLin' A) λ`
+says that one exists. -/
+
+/-- **DLMF 1.2.70**: `A` has the eigenvalue `λ` with eigenvector `a ≠ 0` if `A a = λ a`
+(`Module.End.hasEigenvector_iff`, `Module.End.mem_eigenspace_iff`). -/
+theorem dlmf_1_2_70 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) (a : Fin n → ℂ) :
+    Module.End.HasEigenvector (toLin' A) μ a ↔ a ≠ 0 ∧ A *ᵥ a = μ • a := by
+  rw [Module.End.hasEigenvector_iff, Module.End.mem_eigenspace_iff, toLin'_apply, and_comm]
+
+/-- **DLMF 1.2.70**, the remark that `a` and `λ` may be complex even if `A` is real: the
+rotation `!![0, −1; 1, 0]` has no real eigenvalue, but over `ℂ` it has the eigenvalue `i` with
+eigenvector `(1, −i)` (`Matrix.charpoly_fin_two`). -/
+theorem dlmf_1_2_70_real :
+    (∀ μ : ℝ, ¬ Module.End.HasEigenvalue (toLin' !![(0 : ℝ), -1; 1, 0]) μ) ∧
+      Module.End.HasEigenvector (toLin' !![(0 : ℂ), -1; 1, 0]) Complex.I ![1, -Complex.I] := by
+  constructor
+  · intro μ h
+    rw [Module.End.hasEigenvalue_iff_isRoot_charpoly, charpoly_toLin', charpoly_fin_two,
+      trace_fin_two_of, det_fin_two_of, IsRoot.def] at h
+    simp only [eval_add, eval_sub, eval_pow, eval_X, eval_mul, eval_C] at h
+    nlinarith [sq_nonneg μ]
+  · rw [dlmf_1_2_70]
+    refine ⟨?_, ?_⟩
+    · intro h
+      have := congrFun h 0
+      simp at this
+    · ext i
+      fin_cases i <;> simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+
+/-- `A a = λ a` iff `(A − λ I) a = 0` (1.2.72), the form used to solve 1.2.71. -/
+theorem mulVec_eq_smul_iff {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) (a : Fin n → ℂ) :
+    A *ᵥ a = μ • a ↔ (A - μ • 1) *ᵥ a = 0 := by
+  rw [sub_mulVec, smul_mulVec, one_mulVec, sub_eq_zero]
+
+/-- **DLMF 1.2.71**: the eigenvalues are the roots of the polynomial equation `det(A − λ I) = 0`
+(from `Matrix.exists_mulVec_eq_zero_iff`). -/
+theorem dlmf_1_2_71 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) :
+    Module.End.HasEigenvalue (toLin' A) μ ↔ (A - μ • 1).det = 0 := by
+  rw [← exists_mulVec_eq_zero_iff]
+  constructor
+  · intro h
+    obtain ⟨a, ha⟩ := h.exists_hasEigenvector
+    rw [dlmf_1_2_70, mulVec_eq_smul_iff] at ha
+    exact ⟨a, ha⟩
+  · rintro ⟨a, ha, hAa⟩
+    exact Module.End.hasEigenvalue_of_hasEigenvector
+      ((dlmf_1_2_70 A μ a).mpr ⟨ha, (mulVec_eq_smul_iff A μ a).mpr hAa⟩)
+
+/-- **DLMF 1.2.71**, as a polynomial equation: `λ` is an eigenvalue iff it is a root of the
+characteristic polynomial `det(λ I − A)` (`Module.End.hasEigenvalue_iff_isRoot_charpoly`,
+`Matrix.charpoly_toLin'`). -/
+theorem dlmf_1_2_71_charpoly {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) :
+    Module.End.HasEigenvalue (toLin' A) μ ↔ A.charpoly.IsRoot μ := by
+  rw [Module.End.hasEigenvalue_iff_isRoot_charpoly, charpoly_toLin']
+
+/-- **DLMF 1.2.72**: the eigenvectors for `λ` are the nonzero solutions of `(A − λ I) a = 0`. -/
+theorem dlmf_1_2_72 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) (a : Fin n → ℂ) :
+    Module.End.HasEigenvector (toLin' A) μ a ↔ a ≠ 0 ∧ (A - μ • 1) *ᵥ a = 0 := by
+  rw [dlmf_1_2_70, mulVec_eq_smul_iff]
+
+/-! #### Non-defective square matrices -/
+
+/-- **DLMF**, the definition of linear independence: `v₁, …, vₘ` are linearly independent if
+`∑ cᵢ vᵢ = 0` implies that all coefficients `cᵢ` are zero (`Fintype.linearIndependent_iff`). -/
+theorem dlmf_1_2_73_linearIndependent {n m : ℕ} (v : Fin m → Fin n → ℂ) :
+    LinearIndependent ℂ v ↔ ∀ c : Fin m → ℂ, ∑ i, c i • v i = 0 → ∀ i, c i = 0 :=
+  Fintype.linearIndependent_iff
+
+/-- A matrix of order `n` is non-defective if it has `n` linearly independent eigenvectors. -/
+def IsNonDefective {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
+  ∃ v : Fin n → Fin n → ℂ,
+    LinearIndependent ℂ v ∧ ∀ i, ∃ μ, Module.End.HasEigenvector (toLin' A) μ (v i)
+
+/-- If `A S = S Λ` with `Λ` diagonal, the `j`-th column of `S` satisfies `A s = Λⱼⱼ s`. -/
+theorem mulVec_col_eq_smul {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hΛ : Λ.IsDiag)
+    (h : A * S = S * Λ) (j : Fin n) : A *ᵥ S.col j = Λ j j • S.col j := by
+  ext i
+  have := congrFun (congrFun h i) j
+  rw [← hΛ.diagonal_diag, mul_diagonal, Matrix.mul_apply] at this
+  show ∑ k, A i k * S k j = Λ j j * S i j
+  rw [this, mul_comm]
+  rfl
+
+/-- **DLMF 1.2.73**: the non-defective matrices are precisely those that can be diagonalized by
+a similarity transformation `Λ = S⁻¹ A S` with `S` invertible and `Λ` diagonal
+(`Matrix.linearIndependent_cols_iff_isUnit`). -/
+theorem dlmf_1_2_73 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    IsNonDefective A ↔
+      ∃ S Λ : Matrix (Fin n) (Fin n) ℂ, S.det ≠ 0 ∧ Λ.IsDiag ∧ Λ = S⁻¹ * A * S := by
+  constructor
+  · rintro ⟨v, hv, hev⟩
+    choose μ hμ using hev
+    set S : Matrix (Fin n) (Fin n) ℂ := (Matrix.of v)ᵀ with hS
+    have hcol : S.col = v := by
+      ext j i
+      rfl
+    have hu : IsUnit S := linearIndependent_cols_iff_isUnit.mp (hcol ▸ hv)
+    have hdet : IsUnit S.det := (isUnit_iff_isUnit_det S).mp hu
+    refine ⟨S, diagonal μ, isUnit_iff_ne_zero.mp hdet, isDiag_diagonal μ, ?_⟩
+    have hAS : A * S = S * diagonal μ := by
+      ext i j
+      rw [mul_diagonal]
+      have := congrFun ((dlmf_1_2_70 A (μ j) (v j)).mp (hμ j)).2 i
+      rw [Pi.smul_apply, smul_eq_mul] at this
+      show ∑ k, A i k * v j k = v j i * μ j
+      rw [mul_comm, ← this]
+      rfl
+    rw [mul_assoc, hAS, nonsing_inv_mul_cancel_left S _ hdet]
+  · rintro ⟨S, Λ, hS, hΛ, h⟩
+    have hdet : IsUnit S.det := isUnit_iff_ne_zero.mpr hS
+    have hu : IsUnit S := (isUnit_iff_isUnit_det S).mpr hdet
+    have hAS : A * S = S * Λ := by
+      rw [h, ← mul_assoc, mul_nonsing_inv_cancel_left S _ hdet]
+    have hv : LinearIndependent ℂ S.col := linearIndependent_cols_iff_isUnit.mpr hu
+    exact ⟨S.col, hv, fun j =>
+      ⟨Λ j j, (dlmf_1_2_70 A _ _).mpr ⟨hv.ne_zero j, mulVec_col_eq_smul hΛ hAS j⟩⟩⟩
+
+/-- **DLMF 1.2.73**, the columns of `S` are eigenvectors of `A` with the diagonal entries of
+`Λ` as eigenvalues. -/
+theorem dlmf_1_2_73_columns {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hS : S.det ≠ 0)
+    (hΛ : Λ.IsDiag) (h : Λ = S⁻¹ * A * S) (j : Fin n) :
+    Module.End.HasEigenvector (toLin' A) (Λ j j) (S.col j) := by
+  have hdet : IsUnit S.det := isUnit_iff_ne_zero.mpr hS
+  have hAS : A * S = S * Λ := by
+    rw [h, ← mul_assoc, mul_nonsing_inv_cancel_left S _ hdet]
+  exact (dlmf_1_2_70 A _ _).mpr
+    ⟨(linearIndependent_cols_iff_isUnit.mpr ((isUnit_iff_isUnit_det S).mpr hdet)).ne_zero j,
+      mulVec_col_eq_smul hΛ hAS j⟩
+
+/-- **DLMF 1.2.73**, multiplicities: the diagonal entries of `Λ` need not be distinct, and the
+number of entries equal to `λ` is the multiplicity of the eigenvalue `λ` (as a root of the
+characteristic polynomial; `Matrix.charpoly_units_conj'`, `Matrix.charpoly_diagonal`,
+`Polynomial.roots_multiset_prod_X_sub_C`). -/
+theorem dlmf_1_2_73_multiplicity {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hS : S.det ≠ 0)
+    (hΛ : Λ.IsDiag) (h : Λ = S⁻¹ * A * S) (μ : ℂ) :
+    A.charpoly.rootMultiplicity μ = (univ.filter fun j => Λ j j = μ).card := by
+  obtain ⟨U, hU⟩ := (isUnit_iff_isUnit_det S).mpr (isUnit_iff_ne_zero.mpr hS)
+  have hA : A.charpoly = Λ.charpoly := by
+    rw [h, ← hU, charpoly_units_conj']
+  rw [hA, ← hΛ.diagonal_diag, charpoly_diagonal, ← count_roots, prod_eq_multiset_prod,
+    show (univ.val.map fun i => X - C (diag Λ i)) = (univ.val.map (diag Λ)).map fun a => X - C a
+      by rw [Multiset.map_map]; rfl,
+    roots_multiset_prod_X_sub_C, Multiset.count_map, card_def, filter_val]
+  congr 1
+  exact Multiset.filter_congr fun j _ => by rw [diagonal_apply_eq, eq_comm]
+
+/-- **DLMF 1.2.73**, the sum of all multiplicities is `n` (for every square matrix over `ℂ`:
+the characteristic polynomial has degree `n` and splits; `Matrix.charpoly_natDegree_eq_dim`,
+`Polynomial.Splits.natDegree_eq_card_roots`). -/
+theorem dlmf_1_2_73_sum_multiplicity {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    ∑ μ ∈ A.charpoly.roots.toFinset, A.charpoly.rootMultiplicity μ = n := by
+  simp_rw [← count_roots]
+  rw [Multiset.toFinset_sum_count_eq,
+    ← Polynomial.Splits.natDegree_eq_card_roots (IsAlgClosed.splits A.charpoly),
+    charpoly_natDegree_eq_dim, Fintype.card_fin]
+
+/-! #### Relation of eigenvalues to the determinant and trace -/
+
+/-- **DLMF 1.2.74**: for non-defective `A` with `Λ = S⁻¹ A S`,
+`det A = det(S S⁻¹ A) = det(S⁻¹ A S) = ∏ λᵢ` (`Matrix.det_mul`, `Matrix.det_diagonal`). -/
+theorem dlmf_1_2_74 {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hS : S.det ≠ 0)
+    (hΛ : Λ.IsDiag) (h : Λ = S⁻¹ * A * S) :
+    A.det = (S * S⁻¹ * A).det ∧ (S * S⁻¹ * A).det = (S⁻¹ * A * S).det ∧
+      (S⁻¹ * A * S).det = ∏ i, Λ i i := by
+  refine ⟨by rw [mul_nonsing_inv S (isUnit_iff_ne_zero.mpr hS), one_mul], ?_, ?_⟩
+  · simp only [det_mul]
+    ring
+  · rw [← h, ← hΛ.diagonal_diag, det_diagonal]
+    exact prod_congr rfl fun i _ => (diagonal_apply_eq _ i).symm
+
+/-- **DLMF 1.2.74**, the remark: `det A` is the product of the `n` eigenvalues counted with
+multiplicity, for every square matrix over `ℂ` (`Matrix.det_eq_prod_roots_charpoly`). -/
+theorem dlmf_1_2_74_roots {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    A.det = A.charpoly.roots.prod :=
+  det_eq_prod_roots_charpoly A
+
+/-- **DLMF 1.2.75**: for non-defective `A` with `Λ = S⁻¹ A S`,
+`tr A = tr(S S⁻¹ A) = tr(S⁻¹ A S) = ∑ λᵢ` (`Matrix.trace_mul_comm`, `Matrix.trace_diagonal`). -/
+theorem dlmf_1_2_75 {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hS : S.det ≠ 0)
+    (hΛ : Λ.IsDiag) (h : Λ = S⁻¹ * A * S) :
+    A.trace = (S * S⁻¹ * A).trace ∧ (S * S⁻¹ * A).trace = (S⁻¹ * A * S).trace ∧
+      (S⁻¹ * A * S).trace = ∑ i, Λ i i := by
+  refine ⟨by rw [mul_nonsing_inv S (isUnit_iff_ne_zero.mpr hS), one_mul], ?_, ?_⟩
+  · rw [mul_assoc, trace_mul_comm]
+  · rw [← h, ← hΛ.diagonal_diag, trace_diagonal]
+    exact sum_congr rfl fun i _ => (diagonal_apply_eq _ i).symm
+
+/-- **DLMF 1.2.75**, the remark: `tr A` is the sum of the eigenvalues counted with multiplicity,
+for every square matrix over `ℂ` (`Matrix.trace_eq_sum_roots_charpoly`). -/
+theorem dlmf_1_2_75_roots {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    A.trace = A.charpoly.roots.sum :=
+  trace_eq_sum_roots_charpoly A
+
+/-! #### The matrix exponential and the exponential of the trace
+
+`NormedSpace.exp A` is Mathlib's exponential of the matrix ring with its product topology; every
+matrix norm gives the same series (`Mathlib.Analysis.Normed.Algebra.MatrixExponential`). -/
+
+/-- **DLMF 1.2.76**: `exp A = ∑_{n ≥ 0} Aⁿ / n!`, convergent in norm for every `A`
+(`NormedSpace.exp_series_hasSum_exp'` under the `ℓ²` operator norm). -/
+theorem dlmf_1_2_76 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    HasSum (fun k : ℕ => (k.factorial⁻¹ : ℂ) • A ^ k) (NormedSpace.exp A) := by
+  open scoped Matrix.Norms.L2Operator in
+  exact NormedSpace.exp_series_hasSum_exp' (𝕂 := ℂ) A
+
+/-- **DLMF 1.2.76**, entrywise convergence (`Pi.hasSum`). -/
+theorem dlmf_1_2_76_apply {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (i j : Fin n) :
+    HasSum (fun k : ℕ => (k.factorial⁻¹ : ℂ) * (A ^ k) i j) (NormedSpace.exp A i j) := by
+  have := Pi.hasSum.mp (Pi.hasSum.mp (dlmf_1_2_76 A) i) j
+  simpa using this
+
+/-- **DLMF 1.2.77**: the exponential of the trace, `etr(A) = exp(tr A)`. -/
+noncomputable def etr {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) : ℂ := Complex.exp A.trace
+
+/-- **DLMF 1.2.77**: for a non-defective matrix, `det(exp A) = exp(tr A) = etr(A)`
+(from 1.2.73–1.2.75: `Matrix.exp_conj`, `Matrix.exp_diagonal`, `Matrix.det_conj`,
+`Complex.exp_sum`).  The DLMF remarks that the formula holds for every square matrix
+(Hall 2015, Thm 2.12); that general case is not formalized here. -/
+theorem dlmf_1_2_77 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsNonDefective A) :
+    (NormedSpace.exp A).det = Complex.exp A.trace ∧ Complex.exp A.trace = etr A := by
+  refine ⟨?_, rfl⟩
+  obtain ⟨S, Λ, hS, hΛ, h⟩ := (dlmf_1_2_73 A).mp hA
+  have hdet : IsUnit S.det := isUnit_iff_ne_zero.mpr hS
+  have hu : IsUnit S := (isUnit_iff_isUnit_det S).mpr hdet
+  have hA' : A = S * Λ * S⁻¹ := by
+    rw [h, ← mul_assoc, mul_nonsing_inv_cancel_left S _ hdet, mul_assoc,
+      mul_nonsing_inv S hdet, mul_one]
+  rw [hA', Matrix.exp_conj S Λ hu, det_conj hu, trace_mul_cycle, nonsing_inv_mul S hdet, one_mul,
+    ← hΛ.diagonal_diag, Matrix.exp_diagonal, det_diagonal, trace_diagonal, Complex.exp_sum]
+  refine prod_congr rfl fun i _ => ?_
+  rw [Pi.coe_exp, Complex.exp_eq_exp_ℂ]
 
 end Azurite.DLMF
