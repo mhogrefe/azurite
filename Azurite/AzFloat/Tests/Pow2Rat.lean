@@ -7,10 +7,10 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2
-import Azurite.AzFloat.Exp2Rat
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Pow2
+import Azurite.AzFloat.Pow2Rat
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -29,7 +29,7 @@ private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
-private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := exp2RatPrecRound (Q q) p m
+private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := pow2RatPrecRound (Q q) p m
 
 -- exact powers of two and precision `0`
 #guard E "0" 53 == (F "1" 53, .eq)
@@ -40,15 +40,15 @@ private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := exp2RatPr
 #guard E "-100" 5 == (F "1/1267650600228229401496703205376" 5, .eq)
 #guard E "1" 0 == (nan, .eq)
 #guard E "1/3" 0 == (nan, .eq)
-#guard exp2Rat (Q "64") 53 == F "18446744073709551616" 53
+#guard pow2Rat (Q "64") 53 == F "18446744073709551616" 53
 
 -- agreement with the float `2^x` on dyadic rationals and with `√2`
-#guard E "1/2" 150 == exp2PrecRound (F "1/2" 53) 150 .Nearest
+#guard E "1/2" 150 == pow2PrecRound (F "1/2" 53) 150 .Nearest
 #guard E "1/2" 150 == sqrt2PrecRound 150 .Nearest
 #guard E "1/2" 150 .Floor == sqrt2PrecRound 150 .Floor
-#guard E "-7/4" 150 == exp2PrecRound (F "-7/4" 53) 150 .Nearest
-#guard E "12345/4096" 100 .Ceiling == exp2PrecRound (F "12345/4096" 53) 100 .Ceiling
-#guard E "201/2" 150 == exp2PrecRound (F "201/2" 53) 150 .Nearest
+#guard E "-7/4" 150 == pow2PrecRound (F "-7/4" 53) 150 .Nearest
+#guard E "12345/4096" 100 .Ceiling == pow2PrecRound (F "12345/4096" 53) 100 .Ceiling
+#guard E "201/2" 150 == pow2PrecRound (F "201/2" 53) 150 .Nearest
 
 private def refThird : AzRat :=
   R ("1259921049894873164767210607278228350570251464701507980081975112155299676513959483729396" ++
@@ -81,8 +81,8 @@ private def refBig : AzRat :=
 #guard (E "22/7" 150).1 == ofAzRat ref227 150
 #guard (E "123456/1000" 150).1 == ofAzRat refBig 150
 #guard E "123456/1000" 150 .Floor == ofAzRatRound refBig 150 .Floor
-#guard exp2Rat (Q "1/3") 53 == ofAzRat refThird 53
-#guard exp2Rat (Q "22/7") 200 == ofAzRat ref227 200
+#guard pow2Rat (Q "1/3") 53 == ofAzRat refThird 53
+#guard pow2Rat (Q "22/7") 200 == ofAzRat ref227 200
 
 -- directed modes are ordered
 #guard (E "5/7" 60 .Floor).2 == .lt

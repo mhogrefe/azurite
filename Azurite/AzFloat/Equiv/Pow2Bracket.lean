@@ -7,28 +7,28 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2Bracket
 import Azurite.AzFloat.Equiv.ExpApprox
-import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzFloat.Equiv.LogBaseFloatBracket
+import Azurite.AzFloat.Equiv.RoundToInteger
+import Azurite.AzFloat.Pow2Bracket
 import Azurite.AzRat.Equiv.Unary
 
 /-!
 # Equivalence: the brackets of `2^x`, `2^q`, `2^x − 1` and `2^q − 1`
 
-`ln2MulBracket_spec` (an enclosure of `x ln 2` of width at most `2^(−w)`), `exp2Bracket_spec`
-(width `exp2Eps x w`, `tendsto_exp2Eps`), the irrationality of `2^x` for a dyadic non-integer `x`
+`ln2MulBracket_spec` (an enclosure of `x ln 2` of width at most `2^(−w)`), `pow2Bracket_spec`
+(width `pow2Eps x w`, `tendsto_exp2Eps`), the irrationality of `2^x` for a dyadic non-integer `x`
 (`irrational_two_rpow_of_dyadic`: `2^x = 2^⌊x⌋ · 2^f` with `(2^f)^(2^J)` an integer and
-`1 < 2^f < 2`, by `irrational_nrt_of_notint_nrt`), `exp2Approx_spec` and the Ziv certificate
-`exp2Approx_isSome_exists`; the rational versions `ln2MulRatBracket_spec`, `exp2RatBracket_spec`,
-`irrational_two_rpow_toRat`, `exp2RatApprox_spec`, `exp2RatApprox_isSome_exists`; and for
+`1 < 2^f < 2`, by `irrational_nrt_of_notint_nrt`), `pow2Approx_spec` and the Ziv certificate
+`pow2Approx_isSome_exists`; the rational versions `ln2MulRatBracket_spec`, `pow2RatBracket_spec`,
+`irrational_two_rpow_toRat`, `pow2RatApprox_spec`, `pow2RatApprox_isSome_exists`; and for
 `2^x − 1`: `expM1OfBracket_width` (the real arithmetic), the generic
 `expM1OfBracket_spec_of_bounds` (any bracket of width `δ ≤ 1/64` with `|lo| < 2^e`,
-`|lo| ≤ 2|v|`), `expM1OfBracket_spec` (width `expM1RatEps (x ln 2) c w`), `exp2M1Bracket_spec`
-(width `exp2M1Eps x c w`),
-`irrational_two_rpow_sub_one_finiteVal`, `exp2M1Approx_spec`, `exp2M1Approx_isSome_exists`;
-and for `2^q − 1`: `exp2M1RatExp_bounds`, `exp2M1RatBracket_spec`,
-`irrational_two_rpow_sub_one_toRat`, `exp2M1RatApprox_spec`, `exp2M1RatApprox_isSome_exists`.
+`|lo| ≤ 2|v|`), `expM1OfBracket_spec` (width `expM1RatEps (x ln 2) c w`), `pow2M1Bracket_spec`
+(width `pow2M1Eps x c w`),
+`irrational_two_rpow_sub_one_finiteVal`, `pow2M1Approx_spec`, `pow2M1Approx_isSome_exists`;
+and for `2^q − 1`: `pow2M1RatExp_bounds`, `pow2M1RatBracket_spec`,
+`irrational_two_rpow_sub_one_toRat`, `pow2M1RatApprox_spec`, `pow2M1RatApprox_isSome_exists`.
 -/
 
 namespace Azurite.AzFloat
@@ -210,12 +210,12 @@ theorem ln2MulBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
 
 /-! ### The bracket of `2^x` -/
 
-/-- The width bound of `exp2Bracket`. -/
-noncomputable def exp2Eps (xv : ℝ) (w : ℕ) : ℝ :=
+/-- The width bound of `pow2Bracket`. -/
+noncomputable def pow2Eps (xv : ℝ) (w : ℕ) : ℝ :=
   expOfBracketEps (xv * Real.log 2) ((1 / 2 : ℝ) ^ w) w
 
-theorem tendsto_exp2Eps (xv : ℝ) : Filter.Tendsto (exp2Eps xv) Filter.atTop (nhds 0) := by
-  unfold exp2Eps expOfBracketEps
+theorem tendsto_exp2Eps (xv : ℝ) : Filter.Tendsto (pow2Eps xv) Filter.atTop (nhds 0) := by
+  unfold pow2Eps expOfBracketEps
   have h1 := tendsto_expEps (xv * Real.log 2)
   have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
     (by norm_num : (1 / 2 : ℝ) < 1)
@@ -228,13 +228,13 @@ theorem tendsto_exp2Eps (xv : ℝ) : Filter.Tendsto (exp2Eps xv) Filter.atTop (n
 theorem two_rpow_eq_exp (xv : ℝ) : (2 : ℝ) ^ xv = Real.exp (xv * Real.log 2) := by
   rw [Real.rpow_def_of_pos (by norm_num), mul_comm]
 
-/-- `exp2Bracket x e w` encloses `2^x` for a float `x` with `|x| < 2^e`, with width at most
-`exp2Eps x w`. -/
-theorem exp2Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (e : AzInt)
+/-- `pow2Bracket x e w` encloses `2^x` for a float `x` with `|x| < 2^e`, with width at most
+`pow2Eps x w`. -/
+theorem pow2Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (e : AzInt)
     (hxe : |xv| < (2 : ℝ) ^ e.toInt) {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (exp2Bracket x e w).1.toVal = some (lo : EReal) ∧
-      (exp2Bracket x e w).2.toVal = some (hi : EReal) ∧
-      lo ≤ (2 : ℝ) ^ xv ∧ (2 : ℝ) ^ xv ≤ hi ∧ hi - lo ≤ exp2Eps xv w := by
+    ∃ lo hi : ℝ, (pow2Bracket x e w).1.toVal = some (lo : EReal) ∧
+      (pow2Bracket x e w).2.toVal = some (hi : EReal) ∧
+      lo ≤ (2 : ℝ) ^ xv ∧ (2 : ℝ) ^ xv ≤ hi ∧ hi - lo ≤ pow2Eps xv w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := ln2MulBracket_spec hx e hxe w hw
   have hw1 : hi - lo ≤ 1 := by
     have := pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := w)
@@ -242,22 +242,22 @@ theorem exp2Bracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERe
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw
   rw [two_rpow_eq_exp]
   refine ⟨a, b, ha, hb, ha1, hb1, ?_⟩
-  unfold exp2Eps
+  unfold pow2Eps
   refine hab.trans ?_
   unfold expOfBracketEps
   have := Real.exp_pos (xv * Real.log 2)
   nlinarith
 
-/-- `exp2Approx` is a strict enclosure of `2^x` for a non-integer finite `x`, with width at
-most `exp2Eps x w`. -/
-theorem exp2Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+/-- `pow2Approx` is a strict enclosure of `2^x` for a non-integer finite `x`, with width at
+most `pow2Eps x w`. -/
+theorem pow2Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) (hni : ¬ isInteger (finite s e q m hv) = true) :
-    ∃ lv hv' : ℝ, Rounds (exp2Approx (finite s e q m hv) e w).1 lv ∧
-      Rounds (exp2Approx (finite s e q m hv) e w).2 hv' ∧
+    ∃ lv hv' : ℝ, Rounds (pow2Approx (finite s e q m hv) e w).1 lv ∧
+      Rounds (pow2Approx (finite s e q m hv) e w).2 hv' ∧
       lv < (2 : ℝ) ^ finiteVal s e m ∧ (2 : ℝ) ^ finiteVal s e m < hv' ∧
-      hv' - lv ≤ exp2Eps (finiteVal s e m) w := by
+      hv' - lv ≤ pow2Eps (finiteVal s e m) w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ :=
-    exp2Bracket_spec (toVal_finite s e q m hv) e (abs_finiteVal_bounds s e hv).2 hw
+    pow2Bracket_spec (toVal_finite s e q m hv) e (abs_finiteVal_bounds s e hv).2 hw
   have hni' : ¬ ∃ n : ℤ, finiteVal s e m = n := fun h => hni ((isInteger_finite s e hv).mpr h)
   obtain ⟨N, J, hd⟩ := exists_dyadic_of_finiteVal s e m
   have hirr := irrational_two_rpow_of_dyadic hd hni'
@@ -265,18 +265,18 @@ theorem exp2Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : �
   exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
 
 /-- The Ziv certificate for `2^x`. -/
-theorem exp2Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt)
+theorem pow2Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt)
     {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (hni : ¬ isInteger (finite s e q m hv) = true)
     (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (exp2Approx (finite s e q m hv) e (w₀ * 2 ^ f)).1
-      (exp2Approx (finite s e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+    ∃ f : ℕ, (roundingPossible (pow2Approx (finite s e q m hv) e (w₀ * 2 ^ f)).1
+      (pow2Approx (finite s e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
   have hni' : ¬ ∃ n : ℤ, finiteVal s e m = n := fun h => hni ((isInteger_finite s e hv).mpr h)
   have hirr := irrational_two_rpow_of_dyadic
     (exists_dyadic_of_finiteVal s e m).choose_spec.choose_spec hni'
-  exists_isSome_of_irrational_threshold p mode (exp2Approx (finite s e q m hv) e) hirr
-    (exp2Eps (finiteVal s e m)) (tendsto_exp2Eps _) 64
+  exists_isSome_of_irrational_threshold p mode (pow2Approx (finite s e q m hv) e) hirr
+    (pow2Eps (finiteVal s e m)) (tendsto_exp2Eps _) 64
     (fun w hw => by
-      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := exp2Approx_spec hw s e hv hni
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := pow2Approx_spec hw s e hv hni
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 /-! ### The bracket of `q ln 2` for a rational `q` -/
@@ -396,12 +396,12 @@ theorem ln2MulRatBracket_spec (q : AzRat) (w : ℕ) (hw : 64 ≤ w) :
     · rw [hax] at hP1; linarith
     · rw [hu] at hpwid; linarith
 
-/-- `exp2RatBracket q w` encloses `2^q` with width at most `exp2Eps q w`. -/
-theorem exp2RatBracket_spec (q : AzRat) {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (exp2RatBracket q w).1.toVal = some (lo : EReal) ∧
-      (exp2RatBracket q w).2.toVal = some (hi : EReal) ∧
+/-- `pow2RatBracket q w` encloses `2^q` with width at most `pow2Eps q w`. -/
+theorem pow2RatBracket_spec (q : AzRat) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (pow2RatBracket q w).1.toVal = some (lo : EReal) ∧
+      (pow2RatBracket q w).2.toVal = some (hi : EReal) ∧
       lo ≤ (2 : ℝ) ^ (AzRat.toRat q : ℝ) ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) ≤ hi ∧
-      hi - lo ≤ exp2Eps (AzRat.toRat q : ℝ) w := by
+      hi - lo ≤ pow2Eps (AzRat.toRat q : ℝ) w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := ln2MulRatBracket_spec q w hw
   have hw1 : hi - lo ≤ 1 := by
     have := pow_le_one₀ (by norm_num : (0 : ℝ) ≤ 1 / 2) (by norm_num : (1 / 2 : ℝ) ≤ 1) (n := w)
@@ -409,7 +409,7 @@ theorem exp2RatBracket_spec (q : AzRat) {w : ℕ} (hw : 64 ≤ w) :
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw
   rw [two_rpow_eq_exp]
   refine ⟨a, b, ha, hb, ha1, hb1, ?_⟩
-  unfold exp2Eps
+  unfold pow2Eps
   refine hab.trans ?_
   unfold expOfBracketEps
   have := Real.exp_pos ((AzRat.toRat q : ℝ) * Real.log 2)
@@ -433,25 +433,25 @@ theorem irrational_two_rpow_toRat (q : AzRat) (hd : q.den.toNat ≠ 1) :
     rw [← this]
     rfl
 
-/-- `exp2RatApprox` is a strict enclosure of `2^q` for a non-integer rational `q`, with width at
-most `exp2Eps q w`. -/
-theorem exp2RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hd : q.den.toNat ≠ 1) :
-    ∃ lv hv : ℝ, Rounds (exp2RatApprox q w).1 lv ∧ Rounds (exp2RatApprox q w).2 hv ∧
+/-- `pow2RatApprox` is a strict enclosure of `2^q` for a non-integer rational `q`, with width at
+most `pow2Eps q w`. -/
+theorem pow2RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (hd : q.den.toNat ≠ 1) :
+    ∃ lv hv : ℝ, Rounds (pow2RatApprox q w).1 lv ∧ Rounds (pow2RatApprox q w).2 hv ∧
       lv < (2 : ℝ) ^ (AzRat.toRat q : ℝ) ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) < hv ∧
-      hv - lv ≤ exp2Eps (AzRat.toRat q : ℝ) w := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := exp2RatBracket_spec q hw
+      hv - lv ≤ pow2Eps (AzRat.toRat q : ℝ) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := pow2RatBracket_spec q hw
   obtain ⟨r1, r2, r3, r4⟩ := rounds_of_bracket hlo hhi h1 h2 (irrational_two_rpow_toRat q hd)
   exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
 
 /-- The Ziv certificate for `2^q`. -/
-theorem exp2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+theorem pow2RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
     (hd : q.den.toNat ≠ 1) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (exp2RatApprox q (w₀ * 2 ^ f)).1 (exp2RatApprox q (w₀ * 2 ^ f)).2
+    ∃ f : ℕ, (roundingPossible (pow2RatApprox q (w₀ * 2 ^ f)).1 (pow2RatApprox q (w₀ * 2 ^ f)).2
       p mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (exp2RatApprox q) (irrational_two_rpow_toRat q hd)
-    (exp2Eps (AzRat.toRat q : ℝ)) (tendsto_exp2Eps _) 64
+  exists_isSome_of_irrational_threshold p mode (pow2RatApprox q) (irrational_two_rpow_toRat q hd)
+    (pow2Eps (AzRat.toRat q : ℝ)) (tendsto_exp2Eps _) 64
     (fun w hw => by
-      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := exp2RatApprox_spec hw q hd
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := pow2RatApprox_spec hw q hd
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 /-! ### The bracket of `2^x − 1` -/
@@ -510,11 +510,11 @@ theorem expM1OfBracket_width {lo hi v a b dv E corr hi' u δ D : ℝ} (hu0 : 0 <
     have h8 : 0 ≤ Real.exp lo * δ := by positivity
     nlinarith
 
-/-- The width bound of `exp2M1Bracket` at compensation `c`. -/
-noncomputable def exp2M1Eps (xv : ℝ) (c w : ℕ) : ℝ := expM1RatEps (xv * Real.log 2) c w
+/-- The width bound of `pow2M1Bracket` at compensation `c`. -/
+noncomputable def pow2M1Eps (xv : ℝ) (c w : ℕ) : ℝ := expM1RatEps (xv * Real.log 2) c w
 
 theorem tendsto_exp2M1Eps (xv : ℝ) (c : ℕ) :
-    Filter.Tendsto (exp2M1Eps xv c) Filter.atTop (nhds 0) :=
+    Filter.Tendsto (pow2M1Eps xv c) Filter.atTop (nhds 0) :=
   tendsto_expM1RatEps (xv * Real.log 2) c
 
 /-- `2^e ≤ 2 |x|` for a finite float `x` of exponent `e`. -/
@@ -687,19 +687,19 @@ theorem expM1OfBracket_spec {X : AzFloat × AzFloat} {lo hi xv : ℝ} (e : AzInt
     mul_le_mul_of_nonneg_left hδu (by positivity)
   linarith
 
-/-- `exp2M1Bracket x e w` encloses `2^x − 1` for a finite float `x` of exponent `e`, with width
-at most `exp2M1Eps x (expM1Comp e) w`. -/
-theorem exp2M1Bracket_spec (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+/-- `pow2M1Bracket x e w` encloses `2^x − 1` for a finite float `x` of exponent `e`, with width
+at most `pow2M1Eps x (expM1Comp e) w`. -/
+theorem pow2M1Bracket_spec (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
     {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (exp2M1Bracket (finite s e q m hv) e w).1.toVal = some (lo : EReal) ∧
-      (exp2M1Bracket (finite s e q m hv) e w).2.toVal = some (hi : EReal) ∧
+    ∃ lo hi : ℝ, (pow2M1Bracket (finite s e q m hv) e w).1.toVal = some (lo : EReal) ∧
+      (pow2M1Bracket (finite s e q m hv) e w).2.toVal = some (hi : EReal) ∧
       lo ≤ (2 : ℝ) ^ finiteVal s e m - 1 ∧ (2 : ℝ) ^ finiteVal s e m - 1 ≤ hi ∧
-      hi - lo ≤ exp2M1Eps (finiteVal s e m) (expM1Comp e) w := by
+      hi - lo ≤ pow2M1Eps (finiteVal s e m) (expM1Comp e) w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := ln2MulBracket_spec (toVal_finite s e q m hv) e
     (abs_finiteVal_bounds s e hv).2 (w + expM1Comp e) (by omega)
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expM1OfBracket_spec e hlo hhi h1 h2 hwid
     (abs_finiteVal_bounds s e hv).2 (two_zpow_le_two_mul_abs_finiteVal s e hv) hw
-  unfold exp2M1Bracket
+  unfold pow2M1Bracket
   rw [two_rpow_eq_exp]
   exact ⟨a, b, ha, hb, ha1, hb1, hab⟩
 
@@ -712,42 +712,42 @@ theorem irrational_two_rpow_sub_one_finiteVal (s : Bool) (e : AzInt) {q : ℕ} {
     (exists_dyadic_of_finiteVal s e m).choose_spec.choose_spec hni').sub_intCast 1
   rwa [Int.cast_one] at h
 
-/-- `exp2M1Approx` is a strict enclosure of `2^x − 1` for a non-integer float `x`, with width at
-most `exp2M1Eps x (expM1Comp e) w`. -/
-theorem exp2M1Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
+/-- `pow2M1Approx` is a strict enclosure of `2^x − 1` for a non-integer float `x`, with width at
+most `pow2M1Eps x (expM1Comp e) w`. -/
+theorem pow2M1Approx_spec {w : ℕ} (hw : 64 ≤ w) (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) (hni : ¬ isInteger (finite s e q m hv) = true) :
-    ∃ lv hv' : ℝ, Rounds (exp2M1Approx (finite s e q m hv) e w).1 lv ∧
-      Rounds (exp2M1Approx (finite s e q m hv) e w).2 hv' ∧
+    ∃ lv hv' : ℝ, Rounds (pow2M1Approx (finite s e q m hv) e w).1 lv ∧
+      Rounds (pow2M1Approx (finite s e q m hv) e w).2 hv' ∧
       lv < (2 : ℝ) ^ finiteVal s e m - 1 ∧ (2 : ℝ) ^ finiteVal s e m - 1 < hv' ∧
-      hv' - lv ≤ exp2M1Eps (finiteVal s e m) (expM1Comp e) w := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := exp2M1Bracket_spec s e hv hw
+      hv' - lv ≤ pow2M1Eps (finiteVal s e m) (expM1Comp e) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := pow2M1Bracket_spec s e hv hw
   obtain ⟨r1, r2, r3, r4⟩ :=
     rounds_of_bracket hlo hhi h1 h2 (irrational_two_rpow_sub_one_finiteVal s e hv hni)
   exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
 
 /-- The Ziv certificate for `2^x − 1`. -/
-theorem exp2M1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool)
+theorem pow2M1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool)
     (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
     (hni : ¬ isInteger (finite s e q m hv) = true) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (exp2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).1
-      (exp2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (exp2M1Approx (finite s e q m hv) e)
-    (irrational_two_rpow_sub_one_finiteVal s e hv hni) (exp2M1Eps (finiteVal s e m) (expM1Comp e))
+    ∃ f : ℕ, (roundingPossible (pow2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).1
+      (pow2M1Approx (finite s e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (pow2M1Approx (finite s e q m hv) e)
+    (irrational_two_rpow_sub_one_finiteVal s e hv hni) (pow2M1Eps (finiteVal s e m) (expM1Comp e))
     (tendsto_exp2M1Eps _ _) 64
     (fun w hw => by
-      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := exp2M1Approx_spec hw s e hv hni
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := pow2M1Approx_spec hw s e hv hni
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 /-! ### The bracket of `2^q − 1` for a rational `q` -/
 
-/-- `2^(e−1) ≤ |q| < 2^e` for the exponent `e = exp2M1RatExp q` of a rational `q ≠ 0`. -/
-theorem exp2M1RatExp_bounds (q : AzRat) (h0 : q.num ≠ 0) :
-    |(AzRat.toRat q : ℝ)| < (2 : ℝ) ^ (exp2M1RatExp q).toInt ∧
-      (2 : ℝ) ^ (exp2M1RatExp q).toInt ≤ 2 * |(AzRat.toRat q : ℝ)| := by
+/-- `2^(e−1) ≤ |q| < 2^e` for the exponent `e = pow2M1RatExp q` of a rational `q ≠ 0`. -/
+theorem pow2M1RatExp_bounds (q : AzRat) (h0 : q.num ≠ 0) :
+    |(AzRat.toRat q : ℝ)| < (2 : ℝ) ^ (pow2M1RatExp q).toInt ∧
+      (2 : ℝ) ^ (pow2M1RatExp q).toInt ≤ 2 * |(AzRat.toRat q : ℝ)| := by
   have hqpos : 0 < |(AzRat.toRat q : ℝ)| := AzRat.abs_toRat_pos q h0
   obtain ⟨L, hL⟩ : ∃ L : ℤ, L = Int.log 2 |(AzRat.toRat q : ℝ)| := ⟨_, rfl⟩
-  have he : (exp2M1RatExp q).toInt = L + 1 := by
-    unfold exp2M1RatExp
+  have he : (pow2M1RatExp q).toInt = L + 1 := by
+    unfold pow2M1RatExp
     rw [AzInt.toInt_ofInt, AzRat.floorLogBaseAbs_eq 2 (by decide) q h0, hL]; rfl
   have h2L : (2 : ℝ) ^ L ≤ |(AzRat.toRat q : ℝ)| := by
     rw [hL]; exact_mod_cast Int.zpow_log_le_self (by norm_num : 1 < 2) hqpos
@@ -758,19 +758,19 @@ theorem exp2M1RatExp_bounds (q : AzRat) (h0 : q.num ≠ 0) :
   rw [zpow_add_one₀ (by norm_num : (2 : ℝ) ≠ 0)]
   linarith
 
-/-- `exp2M1RatBracket q w` encloses `2^q − 1` for a rational `q ≠ 0`, with width at most
-`exp2M1Eps q (expM1Comp (exp2M1RatExp q)) w`. -/
-theorem exp2M1RatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (exp2M1RatBracket q w).1.toVal = some (lo : EReal) ∧
-      (exp2M1RatBracket q w).2.toVal = some (hi : EReal) ∧
+/-- `pow2M1RatBracket q w` encloses `2^q − 1` for a rational `q ≠ 0`, with width at most
+`pow2M1Eps q (expM1Comp (pow2M1RatExp q)) w`. -/
+theorem pow2M1RatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (pow2M1RatBracket q w).1.toVal = some (lo : EReal) ∧
+      (pow2M1RatBracket q w).2.toVal = some (hi : EReal) ∧
       lo ≤ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ≤ hi ∧
-      hi - lo ≤ exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q)) w := by
-  obtain ⟨hxe, hxe1⟩ := exp2M1RatExp_bounds q h0
+      hi - lo ≤ pow2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (pow2M1RatExp q)) w := by
+  obtain ⟨hxe, hxe1⟩ := pow2M1RatExp_bounds q h0
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ :=
-    ln2MulRatBracket_spec q (w + expM1Comp (exp2M1RatExp q)) (by omega)
+    ln2MulRatBracket_spec q (w + expM1Comp (pow2M1RatExp q)) (by omega)
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ :=
-    expM1OfBracket_spec (exp2M1RatExp q) hlo hhi h1 h2 hwid hxe hxe1 hw
-  unfold exp2M1RatBracket
+    expM1OfBracket_spec (pow2M1RatExp q) hlo hhi h1 h2 hwid hxe hxe1 hw
+  unfold pow2M1RatBracket
   rw [two_rpow_eq_exp]
   exact ⟨a, b, ha, hb, ha1, hb1, hab⟩
 
@@ -780,28 +780,28 @@ theorem irrational_two_rpow_sub_one_toRat (q : AzRat) (hd : q.den.toNat ≠ 1) :
   have h := (irrational_two_rpow_toRat q hd).sub_intCast 1
   rwa [Int.cast_one] at h
 
-/-- `exp2M1RatApprox` is a strict enclosure of `2^q − 1` for a non-integer rational `q`, with
-width at most `exp2M1Eps q (expM1Comp (exp2M1RatExp q)) w`. -/
-theorem exp2M1RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0)
+/-- `pow2M1RatApprox` is a strict enclosure of `2^q − 1` for a non-integer rational `q`, with
+width at most `pow2M1Eps q (expM1Comp (pow2M1RatExp q)) w`. -/
+theorem pow2M1RatApprox_spec {w : ℕ} (hw : 64 ≤ w) (q : AzRat) (h0 : q.num ≠ 0)
     (hd : q.den.toNat ≠ 1) :
-    ∃ lv hv : ℝ, Rounds (exp2M1RatApprox q w).1 lv ∧ Rounds (exp2M1RatApprox q w).2 hv ∧
+    ∃ lv hv : ℝ, Rounds (pow2M1RatApprox q w).1 lv ∧ Rounds (pow2M1RatApprox q w).2 hv ∧
       lv < (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧ (2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1 < hv ∧
-      hv - lv ≤ exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q)) w := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := exp2M1RatBracket_spec q h0 hw
+      hv - lv ≤ pow2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (pow2M1RatExp q)) w := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := pow2M1RatBracket_spec q h0 hw
   obtain ⟨r1, r2, r3, r4⟩ :=
     rounds_of_bracket hlo hhi h1 h2 (irrational_two_rpow_sub_one_toRat q hd)
   exact ⟨lo, hi, r1, r2, r3, r4, h3⟩
 
 /-- The Ziv certificate for `2^q − 1`. -/
-theorem exp2M1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
+theorem pow2M1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
     (h0 : q.num ≠ 0) (hd : q.den.toNat ≠ 1) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (exp2M1RatApprox q (w₀ * 2 ^ f)).1
-      (exp2M1RatApprox q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (exp2M1RatApprox q)
+    ∃ f : ℕ, (roundingPossible (pow2M1RatApprox q (w₀ * 2 ^ f)).1
+      (pow2M1RatApprox q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (pow2M1RatApprox q)
     (irrational_two_rpow_sub_one_toRat q hd)
-    (exp2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (exp2M1RatExp q))) (tendsto_exp2M1Eps _ _) 64
+    (pow2M1Eps (AzRat.toRat q : ℝ) (expM1Comp (pow2M1RatExp q))) (tendsto_exp2M1Eps _ _) 64
     (fun w hw => by
-      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := exp2M1RatApprox_spec hw q h0 hd
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := pow2M1RatApprox_spec hw q h0 hd
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 end Azurite.AzFloat

@@ -4664,8 +4664,8 @@ only checked in the kernel), composed by a dispatcher whose own soundness is tri
 
 ## `2^x` for `AzFloat` (DONE 2026-10-26, fuel-free)
 
-User: continue matching Malachite's exp/pow functions.  `AzFloat/Exp2Bracket.lean` + `Equiv/`,
-`AzFloat/Exp2.lean` + `Equiv/` + `Tests/`.  `2^x = exp (x ln 2)`: `ln2MulBracket x e w` = `|x|`
+User: continue matching Malachite's exp/pow functions.  `AzFloat/Pow2Bracket.lean` + `Equiv/`,
+`AzFloat/Pow2.lean` + `Equiv/` + `Tests/`.  `2^x = exp (x ln 2)`: `ln2MulBracket x e w` = `|x|`
 times the ends of `ln2Bracket` at `expWork e w = w + 16 + max(e, 0)` (`mulFloor_err`/
 `mulCeiling_err` on the nonnegative products, ends swapped and negated for `x < 0`), width
 `≤ 12 |x| 2^(−W) ≤ 2^(−w)` (the `E · (1/2)^emax = 1` trick of `expReduce_spec`; the lower end
@@ -4679,68 +4679,68 @@ of the `ln 2` bracket `≥ 1/5` and `(1/2)^W ≤ 1/64` give `0 ≤ lo₂`, `hi�
 `f = (N % 2^J)/2^J` (`Int.fract_div_intCast_eq_div_intCast_mod`), `(2^f)^(2^J) = 2^(N % 2^J)`
 an integer and `1 < 2^f < 2`, so `2^f` is irrational by `irrational_nrt_of_notint_nrt`, and
 `2^x = (2^⌊x⌋ : ℚ) · 2^f` (`Real.rpow_add`, `rpow_intCast`, `Rat.cast_zpow`, `.ratCast_mul`);
-`exists_dyadic_of_finiteVal` gives `N`, `J = size m + |e|`.  Spec `Spec.exp2`
-(`rpow`), `exp2PrecRound_eq_liftVal`.  Tests: specials, exact powers at precision 1 (`2^100`,
+`exists_dyadic_of_finiteVal` gives `N`, `J = size m + |e|`.  Spec `Spec.pow2`
+(`rpow`), `pow2PrecRound_eq_liftVal`.  Tests: specials, exact powers at precision 1 (`2^100`,
 `2^(−100)`), `2^(1/2)` against `sqrt2PrecRound` in three modes, seven dyadic arguments at 150
 bits against 120-digit references, directed modes, agreement with `exp (x · ln2 300)`.
 
 ## `2^q` for a rational `q` (DONE 2026-10-26, fuel-free)
 
-User: the `AzRat → AzFloat` variant of `2^x`.  `AzFloat/Exp2Rat.lean` + `Equiv/` + `Tests/`,
-with the bracket in `Exp2Bracket`: `ln2MulRatBracket q w` = the floats below and above `|q|`
+User: the `AzRat → AzFloat` variant of `2^x`.  `AzFloat/Pow2Rat.lean` + `Equiv/` + `Tests/`,
+with the bracket in `Pow2Bracket`: `ln2MulRatBracket q w` = the floats below and above `|q|`
 (`ofAzRatRound q.abs W .Floor/.Ceiling`, relative error `≤ 2 · 2^(−W)`) times the ends of
 `ln2Bracket W` at `W = w + 16 + size (num q)`, ends swapped and negated for `sign q = false`
 (then `num q ≠ 0` by `zero_sign`, so `q < 0`).  Width `b hi − a lo = b (hi − lo) + (b − a) lo
 ≤ 2 |q| · 8 δ + 4 |q| δ ≤ 20 |q| 2^(−W) ≤ 2^(−w)` by `|q| < 2^(size (num q))` (`abs_toRat_lt`)
-and the `2^s · (1/2)^s = 1` trick.  Then `expOfBracket` as for `2^x`, so the same `exp2Eps`.
+and the `2^s · (1/2)^s = 1` trick.  Then `expOfBracket` as for `2^x`, so the same `pow2Eps`.
 **Exact case**: `den q = 1` → `setPrecRound (powerOf2 (AzInt.mkNorm (sign q) (num q))) p mode`
 (`toInt_mkNorm`, `toRat_cast_eq` with the denominator `1`, `Real.rpow_intCast`).
 **Irrationality**: `irrational_two_rpow_of_dyadic` generalized to `irrational_two_rpow_of_rat`
 (`x · D = N`, `0 < D`, same proof with `D` for `2^J`; the dyadic lemma is now its instance),
 and `irrational_two_rpow_toRat`: a rational `2^q` with `den q ≠ 1` would make `q` an integer
-(`Rat.den_intCast`, `(toRat q).den = (den q).toNat` by `rfl`).  Spec `exp2RatPrecRound_eq`
-(`= roundVal p mode (Spec.exp2 (toRat q))`, `p ≠ 0`; `(nan, .eq)` at `p = 0`).  Tests: exact
-powers (`2^0`, `2^10`, `2^(−3)` at precision 1, `2^(±100)`), agreement with `exp2PrecRound` on
+(`Rat.den_intCast`, `(toRat q).den = (den q).toNat` by `rfl`).  Spec `pow2RatPrecRound_eq`
+(`= roundVal p mode (Spec.pow2 (toRat q))`, `p ≠ 0`; `(nan, .eq)` at `p = 0`).  Tests: exact
+powers (`2^0`, `2^10`, `2^(−3)` at precision 1, `2^(±100)`), agreement with `pow2PrecRound` on
 dyadics and with `sqrt2PrecRound` at `1/2`, `2^(1/3)`, `2^(10/3)`, `2^(−1/3)`, `2^(1/10)`,
 `2^(22/7)`, `2^(123.456)` at 150 bits against 120-digit references, directed modes.
 
 ## `2^x − 1` for `AzFloat` (DONE 2026-10-26, fuel-free)
 
-User: `x ↦ 2^x − 1`.  `AzFloat/Exp2M1.lean` + `Equiv/` + `Tests/`, bracket in `Exp2Bracket`.
+User: `x ↦ 2^x − 1`.  `AzFloat/Pow2M1.lean` + `Equiv/` + `Tests/`, bracket in `Pow2Bracket`.
 `expM1OfBracket X e w` is the `exp v − 1` analogue of `expOfBracket`: `expM1Bracket` at the lower
 end `lo` of a bracket `[lo, hi]` of `v` (with `|lo| < 2^e`, so its own tiny path and compensation
 `max(−e, 0)` apply) gives `[a, b] ∋ exp lo − 1`; the upper end is `b + ⌈E · 2d⌉` with
 `E = ⌈b + 1⌉ ≥ exp lo` and `d = ⌈hi − lo⌉`, since `exp v − 1 ≤ (exp lo − 1) + 2 exp lo (v − lo)`.
-`exp2M1Bracket x e w = expM1OfBracket (ln2MulBracket x e (w + max(−e, 0))) e w`: the bracket of
+`pow2M1Bracket x e w = expM1OfBracket (ln2MulBracket x e (w + max(−e, 0))) e w`: the bracket of
 `x ln 2` is computed at the compensated precision so that its width `δ ≤ 2^(−w−c) ≤ 2^(−64) 2^e`
 (`half_pow_comp_le`) is a `2^(−w)` fraction of `|x ln 2|` (`2^e ≤ 2 |x|`,
 `two_zpow_le_two_mul_abs_finiteVal`); this gives `|lo| < 2^e` and `|lo| ≤ 2 |x ln 2|`, the
 hypotheses of `expM1Bracket_spec` and `expM1Eps_le`.  Width (`expM1OfBracket_width`, pure real
 arithmetic): `≤ 2 D + (33 exp lo + |exp lo − 1|) u` with `D = expM1Eps lo c w`, `u = 2^(−w)`,
 hence `≤ expM1RatEps (x ln 2) c w` (the existing `3 ×` bound of the rational `exp q − 1`), reused
-as `exp2M1Eps`.  **Exact case**: `isInteger x` → `subPrecRound (powerOf2 (truncToAzInt x)) one`
+as `pow2M1Eps`.  **Exact case**: `isInteger x` → `subPrecRound (powerOf2 (truncToAzInt x)) one`
 (`subPrecRound_eq_liftVal₂`, `Spec.sub` unfolded to `Spec.add_coe_coe`).  **Irrationality**:
 `irrational_two_rpow_sub_one_finiteVal` from the dyadic `2^x` lemma and `.sub_intCast 1`.  Spec
-`Spec.exp2M1`, `exp2M1PrecRound_eq_liftVal`.  Tests: specials, exact `2^n − 1` (precision 1,
+`Spec.pow2M1`, `pow2M1PrecRound_eq_liftVal`.  Tests: specials, exact `2^n − 1` (precision 1,
 `2^100 − 1` at 150 and 10 bits, `2^(−100) − 1` rounding to `−1` from above), `√2 − 1`, eleven
 arguments at 150 bits against 200-digit references including `±2^(−30)` and `±2^(−200)` (the
 tiny path: `2^(±2^(−200)) − 1 ≈ ±ln 2 · 2^(−200)`, checked against `tiny × ln2`), directed modes.
 
 ## `2^q − 1` for a rational `q` (DONE 2026-10-26, fuel-free)
 
-User: the `AzRat → AzFloat` variant of `2^x − 1`.  `AzFloat/Exp2M1Rat.lean` + `Equiv/` +
-`Tests/`, bracket in `Exp2Bracket`.  The float proof was first factored into the generic
+User: the `AzRat → AzFloat` variant of `2^x − 1`.  `AzFloat/Pow2M1Rat.lean` + `Equiv/` +
+`Tests/`, bracket in `Pow2Bracket`.  The float proof was first factored into the generic
 `expM1OfBracket_spec`: for any bracket `X` of `x ln 2` of width `≤ 2^(−w−c)`, `c = expM1Comp e`,
 with `2^(e−1) ≤ |x| < 2^e`, `expM1OfBracket X e w` encloses `exp (x ln 2) − 1` with width
-`≤ expM1RatEps (x ln 2) c w`; `exp2M1Bracket_spec` is now five lines.  The rational bracket
-`exp2M1RatBracket q w = expM1OfBracket (ln2MulRatBracket q (w + c)) e w` at the exponent
-`e = exp2M1RatExp q = ⌊log₂ |q|⌋ + 1` (`AzRat.floorLogBaseAbs`; `exp2M1RatExp_bounds` from
+`≤ expM1RatEps (x ln 2) c w`; `pow2M1Bracket_spec` is now five lines.  The rational bracket
+`pow2M1RatBracket q w = expM1OfBracket (ln2MulRatBracket q (w + c)) e w` at the exponent
+`e = pow2M1RatExp q = ⌊log₂ |q|⌋ + 1` (`AzRat.floorLogBaseAbs`; `pow2M1RatExp_bounds` from
 `Int.zpow_log_le_self`/`Int.lt_zpow_succ_log_self`), so the same generic lemma applies with
 `ln2MulRatBracket_spec`.  Driver: `num q = 0 → (zero, .eq)`; `den q = 1 →
 subPrecRound (powerOf2 (AzInt.mkNorm (sign q) (num q))) one` (`toInt_mkNorm`); otherwise the
 certified loop (`irrational_two_rpow_sub_one_toRat` from `irrational_two_rpow_toRat`).  Spec
-`exp2M1RatPrecRound_eq` (`= roundVal p mode (Spec.exp2M1 (toRat q))`, `p ≠ 0`).  Tests: zero,
-exact `2^n − 1`, agreement with `exp2M1PrecRound` on six dyadics, ten non-dyadic arguments at 150
+`pow2M1RatPrecRound_eq` (`= roundVal p mode (Spec.pow2M1 (toRat q))`, `p ≠ 0`).  Tests: zero,
+exact `2^n − 1`, agreement with `pow2M1PrecRound` on six dyadics, ten non-dyadic arguments at 150
 bits against 200-digit references including `±10^(−6)` and `±10^(−60)` (the compensation at
 `e = −199`), directed modes.
 
@@ -4756,7 +4756,7 @@ uses `7/5 < √2 < 3/2`, `ln 2` within `10^(−9)`, and `2^(−w) ≤ 10^(−18)
 `[0.88, 1.13]`.  Spec `gelfondSchneiderPrecRound_eq_or` (`= liftVal₀ (some (2^√2))` or
 `(nan, .eq)`) through `two_rpow_eq_exp` and `zivLoop_eq_of_ne_nan_threshold`.  Irrationality
 pending: the Gelfond–Schneider theorem itself (ledger entry added).  Tests: 1, 2, 3, 53, 100
-bits in three modes against a 130-digit evaluation, agreement with `exp2 (sqrt2 300)`, decimal
+bits in three modes against a 130-digit evaluation, agreement with `pow2 (sqrt2 300)`, decimal
 string.
 
 ## `u^x` for a natural base `u` (DONE 2026-10-26, fuel-free)
@@ -4807,7 +4807,7 @@ no separate zero case for `u ≥ 2`.  **Irrationality**: `irrational_rpow_of_rat
 `1^q = 1`.  Spec `powBaseRatPrecRound_eq` (`= roundVal p mode (Spec.powBase u (toRat q))`).
 Tests: specials, exact powers (`8^(−2/3) = 1/4`, `27^(4/3) = 81`, `1000^(±1/3)`, `1024^(1/10)`,
 `1024^(1/11)` not exact, `3^(±40)` at 20 bits), agreement with `powBasePrecRound` on dyadics and
-with `exp2RatPrecRound` for `u = 2`, nine irrational powers at 150 bits against 200-digit
+with `pow2RatPrecRound` for `u = 2`, nine irrational powers at 150 bits against 200-digit
 references (`(2^64 − 1)^(1/7)`, `6^(301/3)`, `10^(−401/6)`, …), directed modes.
 
 ## `u^x − 1` for a natural base `u` (DONE 2026-10-26, fuel-free)
@@ -4822,7 +4822,7 @@ polynomial `lnEps`).  **Refactor**: `expM1OfBracket_width` now takes any `δ ≤
 the two bounds on `lo` and a width `δ ≤ 1/64` as hypotheses, giving width
 `(2/3) expM1RatEps v c w + (|exp v − 1| + exp v) 2^(−w) + 32 exp v · δ` (`expM1RatEps_slack`
 absorbs the middle term into the first); the old `expM1OfBracket_spec` is now a corollary, so
-`exp2M1`/`exp2M1Rat` are unchanged.  **`u^x − 1`**: the exponent of `x ln u` is `e + 6`
+`pow2M1`/`pow2M1Rat` are unchanged.  **`u^x − 1`**: the exponent of `x ln u` is `e + 6`
 (`powBaseM1Exp`, `45 < 64`); the `x ln u` bracket is computed at `w + max(−e − 6, 0)` bits; its
 width is `≤ 2^e / 4` from `136 + |e| + |eb|` bits (`mulLnEps_comp_le`: `(1/2)^c ≤ 64 · 2^e`,
 `c + max(e, 0) ≤ |e|`, `2^53 w^5 + 2^8 ≤ 2^w`), which gives `|lo| < 64 · 2^e` and
@@ -4833,7 +4833,7 @@ mulLnEps e eb (w + c)` (`tendsto` through `Filter.tendsto_add_atTop_nat`).  **Ex
 `r^n − 1` by `subPrecRound (ofAzNat (r^n)) one`, or `divPrecRound (ofAzInt (1 − r^|n|))
 (ofAzNat (r^|n|))` for `n < 0`.  Spec `Spec.powBaseM1 u = (Spec.powBase u ·).map (· − 1)`,
 `powBaseM1PrecRound_eq_liftVal`.  Tests: specials, seven exact values, agreement with
-`exp2M1PrecRound` and with `u^x` at higher precision, eight irrational values at 150 bits
+`pow2M1PrecRound` and with `u^x` at higher precision, eight irrational values at 150 bits
 against 200-digit references, the small arguments `10^(±2^(−30)) − 1`, `10^(1/1024) − 1` and
 the tiny `10^(±2^(−200)) − 1 ≈ ±ln 10 · 2^(−200)` (checked against `tiny × ln10Bracket`),
 directed modes.
@@ -4842,8 +4842,8 @@ directed modes.
 
 User: the `AzRat`-exponent variant of `u^x − 1`.  `AzFloat/PowBaseM1Rat.lean` + `Equiv/` +
 `Tests/`, bracket in `PowBaseBracket`.  `powBaseM1RatBracket q u w = expM1OfBracket
-(lnBaseMulRatBracket q u (w + c)) e' w` with `e' = exp2M1RatExp q + 6` (`2^(e−1) ≤ |q| < 2^e`
-for `e = exp2M1RatExp q`, `exp2M1RatExp_bounds`) and `c = expM1Comp e'`.  The width lemma
+(lnBaseMulRatBracket q u (w + c)) e' w` with `e' = pow2M1RatExp q + 6` (`2^(e−1) ≤ |q| < 2^e`
+for `e = pow2M1RatExp q`, `pow2M1RatExp_bounds`) and `c = expM1Comp e'`.  The width lemma
 `mulLnEps_comp_le` was generalized to `mulLnEps_comp_le_of E e eb w B`: the width argument `E`
 (here `size (num q)`) and the compensation exponent `e` are separate, with a bound
 `B ≥ c + max(E, 0)` and the precision `136 + B + |eb|`; the float version is the instance
@@ -4855,5 +4855,19 @@ the certified loop (`irrational_sub_one_of_powBaseRatExact?_none`).  Spec
 `powBaseM1RatPrecRound_eq` (`= roundVal p mode (Spec.powBaseM1 u (toRat q))`).  Tests:
 specials, exact values (`8^(−2/3) − 1 = −3/4`, `27^(4/3) − 1 = 80`, `1024^(±…/10) − 1`,
 `3^(±40) − 1` at 20 bits), agreement with `powBaseM1PrecRound` on dyadics and with
-`exp2M1RatPrecRound` for `u = 2`, seven irrational values at 150 bits against 200-digit
+`pow2M1RatPrecRound` for `u = 2`, seven irrational values at 150 bits against 200-digit
 references, the small `10^(±10^(−6)) − 1` and tiny `10^(±10^(−60)) − 1`, directed modes.
+
+## `pow10` family and the `exp2 → pow2` rename (DONE 2026-10-26)
+
+User: `pow10`, `pow10Rat`, `pow10M1`, `pow10M1Rat` as the `u = 10` special cases of the
+`powBase*` functions, and the `exp2*` functions renamed `pow2*` for consistency.
+`AzFloat/Pow10.lean` + `Equiv/` + `Tests/`: thin wrappers (`pow10PrecRound x p mode =
+powBasePrecRound 10 x p mode`, …) whose specifications are the base-`10` instances of the
+general ones (`(10 : UInt64).toNat = 10` by `rfl`).  Tests: agreement with the general
+functions, exact powers of ten, `10^(1/2) = √10`, `10^(1/3)` and `10^(1/3) − 1` at 150 bits,
+specials.  **Rename**: the files `Exp2*.lean` (`Exp2`, `Exp2Bracket`, `Exp2Rat`, `Exp2M1`,
+`Exp2M1Rat`, with `Equiv/` and `Tests/`) are now `Pow2*.lean`, and every `exp2…` identifier
+(`pow2PrecRound`, `pow2`, `pow2Rat…`, `pow2M1…`, `pow2M1Rat…`, `pow2Bracket`, `pow2Approx`,
+`pow2Eps`, `Spec.pow2`, `Spec.pow2M1`, their lemmas) is `pow2…`; the ledger sections above
+keep their original titles (`2^x`, …) but the identifiers in them were renamed too.

@@ -7,25 +7,25 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.Exp2Bracket
+import Azurite.AzFloat.Equiv.Pow2Bracket
 
 /-!
 ## `2^x`
 
-`exp2PrecRound x p mode` is `2^x` correctly rounded to precision `p` in `mode`, with the
-comparison against the exact value; `exp2 x` rounds to nearest at the precision of `x`.  An
+`pow2PrecRound x p mode` is `2^x` correctly rounded to precision `p` in `mode`, with the
+comparison against the exact value; `pow2 x` rounds to nearest at the precision of `x`.  An
 integer `x` gives the exact power of two (`powerOf2`, one `setPrecRound`); otherwise the
-certified Ziv loop (no fuel) runs over `exp2Approx` (`2^x = exp (x ln 2)`, the bracket of
+certified Ziv loop (no fuel) runs over `pow2Approx` (`2^x = exp (x ln 2)`, the bracket of
 `x ln 2` from the bracket of `ln 2` and `expOfBracket`), total because `2^x` is irrational for
 every non-integer dyadic `x`.  Special values: `2^NaN = NaN`, `2^(+∞) = +∞`, `2^(−∞) = 0`,
-`2^0 = 1`.  The specification `exp2PrecRound_eq_liftVal` is in `Equiv/Exp2.lean`.
+`2^0 = 1`.  The specification `pow2PrecRound_eq_liftVal` is in `Equiv/Pow2.lean`.
 -/
 
 namespace Azurite.AzFloat
 
 /-- `2^x` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0`). -/
-def exp2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+def pow2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | infinity s => if s then (infinity true, .eq) else (zero, .eq)
@@ -36,11 +36,11 @@ def exp2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
       setPrecRound (powerOf2 (truncToAzInt (finite s e q m hv))) p mode
     else
       haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (exp2Approx (finite s e q m hv) e) p mode (p + zivGuardBits)
-        (exp2Approx_isSome_exists p mode s e hv hi (p + zivGuardBits)
+      zivLoopCertified (pow2Approx (finite s e q m hv) e) p mode (p + zivGuardBits)
+        (pow2Approx_isSome_exists p mode s e hv hi (p + zivGuardBits)
           (by unfold zivGuardBits; omega))
 
 /-- `2^x` rounded to nearest at the precision of `x`. -/
-def exp2 (x : AzFloat) : AzFloat := (exp2PrecRound x (x.precision?.getD 1) .Nearest).1
+def pow2 (x : AzFloat) : AzFloat := (pow2PrecRound x (x.precision?.getD 1) .Nearest).1
 
 end Azurite.AzFloat

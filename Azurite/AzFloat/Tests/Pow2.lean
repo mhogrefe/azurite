@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2
-import Azurite.AzFloat.Exp
-import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Exp
+import Azurite.AzFloat.Ln2
+import Azurite.AzFloat.Pow2
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -31,7 +31,7 @@ private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
-private def E (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := exp2PrecRound x p m
+private def E (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := pow2PrecRound x p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 
@@ -42,10 +42,10 @@ private def ninf : AzFloat := infinity false
 #guard E zero 53 == (F "1" 53, .eq)
 #guard E zero 0 == (nan, .eq)
 #guard E (F "1" 53) 0 == (nan, .eq)
-#guard exp2 nan == nan
-#guard exp2 pinf == infinity true
-#guard exp2 ninf == zero
-#guard exp2 zero == one
+#guard pow2 nan == nan
+#guard pow2 pinf == infinity true
+#guard pow2 ninf == zero
+#guard pow2 zero == one
 
 -- exact powers of two
 #guard E (F "10" 53) 53 == (F "1024" 53, .eq)
@@ -55,7 +55,7 @@ private def ninf : AzFloat := infinity false
 #guard E (F "1" 53) 10 == (F "2" 10, .eq)
 #guard E (F "100" 53) 5 == (F "1267650600228229401496703205376" 5, .eq)
 #guard E (F "-100" 53) 5 == (F "1/1267650600228229401496703205376" 5, .eq)
-#guard exp2 (F "64" 53) == F "18446744073709551616" 53
+#guard pow2 (F "64" 53) == F "18446744073709551616" 53
 
 private def refHalf : AzRat :=
   R ("1414213562373095048801688724209698078569671875376948073176679737990732478462107038850387" ++
@@ -84,7 +84,7 @@ private def refMix : AzRat :=
 #guard E (F "1/2" 53) 150 .Floor == sqrt2PrecRound 150 .Floor
 #guard E (F "1/2" 53) 150 .Ceiling == sqrt2PrecRound 150 .Ceiling
 #guard (E (F "1/2" 53) 150).1 == ofAzRat refHalf 150
-#guard exp2 (F "1/2" 53) == ofAzRat refHalf 53
+#guard pow2 (F "1/2" 53) == ofAzRat refHalf 53
 
 -- other dyadic arguments
 #guard (E (F "3/4" 53) 150).1 == ofAzRat refThird2 150
@@ -98,7 +98,7 @@ private def refMix : AzRat :=
 #guard (E (F "-7/4" 53) 150).1 == ofAzRat refNeg74 150
 #guard (E (F "12345/4096" 53) 150).1 == ofAzRat refMix 150
 #guard E (F "12345/4096" 53) 100 .Floor == ofAzRatRound refMix 100 .Floor
-#guard exp2 (F "-7/4" 53) == ofAzRat refNeg74 53
+#guard pow2 (F "-7/4" 53) == ofAzRat refNeg74 53
 
 -- directed modes are ordered
 #guard (E (F "5/8" 53) 60 .Floor).2 == .lt

@@ -7,9 +7,9 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.LogBaseRat
 import Azurite.AzFloat.Equiv.LogBase
 import Azurite.AzFloat.Equiv.LogBasePow2Rat
+import Azurite.AzFloat.LogBaseRat
 
 /-!
 # Equivalence: the logarithm of a rational in a natural base

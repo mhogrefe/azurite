@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.PowBaseBracket
-import Azurite.AzFloat.Equiv.Exp2Bracket
 import Azurite.AzFloat.Equiv.LogBaseBracket
 import Azurite.AzFloat.Equiv.LogBaseExact
-import Azurite.AzFloat.Equiv.Exp2Rat
+import Azurite.AzFloat.Equiv.Pow2Bracket
+import Azurite.AzFloat.Equiv.Pow2Rat
+import Azurite.AzFloat.PowBaseBracket
 
 /-!
 # Equivalence: the brackets of `u^x` and `u^q`
@@ -33,7 +33,7 @@ import Azurite.AzFloat.Equiv.Exp2Rat
   `powBaseM1Bracket_spec` (through `expM1OfBracket_spec_of_bounds` at the exponent `e + 6`,
   width `powBaseM1Eps`), `powBaseM1Approx_spec`, `powBaseM1Approx_isSome_exists`,
   `irrational_sub_one_of_powBaseExact?_none`; and for `u^q − 1`: `powBaseM1RatBracket_spec`
-  (the exponent `exp2M1RatExp q + 6`, `mulLnEps_comp_le_of` with `B = |e| + size (num q)`),
+  (the exponent `pow2M1RatExp q + 6`, `mulLnEps_comp_le_of` with `B = |e| + size (num q)`),
   `powBaseM1RatApprox_spec`, `powBaseM1RatApprox_isSome_exists`,
   `irrational_sub_one_of_powBaseRatExact?_none`.
 -/
@@ -1049,7 +1049,7 @@ theorem irrational_sub_one_of_powBaseExact?_none (s : Bool) (e : AzInt) {q : ℕ
 
 /-- `powBaseM1RatW₀ q u` as an integer. -/
 theorem powBaseM1RatW₀_eq (q : AzRat) (u : UInt64) :
-    ((powBaseM1RatW₀ q u : ℕ) : ℤ) = 136 + (|(exp2M1RatExp q).toInt| + q.num.size)
+    ((powBaseM1RatW₀ q u : ℕ) : ℤ) = 136 + (|(pow2M1RatExp q).toInt| + q.num.size)
       + |((baseFloat u).exponent?.getD 0).toInt| := by
   unfold powBaseM1RatW₀
   rw [Nat.cast_add, Nat.cast_add, Nat.cast_add, AzInt.abs_toNat_eq, AzInt.abs_toNat_eq]
@@ -1066,11 +1066,11 @@ theorem powBaseM1RatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) (u : UInt64) (hu
       lo ≤ (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧
       (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ≤ hi ∧
       hi - lo ≤ powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
-        (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
+        (expM1Comp (powBaseM1Exp (pow2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
         w := by
   have hw64 : 64 ≤ w := by unfold powBaseM1RatW₀ at hw; omega
-  obtain ⟨e, he⟩ : ∃ e : AzInt, e = exp2M1RatExp q := ⟨_, rfl⟩
-  obtain ⟨hxe, hxe1⟩ := exp2M1RatExp_bounds q h0
+  obtain ⟨e, he⟩ : ∃ e : AzInt, e = pow2M1RatExp q := ⟨_, rfl⟩
+  obtain ⟨hxe, hxe1⟩ := pow2M1RatExp_bounds q h0
   rw [← he] at hxe hxe1
   obtain ⟨xv, hxv⟩ : ∃ xv : ℝ, xv = (AzRat.toRat q : ℝ) := ⟨_, rfl⟩
   rw [← hxv] at hxe hxe1
@@ -1146,7 +1146,7 @@ theorem powBaseM1RatApprox_spec {w : ℕ} (q : AzRat) (h0 : q.num ≠ 0) (u : UI
       lv < (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 ∧
       (u.toNat : ℝ) ^ (AzRat.toRat q : ℝ) - 1 < hv ∧
       hv - lv ≤ powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
-        (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
+        (expM1Comp (powBaseM1Exp (pow2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat)
         w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := powBaseM1RatBracket_spec q h0 u hu hw
   obtain ⟨r1, r2, r3, r4⟩ := rounds_of_bracket hlo hhi h1 h2 hirr
@@ -1160,7 +1160,7 @@ theorem powBaseM1RatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMo
       (powBaseM1RatApprox q u (w₀ * 2 ^ f)).2 p mode).isSome = true :=
   exists_isSome_of_irrational_threshold p mode (powBaseM1RatApprox q u) hirr
     (powBaseM1Eps (q.num.size : ℤ) ((baseFloat u).exponent?.getD 0).toInt
-      (expM1Comp (powBaseM1Exp (exp2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat))
+      (expM1Comp (powBaseM1Exp (pow2M1RatExp q))) ((AzRat.toRat q : ℝ) * Real.log u.toNat))
     (tendsto_powBaseM1Eps _ _ _ _) (powBaseM1RatW₀ q u)
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwidth⟩ := powBaseM1RatApprox_spec q h0 u hu hirr hw

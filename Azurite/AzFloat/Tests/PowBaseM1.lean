@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Ln10Bracket
+import Azurite.AzFloat.Pow2M1
 import Azurite.AzFloat.PowBase
 import Azurite.AzFloat.PowBaseM1
-import Azurite.AzFloat.Exp2M1
-import Azurite.AzFloat.Ln10Bracket
-import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -75,9 +75,9 @@ private def ninf : AzFloat := infinity false
 #guard powBaseM1 4 (F "3/2" 53) == F "7" 53
 
 -- agreement with `2^x − 1` and with `u^x` at a higher precision
-#guard E 2 (F "1/2" 53) 150 == exp2M1PrecRound (F "1/2" 53) 150 .Nearest
-#guard E 2 (F "-7/4" 53) 150 .Floor == exp2M1PrecRound (F "-7/4" 53) 150 .Floor
-#guard E 2 (F "1/1073741824" 53) 150 == exp2M1PrecRound (F "1/1073741824" 53) 150 .Nearest
+#guard E 2 (F "1/2" 53) 150 == pow2M1PrecRound (F "1/2" 53) 150 .Nearest
+#guard E 2 (F "-7/4" 53) 150 .Floor == pow2M1PrecRound (F "-7/4" 53) 150 .Floor
+#guard E 2 (F "1/1073741824" 53) 150 == pow2M1PrecRound (F "1/1073741824" 53) 150 .Nearest
 #guard (E 7 (F "3/4" 53) 100).1
   == (subPrecRound (powBasePrecRound 7 (F "3/4" 53) 300 .Nearest).1 one 100 .Nearest).1
 

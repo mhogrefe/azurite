@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2
-import Azurite.AzFloat.Exp2M1
-import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Ln2
+import Azurite.AzFloat.Pow2
+import Azurite.AzFloat.Pow2M1
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -31,7 +31,7 @@ private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
-private def E (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := exp2M1PrecRound x p m
+private def E (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := pow2M1PrecRound x p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 
@@ -43,10 +43,10 @@ private def ninf : AzFloat := infinity false
 #guard E zero 53 == (zero, .eq)
 #guard E zero 0 == (zero, .eq)
 #guard E (F "1" 53) 0 == (nan, .eq)
-#guard exp2M1 nan == nan
-#guard exp2M1 pinf == infinity true
-#guard exp2M1 ninf == F "-1" 1
-#guard exp2M1 zero == zero
+#guard pow2M1 nan == nan
+#guard pow2M1 pinf == infinity true
+#guard pow2M1 ninf == F "-1" 1
+#guard pow2M1 zero == zero
 
 -- integer arguments: exact `2^n − 1`
 #guard E (F "1" 53) 1 == (one, .eq)
@@ -57,8 +57,8 @@ private def ninf : AzFloat := infinity false
 #guard E (F "100" 53) 10 == (F "1267650600228229401496703205376" 10, .gt)
 #guard E (F "-100" 53) 10 == (F "-1" 10, .lt)
 #guard E (F "-100" 53) 10 .Ceiling == (F "-1023/1024" 10, .gt)
-#guard exp2M1 (F "10" 53) == F "1023" 53
-#guard exp2M1 (F "64" 53) == F "18446744073709551616" 53
+#guard pow2M1 (F "10" 53) == F "1023" 53
+#guard pow2M1 (F "64" 53) == F "18446744073709551616" 53
 
 private def refHalf : AzRat :=
   R ("4142135623730950488016887242096980785696718753769480731766797379907324784621070388503875" ++
@@ -116,15 +116,15 @@ private def ref12345 : AzRat :=
 #guard E (F "-7/4" 53) 150 .Up == ofAzRatRound refNeg74 150 .Up
 #guard (E (F "1/1024" 53) 150).1 == ofAzRat ref1024 150
 #guard (E (F "12345/4096" 53) 150).1 == ofAzRat ref12345 150
-#guard exp2M1 (F "1/2" 53) == ofAzRat refHalf 53
-#guard exp2M1 (F "7/4" 200) == ofAzRat ref74 200
+#guard pow2M1 (F "1/2" 53) == ofAzRat refHalf 53
+#guard pow2M1 (F "7/4" 200) == ofAzRat ref74 200
 
 -- small arguments: the cancellation is compensated
 #guard (E (F "1/1073741824" 53) 150).1 == ofAzRat ref30 150
 #guard E (F "1/1073741824" 53) 150 .Floor == ofAzRatRound ref30 150 .Floor
 #guard (E (F "-1/1073741824" 53) 150).1 == ofAzRat refNeg30 150
 #guard E (F "-1/1073741824" 53) 150 .Ceiling == ofAzRatRound refNeg30 150 .Ceiling
-#guard exp2M1 (F "-1/1073741824" 53) == ofAzRat refNeg30 53
+#guard pow2M1 (F "-1/1073741824" 53) == ofAzRat refNeg30 53
 
 -- tiny arguments: `2^(±2^(−200)) − 1 ≈ ±ln 2 · 2^(−200)`
 private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-200))
@@ -143,4 +143,4 @@ private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-200))
 
 -- agreement with `2^x − 1` at a higher precision
 #guard (E (F "7/4" 53) 100).1
-  == (subPrecRound (exp2PrecRound (F "7/4" 53) 300 .Nearest).1 one 100 .Nearest).1
+  == (subPrecRound (pow2PrecRound (F "7/4" 53) 300 .Nearest).1 one 100 .Nearest).1

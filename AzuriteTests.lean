@@ -21,10 +21,6 @@ import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Exp
-import Azurite.AzFloat.Tests.Exp2
-import Azurite.AzFloat.Tests.Exp2M1
-import Azurite.AzFloat.Tests.Exp2M1Rat
-import Azurite.AzFloat.Tests.Exp2Rat
 import Azurite.AzFloat.Tests.ExpConstants
 import Azurite.AzFloat.Tests.ExpM1
 import Azurite.AzFloat.Tests.ExpM1Rat
@@ -64,6 +60,11 @@ import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.PiConstants
+import Azurite.AzFloat.Tests.Pow10
+import Azurite.AzFloat.Tests.Pow2
+import Azurite.AzFloat.Tests.Pow2M1
+import Azurite.AzFloat.Tests.Pow2M1Rat
+import Azurite.AzFloat.Tests.Pow2Rat
 import Azurite.AzFloat.Tests.PowBase
 import Azurite.AzFloat.Tests.PowBaseM1
 import Azurite.AzFloat.Tests.PowBaseM1Rat

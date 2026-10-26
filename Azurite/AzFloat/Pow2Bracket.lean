@@ -16,12 +16,12 @@ import Azurite.AzRat.Unary
 
 `2^x = exp (x ln 2)`: `ln2MulBracket x e w` encloses `x ln 2` from `|x|` times the ends of
 `ln2Bracket` at the working precision `expWork e w = w + 16 + max(e, 0)` (so that the width is
-below `2^(−w)` for `|x| < 2^e`), the ends swapped and negated for `x < 0`; `exp2Bracket` is
-`expOfBracket` of it, and `exp2Approx` the pair of `Roundable`s for the Ziv loop.  For a
+below `2^(−w)` for `|x| < 2^e`), the ends swapped and negated for `x < 0`; `pow2Bracket` is
+`expOfBracket` of it, and `pow2Approx` the pair of `Roundable`s for the Ziv loop.  For a
 rational `q`, `ln2MulRatBracket` uses the floats below and above `|q|` at `w + 16 + size (num q)`
-bits instead of `|x|`.  `exp2M1Bracket` brackets `2^x − 1` through `expM1OfBracket`, the
-`exp v − 1` analogue of `expOfBracket` built on `expM1Bracket`, and `exp2M1RatBracket` is its
-rational version at the exponent `exp2M1RatExp q = ⌊log₂ |q|⌋ + 1`.
+bits instead of `|x|`.  `pow2M1Bracket` brackets `2^x − 1` through `expM1OfBracket`, the
+`exp v − 1` analogue of `expOfBracket` built on `expM1Bracket`, and `pow2M1RatBracket` is its
+rational version at the exponent `pow2M1RatExp q = ⌊log₂ |q|⌋ + 1`.
 -/
 
 namespace Azurite.AzFloat
@@ -37,12 +37,12 @@ def ln2MulBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
   if x.isNegative then (-P.2, -P.1) else P
 
 /-- The bracket of `2^x` at working precision `w`. -/
-def exp2Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+def pow2Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
   expOfBracket (ln2MulBracket x e w) w
 
-/-- `exp2Bracket` as a pair of `Roundable`s for the Ziv loop. -/
-def exp2Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
-  let b := exp2Bracket x e w
+/-- `pow2Bracket` as a pair of `Roundable`s for the Ziv loop. -/
+def pow2Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  let b := pow2Bracket x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The bracket of `|q| ln 2` at precision `W` for a rational `q`: the floats below and above
@@ -59,12 +59,12 @@ def ln2MulRatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
   if q.sign then P else (-P.2, -P.1)
 
 /-- The bracket of `2^q` at working precision `w`. -/
-def exp2RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+def pow2RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
   expOfBracket (ln2MulRatBracket q w) w
 
-/-- `exp2RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
-def exp2RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
-  let b := exp2RatBracket q w
+/-- `pow2RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
+def pow2RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let b := pow2RatBracket q w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The bracket of `exp v − 1` from a bracket `X` of `v` with `|v| < 2^e` (of width at most
@@ -81,27 +81,27 @@ def expM1OfBracket (X : AzFloat × AzFloat) (e : AzInt) (w : Nat) : AzFloat × A
 /-- The bracket of `2^x − 1` for a finite float `x` of exponent `e`: `expM1OfBracket` of the
 bracket of `x ln 2` at the compensated working precision `w + max(−e, 0)` (so that its width
 `2^(−w) · 2^(min(e, 0))` is a `2^(−w)` fraction of `|x ln 2|`). -/
-def exp2M1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+def pow2M1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
   expM1OfBracket (ln2MulBracket x e (w + expM1Comp e)) e w
 
-/-- `exp2M1Bracket` as a pair of `Roundable`s for the Ziv loop. -/
-def exp2M1Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
-  let b := exp2M1Bracket x e w
+/-- `pow2M1Bracket` as a pair of `Roundable`s for the Ziv loop. -/
+def pow2M1Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  let b := pow2M1Bracket x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The exponent `⌊log₂ |q|⌋ + 1` of a rational `q ≠ 0` (so `2^(e−1) ≤ |q| < 2^e`), for the
 compensation of `2^q − 1`. -/
-def exp2M1RatExp (q : AzRat) : AzInt := AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 1)
+def pow2M1RatExp (q : AzRat) : AzInt := AzInt.ofInt (AzRat.floorLogBaseAbs 2 q + 1)
 
 /-- The bracket of `2^q − 1` for a rational `q`: `expM1OfBracket` of the bracket of `q ln 2` at
-the compensated working precision `w + max(−e, 0)`, `e = exp2M1RatExp q`. -/
-def exp2M1RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
-  let e := exp2M1RatExp q
+the compensated working precision `w + max(−e, 0)`, `e = pow2M1RatExp q`. -/
+def pow2M1RatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+  let e := pow2M1RatExp q
   expM1OfBracket (ln2MulRatBracket q (w + expM1Comp e)) e w
 
-/-- `exp2M1RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
-def exp2M1RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
-  let b := exp2M1RatBracket q w
+/-- `pow2M1RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
+def pow2M1RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let b := pow2M1RatBracket q w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

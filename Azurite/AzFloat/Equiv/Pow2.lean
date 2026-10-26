@@ -7,14 +7,14 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2
 import Azurite.AzFloat.Equiv.Exp
+import Azurite.AzFloat.Pow2
 
 /-!
 # Equivalence: `2^x`
 
-* `Spec.exp2`: the extended-real `2^a` (`∞ ↦ ∞`, `−∞ ↦ 0`).
-* `exp2PrecRound_eq_liftVal : exp2PrecRound x p mode = liftVal Spec.exp2 x p mode`: `2^x` is
+* `Spec.pow2`: the extended-real `2^a` (`∞ ↦ ∞`, `−∞ ↦ 0`).
+* `pow2PrecRound_eq_liftVal : pow2PrecRound x p mode = liftVal Spec.pow2 x p mode`: `2^x` is
   correctly rounded in every mode, with the exact comparison, and without fuel.
 -/
 
@@ -24,19 +24,19 @@ namespace Spec
 
 open Classical in
 /-- Extended-real `2^a`: `∞ ↦ ∞`, `−∞ ↦ 0`. -/
-noncomputable def exp2 (a : EReal) : Option EReal :=
+noncomputable def pow2 (a : EReal) : Option EReal :=
   if a = ⊤ then some ⊤ else if a = ⊥ then some 0 else some (((2 : ℝ) ^ a.toReal : ℝ) : EReal)
 
-theorem exp2_coe (r : ℝ) : exp2 (r : EReal) = some (((2 : ℝ) ^ r : ℝ) : EReal) := by
-  unfold exp2
+theorem pow2_coe (r : ℝ) : pow2 (r : EReal) = some (((2 : ℝ) ^ r : ℝ) : EReal) := by
+  unfold pow2
   rw [ite_eq_right (EReal.coe_ne_top r), ite_eq_right (EReal.coe_ne_bot r), EReal.toReal_coe]
 
-@[simp] theorem exp2_top : exp2 ⊤ = some ⊤ := by
-  unfold exp2
+@[simp] theorem pow2_top : pow2 ⊤ = some ⊤ := by
+  unfold pow2
   rw [ite_eq_left rfl]
 
-@[simp] theorem exp2_bot : exp2 ⊥ = some 0 := by
-  unfold exp2
+@[simp] theorem pow2_bot : pow2 ⊥ = some 0 := by
+  unfold pow2
   rw [ite_eq_right bot_ne_top, ite_eq_left rfl]
 
 end Spec
@@ -56,18 +56,18 @@ theorem truncToAzInt_of_isInteger (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
   rw [h5]
 
 /-- **`2^x` is correctly rounded.** -/
-theorem exp2PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    exp2PrecRound x p mode = liftVal Spec.exp2 x p mode := by
+theorem pow2PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    pow2PrecRound x p mode = liftVal Spec.pow2 x p mode := by
   unfold liftVal
   cases x with
   | nan => rfl
-  | infinity s => cases s <;> simp [exp2PrecRound]
+  | infinity s => cases s <;> simp [pow2PrecRound]
   | zero =>
-    simp only [exp2PrecRound, toVal_zero, Option.bind_some]
-    rw [ite_eq_right (NeZero.ne p), ← EReal.coe_zero, Spec.exp2_coe, Real.rpow_zero,
+    simp only [pow2PrecRound, toVal_zero, Option.bind_some]
+    rw [ite_eq_right (NeZero.ne p), ← EReal.coe_zero, Spec.pow2_coe, Real.rpow_zero,
       setPrecRound_eq_roundVal toVal_one']
   | finite s e q m hv =>
-    simp only [exp2PrecRound, toVal_finite, Option.bind_some, Spec.exp2_coe]
+    simp only [pow2PrecRound, toVal_finite, Option.bind_some, Spec.pow2_coe]
     rw [dite_eq_right (NeZero.ne p)]
     split_ifs with hi
     · rw [setPrecRound_eq_roundVal (toVal_powerOf2 _), ← truncToAzInt_of_isInteger s e hv hi,
@@ -76,7 +76,7 @@ theorem exp2PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roun
         (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-            exp2Approx_spec (w := w) (by unfold zivGuardBits at hw; omega) s e hv hi
+            pow2Approx_spec (w := w) (by unfold zivGuardBits at hw; omega) s e hv hi
           exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 
 end Azurite.AzFloat

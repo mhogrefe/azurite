@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.PowBase
-import Azurite.AzFloat.Exp2
-import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Pow2
+import Azurite.AzFloat.PowBase
+import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -84,9 +84,9 @@ private def ninf : AzFloat := infinity false
 #guard (E 1024 (F "1/10" 53) 53).2 != .eq
 
 -- agreement with `2^x` and with `√u`
-#guard E 2 (F "1/2" 53) 150 == exp2PrecRound (F "1/2" 53) 150 .Nearest
-#guard E 2 (F "5/4" 53) 150 .Floor == exp2PrecRound (F "5/4" 53) 150 .Floor
-#guard E 2 (F "-7/4" 53) 150 == exp2PrecRound (F "-7/4" 53) 150 .Nearest
+#guard E 2 (F "1/2" 53) 150 == pow2PrecRound (F "1/2" 53) 150 .Nearest
+#guard E 2 (F "5/4" 53) 150 .Floor == pow2PrecRound (F "5/4" 53) 150 .Floor
+#guard E 2 (F "-7/4" 53) 150 == pow2PrecRound (F "-7/4" 53) 150 .Nearest
 #guard E 3 (F "1/2" 150) 150 == sqrt3PrecRound 150 .Nearest
 #guard E 3 (F "1/2" 150) 150 .Ceiling == sqrt3PrecRound 150 .Ceiling
 #guard E 18446744073709551615 (F "1/2" 53) 150

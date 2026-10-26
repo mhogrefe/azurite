@@ -7,14 +7,14 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2M1Rat
-import Azurite.AzFloat.Equiv.Exp2M1
-import Azurite.AzFloat.Equiv.Exp2Rat
+import Azurite.AzFloat.Equiv.Pow2M1
+import Azurite.AzFloat.Equiv.Pow2Rat
+import Azurite.AzFloat.Pow2M1Rat
 
 /-!
 # Equivalence: `2^q − 1` for a rational
 
-`exp2M1RatPrecRound_eq : exp2M1RatPrecRound q p mode = roundVal p mode (Spec.exp2M1 q)` for
+`pow2M1RatPrecRound_eq : pow2M1RatPrecRound q p mode = roundVal p mode (Spec.pow2M1 q)` for
 `p ≠ 0`: `2^q − 1` is correctly rounded in every mode, with the exact comparison, and without
 fuel.
 -/
@@ -22,11 +22,11 @@ fuel.
 namespace Azurite.AzFloat
 
 /-- **`2^q − 1` of a rational is correctly rounded.** -/
-theorem exp2M1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    exp2M1RatPrecRound q p mode
-      = roundVal p mode (Spec.exp2M1 ((AzRat.toRat q : ℝ) : EReal)) := by
-  unfold exp2M1RatPrecRound
-  rw [Spec.exp2M1_coe]
+theorem pow2M1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    pow2M1RatPrecRound q p mode
+      = roundVal p mode (Spec.pow2M1 ((AzRat.toRat q : ℝ) : EReal)) := by
+  unfold pow2M1RatPrecRound
+  rw [Spec.pow2M1_coe]
   split_ifs with hp h0 hd
   · exact absurd hp (NeZero.ne p)
   · rw [(AzRat.toRat_eq_zero_iff q).mpr h0, Real.rpow_zero, sub_self, EReal.coe_zero,
@@ -41,7 +41,7 @@ theorem exp2M1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingM
       (by unfold zivGuardBits; omega)
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
-          exp2M1RatApprox_spec (w := w) (by unfold zivGuardBits at hw; omega) q h0 hd
+          pow2M1RatApprox_spec (w := w) (by unfold zivGuardBits at hw; omega) q h0 hd
         exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 
 end Azurite.AzFloat

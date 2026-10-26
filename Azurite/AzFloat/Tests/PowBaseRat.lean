@@ -7,10 +7,10 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Pow2Rat
 import Azurite.AzFloat.PowBase
 import Azurite.AzFloat.PowBaseRat
-import Azurite.AzFloat.Exp2Rat
-import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -69,8 +69,8 @@ private def E (u : UInt64) (q : String) (p : Nat) (m : RoundingMode := .Nearest)
 #guard E 3 "1/2" 150 == powBasePrecRound 3 (F "1/2" 53) 150 .Nearest
 #guard E 7 "-7/4" 150 .Floor == powBasePrecRound 7 (F "-7/4" 53) 150 .Floor
 #guard E 12345 "5/4" 150 == powBasePrecRound 12345 (F "5/4" 53) 150 .Nearest
-#guard E 2 "1/3" 150 == exp2RatPrecRound (Q "1/3") 150 .Nearest
-#guard E 2 "-10/3" 150 .Ceiling == exp2RatPrecRound (Q "-10/3") 150 .Ceiling
+#guard E 2 "1/3" 150 == pow2RatPrecRound (Q "1/3") 150 .Nearest
+#guard E 2 "-10/3" 150 .Ceiling == pow2RatPrecRound (Q "-10/3") 150 .Ceiling
 
 private def ref3Third : AzRat :=
   R ("1442249570307408382321638310780109588391869253499350577546416194541687596829997339854755" ++

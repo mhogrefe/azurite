@@ -7,10 +7,10 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Pow2M1Rat
 import Azurite.AzFloat.PowBaseM1
 import Azurite.AzFloat.PowBaseM1Rat
-import Azurite.AzFloat.Exp2M1Rat
-import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -69,9 +69,9 @@ private def E (u : UInt64) (q : String) (p : Nat) (m : RoundingMode := .Nearest)
 #guard E 3 "1/2" 150 == powBaseM1PrecRound 3 (F "1/2" 53) 150 .Nearest
 #guard E 7 "-7/4" 150 .Floor == powBaseM1PrecRound 7 (F "-7/4" 53) 150 .Floor
 #guard E 10 "1/1073741824" 150 == powBaseM1PrecRound 10 (F "1/1073741824" 53) 150 .Nearest
-#guard E 2 "1/3" 150 == exp2M1RatPrecRound (Q "1/3") 150 .Nearest
-#guard E 2 "-10/3" 150 .Ceiling == exp2M1RatPrecRound (Q "-10/3") 150 .Ceiling
-#guard E 2 "1/1000000" 150 == exp2M1RatPrecRound (Q "1/1000000") 150 .Nearest
+#guard E 2 "1/3" 150 == pow2M1RatPrecRound (Q "1/3") 150 .Nearest
+#guard E 2 "-10/3" 150 .Ceiling == pow2M1RatPrecRound (Q "-10/3") 150 .Ceiling
+#guard E 2 "1/1000000" 150 == pow2M1RatPrecRound (Q "1/1000000") 150 .Nearest
 
 private def ref3Third : AzRat :=
   R ("4422495703074083823216383107801095883918692534993505775464161945416875968299973398547554" ++

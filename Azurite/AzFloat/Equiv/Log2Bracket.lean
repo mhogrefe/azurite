@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Log2Bracket
 import Azurite.AzFloat.Equiv.LnBracket
+import Azurite.AzFloat.Log2Bracket
+import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Size
-import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzRat.Equiv.LogBase2
 import Azurite.AzRat.Equiv.Pow2
 import Mathlib.Analysis.SpecialFunctions.Log.Base

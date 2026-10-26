@@ -7,10 +7,10 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2M1
-import Azurite.AzFloat.Exp2M1Rat
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Pow2M1
+import Azurite.AzFloat.Pow2M1Rat
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 
@@ -29,7 +29,7 @@ private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 /-- The rational `digits / 10^zeros`. -/
 private def R (digits : String) (zeros : Nat) : AzRat := Q (digits ++ "/1" ++ "".pushn '0' zeros)
-private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := exp2M1RatPrecRound (Q q) p m
+private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := pow2M1RatPrecRound (Q q) p m
 
 -- zero, integers and precision `0`
 #guard E "0" 53 == (zero, .eq)
@@ -43,15 +43,15 @@ private def E (q : String) (p : Nat) (m : RoundingMode := .Nearest) := exp2M1Rat
 #guard E "100" 10 == (F "1267650600228229401496703205376" 10, .gt)
 #guard E "-100" 10 == (F "-1" 10, .lt)
 #guard E "-100" 10 .Ceiling == (F "-1023/1024" 10, .gt)
-#guard exp2M1Rat (Q "10") 53 == F "1023" 53
+#guard pow2M1Rat (Q "10") 53 == F "1023" 53
 
 -- agreement with the float `2^x − 1` on dyadic rationals
-#guard E "1/2" 150 == exp2M1PrecRound (F "1/2" 53) 150 .Nearest
-#guard E "1/2" 150 .Floor == exp2M1PrecRound (F "1/2" 53) 150 .Floor
-#guard E "-7/4" 150 == exp2M1PrecRound (F "-7/4" 53) 150 .Nearest
-#guard E "12345/4096" 100 .Ceiling == exp2M1PrecRound (F "12345/4096" 53) 100 .Ceiling
-#guard E "1/1073741824" 150 == exp2M1PrecRound (F "1/1073741824" 53) 150 .Nearest
-#guard E "-1/1073741824" 150 .Up == exp2M1PrecRound (F "-1/1073741824" 53) 150 .Up
+#guard E "1/2" 150 == pow2M1PrecRound (F "1/2" 53) 150 .Nearest
+#guard E "1/2" 150 .Floor == pow2M1PrecRound (F "1/2" 53) 150 .Floor
+#guard E "-7/4" 150 == pow2M1PrecRound (F "-7/4" 53) 150 .Nearest
+#guard E "12345/4096" 100 .Ceiling == pow2M1PrecRound (F "12345/4096" 53) 100 .Ceiling
+#guard E "1/1073741824" 150 == pow2M1PrecRound (F "1/1073741824" 53) 150 .Nearest
+#guard E "-1/1073741824" 150 .Up == pow2M1PrecRound (F "-1/1073741824" 53) 150 .Up
 
 private def refThird : AzRat :=
   R ("2599210498948731647672106072782283505702514647015079800819751121552996765139594837293965" ++
@@ -104,8 +104,8 @@ private def refNegTiny : AzRat :=
 #guard (E "22/7" 150).1 == ofAzRat ref227 150
 #guard (E "123456/1000" 150).1 == ofAzRat refBig 150
 #guard E "123456/1000" 150 .Floor == ofAzRatRound refBig 150 .Floor
-#guard exp2M1Rat (Q "1/3") 53 == ofAzRat refThird 53
-#guard exp2M1Rat (Q "22/7") 200 == ofAzRat ref227 200
+#guard pow2M1Rat (Q "1/3") 53 == ofAzRat refThird 53
+#guard pow2M1Rat (Q "22/7") 200 == ofAzRat ref227 200
 
 -- small and tiny arguments: the cancellation is compensated
 #guard (E "1/1000000" 150).1 == ofAzRat refMicro 150
@@ -118,7 +118,7 @@ private def refNegTiny : AzRat :=
   == ofAzRat refTiny 300
 #guard E "-1/1000000000000000000000000000000000000000000000000000000000000" 300 .Ceiling
   == ofAzRatRound refNegTiny 300 .Ceiling
-#guard exp2M1Rat (Q "-1/1000000") 53 == ofAzRat refNegMicro 53
+#guard pow2M1Rat (Q "-1/1000000") 53 == ofAzRat refNegMicro 53
 
 -- directed modes are ordered
 #guard (E "5/7" 60 .Floor).2 == .lt

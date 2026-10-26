@@ -7,11 +7,11 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Precision
 import Azurite.AzFloat.Equiv.Sum
+import Azurite.AzFloat.RoundToInteger
 import Azurite.AzInt.Equiv.ShiftRightRound
 import Azurite.AzNat.Equiv.IsMultipleOfPow2
 import Azurite.Rounding.IntPrecision

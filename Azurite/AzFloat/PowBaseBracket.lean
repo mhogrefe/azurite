@@ -7,10 +7,10 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Exp2Bracket
 import Azurite.AzFloat.ExpApprox
 import Azurite.AzFloat.LogBaseBracket
 import Azurite.AzFloat.LogBaseExact
+import Azurite.AzFloat.Pow2Bracket
 import Azurite.AzRat.Conversion
 import Azurite.AzRat.Mul
 
@@ -28,7 +28,7 @@ then equals `r^n`; every other `u^x` is irrational (`Equiv/PowBaseBracket.lean`)
 versions `lnBaseMulRatBracket`, `powBaseRatBracket`, `powBaseRatApprox`, `powBaseRatExact?` use
 the floats below and above `|q|` at `w + 16 + size (num q)` bits instead of `|x|`.
 `powBaseM1Bracket` brackets `u^x − 1` through `expM1OfBracket` at the exponent `e + 6`, and
-`powBaseM1RatBracket` is its rational version at the exponent `exp2M1RatExp q + 6`.
+`powBaseM1RatBracket` is its rational version at the exponent `pow2M1RatExp q + 6`.
 -/
 
 namespace Azurite.AzFloat
@@ -143,9 +143,9 @@ def powBaseM1Start (e : AzInt) (u : UInt64) (p : Nat) : Nat :=
   p + zivGuardBits + powBaseM1W₀ e u
 
 /-- The bracket of `u^q − 1` for a rational `q ≠ 0`: `expM1OfBracket` at the exponent
-`exp2M1RatExp q + 6` of the bracket of `q ln u` computed at the compensated precision. -/
+`pow2M1RatExp q + 6` of the bracket of `q ln u` computed at the compensated precision. -/
 def powBaseM1RatBracket (q : AzRat) (u : UInt64) (w : Nat) : AzFloat × AzFloat :=
-  let e' := powBaseM1Exp (exp2M1RatExp q)
+  let e' := powBaseM1Exp (pow2M1RatExp q)
   expM1OfBracket (lnBaseMulRatBracket q u (w + expM1Comp e')) e' w
 
 /-- `powBaseM1RatBracket` as a pair of `Roundable`s for the Ziv loop. -/
@@ -154,9 +154,9 @@ def powBaseM1RatApprox (q : AzRat) (u : UInt64) (w : Nat) : Roundable × Roundab
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The precision from which the bracket of `q ln u` is narrow enough for `expM1OfBracket`:
-`136 + |exp2M1RatExp q| + size (num q) + |exponent of u|`. -/
+`136 + |pow2M1RatExp q| + size (num q) + |exponent of u|`. -/
 def powBaseM1RatW₀ (q : AzRat) (u : UInt64) : Nat :=
-  136 + (exp2M1RatExp q).abs.toNat + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
+  136 + (pow2M1RatExp q).abs.toNat + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
 
 /-- The starting precision of the Ziv loop for `u^q − 1` at precision `p`. -/
 def powBaseM1RatStart (q : AzRat) (u : UInt64) (p : Nat) : Nat :=

@@ -7,8 +7,8 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.Equiv.Log2
+import Azurite.AzFloat.LogBasePow2
 import Azurite.AzRat.Equiv.Construct
 
 /-!

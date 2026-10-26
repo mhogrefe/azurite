@@ -7,9 +7,9 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.PiDiv3Bracket
-import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.LogBasePow2Bracket
+import Azurite.AzFloat.Equiv.PiBracket
+import Azurite.AzFloat.PiDiv3Bracket
 
 /-!
 # Equivalence: the bracket of `π/3`
