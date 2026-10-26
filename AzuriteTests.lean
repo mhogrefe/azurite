@@ -17,6 +17,8 @@ import Azurite.AzFloat.Tests.AddMulRat
 import Azurite.AzFloat.Tests.AddSubRat
 import Azurite.AzFloat.Tests.Agm
 import Azurite.AzFloat.Tests.Basic
+import Azurite.AzFloat.Tests.Cbrt
+import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat

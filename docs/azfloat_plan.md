@@ -4891,3 +4891,48 @@ condition with `(c := …)` whenever the proof term does not fix it.  Spec `Spec
 dyadic powers (`(3/2)^10`, `2^(±100)`, `(−1/2)^(−3) = −8`, `3^40` at 20 bits), inexact ones
 (`(±3/2)^(−3) = ±8/27`, the 53-bit `x ≈ 1/3` to the powers `5` and `−7` against exact
 rationals), directed modes and comparison results.
+
+## Cube root (DONE 2026-10-26)
+
+User: cube root for `AzFloat` (towards the Airy functions, which need `∛`).  `AzFloat/Cbrt.lean`
++ `Equiv/` + `Tests/`, plus `Equiv/NegRound.lean`.  **Algorithm**: the cube-root analogue of
+`sqrtCore` (MCA §3.5, FPSqrt), no Ziv loop: `x = n · 2^(e − q)`, `e − q = t + 3w` with
+`t = 3p − q − δ`, `δ = (−e) mod 3` (`AzInt` `%`, `Int.emod`), so `M = n · 2^t ∈ [2^(3p−3), 2^(3p))`
+and `c = ⌊∛⌊M⌋⌋` (`AzNat.rootInt M 3`) has `p` bits; exact iff `c³ = ⌊M⌋` and no bits were
+shifted out; the midpoint test is `n · 2^(t+3)` vs `(2c + 1)³` (`compareScaled`);
+`roundFromFloor`, `normalizeCarry` at exponent `w + p`, `w = (e − 3p + δ) / 3` (exact).
+**Negative inputs**: `∛(−x) = −∛x`; the core runs on the magnitude with the *negated mode*
+(`RoundingMode.neg`, `Floor ↔ Ceiling`) and the result is negated with the comparison swapped.
+This needed the float-level `roundVal_neg` (new `Equiv/NegRound.lean`): `roundVal p mode (−v)
+= (−(roundVal p (−mode) v).1, (…).2.swap)`, from `RoundingTarget.round_neg` on the symmetric
+`floatSet p` (already an instance of `SymmetricRoundingTarget`), `precision?_neg`,
+`toVal_injective`; `compare_neg_neg_ereal`.  Reusable for every odd function.  **Real cube
+root**: Mathlib has none; `realCbrt x = x^(1/3)` for `x ≥ 0`, `−(−x)^(1/3)` otherwise
+(`Real.rpow_inv_natCast_pow`, `Real.pow_rpow_inv_natCast`), with `realCbrt_pow_three`,
+`realCbrt_neg`, `realCbrt_eq_of_pow_three` (uniqueness of the nonnegative root).  **Proof**
+`cbrtCore_eq` mirrors `sqrtCore_eq` with cubes: `c ≤ y < c + 1` from `c³ ≤ ⌊M⌋ < (c+1)³`
+(`pow_le_pow_iff_left₀`, `pow_lt_pow_iff_left₀`), exactness via `pow_left_inj₀`, the midpoint
+via `pow_lt_pow_left₀`, `y · 2^w = ∛(finiteVal)` by uniqueness.  Spec `Spec.cbrt` (`±∞` fixed),
+`cbrtPrecRound_eq_liftVal`.  Tests: exact cubes (`∛(27/8)`, `∛(−8)`, `∛(2^303) = 2^101`,
+`∛10^21`), `∛2` in all modes at 2, 3 and 53 bits, ties at precision 1 (`3/2 → 2`, `5/2 → 2`),
+agreement with `10^(1/3)`/`7^(1/3)`/`12345^(1/3)` from the `powBaseRat` family at 150 bits,
+the symmetry with `Floor`/`Ceiling` exchanged, specials.
+
+## Cube root of a rational (DONE 2026-10-26)
+
+User: `∛q` for `q : AzRat`, returning an `AzFloat`.  `AzFloat/CbrtRat.lean` + `Equiv/` +
+`Tests/`, the cube-root analogue of `sqrtRatCore`: `e = ⌊log₂ (n / d)⌋` (`floorLog2_bounds`),
+`h = ⌊e / 3⌋` (`AzInt` `/`, floor division by a positive divisor), `k = p − 1 − h`; the shift
+`3k` goes to `n` or `d` by the sign of `k`, so `A / D = (n / d) 2^(3k) ∈ [2^(3p−3), 2^(3p))`
+(`3h ≤ e < 3h + 3`); `c = ⌊∛⌊A / D⌋⌋` by `AzNat.rootInt (A / D) 3` (the floor of the cube root
+of the integer quotient is the floor of the cube root of the fraction: `c³ ≤ ⌊A/D⌋ ≤ A/D <
+⌊A/D⌋ + 1 ≤ (c + 1)³`), exactness `c³ · D = A` and the midpoint `8A` vs `(2c + 1)³ · D` by
+`AzNat.compareProduct` (no division of the products), then `roundFromFloor_normalizeCarry_eq`
+with exponent `h + 1 = p − k`, and `∛(n/d) = y · 2^(−k)` by `realCbrt_eq_of_pow_three`.
+Negative `q` as for `cbrt` (`roundVal_neg`, `realCbrt_neg`); `q = 0 ↦ 0`.  Spec
+`cbrtRatPrecRound_eq` (`= roundVal p mode (Spec.cbrt (toRat q))`).  The proof was written in
+one pass from `sqrtRatCore_eq` and `cbrtCore_eq`.  Tests: exact cubes (`∛(−1/27) = −1/3`,
+`∛(1000/343) = 10/7`, `∛10^21`, `∛10^(−21)`), agreement with the float `cbrt` on dyadics and
+with `10^(±1/3)`, `7^(±1/3)` from the `powBaseRat` family at 150 bits, `∛(±1/3)` in the
+directed modes, ties at precision 1, the symmetry with `Floor`/`Ceiling` exchanged, zero and
+precision `0`.
