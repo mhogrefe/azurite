@@ -4758,3 +4758,54 @@ uses `7/5 < √2 < 3/2`, `ln 2` within `10^(−9)`, and `2^(−w) ≤ 10^(−18)
 pending: the Gelfond–Schneider theorem itself (ledger entry added).  Tests: 1, 2, 3, 53, 100
 bits in three modes against a 130-digit evaluation, agreement with `exp2 (sqrt2 300)`, decimal
 string.
+
+## `u^x` for a natural base `u` (DONE 2026-10-26, fuel-free)
+
+User: `(u, x) ↦ u^x` for a `UInt64` base and a float exponent.  `AzFloat/PowBaseBracket.lean`
++ `Equiv/`, `AzFloat/PowBase.lean` + `Equiv/` + `Tests/`.  `u^x = exp (x ln u)`:
+`lnBaseMulBracket x e u w` = `|x|` times the ends of `lnBaseBracket u` (the `ln b` bracket of
+the log family, lower end `≥ 1/2`) at `expWork e w = w + 16 + max(e, 0)` bits, signs by
+swapping and negating (`absMulBracket`, `mulBracketSigned`), then `expOfBracket`.
+**Width**: `|x| (d − c) ≤ |x| lnEps eb W ≤ lnEps (|eb| + 16 + max(e, 0)) w / 2^16` — the
+polynomial of `lnEps` at `W` equals the one at `w` with the enlarged exponent argument and the
+`|x| ≤ 2^max(e, 0)` factor cancels against `(1/2)^max(e, 0)` (the `E · (1/2)^emax = 1` trick);
+the roundings add `≤ 2^(−w)` (`ln u < 45` for 64-bit `u`).  `expOfBracket_spec_width` needs the
+bracket width `≤ 1`, and `lnEps` grows polynomially in the exponents, so the Ziv loop starts at
+`powBaseStart e u p = p + 64 + powBaseW₀ e u`, `powBaseW₀ = 128 + max(e, 0) + |eb|`:
+`mulLnEps_le_one` from `2^46 w^5 ≤ 2^w` for `w ≥ 128` (`two_pow_46_mul_pow5_le`, induction).
+**Exact detection** (`powBaseExact?`): with `u = r^s` (`maxRootBase`, `r` primitive),
+`u^x = r^(s x)`; `s x` is computed exactly in `AzRat` (`toAzRat?` of `x` times `s`), and an
+integer `n` gives `r^n` (`AzNat.pow`, one `setPrecRound`, or `divPrecRound one (r^|n|)` for
+`n < 0`).  **Irrationality** otherwise (`irrational_rpow_of_rat_of_not_pow`): for `y = N/D` not
+an integer, `f = fract y ∈ (0, 1)`, `(r^f)^D = r^N'` with `N' = N mod D ∈ (0, D)`; if `r^f` were
+an integer `M` then `M^D = r^N'`, and dividing the exponents by their gcd gives
+`M^D' = r^N''` with coprime `D' ≥ 2`, so `r` is a `D'`-th power
+(`Nat.exists_eq_pow_of_exponent_coprime_of_pow_eq_pow`), contradicting `maxRootBase_not_pow`;
+hence `r^f` is irrational (`irrational_nrt_of_notint_nrt`) and so is `r^y = r^⌊y⌋ · r^f`.  The
+dyadic `s x` comes from `exists_dyadic_of_finiteVal`.  **Spec** `Spec.powBase u`: `0^a = +∞`
+for `a < 0` (Mathlib's `rpow` has `0^a = 0` there), `0^0 = 1`, `1^a = 1`, `1^(±∞)` undefined,
+`u^(±∞)` by continuity; `powBasePrecRound_eq_liftVal`.  Tests: specials, nine exact rational
+powers (`4^(3/2) = 8`, `16^(−3/4) = 1/8`, `3^(±40)` at 20 bits, …), agreement with `2^x` and
+`√u` (`u = 3`, `2^64 − 1`), eleven irrational powers at 150 bits against 200-digit references
+(`3^(201/2)`, `6^(−201/4)`, `(2^64 − 1)^(1/4)`, …), directed modes.
+
+## `u^q` for a natural base and a rational `q` (DONE 2026-10-26, fuel-free)
+
+User: the `AzRat`-exponent variant of `u^x`.  `AzFloat/PowBaseRat.lean` + `Equiv/` + `Tests/`,
+brackets in `PowBaseBracket`.  `lnBaseMulRatBracket q u w` = the floats `a ≤ |q| ≤ b` at
+`W = w + 16 + size (num q)` bits (`ofAzRatRound q.abs`, relative error `≤ 2^(1−W)`) times the
+ends `c ≤ ln u ≤ d` of `lnBaseBracket u W`, directed products, swapped and negated for
+`q < 0`; then `expOfBracket`.  Width: `b d − a c = b (d − c) + (b − a) c ≤ 2|q| lnEps eb W +
+180 |q| 2^(−W)`, the roundings `≤ 2 b d 2^(−W) + 2 a c 2^(−W)` with `d ≤ 45 + lnEps eb W`; the
+`|q| < 2^size` factor cancels against `(1/2)^size` as in the float version, so the bound is the
+same `mulLnEps (size (num q)) eb w` and `powBaseRatW₀ q u = 128 + size (num q) + |eb|` starts
+the loop where it is below `1`.  **Exact detection** (`powBaseRatExact?`): `s q` in `AzRat`
+with `den = 1` gives `r^n`; this covers `q = 0` (`r^0 = 1`) and the integers, so the driver has
+no separate zero case for `u ≥ 2`.  **Irrationality**: `irrational_rpow_of_rat_of_not_pow` at
+`D = den (s q)`, `N = ±num (s q)` (`toRat_cast_eq`), non-integer from `den ≠ 1`
+(`Rat.den_intCast`).  Driver specials: `0^q = 0` for `q > 0`, `+∞` for `q < 0`, `0^0 = 1`,
+`1^q = 1`.  Spec `powBaseRatPrecRound_eq` (`= roundVal p mode (Spec.powBase u (toRat q))`).
+Tests: specials, exact powers (`8^(−2/3) = 1/4`, `27^(4/3) = 81`, `1000^(±1/3)`, `1024^(1/10)`,
+`1024^(1/11)` not exact, `3^(±40)` at 20 bits), agreement with `powBasePrecRound` on dyadics and
+with `exp2RatPrecRound` for `u = 2`, nine irrational powers at 150 bits against 200-digit
+references (`(2^64 − 1)^(1/7)`, `6^(301/3)`, `10^(−401/6)`, …), directed modes.
