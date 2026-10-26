@@ -16,6 +16,13 @@ import Mathlib.RingTheory.Polynomial.Pochhammer
 import Mathlib.Algebra.Polynomial.PartialFractions
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Analysis.Calculus.Deriv.Slope
+import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Data.Matrix.Mul
+import Mathlib.LinearAlgebra.Matrix.ConjTranspose
 
 /-!
 # DLMF §1.2: Elementary Algebra
@@ -56,6 +63,26 @@ thin restatement of a Mathlib lemma (named in the docstring) or proven here.  Th
   the Taylor expansion (`sum_taylor_eq`, `taylor_coeff`, `factorial_smul_hasseDeriv`).
 * 1.2.16 `dlmf_1_2_16`: the decomposition with multiplicities
   (`eq_quo_mul_prod_add_sum_rem_mul_prod`; the quotient vanishes by degrees).
+
+## §1.2(iv) Means
+
+* 1.2.17–1.2.19 `arithMean`, `geomMean`, `harmMean` (`dlmf_1_2_17`–`dlmf_1_2_19`).
+* 1.2.20 `IsWeights` (`dlmf_1_2_20`), 1.2.21–1.2.22 `weightedMean` (`dlmf_1_2_21`,
+  `dlmf_1_2_22`: the convention `M(r) = 0` for `r < 0` and a vanishing `aⱼ`).
+* 1.2.23 `dlmf_1_2_23` (`M(r) → max` as `r → ∞`, a squeeze), 1.2.24 `dlmf_1_2_24`
+  (`M(r) → min` as `r → −∞`, through the reciprocals).
+* 1.2.25 `dlmf_1_2_25_arith`, `dlmf_1_2_25_harm` (`M(1) = A`, `M(−1) = H` for `pⱼ = 1/n`),
+  1.2.26 `dlmf_1_2_26` (`M(r) → G` as `r → 0`, by the derivative of `log S` at `0`).
+
+## §1.2(v) Matrices, vectors, scalar products, and norms
+
+* 1.2.27–1.2.30 `dlmf_1_2_27`–`dlmf_1_2_30`: the matrix `[aᵢⱼ]` (`Matrix.of`), the transpose,
+  the complex conjugate and the Hermitian conjugate (`conjTranspose`), entrywise.
+* 1.2.31–1.2.33 `dlmf_1_2_31`–`dlmf_1_2_33`: scalar multiplication, commutativity and
+  associativity of addition.
+* 1.2.34–1.2.37 `dlmf_1_2_34`–`dlmf_1_2_37`: the row-times-column rule (`Matrix.mul_apply`),
+  associativity (`Matrix.mul_assoc`), distributivity (`Matrix.mul_add`), the transpose of a
+  product (`Matrix.transpose_mul`).
 
 Mathlib's `Ring.choose z k` agrees with `Nat.choose` on the natural numbers
 (`Ring.choose_natCast`), so the complex-argument statements specialize to the integer ones.
@@ -430,5 +457,291 @@ theorem dlmf_1_2_16 {K : Type*} [Field K] {n : ℕ} (α : Fin n → K) (hα : Fu
   simp only [hg, eval_pow, eval_sub, eval_X, eval_C]
   have hpe : ∏ k ∈ univ.erase j, (x - α k) ^ m k ≠ 0 := prod_ne_zero_iff.mpr fun k _ => hx0 k
   rw [mul_div_mul_right _ _ hpe]
+
+/-! ### §1.2(iv) Means
+
+For `n` numbers `a₁, …, aₙ` (indexed by `Fin n`, with `n ≥ 1` wherever a maximum or minimum is
+taken) and weights `p₁, …, pₙ`. -/
+
+open Filter Topology
+
+/-- **DLMF 1.2.17**: the arithmetic mean `A = (a₁ + a₂ + ⋯ + aₙ) / n`. -/
+noncomputable def arithMean {n : ℕ} (a : Fin n → ℝ) : ℝ := (∑ i, a i) / n
+
+theorem dlmf_1_2_17 {n : ℕ} (a : Fin n → ℝ) : arithMean a = (∑ i, a i) / n := rfl
+
+/-- **DLMF 1.2.18**: the geometric mean `G = (a₁ a₂ ⋯ aₙ)^(1/n)` of positive numbers. -/
+noncomputable def geomMean {n : ℕ} (a : Fin n → ℝ) : ℝ := (∏ i, a i) ^ (1 / n : ℝ)
+
+theorem dlmf_1_2_18 {n : ℕ} (a : Fin n → ℝ) : geomMean a = (∏ i, a i) ^ (1 / n : ℝ) := rfl
+
+/-- **DLMF 1.2.19**: the harmonic mean `H` of positive numbers,
+`1 / H = (1 / n) (1 / a₁ + 1 / a₂ + ⋯ + 1 / aₙ)`. -/
+noncomputable def harmMean {n : ℕ} (a : Fin n → ℝ) : ℝ := ((1 / n : ℝ) * ∑ i, (a i)⁻¹)⁻¹
+
+theorem dlmf_1_2_19 {n : ℕ} (a : Fin n → ℝ) : (harmMean a)⁻¹ = (1 / n : ℝ) * ∑ i, (a i)⁻¹ :=
+  inv_inv _
+
+/-- **DLMF 1.2.20**: weights are `n` positive numbers `p₁, …, pₙ` with `p₁ + ⋯ + pₙ = 1`. -/
+def IsWeights {n : ℕ} (p : Fin n → ℝ) : Prop := (∀ i, 0 < p i) ∧ ∑ i, p i = 1
+
+theorem dlmf_1_2_20 {n : ℕ} {p : Fin n → ℝ} (hp : IsWeights p) : ∑ i, p i = 1 := hp.2
+
+/-- The uniform weights `pⱼ = 1 / n`. -/
+theorem isWeights_const {n : ℕ} [NeZero n] : IsWeights (fun _ : Fin n => (1 / n : ℝ)) := by
+  refine ⟨fun _ => one_div_pos.mpr (Nat.cast_pos.mpr (Nat.pos_of_ne_zero (NeZero.ne n))), ?_⟩
+  rw [sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one_div_cancel]
+  exact_mod_cast NeZero.ne n
+
+/-- **DLMF 1.2.21–1.2.22**: the weighted mean `M(r) = (p₁ a₁^r + ⋯ + pₙ aₙ^r)^(1/r)` of
+nonnegative numbers for `r ≠ 0`, with the convention `M(r) = 0` when `r < 0` and some `aⱼ = 0`
+(1.2.22). -/
+noncomputable def weightedMean {n : ℕ} (p a : Fin n → ℝ) (r : ℝ) : ℝ :=
+  if r < 0 ∧ ∃ i, a i = 0 then 0 else (∑ i, p i * a i ^ r) ^ (1 / r)
+
+/-- **DLMF 1.2.21**: outside the exceptional case of 1.2.22,
+`M(r) = (p₁ a₁^r + p₂ a₂^r + ⋯ + pₙ aₙ^r)^(1/r)`. -/
+theorem dlmf_1_2_21 {n : ℕ} (p a : Fin n → ℝ) (r : ℝ) (h : ¬ (r < 0 ∧ ∃ i, a i = 0)) :
+    weightedMean p a r = (∑ i, p i * a i ^ r) ^ (1 / r) := by
+  unfold weightedMean
+  rw [ite_eq_right h]
+
+/-- **DLMF 1.2.22**: `M(r) = 0` for `r < 0` when `a₁ a₂ ⋯ aₙ = 0`. -/
+theorem dlmf_1_2_22 {n : ℕ} (p a : Fin n → ℝ) (r : ℝ) (hr : r < 0) (h : ∏ i, a i = 0) :
+    weightedMean p a r = 0 := by
+  unfold weightedMean
+  obtain ⟨i, -, hi⟩ := prod_eq_zero_iff.mp h
+  rw [ite_eq_left ⟨hr, i, hi⟩]
+
+/-- **DLMF 1.2.23**: `M(r) → max(a₁, …, aₙ)` as `r → ∞`, for nonnegative `aⱼ` and weights `p`:
+squeezed between `pⱼ₀^(1/r) · max` (the term of the maximum) and `max`. -/
+theorem dlmf_1_2_23 {n : ℕ} [NeZero n] {p : Fin n → ℝ} (hp : IsWeights p) (a : Fin n → ℝ)
+    (ha : ∀ i, 0 ≤ a i) :
+    Tendsto (weightedMean p a) atTop (𝓝 (univ.sup' univ_nonempty a)) := by
+  obtain ⟨hp0, hp1⟩ := hp
+  set m := univ.sup' univ_nonempty a with hm
+  obtain ⟨i₀, -, hi₀⟩ := exists_mem_eq_sup' univ_nonempty a
+  have hle : ∀ i, a i ≤ m := fun i => le_sup' a (mem_univ i)
+  have hm0 : 0 ≤ m := (ha i₀).trans (hle i₀)
+  -- the two bounds for `r > 0`
+  have hupper : ∀ r, 0 < r → weightedMean p a r ≤ m := by
+    intro r hr
+    rw [dlmf_1_2_21 p a r (fun h => lt_asymm hr h.1), one_div]
+    have hsum : ∑ i, p i * a i ^ r ≤ m ^ r := by
+      calc ∑ i, p i * a i ^ r ≤ ∑ i, p i * m ^ r :=
+            sum_le_sum fun i _ => mul_le_mul_of_nonneg_left
+              (Real.rpow_le_rpow (ha i) (hle i) hr.le) (hp0 i).le
+        _ = m ^ r := by rw [← sum_mul, hp1, one_mul]
+    calc (∑ i, p i * a i ^ r) ^ r⁻¹ ≤ (m ^ r) ^ r⁻¹ :=
+          Real.rpow_le_rpow
+            (sum_nonneg fun i _ => mul_nonneg (hp0 i).le (Real.rpow_nonneg (ha i) r))
+            hsum (by positivity)
+      _ = m := Real.rpow_rpow_inv hm0 hr.ne'
+  have hlower : ∀ r, 0 < r → p i₀ ^ r⁻¹ * m ≤ weightedMean p a r := by
+    intro r hr
+    rw [dlmf_1_2_21 p a r (fun h => lt_asymm hr h.1), one_div]
+    have hsum : p i₀ * m ^ r ≤ ∑ i, p i * a i ^ r := by
+      rw [hm, hi₀]
+      exact single_le_sum (fun i _ => mul_nonneg (hp0 i).le (Real.rpow_nonneg (ha i) r))
+        (mem_univ i₀)
+    calc p i₀ ^ r⁻¹ * m = (p i₀ * m ^ r) ^ r⁻¹ := by
+          rw [Real.mul_rpow (hp0 i₀).le (Real.rpow_nonneg hm0 r), Real.rpow_rpow_inv hm0 hr.ne']
+      _ ≤ (∑ i, p i * a i ^ r) ^ r⁻¹ :=
+          Real.rpow_le_rpow (mul_nonneg (hp0 i₀).le (Real.rpow_nonneg hm0 r)) hsum (by positivity)
+  -- the lower bound tends to `m`
+  have hg : Tendsto (fun r : ℝ => p i₀ ^ r⁻¹ * m) atTop (𝓝 m) := by
+    have h1 : Tendsto (fun r : ℝ => p i₀ ^ r⁻¹) atTop (𝓝 (p i₀ ^ (0 : ℝ))) :=
+      (Real.continuousAt_const_rpow (hp0 i₀).ne').tendsto.comp tendsto_inv_atTop_zero
+    rw [Real.rpow_zero] at h1
+    simpa using h1.mul_const m
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le' hg tendsto_const_nhds
+    ((eventually_gt_atTop 0).mono fun r hr => hlower r hr)
+    ((eventually_gt_atTop 0).mono fun r hr => hupper r hr)
+
+/-- The maximum of the reciprocals of positive numbers is the reciprocal of the minimum. -/
+theorem sup'_inv_eq_inv_inf' {n : ℕ} [NeZero n] (a : Fin n → ℝ) (ha : ∀ i, 0 < a i) :
+    univ.sup' univ_nonempty (fun i => (a i)⁻¹) = (univ.inf' univ_nonempty a)⁻¹ := by
+  obtain ⟨j, -, hj⟩ := exists_mem_eq_inf' univ_nonempty a
+  rw [hj]
+  apply le_antisymm
+  · refine sup'_le _ _ fun i _ => ?_
+    have : a j ≤ a i := hj ▸ inf'_le a (mem_univ i)
+    exact inv_anti₀ (ha j) this
+  · exact le_sup' (fun i => (a i)⁻¹) (mem_univ j)
+
+/-- **DLMF 1.2.24**: `M(r) → min(a₁, …, aₙ)` as `r → −∞`, for nonnegative `aⱼ` and weights
+`p`: when some `aⱼ = 0` the mean is `0` for `r < 0` by 1.2.22, and otherwise
+`M(r) = 1 / M'(−r)` for the mean `M'` of the reciprocals, so 1.2.23 applies. -/
+theorem dlmf_1_2_24 {n : ℕ} [NeZero n] {p : Fin n → ℝ} (hp : IsWeights p) (a : Fin n → ℝ)
+    (ha : ∀ i, 0 ≤ a i) :
+    Tendsto (weightedMean p a) atBot (𝓝 (univ.inf' univ_nonempty a)) := by
+  by_cases h0 : ∃ i, a i = 0
+  · obtain ⟨i, hi⟩ := h0
+    have hinf : univ.inf' univ_nonempty a = 0 :=
+      le_antisymm (hi ▸ inf'_le a (mem_univ i)) (le_inf' _ _ fun j _ => ha j)
+    rw [hinf]
+    refine tendsto_const_nhds.congr' ((eventually_lt_atBot 0).mono fun r hr => ?_)
+    unfold weightedMean
+    rw [ite_eq_left ⟨hr, i, hi⟩]
+  push Not at h0
+  have hapos : ∀ i, 0 < a i := fun i => lt_of_le_of_ne (ha i) (Ne.symm (h0 i))
+  -- the mean of the reciprocals
+  set b : Fin n → ℝ := fun i => (a i)⁻¹ with hb
+  have hb0 : ∀ i, 0 ≤ b i := fun i => (inv_pos.mpr (hapos i)).le
+  have hsup := dlmf_1_2_23 hp b hb0
+  rw [show univ.sup' univ_nonempty b = (univ.inf' univ_nonempty a)⁻¹ from
+    sup'_inv_eq_inv_inf' a hapos] at hsup
+  have hinf0 : univ.inf' univ_nonempty a ≠ 0 := by
+    obtain ⟨j, -, hj⟩ := exists_mem_eq_inf' univ_nonempty a
+    rw [hj]; exact (hapos j).ne'
+  have hcomp := (hsup.comp tendsto_neg_atBot_atTop).inv₀ (inv_ne_zero hinf0)
+  rw [inv_inv] at hcomp
+  refine hcomp.congr' ((eventually_lt_atBot 0).mono fun r hr => ?_)
+  -- `M(r) = (M'(−r))⁻¹` for `r < 0`
+  show (weightedMean p b (-r))⁻¹ = weightedMean p a r
+  rw [dlmf_1_2_21 p b (-r) (fun h => lt_asymm hr (by linarith [h.1])),
+    dlmf_1_2_21 p a r (fun h => h0 h.2.choose h.2.choose_spec)]
+  have hterm : ∀ i, p i * b i ^ (-r) = p i * a i ^ r := fun i => by
+    rw [hb]; simp only []
+    rw [Real.inv_rpow (ha i), ← Real.rpow_neg (ha i), neg_neg]
+  simp only [hterm]
+  rw [← Real.rpow_neg (sum_nonneg fun i _ => mul_nonneg (hp.1 i).le (Real.rpow_nonneg (ha i) r))]
+  congr 1
+  rw [one_div, one_div, inv_neg, neg_neg]
+
+/-- **DLMF 1.2.25**, first part: with the uniform weights `pⱼ = 1 / n`, `M(1) = A`. -/
+theorem dlmf_1_2_25_arith {n : ℕ} [NeZero n] (a : Fin n → ℝ) :
+    weightedMean (fun _ => (1 / n : ℝ)) a 1 = arithMean a := by
+  rw [dlmf_1_2_21 _ _ _ (fun h => lt_irrefl _ (h.1.trans zero_lt_one)), div_one, Real.rpow_one]
+  simp only [Real.rpow_one, ← mul_sum, arithMean]
+  ring
+
+/-- **DLMF 1.2.25**, second part: with the uniform weights `pⱼ = 1 / n` and positive `aⱼ`,
+`M(−1) = H`. -/
+theorem dlmf_1_2_25_harm {n : ℕ} [NeZero n] (a : Fin n → ℝ) (ha : ∀ i, 0 < a i) :
+    weightedMean (fun _ => (1 / n : ℝ)) a (-1) = harmMean a := by
+  rw [dlmf_1_2_21 _ _ _ (fun h => (ha h.2.choose).ne' h.2.choose_spec), div_neg, div_one,
+    Real.rpow_neg_one]
+  simp only [Real.rpow_neg_one, ← mul_sum, harmMean]
+
+/-- **DLMF 1.2.26**: with the uniform weights `pⱼ = 1 / n` and positive `aⱼ`, `M(r) → G` as
+`r → 0`: `log M(r) = log S(r) / r` with `S(r) = (1/n) ∑ aⱼ^r`, `S(0) = 1`, and `log S` has
+derivative `(1/n) ∑ log aⱼ = log G` at `0`. -/
+theorem dlmf_1_2_26 {n : ℕ} [NeZero n] (a : Fin n → ℝ) (ha : ∀ i, 0 < a i) :
+    Tendsto (weightedMean (fun _ => (1 / n : ℝ)) a) (𝓝[≠] 0) (𝓝 (geomMean a)) := by
+  have hn : (n : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne n
+  -- `S(r) = (1/n) ∑ exp (r log aⱼ)` and its derivative at `0`
+  set S : ℝ → ℝ := fun r => ∑ i, (1 / n : ℝ) * Real.exp (r * Real.log (a i)) with hS
+  have hS0 : S 0 = 1 := by
+    rw [hS]; simp only [zero_mul, Real.exp_zero, mul_one, sum_const, card_univ, Fintype.card_fin,
+      nsmul_eq_mul]
+    field_simp
+  have hSpos : ∀ r, 0 < S r := fun r =>
+    sum_pos (fun i _ => by positivity) univ_nonempty
+  have hSa : ∀ r, S r = ∑ i, (1 / n : ℝ) * a i ^ r := fun r => by
+    rw [hS]; simp only []
+    refine sum_congr rfl fun i _ => ?_
+    rw [Real.rpow_def_of_pos (ha i), mul_comm r]
+  have hSderiv : HasDerivAt S (∑ i, (1 / n : ℝ) * Real.log (a i)) 0 := by
+    have h : ∀ i ∈ (univ : Finset (Fin n)),
+        HasDerivAt (fun r : ℝ => (1 / n : ℝ) * Real.exp (r * Real.log (a i)))
+          ((1 / n : ℝ) * Real.log (a i)) 0 := by
+      intro i _
+      have := (((hasDerivAt_id (0 : ℝ)).mul_const (Real.log (a i))).exp).const_mul (1 / n : ℝ)
+      simpa using this
+    have := HasDerivAt.sum h
+    convert this using 1
+    funext r
+    rw [hS]
+    simp only [Finset.sum_apply]
+  have hlog : HasDerivAt (fun r => Real.log (S r)) (∑ i, (1 / n : ℝ) * Real.log (a i)) 0 := by
+    have := hSderiv.log (hSpos 0).ne'
+    rwa [hS0, div_one] at this
+  have hslope := hasDerivAt_iff_tendsto_slope_zero.mp hlog
+  simp only [zero_add, hS0, Real.log_one, sub_zero, smul_eq_mul] at hslope
+  -- `G = exp ((1/n) ∑ log aⱼ)`
+  have hG : geomMean a = Real.exp (∑ i, (1 / n : ℝ) * Real.log (a i)) := by
+    unfold geomMean
+    rw [Real.rpow_def_of_pos (prod_pos fun i _ => ha i), Real.log_prod fun i _ => (ha i).ne',
+      sum_mul]
+    congr 1
+    exact sum_congr rfl fun i _ => by ring
+  rw [hG]
+  refine (Real.continuous_exp.continuousAt.tendsto.comp hslope).congr' ?_
+  refine eventually_of_mem self_mem_nhdsWithin fun r hr => ?_
+  have hr : r ≠ 0 := hr
+  show Real.exp (r⁻¹ * Real.log (S r)) = weightedMean (fun _ => (1 / n : ℝ)) a r
+  rw [dlmf_1_2_21 _ _ _ (fun h => (ha h.2.choose).ne' h.2.choose_spec), ← hSa,
+    Real.rpow_def_of_pos (hSpos r), one_div, mul_comm]
+
+/-! ### §1.2(v) Matrices, vectors, scalar products, and norms
+
+An `m × n` matrix with complex entries is `Matrix (Fin m) (Fin n) ℂ`, with `A i j` the entry
+`aᵢⱼ`; `Aᵀ` is the transpose and `Aᴴ` the Hermitian conjugate (Mathlib's `conjTranspose`). -/
+
+open Matrix
+
+/-- **DLMF 1.2.27**: the `m × n` matrix `A = [aᵢⱼ]` with entries `aᵢⱼ ∈ ℂ` (`Matrix.of`). -/
+theorem dlmf_1_2_27 {m n : ℕ} (a : Fin m → Fin n → ℂ) (i : Fin m) (j : Fin n) :
+    (Matrix.of a : Matrix (Fin m) (Fin n) ℂ) i j = a i j :=
+  of_apply a i j
+
+/-- **DLMF 1.2.28**: the transpose `Aᵀ = [aⱼᵢ]`, an `n × m` matrix (`Matrix.transpose_apply`). -/
+theorem dlmf_1_2_28 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (i : Fin n) (j : Fin m) :
+    Aᵀ i j = A j i :=
+  transpose_apply A i j
+
+/-- **DLMF 1.2.29**: the complex conjugate `A̅ = [a̅ᵢⱼ]`, entrywise (`Matrix.map` with the
+conjugation `starRingEnd ℂ`). -/
+theorem dlmf_1_2_29 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (i : Fin m) (j : Fin n) :
+    A.map (starRingEnd ℂ) i j = starRingEnd ℂ (A i j) :=
+  map_apply
+
+/-- **DLMF 1.2.30**: the Hermitian conjugate `Aᴴ = [a̅ⱼᵢ]`, an `n × m` matrix
+(`Matrix.conjTranspose_apply`). -/
+theorem dlmf_1_2_30 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (i : Fin n) (j : Fin m) :
+    Aᴴ i j = starRingEnd ℂ (A j i) :=
+  conjTranspose_apply A j i
+
+/-- **DLMF 1.2.31**: multiplication by a scalar, `αA = Aα = [α aᵢⱼ]` (`Matrix.smul_apply`; the
+right multiplication is the same since `ℂ` is commutative). -/
+theorem dlmf_1_2_31 {m n : ℕ} (α : ℂ) (A : Matrix (Fin m) (Fin n) ℂ) (i : Fin m) (j : Fin n) :
+    (α • A) i j = α * A i j ∧ (α • A) i j = A i j * α :=
+  ⟨Matrix.smul_apply α A i j, by rw [Matrix.smul_apply, smul_eq_mul, mul_comm]⟩
+
+/-- **DLMF 1.2.32**: matrix addition is commutative and entrywise,
+`A + B = B + A = [aᵢⱼ + bᵢⱼ]` (`add_comm`, `Matrix.add_apply`). -/
+theorem dlmf_1_2_32 {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℂ) :
+    A + B = B + A ∧ ∀ i j, (A + B) i j = A i j + B i j :=
+  ⟨add_comm A B, fun i j => Matrix.add_apply A B i j⟩
+
+/-- **DLMF 1.2.33**: matrix addition is associative,
+`A + B + C = (A + B) + C = A + (B + C) = [aᵢⱼ + bᵢⱼ + cᵢⱼ]` (`add_assoc`, `Matrix.add_apply`). -/
+theorem dlmf_1_2_33 {m n : ℕ} (A B C : Matrix (Fin m) (Fin n) ℂ) :
+    A + B + C = A + (B + C) ∧ ∀ i j, (A + B + C) i j = A i j + B i j + C i j :=
+  ⟨add_assoc A B C, fun i j => by rw [Matrix.add_apply, Matrix.add_apply]⟩
+
+/-- **DLMF 1.2.34**: the product `C = AB` of an `m × n` by an `n × p` matrix is the `m × p`
+matrix with `cᵢⱼ = ∑ₖ aᵢₖ bₖⱼ` (the row-times-column rule; `Matrix.mul_apply`). -/
+theorem dlmf_1_2_34 {m n p : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin p) ℂ)
+    (i : Fin m) (j : Fin p) : (A * B) i j = ∑ k, A i k * B k j :=
+  mul_apply
+
+/-- **DLMF 1.2.35**: matrix multiplication is associative, `A(BC) = (AB)C`, whenever the
+products are defined (`Matrix.mul_assoc`). -/
+theorem dlmf_1_2_35 {m n p q : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin p) ℂ)
+    (C : Matrix (Fin p) (Fin q) ℂ) : A * (B * C) = A * B * C :=
+  (Matrix.mul_assoc A B C).symm
+
+/-- **DLMF 1.2.36**: multiplication distributes over addition, `A(B + C) = AB + AC`
+(`Matrix.mul_add`). -/
+theorem dlmf_1_2_36 {m n p : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B C : Matrix (Fin n) (Fin p) ℂ) :
+    A * (B + C) = A * B + A * C :=
+  Matrix.mul_add A B C
+
+/-- **DLMF 1.2.37**: the transpose of a product, `(AB)ᵀ = Bᵀ Aᵀ` (`Matrix.transpose_mul`). -/
+theorem dlmf_1_2_37 {m n p : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin p) ℂ) :
+    (A * B)ᵀ = Bᵀ * Aᵀ :=
+  transpose_mul A B
 
 end Azurite.DLMF
