@@ -16,6 +16,9 @@ import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
 import Mathlib.Analysis.Calculus.UniformLimitsDeriv
 import Mathlib.MeasureTheory.Integral.Prod
 import Mathlib.Topology.TietzeExtension
+import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
+import Mathlib.MeasureTheory.Function.Jacobian
+import Mathlib.MeasureTheory.Group.Measure
 
 /-!
 # DLMF §1.5: Calculus of Two or More Variables
@@ -102,6 +105,16 @@ Physicists' notation: `θ` polar angle, `φ` azimuth (mathematicians usually int
 * Riemann forms of 1.5.29–1.5.31 and 1.5.34: `isPiecewiseContinuousRect_extendByZero_regionX`,
   `…_regionY` (`f*` is piecewise continuous), `dlmf_1_5_31_riemann`, `dlmf_1_5_34_riemann`
   (`∬_R f* dA` exists as a Riemann limit and equals `∬_D f dA` and the repeated integral).
+
+## §1.5(vi) Jacobians and change of variables
+
+* 1.5.38 `jacobian2`, `dlmf_1_5_38`; 1.5.39 `dlmf_1_5_39` (polar: `r`); 1.5.40 `partialX3`,
+  `partialY3`, `partialZ3`, `jacobian3`; 1.5.41 `dlmf_1_5_41` (spherical: `ρ² sin θ`).
+* `ContinuousLinearMap.det_prod_two`, `ContinuousLinearMap.det_prod_three`,
+  `det_fderiv_eq_jacobian2`, `det_fderiv_eq_jacobian3` (the Jacobians are the determinants of the
+  derivatives).
+* 1.5.42 `dlmf_1_5_42`, 1.5.43 `dlmf_1_5_43` (change of variables for maps differentiable on
+  `D*` and one-to-one off a null set; Mathlib's `integral_image_eq_integral_abs_det_fderiv_smul`).
 -/
 
 namespace Azurite.DLMF
@@ -2348,5 +2361,248 @@ theorem dlmf_1_5_34_riemann {f : ℝ → ℝ → ℝ} {a b c d : ℝ} {ψ₁ ψ�
   rwa [dlmf_1_5_29 (isCompact_regionY hψ₁ hψ₂).isClosed.measurableSet hDR] at this
 
 end MultipleIntegrals
+
+/-! ## §1.5(vi) Jacobians and change of variables -/
+
+section Jacobians
+
+open MeasureTheory
+
+/-- The partial derivatives `∂f/∂x`, `∂f/∂y`, `∂f/∂z` of a function `f(x, y, z)`. -/
+noncomputable def partialX3 (f : ℝ → ℝ → ℝ → ℝ) (x y z : ℝ) : ℝ := deriv (fun t => f t y z) x
+
+@[inherit_doc partialX3]
+noncomputable def partialY3 (f : ℝ → ℝ → ℝ → ℝ) (x y z : ℝ) : ℝ := deriv (fun t => f x t z) y
+
+@[inherit_doc partialX3]
+noncomputable def partialZ3 (f : ℝ → ℝ → ℝ → ℝ) (x y z : ℝ) : ℝ := deriv (f x y) z
+
+/-- **DLMF 1.5.38**: the Jacobian `∂(f, g)/∂(x, y)`. -/
+noncomputable def jacobian2 (f g : ℝ → ℝ → ℝ) (x y : ℝ) : ℝ :=
+  Matrix.det !![partialX f x y, partialY f x y; partialX g x y, partialY g x y]
+
+/-- **DLMF 1.5.38**: `∂(f, g)/∂(x, y) = f_x g_y − f_y g_x`. -/
+theorem dlmf_1_5_38 (f g : ℝ → ℝ → ℝ) (x y : ℝ) :
+    jacobian2 f g x y = partialX f x y * partialY g x y - partialY f x y * partialX g x y :=
+  Matrix.det_fin_two_of _ _ _ _
+
+/-- **DLMF 1.5.39**: `∂(x, y)/∂(r, φ) = r` for polar coordinates. -/
+theorem dlmf_1_5_39 (r φ : ℝ) :
+    jacobian2 (fun r φ => r * cos φ) (fun r φ => r * sin φ) r φ = r := by
+  rw [dlmf_1_5_38]
+  have h1 : partialX (fun r φ => r * cos φ) r φ = cos φ := by
+    exact ((hasDerivAt_id r).mul_const (cos φ)).deriv.trans (one_mul _)
+  have h2 : partialY (fun r φ => r * cos φ) r φ = r * -sin φ :=
+    ((hasDerivAt_cos φ).const_mul r).deriv
+  have h3 : partialX (fun r φ => r * sin φ) r φ = sin φ := by
+    exact ((hasDerivAt_id r).mul_const (sin φ)).deriv.trans (one_mul _)
+  have h4 : partialY (fun r φ => r * sin φ) r φ = r * cos φ :=
+    ((hasDerivAt_sin φ).const_mul r).deriv
+  rw [h1, h2, h3, h4]
+  linear_combination r * sin_sq_add_cos_sq φ
+
+/-- **DLMF 1.5.40**: the Jacobian `∂(f, g, h)/∂(x, y, z)`. -/
+noncomputable def jacobian3 (f g h : ℝ → ℝ → ℝ → ℝ) (x y z : ℝ) : ℝ :=
+  Matrix.det !![partialX3 f x y z, partialY3 f x y z, partialZ3 f x y z;
+    partialX3 g x y z, partialY3 g x y z, partialZ3 g x y z;
+    partialX3 h x y z, partialY3 h x y z, partialZ3 h x y z]
+
+/-- **DLMF 1.5.41**: `∂(x, y, z)/∂(ρ, θ, φ) = ρ² sin θ` for spherical coordinates. -/
+theorem dlmf_1_5_41 (ρ θ φ : ℝ) :
+    jacobian3 (fun ρ θ φ => ρ * sin θ * cos φ) (fun ρ θ φ => ρ * sin θ * sin φ)
+      (fun ρ θ _ => ρ * cos θ) ρ θ φ = ρ ^ 2 * sin θ := by
+  have a1 : partialX3 (fun ρ θ φ => ρ * sin θ * cos φ) ρ θ φ = sin θ * cos φ := by
+    exact (((hasDerivAt_id ρ).mul_const (sin θ)).mul_const (cos φ)).deriv.trans (by ring)
+  have a2 : partialY3 (fun ρ θ φ => ρ * sin θ * cos φ) ρ θ φ = ρ * cos θ * cos φ :=
+    (((hasDerivAt_sin θ).const_mul ρ).mul_const (cos φ)).deriv
+  have a3 : partialZ3 (fun ρ θ φ => ρ * sin θ * cos φ) ρ θ φ = ρ * sin θ * -sin φ :=
+    ((hasDerivAt_cos φ).const_mul (ρ * sin θ)).deriv
+  have b1 : partialX3 (fun ρ θ φ => ρ * sin θ * sin φ) ρ θ φ = sin θ * sin φ := by
+    exact (((hasDerivAt_id ρ).mul_const (sin θ)).mul_const (sin φ)).deriv.trans (by ring)
+  have b2 : partialY3 (fun ρ θ φ => ρ * sin θ * sin φ) ρ θ φ = ρ * cos θ * sin φ :=
+    (((hasDerivAt_sin θ).const_mul ρ).mul_const (sin φ)).deriv
+  have b3 : partialZ3 (fun ρ θ φ => ρ * sin θ * sin φ) ρ θ φ = ρ * sin θ * cos φ :=
+    ((hasDerivAt_sin φ).const_mul (ρ * sin θ)).deriv
+  have c1 : partialX3 (fun ρ θ (_ : ℝ) => ρ * cos θ) ρ θ φ = cos θ := by
+    exact ((hasDerivAt_id ρ).mul_const (cos θ)).deriv.trans (one_mul _)
+  have c2 : partialY3 (fun ρ θ (_ : ℝ) => ρ * cos θ) ρ θ φ = ρ * -sin θ :=
+    ((hasDerivAt_cos θ).const_mul ρ).deriv
+  have c3 : partialZ3 (fun ρ θ (_ : ℝ) => ρ * cos θ) ρ θ φ = 0 :=
+    deriv_const φ (ρ * cos θ)
+  rw [jacobian3, Matrix.det_fin_three]
+  simp only [Matrix.of_apply, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_two, Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.head_cons,
+    Matrix.tail_cons, Matrix.head_fin_const]
+  rw [a1, a2, a3, b1, b2, b3, c1, c2, c3]
+  linear_combination (ρ ^ 2 * sin θ * (sin θ ^ 2 + cos θ ^ 2)) * sin_sq_add_cos_sq φ +
+    (ρ ^ 2 * sin θ) * sin_sq_add_cos_sq θ
+
+/-- The determinant of a linear map of the plane: `det L = L₁₁ L₂₂ − L₁₂ L₂₁`. -/
+theorem ContinuousLinearMap.det_prod_two (L : ℝ × ℝ →L[ℝ] ℝ × ℝ) :
+    L.det = (L (1, 0)).1 * (L (0, 1)).2 - (L (0, 1)).1 * (L (1, 0)).2 := by
+  rw [ContinuousLinearMap.det, ← LinearMap.det_toMatrix (Module.Basis.finTwoProd ℝ),
+    Matrix.det_fin_two]
+  simp [LinearMap.toMatrix_apply]
+
+/-- `(Fin 3 → ℝ) ≃ ℝ × ℝ × ℝ`. -/
+noncomputable def finThreeEquivProd : (Fin 3 → ℝ) ≃ₗ[ℝ] ℝ × ℝ × ℝ :=
+  (Fin.consLinearEquiv ℝ (fun _ => ℝ)).symm.trans
+    ((LinearEquiv.refl ℝ ℝ).prodCongr (LinearEquiv.finTwoArrow ℝ ℝ))
+
+/-- The determinant of a linear map of `ℝ³` as the determinant of its matrix. -/
+theorem ContinuousLinearMap.det_prod_three (L : ℝ × ℝ × ℝ →L[ℝ] ℝ × ℝ × ℝ) :
+    L.det = Matrix.det !![(L (1, 0, 0)).1, (L (0, 1, 0)).1, (L (0, 0, 1)).1;
+      (L (1, 0, 0)).2.1, (L (0, 1, 0)).2.1, (L (0, 0, 1)).2.1;
+      (L (1, 0, 0)).2.2, (L (0, 1, 0)).2.2, (L (0, 0, 1)).2.2] := by
+  rw [ContinuousLinearMap.det, ← LinearMap.det_conj (L : ℝ × ℝ × ℝ →ₗ[ℝ] ℝ × ℝ × ℝ)
+    finThreeEquivProd.symm, ← LinearMap.det_toMatrix']
+  congr 1
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [LinearMap.toMatrix'_apply, finThreeEquivProd, Fin.consLinearEquiv, Fin.tail,
+      Fin.cons] <;> rfl
+
+/-- The Jacobian of `(u, v) ↦ (x(u, v), y(u, v))` is the determinant of its derivative. -/
+theorem det_fderiv_eq_jacobian2 {x y : ℝ → ℝ → ℝ} {p : ℝ × ℝ}
+    (hF : DifferentiableAt ℝ (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) p) :
+    (fderiv ℝ (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) p).det = jacobian2 x y p.1 p.2 := by
+  set L := fderiv ℝ (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) p
+  have hL : HasFDerivAt (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) L p := hF.hasFDerivAt
+  have hx : HasFDerivAt (uncurry x) ((ContinuousLinearMap.fst ℝ ℝ ℝ).comp L) (p.1, p.2) := by
+    have := (ContinuousLinearMap.fst ℝ ℝ ℝ).hasFDerivAt.comp p hL
+    exact this
+  have hy : HasFDerivAt (uncurry y) ((ContinuousLinearMap.snd ℝ ℝ ℝ).comp L) (p.1, p.2) := by
+    have := (ContinuousLinearMap.snd ℝ ℝ ℝ).hasFDerivAt.comp p hL
+    exact this
+  rw [dlmf_1_5_38, partialX_of_hasFDerivAt hx, partialY_of_hasFDerivAt hx,
+    partialX_of_hasFDerivAt hy, partialY_of_hasFDerivAt hy, ContinuousLinearMap.det_prod_two]
+  simp
+
+theorem partialX3_of_hasFDerivAt {f : ℝ → ℝ → ℝ → ℝ} {x y z : ℝ} {L : ℝ × ℝ × ℝ →L[ℝ] ℝ}
+    (h : HasFDerivAt (fun q : ℝ × ℝ × ℝ => f q.1 q.2.1 q.2.2) L (x, y, z)) :
+    partialX3 f x y z = L (1, 0, 0) := by
+  have := h.comp_hasDerivAt x ((hasDerivAt_id x).prodMk
+    ((hasDerivAt_const x y).prodMk (hasDerivAt_const x z)))
+  exact this.deriv
+
+theorem partialY3_of_hasFDerivAt {f : ℝ → ℝ → ℝ → ℝ} {x y z : ℝ} {L : ℝ × ℝ × ℝ →L[ℝ] ℝ}
+    (h : HasFDerivAt (fun q : ℝ × ℝ × ℝ => f q.1 q.2.1 q.2.2) L (x, y, z)) :
+    partialY3 f x y z = L (0, 1, 0) := by
+  have := h.comp_hasDerivAt y ((hasDerivAt_const y x).prodMk
+    ((hasDerivAt_id y).prodMk (hasDerivAt_const y z)))
+  exact this.deriv
+
+theorem partialZ3_of_hasFDerivAt {f : ℝ → ℝ → ℝ → ℝ} {x y z : ℝ} {L : ℝ × ℝ × ℝ →L[ℝ] ℝ}
+    (h : HasFDerivAt (fun q : ℝ × ℝ × ℝ => f q.1 q.2.1 q.2.2) L (x, y, z)) :
+    partialZ3 f x y z = L (0, 0, 1) := by
+  have := h.comp_hasDerivAt z ((hasDerivAt_const z x).prodMk
+    ((hasDerivAt_const z y).prodMk (hasDerivAt_id z)))
+  exact this.deriv
+
+/-- The Jacobian of `(u, v, w) ↦ (x, y, z)(u, v, w)` is the determinant of its derivative. -/
+theorem det_fderiv_eq_jacobian3 {x y z : ℝ → ℝ → ℝ → ℝ} {p : ℝ × ℝ × ℝ}
+    (hF : DifferentiableAt ℝ (fun q : ℝ × ℝ × ℝ =>
+      (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) p) :
+    (fderiv ℝ (fun q : ℝ × ℝ × ℝ =>
+      (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) p).det =
+      jacobian3 x y z p.1 p.2.1 p.2.2 := by
+  set L := fderiv ℝ (fun q : ℝ × ℝ × ℝ =>
+    (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) p
+  have hL := hF.hasFDerivAt
+  have hx : HasFDerivAt (fun q : ℝ × ℝ × ℝ => x q.1 q.2.1 q.2.2)
+      ((ContinuousLinearMap.fst ℝ ℝ (ℝ × ℝ)).comp L) (p.1, p.2.1, p.2.2) := by
+    have := (ContinuousLinearMap.fst ℝ ℝ (ℝ × ℝ)).hasFDerivAt.comp p hL
+    exact this
+  have hy : HasFDerivAt (fun q : ℝ × ℝ × ℝ => y q.1 q.2.1 q.2.2)
+      ((ContinuousLinearMap.fst ℝ ℝ ℝ).comp
+        ((ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ)).comp L)) (p.1, p.2.1, p.2.2) := by
+    have := (ContinuousLinearMap.fst ℝ ℝ ℝ).hasFDerivAt.comp p
+      ((ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ)).hasFDerivAt.comp p hL)
+    exact this
+  have hz : HasFDerivAt (fun q : ℝ × ℝ × ℝ => z q.1 q.2.1 q.2.2)
+      ((ContinuousLinearMap.snd ℝ ℝ ℝ).comp
+        ((ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ)).comp L)) (p.1, p.2.1, p.2.2) := by
+    have := (ContinuousLinearMap.snd ℝ ℝ ℝ).hasFDerivAt.comp p
+      ((ContinuousLinearMap.snd ℝ ℝ (ℝ × ℝ)).hasFDerivAt.comp p hL)
+    exact this
+  rw [jacobian3, partialX3_of_hasFDerivAt hx, partialY3_of_hasFDerivAt hx,
+    partialZ3_of_hasFDerivAt hx, partialX3_of_hasFDerivAt hy, partialY3_of_hasFDerivAt hy,
+    partialZ3_of_hasFDerivAt hy, partialX3_of_hasFDerivAt hz, partialY3_of_hasFDerivAt hz,
+    partialZ3_of_hasFDerivAt hz, ContinuousLinearMap.det_prod_three]
+  simp
+
+/-- **DLMF 1.5.42** (change of variables in a double integral): if `D` is the image of `D*` under
+`(u, v) ↦ (x(u, v), y(u, v))`, differentiable on `D*` and one-to-one except on a set `N` of area
+zero, then `∬_D f(x, y) dx dy = ∬_{D*} f(x(u, v), y(u, v)) |∂(x, y)/∂(u, v)| du dv`. -/
+theorem dlmf_1_5_42 {f x y : ℝ → ℝ → ℝ} {Dstar N : Set (ℝ × ℝ)} (hD : MeasurableSet Dstar)
+    (hNm : MeasurableSet N) (hN : volume N = 0)
+    (hdiff : ∀ p ∈ Dstar, DifferentiableAt ℝ (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) p)
+    (hinj : InjOn (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) (Dstar \ N)) :
+    ∫ p in (fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)) '' Dstar, f p.1 p.2 =
+      ∫ q in Dstar, f (x q.1 q.2) (y q.1 q.2) * |jacobian2 x y q.1 q.2| := by
+  have : (volume : Measure (ℝ × ℝ)).IsAddHaarMeasure := by
+    rw [Measure.volume_eq_prod]; infer_instance
+  set F := fun q : ℝ × ℝ => (x q.1 q.2, y q.1 q.2)
+  have hcov := integral_image_eq_integral_abs_det_fderiv_smul volume (hD.diff hNm)
+    (fun p hp => (hdiff p hp.1).hasFDerivAt.hasFDerivWithinAt) hinj (fun p => f p.1 p.2)
+  have himg : volume (F '' (Dstar ∩ N)) = 0 :=
+    addHaar_image_eq_zero_of_differentiableOn_of_addHaar_eq_zero volume
+      (fun p hp => (hdiff p hp.1).differentiableWithinAt)
+      (measure_mono_null inter_subset_right hN)
+  have h1 : F '' Dstar =ᵐ[volume] F '' (Dstar \ N) := by
+    refine ae_eq_set.mpr ⟨measure_mono_null (fun p hp => ?_) himg, ?_⟩
+    · obtain ⟨q, hq, rfl⟩ := hp.1
+      by_cases hqN : q ∈ N
+      · exact ⟨q, ⟨hq, hqN⟩, rfl⟩
+      · exact (hp.2 ⟨q, ⟨hq, hqN⟩, rfl⟩).elim
+    · rw [sdiff_eq_empty.mpr (image_mono sdiff_subset), measure_empty]
+  have h2 : Dstar \ N =ᵐ[volume] Dstar :=
+    sdiff_ae_eq_self.mpr (measure_mono_null inter_subset_right hN)
+  rw [setIntegral_congr_set h1, hcov, setIntegral_congr_set h2]
+  refine setIntegral_congr_fun hD fun q hq => ?_
+  simp only [smul_eq_mul, F]
+  rw [det_fderiv_eq_jacobian2 (hdiff q hq), mul_comm]
+
+/-- **DLMF 1.5.43** (change of variables in a triple integral): likewise for a map
+`(u, v, w) ↦ (x, y, z)(u, v, w)` differentiable on `D*` and one-to-one except on a set of volume
+zero: `∭_D f dx dy dz = ∭_{D*} f(x, y, z) |∂(x, y, z)/∂(u, v, w)| du dv dw`. -/
+theorem dlmf_1_5_43 {f x y z : ℝ → ℝ → ℝ → ℝ} {Dstar N : Set (ℝ × ℝ × ℝ)}
+    (hD : MeasurableSet Dstar) (hNm : MeasurableSet N) (hN : volume N = 0)
+    (hdiff : ∀ p ∈ Dstar, DifferentiableAt ℝ (fun q : ℝ × ℝ × ℝ =>
+      (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) p)
+    (hinj : InjOn (fun q : ℝ × ℝ × ℝ =>
+      (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) (Dstar \ N)) :
+    ∫ p in (fun q : ℝ × ℝ × ℝ =>
+        (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)) '' Dstar,
+        f p.1 p.2.1 p.2.2 =
+      ∫ q in Dstar, f (x q.1 q.2.1 q.2.2) (y q.1 q.2.1 q.2.2) (z q.1 q.2.1 q.2.2) *
+        |jacobian3 x y z q.1 q.2.1 q.2.2| := by
+  have : (volume : Measure (ℝ × ℝ)).IsAddHaarMeasure := by
+    rw [Measure.volume_eq_prod]; infer_instance
+  have : (volume : Measure (ℝ × ℝ × ℝ)).IsAddHaarMeasure := by
+    rw [Measure.volume_eq_prod]; infer_instance
+  set F := fun q : ℝ × ℝ × ℝ => (x q.1 q.2.1 q.2.2, y q.1 q.2.1 q.2.2, z q.1 q.2.1 q.2.2)
+  have hcov := integral_image_eq_integral_abs_det_fderiv_smul volume (hD.diff hNm)
+    (fun p hp => (hdiff p hp.1).hasFDerivAt.hasFDerivWithinAt) hinj
+    (fun p => f p.1 p.2.1 p.2.2)
+  have himg : volume (F '' (Dstar ∩ N)) = 0 :=
+    addHaar_image_eq_zero_of_differentiableOn_of_addHaar_eq_zero volume
+      (fun p hp => (hdiff p hp.1).differentiableWithinAt)
+      (measure_mono_null inter_subset_right hN)
+  have h1 : F '' Dstar =ᵐ[volume] F '' (Dstar \ N) := by
+    refine ae_eq_set.mpr ⟨measure_mono_null (fun p hp => ?_) himg, ?_⟩
+    · obtain ⟨q, hq, rfl⟩ := hp.1
+      by_cases hqN : q ∈ N
+      · exact ⟨q, ⟨hq, hqN⟩, rfl⟩
+      · exact (hp.2 ⟨q, ⟨hq, hqN⟩, rfl⟩).elim
+    · rw [sdiff_eq_empty.mpr (image_mono sdiff_subset), measure_empty]
+  have h2 : Dstar \ N =ᵐ[volume] Dstar :=
+    sdiff_ae_eq_self.mpr (measure_mono_null inter_subset_right hN)
+  rw [setIntegral_congr_set h1, hcov, setIntegral_congr_set h2]
+  refine setIntegral_congr_fun hD fun q hq => ?_
+  simp only [smul_eq_mul, F]
+  rw [det_fderiv_eq_jacobian3 (hdiff q hq), mul_comm]
+
+end Jacobians
 
 end Azurite.DLMF

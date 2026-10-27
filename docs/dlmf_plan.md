@@ -233,4 +233,12 @@ after their subsection.
 | 1.5.36 | `dlmf_1_5_36` (arbitrary intervals `s`, `t`; `f` measurable on `s × t`; one repeated integral absolutely convergent) | `integral_integral_swap`, `integrable_prod_iff`, `integrable_prod_iff'` |
 | 1.5.37 | `regionXYZ`, `dlmf_1_5_37` (triple integral over `a ≤ x ≤ b`, `φ₁ ≤ y ≤ φ₂`, `ψ₁ ≤ z ≤ ψ₂` as a repeated integral, via `dlmf_1_5_31` on each slice) | `integral_prod` |
 | §1.5(v) prose (Lebesgue) | the double/triple integrals over `D` are Lebesgue integrals throughout; `dlmf_1_5_27`/`dlmf_1_5_27_piecewise` identify the Riemann limit with them | — |
-| 1.5.38– | — | not yet (§1.5(vi) Jacobians and change of variables onward) |
+| 1.5.38 | `jacobian2` (`det` of the matrix of partials), `dlmf_1_5_38` (`f_x g_y − f_y g_x`) | `Matrix.det_fin_two_of` |
+| 1.5.39 | `dlmf_1_5_39` (`∂(x, y)/∂(r, φ) = r`) | — |
+| 1.5.40 | `partialX3`, `partialY3`, `partialZ3`, `jacobian3` | `Matrix.det_fin_three` |
+| 1.5.41 | `dlmf_1_5_41` (`∂(x, y, z)/∂(ρ, θ, φ) = ρ² sin θ`) | — |
+| §1.5(vi) bridge | `ContinuousLinearMap.det_prod_two`, `ContinuousLinearMap.det_prod_three` (`finThreeEquivProd`), `det_fderiv_eq_jacobian2`, `det_fderiv_eq_jacobian3`, `partialX3_of_hasFDerivAt` (and `Y3`, `Z3`) | `LinearMap.det_toMatrix`, `Module.Basis.finTwoProd`, `LinearMap.det_conj`, `LinearMap.det_toMatrix'`, `Fin.consLinearEquiv` |
+| 1.5.42 | `dlmf_1_5_42` (`D = F(D*)`, `F` differentiable on `D*`, one-to-one off a null set `N`) | `integral_image_eq_integral_abs_det_fderiv_smul`, `addHaar_image_eq_zero_of_differentiableOn_of_addHaar_eq_zero` |
+| 1.5.43 | `dlmf_1_5_43` (triple integrals, likewise) | same |
+
+§1.5 is complete.
