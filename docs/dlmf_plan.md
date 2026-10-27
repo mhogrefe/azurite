@@ -191,5 +191,24 @@ after their subsection.
 | 1.4.38 | `convexOn_iff_dlmf` (any interval), `dlmf_1_4_38` (`(a, b)`), `dlmf_1_4_38_Icc` (closed intervals); Figure 1.4.2 (`g(t) ≤ l(t)`) is the same inequality | `ConvexOn` |
 | §1.4(viii) prose | `dlmf_1_4_viii_deriv2` (twice differentiable: convex iff `f'' ≥ 0` on `(a, b)`), `convexOn_iff_tangent_le`, `dlmf_1_4_viii_tangent` (convex iff the curve does not lie below its tangent; differentiability suffices) | `convexOn_of_deriv2_nonneg'`, `ConvexOn.monotoneOn_deriv`, `MonotoneOn.derivWithin_nonneg`, `ConvexOn.deriv_le_slope`, `ConvexOn.slope_le_deriv` |
 
-§1.4 COMPLETE.
+§1.4 is complete.
 
+### §1.5 Calculus of Two or More Variables (`Azurite/DLMF/Chapter1/Section5.lean`)
+
+`f(x, y)` is a curried `f : ℝ → ℝ → ℝ`; plane continuity/differentiability is that of
+`Function.uncurry f` (the max metric on `ℝ × ℝ` matches `|α|, |β| < δ`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.5.1 | `dlmf_1_5_1` (continuity at `(a, b)` as a limit) | `ContinuousAt` |
+| 1.5.2 | `dlmf_1_5_2` (`ε`–`δ` with `|α|, |β| < δ`) | `Metric.continuousAt_iff`, `Prod.dist_eq` |
+| §1.5(i) prose | `dlmf_1_5_i_continuousOn` (continuous on an open `D` iff at all its points), `IsPiecewiseContinuous₂` (piecewise continuous in each variable) | `IsOpen.continuousOn_iff` |
+| 1.5.3–1.5.4 | `partialX`, `partialY`, `dlmf_1_5_3`, `dlmf_1_5_4` (difference-quotient limits ↔ `HasDerivAt`), `partialX_eq_of_tendsto`, `partialY_eq_of_tendsto` | `hasDerivAt_iff_tendsto_slope_zero` |
+| 1.5.5 | `partialXY`, `partialYX`, `partialXX`, `partialYY`, `dlmf_1_5_5` | — |
+| §1.5(i) prose | `IsContinuouslyDifferentiable` (`f, f_x, f_y` exist and are continuous), `isContinuouslyDifferentiable_iff` (iff `C¹`), `IsContinuouslyDifferentiable.hasStrictFDerivAt`, `fderiv_uncurry_eq`, `IsTwiceContinuouslyDifferentiable`, `isTwiceContinuouslyDifferentiable_iff` (iff `C²`); helpers `hasDerivAt_partialX/Y`, `partialX/Y_of_hasFDerivAt`, `clm_apply_pair`, `fderiv_uncurry_apply` | `hasStrictFDerivAt_uncurry_coprod`, `contDiff_one_iff_fderiv`, `contDiff_succ_iff_fderiv` |
+| 1.5.6 | `dlmf_1_5_6` (`∂²f/∂x∂y = ∂²f/∂y∂x` for twice-continuously differentiable `f`) | `ContDiffAt.isSymmSndFDerivAt`, `HasFDerivAt.clm_apply` |
+| 1.5.7 | `dlmf_1_5_7` (`f` differentiable at `(x(t), y(t))`) | `HasFDerivAt.comp_hasDerivAt` |
+| 1.5.8 | `dlmf_1_5_8` | — |
+| 1.5.9 | `dlmf_1_5_9` (three intermediate variables; `clm_apply_triple`) | `HasFDerivAt.comp_hasDerivAt` |
+| §1.5(i) prose (implicit function theorem) | `dlmf_1_5_i_implicit` (`F` continuously differentiable, `F(a, b) = 0`, `F_y(a, b) ≠ 0`: `g` with `g(a) = b`, `F(x, g x) = 0` near `a`, zeros of `F` near `(a, b)` = graph of `g`, `g` `C¹` near `a`, `g' = −F_x/F_y` near `a`) | `ContDiffAt.implicitFunction`, `ContDiffAt.contDiffAt_implicitFunction`, `ContDiffAt.eventually` |
+| 1.5.10– | — | not yet (§1.5(ii) coordinate systems onward) |
