@@ -34,6 +34,9 @@ import Mathlib.RingTheory.RootsOfUnity.Complex
 import Mathlib.Topology.Algebra.InfiniteSum.Constructions
 import Mathlib.Topology.Algebra.InfiniteSum.Order
 import Mathlib.Topology.Algebra.InfiniteSum.Real
+import Mathlib.Analysis.InnerProductSpace.JointEigenspace
+import Mathlib.Analysis.Matrix.Spectrum
+import Azurite.DLMF.Chapter1.Section2
 
 /-!
 # DLMF §1.3: Determinants, Linear Operators, and Spectral Expansions
@@ -88,6 +91,22 @@ ledger `docs/dlmf_plan.md` maps every equation to its theorem.
   principal-minor expansion `det (1 + B) = ∑_S det B_S` (`det_one_add_eq_sum_compl`), the bound
   `|det M| ≤ ∏ⱼ ∑ᵢ |Mᵢⱼ|` (`norm_det_le_prod_sum`) and the summability of `∏_{j ∈ S} rⱼ` over
   the finite subsets of `ℤ` (`summable_prod_finset`).
+
+## §1.3(iv) Matrices as linear operators
+
+* `dlmf_1_3_iv_linear`: `A(αa + βb) = αAa + βAb`.
+* `dlmf_1_3_iv_adjoint`, `dlmf_1_3_iv_adjoint_unique`, `dlmf_1_3_iv_adjoint_real`: the adjoint
+  `A* = Aᴴ` (`⟨Aa, b⟩ = ⟨a, Aᴴb⟩`, and it is the only such matrix), `A* = Aᵀ` for real `A`.
+* `dlmf_1_3_iv_selfAdjoint`, `dlmf_1_3_iv_selfAdjoint_real`: Hermitian and real symmetric
+  matrices are self-adjoint; `dlmf_1_3_iv_eigenvalue_real`, `dlmf_1_3_iv_spectrum`: their
+  eigenvalues are real and form the spectrum.
+* `dlmf_1_3_iv_spectral`, `dlmf_1_3_iv_spectral_real`: orthonormal eigenvector columns, `S`
+  unitary (orthogonal), `S⁻¹ = Sᴴ` (`Sᵀ`), `Sᴴ A S = [λᵢ δᵢⱼ]`
+  (`exists_unitary_diagonalization`, from `Matrix.IsHermitian.eigenvectorUnitary`).
+* `dlmf_1_3_iv_simultaneous`: commuting self-adjoint matrices have an orthonormal basis of
+  simultaneous eigenvectors (`LinearMap.IsSymmetric.directSum_isInternal_of_commute`).
+* 1.3.20 `dlmf_1_3_20`: `u = ∑ ⟨u, aᵢ⟩ aᵢ`; 1.3.21 `dlmf_1_3_21`: Parseval's equality
+  `‖u‖² = ∑ |⟨u, aᵢ⟩|²` (`orthonormalBasisOf`).
 -/
 
 namespace Azurite.DLMF
@@ -1139,5 +1158,223 @@ theorem dlmf_1_3_iii_hill_converges {a : ℤ → ℤ → ℂ} (ha : IsHillType a
   have := hm.hasSum.comp tendsto_powerset_Icc
   refine this.congr fun n => ?_
   exact (infDet_eq_sum_hillMinor a n).symm
+
+
+/-! ### §1.3(iv) Matrices as linear operators
+
+`Eₙ = ℂⁿ` with the DLMF scalar product `⟨u, v⟩ = ∑ uᵢ v̅ᵢ` (`scalarProduct`, §1.2) and the `ℓ²`
+norm (`lpNorm 2`). -/
+
+/-- **DLMF §1.3(iv)**: a square matrix is a linear operator on `Eₙ`,
+`A(αa + βb) = αAa + βAb` (`Matrix.mulVec_add`, `Matrix.mulVec_smul`). -/
+theorem dlmf_1_3_iv_linear {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (α β : ℂ) (a b : Fin n → ℂ) :
+    A *ᵥ (α • a + β • b) = α • (A *ᵥ a) + β • (A *ᵥ b) := by
+  rw [mulVec_add, mulVec_smul, mulVec_smul]
+
+/-- **DLMF §1.3(iv)**: the adjoint of a complex matrix is its Hermitian conjugate,
+`⟨Aa, b⟩ = ⟨a, Aᴴb⟩`. -/
+theorem dlmf_1_3_iv_adjoint {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (a b : Fin n → ℂ) :
+    scalarProduct (A *ᵥ a) b = scalarProduct a (Aᴴ *ᵥ b) := by
+  simp only [scalarProduct, mulVec, dotProduct, conjTranspose_apply, map_sum, map_mul,
+    Complex.star_def, Complex.conj_conj, sum_mul, mul_sum]
+  rw [sum_comm]
+  exact sum_congr rfl fun i _ => sum_congr rfl fun j _ => by ring
+
+theorem scalarProduct_single {n : ℕ} (x : Fin n → ℂ) (i : Fin n) :
+    scalarProduct x (Pi.single i 1) = x i := by
+  simp [scalarProduct, Pi.single_apply]
+
+theorem single_scalarProduct {n : ℕ} (x : Fin n → ℂ) (i : Fin n) :
+    scalarProduct (Pi.single i 1) x = starRingEnd ℂ (x i) := by
+  simp [scalarProduct, Pi.single_apply]
+
+/-- **DLMF §1.3(iv)**: the adjoint is unique: if `⟨Aa, b⟩ = ⟨a, Bb⟩` for all `a, b`, then
+`B = Aᴴ`. -/
+theorem dlmf_1_3_iv_adjoint_unique {n : ℕ} {A B : Matrix (Fin n) (Fin n) ℂ}
+    (h : ∀ a b, scalarProduct (A *ᵥ a) b = scalarProduct a (B *ᵥ b)) : B = Aᴴ := by
+  ext j i
+  have := h (Pi.single j 1) (Pi.single i 1)
+  rw [scalarProduct_single, single_scalarProduct, mulVec_single_one, mulVec_single_one] at this
+  change A i j = starRingEnd ℂ (B j i) at this
+  rw [conjTranspose_apply, this, Complex.star_def, Complex.conj_conj]
+
+/-- **DLMF §1.3(iv)**: in the real case the adjoint is the transpose,
+`(Aa) · b = a · (Aᵀb)` (`Matrix.dotProduct_mulVec`, `Matrix.vecMul_transpose`). -/
+theorem dlmf_1_3_iv_adjoint_real {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (a b : Fin n → ℝ) :
+    (A *ᵥ a) ⬝ᵥ b = a ⬝ᵥ (Aᵀ *ᵥ b) := by
+  rw [dotProduct_mulVec, ← vecMul_transpose]
+
+/-- **DLMF §1.3(iv)**: Hermitian matrices are self-adjoint, `⟨Aa, b⟩ = ⟨a, Ab⟩`. -/
+theorem dlmf_1_3_iv_selfAdjoint {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian)
+    (a b : Fin n → ℂ) : scalarProduct (A *ᵥ a) b = scalarProduct a (A *ᵥ b) := by
+  rw [dlmf_1_3_iv_adjoint, hA.eq]
+
+/-- **DLMF §1.3(iv)**: real symmetric matrices are self-adjoint, `(Aa) · b = a · (Ab)`. -/
+theorem dlmf_1_3_iv_selfAdjoint_real {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
+    (a b : Fin n → ℝ) : (A *ᵥ a) ⬝ᵥ b = a ⬝ᵥ (A *ᵥ b) := by
+  rw [dlmf_1_3_iv_adjoint_real, hA.eq]
+
+/-- **DLMF §1.3(iv)**: the eigenvalues of a self-adjoint matrix are real. -/
+theorem dlmf_1_3_iv_eigenvalue_real {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian)
+    {μ : ℂ} {a : Fin n → ℂ} (ha : a ≠ 0) (h : A *ᵥ a = μ • a) : ∃ r : ℝ, μ = r := by
+  have h1 := dlmf_1_3_iv_selfAdjoint hA a a
+  rw [h] at h1
+  have e1 : scalarProduct (μ • a) a = μ * scalarProduct a a := by
+    simpa using dlmf_1_2_42 μ 1 a a
+  have e2 : scalarProduct a (μ • a) = starRingEnd ℂ μ * scalarProduct a a := by
+    simpa using dlmf_1_2_42 1 μ a a
+  rw [e1, e2] at h1
+  have hne : scalarProduct a a ≠ 0 := fun h0 => ha ((dlmf_1_2_43 a).mp h0)
+  exact Complex.conj_eq_iff_real.mp (mul_right_cancel₀ hne h1).symm
+
+/-- **DLMF §1.3(iv)**: the spectrum of a Hermitian matrix consists of its `n` real eigenvalues
+`λ₁, …, λₙ` (`Matrix.IsHermitian.spectrum_eq_image_range`). -/
+theorem dlmf_1_3_iv_spectrum {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) :
+    spectrum ℂ A = Set.range fun i => (hA.eigenvalues i : ℂ) := by
+  rw [hA.spectrum_eq_image_range, ← Set.range_comp]
+  rfl
+
+/-- Unitary diagonalization of a Hermitian matrix over `ℝ` or `ℂ`: `Sᴴ S = I`, the columns of `S`
+are eigenvectors, and `Sᴴ A S = diag(λ)` with real `λ`
+(`Matrix.IsHermitian.conjStarAlgAut_star_eigenvectorUnitary`). -/
+theorem exists_unitary_diagonalization {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
+    {A : Matrix (Fin n) (Fin n) 𝕜} (hA : A.IsHermitian) :
+    ∃ (S : Matrix (Fin n) (Fin n) 𝕜) (ev : Fin n → ℝ), Sᴴ * S = 1 ∧
+      (∀ j, A *ᵥ S.col j = (ev j : 𝕜) • S.col j) ∧
+      Sᴴ * A * S = diagonal fun i => (ev i : 𝕜) := by
+  refine ⟨hA.eigenvectorUnitary, hA.eigenvalues, ?_, fun j => ?_, ?_⟩
+  · exact Matrix.mem_unitaryGroup_iff'.mp hA.eigenvectorUnitary.2
+  · rw [IsHermitian.eigenvectorUnitary_col_eq, hA.mulVec_eigenvectorBasis,
+      RCLike.real_smul_eq_coe_smul (K := 𝕜)]
+  · have := hA.conjStarAlgAut_star_eigenvectorUnitary
+    rw [Unitary.conjStarAlgAut_star_apply] at this
+    exact this
+
+/-- `(Sᴴ S)ⱼᵢ = ⟨colᵢ S, colⱼ S⟩`: `Sᴴ S = I` says the columns are orthonormal. -/
+theorem scalarProduct_col {n : ℕ} (S : Matrix (Fin n) (Fin n) ℂ) (i j : Fin n) :
+    scalarProduct (S.col i) (S.col j) = (Sᴴ * S) j i := by
+  simp only [scalarProduct, Matrix.mul_apply, conjTranspose_apply, Complex.star_def]
+  exact sum_congr rfl fun k _ => mul_comm _ _
+
+/-- **DLMF §1.3(iv)**, the spectral theorem for Hermitian matrices: the eigenvectors
+`a₁, …, aₙ` can be chosen to form a complete orthonormal basis of `Eₙ`; with them as the columns of
+`S`, `S` is unitary, `S⁻¹ = Sᴴ`, and `Sᴴ A S = [λᵢ δᵢⱼ]` with real `λᵢ`. -/
+theorem dlmf_1_3_iv_spectral {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) :
+    ∃ (S : Matrix (Fin n) (Fin n) ℂ) (ev : Fin n → ℝ),
+      (∀ i j, scalarProduct (S.col i) (S.col j) = if i = j then 1 else 0) ∧
+      (∀ j, A *ᵥ S.col j = (ev j : ℂ) • S.col j) ∧
+      S ∈ unitaryGroup (Fin n) ℂ ∧ S⁻¹ = Sᴴ ∧
+      Sᴴ * A * S = diagonal fun i => (ev i : ℂ) := by
+  obtain ⟨S, ev, hS, hcol, hdiag⟩ := exists_unitary_diagonalization hA
+  refine ⟨S, ev, fun i j => ?_, hcol, mem_unitaryGroup_iff'.mpr hS, inv_eq_left_inv hS, hdiag⟩
+  rw [scalarProduct_col, hS, one_apply]
+  exact if_congr eq_comm rfl rfl
+
+/-- **DLMF §1.3(iv)**, the real symmetric case: `S` is an orthogonal transformation,
+`Sᵀ S = I`, `S⁻¹ = Sᵀ`, and `Sᵀ A S = diag(λ)`. -/
+theorem dlmf_1_3_iv_spectral_real {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
+    ∃ (S : Matrix (Fin n) (Fin n) ℝ) (ev : Fin n → ℝ),
+      (∀ j, A *ᵥ S.col j = ev j • S.col j) ∧
+      S ∈ orthogonalGroup (Fin n) ℝ ∧ S⁻¹ = Sᵀ ∧ Sᵀ * A * S = diagonal ev := by
+  have hH : A.IsHermitian := by
+    rw [IsHermitian, conjTranspose_eq_transpose_of_trivial]
+    exact hA
+  obtain ⟨S, ev, hS, hcol, hdiag⟩ := exists_unitary_diagonalization hH
+  rw [conjTranspose_eq_transpose_of_trivial] at hS hdiag
+  refine ⟨S, ev, fun j => by simpa using hcol j, ?_, inv_eq_left_inv hS, by simpa using hdiag⟩
+  rw [mem_orthogonalGroup_iff']
+  exact hS
+
+/-- An orthonormal basis of `EuclideanSpace ℂ (Fin n)` as vectors orthonormal for the DLMF scalar
+product. -/
+theorem scalarProduct_orthonormalBasis {n : ℕ}
+    (b : OrthonormalBasis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) (i j : Fin n) :
+    scalarProduct (b i).ofLp (b j).ofLp = if i = j then 1 else 0 := by
+  rw [scalarProduct_eq_inner]
+  change inner ℂ (b j) (b i) = _
+  rw [orthonormal_iff_ite.mp b.orthonormal j i]
+  exact if_congr eq_comm rfl rfl
+
+theorem toEuclideanLin_apply_eq {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ}
+    {v : EuclideanSpace ℂ (Fin n)} (h : v ∈ Module.End.eigenspace (toEuclideanLin A) μ) :
+    A *ᵥ v.ofLp = μ • v.ofLp := by
+  rw [Module.End.mem_eigenspace_iff, toLpLin_apply] at h
+  exact congrArg WithLp.ofLp h
+
+/-- An internal orthogonal direct sum with finitely many summands has an orthonormal basis of
+vectors each lying in one summand (`DirectSum.IsInternal.subordinateOrthonormalBasis`). -/
+theorem exists_orthonormalBasis_subordinate {n : ℕ} {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {V : ι → Submodule ℂ (EuclideanSpace ℂ (Fin n))} (hV : DirectSum.IsInternal V)
+    (hV' : OrthogonalFamily ℂ (fun i => V i) fun i => (V i).subtypeₗᵢ) :
+    ∃ b : OrthonormalBasis (Fin n) ℂ (EuclideanSpace ℂ (Fin n)), ∀ a, ∃ i, b a ∈ V i :=
+  ⟨hV.subordinateOrthonormalBasis finrank_euclideanSpace_fin hV',
+    fun a => ⟨_, hV.subordinateOrthonormalBasis_subordinate finrank_euclideanSpace_fin a hV'⟩⟩
+
+/-- **DLMF §1.3(iv)**: if self-adjoint `A` and `B` commute, `[A, B] = 0`, then simultaneous
+eigenvectors of `A` and `B` always exist; indeed they can be chosen to form an orthonormal basis of
+`Eₙ` (`LinearMap.IsSymmetric.directSum_isInternal_of_commute`,
+`DirectSum.IsInternal.subordinateOrthonormalBasis`). -/
+theorem dlmf_1_3_iv_simultaneous {n : ℕ} {A B : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian)
+    (hB : B.IsHermitian) (hAB : ⁅A, B⁆ = 0) :
+    ∃ a : Fin n → Fin n → ℂ,
+      (∀ i j, scalarProduct (a i) (a j) = if i = j then 1 else 0) ∧
+      ∀ i, (∃ μ : ℂ, A *ᵥ a i = μ • a i) ∧ ∃ ν : ℂ, B *ᵥ a i = ν • a i := by
+  have hA' := isSymmetric_toEuclideanLin_iff.mpr hA
+  have hB' := isSymmetric_toEuclideanLin_iff.mpr hB
+  have hcomm : Commute (toEuclideanLin A) (toEuclideanLin B) := by
+    rw [Ring.lie_def, sub_eq_zero] at hAB
+    change toEuclideanLin A ∘ₗ toEuclideanLin B = toEuclideanLin B ∘ₗ toEuclideanLin A
+    rw [← toLpLin_mul_same, ← toLpLin_mul_same, hAB]
+  classical
+  set V : ℂ × ℂ → Submodule ℂ (EuclideanSpace ℂ (Fin n)) := fun i =>
+    Module.End.eigenspace (toEuclideanLin A) i.2 ⊓ Module.End.eigenspace (toEuclideanLin B) i.1
+    with hVdef
+  have hV : DirectSum.IsInternal V :=
+    LinearMap.IsSymmetric.directSum_isInternal_of_commute hA' hB' hcomm
+  have hV' := LinearMap.IsSymmetric.orthogonalFamily_eigenspace_inf_eigenspace hA' hB'
+  -- only finitely many joint eigenspaces are nonzero
+  let _ : Fintype {i // V i ≠ ⊥} := hV.submodule_iSupIndep.fintypeNeBotOfFiniteDimensional
+  obtain ⟨b, hb⟩ := exists_orthonormalBasis_subordinate (DirectSum.isInternal_ne_bot_iff.mpr hV)
+    (hV'.comp (f := fun i : {i // V i ≠ ⊥} => i.1) Subtype.val_injective)
+  refine ⟨fun i => (b i).ofLp, scalarProduct_orthonormalBasis b, fun i => ?_⟩
+  obtain ⟨k, hk⟩ := hb i
+  exact ⟨⟨_, toEuclideanLin_apply_eq A hk.1⟩, ⟨_, toEuclideanLin_apply_eq B hk.2⟩⟩
+
+/-- Vectors orthonormal for the DLMF scalar product, as an orthonormal basis of
+`EuclideanSpace ℂ (Fin n)` (`n` orthonormal vectors span the `n`-dimensional space). -/
+noncomputable def orthonormalBasisOf {n : ℕ} (a : Fin n → Fin n → ℂ)
+    (ha : ∀ i j, scalarProduct (a i) (a j) = if i = j then 1 else 0) :
+    OrthonormalBasis (Fin n) ℂ (EuclideanSpace ℂ (Fin n)) :=
+  have hon : Orthonormal ℂ fun i => toE (a i) := orthonormal_iff_ite.mpr fun i j => by
+    rw [← scalarProduct_eq_inner, ha j i]
+    exact if_congr eq_comm rfl rfl
+  OrthonormalBasis.mk hon (hon.linearIndependent.span_eq_top_of_card_eq_finrank'
+    (by rw [Fintype.card_fin, finrank_euclideanSpace_fin])).ge
+
+theorem orthonormalBasisOf_apply {n : ℕ} (a : Fin n → Fin n → ℂ)
+    (ha : ∀ i j, scalarProduct (a i) (a j) = if i = j then 1 else 0) (i : Fin n) :
+    orthonormalBasisOf a ha i = toE (a i) :=
+  by unfold orthonormalBasisOf; rw [OrthonormalBasis.coe_mk]
+
+/-- **DLMF 1.3.20**: for an orthonormal basis `{aᵢ}` of `Eₙ`, every vector expands as
+`u = ∑ cᵢ aᵢ` with `cᵢ = ⟨u, aᵢ⟩` (`OrthonormalBasis.sum_repr'`). -/
+theorem dlmf_1_3_20 {n : ℕ} (a : Fin n → Fin n → ℂ)
+    (ha : ∀ i j, scalarProduct (a i) (a j) = if i = j then 1 else 0) (u : Fin n → ℂ) :
+    u = ∑ i, scalarProduct u (a i) • a i := by
+  have h := (orthonormalBasisOf a ha).sum_repr' (toE u)
+  simp only [orthonormalBasisOf_apply, ← scalarProduct_eq_inner] at h
+  have := congrArg WithLp.ofLp h
+  rw [WithLp.ofLp_sum] at this
+  simpa [toE] using this.symm
+
+/-- **DLMF 1.3.21**, Parseval's equality: `‖u‖² = ∑ |cᵢ|²` for the `ℓ²` norm
+(`OrthonormalBasis.repr` is an isometry, `EuclideanSpace.norm_sq_eq`). -/
+theorem dlmf_1_3_21 {n : ℕ} (a : Fin n → Fin n → ℂ)
+    (ha : ∀ i j, scalarProduct (a i) (a j) = if i = j then 1 else 0) (u : Fin n → ℂ) :
+    lpNorm 2 u ^ 2 = ∑ i, ‖scalarProduct u (a i)‖ ^ 2 := by
+  set b := orthonormalBasisOf a ha
+  rw [lpNorm_two_eq_norm, ← b.repr.norm_map, EuclideanSpace.norm_sq_eq]
+  refine sum_congr rfl fun i _ => ?_
+  rw [b.repr_apply_apply, orthonormalBasisOf_apply, ← scalarProduct_eq_inner]
 
 end Azurite.DLMF
