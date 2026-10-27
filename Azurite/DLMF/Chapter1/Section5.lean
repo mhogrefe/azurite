@@ -38,6 +38,21 @@ metric, which is exactly the `|α|, |β| < δ` of 1.5.2).
 * Implicit function theorem: `dlmf_1_5_i_implicit` (`F(a, b) = 0`, `F_y(a, b) ≠ 0`: a function
   `g`, `C¹` near `a`, with `g(a) = b`, `F(x, g(x)) = 0`, the solutions of `F = 0` near `(a, b)`
   are the graph of `g`, and `g'(x) = −F_x/F_y`).
+
+## §1.5(ii) Coordinate systems
+
+Physicists' notation: `θ` polar angle, `φ` azimuth (mathematicians usually interchange them).
+
+* Polar: 1.5.10 `dlmf_1_5_10` (every point is `(r cos φ, r sin φ)`, `r ≥ 0`, `0 ≤ φ < 2π`),
+  `polarPullback`, `hasDerivAt_polar_r`, `hasDerivAt_polar_φ`, `hasDerivAt_polar_rr`,
+  `hasDerivAt_polar_φφ`; 1.5.11 `dlmf_1_5_11`, 1.5.12 `dlmf_1_5_12` (`r ≠ 0`); 1.5.13
+  `dlmf_1_5_13` (Laplacian `f_rr + f_r/r + f_φφ/r²`).
+* Cylindrical: `laplacian3`; 1.5.14 `dlmf_1_5_14`, `dlmf_1_5_14_partial` (1.5.11–1.5.12 still
+  apply); 1.5.15 `dlmf_1_5_15`.
+* Spherical: 1.5.16 `dlmf_1_5_16` (`ρ ≥ 0`, `0 ≤ θ ≤ π`, `0 ≤ φ < 2π`;
+  `exists_polar_of_nonneg`), `sphericalPullback`; 1.5.17 `dlmf_1_5_17` (for `C²` `f`, `ρ ≠ 0`,
+  `sin θ ≠ 0`; the cylindrical Laplacian composed with polar coordinates in the `(z, r)`
+  half-plane).
 -/
 
 namespace Azurite.DLMF
@@ -407,5 +422,260 @@ theorem dlmf_1_5_i_implicit {F : ℝ → ℝ → ℝ} (hF : IsContinuouslyDiffer
       simp only [id] at hsum
       linarith
     rwa [hg'] at hgd
+
+/-! ## §1.5(ii) Coordinate systems
+
+The DLMF follows the physicists' notation: `θ` is the polar (colatitude) angle and `φ` the azimuth;
+mathematicians usually interchange the two symbols. -/
+
+open Real
+
+/-- Upper-half-plane polar coordinates: `(x, y)` with `y ≥ 0` is `(r cos θ, r sin θ)` with `r ≥ 0`
+and `0 ≤ θ ≤ π`. -/
+theorem exists_polar_of_nonneg {x y : ℝ} (hy : 0 ≤ y) :
+    ∃ r θ : ℝ, 0 ≤ r ∧ θ ∈ Icc 0 π ∧ x = r * cos θ ∧ y = r * sin θ := by
+  set w : ℂ := ⟨x, y⟩
+  refine ⟨‖w‖, Complex.arg w, norm_nonneg _, ⟨Complex.arg_nonneg_iff.mpr hy,
+    Complex.arg_le_pi w⟩, ?_, ?_⟩
+  · rw [Complex.norm_mul_cos_arg]
+  · rw [Complex.norm_mul_sin_arg]
+
+/-- **DLMF 1.5.10** (polar coordinates): every `(x, y)` is `(r cos φ, r sin φ)` with `0 ≤ r < ∞`,
+`0 ≤ φ < 2π`. -/
+theorem dlmf_1_5_10 (x y : ℝ) :
+    ∃ r φ : ℝ, 0 ≤ r ∧ φ ∈ Ico 0 (2 * π) ∧ x = r * cos φ ∧ y = r * sin φ := by
+  set w : ℂ := ⟨x, y⟩
+  have hc : ‖w‖ * cos (Complex.arg w) = x := Complex.norm_mul_cos_arg w
+  have hs : ‖w‖ * sin (Complex.arg w) = y := Complex.norm_mul_sin_arg w
+  have h1 := Complex.neg_pi_lt_arg w
+  have h2 := Complex.arg_le_pi w
+  rcases le_or_gt 0 (Complex.arg w) with h | h
+  · refine ⟨‖w‖, Complex.arg w, norm_nonneg _, ⟨h, by linarith [pi_pos]⟩, hc.symm, hs.symm⟩
+  · refine ⟨‖w‖, Complex.arg w + 2 * π, norm_nonneg _, ⟨by linarith, by linarith⟩, ?_, ?_⟩
+    · rw [cos_add_two_pi, hc]
+    · rw [sin_add_two_pi, hs]
+
+/-- A function `f(x, y)` expressed in polar coordinates: `(r, φ) ↦ f(r cos φ, r sin φ)`. -/
+noncomputable def polarPullback (f : ℝ → ℝ → ℝ) : ℝ → ℝ → ℝ :=
+  fun r φ => f (r * cos φ) (r * sin φ)
+
+/-- `∂/∂r f(r cos φ, r sin φ) = f_x cos φ + f_y sin φ`. -/
+theorem hasDerivAt_polar_r {f : ℝ → ℝ → ℝ} {r φ : ℝ}
+    (hf : DifferentiableAt ℝ (uncurry f) (r * cos φ, r * sin φ)) :
+    HasDerivAt (fun s => f (s * cos φ) (s * sin φ))
+      (partialX f (r * cos φ) (r * sin φ) * cos φ + partialY f (r * cos φ) (r * sin φ) * sin φ)
+      r :=
+  (dlmf_1_5_7 ((hasDerivAt_id r).mul_const (cos φ)) ((hasDerivAt_id r).mul_const (sin φ))
+    hf).congr_deriv (by simp)
+
+/-- `∂/∂φ f(r cos φ, r sin φ) = −f_x r sin φ + f_y r cos φ`. -/
+theorem hasDerivAt_polar_φ {f : ℝ → ℝ → ℝ} {r φ : ℝ}
+    (hf : DifferentiableAt ℝ (uncurry f) (r * cos φ, r * sin φ)) :
+    HasDerivAt (fun t => f (r * cos t) (r * sin t))
+      (partialX f (r * cos φ) (r * sin φ) * (r * -sin φ) +
+        partialY f (r * cos φ) (r * sin φ) * (r * cos φ)) φ :=
+  dlmf_1_5_7 ((hasDerivAt_cos φ).const_mul r) ((hasDerivAt_sin φ).const_mul r) hf
+
+/-- **DLMF 1.5.11**: `∂/∂x = cos φ ∂/∂r − (sin φ / r) ∂/∂φ`. -/
+theorem dlmf_1_5_11 {f : ℝ → ℝ → ℝ} {r φ : ℝ} (hr : r ≠ 0)
+    (hf : DifferentiableAt ℝ (uncurry f) (r * cos φ, r * sin φ)) :
+    partialX f (r * cos φ) (r * sin φ) =
+      cos φ * partialX (polarPullback f) r φ - sin φ / r * partialY (polarPullback f) r φ := by
+  have e1 : partialX (polarPullback f) r φ = _ := (hasDerivAt_polar_r hf).deriv
+  have e2 : partialY (polarPullback f) r φ = _ := (hasDerivAt_polar_φ hf).deriv
+  rw [e1, e2]
+  have e3 : sin φ / r * (partialX f (r * cos φ) (r * sin φ) * (r * -sin φ) +
+      partialY f (r * cos φ) (r * sin φ) * (r * cos φ)) = sin φ *
+      (partialX f (r * cos φ) (r * sin φ) * -sin φ +
+        partialY f (r * cos φ) (r * sin φ) * cos φ) := by
+    field_simp
+  rw [e3]
+  linear_combination (-partialX f (r * cos φ) (r * sin φ)) * sin_sq_add_cos_sq φ
+
+/-- **DLMF 1.5.12**: `∂/∂y = sin φ ∂/∂r + (cos φ / r) ∂/∂φ`. -/
+theorem dlmf_1_5_12 {f : ℝ → ℝ → ℝ} {r φ : ℝ} (hr : r ≠ 0)
+    (hf : DifferentiableAt ℝ (uncurry f) (r * cos φ, r * sin φ)) :
+    partialY f (r * cos φ) (r * sin φ) =
+      sin φ * partialX (polarPullback f) r φ + cos φ / r * partialY (polarPullback f) r φ := by
+  have e1 : partialX (polarPullback f) r φ = _ := (hasDerivAt_polar_r hf).deriv
+  have e2 : partialY (polarPullback f) r φ = _ := (hasDerivAt_polar_φ hf).deriv
+  rw [e1, e2]
+  have e3 : cos φ / r * (partialX f (r * cos φ) (r * sin φ) * (r * -sin φ) +
+      partialY f (r * cos φ) (r * sin φ) * (r * cos φ)) = cos φ *
+      (partialX f (r * cos φ) (r * sin φ) * -sin φ +
+        partialY f (r * cos φ) (r * sin φ) * cos φ) := by
+    field_simp
+  rw [e3]
+  linear_combination (-partialY f (r * cos φ) (r * sin φ)) * sin_sq_add_cos_sq φ
+
+/-- A twice-continuously differentiable `f` and its first partials are differentiable on the
+plane. -/
+theorem IsTwiceContinuouslyDifferentiable.differentiable {f : ℝ → ℝ → ℝ}
+    (hf : IsTwiceContinuouslyDifferentiable f) :
+    Differentiable ℝ (uncurry f) ∧ Differentiable ℝ (uncurry (partialX f)) ∧
+      Differentiable ℝ (uncurry (partialY f)) :=
+  ⟨((isContinuouslyDifferentiable_iff f).mp hf.1).differentiable one_ne_zero,
+    ((isContinuouslyDifferentiable_iff _).mp hf.2.1).differentiable one_ne_zero,
+    ((isContinuouslyDifferentiable_iff _).mp hf.2.2).differentiable one_ne_zero⟩
+
+/-- `∂²/∂r²` of `f(r cos φ, r sin φ)`. -/
+theorem hasDerivAt_polar_rr {f : ℝ → ℝ → ℝ} (hf : IsTwiceContinuouslyDifferentiable f)
+    (r φ : ℝ) : HasDerivAt (fun s => partialX (polarPullback f) s φ)
+      ((partialXX f (r * cos φ) (r * sin φ) * cos φ + partialYX f (r * cos φ) (r * sin φ) *
+        sin φ) * cos φ + (partialXY f (r * cos φ) (r * sin φ) * cos φ +
+        partialYY f (r * cos φ) (r * sin φ) * sin φ) * sin φ) r := by
+  obtain ⟨h0, hX, hY⟩ := hf.differentiable
+  have e : (fun s => partialX (polarPullback f) s φ) = fun s =>
+      partialX f (s * cos φ) (s * sin φ) * cos φ + partialY f (s * cos φ) (s * sin φ) * sin φ :=
+    funext fun s => (hasDerivAt_polar_r (h0 _)).deriv
+  rw [e]
+  exact ((hasDerivAt_polar_r (hX _)).mul_const (cos φ)).add
+    ((hasDerivAt_polar_r (hY _)).mul_const (sin φ))
+
+/-- `∂²/∂φ²` of `f(r cos φ, r sin φ)`. -/
+theorem hasDerivAt_polar_φφ {f : ℝ → ℝ → ℝ} (hf : IsTwiceContinuouslyDifferentiable f)
+    (r φ : ℝ) : HasDerivAt (fun t => partialY (polarPullback f) r t)
+      ((partialXX f (r * cos φ) (r * sin φ) * (r * -sin φ) +
+          partialYX f (r * cos φ) (r * sin φ) * (r * cos φ)) * (r * -sin φ) +
+        partialX f (r * cos φ) (r * sin φ) * (r * -cos φ) +
+        ((partialXY f (r * cos φ) (r * sin φ) * (r * -sin φ) +
+          partialYY f (r * cos φ) (r * sin φ) * (r * cos φ)) * (r * cos φ) +
+        partialY f (r * cos φ) (r * sin φ) * (r * -sin φ))) φ := by
+  obtain ⟨h0, hX, hY⟩ := hf.differentiable
+  have e : (fun t => partialY (polarPullback f) r t) = fun t =>
+      partialX f (r * cos t) (r * sin t) * (r * -sin t) +
+        partialY f (r * cos t) (r * sin t) * (r * cos t) :=
+    funext fun t => (hasDerivAt_polar_φ (h0 _)).deriv
+  rw [e]
+  exact ((hasDerivAt_polar_φ (hX _)).mul ((hasDerivAt_sin φ).neg.const_mul r)).add
+    ((hasDerivAt_polar_φ (hY _)).mul ((hasDerivAt_cos φ).const_mul r))
+
+/-- **DLMF 1.5.13** (Laplacian in polar coordinates): `∇²f = f_xx + f_yy = f_rr + f_r/r + f_φφ/r²`,
+for twice-continuously differentiable `f` and `r ≠ 0`. -/
+theorem dlmf_1_5_13 {f : ℝ → ℝ → ℝ} (hf : IsTwiceContinuouslyDifferentiable f) {r φ : ℝ}
+    (hr : r ≠ 0) :
+    partialXX f (r * cos φ) (r * sin φ) + partialYY f (r * cos φ) (r * sin φ) =
+      partialXX (polarPullback f) r φ + partialX (polarPullback f) r φ / r +
+        partialYY (polarPullback f) r φ / r ^ 2 := by
+  have e1 : partialXX (polarPullback f) r φ = _ := (hasDerivAt_polar_rr hf r φ).deriv
+  have e2 : partialYY (polarPullback f) r φ = _ := (hasDerivAt_polar_φφ hf r φ).deriv
+  have e3 : partialX (polarPullback f) r φ = _ :=
+    (hasDerivAt_polar_r (hf.differentiable.1 (r * cos φ, r * sin φ))).deriv
+  rw [e1, e2, e3]
+  set A := partialXX f (r * cos φ) (r * sin φ)
+  set B := partialYX f (r * cos φ) (r * sin φ)
+  set C := partialXY f (r * cos φ) (r * sin φ)
+  set D := partialYY f (r * cos φ) (r * sin φ)
+  set a := partialX f (r * cos φ) (r * sin φ)
+  set b := partialY f (r * cos φ) (r * sin φ)
+  have e4 : ((A * (r * -sin φ) + B * (r * cos φ)) * (r * -sin φ) + a * (r * -cos φ) +
+      ((C * (r * -sin φ) + D * (r * cos φ)) * (r * cos φ) + b * (r * -sin φ))) / r ^ 2 =
+      A * sin φ ^ 2 - B * sin φ * cos φ - C * sin φ * cos φ + D * cos φ ^ 2 -
+        (a * cos φ + b * sin φ) / r := by
+    field_simp
+    ring
+  rw [e4]
+  linear_combination (-(A + D)) * sin_sq_add_cos_sq φ
+
+/-- `∇²f = f_xx + f_yy + f_zz` for `f(x, y, z)`, the second derivatives taken in each variable with
+the other two fixed. -/
+noncomputable def laplacian3 (f : ℝ → ℝ → ℝ → ℝ) (x y z : ℝ) : ℝ :=
+  partialXX (fun a b => f a b z) x y + partialYY (fun a b => f a b z) x y + deriv (deriv (f x y)) z
+
+/-- **DLMF 1.5.14** (cylindrical coordinates): every `(x, y, z)` is `(r cos φ, r sin φ, z)` with
+`0 ≤ r < ∞`, `0 ≤ φ < 2π`. -/
+theorem dlmf_1_5_14 (x y z : ℝ) : ∃ r φ : ℝ, 0 ≤ r ∧ φ ∈ Ico 0 (2 * π) ∧
+    (x, y, z) = (r * cos φ, r * sin φ, z) := by
+  obtain ⟨r, φ, hr, hφ, hx, hy⟩ := dlmf_1_5_10 x y
+  exact ⟨r, φ, hr, hφ, by rw [hx, hy]⟩
+
+/-- **DLMF §1.5(ii)**: in cylindrical coordinates 1.5.11 and 1.5.12 still apply (to `f(·, ·, z)`
+for each `z`). -/
+theorem dlmf_1_5_14_partial {f : ℝ → ℝ → ℝ → ℝ} {r φ z : ℝ} (hr : r ≠ 0)
+    (hf : DifferentiableAt ℝ (uncurry fun a b => f a b z) (r * cos φ, r * sin φ)) :
+    partialX (fun a b => f a b z) (r * cos φ) (r * sin φ) =
+        cos φ * partialX (fun r φ => f (r * cos φ) (r * sin φ) z) r φ -
+          sin φ / r * partialY (fun r φ => f (r * cos φ) (r * sin φ) z) r φ ∧
+      partialY (fun a b => f a b z) (r * cos φ) (r * sin φ) =
+        sin φ * partialX (fun r φ => f (r * cos φ) (r * sin φ) z) r φ +
+          cos φ / r * partialY (fun r φ => f (r * cos φ) (r * sin φ) z) r φ :=
+  ⟨dlmf_1_5_11 hr hf, dlmf_1_5_12 hr hf⟩
+
+/-- **DLMF 1.5.15** (Laplacian in cylindrical coordinates):
+`∇²f = f_rr + f_r/r + f_φφ/r² + f_zz`, for `f(·, ·, z)` twice-continuously differentiable for
+every `z`, and `r ≠ 0`. -/
+theorem dlmf_1_5_15 {f : ℝ → ℝ → ℝ → ℝ}
+    (hf : ∀ z, IsTwiceContinuouslyDifferentiable fun a b => f a b z) {r φ z : ℝ} (hr : r ≠ 0) :
+    laplacian3 f (r * cos φ) (r * sin φ) z =
+      partialXX (fun r φ => f (r * cos φ) (r * sin φ) z) r φ +
+        partialX (fun r φ => f (r * cos φ) (r * sin φ) z) r φ / r +
+        partialYY (fun r φ => f (r * cos φ) (r * sin φ) z) r φ / r ^ 2 +
+        deriv (deriv fun z => f (r * cos φ) (r * sin φ) z) z := by
+  have h := dlmf_1_5_13 (hf z) hr (φ := φ)
+  unfold laplacian3
+  rw [h]
+  rfl
+
+/-- **DLMF 1.5.16** (spherical coordinates): every `(x, y, z)` is
+`(ρ sin θ cos φ, ρ sin θ sin φ, ρ cos θ)` with `0 ≤ ρ < ∞`, `0 ≤ θ ≤ π`, `0 ≤ φ < 2π`. -/
+theorem dlmf_1_5_16 (x y z : ℝ) : ∃ ρ θ φ : ℝ, 0 ≤ ρ ∧ θ ∈ Icc 0 π ∧ φ ∈ Ico 0 (2 * π) ∧
+    (x, y, z) = (ρ * sin θ * cos φ, ρ * sin θ * sin φ, ρ * cos θ) := by
+  obtain ⟨r, φ, hr, hφ, hx, hy⟩ := dlmf_1_5_10 x y
+  obtain ⟨ρ, θ, hρ, hθ, hz, hr'⟩ := exists_polar_of_nonneg (x := z) hr
+  exact ⟨ρ, θ, φ, hρ, hθ, hφ, by rw [hx, hy, hz, hr']⟩
+
+/-- A function `f(x, y, z)` expressed in spherical coordinates:
+`(ρ, θ, φ) ↦ f(ρ sin θ cos φ, ρ sin θ sin φ, ρ cos θ)`. -/
+noncomputable def sphericalPullback (f : ℝ → ℝ → ℝ → ℝ) : ℝ → ℝ → ℝ → ℝ :=
+  fun ρ θ φ => f (ρ * sin θ * cos φ) (ρ * sin θ * sin φ) (ρ * cos θ)
+
+/-- **DLMF 1.5.17** (Laplacian in spherical coordinates): for `C²` `f(x, y, z)`, `ρ ≠ 0` and
+`sin θ ≠ 0`,
+`∇²f = (1/ρ²) ∂/∂ρ (ρ² ∂f/∂ρ) + (1/(ρ² sin² θ)) ∂²f/∂φ² + (1/(ρ² sin θ)) ∂/∂θ (sin θ ∂f/∂θ)`.
+The proof composes the cylindrical Laplacian 1.5.15 with polar coordinates `(z, r) =
+(ρ cos θ, ρ sin θ)` in the `(z, r)` half-plane (1.5.12, 1.5.13). -/
+theorem dlmf_1_5_17 {f : ℝ → ℝ → ℝ → ℝ} (hf : ContDiff ℝ 2 fun p : ℝ × ℝ × ℝ => f p.1 p.2.1 p.2.2)
+    {ρ θ φ : ℝ} (hρ : ρ ≠ 0) (hθ : sin θ ≠ 0) :
+    laplacian3 f (ρ * sin θ * cos φ) (ρ * sin θ * sin φ) (ρ * cos θ) =
+      1 / ρ ^ 2 * deriv (fun s => s ^ 2 * deriv (fun t => sphericalPullback f t θ φ) s) ρ +
+        1 / (ρ ^ 2 * sin θ ^ 2) * deriv (deriv fun t => sphericalPullback f ρ θ t) φ +
+        1 / (ρ ^ 2 * sin θ) *
+          deriv (fun t => sin t * deriv (fun u => sphericalPullback f ρ u φ) t) θ := by
+  have hslice : ∀ z, IsTwiceContinuouslyDifferentiable fun a b => f a b z := fun z =>
+    (isTwiceContinuouslyDifferentiable_iff _).mpr
+      (hf.comp (contDiff_fst.prodMk (contDiff_snd.prodMk contDiff_const)))
+  set G : ℝ → ℝ → ℝ := fun z r => f (r * cos φ) (r * sin φ) z with hGdef
+  have hG : IsTwiceContinuouslyDifferentiable G := (isTwiceContinuouslyDifferentiable_iff _).mpr
+    (hf.comp ((contDiff_snd.mul contDiff_const).prodMk
+      ((contDiff_snd.mul contDiff_const).prodMk contDiff_fst)))
+  -- the cylindrical Laplacian at `r = ρ sin θ`, `z = ρ cos θ`
+  have hA := dlmf_1_5_15 hslice (mul_ne_zero hρ hθ) (φ := φ) (z := ρ * cos θ)
+  -- polar coordinates `(z, r) = (ρ cos θ, ρ sin θ)` in the `(z, r)` half-plane
+  have hB : deriv (deriv fun z => f (ρ * sin θ * cos φ) (ρ * sin θ * sin φ) z) (ρ * cos θ) +
+      partialXX (fun r φ => f (r * cos φ) (r * sin φ) (ρ * cos θ)) (ρ * sin θ) φ =
+      partialXX (polarPullback G) ρ θ + partialX (polarPullback G) ρ θ / ρ +
+        partialYY (polarPullback G) ρ θ / ρ ^ 2 :=
+    dlmf_1_5_13 hG hρ (φ := θ)
+  have hC : partialX (fun r φ => f (r * cos φ) (r * sin φ) (ρ * cos θ)) (ρ * sin θ) φ =
+      sin θ * partialX (polarPullback G) ρ θ + cos θ / ρ * partialY (polarPullback G) ρ θ :=
+    dlmf_1_5_12 hρ (hG.differentiable.1 _)
+  have h1 : deriv (fun s => s ^ 2 * deriv (fun t => sphericalPullback f t θ φ) s) ρ =
+      2 * ρ * partialX (polarPullback G) ρ θ + ρ ^ 2 * partialXX (polarPullback G) ρ θ := by
+    have hd : HasDerivAt (fun s => partialX (polarPullback G) s θ)
+        (partialXX (polarPullback G) ρ θ) ρ :=
+      (hasDerivAt_polar_rr hG ρ θ).differentiableAt.hasDerivAt
+    exact (((hasDerivAt_pow 2 ρ).mul hd).congr_deriv (by norm_num)).deriv
+  have h2 : deriv (fun t => sin t * deriv (fun u => sphericalPullback f ρ u φ) t) θ =
+      cos θ * partialY (polarPullback G) ρ θ + sin θ * partialYY (polarPullback G) ρ θ := by
+    have hd : HasDerivAt (fun t => partialY (polarPullback G) ρ t)
+        (partialYY (polarPullback G) ρ θ) θ :=
+      (hasDerivAt_polar_φφ hG ρ θ).differentiableAt.hasDerivAt
+    exact ((hasDerivAt_sin θ).mul hd).deriv
+  have h3 : deriv (deriv fun t => sphericalPullback f ρ θ t) φ =
+      partialYY (fun r φ => f (r * cos φ) (r * sin φ) (ρ * cos θ)) (ρ * sin θ) φ := rfl
+  rw [hA, h1, h2, h3, hC]
+  linear_combination (norm := skip) hB
+  field_simp
+  ring
 
 end Azurite.DLMF

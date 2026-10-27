@@ -211,4 +211,12 @@ after their subsection.
 | 1.5.8 | `dlmf_1_5_8` | — |
 | 1.5.9 | `dlmf_1_5_9` (three intermediate variables; `clm_apply_triple`) | `HasFDerivAt.comp_hasDerivAt` |
 | §1.5(i) prose (implicit function theorem) | `dlmf_1_5_i_implicit` (`F` continuously differentiable, `F(a, b) = 0`, `F_y(a, b) ≠ 0`: `g` with `g(a) = b`, `F(x, g x) = 0` near `a`, zeros of `F` near `(a, b)` = graph of `g`, `g` `C¹` near `a`, `g' = −F_x/F_y` near `a`) | `ContDiffAt.implicitFunction`, `ContDiffAt.contDiffAt_implicitFunction`, `ContDiffAt.eventually` |
-| 1.5.10– | — | not yet (§1.5(ii) coordinate systems onward) |
+| §1.5(ii) prose (notations) | module doc: physicists' `θ` (polar angle) and `φ` (azimuth) | — |
+| 1.5.10 | `dlmf_1_5_10` (`(x, y) = (r cos φ, r sin φ)`, `0 ≤ r`, `0 ≤ φ < 2π`), `polarPullback` | `Complex.norm_mul_cos_arg`, `Complex.norm_mul_sin_arg`, `Complex.arg` bounds |
+| 1.5.11–1.5.12 | `dlmf_1_5_11`, `dlmf_1_5_12` (`r ≠ 0`, `f` differentiable at the point; `hasDerivAt_polar_r`, `hasDerivAt_polar_φ`) | — (chain rule `dlmf_1_5_7`) |
+| 1.5.13 | `dlmf_1_5_13` (`f_xx + f_yy = f_rr + f_r/r + f_φφ/r²`, twice-continuously differentiable `f`, `r ≠ 0`; `hasDerivAt_polar_rr`, `hasDerivAt_polar_φφ`, `IsTwiceContinuouslyDifferentiable.differentiable`) | — |
+| 1.5.14 | `dlmf_1_5_14` (cylindrical representation), `dlmf_1_5_14_partial` (1.5.11–1.5.12 still apply) | — |
+| 1.5.15 | `laplacian3`, `dlmf_1_5_15` (`∇²f = f_rr + f_r/r + f_φφ/r² + f_zz`) | — |
+| 1.5.16 | `dlmf_1_5_16` (spherical representation, `0 ≤ θ ≤ π`; `exists_polar_of_nonneg`), `sphericalPullback` | `Complex.arg_nonneg_iff` |
+| 1.5.17 | `dlmf_1_5_17` (`f` `C²` on `ℝ³`, `ρ ≠ 0`, `sin θ ≠ 0`; cylindrical Laplacian + polar coordinates in the `(z, r)` half-plane) | `ContDiff.comp` |
+| 1.5.18– | — | not yet (§1.5(iii) Taylor's theorem; maxima and minima onward) |
