@@ -128,3 +128,32 @@ Prose statements (no equation number) are named `dlmf_1_3_i_<topic>` after their
 | 1.3.21 | `dlmf_1_3_21` (Parseval `‖u‖² = ∑ |cᵢ|²`) | `OrthonormalBasis.repr` (isometry), `EuclideanSpace.norm_sq_eq`, `repr_apply_apply` |
 
 §1.3 is complete.
+
+### §1.4 Calculus of One Variable (`Azurite/DLMF/Chapter1/Section4.lean`)
+
+Prose statements (no equation number) are named `dlmf_1_4_i_<topic>`, `dlmf_1_4_ii_<topic>`, …
+after their subsection.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| §1.4(i) prose | `dlmf_1_4_i_nondecreasing`, `dlmf_1_4_i_increasing`, `dlmf_1_4_i_nonincreasing`, `dlmf_1_4_i_decreasing` (the four cases with `x₁ < x₂`), `IsMonotonic`, `IsStrictlyMonotonic`, `isMonotonic_iff`, `IsStrictlyMonotonic.isMonotonic` | `MonotoneOn`, `StrictMonoOn`, `AntitoneOn`, `StrictAntiOn`, `StrictMonoOn.monotoneOn` |
+| 1.4.1 | `dlmf_1_4_1` (continuous on the right iff `f(c+) = f(c)`) | `ContinuousWithinAt`, `continuousWithinAt_Ioi_iff_Ici` |
+| 1.4.2 | `dlmf_1_4_2` (`ε`–`δ`: `|f(c + α) − f(c)| < ε` for `0 ≤ α < δ`) | `Metric.continuousWithinAt_iff` |
+| 1.4.3 | `dlmf_1_4_3` (continuous on the left iff `f(c−) = f(c)`), `dlmf_1_4_3_eps` (`ε`–`δ`) | `continuousWithinAt_Iio_iff_Iic`, `Metric.continuousWithinAt_iff` |
+| §1.4(ii) prose | `dlmf_1_4_ii_continuousAt` (both sides), `dlmf_1_4_ii_C_open` (`C(a, b)`), `dlmf_1_4_ii_C_closed` (`C[a, b]` for `a < b`), `HasRemovableSingularity` (+ `.continuousAt_update`), `dlmf_1_4_ii_sin_div_removable` (`(sin x)/x` at `0`), `HasSimpleDiscontinuity`, `IsPiecewiseContinuous` (+ `ContinuousOn.isPiecewiseContinuous`), `dlmf_1_4_ii_step_piecewiseContinuous` (unit step, cf. Figure 1.4.1) | `continuousAt_iff_continuous_left_right`, `IsOpen.continuousOn_iff`, `Icc_mem_nhdsGE`, `Icc_mem_nhdsLE`, `Real.continuous_sinc`, `Real.sinc_of_ne_zero` |
+| 1.4.4 | `dlmf_1_4_4` (`HasDerivAt f f' x` iff the difference quotient tends to `f'`), `dlmf_1_4_4_differentiable` (differentiable iff the limit exists) | `hasDerivAt_iff_tendsto_slope_zero` |
+| 1.4.5 | `dlmf_1_4_5` | `deriv_add` |
+| 1.4.6 | `dlmf_1_4_6` | `deriv_mul` |
+| 1.4.7 | `dlmf_1_4_7` (`g(x) ≠ 0`) | `deriv_div` |
+| 1.4.8 | `dlmf_1_4_8` (`f⁽²⁾ = (f')'`) | `iteratedDeriv_succ`, `iteratedDeriv_one` |
+| 1.4.9 | `dlmf_1_4_9` | `iteratedDeriv_succ` |
+| §1.4(iii) prose | `dlmf_1_4_iii_Cn` (`Cⁿ(I)` iff `f, …, f⁽ⁿ⁾` exist and are continuous, `UniqueDiffOn I`), `dlmf_1_4_iii_Cinfty` | `contDiffOn_nat_iff_continuousOn_differentiableOn_deriv`, `contDiffOn_infty` |
+| 1.4.10 | `dlmf_1_4_10` (chain rule) | `deriv_comp` |
+| §1.4(iii) prose | `dlmf_1_4_iii_max`, `dlmf_1_4_iii_min` (`f ≤ f(c)` / `f ≥ f(c)` on `[c − δ, c + δ]` ⇒ `f'(c) = 0`) | `IsLocalMax.deriv_eq_zero`, `IsLocalMin.deriv_eq_zero` |
+| 1.4.11 | `dlmf_1_4_11` (mean value theorem) | `exists_deriv_eq_slope` |
+| §1.4(iii) prose | `dlmf_1_4_iii_monotone` (`f' ≥ 0`), `dlmf_1_4_iii_antitone` (`f' ≤ 0`), `dlmf_1_4_iii_const` (`f' = 0`) on `(a, b)` | `monotoneOn_of_deriv_nonneg`, `antitoneOn_of_deriv_nonpos` |
+| 1.4.12 | `dlmf_1_4_12` (Leibniz, `∑ C(n, k) f⁽ⁿ⁻ᵏ⁾ g⁽ᵏ⁾`) | `iteratedDeriv_mul`, `Finset.sum_range_reflect`, `Nat.choose_symm` |
+| 1.4.13 | `dlmf_1_4_13` (DLMF's multiplicity form `∑_{m₁+2m₂+⋯+nmₙ=n} n!/(m₁!⋯mₙ!) f⁽ᵏ⁾(g) ∏ (g⁽ʲ⁾/j!)^{mⱼ}`, the solutions indexed by `Nat.Partition n` with `mⱼ = count j`), `dlmf_1_4_13_tuples` (literally over the tuples `multiplicityVectors n`; bijection `multiplicities`/`partitionOfMultiplicities`), `dlmf_1_4_13_partitions` (Mathlib's ordered-set-partition form), `dlmf_1_4_13_two`, `dlmf_1_4_13_three`. The bridge is `Azurite/DLMF/Chapter1/SetPartitionCount.lean`: `cnt_eq_bell` (the number of ordered finpartitions of `Fin n` with block sizes `s` is `Multiset.bell s` — Mathlib's TODO), by induction via `OrderedFinpartition.extendEquiv` (`sizes_extendLeft`, `sizes_extendMiddle`, `cnt_succ`) with the weight `wt` (`wt_erase_one`, `wt_grow`, `cnt_mul_wt`, `bell_mul_wt`); then `iteratedDeriv_comp_eq_sum_partition` (regrouping by `Finset.sum_comp`) and `bell_cast_eq` | `iteratedDeriv_comp_eq_sum_orderedFinpartition`, `OrderedFinpartition.extendEquiv`, `Multiset.bell_mul_eq`, `Finset.prod_multiset_map_count`, `Finset.sum_comp`, `Nat.Partition`, `iteratedDeriv_comp_two`, `iteratedDeriv_comp_three` |
+| 1.4.14–1.4.15 | `dlmf_1_4_15` (L'Hôpital `0/0`), `dlmf_1_4_15_atTop` (`∞/∞`, proven here: `lhopital_atTop_estimate`, `lhopital_atTop_right_on_Ioo` via Cauchy's MVT on `[x, y]`, `lhopital_atTop_left_on_Ioo` by reflection) | `deriv.lhopital_zero_nhdsNE`, `exists_ratio_hasDerivAt_eq_ratio_slope`, `exists_hasDerivAt_eq_slope`, `differentiableAt_of_deriv_ne_zero`, `tendsto_neg_nhdsGT_neg` |
+| 1.4.16– | — | not yet |
+

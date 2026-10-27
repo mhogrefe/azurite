@@ -1667,6 +1667,8 @@ import Azurite.CrandallPomerance.Chapter4.Theorem_4_4_6_CycM
 import Azurite.CrandallPomerance.Chapter4.Theorem_4_4_6_Tower
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
+import Azurite.DLMF.Chapter1.Section4
+import Azurite.DLMF.Chapter1.SetPartitionCount
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
