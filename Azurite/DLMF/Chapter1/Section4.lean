@@ -36,6 +36,8 @@ import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.MeasureTheory.Function.L2Space
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.MeanValue
+import Mathlib.Topology.EMetricSpace.VariationOnFromTo
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 /-!
 # DLMF §1.4: Calculus of One Variable
@@ -133,6 +135,23 @@ subsection.  Functions are real-valued functions of a real variable, `f : ℝ �
 * 1.4.31 `dlmf_1_4_31`: repeated integrals, `repeatedIntegral a n f b = (1/n!) ∫_a^b (b − x)^n f`
   (`primitive`, `integral_pow_mul_eq_succ_mul_primitive`: one integration by parts per step).
 * 1.4.32 `l2NormSq`, `dlmf_1_4_32`: square-integrable functions (Mathlib's `MemLp f 2`).
+* Functions of bounded variation (with Olver (1997b) §11.2–11.5, pp. 27–29): 1.4.33
+  `dlmf_1_4_33` (`𝒱_{a,b}(f) = eVariationOn f s` is the supremum of `∑ |f(xⱼ) − f(xⱼ₋₁)|` over
+  point sets `x₀ < ⋯ < xₙ` of the closure `s`), `dlmf_1_4_v_variation_closure`,
+  `dlmf_1_4_v_boundedVariationOn_iff`, `dlmf_1_4_v_boundedVariationOn_iff_bdd`,
+  `leftVariation` (`𝒱_{a,x}(f)`), `dlmf_1_4_v_jordan` (`g = 𝒱_{a,x}(f)` and `h = g − f`
+  nondecreasing and bounded, `f = g − h`); `olver_11_3` (`𝒱 ≥ ‖f(b) − f(a)‖`), `olver_11_01`
+  (monotonic `f`), `olver_11_3_subdivision` (subdivision at the extrema); 1.4.34 `olver_11_02`
+  (`𝒱_{a,b}(f) = ∫_a^b ‖f'‖` for `f'` continuous on `[a, b]`, `E`-valued, via Riemann sums of
+  `‖f'‖`), `eVariationOn_eq_integral_of_isOpen` (open interval, `[c, d]` exhaustion:
+  `exists_Icc_exhaustion`), `dlmf_1_4_34` (`f` continuous on `[a, b]`, `f'` on `(a, b)`),
+  `dlmf_1_4_34_Ioi`, `dlmf_1_4_34_Iio`, `dlmf_1_4_34_univ`, `dlmf_1_4_34_real`, `olver_11_5`
+  (complex `f`), `variationIntegral` (DLMF's extension to arbitrary `a, b`); Olver Ex. 11.1
+  `olver_ex_11_1_add`, `olver_ex_11_1_norm`, `olver_ex_11_1_abs`, `olver_ex_11_1_abs_eq`
+  (equality for continuous real `f`); Ex. 11.2 (ii) `olver_ex_11_2_ii` (step function), (iii)
+  `olver_ex_11_2_iii` (`𝒱(sech) = 2`, via `eVariationOn_Iic_of_monotoneOn`,
+  `eVariationOn_Ici_of_antitoneOn`).  Not formalized: Ex. 11.2 (i), (iv), and the variation
+  along a path in `ℂ` (Olver §11.5 second half, Ex. 11.3–11.4).
 -/
 
 namespace Azurite.DLMF
@@ -1925,6 +1944,666 @@ theorem dlmf_1_4_32 {f : ℝ → ℝ} {a b : ℝ}
   rw [memLp_two_iff_integrable_sq hf]
   simp only [sq_abs]
   rfl
+
+
+/-! ### Functions of bounded variation (DLMF 1.4.33–1.4.34, Olver (1997b) §11.2–11.5) -/
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+
+/-- Each Riemann–Stieltjes-type sum of `‖f(xⱼ₊₁) − f(xⱼ)‖` along a monotone sequence in `[a, b]`
+is at most `∫_a^b ‖f'‖`, for `f` with continuous derivative `f'` on `[a, b]`
+(`‖f(xⱼ₊₁) − f(xⱼ)‖ = ‖∫ f'‖ ≤ ∫ ‖f'‖`, Olver §11.4). -/
+theorem sum_norm_sub_le_integral {f f' : ℝ → E} {a b : ℝ} (hab : a ≤ b)
+    (hf : ∀ x ∈ Icc a b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Icc a b))
+    {u : ℕ → ℝ} (hu : Monotone u) {n : ℕ} (hus : ∀ i ≤ n, u i ∈ Icc a b) :
+    ∑ i ∈ range n, ‖f (u (i + 1)) - f (u i)‖ ≤ ∫ x in a..b, ‖f' x‖ := by
+  have hnorm : ContinuousOn (fun x => ‖f' x‖) (Icc a b) := hf'.norm
+  have hsub : ∀ i < n, uIcc (u i) (u (i + 1)) ⊆ Icc a b := fun i hi => by
+    rw [uIcc_of_le (hu (Nat.le_succ i))]
+    exact Icc_subset_Icc (hus i hi.le).1 (hus (i + 1) hi).2
+  calc ∑ i ∈ range n, ‖f (u (i + 1)) - f (u i)‖
+      = ∑ i ∈ range n, ‖∫ x in u i..u (i + 1), f' x‖ := by
+        refine sum_congr rfl fun i hi => ?_
+        have hi' := mem_range.mp hi
+        rw [intervalIntegral.integral_eq_sub_of_hasDerivAt (fun x hx => hf x (hsub i hi' hx))
+          ((hf'.mono (hsub i hi')).intervalIntegrable)]
+    _ ≤ ∑ i ∈ range n, ∫ x in u i..u (i + 1), ‖f' x‖ :=
+        sum_le_sum fun i _ => intervalIntegral.norm_integral_le_integral_norm (hu (Nat.le_succ i))
+    _ = ∫ x in u 0..u n, ‖f' x‖ :=
+        intervalIntegral.sum_integral_adjacent_intervals fun i hi =>
+          (hnorm.mono (hsub i hi)).intervalIntegrable
+    _ ≤ ∫ x in a..b, ‖f' x‖ :=
+        intervalIntegral.integral_mono_interval (hus 0 (Nat.zero_le n)).1 (hu (Nat.zero_le n))
+          (hus n le_rfl).2
+          (ae_of_all _ fun x => norm_nonneg _) (hnorm.intervalIntegrable_of_Icc hab)
+
+/-- **Olver (11.02)** (DLMF 1.4.34 on a compact interval): for `f` with continuous derivative
+`f'` on `[a, b]`, `𝒱_{a,b}(f) = ∫_a^b ‖f'(x)‖ dx`.  The sums `∑ ‖f(xⱼ₊₁) − f(xⱼ)‖` are at most
+the integral; conversely they are within `ε (b − a)` of the Riemann sums of `‖f'‖` once the mesh
+is small, by uniform continuity of `f'`. -/
+theorem olver_11_02 {f f' : ℝ → E} {a b : ℝ} (hab : a ≤ b)
+    (hf : ∀ x ∈ Icc a b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Icc a b)) :
+    eVariationOn f (Icc a b) = ENNReal.ofReal (∫ x in a..b, ‖f' x‖) := by
+  have hnorm : ContinuousOn (fun x => ‖f' x‖) (Icc a b) := hf'.norm
+  set I := ∫ x in a..b, ‖f' x‖ with hI
+  -- the upper bound
+  have hle : eVariationOn f (Icc a b) ≤ ENNReal.ofReal I := by
+    refine iSup_le fun p => ?_
+    obtain ⟨n, u, hu, hus⟩ := p
+    calc ∑ i ∈ range n, edist (f (u (i + 1))) (f (u i))
+        = ENNReal.ofReal (∑ i ∈ range n, ‖f (u (i + 1)) - f (u i)‖) := by
+          rw [ENNReal.ofReal_sum_of_nonneg fun i _ => norm_nonneg _]
+          exact sum_congr rfl fun i _ => by rw [edist_dist, dist_eq_norm]
+      _ ≤ ENNReal.ofReal I :=
+          ENNReal.ofReal_le_ofReal (sum_norm_sub_le_integral hab hf hf' hu fun i _ => hus i)
+  refine le_antisymm hle ?_
+  -- the lower bound: suppose `V < I`
+  by_contra hlt
+  rw [not_le] at hlt
+  have hV : eVariationOn f (Icc a b) ≠ ⊤ := (hlt.trans ENNReal.ofReal_lt_top).ne
+  have hVI : (eVariationOn f (Icc a b)).toReal < I := by
+    have := ENNReal.toReal_strict_mono ENNReal.ofReal_ne_top hlt
+    rwa [ENNReal.toReal_ofReal (intervalIntegral.integral_nonneg hab fun x _ => norm_nonneg _)]
+      at this
+  set V := (eVariationOn f (Icc a b)).toReal with hVdef
+  set ε := (I - V) / (2 * (b - a + 1)) with hε
+  have hε0 : 0 < ε := by
+    have : 0 < b - a + 1 := by linarith
+    have : 0 < I - V := by linarith
+    positivity
+  -- Riemann sums of `‖f'‖` approximate `I`, and `f'` is uniformly continuous
+  obtain ⟨δ₁, hδ₁, hR⟩ := dlmf_1_4_18 hab hnorm ε hε0
+  obtain ⟨δ₂, hδ₂, hU⟩ := Metric.uniformContinuousOn_iff.mp
+    (isCompact_Icc.uniformContinuousOn_of_continuous hf') ε hε0
+  -- a fine uniform partition
+  rcases eq_or_lt_of_le hab with rfl | hab'
+  · -- `a = b`: the integral is `0`, contradiction with `V ≥ 0`
+    simp only [hI, intervalIntegral.integral_same] at hVI
+    exact absurd hVI (not_lt.mpr ENNReal.toReal_nonneg)
+  obtain ⟨m, hm⟩ := exists_nat_gt ((b - a) / min δ₁ δ₂)
+  have hmin : 0 < min δ₁ δ₂ := lt_min hδ₁ hδ₂
+  have hm0 : 0 < m := by
+    have : 0 < (b - a) / min δ₁ δ₂ := div_pos (by linarith) hmin
+    exact_mod_cast this.trans hm
+  set P := uniformPartition hab' m hm0
+  have hstep : ∀ j < P.n, P.x (j + 1) - P.x j < min δ₁ δ₂ := fun j _ => by
+    simp only [P, uniformPartition]
+    push_cast
+    have hm' : (0 : ℝ) < m := Nat.cast_pos.mpr hm0
+    rw [show a + ((j : ℝ) + 1) * ((b - a) / m) - (a + j * ((b - a) / m)) = (b - a) / m by ring,
+      div_lt_iff₀ hm']
+    rw [div_lt_iff₀ hmin] at hm
+    linarith
+  -- the sum over the partition bounds `V` from below
+  have hsumV : ∑ j ∈ range P.n, ‖f (P.x (j + 1)) - f (P.x j)‖ ≤ V := by
+    set u : ℕ → ℝ := fun j => P.x (min j P.n) with hu
+    have humono : Monotone u := fun i j hij =>
+      P.le_of_le (min_le_min_right _ hij) (min_le_right _ _)
+    have hus : ∀ i, u i ∈ Icc a b := fun i => P.mem_Icc (min_le_right _ _)
+    have h1 := eVariationOn.sum_le (f := f) humono hus (n := P.n)
+    rw [hVdef, ← ENNReal.ofReal_le_iff_le_toReal hV, ENNReal.ofReal_sum_of_nonneg
+      fun i _ => norm_nonneg _]
+    refine le_trans (le_of_eq ?_) h1
+    refine sum_congr rfl fun j hj => ?_
+    have hjn := mem_range.mp hj
+    rw [edist_dist, dist_eq_norm, hu]
+    simp only [min_eq_left hjn.le, min_eq_left (Nat.succ_le_of_lt hjn)]
+  -- each increment is close to `‖f'(ξⱼ)‖ Δⱼ`
+  have hterm : ∀ j ∈ range P.n, ‖f' (P.ξ j)‖ * (P.x (j + 1) - P.x j) - ε * (P.x (j + 1) - P.x j) ≤
+      ‖f (P.x (j + 1)) - f (P.x j)‖ := by
+    intro j hj
+    have hjn := mem_range.mp hj
+    have hlt := P.lt j hjn
+    have htag := P.tag j hjn
+    have hsub : Icc (P.x j) (P.x (j + 1)) ⊆ Icc a b :=
+      Icc_subset_Icc (P.mem_Icc hjn.le).1 (P.mem_Icc hjn).2
+    have hsub' : uIcc (P.x j) (P.x (j + 1)) ⊆ Icc a b := by rw [uIcc_of_le hlt.le]; exact hsub
+    have hint : ∫ x in P.x j..P.x (j + 1), f' x = f (P.x (j + 1)) - f (P.x j) :=
+      intervalIntegral.integral_eq_sub_of_hasDerivAt (fun x hx => hf x (hsub' hx))
+        ((hf'.mono hsub').intervalIntegrable)
+    have hconst : ∫ x in P.x j..P.x (j + 1), f' (P.ξ j) = (P.x (j + 1) - P.x j) • f' (P.ξ j) :=
+      intervalIntegral.integral_const _
+    have hdiff : ‖∫ x in P.x j..P.x (j + 1), (f' x - f' (P.ξ j))‖ ≤ ε * (P.x (j + 1) - P.x j) := by
+      have := intervalIntegral.norm_integral_le_of_norm_le_const (a := P.x j) (b := P.x (j + 1))
+        (f := fun x => f' x - f' (P.ξ j)) (C := ε) fun x hx => by
+          rw [uIoc_of_le hlt.le] at hx
+          have hx' := Ioc_subset_Icc_self hx
+          have hd : dist x (P.ξ j) < δ₂ := by
+            rw [Real.dist_eq, abs_lt]
+            have := (hstep j hjn).trans_le (min_le_right _ _)
+            constructor <;> linarith [hx'.1, hx'.2, htag.1, htag.2]
+          have := hU x (hsub hx') (P.ξ j) (hsub htag) hd
+          rw [dist_eq_norm] at this
+          exact this.le
+      rwa [abs_of_nonneg (sub_nonneg.mpr hlt.le)] at this
+    rw [intervalIntegral.integral_sub (hf'.mono hsub').intervalIntegrable intervalIntegrable_const,
+      hint, hconst] at hdiff
+    have h1 := abs_norm_sub_norm_le (f (P.x (j + 1)) - f (P.x j))
+      ((P.x (j + 1) - P.x j) • f' (P.ξ j))
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.mpr hlt.le), abs_le] at h1
+    linarith [h1.1]
+  have hsum := Finset.sum_le_sum hterm
+  rw [Finset.sum_sub_distrib, ← Finset.mul_sum, P.sum_lengths] at hsum
+  have hRS := hR P fun j hj => (hstep j hj).trans_le (min_le_left _ _)
+  rw [abs_lt] at hRS
+  have hRS' : I - ε < P.riemannSum fun x => ‖f' x‖ := by linarith [hRS.1]
+  have hmain : P.riemannSum (fun x => ‖f' x‖) - ε * (b - a) ≤ V := by
+    rw [TaggedPartition.riemannSum]
+    linarith
+  have : I - ε * (b - a + 1) ≤ V := by linarith
+  rw [hε] at this
+  have hden : 0 < 2 * (b - a + 1) := by linarith
+  have : (I - V) / (2 * (b - a + 1)) * (b - a + 1) = (I - V) / 2 := by field_simp
+  linarith
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- The variation is unchanged by negating the function. -/
+theorem eVariationOn_neg (f : ℝ → E) (s : Set ℝ) : eVariationOn (-f) s = eVariationOn f s := by
+  unfold eVariationOn
+  exact iSup_congr fun p => sum_congr rfl fun i _ => by simp only [Pi.neg_apply, edist_neg_neg]
+
+/-- **DLMF 1.4.33.** For real `f` on a set `s` (the closure of the interval `(a, b)`), the total
+variation `𝒱_{a,b}(f) = eVariationOn f s` is the supremum of `∑ |f(x_j) − f(x_{j−1})|` over all
+finite sets of points `x₀ < x₁ < ⋯ < xₙ` of `s`. -/
+theorem dlmf_1_4_33 (f : ℝ → ℝ) (s : Set ℝ) :
+    eVariationOn f s =
+      ⨆ p : (n : ℕ) × {u : ℕ → ℝ // StrictMonoOn u (Set.Iic n) ∧ ∀ i ∈ Set.Iic n, u i ∈ s},
+        ENNReal.ofReal (∑ j ∈ range p.1, |f (p.2.1 (j + 1)) - f (p.2.1 j)|) := by
+  rw [eVariationOn.eVariationOn_eq_strictMonoOn]
+  refine iSup_congr fun p => ?_
+  rw [ENNReal.ofReal_sum_of_nonneg fun i _ => abs_nonneg _]
+  exact sum_congr rfl fun i _ => by rw [edist_dist, Real.dist_eq]
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- DLMF §1.4(v): the closure of `(a, b)` is `(a, b)` with the finite endpoints added, so
+`𝒱_{a,b}(f)` is the variation on `[a, b]`, `[a, ∞)`, `(−∞, b]` or `ℝ`. -/
+theorem dlmf_1_4_v_variation_closure (f : ℝ → E) {a b : ℝ} (hab : a < b) :
+    eVariationOn f (closure (Ioo a b)) = eVariationOn f (Icc a b) ∧
+      eVariationOn f (closure (Ioi a)) = eVariationOn f (Ici a) ∧
+      eVariationOn f (closure (Iio b)) = eVariationOn f (Iic b) := by
+  rw [closure_Ioo hab.ne, closure_Ioi, closure_Iio]
+  exact ⟨rfl, rfl, rfl⟩
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- DLMF §1.4(v): `f` is of bounded variation on `(a, b)` when `𝒱_{a,b}(f) < ∞`. -/
+theorem dlmf_1_4_v_boundedVariationOn_iff (f : ℝ → E) (s : Set ℝ) :
+    BoundedVariationOn f s ↔ eVariationOn f s < ⊤ :=
+  lt_top_iff_ne_top.symm
+
+/-- Bounded variation of real `f`, in terms of the sums of DLMF 1.4.33: they are bounded. -/
+theorem dlmf_1_4_v_boundedVariationOn_iff_bdd (f : ℝ → ℝ) (s : Set ℝ) :
+    BoundedVariationOn f s ↔ ∃ M : ℝ, ∀ (n : ℕ) (u : ℕ → ℝ), StrictMonoOn u (Set.Iic n) →
+      (∀ i ∈ Set.Iic n, u i ∈ s) → ∑ j ∈ range n, |f (u (j + 1)) - f (u j)| ≤ M := by
+  constructor
+  · intro h
+    refine ⟨(eVariationOn f s).toReal, fun n u hu hus => ?_⟩
+    rw [← ENNReal.ofReal_le_iff_le_toReal h, dlmf_1_4_33]
+    exact le_iSup (fun p : (n : ℕ) ×
+      {u : ℕ → ℝ // StrictMonoOn u (Set.Iic n) ∧ ∀ i ∈ Set.Iic n, u i ∈ s} =>
+        ENNReal.ofReal (∑ j ∈ range p.1, |f (p.2.1 (j + 1)) - f (p.2.1 j)|)) ⟨n, u, hu, hus⟩
+  · rintro ⟨M, hM⟩
+    show eVariationOn f s ≠ ⊤
+    rw [dlmf_1_4_33]
+    exact ne_top_of_le_ne_top ENNReal.ofReal_ne_top
+      (iSup_le fun p => ENNReal.ofReal_le_ofReal (hM p.1 p.2.1 p.2.2.1 p.2.2.2))
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- DLMF's `g(x) = 𝒱_{a,x}(f)`: the variation of `f` on the part of `s` at or to the left of `x`
+(`a` being the left end of `s`, possibly `−∞`).  When `a` is the least element of `s` this is
+Mathlib's `variationOnFromTo f s a x`. -/
+noncomputable def leftVariation (f : ℝ → E) (s : Set ℝ) (x : ℝ) : ℝ :=
+  (eVariationOn f (s ∩ Iic x)).toReal
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+theorem leftVariation_eq_variationOnFromTo {f : ℝ → E} {s : Set ℝ} {a : ℝ} (ha : IsLeast s a)
+    {x : ℝ} (hx : x ∈ s) : leftVariation f s x = variationOnFromTo f s a x := by
+  rw [leftVariation, variationOnFromTo.eq_of_le f s (ha.2 hx)]
+  congr 2
+  ext y
+  simp only [mem_inter_iff, Set.mem_Iic, Set.mem_Icc]
+  exact ⟨fun h => ⟨h.1, ha.2 h.1, h.2⟩, fun h => ⟨h.1, h.2.2⟩⟩
+
+/-- DLMF §1.4(v), the Jordan decomposition: if `f` is of bounded variation on `s`, then
+`g(x) = 𝒱_{a,x}(f)` and `h(x) = 𝒱_{a,x}(f) − f(x)` are nondecreasing bounded functions on `s`,
+and `f = g − h`. -/
+theorem dlmf_1_4_v_jordan {f : ℝ → ℝ} {s : Set ℝ} (hf : BoundedVariationOn f s) :
+    MonotoneOn (leftVariation f s) s ∧ MonotoneOn (leftVariation f s - f) s ∧
+      (∃ C, ∀ x ∈ s, |leftVariation f s x| ≤ C) ∧
+      (∃ C, ∀ x ∈ s, |(leftVariation f s - f) x| ≤ C) ∧
+      ∀ x, f x = leftVariation f s x - (leftVariation f s - f) x := by
+  have hfin : ∀ t ⊆ s, eVariationOn f t ≠ ⊤ := fun t ht =>
+    ne_top_of_le_ne_top hf (eVariationOn.mono f ht)
+  -- the variation up to `y` dominates the variation up to `x ∈ s` plus that on `[x, y]`
+  have hsplit : ∀ x ∈ s, ∀ y, x ≤ y →
+      leftVariation f s x + (eVariationOn f (s ∩ Icc x y)).toReal ≤ leftVariation f s y := by
+    intro x hx y hxy
+    have h1 := eVariationOn.add_le_union f (s := s ∩ Iic x) (t := s ∩ Icc x y)
+      fun u hu v hv => hu.2.trans hv.2.1
+    have hU : (s ∩ Iic x) ∪ (s ∩ Icc x y) ⊆ s ∩ Iic y := by
+      rintro z (⟨hz, hzx⟩ | ⟨hz, hzxy⟩)
+      · exact ⟨hz, hzx.trans hxy⟩
+      · exact ⟨hz, hzxy.2⟩
+    rw [leftVariation, leftVariation,
+      ← ENNReal.toReal_add (hfin _ inter_subset_left) (hfin _ inter_subset_left)]
+    exact ENNReal.toReal_mono (hfin _ inter_subset_left) (h1.trans (eVariationOn.mono f hU))
+  have hbdd : ∀ x, |leftVariation f s x| ≤ (eVariationOn f s).toReal := fun x => by
+    rw [leftVariation, abs_of_nonneg ENNReal.toReal_nonneg]
+    exact ENNReal.toReal_mono hf (eVariationOn.mono f inter_subset_left)
+  refine ⟨fun x hx y _ hxy =>
+    le_trans (le_add_of_nonneg_right ENNReal.toReal_nonneg) (hsplit x hx y hxy), ?_,
+    ⟨_, fun x _ => hbdd x⟩, ?_, fun x => by simp⟩
+  · intro x hx y hy hxy
+    have hd := eVariationOn.edist_le f (s := s ∩ Icc x y) ⟨hx, le_rfl, hxy⟩ ⟨hy, hxy, le_rfl⟩
+    rw [edist_dist, Real.dist_eq] at hd
+    have hd' : |f x - f y| ≤ (eVariationOn f (s ∩ Icc x y)).toReal :=
+      (ENNReal.ofReal_le_iff_le_toReal (hfin _ inter_subset_left)).mp hd
+    have := hsplit x hx y hxy
+    simp only [Pi.sub_apply]
+    linarith [neg_abs_le (f x - f y)]
+  · rcases s.eq_empty_or_nonempty with rfl | ⟨x₀, hx₀⟩
+    · exact ⟨0, fun x hx => hx.elim⟩
+    refine ⟨2 * (eVariationOn f s).toReal + |f x₀|, fun x hx => ?_⟩
+    have h2 := hf.dist_le hx hx₀
+    rw [Real.dist_eq] at h2
+    simp only [Pi.sub_apply]
+    calc |leftVariation f s x - f x| ≤ |leftVariation f s x| + |f x| := abs_sub _ _
+      _ ≤ _ := by linarith [hbdd x, abs_sub_abs_le_abs_sub (f x) (f x₀)]
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- **Olver §11.3**: the subdivision `x₀ = a`, `x₁ = b` gives `𝒱_{a,b}(f) ≥ ‖f(b) − f(a)‖`. -/
+theorem olver_11_3 (f : ℝ → E) {a b : ℝ} (hab : a ≤ b) :
+    ENNReal.ofReal ‖f b - f a‖ ≤ eVariationOn f (Icc a b) := by
+  rw [← dist_eq_norm, ← edist_dist]
+  exact eVariationOn.edist_le f (Set.right_mem_Icc.mpr hab) (Set.left_mem_Icc.mpr hab)
+
+/-- **Olver (11.01)**: equality holds when `f` is monotonic on `[a, b]`. -/
+theorem olver_11_01 {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : MonotoneOn f (Icc a b) ∨ AntitoneOn f (Icc a b)) :
+    eVariationOn f (Icc a b) = ENNReal.ofReal |f b - f a| := by
+  have ha := Set.left_mem_Icc.mpr hab
+  have hb := Set.right_mem_Icc.mpr hab
+  rcases hf with hf | hf
+  · rw [abs_of_nonneg (sub_nonneg.mpr (hf ha hb hab))]
+    have := hf.eVariationOn_eq ha hb
+    rwa [Set.inter_self] at this
+  · have hneg : MonotoneOn (-f) (Icc a b) := fun x hx y hy hxy => neg_le_neg (hf hx hy hxy)
+    rw [← eVariationOn_neg, abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr (hf ha hb hab))]
+    have := hneg.eVariationOn_eq ha hb
+    rwa [Set.inter_self, Pi.neg_apply, Pi.neg_apply, neg_sub_neg] at this
+
+/-- **Olver §11.3**: subdividing `[a, b]` at the maxima and minima of `f`, so that `f` is
+monotonic on each subinterval `[x_j, x_{j+1}]`, gives `𝒱_{a,b}(f) = ∑ |f(x_{j+1}) − f(x_j)|`. -/
+theorem olver_11_3_subdivision {f : ℝ → ℝ} {x : ℕ → ℝ} (hx : Monotone x) {n : ℕ}
+    (hf : ∀ j < n, MonotoneOn f (Icc (x j) (x (j + 1))) ∨ AntitoneOn f (Icc (x j) (x (j + 1)))) :
+    eVariationOn f (Icc (x 0) (x n)) =
+      ENNReal.ofReal (∑ j ∈ range n, |f (x (j + 1)) - f (x j)|) := by
+  have h := eVariationOn.sum f hx (s := Icc (x 0) (x n)) (n := n)
+    fun i _ hin => ⟨hx (Nat.zero_le i), hx hin.le⟩
+  rw [Set.inter_self] at h
+  rw [← h, ENNReal.ofReal_sum_of_nonneg fun i _ => abs_nonneg _]
+  refine sum_congr rfl fun j hj => ?_
+  have hjn := mem_range.mp hj
+  rw [inter_eq_right.mpr (Icc_subset_Icc (hx (Nat.zero_le j)) (hx hjn)),
+    olver_11_01 (hx (Nat.le_succ j)) (hf j hjn)]
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- **Olver Ex. 11.1**: `𝒱(f + g) ≤ 𝒱(f) + 𝒱(g)`. -/
+theorem olver_ex_11_1_add (f g : ℝ → E) (s : Set ℝ) :
+    eVariationOn (f + g) s ≤ eVariationOn f s + eVariationOn g s := by
+  refine iSup_le fun p => ?_
+  obtain ⟨n, u, hu, hus⟩ := p
+  calc ∑ i ∈ range n, edist ((f + g) (u (i + 1))) ((f + g) (u i))
+      ≤ ∑ i ∈ range n, (edist (f (u (i + 1))) (f (u i)) + edist (g (u (i + 1))) (g (u i))) :=
+        sum_le_sum fun i _ => edist_add_add_le _ _ _ _
+    _ = ∑ i ∈ range n, edist (f (u (i + 1))) (f (u i)) +
+          ∑ i ∈ range n, edist (g (u (i + 1))) (g (u i)) := sum_add_distrib
+    _ ≤ _ := add_le_add (eVariationOn.sum_le hu hus) (eVariationOn.sum_le hu hus)
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+/-- **Olver Ex. 11.1**: `𝒱(f) ≥ 𝒱(‖f‖)`, since the norm is `1`-Lipschitz. -/
+theorem olver_ex_11_1_norm (f : ℝ → E) (s : Set ℝ) :
+    eVariationOn (fun x => ‖f x‖) s ≤ eVariationOn f s := by
+  have := (lipschitzWith_one_norm (E := E)).lipschitzOnWith (s := univ)
+    |>.comp_eVariationOn_le (g := f) (s := s) (mapsTo_univ _ _)
+  rw [ENNReal.coe_one, one_mul] at this
+  exact this
+
+/-- **Olver Ex. 11.1** for real `f`: `𝒱(|f|) ≤ 𝒱(f)`. -/
+theorem olver_ex_11_1_abs (f : ℝ → ℝ) (s : Set ℝ) :
+    eVariationOn (fun x => |f x|) s ≤ eVariationOn f s := by
+  simpa only [Real.norm_eq_abs] using olver_ex_11_1_norm f s
+
+/-- An open order-connected subset of `ℝ` (an open interval, possibly unbounded) is the increasing
+union of compact intervals `[c n, d n]` it contains, built from an enumeration of its rational
+points. -/
+theorem exists_Icc_exhaustion {I : Set ℝ} (hI : IsOpen I) (hI' : I.OrdConnected)
+    (hne : I.Nonempty) : ∃ c d : ℕ → ℝ, Antitone c ∧ Monotone d ∧ (∀ n, c n ≤ d n) ∧
+      (∀ n, Icc (c n) (d n) ⊆ I) ∧ ⋃ n, Icc (c n) (d n) = I := by
+  -- every point of `I` has rational points of `I` on both sides
+  have hrat : ∀ x ∈ I, ∃ r₁ r₂ : ℚ, (r₁ : ℝ) ∈ I ∩ range ((↑) : ℚ → ℝ) ∧
+      (r₂ : ℝ) ∈ I ∩ range ((↑) : ℚ → ℝ) ∧ (r₁ : ℝ) ≤ x ∧ x ≤ r₂ := by
+    intro x hx
+    obtain ⟨ε, hε, hball⟩ := Metric.mem_nhds_iff.mp (hI.mem_nhds hx)
+    obtain ⟨r₁, hr₁⟩ := exists_rat_btwn (show x - ε < x by linarith)
+    obtain ⟨r₂, hr₂⟩ := exists_rat_btwn (show x < x + ε by linarith)
+    refine ⟨r₁, r₂, ⟨hball ?_, r₁, rfl⟩, ⟨hball ?_, r₂, rfl⟩, hr₁.2.le, hr₂.1.le⟩ <;>
+      rw [Metric.mem_ball, Real.dist_eq, abs_lt] <;> constructor <;> linarith
+  obtain ⟨x₀, hx₀⟩ := hne
+  obtain ⟨r₀, -, hr₀, -, -, -⟩ := hrat x₀ hx₀
+  obtain ⟨q, hq⟩ := ((countable_range _).mono (inter_subset_right (s := I))).exists_eq_range
+    ⟨_, hr₀⟩
+  have hqI : ∀ n, q n ∈ I := fun n => by
+    have : q n ∈ I ∩ range ((↑) : ℚ → ℝ) := by rw [hq]; exact mem_range_self n
+    exact this.1
+  have hne' : ∀ n, (range (n + 1)).Nonempty := fun n => ⟨0, mem_range.mpr n.succ_pos⟩
+  have hsub : ∀ n, Icc ((range (n + 1)).inf' (hne' n) q) ((range (n + 1)).sup' (hne' n) q) ⊆ I :=
+    fun n => by
+      obtain ⟨i, -, hi⟩ := Finset.exists_mem_eq_inf' (hne' n) q
+      obtain ⟨j, -, hj⟩ := Finset.exists_mem_eq_sup' (hne' n) q
+      rw [hi, hj]
+      exact hI'.out (hqI i) (hqI j)
+  refine ⟨fun n => (range (n + 1)).inf' (hne' n) q, fun n => (range (n + 1)).sup' (hne' n) q,
+    fun m n hmn => Finset.inf'_mono q (range_subset_range.mpr (by omega)) (hne' m),
+    fun m n hmn => Finset.sup'_mono q (range_subset_range.mpr (by omega)) (hne' m),
+    fun n => (Finset.inf'_le q (mem_range.mpr n.succ_pos)).trans
+      (Finset.le_sup' q (mem_range.mpr n.succ_pos)), hsub,
+    subset_antisymm (iUnion_subset hsub) fun x hx => ?_⟩
+  obtain ⟨r₁, r₂, hr₁, hr₂, h₁, h₂⟩ := hrat x hx
+  rw [hq] at hr₁ hr₂
+  obtain ⟨i, hi⟩ := hr₁
+  obtain ⟨j, hj⟩ := hr₂
+  refine mem_iUnion.mpr ⟨max i j, ?_, ?_⟩
+  · calc (range (max i j + 1)).inf' (hne' _) q ≤ q i :=
+        Finset.inf'_le q (mem_range.mpr (by omega))
+      _ ≤ x := hi ▸ h₁
+  · calc x ≤ q j := hj ▸ h₂
+      _ ≤ (range (max i j + 1)).sup' (hne' _) q := Finset.le_sup' q (mem_range.mpr (by omega))
+
+/-- **DLMF 1.4.34, Olver §11.4** on an open interval `I` (bounded or not): if `f` has continuous
+derivative `f'` on `I` and `‖f'‖` is integrable over `I`, then `𝒱_I(f) = ∫_I ‖f'(x)‖ dx`.  The
+upper bound is Olver's `∑ ‖f(x_{s+1}) − f(x_s)‖ = ∑ ‖∫ f'‖ ≤ ∫ ‖f'‖`; the lower bound (11.03)
+is `𝒱_I(f) ≥ 𝒱_{c,d}(f) = ∫_c^d ‖f'‖` for arbitrary `c ≤ d` in `I`, letting `[c, d]` exhaust
+`I`. -/
+theorem eVariationOn_eq_integral_of_isOpen {f f' : ℝ → E} {I : Set ℝ} (hI : IsOpen I)
+    (hI' : I.OrdConnected) (hf : ∀ x ∈ I, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' I)
+    (hint : IntegrableOn (fun x => ‖f' x‖) I) :
+    eVariationOn f I = ENNReal.ofReal (∫ x in I, ‖f' x‖) := by
+  rcases I.eq_empty_or_nonempty with rfl | hne
+  · simp
+  apply le_antisymm
+  · refine iSup_le fun p => ?_
+    obtain ⟨n, u, hu, hus⟩ := p
+    have hsub : Icc (u 0) (u n) ⊆ I := hI'.out (hus 0) (hus n)
+    calc ∑ i ∈ range n, edist (f (u (i + 1))) (f (u i))
+        = ENNReal.ofReal (∑ i ∈ range n, ‖f (u (i + 1)) - f (u i)‖) := by
+          rw [ENNReal.ofReal_sum_of_nonneg fun i _ => norm_nonneg _]
+          exact sum_congr rfl fun i _ => by rw [edist_dist, dist_eq_norm]
+      _ ≤ ENNReal.ofReal (∫ x in u 0..u n, ‖f' x‖) :=
+          ENNReal.ofReal_le_ofReal (sum_norm_sub_le_integral (hu (Nat.zero_le n))
+            (fun x hx => hf x (hsub hx)) (hf'.mono hsub) hu
+            fun i hi => ⟨hu (Nat.zero_le i), hu hi⟩)
+      _ ≤ ENNReal.ofReal (∫ x in I, ‖f' x‖) := by
+          rw [intervalIntegral.integral_of_le (hu (Nat.zero_le n))]
+          exact ENNReal.ofReal_le_ofReal (setIntegral_mono_set hint
+            (ae_of_all _ fun x => norm_nonneg _) (ae_of_all _ (Ioc_subset_Icc_self.trans hsub)))
+  · obtain ⟨c, d, hc, hd, hcd, hsub, hU⟩ := exists_Icc_exhaustion hI hI' hne
+    have hlim : Tendsto (fun n => ∫ x in Icc (c n) (d n), ‖f' x‖) atTop
+        (𝓝 (∫ x in I, ‖f' x‖)) := by
+      have := tendsto_setIntegral_of_monotone (μ := volume) (f := fun x => ‖f' x‖)
+        (s := fun n => Icc (c n) (d n)) (fun n => measurableSet_Icc)
+        (fun m n hmn => Icc_subset_Icc (hc hmn) (hd hmn)) (by rw [hU]; exact hint)
+      rwa [hU] at this
+    refine le_of_tendsto' (ENNReal.tendsto_ofReal hlim) fun n => ?_
+    rw [integral_Icc_eq_integral_Ioc, ← intervalIntegral.integral_of_le (hcd n),
+      ← olver_11_02 (hcd n) (fun x hx => hf x (hsub n hx)) (hf'.mono (hsub n))]
+    exact eVariationOn.mono f (hsub n)
+
+/-- **DLMF 1.4.34** for a bounded interval: if `f` is continuous on `[a, b]`, `f'` is continuous
+on `(a, b)` and `∫_a^b ‖f'‖` exists, then `𝒱_{a,b}(f) = ∫_a^b ‖f'(x)‖ dx`. -/
+theorem dlmf_1_4_34 {f f' : ℝ → E} {a b : ℝ} (hab : a < b) (hfc : ContinuousOn f (Icc a b))
+    (hf : ∀ x ∈ Ioo a b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Ioo a b))
+    (hint : IntegrableOn (fun x => ‖f' x‖) (Ioo a b)) :
+    eVariationOn f (Icc a b) = ENNReal.ofReal (∫ x in a..b, ‖f' x‖) := by
+  rw [intervalIntegral.integral_of_le hab.le, integral_Ioc_eq_integral_Ioo,
+    ← eVariationOn_eq_integral_of_isOpen isOpen_Ioo ordConnected_Ioo hf hf' hint]
+  -- the variation is unchanged by adding the endpoints, by continuity of `f` there
+  have hb : eVariationOn f (Ioo a b) = eVariationOn f (Ioc a b) := by
+    have h := eVariationOn.eVariationOn_inter_Iio_eq_inter_Iic_of_continuousWithinAt (f := f)
+      (s := Ioi a) (a := b) (by rw [Ioi_inter_Iio, nhdsWithin_Ioo_eq_nhdsLT hab]; infer_instance)
+      (by
+        rw [Ioi_inter_Iic]
+        exact (hfc b (Set.right_mem_Icc.mpr hab.le)).mono Ioc_subset_Icc_self)
+    rwa [Ioi_inter_Iio, Ioi_inter_Iic] at h
+  have ha : eVariationOn f (Ioc a b) = eVariationOn f (Icc a b) :=
+    eVariationOn.eVariationOn_Ioc_eq_Icc_of_continuousWithinAt
+      ((hfc a (Set.left_mem_Icc.mpr hab.le)).mono_of_mem_nhdsWithin (Icc_mem_nhdsGE hab))
+  rw [← ha, ← hb]
+
+/-- **DLMF 1.4.34** on `[a, ∞)`: `𝒱_{a,∞}(f) = ∫_a^∞ ‖f'(x)‖ dx`. -/
+theorem dlmf_1_4_34_Ioi {f f' : ℝ → E} {a : ℝ} (hfc : ContinuousWithinAt f (Ici a) a)
+    (hf : ∀ x ∈ Ioi a, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Ioi a))
+    (hint : IntegrableOn (fun x => ‖f' x‖) (Ioi a)) :
+    eVariationOn f (Ici a) = ENNReal.ofReal (∫ x in Ioi a, ‖f' x‖) := by
+  rw [← eVariationOn_eq_integral_of_isOpen isOpen_Ioi ordConnected_Ioi hf hf' hint]
+  have h := eVariationOn.eVariationOn_inter_Ioi_eq_inter_Ici_of_continuousWithinAt (f := f)
+    (s := univ) (a := a) (by rw [univ_inter]; infer_instance) (by rwa [univ_inter])
+  rwa [univ_inter, univ_inter, eq_comm] at h
+
+/-- **DLMF 1.4.34** on `(−∞, b]`: `𝒱_{−∞,b}(f) = ∫_{−∞}^b ‖f'(x)‖ dx`. -/
+theorem dlmf_1_4_34_Iio {f f' : ℝ → E} {b : ℝ} (hfc : ContinuousWithinAt f (Iic b) b)
+    (hf : ∀ x ∈ Iio b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Iio b))
+    (hint : IntegrableOn (fun x => ‖f' x‖) (Iio b)) :
+    eVariationOn f (Iic b) = ENNReal.ofReal (∫ x in Iio b, ‖f' x‖) := by
+  rw [← eVariationOn_eq_integral_of_isOpen isOpen_Iio ordConnected_Iio hf hf' hint]
+  have h := eVariationOn.eVariationOn_inter_Iio_eq_inter_Iic_of_continuousWithinAt (f := f)
+    (s := univ) (a := b) (by rw [univ_inter]; infer_instance) (by rwa [univ_inter])
+  rwa [univ_inter, univ_inter, eq_comm] at h
+
+/-- **DLMF 1.4.34** on `(−∞, ∞)`: `𝒱_{−∞,∞}(f) = ∫_{−∞}^∞ ‖f'(x)‖ dx`. -/
+theorem dlmf_1_4_34_univ {f f' : ℝ → E} (hf : ∀ x, HasDerivAt f (f' x) x) (hf' : Continuous f')
+    (hint : Integrable fun x => ‖f' x‖) :
+    eVariationOn f univ = ENNReal.ofReal (∫ x, ‖f' x‖) := by
+  rw [← Measure.restrict_univ (μ := volume)]
+  exact eVariationOn_eq_integral_of_isOpen isOpen_univ ordConnected_univ (fun x _ => hf x)
+    hf'.continuousOn hint.integrableOn
+
+/-- **DLMF 1.4.34** for real `f` on a compact interval, with `|f'|` in place of `‖f'‖`. -/
+theorem dlmf_1_4_34_real {f f' : ℝ → ℝ} {a b : ℝ} (hab : a < b) (hfc : ContinuousOn f (Icc a b))
+    (hf : ∀ x ∈ Ioo a b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Ioo a b))
+    (hint : IntegrableOn (fun x => |f' x|) (Ioo a b)) :
+    eVariationOn f (Icc a b) = ENNReal.ofReal (∫ x in a..b, |f' x|) := by
+  simpa only [Real.norm_eq_abs] using
+    dlmf_1_4_34 hab hfc hf hf' (by simpa only [Real.norm_eq_abs] using hint)
+
+/-- **Olver §11.5, DLMF §1.4(v)**: for a complex function `f` of the real variable `x`, the
+variation is given by (11.02) / (1.4.34): `𝒱_{a,b}(f) = ∫_a^b |f'(x)| dx`. -/
+theorem olver_11_5 {f f' : ℝ → ℂ} {a b : ℝ} (hab : a ≤ b)
+    (hf : ∀ x ∈ Icc a b, HasDerivAt f (f' x) x) (hf' : ContinuousOn f' (Icc a b)) :
+    eVariationOn f (Icc a b) = ENNReal.ofReal (∫ x in a..b, ‖f' x‖) :=
+  olver_11_02 hab hf hf'
+
+/-- DLMF's extension of `𝒱_{a,b}(f)` by (1.4.34) to arbitrary real `a, b` (not necessarily
+`a < b`) and to complex (here `E`-valued) `f`: `𝒱_{a,b}(f) = ∫_a^b ‖f'(x)‖ dx`. -/
+noncomputable def variationIntegral (f : ℝ → E) (a b : ℝ) : ℝ :=
+  ∫ x in a..b, ‖deriv f x‖
+
+omit [CompleteSpace E] in
+/-- Reversing the endpoints negates the extended variation. -/
+theorem variationIntegral_symm (f : ℝ → E) (a b : ℝ) :
+    variationIntegral f b a = -variationIntegral f a b :=
+  intervalIntegral.integral_symm a b
+
+/-- For `a ≤ b` and continuously differentiable `f`, the extended variation is the total
+variation of `f` on `[a, b]`. -/
+theorem variationIntegral_eq_toReal {f : ℝ → E} {a b : ℝ} (hab : a ≤ b)
+    (hf : ∀ x ∈ Icc a b, DifferentiableAt ℝ f x) (hf' : ContinuousOn (deriv f) (Icc a b)) :
+    variationIntegral f a b = (eVariationOn f (Icc a b)).toReal := by
+  rw [variationIntegral, olver_11_02 hab (fun x hx => (hf x hx).hasDerivAt) hf',
+    ENNReal.toReal_ofReal (intervalIntegral.integral_nonneg hab fun x _ => norm_nonneg _)]
+
+/-- Splitting a sum over `range (2n)` into consecutive pairs. -/
+theorem sum_range_two_mul (g : ℕ → ℝ) (n : ℕ) :
+    ∑ k ∈ range (2 * n), g k = ∑ i ∈ range n, (g (2 * i) + g (2 * i + 1)) := by
+  induction n with
+  | zero => simp
+  | succ n ih => rw [show 2 * (n + 1) = 2 * n + 1 + 1 by ring, sum_range_succ, sum_range_succ,
+      sum_range_succ, ih, add_assoc]
+
+/-- **Olver Ex. 11.1**, the equality case: for real continuous `f` on an interval `s`,
+`𝒱(|f|) = 𝒱(f)`.  Refining a subdivision by a zero of `f` (intermediate value theorem) between
+any two consecutive points where `f` changes sign makes the `|f|`-sum equal the `f`-sum. -/
+theorem olver_ex_11_1_abs_eq {f : ℝ → ℝ} {s : Set ℝ} (hs : s.OrdConnected)
+    (hf : ContinuousOn f s) : eVariationOn (fun x => |f x|) s = eVariationOn f s := by
+  refine le_antisymm (olver_ex_11_1_abs f s) (iSup_le fun p => ?_)
+  obtain ⟨n, u, hu, hus⟩ := p
+  -- a point `z i` of `[u i, u (i+1)]`: a zero of `f` when `f` changes sign, else `u i`
+  have hz : ∀ i, ∃ z ∈ Icc (u i) (u (i + 1)),
+      (f (u i) * f (u (i + 1)) ≤ 0 → f z = 0) ∧ (0 < f (u i) * f (u (i + 1)) → z = u i) := by
+    intro i
+    have hsub : Icc (u i) (u (i + 1)) ⊆ s := hs.out (hus i) (hus (i + 1))
+    by_cases h : f (u i) * f (u (i + 1)) ≤ 0
+    · rcases mul_nonpos_iff.mp h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+      · obtain ⟨z, hz, hfz⟩ := intermediate_value_Icc' (hu (Nat.le_succ i)) (hf.mono hsub) ⟨h2, h1⟩
+        exact ⟨z, hz, fun _ => hfz, fun h' => absurd h' (not_lt.mpr h)⟩
+      · obtain ⟨z, hz, hfz⟩ := intermediate_value_Icc (hu (Nat.le_succ i)) (hf.mono hsub) ⟨h1, h2⟩
+        exact ⟨z, hz, fun _ => hfz, fun h' => absurd h' (not_lt.mpr h)⟩
+    · exact ⟨u i, Set.left_mem_Icc.mpr (hu (Nat.le_succ i)), fun h' => absurd h' h, fun _ => rfl⟩
+  choose z hzmem hz0 hz1 using hz
+  -- the refined sequence `u 0, z 0, u 1, z 1, …`, kept opaque
+  obtain ⟨v, hv0, hv1⟩ : ∃ v : ℕ → ℝ, (∀ m, v (2 * m) = u m) ∧ ∀ m, v (2 * m + 1) = z m :=
+    ⟨fun k => if k % 2 = 0 then u (k / 2) else z (k / 2), fun m => by
+      simp only [Nat.mul_mod_right, ↓reduceIte, Nat.mul_div_cancel_left _ two_pos], fun m => by
+      have h1 : (2 * m + 1) % 2 = 1 := by omega
+      have h2 : (2 * m + 1) / 2 = m := by omega
+      simp only [h1, h2, one_ne_zero, ↓reduceIte]⟩
+  have hv0' : ∀ m, v (2 * m + 1 + 1) = u (m + 1) := fun m => by
+    rw [show 2 * m + 1 + 1 = 2 * (m + 1) by ring, hv0]
+  have hvmono : Monotone v := by
+    refine monotone_nat_of_le_succ fun k => ?_
+    obtain ⟨m, rfl | rfl⟩ := Nat.even_or_odd' k
+    · rw [hv0, hv1]; exact (hzmem m).1
+    · rw [hv1, hv0']; exact (hzmem m).2
+  have hvs : ∀ k, v k ∈ s := fun k => by
+    obtain ⟨m, rfl | rfl⟩ := Nat.even_or_odd' k
+    · rw [hv0]; exact hus m
+    · rw [hv1]; exact hs.out (hus m) (hus (m + 1)) (hzmem m)
+  -- each original increment is at most the two refined ones
+  have hterm : ∀ i, |f (u (i + 1)) - f (u i)| ≤
+      |(|f (z i)| - |f (u i)|)| + |(|f (u (i + 1))| - |f (z i)|)| := by
+    intro i
+    by_cases h : f (u i) * f (u (i + 1)) ≤ 0
+    · rw [hz0 i h, abs_zero, zero_sub, sub_zero, abs_neg, abs_abs, abs_abs]
+      rcases mul_nonpos_iff.mp h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;>
+        cases abs_cases (f (u (i + 1)) - f (u i)) <;> cases abs_cases (f (u i)) <;>
+        cases abs_cases (f (u (i + 1))) <;> linarith
+    · rw [hz1 i (not_le.mp h), sub_self, abs_zero, zero_add]
+      rcases mul_pos_iff.mp (not_le.mp h) with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;>
+        cases abs_cases (f (u (i + 1)) - f (u i)) <;> cases abs_cases (f (u i)) <;>
+        cases abs_cases (f (u (i + 1))) <;> cases abs_cases (|f (u (i + 1))| - |f (u i)|) <;>
+        linarith
+  calc ∑ i ∈ range n, edist (f (u (i + 1))) (f (u i))
+      = ENNReal.ofReal (∑ i ∈ range n, |f (u (i + 1)) - f (u i)|) := by
+        rw [ENNReal.ofReal_sum_of_nonneg fun i _ => abs_nonneg _]
+        exact sum_congr rfl fun i _ => by rw [edist_dist, Real.dist_eq]
+    _ ≤ ENNReal.ofReal (∑ k ∈ range (2 * n), |(|f (v (k + 1))| - |f (v k)|)|) := by
+        rw [sum_range_two_mul]
+        refine ENNReal.ofReal_le_ofReal (sum_le_sum fun i _ => ?_)
+        rw [hv0, hv1, hv0']
+        exact hterm i
+    _ = ∑ k ∈ range (2 * n), edist |f (v (k + 1))| |f (v k)| := by
+        rw [ENNReal.ofReal_sum_of_nonneg fun i _ => abs_nonneg _]
+        exact sum_congr rfl fun i _ => by rw [edist_dist, Real.dist_eq]
+    _ ≤ eVariationOn (fun x => |f x|) s := eVariationOn.sum_le (f := fun x => |f x|) hvmono hvs
+
+/-- The variation of a nondecreasing function on `(−∞, b]` with limit `L` at `−∞` is
+`f(b) − L`. -/
+theorem eVariationOn_Iic_of_monotoneOn {f : ℝ → ℝ} {b L : ℝ} (hf : MonotoneOn f (Iic b))
+    (hL : Tendsto f atBot (𝓝 L)) : eVariationOn f (Iic b) = ENNReal.ofReal (f b - L) := by
+  have hLle : ∀ x ≤ b, L ≤ f x := by
+    intro x hx
+    have hg : Monotone fun y => f (min y b) := fun y z hyz =>
+      hf (mem_Iic.mpr (min_le_right _ _)) (mem_Iic.mpr (min_le_right _ _)) (min_le_min_right _ hyz)
+    have hg' : Tendsto (fun y => f (min y b)) atBot (𝓝 L) := by
+      refine hL.congr' ?_
+      filter_upwards [eventually_le_atBot b] with y hy
+      rw [min_eq_left hy]
+    have := hg.le_of_tendsto hg' x
+    rwa [min_eq_left hx] at this
+  apply le_antisymm
+  · rw [eVariationOn.eq_biSup_inter_Icc]
+    refine iSup₂_le fun p hp => ?_
+    obtain ⟨h1, h2, _⟩ := hp
+    rw [hf.eVariationOn_eq h1 h2]
+    exact ENNReal.ofReal_le_ofReal (by linarith [hf h2 (mem_Iic.mpr le_rfl) h2, hLle _ h1])
+  · have hV : ∀ c ≤ b, ENNReal.ofReal (f b - f c) ≤ eVariationOn f (Iic b) := fun c hc => by
+      rw [← hf.eVariationOn_eq (mem_Iic.mpr hc) (mem_Iic.mpr le_rfl)]
+      exact eVariationOn.mono f inter_subset_left
+    exact le_of_tendsto (ENNReal.tendsto_ofReal (tendsto_const_nhds.sub hL))
+      (by filter_upwards [eventually_le_atBot b] with c hc using hV c hc)
+
+/-- The variation of a nonincreasing function on `[a, ∞)` with limit `L` at `∞` is `f(a) − L`. -/
+theorem eVariationOn_Ici_of_antitoneOn {f : ℝ → ℝ} {a L : ℝ} (hf : AntitoneOn f (Ici a))
+    (hL : Tendsto f atTop (𝓝 L)) : eVariationOn f (Ici a) = ENNReal.ofReal (f a - L) := by
+  have hLle : ∀ x, a ≤ x → L ≤ f x := by
+    intro x hx
+    have hg : Antitone fun y => f (max y a) := fun y z hyz =>
+      hf (mem_Ici.mpr (le_max_right _ _)) (mem_Ici.mpr (le_max_right _ _)) (max_le_max_right _ hyz)
+    have hg' : Tendsto (fun y => f (max y a)) atTop (𝓝 L) := by
+      refine hL.congr' ?_
+      filter_upwards [eventually_ge_atTop a] with y hy
+      rw [max_eq_left hy]
+    have := hg.le_of_tendsto hg' x
+    rwa [max_eq_left hx] at this
+  have hneg : MonotoneOn (-f) (Ici a) := fun x hx y hy hxy => neg_le_neg (hf hx hy hxy)
+  apply le_antisymm
+  · rw [eVariationOn.eq_biSup_inter_Icc]
+    refine iSup₂_le fun p hp => ?_
+    obtain ⟨h1, h2, _⟩ := hp
+    rw [← eVariationOn_neg, hneg.eVariationOn_eq h1 h2, Pi.neg_apply, Pi.neg_apply]
+    exact ENNReal.ofReal_le_ofReal (by linarith [hf (mem_Ici.mpr le_rfl) h1 h1, hLle _ h2])
+  · have hV : ∀ c, a ≤ c → ENNReal.ofReal (f a - f c) ≤ eVariationOn f (Ici a) := fun c hc => by
+      rw [← eVariationOn_neg, ← neg_sub_neg (f c) (f a), ← Pi.neg_apply f, ← Pi.neg_apply f,
+        ← hneg.eVariationOn_eq (mem_Ici.mpr le_rfl) (mem_Ici.mpr hc)]
+      exact eVariationOn.mono _ inter_subset_left
+    exact le_of_tendsto (ENNReal.tendsto_ofReal (tendsto_const_nhds.sub hL))
+      (by filter_upwards [eventually_ge_atTop a] with c hc using hV c hc)
+
+/-- **Olver Ex. 11.2 (ii)**: the step function `f = 0` (`x < 0`), `1/2` (`x = 0`), `1`
+(`x > 0`) has `𝒱_{−1,1}(f) = 1`. -/
+theorem olver_ex_11_2_ii :
+    eVariationOn (fun x : ℝ => if x < 0 then (0 : ℝ) else if x = 0 then 1 / 2 else 1)
+      (Icc (-1) 1) = 1 := by
+  have hmono : MonotoneOn (fun x : ℝ => if x < 0 then (0 : ℝ) else if x = 0 then 1 / 2 else 1)
+      (Icc (-1) 1) := by
+    intro x _ y _ hxy
+    simp only
+    split_ifs <;> norm_num <;>
+      first | linarith | exact ‹¬x = 0› (le_antisymm (by linarith) (not_lt.mp ‹¬x < 0›))
+  rw [olver_11_01 (a := -1) (b := 1) (by norm_num) (Or.inl hmono)]
+  norm_num
+
+/-- **Olver Ex. 11.2 (iii)**: `𝒱_{−∞,∞}(sech x) = 2`.  `sech` increases from `0` to `1` on
+`(−∞, 0]` and decreases from `1` to `0` on `[0, ∞)`. -/
+theorem olver_ex_11_2_iii : eVariationOn (fun x => (Real.cosh x)⁻¹) univ = 2 := by
+  have hcosh : ∀ x y : ℝ, |x| ≤ |y| → (Real.cosh y)⁻¹ ≤ (Real.cosh x)⁻¹ := fun x y h =>
+    (inv_le_inv₀ (Real.cosh_pos y) (Real.cosh_pos x)).mpr (Real.cosh_le_cosh.mpr h)
+  have hexp : ∀ x : ℝ, Real.exp (-x) / 2 ≤ Real.cosh x := fun x => by
+    rw [Real.cosh_eq]; linarith [Real.exp_pos x]
+  have hexp' : ∀ x : ℝ, Real.exp x / 2 ≤ Real.cosh x := fun x => by
+    rw [Real.cosh_eq]; linarith [Real.exp_pos (-x)]
+  have hbot : Tendsto (fun x => (Real.cosh x)⁻¹) atBot (𝓝 0) :=
+    (tendsto_atTop_mono hexp ((Real.tendsto_exp_atTop.comp tendsto_neg_atBot_atTop).atTop_div_const
+      two_pos)).inv_tendsto_atTop
+  have htop : Tendsto (fun x => (Real.cosh x)⁻¹) atTop (𝓝 0) :=
+    (tendsto_atTop_mono hexp' (Real.tendsto_exp_atTop.atTop_div_const two_pos)).inv_tendsto_atTop
+  have hl := eVariationOn_Iic_of_monotoneOn (b := 0) (fun x hx y hy hxy =>
+    hcosh y x (by rw [abs_of_nonpos (mem_Iic.mp hx), abs_of_nonpos (mem_Iic.mp hy)]; linarith))
+    hbot
+  have hr := eVariationOn_Ici_of_antitoneOn (a := 0) (fun x hx y hy hxy =>
+    hcosh x y (by rw [abs_of_nonneg (mem_Ici.mp hx), abs_of_nonneg (mem_Ici.mp hy)]; exact hxy))
+    htop
+  rw [← Set.Iic_union_Ici (a := (0 : ℝ)), eVariationOn.union _ isGreatest_Iic isLeast_Ici, hl, hr,
+    Real.cosh_zero, inv_one, sub_zero, ENNReal.ofReal_one, one_add_one_eq_two]
 
 end DefiniteIntegrals
 
