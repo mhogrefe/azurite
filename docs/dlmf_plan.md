@@ -260,4 +260,38 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | §1.6(i) prose | `dlmf_1_6_i_area` (base `‖a‖` × height `= ‖a × b‖`), `dlmf_1_6_i_volume` (Lebesgue volume of the parallelepiped `= |a · (b × c)|`) | `Measure.addHaar_parallelepiped`, `addHaarMeasure_eq_volume_pi` |
 | 1.6.10 | `dlmf_1_6_10` | — |
 | 1.6.11 | `dlmf_1_6_11` | — |
-| 1.6.12– | — | not yet (§1.6(ii) alternative notations onward) |
+| 1.6.12 | `dlmf_1_6_12` (summation convention as an explicit sum) | `dotProduct` |
+| 1.6.13 | `unitE`, `unitE_eq`, `dlmf_1_6_13` (`aⱼ eⱼ = a`) | `Pi.single` |
+| 1.6.14 | `leviCivita`, `dlmf_1_6_14` (`ε_{σ(1)σ(2)σ(3)} = sign σ`; `0` if not a permutation; kernel `decide`) | `Equiv.Perm.sign` |
+| 1.6.15 | `dlmf_1_6_15` | — |
+| 1.6.16 | `dlmf_1_6_16` (`ε_{jkℓ}ε_{ℓmn} = δδ − δδ`, kernel `decide`) | — |
+| 1.6.17 | `dlmf_1_6_17` (`eⱼ × eₖ = ε_{jkℓ} eℓ`) | `cross_apply` |
+| 1.6.18 | `dlmf_1_6_18` | — |
+| §1.6(ii) prose | `sum_leviCivita_eq_triple`, `dlmf_1_6_ii_volume` (volume `= |ε_{jkℓ} aⱼ bₖ cℓ|`) | — |
+| 1.6.19 | `pd` (`∂f/∂xᵢ = Df(p) eᵢ`), `hasDerivAt_pd`, `dlmf_1_6_19` (= derivative of `t ↦ f(p + t eᵢ)`) | `HasFDerivAt.comp_hasDerivAt` |
+| 1.6.20 | `grad3`, `dlmf_1_6_20` | — |
+| 1.6.21 | `div3`, `dlmf_1_6_21` | — |
+| 1.6.22 | `curl3` (components), `dlmf_1_6_22` (formal determinant as `(∇ × F)ℓ = ε_{ℓjk} ∂ⱼFₖ`) | — |
+| 1.6.23–1.6.24 | `pd_add`, `pd_sub`, `pd_mul`, `pd_div`, `dlmf_1_6_23`, `dlmf_1_6_24` (differentiable at `p`, `g(p) ≠ 0`) | `fderiv_mul`, `fderiv_add`, `fderiv_sub`, `HasDerivAt.div` |
+| 1.6.25–1.6.26 | `dlmf_1_6_25`, `dlmf_1_6_26` | `differentiableAt_pi` |
+| 1.6.27 | `dlmf_1_6_27` (`div curl F = 0`, `C²`); `pd_pd_eq`, `pd_comm`, `contDiff_pd`, `differentiable_pd` | `ContDiffAt.isSymmSndFDerivAt`, `HasFDerivAt.clm_apply`, `contDiff_pi` |
+| 1.6.28 | `dlmf_1_6_28` | — |
+| 1.6.29 | `dlmf_1_6_29` (`curl grad f = 0`) | — |
+| 1.6.30 | `lap3`, `dlmf_1_6_30` (`∇²f = ∇ · ∇f = ∑ ∂ᵢ²f`) | — |
+| 1.6.31 | `pd_mul_fun`, `dlmf_1_6_31` | — |
+| 1.6.32 | `dlmf_1_6_32` (via 1.6.26 and 1.6.29) | — |
+| 1.6.33 | `dlmf_1_6_33` | — |
+| 1.6.34 | `vlap3`, `pd_sum`, `dlmf_1_6_34` (`curl curl F = ∇(∇ · F) − ∇²F`) | `fderiv_fun_sum` |
+| 1.6.35– | — | not yet (§1.6(iv) path and line integrals onward) |
+
+### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| §1.11(ii) prose (number of zeros) | `dlmf_1_11_ii_card_roots` (complex coefficients), `dlmf_1_11_ii_card_roots_real` (real coefficients, zeros in `ℂ`) | `IsAlgClosed.card_roots_eq_natDegree`, `IsAlgClosed.card_roots_map_eq_natDegree_of_injective` |
+| §1.11(ii) prose (odd/even degree) | `dlmf_1_11_ii_odd`, `dlmf_1_11_ii_even`, `monic_tendsto_atTop`, `exists_root_Ioo_of_mul_neg`, `monic_exists_pos_root` | `tendsto_atTop_of_leadingCoeff_nonneg`, `intermediate_value_Icc`, `comp_neg_X_leadingCoeff_eq` |
+| §1.11(ii) prose (Descartes' rule of signs) | `dlmf_1_11_ii_descartes` (bound and **parity**), `dlmf_1_11_ii_descartes_neg` (`f(−z)`, negative zeros); parity proof: `neg_one_pow_signVariations` (lists), `coeffList_head`, `coeffList_getLast`, `neg_one_pow_signVariations_poly`, `sign_eval_zero_eq_sign_leadingCoeff` (IVT), `neg_one_pow_countP_roots_pos`, `signVariations_X_pow_mul`, `nat_mod_two_eq_of_neg_one_pow_eq` | `roots_countP_pos_le_signVariations` (bound only), `List.signVariations_cons_cons_of_ne_zero`, `roots_comp_neg_X`, `Multiset.prod_X_sub_C_dvd_iff_le_roots` |
+| 1.11.8 | `exampleF`, `dlmf_1_11_8` (`f(−z)`), `exampleF_coeffList`, `exampleF_neg_coeffList`, `dlmf_1_11_ii_example` (one sign change each; one positive, one negative, six non-real zeros) | `filter_roots_map_range_eq_map_roots` |
+| §1.11(ii) prose (reciprocals) | `dlmf_1_11_ii_reverse_coeff` (`zⁿ f(1/z)` is `reverse`), `dlmf_1_11_ii_reverse` | `eval₂_reverse_eq_zero_iff`, `coeff_reverse` |
+| 1.11.9 | `discriminantOfZeros`, `dlmf_1_11_9` (Mathlib's `discr` = `aₙ^{2n−2} ∏_{j<k}(zⱼ − zₖ)²`), `prod_prod_erase_sub`, `sum_card_Ioi`, `dlmf_1_11_9_complex` | `resultant_deriv`, `resultant_eq_prod_eval`, `eval_multiset_prod_X_sub_C_derivative`, `discr_C` |
+| 1.11.10 | `dlmf_1_11_10` (general `k`), `dlmf_1_11_10_sum`, `dlmf_1_11_10_pairs`, `dlmf_1_11_10_prod` | `coeff_eq_esymm_roots_of_card` |
