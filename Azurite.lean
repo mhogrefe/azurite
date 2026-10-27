@@ -1669,6 +1669,7 @@ import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4
 import Azurite.DLMF.Chapter1.Section5
+import Azurite.DLMF.Chapter1.Section6
 import Azurite.DLMF.Chapter1.SetPartitionCount
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic

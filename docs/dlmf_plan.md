@@ -242,3 +242,22 @@ after their subsection.
 | 1.5.43 | `dlmf_1_5_43` (triple integrals, likewise) | same |
 
 §1.5 is complete.
+
+### §1.6 Vectors and Vector-Valued Functions (`Azurite/DLMF/Chapter1/Section6.lean`)
+
+Vectors are `a : Fin 3 → ℝ` (components `a 0, a 1, a 2`), with Mathlib's dot product `⬝ᵥ` and
+cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 3 → ℝ` is the sup norm).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.6.1 | `dlmf_1_6_1` | — |
+| 1.6.2 | `dlmf_1_6_2` (`a · b = a₁b₁ + a₂b₂ + a₃b₃`) | `dotProduct` |
+| 1.6.3 | `vnorm` (`√(a · a)`), `dlmf_1_6_3` (= norm in `EuclideanSpace ℝ (Fin 3)`), `inner_toLp` | `EuclideanSpace.norm_eq`, `EuclideanSpace.inner_eq_star_dotProduct` |
+| 1.6.4 | `vangle`, `vangle_mem_Icc`, `dlmf_1_6_4` (`cos θ = a · b/(‖a‖ ‖b‖)`) | `InnerProductGeometry.angle`, `InnerProductGeometry.cos_angle` |
+| 1.6.5–1.6.6 | `unitI`, `unitJ`, `unitK`, `dlmf_1_6_6` | — |
+| 1.6.7–1.6.8 | `dlmf_1_6_7`, `dlmf_1_6_8` | `cross_apply` |
+| 1.6.9 | `dlmf_1_6_9_det` (formal determinant expanded along the first row), `dlmf_1_6_9` (components), `dot_cross_self_eq` (Lagrange's identity), `vnorm_cross` (`‖a × b‖ = ‖a‖ ‖b‖ sin θ`), `dlmf_1_6_9_normal` (`a × b = ‖a‖ ‖b‖ (sin θ) n`, `n` unit, normal, `det [a, b, n] > 0`) | `triple_product_eq_det`, `triple_product_permutation`, `InnerProductGeometry.sin_angle_mul_norm_mul_norm` |
+| §1.6(i) prose | `dlmf_1_6_i_area` (base `‖a‖` × height `= ‖a × b‖`), `dlmf_1_6_i_volume` (Lebesgue volume of the parallelepiped `= |a · (b × c)|`) | `Measure.addHaar_parallelepiped`, `addHaarMeasure_eq_volume_pi` |
+| 1.6.10 | `dlmf_1_6_10` | — |
+| 1.6.11 | `dlmf_1_6_11` | — |
+| 1.6.12– | — | not yet (§1.6(ii) alternative notations onward) |
