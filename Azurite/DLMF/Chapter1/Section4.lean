@@ -20,6 +20,22 @@ import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 import Mathlib.Analysis.Calculus.LHopital
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Azurite.DLMF.Chapter1.SetPartitionCount
+import Mathlib.Analysis.Normed.Group.Bounded
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
+import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+import Mathlib.Topology.UniformSpace.HeineCantor
+import Mathlib.Analysis.Calculus.Deriv.ZPow
+import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
+import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
+import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import Mathlib.MeasureTheory.Measure.Stieltjes
+import Mathlib.MeasureTheory.Measure.WithDensity
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.MeasureTheory.Function.L2Space
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.MeanValue
 
 /-!
 # DLMF §1.4: Calculus of One Variable
@@ -70,6 +86,53 @@ subsection.  Functions are real-valued functions of a real variable, `f : ℝ �
 * 1.4.14–1.4.15 L'Hôpital: `dlmf_1_4_15` (`0/0`, `deriv.lhopital_zero_nhdsNE`) and
   `dlmf_1_4_15_atTop` (`∞/∞`, proven here from Cauchy's mean value theorem:
   `lhopital_atTop_estimate`, `lhopital_atTop_right_on_Ioo`, `lhopital_atTop_left_on_Ioo`).
+
+## §1.4(iv) Indefinite integrals
+
+* `IsAntiderivOn` (`F' = f` on `I`), `IsAntiderivOn.add_const`, `dlmf_1_4_iv_antideriv`
+  (`∫ f dx = F(x) + C`: on an open interval any two indefinite integrals differ by a constant).
+* 1.4.16 `dlmf_1_4_16` (integration by parts for indefinite integrals) and
+  `dlmf_1_4_16_definite` (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`).
+* 1.4.17 `dlmf_1_4_17` (`∫ xⁿ = xⁿ⁺¹/(n + 1)`, integer `n ≠ −1`), `dlmf_1_4_17_neg_one`
+  (`∫ x⁻¹ = ln|x|`), `dlmf_1_4_17_rpow` (real `n ≠ −1`, `x > 0`).
+
+## §1.4(v) Definite integrals
+
+* Riemann integrals: `TaggedPartition` (`a = x₀ < ⋯ < xₙ = b`, tags `ξⱼ ∈ [xⱼ, xⱼ₊₁]`),
+  `TaggedPartition.riemannSum`, `HasRiemannIntegral` (1.4.18 as `max(xⱼ₊₁ − xⱼ) → 0`),
+  `RiemannIntegrable`, `HasRiemannIntegral.unique` (via `uniformPartition`).
+* `hasRiemannIntegral_of_bounded`: a bounded function continuous on `[a, b]` off a finite set has
+  Riemann integral `∫ x in a..b, f x`; hence 1.4.18 `dlmf_1_4_18` (continuous) and
+  `dlmf_1_4_v_piecewise` (piecewise continuous, `IsPiecewiseContinuous.exists_bound`).
+* 1.4.19 `dlmf_1_4_19` (and `HasRiemannIntegral.linear`), 1.4.20 `dlmf_1_4_20`, 1.4.21
+  `dlmf_1_4_21`.
+* Infinite integrals: `ConvergesAtTop`, `ConvergesAtBot` (1.4.22), `ConvergesLeft`,
+  `ConvergesRight` (1.4.23); `dlmf_1_4_22`, `dlmf_1_4_22_Iic`, `dlmf_1_4_23`,
+  `dlmf_1_4_23_right` (the limits equal the Lebesgue integrals); `dlmf_1_4_v_abs_atTop`,
+  `dlmf_1_4_v_abs_left` (absolute convergence implies convergence).
+* Stieltjes, Lebesgue, Lebesgue–Stieltjes integrals: `dlmf_1_4_v_stieltjes_measure` (Mathlib's
+  `StieltjesFunction.measure`, `dα((c, d]) = α(d) − α(c)`), `dlmf_1_4_v_lebesgue` (Lebesgue
+  measure is `dα` for `α(x) = x`), `TaggedPartition.stieltjesSum`, `HasStieltjesIntegral`,
+  `hasStieltjesIntegral_of_deriv` (for `α` with continuous derivative `w`, the Stieltjes integral
+  is `∫ f w`).
+* Absolutely continuous Stieltjes measure: 1.4.23_1 `dlmf_1_4_23_1` (`α(d) − α(c) = ∫_c^d w` gives
+  `dα = w dx`, `withDensity`), 1.4.23_2 `dlmf_1_4_23_2` (`∫ f dα = ∫ f w`),
+  `dlmf_1_4_v_absCont_of_deriv`, `stieltjesOfDeriv`, `stieltjesOfDeriv_measure` (differentiable
+  `α` with continuous `α' = w`).
+* Stieltjes measure with `α` discontinuous: `heaviside` (`H(x − x₀)`), `heaviside_measure`
+  (`dα = δ(x − x₀) dx`), `dlmf_1_4_v_heaviside` (`∫_a^b f dα = f(xₙ)` or `0`), 1.4.23_3
+  `dlmf_1_4_23_3` (`∫ f dα = ∫ w f + ∑ wₙ f(xₙ)`; `measure_sum_smul`, `integral_sum_dirac`,
+  `integrable_sum_dirac`).
+* Cauchy principal values: `HasPrincipalValue` (1.4.24), `HasPrincipalValueInfty` (1.4.25);
+  `dlmf_1_4_24`, `dlmf_1_4_25` (they equal the integral when it exists),
+  `dlmf_1_4_24_inv` (`⨍_{−1}^1 dx/x = 0`), `dlmf_1_4_25_id` (`⨍ x dx = 0`).
+* 1.4.26–1.4.27 `dlmf_1_4_26`, `dlmf_1_4_27`: the fundamental theorem of calculus.
+* 1.4.28 `dlmf_1_4_28`, `dlmf_1_4_28_piecewise`: change of variables.
+* 1.4.29 `dlmf_1_4_29`: the first mean value theorem; 1.4.30 `dlmf_1_4_30` (and
+  `dlmf_1_4_30_monotone`, `intervalIntegrable_mul_of_monotoneOn`): the second mean value theorem.
+* 1.4.31 `dlmf_1_4_31`: repeated integrals, `repeatedIntegral a n f b = (1/n!) ∫_a^b (b − x)^n f`
+  (`primitive`, `integral_pow_mul_eq_succ_mul_primitive`: one integration by parts per step).
+* 1.4.32 `l2NormSq`, `dlmf_1_4_32`: square-integrable functions (Mathlib's `MemLp f 2`).
 -/
 
 namespace Azurite.DLMF
@@ -747,5 +810,1122 @@ theorem dlmf_1_4_15_atTop {f g : ℝ → ℝ} {a L : ℝ}
       (fun x hx => (hdg x (hsub hx).2).hasDerivAt) (fun x hx => (hsub hx).2) hga.2 hdiv.2
 
 end Derivatives
+
+
+/-! ### §1.4(iv) Indefinite integrals -/
+
+/-- **DLMF §1.4(iv)**: `F` is an indefinite integral (antiderivative) of `f` on `I` if
+`F'(x) = f(x)` there. -/
+def IsAntiderivOn (F f : ℝ → ℝ) (I : Set ℝ) : Prop := ∀ x ∈ I, HasDerivAt F (f x) x
+
+/-- **DLMF §1.4(iv)**: if `F' = f`, then `F + C` is again an indefinite integral of `f`. -/
+theorem IsAntiderivOn.add_const {F f : ℝ → ℝ} {I : Set ℝ} (h : IsAntiderivOn F f I) (C : ℝ) :
+    IsAntiderivOn (fun x => F x + C) f I := fun x hx => (h x hx).add_const C
+
+/-- **DLMF §1.4(iv)**: `∫ f dx = F(x) + C`: on an open interval (more generally an open
+preconnected set), every indefinite integral of `f` is `F + C` for a constant `C`
+(`IsOpen.is_const_of_deriv_eq_zero`). -/
+theorem dlmf_1_4_iv_antideriv {F G f : ℝ → ℝ} {I : Set ℝ} (hI : IsOpen I)
+    (hI' : IsPreconnected I) (hF : IsAntiderivOn F f I) (hG : IsAntiderivOn G f I) :
+    ∃ C, ∀ x ∈ I, G x = F x + C := by
+  rcases I.eq_empty_or_nonempty with rfl | ⟨x₀, hx₀⟩
+  · exact ⟨0, fun x hx => absurd hx (Set.notMem_empty x)⟩
+  have hd : ∀ x ∈ I, HasDerivAt (fun x => G x - F x) 0 x := fun x hx => by
+    have := (hG x hx).sub (hF x hx)
+    rwa [sub_self] at this
+  refine ⟨G x₀ - F x₀, fun x hx => ?_⟩
+  have := hI.is_const_of_deriv_eq_zero (f := fun x => G x - F x) hI'
+    (fun y hy => (hd y hy).differentiableAt.differentiableWithinAt)
+    (fun y hy => (hd y hy).deriv) hx hx₀
+  linarith
+
+/-- **DLMF 1.4.16**, integration by parts: if `F' = f` and `H' = F g'`, then `F g − H` is an
+indefinite integral of `f g`: `∫ f g = (∫ f) g − ∫ (∫ f) g'`. -/
+theorem dlmf_1_4_16 {F f g g' H : ℝ → ℝ} {I : Set ℝ} (hF : IsAntiderivOn F f I)
+    (hg : ∀ x ∈ I, HasDerivAt g (g' x) x) (hH : IsAntiderivOn H (fun x => F x * g' x) I) :
+    IsAntiderivOn (fun x => F x * g x - H x) (fun x => f x * g x) I := fun x hx => by
+  have := ((hF x hx).mul (hg x hx)).sub (hH x hx)
+  convert this using 1
+  ring
+
+/-- **DLMF 1.4.16**, definite form (`intervalIntegral.integral_mul_deriv_eq_deriv_mul`):
+`∫_a^b F g' = F(b) g(b) − F(a) g(a) − ∫_a^b f g` for `F' = f`. -/
+theorem dlmf_1_4_16_definite {F f g g' : ℝ → ℝ} {a b : ℝ}
+    (hF : ∀ x ∈ uIcc a b, HasDerivAt F (f x) x) (hg : ∀ x ∈ uIcc a b, HasDerivAt g (g' x) x)
+    (hf : IntervalIntegrable f MeasureTheory.volume a b)
+    (hg' : IntervalIntegrable g' MeasureTheory.volume a b) :
+    ∫ x in a..b, f x * g x = F b * g b - F a * g a - ∫ x in a..b, F x * g' x := by
+  rw [intervalIntegral.integral_mul_deriv_eq_deriv_mul hF hg hf hg']
+  ring
+
+/-- **DLMF 1.4.17**, `n ≠ −1`: `∫ xⁿ dx = xⁿ⁺¹/(n + 1) + C` for integer `n` (at `x ≠ 0` when
+`n < 0`; `hasDerivAt_zpow`). -/
+theorem dlmf_1_4_17 {n : ℤ} (hn : n ≠ -1) {x : ℝ} (hx : x ≠ 0 ∨ 0 ≤ n) :
+    HasDerivAt (fun x : ℝ => x ^ (n + 1) / (n + 1)) (x ^ n) x := by
+  have hn' : ((n : ℝ) + 1) ≠ 0 := by
+    intro h
+    apply hn
+    exact_mod_cast (eq_neg_of_add_eq_zero_left h)
+  have := (hasDerivAt_zpow (n + 1) x (hx.imp_right fun h => by omega)).div_const ((n : ℝ) + 1)
+  convert this using 1
+  push_cast
+  rw [add_sub_cancel_right]
+  field_simp
+
+/-- **DLMF 1.4.17**, `n = −1`: `∫ x⁻¹ dx = ln|x| + C` (`Real.hasDerivAt_log`, `Real.log_abs`). -/
+theorem dlmf_1_4_17_neg_one {x : ℝ} (hx : x ≠ 0) :
+    HasDerivAt (fun x : ℝ => Real.log |x|) (x ^ (-1 : ℤ)) x := by
+  simp only [Real.log_abs, zpow_neg_one]
+  exact Real.hasDerivAt_log hx
+
+/-- **DLMF 1.4.17** for real exponents `n ≠ −1` at `x > 0` (`Real.hasDerivAt_rpow_const`). -/
+theorem dlmf_1_4_17_rpow {n x : ℝ} (hn : n ≠ -1) (hx : 0 < x) :
+    HasDerivAt (fun x : ℝ => x ^ (n + 1) / (n + 1)) (x ^ n) x := by
+  have hn' : n + 1 ≠ 0 := fun h => hn (eq_neg_of_add_eq_zero_left h)
+  have := (Real.hasDerivAt_rpow_const (p := n + 1) (Or.inl hx.ne')).div_const (n + 1)
+  convert this using 1
+  rw [add_sub_cancel_right]
+  field_simp
+
+/-! ### §1.4(v) Definite integrals
+
+Mathlib's integral `∫ x in a..b, f x` is the Lebesgue integral; the DLMF's Riemann integral is the
+limit 1.4.18 of Riemann sums over tagged partitions (`TaggedPartition`, `HasRiemannIntegral`),
+proven here to exist and agree with Mathlib's integral for bounded functions continuous off a
+finite set, in particular for continuous and for piecewise continuous functions. -/
+
+section DefiniteIntegrals
+
+open MeasureTheory Finset
+
+/-! #### Riemann integrals -/
+
+/-- **DLMF §1.4(v)**: a tagged partition `a = x₀ < x₁ < ⋯ < xₙ = b` of `[a, b]` with points
+`ξⱼ ∈ [xⱼ, xⱼ₊₁]`, `j = 0, 1, …, n − 1`. -/
+structure TaggedPartition (a b : ℝ) where
+  /-- The number of subintervals. -/
+  n : ℕ
+  /-- The division points `x₀, …, xₙ`. -/
+  x : ℕ → ℝ
+  /-- The tags `ξ₀, …, ξₙ₋₁`. -/
+  ξ : ℕ → ℝ
+  lt : ∀ j < n, x j < x (j + 1)
+  first : x 0 = a
+  last : x n = b
+  tag : ∀ j < n, ξ j ∈ Icc (x j) (x (j + 1))
+
+namespace TaggedPartition
+
+variable {a b : ℝ} (P : TaggedPartition a b)
+
+/-- The Riemann sum `∑ⱼ f(ξⱼ)(xⱼ₊₁ − xⱼ)`. -/
+def riemannSum (f : ℝ → ℝ) : ℝ := ∑ j ∈ range P.n, f (P.ξ j) * (P.x (j + 1) - P.x j)
+
+theorem le_of_le : ∀ {i j : ℕ}, i ≤ j → j ≤ P.n → P.x i ≤ P.x j := by
+  intro i j hij hjn
+  induction j with
+  | zero => rw [Nat.le_zero.mp hij]
+  | succ j ih =>
+    rcases Nat.of_le_succ hij with h | h
+    · exact (ih h (by omega)).trans (P.lt j (by omega)).le
+    · rw [h]
+
+theorem mem_Icc {j : ℕ} (hj : j ≤ P.n) : P.x j ∈ Icc a b := by
+  refine ⟨?_, ?_⟩
+  · calc a = P.x 0 := P.first.symm
+      _ ≤ P.x j := P.le_of_le (Nat.zero_le j) hj
+  · calc P.x j ≤ P.x P.n := P.le_of_le hj le_rfl
+      _ = b := P.last
+
+theorem a_le_b {a b : ℝ} (P : TaggedPartition a b) : a ≤ b :=
+  (P.mem_Icc (j := 0) (Nat.zero_le _)).1.trans (P.mem_Icc (j := 0) (Nat.zero_le _)).2
+
+theorem sum_lengths : ∑ j ∈ range P.n, (P.x (j + 1) - P.x j) = b - a := by
+  rw [Finset.sum_range_sub, P.first, P.last]
+
+/-- Disjoint subintervals inside `[c, d]` have total length at most `d − c`. -/
+theorem sum_lengths_le {T : Finset ℕ} (hT : T ⊆ range P.n) {c d : ℝ} (hcd : c ≤ d)
+    (hsub : ∀ j ∈ T, Icc (P.x j) (P.x (j + 1)) ⊆ Icc c d) :
+    ∑ j ∈ T, (P.x (j + 1) - P.x j) ≤ d - c := by
+  have hdisj : (T : Set ℕ).PairwiseDisjoint fun j => Ioo (P.x j) (P.x (j + 1)) := by
+    intro i hi j hj hij
+    rcases lt_or_gt_of_ne hij with h | h
+    · have hi' := mem_range.mp (hT hi)
+      have hj' := mem_range.mp (hT hj)
+      have : P.x (i + 1) ≤ P.x j := P.le_of_le h (by omega)
+      exact Set.disjoint_left.mpr fun t ht1 ht2 => by linarith [ht1.2, ht2.1]
+    · have hi' := mem_range.mp (hT hi)
+      have hj' := mem_range.mp (hT hj)
+      have : P.x (j + 1) ≤ P.x i := P.le_of_le h (by omega)
+      exact Set.disjoint_left.mpr fun t ht1 ht2 => by linarith [ht1.1, ht2.2]
+  have hmeas := measure_biUnion_finset (μ := volume) hdisj fun j _ => measurableSet_Ioo
+  have hle : volume (⋃ j ∈ T, Ioo (P.x j) (P.x (j + 1))) ≤ volume (Icc c d) :=
+    measure_mono (Set.iUnion₂_subset fun j hj => Ioo_subset_Icc_self.trans (hsub j hj))
+  rw [hmeas, Real.volume_Icc] at hle
+  simp only [Real.volume_Ioo] at hle
+  have hnn : ∀ j ∈ T, 0 ≤ P.x (j + 1) - P.x j := fun j hj =>
+    sub_nonneg.mpr (P.lt j (mem_range.mp (hT hj))).le
+  rw [← ENNReal.ofReal_sum_of_nonneg hnn, ENNReal.ofReal_le_ofReal_iff (by linarith)] at hle
+  exact hle
+
+end TaggedPartition
+
+open TaggedPartition
+
+/-- **DLMF 1.4.18**: `I` is the limit of the Riemann sums `∑ f(ξⱼ)(xⱼ₊₁ − xⱼ)` as
+`max (xⱼ₊₁ − xⱼ) → 0`. -/
+def HasRiemannIntegral (f : ℝ → ℝ) (a b I : ℝ) : Prop :=
+  ∀ ε > 0, ∃ δ > 0, ∀ P : TaggedPartition a b, (∀ j < P.n, P.x (j + 1) - P.x j < δ) →
+    |P.riemannSum f - I| < ε
+
+/-- **DLMF §1.4(v)**: `f` is Riemann integrable on `[a, b]` if the limit 1.4.18 exists. -/
+def RiemannIntegrable (f : ℝ → ℝ) (a b : ℝ) : Prop := ∃ I, HasRiemannIntegral f a b I
+
+/-- The Riemann sum minus the integral, interval by interval. -/
+theorem riemannSum_sub_integral {f : ℝ → ℝ} {a b : ℝ} (P : TaggedPartition a b)
+    (hf : IntervalIntegrable f volume a b) :
+    P.riemannSum f - ∫ x in a..b, f x =
+      ∑ j ∈ range P.n, ∫ t in P.x j..P.x (j + 1), (f (P.ξ j) - f t) := by
+  have hab : a ≤ b := P.a_le_b
+  have hint : ∀ j < P.n, IntervalIntegrable f volume (P.x j) (P.x (j + 1)) := fun j hj =>
+    hf.mono_set (by
+      rw [uIcc_of_le hab, uIcc_of_le (P.lt j hj).le]
+      exact Icc_subset_Icc (P.mem_Icc hj.le).1 (P.mem_Icc hj).2)
+  have hsum := intervalIntegral.sum_integral_adjacent_intervals hint
+  rw [P.first, P.last] at hsum
+  rw [← hsum, TaggedPartition.riemannSum, ← Finset.sum_sub_distrib]
+  refine Finset.sum_congr rfl fun j hj => ?_
+  rw [intervalIntegral.integral_sub intervalIntegrable_const (hint j (mem_range.mp hj)),
+    intervalIntegral.integral_const, smul_eq_mul, mul_comm]
+
+/-- One term of the error: if `|f(ξ) − f(t)| ≤ C` on `[xⱼ, xⱼ₊₁]`, the term is at most
+`C (xⱼ₊₁ − xⱼ)` (`intervalIntegral.norm_integral_le_of_norm_le_const`). -/
+theorem abs_error_term_le {f : ℝ → ℝ} {u v ξ C : ℝ} (huv : u ≤ v)
+    (h : ∀ t ∈ Icc u v, |f ξ - f t| ≤ C) :
+    |∫ t in u..v, (f ξ - f t)| ≤ C * (v - u) := by
+  have := intervalIntegral.norm_integral_le_of_norm_le_const (a := u) (b := v)
+    (f := fun t => f ξ - f t) (C := C) fun t ht => by
+      rw [uIoc_of_le huv] at ht
+      exact h t (Ioc_subset_Icc_self ht)
+  rwa [Real.norm_eq_abs, abs_of_nonneg (sub_nonneg.mpr huv)] at this
+
+/-- A sum over a union of finsets is at most the sum of the sums, for nonnegative terms. -/
+theorem sum_biUnion_le_of_nonneg {S : Finset ℝ} {T : ℝ → Finset ℕ} {g : ℕ → ℝ}
+    (hg : ∀ j ∈ S.biUnion T, 0 ≤ g j) : ∑ j ∈ S.biUnion T, g j ≤ ∑ s ∈ S, ∑ j ∈ T s, g j := by
+  classical
+  induction S using Finset.induction_on with
+  | empty => simp
+  | insert a S ha ih =>
+    rw [Finset.biUnion_insert] at hg ⊢
+    rw [Finset.sum_insert ha]
+    have ih' := ih fun j hj => hg j (Finset.mem_union_right _ hj)
+    calc ∑ j ∈ T a ∪ S.biUnion T, g j
+        ≤ ∑ j ∈ T a ∪ S.biUnion T, g j + ∑ j ∈ T a ∩ S.biUnion T, g j :=
+          le_add_of_nonneg_right (Finset.sum_nonneg fun j hj =>
+            hg j (Finset.mem_union_left _ (Finset.mem_inter.mp hj).1))
+      _ = ∑ j ∈ T a, g j + ∑ j ∈ S.biUnion T, g j := Finset.sum_union_inter
+      _ ≤ ∑ j ∈ T a, g j + ∑ s ∈ S, ∑ j ∈ T s, g j := by gcongr
+
+/-- **Riemann integrability of bounded functions continuous off a finite set**: if `|f| ≤ M` on
+`[a, b]` and `f` is continuous on `[a, b]` except at the points of a finite set `S`, the Riemann
+sums converge to the integral.  Away from `η`-windows around `S`, `f` is uniformly continuous; the
+subintervals meeting a window lie in a `2η`-window and have total length at most `4η` per point. -/
+theorem hasRiemannIntegral_of_bounded {f : ℝ → ℝ} {a b M : ℝ} {S : Finset ℝ} (hab : a ≤ b)
+    (hM : ∀ x ∈ Icc a b, |f x| ≤ M)
+    (hcont : ∀ x ∈ Icc a b, x ∉ S → ContinuousWithinAt f (Icc a b) x)
+    (hf : IntervalIntegrable f volume a b) :
+    HasRiemannIntegral f a b (∫ x in a..b, f x) := by
+  classical
+  intro ε hε
+  have hM0 : 0 ≤ M := (abs_nonneg _).trans (hM a ⟨le_rfl, hab⟩)
+  set k : ℝ := (S.card : ℝ) with hk
+  have hk0 : 0 ≤ k := Nat.cast_nonneg _
+  set η := ε / (16 * (M + 1) * (k + 1)) with hη
+  have hη0 : 0 < η := by positivity
+  set K := Icc a b \ ⋃ s ∈ S, Ioo (s - η) (s + η) with hK
+  have hKc : IsCompact K :=
+    isCompact_Icc.diff (isOpen_biUnion fun s _ => isOpen_Ioo)
+  have hKcont : ContinuousOn f K := fun t ht =>
+    (hcont t ht.1 fun hs => ht.2 (mem_iUnion₂.mpr ⟨t, hs, by constructor <;> linarith⟩)).mono
+      sdiff_subset
+  set ε' := ε / (2 * (b - a + 1)) with hε'
+  have hε'0 : 0 < ε' := by
+    have : 0 < b - a + 1 := by linarith
+    positivity
+  obtain ⟨δ₁, hδ₁, hδ₁'⟩ :=
+    Metric.uniformContinuousOn_iff.mp (hKc.uniformContinuousOn_of_continuous hKcont) ε' hε'0
+  refine ⟨min δ₁ η, lt_min hδ₁ hη0, fun P hP => ?_⟩
+  rw [riemannSum_sub_integral P hf]
+  set Δ : ℕ → ℝ := fun j => P.x (j + 1) - P.x j with hΔ
+  have hΔ0 : ∀ j ∈ range P.n, 0 ≤ Δ j := fun j hj =>
+    sub_nonneg.mpr (P.lt j (mem_range.mp hj)).le
+  set good : ℕ → Prop := fun j => Icc (P.x j) (P.x (j + 1)) ⊆ K with hgood
+  -- the bound on each term
+  have hterm : ∀ j ∈ range P.n, |∫ t in P.x j..P.x (j + 1), (f (P.ξ j) - f t)| ≤
+      (if good j then ε' else 2 * M) * Δ j := by
+    intro j hj
+    have hjn := mem_range.mp hj
+    have hlt := P.lt j hjn
+    have htag := P.tag j hjn
+    have hIcc : Icc (P.x j) (P.x (j + 1)) ⊆ Icc a b :=
+      Icc_subset_Icc (P.mem_Icc hjn.le).1 (P.mem_Icc hjn).2
+    refine abs_error_term_le hlt.le fun t ht => ?_
+    split_ifs with hg
+    · have h1 := hδ₁' (P.ξ j) (hg htag) t (hg ht)
+      have hd : dist (P.ξ j) t < δ₁ := by
+        rw [Real.dist_eq, abs_lt]
+        have := hP j hjn
+        have := min_le_left δ₁ η
+        constructor <;> linarith [ht.1, ht.2, htag.1, htag.2]
+      rw [Real.dist_eq] at h1
+      exact (h1 hd).le
+    · calc |f (P.ξ j) - f t| ≤ |f (P.ξ j)| + |f t| := abs_sub _ _
+        _ ≤ M + M := add_le_add (hM _ (hIcc htag)) (hM _ (hIcc ht))
+        _ = 2 * M := by ring
+  -- the bad intervals lie in `2η`-windows around the points of `S`
+  set T : ℝ → Finset ℕ := fun s => (range P.n).filter fun j =>
+    Icc (P.x j) (P.x (j + 1)) ⊆ Icc (s - 2 * η) (s + 2 * η) with hT
+  have hbad : (range P.n).filter (fun j => ¬ good j) ⊆ S.biUnion T := by
+    intro j hj
+    obtain ⟨hj, hng⟩ := Finset.mem_filter.mp hj
+    have hjn := mem_range.mp hj
+    obtain ⟨t, ht, htK⟩ := Set.not_subset.mp hng
+    have htab : t ∈ Icc a b :=
+      Icc_subset_Icc (P.mem_Icc hjn.le).1 (P.mem_Icc hjn).2 ht
+    have : t ∈ ⋃ s ∈ S, Ioo (s - η) (s + η) := by
+      by_contra hn
+      exact htK ⟨htab, hn⟩
+    obtain ⟨s, hs, hst⟩ := mem_iUnion₂.mp this
+    have hδ := (hP j hjn).trans_le (min_le_right δ₁ η)
+    refine Finset.mem_biUnion.mpr ⟨s, hs, Finset.mem_filter.mpr ⟨hj, ?_⟩⟩
+    refine Icc_subset_Icc ?_ ?_ <;> linarith [ht.1, ht.2, hst.1, hst.2]
+  have hT_le : ∀ s ∈ S, ∑ j ∈ T s, Δ j ≤ 4 * η := fun s _ => by
+    have := P.sum_lengths_le (T := T s) (Finset.filter_subset _ _)
+      (c := s - 2 * η) (d := s + 2 * η) (by linarith)
+      fun j hj => (Finset.mem_filter.mp hj).2
+    linarith
+  have hbad_sum : ∑ j ∈ (range P.n).filter (fun j => ¬ good j), Δ j ≤ k * (4 * η) := by
+    calc ∑ j ∈ (range P.n).filter (fun j => ¬ good j), Δ j
+        ≤ ∑ j ∈ S.biUnion T, Δ j :=
+          Finset.sum_le_sum_of_subset_of_nonneg hbad fun j hj _ => by
+            obtain ⟨s, _, hjs⟩ := Finset.mem_biUnion.mp hj
+            exact hΔ0 j (Finset.filter_subset _ _ hjs)
+      _ ≤ ∑ s ∈ S, ∑ j ∈ T s, Δ j := sum_biUnion_le_of_nonneg fun j hj => by
+          obtain ⟨s, _, hjs⟩ := Finset.mem_biUnion.mp hj
+          exact hΔ0 j (Finset.filter_subset _ _ hjs)
+      _ ≤ ∑ _s ∈ S, 4 * η := Finset.sum_le_sum hT_le
+      _ = k * (4 * η) := by rw [Finset.sum_const, nsmul_eq_mul]
+  have hgood_sum : ∑ j ∈ (range P.n).filter (fun j => good j), Δ j ≤ b - a := by
+    rw [← P.sum_lengths]
+    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
+      fun j hj _ => hΔ0 j hj
+  calc |∑ j ∈ range P.n, ∫ t in P.x j..P.x (j + 1), (f (P.ξ j) - f t)|
+      ≤ ∑ j ∈ range P.n, |∫ t in P.x j..P.x (j + 1), (f (P.ξ j) - f t)| :=
+        Finset.abs_sum_le_sum_abs _ _
+    _ ≤ ∑ j ∈ range P.n, (if good j then ε' else 2 * M) * Δ j := Finset.sum_le_sum hterm
+    _ = ε' * ∑ j ∈ (range P.n).filter (fun j => good j), Δ j +
+        2 * M * ∑ j ∈ (range P.n).filter (fun j => ¬ good j), Δ j := by
+        simp only [ite_mul]
+        rw [Finset.sum_ite, Finset.mul_sum, Finset.mul_sum]
+    _ ≤ ε' * (b - a) + 2 * M * (k * (4 * η)) := by
+        gcongr
+    _ < ε := by
+        have h1 : ε' * (b - a) < ε / 2 := by
+          rw [hε', div_mul_eq_mul_div, div_lt_iff₀ (by linarith)]
+          nlinarith
+        have h2 : 2 * M * (k * (4 * η)) < ε / 2 := by
+          have hden : 0 < 16 * (M + 1) * (k + 1) := by positivity
+          have : 2 * M * (k * (4 * η)) = ε * (8 * M * k) / (16 * (M + 1) * (k + 1)) := by
+            rw [hη]; field_simp; ring
+          rw [this, div_lt_iff₀ hden]
+          nlinarith [mul_nonneg hM0 hk0]
+        linarith
+
+/-- A bounded function continuous on `[a, b]` off a finite set is integrable there. -/
+theorem intervalIntegrable_of_bounded {f : ℝ → ℝ} {a b M : ℝ} {S : Finset ℝ} (hab : a ≤ b)
+    (hM : ∀ x ∈ Icc a b, |f x| ≤ M)
+    (hcont : ∀ x ∈ Icc a b, x ∉ S → ContinuousWithinAt f (Icc a b) x) :
+    IntervalIntegrable f volume a b := by
+  rw [intervalIntegrable_iff_integrableOn_Icc_of_le hab]
+  have hc : ContinuousOn f (Icc a b \ (S : Set ℝ)) := fun x hx =>
+    (hcont x hx.1 hx.2).mono sdiff_subset
+  have hmeas : AEStronglyMeasurable f (volume.restrict (Icc a b)) := by
+    have := hc.aestronglyMeasurable (μ := volume)
+      (measurableSet_Icc.diff S.finite_toSet.measurableSet)
+    rwa [Measure.restrict_congr_set (sdiff_null_ae_eq_self (S.finite_toSet.measure_zero _))]
+      at this
+  exact IntegrableOn.of_bound measure_Icc_lt_top hmeas M
+    (ae_restrict_of_forall_mem measurableSet_Icc fun x hx => by
+      rw [Real.norm_eq_abs]; exact hM x hx)
+
+/-- A piecewise continuous function is bounded on `[a, b]`: it is locally bounded (by continuity,
+or by its one-sided limits at the simple discontinuities) and `[a, b]` is compact. -/
+theorem IsPiecewiseContinuous.exists_bound {f : ℝ → ℝ} {a b : ℝ}
+    (h : IsPiecewiseContinuous f (Icc a b)) : ∃ M, ∀ x ∈ Icc a b, |f x| ≤ M := by
+  obtain ⟨S, hcont, hdisc⟩ := h
+  have hloc : ∀ y ∈ Icc a b, ∃ C, ∀ᶠ z in 𝓝 y, z ∈ Icc a b → |f z| ≤ C := by
+    intro y hy
+    by_cases hyS : y ∈ S
+    · obtain ⟨L, R, hR, hL, -⟩ := hdisc y hyS
+      have h1 : ∀ᶠ z in 𝓝[>] y, |f z| ≤ |R| + 1 := by
+        filter_upwards [(Metric.tendsto_nhds.mp hR) 1 one_pos] with z hz
+        rw [Real.dist_eq] at hz
+        have := abs_sub_abs_le_abs_sub (f z) R
+        linarith
+      have h2 : ∀ᶠ z in 𝓝[<] y, |f z| ≤ |L| + 1 := by
+        filter_upwards [(Metric.tendsto_nhds.mp hL) 1 one_pos] with z hz
+        rw [Real.dist_eq] at hz
+        have := abs_sub_abs_le_abs_sub (f z) L
+        linarith
+      have h3 : ∀ᶠ z in 𝓝[≠] y, |f z| ≤ |L| + |R| + 1 := by
+        rw [← nhdsLT_sup_nhdsGT, eventually_sup]
+        exact ⟨h2.mono fun z hz => by linarith [abs_nonneg R],
+          h1.mono fun z hz => by linarith [abs_nonneg L]⟩
+      refine ⟨|L| + |R| + 1 + |f y|, ?_⟩
+      filter_upwards [eventually_nhdsWithin_iff.mp h3] with z hz _
+      by_cases hzy : z = y
+      · rw [hzy]; linarith [abs_nonneg L, abs_nonneg R]
+      · linarith [hz hzy, abs_nonneg (f y)]
+    · have hc := hcont y hy hyS
+      have h1 : ∀ᶠ z in 𝓝[Icc a b] y, |f z| ≤ |f y| + 1 := by
+        filter_upwards [(Metric.tendsto_nhds.mp hc) 1 one_pos] with z hz
+        rw [Real.dist_eq] at hz
+        have := abs_sub_abs_le_abs_sub (f z) (f y)
+        linarith
+      exact ⟨|f y| + 1, eventually_nhdsWithin_iff.mp h1⟩
+  choose C hC using hloc
+  obtain ⟨t, ht⟩ := isCompact_Icc.elim_nhds_subcover'
+    (fun y hy => {z | z ∈ Icc a b → |f z| ≤ C y hy}) fun y hy => hC y hy
+  refine ⟨∑ y ∈ t, |C y.1 y.2|, fun x hx => ?_⟩
+  obtain ⟨y, hyt, hxy⟩ := mem_iUnion₂.mp (ht hx)
+  calc |f x| ≤ C y.1 y.2 := hxy hx
+    _ ≤ |C y.1 y.2| := le_abs_self _
+    _ ≤ ∑ y ∈ t, |C y.1 y.2| :=
+        Finset.single_le_sum (f := fun y : Icc a b => |C y.1 y.2|) (fun _ _ => abs_nonneg _) hyt
+
+/-- **DLMF 1.4.18**: a continuous function on `[a, b]` is Riemann integrable, and its integral is
+the limit of the Riemann sums. -/
+theorem dlmf_1_4_18 {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) :
+    HasRiemannIntegral f a b (∫ x in a..b, f x) := by
+  obtain ⟨M, hM⟩ := isCompact_Icc.exists_bound_of_continuousOn hf
+  have hM' : ∀ x ∈ Icc a b, |f x| ≤ M := fun x hx => by rw [← Real.norm_eq_abs]; exact hM x hx
+  have hcont : ∀ x ∈ Icc a b, x ∉ (∅ : Finset ℝ) → ContinuousWithinAt f (Icc a b) x :=
+    fun x hx _ => hf x hx
+  exact hasRiemannIntegral_of_bounded hab hM' hcont (intervalIntegrable_of_bounded hab hM' hcont)
+
+/-- **DLMF §1.4(v)**: piecewise continuity of `f` on `[a, b]` is sufficient for the limit 1.4.18 to
+exist. -/
+theorem dlmf_1_4_v_piecewise {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : IsPiecewiseContinuous f (Icc a b)) :
+    HasRiemannIntegral f a b (∫ x in a..b, f x) := by
+  obtain ⟨M, hM⟩ := hf.exists_bound
+  obtain ⟨S, hcont, -⟩ := hf
+  exact hasRiemannIntegral_of_bounded hab hM hcont (intervalIntegrable_of_bounded hab hM hcont)
+
+/-- The uniform partition of `[a, b]` into `n` equal parts, tagged at the left endpoints. -/
+noncomputable def uniformPartition {a b : ℝ} (hab : a < b) (n : ℕ) (hn : 0 < n) :
+    TaggedPartition a b where
+  n := n
+  x j := a + j * ((b - a) / n)
+  ξ j := a + j * ((b - a) / n)
+  lt j _ := by
+    have : 0 < (b - a) / n := div_pos (by linarith) (Nat.cast_pos.mpr hn)
+    push_cast
+    nlinarith
+  first := by simp
+  last := by
+    have : (n : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hn.ne'
+    field_simp
+    ring
+  tag j _ := by
+    have : 0 < (b - a) / n := div_pos (by linarith) (Nat.cast_pos.mpr hn)
+    refine ⟨le_rfl, ?_⟩
+    push_cast
+    nlinarith
+
+/-- **DLMF §1.4(v)**: the limit 1.4.18 is unique (for `a < b`), so the Riemann integral is well
+defined. -/
+theorem HasRiemannIntegral.unique {f : ℝ → ℝ} {a b I J : ℝ} (hab : a < b)
+    (hI : HasRiemannIntegral f a b I) (hJ : HasRiemannIntegral f a b J) : I = J := by
+  refine eq_of_abs_sub_nonpos (le_of_forall_pos_lt_add fun ε hε => ?_)
+  obtain ⟨δ, hδ, hδ'⟩ := hI (ε / 2) (half_pos hε)
+  obtain ⟨δ', hδ'0, hδ''⟩ := hJ (ε / 2) (half_pos hε)
+  obtain ⟨n, hn⟩ := exists_nat_gt ((b - a) / min δ δ')
+  have hmin : 0 < min δ δ' := lt_min hδ hδ'0
+  have hn0 : 0 < n := by
+    have : 0 < (b - a) / min δ δ' := div_pos (by linarith) hmin
+    exact_mod_cast this.trans hn
+  set P := uniformPartition hab n hn0
+  have hstep : ∀ j < P.n, P.x (j + 1) - P.x j < min δ δ' := fun j _ => by
+    simp only [P, uniformPartition]
+    push_cast
+    have hn' : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
+    rw [show a + ((j : ℝ) + 1) * ((b - a) / n) - (a + j * ((b - a) / n)) = (b - a) / n by ring,
+      div_lt_iff₀ hn']
+    rw [div_lt_iff₀ hmin] at hn
+    linarith
+  have h1 := hδ' P fun j hj => (hstep j hj).trans_le (min_le_left _ _)
+  have h2 := hδ'' P fun j hj => (hstep j hj).trans_le (min_le_right _ _)
+  calc |I - J| ≤ |P.riemannSum f - I| + |P.riemannSum f - J| := by
+        rw [abs_sub_comm (P.riemannSum f) I]
+        exact abs_sub_le I (P.riemannSum f) J
+    _ < ε / 2 + ε / 2 := add_lt_add h1 h2
+    _ = 0 + ε := by ring
+
+/-- **DLMF 1.4.19**: `∫(cf + dg) = c∫f + d∫g` for constants `c, d` (`intervalIntegral.integral_add`,
+`intervalIntegral.integral_const_mul`). -/
+theorem dlmf_1_4_19 {f g : ℝ → ℝ} {a b : ℝ} (c d : ℝ) (hf : IntervalIntegrable f volume a b)
+    (hg : IntervalIntegrable g volume a b) :
+    ∫ x in a..b, (c * f x + d * g x) = c * (∫ x in a..b, f x) + d * ∫ x in a..b, g x := by
+  rw [intervalIntegral.integral_add (hf.const_mul c) (hg.const_mul d),
+    intervalIntegral.integral_const_mul, intervalIntegral.integral_const_mul]
+
+/-- **DLMF 1.4.19** for the Riemann sums: the limits 1.4.18 are linear. -/
+theorem HasRiemannIntegral.linear {f g : ℝ → ℝ} {a b I J : ℝ} (c d : ℝ)
+    (hf : HasRiemannIntegral f a b I) (hg : HasRiemannIntegral g a b J) :
+    HasRiemannIntegral (fun x => c * f x + d * g x) a b (c * I + d * J) := by
+  intro ε hε
+  have hc : 0 < 2 * (|c| + 1) := by positivity
+  have hd : 0 < 2 * (|d| + 1) := by positivity
+  obtain ⟨δ₁, hδ₁, h₁⟩ := hf (ε / (2 * (|c| + 1))) (div_pos hε hc)
+  obtain ⟨δ₂, hδ₂, h₂⟩ := hg (ε / (2 * (|d| + 1))) (div_pos hε hd)
+  refine ⟨min δ₁ δ₂, lt_min hδ₁ hδ₂, fun P hP => ?_⟩
+  have e1 := h₁ P fun j hj => (hP j hj).trans_le (min_le_left _ _)
+  have e2 := h₂ P fun j hj => (hP j hj).trans_le (min_le_right _ _)
+  have hsum : P.riemannSum (fun x => c * f x + d * g x) =
+      c * P.riemannSum f + d * P.riemannSum g := by
+    simp only [TaggedPartition.riemannSum, Finset.mul_sum, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun j _ => by ring
+  rw [hsum]
+  have hc' : |c| * |P.riemannSum f - I| ≤ ε / 2 := by
+    have h1 : |c| * |P.riemannSum f - I| ≤ (|c| + 1) * (ε / (2 * (|c| + 1))) :=
+      mul_le_mul (by linarith) e1.le (abs_nonneg _) (by positivity)
+    have h2 : (|c| + 1) * (ε / (2 * (|c| + 1))) = ε / 2 := by field_simp
+    linarith
+  have hd' : |d| * |P.riemannSum g - J| < ε / 2 := by
+    have h1 : |d| * |P.riemannSum g - J| ≤ |d| * (ε / (2 * (|d| + 1))) :=
+      mul_le_mul_of_nonneg_left e2.le (abs_nonneg _)
+    have h2 : |d| * (ε / (2 * (|d| + 1))) < (|d| + 1) * (ε / (2 * (|d| + 1))) :=
+      mul_lt_mul_of_pos_right (by linarith) (div_pos hε hd)
+    have h3 : (|d| + 1) * (ε / (2 * (|d| + 1))) = ε / 2 := by field_simp
+    linarith
+  calc |c * P.riemannSum f + d * P.riemannSum g - (c * I + d * J)|
+      = |c * (P.riemannSum f - I) + d * (P.riemannSum g - J)| := by ring_nf
+    _ ≤ |c * (P.riemannSum f - I)| + |d * (P.riemannSum g - J)| := abs_add_le _ _
+    _ = |c| * |P.riemannSum f - I| + |d| * |P.riemannSum g - J| := by rw [abs_mul, abs_mul]
+    _ < ε := by linarith
+
+/-- **DLMF 1.4.20**: `∫_a^b f = −∫_b^a f` (`intervalIntegral.integral_symm`). -/
+theorem dlmf_1_4_20 (f : ℝ → ℝ) (a b : ℝ) : ∫ x in a..b, f x = -∫ x in b..a, f x :=
+  intervalIntegral.integral_symm b a
+
+/-- **DLMF 1.4.21**: `∫_a^b f = ∫_a^c f + ∫_c^b f`
+(`intervalIntegral.integral_add_adjacent_intervals`). -/
+theorem dlmf_1_4_21 {f : ℝ → ℝ} {a b c : ℝ} (hac : IntervalIntegrable f volume a c)
+    (hcb : IntervalIntegrable f volume c b) :
+    ∫ x in a..b, f x = (∫ x in a..c, f x) + ∫ x in c..b, f x :=
+  (intervalIntegral.integral_add_adjacent_intervals hac hcb).symm
+
+/-! #### Infinite integrals -/
+
+/-- **DLMF 1.4.22**: `∫_a^∞ f = lim_{b→∞} ∫_a^b f`; the integral converges to `L`. -/
+def ConvergesAtTop (f : ℝ → ℝ) (a L : ℝ) : Prop :=
+  Tendsto (fun b => ∫ x in a..b, f x) atTop (𝓝 L)
+
+/-- **DLMF 1.4.22**, similarly `∫_{−∞}^a f = lim_{b→−∞} ∫_b^a f`. -/
+def ConvergesAtBot (f : ℝ → ℝ) (a L : ℝ) : Prop :=
+  Tendsto (fun b => ∫ x in b..a, f x) atBot (𝓝 L)
+
+/-- **DLMF 1.4.23**: for `f(b) = ±∞`, `∫_a^b f = lim_{c→b−} ∫_a^c f`. -/
+def ConvergesLeft (f : ℝ → ℝ) (a b L : ℝ) : Prop :=
+  Tendsto (fun c => ∫ x in a..c, f x) (𝓝[<] b) (𝓝 L)
+
+/-- **DLMF 1.4.23**, similarly when `f(a) = ±∞`: `∫_a^b f = lim_{c→a+} ∫_c^b f`. -/
+def ConvergesRight (f : ℝ → ℝ) (a b L : ℝ) : Prop :=
+  Tendsto (fun c => ∫ x in c..b, f x) (𝓝[>] a) (𝓝 L)
+
+/-- **DLMF 1.4.22**: for `f` (Lebesgue) integrable on `(a, ∞)`, the limit exists and equals
+`∫_{(a,∞)} f` (`intervalIntegral_tendsto_integral_Ioi`). -/
+theorem dlmf_1_4_22 {f : ℝ → ℝ} {a : ℝ} (hf : IntegrableOn f (Ioi a)) :
+    ConvergesAtTop f a (∫ x in Ioi a, f x) :=
+  intervalIntegral_tendsto_integral_Ioi a hf tendsto_id
+
+/-- **DLMF 1.4.22** for `∫_{−∞}^a` (`intervalIntegral_tendsto_integral_Iic`). -/
+theorem dlmf_1_4_22_Iic {f : ℝ → ℝ} {a : ℝ} (hf : IntegrableOn f (Iic a)) :
+    ConvergesAtBot f a (∫ x in Iic a, f x) :=
+  intervalIntegral_tendsto_integral_Iic a hf tendsto_id
+
+/-- **DLMF 1.4.23**: for `f` integrable on `[a, b]`, `∫_a^c f → ∫_a^b f` as `c → b−`
+(`intervalIntegral.continuousOn_primitive_interval`). -/
+theorem dlmf_1_4_23 {f : ℝ → ℝ} {a b : ℝ} (hab : a < b) (hf : IntervalIntegrable f volume a b) :
+    ConvergesLeft f a b (∫ x in a..b, f x) := by
+  have hc := intervalIntegral.continuousOn_primitive_interval (μ := volume)
+    ((intervalIntegrable_iff_integrableOn_Icc_of_le hab.le).mp hf |>.mono_set
+      (by rw [uIcc_of_le hab.le]))
+  have hb : b ∈ uIcc a b := right_mem_uIcc
+  have hmem : uIcc a b ∈ 𝓝[<] b := by
+    rw [uIcc_of_le hab.le]
+    exact Filter.mem_of_superset (Ioo_mem_nhdsLT hab) Ioo_subset_Icc_self
+  exact ((hc b hb).mono_of_mem_nhdsWithin hmem).tendsto
+
+/-- **DLMF 1.4.23** at the left endpoint: `∫_c^b f → ∫_a^b f` as `c → a+`. -/
+theorem dlmf_1_4_23_right {f : ℝ → ℝ} {a b : ℝ} (hab : a < b)
+    (hf : IntervalIntegrable f volume a b) : ConvergesRight f a b (∫ x in a..b, f x) := by
+  have hc := intervalIntegral.continuousOn_primitive_interval (μ := volume)
+    ((intervalIntegrable_iff_integrableOn_Icc_of_le hab.le).mp hf |>.mono_set
+      (by rw [uIcc_of_le hab.le]))
+  have hmem : uIcc a b ∈ 𝓝[>] a := by
+    rw [uIcc_of_le hab.le]
+    exact Filter.mem_of_superset (Ioo_mem_nhdsGT hab) Ioo_subset_Icc_self
+  have hlim := ((hc a left_mem_uIcc).mono_of_mem_nhdsWithin hmem).tendsto
+  simp only [intervalIntegral.integral_same] at hlim
+  have := (tendsto_const_nhds (x := ∫ x in a..b, f x)).sub hlim
+  rw [sub_zero] at this
+  refine this.congr' ?_
+  filter_upwards [Ioo_mem_nhdsGT hab] with c hc'
+  exact intervalIntegral.integral_interval_sub_left hf
+    (hf.mono_set (by rw [uIcc_of_le hab.le, uIcc_of_le hc'.1.le]
+                     exact Icc_subset_Icc le_rfl hc'.2.le))
+
+/-- **DLMF §1.4(v)**: absolute convergence implies convergence (at `∞`): if `∫_a^b |f|` has a limit
+as `b → ∞`, then `f` is integrable on `(a, ∞)` and `∫_a^b f` converges
+(`integrableOn_Ioi_of_intervalIntegral_norm_tendsto`). -/
+theorem dlmf_1_4_v_abs_atTop {f : ℝ → ℝ} {a L : ℝ}
+    (hloc : ∀ b, IntervalIntegrable f volume a b) (habs : ConvergesAtTop (fun x => |f x|) a L) :
+    IntegrableOn f (Ioi a) ∧ ConvergesAtTop f a (∫ x in Ioi a, f x) := by
+  have hint : IntegrableOn f (Ioi a) :=
+    integrableOn_Ioi_of_intervalIntegral_norm_tendsto L a (fun i => (hloc i).1) tendsto_id
+      (by simp only [Real.norm_eq_abs]; exact habs)
+  exact ⟨hint, dlmf_1_4_22 hint⟩
+
+/-- **DLMF §1.4(v)**: absolute convergence implies convergence (at a singular endpoint `b`): if
+`∫_a^c |f|` has a limit as `c → b−`, then `f` is integrable on `[a, b]` and `∫_a^c f` converges. -/
+theorem dlmf_1_4_v_abs_left {f : ℝ → ℝ} {a b L : ℝ} (hab : a < b)
+    (hloc : ∀ c < b, IntervalIntegrable f volume a c)
+    (habs : ConvergesLeft (fun x => |f x|) a b L) :
+    IntervalIntegrable f volume a b ∧ ConvergesLeft f a b (∫ x in a..b, f x) := by
+  classical
+  set b' : ℝ → ℝ := fun i => if i < b then i else a with hb'
+  have hfi : ∀ i, IntegrableOn f (Ioc a (b' i)) := fun i => by
+    by_cases hi : i < b
+    · simp only [hb', ite_eq_left hi]
+      exact (hloc i hi).1
+    · simp only [hb', ite_eq_right hi, Set.Ioc_self]
+      exact integrableOn_empty (f := f)
+  have hb'lim : Tendsto b' (𝓝[<] b) (𝓝 b) := by
+    refine (tendsto_nhdsWithin_of_tendsto_nhds tendsto_id).congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with i hi
+    simp [hb', mem_Iio.mp hi]
+  have hbound : ∀ᶠ i in 𝓝[<] b, (∫ x in Ioc a (b' i), ‖f x‖) ≤ L + 1 := by
+    filter_upwards [Ioo_mem_nhdsLT hab, (Metric.tendsto_nhds.mp habs) 1 one_pos] with i hi hL
+    simp only [hb', ite_eq_left hi.2]
+    rw [Real.dist_eq] at hL
+    rw [← intervalIntegral.integral_of_le hi.1.le]
+    simp only [Real.norm_eq_abs]
+    linarith [le_abs_self ((∫ x in a..i, |f x|) - L)]
+  have hint := integrableOn_Ioc_of_intervalIntegral_norm_bounded_right hfi hb'lim hbound
+  have hii : IntervalIntegrable f volume a b :=
+    (intervalIntegrable_iff_integrableOn_Ioc_of_le hab.le).mpr hint
+  exact ⟨hii, dlmf_1_4_23 hab hii⟩
+
+
+open scoped ENNReal NNReal
+
+/-! #### Stieltjes, Lebesgue, and Lebesgue–Stieltjes integrals -/
+
+/-- **DLMF §1.4(v)**: the Stieltjes measure `dα` of a nondecreasing function `α` gives `(c, d]` the
+mass `α(d) − α(c)` (`StieltjesFunction.measure_Ioc`; Mathlib's `StieltjesFunction` is a
+nondecreasing right-continuous function, and `Monotone.stieltjesFunction` replaces a nondecreasing
+function by its right limits, which does not change the Stieltjes integral of a continuous
+function). -/
+theorem dlmf_1_4_v_stieltjes_measure (α : StieltjesFunction ℝ) (c d : ℝ) :
+    α.measure (Ioc c d) = ENNReal.ofReal (α d - α c) :=
+  α.measure_Ioc c d
+
+/-- **DLMF §1.4(v)**: Lebesgue measure is the Stieltjes measure of `α(x) = x`, so the Lebesgue
+integral is the Lebesgue–Stieltjes integral for `α(x) = x` (`Real.volume_eq_stieltjes_id`). -/
+theorem dlmf_1_4_v_lebesgue : (volume : Measure ℝ) = StieltjesFunction.id.measure :=
+  Real.volume_eq_stieltjes_id
+
+namespace TaggedPartition
+
+variable {a b : ℝ}
+
+/-- The Riemann–Stieltjes sum `∑ⱼ f(ξⱼ)(α(xⱼ₊₁) − α(xⱼ))`. -/
+def stieltjesSum (P : TaggedPartition a b) (f α : ℝ → ℝ) : ℝ :=
+  ∑ j ∈ range P.n, f (P.ξ j) * (α (P.x (j + 1)) - α (P.x j))
+
+end TaggedPartition
+
+/-- **DLMF §1.4(v)**: the Stieltjes integral `∫_a^b f dα` as the limit of Riemann–Stieltjes sums
+(defined "similarly as Riemann integrability"). -/
+def HasStieltjesIntegral (f α : ℝ → ℝ) (a b I : ℝ) : Prop :=
+  ∀ ε > 0, ∃ δ > 0, ∀ P : TaggedPartition a b, (∀ j < P.n, P.x (j + 1) - P.x j < δ) →
+    |P.stieltjesSum f α - I| < ε
+
+/-- **DLMF §1.4(v)**: for `α` differentiable on `[a, b]` with continuous derivative `w` and `f`
+continuous, the Stieltjes integral exists and equals `∫_a^b f(x) w(x) dx`: by the mean value
+theorem `α(xⱼ₊₁) − α(xⱼ) = w(cⱼ)(xⱼ₊₁ − xⱼ)`, so the Riemann–Stieltjes sums are within
+`max |f| · osc w · (b − a)` of the Riemann sums of `f w`. -/
+theorem hasStieltjesIntegral_of_deriv {f α w : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hα : ∀ x ∈ Icc a b, HasDerivAt α (w x) x) (hw : ContinuousOn w (Icc a b))
+    (hf : ContinuousOn f (Icc a b)) :
+    HasStieltjesIntegral f α a b (∫ x in a..b, f x * w x) := by
+  intro ε hε
+  obtain ⟨Mf, hMf⟩ := isCompact_Icc.exists_bound_of_continuousOn hf
+  have hMf0 : 0 ≤ Mf := (norm_nonneg _).trans (hMf a ⟨le_rfl, hab⟩)
+  obtain ⟨δ₁, hδ₁, h₁⟩ := dlmf_1_4_18 hab (hf.mul hw) (ε / 2) (half_pos hε)
+  set ε' := ε / (2 * (Mf + 1) * (b - a + 1)) with hε'
+  have hε'0 : 0 < ε' := by
+    have : 0 < b - a + 1 := by linarith
+    positivity
+  obtain ⟨δ₂, hδ₂, h₂⟩ := Metric.uniformContinuousOn_iff.mp
+    (isCompact_Icc.uniformContinuousOn_of_continuous hw) ε' hε'0
+  refine ⟨min δ₁ δ₂, lt_min hδ₁ hδ₂, fun P hP => ?_⟩
+  have hR := h₁ P fun j hj => (hP j hj).trans_le (min_le_left _ _)
+  have hdiff : |P.stieltjesSum f α - P.riemannSum (fun x => f x * w x)| ≤ Mf * ε' * (b - a) := by
+    rw [TaggedPartition.stieltjesSum, TaggedPartition.riemannSum, ← Finset.sum_sub_distrib,
+      ← P.sum_lengths, Finset.mul_sum]
+    refine (Finset.abs_sum_le_sum_abs _ _).trans (Finset.sum_le_sum fun j hj => ?_)
+    have hjn := mem_range.mp hj
+    have hlt := P.lt j hjn
+    have hsub : Icc (P.x j) (P.x (j + 1)) ⊆ Icc a b :=
+      Icc_subset_Icc (P.mem_Icc hjn.le).1 (P.mem_Icc hjn).2
+    obtain ⟨c, hc, hcα⟩ := exists_hasDerivAt_eq_slope α w hlt
+      (fun x hx => (hα x (hsub hx)).continuousAt.continuousWithinAt)
+      fun x hx => hα x (hsub (Ioo_subset_Icc_self hx))
+    have hΔ : α (P.x (j + 1)) - α (P.x j) = w c * (P.x (j + 1) - P.x j) := by
+      rw [hcα, div_mul_cancel₀ _ (sub_ne_zero.mpr hlt.ne')]
+    have htag := P.tag j hjn
+    have hwc : |w c - w (P.ξ j)| ≤ ε' := by
+      have hd : dist c (P.ξ j) < δ₂ := by
+        rw [Real.dist_eq, abs_lt]
+        have := (hP j hjn).trans_le (min_le_right _ _)
+        constructor <;> linarith [hc.1, hc.2, htag.1, htag.2]
+      have := h₂ c (hsub (Ioo_subset_Icc_self hc)) (P.ξ j) (hsub htag) hd
+      rw [Real.dist_eq] at this
+      exact this.le
+    have hfξ : |f (P.ξ j)| ≤ Mf := by rw [← Real.norm_eq_abs]; exact hMf _ (hsub htag)
+    rw [hΔ, show f (P.ξ j) * (w c * (P.x (j + 1) - P.x j)) - f (P.ξ j) * w (P.ξ j) *
+        (P.x (j + 1) - P.x j) = f (P.ξ j) * (w c - w (P.ξ j)) * (P.x (j + 1) - P.x j) by ring,
+      abs_mul, abs_mul, abs_of_pos (sub_pos.mpr hlt)]
+    have : |f (P.ξ j)| * |w c - w (P.ξ j)| ≤ Mf * ε' :=
+      mul_le_mul hfξ hwc (abs_nonneg _) hMf0
+    nlinarith [sub_pos.mpr hlt]
+  have hsmall : Mf * ε' * (b - a) < ε / 2 := by
+    have hpos : 0 < 2 * (Mf + 1) * (b - a + 1) := by
+      have : 0 < b - a + 1 := by linarith
+      positivity
+    rw [hε', mul_div_assoc', div_mul_eq_mul_div, div_lt_iff₀ hpos]
+    have h1 : Mf * ε * (b - a) * 2 ≤ (Mf + 1) * ε * (b - a + 1) * 2 := by
+      have : 0 ≤ b - a := by linarith
+      gcongr <;> linarith
+    nlinarith [mul_pos hε (show (0 : ℝ) < Mf + 1 by linarith)]
+  calc |P.stieltjesSum f α - ∫ x in a..b, f x * w x|
+      ≤ |P.stieltjesSum f α - P.riemannSum (fun x => f x * w x)| +
+          |P.riemannSum (fun x => f x * w x) - ∫ x in a..b, f x * w x| := abs_sub_le _ _ _
+    _ < ε / 2 + ε / 2 := add_lt_add_of_le_of_lt (hdiff.trans hsmall.le) hR
+    _ = ε := add_halves ε
+
+/-! #### Absolutely continuous Stieltjes measure -/
+
+/-- **DLMF 1.4.23_1**: `dα` is absolutely continuous with weight function `w ≥ 0` when
+`α(d) − α(c) = ∫_c^d w(x) dx` for `c ≤ d`; then `dα = w(x) dx`, i.e. the Stieltjes measure is
+Lebesgue measure with density `w` (`Measure.ext_of_Ioc'`, `ofReal_integral_eq_lintegral_ofReal`). -/
+theorem dlmf_1_4_23_1 {α : StieltjesFunction ℝ} {w : ℝ → ℝ} (hw0 : ∀ x, 0 ≤ w x)
+    (hwi : LocallyIntegrable w volume) (hα : ∀ c d, c ≤ d → α d - α c = ∫ x in c..d, w x) :
+    α.measure = volume.withDensity fun x => ENNReal.ofReal (w x) := by
+  refine Measure.ext_of_Ioc' _ _ (fun c d _ => measure_Ioc_lt_top.ne) fun c d hcd => ?_
+  rw [α.measure_Ioc, hα c d hcd.le, intervalIntegral.integral_of_le hcd.le,
+    withDensity_apply _ measurableSet_Ioc,
+    ofReal_integral_eq_lintegral_ofReal (hwi.integrableOn_isCompact isCompact_Icc |>.mono_set
+      Ioc_subset_Icc_self) (ae_of_all _ fun x => hw0 x)]
+
+/-- **DLMF 1.4.23_2**: then `∫_a^b f(x) dα(x) = ∫_a^b f(x) w(x) dx`
+(`integral_withDensity_eq_integral_toReal_smul₀`). -/
+theorem dlmf_1_4_23_2 {α : StieltjesFunction ℝ} {w : ℝ → ℝ} (hw0 : ∀ x, 0 ≤ w x)
+    (hwi : LocallyIntegrable w volume) (hα : ∀ c d, c ≤ d → α d - α c = ∫ x in c..d, w x)
+    (f : ℝ → ℝ) {a b : ℝ} (hab : a ≤ b) :
+    ∫ x in Ioo a b, f x ∂α.measure = ∫ x in a..b, f x * w x := by
+  rw [dlmf_1_4_23_1 hw0 hwi hα, restrict_withDensity measurableSet_Ioo,
+    integral_withDensity_eq_integral_toReal_smul₀
+      (hwi.aestronglyMeasurable.aemeasurable.ennreal_ofReal.restrict)
+      (ae_of_all _ fun x => ENNReal.ofReal_lt_top),
+    intervalIntegral.integral_of_le hab, integral_Ioc_eq_integral_Ioo]
+  refine setIntegral_congr_fun measurableSet_Ioo fun x _ => ?_
+  rw [ENNReal.toReal_ofReal (hw0 x), smul_eq_mul, mul_comm]
+
+/-- The Stieltjes function `α` of a `C¹` function with nonnegative derivative. -/
+def stieltjesOfDeriv {α w : ℝ → ℝ} (hα : ∀ x, HasDerivAt α (w x) x) (hw0 : ∀ x, 0 ≤ w x) :
+    StieltjesFunction ℝ where
+  toFun := α
+  mono' := monotone_of_deriv_nonneg (fun x => (hα x).differentiableAt)
+    fun x => (hα x).deriv ▸ hw0 x
+  right_continuous' x := (hα x).continuousAt.continuousWithinAt
+
+/-- **DLMF §1.4(v)**: in particular `dα` is absolutely continuous when `α` is differentiable with
+`α' = w` continuous: `α(d) − α(c) = ∫_c^d w` (`intervalIntegral.integral_eq_sub_of_hasDerivAt`). -/
+theorem dlmf_1_4_v_absCont_of_deriv {α w : ℝ → ℝ} (hα : ∀ x, HasDerivAt α (w x) x)
+    (hw : Continuous w) (c d : ℝ) : α d - α c = ∫ x in c..d, w x :=
+  (intervalIntegral.integral_eq_sub_of_hasDerivAt (fun x _ => hα x)
+    (hw.intervalIntegrable c d)).symm
+
+theorem stieltjesOfDeriv_measure {α w : ℝ → ℝ} (hα : ∀ x, HasDerivAt α (w x) x)
+    (hw0 : ∀ x, 0 ≤ w x) (hw : Continuous w) :
+    (stieltjesOfDeriv hα hw0).measure = volume.withDensity fun x => ENNReal.ofReal (w x) :=
+  dlmf_1_4_23_1 hw0 hw.locallyIntegrable fun c d _ => dlmf_1_4_v_absCont_of_deriv hα hw c d
+
+/-! #### Stieltjes measure with `α(x)` discontinuous -/
+
+/-- The Heaviside step `H(x − x₀)` (`1` for `x ≥ x₀`, `0` for `x < x₀`; right-continuous, as a
+Stieltjes function). -/
+noncomputable def heaviside (x₀ : ℝ) : StieltjesFunction ℝ where
+  toFun x := if x₀ ≤ x then 1 else 0
+  mono' x y hxy := by
+    by_cases hx : x₀ ≤ x
+    · simp [hx, hx.trans hxy]
+    · by_cases hy : x₀ ≤ y <;> simp [hx, hy]
+  right_continuous' x := by
+    by_cases hx : x₀ ≤ x
+    · refine (continuousWithinAt_const (b := (1 : ℝ))).congr (fun y hy => ?_) (by simp [hx])
+      simp [hx.trans (mem_Ici.mp hy)]
+    · have : ∀ᶠ y in 𝓝[Ici x] x, (if x₀ ≤ y then (1 : ℝ) else 0) = 0 := by
+        filter_upwards [nhdsWithin_le_nhds (Iio_mem_nhds (not_le.mp hx))] with y hy
+        simp [not_le.mpr (mem_Iio.mp hy)]
+      exact (continuousWithinAt_const (b := (0 : ℝ))).congr_of_eventuallyEq this (by simp [hx])
+
+theorem heaviside_apply (x₀ x : ℝ) : heaviside x₀ x = if x₀ ≤ x then 1 else 0 := rfl
+
+/-- **DLMF §1.4(v)**: for `α(x) = H(x − xₙ)` the measure `dα` is the Dirac measure `δ(x − xₙ) dx`
+at `xₙ`. -/
+theorem heaviside_measure (x₀ : ℝ) : (heaviside x₀).measure = Measure.dirac x₀ := by
+  refine Measure.ext_of_Ioc' _ _ (fun c d _ => measure_Ioc_lt_top.ne) fun c d hcd => ?_
+  rw [StieltjesFunction.measure_Ioc, heaviside_apply, heaviside_apply,
+    Measure.dirac_apply' _ measurableSet_Ioc]
+  by_cases h1 : x₀ ≤ c
+  · have h2 : x₀ ≤ d := h1.trans hcd.le
+    simp [h1, h2, Set.indicator, not_lt.mpr h1]
+  · by_cases h2 : x₀ ≤ d
+    · simp [h1, h2, Set.indicator, not_le.mp h1]
+    · simp [h1, h2, Set.indicator]
+
+/-- **DLMF §1.4(v)**: `∫_a^b f(x) dα(x) = f(xₙ)` for `xₙ ∈ (a, b)` and `0` otherwise, when
+`α(x) = H(x − xₙ)` (`setIntegral_dirac`). -/
+theorem dlmf_1_4_v_heaviside (f : ℝ → ℝ) (x₀ a b : ℝ) :
+    ∫ x in Ioo a b, f x ∂(heaviside x₀).measure = if x₀ ∈ Ioo a b then f x₀ else 0 := by
+  classical
+  rw [heaviside_measure, setIntegral_dirac]
+
+/-- Every function is integrable against a finite nonnegative combination of Dirac measures. -/
+theorem integrable_sum_dirac {ι : Type*} (T : Finset ι) (c : ι → ℝ≥0) (x : ι → ℝ) (f : ℝ → ℝ) :
+    Integrable f (∑ n ∈ T, c n • Measure.dirac (x n)) := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => simp
+  | insert m T hm ih =>
+    rw [Finset.sum_insert hm]
+    exact ((integrable_dirac (by simp)).smul_measure_nnreal).add_measure ih
+
+/-- The integral against a finite nonnegative combination of Dirac measures at points of `s`. -/
+theorem integral_sum_dirac {ι : Type*} (T : Finset ι) (c : ι → ℝ≥0) (x : ι → ℝ) (f : ℝ → ℝ)
+    (s : Set ℝ) (hx : ∀ n ∈ T, x n ∈ s) :
+    ∫ y in s, f y ∂(∑ n ∈ T, c n • Measure.dirac (x n)) = ∑ n ∈ T, (c n : ℝ) * f (x n) := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => simp
+  | insert m T hm ih =>
+    rw [Finset.sum_insert hm, Finset.sum_insert hm, Measure.restrict_add,
+      integral_add_measure ((integrable_dirac (by simp)).smul_measure_nnreal.restrict)
+        ((integrable_sum_dirac T c x f).restrict),
+      Measure.restrict_smul, integral_smul_nnreal_measure, setIntegral_dirac,
+      ite_eq_left (hx m (Finset.mem_insert_self m T)),
+      ih fun n hn => hx n (Finset.mem_insert_of_mem hn), NNReal.smul_def, smul_eq_mul]
+
+/-- The Stieltjes measure of a finite nonnegative combination of Stieltjes functions
+(`StieltjesFunction.measure_add`, `StieltjesFunction.measure_smul`). -/
+theorem measure_sum_smul {ι : Type*} (T : Finset ι) (c : ι → ℝ≥0) (g : ι → StieltjesFunction ℝ) :
+    (∑ n ∈ T, c n • g n).measure = ∑ n ∈ T, c n • (g n).measure := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => simp [StieltjesFunction.measure_zero]
+  | insert m T hm ih =>
+    rw [Finset.sum_insert hm, Finset.sum_insert hm, StieltjesFunction.measure_add,
+      StieltjesFunction.measure_smul, ih]
+
+/-- **DLMF 1.4.23_3**: for `dα(x) = w(x) dx + ∑ₙ wₙ δ(x − xₙ) dx` with `xₙ ∈ (a, b)`, i.e.
+`α = α_w + ∑ₙ wₙ H(x − xₙ)` with `dα_w = w dx` absolutely continuous, and `f` continuous,
+`∫_a^b f(x) dα(x) = ∫_a^b w(x) f(x) dx + ∑ₙ wₙ f(xₙ)`. -/
+theorem dlmf_1_4_23_3 {αw : StieltjesFunction ℝ} {w : ℝ → ℝ} (hw0 : ∀ x, 0 ≤ w x)
+    (hwi : LocallyIntegrable w volume) (hα : ∀ c d, c ≤ d → αw d - αw c = ∫ x in c..d, w x)
+    {ι : Type*} (T : Finset ι) (wₙ : ι → ℝ≥0) (xₙ : ι → ℝ) {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hxₙ : ∀ n ∈ T, xₙ n ∈ Ioo a b) (hf : ContinuousOn f (Icc a b)) :
+    ∫ x in Ioo a b, f x ∂(αw + ∑ n ∈ T, wₙ n • heaviside (xₙ n)).measure =
+      (∫ x in a..b, w x * f x) + ∑ n ∈ T, (wₙ n : ℝ) * f (xₙ n) := by
+  have hmeas : (αw + ∑ n ∈ T, wₙ n • heaviside (xₙ n)).measure =
+      αw.measure + ∑ n ∈ T, wₙ n • Measure.dirac (xₙ n) := by
+    rw [StieltjesFunction.measure_add, measure_sum_smul]
+    simp only [heaviside_measure]
+  have hint : IntegrableOn f (Ioo a b) αw.measure :=
+    (hf.integrableOn_compact isCompact_Icc).mono_set Ioo_subset_Icc_self
+  rw [hmeas, Measure.restrict_add, integral_add_measure hint
+    ((integrable_sum_dirac T wₙ xₙ f).restrict), dlmf_1_4_23_2 hw0 hwi hα f hab,
+    integral_sum_dirac T wₙ xₙ f _ hxₙ]
+  congr 1
+  exact intervalIntegral.integral_congr fun x _ => mul_comm (f x) (w x)
+
+
+/-! #### Cauchy principal values -/
+
+/-- **DLMF 1.4.24**: the Cauchy principal value
+`⨍_a^b f = lim_{ε→0+} (∫_a^{c−ε} f + ∫_{c+ε}^b f)` is `L`. -/
+def HasPrincipalValue (f : ℝ → ℝ) (a b c L : ℝ) : Prop :=
+  Tendsto (fun ε => (∫ x in a..c - ε, f x) + ∫ x in c + ε..b, f x) (𝓝[>] 0) (𝓝 L)
+
+/-- **DLMF 1.4.25**: `⨍_{−∞}^∞ f = lim_{b→∞} ∫_{−b}^b f` is `L`. -/
+def HasPrincipalValueInfty (f : ℝ → ℝ) (L : ℝ) : Prop :=
+  Tendsto (fun b => ∫ x in -b..b, f x) atTop (𝓝 L)
+
+theorem tendsto_sub_nhdsGT {a b c : ℝ} (hc : c ∈ Ioo a b) :
+    Tendsto (fun ε => c - ε) (𝓝[>] 0) (𝓝[Icc a b] c) := by
+  refine tendsto_nhdsWithin_iff.mpr ⟨?_, ?_⟩
+  · have : Tendsto (fun ε : ℝ => c - ε) (𝓝 0) (𝓝 (c - 0)) := tendsto_const_nhds.sub tendsto_id
+    rw [sub_zero] at this
+    exact this.mono_left nhdsWithin_le_nhds
+  · filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < c - a by linarith [hc.1])] with ε hε
+    exact ⟨by linarith [hε.2], by linarith [hε.1, hc.2]⟩
+
+theorem tendsto_add_nhdsGT {a b c : ℝ} (hc : c ∈ Ioo a b) :
+    Tendsto (fun ε => c + ε) (𝓝[>] 0) (𝓝[Icc a b] c) := by
+  refine tendsto_nhdsWithin_iff.mpr ⟨?_, ?_⟩
+  · have : Tendsto (fun ε : ℝ => c + ε) (𝓝 0) (𝓝 (c + 0)) := tendsto_const_nhds.add tendsto_id
+    rw [add_zero] at this
+    exact this.mono_left nhdsWithin_le_nhds
+  · filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < b - c by linarith [hc.2])] with ε hε
+    exact ⟨by linarith [hε.1, hc.1], by linarith [hε.2]⟩
+
+/-- **DLMF 1.4.24**: when `∫_a^b f` exists, the principal value exists and equals it (continuity
+of `x ↦ ∫_a^x f`, `intervalIntegral.continuousOn_primitive_interval`). -/
+theorem dlmf_1_4_24 {f : ℝ → ℝ} {a b c : ℝ} (hc : c ∈ Ioo a b)
+    (hf : IntervalIntegrable f volume a b) : HasPrincipalValue f a b c (∫ x in a..b, f x) := by
+  have hab : a ≤ b := (hc.1.trans hc.2).le
+  have hcont := intervalIntegral.continuousOn_primitive_interval (μ := volume)
+    ((intervalIntegrable_iff_integrableOn_Icc_of_le hab).mp hf |>.mono_set
+      (by rw [Set.uIcc_of_le hab]))
+  rw [Set.uIcc_of_le hab] at hcont
+  set F := fun x => ∫ t in a..x, f t with hF
+  have hcF : ContinuousWithinAt F (Icc a b) c := hcont c (Ioo_subset_Icc_self hc)
+  have h1 := hcF.tendsto.comp (tendsto_sub_nhdsGT hc)
+  have h2 := hcF.tendsto.comp (tendsto_add_nhdsGT hc)
+  have hlim := h1.add (tendsto_const_nhds (x := ∫ x in a..b, f x)) |>.sub h2
+  rw [add_sub_cancel_left] at hlim
+  refine hlim.congr' ?_
+  filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < min (c - a) (b - c) by
+    exact lt_min (by linarith [hc.1]) (by linarith [hc.2]))] with ε hε
+  have hε1 : ε < c - a := hε.2.trans_le (min_le_left _ _)
+  have hε2 : ε < b - c := hε.2.trans_le (min_le_right _ _)
+  have hsub : IntervalIntegrable f volume a (c + ε) := hf.mono_set (by
+    rw [Set.uIcc_of_le hab, Set.uIcc_of_le (by linarith [hε.1])]
+    exact Icc_subset_Icc le_rfl (by linarith))
+  simp only [Function.comp, hF]
+  rw [← intervalIntegral.integral_interval_sub_left hf hsub]
+  ring
+
+/-- **DLMF §1.4(v)**: the principal value can exist when the integral does not: for `f(x) = 1/x`
+on `(−1, 1)` with `c = 0`, `∫_{−1}^{−ε} dx/x + ∫_ε^1 dx/x = 0` (`integral_inv`). -/
+theorem dlmf_1_4_24_inv : HasPrincipalValue (fun x => x⁻¹) (-1) 1 0 0 := by
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [Ioo_mem_nhdsGT (show (0 : ℝ) < 1 by norm_num)] with ε hε
+  have h1 : (0 : ℝ) ∉ uIcc (-1) (0 - ε) := by
+    rw [Set.uIcc_of_le (by linarith [hε.2])]
+    intro h
+    linarith [h.2, hε.1]
+  have h2 : (0 : ℝ) ∉ uIcc (0 + ε) 1 := by
+    rw [Set.uIcc_of_le (by linarith [hε.2])]
+    intro h
+    linarith [h.1, hε.1]
+  rw [integral_inv h1, integral_inv h2, zero_sub, zero_add, neg_div_neg_eq, div_one,
+    one_div, Real.log_inv, add_neg_cancel]
+
+/-- **DLMF 1.4.25**: for `f` integrable on `ℝ`, the principal value exists and equals `∫ f`
+(`intervalIntegral_tendsto_integral`). -/
+theorem dlmf_1_4_25 {f : ℝ → ℝ} (hf : Integrable f) : HasPrincipalValueInfty f (∫ x, f x) :=
+  intervalIntegral_tendsto_integral hf tendsto_neg_atTop_atBot tendsto_id
+
+/-- **DLMF §1.4(v)**: `⨍_{−∞}^∞ x dx = 0` although `x` is not integrable (`integral_id`). -/
+theorem dlmf_1_4_25_id : HasPrincipalValueInfty (fun x => x) 0 := by
+  refine tendsto_const_nhds.congr fun b => ?_
+  rw [integral_id]
+  ring
+
+/-! #### Fundamental theorem of calculus -/
+
+/-- **DLMF 1.4.26**: for `F' = f` with `f` continuous, `∫_a^b f = F(b) − F(a)`
+(`intervalIntegral.integral_eq_sub_of_hasDerivAt`). -/
+theorem dlmf_1_4_26 {F f : ℝ → ℝ} {a b : ℝ} (hF : ∀ x ∈ uIcc a b, HasDerivAt F (f x) x)
+    (hf : ContinuousOn f (uIcc a b)) : ∫ x in a..b, f x = F b - F a :=
+  intervalIntegral.integral_eq_sub_of_hasDerivAt hF hf.intervalIntegrable
+
+/-- **DLMF 1.4.27**: `d/dx ∫_a^x f(t) dt = f(x)` for continuous `f`
+(`Continuous.integral_hasStrictDerivAt`). -/
+theorem dlmf_1_4_27 {f : ℝ → ℝ} (hf : Continuous f) (a x : ℝ) :
+    HasDerivAt (fun x => ∫ t in a..x, f t) (f x) x :=
+  (hf.integral_hasStrictDerivAt a x).hasDerivAt
+
+/-! #### Change of variables -/
+
+/-- **DLMF 1.4.28**: `∫_a^b f(φ(x)) φ'(x) dx = ∫_{φ(a)}^{φ(b)} f(t) dt` for `φ'` continuous and `f`
+continuous on `φ([a, b])` (`intervalIntegral.integral_comp_mul_deriv'`). -/
+theorem dlmf_1_4_28 {f φ φ' : ℝ → ℝ} {a b : ℝ} (hφ : ∀ x ∈ uIcc a b, HasDerivAt φ (φ' x) x)
+    (hφ' : ContinuousOn φ' (uIcc a b)) (hf : ContinuousOn f (φ '' uIcc a b)) :
+    ∫ x in a..b, f (φ x) * φ' x = ∫ t in φ a..φ b, f t :=
+  intervalIntegral.integral_comp_mul_deriv' hφ hφ' hf
+
+/-- **DLMF 1.4.28** for piecewise continuous `φ'`: it suffices that `φ` be continuous with
+right derivative `φ'` on `(a, b)` and the integrands be integrable
+(`intervalIntegral.integral_comp_mul_deriv'''`). -/
+theorem dlmf_1_4_28_piecewise {f φ φ' : ℝ → ℝ} {a b : ℝ} (hφ : ContinuousOn φ (uIcc a b))
+    (hφ' : ∀ x ∈ Ioo (min a b) (max a b), HasDerivWithinAt φ (φ' x) (Ioi x) x)
+    (hf : ContinuousOn f (φ '' Ioo (min a b) (max a b))) (hf1 : IntegrableOn f (φ '' uIcc a b))
+    (hf2 : IntegrableOn (fun x => f (φ x) * φ' x) (uIcc a b)) :
+    ∫ x in a..b, f (φ x) * φ' x = ∫ t in φ a..φ b, f t :=
+  intervalIntegral.integral_comp_mul_deriv''' hφ hφ' hf hf1 hf2
+
+/-! #### Mean value theorems -/
+
+/-- **DLMF 1.4.29**, the first mean value theorem: for `f` continuous and `φ ≥ 0` integrable on
+`[a, b]`, `∫_a^b f φ = f(c) ∫_a^b φ` for some `c ∈ [a, b]`
+(`exists_eq_const_mul_intervalIntegral_of_nonneg`). -/
+theorem dlmf_1_4_29 {f φ : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b) (hf : ContinuousOn f (Icc a b))
+    (hφ : IntervalIntegrable φ volume a b) (hφ0 : ∀ x ∈ Icc a b, 0 ≤ φ x) :
+    ∃ c ∈ Icc a b, ∫ x in a..b, f x * φ x = f c * ∫ x in a..b, φ x := by
+  rw [← Set.uIcc_of_le hab] at hf ⊢
+  exact exists_eq_const_mul_intervalIntegral_of_nonneg hf hφ fun x hx =>
+    hφ0 x (by rw [← Set.uIcc_of_le hab]; exact uIoc_subset_uIcc hx)
+
+/-- Integrability of `f φ` for `f` monotone and `φ` integrable on `[a, b]`. -/
+theorem intervalIntegrable_mul_of_monotoneOn {f φ : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : MonotoneOn f (Icc a b)) (hφ : IntervalIntegrable φ volume a b) :
+    IntervalIntegrable (fun x => f x * φ x) volume a b := by
+  have hfi : IntervalIntegrable f volume a b :=
+    MonotoneOn.intervalIntegrable (by rwa [Set.uIcc_of_le hab])
+  rw [intervalIntegrable_iff_integrableOn_Ioc_of_le hab] at hfi hφ ⊢
+  refine hφ.bdd_mul hfi.aestronglyMeasurable (c := |f a| + |f b|) ?_
+  refine ae_restrict_of_forall_mem measurableSet_Ioc fun x hx => ?_
+  have hx' : x ∈ Icc a b := Ioc_subset_Icc_self hx
+  have h1 := hf ⟨le_rfl, hab⟩ hx' hx'.1
+  have h2 := hf hx' ⟨hab, le_rfl⟩ hx'.2
+  rw [Real.norm_eq_abs, abs_le]
+  constructor <;> linarith [neg_abs_le (f a), le_abs_self (f b), abs_nonneg (f a),
+    abs_nonneg (f b)]
+
+/-- **DLMF 1.4.30**, the second mean value theorem, `f` nondecreasing: `∫_a^b f φ =
+f(a) ∫_a^c φ + f(b) ∫_c^b φ` for some `c ∈ [a, b]` (from Mathlib's nonnegative-weight form
+`exists_eq_const_mul_intervalIntegral_of_nonneg_of_monotoneOn` applied to `f − f(a)`). -/
+theorem dlmf_1_4_30_monotone {f φ : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b) (hf : MonotoneOn f (Icc a b))
+    (hφ : IntervalIntegrable φ volume a b) :
+    ∃ c ∈ Icc a b, ∫ x in a..b, f x * φ x =
+      f a * (∫ x in a..c, φ x) + f b * ∫ x in c..b, φ x := by
+  have hg : MonotoneOn (fun x => f x - f a) (Icc a b) := fun x hx y hy hxy =>
+    sub_le_sub_right (hf hx hy hxy) _
+  obtain ⟨c, hc, hcg⟩ := exists_eq_const_mul_intervalIntegral_of_nonneg_of_monotoneOn
+    (f := fun x => f x - f a) hab (by simp) hg hφ
+  refine ⟨c, hc, ?_⟩
+  have hfφ := intervalIntegrable_mul_of_monotoneOn hab hf hφ
+  have hsplit : ∫ x in a..b, (f x - f a) * φ x =
+      (∫ x in a..b, f x * φ x) - f a * ∫ x in a..b, φ x := by
+    simp only [sub_mul]
+    rw [intervalIntegral.integral_sub hfφ (hφ.const_mul (f a)),
+      intervalIntegral.integral_const_mul]
+  have hca : IntervalIntegrable φ volume a c := hφ.mono_set (by
+    rw [Set.uIcc_of_le hab, Set.uIcc_of_le hc.1]; exact Icc_subset_Icc le_rfl hc.2)
+  have hcb : IntervalIntegrable φ volume c b := hφ.mono_set (by
+    rw [Set.uIcc_of_le hab, Set.uIcc_of_le hc.2]; exact Icc_subset_Icc hc.1 le_rfl)
+  have hadd := intervalIntegral.integral_add_adjacent_intervals hca hcb
+  rw [hsplit, ← hadd] at hcg
+  linarith
+
+/-- **DLMF 1.4.30**, the second mean value theorem for `f` monotonic (nondecreasing or
+nonincreasing; the nonincreasing case from the nondecreasing one applied to `−f`). -/
+theorem dlmf_1_4_30 {f φ : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : MonotoneOn f (Icc a b) ∨ AntitoneOn f (Icc a b))
+    (hφ : IntervalIntegrable φ volume a b) :
+    ∃ c ∈ Icc a b, ∫ x in a..b, f x * φ x =
+      f a * (∫ x in a..c, φ x) + f b * ∫ x in c..b, φ x := by
+  rcases hf with hf | hf
+  · exact dlmf_1_4_30_monotone hab hf hφ
+  · obtain ⟨c, hc, h⟩ := dlmf_1_4_30_monotone (f := fun x => -f x) hab hf.neg hφ
+    refine ⟨c, hc, ?_⟩
+    simp only [neg_mul, intervalIntegral.integral_neg] at h
+    linarith
+
+/-! #### Repeated integrals -/
+
+/-- The primitive `P g (x) = ∫_a^x g`. -/
+noncomputable def primitive (a : ℝ) (g : ℝ → ℝ) : ℝ → ℝ := fun x => ∫ t in a..x, g t
+
+/-- The repeated integral `∫_a^b dxₙ ∫_a^{xₙ} dxₙ₋₁ ⋯ ∫_a^{x₂} dx₁ ∫_a^{x₁} f(x) dx` (`n + 1`
+integrations), i.e. the `(n + 1)`-fold primitive of `f` at `b`. -/
+noncomputable def repeatedIntegral (a : ℝ) (n : ℕ) (f : ℝ → ℝ) (b : ℝ) : ℝ :=
+  (primitive a)^[n + 1] f b
+
+theorem continuous_primitive' {g : ℝ → ℝ} (hg : Continuous g) (a : ℝ) :
+    Continuous (primitive a g) :=
+  intervalIntegral.continuous_primitive (fun _ _ => hg.intervalIntegrable _ _) a
+
+/-- One integration by parts: `∫_a^b (b − x)^{n+1} f(x) dx = (n + 1) ∫_a^b (b − x)^n P f(x) dx`. -/
+theorem integral_pow_mul_eq_succ_mul_primitive {f : ℝ → ℝ} (hf : Continuous f) (a b : ℝ)
+    (n : ℕ) : ∫ x in a..b, (b - x) ^ (n + 1) * f x =
+      (n + 1) * ∫ x in a..b, (b - x) ^ n * primitive a f x := by
+  have hu : ∀ x ∈ uIcc a b, HasDerivAt (fun x => (b - x) ^ (n + 1))
+      (-((n + 1 : ℕ) : ℝ) * (b - x) ^ n) x := fun x _ => by
+    have := (hasDerivAt_pow (n + 1) (b - x)).comp x ((hasDerivAt_id x).const_sub b)
+    convert this using 1
+    · rfl
+    · rw [Nat.add_sub_cancel]
+      push_cast
+      ring
+  have hv : ∀ x ∈ uIcc a b, HasDerivAt (primitive a f) (f x) x := fun x _ =>
+    (hf.integral_hasStrictDerivAt a x).hasDerivAt
+  have hparts := intervalIntegral.integral_mul_deriv_eq_deriv_mul hu hv
+    ((continuous_const.mul ((continuous_const.sub continuous_id).pow n)).intervalIntegrable a b)
+    (hf.intervalIntegrable a b)
+  rw [hparts]
+  simp only [primitive, sub_self, intervalIntegral.integral_same, mul_zero,
+    zero_pow (Nat.succ_ne_zero n), zero_mul, zero_sub]
+  rw [← intervalIntegral.integral_neg, ← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_congr fun x _ => ?_
+  push_cast
+  ring
+
+/-- **DLMF 1.4.31**, repeated integrals (Cauchy's formula): for `f` continuous,
+`∫_a^b dxₙ ∫_a^{xₙ} ⋯ ∫_a^{x₁} f(x) dx = (1/n!) ∫_a^b (b − x)^n f(x) dx`; by induction on `n`
+with one integration by parts per step. -/
+theorem dlmf_1_4_31 {f : ℝ → ℝ} (hf : Continuous f) (a b : ℝ) (n : ℕ) :
+    repeatedIntegral a n f b = 1 / n.factorial * ∫ x in a..b, (b - x) ^ n * f x := by
+  induction n generalizing f with
+  | zero => simp [repeatedIntegral, primitive]
+  | succ n ih =>
+    have h := ih (continuous_primitive' hf a)
+    rw [repeatedIntegral] at h
+    rw [repeatedIntegral, Function.iterate_succ_apply, h,
+      integral_pow_mul_eq_succ_mul_primitive hf a b n, Nat.factorial_succ]
+    push_cast
+    field_simp
+
+/-! #### Square-integrable functions -/
+
+/-- **DLMF 1.4.32**: `‖f‖₂² = ∫_a^b |f(x)|² dx`. -/
+noncomputable def l2NormSq (f : ℝ → ℝ) (a b : ℝ) : ℝ := ∫ x in a..b, |f x| ^ 2
+
+/-- **DLMF 1.4.32**: a (measurable) `f` is square-integrable on `(a, b)`, i.e. in Mathlib's `L²`
+(`MemLp f 2`), iff `|f|²` is integrable there (`memLp_two_iff_integrable_sq`). -/
+theorem dlmf_1_4_32 {f : ℝ → ℝ} {a b : ℝ}
+    (hf : AEStronglyMeasurable f (volume.restrict (Ioc a b))) :
+    MemLp f 2 (volume.restrict (Ioc a b)) ↔ IntegrableOn (fun x => |f x| ^ 2) (Ioc a b) := by
+  rw [memLp_two_iff_integrable_sq hf]
+  simp only [sq_abs]
+  rfl
+
+end DefiniteIntegrals
 
 end Azurite.DLMF
