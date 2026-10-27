@@ -38,6 +38,9 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.MeanValue
 import Mathlib.Topology.EMetricSpace.VariationOnFromTo
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.Analysis.Calculus.Taylor
+import Mathlib.Analysis.Calculus.DerivativeTest
+import Mathlib.Analysis.Convex.Deriv
 
 /-!
 # DLMF §1.4: Calculus of One Variable
@@ -152,6 +155,27 @@ subsection.  Functions are real-valued functions of a real variable, `f : ℝ �
   `olver_ex_11_2_iii` (`𝒱(sech) = 2`, via `eVariationOn_Iic_of_monotoneOn`,
   `eVariationOn_Ici_of_antitoneOn`).  Not formalized: Ex. 11.2 (i), (iv), and the variation
   along a path in `ℂ` (Olver §11.5 second half, Ex. 11.3–11.4).
+
+## §1.4(vi) Taylor's theorem for real variables
+
+* `taylorSum` (`∑_{k=0}^n f^{(k)}(a)/k! (x − a)^k`, one-sided derivatives within `[a, b]`),
+  `iteratedDerivWithin_Icc_left`, `taylorWithinEval_eq_taylorSum`.
+* 1.4.35–1.4.36 `dlmf_1_4_35_36` (Lagrange remainder, `a < c < x`); 1.4.37 `dlmf_1_4_37`
+  (integral remainder), for `f ∈ C^{n+1}[a, b]` (`ContDiffOn ℝ (n + 1) f (Icc a b)`).
+
+## §1.4(vii) Maxima and minima
+
+* `dlmf_1_4_vii_localMax`, `dlmf_1_4_vii_localMin`: the second-derivative test.
+* `dlmf_1_4_vii_isMaxOn`, `dlmf_1_4_vii_isMinOn`, `dlmf_1_4_vii_exists_max`,
+  `dlmf_1_4_vii_exists_min`: the overall extrema on `[a, b]` are at local extrema or end points.
+
+## §1.4(viii) Convex functions
+
+* 1.4.38 `dlmf_1_4_38` (`(a, b)`), `dlmf_1_4_38_Icc` (`[a, b]`), via `convexOn_iff_dlmf`
+  (Mathlib's `ConvexOn`; Figure 1.4.2's `g(t) ≤ l(t)` is the same inequality).
+* `dlmf_1_4_viii_deriv2` (twice differentiable: convex iff `f'' ≥ 0` on `(a, b)`),
+  `dlmf_1_4_viii_tangent` / `convexOn_iff_tangent_le` (convex iff the curve does not lie below
+  its tangents).
 -/
 
 namespace Azurite.DLMF
@@ -2606,5 +2630,206 @@ theorem olver_ex_11_2_iii : eVariationOn (fun x => (Real.cosh x)⁻¹) univ = 2 
     Real.cosh_zero, inv_one, sub_zero, ENNReal.ofReal_one, one_add_one_eq_two]
 
 end DefiniteIntegrals
+
+/-! ## §1.4(vi) Taylor's theorem for real variables -/
+
+section Taylor
+
+open Finset
+
+/-- The Taylor sum `∑_{k=0}^n f^{(k)}(a)/k! (x − a)^k` of DLMF 1.4.35, for `f ∈ C^{n+1}[a, b]`; the
+derivatives at `a` are one-sided (within `[a, b]`). -/
+noncomputable def taylorSum (f : ℝ → ℝ) (a b : ℝ) (n : ℕ) (x : ℝ) : ℝ :=
+  ∑ k ∈ range (n + 1), iteratedDerivWithin k f (Icc a b) a / k.factorial * (x - a) ^ k
+
+/-- One-sided derivatives at `a` within `[a, x]` and within `[a, b]` agree, for `a < x ≤ b`. -/
+theorem iteratedDerivWithin_Icc_left (f : ℝ → ℝ) {a b x : ℝ} (hax : a < x) (hxb : x ≤ b)
+    (k : ℕ) : iteratedDerivWithin k f (Icc a x) a = iteratedDerivWithin k f (Icc a b) a := by
+  have h : Icc a x = Icc a b ∩ Iic x := by
+    ext y
+    simp only [Set.mem_Icc, mem_inter_iff, Set.mem_Iic]
+    exact ⟨fun h => ⟨⟨h.1, h.2.trans hxb⟩, h.2⟩, fun h => ⟨h.1.1, h.2⟩⟩
+  rw [iteratedDerivWithin_eq_iteratedFDerivWithin, iteratedDerivWithin_eq_iteratedFDerivWithin, h,
+    iteratedFDerivWithin_inter' (mem_nhdsWithin_of_mem_nhds (Iic_mem_nhds hax))]
+
+/-- Mathlib's Taylor polynomial on `[a, x]` is the Taylor sum of DLMF 1.4.35. -/
+theorem taylorWithinEval_eq_taylorSum (f : ℝ → ℝ) {a b x : ℝ} (hax : a < x) (hxb : x ≤ b)
+    (n : ℕ) : taylorWithinEval f n (Icc a x) a x = taylorSum f a b n x := by
+  rw [taylor_within_apply, taylorSum]
+  refine sum_congr rfl fun k _ => ?_
+  rw [iteratedDerivWithin_Icc_left f hax hxb, smul_eq_mul, div_eq_mul_inv]
+  ring
+
+/-- **DLMF 1.4.35–1.4.36** (Taylor's theorem, Lagrange remainder): if `f ∈ C^{n+1}[a, b]` and
+`a < x ≤ b`, then `f(x) = ∑_{k=0}^n f^{(k)}(a)/k! (x − a)^k + R_n` with
+`R_n = f^{(n+1)}(c)/(n+1)! (x − a)^{n+1}` for some `a < c < x`. -/
+theorem dlmf_1_4_35_36 {f : ℝ → ℝ} {a b x : ℝ} {n : ℕ} (hf : ContDiffOn ℝ (n + 1) f (Icc a b))
+    (hx : x ∈ Ioc a b) : ∃ c ∈ Ioo a x, f x = taylorSum f a b n x +
+      iteratedDerivWithin (n + 1) f (Icc a b) c / (n + 1).factorial * (x - a) ^ (n + 1) := by
+  obtain ⟨hax, hxb⟩ := hx
+  have hsub : uIcc a x ⊆ Icc a b := by
+    rw [uIcc_of_le hax.le]
+    exact Icc_subset_Icc_right hxb
+  obtain ⟨c, hc, h⟩ := taylor_mean_remainder_lagrange_iteratedDeriv hax.ne (hf.mono hsub)
+  rw [uIoo_of_le hax.le] at hc
+  refine ⟨c, hc, ?_⟩
+  have hcb : c < b := hc.2.trans_le hxb
+  have hcd : iteratedDerivWithin (n + 1) f (Icc a b) c = iteratedDeriv (n + 1) f c :=
+    iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc (hax.trans_le hxb))
+      (hf.contDiffAt (Icc_mem_nhds hc.1 hcb)) ⟨hc.1.le, hcb.le⟩
+  rw [uIcc_of_le hax.le, taylorWithinEval_eq_taylorSum f hax hxb] at h
+  rw [hcd, div_mul_eq_mul_div]
+  linarith
+
+/-- **DLMF 1.4.37** (integral form of the remainder): if `f ∈ C^{n+1}[a, b]` and `a ≤ x ≤ b`, then
+`R_n = f(x) − ∑_{k=0}^n f^{(k)}(a)/k! (x − a)^k = (1/n!) ∫_a^x (x − t)^n f^{(n+1)}(t) dt`. -/
+theorem dlmf_1_4_37 {f : ℝ → ℝ} {a b x : ℝ} {n : ℕ} (hf : ContDiffOn ℝ (n + 1) f (Icc a b))
+    (hx : x ∈ Icc a b) : f x - taylorSum f a b n x =
+      1 / n.factorial * ∫ t in a..x, (x - t) ^ n * iteratedDerivWithin (n + 1) f (Icc a b) t := by
+  obtain ⟨hax, hxb⟩ := hx
+  rcases eq_or_lt_of_le hax with rfl | hax
+  · simp [taylorSum, sum_range_succ']
+  have hsub : uIcc a x ⊆ Icc a b := by
+    rw [uIcc_of_le hax.le]
+    exact Icc_subset_Icc_right hxb
+  have h := taylor_integral_remainder (hf.mono hsub)
+  rw [uIcc_of_le hax.le, taylorWithinEval_eq_taylorSum f hax hxb] at h
+  rw [h, ← intervalIntegral.integral_const_mul]
+  refine intervalIntegral.integral_congr_ae ?_
+  filter_upwards [MeasureTheory.compl_mem_ae_iff.mpr (MeasureTheory.measure_singleton x)]
+    with t ht hmem
+  rw [uIoc_of_le hax.le] at hmem
+  have htx : t < x := lt_of_le_of_ne hmem.2 ht
+  have htb : t < b := htx.trans_le hxb
+  have hcont : ContDiffAt ℝ (n + 1) f t := hf.contDiffAt (Icc_mem_nhds hmem.1 htb)
+  rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hax) hcont ⟨hmem.1.le, htx.le⟩,
+    iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc (hax.trans_le hxb)) hcont
+      ⟨hmem.1.le, htb.le⟩, smul_eq_mul]
+  ring
+
+end Taylor
+
+/-! ## §1.4(vii) Maxima and minima -/
+
+/-- **DLMF §1.4(vii)**: if `f'(x₀) = 0` and `f''(x₀) < 0`, then `x₀` is a local maximum. -/
+theorem dlmf_1_4_vii_localMax {f : ℝ → ℝ} {x₀ : ℝ} (hf : DifferentiableAt ℝ f x₀)
+    (h1 : deriv f x₀ = 0) (h2 : deriv (deriv f) x₀ < 0) : IsLocalMax f x₀ :=
+  isLocalMax_of_deriv_deriv_neg h2 h1 hf.continuousAt
+
+/-- **DLMF §1.4(vii)**: if `f'(x₀) = 0` and `f''(x₀) > 0`, then `x₀` is a local minimum. -/
+theorem dlmf_1_4_vii_localMin {f : ℝ → ℝ} {x₀ : ℝ} (hf : DifferentiableAt ℝ f x₀)
+    (h1 : deriv f x₀ = 0) (h2 : 0 < deriv (deriv f) x₀) : IsLocalMin f x₀ :=
+  isLocalMin_of_deriv_deriv_pos h2 h1 hf.continuousAt
+
+/-- **DLMF §1.4(vii)**: the overall maximum of `f` on `[a, b]` is at a local maximum or at one of
+the end points `a`, `b`. -/
+theorem dlmf_1_4_vii_isMaxOn {f : ℝ → ℝ} {a b x₀ : ℝ} (hx : x₀ ∈ Icc a b)
+    (h : IsMaxOn f (Icc a b) x₀) : x₀ = a ∨ x₀ = b ∨ IsLocalMax f x₀ := by
+  rcases eq_or_lt_of_le hx.1 with rfl | h1
+  · exact Or.inl rfl
+  rcases eq_or_lt_of_le hx.2 with rfl | h2
+  · exact Or.inr (Or.inl rfl)
+  exact Or.inr (Or.inr (h.isLocalMax (Icc_mem_nhds h1 h2)))
+
+/-- **DLMF §1.4(vii)**: the overall minimum of `f` on `[a, b]` is at a local minimum or at one of
+the end points `a`, `b`. -/
+theorem dlmf_1_4_vii_isMinOn {f : ℝ → ℝ} {a b x₀ : ℝ} (hx : x₀ ∈ Icc a b)
+    (h : IsMinOn f (Icc a b) x₀) : x₀ = a ∨ x₀ = b ∨ IsLocalMin f x₀ := by
+  rcases eq_or_lt_of_le hx.1 with rfl | h1
+  · exact Or.inl rfl
+  rcases eq_or_lt_of_le hx.2 with rfl | h2
+  · exact Or.inr (Or.inl rfl)
+  exact Or.inr (Or.inr (h.isLocalMin (Icc_mem_nhds h1 h2)))
+
+/-- **DLMF §1.4(vii)**: a continuous `f` attains its overall maximum on `[a, b]`, at a local
+maximum or at an end point. -/
+theorem dlmf_1_4_vii_exists_max {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : ContinuousOn f (Icc a b)) :
+    ∃ x₀ ∈ Icc a b, IsMaxOn f (Icc a b) x₀ ∧ (x₀ = a ∨ x₀ = b ∨ IsLocalMax f x₀) := by
+  obtain ⟨x₀, hx, h⟩ := isCompact_Icc.exists_isMaxOn (nonempty_Icc.mpr hab) hf
+  exact ⟨x₀, hx, h, dlmf_1_4_vii_isMaxOn hx h⟩
+
+/-- **DLMF §1.4(vii)**: a continuous `f` attains its overall minimum on `[a, b]`, at a local
+minimum or at an end point. -/
+theorem dlmf_1_4_vii_exists_min {f : ℝ → ℝ} {a b : ℝ} (hab : a ≤ b)
+    (hf : ContinuousOn f (Icc a b)) :
+    ∃ x₀ ∈ Icc a b, IsMinOn f (Icc a b) x₀ ∧ (x₀ = a ∨ x₀ = b ∨ IsLocalMin f x₀) := by
+  obtain ⟨x₀, hx, h⟩ := isCompact_Icc.exists_isMinOn (nonempty_Icc.mpr hab) hf
+  exact ⟨x₀, hx, h, dlmf_1_4_vii_isMinOn hx h⟩
+
+/-! ## §1.4(viii) Convex functions -/
+
+/-- Convexity on an interval `s` in the form of DLMF 1.4.38:
+`f((1 − t)c + td) ≤ (1 − t)f(c) + tf(d)` for `c, d ∈ s`, `t ∈ [0, 1]`. -/
+theorem convexOn_iff_dlmf {s : Set ℝ} (hs : Convex ℝ s) {f : ℝ → ℝ} :
+    ConvexOn ℝ s f ↔ ∀ c ∈ s, ∀ d ∈ s, ∀ t ∈ Icc (0 : ℝ) 1,
+      f ((1 - t) * c + t * d) ≤ (1 - t) * f c + t * f d := by
+  constructor
+  · intro h c hc d hd t ht
+    simpa only [smul_eq_mul] using h.2 hc hd (sub_nonneg.mpr ht.2) ht.1 (by ring)
+  · intro h
+    refine ⟨hs, fun c hc d hd μ ν hμ hν hμν => ?_⟩
+    obtain rfl : μ = 1 - ν := by linarith
+    simpa only [smul_eq_mul] using h c hc d hd ν ⟨hν, by linarith⟩
+
+/-- **DLMF 1.4.38**: `f` is convex on `(a, b)` iff `f((1 − t)c + td) ≤ (1 − t)f(c) + tf(d)` for
+all `c, d ∈ (a, b)` and `t ∈ [0, 1]` (Mathlib's `ConvexOn`). -/
+theorem dlmf_1_4_38 {f : ℝ → ℝ} {a b : ℝ} :
+    ConvexOn ℝ (Ioo a b) f ↔ ∀ c ∈ Ioo a b, ∀ d ∈ Ioo a b, ∀ t ∈ Icc (0 : ℝ) 1,
+      f ((1 - t) * c + t * d) ≤ (1 - t) * f c + t * f d :=
+  convexOn_iff_dlmf (convex_Ioo a b)
+
+/-- **DLMF §1.4(viii)**: the similar definition for a closed interval `[a, b]`. -/
+theorem dlmf_1_4_38_Icc {f : ℝ → ℝ} {a b : ℝ} :
+    ConvexOn ℝ (Icc a b) f ↔ ∀ c ∈ Icc a b, ∀ d ∈ Icc a b, ∀ t ∈ Icc (0 : ℝ) 1,
+      f ((1 - t) * c + t * d) ≤ (1 - t) * f c + t * f d :=
+  convexOn_iff_dlmf (convex_Icc a b)
+
+/-- **DLMF §1.4(viii)**: a twice differentiable `f` is convex on `(a, b)` iff `f''(x) ≥ 0` there. -/
+theorem dlmf_1_4_viii_deriv2 {f : ℝ → ℝ} {a b : ℝ} (hf : ∀ x ∈ Ioo a b, DifferentiableAt ℝ f x)
+    (hf' : ∀ x ∈ Ioo a b, DifferentiableAt ℝ (deriv f) x) :
+    ConvexOn ℝ (Ioo a b) f ↔ ∀ x ∈ Ioo a b, 0 ≤ deriv (deriv f) x := by
+  constructor
+  · intro h x hx
+    rw [← derivWithin_of_isOpen isOpen_Ioo hx]
+    exact (h.monotoneOn_deriv hf).derivWithin_nonneg
+  · intro h
+    exact convexOn_of_deriv2_nonneg' (convex_Ioo a b)
+      (fun x hx => (hf x hx).differentiableWithinAt)
+      (fun x hx => (hf' x hx).differentiableWithinAt) fun x hx => h x hx
+
+/-- A differentiable function on an interval `s` is convex iff its graph does not lie below its
+tangent at any point: `f(x) + f'(x)(y − x) ≤ f(y)`. -/
+theorem convexOn_iff_tangent_le {s : Set ℝ} (hs : Convex ℝ s) {f : ℝ → ℝ}
+    (hf : ∀ x ∈ s, DifferentiableAt ℝ f x) :
+    ConvexOn ℝ s f ↔ ∀ x ∈ s, ∀ y ∈ s, f x + deriv f x * (y - x) ≤ f y := by
+  constructor
+  · intro h x hx y hy
+    rcases lt_trichotomy x y with hxy | rfl | hxy
+    · have := h.deriv_le_slope hx hy hxy (hf x hx)
+      rw [slope_def_field, le_div_iff₀ (sub_pos.mpr hxy)] at this
+      linarith
+    · simp
+    · have := h.slope_le_deriv hy hx hxy (hf x hx)
+      rw [slope_def_field, div_le_iff₀ (sub_pos.mpr hxy)] at this
+      have e : deriv f x * (y - x) = -(deriv f x * (x - y)) := by ring
+      linarith
+  · intro h
+    refine ⟨hs, fun x hx y hy μ ν hμ hν hμν => ?_⟩
+    have hz := hs hx hy hμ hν hμν
+    simp only [smul_eq_mul] at hz ⊢
+    have h1 := mul_le_mul_of_nonneg_left (h _ hz x hx) hμ
+    have h2 := mul_le_mul_of_nonneg_left (h _ hz y hy) hν
+    set d := deriv f (μ * x + ν * y)
+    have e : μ * (f (μ * x + ν * y) + d * (x - (μ * x + ν * y))) +
+        ν * (f (μ * x + ν * y) + d * (y - (μ * x + ν * y))) = f (μ * x + ν * y) := by
+      linear_combination (f (μ * x + ν * y) - d * (μ * x + ν * y)) * hμν
+    linarith
+
+/-- **DLMF §1.4(viii)**: a continuously differentiable function is convex on `(a, b)` iff the
+curve does not lie below its tangent at any point (differentiability suffices). -/
+theorem dlmf_1_4_viii_tangent {f : ℝ → ℝ} {a b : ℝ} (hf : ∀ x ∈ Ioo a b, DifferentiableAt ℝ f x) :
+    ConvexOn ℝ (Ioo a b) f ↔ ∀ x ∈ Ioo a b, ∀ y ∈ Ioo a b, f x + deriv f x * (y - x) ≤ f y :=
+  convexOn_iff_tangent_le (convex_Ioo a b) hf
 
 end Azurite.DLMF
