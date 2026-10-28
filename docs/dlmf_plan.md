@@ -334,6 +334,34 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.7.10 | `dlmf_1_7_10` (`φ` convex on `(a, b)`, endpoints in `[−∞, +∞]`, `φ ∘ f` integrable); general `convexOn_intervalIntegral_le` (open convex set), `exists_affine_le_of_convexOn` (supporting line), `exists_mem_Icc_le_intervalIntegral` | `ConvexOn.slope_mono_adjacent`, `intervalIntegral.intervalIntegral_pos_of_pos_on` |
 | 1.7.11 | `dlmf_1_7_11` (`≤`), `dlmf_1_7_11_lt` (strict unless `f` a.e. constant; **DLMF prints `<` unconditionally, false for constant `f`**), `dlmf_1_7_11_eq_iff` | `StrictConvexOn.ae_eq_const_or_map_average_lt`, `strictConvexOn_exp` |
 
+### §1.8 Fourier Series (`Azurite/DLMF/Chapter1/Section8.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.8.1 | `dlmf_1_8_1` (continuous `2π`-periodic `f` with summable `cₙ`: pointwise `HasSum` of `aₙ cos nx + bₙ sin nx` to `f(x) − ½a₀`; DLMF's series is formal) | `HasSum.nat_add_neg`, `hasSum_nat_add_iff'` |
+| 1.8.2 | `fourierA`, `fourierB`, `dlmf_1_8_2_a`, `dlmf_1_8_2_b` | |
+| §1.8(i) prose (even/odd) | `dlmf_1_8_i_even` (`bₙ = 0`), `dlmf_1_8_i_odd` (`aₙ = 0`) | `intervalIntegral.integral_comp_neg` |
+| 1.8.3 | `dlmf_1_8_3` (pointwise `HasSum` of `cₙ e^{inx}`), `fourierCoeff_lift_eq` | `has_pointwise_sum_fourier_series_of_summable`, `Continuous.quotient_liftOn'` |
+| 1.8.4 | `fourierC`, `dlmf_1_8_4`, `fourierC_eq_fourierCoeffOn`; relations `fourierC_natCast`, `fourierC_neg_natCast`, `fourierC_zero` | `fourierCoeffOn_eq_integral`, `fourier_coe_apply` |
+| 1.8.5 | `dlmf_1_8_5` (from 1.8.6_1 with `g = f`) | `Complex.hasSum_ofReal` |
+| 1.8.6 | `dlmf_1_8_6` | `hasSum_sq_fourierCoeffOn` |
+| 1.8.6_1 | `dlmf_1_8_6_1`, `fourier_pair_mul_conj` | |
+| 1.8.6_2 | `dlmf_1_8_6_2` (polarization `four_mul_mul_conj`, linearity `fourierC_add_mul`) | |
+| 1.8.7 | `dlmf_1_8_7` (`aₙ, bₙ, c±ₙ = o(n⁻ᵐ)` for a chain of right derivatives ending in an integrable `f⁽ᵐ⁾`), `fourierC_eq_div_of_hasDerivWithinAt`, `fourierC_iterate`, `isLittleO_of_tendsto_pow_mul` | `fourierCoeffOn_of_hasDeriv_right` |
+| §1.8(i) prose (uniqueness) | `dlmf_1_8_i_uniqueness`, `dlmf_1_8_i_uniqueness_ab`, `eq_zero_of_fourierC_eq_zero`, `memLp_of_continuous` | `Measure.eqOn_open_of_ae_eq`, `toIocMod_mem_Ioc` |
+| 1.8.8 | `lebesgueConst`, `dlmf_1_8_8` | |
+| 1.8.9 | `dlmf_1_8_9` (`IsEquivalent`); `lebesgueConst_bounds`, `inv_sin_sub_inv_le_one`, `sincAbs_bounds`, `piece_lower`, `piece_upper`, `integral_abs_sin_period` | `Real.sin_ge_sub_cube`, `Real.mul_le_sin`, `log_add_one_le_harmonic`, `harmonic_le_one_add_log`, `Real.isLittleO_const_log_atTop` |
+| 1.8.10 | `dlmf_1_8_10`, `dlmf_1_8_10_atBot`, `tendsto_intervalIntegral_mul_exp_cocompact` | `Real.tendsto_integral_exp_smul_cocompact` |
+| 1.8.11 | `fourierPartialSum`, `dlmf_1_8_11` (Dirichlet: partial sums → `½f(x−) + ½f(x+)` for `f` periodic, integrable on a period, with one-sided derivatives at `x` based at `f(x±)`; no finiteness of discontinuities needed); `halfDirichlet`, `two_mul_halfDirichlet_mul_sin`, `integral_halfDirichlet`, `fourierPartialSum_eq_integral`, `fourierPartialSum_eq_fold`, `intervalIntegrable_dirichlet_quotient`, `tendsto_integral_mul_sin` | `intervalIntegral.integral_comp_add_right`, `Function.Periodic.intervalIntegral_add_eq`, `mem_nhdsGT_iff_exists_Ioo_subset` |
+| §1.8(ii) prose (non-uniform at jumps) | `dlmf_1_8_ii_nonuniform` (uniform convergence near `x` to a limit equal to `f` off `x` forces `f(x−) = f(x+)`) | `TendstoUniformlyOn.continuousOn` |
+| 1.8.12 | `dlmf_1_8_12` (all real `x`; `f` periodic and square-integrable on a period), `hasSum_integral_of_mem` (Parseval 1.8.6_1 against `orientedIndicator`), `fourierA_orientedIndicator`, `fourierB_orientedIndicator` | `setIntegral_indicator` |
+| §1.8(iii) prose (termwise differentiation) | `dlmf_1_8_iii_deriv` (`f ∈ C²` periodic: `f′(x) = ∑ n (bₙ cos nx − aₙ sin nx)`); `fourierC_deriv`, `fourierA_deriv`, `fourierB_deriv`, `periodic_deriv` | `Summable.of_norm_bounded_eventually`, `Real.summable_one_div_int_pow`, `intervalIntegral.integral_deriv_eq_sub` |
+| 1.8.13 | moved by DLMF to 1.8.6_1 (`dlmf_1_8_6_1`) | |
+| 1.8.14 | In `Azurite/DLMF/Chapter1/Section8Poisson.lean`: `dlmf_1_8_14` (DLMF hypotheses `f ∈ C²`, `f`, `f″` integrable; both series converge); `norm_le_integral_add`, `norm_deriv_le_integral` (weight `6(t−a)(a+1−t)`), `poisson_aux` (`f′` integrable, translates summable on compacts), `summable_integral_norm_Ioc`, `norm_fourier_le` | `Real.tsum_eq_tsum_fourier`, `Real.fourier_deriv`, `Real.integrable_of_summable_norm_Icc`, `hasSum_integral_iUnion` |
+| §1.8(iv) prose (1.14.1 form) | `dlmf_1_8_iv_fourier` (integral `= √(2π) 𝓕(f)(−2πn)`) | |
+| 1.8.15 | `dlmf_1_8_15` (continuous, bounded variation, integrable on `[0, ∞)`; right series via partial sums); Jordan's test: `dirichlet1`, `abs_integral_dirichlet1_le`, `tendsto_integral_mul_sin_real`, `tendsto_integral_monotone_mul_dirichlet1`, `tendsto_integral_bv_mul_dirichlet1`, `abs_integral_bv_mul_dirichlet1_le`; pieces `integral_piece_eq`, `tendsto_piece`, `abs_piece_le`, `hasSum_pieces`, `integral_mul_dirichlet1_eq` | `exists_le_const_mul_norm_intervalIntegral_of_nonneg_of_antitoneOn` (second mean value theorem), `variationOnFromTo.monotoneOn`, `variationOnFromTo.sub_self_monotoneOn`, `eVariationOn.comp_le_of_monotoneOn`, `tendsto_tsum_of_dominated_convergence`, `intervalIntegral_tendsto_integral_Ioi` |
+| 1.8.16 | `dlmf_1_8_16` (`ℜω > 0`, complex `x`) | `Complex.tsum_exp_neg_quadratic`, `summable_jacobiTheta₂_term_iff`, `Complex.inv_cpow` |
+
 ### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`)
 
 | Equation | Theorem | Mathlib |
