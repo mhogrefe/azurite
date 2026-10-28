@@ -21,6 +21,8 @@ import Mathlib.MeasureTheory.Integral.DivergenceTheorem
 /-!
 # DLMF §1.6: Vectors and Vector-Valued Functions
 
+§1.6(v) (surfaces and integrals over surfaces) is in `Section6Surfaces.lean`.
+
 Formalizations of <https://dlmf.nist.gov/1.6>, one theorem per equation, named `dlmf_1_6_N`;
 statements made in the prose are named `dlmf_1_6_i_<topic>`.  Vectors of `ℝ³` are
 `a : Fin 3 → ℝ` with components `a 0, a 1, a 2` (DLMF's `a₁, a₂, a₃`); the dot product is
