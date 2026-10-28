@@ -1675,6 +1675,7 @@ import Azurite.DLMF.Chapter1.Section6Gauss
 import Azurite.DLMF.Chapter1.Section6GaussExamples
 import Azurite.DLMF.Chapter1.Section6GaussOrientation
 import Azurite.DLMF.Chapter1.Section6Surfaces
+import Azurite.DLMF.Chapter1.Section7
 import Azurite.DLMF.Chapter1.SetPartitionCount
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
