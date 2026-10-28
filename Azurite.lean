@@ -1678,6 +1678,13 @@ import Azurite.DLMF.Chapter1.Section6Surfaces
 import Azurite.DLMF.Chapter1.Section7
 import Azurite.DLMF.Chapter1.Section8
 import Azurite.DLMF.Chapter1.Section8Poisson
+import Azurite.DLMF.Chapter1.Section9
+import Azurite.DLMF.Chapter1.Section9CauchyJordan
+import Azurite.DLMF.Chapter1.Section9Conformal
+import Azurite.DLMF.Chapter1.Section9Integration
+import Azurite.DLMF.Chapter1.Section9Limits
+import Azurite.DLMF.Chapter1.Section9PowerSeries
+import Azurite.DLMF.Chapter1.Section9Series
 import Azurite.DLMF.Chapter1.SetPartitionCount
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic

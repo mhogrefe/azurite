@@ -362,6 +362,84 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.8.15 | `dlmf_1_8_15` (continuous, bounded variation, integrable on `[0, ∞)`; right series via partial sums); Jordan's test: `dirichlet1`, `abs_integral_dirichlet1_le`, `tendsto_integral_mul_sin_real`, `tendsto_integral_monotone_mul_dirichlet1`, `tendsto_integral_bv_mul_dirichlet1`, `abs_integral_bv_mul_dirichlet1_le`; pieces `integral_piece_eq`, `tendsto_piece`, `abs_piece_le`, `hasSum_pieces`, `integral_mul_dirichlet1_eq` | `exists_le_const_mul_norm_intervalIntegral_of_nonneg_of_antitoneOn` (second mean value theorem), `variationOnFromTo.monotoneOn`, `variationOnFromTo.sub_self_monotoneOn`, `eVariationOn.comp_le_of_monotoneOn`, `tendsto_tsum_of_dominated_convergence`, `intervalIntegral_tendsto_integral_Ioi` |
 | 1.8.16 | `dlmf_1_8_16` (`ℜω > 0`, complex `x`) | `Complex.tsum_exp_neg_quadratic`, `summable_jacobiTheta₂_term_iff`, `Complex.inv_cpow` |
 
+### §1.9 Calculus of a Complex Variable (`Azurite/DLMF/Chapter1/Section9.lean`, `Section9Integration.lean`, `Section9CauchyJordan.lean`, `Section9Conformal.lean`, `Section9Series.lean`, `Section9Limits.lean`, `Section9PowerSeries.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.9.1–1.9.2 | `dlmf_1_9_1` (`z = ℜz + iℑz`, `i² = −1`), `dlmf_1_9_2` | `Complex.re_add_im`, `Complex.I_sq` |
+| 1.9.3–1.9.4 | `dlmf_1_9_3`, `dlmf_1_9_4` | `Complex.norm_mul_cos_arg`, `Complex.norm_add_mul_I` |
+| 1.9.5–1.9.6 | `dlmf_1_9_5_first`/`_second`/`_third`/`_fourth` (quadrants; real axis included in the 1st/2nd, imaginary axis excluded), `dlmf_1_9_6`; `arg_eq_arctan_of_re_pos`, `arcsin_div_sqrt_eq_arctan` | `Complex.tan_arg`, `Real.arctan_tan`, `Complex.arg_of_re_neg_of_im_nonneg` |
+| 1.9.7 | `IsPhase`, `dlmf_1_9_7` (phases `= ph z + 2nπ`), `dlmf_1_9_7_principal_isPhase`, `dlmf_1_9_7_principal_range`, `dlmf_1_9_7_principal_unique`, `dlmf_1_9_7_continuousAt`, `dlmf_1_9_7_negative_axis` (value `π`, limit `−π` from below) | `Complex.exp_eq_exp_iff_exists_int`, `Complex.continuousAt_arg`, `Complex.tendsto_arg_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| 1.9.8–1.9.12 | `dlmf_1_9_8` … `dlmf_1_9_12` | `Complex.abs_re_le_norm`, `Complex.exp_mul_I`, `Complex.norm_conj` |
+| 1.9.13 | `dlmf_1_9_13` (general phases), `dlmf_1_9_13_principal` (`ph z ≠ π`) | `Complex.arg_conj`, `Complex.exp_conj` |
+| 1.9.14–1.9.17, 1.9.19 | `dlmf_1_9_14` … `dlmf_1_9_17`, `dlmf_1_9_19` | `norm_mul`, `norm_div` |
+| 1.9.18, 1.9.20 | `dlmf_1_9_18`, `dlmf_1_9_20` (general phases); `_principal` (up to `2nπ`), `_principal_counterexample` | |
+| 1.9.21 | `dlmf_1_9_21` (even/odd binomial sums with sign `(−1)^⌊k/2⌋`), `re_I_pow`, `im_I_pow` | `add_pow` |
+| 1.9.22 | `dlmf_1_9_22` (De Moivre, `n ∈ ℤ`) | `Complex.exp_int_mul` |
+| 1.9.23 | `dlmf_1_9_23` | `abs_norm_sub_norm_le`, `norm_add_le` |
+| §1.9(ii) prose (continuity) | `dlmf_1_9_ii_continuousAt`, `dlmf_1_9_ii_continuousAt₂` (two variables), `dlmf_1_9_ii_continuousOn` (on a region) | `Metric.continuousAt_iff`, `Metric.continuousOn_iff` |
+| §1.9(ii) prose (point sets) | `dlmf_1_9_ii_isOpen`, `IsLimitPoint`, `isLimitPoint_iff_accPt`, `dlmf_1_9_ii_limitPoint_infinite`, `dlmf_1_9_ii_closure`; `PolygonallyJoined` (chain of segments), `dlmf_1_9_ii_domain` (open: connected ⇔ polygonally connected); `dlmf_1_9_ii_boundary`, `dlmf_1_9_ii_closed_domain`, `IsRegion`, `dlmf_1_9_ii_interior_points` | `closure_eq_self_union_derivedSet`, `IsPreconnected.induction₂'`, `Convex.isPathConnected`, `frontier_eq_closure_inter_closure` |
+| 1.9.24 | `dlmf_1_9_24`, `dlmf_1_9_ii_continuousAt_of_differentiableAt` | `hasDerivAt_iff_tendsto_slope_zero` |
+| 1.9.25 | `dlmf_1_9_25`, `hasDerivAt_partials`, `hasDerivAt_horizontal`, `hasDerivAt_vertical`; converse `dlmf_1_9_25_converse` (needs only `∂u/∂x`, `∂v/∂x` continuous) | `HasDerivAt.comp_ofReal`, `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`, `hasDerivAt_iff_isLittleO_nhds_zero` |
+| §1.9(ii) prose (analyticity) | `dlmf_1_9_ii_analyticAt`, `dlmf_1_9_ii_entire`, `dlmf_1_9_ii_iterate_deriv` | `analyticAt_iff_eventually_differentiableAt`, `DifferentiableOn.deriv` |
+| 1.9.26 | `dlmf_1_9_26` (`u` and `v`), `laplace_re` | `Filter.EventuallyEq.deriv_eq` |
+| 1.9.27 | `dlmf_1_9_27` (`u` and `v`, `r > 0`), `laplace_polar_re` | |
+| §1.9(iii) arcs and contours | `IsArc`, `IsContour`, `IsSimpleContour`, `IsSimpleClosedContour` (`Section9Integration.lean`); `IsArc.isContour`, `IsContour.nonempty_closedPiecewiseC1`, `IsSimpleClosedContour.isJordanCurve` | `JordanCurve.ClosedPiecewiseC1`, `JordanCurve.IsJordanCurve` |
+| 1.9.28 | `contourIntegral`, `dlmf_1_9_28` (`z` differentiable off a countable set), `ClosedPiecewiseC1.contourIntegral_eq` (piecewise = single integral); infinite-integral remark not formalized (definition) | `intervalIntegral.sum_integral_adjacent_intervals` |
+| §1.9(iii) Jordan curve theorem | `dlmf_1_9_iii_jordan` (interior/exterior open, connected, disjoint, cover the complement, bounded/unbounded, frontier = `C`; continuity suffices), `frontier_connectedComponentIn_jordan` | vendored `JordanCurve.component_boundary_eq` |
+| 1.9.29 | `dlmf_1_9_29_jordan` (DLMF's hypotheses: simple closed contour, `f` continuous on interior ∪ `C`, analytic inside; `Section9CauchyJordan.lean` — smooth approximation + Lipschitz cutoff + Green + Minkowski bound `exists_volume_thickening_le`); `dlmf_1_9_29` (any closed piecewise-`C¹` curve, `f` analytic on an open set ⊇ interior ∪ `C`); homology form `ClosedPiecewiseC1.contourIntegral_eq_zero` (`windingSupport`) | `JordanCurve.contourIntegral_eq_integral_dbar'`, `exists_contDiff_support_eq_eq_one_iff` |
+| 1.9.30 | `dlmf_1_9_30_jordan` (DLMF's hypotheses), `dlmf_1_9_30` (positively oriented, analytic neighbourhood); homology form `contourIntegral_div_sub` | `differentiableOn_dslope`, `JordanCurve.contourIntegral_inv_eq` |
+| 1.9.31 | `dlmf_1_9_31_jordan` (DLMF's hypotheses), `dlmf_1_9_31` (all `n ≥ 0`, analytic neighbourhood); homology form `contourIntegral_div_sub_pow`, `iteratedDeriv_succ_eq_dslope`, `contourIntegral_inv_pow_eq_zero` | `iteratedDeriv_fun_mul`, `sub_smul_dslope` |
+| §1.9(iii) Liouville | `dlmf_1_9_iii_liouville` | `Differentiable.exists_const_forall_eq_of_bounded` |
+| 1.9.32 | `dlmf_1_9_32` (`𝒩(C, z₀) = windingNumber ∈ ℤ`), `dlmf_1_9_32_simple` (1 inside, 0 outside), `dlmf_1_9_iii_orientation` | `JordanCurve.isPositivelyOriented_or_isNegativelyOriented` |
+| 1.9.33 | `dlmf_1_9_33` | `InnerProductSpace.HarmonicOnNhd.circleAverage_eq` |
+| 1.9.34 | `poissonIntegral`, `dlmf_1_9_34` (polar form), `dlmf_1_9_34_harmonic`, `dlmf_1_9_34_tendsto` (boundary values) | `poissonKernel`, `analyticOnNhd_circleAverage_herglotzRieszKernel_smul`, `HarmonicOnNhd.circleAverage_poissonKernel_smul`, `AnalyticAt.harmonicAt_re` |
+| 1.9.35 | `diskAtInfty`, `dlmf_1_9_35` (neighbourhood basis of `∞` in `OnePoint ℂ`), `diskAtInfty_mem_nhds` (`Section9Conformal.lean`) | `OnePoint.hasBasis_nhds_infty` |
+| 1.9.36 | `dlmf_1_9_36` (as limits `w → ∞`, `cobounded ℂ`), `tendsto_coe_nhds_infty_iff` | `tendsto_add_const_cobounded` |
+| 1.9.37 | `dlmf_1_9_37` (`z ≠ 0`), `dlmf_1_9_37_infty` (`∞·∞`) | `tendsto_mul_left_cobounded`, `Tendsto.atTop_mul_atTop₀` |
+| 1.9.38 | `dlmf_1_9_38` | `tendsto_inv₀_cobounded` |
+| 1.9.39 | `dlmf_1_9_39` | `tendsto_inv₀_nhdsNE_zero` |
+| §1.9(iv) analytic at `∞` | `invChart`, `AnalyticAtInfty`, `derivInfty`, `AnalyticAtInfty.tendsto` | |
+| §1.9(iv) conformal transformation | `tangentAngle`, `dlmf_1_9_iv_conformal` (signed tangent angle preserved), `dlmf_1_9_iv_conformalAt`, `dlmf_1_9_iv_linear` | `Complex.arg_mul_coe_angle`, `DifferentiableAt.conformalAt` |
+| 1.9.40 | `mobius`, `mobiusExt` (on `OnePoint ℂ`) | `OnePoint.elim` |
+| 1.9.41 | `dlmf_1_9_41` (values and limits), `tendsto_mobius_pole`, `tendsto_mobius_infty` | `Tendsto.pos_mul_atTop` |
+| 1.9.42 | `dlmf_1_9_42` | `HasDerivAt.div` |
+| 1.9.43 | `dlmf_1_9_43` (+ analytic at `∞`), `invChart_mobius` | |
+| 1.9.44 | `dlmf_1_9_44`, `dlmf_1_9_44_left`, `mobiusExt_leftInverse` | |
+| §1.9(iv) bilinear prose | `dlmf_1_9_iv_bilinear` (bijective, continuous both ways on `ℂ ∪ {∞}`, conformal at finite points, `∞`, and the pole), `continuous_mobiusExt` | `OnePoint.continuous_iff`, `continuousAt_iff_punctured_nhds` |
+| 1.9.45 | `crossRatio`, `dlmf_1_9_45` (invariance, finite points), `dlmf_1_9_45_infty` (limiting form `z₄ → ∞`), `mobius_sub_mobius`; invariance with points at `∞` not formalized | |
+| §1.9(v) sequences | `dlmf_1_9_v_tendsto_iff`, `dlmf_1_9_v_converges_iff` (`Section9Series.lean`) | `Complex.re_add_im` |
+| §1.9(v) series | `partialSum`, `SeriesConverges` (DLMF: partial sums, not Mathlib's unconditional `Summable`), `SeriesDiverges`, `SeriesConvergesAbsolutely` (`seriesConvergesAbsolutely_iff`: = `Summable ‖zₙ‖`), `dlmf_1_9_v_absolutely`, `SeriesConverges.tendsto_zero` | `hasSum_iff_tendsto_nat_of_nonneg`, `Summable.of_norm` |
+| §1.9(v) root and ratio tests | `dlmf_1_9_v_root_lt`, `dlmf_1_9_v_root_gt`, `dlmf_1_9_v_ratio_lt` (`zₙ ≠ 0` eventually), `dlmf_1_9_v_ratio_gt` (divergence absolute and outright) | `summable_of_ratio_test_tendsto_lt_one`, `summable_geometric_of_lt_one` |
+| 1.9.46 | `ConvergesPointwiseOn`, `dlmf_1_9_46_of_uniform` | `TendstoUniformlyOn.tendsto_at` |
+| 1.9.47 | `dlmf_1_9_47`, `SeriesConvergesUniformlyOn` | `Metric.tendstoUniformlyOn_iff` |
+| §1.9(v) Weierstrass `M`-test | `dlmf_1_9_v_Mtest` | `tendstoUniformlyOn_tsum_nat` |
+| §1.9(v) doubly-infinite series | `doublePartialSum`, `DoubleSeriesConverges`, `DoubleSeriesConvergesUniformlyOn`, `dlmf_1_9_v_doubly`, `dlmf_1_9_v_doubly_uniform`, `doublePartialSum_eq`, `uniformCauchySeqOn_of_split` | `UniformCauchySeqOn.tendstoUniformlyOn_of_tendsto` |
+| §1.9(vi) circle of convergence | `psum`, `pradius` (`Section9PowerSeries.lean`), `dlmf_1_9_vi_converges`, `dlmf_1_9_vi_diverges`, `dlmf_1_9_vi_uniform`, `dlmf_1_9_vi_analytic` | `FormalMultilinearSeries.ofScalars`, `summable_norm_mul_pow`, `le_radius_of_tendsto` |
+| 1.9.48 | `dlmf_1_9_48` | |
+| 1.9.49 | `dlmf_1_9_49` (Cauchy–Hadamard) | `FormalMultilinearSeries.radius_eq_liminf` |
+| 1.9.50 | `dlmf_1_9_50` | |
+| 1.9.51 | `dlmf_1_9_51` (absolutely convergent), `dlmf_1_9_51_psum` (inside both circles) | `tsum_mul_tsum_eq_tsum_sum_range_of_summable_norm` |
+| 1.9.52 | `cauchyCoeff` | |
+| 1.9.53–1.9.54 | `dlmf_1_9_54` (`a₀ ≠ 0`, small `|z|`), `pradius_recipCoeff_pos`, `cauchyCoeff_recipCoeff` | |
+| 1.9.55 | `dlmf_1_9_55` | |
+| 1.9.56 | `recipCoeff`, `dlmf_1_9_56` | |
+| 1.9.57 | `dlmf_1_9_57` (`a₀ = 1`, principal log), `exists_ball_slitPlane`, `cauchyCoeff_logCoeff` | `Complex.hasDerivAt_log`, `IsOpen.eqOn_of_deriv_eq` |
+| 1.9.58 | `dlmf_1_9_58` | |
+| 1.9.59 | `logCoeff`, `dlmf_1_9_59` (all `n ≥ 1`) | |
+| 1.9.60 | `dlmf_1_9_60` (principal power), `cauchyCoeff_powCoeff` | `IsOpen.is_const_of_deriv_eq_zero`, `cpow_def_of_ne_zero` |
+| 1.9.61 | `dlmf_1_9_61` | |
+| 1.9.62 | `powCoeff`, `dlmf_1_9_62` | |
+| 1.9.63 | `dlmf_1_9_63` (`Nat.ascFactorial` for `(n+1)_m`), `hasDerivAt_psum`, `dcoeff`, `le_pradius_dcoeff`, `iterate_dcoeff_apply` | `hasDerivAt_tsum_of_isPreconnected` |
+| §1.9(vi) coefficient growth | `norm_le_of_recursion`, `pradius_pos_of_bound`, `exists_coeff_bound` | |
+| 1.9.64 | `DoubleSeqConverges`, `doubleSeqConverges_iff` (`Section9Limits.lean`) | `Metric.tendsto_atTop` |
+| 1.9.65 | `dlmf_1_9_65`, `dlmf_1_9_65_swap` (inner limits exist ⇒ repeated limits exist and equal) | `le_of_tendsto` |
+| 1.9.66 | `doubleSeriesPartial`, `DoubleSeriesConvergesTo`, `DoubleSeriesConvergesAbsolutely` | |
+| 1.9.67 | `dlmf_1_9_67`, `summable_norm_of_doubleSeriesConvergesAbsolutely`, `tendsto_range_product` | `summable_of_sum_le`, `HasSum.prod_fiberwise`, `Summable.prod_factor` |
+| 1.9.68 | `dlmf_1_9_68` (finite contour `z : [a, b] → D`, continuous, integrable `z′`) | `TendstoUniformlyOn.continuousOn`, `intervalIntegral.integral_finsetSum` |
+| 1.9.69–1.9.70 | `dlmf_1_9_69_iff_70` (the conditions coincide) | `lintegral_tsum` |
+| 1.9.71 | `dlmf_1_9_71` (`eIoo a b`, `EReal` endpoints) | `integral_tsum`, `ae_lt_top'` |
+
 ### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`)
 
 | Equation | Theorem | Mathlib |
