@@ -12,7 +12,9 @@ The header mirrors the one used in Malachite, adapted to the Apache License 2.0:
 
 It is written as a `/- ... -/` block comment in Lean files, as `//` line comments in Rust and C
 files, and as `#` line comments (after the shebang line, if any) in shell scripts.  The header must
-be the first thing in the file and must be followed by a blank line.
+be the first thing in the file and must be followed by a blank line.  Files adapted from other
+projects may carry an attribution block ("Uses code adopted from ...", the original copyright, a
+blank line) between the copyright line and "This file is part of Azurite.", as in Malachite.
 
 Usage:
     scripts/check_headers.py          # report files without a header; exit 1 if any
@@ -51,10 +53,29 @@ def header_lines(path: str, year: str) -> list[str]:
     raise ValueError(path)
 
 
+def skip_attribution(lines: list[str], start: int, expected: list[str]) -> list[str]:
+    """Drop an optional third-party attribution block from the header.
+
+    In files adapted from other projects, a block beginning with a line containing
+    "Uses code adopted from" may sit between the Azurite copyright line and "This file is part of
+    Azurite." (as in Malachite); it is removed before the header is compared with the template.
+    """
+    k = next(i for i, line in enumerate(expected) if "This file is part of Azurite." in line)
+    i = start + k
+    if i < len(lines) and "Uses code adopted from" in lines[i]:
+        j = i
+        while j < len(lines) and lines[j] != expected[k]:
+            j += 1
+        if j < len(lines):
+            return lines[:i] + lines[j:]
+    return lines
+
+
 def has_header(lines: list[str], path: str) -> bool:
     """Whether `lines` (the file's lines) start with a valid header and a blank line."""
     start = 1 if lines and lines[0].startswith("#!") else 0
     expected = header_lines(path, "0000")
+    lines = skip_attribution(lines, start, expected)
     body = lines[start : start + len(expected)]
     if len(body) != len(expected):
         return False

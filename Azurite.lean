@@ -1718,6 +1718,15 @@ import Azurite.GathenGerhard.Chapter14.DistinctDegree
 import Azurite.GathenGerhard.Chapter14.Lemma_14_6
 import Azurite.GathenGerhard.Chapter14.Lemma_14_7
 import Azurite.GathenGerhard.Chapter14.Theorem_14_2
+import Azurite.JordanCurve.Arcs
+import Azurite.JordanCurve.Brouwer
+import Azurite.JordanCurve.CauchyPompeiu
+import Azurite.JordanCurve.Counting
+import Azurite.JordanCurve.Green
+import Azurite.JordanCurve.Interior
+import Azurite.JordanCurve.Orientation
+import Azurite.JordanCurve.Theorem
+import Azurite.JordanCurve.WindingNumber
 import Azurite.Random.AzPolynomial
 import Azurite.Random.Bool
 import Azurite.Random.Gen
