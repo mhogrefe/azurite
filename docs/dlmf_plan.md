@@ -533,3 +533,31 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.12.25 | `dlmf_1_12_25` (Pringsheim), `pringsheim_denom`, `cfNonzero_of_pringsheim` | `summable_of_sum_range_le` |
 | 1.12.26–1.12.27 | `dlmf_1_12_27` (sector of the convergents), `VVSector`, `arg_sector_iff`, `vanVleck_tails`; `dlmf_1_12_v_vanVleck_ph` (`|ph C| ≤ π/2`) | `Complex.arg_of_re_nonneg`, `Real.arcsin_lt_arcsin` |
 | 1.12.28 (+ even/odd convergence) | `dlmf_1_12_28` (Van Vleck, full proof, `Section12VanVleck.lean`): `posC_even_tendsto`, `posC_odd_tendsto`, `posC_tendsto` (Seidel–Stern), `stern_stolz`, `coeff_tendsto_of_bounded`, `tendsto_of_bounded_power_series` (Vitali, power-series form), `vvFamily`, `vvFamily_sector`, `cfConv_differentiableOn`, `norm_cfConv_le` | `Complex.hasSum_taylorSeries_on_ball`, `Complex.norm_iteratedDeriv_le_of_forall_mem_sphere_norm_le`, `tendsto_tsum_of_dominated_convergence`, `tendsto_atTop_ciSup` |
+
+### §1.13 Differential Equations (`Azurite/DLMF/Chapter1/Section13.lean`, `Section13Primitive.lean`, `Section13Parameter.lean`, `Section13Inhomogeneous.lean`, `Section13Change.lean`, `Section13Products.lean`, `Section13SturmLiouville.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| §1.13(i) simply-connected | `IsSimplyConnectedDLMF` (complement in `OnePoint ℂ` connected), `IsSCDomain`; `windingNumber_eq_zero_of_simplyConnected`, `contourIntegral_eq_zero_of_simplyConnected`, `exists_primitive_of_simplyConnected` (`Section13Primitive.lean`, via polygonal chains: `polygon`, `chainInt_eq_zero_of_closed`, `chainInt_add_segInt`) | `DifferentiableOn.isExactOn_ball`, `IsPreconnected.constant` |
+| 1.13.1 | `IsODESolution`, `IsODESolution.analyticOnNhd`, `IsODESolution.linearCombo` | `DifferentiableOn.analyticOnNhd` |
+| §1.13(i) existence, uniqueness | `dlmf_1_13_i_exists` (Picard iteration `picard` along chains, `norm_iter_le`, `picardLim_hasDerivAt`), `dlmf_1_13_i_eq_zero`, `dlmf_1_13_i_unique`, `dlmf_1_13_i_infinite` | `image_norm_le_of_norm_deriv_right_le_deriv_boundary`, `hasDerivAt_of_tendstoLocallyUniformlyOn`, `tendstoUniformlyOn_tsum_nat` |
+| 1.13.2 | `IsFundamentalPair`, `dlmf_1_13_2` | — |
+| 1.13.3 | `dlmf_1_13_3`, `isFundamentalPair_of_wronskian_ne_zero` | — |
+| 1.13.4 | `wronskian`, `dlmf_1_13_4` (determinant form); `wronskianN` (`n` arguments), `wronskianN_two` | `Matrix.det_fin_two_of` |
+| 1.13.5 | `dlmf_1_13_5` (any primitive), `dlmf_1_13_5_primitive` (normalized at `z₀`), `wronskian_eq_zero_or_ne_zero`, `dlmf_1_13_i_wronskian_const` (`f = 0`); `n`th order: `hasDerivAt_det` (Jacobi), `IsODESolutionN`, `dlmf_1_13_5_orderN`, `dlmf_1_13_5_orderN_general` | `IsOpen.exists_is_const_of_deriv_eq_zero`, `ContinuousMultilinearMap.hasFDerivAt`, `Matrix.det_updateRow_sum` |
+| 1.13.6 | `dlmf_1_13_6` (TFAE: fundamental pair, `𝒲 ≠ 0` in `D`, linear independence) | — |
+| 1.13.7 | `dlmf_1_13_ii` (`Section13Parameter.lean`; `D` open and connected; analyticity in `z` not needed): `exists_hasDerivAt_param`, `param_bounds`, `param_quot_bounds`, `odeC`, `odeC_quot_sub`, `exists_tendsto_of_dist_le`, `norm_le_along_chain_gronwall` | `norm_le_gronwallBound_of_norm_deriv_right_le`, `Complex.norm_deriv_le_of_forall_mem_sphere_norm_le`, `hasDerivAt_iff_tendsto_slope_zero` |
+| 1.13.8 | `IsInhomSolution` (`Section13Inhomogeneous.lean`), `IsInhomSolution.sub`, `IsInhomSolution.add_hom`, `dlmf_1_13_iii_exists_particular`, `dlmf_1_13_iii_exists`, `dlmf_1_13_iii_infinite` | — |
+| 1.13.9 | `dlmf_1_13_9`, `dlmf_1_13_9_converse` | — |
+| 1.13.10 | `dlmf_1_13_10` (variation of parameters, any primitives) | — |
+| 1.13.11–1.13.12 | `dlmf_1_13_11` (`Section13Change.lean`; `ξ = 1/z`) | `hasDerivAt_inv` |
+| 1.13.13–1.13.15 | `dlmfH`, `dlmf_1_13_14` (iff, `P′ = f`) | — |
+| 1.13.16–1.13.17 | `dlmf_1_13_17_identity`, `dlmf_1_13_17` (iff, `η′ = e^{−P}`) | — |
+| 1.13.18–1.13.20 | `schwarzian`, `dlmf_1_13_20` (first form, `q² ż = 1`), `dlmf_1_13_19` (Liouville), `schwarzian_alg`, `sq_mul_deriv_relations` | — |
+| 1.13.21–1.13.22 | `dlmf_1_13_21` (Cayley), `dlmf_1_13_22` (inverse), `deriv_comp_three` | `Filter.EventuallyEq.deriv` |
+| 1.13.23 | `dlmf_1_13_23` (`Section13Products.lean`), `deriv_three_mul` | — |
+| 1.13.24–1.13.25 | `dlmf_1_13_25` (`I ≠ J` in `D`), `dlmf_1_13_25_quotient` (the quotient is `U′V − UV′`) | — |
+| §1.13(vi)–(vii) | references only (singularities, closed-form solutions): not formalized | — |
+| 1.13.26–1.13.28 | `IsSLSolution`, `UnmixedBC`, `PeriodicBC`, `IsRegularUnmixed`, `IsSLEigenvalue`, `IsSLEigenfunction` (`Section13SturmLiouville.lean`; `p`, `ρ` `C²` and positive on `ℝ`) | — |
+| 1.13.29–1.13.31 | `lvT`, `lvX`, `lvW`, `lvU`, `lvQhat`, `lv_identity`, `dlmf_1_13_29`, `isLiouvilleSolution_lvW`, `isSLSolution_lvU`, `IsLiouvilleEigenvalue` | `HasDerivAt.of_local_left_inverse`, `continuousAt_of_monotoneOn_of_image_mem_nhds`, `Continuous.integral_hasStrictDerivAt` |
+| §1.13(viii) (i)–(iii) | `dlmf_1_13_viii_eigenvalues_unmixed` (+ `lvBC₁`, `lvBC₂`, `lvBC_ne`, `lv_bc_eq`), `dlmf_1_13_viii_zeros`, `dlmf_1_13_viii_zeros'`, `lv_periodic_iff`, `dlmf_1_13_viii_eigenvalues_periodic` (periodic case needs `p, ρ, p′, ρ′` equal at `a`, `b`) | `Function.Injective.encard_image` |

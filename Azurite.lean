@@ -1685,6 +1685,13 @@ import Azurite.DLMF.Chapter1.Section12
 import Azurite.DLMF.Chapter1.Section12Contraction
 import Azurite.DLMF.Chapter1.Section12Convergence
 import Azurite.DLMF.Chapter1.Section12VanVleck
+import Azurite.DLMF.Chapter1.Section13
+import Azurite.DLMF.Chapter1.Section13Change
+import Azurite.DLMF.Chapter1.Section13Inhomogeneous
+import Azurite.DLMF.Chapter1.Section13Parameter
+import Azurite.DLMF.Chapter1.Section13Primitive
+import Azurite.DLMF.Chapter1.Section13Products
+import Azurite.DLMF.Chapter1.Section13SturmLiouville
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4
