@@ -1681,6 +1681,10 @@ import Azurite.DLMF.Chapter1.Section11Division
 import Azurite.DLMF.Chapter1.Section11LowDegree
 import Azurite.DLMF.Chapter1.Section11Roots
 import Azurite.DLMF.Chapter1.Section11Stable
+import Azurite.DLMF.Chapter1.Section12
+import Azurite.DLMF.Chapter1.Section12Contraction
+import Azurite.DLMF.Chapter1.Section12Convergence
+import Azurite.DLMF.Chapter1.Section12VanVleck
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4

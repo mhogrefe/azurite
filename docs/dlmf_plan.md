@@ -510,3 +510,26 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | §1.11(ii) prose (reciprocals) | `dlmf_1_11_ii_reverse_coeff` (`zⁿ f(1/z)` is `reverse`), `dlmf_1_11_ii_reverse` | `eval₂_reverse_eq_zero_iff`, `coeff_reverse` |
 | 1.11.9 | `discriminantOfZeros`, `dlmf_1_11_9` (Mathlib's `discr` = `aₙ^{2n−2} ∏_{j<k}(zⱼ − zₖ)²`), `prod_prod_erase_sub`, `sum_card_Ioi`, `dlmf_1_11_9_complex` | `resultant_deriv`, `resultant_eq_prod_eval`, `eval_multiset_prod_X_sub_C_derivative`, `discr_C` |
 | 1.11.10 | `dlmf_1_11_10` (general `k`), `dlmf_1_11_10_sum`, `dlmf_1_11_10_pairs`, `dlmf_1_11_10_prod` | `coeff_eq_esymm_roots_of_card` |
+
+### §1.12 Continued Fractions (`Azurite/DLMF/Chapter1/Section12.lean`, `Section12Contraction.lean`, `Section12Convergence.lean`, `Section12VanVleck.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.12.1–1.12.3 | `cfw`, `cfConv`, `CfConverges` (notation, approximants, convergence) | — |
+| 1.12.4 | `dlmf_1_12_4` (`Cₙ = Aₙ/Bₙ`, under `CfNonzero`), `cfA`, `cfB`, `cfP`, `cfQ` | — |
+| 1.12.5–1.12.6 | `dlmf_1_12_5`, `dlmf_1_12_6` | — |
+| 1.12.7 | `dlmf_1_12_7` (determinant formula) | `Finset.prod_Icc_succ_top` |
+| 1.12.8–1.12.9 | `dlmf_1_12_8`, `dlmf_1_12_9` | — |
+| 1.12.10–1.12.14 | `dlmf_1_12_10`, `dlmf_1_12_11`, `dlmf_1_12_12`, `dlmf_1_12_13`, `dlmf_1_12_14` | — |
+| 1.12.15–1.12.16 | `dlmf_1_12_15` (`A′ₙ = (∏ d_k)Aₙ`), `dlmf_1_12_16` (same convergents) | — |
+| 1.12.17 | `dlmf_1_12_17_one`, `dlmf_1_12_17_two`, `cfD`, `cfD_values` | — |
+| 1.12.18–1.12.19 | `dlmf_1_12_18` (`Bₙ = 1`, `Aₙ` = partial sum), `dlmf_1_12_19` | — |
+| 1.12.20–1.12.21 | `cfw`, `CfNonzero`, `dlmf_1_12_21`, `dlmf_1_12_21_limits` (`Cₙ(0)`, `Cₙ(∞)` as a limit over `ℂ`) | `tendsto_inv₀_cobounded` |
+| 1.12.22 | `dlmf_1_12_22`, `cfPoint`, `convPt`, `cfPoint_eq_iff`, `cramer` (`Section12Contraction.lean`) | `OnePoint` |
+| §1.12(iv) contraction/extension | `IsContraction`, `IsExtension`, `dlmf_1_12_iv_even_exists`, `dlmf_1_12_iv_odd_exists`, `convPt_add_two_eq_iff` | — |
+| 1.12.23 | `evenA`, `evenB`, `evenScale`, `dlmf_1_12_23_numer`, `dlmf_1_12_23`, `cf_two_step` | — |
+| 1.12.24 | `oddA`, `oddB`, `oddScale`, `dlmf_1_12_24_numer`, `dlmf_1_12_24` | — |
+| §1.12(v) convergence | `CfConvergent` (`Section12Convergence.lean`) | — |
+| 1.12.25 | `dlmf_1_12_25` (Pringsheim), `pringsheim_denom`, `cfNonzero_of_pringsheim` | `summable_of_sum_range_le` |
+| 1.12.26–1.12.27 | `dlmf_1_12_27` (sector of the convergents), `VVSector`, `arg_sector_iff`, `vanVleck_tails`; `dlmf_1_12_v_vanVleck_ph` (`|ph C| ≤ π/2`) | `Complex.arg_of_re_nonneg`, `Real.arcsin_lt_arcsin` |
+| 1.12.28 (+ even/odd convergence) | `dlmf_1_12_28` (Van Vleck, full proof, `Section12VanVleck.lean`): `posC_even_tendsto`, `posC_odd_tendsto`, `posC_tendsto` (Seidel–Stern), `stern_stolz`, `coeff_tendsto_of_bounded`, `tendsto_of_bounded_power_series` (Vitali, power-series form), `vvFamily`, `vvFamily_sector`, `cfConv_differentiableOn`, `norm_cfConv_le` | `Complex.hasSum_taylorSeries_on_ball`, `Complex.norm_iteratedDeriv_le_of_forall_mem_sphere_norm_le`, `tendsto_tsum_of_dominated_convergence`, `tendsto_atTop_ciSup` |
