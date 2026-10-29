@@ -1677,6 +1677,10 @@ import Azurite.DLMF.Chapter1.Section10PartialFractions
 import Azurite.DLMF.Chapter1.Section10Products
 import Azurite.DLMF.Chapter1.Section10Residue
 import Azurite.DLMF.Chapter1.Section11
+import Azurite.DLMF.Chapter1.Section11Division
+import Azurite.DLMF.Chapter1.Section11LowDegree
+import Azurite.DLMF.Chapter1.Section11Roots
+import Azurite.DLMF.Chapter1.Section11Stable
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4

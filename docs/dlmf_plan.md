@@ -483,14 +483,30 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.10.25 | `dlmf_1_10_25` (extra `‖zₙ‖ → ∞`), `mittagLeffler`, `mittagLeffler_split`, `norm_mlTerm_le` | `differentiableOn_tsum_of_summable_norm`, `circleIntegral.integral_sub_center_inv` |
 | 1.10.26–1.10.27 | `dlmf_1_10_27`, `circleIntegral_pow_div_pow` (`Section10Generating.lean`) | `intervalIntegral.hasSum_integral_of_dominated_convergence`, `circleIntegral.integral_sub_zpow_of_ne` |
 
-### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`)
+### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`, `Section11Division.lean`, `Section11LowDegree.lean`, `Section11Roots.lean`, `Section11Stable.lean`)
 
 | Equation | Theorem | Mathlib |
 |---|---|---|
+| 1.11.1–1.11.3 | `horner`, `hornerStep`, `horner_top`, `horner_succ`, `dlmf_1_11_2`, `dlmf_1_11_2_poly` (`Section11Division.lean`) | `Finset.sum_range_sub`, `Polynomial.as_sum_range_C_mul_X_pow` |
+| 1.11.4 | `dlmf_1_11_4`, `dlmf_1_11_4_poly` | `Polynomial.eval_eq_sum_range` |
+| 1.11.5–1.11.6 | `dlmf_1_11_5`, `dlmf_1_11_6`, `horner_shift`, `horner_map` | `Polynomial.derivative_mul` |
+| 1.11.7 | `dlmf_1_11_7` (existence and uniqueness) | `EuclideanDomain.div_add_mod`, `Polynomial.degree_mod_lt`, `Polynomial.degree_le_mul_left` |
 | §1.11(ii) prose (number of zeros) | `dlmf_1_11_ii_card_roots` (complex coefficients), `dlmf_1_11_ii_card_roots_real` (real coefficients, zeros in `ℂ`) | `IsAlgClosed.card_roots_eq_natDegree`, `IsAlgClosed.card_roots_map_eq_natDegree_of_injective` |
 | §1.11(ii) prose (odd/even degree) | `dlmf_1_11_ii_odd`, `dlmf_1_11_ii_even`, `monic_tendsto_atTop`, `exists_root_Ioo_of_mul_neg`, `monic_exists_pos_root` | `tendsto_atTop_of_leadingCoeff_nonneg`, `intermediate_value_Icc`, `comp_neg_X_leadingCoeff_eq` |
 | §1.11(ii) prose (Descartes' rule of signs) | `dlmf_1_11_ii_descartes` (bound and **parity**), `dlmf_1_11_ii_descartes_neg` (`f(−z)`, negative zeros); parity proof: `neg_one_pow_signVariations` (lists), `coeffList_head`, `coeffList_getLast`, `neg_one_pow_signVariations_poly`, `sign_eval_zero_eq_sign_leadingCoeff` (IVT), `neg_one_pow_countP_roots_pos`, `signVariations_X_pow_mul`, `nat_mod_two_eq_of_neg_one_pow_eq` | `roots_countP_pos_le_signVariations` (bound only), `List.signVariations_cons_cons_of_ne_zero`, `roots_comp_neg_X`, `Multiset.prod_X_sub_C_dvd_iff_le_roots` |
 | 1.11.8 | `exampleF`, `dlmf_1_11_8` (`f(−z)`), `exampleF_coeffList`, `exampleF_neg_coeffList`, `dlmf_1_11_ii_example` (one sign change each; one positive, one negative, six non-real zeros) | `filter_roots_map_range_eq_map_roots` |
+| 1.11.11 | `dlmf_1_11_11` (roots, sum, product) (`Section11LowDegree.lean`) | — |
+| §1.11(iii) cubic reduction | `cubicP`, `cubicQ`, `dlmf_1_11_iii_cubic_reduce`, `cubic_coeffs_eq_zero` | — |
+| 1.11.12 | `cubicD`, `dlmf_1_11_12` (`D = ∏ (wᵢ − wⱼ)²`) | — |
+| 1.11.13–1.11.15 | `dlmf_1_11_14`, `cubic_factor`, `dlmf_1_11_15` (`ρ`), `dlmf_1_11_iii_cubic_roots`, `dlmf_1_11_iii_cubic_example` | `Real.cos_pi_div_three`, `Real.sin_pi_div_three`, `Real.rpow_inv_natCast_pow` |
+| 1.11.16–1.11.17 | `quarticP`, `quarticQ`, `quarticR`, `dlmf_1_11_16`, `quarticD`, `dlmf_1_11_17` | — |
+| 1.11.18–1.11.20 | `dlmf_1_11_19` (resolvent cubic), `dlmf_1_11_20` (sign choice exists), `dlmf_1_11_iii_quartic_example` | — |
+| 1.11.21 | `dlmf_1_11_21`, `pow_sub_eq_prod`, `roots_injOn`, `pow_eq_iff_of_prod` (`Section11Roots.lean`) | `X_pow_sub_C_eq_prod`, `Complex.isPrimitiveRoot_exp`, `mul_geom_sum` |
+| §1.11(iv) `zⁿ + 1 = 0` | `dlmf_1_11_iv_neg_one` | `Complex.exp_pi_mul_I` |
+| 1.11.22–1.11.23 | `dlmf_1_11_23` | `Complex.norm_mul_exp_arg_mul_I`, `Real.rpow_inv_natCast_pow` |
+| 1.11.24 | `IsStable` (`Section11Stable.lean`) | — |
+| 1.11.25–1.11.26 | `hurwitzD`, `hdet`, `dlmf_1_11_25_one`, `dlmf_1_11_25_two`, `dlmf_1_11_25_three` | `Matrix.det_fin_two`, `Matrix.det_fin_three` |
+| §1.11(v) Hurwitz criterion | `dlmf_1_11_v_hurwitz` (full proof): `hurwitz_criterion`, `hStable_routh_iff`, `hdet_succ`, `hpoly_routh`, `exists_rhp_root_iff_of_homotopy`, `exists_root_near`, `norm_le_of_root`, `div_pos_of_hStable`, `isStable_iff_hStable` | `C_leadingCoeff_mul_prod_multiset_X_sub_C`, `Splits.nextCoeff_eq_neg_sum_roots_mul_leadingCoeff`, `Matrix.det_succ_column_zero`, `isClopen_iff` (`ConnectedSpace unitInterval`) |
 | §1.11(ii) prose (reciprocals) | `dlmf_1_11_ii_reverse_coeff` (`zⁿ f(1/z)` is `reverse`), `dlmf_1_11_ii_reverse` | `eval₂_reverse_eq_zero_iff`, `coeff_reverse` |
 | 1.11.9 | `discriminantOfZeros`, `dlmf_1_11_9` (Mathlib's `discr` = `aₙ^{2n−2} ∏_{j<k}(zⱼ − zₖ)²`), `prod_prod_erase_sub`, `sum_card_Ioi`, `dlmf_1_11_9_complex` | `resultant_deriv`, `resultant_eq_prod_eval`, `eval_multiset_prod_X_sub_C_derivative`, `discr_C` |
 | 1.11.10 | `dlmf_1_11_10` (general `k`), `dlmf_1_11_10_sum`, `dlmf_1_11_10_pairs`, `dlmf_1_11_10_prod` | `coeff_eq_esymm_roots_of_card` |
