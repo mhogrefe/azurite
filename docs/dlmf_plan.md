@@ -440,6 +440,49 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.9.69–1.9.70 | `dlmf_1_9_69_iff_70` (the conditions coincide) | `lintegral_tsum` |
 | 1.9.71 | `dlmf_1_9_71` (`eIoo a b`, `EReal` endpoints) | `integral_tsum`, `ae_lt_top'` |
 
+### §1.10 Functions of a Complex Variable (`Azurite/DLMF/Chapter1/Section10.lean`, `Section10Continuation.lean`, `Section10Laurent.lean`, `Section10Residue.lean`, `Section10MaxModulus.lean`, `Section10Multivalued.lean`, `Section10Inverse.lean`, `Section10ContourIntegrals.lean`, `Section10Products.lean`, `Section10PartialFractions.lean`, `Section10Generating.lean`)
+
+| DLMF | Azurite | Mathlib |
+|---|---|---|
+| 1.10.1 | `dlmf_1_10_1`, `dlmf_1_10_1_radius` (radius `≥ R`) | `Complex.hasSum_taylorSeries_on_eball` |
+| 1.10.2 | `dlmf_1_10_2` | `NormedSpace.expSeries_div_hasSum_exp` |
+| 1.10.3 | `dlmf_1_10_3` | `Complex.hasSum_taylorSeries_log` |
+| 1.10.4 | `dlmf_1_10_4`, `ringChoose_eq_ascPochhammer` | `one_div_one_sub_cpow_hasFPowerSeriesOnBall_zero` |
+| §1.10(i) zeros | `IsZeroOfOrder`, `IsSimpleZero`, `isZeroOfOrder_iff_analyticOrderAt`, `isZeroOfOrder_iff_exists`, `isSimpleZero_iff` | `natCast_le_analyticOrderAt_iff_iteratedDeriv_eq_zero`, `AnalyticAt.analyticOrderAt_eq_natCast` |
+| §1.10(ii) identity theorem | `dlmf_1_10_ii_identity` (limit point), `dlmf_1_10_ii_identity_arc` (arc), `accPt_arc` (`Section10Continuation.lean`) | `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq` |
+| §1.10(ii) continuation | `IsAnalyticContinuation`, `IsAnalyticContinuation.unique`, `IsContinuationAlong` | |
+| 1.10.5 | `dlmf_1_10_5` (Schwarz reflection; `Ω ∪ L ∪ conj Ω` open), `schwarzReflection`, `rectBoundary_split` | `isConservativeOn_and_continuousOn_iff_isDifferentiableOn` (Morera), `integral_boundary_rect_eq_zero_of_continuousOn_of_differentiableOn`, `HasDerivAt.conj_conj` |
+| 1.10.6 | `annulus`, `dlmf_1_10_6` (doubly-infinite series), `hasSum_laurent`, `two_pi_I_mul_eq_annulus`, `hasSum_inner_laurent`; `dlmf_1_10_6_uniform`, `dlmf_1_10_6_compact` (uniform/absolute on compacts) (`Section10Laurent.lean`) | `circleIntegral_eq_of_differentiable_on_annulus_off_countable`, `hasSum_two_pi_I_cauchyPowerSeries_integral` |
+| 1.10.7 | `laurentCoeff`, `laurentCoeff_eq` (independent of `r`), `norm_laurentCoeff_le` | `circleIntegral.norm_integral_le_of_norm_le_const` |
+| §1.10(iii) singularities | `IsIsolatedSingularity`, `IsRemovableSingularity`, `IsPoleOfOrder`, `IsPole`, `IsEssentialSingularity`, `isPole_iff`, `singularity_trichotomy`, `IsRemovableSingularity.hasSum`, `isRemovableSingularity_of_tendsto`, `sin_div_removable`, `residue`, `residue_eq`, `IsMeromorphicDLMF`, `…AtInfty`; Picard's theorem not formalized | `hasDerivAt_iff_tendsto_slope` |
+| 1.10.8 | `dlmf_1_10_8`, `ClosedPiecewiseC1.contourIntegral_eq_sum_residues` (DLMF's hypotheses: boundary continuity, finitely many singularities); `principalPart`, `differentiableOn_principalPart`, `norm_sub_principalPart_le`, `ClosedPiecewiseC1.contourIntegral_principalPart` (`Section10Residue.lean`) | `differentiableOn_update_limUnder_of_bddAbove`, `Complex.differentiableOn_tsum_of_summable_norm` |
+| 1.10.9 | `dlmf_1_10_9` (integral form), `dlmf_1_10_9_phase` (`(2π)⁻¹ Δ_C ph f`, any continuous branch), `residue_mul_logDeriv`, `ClosedPiecewiseC1.contourIntegral_mul_logDeriv`, `eq_exp_primitive_mul`, `contourIntegral_logDeriv_eq_phase` | `circleIntegral_sub_inv_smul_of_differentiable_on_off_countable`, `intervalIntegral.integral_hasDerivAt_right`, `intermediate_value_Icc` |
+| 1.10.10 | `dlmf_1_10_10` | |
+| §1.10(iv) Rouché | `dlmf_1_10_iv_rouche`, `exists_zeros_finset`, `exists_factor_of_analyticOrderAt`, `contourIntegral_logDeriv_eq_card` | `AnalyticOnNhd.eqOn_zero_of_preconnected_of_frequently_eq_zero`, `Set.Infinite.exists_accPt_of_subset_isCompact`, `HasDerivAt.clog` |
+| §1.10(v) analytic functions | `dlmf_1_10_v_maxModulus`, `dlmf_1_10_v_boundary` (`Section10MaxModulus.lean`) | `Complex.eqOn_of_isPreconnected_of_isMaxOn_norm`, `Complex.exists_mem_frontier_isMaxOn_norm` |
+| §1.10(v) harmonic functions | `dlmf_1_10_v_harmonic`, `dlmf_1_10_v_harmonic_boundary`, `harmonic_eventually_eq_of_isMax` | `InnerProductSpace.HarmonicOnNhd.exists_analyticOnNhd_ball_re_eq` |
+| 1.10.11 | `dlmf_1_10_11`, `dlmf_1_10_11_eq_iff` (equality case) | `Complex.dist_le_div_mul_dist_of_mapsTo_ball`, `Complex.norm_deriv_le_div_of_mapsTo_ball`, `Complex.affine_of_mapsTo_ball_of_exists_norm_dslope_eq_div'` |
+| §1.10(vi) branches, `√z` | `IsBranch`, `sqrtMV`, `sqrtMV_eq`, `dlmf_1_10_vi_sqrt_slit`, `dlmf_1_10_vi_sqrt_upper` (`Section10Multivalued.lean`) | `Complex.cpow`, `Complex.slitPlane` |
+| §1.10(vi) branch points | `IsBranchPoint`, `cutNbhd`, `dlmf_1_10_vi_branchPoint_sqrt`, `dlmf_1_10_vi_branchPoints_powPair` | `Complex.exp_eq_one_iff` |
+| §1.10(vi) `(1 − z)^α (1 + z)^β` | `powPairMV`, `powPairPrin`, `cutPlanePM1`, `dlmf_1_10_vi_powPair_branch`, `dlmf_1_10_vi_powPair_real` | `starConvex_one_slitPlane` |
+| §1.10(vi) continuation | `ClosedPiecewiseC1.dlmf_1_10_vi_continuation`, `…_continuation_mn`, `exists_log_lift`, `log_lift_sub_eq`, `eq_of_mapsTo_countable` | `Cardinal.Real.Icc_countable_iff` |
+| 1.10.12 | `dlmf_1_10_12`, `dlmf_1_10_12_unique` (`Section10Inverse.lean`) | `HasStrictFDerivAt.toOpenPartialHomeomorph`, `OpenPartialHomeomorph.hasDerivAt_symm` |
+| 1.10.13 | `dlmf_1_10_13`, `inversionCoeff` | `two_pi_I_inv_smul_circleIntegral_sub_inv_smul_of_differentiable_on_off_countable` |
+| 1.10.14 | `dlmf_1_10_14`, `lagrangeCoeff`, `hasSum_lagrange` | `circleIntegral.integral_eq_zero_of_hasDerivWithinAt` |
+| 1.10.15 | `extPowMV`, `extBranch`, `extBranch_mem_rootMV`, `dlmf_1_10_15_integer` | `AnalyticAt.analyticOrderAt_eq_natCast` |
+| 1.10.16–1.10.17 | `dlmf_1_10_16` (all branches of `(w − w₀)^{1/μ}` via `rootMV`) | — |
+| 1.10.18 | `dlmf_1_10_18`, `continuousOn_deriv_param`, `hasDerivAt_integral_param_complex` (`Section10ContourIntegrals.lean`) | `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`, `Complex.norm_deriv_le_of_forall_mem_sphere_norm_le` |
+| §1.10(viii) infinite/singular endpoint | `dlmf_1_10_viii_improper`, `IntegralConvergesUniformlyOn`, `upperLimit_atTop`, `upperLimit_nhdsLT` | `TendstoLocallyUniformlyOn.differentiableOn`, `TendstoLocallyUniformlyOn.deriv` |
+| 1.10.19 | `dlmf_1_10_19_atTop`, `dlmf_1_10_19_nhdsLT` | `Metric.tendstoUniformlyOn_iff` |
+| §1.10(viii) M-test | `dlmf_1_10_viii_Mtest` | `tendsto_integral_filter_of_dominated_convergence` |
+| §1.10(ix) convergence | `partialProd`, `InfProdConverges`, `InfProdConvergesAbsolutely`, `InfProdConvergesUniformlyOn`, `InfProdConverges.exists_tendsto`, `dlmf_1_10_ix_log`, `dlmf_1_10_ix_abs`, `InfProdConvergesAbsolutely.infProdConverges` (`Section10Products.lean`) | `Complex.exp_eq_one_iff`, `tendsto_atTop_ciSup` |
+| 1.10.20–1.10.21 | `dlmf_1_10_20` (explicit `1 + aₙ ≠ 0`), `dlmf_1_10_ix_Mtest` | `tendstoUniformlyOn_tsum_nat`, `TendstoLocallyUniformlyOn.differentiableOn`, `Complex.norm_log_one_add_half_le_self` |
+| 1.10.22 | `dlmf_1_10_22`, `weierstrassProduct`, `weierstrassE`, `norm_weierstrassE_sub_one_le` | `Complex.norm_exp_sub_one_sub_id_le`, `Complex.norm_exp_sub_one_le` |
+| 1.10.23 | `dlmf_1_10_23` (`Section10PartialFractions.lean`) | `TendstoLocallyUniformlyOn.differentiableOn` |
+| 1.10.24 | `dlmf_1_10_24` | `logDeriv_fun_prod`, `TendstoLocallyUniformlyOn.deriv` |
+| 1.10.25 | `dlmf_1_10_25` (extra `‖zₙ‖ → ∞`), `mittagLeffler`, `mittagLeffler_split`, `norm_mlTerm_le` | `differentiableOn_tsum_of_summable_norm`, `circleIntegral.integral_sub_center_inv` |
+| 1.10.26–1.10.27 | `dlmf_1_10_27`, `circleIntegral_pow_div_pow` (`Section10Generating.lean`) | `intervalIntegral.hasSum_integral_of_dominated_convergence`, `circleIntegral.integral_sub_zpow_of_ne` |
+
 ### §1.11 Zeros of Polynomials (`Azurite/DLMF/Chapter1/Section11.lean`)
 
 | Equation | Theorem | Mathlib |
