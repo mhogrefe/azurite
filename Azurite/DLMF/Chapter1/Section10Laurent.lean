@@ -34,8 +34,8 @@ Formalizations of <https://dlmf.nist.gov/1.10.iii> (Mathlib has no Laurent expan
   `sin_div_removable` (`(sin z)/z` at `0`); `residue`, `residue_eq`; `IsMeromorphicDLMF`;
   singularities at infinity via `f(1/z)` (`IsRemovableSingularityAtInfty`, `IsPoleOfOrderAtInfty`,
   `IsEssentialSingularityAtInfty`).
-* Not formalized: Picard's (great) theorem, and the naming of `∞` as an essential singularity of a
-  meromorphic function with infinitely many poles (a definition).
+* Picard's theorem and the naming of `∞` as an essential singularity of a meromorphic function
+  with infinitely many poles: `Section10Picard.lean`.
 -/
 
 open Filter Topology Set Metric Complex MeasureTheory

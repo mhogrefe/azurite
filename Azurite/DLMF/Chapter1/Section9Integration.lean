@@ -31,7 +31,11 @@ numbers, `∮ g dz = 2i ∫ ∂̄g · W dA`) and the vendored Jordan curve theor
 * 1.9.28: `contourIntegral f z a b = ∫ₐᵇ f(z(t)) z′(t) dt`; `dlmf_1_9_28` (the `x′ + i y′` form,
   `z` differentiable off a countable set); `ClosedPiecewiseC1.contourIntegral_eq` (the piecewise
   integral equals the single integral).  DLMF's remark on infinite integrands / infinite
-  endpoints ("defined analogously to §1.4(v)") is a definition and is not formalized.
+  endpoints ("defined analogously to §1.4(v)"): `ContourConvergesAtTop`, `ContourConvergesAtBot`,
+  `ContourConvergesLeft`, `ContourConvergesRight`, agreeing with the Lebesgue integral for
+  integrable integrands (`contourConvergesAtTop_of_integrableOn`, `…AtBot…`,
+  `contourConvergesLeft_of_intervalIntegrable`, `…Right…`); example
+  `contourConvergesAtTop_exp_neg` (`∫_0^∞ e^{−z} dz = 1`).
 * Contour-integral calculus on `ClosedPiecewiseC1`: `contourIntegral_congr`, `_add`,
   `_const_mul`, `contourIntegral_eq_zero_of_hasDerivAt` (closed curve, exact integrand),
   `contourIntegral_inv_pow_eq_zero` (`∮ dz/(z − p)^(n+2) = 0`).
@@ -148,6 +152,83 @@ theorem dlmf_1_9_28 (f : ℂ → ℂ) {z : ℝ → ℂ} {a b : ℝ} {s : Set ℝ
     exact ht
   rw [uIoc] at htI
   rw [deriv_eq_deriv_re_add_I_mul (hz t ⟨⟨htI.1, lt_of_le_of_ne htI.2 ht'.2⟩, ht'.1⟩)]
+
+/-! #### Infinite contour integrals (the remark after 1.9.28) -/
+
+/-- DLMF §1.9(iii), "defined analogously to §1.4(v)" (1.4.22): the contour integral over the path
+`z(t)`, `a ≤ t < ∞`, converges to `L`. -/
+def ContourConvergesAtTop (f : ℂ → ℂ) (z : ℝ → ℂ) (a : ℝ) (L : ℂ) : Prop :=
+  Tendsto (fun b => contourIntegral f z a b) atTop (𝓝 L)
+
+/-- The contour integral over `z(t)`, `−∞ < t ≤ a`, converges to `L`. -/
+def ContourConvergesAtBot (f : ℂ → ℂ) (z : ℝ → ℂ) (a : ℝ) (L : ℂ) : Prop :=
+  Tendsto (fun b => contourIntegral f z b a) atBot (𝓝 L)
+
+/-- (1.4.23) An integrand infinite at the end `t = b` of the path: `∫_a^b = lim_{c→b−} ∫_a^c`. -/
+def ContourConvergesLeft (f : ℂ → ℂ) (z : ℝ → ℂ) (a b : ℝ) (L : ℂ) : Prop :=
+  Tendsto (fun c => contourIntegral f z a c) (𝓝[<] b) (𝓝 L)
+
+/-- (1.4.23) An integrand infinite at the start `t = a`: `∫_a^b = lim_{c→a+} ∫_c^b`. -/
+def ContourConvergesRight (f : ℂ → ℂ) (z : ℝ → ℂ) (a b : ℝ) (L : ℂ) : Prop :=
+  Tendsto (fun c => contourIntegral f z c b) (𝓝[>] a) (𝓝 L)
+
+/-- When `f(z(t)) z′(t)` is integrable on `(a, ∞)`, the infinite contour integral converges to
+the Lebesgue integral. -/
+theorem contourConvergesAtTop_of_integrableOn {f : ℂ → ℂ} {z : ℝ → ℂ} {a : ℝ}
+    (hf : IntegrableOn (fun t => f (z t) * deriv z t) (Ioi a)) :
+    ContourConvergesAtTop f z a (∫ t in Ioi a, f (z t) * deriv z t) :=
+  intervalIntegral_tendsto_integral_Ioi a hf tendsto_id
+
+/-- When `f(z(t)) z′(t)` is integrable on `(−∞, a)`, the infinite contour integral converges to
+the Lebesgue integral. -/
+theorem contourConvergesAtBot_of_integrableOn {f : ℂ → ℂ} {z : ℝ → ℂ} {a : ℝ}
+    (hf : IntegrableOn (fun t => f (z t) * deriv z t) (Iic a)) :
+    ContourConvergesAtBot f z a (∫ t in Iic a, f (z t) * deriv z t) :=
+  intervalIntegral_tendsto_integral_Iic a hf tendsto_id
+
+/-- For an integrable integrand the limits at a finite end agree with the contour integral. -/
+theorem contourConvergesLeft_of_intervalIntegrable {f : ℂ → ℂ} {z : ℝ → ℂ} {a b : ℝ}
+    (hab : a < b) (hf : IntervalIntegrable (fun t => f (z t) * deriv z t) volume a b) :
+    ContourConvergesLeft f z a b (contourIntegral f z a b) := by
+  have hc := intervalIntegral.continuousOn_primitive_interval (μ := volume)
+    ((intervalIntegrable_iff_integrableOn_Icc_of_le hab.le).mp hf |>.mono_set
+      (by rw [uIcc_of_le hab.le]))
+  have hmem : uIcc a b ∈ 𝓝[<] b := by
+    rw [uIcc_of_le hab.le]
+    exact Filter.mem_of_superset (Ioo_mem_nhdsLT hab) Ioo_subset_Icc_self
+  exact ((hc b right_mem_uIcc).mono_of_mem_nhdsWithin hmem).tendsto
+
+/-- At the start of the path. -/
+theorem contourConvergesRight_of_intervalIntegrable {f : ℂ → ℂ} {z : ℝ → ℂ} {a b : ℝ}
+    (hab : a < b) (hf : IntervalIntegrable (fun t => f (z t) * deriv z t) volume a b) :
+    ContourConvergesRight f z a b (contourIntegral f z a b) := by
+  have hc := intervalIntegral.continuousOn_primitive_interval_left (μ := volume)
+    ((intervalIntegrable_iff_integrableOn_Icc_of_le hab.le).mp hf |>.mono_set
+      (by rw [uIcc_of_le hab.le]))
+  have hmem : uIcc a b ∈ 𝓝[>] a := by
+    rw [uIcc_of_le hab.le]
+    exact Filter.mem_of_superset (Ioo_mem_nhdsGT hab) Ioo_subset_Icc_self
+  exact ((hc a left_mem_uIcc).mono_of_mem_nhdsWithin hmem).tendsto
+
+/-- Example: along the positive real axis, `∫_0^∞ e^{−z} dz = 1`. -/
+theorem contourConvergesAtTop_exp_neg :
+    ContourConvergesAtTop (fun w => cexp (-w)) (fun t : ℝ => (t : ℂ)) 0 1 := by
+  have hd : ∀ t : ℝ, deriv (fun t : ℝ => (t : ℂ)) t = 1 := fun t =>
+    ((hasDerivAt_id t).ofReal_comp).deriv.trans (by simp)
+  have he : ∀ b : ℝ, contourIntegral (fun w => cexp (-w)) (fun t : ℝ => (t : ℂ)) 0 b =
+      ((1 - Real.exp (-b) : ℝ) : ℂ) := fun b => by
+    simp only [contourIntegral, hd, mul_one]
+    have : ∫ t in (0 : ℝ)..b, Real.exp (-t) = 1 - Real.exp (-b) := by
+      rw [intervalIntegral.integral_comp_neg (fun t => Real.exp t), integral_exp]; simp
+    rw [← this, ← intervalIntegral.integral_ofReal]
+    congr 1; funext t; push_cast; rfl
+  unfold ContourConvergesAtTop
+  simp_rw [he]
+  have : Tendsto (fun b : ℝ => 1 - Real.exp (-b)) atTop (𝓝 (1 - 0)) :=
+    tendsto_const_nhds.sub Real.tendsto_exp_neg_atTop_nhds_zero
+  rw [sub_zero] at this
+  have h := (Complex.continuous_ofReal.tendsto _).comp this
+  rwa [Complex.ofReal_one] at h
 
 end Azurite.DLMF
 

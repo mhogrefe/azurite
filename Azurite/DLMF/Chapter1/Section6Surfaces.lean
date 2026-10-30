@@ -37,7 +37,7 @@ Formalizations of <https://dlmf.nist.gov/1.6.v> (a companion to `Section6.lean`,
 * 1.6.58 Gauss's theorem `dlmf_1_6_58` and Green's theorem for volume 1.6.59–1.6.60
   (`dlmf_1_6_59`, `dlmf_1_6_60`) for boxes `V = [a, b] ⊂ ℝ³` (`boxFace`, `boxFlux`,
   `boxNormalDerivIntegral`), from Mathlib's divergence theorem on boxes.  Bounded regions with
-  an arbitrary piecewise smooth boundary are not formalized.
+  a closed piecewise smooth boundary: `Section6Gauss.lean`, `Section6GaussOrientation.lean`.
 -/
 
 namespace Azurite.DLMF

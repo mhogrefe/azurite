@@ -153,8 +153,8 @@ subsection.  Functions are real-valued functions of a real variable, `f : ℝ �
   `olver_ex_11_1_add`, `olver_ex_11_1_norm`, `olver_ex_11_1_abs`, `olver_ex_11_1_abs_eq`
   (equality for continuous real `f`); Ex. 11.2 (ii) `olver_ex_11_2_ii` (step function), (iii)
   `olver_ex_11_2_iii` (`𝒱(sech) = 2`, via `eVariationOn_Iic_of_monotoneOn`,
-  `eVariationOn_Ici_of_antitoneOn`).  Not formalized: Ex. 11.2 (i), (iv), and the variation
-  along a path in `ℂ` (Olver §11.5 second half, Ex. 11.3–11.4).
+  `eVariationOn_Ici_of_antitoneOn`).  Ex. 11.2 (i), (iv), the variation along a path in `ℂ`
+  (Olver §11.5 second half) and Ex. 11.3–11.4: `Section4Olver.lean`.
 
 ## §1.4(vi) Taylor's theorem for real variables
 

@@ -38,7 +38,11 @@ one-point compactification `OnePoint ℂ`; "`w → ∞`" in `ℂ` is the filter 
   points, at `∞`, and at the pole through the chart `1/w`).
 * 1.9.45: `crossRatio`, `dlmf_1_9_45` (invariance under bilinear transformations, all four points
   finite with finite images), `dlmf_1_9_45_infty` (limiting form `(z₁ − z₂)/(z₃ − z₂)` as
-  `z₄ → ∞`); invariance with points at `∞` (the limiting forms) is not formalized.
+  `z₄ → ∞`).  On `ℂ ∪ {∞}`: `crossRatioExt` (homogeneous coordinates `homCoord`, determinants
+  `homDet`), equal to `crossRatio` at finite points (`crossRatioExt_coe`) and to the limiting forms
+  at `∞` (`crossRatioExt_infty₁` … `crossRatioExt_infty₄`, `dlmf_1_9_45_limits`);
+  `dlmf_1_9_45_ext` (invariance for all four points of the extended plane, including the pole
+  and `∞`).
 -/
 
 open Complex Filter Topology Bornology Set Metric OnePoint
@@ -471,5 +475,142 @@ theorem dlmf_1_9_45_infty (z₁ z₂ z₃ : ℂ) :
   rw [crossRatio, show z₃ * z₄⁻¹ - 1 = (z₃ - z₄) / z₄ by field_simp,
     show z₁ * z₄⁻¹ - 1 = (z₁ - z₄) / z₄ by field_simp, div_div_div_cancel_right₀ hz,
     div_mul_div_comm, mul_comm (z₃ - z₂)]
+
+/-! ### Cross ratio on the extended plane -/
+
+/-- Homogeneous coordinates on `ℂ ∪ {∞}`: `z ↦ (z, 1)`, `∞ ↦ (1, 0)`. -/
+noncomputable def homCoord (p : OnePoint ℂ) : ℂ × ℂ := OnePoint.elim p (1, 0) fun z => (z, 1)
+
+@[simp] theorem homCoord_infty : homCoord ∞ = (1, 0) := rfl
+
+@[simp] theorem homCoord_coe (z : ℂ) : homCoord z = (z, 1) := rfl
+
+/-- The determinant `u₁v₂ − v₁u₂` of two homogeneous coordinate vectors. -/
+def homDet (u v : ℂ × ℂ) : ℂ := u.1 * v.2 - v.1 * u.2
+
+/-- **DLMF 1.9.45** on `ℂ ∪ {∞}`: the cross ratio in homogeneous coordinates; at finite points
+it is `crossRatio`, and a point at `∞` gives the limiting forms (`crossRatioExt_infty₁` …
+`crossRatioExt_infty₄`, `dlmf_1_9_45_limits`). -/
+noncomputable def crossRatioExt (p₁ p₂ p₃ p₄ : OnePoint ℂ) : ℂ :=
+  homDet (homCoord p₁) (homCoord p₂) * homDet (homCoord p₃) (homCoord p₄) /
+    (homDet (homCoord p₁) (homCoord p₄) * homDet (homCoord p₃) (homCoord p₂))
+
+@[simp] theorem crossRatioExt_coe (z₁ z₂ z₃ z₄ : ℂ) :
+    crossRatioExt z₁ z₂ z₃ z₄ = crossRatio z₁ z₂ z₃ z₄ := by
+  simp [crossRatioExt, homDet, crossRatio]
+
+theorem neg_mul_div_neg_mul (x y : ℂ) : (-1 * x) / (-1 * y) = x / y :=
+  mul_div_mul_left x y (by norm_num)
+
+theorem crossRatioExt_infty₁ (z₂ z₃ z₄ : ℂ) :
+    crossRatioExt ∞ z₂ z₃ z₄ = (z₃ - z₄) / (z₃ - z₂) := by
+  simp only [crossRatioExt, homCoord_infty, homCoord_coe, homDet]
+  congr 1 <;> ring
+
+theorem crossRatioExt_infty₂ (z₁ z₃ z₄ : ℂ) :
+    crossRatioExt z₁ ∞ z₃ z₄ = (z₃ - z₄) / (z₁ - z₄) := by
+  simp only [crossRatioExt, homCoord_infty, homCoord_coe, homDet]
+  rw [← neg_mul_div_neg_mul]; congr 1 <;> ring
+
+theorem crossRatioExt_infty₃ (z₁ z₂ z₄ : ℂ) :
+    crossRatioExt z₁ z₂ ∞ z₄ = (z₁ - z₂) / (z₁ - z₄) := by
+  simp only [crossRatioExt, homCoord_infty, homCoord_coe, homDet]
+  congr 1 <;> ring
+
+theorem crossRatioExt_infty₄ (z₁ z₂ z₃ : ℂ) :
+    crossRatioExt z₁ z₂ z₃ ∞ = (z₁ - z₂) / (z₃ - z₂) := by
+  simp only [crossRatioExt, homCoord_infty, homCoord_coe, homDet]
+  rw [← neg_mul_div_neg_mul]; congr 1 <;> ring
+
+theorem crossRatio_swap₁₃ (z₁ z₂ z₃ z₄ : ℂ) :
+    crossRatio z₁ z₂ z₃ z₄ = crossRatio z₃ z₄ z₁ z₂ := by
+  rw [crossRatio, crossRatio]; congr 1 <;> ring
+
+theorem crossRatio_swap₁₂ (z₁ z₂ z₃ z₄ : ℂ) :
+    crossRatio z₁ z₂ z₃ z₄ = crossRatio z₂ z₁ z₄ z₃ := by
+  rw [crossRatio, crossRatio]; congr 1 <;> ring
+
+/-- DLMF 1.9.45 with a point at `∞`: `crossRatioExt` is the limit of the cross ratio as any one of
+the four points tends to `∞` (the others fixed). -/
+theorem dlmf_1_9_45_limits (z₁ z₂ z₃ z₄ : ℂ) :
+    Tendsto (fun w => crossRatio w z₂ z₃ z₄) (cobounded ℂ) (𝓝 (crossRatioExt ∞ z₂ z₃ z₄)) ∧
+      Tendsto (fun w => crossRatio z₁ w z₃ z₄) (cobounded ℂ) (𝓝 (crossRatioExt z₁ ∞ z₃ z₄)) ∧
+      Tendsto (fun w => crossRatio z₁ z₂ w z₄) (cobounded ℂ) (𝓝 (crossRatioExt z₁ z₂ ∞ z₄)) ∧
+      Tendsto (fun w => crossRatio z₁ z₂ z₃ w) (cobounded ℂ) (𝓝 (crossRatioExt z₁ z₂ z₃ ∞)) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simp_rw [crossRatio_swap₁₃ _ z₂, crossRatio_swap₁₂ z₃]
+    rw [crossRatioExt_infty₁, show (z₃ - z₄) / (z₃ - z₂) = (z₄ - z₃) / (z₂ - z₃) by
+      rw [← neg_sub z₄ z₃, ← neg_sub z₂ z₃, neg_div_neg_eq]]
+    exact dlmf_1_9_45_infty z₄ z₃ z₂
+  · simp_rw [crossRatio_swap₁₃ z₁]
+    rw [crossRatioExt_infty₂]
+    exact dlmf_1_9_45_infty z₃ z₄ z₁
+  · simp_rw [crossRatio_swap₁₂ z₁]
+    rw [crossRatioExt_infty₃, show (z₁ - z₂) / (z₁ - z₄) = (z₂ - z₁) / (z₄ - z₁) by
+      rw [← neg_sub z₁ z₂, ← neg_sub z₁ z₄, neg_div_neg_eq]]
+    exact dlmf_1_9_45_infty z₂ z₁ z₄
+  · rw [crossRatioExt_infty₄]
+    exact dlmf_1_9_45_infty z₁ z₂ z₃
+
+/-- The bilinear transformation acts linearly on homogeneous coordinates, up to a nonzero
+factor. -/
+theorem exists_homCoord_mobiusExt (hc : c ≠ 0) (hdet : a * d - b * c ≠ 0) (p : OnePoint ℂ) :
+    ∃ l : ℂ, l ≠ 0 ∧
+      a * (homCoord p).1 + b * (homCoord p).2 = l * (homCoord (mobiusExt a b c d p)).1 ∧
+      c * (homCoord p).1 + d * (homCoord p).2 = l * (homCoord (mobiusExt a b c d p)).2 := by
+  induction p using OnePoint.rec with
+  | infty =>
+    refine ⟨c, hc, ?_, ?_⟩ <;> simp only [homCoord_infty, mobiusExt_infty, homCoord_coe]
+    · field_simp; ring
+    · ring
+  | coe z =>
+    by_cases hz : c * z + d = 0
+    · have hab : a * z + b ≠ 0 := fun h => hdet (by linear_combination a * hz - c * h)
+      refine ⟨a * z + b, hab, ?_, ?_⟩ <;>
+        simp only [homCoord_coe, mobiusExt_coe, hz, ↓reduceIte, homCoord_infty]
+      · ring
+      · rw [mul_zero, mul_one]; exact hz
+    · refine ⟨c * z + d, hz, ?_, ?_⟩ <;>
+        simp only [homCoord_coe, mobiusExt_coe, hz, ↓reduceIte, mobius]
+      · rw [mul_one, mul_div_cancel₀ _ hz]
+      · ring
+
+theorem homDet_eq_of_linear {u v u' v' : ℂ × ℂ} {l m : ℂ} (hl : l ≠ 0) (hm : m ≠ 0)
+    (hu1 : a * u.1 + b * u.2 = l * u'.1) (hu2 : c * u.1 + d * u.2 = l * u'.2)
+    (hv1 : a * v.1 + b * v.2 = m * v'.1) (hv2 : c * v.1 + d * v.2 = m * v'.2) :
+    homDet u' v' = (a * d - b * c) / (l * m) * homDet u v := by
+  have h : l * m * homDet u' v' = (a * d - b * c) * homDet u v := by
+    simp only [homDet]
+    linear_combination (-(m * v'.2)) * hu1 - (a * u.1 + b * u.2) * hv2 + (l * u'.2) * hv1 +
+      (a * v.1 + b * v.2) * hu2
+  field_simp
+  linear_combination h
+
+/-- **DLMF 1.9.45** on `ℂ ∪ {∞}`: the cross ratio is invariant under bilinear transformations,
+for all four points of the extended plane (finite, at the pole `−d/c`, or at `∞`). -/
+theorem dlmf_1_9_45_ext (hc : c ≠ 0) (hdet : a * d - b * c ≠ 0) (p₁ p₂ p₃ p₄ : OnePoint ℂ) :
+    crossRatioExt (mobiusExt a b c d p₁) (mobiusExt a b c d p₂) (mobiusExt a b c d p₃)
+      (mobiusExt a b c d p₄) = crossRatioExt p₁ p₂ p₃ p₄ := by
+  obtain ⟨l₁, h₁, e₁, f₁⟩ := exists_homCoord_mobiusExt hc hdet p₁
+  obtain ⟨l₂, h₂, e₂, f₂⟩ := exists_homCoord_mobiusExt hc hdet p₂
+  obtain ⟨l₃, h₃, e₃, f₃⟩ := exists_homCoord_mobiusExt hc hdet p₃
+  obtain ⟨l₄, h₄, e₄, f₄⟩ := exists_homCoord_mobiusExt hc hdet p₄
+  have K : (a * d - b * c) ^ 2 / (l₁ * l₂ * l₃ * l₄) ≠ 0 := by
+    have := mul_ne_zero (mul_ne_zero (mul_ne_zero h₁ h₂) h₃) h₄
+    exact div_ne_zero (pow_ne_zero _ hdet) this
+  rw [crossRatioExt, crossRatioExt, homDet_eq_of_linear h₁ h₂ e₁ f₁ e₂ f₂,
+    homDet_eq_of_linear h₃ h₄ e₃ f₃ e₄ f₄, homDet_eq_of_linear h₁ h₄ e₁ f₁ e₄ f₄,
+    homDet_eq_of_linear h₃ h₂ e₃ f₃ e₂ f₂]
+  generalize homDet (homCoord p₁) (homCoord p₂) = D₁₂
+  generalize homDet (homCoord p₃) (homCoord p₄) = D₃₄
+  generalize homDet (homCoord p₁) (homCoord p₄) = D₁₄
+  generalize homDet (homCoord p₃) (homCoord p₂) = D₃₂
+  have hn : (a * d - b * c) / (l₁ * l₂) * D₁₂ * ((a * d - b * c) / (l₃ * l₄) * D₃₄) =
+      (a * d - b * c) ^ 2 / (l₁ * l₂ * l₃ * l₄) * (D₁₂ * D₃₄) := by
+    field_simp
+  have hd : (a * d - b * c) / (l₁ * l₄) * D₁₄ * ((a * d - b * c) / (l₃ * l₂) * D₃₂) =
+      (a * d - b * c) ^ 2 / (l₁ * l₂ * l₃ * l₄) * (D₁₄ * D₃₂) := by
+    field_simp
+  rw [hn, hd, mul_div_mul_left _ _ K]
 
 end Azurite.DLMF

@@ -19,8 +19,10 @@ Formalizations of <https://dlmf.nist.gov/1.10.ii>.
 * Identity theorem: `dlmf_1_10_ii_identity` (agreement on a set with a limit point in the domain
   `D = D₁ ∩ D₂`, assumed connected), `dlmf_1_10_ii_identity_arc` (agreement on an arc; `accPt_arc`).
 * `IsAnalyticContinuation` (`(f₁, D₁)`, `(f₂, D₂)`), `IsAnalyticContinuation.unique`,
-  `IsContinuationAlong` (continuation along a path by a chain of function elements).  The prose on
-  the use of continuation for functional equations is not formalized.
+  `IsContinuationAlong` (continuation along a path by a chain of function elements).
+* Functional equations: `dlmf_1_10_ii_functional` (an identity proven on a real segment holds on
+  any connected domain of analyticity), `dlmf_1_10_ii_functional₂` (two variables: continue in
+  each in turn), example `exp_add_of_real` (`e^{z + w} = e^z e^w` from the real case).
 * 1.10.5 (Schwarz reflection principle): `dlmf_1_10_5`, for `f` analytic on an open `Ω` in the
   upper half-plane, continuous on `Ω ∪ L` (`L` real points) and real on `L`, with
   `Ω ∪ L ∪ conj Ω` open (in DLMF's setting `Ω` is the interior of a simple closed contour made of a
@@ -105,6 +107,43 @@ theorem IsAnalyticContinuation.unique {f₁ f₂ g₂ : ℂ → ℂ} {D₁ D₂ 
   refine (Eventually.frequently ?_)
   filter_upwards [nhdsWithin_le_nhds hmem] with w hw
   exact (hfeq hw).symm.trans (hgeq hw)
+
+/-! ### Functional equations -/
+
+/-- DLMF §1.10(ii): continuation reduces a transformation or functional equation to (a) proving it
+for real variables and (b) finding a (connected) domain where both sides are analytic.  If `g`,
+`h` are analytic on a connected open `D` containing the real segment `[a, b]`, `a < b`, and
+`g = h` there, then `g = h` throughout `D`. -/
+theorem dlmf_1_10_ii_functional {D : Set ℂ} (hD : IsOpen D) (hDc : IsPreconnected D)
+    {g h : ℂ → ℂ} (hg : DifferentiableOn ℂ g D) (hh : DifferentiableOn ℂ h D) {a b : ℝ}
+    (hab : a < b) (hsub : ∀ x ∈ Icc a b, (x : ℂ) ∈ D) (heq : ∀ x ∈ Icc a b, g x = h x) :
+    EqOn g h D := by
+  have := dlmf_1_10_ii_identity_arc hD hD hg hh (by rwa [inter_self]) (z := fun t : ℝ => (t : ℂ))
+    hab continuous_ofReal.continuousOn ofReal_injective.injOn
+    (by rintro _ ⟨t, ht, rfl⟩; exact ⟨hsub t ht, hsub t ht⟩) heq
+  rwa [inter_self] at this
+
+/-- DLMF §1.10(ii), functional equations in two variables (addition theorems): if `F(z, w)` and
+`G(z, w)` are entire in each variable and agree for real `z`, `w`, they agree for all complex
+`z`, `w` (continue first in `z`, then in `w`). -/
+theorem dlmf_1_10_ii_functional₂ {F G : ℂ → ℂ → ℂ} (hF₁ : ∀ w, Differentiable ℂ fun z => F z w)
+    (hF₂ : ∀ z, Differentiable ℂ (F z)) (hG₁ : ∀ w, Differentiable ℂ fun z => G z w)
+    (hG₂ : ∀ z, Differentiable ℂ (G z)) (heq : ∀ x y : ℝ, F x y = G x y) (z w : ℂ) :
+    F z w = G z w := by
+  have step1 : ∀ y : ℝ, ∀ z, F z y = G z y := fun y z =>
+    dlmf_1_10_ii_functional (D := univ) isOpen_univ isPreconnected_univ
+      (hF₁ y).differentiableOn (hG₁ y).differentiableOn zero_lt_one (fun _ _ => mem_univ _)
+      (fun x _ => heq x y) (mem_univ z)
+  exact dlmf_1_10_ii_functional (D := univ) isOpen_univ isPreconnected_univ
+    (hF₂ z).differentiableOn (hG₂ z).differentiableOn zero_lt_one (fun _ _ => mem_univ _)
+    (fun y _ => step1 y z) (mem_univ w)
+
+/-- Example: the addition theorem `e^{z + w} = e^z e^w` follows from the real one. -/
+theorem exp_add_of_real (z w : ℂ) : cexp (z + w) = cexp z * cexp w :=
+  dlmf_1_10_ii_functional₂ (F := fun z w => cexp (z + w)) (G := fun z w => cexp z * cexp w)
+    (fun _ => by fun_prop) (fun _ => by fun_prop) (fun _ => by fun_prop) (fun _ => by fun_prop)
+    (fun x y => by
+      rw [← ofReal_add, ← ofReal_exp, ← ofReal_exp, ← ofReal_exp, Real.exp_add, ofReal_mul]) z w
 
 /-! ### Schwarz reflection principle -/
 

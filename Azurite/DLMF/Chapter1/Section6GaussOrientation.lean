@@ -43,8 +43,9 @@ This file derives that hypothesis from the geometric reading of the DLMF sentenc
   `dlmf_1_6_58_outward`, `dlmf_1_6_59_outward` and `dlmf_1_6_60_outward` state Gauss's theorem
   and Green's identities for it.
 
-Connectedness of the interior and exterior is a hypothesis.  The Jordan–Brouwer separation
-theorem, which would supply it, is not formalized.
+Connectedness of the interior and exterior is a hypothesis here.  `Section6GaussSeparation.lean`
+derives it from the Jordan–Brouwer separation theorem when the surface is connected and locally a
+graph (`ClosedSurface.outwardBoundary_of_isLocallyGraph`).
 -/
 
 namespace Azurite.DLMF
