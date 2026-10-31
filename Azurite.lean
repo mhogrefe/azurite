@@ -1738,6 +1738,13 @@ import Azurite.DLMF.Chapter1.Section15Fractional
 import Azurite.DLMF.Chapter1.Section15FractionalDeriv
 import Azurite.DLMF.Chapter1.Section15Integrals
 import Azurite.DLMF.Chapter1.Section15Tauberian
+import Azurite.DLMF.Chapter1.Section16
+import Azurite.DLMF.Chapter1.Section16Derivatives
+import Azurite.DLMF.Chapter1.Section16Fourier
+import Azurite.DLMF.Chapter1.Section16FourierSpecial
+import Azurite.DLMF.Chapter1.Section16Heaviside
+import Azurite.DLMF.Chapter1.Section16Several
+import Azurite.DLMF.Chapter1.Section16Tempered
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4
