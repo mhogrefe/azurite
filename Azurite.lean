@@ -1731,6 +1731,13 @@ import Azurite.DLMF.Chapter1.Section14TableSin
 import Azurite.DLMF.Chapter1.Section14TableSinArctan
 import Azurite.DLMF.Chapter1.Section14TableSinImproper
 import Azurite.DLMF.Chapter1.Section14TableSinLog
+import Azurite.DLMF.Chapter1.Section15
+import Azurite.DLMF.Chapter1.Section15Fourier
+import Azurite.DLMF.Chapter1.Section15FourierIntegrals
+import Azurite.DLMF.Chapter1.Section15Fractional
+import Azurite.DLMF.Chapter1.Section15FractionalDeriv
+import Azurite.DLMF.Chapter1.Section15Integrals
+import Azurite.DLMF.Chapter1.Section15Tauberian
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4
