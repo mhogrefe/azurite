@@ -1745,6 +1745,9 @@ import Azurite.DLMF.Chapter1.Section16FourierSpecial
 import Azurite.DLMF.Chapter1.Section16Heaviside
 import Azurite.DLMF.Chapter1.Section16Several
 import Azurite.DLMF.Chapter1.Section16Tempered
+import Azurite.DLMF.Chapter1.Section17
+import Azurite.DLMF.Chapter1.Section17Integral
+import Azurite.DLMF.Chapter1.Section17Series
 import Azurite.DLMF.Chapter1.Section2
 import Azurite.DLMF.Chapter1.Section3
 import Azurite.DLMF.Chapter1.Section4

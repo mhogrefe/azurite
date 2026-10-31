@@ -685,3 +685,23 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.16.38–1.16.43 | `dlmf_1_16_38`, `dlmf_1_16_39` (`𝓕(δ) = 1/√(2π)`), `dlmf_1_16_40` (`√(2π) 𝓕(δ) = 1`), `dlmf_1_16_41`, `dlmf_1_16_42` (`𝓕(1) = √(2π) δ`), `dlmf_1_16_43` (`𝓕(1)/√(2π) = δ`) | — |
 | 1.16.44–1.16.47 | `dlmf_1_16_44`, `integral_Ioi_deriv_temp`, `dlmf_1_16_45_sign`, `dlmf_1_16_45_heaviside`, `dlmf_1_16_46`; `tempX`, `hasDerivAt_dlmfFourier_temp`, `derivTempTest_fourierTest1`, `fourierDist1_tempDeriv` (`𝓕(u′) = (x/i)𝓕(u)`), `dlmf_1_16_47` | `hasDerivAt_integral_of_dominated_loc_of_deriv_le` |
 | 1.16.48–1.16.51 | `pvInvX`, `integrableOn_pvInvX`, `tendsto_pvInvX` (PV limit), `pvDist`; `tendsto_conjPoissonInt_zero`, `dlmf_1_16_49` (via damping `e^{−ε|x|}` and §1.14's conjugate Poisson integral), `dlmf_1_16_48`, `tempH_eq`, `dlmf_1_16_50`, `dlmf_1_16_51` | `norm_image_sub_le_of_norm_deriv_le_segment'`, `tendsto_integral_filter_of_dominated_convergence`, `integral_comp_neg_Ioi` |
+
+### §1.17 Integral and Series Representations of the Dirac Delta (`Azurite/DLMF/Chapter1/Section17*.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 1.17.1–1.17.2 | `dlmf_1_17_1_2_not_function` (no function vanishing off `0` satisfies 1.17.2 for all test functions; `exists_testFunction_one`), `dlmf_1_17_2` (Dirac distribution), `dlmf_1_17_2_measure` (`Measure.dirac`) (`Section17.lean`) | `ContDiffBump`, `integral_dirac` |
+| 1.17.3–1.17.4 | `IsDeltaSequence`, `dlmf_1_17_4` (delta sequence ⇔ regular distributions converge to `δ_a`) | — |
+| 1.17.5 | `gaussDelta`, `dlmf_1_17_5`, `integral_gaussDelta`, `integral_Ioi_gaussDelta`, `isDeltaSequence_gaussDelta`, `dlmf_1_17_4_gaussDelta` | `integral_gaussian`, `integral_gaussian_Ioi` |
+| 1.17.6–1.17.7 | `gaussPeak` (`2√(n/π) e^{−(n−N)t²}`), `tendstoUniformlyOn_gaussPeak`, `tendsto_setIntegral_Ioi_gaussDelta`, `tendsto_integral_gaussDelta` (`→ ½φ(a−) + ½φ(a+)`), `dlmf_1_17_6`, `dlmf_1_17_6_growth` (`φ = O(e^{αx²})`), `dlmf_1_17_7` (piecewise continuous) | `tendsto_setIntegral_peak_smul_of_integrableOn_of_tendsto_aux`, `integrableOn_peak_smul_of_integrableOn_of_tendsto`, `LocallyIntegrable.integrable_of_isBigO_cocompact`, `tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero` |
+| 1.17.8 | `dlmf_1_17_8` (Fourier inversion, `Section17Integral.lean`) | — (§1.14 `dlmf_inversion`) |
+| 1.17.9–1.17.11 | `dlmf_1_17_9_not_integrable` (inner integral diverges), `dlmf_1_17_10`, `fourierGaussDelta`, `dlmf_1_17_11` (= `gaussDelta`, all `n`), `dlmf_1_17_9` (generalized integral under 1.17.6 hypotheses) | `fourierIntegral_gaussian`, `Complex.ofReal_cpow` |
+| 1.17.12 | `dlmf_1_17_12` (distributional limit of 1.17.11), `dlmf_1_17_12_tempered` (= 1.16.43) | — |
+| 1.17.12_1–1.17.12_2 | `dlmf_1_17_12_1`, `dlmf_1_17_12_2` (cosine/sine inversion 1.14.11, 1.14.12) | — |
+| 1.17.14 (`ℓ = 0`) | `mul_sinc`, `dlmf_1_17_14_zero_integrand`, `dlmf_1_17_14_zero` (`𝗃₀ = sinc`, reduces to 1.17.12_2) | `Real.sinc` |
+| 1.17.13–1.17.16 | **Deferred**: Hankel (Bessel `J_ν`), spherical Bessel `ℓ ≥ 1`, Coulomb, Airy completeness | — |
+| 1.17.17 | `dlmf_1_17_17` (Fourier summation formula, `Section17Series.lean`) | — (§1.8 `dlmf_1_8_3`) |
+| 1.17.18 | `dlmf_1_17_18_not_summable`, `dlmf_1_17_18_not_tendsto` (series and symmetric partial sums diverge) | `Summable.tendsto_cofinite_zero` |
+| 1.17.19–1.17.20 | `dirichletDelta`, `sum_Icc_cexp_eq_halfDirichlet`, `dirichletDelta_eq`, `dlmf_1_17_20`, `integral_dirichletDelta_mul` (= Fourier partial sum), `dlmf_1_17_19_dirichlet` (1.8.11 conditions), `dlmf_1_17_19` (differentiable at `a`). **Discrepancy:** false for merely continuous periodic `φ`: `dlmf_1_17_19_counterexample` (`dirichletFunctional`, `le_norm_dirichletFunctional` ≥ `Lₙ/2 − 1`, `tendsto_lebesgueConst_atTop`, Banach–Steinhaus) | `banach_steinhaus`, `ContinuousLinearMap.le_opNorm` |
+| 1.17.21 | `dlmf_1_17_21` (Dirac comb: `∫ δₙ(x−a)φ → ∑ₘ φ(a+2πm)` for test functions, via Poisson 1.8.14) | `tendsto_atTop_finset_of_monotone` |
+| 1.17.22–1.17.25 | **Deferred**: Legendre, Laguerre, Hermite, spherical-harmonic completeness (Chs. 14, 18) | — |
