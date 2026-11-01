@@ -118,13 +118,11 @@ theorem boundedVariationOn_cexp (σ : ℝ) (a b : ℝ) :
   rwa [← eVariationOn.congr (f := fun τ : ℝ => cexp (-((σ : ℂ) * τ))) (fun τ _ => by
     simp only [Function.comp_apply, ofReal_exp]; push_cast; ring_nf)] at this
 
-/-- **DLMF (1.14.20)** (Bromwich inversion): for `σ > α`, `t > 0` and `f` of bounded variation
-near `t`,
-`(2πi)^{−1} ∫_{σ−iT}^{σ+iT} e^{ts} ℒ(f)(s) ds → ½(f(t+) + f(t−))` as `T → ∞`. The contour
-integral is written with `s = σ + iy`, `ds = i dy`. -/
-theorem dlmf_1_14_20_bv {M α σ : ℝ} {f : ℝ → ℂ}
-    (hfm : AEStronglyMeasurable f (volume.restrict (Ioi 0))) (hg : ExpGrowth M α f)
-    (hσ : α < σ) {t δ : ℝ} (hδ : 0 < δ) (hδt : δ < t)
+/-- **DLMF (1.14.20)** under the hypothesis that `e^{−σt} f(t)` is integrable on `(0, ∞)` (as in
+DLMF §2.4(ii)) rather than exponential growth. -/
+theorem dlmf_1_14_20_bv' {σ : ℝ} {f : ℝ → ℂ}
+    (hgi : IntegrableOn (fun τ : ℝ => cexp (-((σ : ℂ) * τ)) * f τ) (Ioi 0))
+    {t δ : ℝ} (hδ : 0 < δ) (hδt : δ < t)
     (hbv : BoundedVariationOn f (Icc (t - δ) (t + δ))) {Lp Lm : ℂ}
     (hp : Tendsto f (𝓝[>] t) (𝓝 Lp)) (hm : Tendsto f (𝓝[<] t) (𝓝 Lm)) :
     Tendsto (fun T : ℝ => (2 * Real.pi : ℂ)⁻¹ *
@@ -136,8 +134,7 @@ theorem dlmf_1_14_20_bv {M α σ : ℝ} {f : ℝ → ℂ}
   have hπ := Real.pi_pos
   have hcc : c * c = 2 * Real.pi := by
     rw [hc, ← ofReal_mul, Real.mul_self_sqrt (by positivity)]; push_cast; ring
-  have hgi : Integrable g := (integrable_indicator_iff measurableSet_Ioi).mpr
-    (integrableOn_laplace hfm hg (show α < (σ : ℂ).re by simpa using hσ))
+  have hgi : Integrable g := (integrable_indicator_iff measurableSet_Ioi).mpr hgi
   -- `g` near `t`
   have heqOn : EqOn g (fun τ => f τ * cexp (-((σ : ℂ) * τ))) (Icc (t - δ) (t + δ)) :=
     fun τ hτ => by
@@ -193,6 +190,21 @@ theorem dlmf_1_14_20_bv {M α σ : ℝ} {f : ℝ → ℂ}
   field_simp
   rw [sq, hcc]
   ring
+
+/-- **DLMF (1.14.20)** (Bromwich inversion): for `σ > α`, `t > 0` and `f` of bounded variation
+near `t`,
+`(2πi)^{−1} ∫_{σ−iT}^{σ+iT} e^{ts} ℒ(f)(s) ds → ½(f(t+) + f(t−))` as `T → ∞`. The contour
+integral is written with `s = σ + iy`, `ds = i dy`. -/
+theorem dlmf_1_14_20_bv {M α σ : ℝ} {f : ℝ → ℂ}
+    (hfm : AEStronglyMeasurable f (volume.restrict (Ioi 0))) (hg : ExpGrowth M α f)
+    (hσ : α < σ) {t δ : ℝ} (hδ : 0 < δ) (hδt : δ < t)
+    (hbv : BoundedVariationOn f (Icc (t - δ) (t + δ))) {Lp Lm : ℂ}
+    (hp : Tendsto f (𝓝[>] t) (𝓝 Lp)) (hm : Tendsto f (𝓝[<] t) (𝓝 Lm)) :
+    Tendsto (fun T : ℝ => (2 * Real.pi : ℂ)⁻¹ *
+      ∫ y in (-T)..T, cexp (((σ : ℂ) + y * I) * t) * laplace f (σ + y * I)) atTop
+      (𝓝 ((Lp + Lm) / 2)) :=
+  dlmf_1_14_20_bv' (integrableOn_laplace hfm hg (show α < (σ : ℂ).re by simpa using hσ))
+    hδ hδt hbv hp hm
 
 /-- **DLMF (1.14.20)** for `f` continuous at `t`: the Bromwich integral tends to `f(t)`. -/
 theorem dlmf_1_14_20 {M α σ : ℝ} {f : ℝ → ℂ}
