@@ -1,5 +1,7 @@
 # DLMF formalization ledger
 
+Discrepancies with the DLMF found along the way are collected in `docs/dlmf_errata.md`.
+
 A walk through the NIST Digital Library of Mathematical Functions (<https://dlmf.nist.gov>),
 one Lean theorem per equation, in `Azurite/DLMF/ChapterC/SectionS.lean` with the theorem
 `dlmf_C_S_N` for equation C.S.N (suffixes for the several equalities of one equation).  Each
