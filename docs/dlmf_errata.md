@@ -47,9 +47,20 @@ The per-equation ledger is `docs/dlmf_plan.md`.
 
 ## Chapter 2
 
+### Errors
+
+| DLMF | Issue | Lean |
+| --- | --- | --- |
+| 2.3.26–2.3.27 | `a = (2p(α,0) − 2p(α,α))^{1/2}` is nonnegative, but for `α < 0` (allowed, `α₁ ≤ 0`) the point `t = 0 > α` takes the upper sign in 2.3.27 and gives `w = 2a ≠ 0`, contradicting "`t = 0` corresponds to `w = 0`". The square root in `a` must carry the sign of `α`: `a = −(2p(α,0) − 2p(α,α))^{1/2}` for `α < 0` | `dlmf_2_3_27_unsigned_ne`, `dlmf_2_3_26` (signed `bleisteinA`) (`Chapter2/Section3BleisteinChange.lean`) |
+
 ### Imprecisions
 
 | DLMF | Issue | Lean |
 | --- | --- | --- |
 | 2.1.10 | DLMF says both relations `o(φ) = O(φ)` and `o(φ) + o(φ) = o(φ)` "are not reversible" (`=` meaning `⊆`). The first is not (`O(φ) ⊄ o(φ)`), but the second is: `o(φ) ⊆ o(φ) + o(φ)` (`f = f + 0`), so it holds as an equality of classes | `dlmf_2_1_10_1_not_reversible`, `dlmf_2_1_10_2_reverse`, `dlmf_2_1_10_2_eq` (`Chapter2/Section1.lean`) |
 | §2.2, 2.2.1–2.2.2 | `f` is assumed continuous only for `a < x < ∞`, but the conclusion is stated for `y > f(a)`. Continuity at `a` (from the right) is needed: `f = x` on `(0, ∞)` with `f(0) = −1` has no root for `y = −½` | `dlmf_2_2_1_counterexample`; `rootDLMF_spec` (with continuity on `[a, ∞)`) (`Chapter2/Section2.lean`) |
+| 2.3.3 | `σₙ` contains `ln \|q⁽ⁿ⁾(t)/q⁽ⁿ⁾(0)\|`, so `q⁽ⁿ⁾(0) ≠ 0` is needed; requiring `σₙ` finite "for `n = 0, 1, 2, …`" is more than the bound for a given `n` uses (only `σₙ` itself) | `dlmf_2_3_3` (hypothesis `q⁽ⁿ⁾(0) ≠ 0`, single `n`) (`Chapter2/Section3Laplace.lean`) |
+| 2.3.18 | `Res_{t=a}[q(t)/(p(t) − p(a))^{(λ+s)/μ}]` is formal: `q` and `p` are only asymptotic series (not analytic, with fractional powers), so the residue means the coefficient of `(t − a)^{−1}` in the asymptotic expansion of the quotient in powers `(t − a)^{k−s−1}` | `dlmf_2_3_18`, `laplaceMethodCoeff` (`Chapter2/Section3LaplaceCoeff.lean`) |
+| §2.3(iv), 2.3.23 | For `p(b) = ∞` (condition (d)), DLMF also requires `P₀(b) = 0`, i.e. `q(t) → 0` as `t → b−`; the expansion holds without it (after the substitution `v = p(t) − p(a)` it is 2.3.20 on `(0, ∞)`, whose uniform-convergence condition 2.3.22 already suffices). The two-series `∼` in 2.3.23 has no single asymptotic scale; it means the error after `N` and `M` terms is `O(x^{−α_N}) + O(x^{−(M+1)})` | `dlmf_2_3_23_d` (no `P₀(b) = 0` hypothesis), `dlmf_2_3_23` (two-index error bound) (`Chapter2/Section3StationaryGeneral.lean`) |
+| §2.3(v), 2.3.24 | "the minimum value of `p(α,t)` in `[0, k)` is at `t = α`" is impossible for `α < 0` (`α ∉ [0, k)`), so `p` must be given on a larger interval; and a minimum at `α` does not make `t ↦ w` one-to-one, as stated after 2.3.27: `p` must be strictly monotone on each side of `α` | `BleisteinPhase` (`(t − α)p′(t) > 0`), `strictMonoOn_W` (`Chapter2/Section3BleisteinChange.lean`) |
+| 2.3.32 | Obtained "formally", with `φₛ(α)` only "continuous at `α = 0`", and the meaning of the uniform `∼` is not given. For fixed `α < 0` the terms are not of decreasing order (each `φₛ x^{−(λ+s)/2}Fₛ(a√x)` is of order `x^{−λ}`), so it is not a Poincaré expansion there. The rigorous uniform statement is a remainder bound: given a Taylor remainder bound for `f(α, ·)` about `a`, uniform in `α`, and `κ ≥ a + δ`, the error after `n` terms is at most `K x^{−(λ+n)/2} Gₙ(a√x)` (`Gₙ` = 2.3.33 with `\|τ − y\|ⁿ`; `Gₙ = Fₙ` for even `n`). Convergence of the Taylor series 2.3.31 is not needed | `dlmf_2_3_32`, `dlmf_2_3_32_even` (`Chapter2/Section3Bleistein.lean`), `dlmf_2_3_32_integral` (`Chapter2/Section3BleisteinChange.lean`) |
