@@ -12,9 +12,11 @@ There are two kinds of entry:
 * **Imprecisions**: the statement is right in substance but omits a hypothesis, a degenerate
   case, or a convention needed to make it literally true.
 
-The per-equation ledger is `docs/dlmf_plan.md`. This file covers Chapter 1.
+The per-equation ledger is `docs/dlmf_plan.md`.
 
-## Errors
+## Chapter 1
+
+### Errors
 
 | DLMF | DLMF states | What is true | Lean |
 | --- | --- | --- | --- |
@@ -33,7 +35,7 @@ The per-equation ledger is `docs/dlmf_plan.md`. This file covers Chapter 1.
 | 1.18.54 | the Sokhotski–Plemelj formula for `f ∈ C(X)` | Continuity is not enough for the integrals to exist (`f = 1` on `[0, ∞)`). Needs integrability of `f` and existence of the principal value at `x` | `dlmf_1_18_54_counterexample`; `dlmf_1_18_54` (`Section18Plemelj.lean`) |
 | §1.18(ix), boundary conditions | any self-adjoint extension of `ℒ` is obtained by restricting `ℒ*` to `B₁(f) = 0` (if `n₁ = 2`), `B₂(f) = 0` (if `n₂ = 2`), with `B₁` a boundary value at `a` and `B₂` one at `b` | False when both ends are limit circle. Dunford–Schwartz Cor. XIII.2.31 has the qualifier "if the boundary conditions are separated". Counterexample: `q = 0` on `(0, 1)` has a self-adjoint extension containing `e^{2πix}` but not its cut-off near `0`, which separated conditions would force. True when at most one end is limit circle | `dlmf_1_18_ix_ext_LC_LC_counterexample` (`Section18WeylCounter.lean`); `dlmf_1_18_ix_ext_LP_LP`, `dlmf_1_18_ix_ext_LC_LP`, `dlmf_1_18_ix_ext_LP_LC` (`Section18WeylExt.lean`) |
 
-## Imprecisions
+### Imprecisions
 
 | DLMF | Issue | Lean |
 | --- | --- | --- |
@@ -42,3 +44,12 @@ The per-equation ledger is `docs/dlmf_plan.md`. This file covers Chapter 1.
 | §1.18(viii), Simon's bound-state theorem | DLMF omits Simon's decay hypothesis on the potential; the formalization assumes compact support | `dlmf_1_18_viii_simon` (`Section18Simon.lean`) |
 | 1.18.67 | The measure `r² dr` belongs to `R = u/r`, not to the `u` of 1.18.67 (whose measure is `dr`) | `dlmf_1_18_67` (`Section18Radial3D.lean`) |
 | §1.18(ix), von Neumann extensions | The isometry `U : N_i → N_{−i}` must be onto for `A_U` to be self-adjoint, and `n₊ = n₋` must mean equal Hilbert dimension | `vonNeumannExt_isSelfAdjoint_iff`, `exists_selfAdjoint_ext_iff` (`Section18VonNeumann.lean`) |
+
+## Chapter 2
+
+### Imprecisions
+
+| DLMF | Issue | Lean |
+| --- | --- | --- |
+| 2.1.10 | DLMF says both relations `o(φ) = O(φ)` and `o(φ) + o(φ) = o(φ)` "are not reversible" (`=` meaning `⊆`). The first is not (`O(φ) ⊄ o(φ)`), but the second is: `o(φ) ⊆ o(φ) + o(φ)` (`f = f + 0`), so it holds as an equality of classes | `dlmf_2_1_10_1_not_reversible`, `dlmf_2_1_10_2_reverse`, `dlmf_2_1_10_2_eq` (`Chapter2/Section1.lean`) |
+| §2.2, 2.2.1–2.2.2 | `f` is assumed continuous only for `a < x < ∞`, but the conclusion is stated for `y > f(a)`. Continuity at `a` (from the right) is needed: `f = x` on `(0, ∞)` with `f(0) = −1` has no root for `y = −½` | `dlmf_2_2_1_counterexample`; `rootDLMF_spec` (with continuity on `[a, ∞)`) (`Chapter2/Section2.lean`) |
