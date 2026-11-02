@@ -1864,6 +1864,8 @@ import Azurite.DLMF.Chapter2.Section6
 import Azurite.DLMF.Chapter2.Section6Fractional
 import Azurite.DLMF.Chapter2.Section6FractionalExample
 import Azurite.DLMF.Chapter2.Section6FractionalExpansion
+import Azurite.DLMF.Chapter2.Section6Regularization
+import Azurite.DLMF.Chapter2.Section6RegularizationExpansion
 import Azurite.DLMF.Chapter2.Section6Stieltjes
 import Azurite.DLMF.Chapter2.Section6StieltjesExample
 import Azurite.DLMF.Chapter2.Section6StieltjesExpansion
