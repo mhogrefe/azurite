@@ -979,3 +979,24 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 2.8.35–2.8.36 | DEFERRED with 2.8.25–2.8.30 | |
 | §2.8(v) Multiple and Fractional Turning Points | Not formalized: no numbered equations. Descriptive survey (multiple turning point: `f` has a zero of multiplicity `λ = 2, 3, 4, …`, `g` analytic; fractional: `(z−z₀)^{−λ} f` and `g` analytic, `λ > −2`); uniform approximations by Bessel functions of order `1/(λ+2)`, approximations but not expansions for `λ ≠ 0, ±1`; results and error bounds in Olver (1977c), connection formulas in Olver (1977a, 1977b, 1978) | |
 | §2.8(vi) Coalescing Transition Points | Not formalized: no numbered equations. Bibliographic survey (coalescing turning points: parabolic cylinder functions; turning point and double pole: Bessel functions of variable order; turning point and simple pole: Whittaker functions) with cross-references to later chapters | |
+
+### §2.9 Difference Equations
+
+| DLMF | Azurite | Mathlib |
+|---|---|---|
+| 2.9.1 | `IsDiffSolution f g w` (`Section9.lean`) | |
+| 2.9.2 | `dlmf_2_9_2`, `dlmf_2_9_1_iff_2_9_2` (`Section9.lean`) | `fwdDiff` |
+| 2.9.3 | `IsAsympSeqDLMF` (Poincaré along the integers), `isAsympSeqDLMF_iff`; calculus `HasAsympSeries` (`add`, `const_mul`, `sum`, `mul` via `seqConv`, `pow_mul`, `hasAsympSeries_one_add_cpow`) (`Section9.lean`) | `Complex.one_add_cpow_hasFPowerSeriesAt_zero`, `HasFPowerSeriesAt.isBigO_sub_partialSum_pow` |
+| 2.9.4 | `dlmf_2_9_4`: each truncation `diffTrunc` of `ρⁿ n^α ∑ aₛ/nˢ` satisfies 2.9.1 up to `ρⁿ n^α B_N(n)`, `B_N = O(n^{−N−2})`; residual identity `formalTrunc_residual`, coefficient identities `diffCoeff_vanish` (`Section9Formal.lean`) | |
+| 2.9.5 | `dlmf_2_9_5` (roots, `ρ₁ = ρ₂ ↔ f₀² = 4g₀`), `dlmf_2_9_construction_fails` (`f₀ + 2ρ = 0 ↔ f₀² = 4g₀`), `charRoot_ne_zero` (`Section9Formal.lean`) | `IsAlgClosed.exists_eq_mul_self` |
+| 2.9.6 | `diffAlpha`, `diffT_one` (`T(s, 1) = −sρ(f₀ + 2ρ)`) (`Section9Formal.lean`) | |
+| 2.9.7 | `diffCoeff`, `diffCoeff_succ`, `dlmf_2_9_7` (DLMF's form) (`Section9Formal.lean`) | `Ring.choose` |
+| 2.9.8 | `IsDiffAsympDLMF`, `HasLeading` (`IsDiffAsympDLMF.hasLeading`); consequences for any solutions with these behaviours: `dlmf_2_9_8_independent`, `HasLeading.tendsto_ratio`. DEFERRED: the existence of the solutions `w_j` (Wong and Li 1992b) and error bounds (Zhang et al. 1996) (`Section9Recessive.lean`) | |
+| §2.9(i) recessive/dominant | `dlmf_2_9_8_recessive` (`\|ρ₂\| > \|ρ₁\|`, or equal and `ℜα₂ > ℜα₁` ⇒ `w₁/w₂ → 0`), `dlmf_2_9_8_neither` (equal moduli and real parts ⇒ `\|w₁/w₂\| → 1`), `dlmf_2_9_8_recessive_unique` (via `casoratian`, `IsDiffSolution.eq_comb`, `exists_casoratian_ne_zero`), `dlmf_2_9_8_dominant_not_unique`. Not formalized: the informal remark on numerically satisfactory pairs; inverse factorial series (Olde Daalhuis 2004a) (`Section9Recessive.lean`) | |
+| 2.9.9 | `dlmf_2_9_9` (each truncation `sqrtTrunc` of `ρⁿ e^{κ√n} n^α ∑ cₛ/n^{s/2}` satisfies 2.9.1 up to `ρⁿ e^{κ√n} n^α O(n^{−(N+4)/2})`), `dlmf_2_9_9_pair` (`κⱼ = (−1)ʲκ`, coefficients `(−1)^{js}cₛ` via `sqCoeff_neg`); residual `sqrtTrunc_residual`, bracket series `sqBracket_series`, coefficients `sqCoeff` ("determined by formal substitution"), `sqCoeff_vanish`. DEFERRED: the existence of the solutions `w_j` (Wong and Li 1992b) (`Section9Sqrt.lean`) | `Complex.exp_bound`, `Complex.one_add_cpow_hasFPowerSeriesAt_zero` |
+| 2.9.10 | `dlmf_2_9_10`: `T(s, 0) = T(s, 1) = 0`; `T(s, 2) = 0 ↔ g₀κ² = 2f₀f₁ − 4g₁`; then (`κ ≠ 0`) `T(0, 3) = 0 ↔ 4g₀α = g₀ + 2g₁`; `sqT_three_eq` (`T(s, 3) = −κg₀s/2`), `kappa_ne_zero` (`Section9Sqrt.lean`) | |
+| 2.9.11 | `coincPoly`, `dlmf_2_9_11` (factorization `2g₀(α − α₁)(α − α₂)`), `coinc_T_one`, `coinc_T_two` (`T(s, 2) = P(α − s)/2`) (`Section9Coincident.lean`) | `IsAlgClosed.exists_eq_mul_self` |
+| 2.9.12 | `coincCoeff`, `dlmf_2_9_12` (formal solutions for a root `α` with `P(α − m) ≠ 0`, `m ≥ 1`), `dlmf_2_9_12_coeff` (the coefficients satisfy 2.9.7), `dlmf_2_9_12_pair` (`α₂ − α₁ ∉ ℤ`: both roots), `dlmf_2_9_12_first` (`α₂ − α₁ ∈ ℕ`: `j = 1`); the parenthetical remark corrected in `dlmf_2_9_ii_coeff` (errata). DEFERRED: existence of `w_j` (`Section9Coincident.lean`) | |
+| 2.9.13 | DEFERRED: logarithmic solutions when `α₂ − α₁ = 0, 1, 2, …` (compare the deferred 2.7.6) | |
+| 2.9.14 | Not formalized: pointer to Wong and Li (1992a) for `w(n+2) + n^P f(n) w(n+1) + n^Q g(n) w(n) = 0` | |
+| §2.9(iii) Other Approximations | Not formalized: no numbered equations. Bibliographic survey (Liouville–Green analogues with error bounds: Spigler and Vianello 1992, 1997, Spigler et al. 1999; turning points and uniform expansions: Wang and Wong 2003, 2005; arbitrary order: Wimp 1984; orthogonal polynomials: Wang and Wong 2012, Wong 2014, Dai et al. 2014) | |

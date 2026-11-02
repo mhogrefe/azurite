@@ -1886,6 +1886,12 @@ import Azurite.DLMF.Chapter2.Section8CaseII
 import Azurite.DLMF.Chapter2.Section8CaseIII
 import Azurite.DLMF.Chapter2.Section8Transition
 import Azurite.DLMF.Chapter2.Section8Volterra
+import Azurite.DLMF.Chapter2.Section9
+import Azurite.DLMF.Chapter2.Section9Coincident
+import Azurite.DLMF.Chapter2.Section9Formal
+import Azurite.DLMF.Chapter2.Section9Recessive
+import Azurite.DLMF.Chapter2.Section9SeriesExp
+import Azurite.DLMF.Chapter2.Section9Sqrt
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
