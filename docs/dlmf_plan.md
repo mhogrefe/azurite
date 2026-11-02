@@ -1000,3 +1000,45 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 2.9.13 | DEFERRED: logarithmic solutions when `α₂ − α₁ = 0, 1, 2, …` (compare the deferred 2.7.6) | |
 | 2.9.14 | Not formalized: pointer to Wong and Li (1992a) for `w(n+2) + n^P f(n) w(n+1) + n^Q g(n) w(n) = 0` | |
 | §2.9(iii) Other Approximations | Not formalized: no numbered equations. Bibliographic survey (Liouville–Green analogues with error bounds: Spigler and Vianello 1992, 1997, Spigler et al. 1999; turning points and uniform expansions: Wang and Wong 2003, 2005; arbitrary order: Wimp 1984; orthogonal polynomials: Wang and Wong 2012, Wong 2014, Dai et al. 2014) | |
+
+### §2.10 Sums and Sequences
+
+| DLMF | Azurite | Mathlib |
+|---|---|---|
+| §2.10(i) `B̃ₙ` | `periodicBernoulli` (`B̃ₙ(x) = Bₙ(x − ⌊x⌋)`), `periodicBernoulli_bound` (`Section10.lean`) | `bernoulliFun`, `bernoulli` |
+| 2.10.1 | `dlmf_2_10_1` (Euler–Maclaurin for integers `a < n`, `m > 0`, derivatives up to `f^{(2m)}`, `f^{(2m)}` absolutely integrable); `em_sum` (any real start `t`), `em_unit`, `em_iter`, `em_alt_sum` (`Section10.lean`) | `intervalIntegral.integral_mul_deriv_eq_deriv_mul`, `hasDerivAt_bernoulliFun`, `bernoulli_eq_zero_of_odd` |
+| 2.10.2 | DEFERRED: the Abel–Plana formula (contour integration on the strip `a ≤ ℜz ≤ n`, the mean-value parameter `ϑₙ`) | |
+| 2.10.3 | `exS` (`Section10Example.lean`) | |
+| 2.10.4 | `dlmf_2_10_4` (one constant `C` for all `m ≥ 2`, via `exC_succ` and `const_eq_of_tendsto`); `exS_eq`, `exTerm` (`Section10Example.lean`) | `Real.hasDerivAt_mul_log` |
+| 2.10.5 | `jlogR`; `dlmf_2_10_5_bound` (sign `(−1)^m`, `R_m − R_{m+1}` is the term `s = m`, `\|R_m\| ≤` that term, same sign); `periodicBernoulli_sub_sign` ("`B̃_{2m}(x) − B_{2m}` is of constant sign `(−1)^m`", from the Fourier series), `em_tail`, `emRem_sign`, `remainder_bound` (`Section10Tail.lean`, `Section10Example.lean`) | `hasSum_one_div_nat_pow_mul_cos`, `intervalIntegral_tendsto_integral_Ioi` |
+| 2.10.6 | DEFERRED: `C = (γ + ln 2π)/12 − ζ′(2)/(2π²) = 1/12 − ζ′(−1)` (DLMF derives it from 2.10.2; needs `ζ′`, §25.2) | |
+| 2.10.7 | DEFERRED: `∑_{j<n} j^α ∼ ζ(−α) + …`; the Euler–Maclaurin machinery applies, but identifying the constant with `ζ(−α)` for `α > −1` needs the analytic continuation of the constant in `α` | |
+| 2.10.8 | `dlmf_2_10_8` (constant `γ`: `emConst_inv_eq_gamma` from `Real.tendsto_harmonic_sub_log`), `dlmf_2_10_8_bound` (remainder bounded by the first neglected term, same sign) (`Section10Example.lean`) | `Real.tendsto_harmonic_sub_log`, `harmonic_eq_sum_Icc` |
+| §2.10(i) closing remarks | Not formalized: pointers to Sidi (2004, 2012a, 2012b), Weniger (2007), Elliott (1998) | |
+| 2.10.9–2.10.10 | `dlmf_2_10_9` (summation by parts), `partialSumU` (`Section10Parts.lean`) | |
+| 2.10.11 | `sumOsc` (`Section10Parts.lean`) | |
+| 2.10.12 | `dlmf_2_10_12` (`\|S\| ≤ ∑ j^α`; `∑ j^α` bounded for `α < −1`, `≤ 1 + ln n` for `α = −1`, `≤ (1 + 1/(α+1)) n^{α+1}` for `α > −1`); `sum_rpow_le` (`≤ K(n^{γ+1} + 1)` for `γ ≠ −1`) (`Section10Parts.lean`) | `Real.summable_nat_rpow`, `harmonic_le_one_add_log`, `exists_hasDerivAt_eq_slope` |
+| 2.10.13 | `dlmf_2_10_13` (`Section10Parts.lean`) | |
+| 2.10.14 | `dlmf_2_10_14` (`Section10Parts.lean`) | |
+| 2.10.15 | `dlmf_2_10_15` (`\|j^α − (j+1)^α + αj^{α−1}\| ≤ \|α(α−1)\| C j^{α−2}`, `C = max(1, 2^{α−2})`, all `j ≥ 1`) (`Section10Parts.lean`) | `norm_image_sub_le_of_norm_deriv_le_segment'` |
+| 2.10.16 | `dlmf_2_10_16` (remainder `sumOscRem` with `\|e\| ≤ K(n^{α−1} + 1)`, all `n ≥ 1`); `sumOsc_decomp` (`Section10Parts.lean`) | |
+| 2.10.17 | `dlmf_2_10_17` (`\|S\| ≤ K(n^α + 1)`) (`Section10Parts.lean`) | |
+| 2.10.18 | `dlmf_2_10_18` (`\|S − e^{inβ}n^α/(e^{iβ} − 1)\| ≤ K(n^{α−1} + 1)`); extensions (Olver 1997b, Ch. 8) not formalized (`Section10Parts.lean`) | |
+| 2.10.19 | `hyp0F2` (`₀F₂(−; 1, 1; x) = ∑ xʲ/(j!)³`), `summable_hyp0F2`, `summable_hyp0F2_complex` (entire) (`Section10Entire.lean`) | `Real.summable_pow_div_factorial` |
+| 2.10.20 | DEFERRED: the contour representation `∑_{j<n} xʲ/(j!)³ = (1/2i)∫_𝒞 x^t cot(πt)/Γ(t+1)³ dt` (residue theorem on the contour of Figure 2.10.1) | |
+| 2.10.21 | `dlmf_2_10_21` (`cot(πt)/(2i) = −½ − 1/(e^{−2πit} − 1) = ½ + 1/(e^{2πit} − 1)`, `t ∉ ℤ`) (`Section10Entire.lean`) | `Complex.cot_pi_eq_exp_ratio` |
+| 2.10.22–2.10.23 | DEFERRED: Cauchy deformation and the vanishing of the quarter-circle integrals, which need the complex Stirling bounds 5.11.7 for `1/Γ(t+1)³` | |
+| 2.10.24 | `dlmf_2_10_24` (`AsympEqDLMF`): proved by a real-variable route (DLMF's route goes through 2.10.23 and Laplace's method): `₀F₂(v¹⁵) = e^{3v⁵}∑ bⱼ³` (`hyp0F2_eq`), Stirling form `poissonW_eq`, Taylor bound `entPhi_taylor`, tails `poissonW_tail` via `entPhi_tangent`, window terms `window_term`, Gaussian Riemann sum `tendsto_gaussSum`, squeeze `tendsto_main` (`Section10Entire.lean`) | `Stirling.tendsto_stirlingSeq_sqrt_pi`, `Stirling.stirlingSeq'_antitone`, `integral_gaussian`, `Real.abs_log_sub_add_sum_range_le` |
+| §2.10(iii) closing remarks | Not formalized: pointers to Olver (1997b, Ch. 8), Ford (1960), Berndt and Evans (1984), Paris and Kaminski (2001, Ch. 5), §16.11 | |
+| 2.10.25 | `dlmf_2_10_25` (from §1.10's `dlmf_1_10_6`) (`Section10Darboux.lean`) | |
+| 2.10.26 | `dlmf_2_10_26` (positively oriented Jordan curve in the annulus enclosing `0`, via the residue theorem `dlmf_1_10_8`); `laurentCoeff_fourier` (circle form `fₙ = (2πρⁿ)⁻¹∫_0^{2π} f(ρe^{iθ})e^{−inθ}dθ`) (`Section10Darboux.lean`) | |
+| §2.10(iv) conditions (a)–(c), (b´), 2.10.27, 2.10.30 | `DarbouxCond` (finitely many singular points on `\|z\| = r` with `O((z − zⱼ)^{σⱼ−1})`, `σⱼ > 0`, continuity elsewhere; (b) via `darbouxCond_of_continuousOn`); `DarbouxCond.tendsto` (radial limit by dominated convergence), `integrable_norm_exp_sub_rpow`, `norm_exp_sub_exp_ge` (Jordan's inequality), `norm_sub_ge_of_circle`; 2.10.27 (`g`'s coefficients) is `laurentCoeff g` (`Section10Darboux.lean`) | `Real.mul_le_sin`, `intervalIntegral.tendsto_integral_filter_of_dominated_convergence`, `Function.Periodic.intervalIntegrable` |
+| 2.10.28 | `dlmf_2_10_28` (both forms; `h` is `f − g` extended to `\|z\| = r`) (`Section10Darboux.lean`) | |
+| 2.10.29 | `dlmf_2_10_29` (`rⁿ(fₙ − gₙ) → 0` as `n → ±∞`, under (b´)) (`Section10Darboux.lean`) | Riemann–Lebesgue `tendsto_intervalIntegral_mul_exp_cocompact` (§1.8) |
+| 2.10.31–2.10.32 | `dlmf_2_10_31` (`rⁿ\|n\|^m\|fₙ − gₙ\| → 0` when `f^{(m)} − g^{(m)}` satisfies (b) or (b´)); proved from 2.10.29 for the derivatives and `laurentCoeff_iterate_deriv`, not by integrating by parts (`Section10Darboux.lean`) | `circleIntegral.integral_eq_zero_of_hasDerivWithinAt` |
+| §2.10(iv) Example setup | `legendreP` (Bonnet recurrence, 18.9.1); `α ∈ (0, π)`, not `(0, 2π)` (erratum, `dlmf_2_10_36_false`); coefficient calculus `laurentCoeff_add'`/`_const_mul`/`_mul_id`/`_zero'`, `hasSum_taylor` (Taylor series from `laurentCoeff`), `laurentCoeff_ode` (coefficient recurrence of `(p₀ + p₁z + p₂z²)G′ = (q₀ + q₁z)G`) (`Section10Legendre.lean`) | `DifferentiableOn.hasFPowerSeriesOnBall`, `cauchyPowerSeries_apply`, `two_pi_I_inv_smul_circleIntegral_sub_inv_smul_of_differentiable_on_off_countable` |
+| 2.10.33 | `dlmf_2_10_33` (`HasSum`, `\|z\| < 1`) for `legendreGen = (1 − ze^{iα})^{−1/2}(1 − ze^{−iα})^{−1/2}` (principal powers; `legendreGen_sq`, `legendreGen_zero` fix the branch); coefficients via the ODE `(1 − 2z cos α + z²)f′ = (cos α − z)f` (`legendreGen_ode`, `laurentCoeff_legendreGen`) | `HasDerivAt.cpow_const` |
+| 2.10.34 | `legendreCmp` (`A₊(1 − ze^{iα})^{−1/2} + A₋(1 − ze^{−iα})^{−1/2}`; DLMF's grouping `legendreCmp_comb`, branch `legendreBranch_sq`) | |
+| 2.10.35 | `dlmf_2_10_35` (`laurentCoeff_hsq`: `(1 − βz)^{−1/2}` has coefficients `βⁿΓ(n+½)/(√π n!)`, from its ODE) | `Real.Gamma_one_half_eq` |
+| (b´) for the example | `legendre_darbouxCond` (`f′ − g′`, `σ = ½` at `e^{±iα}`; `legendreAP_eq`/`legendreAM_eq`: `A₊ = (1 − e^{−2iα})^{−1/2}`, `A₋ = (1 − e^{2iα})^{−1/2}`; local estimate `sing_bound`) | `HasDerivAt.isBigO_sub`, `Complex.norm_cpow_real`, `Complex.log_exp` |
+| 2.10.36 | `dlmf_2_10_36` (`n\|Pₙ(cos α) − (2/(πn sin α))^{1/2} cos(nα + ½α − ¼π)\| → 0`, `0 < α < π`), from `dlmf_2_10_31` (`m = 1`, `r = 1`) and `halfGamma_bounds` (`(n+½)^{−1/2} ≤ Γ(n+½)/n! ≤ n^{−1/2}` by log-convexity, in place of 5.11.7); `dlmf_2_10_36_false` (fails for `π < α < 2π`) | `Real.Gamma_mul_add_mul_le_rpow_Gamma_mul_rpow_Gamma` |
