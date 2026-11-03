@@ -206,8 +206,8 @@ after their subsection.
 | 1.5.1 | `dlmf_1_5_1` (continuity at `(a, b)` as a limit) | `ContinuousAt` |
 | 1.5.2 | `dlmf_1_5_2` (`ε`–`δ` with `|α|, |β| < δ`) | `Metric.continuousAt_iff`, `Prod.dist_eq` |
 | §1.5(i) prose | `dlmf_1_5_i_continuousOn` (continuous on an open `D` iff at all its points), `IsPiecewiseContinuous₂` (piecewise continuous in each variable) | `IsOpen.continuousOn_iff` |
-| 1.5.3–1.5.4 | `partialX`, `partialY`, `dlmf_1_5_3`, `dlmf_1_5_4` (difference-quotient limits ↔ `HasDerivAt`), `partialX_eq_of_tendsto`, `partialY_eq_of_tendsto` | `hasDerivAt_iff_tendsto_slope_zero` |
-| 1.5.5 | `partialXY`, `partialYX`, `partialXX`, `partialYY`, `dlmf_1_5_5` | — |
+| 1.5.3–1.5.4 | `partialX`, `iterPartialY`, `dlmf_1_5_3`, `dlmf_1_5_4` (difference-quotient limits ↔ `HasDerivAt`), `partialX_eq_of_tendsto`, `partialY_eq_of_tendsto` | `hasDerivAt_iff_tendsto_slope_zero` |
+| 1.5.5 | `iterPartialXY`, `partialYX`, `partialXX`, `partialYY`, `dlmf_1_5_5` | — |
 | §1.5(i) prose | `IsContinuouslyDifferentiable` (`f, f_x, f_y` exist and are continuous), `isContinuouslyDifferentiable_iff` (iff `C¹`), `IsContinuouslyDifferentiable.hasStrictFDerivAt`, `fderiv_uncurry_eq`, `IsTwiceContinuouslyDifferentiable`, `isTwiceContinuouslyDifferentiable_iff` (iff `C²`); helpers `hasDerivAt_partialX/Y`, `partialX/Y_of_hasFDerivAt`, `clm_apply_pair`, `fderiv_uncurry_apply` | `hasStrictFDerivAt_uncurry_coprod`, `contDiff_one_iff_fderiv`, `contDiff_succ_iff_fderiv` |
 | 1.5.6 | `dlmf_1_5_6` (`∂²f/∂x∂y = ∂²f/∂y∂x` for twice-continuously differentiable `f`) | `ContDiffAt.isSymmSndFDerivAt`, `HasFDerivAt.clm_apply` |
 | 1.5.7 | `dlmf_1_5_7` (`f` differentiable at `(x(t), y(t))`) | `HasFDerivAt.comp_hasDerivAt` |
@@ -1291,3 +1291,58 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.3.43 | `cardinalFn` (`tsum`), `cardinal_node` (interpolation at `kh`), `cardinal_summable` (absolute convergence under `∑ \|f(kh)\|/(1 + \|k\|) < ∞`); erratum: `cardinalCounter`, `cardinalCounter_term`, `cardinal_not_summable`, `cardinal_partial_sums_atBot` (bounded `f` with divergent series) | `tsum_eq_single`, `Summable.of_norm_bounded`, `Real.not_summable_one_div_natCast`, `Real.tendsto_sum_range_one_div_nat_succ_atTop` |
 | 3.3.44 | `sincS` (removable singularity filled with `1`), `dlmf_3_3_44`, `sincS_node`, `abs_sincS_le` | `Real.sinc`, `Real.abs_sinc_le_one`, `Real.sin_int_mul_pi` |
 | "For theory and applications see Stenger (1993, Chapter 3)" | Not formalized (reference) | |
+
+## Section 3.4
+
+### §3.4(i) Equally-Spaced Nodes, through 3.4.4 (`Azurite/DLMF/Chapter3/Section4.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.4.1 | `dlmf_3_4_1` (every real `t`; DLMF: `n₀ < t < n₁`) | `Polynomial.hasDerivAt`, `HasDerivAt.fun_sum`, `HasDerivAt.unique` |
+| 3.4.2 | `lagCoeffD` (derivative of the cancelled `A_k^n`), `differentiable_lagCoeff'`, `dlmf_3_4_2` (= derivative of DLMF's `A_k^n` off `t = k`) | `Filter.EventuallyEq.deriv_eq` |
+| 3.4.3 | `dlmf_3_4_3` (corrected: second term `h^{n+2}/(n+2)!`), general nodes `hasDerivAt_lagrangeRem_mean`, `remG`, `lagrangeRem_eq_nodal_mul_remG`, `remG_slope`, `eq_C_mul_nodal`, `divDiff_mem_image`, `eqNode_nodal_deriv`; erratum `dlmf_3_4_3_erratum` | `Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero`, `hasDerivAt_iff_tendsto_slope`, `Lagrange.eval_nodal_derivative_eval_node_eq`, `IsCompact.image_of_continuousOn` |
+| 3.4.4 | `dlmf_3_4_4` (corrected: `c_n h \|f^{(n+2)}(ξ₁)\|`); `abs_deriv_prod_Icc_eqN_le` (`\|(d/dt) ∏_{k=n₀}^{n₁} (t − k)\| ≤ n!` on `[n₀, n₁]`, all `n`, by induction via `fallProd`, `abs_fallProd_le`, `abs_deriv_fallProd_le`, `prod_Icc_eqN_eq_fallProd`) | `Finset.prod_range_succ'`, `HasDerivAt.fun_mul`, `Fin.prod_univ_eq_prod_range` |
+
+### §3.4(i) Two-Point through Eight-Point Formulas (`Azurite/DLMF/Chapter3/Section4Points.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| `B_k^n` for explicit `n` | `lagCoeffD_eq` (`B_k^n = c ω_E′`) | `Lagrange.eval_nodal`, `Polynomial.derivative_mul` |
+| 3.4.5 | `dlmf_3_4_5`, `lagCoeffD_one`; bound `dlmf_3_4_5_bound` (`c₁ = 1/8`) | |
+| 3.4.6 | `dlmf_3_4_6`, `lagCoeffD_two`; bound `dlmf_3_4_6_bound` (`c₂ = 1/(9√3)`) | |
+| 3.4.7, 3.4.8 | `dlmf_3_4_7`, `dlmf_3_4_8` | |
+| 3.4.9, 3.4.10 | `dlmf_3_4_9`, `dlmf_3_4_10` | |
+| 3.4.11, 3.4.12 | `dlmf_3_4_11`, `dlmf_3_4_12` | |
+| 3.4.13, 3.4.14 | `dlmf_3_4_13`, `dlmf_3_4_14` | |
+| 3.4.15, 3.4.16 | `dlmf_3_4_15`, `dlmf_3_4_16` | |
+| bounds for `n = 3, …, 7` | Not stated separately: `dlmf_3_4_4` with the `t`-sets and `c_n` bounds of §3.3(ii) (`dlmf_3_3_21_*`, `dlmf_3_3_24_*`, `dlmf_3_3_27_*`, `dlmf_3_3_30_*`, `dlmf_3_3_33_*`) | |
+| higher derivatives (Collatz), Sinc-based formulas (Stenger) | Not formalized (references) | |
+
+### §3.4(ii) Analytic Functions (`Azurite/DLMF/Chapter3/Section4Analytic.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.4.17 | `dlmf_3_4_17` (analytic `F`, any interior `x₀`), `dlmf_3_4_17_real` (real `f` extending analytically), `ofReal_iteratedDeriv_eq` | `DifferentiableOn.analyticOnNhd`, `AnalyticOnNhd.iterated_deriv`, `HasDerivAt.real_of_complex`, `HasDerivAt.ofReal_comp` |
+| 3.4.18 | `dlmf_3_4_18` (`F` analytic on the closed disk) | `DifferentiableOn.circleIntegral_one_div_sub_center_pow_smul`, `deriv_circleMap` |
+| "approximated by the composite trapezoidal rule (3.5.2)" | Not formalized (§3.5 not yet available) | |
+| 3.4.19 | `dlmf_3_4_19` (every `r > 0`) | `Complex.iter_deriv_exp`, `intervalIntegral.intervalIntegral_re` |
+| "`r = k` … the integrand equals `e^k` at the dominant points `θ = 0, 2π`" | `dlmf_3_4_19_dominant` | `Real.cos_nat_mul_two_pi` |
+| "with the factor `k^{−k}` … a rough approximation to `1/k!`" | `dlmf_3_4_19_bound` (`1/k! ≤ e^k/k^k`) | `intervalIntegral.integral_mono_on` |
+| saddle-point motivation, efficiency of the trapezoidal rule | Not formalized (pointers to §2.4(iv), §3.5(i), §3.5(ix)) | |
+
+### §3.4(iii) Partial Derivatives (`Azurite/DLMF/Chapter3/Section4Partial.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| `u_{t,s} = u(x₀ + th, y₀ + sh)`, partial derivatives | `iterPartialY`, `iterPartialXY` (`y` first; no higher symmetry used), `contDiff_iterPartialY` | `ContDiff.fderiv_right`, `ContDiff.clm_apply`, `HasFDerivAt.comp_hasDerivAt` |
+| `O(hᵖ)` machinery | `taylor_lagrange_iteratedDeriv`, `taylor2`, `stencilTarget`, `stencil_isBigO` | `taylor_mean_remainder_lagrange_iteratedDeriv`, `iteratedDerivWithin_eq_iteratedDeriv`, `IsCompact.exists_bound_of_continuousOn`, `Asymptotics.IsBigO.of_bound` |
+| 3.4.20, 3.4.21 | `dlmf_3_4_20`, `dlmf_3_4_21` (`u ∈ C³`) | |
+| 3.4.22–3.4.24 | `dlmf_3_4_22` (`C⁴`), `dlmf_3_4_23` (`C⁶`), `dlmf_3_4_24` (`C⁴`) | |
+| 3.4.25, 3.4.26 | `dlmf_3_4_25`, `dlmf_3_4_26` (`C⁴`) | |
+| 3.4.27 | `laplacian` | |
+| 3.4.28, 3.4.29 | `dlmf_3_4_28` (`C⁴`), `dlmf_3_4_29` (`C⁶`) | |
+| 3.4.30, 3.4.31 | `dlmf_3_4_30`, `dlmf_3_4_31` (`C⁶`) | |
+| 3.4.32 | `biharmonic` | |
+| 3.4.33, 3.4.34 | `dlmf_3_4_33` (`C⁶`), `dlmf_3_4_34` (`C⁸`) | |
+| Hypotheses | `u` is `C^{d+p}` on all of `ℝ²` (DLMF states none); a local version (smoothness near `(x₀, y₀)`) is not formalized | |
+| sources (Panow), formulas on other grids (Collatz) | Not formalized (references) | |

@@ -1931,6 +1931,10 @@ import Azurite.DLMF.Chapter3.Section3Newton
 import Azurite.DLMF.Chapter3.Section3Points
 import Azurite.DLMF.Chapter3.Section3PointsFiveSix
 import Azurite.DLMF.Chapter3.Section3PointsSevenEight
+import Azurite.DLMF.Chapter3.Section4
+import Azurite.DLMF.Chapter3.Section4Analytic
+import Azurite.DLMF.Chapter3.Section4Partial
+import Azurite.DLMF.Chapter3.Section4Points
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
