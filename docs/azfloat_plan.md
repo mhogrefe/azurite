@@ -4945,3 +4945,18 @@ User: `∛2` as an `AzFloat` constant.  `cbrt2PrecRound p mode = cbrtPrecRound t
 (1, 2, 3 and 53 bits in the three modes, the hexadecimal and decimal strings at 53 bits,
 precision `0`, agreement with `cbrt (F "2" 100)`).  No Ziv loop and no irrationality proof are
 needed: the cube root is rounded directly.
+
+## Interval evaluation for numerical claims (DONE 2026-11-02)
+
+User (2026-11-02): DLMF numerical claims are to be computed with `AzFloat` and the decimal
+values replicated (least significant digits may differ); defer when `AzFloat` cannot do it
+yet.  `AzFloat/Interval.lean`: `Encl = AzFloat × AzFloat` with directed-rounded `add`, `sub`,
+`subNonneg`, `mul`, `div`, `pow`, `widen`, `neg`, exact `nat`, `pi` (Brent–Salamin
+`piBracket`, structural) and `exp` (`expBracketAt`, lower end clamped); `valData` and
+`toDecimalPlaces` (fixed point, trailing zeros, no exponent notation).
+`Equiv/Interval.lean`: `IsEncl`/`IsEncl0`/`IsEnclPos` and one soundness lemma per operation,
+`IsEncl.bounds`.  The certified `piPrecRound`/`expPrecRound` are not kernel-reducible
+(well-founded Ziv loop); the brackets are, and are enough for enclosures.  First use: DLMF
+§2.11(i) (`DLMF/Chapter2/Section11Numerics.lean`), all enclosures at 64 bits, kernel time
+about a minute for the whole file.  Not yet: enclosures of signed products/quotients (only
+nonnegative factors and positive divisors), `ln`, roots, special functions.

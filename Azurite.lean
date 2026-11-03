@@ -82,6 +82,7 @@ import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.HexString
+import Azurite.AzFloat.Equiv.Interval
 import Azurite.AzFloat.Equiv.Lemniscate
 import Azurite.AzFloat.Equiv.Literals
 import Azurite.AzFloat.Equiv.Ln
@@ -168,6 +169,7 @@ import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.HexString
+import Azurite.AzFloat.Interval
 import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.Literals
 import Azurite.AzFloat.Ln
@@ -1812,6 +1814,17 @@ import Azurite.DLMF.Chapter2.Section10Example
 import Azurite.DLMF.Chapter2.Section10Legendre
 import Azurite.DLMF.Chapter2.Section10Parts
 import Azurite.DLMF.Chapter2.Section10Tail
+import Azurite.DLMF.Chapter2.Section11
+import Azurite.DLMF.Chapter2.Section11Euler
+import Azurite.DLMF.Chapter2.Section11Expint
+import Azurite.DLMF.Chapter2.Section11ExpintAsymp
+import Azurite.DLMF.Chapter2.Section11ExpintLaplace
+import Azurite.DLMF.Chapter2.Section11Levin
+import Azurite.DLMF.Chapter2.Section11Numerics
+import Azurite.DLMF.Chapter2.Section11Resurgence
+import Azurite.DLMF.Chapter2.Section11Stokes
+import Azurite.DLMF.Chapter2.Section11Terminant
+import Azurite.DLMF.Chapter2.Section11TerminantAsymp
 import Azurite.DLMF.Chapter2.Section1BorelRitt
 import Azurite.DLMF.Chapter2.Section1Expansion
 import Azurite.DLMF.Chapter2.Section1Generalized
