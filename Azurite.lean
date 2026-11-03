@@ -1912,6 +1912,9 @@ import Azurite.DLMF.Chapter2.Section9Formal
 import Azurite.DLMF.Chapter2.Section9Recessive
 import Azurite.DLMF.Chapter2.Section9SeriesExp
 import Azurite.DLMF.Chapter2.Section9Sqrt
+import Azurite.DLMF.Chapter3.Section1
+import Azurite.DLMF.Chapter3.Section1Interval
+import Azurite.DLMF.Chapter3.Section1LevelIndex
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

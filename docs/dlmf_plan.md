@@ -1103,3 +1103,25 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 2.11.31 | DEFERRED: the value of `W_{2.3,0.5}(1.0)` needs the Whittaker function (plan: AzFloat evaluation from a convergent representation once Chapter 13 exists). The claims comparing with the quoted value are proved: `dlmf_2_11_vi_s4` ("correct to almost 3D": error in `(0.0029, 0.003)`), `dlmf_2_11_vi_d10` (8D), `dlmf_2_11_vi_d20` (13D; `d₂₀ = −0.83299 50268 27501 4`, `levin_d20_decimals`) | |
 | 2.11.32 | `levinD` (over any field; `levinW` weights `(−1)^j C(n,j)(j+1)^{n−1}`, `zpow`), `levinD_const_mul` (homogeneity), `levinD_cast` | |
 | "extrapolated values may converge to an accurate value on one side of a Stokes line …" | Not formalized (cautionary remark) | |
+
+## Chapter 3: Numerical Methods
+
+### §3.1 Arithmetics and Error Measures (`Azurite/DLMF/Chapter3/Section1*.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| §3.1(i) binary/hexadecimal systems, historical remarks | Not formalized (no mathematical content) | |
+| 3.1.1, 3.1.2 | `machineNum` (`ℝ_fl` with `p` bits, `E_min ≤ E ≤ E_max`, the bit sum of 3.1.2); `mem_machineNum_iff` (`±M 2^E/2^{p−1}`, `2^{p−1} ≤ M < 2^p`, via `binDigit`/`bitsVal`); `machine_abs_bounds` (`2^E ≤ \|x\| < 2^{E+1}`) (`Section1.lean`) | `Nat.mod_pow_succ`, `Finset.sum_range_reflect` |
+| format width `N` | `BinaryFormat` (sign, `p − 1` fraction bits, `N − p` exponent bits) | |
+| `ε_M`, machine precision | `machineEps` (`2^{1−p}`), `machineEps_isLeast` (`1 + ε_M` least machine number `> 1`), `machineEps_half` (`½ε_M = 2^{−p}`) | |
+| 3.1.3 | `dlmf_3_1_3`, `machineNmin_mem` (both bounds attained); underflow/overflow are the definitions `\|x\| < N_min`, `\|x\| > N_max` (not separately formalized) | |
+| IEEE 754-2019 formats, Figure 3.1.1 | `binary32`, `binary64`, `binary128`, `dlmf_figure_3_1_1` (8/11/15 exponent bits, `E_max = 2^{N−p−1} − 1`, `E_min = 1 − E_max`) | |
+| machine precisions `0.596 × 10^{−7}`, `0.111 × 10^{−15}`, `0.963 × 10^{−34}` | `dlmf_3_1_ii_precision_decimals` (`AzRat.toSci`, kernel), `dlmf_3_1_ii_precisions` | |
+| 3.1.4, 3.1.5 | `roundChop` (`x₋`), `roundChopUp` (`x₊`), `roundChop_bounds`, `roundChop_mem` (machine numbers when `N_min ≤ x ≤ N_max`, `x₊` when `x < N_max`); `roundFloor_eq_roundChop` (Azurite's `round (precisionSet 2 p) .Floor` is chopping), `roundNearest_spec` (`.Nearest` gives the nearer of `x₋`, `x₊`; ties to even), `roundNearest_neg` | `Int.log`, `Int.zpow_log_le_self` |
+| "maximum relative error `ε_M`" (chopping) | `roundChop_rel_err` (`< ε_M/(1+ε_M)`), `roundChop_rel_err_lt` (`< ε_M`), `roundChop_rel_err_sharp` (supremum `ε_M/(1+ε_M)`, not attained); see errata | |
+| "maximum relative error equal to the machine precision `2^{−p}`" (nearest) | `roundNearest_rel_err` (`≤ 2^{−p}/(1+2^{−p})`), `roundNearest_rel_err_attained` (at `1 + 2^{−p}`); see errata | |
+| 3.1.6 | `intervalOp`; `intervalOp_add`, `intervalOp_sub`, `intervalOp_mul` (`min4`/`max4`), `intervalOp_div` (`image_inv_Icc`), `intervalOp_div_unbounded` ("only if the divisor interval does not contain zero"), `encl_intervalOp_add_sub` (rounded end points: `AzFloat.Encl`) (`Section1Interval.lean`) | `Set.image_uncurry_prod`, `IsPreconnected.Icc_subset` |
+| §3.1(iii) exact rational arithmetic | Realized by `AzRat` (lowest terms over `AzNat`, `AzRat.toSci`); nothing further to formalize | |
+| 3.1.7 | `genLog`, `existsUnique_level` (with `ln_k x ≥ 1` for `k < ℓ`), `levelIndex`, `levelIndexInv_levelIndex` (`Section1LevelIndex.lean`); generalized precision is undefined in the text (not formalized) | `Real.log_le_sub_one_of_pos` |
+| 3.1.8–3.1.11 | `absErr`, `relErr`, `relPrec`, `mollErr`; `dlmf_3_1_9`, `mollErr_eq`, `relPrec_ofReal`, `relPrec_symm`, `relErr_relPrec` | |
+| references (Goldberg, Overton, Moore, IEEE 1788, Olver 1983, …) | Not formalized | |
