@@ -1921,6 +1921,16 @@ import Azurite.DLMF.Chapter3.Section2Eigen
 import Azurite.DLMF.Chapter3.Section2Lanczos
 import Azurite.DLMF.Chapter3.Section2Pivot
 import Azurite.DLMF.Chapter3.Section2Tridiag
+import Azurite.DLMF.Chapter3.Section3
+import Azurite.DLMF.Chapter3.Section3Cardinal
+import Azurite.DLMF.Chapter3.Section3Contour
+import Azurite.DLMF.Chapter3.Section3Divided
+import Azurite.DLMF.Chapter3.Section3Equal
+import Azurite.DLMF.Chapter3.Section3Inverse
+import Azurite.DLMF.Chapter3.Section3Newton
+import Azurite.DLMF.Chapter3.Section3Points
+import Azurite.DLMF.Chapter3.Section3PointsFiveSix
+import Azurite.DLMF.Chapter3.Section3PointsSevenEight
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

@@ -1182,3 +1182,112 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.2.23 | `lanczosP`, `dlmf_3_2_23` (`p₀ = 1`, `p₁ = λ − α₁`, the recurrence), `det_tridiag` (tridiagonal determinant recurrence), `charmatrix_lanczosB` | `Matrix.det_succ_row`, `Matrix.det_succ_column`, `Matrix.det_unique` |
 | 3.2.24 (`S`-orthogonality, `S = LᵀL`) | `dlmf_3_2_24` (the recursion), `lanczosS_orthonormal`, `dlmf_3_2_24_orthonormal` (`v_jᵀSv_k = δ_{j,k}`) | `Matrix.transpose_nonsing_inv`, `Matrix.mul_nonsing_inv` |
 | relation to Gauss quadrature (§3.5(v)), numerical remarks | Not formalized (§3.5 not yet available; references) | |
+
+### §3.3(i) Lagrange Interpolation (`Azurite/DLMF/Chapter3/Section3.lean`, `Section3Contour.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "the unique polynomial `P_n(z)` of degree not exceeding `n` such that `P_n(z_k) = f_k`" | `lagrange_unique` | `Lagrange.eval_interpolate_at_node`, `Lagrange.degree_interpolate_lt`, `Lagrange.eq_interpolate_of_eval_eq` |
+| 3.3.1 | `dlmf_3_3_1`, `dlmf_3_3_1_nodal`, `dlmf_3_3_1_barycentric` (`z` not a node in the last two) | `Lagrange.eval_interpolate_not_at_node`, `Lagrange.eval_interpolate_not_at_node'` |
+| 3.3.2 | `dlmf_3_3_2`, `dlmf_3_3_2_delta` | `Lagrange.eval_basis_self`, `Lagrange.eval_basis_of_ne` |
+| 3.3.3 | `dlmf_3_3_3` | `Lagrange.eval_nodal` |
+| 3.3.3_1 | `dlmf_3_3_3_1` | `Lagrange.nodalWeight_eq_eval_derivative_nodal` |
+| 3.3.3_2 | `dlmf_3_3_3_2` | `Lagrange.sum_basis`, `Lagrange.interpolate_one` |
+| "most efficient representation" (Berrut–Trefethen) | Not formalized (complexity remark) | |
+| 3.3.4 | `lagrangeRem` (definition of `R_n`) | |
+| 3.3.5 | `dlmf_3_3_5` (`f` `n + 1` times differentiable on an open set containing `I`; continuity of `f^{(n+1)}` not needed); generalized Rolle `exists_iteratedDeriv_eq_zero` | `exists_deriv_eq_zero`, `Finset.orderEmbOfFin`, `Polynomial.coeff_iterate_derivative` |
+| 3.3.6 | `dlmf_3_3_6` (Jordan contour, `f` continuous on the closed region and analytic inside; all nodes `z₀, …, z_n` enclosed, see errata); `nodal_partialFraction`, `ClosedPiecewiseC1.contourIntegral_finsetSum` | `Polynomial.mul_divByMonic_eq_iff_isRoot` |
+
+### §3.3(ii) Lagrange Interpolation with Equally-Spaced Nodes, through Linear Interpolation (`Azurite/DLMF/Chapter3/Section3Equal.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.7 | `dlmf_3_3_7` (DLMF's `A_k^n`, `t` not a node), `dlmf_3_3_7'` (cancelled `A_k^n`, every real `t`); `R_{n,t}` = `lagrangeRem (eqNode x₀ h n) f (x₀ + th)`; nodes `eqNode`, `eqNode_injective` | |
+| 3.3.8 | `eqN0`, `eqN1`; `eqN0_eq` (`n₀ = −⌊n/2⌋`), `eqN1_eq` (`n₁ = n₀ + n`) | |
+| 3.3.9 | `eqSigma`, `eqSigma_eq` (`σ = n mod 2`) | |
+| 3.3.10 | `lagCoeff`; `lagCoeff'` (factor `t − k` cancelled), `lagCoeff_eq`; `eqNode_basis_eval` (`A_k^n(t) = ℓ_k(x₀ + th)`), `prod_fin_erase_sub`. At an integer `t = k` with `n₀ < t < n₁` the formula is `0/0` and is read with `t − k` cancelled | `Lagrange.basis`, `Finset.mul_prod_erase` |
+| 3.3.11 | `dlmf_3_3_11` (every real `t`; `ξ` in the smallest interval containing `x₀ + th` and the nodes), `eqNode_nodal_eval` | |
+| 3.3.12 | `eqBoundCoeff` (max as `sSup` over a `t`-set) | |
+| 3.3.13 | `dlmf_3_3_13` (bounded `t`-set) | `IsCompact.bddAbove_image`, `le_csSup` |
+| 3.3.14 | `dlmf_3_3_14` (every real `t`), `lagCoeff'_one` | |
+| 3.3.15 | `dlmf_3_3_15` (`c₁ = 1/8` on `(0, 1)`, maximum attained at `t = ½`), `dlmf_3_3_15_bound` (`\|R_{1,t}\| ≤ h²\|f''(ξ)\|/8`, `ξ ∈ [x₀, x₀ + h]`) | `IsGreatest.csSup_eq` |
+
+### §3.3(ii) Three-Point and Four-Point Formulas (`Azurite/DLMF/Chapter3/Section3Points.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.13 for `t ∈ (n₀, n₁)` | `dlmf_3_3_13_Ioo` (`ξ ∈ [x_{n₀}, x_{n₁}]`) | |
+| 3.3.16 | `dlmf_3_3_16` (sum form and written-out form; every real `t`, DLMF: `\|t\| < 1`) | |
+| 3.3.17 | `dlmf_3_3_17` | |
+| 3.3.18 | `dlmf_3_3_18` (`c₂ = 1/(9√3)` on `(−1, 1)`, attained at `t = 1/√3`), `dlmf_3_3_18_decimal` (`0.0641 ≤ c₂ < 0.0642`), `dlmf_3_3_18_bound` | `Real.lt_sqrt`, `Real.sqrt_lt'`, `abs_le_of_sq_le_sq'` |
+| 3.3.19 | `dlmf_3_3_19` (sum form and written-out form; every real `t`, DLMF: `−1 < t < 2`) | |
+| 3.3.20 | `dlmf_3_3_20` | |
+| 3.3.21 | `dlmf_3_3_21_inner` (`3/128` on `(0, 1)`, attained at `t = ½`), `dlmf_3_3_21_outer` (`1/24` on `(−1, 0) ∪ (1, 2)`, attained at `t = (1 − √5)/2`), `dlmf_3_3_21_decimal`, `dlmf_3_3_21_bound_inner`, `dlmf_3_3_21_bound_outer` | `IsGreatest.csSup_eq` |
+
+### §3.3(ii) Five-Point and Six-Point Formulas (`Azurite/DLMF/Chapter3/Section3PointsFiveSix.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.12 bounds | `eqBoundCoeff_bounds` (witness + uniform bound), `eqRem_le_of_coeff_le` | `le_csSup_of_le`, `csSup_le` |
+| 3.3.22 | `dlmf_3_3_22` (sum form and written-out form; every real `t`, DLMF: `\|t\| < 2`) | |
+| 3.3.23 | `dlmf_3_3_23` | |
+| 3.3.24 | `dlmf_3_3_24_inner` (`0.0118 ≤ c₄ < 0.0119` on `(−1, 1)`), `dlmf_3_3_24_outer` (`0.0302 ≤ c₄ < 0.0303` on `(−2, −1) ∪ (1, 2)`); certificates `quintic_le_inner`, `quintic_le_outer`; `dlmf_3_3_24_bound_inner`, `dlmf_3_3_24_bound_outer` (with the upper decimals) | |
+| 3.3.25 | `dlmf_3_3_25` (sum form and written-out form; every real `t`, DLMF: `−2 < t < 3`) | |
+| 3.3.26 | `dlmf_3_3_26` | |
+| 3.3.27 | `dlmf_3_3_27_inner` (`c₅ = 5/1024` exactly on `(0, 1)`), `dlmf_3_3_27_inner_decimal` (`0.00488…`), `dlmf_3_3_27_mid` (`0.00701 ≤ c₅ < 0.00702` on `(−1, 0) ∪ (1, 2)`), `dlmf_3_3_27_outer` (`0.0234 ≤ c₅ < 0.0235` on `(−2, −1) ∪ (2, 3)`); certificates `cubic_le_inner`, `cubic_le_mid`, `cubic_le_outer`; remainder bounds `dlmf_3_3_27_bound_inner`, `_mid`, `_outer` | |
+
+### §3.3(ii) Seven-Point and Eight-Point Formulas (`Azurite/DLMF/Chapter3/Section3PointsSevenEight.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.28 | `dlmf_3_3_28` (sum form and written-out form; every real `t`, DLMF: `\|t\| < 3`) | |
+| 3.3.29 | `dlmf_3_3_29` | |
+| 3.3.30 | `dlmf_3_3_30_inner` (`0.00245 ≤ c₆ < 0.00246`), `dlmf_3_3_30_mid` (`0.00459 ≤ c₆ < 0.00460`), `dlmf_3_3_30_outer` (`0.0190 ≤ c₆ < 0.0191`); certificates `septic_le_inner`, `septic_le_mid`, `septic_le_outer`; `dlmf_3_3_30_bound` (all three `t`-sets) | |
+| 3.3.31 | `dlmf_3_3_31` (sum form and written-out form; every real `t`, DLMF: `−3 < t < 4`) | |
+| 3.3.32 | `dlmf_3_3_32` | |
+| 3.3.33 | `dlmf_3_3_33_inner` (`c₇ = 35/32768` exactly), `dlmf_3_3_33_inner_decimal` (`0.00106…`), `dlmf_3_3_33_mid` (`0.00139 ≤ c₇ < 0.00140`), `dlmf_3_3_33_third` (`0.00321 ≤ c₇ < 0.00322`), `dlmf_3_3_33_outer` (`0.0158 ≤ c₇ < 0.0159`); certificates `quartic_le_inner`, `quartic_le_mid`, `quartic_le_third`, `quartic_le_outer`; `dlmf_3_3_33_bound` (all four `t`-sets) | |
+
+### §3.3(iii) Divided Differences (`Azurite/DLMF/Chapter3/Section3Divided.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.34 | `divDiff` (the recursion), `divDiff_succ_seq` (general step for a sequence), `dlmf_3_3_34` (the three displayed cases) | |
+| "the divided difference of order `n`" = leading coefficient of `P_n` | `divDiff_eq_coeff`, `interpolate_neville`, `coeff_interpolate`, `coeff_basis_eq_nodalWeight` | `Lagrange.basis_eq_prod_sub_inv_mul_nodal_div`, `Lagrange.nodal_erase_eq_nodal_div`, `Polynomial.coeff_X_sub_C_mul` |
+| 3.3.35 | `dlmf_3_3_35` (distinct nodes) | `Lagrange.nodalWeight` |
+| 3.3.36 | `dlmf_3_3_36` (`f` `n` times differentiable on an open set containing the smallest interval containing the nodes; `ξ` in that interval), `iterate_derivative_of_natDegree_le` | `Polynomial.coeff_iterate_derivative` |
+| 3.3.37 | `dlmf_3_3_37` (Jordan contour, `f` continuous on the closed region and analytic inside; vacuous "for `z ∈ D`", see errata) | |
+
+### §3.3(iv) Newton's Interpolation Formula (`Azurite/DLMF/Chapter3/Section3Newton.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.3.38 | `newton_interpolate` (`P_n` in Newton form), `dlmf_3_3_38` (with `R_n` of §3.3(i)); nodes a sequence distinct on `{0, …, n}` | `Polynomial.natDegree_le_iff_coeff_eq_zero`, `Fin.prod_univ_eq_prod_range` |
+| "easy updating" | `newton_update` | |
+| "robustness with respect to confluence" | Not formalized (qualitative remark) | |
+| `[z₀, z₀, …, z₀] f = f^{(k)}(z₀)/k!` (limiting form) | `divDiff_confluent` (real nodes: ε–δ limit as `k + 1` distinct points tend to `z₀`; `f` `k` times differentiable near `z₀`, `f^{(k)}` continuous at `z₀`). Complex nodes (analytic `f`) deferred: needs the limit under the 3.3.37 contour integral | `Metric.isOpen_iff`, `Metric.continuousAt_iff` |
+
+### §3.3(v) Inverse Interpolation (`Azurite/DLMF/Chapter3/Section3Inverse.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "interchange the roles of the points `z_k` and the function values `f_k`" | `inverse_interpolation` (general `n`), `divDiff_congr` | |
+| "solving a nonlinear scalar equation `f(z) = 0`" | `inverse_interpolation_zero` (error of `x(0)` via 3.3.5 for the inverse function) | |
+| "combine the methods of §3.8 with direct interpolation and §3.4" | Not formalized (pointer; §3.4, §3.8 not yet available) | |
+| 3.3.39 | `dlmf_3_3_39` | |
+| Example: `a₁ = −2.33810 7410…`, `f_k = Ai(x_k)` | **Deferred**: needs certified AzFloat `Ai` (Airy arc T3–T8; blocked on `Γ(1/3)` for `c₁ = Ai(0)`, `c₂ = −Ai′(0)`). Python 60-digit series check: `Ai(−2.2) = 0.09614 53780 08`, `Ai(−2.3) = 0.02670 63330 57`, `Ai(−2.4) = −0.04333 41404 4`, `a₁ = −2.33810 74104 6` | |
+| 3.3.40 | `dlmf_3_3_40_zero` (`x = −2.33823 2462` from the printed polynomial). **Deferred**: the coefficients `1.44011 1973`, `0.08865 85832` as divided differences of the `Ai` data (they need the unrounded `Ai` values; the 10-digit rounded values give `…3659`, `…5910`) | |
+| second inverse step (`[f₀, …, f₃] x = 1.12388 6190`, `x = −2.33810 7409`) | **Deferred** (needs `Ai(x₃)`); correct-digit count proved in `dlmf_3_3_v_correct_digits` | |
+| 3.3.41 | `airyNewton2`, `dlmf_3_3_41` (corrected first factor `x + 2.2`, see errata) | |
+| 3.3.42 | `dlmf_3_3_42` (`HasDerivAt`; exact constant `0.55906 902575`) | `HasDerivAt.mul`, `HasDerivAt.const_mul` |
+| Newton's rule from `−2.5`, `x₃ = −2.33934 0514` | `dlmf_3_3_v_newton_x3` | |
+| `[x₀, …, x₃] f = −0.26608 28233`, `x = −2.33810 7373` | `airyNewton3`, `airyNewton3_hasDerivAt`, `dlmf_3_3_v_newton_final` (from the printed divided difference; sign erratum); the divided difference itself deferred (needs `Ai`; numerical drift in the 8th digit, see errata) | |
+| "4 / 9 / 8 correct digits" | `dlmf_3_3_v_correct_digits` (given `−2.33810 7411 < a₁ ≤ −2.33810 7410`) | |
+
+### §3.3(vi) Other Interpolation Methods (`Azurite/DLMF/Chapter3/Section3Cardinal.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Hermite, trigonometric, spline, rational, Chebyshev-point and bivariate interpolation; convergence properties | Not formalized (references only) | |
+| 3.3.43 | `cardinalFn` (`tsum`), `cardinal_node` (interpolation at `kh`), `cardinal_summable` (absolute convergence under `∑ \|f(kh)\|/(1 + \|k\|) < ∞`); erratum: `cardinalCounter`, `cardinalCounter_term`, `cardinal_not_summable`, `cardinal_partial_sums_atBot` (bounded `f` with divergent series) | `tsum_eq_single`, `Summable.of_norm_bounded`, `Real.not_summable_one_div_natCast`, `Real.tendsto_sum_range_one_div_nat_succ_atTop` |
+| 3.3.44 | `sincS` (removable singularity filled with `1`), `dlmf_3_3_44`, `sincS_node`, `abs_sincS_le` | `Real.sinc`, `Real.abs_sinc_le_one`, `Real.sin_int_mul_pi` |
+| "For theory and applications see Stenger (1993, Chapter 3)" | Not formalized (reference) | |
