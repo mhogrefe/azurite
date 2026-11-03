@@ -1915,6 +1915,12 @@ import Azurite.DLMF.Chapter2.Section9Sqrt
 import Azurite.DLMF.Chapter3.Section1
 import Azurite.DLMF.Chapter3.Section1Interval
 import Azurite.DLMF.Chapter3.Section1LevelIndex
+import Azurite.DLMF.Chapter3.Section2
+import Azurite.DLMF.Chapter3.Section2Cond
+import Azurite.DLMF.Chapter3.Section2Eigen
+import Azurite.DLMF.Chapter3.Section2Lanczos
+import Azurite.DLMF.Chapter3.Section2Pivot
+import Azurite.DLMF.Chapter3.Section2Tridiag
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

@@ -1125,3 +1125,60 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.1.7 | `genLog`, `existsUnique_level` (with `ln_k x ≥ 1` for `k < ℓ`), `levelIndex`, `levelIndexInv_levelIndex` (`Section1LevelIndex.lean`); generalized precision is undefined in the text (not formalized) | `Real.log_le_sub_one_of_pos` |
 | 3.1.8–3.1.11 | `absErr`, `relErr`, `relPrec`, `mollErr`; `dlmf_3_1_9`, `mollErr_eq`, `relPrec_ofReal`, `relPrec_symm`, `relErr_relPrec` | |
 | references (Goldberg, Overton, Moore, IEEE 1788, Olver 1983, …) | Not formalized | |
+
+### §3.2(i) Gaussian Elimination (`Azurite/DLMF/Chapter3/Section2*.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.2.1, 3.2.2 | The system `Ax = b` for `A : AzMatrix K n n` (any field); the augmented matrix is not formed (the right side is carried by forward elimination) | |
+| 3.2.3 | `luU` = `AzMatrix.gaussSteps M n` (BPR Algorithm 8.15 without pivoting), `luU_upper` (`Section2.lean`) | |
+| 3.2.4 | `luL` (unit lower triangular), multipliers `luMult` (`ℓ_{ik} = g^{(k)}_{ik}/g^{(k)}_{kk}`) | |
+| 3.2.5 | `dlmf_3_2_5` (`A = LU` when `u_{11}, …, u_{n−1,n−1} ≠ 0`), via `gaussSteps_succ_row` and `gaussSteps_invariant` | |
+| forward elimination, back substitution | `forwardSubst`/`forwardSubst_spec` (`Ly = b`), `backSubst`/`backSubst_spec` (`Ux = y`), `gauss_solve` (`Ax = b`), `mulVec_mul` | |
+| 3.2.6 and the Example | `gaussExampleA`, `dlmf_3_2_6` (`L`, `U`, `LU = A`, kernel), `dlmf_3_2_i_example_solve` (`y = [1, −1, 3]ᵀ`, `x = [1/6, 1/6, 1/6]ᵀ`) | |
+| "unduly large multipliers … unstable" | Not formalized (stability heuristic) | |
+| partial pivoting, "`\|ℓ_{jk}\| ≤ 1` in all cases" | `pivotRow`, `ppSwap`, `ppElim`, `ppRun`, `gaussPP`, `ppL`, `ppU`, `ppPA`; `gaussPP_factorization` (`PA = LU` for every square matrix), `ppRun_invariant`, `ppR_swap`, `ppR_elim`; `ppRun_mult_le_one`, `ppL_le_one` (`Section2Pivot.lean`) | |
+| iterative refinement | `iterative_refinement_lu` (residual `r = b − Ax`, correction from the existing `L`, `U` by forward elimination and back substitution, `x + δx` solves `Ax = b`), `iterative_refinement` (the identity `A(x + δx) = b`); the effect of rounding errors is not formalized | `Matrix.mulVec_add`, `dotProduct_add` |
+
+### §3.2(ii) Gaussian Elimination for a Tridiagonal Matrix (`Azurite/DLMF/Chapter3/Section2Tridiag.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.2.7 | `tridiag`, `triEntry` (sequences indexed from `1`) | |
+| "Assume that `A` can be factored as in (3.2.5), but without partial pivoting" | `gaussSteps_tridiag` (the general elimination keeps the closed form `triG` at every step, no pivot hypothesis); `tridiag_LU` (`A = LU` for `d₁, …, d_{n−1} ≠ 0`) | |
+| 3.2.8 | `dlmf_3_2_8` (`luL` unit lower bidiagonal with `ℓ_j`) | |
+| 3.2.9 | `dlmf_3_2_9` (`luU` upper bidiagonal, `d_j`, `u_j = c_j`) | |
+| 3.2.10 | `triD`, `triL`, `dlmf_3_2_10` | |
+| 3.2.11 | `triY`, `dlmf_3_2_11` | |
+| 3.2.12 | `triX`, `dlmf_3_2_12`; `tridiag_solve` (`Ax = f` for `d₁, …, d_n ≠ 0`), `sum_lower_bidiag`, `sum_upper_bidiag` | `Finset.sum_eq_add`, `Finset.sum_eq_single` |
+
+### §3.2(iii) Condition of Linear Systems (`Azurite/DLMF/Chapter3/Section2Cond.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.2.13 | `dlmf_3_2_13` (`p = 1, 2, …`), `dlmf_3_2_13_inf`, `dlmf_3_2_13_euclidean` (vector norms are Mathlib's `ℓ^p` norms on `WithLp p (Fin n → 𝕜)`) | `PiLp.norm_eq_sum`, `PiLp.norm_eq_ciSup`, `EuclideanSpace.norm_eq` |
+| 3.2.14 | `matNorm` (the supremum of the ratios, literally), `matNorm_eq` (= operator norm of `lpCLM`), `matNorm_mulVec_le`, `matNorm_mul_le`, `matNorm_one`. The "max" (attainment) is not separately proved | `Matrix.toLpLin`, `ContinuousLinearMap.opNorm_le_bound` |
+| 3.2.15 | `dlmf_3_2_15_one` (largest column sum), `dlmf_3_2_15_inf` (largest row sum, sign vector), `dlmf_3_2_15_two` (`√ρ(AAᴴ)`), `dlmf_3_2_15_two_real` (`√ρ(AAᵀ)`); `eigRadius`, `mem_spectrum_iff_eigen` | `Matrix.l2_opNorm_conjTranspose_mul_self`, `ContinuousLinearMap.spectralRadius_eq_nnnorm`, `Matrix.toEuclideanCLM` |
+| 3.2.16 | `condNum`; "`κ(A) ≥ 1`": `one_le_condNum` | |
+| 3.2.17 | `dlmf_3_2_17` | `Matrix.nonsing_inv_mul` |
+| "the larger the value `κ(A)`, the more ill-conditioned the system" | Not formalized (interpretation of 3.2.17) | |
+
+### §3.2(iv) Eigenvalues and Eigenvectors, §3.2(v) Condition of Eigenvalues (`Azurite/DLMF/Chapter3/Section2Eigen.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.2.18 | `IsRightEigen`, `IsLeftEigen`, `isLeftEigen_iff` (`yᵀA = λyᵀ ↔ Aᵀy = λy`), `IsEigenvalue`; normalized eigenvectors `IsRightEigen.normalize` | `Matrix.mulVec_transpose` |
+| 3.2.19 | `dlmf_3_2_19` (`p_n(λ) = det[λI − A]`), `charpoly_isRoot_iff` (zeros = eigenvalues), `isEigenvalue_transpose` | `Matrix.eval_charpoly`, `Matrix.exists_mulVec_eq_zero_iff`, `Matrix.charpoly_transpose` |
+| multiplicity, nondefective, "`m` linearly independent eigenvectors" | `IsNondefective`, `charpoly_eq_prod_of_nondefective`, `dlmf_3_2_iv_multiplicity` | `Matrix.charpoly_units_conj`, `Matrix.charpoly_diagonal`, `Polynomial.roots_multiset_prod_X_sub_C`, `Matrix.linearIndependent_cols_iff_isUnit` |
+| 3.2.20 | `eigCond`; `eigvec_eq_smul_of_simple`, `dotProduct_ne_zero_of_simple` (`yᵀx ≠ 0`), `one_le_eigCond` ("`κ(λ) ≥ 1`"), `abs_dotProduct_eq_abs_cos` ("`\|yᵀx\| = \|cos θ\|`"), `eigCond_eq_one_of_symm` (symmetric `A`: `κ(λ) = 1`) | `basisOfLinearIndependentOfCardEqFinrank`, `InnerProductGeometry.cos_angle_mul_norm_mul_norm`, `Real.sum_mul_le_sqrt_mul_sqrt` |
+| "the calculation of its eigenvalues is a well-conditioned problem" | Not formalized (interpretation) | |
+
+### §3.2(vi) Lanczos Tridiagonalization of a Symmetric Matrix (`Azurite/DLMF/Chapter3/Section2Lanczos.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.2.21 | `lzStep`, `lzState`, `lzV`, `lzα`, `lzβ` with `S = I`, `L = I`; `lzV_one`, `lzα_one`, `lzβ_one`; "`v_jᵀv_k = δ_{j,k}`": `dlmf_3_2_21_orthonormal` (no-breakdown hypothesis, see errata), via `lanczos_orthonormal_aux` | `Matrix.dotProduct_mulVec` |
+| 3.2.22 | `lanczosB`, `lanczosV`, `lz_entry` (`v_aᵀAv_b = B_{ab}`), `lanczosV_spec` (`VᵀV = I`, `VᵀAV = B`), `dlmf_3_2_22` (same characteristic polynomial and eigenvalues) | `Matrix.charpoly_units_conj`, `Matrix.inv_eq_left_inv` |
+| 3.2.23 | `lanczosP`, `dlmf_3_2_23` (`p₀ = 1`, `p₁ = λ − α₁`, the recurrence), `det_tridiag` (tridiagonal determinant recurrence), `charmatrix_lanczosB` | `Matrix.det_succ_row`, `Matrix.det_succ_column`, `Matrix.det_unique` |
+| 3.2.24 (`S`-orthogonality, `S = LᵀL`) | `dlmf_3_2_24` (the recursion), `lanczosS_orthonormal`, `dlmf_3_2_24_orthonormal` (`v_jᵀSv_k = δ_{j,k}`) | `Matrix.transpose_nonsing_inv`, `Matrix.mul_nonsing_inv` |
+| relation to Gauss quadrature (§3.5(v)), numerical remarks | Not formalized (§3.5 not yet available; references) | |
