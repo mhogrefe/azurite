@@ -4960,3 +4960,42 @@ yet.  `AzFloat/Interval.lean`: `Encl = AzFloat × AzFloat` with directed-rounded
 §2.11(i) (`DLMF/Chapter2/Section11Numerics.lean`), all enclosures at 64 bits, kernel time
 about a minute for the whole file.  Not yet: enclosures of signed products/quotients (only
 nonnegative factors and positive divisors), `ln`, roots, special functions.
+
+## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
+
+Candidate method for functions defined by a three-term recurrence whose wanted solution is
+recessive (minimal): `Jₙ(x)`, `Iₙ(x)`, spherical Bessel functions, Legendre `Qₙ`, Anger–Weber and
+Struve functions, and Clenshaw-type Chebyshev-series solutions of ODEs. Not a replacement for
+binary splitting of convergent series (`exp`, `ln`, `Γ`, …); it pays off for whole columns
+`w₀, …, w_M` (`O(N)` work) and where a direct series cancels badly (e.g. `Jₙ(x)` for large `x`).
+
+The formal groundwork exists (DLMF §3.6(v) and Olver (1967a), `Azurite/DLMF/Chapter3/`):
+
+* `Section6Olver`: `pₙ`, `eₙ` (3.6.8), back substitution 3.6.10; `olverW_eq` — with `pₙ`, `eₙ`
+  exact, the computed values are exactly `wₙ − (w_N/p_N) pₙ`, so the only error is truncation.
+* `Section6OlverError`: truncation error `pₙ ∑_{s≥N} eₛ/(pₛp_{s+1})` (`olver_5_01`), the step
+  `N → N + 1` (`olver_4_10`, predicts the change before back substitution), rounding propagation
+  (`olver_7_01`, `olver_7_02`, `olver_backsub_propagation`).
+* `Section6OlverGeneral`: general normalization `∑ mᵣwᵣ = k` (`olver_9_04`, `olver_9_10`), Theorem 2
+  (convergence), strict bounds `olver_10_07` (`ρ`-bounds `IsRhoBound`, tail series `E_N`).
+
+Sketch of a certified implementation (`olverEnclosure`):
+
+1. Run the forward elimination (`pₙ`, `eₙ`) in exact `AzInt`/`AzRat` or in dyadic enclosures with
+   outward rounding (cf. the Table 3.5.20 evaluator `rdDown`/`rdUp`); `pₙ` grows fast, so exact
+   rationals get large — prefer dyadic balls.
+2. Choose `N` by 3.6.9 / Olver (4.11)–(4.12) / (9.15) as a first guess; certify with the strict
+   bound (10.07) (or (5.01) plus a tail bound).
+3. Back substitution in ball arithmetic; propagation factor `pᵣ/pₛ` (§7) keeps it stable except
+   for ill-posed normalizations (`|f₀|` small; (7.02)) — absorbed by the Ziv loop raising the
+   working precision.
+4. Ziv loop: raise `N` and/or precision until the enclosure decides the rounding; Theorem 2
+   gives termination.
+
+Open per-family obligations: a certified bound for the tail `E_N` (e.g. eventual monotone or
+geometric decay of `eₛ/(pₛp_{s+1})` or of `(1 + ρ)` products), the `ρ`-bounds from the
+coefficients, and nonvanishing of `pₙ` (`p₂, …, p_N ≠ 0`, Olver §4).
+
+First prototype: `Jₙ(x)` for rational `x`, `n = 0, …, M`, with Olver's Example 3 normalization
+`J₀ + 2J₂ + 2J₄ + ⋯ = 1` (the §9 general-normalization case). The recursions are structural pair
+recursions, so the same code can run under `decide +kernel` for DLMF numerics.

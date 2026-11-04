@@ -1603,3 +1603,98 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | Cools (2003), Stroud (1971) | Not formalized (references) | |
 | "Monte Carlo … error of order `1/√N`, independently of the dimension" | `mcMean`, `integral_mcMean` (unbiased), `variance_mcMean` (`σ²/N`), `sqrt_variance_mcMean` (`σ/√N`), `dlmf_3_5_x_monteCarlo` (`P(\|mean − m\| ≥ ε) ≤ σ²/(Nε²)`, any probability space) | `ProbabilityTheory.IndepFun.variance_sum`, `ProbabilityTheory.meas_ge_le_variance_div_sq` |
 | Importance sampling ("points … sampled from a probability distribution"); Davis–Rabinowitz, Schürer (2004) | Not formalized (prose, references) | |
+
+## Section 3.6
+
+### §3.6(i) Introduction (`Azurite/DLMF/Chapter3/Section6.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.6.1 (`n ∈ ℤ`) | `diffLHS` | |
+| 3.6.2 (`Δw_{n−1} = wₙ − w_{n−1}`, `Δ²w_{n−1} = Δwₙ − Δw_{n−1}`) | `dlmf_3_6_2`, `dlmf_3_6_1_iff_3_6_2` | `fwdDiff` |
+| homogeneous / inhomogeneous | `IsHomogeneousDiff` | |
+| "problems of severe instability often arise" | Made precise in §3.6(ii) | |
+
+### §3.6(ii) Homogeneous Equations (`Azurite/DLMF/Chapter3/Section6.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.6.3, "given `w₀`, `w₁` … computed recursively for `n = 2, 3, …`" (`aₙ ≠ 0`) | `IsRec3`, `fwdRec`, `fwdRecPair`, `dlmf_3_6_3_forward` (existence and uniqueness), `IsRec3.eq_of_eq` | |
+| "small multiples of `wₙ` and of an independent solution `gₙ`" | `IsRec3.eq_comb` (two solutions with nonzero Casoratian span all solutions), `casoratian` (§2.9) | |
+| "of little consequence if the wanted solution is growing … at least as fast" | `dlmf_3_6_ii_forward_stable` (`\|gₙ/wₙ\| ≤ M` ⇒ relative error `≤ \|ε\| M`) | |
+| 3.6.4, recessive (minimal, distinguished) solutions | `IsRecessiveWrt`, `IsRecessive`, `casoratian_ne_zero_of_recessive` | |
+| "unique except for a constant factor" | `dlmf_3_6_4_unique` | `tendsto_norm_inv_nhdsNE_zero_atTop` |
+| "the computations are unstable" | `dlmf_3_6_ii_forward_unstable` (relative error `→ ∞`) | |
+| backward recursion (`cₙ ≠ 0`) from `w_N`, `w_{N+1}` | `bwdRec`, `bwdRecPair`, `dlmf_3_6_3_backward` (existence and uniqueness of `w_{N−1}, …, w₀`) | |
+| "the unwanted multiples of `gₙ` now decay in comparison with `wₙ`" | `bwdPerturbed`, `bwdPerturbed_isRec3`, `bwdPerturbed_start`, `dlmf_3_6_ii_backward_stable` | |
+| starting values from asymptotic expansions (§2.9); §§3.6(iii), 3.6(v) | Not formalized (pointers) | |
+
+### §3.6(iii) Miller's Algorithm (`Azurite/DLMF/Chapter3/Section6Miller.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| (needed) Casoratian of two solutions | `IsRec3.casoratian_succ` (`aₙCₙ = cₙC_{n−1}`), `IsRec3.casoratian_ne_zero` | |
+| trial values `w_N = 1`, `w_{N+1} = 0`, backward recursion; "the original components of the unwanted solution `gₙ` die away" | `millerTrial`, `millerZ`, `millerTrial_eq` (trial solution `= zₙ/z_N`, `zₙ = wₙ − (w_{N+1}/g_{N+1})gₙ`), `tendsto_millerZ` | |
+| normalizing factor `Λ` = true `w₀` / trial value | `millerNorm`, `dlmf_3_6_iii_miller` (convergence for every fixed `n`, `w₀ ≠ 0`) | |
+| 3.6.5 `∑ λₙwₙ = 1` | `millerSumNorm`, `dlmf_3_6_iii_miller_sum` (convergence when `(w_{N+1}/g_{N+1})∑_{k≤N} λₖgₖ → 0`; no condition on `w₀`) | `HasSum.tendsto_sum_nat` |
+| repetition with higher `N` until agreement; references (Wimp, Gautschi, Olver, Gil et al.), continued fractions | Not formalized (algorithmic loop, references) | |
+
+### §3.6(iv) Inhomogeneous Equations (`Azurite/DLMF/Chapter3/Section6Inhom.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.6.1 with `aₙcₙ ≠ 0` | `IsRec3Inh`, `IsRec3Inh.add_hom`, `IsRec3Inh.sub` | |
+| forward (backward) recursion stable if `wₙ` grows (decays) at least as fast as any complementary function | `dlmf_3_6_iv_forward_stable`, `dlmf_3_6_iv_backward_stable` | |
+| 3.6.6; "computation of `wₙ` by forward recursion is unstable" | `dlmf_3_6_iv_forward_unstable` | |
+| "if … `fₙ/wₙ → 0` … backward recursion is unstable as well" | `dlmf_3_6_iv_backward_unstable` | `tendsto_norm_inv_nhdsNE_zero_atTop` |
+| "two independent solutions `fₙ` and `gₙ` of the corresponding inhomogeneous equation (the complementary functions)" | **Erratum**: complementary functions solve the *homogeneous* equation (`IsRec3 a b c f`); see `docs/dlmf_errata.md` | |
+| 3.6.7 (tridiagonal system, §3.2(ii)) | `IsBVSol`, `dlmf_3_6_7` (equivalence with `tridiag` of 3.2.7), `tridiag_mulVec_row`, `triEntry_split` | |
+| "as `N → ∞` with `n` fixed, `wₙ^{(N)} → wₙ`" | `dlmf_3_6_iv_boundary` (solvable for large `N`; convergence), `bvH`, `bvH_isRec3`, `eq_mul_bvH_of_zero`, `dlmf_3_6_iv_wanted_unique` | `Classical.epsilon_spec` |
+| Olver (1967a) | Not formalized (reference) | |
+
+### §3.6(v) Olver's Algorithm (`Azurite/DLMF/Chapter3/Section6Olver.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| `pₙ`: 3.6.3 with `p₀ = 0`, `p₁ = 1` by forward recurrence | `olverP`, `olverP_isRec3` | |
+| 3.6.8 (`e₀ = w₀`); "equivalent to forward elimination" | `olverE`, `dlmf_3_6_8`, `olverE_eq` (`eₙ = p_{n+1}wₙ − pₙw_{n+1}` for every solution of 3.6.1) | |
+| 3.6.9 | `dlmf_3_6_9` (the test is eventually passed when the terms `eₙ/(pₙp_{n+1})`, `1 ≤ n ≤ M`, are nonzero); its meaning: `olver_series` (`wₙ/pₙ = ∑_{k≥n} e_k/(p_kp_{k+1})`), `olver_div_sub`, `olver_error` (error `pₙ(w_N/p_N)` = `pₙ` × tail of the series) | `Finset.exists_mem_eq_inf'` |
+| 3.6.10 from `w_N = 0`; "back substitution" | `olverWAux`, `olverW`, `dlmf_3_6_10`, `olverW_eq` (`wₙ − (w_N/p_N)pₙ`), `olverW_isBVSol` (solves 3.6.7) | |
+| convergence; "applicable equally to the recessive solution of 3.6.3 or … 3.6.1 under §3.6(iv)" | `dlmf_3_6_v_tendsto`, `olver_tendsto_div`, `dlmf_3_6_v_inhom`, `dlmf_3_6_v_recessive` | |
+| "to a prescribed relative accuracy `ε`" | Not formalized: 3.6.9 estimates the tail by its first term (heuristic; error analyses in Olver (1967a), Olver and Sookne (1972), Wimp (1984)) | |
+| "to a prescribed relative accuracy `ε`" | `dlmf_3_6_9_one_step` (3.6.9 bounds the next change by `ε|pₙ| min_m |eₘ/(pₘp_{m+1})|`), `dlmf_3_6_9_relative` (relative change `≤ ε` when the terms `eₛ/(pₛp_{s+1})` are nonnegative reals); the error of `wₙ^{(N)}` itself is `pₙ ∑_{s≥N} eₛ/(pₛp_{s+1})` (`olver_5_01`), estimated by 3.6.9 through its first term (heuristic; strict bounds: `olver_10_07`) | |
+| error analyses, Olver (1967a) §§4–5, 7 (`Section6OlverError.lean`) | (4.09)–(4.12) `olver_4_09`, `olver_4_10`, `olver_4_11`, `olver_4_12`; truncation error (5.01)–(5.04) `olverTrunc`, `olver_5_01`, `olver_5_03`, `olver_5_04`, `olverT`, `olver_partial_sum`; rounding errors (7.01) `olver_7_01`, `olverP_div_tendsto`, (7.02) `olver_7_02`, back-substitution factor `pᵣ/pₛ` `olver_backsub_propagation` | `Filter.Tendsto.limUnder_eq` |
+| more general normalizing condition, Olver (1967a) §§9–10 (`Section6OlverGeneral.lean`) | (9.01)–(9.04) `NormSum`, `olver_9_04` (existence and uniqueness), `eq_comb_of_range`; (9.05)–(9.07) `IsGenBVSol`; (9.10)–(9.14) `genP`, `genQ`, `genE`, `olver_9_10`, `olver_9_14`; Theorem 2 `olver_theorem_2`; bounds (10.02) `olver_10_02`, (10.03)–(10.04) `IsRhoBound`, `olver_10_04`, `olver_10_03`, (10.05)–(10.06) `olver_10_06`, `olver_eta_N`, (10.07)–(10.10) `olverGenBound`, `olver_10_07`, `norm_sub_le_tsum_of_steps` | `Filter.Tendsto.div_atTop`, `not_tendsto_atTop_of_tendsto_nhds`, `Finset.prod_Ico_consecutive`, `HasSum.tendsto_sum_nat` |
+| Olver (1967a) §8 (Miller/Shintani as backward elimination), §11 (alternative method, first-order error decomposition), examples; Olver and Sookne (1972), Wimp (1984) | Not formalized | |
+| examples | See §3.6(vi) | |
+
+### §3.6(vi) Examples (`Azurite/DLMF/Chapter3/Section6Examples.lean`, `Section6Weber.lean`, `Section6WeberTable.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.6.11 (satisfied by `Jₙ(1)`) | `besA`, `besB`, `besC`, `besJ1`, `dlmf_3_6_11` (from `BZ.besselJNat_recurrence`) | |
+| 3.6.12 | `dlmf_3_6_12`, `abs_besselJNat_one_sub_le`, `tendsto_besselJNat_one`, `besselJNat_zero_one_pos` | `Stirling.factorial_isEquivalent_stirling` |
+| 3.6.13 (`Yₙ(1)`) | **Deferred**: `Yₙ` is only defined (`BZ.besselY`); the dominance claim is proved for every solution independent of `Jₙ(1)` (`dlmf_3_6_vi_dominant`) | |
+| "`Yₙ(1)` is dominant … `Jₙ(1)` is recessive"; backward recursion by Miller's or Olver's algorithm | `besP`, `besP_ge`, `olverP_bes`, `besJ1_isRecessive`, `dlmf_3_6_vi_dominant`, `dlmf_3_6_vi_miller`, `dlmf_3_6_vi_olver` | |
+| 11.10.2 (used), 3.6.14 | `weberE`, `abs_weberE_le`, `weberE_rec`, `weberD`, `weberW`, `dlmf_3_6_14` | `intervalIntegral.integral_eq_sub_of_hasDerivAt` |
+| 3.6.15, 3.6.16 | `weberE_expansion` (`π𝐄ₙ(1) = 1/(n−1) − (−1)ⁿ/(n+1) + O(n⁻³)`, explicit), `dlmf_3_6_15`, `dlmf_3_6_16` | |
+| "intermediate … ; the conditions for Olver's algorithm are satisfied" | `dlmf_3_6_vi_weber_intermediate`, `weberE_lower`, `tendsto_weberW_div_olverP`, `dlmf_3_6_vi_weber_olver` | |
+| `𝐄₀(1) = −0.56865 663` from the Maclaurin series (§11.10(iii)) | `weberE_zero_one`, `weberE0Term`, `hasSum_weberE0Term`, `integral_sin_sin_mem`, `dlmf_table_3_6_1_E0` | `intervalIntegral.hasSum_integral_of_dominated_convergence`, `integral_sin_pow_odd`, `Real.hasSum_sin` |
+| "The least value of `N` that satisfies (3.6.9) is found to be 16" | `dlmf_table_3_6_1_N` | |
+| Table 3.6.1 (`pₙ`, `eₙ`, `eₙ/(pₙp_{n+1})`, `wₙ`) | `table361`, `dlmf_table_3_6_1` (all 64 printed entries correctly rounded results of the computation); `besS`, `olverE_weber`, `olverW_eq_sum`, `olverW_zero_eq`, `encAB`, `encMul`, `RoundsSig`, `rsum` | `Real.pi_gt_d20`, `Real.pi_lt_d20` |
+| "The values of `wₙ` for `n = 1, 2, …, 10` are the wanted values of `𝐄ₙ(1)`" | `dlmf_table_3_6_1_wanted` (`n = 2, …, 10`), `trueEnc`, `trueEnc_sound`; **erratum** `dlmf_table_3_6_1_erratum_w1` (`n = 1`) | |
+| "for `n > 10` … the underlined digits are in error" | `dlmf_table_3_6_1_digits` (`n = 11–14` consistent with the half-unit criterion; **erratum** at `n = 15`) | |
+| Gil et al., references | Not formalized | |
+
+### §3.6(vii) Linear Difference Equations of Other Orders (`Azurite/DLMF/Chapter3/Section6Other.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.6.17 | `IsRec1`, `rec1H`, `rec1H_isRec1`, `rec1H_ne_zero`, `IsRec1.eq_mul_rec1H`, `IsRec1.sub` | |
+| "in the inhomogeneous case it may sometimes be necessary to recur backwards to achieve stability" | `rec1Back`, `rec1Back_spec`, `rec1_eq_of_end`, `rec1Back_eq`, `dlmf_3_6_17_backward`, `dlmf_3_6_17_forward_unstable`, `dlmf_3_6_17_unique` | |
+| 3.6.18 | `IsRecK`, `IsRecKUpTo`, `isRecK_two_iff` (3.6.1 is `k = 2`) | |
+| "or for systems of `k` first-order inhomogeneous equations" | `companionStep`, `dlmf_3_6_18_system` | |
+| "`k − ℓ` conditions … at the beginning …, and `ℓ` conditions at the end" | `IsBVk` | |
+| "forward and backward recursion … the special cases `ℓ = 0` and `ℓ = k`" | `recKState`, `recKFwd`, `recKState_eq`, `dlmf_3_6_18_forward`, `recK_eq_of_init`, `dlmf_3_6_vii_ell_zero`; `revA`, `revD`, `recKBwd`, `recK_eq_of_end`, `dlmf_3_6_18_backward`, `dlmf_3_6_vii_ell_k` | |
+| "`ℓ` … depends on the asymptotic behavior of the wanted solution" | Prose (see §3.6(ii), 3.6.17 above for `k = 1, 2`) | |
+| Gautschi (1997b), Wimp (1984), Cash and Zahar (1994), Lozier (1980) | Not formalized | |

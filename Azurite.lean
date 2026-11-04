@@ -1967,6 +1967,16 @@ import Azurite.DLMF.Chapter3.Section5Oscillatory
 import Azurite.DLMF.Chapter3.Section5Romberg
 import Azurite.DLMF.Chapter3.Section5Simpson
 import Azurite.DLMF.Chapter3.Section5Smooth
+import Azurite.DLMF.Chapter3.Section6
+import Azurite.DLMF.Chapter3.Section6Examples
+import Azurite.DLMF.Chapter3.Section6Inhom
+import Azurite.DLMF.Chapter3.Section6Miller
+import Azurite.DLMF.Chapter3.Section6Olver
+import Azurite.DLMF.Chapter3.Section6OlverError
+import Azurite.DLMF.Chapter3.Section6OlverGeneral
+import Azurite.DLMF.Chapter3.Section6Other
+import Azurite.DLMF.Chapter3.Section6Weber
+import Azurite.DLMF.Chapter3.Section6WeberTable
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
