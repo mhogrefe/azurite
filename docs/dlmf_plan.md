@@ -513,7 +513,7 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 1.11.22–1.11.23 | `dlmf_1_11_23` | `Complex.norm_mul_exp_arg_mul_I`, `Real.rpow_inv_natCast_pow` |
 | 1.11.24 | `IsStable` (`Section11Stable.lean`) | — |
 | 1.11.25–1.11.26 | `hurwitzD`, `hdet`, `dlmf_1_11_25_one`, `dlmf_1_11_25_two`, `dlmf_1_11_25_three` | `Matrix.det_fin_two`, `Matrix.det_fin_three` |
-| §1.11(v) Hurwitz criterion | `dlmf_1_11_v_hurwitz` (full proof): `hurwitz_criterion`, `hStable_routh_iff`, `hdet_succ`, `hpoly_routh`, `exists_rhp_root_iff_of_homotopy`, `exists_root_near`, `norm_le_of_root`, `div_pos_of_hStable`, `isStable_iff_hStable` | `C_leadingCoeff_mul_prod_multiset_X_sub_C`, `Splits.nextCoeff_eq_neg_sum_roots_mul_leadingCoeff`, `Matrix.det_succ_column_zero`, `isClopen_iff` (`ConnectedSpace unitInterval`) |
+| §1.11(v) Hurwitz criterion | `dlmf_1_11_v_hurwitz` (full proof): `hurwitz_criterion`, `hStable_routh_iff`, `hdet_succ`, `hpoly_routh`, `exists_rhp_root_iff_of_homotopy`, `exists_root_within`, `norm_le_of_root`, `div_pos_of_hStable`, `isStable_iff_hStable` | `C_leadingCoeff_mul_prod_multiset_X_sub_C`, `Splits.nextCoeff_eq_neg_sum_roots_mul_leadingCoeff`, `Matrix.det_succ_column_zero`, `isClopen_iff` (`ConnectedSpace unitInterval`) |
 | §1.11(ii) prose (reciprocals) | `dlmf_1_11_ii_reverse_coeff` (`zⁿ f(1/z)` is `reverse`), `dlmf_1_11_ii_reverse` | `eval₂_reverse_eq_zero_iff`, `coeff_reverse` |
 | 1.11.9 | `discriminantOfZeros`, `dlmf_1_11_9` (Mathlib's `discr` = `aₙ^{2n−2} ∏_{j<k}(zⱼ − zₖ)²`), `prod_prod_erase_sub`, `sum_card_Ioi`, `dlmf_1_11_9_complex` | `resultant_deriv`, `resultant_eq_prod_eval`, `eval_multiset_prod_X_sub_C_derivative`, `discr_C` |
 | 1.11.10 | `dlmf_1_11_10` (general `k`), `dlmf_1_11_10_sum`, `dlmf_1_11_10_pairs`, `dlmf_1_11_10_prod` | `coeff_eq_esymm_roots_of_card` |
@@ -1346,3 +1346,260 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.4.33, 3.4.34 | `dlmf_3_4_33` (`C⁶`), `dlmf_3_4_34` (`C⁸`) | |
 | Hypotheses | `u` is `C^{d+p}` on all of `ℝ²` (DLMF states none); a local version (smoothness near `(x₀, y₀)`) is not formalized | |
 | sources (Panow), formulas on other grids (Collatz) | Not formalized (references) | |
+
+## Section 3.5
+
+### §3.5(i) Trapezoidal Rules (`Azurite/DLMF/Chapter3/Section5.lean`, `Section5Smooth.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.1 | `dlmf_3_5_1` (`f ∈ C²` on an open set containing `[a, b]`; `a < ξ < b`), `exists_mem_Ioo_integral_mul_eq` | `exists_eq_const_mul_intervalIntegral_of_nonneg`, `intervalIntegral_pos_of_pos_on`, `intermediate_value_uIcc`, `ContDiffOn.deriv_of_isOpen` |
+| 3.5.2 | `trapezoidSum`, `trapError`, `dlmf_3_5_2` | |
+| 3.5.3 | `dlmf_3_5_3`, `exists_sum_eq_card_mul` | `sum_integral_adjacent_intervals` |
+| 3.5.4 | `dlmf_3_5_4` (explicit constant, all `k ≥ 1`), `dlmf_3_5_4_isBigO`, `periodic_iteratedDeriv` | `em_iter` (§2.10(i)), `continuous_bernoulliFun`, `intervalIntegral.integral_comp_mul_add` |
+| "when `k = ∞` the error term is an exponentially-small function of `1/h`" | Erratum (needs analyticity): `smoothPeriodic_not_exponentially_small` and the rest of `Section5Smooth` | `contDiff_tsum`, `integral_tsum_of_summable_integral_norm`, `Summable.tsum_finsetSum`, `geom_sum_eq`, `Complex.exp_eq_one_iff` |
+| 3.5.5 ("Similar results hold … analytic in a strip") | Deferred: no precise statement; the natural route is Poisson summation with decay of the Fourier transform (Mathlib's `Real.tsum_eq_tsum_fourier`) | |
+| improvement by Euler–Maclaurin (§2.10(i)); Goodwin, Stenger | Not formalized (pointers) | |
+
+### §3.5(ii) Simpson's Rule (`Azurite/DLMF/Chapter3/Section5Simpson.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.6 | `dlmf_3_5_6` (`f ∈ C⁴` on an open set containing `[a, b]`; `a < ξ < b`), `peano4`, `C4Data`, `simpsonKernel_derivs`, `simpsonKernel_derivs'`, `iteratedDeriv_four_eq` | `integral_eq_sub_of_hasDerivAt`, `integral_add_adjacent_intervals`, `ContDiffOn.deriv_of_isOpen` |
+| 3.5.7 | `simpsonWeight`, `simpsonSum`, `simpsonError`, `dlmf_3_5_7`, `sum_simpsonWeight` | |
+| 3.5.8 | `dlmf_3_5_8` (`n = 2N`) | `sum_integral_adjacent_intervals` |
+| "a combination of two trapezoidal rules, one with step size `h` and one with step size `h/2`" | `simpsonSum_eq_trapezoid` (`S_{2N} = (4T_{2N} − T_N)/3`); the refinement of the error term itself is not formalized | |
+
+### §3.5(iii) Romberg Integration (`Azurite/DLMF/Chapter3/Section5Romberg.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.9 | `rombergCoeff` (`c_s = −B_{2s}/(2s)! (f^{(2s−1)}(b) − f^{(2s−1)}(a))`), `dlmf_3_5_9` (`f ∈ C^{2m+2}` on an open set containing `[a, b]`; `O` uniform in `n ≥ 1`, explicit constant), `contDiffOn_iterate_deriv` | `em_sum` (§2.10(i)), `periodicBernoulli_bound` (§2.10(i)) |
+| "by combining the rule for `h` with that for `h/2`, the first error term `c₁h²` … can be eliminated" | `romberg_expansion` with `k = 1` (`λ_{1,1} = 0`); Simpson form `simpsonSum_eq_trapezoid` (§3.5(ii)) | |
+| 3.5.10 | Erratum (left side must be `G_k(h)`): `rombergG`, `dlmf_3_5_10` (corrected), `dlmf_3_5_10_erratum` | |
+| "successive terms `c₁h², c₂h⁴, …` … are eliminated" | `rombergLambda`, `rombergLambda_succ`, `rombergLambda_eq_zero`, `romberg_expansion` | `Finset.prod_Icc_succ_top` |
+| 3.5.11, elementary start `G₀(h) = ½h(f(a) + f(b))`, `h = b − a` | `dlmf_3_5_11` | |
+| "To generate `G_k(h)` the quantities `G₀(h), …, G₀(h/2ᵏ)` are needed" | By the definition of `rombergG` (structural recursion on `k`) | |
+| 3.5.12 | `dlmf_3_5_12` (`x₀ = a`) | `sum_range_even_odd` (§3.5(ii)) |
+| 3.5.13, `k = 0` | `rombergErrCoeff`, `dlmf_3_5_13_zero` (from 3.5.3) | |
+| 3.5.13, `k = 1` | `dlmf_3_5_13_one` (`G₁` is Simpson's rule; from 3.5.8) | `bernoulli'_four` |
+| 3.5.13, `k ≥ 2` | Deferred: needs the constant sign of the Romberg Peano kernel (Bauer, Rutishauser and Stiefel 1963), then the weighted mean value theorem `exists_mem_Ioo_integral_mul_eq` and `romberg_expansion` to identify the constant | |
+| Hypothesis `f ∈ C^{2k+2}(a, b)` in 3.5.13 | Formalized with `f ∈ C^{2k+2}` on an open set containing `[a, b]` (as in §3.5(i)–(ii)) | |
+| "the Romberg method affords … high accuracy … adaptive algorithm" | Not formalized (remark) | |
+| Example: coefficient of `f^{(16)}(ξ)` in 3.5.13 with `j = 2`, `k = 7` is `(0.14…) × 10⁻¹³` | `dlmf_3_5_iii_example_coeff` (absolute value; the coefficient carries a minus sign), `bernoulli'_six` … `bernoulli'_sixteen`, `bernoulli_sixteen` | `bernoulli'_def`, `bernoulli_eq_bernoulli'_of_ne_one` |
+| 3.5.14 (`∫₀^∞ e^{−pt} J₀(t) dt = 1/√(p² + 1)`), "`G₇(h)` with 14 correct digits" (`p = 1`, `[0, 30]`, `h = 7.5`) | Deferred: needs `J₀` (Chapter 10); the 14 digits would then be an AzFloat enclosure of `G₇(7.5)` plus a bound on the tail `∫₃₀^∞` | |
+| "About `2⁹ = 512` function evaluations" | Not formalized (`G₇(30/4)` uses the `4 · 2⁷ + 1 = 513` nodes of `G₀(30/2⁹)`) | |
+| 20-point Gauss–Laguerre, 15 evaluations | Deferred to Chapter 10 (needs `J₀`; the 20-point nodes and weights are certified in `dlmf_table_3_5_9`) | |
+| Davis and Rabinowitz (singular `f`) | Not formalized (reference) | |
+
+### §3.5(iv) Interpolatory Quadrature Rules (`Azurite/DLMF/Chapter3/Section5Interpolatory.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.15, definition of an interpolatory rule | `quadError`, `IsInterpolatory`, `isInterpolatory_of_pow` | `Polynomial.eval_eq_sum_range'` |
+| "the weights `w_k` and error term `E_n(f)` are found by integrating the product of the Lagrange interpolation polynomial … and `w(x)`" | `interpWeight`, `dlmf_3_5_15`, `isInterpolatory_iff` (uniqueness), `integral_interpolate_mul`, `quadError_interpWeight` (`w` interval integrable, nodes distinct) | `Lagrange.basis`, `Lagrange.interpolate`, `Lagrange.eq_interpolate` |
+| closed / open rules | `IsClosedRule`, `IsOpenRule` | |
+| Newton–Cotes: trapezoidal rules and Simpson's rule are closed | `trapezoid_isInterpolatory`, `trapezoid_isClosedRule`, `trapezoidSum_one_eq`, `simpson_isInterpolatory`, `simpson_isClosedRule`, `simpsonSum_two_eq` (elementary rules; the composite rules are piecewise interpolatory) | `integral_pow` |
+| open rules: midpoint rule | `midpoint_isInterpolatory`, `midpoint_isOpenRule` | |
+| open rules: Gauss formulas | Deferred to §3.5(v) | |
+| Fejér's rule: nodes are the extrema of `T_n` | `ccNode`, `fejer_nodes_isLocalExtr_iff` (`n ≥ 2`), `fejer_isOpenRule`, `fejer_isInterpolatory` (weights `∫₋₁¹ ℓₖ`; DLMF gives no formula) | `Polynomial.Chebyshev.isLocalExtr_T_real_iff` |
+| "If we add `−1` and `1` … the resulting closed formula is the … Clenshaw–Curtis formula" | `range_eq_insert_fejer`, `ccNode_isClosedRule` | |
+| "whose weights are positive" | `ccWeight_pos`, `sum_two_div_four_sq_sub_one` | |
+| 3.5.16–3.5.17 | `ccG`, `ccB`, `ccWeight`, `dlmf_3_5_16` (`n ≥ 1`; interpolatory, weights = `∫₋₁¹ ℓₖ`), `integral_eq_sum_ccWeight`, `ccWeight_mul_cos`, `sum_ccG_mul_cos`, `sum_range_two_mul_cos`, `integral_T_real`, `integral_neg_one_one_eq`, `integral_sin_mul_zero_pi`, `ccNode_injOn` | `Polynomial.Sequence.span_degreeLT`, `Polynomial.Chebyshev.chebyshevTsequence`, `Polynomial.Chebyshev.T_real_cos`, `geom_sum_eq`, `Real.injOn_cos`, `intervalIntegral.integral_comp_mul_deriv` |
+| Mason–Handscomb, Davis–Rabinowitz, Clenshaw–Curtis; comparisons with Gauss quadrature (Trefethen) | Not formalized (references) | |
+
+### §3.5(v) Gauss Quadrature, through the paragraph before "Gauss–Legendre Formula" (`Azurite/DLMF/Chapter3/Section5Gauss.lean`, `Section5GaussError.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "monic polynomials `p_n` … orthogonal with respect to a positive weight function `w` on a finite or infinite interval `(a, b)`; compare §18.2(i)" | `IsGaussWeight` (open interval `I`, `w > 0` on `I`, all moments finite), `wInt`, `IsOrthMonic`, `exists_isOrthMonic`, `IsOrthMonic.unique`, `wInt_pos` | `Matrix.mulVecLin`, `LinearMap.injective_iff_surjective`, `setIntegral_pos_iff_support_of_nonneg_ae` |
+| "nodes `x_k` the zeros of `p_n`" (implicitly: `n` real simple zeros in `(a, b)`) | `IsOrthMonic.roots_spec`, `eval_nonneg_or_nonpos_of_even`, `IsOrthMonic.eq_nodal` | `Polynomial.roots_mul`, `prod_multiset_X_sub_C_of_monic_of_roots_card_eq` |
+| 3.5.18 | `christoffel`, `christoffel_eq_wInt_basis` (= interpolatory weights `∫ ℓₖ w`, so the rule is 3.5.15) | `Lagrange.eval_basis_not_at_node`, `Lagrange.nodalWeight_eq_eval_derivative_nodal` |
+| "they are all positive" | `christoffel_pos` | |
+| 3.5.19 | `dlmf_3_5_19` (finite `(a, b)`, `n ≥ 1`, `f ∈ C^{2n}` on an open set containing `[a, b]`; `ξ ∈ (a, b)`), `hermite`, `hermite_eval`, `hermite_derivative_eval`, `natDegree_hermite_le`, `hermite_error`, `exists_mem_Ioo_notMem_eq_zero` | `exists_deriv_eq_zero`, `intermediate_value_Ioo`, `IsCompact.exists_isMinOn` |
+| 3.5.19 on infinite intervals | Not formalized (DLMF states no conditions on `f`; needs growth conditions making `f w` integrable and `f^{(2n)}` controlled) | |
+| 3.5.20 | `gaussGamma` | |
+| 3.5.20_1 | `dlmf_3_5_20_1` (any interval, polynomial `f`) | `Polynomial.modByMonic_add_div`, `Lagrange.eq_interpolate` |
+| 3.5.20_2 | `dlmf_3_5_20_2` (family `p_m`, `ℓ, m < n`) | |
+| weight chosen to simulate asymptotics; efficiency for `C^∞`; adaptive algorithms; references (Gautschi, Gil et al., Davis–Rabinowitz, Stroud–Secrest) | Not formalized (remarks, references) | |
+| "The given quantities `γ_n` follow from (18.2.5), (18.2.7), Table 18.3.1, and the relation `γ_n = h_n/k_n²`" | `gaussGamma_eq_div` (the relation); the tabulated values belong to the Gauss–Legendre … formulas (Chapter 18) | |
+
+### §3.5(v) Gauss–Legendre Formula (`Azurite/DLMF/Chapter3/Section5GaussLegendre.lean`, `Section5GaussLegendreTables.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.21, `[a, b] = [−1, 1]`, `w(x) = 1` | `isGaussWeight_legendre`, `isOrthMonic_legendreMonic` (Rodrigues' formula, repeated integration by parts) | `intervalIntegral.integral_mul_deriv_eq_deriv_mul`, `Polynomial.isRoot_iterate_derivative_of_lt_rootMultiplicity` |
+| 3.5.21, `γ_n` | `dlmf_3_5_21`, `wallisI_eq` | |
+| "The `p_n(x)` are the monic Legendre polynomials … `P_n(x)` … scaled" | `legendrePoly`, `legendreMonic`, `legendreP_eq`, `legendreLead` | |
+| (used) three-term recurrence, Bonnet 18.9.1, parity | `legendreMonic_succ_succ`, `eval_legendreP_succ_succ`, `eval_neg_legendreP` (on `legendrePoly`) | |
+| (used) weights via the Christoffel function | `christoffel_mul_sum`, `christoffel_legendre` | `Matrix.mul_eq_one_comm_of_card_eq` |
+| Table 3.5.1 (`n = 5`, 15D) | `dlmf_table_3_5_1` | |
+| Table 3.5.2 (`n = 10`, 18D) | `dlmf_table_3_5_2` | |
+| Table 3.5.3 (`n = 20`, 21D) | `dlmf_table_3_5_3` | |
+| Table 3.5.4 (`n = 40`, 21D) | `dlmf_table_3_5_4`; errata `dlmf_table_3_5_4_erratum_5`, `dlmf_table_3_5_4_erratum_15` | |
+| Table 3.5.5 (`n = 80`, 21D) | `dlmf_table_3_5_5`; erratum `dlmf_table_3_5_5_erratum_32` | |
+| Certificate method | `glRH`, `glAC`, `glRowOK_sound`, `glZeroOK_sound`, `glTableOK_sound`, `GLTableSpec` (exact `Nat`/`Int` kernel arithmetic, `D = 10^90`; about 10 s) | `intermediate_value_Ioo` |
+
+### §3.5(v) Gauss–Chebyshev Formula (`Azurite/DLMF/Chapter3/Section5GaussChebyshev.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.22, `w(x) = (1 − x²)^{−1/2}` | `chebWeight`, `chebWeight_eq_rpow`, `isGaussWeight_chebWeight`, `gcT`, `isOrthMonic_gcT` | `Polynomial.Chebyshev.integral_measureT_eq_integral_cos`, `Polynomial.Chebyshev.T_real_cos` |
+| 3.5.22, `γ_n = π/2^{2n−1}` | `dlmf_3_5_22` (`n ≥ 1`) | |
+| 3.5.23 | `gcNodesT`, `dlmf_3_5_23` (`n ≥ 1`) | `Polynomial.Chebyshev.integral_eq_sumZeroes` |
+| "Chebyshev weight functions `(1 − x)^α (1 + x)^β` with `|α| = |β| = ½`" | `chebWeight_eq_rpow` | |
+| 3.5.24 (nodes, weights) | `gcU`, `isOrthMonic_gcU`, `gcNodesU`, `dlmf_3_5_24` (`n ≥ 1`) | `Polynomial.Chebyshev.U_real_cos` |
+| 3.5.24, `γ_n = π/2^{2n+1}` | `dlmf_3_5_24_gamma` (`n ≥ 1`) | |
+| 3.5.25 (`α = ½`: nodes `+cos(2kπ/(2n+1))`) | `gcW`, `isOrthMonic_gcW`, `gcNodesW`, `dlmf_3_5_25_W`, `dlmf_3_5_25_gamma_W` | |
+| 3.5.25 (`α = −½`: nodes `−cos(2kπ/(2n+1))`) | `gcV`, `isOrthMonic_gcV`, `gcNodesV`, `dlmf_3_5_25_V`, `dlmf_3_5_25_gamma_V` | |
+| (tools) | `gauss_rule_eq`, `eq_zero_of_T`, `trap_exact`, `circ_exact`, `cheb_U_identity`, `cheb_W_identity`, `cheb_V_identity` | `Polynomial.Sequence.span_degreeLT` |
+
+### §3.5(v) Gauss–Jacobi Formula (`Azurite/DLMF/Chapter3/Section5GaussJacobi.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.26, `w(x) = (1 − x)^α (1 + x)^β`, `α, β > −1` | `jacW`, `isGaussWeight_jacW`, `intervalIntegrable_jac` | `intervalIntegral.intervalIntegrable_rpow'` |
+| 3.5.26, `γ_n` | `dlmf_3_5_26` (`n ≥ 1`; for `n = 0` and `α + β = −1` the printed expression is `0 · Γ(0)²` in the denominator, i.e. undefined, while `γ₀ = ∫ w` — the rule has `n ≥ 1` nodes) | `Complex.betaIntegral_eq_Gamma_mul_div`, `Real.Gamma_add_one` |
+| "The `p_n(x)` are the monic Jacobi polynomials `P_n^{(α,β)}(x)` (§18.3)" | `jacobiP` (Rodrigues), `jacobiP_rodrigues` (18.5.5), `jacMonic`, `isOrthMonic_jacMonic`, `jacMonic_eq_jacobiP` | |
+| (tools) | `jacR`, `jacF`, `hasDerivAt_jacF`, `iteratedDeriv_jac`, `integral_mul_jacF`, `jacR_degree`, `jacLead`, `integral_rpow_mul_one_sub_rpow`, `integral_jac_beta`, `jacGamma_add_nat` | `intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le` |
+
+### §3.5(v) Gauss–Laguerre Formula (`Azurite/DLMF/Chapter3/Section5GaussLaguerre.lean`, `Section5GaussLaguerreTables.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.27, `[a, b) = [0, ∞)`, `w(x) = x^α e^{−x}`, `α > −1` | `lagW`, `isGaussWeight_lagW`, `wInt_lagW_X_pow` | `Real.GammaIntegral_convergent`, `Real.Gamma_eq_integral` |
+| 3.5.27, `γ_n = n! Γ(n + α + 1)` | `dlmf_3_5_27` (all `n`) | `fwdDiff_iter_eq_sum_shift`, `Polynomial.fwdDiff_iter_eq_zero_of_degree_lt`, `Polynomial.fwdDiff_iter_degree_eq_factorial` |
+| "If `α ≠ 0` … generalized Gauss–Laguerre formula" | Covered: everything above is for general `α > −1` | |
+| "The `p_n` are the monic Laguerre polynomials `L_n` (§18.3)" | `lagL` (explicit sum 18.5.12), `lagMonic`, `lagMonic_monic`, `natDegree_lagMonic`, `isOrthMonic_lagMonic`, `lagMonic_eq_lagL` (`p_n = (−1)^n n! L_n^{(α)}`) | |
+| (used) weights for `α = 0` | `eval_lagL_zero`, `christoffel_laguerre` (`wₖ = 1/∑_{j<n} L_j(xₖ)²`) | |
+| Table 3.5.6 (`n = 5`, 18S) | `dlmf_table_3_5_6` | |
+| Table 3.5.7 (`n = 10`, 18S) | `dlmf_table_3_5_7`; errata `dlmf_table_3_5_7_erratum_0`, `dlmf_table_3_5_7_erratum_3` | |
+| Table 3.5.8 (`n = 15`, 18S) | `dlmf_table_3_5_8` | |
+| Table 3.5.9 (`n = 20`, 18S) | `dlmf_table_3_5_9` | |
+| Certificate method | `lagS`, `lagH`, `lagK_spec`, `lagRowOK_sound`, `lagTableOK_sound`, `LagTableSpec`, `lagNodes`, `lagWeight` (exact `Nat`/`Int` kernel arithmetic, `D = 10^100`, brackets in `[0, R]`) | `intermediate_value_Ioo` |
+
+### §3.5(v) Gauss–Hermite Formula (`Azurite/DLMF/Chapter3/Section5GaussHermite.lean`, `Section5GaussHermiteTables.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.28, `(a, b) = (−∞, ∞)`, `w(x) = e^{−x²}` | `hermW`, `isGaussWeight_hermW`, `wInt_hermW_one`, `wInt_hermW_derivative` | `integrable_rpow_mul_exp_neg_mul_sq`, `integral_gaussian`, `MeasureTheory.integral_mul_deriv_eq_deriv_mul_of_integrable` |
+| 3.5.28, `γ_n = √π n!/2ⁿ` | `dlmf_3_5_28` (all `n`), via `wInt_hermMonic_succ_mul`, `wInt_hermMonic_mul` | `Polynomial.iterate_derivative_eq_zero`, `Polynomial.coeff_iterate_derivative` |
+| "The `p_n(x)` are the monic Hermite polynomials `H_n(x)` (§18.3)" | `hermiteH` (with Rodrigues' formula 18.5.5 `hermiteH_rodrigues`, 18.9.1 `hermiteH_succ_succ`, 18.9.25 `derivative_hermiteH_succ`), `hermMonic`, `hermMonic_eq` (`2ⁿ p_n = H_n`), `hermMonic_spec`, `isOrthMonic_hermMonic` | |
+| (used) parity and weights | `eval_neg_hermiteH`, `eval_neg_hermMonic`, `christoffel_hermite` (`wₖ = √π/∑_{j<n} H_j(xₖ)²/(2^j j!)`) | |
+| "for `n = 5, 10` are shown in Tables 3.5.10 and 3.5.11" | All four printed tables are certified (Tables 3.5.12, 3.5.13 give `n = 15, 20`; the Laguerre sentence is worded the same way) | |
+| Table 3.5.10 (`n = 5`, 15S) | `dlmf_table_3_5_10` | |
+| Table 3.5.11 (`n = 10`, 18S) | `dlmf_table_3_5_11` | |
+| Table 3.5.12 (`n = 15`, 21S) | `dlmf_table_3_5_12` | |
+| Table 3.5.13 (`n = 20`, 21S) | `dlmf_table_3_5_13` | |
+| Certificate method | `hermRH`, `hermAC_spec`, `herm_pi_bounds` (128-bit AzFloat `Encl.pi`, `decide +kernel`), `hermWOK_sound`, `hermRowOK_sound`, `hermZeroOK_sound`, `hermTableOK_sound`, `HermTableSpec`, `hermNodes`, `hermWeight` (exact `Nat`/`Int` kernel arithmetic, `D = 10^100`) | `intermediate_value_Ioo`, `Real.le_sqrt`, `Real.sqrt_le_left` |
+
+### §3.5(v) Gauss Formula for a Logarithmic Weight Function (`Azurite/DLMF/Chapter3/Section5GaussLog.lean`, `Section5GaussLogTables.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.29, `[a, b] = [0, 1]`, `w(x) = ln(1/x)` | `logW`, `logW_eq`, `isGaussWeight_logW` (on `(0, 1)`) | `intervalIntegral.intervalIntegrable_log'` |
+| (used) moments `∫₀¹ xᵏ ln(1/x) dx = 1/(k + 1)²` | `integral_pow_mul_logW`, `wInt_logW_X_pow` | `intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le`, `Real.continuous_mul_log`, `Real.hasDerivAt_mul_log` |
+| (used) the monic orthogonal polynomials (no closed form; rational coefficients) | `logMonic`, `isOrthMonic_logMonic`, `qPoly`, `logMom`, `logOK`, `isOrthMonic_of_logOK`, `gaussGamma_of_logOK`, `logMonic_eq`, `christoffel_log`; `logData_ok` certifies `p_0, …, p_20` | |
+| "for `n = 5, 10` are shown in Tables 3.5.14 and 3.5.15" | All four printed tables are certified (Tables 3.5.16, 3.5.17 give `n = 15, 20`) | |
+| Table 3.5.14 (`n = 5`, 15S) | `dlmf_table_3_5_14` | |
+| Table 3.5.15 (`n = 10`, 18S) | `dlmf_table_3_5_15` | |
+| Table 3.5.16 (`n = 15`, 21S) | `dlmf_table_3_5_16` | |
+| Table 3.5.17 (`n = 20`, 21S) | `dlmf_table_3_5_17` | |
+| Certificate method | `logRowOK_sound`, `logTableOK_sound`, `LogTableSpec`, `logNodes`, `logWeight`, `logGR_lip` (exact `ℚ` kernel arithmetic, `D = 10^100`) | `intermediate_value_Ioo` |
+
+### §3.5(vi) Eigenvalue/Eigenvector Characterization of Gauss Quadrature Formulas (`Azurite/DLMF/Chapter3/Section5Eigen.lean`, `Section5EigenClassical.lean`, `Section5EigenChebyshev.lean`, `Section5EigenJacobi.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.30, with `β_n > 0`, `p_{−1} = 0`, `p_0 = 1` | `recA`, `recB`, `prevP`, `dlmf_3_5_30`, `recB_pos`, `orth_P_zero` (any Gauss weight; `α_n = ∫ x p_n² w/h_n`, `β_n = h_n/h_{n−1}`) | |
+| `h_n = h_0 β_1 β_2 ⋯ β_n` | `gaussGamma_eq_prod` | |
+| 3.5.30_5, `q_n = p_n/√h_n`, `q_{−1} = 0`, `q_0 = 1/√h_0` | `orthoQ`, `orthoQ_zero`, `dlmf_3_5_30_5` | |
+| "closely related to the Lanczos recursion in §3.2(vi)" | Not formalized (remark) | |
+| 3.5.31 (nodes = eigenvalues of `J_n`) | `jacobiMatrix`, `jacobiMatrix_isSymm`, `dlmf_3_5_31` (`∃ v ≠ 0, J_n v = x v ↔ p_n(x) = 0`), `dlmf_3_5_31_hasEigenvalue`, `jacobiMatrix_mulVec_qvec`, `eigvec_eq_smul_qvec` | `Module.End.HasEigenvalue`, `Matrix.toLin'` |
+| 3.5.32, `w_k = β_0 v_{k,1}²`, `β_0 = ∫ w` | `dlmf_3_5_32`, `recB_zero` | |
+| 3.5.33, `γ_n = β_0 β_1 ⋯ β_n` | `dlmf_3_5_33` | |
+| "Tables 3.5.1–3.5.13 can be verified by application of the results given in the present subsection" | Not used: the tables are certified directly (§3.5(v)) | |
+| "monic version `p_n` and orthonormal version `q_n` … dividing by `k_n` respectively `√h_n`" | `legendreP_eq`, `hermMonic_eq`, `lagMonic_eq_lagL`, `jacMonic_eq_jacobiP`, `gcT`, `gcU`, `gcV`, `gcW`, `shP_gcT`; `table_3_5_17_5_laguerre_q`, `wInt_lagL_sq` | |
+| 3.5.33_1 (`α_n`) | `dlmf_3_5_33_1_alpha` (whenever `2n + α + β ≠ 0`), via `coeff_jacR_succ`, `jacR_sub`, `coeff_jacMonic_sub`, `recA_eq_coeff` | |
+| 3.5.33_1 (`β_n`) | `dlmf_3_5_33_1_beta` (`n ≥ 2`; for `n = 1` it holds when `α + β ≠ −1`, `dlmf_3_5_33_1_beta_one`) | |
+| 3.5.33_2 ("by continuity") | `dlmf_3_5_33_2_alpha`, `dlmf_3_5_33_2_beta` (exact values, no continuity argument needed) | |
+| Jacobi `h_0 = 2^{α+β+1}Γ(α+1)Γ(β+1)/Γ(α+β+2)` | `jacobi_h0` | |
+| Table 3.5.17_5, `C_n^{(λ)}` | `table_3_5_17_5_ultra_alpha`, `_beta` (`λ ≠ 0`), `_h0`, `jacW_ultra` (monic `C_n^{(λ)}` = monic `P_n^{(λ−½,λ−½)}`) | `Real.Gamma_mul_Gamma_add_half` |
+| Table 3.5.17_5, `T_n` | `table_3_5_17_5_T_alpha`, `_beta`, `_h0`, `gcT_rec` | `Polynomial.Chebyshev.T_add_two` |
+| Table 3.5.17_5, `U_n` | `table_3_5_17_5_U_alpha`, `_beta`, `_h0`, `gcU_rec` | `Polynomial.Chebyshev.U_add_two`, `integral_cos_sq` |
+| Table 3.5.17_5, `V_n` | `table_3_5_17_5_V_alpha`, `_beta`, `_h0`, `gcV_rec` | `integral_cos` |
+| Table 3.5.17_5, `W_n` | `table_3_5_17_5_W_alpha`, `_beta`, `_h0`, `gcW_rec` | |
+| Table 3.5.17_5, `T_n^*` | `table_3_5_17_5_Tstar_alpha`, `_beta`, `_h0`, `shW_chebWeight_one`, `shP_gcT`; general shift `shW`, `shP`, `wInt_shW`, `isGaussWeight_shW`, `isOrthMonic_shP`, `recAB_shP`, `recB_shP_zero` | `intervalIntegral.integral_comp_mul_sub`, `IntervalIntegrable.comp_mul_left` |
+| Table 3.5.17_5, `P_n` | `table_3_5_17_5_legendre_alpha`, `_beta`, `_h0`, `legendreMonic_rec` | |
+| Table 3.5.17_5, `L_n^{(α)}` | `table_3_5_17_5_laguerre_alpha`, `_beta`, `_h0`, `table_3_5_17_5_laguerre_q` | |
+| Table 3.5.17_5, `H_n` | `table_3_5_17_5_hermite_alpha`, `_beta`, `_h0`, `hermMonic_rec`, `derivative_hermMonic_succ` | |
+| (tools) | `recAB_of_rec` (uniqueness of recurrence coefficients), `recA_eq_coeff`, `eq_zero_of_wInt_mul_P` | |
+| 3.5.33_3, `q_n = L_n^{(α)}/√h_n` | `lagOrtho`, `dlmf_3_5_33_3`, `wInt_lagL_sq` (`h_n = Γ(n + α + 1)/n!`) | |
+
+### §3.5(vii) Oscillatory Integrals (`Azurite/DLMF/Chapter3/Section5Oscillatory.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.34 | `oscCos`, `oscSin` (definitions) | |
+| "can be computed by Filon's rule" (Davis–Rabinowitz) | Not formalized (method not stated in DLMF; reference) | |
+| Wong (Gaussian quadrature for transforms), Evans–Webster (comparison incl. extended Clenshaw–Curtis) | Not formalized (references) | |
+| Longman's method: "the integral is written as an alternating series of positive and negative subintegrals" | `dlmf_3_5_vii_longman_sin`, `dlmf_3_5_vii_longman_cos`, `longman_core` (hypotheses supplied: `f` decreasing on `[0, ∞)` with limit `0`, `ω > 0`; subintegrals between consecutive zeros alternate in sign, decrease to `0`, the series converges and sums to the improper integral), `longmanI`, `longmanA`, `longmanJ`, `longmanA_antitone`, `longmanA_tendsto`, `sum_longmanI`, `longman_rem_le` | `Antitone.tendsto_alternating_series_of_tendsto_zero`, `AntitoneOn.intervalIntegrable`, `Real.sin_add_nat_mul_pi` |
+| "Convergence acceleration schemes, for example Levin's transformation (§3.9(v))" | Deferred to §3.9(v) | |
+| Clendenin (1966), Lyness (1985), Iserles et al. (2006) | Not formalized (references) | |
+
+### §3.5(viii) Complex Gauss Quadrature (`Azurite/DLMF/Chapter3/Section5ComplexGauss.lean`, `Section5ComplexGaussTable.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.35, `s > 0`, `c > c₀ > 0` | `cgI` (`bromwich` of §2.4(ii) at `t = 1`: limit of the symmetric integrals), `tendsto_cgI_pow` (moments `1/Γ(s + k)`), `cgL`, `tendsto_cgI_poly`, `cgI_poly` | `Complex.Gamma_ne_zero_of_re_pos`, `Complex.cpow_add` |
+| "`f(ζ)` analytic in `ℜζ > c₀` and bounded as `ζ → ∞` in `\|ph ζ\| ≤ ½π`" | Hypotheses for convergence of 3.5.35 for general `f`; not needed for the exactness statement (polynomials in `1/ζ` converge for every `c > 0`) | |
+| 3.5.36, `E_n(f) = 0` for `f` a polynomial of degree `≤ 2n − 1` in `1/ζ` | `cgE`, `dlmf_3_5_36`, `cgL_eq_sum`, `cgNodes`, `cgNodesU`, `mem_cgNodes`, `cgWeight`, `cgWeight_eq` (`w_k = A(u_k)/p_n′(u_k)`), `cgA`, `cgQ`, `cgL_basis_eq` | `Lagrange.eq_interpolate`, `Lagrange.basis_eq_prod_sub_inv_mul_nodal_div`, `Polynomial.modByMonic_add_div` |
+| 3.5.37 (complex orthogonal polynomials `p_n(1/ζ)`) | `cgP`, `cgc` (explicitly `₂F₀(−n, s + n − 1; ; u)`), `sum_cgc_mu`, `cgL_cgP_mul_X_pow`, `cgL_cgP_mul`, `dlmf_3_5_37` | `fwdDiff_iter_eq_sum_shift`, `Polynomial.fwdDiff_iter_eq_zero_of_degree_lt` |
+| "related to Bessel polynomials (§§10.49(ii), 18.34)" | `besselYGen` (18.34.1), `cgP_eq_besselYGen` (`p_n(u) = y_n(−2u; s)`) | |
+| (needed) the `n` nodes are distinct and finite | `cgP_ode`, `cgP_ode_iter`, `cgP_derivative_ne_zero` (simple zeros), `nodup_roots_cgP`, `card_cgNodesU`, `eval_zero_cgP` | `Polynomial.lt_rootMultiplicity_iff_isRoot_iterate_derivative_of_mem_nonZeroDivisors'` |
+| "The complex Gauss nodes `ζ_k` have positive real part for all `s > 0`" | Proved for `n = 5`, `s = 1` (`cgNodes_one_five_re_pos`). **Deferred** in general: a stability theorem for generalized Bessel polynomials (zeros of `y_n(x; s)` in `ℜx < 0`), not derivable from this subsection | |
+| Table 3.5.18 (`n = 5`, `s = 1`, 10S) | `dlmf_table_3_5_18`, `polyPz`, `mem_cgNodes_one_five`, `cgWeight_one_five`; certificates `exists_root_within`, `cEval_lip`, `norm_div_sub_div_le`, `cgRowOK_sound`, `cgTableOK_sound` (exact Gaussian rationals, disks of radius `10^{−30}`) | `Polynomial.Splits.eval_derivative_div_eval_of_ne_zero` |
+| Krylov and Skoblya (1985) | Not formalized (reference) | |
+| Example: 3.5.38, 3.5.39 (from §1.14(iii)) | `laplace`, `bromwichPartial`, `dlmf_2_4_3` | |
+| Example: 3.5.40 (`g = J₀`, `G = 1/√(p² + 1)`, conditions hold for `σ > 0`) | `besselJ0`, `lapG`, `laplace_besselJ0` (`ℜp > 0`), `laplace_besselJ0_real`, `tendsto_bromwich_lapG` (`σ > 0`), `abs_besselJ0_le_one`, `besselJ0_ode`, `expGrowth_besselJ0`, `choose_neg_half`, `hasSum_one_add_rpow_neg_half` | `Real.one_add_rpow_hasFPowerSeriesOnBall_zero`, `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq`, `integral_tsum_of_summable_integral_norm`, `BZ.besselJNat_ode` |
+| Example: "(3.5.39) has the form (3.5.35) if we set `ζ = tp`, `c = tσ`, `f(ζ) = t^{−1}ζ^s G(ζ/t)`" | `lapF`, `bromwichPartial_lapF`, `tendsto_cgI_lapF`, `cgI_lapF_besselJ0` | `intervalIntegral.integral_comp_div` |
+| Example: "We choose `s = 1` so that `f(ζ) = O(1)` at infinity" | `lapF_lapG` (`f(ζ) = ζ/√(ζ² + t²)`), `norm_lapF_lapG_le` (`\|f\| ≤ 2` for `\|ζ\| ≥ 2t`) | |
+| Example: 3.5.41 | `lapApprox`, `dlmf_3_5_41` (`J₀(t) = ∑ wₖζₖ/√(ζₖ² + t²) + Eₙ(f)`), `sum_cgWeight`, `lapApprox_zero` | `Complex.pow_cpow_nat_inv` |
+| Table 3.5.19, column `J₀(t)` (10D) | `dlmf_table_3_5_19_J0` (all correct), `j0Rec`, `j0OK_sound`, `abs_tsum_sub_sum_le` | |
+| Table 3.5.19, column `g(t)` | `dlmf_table_3_5_19_g` (`g₅(0) = 1`; certified 10D values at `t = 0.5, 1, 2, 5, 10`), `lapFt_sound`, `lapApprox_near`, `norm_cpow_half_sub_le`, `cgTable_nodes`; **errata** `dlmf_table_3_5_19_erratum` (`t = 1, 2, 5, 10`) | |
+| "The results are given in the middle column … the actual 10D values in the last column" | **Erratum** (text vs the corrected headings of V1.0.7): the middle column is `J₀(t)` and the last is `g(t)`; see `docs/dlmf_errata.md` | |
+| "Agreement is very good for small values of `t`, but not for larger values" | `dlmf_table_3_5_19_agreement` | |
+| "the integration path may need to be deformed; see §3.5(ix)" | See §3.5(ix) (`dlmf_3_5_45_path`) | |
+
+### §3.5(ix) Other Contour Integrals (`Azurite/DLMF/Chapter3/Section5Contour.lean`, `Section5ContourBromwich.lean`, `Section5ContourTable.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "heavy cancellation … deform the path to pass through a saddle point … steepest descent paths (§2.4(iv))" | Prose (pointer); realized in the Example below | |
+| Example: `s = 1`, `f(ζ) = e^{−2λ√ζ}`, "the quadrature rule of §3.5(viii) is useless" | Prose; `erfc` is `BZ.erfc` (7.2.2 for real argument) | |
+| 7.14.4 (used): `∫₀^∞ e^{−pτ} erfc(μ/√τ) dτ = e^{−2μ√p}/p`, `ℜp > 0` | `laplace_erfcLapQ`, `laplace_erfc_real` (Fubini), `integral_exp_neg_sq_sub_sq_div`, `integral_exp_neg_sub_div_sq` (`w = u − a/u`, `v = a/u`), `erfcLapQ`, `erfcLapG`, `hasDerivAt_erfc`, `erfc_nonneg`, `erfc_le_one`, `tendsto_bromwich_erfcLapG` | `integral_integral_swap`, `integral_image_eq_integral_abs_deriv_smul`, `integral_gaussian`, `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq` |
+| 3.5.42, `c > 0` | `dlmf_3_5_42` (limit of symmetric partial integrals), `cgI_erfc` (`I(f) = erfc λ`) | `Complex.cpow_neg_one` |
+| 3.5.43 (from 7.12.1) | `dlmf_3_5_43` (`IsEquivalent`) | `Asymptotics.isEquivalent_of_tendsto_one` |
+| 3.5.44 (`ζ = λ²t`), `c > 0` | `dlmf_3_5_44`, `erfcPhase` | |
+| "saddle point at `t = 1`" | `erfcPhase_saddle`, `hasDerivAt_erfcPhase` | `Complex.hasStrictDerivAt_cpow_const` |
+| "steepest descent path `ℑ(t − 2√t) = 0`, … `r = sec²(½θ)`" | `erfcPhase_im_eq_zero_iff` (`0 < \|θ\| < π`), `im_erfcPhase_polar`, `cpow_half_polar`, `erfcPath`, `erfcPathDeriv`, `hasDerivAt_erfcPath`, `erfcPhase_erfcPath` (`t − 2√t = −1 − tan²(θ/2)`) | `Complex.log_exp` |
+| 3.5.45 | `dlmf_3_5_45` (`θ = 2 arctan s`, `integral_erfcPathIntegrand`; `integral_exp_div_one_add_sq`), `dlmf_3_5_45_path` (the integral of 3.5.44 along the steepest descent path), `erfcPathIntegrand`, `erfcPath_integrand_eq`, `abs_mul_exp_neg_sq_le`. The deformation of the vertical path by Cauchy's theorem is not formalized (both sides are proved equal to `erfc λ`) | `Real.arctan_tan`, `intervalIntegral.integral_comp_neg` |
+| "extended as a periodic `C^∞` function … the trapezoidal rule is exceptionally efficient" | `erfcPathExt`, `contDiff_erfcPathExt`, `periodic_erfcPathExt`, `erfcPathExt_eq`, `erfcPathExt_pi`, `integral_erfcPathExt`, `erfcPath_trapError_isBigO` (`O(hᵏ)` for all `k`, via 3.5.4) | `expNegInvGlue.contDiff` |
+| Table 3.5.20 (`λ = 10`) | `erfcTrap`, `dlmf_table_3_5_20_nodes`, `sum_Icc_even`, `dlmf_table_3_5_20` (rows `h = 0.15, 0.10` correct), **erratum** `dlmf_table_3_5_20_erratum` (rows `h = 0.25, 0.20`: last digit), `dlmf_table_3_5_20_n` (`n = 5, 6, 8, 11`), `dlmf_table_3_5_20_erfc` ("all digits … in the final row are correct"); certificates `expEncl_sound`, `cosEncl_sound`, `gEncl_sound`, `trapEncl_sound`, `count_sound`, `erfcEncl_sound` (7.12.1, 20 terms) | `Real.exp_bound`, `Complex.exp_bound`, `Real.pi_gt_d20`, `Real.pi_lt_d20` |
+| Gil et al. (2001, 2003b), Scorer functions (§9.12) | Not formalized (references) | |
+| "If `f` is meromorphic, with poles near the saddle point, then the foregoing method can be modified" | Not formalized (prose) | |
+| 3.5.46 (Hilbert transform as principal value, §1.14(v)) | `dlmf_3_5_46` (the limits of `(1/π)(∫_{x−R}^{x−ε} + ∫_{x+ε}^{x+R}) f(t)/(t − x) dt` give `hilbert f x`) | |
+| Kress and Martensen (1970) | Not formalized (reference) | |
+| Hankel (§10.22(v)), Kontorovich–Lebedev (§10.43(v)), Mellin (§1.14(iv)) transforms | Not formalized (pointers) | |
+
+### §3.5(x) Cubature Formulas (`Azurite/DLMF/Chapter3/Section5Cubature.lean`, `Section5CubatureTable.lean`, `Section5MonteCarlo.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.5.47 (disk `D`: `x² + y² ≤ h²`) | `dlmf_3_5_47`, `diskRem`, `diskSet`, `cubSum`, `cubRem`; area `volume_diskSet` (`πh²`); moments `integral_diskSet_mono` (polar coordinates), `trigMom`, `trigMom_odd_left`, `trigMom_odd_right`, `trigMom_swap`, `trigMom_eq_thetaQ` | `integral_comp_polarCoord_symm`, `setIntegral_prod_mul`, `integral_sin_pow`, `Function.Periodic.intervalIntegral_add_eq` |
+| 3.5.48 (square `S`: `\|x\|, \|y\| ≤ h`) | `dlmf_3_5_48`, `squareRem`, `squareSet`, `volume_squareSet` (`4h²`), `integral_squareSet_mono` | `integral_pow` |
+| Meaning of `R = O(hᵏ)` | `cubRem_le_of_exact` (exact on monomials of degree `< k` ⇒ `\|R\| ≤ Chᵏ` for `f ∈ Cᵏ`, `0 < h ≤ 1`), `multilinear_diag_eq`, `prod_coord`, `diskRem_isBigO`, `squareRem_isBigO` | `map_add_eq_sum_add_integral_iteratedFDeriv`, `ContinuousMultilinearMap.map_sum`, `ContinuousMultilinearMap.map_smul_univ` |
+| Table 3.5.21 (all seven rules; last square row with the V1.0.7 corner correction) | `diskRule1`–`diskRule4`, `squareRule1`–`squareRule3`; exactness `diskRule1_exact`, …, `squareRule3_exact`; node bounds `*_nodes`; `dlmf_table_3_5_21_disk1`, `_disk2` (`O(h⁴)`), `_disk3`, `_disk4` (`O(h⁶)`), `_square1`, `_square2` (`O(h⁴)`), `_square3` (`O(h⁶)`). All entries correct | |
+| Cools (2003), Stroud (1971) | Not formalized (references) | |
+| "Monte Carlo … error of order `1/√N`, independently of the dimension" | `mcMean`, `integral_mcMean` (unbiased), `variance_mcMean` (`σ²/N`), `sqrt_variance_mcMean` (`σ/√N`), `dlmf_3_5_x_monteCarlo` (`P(\|mean − m\| ≥ ε) ≤ σ²/(Nε²)`, any probability space) | `ProbabilityTheory.IndepFun.variance_sum`, `ProbabilityTheory.meas_ge_le_variance_div_sq` |
+| Importance sampling ("points … sampled from a probability distribution"); Davis–Rabinowitz, Schürer (2004) | Not formalized (prose, references) | |
