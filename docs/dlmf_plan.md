@@ -1760,3 +1760,107 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.7.20, 3.7.21 | `nysK1`, `nysK2`, `nysK3`, `nysK4`, `nysW`, `nysWD`, `nystrom_isBigO`, `dlmf_3_7_20_w` (`w`-update as printed) | |
 | 3.7.21 `k₃` | **Erratum** (`⅛hk₁`, not `⅛hk₂`): `dlmf_3_7_21_erratum`, `not_isBigO_pow_of_le`; corrected `nysK3'`, `dlmf_3_7_20` | |
 | Method remarks; Butcher (1987), Dekker–Verwer (1984), Hairer et al. (1993), Hairer–Wanner (1996) | Not formalized (prose, references) | |
+
+## Section 3.8
+
+### §3.8(i) Introduction (`Azurite/DLMF/Chapter3/Section8.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.8.1; simple zeros; multiplicity `m` | `IsZeroOfMultiplicity`, `isZeroOfMultiplicity_one_iff`, `IsZeroOfMultiplicity.root` | |
+| "compare §1.10(i)" | `isZeroOfMultiplicity_iff_isZeroOfOrder`, `isZeroOfMultiplicity_iff_analyticOrderAt` | `analyticOrderAt` |
+| 3.8.2 (fixed points) | `dlmf_3_8_2` | `Function.IsFixedPt` |
+| 3.8.3 (order `p`) | `HasConvOrder`, `convIndices`, `HasConvOrder.mono` | |
+| Linear, quadratic, cubic convergence | `IsLinearConv`, `IsLinearConv.tendsto`, `IsQuadraticConv`, `IsCubicConv` | |
+| Strict inequality in 3.8.3 | **Imprecision**: `not_mem_convIndices_const` | |
+| "`p` is the largest of the possible set of indices" | **Imprecision**: `slowSeq`, `slowSeq_hasConvOrder`, `slowSeq_not_two`, `tendsto_slowSeq`, `dlmf_3_8_3_no_largest` | `tendsto_pow_const_div_const_pow_of_one_lt` |
+| Local convergence | `ConvergesLocally`, `convergesLocally_of_contract` | |
+
+### §3.8(ii) Newton's Rule (`Azurite/DLMF/Chapter3/Section8Newton.lean`, `Section8NewtonExample.lean`, `Section8NewtonTable.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.8.4 | `newtonStep` | |
+| "If `ζ` is a simple zero, then the iteration converges locally and quadratically" | `newton_sq_estimate`, `newton_simple_zero_ball`, `dlmf_3_8_ii_simple` (`f′` Lipschitz), `dlmf_3_8_ii_simple_of_contDiffAt` (real `C²` or complex analytic), `newton_eventually_quadratic` | `ContDiffAt.exists_lipschitzOnWith`, `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le` |
+| "For multiple zeros the convergence is linear … quadratic convergence can be restored by multiplying … by `m`" | `newtonStepMul`, `deriv_eq_of_factor`, `newton_error_of_factor`, `dlmf_3_8_ii_multiple` (linear, ratio `→ (m − 1)/m`, no order `p > 1`; modified rule quadratic), `exists_factor_of_multiplicity` | |
+| Real functions, condition (a) | `dlmf_3_8_ii_a`, `newton_real_step`, `newton_real_monotone`, `deriv_sign_const`, `exists_deriv_eq_div_of_zero`, `contDiffAt_two_facts` | `exists_deriv_eq_slope` |
+| Condition (b) | `dlmf_3_8_ii_b` (sign conditions on the closed interval `[x₀, x₁]`) | |
+| Example: 3.8.5 | `tanExF`, `exPhi`, `hasDerivAt_exF`, `deriv_exF`, `deriv2_exF`, `dlmf_3_8_5` | `Real.hasDerivAt_tan` |
+| "The first positive zero of `f(x)` lies in the interval `(π, 3π/2)`" | `exF_strictAntiOn`, `exF_ne_zero_of_mem_Ioc`, `dlmf_3_8_ii_example_zero` (`ζ` to 13 decimals) | `Real.lt_tan` |
+| Convergence from `x₀ = 4.65`; Table 3.8.1 | `exF_newton_converges`, `dlmf_table_3_8_1`; **erratum** `x₁ … x₅`; certificate `sinSumQ`, `cotLo`, `cotHi`, `cot_mem`, `cot_antitone`, `cotEnclX`, `phiEncl`, `phiEncl_sound`, `tabEncl`, `tab_correct_check`, `tab_wrong_check` | `Real.pi_gt_d20`, `Real.pi_lt_d20` |
+| "When `x₀ ≤ 4.2875` or `x₀ ≥ 4.7125` … does not converge" | **Erratum** (`x₀ = 2.25` converges): `dlmf_3_8_ii_example_erratum`; the `x₀ ≥ 4.7125` part not formalized | |
+| "faster when we use instead `f(x) = x cos x − sin x`" | `exG`, `exG_eq`, `newtonStep_exG` (Newton map `x + cot x − 1/x`); speed and interval claims not formalized | |
+
+### §3.8(iii) Other Methods (`Azurite/DLMF/Chapter3/Section8Other.lean`, `Section8Secant.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Bisection: "If `f(a)f(b) < 0` … `[a, b]` contains one or more zeros"; bisection; slow (linear) convergence | `bisectStep`, `bisectStep_spec`, `bisect_iter`, `dlmf_3_8_iii_bisection` (error `≤ (b − a)/2ⁿ`) | `tendsto_atTop_ciSup` |
+| "All zeros … can be computed to any predetermined accuracy" | **Imprecision**: `dlmf_3_8_iii_bisection_misses` | |
+| Kaufman and Lenker (1986), Nievergelt (1995) | Not formalized | |
+| 3.8.6; inverse linear interpolation (§3.3(v)) | `rfPoint`, `dlmf_3_8_6`, `rfPoint_interp` | |
+| Regula falsi: "We continue with `x₂` and either `x₀` or `x₁` …" | `rfStep`, `rfPoint_mem`, `rfStep_bracket` | |
+| "The convergence is linear" | `dlmf_3_8_iii_regula_falsi` (strictly convex `f`: fixed endpoint, ratio `→ 1 − f′(ξ)(b − ξ)/f(b) ∈ (0, 1)`, no order `p > 1`), `not_mem_convIndices_of_ge` | `StrictConvexOn.lt_slope_of_hasDerivAt`, `StrictConvexOn.slope_lt_of_hasDerivAt` |
+| Secant method: "converges locally with order of convergence `p = ½(1 + √5)`" | `rolle_three`, `slopeAt`, `dd2_mvt`, `secant_error`, `secantStep`, `secX`, `secX_succ`, `secant_consts`, `secant_local`, `tendsto_of_contract_rec`, `secant_order` (order exactly `φ` for `f″(ξ) ≠ 0`), `dlmf_3_8_iii_secant` | `exists_hasDerivAt_eq_zero`, `Real.goldenRatio` |
+| "its numerical efficiency is ultimately higher than that of Newton's method" | `secant_efficiency` (`√2 < φ`) | |
+| "the first approximation `x₂` may be outside `[x₀, x₁]`" | `secant_outside` | |
+| 3.8.7 (Steffensen); "converges locally and quadratically for both `ℝ` and `ℂ`" | `steffStep`, `lip_taylor`, `steffStep_eq`, `dlmf_3_8_7`, `dlmf_3_8_7_of_contDiffAt`; **imprecision** (`φ′(ζ) ≠ 1` needed) `dlmf_3_8_7_erratum` | |
+| Le (1985) | Not formalized | |
+| Eigenvalue methods (zeros of orthogonal polynomials as eigenvalues of tridiagonal matrices, §3.5(vi)); Gil et al., Grad–Zakrajšek, Ikebe, Ball | See §3.5(vi) (`Section5Eigen`); references not formalized | |
+
+### §3.8(iv) Zeros of Polynomials (`Azurite/DLMF/Chapter3/Section8Poly.lean`, `Section8Bairstow.lean`, `Section8AbelRuffini.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.8.8: `n` zeros in `ℂ` counting multiplicity | `dlmf_3_8_8` (card of roots, `aₙ ∏ (z − ζ)`, multiplicities sum to `n`); `rootMultiplicity_eq_iff_isZeroOfMultiplicity` (§3.8(i) multiplicity), `iteratedDeriv_polyEval` | `IsAlgClosed.card_roots_eq_natDegree`, `C_leadingCoeff_mul_prod_multiset_X_sub_C`, `lt_rootMultiplicity_iff_isRoot_iterate_derivative` |
+| "Explicit formulas … if `n ≤ 4`; see §§1.11(iii) and 4.43" | `dlmf_3_8_iv_radicals` (coefficients by radicals ⇒ zeros by radicals), `dlmf_3_8_iv_radicals_rat`; `quadratic_rad`, `cubic_rad`, `quartic_rad` (from 1.11.11–1.11.20), `IsRad`, `rad_mem`; §4.43 not formalized (Chapter 4) | `solvableByRad`, `solvableByRad.rad_mem` |
+| "No explicit general formulas exist when `n ≥ 5`" | `dlmf_3_8_iv_abel_ruffini` (degree `n` over `ℚ` with a zero not by radicals); vendored `Section8AbelRuffini` (Mathlib Archive, `x⁵ − 4x + 2`) | `isSolvable_gal_of_irreducible` |
+| Deflation via Horner (§1.11(i)); final iteration on `p` | `dlmf_3_8_iv_deflation` (`p = (z − ζ)q`, `deg q = n − 1`, roots `ζ ::ₘ roots q`, zeros of `q` are zeros of `p`) | `roots_mul` |
+| Example `z⁴ − 1`: zeros `±1, ±i`; 3.8.9 | `quartEx`, `dlmf_3_8_iv_example`, `dlmf_3_8_9`, `dlmf_3_8_iv_example_converges` (monotone, quadratic from `1.5`) | |
+| Table 3.8.2 | `dlmf_table_3_8_2`, `tab382`, `tab382_check` (`decide +kernel`); **erratum** `z₅` | |
+| 3.8.10 (Bairstow `qⱼ`, `rⱼ`) | `bairAux`, `bairSeq`, `bairSeq_rec`, `bairSeq_rec_all`, `bairQ`, `bairR`, `bairR_rec`, `bairSeq_map`, `bair_down` | |
+| "On the last iteration `q_n z^{n−2} + ⋯ + q₂` is the quotient" | `bair_telescope`, `bair_quotient_gen`, `dlmf_3_8_10_quotient`, `dlmf_3_8_10_quotient_poly`, `bairF`, `bairF_eq_zero_iff` (factor iff `F = (q₁, q₀ − sq₁) = 0`) | `eq_zero_of_dvd_of_natDegree_lt` |
+| 3.8.11 | `bairStep`, `bairEll`, `bairDet`; Newton interpretation `hasFDerivAt_bairQ` (`∂qⱼ/∂s = rⱼ₊₁`, `∂qⱼ/∂t = rⱼ₊₂`), `bairJ`, `hasFDerivAt_bairF`, `bairStep_newton` | `HasFDerivAt.mul`, `HasFDerivAt.prodMk` |
+| "converges locally and quadratically, except when the wanted quadratic factor is a multiple factor of `q(z)`" | `dlmf_3_8_iv_bairstow` (exact factor with `r₂² − ℓr₃ ≠ 0`); `bairDet_eq_quotient`, `bairDet_eq_quotient_complex` (`r₂² − ℓr₃ = Q(z₁)Q(z₂)`); `newton_sq_bound`, `iter_of_sq_bound`, `norm_le_of_two_by_two`. **Imprecision**: "`q(z)`" should read `p(z)`, and the precise nondegeneracy condition is `Q(z₁)Q(z₂) ≠ 0` (no zero of the quadratic factor is a zero of the quotient), which also excludes `z₁ ≠ z₂` with one of them a multiple zero of `p`. That the method fails to be quadratic in the degenerate cases is not formalized. | `ContDiffAt.exists_lipschitzOnWith`, `Convex.norm_image_sub_le_of_norm_hasFDerivWithin_le` |
+| Example `z⁴ − 2z² + 1`, `s₀ = 7/4`, `t₀ = −1/2` | `bairExA`, `dlmf_3_8_iv_bairstow_example` (exact factor `(z − 1)²`, `Q(1)² = 16`, local quadratic convergence); convergence from `(7/4, −1/2)` itself not formalized (needs explicit constants) | |
+| Table 3.8.3 | `dlmf_table_3_8_3` (all entries correct; `‖e_{k+1}‖ ≤ ‖e_k‖²`, `k ≤ 4`), `tab383`, `errQ`, `tab383_check`, `bairExStepQ`, `bairEx_iterate_cast`, `bairStep_map` | |
+| National Physical Laboratory (1961); McNamee (2007) | Not formalized (references) | |
+
+### §3.8(v) Zeros of Analytic Functions (`Azurite/DLMF/Chapter3/Section8Halley.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "Newton's rule is the most frequently used iterative process" | See §3.8(ii) (`dlmf_3_8_ii_simple`, `dlmf_3_8_ii_simple_of_contDiffAt`) | |
+| 3.8.12 (Halley's rule) | `halleyStep`, `halleyStep_eq` (`z − 2ff′/(2f′² − ff″)`) | |
+| "useful when `f(z)` satisfies a second-order linear differential equation" | `halleyStep_ode` (`f″ + pf′ + qf = 0`: only `f`, `f′` needed) | |
+| "The rule converges locally and is cubically convergent" | `dlmf_3_8_v_halley` (simple zero, `f″` Lipschitz), `dlmf_3_8_v_halley_of_contDiffAt` (`C³`, real or complex), `dlmf_3_8_v_halley_analytic`; `taylor2_bound`, `halley_error`, `halley_cube_ball`, `iter_of_cube_bound` | `ContDiffAt.exists_lipschitzOnWith`, `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`, `AnalyticAt.contDiffAt` |
+| Initial approximations: phase principle, Rouché's theorem (§1.10(iv)) | See §1.10(iv): `dlmf_1_10_9`, `dlmf_1_10_9_phase`, `dlmf_1_10_iv_rouche` | |
+| Fabijonas and Olver (1999); Segura (2002, 2013); Gil and Segura (2003); Gil et al. (2007a) | Not formalized (references) | |
+
+### §3.8(vi) Conditioning of Zeros (`Azurite/DLMF/Chapter3/Section8Conditioning.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.8.13 | `dlmf_3_8_13` (implicit zero `z(α)`: existence, local uniqueness, `dz/dα = −f_α/f_z`; partials continuous at the point) | `implicitFunctionOfBivariate`, `hasStrictFDerivAt_implicitFunctionOfBivariate`, `ContinuousLinearEquiv.unitsEquivAut` |
+| 3.8.14 | `coeffPerturb`, `coeffPerturb_eq`, `coeff_coeffPerturb`, `dlmf_3_8_14` (`dz/da_j = −z^j/f′(z)`) | `Polynomial.hasDerivAt`, `Polynomial.continuous` |
+| "the computation of zeros of polynomials is often an ill-posed problem" | Illustrated by `dlmf_3_8_16` | |
+| 3.8.15 (Wilkinson) | `wilkinson`, `wilkinson_roots`, `wilkinson_eval_eq_zero_iff` | `roots_multiset_prod_X_sub_C` |
+| `p′(20) = 19!`, `a₁₉ = 1 + 2 + ⋯ + 20 = 210` | `wilkinson_deriv_twenty`; **erratum** `wilkinson_coeff_nineteen` (`a₁₉ = −210`) | `prod_X_sub_C_coeff_card_pred` |
+| 3.8.16 | `dlmf_3_8_16` (`dx/da₁₉ = −20¹⁹/19! ∈ (−4.31, −4.30) × 10⁷`) | |
+| Gautschi (1984, §4) | Not formalized (reference) | |
+
+### §3.8(vii) Systems of Nonlinear Equations (prose only)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "For fixed-point iterations and Newton's method for solving systems of nonlinear equations, see Gautschi (1997a) and Ortega and Rheinboldt (1970)" | Pointer. Available in Azurite: Newton's method in a normed space with quadratic local convergence (`newton_sq_bound`, `iter_of_sq_bound`, `Section8Bairstow`), contraction iterations (`convergesLocally_of_contract`, `Section8`) | `ContractingWith.fixedPoint`, `ContractingWith.tendsto_iterate_fixedPoint` (Banach) |
+
+### §3.8(viii) Fixed-Point Iterations: Fractals (`Azurite/DLMF/Chapter3/Section8Fractal.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.8.17 | `Function.iterate` (as throughout §3.8); fixed points 3.8.2 `dlmf_3_8_2` | |
+| "cannot always be predicted, especially in the complex plane" | Prose | |
+| Example 3.8.9: near `±1, ±i` the sequences converge | `quartPhi`, `quartPhi_eq`, `dlmf_3_8_viii_local` (local quadratic convergence at each zero) | |
+| Basins of attraction | `basin`, `basin_mem_nhds`, `basin_disjoint`; symmetry `quartPhi_mul_I`, `quartPhi_conj`, `basin_I_mul` | `tendsto_nhds_unique` |
+| Julia set; "very complicated structure"; Julia sets are fractals (self-similar) | Not formalized (no Julia-set theory in Mathlib); Julia (1918), Devaney (1986) references | |
