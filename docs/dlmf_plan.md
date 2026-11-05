@@ -1698,3 +1698,65 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | "forward and backward recursion … the special cases `ℓ = 0` and `ℓ = k`" | `recKState`, `recKFwd`, `recKState_eq`, `dlmf_3_6_18_forward`, `recK_eq_of_init`, `dlmf_3_6_vii_ell_zero`; `revA`, `revD`, `recKBwd`, `recK_eq_of_end`, `dlmf_3_6_18_backward`, `dlmf_3_6_vii_ell_k` | |
 | "`ℓ` … depends on the asymptotic behavior of the wanted solution" | Prose (see §3.6(ii), 3.6.17 above for `k = 1, 2`) | |
 | Gautschi (1997b), Wimp (1984), Cash and Zahar (1994), Lozier (1980) | Not formalized | |
+
+## Section 3.7
+
+### §3.7(i) Introduction (`Azurite/DLMF/Chapter3/Section7.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.7.1 (`f`, `g`, `h` analytic in a domain `D`) | `IsInhomSolution` (§1.13(iii)); homogeneous case `dlmf_3_7_1_homogeneous` (= `IsODESolution`) | |
+| §1.13, §2.7, Ascher–Petzold (1998), Hairer et al. (1993), Iserles (1996) | Not formalized (pointers) | |
+
+### §3.7(ii) Taylor-Series Method: Initial-Value Problems (`Azurite/DLMF/Chapter3/Section7.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.7.2 | `dlmf_3_7_2` (for every solution in `D`) | `iteratedDeriv_succ` |
+| 3.7.3, 3.7.4 | `taylorFG`, `taylorF`, `taylorG`, `taylorH`, `dlmf_3_7_3`, `dlmf_3_7_4` (also for `s = 1`); `taylorFG_differentiableOn`, `taylorH_differentiableOn`, `taylorH_zero` | |
+| 3.7.6–3.7.9 | `taylorA`, `taylorB`; convergence for `\|τ\| < R` with `B(z, R)` in the domain of analyticity `dlmf_3_7_8_9` (sums are solutions with data `(1, 0)`, `(0, 1)`, `(0, 0)`), `hasSum_taylor_sol`, `isSCDomain_ball`, `infty_mem_closure_ray`, `taylorB_zero` | `Complex.hasSum_taylorSeries_on_ball` |
+| 3.7.5 | `dlmf_3_7_5`, `odeState`, `odeState_succ` | |
+| "`τⱼ = z_{j+1} − zⱼ`, `j = 0, 1, …, P`" | **Erratum** (`j ≤ P − 1`; `z_{P+1}` does not exist): `IsTaylorPath`, `taylorPath` | |
+| Partition `z₀ = a, …, z_P = b` of the path 𝒫; successive application of 3.7.5 | `IsTaylorPath`, `IsTaylorPath.mem`, `taylorPath`, `dlmf_3_7_ii_exact` | |
+| "computed in a stable manner … grows in magnitude at least as fast as all other solutions" | `taylorPath_sub` (errors propagate as homogeneous solutions), `dlmf_3_7_ii_forward_stable` (relative error `≤ C ∑` relative step errors) | |
+| "decaying at least as fast … reverse the labeling … initial values `w(b)` and `w′(b)`" | `dlmf_3_7_ii_backward_stable` | |
+
+### §3.7(iii) Taylor-Series Method: Boundary-Value Problems (`Azurite/DLMF/Chapter3/Section7BVP.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "rate of growth … intermediate to that of two other solutions. (This can happen only for inhomogeneous equations.)" | `exists_dep_three`, `dlmf_3_7_iii_hom_not_intermediate`; inhomogeneous example `dlmf_3_7_iii_inhom_intermediate` (`w″ − w = −1`, `posRealRay`, `tendsto_exp_neg_posRealRay`) | `Matrix.exists_mulVec_eq_zero_iff` |
+| "solve the set of equations (3.7.5) simultaneously for `j = 0, 1, …, P`" | **Erratum** (`j ≤ P − 1`): `bandAP_mulVec_eq_iff` | |
+| 3.7.10 | `stepA`, `stepB`, `bandAP` (block indices `Fin P × Fin 2`, `Fin (P + 1) × Fin 2`), `bandAP_mulVec`, `finProdFinEquiv_two` (flat order) | `finProdFinEquiv` |
+| 3.7.11, 3.7.12 | `bandW`, `bandB` | |
+| 3.7.13 | `dlmf_3_7_13`, `dlmf_3_7_13_flat` | `Matrix.submatrix_mulVec_equiv` |
+| 3.7.14; "the remaining two equations are supplied by boundary conditions" | `IsBC`, `dlmf_3_7_13_14` (3.7.13 + 3.7.14 ⟺ values of a solution of the boundary-value problem) | |
+| "`β₀ = β₁ = 0` … can readily be made tridiagonal by annihilating the elements of `𝐀_P` that lie below the main diagonal and its two adjacent diagonals" | `triState`, `triMult`, `bvpA`, `bvpB`, `bvpC`, `bvpF`, `TriRow`, `bvp_tridiagonal`, `block_iff`, `triRow_odd`, `triRow_even`, `triRows_iff`, `bvpX`, `triState_bvpX`, `dlmf_3_7_iii_tridiag_of_sol`, `dlmf_3_7_iii_sol_of_tridiag` | |
+| "solved by the method of §3.2(ii), if the differential equation is homogeneous" | `dlmf_3_7_iii_solve` (any `h`; nonvanishing pivots `d_j` of 3.2.10), `three_term_of_tridiag`, `triEntry_mul_split` | |
+| "or by Olver's algorithm (§3.6(v)) … especially useful if the endpoint `b` … is at `∞`" | Not formalized (the reduced system is not of the second-order form 3.6.7; see §3.6(v)) | |
+| Parallelism remark; Olde Daalhuis–Olver (1998), Lozier–Olver (1993), Ascher et al. (1995) | Not formalized (prose, references) | |
+
+### §3.7(iv) Sturm–Liouville Eigenvalue Problems (`Azurite/DLMF/Chapter3/Section7SL.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.7.15, 3.7.16 (finite `[a, b]`, `q` continuous on `[a, b]`) | `IsDirichletEigenfunction`, `IsDirichletEigenvalue`; shooting solution `slQ`, `slClamp`, `slV`, `slUL`, `slUDL`, `slU`, `slUD`, `slUL_spec`, `slUL_eq_slU`, `continuous_slU`, `isPruferData_slU`, `ode2_eq_zero_Icc` | `eq_zero_of_abs_deriv_le_mul_abs_self_of_eq_zero_right` |
+| Prüfer angle (proof device) | `pruferRate`, `prufer`, `IsPruferData` (`prufer_S`, `sin_prufer_eq_zero_iff`, `rate_eq`, `rate_of_zero`, `prufer_lt_of_zero`, `prufer_pos`, `prufer_add_pi_le`), comparison `prufer_compare_core`, `prufer_le_of_le`, `prufer_lt_of_lt`; `isPruferData_sin`, `prufer_sin_ge`; `eventually_lt_right_of_hasDerivAt`, `eventually_lt_left_of_hasDerivAt`, `sinc_mul_self`, `sin_add_mul_sin_sub` | `Real.sinc`, `continuous_sinc` |
+| "The eigenvalues `λ_k` are simple" | `eq_mul_slU`, `isDirichletEigenvalue_iff`, `isDirichletEigenfunction_slU`, `exists_slU_ne_zero`, `dlmf_3_7_iv_simple` | |
+| 3.7.17 | `dlmf_3_7_17` (`Λ 0 < Λ 1 < ⋯ → ∞` are all the eigenvalues), `slTheta`, `isDirichletEigenvalue_iff_sin`, `slTheta_strictMono`, `continuous_slTheta`, `slTheta_pos`, `exists_slTheta_lt_pi`, `exists_slTheta_ge` | `intervalIntegral.continuous_parametric_intervalIntegral_of_continuous` |
+| Infinite intervals ("with limits taken in 3.7.16") | **Erratum**: `dlmf_3_7_iv_infinite_no_eigenvalue` (`q = 0` on `(0, ∞)`: no eigenvalues), `eq_zero_of_tendsto_mul` | |
+| `q` piecewise continuous | Not formalized (continuous `q` only) | |
+| Discretization by 3.7.13: tridiagonal, entries polynomials in `λ`; compare §3.2(vi); step size; Pryce (1993) | Not formalized (method description; the entries are polynomials only after truncating 3.7.8) | |
+
+### §3.7(v) Runge–Kutta Method (`Azurite/DLMF/Chapter3/Section7RK.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Jets (proof device) | `IsJet`, `jpoly`, `eval_isBigO_of_coeff`, `pow_isBigO_pow`, `IsJet.congr`, `.congr_fun`, `.add`, `.sub`, `.const_mul`, `.sum`, `.const`, `.id`, `.mono`, `.mul` (`jmul`), `.pow` (`jpow`), `.mul_id` (`jshift`), `.integral` (`jinteg`), `.isBigO_id`, `isJet_zero_of_continuous`, `isBigO_of_isJet_zero` | `Polynomial.X_pow_dvd_iff` |
+| Taylor's formula with `O(‖v‖⁴)` remainder, in coordinates | `taylor3_isBigO`, `taylorCoeff2`, `diag_eq_sum`, `taylorCoeff2_zero`, `taylor3_coord`; three variables `coord3`, `coordVec3`, `prod_coord3`, `card_filter3`, `multilinear_diag_eq3`, `wordFiber`, `taylorCoeff3`, `diag_eq_sum3`, `taylor3_coord3` | `map_add_eq_sum_add_integral_iteratedFDeriv` |
+| Composition of jets with `f` | `compJet`, `compC`, `compJet_eq`, `IsJet.comp_taylor`; `compJet3`, `compC3`, `compJet3_eq`, `IsJet.comp_taylor3` | |
+| 3.7.18, 3.7.19 | `rkK1`, `rkK2`, `rkK3`, `rkK4`, `rk4Step`, `dlmf_3_7_18` (`f ∈ C⁴`) | |
+| "The order estimate `O(h⁵)` holds if the solution `w(z)` has five continuous derivatives" | **Erratum**: `dlmf_3_7_v_erratum` | |
+| 3.7.20, 3.7.21 | `nysK1`, `nysK2`, `nysK3`, `nysK4`, `nysW`, `nysWD`, `nystrom_isBigO`, `dlmf_3_7_20_w` (`w`-update as printed) | |
+| 3.7.21 `k₃` | **Erratum** (`⅛hk₁`, not `⅛hk₂`): `dlmf_3_7_21_erratum`, `not_isBigO_pow_of_le`; corrected `nysK3'`, `dlmf_3_7_20` | |
+| Method remarks; Butcher (1987), Dekker–Verwer (1984), Hairer et al. (1993), Hairer–Wanner (1996) | Not formalized (prose, references) | |

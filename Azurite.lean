@@ -1977,6 +1977,10 @@ import Azurite.DLMF.Chapter3.Section6OlverGeneral
 import Azurite.DLMF.Chapter3.Section6Other
 import Azurite.DLMF.Chapter3.Section6Weber
 import Azurite.DLMF.Chapter3.Section6WeberTable
+import Azurite.DLMF.Chapter3.Section7
+import Azurite.DLMF.Chapter3.Section7BVP
+import Azurite.DLMF.Chapter3.Section7RK
+import Azurite.DLMF.Chapter3.Section7SL
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
