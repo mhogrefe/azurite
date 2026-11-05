@@ -1924,3 +1924,40 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | Brezinski and Redivo Zaglia (1991, pp. 39–42) | Not formalized (reference) | |
 | 3.9.16, 3.9.17 (Weniger) | `wenigerW₁`, `wenigerW₂`, `pochhammer_eval`; kernel by `levinGen_eq_of_poly` | `ascPochhammer` |
 | "β and γ … chosen arbitrarily subject to certain conditions"; Weniger (1989) | Not formalized (reference) | |
+
+## Section 3.10
+
+### §3.10(i) Introduction (`Azurite/DLMF/Chapter3/Section10.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "See §1.12 for relevant properties of continued fractions" | Pointer to `Chapter1/Section12*` | |
+| 3.10.1 (`aₙ ≠ 0`) | `IsCF`, `dlmf_3_10_1` (`CfConverges`, §1.12) | |
+| 3.10.2; "`Cₙ` is the `n`th approximant or convergent" | `dlmf_3_10_2` (`cfConv = cfA/cfB` with recurrences 1.12.5–1.12.6), `cfConv_zero_one` | |
+
+### §3.10(ii) Relations to Power Series (`Azurite/DLMF/Chapter3/Section10Series.lean`, `Section10QD.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "Every convergent, asymptotic, or formal series (3.10.3) can be converted into a continued fraction … with 3.10.4" | **Erratum**: false if some `uₙ = 0` (`n ≥ 1`): `dlmf_3_10_ii_erratum` (via 1.12.7) | |
+| 3.10.3–3.10.5 | `eulerA`, `eulerB`, `eulerA_ne_zero`, `dlmf_3_10_4` (`Bₙ = 1`, `Aₙ = u₀ + ⋯ + uₙ`) | |
+| arctan example (4.24.3, 4.25.4) | Not formalized (Chapter 4 not yet available) | |
+| 3.10.6 (`S`-fraction) | `sfA`, `sfB`, `sNum`, `sDen`, `sDen_coeff_zero`; `pcfP`, `pcfQ` (1.12.5–1.12.6 over a commutative ring), `pcfP_eq_cfP`, `pcfQ_eq_cfQ` | |
+| 3.10.7 (correspondence) | `SCorresponds` | `PowerSeries`, `PowerSeries.inv` |
+| 3.10.8–3.10.10 (QD algorithm) | `qdTable`, `qdE`, `qdQ`, `dlmf_3_10_8`, `dlmf_3_10_9`, `qdCoeff`, `dlmf_3_10_10` | |
+| "the coefficients `aₙ` can always be calculated … by means of the quotient-difference algorithm" | `dlmf_3_10_10_corresponds` (`Section10QD.lean`: if `cₖ ≠ 0` and `e_j^k ≠ 0`, the `S`-fraction with 3.10.10 corresponds to `f`); tails `qdV`, `qdV_tails` (induction on `j` from the rhombus rules), `tail_residual`, `tail_dvd`, `shiftSeries`, `divX`, `pcfP_map`, `pcfQ_map`. Imprecision: "always" needs the `e_j^k` in 3.10.9 to be nonzero (e.g. `cₙ ≡ 1`: `e_1^k = 0`, the `S`-fraction of `1/(1 − z)` terminates) | `PowerSeries.mul_inv_cancel`, `PowerSeries.X_pow_dvd_iff` |
+| Instability; Stokes (1980); Gargantini and Henrici (1967) | Not formalized (numerical remarks, references) | |
+| 3.10.11 (`J`-fraction), association | `jfA`, `jfB`, `jNum`, `jDen`, `JAssociated` | |
+| "`Cₙ` of the Jacobi fraction equals `C_{2n}` of the Stieltjes fraction" | `contrAlpha`, `contrBeta`, `contraction_seq`, `dlmf_3_10_11_contraction`, `sCorresponds_jAssociated` | |
+| Examples (§§4.9, 4.35, 5.10, 7.9, 8.9, …); Lorentzen and Waadeland (1992), Cuyt et al. (2008) | Pointers; not formalized | |
+
+### §3.10(iii) Numerical Evaluation of Continued Fractions (`Azurite/DLMF/Chapter3/Section10Eval.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Forward recurrence algorithm (1.12.5) | `cfA`, `cfB`, `dlmf_1_12_5` (§1.12); instability/overflow/rescaling remarks not formalized | |
+| 3.10.12 (backward recurrence), "`u₀ = Cₙ`" | `backU`, `dlmf_3_10_12` (exact, nested evaluation `cfConv`); stability remark and Jones and Thron (1974) not formalized | |
+| 3.10.13–3.10.15 (forward series recurrence), "the `n`th partial sum … equals the `n`th convergent" | `fsA`, `fsB`, `fsRho`, `fsT`, `fsB_rec`, `fsRho_eq` (`ρ_k = a_k B_{k−1}/B_{k+1}`), `fsT_eq` (`t_k = a₀⋯a_k/(B_k B_{k+1})`), `prod_fsA`, `dlmf_3_10_14` (`B_k ≠ 0`) | |
+| Gautschi (1979c) | Not formalized (reference) | |
+| 3.10.16–3.10.17 (Steed's algorithm) | `steed`, `steed_zero`, `dlmf_3_10_17` (`Dₙ = B_{n−1}/Bₙ`, `∇Cₙ = Cₙ − C_{n−1}`, `Cₙ = Aₙ/Bₙ`; `B_k ≠ 0`) | |
+| Lentz (1976), Thompson and Barnett (1986); Blanch (1964), Lorentzen and Waadeland (1992), Cuyt et al. (2008), Gautschi (1967), Gil et al. (2007a), Wimp (1984); pointers to §§6.18(i), 7.22(i), … | Not formalized (references, pointers) | |

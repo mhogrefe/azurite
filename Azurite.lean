@@ -1913,6 +1913,10 @@ import Azurite.DLMF.Chapter2.Section9Recessive
 import Azurite.DLMF.Chapter2.Section9SeriesExp
 import Azurite.DLMF.Chapter2.Section9Sqrt
 import Azurite.DLMF.Chapter3.Section1
+import Azurite.DLMF.Chapter3.Section10
+import Azurite.DLMF.Chapter3.Section10Eval
+import Azurite.DLMF.Chapter3.Section10QD
+import Azurite.DLMF.Chapter3.Section10Series
 import Azurite.DLMF.Chapter3.Section1Interval
 import Azurite.DLMF.Chapter3.Section1LevelIndex
 import Azurite.DLMF.Chapter3.Section2
