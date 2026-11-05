@@ -1993,6 +1993,14 @@ import Azurite.DLMF.Chapter3.Section8NewtonTable
 import Azurite.DLMF.Chapter3.Section8Other
 import Azurite.DLMF.Chapter3.Section8Poly
 import Azurite.DLMF.Chapter3.Section8Secant
+import Azurite.DLMF.Chapter3.Section9
+import Azurite.DLMF.Chapter3.Section9Aitken
+import Azurite.DLMF.Chapter3.Section9Euler
+import Azurite.DLMF.Chapter3.Section9Hankel
+import Azurite.DLMF.Chapter3.Section9Levin
+import Azurite.DLMF.Chapter3.Section9Shanks
+import Azurite.DLMF.Chapter3.Section9ShanksExample
+import Azurite.DLMF.Chapter3.Section9ShanksTable
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

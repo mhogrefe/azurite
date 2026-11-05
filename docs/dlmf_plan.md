@@ -1864,3 +1864,63 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | Example 3.8.9: near `±1, ±i` the sequences converge | `quartPhi`, `quartPhi_eq`, `dlmf_3_8_viii_local` (local quadratic convergence at each zero) | |
 | Basins of attraction | `basin`, `basin_mem_nhds`, `basin_disjoint`; symmetry `quartPhi_mul_I`, `quartPhi_conj`, `basin_I_mul` | `tendsto_nhds_unique` |
 | Julia set; "very complicated structure"; Julia sets are fractals (self-similar) | Not formalized (no Julia-set theory in Mathlib); Julia (1918), Devaney (1986) references | |
+
+## Section 3.9
+
+### §3.9(i) Sequence Transformations (`Azurite/DLMF/Chapter3/Section9.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Real or complex sequences | `𝕜` a normed field; `SeqTransform` | |
+| Limit-preserving | `IsLimitPreserving` | |
+| 3.9.1 (accelerating) | `IsAccelerating`, `IsAccelerating.tendsto`; `tendsto_of_ratio` (3.9.1 forces `tₙ → σ` when `sₙ ≠ σ` eventually) | |
+| "Similarly for convergent series … partial sums" | `partialSum` (§1.9), `tendsto_partialSum` | `HasSum.tendsto_sum_nat` |
+| "effective for one type of sequence but may not accelerate convergence for another type" | `shiftT`, `shiftT_limitPreserving`, `shiftT_accelerates_factorial` (`1/n!`), `shiftT_not_accelerating_geometric` (`qⁿ`); `id_not_accelerating` | `factorial_tendsto_atTop` |
+| "It may even fail altogether by not being limit-preserving" | `linExtrap` (`sₙ + n(s_{n+1} − sₙ)`), `linExtrap_accelerates` (`1/(n + 1)`), `linExtrap_not_limitPreserving` (`(−1)ⁿ/(n + 1)`) | |
+
+### §3.9(ii) Euler's Transformation of Series (`Azurite/DLMF/Chapter3/Section9Euler.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.9.2 | `eulerTerm`, `dlmf_3_9_2` (convergent `∑ (−1)ᵏaₖ` ⇒ Euler series converges to the same sum); `euler_partial_eq` (binomial means `2^{−N} ∑ C(N, j+1) s_j`), `choose_abel`, `euler_weights`, `toeplitz_tendsto`. **Imprecision**: "provided that the right-hand side converges" is automatic (Euler's transformation is regular) | `Nat.sum_range_choose`, `Nat.choose_le_pow`, `tendsto_pow_const_div_const_pow_of_one_lt` |
+| 3.9.3 | `dlmf_3_9_3` | `fwdDiff` |
+| 3.9.4 | `dlmf_3_9_4`, `neg_one_pow_fwdDiff` | `fwdDiff_iter_eq_sum_shift` |
+| "usually applied to alternating series" | Prose | |
+| 3.9.5 | `dlmf_3_9_5` (both series → `ln 2`; Euler terms `1/(k 2ᵏ)`), `fwdDiff_iter_inv_affine` | `Real.hasSum_pow_div_log_of_abs_lt_one`, `Antitone.tendsto_alternating_series_of_tendsto_zero` |
+| 3.9.6 | `dlmf_3_9_6` (both series → `π/4`; terms `½ k!/(1·3⋯(2k + 1))`) | `Real.tendsto_sum_pi_div_four` |
+
+### §3.9(iii) Aitken's Δ²-Process (`Azurite/DLMF/Chapter3/Section9Aitken.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.9.7 | `aitken`, `dlmf_3_9_7` (forward-difference form) | `fwdDiff` |
+| 3.9.8 (linear convergence) | `IsLinearlyConvergent` | |
+| "This transformation is accelerating if `{sₙ}` is a linearly convergent sequence" | `dlmf_3_9_iii_accelerating` (with `sₙ ≠ σ`), `aitken_ratio`; exactness on geometric sequences `aitken_geometric` | |
+| Iterated Δ²-process; Brezinski and Redivo Zaglia (1991) | `aitkenIter`; reference not formalized | |
+
+### §3.9(iv) Shanks' Transformation (`Azurite/DLMF/Chapter3/Section9Shanks.lean`, `Section9Hankel.lean`, `Section9ShanksTable.lean`, `Section9ShanksExample.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "a generalization of Aitken's Δ²-process" | `shanks_one` (`k = 1` is Aitken) | |
+| 3.9.9 | `shanks` | |
+| 3.9.10 | `hankel`, `hankel_zero`, `hankel_one`, `hankel_two` | `Matrix.det` |
+| 3.9.11 (Wynn's epsilon algorithm) | `wynnEps`, `wynnEps_succ_succ` | |
+| "Then `t_{n,2k} = ε_{2k}^{(n)}`" | `dlmf_3_9_11` (also `ε_{2k+1}^{(n)} = H_k(Δ³sₙ)/H_{k+1}(Δsₙ)`; assumes the Hankel determinants `H_k(Δ²sₙ)`, `H_k(Δsₙ)` nonzero, which DLMF leaves implicit); `wynnEps_three` (`k = 1`). Determinant machinery: `desnanot_jacobi` (via Schur complements, `det_schur`), `det_rowDiff`, `det_onesRow`, `sylvester_hankel`, `sylv1_*`, `sylv2_*`, `hankel_J1`, `hankel_J2` | `Matrix.det_fromBlocks₁₁`, `Matrix.det_permute'`, `sign_finRotate`, `Matrix.det_of_isUpperTriangular`, `Matrix.det_succ_row` |
+| "Aitken's Δ²-process is the case `k = 1`" | `shanks_one`, `wynnEps_three` | |
+| Padé approximant `[(n + k)/k]_f` (§3.11(iv)) | Not formalized (§3.11 not yet available) | |
+| Brezinski and Redivo Zaglia (1991, pp. 78–95) | Not formalized (reference) | |
+| Example 3.9.12, `s_∞ = π²/12 = 0.82246 70334 24…` | `s391`, `sQ391`, `s391_eq`, `dlmf_3_9_12` | `hasSum_zeta_two`, `HasSum.even_add_odd`, `Real.pi_gt_d20` |
+| Table 3.9.1 | `dlmf_table_3_9_1`; `lapDet`, `lapDet_eq` (Laplace expansion in `ℚ`), `sTab391`, `sT391_eq`, `tQ391`, `tab391`, `tab391_check` (`decide +kernel`), `shanks_s391`, `hankel_ratCast`, `hankel_congr`; **erratum** `t_{9,10}` | `RingHom.map_det` |
+
+### §3.9(v) Levin's and Weniger's Transformations (`Azurite/DLMF/Chapter3/Section9Levin.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.9.13 | `levinGen` (weights `c_{j,k,n} = w(n+j)/w(n+k)`), `levinL`; kernel `levinGen_eq_of_poly`, `alt_choose_poly` | `Polynomial.fwdDiff_iter_eq_zero_of_degree_lt`, `fwdDiff_iter_eq_sum_shift` |
+| 3.9.14 | `levin39W`, `dlmf_3_9_14`, `levinL_exact` (exact for `s_m = σ + a_{m+1} ∑_{i<k} d_i/(m+1)^i`); `levinL_zero_eq_levinD` (`n = 0` is 2.11.32, §2.11(vi)) | |
+| 3.9.15 | `IsLogConvergent`; example `zeta2_isLogConvergent` (`∑ 1/(j+1)²`), `zeta2_tail_bounds`, `hasSum_telescope` | `hasSum_zeta_two`, `hasSum_le` |
+| "Sequences that are accelerated by Levin's transformation include logarithmically convergent sequences" | **Erratum** for the special form 3.9.13–3.9.14: `levinL_one_zeta2`, `levinL_one_zeta2_ratio` (ratio → 1/2 for `k = 1`), `levinL_one_not_accelerating`; numerically the ratio → `1/(k+1)` for `k = 2, 3`; Levin's `u`-transformation (exponent `k − 2`) accelerates this sequence (numerical) | |
+| Brezinski and Redivo Zaglia (1991, pp. 39–42) | Not formalized (reference) | |
+| 3.9.16, 3.9.17 (Weniger) | `wenigerW₁`, `wenigerW₂`, `pochhammer_eval`; kernel by `levinGen_eq_of_poly` | `ascPochhammer` |
+| "β and γ … chosen arbitrarily subject to certain conditions"; Weniger (1989) | Not formalized (reference) | |
