@@ -2022,6 +2022,7 @@ import Azurite.DLMF.Chapter3.Section9Levin
 import Azurite.DLMF.Chapter3.Section9Shanks
 import Azurite.DLMF.Chapter3.Section9ShanksExample
 import Azurite.DLMF.Chapter3.Section9ShanksTable
+import Azurite.DLMF.Chapter4.Section2
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

@@ -2084,3 +2084,23 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat enclosure `Encl.exp 96 1`, `e96_data` by `decide +kernel`) | |
 | 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`); **20 decimals deferred** until Euler's constant can be computed | `Real.tendsto_harmonic_sub_log` |
 | Sloane (2003), Finch (2003) | Not formalized (references) | |
+
+## Chapter 4: Elementary Functions
+
+### §4.2(i) The Logarithm (`Azurite/DLMF/Chapter4/Section2.lean`)
+
+`ln z` is `Complex.log` (`log 0 = 0`), `ph z` is `Complex.arg`; paths are `C¹` maps `γ : ℝ → ℂ` on `[0, 1]`, and `∫₁^z dt/t` along `γ` is `pathLogIntegral γ = ∫₀¹ γ′/γ`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.2.1 ("multivalued function of `z` with branch point at `z = 0`") | `exp_pathLogIntegral` (`exp ∫_γ dt/t = z`), `dlmf_4_2_1` (every `ln z + 2kπi` is attained by a path) | `constant_of_has_deriv_right_zero`, `intervalIntegral.integral_hasDerivAt_right` |
+| 4.2.2 (path not meeting `(−∞, 0]`) | `dlmf_4_2_2` | `HasDerivAt.clog_real`, `intervalIntegral.integral_eq_sub_of_hasDerivAt` |
+| "single-valued analytic function on `ℂ ∖ (−∞, 0]` and real-valued … positive real numbers" | `dlmf_4_2_i_analytic`, `dlmf_4_2_i_real` | `analyticAt_clog`, `Complex.ofReal_log` |
+| 4.2.3 | `dlmf_4_2_3` | `Complex.log`, `Complex.mem_slitPlane_iff_arg` |
+| "The only zero of `ln z` is at `z = 1`" | `dlmf_4_2_i_zero` (`z ≠ 0`) | |
+| 4.2.4, 4.2.5 | `dlmf_4_2_5`, `dlmf_4_2_5_cut` (`ln x = ln |x| + iπ`, `x < 0`) | `Complex.arg_ofReal_of_neg` |
+| 4.2.6 | `dlmf_4_2_6` (every path integral is `ln z + 2kπi`) | `Complex.exp_eq_exp_iff_exists_int` |
+| "`k` is the excess of the number of times the path … crosses the negative real axis in the positive sense over … the negative sense" | Not formalized (crossing count) | |
+| 4.2.7 (closed definition, `x ± i0`) | `dlmf_4_2_7` (one-sided limits from the upper/lower half-planes) | `Complex.continuousWithinAt_log_of_re_neg_of_im_zero`, `Complex.tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| "`ln z` is two-valued on the cut, and discontinuous across the cut" | `dlmf_4_2_i_discontinuous` | |
+| Regions of validity of 4.8.7, 4.2.37; §§4.23, 4.24, 4.37, 4.38 | Not formalized here (later sections) | |
