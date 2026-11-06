@@ -2171,3 +2171,29 @@ The principal value is `Complex.cpow`; the general value is `genPowSet z a = {ex
 | Labelled points `A`–`F`, `C̄`, `D̄`, `Ē` (`r` real) | `dlmf_4_3_F2_points`; the edges `Im z = ±π` and the sides `x ± i0` of the cut: `dlmf_4_3_F2_edges` | |
 | Figure 4.3.3 ("There is a branch cut along the negative real axis") | `dlmf_4_2_i_discontinuous` (§4.2(i)) | |
 | Figure 4.3.4 (height `|e^{x+iy}|`, color the phase) | `dlmf_4_2_22`, `dlmf_4_2_23` (§4.2(iii)) | |
+
+### §4.4 Special Values and Limits (`Azurite/DLMF/Chapter4/Section4.lean`)
+
+Powers `e^w` are principal values `(Real.exp 1 : ℂ) ^ w` (`epow`, from 4.2.32).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.4.1 | `dlmf_4_4_1` | `Complex.log_one` |
+| 4.4.2 (`ln(−1 ± i0)`) | `dlmf_4_4_2` (one-sided limits, from 4.2.7) | |
+| 4.4.3 | `dlmf_4_4_3` | `Complex.log_I`, `Complex.log_neg_I` |
+| 4.4.4 | `dlmf_4_4_4` | `Complex.cpow_zero` |
+| 4.4.5 | `dlmf_4_4_5` | `Complex.exp_pi_mul_I` |
+| 4.4.6 | `dlmf_4_4_6` | |
+| 4.4.7 | `dlmf_4_4_7` | `Complex.exp_int_mul_two_pi_mul_I` |
+| 4.4.8 | `dlmf_4_4_8`, `epow_pm` | `Real.cos_pi_div_three`, `Real.sin_pi_div_three` |
+| 4.4.9 | `dlmf_4_4_9` | |
+| 4.4.10 | `dlmf_4_4_10` | `Real.cos_pi_div_four`, `Real.sin_pi_div_four` |
+| 4.4.11 | `dlmf_4_4_11` | |
+| 4.4.12 | `dlmf_4_4_12` | |
+| 4.4.13 (`Re a > 0`, `a ∈ ℂ`) | `dlmf_4_4_13` | `isLittleO_log_rpow_atTop` |
+| 4.4.14 (`Re a > 0`, `x → 0+`) | `dlmf_4_4_14` | `tendsto_log_mul_rpow_nhdsGT_zero` |
+| 4.4.15 | `dlmf_4_4_15` | `tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero` |
+| 4.4.16 (`|ph z| ≤ ½π − δ`, `δ ∈ (0, ½π]`) | `dlmf_4_4_16` (`sectorAtInf δ`, `re_ge_of_sector`: `Re z ≥ |z| sin δ`) | `tendsto_norm_cobounded_atTop` |
+| 4.4.17 | `dlmf_4_4_17` | `Complex.tendsto_one_add_div_pow_exp` |
+| 4.4.18 | `dlmf_4_4_18` | `Real.tendsto_one_add_div_pow_exp` |
+| 4.4.19 (`γ = 0.57721 56649 01532 86060 …`) | `dlmf_4_4_19` (limit, and the first five decimals); **20 decimals deferred** (as for 3.12.4) | `Real.tendsto_harmonic_sub_log` |
