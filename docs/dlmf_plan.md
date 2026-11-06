@@ -2160,3 +2160,14 @@ The principal value is `Complex.cpow`; the general value is `genPowSet z a = {ex
 | 4.2.36 | `dlmf_4_2_36` (closed principal value, `−π ≤ Im ≤ π`); `dlmf_4_2_36_open` (Mathlib's principal value, `−π < Im ≤ π`) | `Complex.log_exp` |
 | 4.2.37, "without the closed definition the `≥` and `≤` signs would have to be replaced by `>` and `<`" | `dlmf_4_2_37` (closed), `dlmf_4_2_37_open` (strict signs), `dlmf_4_2_37_open_fails` (`z = ∓i`) | `Complex.abs_arg_le_pi_div_two_iff` |
 | "Unless indicated otherwise … principal value"; Levinson and Redheffer (1970) | Not formalized (convention, reference) | |
+
+### §4.3 Graphics (`Azurite/DLMF/Chapter4/Section3.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Figure 4.3.1 ("Parallel tangent lines at `(1,0)` and `(0,1)`", "mirror symmetry across the line `y = x`") | `dlmf_4_3_F1_tangents`, `dlmf_4_3_F1_mirror` | `Real.hasDerivAt_log`, `Real.hasDerivAt_exp` |
+| Figure 4.3.2 (strip `−π < Im z < π` onto the cut `w`-plane, `w = e^z`, `z = ln w`) | `logStrip`, `dlmf_4_3_F2_bijOn`, `dlmf_4_3_F2_inverse`, `dlmf_4_3_F2_conformal` | `Complex.log_exp`, `Complex.hasDerivAt_log` |
+| "Lines parallel to the real axis … map onto rays", "lines parallel to the imaginary axis … onto circles centered at the origin" | `dlmf_4_3_F2_rays`, `dlmf_4_3_F2_circles` | |
+| Labelled points `A`–`F`, `C̄`, `D̄`, `Ē` (`r` real) | `dlmf_4_3_F2_points`; the edges `Im z = ±π` and the sides `x ± i0` of the cut: `dlmf_4_3_F2_edges` | |
+| Figure 4.3.3 ("There is a branch cut along the negative real axis") | `dlmf_4_2_i_discontinuous` (§4.2(i)) | |
+| Figure 4.3.4 (height `|e^{x+iy}|`, color the phase) | `dlmf_4_2_22`, `dlmf_4_2_23` (§4.2(iii)) | |

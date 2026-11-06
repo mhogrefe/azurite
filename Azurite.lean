@@ -2027,6 +2027,7 @@ import Azurite.DLMF.Chapter4.Section2
 import Azurite.DLMF.Chapter4.Section2Base
 import Azurite.DLMF.Chapter4.Section2Exp
 import Azurite.DLMF.Chapter4.Section2Pow
+import Azurite.DLMF.Chapter4.Section3
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
