@@ -2197,3 +2197,159 @@ Powers `e^w` are principal values `(Real.exp 1 : ℂ) ^ w` (`epow`, from 4.2.32)
 | 4.4.17 | `dlmf_4_4_17` | `Complex.tendsto_one_add_div_pow_exp` |
 | 4.4.18 | `dlmf_4_4_18` | `Real.tendsto_one_add_div_pow_exp` |
 | 4.4.19 (`γ = 0.57721 56649 01532 86060 …`) | `dlmf_4_4_19` (limit, and the first five decimals); **20 decimals deferred** (as for 3.12.4) | `Real.tendsto_harmonic_sub_log` |
+
+### §4.5 Inequalities (`Azurite/DLMF/Chapter4/Section5.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.5.1 | `dlmf_4_5_1` | `Real.log_lt_sub_one_of_pos` |
+| 4.5.2 | `dlmf_4_5_2` | |
+| 4.5.3 (`0 < x ≤ 0.5828…`) | `dlmf_4_5_3` (for `0 < x < 0.5828…`), `zero_0_5828` (the zero `c`, `0.5828 < c < 0.5829`, positivity on `(0, c)`, unique in `(0, 1)`), `f453_pos_of_zero`; **erratum** `dlmf_4_5_3_endpoint` (equality at `x = c`) | `strictConcaveOn_log_Ioi`, `intermediate_value_Icc'` |
+| 4.5.4 | `dlmf_4_5_4` | `Real.log_le_sub_one_of_pos` |
+| 4.5.5 | `dlmf_4_5_5` | |
+| 4.5.6 | `dlmf_4_5_6` | `Complex.hasSum_taylorSeries_neg_log'`, `Real.hasSum_pow_div_log_of_abs_lt_one`, `HasSum.norm_le_of_bounded` |
+| Mitrinović (1964, 1970), Bullen (1998) | Not formalized (references) | |
+| 4.5.7–4.5.12 (`x ≠ 0`); "When `x = 0` the inequalities become equalities" | `dlmf_4_5_7` … `dlmf_4_5_12`, `dlmf_4_5_ii_zero` | `Real.add_one_lt_exp` |
+| 4.5.13 | `dlmf_4_5_13` | |
+| 4.5.14 (`0 < x ≤ 1.5936…`) | `dlmf_4_5_14` (for `0 < x < 1.5936…`), `zero_1_5936` (the zero `d`, `1.5936 < d < 1.5937`, unique positive zero), `g4514_pos_of_zero`; **erratum** `dlmf_4_5_14_endpoint` (equality at `x = d`) | `strictConvexOn_exp` |
+| 4.5.15 | `dlmf_4_5_15` | `Complex.exp_bound` |
+| 4.5.16 | `dlmf_4_5_16` | `NormedSpace.expSeries_div_hasSum_exp`, `Real.add_one_le_exp` |
+| Taylor bounds for the constants | `taylorQ`, `taylorErrQ`, `exp_taylorQ`; kernel checks `f453_lo_check`, `f453_hi_check`, `g4514_lo_check`, `g4514_hi_check` (`decide +kernel` over `ℚ`) | `Real.exp_bound` |
+
+### §4.6 Power Series (`Azurite/DLMF/Chapter4/Section6.lean`)
+
+The logarithmic series converge only conditionally on the boundary, so they are stated as limits of partial sums.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| (key lemmas) | `tendsto_logSeries` (`∑ wⁿ/n = −ln(1 − w)`, `|w| ≤ 1`, `w ≠ 1`), `logPartial_cauchy` (Dirichlet's test), `hasSum_logSeries_mul`; `tendsto_oddLogSeries`, `log_div_one_add_sub`, `logPartial_sub_neg` | `Antitone.cauchySeq_series_mul_of_tendsto_zero_of_bounded`, `Complex.tendsto_tsum_powerSeries_nhdsWithin_lt` (Abel), `Complex.hasSum_taylorSeries_neg_log'` |
+| 4.6.1 (`|z| ≤ 1`, `z ≠ −1`) | `dlmf_4_6_1` | |
+| 4.6.2 (`Re z ≥ ½`) | `dlmf_4_6_2` | `Complex.log_inv` |
+| 4.6.3 (`|z − 1| ≤ 1`, `z ≠ 0`) | `dlmf_4_6_3` | |
+| 4.6.4 (`Re z ≥ 0`, `z ≠ 0`) | `dlmf_4_6_4` | |
+| 4.6.5 (`|z| ≥ 1`, `z ≠ ±1`) | `dlmf_4_6_5` | |
+| 4.6.6 (`a > 0`, `Re z ≥ −a`, `z ≠ −a`) | `dlmf_4_6_6` | `Complex.log_mul_ofReal` |
+| 4.6.7 (`|z| < 1`, binomial coefficients 1.2.6) | `dlmf_4_6_7` | `Complex.one_add_cpow_hasFPowerSeriesOnBall_zero`, `binomialSeries_apply` |
+| "If `a = 0, 1, 2, …`, then the series terminates and `z` is unrestricted" (generalizes 1.2.2) | `dlmf_4_6_7_nat` | `add_pow`, `Ring.choose_natCast` |
+
+### §4.7 Derivatives and Differential Equations (`Azurite/DLMF/Chapter4/Section7.lean`)
+
+A branch of `Ln` on an open `U` is `IsLnBranch L U` (`L` continuous, `exp ∘ L = id` on `U`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.7.1 | `dlmf_4_7_1` | `Complex.hasDerivAt_log` |
+| 4.7.2 | `dlmf_4_7_2` (every branch) | `HasDerivAt.of_local_left_inverse` |
+| 4.7.3 | `dlmf_4_7_3` (`n ≥ 1`), `iteratedDeriv_succ_eq_of_deriv_eqOn`, `iteratedDeriv_inv_eq` | `iter_deriv_inv`, `Filter.EventuallyEq.iteratedDeriv_eq` |
+| 4.7.4 | `dlmf_4_7_4` | |
+| 4.7.5, 4.7.6 (`f` analytic, nonvanishing) | `dlmf_4_7_6` (on a domain: `w′ = f′/f` iff `w − C ∈ Ln f`) | `IsOpen.exists_is_const_of_deriv_eq_zero` |
+| 4.7.7 | `dlmf_4_7_7` | |
+| 4.7.8 | `dlmf_4_7_8` | |
+| 4.7.9 (`a ≠ 0`); "`ln a` is replaced by the branch of `Ln a`" | `dlmf_4_7_9`, `dlmf_4_7_9_general` | `HasDerivAt.const_cpow` |
+| 4.7.10 | `dlmf_4_7_10` | `HasDerivAt.cpow_const` |
+| 4.7.11 | `dlmf_4_7_11` | |
+| 4.7.12, 4.7.13 | `dlmf_4_7_13` (corrected: `w = C exp(∫ f dz)`); **erratum** `dlmf_4_7_13_erratum` | |
+| 4.7.14, 4.7.15 (`a ≠ 0`) | `dlmf_4_7_15` (`√a = a^{1/2}`) | `Complex.cpow_ofNat_inv_pow` |
+| Kamke (1977) | Not formalized (reference) | |
+
+### §4.8 Identities (`Azurite/DLMF/Chapter4/Section8.lean`)
+
+`Ln z` is `genLogSet z`; the closed principal values (DLMF default, `ph ∈ [−π, π]`) are `closedLogSet z` (and `closedPowSet`); Mathlib's `Complex.log` uses `ph ∈ (−π, π]`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.8.1 ("every value … and vice versa") | `dlmf_4_8_1` (set sum) | |
+| 4.8.2 | `dlmf_4_8_2` (closed); `dlmf_4_8_2_open`, `dlmf_4_8_2_open_fails` (`z₁ = z₂ = −i`) | `Complex.log_exp` |
+| 4.8.3 | `dlmf_4_8_3` | |
+| 4.8.4 | `dlmf_4_8_4` (closed); `dlmf_4_8_4_open` | |
+| 4.8.5 | **erratum** `dlmf_4_8_5_erratum` (equality of sets only for `n = ±1`: `dlmf_4_8_5_pm_one`); inclusion `dlmf_4_8_5` | `Complex.exp_int_mul` |
+| 4.8.6 | `dlmf_4_8_6` (closed); `dlmf_4_8_6_open` | |
+| 4.8.7 | `dlmf_4_8_7` (closed, `|ph z| ≤ π`); `dlmf_4_8_7_open` (`ph z ≠ π`) | `Complex.log_inv` |
+| 4.8.8 | `dlmf_4_8_8` | `Complex.exp_eq_exp_iff_exists_int` |
+| 4.8.9 | `dlmf_4_8_9` (closed); `dlmf_4_8_9_open` | |
+| 4.8.10 | `dlmf_4_8_10` | `Complex.exp_log` |
+| 4.8.11 | `dlmf_4_8_11` | |
+| 4.8.12 | `dlmf_4_8_12` (existence and uniqueness of `k`, `Re(−iz ln a) = Im(z ln a)`); `dlmf_4_8_12_closed` | |
+| 4.8.13 | `dlmf_4_8_13` | `Real.log_rpow` |
+| 4.8.14 | `dlmf_4_8_14` | `Complex.cpow_add` |
+| 4.8.15 | `dlmf_4_8_15` (closed); `dlmf_4_8_15_open` | |
+| 4.8.16 | `dlmf_4_8_16` | |
+| 4.8.17, "The restriction on `z₁` can be removed when `z₂` is an integer" | `dlmf_4_8_17` (closed), `dlmf_4_8_17_open`, `dlmf_4_8_17_int` | `Complex.cpow_intCast` |
+
+### §4.9 Continued Fractions (`Azurite/DLMF/Chapter4/Section9Log.lean`, `Section9Markov.lean`, `Section9Exp.lean`, `Section9PadeExp.lean`)
+
+Convergents are `cfA/cfB` of §1.12; each theorem states that the denominators are eventually nonzero and the convergents tend to the function on DLMF's full region. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.9.1 (`\|ph(1 + z)\| < π`) | `dlmf_4_9_1` (convergents tend to `ln(1 + z)` on the full region; even convergents = Gauss–Legendre on `(0, 1)` (`lg1_even_eq`), odd = Gauss for weight `t` (`lg1_odd_eq`); errors `lg1_err`; Markov's theorem `gauss_tendsto`) | `Complex.log` |
+| 4.9.2 (`z ∈ ℂ ∖ (−∞, −1] ∪ [1, ∞)`) | `dlmf_4_9_2` (convergents = Gauss–Legendre on `(−1, 1)` (`lg2_eq`), errors `lg2_err`) | |
+| 4.9.3 (three continued fractions for `e^z`, all `z ∈ ℂ`) | `dlmf_4_9_3_one`, `dlmf_4_9_3_two`, `dlmf_4_9_3_three` (convergents are Padé approximants, `cf_tendsto_of_err`; Padé convergence `padeExp_tendsto`) | |
+| 4.9.4 (`n ≥ 1`) | `dlmf_4_9_4` | |
+| 4.9.5 | `eSum`, `exp_sub_eSum` (Taylor remainder) | |
+| §4.9(iii) | reference only | |
+
+### §4.10 Integrals (`Azurite/DLMF/Chapter4/Section10.lean`)
+
+Indefinite integrals `∫ f dz = F` are stated as `F′ = f` (`HasDerivAt`) on the region where the principal branches are holomorphic. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.10.1 | `dlmf_4_10_1` (`z` off the cut) | `Complex.hasDerivAt_log` |
+| 4.10.2 | `dlmf_4_10_2` | |
+| 4.10.3 (`n ≠ −1`, integer) | `dlmf_4_10_3` | `hasDerivAt_zpow` |
+| 4.10.4 | `dlmf_4_10_4` (`z ∉ (−∞, 1]`, so `ln z` is off the cut) | |
+| 4.10.5 | `dlmf_4_10_5` (term-by-term: `integral_pow_mul_log`, `hasSum_integral01`, ζ(2)) | `hasSum_zeta_two` |
+| 4.10.6 | `dlmf_4_10_6` (`hasSum_alt_inv_sq`: `∑ (−1)ⁿ/(n+1)² = π²/12`) | |
+| 4.10.7 (`x > 1`) | `dlmf_4_10_7` (principal value exists and equals `li x = ln(x − 1) + ∫₀ˣ (1/ln t − 1/(t − 1)) dt`; integrand bounded by 1) | |
+| 4.10.8 | `dlmf_4_10_8` | |
+| 4.10.9 | `dlmf_4_10_9` (`e^{az} + b` off the cut) | |
+| 4.10.10 | `dlmf_4_10_10` (`e^{az/2} + e^{−az/2}` off the cut) | |
+| 4.10.11 (`ℜc > 0`) | `dlmf_4_10_11` | `integral_gaussian_complex` |
+| 4.10.12 | `dlmf_4_10_12` (`u = eˣ − 1`, `integral_log_one_add_div`) | `integral_comp_mul_deriv'''` |
+| 4.10.13 | `dlmf_4_10_13` | `integral_Ioi_of_hasDerivAt_of_nonneg'` |
+| §4.10(iii) | reference only | |
+
+### §4.12 Generalized Logarithms and Exponentials (`Azurite/DLMF/Chapter4/Section12.lean`)
+
+The simplest choice is `simpleGenExp` (`φ`) / `simpleGenLog` (`ψ`) (`genLog` is taken by §3.1). In Lean `log 0 = 0`, so the integer `ℓ` of 4.12.10 is pinned down by also requiring the earlier iterates to be positive. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.12.1–4.12.2, "strictly increasing when `0 ≤ x ≤ 1`" | `IsGenExp` | |
+| "Its inverse `ψ` … is called a generalized logarithm. It, too, is strictly increasing … and" 4.12.3–4.12.4 | `IsGenLog`, `isGenLog_of_inverse` | |
+| "These functions are not unique" | `genExpOf`, `isGenExp_genExpOf` (any strictly increasing `h` on `[0, 1]` with `h(0) = 0`, `h(1) = 1`), `genExp_not_unique` (`h(x) = x²`) | |
+| 4.12.5 | `dlmf_4_12_5_exp`, `dlmf_4_12_5_log` | |
+| 4.12.6 | `dlmf_4_12_6` | |
+| 4.12.7 | `dlmf_4_12_7` | |
+| "Correspondingly" (`ψ = φ⁻¹`) | `genLog_genExp`, `genExp_genLog`, `isGenLog_genLog` | |
+| 4.12.8 | `dlmf_4_12_8` | |
+| 4.12.9–4.12.10 | `dlmf_4_12_9` (existence, formula, uniqueness of `ℓ`) | |
+| "Both `φ(x)` and `ψ(x)` are continuously differentiable" | `contDiffOn_genExp` (on `(−1, ∞)`), `contDiff_genLog` (gluing lemma `contDiffOn_glue`) | |
+| Clenshaw et al., Walker, Kneser | references only | |
+
+### §4.13 Lambert W-Function (`Azurite/DLMF/Chapter4/Section13Real.lean`, `Section13OmegaAux.lean`, `Section13Omega.lean`, `Section13Branch.lean`, `Section13Cut.lean`, `Section13Deriv.lean`, `Section13Abel.lean`, `Section13Taylor.lean`, `Section13BranchPoint.lean`, `Section13Series.lean`, `Section13SeriesD.lean`) — IN PROGRESS (full complex scope)
+
+`W_k(z) = ω(ln z + 2πik)` via the Wright `ω`-function, the unique solution of `y + ln y = z` (off the half-lines `L± = {t ± iπ : t ≤ −1}`; existence/uniqueness via `y = ρe^{iα}` and the strictly monotone `omegaG`). Values on the cuts are limits from above (counterclockwise continuity). Real branches: `lambertW0`, `lambertWm1`. Erratum: 4.13.1_2 on `L₋`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.13.1 | `dlmf_4_13_1` (all `k`), `dlmf_4_13_1_real`; every solution is a `W_k`: `dlmf_4_13_1_all` | |
+| Real solutions: one on `[0, ∞)` (nonneg., increasing), two on `(−e⁻¹, 0)`, none below; principal branch `W₀ ≥ −1` | `dlmf_4_13_1_nonneg`, `dlmf_4_13_1_two`, `dlmf_4_13_1_none`, `strictMonoOn_lambertW0`, `strictAntiOn_lambertWm1`, `lambertW_zero_ofReal`, `lambertW_neg_one_ofReal` | |
+| Figure 4.13.1 | real branches above | |
+| 4.13.1_1 | TODO (asymptotics) | |
+| `W₀` analytic on `ℂ ∖ (−∞, −e⁻¹]`, real for `z > −e⁻¹`; `W_k` analytic on `ℂ ∖ (−∞, 0]`; branch points | `analyticOnNhd_lambertW_zero`, `dlmf_4_13_W0_analytic` (via `lambertW_zero_eq_of_norm_lt_one`: `|w| < 1` ⇒ `w = W₀`), `dlmf_4_13_Wk_analytic`; `W_{±1}(x ∓ 0i) = Wm(x)`: `tendsto_lambertW_one_below`, `continuousWithinAt_lambertW_neg_one`; on the cut `x < −e⁻¹`: `continuousWithinAt_lambertW_cut` (from above), `tendsto_lambertW_cut_below` (`W_k(x − 0i) = W_{k−1}(x)`); square-root branch point `−e⁻¹`: `lambertGlue` (`W₀`/`W₁`/`W_{−1}` glued over a square-root coordinate), `continuousAt_lambertGlue`, `differentiableOn_lambertGlue` (inverse function theorem `differentiableAt_of_mul_exp` + removable singularity), `differentiableOn_vD` (`W` analytic in `(ez + 1)^{1/2}`, `\|ez + 1\| < 1`), `differentiableOn_uT`; TODO: log branch point `0` | |
+| Figure 4.13.2 (sheet images) | `lambertW_im_add_arg` (`ℑW + ph W = ph z + 2πk`); TODO: region boundaries as curves | |
+| 4.13.1_2 (Wright `ω`) | `wrightOmega`, `existsUnique_omega`, `dlmf_4_13_1_2` (off `L₋`), `wrightOmega_add_log_of_Lm` (**erratum** on `L₋`), `wrightOmega_mul_exp`, `wrightOmega_eq_lambertW` (`ω(z) = W_{𝒦(z)}(e^z)`), `hasDerivAt_wrightOmega` | |
+| 4.13.1_3 (tree `T`) | `dlmf_4_13_1_3` (real), `dlmf_4_13_1_3_complex` | |
+| 4.13.2 | `dlmf_4_13_2`, `dlmf_4_13_2_real`, `dlmf_4_13_2_limits` (`W₀` continuous at `−e⁻¹`; `W₁(−e⁻¹ − 0i) = W_{−1}(−e⁻¹ + 0i) = −1` as half-plane limits), via `eq_neg_one_of_mul_exp` (only root of `we^w = −e⁻¹` with `\|ℑw\| ≤ 2π`) and `tendsto_neg_one_of_mul_exp` (compactness) | `IsCompact.tendsto_nhds_of_unique_mapClusterPt` |
+| 4.13.3_1, 4.13.3_2 | `dlmf_4_13_3_1`, `dlmf_4_13_3_2` (real) | |
+| 4.13.4 | `dlmf_4_13_4` (complex, `ℂ ∖ (−∞, 0]`), `dlmf_4_13_4_W0`, `dlmf_4_13_4_W0'`, `dlmf_4_13_4_Wm1` (real) | |
+| 4.13.4_1–4.13.4_2 | `dlmf_4_13_4_1` (real `W₀`), `dlmf_4_13_4_1_complex` (all `W_k` on `ℂ ∖ (−∞, 0]`), `dlmf_4_13_4_1_W0`, `iteratedDeriv_of_lambert_ode`, `lambertP`, `lambertP_degree` (degree exactly `n`) | |
+| 4.13.5–4.13.5_3 (`\|z\| < e⁻¹`) | `dlmf_4_13_5`, `dlmf_4_13_5_1` (incl. `(W₀/z)^a = e^{−aW₀}`), `dlmf_4_13_5_2`, `dlmf_4_13_5_3`; via `dW_eq` (`W₀^{(n)}(0) = (−n)^{n−1}`, Leibniz recursion from `z(1 + W)W′ = W`), `iteratedDeriv_expW`, `abel_identity` (`∑ C(n,k) k^{k−1}(y + n − k)^{n−k} = n(y + n)^{n−1}`), `norm_W0_lt_one` | `Complex.hasSum_taylorSeries_on_ball` |
+| 4.13.6–4.13.8 (`\|t\| < 2√π`) | `dlmf_4_13_6` (`uT t = W(−e^{−1−t²/2})` on the sheet selected by `t`), `dlmf_4_13_6_W0` (`t ≥ 0`), `dlmf_4_13_6_Wm1` (`t ≤ 0`; `W_{−1}(x + 0i) = W₁(x − 0i)`), `dlmf_4_13_7`, `dlmf_4_13_8`; `lambertC n = (−1)^{n+1} uT^{(n)}(0)/n!` (DLMF's `(−1)^{n−1}`), from `(1 + u)u′ = −tu` by Leibniz (`uT_rec`); `c₁ = 1` from the sign of `W₀ > −1` | `Complex.hasSum_taylorSeries_on_ball`, `Complex.differentiableOn_compl_singleton_and_continuousAt_iff`, `HasStrictDerivAt.localInverse` |
+| 4.13.9 | TODO (needs §5.11 `g_n`) | |
+| 4.13.9_1–4.13.9_2 (`\|ez + 1\| < 1`) | `dlmf_4_13_9_1` (principal `(ez + 1)^{n/2}`; `vD_sqrt`, `sqrt_region`), `dlmf_4_13_9_2` (values `d₀`–`d₄`), `dlmf_4_13_9_2_rec`; `lambertD n = vD^{(n)}(0)/n!`, from `(1 + v)v′(p² − 1) = 2pv` (`vD_rec`); `d₁ = √2` from the sign | `cpow_nat_mul` |
+| 4.13.10–4.13.11 | TODO | |
+| 4.13.12–4.13.14 | `dlmf_4_13_12`, `dlmf_4_13_13`, `dlmf_4_13_14` (real `W₀`), `dlmf_4_13_12_complex`–`dlmf_4_13_14_complex` (all `W_k`) | |
+| 4.13.15–4.13.16 | TODO | |
