@@ -7,7 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.Interval
+import Azurite.AzFloat.Equiv.ConstantKernel
 import Azurite.DLMF.Chapter3.Section11LebesgueNum
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
@@ -21,7 +21,8 @@ Formalizations of <https://dlmf.nist.gov/3.12>.
   enclosure `Encl.pi 96`, computed in the kernel: `pi96_data`).
 * 3.12.2: `π = 4 ∫₀¹ dt/(1 + t²)` (`dlmf_3_12_2`).
 * 3.12.3: `e = 2.71828 18284 59045 23536 …` (`dlmf_3_12_3`, `e = exp 1` as in §4.2(ii), all 20
-  decimals, from the AzFloat enclosure `Encl.exp 96 1`, computed in the kernel: `e96_data`).
+  decimals, from AzFloat's correctly rounded `ePrecRound 80` rounded down and up, evaluated in the
+  kernel through Ziv's loop with fuel: `e80_data`, `const_eq_zivLoop`).
 * 3.12.4: `γ = 0.57721 56649 01532 86060 …` (`Real.eulerMascheroniConstant`, the limit of
   `H_n − ln n` as in §5.2(ii): `dlmf_3_12_4_def`). Only the first five decimals are certified
   (`dlmf_3_12_4_partial`, from the bounds `euler_bounds` of §3.11(ii)); the full 20 decimals are
@@ -57,23 +58,25 @@ theorem dlmf_3_12_2 : π = 4 * ∫ t in (0 : ℝ)..1, 1 / (1 + t ^ 2) := by
   ring
 
 set_option maxRecDepth 100000 in
-/-- The ends of the 96-bit AzFloat enclosure of `e = exp 1`. -/
-theorem e96_data :
-    (valData (Encl.exp 96 (ofAzNat (AzNat.ofNat 1))).1,
-        valData (Encl.exp 96 (ofAzNat (AzNat.ofNat 1))).2) =
-      (some (true, 6891663182871195205680363146943, 2535301200456458802993406410752),
-        some (true, 6891663182871195205680363147625, 2535301200456458802993406410752)) := by
+/-- `e` at 80 bits, rounded down and up (Ziv's loop with fuel, first attempt at 144 bits). -/
+theorem e80_data :
+    (valData (zivLoop (expApprox one 1) 80 .Floor 3 144).1,
+        valData (zivLoop (expApprox one 1) 80 .Ceiling 3 144).1) =
+      (some (true, 205387567963337755372535, 75557863725914323419136),
+        some (true, 821550271853351021490141, 302231454903657293676544)) := by
   decide +kernel
 
-/-- **DLMF 3.12.3**: `e = 2.71828 18284 59045 23536 …` (`e = exp 1`, §4.2(ii)). -/
+/-- **DLMF 3.12.3**: `e = 2.71828 18284 59045 23536 …` (`e = exp 1`, §4.2(ii)), from AzFloat's
+correctly rounded `ePrecRound 80`, rounded down and up. -/
 theorem dlmf_3_12_3 :
     2.71828182845904523536 < Real.exp 1 ∧ Real.exp 1 < 2.71828182845904523537 := by
-  have hx : (ofAzNat (AzNat.ofNat 1)).toVal = some ((1 : ℝ) : EReal) := by
-    rw [toVal_ofAzNat, AzNat.toNat_ofNat]; simp
-  obtain ⟨d1, d2⟩ := Prod.mk.inj e96_data
-  obtain ⟨l, u⟩ := (encloses0_exp hx (w := 96) (by norm_num)).encloses.bounds d1 d2
-  simp only [signedVal, ite_true] at l u
-  refine ⟨lt_of_lt_of_le ?_ l, lt_of_le_of_lt u ?_⟩ <;> norm_num
+  obtain ⟨d1, d2⟩ := Prod.mk.inj e80_data
+  have hF := const_eq_zivLoop eApprox_ok (ePrecRound_eq_liftVal₀ 80 .Floor) (by norm_num) d1
+  have hC := const_eq_zivLoop eApprox_ok (ePrecRound_eq_liftVal₀ 80 .Ceiling) (by norm_num) d2
+  have l := le_of_floor_data (ePrecRound_eq_liftVal₀ 80 .Floor) (hF ▸ d1)
+  have u := ge_of_ceiling_data (ePrecRound_eq_liftVal₀ 80 .Ceiling) (hC ▸ d2)
+  push_cast at l u
+  exact ⟨lt_of_lt_of_le (by norm_num) l, lt_of_le_of_lt u (by norm_num)⟩
 
 /-- **DLMF 3.12.4**, definition (§5.2(ii)): `γ = lim (1 + 1/2 + ⋯ + 1/n − ln n)`. -/
 theorem dlmf_3_12_4_def :

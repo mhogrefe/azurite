@@ -2081,7 +2081,7 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 |---|---|---|
 | 3.12.1 (`π = 3.14159 26535 89793 23846 …`) | `dlmf_3_12_1` (all 20 decimals; AzFloat enclosure `Encl.pi 96`, `pi96_data` by `decide +kernel`) | |
 | 3.12.2 | `dlmf_3_12_2` | `integral_one_div_one_add_sq`, `Real.arctan_one` |
-| 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat enclosure `Encl.exp 96 1`, `e96_data` by `decide +kernel`) | |
+| 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat's correctly rounded `ePrecRound 80` rounded down/up via `const_eq_zivLoop`, `e80_data` by `decide +kernel`) | |
 | 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`); **20 decimals deferred** until Euler's constant can be computed | `Real.tendsto_harmonic_sub_log` |
 | Sloane (2003), Finch (2003) | Not formalized (references) | |
 
@@ -2104,3 +2104,59 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 4.2.7 (closed definition, `x ± i0`) | `dlmf_4_2_7` (one-sided limits from the upper/lower half-planes) | `Complex.continuousWithinAt_log_of_re_neg_of_im_zero`, `Complex.tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
 | "`ln z` is two-valued on the cut, and discontinuous across the cut" | `dlmf_4_2_i_discontinuous` | |
 | Regions of validity of 4.8.7, 4.2.37; §§4.23, 4.24, 4.37, 4.38 | Not formalized here (later sections) | |
+
+### §4.2(ii) Logarithms to a General Base (`Azurite/DLMF/Chapter4/Section2Base.lean`)
+
+`log_a z = ln z / ln a` is `logBase` (principal `ln = Complex.log`).  The constants are certified with AzFloat's correctly rounded `ePrecRound`, `log10EPrecRound`, `ln10PrecRound` at 80 bits, rounded down and up, each identified with Ziv's loop with fuel (`const_eq_zivLoop` in `AzFloat/Equiv/ConstantKernel.lean`, via `zivLoop_eq_of_ne_nan_threshold`) and evaluated by `decide +kernel`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.2.8 (`a, b ≠ 0, 1`) | `logBase`, `dlmf_4_2_8`; positive reals: `logBase_ofReal` | `Real.logb` |
+| 4.2.9 | `dlmf_4_2_9` | |
+| 4.2.10 | `dlmf_4_2_10` | |
+| 4.2.11 (`e = 2.71828 18284 59045 23536 …`) | `dlmf_4_2_11` (= `dlmf_3_12_3`, all 20 decimals) | |
+| 4.2.12 ("the unique positive number … such that `ln e = 1`") | `dlmf_4_2_12` | `Real.log_exp`, `Real.exp_log` |
+| 4.2.13 | `dlmf_4_2_13` | `integral_one_div_of_pos` |
+| 4.2.14 | `dlmf_4_2_14` | |
+| 4.2.15 | `dlmf_4_2_15` | |
+| 4.2.16 | `dlmf_4_2_16` | |
+| 4.2.17 (`log₁₀ e = 0.43429 44819 03251 82765 …`) | `dlmf_4_2_17` (all 20 decimals; `log10E80_data`) | |
+| 4.2.18 (`ln 10 = 2.30258 50929 94045 68401 …`) | `dlmf_4_2_18` (all 20 decimals; `ln1080_data`) | |
+| "Napierian or hyperbolic logarithm", "common or Briggs logarithm" | Not formalized (terminology) | |
+
+### §4.2(iii) The Exponential Function (`Azurite/DLMF/Chapter4/Section2Exp.lean`)
+
+`exp` is `Complex.exp`; the general logarithm `Ln ζ` is `genLogSet ζ = {ln ζ + 2kπi}`, equal to the set of path integrals `∫₁^ζ dt/t` of §4.2(i) (`genLogSet_eq_pathIntegrals`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.2.19 | `dlmf_4_2_19` | `NormedSpace.expSeries_div_hasSum_exp`, `Complex.exp_eq_exp_ℂ` |
+| "an entire function of `z`, with no real or complex zeros" | `dlmf_4_2_iii_entire`, `dlmf_4_2_iii_ne_zero` | `Complex.differentiable_exp`, `Complex.exp_ne_zero` |
+| "It has period `2πi`", 4.2.20 | `dlmf_4_2_20`, `dlmf_4_2_iii_periodic` (the periods are exactly `2kπi`) | `Complex.exp_periodic`, `Complex.exp_eq_one_iff` |
+| 4.2.21 | `dlmf_4_2_21` | `Complex.exp_neg` |
+| 4.2.22 | `dlmf_4_2_22` | `Complex.norm_exp` |
+| 4.2.23 (general value of the phase) | `dlmf_4_2_23` (`exp z = |exp z| e^{iθ} ⟺ θ = Im z + 2kπ`), `dlmf_4_2_23_arg` | `Complex.exp_eq_exp_iff_exists_int` |
+| 4.2.24 | `dlmf_4_2_24` | `Complex.exp_mul_I` |
+| 4.2.25 (`ζ ≠ 0`) | `dlmf_4_2_25` (`genLogSet`) | |
+| Hobson (1928, pp. 289–296) | Not formalized (reference) | |
+
+### §4.2(iv) Powers (`Azurite/DLMF/Chapter4/Section2Pow.lean`)
+
+The principal value is `Complex.cpow`; the general value is `genPowSet z a = {exp(a w) : w ∈ Ln z}`; the principal value under the closed definition (`ph z ∈ [−π, π]`, two values on the cut) is `closedPowSet z a`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.2.26 (`z ≠ 0`) | `genPowSet`, `mem_genPowSet_iff`, `genPowSet_eq` | |
+| "`z⁰ = 1`", 4.2.27 | `dlmf_4_2_26_zero`, `dlmf_4_2_27` (`a = n`, and `a = −n`), `genPowSet_int` | `Complex.cpow_natCast` |
+| "In all other cases, `z^a` is a multivalued function with branch point at `z = 0`" | `dlmf_4_2_iv_multivalued` (single-valued iff `a ∈ ℤ`) | `Complex.exp_eq_one_iff` |
+| 4.2.28 | `dlmf_4_2_28` | `Complex.cpow_def_of_ne_zero` |
+| "analytic … on `ℂ ∖ (−∞, 0]`, and is two-valued and discontinuous on the cut … unless `a ∈ ℤ`" | `dlmf_4_2_iv_analytic`, `closedPowSet`, `cpow_mem_closedPowSet`, `dlmf_4_2_iv_closed_cut` (the two values `exp(a(ln|x| ± iπ))`, equal iff `a ∈ ℤ`), `dlmf_4_2_iv_discontinuous`, `dlmf_4_2_iv_continuous_int` | `AnalyticAt.cpow` |
+| 4.2.29, 4.2.30 ("unrestricted in the general case") | `dlmf_4_2_29_30` (every value `exp(a(ln|z| + iθ))`, `z = |z|e^{iθ}`), principal: `dlmf_4_2_29`, `dlmf_4_2_30` | `Complex.norm_cpow_of_ne_zero` |
+| 4.2.31 | `dlmf_4_2_31` | |
+| 4.2.32 | `dlmf_4_2_32` | |
+| 4.2.33 | `dlmf_4_2_33` | |
+| 4.2.34 | `dlmf_4_2_34` | `NormedSpace.expSeries_div_hasSum_exp`, `Real.exp_eq_exp_ℝ` |
+| 4.2.35 (`a ≠ 0`, `w ≠ 0`) | `dlmf_4_2_35` (also `z ≠ 0`, where `z^a` is defined) | |
+| 4.2.36 | `dlmf_4_2_36` (closed principal value, `−π ≤ Im ≤ π`); `dlmf_4_2_36_open` (Mathlib's principal value, `−π < Im ≤ π`) | `Complex.log_exp` |
+| 4.2.37, "without the closed definition the `≥` and `≤` signs would have to be replaced by `>` and `<`" | `dlmf_4_2_37` (closed), `dlmf_4_2_37_open` (strict signs), `dlmf_4_2_37_open_fails` (`z = ∓i`) | `Complex.abs_arg_le_pi_div_two_iff` |
+| "Unless indicated otherwise … principal value"; Levinson and Redheffer (1970) | Not formalized (convention, reference) | |

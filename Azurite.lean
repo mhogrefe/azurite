@@ -64,6 +64,7 @@ import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Cbrt
 import Azurite.AzFloat.Equiv.CbrtRat
 import Azurite.AzFloat.Equiv.Compare
+import Azurite.AzFloat.Equiv.ConstantKernel
 import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.DirectedRounding
@@ -2023,6 +2024,9 @@ import Azurite.DLMF.Chapter3.Section9Shanks
 import Azurite.DLMF.Chapter3.Section9ShanksExample
 import Azurite.DLMF.Chapter3.Section9ShanksTable
 import Azurite.DLMF.Chapter4.Section2
+import Azurite.DLMF.Chapter4.Section2Base
+import Azurite.DLMF.Chapter4.Section2Exp
+import Azurite.DLMF.Chapter4.Section2Pow
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
