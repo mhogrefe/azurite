@@ -25,7 +25,8 @@ import Azurite.DLMF.Chapter3.Section9Hankel
   Hankel identities `hankel_J1`, `hankel_J2` (Desnanot–Jacobi). The case `k = 1` directly:
   `wynnEps_three`.
 * "If `sₙ` is the `n`th partial sum of a power series `f`, then `t_{n,2k} = ε_{2k}^{(n)}` is the
-  Padé approximant `[(n + k)/k]_f` (§3.11(iv))": not formalized (§3.11 is not yet available).
+  Padé approximant `[(n + k)/k]_f` (§3.11(iv))": `pade_eq_shanks`, `pade_eq_wynnEps`
+  (`Section11Pade.lean`).
 * Brezinski and Redivo Zaglia (1991) is not formalized.
 -/
 

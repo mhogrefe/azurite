@@ -1908,7 +1908,7 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.9.11 (Wynn's epsilon algorithm) | `wynnEps`, `wynnEps_succ_succ` | |
 | "Then `t_{n,2k} = ε_{2k}^{(n)}`" | `dlmf_3_9_11` (also `ε_{2k+1}^{(n)} = H_k(Δ³sₙ)/H_{k+1}(Δsₙ)`; assumes the Hankel determinants `H_k(Δ²sₙ)`, `H_k(Δsₙ)` nonzero, which DLMF leaves implicit); `wynnEps_three` (`k = 1`). Determinant machinery: `desnanot_jacobi` (via Schur complements, `det_schur`), `det_rowDiff`, `det_onesRow`, `sylvester_hankel`, `sylv1_*`, `sylv2_*`, `hankel_J1`, `hankel_J2` | `Matrix.det_fromBlocks₁₁`, `Matrix.det_permute'`, `sign_finRotate`, `Matrix.det_of_isUpperTriangular`, `Matrix.det_succ_row` |
 | "Aitken's Δ²-process is the case `k = 1`" | `shanks_one`, `wynnEps_three` | |
-| Padé approximant `[(n + k)/k]_f` (§3.11(iv)) | Not formalized (§3.11 not yet available) | |
+| Padé approximant `[(n + k)/k]_f` (§3.11(iv)) | `pade_eq_shanks` (`t_{n,2k} = [(n + k)/k]_f`), `pade_eq_wynnEps` (`Section11Pade.lean`) | |
 | Brezinski and Redivo Zaglia (1991, pp. 78–95) | Not formalized (reference) | |
 | Example 3.9.12, `s_∞ = π²/12 = 0.82246 70334 24…` | `s391`, `sQ391`, `s391_eq`, `dlmf_3_9_12` | `hasSum_zeta_two`, `HasSum.even_add_odd`, `Real.pi_gt_d20` |
 | Table 3.9.1 | `dlmf_table_3_9_1`; `lapDet`, `lapDet_eq` (Laplace expansion in `ℚ`), `sTab391`, `sT391_eq`, `tQ391`, `tab391`, `tab391_check` (`decide +kernel`), `shanks_s391`, `hankel_ratCast`, `hankel_congr`; **erratum** `t_{9,10}` | `RingHom.map_det` |
@@ -1961,3 +1961,114 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | Gautschi (1979c) | Not formalized (reference) | |
 | 3.10.16–3.10.17 (Steed's algorithm) | `steed`, `steed_zero`, `dlmf_3_10_17` (`Dₙ = B_{n−1}/Bₙ`, `∇Cₙ = Cₙ − C_{n−1}`, `Cₙ = Aₙ/Bₙ`; `B_k ≠ 0`) | |
 | Lentz (1976), Thompson and Barnett (1986); Blanch (1964), Lorentzen and Waadeland (1992), Cuyt et al. (2008), Gautschi (1967), Gil et al. (2007a), Wimp (1984); pointers to §§6.18(i), 7.22(i), … | Not formalized (references, pointers) | |
+
+## Section 3.11
+
+### §3.11(i) Minimax Polynomial Approximations (`Azurite/DLMF/Chapter3/Section11Minimax.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Minimax approximation, `εₙ = f − pₙ`, `max |εₙ|` | `polyOn`, `minimaxErr` (sup norm on `C([a, b], ℝ)`), `IsMinimax`, `abs_err_le` | `ContinuousMap.norm_coe_le_norm` |
+| "there exists a unique `n`th degree polynomial … that minimizes `max |εₙ(x)|`" | `dlmf_3_11_i_exists_unique` (`a < b`); existence `minimax_exists` (compactness in the finite-dimensional subspace), uniqueness `minimax_unique` via `minimax_extremal` (extremal set has `≥ n + 1` points, Lagrange-interpolating perturbation) and `avg_eq` | `FiniteDimensional.proper_real`, `Lagrange.interpolate`, `eq_of_natDegree_lt_card_of_eval_eq` |
+| "A sufficient condition … `n + 2` distinct points … changes sign at these consecutive maxima" | `dlmf_3_11_i_sufficient`; `not_alternates` (a polynomial of degree `≤ n` cannot strictly alternate in sign at `n + 2` points) | `intermediate_value_Ioo` |
+| 3.11.1–3.11.5 (Remez step) | `remezSystem`, `remezSystem_injective`, `dlmf_3_11_5` (unique solution for `x₀ < ⋯ < x_{n+1}`), `remez_fixed` (correction `0` at an equioscillating `pₙ`) | `LinearMap.injective_iff_surjective_of_finrank_eq_finrank` |
+| 3.11.3–3.11.5 in correction form | `remez_step_iff_delta` (`a_k + δa_k`, `m_j = (−1)^j εₙ(x_j)`), `remez_step_iff` (`p_new(x_j) + (−1)^j m = f(x_j)`), `remezPoly` (`Section11Remez.lean`) | |
+| "The iterative process converges locally and quadratically" | `dlmf_3_11_i_remez_local` (`Section11Remez.lean`): for `f ∈ C²` and `p*` equioscillating at `x₀* < ⋯ < x_{n+1}*` (endpoints fixed as in DLMF) with nondegenerate interior extrema `ε*″(x_j*) ≠ 0`, every `p` near `p*` has exactly one zero of `εₙ′` within `δ` of each interior `x_j*`, and the update obeys `‖p_new − p*‖, |m − m*| ≤ K‖p − p*‖²` (coefficient norm `cn`); `dlmf_3_11_i_remez_converges` (iterates converge, quadratically and at least geometrically, `m → m*`). Ingredients: `remez_lower` (uniform invertibility near the nodes, compactness), `lin_near`/`lin_lower`/`lin_unique`/`lin_exists`/`lin_taylor`. These hypotheses make DLMF's "in general" precise | `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`, `IsCompact.exists_isMinOn`, `intermediate_value_Icc` |
+| Meinardus (1967), Hart et al. (1968), Cody (1970), Ralston (1965) | Not formalized (references) | |
+
+### §3.11(ii) Chebyshev-Series Expansions (`Section11Chebyshev.lean`, `Section11ChebSeries.lean`, `Section11ChebComplex.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.11.6 | `dlmf_3_11_6` (`Tₙ(x) = cos(n arccos x)` on `[−1, 1]`) | `Polynomial.Chebyshev.T_real_cos`, `Real.cos_arccos` |
+| 3.11.7, `T₀ = 1`, `T₁ = x` | `dlmf_3_11_7` (every integer `n`), `dlmf_3_11_7_init` | `Polynomial.Chebyshev.T_add_two` |
+| 3.11.8 | `dlmf_3_11_8`; integrand integrable, `intervalIntegrable_dlmf_3_11_8` | `Polynomial.Chebyshev.integral_measureT`, `integral_eval_T_real_mul_eval_T_real_measureT_of_ne`, `integral_T_real_mul_self_measureT_of_ne_zero`, `intervalIntegrable_sqrt_one_sub_sq_inv` |
+| 3.11.9, `x_ℓ = cos(πℓ/n)`, `∑''` | `dlmf_3_11_9`, `sumDPrime`, `sumDPrime_cos` (`∑''_ℓ cos(mπℓ/n) = n·[2n ∣ m]`, via the Dirichlet kernel `halfDirichlet` of §1.8), `int_dvd_cases` | `Polynomial.Chebyshev.node`, `Int.eq_zero_of_abs_lt_dvd` |
+| Gil et al. (2007a, Chapter 3), Mason and Handscomb (2003), Chapter 18 | Not formalized (references) | |
+| 3.11.10 | `chebCoeff`, `dlmf_3_11_10`; `fourierA_cheb` (`cₙ` = Fourier cosine coefficient of `f(cos θ)`), `fourierB_cheb` | `intervalIntegral.integral_comp_neg` |
+| 3.11.11, uniform convergence for `f` continuously differentiable on `[−1, 1]`, `∑'` | `dlmf_3_11_11` (uniform), `dlmf_3_11_11_hasSum` (pointwise), `chebPartialSum`; `summable_abs_chebCoeff` via `summable_fourierC_cheb` (Parseval for `(f ∘ cos)′`, `fourierC_deriv`) and `dlmf_1_8_1` | `tendsto_sum_nat_add`, `Summable.sum_add_tsum_nat_add` |
+| "(3.11.11) is the Fourier-series expansion of `f(cos θ)`" | `chebPartialSum_cos_eq` (truncations = Fourier partial sums), `fourierA_cheb` | |
+| "if `f ∈ C^∞[−1, 1]` … usually very rapid; compare (1.8.7)" | `dlmf_3_11_ii_smooth` (`cₙ = o(n^{−m})` for `f ∈ C^m[−1, 1]`, from `dlmf_1_8_7`), `dlmf_3_11_ii_smooth_all` | `ContDiff.differentiable_iteratedDeriv` |
+| 3.11.12 | `dlmf_3_11_12` (uniform on `[a, b]`; `dₙ` = 3.11.10 for `t ↦ f(((b − a)t + a + b)/2)`) | `TendstoUniformlyOn.comp` |
+| "a very good first approximation to the minimax polynomial … truncate at its `(n + 1)`th term" | `dlmf_3_11_14` (below) | |
+| 3.11.13 ("approximately"; "exactly those properties concerning its maxima and minima that are required") | `dlmf_3_11_13`: if `εₙ = d T_{n+1}((2x − a − b)/(b − a))` exactly on `[a, b]`, then `pₙ` is minimax with error `|d|` (via `dlmf_3_11_i_sufficient` at the extrema of `T_{n+1}`) | `Polynomial.Chebyshev.eval_T_real_node`, `node_lt`, `abs_eval_T_real_le_one` |
+| 3.11.14, ratio bounded by `1 + Lₙ` | `dlmf_3_11_14` (Powell's bound against any `p` of degree `≤ n` on `[a, b]`), `dlmf_3_11_14_minimax` (against the minimax error), `cheb_tail_hasSum` (the remainder is the tail `∑_{k ≥ n+1}`); ingredients `powell_bound`, `chebPartialSum_bound` (Dirichlet kernel, `|Sₙh| ≤ Lₙ max|h|`), `chebPartialSum_poly` (truncation reproduces polynomials; `integral_cos_pow_mul_cos`, `chebCoeff_poly_eq_zero`) | `fourierPartialSum_eq_fold` (§1.8), `Set.IccExtend` |
+| `L₀ = 1` | `lebesgueConst_zero` | |
+| "`Lₙ` is a monotonically increasing function of `n`" | `dlmf_3_11_ii_lebesgue_strictMono` (strictly; `Section11Lebesgue.lean`) via Szegő's series `dlmf_3_11_ii_szego` (`Lₙ = (16/π²)∑_{k≥1} H′_{k(2n+1)}/(4k² − 1)`, `hprime`), from the Fourier series of `|sin x|` (`hasSum_abs_sin`, `fourierA_abs_sin`), `∫₀^{π/2} sin²(Mu)/sin u du = H′_M` (`integral_sin_sq_div_sin`, `sin_sq_nat_mul`), dominated convergence, `lebesgueConst_eq_half` | `intervalIntegral.hasSum_integral_of_dominated_convergence`, `hasSum_lt` |
+| "`L₁₀₀₀ = 4.07…`" | `dlmf_3_11_ii_lebesgue_1000` (`4.07 ≤ L₁₀₀₀ < 4.08`; numerically `4.0701636…`, `Section11LebesgueNum.lean`): Szegő's series with `H′_M = H_{2M} − ½H_M` (`hprime_eq_harmonic`), `1/(2m) − 1/(12m²) ≤ H_m − ln m − γ ≤ 1/(2m)` (`harmonic_sub_log_bounds`, from `log_one_add_inv_le_trap`/`log_one_add_inv_ge_trap`), `hprime_bounds`, summation by parts `hasSum_log_div`, `∑ 1/(2k+1)² = π²/8` (`hasSum_inv_odd_sq`), kernel-checked rational bounds `dLoQ_40`, `dHiQ_40`, `harmonic_128_bounds`, `euler_bounds`, `log_2001_bounds` | `Real.hasSum_log_one_add_inv`, `tendsto_harmonic_sub_log`, `hasSum_zeta_two`, `Real.log_two_gt_d9`, `Real.pi_gt_d6` |
+| "the set of minimax approximations … `½(n + 1)(n + 2)` coefficients, … Chebyshev-series approximations requires only `n + 1`" | `dlmf_3_11_ii_storage` | |
+| Calculation of Chebyshev coefficients: "more efficient to make use of the orthogonal property (3.11.9)" | `dlmf_3_11_ii_discrete_coeff` (`c_k = (2/n)∑''_ℓ p(x_ℓ)T_k(x_ℓ)` exactly for `p = ∑'_{j≤n} c_jT_j`, `k < n`) | |
+| Recurrences from differential equations; Clenshaw (1957, 1962), Miller (1966), Mason and Handscomb (2003, Chapter 10), Fox and Parker (1968, Chapter 5) | Not formalized (outline and references) | |
+| Clenshaw's algorithm 3.11.15, `u_{n+1} = 0`, `u_n = c_n`, sum `= ½(u₀ − u₂)` | `clenshawW`, `clenshawU`, `clenshawU_init`, `clenshawU_succ_succ`, `dlmf_3_11_15` | |
+| Oliver (1977) | Not formalized (reference) | |
+| Complex variables: "converges within an ellipse" | `dlmf_3_11_ii_complex` (analytic in `chebEllipse ρ = {|z − 1| + |z + 1| < ρ + ρ⁻¹}` ⇒ `f(z) = ∑' cₙTₙ(z)`), `chebCoeffC`, `chebCoeffC_eq`; Joukowski map `norm_joukowski_sub_add`, `joukowski_mem`, `exists_joukowski`, `T_joukowski`; `laurentCoeff_joukowski` (Laurent coefficients on `|w| = 1` = Fourier coefficients of `f(cos θ)`) | `hasSum_laurent` (§1.10), `parallelogram_law_with_norm`, `IsAlgClosed.exists_pow_nat_eq` |
+| "no advantage in ℂ … compared with the Maclaurin expansion", Mason and Handscomb (2003, §5.10) | Not formalized (prose, reference) | |
+
+### §3.11(iii) Minimax Rational Approximations (`Section11Rational.lean`, `Section11RationalExist.lean`, `Section11RationalAchieser.lean`, `Section11RationalExample.lean`, `Section11RationalExampleData.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| `f` continuous, weight `w` continuous and nonvanishing on `[a, b]` | hypotheses of every theorem; `weight_mul_pos` (constant sign) | `intermediate_value_uIcc` |
+| 3.11.16 | `ratDLMF`, `dlmf_3_11_16` (normalization `q₀ = 1`); general class `RatAdmissible` (`deg P ≤ k`, `deg Q ≤ ℓ`, `Q > 0`) | |
+| 3.11.17, minimax | `ratErr`, `ratMaxErr`, `IsRatMinimax`; `abs_ratErr_le`, `ratMaxErr_le`, `exists_ratMaxErr` | `IsCompact.sSup_mem` |
+| "can be extended to the case when `pₙ(x)` is replaced by a rational function" (sufficiency) | `dlmf_3_11_iii_sufficient`, `dlmf_3_11_iii_vallee_poussin` (de la Vallée-Poussin bound), `vallee_poussin_deg` | `not_alternates` (§3.11(i)) |
+| "There exists a unique solution of this minimax problem" | **Erratum** `dlmf_3_11_iii_not_exists` (fails with `q₀ = 1`); corrected existence `dlmf_3_11_iii_exists` (minimizing sequence, `coeff_norm_le_of_eval_le`, `cancel_zeros`), `dlmf_3_11_iii_exists_normalized` (`0 ∈ [a, b]`), uniqueness `dlmf_3_11_iii_unique` | `IsCompact.tendsto_subseq`, `LinearEquiv.ofInjectiveEndo` |
+| 3.11.18, "at least `k + ℓ + 2` values `x_j`" | **Erratum** `dlmf_3_11_iii_degenerate` (`x²`, type `[1, 1]`: three points); corrected `dlmf_3_11_iii_characterization` (Achieser: minimax ⇔ equioscillation at `D + 2 = k + ℓ + 2 − d` points), `dlmf_3_11_iii_alternation`, `ratD`, `ratDefect`, `ratDefect_eq_zero_iff`; ingredients `eq_zero_of_weak_alternates`, `exists_cross_eq` (Bezout), `exists_poly_sign` (separation), `alternation_of_minimax` (perturbation), `exists_coprime_rep` | `Lagrange.coeff_eq_sum`, `isCoprime_div_gcd_div_gcd` |
+| Hart et al. (1968), Remez's second algorithm, Remez (1957), Werner et al. (1967), Johnson and Blair (1973) | Not formalized (references) | |
+| Example, 3.11.19, Table 3.11.1 | `P33`, `Q33`, `pR33`, `qQ`; `dlmf_3_11_iii_table_upper` (`|R₃,₃ − J₀| ≤ 1.09·10⁻⁸` on `[0, 0.8935769663]`), `dlmf_3_11_iii_table_lower` (every type-`[3, 3]` approximation has error `≥ 1.0821·10⁻⁸`), `dlmf_3_11_iii_table_3_11_1`; `besselJ0_approx` (Maclaurin polynomial, error `≤ 10⁻¹⁷`), `poly_cell` (second-order cell bound), kernel checks `cellS_all`, `altPt_check` | `Polynomial.coeff_iterate_derivative` |
+| Figure 3.11.1, "`0 ≤ x ≤ j₀,₁` (`= 0.89357…`)" | **Erratum** `dlmf_3_11_iii_table_erratum` (`j01_bounds`: `2.4 ≤ j₀,₁ ≤ 2.41`; error of `R₃,₃` `≥ 0.04` at `2.4`; competitor `competitor_err` `≤ 0.01`); `besselJ0_pos` on `[0, 2.4]` | |
+
+### §3.11(iv) Padé Approximations (`Section11Pade.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.11.20, 3.11.21, 3.11.22 | `IsPadeForm` (formal power series over a field, `N − fD = O(z^{p+q+1})`), `X_pow_dvd_of_isPadeForm` | `PowerSeries.X_pow_dvd_iff` |
+| "denoted by `[p/q]_f(z)`" | `pade` (in `RatFunc K`), well defined: `exists_isPadeForm` (nonzero solution of the homogeneous system), `isPadeForm_cross` (`N₁D₂ = N₂D₁`), `pade_eq` | `LinearMap.ker_ne_bot_of_finrank_lt`, `IsFractionRing.injective` |
+| "if `b₀ ≠ 0`, then the Maclaurin expansion of (3.11.21) agrees with (3.11.20) up to … `z^{p+q}`" | `dlmf_3_11_iv_maclaurin` | `PowerSeries.mul_inv_cancel` |
+| 3.11.23 (`c_j = 0` for `j < 0`) | `dlmf_3_11_23`, `coeff_mul_poly` | `PowerSeries.coeff_mul` |
+| 3.11.24, "Approximants with the same denominator degree are located in the same column" | `padeTable`, `dlmf_3_11_24`; first column `pade_zero_right` (`[n/0]_f = sₙ`), duality `isPadeForm_inv`, `pade_inv` (`[p/q]_f = 1/[q/p]_{1/f}`), first row `pade_zero_left` | `PowerSeries.trunc` |
+| Baker and Graves-Morris (1996, §4.7): convergence, continued fractions, Gaussian quadrature | Not formalized (references) | |
+| 3.11.25 (Wynn's cross rule) | `dlmf_3_11_25` (lower part, `1 ≤ q < p`, nonvanishing Hankel determinants of the partial sums), `dlmf_3_11_25_upper` (upper part via duality, normal table); ε-table form `wynn_cross_rule` (from the rhombus rule) | |
+| "initializing the preceding column by `[n/−1] = ∞`", "initializing `[−1/n] = 0`" | `dlmf_3_11_25_border` (`W` term absent), `dlmf_3_11_25_upper_border` (`N = 0`); `wynn_cross_rule_border`, `inv_sub_inv_inv` | |
+| "For the recursive computation of `[n+k/k]_f` by Wynn's epsilon algorithm, see (3.9.11)" | `pade_eq_shanks` (Shanks: `[(n+k)/k]_f = t_{n,2k}`, by Cramer's rule on the bordered Hankel matrices, `det_bordMat_sub`, `fwdDiff_psum`), `pade_eq_wynnEps` (`= ε_{2k}^{(n)}`, with `dlmf_3_9_11`) | `Matrix.exists_mulVec_eq_zero_iff`, `Matrix.det_updateRow_add` |
+| 3.11.26 | `dlmf_3_11_26` (`laplace`, §1.14(iii)) | |
+| "approximate `F` by a rational function `R` (vanishing at infinity) and then approximate `f` by `r = ℒ⁻¹R`" | `dlmf_3_11_iv_laplace` (`R = ∑ Aᵢ/(s − aᵢ)^{mᵢ+1}`, `r = ∑ Aᵢ t^{mᵢ}e^{aᵢt}/mᵢ!`) | `laplace_pow_mul_cexp` (§1.14) |
+| "When `F` has an explicit power-series expansion a possible choice of `R` is a Padé approximation"; Luke (1969b, §16.4), Brezinski (1980), Lorentzen and Waadeland (1992) | Not formalized (prose, references) | |
+
+### §3.11(v) Least Squares Approximations (`Section11LeastSquares.lean`, `Section11DFT.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.11.27, 3.11.28 | `monoBasis`, `lsPoly`, `lsSum` with `w = 1` | |
+| "From the equations `∂S/∂a_k = 0` … we derive the normal equations" 3.11.29, 3.11.30 | `momX`, `momF`, `dlmf_3_11_29` (`a` minimizes `S` iff 3.11.29); `dlmf_3_11_v_partial` (`∂S/∂a_k = 2((Xa)_k − F_k)`) | |
+| "The matrix is symmetric and positive definite" (`J ≥ n + 1` distinct points) | `dlmf_3_11_29_posDef`, `linIndepOn_mono`; unique least squares polynomial `dlmf_3_11_v_poly_unique` | `Matrix.PosDef.of_dotProduct_mulVec_pos`, `Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero` |
+| "the system is ill-conditioned when `n` is large …" | Not formalized (qualitative) | |
+| "If `J = n + 1`, then `pₙ(x)` is the Lagrange interpolation polynomial" | `dlmf_3_11_v_lagrange` | `Lagrange.eq_interpolate_of_eval_eq` |
+| 3.11.31, 3.11.32 | `lsApprox`, `lsSum`; exact expansion `lsSum_add`, `lsSum_add_single` | |
+| 3.11.33–3.11.35, "the matrix is again symmetric" | `gramX`, `gramF`, `dlmf_3_11_33` (minimizer iff normal equations, `w ≥ 0`), `gramX_symm` | |
+| 3.11.36, "then the approximation `Φₙ(x)` is determined uniquely" | `LinIndepOn`, `dlmf_3_11_v_unique` (unique minimizing coefficients, `w > 0`), `gramX_posDef` | `Matrix.mulVec_surjective_iff_isUnit` |
+| "Then the system (3.11.33) is diagonal" | `dlmf_3_11_v_orthogonal` (`aₖ = Fₖ/Xₖₖ`) | `Matrix.PosDef.diag_pos` |
+| "can always be orthogonalized … by the Gram–Schmidt procedure" | `dlmf_3_11_v_gram_schmidt` (triangular `ψₖ = ∑_{ℓ≤k} r_{kℓ}φ_ℓ`, orthogonal, independent), `gramX_lin` | `LDL.lowerInv`, `LDL.diag_eq_lowerInv_conj` |
+| Example: `φₖ(x) = e^{ikx}`, `x_j = 2πj/n` | `dftPhi`, `dftNode`, `dftPhi_node` (`φₖ(x_j) = ωₙ^{jk}`) | |
+| 3.11.37 | `dlmf_3_11_37`, `geom_omegaN` | `Complex.isPrimitiveRoot_exp`, `geom_sum_eq` |
+| 3.11.38, 3.11.39, 3.11.40 | `dftCoeff`, `dlmf_3_11_39` (3.11.39 solves 3.11.38), `dlmf_3_11_39_unique`, `dft_orth_dual` | |
+| "the corresponding sum (3.11.32) vanishes" | `dlmf_3_11_v_dft_residual` (with `|·|²`; see errata) | |
+| 3.11.41 | `omegaN`, `dlmf_3_11_41` | |
+| "requires approximately `n²` multiplications" … "reduced to `nm = n log₂ n` operations" (`n = 2^m`) | `fftL` (radix-2 Cooley–Tukey, instrumented), `dlmf_3_11_v_fft` (= `dftList`, 3.11.41), `dlmf_3_11_v_fft_ops` (`½nm` multiplications, `nm` additions), `dlmf_3_11_v_fft_fewer` (`nm < n²`), `dft_split` | |
+| 3.11.42 | `dlmf_3_11_42` (`n = 2N`, `k ∈ ℤ`), `omegaN_two_mul_sq`, `omegaN_two_mul_pow_half` | |
+| Factorization of `Ω` into `m` sparse matrices; "If `n` is not a power of 2, then modifications are possible"; Cooley and Tukey (1965), Van Loan (1992), Gautschi (1997a), Björck (1996) | Not formalized (the factorization is the matrix form of `fftL`; references) | |
+
+### §3.11(vi) Splines (`Section11Splines.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| "on each subinterval `[x_k, x_{k+1}]` … a low-degree polynomial is defined with coefficients determined by, for example, values `f_k` and `f′_k`" | Hermite interpolation of order `r` (degree `≤ 2r + 1`): `hermite_exists`, `hermite_unique`, `hermite_zero` | `Polynomial.lt_rootMultiplicity_of_isRoot_iterate_derivative`, `LinearMap.injective_iff_surjective` |
+| "The set of all the polynomials defines a function, the spline, on `[a, b]`" | `splineFn` (`P₀` plus truncated jumps `cutPoly`), `splineFn_eq_piece` | |
+| "By taking more derivatives into account, the smoothness of the spline will increase" | `splineFn_contDiff` (pieces agreeing to order `r` give `C^r`), `cutPoly_contDiff`; `dlmf_3_11_vi_hermite_spline` (order-`r` Hermite spline is `C^r`), `dlmf_3_11_vi_cubic` (`f_k, f′_k`: cubic `C¹` spline) | `hasDerivAt_of_hasDerivAt_of_ne'`, `contDiff_succ_iff_deriv` |
+| §24.17(ii) splines based on Bernoulli and Euler polynomials | Not formalized (cross-reference) | |
+| Comparison with Lagrange interpolation (§3.3(i)); multivariate splines; de Boor (2001), Chui (1988), Schumaker (1981) | Not formalized (prose, references) | |
+| Cubic Bézier curve: endpoints `(x₀, y₀)`, `(x₃, y₃)`, control points `(x₁, y₁)`, `(x₂, y₂)` | `bezier3`, `bezier3_zero`, `bezier3_one`, Bernstein form `bezier3_bernstein` | `bernsteinPolynomial` |
+| "The slope of the curve at `(x₀, y₀)` is tangent to the line between `(x₀, y₀)` and `(x₁, y₁)`; similarly …" | `dlmf_3_11_vi_bezier_tangent` (`B′(0) = 3(P₁ − P₀)`, `B′(1) = 3(P₃ − P₂)`), `bezier3_hasDerivAt` | |
+| "described by `x(t)` and `y(t)`, which are cubic polynomials with `t ∈ [0, 1]`" | `dlmf_3_11_vi_bezier_cubic` | |
+| "A complete spline results by composing several Bézier curves" | `bezierJoin`, `dlmf_3_11_vi_bezier_join` (continuous when `Q₀ = P₃`; `C¹` when also `Q₁ − Q₀ = P₃ − P₂`) | |
+| Typography application; Knuth (1986) | Not formalized (prose, reference) | |
