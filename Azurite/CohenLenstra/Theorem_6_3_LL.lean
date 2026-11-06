@@ -83,7 +83,7 @@ theorem modEq_pow_of_modEq_of_pow_modEq {r N p m : ℕ} (hp : p.Prime) (hm : 1 �
     have hmapeq : Units.map (ZMod.castHom (dvd_pow_self p (by omega : m ≠ 0)) (ZMod p)).toMonoidHom RU
         = Units.map (ZMod.castHom (dvd_pow_self p (by omega : m ≠ 0)) (ZMod p)).toMonoidHom NU := by
       refine Units.ext ?_
-      simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_coe]
+      simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass]
       rw [hRU, hNU, ZMod.coe_unitOfCoprime, ZMod.coe_unitOfCoprime, map_natCast, map_natCast]
       exact (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
     rw [map_mul, map_inv, hmapeq, mul_inv_cancel]

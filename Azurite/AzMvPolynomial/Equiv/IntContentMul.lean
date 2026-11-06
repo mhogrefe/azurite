@@ -395,7 +395,7 @@ theorem intContent_mul {P Q : AzMvPolynomial n AzInt ord} :
         congr 1; rw [hfacP, hfacQ]
     _ = intContent (AzMvPolynomial.C (signedIntContent P * signedIntContent Q)
           * (primPos P * primPos Q)) := by
-        congr 1
+        refine congrArg intContent ?_
         rw [show AzMvPolynomial.C (signedIntContent P * signedIntContent Q)
             = AzMvPolynomial.C (signedIntContent P) * AzMvPolynomial.C (signedIntContent Q) by
           apply toMvPoly_injective

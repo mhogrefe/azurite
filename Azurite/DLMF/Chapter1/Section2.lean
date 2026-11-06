@@ -1308,7 +1308,7 @@ theorem mulVec_col_eq_smul {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hΛ 
 
 /-- **DLMF 1.2.73**: the non-defective matrices are precisely those that can be diagonalized by
 a similarity transformation `Λ = S⁻¹ A S` with `S` invertible and `Λ` diagonal
-(`Matrix.linearIndependent_cols_iff_isUnit`). -/
+(`Matrix.linearIndependent_col_iff_isUnit`). -/
 theorem dlmf_1_2_73 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
     IsNonDefective A ↔
       ∃ S Λ : Matrix (Fin n) (Fin n) ℂ, S.det ≠ 0 ∧ Λ.IsDiag ∧ Λ = S⁻¹ * A * S := by
@@ -1319,7 +1319,7 @@ theorem dlmf_1_2_73 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
     have hcol : S.col = v := by
       ext j i
       rfl
-    have hu : IsUnit S := linearIndependent_cols_iff_isUnit.mp (hcol ▸ hv)
+    have hu : IsUnit S := linearIndependent_col_iff_isUnit.mp (hcol ▸ hv)
     have hdet : IsUnit S.det := (isUnit_iff_isUnit_det S).mp hu
     refine ⟨S, diagonal μ, isUnit_iff_ne_zero.mp hdet, isDiag_diagonal μ, ?_⟩
     have hAS : A * S = S * diagonal μ := by
@@ -1336,7 +1336,7 @@ theorem dlmf_1_2_73 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
     have hu : IsUnit S := (isUnit_iff_isUnit_det S).mpr hdet
     have hAS : A * S = S * Λ := by
       rw [h, ← mul_assoc, mul_nonsing_inv_cancel_left S _ hdet]
-    have hv : LinearIndependent ℂ S.col := linearIndependent_cols_iff_isUnit.mpr hu
+    have hv : LinearIndependent ℂ S.col := linearIndependent_col_iff_isUnit.mpr hu
     exact ⟨S.col, hv, fun j =>
       ⟨Λ j j, (dlmf_1_2_70 A _ _).mpr ⟨hv.ne_zero j, mulVec_col_eq_smul hΛ hAS j⟩⟩⟩
 
@@ -1349,7 +1349,7 @@ theorem dlmf_1_2_73_columns {n : ℕ} {A S Λ : Matrix (Fin n) (Fin n) ℂ} (hS 
   have hAS : A * S = S * Λ := by
     rw [h, ← mul_assoc, mul_nonsing_inv_cancel_left S _ hdet]
   exact (dlmf_1_2_70 A _ _).mpr
-    ⟨(linearIndependent_cols_iff_isUnit.mpr ((isUnit_iff_isUnit_det S).mpr hdet)).ne_zero j,
+    ⟨(linearIndependent_col_iff_isUnit.mpr ((isUnit_iff_isUnit_det S).mpr hdet)).ne_zero j,
       mulVec_col_eq_smul hΛ hAS j⟩
 
 /-- **DLMF 1.2.73**, multiplicities: the diagonal entries of `Λ` need not be distinct, and the

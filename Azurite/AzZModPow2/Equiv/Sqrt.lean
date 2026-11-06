@@ -430,8 +430,7 @@ theorem sqrt?_some {a r : AzZModPow2 k} (h : sqrt? a = some r) : r * r = a := by
     split_ifs at h with h1 h2
     split at h
     · cases h
-    · try dsimp only at h
-      split_ifs at h with h3
+    · split_ifs at h with h3
       obtain rfl := Option.some.inj h
       exact h3
 
@@ -498,7 +497,6 @@ theorem sqrt?_of_root {a r' : AzZModPow2 k} (ha : a ≠ 0) (hr' : r' * r' = a) :
     rw [AzNat.toNat_modPow2, hu_toNat, AzNat.toNat_one]
     exact hu8
   rw [ite_eq_right (not_not.mpr hmod3)]
-  try dsimp only
   -- the Newton root is an odd root of `uN` modulo `2^n`
   set s := (oddSqrt (ofAzNat k (a.val >>> v))).val with hs
   have hs_sq : s.toNat * s.toNat % 2 ^ k = uN := by

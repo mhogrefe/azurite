@@ -470,7 +470,7 @@ theorem proposition_3_23 {k ℓ : ℕ} {U : Set (Fin k → R)}
     · rintro ⟨⟨h0, h1⟩, hD⟩
       refine ⟨⟨h0, h1⟩, ?_⟩
       have hDval : euclideanNormSq (f (segPath x y t) - f x) - ((B + c) * t) ^ 2 ≤ 0 := hD
-      rw [euclideanNorm_le_iff_normSq_le (by positivity)]
+      rw [euclideanNorm_le_iff_normSq_le (b := (B + c) * t) (mul_nonneg hBc.le h0)]
       linarith
     · rintro ⟨⟨h0, h1⟩, hle⟩
       refine ⟨⟨h0, h1⟩, ?_⟩

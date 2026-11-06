@@ -106,7 +106,7 @@ theorem charpoly_eq_prod_of_nondefective {A : Matrix (Fin n) (Fin n) 𝕜}
     A.charpoly = ∏ k, (X - C (μ k)) := by
   set P : Matrix (Fin n) (Fin n) 𝕜 := Matrix.of fun i k => v k i
   have hcol : P.col = v := by funext k i; rfl
-  have hP : IsUnit P := Matrix.linearIndependent_cols_iff_isUnit.mp (hcol ▸ hA.1)
+  have hP : IsUnit P := Matrix.linearIndependent_col_iff_isUnit.mp (hcol ▸ hA.1)
   have hAP : A * P = P * diagonal μ := by
     ext i k
     rw [mul_diagonal, Matrix.mul_apply]

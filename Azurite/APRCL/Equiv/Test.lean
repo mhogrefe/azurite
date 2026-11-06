@@ -785,11 +785,9 @@ theorem aprclCheck_true {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some 
     split at h <;> try cases h
     rename_i hsl hqst
     obtain ⟨hq1, hq2⟩ := qStage_pass hqst
-    try dsimp only at h
     split at h <;> try cases h
     rename_i hall
     have hall' := Outcome.all_pass hall
-    try dsimp only at h
     split_ifs at h with hsize
     simp only [Bool.not_eq_true', decide_eq_false_iff_not, not_not] at hsize
     -- notation
@@ -1067,14 +1065,12 @@ theorem aprclCheck_false {n : AzNat} {cert : Cert} (h : aprclCheck n cert = some
         obtain ⟨d, hd, hc⟩ := qStage_composite hqst
         exact qCheck_composite hc hN
       · rename_i hsl hqst
-        try dsimp only at h
         split at h <;> try cases h
         · rename_i hall
           obtain ⟨o, ho, ho'⟩ := Outcome.all_composite hall
           obtain ⟨p, hp, rfl⟩ := List.mem_map.mp ho
           exact pCheck_composite (by omega) (Nat.prime_of_mem_primeFactorsList hp) ho' hN
-        · try dsimp only at h
-          split_ifs at h with hsize
+        · split_ifs at h with hsize
           obtain ⟨d, hd, hd1, hdn⟩ := finalDiv_false h
           rcases hN.eq_one_or_self_of_dvd d hd with h1 | h1 <;> omega
   · cases h

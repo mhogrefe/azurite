@@ -66,7 +66,7 @@ theorem isODESolution_exp_neg : IsSolW fun z => Complex.exp (-z) :=
   isSolW_of_hasDerivAt (w' := fun z => -Complex.exp (-z)) hasDerivAt_exp_neg fun z => by
     have := (hasDerivAt_exp_neg z).neg
     convert this using 1
-    first | rfl | ring
+    ring
 
 theorem isODESolution_cosh : IsSolW Complex.cosh :=
   isSolW_of_hasDerivAt (w' := Complex.sinh) (fun z => hasDerivAt_cosh z)

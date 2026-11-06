@@ -90,7 +90,7 @@ theorem toInt_round_nearest_half (n : ℤ) :
   by_cases he : Even n
   · have hno : ¬ Even (n + 1) := fun h => (Int.even_add_one.mp h) he
     split_ifs with h1 h2 <;>
-      first | exact hFn | exact absurd h2.2 he | exact absurd ⟨he, hno⟩ h1
+      first | exact hFn | exact absurd ⟨he, hno⟩ h1
   · have hyes : Even (n + 1) := Int.even_add_one.mpr he
     split_ifs with h1 h2 <;>
       first | exact absurd h1.1 he | exact hCn | exact absurd ⟨hyes, he⟩ h2

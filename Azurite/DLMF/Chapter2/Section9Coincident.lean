@@ -45,7 +45,7 @@ theorem choose_two_eq (b : ℂ) : Ring.choose b 2 = b * (b - 1) / 2 := by
 /-- A complex quadratic factors. -/
 theorem quadratic_factor (A B C : ℂ) (hA : A ≠ 0) :
     ∃ r₁ r₂ : ℂ, ∀ x, A * x ^ 2 + B * x + C = A * (x - r₁) * (x - r₂) := by
-  obtain ⟨s, hs⟩ := IsAlgClosed.exists_eq_mul_self (B ^ 2 - 4 * A * C)
+  obtain ⟨s, hs⟩ := IsAlgClosed.isSquare (B ^ 2 - 4 * A * C)
   refine ⟨(-B + s) / (2 * A), (-B - s) / (2 * A), fun x => ?_⟩
   field_simp
   linear_combination -hs

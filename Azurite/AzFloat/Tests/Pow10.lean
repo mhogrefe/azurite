@@ -51,13 +51,13 @@ private def refThirdM1 : AzRat :=
 #guard pow10M1Rat (Q "1/3") 100 == powBaseM1Rat 10 (Q "1/3") 100
 
 -- exact powers of ten
-#guard pow10PrecRound (F "3" 53) 53 == (F "1000" 53, .eq)
-#guard pow10PrecRound (F "-2" 53) 53 == ofAzRatRound (Q "1/100") 53 .Nearest
-#guard pow10RatPrecRound (Q "5") 53 == (F "100000" 53, .eq)
-#guard pow10RatPrecRound (Q "0") 53 == (F "1" 53, .eq)
-#guard pow10M1PrecRound (F "3" 53) 53 == (F "999" 53, .eq)
-#guard pow10M1RatPrecRound (Q "-1") 53 == ofAzRatRound (Q "-9/10") 53 .Nearest
-#guard pow10M1RatPrecRound (Q "0") 53 == (zero, .eq)
+#guard pow10PrecRound (F "3" 53) 53 .Nearest == (F "1000" 53, .eq)
+#guard pow10PrecRound (F "-2" 53) 53 .Nearest == ofAzRatRound (Q "1/100") 53 .Nearest
+#guard pow10RatPrecRound (Q "5") 53 .Nearest == (F "100000" 53, .eq)
+#guard pow10RatPrecRound (Q "0") 53 .Nearest == (F "1" 53, .eq)
+#guard pow10M1PrecRound (F "3" 53) 53 .Nearest == (F "999" 53, .eq)
+#guard pow10M1RatPrecRound (Q "-1") 53 .Nearest == ofAzRatRound (Q "-9/10") 53 .Nearest
+#guard pow10M1RatPrecRound (Q "0") 53 .Nearest == (zero, .eq)
 #guard pow10 (F "20" 53) == F "100000000000000000000" 53
 
 -- `10^(1/2) = √10` and `10^(1/3)`
@@ -69,11 +69,11 @@ private def refThirdM1 : AzRat :=
 #guard toString (pow10Rat (Q "1/3") 53) == "2.154434690031884"
 
 -- special values
-#guard pow10PrecRound nan 53 == (nan, .eq)
-#guard pow10PrecRound (infinity true) 53 == (infinity true, .eq)
-#guard pow10PrecRound (infinity false) 53 == (zero, .eq)
-#guard pow10PrecRound zero 53 == (F "1" 53, .eq)
-#guard pow10PrecRound (F "1/2" 53) 0 == (nan, .eq)
-#guard pow10M1PrecRound (infinity false) 53 == (F "-1" 53, .eq)
-#guard pow10M1PrecRound zero 53 == (zero, .eq)
+#guard pow10PrecRound nan 53 .Nearest == (nan, .eq)
+#guard pow10PrecRound (infinity true) 53 .Nearest == (infinity true, .eq)
+#guard pow10PrecRound (infinity false) 53 .Nearest == (zero, .eq)
+#guard pow10PrecRound zero 53 .Nearest == (F "1" 53, .eq)
+#guard pow10PrecRound (F "1/2" 53) 0 .Nearest == (nan, .eq)
+#guard pow10M1PrecRound (infinity false) 53 .Nearest == (F "-1" 53, .eq)
+#guard pow10M1PrecRound zero 53 .Nearest == (zero, .eq)
 #guard pow10M1 nan == nan

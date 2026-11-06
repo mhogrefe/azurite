@@ -94,7 +94,7 @@ theorem integral_cos_mul_cos_pi (n m : ℕ) :
     (Continuous.intervalIntegrable (by fun_prop) _ _)
     (Continuous.intervalIntegrable (by fun_prop) _ _),
     integral_cos_int_mul_zero_pi', integral_cos_int_mul_zero_pi']
-  split_ifs <;> first | omega | (simp_all; try ring)
+  split_ifs <;> first | omega | simp_all
 
 /-- `∫_0^π e^{2inx} conj(e^{2imx}) dx = π δ_{n,m}`. -/
 theorem integral_exp_mul_conj_pi (n m : ℤ) :

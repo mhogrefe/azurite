@@ -139,7 +139,8 @@ theorem mem_adjoint_cutoff_of_weak {F F' g : ℝ → ℂ} (hF : ∀ x ∈ X, Has
   have hPz : ∀ x ∉ Ioo α β, P x = 0 := fun x hx => by simp [P, (hχz x hx).1, (hχz x hx).2]
   obtain ⟨M, hM⟩ := isCompact_Icc.exists_bound_of_continuousOn (hPc.mono hIcc)
   have hP2 : MemLp P 2 (volume.restrict X) := by
-    refine (memLp_indicator_const 2 (measurableSet_Icc (a := α) (b := β)) M (Or.inr ?_)).of_le
+    refine (memLp_indicator_const 2 (measurableSet_Icc (a := α) (b := β)).nullMeasurableSet M
+      (Or.inr ?_)).of_le
       (hPc.aestronglyMeasurable hX.measurableSet) (ae_of_all _ fun x => ?_)
     · rw [Measure.restrict_apply measurableSet_Icc]
       exact ((measure_mono inter_subset_left).trans_lt measure_Icc_lt_top).ne

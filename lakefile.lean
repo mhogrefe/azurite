@@ -16,6 +16,9 @@ package «azurite» where
     ⟨`pp.unicode.fun, true⟩, -- pretty-prints `fun a ↦ b`
     ⟨`pp.proofs.withType, false⟩
   ]
+  -- Azurite's files do not use the module system (no `module` header); Mathlib does, so Lake
+  -- would warn on every Mathlib import without this opt-out.
+  allowNonModules := true
   -- add any additional package configuration options here
 
 @[default_target]
@@ -62,9 +65,9 @@ require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"
 -- are built by .github/workflows/docs.yml, which picks the doc-gen4 tag from lean-toolchain.
 meta if get_config? env = some "dev" then
 require «doc-gen4» from git
-  "https://github.com/leanprover/doc-gen4" @ "v4.34.1"
+  "https://github.com/leanprover/doc-gen4" @ "v4.35.0"
 
 -- Mathlib goes last so its transitive dependency pins (e.g. plausible)
 -- take precedence over doc-gen4's, keeping `lake exe cache get` valid.
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.34.1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.35.0"

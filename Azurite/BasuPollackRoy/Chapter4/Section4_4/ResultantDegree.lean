@@ -200,7 +200,7 @@ theorem coeffTotalDegreeLE_bezout {D : ℕ}
   -- The cofactors.
   refine ⟨X.2.1, X.1.1, ?_, ?_, ?_, ?_, ?_⟩
   · -- Bézout identity: `f * X.2 + g * X.1 = C (resultant)`.
-    have key := congr(($(Polynomial.sylveserMap_comp_adjSylvester P Q (m := m) (n := m')
+    have key := congr(($(Polynomial.sylvesterMap_comp_adjSylvester P Q (m := m) (n := m')
       le_rfl le_rfl) (b₂ i0)).1)
     simp only [LinearMap.comp_apply, LinearMap.smul_apply, LinearMap.id_apply,
       Polynomial.sylvesterMap_apply_coe, ← hX] at key

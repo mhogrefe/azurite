@@ -121,7 +121,7 @@ theorem exists_mulChar_orderOf_eq {q p : ℕ} [Fact q.Prime]
     pow_pos (Nat.prime_of_mem_primeFactors hp).pos _
   have : NeZero ((p ^ (q - 1).factorization p : ℕ) : ℂ) :=
     ⟨Nat.cast_ne_zero.mpr hpk.ne'⟩
-  obtain ⟨ζ₀, hζ₀⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot ℂ
+  obtain ⟨ζ₀, hζ₀⟩ := HasEnoughRootsOfUnity.exists_isPrimitiveRoot ℂ
     (p ^ (q - 1).factorization p)
   have hζu : IsPrimitiveRoot ((hζ₀.isUnit hpk.ne').unit)
       (p ^ (q - 1).factorization p) := hζ₀.isUnit_unit hpk.ne'

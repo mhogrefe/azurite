@@ -97,12 +97,12 @@ theorem toVal_exactMul (y z : AzFloat) :
     | zero =>
       simp [Spec.mul, EReal.zero_ne_top, EReal.zero_ne_bot] at hr
       obtain rfl : r = 0 := by
-        first | exact hr | exact hr.symm | exact EReal.coe_eq_zero.mp hr.symm
+        exact EReal.coe_eq_zero.mp hr.symm
       exact zero_mem_floatSet _
     | finite t e q m hv =>
       simp [Spec.mul, EReal.zero_ne_top, EReal.zero_ne_bot] at hr
       obtain rfl : r = 0 := by
-        first | exact hr | exact hr.symm | exact EReal.coe_eq_zero.mp hr.symm
+        exact EReal.coe_eq_zero.mp hr.symm
       exact zero_mem_floatSet _
   | finite s e₁ p₁ m₁ h₁ =>
     cases z with
@@ -114,7 +114,7 @@ theorem toVal_exactMul (y z : AzFloat) :
     | zero =>
       simp [Spec.mul, EReal.zero_ne_top, EReal.zero_ne_bot] at hr
       obtain rfl : r = 0 := by
-        first | exact hr | exact hr.symm | exact EReal.coe_eq_zero.mp hr.symm
+        exact EReal.coe_eq_zero.mp hr.symm
       exact zero_mem_floatSet _
     | finite t e₂ p₂ m₂ h₂ =>
       simp only [toVal_finite, Option.bind_some, Spec.mul_coe_coe, Option.some.injEq,

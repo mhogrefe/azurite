@@ -42,7 +42,7 @@ namespace Azurite.DLMF
 /-- **DLMF 2.9.5**: `ρ² + f₀ρ + g₀ = (ρ − ρ₁)(ρ − ρ₂)`, and `ρ₁ = ρ₂ ↔ f₀² = 4g₀`. -/
 theorem dlmf_2_9_5 (f₀ g₀ : ℂ) : ∃ ρ₁ ρ₂ : ℂ,
     (∀ ρ, ρ ^ 2 + f₀ * ρ + g₀ = (ρ - ρ₁) * (ρ - ρ₂)) ∧ (ρ₁ = ρ₂ ↔ f₀ ^ 2 = 4 * g₀) := by
-  obtain ⟨s, hs⟩ := IsAlgClosed.exists_eq_mul_self (f₀ ^ 2 - 4 * g₀)
+  obtain ⟨s, hs⟩ := IsAlgClosed.isSquare (f₀ ^ 2 - 4 * g₀)
   refine ⟨(-f₀ + s) / 2, (-f₀ - s) / 2, fun ρ => by linear_combination (-1 / 4 : ℂ) * hs, ?_⟩
   constructor
   · intro h

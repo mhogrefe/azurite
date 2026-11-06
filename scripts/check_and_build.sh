@@ -9,7 +9,9 @@
 # check_and_build.sh
 #
 # Validates that every .lean file under Azurite/ is imported by the root
-# module of the lake target that owns it, then runs lake build.
+# module of the lake target that owns it, then runs lake build and the
+# `#guard` test suite (`lake test`, the `AzuriteTests` test driver, which a
+# plain `lake build` never builds).
 #
 #   * Library files                  -> Azurite.lean        (auto-fixed)
 #   * Test files (*/Tests/*)         -> AzuriteTests.lean   (auto-fixed)
@@ -323,6 +325,10 @@ if [[ "$SERIAL" == true ]]; then
   lake build
 
   echo ""
+  echo "Running lake test..."
+  lake test || { echo "Tests FAILED."; overall_status=1; }
+
+  echo ""
   build_diagrams
 
   echo ""
@@ -349,6 +355,11 @@ else
     echo ""
     echo "Lean build failed; waiting for the blueprint pipeline to finish..."
     overall_status=$lake_status
+  else
+    # ── 5b. Run the `#guard` test suite (overlaps the blueprint) ──
+    echo ""
+    echo "Running lake test (blueprint still building in parallel)..."
+    lake test || { echo "Tests FAILED."; overall_status=1; }
   fi
 
   # ── 6. Check axioms (opt-in; needs the Lean build, overlaps the blueprint) ──

@@ -615,9 +615,7 @@ theorem pow_p_modEq_lift {p k : ℕ} (hk : 0 < k)
       have huv : (u : ℤ) ≡ (v : ℤ) [ZMOD (p : ℤ)] := by
         have : ((p : ℤ)) ∣ (u : ℤ) - (v : ℤ) :=
           dvd_trans (dvd_pow_self _ hk.ne') hZ
-        exact Int.ModEq.symm (Int.modEq_iff_dvd.mpr (by
-          have := dvd_neg.mpr this
-          rwa [neg_sub] at this))
+        exact Int.ModEq.symm (Int.modEq_iff_dvd.mpr this)
       calc (u : ℤ) ^ i * (v : ℤ) ^ (p - 1 - i)
           ≡ (v : ℤ) ^ i * (v : ℤ) ^ (p - 1 - i) [ZMOD (p : ℤ)] :=
             Int.ModEq.mul (huv.pow i) (Int.ModEq.refl _)

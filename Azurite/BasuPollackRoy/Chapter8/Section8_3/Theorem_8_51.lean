@@ -96,7 +96,7 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
         congr 1
         simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
         congr 2
-        all_goals first | rfl | omega | (congr 1; omega)
+        all_goals first | omega | (congr 1; omega)
       · rw [ite_eq_right (show ¬ ((i : ℕ) < (Q.map f).natDegree - j) from by omega),
           ite_eq_right (show ¬ ((((finCongr hm) i : Fin _) : ℕ) < Q.natDegree - j)
             from by show ¬ ((i : ℕ) < _); omega)]
@@ -109,7 +109,7 @@ theorem sResV_map_of_natDegree_eq {D E : Type*} [CommRing D] [CommRing E] (f : D
         congr 1
         simp only [Fin.val_castLE, finCongr_apply, Fin.val_cast]
         congr 2
-        all_goals first | rfl | omega | (congr 1; omega)
+        all_goals first | omega | (congr 1; omega)
     · rw [ite_eq_right (show ¬ ((k : ℕ) + 1
             < (P.map f).natDegree + (Q.map f).natDegree - 2 * j) from by omega),
         ite_eq_right (show ¬ ((((finCongr hm) k : Fin _) : ℕ) + 1 < P.natDegree + Q.natDegree - 2 * j)

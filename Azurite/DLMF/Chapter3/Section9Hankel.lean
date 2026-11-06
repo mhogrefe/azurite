@@ -152,7 +152,7 @@ theorem det_onesRow (m : ℕ) (g : ℕ → ℕ → 𝕜) :
     · intro i l hli
       have : (l : ℕ) < i := hli
       simp only [U, of_apply]
-      split_ifs <;> first | (exfalso; omega) | rfl | simp
+      split_ifs <;> first | (exfalso; omega) | simp
   set B := bordMat m g fun _ => 1
   have hmul : ∀ i j, (B * U) i j =
       B i j - (if h : (j : ℕ) = 0 then 0 else B i ⟨(j : ℕ) - 1, by omega⟩) := by

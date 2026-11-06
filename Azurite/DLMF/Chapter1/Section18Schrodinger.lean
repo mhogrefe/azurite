@@ -180,7 +180,7 @@ theorem dlmf_1_18_iv_dense {X : Set ℝ} (hX : IsOpen X) :
   intro h hh
   rw [Submodule.mem_orthogonal] at hh
   have hmem : MemLp (X.indicator (h : ℝ → ℂ)) 2 volume :=
-    (memLp_indicator_iff_restrict hX.measurableSet).mpr (Lp.memLp h)
+    (memLp_indicator_iff_restrict hX.measurableSet.nullMeasurableSet).mpr (Lp.memLp h)
   have hloc : LocallyIntegrableOn (X.indicator (h : ℝ → ℂ)) X volume :=
     (hmem.locallyIntegrable (by norm_num)).locallyIntegrableOn X
   have key := hX.ae_eq_zero_of_integral_contDiff_smul_eq_zero hloc fun φ hφ hφc hφs => by

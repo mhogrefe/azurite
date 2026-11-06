@@ -413,7 +413,7 @@ theorem integral_T_real (m : ℕ) : ∫ x in (-1 : ℝ)..1, (Chebyshev.T ℝ m).
 theorem integral_eq_sum_ccWeight {n : ℕ} (hn : 0 < n) {P : ℝ[X]} (hP : P.degree < (n + 1 : ℕ)) :
     ∫ x in (-1 : ℝ)..1, P.eval x = ∑ k ∈ range (n + 1), ccWeight n k * P.eval (ccNode n k) := by
   have hmem : P ∈ degreeLT ℝ (n + 1) := mem_degreeLT.mpr hP
-  rw [← Sequence.span_degreeLT (Chebyshev.chebyshevTsequence ℝ) (by simp)] at hmem
+  rw [← Sequence.span_degreeLT (Chebyshev.chebyshevTSequence ℝ) (by simp)] at hmem
   clear hP
   induction hmem using Submodule.span_induction with
   | mem x hx =>

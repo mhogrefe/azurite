@@ -70,7 +70,7 @@ theorem eq_zero_of_T {F : ℝ[X] → ℝ} (hadd : ∀ p q, F (p + q) = F p + F q
     {q : ℝ[X]} (hq : q.degree < n) : F q = 0 := by
   have hF0 : F 0 = 0 := by simpa using hsmul 0 0
   have hmem : q ∈ degreeLT ℝ n := mem_degreeLT.mpr hq
-  rw [← Sequence.span_degreeLT (chebyshevTsequence ℝ) (by simp)] at hmem
+  rw [← Sequence.span_degreeLT (chebyshevTSequence ℝ) (by simp)] at hmem
   clear hq
   induction hmem using Submodule.span_induction with
   | mem x hx =>

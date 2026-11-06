@@ -89,7 +89,7 @@ theorem units_pow_prime_pow_eq_one {q m : ℕ} (hq : q.Prime) (hm : m ≠ 0)
   have : NeZero (q ^ m) := ⟨pow_ne_zero _ hq.pos.ne'⟩
   have hval : (u : ZMod (q ^ m)).val ≡ 1 [MOD q] := by
     have hv := congrArg Units.val h1
-    simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_coe,
+    simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass,
       ZMod.castHom_apply, Units.val_one] at hv
     rw [← ZMod.natCast_val] at hv
     exact (ZMod.natCast_eq_natCast_iff _ _ _).mp (by rw [hv, Nat.cast_one])
@@ -355,7 +355,7 @@ private theorem theorem_6_3_prime {n s t : ℕ} (hs : 0 < s) (ht : 0 < t)
                 (ZMod q)).toMonoidHom NU := by
           refine Units.ext ?_
           simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe,
-            MonoidHom.coe_coe]
+            MonoidHom.coe_ofClass]
           rw [hRU, hNU, ZMod.coe_unitOfCoprime, ZMod.coe_unitOfCoprime,
             map_natCast, map_natCast]
           exact hqmod

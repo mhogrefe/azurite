@@ -311,7 +311,7 @@ variable (hX : IsOpen X) (hXc : X.OrdConnected) (hne : X.Nonempty) (hq : Continu
 include hX hv2 in
 theorem memLp_wronskianKernel :
     MemLp ((X ∩ Iio c).indicator fun x => conj (v x)) 2 (volume.restrict X) := by
-  rw [memLp_indicator_iff_restrict ((hX.inter isOpen_Iio).measurableSet),
+  rw [memLp_indicator_iff_restrict ((hX.inter isOpen_Iio).measurableSet.nullMeasurableSet),
     Measure.restrict_restrict_of_subset inter_subset_left]
   exact hv2.star
 
@@ -458,7 +458,8 @@ theorem memLp_cutoff_left {χ : ℝ → ℝ} (hχ : Continuous χ) (hχb : ∀ x
     · rw [indicator_of_mem (show x ∈ X ∩ Iio c from ⟨hx, h⟩)]
     · rw [indicator_of_notMem fun h' => h h'.2, hχ0 x (le_of_not_gt h)]; simp
   refine MemLp.ae_eq heq.symm ?_
-  rw [memLp_indicator_iff_restrict hm, Measure.restrict_restrict_of_subset inter_subset_left]
+  rw [memLp_indicator_iff_restrict hm.nullMeasurableSet,
+    Measure.restrict_restrict_of_subset inter_subset_left]
   refine hw.of_le ((Complex.continuous_ofReal.comp hχ).aestronglyMeasurable.mul
     hw.aestronglyMeasurable)
     (ae_of_all _ fun x => ?_)
