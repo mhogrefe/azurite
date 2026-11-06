@@ -883,16 +883,24 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `DLMF/Chapter4/Section10` | DLMF §4.10: antiderivatives of logarithms and exponentials on principal-branch regions, `∫₀¹ ln t/(1 ∓ t)`, the logarithmic integral `li` as a principal value, the complex Gaussian integral, 4.10.12 by substitution, 4.10.13 |
 | `DLMF/Chapter4/Section12` | DLMF §4.12: generalized exponentials/logarithms (`IsGenExp`, `IsGenLog`), inverses, non-uniqueness via `genExpOf`, the simplest choice `simpleGenExp`/`simpleGenLog` (4.12.5–4.12.10), C¹ regularity by gluing |
 | `DLMF/Chapter4/Section13Abel` | DLMF §4.13 support: the Abel identity `∑_{k=1}^n C(n,k) k^{k−1}(y + n − k)^{n−k} = n(y + n)^{n−1}` |
+| `DLMF/Chapter4/Section13Asymp` | DLMF §4.13: 4.13.1_1, `W_k(z) = ln_k z − ln(ln_k z) + o(1)` as `\|z\| → ∞` |
+| `DLMF/Chapter4/Section13AsympSeries` | DLMF §4.13: the asymptotic expansions 4.13.10 (large `\|z\|`, absolutely convergent) and 4.13.11 (`x → 0−`) with Stirling cycle numbers |
 | `DLMF/Chapter4/Section13Branch` | DLMF §4.13: branches `W_k(z) = ω(ln z + 2πik)` of the Lambert `W`-function, 4.13.1 (all solutions), real branches, 4.13.2, `ω = W_{𝒦}(e^z)`, analyticity and 4.13.4, sheet images |
+| `DLMF/Chapter4/Section13Converge` | DLMF §4.13: convergence of the 4.13.10 series for `k = 0` and real `z ≥ e` (analytic continuation in `σ = 1/ln z` up to the branch point `W₀(−ln z/e)`) |
 | `DLMF/Chapter4/Section13Cut` | DLMF §4.13: solutions with `‖w‖ < 1` are `W₀`, analyticity of `W₀` on `ℂ ∖ (−∞, −e⁻¹]` and of `W_k` on `ℂ ∖ (−∞, 0]`, `W_{±1}(x ∓ 0i)` one-sided limits |
 | `DLMF/Chapter4/Section13BranchPoint` | DLMF §4.13: the branch point `−e⁻¹` — `W₀` continuous there, `W_{±1}(−e⁻¹ ∓ 0i) = −1` (4.13.2 limits, compactness), limits on the cut `x < −e⁻¹`, gluing `W₀`/`W₁`/`W_{−1}` over a square-root coordinate into an analytic function |
 | `DLMF/Chapter4/Section13Deriv` | DLMF §4.13: 4.13.4_1 (higher derivatives, `pₙ`) and 4.13.12–4.13.14 for the complex branches |
+| `DLMF/Chapter4/Section13Figure` | DLMF Figure 4.13.2: images of the Riemann sheets (`W₀`: first sheet onto the region inside `ξ = −η cot η`; `W_k`: sheet `k` onto `(2k − 1)π < ℑw + ph w < (2k + 1)π`), bijectivity |
+| `DLMF/Chapter4/Section13Integrals` | DLMF §4.13: integral representations 4.13.15–4.13.16 of `W₀` on `ℂ ∖ (−∞, −e⁻¹]` (termwise near `0`, analytic continuation, integration by parts) |
+| `DLMF/Chapter4/Section13Lagrange` | DLMF §4.13 support: Stirling generating function `(−ln(1−x))ᵏ/k! = ∑ [n,k]xⁿ/n!`, Lagrange reversion of `u = τ − σ ln(1/(1−u))` by the argument principle, the double series in Stirling numbers |
+| `DLMF/Chapter4/Section13Moments` | DLMF §4.13 support: the moments `∫₀^π ((sin t/t) e^{t cot t})ⁿ dt = π nⁿ/n!` (contour argument in logarithmic coordinates) |
 | `DLMF/Chapter4/Section13Omega` | DLMF §4.13: the Wright `ω`-function (existence/uniqueness of `y + ln y = z` off `L±`, erratum on `L₋`), `ω e^ω = e^z`, analyticity |
 | `DLMF/Chapter4/Section13OmegaAux` | DLMF §4.13 support: the strictly monotone `omegaG` (polar reduction of `y + ln y = a + ib`) and its limits |
 | `DLMF/Chapter4/Section13Real` | DLMF §4.13: real Lambert `W₀`, `W_{−1}`, real solution counts, 4.13.2–4.13.4 (real), `pₙ` and higher derivatives, antiderivatives, real `ω` and `T` |
 | `DLMF/Chapter4/Section13Series` | DLMF §4.13: 4.13.6–4.13.8, the expansion of `W(−e^{−1−t²/2})` in `t` on `\|t\| < 2√π` (coefficients `c_n` via Leibniz); Taylor coefficients `tcoef` |
 | `DLMF/Chapter4/Section13SeriesD` | DLMF §4.13: 4.13.9_1–4.13.9_2, `W₀(z) = ∑ dₙ (ez + 1)^{n/2}` on `\|ez + 1\| < 1` and the `dₙ` recurrence/values |
 | `DLMF/Chapter4/Section13Taylor` | DLMF §4.13: Maclaurin series 4.13.5–4.13.5_3 of `W₀` (derivatives at `0` by Leibniz recursion + Abel identity), `‖W₀‖ < 1` on the disc of radius `e⁻¹` |
+| `DLMF/Chapter4/Section13Zero` | DLMF §4.13: the logarithmic branch point `0` of `W_k`, `k ≠ 0` (`\|W_k\| ≥ 1`, `\|W_k(z)\| → ∞`), monodromy `W_k(x − 0i) = W_{k−1}(x)` on the negative axis |
 | `DLMF/Chapter4/Section2` | DLMF §4.2(i): the general logarithm as `∫₁^z dt/t` along `C¹` paths avoiding `0` (values exactly `ln z + 2kπi`), the principal branch along paths avoiding `(−∞, 0]`, 4.2.3–4.2.5, the closed definition `ln(x ± i0) = ln|x| ± iπ` and discontinuity across the cut |
 | `DLMF/Chapter4/Section2Base` | DLMF §4.2(ii): logarithms to a general base (4.2.8–4.2.10, 4.2.14–4.2.16), `e` as the unique positive solution of `ln e = 1` and `∫₁^e dt/t = 1`, and 20 decimals of `e`, `log₁₀ e`, `ln 10` from AzFloat's correctly rounded constants evaluated in the kernel |
 | `DLMF/Chapter4/Section2Exp` | DLMF §4.2(iii): the exponential function — Maclaurin series, entire without zeros, periods exactly `2kπi`, 4.2.20–4.2.24 (general value of the phase), and `exp z = ζ ⟺ z = Ln ζ` with `Ln ζ` the set of path integrals `∫₁^ζ dt/t` |

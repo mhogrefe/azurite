@@ -3,8 +3,8 @@ Copyright © 2026 Mikhail Hogrefe
 
 This file is part of Azurite.
 
-Azurite is free software: you can redistribute it and/or modify it under the terms of the
-Apache License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.DLMF.Chapter4.Section13Series
@@ -203,7 +203,7 @@ theorem lambertD_one_sq : lambertD 1 ^ 2 = 2 := by
       (contDiffAt_id.mul (contDiffAt_id.mul hF)) hF,
     iteratedDeriv_id_mul_id_mul_zero hF,
     iteratedDeriv_id_mul_zero (contDiffAt_const.mul han.contDiffAt)] at h
-  have e1 : iteratedDeriv 1 (deriv Q) 0 = iteratedDeriv 2 Q 0 := 
+  have e1 : iteratedDeriv 1 (deriv Q) 0 = iteratedDeriv 2 Q 0 :=
     congrFun (iteratedDeriv_succ' (n := 1) (f := Q)).symm 0
   rw [e1, iteratedDeriv_mul_self_zero (contDiffAt_const.add han.contDiffAt),
     sum_range_mul_eq_Icc tcoef_qD_zero, show 2 - 1 = 1 by rfl, Finset.Icc_self, sum_singleton,
