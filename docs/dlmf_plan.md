@@ -2072,3 +2072,15 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | "described by `x(t)` and `y(t)`, which are cubic polynomials with `t ∈ [0, 1]`" | `dlmf_3_11_vi_bezier_cubic` | |
 | "A complete spline results by composing several Bézier curves" | `bezierJoin`, `dlmf_3_11_vi_bezier_join` (continuous when `Q₀ = P₃`; `C¹` when also `Q₁ − Q₀ = P₃ − P₂`) | |
 | Typography application; Knuth (1986) | Not formalized (prose, reference) | |
+
+## Section 3.12
+
+### §3.12 Mathematical Constants (`Azurite/DLMF/Chapter3/Section12.lean`)
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 3.12.1 (`π = 3.14159 26535 89793 23846 …`) | `dlmf_3_12_1` (all 20 decimals; AzFloat enclosure `Encl.pi 96`, `pi96_data` by `decide +kernel`) | |
+| 3.12.2 | `dlmf_3_12_2` | `integral_one_div_one_add_sq`, `Real.arctan_one` |
+| 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat enclosure `Encl.exp 96 1`, `e96_data` by `decide +kernel`) | |
+| 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`); **20 decimals deferred** until Euler's constant can be computed | `Real.tendsto_harmonic_sub_log` |
+| Sloane (2003), Finch (2003) | Not formalized (references) | |

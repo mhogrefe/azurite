@@ -1933,6 +1933,7 @@ import Azurite.DLMF.Chapter3.Section11RationalExampleData
 import Azurite.DLMF.Chapter3.Section11RationalExist
 import Azurite.DLMF.Chapter3.Section11Remez
 import Azurite.DLMF.Chapter3.Section11Splines
+import Azurite.DLMF.Chapter3.Section12
 import Azurite.DLMF.Chapter3.Section1Interval
 import Azurite.DLMF.Chapter3.Section1LevelIndex
 import Azurite.DLMF.Chapter3.Section2
