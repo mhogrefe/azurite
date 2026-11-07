@@ -2482,13 +2482,13 @@ No errata.
 | 4.20.10, 4.20.13 | `dlmf_4_20_13` (`w′(w″ + a²w) = 0`, `mul_eq_zero_dichotomy`; the constant `c` from `e^{ic} = aB + i aA`), `dlmf_4_20_13_singular` | `AnalyticOnNhd.eqOn_zero_of_preconnected_of_eventuallyEq_zero` |
 | 4.20.11, 4.20.14 | `dlmf_4_20_14` (`p = aw`. If `p` reaches `±i` then it is constant, by `zero_propagation_of_deriv_eq_mul`, which uses a local primitive on a disc. Otherwise `g = (p − i)/(p + i)` solves `g′ = 2ia g`, so `g = C e^{2iaz}` by `dlmf_4_7_13`.), `dlmf_4_20_14_singular` | `DifferentiableOn.isExactOn_ball` |
 
-### §4.21 Identities (`Azurite/DLMF/Chapter4/Section21.lean`) — §4.21(i) COMPLETE; §4.21(ii)–(iv) TODO
+### §4.21 Identities (`Azurite/DLMF/Chapter4/Section21.lean`) — COMPLETE
 
 * Each `±` is stated as two conjuncts.
 * `tan`/`cot` identities are stated where the needed `cos`/`sin` are nonzero.
 * `ph` is `Complex.arg`.
 
-No errata.
+**Erratum:** De Moivre's theorem for non-integer `n` fails at `Re z = −π` (§4.21(iii)).
 
 | Equation | Theorem | Mathlib |
 |---|---|---|
@@ -2498,3 +2498,27 @@ No errata.
 | 4.21.4–4.21.5 | `dlmf_4_21_4` (`cos u, cos v ≠ 0`), `dlmf_4_21_5` (`sin u, sin v ≠ 0`) | `div_div_div_cancel_right₀` |
 | 4.21.6–4.21.9 | `dlmf_4_21_6`, …, `dlmf_4_21_9` (`half_sum_diff`) | |
 | 4.21.10–4.21.11 | `dlmf_4_21_10`, `dlmf_4_21_11` | |
+| 4.21.12–4.21.14 | `dlmf_4_21_12`, `dlmf_4_21_13` (`cos z ≠ 0`), `dlmf_4_21_14` (`sin z ≠ 0`); at a pole both sides would be `0` and `1` in Lean's `x/0 = 0` | `Complex.sin_sq_add_cos_sq` |
+| 4.21.15–4.21.20 | `dlmf_4_21_15`, …, `dlmf_4_21_20` | `Complex.cos_add`, `Complex.sin_sub` |
+| 4.21.21–4.21.23 (`±` roots) | `dlmf_4_21_21`, `dlmf_4_21_22`, `dlmf_4_21_23` (`eq_or_eq_neg_cpow_half`; the other forms of 4.21.23 hold everywhere); real sign resolution `dlmf_4_21_21_real` (`0 ≤ x ≤ 2π`), `dlmf_4_21_22_real` (`\|x\| ≤ π`), `dlmf_4_21_23_real` (`0 ≤ x < π`) | `sq_cpow_one_half` (§4.15), `Complex.cos_two_mul` |
+| 4.21.24–4.21.26 | `dlmf_4_21_24`, `dlmf_4_21_25`, `dlmf_4_21_26` | `Complex.tan_neg` |
+| 4.21.27–4.21.29 | `dlmf_4_21_27`, `dlmf_4_21_27_tan`, `dlmf_4_21_28`, `dlmf_4_21_28_tan`, `dlmf_4_21_29` (`tan` forms need `cos z ≠ 0`, `cot` forms `sin z ≠ 0`) | `mul_div_mul_right` |
+| 4.21.30–4.21.33 | `dlmf_4_21_30`, …, `dlmf_4_21_33` | `Complex.sin_three_mul`, `Complex.cos_three_mul` |
+| 4.21.34 (De Moivre) | `dlmf_4_21_34` (`n ∈ ℤ`), `dlmf_4_21_34_complex` (`n ∈ ℂ`, `−π < Re z ≤ π`); **erratum** `dlmf_4_21_34_erratum` (at `Re z = −π` it holds iff `n ∈ ℤ`) | `Complex.exp_int_mul`, `Complex.log_exp`, `Complex.exp_eq_one_iff` |
+| 4.21.35 | `dlmf_4_21_35` (`sin_eq_exp_form`, `prod_one_sub_rootsOfUnity_mul`) | `X_pow_sub_C_eq_prod`, `Complex.isPrimitiveRoot_exp`, `Finset.sum_range_id_mul_two` |
+| 4.21.36 | `dlmf_4_21_36` (`cos(z/2) ≠ 0`; `dt/dz = (1 + t²)/2 ≠ 0`) | `Complex.hasDerivAt_tan` |
+| 4.21.37–4.21.38 (`z = x + iy`) | `dlmf_4_21_37`, `dlmf_4_21_38` | `Complex.sin_add_mul_I`, `Complex.cos_add_mul_I` |
+| 4.21.39–4.21.40 | `dlmf_4_21_39`, `dlmf_4_21_40` (multiply by `2 cos z̄`, `2 sin z̄` and use 4.21.15–4.21.17; valid everywhere, `div_eq_mul_div_mul_of_imp`) | `Complex.cos_conj`, `Complex.sin_mul_I`, `Complex.cos_mul_I` |
+| 4.21.41–4.21.43 | `dlmf_4_21_41`, `dlmf_4_21_42`, `dlmf_4_21_43` (`norm_sin_sq_eq`, `norm_cos_sq_eq` from §4.18) | `Real.sqrt_div'`, `Real.cosh_two_mul` |
+
+### §4.22 Infinite Products and Partial Fractions (`Azurite/DLMF/Chapter4/Section22.lean`) — COMPLETE
+
+Products and sums over `n ≥ 1` are indexed by `n + 1` (and odd numbers `2n − 1` by `2n + 1`), `n ≥ 0`. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.22.1 | `dlmf_4_22_1` (partial products converge for all `z`, multipliable, `sin z = z ∏'`) | `Complex.tendsto_euler_sin_prod`, `multipliable_one_sub_of_summable` |
+| 4.22.2 (all `z`) | `dlmf_4_22_2`. Non-real `z`: `hasProd_cos_of_im_ne`, splitting the sine product at `2z/π` into odd factors (cosine) and even factors (sine at `z/π`). Then continuity of the product (uniform convergence on discs) and density of `{Im ≠ 0}` | `euler_sineTerm_tprod`, `HasProd.even_mul_odd`, `Summable.hasProdUniformlyOn_one_add`, `TendstoUniformlyOn.continuousOn` |
+| 4.22.3 (`z ≠ nπ`) | `dlmf_4_22_3` (`hasSum_cot_sub_inv`) | `cot_series_rep'`, `summable_cotTerm` |
+| 4.22.4 (`z ≠ nπ`) | `dlmf_4_22_4`. `G(w) = ∑ₙ 1/((z − nπ)(w − nπ))` equals `(cot z − cot w)/(w − z)`, and `G` is continuous at `z` by the M-test (`exists_norm_sub_int_mul_pi_ge`, `summable_norm_inv_sub_sq`), so `G(z) = −cot′(z)` | `EisensteinSeries.linear_right_summable`, `continuousOn_tsum`, `tsum_of_add_one_of_neg_add_one`, `dlmf_4_20_6` |
+| 4.22.5 (`z ≠ nπ`) | `dlmf_4_22_5` (`csc z = cot(z/2) − cot z`, even/odd split) | `HasSum.even_add_odd` |

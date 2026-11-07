@@ -2055,6 +2055,7 @@ import Azurite.DLMF.Chapter4.Section19Sec
 import Azurite.DLMF.Chapter4.Section2
 import Azurite.DLMF.Chapter4.Section20
 import Azurite.DLMF.Chapter4.Section21
+import Azurite.DLMF.Chapter4.Section22
 import Azurite.DLMF.Chapter4.Section2Base
 import Azurite.DLMF.Chapter4.Section2Exp
 import Azurite.DLMF.Chapter4.Section2Pow
