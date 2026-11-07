@@ -2056,6 +2056,13 @@ import Azurite.DLMF.Chapter4.Section2
 import Azurite.DLMF.Chapter4.Section20
 import Azurite.DLMF.Chapter4.Section21
 import Azurite.DLMF.Chapter4.Section22
+import Azurite.DLMF.Chapter4.Section23
+import Azurite.DLMF.Chapter4.Section23Gudermannian
+import Azurite.DLMF.Chapter4.Section24
+import Azurite.DLMF.Chapter4.Section25
+import Azurite.DLMF.Chapter4.Section25Arcsin
+import Azurite.DLMF.Chapter4.Section25Exp
+import Azurite.DLMF.Chapter4.Section26
 import Azurite.DLMF.Chapter4.Section2Base
 import Azurite.DLMF.Chapter4.Section2Exp
 import Azurite.DLMF.Chapter4.Section2Pow

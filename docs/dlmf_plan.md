@@ -2522,3 +2522,106 @@ Products and sums over `n ≥ 1` are indexed by `n + 1` (and odd numbers `2n −
 | 4.22.3 (`z ≠ nπ`) | `dlmf_4_22_3` (`hasSum_cot_sub_inv`) | `cot_series_rep'`, `summable_cotTerm` |
 | 4.22.4 (`z ≠ nπ`) | `dlmf_4_22_4`. `G(w) = ∑ₙ 1/((z − nπ)(w − nπ))` equals `(cot z − cot w)/(w − z)`, and `G` is continuous at `z` by the M-test (`exists_norm_sub_int_mul_pi_ge`, `summable_norm_inv_sub_sq`), so `G(z) = −cot′(z)` | `EisensteinSeries.linear_right_summable`, `continuousOn_tsum`, `tsum_of_add_one_of_neg_add_one`, `dlmf_4_20_6` |
 | 4.22.5 (`z ≠ nπ`) | `dlmf_4_22_5` (`csc z = cot(z/2) − cot z`, even/odd split) | `HasSum.even_add_odd` |
+
+### §4.23 Inverse Trigonometric Functions (`Azurite/DLMF/Chapter4/Section23.lean`, §4.23(viii) in `Section23Gudermannian.lean`; definitions in `Section15.lean`) — COMPLETE
+
+The definitions were formalized in §4.15 from the 4.23(i) integrals:
+* general values `arcsinGen`, `arccosGen`, `arccscGen`, `arcsecGen`;
+* principal values `arcsinD`, `arccosD`, `arctanD`, `arccscD`, `arcsecD`, `arccotD`.
+
+A branch point `c` is formalized as: there is no continuous single-valued branch on any punctured disc around `c`. Everything reduces to `no_continuous_sqrt_punctured`, proved by an IVT argument on the circle.
+
+**Imprecision (errata):** `Arccsc` and `Arcsec` also branch at `0`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.23.1–4.23.2 | `arcsinGen`, `arccosGen`, `mem_arcsinGen_iff`, `mem_arccosGen_iff` (§4.15) | |
+| 4.23.3 | `arctanGen` (`C¹` paths avoiding `±i`), `exp_of_arctan_path` (`e^{2iΦ}(1 − iγ) = 1 + iγ`), `mem_arctanGen_iff` (values = solutions of `tan w = z`, `cos w ≠ 0`; `exists_cos_ne_zero_path`) | `Complex.hasDerivAt_tan` |
+| 4.23.4–4.23.6 | `arccscGen`, `arcsecGen` (§4.15), `arccotGen`, `dlmf_4_23_4_6` | |
+| "Each of the six functions is a multivalued function" | `dlmf_4_23_i_multivalued` (`w`, `w + 2π` resp. `w + π`) | `Complex.sin_surjective`, `Complex.cos_surjective`, `Complex.tan_arctan` |
+| Branch points `±i` (`Arctan`, `Arccot`), `±1` (the other four) | `dlmf_4_23_i_branch_points` (`no_arcsin_branch`, `no_arccos_branch`, `no_arctan_branch`, `no_arccsc_branch`, `no_arcsec_branch`, `no_arccot_branch`; `exp_sq_mul_of_tan`, `inv_branch_aux`); **imprecision** `dlmf_4_23_i_branch_zero` (`Arccsc`, `Arcsec` at `0`) | `intermediate_value_uIcc`, `IsPreconnected.intermediate_value₂` |
+| §4.23(ii) principal values = integrals along non-crossing paths | `dlmf_4_23_ii_principal_mem` | |
+| "two-valued on the corresponding cuts" | `dlmf_4_23_ii_two_valued` (`arcsinD_cut_limits`, `arctanD_cut_limits` from §4.15) | |
+| "real on the part of the real axis that remains" | `dlmf_4_23_ii_real` | `Real.arcsin`, `Real.arctan` |
+| 4.23.7–4.23.9 | `dlmf_4_23_7_9` | |
+| "analytic in the cut plane", Figures 4.23.1(i)–(iv) | `dlmf_4_23_ii_analytic` (`one_div_mem_arctanCut`) | |
+| 4.23.10–4.23.15 | `dlmf_4_23_10`, …, `dlmf_4_23_15` (from the integrals; valid for all `z`) | `intervalIntegral.integral_neg` |
+| 4.23.16–4.23.17 | `dlmf_4_23_16`, `dlmf_4_23_17` (§4.15) | |
+| 4.23.18 (`ℜz ≷ 0`) | `dlmf_4_23_18` (`log_add_log_of_mul_eq_neg_one`: `ρ(z) ρ(1/z) = −1`, same half-plane) | `Complex.exp_eq_exp_iff_exists_int`, `Complex.arg_lt_pi_iff` |
+| 4.23.19, 4.23.22 (`z ∈ ℂ ∖ ((−∞, −1) ∪ (1, ∞))`, endpoints `±1` included) | `dlmf_4_23_19`, `dlmf_4_23_22`. `u = (1 − z²)^{1/2} + iz` has `u (u′) = 1` with `ℜu > 0` (`re_pos_of_mul_eq_one`), so `−i ln u` lies in the strip and has `sin = z`; `arcsinD_one`, `arcsinD_neg_one` | `Complex.abs_arg_lt_pi_div_two_iff`, `Complex.log_I` |
+| 4.23.23 (Kahan) | `dlmf_4_23_23` (`w = p + iq`, `w (p − iq) = 1`, `0 < arg w < π/2`, `cos(−2i ln w) = z`) | `Complex.arg_nonneg_iff` |
+| 4.23.20–4.23.21, 4.23.24–4.23.25 (on the cuts) | `dlmf_4_23_20_21`, `dlmf_4_23_24_25` (limits from the two sides, `ln((x² − 1)^{1/2} ± x) = arcosh \|x\|`) | `Real.cosh_arcosh`, `Real.arcosh_pos` |
+| 4.23.26 | `dlmf_4_23_26` (`(i + z)/(i − z) = ρ(z)⁻¹`) | `Complex.log_inv` |
+| 4.23.27 (on the cuts) | `dlmf_4_23_27` (`arctanD_cut_tendsto`, §4.15) | `Real.log_inv` |
+| "`1/(x + i0) = (1/x) − i0`" | `dlmf_4_23_iv_inv_side` | |
+| 4.23.28–4.23.33 (fundamental property) | `dlmf_4_23_31`, `dlmf_4_23_32` (off the cuts and at `±1`), `dlmf_4_23_33` (`Complex.arctan`, all `z ≠ ±i`), `dlmf_4_23_33'` (`arctanD`). General lemmas: `sin_eq_iff_neg_one_zpow`, `cos_eq_iff_pm`, `tan_eq_iff_add_int_mul_pi` | `Complex.sin_eq_sin_iff`, `Complex.cos_eq_cos_iff`, `Complex.sin_eq_zero_iff` |
+| `w = Arcsin z`, `Arccos z`, `Arctan z` | `dlmf_4_23_31_gen`, `dlmf_4_23_32_gen`, `dlmf_4_23_33_gen` | |
+| on the cuts (two-valued principal values) | `dlmf_4_23_31_cut`, `dlmf_4_23_32_cut` (either side value), `arctan_cut_value` (`Complex.arctan` = right-side value of 4.23.27) | `Complex.arg_ofReal_of_neg` |
+| 4.23.37–4.23.38 | `alphaA`, `betaA`; `alphaA_betaA_facts` (`αβ = x`, `(α² − 1)(1 − β²) = y²`, `α ≥ 1`, `β² ≤ 1`, by the triangle inequality), `betaA_sq_lt_one` (off the cuts) | `norm_sub_le`, `abs_norm_sub_norm_le` |
+| 4.23.34–4.23.35 (`±z ∉ (1, ∞)`) | `dlmf_4_23_34` (the right side has `sin = z` by 4.21.37 and lies in the strip; `injOn_sin_sinStrip`; endpoints `±1` separately), `dlmf_4_23_35` (via 4.23.16) | `Real.sign`, `Real.cos_arcsin`, `Real.sinh_arcosh`, `Real.arccos_eq_pi_div_two_sub_arcsin` |
+| 4.23.36 (`\|z\| < 1`) | `dlmf_4_23_36` (`arctanD_eq`; `ℜ((1 + iz)/(1 − iz)) = (1 − x² − y²)/N > 0`, `arg_eq_arctan_of_re_pos`) | `Complex.div_re`, `Complex.div_im` |
+| Table 4.23.1 (rows `−1`, `0`, `1`) | `dlmf_table_4_23_1_neg_one`, `dlmf_table_4_23_1_zero`, `dlmf_table_4_23_1_one` (`arcsinD_ofReal_Icc`, `arccosD_ofReal_Icc`) | `Real.arctan_one` |
+| Table 4.23.1, `arccot 0 = ∓½π` | **imprecision** `dlmf_table_4_23_1_arccot_zero` (one-sided limits `±½π` as `x → 0±`) | `tendsto_inv_nhdsGT_zero`, `Real.tendsto_arctan_atTop` |
+| Table 4.23.1 (rows `±∞`) | `dlmf_table_4_23_1_top`, `dlmf_table_4_23_1_bot` (limits along the real axis; `arccscD_ofReal`, `tendsto_arccscD_of`, `tendsto_arccotD_of`) | `Real.tendsto_arctan_atBot`, `tendsto_inv_atTop_zero` |
+| Interrelations via Table 4.16.3 | `inv_trig_first_quadrant`; `dlmf_4_23_vii_sin`, `_cos`, `_tan`, `_csc`, `_sec`, `_cot` (each off-diagonal entry of Table 4.16.3, `dlmf_table_4_16_3_*`); DLMF's example `dlmf_4_23_vii_example` | `Real.arcsin_sin`, `Real.arccos_cos`, `Real.arctan_tan` |
+| 4.23.42 needs `arcsinh`, …, `arccoth` (defined only in §4.37) | real-variable principal values from DLMF 4.37.1–4.37.3, 4.37.7–4.37.9: `arcsinhR`, `arccoshR`, `arctanhR`, `arccschR`, `arcsechR`, `arccothR`; bridges `arcsinhR_eq`, `arccoshR_eq` (improper at `1`), `arctanhR_eq` | `Real.hasDerivAt_arsinh`, `Real.hasDerivAt_arcosh`, `intervalIntegral.intervalIntegrable_deriv_of_nonneg`, `Real.artanh_eq_half_log` |
+| 4.23.39 | `gd` | |
+| 4.23.40 | `dlmf_4_23_40` (`gd_eq_arctan` by FTC; `gd_trig`: `sin gd = tanh`, `cos gd = sech`; `tan_gd`); **erratum** `dlmf_4_23_40_cos` (`arccos(sech x) = arcsec(cosh x) = gd \|x\|`), `dlmf_4_23_40_cos_nonneg`, `dlmf_4_23_40_cos_neg` | `Real.sin_arctan`, `Real.cos_arctan`, `Real.cosh_abs` |
+| 4.23.41 (inverse of `gd`) | `gdInv`, `gd_mem`, `gdInv_gd`, `gd_gdInv` | `Real.artanh_tanh`, `Real.tanh_artanh` |
+| 4.23.42 | `dlmf_4_23_42` (`gdInv_eq_artanh` by FTC, `gdInv_eq_log`, `tan_half_add_pi_div_four`); **erratum** `dlmf_4_23_42_cosh` (`arccosh(sec x) = arcsech(cos x) = gd⁻¹ \|x\|`) | `Real.artanh_neg`, `Real.arcosh_nonneg` |
+
+### §4.24 Inverse Trigonometric Functions: Further Properties (`Azurite/DLMF/Chapter4/Section24.lean`) — COMPLETE
+
+All principal values are the 4.23(i) integrals (`arcsinD`, `arccosD`, `arctanD`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.24.1 (`\|z\| ≤ 1`, absolutely) | `dlmf_4_24_1`; inside the disc `hasSum_arcsinD` (binomial series of the 4.23.1 integrand `hasSum_one_sub_cpow_neg_half` from `dlmf_4_6_7` via `choose_neg_half_mul_neg_one_pow`, integrated termwise); `summable_arcsinCoeff` (partial sums ≤ `arcsin 1`); boundary by `continuousOn_arcsinD_closedBall` (4.23.19 at `±1`) | `intervalIntegral.hasSum_integral_of_dominated_convergence`, `continuousOn_tsum`, `Set.EqOn.of_subset_closure`, `summable_of_sum_range_le` |
+| 4.24.2 (`\|1 − z\| ≤ 2`, absolutely) | `dlmf_4_24_2` via `arccosD_eq_two_mul_arcsinD` (`arccos z = 2 arcsin(((1 − z)/2)^{1/2})`; off the cut by injectivity of `sin` on the strip, on the cut `1 < z ≤ 3` from the integral values `arcsinD_of_one_lt` (`½π − i arccosh x`), `arcsinD_I_mul` (`i arcsinh y`), `arcosh_eq_two_mul_arsinh`). On the cut the series gives the value of the 4.23(i) integral (the limit from below). | `Complex.ofReal_cpow_of_nonpos`, `Complex.log_ofReal_mul`, `intervalIntegral.integral_add_adjacent_intervals` |
+| 4.24.3 (`\|z\| ≤ 1`, `z ≠ ±i`) | `dlmf_4_24_3` (partial sums; conditionally convergent on `\|z\| = 1`; `tendsto_oddLogSeries` from §4.6), `dlmf_4_24_3_hasSum` (`\|z\| < 1`) | `Complex.hasSum_arctan` |
+| 4.24.4 (`ℜz ≷ 0`, `\|z\| ≥ 1`) | `dlmf_4_24_4` (`arctanD_eq_sub_arctanD_inv` from 4.23.18) | |
+| 4.24.5 (`ℜ(z²) > −½`) | `dlmf_4_24_5` (geometric series in `t(1 − s²)` integrated termwise; `integral_one_sub_sq_pow` = `2·4⋯(2n)/(3·5⋯(2n + 1))` by parts); the condition is `\|z²/(1 + z²)\| < 1` (`norm_div_one_add_lt_one_iff`) | `intervalIntegral.integral_mul_deriv_eq_deriv_mul` |
+| 4.24.6 (between the rectangular hyperbolas) | `dlmf_4_24_6` | |
+| 4.24.7–4.24.9, 4.24.12 (off the cuts) | `dlmf_4_24_7` (`hasStrictDerivAt_arcsinD`, §4.15), `dlmf_4_24_8` (via 4.23.16), `dlmf_4_24_9` (`= Complex.arctan` near `z`), `dlmf_4_24_12` (`z ≠ 0`, `1/z` off the cut) | `HasDerivAt.congr_of_eventuallyEq`, `hasDerivAt_inv` |
+| 4.24.10–4.24.11 (`ℜz ≷ 0`) and the remark on the two signs | `dlmf_4_24_10`, `dlmf_4_24_11`; `mul_cpow_half_one_sub_inv_sq` (`z(1 − z⁻²)^{1/2} = ±(z² − 1)^{1/2}`: both square to `z² − 1` and `ℜ(· conj z) > 0` singles out the sign) | `Complex.mul_conj` |
+| §4.24(iii) interpretation (sets of general values, square roots either value) | general values `arcsinGen`, `arccosGen`, `arctanGen`, `arccotGen` (§4.15/§4.23); `σ = ±1`; arguments `±1` excluded (4.23.1 paths avoid `±1`) | |
+| 4.24.13 | **erratum** `dlmf_4_24_13` (only LHS ⊆ RHS), `dlmf_4_24_13_converse_fails` (`u = v = ½`, `w = ⅔π`) | `Complex.sin_add` |
+| 4.24.14 | `dlmf_4_24_14` (set equality; `exists_cos_eq_mul_sin_eq` picks the sign of `sin b`) | `Complex.cos_eq_cos_iff`, `Complex.cos_surjective` |
+| 4.24.15 | `dlmf_4_24_15` (set equality, `1 ∓ uv ≠ 0`, `v ≠ ±i`) | `Complex.tan_arctan` |
+| 4.24.16 | first equality `dlmf_4_24_16` (set equality); second equality **erratum** `dlmf_4_24_16_arccos` (only LHS ⊆ RHS), `dlmf_4_24_16_arccos_converse_fails` (`u = v = ½`, `w = −½π`) | `Complex.sin_eq_sin_iff`, `Complex.sin_surjective` |
+| 4.24.17 | `dlmf_4_24_17` (both equalities, from 4.24.15 and 4.23.6) | |
+
+### §4.25 Continued Fractions (`Azurite/DLMF/Chapter4/Section25.lean`) — COMPLETE
+
+Convergents are `cfA a b r / cfB a b r` (§1.12); each formula: denominators eventually nonzero and convergents → the function, on DLMF's full regions.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.25.1 (`z ≠ ±½π, ±(3/2)π, …`) | `dlmf_4_25_1`: `Yᵣ = Bᵣ − iAᵣ` (reverse Bessel `θᵣ(−iz)`), `hasDerivAt_tanY` (`Yᵣ′ = −iYᵣ + zYᵣ₋₁`), `tanU` (`uᵣ = e^{iz}Yᵣ/(2r−1)!!`, `uᵣ′ = z uᵣ₋₁/(2r−1)`), `tendsto_tanU` (mean value inequality + uniform bound on a ball), `tan_cf_neg` | `Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`, `Complex.cos_eq_zero_iff` |
+| 4.25.4 (cut plane, Figure 4.23.1(ii)) | `dlmf_4_25_4` from `dlmf_4_9_2` at `iz` (`cfP_scale_first`, `cfQ_change_first`) | |
+| 4.25.3 (cut plane, Figure 4.23.1(i)) | `dlmf_4_25_3` (`Section25Arcsin.lean`): CF in `w = z²` (`asinWa`, `asin_cf_eq`); `asPhi` with `asPhi_split`/`asPhi_mul`/`asPhi_parts`; errors `asin_err` (`E_{2k} = (2k)! w^{2k} Φ(2k,k,k+1)`, `E_{2k+1} = (2k+1)! w^{2k+1} Φ(2k,k+1,k+1)`); weights `asinOmega` = `1/(2√(1+t))`, `asinOmega1` = `−t·asinOmega` on `(−1,0)` (`integral_asinOmega`: `t = s² − 1`); `asin_even_eq`, `asin_odd_eq` (Padé uniqueness), `asin_tendsto` via REUSABLE `gauss_tendsto_of_weight`, `gauss_err_bound_of_weight` (integrable weights); value `asin_value` via `arctanD(tan(arcsin z))` | `intervalIntegral.integral_deriv_smul_comp_of_deriv_nonneg`, `intervalIntegral.intervalIntegrable_deriv_of_nonneg`, `Complex.arctan_tan` |
+| 4.25.5 (Figure 4.23.1(iv), `z ∉ [−i, i]`; complex `a`) | `dlmf_4_25_5` (`Section25Exp.lean`): root `expTau` of `1 − 2zτ − τ² = 0` in the unit disc; `expG ε a τ` (`e^{εa(ψ(t)−ψ(0))}p^{−1/2}`) with ODE `expG_ode` and Taylor coefficients `iteratedDeriv_expG_eq` (`= Bᵣ`, `Aᵣ`); decomposition `expG_decomp` (`(1 − t/τ)^{−1/2}k + m`, `expK`, `expM` via the even/odd parts `expC`, `expS` of `exp`); `darboux_limit` (Cauchy estimates + Tannery, `arcsinCoeff` ratios); `κ(0) = 2 arctanInt τ`, `arctanInt_eq` (identity theorem from the real case), `two_mul_arctanD_expTau` (`2 arctan τ = arccot z`, `abs_re_arctan_lt`) | `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq`, `tendsto_tsum_of_dominated_convergence`, `Complex.norm_iteratedDeriv_le_of_forall_mem_sphere_norm_le`, `Complex.arctan_tan` |
+| 4.25.2 (`\|ℜz\| < ½π`, `az ≠ ±½π, …`; complex `a`) | `dlmf_4_25_2`: `tanACFa`; `tanA_cf_eq` (`2i wʳPᵣ = Aᵣ − Bᵣ`, `2wʳQᵣ = Aᵣ + Bᵣ` for the 4.25.5 convergents at `ia`, `w = cot z`); `cot_strip` (`cot z ∉ [−i, i]`, `arccot(cot z) = z`); `tan_eq_exp_ratio`; `z = 0` by `tanA_cf_zero` | `Complex.cos_eq_zero_iff`, `Complex.sin_eq_zero_iff` |
+
+### §4.26 Integrals (`Azurite/DLMF/Chapter4/Section26.lean`) — §4.26(i)–(iv) DONE
+
+§4.26(i): variables real; extension to `ℂ` "by using continuous branches and avoiding singularities" is realized as `dlmf_4_26_n_complex` with the principal `ln`, wherever its argument is off `(−∞, 0]`. Indefinite integrals `∫ f = F` are `F′ = f` (`HasDerivAt`); improper integrals `∫₀^∞` are limits of `∫₀^R`. Errata: 4.26.9, 4.26.10 (`m = −n ≠ 0`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.26.1, 4.26.2 | `dlmf_4_26_1`, `dlmf_4_26_2` (+ `_complex`, all `z`) | `Real.hasDerivAt_cos`, `Complex.hasDerivAt_sin` |
+| 4.26.3 (`−½π < x < ½π`) | `dlmf_4_26_3`; `dlmf_4_26_3_complex` (`cos z ∉ (−∞, 0]`) | `HasDerivAt.clog` |
+| 4.26.4 (`0 < x < π`) | `dlmf_4_26_4`; `dlmf_4_26_4_complex` (`tan ½z ∉ (−∞, 0]`) | `Real.hasDerivAt_tan`, `Complex.hasDerivAt_tan` |
+| 4.26.5 (`−½π < x < ½π`) | `dlmf_4_26_5` (`gdInv′ = sec`, FTC on the 4.23.41 integral); `dlmf_4_26_5_complex` (`ln((1 + sin z)/cos z)`, argument off the cut), `dlmf_4_26_5_complex_ofReal` (= `gd⁻¹ x` on the interval) | `intervalIntegral.integral_hasDerivAt_right` |
+| 4.26.6 (`0 < x < π`) | `dlmf_4_26_6`; `dlmf_4_26_6_complex` (`sin z ∉ (−∞, 0]`) | `Real.cot_eq_cos_div_sin` |
+| 4.26.7, 4.26.8 (`a² + b² ≠ 0`) | `dlmf_4_26_7`, `dlmf_4_26_8` (+ `_complex`, complex `a`, `b`, `z`) | |
+| 4.26.9 (`m ≠ n`) | **erratum**: `dlmf_4_26_9` needs `m ≠ ±n`; `dlmf_4_26_9_neg` (`m = −n ≠ 0` gives `−½π`); `integral_sin_mul_sin_int` (general value) | `integral_cos`, `Real.sin_int_mul_pi` |
+| 4.26.10 (`m ≠ n`) | **erratum**: `dlmf_4_26_10` needs `m ≠ ±n`; `dlmf_4_26_10_neg` (`½π`); `integral_cos_mul_cos_int` | |
+| 4.26.11 (`n ≠ 0`) | `dlmf_4_26_11` | |
+| 4.26.12 | `dlmf_4_26_12` (every real `m`; limit of `∫₀^R`) | Dirichlet integral `tendsto_integral_inv_mul_sin` (Ch. 1) |
+| 4.26.13 | `dlmf_4_26_13` (limits of `∫₀^R`) | Fresnel `tendsto_integral_sin_mul_sq`, `tendsto_integral_cos_mul_sq` (Ch. 1) |
+| 4.26.14, 4.26.15 (`−1 < x < 1`) | `dlmf_4_26_14`, `dlmf_4_26_15` (`arcsinD`, `arccosD` of real `x`); `_real` versions; `hasDerivAt_sqrt_one_sub_sq` | `Real.hasDerivAt_arcsin`, `Real.hasDerivAt_arccos` |
+| 4.26.16 (`x ∈ ℝ`) | `dlmf_4_26_16`, `dlmf_4_26_16_real` | `Real.hasDerivAt_arctan` |
+| 4.26.17, 4.26.18 (`1 < x`) | `dlmf_4_26_17`, `dlmf_4_26_18` (`arccscD`, `arcsecD`; `arcsecD_ofReal`); `hasDerivAt_arcsin_inv`, `hasDerivAt_arccos_inv`, `hasDerivAt_log_add_sqrt` | |
+| 4.26.19 (`0 < x`) | `dlmf_4_26_19` (`arccotD`), `hasDerivAt_arctan_inv` | |
+| 4.26.20, 4.26.21 (`−1 < x < 1`) | `dlmf_4_26_20`, `dlmf_4_26_21` | |

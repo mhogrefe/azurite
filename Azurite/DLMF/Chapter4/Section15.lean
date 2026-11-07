@@ -1001,17 +1001,13 @@ theorem im_arctan_ratio (z : ℂ) :
     sub_im, zero_sub, add_re]
   ring
 
-/-- **Figure 4.15.11** (`arctan(x + iy)`, principal value): "There are branch cuts along the
-imaginary axis from `−i∞` to `−i` and `i` to `i∞`": `arctan` is holomorphic off the cuts and is
-discontinuous at every point `iy`, `|y| > 1`, of the cuts. -/
-theorem dlmf_4_15_F11 :
-    DifferentiableOn ℂ arctanD arctanCut ∧
-      ∀ y : ℝ, 1 < |y| → ¬ ContinuousAt arctanD (y * I) := by
-  refine ⟨fun z hz => ?_, fun y hy => ?_⟩
-  · have hev : arctanD =ᶠ[𝓝 z] arctan :=
-      Filter.mem_of_superset (isOpen_arctanCut.mem_nhds hz) fun w hw => arctanD_eq hw
-    exact ((hasDerivAt_arctan_of_mem hz).differentiableAt.congr_of_eventuallyEq
-      hev).differentiableWithinAt
+/-- The limits of `arctan` from the right and the left at a point `iy`, `|y| > 1`, of its cuts,
+explicitly. -/
+theorem arctanD_cut_tendsto {y : ℝ} (hy : 1 < |y|) :
+    Tendsto arctanD (𝓝[{z | 0 < z.re}] (y * I))
+        (𝓝 (-I / 2 * (Real.log |(1 - y) / (1 + y)| + π * I))) ∧
+      Tendsto arctanD (𝓝[{z | z.re < 0}] (y * I))
+        (𝓝 (-I / 2 * (Real.log |(1 - y) / (1 + y)| - π * I))) := by
   set z₀ : ℂ := y * I with hz₀
   set x₀ : ℝ := (1 - y) / (1 + y) with hx₀def
   have hy1 : 1 + y ≠ 0 := by intro h; rcases lt_abs.mp hy with h' | h' <;> linarith
@@ -1057,12 +1053,34 @@ theorem dlmf_4_15_F11 :
     filter_upwards [self_mem_nhdsWithin] with z hz
     rw [arctanD_eq (Or.inl (ne_of_lt hz))]
     rfl
-  refine not_continuousAt_of_tendsto_ne
-    (neBot_nhdsWithin_of_ray z₀ 1 fun t ht => by simpa [hz₀] using ht)
-    (neBot_nhdsWithin_of_ray z₀ (-1) fun t ht => by simpa [hz₀] using ht) hTR hTL fun h => ?_
-  have := congrArg re h
-  simp at this
+  exact ⟨hTR, hTL⟩
+
+/-- The limits of `arctan` from the right and the left at a point `iy`, `|y| > 1`, of its cuts:
+they differ by `π` in the real part. -/
+theorem arctanD_cut_limits {y : ℝ} (hy : 1 < |y|) : ∃ b c : ℂ, b.re ≠ c.re ∧
+    Tendsto arctanD (𝓝[{z | 0 < z.re}] (y * I)) (𝓝 b) ∧
+    Tendsto arctanD (𝓝[{z | z.re < 0}] (y * I)) (𝓝 c) := by
+  obtain ⟨h1, h2⟩ := arctanD_cut_tendsto hy
+  refine ⟨_, _, ?_, h1, h2⟩
+  simp
   linarith [Real.pi_pos]
+
+/-- **Figure 4.15.11** (`arctan(x + iy)`, principal value): "There are branch cuts along the
+imaginary axis from `−i∞` to `−i` and `i` to `i∞`": `arctan` is holomorphic off the cuts and is
+discontinuous at every point `iy`, `|y| > 1`, of the cuts. -/
+theorem dlmf_4_15_F11 :
+    DifferentiableOn ℂ arctanD arctanCut ∧
+      ∀ y : ℝ, 1 < |y| → ¬ ContinuousAt arctanD (y * I) := by
+  refine ⟨fun z hz => ?_, fun y hy => ?_⟩
+  · have hev : arctanD =ᶠ[𝓝 z] arctan :=
+      Filter.mem_of_superset (isOpen_arctanCut.mem_nhds hz) fun w hw => arctanD_eq hw
+    exact ((hasDerivAt_arctan_of_mem hz).differentiableAt.congr_of_eventuallyEq
+      hev).differentiableWithinAt
+  obtain ⟨b, c, hbc, hTR, hTL⟩ := arctanD_cut_limits hy
+  refine not_continuousAt_of_tendsto_ne
+    (neBot_nhdsWithin_of_ray (y * I) 1 fun t ht => by simpa using ht)
+    (neBot_nhdsWithin_of_ray (y * I) (-1) fun t ht => by simpa using ht) hTR hTL fun h => ?_
+  exact hbc (congrArg re h)
 
 /-- **DLMF 4.23.9**: `arccot z = arctan(1/z)`. -/
 noncomputable def arccotD (z : ℂ) : ℂ := arctanD (1 / z)
