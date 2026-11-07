@@ -2328,7 +2328,7 @@ The simplest choice is `simpleGenExp` (`φ`) / `simpleGenLog` (`ψ`) (`genLog` i
 | "Both `φ(x)` and `ψ(x)` are continuously differentiable" | `contDiffOn_genExp` (on `(−1, ∞)`), `contDiff_genLog` (gluing lemma `contDiffOn_glue`) | |
 | Clenshaw et al., Walker, Kneser | references only | |
 
-### §4.13 Lambert W-Function (`Azurite/DLMF/Chapter4/Section13Real.lean`, `Section13OmegaAux.lean`, `Section13Omega.lean`, `Section13Branch.lean`, `Section13Cut.lean`, `Section13Deriv.lean`, `Section13Abel.lean`, `Section13Taylor.lean`, `Section13BranchPoint.lean`, `Section13Series.lean`, `Section13SeriesD.lean`, `Section13Asymp.lean`, `Section13Figure.lean`, `Section13Zero.lean`, `Section13Moments.lean`, `Section13Integrals.lean`, `Section13Lagrange.lean`, `Section13AsympSeries.lean`, `Section13Converge.lean`) — IN PROGRESS (full complex scope)
+### §4.13 Lambert W-Function (`Azurite/DLMF/Chapter4/Section13Real.lean`, `Section13OmegaAux.lean`, `Section13Omega.lean`, `Section13Branch.lean`, `Section13Cut.lean`, `Section13Deriv.lean`, `Section13Abel.lean`, `Section13Taylor.lean`, `Section13BranchPoint.lean`, `Section13Series.lean`, `Section13SeriesD.lean`, `Section13Asymp.lean`, `Section13Figure.lean`, `Section13Zero.lean`, `Section13Moments.lean`, `Section13Integrals.lean`, `Section13Lagrange.lean`, `Section13AsympSeries.lean`, `Section13Converge.lean`) — COMPLETE (full complex scope) except 4.13.9 (needs §5.11 `gₙ`)
 
 `W_k(z) = ω(ln z + 2πik)` via the Wright `ω`-function, the unique solution of `y + ln y = z` (off the half-lines `L± = {t ± iπ : t ≤ −1}`; existence/uniqueness via `y = ρe^{iα}` and the strictly monotone `omegaG`). Values on the cuts are limits from above (counterclockwise continuity). Real branches: `lambertW0`, `lambertWm1`. Erratum: 4.13.1_2 on `L₋`.
 
@@ -2353,3 +2353,148 @@ The simplest choice is `simpleGenExp` (`φ`) / `simpleGenLog` (`ψ`) (`genLog` i
 | 4.13.10–4.13.11 | `dlmf_4_13_10` (for large `\|z\|` the series converges absolutely to `W_k(z)`; remainder after `N` terms `O((\|ln ξ\|/\|ξ\|)^{N+1})` along `cobounded ℂ`; `dlmfTerm10`, `lnk`), `dlmf_4_13_11` (`W_{−1}(x + 0i)` as `x → 0−`, `η = ln(−1/x)` (`eta11`); convergent near `0−`, remainder `O((ln η/η)^{N+1})`; `dlmfTerm11`). Core (`Section13Lagrange.lean`): `hasSum_lambertInner` — if `u = τ − σL(u)` (`L = −ln(1 − ·)`, `\|σ\| ≤ 1/4`, `\|τ\| ≤ 1/8`, `\|u\| ≤ 1/2`) then `L(u) = ∑ₙ∑ₘ (−1)^{n+m}[n, n−m+1] τᵐσ^{n−m}/m!`; via `hasSum_stirlingFirst` (`(−ln(1−x))ᵏ/k! = ∑ [n,k]xⁿ/n!`, `[n,k] = Nat.stirlingFirst`), the argument principle `lagL_eq_circleIntegral`, Lagrange reversion `hasSum_lambert_lagrange` (`L(u) = ∑ⱼ (−σ)ʲ Dʲ(L^{j+1})(τ)/(j+1)!`), `hasSum_lagD_div`, regrouping `sum_antidiagonal_lambertT`; `4.13.10` with `σ = 1/ξ`, `τ = ln ξ/ξ`, `u = 1 − W/ξ`; `4.13.11` with `σ = −1/η`, `τ = −ln η/η`, `u = 1 + W/η`. `dlmf_4_13_10_real` (`Section13Converge.lean`): for `k = 0` and real `z ≥ e` the series converges to `W₀(z)` — it is the Taylor series in `σ = 1/ξ` (with `ln ξ` frozen) of `g̃(σ) = 𝒲(1/σ) − 1/σ + λ`, `𝒲(s) = ω(s + ln s − λ)`, analytic for `\|σ\| < 1/r₀` with `\|W₀(−ξ/e)\| < r₀ < ξ` (`sStar_props`, green-curve monotonicity `green_re_lt`, `continuousAt_bigW`, `gTilde_eqOn`, removable singularity, `coeff_eq_of_hasSum`) | `Nat.stirlingFirst`, `DifferentiableOn.circleIntegral_sub_inv_smul`, `differentiableOn_dslope`, `Finset.HasAntidiagonal.sigmaAntidiagonalEquivProd` |
 | 4.13.12–4.13.14 | `dlmf_4_13_12`, `dlmf_4_13_13`, `dlmf_4_13_14` (real `W₀`), `dlmf_4_13_12_complex`–`dlmf_4_13_14_complex` (all `W_k`) | |
 | 4.13.15–4.13.16 (on `ℂ ∖ (−∞, −e⁻¹]`) | `dlmf_4_13_16` (`W₀ = (1/π)∫₀^π ln(1 + z (sin t/t) e^{t cot t}) dt`), `dlmf_4_13_15` (by parts, `nFun`, `hasDerivAt_lamA`: `−t a′ = ((1 − t cot t)² + t²) a`); near `0`: `dlmf_4_13_16_small` (termwise against the moments `integral_lamA_pow`: `∫₀^π aⁿ = π nⁿ/n!`, proven along `w = −ln sinc t + it` with an entire primitive of `exp(n(eʷ − w))` and the circle `\|z\| = 1/sinc T`); extension: `differentiableOn_integral_log` (`one_add_mul_lamA_mem_slitPlane`, `exists_norm_one_add_mul_lamA_ge`), `isPreconnected_cutW0` | `exists_primitive_of_simplyConnected` (§1.13), `DifferentiableOn.circleIntegral_one_div_sub_center_pow_smul`, `intervalIntegral.hasSum_integral_of_dominated_convergence`, `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`, `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` |
+
+### §4.14 Definitions and Periodicity (`Azurite/DLMF/Chapter4/Section14.lean`) — COMPLETE
+
+Mathlib has `Complex.sin`, `cos`, `tan`, `cot`; `csc`, `sec` are defined here (`cscC`, `secC`). A pole is stated as `|f(w)| → ∞` as `w → z₀` (Lean's `x/0 = 0` makes the values at poles junk). No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.14.1–4.14.3 | `dlmf_4_14_1`, `dlmf_4_14_2`, `dlmf_4_14_3` | `Complex.exp_mul_I` |
+| 4.14.4–4.14.7 | `dlmf_4_14_4`, `dlmf_4_14_5` (`cscC`), `dlmf_4_14_6` (`secC`), `dlmf_4_14_7` | `Complex.tan_eq_sin_div_cos`, `Complex.cot_eq_cos_div_sin` |
+| `sin`, `cos` entire; zeros `kπ`, `(k + ½)π` | `dlmf_4_14_entire`, `dlmf_4_14_sin_zeros`, `dlmf_4_14_cos_zeros` | `Complex.sin_eq_zero_iff`, `Complex.cos_eq_zero_iff` |
+| `tan`, `csc`, `sec`, `cot` meromorphic; zeros and poles | `dlmf_4_14_meromorphic`, `dlmf_4_14_tan_zeros`, `dlmf_4_14_cot_zeros`, `dlmf_4_14_csc_sec_ne_zero`, `dlmf_4_14_tan_poles`, `dlmf_4_14_cot_poles`, `dlmf_4_14_csc_poles`, `dlmf_4_14_sec_poles` (via `tendsto_norm_div_of_simple_zero`) | `MeromorphicAt.div`, `HasDerivAt.eventually_ne`, `tendsto_inv₀_nhdsNE_zero` |
+| 4.14.8–4.14.10 | `dlmf_4_14_8`, `dlmf_4_14_9`, `dlmf_4_14_10` | `Complex.sin_add_int_mul_two_pi`, `Complex.tan_periodic` |
+
+### §4.15 Graphics (`Azurite/DLMF/Chapter4/Section15.lean`) — COMPLETE (4.23.18 deferred to §4.23)
+
+The inverse trigonometric functions are defined only in §4.23, so the definitions of §4.23(i)–(ii) are formalized here first.
+* **General values** (4.23.1–4.23.2, 4.23.4–4.23.5): integrals over `C¹` paths avoiding `±1`, with the square root continued from its principal value at `t = 0` (imprecision noted in the errata).
+* **Principal values**: the same integrals along paths that do not cross the cuts. These are the segment `[0, z]` for `arcsin` and `arctan`, and `[z, 0]` followed by `[0, 1]` for `arccos`. Then 4.23.7–4.23.9.
+
+Figures 4.15.1, 4.15.3, 4.15.5 (graphs of `sin`, `cos`, `tan`, `cot`, `csc`, `sec`) and the surfaces 4.15.8, 4.15.10, 4.15.12 make no further claims; §4.14 covers those functions.
+
+**Erratum:** the hyperbolas of Figure 4.15.7 are not rectangular in general.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.23.1 (general `Arcsin`), used throughout | `arcsinGen`, `sin_cos_of_arcsin_path` (`sin Φ = γ`, `cos Φ = g` along the path, by constancy of `γ cos Φ − g sin Φ` and `g cos Φ + γ sin Φ`; `hasDerivAt_of_sq_eq`, `eq_of_hasDerivAt_zero_Icc`), `mem_arcsinGen_iff` (values `= {w : sin w = z}`, `z ≠ ±1`) | `exists_hasDerivAt_eq_slope`, `intervalIntegral.integral_hasDerivAt_right`, `Complex.sin_eq_sin_iff` |
+| 4.23.2 (general `Arccos`) | `arccosGen` (path `z → 0 → 1`), `integral_one_div_sqrt_one_sub_sq` (`∫₀¹ dt/(1 − t²)^{1/2} = π/2`), `mem_arccosGen_iff` | `intervalIntegral.intervalIntegrable_deriv_of_nonneg`, `Real.hasDerivAt_arcsin` |
+| §4.23(ii) principal `arcsin`, `arccos` | `arcsinCut`, `arcsinD`, `arcsinD_props` (a general value, in the strip, `sin(arcsin z) = z`, `cos(arcsin z) = (1 − z²)^{1/2}`; IVT on `Re Φ`), `hasStrictDerivAt_arcsinD`, `arccosD`, `dlmf_4_23_16` | `HasStrictDerivAt.to_local_left_inverse`, `intermediate_value_Icc` |
+| §4.23(ii) principal `arctan`; 4.23.7–4.23.9, 4.23.17 | `arctanCut`, `arctanD`, `arctanD_eq` (`= Complex.arctan`, via `hasDerivAt_arctan_of_mem`), `arccscD`, `arcsecD`, `arccotD`, `arccscGen`, `arcsecGen`, `dlmf_4_23_17` | `HasDerivAt.clog`, `Complex.ofReal_arctan` |
+| Figure 4.15.2 (`Arcsin x`, `Arccos x`, principal values thickened) | `dlmf_4_15_F2` (`(−1)^k arcsin x + kπ`, `±arccos x + 2kπ`; `arcsinD x = arcsin x ∈ [−π/2, π/2]`, `arccosD x = arccos x ∈ [0, π]`) | `Real.sin_arcsin`, `Complex.cos_eq_cos_iff` |
+| Figure 4.15.4 ("`arccot x` is discontinuous at `x = 0`") | `dlmf_4_15_F4` (one-sided limits `±π/2`) | `Real.tendsto_arctan_atTop`, `tendsto_inv_nhdsGT_zero` |
+| Figure 4.15.6 ("Both functions are complex when `−1 < x < 1`") | `dlmf_4_15_F6` (every general value and both boundary values nonreal), `dlmf_4_15_F6_real` (`\|x\| > 1`) | `Real.abs_sin_le_one` |
+| Figure 4.15.7 (strip `\|Re z\| < π/2` onto the doubly cut plane, `w = sin z`, `z = arcsin w`) | `sinStrip`, `dlmf_4_15_F7_bijOn`, `dlmf_4_15_F7_inverse`, `dlmf_4_15_F7_conformal` | `Complex.hasStrictDerivAt_sin` |
+| "Lines parallel to the real axis … ellipses with foci `±1`", "… imaginary axis … rectangular hyperbolas confocal with the ellipses" | `dlmf_4_15_F7_ellipses` (`\|w − 1\| + \|w + 1\| = 2 cosh c`), `dlmf_4_15_F7_hyperbolas` (`\|w + 1\| − \|w − 1\| = 2 sin c`; `norm_sin_sub_one`, `norm_sin_add_one`); **erratum** `dlmf_4_15_F7_not_rectangular` | `Complex.cos_arg`, `Real.cosh_arsinh` |
+| Labelled points `A`–`F`, `C̄`, `D̄`, `Ē` (`r` real) | `dlmf_4_15_F7_points`, `dlmf_4_15_F7_points_D`; the edges `Re z = ±π/2` and the sides of the cuts: `dlmf_4_15_F7_edges` (`tendsto_arcsinD_edge`) | `HasStrictDerivAt.map_nhds_eq` |
+| Figure 4.15.9 (branch cuts of `arcsin` along `(−∞, −1]`, `[1, ∞)`) | `dlmf_4_15_F9` (holomorphic off the cuts, discontinuous at `\|x\| > 1`; `arcsinD_cut_limits`) | |
+| Figure 4.15.11 (branch cuts of `arctan` along `(−i∞, −i]`, `[i, i∞)`) | `dlmf_4_15_F11` (holomorphic off the cuts, discontinuous at `iy`, `\|y\| > 1`) | `dlmf_4_2_7` (§4.2) |
+| Figure 4.15.13 (branch cut of `arccsc` along `[−1, 1]`) | `dlmf_4_15_F13` (holomorphic off `[−1, 1]`, discontinuous at `0 < \|x\| < 1`; `arccscD_cut_limits`) | |
+| 4.15.1–4.15.3 | `dlmf_4_15_1`, `dlmf_4_15_2`, `dlmf_4_15_3` | `Complex.sin_add_pi_div_two`, `Complex.cos_add_pi_div_two` |
+| Surfaces of `arccos`, `arccot`, `arcsec` "with the aid of equations (4.23.16)–(4.23.18)" | `dlmf_4_23_16`, `dlmf_4_23_17`; 4.23.18 TODO (§4.23) | |
+
+### §4.16 Elementary Properties (`Azurite/DLMF/Chapter4/Section16.lean`) — COMPLETE
+
+Notes on how the tables are stated:
+* Real `csc`, `sec` are written `1/sin`, `1/cos` (4.14.5–4.14.6), and complex ones are `cscC`, `secC` (§4.14).
+* Table 4.16.2 holds for all complex `θ`. Lean's `x/0 = 0` makes the quotient identities hold even at poles.
+* Table 4.16.3's "all square roots have their principal values when the functions are real, nonnegative, and finite" is read as the first quadrant `0 < θ < π/2`. That is where all six functions are positive and finite; elsewhere the signs follow Table 4.16.1.
+
+No errata: all 36 entries of Table 4.16.3 were checked against the proofs.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Figure 4.16.1 (quadrants) | `inQuadrant` (`(q − 1)π/2 < θ < qπ/2` modulo `2π`) | |
+| Table 4.16.1 (signs) | `dlmf_table_4_16_1` (via `sin_cos_signs_of_mem`) | `Real.sin_pos_of_pos_of_lt_pi`, `Real.cos_neg_of_pi_div_two_lt_of_lt`, `Real.sin_add_int_mul_two_pi` |
+| Table 4.16.2 (quarter periods, change of sign) | `dlmf_table_4_16_2_sin`, `_cos`, `_tan`, `_csc`, `_sec`, `_cot` (`±` as two conjuncts) | `Complex.sin_add`, `Complex.cos_sub` |
+| Table 4.16.3 (interrelations) | `dlmf_table_4_16_3_sin`, `_cos`, `_tan`, `_csc`, `_sec`, `_cot` (one per column `f(θ) = a`; `sqrt_eq_of_eq_sq`, `first_quadrant_facts`) | `Real.sqrt_sq` |
+
+### §4.17 Special Values and Limits (`Azurite/DLMF/Chapter4/Section17.lean`) — COMPLETE
+
+* Table 4.17.1 is stated over real `θ`, with `csc = 1/sin` and `sec = 1/cos`.
+* A finite row is `TrigRow θ s c t cs se ct`, in the order `sin, cos, tan, csc, sec, cot`.
+* An `∞` entry is a pole, `|f(x)| → ∞` as `x → θ` with `x ≠ θ`, transferred from the complex poles of §4.14 (`tendsto_abs_of_complex_pole`).
+* The rows `7π/12, …, 11π/12` come from `θ ↦ π − θ` (`trigRow_pi_sub`), and `5π/12` from `π/2 − θ`.
+* 4.17.1–4.17.3 are for complex `z → 0`, `z ≠ 0`.
+
+No errata: every entry of the table was checked.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Table 4.17.1, rows `0`, `π/2`, `π` (with `∞` entries) | `dlmf_table_4_17_1_0`, `dlmf_table_4_17_1_pi_div_two`, `dlmf_table_4_17_1_pi` | `dlmf_4_14_csc_poles`, `dlmf_4_14_cot_poles`, `dlmf_4_14_tan_poles`, `dlmf_4_14_sec_poles` (§4.14) |
+| Table 4.17.1, rows `π/12`, `π/6`, `π/4`, `π/3`, `5π/12` | `dlmf_table_4_17_1_pi_div_twelve` (`sin_pi_div_twelve_eq`, `cos_pi_div_twelve_eq`), `_pi_div_six`, `_pi_div_four`, `_pi_div_three`, `_five_pi_div_twelve` (`trigRow_of`) | `Real.sin_pi_div_six`, `Real.cos_pi_div_four`, `Real.sin_pi_div_three` |
+| Table 4.17.1, rows `7π/12`, `2π/3`, `3π/4`, `5π/6`, `11π/12` | `dlmf_table_4_17_1_seven_pi_div_twelve`, `_two_pi_div_three`, `_three_pi_div_four`, `_five_pi_div_six`, `_eleven_pi_div_twelve` | `Real.sin_pi_sub`, `Real.cos_pi_sub` |
+| 4.17.1–4.17.2 | `dlmf_4_17_1`, `dlmf_4_17_2` (derivative quotients at `0`) | `hasDerivAt_iff_tendsto_slope`, `Complex.hasDerivAt_tan` |
+| 4.17.3 | `dlmf_4_17_3` (`1 − cos z = 2 sin²(z/2)` and 4.17.1) | `Complex.cos_two_mul` |
+
+### §4.18 Inequalities (`Azurite/DLMF/Chapter4/Section18.lean`) — COMPLETE
+
+Conventions, none of which are errata:
+* In 4.18.3, `sin x / x` at `x = 0` means its limit `1`. The main statement uses `Real.sinc`, and a quotient form covers `0 < x ≤ π`.
+* 4.18.7 is stated for `y ≠ 0`, since `csch 0 = ∞`.
+* `csc z` is `cscC`, and `csch |y|` is `1/sinh |y|`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.18.1 (Jordan) | `dlmf_4_18_1` | `Real.mul_le_sin`, `Real.sin_le` |
+| 4.18.2 | `dlmf_4_18_2` | `Real.le_tan` |
+| 4.18.3 | `dlmf_4_18_3` (`Real.sinc`), `dlmf_4_18_3'` (`0 < x ≤ π`) | `Real.cos_le_sinc`, `Real.sinc_le_one` |
+| 4.18.4 | `dlmf_4_18_4`. DLMF's proof: `sin_pi_mul_le_four_mul` (`f′` convex since `f‴ ≥ 0`, and `f(0) = f(1/2) = 0`, by MVT and chord), `pi_mul_lt_sin_pi_mul` (`g′ > 0` via Jordan applied to `π/2 − πx`); symmetry `x ↦ 1 − x` | `MonotoneOn.convexOn_of_deriv`, `strictMonoOn_of_deriv_pos`, `exists_hasDerivAt_eq_slope`, `Real.mul_lt_sin` |
+| 4.18.5–4.18.6 | `dlmf_4_18_5`, `dlmf_4_18_6` (`\|sin z\|² = sin² x + sinh² y`, `\|cos z\|² = cos² x + sinh² y`: `norm_sin_sq_eq`, `norm_cos_sq_eq`) | `Real.cosh_sq` |
+| 4.18.7 | `dlmf_4_18_7` (`y ≠ 0`) | `Real.abs_sinh` |
+| 4.18.8 | `dlmf_4_18_8` (from 4.18.6, `\|y\| ≤ \|z\|`) | `Real.cosh_le_cosh` |
+| 4.18.9 | `dlmf_4_18_9` (Maclaurin series, `norm_sin_le_of_bound`) | `Complex.hasSum_sin`, `Real.hasSum_sinh`, `tsum_of_norm_bounded` |
+| 4.18.10 | `dlmf_4_18_10` (`cosh 1 < 2`, `\|sin z\| ≤ \|z\| sinh 1 ≤ (6/5)\|z\|`) | `Real.exp_one_lt_d9` |
+
+### §4.19 Maclaurin Series and Laurent Series (`Azurite/DLMF/Chapter4/Section19.lean`, `Section19Sec.lean`, `Section19Log.lean`) — COMPLETE
+
+* **Notation.** `B_n` is Mathlib's `bernoulli` (`B₁ = −1/2`, the DLMF convention). The DLMF index `n ≥ 1` is written `n = m + 1`, and the coefficients are rational functions of `m` (`cotCoeff`, `tanCoeff`, …).
+* **Euler numbers.** These are defined only in §24.2(ii). They are formalized from DLMF 24.2.6 as `n!` times the Taylor coefficients of `2eᵗ/(e^{2t} + 1)` (`eulerNumber`), with the expansion on `|t| < π/2` proven (`hasSum_eulerGen`).
+* **Proof route.** No generating function of `B_n` is needed. `cot` comes from the Mittag-Leffler series and `ζ(2k)`, and `tan`, `csc` from `cot` identities. The logarithms come from `∑ₖ ln(1 − u/k²)`, which is summed by `ζ(2k)`; its exponential is Euler's sine product, and its imaginary part is bounded by `π`.
+* **`z = 0`** in 4.19.7–4.19.9: both sides are `0` (Lean's `x/0 = 0`, `ln 0 = 0`; DLMF's value there is `ln 1 = 0`).
+
+No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.19.1–4.19.2 | `dlmf_4_19_1`, `dlmf_4_19_2` | `Complex.hasSum_sin`, `Complex.hasSum_cos` |
+| 4.19.6 (`0 < \|z\| < π`) | `dlmf_4_19_6`, `cotCoeff`, displayed terms `cotCoeff_values`; tools `hasSum_swap_of_summable_norm`, `hasSum_zeta_succ`, `mem_integerComplement_of_norm_lt_one` | `cot_series_rep'`, `summable_cotTerm`, `hasSum_zeta_nat`, `HasSum.prod_fiberwise` |
+| 4.19.3 (`\|z\| < π/2`) | `dlmf_4_19_3` (`tan z = cot z − 2 cot 2z`), `tanCoeff`, `tanCoeff_values` (`bernoulli_values`, with `bernoulli'_six`/`_eight` from §3.5) | `bernoulli'_four` |
+| 4.19.4 (`0 < \|z\| < π`) | `dlmf_4_19_4` (`csc z = cot(z/2) − cot z`), `cscCoeff`, `cscCoeff_values` | |
+| 4.19.5 (`\|z\| < π/2`) | `eulerGen`, `eulerNumber` (DLMF 24.2.6), `hasSum_eulerGen`, `eulerNumber_odd`, `eulerNumber_rec` (Leibniz on `eulerGen · cosh = 1`), `eulerNumber_values` (`E₂ = −1`, `E₄ = 5`, `E₆ = −61`), `dlmf_4_19_5`, `secCoeff_values` | `Complex.hasSum_taylorSeries_on_ball`, `iteratedDeriv_mul`, `iteratedDeriv_comp_neg`, `Complex.iteratedDeriv_even_cosh` |
+| 4.19.7 (`\|z\| < π`) | `logSinSum`, `logSinSum_hasSum` (double series over `k`, `n`; `hasSum_rows_cols`), `exp_logSinSum` (Euler product), `abs_im_logSinSum_lt`, `log_sin_div_eq`, `dlmf_4_19_7`, `logSinCoeff` | `euler_sineTerm_tprod`, `HasSum.cexp`, `hasSum_taylorSeries_log`, `norm_log_one_add_half_le_self`, `hasSum_zeta_two` |
+| 4.19.8 (`\|z\| < π/2`) | `dlmf_4_19_8` (`cos z = (sin 2z/2z)/(sin z/z)`, branch from `\|arg cos z\| < π/2`, `abs_im_logSinSum_lt_half`), `logCosCoeff` | `Complex.exp_eq_exp_iff_exists_int`, `Complex.abs_arg_lt_pi_div_two_iff` |
+| 4.19.9 (`\|z\| < π/2`) | `dlmf_4_19_9` (`ln(sin z/z) − ln cos z`), `logTanCoeff` | `Complex.log_exp` |
+
+### §4.20 Derivatives and Differential Equations (`Azurite/DLMF/Chapter4/Section20.lean`) — COMPLETE
+
+* The derivatives of `tan`, `csc`, `sec`, `cot` are stated away from their poles, with `csc` as `cscC` and `sec` as `secC` (§4.14).
+* The differential equations are solved on a domain `D` (open and preconnected) for holomorphic `w`, with `deriv`.
+
+**Imprecision (errata):** 4.20.13–4.20.14 omit the singular solutions `±1/a` and `±i/a`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.20.1–4.20.6 | `dlmf_4_20_1`, …, `dlmf_4_20_6` | `Complex.hasDerivAt_sin`, `Complex.hasDerivAt_tan`, `HasDerivAt.div` |
+| 4.20.7–4.20.8 | `dlmf_4_20_7`, `dlmf_4_20_8` (induction) | `iteratedDeriv_succ`, `Complex.sin_add_pi_div_two` |
+| 4.20.9, 4.20.12 | `dlmf_4_20_12` (`w cos(az) − w′ sin(az)/a` and `w sin(az) + w′ cos(az)/a` are constant) | `IsOpen.exists_is_const_of_deriv_eq_zero`, `DifferentiableOn.deriv` |
+| 4.20.10, 4.20.13 | `dlmf_4_20_13` (`w′(w″ + a²w) = 0`, `mul_eq_zero_dichotomy`; the constant `c` from `e^{ic} = aB + i aA`), `dlmf_4_20_13_singular` | `AnalyticOnNhd.eqOn_zero_of_preconnected_of_eventuallyEq_zero` |
+| 4.20.11, 4.20.14 | `dlmf_4_20_14` (`p = aw`. If `p` reaches `±i` then it is constant, by `zero_propagation_of_deriv_eq_mul`, which uses a local primitive on a disc. Otherwise `g = (p − i)/(p + i)` solves `g′ = 2ia g`, so `g = C e^{2iaz}` by `dlmf_4_7_13`.), `dlmf_4_20_14_singular` | `DifferentiableOn.isExactOn_ball` |
+
+### §4.21 Identities (`Azurite/DLMF/Chapter4/Section21.lean`) — §4.21(i) COMPLETE; §4.21(ii)–(iv) TODO
+
+* Each `±` is stated as two conjuncts.
+* `tan`/`cot` identities are stated where the needed `cos`/`sin` are nonzero.
+* `ph` is `Complex.arg`.
+
+No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.21.1 | `dlmf_4_21_1` | `Real.cos_pi_div_four`, `Real.sin_pi_div_four` |
+| 4.21.1_5 (`A, B ∈ ℝ`) | `dlmf_4_21_1_5` | `Complex.cos_arg`, `Complex.sin_arg`, `Complex.norm_add_mul_I` |
+| 4.21.2–4.21.3 | `dlmf_4_21_2`, `dlmf_4_21_3` | `Complex.sin_add`, `Complex.cos_sub` |
+| 4.21.4–4.21.5 | `dlmf_4_21_4` (`cos u, cos v ≠ 0`), `dlmf_4_21_5` (`sin u, sin v ≠ 0`) | `div_div_div_cancel_right₀` |
+| 4.21.6–4.21.9 | `dlmf_4_21_6`, …, `dlmf_4_21_9` (`half_sum_diff`) | |
+| 4.21.10–4.21.11 | `dlmf_4_21_10`, `dlmf_4_21_11` | |

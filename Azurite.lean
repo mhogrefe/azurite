@@ -2044,7 +2044,17 @@ import Azurite.DLMF.Chapter4.Section13Series
 import Azurite.DLMF.Chapter4.Section13SeriesD
 import Azurite.DLMF.Chapter4.Section13Taylor
 import Azurite.DLMF.Chapter4.Section13Zero
+import Azurite.DLMF.Chapter4.Section14
+import Azurite.DLMF.Chapter4.Section15
+import Azurite.DLMF.Chapter4.Section16
+import Azurite.DLMF.Chapter4.Section17
+import Azurite.DLMF.Chapter4.Section18
+import Azurite.DLMF.Chapter4.Section19
+import Azurite.DLMF.Chapter4.Section19Log
+import Azurite.DLMF.Chapter4.Section19Sec
 import Azurite.DLMF.Chapter4.Section2
+import Azurite.DLMF.Chapter4.Section20
+import Azurite.DLMF.Chapter4.Section21
 import Azurite.DLMF.Chapter4.Section2Base
 import Azurite.DLMF.Chapter4.Section2Exp
 import Azurite.DLMF.Chapter4.Section2Pow
