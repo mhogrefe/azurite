@@ -3744,6 +3744,46 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   *is* the AGM.  Against the 2026-10-19 binary, `ln 10` at 20000 bits went `97.2 → 27.0` ms
   (`3.6×`) and at 53 bits `0.418 → 0.119` (`3.5×`) over the three steps of this arc.
 
+* **The series path for low precision (2026-11-08, UNTIMED, UNTUNED).**  Below
+  `lnSeriesThreshold` (initially `512` bits of working precision, i.e. `p ≤ 448`) the bracket
+  of `ln x` is computed by DLMF's own recipe (4.45.1–4.45.2 and 4.6.4) instead of the AGM
+  (`lnSeriesBracket` in `LnBracket.lean`; the AGM body is now `lnAgmBracket`, and
+  `lnBracketCore`/`lnBracket` dispatch — `lnBracket_eq_core`; `LnConsts.make` computes the
+  bracket of `π` only above the threshold, `pi_eq` is conditional):
+  `x = m₀ 2^ℓ` with `m₀ ∈ [1, 2)`, `ℓ = e − 1` (an exact shift); `k = lnSeriesK w = ⌊lg w⌋ − 3`
+  rounded-down square roots, each clamped at `1` (`lnSqrtIter`; the clamp is a no-op on the
+  value, `√y ≥ 1`, and saves a lemma); `t = ⌊⌊y − 1⌋/⌈y + 1⌉⌋_w`; `J = lnSeriesTerms k w =
+  ⌊(w+1)/(2(k+1))⌋ + 1` terms of `Σ t^(2j+1)/(2j+1)` with one rounded-down product, one
+  rounded-down division by the small integer `2j + 1` and one rounded-down addition per term
+  (`lnSeriesLoop`, structural recursion on `J`); `A = 2^(k+1) s` (exact shift),
+  `E = (20J + 18) 2^(k−w)` (exact float); `± ℓ ln 2` from the bracket of `ln 2` exactly as in the
+  AGM path.  **Error analysis** (`Equiv/LnBracket.lean`, all a priori, nothing adaptive):
+  `lnSqrtIter_spec` — with `L = ln m₀`, after `i` roots `1 ≤ y`, `L/2^i − 6u ≤ ln y ≤ L/2^i`
+  (one rounded-down root halves the error and adds `−ln(1 − 2u) ≤ 3u`, so the slack stays
+  below `6u`); the computed `t` satisfies `t(1 − 8u) ≤ t_c ≤ t`; `log_atanh_series_bounds`
+  (DLMF 4.6.4 from `Real.hasSum_log_sub_log_of_abs_lt_one`): `2 S_J ≤ ln((1+t)/(1−t)) ≤ 2 S_J +
+  (8/3) t^(2J+1)` for `t ≤ 1/2`; `t ≤ ln y / 2 ≤ 2^(−k−1)` (first term of the series), so with
+  `(k+1)(2J+1) ≥ w+1` (`lnSeriesTerms_spec`) the tail is `≤ (4/3) u`; `lnSeriesLoop_spec` —
+  relative invariants `t^(2j+1)(1 − (8 + 20j)u) ≤ p_j ≤ t^(2j+1)` and
+  `S_j(1 − (10 + 20j)u) ≤ s_j ≤ S_j` (every rounded-down operation multiplies by `≥ 1 − 2u`,
+  `t²` carries `1 − 18u`, and `(1−a)(1−b) ≥ 1 − a − b`); altogether `A ≤ L ≤ A + 2^k((10 + 20J)u
+  + (4/3)u + 6u) ≤ A + E`; `lnSeries_final_bounds` turns the `O(W²)u` slacks (`2^k ≤ w`, `J ≤ w`,
+  `W = w + |e| + 8`) into `lnEps e w = 2^40 W^5 u`, so `lnSeriesBracket_spec` has the same
+  conclusion as `lnAgmBracket_spec` and everything downstream (`lnBracket_spec`,
+  `lnBracketWith_spec`, the Ziv certificates, `lnRat`, `lnP1`, the `log` family) is untouched.
+  Cost model: `k` square roots (each a Newton `rsqrt`, `≈ 2–3` products) plus `J ≈ w/(2(k+1))`
+  terms at `≈ 1.3` products, against `(2⌈lg(w/2 + 4)⌉ + 3)` AGM steps at `≈ 4` products
+  (`sqrt + mul + 2 add`): at `w = 117` roughly `3 + 15·1.3 ≈ 23` versus `≈ 90`, at `w = 1064`
+  roughly `130` versus `92` — the crossover should be near `w ≈ 500–700`; `lnSeriesK`,
+  `lnSeriesTerms` and `lnSeriesThreshold` are the knobs (`az_float_ln` has the columns `serBr`
+  and `agmBr`, both paths with precomputed constants, for the tuning).  Not done: adaptive
+  stopping of the series (a priori `J` is pessimistic for `x` near `1`), the symmetric range
+  `m₀ ∈ [1/√2, √2)` (halves `t` for free), and the `ln 2`-free variant for small `|e|`.  Also
+  moved `maxOf`/`minOf` (+ `toVal_maxOf`/`toVal_minOf`) from `LogBaseFloatBracket` to
+  `Compare`/`Equiv/Compare` for the clamp.  The only kernel-checked datum on `lnBracket` at
+  `w ≤ 512`, `e45HalfLn10_data` (`DLMF/Chapter4/Section45Numerics.lean`), was recomputed.
+  Benchmark pending (machine not quiet).
+
 ## `ln` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
 
 Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.lean`; the bracket

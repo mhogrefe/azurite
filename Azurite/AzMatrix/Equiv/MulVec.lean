@@ -78,8 +78,8 @@ theorem AzMatrix.ofFn_vecMul (g : Fin m → R) (f : Fin m → Fin n → R) :
 private def testM : AzMatrix AzInt 2 2 := AzMatrix.ofLists [[1, 2], [3, 4]]
 private def testV : AzVector AzInt 2 := AzVector.ofList [5, 6]
 
-#guard toString (testM.mulVec testV) = "[17, 39]"
+#guard toString (testM.mulVec testV) = "(17, 39)"
 
-#guard toString (testM.vecMul testV) = "[23, 34]"
+#guard toString (testM.vecMul testV) = "(23, 34)"
 
 end Azurite

@@ -73,4 +73,10 @@ def gt (x y : AzFloat) : Bool := partialCompare x y == some .gt
 /-- `x ≥ y` on values, `false` whenever a `NaN` is involved. -/
 def ge (x y : AzFloat) : Bool := partialCompare x y != some .lt && partialCompare x y != none
 
+/-- The larger of two floats by value (`x` when they are not comparable). -/
+def maxOf (x y : AzFloat) : AzFloat := if partialCompare x y == some .lt then y else x
+
+/-- The smaller of two floats by value (`x` when they are not comparable). -/
+def minOf (x y : AzFloat) : AzFloat := if partialCompare y x == some .lt then y else x
+
 end Azurite.AzFloat

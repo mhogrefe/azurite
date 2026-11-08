@@ -43,22 +43,22 @@ def AzVector.gramSchmidt (vs : List (AzVector R n)) : List (AzVector R n) :=
 /-! ### Sanity checks (over `AzRat`), via `parseStr`/`toString` -/
 
 -- Parsing round-trips through `toString`.
-#guard (AzVector.parseStr (R := AzRat) (n := 2) "[1, 1]").map toString = some "[1, 1]"
+#guard (AzVector.parseStr (R := AzRat) (n := 2) "(1, 1)").map toString = some "(1, 1)"
 
 -- Gram–Schmidt of `(1, 1)` and `(2, 0)` yields the orthogonal `(1, 1)`, `(1, -1)`.
 #guard
   (do
-    let v₀ ← AzVector.parseStr (R := AzRat) (n := 2) "[1, 1]"
-    let v₁ ← AzVector.parseStr (R := AzRat) (n := 2) "[2, 0]"
-    pure ((AzVector.gramSchmidt [v₀, v₁]).map toString)) = some ["[1, 1]", "[1, -1]"]
+    let v₀ ← AzVector.parseStr (R := AzRat) (n := 2) "(1, 1)"
+    let v₁ ← AzVector.parseStr (R := AzRat) (n := 2) "(2, 0)"
+    pure ((AzVector.gramSchmidt [v₀, v₁]).map toString)) = some ["(1, 1)", "(1, -1)"]
 
 -- A 3-vector example exercising the rational arithmetic.
 #guard
   (do
-    let v₀ ← AzVector.parseStr (R := AzRat) (n := 3) "[1, 1, 0]"
-    let v₁ ← AzVector.parseStr (R := AzRat) (n := 3) "[1, 0, 1]"
-    let v₂ ← AzVector.parseStr (R := AzRat) (n := 3) "[0, 1, 1]"
+    let v₀ ← AzVector.parseStr (R := AzRat) (n := 3) "(1, 1, 0)"
+    let v₁ ← AzVector.parseStr (R := AzRat) (n := 3) "(1, 0, 1)"
+    let v₂ ← AzVector.parseStr (R := AzRat) (n := 3) "(0, 1, 1)"
     pure ((AzVector.gramSchmidt [v₀, v₁, v₂]).map toString)) =
-      some ["[1, 1, 0]", "[1/2, -1/2, 1]", "[-2/3, 2/3, 2/3]"]
+      some ["(1, 1, 0)", "(1/2, -1/2, 1)", "(-2/3, 2/3, 2/3)"]
 
 end Azurite

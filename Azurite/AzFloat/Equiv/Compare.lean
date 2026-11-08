@@ -233,4 +233,30 @@ theorem eqIEEE_iff (x y : AzFloat) :
       · rintro ⟨v, hv, hv'⟩
         rw [hv, hv']
 
+/-! ### `maxOf`, `minOf` -/
+
+theorem toVal_maxOf {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hy : y.toVal = some (yv : EReal)) : (maxOf x y).toVal = some ((max xv yv : ℝ) : EReal) := by
+  unfold maxOf
+  rw [partialCompare_eq, hx, hy]
+  simp only [compare_coe_coe, beq_iff_eq, Option.some.injEq]
+  split_ifs with h
+  · rw [compare_lt_iff_lt] at h
+    rw [hy, max_eq_right h.le]
+  · rw [compare_lt_iff_lt] at h
+    push Not at h
+    rw [hx, max_eq_left h]
+
+theorem toVal_minOf {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hy : y.toVal = some (yv : EReal)) : (minOf x y).toVal = some ((min xv yv : ℝ) : EReal) := by
+  unfold minOf
+  rw [partialCompare_eq, hx, hy]
+  simp only [compare_coe_coe, beq_iff_eq, Option.some.injEq]
+  split_ifs with h
+  · rw [compare_lt_iff_lt] at h
+    rw [hy, min_eq_right h.le]
+  · rw [compare_lt_iff_lt] at h
+    push Not at h
+    rw [hx, min_eq_left h]
+
 end Azurite.AzFloat

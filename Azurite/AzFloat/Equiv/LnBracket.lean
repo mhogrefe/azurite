@@ -30,10 +30,17 @@ import Azurite.Transcendental.Exp
   `b_S ≤ AGM(1, k) ≤ ⌈a_S + δ⌉_w`.
 * `agm_log_gap`: after `lnSteps w` steps from `(1, k)`, `k ≥ 2^(−2h)`, the gap is at most
   `8 · 2^(−5h)` (`agm_log_iterations`, then two quadratic steps).
-* `lnBracket_spec`: for a positive float `x` with exponent `e`, `lnBracket x e w` encloses
-  `ln x` with width at most `lnEps e w = 2^40 (w + |e| + 8)^5 2^(−w)` (`w ≥ 64`), using
-  `abs_pi_div_AGM_sub_log_le` (MCA's AGM–logarithm error), `piBracket_spec` and `ln2Bracket_spec`
-  (the term `ℓ ln 2`, `ln_L_spec`).
+* `lnAgmBracket_spec`: for a positive float `x` with exponent `e`, `lnAgmBracket pb lb x e w`
+  encloses `ln x` with width at most `lnEps e w = 2^40 (w + |e| + 8)^5 2^(−w)` (`w ≥ 64`), for
+  any brackets `pb` of `π` and `lb` of `ln 2` fit for `w` (`PiBracketFor`, `Ln2BracketFor`),
+  using `abs_pi_div_AGM_sub_log_le` (MCA's AGM–logarithm error) and `ln_L_spec` (the term
+  `ℓ ln 2`).
+* The series path: `log_atanh_series_bounds` (DLMF 4.6.4, `2 S_J ≤ ln((1+t)/(1−t)) ≤ 2 S_J +
+  (8/3) t^(2J+1)`), `lnSqrtIter_spec` (the rounded-down roots lose at most `6 · 2^(−w)` in
+  `ln`), `lnSeriesLoop_spec` (relative invariants of the rounded-down sum and power),
+  `lnSeries_final_bounds`, and `lnSeriesBracket_spec` with the same conclusion.
+* `lnBracketCore_spec`, `lnBracket_eq_core`, `lnBracket_spec`, `lnBracketWith_spec`: the
+  dispatcher and its instances (`piBracket w`, `ln2Bracket w`, or an `LnConsts`).
 * `lnApprox_isSome_exists`: the Ziv certificate, from `irrational_log_rat`.
 * `lnFloorApprox_spec`: `ln` of a float `y ≤ q ≤ y (1 + 2·2^(−w))`, the upper end widened by
   `2^(2−w) ≥ ln (q/y)`, encloses `ln q` with width `≤ lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2 ≥
@@ -858,13 +865,13 @@ theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat} (hlb : Ln2
 /-! ### The bracket -/
 
 set_option maxHeartbeats 400000 in
-/-- `lnBracketCore pb lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+/-- `lnAgmBracket pb lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
 any brackets `pb` of `π` and `lb` of `ln 2` fit for `w`. -/
-theorem lnBracketCore_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat}
+theorem lnAgmBracket_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat}
     (hpb : PiBracketFor w pb) (hlb : Ln2BracketFor w lb) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) :
-    ∃ lv hv' : ℝ, (lnBracketCore pb lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
-      (lnBracketCore pb lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+    ∃ lv hv' : ℝ, (lnAgmBracket pb lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnAgmBracket pb lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
       lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
       hv' - lv ≤ lnEps e.toInt w := by
   have : NeZero w := ⟨by omega⟩
@@ -961,7 +968,7 @@ theorem lnBracketCore_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat
   -- `ℓ ln 2`
   obtain ⟨LLo, LHi, hLLo, hLHi, hL1, hL2, hLw, hLLo_abs, hLHi_abs⟩ := ln_L_spec hw hlb ℓ
   -- the final combination
-  simp only [lnBracketCore]
+  simp only [lnAgmBracket]
   rw [← hh_def, hS_eq, ← hℓ, ← heps]
   obtain ⟨lo1, hlo1, hlo1a, hlo1b⟩ := subFloor_abs hqLo hE w
   obtain ⟨lo, hlo, hloa, hlob⟩ := subFloor_abs hlo1 hLHi w
@@ -997,14 +1004,611 @@ theorem lnBracketCore_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat
       hblM hMah hbllo hah2 hwidth hpl0 hplπ hπph hpw hfq hcq hEv0 hEv_le hLw hLLo_abs
       hLHi_abs hlo1a hlo1b hlob hhi1a hhi1b hhib
 
+/-! ### The series path -/
+
+theorem one_sub_mul_two {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) : 1 - a - b ≤ (1 - a) * (1 - b) := by
+  nlinarith [mul_nonneg ha hb]
+
+theorem one_sub_mul_three {a b c : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) (hc1 : c ≤ 1) :
+    1 - a - b - c ≤ (1 - a) * (1 - b) * (1 - c) := by
+  nlinarith [mul_nonneg ha hb, mul_nonneg hb hc, mul_nonneg ha hc,
+    mul_nonneg (mul_nonneg ha hb) (sub_nonneg.mpr hc1)]
+
+/-- `(k + 1)(2J + 1) ≥ w + 1` for `J = lnSeriesTerms k w`. -/
+theorem lnSeriesTerms_spec (k w : ℕ) : w + 1 ≤ (k + 1) * (2 * lnSeriesTerms k w + 1) := by
+  unfold lnSeriesTerms
+  have h1 := Nat.div_add_mod (w + 1) (2 * (k + 1))
+  have h2 := Nat.mod_lt (w + 1) (show 0 < 2 * (k + 1) by omega)
+  nlinarith
+
+theorem lnSeriesTerms_le {k w : ℕ} (hw : 3 ≤ w) : lnSeriesTerms k w ≤ w := by
+  unfold lnSeriesTerms
+  have := Nat.div_le_div_left (a := w + 1) (show 2 ≤ 2 * (k + 1) by omega) two_pos
+  omega
+
+theorem two_pow_lnSeriesK_le {w : ℕ} (hw : 1 ≤ w) : 2 ^ lnSeriesK w ≤ w :=
+  (Nat.pow_le_pow_right two_pos (Nat.sub_le _ _)).trans (Nat.pow_log_le_self 2 (by omega))
+
+/-- The partial sums of the series `Σ t^(2j+1)/(2j+1)` (DLMF 4.6.4 without the factor `2`). -/
+noncomputable def lnSeriesPartial (t : ℝ) (J : ℕ) : ℝ :=
+  ∑ j ∈ Finset.range J, t ^ (2 * j + 1) / (2 * j + 1)
+
+theorem lnSeriesPartial_zero (t : ℝ) : lnSeriesPartial t 0 = 0 := by simp [lnSeriesPartial]
+
+theorem lnSeriesPartial_succ (t : ℝ) (j : ℕ) :
+    lnSeriesPartial t (j + 1) = lnSeriesPartial t j + t ^ (2 * j + 1) / (2 * j + 1) := by
+  unfold lnSeriesPartial; rw [Finset.sum_range_succ]
+
+theorem lnSeriesPartial_nonneg {t : ℝ} (ht : 0 ≤ t) (J : ℕ) : 0 ≤ lnSeriesPartial t J :=
+  Finset.sum_nonneg fun j _ => by positivity
+
+/-- **DLMF 4.6.4** as needed here: `ln((1+t)/(1−t)) = 2 Σ t^(2j+1)/(2j+1)`; for `0 ≤ t ≤ 1/2`,
+`J` terms give a lower bound and leave a tail of at most `(8/3) t^(2J+1)`. -/
+theorem log_atanh_series_bounds {t : ℝ} (ht0 : 0 ≤ t) (ht : t ≤ 1 / 2) (J : ℕ) :
+    2 * lnSeriesPartial t J ≤ Real.log ((1 + t) / (1 - t)) ∧
+      Real.log ((1 + t) / (1 - t)) ≤ 2 * lnSeriesPartial t J + 8 / 3 * t ^ (2 * J + 1) := by
+  have habs : |t| < 1 := by rw [abs_of_nonneg ht0]; linarith
+  have hs := Real.hasSum_log_sub_log_of_abs_lt_one habs
+  have hlog : Real.log ((1 + t) / (1 - t)) = Real.log (1 + t) - Real.log (1 - t) :=
+    Real.log_div (by linarith) (by linarith)
+  rw [hlog]
+  have hf0 : ∀ k : ℕ, 0 ≤ 2 * (1 / (2 * (k : ℝ) + 1)) * t ^ (2 * k + 1) := fun k => by positivity
+  have hsum_eq : ∀ J, ∑ j ∈ Finset.range J, 2 * (1 / (2 * (j : ℝ) + 1)) * t ^ (2 * j + 1)
+      = 2 * lnSeriesPartial t J := by
+    intro J
+    unfold lnSeriesPartial
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    ring
+  constructor
+  · rw [← hsum_eq]
+    exact sum_le_hasSum (Finset.range J) (fun i _ => hf0 i) hs
+  · rw [← hsum_eq, ← hs.tsum_eq, ← hs.summable.sum_add_tsum_nat_add J]
+    have ht2 : t ^ 2 < 1 := by nlinarith
+    have hg : ∀ i : ℕ, 2 * (1 / (2 * ((i + J : ℕ) : ℝ) + 1)) * t ^ (2 * (i + J) + 1)
+        ≤ 2 * t ^ (2 * J + 1) * (t ^ 2) ^ i := by
+      intro i
+      have h1 : (1 : ℝ) / (2 * ((i + J : ℕ) : ℝ) + 1) ≤ 1 := by
+        rw [div_le_one (by positivity)]
+        have : (0 : ℝ) ≤ ((i + J : ℕ) : ℝ) := Nat.cast_nonneg _
+        linarith
+      have h2 : t ^ (2 * (i + J) + 1) = t ^ (2 * J + 1) * (t ^ 2) ^ i := by
+        rw [← pow_mul, ← pow_add]; congr 1; ring
+      rw [h2]
+      have h3 : 0 ≤ t ^ (2 * J + 1) * (t ^ 2) ^ i := by positivity
+      calc 2 * (1 / (2 * ((i + J : ℕ) : ℝ) + 1)) * (t ^ (2 * J + 1) * (t ^ 2) ^ i)
+          ≤ 2 * 1 * (t ^ (2 * J + 1) * (t ^ 2) ^ i) := by gcongr
+        _ = 2 * t ^ (2 * J + 1) * (t ^ 2) ^ i := by ring
+    have hsumm : Summable fun i : ℕ =>
+        2 * (1 / (2 * ((i + J : ℕ) : ℝ) + 1)) * t ^ (2 * (i + J) + 1) :=
+      (summable_nat_add_iff J).mpr hs.summable
+    have hgeo : Summable fun i : ℕ => 2 * t ^ (2 * J + 1) * (t ^ 2) ^ i :=
+      (summable_geometric_of_lt_one (by positivity) ht2).mul_left _
+    have htail : ∑' i : ℕ, 2 * (1 / (2 * ((i + J : ℕ) : ℝ) + 1)) * t ^ (2 * (i + J) + 1)
+        ≤ 8 / 3 * t ^ (2 * J + 1) := by
+      calc ∑' i : ℕ, 2 * (1 / (2 * ((i + J : ℕ) : ℝ) + 1)) * t ^ (2 * (i + J) + 1)
+          ≤ ∑' i : ℕ, 2 * t ^ (2 * J + 1) * (t ^ 2) ^ i := Summable.tsum_le_tsum hg hsumm hgeo
+        _ = 2 * t ^ (2 * J + 1) * (1 - t ^ 2)⁻¹ := by
+            rw [tsum_mul_left, tsum_geometric_of_lt_one (by positivity) ht2]
+        _ ≤ 8 / 3 * t ^ (2 * J + 1) := by
+            have h34 : (1 - t ^ 2)⁻¹ ≤ 4 / 3 := by
+              rw [inv_le_comm₀ (by nlinarith) (by norm_num)]; nlinarith
+            have : 0 ≤ t ^ (2 * J + 1) := by positivity
+            nlinarith
+    linarith
+
+/-- The square-root reduction: with `L = ln m₀`, after `k` further roots from a value `y` with
+`1 ≤ y`, `L/2^i − 6u ≤ ln y ≤ L/2^i`, the result `z` has `1 ≤ z` and
+`L/2^(i+k) − 6u ≤ ln z ≤ L/2^(i+k)` (`u = 2^(−w)`). -/
+theorem lnSqrtIter_spec {w : ℕ} (hw : 64 ≤ w) (L : ℝ) (k : ℕ) :
+    ∀ (i : ℕ) (y : AzFloat) (yv : ℝ), y.toVal = some (yv : EReal) → 1 ≤ yv →
+      Real.log yv ≤ L / 2 ^ i → L / 2 ^ i - 6 * (1 / 2 : ℝ) ^ w ≤ Real.log yv →
+      ∃ zv : ℝ, (lnSqrtIter w k y).toVal = some (zv : EReal) ∧ 1 ≤ zv ∧
+        Real.log zv ≤ L / 2 ^ (i + k) ∧ L / 2 ^ (i + k) - 6 * (1 / 2 : ℝ) ^ w ≤ Real.log zv := by
+  induction k with
+  | zero =>
+    intro i y yv hy h1 h2 h3
+    exact ⟨yv, hy, h1, by simpa using h2, by simpa using h3⟩
+  | succ k ih =>
+    intro i y yv hy h1 h2 h3
+    have : NeZero w := ⟨by omega⟩
+    obtain ⟨u, hu_def⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+    have hu0 : 0 < u := by rw [hu_def]; positivity
+    have hu6 : 6 * u ≤ 1 / 2 := by
+      have : u ≤ (1 / 2 : ℝ) ^ 64 := by
+        rw [hu_def]; exact pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+      have : (1 / 2 : ℝ) ^ 64 ≤ 1 / 12 := by norm_num
+      linarith
+    rw [← hu_def] at h3
+    have hy0 : 0 < yv := by linarith
+    obtain ⟨r, hr, hfr⟩ := sqrtFloor_err hy hy0.le w
+    have hsq1 : 1 ≤ Real.sqrt yv := Real.one_le_sqrt.mpr h1
+    have hsq0 : 0 < Real.sqrt yv := by linarith
+    have hz : (maxOf (sqrtPrecRound y w .Floor).1 one).toVal = some ((max r 1 : ℝ) : EReal) :=
+      toVal_maxOf hr toVal_one'
+    have hz1 : 1 ≤ max r 1 := le_max_right _ _
+    have hzle : max r 1 ≤ Real.sqrt yv := max_le hfr.le hsq1
+    have hpow : L / 2 ^ (i + 1) = L / 2 ^ i / 2 := by rw [pow_succ, div_div]
+    have hlog_le : Real.log (max r 1) ≤ L / 2 ^ (i + 1) := by
+      rw [hpow]
+      calc Real.log (max r 1) ≤ Real.log (Real.sqrt yv) :=
+            Real.log_le_log (by linarith) hzle
+        _ = Real.log yv / 2 := Real.log_sqrt hy0.le
+        _ ≤ L / 2 ^ i / 2 := by linarith
+    have hr_ge : Real.sqrt yv * (1 - 2 * u) ≤ r := by
+      have := hfr.ge
+      rw [← hu_def] at this
+      linarith
+    have hlog_ge : L / 2 ^ (i + 1) - 6 * u ≤ Real.log (max r 1) := by
+      have hpos : 0 < Real.sqrt yv * (1 - 2 * u) := by
+        apply mul_pos hsq0; linarith
+      have h1' : Real.log (Real.sqrt yv * (1 - 2 * u)) ≤ Real.log (max r 1) :=
+        Real.log_le_log hpos (hr_ge.trans (le_max_left _ _))
+      rw [Real.log_mul hsq0.ne' (by linarith), Real.log_sqrt hy0.le] at h1'
+      have hl2 : -(3 * u) ≤ Real.log (1 - 2 * u) := by
+        have h := Real.one_sub_inv_le_log_of_pos (x := 1 - 2 * u) (by linarith)
+        have : (1 - 2 * u)⁻¹ ≤ 1 + 3 * u := by
+          rw [inv_le_iff_one_le_mul₀ (by linarith)]; nlinarith
+        linarith
+      rw [hpow]
+      linarith
+    obtain ⟨zv, hzv, hzv1, hzv2, hzv3⟩ := ih (i + 1) _ (max r 1) hz hz1 hlog_le (by
+      rw [hu_def] at hlog_ge; exact hlog_ge)
+    refine ⟨zv, ?_, hzv1, ?_, ?_⟩
+    · simpa [lnSqrtIter] using hzv
+    · rwa [show i + (k + 1) = i + 1 + k by omega]
+    · rwa [show i + (k + 1) = i + 1 + k by omega]
+
+/-- The invariant of `lnSeriesLoop`: with `S_j = Σ_{i<j} t^(2i+1)/(2i+1)` and `u = 2^(−w)`, the
+computed sum `s` and power `p` satisfy `S_j (1 − (10 + 20j)u) ≤ s ≤ S_j` and
+`t^(2j+1) (1 − (8 + 20j)u) ≤ p ≤ t^(2j+1)`. -/
+theorem lnSeriesLoop_spec {w : ℕ} (hw : 64 ≤ w) {t : ℝ} (ht0 : 0 ≤ t)
+    {t2 : AzFloat} {t2v : ℝ} (ht2 : t2.toVal = some (t2v : EReal)) (ht2le : t2v ≤ t ^ 2)
+    (ht2ge : t ^ 2 * (1 - 18 * (1 / 2 : ℝ) ^ w) ≤ t2v) (n : ℕ) :
+    ∀ (j : ℕ) (s p : AzFloat) (sv pv : ℝ), j + n ≤ w →
+      s.toVal = some (sv : EReal) → p.toVal = some (pv : EReal) →
+      0 ≤ sv → sv ≤ lnSeriesPartial t j →
+      lnSeriesPartial t j * (1 - (10 + 20 * j) * (1 / 2 : ℝ) ^ w) ≤ sv →
+      0 ≤ pv → pv ≤ t ^ (2 * j + 1) → t ^ (2 * j + 1) * (1 - (8 + 20 * j) * (1 / 2 : ℝ) ^ w) ≤ pv →
+      ∃ sv' pv' : ℝ, (lnSeriesLoop w t2 n j (s, p)).1.toVal = some (sv' : EReal) ∧
+        (lnSeriesLoop w t2 n j (s, p)).2.toVal = some (pv' : EReal) ∧
+        0 ≤ sv' ∧ sv' ≤ lnSeriesPartial t (j + n) ∧
+        lnSeriesPartial t (j + n) * (1 - (10 + 20 * ((j + n : ℕ) : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ sv' ∧
+        0 ≤ pv' ∧ pv' ≤ t ^ (2 * (j + n) + 1) ∧
+        t ^ (2 * (j + n) + 1) * (1 - (8 + 20 * ((j + n : ℕ) : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ pv' := by
+  induction n with
+  | zero =>
+    intro j s p sv pv _ hs hp hs0 hs1 hs2 hp0 hp1 hp2
+    exact ⟨sv, pv, hs, hp, hs0, by simpa using hs1, by simpa using hs2, hp0, by simpa using hp1,
+      by simpa using hp2⟩
+  | succ n ih =>
+    intro j s p sv pv hjn hs hp hs0 hs1 hs2 hp0 hp1 hp2
+    have : NeZero w := ⟨by omega⟩
+    obtain ⟨u, hu_def⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+    have hu0 : 0 < u := by rw [hu_def]; positivity
+    have hwu : (w : ℝ) * u ≤ (1 / 2 : ℝ) ^ 32 := by rw [hu_def]; exact mul_half_pow_le hw
+    have hwu' : 28 * ((w : ℝ) * u) ≤ 1 := by
+      have : (1 / 2 : ℝ) ^ 32 ≤ 1 / 28 := by norm_num
+      linarith
+    have hju : ((j : ℝ) + 1) * u ≤ (w : ℝ) * u := by
+      have : ((j : ℝ) + 1) ≤ w := by exact_mod_cast (show j + 1 ≤ w by omega)
+      exact mul_le_mul_of_nonneg_right this hu0.le
+    rw [← hu_def] at hs2 hp2 ht2ge
+    set α := (8 + 20 * (j : ℝ)) * u with hα
+    set β := (10 + 20 * (j : ℝ)) * u with hβ
+    have hα0 : 0 ≤ α := by positivity
+    have hα1 : α ≤ 1 := by rw [hα]; nlinarith
+    have hβα : β = α + 2 * u := by rw [hα, hβ]; ring
+    have h2u : 0 ≤ 1 - 2 * u := by nlinarith
+    have hT0 : 0 ≤ t ^ (2 * j + 1) / (2 * j + 1) := by positivity
+    have hpow0 : 0 ≤ t ^ (2 * j + 1) := by positivity
+    have ht2v0 : 0 ≤ t2v := by
+      refine le_trans ?_ ht2ge
+      apply mul_nonneg (by positivity); nlinarith
+    -- the term
+    have hd : (ofAzNat (AzNat.ofNat (2 * j + 1))).toVal = some ((((2 * j + 1 : ℕ) : ℝ)) : EReal) :=
+      toVal_ofAzNat_ofNat _
+    have hdpos : (0 : ℝ) < ((2 * j + 1 : ℕ) : ℝ) := by positivity
+    obtain ⟨termv, hterm, hfterm⟩ := divFloor_err hp hd hdpos hp0 w
+    have hcast : (((2 * j + 1 : ℕ) : ℝ)) = 2 * (j : ℝ) + 1 := by push_cast; ring
+    rw [hcast] at hfterm
+    have hterm_le : termv ≤ t ^ (2 * j + 1) / (2 * j + 1) :=
+      hfterm.le.trans (div_le_div_of_nonneg_right hp1 (by positivity))
+    have hterm_ge : t ^ (2 * j + 1) / (2 * j + 1) * (1 - α - 2 * u) ≤ termv := by
+      have h1 : t ^ (2 * j + 1) * (1 - α) / (2 * j + 1) ≤ pv / (2 * j + 1) :=
+        div_le_div_of_nonneg_right hp2 (by positivity)
+      have h2 : pv / (2 * j + 1) * (1 - 2 * u) ≤ termv := by
+        have := hfterm.ge; rw [← hu_def] at this; linarith
+      have h3 : t ^ (2 * j + 1) * (1 - α) / (2 * j + 1)
+          = t ^ (2 * j + 1) / (2 * j + 1) * (1 - α) := by
+        ring
+      rw [h3] at h1
+      calc t ^ (2 * j + 1) / (2 * j + 1) * (1 - α - 2 * u)
+          ≤ t ^ (2 * j + 1) / (2 * j + 1) * ((1 - α) * (1 - 2 * u)) :=
+            mul_le_mul_of_nonneg_left (one_sub_mul_two hα0 (by linarith)) hT0
+        _ = t ^ (2 * j + 1) / (2 * j + 1) * (1 - α) * (1 - 2 * u) := by ring
+        _ ≤ pv / (2 * j + 1) * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 h2u
+        _ ≤ termv := h2
+    -- the new sum
+    obtain ⟨sv', hs', hfs'⟩ := addFloor_err hs hterm w (by linarith [hfterm.nonneg])
+    have hS := lnSeriesPartial_succ t j
+    have hS0 := lnSeriesPartial_nonneg ht0 (j + 1)
+    have hs'_le : sv' ≤ lnSeriesPartial t (j + 1) := by rw [hS]; linarith [hfs'.le]
+    have hs'_ge : lnSeriesPartial t (j + 1) * (1 - (10 + 20 * ((j + 1 : ℕ) : ℝ)) * u) ≤ sv' := by
+      have h1 : lnSeriesPartial t (j + 1) * (1 - β) ≤ sv + termv := by
+        rw [hS, add_mul]
+        have : t ^ (2 * j + 1) / (2 * j + 1) * (1 - β)
+            = t ^ (2 * j + 1) / (2 * j + 1) * (1 - α - 2 * u) := by
+          rw [hβα]; ring
+        linarith
+      have h2 : (sv + termv) * (1 - 2 * u) ≤ sv' := by
+        have := hfs'.ge; rw [← hu_def] at this; linarith
+      have h3 : lnSeriesPartial t (j + 1) * (1 - β - 2 * u)
+          ≤ lnSeriesPartial t (j + 1) * ((1 - β) * (1 - 2 * u)) :=
+        mul_le_mul_of_nonneg_left (one_sub_mul_two (by positivity) (by linarith)) hS0
+      have h4 : (10 + 20 * ((j + 1 : ℕ) : ℝ)) * u = β + 20 * u := by rw [hβ]; push_cast; ring
+      rw [h4]
+      have h5 : lnSeriesPartial t (j + 1) * (1 - (β + 20 * u))
+          ≤ lnSeriesPartial t (j + 1) * (1 - β - 2 * u) :=
+        mul_le_mul_of_nonneg_left (by linarith) hS0
+      calc lnSeriesPartial t (j + 1) * (1 - (β + 20 * u))
+          ≤ lnSeriesPartial t (j + 1) * ((1 - β) * (1 - 2 * u)) := h5.trans h3
+        _ = lnSeriesPartial t (j + 1) * (1 - β) * (1 - 2 * u) := by ring
+        _ ≤ (sv + termv) * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 h2u
+        _ ≤ sv' := h2
+    -- the new power
+    obtain ⟨pv', hp', hfp'⟩ := mulFloor_err hp ht2 w (mul_nonneg hp0 ht2v0)
+    have hpow_eq : t ^ (2 * (j + 1) + 1) = t ^ (2 * j + 1) * t ^ 2 := by ring
+    have hp'_le : pv' ≤ t ^ (2 * (j + 1) + 1) := by
+      rw [hpow_eq]
+      exact hfp'.le.trans (mul_le_mul hp1 ht2le ht2v0 hpow0)
+    have hp'_ge : t ^ (2 * (j + 1) + 1) * (1 - (8 + 20 * ((j + 1 : ℕ) : ℝ)) * u) ≤ pv' := by
+      have h1 : t ^ (2 * j + 1) * (1 - α) * (t ^ 2 * (1 - 18 * u)) ≤ pv * t2v :=
+        mul_le_mul hp2 ht2ge (by apply mul_nonneg (by positivity); nlinarith)
+          hp0
+      have h2 : pv * t2v * (1 - 2 * u) ≤ pv' := by
+        have := hfp'.ge; rw [← hu_def] at this; linarith
+      have h4 : (8 + 20 * ((j + 1 : ℕ) : ℝ)) * u = α + 18 * u + 2 * u := by rw [hα]; push_cast; ring
+      rw [h4, hpow_eq]
+      have hX : 0 ≤ t ^ (2 * j + 1) * t ^ 2 := by positivity
+      calc t ^ (2 * j + 1) * t ^ 2 * (1 - (α + 18 * u + 2 * u))
+          ≤ t ^ (2 * j + 1) * t ^ 2 * ((1 - α) * (1 - 18 * u) * (1 - 2 * u)) := by
+            apply mul_le_mul_of_nonneg_left _ hX
+            have := one_sub_mul_three hα0 (by positivity : (0 : ℝ) ≤ 18 * u)
+              (by positivity : (0 : ℝ) ≤ 2 * u) (by linarith)
+            linarith
+        _ = t ^ (2 * j + 1) * (1 - α) * (t ^ 2 * (1 - 18 * u)) * (1 - 2 * u) := by ring
+        _ ≤ pv * t2v * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 h2u
+        _ ≤ pv' := h2
+    -- the recursive call
+    have hrec : lnSeriesLoop w t2 (n + 1) j (s, p)
+        = lnSeriesLoop w t2 n (j + 1) ((addPrecRound s
+            (divPrecRound p (ofAzNat (AzNat.ofNat (2 * j + 1))) w .Floor).1 w .Floor).1,
+          (mulPrecRound p t2 w .Floor).1) := rfl
+    rw [hrec]
+    have hsv'0 : 0 ≤ sv' := hfs'.nonneg
+    have hpv'0 : 0 ≤ pv' := hfp'.nonneg
+    rw [hu_def] at hs'_ge hp'_ge
+    obtain ⟨sv'', pv'', h1, h2, h3, h4, h5, h6, h7, h8⟩ :=
+      ih (j + 1) _ _ sv' pv' (by omega) hs' hp' hsv'0 hs'_le hs'_ge hpv'0 hp'_le hp'_ge
+    refine ⟨sv'', pv'', h1, h2, h3, ?_, ?_, h6, ?_, ?_⟩
+    · rwa [show j + (n + 1) = j + 1 + n by omega]
+    · rwa [show j + (n + 1) = j + 1 + n by omega]
+    · rwa [show j + (n + 1) = j + 1 + n by omega]
+    · rwa [show j + (n + 1) = j + 1 + n by omega]
+
+/-- The pure-real width budget of the series bracket: all the slacks are `O(W²) u` with
+`W = w + |e| + 8`, far below `lnEps = 2^40 W^5 u`. -/
+theorem lnSeries_final_bounds {u W Av Ev LLo LHi lo hi1 hi : ℝ} (hu0 : 0 < u) (hu1 : u ≤ 1)
+    (hW : 72 ≤ W) (hAv0 : 0 ≤ Av) (hAv1 : Av ≤ 1) (hEv0 : 0 ≤ Ev) (hEv : Ev ≤ 38 * W ^ 2 * u)
+    (hLw : LHi - LLo ≤ 12 * W * u) (hLLo : |LLo| ≤ 2 * W) (hLHi : |LHi| ≤ 2 * W)
+    (hlo : Av + LLo ≤ lo + 2 * |Av + LLo| * u)
+    (hhi1ge : Av + Ev ≤ hi1) (hhi1 : hi1 ≤ Av + Ev + 2 * (Av + Ev) * u)
+    (hhi : hi ≤ hi1 + LHi + 2 * |hi1 + LHi| * u) :
+    hi - lo ≤ 2 ^ 40 * W ^ 5 * u := by
+  obtain ⟨hLLo1, hLLo2⟩ := abs_le.mp hLLo
+  obtain ⟨hLHi1, hLHi2⟩ := abs_le.mp hLHi
+  have hW2 : W ≤ W ^ 2 := by nlinarith
+  have hEvu : Ev * u ≤ 38 * W ^ 2 * u := by nlinarith
+  have hhi1' : hi1 ≤ 3 + 114 * W ^ 2 * u := by nlinarith
+  have habs1 : |Av + LLo| ≤ 1 + 2 * W := abs_le.mpr ⟨by linarith, by linarith⟩
+  have habs2 : |hi1 + LHi| ≤ 3 + 114 * W ^ 2 * u + 2 * W := by
+    rw [abs_le]; constructor <;> nlinarith
+  have hW2u : W ^ 2 * u ≤ W ^ 2 := by nlinarith
+  have h1 : 2 * |Av + LLo| * u ≤ 2 * (1 + 2 * W) * u := by nlinarith
+  have h2 : 2 * |hi1 + LHi| * u ≤ 2 * (3 + 114 * W ^ 2 + 2 * W) * u := by nlinarith
+  have hW5 : 400 * W ^ 2 ≤ 2 ^ 40 * W ^ 5 := by
+    nlinarith [pow_le_pow_left₀ (by norm_num : (0:ℝ) ≤ 72) hW 3]
+  nlinarith
+
+set_option maxHeartbeats 800000 in
+/-- `lnSeriesBracket lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+any bracket `lb` of `ln 2` fit for `w`. -/
+theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
+    (hlb : Ln2BracketFor w lb) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    ∃ lv hv' : ℝ, (lnSeriesBracket lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnSeriesBracket lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨u, hu_def⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
+  have hu0 : 0 < u := by rw [hu_def]; positivity
+  have hu64 : u ≤ (1 / 2 : ℝ) ^ 64 := by
+    rw [hu_def]; exact pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+  have hu1 : u ≤ 1 / 1000 := hu64.trans (by norm_num)
+  have hwu : (w : ℝ) * u ≤ (1 / 2 : ℝ) ^ 32 := by rw [hu_def]; exact mul_half_pow_le hw
+  have hw64 : (64 : ℝ) ≤ w := by exact_mod_cast hw
+  -- the value of `x`
+  set v := finiteVal true e m with hv_def
+  have hx : (finite true e q m hv).toVal = some (v : EReal) := toVal_finite _ _ _ _ _
+  have hv0 : 0 < v := finiteVal_true_pos e hv
+  obtain ⟨hvlo, hvhi⟩ := abs_finiteVal_bounds true e hv
+  rw [abs_of_pos hv0] at hvlo hvhi
+  -- the parameters
+  set k := lnSeriesK w with hk_def
+  set J := lnSeriesTerms k w with hJ_def
+  have hJw : J ≤ w := lnSeriesTerms_le (by omega)
+  have hkJ := lnSeriesTerms_spec k w
+  have h2k : (2 : ℝ) ^ k ≤ w := by exact_mod_cast two_pow_lnSeriesK_le (by omega)
+  have h2k0 : (0 : ℝ) < 2 ^ k := by positivity
+  -- `ℓ = e − 1` and `m₀ = x 2^(−ℓ) ∈ [1, 2)`
+  set ℓ : AzInt := e - 1 with hℓ
+  have hℓ_int : ℓ.toInt = e.toInt - 1 := by rw [hℓ, AzInt.toInt_sub]; rfl
+  have hm0 : ((finite true e q m hv) <<< (-ℓ)).toVal
+      = some ((v * (2 : ℝ) ^ (1 - e.toInt) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal hx, AzInt.toInt_neg, hℓ_int, neg_sub]
+  set m0v : ℝ := v * (2 : ℝ) ^ (1 - e.toInt) with hm0v
+  have h2e : (0 : ℝ) < (2 : ℝ) ^ (1 - e.toInt) := zpow_pos (by norm_num) _
+  have hm01 : 1 ≤ m0v := by
+    have := mul_le_mul_of_nonneg_right hvlo h2e.le
+    rw [← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0), show e.toInt - 1 + (1 - e.toInt) = 0 by ring,
+      zpow_zero] at this
+    exact this
+  have hm02 : m0v < 2 := by
+    have := mul_lt_mul_of_pos_right hvhi h2e
+    rw [← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0), show e.toInt + (1 - e.toInt) = 1 by ring,
+      zpow_one] at this
+    exact this
+  have hm00 : 0 < m0v := by linarith
+  set L := Real.log m0v with hL
+  have hL0 : 0 ≤ L := Real.log_nonneg hm01
+  have hL1 : L ≤ Real.log 2 := Real.log_le_log hm00 hm02.le
+  have hlog2 := Real.log_two_lt_d9
+  have hlogv : Real.log v = L + (ℓ.toInt : ℝ) * Real.log 2 := by
+    rw [hL, hm0v, Real.log_mul hv0.ne' h2e.ne', Real.log_zpow, hℓ_int]; push_cast; ring
+  -- the square roots
+  obtain ⟨yv, hy, hy1, hylog_le, hylog_ge⟩ := lnSqrtIter_spec hw L k 0 _ m0v hm0 hm01
+    (by rw [pow_zero, div_one]) (by rw [pow_zero, div_one, ← hu_def]; linarith)
+  rw [zero_add] at hylog_le hylog_ge
+  rw [← hu_def] at hylog_ge
+  have hy0 : 0 < yv := by linarith
+  have hy2 : yv ≤ 2 := by
+    have h1 : Real.log yv ≤ Real.log 2 := by
+      calc Real.log yv ≤ L / 2 ^ k := hylog_le
+        _ ≤ L := div_le_self hL0 (one_le_pow₀ one_le_two)
+        _ ≤ Real.log 2 := hL1
+    exact (Real.log_le_log_iff hy0 two_pos).mp h1
+  -- `t = (y − 1)/(y + 1)`
+  set tv : ℝ := (yv - 1) / (yv + 1) with htv
+  have hyp1 : 0 < yv + 1 := by linarith
+  have htv0 : 0 ≤ tv := div_nonneg (by linarith) hyp1.le
+  have htv3 : tv ≤ 1 / 3 := by rw [htv, div_le_iff₀ hyp1]; linarith
+  have htv_half : tv ≤ 1 / 2 := htv3.trans (by norm_num)
+  have hy_eq : (1 + tv) / (1 - tv) = yv := by
+    rw [htv]; field_simp; ring
+  obtain ⟨hser1, hser2⟩ := log_atanh_series_bounds htv0 htv_half J
+  rw [hy_eq] at hser1 hser2
+  have ht_le : 2 * tv ≤ Real.log yv := by
+    have := (log_atanh_series_bounds htv0 htv_half 1).1
+    rw [hy_eq] at this
+    simpa [lnSeriesPartial] using this
+  have htk : tv ≤ (1 / 2 : ℝ) ^ (k + 1) := by
+    have h1 : Real.log yv ≤ 1 / 2 ^ k := by
+      calc Real.log yv ≤ L / 2 ^ k := hylog_le
+        _ ≤ 1 / 2 ^ k := by gcongr; linarith
+    rw [pow_succ, one_div_pow]
+    linarith
+  -- the tail
+  have htail : 8 / 3 * tv ^ (2 * J + 1) ≤ 2 * u := by
+    have h1 : tv ^ (2 * J + 1) ≤ ((1 / 2 : ℝ) ^ (k + 1)) ^ (2 * J + 1) :=
+      pow_le_pow_left₀ htv0 htk _
+    rw [← pow_mul] at h1
+    have h2 : ((1 / 2 : ℝ)) ^ ((k + 1) * (2 * J + 1)) ≤ (1 / 2 : ℝ) ^ (w + 1) :=
+      pow_le_pow_of_le_one (by norm_num) (by norm_num) hkJ
+    rw [pow_succ, ← hu_def] at h2
+    linarith
+  -- the computed `t`
+  obtain ⟨numv, hnum, hfnum⟩ := subFloor_err hy toVal_one' w (by linarith)
+  obtain ⟨denv, hden, hcden⟩ := addCeiling_err hy toVal_one' w (by linarith)
+  have hdenv0 : 0 < denv := lt_of_lt_of_le hyp1 hcden.ge
+  obtain ⟨tcv, htc, hftc⟩ := divFloor_err hnum hden hdenv0 hfnum.nonneg w
+  have htcv0 : 0 ≤ tcv := hftc.nonneg
+  have htc_le : tcv ≤ tv := by
+    refine hftc.le.trans ?_
+    rw [htv, div_le_div_iff₀ hdenv0 hyp1]
+    exact mul_le_mul hfnum.le hcden.ge hyp1.le (by linarith)
+  have htc_ge : tv * (1 - 8 * u) ≤ tcv := by
+    have hA : (yv - 1) * (1 - 2 * u) ≤ numv := by
+      have := hfnum.ge; rw [← hu_def] at this; linarith
+    have hB : denv ≤ (yv + 1) * (1 + 2 * u) := by
+      have := hcden.le; rw [← hu_def] at this; linarith
+    have hB0 : (0 : ℝ) < (yv + 1) * (1 + 2 * u) := by positivity
+    have h1 : (yv - 1) * (1 - 2 * u) / ((yv + 1) * (1 + 2 * u)) ≤ numv / denv := by
+      rw [div_le_div_iff₀ hB0 hdenv0]
+      exact mul_le_mul hA hB hdenv0.le hfnum.nonneg
+    have h2 : numv / denv * (1 - 2 * u) ≤ tcv := by
+      have := hftc.ge; rw [← hu_def] at this; linarith
+    have h3 : (yv - 1) * (1 - 2 * u) / ((yv + 1) * (1 + 2 * u)) * (1 - 2 * u)
+        = tv * ((1 - 2 * u) ^ 2 / (1 + 2 * u)) := by
+      rw [htv]; field_simp
+    have h4 : 1 - 8 * u ≤ (1 - 2 * u) ^ 2 / (1 + 2 * u) := by
+      rw [le_div_iff₀ (by linarith)]; nlinarith
+    calc tv * (1 - 8 * u) ≤ tv * ((1 - 2 * u) ^ 2 / (1 + 2 * u)) :=
+          mul_le_mul_of_nonneg_left h4 htv0
+      _ = (yv - 1) * (1 - 2 * u) / ((yv + 1) * (1 + 2 * u)) * (1 - 2 * u) := h3.symm
+      _ ≤ numv / denv * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 (by linarith)
+      _ ≤ tcv := h2
+  -- `t²`
+  obtain ⟨t2v, ht2, hft2⟩ := sqrFloor_err htc w
+  have ht2le : t2v ≤ tv ^ 2 := by
+    rw [pow_two]; exact hft2.le.trans (mul_le_mul htc_le htc_le htcv0 htv0)
+  have ht2ge : tv ^ 2 * (1 - 18 * (1 / 2 : ℝ) ^ w) ≤ t2v := by
+    rw [← hu_def]
+    have h1 : tv * (1 - 8 * u) * (tv * (1 - 8 * u)) ≤ tcv * tcv :=
+      mul_le_mul htc_ge htc_ge (mul_nonneg htv0 (by linarith)) htcv0
+    have h2 : tcv * tcv * (1 - 2 * u) ≤ t2v := by
+      have := hft2.ge; rw [← hu_def] at this; linarith
+    have h3 := one_sub_mul_three (by positivity : (0 : ℝ) ≤ 8 * u) (by positivity : (0 : ℝ) ≤ 8 * u)
+      (by positivity : (0 : ℝ) ≤ 2 * u) (by linarith)
+    have hX : 0 ≤ tv ^ 2 := by positivity
+    calc tv ^ 2 * (1 - 18 * u) ≤ tv ^ 2 * ((1 - 8 * u) * (1 - 8 * u) * (1 - 2 * u)) := by
+          apply mul_le_mul_of_nonneg_left _ hX; linarith
+      _ = tv * (1 - 8 * u) * (tv * (1 - 8 * u)) * (1 - 2 * u) := by ring
+      _ ≤ tcv * tcv * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 (by linarith)
+      _ ≤ t2v := h2
+  -- the series
+  have hz : (zero : AzFloat).toVal = some ((0 : ℝ) : EReal) := by simp
+  obtain ⟨sv, pv, hs, -, hs0, hs_le, hs_ge, -, -, -⟩ := lnSeriesLoop_spec hw htv0 ht2 ht2le ht2ge
+    J 0 zero _ 0 tcv (by omega) hz htc le_rfl (by rw [lnSeriesPartial_zero])
+    (by rw [lnSeriesPartial_zero, zero_mul]) htcv0 (by simpa using htc_le)
+    (by rw [← hu_def]; simpa using htc_ge)
+  rw [zero_add] at hs_le hs_ge
+  rw [← hu_def] at hs_ge
+  have hS0 := lnSeriesPartial_nonneg htv0 J
+  -- `A = 2^(k+1) s`, `E = (20J + 18) 2^k u`
+  have hA : ((lnSeriesLoop w (sqrPrecRound (divPrecRound (subPrecRound
+        (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
+        (addPrecRound (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
+        w .Floor).1 w .Floor).1 J 0 (zero, (divPrecRound (subPrecRound
+        (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
+        (addPrecRound (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
+        w .Floor).1)).1 <<< ((k + 1 : ℕ) : AzInt)).toVal
+      = some ((sv * 2 ^ (k + 1) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal hs, AzInt.toInt_natCast, zpow_natCast]
+  set Av : ℝ := sv * 2 ^ (k + 1) with hAv
+  have hE : (ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((k : AzInt) - (w : AzInt))).toVal
+      = some ((((20 * J + 18 : ℕ) : ℝ) * 2 ^ k * u : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal (toVal_ofAzNat_ofNat _), AzInt.toInt_sub, AzInt.toInt_natCast,
+      AzInt.toInt_natCast, zpow_sub₀ (by norm_num), zpow_natCast, zpow_natCast, hu_def,
+      one_div_pow, div_eq_mul_inv, one_div, mul_assoc]
+  set Ev : ℝ := ((20 * J + 18 : ℕ) : ℝ) * 2 ^ k * u with hEv
+  have hEv0 : 0 ≤ Ev := by positivity
+  -- `A ≤ L ≤ A + E`
+  have hlogy_lo : 2 * lnSeriesPartial tv J ≤ Real.log yv := hser1
+  have hA_le : Av ≤ L := by
+    have h1 : Av ≤ 2 ^ k * (2 * lnSeriesPartial tv J) := by
+      rw [hAv, pow_succ]
+      have := mul_le_mul_of_nonneg_right hs_le (by positivity : (0 : ℝ) ≤ 2 ^ k * 2)
+      linarith
+    have h2 : 2 ^ k * Real.log yv ≤ L := by
+      have := mul_le_mul_of_nonneg_left hylog_le h2k0.le
+      rwa [mul_div_cancel₀ _ h2k0.ne'] at this
+    have h3 : 2 ^ k * (2 * lnSeriesPartial tv J) ≤ 2 ^ k * Real.log yv :=
+      mul_le_mul_of_nonneg_left hlogy_lo h2k0.le
+    linarith
+  have hA_ge : L ≤ Av + Ev := by
+    have hβ : 2 * lnSeriesPartial tv J - 2 * sv ≤ (10 + 20 * (J : ℝ)) * u := by
+      have h1 : lnSeriesPartial tv J - sv ≤ lnSeriesPartial tv J * ((10 + 20 * (J : ℝ)) * u) := by
+        linarith
+      have h2 : 2 * lnSeriesPartial tv J ≤ 1 := by
+        have := hylog_le
+        have h3 : L / 2 ^ k ≤ 1 := by
+          rw [div_le_one h2k0]; linarith [one_le_pow₀ (M₀ := ℝ) one_le_two (n := k)]
+        linarith
+      have h4 : (0 : ℝ) ≤ (10 + 20 * (J : ℝ)) * u := by positivity
+      nlinarith
+    have h1 : L ≤ 2 ^ k * Real.log yv + 2 ^ k * (6 * u) := by
+      have := mul_le_mul_of_nonneg_left hylog_ge h2k0.le
+      rw [mul_sub, mul_div_cancel₀ _ h2k0.ne'] at this
+      linarith
+    have h2 : Real.log yv ≤ 2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u := by linarith
+    have h3 : 2 ^ k * Real.log yv ≤ 2 ^ k * (2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u) :=
+      mul_le_mul_of_nonneg_left h2 h2k0.le
+    have h4 : Ev = 2 ^ k * ((20 * (J : ℝ) + 18) * u) := by rw [hEv]; push_cast; ring
+    have h5 : Av = 2 ^ k * (2 * sv) := by rw [hAv, pow_succ]; ring
+    rw [h4, h5]
+    nlinarith
+  -- `ℓ ln 2`
+  obtain ⟨LLo, LHi, hLLo, hLHi, hL1, hL2, hLw, hLLo_abs, hLHi_abs⟩ := ln_L_spec hw hlb ℓ
+  rw [← hu_def] at hLw
+  -- the final combination
+  simp only [lnSeriesBracket]
+  rw [← hk_def, ← hJ_def, ← hℓ]
+  obtain ⟨lo, hlo, hloa, hlob⟩ := addFloor_abs hA hLLo w
+  obtain ⟨hi1, hhi1, hchi1⟩ := addCeiling_err hA hE w (by positivity)
+  obtain ⟨hi, hhi, hhia, hhib⟩ := addCeiling_abs hhi1 hLHi w
+  rw [← hu_def] at hlob hhib
+  refine ⟨lo, hi, hlo, hhi, ?_, ?_, ?_⟩
+  · rw [hlogv]; linarith
+  · rw [hlogv]; linarith [hchi1.ge]
+  · -- the width
+    have hℓe : |(ℓ.toInt : ℝ)| ≤ |(e.toInt : ℝ)| + 1 := by
+      rw [hℓ_int]; push_cast
+      calc |(e.toInt : ℝ) - 1| ≤ |(e.toInt : ℝ)| + |(1 : ℝ)| := abs_sub _ _
+        _ = |(e.toInt : ℝ)| + 1 := by rw [abs_one]
+    set W : ℝ := (w : ℝ) + |(e.toInt : ℝ)| + 8 with hW
+    have hW72 : 72 ≤ W := by rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
+    have hJW : (J : ℝ) ≤ W := by
+      have : (J : ℝ) ≤ w := by exact_mod_cast hJw
+      rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
+    have h2kW : (2 : ℝ) ^ k ≤ W := by rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
+    have hℓW : |(ℓ.toInt : ℝ)| ≤ W := by rw [hW]; linarith
+    have hEvW : Ev ≤ 38 * W ^ 2 * u := by
+      rw [hEv]; push_cast
+      have h1 : 20 * (J : ℝ) + 18 ≤ 38 * W := by linarith
+      have h2 : (20 * (J : ℝ) + 18) * 2 ^ k ≤ 38 * W * W := by
+        apply mul_le_mul h1 h2kW (by positivity) (by linarith)
+      have : (20 * (J : ℝ) + 18) * 2 ^ k * u ≤ 38 * W * W * u :=
+        mul_le_mul_of_nonneg_right h2 hu0.le
+      linarith [this]
+    have hAv0 : 0 ≤ Av := by positivity
+    have hAv1 : Av ≤ 1 := by linarith
+    have hLw' : LHi - LLo ≤ 12 * W * u := by
+      have : 12 * |(ℓ.toInt : ℝ)| * u ≤ 12 * W * u := by
+        apply mul_le_mul_of_nonneg_right _ hu0.le; linarith
+      linarith
+    have hLLoW : |LLo| ≤ 2 * W := by linarith
+    have hLHiW : |LHi| ≤ 2 * W := by linarith
+    have hhi1' : hi1 ≤ Av + Ev + 2 * (Av + Ev) * u := by
+      have := hchi1.le; rw [← hu_def] at this; exact this
+    have := lnSeries_final_bounds hu0 (by linarith) hW72 hAv0 hAv1 hEv0 hEvW hLw' hLLoW hLHiW
+      hlob hchi1.ge hhi1' hhib
+    unfold lnEps
+    rw [← hu_def]
+    exact this
+
+/-! ### The dispatcher -/
+
+/-- `lnBracketCore pb lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+any bracket `lb` of `ln 2` fit for `w` and, above `lnSeriesThreshold`, any bracket `pb` of `π`
+fit for `w`. -/
+theorem lnBracketCore_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat}
+    (hpb : lnSeriesThreshold < w → PiBracketFor w pb) (hlb : Ln2BracketFor w lb) (e : AzInt)
+    {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    ∃ lv hv' : ℝ, (lnBracketCore pb lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnBracketCore pb lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w := by
+  unfold lnBracketCore
+  split_ifs with hT
+  · exact lnSeriesBracket_spec hw hlb e hv
+  · exact lnAgmBracket_spec hw (hpb (by omega)) hlb e hv
+
+theorem lnBracket_eq_core (x : AzFloat) (e : AzInt) (w : ℕ) :
+    lnBracket x e w = lnBracketCore (piBracket w) (ln2Bracket w) x e w := by
+  unfold lnBracket lnBracketCore
+  split_ifs <;> rfl
+
 /-- `lnBracket x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`). -/
 theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) :
     ∃ lv hv' : ℝ, (lnBracket (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
       (lnBracket (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
       lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
-      hv' - lv ≤ lnEps e.toInt w :=
-  lnBracketCore_spec hw (piBracketFor_piBracket hw) (ln2BracketFor_ln2Bracket (by omega)) e hv
+      hv' - lv ≤ lnEps e.toInt w := by
+  rw [lnBracket_eq_core]
+  exact lnBracketCore_spec hw (fun _ => piBracketFor_piBracket hw)
+    (ln2BracketFor_ln2Bracket (by omega)) e hv
 
 /-- `lnBracketWith c x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
 any constants `c`. -/
@@ -1016,8 +1620,8 @@ theorem lnBracketWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (e : AzInt) 
       hv' - lv ≤ lnEps e.toInt w := by
   unfold lnBracketWith
   split_ifs with hW
-  · have hpb : PiBracketFor w c.pi := by
-      rw [c.pi_eq]
+  · have hpb : lnSeriesThreshold < w → PiBracketFor w c.pi := fun hT => by
+      rw [c.pi_eq (by omega)]
       exact (piBracketFor_piBracket (by omega)).of_le (by omega) hW
     have hlb : Ln2BracketFor w c.ln2 := by
       rw [c.ln2_eq]

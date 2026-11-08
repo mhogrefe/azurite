@@ -11,8 +11,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   `toChars` / `parseChars` for `AzVector`, round-trip proof, and `ToString`
   instance.
 
-  Format: `"[e₀, e₁, …, e_{n-1}]"` — outer brackets, elements joined by
-  `", "` (comma + space). For `n = 0`, the representation is `"[]"`.
+  Format: `"(e₀, e₁, …, e_{n-1})"` — outer parentheses (as Malachite's `Vector`), elements
+  joined by `", "` (comma + space). For `n = 0`, the representation is `"()"`.
 -/
 import Azurite.AzVector.ParsableElement
 import Azurite.AzVector.Basic
@@ -30,12 +30,12 @@ omit [ParsableElement R] in
 @[simp] theorem toList_length (v : AzVector R n) : v.toList.length = n := by
   simp [toList]
 
-/-- Serialize a vector as a character list: `"[e₀, e₁, …, e_{n-1}]"`. -/
+/-- Serialize a vector as a character list: `"(e₀, e₁, …, e_{n-1})"`. -/
 def toChars (v : AzVector R n) : List Char :=
-  '[' :: List.intercalate [',', ' '] (v.toList.map ParsableElement.toChars) ++ [']']
+  '(' :: List.intercalate [',', ' '] (v.toList.map ParsableElement.toChars) ++ [')']
 
-/-- Length-aware parser for a comma-space-separated element list (without
-    brackets). Recurses structurally on the expected element count `n`. -/
+/-- Length-aware parser for a comma-space-separated element list (without the enclosing
+    delimiters). Recurses structurally on the expected element count `n`. -/
 def parseElementsN :
     ℕ → List Char → Option (List R)
   | 0, [] => some []
@@ -51,9 +51,9 @@ def parseElementsN :
 /-- Parse a character list as a vector of length `n`. -/
 def parseChars (cs : List Char) : Option (AzVector R n) :=
   match cs with
-  | '[' :: rest =>
+  | '(' :: rest =>
     match rest.reverse with
-    | ']' :: body_rev =>
+    | ')' :: body_rev =>
       match parseElementsN n body_rev.reverse with
       | none => none
       | some elems =>
@@ -134,11 +134,11 @@ lemma parseElementsN_intercalate :
 theorem parseChars_toChars (v : AzVector R n) : parseChars (toChars v) = some v := by
   unfold parseChars toChars
   set body := List.intercalate [',', ' '] (v.toList.map ParsableElement.toChars) with hbody
-  -- '[' :: body ++ [']'] matches the '[' :: rest pattern with rest = body ++ [']']
-  show (match '[' :: (body ++ [']']) with
-    | '[' :: rest =>
+  -- '(' :: body ++ [')'] matches the '(' :: rest pattern with rest = body ++ [')']
+  show (match '(' :: (body ++ [')']) with
+    | '(' :: rest =>
       match rest.reverse with
-      | ']' :: body_rev =>
+      | ')' :: body_rev =>
         match parseElementsN n body_rev.reverse with
         | none => none
         | some elems =>
@@ -146,14 +146,14 @@ theorem parseChars_toChars (v : AzVector R n) : parseChars (toChars v) = some v 
       | _ => none
     | _ => none) = some v
   -- Step through the matches
-  show (match (body ++ [']']).reverse with
-    | ']' :: body_rev =>
+  show (match (body ++ [')']).reverse with
+    | ')' :: body_rev =>
       match parseElementsN n body_rev.reverse with
       | none => none
       | some elems =>
         if h : elems.length = n then some (AzVector.ofList elems h) else none
     | _ => none) = some v
-  rw [show (body ++ [']']).reverse = ']' :: body.reverse from by simp]
+  rw [show (body ++ [')']).reverse = ')' :: body.reverse from by simp]
   show (match parseElementsN n body.reverse.reverse with
     | none => none
     | some elems =>

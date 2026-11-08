@@ -26,12 +26,6 @@ quotient is shifted back exactly.  `logBaseFloatQuot` divides any bracket by the
 
 namespace Azurite.AzFloat
 
-/-- The larger of two floats by value (`x` when they are not comparable). -/
-def maxOf (x y : AzFloat) : AzFloat := if partialCompare x y == some .lt then y else x
-
-/-- The smaller of two floats by value (`x` when they are not comparable). -/
-def minOf (x y : AzFloat) : AzFloat := if partialCompare y x == some .lt then y else x
-
 /-- A bracket of `ln b` for a positive float `b ≠ 1` of exponent `eb`, whose ends have the sign
 of `ln b`: for `b > 1` the lower end is raised to `⌊⌊b − 1⌋ / b⌋ ≤ (b − 1)/b`, for `b < 1` the
 upper end is lowered to `−⌊1 − b⌋ ≥ b − 1`. -/

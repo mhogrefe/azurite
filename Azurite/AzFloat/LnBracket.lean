@@ -16,6 +16,12 @@ import Azurite.AzFloat.Conversion
 /-!
 ## The natural logarithm
 
+Two paths, selected by the working precision `w` (`lnBracketCore`, `lnBracket`): the **series
+path** below `lnSeriesThreshold` (DLMF 4.45.1–4.45.2 and 4.6.4: `x = m₀ 2^ℓ`, a few square
+roots bring `m₀` close to `1`, then `ln y = 2 Σ t^(2j+1)/(2j+1)` with `t = (y − 1)/(y + 1)`,
+everything rounded down with an exact a priori slack; `lnSeriesBracket`, documented there), and
+the **AGM path** above it (`lnAgmBracket`), described here.
+
 `ln x` by the AGM (MCA §4.8.2, `Chapter4/AGMLog.lean`, `AGMLogBound.lean`): for `0 < k ≤ 1`,
 `|π/(2 AGM(1, k)) − ln(4/k)| ≤ (k²/4)(2 − ln k)`.  At working precision `w`, with
 `h = ⌊w/4⌋ + 2`, the argument is scaled to `y = x · 2^ℓ ∈ [2^(2h+1), 2^(2h+2))`, so that
@@ -30,9 +36,9 @@ so relative errors add up over the steps), hence `b_S ≤ AGM(1, k) ≤ a_S + δ
 and the float `δ` is exact (`lnAgmDelta`).  `π` is from `piBracket`, `ℓ ln 2` from the float
 bracket `ln2Bracket` (`|ℓ|` times the ends, outward, the signs restored by negation).
 
-The bracket's width is at most `2^40 (w + |e| + 8)^5 2^(−w)` (`Equiv/LnBracket.lean`,
-`lnBracket_spec`: the interval AGM keeps *relative*
-errors, which grow only additively with the steps since the AGM is homogeneous), and `ln x`
+The bracket's width on either path is at most `2^40 (w + |e| + 8)^5 2^(−w)`
+(`Equiv/LnBracket.lean`, `lnBracket_spec`: the rounded-down AGM keeps *relative* errors, which
+grow only additively with the steps since the AGM is homogeneous), and `ln x`
 is irrational for every float `x ≠ 1` (`irrational_log_rat`), so the certified Ziv loop needs no
 fuel: `lnPrecRound` is total and proven correctly rounded.  Special values: `ln NaN = NaN`,
 `ln (+∞) = +∞`, `ln 0 = −∞`, `ln x = NaN` for `x < 0`, `ln 1 = 0` exactly.
@@ -58,11 +64,10 @@ precision `w`, as an exact float. -/
 def lnAgmDelta (w S : Nat) : AzFloat :=
   ofAzNat (AzNat.ofNat (8 * S + 2)) <<< (-(AzNat.ofNat w).toAzInt)
 
-/-- The two ends of the bracket of `ln x` at working precision `w`, for a finite positive `x`
-with exponent `e` (`2^(e−1) ≤ x < 2^e`), from given brackets `pb` of `π` and `lb` of `ln 2`
-(computed at precision `w` or finer; `lnBracket` computes them, `lnBracketWith` takes them
-from an `LnConsts`). -/
-def lnBracketCore (pb lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+/-- The two ends of the bracket of `ln x` at working precision `w` by the **AGM path**, for a
+finite positive `x` with exponent `e` (`2^(e−1) ≤ x < 2^e`), from given brackets `pb` of `π` and
+`lb` of `ln 2` (computed at precision `w` or finer). -/
+def lnAgmBracket (pb lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
     AzFloat × AzFloat :=
   let h := lnH w
   let l : AzInt := (AzNat.ofNat (2 * h + 2)).toAzInt - e
@@ -83,11 +88,80 @@ def lnBracketCore (pb lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Na
   ((subPrecRound (subPrecRound qLo eps w .Floor).1 LHi w .Floor).1,
     (subPrecRound (addPrecRound qHi eps w .Ceiling).1 LLo w .Ceiling).1)
 
+/-! ### The series path -/
+
+/-- The number of square roots taken before the series at working precision `w`:
+`⌊lg w⌋ − 3` (tuned, see `docs/azfloat_plan.md`). -/
+def lnSeriesK (w : Nat) : Nat := Nat.log 2 w - 3
+
+/-- The number of series terms after `k` square roots: `(k + 1)(2J + 1) ≥ w + 1`
+(`lnSeriesTerms_spec`), so that the tail `Σ_{j ≥ J} t^(2j+1)/(2j+1) ≤ (4/3) t^(2J+1)` is at most
+`(4/3) 2^(−w−1)` for `t ≤ 2^(−k−1)`. -/
+def lnSeriesTerms (k w : Nat) : Nat := (w + 1) / (2 * (k + 1)) + 1
+
+/-- `k` square roots, each rounded down and clamped at `1` (the clamp never changes the value,
+`√y ≥ 1` for `y ≥ 1` and `1` is a float, but keeps the proof simple). -/
+def lnSqrtIter (w : Nat) : Nat → AzFloat → AzFloat
+  | 0, y => y
+  | k + 1, y => lnSqrtIter w k (maxOf (sqrtPrecRound y w .Floor).1 one)
+
+/-- `n` more terms of `Σ_j t^(2j+1)/(2j+1)` from term `j`, every operation rounded down: the
+state is `(s, p)` with `s` the sum so far and `p = t^(2j+1)`; `t2 = t²`. -/
+def lnSeriesLoop (w : Nat) (t2 : AzFloat) : Nat → Nat → AzFloat × AzFloat → AzFloat × AzFloat
+  | 0, _, sp => sp
+  | n + 1, j, sp =>
+    let term := (divPrecRound sp.2 (ofAzNat (AzNat.ofNat (2 * j + 1))) w .Floor).1
+    lnSeriesLoop w t2 n (j + 1)
+      ((addPrecRound sp.1 term w .Floor).1, (mulPrecRound sp.2 t2 w .Floor).1)
+
+/-- The two ends of the bracket of `ln x` at working precision `w` by the **series path**
+(DLMF 4.45.1–4.45.2 and 4.6.4): `x = m₀ 2^ℓ` with `m₀ ∈ [1, 2)`, `ℓ = e − 1`; `y = m₀^(1/2^k)` by
+`k = lnSeriesK w` rounded-down square roots; `t = (y − 1)/(y + 1) ≤ 2^(−k−1)`;
+`ln y = 2 Σ t^(2j+1)/(2j+1)` summed for `J = lnSeriesTerms k w` terms with every operation
+rounded down, so `2^(k+1) s ≤ ln m₀`; the exact float `E = (20J + 18) 2^(k−w)` covers the
+roundings, the tail of the series and the square roots (`lnSeriesBracket_spec`); then
+`± ℓ ln 2` from the bracket `lb` of `ln 2` exactly as in `lnAgmBracket`. -/
+def lnSeriesBracket (lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
+  let k := lnSeriesK w
+  let J := lnSeriesTerms k w
+  let l : AzInt := e - 1
+  let y := lnSqrtIter w k (x <<< (-l))
+  let num := (subPrecRound y one w .Floor).1
+  let den := (addPrecRound y one w .Ceiling).1
+  let t := (divPrecRound num den w .Floor).1
+  let t2 := (sqrPrecRound t w .Floor).1
+  let s := (lnSeriesLoop w t2 J 0 (zero, t)).1
+  let A := s <<< ((k + 1 : Nat) : AzInt)
+  let E := ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((k : AzInt) - (w : AzInt))
+  let m := ofAzNat l.abs
+  let B := (mulPrecRound m lb.1 w .Floor).1
+  let C := (mulPrecRound m lb.2 w .Ceiling).1
+  let LLo := if l.sign then B else -C
+  let LHi := if l.sign then C else -B
+  ((addPrecRound A LLo w .Floor).1,
+    (addPrecRound (addPrecRound A E w .Ceiling).1 LHi w .Ceiling).1)
+
+/-! ### The dispatcher -/
+
+/-- Working precisions up to this take the series path, above it the AGM (tuned, see
+`docs/azfloat_plan.md`). -/
+def lnSeriesThreshold : Nat := 512
+
+/-- The two ends of the bracket of `ln x` at working precision `w`, from given brackets `pb` of
+`π` (needed above `lnSeriesThreshold` only) and `lb` of `ln 2`, computed at precision `w` or
+finer: the series path up to `lnSeriesThreshold`, the AGM path above. -/
+def lnBracketCore (pb lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
+  if w ≤ lnSeriesThreshold then lnSeriesBracket lb x e w else lnAgmBracket pb lb x e w
+
 /-- The two ends of the bracket of `ln x` at working precision `w`, for a finite positive `x`
 with exponent `e` (`2^(e−1) ≤ x < 2^e`): `lnBracketCore` with the brackets of `π` and `ln 2`
-computed at precision `w`. -/
+computed at precision `w` (`lnBracket_eq_core`; the bracket of `π` is only computed on the AGM
+path). -/
 def lnBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
-  lnBracketCore (piBracket w) (ln2Bracket w) x e w
+  if w ≤ lnSeriesThreshold then lnSeriesBracket (ln2Bracket w) x e w
+  else lnAgmBracket (piBracket w) (ln2Bracket w) x e w
 
 /-- The bracket as a pair of `Roundable`s. -/
 def lnApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
@@ -101,15 +175,18 @@ runtime; build one with `LnConsts.make W` (or `LnConsts.forPrecision p`, `Ln.lea
 structure LnConsts where
   /-- The working precision of the stored brackets. -/
   W : Nat
-  /-- The bracket of `π` at precision `W`. -/
+  /-- The bracket of `π` at precision `W` (only needed, and only computed, above
+  `lnSeriesThreshold`). -/
   pi : AzFloat × AzFloat
   /-- The bracket of `ln 2` at precision `W`. -/
   ln2 : AzFloat × AzFloat
-  pi_eq : pi = piBracket W
+  pi_eq : lnSeriesThreshold < W → pi = piBracket W
   ln2_eq : ln2 = ln2Bracket W
 
 /-- The constants for `ln` at working precision `W`. -/
-def LnConsts.make (W : Nat) : LnConsts := ⟨W, piBracket W, ln2Bracket W, rfl, rfl⟩
+def LnConsts.make (W : Nat) : LnConsts :=
+  ⟨W, if lnSeriesThreshold < W then piBracket W else (nan, nan), ln2Bracket W,
+    fun h => ite_eq_left h, rfl⟩
 
 /-- `lnBracket x e w` with the brackets of `π` and `ln 2` taken from `c` when its precision
 suffices (`w ≤ c.W`), computed afresh otherwise (the later Ziv levels). -/

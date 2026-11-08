@@ -21,7 +21,9 @@ import Azurite.Benchmark.Common
 `az_float_ln`: for each precision `P` (bits), the time of `ln x` (nearest, Ziv loop from
 `w = P + 64`), of `lnWith c x` with the constants `c = LnConsts.forPrecision P` computed once
 outside the timing (column `lnWith`), and the pieces of one bracket at `w = P + 64`: the whole
-`lnBracket`, the
+`lnBracket` (whichever path the threshold selects, constants included), the series path alone
+(`serBr`, `lnSeriesBracket`) and the AGM path alone (`agmBr`, `lnAgmBracket`), both with the
+brackets of `π` and `ln 2` precomputed outside the timing, for tuning `lnSeriesThreshold`, the
 rounded-down AGM alone (`agmIterLoN` from `⌊k⌋_w`, column `agm`), the former interval AGM
 (`agmIterN` from the bracket of `k`, column `agmIv`, for comparison), `piBracket w`,
 `ln2Bracket w`, and for reference `sqrt`, `pi P` and `ln2 P`.  Milliseconds.
@@ -94,7 +96,7 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
   IO.println s!"[AzFloat-Ln] ms per call (median of 3 passes over {count} inputs: \
     ln 10, ln 3, ln ½, …); bracket pieces at w = P + 64"
   IO.println (padLeft "bits" 7 ++ padLeft "ln" 10 ++ padLeft "lnWith" 10
-    ++ padLeft "lnBracket" 10 ++ padLeft "agm" 10
+    ++ padLeft "lnBracket" 10 ++ padLeft "serBr" 10 ++ padLeft "agmBr" 10 ++ padLeft "agm" 10
     ++ padLeft "agmIv" 10 ++ padLeft "piBracket" 10 ++ padLeft "ln2Bracket" 11
     ++ padLeft "sqrt" 10 ++ padLeft "pi" 10 ++ padLeft "ln2" 10)
   for P in bitsList do
@@ -105,6 +107,12 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
     let c := LnConsts.forPrecision P
     let nsLnW ← timeOver xs (lnWith c) fsize
     let nsBr ← timeOver xs (fun x => lnBracket x (x.exponent?.getD 0) w) (fun p => fsize p.1)
+    let lb := ln2Bracket w
+    let pb := piBracket w
+    let nsSer ← timeOver xs (fun x => lnSeriesBracket lb x (x.exponent?.getD 0) w)
+      (fun p => fsize p.1)
+    let nsAgmBr ← timeOver xs (fun x => lnAgmBracket pb lb x (x.exponent?.getD 0) w)
+      (fun p => fsize p.1)
     let nsAgm ← timeOver xs (fun x => agmLoOnly x w) (fun s => fsize s.1)
     let nsAgmIv ← timeOver xs (fun x => agmOnly x w) (fun s => fsize s.aHi)
     let ws : Array Nat := xs.map fun _ => w
@@ -115,7 +123,8 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
     let nsPiC ← timeOver ps pi fsize
     let nsLn2C ← timeOver ps ln2 fsize
     IO.println (padLeft s!"{P}" 7 ++ padLeft (ms nsLn count) 10 ++ padLeft (ms nsLnW count) 10
-      ++ padLeft (ms nsBr count) 10 ++ padLeft (ms nsAgm count) 10
+      ++ padLeft (ms nsBr count) 10 ++ padLeft (ms nsSer count) 10
+      ++ padLeft (ms nsAgmBr count) 10 ++ padLeft (ms nsAgm count) 10
       ++ padLeft (ms nsAgmIv count) 10 ++ padLeft (ms nsPi count) 10
       ++ padLeft (ms nsLn2 count) 11
       ++ padLeft (ms nsSqrt count) 10 ++ padLeft (ms nsPiC count) 10
