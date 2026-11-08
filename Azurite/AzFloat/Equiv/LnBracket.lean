@@ -22,9 +22,12 @@ import Azurite.Transcendental.Exp
 /-!
 # Equivalence: the bracket of `ln x`
 
-* `RelEncloses`: the interval AGM keeps the iterates within a *relative* error `δ`, and one
-  step adds at most `8 · 2^(−w)` to `δ` (`relEncloses_agmStep`): the AGM is homogeneous, so the
-  roundings — each within a factor `1 ± 2 · 2^(−w)` — compose multiplicatively.
+* `RelLower`: the rounded-down AGM on a single pair (`agmStepLo`) stays below the exact iterates
+  and within a *relative* error `δ`, and one step adds at most `8 · 2^(−w)` to `δ`
+  (`relLower_agmStepLo`, `relLower_agmIterLoN`): the AGM is homogeneous, so the roundings — each
+  within a factor `1 − 2 · 2^(−w)` — compose multiplicatively.  The a priori `δ = (2 + 8S) 2^(−w)`
+  after `S` steps is added back as the exact float `lnAgmDelta` (`lnAgm_spec`, `ln_agm_widen`):
+  `b_S ≤ AGM(1, k) ≤ ⌈a_S + δ⌉_w`.
 * `agm_log_gap`: after `lnSteps w` steps from `(1, k)`, `k ≥ 2^(−2h)`, the gap is at most
   `8 · 2^(−5h)` (`agm_log_iterations`, then two quadratic steps).
 * `lnBracket_spec`: for a positive float `x` with exponent `e`, `lnBracket x e w` encloses
@@ -74,23 +77,22 @@ theorem two_pow_size_le (n : ℕ) (hn : 0 < n) : 2 ^ n.size ≤ 2 * n := by
         rw [← pow_succ']; congr 1; omega
     _ ≤ 2 * n := Nat.mul_le_mul_left _ h
 
-/-! ### The relative enclosure of the AGM iterates -/
-
-/-- The ends of `s` enclose `(a_n, b_n)` and lie within the relative error `δ`. -/
-def RelEncloses (a b : ℝ) (n : ℕ) (δ : ℝ) (s : AgmBounds) : Prop :=
-  ∃ al ah bl bh : ℝ, s.aLo.toVal = some (al : EReal) ∧ s.aHi.toVal = some (ah : EReal) ∧
-    s.bLo.toVal = some (bl : EReal) ∧ s.bHi.toVal = some (bh : EReal) ∧
-    agmA a b n * (1 - δ) ≤ al ∧ al ≤ agmA a b n ∧ agmA a b n ≤ ah ∧ ah ≤ agmA a b n * (1 + δ) ∧
-    agmB a b n * (1 - δ) ≤ bl ∧ bl ≤ agmB a b n ∧ agmB a b n ≤ bh ∧ bh ≤ agmB a b n * (1 + δ)
-
 variable {a b : ℝ}
 
-/-- One step adds `8 · 2^(−w)` to the relative error. -/
-theorem relEncloses_agmStep (ha : 0 < a) (hb : 0 < b) {n : ℕ} {δ : ℝ} {s : AgmBounds} (w : ℕ)
-    [NeZero w] (hδ0 : 0 ≤ δ) (hδ : δ ≤ 1 / 2) (hu : (1 / 2 : ℝ) ^ w ≤ 1 / 8)
-    (h : RelEncloses a b n δ s) :
-    RelEncloses a b (n + 1) (δ + 8 * (1 / 2 : ℝ) ^ w) (agmStep w s) := by
-  obtain ⟨al, ah, bl, bh, hal, hah, hbl, hbh, hal1, hal2, hah1, hah2, hbl1, hbl2, hbh1, hbh2⟩ := h
+/-! ### The one-sided relative error of the rounded-down iteration -/
+
+/-- The pair `s` lies below `(a_n, b_n)`, within the relative error `δ`. -/
+def RelLower (a b : ℝ) (n : ℕ) (δ : ℝ) (s : AzFloat × AzFloat) : Prop :=
+  ∃ al bl : ℝ, s.1.toVal = some (al : EReal) ∧ s.2.toVal = some (bl : EReal) ∧
+    agmA a b n * (1 - δ) ≤ al ∧ al ≤ agmA a b n ∧ agmB a b n * (1 - δ) ≤ bl ∧ bl ≤ agmB a b n
+
+/-- One rounded-down step adds `8 · 2^(−w)` to the relative error (the lower halves of
+`relEncloses_agmStep`). -/
+theorem relLower_agmStepLo (ha : 0 < a) (hb : 0 < b) {n : ℕ} {δ : ℝ} {s : AzFloat × AzFloat}
+    (w : ℕ) [NeZero w] (hδ0 : 0 ≤ δ) (hδ : δ ≤ 1 / 2) (hu : (1 / 2 : ℝ) ^ w ≤ 1 / 8)
+    (h : RelLower a b n δ s) :
+    RelLower a b (n + 1) (δ + 8 * (1 / 2 : ℝ) ^ w) (agmStepLo w s) := by
+  obtain ⟨al, bl, hal, hbl, hal1, hal2, hbl1, hbl2⟩ := h
   set u := (1 / 2 : ℝ) ^ w with hu_def
   have hu0 : 0 < u := by positivity
   obtain ⟨hA, hB⟩ := agm_pos ha hb n
@@ -99,22 +101,13 @@ theorem relEncloses_agmStep (ha : 0 < a) (hb : 0 < b) {n : ℕ} {δ : ℝ} {s : 
   have h1δ : 0 ≤ 1 - δ := by linarith
   have hal0 : 0 ≤ al := le_trans (mul_nonneg hA.le h1δ) hal1
   have hbl0 : 0 ≤ bl := le_trans (mul_nonneg hB.le h1δ) hbl1
-  have hah0 : 0 ≤ ah := le_trans hA.le hah1
-  have hbh0 : 0 ≤ bh := le_trans hB.le hbh1
-  simp only [agmStep]
-  -- the arithmetic mean
+  simp only [agmStepLo]
   obtain ⟨r1, hr1, hf1⟩ := addFloor_err hal hbl w (by linarith)
-  obtain ⟨r2, hr2, hc2⟩ := addCeiling_err hah hbh w (by linarith)
-  -- the geometric mean
   obtain ⟨m1, hm1, hfm1⟩ := mulFloor_err hal hbl w (mul_nonneg hal0 hbl0)
-  obtain ⟨m2, hm2, hcm2⟩ := mulCeiling_err hah hbh w (mul_nonneg hah0 hbh0)
   obtain ⟨q1, hq1, hfq1⟩ := sqrtFloor_err hm1 hfm1.nonneg w
-  have hm2nn : 0 ≤ m2 := le_trans (mul_nonneg hah0 hbh0) hcm2.ge
-  obtain ⟨q2, hq2, hcq2⟩ := sqrtCeiling_err hm2 hm2nn w
   have hAB0 : 0 ≤ A * B := mul_nonneg hA.le hB.le
   have hS0 : 0 ≤ Real.sqrt (A * B) := Real.sqrt_nonneg _
-  refine ⟨r1 / 2, r2 / 2, q1, q2, toVal_half hr1, toVal_half hr2, hq1, hq2, ?_, ?_, ?_, ?_,
-    ?_, ?_, ?_, ?_⟩
+  refine ⟨r1 / 2, q1, toVal_half hr1, hq1, ?_, ?_, ?_, ?_⟩
   · rw [agmA_succ]
     have h1 : (A + B) * (1 - δ) ≤ al + bl := by linarith
     have h2 : (al + bl) * (1 - 2 * u) ≤ r1 := by linarith [hf1.ge]
@@ -125,16 +118,6 @@ theorem relEncloses_agmStep (ha : 0 < a) (hb : 0 < b) {n : ℕ} {δ : ℝ} {s : 
       exact mul_le_mul_of_nonneg_left (by nlinarith) (by linarith)
     linarith
   · rw [agmA_succ]; linarith [hf1.le]
-  · rw [agmA_succ]; linarith [hc2.ge]
-  · rw [agmA_succ]
-    have h3 : ah + bh ≤ (A + B) * (1 + δ) := by linarith
-    have h4 : r2 ≤ (ah + bh) * (1 + 2 * u) := by linarith [hc2.le]
-    have h5 : (ah + bh) * (1 + 2 * u) ≤ (A + B) * (1 + δ) * (1 + 2 * u) :=
-      mul_le_mul_of_nonneg_right h3 (by linarith)
-    have h6 : (A + B) * (1 + δ) * (1 + 2 * u) ≤ (A + B) * (1 + (δ + 8 * u)) := by
-      rw [mul_assoc]
-      exact mul_le_mul_of_nonneg_left (by nlinarith) (by linarith)
-    linarith
   · rw [agmB_succ]
     have hm1ge : al * bl * (1 - 2 * u) ≤ m1 := by linarith [hfm1.ge]
     have hprod : A * (1 - δ) * (B * (1 - δ)) ≤ al * bl :=
@@ -183,70 +166,33 @@ theorem relEncloses_agmStep (ha : 0 < a) (hb : 0 < b) {n : ℕ} {δ : ℝ} {s : 
   · rw [agmB_succ]
     have h1 : al * bl ≤ A * B := mul_le_mul hal2 hbl2 hbl0 hA.le
     exact hfq1.le.trans (Real.sqrt_le_sqrt (hfm1.le.trans h1))
-  · rw [agmB_succ]
-    have h1 : A * B ≤ ah * bh := mul_le_mul hah1 hbh1 hB.le hah0
-    exact (Real.sqrt_le_sqrt (h1.trans hcm2.ge)).trans hcq2.ge
-  · rw [agmB_succ]
-    have hm2le : m2 ≤ ah * bh * (1 + 2 * u) := by linarith [hcm2.le]
-    have hprod : ah * bh ≤ A * (1 + δ) * (B * (1 + δ)) :=
-      mul_le_mul hah2 hbh2 hbh0 (mul_nonneg hA.le (by linarith))
-    have hm2hi : m2 ≤ A * B * ((1 + δ) ^ 2 * (1 + 2 * u)) := by
-      calc m2 ≤ ah * bh * (1 + 2 * u) := hm2le
-        _ ≤ A * (1 + δ) * (B * (1 + δ)) * (1 + 2 * u) :=
-            mul_le_mul_of_nonneg_right hprod (by linarith)
-        _ = A * B * ((1 + δ) ^ 2 * (1 + 2 * u)) := by ring
-    have hsq : Real.sqrt m2 ≤ Real.sqrt (A * B * ((1 + δ) ^ 2 * (1 + 2 * u))) :=
-      Real.sqrt_le_sqrt hm2hi
-    rw [Real.sqrt_mul hAB0, Real.sqrt_mul (sq_nonneg _), Real.sqrt_sq (by linarith)] at hsq
-    have hs2u : Real.sqrt (1 + 2 * u) ≤ 1 + u := sqrt_one_add_le hu0.le
-    have h7 : Real.sqrt m2 ≤ Real.sqrt (A * B) * (1 + δ) * (1 + u) := by
-      calc Real.sqrt m2 ≤ Real.sqrt (A * B) * ((1 + δ) * Real.sqrt (1 + 2 * u)) := hsq
-        _ ≤ Real.sqrt (A * B) * ((1 + δ) * (1 + u)) :=
-            mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hs2u (by linarith)) hS0
-        _ = _ := by ring
-    have h8 : q2 ≤ Real.sqrt m2 * (1 + 2 * u) := by linarith [hcq2.le]
-    have h9 : Real.sqrt m2 * (1 + 2 * u) ≤ Real.sqrt (A * B) * (1 + δ) * (1 + u) * (1 + 2 * u) :=
-      mul_le_mul_of_nonneg_right h7 (by linarith)
-    have h10 : Real.sqrt (A * B) * (1 + δ) * (1 + u) * (1 + 2 * u)
-        ≤ Real.sqrt (A * B) * (1 + (δ + 8 * u)) := by
-      have huu : u * u ≤ u / 8 := by
-        have := mul_le_mul_of_nonneg_left hu hu0.le; linarith
-      have hdu : δ * u ≤ u / 2 := by
-        have := mul_le_mul_of_nonneg_right hδ hu0.le; linarith
-      have hduu : δ * (u * u) ≤ u / 16 := by
-        have := mul_le_mul_of_nonneg_left huu hδ0
-        have := mul_le_mul_of_nonneg_right hδ (by positivity : (0 : ℝ) ≤ u / 8)
-        nlinarith
-      have e : (1 + δ) * (1 + u) * (1 + 2 * u)
-          = 1 + δ + 3 * u + 2 * (u * u) + 3 * (δ * u) + 2 * (δ * (u * u)) := by ring
-      have : (1 + δ) * (1 + u) * (1 + 2 * u) ≤ 1 + (δ + 8 * u) := by
-        rw [e]
-        linarith
-      calc Real.sqrt (A * B) * (1 + δ) * (1 + u) * (1 + 2 * u)
-          = Real.sqrt (A * B) * ((1 + δ) * (1 + u) * (1 + 2 * u)) := by ring
-        _ ≤ _ := mul_le_mul_of_nonneg_left this hS0
-    linarith
 
-theorem relEncloses_agmIterN (ha : 0 < a) (hb : 0 < b) (w : ℕ) [NeZero w]
+theorem relLower_agmIterLoN (ha : 0 < a) (hb : 0 < b) (w : ℕ) [NeZero w]
     (hu : (1 / 2 : ℝ) ^ w ≤ 1 / 8) :
-    ∀ (n m : ℕ) {δ : ℝ} {s : AgmBounds}, 0 ≤ δ → δ + 8 * (1 / 2 : ℝ) ^ w * n ≤ 1 / 2 →
-      RelEncloses a b m δ s →
-      RelEncloses a b (m + n) (δ + 8 * (1 / 2 : ℝ) ^ w * n) (agmIterN w n s)
+    ∀ (n m : ℕ) {δ : ℝ} {s : AzFloat × AzFloat}, 0 ≤ δ →
+      δ + 8 * (1 / 2 : ℝ) ^ w * n ≤ 1 / 2 → RelLower a b m δ s →
+      RelLower a b (m + n) (δ + 8 * (1 / 2 : ℝ) ^ w * n) (agmIterLoN w n s)
   | 0, m, δ, s, _, _, h => by
-    simp only [agmIterN, Nat.cast_zero, mul_zero, add_zero]
+    simp only [agmIterLoN, Nat.cast_zero, mul_zero, add_zero]
     exact h
   | n + 1, m, δ, s, hδ0, hδ, h => by
     have hu0 : 0 < (1 / 2 : ℝ) ^ w := by positivity
     have hn : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-    have hstep := relEncloses_agmStep ha hb w hδ0 (by push_cast at hδ; nlinarith) hu h
-    have hrec := relEncloses_agmIterN ha hb w hu n (m + 1) (δ := δ + 8 * (1 / 2 : ℝ) ^ w)
+    have hstep := relLower_agmStepLo ha hb w hδ0 (by push_cast at hδ; nlinarith) hu h
+    have hrec := relLower_agmIterLoN ha hb w hu n (m + 1) (δ := δ + 8 * (1 / 2 : ℝ) ^ w)
       (by positivity) (by push_cast at hδ ⊢; linarith) hstep
     have e1 : m + (n + 1) = m + 1 + n := by omega
     have e2 : δ + 8 * (1 / 2 : ℝ) ^ w * ((n + 1 : ℕ) : ℝ)
         = δ + 8 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (n : ℝ) := by push_cast; ring
-    simp only [agmIterN]
+    simp only [agmIterLoN]
     rw [e1, e2]
     exact hrec
+
+/-- The exact float `δ = (8S + 2) · 2^(−w)`. -/
+theorem toVal_lnAgmDelta (w S : ℕ) :
+    (lnAgmDelta w S).toVal = some ((((8 * S + 2 : ℕ) : ℝ) * (1 / 2 : ℝ) ^ w : ℝ) : EReal) := by
+  rw [lnAgmDelta, toVal_shiftLeft_of_toVal (toVal_ofAzNat _), AzNat.toNat_ofNat, AzInt.toInt_neg,
+    toInt_toAzInt, AzNat.toNat_ofNat, zpow_neg, zpow_natCast, one_div_pow, one_div]
 
 /-! ### The number of steps -/
 
@@ -346,7 +292,7 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
     (hblM : bl ≤ M) (hMah : M ≤ ah) (hbllo : 1 / (8 * h + 12) ≤ bl)
     (hah2 : ah ≤ 2)
     (hwidth : ah - bl ≤ 8 * (1 / 2 : ℝ) ^ (5 * h)
-      + 2 * (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)))
+      + 3 * (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)))
     (hpl0 : 0 ≤ pl) (hplπ : pl < Real.pi) (hπph : Real.pi ≤ ph) (hpw : ph - pl ≤ piEps w)
     (hfq : FloorOf w ((pl / 2) / ah) qLo) (hcq : CeilOf w ((ph / 2) / bl) qHi)
     (hEv0 : 0 ≤ Ev) (hEv_le : Ev ≤ (4 * h + 4) * (1 / 2 : ℝ) ^ (4 * h))
@@ -441,7 +387,7 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
       pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
     have e : (1 / 2 : ℝ) ^ (w + 7) = u / 128 := by rw [pow_add, ← hu]; ring
     linarith
-  have hahbl : ah - bl ≤ 200 * W * u := by
+  have hahbl : ah - bl ≤ 300 * W * u := by
     have h1 : 8 * u * (S : ℝ) ≤ 8 * u * (w + 11) := mul_le_mul_of_nonneg_left hSw (by positivity)
     have h2 : (w : ℝ) * u ≤ W * u := mul_le_mul_of_nonneg_right hWw hu0.le
     have h3 : u ≤ W * u := by
@@ -460,13 +406,13 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
     calc W = W ^ 1 := (pow_one W).symm
       _ ≤ W ^ 5 := pow_le_pow_right₀ hW1 (by norm_num)
   have hP0 : 0 ≤ W ^ 5 * u := by positivity
-  have hQpm' : Qp - Qm ≤ (9 * 2 ^ 19 + 3600) * (W ^ 5 * u) := by
+  have hQpm' : Qp - Qm ≤ (9 * 2 ^ 19 + 5400) * (W ^ 5 * u) := by
     have h1 : (piEps w + 2 * (ah - bl)) * (3 * W) ^ 2
-        ≤ (2 ^ 19 * W ^ 3 * u + 2 * (200 * W * u)) * (3 * W) ^ 2 := by
+        ≤ (2 ^ 19 * W ^ 3 * u + 2 * (300 * W * u)) * (3 * W) ^ 2 := by
       apply mul_le_mul_of_nonneg_right _ (by positivity)
       linarith
-    have h2 : (2 ^ 19 * W ^ 3 * u + 2 * (200 * W * u)) * (3 * W) ^ 2
-        = 9 * 2 ^ 19 * (W ^ 5 * u) + 3600 * (W ^ 3 * u) := by ring
+    have h2 : (2 ^ 19 * W ^ 3 * u + 2 * (300 * W * u)) * (3 * W) ^ 2
+        = 9 * 2 ^ 19 * (W ^ 5 * u) + 5400 * (W ^ 3 * u) := by ring
     have h3 : W ^ 3 * u ≤ W ^ 5 * u := mul_le_mul_of_nonneg_right hW3 hu0.le
     linarith
   have hEv2 : 2 * Ev ≤ W ^ 5 * u := by
@@ -527,14 +473,14 @@ theorem ln_final_bounds {w : ℕ} (hw : 64 ≤ w) {h S : ℕ} (hh2 : 2 ≤ h) (h
   -- assemble
   have htotal : hi - lo ≤ (Qp - Qm) + 32 * (W * u) + 2 * Ev + (LHi - LLo) + 108 * (W * u) := by
     linarith
-  have hfin : (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
+  have hfin : (9 * 2 ^ 19 + 5400 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
       + 12 * (W ^ 5 * u) ≤ 2 ^ 40 * (W ^ 5 * u) := by
-    calc (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u + 12 * (W ^ 5 * u)
-        = (9 * 2 ^ 19 + 3600 + 140 + 1 + 12) * (W ^ 5 * u) := by ring
+    calc (9 * 2 ^ 19 + 5400 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u + 12 * (W ^ 5 * u)
+        = (9 * 2 ^ 19 + 5400 + 140 + 1 + 12) * (W ^ 5 * u) := by ring
       _ ≤ 2 ^ 40 * (W ^ 5 * u) := mul_le_mul_of_nonneg_right (by norm_num) hP0
   unfold lnEps
   rw [← hW]
-  have : hi - lo ≤ (9 * 2 ^ 19 + 3600 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
+  have : hi - lo ≤ (9 * 2 ^ 19 + 5400 : ℝ) * (W ^ 5 * u) + 140 * (W ^ 5 * u) + W ^ 5 * u
       + 12 * (W ^ 5 * u) := by linarith
   calc hi - lo ≤ _ := this
     _ ≤ 2 ^ 40 * (W ^ 5 * u) := hfin
@@ -658,22 +604,26 @@ theorem lin_le_two_pow_five {h : ℕ} (hh : 2 ≤ h) : 32 * h + 48 ≤ 2 ^ (5 * 
           rw [show 5 * (h + 1) = 5 * h + 5 by ring, pow_add, mul_comm]
           exact Nat.mul_le_mul_left (2 ^ (5 * h)) (by norm_num)
 
-/-! ### The interval AGM -/
+/-! ### The rounded-down AGM -/
 
-/-- After `2 ⌈lg 2h⌉ + 3` interval steps from `(1, [k⁻, k⁺])`: `b⁻ ≤ AGM(1, k) ≤ a⁺`, with
-`b⁻ ≥ 1/(8h + 12)`, `a⁺ ≤ 2` and `a⁺ − b⁻ ≤ 8 · 2^(−5h) + 2 δ`, `δ = (2 + 8 S) 2^(−w)`. -/
+/-- After `S = 2 ⌈lg 2h⌉ + 3` rounded-down steps from `(1, ⌊k⌋_w)`: with
+`δ = (2 + 8 S) 2^(−w)`, `b_S ≤ AGM(1, k) ≤ a_S + δ`, `b_S ≥ 1/(8h + 12)`, `a_S ≤ 1` and
+`a_S + δ − b_S ≤ 8 · 2^(−5h) + 2 δ`. -/
 theorem lnAgm_spec {w : ℕ} (hw : 64 ≤ w) {k : ℝ} (h : ℕ) (hh : 2 ≤ h) (hh4 : w + 5 ≤ 4 * h)
     (hh4' : 4 * h ≤ w + 8) (hk1 : (1 / 2 : ℝ) ^ (2 * h) ≤ k)
     (hk2 : k ≤ 2 * (1 / 2 : ℝ) ^ (2 * h)) (hk3 : k ≤ 1)
-    {kLo kHi : AzFloat} {kl kh : ℝ} (hkl : kLo.toVal = some (kl : EReal))
-    (hkh : kHi.toVal = some (kh : EReal)) (hfl : FloorOf w k kl) (hch : CeilOf w k kh) :
-    ∃ ah bl : ℝ,
-      (agmIterN w (2 * Nat.clog 2 (2 * h) + 3) ⟨one, one, kLo, kHi⟩).aHi.toVal = some (ah : EReal) ∧
-      (agmIterN w (2 * Nat.clog 2 (2 * h) + 3) ⟨one, one, kLo, kHi⟩).bLo.toVal = some (bl : EReal) ∧
-      bl ≤ AGM 1 k ∧ AGM 1 k ≤ ah ∧ 1 / (8 * h + 12) ≤ bl ∧ ah ≤ 2 ∧
-      ah - bl ≤ 8 * (1 / 2 : ℝ) ^ (5 * h)
-        + 2 * (2 * (1 / 2 : ℝ) ^ w
-          + 8 * (1 / 2 : ℝ) ^ w * ((2 * Nat.clog 2 (2 * h) + 3 : ℕ) : ℝ)) := by
+    {kLo : AzFloat} {kl : ℝ} (hkl : kLo.toVal = some (kl : EReal)) (hfl : FloorOf w k kl) :
+    ∃ aS bl : ℝ,
+      (agmIterLoN w (2 * Nat.clog 2 (2 * h) + 3) (one, kLo)).1.toVal = some (aS : EReal) ∧
+      (agmIterLoN w (2 * Nat.clog 2 (2 * h) + 3) (one, kLo)).2.toVal = some (bl : EReal) ∧
+      bl ≤ AGM 1 k ∧
+      AGM 1 k ≤ aS + (2 * (1 / 2 : ℝ) ^ w
+        + 8 * (1 / 2 : ℝ) ^ w * ((2 * Nat.clog 2 (2 * h) + 3 : ℕ) : ℝ)) ∧
+      1 / (8 * h + 12) ≤ bl ∧ 0 ≤ aS ∧ aS ≤ 1 ∧
+      aS + (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * ((2 * Nat.clog 2 (2 * h) + 3 : ℕ) : ℝ))
+        - bl ≤ 8 * (1 / 2 : ℝ) ^ (5 * h)
+          + 2 * (2 * (1 / 2 : ℝ) ^ w
+            + 8 * (1 / 2 : ℝ) ^ w * ((2 * Nat.clog 2 (2 * h) + 3 : ℕ) : ℝ)) := by
   have : NeZero w := ⟨by omega⟩
   set u := (1 / 2 : ℝ) ^ w with hu_def
   have hu0 : 0 < u := by positivity
@@ -697,28 +647,24 @@ theorem lnAgm_spec {w : ℕ} (hw : 64 ≤ w) {k : ℝ} (h : ℕ) (hh : 2 ≤ h) 
     have h1 : 8 * u * (S : ℝ) ≤ 8 * u * (w + 11) := mul_le_mul_of_nonneg_left hSw' (by positivity)
     have e : (1 / 2 : ℝ) ^ 32 = 64 * (1 / 2 : ℝ) ^ 38 := by norm_num
     nlinarith
-  -- the initial relative enclosure
-  have h0 : RelEncloses 1 k 0 (2 * u) ⟨one, one, kLo, kHi⟩ := by
-    refine ⟨1, 1, kl, kh, toVal_one', toVal_one', hkl, hkh, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  -- the initial pair
+  have h0 : RelLower 1 k 0 (2 * u) (one, kLo) := by
+    refine ⟨1, kl, toVal_one', hkl, ?_, ?_, ?_, ?_⟩
     · simp only [agmA_zero]; linarith
     · simp only [agmA_zero]; exact le_rfl
-    · simp only [agmA_zero]; exact le_rfl
-    · simp only [agmA_zero]; linarith
     · simp only [agmB_zero]; linarith [hfl.ge]
     · simp only [agmB_zero]; exact hfl.le
-    · simp only [agmB_zero]; exact hch.ge
-    · simp only [agmB_zero]; linarith [hch.le]
-  have hiter := relEncloses_agmIterN one_pos hk0 w hu8 S 0 (δ := 2 * u) (by positivity)
+  have hiter := relLower_agmIterLoN one_pos hk0 w hu8 S 0 (δ := 2 * u) (by positivity)
     (by rw [← hδ]; exact hδ_le) h0
   rw [Nat.zero_add] at hiter
-  obtain ⟨al, ah, bl, bh, -, hah, hbl, -, -, -, hah1, hah2, hbl1, hbl2, -, -⟩ := hiter
-  rw [← hδ] at hah2 hbl1
+  obtain ⟨aS, bl, haS, hbl, haS1, haS2, hbl1, hbl2⟩ := hiter
+  rw [← hδ] at haS1 hbl1
   -- the exact iterates
   have hgap := agm_log_gap hk0 hk3 h hk1
   rw [← hS] at hgap
   have hbM : agmB 1 k S ≤ AGM 1 k := agmB_le_AGM one_pos hk0 hS1
   have hMa : AGM 1 k ≤ agmA 1 k S := AGM_le_agmA one_pos hk0 hS1
-  have haS1 : agmA 1 k S ≤ 1 := agmA_one_le hk0 hk3 hS1
+  have haS1' : agmA 1 k S ≤ 1 := agmA_one_le hk0 hk3 hS1
   have hbS0 : 0 < agmB 1 k S := (agm_pos one_pos hk0 S).2
   have hba : agmB 1 k S ≤ agmA 1 k S := agmB_le_agmA one_pos hk0 hS1
   have hbSlo : 1 / (4 * h + 6) ≤ agmB 1 k S := by
@@ -740,7 +686,12 @@ theorem lnAgm_spec {w : ℕ} (hw : 64 ≤ w) {k : ℝ} (h : ℕ) (hh : 2 ≤ h) 
     have h2 : (1 : ℝ) / (2 * h + 3) - 1 / (2 * (2 * h + 3)) = 1 / (4 * h + 6) := by
       field_simp; ring
     linarith
-  refine ⟨ah, bl, hah, hbl, hbl2.trans hbM, hMa.trans hah1, ?_, ?_, ?_⟩
+  have hAδ : agmA 1 k S ≤ aS + δ := by
+    have : agmA 1 k S * δ ≤ 1 * δ := mul_le_mul_of_nonneg_right haS1' hδ0
+    linarith
+  have haS0 : 0 ≤ aS :=
+    le_trans (mul_nonneg (agm_pos one_pos hk0 S).1.le (by linarith)) haS1
+  refine ⟨aS, bl, haS, hbl, hbl2.trans hbM, hMa.trans hAδ, ?_, haS0, haS2.trans haS1', ?_⟩
   · have h1 : agmB 1 k S * (1 / 2) ≤ agmB 1 k S * (1 - δ) :=
       mul_le_mul_of_nonneg_left (by linarith) hbS0.le
     have h2 : (1 : ℝ) / (8 * h + 12) = 1 / (4 * h + 6) * (1 / 2) := by field_simp; ring
@@ -749,26 +700,90 @@ theorem lnAgm_spec {w : ℕ} (hw : 64 ≤ w) {k : ℝ} (h : ℕ) (hh : 2 ≤ h) 
           mul_le_mul_of_nonneg_right hbSlo (by norm_num)
       _ ≤ agmB 1 k S * (1 - δ) := h1
       _ ≤ bl := hbl1
-  · have : agmA 1 k S * (1 + δ) ≤ 1 * (3 / 2) :=
-      mul_le_mul haS1 (by linarith) (by linarith) zero_le_one
+  · have h1 : δ * agmB 1 k S ≤ δ * 1 :=
+      mul_le_mul_of_nonneg_left (hba.trans haS1') hδ0
+    nlinarith
+
+/-- The upper end `ah = ⌈a_S + δ⌉_w` of the AGM bracket: `M ≤ ah ≤ 2` and
+`ah − b_S ≤ g + 3δ` from `a_S + δ − b_S ≤ g + 2δ` (pure real arithmetic). -/
+theorem ln_agm_widen {w : ℕ} (hw : 64 ≤ w) {S : ℕ} (hS3 : 3 ≤ S) (hSw : (S : ℝ) ≤ w + 11)
+    {aS bl M g ah : ℝ} (haS1 : aS ≤ 1)
+    (hMaS : M ≤ aS + (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)))
+    (hwidth0 : aS + (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)) - bl
+      ≤ g + 2 * (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)))
+    (hcah : CeilOf w (aS + (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ))) ah) :
+    M ≤ ah ∧ ah ≤ 2 ∧ ah - bl ≤ g + 3 * (2 * (1 / 2 : ℝ) ^ w + 8 * (1 / 2 : ℝ) ^ w * (S : ℝ)) := by
+  set u := (1 / 2 : ℝ) ^ w with hu
+  have hu0 : 0 < u := by positivity
+  have hu32 : (w : ℝ) * u ≤ (1 / 2 : ℝ) ^ 32 := mul_half_pow_le hw
+  have hw64 : (64 : ℝ) ≤ w := by exact_mod_cast hw
+  have hu38 : u ≤ (1 / 2 : ℝ) ^ 38 := by
+    have : (64 : ℝ) * u ≤ (w : ℝ) * u := mul_le_mul_of_nonneg_right hw64 hu0.le
+    have e : (1 / 2 : ℝ) ^ 32 = 64 * (1 / 2 : ℝ) ^ 38 := by norm_num
     linarith
-  · have e : agmA 1 k S * (1 + δ) - agmB 1 k S * (1 - δ)
-        = (agmA 1 k S - agmB 1 k S) + δ * (agmA 1 k S + agmB 1 k S) := by ring
-    have h1 : δ * (agmA 1 k S + agmB 1 k S) ≤ δ * 2 :=
-      mul_le_mul_of_nonneg_left (by linarith) hδ0
+  have hu8 : u ≤ 1 / 8 := hu38.trans (by norm_num)
+  set δ := 2 * u + 8 * u * (S : ℝ) with hδ
+  have hS3' : (3 : ℝ) ≤ S := by exact_mod_cast hS3
+  have hδ_le : δ ≤ 1 / 2 := by
+    have h1 : 8 * u * (S : ℝ) ≤ 8 * u * (w + 11) := mul_le_mul_of_nonneg_left hSw (by positivity)
+    have e : (1 / 2 : ℝ) ^ 32 = 64 * (1 / 2 : ℝ) ^ 38 := by norm_num
+    nlinarith
+  have h1 : aS + δ ≤ 3 / 2 := by linarith
+  have h2 := hcah.le_of_le h1
+  have h3 : 3 * u ≤ δ := by nlinarith
+  refine ⟨hMaS.trans hcah.ge, ?_, ?_⟩
+  · have : 2 * (3 / 2 : ℝ) * u ≤ 2 * (3 / 2) * (1 / 8) :=
+      mul_le_mul_of_nonneg_left hu8 (by norm_num)
     linarith
+  · linarith
 
 /-! ### The term `ℓ ln 2` -/
 
+/-- `pb` is a bracket of `π` fit for the working precision `w`: ends with values `0 ≤ pl < π ≤ ph`
+and width at most `piEps w` (what `lnBracketCore` needs; `piBracket w` qualifies, and so does
+`piBracket W` for any `W ≥ w`). -/
+def PiBracketFor (w : ℕ) (pb : AzFloat × AzFloat) : Prop :=
+  ∃ pl ph : ℝ, pb.1.toVal = some (pl : EReal) ∧ pb.2.toVal = some (ph : EReal) ∧
+    0 ≤ pl ∧ pl < Real.pi ∧ Real.pi ≤ ph ∧ ph - pl ≤ piEps w
+
+/-- `lb` is a bracket of `ln 2` fit for the working precision `w`: ends with values
+`1/5 ≤ ll ≤ ln 2 ≤ lh` and width at most `8 · 2^(−w)`. -/
+def Ln2BracketFor (w : ℕ) (lb : AzFloat × AzFloat) : Prop :=
+  ∃ ll lh : ℝ, lb.1.toVal = some (ll : EReal) ∧ lb.2.toVal = some (lh : EReal) ∧
+    ll ≤ Real.log 2 ∧ Real.log 2 ≤ lh ∧ lh - ll ≤ 8 * (1 / 2 : ℝ) ^ w ∧ 1 / 5 ≤ ll
+
+theorem piBracketFor_piBracket {w : ℕ} (hw : 64 ≤ w) : PiBracketFor w (piBracket w) :=
+  piBracket_spec hw
+
+theorem ln2BracketFor_ln2Bracket {w : ℕ} (hw : 2 ≤ w) : Ln2BracketFor w (ln2Bracket w) := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := ln2Bracket_spec w
+  exact ⟨ll, lh, h1, h2, h3, h4, h5, h6 hw⟩
+
+/-- A bracket fit for a finer precision `W ≥ w` is fit for `w`. -/
+theorem PiBracketFor.of_le {w W : ℕ} {pb : AzFloat × AzFloat} (hw : 4 ≤ w) (hW : w ≤ W)
+    (h : PiBracketFor W pb) : PiBracketFor w pb := by
+  obtain ⟨pl, ph, h1, h2, h3, h4, h5, h6⟩ := h
+  exact ⟨pl, ph, h1, h2, h3, h4, h5, h6.trans (piEps_antitone hw hW)⟩
+
+/-- A bracket fit for a finer precision `W ≥ w` is fit for `w`. -/
+theorem Ln2BracketFor.of_le {w W : ℕ} {lb : AzFloat × AzFloat} (hW : w ≤ W)
+    (h : Ln2BracketFor W lb) : Ln2BracketFor w lb := by
+  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := h
+  refine ⟨ll, lh, h1, h2, h3, h4, h5.trans ?_, h6⟩
+  exact mul_le_mul_of_nonneg_left (pow_le_pow_of_le_one (by norm_num) (by norm_num) hW)
+    (by norm_num)
+
 /-- The bracket of `ℓ ln 2`: `|ℓ|` times the float bracket of `ln 2`, rounded outward, the signs
 restored by negation when `ℓ < 0`. -/
-theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) (ℓ : AzInt) :
+theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat} (hlb : Ln2BracketFor w lb)
+    (ℓ : AzInt) :
     ∃ LLo LHi : ℝ,
-      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).1 w .Floor).1
-        else -(mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).2 w .Ceiling).1).toVal
+      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) lb.1 w .Floor).1
+        else -(mulPrecRound (ofAzNat ℓ.abs) lb.2 w .Ceiling).1).toVal
           = some (LLo : EReal) ∧
-      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).2 w .Ceiling).1
-        else -(mulPrecRound (ofAzNat ℓ.abs) (ln2Bracket w).1 w .Floor).1).toVal
+      (if ℓ.sign = true then (mulPrecRound (ofAzNat ℓ.abs) lb.2 w .Ceiling).1
+        else -(mulPrecRound (ofAzNat ℓ.abs) lb.1 w .Floor).1).toVal
           = some (LHi : EReal) ∧
       LLo ≤ (ℓ.toInt : ℝ) * Real.log 2 ∧ (ℓ.toInt : ℝ) * Real.log 2 ≤ LHi ∧
       LHi - LLo ≤ 12 * |(ℓ.toInt : ℝ)| * (1 / 2 : ℝ) ^ w ∧
@@ -779,9 +794,8 @@ theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) (ℓ : AzInt) :
   have hu1 : u ≤ 1 / 1000 := by
     calc u ≤ (1 / 2 : ℝ) ^ 64 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
       _ ≤ 1 / 1000 := by norm_num
-  obtain ⟨a, b, ha, hb, haL, hLb, hab, hapos⟩ := ln2Bracket_spec w
+  obtain ⟨a, b, ha, hb, haL, hLb, hab, ha5⟩ := hlb
   rw [← hu_def] at hab
-  have ha5 : 1 / 5 ≤ a := hapos (by omega)
   have hL1 := Real.log_two_gt_d9
   have hL2 := Real.log_two_lt_d9
   have ha0 : 0 < a := by linarith
@@ -843,11 +857,14 @@ theorem ln_L_spec {w : ℕ} (hw : 64 ≤ w) (ℓ : AzInt) :
 
 /-! ### The bracket -/
 
-/-- `lnBracket x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`). -/
-theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+set_option maxHeartbeats 400000 in
+/-- `lnBracketCore pb lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+any brackets `pb` of `π` and `lb` of `ln 2` fit for `w`. -/
+theorem lnBracketCore_spec {w : ℕ} (hw : 64 ≤ w) {pb lb : AzFloat × AzFloat}
+    (hpb : PiBracketFor w pb) (hlb : Ln2BracketFor w lb) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) :
-    ∃ lv hv' : ℝ, (lnBracket (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
-      (lnBracket (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+    ∃ lv hv' : ℝ, (lnBracketCore pb lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnBracketCore pb lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
       lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
       hv' - lv ≤ lnEps e.toInt w := by
   have : NeZero w := ⟨by omega⟩
@@ -892,18 +909,24 @@ theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNa
   have hM0 : 0 < AGM 1 k := AGM_one_pos hk0
   have h4k : 4 / k = yv := by rw [hk]; field_simp
   rw [h4k] at herr
-  -- `k` enclosed
+  -- `k` enclosed from below
   obtain ⟨kl, hkl, hfl⟩ := divFloor_err toVal_four hy hy0 (by norm_num) w
-  obtain ⟨kh, hkh, hch⟩ := divCeiling_err toVal_four hy hy0 (by norm_num) w
-  rw [← hk] at hfl hch
+  rw [← hk] at hfl
   -- the AGM
-  obtain ⟨ah, bl, hah, hbl, hblM, hMah, hbllo, hah2, hwidth⟩ :=
-    lnAgm_spec hw h hh2 hh4 hh4' hk1 hk2 hk3 hkl hkh hfl hch
-  rw [← hS] at hah hbl hwidth
+  obtain ⟨aS, bl, haS, hbl, hblM, hMaS, hbllo, haS0, haS1, hwidth0⟩ :=
+    lnAgm_spec hw h hh2 hh4 hh4' hk1 hk2 hk3 hkl hfl
+  rw [← hS] at haS hbl hMaS hwidth0
+  set δ := 2 * u + 8 * u * (S : ℝ) with hδ
+  have hδ_eq : (((8 * S + 2 : ℕ) : ℝ) * u : ℝ) = δ := by push_cast; rw [hδ]; ring
+  have hD : (lnAgmDelta w S).toVal = some ((δ : ℝ) : EReal) := by
+    rw [toVal_lnAgmDelta, ← hu_def, hδ_eq]
   have hbl0 : 0 < bl := lt_of_lt_of_le (by positivity) hbllo
+  have hδ0 : 0 ≤ δ := by positivity
+  obtain ⟨ah, hah, hcah⟩ := addCeiling_err haS hD w (by linarith)
+  obtain ⟨hMah, hah2, hwidth⟩ := ln_agm_widen hw (S := S) (by omega) hSw haS1 hMaS hwidth0 hcah
   have hah0 : 0 < ah := lt_of_lt_of_le hM0 hMah
   -- `π`
-  obtain ⟨pl, ph, hpl, hph, hpl0, hplπ, hπph, hpw⟩ := piBracket_spec hw
+  obtain ⟨pl, ph, hpl, hph, hpl0, hplπ, hπph, hpw⟩ := hpb
   have hpi3 := Real.pi_gt_three
   have hpi4 := Real.pi_lt_four
   have hpeps : piEps w ≤ 1 / 16 := piEps_le hw
@@ -936,9 +959,9 @@ theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNa
   have hEv0 : 0 ≤ Ev := by rw [hEv]; positivity
   have herrE : |(Real.pi / 2) / AGM 1 k - Real.log yv| ≤ Ev := herr.trans hEv_ge
   -- `ℓ ln 2`
-  obtain ⟨LLo, LHi, hLLo, hLHi, hL1, hL2, hLw, hLLo_abs, hLHi_abs⟩ := ln_L_spec hw ℓ
+  obtain ⟨LLo, LHi, hLLo, hLHi, hL1, hL2, hLw, hLLo_abs, hLHi_abs⟩ := ln_L_spec hw hlb ℓ
   -- the final combination
-  simp only [lnBracket]
+  simp only [lnBracketCore]
   rw [← hh_def, hS_eq, ← hℓ, ← heps]
   obtain ⟨lo1, hlo1, hlo1a, hlo1b⟩ := subFloor_abs hqLo hE w
   obtain ⟨lo, hlo, hloa, hlob⟩ := subFloor_abs hlo1 hLHi w
@@ -973,6 +996,34 @@ theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNa
                 rw [abs_of_nonneg (by positivity)]; linarith)
       hblM hMah hbllo hah2 hwidth hpl0 hplπ hπph hpw hfq hcq hEv0 hEv_le hLw hLLo_abs
       hLHi_abs hlo1a hlo1b hlob hhi1a hhi1b hhib
+
+/-- `lnBracket x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`). -/
+theorem lnBracket_spec {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) :
+    ∃ lv hv' : ℝ, (lnBracket (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnBracket (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w :=
+  lnBracketCore_spec hw (piBracketFor_piBracket hw) (ln2BracketFor_ln2Bracket (by omega)) e hv
+
+/-- `lnBracketWith c x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+any constants `c`. -/
+theorem lnBracketWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) :
+    ∃ lv hv' : ℝ, (lnBracketWith c (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnBracketWith c (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w := by
+  unfold lnBracketWith
+  split_ifs with hW
+  · have hpb : PiBracketFor w c.pi := by
+      rw [c.pi_eq]
+      exact (piBracketFor_piBracket (by omega)).of_le (by omega) hW
+    have hlb : Ln2BracketFor w c.ln2 := by
+      rw [c.ln2_eq]
+      exact (ln2BracketFor_ln2Bracket (by omega)).of_le hW
+    exact lnBracketCore_spec hw hpb hlb e hv
+  · exact lnBracket_spec hw e hv
 
 /-! ### The Ziv interface -/
 
@@ -1024,6 +1075,40 @@ theorem lnApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (e : A
     (irrational_log_finiteVal e hv hne') (lnEps e.toInt) (tendsto_lnEps e.toInt) 64
     (fun w hw => by
       obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := lnApprox_spec hw e hv hne'
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
+
+/-- `lnApproxWith c x e w` encloses `ln x` strictly, with width at most `lnEps e w` (`w ≥ 64`). -/
+theorem lnApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hne : finiteVal true e m ≠ 1) :
+    ∃ lv hv' : ℝ, Rounds (lnApproxWith c (finite true e q m hv) e w).1 lv ∧
+      Rounds (lnApproxWith c (finite true e q m hv) e w).2 hv' ∧
+      lv < Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) < hv' ∧
+      hv' - lv ≤ lnEps e.toInt w := by
+  obtain ⟨lv, hv', hlv, hhv, hlo, hhi, hwidth⟩ := lnBracketWith_spec c hw e hv
+  have hirr := irrational_log_finiteVal e hv hne
+  refine ⟨lv, hv', ?_, ?_, ?_, ?_, hwidth⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlv)
+    rw [fval_of_toVal_coe hlv] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhv)
+    rw [fval_of_toVal_coe hhv] at hR
+    exact hR
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hlv
+    exact lt_of_le_of_ne hlo (hr ▸ fun h => hirr ⟨r, h⟩)
+  · obtain ⟨r, hr⟩ := exists_rat_of_toVal hhv
+    exact lt_of_le_of_ne hhi (hr ▸ fun h => hirr ⟨r, h.symm⟩)
+
+/-- The Ziv certificate for `lnApproxWith`. -/
+theorem lnApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hne : ¬ eqIEEE (finite true e q m hv) one = true) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (lnApproxWith c (finite true e q m hv) e (w₀ * 2 ^ f)).1
+      (lnApproxWith c (finite true e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  have hne' := finiteVal_ne_one_of_not_eqIEEE e hv hne
+  exists_isSome_of_irrational_threshold p mode (lnApproxWith c (finite true e q m hv) e)
+    (irrational_log_finiteVal e hv hne') (lnEps e.toInt) (tendsto_lnEps e.toInt) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwidth⟩ := lnApproxWith_spec c hw e hv hne'
       exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwidth⟩) w₀ hw₀
 
 /-! ### The logarithm of a rational -/

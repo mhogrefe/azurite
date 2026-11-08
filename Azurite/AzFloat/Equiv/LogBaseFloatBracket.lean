@@ -210,6 +210,7 @@ theorem lnKappa_pos {bv : ℝ} (hb1 : bv ≠ 1) : 0 < lnKappa bv := by
   · push Not at h
     exact div_pos (by linarith [lt_of_le_of_ne h hb1]) (by norm_num)
 
+set_option maxHeartbeats 400000 in
 /-- `ln b` is bracketed with width `lnEps eb w`, and the end on the side of `ln b` is at least
 `lnKappa b` in absolute value. -/
 theorem lnBaseFloatBracket_spec {w : ℕ} (hw : 64 ≤ w) (eb : AzInt) {qb : ℕ} {mb : AzNat}

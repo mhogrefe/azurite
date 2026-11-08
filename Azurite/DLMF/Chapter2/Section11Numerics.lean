@@ -115,36 +115,36 @@ theorem dlmf_2_11_i_I10_decimal :
 set_option maxRecDepth 100000 in
 theorem s11Q1_data :
     (valData (s11Q1 64).1, valData (s11Q1 64).2) =
-      (some (true, 3924028072852217159, 73786976294838206464),
-        some (true, 15696112291408868765, 295147905179352825856)) := by
+      (some (true, 7848056145704434351, 147573952589676412928),
+        some (true, 3924028072852217177, 73786976294838206464)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in
 theorem s11Q2_data :
     (valData (s11Q2 64).1, valData (s11Q2 64).2) =
-      (some (true, 14140023023901967123, 295147905179352825856),
-        some (true, 7070011511950983695, 147573952589676412928)) := by
+      (some (true, 1767502877987745907, 36893488147419103232),
+        some (true, 14140023023901967269, 295147905179352825856)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in
 theorem s11Q3_data :
     (valData (s11Q3 64).1, valData (s11Q3 64).2) =
-      (some (true, 6629640348501429595, 73786976294838206464),
-        some (true, 13259280697002859591, 147573952589676412928)) := by
+      (some (true, 3314820174250714847, 36893488147419103232),
+        some (true, 828705043562678713, 9223372036854775808)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in
 theorem s11S3_data :
     (valData (s11S3 64).1, valData (s11S3 64).2) =
-      (some (false, 2489178226769479947, 4722366482869645213696),
-        some (false, 2489178226769479925, 4722366482869645213696)) := by
+      (some (false, 9956712907077919751, 18889465931478580854784),
+        some (false, 9723352448318281, 18446744073709551616)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in
 theorem s11I10_data :
     (valData (s11I10 64).1, valData (s11I10 64).2) =
-      (some (false, 8609797259565465887, 18889465931478580854784),
-        some (false, 17218920373419954345, 37778931862957161709568)) := by
+      (some (false, 8609797259565465849, 18889465931478580854784),
+        some (false, 4304730093354988609, 9444732965739290427392)) := by
   decide +kernel
 
 /-! ### Soundness -/

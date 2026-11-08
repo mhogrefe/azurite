@@ -56,7 +56,7 @@ private def us (ns : UInt64) (count : Nat) : String :=
 `64/256/1024/4096/16384`), `inputs` (random operand sets per size, default `4`). -/
 def runAzRatProfile (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) :
     IO Unit := do
-  let bitsList := match cfg["bits"]? with
+  let bitsList : Array Nat := match cfg["bits"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[64, 256, 1024, 4096, 16384]
   let count := configGetNat cfg "inputs" 4

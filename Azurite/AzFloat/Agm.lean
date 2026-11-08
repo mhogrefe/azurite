@@ -67,6 +67,20 @@ def agmStep (w : Nat) (s : AgmBounds) : AgmBounds :=
     bLo := (sqrtPrecRound (mulPrecRound s.aLo s.bLo w .Floor).1 w .Floor).1
     bHi := (sqrtPrecRound (mulPrecRound s.aHi s.bHi w .Ceiling).1 w .Ceiling).1 }
 
+/-- One AGM step on a single pair `(a, b)`, every operation rounded **down** at precision `w`
+(the halving is exact).  Used with an a priori error bound instead of the interval iteration:
+rounding down keeps `a ≤ a_n`, `b ≤ b_n`, and the relative error below the exact iterates grows
+only additively, by `8 · 2^(−w)` per step (`relLower_agmStepLo`), because the step is monotone
+and homogeneous.  Half the work of `agmStep`. -/
+def agmStepLo (w : Nat) (s : AzFloat × AzFloat) : AzFloat × AzFloat :=
+  ((addPrecRound s.1 s.2 w .Floor).1 >>> (1 : Nat),
+    (sqrtPrecRound (mulPrecRound s.1 s.2 w .Floor).1 w .Floor).1)
+
+/-- The rounded-down step iterated a fixed number of times. -/
+def agmIterLoN (w : Nat) : Nat → AzFloat × AzFloat → AzFloat × AzFloat
+  | 0, s => s
+  | n + 1, s => agmIterLoN w n (agmStepLo w s)
+
 /-- Stop once `aHi − bLo ≤ aHi · 2^(8−w)` (speed only; any number of steps is correct).  The
 rounding noise alone keeps the bracket about `8` ulps wide at precision `w`, so the threshold
 must be well above one ulp; `256` ulps is reached as soon as the exact gap `a_n − b_n` has

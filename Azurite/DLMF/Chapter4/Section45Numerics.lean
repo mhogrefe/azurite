@@ -107,8 +107,8 @@ theorem e45X4_data :
 set_option maxRecDepth 100000 in
 theorem e45HalfPi_data :
     (valData (e45HalfPi 64).1, valData (e45HalfPi 64).2) =
-      (some (true, 7244019458077122837, 4611686018427387904),
-        some (true, 14488038916154245699, 9223372036854775808)) := by
+      (some (true, 3622009729038561421, 2305843009213693952),
+        some (true, 14488038916154245685, 9223372036854775808)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in
@@ -128,8 +128,8 @@ theorem e45Third_data :
 set_option maxRecDepth 100000 in
 theorem e45HalfLn10_data :
     (valData (e45HalfLn10 64).1, valData (e45HalfLn10 64).2) =
-      (some (true, 1327349934949995885, 1152921504606846976),
-        some (true, 10618799479599967457, 9223372036854775808)) := by
+      (some (true, 1327349934949994287, 1152921504606846976),
+        some (true, 10618799479599967337, 9223372036854775808)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in

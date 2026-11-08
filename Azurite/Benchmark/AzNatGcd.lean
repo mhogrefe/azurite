@@ -52,7 +52,7 @@ private def us (ns : UInt64) (count : Nat) : String :=
 (`/`-separated `t-q` pairs — binary fallback `t`, quadratic-layer bound `q` — for extra
 `gcdHalfBinaryWith` columns, default none). -/
 def runAzNatGcd (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
-  let bitsList := match cfg["bits"]? with
+  let bitsList : Array Nat := match cfg["bits"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[128, 256, 512, 1024, 2048, 4096, 16384, 65536]
   let count := configGetNat cfg "inputs" 4
@@ -109,7 +109,7 @@ matrix application, exact shifts and binary division, next to the balanced produ
 unbalanced product of a matrix entry by an operand, and the full `gcd`.  Microseconds. -/
 def runAzNatGcdBreakdown (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) :
     IO Unit := do
-  let limbsList := match cfg["limbs"]? with
+  let limbsList : Array Nat := match cfg["limbs"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[1024, 2048, 4096]
   for limbs in limbsList do
@@ -159,7 +159,7 @@ limbs (config `limbs`, default `4/8/16`), each as ns per call over `inputs` rand
 base case `halfBinaryGcdWord` alone, `lowWord2`, the two fused combinations of a round, one
 `linCombLimbs` pass, and `Mat2.ofWord`. -/
 def runAzNatGcdWord (_limit : Nat) (cfg : Std.HashMap String String) (seed : UInt64) : IO Unit := do
-  let limbsList := match cfg["limbs"]? with
+  let limbsList : Array Nat := match cfg["limbs"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[4, 8, 16]
   let count := configGetNat cfg "inputs" 64

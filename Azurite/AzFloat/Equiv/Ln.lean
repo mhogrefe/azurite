@@ -16,6 +16,8 @@ import Azurite.AzFloat.Ln
   `log ∞ = ∞`).
 * `lnPrecRound_eq_liftVal : lnPrecRound x p mode = liftVal Spec.log x p mode`: `ln` is correctly
   rounded in every mode, with the exact comparison, and without fuel.
+* `lnPrecRoundWith_eq_liftVal`, `lnPrecRoundWith_eq_lnPrecRound`, `lnWith_eq_ln`: the same with
+  precomputed constants (`LnConsts`).
 -/
 
 namespace Azurite.AzFloat
@@ -87,5 +89,56 @@ theorem lnPrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roundi
       simp only [lnPrecRound, toVal_finite]
       rw [finiteVal_false, Option.bind_some,
         Spec.log_coe_neg _ (neg_neg_iff_pos.mpr (finiteVal_true_pos e hv)), roundVal_none]
+
+/-- **`ln` with precomputed constants is correctly rounded.** -/
+theorem lnPrecRoundWith_eq_liftVal (c : LnConsts) (x : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) : lnPrecRoundWith c x p mode = liftVal Spec.log x p mode := by
+  unfold liftVal
+  cases x with
+  | nan => rfl
+  | infinity s => cases s <;> simp [lnPrecRoundWith]
+  | zero => simp [lnPrecRoundWith]
+  | finite s e q m hv =>
+    cases s with
+    | true =>
+      have hv0 := finiteVal_true_pos e hv
+      simp only [lnPrecRoundWith, toVal_finite, Option.bind_some, Spec.log_coe _ hv0]
+      split_ifs with h1 hp
+      · obtain ⟨v, hx, h1v⟩ := (eqIEEE_iff _ _).mp h1
+        rw [toVal_finite] at hx
+        rw [toVal_one', ← hx, Option.some.injEq, EReal.coe_eq_coe_iff] at h1v
+        rw [← h1v, Real.log_one, EReal.coe_zero, roundVal_zero]
+      · exact absurd hp (NeZero.ne p)
+      · exact zivLoopCertified_eq_threshold p mode _ (Real.log (finiteVal true e m)) _
+          (by unfold zivGuardBits; omega)
+          (fun w hw => by
+            obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
+              lnApproxWith_spec c (w := w) (by unfold zivGuardBits at hw; omega) e hv
+                (finiteVal_ne_one_of_not_eqIEEE e hv h1)
+            exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
+    | false =>
+      simp only [lnPrecRoundWith, toVal_finite]
+      rw [finiteVal_false, Option.bind_some,
+        Spec.log_coe_neg _ (neg_neg_iff_pos.mpr (finiteVal_true_pos e hv)), roundVal_none]
+
+/-- The constants change nothing but the running time. -/
+theorem lnPrecRoundWith_eq_lnPrecRound (c : LnConsts) (x : AzFloat) (p : ℕ)
+    (mode : RoundingMode) : lnPrecRoundWith c x p mode = lnPrecRound x p mode := by
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    cases x with
+    | nan => rfl
+    | infinity s => cases s <;> rfl
+    | zero => rfl
+    | finite s e q m hv =>
+      cases s with
+      | true => simp [lnPrecRoundWith, lnPrecRound]
+      | false => rfl
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [lnPrecRoundWith_eq_liftVal, lnPrecRound_eq_liftVal]
+
+theorem lnWith_eq_ln (c : LnConsts) (x : AzFloat) : lnWith c x = ln x := by
+  unfold lnWith ln
+  rw [lnPrecRoundWith_eq_lnPrecRound]
 
 end Azurite.AzFloat

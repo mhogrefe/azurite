@@ -49,6 +49,24 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard toString (ln (F "1/1000000000000" 53)) == "-27.631021115928547"
 #guard toString (ln (F "1267650600228229401496703205376" 53)) == "69.31471805599453"
 
+-- precomputed constants: the same results
+#guard lnWith (LnConsts.forPrecision 53) (F "10" 53) == ln (F "10" 53)
+#guard lnWith (LnConsts.forPrecision 53) (F "3" 53) == ln (F "3" 53)
+#guard lnWith (LnConsts.forPrecision 53) (F "1/2" 53) == ln (F "1/2" 53)
+#guard lnWith (LnConsts.forPrecision 200) (F "10" 200) == ln (F "10" 200)
+#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "10" 53) 53 .Floor
+  == lnPrecRound (F "10" 53) 53 .Floor
+#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "10" 53) 53 .Ceiling
+  == lnPrecRound (F "10" 53) 53 .Ceiling
+#guard lnPrecRoundWith (LnConsts.forPrecision 53) (F "1" 53) 53 .Nearest == (zero, .eq)
+#guard lnWith (LnConsts.forPrecision 53) nan == nan
+#guard lnWith (LnConsts.forPrecision 53) zero == infinity false
+-- constants too coarse for the precision are ignored
+#guard lnWith (LnConsts.make 64) (F "10" 200) == ln (F "10" 200)
+#guard lnWith (LnConsts.make 1) (F "3" 53) == ln (F "3" 53)
+-- finer constants than needed are fine
+#guard lnWith (LnConsts.forPrecision 500) (F "3" 53) == ln (F "3" 53)
+
 -- directed rounding brackets the exact value
 #guard (lnPrecRound (F "10" 53) 53 .Floor).2 == .lt
 #guard (lnPrecRound (F "10" 53) 53 .Ceiling).2 == .gt

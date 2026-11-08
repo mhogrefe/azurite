@@ -65,7 +65,7 @@ private def ms (ns : UInt64) (count : Nat) : String :=
 `53/1000/10000/100000`), `inputs` (square roots of the first `inputs` primes, default `4`). -/
 def runAzFloatToString (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
     IO Unit := do
-  let bitsList := match cfg["bits"]? with
+  let bitsList : Array Nat := match cfg["bits"]? with
     | some s => ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[53, 1000, 10000, 100000]
   let count := configGetNat cfg "inputs" 4

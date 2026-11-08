@@ -3602,6 +3602,148 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   `ln` at 20000 bits 429 → 145 ms (`ln2Bracket` 236 → 57 ms, now comparable to the AGM's 52 ms),
   at 5000 bits 37 → 14 ms, at 1000 bits 4.0 → 1.7 ms.
 
+* **Point-valued AGM with an a priori error bound (2026-11-08).**  The AGM of `lnBracket` ran as
+  an *interval* iteration (`agmStep`: `aLo, aHi, bLo, bHi`, 2 additions + 2 products + 2 square
+  roots per step).  It now runs on a **single pair with every operation rounded down**
+  (`agmStepLo`/`agmIterLoN` in `Agm.lean`, half the work), from `(1, ⌊k⌋_w)` (one directed
+  division instead of two).  Error analysis (`Equiv/LnBracket.lean`): `RelLower a b n δ s` says
+  `A_n(1 − δ) ≤ a ≤ A_n`, `B_n(1 − δ) ≤ b ≤ B_n`; one rounded-down step adds `8 · 2^(−w)` to `δ`
+  (`relLower_agmStepLo` — exactly the lower halves of the former `relEncloses_agmStep`, since
+  `(a + b)/2` and `√(ab)` are monotone and homogeneous of degree 1, so relative errors compose
+  multiplicatively and `(1 − δ)(1 − 2u)² ≥ 1 − δ − 8u`), hence `δ_S = (2 + 8S) 2^(−w)` after `S`
+  steps (`relLower_agmIterLoN`).  The bracket is `[b_S, ⌈a_S + δ_S⌉_w]` with `δ_S` the exact float
+  `lnAgmDelta w S = (8S + 2) · 2^(−w)`: `b_S ≤ B_S ≤ AGM ≤ A_S ≤ a_S + δ_S A_S ≤ a_S + δ_S`
+  (`A_S ≤ 1`), width `≤ (A_S − B_S) + 2δ_S + 3u ≤ 8 · 2^(−5h) + 3δ_S` (`lnAgm_spec`,
+  `ln_agm_widen`); `ln_final_bounds` takes the width with the constant `3` instead of `2`
+  (`300 W u` instead of `200`, absorbed by the `2^40` slack), so `lnEps` and everything
+  downstream (`lnRat`, `lnP1`, `ln 10`, the `log` family) are unchanged.  The interval lemmas
+  `RelEncloses`/`relEncloses_*` were removed; `agmIterN` is kept for the benchmark
+  (`az_float_ln` now has columns `agm` (new) and `agmIv` (interval)).  **Timings (2026-11-08,
+  quiet machine, ms per call, median of 3 over `ln 10, ln 3, ln ½, ln 1.5`; "old" = the
+  2026-10-19 binary run the same day, "new" = this change; `agmIv` is the interval AGM timed
+  inside the new binary):**
+
+  | bits | `ln` old | `ln` new | AGM old | AGM new (`agmIv`) | `piBracket` | `ln2Bracket` |
+  |---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 0.418 | 0.305 | 0.219 | 0.109 (0.218) | 0.140 | 0.029 |
+  | 200 | 0.595 | 0.438 | 0.327 | 0.165 (0.329) | 0.206 | 0.044 |
+  | 1000 | 1.59 | 1.14 | 0.845 | 0.420 (0.837) | 0.528 | 0.151 |
+  | 5000 | 10.8 | 7.8 | 5.88 | 2.88 (5.71) | 3.59 | 1.12 |
+  | 20000 | 97.2 | 69.3 | 52.7 | 26.5 (52.0) | 33.1 | 9.6 |
+
+  The AGM halves exactly as predicted; `ln` is `1.37–1.40×` faster at every precision.  (The
+  `ln2Bracket` figure is `9.6` ms at 20000 bits, not the `57` quoted above — that number predates
+  the GCD and float-bracket fixes.)  The remaining budget at 20000 bits is `π` `33` + AGM `26.5` +
+  `ln 2` `9.6` ms: Brent–Salamin `π` is now the largest piece, and the same rounded-down device
+  applies to it (`a, b, s` on single floats; the `(a − b)²` term is absolutely small).
+  Not done: `agmApprox` (the general `agm` function, adaptive stopping on `Encloses`) and
+  Brent–Salamin `π` still use interval iterations.  Benchmark modules `AzFloatToString`,
+  `AzNatGcd`, `AzRatProfile`, `AzFloatLn` needed `: Array Nat` ascriptions on their
+  `let bitsList := match cfg[…]` (the toolchain now infers `Std.Rio ℕ` from the `for` loop; the
+  gate does not build the `benchmark` executable, so this had gone unnoticed).  Side effect: the kernel-checked endpoint data
+  of `½ ln 10` in `DLMF/Chapter4/Section45Numerics.lean` (`e45HalfLn10_data`) changed in its
+  lower end and was recomputed — a `decide +kernel` on stale data reports "failed to reduce",
+  not "false".
+
+* **Point-valued Brent–Salamin `π` (2026-11-08).**  `piBracket` ran the Brent–Salamin
+  iteration on intervals (`PiBounds`: six floats, `a`/`b`/`s` each bracketed, `clampNonneg` on
+  the lower ends).  It now runs on a **single triple `PiPt = ⟨a, b, s⟩` with every operation
+  rounded down** (`piStep`/`piIter`/`piInit` in `PiBracket.lean`: `a ← ⌊a + b⌋/2`,
+  `b ← ⌊√⌊ab⌋⌋`, `s ← ⌊s − ⌊(⌊a − b⌋)²⌋ · 2^(n−1)⌋`), followed by one point quotient
+  `q = ⌊2⌊(⌊a + b⌋/2)²⌋ / s⌋` and the **a priori absolute slack**
+  `piErr w = 2^(3N + 13 − w)` (`N = piSteps w`): `piBracketAt w = (⌊q − e⌋, ⌈q + e⌉)`.  The
+  analysis is *absolute*, not relative, because `s` is a difference (`Equiv/PiBracket.lean`):
+  with `W` the current error of `a` and `b`, `mean_step` adds `3u`, `geo_step` quadruples
+  (`|√m − √(ab)| ≤ 3/2 |m − ab|` on `ab ≥ 1/3`, needs `16u ≤ W ≤ 1/16`), `diffsq_step` gives
+  `|e − (a − b)²| ≤ 2W + 4u` with `0 ≤ e ≤ 1/2`; the invariant `PiPoint w n p` is
+  `|a − a_n|, |b − b_n| ≤ 2^(2n+4) u` and `|s − s_n| ≤ 2^(3n+7) u` (`piPoint_init`,
+  `piPoint_step`, `piPoint_iter`).  The final quotient has `|q − π_N| ≤ 27 V`
+  (`V = 2^(3N+7) u`), so `E = 64 V = piErr w` and the raw bracket width is
+  `≤ 2E + 36u ≤ 2^(3N+16) u` (`piBracketAt_spec`).  The old `PiBounds`, its lemmas and
+  `toVal_powerOf2_one_sub` were removed; `clampNonneg` stays (used by `Interval.lean`).
+  **The a priori bound is a real loss of `3N + 16 ≈ 3 lg w` bits**, and this bit: the interval
+  iteration tracked the actual, much smaller, rounding error, so the old `piBracket w` was a few
+  ulps wide while the raw point bracket is `2^(3N+16)` ulps wide.  Inside `lnBracket` the
+  relative error of `π` is multiplied by `ln y ≈ w ln 2 / 2 ≈ 2^13` at 20000 bits, so the `ln`
+  bracket at `w = p + 64` became `≈ 2^(3N + 16 + 13 − 64) ≈ 2^9` ulps wide and Ziv's loop needed
+  a **second pass** (first measurement: `piBracket` `33.1 → 16.7` ms and `lnBracket` `69 → 53`
+  ms at 20000 bits as predicted, but `ln` `69 → 221` ms, `7.8 → 14.4` at 5000; `pi p` itself,
+  with `≈ 2^(−5)` ulps of slack, still rounded in one pass).  Fix: `piBracket w` runs the
+  iteration at the working precision `piWork w = w + 3 piSteps w + 16` (`piBracket w =
+  piBracketAt (piWork w)`); since `3N + 16 < w` for `w ≥ 64` (`three_mul_add_lt_two_pow`,
+  `piWork_le_two_mul`), `piSteps (piWork w) ≤ N + 1` (`piSteps_piWork_le`) and the width is
+  `≤ 2^(3(N+1)+16) 2^(−w−3N−16) = 2^(3−w)` (`piBracket_spec_width`), i.e. **eight ulps**, tighter
+  than the interval version ever was; `piBracket_spec` with `piEps w` follows and nothing
+  downstream changes.  The extra `≈ 3 lg w + 16` bits cost `0.3 %` at 20000 bits and `≈ 30 %`
+  of the `π` time at 53 bits (`w = 117 → 154`, one more step), still far below the interval
+  version.  Kernel-checked endpoint data that depends on `π` was recomputed with `#eval`
+  (twice — after the point iteration and again after `piWork`) in
+  `DLMF/Chapter2/Section11Numerics.lean` (`s11Q1/Q2/Q3/S3/I10_data`),
+  `DLMF/Chapter3/Section12.lean` (`pi128_data`; the 20-decimal claim `dlmf_3_12_1` was moved from
+  `Encl.pi 96` to `Encl.pi 128` when the raw bracket was too wide, and left there),
+  `DLMF/Chapter3/Section5GaussHermiteTables.lean` (the rational bounds `hermPiL`/`hermPiU` =
+  the ends of `Encl.pi 128`, now at `piWork 128 = 168` bits) and
+  `DLMF/Chapter4/Section45Numerics.lean` (`e45HalfPi_data`, `e45HalfLn10_data`); all dependent
+  decimal claims go through.  `lnBaseFloatBracket_spec` (`Equiv/LogBaseFloatBracket.lean`) hit
+  the 200k-heartbeat limit after the change and got `set_option maxHeartbeats 400000`.
+  **Lesson:** with a priori error bounds, check the *actual* bracket width against the Ziv
+  guard (`64` bits) and against every kernel-checked decimal claim — a slack of `c lg w` bits is
+  cheap to absorb by raising the internal working precision, and expensive if it triggers a
+  second Ziv pass (`3×` the cost).  **Timings (2026-11-08, quiet machine, ms per call, median
+  of 3 over `ln 10, ln 3, ln ½, ln 1.5`; "AGM" = the point-AGM binary of the same morning,
+  "Oct 19" = the 2026-10-19 binary run the same day):**
+
+  | bits | `ln` Oct 19 | `ln` AGM | `ln` now | `piBracket` AGM | `piBracket` now | `pi` now |
+  |---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 0.418 | 0.305 | 0.247 | 0.140 | 0.082 | 0.085 |
+  | 200 | 0.595 | 0.438 | 0.345 | 0.206 | 0.116 | 0.118 |
+  | 1000 | 1.59 | 1.14 | 0.895 | 0.528 | 0.280 | 0.284 |
+  | 5000 | 10.8 | 7.8 | 5.88 | 3.59 | 1.79 | 1.80 |
+  | 20000 | 97.2 | 69.3 | 52.9 | 33.1 | 16.6 | 16.2 |
+
+  `ln = lnBracket` at every precision again (one Ziv pass); `ln` is `1.69–1.84×` faster than on
+  Oct 19, `π` `1.7–2.0×`.  Budget at 20000 bits: AGM `25.7` + `π` `16.6` + `ln 2` `9.7` ms —
+  the AGM is now the largest piece again, so the series path / Sasaki–Kanada / a tighter AGM
+  step count are next on the arithmetic side, and caching the constants on the API side.
+
+* **Precomputed constants for `ln` (`LnConsts`, 2026-11-08).**  The brackets of `π` and `ln 2`
+  are about half the cost of one `ln` (`16.6 + 9.7` of `52.9` ms at 20000 bits, `0.11` of
+  `0.25` at 53), and they depend only on the working precision.  `lnBracket` was refactored into
+  `lnBracketCore pb lb x e w` with the two brackets as parameters (`lnBracket x e w =
+  lnBracketCore (piBracket w) (ln2Bracket w) x e w`, by `rfl`); the structure `LnConsts`
+  (`W`, `pi`, `ln2`, and the proof fields `pi_eq : pi = piBracket W`, `ln2_eq : ln2 =
+  ln2Bracket W`, erased at runtime) is built once by `LnConsts.make W` /
+  `LnConsts.forPrecision p = make (p + zivGuardBits)`; `lnBracketWith c x e w` uses `c` when
+  `w ≤ c.W` and falls back to `lnBracket` otherwise (the later Ziv levels — a finer bracket than
+  `w` is harmless: the directed divisions and products round it to `w`).  `lnPrecRoundWith c`,
+  `lnWith c` run the same certified Ziv loop on `lnApproxWith c`.  Proofs: the fitness
+  predicates `PiBracketFor w pb` / `Ln2BracketFor w lb` capture exactly what `lnBracketCore_spec`
+  needs (the former `lnBracket_spec`, now with `hpb`/`hlb` hypotheses in place of
+  `piBracket_spec hw` and `ln2Bracket_spec w`, and `ln_L_spec` likewise generalized); they hold
+  for `piBracket w`/`ln2Bracket w` and are inherited from any finer `W ≥ w` (`PiBracketFor.of_le`
+  needs `piEps_antitone`: `(w + 1)³ ≤ 2 w³` from `w = 4`; `Ln2BracketFor.of_le` is just
+  `(1/2)^W ≤ (1/2)^w`).  `lnBracket_spec` and `lnBracketWith_spec` are one-line instances,
+  `lnApproxWith_spec`, `lnApproxWith_isSome_exists`, `lnPrecRoundWith_eq_liftVal` copies of
+  their originals, and `lnPrecRoundWith_eq_lnPrecRound` / `lnWith_eq_ln` follow from both being
+  `liftVal Spec.log` (the `p = 0` case by cases).  The `log` family (`logBase*`, `log2`, `log10`,
+  `lnRat`, `lnP1`) still computes its own constants; the same device applies there when wanted.
+  Tests in `Tests/Ln.lean` (agreement with `ln`, too-coarse constants ignored, finer constants
+  accepted); benchmark column `lnWith` in `az_float_ln`.  **Timings (2026-11-08, quiet
+  machine, ms per call, median of 3 over `ln 10, ln 3, ln ½, ln 1.5`; `c = LnConsts.forPrecision
+  P` built once outside the timing):**
+
+  | bits | `ln` | `lnWith c` | ratio | AGM alone |
+  |---:|---:|---:|---:|---:|
+  | 53 | 0.247 | 0.119 | 2.08 | 0.108 |
+  | 200 | 0.345 | 0.188 | 1.84 | 0.164 |
+  | 1000 | 0.910 | 0.457 | 1.99 | 0.422 |
+  | 5000 | 5.97 | 3.03 | 1.97 | 2.89 |
+  | 20000 | 53.9 | 27.0 | 2.00 | 25.9 |
+
+  `lnWith` is within `5 %` of the bare AGM at every precision: with the constants in hand, `ln`
+  *is* the AGM.  Against the 2026-10-19 binary, `ln 10` at 20000 bits went `97.2 → 27.0` ms
+  (`3.6×`) and at 53 bits `0.418 → 0.119` (`3.5×`) over the three steps of this arc.
+
 ## `ln` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
 
 Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.lean`; the bracket

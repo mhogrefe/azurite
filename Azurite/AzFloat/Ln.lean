@@ -24,6 +24,10 @@ The cost at precision `p` is dominated by the first Ziv level, `w = p + 64`: `2 
 AGM steps, each a multiplication, a square root and two additions at precision `w`, plus the
 brackets of `π` and `ln 2` and three divisions.
 
+The brackets of `π` and `ln 2` are about half of that; `lnPrecRoundWith c`/`lnWith c` take them
+from an `LnConsts` (`LnConsts.forPrecision p`) computed once and shared across many logarithms
+at the same precision, with the same result (`lnPrecRoundWith_eq_lnPrecRound`).
+
 Special values follow IEEE 754 / MPFR conventions: `ln NaN = NaN`, `ln (+∞) = +∞`, `ln 0 = −∞`,
 `ln x = NaN` for `x < 0` (including `−∞`), and `ln 1 = 0` exactly.
 -/
@@ -48,5 +52,32 @@ def lnPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Order
 
 /-- `ln x` rounded to nearest at the precision of `x`. -/
 def ln (x : AzFloat) : AzFloat := (lnPrecRound x (x.precision?.getD 1) .Nearest).1
+
+/-- The constants for `ln` at precision `p`: the brackets of `π` and `ln 2` at the first Ziv
+level `p + zivGuardBits`, which is almost always the only one. -/
+def LnConsts.forPrecision (p : Nat) : LnConsts := LnConsts.make (p + zivGuardBits)
+
+/-- `lnPrecRound x p mode` with the brackets of `π` and `ln 2` taken from `c` (when its
+precision suffices); the same result (`lnPrecRoundWith_eq_lnPrecRound`), about twice as fast
+with `c = LnConsts.forPrecision p` shared across many calls. -/
+def lnPrecRoundWith (c : LnConsts) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  match x with
+  | nan => (nan, .eq)
+  | infinity s => if s then (infinity true, .eq) else (nan, .eq)
+  | zero => (infinity false, .eq)
+  | finite false _ _ _ _ => (nan, .eq)
+  | finite true e q m hv =>
+    if h1 : eqIEEE (finite true e q m hv) one = true then (zero, .eq)
+    else if hp : p = 0 then (nan, .eq)
+    else
+      haveI : NeZero p := ⟨hp⟩
+      zivLoopCertified (lnApproxWith c (finite true e q m hv) e) p mode (p + zivGuardBits)
+        (lnApproxWith_isSome_exists c p mode e hv h1 (p + zivGuardBits)
+          (by unfold zivGuardBits; omega))
+
+/-- `ln x` rounded to nearest at the precision of `x`, with the constants `c`. -/
+def lnWith (c : LnConsts) (x : AzFloat) : AzFloat :=
+  (lnPrecRoundWith c x (x.precision?.getD 1) .Nearest).1
 
 end Azurite.AzFloat

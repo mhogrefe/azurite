@@ -18,7 +18,7 @@ import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 Formalizations of <https://dlmf.nist.gov/3.12>.
 
 * 3.12.1: `π = 3.14159 26535 89793 23846 …` (`dlmf_3_12_1`, all 20 decimals, from the AzFloat
-  enclosure `Encl.pi 96`, computed in the kernel: `pi96_data`).
+  enclosure `Encl.pi 128`, computed in the kernel: `pi128_data`).
 * 3.12.2: `π = 4 ∫₀¹ dt/(1 + t²)` (`dlmf_3_12_2`).
 * 3.12.3: `e = 2.71828 18284 59045 23536 …` (`dlmf_3_12_3`, `e = exp 1` as in §4.2(ii), all 20
   decimals, from AzFloat's correctly rounded `ePrecRound 80` rounded down and up, evaluated in the
@@ -38,17 +38,19 @@ namespace Azurite.DLMF
 open Azurite.AzFloat Encl
 
 set_option maxRecDepth 100000 in
-/-- The ends of the 96-bit AzFloat enclosure of `π`. -/
-theorem pi96_data :
-    (valData (Encl.pi 96).1, valData (Encl.pi 96).2) =
-      (some (true, 31112826664028885653815243071, 9903520314283042199192993792),
-        some (true, 31112826664028885653815243085, 9903520314283042199192993792)) := by
+/-- The ends of the 128-bit AzFloat enclosure of `π`. -/
+theorem pi128_data :
+    (valData (Encl.pi 128).1, valData (Encl.pi 128).2) =
+      (some (true, 73463084912771502742156883195892978055257890456097,
+          23384026197294446691258957323460528314494920687616),
+        some (true, 73463084912771502742156883195892978055275070325281,
+          23384026197294446691258957323460528314494920687616)) := by
   decide +kernel
 
 /-- **DLMF 3.12.1**: `π = 3.14159 26535 89793 23846 …`. -/
 theorem dlmf_3_12_1 : 3.14159265358979323846 < π ∧ π < 3.14159265358979323847 := by
-  obtain ⟨d1, d2⟩ := Prod.mk.inj pi96_data
-  obtain ⟨l, u⟩ := (enclosesPos_pi (w := 96) (by norm_num)).encloses0.encloses.bounds d1 d2
+  obtain ⟨d1, d2⟩ := Prod.mk.inj pi128_data
+  obtain ⟨l, u⟩ := (enclosesPos_pi (w := 128) (by norm_num)).encloses0.encloses.bounds d1 d2
   simp only [signedVal, ite_true] at l u
   refine ⟨lt_of_lt_of_le ?_ l, lt_of_le_of_lt u ?_⟩ <;> norm_num
 

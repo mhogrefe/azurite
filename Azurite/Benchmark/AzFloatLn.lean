@@ -19,9 +19,12 @@ import Azurite.Benchmark.Common
 # `ln` of an `AzFloat`: where the time goes
 
 `az_float_ln`: for each precision `P` (bits), the time of `ln x` (nearest, Ziv loop from
-`w = P + 64`), and the pieces of one bracket at `w = P + 64`: the whole `lnBracket`, the
-interval AGM alone (`agmIterN` from the bracket of `k`), `piBracket w`, `ln2Bracket w`
-(rational), and for reference `sqrt`, `pi P` and `ln2 P`.  Milliseconds.
+`w = P + 64`), of `lnWith c x` with the constants `c = LnConsts.forPrecision P` computed once
+outside the timing (column `lnWith`), and the pieces of one bracket at `w = P + 64`: the whole
+`lnBracket`, the
+rounded-down AGM alone (`agmIterLoN` from `⌊k⌋_w`, column `agm`), the former interval AGM
+(`agmIterN` from the bracket of `k`, column `agmIv`, for comparison), `piBracket w`,
+`ln2Bracket w`, and for reference `sqrt`, `pi P` and `ln2 P`.  Milliseconds.
 
 `az_float_ln2_breakdown`: the pieces of `ln2Bracket w` — the three binary splittings, the three
 series brackets (`seriesBracket`: truncations and two directed divisions each), the whole bracket
@@ -66,6 +69,15 @@ private def agmOnly (x : AzFloat) (w : Nat) : AgmBounds :=
   let kHi := (divPrecRound (one <<< (2 : Nat)) y w .Ceiling).1
   agmIterN w (lnSteps w) ⟨one, one, kLo, kHi⟩
 
+/-- The rounded-down AGM of `lnBracket` alone, from `⌊k⌋_w`. -/
+private def agmLoOnly (x : AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  let h := lnH w
+  let e := x.exponent?.getD 0
+  let l : AzInt := (AzNat.ofNat (2 * h + 2)).toAzInt - e
+  let y := x <<< l
+  let kLo := (divPrecRound (one <<< (2 : Nat)) y w .Floor).1
+  agmIterLoN w (lnSteps w) (one, kLo)
+
 private def fsize (x : AzFloat) : Nat := x.precision?.getD 0
 
 /-- Run the `az_float_ln` benchmark.  Config: `bits` (`/`-separated precisions, default
@@ -73,7 +85,7 @@ private def fsize (x : AzFloat) : Nat := x.precision?.getD 0
 `4`). -/
 def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
     IO Unit := do
-  let bitsList := match cfg["bits"]? with
+  let bitsList : Array Nat := match cfg["bits"]? with
     | some s =>
       ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[53, 1000, 10000, 100000]
@@ -81,16 +93,20 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
   let srcs : Array String := #["10", "3", "1/2", "3/2", "1000000000000", "7"]
   IO.println s!"[AzFloat-Ln] ms per call (median of 3 passes over {count} inputs: \
     ln 10, ln 3, ln ½, …); bracket pieces at w = P + 64"
-  IO.println (padLeft "bits" 7 ++ padLeft "ln" 10 ++ padLeft "lnBracket" 10 ++ padLeft "agm" 10
-    ++ padLeft "piBracket" 10 ++ padLeft "ln2Bracket" 11 ++ padLeft "sqrt" 10 ++ padLeft "pi" 10
-    ++ padLeft "ln2" 10)
+  IO.println (padLeft "bits" 7 ++ padLeft "ln" 10 ++ padLeft "lnWith" 10
+    ++ padLeft "lnBracket" 10 ++ padLeft "agm" 10
+    ++ padLeft "agmIv" 10 ++ padLeft "piBracket" 10 ++ padLeft "ln2Bracket" 11
+    ++ padLeft "sqrt" 10 ++ padLeft "pi" 10 ++ padLeft "ln2" 10)
   for P in bitsList do
     let w := P + zivGuardBits
     let xs : Array AzFloat := (srcs.extract 0 (min count srcs.size)).map fun s =>
       ofAzRat ((AzRat.parse s).get!) P
     let nsLn ← timeOver xs ln fsize
+    let c := LnConsts.forPrecision P
+    let nsLnW ← timeOver xs (lnWith c) fsize
     let nsBr ← timeOver xs (fun x => lnBracket x (x.exponent?.getD 0) w) (fun p => fsize p.1)
-    let nsAgm ← timeOver xs (fun x => agmOnly x w) (fun s => fsize s.aHi)
+    let nsAgm ← timeOver xs (fun x => agmLoOnly x w) (fun s => fsize s.1)
+    let nsAgmIv ← timeOver xs (fun x => agmOnly x w) (fun s => fsize s.aHi)
     let ws : Array Nat := xs.map fun _ => w
     let nsPi ← timeOver ws piBracket (fun p => fsize p.1)
     let nsLn2 ← timeOver ws ln2Bracket (fun p => fsize p.1)
@@ -98,8 +114,10 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
     let ps : Array Nat := xs.map fun _ => P
     let nsPiC ← timeOver ps pi fsize
     let nsLn2C ← timeOver ps ln2 fsize
-    IO.println (padLeft s!"{P}" 7 ++ padLeft (ms nsLn count) 10 ++ padLeft (ms nsBr count) 10
-      ++ padLeft (ms nsAgm count) 10 ++ padLeft (ms nsPi count) 10 ++ padLeft (ms nsLn2 count) 11
+    IO.println (padLeft s!"{P}" 7 ++ padLeft (ms nsLn count) 10 ++ padLeft (ms nsLnW count) 10
+      ++ padLeft (ms nsBr count) 10 ++ padLeft (ms nsAgm count) 10
+      ++ padLeft (ms nsAgmIv count) 10 ++ padLeft (ms nsPi count) 10
+      ++ padLeft (ms nsLn2 count) 11
       ++ padLeft (ms nsSqrt count) 10 ++ padLeft (ms nsPiC count) 10
       ++ padLeft (ms nsLn2C count) 10)
 
@@ -107,7 +125,7 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
 Config: `bits` (default `1000/5000/20000`). -/
 def runAzFloatLn2Breakdown (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
     IO Unit := do
-  let bitsList := match cfg["bits"]? with
+  let bitsList : Array Nat := match cfg["bits"]? with
     | some s =>
       ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[1000, 5000, 20000]
