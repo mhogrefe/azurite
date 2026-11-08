@@ -2625,3 +2625,237 @@ Convergents are `cfA a b r / cfB a b r` (§1.12); each formula: denominators eve
 | 4.26.17, 4.26.18 (`1 < x`) | `dlmf_4_26_17`, `dlmf_4_26_18` (`arccscD`, `arcsecD`; `arcsecD_ofReal`); `hasDerivAt_arcsin_inv`, `hasDerivAt_arccos_inv`, `hasDerivAt_log_add_sqrt` | |
 | 4.26.19 (`0 < x`) | `dlmf_4_26_19` (`arccotD`), `hasDerivAt_arctan_inv` | |
 | 4.26.20, 4.26.21 (`−1 < x < 1`) | `dlmf_4_26_20`, `dlmf_4_26_21` | |
+
+### §4.28 Definitions and Periodicity (`Azurite/DLMF/Chapter4/Section28.lean`) — COMPLETE
+
+Mathlib has `Complex.sinh`, `cosh`, `tanh`; `csch`, `sech`, `coth` are defined here from 4.28.5–4.28.7 (`cschC`, `sechC`, `cothC`). 4.28.8–4.28.13 hold for every `z` (at poles both sides are the junk value `0`). §4.27 (Sums) is a reference only. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.28.1–4.28.3 | `dlmf_4_28_1`, `dlmf_4_28_2` (definitional), `dlmf_4_28_3` | `Complex.cosh_add_sinh`, `Complex.cosh_sub_sinh` |
+| 4.28.4–4.28.7 | `dlmf_4_28_4`, `dlmf_4_28_5` (`cschC`), `dlmf_4_28_6` (`sechC`), `dlmf_4_28_7` (`cothC`), `cothC_eq_cosh_div_sinh` | `Complex.tanh_eq_sinh_div_cosh` |
+| 4.28.8–4.28.13 | `dlmf_4_28_8` … `dlmf_4_28_13` (with `cscC`, `secC` of §4.14) | `Complex.sin_mul_I`, `Complex.cos_mul_I`, `Complex.tan_mul_I` |
+| periods `2πi` (`sinh`, `cosh`), `πi` (`tanh`) | `dlmf_4_28_sinh_periodic`, `dlmf_4_28_cosh_periodic`, `dlmf_4_28_tanh_periodic`, `dlmf_4_28_periodic_int` | `Complex.sin_sub_two_pi`, `Complex.tan_periodic` |
+| zeros `ikπ` (`sinh`), `i(k + ½)π` (`cosh`) | `dlmf_4_28_sinh_zeros`, `dlmf_4_28_cosh_zeros` | `Complex.sin_eq_zero_iff` |
+
+### §4.29 Graphics (`Azurite/DLMF/Chapter4/Section29.lean`, `Section29InvHyp.lean`) — COMPLETE
+
+As in §4.15, the inverse functions are defined first, from DLMF §4.37 (looked ahead): principal values are the 4.37.1–4.37.3 integrals along paths not crossing the cuts of Figure 4.37.1, and 4.37.7–4.37.9. Cuts (Figure 4.37.1): `arcsinh` `(−i∞, −i] ∪ [i, i∞)`, `arccosh` `(−∞, 1]`, `arctanh` `(−∞, −1] ∪ [1, ∞)`. "Complex" on the real axis is stated as in Figure 4.15.6: on the cut, both one-sided limits exist and are nonreal (general values `Arccosh` etc. are left to §4.37). No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.37.1, 4.37.3 (principal) | `arcsinhD` (segment `[0, z]`, `arcsinhCut`), `arctanhD` (`arctanhCut`); `arcsinD_I_mul_arcsinhD`, `arctanD_I_mul_arctanhD` (`arcsinh z = −i arcsin(iz)` etc.), `sinh_arcsinhD`, `tanh_arctanhD`, `hasDerivAt_arcsinhD`, `arcsinhD_ofReal`, `arctanhD_ofReal` | `Real.hasDerivAt_arsinh`, `Real.artanh_eq_half_log` |
+| 4.37.2 (principal) | `arccoshD` (segment `[1, z]`, `arccoshCut`); branch `coshRoot t = (t − 1)^{1/2}(t + 1)^{1/2}` (`coshRoot_sq`, `coshRoot_ofReal`: principal on `(1, ∞)`, `hasDerivAt_coshRoot`); `arccoshD_eq_log` (`ln(z + coshRoot z)`, FTC with `‖integrand‖ ≤ C s^{−1/2}`), `add_coshRoot_mem_slitPlane`, `cosh_arccoshD`, `hasDerivAt_arccoshD`, `arccoshD_ofReal` | `intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le`, `IntervalIntegrable.mono_fun'`, `intervalIntegral.intervalIntegrable_rpow'` |
+| 4.37.7–4.37.9 | `arccschD`, `arcsechD`, `arccothD` | |
+| cut limits | `arccoshD_cut_limits` (`x < 1`; `exists_tendsto_sqrt_side`, `exists_tendsto_log_upper/lower`, `im_coshRoot_nonneg/nonpos`), `arctanhD_cut_limits` (`\|x\| > 1`, from `arctanD_cut_limits`); nonreal via `apply_eq_of_tendsto` (`cosh L = x < 1`, `tanh L = x`, `\|x\| > 1`) | `Complex.continuousWithinAt_log_of_re_neg_of_im_zero`, `Complex.tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| Figures 4.29.1, 4.29.3, 4.29.5 | `dlmf_4_29_F1`, `dlmf_4_29_F3`, `dlmf_4_29_F5` (real on the real axis) | `Complex.ofReal_sinh` |
+| Figure 4.29.2 (`arccosh x` complex for `x < 1`) | `dlmf_4_29_F2` | |
+| Figure 4.29.4 (`arctanh x` complex for `\|x\| > 1`, `arccoth x` for `\|x\| < 1`) | `dlmf_4_29_F4` (`x ≠ 0` for `arccoth`) | |
+| Figure 4.29.6 (`arcsech x` complex for `x < 0`, `x > 1`) | `dlmf_4_29_F6` | |
+| §4.29(ii) (`w = sinh z` from Figure 4.15.7 rotated by `½π`); surfaces via 4.28.8–4.28.13 | `sinhStrip`, `dlmf_4_29_ii_sinh` (bijective, inverse `arcsinhD`, conformal); `dlmf_4_28_8` … `dlmf_4_28_13` | |
+
+### §4.30 Elementary Properties (`Azurite/DLMF/Chapter4/Section30.lean`) — COMPLETE
+
+Table 4.30.1's "all square roots have their principal values when the functions are real, nonnegative, and finite" is read as real `θ > 0`, where all six functions are positive and finite (as Table 4.16.3 is read in the first quadrant). Real `csch`, `sech`, `coth` are `1/sinh`, `1/cosh`, `1/tanh`. No errata: all 36 entries were checked against the proofs.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Table 4.30.1 (interrelations) | `dlmf_table_4_30_1_sinh`, `_cosh`, `_tanh`, `_csch`, `_sech`, `_coth` (one per column `f(θ) = a`; `positive_hyperbolic_facts`, `sqrt_eq_of_eq_sq`) | `Real.cosh_sq`, `Real.sinh_pos_iff`, `Real.tanh_eq_sinh_div_cosh` |
+
+### §4.31 Special Values and Limits (`Azurite/DLMF/Chapter4/Section31.lean`) — COMPLETE
+
+Table 4.31.1 is for complex `z`, one theorem per column. An `∞` entry at a finite point is a pole, `‖f(w)‖ → ∞` as `w → z₀`, `w ≠ z₀` (`tendsto_norm_div_of_simple_zero`, §4.14). **Imprecisions**: `tanh`'s `∞i`/`−∞i` are the same pole (period `πi`); the column `z = ∞` holds only as `ℜz → +∞`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Table 4.31.1, `z = 0`, `½πi`, `πi`, `(3/2)πi` | `dlmf_table_4_31_1_zero`, `_pi_div_two_I`, `_pi_I`, `_three_pi_div_two_I` (`csch_coth_poles`, `tanh_sech_poles`); `dlmf_table_4_31_1_tanh_poles_same` | `Complex.sinh_mul_I`, `Complex.cosh_mul_I`, `Complex.hasDerivAt_sinh` |
+| Table 4.31.1, `z = ∞` | `dlmf_table_4_31_1_infty` (filter `comap re atTop`, via `e^{−z} → 0`); **imprecision** `dlmf_table_4_31_1_infty_not_cobounded` | `Complex.norm_exp`, `tendsto_norm_atTop_iff_cobounded` |
+| 4.31.1–4.31.3 | `dlmf_4_31_1`, `dlmf_4_31_2`, `dlmf_4_31_3` (from 4.17.1–4.17.3 via `z ↦ iz`, `tendsto_I_mul_punctured`) | |
+
+### §4.32 Inequalities (`Azurite/DLMF/Chapter4/Section32.lean`) — COMPLETE
+
+Real `x`. 4.32.1 is stated for `x ≠ 0` (at `0`, `sinh x / x` is the removable value `1`). No errata (4.32.3 has the square root `(sinh x sinh y)^{1/2}`; without it the inequality would fail, e.g. `x = 1`, `y = 2`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.32.1 | `dlmf_4_32_1`; `cube_mul_cosh_le_sinh_cube` (series of `sinh 3x − 3 sinh x − 4x³ cosh x` with coefficients `≥ 0`, `three_pow_bound`) | `Real.hasSum_sinh`, `Real.hasSum_cosh`, `Real.sinh_three_mul`, `hasSum_nat_add_iff` |
+| 4.32.2 (`x > 0`) | `dlmf_4_32_2`; `tanh_lt_self`, `hasDerivAt_tanh'`, `one_sub_tanh_sq`, `half_lt_tanh` | `strictMonoOn_of_hasDerivWithinAt_pos`, `Real.sin_gt_sub_cube` |
+| 4.32.3 (`x, y > 0`) | `dlmf_4_32_3` (`cosh x − cosh y = 2 sinh((x+y)/2) sinh((x−y)/2)`, `sinh x sinh y = sinh²a − sinh²b`) | `Real.abs_sinh`, `Real.self_le_sinh_iff` |
+| 4.32.4 (`x ≥ 0`) | `dlmf_4_32_4` (`tan(½π tanh x) − x` nondecreasing; `cos_sq_le`: `cos²(½πt) ≤ ½π(1 − t²)`) | `monotoneOn_of_hasDerivWithinAt_nonneg`, `Real.arctan_tan`, `Real.sin_le` |
+
+### §4.33 Maclaurin Series and Laurent Series (`Azurite/DLMF/Chapter4/Section33.lean`) — COMPLETE
+
+As in §4.19, `B_n` is Mathlib's `bernoulli` and the DLMF index `n ≥ 1` is `n = m + 1`. "For expansions that correspond to (4.19.4)–(4.19.9), change `z` to `iz` and use (4.28.8)–(4.28.13)" is carried out: each coefficient is the §4.19 one times `±(−1)^n` (`*Coeff_eq`), stated in DLMF's sign-free form. No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.33.1, 4.33.2 | `dlmf_4_33_1`, `dlmf_4_33_2` | `Complex.hasSum_sinh`, `Complex.hasSum_cosh` |
+| 4.33.3 (`\|z\| < ½π`) | `dlmf_4_33_3` (`tanhCoeff`, `tanhCoeff_eq`; from `dlmf_4_19_3`) | |
+| analogues of 4.19.4–4.19.9 | `dlmf_4_33_csch` (`cschCoeff`, `0 < \|z\| < π`), `dlmf_4_33_sech` (`sechCoeff = E_{2n}/(2n)!`, `\|z\| < ½π`), `dlmf_4_33_coth` (`cothCoeff`, `0 < \|z\| < π`), `dlmf_4_33_log_sinh` (`logSinhCoeff`, `\|z\| < π`), `dlmf_4_33_log_cosh` (`logCoshCoeff`, `\|z\| < ½π`), `dlmf_4_33_log_tanh` (`logTanhCoeff`, `\|z\| < ½π`) | `Complex.I_sq` |
+
+### §4.34 Derivatives and Differential Equations (`Azurite/DLMF/Chapter4/Section34.lean`) — COMPLETE
+
+* Derivatives of `tanh`, `csch`, `sech`, `coth` away from their poles (`cschC`, `sechC`, `cothC` of §4.28).
+* The differential equations are solved on a domain `D` (open, preconnected) for holomorphic `w`, by reduction to §4.20 with `a ↦ ia` (`(ia)² = −a²`); 4.34.9 is 4.34.8 for `iw`.
+
+**Imprecision (errata):** 4.34.12–4.34.14 omit the singular solutions `±i/a`, `±1/a`, `±1/a` (as 4.20.13–4.20.14).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.34.1–4.34.6 | `dlmf_4_34_1`, …, `dlmf_4_34_6` | `Complex.hasDerivAt_sinh`, `Complex.hasDerivAt_cosh`, `HasDerivAt.div` |
+| 4.34.7, 4.34.11 | `dlmf_4_34_11` (from `dlmf_4_20_12`) | |
+| 4.34.8, 4.34.12 | `dlmf_4_34_12` (from `dlmf_4_20_13`, `sin_I_family`), `dlmf_4_34_12_singular` | |
+| 4.34.9, 4.34.13 | `dlmf_4_34_13` (4.34.12 for `iw`; `cosh_sub_pi_div_two_I`, `sinh_add_pi_div_two_I`), `dlmf_4_34_13_singular` | |
+| 4.34.10, 4.34.14 | `dlmf_4_34_14` (from `dlmf_4_20_14`; `tan_I_family`: `tan(iu) = i tanh u`, `tanh u = coth(u + ½πi)`), `dlmf_4_34_14_singular` | |
+
+### §4.35 Identities (`Azurite/DLMF/Chapter4/Section35.lean`) — COMPLETE
+
+* Each `±` is stated as two conjuncts (as §4.21).
+* `tanh`/`coth` identities are stated where the needed `cosh`/`sinh` are nonzero; `coth` is `cothC` (§4.28).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.35.1, 4.35.2 | `dlmf_4_35_1`, `dlmf_4_35_2` | `Complex.sinh_add`, `Complex.cosh_sub` |
+| 4.35.3, 4.35.4 | `dlmf_4_35_3` (`cosh u, cosh v ≠ 0`), `dlmf_4_35_4` (`sinh u, sinh v ≠ 0`) | `div_div_div_cancel_right₀` |
+| 4.35.5–4.35.8 | `dlmf_4_35_5`, …, `dlmf_4_35_8` (`half_sum_diff`, §4.21) | |
+| 4.35.9, 4.35.10 | `dlmf_4_35_9`, `dlmf_4_35_10` | |
+| 4.35.11–4.35.13 | `dlmf_4_35_11`, `dlmf_4_35_12` (`cosh z ≠ 0`), `dlmf_4_35_13` (`sinh z ≠ 0`) | `Complex.cosh_sq_sub_sinh_sq` |
+| 4.35.14–4.35.19 | `dlmf_4_35_14`, …, `dlmf_4_35_19` | |
+| 4.35.20–4.35.22 (roots "principal on the positive real axis, determined by continuity elsewhere") | `dlmf_4_35_20`, `dlmf_4_35_21`, `dlmf_4_35_22`: squared identity for all `z`; principal root on `x ≥ 0` (all real `x` for `cosh`); any continuous branch on a connected set avoiding the radicand's zeros, principal at one positive point, equals the left side (`branch_eq_of_sq`: the ratio is continuous into `{±1}`); the other two forms of 4.35.22 hold everywhere | `IsPreconnected.constant_of_mapsTo`, `Complex.cosh_two_mul` |
+| 4.35.23–4.35.33 | `dlmf_4_35_23`, …, `dlmf_4_35_33` (`tanh` forms of 4.35.26, 4.35.28 for `cosh z ≠ 0`; 4.35.33 for `n ∈ ℤ`) | `Complex.sinh_three_mul`, `Complex.cosh_three_mul`, `Complex.exp_int_mul` |
+| 4.35.34–4.35.40 (`z = x + iy`) | `dlmf_4_35_34`, `dlmf_4_35_35` (direct); `dlmf_4_35_36`, `dlmf_4_35_37`, `dlmf_4_35_38`, `dlmf_4_35_39`, `dlmf_4_35_40` from 4.21.39–4.21.43 at `iz = −y + ix` (`I_mul_add_mul_I`); hold everywhere in Lean's convention | `Complex.sinh_mul_I`, `Complex.cosh_mul_I` |
+
+### §4.36 Infinite Products and Partial Fractions (`Azurite/DLMF/Chapter4/Section36.lean`) — COMPLETE
+
+"Replace `z` by `iz` in §4.22": each formula is derived from the §4.22 one at `w = iz` (4.28.8–4.28.13). Indexing as in §4.22 (`n + 1`, odd numbers `2n + 1`). No errata.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.36.1 | `dlmf_4_36_1` (partial products converge, multipliable, `sinh z = z ∏'`; from `dlmf_4_22_1`) | |
+| 4.36.2 | `dlmf_4_36_2` (from `dlmf_4_22_2`) | |
+| 4.36.3 (`z ≠ nπi`) | `dlmf_4_36_3` (from `dlmf_4_22_3`; `I_mul_ne_int_mul_pi`) | |
+| 4.36.4 (`z ≠ nπi`) | `dlmf_4_36_4` (from `dlmf_4_22_4`, reindexed by `n ↦ −n`) | `Equiv.hasSum_iff` |
+| 4.36.5 (`z ≠ nπi`) | `dlmf_4_36_5` (from `dlmf_4_22_5`) | |
+
+### §4.37 Inverse Hyperbolic Functions (`Azurite/DLMF/Chapter4/Section37.lean`; principal values in `Section29InvHyp.lean`; §4.37(iv) in `Section37Log.lean`; §4.37(v) in `Section37Fundamental.lean`; §4.37(vi) in `Section37Interrelations.lean`) — §4.37 COMPLETE ((i)–(vi))
+
+The principal values were defined for §4.29 from the 4.37.1–4.37.3 integrals along paths not crossing the cuts (`arcsinhD`, `arccoshD`, `arctanhD`, and 4.37.7–4.37.9). The general values are defined here from the same integrals over `C¹` paths. `Arcsinh`, `Arctanh` correspond to `Arcsin`, `Arctan` at `iz` (`γ ↦ iγ`); `Arccosh` is treated directly (its path starts at the singular point `1`).
+
+**Errata:** 4.37.11, 4.37.14 (signs reversed). **Imprecisions/typo:** the 4.37.1 and 4.37.2 "principal value" conditions on the square roots; the 4.37.2 path starting at the excluded point `1`; branch points of `Arccsch`, `Arcsech` at `0`; "hyperbolic tangent" for "cotangent" before 4.37.7.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.37.1 (general) | `arcsinhGen`, `mem_arcsinhGen_iff_I`, `mem_arcsinhGen_iff` (`z ≠ ±i`: values = solutions of `sinh w = z`); `cosh_of_arcsinh_path`, `dlmf_4_37_1_branch` | `mem_arcsinGen_iff` (§4.15) |
+| 4.37.2 (general) | `arccoshGen` (paths from `1`, integrable integrand), `cosh_sinh_of_arccosh_path` (invariants `γ cosh Φ − g sinh Φ = 1`, `g cosh Φ − γ sinh Φ = 0`), `mem_arccoshGen_iff` (`z ≠ ±1`; converse via the path `cosh(sw + c s(1 − s))`), `sinh_of_arccosh_path`, `dlmf_4_37_2_branch` | `intervalIntegral.continuousOn_primitive_interval`, `eq_of_hasDerivAt_zero_Icc` (§4.15) |
+| 4.37.3 (general) | `arctanhGen`, `mem_arctanhGen_iff_I`, `mem_arctanhGen_iff` (`cosh w ≠ 0 ∧ tanh w = z`) | `mem_arctanGen_iff` (§4.23) |
+| 4.37.4–4.37.6 | `arccschGen`, `arcsechGen`, `arccothGen`, `dlmf_4_37_4_6` | |
+| §4.37(i) multivalued; branch points | `dlmf_4_37_i_multivalued`, `dlmf_4_37_i_branch_points` (`z ↦ ±iz` to §4.23(i): `mem_ball_mul`, `continuousOn_comp_mul`); **imprecision** `dlmf_4_37_i_branch_zero` | `no_arcsin_branch`, …, `no_arcsec_branch_zero` (§4.23) |
+| §4.37(ii) principal values | `dlmf_4_37_ii_principal_mem`, `dlmf_4_37_ii_two_valued` (`arcsinh` via `arcsinD_cut_limits`; `arccosh` sides differ by the sign of `ℑ`, `im_arccoshD_nonneg/nonpos`; `arctanh` via `arctanD_cut_limits`), `dlmf_4_37_ii_real` | `ge_of_tendsto` |
+| 4.37.7–4.37.9; analytic in Figure 4.37.1(iv)–(vi) | `dlmf_4_37_7_9` (**typo** erratum in the lead-in), `dlmf_4_37_ii_analytic` (`one_div_mem_arccoshCut`, `arctanhD_differentiableAt`) | |
+| 4.37.10, 4.37.12, 4.37.13, 4.37.15 | `dlmf_4_37_10`, `dlmf_4_37_12`, `dlmf_4_37_13`, `dlmf_4_37_15` (from the integrals, all `z`) | `intervalIntegral.integral_neg` |
+| 4.37.11, 4.37.14 | **errata** (signs reversed): `dlmf_4_37_11` (`arccosh(−z) = ∓πi + arccosh z`, `ℑz ≷ 0`; `coshRoot_neg`, `log_neg_of_im_pos/neg`, `cpow_half_neg_of_im_pos/neg`), `dlmf_4_37_14` (`±πi`), counterexamples `dlmf_4_37_11_erratum`, `dlmf_4_37_14_erratum` (`z = i`) | `Complex.arg_neg_eq_arg_sub_pi_of_im_pos` |
+| 4.37.16 | `dlmf_4_37_16` (4.23.19 at `iz`; also `z = ±i`) | |
+| 4.37.17, 4.37.18 | `dlmf_4_37_17`, `dlmf_4_37_18` (limits from `ℜz ≷ 0` at `iy`, `|y| > 1`, via `tendsto_I_mul_re_side`; values at `±i`) | |
+| 4.37.19 | `dlmf_4_37_19` (`coshRoot_eq_sqrt` on `ℜz > 0` via `branch_eq_of_sq`, `starConvex_right_cut`; `ℜz < 0` by 4.37.11; also `z = 1`) | `StarConvex.isPathConnected` |
+| 4.37.20 | `dlmf_4_37_20` (`eq_of_sq_eq_of_im`) | |
+| 4.37.21 (Kahan) | `dlmf_4_37_21` (`cpow_half_two_mul`) | `Complex.abs_arg_lt_pi_div_two_iff` |
+| 4.37.22, 4.37.23 | `dlmf_4_37_22`, `dlmf_4_37_23` (one-sided limits; `tendsto_sqrt_upper_nonpos/lower_nonpos`, `tendsto_coshRoot_factors`) | `continuousWithinAt_log_of_re_neg_of_im_zero`, `tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| 4.37.24, 4.37.25 | `dlmf_4_37_24`, `dlmf_4_37_25` (4.23.26–4.23.27 at `iz`) | |
+| §4.37(iv) "Other Inverse Functions" | `dlmf_4_37_iv_arccsch`, `dlmf_4_37_iv_arcsech` (sign by `ℜz`), `dlmf_4_37_iv_arcsech_kahan`, `dlmf_4_37_iv_arccoth` (`½ ln((z + 1)/(z − 1))`); cut values `dlmf_4_37_iv_arccsch_cut` (`tendsto_one_div_re_side`), `dlmf_4_37_iv_arcsech_cut`, `dlmf_4_37_iv_arccoth_cut` (`tendsto_one_div_nhdsWithin`, sides exchanged) | |
+| 4.37.26–4.37.31 | `dlmf_4_37_29` (also `z = ±i`), `dlmf_4_37_30` (also `z = 1`), `dlmf_4_37_31` (`cosh w ≠ 0`; `cosh_arctanhD_ne_zero`), from `sinh_eq_iff_neg_one_zpow`, `cosh_eq_iff_pm`, `tanh_eq_iff_add_int_mul_pi_I` (the §4.23(v) lemmas at `iw`); on the cuts with either side value `dlmf_4_37_29_cut`, `dlmf_4_37_30_cut`, `dlmf_4_37_31_cut` (`eq_of_side_limit`, `tanh_side_value`); general-value sets `dlmf_4_37_29_gen`, `dlmf_4_37_30_gen`, `dlmf_4_37_31_gen` | `Complex.sin_eq_sin_iff`, `Complex.cos_eq_cos_iff` (via §4.23) |
+| §4.37(vi) Interrelations (Table 4.30.1) | `inv_hyp_positive` (each principal inverse inverts its function on `θ > 0`), `dlmf_4_37_vi_sinh`, `dlmf_4_37_vi_cosh`, `dlmf_4_37_vi_tanh`, `dlmf_4_37_vi_csch`, `dlmf_4_37_vi_sech`, `dlmf_4_37_vi_coth` (five relations per column, real arguments), DLMF's example `dlmf_4_37_vi_example` | `Real.arsinh_sinh`, `Real.arcosh_cosh`, `Real.artanh_tanh` |
+
+### §4.38 Inverse Hyperbolic Functions: Further Properties (`Azurite/DLMF/Chapter4/Section38.lean`) — §4.38(i)–(iii) DONE
+
+**Errata:** 4.38.15 and the second equality of 4.38.18 (only "LHS ⊆ RHS", as 4.24.13/4.24.16). **Imprecisions:** 4.38.3 on the cut `x < −1` and 4.38.4 on the cut `0 < x < 1` give the value from above (the principal values are two-valued there); 4.38.4's condition `ℜz > 0` is not needed off the cut.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.38.1 | `dlmf_4_38_1` (`|z| ≤ 1`; 4.24.1 at `iz`) | |
+| 4.38.2 | `dlmf_4_38_2` (`hasSum_log_half_one_add_sqrt`: derivative `halfSqrtSeries_eq` + FTC + term-by-term integration; `sqrt_sq_add_one_eq` on a polar image via `branch_eq_of_sq`; `log_two_mul_mul`) | `Complex.log_mul_eq_add_log_iff`, `intervalIntegral.hasSum_integral_of_dominated_convergence`, `continuousOn_tsum` |
+| 4.38.3 | `dlmf_4_38_3` (off the cut; `coshRoot_eq_mul_sqrt`, `arg_add_arg_mem` with `im_cpow_half_nonpos/nonneg`), **imprecision** `dlmf_4_38_3_cut` (`x < −1`, value from above, via 4.37.23) | `Complex.norm_mul_exp_arg_mul_I` |
+| 4.38.4 | `dlmf_4_38_4` (`|z − 1| ≤ 2`, off the cut, no `ℜz > 0` needed; `arccoshD_eq_two_mul_arcsinhD` from 4.37.21 + 4.37.16, `two_mul_arcsinhD_series` from 4.38.1), **imprecision** `dlmf_4_38_4_cut` (`−1 < x < 1`, value from above) | |
+| 4.38.5 | `dlmf_4_38_5` (partial sums, `|z| ≤ 1`, `z ≠ ±1`; 4.24.3 at `iz`), `dlmf_4_38_5_hasSum` (`|z| < 1`) | |
+| 4.38.6 | `dlmf_4_38_6` (`σ = ±1` for `ℑz ≷ 0`; 4.24.4 at `iz`) | |
+| 4.38.7, 4.38.8 | `dlmf_4_38_7` (4.24.5 at `iz`), `dlmf_4_38_8` | |
+| 4.38.9, 4.38.11 | `dlmf_4_38_9`, `dlmf_4_38_11` (off the cuts; 4.24.9 at `iz`) | |
+| 4.38.10 | `dlmf_4_38_10` (`σ = ±1` for `ℜz ≷ 0`; `coshRoot_eq_sqrt`, `coshRoot_eq_neg_sqrt`) | |
+| 4.38.12 | `dlmf_4_38_12` (`σ = ±1` for `ℜz ≷ 0`; `mul_sqrt_one_add_inv_sq` on the right half-plane via `branch_eq_of_sq`) | `convex_halfSpace_re_gt` |
+| 4.38.13 | `dlmf_4_38_13` (whole cut plane, no sign; `mul_coshRoot_one_div`, `starConvex_arcsechDomain`) | `StarConvex.isPathConnected` |
+| 4.38.14 | `dlmf_4_38_14` (off `[−1, 1]`) | |
+| 4.38.15 | **erratum** (one inclusion): `dlmf_4_38_15`, counterexample `dlmf_4_38_15_converse_fails` (`0 ∈ Arcsinh(√2 − √2)`, `∉ Arcsinh 1 + Arcsinh 1`) | |
+| 4.38.16, 4.38.17 | set equalities `dlmf_4_38_16`, `dlmf_4_38_17` (4.24.14, 4.24.15 under `w ↦ iw`; `mem_arccoshGen_iff_I`) | |
+| 4.38.18 | first equality `dlmf_4_38_18` (4.24.16 under `w ↦ iw`); second equality **erratum** (one inclusion) `dlmf_4_38_18_arccosh`, counterexample `dlmf_4_38_18_arccosh_converse_fails` (`½πi ∈ Arccosh 0`, `∉ Arcsinh(−i/2) + Arccosh ½`) | |
+| 4.38.19 | `dlmf_4_38_19` (from 4.38.17 with `Arccoth v = Arctanh(1/v)`) | |
+
+### §4.39 Continued Fractions (`Azurite/DLMF/Chapter4/Section39.lean`) — DONE
+
+Each formula is the §4.25 one at `iz`: only the first partial numerator changes (by the factor `i`), so the numerators scale by `i` and the denominators are unchanged (`cf_first_mul_I`, from `cfP_scale_first`, `cfQ_change_first`).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.39.1 | `dlmf_4_39_1` (`z ≠ (2k + 1)½πi`; 4.25.1 and 4.28.10) | |
+| 4.39.2 | `dlmf_4_39_2` (`z ∈ arcsinhCut`; 4.25.3, `√(1 + z²)` principal) | |
+| 4.39.3 | `dlmf_4_39_3` (`z ∈ arctanhCut`; 4.25.4) | |
+
+### §4.40 Integrals (hyperbolic functions) (`Azurite/DLMF/Chapter4/Section40.lean`; §4.40(iii) in `Section40Definite.lean`; §4.40(iv) in `Section40Inverse.lean`) — §4.40(i)–(iv) DONE
+
+An indefinite integral `∫ f dx = F` is stated as `F′ = f` (`HasDerivAt`), for real `x` on DLMF's interval and, per §4.40(i), for complex `z` with principal branches off their cuts (`_complex`). Real `csch`, `sech`, `coth` are `1/sinh`, `1/cosh`, `1/tanh`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| §4.40(i) | module docstring; `dlmf_4_40_n_complex` | |
+| 4.40.1, 4.40.2 | `dlmf_4_40_1`, `dlmf_4_40_2` (+ `_complex`) | `Real.hasDerivAt_cosh`, `Real.hasDerivAt_sinh` |
+| 4.40.3 | `dlmf_4_40_3` (all `x`), `dlmf_4_40_3_complex` (`cosh z ∈ slitPlane`) | `HasDerivAt.clog` |
+| 4.40.4 | `dlmf_4_40_4` (`x > 0`), `dlmf_4_40_4_complex` (`tanh ½z ∈ slitPlane`; `hasDerivAt_ctanh`) | |
+| 4.40.5 | `dlmf_4_40_5` (`hasDerivAt_gd`, FTC for 4.23.39), `dlmf_4_40_5_complex` (`arctan(sinh z)`, `sinh z ∈ arctanCut`), `dlmf_4_40_5_complex_ofReal` (= `gd x`, 4.23.40) | `Continuous.integral_hasStrictDerivAt` |
+| 4.40.6 | `dlmf_4_40_6` (`x > 0`), `dlmf_4_40_6_complex` (`sinh z ∈ slitPlane`) | |
+| 4.40.7 | `dlmf_4_40_7` (real `a ≠ 0`; `hasSum_exp_neg_div_sinh`, `integral_sin_mul_exp_neg`, `hasSum_coth_series` from 4.36.3) | `MeasureTheory.integral_tsum_of_summable_integral_norm`, `integral_exp_mul_complex_Ioi` |
+| 4.40.8 | `dlmf_4_40_8` (real `|a| < π`; `hasSum_one_div_sinh_pi`, `integral_sinh_mul_exp_neg`, `hasSum_cot_all` + even/odd split `hasSum_odd_tan_half` from 4.22.3) | `HasSum.even_add_odd`, `Summable.comp_injective` |
+| 4.40.9 | `dlmf_4_40_9` (complex `a`, `−1 < ℜa < 1`; `logistic` substitution → `4 B(1 + a, 1 − a)`; removable value `4` at `a = 0`) | `integral_image_eq_integral_abs_deriv_smul`, `Complex.Gamma_mul_Gamma_eq_betaIntegral`, `Complex.Gamma_mul_Gamma_one_sub` |
+| 4.40.10 | `dlmf_4_40_10` (`a, b > 0`; `tanh_sub_div_eq_integral`, `sech_sq_integral`, Fubini) | `MeasureTheory.integral_integral_swap`, `integrable_prod_iff'` |
+| 4.40.11–4.40.13 | `dlmf_4_40_11` (all `x`), `dlmf_4_40_12` (`x > 1`), `dlmf_4_40_13` (`|x| < 1`; `hasDerivAt_artanh'`), each with `_real` (Mathlib's `arsinh`, `arcosh`, `artanh`) and the §4.29 bridges `dlmf_4_29_F2`, `dlmf_4_29_F4` | `Real.hasDerivAt_arsinh`, `Real.hasDerivAt_arcosh`, `Real.artanh_eq_half_log` |
+| 4.40.14–4.40.16 | `dlmf_4_40_14` (`x > 0`), `dlmf_4_40_15` (`0 < x < 1`; `arcsin` = `arcsinD`), `dlmf_4_40_16` (`x > 1`), each with `_real` via `arccsch x = arsinh(1/x)` etc. (`dlmf_4_29_F6`, `dlmf_4_29_F4`) | `hasDerivAt_inv`, `Real.hasDerivAt_arcsin` |
+
+§4.40(v) Compendia and §4.41 Sums contain references only (skipped).
+
+### §4.42 Solution of Triangles (`Azurite/DLMF/Chapter4/Section42.lean`) — DONE
+
+Planar: vertices are points of a Euclidean affine space (`EuclideanSpace ℝ (Fin 2)` or any), angles are Mathlib's unoriented `∠`, sides `dist`. Spherical (not in Mathlib): vertices are unit vectors, sides `InnerProductGeometry.angle`, the vertex angle `sphAngle x y z` is the angle between the tangent vectors `y − ⟪x, y⟫x`, `z − ⟪x, z⟫x`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.42.1–4.42.3 | `dlmf_4_42_1`, `dlmf_4_42_2`, `dlmf_4_42_3` (right angle at `C`) | `EuclideanGeometry.sin_angle_of_angle_eq_pi_div_two` etc. |
+| 4.42.4 | `dlmf_4_42_4` (not collinear) | `EuclideanGeometry.law_sin`, `sin_pos_of_not_collinear` |
+| 4.42.5, 4.42.6 | `dlmf_4_42_5`, `dlmf_4_42_6` (`B ≠ C`) | `EuclideanGeometry.law_cos` |
+| 4.42.7 | `dlmf_4_42_7` (area = `Affine.Simplex.volume`; `height_mul_dist_eq` from the altitude foot), `dlmf_4_42_7_lebesgue` (Lebesgue measure of the closed triangle in `ℝ²`) | `Affine.Simplex.volume_eq`, `Affine.Simplex.volume_eq_volume_real_closedInterior` |
+| 4.42.8–4.42.12 | `dlmf_4_42_8` … `dlmf_4_42_12` (`sphAngle`, `sphAngle_props`, `sph_master`) | `InnerProductGeometry.cos_angle_mul_norm_mul_norm`, `sin_angle_mul_norm_mul_norm` |
+
+### §4.43 Cubic Equations (`Azurite/DLMF/Chapter4/Section43.lean`) — DONE
+
+Formalized in DLMF's corrected form (erratum V1.0.10 rewrote cases (a)–(c)). "The roots" are stated as the factorization `z³ + pz + q = (z − z₁)(z − z₂)(z − z₃)` for all `z ∈ ℂ`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.43.1 | `A = √(−⁴⁄₃p)`, `B = √(⁴⁄₃p)` (principal roots of positive reals); `cubic_A_props`, `cubic_ratio_sq` | |
+| 4.43.2 (a) | `dlmf_4_43_2_a` (`4p³ + 27q² ≤ 0`; real `a = ⅓ arcsin(4q/A³)`; all roots real), via `cubic_sin_roots` | `Complex.sin_three_mul`, `Real.sin_arcsin` |
+| 4.43.2 (b) | `dlmf_4_43_2_b` (`p < 0`, `q < 0`, `4p³ + 27q² > 0`; real `a = ⅓ arcosh(−4q/A³)`; conjugate nonreal pair), via `cubic_cosh_roots` | `Complex.cosh_three_mul`, `Real.cosh_arcosh` |
+| 4.43.2 (c) | `dlmf_4_43_2_c` (`p > 0`; real `a = ⅓ arsinh(−4q/B³)`; conjugate nonreal pair), via `cubic_sinh_roots` | `Complex.sinh_three_mul`, `Real.sinh_arsinh` |
+
+§4.44 Other Applications: not formalized (user went from §4.43 to §4.45).
+
+### §4.45 Methods of Computation (`Azurite/DLMF/Chapter4/Section45.lean`, numerics in `Section45Numerics.lean`) — DONE
+
+**Imprecision:** 4.45.15 states `−π ≤ ph z ≤ π`; the principal `ph` is in `(−π, π]`, the value `−π` being the limit from below on the negative axis. The page's own erratum V1.0.7 (4.45.8–4.45.9) is already applied.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 4.45.1–4.45.3 | `dlmf_4_45_1_2`, `dlmf_4_45_1_tendsto`, `dlmf_4_45_3`, `dlmf_4_45_3_exists` | `Real.log_rpow`, `Real.rpow_logb` |
+| 4.45.4–4.45.5 | `dlmf_4_45_4_5`; `½ ln 10 = 1.15…` in `dlmf_4_45_i_constants` (AzFloat `ln10Bracket`) | `Real.rpow_def_of_pos` |
+| 4.45.6–4.45.7 | `dlmf_4_45_6_7`; `½π = 1.57…` in `dlmf_4_45_i_constants` | `Real.sin_add_int_mul_pi` |
+| 4.45.8–4.45.10 | `dlmf_4_45_8` (all real `x`), `arctanSeq`, `dlmf_4_45_9_10` | `Real.arctan_tan`, `Real.sin_arctan` |
+| 4.45.11 | `dlmf_4_45_11` (`x > 1`) | `Complex.hasSum_arctan`, `Real.arctan_inv_of_pos` |
+| 4.45.12–4.45.14 | `dlmf_4_45_12`, `dlmf_4_45_12_arctan`, `dlmf_4_45_13`, `dlmf_4_45_14` (AzFloat enclosures, `decide +kernel`; `isEncl0_sqrtBracket`, `arctan_alternating_bounds`) | `Antitone.alternating_series_le_tendsto` |
+| Table 4.16.3 example | `dlmf_4_45_arcsin` | `Real.arcsin_eq_arctan` |
+| 4.45.15–4.45.16 | `dlmf_4_45_15`, **imprecision** `dlmf_4_45_15_cut`, `dlmf_4_45_16` | `Complex.tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| §4.45(iii) Newton's rule | `lambertNewton`, `lambertNewtonSeq`, `dlmf_4_45_iii_W0`, `dlmf_4_45_iii_Wm1` (`convexOn_mul_exp`) | `ConvexOn.slope_le_of_hasDerivAt`, `tendsto_atTop_ciInf` |
