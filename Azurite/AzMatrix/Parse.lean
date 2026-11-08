@@ -11,9 +11,9 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
   `toChars` / `parseChars` for `AzMatrix`, round-trip proof, and `ToString`
   instance.
 
-  Format: `"[r₀; r₁; …; r_{m-1}]"` where each row `rᵢ` is a comma-space-separated
-  element list (no surrounding brackets on rows). For `m = 0 ∨ n = 0`, the
-  representation is `"[]"`.
+  Format (Malachite's `Matrix`): `"[r₀; r₁; …; r_{m-1}]"` where each row `rᵢ` is a
+  comma-space-separated element list (no surrounding brackets on rows). For `m = 0 ∨ n = 0`
+  there are no entries and the dimensions are spelled out: `"[]_{m,n}"` (e.g. `"[]_{4,0}"`).
 -/
 import Azurite.AzVector.Parse
 import Azurite.AzMatrix.Basic
@@ -33,10 +33,14 @@ def emptyRows : AzMatrix R 0 n := AzMatrix.ofFn (fun i _ => i.elim0)
 /-- The unique matrix when `n = 0`. -/
 def emptyCols : AzMatrix R m 0 := AzMatrix.ofFn (fun _ j => j.elim0)
 
+/-- The representation of a matrix without entries (`m = 0 ∨ n = 0`): `"[]_{m,n}"`. -/
+def degenerateChars (m n : ℕ) : List Char :=
+  '[' :: ']' :: '_' :: '{' :: (Nat.repr m).toList ++ ',' :: (Nat.repr n).toList ++ ['}']
+
 /-- Serialize a matrix as a character list:
-    `"[r₀; r₁; …; r_{m-1}]"`, or `"[]"` when `m = 0 ∨ n = 0`. -/
+    `"[r₀; r₁; …; r_{m-1}]"`, or `"[]_{m,n}"` when `m = 0 ∨ n = 0`. -/
 def toChars (M : AzMatrix R m n) : List Char :=
-  if m = 0 ∨ n = 0 then ['[', ']']
+  if m = 0 ∨ n = 0 then degenerateChars m n
   else
     '[' :: List.intercalate [';', ' ']
       (M.toLists.map (fun row =>
@@ -59,9 +63,9 @@ def parseRowsN (n : ℕ) :
 /-- Parse a character list as a matrix of dimensions `m × n`. -/
 def parseChars (cs : List Char) : Option (AzMatrix R m n) :=
   if hm : m = 0 then
-    if cs = ['[', ']'] then some (hm ▸ emptyRows) else none
+    if cs = degenerateChars m n then some (hm ▸ emptyRows) else none
   else if hn : n = 0 then
-    if cs = ['[', ']'] then some (hn ▸ emptyCols) else none
+    if cs = degenerateChars m n then some (hn ▸ emptyCols) else none
   else
     match cs with
     | '[' :: rest =>
@@ -189,10 +193,9 @@ private lemma eq_emptyCols (hn : n = 0) (M : AzMatrix R m n) :
   ext i j
   exact j.elim0
 
-/-- Lemma: when `m = 0 ∨ n = 0`, `toLists M = []` or has empty rows so that
-    the intercalated string is `[]`. -/
+/-- Lemma: when `m = 0 ∨ n = 0` the representation is `"[]_{m,n}"`. -/
 private lemma toChars_of_degenerate (M : AzMatrix R m n) (h : m = 0 ∨ n = 0) :
-    toChars M = ['[', ']'] := by
+    toChars M = degenerateChars m n := by
   unfold toChars
   rw [ite_eq_left h]
 

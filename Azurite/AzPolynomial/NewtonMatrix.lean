@@ -67,7 +67,7 @@ section Tests
 
 -- Vacuous `k = 0` case (no entries).
 #guard
-  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 0) == "[]"
+  toString ((parseAzPolynomial (R := AzInt) "x^2-3*x+2").get!.newtMatMonic 0) == "[]_{0,0}"
 
 end Tests
 

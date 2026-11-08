@@ -20,6 +20,7 @@ import Azurite.AzVector.Equiv.Dot
 import Azurite.AzVector.Parse
 import Azurite.AzMatrix.Equiv.RowCol
 import Mathlib.Data.Matrix.Mul
+import Azurite.AzMatrix.Parse
 
 namespace Azurite
 variable {R : Type _} [CommSemiring R] {m n : Nat}
@@ -81,5 +82,15 @@ private def testV : AzVector AzInt 2 := AzVector.ofList [5, 6]
 #guard toString (testM.mulVec testV) = "(17, 39)"
 
 #guard toString (testM.vecMul testV) = "(23, 34)"
+
+-- matrices without entries spell out their dimensions, as Malachite's `Matrix`
+#guard (AzMatrix.parseStr (R := AzInt) (m := 4) (n := 0) "[]_{4,0}").map toString
+  = some "[]_{4,0}"
+#guard (AzMatrix.parseStr (R := AzInt) (m := 0) (n := 3) "[]_{0,3}").map toString
+  = some "[]_{0,3}"
+#guard (AzMatrix.parseStr (R := AzInt) (m := 0) (n := 0) "[]_{0,0}").map toString
+  = some "[]_{0,0}"
+#guard (AzMatrix.parseStr (R := AzInt) (m := 4) (n := 0) "[]").isNone
+#guard (AzMatrix.parseStr (R := AzInt) (m := 4) (n := 0) "[]_{0,4}").isNone
 
 end Azurite
