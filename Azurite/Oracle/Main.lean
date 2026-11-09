@@ -13,7 +13,7 @@ import Azurite.Oracle.AzZMod
 import Azurite.Oracle.AzRat
 import Azurite.Oracle.AzFloat
 import Azurite.Oracle.AzNatExtra
-import Azurite.Oracle.AzIntVector
+import Azurite.Oracle.AzVector
 import Azurite.Oracle.AzNatFloat
 
 /-!
@@ -141,6 +141,29 @@ def modes : List (String × Mode) := [
   ("az_nat_bell_numbers_prefix", mode checkBellNumbersPrefix),
   ("az_nat_landau_function_prefix", mode checkLandauFunctionPrefix),
   ("az_nat_dot_sign", mode checkNatDotSign),
+  ("az_nat_vector_add", mode checkNatVectorAdd),
+  ("az_nat_vector_mul_scalar", mode checkNatVectorMulScalar),
+  ("az_nat_vector_dot", mode checkNatVectorDot),
+  ("az_nat_vector_abs_squared", mode checkNatVectorAbsSquared),
+  ("az_nat_vector_zero", mode checkNatVectorZero),
+  ("az_nat_vector_standard_basis_vector", mode checkNatVectorStandardBasisVector),
+  ("az_nat_vector_index", mode checkNatVectorIndex),
+  ("az_nat_vector_to_string", mode checkNatVectorToString),
+  ("az_nat_vector_from_str", mode checkNatVectorFromStr),
+  ("az_nat_vector_mod_add", mode (checkNatVectorMod false .add)),
+  ("az_nat_vector_mod_sub", mode (checkNatVectorMod false .sub)),
+  ("az_nat_vector_mod_neg", mode (checkNatVectorMod false .neg)),
+  ("az_nat_vector_mod_mul", mode (checkNatVectorMod false .mul)),
+  ("az_nat_vector_mod_dot", mode (checkNatVectorMod false .dot)),
+  ("az_nat_vector_mod_abs_squared", mode (checkNatVectorMod false .absSquared)),
+  ("az_nat_vector_mod_cross", mode (checkNatVectorMod false .cross)),
+  ("az_nat_vector_mod_power_of_2_add", mode (checkNatVectorMod true .add)),
+  ("az_nat_vector_mod_power_of_2_sub", mode (checkNatVectorMod true .sub)),
+  ("az_nat_vector_mod_power_of_2_neg", mode (checkNatVectorMod true .neg)),
+  ("az_nat_vector_mod_power_of_2_mul", mode (checkNatVectorMod true .mul)),
+  ("az_nat_vector_mod_power_of_2_dot", mode (checkNatVectorMod true .dot)),
+  ("az_nat_vector_mod_power_of_2_abs_squared", mode (checkNatVectorMod true .absSquared)),
+  ("az_nat_vector_mod_power_of_2_cross", mode (checkNatVectorMod true .cross)),
   ("az_int_dot_sign", mode checkIntDotSign),
   ("az_int_vector_add", mode checkIntVectorAdd),
   ("az_int_vector_sub", mode checkIntVectorSub),
