@@ -53,6 +53,8 @@ import Azurite.AzFloat.CbrtRat
 import Azurite.AzFloat.Compare
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
+import Azurite.AzFloat.Cos
+import Azurite.AzFloat.CosBracket
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Equiv.Add
@@ -67,6 +69,8 @@ import Azurite.AzFloat.Equiv.Compare
 import Azurite.AzFloat.Equiv.ConstantKernel
 import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
+import Azurite.AzFloat.Equiv.Cos
+import Azurite.AzFloat.Equiv.CosBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
@@ -2205,6 +2209,7 @@ import Azurite.Rounding.SciPrecision
 import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
+import Azurite.Transcendental.Cos
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.LambertW

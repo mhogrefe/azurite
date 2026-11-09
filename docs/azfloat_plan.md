@@ -5686,6 +5686,83 @@ branch-point and asymptotic expansions); the numerics are new.  Files:
   the finitely many decisions that need arbitrary precision.  The proofs never mention the
   numerical method that does the actual work.
 
+## Irrationality of `cos q`, `sin q` (DONE 2026-11-09)
+
+User request, as the groundwork for a fuel-free `cos`: "Let's do the necessary work for cos
+irrationality first."  `Transcendental/Cos.lean`: `irrational_cos_rat`, `irrational_sin_rat`
+(and `irrational_cos_int`).  Mathlib has no Lindemann–Weierstrass beyond the analytic lemma
+`exp_polynomial_approx` (Hermite's approximation: for `f ∈ ℤ[X]`, `f(0) ≠ 0`, every large
+prime `p` has `nₚ`, `gₚ ∈ ℤ[X]` with `|nₚ e^r − p gₚ(r)| ≤ c^p/(p−1)!` at the roots `r` of `f`),
+which the repo had used for `e` (`Transcendental/Exp.lean`).  The same lemma at the conjugate
+pair `±in` (`f = X² + n²`, roots algebraic integers) gives `cos n`: summing the two
+approximations, `gₚ(in) + gₚ(−in)` is an integer (even powers only), `e^{in} + e^{−in} = 2 cos n`,
+and a rational `cos n = c/d` makes `2c nₚ − p d m` an integer of modulus `< 1`, hence `0`,
+hence `p ∣ 2c nₚ`, `p ∤ nₚ`, so `p ∣ 2c` — impossible for `p > 2|c|` when `c ≠ 0`; `c = 0`
+is excluded by `cos 2n = −1`.  Rational arguments reduce to integers by Chebyshev
+(`cos (num q) = T_{den q}(cos q)`, `T ∈ ℤ[X]`), and `sin q` by `cos 2q = 1 − 2 sin² q`.
+(~190 lines; no new analysis — the Mathlib lemma does the work.)  Used at once by the
+fuel-free `cos` below.
+
+## `cos` for floats (DONE 2026-11-09, fuel-free)
+
+User request: "implement cosine for AzFloat! Use DLMF, Brent–Zimmerman, or anything else you
+need as a reference. Note that we have a rem function that we can use for argument reduction."
+`AzFloat/CosBracket.lean`, `AzFloat/Cos.lean`, `Equiv/CosBracket.lean`, `Equiv/Cos.lean`,
+`Tests/Cos.lean`: `cosPrecRound x p mode` (correctly rounded, exact comparison), `cos x`
+(nearest at the precision of `x`); `Spec.cos : EReal → Option EReal` (`NaN` at `±∞`,
+`cos 0 = 1`); `cosPrecRound_eq_liftVal`.
+
+**Bracket** (`cosBracket x ex w`, working precision `W = cosWork ex w = w + 12 + max(ex, 0)`):
+
+* *Reduction with `remExact`.*  `[lo, hi]` = `piBracket W`, `y = 2 lo` (a float), so
+  `r' = remExact |x| y = |x| − k y` is exact, `k = ⌊|x| / y⌋ ≥ 0`, `0 ≤ r' < y`.  The true
+  reduction `r = |x| − 2kπ = r' − 2k(π − lo)` lies in `[r' − E, r']` with the 64-bit ceiling
+  `E = ⌈|x| ⌈hi − lo⌉⌉ ≥ 2k(π − lo)` (from `k ≤ |x| / (2 lo)` and `lo ≥ 1`), and
+  `cos x = cos |x| = cos r` (`Real.cos_abs`, `Real.cos_add_int_mul_two_pi`).  Working at
+  `W ≥ w + 12 + ex` makes `E ≤ 32 |x| 2^(−W) ≤ 2^(−w−7)`: the reduction costs exactly the bits
+  of the exponent, as it must (no fancy Payne–Hanek — `π` at `W` bits is one Machin bracket).
+* *Series at `m = r'/8 ∈ [0, π/4)`.*  The alternating Taylor series in interval arithmetic
+  (`Encl`, all ends directed), `cosTerms W = W/4 + 2` terms beyond the first, tail bounded by
+  the last term (the terms decrease for `|m| ≤ 1`: `Antitone.alternating_series_le_tendsto`
+  and `tendsto_le_alternating_series` on `Real.hasSum_cos`), then
+  `cosTerm m N ≤ 1/(2N)! ≤ 2^(1−2N) ≤ 2^(−W/2)`.
+* *Lipschitz widening* by `E/8` (`Real.abs_cos_sub_cos_le`) to enclose `cos (r/8)`, then three
+  double-angle steps `cos 2θ = 2 cos² θ − 1` (`cosDouble`): the first two on nonnegative
+  enclosures (`θ ∈ (−2^(−10), π/2)`, lower end clamped by `enclClamp0`), the last through
+  `|cos (r/2)|` (`enclAbs`), since `2|c|² − 1 = 2c² − 1`.
+
+**Proof structure** (`Equiv/CosBracket.lean`, ~770 lines, compiled with a handful of
+fixes).  Width-tracking enclosure predicates `IsEnclW a x δ`, `IsEncl0W a x δ` (nonnegative
+lower end) with one lemma per interval operation: `IsEncl0W.mul` (values `≤ 1`, widths `≤ 1`:
+`δ + ε + δε + 16u`, `u = 2^(−W)`), `IsEncl0W.div_nat` (`(δ + 8u)/n`), `IsEnclW.sub0`/`add0`
+(`δ + ε + 8(M+1)u` for magnitudes `≤ M`), `IsEnclW.widen0`, `enclClamp0_spec`, `enclAbs_spec`,
+`cosDouble_spec` (`6δ + 80u` for `δ ≤ 1/8`).  Loop invariant `cosSeriesLoop_spec`: the term
+enclosure has width `≤ 80u` (contraction `(112u + 1280u² + 8u)/2 ≤ 80u`), the partial sum
+`≤ 112 i u`, `pos = true ↔ Even i`; `cosSeries_spec` has width
+`cosSeriesEps W = 112 W u + 2·2^(−W/2) + 184u`.  `cosBracket_spec` (for any `x` with
+`|x| < 2^ex`, `w ≥ 64`): width `cosEps ex w = cosEpsW ex (cosWork ex w)`,
+`cosEpsW ex W = 216 (cosSeriesEps W + 8·2^ex u + 24u) + 3440u` — `≈ 2^(−w−3)` in practice
+(probe: widths within a bit of `2^(−w)` for `cos 1/2`, `cos 100`, `cos 10¹²`, `cos 2^(−100)`,
+`cos 1` at 264 bits).  `tendsto_cosEps` via `tendsto_self_mul_const_pow_of_lt_one` and
+`Tendsto.comp` with `W/2 → ∞`; the certificate `cosApprox_isSome_exists` from
+`exists_isSome_of_irrational_threshold` + `irrational_cos_rat` (float values are rationals,
+`exists_rat_of_toVal`).  Ziv start `p + zivGuardBits`, threshold 64.
+
+**Gotchas.**  `rw [← hu] at hlof` fails on `FloorOf W x r` (the `2^(−W)` is inside the
+definition) — rewrite after taking `.ge`/`.le`.  `pow_le_pow_of_le_one (by norm_num) …`
+leaves the bound as a metavariable when the target is `≤ 1/2`-style — prove such numeric
+facts with `norm_num` directly.  Width lemmas with a magnitude parameter `M` need `(M := 2)`
+when the first magnitude hypothesis is a composed term.  `Real.abs_cos_le_one` is already
+`|cos x| ≤ 1` (no `abs_le.mp`).
+
+Tests: 240-digit Python references (Machin `π`, exact reduction with `Decimal`, Taylor series)
+at the exact float arguments (`22/7`, `−7/5` as their 53-bit floats), rounded with exact
+rationals; `cos` of the 53-bit float nearest `π` is `−1` (`.lt`), `cos 2^(−100) = 1` (`.gt`);
+200-bit `cos 1`, `cos 100` by `toString`.  UNTIMED; the cost is one `piBracket W` + a
+`W/4`-term interval series + a few products (`O(W)` operations of `W` bits — a binary-splitting
+or `exp`-style chunked series would be the next step if timing matters).  Not done: `sin`,
+`tan`, the rational-argument variants, `sincos`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

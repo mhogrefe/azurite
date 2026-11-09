@@ -45,6 +45,7 @@ import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rem
 import Azurite.AzFloat.SqrtRat
+import Azurite.AzFloat.Agm
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -912,6 +913,117 @@ def checkFloatFusedWith {α : Type} (name : String) (altName : String)
   let computed ← roundedResult name (f x.1 y.1 z p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
   else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+/-! ### The arithmetic-geometric mean -/
+
+/-- Malachite's AGM special cases, which follow MPFR's: after `NaN` and the infinities, a zero
+argument gives `0` even when the other argument is negative, where Azurite checks for negative
+arguments first and gives `NaN`. -/
+def malachiteAgm (x y : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  if x.isNaN || y.isNaN || x.isInfinite || y.isInfinite then AzFloat.agmPrecRound x y p m
+  else if x.isZero || y.isZero then (AzFloat.zero, .eq)
+  else AzFloat.agmPrecRound x y p m
+
+/-- `malachiteAgm` for two rationals. -/
+def malachiteAgmRat (x y : AzRat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  if x = 0 ∨ y = 0 then (AzFloat.zero, .eq) else AzFloat.agmRatPrecRound x y p m
+
+/-- `malachiteAgm` for a float and a rational. -/
+def malachiteAgmFloatRat (x : AzFloat) (q : AzRat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if x.isNaN || x.isInfinite then AzFloat.agmFloatRatPrecRound x q p m
+  else if x.isZero then (AzFloat.zero, .eq)
+  else if q = 0 then (AzFloat.zero, .eq)
+  else AzFloat.agmFloatRatPrecRound x q p m
+
+/-- The AGM of a float `x` and a `y` of type `α`, in all of Malachite's shapes: `agm(x, y) = r`,
+`(x).{name}[_prec][_round][_val_ref|_ref_val|_ref_ref](y[, p][, rm]) = (r, o)`, and the
+assignments `x := x; x.{name}[…]_assign[_ref](y[, p][, rm]) = o; x = r` and
+`x := x; x.agm_assign(y); x = r`. The precision defaults to `defaultPrec x y`, the mode to
+`Nearest`. -/
+def checkFloatAgmWith {α : Type} (name : String) (parseY : String → Option α)
+    (defaultPrec : AzFloat → α → Nat) (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering)
+    (line : String) : Verdict := do
+  if line.startsWith "agm(" then
+    let some (args, res) := functionCall line "agm" | fail "not an `agm(x, y) = r` line"
+    let (x, y) ← match args with
+      | [x, y] => pure (x, y)
+      | _ => fail "agm takes two arguments"
+    let x ← expect "x" (parseFloat (stripRef x))
+    let y ← expect "y" (parseY (stripRef y))
+    let computed ← roundedResult "agm" (f x.1 y (defaultPrec x.1 y)) (.mode .Nearest)
+    expectFloat "agm" computed.1 (← expect "r" (parseFloat res))
+  else
+  let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        if !(b.startsWith "x." && c.startsWith "x = ") then fail "not an assignment line"
+        let call := dropChars b 2
+        let some (args, _) := splitParenthesized call | fail "not a method call"
+        pure (dropChars a 5, (call.splitOn "(").headD "", args, dropChars c 4, false)
+      | _ => fail "not an assignment line"
+    else do
+      let (lhs, rhs) ← expect "an `x.f(…) = r` line" (splitEquals line)
+      let some (x, rest) := splitParenthesized lhs | fail "no receiver"
+      if !rest.startsWith "." then fail "not a method call"
+      let call := dropChars rest 1
+      let some (args, _) := splitParenthesized call | fail "not a method call"
+      pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
+  let base ← if method == name || method.startsWith s!"{name}_" then pure name
+    else if method == "agm_assign" then pure "agm"
+    else fail s!"not a {name} line"
+  let tags := (dropChars method base.length).splitOn "_"
+  let hasPrec := tags.contains "prec"
+  let hasRound := tags.contains "round"
+  let (y, p, rm) ← match splitArgs args, hasPrec, hasRound with
+    | [y, p, rm], true, true => pure (y, some p, some rm)
+    | [y, p], true, false => pure (y, some p, none)
+    | [y, rm], false, true => pure (y, none, some rm)
+    | [y], false, false => pure (y, none, none)
+    | _, _, _ => fail s!"{method}: wrong number of arguments"
+  let x ← expect "x" (parseFloat (stripRef x))
+  let y ← expect "y" (parseY (stripRef y))
+  let p ← match p with
+    | some p => expect "precision" (parseNat p)
+    | none => pure (defaultPrec x.1 y)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult method (f x.1 y p) rm
+  if withOrdering then expectFloatPair method computed (← parseFloatPair res)
+  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+/-- `Float`'s `agm` family, against `AzFloat.agmPrecRound` (through `malachiteAgm`). -/
+def checkFloatAgm : String → Verdict :=
+  checkFloatAgmWith "agm" (fun s => (parseFloat s).map (·.1)) AzFloat.combinedPrecision
+    malachiteAgm
+
+/-- `Float`'s `agm_float_rational` family and `agm` with a `Rational`, against
+`AzFloat.agmFloatRatPrecRound` (through `malachiteAgmFloatRat`); the default precision is `x`'s. -/
+def checkFloatAgmFloatRational : String → Verdict :=
+  checkFloatAgmWith "agm_float_rational" parseAzRat (fun x _ => x.precision?.getD 1)
+    malachiteAgmFloatRat
+
+/-- `Float::agm_rational_prec[_round][_val_ref|_ref_val|_ref_ref](x, y, p[, rm]) = (r, o)`, against
+`AzFloat.agmRatPrecRound` (through `malachiteAgmRat`). -/
+def checkFloatAgmRational (line : String) : Verdict := do
+  let (lhs, rhs) ← expect "an `agm_rational_prec(…) = (r, o)` line" (splitEquals line)
+  if !lhs.startsWith "agm_rational_prec" then fail "not an agm_rational line"
+  let method := (lhs.splitOn "(").headD ""
+  let some (args, _) := splitParenthesized lhs | fail "not a function call"
+  let hasRound := ((dropChars method 17).splitOn "_").contains "round"
+  let (x, y, p, rm) ← match splitArgs args, hasRound with
+    | [x, y, p, rm], true => pure (x, y, p, some rm)
+    | [x, y, p], false => pure (x, y, p, none)
+    | _, _ => fail s!"{method}: wrong number of arguments"
+  let x ← expect "x" (parseAzRat (stripRef x))
+  let y ← expect "y" (parseAzRat (stripRef y))
+  let p ← expect "precision" (parseNat p)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult method (malachiteAgmRat x y p) rm
+  expectFloatPair method computed (← parseFloatPair rhs)
 
 /-- `checkFloatFusedWith` for three floats. -/
 def checkFloatFused (name : String)
