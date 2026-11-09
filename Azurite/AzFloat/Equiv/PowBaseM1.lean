@@ -97,14 +97,26 @@ theorem powBaseM1PrecRound_eq_liftVal (u : UInt64) (x : AzFloat) (p : ℕ) [NeZe
         obtain ⟨hcs, -, hc2, -⟩ := maxRootBase_spec (AzNat.ofNat u.toNat) hu2
         rw [← hr] at hc2
         have hrR : (0 : ℝ) < (r.toNat : ℝ) ^ n.abs.toNat := by positivity
-        rw [hval, toInt_eq_of_sign]
-        split_ifs with hs
-        · rw [zpow_natCast, subPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzNat, toVal_one',
+        rw [hval]
+        split_ifs with hc hs
+        rotate_left 2
+        · exact zivLoopCertified_eq_threshold' p mode _ _
+            (not_mem_floatSet_natPow_sub_one p hc2 (Bool.eq_false_iff.mpr hc)) _
+            (by unfold powBaseM1Start zivGuardBits; omega)
+            (fun w hw => by
+              obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ := powBaseM1Approx_spec' (w := w) s e hv u
+                (by omega) (by unfold powBaseM1Start at hw; omega)
+              rw [hval] at hlo hhi
+              exact ⟨lv, hv', hl, hh, hlo, hhi⟩) _
+        all_goals rw [toInt_eq_of_sign]
+        · rw [ite_eq_left hs, zpow_natCast, subPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzNat,
+            toVal_one',
             Option.bind_some, Option.bind_some, Spec.sub, ← EReal.coe_neg, Spec.add_coe_coe,
             AzNat.toNat_pow, Nat.cast_pow, sub_eq_add_neg]
-        · rw [zpow_neg, zpow_natCast, divPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzInt,
-            toVal_ofAzNat, Option.bind_some, Option.bind_some, AzNat.toNat_pow, Nat.cast_pow,
-            Spec.div_coe_coe _ _ hrR.ne', AzInt.toInt_sub, toInt_toAzInt, AzNat.toNat_pow]
+        · rw [ite_eq_right hs, zpow_neg, zpow_natCast, divPrecRound_eq_liftVal₂, liftVal₂,
+            toVal_ofAzInt, toVal_ofAzNat, Option.bind_some, Option.bind_some, AzNat.toNat_pow,
+            Nat.cast_pow, Spec.div_coe_coe _ _ hrR.ne', AzInt.toInt_sub, toInt_toAzInt,
+            AzNat.toNat_pow]
           have h1' : ((1 : AzInt)).toInt = 1 := rfl
           rw [h1']
           have hval' : ((1 - (r.toNat ^ n.abs.toNat : ℕ) : ℤ) : ℝ) / (r.toNat : ℝ) ^ n.abs.toNat

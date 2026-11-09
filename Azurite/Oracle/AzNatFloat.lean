@@ -11,6 +11,9 @@ import Azurite.Oracle.AzFloat
 import Azurite.AzFloat.Float64
 import Azurite.AzRat.LogBase
 import Azurite.AzRat.Shift
+import Azurite.AzFloat.Sum
+import Azurite.AzFloat.Product
+import Azurite.AzFloat.AddMul
 
 /-!
 # Checks for the conversions between Malachite's `Natural` and the primitive floats
@@ -348,5 +351,90 @@ def checkNatSci (fmt : BinaryFormat) (line : String) : Verdict := do
 def checkNatSciF32 : String → Verdict := checkNatSci binary32
 
 def checkNatSciF64 : String → Verdict := checkNatSci binary64
+
+/-! ### Correctly rounded `f64` sums and products -/
+
+/-- Whether a printed primitive float is `-0.0`, a sign the values do not carry. -/
+def isNegativeZeroString (s : String) : Bool := trim s == "-0.0" || trim s == "-0"
+
+/-- `name([x, …]) = z` for Malachite's `primitive_float_sum` and `primitive_float_product` on
+`f64`s: the value against Azurite's `sumFloat64` or `productFloat64`, which round the exact result
+once to binary64 with IEEE 754's rules, subnormals and overflow included. Azurite's result for an
+exact zero is always `+0.0`, so when the result is zero its sign is checked against Malachite's
+documented rule instead, `zeroSign` of the inputs (each input with whether it was `-0.0`). -/
+def checkF64ListFold (name : String) (f : List Float → Float)
+    (zeroSign : List (AzFloat × Bool) → Bool) (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}([…]) = z` line" (functionCall line name)
+  let xs ← match args with
+    | [xs] => expect "list" (parseList xs)
+    | _ => fail s!"{name} takes one argument"
+  let xs ← xs.mapM fun x => do
+    let v ← expect "x" (parsePrimitiveFloat binary64 x)
+    pure (v, isNegativeZeroString x)
+  let printed ← expect "z" (parsePrimitiveFloat binary64 res)
+  let computed := AzFloat.ofFloat64 (f (xs.map fun x => AzFloat.toFloat64 x.1))
+  expectSameFloat name computed printed
+  if computed == .zero && zeroSign xs != isNegativeZeroString res then
+    disagree s!"{name}: the zero should be {if zeroSign xs then "-0.0" else "0.0"}"
+
+/-- Malachite's sign for a zero sum: negative exactly when there are inputs, all of them `-0.0`. -/
+def sumZeroSign (xs : List (AzFloat × Bool)) : Bool := !xs.isEmpty && xs.all (·.2)
+
+/-- Malachite's sign for a zero product (an exact zero or an underflow): negative exactly when an
+odd number of the inputs are negative, `-0.0` included. -/
+def productZeroSign (xs : List (AzFloat × Bool)) : Bool :=
+  (xs.filter fun x => x.2 || AzFloat.partialCompare x.1 .zero == some .lt).length % 2 == 1
+
+def checkF64Sum : String → Verdict :=
+  checkF64ListFold "primitive_float_sum" AzFloat.sumFloat64 sumZeroSign
+
+def checkF64Product : String → Verdict :=
+  checkF64ListFold "primitive_float_product" AzFloat.productFloat64 productZeroSign
+
+/-! ### Correctly rounded `f64` fused multiply-add and multiply-subtract -/
+
+/-- Whether a Lean `Float` is a zero with the sign bit set. -/
+def isNegZeroFloat (r : Float) : Bool := r == 0 && 1 / r < 0
+
+/-- `name(x, y, z) = r` for Malachite's `primitive_float_add_mul` (`sub = false`) and
+`primitive_float_sub_mul` on `f64`s: the value against Azurite's `addMulFloat64` or
+`subMulFloat64`, IEEE 754's correctly rounded `fma` and its subtracting form. Azurite gives an exact
+zero as `+0.0`, so for an exact zero (a zero with the `Ordering` `Equal` at 53 bits) the sign is
+checked against IEEE 754's rule, which Malachite follows: a zero product `y·z` has the sign of the
+product of the signs, `-0.0 + -0.0` is `-0.0`, and any other exact zero is `+0.0`. A result that
+underflows to zero keeps Azurite's sign. -/
+def checkF64Fused (name : String) (sub : Bool) (f : Float → Float → Float → Float)
+    (g : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
+    Verdict := do
+  let (args, res) ← expect s!"a `{name}(x, y, z) = r` line" (functionCall line name)
+  let (xs, ys, zs) ← match args with
+    | [x, y, z] => pure (x, y, z)
+    | _ => fail s!"{name} takes three arguments"
+  let x ← expect "x" (parsePrimitiveFloat binary64 xs)
+  let y ← expect "y" (parsePrimitiveFloat binary64 ys)
+  let z ← expect "z" (parsePrimitiveFloat binary64 zs)
+  let printed ← expect "r" (parsePrimitiveFloat binary64 res)
+  let r := f (AzFloat.toFloat64 x) (AzFloat.toFloat64 y) (AzFloat.toFloat64 z)
+  let computed := AzFloat.ofFloat64 r
+  expectSameFloat name computed printed
+  if computed == .zero then
+    let negative (v : AzFloat) (s : String) : Bool :=
+      isNegativeZeroString s || AzFloat.partialCompare v .zero == some .lt
+    let exactZero := g x y z 53 .Nearest == (.zero, .eq)
+    let expected :=
+      if !exactZero then isNegZeroFloat r
+      else if x == .zero && (y == .zero || z == .zero) then
+        -- the product's sign, flipped for a subtraction, combined with `x`'s
+        let p := negative y ys != negative z zs
+        negative x xs && (if sub then !p else p)
+      else false
+    if expected != isNegativeZeroString res then
+      disagree s!"{name}: the zero should be {if expected then "-0.0" else "0.0"}"
+
+def checkF64AddMul : String → Verdict :=
+  checkF64Fused "primitive_float_add_mul" false AzFloat.addMulFloat64 AzFloat.addMulPrecRound
+
+def checkF64SubMul : String → Verdict :=
+  checkF64Fused "primitive_float_sub_mul" true AzFloat.subMulFloat64 AzFloat.subMulPrecRound
 
 end Azurite.Oracle

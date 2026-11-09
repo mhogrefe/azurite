@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Equiv.PowBaseBracket
+import Azurite.AzFloat.Equiv.PowBracket
 import Azurite.AzFloat.PowBaseM1
 
 /-!
@@ -38,10 +39,16 @@ def powBaseM1RatPrecRound (u : UInt64) (q : AzRat) (p : Nat) (mode : RoundingMod
     haveI : NeZero p := ⟨hp⟩
     match hx : powBaseRatExact? q (AzNat.ofNat u.toNat) with
     | some (r, n) =>
-      if n.sign then subPrecRound (ofAzNat (r.pow n.abs.toNat)) one p mode
+      if hc : natPowM1Cheap r n p = true then
+        if n.sign then subPrecRound (ofAzNat (r.pow n.abs.toNat)) one p mode
+        else
+          divPrecRound (ofAzInt (1 - (r.pow n.abs.toNat).toAzInt)) (ofAzNat (r.pow n.abs.toNat))
+            p mode
       else
-        divPrecRound (ofAzInt (1 - (r.pow n.abs.toNat).toAzInt)) (ofAzNat (r.pow n.abs.toNat))
-          p mode
+        zivLoopCertified (powBaseM1RatApprox q u) p mode (powBaseM1RatStart q u p)
+          (powBaseM1RatApprox_isSome_exists_of_not_cheap p mode q hq0 u (by omega) hx
+            (Bool.eq_false_iff.mpr hc) (powBaseM1RatStart q u p)
+            (by unfold powBaseM1RatStart zivGuardBits; omega))
     | none =>
       zivLoopCertified (powBaseM1RatApprox q u) p mode (powBaseM1RatStart q u p)
         (powBaseM1RatApprox_isSome_exists p mode q hq0 u (by omega)

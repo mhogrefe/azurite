@@ -191,9 +191,9 @@ def Rounds (r : Roundable) (v : ℝ) : Prop :=
 
 /-- When `roundingPossible` answers, it answers with the rounding of the exact value, which
 lies in `(l, h]` or is `l = h`. -/
-theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Roundable}
+theorem roundingPossible_eq' (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Roundable}
     {lv hv v : ℝ} (hl : Rounds l lv) (hh : Rounds h hv) (h₁ : lv ≤ v) (h₂ : v ≤ hv)
-    (h₃ : lv = v → hv = v) {r : AzFloat × Ordering}
+    (h₃ : (lv = v → hv = v) ∨ ((v : ℝ) : EReal) ∉ floatSet (p + 1)) {r : AzFloat × Ordering}
     (hr : roundingPossible l h p mode = some r) :
     r = roundVal p mode (some (v : EReal)) := by
   unfold roundingPossible at hr
@@ -203,10 +203,6 @@ theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Ro
   by_cases hveq : v = hv
   · rw [hveq]
   have hlt : v < hv := lt_of_le_of_ne h₂ hveq
-  have hlv : lv < v := by
-    rcases lt_or_eq_of_le h₁ with h' | h'
-    · exact h'
-    · exact absurd (h₃ h').symm hveq
   -- the `(p+1)`-bit floors of the two ends agree
   rw [hl, hh] at heq
   obtain ⟨vv, hv1, hv2⟩ := (eqIEEE_iff _ _).mp heq
@@ -227,8 +223,23 @@ theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Ro
   have h2 : (roundFloor (floatSet (p + 1)) lv).val ≤ (lv : EReal) :=
     (isGreatest_roundFloor (floatSet (p + 1)) lv).1.2
   rw [← hval] at h1
-  have := EReal.coe_le_coe_iff.mp (le_trans h1 h2)
-  linarith
+  have hblv := EReal.coe_le_coe_iff.mp (le_trans h1 h2)
+  rcases h₃ with h₃ | h₃
+  · have hlv : lv < v := by
+      rcases lt_or_eq_of_le h₁ with h' | h'
+      · exact h'
+      · exact absurd (h₃ h').symm hveq
+    linarith
+  · have hbv : b = v := le_antisymm (by linarith) hvb
+    exact h₃ (hbv ▸ hb)
+
+/-- `roundingPossible_eq'` with the strictness side condition alone. -/
+theorem roundingPossible_eq (p : ℕ) [NeZero p] (mode : RoundingMode) {l h : Roundable}
+    {lv hv v : ℝ} (hl : Rounds l lv) (hh : Rounds h hv) (h₁ : lv ≤ v) (h₂ : v ≤ hv)
+    (h₃ : lv = v → hv = v) {r : AzFloat × Ordering}
+    (hr : roundingPossible l h p mode = some r) :
+    r = roundVal p mode (some (v : EReal)) :=
+  roundingPossible_eq' p mode hl hh h₁ h₂ (Or.inl h₃) hr
 
 /-- Correctness of Ziv's loop: if every approximation at a positive working precision brackets
 the exact value `v`, rounding is possible from working precision `W` on, and the fuel reaches
@@ -679,6 +690,41 @@ end Azurite.AzFloat
 namespace Azurite.AzFloat
 
 /-- The certified loop returns the rounding of the exact value, at every stage. -/
+theorem zivLoopCertified_go_eq' (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (w₀ : ℕ)
+    (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv)
+    (hw₀ : 0 < w₀)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    ∀ (n f : ℕ) (hf : ∀ g < f,
+        (roundingPossible (approx (w₀ * 2 ^ g)).1 (approx (w₀ * 2 ^ g)).2 p mode).isSome = false),
+      Nat.find h - f = n →
+      zivLoopCertified.go approx p mode w₀ h f hf = roundVal p mode (some (v : EReal))
+  | n, f, hf, hn => by
+    have hw : w₀ ≤ w₀ * 2 ^ f := Nat.le_mul_of_pos_right _ (by positivity)
+    obtain ⟨lv, hv, hl, hh, h₁, h₂⟩ := happrox _ hw
+    rw [zivLoopCertified.go.eq_def]
+    split
+    · rename_i r hr
+      exact roundingPossible_eq' p mode hl hh h₁ h₂ (Or.inr hvB) hr
+    · rename_i hr
+      have hlt : f < Nat.find h := by
+        by_contra hcon
+        push Not at hcon
+        have hspec := Nat.find_spec h
+        rcases Nat.lt_or_eq_of_le hcon with hlt' | heq
+        · rw [hf _ hlt'] at hspec; exact Bool.false_ne_true hspec
+        · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
+      cases n with
+      | zero => omega
+      | succ m =>
+        exact zivLoopCertified_go_eq' p mode approx v hvB w₀ happrox hw₀ h m (f + 1) _
+          (by omega)
+
+/-- `zivLoopCertified_go_eq'` with the strictness side condition on the brackets instead of the
+non-boundary hypothesis. -/
 theorem zivLoopCertified_go_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
     (approx : Nat → Roundable × Roundable) (v : ℝ) (w₀ : ℕ)
     (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
@@ -722,7 +768,20 @@ theorem zivLoopCertified_eq (p : ℕ) [NeZero p] (mode : RoundingMode)
   zivLoopCertified_go_eq p mode approx v w₀ (fun w hw => happrox w (by omega)) hw₀ h _ 0 _ rfl
 
 /-- The certified loop is correct when the bracket is only known to be valid from the starting
-precision `w₀` on (the loop never looks below `w₀`). -/
+precision `w₀` on (the loop never looks below `w₀`), for a value that is not a boundary: no
+strictness condition on the brackets is needed. -/
+theorem zivLoopCertified_eq_threshold' (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    zivLoopCertified approx p mode w₀ h = roundVal p mode (some (v : EReal)) :=
+  zivLoopCertified_go_eq' p mode approx v hvB w₀ happrox hw₀ h _ 0 _ rfl
+
+/-- `zivLoopCertified_eq_threshold'` with the strictness side condition on the brackets instead
+of the non-boundary hypothesis. -/
 theorem zivLoopCertified_eq_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
     (approx : Nat → Roundable × Roundable) (v : ℝ) (w₀ : ℕ) (hw₀ : 0 < w₀)
     (happrox : ∀ w, w₀ ≤ w → ∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
@@ -831,18 +890,19 @@ theorem exists_isSome_of_irrational (p : ℕ) [NeZero p] (mode : RoundingMode)
     calc D ≤ bp - v := min_le_right _ _
       _ ≤ -(v - b) := by linarith
 
-/-- The certificate from a bracket that is only valid above a threshold `W₀` and whose width
-`ε w` tends to zero: Ziv's loop still reaches a working precision where rounding is possible. -/
-theorem exists_isSome_of_irrational_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
-    (approx : Nat → Roundable × Roundable) {v : ℝ} (hv : Irrational v) (ε : ℕ → ℝ)
+/-- **Ziv's certificate for a value that is not a boundary**: a nonzero `v` outside
+`floatSet (p + 1)` (no `p`-bit float and no midpoint of two) is at positive distance from the
+nearest boundaries, so a bracket that is valid above a threshold `W₀` and whose width `ε w`
+tends to zero reaches a working precision where rounding is possible. -/
+theorem exists_isSome_of_not_mem_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) {v : ℝ} (hv0 : v ≠ 0)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (ε : ℕ → ℝ)
     (hε : Filter.Tendsto ε Filter.atTop (nhds 0)) (W₀ : ℕ)
     (happrox : ∀ w, W₀ ≤ w → ∃ lv hv' : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv' ∧
       lv ≤ v ∧ v ≤ hv' ∧ hv' - lv ≤ ε w)
     (w₀ : ℕ) (hw₀ : 0 < w₀) :
     ∃ f : ℕ, (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p
       mode).isSome = true := by
-  have hv0 : v ≠ 0 := hv.ne_zero
-  have hvB := not_mem_floatSet_of_irrational p hv
   obtain ⟨bm, bp, hbm, hbp, hbmv, hvbp, hgreatest, hleast, -, -⟩ :=
     adjacent_boundaries p v hv0 hvB
   set D := min (v - bm) (bp - v) with hD
@@ -866,5 +926,18 @@ theorem exists_isSome_of_irrational_threshold (p : ℕ) [NeZero p] (mode : Round
     rw [abs_of_neg (by linarith)]
     calc D ≤ bp - v := min_le_right _ _
       _ ≤ -(v - b) := by linarith
+
+/-- The certificate from a bracket that is only valid above a threshold `W₀` and whose width
+`ε w` tends to zero, for an irrational value. -/
+theorem exists_isSome_of_irrational_threshold (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) {v : ℝ} (hv : Irrational v) (ε : ℕ → ℝ)
+    (hε : Filter.Tendsto ε Filter.atTop (nhds 0)) (W₀ : ℕ)
+    (happrox : ∀ w, W₀ ≤ w → ∃ lv hv' : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv' ∧
+      lv ≤ v ∧ v ≤ hv' ∧ hv' - lv ≤ ε w)
+    (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p
+      mode).isSome = true :=
+  exists_isSome_of_not_mem_threshold p mode approx hv.ne_zero
+    (not_mem_floatSet_of_irrational p hv) ε hε W₀ happrox w₀ hw₀
 
 end Azurite.AzFloat

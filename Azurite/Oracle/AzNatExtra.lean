@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.Oracle.AzRat
 import Azurite.AzNat.LogBase2
+import Azurite.AzNat.LogBase
 import Azurite.Oracle.AzZModPow2
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.SqrtRem
@@ -331,25 +332,9 @@ def checkNatLogBasePowerOf2 (line : String) : Verdict := do
       | none => pure none
     expectEq name (optionString (n.checkedLogBasePowerOf2 k)) (optionString printed)
 
-/-- `⌊log_b n⌋` and whether `n` is a power of `b`: `AzRat.floorLogBaseAbs` and `cmpPowAbs` for a
-base that fits in a limb, repeated multiplication otherwise. -/
-def natLogBase (n b : AzNat) : Nat × Bool :=
-  if b.limbs.size ≤ 1 then
-    let bb := b.limbs.getD 0 0
-    let f := AzRat.floorLogBaseAbs bb n.toAzRat
-    (f.toNat, AzRat.cmpPowAbs bb f n.toAzRat == .eq)
-  else Id.run do
-    -- a base of two or more limbs: at most `n.size / 64` multiplications
-    let mut e := 0
-    let mut p : AzNat := 1
-    for _ in [0:n.size + 1] do
-      let q := AzNat.mul p b
-      if AzNat.compare q n == .gt then break
-      p := q
-      e := e + 1
-    return (e, p == n)
-
-/-- `floor_log_base(n, b) = e`, `ceiling_log_base(n, b) = e`, or `checked_log_base(n, b) = …`. -/
+/-- `floor_log_base(n, b) = e`, `ceiling_log_base(n, b) = e`, or `checked_log_base(n, b) = …`:
+`AzNat.floorLogBase`, `ceilingLogBase`, and `checkedLogBase`. Malachite panics when `n` is zero or
+`b < 2`, where Azurite returns `none`, so its demos never print either. -/
 def checkNatLogBase (line : String) : Verdict := do
   let names := ["floor_log_base", "ceiling_log_base", "checked_log_base"]
   let name ← match names.find? fun n => line.startsWith s!"{n}(" with
@@ -361,18 +346,21 @@ def checkNatLogBase (line : String) : Verdict := do
     | _ => fail s!"{name} takes two arguments"
   let n ← expect "n" (parseAzNat n)
   let b ← expect "base" (parseAzNat b)
-  if n == (0 : AzNat) || AzNat.compare b 2 == .lt then fail "the logarithm is undefined"
-  let (floor, exact) := natLogBase n b
+  if n == (0 : AzNat) || AzNat.compare b 2 == .lt then
+    disagree "Malachite printed an undefined logarithm"
+  let total (r : Option Nat) : Except Failure Nat := match r with
+    | some e => pure e
+    | none => disagree "Azurite found the logarithm undefined"
   match name with
-  | "floor_log_base" => expectEq name floor (← expect "e" (parseNat res))
+  | "floor_log_base" => expectEq name (← total (AzNat.floorLogBase b n)) (← expect "e" (parseNat res))
   | "ceiling_log_base" =>
-    expectEq name (if exact then floor else floor + 1) (← expect "e" (parseNat res))
+    expectEq name (← total (AzNat.ceilingLogBase b n)) (← expect "e" (parseNat res))
   | _ =>
     let printed ← expect "result" (parseOption res)
     let printed ← match printed with
       | some e => expect "e" ((parseNat e).map some)
       | none => pure none
-    expectEq name (optionString (if exact then some floor else none)) (optionString printed)
+    expectEq name (optionString (AzNat.checkedLogBase b n)) (optionString printed)
 
 /-- `x.ceiling_sqrt() = r` or `x.checked_sqrt() = Some(r)`/`None`, from `AzNat.sqrtRem`. -/
 def checkNatSqrtVariants (line : String) : Verdict := do

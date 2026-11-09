@@ -27,6 +27,18 @@ import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.Product
+import Azurite.AzFloat.ExpConstants
+import Azurite.AzFloat.Ln2
+import Azurite.AzFloat.Lemniscate
+import Azurite.AzFloat.GaussConstant
+import Azurite.AzFloat.PiConstants
+import Azurite.AzFloat.Pi
+import Azurite.AzFloat.EulerGamma
+import Azurite.AzFloat.GelfondSchneider
+import Azurite.AzFloat.Ramanujan
+import Azurite.AzFloat.Gelfond
+import Azurite.AzFloat.Recip
+import Azurite.AzFloat.AddMul
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -294,8 +306,9 @@ def checkFloatDivRational : String → Verdict :=
 /-- A unary operation's line in one of its four shapes: the plain one (`(x) ^ 2 = z` or
 `(x).sqrt() = z`), `(x).name_prec(p) = (z, o)`, `(x).name_round(rm) = (z, o)`, or
 `(x).name_prec_round(p, rm) = (z, o)`. The plain shape rounds to nearest at `x`'s precision. -/
-def checkFloatUnary (name : String) (plain : String → Option (String × String))
-    (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
+def checkFloatUnarySigned (name : String) (plain : String → Option (String × String))
+    (f : AzFloat × Bool → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
+    Verdict := do
   match methodCall line s!"{name}_prec_round", methodCall line s!"{name}_round",
       methodCall line s!"{name}_prec" with
   | some (x, [p, rm], res), _, _ =>
@@ -303,26 +316,31 @@ def checkFloatUnary (name : String) (plain : String → Option (String × String
     let p ← expect "precision" (parseNat p)
     let rm ← expect "rounding mode" (parseRounding rm)
     let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 p) rm
+    let computed ← roundedResult name (f x p) rm
     expectFloatPair s!"{name}_prec_round" computed printed
   | _, some (x, [rm], res), _ =>
     let x ← expect "x" (parseFloat x)
     let rm ← expect "rounding mode" (parseRounding rm)
     let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 (x.1.precision?.getD 1)) rm
+    let computed ← roundedResult name (f x (x.1.precision?.getD 1)) rm
     expectFloatPair s!"{name}_round" computed printed
   | _, _, some (x, [p], res) =>
     let x ← expect "x" (parseFloat x)
     let p ← expect "precision" (parseNat p)
     let printed ← parseFloatPair res
-    let computed ← roundedResult name (f x.1 p) (.mode .Nearest)
+    let computed ← roundedResult name (f x p) (.mode .Nearest)
     expectFloatPair s!"{name}_prec" computed printed
   | _, _, _ =>
     let (x, z) ← expect s!"a `{name}` line" (plain line)
     let x ← expect "x" (parseFloat x)
     let z ← expect "z" (parseFloat z)
-    let computed ← roundedResult name (f x.1 (x.1.precision?.getD 1)) (.mode .Nearest)
+    let computed ← roundedResult name (f x (x.1.precision?.getD 1)) (.mode .Nearest)
     expectFloat name computed.1 z
+
+/-- `checkFloatUnarySigned` for an operation that does not depend on the sign of a zero input. -/
+def checkFloatUnary (name : String) (plain : String → Option (String × String))
+    (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering) : String → Verdict :=
+  checkFloatUnarySigned name plain fun x => f x.1
 
 /-- `(x) ^ 2 = z`. -/
 def squareLine (line : String) : Option (String × String) := do
@@ -351,6 +369,20 @@ def reciprocalSqrtLine (line : String) : Option (String × String) := do
 sign adjustment is needed. -/
 def checkFloatReciprocalSqrt : String → Verdict :=
   checkFloatUnary "reciprocal_sqrt" reciprocalSqrtLine AzFloat.rsqrtPrecRound
+
+/-- `(x).reciprocal() = z`. -/
+def reciprocalLine (line : String) : Option (String × String) := do
+  let (x, args, z) ← methodCall line "reciprocal"
+  guard args.isEmpty
+  pure (x, z)
+
+/-- `1/x`: `AzFloat.recipPrecRound`. Malachite's `1/(-0.0)` is `-∞`, which Azurite, reading the
+zero as unsigned, gives as `+∞`, so the result is negated for a `-0.0` input, as in
+`checkFloatDiv`. -/
+def checkFloatReciprocal : String → Verdict :=
+  checkFloatUnarySigned "reciprocal" reciprocalLine fun x p m =>
+    let (r, o) := AzFloat.recipPrecRound x.1 p m
+    (if x.2 then AzFloat.neg r else r, o)
 
 /-- `-(x) = z`. -/
 def checkFloatNeg (line : String) : Verdict := do
@@ -538,7 +570,24 @@ def irrationalConstants : List (String × (Nat → RoundingMode → AzFloat × O
     ("sqrt_3_over_3", AzFloat.sqrt3Over3PrecRound),
     ("sqrt_5_over_5", AzFloat.sqrt5Over5PrecRound), ("phi", AzFloat.phiPrecRound),
     ("prime_constant", AzFloat.primeConstantPrecRound),
-    ("prouhet_thue_morse_constant", AzFloat.prouhetThueMorsePrecRound)]
+    ("prouhet_thue_morse_constant", AzFloat.prouhetThueMorsePrecRound),
+    ("ln_2", AzFloat.ln2PrecRound), ("log_2_e", AzFloat.log2EPrecRound),
+    ("ln_10", AzFloat.ln10PrecRound), ("log_10_e", AzFloat.log10EPrecRound),
+    ("log_2_10", AzFloat.log2TenPrecRound), ("log_10_2", AzFloat.log10TwoPrecRound),
+    ("pi", AzFloat.piPrecRound), ("tau", AzFloat.tauPrecRound), ("e", AzFloat.ePrecRound),
+    ("gauss_constant", AzFloat.gaussConstantPrecRound),
+    ("lemniscate_constant", AzFloat.lemniscateConstantPrecRound),
+    ("pi_over_2", AzFloat.piDiv2PrecRound), ("pi_over_3", AzFloat.piDiv3PrecRound),
+    ("pi_over_4", AzFloat.piDiv4PrecRound), ("pi_over_6", AzFloat.piDiv6PrecRound),
+    ("pi_over_8", AzFloat.piDiv8PrecRound), ("one_over_pi", AzFloat.oneDivPiPrecRound),
+    ("two_over_pi", AzFloat.twoDivPiPrecRound), ("sqrt_pi", AzFloat.sqrtPiPrecRound),
+    ("one_over_sqrt_pi", AzFloat.oneDivSqrtPiPrecRound),
+    ("two_over_sqrt_pi", AzFloat.twoDivSqrtPiPrecRound),
+    ("one_over_sqrt_tau", AzFloat.oneDivSqrtTauPrecRound),
+    ("gelfonds_constant", AzFloat.gelfondPrecRound),
+    ("ramanujans_constant", AzFloat.ramanujanPrecRound),
+    ("gelfond_schneider_constant", AzFloat.gelfondSchneiderPrecRound),
+    ("eulers_constant", AzFloat.eulerGammaPrecRound)]
 
 /-- `c_prec_round(p, rm) = (z, o)` or `c_prec(p) = (z, o)` for one of the
 `irrationalConstants` `c`. The constants lie well inside Malachite's exponent range, but the
@@ -752,5 +801,76 @@ def checkFloatFromRational (line : String) : Verdict := do
     let computed ← roundedResult "from_rational_prec" (AzFloat.ofAzRatRound q p) (.mode .Nearest)
     expectFloatPair "from_rational_prec" computed printed
   | _, _ => fail "not a from_rational line"
+
+/-! ### Fused multiply-add and multiply-subtract -/
+
+/-- The text inside the first balanced pair of parentheses of `s`, starting at its first `(`, and
+the rest of `s` after the closing one. -/
+def splitParenthesized (s : String) : Option (String × String) := Id.run do
+  let cs := s.toList
+  let some start := cs.findIdx? (· == '(') | return none
+  let mut depth := 0
+  let mut i := start
+  for c in cs.drop start do
+    if c == '(' then depth := depth + 1
+    else if c == ')' then
+      depth := depth - 1
+      if depth == 0 then
+        return some (String.ofList ((cs.drop (start + 1)).take (i - start - 1)),
+          String.ofList (cs.drop (i + 1)))
+    i := i + 1
+  return none
+
+/-- A `Float` fused operation `name` (`add_mul` or `sub_mul`) in any of the demos' shapes:
+`(x).method(y, z, …) = r` or `x := x; x.method(y, z, …); x = r`, where the method is `name`
+followed by any of `_prec`, `_round`, `_assign`, and the `_val_ref`-style suffixes. Which of the
+precision and rounding mode follow `y` and `z` is read off the method name; the precision defaults
+to the largest of the operands' and the mode to `Nearest`. A result printed with its `Ordering` is
+compared with it. -/
+def checkFloatFused (name : String)
+    (f : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
+    Verdict := do
+  let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        if !(b.startsWith "x." && c.startsWith "x = ") then fail "not an assignment line"
+        let call := dropChars b 2
+        let some (args, _) := splitParenthesized call | fail "not a method call"
+        pure (dropChars a 5, (call.splitOn "(").headD "", args, dropChars c 4, false)
+      | _ => fail "not an assignment line"
+    else do
+      let (lhs, rhs) ← expect "an `x.f(…) = r` line" (splitEquals line)
+      let some (x, rest) := splitParenthesized lhs | fail "no receiver"
+      if !rest.startsWith "." then fail "not a method call"
+      let call := dropChars rest 1
+      let some (args, _) := splitParenthesized call | fail "not a method call"
+      pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
+  if !(method == name || method.startsWith s!"{name}_") then fail s!"not a {name} line"
+  let tags := (dropChars method name.length).splitOn "_"
+  let hasPrec := tags.contains "prec"
+  let hasRound := tags.contains "round"
+  let args := splitArgs args
+  let x ← expect "x" (parseFloat x)
+  let (y, z, p, rm) ← match args, hasPrec, hasRound with
+    | [y, z, p, rm], true, true => pure (y, z, some p, some rm)
+    | [y, z, p], true, false => pure (y, z, some p, none)
+    | [y, z, rm], false, true => pure (y, z, none, some rm)
+    | [y, z], false, false => pure (y, z, none, none)
+    | _, _, _ => fail s!"{method}: wrong number of arguments"
+  let y ← expect "y" (parseFloat y)
+  let z ← expect "z" (parseFloat z)
+  let p ← match p with
+    | some p => expect "precision" (parseNat p)
+    | none => pure (AzFloat.fusedPrecision x.1 y.1 z.1)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult name (f x.1 y.1 z.1 p) rm
+  if withOrdering then expectFloatPair method computed (← parseFloatPair res)
+  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+def checkFloatAddMul : String → Verdict := checkFloatFused "add_mul" AzFloat.addMulPrecRound
+
+def checkFloatSubMul : String → Verdict := checkFloatFused "sub_mul" AzFloat.subMulPrecRound
 
 end Azurite.Oracle

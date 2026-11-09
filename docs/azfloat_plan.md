@@ -5383,6 +5383,65 @@ Files: `Transcendental/EulerGamma.lean` (theory), `AzInt/SignedSplit.lean` + `Eq
   up, `eulerGammaPrecRound_eq_or` + `le_of_floor_data`) was started too but is several times
   slower in the kernel (`w = 144`: `n = 105`, `572` terms, `162`-bit floats) and was abandoned.
 
+## `x^y` for floats (DONE 2026-11-09, fuel-free)
+
+User request ("a function that raises an AzFloat to an AzFloat power … follows IEEE 754", with
+Malachite's table of special values).  Files: `AzFloat/PowBracket.lean` + `Equiv/`,
+`AzFloat/Pow.lean` + `Equiv/` + `Tests/`; `Equiv/Ziv.lean` extended.
+
+* **Design.**  `x^y = exp (y ln x)`: `lnMulBracket` is `y` times `lnBracket x` at
+  `W = expWork ey w` with the products rounded outward whatever the signs (`mulBracketAny`:
+  `roundVal_floor_abs`/`roundVal_ceiling_abs`, no nonnegativity assumptions, so the bracket of
+  `ln x` may be negative or straddle `0`), then `expOfBracket`.  The width bound is the
+  natural-base `mulLnEps ey ex w` (the `|y| < 2^ey` against `max(ey, 0)` cancellation as in
+  `lnBaseMulBracket_spec`, and `|ln x| ≤ |ex| + 1` in place of `ln u < 45`), so `powW₀ ey ex =
+  136 + max(ey, 0) + |ex|` and `powBaseEps` are reused.
+* **Exact cases.**  Integer `y = n`: `powIntPrecRound` when `|n| (size m' − 1) ≤ p + 1` for the
+  odd part `m'` of `x`'s significand — then the exact power has at most `2(p + 1)` bits and may
+  be a `p`-bit float or a midpoint, which Ziv's loop could never resolve — and otherwise the
+  bracket, because the power's odd part `m'^|n|` has more than `p + 1` bits (`n > 0`) or the
+  power is not dyadic (`n < 0`): never a rounding boundary (`not_mem_floatSet_of_odd_mul`,
+  `not_mem_floatSet_of_div_odd`, via the uniqueness of odd parts `odd_mul_two_pow_inj`).  This
+  keeps `3^(10^11)` at 34 ms where the natural-base `powBase` (which computes `r^n` exactly in
+  `powBaseExact?`) takes 12 s already for `3^(10^6)` and does not finish for `3^(10^9)` — a
+  known weakness of `powBase` to fix the same way.  Non-integer `y = N/2^J`, `x = m 2^t > 0`
+  (`m`, `N` odd): `x^y` is rational iff `2^J ∣ t` and `m = u^(2^J)` (`powExact?`: `splitOdd`,
+  `oddPow2Root` by `J` square roots, impossible once `J ≥ size m` for `m ≥ 3`), and then
+  `x^y = (u 2^(t/2^J))^N` is an integer power of the float `z = u 2^(t/2^J)`; otherwise
+  `irrational_dyadic_rpow`: a rational `x^y` would make `M = m 2^(t + 2^J k)` a `2^J`-th power
+  (`irrational_natCast_rpow_div_of_not_pow` from `irrational_nrt_of_notint_nrt` and
+  `Nat.exists_eq_pow_of_exponent_coprime_of_pow_eq_pow`, the base scaled to a natural number,
+  `N < 0` through `irrational_inv_iff`).
+* **Ziv without strictness.**  The loop lemmas required `lv = v → hv = v` of every bracket,
+  which irrational values give for free but rational ones (the non-cheap integer powers) do not;
+  the condition was only used to exclude `v` itself being a boundary, so
+  `roundingPossible_eq'`/`zivLoopCertified_eq_threshold'` take `v ∉ floatSet (p+1)` instead and
+  `exists_isSome_of_not_mem_threshold` is the general certificate (the irrational versions are
+  corollaries; the old statements are kept as wrappers).
+* **Spec** `Spec.pow` on `Option EReal` (so that `NaN^0 = 1` and `1^NaN = 1`, as Malachite):
+  `powPrecRound_eq : powPrecRound x y p mode = roundVal p mode (Spec.pow x.toVal y.toVal)`.
+  Malachite's `−0.0` results (`(−∞)^(negative odd integer)`, `(−0)^…`) are `0` here (no negative
+  zero).
+* **Tests:** the whole special-value table, exact dyadic powers (`4^(3/2)`, `(9/4)^(3/2)`,
+  `16^(−3/4)`, `2^(±100)` at 1 bit), bracket-path integer powers (`3^40`, `(−3)^41`, `3^(−40)` at
+  20 bits against `powIntPrecRound` and exact references), `2^(1/2)` against `√2`, `(3/2)^(5/4)`,
+  `10^(−1/8)`, `(123456789/1024)^(77/64)`, `3^(7/4)` against `powBase`, `(1/3)^(1/3)` at 200
+  bits (80-digit references), directed modes.  UNTIMED beyond the `3^(10^k)` probes.
+* **The natural-base powers fixed the same way (user request, 2026-11-09).**  `powBase` and
+  `powBaseRat` now compute the exact case `u^x = r^n` through `natPowOrZiv r n` (`powIntOrZiv`
+  on the exact float `ofAzNat r`), so `3^(10^9)` at 10 bits takes 48 ms (before: the exact
+  `3^(10^6)` took 12 s and `3^(10^9)` did not finish).  For `powBaseM1`/`powBaseM1Rat` the
+  result is `r^n − 1`, whose odd part is not simply `m'^n`: the test is `natPowM1Cheap`
+  (`|n| (size m' − 1) ≤ p + 3 + 2 size r + size |n|`) and the non-boundary proof
+  (`not_mem_floatSet_natPow_sub_one`) uses **lifting the exponent** — `v₂(r^a − 1) + 3 ≤ 2 size
+  r + size a` for odd `r ≥ 3` (`padicValNat_two_pow_sub_one_le`, from Mathlib's
+  `padicValNat.pow_two_sub_pow` applied to `r^(2a) − 1 = (r^a − 1)(r^a + 1)` with `r^a + 1`
+  even) — so the odd part of `r^a − 1` still has more than `p + 1` bits; `r` even gives an odd
+  `r^a − 1`, and `n < 0` gives `−(r^a − 1) 2^(−ca)/m'^a` with `gcd(r^a − 1, m'^a) = 1`
+  (`not_mem_floatSet_of_div_odd_coprime`), not dyadic.  Timings at 10 bits: `3^(10^9)` 48 ms
+  (`powBase`), 32 (`powBaseRat`), 35 (`powBaseM1`), 37 (`powBaseM1Rat`); `10^(10^6)` at 53 bits
+  35 ms.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

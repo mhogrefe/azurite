@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.PowBase
+import Azurite.AzFloat.Equiv.Pow
 import Azurite.AzFloat.Equiv.Div
 
 /-!
@@ -91,14 +92,8 @@ theorem powBasePrecRound_eq_liftVal (u : UInt64) (x : AzFloat) (p : ℕ) [NeZero
         rw [AzNat.toNat_ofNat] at hval
         obtain ⟨hcs, -, hc2, -⟩ := maxRootBase_spec (AzNat.ofNat u.toNat) hu2
         rw [← hr] at hc2
-        have hrR : (0 : ℝ) < (r.toNat : ℝ) ^ n.abs.toNat := by positivity
-        rw [hval, toInt_eq_of_sign]
-        split_ifs with hs
-        · rw [zpow_natCast, setPrecRound_eq_roundVal (toVal_ofAzNat _), AzNat.toNat_pow,
-            Nat.cast_pow]
-        · rw [zpow_neg, zpow_natCast, divPrecRound_eq_liftVal₂, liftVal₂, toVal_one',
-            toVal_ofAzNat, Option.bind_some, Option.bind_some, AzNat.toNat_pow, Nat.cast_pow,
-            Spec.div_coe_coe _ _ hrR.ne', one_div]
+        have hr0 : r ≠ 0 := fun h => by rw [h, AzNat.toNat_zero] at hc2; omega
+        rw [hval, natPowOrZiv_eq hr0]
       · rename_i hx
         exact zivLoopCertified_eq_threshold p mode _ ((u.toNat : ℝ) ^ finiteVal s e m) _
           (by unfold powBaseStart zivGuardBits; omega)

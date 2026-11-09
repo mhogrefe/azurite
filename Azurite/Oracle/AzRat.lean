@@ -221,30 +221,114 @@ def logBaseLine (line name : String) : Except Failure (AzRat × UInt64 × String
   if b < 2 then fail "the base is below 2"
   pure (x, b, res)
 
-/-- `floor_log_base(x, b) = e` for a `u64` base and positive `x`. -/
+/-- `x` and the base `b` of a `name(x, b) = r` line for Malachite's positive-only `u64`-base
+logarithms; Azurite's take `|x|`, and the demos print only positive `x`. -/
+def positiveLogBaseLine (line name : String) : Except Failure (AzRat × UInt64 × String) := do
+  let (x, b, res) ← logBaseLine line name
+  if !x.sign || x.num == (0 : AzNat) then disagree s!"Malachite printed {name} of a nonpositive x"
+  pure (x, b, res)
+
+/-- `floor_log_base(x, b) = e` for a `u64` base: `AzRat.floorLogBaseAbs`. -/
 def checkRatFloorLogBase (line : String) : Verdict := do
-  let (x, b, res) ← logBaseLine line "floor_log_base"
+  let (x, b, res) ← positiveLogBaseLine line "floor_log_base"
   let e ← expect "e" (parseInt res)
   expectEq "floor_log_base" (AzRat.floorLogBaseAbs b x) e
 
-/-- `ceiling_log_base(x, b) = e`: the floor, plus one unless `b^e = |x|`. -/
+/-- `ceiling_log_base(x, b) = e` for a `u64` base: `AzRat.ceilingLogBaseAbs`. -/
 def checkRatCeilingLogBase (line : String) : Verdict := do
-  let (x, b, res) ← logBaseLine line "ceiling_log_base"
+  let (x, b, res) ← positiveLogBaseLine line "ceiling_log_base"
   let e ← expect "e" (parseInt res)
-  let f := AzRat.floorLogBaseAbs b x
-  let computed := if AzRat.cmpPowAbs b f x == .eq then f else f + 1
-  expectEq "ceiling_log_base" computed e
+  expectEq "ceiling_log_base" (AzRat.ceilingLogBaseAbs b x) e
 
-/-- `checked_log_base(x, b) = Some(e)` or `None`: the floor when `b^e = |x|` exactly. -/
+/-- `checked_log_base(x, b) = Some(e)` or `None` for a `u64` base: `AzRat.checkedLogBaseAbs`. -/
 def checkRatCheckedLogBase (line : String) : Verdict := do
-  let (x, b, res) ← logBaseLine line "checked_log_base"
+  let (x, b, res) ← positiveLogBaseLine line "checked_log_base"
   let res ← expect "result" (parseOption res)
   let res ← match res with
     | some e => expect "e" ((parseInt e).map some)
     | none => pure none
-  let f := AzRat.floorLogBaseAbs b x
-  let computed : Option Int := if AzRat.cmpPowAbs b f x == .eq then some f else none
-  expectEq "checked_log_base" (optionString computed) (optionString res)
+  expectEq "checked_log_base" (optionString (AzRat.checkedLogBaseAbs b x)) (optionString res)
+
+/-- `x` and the rational base `b` of a `name(x, b) = r` line for Malachite's positive-only
+rational-base logarithms, which panic unless `x > 0`, `b > 0`, and `b ≠ 1`. -/
+def ratBaseLogLine (line name : String) : Except Failure (AzRat × AzRat × String) := do
+  let (args, res) ← expect s!"a `{name}(x, b) = r` line" (functionCall line name)
+  let (x, b) ← match args with
+    | [x, b] => pure (x, b)
+    | _ => fail s!"{name} takes two arguments"
+  let x ← expect "x" (parseAzRat x)
+  let b ← expect "b" (parseAzRat b)
+  if !x.sign || x.num == (0 : AzNat) then disagree s!"Malachite printed {name} of a nonpositive x"
+  if !AzRat.isLogBase b then disagree s!"Malachite printed {name} with an invalid base"
+  pure (x, b, res)
+
+/-- The value of a rational-base logarithm that Azurite defines for every valid input. -/
+def definedLog (r : Option Int) : Except Failure Int := match r with
+  | some e => pure e
+  | none => disagree "Azurite found the logarithm undefined"
+
+/-- `floor_log_base(x, b) = e` for a rational base: `AzRat.floorLogBaseRatAbs`. -/
+def checkRatFloorLogBaseRat (line : String) : Verdict := do
+  let (x, b, res) ← ratBaseLogLine line "floor_log_base"
+  expectEq "floor_log_base" (← definedLog (AzRat.floorLogBaseRatAbs b x))
+    (← expect "e" (parseInt res))
+
+/-- `ceiling_log_base(x, b) = e` for a rational base: `AzRat.ceilingLogBaseRatAbs`. -/
+def checkRatCeilingLogBaseRat (line : String) : Verdict := do
+  let (x, b, res) ← ratBaseLogLine line "ceiling_log_base"
+  expectEq "ceiling_log_base" (← definedLog (AzRat.ceilingLogBaseRatAbs b x))
+    (← expect "e" (parseInt res))
+
+/-- `checked_log_base(x, b) = Some(e)` or `None` for a rational base:
+`AzRat.checkedLogBaseRatAbs`. -/
+def checkRatCheckedLogBaseRat (line : String) : Verdict := do
+  let (x, b, res) ← ratBaseLogLine line "checked_log_base"
+  let res ← expect "result" (parseOption res)
+  let res ← match res with
+    | some e => expect "e" ((parseInt e).map some)
+    | none => pure none
+  expectEq "checked_log_base" (optionString (AzRat.checkedLogBaseRatAbs b x)) (optionString res)
+
+/-- `x` and the exponent `p` of a `name(x, p) = r` line for Malachite's logarithms in base `2^p`,
+which take a signed `p` and panic unless `x > 0` and `p ≠ 0`. -/
+def powerOf2LogLine (line name : String) : Except Failure (AzRat × Int × String) := do
+  let (args, res) ← expect s!"a `{name}(x, p) = r` line" (functionCall line name)
+  let (x, p) ← match args with
+    | [x, p] => pure (x, p)
+    | _ => fail s!"{name} takes two arguments"
+  let x ← expect "x" (parseAzRat x)
+  let p ← expect "p" (parseInt p)
+  if !x.sign || x.num == (0 : AzNat) then disagree s!"Malachite printed {name} of a nonpositive x"
+  if p == 0 then disagree s!"Malachite printed {name} in base 1"
+  pure (x, p, res)
+
+/-- `floor_log_base_power_of_2(x, p) = e`: `AzRat.floorLogBasePowerOf2Abs` for `p > 0`; for `p < 0`
+the base `2^p` is below 1 and `⌊log_{2^p} x⌋ = -⌈log_{2^-p} x⌉`. -/
+def checkRatFloorLogBasePowerOf2 (line : String) : Verdict := do
+  let (x, p, res) ← powerOf2LogLine line "floor_log_base_power_of_2"
+  let e ← definedLog (if p > 0 then x.floorLogBasePowerOf2Abs p.toNat
+    else (x.ceilingLogBasePowerOf2Abs (-p).toNat).map (- ·))
+  expectEq "floor_log_base_power_of_2" e (← expect "e" (parseInt res))
+
+/-- `ceiling_log_base_power_of_2(x, p) = e`: `AzRat.ceilingLogBasePowerOf2Abs` for `p > 0`, and
+`-⌊log_{2^-p} x⌋` for `p < 0`. -/
+def checkRatCeilingLogBasePowerOf2 (line : String) : Verdict := do
+  let (x, p, res) ← powerOf2LogLine line "ceiling_log_base_power_of_2"
+  let e ← definedLog (if p > 0 then x.ceilingLogBasePowerOf2Abs p.toNat
+    else (x.floorLogBasePowerOf2Abs (-p).toNat).map (- ·))
+  expectEq "ceiling_log_base_power_of_2" e (← expect "e" (parseInt res))
+
+/-- `checked_log_base_power_of_2(x, p) = Some(e)` or `None`: `AzRat.checkedLogBasePowerOf2Abs`
+for `p > 0`, negated for `p < 0`. -/
+def checkRatCheckedLogBasePowerOf2 (line : String) : Verdict := do
+  let (x, p, res) ← powerOf2LogLine line "checked_log_base_power_of_2"
+  let res ← expect "result" (parseOption res)
+  let res ← match res with
+    | some e => expect "e" ((parseInt e).map some)
+    | none => pure none
+  let computed := if p > 0 then x.checkedLogBasePowerOf2Abs p.toNat
+    else (x.checkedLogBasePowerOf2Abs (-p).toNat).map (- ·)
+  expectEq "checked_log_base_power_of_2" (optionString computed) (optionString res)
 
 /-! ### Comparison -/
 

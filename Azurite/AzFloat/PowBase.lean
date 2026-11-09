@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Equiv.PowBaseBracket
+import Azurite.AzFloat.Pow
 
 /-!
 ## `u^x` for a natural base `u`
@@ -43,9 +44,7 @@ def powBasePrecRound (u : UInt64) (x : AzFloat) (p : Nat) (mode : RoundingMode) 
     else
       haveI : NeZero p := ⟨hp⟩
       match hx : powBaseExact? (finite s e q m hv) (AzNat.ofNat u.toNat) with
-      | some (r, n) =>
-        if n.sign then setPrecRound (ofAzNat (r.pow n.abs.toNat)) p mode
-        else divPrecRound one (ofAzNat (r.pow n.abs.toNat)) p mode
+      | some (r, n) => natPowOrZiv r n p mode
       | none =>
         zivLoopCertified (powBaseApprox (finite s e q m hv) e u) p mode (powBaseStart e u p)
           (powBaseApprox_isSome_exists p mode s e hv u (by omega)

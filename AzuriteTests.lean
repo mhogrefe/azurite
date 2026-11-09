@@ -63,6 +63,7 @@ import Azurite.AzFloat.Tests.MulRat
 import Azurite.AzFloat.Tests.OfString
 import Azurite.AzFloat.Tests.Pi
 import Azurite.AzFloat.Tests.PiConstants
+import Azurite.AzFloat.Tests.Pow
 import Azurite.AzFloat.Tests.Pow10
 import Azurite.AzFloat.Tests.Pow2
 import Azurite.AzFloat.Tests.Pow2M1
