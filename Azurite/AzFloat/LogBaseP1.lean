@@ -18,7 +18,7 @@ import Azurite.AzNat.LogBase2
 `logBaseP1PrecRound x b p mode` is `log_b (1 + x)` for a 64-bit natural base `b ≥ 2` (the
 natural-base analogue of C23's `log2P1`), correctly rounded to precision `p` in `mode`, with the
 comparison against the exact value; `logBaseP1 x b` rounds to nearest.  The working precision
-starts at `p + 64 + leadingZeroBits e` as `lnP1` does, so that tiny `x` are resolved.  Exact
+starts at `lnP1Start e p` as `lnP1` does, so that tiny `x` are resolved.  Exact
 cases first: for a power-of-two base `b = 2^k`, `1 + x = 2^j` (`onePlusPow2Exponent?`) gives the
 rational `j / k`; otherwise `1 + x = c^r` for the primitive root `c` of `b = c^s` and a positive
 integer `x` (`logBaseP1Exact?`) gives `r / s`; both are rounded once (`ofAzRatRound`).  Every
@@ -42,29 +42,29 @@ def logBaseP1Finite (b : UInt64) (A : AzFloat → Nat → Roundable × Roundable
     (mode : RoundingMode) : AzFloat × Ordering :=
   match hk : (AzNat.ofNat b.toNat).checkedLogBase2 with
   | some k =>
-    match h : onePlusPow2Exponent? (finite s e q m hv) (p + zivGuardBits + leadingZeroBits e)
+    match h : onePlusPow2Exponent? (finite s e q m hv) (lnP1Start e p)
       with
     | some j => ofAzRatRound (AzRat.ofAzInts j (AzNat.ofNat k).toAzInt) p mode
     | none =>
       zivLoopCertified (A (finite s e q m hv)) p mode
-        (p + zivGuardBits + leadingZeroBits e)
+        (lnP1Start e p)
         (hA p mode (toVal_finite s e q m hv) hgt hb
           (irrational_log_div_log_one_add_of_pow2 s e hv hgt b hb hk
-            (by unfold zivGuardBits; omega) h)
-          _ (by unfold zivGuardBits; omega))
+            (by have := lnP1Start_ge e p; omega) h)
+          _ (by have := lnP1Start_ge e p; omega))
   | none =>
     match hx : logBaseP1Exact? (finite s e q m hv) (AzNat.ofNat b.toNat) with
     | some r => ofAzRatRound r p mode
     | none =>
       zivLoopCertified (A (finite s e q m hv)) p mode
-        (p + zivGuardBits + leadingZeroBits e)
+        (lnP1Start e p)
         (hA p mode (toVal_finite s e q m hv) hgt hb
           (AzNat.toNat_ofNat b.toNat ▸
             irrational_of_logBaseP1Exact?_none s e hv (AzNat.ofNat b.toNat)
               (by rw [AzNat.toNat_ofNat]; exact hb)
               (by rw [AzNat.toNat_ofNat]; exact b.toBitVec.isLt)
               ((AzNat.checkedLogBase2_eq_none_iff _).mp hk) hgt hx)
-          _ (by unfold zivGuardBits; omega))
+          _ (by have := lnP1Start_ge e p; omega))
 
 /-- `log_b (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0` or `b < 2`). -/

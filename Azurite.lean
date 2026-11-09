@@ -55,6 +55,8 @@ import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
 import Azurite.AzFloat.CosBracket
+import Azurite.AzFloat.CosPeriod
+import Azurite.AzFloat.CosPeriodBracket
 import Azurite.AzFloat.CosRat
 import Azurite.AzFloat.CosRatBracket
 import Azurite.AzFloat.Div
@@ -73,6 +75,8 @@ import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Cos
 import Azurite.AzFloat.Equiv.CosBracket
+import Azurite.AzFloat.Equiv.CosPeriod
+import Azurite.AzFloat.Equiv.CosPeriodBracket
 import Azurite.AzFloat.Equiv.CosRat
 import Azurite.AzFloat.Equiv.CosRatBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
@@ -2217,6 +2221,7 @@ import Azurite.Transcendental.Cos
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.LambertW
+import Azurite.Transcendental.Niven
 import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit

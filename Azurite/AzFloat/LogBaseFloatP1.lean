@@ -16,7 +16,7 @@ import Azurite.AzFloat.LnP1
 `logBaseFloatP1PrecRound x b p mode` is `log_b (1 + x) = ln (1 + x) / ln b` for floats `x` and
 `b`, correctly rounded to precision `p` in `mode`, with the comparison against the exact value;
 `logBaseFloatP1 x b` rounds to nearest at the precision of `x`.  The working precision starts at
-`p + 64 + leadingZeroBits e` as `lnP1` does.  For finite `x > −1` (so `1 + x > 0`, and
+`lnP1Start e p` as `lnP1` does.  For finite `x > −1` (so `1 + x > 0`, and
 `1 + x ≠ 1`) and a positive finite base `b ≠ 1`, the odd part and dyadic exponent of `1 + x`
 are computed directly from those of `x` (`onePlusDyadic`) and the common-root test
 `logBaseFloatExact?` decides exactness; otherwise the certified Ziv loop runs on
@@ -39,10 +39,10 @@ def logBaseFloatP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fini
   | some r => ofAzRatRound r p mode
   | none =>
     zivLoopCertified (logBaseFloatP1Approx (finite s e q m hv) (finite true eb qb mb hvb) eb)
-      p mode (p + zivGuardBits + leadingZeroBits e)
+      p mode (lnP1Start e p)
       (logBaseFloatP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt eb hvb hb1
         (irrational_logBaseFloatP1_of_none s e hv hgt eb hvb hb1 hx)
-        _ (by unfold zivGuardBits; omega))
+        _ (by have := lnP1Start_ge e p; omega))
 
 /-- Finite `x > −1`: dispatch on the base. -/
 def logBaseFloatP1Pos (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)

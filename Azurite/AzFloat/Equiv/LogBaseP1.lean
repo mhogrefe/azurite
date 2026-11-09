@@ -45,7 +45,7 @@ theorem logBaseP1Finite_eq (b : UInt64) (A : AzFloat → ℕ → Roundable × Ro
       = roundVal p mode
           (some ((Real.log (1 + finiteVal s e m) / Real.log b.toNat : ℝ) : EReal)) := by
   have hpos : 0 < 1 + finiteVal s e m := by linarith
-  have hw : NeZero (p + zivGuardBits + leadingZeroBits e) := ⟨by unfold zivGuardBits; omega⟩
+  have hw : NeZero (lnP1Start e p) := ⟨by have := lnP1Start_ge e p; omega⟩
   unfold logBaseP1Finite
   split
   · -- a power-of-two base
@@ -62,12 +62,12 @@ theorem logBaseP1Finite_eq (b : UInt64) (A : AzFloat → ℕ → Roundable × Ro
         rfl
       · next hj =>
         have hirr := irrational_log_div_log_one_add_of_pow2 s e hv hgt b hb hk
-          (w := p + zivGuardBits + leadingZeroBits e) (by unfold zivGuardBits; omega) hj
+          (w := lnP1Start e p) (by have := lnP1Start_ge e p; omega) hj
         exact zivLoopCertified_eq_threshold p mode _
-          (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by unfold zivGuardBits; omega)
+          (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by have := lnP1Start_ge e p; omega)
           (fun w hw => by
             obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-              hspec (w := w) (by unfold zivGuardBits at hw; omega)
+              hspec (w := w) (by have := lnP1Start_ge e p; omega)
                 (toVal_finite s e q m hv) hgt hb hirr
             exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
   · next hk =>
@@ -83,10 +83,10 @@ theorem logBaseP1Finite_eq (b : UInt64) (A : AzFloat → ℕ → Roundable × Ro
           (by rw [AzNat.toNat_ofNat]; exact hb) (by rw [AzNat.toNat_ofNat]; exact b.toBitVec.isLt)
           ((AzNat.checkedLogBase2_eq_none_iff _).mp hk) hgt hx
       exact zivLoopCertified_eq_threshold p mode _
-        (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by unfold zivGuardBits; omega)
+        (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by have := lnP1Start_ge e p; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-            hspec (w := w) (by unfold zivGuardBits at hw; omega)
+            hspec (w := w) (by have := lnP1Start_ge e p; omega)
               (toVal_finite s e q m hv) hgt hb hirr
           exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 

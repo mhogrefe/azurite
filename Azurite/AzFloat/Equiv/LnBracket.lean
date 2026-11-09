@@ -2039,6 +2039,108 @@ theorem lnFloorBracketWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {y : Az
       hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w :=
   lnFloorBracketBy_spec (lnBracketFn_lnBracketWith c) hw hr hqv0 hr1 hr2
 
+/-- `x − 2x² ≤ ln (1 + x)` for `x ≥ −1/2`. -/
+theorem sub_two_mul_sq_le_log_one_add {x : ℝ} (hx : -1 / 2 ≤ x) :
+    x - 2 * x ^ 2 ≤ Real.log (1 + x) := by
+  have hpos : 0 < 1 + x := by linarith
+  have h := Real.one_sub_inv_le_log_of_pos hpos
+  have e : 1 - (1 + x)⁻¹ = x / (1 + x) := by field_simp; ring
+  rw [e] at h
+  refine le_trans ?_ h
+  rw [le_div_iff₀ hpos]
+  nlinarith [mul_nonneg (sq_nonneg x) (by linarith : 0 ≤ 1 + 2 * x)]
+
+/-- The tiny-argument facts: for a float of exponent `e ≤ −(w + 8)`, `|x| < 2^(−w−8)`. -/
+theorem abs_finiteVal_lt_of_tiny (s : Bool) {e : AzInt} {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) {w : ℕ} (hs : e.sign = false) (he : w + 8 ≤ e.abs.toNat) :
+    |finiteVal s e m| < (2 : ℝ) ^ e.toInt ∧ (2 : ℝ) ^ e.toInt ≤ (1 / 2 : ℝ) ^ (w + 8) := by
+  refine ⟨(abs_finiteVal_bounds s e hv).2, ?_⟩
+  have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
+  rw [htoInt, hs]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  rw [zpow_neg, zpow_natCast, ← one_div, ← one_div_pow]
+  exact pow_le_pow_of_le_one (by norm_num) (by norm_num) he
+
+/-- `lnP1BracketOf F x w` encloses `ln (1 + x)` with the width bound of `lnFloorBracket`, for
+every bracket function `F` with the conclusion of `lnFloorBracket_spec` at `w`. -/
+theorem lnP1BracketOf_spec {F : AzFloat → ℕ → AzFloat × AzFloat} {w : ℕ} (hw : 64 ≤ w)
+    (hF : ∀ {y : AzFloat} {r qv : ℝ}, y.toVal = some (r : EReal) → 0 < qv → r ≤ qv →
+      qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w →
+      ∃ lv hv : ℝ, (F y w).1.toVal = some (lv : EReal) ∧ (F y w).2.toVal = some (hv : EReal) ∧
+        lv ≤ Real.log qv ∧ Real.log qv ≤ hv ∧
+        hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w)
+    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) :
+    ∃ lv hv : ℝ, (lnP1BracketOf F x w).1.toVal = some (lv : EReal) ∧
+      (lnP1BracketOf F x w).2.toVal = some (hv : EReal) ∧
+      lv ≤ Real.log (1 + xv) ∧ Real.log (1 + xv) ≤ hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  have hgen : ∃ lv hv : ℝ, (F (addPrecRound one x w .Floor).1 w).1.toVal = some (lv : EReal) ∧
+      (F (addPrecRound one x w .Floor).1 w).2.toVal = some (hv : EReal) ∧
+      lv ≤ Real.log (1 + xv) ∧ Real.log (1 + xv) ≤ hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+    obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+    exact hF hr hpos hf.le hf.ge
+  cases x with
+  | nan => exact hgen
+  | infinity s => exact hgen
+  | zero => exact hgen
+  | finite s e q m hv =>
+    simp only [lnP1BracketOf]
+    split_ifs with hc
+    · obtain ⟨hs, he⟩ := hc
+      have : NeZero (w + 8) := ⟨by omega⟩
+      rw [toVal_finite] at hx
+      have hxv : xv = finiteVal s e m := by
+        rw [Option.some.injEq, EReal.coe_eq_coe_iff] at hx; exact hx.symm
+      obtain ⟨hlt, h2e⟩ := abs_finiteVal_lt_of_tiny s hv hs he
+      rw [← hxv] at hlt
+      set u := (1 / 2 : ℝ) ^ w with hu
+      have hu0 : 0 < u := by positivity
+      have hus : u ≤ 1 / 16 := by
+        calc u ≤ (1 / 2 : ℝ) ^ 4 := pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+          _ = 1 / 16 := by norm_num
+      have hu8 : (1 / 2 : ℝ) ^ (w + 8) = u / 256 := by rw [hu, pow_add]; norm_num; ring
+      rw [hu8] at h2e
+      set t := (2 : ℝ) ^ e.toInt with ht
+      have ht0 : 0 < t := by positivity
+      have hx' : (finite s e q m hv).toVal = some (xv : EReal) := by rw [toVal_finite, hxv]
+      have habs : (finite s e q m hv).abs.toVal = some ((|xv| : ℝ) : EReal) := by
+        rw [toVal_abs, hx', Option.map_some, ← EReal.coe_neg]
+        congr 1
+      have hd : ((((finite s e q m hv).abs <<< e) <<< AzInt.ofInt 1)).toVal
+          = some ((2 * (|xv| * t) : ℝ) : EReal) := by
+        rw [toVal_shiftLeft_of_toVal (toVal_shiftLeft_of_toVal habs e), AzInt.toInt_ofInt,
+          zpow_one, mul_comm]
+      obtain ⟨lo, hlo, hlo1, hlo2⟩ := subFloor_abs hx' hd (w + 8)
+      rw [hu8] at hlo2
+      have hax := abs_nonneg xv
+      have hsq : xv ^ 2 ≤ |xv| * t := by
+        rw [← sq_abs, sq]; exact mul_le_mul_of_nonneg_left hlt.le hax
+      have hxhalf : -1 / 2 ≤ xv := by
+        have := neg_abs_le xv; linarith
+      have hlow := sub_two_mul_sq_le_log_one_add hxhalf
+      have hup : Real.log (1 + xv) ≤ xv := by
+        have := Real.log_le_sub_one_of_pos hpos; linarith
+      have hd0 : 0 ≤ |xv| * t := mul_nonneg hax ht0.le
+      have hdle : |xv| * t ≤ u / 256 * (u / 256) :=
+        mul_le_mul (hlt.le.trans h2e) h2e ht0.le (by positivity)
+      have habsd : |xv - 2 * (|xv| * t)| ≤ u := by
+        rw [abs_le]
+        constructor
+        · have := neg_abs_le xv; nlinarith
+        · have := le_abs_self xv; nlinarith
+      refine ⟨lo, xv, hlo, hx', by linarith, hup, ?_⟩
+      have hE : (0 : ℝ) ≤ lnEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2 : ℕ) w := by
+        unfold lnEps; positivity
+      have hA := abs_nonneg (Real.log (1 + xv))
+      unfold lnRatEps
+      have h1 : xv - lo ≤ 4 * u := by nlinarith [mul_le_mul_of_nonneg_right habsd hu0.le]
+      nlinarith [mul_nonneg (add_nonneg hA (add_nonneg hE (by positivity : (0 : ℝ) ≤ 8 * u)))
+        hu0.le]
+    · exact hgen
+
 /-- The ends of a bracket as `Roundable`s round to themselves and inherit strict enclosure. -/
 theorem rounds_pair_of_bracket {b : AzFloat × AzFloat} {lv hv v : ℝ}
     (hlv : b.1.toVal = some (lv : EReal)) (hhv : b.2.toVal = some (hv : EReal))

@@ -273,8 +273,8 @@ theorem logBaseP1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
         ((baseFloat b).exponent?.getD 0).toInt |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracket_spec hw hr h0 h1 h2) hx hx1
   obtain ⟨c, d, hc, hd, hc0, hcM, hMd, hcd⟩ := lnBaseBracket_spec hw b hb
   obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
     quotientBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
@@ -406,8 +406,8 @@ theorem logBaseP1ApproxWith_spec (cb : LogBaseConsts) {w : ℕ} (hw : 64 ≤ w) 
         ((baseFloat cb.base).exponent?.getD 0).toInt |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracketWith_spec cb.ln hw hr hpos hf.le hf.ge
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracketWith_spec cb.ln hw hr h0 h1 h2) hx hx1
   obtain ⟨c, d, hc, hd, hc0, hcM, hMd, hcd⟩ := cb.lnBAt_fit hw hb
   obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
     quotientBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid

@@ -98,7 +98,7 @@ def logBaseFloatApprox (x : AzFloat) (ex : AzInt) (b : AzFloat) (eb : AzInt) (w 
 /-- The bracket of `log_b (1 + x) = ln (1 + x) / ln b` for a float `x > −1` and a positive float
 `b ≠ 1` of exponent `eb`: the `ln (1 + x)` bracket of `lnP1` divided by the bracket of `ln b`. -/
 def logBaseFloatP1Approx (x b : AzFloat) (eb : AzInt) (w : Nat) : Roundable × Roundable :=
-  logBaseFloatQuot (lnFloorBracket (addPrecRound one x w .Floor).1 w) b eb w
+  logBaseFloatQuot (lnP1BracketOf lnFloorBracket x w) b eb w
 
 /-- The bracket of `log_b q = ln q / ln b` for a positive rational `q` and a positive float
 `b ≠ 1` of exponent `eb`: the rational `ln` bracket divided by the bracket of `ln b`. -/
@@ -110,7 +110,7 @@ def logBaseRatFloatApprox (q : AzRat) (b : AzFloat) (eb : AzInt) (w : Nat) :
 rational base `b ≠ 1`: the `ln (1 + x)` bracket of `lnP1` divided by the rational bracket of
 `ln b`. -/
 def logBaseRatBaseP1Approx (x : AzFloat) (b : AzRat) (w : Nat) : Roundable × Roundable :=
-  logBaseQuotWith (lnFloorBracket (addPrecRound one x w .Floor).1 w) (lnRatBaseBracket b w)
+  logBaseQuotWith (lnP1BracketOf lnFloorBracket x w) (lnRatBaseBracket b w)
     (decide (b.den < b.num)) w
 
 /-- The bracket of `log_b q = ln q / ln b` for positive rationals `q` and `b ≠ 1`: the rational

@@ -546,8 +546,8 @@ theorem logBaseFloatP1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : 
         (1 / lnKappa (finiteVal true eb mb)) |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracket_spec hw hr h0 h1 h2) hx hx1
   exact logBaseFloatQuot_spec hw ha hb' haL hLb hwid eb hvb hb1 hirr
 
 /-- The Ziv certificate for `log_b (1 + x)` with a float base. -/
@@ -700,8 +700,8 @@ theorem logBaseRatBaseP1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv 
         |Real.log (1 + xv)| |Real.log (AzRat.toRat b : ℝ)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracket_spec hw hr h0 h1 h2) hx hx1
   obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hκc, hdκ⟩ := lnRatBaseBracket_spec hw b hb hb1
   exact logBaseQuotWith_spec hw ha hb' hc hd hcM hMd hcd haL hLb hwid (lnRatKappa_pos hb1) _
     (fun hp => hκc (decide_eq_true_iff.mp hp)) (fun hn => hdκ (of_decide_eq_false hn)) hirr

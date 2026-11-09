@@ -57,6 +57,10 @@ theorem cosPrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Round
   | finite s e q m hv =>
     simp only [cosPrecRound, toVal_finite, Option.bind_some, Spec.cos_coe]
     rw [dite_eq_right (NeZero.ne p)]
+    split
+    · next r hT =>
+      exact cosTiny?_eq (abs_finiteVal_bounds s e hv).2
+        (irrational_cos_of_toVal (toVal_finite s e q m hv) (finiteVal_ne_zero s e hv)) hT
     exact zivLoopCertified_eq_threshold' p mode _ (Real.cos (finiteVal s e m))
       (not_mem_floatSet_of_irrational p
         (irrational_cos_of_toVal (toVal_finite s e q m hv) (finiteVal_ne_zero s e hv)))

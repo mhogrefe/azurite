@@ -262,8 +262,8 @@ theorem logBasePow2P1Approx_spec {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : �
       hv' - lv ≤ logBasePow2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracket_spec hw hr hpos hf.le hf.ge
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracket_spec hw hr h0 h1 h2) hx hx1
   obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ := log2Quotients_spec hw ha hb haL hLb hwid
   rw [Real.log_div_log] at hlo1 hhi1
   obtain ⟨lv, hv', hl, hh, hlo', hhi', hw'⟩ :=
@@ -382,8 +382,8 @@ theorem logBasePow2P1ApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {x
       hv' - lv ≤ logBasePow2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
   have : NeZero w := ⟨by omega⟩
   have hpos : 0 < 1 + xv := by linarith
-  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
-  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracketWith_spec c hw hr hpos hf.le hf.ge
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ :=
+    lnP1BracketOf_spec hw (fun hr h0 h1 h2 => lnFloorBracketWith_spec c hw hr h0 h1 h2) hx hx1
   obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
     log2QuotientsWith_spec hw (c.ln2At_fit hw) ha hb haL hLb hwid
   rw [Real.log_div_log] at hlo1 hhi1

@@ -20,7 +20,7 @@ ceiling of `1 + x` at the starting precision coincide and the significand is a p
 the result is the integer `k`, exact.  Otherwise `log₂ (1 + x)` is irrational
 (`irrational_logb_two_one_add_of_none`) and the certified Ziv loop runs on `log2P1Approx`, the
 quotient of the `ln (1 + x)` bracket of `lnP1` by the bracket of `ln 2`, started at
-`p + 64 + leadingZeroBits e` as `lnP1` does.  Special values as for `lnP1`: `NaN ↦ NaN`,
+`lnP1Start e p` as `lnP1` does.  Special values as for `lnP1`: `NaN ↦ NaN`,
 `+∞ ↦ +∞`, `−∞ ↦ NaN`, `0 ↦ 0` exactly, `−1 ↦ −∞`, `NaN` below `−1`.  The specification
 `log2P1PrecRound_eq_liftVal` is in `Equiv/Log2P1.lean`.
 -/
@@ -43,35 +43,35 @@ def log2P1PrecRoundCore (A : AzFloat → Nat → Roundable × Roundable)
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      match h : onePlusPow2Exponent? (finite true e q m hv) (p + zivGuardBits + leadingZeroBits e)
+      match h : onePlusPow2Exponent? (finite true e q m hv) (lnP1Start e p)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
         zivLoopCertified (A (finite true e q m hv)) p mode
-          (p + zivGuardBits + leadingZeroBits e)
+          (lnP1Start e p)
           (hA p mode (toVal_finite true e q m hv)
             (by linarith [finiteVal_true_pos e hv])
             (irrational_logb_two_one_add_of_none (toVal_finite true e q m hv)
-              (by unfold zivGuardBits; omega) (by linarith [finiteVal_true_pos e hv]) h)
-            _ (by unfold zivGuardBits; omega))
+              (by have := lnP1Start_ge e p; omega) (by linarith [finiteVal_true_pos e hv]) h)
+            _ (by have := lnP1Start_ge e p; omega))
   | finite false e q m hv =>
     if hneg : e.sign = true ∧ e.abs ≠ 0 then
       if eqIEEE (finite false e q m hv) (-one) then (infinity false, .eq) else (nan, .eq)
     else if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      match h : onePlusPow2Exponent? (finite false e q m hv) (p + zivGuardBits + leadingZeroBits e)
+      match h : onePlusPow2Exponent? (finite false e q m hv) (lnP1Start e p)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
         zivLoopCertified (A (finite false e q m hv)) p mode
-          (p + zivGuardBits + leadingZeroBits e)
+          (lnP1Start e p)
           (hA p mode (toVal_finite false e q m hv)
             (finiteVal_false_gt_neg_one e hv hneg)
             (irrational_logb_two_one_add_of_none (toVal_finite false e q m hv)
-              (by unfold zivGuardBits; omega)
+              (by have := lnP1Start_ge e p; omega)
               (by linarith [finiteVal_false_gt_neg_one e hv hneg]) h)
-            _ (by unfold zivGuardBits; omega))
+            _ (by have := lnP1Start_ge e p; omega))
 
 /-- `log₂ (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0`). -/
@@ -83,7 +83,7 @@ def log2P1 (x : AzFloat) : AzFloat := (log2P1PrecRound x (x.precision?.getD 1) .
 
 /-- `log2P1PrecRound` with the constants `c`; the same result
 (`log2P1PrecRoundWith_eq_log2P1PrecRound`).  (The Ziv loop starts at
-`p + 64 + leadingZeroBits e`, so for small `|x|` the constants need a correspondingly finer `W`
+`lnP1Start e p`, so for small `|x|` the constants need a correspondingly finer `W`
 to be used.) -/
 def log2P1PrecRoundWith (c : LnConsts) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=

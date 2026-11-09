@@ -250,6 +250,22 @@ of `⌊q⌋_w`. -/
 def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
   lnFloorApprox (ofAzRatRound q w .Floor).1 w
 
+/-- The float bracket of `ln (1 + x)` at working precision `w`, on a bracket function `F` for
+`ln` of a float below the argument (`lnFloorBracket`, or `lnFloorBracketWith c`).  **Tiny
+arguments**: when `|x| < 2^e` with `e ≤ −(w + 8)`, the bracket is `[⌊x − 2|x| 2^e⌋, x]`, from
+`x − 2x² ≤ ln (1 + x) ≤ x` — no logarithm is computed, and the relative width is about
+`2^(−w)`, so the working precision need not cover the leading zeros of `x`.  Otherwise `F` at
+`⌊1 + x⌋_w`. -/
+def lnP1BracketOf (F : AzFloat → Nat → AzFloat × AzFloat) (x : AzFloat) (w : Nat) :
+    AzFloat × AzFloat :=
+  match x with
+  | finite s e q m hv =>
+    if e.sign = false ∧ w + 8 ≤ e.abs.toNat then
+      ((subPrecRound (finite s e q m hv) (((finite s e q m hv).abs <<< e) <<< AzInt.ofInt 1)
+        (w + 8) .Floor).1, finite s e q m hv)
+    else F (addPrecRound one (finite s e q m hv) w .Floor).1 w
+  | x => F (addPrecRound one x w .Floor).1 w
+
 /-- The bracket of `ln (1 + x)` for a float `x > −1` at working precision `w`: `lnFloorApprox` of
 `⌊1 + x⌋_w` (one rounded addition; for `|x| < 1` the caller starts `w` high enough that the
 rounding keeps the leading bits of `x`). -/

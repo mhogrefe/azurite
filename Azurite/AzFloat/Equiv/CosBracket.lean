@@ -12,6 +12,7 @@ import Azurite.AzFloat.Equiv.Interval
 import Azurite.AzFloat.Equiv.Rem
 import Azurite.AzFloat.Equiv.LambertWBracket
 import Azurite.Transcendental.Cos
+import Azurite.AzFloat.Equiv.NegRound
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Analysis.SpecificLimits.Normed
@@ -738,6 +739,46 @@ theorem irrational_cos_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (x
     rw [hq, Rat.cast_zero]
   rw [hq]
   exact irrational_cos_rat hq0
+
+/-- `cosTiny?` answers only for a tiny exponent. -/
+theorem cosTiny?_cond {e : AzInt} {p : ℕ} {mode : RoundingMode} {r : AzFloat × Ordering}
+    (h : cosTiny? e p mode = some r) : e.sign = false ∧ p + zivGuardBits + 8 ≤ e.abs.toNat := by
+  unfold cosTiny? at h
+  dsimp only at h
+  split_ifs at h with hc
+  exact hc
+
+/-- The tiny-argument path answers with the rounding of `cos v`, for any `|v| < 2^e` with an
+irrational cosine. -/
+theorem cosTiny?_eq {e : AzInt} {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} {v : ℝ} (hv : |v| < (2 : ℝ) ^ e.toInt)
+    (hirr : Irrational (Real.cos v)) (h : cosTiny? e p mode = some r) :
+    r = roundVal p mode (some ((Real.cos v : ℝ) : EReal)) := by
+  unfold cosTiny? at h
+  dsimp only at h
+  split_ifs at h with hc
+  obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
+  have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
+  set t := (2 : ℝ) ^ e.toInt with ht
+  have ht0 : 0 < t := by positivity
+  have hd : ((one <<< e) <<< e).toVal = some ((1 * t * t : ℝ) : EReal) :=
+    toVal_shiftLeft_of_toVal (toVal_shiftLeft_of_toVal toVal_one' e) e
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs toVal_neg_one hd (p + zivGuardBits + 8)
+  have hcos := Real.one_sub_sq_div_two_le_cos (x := v)
+  have hsq : v ^ 2 ≤ t * t := by
+    rw [← sq_abs, sq]
+    exact mul_le_mul hv.le hv.le (abs_nonneg v) ht0.le
+  have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe toVal_neg_one)
+  rw [fval_of_toVal_coe toVal_neg_one] at hR1
+  have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+  rw [fval_of_toVal_coe hhi] at hR2
+  have hr := roundingPossible_eq' p (-mode) (v := -Real.cos v) hR1 hR2
+    (by linarith [Real.cos_le_one v]) (by nlinarith [mul_pos ht0 ht0])
+    (Or.inr (not_mem_floatSet_of_irrational p hirr.neg)) hr'
+  rw [hr]
+  have hneg := roundVal_neg p mode (-Real.cos v)
+  rw [neg_neg] at hneg
+  exact hneg.symm
 
 /-- The Ziv certificate for `cos x`, `x` a nonzero finite float. -/
 theorem cosApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ}

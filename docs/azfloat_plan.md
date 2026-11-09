@@ -5775,6 +5775,102 @@ proof; the widen lemma `IsEnclW.widen0` from the float proof did all the work.  
 `cos (−7/5)` at the exact rational and at the 53-bit float nearest `−7/5` differ in the last
 place (`…6023` vs `…6027`) — a good discriminating test for rational-argument variants.
 
+## `cos (2π x / u)` with an integer period (DONE 2026-11-09, fuel-free)
+
+User request, after Malachite's `cos_with_period_prec_round(x, u, prec, rm)` ("computes
+`cos(2πx/u)`; this allows for easily using degrees or other integer subdivisions of the circle.
+You'll need to account for more rational outputs").  `AzFloat/CosPeriod.lean`,
+`CosPeriodBracket.lean`, Equivs, `Tests/CosPeriod.lean`, and the analytic core
+`Transcendental/Niven.lean`: `cosWithPeriodPrecRound x u p mode` (`u : UInt64`; `u = 0`, `NaN`,
+`±∞` give `NaN`; `x = 0` gives `1`), `cosWithPeriod x u`; `Spec.cosWithPeriod : EReal → ℕ →
+Option EReal`; `cosWithPeriodPrecRound_eq`.
+
+**Exact reduction.**  `x = ±m 2^E` (`E = e − size m`), so `x/u = ±m 2^E/u` and
+`periodFrac m E u = frac(m 2^E / u)` is computed as a reduced `AzRat` (`ofAzNats`):
+`((m 2^E) mod u)/u` for `E ≥ 0`, `(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`
+(`periodFrac_spec`: `m 2^E / u = k + r`, `0 ≤ r < 1`).  `cos (2π x/u) = cos (2π r)` by
+evenness and periodicity.
+
+**The rational outputs — Niven's theorem.**  `cos (2πr)` for rational `r` is rational exactly
+when the reduced denominator of `r` is `1, 2, 3, 4, 6` (values `1, −1, −1/2, 0, 1/2`).  Proof in
+`Transcendental/Niven.lean`, from first principles with Mathlib's integral-closure API:
+`2 cos (2πr) = e^{2πir} + e^{−2πir}` is a sum of roots of unity (roots of `X^den − 1`), hence an
+algebraic integer (`isIntegral_two_cos_two_pi_mul_rat`); a rational algebraic integer is an
+integer (`IsIntegrallyClosed ℤ` from `GCDMonoid.toIsIntegrallyClosed`, through
+`isIntegral_algebraMap_iff` for `ℚ → ℝ` and `ℝ → ℂ`), of modulus `≤ 2`, so a rational
+`cos (2πr)` is in `{−1, −1/2, 0, 1/2, 1}` (`cos_two_pi_mul_rat_mem_of_rat`); each value forces
+the denominator (`Real.cos_eq_one_iff`, `cos_eq_zero_iff`, `cos_eq_cos_iff` at `π/3`, `2π/3`,
+with `Rat.den_div_eq_of_coprime` and explicit Bézout witnesses `⟨u, v⟩` for `IsCoprime`), giving
+`irrational_cos_two_pi_mul_rat` (den `∉ {1,2,3,4,6}`); conversely `cos_two_pi_mul_rat_of_den_eq_*`
+give the five values (numerator residues by `omega` from `¬ p ∣ num` for the primes `p ∣ den`).
+~230 lines.  The driver tests the AzNat denominator against `AzNat.ofNat 1, 2, 4, 3, 6`
+(`DecidableEq AzNat`) and returns `setPrecRound` of `one`, `−one`, `zero`, `∓ one <<< −1`;
+otherwise the Ziv loop on `cosPeriodApprox r` is certified by the irrationality.
+
+**Bracket** (`cosPeriodBracket r w`, `W = cosWork 3 w`): `t = ⌊2 ⌊r⌋_W · lo⌋_W` with `lo` the
+lower end of `piBracket W` satisfies `0 ≤ 2πr − t ≤ 48·2^(−W)` (three nonnegative pieces:
+`2r(π − lo)`, `2 lo (r − ⌊r⌋_W)`, the product rounding), `|t| < 8`, so `cosBracket t 3 w`
+widened by the exact float `2^(6−W)` encloses `cos (2πr)` (Lipschitz; `IsEnclW.widen0` again);
+width `cosPeriodEps w = cosEps 3 w + 152·2^(−W)`.  Everything downstream of the float `cos` was
+reused unchanged.
+
+**Gotchas.**  Projecting `.2.2.1` out of an `∃`-lemma inside a `def` is rejected by the kernel
+("invalid projection") — obtain the components in a `by` block for the proof argument instead.
+`Int.toInt`-style model functions are fine in code for exponents, but `E = e − size m` was
+kept as an `AzInt` (`sign`/`abs` dispatch) so the shift amounts are `AzNat.toNat` of small
+numbers only.  `pow_le_pow_of_le_one (by norm_num) …` and `den_eq_of_coprime_den (by norm_num)`
+leave metavariables when the numeral is determined by a later argument — put the determining
+hypothesis first or name the implicit arguments.  `norm_num` on an `EReal` coercion goal pushes
+casts the wrong way; prove the real identity first.  `toVal_half` already exists (`u >>> 1`);
+the new one is `toVal_one_half`.
+
+Tests: degrees (`u = 360`) and turns, all five exact values (and at 7 bits), the 53-bit float
+nearest `1/3` of a turn (whose cosine is one ulp off `−1/2`: the exact-denominator test must
+see the float, not the intended rational), `2^(−100)` and `1/(2^64 − 1)` turns (round to `1`),
+`(10^15 + 1)°`, directed modes, 200-bit `cos (2π/7)` and `cos 1°`.  UNTIMED.  Not done: `sin`
+with a period, the rational-`x` variant (would be `periodFrac` on `num/(den u)`).
+
+## Tiny arguments of `lnP1` and the `log_b (1 + x)` family (DONE 2026-11-10)
+
+Report from the Malachite side: `lnP1 (2^(−2^30))` ran for over six minutes — every `…P1`
+driver started its Ziv loop at `p + 64 + leadingZeroBits e` bits (`≈ 2^30`), since the bracket
+is `ln ⌊1 + x⌋_w`.  Fix, from `x − 2x² ≤ ln (1 + x) ≤ x` for `x ≥ −1/2`
+(`sub_two_mul_sq_le_log_one_add`, from `1 − 1/y ≤ ln y`):
+
+* **`lnP1`** (`lnP1Tiny?`, tried before the loop in `lnP1PrecRoundCore`, so the `With` variant
+  has it too): for `e ≤ −(w + 8)`, `w = max p q + 64` (`q` the precision of `x`), the value
+  `−ln (1 + x)` lies in `(−x, −x + 2x²]`; one `roundingPossible` test on
+  `[−x, ⌈−x + 2|x| 2^e⌉_{w+8}]` in the negated mode, result negated (`roundVal_neg`,
+  `roundingPossible_eq'`).  The negation is the point: the Ziv test is for `(l, h]`, and in
+  `[x − 2x², x)` the exact end `x` — usually a `p`-bit float, a boundary — would sit at the
+  closed side and the test would never pass.  The test cannot fail here (`x` has at most `w`
+  bits, so no `(p+1)`-bit float lies within one `(w+8)`-bit ulp above `−x`), but nothing
+  relies on that: `none` falls through to the loop.
+* **`log2P1`, `logBaseP1`, `logBasePow2P1`, `logBaseFloatP1`, `logBaseRatBaseP1`** (and the
+  `With` variants): the shared float bracket is now `lnP1BracketOf F x w`, which for
+  `e ≤ −(w + 8)` is `[⌊x − 2|x| 2^e⌋_{w+8}, x]` (no logarithm) and `F ⌊1 + x⌋_w` otherwise;
+  `lnP1BracketOf_spec` has the same conclusion as `lnFloorBracket_spec` (the tiny width is
+  `≤ 4·2^(−w) ≤ lnRatEps`), so each downstream proof changed by one line.  The start precision
+  is `lnP1Start e p` = `p + 64` when `e ≤ −(p + 72)`, else the old value.  These values are
+  irrational multiples, so the plain bracket has no boundary problem.
+
+All six at `x = 2^(−2^30)`, `p = 53`: immediate (the whole probe file, 12 evaluations, 2.6 s of
+interpreter including imports).  Tests added to the six `Tests/…P1` files.  Residual: if the
+tiny bracket of a `log_b` relative fails at every level up to `−e` (relative gap to a boundary
+below `2^e`; probability `≈ 2^(−64)` per level) the loop reaches the old precision.
+
+**The same fix for `cos`** (user: "Please make the same fix for cos", DONE 2026-11-10):
+`cos x ∈ [1 − x²/2, 1)` has the boundary `1` at the closed side, so the loop needed
+`w ≈ 2|e|`.  `cosTiny? e p mode` (`AzFloat/CosBracket.lean`): for `|v| < 2^e`,
+`e ≤ −(p + 72)`, one `roundingPossible` test on `[−1, ⌈−1 + 2^(2e)⌉_{p+72}]` in the negated
+mode, negated — nothing is computed from the argument.  `cosTiny?_eq` holds for any `|v| < 2^e`
+with an irrational cosine, so the three drivers share it: `cosPrecRound` at the exponent of
+`x`; `cosRatPrecRound` at `ratExpBound q` (no rational-to-float rounding at all);
+`cosWithPeriodPrecRound` at `e + 3` (`|2πx/u| < 8·2^e`), BEFORE `periodFrac` (which would
+build a `|e|`-bit denominator), with irrationality from the new
+`irrational_cos_two_pi_mul_rat_of_small` (`0 < r < 1/6` forces `den r > 6`).
+`expM1` already has a tiny bracket with the exact end at the open side.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

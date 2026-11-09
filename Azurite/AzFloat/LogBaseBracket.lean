@@ -62,7 +62,7 @@ def logBaseRatApprox (q : AzRat) (b : UInt64) (w : Nat) : Roundable × Roundable
 /-- The bracket of `log_b (1 + x)` at working precision `w`: the `ln (1 + x)` bracket of `lnP1`
 (`lnFloorBracket` of the floor-rounded sum `1 + x`) divided by the bracket of `ln b`. -/
 def logBaseP1Approx (x : AzFloat) (b : UInt64) (w : Nat) : Roundable × Roundable :=
-  let qb := quotientBracket (lnFloorBracket (addPrecRound one x w .Floor).1 w) (lnBaseBracket b w) w
+  let qb := quotientBracket (lnP1BracketOf lnFloorBracket x w) (lnBaseBracket b w) w
   (fun p mode => setPrecRound qb.1 p mode, fun p mode => setPrecRound qb.2 p mode)
 
 /-! ### Precomputed constants for a natural base -/
@@ -103,7 +103,7 @@ def logBaseRatApproxWith (cb : LogBaseConsts) (q : AzRat) (w : Nat) : Roundable 
 
 /-- `logBaseP1Approx` with the constants `cb`. -/
 def logBaseP1ApproxWith (cb : LogBaseConsts) (x : AzFloat) (w : Nat) : Roundable × Roundable :=
-  let qb := quotientBracket (lnFloorBracketWith cb.ln (addPrecRound one x w .Floor).1 w)
+  let qb := quotientBracket (lnP1BracketOf (lnFloorBracketWith cb.ln) x w)
     (cb.lnBAt w) w
   (fun p mode => setPrecRound qb.1 p mode, fun p mode => setPrecRound qb.2 p mode)
 

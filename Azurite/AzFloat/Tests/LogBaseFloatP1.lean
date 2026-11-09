@@ -133,3 +133,8 @@ private def refTiny : AzRat :=
 #guard logBaseFloatP1 (F "7" 10) (F "4" 53) == F "3/2" 10
 #guard logBaseFloatP1 (F "6" 53) (F "3" 53) == ofAzRat ref37 53
 #guard logBaseFloatP1 (F "1" 53) (F "10" 53) == logBaseP1 (F "1" 53) 10
+
+-- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+#guard L tinyX (F "10" 53) 53 == logBaseP1PrecRound tinyX 10 53 .Nearest

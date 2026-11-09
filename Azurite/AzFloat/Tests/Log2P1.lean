@@ -74,3 +74,12 @@ private def ref3 : AzRat :=
 #guard log2P1With (LnConsts.forPrecision 53) (F "1" 53) == log2P1 (F "1" 53)
 #guard log2P1PrecRoundWith (LnConsts.forPrecision 53) (F "1/2" 53) 53 .Ceiling
   == log2P1PrecRound (F "1/2" 53) 53 .Ceiling
+
+-- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+-- `log₂ (1 + x) ≈ x / ln 2`
+#guard log2P1PrecRound tinyX 53 .Nearest
+  == ((F "3248660424278399/2251799813685248" 53) <<< tinyE, .lt)
+#guard log2P1PrecRoundWith (LnConsts.forPrecision 53) tinyX 53 .Nearest
+  == log2P1PrecRound tinyX 53 .Nearest

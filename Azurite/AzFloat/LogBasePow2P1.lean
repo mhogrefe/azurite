@@ -17,7 +17,7 @@ import Azurite.AzRat.Construct
 `logBasePow2P1PrecRound x k p mode` is `log_{2^k} (1 + x) = log₂ (1 + x) / k` for an integer
 `k ≠ 0` (possibly negative), correctly rounded to precision `p` in `mode`, with the comparison
 against the exact value; `logBasePow2P1 x k` rounds to nearest.  The working precision starts
-at `p + 64 + leadingZeroBits e` as `lnP1` does.  If `1 + x = 2^j` (`onePlusPow2Exponent?`) the
+at `lnP1Start e p` as `lnP1` does.  If `1 + x = 2^j` (`onePlusPow2Exponent?`) the
 result is the rational `j / k`, rounded once (`ofAzRatRound`); otherwise `log₂ (1 + x) / k` is
 irrational and the certified Ziv loop runs on `logBasePow2P1Approx`, the `ln (1 + x)` bracket of
 `lnP1` turned into a `log₂` bracket and divided by `|k|`.  Special values: `NaN` for `NaN`, `−∞`,
@@ -38,17 +38,17 @@ def logBasePow2P1Finite (A : AzFloat → AzInt → Nat → Roundable × Roundabl
     (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
     (hgt : -1 < finiteVal s e m) (k : AzInt) (hk : k ≠ 0) (p : Nat) [NeZero p]
     (mode : RoundingMode) : AzFloat × Ordering :=
-  match h : onePlusPow2Exponent? (finite s e q m hv) (p + zivGuardBits + leadingZeroBits e) with
+  match h : onePlusPow2Exponent? (finite s e q m hv) (lnP1Start e p) with
   | some j => ofAzRatRound (AzRat.ofAzInts j k) p mode
   | none =>
     zivLoopCertified (A (finite s e q m hv) k) p mode
-      (p + zivGuardBits + leadingZeroBits e)
+      (lnP1Start e p)
       (hA p mode (toVal_finite s e q m hv) hgt k hk
         (Irrational.div_intCast
           (irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
-            (by unfold zivGuardBits; omega) (by linarith) h)
+            (by have := lnP1Start_ge e p; omega) (by linarith) h)
           (toInt_ne_zero_of_ne_zero hk))
-        _ (by unfold zivGuardBits; omega))
+        _ (by have := lnP1Start_ge e p; omega))
 
 /-- `log_{2^k} (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact
 value (`(nan, .eq)` for `p = 0` or `k = 0`). -/

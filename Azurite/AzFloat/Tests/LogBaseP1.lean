@@ -96,3 +96,10 @@ private def refTiny : AzRat :=
 #guard logBaseP1With (LogBaseConsts.forPrecision 3 53) (F "-1/2" 53) == logBaseP1 (F "-1/2" 53) 3
 #guard logBaseP1With (LogBaseConsts.forPrecision 4 53) (F "3" 53) == logBaseP1 (F "3" 53) 4
 #guard logBaseP1With (LogBaseConsts.forPrecision 10 53) (F "9" 53) == logBaseP1 (F "9" 53) 10
+
+-- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+-- `log₁₀ (1 + x) ≈ x / ln 10`
+#guard L tinyX 10 53 == ((F "3911776933737095/9007199254740992" 53) <<< tinyE, .lt)
+#guard (L (-tinyX) 10 53).2 == .gt

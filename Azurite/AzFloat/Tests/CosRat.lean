@@ -63,3 +63,10 @@ private def C (q : String) (p : Nat) (m : RoundingMode := .Nearest) := cosRatPre
   == "0.944956946314737664388284007675880607845852699565140737677646"
 #guard toString (cosRat (Q "355/113") 200)
   == "-0.9999999999999644184337169343129714252032324580791768112016077"
+
+-- tiny arguments (`1/(3·2^1000)`): rounded without touching the argument
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
+#guard cosRatPrecRound tinyQ 53 .Nearest == (F "1" 53, .gt)
+#guard cosRatPrecRound tinyQ 53 .Floor == (belowOne, .lt)
+#guard cosRatPrecRound (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)

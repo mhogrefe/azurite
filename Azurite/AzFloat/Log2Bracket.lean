@@ -50,7 +50,7 @@ def log2RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
 the bracket of `ln (1 + x)` from the float `⌊1 + x⌋_w` (`lnFloorBracket`) by the bracket of
 `ln 2`. -/
 def log2P1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
-  let b := log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w
+  let b := log2Quotients (lnP1BracketOf lnFloorBracket x w) w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-! ### The same with precomputed constants -/
@@ -67,7 +67,7 @@ def log2RatApproxWith (c : LnConsts) (q : AzRat) (w : Nat) : Roundable × Rounda
 
 /-- `log2P1Approx` with the constants `c`. -/
 def log2P1ApproxWith (c : LnConsts) (x : AzFloat) (w : Nat) : Roundable × Roundable :=
-  let b := log2QuotientsWith (c.ln2At w) (lnFloorBracketWith c (addPrecRound one x w .Floor).1 w) w
+  let b := log2QuotientsWith (c.ln2At w) (lnP1BracketOf (lnFloorBracketWith c) x w) w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- Whether `1 + x` is exactly a power of two `2^k`, and then `k`: the floor and the ceiling of

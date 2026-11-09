@@ -46,6 +46,12 @@ import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rem
 import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Agm
+import Azurite.AzFloat.Ln
+import Azurite.AzFloat.LnRat
+import Azurite.AzFloat.LnP1
+import Azurite.AzFloat.Log2
+import Azurite.AzFloat.Log2Rat
+import Azurite.AzFloat.Log2P1
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1024,6 +1030,97 @@ def checkFloatAgmRational (line : String) : Verdict := do
     | none => pure (.mode .Nearest)
   let computed ← roundedResult method (malachiteAgmRat x y p) rm
   expectFloatPair method computed (← parseFloatPair rhs)
+
+/-! ### Logarithms -/
+
+/-- A unary operation in all of Malachite's shapes: `(x).{name}() = r`,
+`(x).{name}_prec[_round][_ref](p[, rm]) = (r, o)`, `(x).{name}_round[_ref](rm) = (r, o)`, and the
+assignments `x := x; x.{name}[…]_assign(…) = o; x = r` (or with no `= o`). Only the tags `prec`,
+`round`, `ref`, and `assign` may follow the name, so `ln` does not match `ln_1_plus_x`. The
+precision defaults to `x`'s and the mode to `Nearest`. -/
+def checkFloatUnaryWith (name : String) (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+    (line : String) : Verdict := do
+  let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        if !(b.startsWith "x." && c.startsWith "x = ") then fail "not an assignment line"
+        let call := dropChars b 2
+        let some (args, _) := splitParenthesized call | fail "not a method call"
+        pure (dropChars a 5, (call.splitOn "(").headD "", args, dropChars c 4, false)
+      | _ => fail "not an assignment line"
+    else do
+      let (lhs, rhs) ← expect "an `x.f(…) = r` line" (splitEquals line)
+      let some (x, rest) := splitParenthesized lhs | fail "no receiver"
+      if !rest.startsWith "." then fail "not a method call"
+      let call := dropChars rest 1
+      let some (args, _) := splitParenthesized call | fail "not a method call"
+      pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
+  if !(method == name || method.startsWith s!"{name}_") then fail s!"not a {name} line"
+  let tags := ((dropChars method name.length).splitOn "_").filter (· != "")
+  if !tags.all (fun t => ["prec", "round", "ref", "assign"].contains t) then
+    fail s!"not a {name} line"
+  let hasPrec := tags.contains "prec"
+  let hasRound := tags.contains "round"
+  let (p, rm) ← match splitArgs args, hasPrec, hasRound with
+    | [p, rm], true, true => pure (some p, some rm)
+    | [p], true, false => pure (some p, none)
+    | [rm], false, true => pure (none, some rm)
+    | [], false, false => pure (none, none)
+    | _, _, _ => fail s!"{method}: wrong number of arguments"
+  let x ← expect "x" (parseFloat (stripRef x))
+  let p ← match p with
+    | some p => expect "precision" (parseNat p)
+    | none => pure (x.1.precision?.getD 1)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult method (f x.1 p) rm
+  if withOrdering then expectFloatPair method computed (← parseFloatPair res)
+  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+/-- `Float`'s `ln` family, against `AzFloat.lnPrecRound`. -/
+def checkFloatLn : String → Verdict := checkFloatUnaryWith "ln" AzFloat.lnPrecRound
+
+/-- `Float`'s `ln_1_plus_x` family, against `AzFloat.lnP1PrecRound`. Malachite's
+`ln_1_plus_x(-0.0)` is `-0.0`, where Azurite, with no signed zero, gives `0`; the sign of a zero
+result is not compared. -/
+def checkFloatLn1PlusX : String → Verdict :=
+  checkFloatUnaryWith "ln_1_plus_x" AzFloat.lnP1PrecRound
+
+/-- `Float::ln_rational_prec[_round][_ref](q, p[, rm]) = (r, o)` and
+`ln_unsigned_prec[_round](n, p[, rm]) = (r, o)`, against `AzFloat.lnRatPrecRound`. -/
+def checkFloatLnRational (line : String) : Verdict := do
+  if line.startsWith "ln_unsigned_prec" then
+    let (method, args, res) ←
+      match functionCall line "ln_unsigned_prec_round", functionCall line "ln_unsigned_prec" with
+      | some (args, res), _ => pure ("ln_unsigned_prec_round", args, res)
+      | _, some (args, res) => pure ("ln_unsigned_prec", args, res)
+      | _, _ => fail "not an ln_unsigned line"
+    let (n, p, rm) ← match args with
+      | [n, p, rm] => pure (n, p, some rm)
+      | [n, p] => pure (n, p, none)
+      | _ => fail s!"{method}: unexpected arguments"
+    let n ← expect "n" (parseAzRat n)
+    let p ← expect "precision" (parseNat p)
+    let rm ← match rm with
+      | some rm => expect "rounding mode" (parseRounding rm)
+      | none => pure (.mode .Nearest)
+    let computed ← roundedResult method (AzFloat.lnRatPrecRound n p) rm
+    expectFloatPair method computed (← parseFloatPair res)
+  else checkFloatOfRational "ln_rational" AzFloat.lnRatPrecRound line
+
+/-- `Float`'s `log_base_2` family, against `AzFloat.log2PrecRound`. -/
+def checkFloatLogBase2 : String → Verdict := checkFloatUnaryWith "log_base_2" AzFloat.log2PrecRound
+
+/-- `Float`'s `log_base_2_1_plus_x` family, against `AzFloat.log2P1PrecRound`; as with
+`ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatLogBase21PlusX : String → Verdict :=
+  checkFloatUnaryWith "log_base_2_1_plus_x" AzFloat.log2P1PrecRound
+
+/-- `Float::log_base_2_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.log2RatPrecRound`. -/
+def checkFloatLogBase2Rational : String → Verdict :=
+  checkFloatOfRational "log_base_2_rational" AzFloat.log2RatPrecRound
 
 /-- `checkFloatFusedWith` for three floats. -/
 def checkFloatFused (name : String)

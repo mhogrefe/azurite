@@ -16,6 +16,7 @@ import Azurite.AzFloat.Equiv.CosRatBracket
 `mode`, with the comparison against the exact value; `cosRat q p` rounds to nearest.  `cos 0 = 1`
 exactly; otherwise a certified Ziv loop (`zivLoopCertified`, no fuel) on `cosRatApprox`
 (`AzFloat/CosRatBracket.lean`: the float bracket at `⌊q⌋_W`, widened by the Lipschitz bound),
+preceded by the tiny-argument path `cosTiny?` at the exponent bound `ratExpBound q`;
 total because `cos q` is irrational for every rational `q ≠ 0` (`irrational_cos_rat`).  The
 specification `cosRatPrecRound_eq` is in `Equiv/CosRat.lean`.
 -/
@@ -29,8 +30,12 @@ def cosRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
   else if h0 : q.num = 0 then setPrecRound one p mode
   else
     haveI : NeZero p := ⟨hp⟩
-    zivLoopCertified (cosRatApprox q) p mode (p + zivGuardBits)
-      (cosRatApprox_isSome_exists p mode q h0 (p + zivGuardBits) (by unfold zivGuardBits; omega))
+    match cosTiny? (ratExpBound q) p mode with
+    | some r => r
+    | none =>
+      zivLoopCertified (cosRatApprox q) p mode (p + zivGuardBits)
+        (cosRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+          (by unfold zivGuardBits; omega))
 
 /-- `cos q` rounded to nearest at precision `p`. -/
 def cosRat (q : AzRat) (p : Nat) : AzFloat := (cosRatPrecRound q p .Nearest).1

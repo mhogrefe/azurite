@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Interval
 import Azurite.AzFloat.Rem
+import Azurite.AzFloat.Ziv
 
 /-!
 ## The bracket of `cos x`
@@ -78,6 +79,21 @@ def cosBracket (x : AzFloat) (ex : AzInt) (w : Nat) : AzFloat × AzFloat :=
   let C2 := cosDouble W (enclClamp0 C)
   let C4 := cosDouble W (enclClamp0 C2)
   cosDouble W (enclAbs C4)
+
+/-- **The tiny-argument path of `cos`** for an argument below `2^e` in magnitude: when
+`e ≤ −(p + 72)`, `−cos x` lies in `(−1, −1 + 2^(2e)]` (from `cos x ≥ 1 − x²/2`), so it is rounded
+in the negated mode from the bracket `[−1, ⌈−1 + 2^(2e)⌉_{p+72}]` by the test of
+`roundingPossible`, and the result is negated.  (The negation puts the exact end `1`, a rounding
+boundary, at the open side of the half-open test.)  Nothing is computed from the argument, so the
+cost is independent of `e`; the Ziv loop would need about `2|e|` bits.  `none` when the argument
+is not tiny or the test fails. -/
+def cosTiny? (e : AzInt) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
+  let w := p + zivGuardBits
+  if e.sign = false ∧ w + 8 ≤ e.abs.toNat then
+    let hi := (addPrecRound (-one) ((one <<< e) <<< e) (w + 8) .Ceiling).1
+    (roundingPossible (fun P M => setPrecRound (-one) P M) (fun P M => setPrecRound hi P M) p
+      (-mode)).map fun r => (-r.1, r.2.swap)
+  else none
 
 /-- `cosBracket` as a pair of `Roundable`s for the Ziv loop. -/
 def cosApprox (x : AzFloat) (ex : AzInt) (w : Nat) : Roundable × Roundable :=

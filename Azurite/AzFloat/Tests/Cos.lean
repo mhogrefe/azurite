@@ -63,3 +63,16 @@ private def C (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := cosPrecR
   == "0.540302305868139717400936607442976603732310420617922227670097"
 #guard toString (cos (F "100" 200))
   == "0.862318872287683934101938513950842535510084008535510829280162"
+
+-- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard cosPrecRound tinyX 53 .Nearest == (F "1" 53, .gt)
+#guard cosPrecRound tinyX 53 .Ceiling == (F "1" 53, .gt)
+#guard cosPrecRound tinyX 53 .Floor == (belowOne, .lt)
+#guard cosPrecRound (-tinyX) 53 .Floor == (belowOne, .lt)
+#guard cosPrecRound ((F "1/3" 200) <<< tinyE) 10 .Nearest == (F "1" 10, .gt)
+#guard cos tinyX == F "1" 53
+-- the tiny path and the loop agree where both apply
+#guard cosPrecRound ((F "1" 53) <<< AzInt.ofInt (-130)) 53 .Floor == (belowOne, .lt)

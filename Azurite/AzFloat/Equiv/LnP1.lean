@@ -19,6 +19,60 @@ import Azurite.AzFloat.Equiv.Ln
 
 namespace Azurite.AzFloat
 
+/-- The tiny-argument path answers with the rounding of `ln (1 + x)`. -/
+theorem lnP1Tiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
+    (h : lnP1Tiny? (finite s e q m hv) e q p mode = some r) :
+    r = roundVal p mode (some ((Real.log (1 + finiteVal s e m) : ℝ) : EReal)) := by
+  unfold lnP1Tiny? at h
+  dsimp only at h
+  split_ifs at h with hc
+  obtain ⟨hs, he⟩ := hc
+  obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
+  set w := max p q + zivGuardBits with hw
+  have : NeZero (w + 8) := ⟨by omega⟩
+  set xv := finiteVal s e m with hxv
+  have hx : (finite s e q m hv).toVal = some (xv : EReal) := toVal_finite s e q m hv
+  obtain ⟨hlt, h2e⟩ := abs_finiteVal_lt_of_tiny s hv hs he
+  rw [← hxv] at hlt
+  have h256 : (1 / 2 : ℝ) ^ (w + 8) ≤ 1 / 2 := by
+    calc (1 / 2 : ℝ) ^ (w + 8) ≤ (1 / 2 : ℝ) ^ 1 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 2 := by norm_num
+  set t := (2 : ℝ) ^ e.toInt with ht
+  have ht0 : 0 < t := by positivity
+  have hax := abs_nonneg xv
+  have hxhalf : -1 / 2 ≤ xv := by
+    have := neg_abs_le xv; linarith
+  have hpos : 0 < 1 + xv := by linarith
+  have hx0 : xv ≠ 0 := finiteVal_ne_zero s e hv
+  have hirr := irrational_log_one_add_of_toVal hx hpos hx0
+  have hnx : (-(finite s e q m hv)).toVal = some ((-xv : ℝ) : EReal) := by
+    rw [toVal_neg, hx, Option.map_some, EReal.coe_neg]
+  have habs : (finite s e q m hv).abs.toVal = some ((|xv| : ℝ) : EReal) := by
+    rw [toVal_abs, hx, Option.map_some, ← EReal.coe_neg]
+    congr 1
+  have hd : ((((finite s e q m hv).abs <<< e) <<< AzInt.ofInt 1)).toVal
+      = some ((2 * (|xv| * t) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal (toVal_shiftLeft_of_toVal habs e), AzInt.toInt_ofInt,
+      zpow_one, mul_comm]
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs hnx hd (w + 8)
+  have hsq : xv ^ 2 ≤ |xv| * t := by
+    rw [← sq_abs, sq]; exact mul_le_mul_of_nonneg_left hlt.le hax
+  have hlow := sub_two_mul_sq_le_log_one_add hxhalf
+  have hup : Real.log (1 + xv) ≤ xv := by
+    have := Real.log_le_sub_one_of_pos hpos; linarith
+  have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hnx)
+  rw [fval_of_toVal_coe hnx] at hR1
+  have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+  rw [fval_of_toVal_coe hhi] at hR2
+  have hr := roundingPossible_eq' p (-mode) (v := -Real.log (1 + xv)) hR1 hR2 (by linarith)
+    (by linarith) (Or.inr (not_mem_floatSet_of_irrational p hirr.neg)) hr'
+  rw [hr]
+  have hneg := roundVal_neg p mode (-Real.log (1 + xv))
+  rw [neg_neg] at hneg
+  exact hneg.symm
+
 /-- `lnP1PrecRoundCore A hA` is correctly rounded for every bracket function `A` with the
 conclusion of `lnP1Approx_spec`. -/
 theorem lnP1PrecRoundCore_eq_liftVal (A : AzFloat → ℕ → Roundable × Roundable) (hA)
@@ -51,6 +105,8 @@ theorem lnP1PrecRoundCore_eq_liftVal (A : AzFloat → ℕ → Roundable × Round
       · exact absurd hp (NeZero.ne p)
       rw [← EReal.coe_one, ← EReal.coe_add, Spec.log_coe _ (by linarith),
         add_comm (finiteVal true e m) 1]
+      split
+      · next r hT => exact lnP1Tiny?_eq hv p mode hT
       exact zivLoopCertified_eq_threshold p mode _ (Real.log (1 + finiteVal true e m)) _
         (by unfold zivGuardBits; omega)
         (fun w hw => by
@@ -80,6 +136,8 @@ theorem lnP1PrecRoundCore_eq_liftVal (A : AzFloat → ℕ → Roundable × Round
       · have hgt := finiteVal_false_gt_neg_one e hv hneg
         rw [← EReal.coe_one, ← EReal.coe_add, Spec.log_coe _ (by linarith),
           add_comm (finiteVal false e m) 1]
+        split
+        · next r hT => exact lnP1Tiny?_eq hv p mode hT
         exact zivLoopCertified_eq_threshold p mode _ (Real.log (1 + finiteVal false e m)) _
           (by unfold zivGuardBits; omega)
           (fun w hw => by

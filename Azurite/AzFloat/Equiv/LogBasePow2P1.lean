@@ -45,7 +45,7 @@ theorem logBasePow2P1Finite_eq (A : AzFloat → AzInt → ℕ → Roundable × R
       = roundVal p mode
           (some ((Real.logb 2 (1 + finiteVal s e m) / k.toInt : ℝ) : EReal)) := by
   have hpos : 0 < 1 + finiteVal s e m := by linarith
-  have hw : NeZero (p + zivGuardBits + leadingZeroBits e) := ⟨by unfold zivGuardBits; omega⟩
+  have hw : NeZero (lnP1Start e p) := ⟨by have := lnP1Start_ge e p; omega⟩
   unfold logBasePow2P1Finite
   split
   · rename_i j hj
@@ -56,13 +56,13 @@ theorem logBasePow2P1Finite_eq (A : AzFloat → AzInt → ℕ → Roundable × R
   · rename_i hj
     have hirr := Irrational.div_intCast
       (irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
-        (w := p + zivGuardBits + leadingZeroBits e) (by unfold zivGuardBits; omega) hpos hj)
+        (w := lnP1Start e p) (by have := lnP1Start_ge e p; omega) hpos hj)
       (toInt_ne_zero_of_ne_zero hk)
     exact zivLoopCertified_eq_threshold p mode _
-      (Real.logb 2 (1 + finiteVal s e m) / k.toInt) _ (by unfold zivGuardBits; omega)
+      (Real.logb 2 (1 + finiteVal s e m) / k.toInt) _ (by have := lnP1Start_ge e p; omega)
       (fun w hw => by
         obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-          hspec (w := w) (by unfold zivGuardBits at hw; omega)
+          hspec (w := w) (by have := lnP1Start_ge e p; omega)
             (toVal_finite s e q m hv) hgt k hk hirr
         exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 

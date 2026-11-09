@@ -22,6 +22,9 @@ arithmetic, and three double-angle steps.  The loop terminates because `cos x` i
 every nonzero float `x` (`irrational_cos_rat`, from Hermite–Lindemann), so the exact value is never
 a rounding boundary.
 
+Tiny arguments (`|x| < 2^e`, `e ≤ −(p + 72)`) never reach the loop: `cosTiny?` rounds `1⁻`
+directly, at a cost independent of `e` (the loop would need about `2|e|` bits).
+
 Special values: `cos NaN = NaN`, `cos (±∞) = NaN`, `cos 0 = 1` exactly.
 -/
 
@@ -38,9 +41,12 @@ def cosPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orde
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (cosApprox (finite s e q m hv) e) p mode (p + zivGuardBits)
-        (cosApprox_isSome_exists p mode (toVal_finite s e q m hv) (finiteVal_ne_zero s e hv)
-          (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits) (by unfold zivGuardBits; omega))
+      match cosTiny? e p mode with
+      | some r => r
+      | none =>
+        zivLoopCertified (cosApprox (finite s e q m hv) e) p mode (p + zivGuardBits)
+          (cosApprox_isSome_exists p mode (toVal_finite s e q m hv) (finiteVal_ne_zero s e hv)
+            (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits) (by unfold zivGuardBits; omega))
 
 /-- `cos x` rounded to nearest at the precision of `x`. -/
 def cos (x : AzFloat) : AzFloat := (cosPrecRound x (x.precision?.getD 1) .Nearest).1

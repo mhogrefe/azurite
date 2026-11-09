@@ -57,7 +57,8 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard toString (lnP1 (F "-1/1073741824" 200))
   == "-9.31322575049159384888466296106498912866875882669738160663179e-10"
 #guard toString (lnP1 (F "1/1267650600228229401496703205376" 300))
-  == "7.888609052210118054117285652824750789093133780236658015675900880884818306491157115024101102e-31"
+  == "7.888609052210118054117285652824750789093133780236"
+    ++ "658015675900880884818306491157115024101102e-31"
 
 -- precomputed constants: the same results
 #guard lnP1With (LnConsts.forPrecision 53) (F "1/2" 53) == lnP1 (F "1/2" 53)
@@ -66,3 +67,28 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard lnP1With (LnConsts.forPrecision 53) (F "1/1000000" 53) == lnP1 (F "1/1000000" 53)
 #guard lnP1PrecRoundWith (LnConsts.forPrecision 53) (F "1/2" 53) 53 .Ceiling
   == lnP1PrecRound (F "1/2" 53) 53 .Ceiling
+
+-- tiny arguments: the cost does not depend on the exponent (`2^(−2^30)` is immediate)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def third200 : AzFloat := (F "1/3" 53) <<< AzInt.ofInt (-200)
+#guard lnP1PrecRound tinyX 53 .Nearest == (tinyX, .gt)
+#guard lnP1PrecRound tinyX 53 .Ceiling == (tinyX, .gt)
+#guard (lnP1PrecRound tinyX 53 .Floor).2 == .lt
+#guard (lnP1PrecRound tinyX 53 .Floor).1 != tinyX
+#guard lnP1PrecRound (-tinyX) 53 .Ceiling == (-tinyX, .gt)
+#guard (lnP1PrecRound (-tinyX) 53 .Nearest).2 == .gt
+#guard lnP1PrecRound ((F "3/2" 100) <<< tinyE) 53 .Nearest
+  == ((F "3/2" 53) <<< tinyE, .gt)
+#guard (lnP1PrecRound tinyX 200 .Nearest).1 == (F "1" 200) <<< tinyE
+#guard lnP1 tinyX == tinyX
+-- `ln (1 ± ⌊1/3⌋₅₃ 2^(−200))` (references from the series with exact rationals)
+#guard lnP1PrecRound third200 53 .Nearest == (third200, .gt)
+#guard lnP1PrecRound third200 53 .Ceiling == (third200, .gt)
+#guard lnP1PrecRound third200 53 .Floor
+  == ((F "1501199875790165/4503599627370496" 53) <<< AzInt.ofInt (-200), .lt)
+#guard lnP1PrecRound (-third200) 53 .Nearest == (-third200, .gt)
+#guard lnP1PrecRound (-third200) 53 .Floor
+  == ((F "-3002399751580331/9007199254740992" 53) <<< AzInt.ofInt (-200), .lt)
+#guard lnP1PrecRoundWith (LnConsts.forPrecision 53) tinyX 53 .Floor
+  == lnP1PrecRound tinyX 53 .Floor

@@ -16,7 +16,7 @@ import Azurite.AzFloat.LogBaseRatBase
 `logBaseRatBaseP1PrecRound x b p mode` is `log_b (1 + x) = ln (1 + x) / ln b` for a float `x`
 and a rational base `b`, correctly rounded to precision `p` in `mode`, with the comparison
 against the exact value; `logBaseRatBaseP1 x b` rounds to nearest at the precision of `x`.  The
-working precision starts at `p + 64 + leadingZeroBits e` as `lnP1` does.  For finite `x > −1`
+working precision starts at `lnP1Start e p` as `lnP1` does.  For finite `x > −1`
 and `b > 0`, `b ≠ 1`, the odd part and dyadic exponent of `1 + x` (`onePlusDyadic`) feed the
 rational-base exactness test `logBaseRatBaseExact?`; otherwise the certified Ziv loop runs on
 `logBaseRatBaseP1Approx`.  Special values: `b = 0` and `b = 1` delegate to
@@ -39,11 +39,11 @@ def logBaseRatBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fi
   | some r => ofAzRatRound r p mode
   | none =>
     zivLoopCertified (logBaseRatBaseP1Approx (finite s e q m hv) b) p mode
-      (p + zivGuardBits + leadingZeroBits e)
+      (lnP1Start e p)
       (logBaseRatBaseP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt b hb hb1
         (irrational_logBaseRatBaseP1_of_none s e hv hgt b (sign_eq_true_of_toRat_pos b hb)
           (num_ne_zero_of_toRat_pos b hb) hb1 hx)
-        _ (by unfold zivGuardBits; omega))
+        _ (by have := lnP1Start_ge e p; omega))
 
 /-- Finite `x > −1` and `b > 0`, `b ≠ 1`: the precision check. -/
 def logBaseRatBaseP1Pos (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)

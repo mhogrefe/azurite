@@ -37,10 +37,10 @@ theorem logBaseRatBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
   · rename_i hx
     have hirr := irrational_logBaseRatBaseP1_of_none s e hv hgt b (sign_eq_true_of_toRat_pos b hb)
       (num_ne_zero_of_toRat_pos b hb) hb1 hx
-    exact zivLoopCertified_eq_threshold p mode _ _ _ (by unfold zivGuardBits; omega)
+    exact zivLoopCertified_eq_threshold p mode _ _ _ (by have := lnP1Start_ge e p; omega)
       (fun w hw => by
         obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-          logBaseRatBaseP1Approx_spec (w := w) (by unfold zivGuardBits at hw; omega)
+          logBaseRatBaseP1Approx_spec (w := w) (by have := lnP1Start_ge e p; omega)
             (toVal_finite s e q m hv) hgt b hb hb1 hirr
         exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 

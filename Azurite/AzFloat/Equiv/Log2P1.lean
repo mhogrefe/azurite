@@ -38,31 +38,31 @@ theorem log2P1_finite_eq (A : AzFloat → ℕ → Roundable × Roundable)
     (hspec : Log2P1ApproxFn A)
     (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt) {q : ℕ}
     {m : AzNat} (hv : FiniteValid q m) (hgt : -1 < finiteVal s e m) :
-    (match h : onePlusPow2Exponent? (finite s e q m hv) (p + zivGuardBits + leadingZeroBits e)
+    (match h : onePlusPow2Exponent? (finite s e q m hv) (lnP1Start e p)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
         zivLoopCertified (A (finite s e q m hv)) p mode
-          (p + zivGuardBits + leadingZeroBits e)
+          (lnP1Start e p)
           (hA p mode (toVal_finite s e q m hv) hgt
             (irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
-              (by unfold zivGuardBits; omega) (by linarith) h)
-            _ (by unfold zivGuardBits; omega)))
+              (by have := lnP1Start_ge e p; omega) (by linarith) h)
+            _ (by have := lnP1Start_ge e p; omega)))
       = roundVal p mode (some ((Real.logb 2 (1 + finiteVal s e m) : ℝ) : EReal)) := by
   have hpos : 0 < 1 + finiteVal s e m := by linarith
-  have hw : NeZero (p + zivGuardBits + leadingZeroBits e) := ⟨by unfold zivGuardBits; omega⟩
+  have hw : NeZero (lnP1Start e p) := ⟨by have := lnP1Start_ge e p; omega⟩
   split
   · rename_i k h
     rw [setPrecRound_eq_roundVal (toVal_ofAzInt k),
       onePlusPow2Exponent?_some (toVal_finite s e q m hv) _ h, logb_two_zpow]
   · rename_i h
     have hirr := irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
-      (w := p + zivGuardBits + leadingZeroBits e) (by unfold zivGuardBits; omega) hpos h
+      (w := lnP1Start e p) (by have := lnP1Start_ge e p; omega) hpos h
     exact zivLoopCertified_eq_threshold p mode _ (Real.logb 2 (1 + finiteVal s e m)) _
-      (by unfold zivGuardBits; omega)
+      (by have := lnP1Start_ge e p; omega)
       (fun w hw => by
         obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-          hspec (w := w) (by unfold zivGuardBits at hw; omega)
+          hspec (w := w) (by have := lnP1Start_ge e p; omega)
             (toVal_finite s e q m hv) hgt hirr
         exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 
