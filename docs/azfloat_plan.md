@@ -5844,6 +5844,18 @@ before the reduction.  New exact cases no float reaches: `1/3` and `1/6` of a tu
 (~60 lines of definitions, ~100 of proof.)  Gotcha: a `have` between the `match` and the `let`
 in the definition needs `dsimp only` before `split_ifs` in the proof.
 
+## `cos (π x)` (DONE 2026-11-10)
+
+User request: "the equivalent of Malachite's cos_pi(_prec_round), which computes cos(pi x).
+This is just a special case of the with-period functions.  Also include a variant that takes
+AzRat."  `AzFloat/CosPi.lean`: `cosPiPrecRound x p mode := cosWithPeriodPrecRound x 2 p mode`,
+`cosPi x`, `cosPiRatPrecRound q p mode := cosRatWithPeriodPrecRound q 2 p mode`,
+`cosPiRat q p`.  `Equiv/CosPi.lean`: `Spec.cosPi` (`NaN` at `±∞`),
+`Spec.cosWithPeriod_two : cosWithPeriod a 2 = cosPi a`, `cosPiPrecRound_eq_liftVal`,
+`cosPiRatPrecRound_eq`.  Exact at integers (`±1`), half-integers (`0`) and, for rationals,
+thirds (`±1/2`).  Tests include `cos (π ⌊1/3⌋₅₃) = 1/2` with `.lt` and an 80-bit argument near
+`10²⁰`.
+
 ## Tiny arguments of `lnP1` and the `log_b (1 + x)` family (DONE 2026-11-10)
 
 Report from the Malachite side: `lnP1 (2^(−2^30))` ran for over six minutes — every `…P1`

@@ -22,6 +22,7 @@ import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Cos
 import Azurite.AzFloat.Tests.CosPeriod
+import Azurite.AzFloat.Tests.CosPi
 import Azurite.AzFloat.Tests.CosRat
 import Azurite.AzFloat.Tests.CosRatPeriod
 import Azurite.AzFloat.Tests.Div
