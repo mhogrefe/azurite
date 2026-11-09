@@ -5473,6 +5473,33 @@ Ordering").  Files: `AzFloat/RatPowBracket.lean` + `Equiv/`, `AzFloat/RatPow.lea
   `10^(1/2)`, 200-bit `(1/3)^(1/3)`, agreement with `pow` on float bases, `(2/3)^(10^9)` at 10
   bits through the bracket.  UNTIMED.
 
+## `x^q` for a rational exponent (DONE 2026-11-09, fuel-free)
+
+User request ("a function that raises an AzFloat to an AzRat power, returning an AzFloat and an
+Ordering").  Files: `AzFloat/PowRatBracket.lean` + `Equiv/`, `AzFloat/PowRat.lean` + `Equiv/` +
+`Tests/`.  The structure of `x^y` with the exponent `q = ±num/den` in lowest terms.
+
+* **Bracket.**  Instead of multiplying `ln x` by a rational with sign cases (as the natural-base
+  `lnBaseMulRatBracket` does for a positive logarithm), the rational enters through the float
+  `y = ⌊q⌋_W` below it: the bracket is `lnMulBracket x ex y eq w` — the float-exponent bracket
+  with its `lnMulBracket_spec` reused verbatim, `eq = ratExpBound q = size num − size den + 2 >
+  lg |y|` — widened on both sides by the slack `2^(eq + size(|ex| + 1) + 1 − W)`, which covers
+  `|q − y| |ln x| ≤ 2 |q| 2^(−W) (|ex| + 1)`.  Width `powRatEps = 2 mulLnEps + 2^(size(|ex|+1))
+  2^(−w)`, below `1` from `powRatW₀ = powW₀ eq ex + size(|ex| + 1) + 1`.
+* **Integer exponents** (`den = 1`): `powIntOrZiv` with `n = ±num`, as `pow`.
+* **Non-integer exponents**, `x = m 2^t > 0`, `den ≥ 2`: `x^q` rational iff `den ∣ t` and `m` is a
+  `den`-th power — `oddRootD` uses the existing `AzNat.rootInt` (MCA Algorithm 1.14) and
+  `rootIntNat_pow_eq_iff`, after the shortcuts `m = 1` and `den ≥ size m` — and then
+  `x^q = (u 2^(t/den))^(±num)`, an integer power of a float; otherwise
+  `irrational_dyadic_rpow_gen`, the `2^J` lemma of `pow` generalized to any `D ≥ 2` coprime to
+  `N` (the same odd-part uniqueness argument).
+* **Spec** `Spec.pow x.toVal (some q)`: `powRatPrecRound_eq`.
+* **Tests:** the special-value table (`(−∞)^q` by `den = 1 ∧ num odd`), exact powers
+  (`8^(1/3)`, `(27/8)^(2/3)`, `1024^(−7/10) = 1/128`, `(1/4)^(−1/2)`), bracket-path integer
+  powers, `(3/2)^(1/3)`, `2^(1/3)` against `cbrt`, `10^(2/7)`, `(5/4)^(−5/3)`, `3^(22/7)`,
+  `7^(−401/6)` (90-digit references), agreement with `pow2Rat` and `powBaseRat`, 200-bit `∛2`.
+  UNTIMED.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
