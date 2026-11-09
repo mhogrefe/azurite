@@ -5830,6 +5830,20 @@ see the float, not the intended rational), `2^(−100)` and `1/(2^64 − 1)` tur
 `(10^15 + 1)°`, directed modes, 200-bit `cos (2π/7)` and `cos 1°`.  UNTIMED.  Not done: `sin`
 with a period, the rational-`x` variant (would be `periodFrac` on `num/(den u)`).
 
+## `cos (2π q / u)` for a rational `q` (DONE 2026-11-10, fuel-free)
+
+User request: "a variant of cosWithPeriod that takes an AzRat" (`u` stays a `UInt64`).
+`AzFloat/CosRatPeriod.lean`, `Equiv/CosRatPeriod.lean`, `Tests/CosRatPeriod.lean`:
+`cosRatWithPeriodPrecRound q u p mode`, `cosRatWithPeriod q u p`;
+`cosRatWithPeriodPrecRound_eq : = roundVal p mode (Spec.cosWithPeriod q u)`.  Only the
+reduction is new: `periodFracRat q u = (n mod d u)/(d u)` for `q = ±n/d` (reduced by
+`ofAzNats`; `periodFracRat_spec`: `|q|/u = k + r`, `0 ≤ r < 1`).  Everything else is the float
+variant's machinery unchanged: the Niven denominators `1, 2, 4, 3, 6`, `cosPeriodApprox r`
+with its certificate, and `cosTiny?` at `ratExpBound q + 2` (`|2πq/u| < 8|q| < 2^(eq+2)`)
+before the reduction.  New exact cases no float reaches: `1/3` and `1/6` of a turn.
+(~60 lines of definitions, ~100 of proof.)  Gotcha: a `have` between the `match` and the `let`
+in the definition needs `dsimp only` before `split_ifs` in the proof.
+
 ## Tiny arguments of `lnP1` and the `log_b (1 + x)` family (DONE 2026-11-10)
 
 Report from the Malachite side: `lnP1 (2^(−2^30))` ran for over six minutes — every `…P1`

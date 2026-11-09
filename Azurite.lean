@@ -59,6 +59,7 @@ import Azurite.AzFloat.CosPeriod
 import Azurite.AzFloat.CosPeriodBracket
 import Azurite.AzFloat.CosRat
 import Azurite.AzFloat.CosRatBracket
+import Azurite.AzFloat.CosRatPeriod
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Equiv.Add
@@ -79,6 +80,7 @@ import Azurite.AzFloat.Equiv.CosPeriod
 import Azurite.AzFloat.Equiv.CosPeriodBracket
 import Azurite.AzFloat.Equiv.CosRat
 import Azurite.AzFloat.Equiv.CosRatBracket
+import Azurite.AzFloat.Equiv.CosRatPeriod
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat

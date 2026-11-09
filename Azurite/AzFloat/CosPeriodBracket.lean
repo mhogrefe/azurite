@@ -34,6 +34,12 @@ def periodFrac (m : AzNat) (E : AzInt) (u : AzNat) : AzRat :=
     let D := u <<< E.abs.toNat
     AzRat.ofAzNats (m % D) D
 
+/-- The fractional part of `|q| / u` for a rational `q = ±n/d` as a reduced rational
+(`u ≠ 0`): `(n mod d u) / (d u)`. -/
+def periodFracRat (q : AzRat) (u : AzNat) : AzRat :=
+  let D := q.den * u
+  AzRat.ofAzNats (q.num % D) D
+
 /-- The bracket of `cos (2πr)` at Ziv level `w` for a rational `r ∈ [0, 1)`. -/
 def cosPeriodBracket (r : AzRat) (w : Nat) : AzFloat × AzFloat :=
   let W := cosWork (AzInt.ofInt 3) w

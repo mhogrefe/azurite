@@ -11,6 +11,7 @@ import Azurite.AzFloat.CosPeriodBracket
 import Azurite.AzFloat.Equiv.CosRatBracket
 import Azurite.AzRat.Equiv.Construct
 import Azurite.Transcendental.Niven
+import Azurite.AzFloat.Equiv.RatPow
 
 /-!
 # Equivalence: the bracket of `cos (2πr)`
@@ -73,6 +74,28 @@ theorem periodFrac_spec (m : AzNat) (E : AzInt) {u : AzNat} (hu : u ≠ 0) :
     · push_cast at hD ⊢
       rw [div_lt_one hD]
       exact_mod_cast Nat.mod_lt _ hDn
+
+/-- `periodFracRat q u` is the fractional part of `|q| / u`. -/
+theorem periodFracRat_spec (q : AzRat) {u : AzNat} (hu : u ≠ 0) :
+    ∃ k : ℕ, |((AzRat.toRat q : ℚ) : ℝ)| / u.toNat
+        = k + ((AzRat.toRat (periodFracRat q u) : ℚ) : ℝ) ∧
+      0 ≤ ((AzRat.toRat (periodFracRat q u) : ℚ) : ℝ) ∧
+      ((AzRat.toRat (periodFracRat q u) : ℚ) : ℝ) < 1 := by
+  have hUn : 0 < u.toNat :=
+    Nat.pos_of_ne_zero fun h => hu (AzNat.toNat_injective (by rw [h, AzNat.toNat_zero]))
+  have hdn : 0 < q.den.toNat := AzRat.den_toNat_pos q
+  have hDn : 0 < q.den.toNat * u.toNat := Nat.mul_pos hdn hUn
+  have hD : (0 : ℝ) < ((q.den.toNat * u.toNat : ℕ) : ℝ) := by exact_mod_cast hDn
+  unfold periodFracRat
+  rw [abs_coe_toRat, AzRat.toRat_ofAzNats, AzNat.toNat_mod, AzNat.toNat_mul]
+  refine ⟨q.num.toNat / (q.den.toNat * u.toNat), ?_, by positivity, ?_⟩
+  · have h := natCast_div_eq_add_mod_div q.num.toNat (q.den.toNat * u.toNat) hDn
+    rw [div_div]
+    push_cast at h ⊢
+    exact h
+  · push_cast at hD ⊢
+    rw [div_lt_one hD]
+    exact_mod_cast Nat.mod_lt _ hDn
 
 /-! ### The denominator of an `AzRat` -/
 
