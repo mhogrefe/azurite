@@ -55,6 +55,8 @@ import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
 import Azurite.AzFloat.CosBracket
+import Azurite.AzFloat.CosRat
+import Azurite.AzFloat.CosRatBracket
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Equiv.Add
@@ -71,6 +73,8 @@ import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Cos
 import Azurite.AzFloat.Equiv.CosBracket
+import Azurite.AzFloat.Equiv.CosRat
+import Azurite.AzFloat.Equiv.CosRatBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat

@@ -21,6 +21,7 @@ import Azurite.AzFloat.Tests.Cbrt
 import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Cos
+import Azurite.AzFloat.Tests.CosRat
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.EulerGamma

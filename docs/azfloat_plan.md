@@ -5761,7 +5761,19 @@ rationals; `cos` of the 53-bit float nearest `π` is `−1` (`.lt`), `cos 2^(−
 200-bit `cos 1`, `cos 100` by `toString`.  UNTIMED; the cost is one `piBracket W` + a
 `W/4`-term interval series + a few products (`O(W)` operations of `W` bits — a binary-splitting
 or `exp`-style chunked series would be the next step if timing matters).  Not done: `sin`,
-`tan`, the rational-argument variants, `sincos`.
+`tan`, `sincos`.
+
+**Rational argument** (user request 2026-11-09, DONE same day): `cosRatPrecRound q p mode`,
+`cosRat q p` (`AzFloat/CosRat.lean`, `CosRatBracket.lean`, Equivs, `Tests/CosRat.lean`).
+`cosRatBracket q w`: with `eq = ratExpBound q` (`|q| < 2^(eq−1)`, so the floor float also has
+`|⌊q⌋_W| < 2^eq`) and `W = cosWork eq w`, the float bracket `cosBracket ⌊q⌋_W eq w` widened
+(`Encl.widen`) by the 64-bit ceiling of `⌈q⌉_W − ⌊q⌋_W ≥ |q − ⌊q⌋_W|` (Lipschitz); width
+`cosRatEps q w = cosEps eq w + 8·2^eq 2^(−W) + 24·2^(−W)`.  `cos 0 = 1` exactly; otherwise the
+certificate is `irrational_cos_rat` at `q.toRat ≠ 0` (`coe_toRat_ne_zero_of_num_ne_zero`).
+`cosRatPrecRound_eq : = roundVal p mode (Spec.cos q)`.  ~40 lines of definitions, ~120 of
+proof; the widen lemma `IsEnclW.widen0` from the float proof did all the work.  Test note:
+`cos (−7/5)` at the exact rational and at the 53-bit float nearest `−7/5` differ in the last
+place (`…6023` vs `…6027`) — a good discriminating test for rational-argument variants.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
