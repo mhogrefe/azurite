@@ -41,6 +41,7 @@ import Azurite.AzFloat.Recip
 import Azurite.AzFloat.AddMul
 import Azurite.AzFloat.AddMulRat
 import Azurite.AzFloat.MulAddMul
+import Azurite.AzFloat.MulAddMulRat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -899,8 +900,9 @@ def checkFloatSubMulRational : String → Verdict :=
 `a := x; a.method(y, z, w, …); a = r`, the method `name` followed by any of `_prec`, `_round`,
 `_assign`, and the `_val_ref`-style suffixes, with the precision and rounding mode read off the
 method name as in `checkFloatFusedWith`; the default precision is the largest of the four. -/
-def checkFloatFused4 (name : String)
-    (f : AzFloat → AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+def checkFloatFused4With {α : Type} (name altName : String) (parseW : String → Option α)
+    (defaultPrec : AzFloat → AzFloat → AzFloat → α → Nat)
+    (f : AzFloat → AzFloat → AzFloat → α → Nat → RoundingMode → AzFloat × Ordering)
     (line : String) : Verdict := do
   let (x, method, args, res, withOrdering) ← if line.startsWith "a := " then
       match line.splitOn "; " with
@@ -917,8 +919,10 @@ def checkFloatFused4 (name : String)
       let call := dropChars rest 1
       let some (args, _) := splitParenthesized call | fail "not a method call"
       pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
-  if !(method == name || method.startsWith s!"{name}_") then fail s!"not a {name} line"
-  let tags := (dropChars method name.length).splitOn "_"
+  let base ← if method == altName || method.startsWith s!"{altName}_" then pure altName
+    else if method == name || method.startsWith s!"{name}_" then pure name
+    else fail s!"not a {name} line"
+  let tags := (dropChars method base.length).splitOn "_"
   let hasPrec := tags.contains "prec"
   let hasRound := tags.contains "round"
   let x ← expect "x" (parseFloat (stripRef x))
@@ -930,21 +934,38 @@ def checkFloatFused4 (name : String)
     | _, _, _ => fail s!"{method}: wrong number of arguments"
   let y ← expect "y" (parseFloat y)
   let z ← expect "z" (parseFloat z)
-  let w ← expect "w" (parseFloat w)
+  let w ← expect "w" (parseW w)
   let p ← match p with
     | some p => expect "precision" (parseNat p)
-    | none => pure (AzFloat.fusedPrecision₄ x.1 y.1 z.1 w.1)
+    | none => pure (defaultPrec x.1 y.1 z.1 w)
   let rm ← match rm with
     | some rm => expect "rounding mode" (parseRounding rm)
     | none => pure (.mode .Nearest)
-  let computed ← roundedResult name (f x.1 y.1 z.1 w.1 p) rm
+  let computed ← roundedResult name (f x.1 y.1 z.1 w p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
   else expectFloat method computed.1 (← expect "r" (parseFloat res))
+
+/-- `checkFloatFused4With` for four floats. -/
+def checkFloatFused4 (name : String)
+    (f : AzFloat → AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) :
+    String → Verdict :=
+  checkFloatFused4With name name (fun s => (parseFloat s).map (·.1)) AzFloat.fusedPrecision₄ f
 
 def checkFloatMulAddMul : String → Verdict :=
   checkFloatFused4 "mul_add_mul" AzFloat.mulAddMulPrecRound
 
 def checkFloatMulSubMul : String → Verdict :=
   checkFloatFused4 "mul_sub_mul" AzFloat.mulSubMulPrecRound
+
+/-- `x·y ± z·w` with a rational `w`: Malachite's `mul_add_mul_rational_*` methods and its
+`mul_add_mul` with a `Rational` argument, against `AzFloat.mulAddMulRatPrecRound` and
+`mulSubMulRatPrecRound`; the default precision is the largest of the three floats'. -/
+def checkFloatMulAddMulRational : String → Verdict :=
+  checkFloatFused4With "mul_add_mul" "mul_add_mul_rational" parseAzRat
+    (fun x y z _ => AzFloat.fusedPrecision x y z) AzFloat.mulAddMulRatPrecRound
+
+def checkFloatMulSubMulRational : String → Verdict :=
+  checkFloatFused4With "mul_sub_mul" "mul_sub_mul_rational" parseAzRat
+    (fun x y z _ => AzFloat.fusedPrecision x y z) AzFloat.mulSubMulRatPrecRound
 
 end Azurite.Oracle

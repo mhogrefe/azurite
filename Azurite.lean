@@ -150,6 +150,8 @@ import Azurite.AzFloat.Equiv.ProuhetThueMorse
 import Azurite.AzFloat.Equiv.Ramanujan
 import Azurite.AzFloat.Equiv.RatPow
 import Azurite.AzFloat.Equiv.RatPowBracket
+import Azurite.AzFloat.Equiv.RatPowRat
+import Azurite.AzFloat.Equiv.RatPowRatBracket
 import Azurite.AzFloat.Equiv.Recip
 import Azurite.AzFloat.Equiv.Rem
 import Azurite.AzFloat.Equiv.RoundScaled
@@ -243,6 +245,8 @@ import Azurite.AzFloat.ProuhetThueMorse
 import Azurite.AzFloat.Ramanujan
 import Azurite.AzFloat.RatPow
 import Azurite.AzFloat.RatPowBracket
+import Azurite.AzFloat.RatPowRat
+import Azurite.AzFloat.RatPowRatBracket
 import Azurite.AzFloat.Recip
 import Azurite.AzFloat.Rem
 import Azurite.AzFloat.RoundScaled

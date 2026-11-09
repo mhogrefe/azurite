@@ -81,6 +81,7 @@ import Azurite.AzFloat.Tests.Product
 import Azurite.AzFloat.Tests.ProuhetThueMorse
 import Azurite.AzFloat.Tests.Ramanujan
 import Azurite.AzFloat.Tests.RatPow
+import Azurite.AzFloat.Tests.RatPowRat
 import Azurite.AzFloat.Tests.Recip
 import Azurite.AzFloat.Tests.Rem
 import Azurite.AzFloat.Tests.RoundToInteger

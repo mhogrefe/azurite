@@ -5500,6 +5500,41 @@ Ordering").  Files: `AzFloat/PowRatBracket.lean` + `Equiv/`, `AzFloat/PowRat.lea
   `7^(−401/6)` (90-digit references), agreement with `pow2Rat` and `powBaseRat`, 200-bit `∛2`.
   UNTIMED.
 
+## `q^r` for rationals `q` and `r` (DONE 2026-11-09, fuel-free)
+
+User request ("Last pow function for now: AzRat ^ AzRat, returning an AzFloat and an Ordering").
+Files: `AzFloat/RatPowRatBracket.lean` + `Equiv/`, `AzFloat/RatPowRat.lean` + `Equiv/` +
+`Tests/`.  The two rational pieces above combined, with `q = ±a/b` and `r = ±N/D` in lowest
+terms:
+
+* **Bracket.**  `exp (r ln q)`: the bracket of `⌊r⌋_W ln q` is the rational-base
+  `lnRatMulBracket q ⌊r⌋_W er w` with its spec reused verbatim (`er = ratExpBound r`, any float
+  `y` with `|y| < 2^er` is allowed, and `|⌊r⌋_W| ≤ |r| (1 + 2^(1−W)) < 2^er`), widened by the
+  slack `ratPowRatSlack r q W = 2^(er + size(size a + size b) + 1 − W)` covering
+  `|r − ⌊r⌋_W| |ln q| ≤ 2 |r| 2^(−W) (size a + size b)` (`abs_log_div_le`).  Width
+  `ratPowRatEps = 2 mulLnEps er (ratPowE q) w + 2^(size(size a + size b)) 2^(−w)`, below `1` from
+  `ratPowRatW₀ r q = ratPowW₀ er q + size(size a + size b) + 1`.
+* **Integer exponents** (`D = 1`): `ratPowIntOrZiv` with `n = ±N` and the sign
+  `(−1)^n` for `q < 0`, as `q^y`.
+* **Non-integer exponents** (`D ≥ 2`), `q > 0`: `q^r` is rational iff `a` and `b` are both
+  `D`-th powers — `natRootD? m D` is `oddRootD` of the odd part of `m` plus `D ∣` the power-of-two
+  exponent (the general-`D` version of `natPow2Root?`) — and then `q^r = (u/v)^(±N)`, an integer
+  power of the rational `u/v`; otherwise `irrational_div_rpow_of_not_pow_gen`, the `2^J` lemma of
+  `q^y` generalized to any `D ≥ 2` coprime to `N` (the same `a/b = a b^(D−1) / b^D` argument
+  with `Nat.exists_eq_pow_of_exponent_coprime_of_pow_eq_pow` for `b^(D−1) = e^D ⇒ b = f^D`).
+* **Spec** `Spec.pow (some q) (some r)`: `ratPowRatPrecRound_eq`.  Small AzRat helpers
+  `coe_toRat_ne_zero_of_num_ne_zero`, `coe_toRat_eq_zero_of_num_eq_zero`,
+  `sign_true_iff_toRat_pos` factor the sign/zero case analysis that the two earlier drivers
+  repeated inline.
+* **Tests:** the special-value table (`0^0 = 1`, `0^r`, `1^r`, `(−1)^n`, negative bases with
+  non-integer exponents, `p = 0`), exact powers (`8^(1/3)`, `(27/8)^(2/3)`, `(32/243)^(3/5) =
+  8/27` rounded, `(1/8)^(−2/3) = 4`, `1024^(−7/10)`, `(−3/2)^3`, `2^100` at 1 bit), bracket-path
+  integer powers (`3^40`, `(−3)^41` at 20 bits, `(1 + 10^−6)^(10^6)`), `(1/3)^(1/3)`,
+  `(2/3)^(5/7)`, `(10/3)^(−7/3)`, `(22/7)^(355/113)`, `7^(−401/6)` in the three modes (150-digit
+  `Decimal` references), agreement with `ratPowPrecRound` and `powRatPrecRound` on exact float
+  arguments, 200-bit `(1/3)^(1/3)`.  UNTIMED (single-call probes, not benchmarked: `(1/3)^(1/3)`
+  27 ms at 53 bits, 0.6 s at 2000 bits, 30 s at 20000 bits; the exact `(32/243)^(3/5)` 1 ms).
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
