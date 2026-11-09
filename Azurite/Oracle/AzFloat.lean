@@ -42,6 +42,8 @@ import Azurite.AzFloat.AddMul
 import Azurite.AzFloat.AddMulRat
 import Azurite.AzFloat.MulAddMul
 import Azurite.AzFloat.MulAddMulRat
+import Azurite.AzFloat.RoundToInteger
+import Azurite.AzFloat.Rem
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -488,6 +490,9 @@ def checkFloatIsZero : String → Verdict :=
 
 def checkFloatIsNormal : String → Verdict :=
   checkFloatPredicate " is normal" " is not normal" fun x _ => x.isNormal
+
+def checkFloatIsInteger : String → Verdict :=
+  checkFloatPredicate " is an integer" " is not an integer" fun x _ => x.isInteger
 
 /-- Malachite's `is_power_of_2`: a positive finite power of two. -/
 def checkFloatIsPowerOf2 : String → Verdict :=
@@ -967,5 +972,67 @@ def checkFloatMulAddMulRational : String → Verdict :=
 def checkFloatMulSubMulRational : String → Verdict :=
   checkFloatFused4With "mul_sub_mul" "mul_sub_mul_rational" parseAzRat
     (fun x y z _ => AzFloat.fusedPrecision x y z) AzFloat.mulSubMulRatPrecRound
+
+/-! ### Remainder and rounding to an integer -/
+
+/-- The truncated remainder `x % y` and its `_prec`, `_round`, and `_prec_round` forms:
+`AzFloat.remPrecRound`. A zero result's sign is not compared, so the sign of a zero `x` does not
+matter; Malachite's `x % (-0.0)` is `NaN`, as Azurite's `x % 0` is. -/
+def checkFloatRem : String → Verdict :=
+  checkFloatBinary "%" "rem" (onValues AzFloat.remPrecRound)
+
+/-- `(x).round_to_integer[_prec|_round|_prec_round](…) = (r, o, b)`: `roundToIntegerPrecRound`,
+which returns the rounded integer, its comparison with `x`, and whether `x` was an integer; the
+precision defaults to `x`'s and the mode to `Nearest`. The value and its `Ordering` go through
+Malachite's exponent range like every other result. -/
+def checkFloatRoundToInteger (line : String) : Verdict := do
+  let (lhs, rhs) ← expect "an `x.round_to_integer…(…) = (r, o, b)` line" (splitEquals line)
+  let some (x, rest) := splitParenthesized lhs | fail "no receiver"
+  if !rest.startsWith ".round_to_integer" then fail "not a round_to_integer line"
+  let call := dropChars rest 1
+  let method := (call.splitOn "(").headD ""
+  let some (args, _) := splitParenthesized call | fail "not a method call"
+  let x ← expect "x" (parseFloat (stripRef x))
+  let (p, rm) ← match method, splitArgs args with
+    | "round_to_integer", [] => pure (none, none)
+    | "round_to_integer_prec", [p] => pure (some p, none)
+    | "round_to_integer_round", [rm] => pure (none, some rm)
+    | "round_to_integer_prec_round", [p, rm] => pure (some p, some rm)
+    | _, _ => fail s!"{method}: unexpected arguments"
+  let p ← match p with
+    | some p => expect "precision" (parseNat p)
+    | none => pure (x.1.precision?.getD 1)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let (r, o, b) ← match splitTopLevel (dropRightChars (dropChars (trim rhs) 1) 1) ',' with
+    | [r, o, b] => pure (trim r, trim o, trim b)
+    | _ => fail "not an `(r, o, b)` result"
+  let printed ← expect "r" (parseFloat r)
+  let o ← expect "ordering" (parseOrdering o)
+  let b ← expect "bool" (parseBool b)
+  let isInt := (AzFloat.roundToIntegerPrecRound x.1 p .Nearest).2.2
+  let computed ← roundedResult method
+    (fun m => let (v, c, _) := AzFloat.roundToIntegerPrecRound x.1 p m; (v, c)) rm
+  expectFloatPair method computed (printed, o)
+  expectEq s!"{method}: is an integer" isInt b
+
+/-- `(x).round_to_integer_then_prec_round(irm, p, rm) = (r, o)`: `roundToIntegerThenPrecRound`,
+the integer rounding in `irm` followed by the rounding to `p` bits in `rm`. -/
+def checkFloatRoundToIntegerThen (line : String) : Verdict := do
+  let (x, args, res) ← expect "an `x.round_to_integer_then_prec_round(irm, p, rm) = (r, o)` line"
+    (methodCall line "round_to_integer_then_prec_round")
+  let (irm, p, rm) ← match args with
+    | [irm, p, rm] => pure (irm, p, rm)
+    | _ => fail "round_to_integer_then_prec_round takes three arguments"
+  let x ← expect "x" (parseFloat x)
+  let irm ← match ← expect "integer rounding mode" (parseRounding irm) with
+    | .mode m => pure m
+    | .exact => disagree "Malachite printed an Exact integer rounding"
+  let p ← expect "precision" (parseNat p)
+  let rm ← expect "rounding mode" (parseRounding rm)
+  let computed ← roundedResult "round_to_integer_then_prec_round"
+    (AzFloat.roundToIntegerThenPrecRound x.1 irm p) rm
+  expectFloatPair "round_to_integer_then_prec_round" computed (← parseFloatPair res)
 
 end Azurite.Oracle

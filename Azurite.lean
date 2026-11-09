@@ -85,6 +85,8 @@ import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.HexString
 import Azurite.AzFloat.Equiv.Interval
+import Azurite.AzFloat.Equiv.LambertW
+import Azurite.AzFloat.Equiv.LambertWBracket
 import Azurite.AzFloat.Equiv.Lemniscate
 import Azurite.AzFloat.Equiv.Literals
 import Azurite.AzFloat.Equiv.Ln
@@ -181,6 +183,8 @@ import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Interval
+import Azurite.AzFloat.LambertW
+import Azurite.AzFloat.LambertWBracket
 import Azurite.AzFloat.Lemniscate
 import Azurite.AzFloat.Literals
 import Azurite.AzFloat.Ln
@@ -2203,6 +2207,7 @@ import Azurite.Sci.Number
 import Azurite.Sci.Options
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
+import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit

@@ -5581,6 +5581,96 @@ Ziv loops on nine input pairs at 1/2/10/53/200/1000 bits).
   `expReduce`); at 1 % of the total it is not worth a cache.  The `+16` of `expWork` and the
   `zivGuardBits = 64` are shared with `exp` and were left alone.
 
+## The real Lambert `W` function (DONE 2026-11-09, fuel-free)
+
+User request ("implement both real branches of the Lambert W function! Review DLMF and do
+additional research if needed").  DLMF §4.13 was already formalized (`DLMF/Chapter4/Section13*`:
+the branches `lambertW0`, `lambertWm1` on the real line, 4.13.1–4.13.4, the series, the
+branch-point and asymptotic expansions); the numerics are new.  Files:
+`Transcendental/LambertW.lean` (analysis), `AzFloat/LambertWBracket.lean` + `Equiv/`,
+`AzFloat/LambertW.lean` + `Equiv/` + `Tests/`.
+
+* **The problem.**  `W` has no argument reduction and no series that converges fast on the whole
+  domain, so the natural method is a root finder for `w e^w = x`.  A verified root finder with a
+  *proof of convergence* (Newton/Halley with rounding) would be long; a bisection is trivially
+  convergent but costs `O(w)` exponentials.  The design separates the two concerns:
+* **Verified bracket around an unverified candidate.**  Halley's iteration (one `exp` per step,
+  precisions `64 + ℓ, 128 + ℓ, …, W + ℓ` with the loss margin `ℓ = 2 compBits + 16` — about `2`
+  exponentials at full precision; seeds: `Float`
+  when it can represent the problem, the branch-point series `−1 ± p − p²/3 + 11p³/72 − 43p⁴/540`
+  when `q = 1 + ex < 2^(−40)`, else the lower end of the a priori interval) gives a candidate `n`
+  that is never trusted.  From a rigorous enclosure `F` of `n eⁿ` (`mulBracketAny` of
+  `expBracketAt`), `δ ≥ |x − n eⁿ|`, and a lower bound `D ≤ |(1 + t) eᵗ|` on an interval
+  `I ∋ W, n` (`dist(−1, I) · derivLowerExp`, where `derivLowerExp = ⌊eⁿ⌋ (1 + a − n) ≤ eᵃ` reuses
+  the candidate's exponential and `eᵗ ≥ 1 + t`, falling back to `eᵃ` at 64 bits when `a ≤ n − 1`),
+  the mean value theorem gives
+  `|W − n| ≤ δ / D` (`mul_abs_sub_le_abs_sub_mul_exp_W0/_Wm1`, via
+  `Convex.mul_sub_le_image_sub_of_le_deriv`).  Three rounds, each shrinking `I` and so improving
+  `D`, give an essentially optimal bracket (the first round may lose `lg(1/(1+a₀))` or
+  `lg|ln y|` bits, the second recovers them).  One full-precision `exp` for the verification: a
+  Lambert `W` costs about `3` exponentials plus the bracket of `e` for `x < 0`.
+  *First version* (tripling schedule `64, 192, 576, …, W`, three 64-bit exponentials for `D`,
+  `q` always re-enclosed): the candidate fell short of the working precision at 5000 bits (each
+  Halley step loses a constant, and `2 compBits` near the branch point, so tripling is not
+  saturated and the last step cannot recover; `lg|x − n eⁿ|` was `−3332` for `W = 5102`) and the
+  bisection fallback ran — 480 s per call.  The doubling schedule with the loss margin fixes it
+  (all probed cases saturate: `lg|x − n eⁿ|` at the width of the exponential bracket).
+* **Provable convergence by a fallback.**  The Ziv certificate needs `width → 0` at every level.
+  If the mean-value bracket is not narrower than the target `max(|a₀|, |b₀|) 2^(−w−1)`, the
+  level falls back to `3W + 8` steps of bisection on the dyadic grid `2^e ℤ` (exact integer
+  midpoints, regrid when `B − A ≤ 1`, each step shrinks by `3/4`: `gridBisectStep_spec`), the
+  side of a grid point decided by a **certified search** over precisions `64 · 2^k`
+  (`sideOf`: `m eᵐ ≠ x` since the roots are irrational and `m` is dyadic, so some precision
+  decides; `findSome` runs the search with the erased certificate).  The fallback never runs in
+  practice (all first attempts succeed in the tests), but it makes `lambertEps → 0` a theorem
+  without any analysis of Halley's iteration.
+* **A priori enclosures** (needed for `D` and the grid): `x/(1+x) ≤ W₀ ≤ x` (`x < 3`),
+  `ln x − ln ln x ≤ W₀ ≤ ln x` (`x ≥ 3 > e`), `−1 + √(2q/e) ≤ W₀ ≤ −1 + √(2q)` (from `s²/2 ≤
+  (s−1)eˢ + 1 ≤ e s²/2` on `[0, 1]`, the function being `∫₀ˢ t eᵗ`), `W₋₁ ≤ −1 − √(2q)`,
+  `−1 − √(2eq) ≤ W₋₁` for `q ≤ 1/4` (from `e⁻ᵗt²/2 ≤ 1 − (1+t)e⁻ᵗ ≤ t²/2`, and `1 − 2/e > 1/4`
+  to keep `t ≤ 1`), and `L − 1 ≤ W₋₁ ≤ L` with `L = ln y − ln(−ln y)` (`y = −x`; `g(L) ≤ x ≤
+  g(L − 1)` by direct computation, the latter from `1 + ln v ≤ v ≤ (e − 1) v`).  The crude
+  `2 ln y` was rejected: its `e^a` loses a factor `y`.
+* **Domain and the branch point.**  `q = 1 + ex` from the bracket of `e`: the certified search
+  `qEncl` decides `q < 0` (`NaN`) or `0 < lo ≤ q ≤ hi` (`exists_qAt_isSome`, since
+  `1 + e r ≠ 0` for rational `r`), `qTight` recomputes the enclosure at `128 + 2 compBits` bits,
+  and `compBits ≈ −lg(q)/2 + 2` extra working bits compensate the derivative `≈ √(2q)/e` near
+  `−e⁻¹` (`lambertWork w = max (w + 10 + compBits) 64`).  The a priori ends are computed at
+  `64 + 2 compBits` bits so that `−1 + √(2q/e)` does not collapse onto `−1` (if it did, the
+  rounds would be skipped and the fallback would run — still correct).
+* **Irrationality.**  `W e^W = x` rational with `W` rational nonzero gives `e^W = x/W` rational,
+  against `irrational_exp_rat` (`Transcendental/Exp.lean`); `−e⁻¹` is irrational, so a float
+  never sits on the domain boundary.  Hence both drivers are fuel-free.
+* **Spec.**  `Spec.lambertW0`: `+∞ ↦ +∞`, `NaN` below `−e⁻¹` and at `−∞`, else `W₀`;
+  `Spec.lambertWm1`: `0 ↦ −∞`, `NaN` at `±∞`, below `−e⁻¹` and for `x > 0`.
+  `lambertW0PrecRound_eq`, `lambertWm1PrecRound_eq`.
+* **Tests:** special values (including the 53-bit float nearest `−e⁻¹`, which lies *below* it
+  and is `NaN`), 13 positive and 11 negative arguments for `W₀`, 12 for `W₋₁`, in the three modes
+  with 120-digit references at the exact float arguments; the float one ulp above the nearest
+  float to `−e⁻¹` (`q ≈ 1.17·10⁻¹⁶`, both branches, 53 and 200 bits); 200-bit `Ω = W₀(1)` and
+  `W₋₁(−1/4)`.
+* **Timings (2026-11-09, `az_float_lambert`, ms per call, median of 3; `Benchmark/AzFloatLambert.lean`).**
+  `bp` is the float one ulp above the 53-bit float nearest `−e⁻¹` (`compBits = 28`).
+
+  | bits | `W₀ 1/2` | `W₀ 1` | `W₀ 10¹⁰` | `W₀ −0.1` | `W₀ bp` | `W₋₁ −0.1` | `W₋₁ −2^−100` | `W₋₁ bp` | `exp` | `ln` |
+  |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 0.441 | 0.430 | 0.765 | 0.678 | 1.228 | 0.975 | 0.930 | 1.219 | 0.124 | 0.066 |
+  | 200 | 1.030 | 1.030 | 1.424 | 1.186 | 1.648 | 1.638 | 1.552 | 1.678 | 0.213 | 0.095 |
+  | 1000 | 3.075 | 3.134 | 3.600 | 3.172 | 3.706 | 3.675 | 3.550 | 3.693 | 0.675 | 0.269 |
+  | 5000 | 17.75 | 17.66 | 17.87 | 17.46 | 18.05 | 18.16 | 17.95 | 18.39 | 5.01 | 5.70 |
+
+  About `3.5` exponentials at high precision (Halley `≈ 2`, the verification `1`, the rest the
+  `e` bracket, the a priori logarithms and the Ziv bookkeeping); at 53 bits the fixed costs
+  (the bracket of `e` for `x < 0`, two 64-bit logarithms for `x ≥ 3`, the `Float` seed) show,
+  and the branch-point cases pay `compBits = 28` extra bits in every operation.  Before the
+  schedule fix the 5000-bit `bp` and `−2^(−100)` cases took 480 s (fallback); the first fixed
+  version (doubling from 64) cost 21 ms at 5000 bits, the retuned start `W / 2^k` 17.7 ms.
+* **Reusable pattern.**  For an inverse function without a series: *verified bracket around an
+  unverified candidate* (mean value theorem with an interval derivative bound) + *trivially
+  convergent fallback* (grid bisection with certified comparisons) + *certified searches* for
+  the finitely many decisions that need arbitrary precision.  The proofs never mention the
+  numerical method that does the actual work.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
