@@ -25,6 +25,7 @@ import Azurite.AzInt.TrailingZeros
 import Azurite.AzInt.ShiftLeft
 import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.ShiftRightRound
+import Azurite.AzNat.ShiftRightNearestTernary
 import Azurite.AzInt.Compare
 import Azurite.AzInt.Conversion
 import Azurite.AzInt.ToString
@@ -561,5 +562,66 @@ def checkIntListFold (name : String) (f : List AzInt → AzInt) (line : String) 
 def checkIntSum : String → Verdict := checkIntListFold "sum" AzInt.sum
 
 def checkIntProduct : String → Verdict := checkIntListFold "product" AzInt.product
+
+/-! ### Shifts of inexact values -/
+
+/-- Malachite's `shr_round_with_ordering` of `x`, an approximation whose ordering against an exact
+value is `o`, by `sh` bits. With `o = .eq` it is the plain rounded shift. Otherwise, under
+`Nearest`, it is `shiftRightNearestTernary`, whose result's ordering against the shifted exact
+value is that of the result shifted back against `x`, or `o` when they are equal; under a directed
+mode the exact value is represented by `x - sign(o)/4`, which no rounding boundary separates from
+`x`, so the result is the rounded shift of the integer `4x - sign(o)` by `sh + 2` bits. For a
+`Natural`, `Down` and `Up` are `Floor` and `Ceiling`. -/
+def roundedShrWithOrdering (natural : Bool) (x : AzInt) (sh : Nat) (rm : Rounding)
+    (o : Ordering) : Except Failure (AzInt × Ordering) :=
+  match o, rm with
+  | .eq, rm => roundedIntShr x sh rm
+  | _, .exact => disagree "Malachite printed an Exact shift of an inexact value"
+  | o, .mode .Nearest =>
+    let v := AzInt.shiftRightNearestTernary x o sh
+    let c := AzInt.compare (AzInt.shiftLeft v sh) x
+    pure (v, if c == .eq then o else c)
+  | o, .mode m =>
+    let m := if natural then
+        match m with
+        | .Down => .Floor
+        | .Up => .Ceiling
+        | m => m
+      else m
+    let t := AzInt.shiftLeft x 2 - AzInt.ofInt (match o with | .lt => -1 | _ => 1)
+    pure (AzInt.shiftRightRound t m (sh + 2))
+
+/-- `(x).shr_round_with_ordering(sh, rm, o) = (v, p)`, with `x` possibly borrowed, or `x := x;
+x.shr_round_with_ordering_assign(sh, rm, o) = p; x = v`; `natural` reads the values as `Natural`s. -/
+def checkShrRoundWithOrdering (natural : Bool) (line : String) : Verdict := do
+  let parseValue (what s : String) : Except Failure AzInt :=
+    if natural then do pure (← expect what (parseAzNat s)).toAzInt
+    else expect what (parseAzInt s)
+  let (x, args, v, p) ← if line.startsWith "x := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        let pre := "x.shr_round_with_ordering_assign("
+        match b.splitOn ") = " with
+        | [call, p] =>
+          if !(call.startsWith pre && c.startsWith "x = ") then fail "not an assignment line"
+          pure (dropChars a 5, splitArgs (dropChars call pre.length), dropChars c 4, p)
+        | _ => fail "not an assignment line"
+      | _ => fail "not an assignment line"
+    else do
+      let (x, args, res) ← expect "an `x.shr_round_with_ordering(sh, rm, o) = (v, p)` line"
+        (methodCall line "shr_round_with_ordering")
+      let (v, p) ← expect "(value, ordering)" (parseTuple2 res)
+      pure (x, args, v, p)
+  let (sh, rm, o) ← match args with
+    | [sh, rm, o] => pure (sh, rm, o)
+    | _ => fail "shr_round_with_ordering takes three arguments"
+  let x ← parseValue "x" (stripRef x)
+  let sh ← expect "shift" (parseNat sh)
+  let rm ← expect "rounding mode" (parseRounding rm)
+  let o ← expect "ordering" (parseOrdering o)
+  let v ← parseValue "value" v
+  let p ← expect "ordering" (parseOrdering p)
+  let (av, ap) ← roundedShrWithOrdering natural x sh rm o
+  expectEq "shr_round_with_ordering" (pairString av ap) (pairString v p)
 
 end Azurite.Oracle

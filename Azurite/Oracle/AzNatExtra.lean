@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.Oracle.AzRat
+import Azurite.AzNat.LogBase2
 import Azurite.Oracle.AzZModPow2
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.SqrtRem
@@ -275,29 +276,33 @@ def checkNatCrt (line : String) : Verdict := do
 
 /-! ### Logarithms and square roots -/
 
-/-- `name(n) = e` or `name(n) = Some(e)`/`None` for the base-2 logarithms: from `AzNat.size` and
-`isPowerOfTwo`. -/
+/-- `name(n) = e` or `name(n) = Some(e)`/`None` for the base-2 logarithms: `AzNat.floorLogBase2`,
+`ceilingLogBase2`, and `checkedLogBase2`. Malachite's floor and ceiling panic on zero, where
+Azurite's return `none`, so their demos never print a zero argument. -/
 def checkNatLogBase2 (line : String) : Verdict := do
   let names := ["floor_log_base_2", "ceiling_log_base_2", "checked_log_base_2"]
   let name ← match names.find? fun n => line.startsWith s!"{n}(" with
     | some n => pure n
     | none => fail "not a base-2 logarithm line"
   let (n, res) ← unaryFunction line name
-  if n == (0 : AzNat) then fail "the logarithm of zero is undefined"
-  let floor := n.size - 1
-  let exact := n.isPowerOfTwo
+  let total (r : Option Nat) : Except Failure Nat := match r with
+    | some e => pure e
+    | none => disagree "Malachite printed a logarithm of zero"
   match name with
-  | "floor_log_base_2" => expectEq name floor (← expect "e" (parseNat res))
+  | "floor_log_base_2" =>
+    expectEq name (← total n.floorLogBase2) (← expect "e" (parseNat res))
   | "ceiling_log_base_2" =>
-    expectEq name (if exact then floor else floor + 1) (← expect "e" (parseNat res))
+    expectEq name (← total n.ceilingLogBase2) (← expect "e" (parseNat res))
   | _ =>
     let printed ← expect "result" (parseOption res)
     let printed ← match printed with
       | some e => expect "e" ((parseNat e).map some)
       | none => pure none
-    expectEq name (optionString (if exact then some floor else none)) (optionString printed)
+    expectEq name (optionString n.checkedLogBase2) (optionString printed)
 
-/-- `name(n, k) = e` (or `Some(e)`/`None`) for the logarithms in base `2^k`. -/
+/-- `name(n, k) = e` (or `Some(e)`/`None`) for the logarithms in base `2^k`:
+`AzNat.floorLogBasePowerOf2`, `ceilingLogBasePowerOf2`, and `checkedLogBasePowerOf2`. Malachite
+panics when `n` or `k` is zero, where Azurite returns `none`, so its demos never print either. -/
 def checkNatLogBasePowerOf2 (line : String) : Verdict := do
   let names := ["floor_log_base_power_of_2", "ceiling_log_base_power_of_2",
     "checked_log_base_power_of_2"]
@@ -310,20 +315,21 @@ def checkNatLogBasePowerOf2 (line : String) : Verdict := do
     | _ => fail s!"{name} takes two arguments"
   let n ← expect "n" (parseAzNat n)
   let k ← expect "k" (parseNat k)
-  if n == (0 : AzNat) || k == 0 then fail "the logarithm is undefined"
-  let bits := n.size - 1
-  let floor := bits / k
-  let exact := n.isPowerOfTwo && bits % k == 0
+  if n == (0 : AzNat) || k == 0 then disagree "Malachite printed an undefined logarithm"
+  let total (r : Option Nat) : Except Failure Nat := match r with
+    | some e => pure e
+    | none => disagree "Azurite found the logarithm undefined"
   match name with
-  | "floor_log_base_power_of_2" => expectEq name floor (← expect "e" (parseNat res))
+  | "floor_log_base_power_of_2" =>
+    expectEq name (← total (n.floorLogBasePowerOf2 k)) (← expect "e" (parseNat res))
   | "ceiling_log_base_power_of_2" =>
-    expectEq name (if exact then floor else floor + 1) (← expect "e" (parseNat res))
+    expectEq name (← total (n.ceilingLogBasePowerOf2 k)) (← expect "e" (parseNat res))
   | _ =>
     let printed ← expect "result" (parseOption res)
     let printed ← match printed with
       | some e => expect "e" ((parseNat e).map some)
       | none => pure none
-    expectEq name (optionString (if exact then some floor else none)) (optionString printed)
+    expectEq name (optionString (n.checkedLogBasePowerOf2 k)) (optionString printed)
 
 /-- `⌊log_b n⌋` and whether `n` is a power of `b`: `AzRat.floorLogBaseAbs` and `cmpPowAbs` for a
 base that fits in a limb, repeated multiplication otherwise. -/

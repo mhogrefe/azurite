@@ -2082,7 +2082,7 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.12.1 (`π = 3.14159 26535 89793 23846 …`) | `dlmf_3_12_1` (all 20 decimals; AzFloat enclosure `Encl.pi 128`, `pi128_data` by `decide +kernel`) | |
 | 3.12.2 | `dlmf_3_12_2` | `integral_one_div_one_add_sq`, `Real.arctan_one` |
 | 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat's correctly rounded `ePrecRound 80` rounded down/up via `const_eq_zivLoop`, `e80_data` by `decide +kernel`) | |
-| 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`); **20 decimals deferred** until Euler's constant can be computed | `Real.tendsto_harmonic_sub_log` |
+| 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4` (all 20 decimals, 2026-11-09: AzFloat's enclosure `eulerGammaBracket 72` evaluated in the kernel — `eulerGamma72_data` — through Sweeney's formula with signed binary splitting and `ln n`, `eulerGammaBracket_spec` + `toVal_of_valData`); `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`) kept | `Real.tendsto_harmonic_sub_log`, `Real.eulerMascheroniConstant_eq_neg_integral_log` |
 | Sloane (2003), Finch (2003) | Not formalized (references) | |
 
 ## Chapter 4: Elementary Functions
@@ -2196,7 +2196,7 @@ Powers `e^w` are principal values `(Real.exp 1 : ℂ) ^ w` (`epow`, from 4.2.32)
 | 4.4.16 (`|ph z| ≤ ½π − δ`, `δ ∈ (0, ½π]`) | `dlmf_4_4_16` (`sectorAtInf δ`, `re_ge_of_sector`: `Re z ≥ |z| sin δ`) | `tendsto_norm_cobounded_atTop` |
 | 4.4.17 | `dlmf_4_4_17` | `Complex.tendsto_one_add_div_pow_exp` |
 | 4.4.18 | `dlmf_4_4_18` | `Real.tendsto_one_add_div_pow_exp` |
-| 4.4.19 (`γ = 0.57721 56649 01532 86060 …`) | `dlmf_4_4_19` (limit, and the first five decimals); **20 decimals deferred** (as for 3.12.4) | `Real.tendsto_harmonic_sub_log` |
+| 4.4.19 (`γ = 0.57721 56649 01532 86060 …`) | `dlmf_4_4_19` (limit, and all 20 decimals from `dlmf_3_12_4`, 2026-11-09) | `Real.tendsto_harmonic_sub_log` |
 
 ### §4.5 Inequalities (`Azurite/DLMF/Chapter4/Section5.lean`)
 

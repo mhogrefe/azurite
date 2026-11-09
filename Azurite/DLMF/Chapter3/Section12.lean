@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Equiv.ConstantKernel
+import Azurite.AzFloat.Equiv.EulerGamma
 import Azurite.DLMF.Chapter3.Section11LebesgueNum
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.NumberTheory.Harmonic.EulerMascheroni
@@ -24,9 +25,11 @@ Formalizations of <https://dlmf.nist.gov/3.12>.
   decimals, from AzFloat's correctly rounded `ePrecRound 80` rounded down and up, evaluated in the
   kernel through Ziv's loop with fuel: `e80_data`, `const_eq_zivLoop`).
 * 3.12.4: `γ = 0.57721 56649 01532 86060 …` (`Real.eulerMascheroniConstant`, the limit of
-  `H_n − ln n` as in §5.2(ii): `dlmf_3_12_4_def`). Only the first five decimals are certified
-  (`dlmf_3_12_4_partial`, from the bounds `euler_bounds` of §3.11(ii)); the full 20 decimals are
-  deferred until Euler's constant can be computed to that precision.
+  `H_n − ln n` as in §5.2(ii): `dlmf_3_12_4_def`; all 20 decimals, `dlmf_3_12_4`, from AzFloat's
+  enclosure `eulerGammaBracket 72` — Sweeney's formula with the series summed exactly by signed
+  binary splitting, and `ln n` — evaluated in the kernel: `eulerGamma72_data`; the first five
+  decimals also follow from the elementary bounds `euler_bounds` of §3.11(ii),
+  `dlmf_3_12_4_partial`).
 
 Sloane (2003) and Finch (2003) are references.
 -/
@@ -86,11 +89,35 @@ theorem dlmf_3_12_4_def :
       (nhds eulerMascheroniConstant) :=
   tendsto_harmonic_sub_log
 
-/-- **DLMF 3.12.4**, first five decimals: `γ = 0.57721 …`. The full 20 decimals
-`0.57721 56649 01532 86060 …` are deferred. -/
+/-- **DLMF 3.12.4**, first five decimals from the elementary bounds of §3.11(ii):
+`γ = 0.57721 …`. -/
 theorem dlmf_3_12_4_partial :
     0.57721 < eulerMascheroniConstant ∧ eulerMascheroniConstant < 0.57722 := by
   obtain ⟨h1, h2⟩ := euler_bounds
   constructor <;> norm_num at h1 h2 ⊢ <;> linarith
+
+set_option maxRecDepth 100000 in
+/-- The ends of the AzFloat enclosure of `γ` at working precision 72 (floats of 89 bits). -/
+theorem eulerGamma72_data :
+    (valData (eulerGammaBracket 72).1, valData (eulerGammaBracket 72).2) =
+      (some (true, 22329949465135640179520615, 38685626227668133590597632),
+        some (true, 44659898930271280359043995, 77371252455336267181195264)) := by
+  decide +kernel
+
+/-- **DLMF 3.12.4**: `γ = 0.57721 56649 01532 86060 …`, all 20 decimals, from the enclosure
+`eulerGammaBracket 72` (`eulerGammaBracket_spec`). -/
+theorem dlmf_3_12_4 :
+    0.57721566490153286060 < eulerMascheroniConstant ∧
+      eulerMascheroniConstant < 0.57721566490153286061 := by
+  obtain ⟨d1, d2⟩ := Prod.mk.inj eulerGamma72_data
+  obtain ⟨lo, hi, hlo, hhi, h1, h2⟩ := eulerGammaBracket_spec (w := 72) (by norm_num)
+  rw [toVal_of_valData d1] at hlo
+  rw [toVal_of_valData d2] at hhi
+  have e1 := EReal.coe_injective (Option.some_injective _ hlo)
+  have e2 := EReal.coe_injective (Option.some_injective _ hhi)
+  rw [← e1] at h1
+  rw [← e2] at h2
+  simp only [signedVal, ite_true] at h1 h2
+  refine ⟨lt_of_le_of_lt ?_ h1, lt_of_le_of_lt h2 ?_⟩ <;> norm_num
 
 end Azurite.DLMF

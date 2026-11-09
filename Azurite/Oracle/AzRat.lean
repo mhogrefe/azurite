@@ -194,6 +194,22 @@ def checkRatFloorLogBase2 : String → Verdict :=
 def checkRatCeilingLogBase2 : String → Verdict :=
   checkRatLog2 ["ceiling_log_base_2_abs", "ceiling_log_base_2"] AzRat.ceilingLogBase2Abs
 
+/-- `checked_log_base_2(x) = Some(k)` or `None`, for Malachite's `Rational::checked_log_base_2`:
+`AzRat.checkedLogBase2`, `some k` exactly when `x = 2^k`. Malachite panics unless `x` is
+positive, where Azurite returns `none`, so the demo prints only positive `x`. -/
+def checkRatCheckedLogBase2 (line : String) : Verdict := do
+  let (args, res) ← expect "a `checked_log_base_2(x) = r` line"
+    (functionCall line "checked_log_base_2")
+  let x ← match args with
+    | [x] => expect "x" (parseAzRat x)
+    | _ => fail "checked_log_base_2 takes one argument"
+  if !x.sign || x.num == (0 : AzNat) then disagree "Malachite printed the logarithm of a nonpositive x"
+  let printed ← expect "result" (parseOption res)
+  let printed ← match printed with
+    | some e => expect "k" ((parseAzInt e).map some)
+    | none => pure none
+  expectEq "checked_log_base_2" (optionString x.checkedLogBase2) (optionString printed)
+
 /-- `x`, the base `b` (a `u64`), and the result of a `name(x, b) = r` line. -/
 def logBaseLine (line name : String) : Except Failure (AzRat × UInt64 × String) := do
   let (args, res) ← expect s!"a `{name}(x, b) = r` line" (functionCall line name)

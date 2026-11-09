@@ -5295,6 +5295,94 @@ yet.  `AzFloat/Interval.lean`: `Encl = AzFloat × AzFloat` with directed-rounded
 about a minute for the whole file.  Not yet: enclosures of signed products/quotients (only
 nonnegative factors and positive divisors), `ln`, roots, special functions.
 
+## Euler's constant `γ` (DONE 2026-11-09, fuel-based)
+
+User request ("implement Euler's gamma constant … a relatively efficient, provable algorithm").
+Files: `Transcendental/EulerGamma.lean` (theory), `AzInt/SignedSplit.lean` + `Equiv` + `Tests`
+(signed binary splitting), `AzFloat/EulerGamma.lean`, `Equiv/EulerGamma.lean`,
+`Tests/EulerGamma.lean`, `Benchmark/AzFloatEulerGamma.lean` (`az_float_euler_gamma`).
+
+* **Choice of algorithm.**  Three candidates were weighed against what Mathlib can prove.
+  Brent–McMillan (1980; `γ = A(n)/B(n) − ln n`, `A = ∑ H_k (n^k/k!)²`, `B = ∑ (n^k/k!)² = I₀(2n)`,
+  error `O(e^(−4n))`, `≈ 2.07 w` terms of two series) is the fastest known method but its error
+  bound is the asymptotics of the modified Bessel functions `I₀`, `K₀` — no Bessel theory in
+  Mathlib.  Euler–Maclaurin on `H_m − ln m` needs the remainder theory (absent).  **Sweeney's
+  exponential-integral method** (1963), `γ = ∑_{k≥0} (−1)^k n^(k+1)/((k+1)(k+1)!) − ln n − E₁(n)`
+  with `0 ≤ E₁(n) ≤ e^(−n)/n`, follows from Mathlib's
+  `eulerMascheroniConstant_eq_neg_integral_log` (`γ = −∫₀^∞ ln t e^(−t) dt`) by splitting the
+  integral at `n`: integration by parts on `(n, ∞)`, the exponential series and
+  `∫₀^n t^k ln t dt` on `(0, n]` (dominated convergence).  Cost: `N = 4n + w + 8 ≈ 3.8 w` terms
+  of alternating sign with `|t_k| ≤ e^n/(k+1)` peaking at `k ≈ n`, hence cancellation of about
+  `n log₂ e ≈ w` bits — the exact binary splitting absorbs it (no precision loss, the fraction
+  is exact), plus one `ln n` of a small integer at `≈ w` bits.  Asymptotically `O(M(w) log² w)`
+  like Brent–McMillan, about twice the terms.  **Revisit** Brent–McMillan when the DLMF arc
+  reaches Chapter 10 (Bessel functions) — the user's note (2026-11-08).
+* **Signed splitting engine** (`AzInt/SignedSplit.lean`): the general `P, Q, B, T` form with
+  `T : AzInt`, generic in the leaf as `AzNat/AtanhSplit.lean`, specialized to `b = q` (true for
+  Sweeney: both are `k + 1`), so `B = Q` and the state is `(P, Q, T)` representing `T/Q²`; merge
+  `(P₁P₂, Q₁Q₂, Q₂²T₁ + Q₁P₁T₂)` — two products, one squaring and two `AzNat × AzInt` products
+  instead of five products and two mixed products; `SignedSeries`/`SignedSpecOf` spec,
+  `sweeneyNumDen_eq` (`sweeneyNumDen n N = (T, Q²)`).  The first version (2026-11-09, same day)
+  carried `B` separately; dropping it was worth about 15 % of the splitting.  (`AzNat/ExpSplit.lean`
+  is the unsigned `P, B, T` special case with `q = 2^s`.)
+* **Bracket** (`eulerGammaBracket w`): `n = ⌊7(w+5)/10⌋ + 1` (so `(w+5) ln 2 ≤ n`, hence
+  `E₁(n) ≤ e^(−n) ≤ 2^(−w−5)`, via `Real.log_two_lt_d9`), `N = 37q − 1` terms with
+  `q = ⌈n/10⌉` (`eulerGammaQ`), i.e. `N ≈ 3.7 n ≈ 2.6 w` (tail `≤ 2·2^(−16q) ≤ 2^(−w−8)`,
+  `abs_tsum_sweeneyTerm_sub_sum_le_of_le`: the tail is at most twice the first omitted term
+  from `2n ≤ N + 2` on, `|t_N| ≤ n^(N+1)/(N+1)! ≤ (e n/(N+1))^(N+1)` from Mathlib's
+  `Real.pow_div_factorial_le_exp` at `x = N + 1` (`pow_div_factorial_le_exp_mul_div_pow`), and
+  `(10e/37)^37 ≤ 2^(−16)` by `norm_num` from `e ≤ 2.72`; the multiple-of-37 shape keeps the
+  exponent a natural number — no `rpow`).  The first version used the cruder `e^n ≤ 4^n`, hence
+  `N = 4n + w + 8 ≈ 3.8 w` (`abs_tsum_sweeneyTerm_sub_sum_le`, kept), 30 % more terms.  Floats of `k = w + 12 + ⌊lg n⌋` bits (`seriesBracket`'s
+  relative `8·2^(−k)` on `S ≤ ln n + 2 < 2^(⌊lg n⌋+1)` is below `2^(−w−8)`), `ln n` from
+  `lnBracketOf (ofAzNat n) k` (a new wrapper of `lnBracket` with the float's own exponent, spec
+  `lnBracketOf_spec`), ends `⌊⌊S_lo − L_hi⌋ − 2^(−w−4)⌋` and `⌈⌈S_hi + 2^(−w−4)⌉ − L_lo⌉` (the
+  lower end strictly below `γ` since `2^(−w−5) + 2^(−w−8) < 2^(−w−4)`).  The partial sum is
+  positive (`S ≥ γ + ln n − 2^(−w−8) > 0`, `one_half_lt_eulerMascheroniConstant`), so
+  `T.natAbs` feeds `seriesBracket`.  Measured widths `1.07·10^(−36)` at `w = 117` (`p = 53`) and
+  `2.0·10^(−321)` at `w = 1064`: the first Ziv level always suffices in practice.
+* **Loop:** `zivLoop` with fuel `eulerGammaFuel p = zivFuel (16 (p + 64))`, specification
+  `eulerGammaPrecRound_eq_or` (correctly rounded or `(nan, .eq)`); the certificate would need
+  `Irrational γ`, an open problem (pending-irrationality ledger).  No width bound proven (not
+  needed for the fuel version; `lnEps` would dominate it).
+* **Tests:** 1, 2, 3, 53, 100 bits in nearest/floor/ceiling against an independent 150-digit
+  Brent–McMillan evaluation (Python `Decimal`), precision `0`, decimal strings at 53/200/400
+  bits (agree with the published expansion).
+* **Timings (2026-11-09, `az_float_euler_gamma`, ms per call, pieces at `w = P + 64`).**
+  First version (`N = 4n + w + 8`, four-component state):
+
+  | bits | `n` | `N` | `eulerGamma` | splitting | `seriesBracket` | `lnBracketOf` | `pi` | `ln 3/2` |
+  |---|---|---|---|---|---|---|---|---|
+  | 53 | 86 | 469 | 0.384 | 0.273 | 0.010 | 0.095 | 0.020 | 0.089 |
+  | 200 | 189 | 1028 | 1.19 | 1.07 | 0.020 | 0.166 | 0.032 | 0.147 |
+  | 1000 | 749 | 4068 | 12.1 | 11.4 | 0.099 | 0.636 | 0.136 | 0.597 |
+  | 5000 | 3549 | 19268 | 178 | 173 | 0.70 | 5.28 | 1.18 | 5.42 |
+  | 20000 | 14049 | 76268 | 1661 | 1583 | 3.47 | 48.6 | 12.9 | 49.0 |
+
+  After the sharper tail bound (`N = 37⌈n/10⌉ − 1`) and the `B = Q` fusion, same day:
+
+  | bits | `n` | `N` | `eulerGamma` | splitting | `seriesBracket` | `lnBracketOf` | `pi` | `ln 3/2` |
+  |---|---|---|---|---|---|---|---|---|
+  | 53 | 86 | 332 | 0.309 | 0.183 | 0.009 | 0.102 | 0.021 | 0.095 |
+  | 200 | 189 | 702 | 0.716 | 0.516 | 0.016 | 0.162 | 0.033 | 0.157 |
+  | 1000 | 749 | 2774 | 5.96 | 5.04 | 0.064 | 0.605 | 0.136 | 0.606 |
+  | 5000 | 3549 | 13134 | 85.3 | 89.8 | 0.53 | 5.43 | 1.16 | 5.37 |
+  | 20000 | 14049 | 51984 | 807 | 752 | 2.72 | 49.6 | 12.5 | 49.3 |
+
+  `eulerGamma` is 1.24× faster at 53 bits, 1.66× at 200, 2.0× at 1000 and 2.1× at 5000 and
+  20000 bits (the splitting 2.1×: 32 % fewer terms with proportionally smaller operands, and one
+  big product less per merge).  The splitting is still 59 % of the call at 53 bits and ≈ 93 %
+  from 1000 bits on; `ln n` is the rest.  What is left: the term count is now within 5 % of
+  what the exact term sizes allow for Sweeney's series, so further gains need either
+  Brent–McMillan (Bessel theory) or a faster splitting kernel (the root-level products are
+  megabit-sized at 20000 bits; the `P` component is not needed at the root).
+* **DLMF 3.12.4 / 4.4.19:** the 20 decimals `0.57721 56649 01532 86060` certified in the kernel
+  from the enclosure `eulerGammaBracket 72` (`eulerGamma72_data`, `valData` of both ends, about
+  8 minutes of kernel time; `eulerGammaBracket_spec` + `toVal_of_valData`), lifting the former
+  "first five decimals" deferral.  The Ziv-loop route (`eulerGammaPrecRound 80` rounded down and
+  up, `eulerGammaPrecRound_eq_or` + `le_of_floor_data`) was started too but is several times
+  slower in the kernel (`w = 144`: `n = 105`, `572` terms, `162`-bit floats) and was abandoned.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

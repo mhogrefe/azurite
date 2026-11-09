@@ -22,6 +22,7 @@ import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
+import Azurite.AzFloat.Tests.EulerGamma
 import Azurite.AzFloat.Tests.Exp
 import Azurite.AzFloat.Tests.ExpConstants
 import Azurite.AzFloat.Tests.ExpM1
@@ -85,6 +86,7 @@ import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum
 import Azurite.AzFloat.Tests.ToString
+import Azurite.AzInt.Tests.SignedSplit
 import Azurite.AzNat.Tests.AtanhSplit
 import Azurite.AzNat.Tests.CompareDouble
 import Azurite.AzNat.Tests.Conversion

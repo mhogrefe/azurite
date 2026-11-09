@@ -23,8 +23,8 @@ definition 4.2.7 on the cut).
 * §4.4(ii): 4.4.4–4.4.12 (`dlmf_4_4_4` … `dlmf_4_4_12`).
 * §4.4(iii): 4.4.13–4.4.15 (`dlmf_4_4_13`, `dlmf_4_4_14`, `dlmf_4_4_15`, `a ∈ ℂ`); 4.4.16 in the
   sector `|ph z| ≤ ½π − δ`, `δ ∈ (0, ½π]` (`dlmf_4_4_16`, with the filter `sectorAtInf δ` of
-  `z → ∞` in the sector); 4.4.17, 4.4.18; 4.4.19 (`dlmf_4_4_19`: the limit is `γ`, with its first
-  five decimals; the 20 decimals are deferred, as for 3.12.4).
+  `z → ∞` in the sector); 4.4.17, 4.4.18; 4.4.19 (`dlmf_4_4_19`: the limit is `γ`, with all 20
+  decimals from 3.12.4).
 -/
 
 open Complex Set Filter Topology
@@ -242,13 +242,14 @@ theorem dlmf_4_4_18 :
     Tendsto (fun n : ℕ => (1 + 1 / (n : ℝ)) ^ n) atTop (𝓝 (Real.exp 1)) :=
   Real.tendsto_one_add_div_pow_exp 1
 
-/-- **DLMF 4.4.19**: `lim ((∑_{k=1}^n 1/k) − ln n) = γ = 0.57721 …` (5.2.3). The first five
-decimals are certified; the 20 decimals `0.57721 56649 01532 86060 …` are deferred. -/
+/-- **DLMF 4.4.19**: `lim ((∑_{k=1}^n 1/k) − ln n) = γ = 0.57721 56649 01532 86060 …` (5.2.3),
+the 20 decimals from 3.12.4 (Euler's constant computed by `AzFloat`). -/
 theorem dlmf_4_4_19 :
     Tendsto (fun n : ℕ => (∑ k ∈ Finset.Icc 1 n, (1 : ℝ) / k) - Real.log n) atTop
         (𝓝 Real.eulerMascheroniConstant) ∧
-      0.57721 < Real.eulerMascheroniConstant ∧ Real.eulerMascheroniConstant < 0.57722 := by
-  refine ⟨(dlmf_3_12_4_def).congr fun n => ?_, dlmf_3_12_4_partial⟩
+      0.57721566490153286060 < Real.eulerMascheroniConstant ∧
+        Real.eulerMascheroniConstant < 0.57721566490153286061 := by
+  refine ⟨(dlmf_3_12_4_def).congr fun n => ?_, dlmf_3_12_4⟩
   rw [harmonic_eq_sum_Icc]
   push_cast
   simp [one_div]

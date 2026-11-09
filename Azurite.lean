@@ -70,6 +70,7 @@ import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
+import Azurite.AzFloat.Equiv.EulerGamma
 import Azurite.AzFloat.Equiv.Exp
 import Azurite.AzFloat.Equiv.ExpApprox
 import Azurite.AzFloat.Equiv.ExpBracket
@@ -157,6 +158,7 @@ import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
+import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.Exp
 import Azurite.AzFloat.ExpApprox
 import Azurite.AzFloat.ExpBracket
@@ -292,6 +294,7 @@ import Azurite.AzInt.Equiv.RingEquiv
 import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzInt.Equiv.ShiftRight
 import Azurite.AzInt.Equiv.ShiftRightRound
+import Azurite.AzInt.Equiv.SignedSplit
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.SumProduct
@@ -313,6 +316,7 @@ import Azurite.AzInt.Pow2
 import Azurite.AzInt.ShiftLeft
 import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.ShiftRightRound
+import Azurite.AzInt.SignedSplit
 import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
 import Azurite.AzInt.SumProduct
@@ -2181,6 +2185,7 @@ import Azurite.Rounding.SciPrecision
 import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
+import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
