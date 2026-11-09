@@ -349,6 +349,8 @@ def modes : List (String × Mode) := [
   ("az_float_square", mode checkFloatSquare),
   ("az_float_sqrt", mode checkFloatSqrt),
   ("az_float_reciprocal_sqrt", mode checkFloatReciprocalSqrt),
+  ("az_float_sqrt_rational", mode checkFloatSqrtRational),
+  ("az_float_reciprocal_sqrt_rational", mode checkFloatReciprocalSqrtRational),
   ("az_float_reciprocal", mode checkFloatReciprocal),
   ("az_f64_sum", mode checkF64Sum),
   ("az_f64_product", mode checkF64Product),

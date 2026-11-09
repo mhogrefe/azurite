@@ -29,8 +29,13 @@ on a dyadic grid (`bisectGrid`), whose halving is trivially provable.
 
 The two decisions that need arbitrary precision — the sign of `q = 1 + e x` (the domain
 boundary `−e⁻¹`, `qAt`/`qEncl`) and the side of a test point (`sideAt`/`sideOf`) — are
-certified searches (`findSome`): `x` is a float, `−e⁻¹` and the roots are irrational, so some
+certified searches (`findSome`): `x` is rational, `−e⁻¹` and the roots are irrational, so some
 precision decides, and the proof of that is the (erased) termination certificate.
+
+**The target.**  `x` enters through an enclosure function `xAt : Nat → AzFloat × AzFloat`
+(precision ↦ floats below and above `x`): `floatAt x = fun _ => (x, x)` for a float and
+`ratAt q` (the `Floor` and `Ceiling` roundings of `q`) for an `AzRat`, so one pipeline serves
+`lambertW0PrecRound` and `lambertW0RatPrecRound`.
 
 * `aprioriW0 x qE P`, `aprioriWm1 x qE P`: proven enclosures `[a₀, b₀]` with `a₀ ≥ −1` (`W₀`)
   or `b₀ ≤ −1` (`W₋₁`): `x/(1+x) ≤ W₀ x ≤ x` (`0 ≤ x < 3`), `ln x − ln ln x ≤ W₀ x ≤ ln x`
@@ -42,6 +47,15 @@ precision decides, and the proof of that is the (erased) termination certificate
 -/
 
 namespace Azurite.AzFloat
+
+/-! ### The target -/
+
+/-- The enclosure function of a float: the float itself at every precision. -/
+def floatAt (x : AzFloat) : Nat → AzFloat × AzFloat := fun _ => (x, x)
+
+/-- The enclosure function of a rational: its `Floor` and `Ceiling` roundings. -/
+def ratAt (q : AzRat) : Nat → AzFloat × AzFloat :=
+  fun P => ((ofAzRatRound q P .Floor).1, (ofAzRatRound q P .Ceiling).1)
 
 /-! ### A certified search -/
 
@@ -75,34 +89,39 @@ def mulExpBracket (t : AzFloat) (P : Nat) : AzFloat × AzFloat :=
   mulBracketAny t (expBracketAt t P) P
 
 /-- `some true` when `m eᵐ < x` is certain at precision `P`, `some false` when `m eᵐ > x` is,
-`none` otherwise. -/
-def sideAt (x m : AzFloat) (P : Nat) : Option Bool :=
+`none` otherwise (`x` through its enclosure at precision `P`). -/
+def sideAt (xAt : Nat → AzFloat × AzFloat) (m : AzFloat) (P : Nat) : Option Bool :=
+  let X := xAt P
   let F := mulExpBracket m P
-  if lt F.2 x then some true else if lt x F.1 then some false else none
+  if lt F.2 X.1 then some true else if lt X.2 F.1 then some false else none
 
 /-- The side of `m` relative to the root, decided at some precision `64 · 2^k`. -/
-def sideOf (x m : AzFloat) (h : ∃ k, (sideAt x m (64 * 2 ^ k)).isSome = true) : Bool :=
-  findSome (fun k => sideAt x m (64 * 2 ^ k)) h
+def sideOf (xAt : Nat → AzFloat × AzFloat) (m : AzFloat)
+    (h : ∃ k, (sideAt xAt m (64 * 2 ^ k)).isSome = true) : Bool :=
+  findSome (fun k => sideAt xAt m (64 * 2 ^ k)) h
 
 /-! ### `q = 1 + e x` -/
 
-/-- Bounds `lo ≤ q ≤ hi` of `q = 1 + e x` for `x < 0` at precision `P`, from the bracket of `e`. -/
-def qBounds (x : AzFloat) (P : Nat) : AzFloat × AzFloat :=
-  let E := expBracketAt one P
-  ((addPrecRound one (mulPrecRound E.2 x P .Floor).1 P .Floor).1,
-    (addPrecRound one (mulPrecRound E.1 x P .Ceiling).1 P .Ceiling).1)
+/-- Bounds `lo ≤ q ≤ hi` of `q = 1 + e x` for `x < 0` at precision `P`, from the bracket
+`[c, d]` of `e` (nonnegative lower end) and the enclosure `[x₁, x₂]` of `x`:
+`1 + d x₁ ≤ 1 + e x ≤ 1 + c x₂`. -/
+def qBounds (xAt : Nat → AzFloat × AzFloat) (P : Nat) : AzFloat × AzFloat :=
+  let E := Encl.exp P one
+  let X := xAt P
+  ((addPrecRound one (mulPrecRound E.2 X.1 P .Floor).1 P .Floor).1,
+    (addPrecRound one (mulPrecRound E.1 X.2 P .Ceiling).1 P .Ceiling).1)
 
 /-- A decision about `q = 1 + e x` for `x < 0` at precision `P`: `some none` when `q < 0` is
 certain (out of the domain), `some (some (lo, hi))` when `0 < lo ≤ q ≤ hi` is, `none`
 otherwise. -/
-def qAt (x : AzFloat) (P : Nat) : Option (Option (AzFloat × AzFloat)) :=
-  let b := qBounds x P
+def qAt (xAt : Nat → AzFloat × AzFloat) (P : Nat) : Option (Option (AzFloat × AzFloat)) :=
+  let b := qBounds xAt P
   if lt b.2 zero then some none else if lt zero b.1 then some (some b) else none
 
 /-- The decision about `q`, at some precision `64 · 2^k`. -/
-def qEncl (x : AzFloat) (h : ∃ k, (qAt x (64 * 2 ^ k)).isSome = true) :
+def qEncl (xAt : Nat → AzFloat × AzFloat) (h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true) :
     Option (AzFloat × AzFloat) :=
-  findSome (fun k => qAt x (64 * 2 ^ k)) h
+  findSome (fun k => qAt xAt (64 * 2 ^ k)) h
 
 /-- The extra working bits near the branch point: about `−lg(q)/2 + 2`. -/
 def compBits (qE : Option (AzFloat × AzFloat)) : Nat :=
@@ -116,10 +135,10 @@ def compBits (qE : Option (AzFloat × AzFloat)) : Nat :=
 /-- Near the branch point (`compBits ≠ 0`) the enclosure of `q` is recomputed at
 `128 + 2 compBits` bits (about 64 relative bits) and kept when its lower end is positive;
 otherwise the first enclosure already has 60 relative bits. -/
-def qTight (x : AzFloat) (q : AzFloat × AzFloat) : AzFloat × AzFloat :=
+def qTight (xAt : Nat → AzFloat × AzFloat) (q : AzFloat × AzFloat) : AzFloat × AzFloat :=
   if compBits (some q) = 0 then q
   else
-    let b := qBounds x (128 + 2 * compBits (some q))
+    let b := qBounds xAt (128 + 2 * compBits (some q))
     if lt zero b.1 then b else q
 
 /-! ### A priori enclosures -/
@@ -128,14 +147,16 @@ def qTight (x : AzFloat) (q : AzFloat × AzFloat) : AzFloat × AzFloat :=
 def lnBounds (t : AzFloat) (P : Nat) : AzFloat × AzFloat :=
   ((lnPrecRound t P .Floor).1, (lnPrecRound t P .Ceiling).1)
 
-/-- A proven enclosure of `W₀ x` for `x ≥ 0`: `[x/(1+x), x]` for `x < 3`,
-`[ln x − ln ln x, ln x]` for `x ≥ 3`. -/
-def aprioriW0Pos (x : AzFloat) (P : Nat) : AzFloat × AzFloat :=
-  if lt x (ofAzNat (AzNat.ofNat 3)) then
-    ((divPrecRound x (addPrecRound one x P .Ceiling).1 P .Floor).1, x)
+/-- A proven enclosure of `W₀ x` for `x > 0` from the enclosure `[x₁, x₂]` of `x` at precision
+`P`: `[x₁/(1+x₁), x₂]` for `x₁ < 3`, `[ln x₁ − ln ln x₂, ln x₂]` for `x₁ ≥ 3`. -/
+def aprioriW0Pos (xAt : Nat → AzFloat × AzFloat) (P : Nat) : AzFloat × AzFloat :=
+  let X := xAt P
+  if lt X.1 (ofAzNat (AzNat.ofNat 3)) then
+    ((divPrecRound X.1 (addPrecRound one X.1 P .Ceiling).1 P .Floor).1, X.2)
   else
-    let L := lnBounds x P
-    ((subPrecRound L.1 (lnPrecRound L.2 P .Ceiling).1 P .Floor).1, L.2)
+    let l₁ := (lnPrecRound X.1 P .Floor).1
+    let l₂ := (lnPrecRound X.2 P .Ceiling).1
+    ((subPrecRound l₁ (lnPrecRound l₂ P .Ceiling).1 P .Floor).1, l₂)
 
 /-- A proven enclosure of `W₀ x` for `−e⁻¹ < x < 0` from an enclosure `[lo, hi]` of `q`:
 `[max(−1, −1 + √(2 lo/e)), min(0, −1 + √(2 hi))]`. -/
@@ -145,10 +166,12 @@ def aprioriW0Neg (qlo qhi : AzFloat) (P : Nat) : AzFloat × AzFloat :=
   let s := (sqrtPrecRound (qhi <<< AzInt.ofInt 1) P .Ceiling).1
   (maxOf (-one) (addPrecRound (-one) r P .Floor).1, minOf zero (addPrecRound (-one) s P .Ceiling).1)
 
-/-- A proven enclosure of `W₋₁ x` for `−e⁻¹ < x < 0` from an enclosure `[lo, hi]` of `q`:
-upper end `−1 − √(2 lo)`; lower end `−1 − √(2 e hi)` when `hi ≤ 1/4`, else
-`ln y − ln(−ln y) − 1` (`y = −x`) from `ln y ∈ [l₁, l₂]`: `l₁ − ln(−l₁) − 1`. -/
-def aprioriWm1 (x qlo qhi : AzFloat) (P : Nat) : AzFloat × AzFloat :=
+/-- A proven enclosure of `W₋₁ x` for `−e⁻¹ < x < 0` from an enclosure `[lo, hi]` of `q` and the
+enclosure `[x₁, x₂]` of `x`: upper end `−1 − √(2 lo)`; lower end `−1 − √(2 e hi)` when
+`hi ≤ 1/4`, else `ln y − ln(−ln y) − 1` (`y = −x`) from `l₁ ≤ ln(−x₂) ≤ ln y`:
+`l₁ − ln(−l₁) − 1`. -/
+def aprioriWm1 (xAt : Nat → AzFloat × AzFloat) (qlo qhi : AzFloat) (P : Nat) :
+    AzFloat × AzFloat :=
   let E := expBracketAt one P
   let s := (sqrtPrecRound (qlo <<< AzInt.ofInt 1) P .Floor).1
   let b := minOf (-one) (subPrecRound (-one) s P .Ceiling).1
@@ -157,16 +180,16 @@ def aprioriWm1 (x qlo qhi : AzFloat) (P : Nat) : AzFloat × AzFloat :=
       let t := (sqrtPrecRound (mulPrecRound (E.2 <<< AzInt.ofInt 1) qhi P .Ceiling).1 P .Ceiling).1
       (subPrecRound (-one) t P .Floor).1
     else
-      let L := lnBounds (-x) P
+      let L := lnBounds (-(xAt P).2) P
       let v := -L.1
       (subPrecRound (subPrecRound L.1 (lnPrecRound v P .Ceiling).1 P .Floor).1 one P .Floor).1
   (a, b)
 
 /-! ### The mean-value round -/
 
-/-- `δ ≥ |x − n eⁿ|` from an enclosure `F` of `n eⁿ`. -/
-def mvtDelta (x : AzFloat) (F : AzFloat × AzFloat) (P : Nat) : AzFloat :=
-  maxOf (subPrecRound F.2 x P .Ceiling).1 (subPrecRound x F.1 P .Ceiling).1
+/-- `δ ≥ |x − n eⁿ|` from an enclosure `F` of `n eⁿ` and the enclosure `X` of `x`. -/
+def mvtDelta (X F : AzFloat × AzFloat) (P : Nat) : AzFloat :=
+  maxOf (subPrecRound F.2 X.1 P .Ceiling).1 (subPrecRound X.2 F.1 P .Ceiling).1
 
 /-- A lower bound of `eᵃ` from a lower bound `elo0 ≤ eⁿ` of the candidate's exponential:
 `elo0 · (1 + a − n)` when that factor is positive (`eᵗ ≥ 1 + t`), else the exponential of `a` at
@@ -192,11 +215,11 @@ def mvtRound (branch0 : Bool) (n elo0 δ : AzFloat) (I : AzFloat × AzFloat) (P 
   else I
 
 /-- Three mean-value rounds around the candidate `n` (clamped into `I₀`). -/
-def mvtRounds (branch0 : Bool) (x n : AzFloat) (I₀ : AzFloat × AzFloat) (P : Nat) :
-    AzFloat × AzFloat :=
+def mvtRounds (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat) (n : AzFloat)
+    (I₀ : AzFloat × AzFloat) (P : Nat) : AzFloat × AzFloat :=
   let E := expBracketAt n P
   let elo0 := clampNonneg E.1
-  let δ := mvtDelta x (mulBracketAny n E P) P
+  let δ := mvtDelta (xAt P) (mulBracketAny n E P) P
   let I₁ := mvtRound branch0 n elo0 δ I₀ P
   let I₂ := mvtRound branch0 n elo0 δ I₁ P
   mvtRound branch0 n elo0 δ I₂ P
@@ -206,22 +229,22 @@ def mvtRounds (branch0 : Bool) (x n : AzFloat) (I₀ : AzFloat × AzFloat) (P : 
 /-- One bisection step on the grid `2^e ℤ`: the interval `[A, B]·2^e` is refined to
 `[2A, 2B]·2^(e−1)`
 when `B − A ≤ 1`, then split at `M = ⌊(A + B)/2⌋` by the certified side of `M 2^e`. -/
-def gridBisectStep (branch0 : Bool) (x : AzFloat)
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+def gridBisectStep (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (A B e : AzInt) : AzInt × AzInt × AzInt :=
   let (A, B, e) := if B - A ≤ AzInt.ofInt 1 then (A <<< 1, B <<< 1, e - AzInt.ofInt 1)
     else (A, B, e)
   let M := (A + B).ediv (AzInt.ofInt 2)
-  let below := sideOf x (ofAzInt M <<< e) (hs M e)
+  let below := sideOf xAt (ofAzInt M <<< e) (hs M e)
   -- `below`: `m eᵐ < x`, i.e. `W > m` on the increasing branch, `W < m` on the decreasing one
   if below == branch0 then (M, B, e) else (A, M, e)
 
 /-- `k` bisection steps. -/
-def bisectGrid (branch0 : Bool) (x : AzFloat)
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
+def bisectGrid (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
     Nat → AzInt × AzInt × AzInt → AzInt × AzInt × AzInt
   | 0, s => s
-  | k + 1, (A, B, e) => bisectGrid branch0 x hs k (gridBisectStep branch0 x hs A B e)
+  | k + 1, (A, B, e) => bisectGrid branch0 xAt hs k (gridBisectStep branch0 xAt hs A B e)
 
 /-- The integer grid enclosing `[a, b]`: `[⌊a⌋ − 1, ⌈b⌉ + 1]` through the truncations, clamped
 to the monotone region of the branch (`≥ −1` for `W₀`, `≤ −1` for `W₋₁`). -/
@@ -312,8 +335,10 @@ def clampInto (I : AzFloat × AzFloat) (n : AzFloat) : AzFloat :=
 
 /-- The unverified candidate for `W` at working precision `W`: a seed (`Float`, the branch-point
 series when `q < 2^(−40)`, or the midpoint of `I₀`) refined by Halley's iteration. -/
-def halleyCandidate (branch0 : Bool) (x : AzFloat) (qE : Option (AzFloat × AzFloat))
-    (I₀ : AzFloat × AzFloat) (W : Nat) : AzFloat :=
+def halleyCandidate (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
+    (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat) (W : Nat) : AzFloat :=
+  let loss := 2 * compBits qE + 16
+  let x := (xAt (W + loss)).1
   let tiny := match qE with
     | some (lo, _) => lt lo (powerOf2 (AzInt.ofInt (-40)))
     | none => false
@@ -327,7 +352,7 @@ def halleyCandidate (branch0 : Bool) (x : AzFloat) (qE : Option (AzFloat × AzFl
       | some s => s
       | none => (addPrecRound I₀.1 I₀.2 64 .Nearest).1 <<< AzInt.ofInt (-1)
   let P₀ := W / 2 ^ Nat.log2 (W / 64)
-  let n := halleyRefine x (clampInto I₀ seed) P₀ W (2 * compBits qE + 16) (W + 2)
+  let n := halleyRefine x (clampInto I₀ seed) P₀ W loss (W + 2)
   clampInto I₀ n
 
 /-! ### The bracket at a Ziv level -/
@@ -341,22 +366,22 @@ def lambertTarget (I₀ : AzFloat × AzFloat) (w : Nat) : AzFloat :=
 
 /-- The bracket of the root at Ziv level `w`: the mean-value rounds around the Halley candidate
 when they reach the target width, otherwise `3 W + 8` grid bisection steps. -/
-def lambertBracket (branch0 : Bool) (x : AzFloat) (qE : Option (AzFloat × AzFloat))
-    (I₀ : AzFloat × AzFloat)
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+def lambertBracket (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
+    (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (w : Nat) : AzFloat × AzFloat :=
   let W := lambertWork qE w
-  let n := halleyCandidate branch0 x qE I₀ W
-  let I := mvtRounds branch0 x n I₀ W
+  let n := halleyCandidate branch0 xAt qE I₀ W
+  let I := mvtRounds branch0 xAt n I₀ W
   if le (subPrecRound I.2 I.1 64 .Ceiling).1 (lambertTarget I₀ w) then I
-  else gridFloats (bisectGrid branch0 x hs (3 * W + 8) (gridOf branch0 I₀))
+  else gridFloats (bisectGrid branch0 xAt hs (3 * W + 8) (gridOf branch0 I₀))
 
 /-- The bracket as a pair of `Roundable`s. -/
-def lambertApprox (branch0 : Bool) (x : AzFloat) (qE : Option (AzFloat × AzFloat))
-    (I₀ : AzFloat × AzFloat)
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+def lambertApprox (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
+    (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (w : Nat) : Roundable × Roundable :=
-  let b := lambertBracket branch0 x qE I₀ hs w
+  let b := lambertBracket branch0 xAt qE I₀ hs w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

@@ -35,6 +35,7 @@ import Azurite.AzFloat.Tests.Gelfond
 import Azurite.AzFloat.Tests.GelfondSchneider
 import Azurite.AzFloat.Tests.HexString
 import Azurite.AzFloat.Tests.LambertW
+import Azurite.AzFloat.Tests.LambertWRat
 import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
 import Azurite.AzFloat.Tests.Ln

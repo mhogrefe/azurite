@@ -5665,6 +5665,21 @@ branch-point and asymptotic expansions); the numerics are new.  Files:
   and the branch-point cases pay `compBits = 28` extra bits in every operation.  Before the
   schedule fix the 5000-bit `bp` and `−2^(−100)` cases took 480 s (fallback); the first fixed
   version (doubling from 64) cost 21 ms at 5000 bits, the retuned start `W / 2^k` 17.7 ms.
+* **Rational arguments (2026-11-09, user request).**  `lambertW0RatPrecRound`,
+  `lambertWm1RatPrecRound` (and `lambertW0Rat`, `lambertWm1Rat`): the pipeline was generalized
+  to a target given by an *enclosure function* `xAt : Nat → AzFloat × AzFloat` (precision ↦
+  floats below and above `x`, within `4|x| 2^(−P)`): `floatAt x = fun _ => (x, x)`,
+  `ratAt q` = the `Floor`/`Ceiling` roundings.  The mean-value `δ` takes the enclosure's width
+  (`mvtDelta`), the side test decides when the enclosures of `m eᵐ` and `x` are disjoint (both
+  shrink, so the certificate still holds), `qBounds` uses `1 + d x₁ ≤ 1 + e x ≤ 1 + c x₂`, and
+  the a priori enclosures read `x₁`/`x₂` (`ln x₁ − ln ln x₂` for large `x`; `ln(−x₂) ≤ ln(−x)`
+  for `W₋₁`).  The three Ziv loops `lambertW0Pos`/`lambertW0Neg`/`lambertWm1Neg` are written
+  once over `xAt` and a bundled proposition (`PosTarget`/`NegTarget`: the real target exists, is
+  rational, enclosed, of the right sign — a Prop, so the loops stay computable) and proven once
+  (`lambertW0Pos_eq`, …); the four drivers are instances.  Tests `Tests/LambertWRat.lean`:
+  exact rationals in the three modes (120-digit references), `−3678794411/10¹⁰` just above
+  `−e⁻¹` (`q ≈ 1.9·10⁻¹⁰`), `−3678794412/10¹⁰` below it (`NaN`), agreement with the float
+  versions on exact arguments, 200 bits.
 * **Reusable pattern.**  For an inverse function without a series: *verified bracket around an
   unverified candidate* (mean value theorem with an interval derivative bound) + *trivially
   convergent fallback* (grid bisection with certified comparisons) + *certified searches* for

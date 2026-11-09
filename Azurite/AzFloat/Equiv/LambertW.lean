@@ -8,14 +8,17 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.LambertW
+import Azurite.AzFloat.Equiv.RatPowRat
 
 /-!
 # Equivalence: the real branches of the Lambert `W` function
 
 `Spec.lambertW0`, `Spec.lambertWm1 : EReal → Option EReal` are the exact functions on the
-extended reals (`none` is `NaN`), and `lambertW0PrecRound_eq`, `lambertWm1PrecRound_eq` say that
-the drivers are their correct roundings in every mode, with the exact comparison and without
-fuel.
+extended reals (`none` is `NaN`), and `lambertW0PrecRound_eq`, `lambertWm1PrecRound_eq`
+(floats), `lambertW0RatPrecRound_eq`, `lambertWm1RatPrecRound_eq` (rationals) say that the
+drivers are their correct roundings in every mode, with the exact comparison and without fuel.
+The three Ziv loops `lambertW0Pos`, `lambertW0Neg`, `lambertWm1Neg` are proven once for any
+enclosed rational target (`lambertW0Pos_eq`, `lambertW0Neg_eq`, `lambertWm1Neg_eq`).
 -/
 
 open Real
@@ -89,6 +92,95 @@ theorem lambertWm1_coe_of_mem {xv : ℝ} (h1 : -Real.exp (-1) ≤ xv) (h0 : xv <
 
 end Spec
 
+/-! ### The three Ziv loops -/
+
+/-- `lambertW0Pos` is the correct rounding of `W₀ x` for a rational target `x > 0`. -/
+theorem lambertW0Pos_eq (xAt : ℕ → AzFloat × AzFloat) (h : PosTarget xAt) {xv : ℝ}
+    (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hpos : 0 < xv) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    lambertW0Pos xAt h p mode
+      = roundVal p mode (some ((Azurite.DLMF.lambertW0 xv : ℝ) : EReal)) := by
+  obtain ⟨r, hr⟩ := hrat
+  have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
+  obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Pos_spec hX hpos (le_refl 64)
+  have hW := Azurite.DLMF.lambertW0_spec (Azurite.LambertW.neg_exp_neg_one_le_of_nonneg hpos.le)
+  have hirr : Irrational (Azurite.DLMF.lambertW0 xv) := by
+    rw [hr]
+    exact Azurite.LambertW.irrational_lambertW0 hr0
+      (by rw [← hr]; exact Azurite.LambertW.neg_exp_neg_one_le_of_nonneg hpos.le)
+  unfold lambertW0Pos
+  exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
+    (by unfold zivGuardBits; omega)
+    (fun w _ => by
+      obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec true hX none ha₀ hb₀ hW.2
+        haW hWb ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ _ w
+      exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+
+/-- `lambertW0Neg` is the correct rounding of `Spec.lambertW0 x` for a rational target `x < 0`. -/
+theorem lambertW0Neg_eq (xAt : ℕ → AzFloat × AzFloat) (h : NegTarget xAt) {xv : ℝ}
+    (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hneg : xv < 0) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    lambertW0Neg xAt h p mode = roundVal p mode (Spec.lambertW0 (xv : EReal)) := by
+  obtain ⟨r, hr⟩ := hrat
+  have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
+  unfold lambertW0Neg
+  split
+  · rename_i hq
+    have := qEncl_eq_none hX hneg _ hq
+    rw [Spec.lambertW0_coe_of_lt this, roundVal_none]
+  · rename_i lo hi hq
+    obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hX hneg _ hq
+    have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
+    rw [Spec.lambertW0_coe_of_le hx1.le]
+    obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
+      qTight_spec (q := (lo, hi)) hX hneg hlo hhi hl0 hl hh
+    obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Neg_spec hx1 hneg hl' hh' hl0' hlq' hqh'
+      (by omega : 64 ≤ 64 + 2 * compBits (some (qTight xAt (lo, hi))))
+    have hW := Azurite.DLMF.lambertW0_spec hx1.le
+    have hirr : Irrational (Azurite.DLMF.lambertW0 xv) := by
+      rw [hr]
+      exact Azurite.LambertW.irrational_lambertW0 hr0 (by rw [← hr]; exact hx1.le)
+    exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
+      (by unfold zivGuardBits; omega)
+      (fun w _ => by
+        obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec true hX _ ha₀ hb₀ hW.2
+          haW hWb ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ _ w
+        exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+
+/-- `lambertWm1Neg` is the correct rounding of `Spec.lambertWm1 x` for a rational target
+`x < 0`. -/
+theorem lambertWm1Neg_eq (xAt : ℕ → AzFloat × AzFloat) (h : NegTarget xAt) {xv : ℝ}
+    (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hneg : xv < 0) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    lambertWm1Neg xAt h p mode = roundVal p mode (Spec.lambertWm1 (xv : EReal)) := by
+  obtain ⟨r, hr⟩ := hrat
+  unfold lambertWm1Neg
+  split
+  · rename_i hq
+    have := qEncl_eq_none hX hneg _ hq
+    rw [Spec.lambertWm1_coe_of_lt this, roundVal_none]
+  · rename_i lo hi hq
+    obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hX hneg _ hq
+    have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
+    rw [Spec.lambertWm1_coe_of_mem hx1.le hneg]
+    obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
+      qTight_spec (q := (lo, hi)) hX hneg hlo hhi hl0 hl hh
+    obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriWm1_spec hX hx1 hneg hl' hh' hl0' hlq' hqh'
+      (by omega : 64 ≤ 64 + 2 * compBits (some (qTight xAt (lo, hi))))
+    have hW := Azurite.DLMF.lambertWm1_spec hx1.le hneg
+    have hirr : Irrational (Azurite.DLMF.lambertWm1 xv) := by
+      rw [hr]
+      exact Azurite.LambertW.irrational_lambertWm1 (by rw [← hr]; exact hx1.le)
+        (by rw [← hr]; exact hneg)
+    exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
+      (by unfold zivGuardBits; omega)
+      (fun w _ => by
+        obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec false hX _ ha₀ hb₀ hW.2
+          haW hWb ⟨fun h => (Bool.false_ne_true h).elim, fun _ => hW.1⟩ _ w
+        exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+
+/-! ### The float drivers -/
+
 /-- **`W₀` is correctly rounded.** -/
 theorem lambertW0PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
     lambertW0PrecRound x p mode = liftVal Spec.lambertW0 x p mode := by
@@ -108,59 +200,17 @@ theorem lambertW0PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
       Azurite.DLMF.lambertW0_zero, EReal.coe_zero, roundVal_zero]
   | finite s e q m hv =>
     simp only [lambertW0PrecRound, toVal_finite, Option.bind_some, dite_eq_right hp]
-    set xv := finiteVal s e m with hxv
-    have hx : (finite s e q m hv).toVal = some (xv : EReal) := toVal_finite s e q m hv
     by_cases hs : s = true
     · rw [dite_eq_left hs]
       subst hs
-      have hpos := finiteVal_true_pos e hv
-      rw [← hxv] at hpos
-      rw [Spec.lambertW0_coe_of_le (by linarith [Real.exp_pos (-1)])]
-      obtain ⟨r, hr⟩ := exists_rat_of_toVal hx
-      have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
-      obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Pos_spec hx hpos.le (le_refl 64)
-      have hW := Azurite.DLMF.lambertW0_spec (Azurite.LambertW.neg_exp_neg_one_le_of_nonneg hpos.le)
-      have hirr : Irrational (Azurite.DLMF.lambertW0 xv) := by
-        rw [hr]
-        exact Azurite.LambertW.irrational_lambertW0 hr0
-          (by rw [← hr]; exact Azurite.LambertW.neg_exp_neg_one_le_of_nonneg hpos.le)
-      exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
-        (by unfold zivGuardBits; omega)
-        (fun w _ => by
-          obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec true hx none ha₀ hb₀ hW.2
-            haW hWb ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩
-            (sideCert_pos true e q m hv rfl) w
-          exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+      refine (lambertW0Pos_eq _ _ (floatAt_encl (toVal_finite true e q m hv))
+        (finiteVal_rat true e hv) (finiteVal_true_pos e hv) p mode).trans ?_
+      rw [Spec.lambertW0_coe_of_le (by linarith [Real.exp_pos (-1), finiteVal_true_pos e hv])]
     · rw [dite_eq_right hs]
       have hs' : s = false := Bool.eq_false_iff.mpr hs
       subst hs'
-      have hneg := finiteVal_false_neg e hv
-      rw [← hxv] at hneg
-      split
-      · rename_i hq
-        have := qEncl_eq_none hx hneg _ hq
-        rw [Spec.lambertW0_coe_of_lt this, roundVal_none]
-      · rename_i lo hi hq
-        obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hx hneg _ hq
-        have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
-        rw [Spec.lambertW0_coe_of_le hx1.le]
-        obtain ⟨r, hr⟩ := exists_rat_of_toVal hx
-        have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
-        obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
-          qTight_spec (q := (lo, hi)) hx hneg hlo hhi hl0 hl hh
-        obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Neg_spec hx1 hneg hl' hh' hl0' hlq' hqh'
-          (by omega : 64 ≤ 64 + 2 * compBits (some (qTight (finite false e q m hv) (lo, hi))))
-        have hW := Azurite.DLMF.lambertW0_spec hx1.le
-        have hirr : Irrational (Azurite.DLMF.lambertW0 xv) := by
-          rw [hr]
-          exact Azurite.LambertW.irrational_lambertW0 hr0 (by rw [← hr]; exact hx1.le)
-        exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
-          (by unfold zivGuardBits; omega)
-          (fun w _ => by
-            obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec true hx _ ha₀ hb₀ hW.2
-              haW hWb ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩
-              (sideCert_neg false e q m hv rfl hq) w
-            exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+      exact lambertW0Neg_eq _ _ (floatAt_encl (toVal_finite false e q m hv))
+        (finiteVal_rat false e hv) (finiteVal_false_neg e hv) p mode
 
 /-- **`W₋₁` is correctly rounded.** -/
 theorem lambertWm1PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
@@ -180,43 +230,51 @@ theorem lambertWm1PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roundi
       roundVal_bot]
   | finite s e q m hv =>
     simp only [lambertWm1PrecRound, toVal_finite, Option.bind_some, dite_eq_right hp]
-    set xv := finiteVal s e m with hxv
-    have hx : (finite s e q m hv).toVal = some (xv : EReal) := toVal_finite s e q m hv
     by_cases hs : s = true
     · rw [dite_eq_left hs]
       subst hs
-      have hpos := finiteVal_true_pos e hv
-      rw [← hxv] at hpos
-      rw [Spec.lambertWm1_coe_of_pos hpos, roundVal_none]
+      rw [Spec.lambertWm1_coe_of_pos (finiteVal_true_pos e hv), roundVal_none]
     · rw [dite_eq_right hs]
       have hs' : s = false := Bool.eq_false_iff.mpr hs
       subst hs'
-      have hneg := finiteVal_false_neg e hv
-      rw [← hxv] at hneg
-      split
-      · rename_i hq
-        have := qEncl_eq_none hx hneg _ hq
-        rw [Spec.lambertWm1_coe_of_lt this, roundVal_none]
-      · rename_i lo hi hq
-        obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hx hneg _ hq
-        have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
-        rw [Spec.lambertWm1_coe_of_mem hx1.le hneg]
-        obtain ⟨r, hr⟩ := exists_rat_of_toVal hx
-        obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
-          qTight_spec (q := (lo, hi)) hx hneg hlo hhi hl0 hl hh
-        obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriWm1_spec hx hx1 hneg hl' hh' hl0' hlq' hqh'
-          (by omega : 64 ≤ 64 + 2 * compBits (some (qTight (finite false e q m hv) (lo, hi))))
-        have hW := Azurite.DLMF.lambertWm1_spec hx1.le hneg
-        have hirr : Irrational (Azurite.DLMF.lambertWm1 xv) := by
-          rw [hr]
-          exact Azurite.LambertW.irrational_lambertWm1 (by rw [← hr]; exact hx1.le)
-            (by rw [← hr]; exact hneg)
-        exact zivLoopCertified_eq_threshold' p mode _ _ (not_mem_floatSet_of_irrational p hirr) _
-          (by unfold zivGuardBits; omega)
-          (fun w _ => by
-            obtain ⟨lv, hv', h1, h2, h3, h4, -⟩ := lambertApprox_spec false hx _ ha₀ hb₀ hW.2
-              haW hWb ⟨fun h => (Bool.false_ne_true h).elim, fun _ => hW.1⟩
-              (sideCert_neg false e q m hv rfl hq) w
-            exact ⟨lv, hv', h1, h2, h3, h4⟩) _
+      exact lambertWm1Neg_eq _ _ (floatAt_encl (toVal_finite false e q m hv))
+        (finiteVal_rat false e hv) (finiteVal_false_neg e hv) p mode
+
+/-! ### The rational drivers -/
+
+/-- **`W₀` of a rational is correctly rounded.** -/
+theorem lambertW0RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lambertW0RatPrecRound q p mode
+      = roundVal p mode (Spec.lambertW0 (((AzRat.toRat q : ℚ) : ℝ) : EReal)) := by
+  have hp := NeZero.ne p
+  unfold lambertW0RatPrecRound
+  by_cases h0 : q.num = 0
+  · rw [dite_eq_left h0, coe_toRat_eq_zero_of_num_eq_zero q h0, EReal.coe_zero, ← EReal.coe_zero,
+      Spec.lambertW0_coe_of_le (by linarith [Real.exp_pos (-1)]), Azurite.DLMF.lambertW0_zero,
+      EReal.coe_zero, roundVal_zero]
+  · rw [dite_eq_right h0, dite_eq_right hp]
+    by_cases hs : q.sign = true
+    · rw [dite_eq_left hs]
+      refine (lambertW0Pos_eq _ _ (ratAt_encl q) ⟨_, rfl⟩ (toRat_pos_real q hs h0) p mode).trans ?_
+      rw [Spec.lambertW0_coe_of_le (by linarith [Real.exp_pos (-1), toRat_pos_real q hs h0])]
+    · rw [dite_eq_right hs]
+      exact lambertW0Neg_eq _ _ (ratAt_encl q) ⟨_, rfl⟩
+        (toRat_neg_real q (Bool.eq_false_iff.mpr hs) h0) p mode
+
+/-- **`W₋₁` of a rational is correctly rounded.** -/
+theorem lambertWm1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lambertWm1RatPrecRound q p mode
+      = roundVal p mode (Spec.lambertWm1 (((AzRat.toRat q : ℚ) : ℝ) : EReal)) := by
+  have hp := NeZero.ne p
+  unfold lambertWm1RatPrecRound
+  by_cases h0 : q.num = 0
+  · rw [dite_eq_left h0, coe_toRat_eq_zero_of_num_eq_zero q h0, EReal.coe_zero,
+      Spec.lambertWm1_zero, roundVal_bot]
+  · rw [dite_eq_right h0, dite_eq_right hp]
+    by_cases hs : q.sign = true
+    · rw [dite_eq_left hs, Spec.lambertWm1_coe_of_pos (toRat_pos_real q hs h0), roundVal_none]
+    · rw [dite_eq_right hs]
+      exact lambertWm1Neg_eq _ _ (ratAt_encl q) ⟨_, rfl⟩
+        (toRat_neg_real q (Bool.eq_false_iff.mpr hs) h0) p mode
 
 end Azurite.AzFloat

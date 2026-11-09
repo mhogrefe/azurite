@@ -57,6 +57,23 @@ theorem le_eq_true_iff {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : 
 
 theorem toVal_zero' : zero.toVal = some ((0 : ℝ) : EReal) := by rw [toVal_zero, EReal.coe_zero]
 
+/-! ### The target -/
+
+/-- `xAt` encloses `x` at every precision `P ≥ 64`, within `4|x| 2^(−P)`. -/
+def XEncl (xAt : ℕ → AzFloat × AzFloat) (xv : ℝ) : Prop :=
+  ∀ P : ℕ, 64 ≤ P → ∃ lo hi : ℝ, (xAt P).1.toVal = some (lo : EReal) ∧
+    (xAt P).2.toVal = some (hi : EReal) ∧ lo ≤ xv ∧ xv ≤ hi ∧ hi - lo ≤ 4 * |xv| * (1 / 2 : ℝ) ^ P
+
+theorem floatAt_encl {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) :
+    XEncl (floatAt x) xv := fun P _ =>
+  ⟨xv, xv, hx, hx, le_rfl, le_rfl, by simp only [sub_self]; positivity⟩
+
+theorem ratAt_encl (q : AzRat) : XEncl (ratAt q) ((AzRat.toRat q : ℚ) : ℝ) := fun P hP => by
+  have : NeZero P := ⟨by omega⟩
+  obtain ⟨r₁, h₁, h₁1, h₁2⟩ := ofAzRatRound_floor_abs q P
+  obtain ⟨r₂, h₂, h₂1, h₂2⟩ := ofAzRatRound_ceiling_abs q P
+  exact ⟨r₁, r₂, h₁, h₂, h₁1, h₂1, by linarith⟩
+
 /-! ### The certified search -/
 
 theorem findSome_go_spec {α : Type} (f : ℕ → Option α) (h : ∃ k, (f k).isSome = true) :
@@ -135,39 +152,47 @@ theorem mulExpBracket_spec {t : AzFloat} {tv : ℝ} (ht : t.toVal = some (tv : E
 
 /-! ### The side of a test point -/
 
-theorem sideAt_eq_some_true {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hm : m.toVal = some (mv : EReal)) {P : ℕ} (hP : 64 ≤ P) (h : sideAt x m P = some true) :
-    mv * Real.exp mv < xv := by
+theorem sideAt_eq_some_true {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    {m : AzFloat} {mv : ℝ} (hm : m.toVal = some (mv : EReal)) {P : ℕ} (hP : 64 ≤ P)
+    (h : sideAt xAt m P = some true) : mv * Real.exp mv < xv := by
+  obtain ⟨xlo, xhi, hxlo, hxhi, hx1, hx2, -⟩ := hX P hP
   obtain ⟨lo, hi, hlo, hhi, h1, h2, -⟩ := mulExpBracket_spec hm hP
   unfold sideAt at h
   simp only at h
   split_ifs at h with hc1 hc2
-  · rw [lt_eq_true_iff hhi hx] at hc1; linarith
+  · rw [lt_eq_true_iff hhi hxlo] at hc1; linarith
   · cases h
 
-theorem sideAt_eq_some_false {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hm : m.toVal = some (mv : EReal)) {P : ℕ} (hP : 64 ≤ P) (h : sideAt x m P = some false) :
-    xv < mv * Real.exp mv := by
+theorem sideAt_eq_some_false {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    {m : AzFloat} {mv : ℝ} (hm : m.toVal = some (mv : EReal)) {P : ℕ} (hP : 64 ≤ P)
+    (h : sideAt xAt m P = some false) : xv < mv * Real.exp mv := by
+  obtain ⟨xlo, xhi, hxlo, hxhi, hx1, hx2, -⟩ := hX P hP
   obtain ⟨lo, hi, hlo, hhi, h1, h2, -⟩ := mulExpBracket_spec hm hP
   unfold sideAt at h
   simp only at h
   split_ifs at h with hc1 hc2
   · cases h
-  · rw [lt_eq_true_iff hx hlo] at hc2; linarith
+  · rw [lt_eq_true_iff hxhi hlo] at hc2; linarith
 
 theorem le_mul_two_pow_self (n : ℕ) : n ≤ 64 * 2 ^ n := by
   have := Nat.lt_two_pow_self (n := n)
   omega
 
 /-- The side of a test point `m` with `m eᵐ ≠ x` is decided at some precision `64 · 2^k`. -/
-theorem exists_sideAt_isSome {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hm : m.toVal = some (mv : EReal)) (hne : mv * Real.exp mv ≠ xv) :
-    ∃ k, (sideAt x m (64 * 2 ^ k)).isSome = true := by
+theorem exists_sideAt_isSome {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    {m : AzFloat} {mv : ℝ} (hm : m.toVal = some (mv : EReal)) (hne : mv * Real.exp mv ≠ xv) :
+    ∃ k, (sideAt xAt m (64 * 2 ^ k)).isSome = true := by
   have hδ : 0 < |mv * Real.exp mv - xv| := abs_pos.mpr (sub_ne_zero.mpr hne)
-  obtain ⟨P₀, hP₀⟩ := Filter.eventually_atTop.mp
-    ((tendsto_mulExpEps mv).eventually (gt_mem_nhds hδ))
+  have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num : (1 / 2 : ℝ) < 1)
+  have htend : Filter.Tendsto (fun P : ℕ => mulExpEps mv P + 4 * |xv| * (1 / 2 : ℝ) ^ P)
+      Filter.atTop (nhds 0) := by
+    have := (tendsto_mulExpEps mv).add (hu.const_mul (4 * |xv|))
+    simpa using this
+  obtain ⟨P₀, hP₀⟩ := Filter.eventually_atTop.mp (htend.eventually (gt_mem_nhds hδ))
   refine ⟨P₀, ?_⟩
   have hP : 64 ≤ 64 * 2 ^ P₀ := Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)
+  obtain ⟨xlo, xhi, hxlo, hxhi, hx1, hx2, hxw⟩ := hX _ hP
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hw⟩ := mulExpBracket_spec hm hP
   have hε := hP₀ _ (le_mul_two_pow_self P₀)
   unfold sideAt
@@ -176,27 +201,29 @@ theorem exists_sideAt_isSome {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some 
   · rfl
   · rfl
   · exfalso
-    rw [lt_eq_true_iff hhi hx] at hc1
-    rw [lt_eq_true_iff hx hlo] at hc2
-    have : |mv * Real.exp mv - xv| ≤ hi - lo := by
+    rw [lt_eq_true_iff hhi hxlo] at hc1
+    rw [lt_eq_true_iff hxhi hlo] at hc2
+    have : |mv * Real.exp mv - xv| ≤ (hi - lo) + (xhi - xlo) := by
       rw [abs_le]; constructor <;> linarith
     linarith
 
-theorem sideOf_true {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hm : m.toVal = some (mv : EReal)) (hs : ∃ k, (sideAt x m (64 * 2 ^ k)).isSome = true)
-    (h : sideOf x m hs = true) : mv * Real.exp mv < xv := by
-  obtain ⟨j, hj⟩ := findSome_spec (fun k => sideAt x m (64 * 2 ^ k)) hs
+theorem sideOf_true {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) {m : AzFloat}
+    {mv : ℝ} (hm : m.toVal = some (mv : EReal))
+    (hs : ∃ k, (sideAt xAt m (64 * 2 ^ k)).isSome = true) (h : sideOf xAt m hs = true) :
+    mv * Real.exp mv < xv := by
+  obtain ⟨j, hj⟩ := findSome_spec (fun k => sideAt xAt m (64 * 2 ^ k)) hs
   unfold sideOf at h
   rw [h] at hj
-  exact sideAt_eq_some_true hx hm (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
+  exact sideAt_eq_some_true hX hm (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
 
-theorem sideOf_false {x m : AzFloat} {xv mv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hm : m.toVal = some (mv : EReal)) (hs : ∃ k, (sideAt x m (64 * 2 ^ k)).isSome = true)
-    (h : sideOf x m hs = false) : xv < mv * Real.exp mv := by
-  obtain ⟨j, hj⟩ := findSome_spec (fun k => sideAt x m (64 * 2 ^ k)) hs
+theorem sideOf_false {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) {m : AzFloat}
+    {mv : ℝ} (hm : m.toVal = some (mv : EReal))
+    (hs : ∃ k, (sideAt xAt m (64 * 2 ^ k)).isSome = true) (h : sideOf xAt m hs = false) :
+    xv < mv * Real.exp mv := by
+  obtain ⟨j, hj⟩ := findSome_spec (fun k => sideAt xAt m (64 * 2 ^ k)) hs
   unfold sideOf at h
   rw [h] at hj
-  exact sideAt_eq_some_false hx hm (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
+  exact sideAt_eq_some_false hX hm (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
 
 /-! ### `q = 1 + e x` -/
 
@@ -224,17 +251,34 @@ theorem expEps_one_le_one {P : ℕ} (hP : 64 ≤ P) : expEps 1 P ≤ 1 := by
     _ ≤ 3 * 80 * (73 * (1 / 2 : ℝ) ^ 64) := by gcongr
     _ ≤ 1 := by norm_num
 
-/-- `qBounds x P` encloses `1 + e x` for `x < 0`, within `(33|x| + 2)(expEps 1 P + 2^(−P))` on
-each side. -/
-theorem qBounds_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
+/-- The bracket of `e` with a nonnegative lower end has the width of `expBracketAt`. -/
+theorem exp_one_encl {P : ℕ} (hP : 64 ≤ P) :
+    ∃ c d : ℝ, (Encl.exp P one).1.toVal = some (c : EReal) ∧
+      (Encl.exp P one).2.toVal = some (d : EReal) ∧ 0 ≤ c ∧ c ≤ Real.exp 1 ∧ Real.exp 1 ≤ d ∧
+      d - c ≤ expEps 1 P := by
+  obtain ⟨c₀, d, hc₀, hd, hc1, hd1, hcd⟩ := expBracketAt_spec toVal_one' hP
+  obtain ⟨c, hc, hc0, hcle, hceq⟩ := clampNonneg_spec hc₀
+  have hc₀0 : 0 ≤ c₀ := by
+    by_contra hneg
+    push Not at hneg
+    have := expEps_one_le_one hP
+    have := Real.add_one_lt_exp (one_ne_zero (α := ℝ))
+    linarith
+  rw [hceq hc₀0] at hc
+  exact ⟨c₀, d, hc, hd, hc₀0, hc1, hd1, hcd⟩
+
+/-- `qBounds xAt P` encloses `1 + e x` for `x < 0`, within `(177|x| + 2)(expEps 1 P + 2^(−P))`
+on each side. -/
+theorem qBounds_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hx0 : xv < 0)
     {P : ℕ} (hP : 64 ≤ P) :
-    ∃ lo hi : ℝ, (qBounds x P).1.toVal = some (lo : EReal) ∧
-      (qBounds x P).2.toVal = some (hi : EReal) ∧ lo ≤ 1 + Real.exp 1 * xv ∧
+    ∃ lo hi : ℝ, (qBounds xAt P).1.toVal = some (lo : EReal) ∧
+      (qBounds xAt P).2.toVal = some (hi : EReal) ∧ lo ≤ 1 + Real.exp 1 * xv ∧
       1 + Real.exp 1 * xv ≤ hi ∧
-      1 + Real.exp 1 * xv - (33 * |xv| + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P) ≤ lo ∧
-      hi ≤ 1 + Real.exp 1 * xv + (33 * |xv| + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P) := by
+      1 + Real.exp 1 * xv - (177 * |xv| + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P) ≤ lo ∧
+      hi ≤ 1 + Real.exp 1 * xv + (177 * |xv| + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P) := by
   have : NeZero P := ⟨by omega⟩
-  obtain ⟨c, d, hc, hd, hc1, hd1, hcd⟩ := expBracketAt_spec toVal_one' hP
+  obtain ⟨c, d, hc, hd, hc0, hc1, hd1, hcd⟩ := exp_one_encl hP
+  obtain ⟨x₁, x₂, hx₁, hx₂, hx₁1, hx₂1, hxw⟩ := hX P hP
   set u := (1 / 2 : ℝ) ^ P with hu
   set ε := expEps 1 P with hε
   have hu0 : 0 ≤ u := by positivity
@@ -246,54 +290,83 @@ theorem qBounds_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
   set A := |xv| with hA
   have hA0 : 0 ≤ A := abs_nonneg _
   have hxA : xv = -A := by rw [hA, abs_of_neg hx0]; ring
-  have hd4 : |d| ≤ 4 := by rw [abs_of_nonneg (by linarith)]; linarith
-  have hc4 : |c| ≤ 4 := by rw [abs_le]; constructor <;> linarith
-  obtain ⟨r, hr, hr1, hr2⟩ := mulFloor_abs hd hx P
+  have hd4 : d ≤ 4 := by linarith
+  have hc4 : c ≤ 4 := by linarith
+  -- `x₁, x₂` are within `4Au` of `x`
+  have hx₁A : |x₁| ≤ 5 * A := by rw [abs_le]; constructor <;> nlinarith
+  have hx₂A : |x₂| ≤ 5 * A := by rw [abs_le]; constructor <;> nlinarith
+  unfold qBounds
+  simp only
+  obtain ⟨r, hr, hr1, hr2⟩ := mulFloor_abs hd hx₁ P
   obtain ⟨lo, hlo, hlo1, hlo2⟩ := addFloor_abs toVal_one' hr P
-  obtain ⟨r', hr', hr'1, hr'2⟩ := mulCeiling_abs hc hx P
+  obtain ⟨r', hr', hr'1, hr'2⟩ := mulCeiling_abs hc hx₂ P
   obtain ⟨hi, hhi, hhi1, hhi2⟩ := addCeiling_abs toVal_one' hr' P
   rw [← hu] at hr2 hlo2 hr'2 hhi2
-  have hdx : d * xv ≤ Real.exp 1 * xv := mul_le_mul_of_nonpos_right hd1 hx0.le
-  have hcx : Real.exp 1 * xv ≤ c * xv := mul_le_mul_of_nonpos_right hc1 hx0.le
-  have hdxa : |d * xv| ≤ 4 * A := by
-    rw [abs_mul]; exact mul_le_mul_of_nonneg_right hd4 hA0
-  have hcxa : |c * xv| ≤ 4 * A := by
-    rw [abs_mul]; exact mul_le_mul_of_nonneg_right hc4 hA0
-  have hdxu : |d * xv| * u ≤ 4 * A * u := mul_le_mul_of_nonneg_right hdxa hu0
-  have hcxu : |c * xv| * u ≤ 4 * A * u := mul_le_mul_of_nonneg_right hcxa hu0
-  have hdxu1 : |d * xv| * u ≤ |d * xv| := mul_le_of_le_one_right (abs_nonneg _) hu1
-  have hcxu1 : |c * xv| * u ≤ |c * xv| := mul_le_of_le_one_right (abs_nonneg _) hu1
-  have hr_abs : |1 + r| ≤ 1 + 12 * A := by
-    have h1 := le_abs_self (d * xv)
-    have h2 := neg_abs_le (d * xv)
-    have : |r| ≤ 12 * A := by rw [abs_le]; constructor <;> nlinarith
+  have hdx : d * x₁ ≤ Real.exp 1 * xv := by
+    calc d * x₁ ≤ d * xv := mul_le_mul_of_nonneg_left hx₁1 (by linarith)
+      _ ≤ Real.exp 1 * xv := mul_le_mul_of_nonpos_right hd1 hx0.le
+  have hcx : Real.exp 1 * xv ≤ c * x₂ := by
+    calc Real.exp 1 * xv ≤ c * xv := mul_le_mul_of_nonpos_right hc1 hx0.le
+      _ ≤ c * x₂ := mul_le_mul_of_nonneg_left hx₂1 hc0
+  have hdxa : |d * x₁| ≤ 20 * A := by
+    rw [abs_mul, abs_of_nonneg (by linarith)]; nlinarith
+  have hcxa : |c * x₂| ≤ 20 * A := by
+    rw [abs_mul, abs_of_nonneg hc0]; nlinarith
+  have hdxu : |d * x₁| * u ≤ 20 * A * u := mul_le_mul_of_nonneg_right hdxa hu0
+  have hcxu : |c * x₂| * u ≤ 20 * A * u := mul_le_mul_of_nonneg_right hcxa hu0
+  have hr_abs : |1 + r| ≤ 1 + 60 * A := by
+    have h1 := le_abs_self (d * x₁)
+    have h2 := neg_abs_le (d * x₁)
+    have hdxu1 : |d * x₁| * u ≤ |d * x₁| := mul_le_of_le_one_right (abs_nonneg _) hu1
+    have : |r| ≤ 60 * A := by rw [abs_le]; constructor <;> nlinarith
     calc |1 + r| ≤ |(1 : ℝ)| + |r| := abs_add_le 1 r
-      _ ≤ 1 + 12 * A := by rw [abs_one]; linarith
-  have hr'_abs : |1 + r'| ≤ 1 + 12 * A := by
-    have h1 := le_abs_self (c * xv)
-    have h2 := neg_abs_le (c * xv)
-    have : |r'| ≤ 12 * A := by rw [abs_le]; constructor <;> nlinarith
+      _ ≤ 1 + 60 * A := by rw [abs_one]; linarith
+  have hr'_abs : |1 + r'| ≤ 1 + 60 * A := by
+    have h1 := le_abs_self (c * x₂)
+    have h2 := neg_abs_le (c * x₂)
+    have hcxu1 : |c * x₂| * u ≤ |c * x₂| := mul_le_of_le_one_right (abs_nonneg _) hu1
+    have : |r'| ≤ 60 * A := by rw [abs_le]; constructor <;> nlinarith
     calc |1 + r'| ≤ |(1 : ℝ)| + |r'| := abs_add_le 1 r'
-      _ ≤ 1 + 12 * A := by rw [abs_one]; linarith
-  have hru : |1 + r| * u ≤ (1 + 12 * A) * u := mul_le_mul_of_nonneg_right hr_abs hu0
-  have hr'u : |1 + r'| * u ≤ (1 + 12 * A) * u := mul_le_mul_of_nonneg_right hr'_abs hu0
+      _ ≤ 1 + 60 * A := by rw [abs_one]; linarith
+  have hru : |1 + r| * u ≤ (1 + 60 * A) * u := mul_le_mul_of_nonneg_right hr_abs hu0
+  have hr'u : |1 + r'| * u ≤ (1 + 60 * A) * u := mul_le_mul_of_nonneg_right hr'_abs hu0
+  -- the errors from the bracket of `e` and from the enclosure of `x`
   have hde : (d - Real.exp 1) * A ≤ ε * A := mul_le_mul_of_nonneg_right (by linarith) hA0
   have hce : (Real.exp 1 - c) * A ≤ ε * A := mul_le_mul_of_nonneg_right (by linarith) hA0
+  have hdw : d * (xv - x₁) ≤ 16 * A * u := by
+    calc d * (xv - x₁) ≤ 4 * (4 * A * u) :=
+          mul_le_mul hd4 (by linarith) (by linarith) (by norm_num)
+      _ = 16 * A * u := by ring
+  have hcw : c * (x₂ - xv) ≤ 16 * A * u := by
+    calc c * (x₂ - xv) ≤ 4 * (4 * A * u) :=
+          mul_le_mul hc4 (by linarith) (by linarith) (by norm_num)
+      _ = 16 * A * u := by ring
   have e1 : d * xv = Real.exp 1 * xv - (d - Real.exp 1) * A := by rw [hxA]; ring
   have e2 : c * xv = Real.exp 1 * xv + (Real.exp 1 - c) * A := by rw [hxA]; ring
   have hAu : 0 ≤ A * u := mul_nonneg hA0 hu0
   have hAε : 0 ≤ A * ε := mul_nonneg hA0 hε0
+  have hprod : (177 * A + 2) * (ε + u) = 177 * (A * ε) + 2 * ε + 177 * (A * u) + 2 * u := by ring
+  have hdx₁ : d * x₁ ≥ Real.exp 1 * xv - ε * A - 16 * A * u := by
+    have : d * x₁ = d * xv - d * (xv - x₁) := by ring
+    linarith
+  have hcx₂ : c * x₂ ≤ Real.exp 1 * xv + ε * A + 16 * A * u := by
+    have : c * x₂ = c * xv + c * (x₂ - xv) := by ring
+    linarith
   refine ⟨lo, hi, hlo, hhi, by linarith, by linarith, ?_, ?_⟩
-  · nlinarith
-  · nlinarith
+  · have hr_lo : r ≥ d * x₁ - 2 * (|d * x₁| * u) := by linarith
+    have hlo_lo : lo ≥ 1 + r - 2 * (|1 + r| * u) := by linarith
+    linarith
+  · have hr_hi : r' ≤ c * x₂ + 2 * (|c * x₂| * u) := by linarith
+    have hhi_hi : hi ≤ 1 + r' + 2 * (|1 + r'| * u) := by linarith
+    linarith
 
 /-- The error bound of `qBounds` tends to `0`. -/
 theorem tendsto_qErr (A : ℝ) :
-    Filter.Tendsto (fun P : ℕ => (33 * A + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P)) Filter.atTop
+    Filter.Tendsto (fun P : ℕ => (177 * A + 2) * (expEps 1 P + (1 / 2 : ℝ) ^ P)) Filter.atTop
       (nhds 0) := by
   have hu := tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
     (by norm_num : (1 / 2 : ℝ) < 1)
-  have := ((tendsto_expEps 1).add hu).const_mul (33 * A + 2)
+  have := ((tendsto_expEps 1).add hu).const_mul (177 * A + 2)
   simp only [add_zero, mul_zero] at this
   exact this
 
@@ -312,9 +385,9 @@ theorem lt_neg_exp_neg_one_iff (xv : ℝ) : xv < -Real.exp (-1) ↔ 1 + Real.exp
     have : xv < -1 / Real.exp 1 := (lt_div_iff₀ he).mpr h2
     rwa [neg_div, one_div] at this
 
-theorem qAt_eq_some_none {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
-    {P : ℕ} (hP : 64 ≤ P) (h : qAt x P = some none) : xv < -Real.exp (-1) := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hx hx0 hP
+theorem qAt_eq_some_none {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hx0 : xv < 0) {P : ℕ} (hP : 64 ≤ P) (h : qAt xAt P = some none) : xv < -Real.exp (-1) := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hX hx0 hP
   unfold qAt at h
   simp only at h
   split_ifs at h with hc1 hc2
@@ -323,11 +396,11 @@ theorem qAt_eq_some_none {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERe
     linarith
   · cases h
 
-theorem qAt_eq_some_some {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
-    {P : ℕ} (hP : 64 ≤ P) {lo hi : AzFloat} (h : qAt x P = some (some (lo, hi))) :
+theorem qAt_eq_some_some {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hx0 : xv < 0) {P : ℕ} (hP : 64 ≤ P) {lo hi : AzFloat} (h : qAt xAt P = some (some (lo, hi))) :
     ∃ lov hiv : ℝ, lo.toVal = some (lov : EReal) ∧ hi.toVal = some (hiv : EReal) ∧ 0 < lov ∧
       lov ≤ 1 + Real.exp 1 * xv ∧ 1 + Real.exp 1 * xv ≤ hiv := by
-  obtain ⟨lov, hiv, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hx hx0 hP
+  obtain ⟨lov, hiv, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hX hx0 hP
   unfold qAt at h
   simp only at h
   split_ifs at h with hc1 hc2
@@ -338,14 +411,14 @@ theorem qAt_eq_some_some {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERe
     exact ⟨lov, hiv, hlo, hhi, hc2, h1, h2⟩
 
 /-- The sign of `q = 1 + e x ≠ 0` is decided at some precision `64 · 2^k`. -/
-theorem exists_qAt_isSome {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
-    (hne : 1 + Real.exp 1 * xv ≠ 0) : ∃ k, (qAt x (64 * 2 ^ k)).isSome = true := by
+theorem exists_qAt_isSome {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hx0 : xv < 0)
+    (hne : 1 + Real.exp 1 * xv ≠ 0) : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true := by
   have hδ : 0 < |1 + Real.exp 1 * xv| := abs_pos.mpr hne
   obtain ⟨P₀, hP₀⟩ := Filter.eventually_atTop.mp
     ((tendsto_qErr |xv|).eventually (gt_mem_nhds hδ))
   refine ⟨P₀, ?_⟩
   have hP : 64 ≤ 64 * 2 ^ P₀ := Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3, h4⟩ := qBounds_spec hx hx0 hP
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, h3, h4⟩ := qBounds_spec hX hx0 hP
   have hε := hP₀ _ (le_mul_two_pow_self P₀)
   unfold qAt
   simp only
@@ -359,36 +432,36 @@ theorem exists_qAt_isSome {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ER
     · rw [abs_of_neg hq] at hε; linarith
     · rw [abs_of_pos hq] at hε; linarith
 
-theorem qEncl_eq_none {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
-    (h : ∃ k, (qAt x (64 * 2 ^ k)).isSome = true) (hn : qEncl x h = none) :
+theorem qEncl_eq_none {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hx0 : xv < 0)
+    (h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true) (hn : qEncl xAt h = none) :
     xv < -Real.exp (-1) := by
-  obtain ⟨j, hj⟩ := findSome_spec (fun k => qAt x (64 * 2 ^ k)) h
+  obtain ⟨j, hj⟩ := findSome_spec (fun k => qAt xAt (64 * 2 ^ k)) h
   unfold qEncl at hn
   rw [hn] at hj
-  exact qAt_eq_some_none hx hx0 (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
+  exact qAt_eq_some_none hX hx0 (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
 
-theorem qEncl_eq_some {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
-    (h : ∃ k, (qAt x (64 * 2 ^ k)).isSome = true) {lo hi : AzFloat}
-    (hs : qEncl x h = some (lo, hi)) :
+theorem qEncl_eq_some {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hx0 : xv < 0)
+    (h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true) {lo hi : AzFloat}
+    (hs : qEncl xAt h = some (lo, hi)) :
     ∃ lov hiv : ℝ, lo.toVal = some (lov : EReal) ∧ hi.toVal = some (hiv : EReal) ∧ 0 < lov ∧
       lov ≤ 1 + Real.exp 1 * xv ∧ 1 + Real.exp 1 * xv ≤ hiv := by
-  obtain ⟨j, hj⟩ := findSome_spec (fun k => qAt x (64 * 2 ^ k)) h
+  obtain ⟨j, hj⟩ := findSome_spec (fun k => qAt xAt (64 * 2 ^ k)) h
   unfold qEncl at hs
   rw [hs] at hj
-  exact qAt_eq_some_some hx hx0 (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
+  exact qAt_eq_some_some hX hx0 (Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)) hj
 
 /-- `qTight` keeps a sound enclosure. -/
-theorem qTight_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx0 : xv < 0)
+theorem qTight_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hx0 : xv < 0)
     {q : AzFloat × AzFloat} {l h : ℝ} (hl : q.1.toVal = some (l : EReal))
     (hh : q.2.toVal = some (h : EReal)) (hl0 : 0 < l) (hlq : l ≤ 1 + Real.exp 1 * xv)
     (hqh : 1 + Real.exp 1 * xv ≤ h) :
-    ∃ lov hiv : ℝ, (qTight x q).1.toVal = some (lov : EReal) ∧
-      (qTight x q).2.toVal = some (hiv : EReal) ∧ 0 < lov ∧ lov ≤ 1 + Real.exp 1 * xv ∧
+    ∃ lov hiv : ℝ, (qTight xAt q).1.toVal = some (lov : EReal) ∧
+      (qTight xAt q).2.toVal = some (hiv : EReal) ∧ 0 < lov ∧ lov ≤ 1 + Real.exp 1 * xv ∧
       1 + Real.exp 1 * xv ≤ hiv := by
   unfold qTight
   simp only
   have hP : 64 ≤ 128 + 2 * compBits (some q) := by omega
-  obtain ⟨lov, hiv, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hx hx0 hP
+  obtain ⟨lov, hiv, hlo, hhi, h1, h2, -, -⟩ := qBounds_spec hX hx0 hP
   split_ifs with h0 hc
   · exact ⟨l, h, hl, hh, hl0, hlq, hqh⟩
   · rw [lt_eq_true_iff toVal_zero' hlo] at hc
@@ -433,36 +506,48 @@ theorem toVal_shiftLeft_one {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : 
   rw [toVal_shiftLeft_of_toVal hx, AzInt.toInt_ofInt]
   norm_num [mul_comm]
 
-/-- `aprioriW0Pos` encloses `W₀ x` for `x ≥ 0`. -/
-theorem aprioriW0Pos_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hx0 : 0 ≤ xv) {P : ℕ} (hP : 64 ≤ P) :
-    ∃ a b : ℝ, (aprioriW0Pos x P).1.toVal = some (a : EReal) ∧
-      (aprioriW0Pos x P).2.toVal = some (b : EReal) ∧ a ≤ lambertW0 xv ∧ lambertW0 xv ≤ b := by
+/-- `aprioriW0Pos` encloses `W₀ x` for `x > 0`. -/
+theorem aprioriW0Pos_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hx0 : 0 < xv) {P : ℕ} (hP : 64 ≤ P) :
+    ∃ a b : ℝ, (aprioriW0Pos xAt P).1.toVal = some (a : EReal) ∧
+      (aprioriW0Pos xAt P).2.toVal = some (b : EReal) ∧ a ≤ lambertW0 xv ∧ lambertW0 xv ≤ b := by
   have : NeZero P := ⟨by omega⟩
+  obtain ⟨x₁, x₂, hx₁, hx₂, hx₁1, hx₂1, hxw⟩ := hX P hP
+  have hu : (1 / 2 : ℝ) ^ P ≤ 1 / 8 := by
+    calc (1 / 2 : ℝ) ^ P ≤ (1 / 2 : ℝ) ^ 3 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 8 := by norm_num
+  have hx₁pos : 0 < x₁ := by
+    rw [abs_of_pos hx0] at hxw
+    nlinarith [mul_le_mul_of_nonneg_left hu hx0.le]
   unfold aprioriW0Pos
+  simp only
   split_ifs with hlt
-  · obtain ⟨c, hc, hc1, -⟩ := addCeiling_abs toVal_one' hx P
+  · obtain ⟨c, hc, hc1, -⟩ := addCeiling_abs toVal_one' hx₁ P
     have hc0 : c ≠ 0 := by linarith
-    obtain ⟨r, hr, hr1, -⟩ := divFloor_abs hx hc hc0 P
-    refine ⟨r, xv, hr, hx, ?_, lambertW0_le_self hx0⟩
-    calc r ≤ xv / c := hr1
-      _ ≤ xv / (1 + xv) := div_le_div_of_nonneg_left hx0 (by linarith) hc1
-      _ ≤ lambertW0 xv := div_one_add_le_lambertW0 hx0
-  · rw [lt_eq_true_iff hx toVal_three] at hlt
+    obtain ⟨r, hr, hr1, -⟩ := divFloor_abs hx₁ hc hc0 P
+    refine ⟨r, x₂, hr, hx₂, ?_, (lambertW0_le_self hx0.le).trans hx₂1⟩
+    calc r ≤ x₁ / c := hr1
+      _ ≤ x₁ / (1 + x₁) := div_le_div_of_nonneg_left hx₁pos.le (by linarith) hc1
+      _ ≤ xv / (1 + xv) := by
+          rw [div_le_div_iff₀ (by linarith) (by linarith)]
+          nlinarith
+      _ ≤ lambertW0 xv := div_one_add_le_lambertW0 hx0.le
+  · rw [lt_eq_true_iff hx₁ toVal_three] at hlt
     push Not at hlt
     have hxe : Real.exp 1 ≤ xv := by linarith [Real.exp_one_lt_d9]
-    have hxpos : 0 < xv := by linarith
     have hl1 : 1 ≤ Real.log xv := by
       rw [← Real.log_exp 1]; exact Real.log_le_log (Real.exp_pos 1) hxe
-    unfold lnBounds
-    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hx hxpos P
-    obtain ⟨l₂, hl₂, hl₂1⟩ := lnCeiling_ge hx hxpos P
+    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hx₁ hx₁pos P
+    obtain ⟨l₂, hl₂, hl₂1⟩ := lnCeiling_ge hx₂ (by linarith) P
+    have hl₁' : l₁ ≤ Real.log xv := hl₁1.trans (Real.log_le_log hx₁pos hx₁1)
+    have hl₂' : Real.log xv ≤ l₂ := (Real.log_le_log hx0 hx₂1).trans hl₂1
     have hl₂pos : 0 < l₂ := by linarith
     obtain ⟨c, hc, hc1⟩ := lnCeiling_ge hl₂ hl₂pos P
     obtain ⟨a, ha, ha1, -⟩ := subFloor_le hl₁ hc P
-    refine ⟨a, l₂, ha, hl₂, ?_, (lambertW0_le_log hxe).trans hl₂1⟩
+    refine ⟨a, l₂, ha, hl₂, ?_, (lambertW0_le_log hxe).trans hl₂'⟩
     have hlog : Real.log (Real.log xv) ≤ c :=
-      (Real.log_le_log (by linarith) hl₂1).trans hc1
+      (Real.log_le_log (by linarith) hl₂').trans hc1
     linarith [log_sub_log_log_le_lambertW0 hxe]
 
 /-- `aprioriW0Neg` encloses `W₀ x` for `−e⁻¹ < x < 0`, from an enclosure `0 < l ≤ q ≤ h`. -/
@@ -506,15 +591,23 @@ theorem aprioriW0Neg_spec {xv : ℝ} (hx1 : -Real.exp (-1) < xv) (hx0 : xv < 0)
     linarith
 
 /-- `aprioriWm1` encloses `W₋₁ x` for `−e⁻¹ < x < 0`, from an enclosure `0 < l ≤ q ≤ h`. -/
-theorem aprioriWm1_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+theorem aprioriWm1_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
     (hx1 : -Real.exp (-1) < xv) (hx0 : xv < 0)
     {qlo qhi : AzFloat} {l h : ℝ} (hlo : qlo.toVal = some (l : EReal))
     (hhi : qhi.toVal = some (h : EReal)) (hl0 : 0 < l) (hl : l ≤ 1 + Real.exp 1 * xv)
     (hh : 1 + Real.exp 1 * xv ≤ h) {P : ℕ} (hP : 64 ≤ P) :
-    ∃ a b : ℝ, (aprioriWm1 x qlo qhi P).1.toVal = some (a : EReal) ∧
-      (aprioriWm1 x qlo qhi P).2.toVal = some (b : EReal) ∧ a ≤ lambertWm1 xv ∧
+    ∃ a b : ℝ, (aprioriWm1 xAt qlo qhi P).1.toVal = some (a : EReal) ∧
+      (aprioriWm1 xAt qlo qhi P).2.toVal = some (b : EReal) ∧ a ≤ lambertWm1 xv ∧
       lambertWm1 xv ≤ b := by
   have : NeZero P := ⟨by omega⟩
+  obtain ⟨x₁, x₂, hx₁, hx₂, hx₁1, hx₂1, hxw⟩ := hX P hP
+  have hu : (1 / 2 : ℝ) ^ P ≤ 1 / 8 := by
+    calc (1 / 2 : ℝ) ^ P ≤ (1 / 2 : ℝ) ^ 3 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 8 := by norm_num
+  have hx₂neg : x₂ < 0 := by
+    rw [abs_of_neg hx0] at hxw
+    nlinarith [mul_le_mul_of_nonneg_left hu (by linarith : (0:ℝ) ≤ -xv)]
   obtain ⟨c, d, hc, hd, hc1, hd1, -⟩ := expBracketAt_spec toVal_one' hP
   have he0 := Real.exp_pos 1
   have hd0 : 0 < d := lt_of_lt_of_le he0 hd1
@@ -546,17 +639,18 @@ theorem aprioriWm1_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERea
     have h2 : √(2 * Real.exp 1 * q) ≤ t :=
       (Real.sqrt_le_sqrt h1).trans ((Real.sqrt_le_sqrt hmc.ge).trans htc.ge)
     linarith [branch_le_lambertWm1 hx1 hx0 hq4]
-  · -- the logarithmic bound
-    have hnx : (-x).toVal = some ((-xv : ℝ) : EReal) := by
-      rw [toVal_neg, hx, Option.map_some, EReal.coe_neg]
-    have hypos : 0 < -xv := by linarith
+  · -- the logarithmic bound, from `ln(−x₂) ≤ ln(−x)`
+    have hnx : (-(xAt P).2).toVal = some ((-x₂ : ℝ) : EReal) := by
+      rw [toVal_neg, hx₂, Option.map_some, EReal.coe_neg]
+    have hypos : 0 < -x₂ := by linarith
     have hylt : Real.log (-xv) < -1 := by
-      have := Real.log_lt_log hypos (by linarith : -xv < Real.exp (-1))
+      have := Real.log_lt_log (by linarith) (by linarith : -xv < Real.exp (-1))
       rwa [Real.log_exp] at this
     unfold lnBounds
     obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hnx hypos P
+    have hl₁1' : l₁ ≤ Real.log (-xv) := hl₁1.trans (Real.log_le_log hypos (by linarith))
     obtain ⟨l₂, hl₂, -⟩ := lnCeiling_ge hnx hypos P
-    have hv : (-(lnPrecRound (-x) P .Floor).1).toVal = some ((-l₁ : ℝ) : EReal) := by
+    have hv : (-(lnPrecRound (-(xAt P).2) P .Floor).1).toVal = some ((-l₁ : ℝ) : EReal) := by
       rw [toVal_neg, hl₁, Option.map_some, EReal.coe_neg]
     have hvpos : 0 < -l₁ := by linarith
     obtain ⟨c', hc', hc'1⟩ := lnCeiling_ge hv hvpos P
@@ -569,13 +663,15 @@ theorem aprioriWm1_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERea
 
 /-! ### The mean-value rounds -/
 
-/-- `mvtDelta x F P ≥ |x − g|` for any `g` enclosed by `F`. -/
-theorem mvtDelta_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+/-- `mvtDelta X F P ≥ |x − g|` for any `x` enclosed by `X` and `g` enclosed by `F`. -/
+theorem mvtDelta_spec {X : AzFloat × AzFloat} {xlo xhi xv : ℝ}
+    (hxlo : X.1.toVal = some (xlo : EReal)) (hxhi : X.2.toVal = some (xhi : EReal))
+    (hx1 : xlo ≤ xv) (hx2 : xv ≤ xhi)
     {F : AzFloat × AzFloat} {lo hi g : ℝ} (hlo : F.1.toVal = some (lo : EReal))
     (hhi : F.2.toVal = some (hi : EReal)) (h1 : lo ≤ g) (h2 : g ≤ hi) (P : ℕ) [NeZero P] :
-    ∃ δ : ℝ, (mvtDelta x F P).toVal = some (δ : EReal) ∧ |xv - g| ≤ δ := by
-  obtain ⟨d₁, hd₁, hd₁1, -⟩ := subCeiling_abs hhi hx P
-  obtain ⟨d₂, hd₂, hd₂1, -⟩ := subCeiling_abs hx hlo P
+    ∃ δ : ℝ, (mvtDelta X F P).toVal = some (δ : EReal) ∧ |xv - g| ≤ δ := by
+  obtain ⟨d₁, hd₁, hd₁1, -⟩ := subCeiling_abs hhi hxlo P
+  obtain ⟨d₂, hd₂, hd₂1, -⟩ := subCeiling_abs hxhi hlo P
   refine ⟨max d₁ d₂, toVal_maxOf hd₁ hd₂, ?_⟩
   rw [abs_le]
   constructor
@@ -709,20 +805,21 @@ theorem mvtRound_spec (branch0 : Bool) {n elo0 δ : AzFloat} {xv nv el δv : ℝ
   · exact mvtRound_spec_W0 hn hel hel0 hel1 hδ hδv ha hb hWx haW hWb han hnb P
 
 /-- The three rounds keep the root inside the old interval. -/
-theorem mvtRounds_spec (branch0 : Bool) {x n : AzFloat} {xv nv : ℝ}
-    (hx : x.toVal = some (xv : EReal)) (hn : n.toVal = some (nv : EReal))
+theorem mvtRounds_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {n : AzFloat} {xv nv : ℝ}
+    (hX : XEncl xAt xv) (hn : n.toVal = some (nv : EReal))
     {I₀ : AzFloat × AzFloat} {a₀ b₀ : ℝ} (ha₀ : I₀.1.toVal = some (a₀ : EReal))
     (hb₀ : I₀.2.toVal = some (b₀ : EReal)) {W : ℝ} (hWx : W * Real.exp W = xv) (haW : a₀ ≤ W)
     (hWb : W ≤ b₀) (han : a₀ ≤ nv) (hnb : nv ≤ b₀) {P : ℕ} (hP : 64 ≤ P) :
-    ∃ a b : ℝ, (mvtRounds branch0 x n I₀ P).1.toVal = some (a : EReal) ∧
-      (mvtRounds branch0 x n I₀ P).2.toVal = some (b : EReal) ∧ a₀ ≤ a ∧ a ≤ W ∧ W ≤ b ∧
+    ∃ a b : ℝ, (mvtRounds branch0 xAt n I₀ P).1.toVal = some (a : EReal) ∧
+      (mvtRounds branch0 xAt n I₀ P).2.toVal = some (b : EReal) ∧ a₀ ≤ a ∧ a ≤ W ∧ W ≤ b ∧
       b ≤ b₀ := by
   have : NeZero P := ⟨by omega⟩
+  obtain ⟨xlo, xhi, hxlo, hxhi, hx1, hx2, -⟩ := hX P hP
   obtain ⟨c, d, hc, hd, hc1, hd1, -⟩ := expBracketAt_spec hn hP
   obtain ⟨el, hel, hel0, helle, -⟩ := clampNonneg_spec hc
   have hel1 : el ≤ Real.exp nv := helle.trans (max_le hc1 (Real.exp_pos nv).le)
   obtain ⟨lo, hi, hlo, hhi, h1, h2, -⟩ := mulBracketAny_spec hn hc hd hc1 hd1 P
-  obtain ⟨δ, hδ, hδv⟩ := mvtDelta_spec hx hlo hhi h1 h2 P
+  obtain ⟨δ, hδ, hδv⟩ := mvtDelta_spec hxlo hxhi hx1 hx2 hlo hhi h1 h2 P
   unfold mvtRounds
   simp only
   obtain ⟨a₁, b₁, ha₁, hb₁, h01, haW1, hWb1, hb01, han1, hnb1⟩ :=
@@ -774,12 +871,12 @@ theorem gridVal_mono {M N e : AzInt} (h : M.toInt ≤ N.toInt) : gridVal M e ≤
   exact mul_le_mul_of_nonneg_right (by exact_mod_cast h) (by positivity)
 
 /-- One bisection step keeps the invariant and shrinks the width by `3/4`. -/
-theorem gridBisectStep_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
-    (hx : x.toVal = some (xv : EReal))
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+theorem gridBisectStep_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ}
+    (hX : XEncl xAt xv)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     {W : ℝ} (hWx : W * Real.exp W = xv) {A B e : AzInt} (hinv : GridInv branch0 W (A, B, e)) :
-    GridInv branch0 W (gridBisectStep branch0 x hs A B e) ∧
-      gridWidth (gridBisectStep branch0 x hs A B e) ≤ 3 / 4 * gridWidth (A, B, e) := by
+    GridInv branch0 W (gridBisectStep branch0 xAt hs A B e) ∧
+      gridWidth (gridBisectStep branch0 xAt hs A B e) ≤ 3 / 4 * gridWidth (A, B, e) := by
   obtain ⟨hAW, hWB, hreg0, hreg1⟩ := hinv
   simp only at hAW hWB hreg0 hreg1
   -- the regrid
@@ -839,9 +936,9 @@ theorem gridBisectStep_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
   rw [← hA'] at hAW hreg0
   rw [← hB'] at hWB hreg1
   -- the side of `M 2^e'`
-  cases hside : sideOf x (ofAzInt M <<< e') (hs M e') with
+  cases hside : sideOf xAt (ofAzInt M <<< e') (hs M e') with
   | true =>
-    have hlt := sideOf_true hx hm (hs M e') hside
+    have hlt := sideOf_true hX hm (hs M e') hside
     cases branch0 with
     | true =>
       -- increasing branch: `g(m) < g(W)` gives `m < W`
@@ -872,7 +969,7 @@ theorem gridBisectStep_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
       try simp only
       linarith [hwidth.2]
   | false =>
-    have hgt := sideOf_false hx hm (hs M e') hside
+    have hgt := sideOf_false hX hm (hs M e') hside
     cases branch0 with
     | true =>
       simp only [beq_iff_eq, Bool.false_eq_true, ↓reduceIte]
@@ -902,22 +999,23 @@ theorem gridBisectStep_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
       linarith [hwidth.1]
 
 /-- `k` bisection steps keep the invariant and shrink the width by `(3/4)^k`. -/
-theorem bisectGrid_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+theorem bisectGrid_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ}
+    (hX : XEncl xAt xv)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     {W : ℝ} (hWx : W * Real.exp W = xv) :
     ∀ (k : ℕ) (s : AzInt × AzInt × AzInt), GridInv branch0 W s →
-      GridInv branch0 W (bisectGrid branch0 x hs k s) ∧
-        gridWidth (bisectGrid branch0 x hs k s) ≤ (3 / 4 : ℝ) ^ k * gridWidth s := by
+      GridInv branch0 W (bisectGrid branch0 xAt hs k s) ∧
+        gridWidth (bisectGrid branch0 xAt hs k s) ≤ (3 / 4 : ℝ) ^ k * gridWidth s := by
   intro k
   induction k with
   | zero => intro s hs'; exact ⟨hs', by simp only [bisectGrid, pow_zero, one_mul]; exact le_rfl⟩
   | succ k ih =>
     rintro ⟨A, B, e⟩ hinv
-    obtain ⟨hinv', hw⟩ := gridBisectStep_spec branch0 hx hs hWx hinv
+    obtain ⟨hinv', hw⟩ := gridBisectStep_spec branch0 hX hs hWx hinv
     obtain ⟨hinv'', hw'⟩ := ih _ hinv'
     refine ⟨hinv'', ?_⟩
-    calc gridWidth (bisectGrid branch0 x hs k (gridBisectStep branch0 x hs A B e))
-        ≤ (3 / 4 : ℝ) ^ k * gridWidth (gridBisectStep branch0 x hs A B e) := hw'
+    calc gridWidth (bisectGrid branch0 xAt hs k (gridBisectStep branch0 xAt hs A B e))
+        ≤ (3 / 4 : ℝ) ^ k * gridWidth (gridBisectStep branch0 xAt hs A B e) := hw'
       _ ≤ (3 / 4 : ℝ) ^ k * (3 / 4 * gridWidth (A, B, e)) :=
           mul_le_mul_of_nonneg_left hw (by positivity)
       _ = (3 / 4 : ℝ) ^ (k + 1) * gridWidth (A, B, e) := by ring
@@ -1013,10 +1111,11 @@ theorem clampInto_spec {I : AzFloat × AzFloat} {a b : ℝ} (ha : I.1.toVal = so
   | nan => exact ⟨a, ha, le_rfl, hab⟩
   | infinity s => exact ⟨a, ha, le_rfl, hab⟩
 
-theorem halleyCandidate_spec (branch0 : Bool) (x : AzFloat) (qE : Option (AzFloat × AzFloat))
+theorem halleyCandidate_spec (branch0 : Bool) (xAt : ℕ → AzFloat × AzFloat)
+    (qE : Option (AzFloat × AzFloat))
     {I₀ : AzFloat × AzFloat} {a₀ b₀ : ℝ} (ha₀ : I₀.1.toVal = some (a₀ : EReal))
     (hb₀ : I₀.2.toVal = some (b₀ : EReal)) (hab : a₀ ≤ b₀) (W : ℕ) :
-    ∃ nv : ℝ, (halleyCandidate branch0 x qE I₀ W).toVal = some (nv : EReal) ∧ a₀ ≤ nv ∧
+    ∃ nv : ℝ, (halleyCandidate branch0 xAt qE I₀ W).toVal = some (nv : EReal) ∧ a₀ ≤ nv ∧
       nv ≤ b₀ := by
   unfold halleyCandidate
   simp only
@@ -1065,24 +1164,24 @@ theorem tendsto_lambertEps (a₀ b₀ : ℝ) (qE : Option (AzFloat × AzFloat)) 
       nlinarith [mul_nonneg hM (pow_nonneg (by norm_num : (0:ℝ) ≤ 1 / 2) w)]
 
 /-- `lambertBracket` encloses the root, with width at most `lambertEps a₀ b₀ qE w`. -/
-theorem lambertBracket_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
-    (hx : x.toVal = some (xv : EReal))
+theorem lambertBracket_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ}
+    (hX : XEncl xAt xv)
     (qE : Option (AzFloat × AzFloat)) {I₀ : AzFloat × AzFloat} {a₀ b₀ : ℝ}
     (ha₀ : I₀.1.toVal = some (a₀ : EReal)) (hb₀ : I₀.2.toVal = some (b₀ : EReal)) {W : ℝ}
     (hWx : W * Real.exp W = xv) (haW : a₀ ≤ W) (hWb : W ≤ b₀)
     (hbr : (branch0 = true → -1 ≤ W) ∧ (branch0 = false → W ≤ -1))
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
-    ∃ lo hi : ℝ, (lambertBracket branch0 x qE I₀ hs w).1.toVal = some (lo : EReal) ∧
-      (lambertBracket branch0 x qE I₀ hs w).2.toVal = some (hi : EReal) ∧ lo ≤ W ∧ W ≤ hi ∧
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
+    ∃ lo hi : ℝ, (lambertBracket branch0 xAt qE I₀ hs w).1.toVal = some (lo : EReal) ∧
+      (lambertBracket branch0 xAt qE I₀ hs w).2.toVal = some (hi : EReal) ∧ lo ≤ W ∧ W ≤ hi ∧
       hi - lo ≤ lambertEps a₀ b₀ qE w := by
   have hab : a₀ ≤ b₀ := haW.trans hWb
   have hP : 64 ≤ lambertWork qE w := by unfold lambertWork; omega
   unfold lambertBracket
   simp only
   set P := lambertWork qE w with hPdef
-  obtain ⟨nv, hn, han, hnb⟩ := halleyCandidate_spec branch0 x qE ha₀ hb₀ hab P
+  obtain ⟨nv, hn, han, hnb⟩ := halleyCandidate_spec branch0 xAt qE ha₀ hb₀ hab P
   obtain ⟨a, b, ha, hb, h0a, haW', hWb', hbb0⟩ :=
-    mvtRounds_spec branch0 hx hn ha₀ hb₀ hWx haW hWb han hnb hP
+    mvtRounds_spec branch0 hX hn ha₀ hb₀ hWx haW hWb han hnb hP
   obtain ⟨d, hd, hd1, -⟩ := subCeiling_abs hb ha 64
   split_ifs with hle
   · rw [le_eq_true_iff hd (toVal_lambertTarget ha₀ hb₀ w)] at hle
@@ -1090,13 +1189,13 @@ theorem lambertBracket_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
     unfold lambertEps
     exact le_max_of_le_left (by linarith)
   · obtain ⟨hinv₀, hw₀⟩ := gridOf_spec branch0 ha₀ hb₀ haW hWb hbr
-    obtain ⟨hinv, hw⟩ := bisectGrid_spec branch0 hx hs hWx (3 * P + 8) _ hinv₀
-    obtain ⟨hlo, hhi⟩ := gridFloats_spec (bisectGrid branch0 x hs (3 * P + 8) (gridOf branch0 I₀))
+    obtain ⟨hinv, hw⟩ := bisectGrid_spec branch0 hX hs hWx (3 * P + 8) _ hinv₀
+    obtain ⟨hlo, hhi⟩ := gridFloats_spec (bisectGrid branch0 xAt hs (3 * P + 8) (gridOf branch0 I₀))
     obtain ⟨hAW, hWB, -, -⟩ := hinv
     refine ⟨_, _, hlo, hhi, hAW, hWB, ?_⟩
-    have hwid : gridWidth (bisectGrid branch0 x hs (3 * P + 8) (gridOf branch0 I₀))
+    have hwid : gridWidth (bisectGrid branch0 xAt hs (3 * P + 8) (gridOf branch0 I₀))
         ≤ (3 / 4 : ℝ) ^ (3 * P + 8) * (b₀ - a₀ + 4) := by
-      calc gridWidth (bisectGrid branch0 x hs (3 * P + 8) (gridOf branch0 I₀))
+      calc gridWidth (bisectGrid branch0 xAt hs (3 * P + 8) (gridOf branch0 I₀))
           ≤ (3 / 4 : ℝ) ^ (3 * P + 8) * gridWidth (gridOf branch0 I₀) := hw
         _ ≤ (3 / 4 : ℝ) ^ (3 * P + 8) * (b₀ - a₀ + 4) :=
             mul_le_mul_of_nonneg_left hw₀ (by positivity)
@@ -1106,18 +1205,18 @@ theorem lambertBracket_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
     exact le_max_of_le_right hwid
 
 /-- `lambertApprox` brackets the root by `Roundable`s. -/
-theorem lambertApprox_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
-    (hx : x.toVal = some (xv : EReal))
+theorem lambertApprox_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ}
+    (hX : XEncl xAt xv)
     (qE : Option (AzFloat × AzFloat)) {I₀ : AzFloat × AzFloat} {a₀ b₀ : ℝ}
     (ha₀ : I₀.1.toVal = some (a₀ : EReal)) (hb₀ : I₀.2.toVal = some (b₀ : EReal)) {W : ℝ}
     (hWx : W * Real.exp W = xv) (haW : a₀ ≤ W) (hWb : W ≤ b₀)
     (hbr : (branch0 = true → -1 ≤ W) ∧ (branch0 = false → W ≤ -1))
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
-    ∃ lv hv : ℝ, Rounds (lambertApprox branch0 x qE I₀ hs w).1 lv ∧
-      Rounds (lambertApprox branch0 x qE I₀ hs w).2 hv ∧ lv ≤ W ∧ W ≤ hv ∧
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) (w : ℕ) :
+    ∃ lv hv : ℝ, Rounds (lambertApprox branch0 xAt qE I₀ hs w).1 lv ∧
+      Rounds (lambertApprox branch0 xAt qE I₀ hs w).2 hv ∧ lv ≤ W ∧ W ≤ hv ∧
       hv - lv ≤ lambertEps a₀ b₀ qE w := by
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hw⟩ :=
-    lambertBracket_spec branch0 hx qE ha₀ hb₀ hWx haW hWb hbr hs w
+    lambertBracket_spec branch0 hX qE ha₀ hb₀ hWx haW hWb hbr hs w
   have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
   rw [fval_of_toVal_coe hlo] at hR1
   have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
@@ -1126,17 +1225,17 @@ theorem lambertApprox_spec (branch0 : Bool) {x : AzFloat} {xv : ℝ}
 
 /-- The Ziv certificate for an irrational root. -/
 theorem lambertApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (branch0 : Bool)
-    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (qE : Option (AzFloat × AzFloat))
+    {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (qE : Option (AzFloat × AzFloat))
     {I₀ : AzFloat × AzFloat} {a₀ b₀ : ℝ} (ha₀ : I₀.1.toVal = some (a₀ : EReal))
     (hb₀ : I₀.2.toVal = some (b₀ : EReal)) {W : ℝ} (hWx : W * Real.exp W = xv) (haW : a₀ ≤ W)
     (hWb : W ≤ b₀) (hbr : (branch0 = true → -1 ≤ W) ∧ (branch0 = false → W ≤ -1))
-    (hs : ∀ M e : AzInt, ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (hirr : Irrational W) (w₀ : ℕ) (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (lambertApprox branch0 x qE I₀ hs (w₀ * 2 ^ f)).1
-      (lambertApprox branch0 x qE I₀ hs (w₀ * 2 ^ f)).2 p mode).isSome = true :=
-  exists_isSome_of_irrational_threshold p mode (lambertApprox branch0 x qE I₀ hs) hirr
+    ∃ f : ℕ, (roundingPossible (lambertApprox branch0 xAt qE I₀ hs (w₀ * 2 ^ f)).1
+      (lambertApprox branch0 xAt qE I₀ hs (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (lambertApprox branch0 xAt qE I₀ hs) hirr
     (lambertEps a₀ b₀ qE) (tendsto_lambertEps a₀ b₀ qE (haW.trans hWb)) 0
-    (fun w _ => lambertApprox_spec branch0 hx qE ha₀ hb₀ hWx haW hWb hbr hs w) w₀ hw₀
+    (fun w _ => lambertApprox_spec branch0 hX qE ha₀ hb₀ hWx haW hWb hbr hs w) w₀ hw₀
 
 /-! ### The side certificate from irrationality -/
 
@@ -1146,10 +1245,10 @@ theorem gridVal_rat (M e : AzInt) : ∃ r : ℚ, gridVal M e = r :=
 
 /-- For a rational `x ≠ 0` in the domain, no grid point `m` has `m eᵐ = x`: the roots are
 irrational. -/
-theorem exists_sideAt_isSome_grid {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+theorem exists_sideAt_isSome_grid {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
     {r : ℚ} (hxr : xv = r) (hx0 : xv ≠ 0) (hx1 : -Real.exp (-1) < xv) (M e : AzInt) :
-    ∃ k, (sideAt x (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true := by
-  apply exists_sideAt_isSome hx (toVal_gridPoint M e)
+    ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true := by
+  apply exists_sideAt_isSome hX (toVal_gridPoint M e)
   intro heq
   obtain ⟨q, hq⟩ := gridVal_rat M e
   have hr0 : r ≠ 0 := by rintro rfl; exact hx0 (by rw [hxr, Rat.cast_zero])
@@ -1183,122 +1282,185 @@ theorem one_add_exp_mul_rat_ne_zero (r : ℚ) : 1 + Real.exp 1 * (r : ℝ) ≠ 0
   field_simp
   linarith
 
-/-- The side certificate for a positive float. -/
-theorem sideCert_pos (s : Bool) (e : AzInt) (q : ℕ) (m : AzNat) (hv : FiniteValid q m)
-    (hs : s = true) (M e' : AzInt) :
-    ∃ k, (sideAt (finite s e q m hv) (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
-  obtain ⟨r, hr⟩ := finiteVal_rat s e hv
-  subst hs
-  have hpos := finiteVal_true_pos e hv
-  exact exists_sideAt_isSome_grid (toVal_finite true e q m hv) hr hpos.ne'
-    (by linarith [Real.exp_pos (-1)]) M e'
+/-- The side certificate for a rational target `x > 0`. -/
+theorem sideCert_pos {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hrat : ∃ r : ℚ, xv = r) (hpos : 0 < xv) (M e' : AzInt) :
+    ∃ k, (sideAt xAt (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
+  exact exists_sideAt_isSome_grid hX hr hpos.ne' (by linarith [Real.exp_pos (-1)]) M e'
 
-/-- The `q` certificate for a negative float. -/
-theorem qCert (s : Bool) (e : AzInt) (q : ℕ) (m : AzNat) (hv : FiniteValid q m) (hs : s = false) :
-    ∃ k, (qAt (finite s e q m hv) (64 * 2 ^ k)).isSome = true := by
-  obtain ⟨r, hr⟩ := finiteVal_rat s e hv
-  subst hs
-  have hneg := finiteVal_false_neg e hv
-  exact exists_qAt_isSome (toVal_finite false e q m hv) hneg
-    (by rw [hr]; exact one_add_exp_mul_rat_ne_zero r)
+/-- The `q` certificate for a rational target `x < 0`. -/
+theorem qCert {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r)
+    (hneg : xv < 0) : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
+  exact exists_qAt_isSome hX hneg (by rw [hr]; exact one_add_exp_mul_rat_ne_zero r)
 
-/-- The side certificate for a negative float in the domain. -/
-theorem sideCert_neg (s : Bool) (e : AzInt) (q : ℕ) (m : AzNat) (hv : FiniteValid q m)
-    (hs : s = false) {lo hi : AzFloat}
-    (hq : qEncl (finite s e q m hv) (qCert s e q m hv hs) = some (lo, hi)) (M e' : AzInt) :
-    ∃ k, (sideAt (finite s e q m hv) (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
-  obtain ⟨r, hr⟩ := finiteVal_rat s e hv
-  subst hs
-  have hneg := finiteVal_false_neg e hv
-  obtain ⟨lov, hiv, -, -, hl0, hl, -⟩ := qEncl_eq_some (toVal_finite false e q m hv) hneg _ hq
-  have hx1 : -Real.exp (-1) < finiteVal false e m := by
-    rw [neg_exp_neg_one_lt_iff]; linarith
-  exact exists_sideAt_isSome_grid (toVal_finite false e q m hv) hr hneg.ne hx1 M e'
+/-- The side certificate for a rational target `x < 0` in the domain. -/
+theorem sideCert_neg {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEncl xAt xv)
+    (hrat : ∃ r : ℚ, xv = r) (hneg : xv < 0) {h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true}
+    {lo hi : AzFloat} (hq : qEncl xAt h = some (lo, hi)) (M e' : AzInt) :
+    ∃ k, (sideAt xAt (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
+  obtain ⟨lov, hiv, -, -, hl0, hl, -⟩ := qEncl_eq_some hX hneg _ hq
+  have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
+  exact exists_sideAt_isSome_grid hX hr hneg.ne hx1 M e'
 
-/-- The Ziv certificate of `W₀` for a positive float. -/
-theorem zivCert_W0_pos (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt) (q : ℕ)
-    (m : AzNat) (hv : FiniteValid q m) (hs : s = true) :
+/-- The Ziv certificate of `W₀` for a rational target `x > 0`. -/
+theorem zivCert_W0_pos (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    {xv : ℝ} (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hpos : 0 < xv)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
     ∃ f : ℕ, (roundingPossible
-      (lambertApprox true (finite s e q m hv) none (aprioriW0Pos (finite s e q m hv) 64)
-        (sideCert_pos s e q m hv hs) ((p + zivGuardBits) * 2 ^ f)).1
-      (lambertApprox true (finite s e q m hv) none (aprioriW0Pos (finite s e q m hv) 64)
-        (sideCert_pos s e q m hv hs) ((p + zivGuardBits) * 2 ^ f)).2 p mode).isSome = true := by
-  subst hs
-  have hx := toVal_finite true e q m hv
-  have hpos := finiteVal_true_pos e hv
-  obtain ⟨r, hr⟩ := finiteVal_rat true e hv
+      (lambertApprox true xAt none (aprioriW0Pos xAt 64) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox true xAt none (aprioriW0Pos xAt 64) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
   have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
-  obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Pos_spec hx hpos.le (le_refl 64)
+  obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Pos_spec hX hpos (le_refl 64)
   have hW := lambertW0_spec (neg_exp_neg_one_le_of_nonneg hpos.le)
-  refine lambertApprox_isSome_exists p mode true hx none ha₀ hb₀ hW.2 haW hWb
-    ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ _ ?_ _
+  refine lambertApprox_isSome_exists p mode true hX none ha₀ hb₀ hW.2 haW hWb
+    ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ hs ?_ _
     (by unfold zivGuardBits; omega)
   rw [hr]
   exact irrational_lambertW0 hr0 (by rw [← hr]; exact neg_exp_neg_one_le_of_nonneg hpos.le)
 
-/-- The Ziv certificate of `W₀` for a negative float in the domain. -/
-theorem zivCert_W0_neg (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt) (q : ℕ)
-    (m : AzNat) (hv : FiniteValid q m) (hs : s = false) {lo hi : AzFloat}
-    (hq : qEncl (finite s e q m hv) (qCert s e q m hv hs) = some (lo, hi)) :
+/-- The Ziv certificate of `W₀` for a rational target `x < 0` in the domain. -/
+theorem zivCert_W0_neg (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    {xv : ℝ} (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hneg : xv < 0)
+    {h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true} {lo hi : AzFloat}
+    (hq : qEncl xAt h = some (lo, hi))
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
     ∃ f : ℕ, (roundingPossible
-      (lambertApprox true (finite s e q m hv) (some (qTight (finite s e q m hv) (lo, hi)))
-        (aprioriW0Neg (qTight (finite s e q m hv) (lo, hi)).1
-          (qTight (finite s e q m hv) (lo, hi)).2
-          (64 + 2 * compBits (some (qTight (finite s e q m hv) (lo, hi)))))
-        (sideCert_neg s e q m hv hs hq) ((p + zivGuardBits) * 2 ^ f)).1
-      (lambertApprox true (finite s e q m hv) (some (qTight (finite s e q m hv) (lo, hi)))
-        (aprioriW0Neg (qTight (finite s e q m hv) (lo, hi)).1
-          (qTight (finite s e q m hv) (lo, hi)).2
-          (64 + 2 * compBits (some (qTight (finite s e q m hv) (lo, hi)))))
-        (sideCert_neg s e q m hv hs hq) ((p + zivGuardBits) * 2 ^ f)).2 p mode).isSome = true := by
-  subst hs
-  have hx := toVal_finite false e q m hv
-  have hneg := finiteVal_false_neg e hv
-  obtain ⟨r, hr⟩ := finiteVal_rat false e hv
+      (lambertApprox true xAt (some (qTight xAt (lo, hi)))
+        (aprioriW0Neg (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox true xAt (some (qTight xAt (lo, hi)))
+        (aprioriW0Neg (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
   have hr0 : r ≠ 0 := by rintro rfl; rw [Rat.cast_zero] at hr; linarith
-  obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hx hneg _ hq
-  have hx1 : -Real.exp (-1) < finiteVal false e m := by rw [neg_exp_neg_one_lt_iff]; linarith
+  obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hX hneg _ hq
+  have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
   obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
-    qTight_spec (q := (lo, hi)) hx hneg hlo hhi hl0 hl hh
+    qTight_spec (q := (lo, hi)) hX hneg hlo hhi hl0 hl hh
   obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriW0Neg_spec hx1 hneg hl' hh' hl0' hlq' hqh'
-    (by omega : 64 ≤ 64 + 2 * compBits (some (qTight (finite false e q m hv) (lo, hi))))
+    (by omega : 64 ≤ 64 + 2 * compBits (some (qTight xAt (lo, hi))))
   have hW := lambertW0_spec hx1.le
-  refine lambertApprox_isSome_exists p mode true hx _ ha₀ hb₀ hW.2 haW hWb
-    ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ _ ?_ _
+  refine lambertApprox_isSome_exists p mode true hX _ ha₀ hb₀ hW.2 haW hWb
+    ⟨fun _ => hW.1, fun h => (Bool.false_ne_true h.symm).elim⟩ hs ?_ _
     (by unfold zivGuardBits; omega)
   rw [hr]
   exact irrational_lambertW0 hr0 (by rw [← hr]; exact hx1.le)
 
-/-- The Ziv certificate of `W₋₁` for a negative float in the domain. -/
-theorem zivCert_Wm1 (p : ℕ) [NeZero p] (mode : RoundingMode) (s : Bool) (e : AzInt) (q : ℕ)
-    (m : AzNat) (hv : FiniteValid q m) (hs : s = false) {lo hi : AzFloat}
-    (hq : qEncl (finite s e q m hv) (qCert s e q m hv hs) = some (lo, hi)) :
+/-- The Ziv certificate of `W₋₁` for a rational target `x < 0` in the domain. -/
+theorem zivCert_Wm1 (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    {xv : ℝ} (hX : XEncl xAt xv) (hrat : ∃ r : ℚ, xv = r) (hneg : xv < 0)
+    {h : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true} {lo hi : AzFloat}
+    (hq : qEncl xAt h = some (lo, hi))
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
     ∃ f : ℕ, (roundingPossible
-      (lambertApprox false (finite s e q m hv) (some (qTight (finite s e q m hv) (lo, hi)))
-        (aprioriWm1 (finite s e q m hv) (qTight (finite s e q m hv) (lo, hi)).1
-          (qTight (finite s e q m hv) (lo, hi)).2
-          (64 + 2 * compBits (some (qTight (finite s e q m hv) (lo, hi)))))
-        (sideCert_neg s e q m hv hs hq) ((p + zivGuardBits) * 2 ^ f)).1
-      (lambertApprox false (finite s e q m hv) (some (qTight (finite s e q m hv) (lo, hi)))
-        (aprioriWm1 (finite s e q m hv) (qTight (finite s e q m hv) (lo, hi)).1
-          (qTight (finite s e q m hv) (lo, hi)).2
-          (64 + 2 * compBits (some (qTight (finite s e q m hv) (lo, hi)))))
-        (sideCert_neg s e q m hv hs hq) ((p + zivGuardBits) * 2 ^ f)).2 p mode).isSome = true := by
-  subst hs
-  have hx := toVal_finite false e q m hv
-  have hneg := finiteVal_false_neg e hv
-  obtain ⟨r, hr⟩ := finiteVal_rat false e hv
-  obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hx hneg _ hq
-  have hx1 : -Real.exp (-1) < finiteVal false e m := by rw [neg_exp_neg_one_lt_iff]; linarith
+      (lambertApprox false xAt (some (qTight xAt (lo, hi)))
+        (aprioriWm1 xAt (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox false xAt (some (qTight xAt (lo, hi)))
+        (aprioriWm1 xAt (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨r, hr⟩ := hrat
+  obtain ⟨lov, hiv, hlo, hhi, hl0, hl, hh⟩ := qEncl_eq_some hX hneg _ hq
+  have hx1 : -Real.exp (-1) < xv := by rw [neg_exp_neg_one_lt_iff]; linarith
   obtain ⟨l', h', hl', hh', hl0', hlq', hqh'⟩ :=
-    qTight_spec (q := (lo, hi)) hx hneg hlo hhi hl0 hl hh
-  obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriWm1_spec hx hx1 hneg hl' hh' hl0' hlq' hqh'
-    (by omega : 64 ≤ 64 + 2 * compBits (some (qTight (finite false e q m hv) (lo, hi))))
+    qTight_spec (q := (lo, hi)) hX hneg hlo hhi hl0 hl hh
+  obtain ⟨a₀, b₀, ha₀, hb₀, haW, hWb⟩ := aprioriWm1_spec hX hx1 hneg hl' hh' hl0' hlq' hqh'
+    (by omega : 64 ≤ 64 + 2 * compBits (some (qTight xAt (lo, hi))))
   have hW := lambertWm1_spec hx1.le hneg
-  refine lambertApprox_isSome_exists p mode false hx _ ha₀ hb₀ hW.2 haW hWb
-    ⟨fun h => (Bool.false_ne_true h).elim, fun _ => hW.1⟩ _ ?_ _
+  refine lambertApprox_isSome_exists p mode false hX _ ha₀ hb₀ hW.2 haW hWb
+    ⟨fun h => (Bool.false_ne_true h).elim, fun _ => hW.1⟩ hs ?_ _
     (by unfold zivGuardBits; omega)
   rw [hr]
   exact irrational_lambertWm1 (by rw [← hr]; exact hx1.le) (by rw [← hr]; exact hneg)
+
+/-! ### The float and rational instances -/
+
+theorem finite_true_pos_rat (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    0 < finiteVal true e m := finiteVal_true_pos e hv
+
+theorem finite_false_neg_rat (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    finiteVal false e m < 0 := finiteVal_false_neg e hv
+
+/-- A rational with positive sign and nonzero numerator is positive. -/
+theorem toRat_pos_real (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) :
+    (0 : ℝ) < ((AzRat.toRat q : ℚ) : ℝ) := by exact_mod_cast toRat_pos_of_sign q hs h0
+
+/-- A rational with negative sign and nonzero numerator is negative. -/
+theorem toRat_neg_real (q : AzRat) (hs : q.sign = false) (h0 : q.num ≠ 0) :
+    ((AzRat.toRat q : ℚ) : ℝ) < 0 := by exact_mod_cast toRat_neg_of_sign q hs h0
+
+/-! ### Bundled targets (the drivers carry one proposition, not a real) -/
+
+/-- A positive rational target with its enclosure function. -/
+def PosTarget (xAt : ℕ → AzFloat × AzFloat) : Prop :=
+  ∃ xv : ℝ, XEncl xAt xv ∧ (∃ r : ℚ, xv = r) ∧ 0 < xv
+
+/-- A negative rational target with its enclosure function. -/
+def NegTarget (xAt : ℕ → AzFloat × AzFloat) : Prop :=
+  ∃ xv : ℝ, XEncl xAt xv ∧ (∃ r : ℚ, xv = r) ∧ xv < 0
+
+theorem sideCert_pos' {xAt : ℕ → AzFloat × AzFloat} (h : PosTarget xAt) (M e' : AzInt) :
+    ∃ k, (sideAt xAt (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨xv, hX, hrat, hpos⟩ := h
+  exact sideCert_pos hX hrat hpos M e'
+
+theorem qCert' {xAt : ℕ → AzFloat × AzFloat} (h : NegTarget xAt) :
+    ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨xv, hX, hrat, hneg⟩ := h
+  exact qCert hX hrat hneg
+
+theorem sideCert_neg' {xAt : ℕ → AzFloat × AzFloat} (h : NegTarget xAt)
+    {h0 : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true} {lo hi : AzFloat}
+    (hq : qEncl xAt h0 = some (lo, hi)) (M e' : AzInt) :
+    ∃ k, (sideAt xAt (ofAzInt M <<< e') (64 * 2 ^ k)).isSome = true := by
+  obtain ⟨xv, hX, hrat, hneg⟩ := h
+  exact sideCert_neg hX hrat hneg hq M e'
+
+theorem zivCert_W0_pos' (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    (h : PosTarget xAt)
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
+    ∃ f : ℕ, (roundingPossible
+      (lambertApprox true xAt none (aprioriW0Pos xAt 64) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox true xAt none (aprioriW0Pos xAt 64) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨xv, hX, hrat, hpos⟩ := h
+  exact zivCert_W0_pos p mode hX hrat hpos hs
+
+theorem zivCert_W0_neg' (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    (h : NegTarget xAt) {h0 : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true} {lo hi : AzFloat}
+    (hq : qEncl xAt h0 = some (lo, hi))
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
+    ∃ f : ℕ, (roundingPossible
+      (lambertApprox true xAt (some (qTight xAt (lo, hi)))
+        (aprioriW0Neg (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox true xAt (some (qTight xAt (lo, hi)))
+        (aprioriW0Neg (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨xv, hX, hrat, hneg⟩ := h
+  exact zivCert_W0_neg p mode hX hrat hneg hq hs
+
+theorem zivCert_Wm1' (p : ℕ) [NeZero p] (mode : RoundingMode) {xAt : ℕ → AzFloat × AzFloat}
+    (h : NegTarget xAt) {h0 : ∃ k, (qAt xAt (64 * 2 ^ k)).isSome = true} {lo hi : AzFloat}
+    (hq : qEncl xAt h0 = some (lo, hi))
+    (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true) :
+    ∃ f : ℕ, (roundingPossible
+      (lambertApprox false xAt (some (qTight xAt (lo, hi)))
+        (aprioriWm1 xAt (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).1
+      (lambertApprox false xAt (some (qTight xAt (lo, hi)))
+        (aprioriWm1 xAt (qTight xAt (lo, hi)).1 (qTight xAt (lo, hi)).2
+          (64 + 2 * compBits (some (qTight xAt (lo, hi))))) hs ((p + zivGuardBits) * 2 ^ f)).2
+      p mode).isSome = true := by
+  obtain ⟨xv, hX, hrat, hneg⟩ := h
+  exact zivCert_Wm1 p mode hX hrat hneg hq hs
 
 end Azurite.AzFloat

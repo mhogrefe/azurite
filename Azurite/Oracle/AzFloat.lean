@@ -44,6 +44,7 @@ import Azurite.AzFloat.MulAddMul
 import Azurite.AzFloat.MulAddMulRat
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rem
+import Azurite.AzFloat.SqrtRat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -809,6 +810,38 @@ def checkFloatFromRational (line : String) : Verdict := do
     let computed ← roundedResult "from_rational_prec" (AzFloat.ofAzRatRound q p) (.mode .Nearest)
     expectFloatPair "from_rational_prec" computed printed
   | _, _ => fail "not a from_rational line"
+
+/-- `Float::{name}_prec_round[_ref](q, p, rm) = (x, o)` and `Float::{name}_prec[_ref](q, p) = (x, o)`,
+functions of a `Rational` alone (the `_ref` forms print `&q`), against `f q p rm`. -/
+def checkFloatOfRational (name : String) (f : AzRat → Nat → RoundingMode → AzFloat × Ordering)
+    (line : String) : Verdict := do
+  let pr := s!"Float::{name}_prec_round"
+  let pl := s!"Float::{name}_prec"
+  let (method, args, res) ←
+    match functionCall line pr, functionCall line s!"{pr}_ref",
+        functionCall line pl, functionCall line s!"{pl}_ref" with
+    | some (args, res), _, _, _ | _, some (args, res), _, _ => pure (pr, args, res)
+    | _, _, some (args, res), _ | _, _, _, some (args, res) => pure (pl, args, res)
+    | _, _, _, _ => fail s!"not a {name} line"
+  let (q, p, rm) ← match args with
+    | [q, p, rm] => pure (q, p, some rm)
+    | [q, p] => pure (q, p, none)
+    | _ => fail s!"{method}: unexpected arguments"
+  let q ← expect "q" (parseAzRat (stripRef q))
+  let p ← expect "precision" (parseNat p)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult method (f q p) rm
+  expectFloatPair method computed (← parseFloatPair res)
+
+/-- `Float::sqrt_rational_prec_round(q, p, rm)`: `sqrtRatPrecRound`. -/
+def checkFloatSqrtRational : String → Verdict :=
+  checkFloatOfRational "sqrt_rational" AzFloat.sqrtRatPrecRound
+
+/-- `Float::reciprocal_sqrt_rational_prec_round(q, p, rm)`: `rsqrtRatPrecRound`. -/
+def checkFloatReciprocalSqrtRational : String → Verdict :=
+  checkFloatOfRational "reciprocal_sqrt_rational" AzFloat.rsqrtRatPrecRound
 
 /-! ### Fused multiply-add and multiply-subtract -/
 
