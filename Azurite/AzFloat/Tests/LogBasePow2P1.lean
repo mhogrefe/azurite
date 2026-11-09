@@ -13,6 +13,7 @@ import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.LogBasePow2P1
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log_{2^k} (1 + x)`
@@ -88,3 +89,9 @@ private def ref16 : AzRat :=
 #guard logBasePow2P1 (F "7" 10) (K 3) == F "1" 10
 #guard logBasePow2P1 (F "10" 53) (K 1) == log2P1 (F "10" 53)
 #guard logBasePow2P1 (F "9" 53) (K 4) == ofAzRat ref16 53
+
+-- precomputed constants: the same results
+#guard logBasePow2P1With (LnConsts.forPrecision 53) (F "1/2" 53) (K 3)
+  == logBasePow2P1 (F "1/2" 53) (K 3)
+#guard logBasePow2P1With (LnConsts.forPrecision 53) (F "-1/2" 53) (K 2)
+  == logBasePow2P1 (F "-1/2" 53) (K 2)

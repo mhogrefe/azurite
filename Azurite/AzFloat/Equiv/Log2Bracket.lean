@@ -211,18 +211,18 @@ theorem tendsto_log2Eps (e : ℤ) (A : ℝ) :
 
 /-- `log2Quotients b w` for a bracket `[a, bv] ∋ L` of width `≤ ε` encloses `L / ln 2`, within
 `5ε + 140 (|L| + ε) 2^(−w)` (`w ≥ 64`). -/
-theorem log2Quotients_spec {w : ℕ} (hw : 64 ≤ w) {b : AzFloat × AzFloat} {a bv L ε : ℝ}
+theorem log2QuotientsWith_spec {w : ℕ} (hw : 64 ≤ w) {cb : AzFloat × AzFloat}
+    (hcb : Ln2BracketFor w cb) {b : AzFloat × AzFloat} {a bv L ε : ℝ}
     (ha : b.1.toVal = some (a : EReal)) (hb : b.2.toVal = some (bv : EReal)) (haL : a ≤ L)
     (hLb : L ≤ bv) (hwid : bv - a ≤ ε) :
-    ∃ lo hi : ℝ, (log2Quotients b w).1.toVal = some (lo : EReal) ∧
-      (log2Quotients b w).2.toVal = some (hi : EReal) ∧
+    ∃ lo hi : ℝ, (log2QuotientsWith cb b w).1.toVal = some (lo : EReal) ∧
+      (log2QuotientsWith cb b w).2.toVal = some (hi : EReal) ∧
       lo ≤ L / Real.log 2 ∧ L / Real.log 2 ≤ hi ∧
       hi - lo ≤ 5 * ε + 140 * (|L| + ε) * (1 / 2 : ℝ) ^ w := by
   have : NeZero w := ⟨by omega⟩
-  obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hcpos⟩ := ln2Bracket_spec w
+  obtain ⟨c, d, hc, hd, hcM, hMd, hcd, hc5⟩ := hcb
   set u := (1 / 2 : ℝ) ^ w with hu
   have hu0 : 0 < u := by positivity
-  have hc5 : 1 / 5 ≤ c := hcpos (by omega)
   have hL1 := Real.log_two_gt_d9
   have hc0 : 0 < c := by linarith
   have hM0 : 0 < Real.log 2 := by linarith
@@ -257,6 +257,17 @@ theorem log2Quotients_spec {w : ℕ} (hw : 64 ≤ w) {b : AzFloat × AzFloat} {a
   have hau : |a| * u ≤ (|L| + ε) * u := mul_le_mul_of_nonneg_right habs_a hu0.le
   have hbu : |bv| * u ≤ (|L| + ε) * u := mul_le_mul_of_nonneg_right habs_b hu0.le
   exact ⟨lo, hi, hlo, hhi, hlo1, hhi1, by linarith⟩
+
+/-- `log2Quotients b w` for a bracket `[a, bv] ∋ L` of width `≤ ε` encloses `L / ln 2`, within
+`5ε + 140 (|L| + ε) 2^(−w)` (`w ≥ 64`). -/
+theorem log2Quotients_spec {w : ℕ} (hw : 64 ≤ w) {b : AzFloat × AzFloat} {a bv L ε : ℝ}
+    (ha : b.1.toVal = some (a : EReal)) (hb : b.2.toVal = some (bv : EReal)) (haL : a ≤ L)
+    (hLb : L ≤ bv) (hwid : bv - a ≤ ε) :
+    ∃ lo hi : ℝ, (log2Quotients b w).1.toVal = some (lo : EReal) ∧
+      (log2Quotients b w).2.toVal = some (hi : EReal) ∧
+      lo ≤ L / Real.log 2 ∧ L / Real.log 2 ≤ hi ∧
+      hi - lo ≤ 5 * ε + 140 * (|L| + ε) * (1 / 2 : ℝ) ^ w :=
+  log2QuotientsWith_spec hw (ln2BracketFor_ln2Bracket (by omega)) ha hb haL hLb hwid
 
 /-- `log2Approx x e w` encloses `ln x / ln 2` strictly (the significand of `x` not a power of two),
 with width at most `log2Eps e |ln x| w` (`w ≥ 64`). -/
@@ -614,6 +625,98 @@ theorem log2P1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x
     (log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_log2RatEps _ _) 64
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2P1Approx_spec hw hx hx1 hirr
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The same with precomputed constants -/
+
+theorem log2ApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (hnp : m.isPowerOfTwo = false) :
+    ∃ lv hv' : ℝ, Rounds (log2ApproxWith c (finite true e q m hv) e w).1 lv ∧
+      Rounds (log2ApproxWith c (finite true e q m hv) e w).2 hv' ∧
+      lv < Real.log (finiteVal true e m) / Real.log 2 ∧
+      Real.log (finiteVal true e m) / Real.log 2 < hv' ∧
+      hv' - lv ≤ log2Eps e.toInt |Real.log (finiteVal true e m)| w := by
+  have hirr : Irrational (Real.log (finiteVal true e m) / Real.log 2) := by
+    rw [Real.log_div_log]
+    exact irrational_logb_two_finiteVal e m (ne_zero_of_finiteValid e hv)
+      (fun h => by rw [← AzNat.isPowerOfTwo_iff] at h; rw [h] at hnp; cases hnp)
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnBracketWith_spec c hw e hv
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    log2QuotientsWith_spec hw (c.ln2At_fit hw) ha hb haL hLb hwid
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem log2ApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (hnp : m.isPowerOfTwo = false)
+    (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2ApproxWith c (finite true e q m hv) e (w₀ * 2 ^ f)).1
+      (log2ApproxWith c (finite true e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true := by
+  have hirr : Irrational (Real.log (finiteVal true e m) / Real.log 2) := by
+    rw [Real.log_div_log]
+    exact irrational_logb_two_finiteVal e m (ne_zero_of_finiteValid e hv)
+      (fun h => by rw [← AzNat.isPowerOfTwo_iff] at h; rw [h] at hnp; cases hnp)
+  exact exists_isSome_of_irrational_threshold p mode (log2ApproxWith c (finite true e q m hv) e)
+    hirr (log2Eps e.toInt |Real.log (finiteVal true e m)|) (tendsto_log2Eps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := log2ApproxWith_spec c hw e hv hnp
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+theorem log2RatApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (hnp : q.isPowerOfTwo = false) :
+    ∃ lv hv : ℝ, Rounds (log2RatApproxWith c q w).1 lv ∧ Rounds (log2RatApproxWith c q w).2 hv ∧
+      lv < Real.logb 2 (AzRat.toRat q : ℝ) ∧ Real.logb 2 (AzRat.toRat q : ℝ) < hv ∧
+      hv - lv ≤ log2RatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hirr := irrational_logb_two_toRat q hq hnp
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracketWith_spec c hw hr hqv0 hr1 hr2
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    log2QuotientsWith_spec hw (c.ln2At_fit hw) ha hb haL hLb hwid
+  rw [Real.log_div_log] at hlo1 hhi1
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem log2RatApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q) (hnp : q.isPowerOfTwo = false) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2RatApproxWith c q (w₀ * 2 ^ f)).1
+      (log2RatApproxWith c q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (log2RatApproxWith c q)
+    (irrational_logb_two_toRat q hq hnp)
+    (log2RatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2) |Real.log (AzRat.toRat q : ℝ)|)
+    (tendsto_log2RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2RatApproxWith_spec c hw q hq hnp
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+theorem log2P1ApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
+    (hirr : Irrational (Real.logb 2 (1 + xv))) :
+    ∃ lv hv : ℝ, Rounds (log2P1ApproxWith c x w).1 lv ∧ Rounds (log2P1ApproxWith c x w).2 hv ∧
+      lv < Real.logb 2 (1 + xv) ∧ Real.logb 2 (1 + xv) < hv ∧
+      hv - lv ≤ log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  obtain ⟨a, b, ha, hb, haL, hLb, hwid⟩ := lnFloorBracketWith_spec c hw hr hpos hf.le hf.ge
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    log2QuotientsWith_spec hw (c.ln2At_fit hw) ha hb haL hLb hwid
+  rw [Real.log_div_log] at hlo1 hhi1
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem log2P1ApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv)
+    (hirr : Irrational (Real.logb 2 (1 + xv))) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (log2P1ApproxWith c x (w₀ * 2 ^ f)).1
+      (log2P1ApproxWith c x (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (log2P1ApproxWith c x) hirr
+    (log2RatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_log2RatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2P1ApproxWith_spec c hw hx hx1 hirr
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
 end Azurite.AzFloat

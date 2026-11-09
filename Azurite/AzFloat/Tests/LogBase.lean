@@ -12,6 +12,7 @@ import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log_b`
@@ -86,3 +87,13 @@ private def ref374 : AzRat :=
 #guard logBase (F "1000" 10) 10 == F "3" 10
 #guard logBase (F "10" 53) 2 == log2 (F "10" 53)
 #guard logBase (F "2" 53) 10 == ofAzRat ref102 53
+
+-- precomputed constants: the same results (natural, power-of-two and tiny bases)
+#guard logBaseWith (LogBaseConsts.forPrecision 10 53) (F "7" 53) == logBase (F "7" 53) 10
+#guard logBaseWith (LogBaseConsts.forPrecision 3 200) (F "10" 200) == logBase (F "10" 200) 3
+#guard logBaseWith (LogBaseConsts.forPrecision 8 53) (F "10" 53) == logBase (F "10" 53) 8
+#guard logBaseWith (LogBaseConsts.forPrecision 10 53) (F "1000" 53) == logBase (F "1000" 53) 10
+#guard logBaseWith (LogBaseConsts.forPrecision 1 53) (F "10" 53) == logBase (F "10" 53) 1
+#guard logBasePrecRoundWith (LogBaseConsts.forPrecision 10 53) (F "7" 53) 53 .Floor
+  == logBasePrecRound (F "7" 53) 10 53 .Floor
+#guard logBaseWith (LogBaseConsts.make 10 1) (F "7" 53) == logBase (F "7" 53) 10

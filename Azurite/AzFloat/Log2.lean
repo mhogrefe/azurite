@@ -26,9 +26,14 @@ certified Ziv loop, without fuel.  Special values: `log₂ NaN = NaN`, `log₂ (
 
 namespace Azurite.AzFloat
 
-/-- `log₂ x` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0`). -/
-def log2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `log2PrecRound` built on a bracket function `A` of `log₂ x` with its Ziv certificate `hA`
+(`log2Approx`, or `log2ApproxWith c` with precomputed constants). -/
+def log2PrecRoundCore (A : AzFloat → AzInt → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) (e : AzInt) {q : ℕ} {m : AzNat}
+      (hv : FiniteValid q m), m.isPowerOfTwo = false → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A (finite true e q m hv) e (w₀ * 2 ^ f)).1
+        (A (finite true e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | infinity s => if s then (infinity true, .eq) else (nan, .eq)
@@ -40,11 +45,26 @@ def log2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
       haveI : NeZero p := ⟨hp⟩
       if h2 : m.isPowerOfTwo = true then setPrecRound (ofAzInt (e - 1)) p mode
       else
-        zivLoopCertified (log2Approx (finite true e q m hv) e) p mode (p + zivGuardBits)
-          (log2Approx_isSome_exists p mode e hv (Bool.eq_false_iff.mpr h2) (p + zivGuardBits)
+        zivLoopCertified (A (finite true e q m hv) e) p mode (p + zivGuardBits)
+          (hA p mode e hv (Bool.eq_false_iff.mpr h2) (p + zivGuardBits)
             (by unfold zivGuardBits; omega))
+
+/-- `log₂ x` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0`). -/
+def log2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  log2PrecRoundCore log2Approx @log2Approx_isSome_exists x p mode
 
 /-- `log₂ x` rounded to nearest at the precision of `x`. -/
 def log2 (x : AzFloat) : AzFloat := (log2PrecRound x (x.precision?.getD 1) .Nearest).1
+
+/-- `log2PrecRound` with the constants `c` (`LnConsts.forPrecision p`); the same result
+(`log2PrecRoundWith_eq_log2PrecRound`). -/
+def log2PrecRoundWith (c : LnConsts) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  log2PrecRoundCore (log2ApproxWith c) (@log2ApproxWith_isSome_exists c) x p mode
+
+/-- `log₂ x` rounded to nearest at the precision of `x`, with the constants `c`. -/
+def log2With (c : LnConsts) (x : AzFloat) : AzFloat :=
+  (log2PrecRoundWith c x (x.precision?.getD 1) .Nearest).1
 
 end Azurite.AzFloat

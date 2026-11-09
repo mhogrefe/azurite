@@ -91,8 +91,8 @@ def lnAgmBracket (pb lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat
 /-! ### The series path -/
 
 /-- The number of square roots taken before the series at working precision `w`:
-`⌊lg w⌋ − 3` (tuned, see `docs/azfloat_plan.md`). -/
-def lnSeriesK (w : Nat) : Nat := Nat.log 2 w - 3
+`⌊lg w⌋ − 1` (tuned 2026-11-08, see `docs/azfloat_plan.md`). -/
+def lnSeriesK (w : Nat) : Nat := Nat.log 2 w - 1
 
 /-- The number of series terms after `k` square roots: `(k + 1)(2J + 1) ≥ w + 1`
 (`lnSeriesTerms_spec`), so that the tail `Σ_{j ≥ J} t^(2j+1)/(2j+1) ≤ (4/3) t^(2J+1)` is at most
@@ -105,35 +105,56 @@ def lnSqrtIter (w : Nat) : Nat → AzFloat → AzFloat
   | 0, y => y
   | k + 1, y => lnSqrtIter w k (maxOf (sqrtPrecRound y w .Floor).1 one)
 
-/-- `n` more terms of `Σ_j t^(2j+1)/(2j+1)` from term `j`, every operation rounded down: the
-state is `(s, p)` with `s` the sum so far and `p = t^(2j+1)`; `t2 = t²`. -/
-def lnSeriesLoop (w : Nat) (t2 : AzFloat) : Nat → Nat → AzFloat × AzFloat → AzFloat × AzFloat
+/-- Up to `n` more terms of `Σ_j t^(2j+1)/(2j+1)` from term `j`, every operation rounded down:
+the state is `(s, p)` with `s` the sum so far and `p = t^(2j+1)`; `t2 = t²`.  The loop **stops
+early** as soon as the computed power `p` falls below `tau` (`2^(−w−3)` in `lnSeriesBracketK`):
+the exact `t^(2j+1)` is then below `2 tau` and the tail of the series below `(16/3) tau`
+(`lnSeriesLoop_spec`), so for arguments close to `1` only a few terms are summed. -/
+def lnSeriesLoop (w : Nat) (t2 tau : AzFloat) : Nat → Nat → AzFloat × AzFloat → AzFloat × AzFloat
   | 0, _, sp => sp
   | n + 1, j, sp =>
-    let term := (divPrecRound sp.2 (ofAzNat (AzNat.ofNat (2 * j + 1))) w .Floor).1
-    lnSeriesLoop w t2 n (j + 1)
-      ((addPrecRound sp.1 term w .Floor).1, (mulPrecRound sp.2 t2 w .Floor).1)
+    if partialCompare sp.2 tau == some .lt then sp
+    else
+      let term := (divPrecRound sp.2 (ofAzNat (AzNat.ofNat (2 * j + 1))) w .Floor).1
+      lnSeriesLoop w t2 tau n (j + 1)
+        ((addPrecRound sp.1 term w .Floor).1, (mulPrecRound sp.2 t2 w .Floor).1)
+
+/-- Guaranteed leading zero bits of a float `y₁ ∈ [0, 1)`, from its exponent alone, one bit of
+safety removed: `y₁ ≤ 2^(−c−1)` for `c = lnSeriesLead y₁` unless `c = 0` (`lnSeriesLead_spec`).
+Applied to `m₀ − 1`, it says how close `m₀` already is to `1`, and how many of the square roots
+of the series path can be skipped. -/
+def lnSeriesLead (y₁ : AzFloat) : Nat :=
+  match y₁.exponent? with
+  | some e' => if e'.sign then 0 else e'.abs.toNat - 1
+  | none => 0
 
 /-- The two ends of the bracket of `ln x` at working precision `w` by the **series path**
 (DLMF 4.45.1–4.45.2 and 4.6.4): `x = m₀ 2^ℓ` with `m₀ ∈ [1, 2)`, `ℓ = e − 1`; `y = m₀^(1/2^k)` by
-`k = lnSeriesK w` rounded-down square roots; `t = (y − 1)/(y + 1) ≤ 2^(−k−1)`;
-`ln y = 2 Σ t^(2j+1)/(2j+1)` summed for `J = lnSeriesTerms k w` terms with every operation
-rounded down, so `2^(k+1) s ≤ ln m₀`; the exact float `E = (20J + 18) 2^(k−w)` covers the
+`k` rounded-down square roots (`lnSeriesK w` in `lnSeriesBracket`; any `k` with `2^k ≤ w`
+works, `lnSeriesBracketK` has it as a parameter for tuning) — fewer, `kr = k − min k c₀`, when
+`m₀ − 1` already has `c₀ = lnSeriesLead (m₀ − 1)` leading zero bits, each root being worth one
+bit; `t = (y − 1)/(y + 1) ≤ 2^(−kr−c₀−1)`;
+`ln y = 2 Σ t^(2j+1)/(2j+1)` summed for at most `J = lnSeriesTerms (kr + c₀) w` terms with every
+operation rounded down — fewer when the computed power drops below `2^(−w−3)` (`lnSeriesLoop`) —
+so `2^(kr+1) s ≤ ln m₀`; the exact float `E = (20J + 18) 2^(kr−w)` covers the
 roundings, the tail of the series and the square roots (`lnSeriesBracket_spec`); then
 `± ℓ ln 2` from the bracket `lb` of `ln 2` exactly as in `lnAgmBracket`. -/
-def lnSeriesBracket (lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+def lnSeriesBracketK (k : Nat) (lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
     AzFloat × AzFloat :=
-  let k := lnSeriesK w
-  let J := lnSeriesTerms k w
   let l : AzInt := e - 1
-  let y := lnSqrtIter w k (x <<< (-l))
+  let m0 := x <<< (-l)
+  let c0 := lnSeriesLead (subPrecRound m0 one w .Floor).1
+  let kr := k - min k c0
+  let J := lnSeriesTerms (kr + c0) w
+  let y := lnSqrtIter w kr m0
   let num := (subPrecRound y one w .Floor).1
   let den := (addPrecRound y one w .Ceiling).1
   let t := (divPrecRound num den w .Floor).1
   let t2 := (sqrPrecRound t w .Floor).1
-  let s := (lnSeriesLoop w t2 J 0 (zero, t)).1
-  let A := s <<< ((k + 1 : Nat) : AzInt)
-  let E := ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((k : AzInt) - (w : AzInt))
+  let tau := powerOf2 (-(AzNat.ofNat (w + 3)).toAzInt)
+  let s := (lnSeriesLoop w t2 tau J 0 (zero, t)).1
+  let A := s <<< ((kr + 1 : Nat) : AzInt)
+  let E := ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((kr : AzInt) - (w : AzInt))
   let m := ofAzNat l.abs
   let B := (mulPrecRound m lb.1 w .Floor).1
   let C := (mulPrecRound m lb.2 w .Ceiling).1
@@ -142,11 +163,17 @@ def lnSeriesBracket (lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat
   ((addPrecRound A LLo w .Floor).1,
     (addPrecRound (addPrecRound A E w .Ceiling).1 LHi w .Ceiling).1)
 
+/-- The series path with the tuned number of square roots `lnSeriesK w`. -/
+def lnSeriesBracket (lb : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
+  lnSeriesBracketK (lnSeriesK w) lb x e w
+
 /-! ### The dispatcher -/
 
-/-- Working precisions up to this take the series path, above it the AGM (tuned, see
-`docs/azfloat_plan.md`). -/
-def lnSeriesThreshold : Nat := 512
+/-- Working precisions up to this take the series path, above it the AGM (tuned 2026-11-08,
+see `docs/azfloat_plan.md`: the paths cross near `w ≈ 1550` with the constants precomputed and
+near `w ≈ 2500` without). -/
+def lnSeriesThreshold : Nat := 2048
 
 /-- The two ends of the bracket of `ln x` at working precision `w`, from given brackets `pb` of
 `π` (needed above `lnSeriesThreshold` only) and `lb` of `ln 2`, computed at precision `w` or
@@ -198,15 +225,20 @@ def lnApproxWith (c : LnConsts) (x : AzFloat) (e : AzInt) (w : Nat) : Roundable 
   let b := lnBracketWith c x e w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
-/-- The bracket of `ln q` from a float `y = ⌊q⌋_w` below `q` (within a relative `2·2^(−w)`):
-`ln y` by `lnBracket` (one AGM run), the upper end widened by `2^(2−w) ≥ ln (q/y)`.  (If `y` is
-not a positive finite float the ends are `NaN`; the callers never ask.) -/
-def lnFloorBracket (y : AzFloat) (w : Nat) : AzFloat × AzFloat :=
+/-- The bracket of `ln q` from a float `y = ⌊q⌋_w` below `q` (within a relative `2·2^(−w)`),
+built on a bracket function `L` for `ln` of a positive float (`lnBracket`, or `lnBracketWith c`):
+`ln y` by `L`, the upper end widened by `2^(2−w) ≥ ln (q/y)`.  (If `y` is not a positive finite
+float the ends are `NaN`; the callers never ask.) -/
+def lnFloorBracketBy (L : AzFloat → AzInt → Nat → AzFloat × AzFloat) (y : AzFloat) (w : Nat) :
+    AzFloat × AzFloat :=
   match y with
   | y@(finite true e _ _ _) =>
-    let b := lnBracket y e w
+    let b := L y e w
     (b.1, (addPrecRound b.2 (powerOf2 (((2 : Nat) : AzInt) - (w : AzInt))) w .Ceiling).1)
   | _ => (nan, nan)
+
+/-- The bracket of `ln q` from a float `y = ⌊q⌋_w` below `q`, with `ln y` by `lnBracket`. -/
+def lnFloorBracket (y : AzFloat) (w : Nat) : AzFloat × AzFloat := lnFloorBracketBy lnBracket y w
 
 /-- `lnFloorBracket` as a pair of `Roundable`s. -/
 def lnFloorApprox (y : AzFloat) (w : Nat) : Roundable × Roundable :=
@@ -223,5 +255,29 @@ def lnRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
 rounding keeps the leading bits of `x`). -/
 def lnP1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
   lnFloorApprox (addPrecRound one x w .Floor).1 w
+
+/-! ### The same with precomputed constants -/
+
+/-- The bracket of `ln 2` for working precision `w`: from the constants `c` when their precision
+suffices, computed otherwise. -/
+def LnConsts.ln2At (c : LnConsts) (w : Nat) : AzFloat × AzFloat :=
+  if w ≤ c.W then c.ln2 else ln2Bracket w
+
+/-- `lnFloorBracket` with the constants `c`. -/
+def lnFloorBracketWith (c : LnConsts) (y : AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  lnFloorBracketBy (lnBracketWith c) y w
+
+/-- `lnFloorBracketWith` as a pair of `Roundable`s. -/
+def lnFloorApproxWith (c : LnConsts) (y : AzFloat) (w : Nat) : Roundable × Roundable :=
+  let b := lnFloorBracketWith c y w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- `lnRatApprox` with the constants `c`. -/
+def lnRatApproxWith (c : LnConsts) (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  lnFloorApproxWith c (ofAzRatRound q w .Floor).1 w
+
+/-- `lnP1Approx` with the constants `c`. -/
+def lnP1ApproxWith (c : LnConsts) (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+  lnFloorApproxWith c (addPrecRound one x w .Floor).1 w
 
 end Azurite.AzFloat

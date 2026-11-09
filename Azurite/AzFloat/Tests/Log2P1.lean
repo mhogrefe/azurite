@@ -12,6 +12,7 @@ import Azurite.AzFloat.Log2P1
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log₂ (1 + x)`
@@ -65,3 +66,11 @@ private def ref3 : AzRat :=
     ++ tenPow79)
 #guard log2P1 (F "2" 200) == ofAzRat ref3 200
 #guard log2P1 (F "9" 200) == ofAzRat ref10 200
+
+-- precomputed constants: the same results
+#guard log2P1With (LnConsts.forPrecision 53) (F "1/2" 53) == log2P1 (F "1/2" 53)
+#guard log2P1With (LnConsts.forPrecision 53) (F "9" 53) == log2P1 (F "9" 53)
+#guard log2P1With (LnConsts.forPrecision 53) (F "-1/2" 53) == log2P1 (F "-1/2" 53)
+#guard log2P1With (LnConsts.forPrecision 53) (F "1" 53) == log2P1 (F "1" 53)
+#guard log2P1PrecRoundWith (LnConsts.forPrecision 53) (F "1/2" 53) 53 .Ceiling
+  == log2P1PrecRound (F "1/2" 53) 53 .Ceiling

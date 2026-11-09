@@ -28,14 +28,20 @@ for `q < 0` and the bases `0` and `1`; `log_b 0 = −∞`.  The specification
 
 namespace Azurite.AzFloat
 
-/-- `log_b q` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0` or `b < 2`). -/
-def logBaseRatPrecRound (q : AzRat) (b : UInt64) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
+/-- `logBaseRatPrecRound` for the base `b`, built on the power-of-two driver `P2` and a bracket
+function `A` of `log_b q` with its Ziv certificate `hA`. -/
+def logBaseRatPrecRoundCore (b : UInt64)
+    (P2 : AzRat → AzInt → Nat → RoundingMode → AzFloat × Ordering)
+    (A : AzRat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) (q : AzRat), (0 : ℚ) < AzRat.toRat q →
+      2 ≤ b.toNat → Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log b.toNat) →
+      ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A q (w₀ * 2 ^ f)).1 (A q (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if hb : b.toNat < 2 then (nan, .eq)
   else
     match (AzNat.ofNat b.toNat).checkedLogBase2 with
-    | some k => logBasePow2RatPrecRound q (AzNat.ofNat k).toAzInt p mode
+    | some k => P2 q (AzNat.ofNat k).toAzInt p mode
     | none =>
       if h0 : q.num = 0 then (infinity false, .eq)
       else if hs : q.sign = true then
@@ -45,9 +51,8 @@ def logBaseRatPrecRound (q : AzRat) (b : UInt64) (p : Nat) (mode : RoundingMode)
           match hx : logBaseExactRat? q (AzNat.ofNat b.toNat) with
           | some r => ofAzRatRound r p mode
           | none =>
-            zivLoopCertified (logBaseRatApprox q b) p mode (p + zivGuardBits)
-              (logBaseRatApprox_isSome_exists p mode q (toRat_pos_of_sign q hs h0) b
-                (not_lt.mp hb)
+            zivLoopCertified (A q) p mode (p + zivGuardBits)
+              (hA p mode q (toRat_pos_of_sign q hs h0) (not_lt.mp hb)
                 (AzNat.toNat_ofNat b.toNat ▸
                   irrational_of_logBaseExactRat?_none q (toRat_pos_of_sign q hs h0)
                     (AzNat.ofNat b.toNat) (by rw [AzNat.toNat_ofNat]; exact not_lt.mp hb)
@@ -55,8 +60,30 @@ def logBaseRatPrecRound (q : AzRat) (b : UInt64) (p : Nat) (mode : RoundingMode)
                 (p + zivGuardBits) (by unfold zivGuardBits; omega))
       else (nan, .eq)
 
+/-- `log_b q` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0` or `b < 2`). -/
+def logBaseRatPrecRound (q : AzRat) (b : UInt64) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  logBaseRatPrecRoundCore b logBasePow2RatPrecRound (fun q w => logBaseRatApprox q b w)
+    (@fun p _ mode q hq hb hirr w₀ hw₀ =>
+      logBaseRatApprox_isSome_exists p mode q hq b hb hirr w₀ hw₀)
+    q p mode
+
 /-- `log_b q` rounded to nearest at precision `p`. -/
 def logBaseRat (q : AzRat) (b : UInt64) (p : Nat) : AzFloat :=
   (logBaseRatPrecRound q b p .Nearest).1
+
+/-- `logBaseRatPrecRound q cb.base p mode` with the constants `cb`; the same result
+(`logBaseRatPrecRoundWith_eq_logBaseRatPrecRound`). -/
+def logBaseRatPrecRoundWith (cb : LogBaseConsts) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  logBaseRatPrecRoundCore cb.base (logBasePow2RatPrecRoundWith cb.ln) (logBaseRatApproxWith cb)
+    (@fun p _ mode q hq hb hirr w₀ hw₀ =>
+      logBaseRatApproxWith_isSome_exists cb p mode q hq hb hirr w₀ hw₀)
+    q p mode
+
+/-- `log_{cb.base} q` rounded to nearest at precision `p`, with the constants `cb`. -/
+def logBaseRatWith (cb : LogBaseConsts) (q : AzRat) (p : Nat) : AzFloat :=
+  (logBaseRatPrecRoundWith cb q p .Nearest).1
 
 end Azurite.AzFloat

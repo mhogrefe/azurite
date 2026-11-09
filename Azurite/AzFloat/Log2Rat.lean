@@ -24,9 +24,13 @@ bracket of `ln q` (`lnFloorBracket` of `⌊q⌋_w`, one AGM run) and the bracket
 
 namespace Azurite.AzFloat
 
-/-- `log₂ q` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0`). -/
-def log2RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `log2RatPrecRound` built on a bracket function `A` of `log₂ q` with its Ziv certificate
+`hA` (`log2RatApprox`, or `log2RatApproxWith c` with precomputed constants). -/
+def log2RatPrecRoundCore (A : AzRat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) (q : AzRat), (0 : ℚ) < AzRat.toRat q →
+      q.isPowerOfTwo = false → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A q (w₀ * 2 ^ f)).1 (A q (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if h0 : q.num = 0 then (infinity false, .eq)
   else if hs : q.sign = true then
     if hp : p = 0 then (nan, .eq)
@@ -35,13 +39,28 @@ def log2RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
       match h2 : q.checkedLogBase2 with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
-        zivLoopCertified (log2RatApprox q) p mode (p + zivGuardBits)
-          (log2RatApprox_isSome_exists p mode q (toRat_pos_of_sign q hs h0)
+        zivLoopCertified (A q) p mode (p + zivGuardBits)
+          (hA p mode q (toRat_pos_of_sign q hs h0)
             (AzRat.isPowerOfTwo_eq_false_of_checkedLogBase2_eq_none q h2) (p + zivGuardBits)
             (by unfold zivGuardBits; omega))
   else (nan, .eq)
 
+/-- `log₂ q` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0`). -/
+def log2RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  log2RatPrecRoundCore log2RatApprox @log2RatApprox_isSome_exists q p mode
+
 /-- `log₂ q` rounded to nearest at precision `p`. -/
 def log2Rat (q : AzRat) (p : Nat) : AzFloat := (log2RatPrecRound q p .Nearest).1
+
+/-- `log2RatPrecRound` with the constants `c`; the same result
+(`log2RatPrecRoundWith_eq_log2RatPrecRound`). -/
+def log2RatPrecRoundWith (c : LnConsts) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  log2RatPrecRoundCore (log2RatApproxWith c) (@log2RatApproxWith_isSome_exists c) q p mode
+
+/-- `log₂ q` rounded to nearest at precision `p`, with the constants `c`. -/
+def log2RatWith (c : LnConsts) (q : AzRat) (p : Nat) : AzFloat :=
+  (log2RatPrecRoundWith c q p .Nearest).1
 
 end Azurite.AzFloat

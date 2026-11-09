@@ -1576,6 +1576,7 @@ import Azurite.BrentZimmermann.Chapter4.LegendreRelation
 import Azurite.BrentZimmermann.Chapter4.Lemniscate
 import Azurite.BrentZimmermann.Chapter4.Ln2BinarySplitting
 import Azurite.BrentZimmermann.Chapter4.Newton
+import Azurite.BrentZimmermann.Chapter4.PiBinarySplitting
 import Azurite.BrentZimmermann.Chapter4.PowerSeriesEval
 import Azurite.BrentZimmermann.Chapter4.Reciprocal
 import Azurite.BrentZimmermann.Chapter4.RectangularSplitting

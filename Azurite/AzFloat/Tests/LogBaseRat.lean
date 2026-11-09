@@ -13,6 +13,7 @@ import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log_b` of a rational
@@ -98,3 +99,9 @@ private def ref374 : AzRat :=
 #guard logBaseRat (Q "1000") 10 10 == F "3" 10
 #guard logBaseRat (Q "10") 2 53 == log2Rat (Q "10") 53
 #guard logBaseRat (Q "2") 10 53 == ofAzRat ref102 53
+
+-- precomputed constants: the same results
+#guard logBaseRatWith (LogBaseConsts.forPrecision 10 53) (Q "7") 53 == logBaseRat (Q "7") 10 53
+#guard logBaseRatWith (LogBaseConsts.forPrecision 3 53) (Q "1/7") 53 == logBaseRat (Q "1/7") 3 53
+#guard logBaseRatWith (LogBaseConsts.forPrecision 4 53) (Q "7") 53 == logBaseRat (Q "7") 4 53
+#guard logBaseRatWith (LogBaseConsts.forPrecision 10 53) (Q "100") 53 == logBaseRat (Q "100") 10 53

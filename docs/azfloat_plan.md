@@ -3744,14 +3744,15 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   *is* the AGM.  Against the 2026-10-19 binary, `ln 10` at 20000 bits went `97.2 → 27.0` ms
   (`3.6×`) and at 53 bits `0.418 → 0.119` (`3.5×`) over the three steps of this arc.
 
-* **The series path for low precision (2026-11-08, UNTIMED, UNTUNED).**  Below
-  `lnSeriesThreshold` (initially `512` bits of working precision, i.e. `p ≤ 448`) the bracket
+* **The series path for low precision (2026-11-08, TIMED and TUNED).**  Below
+  `lnSeriesThreshold` (`2048` bits of working precision, i.e. `p ≤ 1984`) the bracket
   of `ln x` is computed by DLMF's own recipe (4.45.1–4.45.2 and 4.6.4) instead of the AGM
   (`lnSeriesBracket` in `LnBracket.lean`; the AGM body is now `lnAgmBracket`, and
   `lnBracketCore`/`lnBracket` dispatch — `lnBracket_eq_core`; `LnConsts.make` computes the
   bracket of `π` only above the threshold, `pi_eq` is conditional):
-  `x = m₀ 2^ℓ` with `m₀ ∈ [1, 2)`, `ℓ = e − 1` (an exact shift); `k = lnSeriesK w = ⌊lg w⌋ − 3`
-  rounded-down square roots, each clamped at `1` (`lnSqrtIter`; the clamp is a no-op on the
+  `x = m₀ 2^ℓ` with `m₀ ∈ [1, 2)`, `ℓ = e − 1` (an exact shift); `k = lnSeriesK w = ⌊lg w⌋ − 1`
+  rounded-down square roots (`lnSeriesBracketK k` has `k` as a parameter, proven for any
+  `2^k ≤ w`; `lnSeriesBracket` fixes it), each clamped at `1` (`lnSqrtIter`; the clamp is a no-op on the
   value, `√y ≥ 1`, and saves a lemma); `t = ⌊⌊y − 1⌋/⌈y + 1⌉⌋_w`; `J = lnSeriesTerms k w =
   ⌊(w+1)/(2(k+1))⌋ + 1` terms of `Σ t^(2j+1)/(2j+1)` with one rounded-down product, one
   rounded-down division by the small integer `2j + 1` and one rounded-down addition per term
@@ -3774,15 +3775,148 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   Cost model: `k` square roots (each a Newton `rsqrt`, `≈ 2–3` products) plus `J ≈ w/(2(k+1))`
   terms at `≈ 1.3` products, against `(2⌈lg(w/2 + 4)⌉ + 3)` AGM steps at `≈ 4` products
   (`sqrt + mul + 2 add`): at `w = 117` roughly `3 + 15·1.3 ≈ 23` versus `≈ 90`, at `w = 1064`
-  roughly `130` versus `92` — the crossover should be near `w ≈ 500–700`; `lnSeriesK`,
+  roughly `130` versus `92` — the crossover was expected near `w ≈ 500–700`; `lnSeriesK`,
   `lnSeriesTerms` and `lnSeriesThreshold` are the knobs (`az_float_ln` has the columns `serBr`
-  and `agmBr`, both paths with precomputed constants, for the tuning).  Not done: adaptive
+  and `agmBr`, both paths with precomputed constants; `az_float_ln_series` sweeps `k`).
+  **Tuning (2026-11-08, quiet machine, ms per call, 4 inputs, both paths with the constants
+  precomputed; `k₀ = ⌊lg w⌋ − 3` was the first guess):**
+
+  | `p` | `w` | `k₀` | `k₀−1` | `k₀` | `k₀+1` | `k₀+2` | `k₀+3` | AGM path |
+  |---:|---:|---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 117 | 3 | 0.055 | 0.053 | 0.053 | 0.055 | 0.060 | 0.117 |
+  | 200 | 264 | 5 | 0.093 | 0.092 | 0.091 | 0.092 | 0.094 | 0.175 |
+  | 400 | 464 | 5 | 0.169 | 0.155 | 0.151 | 0.148 | 0.148 | 0.230 |
+  | 1000 | 1064 | 7 | 0.417 | 0.394 | 0.372 | 0.363 | 0.354 | 0.448 |
+  | 1500 | 1564 | 7 | 0.788 | 0.728 | 0.674 | 0.648 | 0.623 | 0.624 |
+  | 2000 | 2064 | 8 | 1.204 | 1.103 | 1.046 | 0.987 | 0.967 | 0.887 |
+  | 3000 | 3064 | 8 | 2.671 | 2.442 | 2.274 | 2.138 | 2.030 | 1.409 |
+
+  The square roots are cheaper than the cost model assumed (the Newton `rsqrt` at these sizes
+  is close to one product): more of them pay until `k = ⌊lg w⌋ − 1` (`k₀ + 2`), which is within
+  `4 %` of the best column everywhere and the best from `w ≈ 1000` on; `lnSeriesK` was set to
+  it.  With that `k` the series path meets the AGM path at `w ≈ 1550` when the constants are
+  precomputed (`lnWith`) and at `w ≈ 2500` when they are not (`ln` also pays `π`, which the
+  series path never needs); `lnSeriesThreshold = 2048` splits the difference (at `p = 2000`
+  the uncached `ln` loses `≈ 35 %` to the AGM dispatch, at `p = 1500` the cached `lnWith`
+  loses `≈ 4 %` to the series dispatch).  **Timings after tuning (`az_float_ln`):**
+
+  | bits | `ln` Oct 19 | `ln` before series | `ln` now | `lnWith` now | series/AGM bracket |
+  |---:|---:|---:|---:|---:|---:|
+  | 53 | 0.418 | 0.247 | 0.084 | 0.055 | 0.053 / 0.112 |
+  | 200 | 0.595 | 0.345 | 0.138 | 0.092 | 0.091 / 0.173 |
+  | 1000 | 1.59 | 0.910 | 0.538 | 0.361 | 0.356 / 0.447 |
+  | 1500 | — | — | 0.893 | 0.646 | 0.643 / 0.617 |
+  | 2000 | — | — | 1.81 | 0.894 | 0.994 / 0.883 |
+  | 5000 | 10.8 | 5.97 | 5.88 | 3.00 | (6.28) / 2.99 |
+  | 20000 | 97.2 | 53.9 | 52.7 | 26.5 | (160) / 26.4 |
+
+  `ln` at 53 bits is `5.0×` faster than on Oct 19 (`4.3×` at 200, `3.0×` at 1000), `lnWith`
+  `7.6×`.  The `e45HalfLn10_data` kernel datum was recomputed once more (the first
+  `k` changed its endpoints).  Not done: adaptive
   stopping of the series (a priori `J` is pessimistic for `x` near `1`), the symmetric range
   `m₀ ∈ [1/√2, √2)` (halves `t` for free), and the `ln 2`-free variant for small `|e|`.  Also
   moved `maxOf`/`minOf` (+ `toVal_maxOf`/`toVal_minOf`) from `LogBaseFloatBracket` to
-  `Compare`/`Equiv/Compare` for the clamp.  The only kernel-checked datum on `lnBracket` at
-  `w ≤ 512`, `e45HalfLn10_data` (`DLMF/Chapter4/Section45Numerics.lean`), was recomputed.
-  Benchmark pending (machine not quiet).
+  `Compare`/`Equiv/Compare` for the clamp.  The only kernel-checked datum on `lnBracket` below
+  the threshold, `e45HalfLn10_data` (`DLMF/Chapter4/Section45Numerics.lean`), was recomputed.
+
+* **`π` by Machin's formula and binary splitting (2026-11-08).**  `piBracket w` is now
+  `piMachinBracket w`: `π = 16 arctan(1/5) − 4 arctan(1/239)` (Mathlib's
+  `Real.four_mul_arctan_inv_5_sub_arctan_inv_239`), each `arctan(1/q)` summed exactly by the
+  binary-splitting engine of `ln 2` — the alternating series is taken in **pairs** of terms,
+  `atanPair q j = 1/((4j+1) q^(4j+1)) − 1/((4j+3) q^(4j+3)) = ((4j+3) q² − (4j+1)) /
+  ((4j+1)(4j+3) q^(4j+3)) > 0`, so the positive-term engine applies with the leaf
+  `((4j+3) q² − (4j+1), (4j+1)(4j+3), q⁴)` (`AzNat.atanLeaf`, `atanNumDen`); the engine was made
+  generic in the leaf (`seqOf`, `splitFuelOf`, `splitOf`; `SplitSeries`/`SpecOf` in the proofs,
+  the `atanh` definitions are now instances).  Theory in `Chapter4/PiBinarySplitting.lean`: the
+  alternating-series bounds `∑_{j<N} atanPair ≤ arctan(1/q) ≤ ∑_{j<N} atanPair + atanTerm q (2N)`
+  (`Antitone.alternating_series_le_tendsto` and `tendsto_le_alternating_series` on
+  `Real.hasSum_arctan`), `atanTerm q (2N) ≤ 2^(−w−5)` for `(4N+1) b ≥ w + 5`, `2^b ≤ q`
+  (`N₅ = ⌊(w+5)/8⌋ + 1`, `N₂₃₉ = ⌊(w+5)/28⌋ + 1`; the `239` series in fact reaches `2^(−w−13)`,
+  which gives the strict lower end).  Float bracket exactly as `ln2Bracket`: two
+  `seriesBracket`s at `w + 8` bits (`seriesBracket_spec` generalized to any exact fraction,
+  `seriesBracket_spec_of`), the tails `2^(−w−5)` added on the appropriate side, `16·` and `4·`
+  as exact shifts, one directed subtraction per end; `piMachinBracket_spec` gives
+  `0 ≤ lo < π ≤ hi` with width `≤ 8 · 2^(−w)` (in fact `≈ 1 · 2^(−w)`), so `piBracket_spec`
+  (`piEps`) and everything downstream are unchanged.  Brent–Salamin stays as `piAgmBracket`
+  (benchmark column `piAgm`).  **Timings (2026-11-08, ms per call):**
+
+  | bits | Brent–Salamin (`piAgm`) | Machin (`piBracket` now) | ratio |
+  |---:|---:|---:|---:|
+  | 53 | 0.082 | 0.018 | 4.6 |
+  | 200 | 0.115 | 0.032 | 3.6 |
+  | 1000 | 0.281 | 0.128 | 2.2 |
+  | 5000 | 1.83 | 1.21 | 1.5 |
+  | 20000 | 16.3 | 12.6 | 1.3 |
+
+  Only `pi128_data` (`DLMF/Chapter3/Section12.lean`) and the Hermite table bounds
+  `hermPiL`/`hermPiU` changed among the kernel-checked data (the 64-bit enclosures of
+  `Section11Numerics`/`Section45Numerics` came out identical).  Not done: Størmer's four-term
+  formula (fewer terms, more series — binary splitting favours few series), and sharing the
+  `arctan(1/q)` engine with the trigonometric functions.
+
+* **`LnConsts` for the rest of the natural-log family (2026-11-08).**  `lnRat`, `lnP1`, `log2`,
+  `log2Rat`, `log2P1` now have `…PrecRoundWith c`/`…With c` variants sharing one `LnConsts`
+  (`LnConsts.forPrecision p`).  Plumbing: `LnConsts.ln2At c w` (the bracket of `ln 2` from `c`
+  when `w ≤ c.W`), `lnFloorBracketBy L` (the floor bracket over any `ln` bracket function; the
+  old `lnFloorBracket` is the instance at `lnBracket`, `lnFloorBracketWith c` at
+  `lnBracketWith c`), `log2QuotientsWith` (the `ln 2` bracket as a parameter).  Proofs: the
+  predicate `LnBracketFn L` (the conclusion of `lnBracket_spec`) makes `lnFloorBracketBy_spec`
+  generic; `log2QuotientsWith_spec` takes `Ln2BracketFor`; the five Ziv drivers were refactored
+  into `…PrecRoundCore A hA` (the loop over any bracket function `A` with its Ziv certificate
+  `hA`), with ONE correctness proof each (`…PrecRoundCore_eq[_liftVal]`, hypothesis: the
+  conclusion of `…Approx_spec` for `A`) and the plain and `With` drivers as instances — so the
+  `With` equalities (`…PrecRoundWith_eq_…PrecRound`, `…With_eq_…`) are one-liners and future
+  variants cost nothing.  Caveat: `lnP1`/`log2P1` start Ziv at `p + 64 + leadingZeroBits e`, so
+  for small `|x|` the constants only help if built with a correspondingly larger `W`.  Not done:
+  the `logBase` family (natural, float and rational bases), which would want a `LogBaseConsts`
+  holding the bracket of `ln b` as well; untimed (the gains follow `lnWith`'s: the constants are
+  about half of each call).
+
+* **Adaptive stopping and skipped square roots in the series path (2026-11-08).**  Two
+  refinements for arguments close to `1` (the `lnP1`/`log1p` regime), both with the same `E`:
+  (1) `lnSeriesLoop` keeps its a priori fuel `J` but **stops** as soon as the computed power
+  `p_j` drops below `τ = 2^(−w−3)`: under the proven relative invariant
+  `t^(2j+1)(1 − (8 + 20j)u) ≤ p_j` the exact power is `≤ 2 p_j < 2τ`, so the tail is
+  `≤ (16/3) τ = (2/3) u`, inside the `2u` the slack `E` already reserves for it; the loop lemma
+  now returns the stopping index `jf ≤ J` with `jf = J ∨ p_jf < τ` and the invariants at `jf`,
+  and the main proof takes the series bounds at `jf` (`lnSeriesLoop_spec`).  (2) The exponent of
+  `m₀ − 1` (an exact float) tells how many leading zero bits `t` already has:
+  `c₀ = lnSeriesLead (m₀ − 1)` (`lnSeriesLead_spec`: `m₀ − 1 ≤ 2^(−c₀−1)` unless `c₀ = 0`, one
+  bit kept for the rounding of `m₀ − 1`), each square root being worth one bit, only
+  `kr = k − min k c₀` roots are taken and the term count is `J = lnSeriesTerms (kr + c₀) w`
+  (`t ≤ 2^(−kr−c₀−1)` from `ln m₀ ≤ m₀ − 1 ≤ 2^(−c₀)`); the amplification `2^kr` in `E` and `A`
+  is the actual one.  **Timings (2026-11-08, ms per call, `ln (1 + 10^(−d))`):**
+
+  | bits | `d = 1` | `d = 3` | `d = 6` | `d = 12` | before (any `d`) |
+  |---:|---:|---:|---:|---:|---:|
+  | 53 | 0.091 | 0.064 | 0.057 | 0.056 | 0.087 |
+  | 200 | 0.156 | 0.108 | 0.093 | 0.083 | ≈ 0.14 |
+  | 1000 | 0.638 | 0.502 | 0.362 | 0.286 | ≈ 0.62 |
+
+  (`az_float_lnp1`.)  The remaining floor for tiny `x` at 53 bits is `ln 2` (`0.03` ms; the
+  Ziv loop starts at `p + 64 + leadingZeroBits e` bits for `lnP1`, so `w` grows with `−lg x`)
+  plus the fixed overhead; `ln` of ordinary arguments is unchanged (the first `lnSeriesLoop` term
+  is never below `τ` there).  The `e45HalfLn10_data` endpoints did not move.
+
+* **`LogBaseConsts` for the `log_b` family (2026-11-08).**  `logBase`, `logBaseRat`,
+  `logBaseP1` (natural base `b : UInt64`) and `logBasePow2`, `logBasePow2Rat`, `logBasePow2P1`
+  (base `2^k`) have `…PrecRoundWith`/`…With` variants.  `LogBaseConsts` holds the base, an
+  `LnConsts` (the brackets of `π` and `ln 2`, which also serve the power-of-two path) and the
+  bracket of `ln b` at the same precision (`lnB_eq : lnB = lnBaseBracket base ln.W`, erased);
+  `LogBaseConsts.make b W`, `LogBaseConsts.forPrecision b p`; `lnBAt` falls back to a fresh
+  bracket at the later Ziv levels.  The power-of-two family takes a bare `LnConsts`.  Proofs: the
+  fitness predicate `LnBaseBracketFor b w cd` (the conclusion of `lnBaseBracket_spec`) is
+  inherited from finer precisions through **`lnEps_antitone`** (`(X+1)^5 ≤ 2 X^5` for
+  `X = w + |e| + 8 ≥ 8`, the `lnEps` analogue of `piEps_antitone`); the six drivers were
+  refactored into `…PrecRoundCore` like the natural-log family — the natural-base cores also take
+  the power-of-two driver `P2` they delegate to for `b = 2^k`, with its correctness as a
+  hypothesis `hP2` — and each has one correctness proof, the plain and `With` drivers being
+  instances (`…With_eq_…` one-liners; the `With` drivers take the base from `cb`, so the
+  equalities read `logBasePrecRoundWith cb x p mode = logBasePrecRound x cb.base p mode`).  The
+  float-base and rational-base variants (`logBaseFloat*`, `logBaseRat{Base,Float,Rat}*`) were
+  left alone — they would want a bracket of `ln b` for a float or rational base, i.e. a third
+  constants structure, for a rarer use.  Untimed: the gain is the `ln2 + π` (power-of-two path)
+  or `ln b` (one more `ln` run, so about half of each call) share of every call.
 
 ## `ln` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
 

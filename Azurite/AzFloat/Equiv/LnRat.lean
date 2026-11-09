@@ -19,10 +19,18 @@ is correctly rounded in every mode, with the exact comparison, and without fuel.
 
 namespace Azurite.AzFloat
 
-/-- **`ln` of a rational is correctly rounded.** -/
-theorem lnRatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    lnRatPrecRound q p mode = roundVal p mode (Spec.log ((AzRat.toRat q : ℝ) : EReal)) := by
-  unfold lnRatPrecRound
+/-- `lnRatPrecRoundCore A hA` is correctly rounded for every bracket function `A` with the
+conclusion of `lnRatApprox_spec`. -/
+theorem lnRatPrecRoundCore_eq (A : AzRat → ℕ → Roundable × Roundable) (hA)
+    (hspec : ∀ {w : ℕ}, 64 ≤ w → ∀ (q : AzRat), (0 : ℚ) < AzRat.toRat q → AzRat.toRat q ≠ 1 →
+      ∃ lv hv : ℝ, Rounds (A q w).1 lv ∧ Rounds (A q w).2 hv ∧
+        lv < Real.log (AzRat.toRat q : ℝ) ∧ Real.log (AzRat.toRat q : ℝ) < hv ∧
+        hv - lv ≤ lnRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+          |Real.log (AzRat.toRat q : ℝ)| w)
+    (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lnRatPrecRoundCore A hA q p mode
+      = roundVal p mode (Spec.log ((AzRat.toRat q : ℝ) : EReal)) := by
+  unfold lnRatPrecRoundCore
   split_ifs with h0 hs h1 hp
   · rw [(AzRat.toRat_eq_zero_iff q).mpr h0]
     simp only [EReal.coe_zero, Spec.log_zero, roundVal_bot]
@@ -37,9 +45,32 @@ theorem lnRatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode)
       (by unfold zivGuardBits; omega)
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
-          lnRatApprox_spec (w := w) (by unfold zivGuardBits at hw; omega) q hq hq1
+          hspec (w := w) (by unfold zivGuardBits at hw; omega) q hq hq1
         exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
   · have hneg := toRat_neg_of_sign q (by simpa using hs) h0
     rw [Spec.log_coe_neg _ hneg, roundVal_none]
+
+/-- **`ln` of a rational is correctly rounded.** -/
+theorem lnRatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lnRatPrecRound q p mode = roundVal p mode (Spec.log ((AzRat.toRat q : ℝ) : EReal)) :=
+  lnRatPrecRoundCore_eq _ _ @lnRatApprox_spec q p mode
+
+/-- **`ln` of a rational with precomputed constants is correctly rounded.** -/
+theorem lnRatPrecRoundWith_eq (c : LnConsts) (q : AzRat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    lnRatPrecRoundWith c q p mode = roundVal p mode (Spec.log ((AzRat.toRat q : ℝ) : EReal)) :=
+  lnRatPrecRoundCore_eq _ _ (@lnRatApproxWith_spec c) q p mode
+
+theorem lnRatPrecRoundWith_eq_lnRatPrecRound (c : LnConsts) (q : AzRat) (p : ℕ)
+    (mode : RoundingMode) : lnRatPrecRoundWith c q p mode = lnRatPrecRound q p mode := by
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    simp [lnRatPrecRoundWith, lnRatPrecRound, lnRatPrecRoundCore]
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [lnRatPrecRoundWith_eq, lnRatPrecRound_eq]
+
+theorem lnRatWith_eq_lnRat (c : LnConsts) (q : AzRat) (p : ℕ) : lnRatWith c q p = lnRat q p := by
+  unfold lnRatWith lnRat
+  rw [lnRatPrecRoundWith_eq_lnRatPrecRound]
 
 end Azurite.AzFloat

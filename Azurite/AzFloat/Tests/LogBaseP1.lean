@@ -13,6 +13,7 @@ import Azurite.AzFloat.Log2P1
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log_b (1 + x)`
@@ -89,3 +90,9 @@ private def refTiny : AzRat :=
 #guard logBaseP1 (F "7" 53) 8 == F "1" 53
 #guard logBaseP1 (F "10" 53) 2 == log2P1 (F "10" 53)
 #guard logBaseP1 (F "1" 53) 10 == logBase (F "2" 53) 10
+
+-- precomputed constants: the same results
+#guard logBaseP1With (LogBaseConsts.forPrecision 10 53) (F "1/2" 53) == logBaseP1 (F "1/2" 53) 10
+#guard logBaseP1With (LogBaseConsts.forPrecision 3 53) (F "-1/2" 53) == logBaseP1 (F "-1/2" 53) 3
+#guard logBaseP1With (LogBaseConsts.forPrecision 4 53) (F "3" 53) == logBaseP1 (F "3" 53) 4
+#guard logBaseP1With (LogBaseConsts.forPrecision 10 53) (F "9" 53) == logBaseP1 (F "9" 53) 10

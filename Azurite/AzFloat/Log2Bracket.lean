@@ -25,11 +25,14 @@ namespace Azurite.AzFloat
 
 /-- The quotient of a bracket `b` of `ln x` by the bracket of `ln 2`, rounded outward: the sign of
 each end of `b` selects the end of the `ln 2` bracket that makes the quotient an outer bound. -/
-def log2Quotients (b : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
-  let c := ln2Bracket w
+def log2QuotientsWith (c b : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
   (if b.1.isNegative then (divPrecRound b.1 c.1 w .Floor).1 else (divPrecRound b.1 c.2 w .Floor).1,
     if b.2.isNegative then (divPrecRound b.2 c.2 w .Ceiling).1
     else (divPrecRound b.2 c.1 w .Ceiling).1)
+
+/-- `log2QuotientsWith` with the bracket of `ln 2` computed at `w`. -/
+def log2Quotients (b : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  log2QuotientsWith (ln2Bracket w) b w
 
 /-- The bracket of `log₂ x` for a positive finite float `x` of exponent `e` at working precision
 `w`. -/
@@ -48,6 +51,23 @@ the bracket of `ln (1 + x)` from the float `⌊1 + x⌋_w` (`lnFloorBracket`) by
 `ln 2`. -/
 def log2P1Approx (x : AzFloat) (w : Nat) : Roundable × Roundable :=
   let b := log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-! ### The same with precomputed constants -/
+
+/-- `log2Approx` with the constants `c` (the brackets of `ln x` and of `ln 2`). -/
+def log2ApproxWith (c : LnConsts) (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  let b := log2QuotientsWith (c.ln2At w) (lnBracketWith c x e w) w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- `log2RatApprox` with the constants `c`. -/
+def log2RatApproxWith (c : LnConsts) (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let b := log2QuotientsWith (c.ln2At w) (lnFloorBracketWith c (ofAzRatRound q w .Floor).1 w) w
+  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- `log2P1Approx` with the constants `c`. -/
+def log2P1ApproxWith (c : LnConsts) (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+  let b := log2QuotientsWith (c.ln2At w) (lnFloorBracketWith c (addPrecRound one x w .Floor).1 w) w
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- Whether `1 + x` is exactly a power of two `2^k`, and then `k`: the floor and the ceiling of

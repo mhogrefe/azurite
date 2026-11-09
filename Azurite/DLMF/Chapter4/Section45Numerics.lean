@@ -128,8 +128,8 @@ theorem e45Third_data :
 set_option maxRecDepth 100000 in
 theorem e45HalfLn10_data :
     (valData (e45HalfLn10 64).1, valData (e45HalfLn10 64).2) =
-      (some (true, 663674967474997953, 576460752303423488),
-        some (true, 331837483737498989, 288230376151711744)) := by
+      (some (true, 10618799479599967237, 9223372036854775808),
+        some (true, 10618799479599968345, 9223372036854775808)) := by
   decide +kernel
 
 set_option maxRecDepth 100000 in

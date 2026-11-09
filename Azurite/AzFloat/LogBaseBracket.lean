@@ -65,4 +65,46 @@ def logBaseP1Approx (x : AzFloat) (b : UInt64) (w : Nat) : Roundable × Roundabl
   let qb := quotientBracket (lnFloorBracket (addPrecRound one x w .Floor).1 w) (lnBaseBracket b w) w
   (fun p mode => setPrecRound qb.1 p mode, fun p mode => setPrecRound qb.2 p mode)
 
+/-! ### Precomputed constants for a natural base -/
+
+/-- **Precomputed constants for `log_b`** with a natural base `b`: the constants of `ln`
+(`LnConsts`, the brackets of `π` and `ln 2`) and the bracket of `ln b` at the same working
+precision `ln.W`; `LogBaseConsts.make b W` builds them (`LogBaseConsts.forPrecision b p` in
+`LogBase.lean`).  The proof field pins `lnB` to `lnBaseBracket b ln.W` and is erased at runtime. -/
+structure LogBaseConsts where
+  /-- The base. -/
+  base : UInt64
+  /-- The constants of `ln` (and of `log₂`, for a power-of-two base). -/
+  ln : LnConsts
+  /-- The bracket of `ln base` at precision `ln.W`. -/
+  lnB : AzFloat × AzFloat
+  lnB_eq : lnB = lnBaseBracket base ln.W
+
+/-- The constants for `log_b` at working precision `W`. -/
+def LogBaseConsts.make (b : UInt64) (W : Nat) : LogBaseConsts :=
+  ⟨b, LnConsts.make W, lnBaseBracket b W, rfl⟩
+
+/-- The bracket of `ln base` for working precision `w`: from the constants when their precision
+suffices, computed otherwise. -/
+def LogBaseConsts.lnBAt (cb : LogBaseConsts) (w : Nat) : AzFloat × AzFloat :=
+  if w ≤ cb.ln.W then cb.lnB else lnBaseBracket cb.base w
+
+/-- `logBaseApprox` with the constants `cb` (base `cb.base`). -/
+def logBaseApproxWith (cb : LogBaseConsts) (x : AzFloat) (e : AzInt) (w : Nat) :
+    Roundable × Roundable :=
+  let q := quotientBracket (lnBracketWith cb.ln x e w) (cb.lnBAt w) w
+  (fun p mode => setPrecRound q.1 p mode, fun p mode => setPrecRound q.2 p mode)
+
+/-- `logBaseRatApprox` with the constants `cb`. -/
+def logBaseRatApproxWith (cb : LogBaseConsts) (q : AzRat) (w : Nat) : Roundable × Roundable :=
+  let qb := quotientBracket (lnFloorBracketWith cb.ln (ofAzRatRound q w .Floor).1 w)
+    (cb.lnBAt w) w
+  (fun p mode => setPrecRound qb.1 p mode, fun p mode => setPrecRound qb.2 p mode)
+
+/-- `logBaseP1Approx` with the constants `cb`. -/
+def logBaseP1ApproxWith (cb : LogBaseConsts) (x : AzFloat) (w : Nat) : Roundable × Roundable :=
+  let qb := quotientBracket (lnFloorBracketWith cb.ln (addPrecRound one x w .Floor).1 w)
+    (cb.lnBAt w) w
+  (fun p mode => setPrecRound qb.1 p mode, fun p mode => setPrecRound qb.2 p mode)
+
 end Azurite.AzFloat

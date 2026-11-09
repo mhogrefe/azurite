@@ -23,21 +23,40 @@ Special values: `ln 0 = −∞`, `ln q = NaN` for `q < 0`, `ln 1 = 0` exactly.  
 
 namespace Azurite.AzFloat
 
-/-- `ln q` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0`). -/
-def lnRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `lnRatPrecRound` built on a bracket function `A` of `ln q` with its Ziv certificate `hA`
+(`lnRatApprox`, or `lnRatApproxWith c` with precomputed constants). -/
+def lnRatPrecRoundCore (A : AzRat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) (q : AzRat), (0 : ℚ) < AzRat.toRat q →
+      AzRat.toRat q ≠ 1 → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A q (w₀ * 2 ^ f)).1 (A q (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if h0 : q.num = 0 then (infinity false, .eq)
   else if hs : q.sign = true then
     if h1 : q.num = q.den then (zero, .eq)
     else if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (lnRatApprox q) p mode (p + zivGuardBits)
-        (lnRatApprox_isSome_exists p mode q (toRat_pos_of_sign q hs h0)
+      zivLoopCertified (A q) p mode (p + zivGuardBits)
+        (hA p mode q (toRat_pos_of_sign q hs h0)
           (toRat_ne_one_of_num_ne_den q hs h1) (p + zivGuardBits) (by unfold zivGuardBits; omega))
   else (nan, .eq)
 
+/-- `ln q` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0`). -/
+def lnRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  lnRatPrecRoundCore lnRatApprox @lnRatApprox_isSome_exists q p mode
+
 /-- `ln q` rounded to nearest at precision `p`. -/
 def lnRat (q : AzRat) (p : Nat) : AzFloat := (lnRatPrecRound q p .Nearest).1
+
+/-- `lnRatPrecRound` with the constants `c`; the same result
+(`lnRatPrecRoundWith_eq_lnRatPrecRound`). -/
+def lnRatPrecRoundWith (c : LnConsts) (q : AzRat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  lnRatPrecRoundCore (lnRatApproxWith c) (@lnRatApproxWith_isSome_exists c) q p mode
+
+/-- `ln q` rounded to nearest at precision `p`, with the constants `c`. -/
+def lnRatWith (c : LnConsts) (q : AzRat) (p : Nat) : AzFloat :=
+  (lnRatPrecRoundWith c q p .Nearest).1
 
 end Azurite.AzFloat

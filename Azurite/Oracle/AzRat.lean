@@ -29,6 +29,7 @@ import Azurite.AzRat.LogBase2
 import Azurite.AzRat.SumProduct
 import Azurite.AzRat.CompareProduct
 import Azurite.AzRat.CompareProducts
+import Azurite.AzRat.Pow2
 
 /-!
 # Checks for Malachite's `Rational` against `AzRat`
@@ -542,5 +543,17 @@ def checkRatListFold (name : String) (f : List AzRat → AzRat) (line : String) 
 def checkRatSum : String → Verdict := checkRatListFold "sum" AzRat.sum
 
 def checkRatProduct : String → Verdict := checkRatListFold "product" AzRat.product
+
+/-- `x is a power of 2` or `x is not a power of 2`, for Malachite's `Rational::is_power_of_2`:
+`AzRat.isPowerOfTwo`, whether `x = 2^k` for an integer `k`. -/
+def checkRatIsPowerOf2 (line : String) : Verdict := do
+  let pos := " is a power of 2"
+  let neg := " is not a power of 2"
+  let (x, expected) ←
+    if line.endsWith neg then pure (dropRightChars line neg.length, false)
+    else if line.endsWith pos then pure (dropRightChars line pos.length, true)
+    else fail s!"not an `x{pos}` or `x{neg}` line"
+  let x ← expect "x" (parseAzRat x)
+  expectEq "is a power of 2" x.isPowerOfTwo expected
 
 end Azurite.Oracle

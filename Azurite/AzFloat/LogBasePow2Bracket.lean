@@ -42,4 +42,23 @@ def logBasePow2RatApprox (q : AzRat) (k : AzInt) (w : Nat) : Roundable × Rounda
 def logBasePow2P1Approx (x : AzFloat) (k : AzInt) (w : Nat) : Roundable × Roundable :=
   divBracketByInt (log2Quotients (lnFloorBracket (addPrecRound one x w .Floor).1 w) w) k w
 
+/-! ### The same with precomputed constants -/
+
+/-- `logBasePow2Approx` with the constants `c`. -/
+def logBasePow2ApproxWith (c : LnConsts) (x : AzFloat) (e k : AzInt) (w : Nat) :
+    Roundable × Roundable :=
+  divBracketByInt (log2QuotientsWith (c.ln2At w) (lnBracketWith c x e w) w) k w
+
+/-- `logBasePow2RatApprox` with the constants `c`. -/
+def logBasePow2RatApproxWith (c : LnConsts) (q : AzRat) (k : AzInt) (w : Nat) :
+    Roundable × Roundable :=
+  divBracketByInt
+    (log2QuotientsWith (c.ln2At w) (lnFloorBracketWith c (ofAzRatRound q w .Floor).1 w) w) k w
+
+/-- `logBasePow2P1Approx` with the constants `c`. -/
+def logBasePow2P1ApproxWith (c : LnConsts) (x : AzFloat) (k : AzInt) (w : Nat) :
+    Roundable × Roundable :=
+  divBracketByInt
+    (log2QuotientsWith (c.ln2At w) (lnFloorBracketWith c (addPrecRound one x w .Floor).1 w) w) k w
+
 end Azurite.AzFloat

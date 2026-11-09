@@ -60,3 +60,10 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
   == "1.145132304303002548373822955980126138260122258715811240879858"
 #guard toString (lnRat (Q "123456789/1000") 200)
   == "11.72364648718588098113995898391011158691037737513408304708511"
+
+-- precomputed constants: the same results
+#guard lnRatWith (LnConsts.forPrecision 53) (Q "10") 53 == lnRat (Q "10") 53
+#guard lnRatWith (LnConsts.forPrecision 53) (Q "1/3") 53 == lnRat (Q "1/3") 53
+#guard lnRatWith (LnConsts.forPrecision 200) (Q "22/7") 200 == lnRat (Q "22/7") 200
+#guard lnRatPrecRoundWith (LnConsts.forPrecision 53) (Q "10") 53 .Floor
+  == lnRatPrecRound (Q "10") 53 .Floor

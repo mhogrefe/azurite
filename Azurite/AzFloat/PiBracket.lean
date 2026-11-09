@@ -10,11 +10,20 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Agm
 import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Div
+import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzInt.Instances
 import Azurite.BrentZimmermann.Chapter4.BrentSalamin
 
 /-!
-## The Brent–Salamin bracket of `π`
+## The bracket of `π`: Machin's formula by binary splitting, and Brent–Salamin
+
+`piBracket w` is **Machin's formula** `π = 16 arctan(1/5) − 4 arctan(1/239)` with the two
+series summed exactly by binary splitting in pairs of terms (`piMachinBracket`, below; the
+theory is `Chapter4/PiBinarySplitting.lean`, the engine `AzNat/AtanhSplit.lean`).  The
+Brent–Salamin iteration (`piAgmBracket`) is kept for reference — it was the original method and
+is still the subject of the first half of this file.
+
+### The Brent–Salamin bracket
 
 The Gauss–Legendre / Brent–Salamin iteration (MCA §4.8.2, `BrentSalamin.lean`):
 `a₀ = 1`, `b₀ = 1/√2`, `s₀ = 1/2`, `a' = (a + b)/2`, `b' = √(ab)`,
@@ -31,9 +40,10 @@ The final `q = ⌊2 ⌊a_{N+1}²⌋/s_N⌋` is within `2^(3N+12) 2^(−w)` of `�
 of width at most `2^(3N+16) 2^(−w)` (`piBracketAt_spec`).  Since the a priori slack is a true
 loss of `3N + 16 ≈ 3 lg w` bits (the interval iteration it replaces was much tighter than its
 proven bound, and Ziv's loop for `ln` would need a second pass at high precision), `piBracket w`
-runs the iteration at the working precision `piWork w = w + 3N + 16`: its width is at most
-`2^(3−w) ≤ piEps w = 2^19 w³ 2^(−w)` and the lower end is strictly below `π` (`piBracket_spec`),
-so Ziv's loop needs no fuel (`Pi.lean`).  Half the work of the former interval iteration.
+runs the iteration at the working precision `piWork w = w + 3N + 16` (`piAgmBracket`): its
+width is at most `2^(3−w)` and the lower end is strictly below `π` (`piAgmBracket_spec`).  Half
+the work of the former interval iteration.  Both brackets satisfy `piBracket_spec` (width
+`≤ piEps w = 2^19 w³ 2^(−w)`, strict below), so Ziv's loop needs no fuel (`Pi.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -84,9 +94,39 @@ def piBracketAt (w : Nat) : AzFloat × AzFloat :=
 absorb the a priori error, so that the bracket has width at most `2^(3−w)`. -/
 def piWork (w : Nat) : Nat := w + 3 * BZ.piSteps w + 16
 
-/-- The two ends of the bracket of `π` at working precision `w` (the raw bracket at `piWork w`,
-width `≤ 2^(3−w)`). -/
-def piBracket (w : Nat) : AzFloat × AzFloat := piBracketAt (piWork w)
+/-- The two ends of the Brent–Salamin bracket of `π` at working precision `w` (the raw bracket
+at `piWork w`, width `≤ 2^(3−w)`).  Superseded by `piBracket` (Machin's formula), kept for
+reference and benchmarking. -/
+def piAgmBracket (w : Nat) : AzFloat × AzFloat := piBracketAt (piWork w)
+
+/-! ### Machin's formula by binary splitting -/
+
+/-- Pairs of terms for `arctan(1/5)` at working precision `w`: `(4N+1)·2 ≥ w + 5`. -/
+def piMachinN₁ (w : Nat) : Nat := (w + 5) / 8 + 1
+
+/-- Pairs of terms for `arctan(1/239)`: `(4N+1)·7 ≥ w + 5`. -/
+def piMachinN₂ (w : Nat) : Nat := (w + 5) / 28 + 1
+
+/-- The bracket of `π` by **Machin's formula** `π = 16 arctan(1/5) − 4 arctan(1/239)`
+(`PiBinarySplitting.lean`), the two series summed exactly by binary splitting in pairs of terms
+(`AzNat.atanNumDen`), each turned into a float bracket by `seriesBracket` at `k = w + 8` bits,
+the tails `≤ 2^(−w−5)` added on the appropriate side (`t`), and the combination evaluated with
+directed rounding: `lo = ⌊16 lo₁ − 4 ⌈hi₂ + t⌉⌋`, `hi = ⌈16 ⌈hi₁ + t⌉ − 4 lo₂⌉` (the factors
+`16` and `4` are exact shifts).  Width at most `8 · 2^(−w)` (`piMachinBracket_spec`). -/
+def piMachinBracket (w : Nat) : AzFloat × AzFloat :=
+  let k := w + 8
+  let b₁ := seriesBracket (AzNat.atanNumDen 5 (piMachinN₁ w)) k
+  let b₂ := seriesBracket (AzNat.atanNumDen 239 (piMachinN₂ w)) k
+  let t := powerOf2 (-(AzNat.ofNat (w + 5)).toAzInt)
+  ((subPrecRound (b₁.1 <<< (4 : Nat)) ((addPrecRound b₂.2 t k .Ceiling).1 <<< (2 : Nat))
+      k .Floor).1,
+    (subPrecRound ((addPrecRound b₁.2 t k .Ceiling).1 <<< (4 : Nat)) (b₂.1 <<< (2 : Nat))
+      k .Ceiling).1)
+
+/-- The two ends of the bracket of `π` at working precision `w`: Machin's formula by binary
+splitting (`piMachinBracket`; faster than the Brent–Salamin `piAgmBracket` at every precision,
+`4.6×` at 53 bits, `1.3×` at 20000).  Width at most `8 · 2^(−w)` (`piBracket_spec_width`). -/
+def piBracket (w : Nat) : AzFloat × AzFloat := piMachinBracket w
 
 /-- The bracket of `π` at working precision `w`, as a pair of `Roundable`s. -/
 def piApprox (w : Nat) : Roundable × Roundable :=

@@ -32,8 +32,13 @@ in `Equiv/LogBaseP1.lean`.
 namespace Azurite.AzFloat
 
 /-- The finite case of `logBaseP1PrecRound` for `x > −1`: the exact branches or the Ziv loop. -/
-def logBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
-    (hgt : -1 < finiteVal s e m) (b : UInt64) (hb : 2 ≤ b.toNat) (p : Nat) [NeZero p]
+def logBaseP1Finite (b : UInt64) (A : AzFloat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ},
+      x.toVal = some (xv : EReal) → -1 < xv → 2 ≤ b.toNat →
+      Irrational (Real.log (1 + xv) / Real.log b.toNat) → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A x (w₀ * 2 ^ f)).1 (A x (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hgt : -1 < finiteVal s e m) (hb : 2 ≤ b.toNat) (p : Nat) [NeZero p]
     (mode : RoundingMode) : AzFloat × Ordering :=
   match hk : (AzNat.ofNat b.toNat).checkedLogBase2 with
   | some k =>
@@ -41,9 +46,9 @@ def logBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteVal
       with
     | some j => ofAzRatRound (AzRat.ofAzInts j (AzNat.ofNat k).toAzInt) p mode
     | none =>
-      zivLoopCertified (logBaseP1Approx (finite s e q m hv) b) p mode
+      zivLoopCertified (A (finite s e q m hv)) p mode
         (p + zivGuardBits + leadingZeroBits e)
-        (logBaseP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt b hb
+        (hA p mode (toVal_finite s e q m hv) hgt hb
           (irrational_log_div_log_one_add_of_pow2 s e hv hgt b hb hk
             (by unfold zivGuardBits; omega) h)
           _ (by unfold zivGuardBits; omega))
@@ -51,9 +56,9 @@ def logBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteVal
     match hx : logBaseP1Exact? (finite s e q m hv) (AzNat.ofNat b.toNat) with
     | some r => ofAzRatRound r p mode
     | none =>
-      zivLoopCertified (logBaseP1Approx (finite s e q m hv) b) p mode
+      zivLoopCertified (A (finite s e q m hv)) p mode
         (p + zivGuardBits + leadingZeroBits e)
-        (logBaseP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt b hb
+        (hA p mode (toVal_finite s e q m hv) hgt hb
           (AzNat.toNat_ofNat b.toNat ▸
             irrational_of_logBaseP1Exact?_none s e hv (AzNat.ofNat b.toNat)
               (by rw [AzNat.toNat_ofNat]; exact hb)
@@ -63,8 +68,12 @@ def logBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteVal
 
 /-- `log_b (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0` or `b < 2`). -/
-def logBaseP1PrecRound (x : AzFloat) (b : UInt64) (p : Nat) (mode : RoundingMode) :
-    AzFloat × Ordering :=
+def logBaseP1PrecRoundCore (b : UInt64) (A : AzFloat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ},
+      x.toVal = some (xv : EReal) → -1 < xv → 2 ≤ b.toNat →
+      Irrational (Real.log (1 + xv) / Real.log b.toNat) → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A x (w₀ * 2 ^ f)).1 (A x (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   if hb : b.toNat < 2 then (nan, .eq)
   else
     match x with
@@ -75,17 +84,41 @@ def logBaseP1PrecRound (x : AzFloat) (b : UInt64) (p : Nat) (mode : RoundingMode
       if hp : p = 0 then (nan, .eq)
       else
         haveI : NeZero p := ⟨hp⟩
-        logBaseP1Finite true e hv (by linarith [finiteVal_true_pos e hv]) b (not_lt.mp hb) p mode
+        logBaseP1Finite b A hA true e hv (by linarith [finiteVal_true_pos e hv]) (not_lt.mp hb)
+          p mode
     | finite false e q m hv =>
       if hneg : e.sign = true ∧ e.abs ≠ 0 then
         if eqIEEE (finite false e q m hv) (-one) then (infinity false, .eq) else (nan, .eq)
       else if hp : p = 0 then (nan, .eq)
       else
         haveI : NeZero p := ⟨hp⟩
-        logBaseP1Finite false e hv (finiteVal_false_gt_neg_one e hv hneg) b (not_lt.mp hb) p mode
+        logBaseP1Finite b A hA false e hv (finiteVal_false_gt_neg_one e hv hneg) (not_lt.mp hb)
+          p mode
+
+/-- `log_b (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0` or `b < 2`). -/
+def logBaseP1PrecRound (x : AzFloat) (b : UInt64) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  logBaseP1PrecRoundCore b (fun x w => logBaseP1Approx x b w)
+    (@fun p _ mode _ _ hx hx1 hb hirr w₀ hw₀ =>
+      logBaseP1Approx_isSome_exists p mode hx hx1 b hb hirr w₀ hw₀)
+    x p mode
 
 /-- `log_b (1 + x)` rounded to nearest at the precision of `x`. -/
 def logBaseP1 (x : AzFloat) (b : UInt64) : AzFloat :=
   (logBaseP1PrecRound x b (x.precision?.getD 1) .Nearest).1
+
+/-- `logBaseP1PrecRound x cb.base p mode` with the constants `cb`; the same result
+(`logBaseP1PrecRoundWith_eq_logBaseP1PrecRound`). -/
+def logBaseP1PrecRoundWith (cb : LogBaseConsts) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  logBaseP1PrecRoundCore cb.base (logBaseP1ApproxWith cb)
+    (@fun p _ mode _ _ hx hx1 hb hirr w₀ hw₀ =>
+      logBaseP1ApproxWith_isSome_exists cb p mode hx hx1 hb hirr w₀ hw₀)
+    x p mode
+
+/-- `log_{cb.base} (1 + x)` rounded to nearest at the precision of `x`, with the constants `cb`. -/
+def logBaseP1With (cb : LogBaseConsts) (x : AzFloat) : AzFloat :=
+  (logBaseP1PrecRoundWith cb x (x.precision?.getD 1) .Nearest).1
 
 end Azurite.AzFloat

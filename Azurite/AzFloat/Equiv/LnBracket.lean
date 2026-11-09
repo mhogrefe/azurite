@@ -1164,26 +1164,36 @@ computed sum `s` and power `p` satisfy `S_j (1 − (10 + 20j)u) ≤ s ≤ S_j` a
 `t^(2j+1) (1 − (8 + 20j)u) ≤ p ≤ t^(2j+1)`. -/
 theorem lnSeriesLoop_spec {w : ℕ} (hw : 64 ≤ w) {t : ℝ} (ht0 : 0 ≤ t)
     {t2 : AzFloat} {t2v : ℝ} (ht2 : t2.toVal = some (t2v : EReal)) (ht2le : t2v ≤ t ^ 2)
-    (ht2ge : t ^ 2 * (1 - 18 * (1 / 2 : ℝ) ^ w) ≤ t2v) (n : ℕ) :
+    (ht2ge : t ^ 2 * (1 - 18 * (1 / 2 : ℝ) ^ w) ≤ t2v)
+    {tau : AzFloat} {tauv : ℝ} (htau : tau.toVal = some (tauv : EReal)) (n : ℕ) :
     ∀ (j : ℕ) (s p : AzFloat) (sv pv : ℝ), j + n ≤ w →
       s.toVal = some (sv : EReal) → p.toVal = some (pv : EReal) →
       0 ≤ sv → sv ≤ lnSeriesPartial t j →
       lnSeriesPartial t j * (1 - (10 + 20 * j) * (1 / 2 : ℝ) ^ w) ≤ sv →
       0 ≤ pv → pv ≤ t ^ (2 * j + 1) → t ^ (2 * j + 1) * (1 - (8 + 20 * j) * (1 / 2 : ℝ) ^ w) ≤ pv →
-      ∃ sv' pv' : ℝ, (lnSeriesLoop w t2 n j (s, p)).1.toVal = some (sv' : EReal) ∧
-        (lnSeriesLoop w t2 n j (s, p)).2.toVal = some (pv' : EReal) ∧
-        0 ≤ sv' ∧ sv' ≤ lnSeriesPartial t (j + n) ∧
-        lnSeriesPartial t (j + n) * (1 - (10 + 20 * ((j + n : ℕ) : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ sv' ∧
-        0 ≤ pv' ∧ pv' ≤ t ^ (2 * (j + n) + 1) ∧
-        t ^ (2 * (j + n) + 1) * (1 - (8 + 20 * ((j + n : ℕ) : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ pv' := by
+      ∃ (m : ℕ) (sv' pv' : ℝ), j ≤ m ∧ m ≤ j + n ∧ (m = j + n ∨ pv' < tauv) ∧
+        (lnSeriesLoop w t2 tau n j (s, p)).1.toVal = some (sv' : EReal) ∧
+        (lnSeriesLoop w t2 tau n j (s, p)).2.toVal = some (pv' : EReal) ∧
+        0 ≤ sv' ∧ sv' ≤ lnSeriesPartial t m ∧
+        lnSeriesPartial t m * (1 - (10 + 20 * (m : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ sv' ∧
+        0 ≤ pv' ∧ pv' ≤ t ^ (2 * m + 1) ∧
+        t ^ (2 * m + 1) * (1 - (8 + 20 * (m : ℝ)) * (1 / 2 : ℝ) ^ w) ≤ pv' := by
   induction n with
   | zero =>
     intro j s p sv pv _ hs hp hs0 hs1 hs2 hp0 hp1 hp2
-    exact ⟨sv, pv, hs, hp, hs0, by simpa using hs1, by simpa using hs2, hp0, by simpa using hp1,
-      by simpa using hp2⟩
+    exact ⟨j, sv, pv, le_rfl, by omega, Or.inl (by omega), hs, hp, hs0, hs1, hs2, hp0, hp1, hp2⟩
   | succ n ih =>
     intro j s p sv pv hjn hs hp hs0 hs1 hs2 hp0 hp1 hp2
     have : NeZero w := ⟨by omega⟩
+    by_cases hlt : (partialCompare p tau == some Ordering.lt) = true
+    · -- the power is already below `tau`: stop
+      have hrec : lnSeriesLoop w t2 tau (n + 1) j (s, p) = (s, p) := by
+        simp only [lnSeriesLoop, hlt, ↓reduceIte]
+      have hpt : pv < tauv := by
+        rw [partialCompare_eq, hp, htau] at hlt
+        simpa [compare_coe_coe, compare_lt_iff_lt] using hlt
+      rw [hrec]
+      exact ⟨j, sv, pv, le_rfl, by omega, Or.inr hpt, hs, hp, hs0, hs1, hs2, hp0, hp1, hp2⟩
     obtain ⟨u, hu_def⟩ : ∃ u : ℝ, u = (1 / 2 : ℝ) ^ w := ⟨_, rfl⟩
     have hu0 : 0 < u := by rw [hu_def]; positivity
     have hwu : (w : ℝ) * u ≤ (1 / 2 : ℝ) ^ 32 := by rw [hu_def]; exact mul_half_pow_le hw
@@ -1281,21 +1291,21 @@ theorem lnSeriesLoop_spec {w : ℕ} (hw : 64 ≤ w) {t : ℝ} (ht0 : 0 ≤ t)
         _ ≤ pv * t2v * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 h2u
         _ ≤ pv' := h2
     -- the recursive call
-    have hrec : lnSeriesLoop w t2 (n + 1) j (s, p)
-        = lnSeriesLoop w t2 n (j + 1) ((addPrecRound s
+    have hrec : lnSeriesLoop w t2 tau (n + 1) j (s, p)
+        = lnSeriesLoop w t2 tau n (j + 1) ((addPrecRound s
             (divPrecRound p (ofAzNat (AzNat.ofNat (2 * j + 1))) w .Floor).1 w .Floor).1,
-          (mulPrecRound p t2 w .Floor).1) := rfl
+          (mulPrecRound p t2 w .Floor).1) := by
+      simp only [lnSeriesLoop, hlt, Bool.false_eq_true, ↓reduceIte]
     rw [hrec]
     have hsv'0 : 0 ≤ sv' := hfs'.nonneg
     have hpv'0 : 0 ≤ pv' := hfp'.nonneg
     rw [hu_def] at hs'_ge hp'_ge
-    obtain ⟨sv'', pv'', h1, h2, h3, h4, h5, h6, h7, h8⟩ :=
+    obtain ⟨m, sv'', pv'', hm1, hm2, hstop, h1, h2, h3, h4, h5, h6, h7, h8⟩ :=
       ih (j + 1) _ _ sv' pv' (by omega) hs' hp' hsv'0 hs'_le hs'_ge hpv'0 hp'_le hp'_ge
-    refine ⟨sv'', pv'', h1, h2, h3, ?_, ?_, h6, ?_, ?_⟩
-    · rwa [show j + (n + 1) = j + 1 + n by omega]
-    · rwa [show j + (n + 1) = j + 1 + n by omega]
-    · rwa [show j + (n + 1) = j + 1 + n by omega]
-    · rwa [show j + (n + 1) = j + 1 + n by omega]
+    refine ⟨m, sv'', pv'', by omega, by omega, ?_, h1, h2, h3, h4, h5, h6, h7, h8⟩
+    rcases hstop with hstop | hstop
+    · exact Or.inl (by omega)
+    · exact Or.inr hstop
 
 /-- The pure-real width budget of the series bracket: all the slacks are `O(W²) u` with
 `W = w + |e| + 8`, far below `lnEps = 2^40 W^5 u`. -/
@@ -1321,13 +1331,39 @@ theorem lnSeries_final_bounds {u W Av Ev LLo LHi lo hi1 hi : ℝ} (hu0 : 0 < u) 
     nlinarith [pow_le_pow_left₀ (by norm_num : (0:ℝ) ≤ 72) hW 3]
   nlinarith
 
+/-- `lnSeriesLead y₁ = c` says `y₁ ≤ 2^(−c−1)`, unless `c = 0`. -/
+theorem lnSeriesLead_spec {y₁ : AzFloat} {v : ℝ} (hy : y₁.toVal = some (v : EReal)) :
+    lnSeriesLead y₁ = 0 ∨ v ≤ (1 / 2 : ℝ) ^ (lnSeriesLead y₁ + 1) := by
+  cases y₁ with
+  | finite s e' q' m' hv' =>
+    rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at hy
+    simp only [lnSeriesLead, exponent?]
+    by_cases hs : e'.sign = true
+    · left; simp [hs]
+    · simp only [hs, Bool.false_eq_true, ↓reduceIte]
+      rcases Nat.eq_zero_or_pos e'.abs.toNat with h0 | h0
+      · left; omega
+      · right
+        rw [show e'.abs.toNat - 1 + 1 = e'.abs.toNat by omega]
+        have hb := (abs_finiteVal_bounds s e' hv').2
+        have hint : e'.toInt = -(e'.abs.toNat : ℤ) := by
+          unfold AzInt.toInt
+          rw [ite_eq_right hs]
+        rw [hint, zpow_neg, zpow_natCast] at hb
+        rw [one_div_pow, one_div, ← hy]
+        exact (le_abs_self _).trans hb.le
+  | zero => left; rfl
+  | nan => left; rfl
+  | infinity s => left; rfl
+
 set_option maxHeartbeats 800000 in
-/-- `lnSeriesBracket lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
-any bracket `lb` of `ln 2` fit for `w`. -/
-theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
+/-- `lnSeriesBracketK k lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`),
+for any bracket `lb` of `ln 2` fit for `w` and any `k` with `2^k ≤ w`. -/
+theorem lnSeriesBracketK_spec {w k : ℕ} (hw : 64 ≤ w) (hk : 2 ^ k ≤ w) {lb : AzFloat × AzFloat}
     (hlb : Ln2BracketFor w lb) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
-    ∃ lv hv' : ℝ, (lnSeriesBracket lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
-      (lnSeriesBracket lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+    ∃ lv hv' : ℝ,
+      (lnSeriesBracketK k lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnSeriesBracketK k lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
       lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
       hv' - lv ≤ lnEps e.toInt w := by
   have : NeZero w := ⟨by omega⟩
@@ -1344,13 +1380,8 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
   have hv0 : 0 < v := finiteVal_true_pos e hv
   obtain ⟨hvlo, hvhi⟩ := abs_finiteVal_bounds true e hv
   rw [abs_of_pos hv0] at hvlo hvhi
-  -- the parameters
-  set k := lnSeriesK w with hk_def
-  set J := lnSeriesTerms k w with hJ_def
-  have hJw : J ≤ w := lnSeriesTerms_le (by omega)
-  have hkJ := lnSeriesTerms_spec k w
-  have h2k : (2 : ℝ) ^ k ≤ w := by exact_mod_cast two_pow_lnSeriesK_le (by omega)
-  have h2k0 : (0 : ℝ) < 2 ^ k := by positivity
+  -- the parameters: the leading zeros of `m₀ − 1` decide how many roots are taken
+  have h2k_orig : (2 : ℝ) ^ k ≤ w := by exact_mod_cast hk
   -- `ℓ = e − 1` and `m₀ = x 2^(−ℓ) ∈ [1, 2)`
   set ℓ : AzInt := e - 1 with hℓ
   have hℓ_int : ℓ.toInt = e.toInt - 1 := by rw [hℓ, AzInt.toInt_sub]; rfl
@@ -1376,15 +1407,37 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
   have hlog2 := Real.log_two_lt_d9
   have hlogv : Real.log v = L + (ℓ.toInt : ℝ) * Real.log 2 := by
     rw [hL, hm0v, Real.log_mul hv0.ne' h2e.ne', Real.log_zpow, hℓ_int]; push_cast; ring
+  -- the leading zeros of `m₀ − 1`, the roots actually taken, the number of terms
+  obtain ⟨d0v, hd0, hfd0⟩ := subFloor_err hm0 toVal_one' w (by linarith)
+  set c0 := lnSeriesLead (subPrecRound ((finite true e q m hv) <<< (-ℓ)) one w .Floor).1
+    with hc0
+  set kr := k - min k c0 with hkr
+  have hkr_le : kr ≤ k := by omega
+  set J := lnSeriesTerms (kr + c0) w with hJ_def
+  have hJw : J ≤ w := lnSeriesTerms_le (by omega)
+  have hkJ := lnSeriesTerms_spec (kr + c0) w
+  have h2k : (2 : ℝ) ^ kr ≤ w := (pow_le_pow_right₀ one_le_two hkr_le).trans h2k_orig
+  have h2k0 : (0 : ℝ) < 2 ^ kr := by positivity
+  have hLc0 : L ≤ (1 / 2 : ℝ) ^ c0 := by
+    rcases lnSeriesLead_spec hd0 with hlead | hlead <;> rw [← hc0] at hlead
+    · rw [hlead, pow_zero]; linarith
+    · have h1 : (m0v - 1) * (1 - 2 * u) ≤ d0v := by
+        have := hfd0.ge; rw [← hu_def] at this; linarith
+      have h2 : m0v - 1 ≤ 2 * (1 / 2 : ℝ) ^ (c0 + 1) := by
+        have hu4 : 2 * u ≤ 1 / 2 := by linarith
+        nlinarith
+      have h3 : 2 * (1 / 2 : ℝ) ^ (c0 + 1) = (1 / 2 : ℝ) ^ c0 := by rw [pow_succ]; ring
+      have h4 : L ≤ m0v - 1 := Real.log_le_sub_one_of_pos hm00
+      linarith
   -- the square roots
-  obtain ⟨yv, hy, hy1, hylog_le, hylog_ge⟩ := lnSqrtIter_spec hw L k 0 _ m0v hm0 hm01
+  obtain ⟨yv, hy, hy1, hylog_le, hylog_ge⟩ := lnSqrtIter_spec hw L kr 0 _ m0v hm0 hm01
     (by rw [pow_zero, div_one]) (by rw [pow_zero, div_one, ← hu_def]; linarith)
   rw [zero_add] at hylog_le hylog_ge
   rw [← hu_def] at hylog_ge
   have hy0 : 0 < yv := by linarith
   have hy2 : yv ≤ 2 := by
     have h1 : Real.log yv ≤ Real.log 2 := by
-      calc Real.log yv ≤ L / 2 ^ k := hylog_le
+      calc Real.log yv ≤ L / 2 ^ kr := hylog_le
         _ ≤ L := div_le_self hL0 (one_le_pow₀ one_le_two)
         _ ≤ Real.log 2 := hL1
     exact (Real.log_le_log_iff hy0 two_pos).mp h1
@@ -1396,24 +1449,25 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
   have htv_half : tv ≤ 1 / 2 := htv3.trans (by norm_num)
   have hy_eq : (1 + tv) / (1 - tv) = yv := by
     rw [htv]; field_simp; ring
-  obtain ⟨hser1, hser2⟩ := log_atanh_series_bounds htv0 htv_half J
-  rw [hy_eq] at hser1 hser2
   have ht_le : 2 * tv ≤ Real.log yv := by
     have := (log_atanh_series_bounds htv0 htv_half 1).1
     rw [hy_eq] at this
     simpa [lnSeriesPartial] using this
-  have htk : tv ≤ (1 / 2 : ℝ) ^ (k + 1) := by
-    have h1 : Real.log yv ≤ 1 / 2 ^ k := by
-      calc Real.log yv ≤ L / 2 ^ k := hylog_le
-        _ ≤ 1 / 2 ^ k := by gcongr; linarith
-    rw [pow_succ, one_div_pow]
+  have htk : tv ≤ (1 / 2 : ℝ) ^ (kr + c0 + 1) := by
+    have h1 : Real.log yv ≤ (1 / 2 : ℝ) ^ c0 / 2 ^ kr := by
+      calc Real.log yv ≤ L / 2 ^ kr := hylog_le
+        _ ≤ (1 / 2 : ℝ) ^ c0 / 2 ^ kr := div_le_div_of_nonneg_right hLc0 h2k0.le
+    have h2 : (1 / 2 : ℝ) ^ (kr + c0 + 1) = (1 / 2 : ℝ) ^ c0 / 2 ^ kr / 2 := by
+      rw [pow_add, pow_add, pow_one, one_div_pow (2 : ℝ) kr]
+      ring
+    rw [h2]
     linarith
   -- the tail
   have htail : 8 / 3 * tv ^ (2 * J + 1) ≤ 2 * u := by
-    have h1 : tv ^ (2 * J + 1) ≤ ((1 / 2 : ℝ) ^ (k + 1)) ^ (2 * J + 1) :=
+    have h1 : tv ^ (2 * J + 1) ≤ ((1 / 2 : ℝ) ^ (kr + c0 + 1)) ^ (2 * J + 1) :=
       pow_le_pow_left₀ htv0 htk _
     rw [← pow_mul] at h1
-    have h2 : ((1 / 2 : ℝ)) ^ ((k + 1) * (2 * J + 1)) ≤ (1 / 2 : ℝ) ^ (w + 1) :=
+    have h2 : ((1 / 2 : ℝ)) ^ ((kr + c0 + 1) * (2 * J + 1)) ≤ (1 / 2 : ℝ) ^ (w + 1) :=
       pow_le_pow_of_le_one (by norm_num) (by norm_num) hkJ
     rw [pow_succ, ← hu_def] at h2
     linarith
@@ -1466,74 +1520,106 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
       _ = tv * (1 - 8 * u) * (tv * (1 - 8 * u)) * (1 - 2 * u) := by ring
       _ ≤ tcv * tcv * (1 - 2 * u) := mul_le_mul_of_nonneg_right h1 (by linarith)
       _ ≤ t2v := h2
-  -- the series
+  -- the series, stopped after `jf ≤ J` terms
   have hz : (zero : AzFloat).toVal = some ((0 : ℝ) : EReal) := by simp
-  obtain ⟨sv, pv, hs, -, hs0, hs_le, hs_ge, -, -, -⟩ := lnSeriesLoop_spec hw htv0 ht2 ht2le ht2ge
-    J 0 zero _ 0 tcv (by omega) hz htc le_rfl (by rw [lnSeriesPartial_zero])
-    (by rw [lnSeriesPartial_zero, zero_mul]) htcv0 (by simpa using htc_le)
-    (by rw [← hu_def]; simpa using htc_ge)
-  rw [zero_add] at hs_le hs_ge
-  rw [← hu_def] at hs_ge
-  have hS0 := lnSeriesPartial_nonneg htv0 J
+  have htau : (powerOf2 (-(AzNat.ofNat (w + 3)).toAzInt)).toVal
+      = some (((1 / 2 : ℝ) ^ (w + 3) : ℝ) : EReal) := by
+    rw [toVal_powerOf2, AzInt.toInt_neg, toInt_toAzInt, AzNat.toNat_ofNat, zpow_neg,
+      zpow_natCast, one_div_pow, one_div]
+  obtain ⟨jf, sv, pv, -, hmJ, hstop, hs, -, hs0, hs_le, hs_ge, -, -, hp_ge⟩ :=
+    lnSeriesLoop_spec hw htv0 ht2 ht2le ht2ge htau J 0 zero _ 0 tcv (by omega) hz htc le_rfl
+      (by rw [lnSeriesPartial_zero]) (by rw [lnSeriesPartial_zero, zero_mul]) htcv0
+      (by simpa using htc_le) (by rw [← hu_def]; simpa using htc_ge)
+  rw [zero_add] at hmJ hstop
+  rw [← hu_def] at hs_ge hp_ge
+  have hmJ' : (jf : ℝ) ≤ J := by exact_mod_cast hmJ
+  have hS0 := lnSeriesPartial_nonneg htv0 jf
+  obtain ⟨hser1, hser2⟩ := log_atanh_series_bounds htv0 htv_half jf
+  rw [hy_eq] at hser1 hser2
+  -- the tail after `jf` terms
+  have htail_m : 8 / 3 * tv ^ (2 * jf + 1) ≤ 2 * u := by
+    rcases hstop with hstop | hstop
+    · rw [hstop]; exact htail
+    · have hα : (8 + 20 * (jf : ℝ)) * u ≤ 1 / 2 := by
+        have : (8 + 20 * (jf : ℝ)) * u ≤ 28 * ((w : ℝ) * u) := by
+          have hmw : (jf : ℝ) ≤ w := by exact_mod_cast (hmJ.trans hJw)
+          nlinarith
+        have : (1 / 2 : ℝ) ^ 32 ≤ 1 / 56 := by norm_num
+        linarith
+      have h1 : tv ^ (2 * jf + 1) ≤ 2 * pv := by
+        have hX : 0 ≤ tv ^ (2 * jf + 1) := by positivity
+        nlinarith
+      have h2 : (1 / 2 : ℝ) ^ (w + 3) = u / 8 := by rw [hu_def, pow_add]; ring
+      rw [h2] at hstop
+      linarith
   -- `A = 2^(k+1) s`, `E = (20J + 18) 2^k u`
   have hA : ((lnSeriesLoop w (sqrPrecRound (divPrecRound (subPrecRound
-        (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
-        (addPrecRound (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
-        w .Floor).1 w .Floor).1 J 0 (zero, (divPrecRound (subPrecRound
-        (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
-        (addPrecRound (lnSqrtIter w k ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
-        w .Floor).1)).1 <<< ((k + 1 : ℕ) : AzInt)).toVal
-      = some ((sv * 2 ^ (k + 1) : ℝ) : EReal) := by
+        (lnSqrtIter w kr ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
+        (addPrecRound (lnSqrtIter w kr ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
+        w .Floor).1 w .Floor).1 (powerOf2 (-(AzNat.ofNat (w + 3)).toAzInt)) J 0 (zero,
+        (divPrecRound (subPrecRound
+        (lnSqrtIter w kr ((finite true e q m hv) <<< (-ℓ))) one w .Floor).1
+        (addPrecRound (lnSqrtIter w kr ((finite true e q m hv) <<< (-ℓ))) one w .Ceiling).1
+        w .Floor).1)).1 <<< ((kr + 1 : ℕ) : AzInt)).toVal
+      = some ((sv * 2 ^ (kr + 1) : ℝ) : EReal) := by
     rw [toVal_shiftLeft_of_toVal hs, AzInt.toInt_natCast, zpow_natCast]
-  set Av : ℝ := sv * 2 ^ (k + 1) with hAv
-  have hE : (ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((k : AzInt) - (w : AzInt))).toVal
-      = some ((((20 * J + 18 : ℕ) : ℝ) * 2 ^ k * u : ℝ) : EReal) := by
+  set Av : ℝ := sv * 2 ^ (kr + 1) with hAv
+  have hE : (ofAzNat (AzNat.ofNat (20 * J + 18)) <<< ((kr : AzInt) - (w : AzInt))).toVal
+      = some ((((20 * J + 18 : ℕ) : ℝ) * 2 ^ kr * u : ℝ) : EReal) := by
     rw [toVal_shiftLeft_of_toVal (toVal_ofAzNat_ofNat _), AzInt.toInt_sub, AzInt.toInt_natCast,
       AzInt.toInt_natCast, zpow_sub₀ (by norm_num), zpow_natCast, zpow_natCast, hu_def,
       one_div_pow, div_eq_mul_inv, one_div, mul_assoc]
-  set Ev : ℝ := ((20 * J + 18 : ℕ) : ℝ) * 2 ^ k * u with hEv
+  set Ev : ℝ := ((20 * J + 18 : ℕ) : ℝ) * 2 ^ kr * u with hEv
   have hEv0 : 0 ≤ Ev := by positivity
   -- `A ≤ L ≤ A + E`
-  have hlogy_lo : 2 * lnSeriesPartial tv J ≤ Real.log yv := hser1
+  have hlogy_lo : 2 * lnSeriesPartial tv jf ≤ Real.log yv := hser1
   have hA_le : Av ≤ L := by
-    have h1 : Av ≤ 2 ^ k * (2 * lnSeriesPartial tv J) := by
+    have h1 : Av ≤ 2 ^ kr * (2 * lnSeriesPartial tv jf) := by
       rw [hAv, pow_succ]
-      have := mul_le_mul_of_nonneg_right hs_le (by positivity : (0 : ℝ) ≤ 2 ^ k * 2)
+      have := mul_le_mul_of_nonneg_right hs_le (by positivity : (0 : ℝ) ≤ 2 ^ kr * 2)
       linarith
-    have h2 : 2 ^ k * Real.log yv ≤ L := by
+    have h2 : 2 ^ kr * Real.log yv ≤ L := by
       have := mul_le_mul_of_nonneg_left hylog_le h2k0.le
       rwa [mul_div_cancel₀ _ h2k0.ne'] at this
-    have h3 : 2 ^ k * (2 * lnSeriesPartial tv J) ≤ 2 ^ k * Real.log yv :=
+    have h3 : 2 ^ kr * (2 * lnSeriesPartial tv jf) ≤ 2 ^ kr * Real.log yv :=
       mul_le_mul_of_nonneg_left hlogy_lo h2k0.le
     linarith
   have hA_ge : L ≤ Av + Ev := by
-    have hβ : 2 * lnSeriesPartial tv J - 2 * sv ≤ (10 + 20 * (J : ℝ)) * u := by
-      have h1 : lnSeriesPartial tv J - sv ≤ lnSeriesPartial tv J * ((10 + 20 * (J : ℝ)) * u) := by
+    have hβ : 2 * lnSeriesPartial tv jf - 2 * sv ≤ (10 + 20 * (J : ℝ)) * u := by
+      have h1 : lnSeriesPartial tv jf - sv
+          ≤ lnSeriesPartial tv jf * ((10 + 20 * (jf : ℝ)) * u) := by
         linarith
-      have h2 : 2 * lnSeriesPartial tv J ≤ 1 := by
+      have h2 : 2 * lnSeriesPartial tv jf ≤ 1 := by
         have := hylog_le
-        have h3 : L / 2 ^ k ≤ 1 := by
-          rw [div_le_one h2k0]; linarith [one_le_pow₀ (M₀ := ℝ) one_le_two (n := k)]
+        have h3 : L / 2 ^ kr ≤ 1 := by
+          rw [div_le_one h2k0]; linarith [one_le_pow₀ (M₀ := ℝ) one_le_two (n := kr)]
         linarith
-      have h4 : (0 : ℝ) ≤ (10 + 20 * (J : ℝ)) * u := by positivity
-      nlinarith
-    have h1 : L ≤ 2 ^ k * Real.log yv + 2 ^ k * (6 * u) := by
+      have h4 : (10 + 20 * (jf : ℝ)) * u ≤ (10 + 20 * (J : ℝ)) * u :=
+        mul_le_mul_of_nonneg_right (by linarith) hu0.le
+      have h5 : (0 : ℝ) ≤ (10 + 20 * (jf : ℝ)) * u := by positivity
+      have h6 : lnSeriesPartial tv jf * ((10 + 20 * (jf : ℝ)) * u)
+          ≤ 1 / 2 * ((10 + 20 * (jf : ℝ)) * u) :=
+        mul_le_mul_of_nonneg_right (by linarith) h5
+      linarith only [h1, h4, h6]
+    have h1 : L ≤ 2 ^ kr * Real.log yv + 2 ^ kr * (6 * u) := by
       have := mul_le_mul_of_nonneg_left hylog_ge h2k0.le
       rw [mul_sub, mul_div_cancel₀ _ h2k0.ne'] at this
       linarith
     have h2 : Real.log yv ≤ 2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u := by linarith
-    have h3 : 2 ^ k * Real.log yv ≤ 2 ^ k * (2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u) :=
+    have h3 : 2 ^ kr * Real.log yv ≤ 2 ^ kr * (2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u) :=
       mul_le_mul_of_nonneg_left h2 h2k0.le
-    have h4 : Ev = 2 ^ k * ((20 * (J : ℝ) + 18) * u) := by rw [hEv]; push_cast; ring
-    have h5 : Av = 2 ^ k * (2 * sv) := by rw [hAv, pow_succ]; ring
+    have h4 : Ev = 2 ^ kr * ((20 * (J : ℝ) + 18) * u) := by rw [hEv]; push_cast; ring
+    have h5 : Av = 2 ^ kr * (2 * sv) := by rw [hAv, pow_succ]; ring
+    have h6 : 2 ^ kr * (2 * sv + (10 + 20 * (J : ℝ)) * u + 2 * u) + 2 ^ kr * (6 * u)
+        = 2 ^ kr * (2 * sv) + 2 ^ kr * ((20 * (J : ℝ) + 18) * u) := by ring
     rw [h4, h5]
-    nlinarith
+    linarith only [h1, h3, h6]
   -- `ℓ ln 2`
   obtain ⟨LLo, LHi, hLLo, hLHi, hL1, hL2, hLw, hLLo_abs, hLHi_abs⟩ := ln_L_spec hw hlb ℓ
   rw [← hu_def] at hLw
   -- the final combination
-  simp only [lnSeriesBracket]
-  rw [← hk_def, ← hJ_def, ← hℓ]
+  simp only [lnSeriesBracketK]
+  rw [← hℓ, ← hc0, ← hkr, ← hJ_def]
   obtain ⟨lo, hlo, hloa, hlob⟩ := addFloor_abs hA hLLo w
   obtain ⟨hi1, hhi1, hchi1⟩ := addCeiling_err hA hE w (by positivity)
   obtain ⟨hi, hhi, hhia, hhib⟩ := addCeiling_abs hhi1 hLHi w
@@ -1551,14 +1637,14 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
     have hJW : (J : ℝ) ≤ W := by
       have : (J : ℝ) ≤ w := by exact_mod_cast hJw
       rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
-    have h2kW : (2 : ℝ) ^ k ≤ W := by rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
+    have h2kW : (2 : ℝ) ^ kr ≤ W := by rw [hW]; linarith [abs_nonneg (e.toInt : ℝ)]
     have hℓW : |(ℓ.toInt : ℝ)| ≤ W := by rw [hW]; linarith
     have hEvW : Ev ≤ 38 * W ^ 2 * u := by
       rw [hEv]; push_cast
       have h1 : 20 * (J : ℝ) + 18 ≤ 38 * W := by linarith
-      have h2 : (20 * (J : ℝ) + 18) * 2 ^ k ≤ 38 * W * W := by
+      have h2 : (20 * (J : ℝ) + 18) * 2 ^ kr ≤ 38 * W * W := by
         apply mul_le_mul h1 h2kW (by positivity) (by linarith)
-      have : (20 * (J : ℝ) + 18) * 2 ^ k * u ≤ 38 * W * W * u :=
+      have : (20 * (J : ℝ) + 18) * 2 ^ kr * u ≤ 38 * W * W * u :=
         mul_le_mul_of_nonneg_right h2 hu0.le
       linarith [this]
     have hAv0 : 0 ≤ Av := by positivity
@@ -1576,6 +1662,16 @@ theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
     unfold lnEps
     rw [← hu_def]
     exact this
+
+/-- `lnSeriesBracket lb x e w` encloses `ln x`, with width at most `lnEps e w` (`w ≥ 64`), for
+any bracket `lb` of `ln 2` fit for `w`. -/
+theorem lnSeriesBracket_spec {w : ℕ} (hw : 64 ≤ w) {lb : AzFloat × AzFloat}
+    (hlb : Ln2BracketFor w lb) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    ∃ lv hv' : ℝ, (lnSeriesBracket lb (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (lnSeriesBracket lb (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w :=
+  lnSeriesBracketK_spec hw (two_pow_lnSeriesK_le (by omega)) hlb e hv
 
 /-! ### The dispatcher -/
 
@@ -1717,6 +1813,29 @@ theorem lnApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : R
 
 /-! ### The logarithm of a rational -/
 
+/-- `lnEps e` is decreasing in the working precision: `(X + 1)^5 ≤ 2 X^5` for `X ≥ 8`. -/
+theorem lnEps_succ_le (e : ℤ) (w : ℕ) : lnEps e (w + 1) ≤ lnEps e w := by
+  unfold lnEps
+  set X : ℝ := (w : ℝ) + |(e : ℝ)| + 8 with hX
+  have hX8 : 8 ≤ X := by
+    rw [hX]; linarith [abs_nonneg (e : ℝ), (Nat.cast_nonneg w : (0 : ℝ) ≤ w)]
+  have hX0 : 0 ≤ X := by linarith
+  have h1 : ((w + 1 : ℕ) : ℝ) + |(e : ℝ)| + 8 = X + 1 := by rw [hX]; push_cast; ring
+  rw [h1]
+  have h2 : X + 1 ≤ 9 / 8 * X := by linarith
+  have h3 : (X + 1) ^ 5 ≤ (9 / 8 * X) ^ 5 := pow_le_pow_left₀ (by linarith) h2 5
+  have h4 : (9 / 8 * X) ^ 5 ≤ 2 * X ^ 5 := by
+    rw [mul_pow]; nlinarith [pow_nonneg hX0 5]
+  have hu : (0 : ℝ) < (1 / 2 : ℝ) ^ w := by positivity
+  have h5 := mul_le_mul_of_nonneg_right (h3.trans h4) hu.le
+  rw [pow_succ (1 / 2 : ℝ) w]
+  nlinarith [h5]
+
+theorem lnEps_antitone {e : ℤ} {w W : ℕ} (hW : w ≤ W) : lnEps e W ≤ lnEps e w := by
+  induction W, hW using Nat.le_induction with
+  | base => exact le_rfl
+  | succ W _ ih => exact (lnEps_succ_le e W).trans ih
+
 /-- `lnEps` is monotone in `|e|`. -/
 theorem lnEps_mono {e e' : ℤ} (h : |e| ≤ |e'|) (w : ℕ) : lnEps e w ≤ lnEps e' w := by
   unfold lnEps
@@ -1799,13 +1918,29 @@ theorem tendsto_lnRatEps (E : ℕ) (A : ℝ) :
   simp only [mul_zero, add_zero] at this
   exact this
 
-/-- `lnFloorBracket y w` for a float `y` with `y ≤ q ≤ y (1 + 2·2^(−w))` encloses `ln q`, with
-width at most `lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2` (`w ≥ 64`). -/
-theorem lnFloorBracket_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+/-- A bracket function for `ln` of a positive float with the conclusion of `lnBracket_spec`
+(`lnBracket`, `lnBracketWith c`). -/
+def LnBracketFn (L : AzFloat → AzInt → ℕ → AzFloat × AzFloat) : Prop :=
+  ∀ {w : ℕ}, 64 ≤ w → ∀ (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m),
+    ∃ lv hv' : ℝ, (L (finite true e q m hv) e w).1.toVal = some (lv : EReal) ∧
+      (L (finite true e q m hv) e w).2.toVal = some (hv' : EReal) ∧
+      lv ≤ Real.log (finiteVal true e m) ∧ Real.log (finiteVal true e m) ≤ hv' ∧
+      hv' - lv ≤ lnEps e.toInt w
+
+theorem lnBracketFn_lnBracket : LnBracketFn lnBracket := fun hw e _ _ hv => lnBracket_spec hw e hv
+
+theorem lnBracketFn_lnBracketWith (c : LnConsts) : LnBracketFn (lnBracketWith c) :=
+  fun hw e _ _ hv => lnBracketWith_spec c hw e hv
+
+/-- `lnFloorBracketBy L y w` for a float `y` with `y ≤ q ≤ y (1 + 2·2^(−w))` encloses `ln q`,
+with width at most `lnRatEps E |ln q| w`, `E = ⌊2 |ln q|⌋ + 2` (`w ≥ 64`), for any bracket
+function `L` with the conclusion of `lnBracket_spec`. -/
+theorem lnFloorBracketBy_spec {L : AzFloat → AzInt → ℕ → AzFloat × AzFloat} (hL : LnBracketFn L)
+    {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
     (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
     (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) :
-    ∃ lv hv : ℝ, (lnFloorBracket y w).1.toVal = some (lv : EReal) ∧
-      (lnFloorBracket y w).2.toVal = some (hv : EReal) ∧
+    ∃ lv hv : ℝ, (lnFloorBracketBy L y w).1.toVal = some (lv : EReal) ∧
+      (lnFloorBracketBy L y w).2.toVal = some (hv : EReal) ∧
       lv ≤ Real.log qv ∧ Real.log qv ≤ hv ∧
       hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w := by
   have : NeZero w := ⟨by omega⟩
@@ -1819,8 +1954,8 @@ theorem lnFloorBracket_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
   have hr0 : 0 < r := by linarith
   obtain ⟨e, q', m, hv, hx, hrv⟩ := eq_finite_true_of_toVal_pos hr hr0
   subst hx
-  simp only [lnFloorBracket]
-  obtain ⟨lv, hv', hlv, hhv, hlo, hhi, hwid⟩ := lnBracket_spec hw e hv
+  simp only [lnFloorBracketBy]
+  obtain ⟨lv, hv', hlv, hhv, hlo, hhi, hwid⟩ := hL hw e hv
   rw [hrv] at hlo hhi
   obtain ⟨hlow, hhigh⟩ := abs_finiteVal_bounds true e hv
   rw [hrv, abs_of_pos hr0] at hlow hhigh
@@ -1885,6 +2020,42 @@ theorem lnFloorBracket_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
   refine ⟨lv, hv2, hlv, hhv2, hlo.trans hlogq_lo, by linarith, ?_⟩
   unfold lnRatEps
   linarith
+
+theorem lnFloorBracket_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+    (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) :
+    ∃ lv hv : ℝ, (lnFloorBracket y w).1.toVal = some (lv : EReal) ∧
+      (lnFloorBracket y w).2.toVal = some (hv : EReal) ∧
+      lv ≤ Real.log qv ∧ Real.log qv ≤ hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w :=
+  lnFloorBracketBy_spec lnBracketFn_lnBracket hw hr hqv0 hr1 hr2
+
+theorem lnFloorBracketWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+    (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) :
+    ∃ lv hv : ℝ, (lnFloorBracketWith c y w).1.toVal = some (lv : EReal) ∧
+      (lnFloorBracketWith c y w).2.toVal = some (hv : EReal) ∧
+      lv ≤ Real.log qv ∧ Real.log qv ≤ hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w :=
+  lnFloorBracketBy_spec (lnBracketFn_lnBracketWith c) hw hr hqv0 hr1 hr2
+
+/-- The ends of a bracket as `Roundable`s round to themselves and inherit strict enclosure. -/
+theorem rounds_pair_of_bracket {b : AzFloat × AzFloat} {lv hv v : ℝ}
+    (hlv : b.1.toVal = some (lv : EReal)) (hhv : b.2.toVal = some (hv : EReal))
+    (hlo : lv ≤ v) (hhi : v ≤ hv) (hirr : Irrational v) :
+    Rounds (fun p mode => setPrecRound b.1 p mode) lv ∧
+      Rounds (fun p mode => setPrecRound b.2 p mode) hv ∧ lv < v ∧ v < hv := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hlv)
+    rw [fval_of_toVal_coe hlv] at hR
+    exact hR
+  · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhv)
+    rw [fval_of_toVal_coe hhv] at hR
+    exact hR
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hlv
+    exact lt_of_le_of_ne hlo fun h => hirr.ne_rat r' (h.symm.trans hr')
+  · obtain ⟨r', hr'⟩ := exists_rat_of_toVal hhv
+    exact lt_of_le_of_ne hhi fun h => hirr.ne_rat r' (h.trans hr')
 
 /-- `lnFloorApprox y w` encloses `ln q` strictly when `ln q` is irrational. -/
 theorem lnFloorApprox_spec {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
@@ -1969,6 +2140,72 @@ theorem lnP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) {x :
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := lnP1Approx_spec hw hx hx1 hx0
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The same with precomputed constants -/
+
+theorem lnFloorApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {y : AzFloat} {r qv : ℝ}
+    (hr : y.toVal = some (r : EReal)) (hqv0 : 0 < qv) (hr1 : r ≤ qv)
+    (hr2 : qv ≤ r + 2 * qv * (1 / 2 : ℝ) ^ w) (hirr : Irrational (Real.log qv)) :
+    ∃ lv hv : ℝ, Rounds (lnFloorApproxWith c y w).1 lv ∧ Rounds (lnFloorApproxWith c y w).2 hv ∧
+      lv < Real.log qv ∧ Real.log qv < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log qv|⌋₊ + 2) |Real.log qv| w := by
+  obtain ⟨lv, hv, hlv, hhv, hlo, hhi, hwid⟩ := lnFloorBracketWith_spec c hw hr hqv0 hr1 hr2
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlv hhv hlo hhi hirr
+  exact ⟨lv, hv, h1, h2, h3, h4, hwid⟩
+
+theorem lnRatApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (hq1 : AzRat.toRat q ≠ 1) :
+    ∃ lv hv : ℝ, Rounds (lnRatApproxWith c q w).1 lv ∧ Rounds (lnRatApproxWith c q w).2 hv ∧
+      lv < Real.log (AzRat.toRat q : ℝ) ∧ Real.log (AzRat.toRat q : ℝ) < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  exact lnFloorApproxWith_spec c hw hr hqv0 hr1 hr2 (irrational_log_rat hq hq1)
+
+theorem lnRatApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q) (hq1 : AzRat.toRat q ≠ 1) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (lnRatApproxWith c q (w₀ * 2 ^ f)).1
+      (lnRatApproxWith c q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (lnRatApproxWith c q) (irrational_log_rat hq hq1)
+    (lnRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2) |Real.log (AzRat.toRat q : ℝ)|)
+    (tendsto_lnRatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := lnRatApproxWith_spec c hw q hq hq1
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+theorem lnP1ApproxWith_spec (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0) :
+    ∃ lv hv : ℝ, Rounds (lnP1ApproxWith c x w).1 lv ∧ Rounds (lnP1ApproxWith c x w).2 hv ∧
+      lv < Real.log (1 + xv) ∧ Real.log (1 + xv) < hv ∧
+      hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  exact lnFloorApproxWith_spec c hw hr hpos hf.le hf.ge
+    (irrational_log_one_add_of_toVal hx hpos hx0)
+
+theorem lnP1ApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hx0 : xv ≠ 0)
+    (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (lnP1ApproxWith c x (w₀ * 2 ^ f)).1
+      (lnP1ApproxWith c x (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (lnP1ApproxWith c x)
+    (irrational_log_one_add_of_toVal hx (by linarith) hx0)
+    (lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)|) (tendsto_lnRatEps _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := lnP1ApproxWith_spec c hw hx hx1 hx0
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-- The bracket of `ln 2` that `c` supplies for `w` is fit for `w`. -/
+theorem LnConsts.ln2At_fit (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) : Ln2BracketFor w (c.ln2At w) := by
+  unfold LnConsts.ln2At
+  split_ifs with hW
+  · rw [c.ln2_eq]
+    exact (ln2BracketFor_ln2Bracket (by omega)).of_le hW
+  · exact ln2BracketFor_ln2Bracket (by omega)
 
 /-! ### Facts about the exponent for `lnP1PrecRound` -/
 

@@ -32,9 +32,13 @@ namespace Azurite.AzFloat
 else `0` (only the start of the working precision depends on it). -/
 def leadingZeroBits (e : AzInt) : Nat := if e.sign then 0 else e.abs.toUInt64.toNat
 
-/-- `ln (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
-(`(nan, .eq)` for `p = 0`). -/
-def lnP1PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+/-- `lnP1PrecRound` built on a bracket function `A` of `ln (1 + x)` with its Ziv
+certificate `hA` (`lnP1Approx`, or `lnP1ApproxWith c` with precomputed constants). -/
+def lnP1PrecRoundCore (A : AzFloat → Nat → Roundable × Roundable)
+    (hA : ∀ (p : Nat) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ},
+      x.toVal = some (xv : EReal) → -1 < xv → xv ≠ 0 → ∀ w₀ : Nat, 0 < w₀ →
+      ∃ f : Nat, (roundingPossible (A x (w₀ * 2 ^ f)).1 (A x (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
   match x with
   | nan => (nan, .eq)
   | infinity s => if s then (infinity true, .eq) else (nan, .eq)
@@ -43,9 +47,9 @@ def lnP1PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (lnP1Approx (finite true e q m hv)) p mode
+      zivLoopCertified (A (finite true e q m hv)) p mode
         (p + zivGuardBits + leadingZeroBits e)
-        (lnP1Approx_isSome_exists p mode (toVal_finite true e q m hv)
+        (hA p mode (toVal_finite true e q m hv)
           (by linarith [finiteVal_true_pos e hv]) (finiteVal_true_pos e hv).ne' _
           (by unfold zivGuardBits; omega))
   | finite false e q m hv =>
@@ -54,13 +58,29 @@ def lnP1PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     else if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (lnP1Approx (finite false e q m hv)) p mode
+      zivLoopCertified (A (finite false e q m hv)) p mode
         (p + zivGuardBits + leadingZeroBits e)
-        (lnP1Approx_isSome_exists p mode (toVal_finite false e q m hv)
+        (hA p mode (toVal_finite false e q m hv)
           (finiteVal_false_gt_neg_one e hv hneg) (finiteVal_false_ne_zero e hv) _
           (by unfold zivGuardBits; omega))
 
+/-- `ln (1 + x)` rounded to precision `p` with `mode`, and the comparison with the exact value
+(`(nan, .eq)` for `p = 0`). -/
+def lnP1PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  lnP1PrecRoundCore lnP1Approx @lnP1Approx_isSome_exists x p mode
+
 /-- `ln (1 + x)` rounded to nearest at the precision of `x`. -/
 def lnP1 (x : AzFloat) : AzFloat := (lnP1PrecRound x (x.precision?.getD 1) .Nearest).1
+
+/-- `lnP1PrecRound` with the constants `c`; the same result (`lnP1PrecRoundWith_eq_lnP1PrecRound`).
+(The Ziv loop starts at `p + 64 + leadingZeroBits e`, so for small `|x|` the constants need a
+correspondingly finer `W` to be used.) -/
+def lnP1PrecRoundWith (c : LnConsts) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  lnP1PrecRoundCore (lnP1ApproxWith c) (@lnP1ApproxWith_isSome_exists c) x p mode
+
+/-- `ln (1 + x)` rounded to nearest at the precision of `x`, with the constants `c`. -/
+def lnP1With (c : LnConsts) (x : AzFloat) : AzFloat :=
+  (lnP1PrecRoundWith c x (x.precision?.getD 1) .Nearest).1
 
 end Azurite.AzFloat

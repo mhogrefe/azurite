@@ -12,6 +12,7 @@ import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log₂` of a rational
@@ -62,3 +63,10 @@ private def ref3 : AzRat :=
     ++ tenPow79)
 #guard log2Rat (Q "10") 200 == ofAzRat ref10 200
 #guard log2Rat (Q "1/3") 200 == ofAzRat (-ref3) 200
+
+-- precomputed constants: the same results
+#guard log2RatWith (LnConsts.forPrecision 53) (Q "10") 53 == log2Rat (Q "10") 53
+#guard log2RatWith (LnConsts.forPrecision 53) (Q "1/3") 53 == log2Rat (Q "1/3") 53
+#guard log2RatWith (LnConsts.forPrecision 53) (Q "8") 53 == log2Rat (Q "8") 53
+#guard log2RatPrecRoundWith (LnConsts.forPrecision 53) (Q "10") 53 .Floor
+  == log2RatPrecRound (Q "10") 53 .Floor

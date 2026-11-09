@@ -22,12 +22,19 @@ import Azurite.AzRat.Equiv.Construct
 namespace Azurite.AzFloat
 
 /-- **`log_{2^k}` of a rational is correctly rounded.** -/
-theorem logBasePow2RatPrecRound_eq (q : AzRat) (k : AzInt) (hk : k ≠ 0) (p : ℕ) [NeZero p]
-    (mode : RoundingMode) :
-    logBasePow2RatPrecRound q k p mode
+theorem logBasePow2RatPrecRoundCore_eq (A : AzRat → AzInt → ℕ → Roundable × Roundable) (hA)
+    (hspec : ∀ {w : ℕ}, 64 ≤ w → ∀ (q : AzRat), (0 : ℚ) < AzRat.toRat q →
+      q.isPowerOfTwo = false → ∀ (k : AzInt), k ≠ 0 →
+      ∃ lv hv' : ℝ, Rounds (A q k w).1 lv ∧ Rounds (A q k w).2 hv' ∧
+        lv < Real.logb 2 (AzRat.toRat q : ℝ) / k.toInt ∧
+        Real.logb 2 (AzRat.toRat q : ℝ) / k.toInt < hv' ∧
+        hv' - lv ≤ logBasePow2RatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+          |Real.log (AzRat.toRat q : ℝ)| w)
+    (q : AzRat) (k : AzInt) (hk : k ≠ 0) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    logBasePow2RatPrecRoundCore A hA q k p mode
       = roundVal p mode (Spec.logBasePow2 k.toInt ((AzRat.toRat q : ℝ) : EReal)) := by
   have hkI := toInt_ne_zero_of_ne_zero hk
-  unfold logBasePow2RatPrecRound
+  unfold logBasePow2RatPrecRoundCore
   rw [dite_eq_right hk]
   split_ifs with h0 hs hp
   · rw [(AzRat.toRat_eq_zero_iff q).mpr h0, EReal.coe_zero, Spec.logBasePow2_zero _ hkI,
@@ -54,9 +61,40 @@ theorem logBasePow2RatPrecRound_eq (q : AzRat) (k : AzInt) (hk : k ≠ 0) (p : �
         (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
-            logBasePow2RatApprox_spec (w := w) (by unfold zivGuardBits at hw; omega) q hq h2 k hk
+            hspec (w := w) (by unfold zivGuardBits at hw; omega) q hq h2 k hk
           exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
   · have hneg := toRat_neg_of_sign q (by simpa using hs) h0
     rw [Spec.logBasePow2_coe_neg _ _ hneg, roundVal_none]
+
+/-- **`log_{2^k}` of a rational is correctly rounded.** -/
+theorem logBasePow2RatPrecRound_eq (q : AzRat) (k : AzInt) (hk : k ≠ 0) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    logBasePow2RatPrecRound q k p mode
+      = roundVal p mode (Spec.logBasePow2 k.toInt ((AzRat.toRat q : ℝ) : EReal)) :=
+  logBasePow2RatPrecRoundCore_eq _ _ @logBasePow2RatApprox_spec q k hk p mode
+
+/-- **`log_{2^k}` of a rational with precomputed constants is correctly rounded.** -/
+theorem logBasePow2RatPrecRoundWith_eq (c : LnConsts) (q : AzRat) (k : AzInt) (hk : k ≠ 0)
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    logBasePow2RatPrecRoundWith c q k p mode
+      = roundVal p mode (Spec.logBasePow2 k.toInt ((AzRat.toRat q : ℝ) : EReal)) :=
+  logBasePow2RatPrecRoundCore_eq _ _ (@logBasePow2RatApproxWith_spec c) q k hk p mode
+
+theorem logBasePow2RatPrecRoundWith_eq_logBasePow2RatPrecRound (c : LnConsts) (q : AzRat)
+    (k : AzInt) (p : ℕ) (mode : RoundingMode) :
+    logBasePow2RatPrecRoundWith c q k p mode = logBasePow2RatPrecRound q k p mode := by
+  by_cases hk : k = 0
+  · subst hk
+    simp [logBasePow2RatPrecRoundWith, logBasePow2RatPrecRound, logBasePow2RatPrecRoundCore]
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    simp [logBasePow2RatPrecRoundWith, logBasePow2RatPrecRound, logBasePow2RatPrecRoundCore]
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [logBasePow2RatPrecRoundWith_eq c q k hk, logBasePow2RatPrecRound_eq q k hk]
+
+theorem logBasePow2RatWith_eq_logBasePow2Rat (c : LnConsts) (q : AzRat) (k : AzInt) (p : ℕ) :
+    logBasePow2RatWith c q k p = logBasePow2Rat q k p := by
+  unfold logBasePow2RatWith logBasePow2Rat
+  rw [logBasePow2RatPrecRoundWith_eq_logBasePow2RatPrecRound]
 
 end Azurite.AzFloat

@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.Ln
+import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Pi
 import Azurite.AzFloat.Sqrt
@@ -26,7 +27,15 @@ outside the timing (column `lnWith`), and the pieces of one bracket at `w = P + 
 brackets of `π` and `ln 2` precomputed outside the timing, for tuning `lnSeriesThreshold`, the
 rounded-down AGM alone (`agmIterLoN` from `⌊k⌋_w`, column `agm`), the former interval AGM
 (`agmIterN` from the bracket of `k`, column `agmIv`, for comparison), `piBracket w`,
+`piAgmBracket w` (the former Brent–Salamin bracket, column `piAgm`),
 `ln2Bracket w`, and for reference `sqrt`, `pi P` and `ln2 P`.  Milliseconds.
+
+`az_float_lnp1`: `lnP1 (10^(−d))` for `d ∈ {1, 3, 6, 12}`, where the adaptive stopping of the
+series path pays.
+
+`az_float_ln_series`: the series path for `k` square roots from `lnSeriesK w − 3` to
+`lnSeriesK w + 3` against the AGM path (constants precomputed), for tuning `lnSeriesK` and
+`lnSeriesThreshold`.
 
 `az_float_ln2_breakdown`: the pieces of `ln2Bracket w` — the three binary splittings, the three
 series brackets (`seriesBracket`: truncations and two directed divisions each), the whole bracket
@@ -97,7 +106,8 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
     ln 10, ln 3, ln ½, …); bracket pieces at w = P + 64"
   IO.println (padLeft "bits" 7 ++ padLeft "ln" 10 ++ padLeft "lnWith" 10
     ++ padLeft "lnBracket" 10 ++ padLeft "serBr" 10 ++ padLeft "agmBr" 10 ++ padLeft "agm" 10
-    ++ padLeft "agmIv" 10 ++ padLeft "piBracket" 10 ++ padLeft "ln2Bracket" 11
+    ++ padLeft "agmIv" 10 ++ padLeft "piBracket" 10 ++ padLeft "piAgm" 10
+    ++ padLeft "ln2Bracket" 11
     ++ padLeft "sqrt" 10 ++ padLeft "pi" 10 ++ padLeft "ln2" 10)
   for P in bitsList do
     let w := P + zivGuardBits
@@ -117,6 +127,7 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
     let nsAgmIv ← timeOver xs (fun x => agmOnly x w) (fun s => fsize s.aHi)
     let ws : Array Nat := xs.map fun _ => w
     let nsPi ← timeOver ws piBracket (fun p => fsize p.1)
+    let nsPiM ← timeOver ws piAgmBracket (fun p => fsize p.1)
     let nsLn2 ← timeOver ws ln2Bracket (fun p => fsize p.1)
     let nsSqrt ← timeOver xs sqrt fsize
     let ps : Array Nat := xs.map fun _ => P
@@ -126,9 +137,70 @@ def runAzFloatLn (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt6
       ++ padLeft (ms nsBr count) 10 ++ padLeft (ms nsSer count) 10
       ++ padLeft (ms nsAgmBr count) 10 ++ padLeft (ms nsAgm count) 10
       ++ padLeft (ms nsAgmIv count) 10 ++ padLeft (ms nsPi count) 10
+      ++ padLeft (ms nsPiM count) 10
       ++ padLeft (ms nsLn2 count) 11
       ++ padLeft (ms nsSqrt count) 10 ++ padLeft (ms nsPiC count) 10
       ++ padLeft (ms nsLn2C count) 10)
+
+/-- Run the `az_float_lnp1` benchmark: `lnP1 x` (`ln (1 + x)`) for `x = 10^(−d)`,
+`d ∈ {1, 3, 6, 12}`, at each precision — the regime where the adaptive stopping of the series
+path and the skipped square roots pay.  Config: `bits` (default `53/200/1000`). -/
+def runAzFloatLnP1 (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
+    IO Unit := do
+  let bitsList : Array Nat := match cfg["bits"]? with
+    | some s =>
+      ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
+    | none => #[53, 200, 1000]
+  let ds : Array Nat := #[1, 3, 6, 12]
+  IO.println "[AzFloat-LnP1] ms per call (median of 3 passes); ln (1 + 10^(−d))"
+  IO.println (padLeft "bits" 7 ++ padLeft "d=1" 10 ++ padLeft "d=3" 10 ++ padLeft "d=6" 10
+    ++ padLeft "d=12" 10 ++ padLeft "ln 3/2" 10)
+  for P in bitsList do
+    let mut line := padLeft s!"{P}" 7
+    for d in ds do
+      let x := ofAzRat ((AzRat.parse s!"1/{10 ^ d}").get!) P
+      let ns ← timeOver #[x] lnP1 fsize
+      line := line ++ padLeft (ms ns 1) 10
+    let y := ofAzRat ((AzRat.parse "3/2").get!) P
+    let nsL ← timeOver #[y] ln fsize
+    IO.println (line ++ padLeft (ms nsL 1) 10)
+
+/-- Run the `az_float_ln_series` benchmark: the series path `lnSeriesBracketK k` at `w = P + 64`
+for `k` from `lnSeriesK w − 3` to `lnSeriesK w + 3` (the current choice marked `*`), against the
+AGM path, both with the constants precomputed outside the timing.  Config: `bits` (default
+`53/200/1000/2000`). -/
+def runAzFloatLnSeries (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
+    IO Unit := do
+  let bitsList : Array Nat := match cfg["bits"]? with
+    | some s =>
+      ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
+    | none => #[53, 200, 1000, 2000]
+  let count := configGetNat cfg "inputs" 4
+  let srcs : Array String := #["10", "3", "1/2", "3/2", "1000000000000", "7"]
+  IO.println s!"[AzFloat-Ln-series] ms per call (median of 3 passes over {count} inputs); \
+    series path by number of square roots k (current k marked *), AGM path; w = P + 64"
+  IO.println (padLeft "bits" 7 ++ padLeft "w" 7 ++ padLeft "k0" 5 ++ padLeft "k0-3" 9
+    ++ padLeft "k0-2" 9 ++ padLeft "k0-1" 9 ++ padLeft "k0*" 9 ++ padLeft "k0+1" 9
+    ++ padLeft "k0+2" 9 ++ padLeft "k0+3" 9 ++ padLeft "agmBr" 9)
+  for P in bitsList do
+    let w := P + zivGuardBits
+    let xs : Array AzFloat := (srcs.extract 0 (min count srcs.size)).map fun s =>
+      ofAzRat ((AzRat.parse s).get!) P
+    let lb := ln2Bracket w
+    let pb := piBracket w
+    let k0 := lnSeriesK w
+    let mut line := padLeft s!"{P}" 7 ++ padLeft s!"{w}" 7 ++ padLeft s!"{k0}" 5
+    for d in [0, 1, 2, 3, 4, 5, 6] do
+      if k0 + d < 3 then
+        line := line ++ padLeft "-" 9
+      else
+        let k := k0 + d - 3
+        let ns ← timeOver xs (fun x => lnSeriesBracketK k lb x (x.exponent?.getD 0) w)
+          (fun p => fsize p.1)
+        line := line ++ padLeft (ms ns count) 9
+    let nsAgm ← timeOver xs (fun x => lnAgmBracket pb lb x (x.exponent?.getD 0) w)
+      (fun p => fsize p.1)
+    IO.println (line ++ padLeft (ms nsAgm count) 9)
 
 /-- Run the `az_float_ln2_breakdown` benchmark: the pieces of `ln2Bracket w` at `w = P + 64`.
 Config: `bits` (default `1000/5000/20000`). -/

@@ -12,6 +12,7 @@ import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.LogBasePow2Rat
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
+import Azurite.AzFloat.Ln
 
 /-!
 # Tests for `log_{2^k}` of a rational
@@ -75,3 +76,9 @@ private def ref1000 : AzRat :=
 -- nearest at precision `p`
 #guard logBasePow2Rat (Q "256") (K 4) 10 == F "2" 10
 #guard logBasePow2Rat (Q "10") (K 1) 53 == log2Rat (Q "10") 53
+
+-- precomputed constants: the same results
+#guard logBasePow2RatWith (LnConsts.forPrecision 53) (Q "10") (K 3) 53
+  == logBasePow2Rat (Q "10") (K 3) 53
+#guard logBasePow2RatWith (LnConsts.forPrecision 53) (Q "1/7") (K (-2)) 53
+  == logBasePow2Rat (Q "1/7") (K (-2)) 53

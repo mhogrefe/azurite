@@ -58,3 +58,11 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
   == "-9.31322575049159384888466296106498912866875882669738160663179e-10"
 #guard toString (lnP1 (F "1/1267650600228229401496703205376" 300))
   == "7.888609052210118054117285652824750789093133780236658015675900880884818306491157115024101102e-31"
+
+-- precomputed constants: the same results
+#guard lnP1With (LnConsts.forPrecision 53) (F "1/2" 53) == lnP1 (F "1/2" 53)
+#guard lnP1With (LnConsts.forPrecision 53) (F "9" 53) == lnP1 (F "9" 53)
+#guard lnP1With (LnConsts.forPrecision 53) (F "-1/2" 53) == lnP1 (F "-1/2" 53)
+#guard lnP1With (LnConsts.forPrecision 53) (F "1/1000000" 53) == lnP1 (F "1/1000000" 53)
+#guard lnP1PrecRoundWith (LnConsts.forPrecision 53) (F "1/2" 53) 53 .Ceiling
+  == lnP1PrecRound (F "1/2" 53) 53 .Ceiling

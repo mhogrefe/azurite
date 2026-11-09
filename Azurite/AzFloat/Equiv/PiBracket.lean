@@ -9,6 +9,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
+import Azurite.AzFloat.Equiv.Ln2Bracket
+import Azurite.BrentZimmermann.Chapter4.PiBinarySplitting
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.Real.Pi.Irrational
 
@@ -22,10 +24,13 @@ building blocks `mean_step`, `geo_step`, `diffsq_step`: each operation's roundin
 small and the step is Lipschitz), the computed `π_N` is within `2^(3N+12) 2^(−w)` of the exact
 `π_N` (`piBracketAt_spec`), and the raw bracket `[⌊q − E⌋, ⌈q + E⌉]` with `E = 2^(3N+13) 2^(−w)`
 has width at most `2^(3N+16) 2^(−w)`.  Run at `piWork w = w + 3N + 16` bits, this is
-`piBracket w`, of width at most `2^(3−w)` (`piBracket_spec_width`; `piWork_le_two_mul`,
-`piSteps_piWork_le`) and hence `piEps w = 2^19 w³ 2^(−w) → 0` (`piBracket_spec`,
-`tendsto_piEps`).  With `irrational_pi`, this gives the Ziv certificate
-`piApprox_isSome_exists`, and `Pi.lean` needs no fuel.
+`piAgmBracket w`, of width at most `2^(3−w)` (`piAgmBracket_spec`; `piWork_le_two_mul`,
+`piSteps_piWork_le`).  **Machin's formula** by binary splitting (`piMachinBracket_spec`: the
+two `seriesBracket`s, the tails `2^(−w−5)` and the directed combination give width
+`≤ 8 · 2^(−w)` and a lower end strictly below `π`) is `piBracket`, hence `piBracket_spec_width`
+and `piBracket_spec` (width `≤ piEps w = 2^19 w³ 2^(−w) → 0`, `tendsto_piEps`).  With
+`irrational_pi`, this gives the Ziv certificate `piApprox_isSome_exists`, and `Pi.lean` needs no
+fuel.
 -/
 
 namespace Azurite.AzFloat
@@ -586,11 +591,11 @@ theorem piSteps_piWork_le {w : ℕ} (hw : 64 ≤ w) : piSteps (piWork w) ≤ piS
   rw [mul_comm, Nat.log_mul_base one_lt_two (by omega)] at h
   omega
 
-/-- The bracket of `π` at working precision `w`: ends with values, `0 ≤ lo < π ≤ hi`, width at
-most `2^(3−w)`. -/
-theorem piBracket_spec_width {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lv hv : ℝ, (piBracket w).1.toVal = some (lv : EReal) ∧
-      (piBracket w).2.toVal = some (hv : EReal) ∧
+/-- The Brent–Salamin bracket of `π` at working precision `w`: ends with values,
+`0 ≤ lo < π ≤ hi`, width at most `2^(3−w)`. -/
+theorem piAgmBracket_spec {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, (piAgmBracket w).1.toVal = some (lv : EReal) ∧
+      (piAgmBracket w).2.toVal = some (hv : EReal) ∧
       0 ≤ lv ∧ lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ 8 * (1 / 2 : ℝ) ^ w := by
   have hw' : 64 ≤ piWork w := by unfold piWork; omega
   obtain ⟨lv, hv, hlv, hhv, h0, hlo, hhi, hwid⟩ := piBracketAt_spec hw'
@@ -609,6 +614,145 @@ theorem piBracket_spec_width {w : ℕ} (hw : 64 ≤ w) :
           rw [← mul_pow]; norm_num
         rw [hpw, pow_add (1 / 2 : ℝ) w (3 * N + 16), h8]
         linear_combination (8 * (1 / 2 : ℝ) ^ w) * h1
+
+/-! ### Machin's formula by binary splitting -/
+
+theorem toVal_shiftLeft_nat_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (k : ℕ) : (x <<< k).toVal = some ((xv * 2 ^ k : ℝ) : EReal) := by
+  rw [toVal_shiftLeft_nat (isFinite_of_toVal_coe hx), fval_of_toVal_coe hx, zpow_natCast]
+
+theorem piMachinN_spec (w : ℕ) :
+    w + 5 ≤ (4 * piMachinN₁ w + 1) * 2 ∧ w + 8 + 5 ≤ (4 * piMachinN₂ w + 1) * 7 := by
+  unfold piMachinN₁ piMachinN₂; omega
+
+set_option maxHeartbeats 800000 in
+/-- `piMachinBracket w` encloses `π`, strictly from below, with width at most `8 · 2^(−w)`
+(`w ≥ 64`). -/
+theorem piMachinBracket_spec {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, (piMachinBracket w).1.toVal = some (lv : EReal) ∧
+      (piMachinBracket w).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ 8 * (1 / 2 : ℝ) ^ w := by
+  have hk : NeZero (w + 8) := ⟨by omega⟩
+  -- the units
+  set u := (1 / 2 : ℝ) ^ w with hu
+  set uk := (1 / 2 : ℝ) ^ (w + 8) with huk
+  set tv := (1 / 2 : ℝ) ^ (w + 5) with htv
+  have hu0 : 0 < u := by positivity
+  have huk0 : 0 < uk := by positivity
+  have htv0 : 0 < tv := by positivity
+  have hukU : uk = u / 256 := by rw [huk, hu, pow_add]; ring
+  have htvU : tv = u / 32 := by rw [htv, hu, pow_add]; ring
+  have hu1 : u ≤ (1 / 2 : ℝ) ^ 64 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hw
+  have hu2 : u ≤ 1 / 1000 := hu1.trans (by norm_num)
+  -- the tails
+  obtain ⟨hN1, hN2⟩ := piMachinN_spec w
+  have t1 := atanTerm_le_half_pow (by norm_num : 2 ^ 2 ≤ 5) hN1
+  have t2 := atanTerm_le_half_pow (by norm_num : 2 ^ 7 ≤ 239) hN2
+  simp only [Nat.cast_ofNat] at t1 t2
+  rw [← htv] at t1
+  have ht13 : (1 / 2 : ℝ) ^ (w + 8 + 5) = tv / 256 := by rw [htv, pow_add, pow_add]; ring
+  rw [ht13] at t2
+  -- the exact pair sums and `arctan`
+  set S₁ := ∑ j ∈ Finset.range (piMachinN₁ w), atanPair 5 j with hS₁
+  set S₂ := ∑ j ∈ Finset.range (piMachinN₂ w), atanPair 239 j with hS₂
+  have hS₁0 : 0 ≤ S₁ := Finset.sum_nonneg fun j _ => atanPair_pos (by norm_num) j
+  have hS₂0 : 0 ≤ S₂ := Finset.sum_nonneg fun j _ => atanPair_pos (by norm_num) j
+  obtain ⟨hA1, hA1'⟩ := arctan_inv_bounds (by norm_num : (1 : ℝ) < 5) (piMachinN₁ w)
+  obtain ⟨hA2, hA2'⟩ := arctan_inv_bounds (by norm_num : (1 : ℝ) < 239) (piMachinN₂ w)
+  rw [← hS₁] at hA1 hA1'
+  rw [← hS₂] at hA2 hA2'
+  have hpi := pi_eq_machin
+  have hpi3 := Real.pi_gt_three
+  have har1 : Real.arctan (1 / 5) ≤ 1 / 5 := by
+    have := (arctan_inv_bounds (by norm_num : (1 : ℝ) < 5) 0).2
+    simpa [atanTerm] using this
+  have har2 : Real.arctan (1 / 239) ≤ 1 / 239 := by
+    have := (arctan_inv_bounds (by norm_num : (1 : ℝ) < 239) 0).2
+    simpa [atanTerm] using this
+  have har2' : 0 ≤ Real.arctan (1 / 239) := Real.arctan_nonneg.mpr (by norm_num)
+  have har1' : 3 / 16 ≤ Real.arctan (1 / 5) := by linarith
+  have hS₁1 : S₁ ≤ 1 / 5 := hA1.trans har1
+  have hS₂1 : S₂ ≤ 1 / 239 := hA2.trans har2
+  have hS₁lo : 3 / 16 - tv ≤ S₁ := by linarith
+  -- the series brackets
+  have e1 := AzNat.atanNumDen_eq (by norm_num : 0 < 5) (piMachinN₁ w)
+  have e2 := AzNat.atanNumDen_eq (by norm_num : 0 < 239) (piMachinN₂ w)
+  push_cast at e1 e2
+  rw [← hS₁] at e1
+  rw [← hS₂] at e2
+  obtain ⟨l₁, h₁, hl₁, hh₁, hl₁0, hl₁S, hSl₁, hSh₁, hh₁S⟩ :=
+    seriesBracket_spec_of e1 (AzNat.atanNumDen_den_pos (by norm_num) _) hS₁0 (k := w + 8) (by omega)
+  obtain ⟨l₂, h₂, hl₂, hh₂, hl₂0, hl₂S, hSl₂, hSh₂, hh₂S⟩ :=
+    seriesBracket_spec_of e2 (AzNat.atanNumDen_den_pos (by norm_num) _) hS₂0 (k := w + 8) (by omega)
+  rw [← huk] at hSl₁ hh₁S hSl₂ hh₂S
+  have huk1 : uk ≤ 1 / 1000 := by rw [hukU]; linarith
+  have htv1 : tv ≤ 1 / 1000 := by rw [htvU]; linarith
+  have hS₁uk : S₁ * uk ≤ uk / 5 := by nlinarith
+  have hS₂uk : S₂ * uk ≤ uk / 239 := by nlinarith
+  have hh₁1 : h₁ ≤ 1 / 4 := by nlinarith
+  have hh₂1 : h₂ ≤ 1 / 200 := by nlinarith
+  -- the tails as floats and the ceilings `h + t`
+  have ht := toVal_tail w
+  rw [← htv] at ht
+  obtain ⟨c₁, hc₁, hcc₁⟩ := addCeiling_err hh₁ ht (w + 8) (by linarith)
+  obtain ⟨c₂, hc₂, hcc₂⟩ := addCeiling_err hh₂ ht (w + 8) (by linarith)
+  have hcc₁' := hcc₁.le
+  have hcc₂' := hcc₂.le
+  rw [← huk] at hcc₁' hcc₂'
+  have hc₁ge := hcc₁.ge
+  have hc₂ge := hcc₂.ge
+  have hc₁uk : (h₁ + tv) * uk ≤ uk / 2 := by nlinarith
+  have hc₂uk : (h₂ + tv) * uk ≤ uk / 2 := by nlinarith
+  have hc₁1 : c₁ ≤ 1 / 2 := by linarith
+  have hc₂1 : c₂ ≤ 1 / 100 := by linarith
+  -- the shifts
+  have hA : ((seriesBracket (AzNat.atanNumDen 5 (piMachinN₁ w)) (w + 8)).1 <<< (4 : Nat)).toVal
+      = some ((16 * l₁ : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_nat_of_toVal hl₁]; congr 2; ring
+  have hB : ((seriesBracket (AzNat.atanNumDen 239 (piMachinN₂ w)) (w + 8)).1 <<< (2 : Nat)).toVal
+      = some ((4 * l₂ : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_nat_of_toVal hl₂]; congr 2; ring
+  have hC₁ : ((addPrecRound (seriesBracket (AzNat.atanNumDen 5 (piMachinN₁ w)) (w + 8)).2
+      (powerOf2 (-(AzNat.ofNat (w + 5)).toAzInt)) (w + 8) .Ceiling).1 <<< (4 : Nat)).toVal
+      = some ((16 * c₁ : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_nat_of_toVal hc₁]; congr 2; ring
+  have hC₂ : ((addPrecRound (seriesBracket (AzNat.atanNumDen 239 (piMachinN₂ w)) (w + 8)).2
+      (powerOf2 (-(AzNat.ofNat (w + 5)).toAzInt)) (w + 8) .Ceiling).1 <<< (2 : Nat)).toVal
+      = some ((4 * c₂ : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_nat_of_toVal hc₂]; congr 2; ring
+  -- the combination
+  simp only [piMachinBracket]
+  obtain ⟨lo, hlo, hloa, hlob⟩ := subFloor_abs hA hC₂ (w + 8)
+  obtain ⟨hi, hhi, hhia, hhib⟩ := subCeiling_abs hC₁ hB (w + 8)
+  rw [← huk] at hlob hhib
+  -- magnitudes for the rounding errors
+  have hl₁lo : 3 / 16 - tv - 6 * (uk / 5) ≤ l₁ := by nlinarith
+  have habs1 : |16 * l₁ - 4 * c₂| ≤ 4 := by
+    rw [abs_le]; constructor <;> linarith
+  have habs2 : |16 * c₁ - 4 * l₂| ≤ 8 := by
+    rw [abs_le]; constructor <;> linarith
+  have hr1 : 2 * |16 * l₁ - 4 * c₂| * uk ≤ 8 * uk := by nlinarith
+  have hr2 : 2 * |16 * c₁ - 4 * l₂| * uk ≤ 16 * uk := by nlinarith
+  refine ⟨lo, hi, hlo, hhi, ?_, ?_, ?_, ?_⟩
+  · -- `0 ≤ lo`
+    linarith
+  · -- `lo < π`: `16 l₁ − 4 c₂ ≤ 16 S₁ − 4 (S₂ + t) < 16 arctan(1/5) − 4 arctan(1/239)`
+    have h1 : Real.arctan (1 / 239) < S₂ + tv := by linarith
+    linarith
+  · -- `π ≤ hi`
+    have h1 : Real.arctan (1 / 5) ≤ S₁ + tv := by linarith
+    linarith
+  · -- the width
+    rw [hukU, htvU] at *
+    linarith
+
+/-- The bracket of `π` at working precision `w`: ends with values, `0 ≤ lo < π ≤ hi`, width at
+most `8 · 2^(−w)`. -/
+theorem piBracket_spec_width {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, (piBracket w).1.toVal = some (lv : EReal) ∧
+      (piBracket w).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv < Real.pi ∧ Real.pi ≤ hv ∧ hv - lv ≤ 8 * (1 / 2 : ℝ) ^ w :=
+  piMachinBracket_spec hw
 
 /-- The bracket of `π` at working precision `w`: ends with values, `0 ≤ lo < π ≤ hi`, width at
 most `piEps w`. -/

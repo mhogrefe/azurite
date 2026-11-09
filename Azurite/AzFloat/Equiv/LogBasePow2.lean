@@ -67,11 +67,19 @@ theorem sign_eq_decide_pos_toInt (k : AzInt) (hk : k ≠ 0) : k.sign = decide (0
   · intro h; exact h.le
 
 /-- **`log_{2^k}` is correctly rounded.** -/
-theorem logBasePow2PrecRound_eq_liftVal (x : AzFloat) (k : AzInt) (hk : k ≠ 0) (p : ℕ)
-    [NeZero p] (mode : RoundingMode) :
-    logBasePow2PrecRound x k p mode = liftVal (Spec.logBasePow2 k.toInt) x p mode := by
+theorem logBasePow2PrecRoundCore_eq_liftVal
+    (A : AzFloat → AzInt → AzInt → ℕ → Roundable × Roundable) (hA)
+    (hspec : ∀ {w : ℕ}, 64 ≤ w → ∀ (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m),
+      m.isPowerOfTwo = false → ∀ (k : AzInt), k ≠ 0 →
+      ∃ lv hv' : ℝ, Rounds (A (finite true e q m hv) e k w).1 lv ∧
+        Rounds (A (finite true e q m hv) e k w).2 hv' ∧
+        lv < Real.log (finiteVal true e m) / Real.log 2 / k.toInt ∧
+        Real.log (finiteVal true e m) / Real.log 2 / k.toInt < hv' ∧
+        hv' - lv ≤ logBasePow2Eps e.toInt |Real.log (finiteVal true e m)| w)
+    (x : AzFloat) (k : AzInt) (hk : k ≠ 0) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    logBasePow2PrecRoundCore A hA x k p mode = liftVal (Spec.logBasePow2 k.toInt) x p mode := by
   have hkI := toInt_ne_zero_of_ne_zero hk
-  unfold logBasePow2PrecRound liftVal
+  unfold logBasePow2PrecRoundCore liftVal
   rw [dite_eq_right hk]
   cases x with
   | nan => rfl
@@ -109,12 +117,44 @@ theorem logBasePow2PrecRound_eq_liftVal (x : AzFloat) (k : AzInt) (hk : k ≠ 0)
           (Real.log (finiteVal true e m) / Real.log 2 / k.toInt) _ (by unfold zivGuardBits; omega)
           (fun w hw => by
             obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-              logBasePow2Approx_spec (w := w) (by unfold zivGuardBits at hw; omega) e hv
+              hspec (w := w) (by unfold zivGuardBits at hw; omega) e hv
                 (Bool.eq_false_iff.mpr h2) k hk
             exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
     | false =>
       simp only [toVal_finite]
       rw [finiteVal_false, Option.bind_some,
         Spec.logBasePow2_coe_neg _ _ (neg_neg_iff_pos.mpr (finiteVal_true_pos e hv)), roundVal_none]
+
+/-- **`log_{2^k}` is correctly rounded.** -/
+theorem logBasePow2PrecRound_eq_liftVal (x : AzFloat) (k : AzInt) (hk : k ≠ 0) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    logBasePow2PrecRound x k p mode = liftVal (Spec.logBasePow2 k.toInt) x p mode :=
+  logBasePow2PrecRoundCore_eq_liftVal _ _ @logBasePow2Approx_spec x k hk p mode
+
+/-- **`log_{2^k}` with precomputed constants is correctly rounded.** -/
+theorem logBasePow2PrecRoundWith_eq_liftVal (c : LnConsts) (x : AzFloat) (k : AzInt) (hk : k ≠ 0)
+    (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    logBasePow2PrecRoundWith c x k p mode = liftVal (Spec.logBasePow2 k.toInt) x p mode :=
+  logBasePow2PrecRoundCore_eq_liftVal _ _ (@logBasePow2ApproxWith_spec c) x k hk p mode
+
+theorem logBasePow2PrecRoundWith_eq_logBasePow2PrecRound (c : LnConsts) (x : AzFloat) (k : AzInt)
+    (p : ℕ) (mode : RoundingMode) :
+    logBasePow2PrecRoundWith c x k p mode = logBasePow2PrecRound x k p mode := by
+  by_cases hk : k = 0
+  · subst hk
+    simp [logBasePow2PrecRoundWith, logBasePow2PrecRound, logBasePow2PrecRoundCore]
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    cases x with
+    | finite s e q m hv =>
+      cases s <;> simp [logBasePow2PrecRoundWith, logBasePow2PrecRound, logBasePow2PrecRoundCore]
+    | _ => rfl
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [logBasePow2PrecRoundWith_eq_liftVal c x k hk, logBasePow2PrecRound_eq_liftVal x k hk]
+
+theorem logBasePow2With_eq_logBasePow2 (c : LnConsts) (x : AzFloat) (k : AzInt) :
+    logBasePow2With c x k = logBasePow2 x k := by
+  unfold logBasePow2With logBasePow2
+  rw [logBasePow2PrecRoundWith_eq_logBasePow2PrecRound]
 
 end Azurite.AzFloat

@@ -124,33 +124,29 @@ theorem atanhNumDen_den_ne_zero {q : ℕ} (hq : 0 < q) {N : ℕ} (hN : 0 < N) :
     sum_pos (fun k _ => atanhTerm_pos (by exact_mod_cast hq) k) (nonempty_range_iff.mpr hN.ne')
   exact hpos.ne this
 
-/-- `seriesBracket` encloses the exact series `S` with relative errors `6 · 2^(−k)` below and
-`8 · 2^(−k)` above (`k ≥ 4`). -/
-theorem seriesBracket_spec {q : ℕ} (hq : 0 < q) {N : ℕ} (hN : 0 < N) {k : ℕ} (hk : 4 ≤ k) :
-    ∃ lv hv : ℝ, (seriesBracket (AzNat.atanhNumDen q N) k).1.toVal = some (lv : EReal) ∧
-      (seriesBracket (AzNat.atanhNumDen q N) k).2.toVal = some (hv : EReal) ∧
-      0 ≤ lv ∧ lv ≤ ∑ i ∈ range N, atanhTerm q i ∧
-      (∑ i ∈ range N, atanhTerm q i) * (1 - 6 * (1 / 2 : ℝ) ^ k) ≤ lv ∧
-      ∑ i ∈ range N, atanhTerm q i ≤ hv ∧
-      hv ≤ (∑ i ∈ range N, atanhTerm q i) * (1 + 8 * (1 / 2 : ℝ) ^ k) := by
+/-- `seriesBracket s k` for an exact fraction `s = (n, d)` with `n/d = S ≥ 0`, `d > 0`: floats
+`lv ≤ S ≤ hv` with `S (1 − 6·2^(−k)) ≤ lv` and `hv ≤ S (1 + 8·2^(−k))` (`k ≥ 4`). -/
+theorem seriesBracket_spec_of {s : AzNat × AzNat} {S : ℝ} (hSeq : (s.1.toNat : ℝ) / s.2.toNat = S)
+    (hd : 0 < s.2.toNat) (hS0 : 0 ≤ S) {k : ℕ} (hk : 4 ≤ k) :
+    ∃ lv hv : ℝ, (seriesBracket s k).1.toVal = some (lv : EReal) ∧
+      (seriesBracket s k).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv ≤ S ∧ S * (1 - 6 * (1 / 2 : ℝ) ^ k) ≤ lv ∧ S ≤ hv ∧
+      hv ≤ S * (1 + 8 * (1 / 2 : ℝ) ^ k) := by
   have : NeZero k := ⟨by omega⟩
-  set S := ∑ i ∈ range N, atanhTerm q i with hSdef
-  set n : ℝ := ((AzNat.atanhNumDen q N).1.toNat : ℝ) with hndef
-  set d : ℝ := ((AzNat.atanhNumDen q N).2.toNat : ℝ) with hddef
-  have hSeq : n / d = S := AzNat.atanhNumDen_eq hq N
-  have hd0 : 0 < d := lt_of_le_of_ne (Nat.cast_nonneg _) (atanhNumDen_den_ne_zero hq hN).symm
+  set n : ℝ := (s.1.toNat : ℝ) with hndef
+  set d : ℝ := (s.2.toNat : ℝ) with hddef
+  have hd0 : 0 < d := by rw [hddef]; exact_mod_cast hd
   have hn : n = S * d := by rw [← hSeq]; field_simp
-  have hS0 : 0 ≤ S := sum_nonneg fun i _ => (atanhTerm_pos (by exact_mod_cast hq) i).le
   have hn0 : 0 ≤ n := by rw [hn]; exact mul_nonneg hS0 hd0.le
   set x := (1 / 2 : ℝ) ^ k with hx
   have hx0 : 0 < x := by positivity
   have hx1 : x ≤ 1 / 16 := by
     calc x ≤ (1 / 2 : ℝ) ^ 4 := pow_le_pow_of_le_one (by norm_num) (by norm_num) hk
       _ = 1 / 16 := by norm_num
-  obtain ⟨n₁, hn₁, hfn₁⟩ := setPrecFloor_err (toVal_ofAzNat (AzNat.atanhNumDen q N).1) hn0 k
-  obtain ⟨d₁, hd₁, hcd₁⟩ := setPrecCeiling_err (toVal_ofAzNat (AzNat.atanhNumDen q N).2) hd0.le k
-  obtain ⟨n₂, hn₂, hcn₂⟩ := setPrecCeiling_err (toVal_ofAzNat (AzNat.atanhNumDen q N).1) hn0 k
-  obtain ⟨d₂, hd₂, hfd₂⟩ := setPrecFloor_err (toVal_ofAzNat (AzNat.atanhNumDen q N).2) hd0.le k
+  obtain ⟨n₁, hn₁, hfn₁⟩ := setPrecFloor_err (toVal_ofAzNat s.1) hn0 k
+  obtain ⟨d₁, hd₁, hcd₁⟩ := setPrecCeiling_err (toVal_ofAzNat s.2) hd0.le k
+  obtain ⟨n₂, hn₂, hcn₂⟩ := setPrecCeiling_err (toVal_ofAzNat s.1) hn0 k
+  obtain ⟨d₂, hd₂, hfd₂⟩ := setPrecFloor_err (toVal_ofAzNat s.2) hd0.le k
   have hd₁0 : 0 < d₁ := lt_of_lt_of_le hd0 hcd₁.ge
   have hd₂0 : 0 < d₂ := by
     have h0 : d ≤ d₂ + 2 * d * x := hfd₂.ge
@@ -201,6 +197,18 @@ theorem seriesBracket_spec {q : ℕ} (hq : 0 < q) {N : ℕ} (hN : 0 < N) {k : �
     have h2 : S * (1 + 5 * x) * (1 + 2 * x) = S * (1 + 8 * x) - S * (x * (1 - 10 * x)) := by ring
     have h3 : 0 ≤ S * (x * (1 - 10 * x)) := mul_nonneg hS0 (mul_nonneg hx0.le (by linarith))
     linarith
+
+/-- `seriesBracket` encloses the exact partial sum of `atanh(1/q)` with relative errors
+`6 · 2^(−k)` below and `8 · 2^(−k)` above (`k ≥ 4`). -/
+theorem seriesBracket_spec {q : ℕ} (hq : 0 < q) {N : ℕ} (_hN : 0 < N) {k : ℕ} (hk : 4 ≤ k) :
+    ∃ lv hv : ℝ, (seriesBracket (AzNat.atanhNumDen q N) k).1.toVal = some (lv : EReal) ∧
+      (seriesBracket (AzNat.atanhNumDen q N) k).2.toVal = some (hv : EReal) ∧
+      0 ≤ lv ∧ lv ≤ ∑ i ∈ range N, atanhTerm q i ∧
+      (∑ i ∈ range N, atanhTerm q i) * (1 - 6 * (1 / 2 : ℝ) ^ k) ≤ lv ∧
+      ∑ i ∈ range N, atanhTerm q i ≤ hv ∧
+      hv ≤ (∑ i ∈ range N, atanhTerm q i) * (1 + 8 * (1 / 2 : ℝ) ^ k) :=
+  seriesBracket_spec_of (AzNat.atanhNumDen_eq hq N) (AzNat.atanhNumDen_den_pos hq N)
+    (sum_nonneg fun i _ => (atanhTerm_pos (by exact_mod_cast hq) i).le) hk
 
 /-- The tail bound float `2^(−w−5)`. -/
 theorem toVal_tail (w : ℕ) :

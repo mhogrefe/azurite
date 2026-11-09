@@ -6,6 +6,15 @@ This file is part of Azurite.
 Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
+
+/-
+Copyright © 2026 Mikhail Hogrefe
+
+This file is part of Azurite.
+
+Azurite is free software: you can redistribute it and/or modify it under the terms of the Apache
+License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
+-/
 import Azurite.Oracle.AzNatExtra
 import Azurite.AzVector.Operations
 import Azurite.AzVector.Dot
@@ -16,6 +25,8 @@ import Azurite.AzNat.Instances
 import Azurite.AzNat.ParsableElement
 import Azurite.AzInt.Instances
 import Azurite.AzInt.ParsableElement
+import Azurite.AzRat.Instances
+import Azurite.AzRat.ParsableElement
 import Azurite.Oracle.AzZMod
 import Azurite.Oracle.AzZModPow2
 import Azurite.AzZMod.Instances
@@ -220,6 +231,65 @@ def checkVectorFromStr (typeName : String) (elem : String → Option R) (line : 
     | none => "Err(())"
   expectEq "from_str" expected (trim rhs)
 
+/-- `v := x; v[i] += 1; v = z`, which adds 1 to one entry with the element type's `+`. -/
+def checkVectorIndexIncrement [Add R] [One R] (body : String → Option (List R)) (line : String) :
+    Verdict := do
+  let (x, b, z) ← match line.splitOn "; " with
+    | [a, b, c] =>
+      if !(a.startsWith "v := " && b.startsWith "v[" && b.endsWith "] += 1" &&
+          c.startsWith "v = ") then
+        fail "not a `v := x; v[i] += 1; v = z` line"
+      pure (dropChars a 5, dropRightChars (dropChars b 2) 6, dropChars c 4)
+    | _ => fail "not a `v := x; v[i] += 1; v = z` line"
+  let i ← expect "i" (parseNat b)
+  let xs ← expect "x" (parseVectorWith body x)
+  if h : i < xs.length then
+    expectEq "index_mut" (renderVector (xs.set i (xs[i] + 1))) (trim z)
+  else
+    disagree "the index is out of range"
+
+/-- `-(x) = z`, `-&(x) = z`, or `v := x; v.neg_assign(); v = z`. -/
+def checkVectorNeg [Neg R] (body : String → Option (List R)) (line : String) : Verdict := do
+  let (x, z) ← if line.startsWith "v := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        if !(b == "v.neg_assign()" && c.startsWith "v = ") then fail "not an assignment line"
+        pure (dropChars a 5, dropChars c 4)
+      | _ => fail "not an assignment line"
+    else do
+      let (lhs, rhs) ← expect "a `-(x) = z` line" (splitEquals line)
+      if lhs.startsWith "-&(" && lhs.endsWith ")" then
+        pure (dropRightChars (dropChars lhs 3) 1, rhs)
+      else if lhs.startsWith "-(" && lhs.endsWith ")" then
+        pure (dropRightChars (dropChars lhs 2) 1, rhs)
+      else fail "not a negation"
+  let xs ← expect "x" (parseVectorWith body x)
+  expectEq "neg" (toString (-(AzVector.ofList xs rfl : AzVector R xs.length))) (trim z)
+
+/-- `v.cross(w) = z`, with either operand borrowed, or `v := x; v.cross_assign(w); v = z`. -/
+def checkVectorCross [Ring R] (body : String → Option (List R)) (line : String) : Verdict := do
+  let (x, y, z) ← if line.startsWith "v := " then
+      match line.splitOn "; " with
+      | [a, b, c] =>
+        let pre := "v.cross_assign("
+        if !(b.startsWith pre && b.endsWith ")" && c.startsWith "v = ") then
+          fail "not an assignment line"
+        pure (dropChars a 5, dropRightChars (dropChars b pre.length) 1, dropChars c 4)
+      | _ => fail "not an assignment line"
+    else do
+      let (v, args, res) ← expect "a `v.cross(w) = z` line" (methodCall line "cross")
+      match args with
+      | [w] => pure (s!"({v})", s!"({w})", res)
+      | _ => fail "cross takes one argument"
+  let xs ← expect "x" (parseVectorWith body x)
+  let ys ← expect "y" (parseVectorWith body y)
+  if h : xs.length = 3 ∧ ys.length = 3 then
+    let v : AzVector R 3 := AzVector.ofList xs h.1
+    let w : AzVector R 3 := AzVector.ofList ys h.2
+    expectEq "cross" (toString (v.cross w)) (trim z)
+  else
+    disagree "the cross product needs two 3-dimensional vectors"
+
 end Generic
 
 /-- A bare vector, as the `to_string` and `Debug` demos print it: Azurite's parser reads it with
@@ -273,23 +343,8 @@ def checkIntVectorAdd : String → Verdict :=
 def checkIntVectorSub : String → Verdict :=
   checkVectorEntrywise parseIntVectorBody "-" fun _ v w => v - w
 
-/-- `-(x) = z`, `-&(x) = z`, or `v := x; v.neg_assign(); v = z`. -/
-def checkIntVectorNeg (line : String) : Verdict := do
-  let (x, z) ← if line.startsWith "v := " then
-      match line.splitOn "; " with
-      | [a, b, c] =>
-        if !(b == "v.neg_assign()" && c.startsWith "v = ") then fail "not an assignment line"
-        pure (dropChars a 5, dropChars c 4)
-      | _ => fail "not an assignment line"
-    else do
-      let (lhs, rhs) ← expect "a `-(x) = z` line" (splitEquals line)
-      if lhs.startsWith "-&(" && lhs.endsWith ")" then
-        pure (dropRightChars (dropChars lhs 3) 1, rhs)
-      else if lhs.startsWith "-(" && lhs.endsWith ")" then
-        pure (dropRightChars (dropChars lhs 2) 1, rhs)
-      else fail "not a negation"
-  let xs ← expect "x" (parseIntVector x)
-  expectEq "neg" (toString (-(AzVector.ofList xs rfl : AzVector AzInt xs.length))) (trim z)
+/-- `IntegerVector`'s negation. -/
+def checkIntVectorNeg : String → Verdict := checkVectorNeg parseIntVectorBody
 
 /-- `IntegerVector`'s multiplication by an `Integer`. -/
 def checkIntVectorMulScalar : String → Verdict :=
@@ -300,29 +355,7 @@ def checkIntVectorDot : String → Verdict := checkVectorDot parseIntVectorBody 
 def checkIntVectorAbsSquared : String → Verdict :=
   checkVectorAbsSquared parseIntVectorBody parseAzInt
 
-/-- `v.cross(w) = z`, with either operand borrowed, or `v := x; v.cross_assign(w); v = z`. -/
-def checkIntVectorCross (line : String) : Verdict := do
-  let (x, y, z) ← if line.startsWith "v := " then
-      match line.splitOn "; " with
-      | [a, b, c] =>
-        let pre := "v.cross_assign("
-        if !(b.startsWith pre && b.endsWith ")" && c.startsWith "v = ") then
-          fail "not an assignment line"
-        pure (dropChars a 5, dropRightChars (dropChars b pre.length) 1, dropChars c 4)
-      | _ => fail "not an assignment line"
-    else do
-      let (v, args, res) ← expect "a `v.cross(w) = z` line" (methodCall line "cross")
-      match args with
-      | [w] => pure (s!"({v})", s!"({w})", res)
-      | _ => fail "cross takes one argument"
-  let xs ← expect "x" (parseIntVector x)
-  let ys ← expect "y" (parseIntVector y)
-  if h : xs.length = 3 ∧ ys.length = 3 then
-    let v : AzVector AzInt 3 := AzVector.ofList xs h.1
-    let w : AzVector AzInt 3 := AzVector.ofList ys h.2
-    expectEq "cross" (toString (v.cross w)) (trim z)
-  else
-    disagree "the cross product needs two 3-dimensional vectors"
+def checkIntVectorCross : String → Verdict := checkVectorCross parseIntVectorBody
 
 def checkIntVectorZero : String → Verdict := checkVectorZero (R := AzInt) "IntegerVector"
 
@@ -336,6 +369,45 @@ def checkIntVectorToString : String → Verdict := checkVectorToString AzInt
 /-- `IntegerVector::from_str`, each element read by `Integer::from_str`'s rule. -/
 def checkIntVectorFromStr : String → Verdict :=
   checkVectorFromStr "IntegerVector" (malachiteParseInteger 10)
+
+
+/-! ### `RationalVector` -/
+
+/-- `RationalVector`'s `+` and `+=`. -/
+def checkRatVectorAdd : String → Verdict :=
+  checkVectorEntrywise parseRatVectorBody "+" fun _ v w => v + w
+
+/-- `RationalVector`'s `-` and `-=`. -/
+def checkRatVectorSub : String → Verdict :=
+  checkVectorEntrywise parseRatVectorBody "-" fun _ v w => v - w
+
+def checkRatVectorNeg : String → Verdict := checkVectorNeg parseRatVectorBody
+
+/-- `RationalVector`'s multiplication by a `Rational`. -/
+def checkRatVectorMulScalar : String → Verdict :=
+  checkVectorMulScalar parseRatVectorBody parseAzRat
+
+def checkRatVectorDot : String → Verdict := checkVectorDot parseRatVectorBody parseAzRat
+
+def checkRatVectorAbsSquared : String → Verdict :=
+  checkVectorAbsSquared parseRatVectorBody parseAzRat
+
+def checkRatVectorCross : String → Verdict := checkVectorCross parseRatVectorBody
+
+def checkRatVectorZero : String → Verdict := checkVectorZero (R := AzRat) "RationalVector"
+
+def checkRatVectorStandardBasisVector : String → Verdict :=
+  checkVectorStandardBasisVector (R := AzRat) "RationalVector"
+
+def checkRatVectorIndex : String → Verdict := checkVectorIndex parseRatVectorBody parseAzRat
+
+def checkRatVectorIndexMut : String → Verdict := checkVectorIndexIncrement parseRatVectorBody
+
+def checkRatVectorToString : String → Verdict := checkVectorToString AzRat
+
+/-- `RationalVector::from_str`, each element read by `Rational::from_str`'s rule. -/
+def checkRatVectorFromStr : String → Verdict :=
+  checkVectorFromStr "RationalVector" malachiteParseRational
 
 /-! ### Modular `NaturalVector` operations -/
 
@@ -422,5 +494,44 @@ def checkNatVectorMod (pow2 : Bool) (op : ModVectorOp) (line : String) : Verdict
     let hm ← modulus m
     have : NeZero m.toNat := hm.down
     checkModVectorIn (AzZMod m) (residueMod m) AzZMod.val name op v args z
+
+/-! ### `UnsignedVector<u64>`
+
+A `u64` is a residue modulo $2^{64}$, so `UnsignedVector<u64>` is checked as a vector of
+`AzZModPow2 64`, whose string form is that of its value; a printed entry that does not fit in a
+`u64` is unreadable, and adding 1 wraps around as `wrapping_add` does. -/
+
+/-- A `u64` printed in decimal, as a residue modulo $2^{64}$. -/
+def parseU64 (s : String) : Option (AzZModPow2 64) := do
+  let x ← parseAzNat s
+  let a := AzZModPow2.ofAzNat 64 x
+  if a.val == x then some a else none
+
+/-- The entries of a vector of `u64`s between the parentheses. -/
+def parseU64VectorBody (s : String) : Option (List (AzZModPow2 64)) :=
+  if (trim s).isEmpty then some [] else (splitTopLevel s ',').mapM fun x => parseU64 (trim x)
+
+/-- `u64::from_str`: an optional `+` and then decimal digits, of a value below $2^{64}$. -/
+def rustParseU64 (s : String) : Option (AzZModPow2 64) := do
+  let x ← malachiteParseBase 10 s
+  let a := AzZModPow2.ofAzNat 64 x
+  if a.val == x then some a else none
+
+def checkU64VectorZero : String → Verdict :=
+  checkVectorZero (R := AzZModPow2 64) "UnsignedVector<u64>"
+
+def checkU64VectorStandardBasisVector : String → Verdict :=
+  checkVectorStandardBasisVector (R := AzZModPow2 64) "UnsignedVector<u64>"
+
+def checkU64VectorIndex : String → Verdict :=
+  checkVectorIndex parseU64VectorBody parseU64
+
+def checkU64VectorIndexMut : String → Verdict := checkVectorIndexIncrement parseU64VectorBody
+
+def checkU64VectorToString : String → Verdict := checkVectorToString (AzZModPow2 64)
+
+/-- `UnsignedVector::<u64>::from_str`, each entry read by `u64::from_str`'s rule. -/
+def checkU64VectorFromStr : String → Verdict :=
+  checkVectorFromStr "UnsignedVector::<u64>" rustParseU64
 
 end Azurite.Oracle

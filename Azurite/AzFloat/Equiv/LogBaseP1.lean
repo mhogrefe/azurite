@@ -21,11 +21,27 @@ the exact comparison, and without fuel.
 
 namespace Azurite.AzFloat
 
+/-- The specification of a bracket function for `log_b (1 + x)`: the conclusion of
+`logBaseP1Approx_spec`. -/
+def LogBaseP1ApproxFn (b : UInt64) (A : AzFloat → ℕ → Roundable × Roundable) : Prop :=
+  ∀ {w : ℕ}, 64 ≤ w → ∀ {x : AzFloat} {xv : ℝ}, x.toVal = some (xv : EReal) → -1 < xv →
+    2 ≤ b.toNat → Irrational (Real.log (1 + xv) / Real.log b.toNat) →
+    ∃ lv hv : ℝ, Rounds (A x w).1 lv ∧ Rounds (A x w).2 hv ∧
+      lv < Real.log (1 + xv) / Real.log b.toNat ∧ Real.log (1 + xv) / Real.log b.toNat < hv ∧
+      hv - lv ≤ logBaseRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2)
+        ((baseFloat b).exponent?.getD 0).toInt |Real.log (1 + xv)| w
+
 /-- The finite case: both exact branches and both Ziv loops round `ln (1 + x) / ln b`. -/
-theorem logBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
-    (hgt : -1 < finiteVal s e m) (b : UInt64) (hb : 2 ≤ b.toNat) (p : ℕ) [NeZero p]
+theorem logBaseP1Finite_eq (b : UInt64) (A : AzFloat → ℕ → Roundable × Roundable)
+    (hA : ∀ (p : ℕ) [NeZero p] (mode : RoundingMode) {x : AzFloat} {xv : ℝ},
+      x.toVal = some (xv : EReal) → -1 < xv → 2 ≤ b.toNat →
+      Irrational (Real.log (1 + xv) / Real.log b.toNat) → ∀ w₀ : ℕ, 0 < w₀ →
+      ∃ f : ℕ, (roundingPossible (A x (w₀ * 2 ^ f)).1 (A x (w₀ * 2 ^ f)).2 p mode).isSome = true)
+    (hspec : LogBaseP1ApproxFn b A)
+    (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hgt : -1 < finiteVal s e m) (hb : 2 ≤ b.toNat) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :
-    logBaseP1Finite s e hv hgt b hb p mode
+    logBaseP1Finite b A hA s e hv hgt hb p mode
       = roundVal p mode
           (some ((Real.log (1 + finiteVal s e m) / Real.log b.toNat : ℝ) : EReal)) := by
   have hpos : 0 < 1 + finiteVal s e m := by linarith
@@ -51,8 +67,8 @@ theorem logBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fi
           (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by unfold zivGuardBits; omega)
           (fun w hw => by
             obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-              logBaseP1Approx_spec (w := w) (by unfold zivGuardBits at hw; omega)
-                (toVal_finite s e q m hv) hgt b hb hirr
+              hspec (w := w) (by unfold zivGuardBits at hw; omega)
+                (toVal_finite s e q m hv) hgt hb hirr
             exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
   · next hk =>
     split
@@ -70,16 +86,18 @@ theorem logBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fi
         (Real.log (1 + finiteVal s e m) / Real.log b.toNat) _ (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-            logBaseP1Approx_spec (w := w) (by unfold zivGuardBits at hw; omega)
-              (toVal_finite s e q m hv) hgt b hb hirr
+            hspec (w := w) (by unfold zivGuardBits at hw; omega)
+              (toVal_finite s e q m hv) hgt hb hirr
           exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
 
-/-- **`log_b (1 + x)` is correctly rounded.** -/
-theorem logBaseP1PrecRound_eq_liftVal (x : AzFloat) (b : UInt64) (hb : 2 ≤ b.toNat) (p : ℕ)
-    [NeZero p] (mode : RoundingMode) :
-    logBaseP1PrecRound x b p mode
+/-- `logBaseP1PrecRoundCore b A hA` is correctly rounded for every bracket function `A` with the
+conclusion of `logBaseP1Approx_spec`. -/
+theorem logBaseP1PrecRoundCore_eq_liftVal (b : UInt64) (A : AzFloat → ℕ → Roundable × Roundable)
+    (hA) (hspec : LogBaseP1ApproxFn b A) (x : AzFloat) (hb : 2 ≤ b.toNat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    logBaseP1PrecRoundCore b A hA x p mode
       = liftVal (fun a => Spec.logBase b.toNat (a + 1)) x p mode := by
-  unfold logBaseP1PrecRound liftVal
+  unfold logBaseP1PrecRoundCore liftVal
   rw [dite_eq_right (not_lt.mpr hb)]
   cases x with
   | nan => rfl
@@ -102,7 +120,7 @@ theorem logBaseP1PrecRound_eq_liftVal (x : AzFloat) (b : UInt64) (hb : 2 ≤ b.t
       · exact absurd hp (NeZero.ne p)
       rw [← EReal.coe_one, ← EReal.coe_add, Spec.logBase_coe _ hb _ (by linarith),
         add_comm (finiteVal true e m) 1]
-      exact logBaseP1Finite_eq true e hv _ b hb p mode
+      exact logBaseP1Finite_eq b A hA hspec true e hv _ hb p mode
     | false =>
       simp only [toVal_finite, Option.bind_some]
       split_ifs with hneg heq hp
@@ -123,6 +141,42 @@ theorem logBaseP1PrecRound_eq_liftVal (x : AzFloat) (b : UInt64) (hb : 2 ≤ b.t
       · have hgt := finiteVal_false_gt_neg_one e hv hneg
         rw [← EReal.coe_one, ← EReal.coe_add, Spec.logBase_coe _ hb _ (by linarith),
           add_comm (finiteVal false e m) 1]
-        exact logBaseP1Finite_eq false e hv hgt b hb p mode
+        exact logBaseP1Finite_eq b A hA hspec false e hv hgt hb p mode
+
+/-- **`log_b (1 + x)` is correctly rounded.** -/
+theorem logBaseP1PrecRound_eq_liftVal (x : AzFloat) (b : UInt64) (hb : 2 ≤ b.toNat) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    logBaseP1PrecRound x b p mode
+      = liftVal (fun a => Spec.logBase b.toNat (a + 1)) x p mode :=
+  logBaseP1PrecRoundCore_eq_liftVal b _ _
+    (fun hw _ _ hx hx1 hb hirr => logBaseP1Approx_spec hw hx hx1 b hb hirr) x hb p mode
+
+/-- **`log_b (1 + x)` with precomputed constants is correctly rounded.** -/
+theorem logBaseP1PrecRoundWith_eq_liftVal (cb : LogBaseConsts) (x : AzFloat)
+    (hb : 2 ≤ cb.base.toNat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    logBaseP1PrecRoundWith cb x p mode
+      = liftVal (fun a => Spec.logBase cb.base.toNat (a + 1)) x p mode :=
+  logBaseP1PrecRoundCore_eq_liftVal cb.base _ _
+    (fun hw _ _ hx hx1 hb hirr => logBaseP1ApproxWith_spec cb hw hx hx1 hb hirr) x hb p mode
+
+theorem logBaseP1PrecRoundWith_eq_logBaseP1PrecRound (cb : LogBaseConsts) (x : AzFloat) (p : ℕ)
+    (mode : RoundingMode) :
+    logBaseP1PrecRoundWith cb x p mode = logBaseP1PrecRound x cb.base p mode := by
+  by_cases hb : cb.base.toNat < 2
+  · simp [logBaseP1PrecRoundWith, logBaseP1PrecRound, logBaseP1PrecRoundCore, hb]
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    cases x with
+    | finite s e q m hv =>
+      cases s <;> simp [logBaseP1PrecRoundWith, logBaseP1PrecRound, logBaseP1PrecRoundCore, hb]
+    | _ => rfl
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [logBaseP1PrecRoundWith_eq_liftVal cb x (not_lt.mp hb),
+      logBaseP1PrecRound_eq_liftVal x cb.base (not_lt.mp hb)]
+
+theorem logBaseP1With_eq_logBaseP1 (cb : LogBaseConsts) (x : AzFloat) :
+    logBaseP1With cb x = logBaseP1 x cb.base := by
+  unfold logBaseP1With logBaseP1
+  rw [logBaseP1PrecRoundWith_eq_logBaseP1PrecRound]
 
 end Azurite.AzFloat

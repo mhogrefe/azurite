@@ -19,27 +19,34 @@ import Azurite.AzFloat.Equiv.Ln
 
 namespace Azurite.AzFloat
 
-/-- **`ln (1 + x)` is correctly rounded.** -/
-theorem lnP1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
-    lnP1PrecRound x p mode = liftVal (fun a => Spec.log (a + 1)) x p mode := by
+/-- `lnP1PrecRoundCore A hA` is correctly rounded for every bracket function `A` with the
+conclusion of `lnP1Approx_spec`. -/
+theorem lnP1PrecRoundCore_eq_liftVal (A : AzFloat → ℕ → Roundable × Roundable) (hA)
+    (hspec : ∀ {w : ℕ}, 64 ≤ w → ∀ {x : AzFloat} {xv : ℝ}, x.toVal = some (xv : EReal) →
+      -1 < xv → xv ≠ 0 →
+      ∃ lv hv : ℝ, Rounds (A x w).1 lv ∧ Rounds (A x w).2 hv ∧
+        lv < Real.log (1 + xv) ∧ Real.log (1 + xv) < hv ∧
+        hv - lv ≤ lnRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) |Real.log (1 + xv)| w)
+    (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lnP1PrecRoundCore A hA x p mode = liftVal (fun a => Spec.log (a + 1)) x p mode := by
   unfold liftVal
   cases x with
   | nan => rfl
   | infinity s =>
     cases s
-    · simp only [lnP1PrecRound, toVal_infinity, Bool.false_eq_true, ↓reduceIte, Option.bind_some,
-        EReal.bot_add, Spec.log_bot, roundVal_none]
-    · simp only [lnP1PrecRound, toVal_infinity, ↓reduceIte, Option.bind_some]
+    · simp only [lnP1PrecRoundCore, toVal_infinity, Bool.false_eq_true, ↓reduceIte,
+        Option.bind_some, EReal.bot_add, Spec.log_bot, roundVal_none]
+    · simp only [lnP1PrecRoundCore, toVal_infinity, ↓reduceIte, Option.bind_some]
       rw [← EReal.coe_one, EReal.top_add_coe, Spec.log_top, roundVal_top]
   | zero =>
-    simp only [lnP1PrecRound, toVal_zero, Option.bind_some]
+    simp only [lnP1PrecRoundCore, toVal_zero, Option.bind_some]
     rw [zero_add, ← EReal.coe_one, Spec.log_coe _ one_pos, Real.log_one, EReal.coe_zero,
       roundVal_zero]
   | finite s e q m hv =>
     cases s with
     | true =>
       have hpos := finiteVal_true_pos e hv
-      simp only [lnP1PrecRound, toVal_finite, Option.bind_some]
+      simp only [lnP1PrecRoundCore, toVal_finite, Option.bind_some]
       split_ifs with hp
       · exact absurd hp (NeZero.ne p)
       rw [← EReal.coe_one, ← EReal.coe_add, Spec.log_coe _ (by linarith),
@@ -48,11 +55,11 @@ theorem lnP1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roun
         (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-            lnP1Approx_spec (w := w) (by unfold zivGuardBits at hw; omega)
+            hspec (w := w) (by unfold zivGuardBits at hw; omega)
               (toVal_finite true e q m hv) (by linarith) hpos.ne'
           exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
     | false =>
-      simp only [lnP1PrecRound, toVal_finite, Option.bind_some]
+      simp only [lnP1PrecRoundCore, toVal_finite, Option.bind_some]
       split_ifs with hneg heq hp
       · -- `x = −1`
         obtain ⟨v, hx, h1⟩ := (eqIEEE_iff _ _).mp heq
@@ -77,8 +84,33 @@ theorem lnP1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roun
           (by unfold zivGuardBits; omega)
           (fun w hw => by
             obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=
-              lnP1Approx_spec (w := w) (by unfold zivGuardBits at hw; omega)
+              hspec (w := w) (by unfold zivGuardBits at hw; omega)
                 (toVal_finite false e q m hv) hgt (finiteVal_false_ne_zero e hv)
             exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
+
+/-- **`ln (1 + x)` is correctly rounded.** -/
+theorem lnP1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    lnP1PrecRound x p mode = liftVal (fun a => Spec.log (a + 1)) x p mode :=
+  lnP1PrecRoundCore_eq_liftVal _ _ @lnP1Approx_spec x p mode
+
+/-- **`ln (1 + x)` with precomputed constants is correctly rounded.** -/
+theorem lnP1PrecRoundWith_eq_liftVal (c : LnConsts) (x : AzFloat) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    lnP1PrecRoundWith c x p mode = liftVal (fun a => Spec.log (a + 1)) x p mode :=
+  lnP1PrecRoundCore_eq_liftVal _ _ (@lnP1ApproxWith_spec c) x p mode
+
+theorem lnP1PrecRoundWith_eq_lnP1PrecRound (c : LnConsts) (x : AzFloat) (p : ℕ)
+    (mode : RoundingMode) : lnP1PrecRoundWith c x p mode = lnP1PrecRound x p mode := by
+  rcases Nat.eq_zero_or_pos p with hp | hp
+  · subst hp
+    cases x with
+    | finite s e q m hv => cases s <;> simp [lnP1PrecRoundWith, lnP1PrecRound, lnP1PrecRoundCore]
+    | _ => rfl
+  · have : NeZero p := ⟨hp.ne'⟩
+    rw [lnP1PrecRoundWith_eq_liftVal, lnP1PrecRound_eq_liftVal]
+
+theorem lnP1With_eq_lnP1 (c : LnConsts) (x : AzFloat) : lnP1With c x = lnP1 x := by
+  unfold lnP1With lnP1
+  rw [lnP1PrecRoundWith_eq_lnP1PrecRound]
 
 end Azurite.AzFloat

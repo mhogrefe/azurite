@@ -304,6 +304,130 @@ theorem logBaseP1Approx_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode)
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := logBaseP1Approx_spec hw hx hx1 b hb hirr
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### The same with precomputed constants -/
+
+/-- `cd` is a bracket of `ln b` fit for the working precision `w`: the conclusion of
+`lnBaseBracket_spec`. -/
+def LnBaseBracketFor (b : UInt64) (w : ℕ) (cd : AzFloat × AzFloat) : Prop :=
+  ∃ c d : ℝ, cd.1.toVal = some (c : EReal) ∧ cd.2.toVal = some (d : EReal) ∧
+    1 / 2 ≤ c ∧ c ≤ Real.log b.toNat ∧ Real.log b.toNat ≤ d ∧
+    d - c ≤ lnEps ((baseFloat b).exponent?.getD 0).toInt w
+
+theorem lnBaseBracketFor_lnBaseBracket {w : ℕ} (hw : 64 ≤ w) {b : UInt64} (hb : 2 ≤ b.toNat) :
+    LnBaseBracketFor b w (lnBaseBracket b w) :=
+  lnBaseBracket_spec hw b hb
+
+/-- A bracket fit for a finer precision `W ≥ w` is fit for `w` (`lnEps_antitone`). -/
+theorem LnBaseBracketFor.of_le {b : UInt64} {w W : ℕ} {cd : AzFloat × AzFloat} (hW : w ≤ W)
+    (h : LnBaseBracketFor b W cd) : LnBaseBracketFor b w cd := by
+  obtain ⟨c, d, h1, h2, h3, h4, h5, h6⟩ := h
+  exact ⟨c, d, h1, h2, h3, h4, h5, h6.trans (lnEps_antitone hW)⟩
+
+theorem LogBaseConsts.lnBAt_fit (cb : LogBaseConsts) {w : ℕ} (hw : 64 ≤ w)
+    (hb : 2 ≤ cb.base.toNat) : LnBaseBracketFor cb.base w (cb.lnBAt w) := by
+  unfold LogBaseConsts.lnBAt
+  split_ifs with hW
+  · rw [cb.lnB_eq]
+    exact (lnBaseBracketFor_lnBaseBracket (by omega) hb).of_le hW
+  · exact lnBaseBracketFor_lnBaseBracket hw hb
+
+theorem logBaseApproxWith_spec (cb : LogBaseConsts) {w : ℕ} (hw : 64 ≤ w) (e : AzInt) {q : ℕ}
+    {m : AzNat} (hv : FiniteValid q m) (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (finiteVal true e m) / Real.log cb.base.toNat)) :
+    ∃ lv hv' : ℝ, Rounds (logBaseApproxWith cb (finite true e q m hv) e w).1 lv ∧
+      Rounds (logBaseApproxWith cb (finite true e q m hv) e w).2 hv' ∧
+      lv < Real.log (finiteVal true e m) / Real.log cb.base.toNat ∧
+      Real.log (finiteVal true e m) / Real.log cb.base.toNat < hv' ∧
+      hv' - lv ≤ logBaseEps e.toInt ((baseFloat cb.base).exponent?.getD 0).toInt
+        |Real.log (finiteVal true e m)| w := by
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnBracketWith_spec cb.ln hw e hv
+  obtain ⟨c, d, hc, hd, hc0, hcM, hMd, hcd⟩ := cb.lnBAt_fit hw hb
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    quotientBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem logBaseApproxWith_isSome_exists (cb : LogBaseConsts) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m)
+    (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (finiteVal true e m) / Real.log cb.base.toNat)) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (logBaseApproxWith cb (finite true e q m hv) e (w₀ * 2 ^ f)).1
+      (logBaseApproxWith cb (finite true e q m hv) e (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (logBaseApproxWith cb (finite true e q m hv) e)
+    hirr (logBaseEps e.toInt ((baseFloat cb.base).exponent?.getD 0).toInt
+      |Real.log (finiteVal true e m)|) (tendsto_logBaseEps _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBaseApproxWith_spec cb hw e hv hb hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+theorem logBaseRatApproxWith_spec (cb : LogBaseConsts) {w : ℕ} (hw : 64 ≤ w) (q : AzRat)
+    (hq : (0 : ℚ) < AzRat.toRat q) (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log cb.base.toNat)) :
+    ∃ lv hv' : ℝ, Rounds (logBaseRatApproxWith cb q w).1 lv ∧
+      Rounds (logBaseRatApproxWith cb q w).2 hv' ∧
+      lv < Real.log (AzRat.toRat q : ℝ) / Real.log cb.base.toNat ∧
+      Real.log (AzRat.toRat q : ℝ) / Real.log cb.base.toNat < hv' ∧
+      hv' - lv ≤ logBaseRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+        ((baseFloat cb.base).exponent?.getD 0).toInt |Real.log (AzRat.toRat q : ℝ)| w := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q w
+  have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast hq
+  rw [abs_of_pos hqv0] at hr2
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracketWith_spec cb.ln hw hr hqv0 hr1 hr2
+  obtain ⟨c, d, hc, hd, hc0, hcM, hMd, hcd⟩ := cb.lnBAt_fit hw hb
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    quotientBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem logBaseRatApproxWith_isSome_exists (cb : LogBaseConsts) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) (q : AzRat) (hq : (0 : ℚ) < AzRat.toRat q) (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (AzRat.toRat q : ℝ) / Real.log cb.base.toNat)) (w₀ : ℕ)
+    (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (logBaseRatApproxWith cb q (w₀ * 2 ^ f)).1
+      (logBaseRatApproxWith cb q (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (logBaseRatApproxWith cb q) hirr
+    (logBaseRatEps (⌊2 * |Real.log (AzRat.toRat q : ℝ)|⌋₊ + 2)
+      ((baseFloat cb.base).exponent?.getD 0).toInt |Real.log (AzRat.toRat q : ℝ)|)
+    (tendsto_logBaseRatEps _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := logBaseRatApproxWith_spec cb hw q hq hb hirr
+      exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+theorem logBaseP1ApproxWith_spec (cb : LogBaseConsts) {w : ℕ} (hw : 64 ≤ w) {x : AzFloat}
+    {xv : ℝ} (hx : x.toVal = some (xv : EReal)) (hx1 : -1 < xv) (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (1 + xv) / Real.log cb.base.toNat)) :
+    ∃ lv hv : ℝ, Rounds (logBaseP1ApproxWith cb x w).1 lv ∧
+      Rounds (logBaseP1ApproxWith cb x w).2 hv ∧
+      lv < Real.log (1 + xv) / Real.log cb.base.toNat ∧
+      Real.log (1 + xv) / Real.log cb.base.toNat < hv ∧
+      hv - lv ≤ logBaseRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2)
+        ((baseFloat cb.base).exponent?.getD 0).toInt |Real.log (1 + xv)| w := by
+  have : NeZero w := ⟨by omega⟩
+  have hpos : 0 < 1 + xv := by linarith
+  obtain ⟨r, hr, hf⟩ := addFloor_err toVal_one' hx w hpos.le
+  obtain ⟨a, bv, ha, hb', haL, hLb, hwid⟩ := lnFloorBracketWith_spec cb.ln hw hr hpos hf.le hf.ge
+  obtain ⟨c, d, hc, hd, hc0, hcM, hMd, hcd⟩ := cb.lnBAt_fit hw hb
+  obtain ⟨lo, hi, hlo, hhi, hlo1, hhi1, hwidth⟩ :=
+    quotientBracket_spec hw ha hb' hc hd hc0 hcM hMd hcd haL hLb hwid
+  obtain ⟨h1, h2, h3, h4⟩ := rounds_pair_of_bracket hlo hhi hlo1 hhi1 hirr
+  exact ⟨lo, hi, h1, h2, h3, h4, hwidth⟩
+
+theorem logBaseP1ApproxWith_isSome_exists (cb : LogBaseConsts) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hx1 : -1 < xv) (hb : 2 ≤ cb.base.toNat)
+    (hirr : Irrational (Real.log (1 + xv) / Real.log cb.base.toNat)) (w₀ : ℕ) (hw₀ : 0 < w₀) :
+    ∃ f : ℕ, (roundingPossible (logBaseP1ApproxWith cb x (w₀ * 2 ^ f)).1
+      (logBaseP1ApproxWith cb x (w₀ * 2 ^ f)).2 p mode).isSome = true :=
+  exists_isSome_of_irrational_threshold p mode (logBaseP1ApproxWith cb x) hirr
+    (logBaseRatEps (⌊2 * |Real.log (1 + xv)|⌋₊ + 2) ((baseFloat cb.base).exponent?.getD 0).toInt
+      |Real.log (1 + xv)|)
+    (tendsto_logBaseRatEps _ _ _) 64
+    (fun w hw => by
+      obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := logBaseP1ApproxWith_spec cb hw hx hx1 hb hirr
+      exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
 /-- `ln v / ln (2^k) = log₂ v / k`. -/
 theorem log_div_log_two_pow (k : ℕ) (v : ℝ) :
     Real.log v / Real.log ((2 ^ k : ℕ) : ℝ) = Real.logb 2 v / k := by
