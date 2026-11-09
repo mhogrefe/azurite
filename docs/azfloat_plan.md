@@ -5426,7 +5426,7 @@ Malachite's table of special values).  Files: `AzFloat/PowBracket.lean` + `Equiv
   `16^(−3/4)`, `2^(±100)` at 1 bit), bracket-path integer powers (`3^40`, `(−3)^41`, `3^(−40)` at
   20 bits against `powIntPrecRound` and exact references), `2^(1/2)` against `√2`, `(3/2)^(5/4)`,
   `10^(−1/8)`, `(123456789/1024)^(77/64)`, `3^(7/4)` against `powBase`, `(1/3)^(1/3)` at 200
-  bits (80-digit references), directed modes.  UNTIMED beyond the `3^(10^k)` probes.
+  bits (80-digit references), directed modes.  TIMED in the tuning pass below.
 * **The natural-base powers fixed the same way (user request, 2026-11-09).**  `powBase` and
   `powBaseRat` now compute the exact case `u^x = r^n` through `natPowOrZiv r n` (`powIntOrZiv`
   on the exact float `ofAzNat r`), so `3^(10^9)` at 10 bits takes 48 ms (before: the exact
@@ -5471,7 +5471,7 @@ Ordering").  Files: `AzFloat/RatPowBracket.lean` + `Equiv/`, `AzFloat/RatPow.lea
   powers at 20 bits, `(2/3)^(5/4)`, `(22/7)^(−7/8)`, `(1/3)^(1/3)` (within `1/30` ulp of a
   rounding boundary at 53 bits — the 80-digit reference needed the float exponent, not `1/3`),
   `10^(1/2)`, 200-bit `(1/3)^(1/3)`, agreement with `pow` on float bases, `(2/3)^(10^9)` at 10
-  bits through the bracket.  UNTIMED.
+  bits through the bracket.  TIMED in the tuning pass below.
 
 ## `x^q` for a rational exponent (DONE 2026-11-09, fuel-free)
 
@@ -5498,7 +5498,7 @@ Ordering").  Files: `AzFloat/PowRatBracket.lean` + `Equiv/`, `AzFloat/PowRat.lea
   (`8^(1/3)`, `(27/8)^(2/3)`, `1024^(−7/10) = 1/128`, `(1/4)^(−1/2)`), bracket-path integer
   powers, `(3/2)^(1/3)`, `2^(1/3)` against `cbrt`, `10^(2/7)`, `(5/4)^(−5/3)`, `3^(22/7)`,
   `7^(−401/6)` (90-digit references), agreement with `pow2Rat` and `powBaseRat`, 200-bit `∛2`.
-  UNTIMED.
+  TIMED in the tuning pass below.
 
 ## `q^r` for rationals `q` and `r` (DONE 2026-11-09, fuel-free)
 
@@ -5532,8 +5532,54 @@ terms:
   integer powers (`3^40`, `(−3)^41` at 20 bits, `(1 + 10^−6)^(10^6)`), `(1/3)^(1/3)`,
   `(2/3)^(5/7)`, `(10/3)^(−7/3)`, `(22/7)^(355/113)`, `7^(−401/6)` in the three modes (150-digit
   `Decimal` references), agreement with `ratPowPrecRound` and `powRatPrecRound` on exact float
-  arguments, 200-bit `(1/3)^(1/3)`.  UNTIMED (single-call probes, not benchmarked: `(1/3)^(1/3)`
-  27 ms at 53 bits, 0.6 s at 2000 bits, 30 s at 20000 bits; the exact `(32/243)^(3/5)` 1 ms).
+  arguments, 200-bit `(1/3)^(1/3)`.  TIMED in the tuning pass below (0.24 ms at 53 bits; an
+  interpreter probe through `lake env lean` had suggested 27 ms — file-level `def`s are
+  re-evaluated in the interpreter, so such probes are meaningless for compiled timings).
+
+## Tuning pass over the `pow` family (DONE 2026-11-09)
+
+User request ("please do the tuning pass over the pow family"), machine quiet.  New benchmarks
+`Benchmark/AzFloatPow.lean`: `az_float_pow` (the five drivers on irrational inputs, the pieces
+of one bracket, `exp`/`ln` for reference), `az_float_pow_width` (bits lost by each piece,
+absolute/relative), `az_float_pow_first` (start precision and first-attempt success of the eight
+Ziv loops on nine input pairs at 1/2/10/53/200/1000 bits).
+
+* **Diagnosis.**  The final `pow` bracket loses only 4–5 bits *relative* at any working
+  precision (the `ln` bracket loses 12–27 bits absolute at `W = w + 16 + max(ey, 0)`, which the
+  `+16` and the exponent term absorb), exactly like the `exp` bracket.  But the loops started at
+  `p + 64 + W₀` with `W₀ = 136 + max(ey, 0) + |eb|` — the proven-width margin *added* to the
+  guard bits — so a 53-bit power ran its `ln` and `exp` at 254–270 bits where `exp` alone runs
+  at 117.  Separately, `powBaseExact?` spent 0.28 ms (of 0.70) in `maxRootBase`, which tested all
+  62 exponents `s ∈ [2, 63]` with `AzNat.isPow` even for `u = 3`.
+* **Changes.**  (1) All eight start precisions are `max (p + zivGuardBits) W₀`: the spec needs
+  `W₀ ≤ w` at every level, not `W₀` extra bits (`powStart`, `ratPowStart`, `powRatStart`,
+  `ratPowRatStart`, `powBaseStart`, `powBaseRatStart`, `powBaseM1Start`, `powBaseM1RatStart`;
+  the driver proofs' `omega` handles `max`).  (2) The margin `136` is `88`: `2^54 w^5 ≤ 2^w`
+  already from `w = 88` (`two_pow_54_mul_pow5_le`, induction with the `64·n^k ≤ n^(k+1)` steps),
+  and the `mulLnEps_le_inv256`/`mulLnEps_comp_le_of` bounds need only `24 ≤ 88`; `W₀` now binds
+  only below `p ≈ 24`.  (3) `maxRootBase b = maxRootBaseBounded b (min 63 (size b − 1))`: an
+  exponent `s ≥ size b` cannot work (`2^s ≤ c^s = b < 2^(size b)`, `not_exists_pow_eq_of_size_le`),
+  so `maxRootBase_spec`/`_not_pow` keep their statements through `lt_two_pow_maxRootBase_bound`.
+* **First attempts.**  Every irrational case in `az_float_pow_first` rounds at the first level
+  at all six precisions (1 to 1000 bits).  The only first-level failures are inputs whose
+  `P`-bit roundings make the power exact (`(10^6)^(1/3) = 100`, `(1/4)^(−128) = 2^256`,
+  `(3/2 → 2)^(…)`), which the drivers route to the exact paths and never to the loop.
+* **Timings (`az_float_pow`, ms per call, median of 3, old binary vs new, A/B alternately).**
+
+  | bits | `pow` | `ratPow` | `powRat` | `ratPowRat` | `powBase` | `exp` | `ln` |
+  |---:|---:|---:|---:|---:|---:|---:|---:|
+  | 53 | 0.410 → 0.213 | 0.430 → 0.215 | 0.396 → 0.217 | 0.433 → 0.243 | 0.704 → 0.229 | 0.128 | 0.084 |
+  | 200 | 0.544 → 0.361 | 0.553 → 0.382 | 0.534 → 0.380 | 0.571 → 0.398 | 0.906 → 0.441 | 0.227 | 0.145 |
+  | 1000 | 1.513 → 1.308 | 1.548 → 1.325 | 1.584 → 1.322 | 1.620 → 1.406 | 2.289 → 1.747 | 0.762 | 0.569 |
+  | 5000 | 11.23 → 10.53 | 11.65 → 10.56 | 11.24 → 10.43 | 11.68 → 11.00 | 15.89 → 14.94 | 5.35 | 5.31 |
+
+  A power now costs `exp + ln` plus a few percent (the `ln` at `w + 16 + max(ey, 0)` bits); the
+  remaining `powBase` excess at high precision is `lnBaseBracket` (the base-`u` logarithm through
+  `ln2`/`ln u` brackets) rather than the loop.  No further structural slack is visible: at 5000
+  bits `lnBr + expBr = 10.3` of `10.5` ms.
+* **Not done.**  `ln2Bracket W` is computed twice per level (inside `lnBracket` and inside
+  `expReduce`); at 1 % of the total it is not worth a cache.  The `+16` of `expWork` and the
+  `zivGuardBits = 64` are shared with `exp` and were left alone.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 

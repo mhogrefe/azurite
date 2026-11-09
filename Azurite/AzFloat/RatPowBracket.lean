@@ -19,7 +19,7 @@ import Azurite.AzNat.ShiftLeft
 bits, rounded outward for any signs (`mulBracketAny`), and `ratPowBracket` is `expOfBracket`
 of it; `ratPowApprox neg` gives the ends as `Roundable`s, negated and swapped for a negative
 result.  The width bound is `mulLnEps ey E w` with `E = ratPowE q = 2 (size num + size den) + 2
-≥ ⌊2 |ln q|⌋ + 2`, below `1` from `w ≥ ratPowW₀ ey q = 136 + max(ey, 0) + E` on
+≥ ⌊2 |ln q|⌋ + 2`, below `1` from `w ≥ ratPowW₀ ey q = 88 + max(ey, 0) + E` on
 (`Equiv/RatPowBracket.lean`).
 
 **Exact powers.**  For `q = a/b` in lowest terms and a non-integer `y = N/2^J` (`N` odd),
@@ -53,12 +53,13 @@ def ratPowApprox (neg : Bool) (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) :
 def ratPowE (q : AzRat) : Nat := 2 * (q.num.size + q.den.size) + 2
 
 /-- The precision from which the width bound of `lnRatMulBracket` is below `1`:
-`136 + max(ey, 0) + ratPowE q`. -/
+`88 + max(ey, 0) + ratPowE q`. -/
 def ratPowW₀ (ey : AzInt) (q : AzRat) : Nat :=
-  136 + (if ey.sign then ey.abs.toNat else 0) + ratPowE q
+  88 + (if ey.sign then ey.abs.toNat else 0) + ratPowE q
 
 /-- The starting precision of the Ziv loop for `q^y` at precision `p`. -/
-def ratPowStart (ey : AzInt) (q : AzRat) (p : Nat) : Nat := p + zivGuardBits + ratPowW₀ ey q
+def ratPowStart (ey : AzInt) (q : AzRat) (p : Nat) : Nat :=
+  max (p + zivGuardBits) (ratPowW₀ ey q)
 
 /-! ### The exact powers -/
 

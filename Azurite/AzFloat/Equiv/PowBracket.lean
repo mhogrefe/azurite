@@ -251,7 +251,7 @@ theorem lnMulBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteVali
 
 /-- `powW₀ ey eb` as an integer. -/
 theorem powW₀_eq (ey eb : AzInt) :
-    ((powW₀ ey eb : ℕ) : ℤ) = 136 + max ey.toInt 0 + |eb.toInt| := by
+    ((powW₀ ey eb : ℕ) : ℤ) = 88 + max ey.toInt 0 + |eb.toInt| := by
   unfold powW₀
   rw [Nat.cast_add, Nat.cast_add, expPos_eq_max, AzInt.abs_toNat_eq]
   norm_num
@@ -272,7 +272,7 @@ theorem powBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid 
       hi - lo ≤ powBaseEps ey.toInt eb.toInt (yv * Real.log (finiteVal true eb mb)) w := by
   have hw64 : 64 ≤ w := by unfold powW₀ at hw; omega
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulBracket_spec eb hvb hy ey hye w hw64
-  have hwZ : 136 + max ey.toInt 0 + |eb.toInt| ≤ (w : ℤ) := by
+  have hwZ : 88 + max ey.toInt 0 + |eb.toInt| ≤ (w : ℤ) := by
     rw [← powW₀_eq]; exact_mod_cast hw
   have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64

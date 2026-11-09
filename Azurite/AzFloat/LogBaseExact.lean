@@ -45,8 +45,10 @@ def maxRootBaseBounded (b : AzNat) (t : ℕ) : AzNat × ℕ :=
   let s := maxPowExp b t
   (if s = 1 then b else b.rootInt s, s)
 
-/-- The primitive root of a 64-bit base: `b = c^s` with `s ≤ 63` maximal. -/
-def maxRootBase (b : AzNat) : AzNat × ℕ := maxRootBaseBounded b 63
+/-- The primitive root of a 64-bit base: `b = c^s` with `s ≤ 63` maximal.  Only exponents up to
+`size b − 1` can work (`2^s ≤ c^s = b < 2^(size b)`), so the search is bounded by
+`min 63 (size b − 1)` — for small bases a handful of root tests instead of 62. -/
+def maxRootBase (b : AzNat) : AzNat × ℕ := maxRootBaseBounded b (min 63 (b.size - 1))
 
 /-- `log_b x` as a rational when `x` is a positive integer power `c^r` of the primitive root `c`
 of `b` (`r / s` for `b = c^s`), `none` otherwise. -/

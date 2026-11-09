@@ -58,12 +58,13 @@ def powBaseApprox (x : AzFloat) (e : AzInt) (u : UInt64) (w : Nat) : Roundable �
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The precision from which the width bound of `lnBaseMulBracket` is below `1`:
-`136 + max(e, 0) + |exponent of u|`. -/
+`88 + max(e, 0) + |exponent of u|`. -/
 def powBaseW₀ (e : AzInt) (u : UInt64) : Nat :=
-  136 + (if e.sign then e.abs.toNat else 0) + ((baseFloat u).exponent?.getD 0).abs.toNat
+  88 + (if e.sign then e.abs.toNat else 0) + ((baseFloat u).exponent?.getD 0).abs.toNat
 
 /-- The starting precision of the Ziv loop for `u^x` at precision `p`. -/
-def powBaseStart (e : AzInt) (u : UInt64) (p : Nat) : Nat := p + zivGuardBits + powBaseW₀ e u
+def powBaseStart (e : AzInt) (u : UInt64) (p : Nat) : Nat :=
+  max (p + zivGuardBits) (powBaseW₀ e u)
 
 /-- `u^x` as an exact power `(r, n)` with `u^x = r^n`, `r` the primitive root of `u = r^s`,
 when `s x` is an integer `n`; `none` otherwise (then `u^x` is irrational). -/
@@ -102,11 +103,11 @@ def powBaseRatApprox (q : AzRat) (u : UInt64) (w : Nat) : Roundable × Roundable
 
 /-- The precision from which the width bound of `lnBaseMulRatBracket` is below `1`. -/
 def powBaseRatW₀ (q : AzRat) (u : UInt64) : Nat :=
-  136 + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
+  88 + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
 
 /-- The starting precision of the Ziv loop for `u^q` at precision `p`. -/
 def powBaseRatStart (q : AzRat) (u : UInt64) (p : Nat) : Nat :=
-  p + zivGuardBits + powBaseRatW₀ q u
+  max (p + zivGuardBits) (powBaseRatW₀ q u)
 
 /-- `u^q` as an exact power `(r, n)` with `u^q = r^n`, `r` the primitive root of `u = r^s`,
 when `s q` is an integer `n`; `none` otherwise (then `u^q` is irrational). -/
@@ -134,13 +135,13 @@ def powBaseM1Approx (x : AzFloat) (e : AzInt) (u : UInt64) (w : Nat) :
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The precision from which the bracket of `x ln u` is narrow enough for `expM1OfBracket`:
-`136 + |e| + |exponent of u|`. -/
+`88 + |e| + |exponent of u|`. -/
 def powBaseM1W₀ (e : AzInt) (u : UInt64) : Nat :=
-  136 + e.abs.toNat + ((baseFloat u).exponent?.getD 0).abs.toNat
+  88 + e.abs.toNat + ((baseFloat u).exponent?.getD 0).abs.toNat
 
 /-- The starting precision of the Ziv loop for `u^x − 1` at precision `p`. -/
 def powBaseM1Start (e : AzInt) (u : UInt64) (p : Nat) : Nat :=
-  p + zivGuardBits + powBaseM1W₀ e u
+  max (p + zivGuardBits) (powBaseM1W₀ e u)
 
 /-- The bracket of `u^q − 1` for a rational `q ≠ 0`: `expM1OfBracket` at the exponent
 `pow2M1RatExp q + 6` of the bracket of `q ln u` computed at the compensated precision. -/
@@ -154,12 +155,12 @@ def powBaseM1RatApprox (q : AzRat) (u : UInt64) (w : Nat) : Roundable × Roundab
   (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 /-- The precision from which the bracket of `q ln u` is narrow enough for `expM1OfBracket`:
-`136 + |pow2M1RatExp q| + size (num q) + |exponent of u|`. -/
+`88 + |pow2M1RatExp q| + size (num q) + |exponent of u|`. -/
 def powBaseM1RatW₀ (q : AzRat) (u : UInt64) : Nat :=
-  136 + (pow2M1RatExp q).abs.toNat + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
+  88 + (pow2M1RatExp q).abs.toNat + q.num.size + ((baseFloat u).exponent?.getD 0).abs.toNat
 
 /-- The starting precision of the Ziv loop for `u^q − 1` at precision `p`. -/
 def powBaseM1RatStart (q : AzRat) (u : UInt64) (p : Nat) : Nat :=
-  p + zivGuardBits + powBaseM1RatW₀ q u
+  max (p + zivGuardBits) (powBaseM1RatW₀ q u)
 
 end Azurite.AzFloat

@@ -49,7 +49,7 @@ theorem tendsto_ratPowRatEps (r q : AzRat) :
 theorem ratPowRatEps_le_one (r q : AzRat) {w : ℕ} (hw : ratPowRatW₀ r q ≤ w) :
     ratPowRatEps r q w ≤ 1 := by
   unfold ratPowRatW₀ at hw
-  have hwZ : 136 + max (ratExpBound r).toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
+  have hwZ : 88 + max (ratExpBound r).toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
     rw [← ratPowW₀_eq]; exact_mod_cast (show ratPowW₀ (ratExpBound r) q ≤ w by omega)
   have h1 := mulLnEps_le_inv256 _ _ _ hwZ
   set Ex := (q.num.size + q.den.size).size with hEx

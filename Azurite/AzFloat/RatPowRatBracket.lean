@@ -56,7 +56,8 @@ def ratPowRatW₀ (r q : AzRat) : Nat :=
   ratPowW₀ (ratExpBound r) q + (q.num.size + q.den.size).size + 1
 
 /-- The starting precision of the Ziv loop for `q^r` at precision `p`. -/
-def ratPowRatStart (r q : AzRat) (p : Nat) : Nat := p + zivGuardBits + ratPowRatW₀ r q
+def ratPowRatStart (r q : AzRat) (p : Nat) : Nat :=
+  max (p + zivGuardBits) (ratPowRatW₀ r q)
 
 /-! ### The exact powers -/
 

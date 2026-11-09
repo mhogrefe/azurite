@@ -34,6 +34,7 @@ import Azurite.Benchmark.AzNatGcd
 import Azurite.Benchmark.AzFloatToString
 import Azurite.Benchmark.AzFloatLn
 import Azurite.Benchmark.AzFloatEulerGamma
+import Azurite.Benchmark.AzFloatPow
 import Azurite.Benchmark.AzRatProfile
 import Azurite.Benchmark.AzNatDivMod
 import Azurite.Benchmark.AzNatDivVsDivMod
@@ -66,7 +67,8 @@ def validBenchmarks : List String :=
    "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
    "az_nat_mul_algorithms_toomcook3", "az_nat_div_algorithms", "az_nat_div_cross", "az_nat_div_newton",
    "az_float_to_string", "az_float_ln", "az_float_ln_series", "az_float_lnp1",
-   "az_float_ln2_breakdown", "az_float_euler_gamma",
+   "az_float_ln2_breakdown", "az_float_euler_gamma", "az_float_pow", "az_float_pow_width",
+   "az_float_pow_first",
    "az_rat_profile", "az_nat_gcd", "az_nat_gcd_breakdown", "az_nat_gcd_word",
    "az_nat_div_mod", "az_nat_div_vs_div_mod",
    "az_nat_mod_vs_div_mod", "az_int_div_vs_div_mod", "az_int_mod_vs_div_mod",
@@ -139,6 +141,9 @@ def main (args : List String) : IO Unit := do
       | "az_float_lnp1" => Azurite.Benchmark.runAzFloatLnP1 limit cfg seed
       | "az_float_ln2_breakdown" => Azurite.Benchmark.runAzFloatLn2Breakdown limit cfg seed
       | "az_float_euler_gamma" => Azurite.Benchmark.runAzFloatEulerGamma limit cfg seed
+      | "az_float_pow" => Azurite.Benchmark.runAzFloatPow limit cfg seed
+      | "az_float_pow_width" => Azurite.Benchmark.runAzFloatPowWidth limit cfg seed
+      | "az_float_pow_first" => Azurite.Benchmark.runAzFloatPowFirst limit cfg seed
       | "az_rat_profile" => Azurite.Benchmark.runAzRatProfile limit cfg seed
       | "az_nat_gcd" => Azurite.Benchmark.runAzNatGcd limit cfg seed
       | "az_nat_gcd_breakdown" => Azurite.Benchmark.runAzNatGcdBreakdown limit cfg seed

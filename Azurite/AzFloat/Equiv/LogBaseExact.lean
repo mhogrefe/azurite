@@ -120,16 +120,53 @@ theorem maxRootBaseBounded_not_pow (b : AzNat) (t : ℕ) (hb : 2 ≤ b.toNat)
     omega
   exact hmax (u * s) (by nlinarith) hus ⟨d, hbd.symm⟩
 
-/-- The 64-bit instances. -/
+/-! ### The 64-bit instances -/
+
+/-- No `y` has `y^u = b` for `u ≥ size b` and `b ≥ 2`. -/
+theorem not_exists_pow_eq_of_size_le (b : AzNat) (hb : 2 ≤ b.toNat) {u : ℕ} (hu : b.size ≤ u) :
+    ¬ ∃ y, y ^ u = b.toNat := by
+  rintro ⟨y, hy⟩
+  have hu0 : u ≠ 0 := by
+    rintro rfl
+    rw [pow_zero] at hy
+    omega
+  rcases Nat.lt_or_ge y 2 with hy2 | hy2
+  · have : y ^ u ≤ 1 := by
+      calc y ^ u ≤ 1 ^ u := Nat.pow_le_pow_left (by omega) u
+        _ = 1 := one_pow u
+    omega
+  · have hsz : b.toNat < 2 ^ b.size := by rw [← AzNat.size_toNat]; exact Nat.lt_size_self _
+    have : 2 ^ b.size ≤ y ^ u :=
+      (Nat.pow_le_pow_right (by norm_num) hu).trans (Nat.pow_le_pow_left hy2 u)
+    omega
+
 theorem maxRootBase_spec (b : AzNat) (hb : 2 ≤ b.toNat) :
     b.toNat = (maxRootBase b).1.toNat ^ (maxRootBase b).2 ∧ 1 ≤ (maxRootBase b).2 ∧
       2 ≤ (maxRootBase b).1.toNat ∧
-      ∀ u, (maxRootBase b).2 < u → u ≤ 63 → ¬ ∃ y, y ^ u = b.toNat :=
-  maxRootBaseBounded_spec b 63 hb
+      ∀ u, (maxRootBase b).2 < u → u ≤ 63 → ¬ ∃ y, y ^ u = b.toNat := by
+  obtain ⟨h1, h2, h3, h4⟩ := maxRootBaseBounded_spec b (min 63 (b.size - 1)) hb
+  refine ⟨h1, h2, h3, fun u hu1 hu2 => ?_⟩
+  rcases Nat.lt_or_ge (min 63 (b.size - 1)) u with hlt | hge
+  · exact not_exists_pow_eq_of_size_le b hb (by omega)
+  · exact h4 u hu1 hge
+
+/-- A 64-bit base is below `2^(t + 1)` for the search bound `t = min 63 (size b − 1)`. -/
+theorem lt_two_pow_maxRootBase_bound (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64) :
+    b.toNat < 2 ^ (min 63 (b.size - 1) + 1) := by
+  have hsz : b.toNat < 2 ^ b.size := by rw [← AzNat.size_toNat]; exact Nat.lt_size_self _
+  have hs1 : 1 ≤ b.size := by
+    by_contra h
+    push Not at h
+    have : b.size = 0 := by omega
+    rw [this, pow_zero] at hsz
+    omega
+  rcases Nat.lt_or_ge 63 (b.size - 1) with h | h
+  · rw [min_eq_left h.le]; simpa using hb64
+  · rw [min_eq_right h, Nat.sub_add_cancel hs1]; exact hsz
 
 theorem maxRootBase_not_pow (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64) :
     ∀ t, 2 ≤ t → ¬ ∃ d, (maxRootBase b).1.toNat = d ^ t :=
-  maxRootBaseBounded_not_pow b 63 hb (by simpa using hb64)
+  maxRootBaseBounded_not_pow b _ hb (lt_two_pow_maxRootBase_bound b hb hb64)
 
 /-! ### The exact value -/
 
@@ -318,7 +355,8 @@ theorem exists_eq_pow_maxRootBounded_of_pow_eq_pow (b : AzNat) (t : ℕ) (hb : 2
 theorem exists_eq_pow_maxRoot_of_pow_eq_pow (b : AzNat) (hb : 2 ≤ b.toNat)
     (hb64 : b.toNat < 2 ^ 64) {N d n : ℕ} (hN : 1 ≤ N) (hd : 1 ≤ d)
     (hnat : N ^ d = b.toNat ^ n) : ∃ k, N = (maxRootBase b).1.toNat ^ k :=
-  exists_eq_pow_maxRootBounded_of_pow_eq_pow b 63 hb (by simpa using hb64) hN hd hnat
+  exists_eq_pow_maxRootBounded_of_pow_eq_pow b _ hb (lt_two_pow_maxRootBase_bound b hb hb64) hN
+    hd hnat
 
 /-- An integer float that is not a power of the primitive root has an irrational `log_b`. -/
 theorem irrational_log_div_log_of_int (b : AzNat) (hb : 2 ≤ b.toNat) (hb64 : b.toNat < 2 ^ 64)

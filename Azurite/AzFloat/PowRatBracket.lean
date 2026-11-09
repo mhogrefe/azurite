@@ -65,7 +65,8 @@ def powRatW₀ (q : AzRat) (eb : AzInt) : Nat :=
   powW₀ (ratExpBound q) eb + (eb.abs + 1).size + 1
 
 /-- The starting precision of the Ziv loop for `x^q` at precision `p`. -/
-def powRatStart (q : AzRat) (eb : AzInt) (p : Nat) : Nat := p + zivGuardBits + powRatW₀ q eb
+def powRatStart (q : AzRat) (eb : AzInt) (p : Nat) : Nat :=
+  max (p + zivGuardBits) (powRatW₀ q eb)
 
 /-! ### The exact powers -/
 

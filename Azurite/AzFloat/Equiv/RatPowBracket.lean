@@ -322,7 +322,7 @@ theorem lnRatMulBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0)
 
 /-- `ratPowW₀ ey q` as an integer. -/
 theorem ratPowW₀_eq (ey : AzInt) (q : AzRat) :
-    ((ratPowW₀ ey q : ℕ) : ℤ) = 136 + max ey.toInt 0 + |(ratPowE q : ℤ)| := by
+    ((ratPowW₀ ey q : ℕ) : ℤ) = 88 + max ey.toInt 0 + |(ratPowE q : ℤ)| := by
   unfold ratPowW₀
   rw [Nat.cast_add, Nat.cast_add, expPos_eq_max, abs_of_nonneg (by positivity)]
   norm_num
@@ -337,7 +337,7 @@ theorem ratPowBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) {
       hi - lo ≤ powBaseEps ey.toInt (ratPowE q : ℤ) (yv * Real.log (AzRat.toRat q : ℝ)) w := by
   have hw64 : 64 ≤ w := by unfold ratPowW₀ at hw; omega
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulBracket_spec q hs h0 hy ey hye w hw64
-  have hwZ : 136 + max ey.toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
+  have hwZ : 88 + max ey.toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
     rw [← ratPowW₀_eq]; exact_mod_cast hw
   have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
