@@ -13,6 +13,7 @@ import Azurite.Oracle.AzZMod
 import Azurite.Oracle.AzRat
 import Azurite.Oracle.AzFloat
 import Azurite.Oracle.AzNatExtra
+import Azurite.Oracle.AzIntVector
 import Azurite.Oracle.AzNatFloat
 
 /-!
@@ -141,6 +142,18 @@ def modes : List (String × Mode) := [
   ("az_nat_landau_function_prefix", mode checkLandauFunctionPrefix),
   ("az_nat_dot_sign", mode checkNatDotSign),
   ("az_int_dot_sign", mode checkIntDotSign),
+  ("az_int_vector_add", mode checkIntVectorAdd),
+  ("az_int_vector_sub", mode checkIntVectorSub),
+  ("az_int_vector_neg", mode checkIntVectorNeg),
+  ("az_int_vector_mul_scalar", mode checkIntVectorMulScalar),
+  ("az_int_vector_dot", mode checkIntVectorDot),
+  ("az_int_vector_abs_squared", mode checkIntVectorAbsSquared),
+  ("az_int_vector_cross", mode checkIntVectorCross),
+  ("az_int_vector_zero", mode checkIntVectorZero),
+  ("az_int_vector_standard_basis_vector", mode checkIntVectorStandardBasisVector),
+  ("az_int_vector_index", mode checkIntVectorIndex),
+  ("az_int_vector_to_string", mode checkIntVectorToString),
+  ("az_int_vector_from_str", mode checkIntVectorFromStr),
   ("az_rat_dot_sign", mode checkRatDotSign),
   ("az_nat_sum", mode checkSum),
   ("az_nat_product", mode checkProduct),
