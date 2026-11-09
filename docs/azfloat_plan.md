@@ -5442,6 +5442,37 @@ Malachite's table of special values).  Files: `AzFloat/PowBracket.lean` + `Equiv
   (`powBase`), 32 (`powBaseRat`), 35 (`powBaseM1`), 37 (`powBaseM1Rat`); `10^(10^6)` at 53 bits
   35 ms.
 
+## `q^y` for a rational base (DONE 2026-11-09, fuel-free)
+
+User request ("a function that raises an AzRat to an AzFloat power, returning an AzFloat and an
+Ordering").  Files: `AzFloat/RatPowBracket.lean` + `Equiv/`, `AzFloat/RatPow.lean` + `Equiv/` +
+`Tests/`.  The structure of `x^y` (above) with the base `q = ±a/b` in lowest terms:
+
+* **Bracket.**  `exp (y ln q)` with the bracket of `ln q` from the float `⌊q⌋_W` below `q`
+  (`lnFloorBracket`, the rational-logarithm bracket of `lnRat`), times `y` by the new generic
+  `mulBracketAny_spec`; the `lnRatEps` width is bounded by `mulLnEps ey (ratPowE q) w` with the
+  computable `ratPowE q = 2 (size num + size den) + 2 ≥ ⌊2 |ln q|⌋ + 2` (`|ln (a/b)| ≤ size a
+  + size b`), so `ratPowW₀ ey q = 136 + max(ey, 0) + ratPowE q` and `powBaseEps` are reused.
+* **Integer exponents** `n`: cheap iff both `a^n` and `b^n` pass `powIntCheap`; then one
+  correctly rounded division of the exact floats `a'^|n| 2^(c_a|n| − c_b|n|)` and `b'^|n|`
+  (odd parts `a'`, `b'`; the powers of two go into the exponent, so `2^(10^9)` costs nothing);
+  otherwise the result is not a boundary — an odd denominator part `≥ 3` makes it non-dyadic
+  (`not_mem_floatSet_of_div_odd_coprime`, coprimality from `gcd(a, b) = 1`), and a denominator
+  that is a power of two leaves an odd numerator part of more than `p + 1` bits.
+* **Non-integer exponents** `N/2^J`, `q > 0`: `q^y` is rational iff `a` and `b` are both
+  `2^J`-th powers (`natPow2Root?`: `oddPow2Root` of the odd part and `2^J ∣` the power-of-two
+  exponent), and then `q^y = (u/v)^N`, an integer power of the rational `u/v`; otherwise
+  `irrational_div_rpow_of_not_pow` — `a/b = a b^(2^J−1) / (b^(2^J))`, the numerator a `2^J`-th
+  power only if `a` and `b` are (`exists_eq_pow_of_mul_eq_pow` twice and the coprime-exponent
+  lemma), then `irrational_natCast_rpow_div_of_not_pow`.
+* **Spec** `Spec.pow (some q) y.toVal` (the specification of `x^y`): `ratPowPrecRound_eq`.
+* **Tests:** the special-value table, exact and rational powers (`(4/9)^(1/2) = 2/3` rounded,
+  `(9/4)^(3/2) = 27/8`, `(16/81)^(3/4) = 8/27` rounded, `(−2/3)^3`), bracket-path integer
+  powers at 20 bits, `(2/3)^(5/4)`, `(22/7)^(−7/8)`, `(1/3)^(1/3)` (within `1/30` ulp of a
+  rounding boundary at 53 bits — the 80-digit reference needed the float exponent, not `1/3`),
+  `10^(1/2)`, 200-bit `(1/3)^(1/3)`, agreement with `pow` on float bases, `(2/3)^(10^9)` at 10
+  bits through the bracket.  UNTIMED.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

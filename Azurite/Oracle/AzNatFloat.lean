@@ -14,6 +14,8 @@ import Azurite.AzRat.Shift
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.Product
 import Azurite.AzFloat.AddMul
+import Azurite.AzFloat.AddMulRat
+import Azurite.AzFloat.MulAddMul
 
 /-!
 # Checks for the conversions between Malachite's `Natural` and the primitive floats
@@ -403,8 +405,9 @@ zero as `+0.0`, so for an exact zero (a zero with the `Ordering` `Equal` at 53 b
 checked against IEEE 754's rule, which Malachite follows: a zero product `y·z` has the sign of the
 product of the signs, `-0.0 + -0.0` is `-0.0`, and any other exact zero is `+0.0`. A result that
 underflows to zero keeps Azurite's sign. -/
-def checkF64Fused (name : String) (sub : Bool) (f : Float → Float → Float → Float)
-    (g : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
+def checkF64FusedWith {α β : Type} (name : String) (sub : Bool) (parseZ : String → Option α)
+    (toF : α → β) (negZ : α → String → Bool) (isZeroZ : α → Bool) (f : Float → Float → β → Float)
+    (g : AzFloat → AzFloat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) :
     Verdict := do
   let (args, res) ← expect s!"a `{name}(x, y, z) = r` line" (functionCall line name)
   let (xs, ys, zs) ← match args with
@@ -412,9 +415,9 @@ def checkF64Fused (name : String) (sub : Bool) (f : Float → Float → Float �
     | _ => fail s!"{name} takes three arguments"
   let x ← expect "x" (parsePrimitiveFloat binary64 xs)
   let y ← expect "y" (parsePrimitiveFloat binary64 ys)
-  let z ← expect "z" (parsePrimitiveFloat binary64 zs)
+  let z ← expect "z" (parseZ zs)
   let printed ← expect "r" (parsePrimitiveFloat binary64 res)
-  let r := f (AzFloat.toFloat64 x) (AzFloat.toFloat64 y) (AzFloat.toFloat64 z)
+  let r := f (AzFloat.toFloat64 x) (AzFloat.toFloat64 y) (toF z)
   let computed := AzFloat.ofFloat64 r
   expectSameFloat name computed printed
   if computed == .zero then
@@ -423,18 +426,84 @@ def checkF64Fused (name : String) (sub : Bool) (f : Float → Float → Float �
     let exactZero := g x y z 53 .Nearest == (.zero, .eq)
     let expected :=
       if !exactZero then isNegZeroFloat r
-      else if x == .zero && (y == .zero || z == .zero) then
+      else if x == .zero && (y == .zero || isZeroZ z) then
         -- the product's sign, flipped for a subtraction, combined with `x`'s
-        let p := negative y ys != negative z zs
+        let p := negative y ys != negZ z zs
         negative x xs && (if sub then !p else p)
       else false
     if expected != isNegativeZeroString res then
       disagree s!"{name}: the zero should be {if expected then "-0.0" else "0.0"}"
+
+/-- `checkF64FusedWith` for three `f64`s. -/
+def checkF64Fused (name : String) (sub : Bool) (f : Float → Float → Float → Float)
+    (g : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) :
+    String → Verdict :=
+  checkF64FusedWith name sub (parsePrimitiveFloat binary64) AzFloat.toFloat64
+    (fun v s => isNegativeZeroString s || AzFloat.partialCompare v .zero == some .lt)
+    (· == .zero) f g
 
 def checkF64AddMul : String → Verdict :=
   checkF64Fused "primitive_float_add_mul" false AzFloat.addMulFloat64 AzFloat.addMulPrecRound
 
 def checkF64SubMul : String → Verdict :=
   checkF64Fused "primitive_float_sub_mul" true AzFloat.subMulFloat64 AzFloat.subMulPrecRound
+
+/-- The `f64` fused operations with a rational third operand, whose product with `y` takes the
+sign of `y` times that of the rational, a zero rational counting as positive. -/
+def checkF64AddMulRational : String → Verdict :=
+  checkF64FusedWith "primitive_float_add_mul_rational" false parseAzRat id
+    (fun q _ => !q.sign) (fun q => q.num == (0 : AzNat)) AzFloat.addMulRatFloat64
+    AzFloat.addMulRatPrecRound
+
+def checkF64SubMulRational : String → Verdict :=
+  checkF64FusedWith "primitive_float_sub_mul_rational" true parseAzRat id
+    (fun q _ => !q.sign) (fun q => q.num == (0 : AzNat)) AzFloat.subMulRatFloat64
+    AzFloat.subMulRatPrecRound
+
+/-- `name(x, y, z, w) = r` for Malachite's `primitive_float_mul_add_mul` (`sub = false`) and
+`primitive_float_mul_sub_mul` on `f64`s, against Azurite's `mulAddMulFloat64` and
+`mulSubMulFloat64`. For an exact zero the sign follows IEEE 754's rule, which Malachite follows: if
+both products are zero, the result is `-0.0` exactly when both signed products (the second negated
+for a subtraction) are `-0.0`; any other exact zero is `+0.0`. A result that underflows keeps
+Azurite's sign. -/
+def checkF64Fused4 (name : String) (sub : Bool) (f : Float → Float → Float → Float → Float)
+    (g : AzFloat → AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+    (line : String) : Verdict := do
+  let (args, res) ← expect s!"a `{name}(x, y, z, w) = r` line" (functionCall line name)
+  let strs ← match args with
+    | [x, y, z, w] => pure [x, y, z, w]
+    | _ => fail s!"{name} takes four arguments"
+  let vs ← strs.mapM fun t => expect "operand" (parsePrimitiveFloat binary64 t)
+  let (x, y, z, w) ← match vs with
+    | [x, y, z, w] => pure (x, y, z, w)
+    | _ => fail "four operands"
+  let printed ← expect "r" (parsePrimitiveFloat binary64 res)
+  let r := f (AzFloat.toFloat64 x) (AzFloat.toFloat64 y) (AzFloat.toFloat64 z) (AzFloat.toFloat64 w)
+  let computed := AzFloat.ofFloat64 r
+  expectSameFloat name computed printed
+  if computed == .zero then
+    let negs := (vs.zip strs).map fun (v, t) =>
+      isNegativeZeroString t || AzFloat.partialCompare v .zero == some .lt
+    let (nx, ny, nz, nw) := match negs with
+      | [a, b, c, d] => (a, b, c, d)
+      | _ => (false, false, false, false)
+    let exactZero := g x y z w 53 .Nearest == (.zero, .eq)
+    let expected :=
+      if !exactZero then isNegZeroFloat r
+      else if (x == .zero || y == .zero) && (z == .zero || w == .zero) then
+        let p1 := nx != ny
+        let p2 := nz != nw
+        p1 && (if sub then !p2 else p2)
+      else false
+    if expected != isNegativeZeroString res then
+      disagree s!"{name}: the zero should be {if expected then "-0.0" else "0.0"}"
+
+def checkF64MulAddMul : String → Verdict :=
+  checkF64Fused4 "primitive_float_mul_add_mul" false AzFloat.mulAddMulFloat64
+    AzFloat.mulAddMulPrecRound
+
+def checkF64MulSubMul : String → Verdict :=
+  checkF64Fused4 "primitive_float_mul_sub_mul" true AzFloat.mulSubMulFloat64
+    AzFloat.mulSubMulPrecRound
 
 end Azurite.Oracle
