@@ -3918,6 +3918,24 @@ Files: `AzFloat/LnBracket.lean`, `AzFloat/Ln.lean`, `AzFloat/Equiv/LnBracket.lea
   constants structure, for a rarer use.  Untimed: the gain is the `ln2 + π` (power-of-two path)
   or `ln b` (one more `ln` run, so about half of each call) share of every call.
 
+* **Sasaki–Kanada (§4.8.4) — analysed and skipped (2026-11-08).**  The second AGM algorithm
+  `ln x = (π/4)/AGM(θ₂²(q⁴), θ₃²(q⁴))`, `q = 1/x`, `x ≥ 2^(w/36)` (theory complete in
+  `SecondAGMLog.lean`) would start the AGM from the ratio `≈ 4q² ≈ 2^(−w/18)` instead of
+  `4/y ≈ 2^(−w/2)`.  Counting with the proven step bounds at `w = 20064`: approach phase
+  `2⌈lg 2h⌉ + 1` drops from `29` (`h ≈ w/4`) to `23` (`h' ≈ w/36`), but the quadratic phase from a
+  gap of `2^(−2h') ≈ 2^(−1117)` needs `5` squarings to pass `2^(−w)` instead of `2`, so `28` AGM
+  steps instead of `31`; the start-up costs `q = 1/y` (a division) and `q², q⁴, q⁸, q⁹, q¹⁶, q²⁵,
+  θ₂², θ₃²` (about eight products) against the `k = 4/y` division of the first algorithm.  With an
+  AGM step at `≈ 0.83` ms and a product at `≈ 0.15–0.2` ms (20000 bits), the net gain is
+  `≈ 0.5–1` ms of `25.7` ms — about `3 %` of the AGM path, which only runs above
+  `lnSeriesThreshold = 2048`.  MCA's own assessment ("at best `O(1)` iterations saved") agrees.
+  The implementation would need directed-rounding evaluation of the two θ series with two-sided
+  bounds, the inexact-start argument (`AGM(θ²_hi) ≤ (1 + ε) AGM(θ²_lo)` by homogeneity) and a new
+  quadratic-phase iteration lemma (`+5` steps from the `(θ₂², θ₃²)` start) — about the size of the
+  Machin-`π` job for a `3 %` return, so it was not done.  Should the AGM path ever matter again, the
+  per-step cost (`sqrt` ≈ `0.54` ms of the `0.83` ms step at 20000 bits) is the place to look, not
+  the step count.
+
 ## `ln` of a rational for `AzFloat` (DONE 2026-10-19, fuel-free)
 
 Files: `AzFloat/LnRat.lean`, `AzFloat/Equiv/LnRat.lean`, `AzFloat/Tests/LnRat.lean`; the bracket
