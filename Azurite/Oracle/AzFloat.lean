@@ -58,6 +58,9 @@ import Azurite.AzFloat.LogBasePow2P1
 import Azurite.AzFloat.LogBase
 import Azurite.AzFloat.LogBaseRat
 import Azurite.AzFloat.LogBaseP1
+import Azurite.AzFloat.LogBaseFloat
+import Azurite.AzFloat.LogBaseFloatP1
+import Azurite.AzFloat.LogBaseRatFloat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1081,10 +1084,12 @@ shapes: `(x).{name}(a…) = r`, `(x).{name}_prec[_round][_ref](a…, p[, rm]) = 
 `(x).{name}_round[_ref](a…, rm) = (r, o)`, and the assignments
 `x := x; x.{name}[…]_assign(a…, …) = o; x = r` (or with no `= o`). Only the tags `prec`, `round`,
 `ref`, and `assign` may follow the name, so `ln` does not match `ln_1_plus_x`. The precision
-defaults to `x`'s and the mode to `Nearest`. -/
+defaults to `x`'s and the mode to `Nearest`. A method named in `aliases` (such as the trait
+method `log_base` for `log_base_float_base`) is read as `name` with no tags. -/
 def checkFloatUnaryArgsWith {α : Type} (name : String) (n : Nat)
     (parseLead : List String → Option α)
-    (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
+    (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String)
+    (aliases : List String := []) : Verdict := do
   let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
       match line.splitOn "; " with
       | [a, b, c] =>
@@ -1100,6 +1105,7 @@ def checkFloatUnaryArgsWith {α : Type} (name : String) (n : Nat)
       let call := dropChars rest 1
       let some (args, _) := splitParenthesized call | fail "not a method call"
       pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
+  let method := if aliases.contains method then name else method
   if !(method == name || method.startsWith s!"{name}_") then fail s!"not a {name} line"
   let tags := ((dropChars method name.length).splitOn "_").filter (· != "")
   if !tags.all (fun t => ["prec", "round", "ref", "assign"].contains t) then
@@ -1222,6 +1228,31 @@ def checkFloatLogBase1PlusX : String → Verdict :=
 `AzFloat.logBaseRatPrecRound`. -/
 def checkFloatLogBaseRational : String → Verdict :=
   checkFloatOfRationalArgsWith "log_base_rational" 1 parseLogBase AzFloat.logBaseRatPrecRound
+
+/-- A single `Float` argument, possibly printed by reference. -/
+def parseFloatArg : List String → Option AzFloat
+  | [b] => (parseFloat (stripRef b)).map (·.1)
+  | _ => none
+
+/-- `Float`'s `log_base_float_base` family and the trait method `log_base` with a `Float` base,
+against `AzFloat.logBaseFloatPrecRound`. Malachite gives `log_b 1` the sign of `1 / ln b`, where
+Azurite, with no signed zero, gives `0`; the sign of a zero result is not compared. -/
+def checkFloatLogBaseFloatBase (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "log_base_float_base" 1 parseFloatArg
+    (fun x b => AzFloat.logBaseFloatPrecRound x b) line ["log_base"]
+
+/-- `Float`'s `log_base_float_base_1_plus_x` family and the trait method `log_base_1_plus_x` with
+a `Float` base, against `AzFloat.logBaseFloatP1PrecRound`; the sign of a zero result is not
+compared. -/
+def checkFloatLogBaseFloatBase1PlusX (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "log_base_float_base_1_plus_x" 1 parseFloatArg
+    (fun x b => AzFloat.logBaseFloatP1PrecRound x b) line ["log_base_1_plus_x"]
+
+/-- `Float::log_base_rational_float_base_prec[_round](q, b, p[, rm]) = (r, o)`, against
+`AzFloat.logBaseRatFloatPrecRound`. -/
+def checkFloatLogBaseRationalFloatBase : String → Verdict :=
+  checkFloatOfRationalArgsWith "log_base_rational_float_base" 1 parseFloatArg
+    AzFloat.logBaseRatFloatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

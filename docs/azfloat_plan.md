@@ -6084,8 +6084,30 @@ User request: "implement sine for AzFloat.  Take extreme inputs into account."
 Gotchas: `sinBracket_spec` and the rewritten `cosBracket_spec` need
 `set_option maxHeartbeats 800000`; `2lo < 8` for `|s/8| ≤ 1` needs `Real.pi_lt_d2`, not
 `π ≤ 4`; the smallness `E₂ ≤ 1/128` needs `2^(−w−12) ≤ 2^(−20)`, not `≤ 1/4096`.
-Not done: `sinRat`, `sinWithPeriod`, `sinPi` (the Niven file serves them through
+Not done: `sinWithPeriod`, `sinPi` (the Niven file serves them through
 `sin (2πr) = cos (2π(1/4 − r))`), `tan`, a combined `sinCos`.
+
+## `sin q` for a rational `q` (DONE 2026-11-10, fuel-free)
+
+`AzFloat/SinRatBracket.lean`, `SinRat.lean`, `Equiv/SinRatBracket.lean`, `Equiv/SinRat.lean`,
+`Tests/SinRat.lean`: `sinRatPrecRound q p mode`, `sinRat q p`;
+`sinRatPrecRound_eq : = roundVal p mode (Spec.sin q)`.
+
+* Bracket: `eq = ratExpBound q`, `W = cosWork eq w`, floats `⌊q⌋_W ≤ q ≤ ⌈q⌉_W`, centre `c` the
+  one nearer zero (same sign as `q`, so no case split on the sign of the centre);
+  `sinBracket c eq w` encloses `sin |c|` and `|sin |q| − sin |c|| ≤ |q − c| ≤ E` with
+  `E = ⌈⌈q⌉_W − ⌊q⌋_W⌉₆₄` widens it (`IsEnclW.widen0`); width
+  `sinRatEps q w = sinEps eq w + (8·2^eq + 24)·2^(−W)`.  `sinRatApprox` negates and swaps the
+  ends for `q < 0` (`sin_toRat_eq`).
+* Tiny path (`|q| < 2^e`, `e ≤ −(p + 72)`): `sinTinyCore?` tests
+  `−sin |q| ∈ (−|q|, ⌈⌈−|q|⌉ + 2^(3e)⌉]` with `−|q|` as the rounding procedure of the rational
+  `negAbsRat q` at the open end; one `roundingPossible` call, no `π`, no series.
+* Totality: `irrational_sin_rat` (every nonzero rational), certified Ziv loop.
+* Timings (interpreter, 53 bits): `1/3` 22 ms, `884279719003555/2^48` (near `π`) 20 ms,
+  `3·2^1000/7` 55 ms.  Tiny `q = 1/(3·2^k)`: 68 ms at `k = 20000`, 0.67 s at `k = 10^5` — all
+  of it in `ofAzRatRound` (`AzRat.scaledRound` forms `2^s` by `pow` and a full `divRound`;
+  ≈ quadratic in the size of the denominator).  A shift-based base-2 path in `ofAzRatRound`
+  would make every rational-argument function linear there (not done).
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 

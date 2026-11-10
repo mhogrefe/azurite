@@ -95,6 +95,7 @@ import Azurite.AzFloat.Tests.Rem
 import Azurite.AzFloat.Tests.RoundToInteger
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sin
+import Azurite.AzFloat.Tests.SinRat
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum
