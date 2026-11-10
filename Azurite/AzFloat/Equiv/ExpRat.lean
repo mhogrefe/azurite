@@ -27,7 +27,12 @@ theorem expRatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMode
   split_ifs with hp h0
   · exact absurd hp (NeZero.ne p)
   · rw [(AzRat.toRat_eq_zero_iff q).mpr h0, Real.exp_zero, setPrecRound_eq_roundVal toVal_one']
-  · exact zivLoopCertified_eq_threshold p mode _ (Real.exp (AzRat.toRat q : ℝ)) _
+  · split
+    · next r hT =>
+      exact expNearOne?_eq (abs_toRat_lt_ratTinyExp q)
+        (fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h)))
+        (toRat_sign_iff q h0) hT
+    exact zivLoopCertified_eq_threshold p mode _ (Real.exp (AzRat.toRat q : ℝ)) _
       (by unfold zivGuardBits; omega)
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=

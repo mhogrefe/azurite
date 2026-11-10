@@ -54,6 +54,14 @@ theorem powBaseM1RatPrecRound_eq (u : UInt64) (q : AzRat) (p : ℕ) [NeZero p]
     · rw [dite_eq_right hq0, dite_eq_right (NeZero.ne p)]
       have hu2 : 2 ≤ (AzNat.ofNat u.toNat).toNat := by rw [AzNat.toNat_ofNat]; omega
       split
+      · next r' hT =>
+        obtain ⟨c, d, hc, hd, hc0, hc1, hd1, -⟩ := lnBaseBracket_spec
+          (w := p + zivGuardBits + 8) (by unfold zivGuardBits; omega) u (by omega)
+        rw [Real.rpow_def_of_pos (by exact_mod_cast (by omega : 0 < u.toNat)), mul_comm]
+        exact expM1TinyRat?_eq hc hd (by linarith) hc1 hd1
+          (abs_mul_log_nat_lt (u := u.toNat) (by omega) u.toBitVec.isLt
+            (abs_toRat_lt_ratTinyExp q)) hT
+      split
       · rename_i r n hx
         obtain ⟨hr, hval⟩ := powBaseRatExact?_some q _ hu2 hx
         rw [AzNat.toNat_ofNat] at hval

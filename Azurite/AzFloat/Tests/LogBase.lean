@@ -97,3 +97,9 @@ private def ref374 : AzRat :=
 #guard logBasePrecRoundWith (LogBaseConsts.forPrecision 10 53) (F "7" 53) 53 .Floor
   == logBasePrecRound (F "7" 53) 10 53 .Floor
 #guard logBaseWith (LogBaseConsts.make 10 1) (F "7" 53) == logBase (F "7" 53) 10
+
+-- huge integers with a base that is not a power of two: the exactness test rejects them by the
+-- valuation guard of `AzNat.checkedLogBase` (no power of the base is computed)
+private def bigX : AzFloat := (F "1" 53) <<< AzInt.ofInt (2 ^ 30)
+#guard L bigX 10 53 == (F "5422874305198591/16777216" 53, .gt)
+#guard L ((F "3" 53) <<< AzInt.ofInt (2 ^ 30)) 6 53 == (F "3484460322160875/8388608" 53, .lt)

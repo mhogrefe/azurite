@@ -37,7 +37,20 @@ theorem pow2RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMod
         = (((if q.sign then (q.num.toNat : ℤ) else -(q.num.toNat : ℤ)) : ℤ) : ℝ) := by
       rw [AzRat.toRat_cast_eq, hd, Nat.cast_one, div_one]
     rw [hval, Real.rpow_intCast]
-  · exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ (AzRat.toRat q : ℝ)) _
+  · split
+    · next r hT =>
+      have h0 : q.num ≠ 0 := by
+        intro h
+        have hz : AzRat.toRat q = 0 := by exact_mod_cast (AzRat.toRat_eq_zero_iff q).mpr h
+        have hd1 : (AzRat.toRat q).den = 1 := by rw [hz]; rfl
+        exact hd hd1
+      have hq0 : (AzRat.toRat q : ℝ) ≠ 0 :=
+        fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp (by exact_mod_cast h))
+      rw [two_rpow_eq_exp]
+      exact expNearOne?_eq (abs_mul_log_two_lt (abs_toRat_lt_ratTinyExp q))
+        (mul_ne_zero hq0 (Real.log_pos one_lt_two).ne')
+        ((toRat_sign_iff q h0).trans (mul_log_two_pos_iff _).symm) hT
+    exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ (AzRat.toRat q : ℝ)) _
       (by unfold zivGuardBits; omega)
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=

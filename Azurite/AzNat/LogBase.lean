@@ -70,12 +70,24 @@ test. -/
 def checkedLogBaseCore (b n : AzNat) : Option Nat :=
   (floorLogBase b n).bind fun e => if b.pow e = n then some e else none
 
+/-- A cheap sufficient test that `n` is not a power of `b` from the 2-adic valuations
+`tb = v₂(b)`, `tn = v₂(n)` and the bit lengths: if `n = b^e` then `tn = e · tb` and
+`(size b − 1) e < size n ≤ size b · e + 1`.  It catches `n = m 2^t` with a huge `t` (an odd
+base, or an even base whose power with that many factors `2` would be much longer). -/
+def valuationGuard (b n : AzNat) : Bool :=
+  let tb := b.trailingZeros.getD 0
+  let tn := n.trailingZeros.getD 0
+  if tb = 0 then decide (tn ≠ 0)
+  else
+    decide (tn % tb ≠ 0 ∨
+      ¬ ((b.size - 1) * (tn / tb) < n.size ∧ n.size ≤ b.size * (tn / tb) + 1))
+
 /-- A cheap sufficient test that `n` is not a power of `b`: `v₂(n − 1) + 3 > 2 size b +
-size (size n)`.  (If `n = b^e` then `v₂(b^e − 1) + 3 ≤ 2 size b + size e` by lifting the
-exponent, and `e < size n`.)  It catches `n = m 2^t + 1` with a huge `t`, where computing a
-power of `b` of the size of `n` would be very expensive. -/
+size (size n)`, or `valuationGuard`.  (If `n = b^e` then `v₂(b^e − 1) + 3 ≤ 2 size b + size e`
+by lifting the exponent, and `e < size n`.)  It catches `n = m 2^t + 1` and `n = m 2^t` with a
+huge `t`, where computing a power of `b` of the size of `n` would be very expensive. -/
 def notPowGuard (b n : AzNat) : Bool :=
-  decide (2 * b.size + n.size.size < (n - 1).trailingZeros.getD 0 + 3)
+  valuationGuard b n || decide (2 * b.size + n.size.size < (n - 1).trailingZeros.getD 0 + 3)
 
 /-- `some e` if `n = b^e`, `none` otherwise (and for `b ≤ 1`). -/
 def checkedLogBase (b n : AzNat) : Option Nat :=

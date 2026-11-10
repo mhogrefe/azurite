@@ -181,6 +181,55 @@ theorem lambertWm1Neg_eq (xAt : ℕ → AzFloat × AzFloat) (h : NegTarget xAt) 
 
 /-! ### The float drivers -/
 
+/-- The tiny-argument path of `W₀` answers with the rounding of `W₀ x`. -/
+theorem lambertW0Tiny?_eq {nx : Roundable} {nxHi : AzFloat} {e : AzInt} {w p : ℕ} [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {xv h : ℝ} (hR : Rounds nx (-xv))
+    (hH : nxHi.toVal = some (h : EReal)) (hh : -xv ≤ h) (hx0 : xv ≠ 0)
+    (hlt : |xv| < (2 : ℝ) ^ e.toInt) (hT : lambertW0Tiny? nx nxHi e w p mode = some r) :
+    r = roundVal p mode (Spec.lambertW0 (xv : EReal)) := by
+  unfold lambertW0Tiny? at hT
+  split_ifs at hT with hc
+  obtain ⟨hs, he⟩ := hc
+  obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp hT
+  have : NeZero (w + 8) := ⟨by omega⟩
+  have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
+  set t := (2 : ℝ) ^ e.toInt with ht
+  have ht0 : 0 < t := by positivity
+  have ht8 : t ≤ 1 / 8 := by
+    rw [ht, htoInt, hs]
+    simp only [Bool.false_eq_true, ↓reduceIte]
+    rw [zpow_neg, zpow_natCast, ← one_div, ← one_div_pow]
+    calc (1 / 2 : ℝ) ^ e.abs.toNat ≤ (1 / 2 : ℝ) ^ 3 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 8 := by norm_num
+  have hx8 : |xv| ≤ 1 / 8 := by linarith
+  obtain ⟨hlo, hhi⟩ := Azurite.LambertW.lambertW0_tiny_bounds hx0 hx8
+  have hdom : -Real.exp (-1) ≤ xv := by
+    have he3 : Real.exp 1 < 3 := lt_trans Real.exp_one_lt_d9 (by norm_num)
+    have : (1 : ℝ) / 3 < Real.exp (-1) := by
+      rw [Real.exp_neg, ← one_div]
+      exact one_div_lt_one_div_of_lt (Real.exp_pos 1) he3
+    have := (abs_le.mp hx8).1
+    linarith
+  rw [Spec.lambertW0_coe_of_le hdom]
+  have hd : (((one <<< e) <<< e) <<< AzInt.ofInt 2).toVal
+      = some ((1 * t * t * (2 : ℝ) ^ (2 : ℤ) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal (toVal_shiftLeft_of_toVal
+      (toVal_shiftLeft_of_toVal toVal_one' e) e), AzInt.toInt_ofInt]
+  obtain ⟨hi, hhi', hhi1, -⟩ := addCeiling_abs hH hd (w + 8)
+  have hsq : xv ^ 2 ≤ t * t := by
+    rw [← sq_abs, sq]
+    exact mul_le_mul hlt.le hlt.le (abs_nonneg xv) ht0.le
+  have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi')
+  rw [fval_of_toVal_coe hhi'] at hR2
+  have hr := roundingPossible_eq' p (-mode) (v := -Azurite.DLMF.lambertW0 xv) hR hR2
+    (by linarith) (by norm_num at hhi1; nlinarith)
+    (Or.inl fun hEq => absurd hEq (by linarith)) hr'
+  rw [hr]
+  have hneg := roundVal_neg p mode (-Azurite.DLMF.lambertW0 xv)
+  rw [neg_neg] at hneg
+  exact hneg.symm
+
 /-- **`W₀` is correctly rounded.** -/
 theorem lambertW0PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
     lambertW0PrecRound x p mode = liftVal Spec.lambertW0 x p mode := by
@@ -200,6 +249,14 @@ theorem lambertW0PrecRound_eq (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roundin
       Azurite.DLMF.lambertW0_zero, EReal.coe_zero, roundVal_zero]
   | finite s e q m hv =>
     simp only [lambertW0PrecRound, toVal_finite, Option.bind_some, dite_eq_right hp]
+    split
+    · next r hT =>
+      have hnx : (-(finite s e q m hv)).toVal = some ((-finiteVal s e m : ℝ) : EReal) := by
+        rw [toVal_neg, toVal_finite, Option.map_some, EReal.coe_neg]
+      have hR := rounds_setPrecRound (isFinite_of_toVal_coe hnx)
+      rw [fval_of_toVal_coe hnx] at hR
+      exact lambertW0Tiny?_eq hR hnx le_rfl (finiteVal_ne_zero s e hv)
+        (abs_finiteVal_bounds s e hv).2 hT
     by_cases hs : s = true
     · rw [dite_eq_left hs]
       subst hs
@@ -253,6 +310,20 @@ theorem lambertW0RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
       Spec.lambertW0_coe_of_le (by linarith [Real.exp_pos (-1)]), Azurite.DLMF.lambertW0_zero,
       EReal.coe_zero, roundVal_zero]
   · rw [dite_eq_right h0, dite_eq_right hp]
+    split
+    · next r hT =>
+      have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
+      have hneg : ((AzRat.toRat (-q) : ℚ) : ℝ) = -((AzRat.toRat q : ℚ) : ℝ) := by
+        rw [AzRat.toRat_neg]; push_cast; rfl
+      have hR : Rounds (fun P M => ofAzRatRound (-q) P M) (-((AzRat.toRat q : ℚ) : ℝ)) := by
+        intro P _ M
+        show ofAzRatRound (-q) P M = _
+        rw [ofAzRatRound_eq_roundVal, hneg]
+      obtain ⟨c, hc, hc1, -⟩ := ofAzRatRound_ceiling_abs (-q) (p + zivGuardBits + 8)
+      rw [hneg] at hc1
+      refine lambertW0Tiny?_eq hR hc hc1 (coe_toRat_ne_zero_of_num_ne_zero q h0)
+        (lt_of_lt_of_le (abs_toRat_lt_two_zpow q) ?_) hT
+      exact zpow_le_zpow_right₀ (by norm_num) (by omega)
     by_cases hs : q.sign = true
     · rw [dite_eq_left hs]
       refine (lambertW0Pos_eq _ _ (ratAt_encl q) ⟨_, rfl⟩ (toRat_pos_real q hs h0) p mode).trans ?_

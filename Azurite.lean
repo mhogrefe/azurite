@@ -93,6 +93,7 @@ import Azurite.AzFloat.Equiv.ExpBracket
 import Azurite.AzFloat.Equiv.ExpConstants
 import Azurite.AzFloat.Equiv.ExpM1
 import Azurite.AzFloat.Equiv.ExpM1Rat
+import Azurite.AzFloat.Equiv.ExpM1Tiny
 import Azurite.AzFloat.Equiv.ExpRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
@@ -191,6 +192,7 @@ import Azurite.AzFloat.ExpBracket
 import Azurite.AzFloat.ExpConstants
 import Azurite.AzFloat.ExpM1
 import Azurite.AzFloat.ExpM1Rat
+import Azurite.AzFloat.ExpM1Tiny
 import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate

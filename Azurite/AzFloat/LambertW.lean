@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.PowRatBracket
 import Azurite.AzFloat.Equiv.LambertWBracket
 
 /-!
@@ -73,6 +74,10 @@ def lambertW0PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat �
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
+      match lambertW0Tiny? (fun P M => setPrecRound (-(finite s e q m hv)) P M)
+        (-(finite s e q m hv)) e (max p q + zivGuardBits) p mode with
+      | some r => r
+      | none =>
       if hs : s = true then
         lambertW0Pos (floatAt (finite s e q m hv)) ⟨_, floatAt_encl (toVal_finite s e q m hv),
           finiteVal_rat s e hv, by subst hs; exact finiteVal_true_pos e hv⟩ p mode
@@ -105,6 +110,11 @@ def lambertW0RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat 
   else if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
+    match lambertW0Tiny? (fun P M => ofAzRatRound (-q) P M)
+      (ofAzRatRound (-q) (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) (p + zivGuardBits)
+      p mode with
+    | some r => r
+    | none =>
     if hs : q.sign = true then
       lambertW0Pos (ratAt q) ⟨_, ratAt_encl q, ⟨_, rfl⟩, toRat_pos_real q hs h0⟩ p mode
     else

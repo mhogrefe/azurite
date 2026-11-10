@@ -43,6 +43,9 @@ def powBasePrecRound (u : UInt64) (x : AzFloat) (p : Nat) (mode : RoundingMode) 
     else if h1 : u.toNat = 1 then setPrecRound one p mode
     else
       haveI : NeZero p := ⟨hp⟩
+      match expNearOne? s (nearOneExp e 64) p mode with
+      | some r => r
+      | none =>
       match hx : powBaseExact? (finite s e q m hv) (AzNat.ofNat u.toNat) with
       | some (r, n) => natPowOrZiv r n p mode
       | none =>

@@ -95,3 +95,19 @@ private def ninf : AzFloat := infinity false
 #guard P (F "10" 53) "-401/6" 53 == powBaseRatPrecRound 10 (Q "-401/6") 53 .Nearest
 #guard toString (powRat (F "2" 200) (Q "1/3") 200)
   == "1.259921049894873164767210607278228350570251464701507980081975"
+
+-- a tiny rational argument (`±1/(3·2^1000)`): the value is `1 ± tiny`
+private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
+private def aboveOne : AzFloat := F "4503599627370497/4503599627370496" 53
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard powRatPrecRound (F "3" 53) tinyQ 53 .Nearest == (F "1" 53, .lt)
+#guard powRatPrecRound (F "3" 53) tinyQ 53 .Floor == (F "1" 53, .lt)
+#guard powRatPrecRound (F "3" 53) tinyQ 53 .Ceiling == (aboveOne, .gt)
+#guard powRatPrecRound (F "3" 53) (-tinyQ) 53 .Nearest == (F "1" 53, .gt)
+#guard powRatPrecRound (F "3" 53) (-tinyQ) 53 .Floor == (belowOne, .lt)
+#guard powRatPrecRound (F "3" 53) (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)
+#guard powRatPrecRound (F "1/3" 53) tinyQ 53 .Nearest == (F "1" 53, .gt)
+-- a huge base: `(3·2^(3N))^(1/3) = ∛3 · 2^N`, `N = 2^28`
+#guard powRatPrecRound ((F "3" 53) <<< AzInt.ofInt (3 * 2 ^ 28)) (Q "1/3") 53 .Nearest
+  == ((powRatPrecRound (F "3" 53) (Q "1/3") 53 .Nearest).1 <<< AzInt.ofInt (2 ^ 28),
+    (powRatPrecRound (F "3" 53) (Q "1/3") 53 .Nearest).2)

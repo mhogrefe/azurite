@@ -173,3 +173,16 @@ private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-200))
 #guard partialCompare (E 7 (F "5/8" 53) 60 .Floor).1 (E 7 (F "5/8" 53) 60 .Ceiling).1 == some .lt
 #guard partialCompare (E 7 (F "-5/8" 53) 60 .Floor).1 (E 7 (F "-5/8" 53) 60 .Ceiling).1
   == some .lt
+
+-- tiny arguments: `b^x − 1 ≈ x ln b` is rounded from a bracket at `p + 72` bits whatever the
+-- exponent; the result at `2^(−2^30)` is that at `2^(−100)` (the ordinary path) rescaled
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def x100 : AzFloat := (F "1" 53) <<< AzInt.ofInt (-100)
+private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
+  (r.1 <<< (tinyE + AzInt.ofInt 100), r.2)
+#guard powBaseM1PrecRound 10 tinyX 53 .Nearest
+  == rescale (powBaseM1PrecRound 10 x100 53 .Nearest)
+#guard powBaseM1PrecRound 10 (-tinyX) 53 .Floor
+  == rescale (powBaseM1PrecRound 10 (-x100) 53 .Floor)
+#guard powBaseM1PrecRound 3 tinyX 80 .Ceiling == rescale (powBaseM1PrecRound 3 x100 80 .Ceiling)

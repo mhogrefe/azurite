@@ -56,6 +56,10 @@ def powRatPrecRound (x : AzFloat) (q : AzRat) (p : Nat) (mode : RoundingMode) :
           powIntOrZiv sx ex qx mx hvx (AzInt.mkNorm q.sign q.num) (mkNorm_ne_zero hq0) p mode
         else if hsx : sx = false then (nan, .eq)
         else
+          match expNearOne? (q.sign == lt one (finite sx ex qx mx hvx))
+            (nearOneExp (ratTinyExp q) (ex.abs.toNat + 1)) p mode with
+          | some r => r
+          | none =>
           match hex : powRatExact? ex mx q with
           | some (z, N) =>
             match z with

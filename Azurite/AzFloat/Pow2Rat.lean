@@ -28,6 +28,9 @@ def pow2RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
   else if hd : q.den.toNat = 1 then setPrecRound (powerOf2 (AzInt.mkNorm q.sign q.num)) p mode
   else
     haveI : NeZero p := ⟨hp⟩
+    match expNearOne? q.sign (ratTinyExp q) p mode with
+    | some r => r
+    | none =>
     zivLoopCertified (pow2RatApprox q) p mode (p + zivGuardBits)
       (pow2RatApprox_isSome_exists p mode q hd (p + zivGuardBits) (by unfold zivGuardBits; omega))
 

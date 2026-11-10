@@ -37,24 +37,6 @@ namespace Azurite.AzFloat
 
 /-! ### Comparisons -/
 
-theorem lt_eq_true_iff {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hy : y.toVal = some (yv : EReal)) : lt x y = true ↔ xv < yv := by
-  unfold lt
-  rw [partialCompare_eq, hx, hy]
-  simp only [beq_iff_eq, Option.some.injEq]
-  rw [compare_lt_iff_lt, EReal.coe_lt_coe_iff]
-
-theorem le_eq_true_iff {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hy : y.toVal = some (yv : EReal)) : le x y = true ↔ xv ≤ yv := by
-  unfold le
-  rw [partialCompare_eq, hx, hy]
-  simp only [bne_iff_ne, ne_eq, Option.some.injEq, reduceCtorEq, not_false_eq_true,
-    and_true, Bool.and_eq_true]
-  rw [← not_lt]
-  constructor
-  · intro h hlt; exact h (compare_gt_iff_gt.mpr (EReal.coe_lt_coe_iff.mpr hlt))
-  · intro h hc; exact h (EReal.coe_lt_coe_iff.mp (compare_gt_iff_gt.mp hc))
-
 theorem toVal_zero' : zero.toVal = some ((0 : ℝ) : EReal) := by rw [toVal_zero, EReal.coe_zero]
 
 /-! ### The target -/

@@ -322,6 +322,22 @@ theorem ratPowPrecRound_eq (q : AzRat) (y : AzFloat) (p : ℕ) [NeZero p] (mode 
             have hqdiv : qv = (q.num.toNat : ℝ) / q.den.toNat := by
               rw [hqv]; exact coe_toRat_eq_div_pos q hs
             split
+            · next r' hT =>
+              have hnum1 : 1 ≤ q.num.toNat := AzRat.num_toNat_pos q hq0
+              have hden1 : 1 ≤ q.den.toNat := AzRat.den_toNat_pos q
+              have hdenR : (0 : ℝ) < q.den.toNat := by exact_mod_cast hden1
+              have hlogb : |Real.log qv| ≤ ((q.num.size + q.den.size : ℕ) : ℝ) := by
+                rw [hqdiv]
+                have := abs_log_div_le hnum1 hden1
+                rw [AzNat.size_toNat, AzNat.size_toNat] at this
+                exact_mod_cast this
+              have hgt : decide (q.den.toNat < q.num.toNat) = true ↔ 1 < qv := by
+                rw [decide_eq_true_iff, hqdiv, one_lt_div hdenR]
+                exact Nat.cast_lt.symm
+              refine expNearOne?_rpow_eq hqpos (fun h => hx1 (by rw [h]; rfl)) hlogb
+                (abs_finiteVal_bounds sy ey hvy).2 (finiteVal_ne_zero sy ey hvy)
+                (finiteVal_sign_iff sy ey hvy) hgt hT
+            split
             · rename_i u v N hex
               have h := ratPowExact?_some hq0 q.den_nz
                 ((AzNat.coprime_iff _ _).mp q.reduced) sy ey hvy (Bool.eq_false_iff.mpr hi) hex

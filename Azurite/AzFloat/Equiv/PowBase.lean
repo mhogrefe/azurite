@@ -87,6 +87,10 @@ theorem powBasePrecRound_eq_liftVal (u : UInt64) (x : AzFloat) (p : ℕ) [NeZero
     · rw [dite_eq_right h1]
       have hu2 : 2 ≤ (AzNat.ofNat u.toNat).toNat := by rw [AzNat.toNat_ofNat]; omega
       split
+      · next r' hT =>
+        exact expNearOne?_natBase_eq (by omega) u.toBitVec.isLt (abs_finiteVal_bounds s e hv).2
+          (finiteVal_ne_zero s e hv) (finiteVal_sign_iff s e hv) hT
+      split
       · rename_i r n hx
         obtain ⟨hr, hval⟩ := powBaseExact?_some _ _ hu2 (toVal_finite s e q m hv) hx
         rw [AzNat.toNat_ofNat] at hval

@@ -12,6 +12,7 @@ import Azurite.AzFloat.Equiv.ExpBracket
 import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzNat.Equiv.LogBase2
+import Azurite.AzFloat.Equiv.NegRound
 
 /-!
 # Equivalence: the bracket of `exp x`
@@ -1636,5 +1637,253 @@ theorem expOfBracket_spec_width {X : AzFloat × AzFloat} {lo hi v : ℝ}
       mul_le_mul_of_nonneg_left hEv hδ0
     have hEvu : Real.exp lo * u ≤ Real.exp v * u := mul_le_mul_of_nonneg_right hEv hu0.le
     nlinarith
+
+/-! ### The tiny-exponent path -/
+
+/-- `expNearOne?` answers only for `E ≤ −(p + 72)`: then `2^E ≤ 1/2`. -/
+theorem expNearOne?_cond {pos : Bool} {E : AzInt} {p : ℕ} {mode : RoundingMode}
+    {r : AzFloat × Ordering} (h : expNearOne? pos E p mode = some r) :
+    (2 : ℝ) ^ E.toInt ≤ 1 / 2 := by
+  unfold expNearOne? at h
+  dsimp only at h
+  split_ifs at h with hc
+  all_goals
+    obtain ⟨hs, he⟩ := hc
+    have htoInt : E.toInt = if E.sign then (E.abs.toNat : ℤ) else -(E.abs.toNat : ℤ) := rfl
+    rw [htoInt, hs]
+    simp only [Bool.false_eq_true, ↓reduceIte]
+    rw [zpow_neg, zpow_natCast, ← one_div, ← one_div_pow]
+    calc (1 / 2 : ℝ) ^ E.abs.toNat ≤ (1 / 2 : ℝ) ^ 1 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by unfold zivGuardBits at he; omega)
+      _ = 1 / 2 := by norm_num
+
+/-- The value of `−1`. -/
+theorem toVal_neg_one_float : (-one).toVal = some ((-1 : ℝ) : EReal) := by
+  rw [toVal_neg, toVal_one', Option.map_some, EReal.coe_neg]
+
+/-- The tiny-exponent path answers with the rounding of `exp v`, for any `v ≠ 0` with
+`|v| < 2^E` whose sign is `pos`. -/
+theorem expNearOne?_eq {pos : Bool} {E : AzInt} {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} {v : ℝ} (hv : |v| < (2 : ℝ) ^ E.toInt) (hv0 : v ≠ 0)
+    (hpos : pos = true ↔ 0 < v) (h : expNearOne? pos E p mode = some r) :
+    r = roundVal p mode (some ((Real.exp v : ℝ) : EReal)) := by
+  have ht2 := expNearOne?_cond h
+  unfold expNearOne? at h
+  dsimp only at h
+  have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
+  set t := (2 : ℝ) ^ E.toInt with ht
+  have ht0 : 0 < t := by positivity
+  have hd : (one <<< (E + AzInt.ofInt 1)).toVal = some ((1 * (2 * t) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal toVal_one', AzInt.toInt_add, AzInt.toInt_ofInt,
+      zpow_add₀ two_ne_zero, zpow_one, mul_comm ((2 : ℝ) ^ E.toInt) 2]
+  obtain ⟨hv1, hv2⟩ := abs_lt.mp hv
+  split_ifs at h with hc hp
+  · -- `v > 0`
+    have hvpos : 0 < v := hpos.mp hp
+    obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs toVal_one' hd (p + zivGuardBits + 8)
+    have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe toVal_one')
+    rw [fval_of_toVal_coe toVal_one'] at hR1
+    have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR2
+    have hlt : 1 < Real.exp v := by
+      have := Real.add_one_lt_exp hv0; linarith
+    have hle := exp_le_one_add_two_mul hvpos.le (by linarith)
+    exact roundingPossible_eq' p mode hR1 hR2 hlt.le (by linarith)
+      (Or.inl fun hEq => absurd hEq hlt.ne) h
+  · -- `v < 0`
+    have hvneg : v < 0 := by
+      rcases lt_or_gt_of_ne hv0 with h' | h'
+      · exact h'
+      · exact absurd (hpos.mpr h') hp
+    obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
+    obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs toVal_neg_one_float hd (p + zivGuardBits + 8)
+    have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe toVal_neg_one_float)
+    rw [fval_of_toVal_coe toVal_neg_one_float] at hR1
+    have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR2
+    have hlt : Real.exp v < 1 := by
+      have := Real.exp_lt_exp.mpr hvneg
+      rwa [Real.exp_zero] at this
+    have hge := Real.add_one_le_exp v
+    have hr := roundingPossible_eq' p (-mode) (v := -Real.exp v) hR1 hR2 (by linarith)
+      (by linarith) (Or.inl fun hEq => absurd hEq (by linarith)) hr'
+    rw [hr]
+    have hneg := roundVal_neg p mode (-Real.exp v)
+    rw [neg_neg] at hneg
+    exact hneg.symm
+
+/-- The sign of a finite float is the sign of its value. -/
+theorem finiteVal_sign_iff (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    s = true ↔ 0 < finiteVal s e m := by
+  have hpos := finiteVal_true_pos e hv
+  cases s
+  · have h : finiteVal false e m = -finiteVal true e m := by unfold finiteVal; simp
+    simp only [Bool.false_eq_true, false_iff, not_lt]
+    linarith
+  · simp only [true_iff]
+    exact hpos
+
+/-- `|q| < 2^(ratTinyExp q)`. -/
+theorem abs_toRat_lt_ratTinyExp (q : AzRat) :
+    |(AzRat.toRat q : ℝ)| < (2 : ℝ) ^ (ratTinyExp q).toInt := by
+  have hden : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
+  have hE : (ratTinyExp q).toInt = (q.num.size : ℤ) + 1 - q.den.size := by
+    unfold ratTinyExp
+    rw [AzInt.toInt_sub, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat]
+    push_cast
+    ring
+  have habs : |(AzRat.toRat q : ℝ)| = (q.num.toNat : ℝ) / q.den.toNat := by
+    rw [AzRat.toRat_cast_eq, abs_div, abs_of_pos hden]
+    congr 1
+    split_ifs
+    · rw [abs_of_nonneg (by positivity)]; push_cast; rfl
+    · push_cast; rw [abs_neg, abs_of_nonneg (by positivity)]
+  have h1 : (q.num.toNat : ℝ) < (2 : ℝ) ^ q.num.size := by
+    have := Nat.lt_size_self q.num.toNat
+    rw [AzNat.size_toNat] at this
+    exact_mod_cast this
+  have hdpos : 0 < q.den.size := by
+    rw [← AzNat.size_toNat]
+    exact Nat.size_pos.mpr (AzRat.den_toNat_pos q)
+  have h2 : (2 : ℝ) ^ (q.den.size - 1) ≤ q.den.toNat := by
+    have : q.den.size - 1 < q.den.toNat.size := by rw [AzNat.size_toNat]; omega
+    exact_mod_cast Nat.lt_size.mp this
+  rw [habs, hE, div_lt_iff₀ hden]
+  have e : (2 : ℝ) ^ ((q.num.size : ℤ) + 1 - q.den.size)
+      = (2 : ℝ) ^ q.num.size * 2 / (2 : ℝ) ^ q.den.size := by
+    rw [zpow_sub₀ two_ne_zero, zpow_add₀ two_ne_zero, zpow_natCast, zpow_natCast, zpow_one]
+  have e2 : (2 : ℝ) ^ q.den.size = 2 * (2 : ℝ) ^ (q.den.size - 1) := by
+    rw [← pow_succ']; congr 1; omega
+  rw [e, e2, div_mul_eq_mul_div, lt_div_iff₀ (by positivity)]
+  have h2pos : (0 : ℝ) < (2 : ℝ) ^ (q.den.size - 1) := by positivity
+  nlinarith [mul_lt_mul_of_pos_right h1 h2pos, mul_le_mul_of_nonneg_left h2
+    (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ q.num.size)]
+
+/-- The sign of a nonzero rational is the sign of its value. -/
+theorem toRat_sign_iff (q : AzRat) (h0 : q.num ≠ 0) :
+    q.sign = true ↔ 0 < (AzRat.toRat q : ℝ) := by
+  have hden : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
+  have hnum : (0 : ℝ) < q.num.toNat := by
+    have : q.num.toNat ≠ 0 := fun h => h0 (AzNat.toNat_injective (by rw [h, AzNat.toNat_zero]))
+    exact_mod_cast Nat.pos_of_ne_zero this
+  rw [AzRat.toRat_cast_eq]
+  cases q.sign
+  · simp only [Bool.false_eq_true, ↓reduceIte, false_iff, not_lt]
+    push_cast
+    exact div_nonpos_of_nonpos_of_nonneg (by linarith) hden.le
+  · simp only [↓reduceIte, true_iff]
+    push_cast
+    exact div_pos hnum hden
+
+theorem abs_mul_log_two_lt {x t : ℝ} (h : |x| < t) : |x * Real.log 2| < t := by
+  have hl0 := Real.log_pos one_lt_two
+  have hl1 : Real.log 2 < 1 := by
+    have := Real.log_two_lt_d9; linarith
+  rw [abs_mul, abs_of_pos hl0]
+  nlinarith [abs_nonneg x]
+
+theorem mul_log_two_pos_iff (x : ℝ) : 0 < x * Real.log 2 ↔ 0 < x :=
+  mul_pos_iff_of_pos_right (Real.log_pos one_lt_two)
+
+/-- `|e| = e.abs` as reals. -/
+theorem abs_toInt_cast (e : AzInt) : |(e.toInt : ℝ)| = (e.abs.toNat : ℝ) := by
+  have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
+  rw [htoInt]
+  split_ifs
+  · push_cast; exact abs_of_nonneg (by positivity)
+  · push_cast; rw [abs_neg]; exact abs_of_nonneg (by positivity)
+
+/-- **The tiny-exponent path for a power** `B^y`: `B > 0`, `B ≠ 1`, `|ln B| ≤ N`, `|y| < 2^Ey`,
+`y ≠ 0`, with the sign of `y` and the side of `B` relative to `1` as Booleans. -/
+theorem expNearOne?_rpow_eq {sy b : Bool} {Ey : AzInt} {N : ℕ} {p : ℕ} [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {B y : ℝ} (hB : 0 < B) (hB1 : B ≠ 1)
+    (hlog : |Real.log B| ≤ N) (hy : |y| < (2 : ℝ) ^ Ey.toInt) (hy0 : y ≠ 0)
+    (hsy : sy = true ↔ 0 < y) (hb : b = true ↔ 1 < B)
+    (h : expNearOne? (sy == b) (nearOneExp Ey N) p mode = some r) :
+    r = roundVal p mode (some ((B ^ y : ℝ) : EReal)) := by
+  rw [Real.rpow_def_of_pos hB]
+  have hl0 : Real.log B ≠ 0 := by
+    intro h0
+    rcases Real.log_eq_zero.mp h0 with h' | h' | h'
+    · linarith
+    · exact hB1 h'
+    · linarith
+  have hE : (nearOneExp Ey N).toInt = Ey.toInt + N.size := by
+    unfold nearOneExp
+    rw [AzInt.toInt_add, toInt_toAzInt, AzNat.toNat_ofNat]
+  have hN : (N : ℝ) < (2 : ℝ) ^ N.size := by exact_mod_cast Nat.lt_size_self N
+  refine expNearOne?_eq ?_ (mul_ne_zero hl0 hy0) ?_ h
+  · rw [hE, zpow_add₀ two_ne_zero, zpow_natCast, abs_mul, mul_comm]
+    have h2 : (0 : ℝ) < (2 : ℝ) ^ Ey.toInt := by positivity
+    calc |y| * |Real.log B| ≤ |y| * N := mul_le_mul_of_nonneg_left hlog (abs_nonneg y)
+      _ ≤ (2 : ℝ) ^ Ey.toInt * N := mul_le_mul_of_nonneg_right hy.le (Nat.cast_nonneg N)
+      _ < (2 : ℝ) ^ Ey.toInt * (2 : ℝ) ^ N.size := mul_lt_mul_of_pos_left hN h2
+  · rw [beq_iff_eq, Bool.eq_iff_iff, hsy, hb]
+    have hlog1 : 0 < Real.log B ↔ 1 < B := Real.log_pos_iff hB.le
+    constructor
+    · intro hiff
+      rcases lt_or_gt_of_ne hy0 with hyn | hyp
+      · have hB' : ¬ 1 < B := fun h1 => absurd (hiff.mpr h1) (not_lt.mpr hyn.le)
+        have : Real.log B < 0 :=
+          lt_of_le_of_ne (not_lt.mp fun h => hB' (hlog1.mp h)) hl0
+        exact mul_pos_of_neg_of_neg this hyn
+      · exact mul_pos (hlog1.mpr (hiff.mp hyp)) hyp
+    · intro hpos
+      rcases lt_or_gt_of_ne hy0 with hyn | hyp
+      · have hl : Real.log B < 0 := by
+          by_contra hcon
+          have := mul_nonpos_of_nonneg_of_nonpos (not_lt.mp hcon) hyn.le
+          linarith
+        exact ⟨fun h => absurd h (not_lt.mpr hyn.le),
+          fun h => absurd (hlog1.mpr h) (not_lt.mpr hl.le)⟩
+      · have hl : 0 < Real.log B := by
+          by_contra hcon
+          have := mul_nonpos_of_nonpos_of_nonneg (not_lt.mp hcon) hyp.le
+          linarith
+        exact ⟨fun _ => hlog1.mp hl, fun _ => hyp⟩
+
+/-- The tiny-exponent path for a natural base `2 ≤ u < 2^64`. -/
+theorem expNearOne?_natBase_eq {s : Bool} {Ey : AzInt} {p : ℕ} [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {u : ℕ} {y : ℝ} (hu2 : 2 ≤ u)
+    (hu : u < 2 ^ 64) (hy : |y| < (2 : ℝ) ^ Ey.toInt) (hy0 : y ≠ 0) (hsy : s = true ↔ 0 < y)
+    (h : expNearOne? s (nearOneExp Ey 64) p mode = some r) :
+    r = roundVal p mode (some (((u : ℝ) ^ y : ℝ) : EReal)) := by
+  have hu1 : (1 : ℝ) < u := by exact_mod_cast (by omega : 1 < u)
+  have hlog : |Real.log (u : ℝ)| ≤ ((64 : ℕ) : ℝ) := by
+    rw [abs_of_pos (Real.log_pos hu1)]
+    have h1 : Real.log (u : ℝ) ≤ Real.log ((2 : ℝ) ^ 64) :=
+      Real.log_le_log (by linarith) (by exact_mod_cast hu.le)
+    rw [Real.log_pow] at h1
+    have := Real.log_two_lt_d9
+    push_cast at h1 ⊢
+    nlinarith
+  refine expNearOne?_rpow_eq (sy := s) (b := true) (by linarith) hu1.ne' hlog hy hy0 hsy
+    (by simp [hu1]) ?_
+  have hb : (s == true) = s := by cases s <;> rfl
+  rw [hb]
+  exact h
+
+/-- `|y ln u| < 2^(nearOneExp Ey 64)` for a natural `2 ≤ u < 2^64` and `|y| < 2^Ey`. -/
+theorem abs_mul_log_nat_lt {u : ℕ} (hu2 : 2 ≤ u) (hu : u < 2 ^ 64) {y : ℝ} {Ey : AzInt}
+    (hy : |y| < (2 : ℝ) ^ Ey.toInt) :
+    |y * Real.log (u : ℝ)| < (2 : ℝ) ^ (nearOneExp Ey 64).toInt := by
+  have hu1 : (1 : ℝ) < u := by exact_mod_cast (by omega : 1 < u)
+  have hl0 := Real.log_pos hu1
+  have hl : Real.log (u : ℝ) ≤ 64 := by
+    have h1 : Real.log (u : ℝ) ≤ Real.log ((2 : ℝ) ^ 64) :=
+      Real.log_le_log (by linarith) (by exact_mod_cast hu.le)
+    rw [Real.log_pow] at h1
+    have := Real.log_two_lt_d9
+    push_cast at h1
+    nlinarith
+  have hE : (nearOneExp Ey 64).toInt = Ey.toInt + 7 := by
+    unfold nearOneExp
+    rw [AzInt.toInt_add, toInt_toAzInt, AzNat.toNat_ofNat]
+    rfl
+  have h2 : (0 : ℝ) < (2 : ℝ) ^ Ey.toInt := by positivity
+  rw [hE, zpow_add₀ two_ne_zero, abs_mul, abs_of_pos hl0]
+  have : (2 : ℝ) ^ (7 : ℤ) = 128 := by norm_num
+  rw [this]
+  nlinarith [abs_nonneg y]
 
 end Azurite.AzFloat

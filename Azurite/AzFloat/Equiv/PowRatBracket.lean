@@ -100,9 +100,7 @@ theorem tendsto_powRatEps (q : AzRat) (eb : AzInt) :
 theorem powRatEps_le_one (q : AzRat) (eb : AzInt) {w : ℕ} (hw : powRatW₀ q eb ≤ w) :
     powRatEps q eb w ≤ 1 := by
   unfold powRatW₀ at hw
-  have hwZ : 88 + max (ratExpBound q).toInt 0 + |eb.toInt| ≤ (w : ℤ) := by
-    rw [← powW₀_eq]; exact_mod_cast (show powW₀ (ratExpBound q) eb ≤ w by omega)
-  have h1 := mulLnEps_le_inv256 _ _ _ hwZ
+  have h1 := powW₀_spec (ratExpBound q) eb (show powW₀ (ratExpBound q) eb ≤ w by omega)
   have h2 : (2 : ℝ) ^ (eb.abs + 1).size * (1 / 2 : ℝ) ^ w ≤ 1 / 2 := by
     have : (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ ((eb.abs + 1).size + 1) :=
       pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)

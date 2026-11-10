@@ -125,3 +125,31 @@ private def aboveBranch (p : Nat) : AzFloat := F "-6627126856707895/180143985094
 #guard lambertWm1Float (F "-1/4" 53) == (Wm (F "-1/4" 53) 53).1
 #guard toString (lambertW0Float (F "1" 200))
   == "0.567143290409783872999968662210355549753815787186512508135131"
+
+-- tiny arguments of `W₀` (`W₀ x = x − x² + ⋯`): rounded by one test, at a cost independent of
+-- the exponent (the Ziv loop would need about `|e|` bits to see the side of `x`)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def third200 : AzFloat := (F "1/3" 53) <<< AzInt.ofInt (-200)
+#guard W0 tinyX 53 == (tinyX, .gt)
+#guard W0 tinyX 53 .Ceiling == (tinyX, .gt)
+#guard (W0 tinyX 53 .Floor).2 == .lt
+#guard (W0 tinyX 53 .Floor).1 != tinyX
+#guard W0 (-tinyX) 53 .Ceiling == (-tinyX, .gt)
+#guard (W0 (-tinyX) 53).2 == .gt
+#guard W0 ((F "3/2" 100) <<< tinyE) 53 == ((F "3/2" 53) <<< tinyE, .gt)
+#guard lambertW0Float tinyX == tinyX
+#guard W0 third200 53 == (third200, .gt)
+#guard W0 third200 53 .Floor
+  == ((F "1501199875790165/4503599627370496" 53) <<< AzInt.ofInt (-200), .lt)
+#guard W0 (-third200) 53 == (-third200, .gt)
+#guard W0 (-third200) 53 .Floor
+  == ((F "-3002399751580331/9007199254740992" 53) <<< AzInt.ofInt (-200), .lt)
+
+-- huge arguments of `W₀` and arguments of `W₋₁` near `0⁻`, far outside the `Float` range
+-- (references: the root of `w + ln |w| = ln |x|` at 80 digits)
+#guard W0 ((F "1" 53) <<< AzInt.ofInt (2 ^ 30)) 53 == (F "6243314596803693/8388608" 53, .lt)
+#guard W0 ((F "1" 53) <<< AzInt.ofInt (2 ^ 62)) 53 == (F "3196577161300663808" 53, .lt)
+#guard Wm ((F "-1" 53) <<< tinyE) 53 == (F "-3121657469763513/4194304" 53, .lt)
+#guard Wm ((F "-1" 53) <<< AzInt.ofInt (-(2 ^ 62 : Int))) 53
+  == (F "-3196577161300663808" 53, .gt)

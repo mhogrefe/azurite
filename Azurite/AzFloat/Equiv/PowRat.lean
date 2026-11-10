@@ -176,6 +176,14 @@ theorem powRatPrecRound_eq (x : AzFloat) (q : AzRat) (p : ℕ) [NeZero p] (mode 
             have hxp : 0 < xv := finiteVal_true_pos ex hvx
             rw [ite_eq_left (Or.inl (hxpos.mpr hxp))]
             split
+            · next r hT =>
+              refine expNearOne?_rpow_eq hxp (fun h => hx1 (by rw [h]; rfl))
+                ((abs_log_finiteVal_le ex hvx).trans
+                  (by rw [abs_toInt_cast]; push_cast; exact le_rfl))
+                (abs_toRat_lt_ratTinyExp q)
+                (fun h => hq0 ((AzRat.toRat_eq_zero_iff q).mp h)) (toRat_sign_iff q hq0)
+                (lt_eq_true_iff toVal_one' (toVal_finite true ex qx mx hvx)) hT
+            split
             · rename_i z N hex
               obtain ⟨zv, hzv, hzpos, hval, hN0⟩ := powRatExact?_some ex hvx q hq0 hex
               obtain ⟨ez, qz, mz, hvz, rfl, hzval⟩ := eq_finite_true_of_toVal_pos hzv hzpos

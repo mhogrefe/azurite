@@ -72,7 +72,13 @@ theorem pow2PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roun
     split_ifs with hi
     · rw [setPrecRound_eq_roundVal (toVal_powerOf2 _), ← truncToAzInt_of_isInteger s e hv hi,
         Real.rpow_intCast]
-    · exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ finiteVal s e m) _
+    · split
+      · next r hT =>
+        rw [two_rpow_eq_exp]
+        exact expNearOne?_eq (abs_mul_log_two_lt (abs_finiteVal_bounds s e hv).2)
+          (mul_ne_zero (finiteVal_ne_zero s e hv) (Real.log_pos one_lt_two).ne')
+          ((finiteVal_sign_iff s e hv).trans (mul_log_two_pos_iff _).symm) hT
+      exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ finiteVal s e m) _
         (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=

@@ -144,3 +144,15 @@ private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-200))
 -- agreement with `2^x − 1` at a higher precision
 #guard (E (F "7/4" 53) 100).1
   == (subPrecRound (pow2PrecRound (F "7/4" 53) 300 .Nearest).1 one 100 .Nearest).1
+
+-- tiny arguments: `b^x − 1 ≈ x ln b` is rounded from a bracket at `p + 72` bits whatever the
+-- exponent; the result at `2^(−2^30)` is that at `2^(−100)` (the ordinary path) rescaled
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def x100 : AzFloat := (F "1" 53) <<< AzInt.ofInt (-100)
+private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
+  (r.1 <<< (tinyE + AzInt.ofInt 100), r.2)
+#guard pow2M1PrecRound tinyX 53 .Nearest == rescale (pow2M1PrecRound x100 53 .Nearest)
+#guard pow2M1PrecRound tinyX 53 .Floor == rescale (pow2M1PrecRound x100 53 .Floor)
+#guard pow2M1PrecRound (-tinyX) 53 .Ceiling == rescale (pow2M1PrecRound (-x100) 53 .Ceiling)
+#guard pow2M1PrecRound (-tinyX) 80 .Nearest == rescale (pow2M1PrecRound (-x100) 80 .Nearest)

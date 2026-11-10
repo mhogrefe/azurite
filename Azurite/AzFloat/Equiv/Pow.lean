@@ -486,6 +486,14 @@ theorem powPrecRound_eq (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMod
             have hxp : 0 < xv := finiteVal_true_pos ex hvx
             rw [ite_eq_left (Or.inl (hxpos.mpr hxp))]
             split
+            · next r hT =>
+              refine expNearOne?_rpow_eq hxp (fun h => hx1 (by rw [h]; rfl))
+                ((abs_log_finiteVal_le ex hvx).trans
+                  (by rw [abs_toInt_cast]; push_cast; exact le_rfl))
+                (abs_finiteVal_bounds sy ey hvy).2 (finiteVal_ne_zero sy ey hvy)
+                (finiteVal_sign_iff sy ey hvy)
+                (lt_eq_true_iff toVal_one' (toVal_finite true ex qx mx hvx)) hT
+            split
             · rename_i z N hex
               obtain ⟨zv, hzv, hzpos, hval, hN0⟩ :=
                 powExact?_some ex hvx sy ey hvy (Bool.eq_false_iff.mpr hi) hex

@@ -534,4 +534,49 @@ theorem irrational_lambertWm1 {x : ℚ} (hx1 : -exp (-1) ≤ (x : ℝ)) (hx0 : (
     Irrational (lambertWm1 x) :=
   irrational_of_mul_exp_eq (by exact_mod_cast hx0.ne) (lambertWm1_spec hx1 hx0).2
 
+/-- **Tiny arguments**: `x − 4x² ≤ W₀ x < x` for `0 < |x| ≤ 1/8`. -/
+theorem lambertW0_tiny_bounds {x : ℝ} (hx0 : x ≠ 0) (hx : |x| ≤ 1 / 8) :
+    x - 4 * x ^ 2 ≤ lambertW0 x ∧ lambertW0 x < x := by
+  obtain ⟨hx1, hx2⟩ := abs_le.mp hx
+  have he3 : exp 1 < 3 := lt_trans exp_one_lt_d9 (by norm_num)
+  have hem : (1 : ℝ) / 3 < exp (-1) := by
+    rw [exp_neg, ← one_div]
+    exact one_div_lt_one_div_of_lt (exp_pos 1) he3
+  have hdom : -exp (-1) ≤ x := by linarith
+  obtain ⟨hW1, hWx⟩ := lambertW0_spec hdom
+  set W := lambertW0 x with hW
+  rcases lt_or_gt_of_ne hx0 with hneg | hpos
+  · -- `x < 0`
+    have hW0 : W < 0 := lambertW0_neg hdom hneg
+    have hE1 : exp W < 1 := by
+      have := exp_lt_exp.mpr hW0
+      rwa [exp_zero] at this
+    have hE0 := exp_pos W
+    have hEge : 1 + W ≤ exp W := by linarith [add_one_le_exp W]
+    have hWhalf : -1 / 2 < W := by
+      by_contra hcon
+      push Not at hcon
+      have hEm : exp (-1) ≤ exp W := exp_le_exp.mpr hW1
+      nlinarith
+    refine ⟨?_, by nlinarith⟩
+    rw [← hWx]
+    have hE2 : (1 : ℝ) / 2 < exp W := by linarith
+    have h4 : 1 ≤ 4 * exp W ^ 2 := by nlinarith
+    nlinarith [mul_nonneg (sq_nonneg W) (sub_nonneg.mpr h4),
+      mul_nonneg (neg_nonneg.mpr hW0.le) (sub_nonneg.mpr hEge)]
+  · -- `x > 0`
+    have h1 := div_one_add_le_lambertW0 hpos.le
+    have h2 := lambertW0_le_self hpos.le
+    have hWpos : 0 ≤ W := lambertW0_nonneg hpos.le
+    refine ⟨le_trans ?_ h1, lt_of_le_of_ne h2 ?_⟩
+    · rw [le_div_iff₀ (by linarith)]
+      nlinarith [sq_nonneg x, mul_pos hpos (mul_pos hpos hpos)]
+    · intro heq
+      rw [heq] at hWx
+      have : exp x = 1 := by
+        have := mul_left_cancel₀ hpos.ne' (hWx.trans (mul_one x).symm)
+        exact this
+      have : x = 0 := by rwa [exp_eq_one_iff] at this
+      exact hx0 this
+
 end Azurite.LambertW

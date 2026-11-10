@@ -250,12 +250,35 @@ theorem lnMulBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteVali
       · rw [abs_mul]; exact mul_le_mul_of_nonneg_left hdabs hya0
       · rw [hay]; linarith
 
-/-- `powW₀ ey eb` as an integer. -/
-theorem powW₀_eq (ey eb : AzInt) :
-    ((powW₀ ey eb : ℕ) : ℤ) = 88 + max ey.toInt 0 + |eb.toInt| := by
-  unfold powW₀
-  rw [Nat.cast_add, Nat.cast_add, expPos_eq_max, AzInt.abs_toNat_eq]
-  norm_num
+/-- From `powW₀ ey eb` bits on, the width bound of the bracket of `y ln b` is below `1/256`. -/
+theorem powW₀_spec (ey eb : AzInt) {w : ℕ} (hw : powW₀ ey eb ≤ w) :
+    mulLnEps ey.toInt eb.toInt w ≤ 1 / 256 := by
+  unfold powW₀ at hw
+  have hmax : (((if ey.sign then ey.abs.toNat else 0 : ℕ) : ℕ) : ℤ) = max ey.toInt 0 :=
+    expPos_eq_max ey
+  have habs : ((eb.abs.toNat : ℕ) : ℤ) = |eb.toInt| := AzInt.abs_toNat_eq eb
+  rcases le_total (88 + eb.abs.toNat) (110 + 6 * (eb.abs.toNat + 24).size) with hc | hc
+  · rw [min_eq_left hc] at hw
+    refine mulLnEps_le_inv256 _ _ w ?_
+    have h : (((if ey.sign then ey.abs.toNat else 0) + (88 + eb.abs.toNat) : ℕ) : ℤ) ≤ (w : ℤ) := by
+      exact_mod_cast hw
+    push_cast at h
+    rw [← hmax, ← habs]
+    push_cast
+    omega
+  · rw [min_eq_right hc] at hw
+    refine mulLnEps_le_inv256_of_size _ _ w (eb.abs.toNat + 24).size ?_ ?_
+    · have h := Nat.lt_size_self (eb.abs.toNat + 24)
+      have h' : ((eb.abs.toNat + 24 : ℕ) : ℤ) ≤ (2 : ℤ) ^ (eb.abs.toNat + 24).size := by
+        exact_mod_cast h.le
+      rw [Nat.cast_add, habs] at h'
+      exact_mod_cast h'
+    · have h : (((if ey.sign then ey.abs.toNat else 0)
+          + (110 + 6 * (eb.abs.toNat + 24).size) : ℕ) : ℤ) ≤ (w : ℤ) := by exact_mod_cast hw
+      push_cast at h
+      rw [← hmax]
+      push_cast
+      omega
 
 /-- `b^y = exp (y ln b)` for `b > 0`. -/
 theorem rpow_eq_exp_mul_log {b : ℝ} (hb : 0 < b) (yv : ℝ) :
@@ -273,9 +296,7 @@ theorem powBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid 
       hi - lo ≤ powBaseEps ey.toInt eb.toInt (yv * Real.log (finiteVal true eb mb)) w := by
   have hw64 : 64 ≤ w := by unfold powW₀ at hw; omega
   obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulBracket_spec eb hvb hy ey hye w hw64
-  have hwZ : 88 + max ey.toInt 0 + |eb.toInt| ≤ (w : ℤ) := by
-    rw [← powW₀_eq]; exact_mod_cast hw
-  have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
+  have hw1 : hi - lo ≤ 1 := hwid.trans ((powW₀_spec ey eb hw).trans (by norm_num))
   obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
   rw [rpow_eq_exp_mul_log (finiteVal_true_pos eb hvb)]
   refine ⟨a, b, ha, hb, ha1, hb1, ?_⟩

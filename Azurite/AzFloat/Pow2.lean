@@ -36,6 +36,9 @@ def pow2PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
       setPrecRound (powerOf2 (truncToAzInt (finite s e q m hv))) p mode
     else
       haveI : NeZero p := ⟨hp⟩
+      match expNearOne? s e p mode with
+      | some r => r
+      | none =>
       zivLoopCertified (pow2Approx (finite s e q m hv) e) p mode (p + zivGuardBits)
         (pow2Approx_isSome_exists p mode s e hv hi (p + zivGuardBits)
           (by unfold zivGuardBits; omega))

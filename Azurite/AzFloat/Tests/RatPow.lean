@@ -90,3 +90,17 @@ private def ninf : AzFloat := infinity false
 #guard P "3" (F "7/4" 53) 53 == powPrecRound (F "3" 53) (F "7/4" 53) 53 .Nearest
 #guard P "3/2" (F "5/4" 53) 53 .Floor == powPrecRound (F "3/2" 53) (F "5/4" 53) 53 .Floor
 #guard P "3/2" (F "-11/4" 53) 53 == powPrecRound (F "3/2" 53) (F "-11/4" 53) 53 .Nearest
+
+-- tiny arguments: the value is `1 ± tiny`, with the boundary `1` next to it; one test decides
+-- the rounding at a cost independent of the exponent (the Ziv loop needed about `|e|` bits)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def aboveOne : AzFloat := F "4503599627370497/4503599627370496" 53
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard ratPowPrecRound (Q "7/3") tinyX 53 .Nearest == (F "1" 53, .lt)
+#guard ratPowPrecRound (Q "7/3") tinyX 53 .Floor == (F "1" 53, .lt)
+#guard ratPowPrecRound (Q "7/3") tinyX 53 .Ceiling == (aboveOne, .gt)
+#guard ratPowPrecRound (Q "7/3") (-tinyX) 53 .Nearest == (F "1" 53, .gt)
+#guard ratPowPrecRound (Q "7/3") (-tinyX) 53 .Floor == (belowOne, .lt)
+#guard ratPowPrecRound (Q "7/3") (-tinyX) 53 .Ceiling == (F "1" 53, .gt)
+#guard ratPowPrecRound (Q "3/7") tinyX 53 .Nearest == (F "1" 53, .gt)

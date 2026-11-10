@@ -49,6 +49,12 @@ theorem powBaseRatPrecRound_eq (u : UInt64) (q : AzRat) (p : ℕ) [NeZero p]
   · rw [dite_eq_right h1]
     have hu2 : 2 ≤ (AzNat.ofNat u.toNat).toNat := by rw [AzNat.toNat_ofNat]; omega
     split
+    · next r' hT =>
+      unfold ratNearOne? at hT
+      split_ifs at hT with hq0
+      exact expNearOne?_natBase_eq (by omega) u.toBitVec.isLt (abs_toRat_lt_ratTinyExp q)
+        (fun h => hq0 ((AzRat.toRat_eq_zero_iff q).mp h)) (toRat_sign_iff q hq0) hT
+    split
     · rename_i r n hx
       obtain ⟨hr, hval⟩ := powBaseRatExact?_some q _ hu2 hx
       rw [AzNat.toNat_ofNat] at hval

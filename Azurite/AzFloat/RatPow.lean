@@ -92,6 +92,10 @@ def ratPowPrecRound (q : AzRat) (y : AzFloat) (p : Nat) (mode : RoundingMode) :
       else if hsq : q.sign = false then (nan, .eq)
       else
         have hs : q.sign = true := by revert hsq; cases q.sign <;> simp
+        match expNearOne? (sy == decide (q.den.toNat < q.num.toNat))
+          (nearOneExp ey (q.num.size + q.den.size)) p mode with
+        | some r => r
+        | none =>
         match hex : ratPowExact? q.num q.den sy ey my with
         | some (u, v, N) =>
           have h := ratPowExact?_some hq0 q.den_nz hcop sy ey hvy (Bool.eq_false_iff.mpr hi) hex

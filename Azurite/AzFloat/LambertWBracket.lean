@@ -258,6 +258,23 @@ def gridOf (branch0 : Bool) (I : AzFloat × AzFloat) : AzInt × AzInt × AzInt :
 def gridFloats (s : AzInt × AzInt × AzInt) : AzFloat × AzFloat :=
   (ofAzInt s.1 <<< s.2.2, ofAzInt s.2.1 <<< s.2.2)
 
+/-! ### Tiny arguments of `W₀` -/
+
+/-- **The tiny-argument path of `W₀`** for an argument `x` with `|x| < 2^e`, given by the
+rounding procedure `nx` of `−x` and a float `nxHi ≥ −x`: when `e ≤ −(w + 8)`, `−W₀ x` lies in
+`(−x, −x + 4x²]` (`W₀ x = x − x² + ⋯`), so it is rounded in the negated mode by the test of
+`roundingPossible` on `(−x, ⌈nxHi + 2^(2e+2)⌉_{w+8}]`, and the result is negated.  (As for
+`lnP1Tiny?`: the exact end `x`, usually a rounding boundary, must be at the open side, and the
+Ziv loop would need about `|e|` bits to see the side.)  `none` when the argument is not tiny or
+the test fails. -/
+def lambertW0Tiny? (nx : Roundable) (nxHi : AzFloat) (e : AzInt) (w p : Nat)
+    (mode : RoundingMode) : Option (AzFloat × Ordering) :=
+  if e.sign = false ∧ w + 8 ≤ e.abs.toNat then
+    let hi := (addPrecRound nxHi (((one <<< e) <<< e) <<< AzInt.ofInt 2) (w + 8) .Ceiling).1
+    (roundingPossible nx (fun P M => setPrecRound hi P M) p (-mode)).map
+      fun r => (-r.1, r.2.swap)
+  else none
+
 /-! ### The candidate (unverified) -/
 
 /-- One Halley step for `w e^w = x` at precision `P`. -/
@@ -309,6 +326,34 @@ def seedFloat (branch0 : Bool) (x : AzFloat) : Option AzFloat :=
     let w := halleyFloat xf 8 s
     if w.isFinite && !w.isNaN then some (ofFloat64 w) else none
 
+/-- One Newton step for `w + ln |w| = l` at precision `P`: `w − (w + ln |w| − l) · w/(w + 1)`. -/
+def logSeedStep (l w : AzFloat) (P : Nat) : AzFloat :=
+  let g := (subPrecRound (addPrecRound w (lnPrecRound w.abs P .Nearest).1 P .Nearest).1 l P
+    .Nearest).1
+  let c := (divPrecRound (mulPrecRound g w P .Nearest).1 (addPrecRound w one P .Nearest).1 P
+    .Nearest).1
+  (subPrecRound w c P .Nearest).1
+
+/-- A seed for arguments outside the `Float` range, from `l = ln |x|`.  A tiny argument of
+`W₀`: `x` itself (`W₀ x = x − x² + ⋯`).  A huge argument of `W₀`, or an argument of `W₋₁`
+near `0⁻`: the root of `w + ln |w| = l` (the equation `w eʷ = x` in logarithms) by four Newton
+steps from `l − ln |l|`, at `64` bits beyond the exponent of `l` (so that the absolute error
+of the seed is about `2^(−60)`: Halley's iteration on `w eʷ = x` itself moves only about `2`
+per step while `|w eʷ − x|` is not small against `|x|`, so a seed with an absolute error of
+order `1` — the midpoint of the a priori interval, or a 64-bit seed for `|w| ≈ 2^62` — does
+not converge within the few refinement steps). -/
+def logSeed (branch0 : Bool) (x : AzFloat) : Option AzFloat :=
+  let l₀ := (lnPrecRound x.abs 64 .Nearest).1
+  if branch0 && lt l₀ (-one) then some x
+  else if (branch0 && lt one l₀) || (!branch0 && lt l₀ (-one)) then
+    let P := 64 + (match l₀.exponent? with
+      | some e => if e.sign then e.abs.toNat else 0
+      | none => 0)
+    let l := (lnPrecRound x.abs P .Nearest).1
+    let w₀ := (subPrecRound l (lnPrecRound l.abs P .Nearest).1 P .Nearest).1
+    some (logSeedStep l (logSeedStep l (logSeedStep l (logSeedStep l w₀ P) P) P) P)
+  else none
+
 /-- The branch-point series seed `−1 + p − p²/3 + 11p³/72 − 43p⁴/540` with `p = ±√(2q)`. -/
 def seriesSeed (branch0 : Bool) (qlo : AzFloat) (P : Nat) : AzFloat :=
   let p0 := (sqrtPrecRound (qlo <<< AzInt.ofInt 1) P .Nearest).1
@@ -334,7 +379,8 @@ def clampInto (I : AzFloat × AzFloat) (n : AzFloat) : AzFloat :=
   | _ => I.1
 
 /-- The unverified candidate for `W` at working precision `W`: a seed (`Float`, the branch-point
-series when `q < 2^(−40)`, or the midpoint of `I₀`) refined by Halley's iteration. -/
+series when `q < 2^(−40)`, `logSeed` outside the `Float` range, or the midpoint of `I₀`)
+refined by Halley's iteration. -/
 def halleyCandidate (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
     (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat) (W : Nat) : AzFloat :=
   let loss := 2 * compBits qE + 16
@@ -350,7 +396,10 @@ def halleyCandidate (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
     else
       match seedFloat branch0 x with
       | some s => s
-      | none => (addPrecRound I₀.1 I₀.2 64 .Nearest).1 <<< AzInt.ofInt (-1)
+      | none =>
+        match logSeed branch0 x with
+        | some s => s
+        | none => (addPrecRound I₀.1 I₀.2 64 .Nearest).1 <<< AzInt.ofInt (-1)
   let P₀ := W / 2 ^ Nat.log2 (W / 64)
   let n := halleyRefine x (clampInto I₀ seed) P₀ W loss (W + 2)
   clampInto I₀ n

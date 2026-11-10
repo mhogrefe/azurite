@@ -96,3 +96,11 @@ private def ninf : AzFloat := infinity false
       ++ "803469022129495137770981046170581301261101496891396417650688") 200, .lt)
 #guard lambertW0Rat (Q "1/10") 53 == (W0 "1/10" 53).1
 #guard lambertWm1Rat (Q "-1/3") 53 == (Wm "-1/3" 53).1
+
+-- a tiny rational argument (`±1/(3·2^1000)`): the tiny path of `W₀`
+private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
+#guard (lambertW0RatPrecRound tinyQ 53 .Ceiling).1 == (ofAzRatRound tinyQ 53 .Ceiling).1
+#guard (lambertW0RatPrecRound tinyQ 53 .Ceiling).2 == .gt
+#guard (lambertW0RatPrecRound tinyQ 53 .Floor).1 == (ofAzRatRound tinyQ 53 .Floor).1
+#guard (lambertW0RatPrecRound (-tinyQ) 53 .Floor).2 == .lt
+#guard (lambertW0RatPrecRound (-tinyQ) 53 .Ceiling).1 == (ofAzRatRound (-tinyQ) 53 .Ceiling).1

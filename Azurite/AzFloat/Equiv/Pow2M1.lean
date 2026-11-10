@@ -66,7 +66,13 @@ theorem pow2M1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Ro
     · rw [subPrecRound_eq_liftVal₂, liftVal₂, toVal_powerOf2, toVal_one', Option.bind_some,
         Option.bind_some, Spec.sub, ← EReal.coe_neg, Spec.add_coe_coe,
         ← truncToAzInt_of_isInteger s e hv hi, Real.rpow_intCast, sub_eq_add_neg]
-    · exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ finiteVal s e m - 1) _
+    · split
+      · next r hT =>
+        obtain ⟨ll, lh, hLl, hLh, hl0, hl1, hl2⟩ := ln2Bracket_tiny_spec p
+        rw [two_rpow_eq_exp]
+        exact expM1TinyFloat?_eq hv hLl hLh hl0 hl1 hl2
+          (abs_mul_log_two_lt (abs_finiteVal_bounds s e hv).2) hT
+      exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ finiteVal s e m - 1) _
         (by unfold zivGuardBits; omega)
         (fun w hw => by
           obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=

@@ -24,8 +24,9 @@ import Azurite.AzNat.TrailingZeros
 bracket of `ln x` may have either sign or straddle `0`), and `powBracket` is `expOfBracket` of
 it.  `powApprox neg` gives the ends as `Roundable`s, negated and swapped when the result is to be
 negated (a negative base with an odd integer exponent).  The width bound of `lnMulBracket` is
-the `mulLnEps ey ex w` of the natural-base power, below `1` from `w ≥ powW₀ ey ex = 88 +
-max(ey, 0) + |ex|` on (`Equiv/PowBracket.lean`).
+the `mulLnEps ey ex w` of the natural-base power, below `1` from `w ≥ powW₀ ey ex = max(ey, 0)
++ min(88 + |ex|, 110 + 6 size(|ex| + 24))` on (`Equiv/PowBracket.lean`) — logarithmic in the
+exponent of the base, so that a huge or tiny base does not raise the starting precision.
 
 **Exact powers.**  For `x = m 2^t > 0` with `m` odd and a non-integer `y = N/2^J` (`N` odd,
 `J ≥ 1`), `x^y` is rational iff `2^J ∣ t` and `m = u^(2^J)` is a `2^J`-th power, and then
@@ -65,9 +66,12 @@ def powApprox (neg : Bool) (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt)
   else (fun p mode => setPrecRound r.1 p mode, fun p mode => setPrecRound r.2 p mode)
 
 /-- The precision from which the width bound of `lnMulBracket` is below `1`:
-`88 + max(ey, 0) + |eb|`. -/
+`max(ey, 0) + min(88 + |eb|, 110 + 6 size(|eb| + 24))` (the bound is a polynomial in `|eb|` times
+`2^(−w)`: the first threshold is the smaller one for ordinary bases, the second is logarithmic in
+`|eb|` and keeps a huge or tiny base from raising the starting precision). -/
 def powW₀ (ey eb : AzInt) : Nat :=
-  88 + (if ey.sign then ey.abs.toNat else 0) + eb.abs.toNat
+  (if ey.sign then ey.abs.toNat else 0)
+    + min (88 + eb.abs.toNat) (110 + 6 * (eb.abs.toNat + 24).size)
 
 /-- The starting precision of the Ziv loop for `x^y` at precision `p`. -/
 def powStart (ey eb : AzInt) (p : Nat) : Nat := max (p + zivGuardBits) (powW₀ ey eb)

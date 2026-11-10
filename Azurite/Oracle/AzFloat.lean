@@ -52,6 +52,9 @@ import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Log2P1
+import Azurite.AzFloat.LogBasePow2
+import Azurite.AzFloat.LogBasePow2Rat
+import Azurite.AzFloat.LogBasePow2P1
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -818,10 +821,12 @@ def checkFloatFromRational (line : String) : Verdict := do
     expectFloatPair "from_rational_prec" computed printed
   | _, _ => fail "not a from_rational line"
 
-/-- `Float::{name}_prec_round[_ref](q, p, rm) = (x, o)` and `Float::{name}_prec[_ref](q, p) = (x, o)`,
-functions of a `Rational` alone (the `_ref` forms print `&q`), against `f q p rm`. -/
-def checkFloatOfRational (name : String) (f : AzRat → Nat → RoundingMode → AzFloat × Ordering)
-    (line : String) : Verdict := do
+/-- `Float::{name}_prec_round[_ref](q, a…, p, rm) = (x, o)` and
+`Float::{name}_prec[_ref](q, a…, p) = (x, o)`, functions of a `Rational` and `n` further arguments
+(read by `parseLead`; the `_ref` forms print `&q`), against `f q a p rm`. -/
+def checkFloatOfRationalArgsWith {α : Type} (name : String) (n : Nat)
+    (parseLead : List String → Option α)
+    (f : AzRat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
   let pr := s!"Float::{name}_prec_round"
   let pl := s!"Float::{name}_prec"
   let (method, args, res) ←
@@ -830,17 +835,27 @@ def checkFloatOfRational (name : String) (f : AzRat → Nat → RoundingMode →
     | some (args, res), _, _, _ | _, some (args, res), _, _ => pure (pr, args, res)
     | _, _, some (args, res), _ | _, _, _, some (args, res) => pure (pl, args, res)
     | _, _, _, _ => fail s!"not a {name} line"
-  let (q, p, rm) ← match args with
-    | [q, p, rm] => pure (q, p, some rm)
-    | [q, p] => pure (q, p, none)
+  let (q, args) ← match args with
+    | q :: args => pure (q, args)
+    | [] => fail s!"{method}: unexpected arguments"
+  if args.length < n then fail s!"{method}: unexpected arguments"
+  let a ← expect "leading arguments" (parseLead (args.take n))
+  let (p, rm) ← match args.drop n with
+    | [p, rm] => pure (p, some rm)
+    | [p] => pure (p, none)
     | _ => fail s!"{method}: unexpected arguments"
   let q ← expect "q" (parseAzRat (stripRef q))
   let p ← expect "precision" (parseNat p)
   let rm ← match rm with
     | some rm => expect "rounding mode" (parseRounding rm)
     | none => pure (.mode .Nearest)
-  let computed ← roundedResult method (f q p) rm
+  let computed ← roundedResult method (f q a p) rm
   expectFloatPair method computed (← parseFloatPair res)
+
+/-- `checkFloatOfRationalArgsWith` with no arguments after `q`. -/
+def checkFloatOfRational (name : String) (f : AzRat → Nat → RoundingMode → AzFloat × Ordering) :
+    String → Verdict :=
+  checkFloatOfRationalArgsWith name 0 (fun _ => some ()) (fun q _ => f q)
 
 /-- `Float::sqrt_rational_prec_round(q, p, rm)`: `sqrtRatPrecRound`. -/
 def checkFloatSqrtRational : String → Verdict :=
@@ -868,6 +883,15 @@ def splitParenthesized (s : String) : Option (String × String) := Id.run do
           String.ofList (cs.drop (i + 1)))
     i := i + 1
   return none
+
+/-- The `o` of an assignment line `x := x₀; x.f(…) = o; x = r`, or `none` when the call returns
+nothing (`x.f(…); x = r`). -/
+def assignOrdering (line : String) : Option String :=
+  match line.splitOn "; " with
+  | [_, b, _] => match b.splitOn ") = " with
+    | [_, o] => some (trim o)
+    | _ => none
+  | _ => none
 
 /-- A `Float` fused operation `name` (`add_mul` or `sub_mul`) in any of the demos' shapes:
 `(x).method(y, z, …) = r` or `x := x; x.method(y, z, …); x = r`, where the method is `name`
@@ -918,7 +942,15 @@ def checkFloatFusedWith {α : Type} (name : String) (altName : String)
     | none => pure (.mode .Nearest)
   let computed ← roundedResult name (f x.1 y.1 z p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
-  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+  else
+    expectFloat method computed.1 (← expect "r" (parseFloat res))
+    match assignOrdering line with
+    | some o =>
+      let o ← expect "ordering" (parseOrdering o)
+      if computed.2 != o then
+        disagree s!"{method}: Azurite computed {orderingName computed.2}, Malachite printed \
+          {orderingName o}"
+    | none => pure ()
 
 /-! ### The arithmetic-geometric mean -/
 
@@ -997,7 +1029,15 @@ def checkFloatAgmWith {α : Type} (name : String) (parseY : String → Option α
     | none => pure (.mode .Nearest)
   let computed ← roundedResult method (f x.1 y p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
-  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+  else
+    expectFloat method computed.1 (← expect "r" (parseFloat res))
+    match assignOrdering line with
+    | some o =>
+      let o ← expect "ordering" (parseOrdering o)
+      if computed.2 != o then
+        disagree s!"{method}: Azurite computed {orderingName computed.2}, Malachite printed \
+          {orderingName o}"
+    | none => pure ()
 
 /-- `Float`'s `agm` family, against `AzFloat.agmPrecRound` (through `malachiteAgm`). -/
 def checkFloatAgm : String → Verdict :=
@@ -1033,13 +1073,15 @@ def checkFloatAgmRational (line : String) : Verdict := do
 
 /-! ### Logarithms -/
 
-/-- A unary operation in all of Malachite's shapes: `(x).{name}() = r`,
-`(x).{name}_prec[_round][_ref](p[, rm]) = (r, o)`, `(x).{name}_round[_ref](rm) = (r, o)`, and the
-assignments `x := x; x.{name}[…]_assign(…) = o; x = r` (or with no `= o`). Only the tags `prec`,
-`round`, `ref`, and `assign` may follow the name, so `ln` does not match `ln_1_plus_x`. The
-precision defaults to `x`'s and the mode to `Nearest`. -/
-def checkFloatUnaryWith (name : String) (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering)
-    (line : String) : Verdict := do
+/-- A unary operation with `n` leading arguments (read by `parseLead`) in all of Malachite's
+shapes: `(x).{name}(a…) = r`, `(x).{name}_prec[_round][_ref](a…, p[, rm]) = (r, o)`,
+`(x).{name}_round[_ref](a…, rm) = (r, o)`, and the assignments
+`x := x; x.{name}[…]_assign(a…, …) = o; x = r` (or with no `= o`). Only the tags `prec`, `round`,
+`ref`, and `assign` may follow the name, so `ln` does not match `ln_1_plus_x`. The precision
+defaults to `x`'s and the mode to `Nearest`. -/
+def checkFloatUnaryArgsWith {α : Type} (name : String) (n : Nat)
+    (parseLead : List String → Option α)
+    (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
   let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
       match line.splitOn "; " with
       | [a, b, c] =>
@@ -1061,7 +1103,10 @@ def checkFloatUnaryWith (name : String) (f : AzFloat → Nat → RoundingMode �
     fail s!"not a {name} line"
   let hasPrec := tags.contains "prec"
   let hasRound := tags.contains "round"
-  let (p, rm) ← match splitArgs args, hasPrec, hasRound with
+  let args := splitArgs args
+  if args.length < n then fail s!"{method}: wrong number of arguments"
+  let a ← expect "leading arguments" (parseLead (args.take n))
+  let (p, rm) ← match args.drop n, hasPrec, hasRound with
     | [p, rm], true, true => pure (some p, some rm)
     | [p], true, false => pure (some p, none)
     | [rm], false, true => pure (none, some rm)
@@ -1074,9 +1119,28 @@ def checkFloatUnaryWith (name : String) (f : AzFloat → Nat → RoundingMode �
   let rm ← match rm with
     | some rm => expect "rounding mode" (parseRounding rm)
     | none => pure (.mode .Nearest)
-  let computed ← roundedResult method (f x.1 p) rm
+  let computed ← roundedResult method (f x.1 a p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
-  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+  else
+    expectFloat method computed.1 (← expect "r" (parseFloat res))
+    match assignOrdering line with
+    | some o =>
+      let o ← expect "ordering" (parseOrdering o)
+      if computed.2 != o then
+        disagree s!"{method}: Azurite computed {orderingName computed.2}, Malachite printed \
+          {orderingName o}"
+    | none => pure ()
+
+/-- `checkFloatUnaryArgsWith` with no leading arguments. -/
+def checkFloatUnaryWith (name : String) (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering) :
+    String → Verdict :=
+  checkFloatUnaryArgsWith name 0 (fun _ => some ()) (fun x _ => f x)
+
+/-- `checkFloatUnaryArgsWith` with one leading integer argument, the `pow` of the
+`log_base_power_of_2` families. -/
+def checkFloatUnaryPowWith (name : String)
+    (f : AzFloat → AzInt → Nat → RoundingMode → AzFloat × Ordering) : String → Verdict :=
+  checkFloatUnaryArgsWith name 1 (fun | [k] => parseAzInt k | _ => none) f
 
 /-- `Float`'s `ln` family, against `AzFloat.lnPrecRound`. -/
 def checkFloatLn : String → Verdict := checkFloatUnaryWith "ln" AzFloat.lnPrecRound
@@ -1121,6 +1185,21 @@ def checkFloatLogBase21PlusX : String → Verdict :=
 `AzFloat.log2RatPrecRound`. -/
 def checkFloatLogBase2Rational : String → Verdict :=
   checkFloatOfRational "log_base_2_rational" AzFloat.log2RatPrecRound
+
+/-- `Float`'s `log_base_power_of_2` family, against `AzFloat.logBasePow2PrecRound`. -/
+def checkFloatLogBasePowerOf2 : String → Verdict :=
+  checkFloatUnaryPowWith "log_base_power_of_2" AzFloat.logBasePow2PrecRound
+
+/-- `Float`'s `log_base_power_of_2_1_plus_x` family, against `AzFloat.logBasePow2P1PrecRound`; as
+with `ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatLogBasePowerOf21PlusX : String → Verdict :=
+  checkFloatUnaryPowWith "log_base_power_of_2_1_plus_x" AzFloat.logBasePow2P1PrecRound
+
+/-- `Float::log_base_power_of_2_rational_prec[_round][_ref](q, k, p[, rm]) = (r, o)`, against
+`AzFloat.logBasePow2RatPrecRound`. -/
+def checkFloatLogBasePowerOf2Rational : String → Verdict :=
+  checkFloatOfRationalArgsWith "log_base_power_of_2_rational" 1
+    (fun | [k] => parseAzInt k | _ => none) AzFloat.logBasePow2RatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound
@@ -1216,7 +1295,15 @@ def checkFloatFused4With {α : Type} (name altName : String) (parseW : String �
     | none => pure (.mode .Nearest)
   let computed ← roundedResult name (f x.1 y.1 z.1 w p) rm
   if withOrdering then expectFloatPair method computed (← parseFloatPair res)
-  else expectFloat method computed.1 (← expect "r" (parseFloat res))
+  else
+    expectFloat method computed.1 (← expect "r" (parseFloat res))
+    match assignOrdering line with
+    | some o =>
+      let o ← expect "ordering" (parseOrdering o)
+      if computed.2 != o then
+        disagree s!"{method}: Azurite computed {orderingName computed.2}, Malachite printed \
+          {orderingName o}"
+    | none => pure ()
 
 /-- `checkFloatFused4With` for four floats. -/
 def checkFloatFused4 (name : String)

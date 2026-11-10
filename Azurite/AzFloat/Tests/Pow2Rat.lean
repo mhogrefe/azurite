@@ -89,3 +89,14 @@ private def refBig : AzRat :=
 #guard (E "5/7" 60 .Ceiling).2 == .gt
 #guard partialCompare (E "5/7" 60 .Floor).1 (E "5/7" 60 .Ceiling).1 == some .lt
 #guard partialCompare (E "-5/7" 60 .Floor).1 (E "-5/7" 60 .Ceiling).1 == some .lt
+
+-- a tiny rational argument (`±1/(3·2^1000)`): the value is `1 ± tiny`
+private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
+private def aboveOne : AzFloat := F "4503599627370497/4503599627370496" 53
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard pow2RatPrecRound tinyQ 53 .Nearest == (F "1" 53, .lt)
+#guard pow2RatPrecRound tinyQ 53 .Floor == (F "1" 53, .lt)
+#guard pow2RatPrecRound tinyQ 53 .Ceiling == (aboveOne, .gt)
+#guard pow2RatPrecRound (-tinyQ) 53 .Nearest == (F "1" 53, .gt)
+#guard pow2RatPrecRound (-tinyQ) 53 .Floor == (belowOne, .lt)
+#guard pow2RatPrecRound (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)

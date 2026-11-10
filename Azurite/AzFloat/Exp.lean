@@ -48,6 +48,9 @@ def expPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orde
     if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
+      match expNearOne? s e p mode with
+      | some r => r
+      | none =>
       zivLoopCertified (expApprox (finite s e q m hv) e) p mode (p + zivGuardBits)
         (expApprox_isSome_exists p mode s e hv (p + zivGuardBits) (by unfold zivGuardBits; omega))
 

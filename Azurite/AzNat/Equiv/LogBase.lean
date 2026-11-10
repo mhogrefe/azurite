@@ -120,15 +120,29 @@ theorem checkedLogBaseCore_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : 
 theorem notPowGuard_spec {b n : AzNat} (hb : 2 ≤ b.toNat) (h : notPowGuard b n = true) (e : ℕ) :
     n.toNat ≠ b.toNat ^ e := by
   unfold notPowGuard at h
-  rw [decide_eq_true_eq] at h
-  apply not_eq_pow_of_twoAdic_gt hb
-  rw [size_toNat, size_toNat]
-  by_cases h0 : n - 1 = 0
-  · rw [h0, trailingZeros_zero] at h
-    simp only [Option.getD_none] at h
-    omega
-  · rw [trailingZeros_eq_padicValNat _ h0, Option.getD_some, toNat_sub] at h
-    exact h
+  rw [Bool.or_eq_true] at h
+  rcases h.symm with h | h
+  · rw [decide_eq_true_eq] at h
+    apply not_eq_pow_of_twoAdic_gt hb
+    rw [size_toNat, size_toNat]
+    by_cases h0 : n - 1 = 0
+    · rw [h0, trailingZeros_zero] at h
+      simp only [Option.getD_none] at h
+      omega
+    · rw [trailingZeros_eq_padicValNat _ h0, Option.getD_some, toNat_sub] at h
+      exact h
+  · by_cases hn : n = 0
+    · rw [hn, toNat_zero]
+      exact (Nat.pow_pos (by omega)).ne
+    have hb0 : b ≠ 0 := fun hz => by rw [hz, toNat_zero] at hb; omega
+    apply not_eq_pow_of_valuation hb
+    unfold valuationGuard at h
+    rw [trailingZeros_eq_padicValNat _ hb0, trailingZeros_eq_padicValNat _ hn] at h
+    simp only [Option.getD_some] at h
+    rw [size_toNat, size_toNat]
+    split_ifs at h with htb
+    · exact Or.inl ⟨htb, of_decide_eq_true h⟩
+    · exact Or.inr ⟨htb, of_decide_eq_true h⟩
 
 theorem checkedLogBase_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) (e : ℕ) :
     checkedLogBase b n = some e ↔ n.toNat = b.toNat ^ e := by

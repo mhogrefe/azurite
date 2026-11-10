@@ -373,6 +373,84 @@ theorem mulLnEps_le_one (e eb : ℤ) (w : ℕ) (hw : 88 + max e 0 + |eb| ≤ (w 
     mulLnEps e eb w ≤ 1 :=
   (mulLnEps_le_inv256 e eb w hw).trans (by norm_num)
 
+theorem two_pow_72_mul_pow5_le {v : ℕ} (hv : 110 ≤ v) : 2 ^ 72 * v ^ 5 ≤ 2 ^ v := by
+  induction v, hv using Nat.le_induction with
+  | base => norm_num
+  | succ n hn ih =>
+    have h5 : n * 64 ≤ n ^ 2 := by nlinarith
+    have h4 : n ^ 2 * 64 ≤ n ^ 3 := by nlinarith
+    have h3 : n ^ 3 * 64 ≤ n ^ 4 := by nlinarith
+    have h2 : n ^ 4 * 64 ≤ n ^ 5 := by nlinarith
+    have hstep : (n + 1) ^ 5 ≤ 2 * n ^ 5 := by
+      have e : (n + 1) ^ 5 = n ^ 5 + 5 * n ^ 4 + 10 * n ^ 3 + 10 * n ^ 2 + 5 * n + 1 := by ring
+      rw [e]
+      linarith
+    calc 2 ^ 72 * (n + 1) ^ 5 ≤ 2 ^ 72 * (2 * n ^ 5) := Nat.mul_le_mul_left _ hstep
+      _ = 2 * (2 ^ 72 * n ^ 5) := by ring
+      _ ≤ 2 * 2 ^ n := Nat.mul_le_mul_left _ ih
+      _ = 2 ^ (n + 1) := by ring
+
+/-- `2^59 w^5 2^(5a) ≤ 2^w` from `w ≥ 110 + 6a`. -/
+theorem two_pow_59_mul_pow5_mul_le {w a : ℕ} (hw : 110 + 6 * a ≤ w) :
+    2 ^ 59 * w ^ 5 * 2 ^ (5 * a) ≤ 2 ^ w := by
+  obtain ⟨v, rfl⟩ : ∃ v, w = v + 5 * a := ⟨w - 5 * a, by omega⟩
+  have hv : 110 ≤ v := by omega
+  have h6 : v + 5 * a ≤ 6 * v := by omega
+  have h1 : (v + 5 * a) ^ 5 ≤ (6 * v) ^ 5 := Nat.pow_le_pow_left h6 5
+  have h2 : (6 * v) ^ 5 ≤ 2 ^ 13 * v ^ 5 := by
+    rw [mul_pow]; exact Nat.mul_le_mul_right _ (by norm_num)
+  have h3 := two_pow_72_mul_pow5_le hv
+  calc 2 ^ 59 * (v + 5 * a) ^ 5 * 2 ^ (5 * a)
+      ≤ 2 ^ 59 * (2 ^ 13 * v ^ 5) * 2 ^ (5 * a) :=
+        Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (h1.trans h2))
+    _ = 2 ^ 72 * v ^ 5 * 2 ^ (5 * a) := by ring
+    _ ≤ 2 ^ v * 2 ^ (5 * a) := Nat.mul_le_mul_right _ h3
+    _ = 2 ^ (v + 5 * a) := by rw [pow_add]
+
+/-- The width bound is below `1/256` from `110 + max(e, 0) + 6a` bits, where `|eb| + 24 ≤ 2^a`:
+the precision threshold is logarithmic in the exponent `eb` of the base. -/
+theorem mulLnEps_le_inv256_of_size (e eb : ℤ) (w a : ℕ) (ha : |eb| + 24 ≤ (2 : ℤ) ^ a)
+    (hw : 110 + max e 0 + 6 * (a : ℤ) ≤ (w : ℤ)) : mulLnEps e eb w ≤ 1 / 256 := by
+  unfold mulLnEps lnEps
+  have hm0 : (0 : ℤ) ≤ max e 0 := le_max_right _ _
+  have hwN : 110 + 6 * a ≤ w := by omega
+  have hwR : (110 : ℝ) + max (e : ℝ) 0 + 6 * a ≤ w := by
+    have : ((110 + max e 0 + 6 * (a : ℤ) : ℤ) : ℝ) ≤ ((w : ℤ) : ℝ) := by exact_mod_cast hw
+    push_cast at this
+    exact this
+  have haR : |(eb : ℝ)| + 24 ≤ (2 : ℝ) ^ a := by
+    have : ((|eb| + 24 : ℤ) : ℝ) ≤ (((2 : ℤ) ^ a : ℤ) : ℝ) := by exact_mod_cast ha
+    push_cast at this
+    exact this
+  have hmR : (0 : ℝ) ≤ max (e : ℝ) 0 := le_max_right _ _
+  have hE : ((|eb| + 16 + max e 0 : ℤ) : ℝ) = |(eb : ℝ)| + 16 + max (e : ℝ) 0 := by push_cast; ring
+  rw [hE, abs_of_nonneg (by positivity : (0 : ℝ) ≤ |(eb : ℝ)| + 16 + max (e : ℝ) 0)]
+  have hw1 : (1 : ℝ) ≤ w := by exact_mod_cast (by omega : 1 ≤ w)
+  have h2a : (1 : ℝ) ≤ (2 : ℝ) ^ a := one_le_pow₀ (by norm_num)
+  have hpoly0 : (0 : ℝ) ≤ (w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8 := by positivity
+  have hpoly : (w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8 ≤ 4 * w * (2 : ℝ) ^ a := by
+    nlinarith [mul_nonneg (by linarith : (0 : ℝ) ≤ (w : ℝ) - 1)
+      (by linarith : (0 : ℝ) ≤ (2 : ℝ) ^ a - 1), abs_nonneg (eb : ℝ)]
+  have h1 : (2 : ℝ) ^ 40 * ((w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8) ^ 5
+      ≤ 2 ^ 40 * (4 * w * (2 : ℝ) ^ a) ^ 5 := by gcongr
+  have h2 : (2 : ℝ) ^ 40 * (4 * (w : ℝ) * (2 : ℝ) ^ a) ^ 5
+      = 2 ^ 50 * (w : ℝ) ^ 5 * (2 : ℝ) ^ (5 * a) := by
+    rw [mul_pow, mul_pow, ← pow_mul, mul_comm a 5]; ring
+  have h3 : (2 : ℝ) ^ 59 * (w : ℝ) ^ 5 * (2 : ℝ) ^ (5 * a) ≤ 2 ^ w := by
+    exact_mod_cast two_pow_59_mul_pow5_mul_le hwN
+  have hp : (0 : ℝ) < 2 ^ w := by positivity
+  have hhalf : (1 / 2 : ℝ) ^ w = 1 / 2 ^ w := by rw [one_div_pow]
+  have hhw : (1 / 2 : ℝ) ^ w ≤ 1 / 512 := by
+    calc (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ 9 :=
+          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
+      _ = 1 / 512 := by norm_num
+  have h4 : (2 : ℝ) ^ 40 * ((w : ℝ) + (|(eb : ℝ)| + 16 + max (e : ℝ) 0) + 8) ^ 5 * (1 / 2 : ℝ) ^ w
+      ≤ 1 / 512 := by
+    rw [hhalf, ← div_eq_mul_one_div, div_le_iff₀ hp]
+    have h5 : (0 : ℝ) ≤ (w : ℝ) ^ 5 * (2 : ℝ) ^ (5 * a) := by positivity
+    nlinarith
+  linarith
+
 /-! ### The bracket of `u^x` -/
 
 /-- The width bound of `powBaseBracket` at the exponents `e`, `eb` and the value `v = x ln u`. -/

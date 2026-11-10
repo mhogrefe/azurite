@@ -152,3 +152,12 @@ private def ref10NegBig : AzRat :=
 #guard (E 7 "5/7" 60 .Ceiling).2 == .gt
 #guard partialCompare (E 7 "5/7" 60 .Floor).1 (E 7 "5/7" 60 .Ceiling).1 == some .lt
 #guard partialCompare (E 7 "-5/7" 60 .Floor).1 (E 7 "-5/7" 60 .Ceiling).1 == some .lt
+
+-- tiny rational arguments: `q = ±1/(3·2^1000)` against `±1/(3·2^100)` (the ordinary path)
+private def tq (k : Nat) : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< k)
+private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
+  (r.1 <<< AzInt.ofInt (-900), r.2)
+#guard powBaseM1RatPrecRound 10 (tq 1000) 53 .Nearest
+  == rescale (powBaseM1RatPrecRound 10 (tq 100) 53 .Nearest)
+#guard powBaseM1RatPrecRound 10 (-(tq 1000)) 53 .Ceiling
+  == rescale (powBaseM1RatPrecRound 10 (-(tq 100)) 53 .Ceiling)

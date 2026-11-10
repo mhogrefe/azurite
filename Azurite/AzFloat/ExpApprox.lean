@@ -165,4 +165,39 @@ def expOfBracket (X : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
   (b.1, (addPrecRound b.2 corr (w + 8) .Ceiling).1)
 
 
+/-- **The tiny-exponent path of the exponential family**: the rounding of `exp v` for a real
+`v ≠ 0` with `|v| < 2^E` and known sign (`pos`: `v > 0`), when `E ≤ −(p + 72)`.  Then
+`exp v ∈ (1, 1 + 2^(E+1)]` for `v > 0` and `−exp v ∈ (−1, −1 + 2^(E+1)]` for `v < 0`; one test
+of `roundingPossible` (in the negated mode for `v < 0`, the result negated) with the exact end
+`±1` — a rounding boundary — at the open side.  Nothing is computed from `v`, so the cost is
+independent of `E`; a Ziv loop on a two-sided bracket of `exp v` would need about `|E|` bits.
+`none` when `E` is not small enough or the test fails.  Used by `exp`, `2^x`, `b^x`, `x^y`
+and their rational variants (`v = x`, `x ln 2`, `x ln b`, `y ln x`). -/
+def expNearOne? (pos : Bool) (E : AzInt) (p : Nat) (mode : RoundingMode) :
+    Option (AzFloat × Ordering) :=
+  let w := p + zivGuardBits + 8
+  if E.sign = false ∧ w ≤ E.abs.toNat then
+    let d := one <<< (E + AzInt.ofInt 1)
+    if pos then
+      roundingPossible (fun P M => setPrecRound one P M)
+        (fun P M => setPrecRound (addPrecRound one d w .Ceiling).1 P M) p mode
+    else
+      (roundingPossible (fun P M => setPrecRound (-one) P M)
+        (fun P M => setPrecRound (addPrecRound (-one) d w .Ceiling).1 P M) p (-mode)).map
+        fun r => (-r.1, r.2.swap)
+  else none
+
+/-- An exponent bound for a rational: `|q| < 2^(size num − size den + 1)`. -/
+def ratTinyExp (q : AzRat) : AzInt :=
+  (AzNat.ofNat (q.num.size + 1)).toAzInt - (AzNat.ofNat q.den.size).toAzInt
+
+/-- The exponent bound of `y ln B` for `|y| < 2^Ey` and `|ln B| ≤ N`: `Ey + size N`. -/
+def nearOneExp (Ey : AzInt) (N : Nat) : AzInt := Ey + (AzNat.ofNat N.size).toAzInt
+
+/-- `expNearOne?` for a rational exponent `q` and a base with `|ln B| ≤ N` (`none` for
+`q = 0`). -/
+def ratNearOne? (q : AzRat) (N : Nat) (p : Nat) (mode : RoundingMode) :
+    Option (AzFloat × Ordering) :=
+  if q.num = 0 then none else expNearOne? q.sign (nearOneExp (ratTinyExp q) N) p mode
+
 end Azurite.AzFloat

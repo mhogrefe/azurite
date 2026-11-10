@@ -36,6 +36,9 @@ def powBaseRatPrecRound (u : UInt64) (q : AzRat) (p : Nat) (mode : RoundingMode)
   else if h1 : u.toNat = 1 then setPrecRound one p mode
   else
     haveI : NeZero p := ⟨hp⟩
+    match ratNearOne? q 64 p mode with
+    | some r => r
+    | none =>
     match hx : powBaseRatExact? q (AzNat.ofNat u.toNat) with
     | some (r, n) => natPowOrZiv r n p mode
     | none =>

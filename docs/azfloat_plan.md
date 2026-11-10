@@ -5934,6 +5934,87 @@ faster, UNMEASURED); bases with an even part (`6`, `3/4`, `3/2`, `1/10`): 0.15�
 done: avoiding the `|e|`-bit integer altogether (a guard on `(i, o)` before `onePlusDyadic` /
 `toAzRat?`).
 
+## Lambert `W` on extreme arguments (DONE 2026-11-10)
+
+User: "Do you anticipate any potential issues with evaluating either branch of Lambert W on
+extreme inputs?" — probed, two problems found and fixed (interpreter timings, 53 bits;
+`W₀(1)` = 27 ms):
+
+1. **Tiny arguments of `W₀`** (`2^(−2000)`: 14 s; `2^(−4000)`: 60 s; `2^(−2^30)`: never).
+   `W₀ x = x − x² + ⋯` sits just below the float `x`, at the closed side of the Ziv test, as
+   for `lnP1`.  Fix `lambertW0Tiny? nx nxHi e w p mode` (`LambertWBracket.lean`): `−W₀ x ∈
+   (−x, −x + 4x²]` from the new `lambertW0_tiny_bounds` (`x − 4x² ≤ W₀ x < x` for
+   `0 < |x| ≤ 1/8`; from `W e^W = x`, `1 + W ≤ e^W`, and `x/(1+x) ≤ W₀ x ≤ x` for `x ≥ 0`),
+   one negated `roundingPossible` test with `−x` given by a `Roundable` — `setPrecRound (−x)`
+   for floats (`w = max p q + 64`), `ofAzRatRound (−q)` for rationals (`e = ratExpBound q`) —
+   so one lemma `lambertW0Tiny?_eq` serves both drivers and needs no irrationality.
+   Now 2–5 ms at every exponent.
+2. **Arguments outside the `Float` range where `|W|` is large** — huge `x` for `W₀`, `x → 0⁻`
+   for `W₋₁` (`2^(±2^30)`, `2^(±2^62)`: 11–14 s).  PROFILE: every stage was fast, but the
+   mean-value bracket did not shrink (width `2^5` against a target `2^(−88)`), so the bisection
+   fallback ran.  Cause: `seedFloat` returns `none` when `toFloat64 x` overflows or underflows,
+   and the fallback seed was the MIDPOINT of the a priori interval (width `≈ ln ln x`); Halley's
+   iteration on `w e^w = x` moves only about `2` per step while `|w e^w − x|` is not small
+   against `|x|`, and `halleyRefine` has only `log₂(W/64) + 1` steps.  Fix `logSeed`: solve
+   `w + ln |w| = ln |x|` (the same equation in logarithms) by four Newton steps from
+   `l − ln |l|`, at `64 + exponent(l)` bits (a 64-bit seed for `|w| ≈ 2^62` has absolute error
+   `≈ 1/4`, again too coarse — found by the second probe); for a tiny argument of `W₀` the seed
+   is `x`.  The candidate is unverified by design, so NO proof changed.  Now ≈ 0.1 s (3–4× an
+   ordinary call).  The tiny rational case (`1/(3·2^20000)`: 27 s) was a third cause, see below.
+
+**Found on the way: `exp` itself stalls on tiny arguments** (fixed in the next section; this
+was what made the tiny rational Lambert case slow — Halley's `expPrecRound` at
+`w ≈ 2^(−20001)`).
+
+## Extreme arguments of the `exp` and `pow` families (DONE 2026-11-10)
+
+User: "Yes, please investigate the other functions next."  Survey script (scratch
+`survey.sh`): every driver in its own process with a time limit, at `2^(−K)` for growing `K`,
+then the log/root/pow drivers at `2^(±2^30)`.  Four classes of stall found and fixed
+(interpreter, 53 bits):
+
+1. **Value `1 ± tiny`** — `exp`, `expRat`, `pow2`, `pow2Rat`, `powBase`, `powBaseRat` (hence
+   `pow10*`), `pow`, `ratPow`, `powRat`, `ratPowRat` at a tiny exponent (`2^(−3000)`: 0.9–2 s
+   each, quadratic growth).  One helper `expNearOne? pos E p mode` (`ExpApprox.lean`): for a
+   real `v ≠ 0` of known sign with `|v| < 2^E`, `E ≤ −(p + 72)`: `exp v ∈ (1, 1 + 2^(E+1)]` or
+   `−exp v ∈ (−1, −1 + 2^(E+1)]`, one `roundingPossible` test, nothing computed from `v`.
+   `expNearOne?_eq` (no irrationality: strict end); `expNearOne?_rpow_eq` for `B^y` (`B > 0`,
+   `B ≠ 1`, `|ln B| ≤ N`, `|y| < 2^Ey`, signs as Booleans, exponent bound
+   `nearOneExp Ey N = Ey + size N`); `expNearOne?_natBase_eq` (`N = 64`).  Bounds on `|ln B|`
+   already existed (`abs_log_finiteVal_le`, `abs_log_div_le`).  New early helpers:
+   `ratTinyExp q` with `abs_toRat_lt_ratTinyExp`, `toRat_sign_iff`, `finiteVal_sign_iff`,
+   `abs_toInt_cast`, `abs_mul_log_nat_lt`; `lt_eq_true_iff`/`le_eq_true_iff` moved to
+   `Equiv/Compare`.  Placed BEFORE the exactness tests (`powExact?` iterates `J` square roots
+   for `y = N/2^J`; `powBaseExact?` was 0.5 s at `2^(−100000)`).  Now 0–6 ms at every exponent.
+2. **`b^x − 1` at a tiny `x`** — `pow2M1`, `pow2M1Rat`, `powBaseM1`, `powBaseM1Rat` (the
+   brackets compute `x ln b` to an ABSOLUTE accuracy: precision `w + |e|`, or a Ziv start above
+   `|e|`).  `expM1Tiny?` (`ExpM1Tiny.lean`): `v < exp v − 1 ≤ v + v²` with `v = x λ` bracketed by
+   outward products of floats around `x` with the bracket of `λ = ln b` at `p + 72` bits;
+   `expM1TinyRat?` for a rational `x`.  No irrationality needed.  5–10 ms (floats),
+   0.6 s for a rational with a `10^5`-bit denominator (linear in the input).
+3. **`x^y` with a huge or tiny base** (`(3·2^(2^30))^(1/3)`: no return).  The Ziv start
+   `powW₀ ey eb = 88 + max(ey, 0) + |eb|` was LINEAR in the exponent of the base, an artefact of
+   the proof that the width bound `mulLnEps` is below `1`; the bound is polynomial in `|eb|`,
+   so `powW₀ := max(ey, 0) + min(88 + |eb|, 110 + 6 size(|eb| + 24))` with the new
+   `mulLnEps_le_inv256_of_size` (`2^59 w^5 2^(5a) ≤ 2^w` from `w ≥ 110 + 6a`).  The `min` keeps
+   the old start for ordinary bases (the first version, without it, raised it from 117 to 140
+   bits at `p = 53`).  35 ms.
+4. **`log_b` of a huge integer, base not a power of two** (`log₁₀ (2^(2^30))`): the integer
+   exactness test again; `x` itself (not `x + 1`) is `m 2^t`, where the lifting-the-exponent
+   guard says nothing.  Second guard `AzNat.valuationGuard b n`: if `n = b^e` then
+   `v₂(n) = e v₂(b)` and `(size b − 1) e < size n ≤ size b · e + 1`
+   (`not_eq_pow_of_valuation`).  ≈ 3.8 s interpreted (two trailing-zero scans of 16 M limbs and
+   the materialization), compiled UNMEASURED.
+
+Checked and fine: `ln`, `log2`, `lnP1`, `sqrt`, `cbrt` at `2^(±2^30)`; `exp`, `expM1`, `pow2` at
+`±2^40` (12–17 ms).  INHERENT, not addressed: `exp x`, `b^x` for `|x| ≈ 2^E` need about `E`
+extra bits of `ln 2` (the result's exponent is `x / ln 2`), so `exp (2^(2^30))` is out of reach
+with an unbounded exponent range.
+
+Tests: every driver has guards at `2^(−2^30)` (floats) or `1/(3·2^1000)` (rationals) in the
+three modes and both signs; the `−1` variants are cross-checked against the ordinary path at
+`2^(−100)` rescaled; the huge-base powers against `√3`, `∛3` rescaled.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

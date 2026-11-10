@@ -90,3 +90,14 @@ private def refBig : AzRat :=
 -- `exp (ln q)` returns to `q` at a lower precision
 #guard (expPrecRound (lnRat (Q "1/3") 200) 100 .Nearest).1 == F "1/3" 100
 #guard (expPrecRound (lnRat (Q "22/7") 200) 100 .Nearest).1 == F "22/7" 100
+
+-- a tiny rational argument (`±1/(3·2^1000)`): the value is `1 ± tiny`
+private def tinyQ : AzRat := AzRat.ofAzNats (AzNat.ofNat 1) ((AzNat.ofNat 3) <<< (1000 : Nat))
+private def aboveOne : AzFloat := F "4503599627370497/4503599627370496" 53
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard expRatPrecRound tinyQ 53 .Nearest == (F "1" 53, .lt)
+#guard expRatPrecRound tinyQ 53 .Floor == (F "1" 53, .lt)
+#guard expRatPrecRound tinyQ 53 .Ceiling == (aboveOne, .gt)
+#guard expRatPrecRound (-tinyQ) 53 .Nearest == (F "1" 53, .gt)
+#guard expRatPrecRound (-tinyQ) 53 .Floor == (belowOne, .lt)
+#guard expRatPrecRound (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)

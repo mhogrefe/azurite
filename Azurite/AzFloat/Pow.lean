@@ -120,6 +120,10 @@ def powPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
             (truncToAzInt_ne_zero_of_isInteger sy ey hvy hi) p mode
         else if hsx : sx = false then (nan, .eq)
         else
+          match expNearOne? (sy == lt one (finite sx ex qx mx hvx))
+            (nearOneExp ey (ex.abs.toNat + 1)) p mode with
+          | some r => r
+          | none =>
           match hex : powExact? ex mx sy ey my with
           | some (z, N) =>
             match z with

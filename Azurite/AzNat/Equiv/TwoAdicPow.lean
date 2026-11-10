@@ -85,4 +85,36 @@ theorem not_eq_pow_of_twoAdic_gt {b n : ℕ} (hb : 2 ≤ b)
     have hes : e.size ≤ (b ^ e).size.size := Nat.size_le_size he2.le
     omega
 
+/-- The 2-adic valuation and the bit length of a power: if `n = b^e` then `v₂(n) = e v₂(b)` and
+`(size b − 1) e < size n ≤ size b · e + 1`.  Hence `n` is not a power of `b ≥ 2` when `b` is odd
+and `n` even, or when `b` is even and `e = v₂(n)/v₂(b)` is not an integer or does not fit the
+bit lengths — the cheap test that rejects `m 2^t` for a huge `t` and a base that is not a power
+of two. -/
+theorem not_eq_pow_of_valuation {b n : ℕ} (hb : 2 ≤ b)
+    (h : (padicValNat 2 b = 0 ∧ padicValNat 2 n ≠ 0) ∨
+      (padicValNat 2 b ≠ 0 ∧ (padicValNat 2 n % padicValNat 2 b ≠ 0 ∨
+        ¬ ((b.size - 1) * (padicValNat 2 n / padicValNat 2 b) < n.size ∧
+          n.size ≤ b.size * (padicValNat 2 n / padicValNat 2 b) + 1))))
+    (e : ℕ) : n ≠ b ^ e := by
+  rintro rfl
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have hval : padicValNat 2 (b ^ e) = e * padicValNat 2 b :=
+    padicValNat.pow b e
+  rw [hval] at h
+  rcases h with ⟨h0, h1⟩ | ⟨h0, h1⟩
+  · rw [h0, mul_zero] at h1
+    exact h1 rfl
+  · rcases h1 with h1 | h1
+    · exact h1 (Nat.mul_mod_left e _)
+    · apply h1
+      rw [Nat.mul_div_cancel _ (Nat.pos_of_ne_zero h0)]
+      have hbs : 0 < b.size := Nat.size_pos.mpr (by omega)
+      constructor
+      · rw [Nat.lt_size, pow_mul]
+        exact Nat.pow_le_pow_left (Nat.lt_size.mp (by omega)) e
+      · rw [Nat.size_le, pow_succ, pow_mul]
+        have h2 : b ^ e ≤ (2 ^ b.size) ^ e := Nat.pow_le_pow_left (Nat.lt_size_self b).le e
+        have h3 : 0 < (2 ^ b.size) ^ e := by positivity
+        omega
+
 end Azurite

@@ -108,3 +108,16 @@ private def refMix : AzRat :=
 -- agreement with `exp (x ln 2)` at a higher precision
 #guard (E (F "7/16" 53) 100).1
   == (expPrecRound (mulPrecRound (F "7/16" 53) (ln2 300) 300 .Nearest).1 100 .Nearest).1
+
+-- tiny arguments: the value is `1 ± tiny`, with the boundary `1` next to it; one test decides
+-- the rounding at a cost independent of the exponent (the Ziv loop needed about `|e|` bits)
+private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
+private def tinyX : AzFloat := (F "1" 53) <<< tinyE
+private def aboveOne : AzFloat := F "4503599627370497/4503599627370496" 53
+private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
+#guard pow2PrecRound tinyX 53 .Nearest == (F "1" 53, .lt)
+#guard pow2PrecRound tinyX 53 .Floor == (F "1" 53, .lt)
+#guard pow2PrecRound tinyX 53 .Ceiling == (aboveOne, .gt)
+#guard pow2PrecRound (-tinyX) 53 .Nearest == (F "1" 53, .gt)
+#guard pow2PrecRound (-tinyX) 53 .Floor == (belowOne, .lt)
+#guard pow2PrecRound (-tinyX) 53 .Ceiling == (F "1" 53, .gt)

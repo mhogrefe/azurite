@@ -102,4 +102,17 @@ private def p : String := "1" ++ "".pushn '0' 300
 private def f64 : AzNat := (N "1") <<< (64 : Nat) + 1
 #guard AzNat.checkedLogBase f64 (f64.pow 3) == some 3
 
+-- the valuation guard: `m 2^t` against an odd base or an even base of the wrong length
+#guard AzNat.valuationGuard (N "3") ((N "1") <<< (1000 : Nat))
+#guard AzNat.valuationGuard (N "10") ((N "1") <<< (1000 : Nat))
+#guard AzNat.checkedLogBase (N "10") ((N "3") <<< (100000 : Nat)) == none
+#guard AzNat.checkedLogBase (N "3") ((N "1") <<< (100000 : Nat)) == none
+#guard !AzNat.valuationGuard (N "10") (N "1000000")
+#guard Ck "10" "1000000" == some 6
+#guard Ck "6" "3656158440062976" == some 20
+#guard Ck "12" "144" == some 2
+#guard Ck "12" "1" == some 0
+#guard Ck "3" "1024" == none
+#guard Ck "6" "1024" == none
+
 end Azurite

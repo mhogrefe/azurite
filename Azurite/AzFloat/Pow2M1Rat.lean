@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.Equiv.ExpM1Tiny
 import Azurite.AzFloat.Equiv.Pow2Bracket
 
 /-!
@@ -31,6 +32,9 @@ def pow2M1RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × 
     subPrecRound (powerOf2 (AzInt.mkNorm q.sign q.num)) one p mode
   else
     haveI : NeZero p := ⟨hp⟩
+    match expM1TinyRat? q (ln2Bracket (p + zivGuardBits + 8)) (ratTinyExp q) p mode with
+    | some r => r
+    | none =>
     zivLoopCertified (pow2M1RatApprox q) p mode (p + zivGuardBits)
       (pow2M1RatApprox_isSome_exists p mode q h0 hd (p + zivGuardBits)
         (by unfold zivGuardBits; omega))
