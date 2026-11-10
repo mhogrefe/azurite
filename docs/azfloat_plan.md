@@ -6048,6 +6048,45 @@ All five files compiled on the first build.  Interpreter: the bracket takes 46 m
 compiled).  Tests: 1–64 bits in three modes against a 160-digit Newton reference, 300-bit
 decimal, the fallback bracket containing the candidate's, `cos d = d` at 200 bits.
 
+## `sin` for floats (DONE 2026-11-10, fuel-free), and the series precision of `cos`
+
+User request: "implement sine for AzFloat.  Take extreme inputs into account."
+`AzFloat/SinBracket.lean`, `AzFloat/Sin.lean`, Equivs, `Tests/Sin.lean`: `sinPrecRound x p mode`,
+`sin x`; `Spec.sin`; `sinPrecRound_eq_liftVal`.  `sin NaN = sin (±∞) = NaN`, `sin 0 = 0`.
+
+* **Bracket by the cosine machinery at a shifted centre.**  The tail of `cosBracket` was
+  factored out as `cosTail s E V` (series of `cos (s/8)`, Lipschitz widening by `E/8`, three
+  doublings) with `cosTail_spec`: it encloses `cos t` for every `t` within `E` of the float
+  `s`, given `|s| ≤ 8` and `t/8, t/4 ∈ [−π/2, π/2]`.  Then `sin |x| = sin r = cos (r − π/2)`
+  for the true reduction `r`, and `t = r − π/2` lies within
+  `E₂ = E + ⌈hi − lo⌉ + 2^(4−V)` below `s = ⌈r' − lo/2⌉_V`.  No sine series, no signed interval
+  products.  Oddness: `sinApprox neg` negates and swaps the ends for `x < 0`
+  (`sin_eq_of_neg_iff`, `finiteVal_neg_iff`).  Certificate from `irrational_sin_rat`.
+* **Tiny arguments** (`sinTiny?`, `e ≤ −(max p q + 72)`): `−sin |x| ∈ (−|x|, −|x| + |x|³]`
+  (`Real.sin_lt`, `Real.sin_gt_sub_cube`), one `roundingPossible` test with `−|x|` at the open
+  side; for `x > 0` in the negated mode with the result negated, for `x < 0` directly.
+  2 ms at `2^(−2^30)`.
+* **Huge arguments — found by probing, and it was `cos`'s problem too.**  `sin`/`cos` of
+  `2^1000`: 0.6 s; of `2^4000`: 15 s.  The whole bracket ran at the reduction precision
+  `W = w + 12 + e`, so the series had `(w + e)/4` terms of `w + e` bits.  Only `π` and the exact
+  remainder need `W`: the remainder is now rounded to the SERIES precision `V = w + 12`
+  (`s = ⌈r'⌉_V` for `cos`), the rounding error `16·2^(−V)` joining the slack, and `cosTail`
+  runs at `V`.  The width bounds became exponent-free (`cosEps _ w = cosEpsW (w + 12)`,
+  `2^e 2^(−W) ≤ 2^(−V)` absorbs the reduction error); the signature `cosEps ex w` was kept, so
+  `cosRat`, `cosWithPeriod`, `cosPi` and the Dottie number needed no change.  Now 40 ms at
+  `2^1000`, 0.28 s at `2^4000`.  At `2^100000`: 64 s in the interpreter, of which the profile
+  shows the `π` bracket is essentially all (8.2 s of 8.7 at `2^30000`) — inherent: `sin x`
+  needs `x mod 2π`.  Compiled `π` is far faster (12.6 ms at 20000 bits); UNMEASURED here.
+* **Near a multiple of `π`** (`sin` of the 53-bit float nearest `π`, `≈ 1.2·10^(−16)`): the
+  loop resolves it in 15 ms (the result is small, so the absolute bracket needs about 53 more
+  bits; bounded by the precision of `x` plus its exponent).
+
+Gotchas: `sinBracket_spec` and the rewritten `cosBracket_spec` need
+`set_option maxHeartbeats 800000`; `2lo < 8` for `|s/8| ≤ 1` needs `Real.pi_lt_d2`, not
+`π ≤ 4`; the smallness `E₂ ≤ 1/128` needs `2^(−w−12) ≤ 2^(−20)`, not `≤ 1/4096`.
+Not done: `sinRat`, `sinWithPeriod`, `sinPi` (the Niven file serves them through
+`sin (2πr) = cos (2π(1/4 − r))`), `tan`, a combined `sinCos`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

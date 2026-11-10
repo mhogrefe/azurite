@@ -76,3 +76,7 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard cos tinyX == F "1" 53
 -- the tiny path and the loop agree where both apply
 #guard cosPrecRound ((F "1" 53) <<< AzInt.ofInt (-130)) 53 .Floor == (belowOne, .lt)
+
+-- a huge argument (`2^1000`; reference with a 700-digit `π`): only `π` and the exact remainder
+-- are computed at the reduction precision, the series runs at `w + 12` bits
+#guard C ((F "1" 53) <<< AzInt.ofInt 1000) 53 == (F "8892322134394901/9007199254740992" 53, .lt)

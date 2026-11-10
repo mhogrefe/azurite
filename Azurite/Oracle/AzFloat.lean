@@ -55,6 +55,9 @@ import Azurite.AzFloat.Log2P1
 import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.LogBasePow2Rat
 import Azurite.AzFloat.LogBasePow2P1
+import Azurite.AzFloat.LogBase
+import Azurite.AzFloat.LogBaseRat
+import Azurite.AzFloat.LogBaseP1
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1200,6 +1203,25 @@ def checkFloatLogBasePowerOf21PlusX : String → Verdict :=
 def checkFloatLogBasePowerOf2Rational : String → Verdict :=
   checkFloatOfRationalArgsWith "log_base_power_of_2_rational" 1
     (fun | [k] => parseAzInt k | _ => none) AzFloat.logBasePow2RatPrecRound
+
+/-- A 64-bit natural base, the `base` of the `log_base` families. -/
+def parseLogBase : List String → Option UInt64
+  | [b] => (parseNat b).bind fun n => if n < 2 ^ 64 then some n.toUInt64 else none
+  | _ => none
+
+/-- `Float`'s `log_base` family, against `AzFloat.logBasePrecRound`. -/
+def checkFloatLogBase : String → Verdict :=
+  checkFloatUnaryArgsWith "log_base" 1 parseLogBase AzFloat.logBasePrecRound
+
+/-- `Float`'s `log_base_1_plus_x` family, against `AzFloat.logBaseP1PrecRound`; as with
+`ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatLogBase1PlusX : String → Verdict :=
+  checkFloatUnaryArgsWith "log_base_1_plus_x" 1 parseLogBase AzFloat.logBaseP1PrecRound
+
+/-- `Float::log_base_rational_prec[_round][_ref](q, b, p[, rm]) = (r, o)`, against
+`AzFloat.logBaseRatPrecRound`. -/
+def checkFloatLogBaseRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "log_base_rational" 1 parseLogBase AzFloat.logBaseRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

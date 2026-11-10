@@ -21,19 +21,6 @@ import Azurite.AzFloat.Equiv.RatPowRat
 
 namespace Azurite.AzFloat
 
-/-- `cosEps ex w ≤ 1` from `w = 64` on. -/
-theorem cosEps_le_one (ex : AzInt) {w : ℕ} (hw : 64 ≤ w) : cosEps ex w ≤ 1 := by
-  have hW64 : 64 ≤ cosWork ex w := by unfold cosWork; omega
-  have h1 := cosSeriesEps_le hW64
-  have h2 := two_zpow_mul_half_pow_cosWork ex w
-  have h3 := half_pow_small hW64
-  have h12 : (1 / 2 : ℝ) ^ (w + 12) ≤ 1 / 4096 := by
-    calc (1 / 2 : ℝ) ^ (w + 12) ≤ (1 / 2 : ℝ) ^ 12 :=
-          pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
-      _ = 1 / 4096 := by norm_num
-  unfold cosEps cosEpsW
-  linarith
-
 /-- The width of `cosRatBracket q w`. -/
 noncomputable def cosRatEps (q : AzRat) (w : ℕ) : ℝ :=
   cosEps (ratExpBound q) w
