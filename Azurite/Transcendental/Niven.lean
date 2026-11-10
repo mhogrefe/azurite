@@ -26,7 +26,7 @@ For a rational `r`, `cos (2πr)` is rational exactly when the denominator of `r`
 * `irrational_cos_two_pi_mul_rat`: `cos (2πr)` is irrational when `r.den ∉ {1, 2, 3, 4, 6}`.
 * `cos_two_pi_mul_rat_of_den_eq_*`: the values at the five denominators.
 
-The driver `cosWithPeriodPrecRound` (`AzFloat/CosPeriod.lean`) decides rationality by the
+The driver `cosWithPeriodPrecRound` (`AzFloat/CosWithPeriod.lean`) decides rationality by the
 reduced denominator of the fractional part of `x/u` and certifies its Ziv loop by the
 irrationality.
 -/

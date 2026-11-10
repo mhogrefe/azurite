@@ -7,7 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.CosPeriodBracket
+import Azurite.AzFloat.Equiv.CosWithPeriodBracket
 
 /-!
 ## The cosine with a period: `cos (2π x / u)`
@@ -22,7 +22,7 @@ The argument is reduced exactly: `x/u = m 2^E / u` has the fractional part
 Niven's theorem (`Transcendental/Niven.lean`) the value is rational exactly when the reduced
 denominator of `r` is `1, 2, 3, 4` or `6` — the values `1, −1, −1/2, 0, 1/2`, returned exactly
 (rounded only to `p` bits) — and irrational otherwise, which certifies the Ziv loop on
-`cosPeriodApprox r` (`AzFloat/CosPeriodBracket.lean`).
+`cosPeriodApprox r` (`AzFloat/CosWithPeriodBracket.lean`).
 
 Tiny arguments (`|2πx/u| < 2^(e+3)`, `e + 3 ≤ −(p + 72)`) are rounded by `cosTiny?` before any
 reduction (the value is irrational: `0 < |x|/u < 1/6`), at a cost independent of `e`.

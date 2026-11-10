@@ -8,8 +8,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.CosPi
-import Azurite.AzFloat.Equiv.CosPeriod
-import Azurite.AzFloat.Equiv.CosRatPeriod
+import Azurite.AzFloat.Equiv.CosWithPeriod
+import Azurite.AzFloat.Equiv.CosRatWithPeriod
 
 /-!
 # Equivalence: `cos (π x)`

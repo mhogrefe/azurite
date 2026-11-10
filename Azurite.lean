@@ -55,12 +55,12 @@ import Azurite.AzFloat.Constants
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
 import Azurite.AzFloat.CosBracket
-import Azurite.AzFloat.CosPeriod
-import Azurite.AzFloat.CosPeriodBracket
 import Azurite.AzFloat.CosPi
 import Azurite.AzFloat.CosRat
 import Azurite.AzFloat.CosRatBracket
-import Azurite.AzFloat.CosRatPeriod
+import Azurite.AzFloat.CosRatWithPeriod
+import Azurite.AzFloat.CosWithPeriod
+import Azurite.AzFloat.CosWithPeriodBracket
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Dottie
@@ -79,12 +79,12 @@ import Azurite.AzFloat.Equiv.Constants
 import Azurite.AzFloat.Equiv.Conversion
 import Azurite.AzFloat.Equiv.Cos
 import Azurite.AzFloat.Equiv.CosBracket
-import Azurite.AzFloat.Equiv.CosPeriod
-import Azurite.AzFloat.Equiv.CosPeriodBracket
 import Azurite.AzFloat.Equiv.CosPi
 import Azurite.AzFloat.Equiv.CosRat
 import Azurite.AzFloat.Equiv.CosRatBracket
-import Azurite.AzFloat.Equiv.CosRatPeriod
+import Azurite.AzFloat.Equiv.CosRatWithPeriod
+import Azurite.AzFloat.Equiv.CosWithPeriod
+import Azurite.AzFloat.Equiv.CosWithPeriodBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
@@ -187,6 +187,8 @@ import Azurite.AzFloat.Equiv.Sin
 import Azurite.AzFloat.Equiv.SinBracket
 import Azurite.AzFloat.Equiv.SinRat
 import Azurite.AzFloat.Equiv.SinRatBracket
+import Azurite.AzFloat.Equiv.SinWithPeriod
+import Azurite.AzFloat.Equiv.SinWithPeriodBracket
 import Azurite.AzFloat.Equiv.Sqrt
 import Azurite.AzFloat.Equiv.SqrtPiBracket
 import Azurite.AzFloat.Equiv.SqrtRat
@@ -288,6 +290,8 @@ import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinBracket
 import Azurite.AzFloat.SinRat
 import Azurite.AzFloat.SinRatBracket
+import Azurite.AzFloat.SinWithPeriod
+import Azurite.AzFloat.SinWithPeriodBracket
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.SqrtPiBracket
 import Azurite.AzFloat.SqrtRat
@@ -2242,6 +2246,7 @@ import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.Niven
+import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit

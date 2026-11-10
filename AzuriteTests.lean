@@ -21,10 +21,10 @@ import Azurite.AzFloat.Tests.Cbrt
 import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
 import Azurite.AzFloat.Tests.Cos
-import Azurite.AzFloat.Tests.CosPeriod
 import Azurite.AzFloat.Tests.CosPi
 import Azurite.AzFloat.Tests.CosRat
-import Azurite.AzFloat.Tests.CosRatPeriod
+import Azurite.AzFloat.Tests.CosRatWithPeriod
+import Azurite.AzFloat.Tests.CosWithPeriod
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Dottie
@@ -96,6 +96,7 @@ import Azurite.AzFloat.Tests.RoundToInteger
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sin
 import Azurite.AzFloat.Tests.SinRat
+import Azurite.AzFloat.Tests.SinWithPeriod
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum

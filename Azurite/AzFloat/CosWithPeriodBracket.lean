@@ -14,7 +14,7 @@ import Azurite.AzRat.Construct
 /-!
 ## The bracket of `cos (2πr)` for a rational `r ∈ [0, 1)`
 
-For `cos (2π x / u)` (`AzFloat/CosPeriod.lean`) the argument `x/u = m 2^E / u` is reduced
+For `cos (2π x / u)` (`AzFloat/CosWithPeriod.lean`) the argument `x/u = m 2^E / u` is reduced
 exactly: `periodFrac m E u` is the fractional part of `m 2^E / u` as a reduced `AzRat`
 (`(m 2^E mod u) / u` for `E ≥ 0`, `(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`), so that
 `cos (2π x / u) = cos (2π r)` with `r ∈ [0, 1)`, and the reduced denominator of `r` decides

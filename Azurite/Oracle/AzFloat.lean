@@ -61,6 +61,9 @@ import Azurite.AzFloat.LogBaseP1
 import Azurite.AzFloat.LogBaseFloat
 import Azurite.AzFloat.LogBaseFloatP1
 import Azurite.AzFloat.LogBaseRatFloat
+import Azurite.AzFloat.LogBaseRatBase
+import Azurite.AzFloat.LogBaseRatBaseP1
+import Azurite.AzFloat.LogBaseRatRat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1253,6 +1256,30 @@ def checkFloatLogBaseFloatBase1PlusX (line : String) : Verdict :=
 def checkFloatLogBaseRationalFloatBase : String → Verdict :=
   checkFloatOfRationalArgsWith "log_base_rational_float_base" 1 parseFloatArg
     AzFloat.logBaseRatFloatPrecRound
+
+/-- A single `Rational` argument, possibly printed by reference. -/
+def parseRatArg : List String → Option AzRat
+  | [b] => parseAzRat (stripRef b)
+  | _ => none
+
+/-- `Float`'s `log_base_rational_base` family and the trait method `log_base` with a `Rational`
+base, against `AzFloat.logBaseRatBasePrecRound`; the sign of a zero result is not compared. -/
+def checkFloatLogBaseRationalBase (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "log_base_rational_base" 1 parseRatArg
+    (fun x b => AzFloat.logBaseRatBasePrecRound x b) line ["log_base"]
+
+/-- `Float`'s `log_base_rational_base_1_plus_x` family and the trait method `log_base_1_plus_x`
+with a `Rational` base, against `AzFloat.logBaseRatBaseP1PrecRound`; the sign of a zero result is
+not compared. -/
+def checkFloatLogBaseRationalBase1PlusX (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "log_base_rational_base_1_plus_x" 1 parseRatArg
+    (fun x b => AzFloat.logBaseRatBaseP1PrecRound x b) line ["log_base_1_plus_x"]
+
+/-- `Float::log_base_rational_rational_base_prec[_round](q, b, p[, rm]) = (r, o)`, against
+`AzFloat.logBaseRatRatPrecRound`. -/
+def checkFloatLogBaseRationalRationalBase : String → Verdict :=
+  checkFloatOfRationalArgsWith "log_base_rational_rational_base" 1 parseRatArg
+    AzFloat.logBaseRatRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

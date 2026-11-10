@@ -9,7 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.Cos
-import Azurite.AzFloat.CosPeriod
+import Azurite.AzFloat.CosWithPeriod
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
 

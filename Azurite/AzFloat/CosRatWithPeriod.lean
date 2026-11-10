@@ -7,7 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.CosPeriodBracket
+import Azurite.AzFloat.Equiv.CosWithPeriodBracket
 
 /-!
 ## The cosine with a period of a rational: `cos (2π q / u)`
@@ -15,7 +15,7 @@ import Azurite.AzFloat.Equiv.CosPeriodBracket
 `cosRatWithPeriodPrecRound q u p mode` is `cos (2π q / u)` for an `AzRat` `q` and a `UInt64`
 period `u`, correctly rounded to precision `p` in `mode`, with the comparison against the exact
 value; `cosRatWithPeriod q u p` rounds to nearest.  The rational counterpart of
-`cosWithPeriodPrecRound` (`AzFloat/CosPeriod.lean`), on the same machinery: the fractional part
+`cosWithPeriodPrecRound` (`AzFloat/CosWithPeriod.lean`), on the same machinery: the fractional part
 `r = periodFracRat q u` of `|q| / u` is an exact reduced rational, `cos (2π q / u) = cos (2πr)`,
 the reduced denominators `1, 2, 4, 3, 6` give the exact values `1, −1, 0, −1/2, 1/2` (Niven), and
 otherwise the Ziv loop on `cosPeriodApprox r` is certified by the irrationality.  Tiny arguments

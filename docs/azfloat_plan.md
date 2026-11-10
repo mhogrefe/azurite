@@ -5779,8 +5779,8 @@ place (`…6023` vs `…6027`) — a good discriminating test for rational-argum
 
 User request, after Malachite's `cos_with_period_prec_round(x, u, prec, rm)` ("computes
 `cos(2πx/u)`; this allows for easily using degrees or other integer subdivisions of the circle.
-You'll need to account for more rational outputs").  `AzFloat/CosPeriod.lean`,
-`CosPeriodBracket.lean`, Equivs, `Tests/CosPeriod.lean`, and the analytic core
+You'll need to account for more rational outputs").  `AzFloat/CosWithPeriod.lean`,
+`CosWithPeriodBracket.lean`, Equivs, `Tests/CosWithPeriod.lean`, and the analytic core
 `Transcendental/Niven.lean`: `cosWithPeriodPrecRound x u p mode` (`u : UInt64`; `u = 0`, `NaN`,
 `±∞` give `NaN`; `x = 0` gives `1`), `cosWithPeriod x u`; `Spec.cosWithPeriod : EReal → ℕ →
 Option EReal`; `cosWithPeriodPrecRound_eq`.
@@ -5833,7 +5833,7 @@ with a period, the rational-`x` variant (would be `periodFrac` on `num/(den u)`)
 ## `cos (2π q / u)` for a rational `q` (DONE 2026-11-10, fuel-free)
 
 User request: "a variant of cosWithPeriod that takes an AzRat" (`u` stays a `UInt64`).
-`AzFloat/CosRatPeriod.lean`, `Equiv/CosRatPeriod.lean`, `Tests/CosRatPeriod.lean`:
+`AzFloat/CosRatWithPeriod.lean`, `Equiv/CosRatWithPeriod.lean`, `Tests/CosRatWithPeriod.lean`:
 `cosRatWithPeriodPrecRound q u p mode`, `cosRatWithPeriod q u p`;
 `cosRatWithPeriodPrecRound_eq : = roundVal p mode (Spec.cosWithPeriod q u)`.  Only the
 reduction is new: `periodFracRat q u = (n mod d u)/(d u)` for `q = ±n/d` (reduced by
@@ -6084,8 +6084,7 @@ User request: "implement sine for AzFloat.  Take extreme inputs into account."
 Gotchas: `sinBracket_spec` and the rewritten `cosBracket_spec` need
 `set_option maxHeartbeats 800000`; `2lo < 8` for `|s/8| ≤ 1` needs `Real.pi_lt_d2`, not
 `π ≤ 4`; the smallness `E₂ ≤ 1/128` needs `2^(−w−12) ≤ 2^(−20)`, not `≤ 1/4096`.
-Not done: `sinWithPeriod`, `sinPi` (the Niven file serves them through
-`sin (2πr) = cos (2π(1/4 − r))`), `tan`, a combined `sinCos`.
+Not done: `sinPi`, the rational-argument `sinRatWithPeriod`, `tan`, a combined `sinCos`.
 
 ## `sin q` for a rational `q` (DONE 2026-11-10, fuel-free)
 
@@ -6108,6 +6107,34 @@ Not done: `sinWithPeriod`, `sinPi` (the Niven file serves them through
   of it in `ofAzRatRound` (`AzRat.scaledRound` forms `2^s` by `pow` and a full `divRound`;
   ≈ quadratic in the size of the denominator).  A shift-based base-2 path in `ofAzRatRound`
   would make every rational-argument function linear there (not done).
+
+## `sin (2π x / u)` (DONE 2026-11-10, fuel-free)
+
+`AzFloat/SinWithPeriodBracket.lean`, `SinWithPeriod.lean`, Equivs, `Tests/SinWithPeriod.lean`,
+`Transcendental/NivenSin.lean`: `sinWithPeriodPrecRound x (u : UInt64) p mode`,
+`sinWithPeriod x u`, `Spec.sinWithPeriod`,
+`sinWithPeriodPrecRound_eq : = roundVal p mode (x.toVal.bind (Spec.sinWithPeriod · u))`.
+
+* Reduction as for the cosine: `r = periodFrac m E u ∈ [0, 1)` of `|x|/u`, and
+  `sin (2π x / u) = ± sin (2πr)` with the sign of `x`.
+* Niven for the sine (`irrational_sin_two_pi_mul_rat`): `sin (2πr) = cos (2π(r − 1/4))`, and
+  the denominator of `r − 1/4` is in `{1, 2, 3, 4, 6}` only when that of `r` is in
+  `{1, 2, 4, 12}` (`4s ∈ ℤ ⇒ 4r ∈ ℤ`; `6s ∈ ℤ ⇒ 12r ∈ ℤ`, and `6r ∈ ℤ` would make `3/2` an
+  integer).  Exact values: `0` (`1`, `2`), `±1` (`4`, numerator `1` or `3`), `±1/2` (`12`,
+  numerators `1, 5` or `7, 11`); the driver reads the sign off the numerator
+  (`signedPow2 (s == decide …)`).
+* Bracket: `sinBracket` at `t = ⌊2⌊r⌋_W·lo⌋_W ≥ 0`, widened by `2^(6−W)`; width
+  `sinPeriodEps w = sinEps 3 w + 152·2^(−W)`.
+* Tiny path, before any reduction (`r` would have a `2^|E|`-sized denominator):
+  `y = 2π m 2^E / u < 2^e'` with `e' = e + 3`, tested when `p + 72 ≤ 2|e'|`.  Floats
+  `ylo ≤ y ≤ yhi` from `⌊m/u⌋_W`, `⌈m/u⌉_W` and the `π` bracket at `W = p + 72`, shifted by
+  `E + 1`; `ylo − yhi·2^(2e') < sin y < yhi`; one `roundingPossible` (the value is irrational:
+  `0 < |x|/u < 1/12`).  Unlike `cosTiny?`, both ends are inexact, so the test can fail (then the
+  general path runs); probability about `2^(−60)`.
+* Timings (interpreter, 53 bits): `45°` 17 ms, the float next above `180°` 15 ms,
+  `2^(−2^30)°` 4 ms, `2^(−60)/(2^64 − 1)` 44 ms, `(3·2^100000)°` 19 ms.
+* Gotcha: `split_ifs` on the driver also splits the sign factor `if (!s) = true …` in the goal —
+  `generalize` it first and `subst` afterwards.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
