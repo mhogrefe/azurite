@@ -2459,7 +2459,7 @@ No errata.
 | Equation | Theorem | Mathlib |
 |---|---|---|
 | 4.19.1–4.19.2 | `dlmf_4_19_1`, `dlmf_4_19_2` | `Complex.hasSum_sin`, `Complex.hasSum_cos` |
-| 4.19.6 (`0 < \|z\| < π`) | `dlmf_4_19_6`, `cotCoeff`, displayed terms `cotCoeff_values`; tools `hasSum_swap_of_summable_norm`, `hasSum_zeta_succ`, `mem_integerComplement_of_norm_lt_one` | `cot_series_rep'`, `summable_cotTerm`, `hasSum_zeta_nat`, `HasSum.prod_fiberwise` |
+| 4.19.6 (`0 < \|z\| < π`) | `dlmf_4_19_6`, `cotCoeff`, displayed terms `cotCoeff_values`; tools `hasSum_swap_of_summable_norm`, `hasSum_zeta_add_two`, `mem_integerComplement_of_norm_lt_one` | `cot_series_rep'`, `summable_cotTerm`, `hasSum_zeta_nat`, `HasSum.prod_fiberwise` |
 | 4.19.3 (`\|z\| < π/2`) | `dlmf_4_19_3` (`tan z = cot z − 2 cot 2z`), `tanCoeff`, `tanCoeff_values` (`bernoulli_values`, with `bernoulli'_six`/`_eight` from §3.5) | `bernoulli'_four` |
 | 4.19.4 (`0 < \|z\| < π`) | `dlmf_4_19_4` (`csc z = cot(z/2) − cot z`), `cscCoeff`, `cscCoeff_values` | |
 | 4.19.5 (`\|z\| < π/2`) | `eulerGen`, `eulerNumber` (DLMF 24.2.6), `hasSum_eulerGen`, `eulerNumber_odd`, `eulerNumber_rec` (Leibniz on `eulerGen · cosh = 1`), `eulerNumber_values` (`E₂ = −1`, `E₄ = 5`, `E₆ = −61`), `dlmf_4_19_5`, `secCoeff_values` | `Complex.hasSum_taylorSeries_on_ball`, `iteratedDeriv_mul`, `iteratedDeriv_comp_neg`, `Complex.iteratedDeriv_even_cosh` |
@@ -2898,3 +2898,106 @@ Figure content only, as in §4.3. Mathlib's `Real.exists_isMinOn_Gamma_Ioi` give
 | Figure 5.3.2 ("convex on `(0, ∞)`") | `dlmf_5_3_F2` | `Real.convexOn_log_Gamma` |
 | Figure 5.3.3 (`ψ(x)`) | `dlmf_5_3_F3_real`, `dlmf_5_3_F3_mono`, `dlmf_5_3_F3_zero`; `hasDerivAt_Gamma_real` (`Γ′ = Γψ`), `hasDerivAt_log_Gamma_real` | `HasDerivAt.real_of_complex`, `HasDerivAt.comp_ofReal`, `HasDerivAt.ofReal_comp` |
 | Figures 5.3.4–5.3.6 (surfaces) | `dlmf_5_3_F4`, `dlmf_5_3_F5`, `dlmf_5_3_F6` (symmetry under `y ↦ −y`; `digamma_conj`); poles and zeros in §5.2(i) | `Complex.Gamma_conj`, `HasDerivAt.conj_conj` |
+
+### §5.4 Special Values and Extrema (`Azurite/DLMF/Chapter5/Section4.lean`, `Section4Series.lean`, `Section4Gauss.lean`, `Section4Zeros.lean`) — COMPLETE except the numerics (BACKFILL)
+
+`ψ′` is `deriv digamma`; `n!!` is `Nat.doubleFactorial` (DLMF's `(−1)!! = 1` appears only through the `n = −1` remark); `coth` is written `cosh/sinh`.
+
+**BACKFILL (numerics, user 2026-11-10: "We can't do the numeric computations yet, so just make a note of them for now"):**
+
+| Item | Value to certify | Status |
+|---|---|---|
+| 5.4.6 | `Γ(½) = π^{1/2} = 1.77245 38509 05516 02729…` | closed form proved (`dlmf_5_4_6`); decimals TODO (AzFloat `sqrt` of the `π` bracket would do) |
+| 5.4.7 | `Γ(⅓) = 2.67893 85347 07747 63365…` | TODO (needs a `Γ` evaluator) |
+| 5.4.8 | `Γ(⅔) = 1.35411 79394 26400 41694…` | TODO (or from 5.4.7 by reflection `Γ(⅓)Γ(⅔) = 2π/√3`) |
+| 5.4.9 | `Γ(¼) = 3.62560 99082 21908 31193…` | TODO |
+| 5.4.10 | `Γ(¾) = 1.22541 67024 65177 64512…` | TODO (or from 5.4.9 by reflection `Γ(¼)Γ(¾) = π√2`) |
+| Table 5.4.1, `n = 0` | `x₀ = 1.46163 21449 68362 34126`, `Γ(x₀) = 0.88560 31944 10888 70028` (also the §5.3 Figure 5.3.1 caption `1.46…`, `0.88…`) | TODO; proved so far: unique minimizer, `1 < x₀ < 3/2`, `Γ(x₀) < 0.89`, `ψ(x₀) = 0` (§5.3) |
+| Table 5.4.1, `n = 1` | `x₁ = −0.50408 30082 64455 40926`, `Γ(x₁) = −3.54464 36111 55005 08912` | TODO |
+| Table 5.4.1, `n = 2` | `x₂ = −1.57349 84731 62390 45878`, `Γ(x₂) = 2.30240 72583 39680 13582` | TODO |
+| Table 5.4.1, `n = 3` | `x₃ = −2.61072 08684 44144 65000`, `Γ(x₃) = −0.88813 63584 01241 92010` | TODO |
+| Table 5.4.1, `n = 4` | `x₄ = −3.63529 33664 36901 09784`, `Γ(x₄) = 0.24512 75398 34366 25044` | TODO |
+| Table 5.4.1, `n = 5` | `x₅ = −4.65323 77617 43142 44171`, `Γ(x₅) = −0.05277 96395 87319 40076` | TODO |
+| Table 5.4.1, `n = 6` | `x₆ = −5.66716 24415 56885 53585`, `Γ(x₆) = 0.00932 45944 82614 85052` | TODO |
+| Table 5.4.1, `n = 7` | `x₇ = −6.67841 82130 73426 74283`, `Γ(x₇) = −0.00139 73966 08949 76730` | TODO |
+| Table 5.4.1, `n = 8` | `x₈ = −7.68778 83250 31626 03744`, `Γ(x₈) = 0.00018 18784 44909 40419` | TODO |
+| Table 5.4.1, `n = 9` | `x₉ = −8.69576 41638 16401 26649`, `Γ(x₉) = −0.00002 09252 90446 52667` | TODO |
+| Table 5.4.1, `n = 10` | `x₁₀ = −9.70267 25400 01863 73608`, `Γ(x₁₀) = 0.00000 21574 16104 52285` | TODO |
+
+Table caption: `Γ′(xₙ) = ψ(xₙ) = 0`. A certified table needs: an AzFloat (or exact-rational) enclosure of `ψ` and `Γ` near each `xₙ` (e.g. via the recurrence to `x + N` and the asymptotic series §5.11 with error bounds, or the series 5.7.6), a sign change of `ψ` bracketing each `xₙ`, and uniqueness of the zero in `(−n − 1, −n)` from `ψ′ > 0` (5.15.1).
+
+**5.4.19 and 5.4.20 (DONE 2026-11-10, user: "Please work on the two deferred items")** without §5.7/§5.11/§5.15: the limit form of 5.7.6, `ψ(x) = lim (ln N − ∑_{k<N} 1/(x + k))` for `x > 0` (`tendsto_psiR_series`), follows from the recurrence and the monotonicity of `ψ` (§5.3) with `ln n < ψ(n + 1) < ln(n + 1)` (Mathlib's Euler–Mascheroni sequences). Gauss: roots-of-unity filter + `∑_{m≤M} zᵐ/m → −ln(1 − z)` on the unit circle by `∫₀¹ z/(1 − zt) dt` with the explicit error `1/(δ(M + 1))` (no Abel/Dirichlet test needed). Zeros: strict monotonicity on `(−n, −n + 1)` from `ψ(x) = ψ(x + n) − ∑_{k<n} 1/(x + k)` (no `ψ′`), existence by reflection + IVT; 5.4.20 with the explicit constant `4` for `n ≥ 3` (DLMF cites Walker (2007) for error bounds; ours is self-contained).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.4.1 | `dlmf_5_4_1_one`, `dlmf_5_4_1` | `Complex.Gamma_one`, `Complex.Gamma_nat_eq_factorial` |
+| 5.4.2 | `dlmf_5_4_2_even`, `dlmf_5_4_2_odd`, `dlmf_5_4_2_neg_one` ("also applies when `n = −1`"), `rpow_neg_half_mul_sqrt_pi` | `Nat.doubleFactorial_two_mul`, `Real.Gamma_nat_add_one_add_half` |
+| 5.4.3 | `dlmf_5_4_3` (all real `y`; junk values at `0`), `Gamma_I_mul_Gamma_neg_I_mul` | `Complex.Gamma_mul_Gamma_one_sub`, `Complex.Gamma_conj` |
+| 5.4.4 | `dlmf_5_4_4`, `dlmf_5_4_4_norm` | `Complex.Gamma_mul_Gamma_one_sub` |
+| 5.4.5 | `dlmf_5_4_5` | `Real.sin_pi_div_four`, `Complex.sin_add` |
+| 5.4.6 | `dlmf_5_4_6` (decimals: BACKFILL) | `Real.Gamma_one_half_eq` |
+| 5.4.7–5.4.10 | BACKFILL (numerics) | |
+| 5.4.11 | `dlmf_5_4_11`, `dlmf_5_4_11_real` | `Complex.hasDerivAt_Gamma_one`, `Real.hasDerivAt_Gamma_one` |
+| 5.4.12 | `dlmf_5_4_12`, `dlmf_5_4_12_deriv` (`ψ′(1) = π²/6` by differentiating the duplication formula at `½`) | `Complex.digamma_one`, `Complex.digamma_two_mul` |
+| 5.4.13 | `dlmf_5_4_13`, `dlmf_5_4_13_deriv` (`ψ′(½) = π²/2` by differentiating the reflection formula at `½`; `not_int_of_dist_half`) | `Complex.digamma_one_half`, `Complex.digamma_one_sub` |
+| 5.4.14 | `dlmf_5_4_14` | `Complex.digamma_nat_add_one`, `harmonic_eq_sum_Icc` |
+| 5.4.15 | `dlmf_5_4_15` (every `n ≥ 0`) | `Complex.digamma_apply_add_nat` |
+| 5.4.16 | `dlmf_5_4_16` (`y ≠ 0`; `cot_pi_I_mul`) | `Complex.digamma_one_sub`, `Complex.digamma_apply_add_one`, `digamma_conj` (§5.3) |
+| 5.4.17 | `dlmf_5_4_17` | `Complex.digamma_one_sub` |
+| 5.4.18 | `dlmf_5_4_18` (`y ≠ 0`) | `Complex.digamma_apply_add_one` |
+| 5.4.19 | `dlmf_5_4_19` (`Section4Gauss.lean`; `rootQ`, `sum_rootQ_pow`, `filter_identity`, `tendsto_sum_pow_div_succ`, `log_one_sub_exp`, `sum_sin_mul`, `term_re`) | `Complex.isPrimitiveRoot_exp`, `geom_sum_eq`, `HasDerivAt.clog_real`, `intervalIntegral.integral_eq_sub_of_hasDerivAt`, `Complex.arg_cos_add_sin_mul_I` |
+| limit form of 5.7.6 (used for 5.4.19) | `tendsto_psiR_series` (`Section4Series.lean`; `psiR`, `psiR_add_nat`, `psiR_one_sub`, `psiR_bracket`, `continuousAt_psiR`) | `Real.eulerMascheroniSeq_lt_eulerMascheroniConstant`, `Real.eulerMascheroniConstant_lt_eulerMascheroniSeq'` |
+| Table 5.4.1 caption `Γ′(xₙ) = ψ(xₙ) = 0` | `psiZero`, `psiZero_spec`, `dlmf_5_4_iii_zero` (unique zero in `(−n, −n + 1)`), `dlmf_5_4_iii_all` (all zeros on the negative axis); `psiR_strictMonoOn`, `exists_psiR_zero` (`Section4Zeros.lean`) | `intermediate_value_Icc` |
+| 5.4.20 | `dlmf_5_4_20` (`IsBigO`), `dlmf_5_4_20_bound` (`≤ 4/(n (ln n)²)` for `n ≥ 3`); `psiZero_eq_arctan`, `abs_arctan_sub_le` | `Real.arctan_tan`, `Real.deriv_arctan`, `exists_deriv_eq_slope` |
+| Table 5.4.1 values | BACKFILL (numerics) | |
+
+### §5.5 Functional Relations (`Azurite/DLMF/Chapter5/Section5.lean`) — COMPLETE
+
+Conditions: Mathlib's junk values (`Γ(−n) = 0`, `ψ(−n) = 0`) make 5.5.3 and 5.5.5 hold for every `z`; 5.5.1 needs `z ≠ 0` (it fails only there), 5.5.2 needs `z ∉ {0, −1, …}`. Gauss's multiplication formula is not in Mathlib: proved on `(0, ∞)` by Bohr–Mollerup (`gaussF`, `gaussC`; `n^y ∏ Γ((y + k)/n)/C` satisfies the hypotheses), with `C` from 5.5.7, then extended to `nz ∉ {0, −1, …}` by the identity theorem (`mulPolesCompl n` open and preconnected); 5.5.9 by logarithmic differentiation of 5.5.6 (as Mathlib does for 5.5.8). Gotcha: `∏ k ∈ s, f k / C` parses as `∏ k ∈ s, (f k / C)` — parenthesize the product.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.5.1 | `dlmf_5_5_1` (`z ≠ 0`) | `Complex.Gamma_add_one` |
+| 5.5.2 | `dlmf_5_5_2` (`z ≠ 0, −1, …`) | `Complex.digamma_apply_add_one` |
+| 5.5.3 | `dlmf_5_5_3` (every `z`) | `Complex.Gamma_mul_Gamma_one_sub` |
+| 5.5.4 | `dlmf_5_5_4` (`z ∉ ℤ`) | `Complex.digamma_one_sub` |
+| 5.5.5 | `dlmf_5_5_5` (every `z`; `ofReal_pi_cpow_neg_half_mul_sqrt`) | `Complex.Gamma_mul_Gamma_add_half` |
+| 5.5.6 | `dlmf_5_5_6` (`nz ≠ 0, −1, …`), `gauss_mul_real` (`x > 0`); `gaussF`, `gaussC`, `gaussF_eq_Gamma`, `prod_Gamma_shift`, `convexOn_log_gaussF`, `convexOn_comp_affine`, `convexOn_sum_range`, `mulPolesCompl`, `add_div_not_mem_gammaPoles` | `Real.eq_Gamma_of_log_convex`, `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq` |
+| 5.5.7 | `dlmf_5_5_7` (`n ≥ 1`), via `prod_two_sin` (`∏_{k=1}^{n−1} 2 sin(πk/n) = n`) and `norm_one_sub_exp` | `IsPrimitiveRoot.prod_one_sub_pow_eq_order`, `Real.Gamma_mul_Gamma_one_sub` |
+| 5.5.8 | `dlmf_5_5_8` (`2z ≠ 0, −1, …`) | `Complex.digamma_two_mul` |
+| 5.5.9 | `dlmf_5_5_9` (`nz ≠ 0, −1, …`) | `logDeriv_fun_prod`, `HasDerivAt.logDeriv_Gamma`, `HasDerivAt.const_cpow` |
+| §5.5(iv) Bohr–Mollerup | `dlmf_5_5_iv` | `Real.eq_Gamma_of_log_convex` |
+
+### §5.6 Inequalities (`Azurite/DLMF/Chapter5/Section6.lean`, `Section6Reciprocal.lean`) — 5.6.1–5.6.7 DONE; 5.6.8, 5.6.9 DEFERRED
+
+**Reading of the page:** the WebFetch rendering of 5.6.9 showed `exp(1/(6|z|) − 1)`; a numerical check (20 000 random `z`, `ℜz ∈ [0, 6]`) gives a max ratio 0.98 for `√(2π)|z|^{x−1/2} e^{−π|y|/2} e^{1/(6|z|)}` and > 1 with the extra `−1`, so the statement is the former. 5.6.5's first argument is `x + s^{1/2}` (Kershaw).
+
+**DEFERRED (proofs):**
+* 5.6.8 (`b − a ≥ 1`, `a ≥ 0`, `ℜz > 0`): plan — `Γ(z + a)/Γ(z + b) = Γ(c)⁻¹ ∫₀^∞ e^{−(z+a)u}(1 − e^{−u})^{c−1} du`, `c = b − a`; rotate the ray to `u = r e^{−i arg z}` (Cauchy in the sector, decay from `ℜz > 0`), then `|1 − e^{−u}| ≤ |u|` for `ℜu ≥ 0` gives `≤ Γ(c)⁻¹ ∫ e^{−|z| r} r^{c−1} dr = |z|^{−c}`. Alternatively Bernstein: `e^{−au}((1 − e^{−u})/u)^{c−1}` is completely monotone. Needs §5.12 (Beta integrals) machinery.
+* 5.6.9 (`ℜz ≥ 0`): the complex Stirling formula with Stieltjes' bound `|μ(z)| ≤ 1/(6|z|)` on `ℜz ≥ 0` (DLMF 5.11.ii), plus `y arg z ≥ π|y|/2 − x`. Do with §5.11.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.6.1 | `dlmf_5_6_1`; `stirlingMu`, `stirlingG`, `hasSum_stirlingG`, `stirlingG_pos`, `stirlingG_lt` (`0 < g(t) < 1/(12t) − 1/(12(t+1))`), `stirlingMu_eq_sum`, `stirlingMu_add_nat_eq`, `tendsto_stirlingMu`, `stirlingMu_bounds`, `stirlingMu_strict`, `log_Gamma_add_nat` | `Real.hasSum_log_one_add_inv`, `Stirling.tendsto_stirlingSeq_sqrt_pi`, `Real.BohrMollerup.tendsto_logGammaSeq`, `Real.tendsto_mul_log_one_add_div_atTop` |
+| 5.6.2, 5.6.3 | `dlmf_5_6_3`, then `dlmf_5_6_2` by `(a + b)² ≤ 2(a² + b²)` (`Section6Reciprocal.lean`, DONE 2026-11-10, user: "Let's push on 5.6.2 and 5.6.3"). Own proof, no numerics: symmetry `x ↔ 1/x`; for `x ≥ 3/2` both terms decrease (`log_Gamma_monotoneOn`, `log_Gamma_antitoneOn`); on `[1, 3/2]` strong convexity of `ln Γ` with explicit constants from the ψ series (`psiR_sub_one_ge`: `ψ(t) − ψ(1) ≥ (6/5)(t − 1)` via `ψ(3/2) − ψ(1) = 2 − 2 ln 2`; `psiR_one_sub_ge`: `ψ(1) − ψ(t) ≥ (8/5)(1 − t)` via Basel; `neg_log_Gamma_le_right/left`), `e^A + e^B ≤ 2e^{(A+B)/2 + (A−B)²/8}` (`exp_add_exp_le_two`, `cosh x ≤ e^{x²/2}`), and a quartic `Q(ε, γ) ≤ 0` on `[0, ½]` (`recip_poly_nonpos`, `nlinarith`; max ≈ −1.25). Tangent lines alone fail near `x = 1` (the margin is `≈ 0.8(x − 1)²`); the curvature `ψ′(1) = π²/6` is what makes it work. | `Real.cosh_le_exp_half_sq`, `hasSum_zeta_two`, `monotoneOn_of_deriv_nonneg` |
+| 5.6.4 (Gautschi) | `dlmf_5_6_4`; `psiR_strictMonoOn_pos`, `strictConvexOn_log_Gamma` (not in Mathlib), `log_Gamma_add_one` | `StrictMonoOn.strictConvexOn_of_deriv` |
+| 5.6.5 (Kershaw) | `dlmf_5_6_5`; `kershawPhi`, `tendsto_kershaw_sum`, `kershawPhi_sqrt_nonneg`, `kershawPhi_mid_nonpos`, `log_sub_log_le_div_sqrt` (log mean ≥ geometric), `two_mul_div_le_log_sub_log` (log mean ≤ arithmetic) | `Real.self_le_sinh_iff`, `Real.hasSum_log_sub_log_of_abs_lt_one` |
+| 5.6.6 | `dlmf_5_6_6` (`x` not a pole); `norm_GammaSeq_eq`, `abs_GammaSeq_eq` | `Complex.GammaSeq_tendsto_Gamma`, `Real.GammaSeq_tendsto_Gamma` |
+| 5.6.7 | `dlmf_5_6_7` (`x ≥ ½`; `norm_mul_le_norm_mul`) | `Complex.norm_add_mul_I` |
+| 5.6.8, 5.6.9 | DEFERRED (§5.11/§5.12) | |
+
+### §5.7 Series Expansions (`Azurite/DLMF/Chapter5/Section7.lean`, `Section7Zeta.lean`, `Section7Log.lean`, `Section7Recip.lean`) — COMPLETE (2026-11-10)
+
+**Reading of the page:** the WebFetch rendering of 5.7.7 dropped the halves; the equation is `ψ(½ + ½z) − ψ(½z) = 2∑_{k≥0} (−1)ᵏ/(k + z)` (checked numerically). `ζ` is Mathlib's `riemannZeta`; Mathlib has no complex `ln Γ`, so 5.7.3 is stated exponentiated on the disc and with the real logarithm on `(−1, 2)`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.7.1 | `dlmf_5_7_1` (every `z`); `recipGammaCoeff` (Taylor coefficients of `1/Γ` at `0`, DLMF's definition), `recipGammaCoeff_zero`, `recipGammaCoeff_one` (`c₁ = 1`), `recipGammaCoeff_two` (`c₂ = γ`), `hasSum_recipGamma` | `Complex.hasSum_taylorSeries_of_entire`, `Complex.differentiable_one_div_Gamma` |
+| 5.7.2 | `dlmf_5_7_2` (`k = n + 2`, holds for `k ≥ 2`); `recipGamma_eq_mul` (`1/Γ(z) = z/Γ(1 + z)`), `recipGammaCoeff_succ`, `recipGammaOneAddCoeff_succ` (Leibniz on `h′ = −h ψ(1 + ·)`), `negDigammaOneAddCoeff` (coefficients of `−ψ(1 + z)` from 5.7.4), `hasFPowerSeriesAt_of_hasSum`, `iteratedDeriv_div_factorial_of_hasSum` | `iteratedDeriv_mul`, `AnalyticAt.hasFPowerSeriesAt`, `HasFPowerSeriesAt.eq_formalMultilinearSeries`, `FormalMultilinearSeries.ofScalars_series_injective` |
+| 5.7.3 | `dlmf_5_7_3` (`|z| < 2`, `z ≠ −1`, exponentiated), `dlmf_5_7_3_real` (`x ∈ (−1, 2)`, real log); `lnGammaTerm`, `lnGammaSeries`, `summable_lnGammaTerm`, `Gamma_two_add_eq_exp`, `hasDerivAt_lnGammaSeries`, `hasSum_digamma_two_add`, `norm_zeta_sub_one_le`, `hasSum_zeta_sub_one_succ`, `hasSum_telescope_succ` | `hasDerivAt_tsum_of_isPreconnected`, `IsOpen.is_const_of_deriv_eq_zero`, `hasSum_zeta_two` |
+| 5.7.4 | `dlmf_5_7_4` (`|z| < 1`); `hasSum_zeta_add_two` | `zeta_nat_eq_tsum_of_gt_one`, `HasSum.prod_fiberwise` |
+| 5.7.5 | `dlmf_5_7_5` (HasSum form), `dlmf_5_7_5_eq`; `hasSum_zeta_odd_series`, `hasSum_zeta_sub_one`, `norm_natCast_add_two` — direct proof, no identity theorem | `cot_series_rep'`, `summable_cotTerm` |
+| 5.7.6 | `dlmf_5_7_6`, `dlmf_5_7_6_alt`; `psiTerm`, `psiSeries`, `analyticOnNhd_psiSeries`, `psiSeries_ofReal`, `exists_psiTerm_bound` | `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq` |
+| 5.7.7 | `dlmf_5_7_7` (limit of partial sums; conditional convergence); `tendsto_of_even_odd_cplx`, `sum_range_two_mul_pair` | |
+| 5.7.8 | `dlmf_5_7_8` | `Complex.hasSum_im` |
+

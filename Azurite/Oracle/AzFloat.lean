@@ -1394,13 +1394,30 @@ def checkFloatPowerOf2Rational : String → Verdict :=
 def checkFloatPowerOf2XMinus1Rational : String → Verdict :=
   checkFloatOfRational "power_of_2_x_minus_1_rational" AzFloat.pow2M1RatPrecRound
 
-/-- `AzFloat.powBasePrecRound`, at `expInput x` for `u ≥ 2`: `u^(2^30) ≥ 2^(2^30)` overflows and
+/-- The exponent `±(2^k + 2^-7)`. For `u = r^s` with `r` the primitive root of a `u64` base,
+`s ≤ 63 < 2^7`, so `u` to this power is irrational, and Azurite computes it by its Ziv loop
+rather than by forming the exact power, an integer of billions of bits. -/
+def powSubstitute (neg : Bool) (k : Nat) : AzFloat :=
+  let v := AzFloat.ofAzRat (AzRat.ofAzInts (AzNat.ofNat (2 ^ (k + 7) + 1)).toAzInt
+    (AzNat.ofNat (2 ^ 7)).toAzInt) 64
+  if neg then -v else v
+
+/-- `expInput` for `u^x` with `u ≥ 2`: `x ≥ 2^30` becomes `2^30 + 2^-7` (`u^x` overflows) and
+`x ≤ -2^31` becomes `-(2^31 + 2^-7)` (`u^x` underflows far below half the smallest positive
+value); see `powSubstitute`. -/
+def powInput (x : AzFloat) : AzFloat :=
+  match x with
+  | .finite true e _ _ _ => if AzInt.ofInt 31 ≤ e then powSubstitute false 30 else x
+  | .finite false e _ _ _ => if AzInt.ofInt 32 ≤ e then powSubstitute true 31 else x
+  | _ => x
+
+/-- `AzFloat.powBasePrecRound`, at `powInput x` for `u ≥ 2`: `u^(2^30) ≥ 2^(2^30)` overflows and
 `u^(-2^31) ≤ 2^(-2^31)` underflows far below half the smallest positive value, so the
 substitution is exact. -/
 def malachitePowBase (u : UInt64) (x : AzFloat) (p : Nat) (m : RoundingMode) :
     AzFloat × Ordering :=
   if u.toNat < 2 then AzFloat.powBasePrecRound u x p m
-  else AzFloat.powBasePrecRound u (expInput x) p m
+  else AzFloat.powBasePrecRound u (powInput x) p m
 
 /-- `AzFloat.powBaseM1PrecRound` for `u ≥ 2` with the substitutions of `malachiteExpM1`: for
 `x ≤ -2^31`, `u^x - 1 = -1 + ε` with `0 < ε < 2^(-p-1)`, as at `x = -(p + 2)`. -/
@@ -1412,7 +1429,34 @@ def malachitePowBaseM1 (u : UInt64) (x : AzFloat) (p : Nat) (m : RoundingMode) :
     if AzInt.ofInt 32 ≤ e then
       AzFloat.powBaseM1PrecRound u (exactFromInteger (-(AzNat.ofNat (p + 2)).toAzInt)) p m
     else AzFloat.powBaseM1PrecRound u x p m
-  | _ => AzFloat.powBaseM1PrecRound u (expInput x) p m
+  | _ => AzFloat.powBaseM1PrecRound u (powInput x) p m
+
+/-- `powInput` for a rational exponent `q`: `q ≥ 2^30` becomes `2^30 + 2^-7` (an overflow) and
+`q ≤ -2^31` becomes `-(2^31 + 2^-7)` (an underflow far below half the smallest positive value);
+see `powSubstitute`. -/
+def ratExpInput (q : AzRat) : AzRat :=
+  let sub (neg : Bool) (k : Nat) : AzRat :=
+    AzRat.ofAzInts (if neg then -(AzNat.ofNat (2 ^ (k + 7) + 1)).toAzInt
+      else (AzNat.ofNat (2 ^ (k + 7) + 1)).toAzInt) (AzNat.ofNat (2 ^ 7)).toAzInt
+  if q.num = 0 then q
+  else if q.sign then (if 30 ≤ q.floorLogBase2Abs then sub false 30 else q)
+  else if 31 ≤ q.floorLogBase2Abs then sub true 31 else q
+
+/-- `AzFloat.powBaseRatPrecRound` at `ratExpInput q` for `u ≥ 2`; see `malachitePowBase`. -/
+def malachitePowBaseRat (u : UInt64) (q : AzRat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if u.toNat < 2 then AzFloat.powBaseRatPrecRound u q p m
+  else AzFloat.powBaseRatPrecRound u (ratExpInput q) p m
+
+/-- `AzFloat.powBaseM1RatPrecRound` for `u ≥ 2` with the substitutions of `malachitePowBaseM1`:
+`q ≥ 2^30` becomes `2^30`, and `q ≤ -2^31` becomes `-(p + 2)`. -/
+def malachitePowBaseM1Rat (u : UInt64) (q : AzRat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if u.toNat < 2 || q.num = 0 then AzFloat.powBaseM1RatPrecRound u q p m
+  else if !q.sign && 31 ≤ q.floorLogBase2Abs then
+    AzFloat.powBaseM1RatPrecRound u
+      (AzRat.ofAzInts (-(AzNat.ofNat (p + 2)).toAzInt) (AzNat.ofNat 1).toAzInt) p m
+  else AzFloat.powBaseM1RatPrecRound u (ratExpInput q) p m
 
 /-- `Float::{name}_prec_round(u, y, p, rm) = (r, o)` and `Float::{name}_prec(u, y, p) = (r, o)`
 for a `u64` base `u` and an exponent `y` read by `parseY`, against `f u y p rm`. -/
@@ -1443,14 +1487,14 @@ def checkFloatUnsignedPow : String → Verdict :=
   checkFloatUnsignedPowWith "unsigned_pow" (fun s => (parseFloat s).map (·.1)) malachitePowBase
 
 /-- `Float::unsigned_pow_rational_prec[_round](u, q, p[, rm])`, against
-`AzFloat.powBaseRatPrecRound`. -/
+`AzFloat.powBaseRatPrecRound` (through `malachitePowBaseRat`). -/
 def checkFloatUnsignedPowRational : String → Verdict :=
-  checkFloatUnsignedPowWith "unsigned_pow_rational" parseAzRat AzFloat.powBaseRatPrecRound
+  checkFloatUnsignedPowWith "unsigned_pow_rational" parseAzRat malachitePowBaseRat
 
 /-- `Float::unsigned_pow_unsigned_prec[_round](u, n, p[, rm])`, the integer power `u^n`, against
-`AzFloat.powBaseRatPrecRound` at the rational `n`. -/
+`AzFloat.powBaseRatPrecRound` at the rational `n` (through `malachitePowBaseRat`). -/
 def checkFloatUnsignedPowUnsigned : String → Verdict :=
-  checkFloatUnsignedPowWith "unsigned_pow_unsigned" parseAzRat AzFloat.powBaseRatPrecRound
+  checkFloatUnsignedPowWith "unsigned_pow_unsigned" parseAzRat malachitePowBaseRat
 
 /-- `Float::power_of_10_of_float[_prec][_round][_ref](x, …)`, `Float::power_of_10(x) = r`, and the
 assignments, against `AzFloat.powBasePrecRound 10` (through `malachitePowBase`). -/
@@ -1461,7 +1505,7 @@ def checkFloatPowerOf10OfFloat (line : String) : Verdict :=
 /-- `Float::power_of_10_rational_prec[_round][_ref](q, p[, rm])`, against
 `AzFloat.powBaseRatPrecRound 10`. -/
 def checkFloatPowerOf10Rational : String → Verdict :=
-  checkFloatOfRational "power_of_10_rational" (AzFloat.powBaseRatPrecRound 10)
+  checkFloatOfRational "power_of_10_rational" (malachitePowBaseRat 10)
 
 /-- `Float`'s `power_of_10_x_minus_1` family, against `AzFloat.powBaseM1PrecRound 10` (through
 `malachitePowBaseM1`); the sign of a zero result is not compared. -/
@@ -1471,7 +1515,7 @@ def checkFloatPowerOf10XMinus1 : String → Verdict :=
 /-- `Float::power_of_10_x_minus_1_rational_prec[_round][_ref](q, p[, rm])`, against
 `AzFloat.powBaseM1RatPrecRound 10`. -/
 def checkFloatPowerOf10XMinus1Rational : String → Verdict :=
-  checkFloatOfRational "power_of_10_x_minus_1_rational" (AzFloat.powBaseM1RatPrecRound 10)
+  checkFloatOfRational "power_of_10_x_minus_1_rational" (malachitePowBaseM1Rat 10)
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

@@ -2165,6 +2165,17 @@ import Azurite.DLMF.Chapter4.Section9Markov
 import Azurite.DLMF.Chapter4.Section9PadeExp
 import Azurite.DLMF.Chapter5.Section2
 import Azurite.DLMF.Chapter5.Section3
+import Azurite.DLMF.Chapter5.Section4
+import Azurite.DLMF.Chapter5.Section4Gauss
+import Azurite.DLMF.Chapter5.Section4Series
+import Azurite.DLMF.Chapter5.Section4Zeros
+import Azurite.DLMF.Chapter5.Section5
+import Azurite.DLMF.Chapter5.Section6
+import Azurite.DLMF.Chapter5.Section6Reciprocal
+import Azurite.DLMF.Chapter5.Section7
+import Azurite.DLMF.Chapter5.Section7Log
+import Azurite.DLMF.Chapter5.Section7Recip
+import Azurite.DLMF.Chapter5.Section7Zeta
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence
