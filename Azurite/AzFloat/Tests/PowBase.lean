@@ -184,3 +184,12 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard powBasePrecRound 10 (-tinyX) 53 .Nearest == (F "1" 53, .gt)
 #guard powBasePrecRound 10 (-tinyX) 53 .Floor == (belowOne, .lt)
 #guard powBasePrecRound 10 (-tinyX) 53 .Ceiling == (F "1" 53, .gt)
+
+-- exact powers of a power-of-two base with huge exponents: only the odd part of the
+-- (left-aligned) significand is powered, so `2^k` is a shift, not a `64 k`-bit power
+private def powBaseExpo (u : UInt64) (n : Int) (p : Nat) : Option Int × Ordering :=
+  let r := powBasePrecRound u (ofAzInt (AzInt.ofInt n)) p .Nearest
+  (r.1.exponent?.map (·.toInt), r.2)
+#guard powBaseExpo 2 59011072 2 == (some 59011073, .eq)
+#guard powBaseExpo 8 1033216 30 == (some 3099649, .eq)
+#guard powBaseExpo 8 (-371200) 13 == (some (-1113599), .eq)

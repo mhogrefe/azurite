@@ -97,6 +97,13 @@ theorem setPrecRound_one_eq (p : ℕ) [NeZero p] (mode : RoundingMode) :
     setPrecRound one p mode = roundVal p mode (some (1 : EReal)) := by
   rw [setPrecRound_eq_roundVal toVal_one', EReal.coe_one]
 
+/-- `m = (m >>> c) · 2^c` for the trailing-zero count `c` of `m ≠ 0`. -/
+theorem toNat_eq_shiftRight_trailingZeros_mul (m : AzNat) (hm : m ≠ 0) :
+    m.toNat = (m.shiftRight (m.trailingZeros.getD 0)).toNat * 2 ^ (m.trailingZeros.getD 0) := by
+  rw [AzNat.trailingZeros_eq_padicValNat m hm, Option.getD_some, AzNat.toNat_shiftRight]
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  exact (Nat.div_mul_cancel pow_padicValNat_dvd).symm
+
 /-- **`x^n` is correctly rounded.** -/
 theorem powIntPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :
@@ -162,31 +169,54 @@ theorem powIntPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p
     -- the exact ingredients
     obtain ⟨k, hk⟩ : ∃ k : ℕ, k = n.abs.toNat := ⟨_, rfl⟩
     have hkZ : (k : ℤ) = |n.toInt| := by rw [hk]; exact AzInt.abs_toNat_eq n
-    have hm0 : (m.toNat : ℝ) ≠ 0 := by
+    have hmR : (m.toNat : ℝ) ≠ 0 := by
       intro h0
       apply hv0
       unfold finiteVal
       rw [h0, mul_zero, zero_mul]
-    have ht : ((e - (AzNat.ofNat m.size).toAzInt) * n.abs.toAzInt).toInt
-        = (e.toInt - m.size) * k := by
-      rw [AzInt.toInt_mul, AzInt.toInt_sub, toInt_toAzInt, toInt_toAzInt, AzNat.toNat_ofNat, hk]
-    have hmk : (ofAzNat (m.pow k)).toVal = some (((m.toNat : ℝ) ^ k : ℝ) : EReal) := by
+    have hmA : m ≠ 0 := fun h => hmR (by rw [h, AzNat.toNat_zero, Nat.cast_zero])
+    -- the odd part `mo = m / 2^c`
+    obtain ⟨c, hc⟩ : ∃ c : ℕ, c = m.trailingZeros.getD 0 := ⟨_, rfl⟩
+    obtain ⟨mo, hmo⟩ : ∃ mo : AzNat, mo = m.shiftRight c := ⟨_, rfl⟩
+    have hfac : (m.toNat : ℝ) = (mo.toNat : ℝ) * (2 : ℝ) ^ c := by
+      rw [hmo, hc]
+      exact_mod_cast toNat_eq_shiftRight_trailingZeros_mul m hmA
+    have hm0 : (mo.toNat : ℝ) ≠ 0 := by
+      intro h0
+      rw [h0, zero_mul] at hfac
+      exact hmR hfac
+    rw [← hc, ← hmo]
+    have ht :
+        ((e - (AzNat.ofNat m.size).toAzInt + (AzNat.ofNat c).toAzInt) * n.abs.toAzInt).toInt
+          = (e.toInt - m.size + c) * k := by
+      rw [AzInt.toInt_mul, AzInt.toInt_add, AzInt.toInt_sub, toInt_toAzInt, toInt_toAzInt,
+        toInt_toAzInt, AzNat.toNat_ofNat, AzNat.toNat_ofNat, hk]
+    have hmk : (ofAzNat (mo.pow k)).toVal = some (((mo.toNat : ℝ) ^ k : ℝ) : EReal) := by
       rw [toVal_ofAzNat, AzNat.toNat_pow, Nat.cast_pow]
     have hsgn := sign_pow_eq s k n.abs.isOdd (by rw [hk]; exact abs_isOdd_iff n)
     have hpow := finiteVal_pow s e m k
-    rw [hsgn] at hpow
+    have h2 : (2 : ℝ) ^ (c * k) * (2 : ℝ) ^ ((e.toInt - m.size) * k)
+        = (2 : ℝ) ^ ((e.toInt - m.size + c) * k) := by
+      rw [← zpow_natCast, ← zpow_add₀ two_ne_zero]
+      congr 1
+      push_cast
+      ring
+    rw [hsgn, hfac, mul_pow, ← pow_mul, mul_assoc, mul_assoc ((mo.toNat : ℝ) ^ k), h2,
+      ← mul_assoc] at hpow
     obtain ⟨σ, hσ⟩ : ∃ σ : ℝ, σ = if (!s && n.abs.isOdd) = true then (-1 : ℝ) else 1 := ⟨_, rfl⟩
     rw [← hσ] at hpow
-    have hσmk : (if (!s && n.abs.isOdd) = true then -ofAzNat (m.pow k) else ofAzNat (m.pow k)).toVal
-        = some ((σ * (m.toNat : ℝ) ^ k : ℝ) : EReal) := by
+    have hσmk : (if (!s && n.abs.isOdd) = true then -ofAzNat (mo.pow k) else ofAzNat (mo.pow k)).toVal
+        = some ((σ * (mo.toNat : ℝ) ^ k : ℝ) : EReal) := by
       rw [hσ]
       split_ifs
       · rw [toVal_neg, hmk, Option.map_some, neg_one_mul, EReal.coe_neg]
       · rw [hmk, one_mul]
     have hσp2 : (if (!s && n.abs.isOdd) = true
-        then -powerOf2 (-((e - (AzNat.ofNat m.size).toAzInt) * n.abs.toAzInt))
-        else powerOf2 (-((e - (AzNat.ofNat m.size).toAzInt) * n.abs.toAzInt))).toVal
-        = some ((σ * (2 : ℝ) ^ (-((e.toInt - m.size) * k)) : ℝ) : EReal) := by
+        then -powerOf2 (-((e - (AzNat.ofNat m.size).toAzInt + (AzNat.ofNat c).toAzInt)
+          * n.abs.toAzInt))
+        else powerOf2 (-((e - (AzNat.ofNat m.size).toAzInt + (AzNat.ofNat c).toAzInt)
+          * n.abs.toAzInt))).toVal
+        = some ((σ * (2 : ℝ) ^ (-((e.toInt - m.size + c) * k)) : ℝ) : EReal) := by
       rw [hσ]
       split_ifs
       · rw [toVal_neg, toVal_powerOf2, AzInt.toInt_neg, ht, Option.map_some, neg_one_mul,
