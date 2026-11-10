@@ -69,6 +69,10 @@ import Azurite.AzFloat.Exp
 import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.ExpM1
 import Azurite.AzFloat.ExpM1Rat
+import Azurite.AzFloat.Pow2
+import Azurite.AzFloat.Pow2Rat
+import Azurite.AzFloat.Pow2M1
+import Azurite.AzFloat.Pow2M1Rat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1335,6 +1339,56 @@ def checkFloatExpRational : String → Verdict :=
 `AzFloat.expM1RatPrecRound`. -/
 def checkFloatExpXMinus1Rational : String → Verdict :=
   checkFloatOfRational "exp_x_minus_1_rational" AzFloat.expM1RatPrecRound
+
+/-- An associated-function line `Float::f(x, a…) = r` rewritten as the method line
+`(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/
+def assocAsMethod (line : String) : String :=
+  if !line.startsWith "Float::" then line
+  else
+    let rest := dropChars line 7
+    match splitParenthesized rest with
+    | some (args, after) =>
+      match splitArgs args with
+      | x :: more => s!"({x}).{(rest.splitOn "(").headD ""}({", ".intercalate more}){after}"
+      | [] => line
+    | none => line
+
+/-- `AzFloat.pow2PrecRound` at `expInput x`: `2^(2^30)` already overflows Malachite's range and
+`2^(-2^31)` underflows far below half its smallest positive value, so the substitution of
+`expInput` is exact here too. -/
+def malachitePow2 (x : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  AzFloat.pow2PrecRound (expInput x) p m
+
+/-- `AzFloat.pow2M1PrecRound` with the substitutions of `malachiteExpM1`: for `x ≤ -2^31`,
+`2^x - 1 = -1 + ε` with `0 < ε < 2^(-p-1)`, as at `x = -(p + 2)`. -/
+def malachitePow2M1 (x : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  match x with
+  | .finite false e _ _ _ =>
+    if AzInt.ofInt 32 ≤ e then
+      AzFloat.pow2M1PrecRound (exactFromInteger (-(AzNat.ofNat (p + 2)).toAzInt)) p m
+    else AzFloat.pow2M1PrecRound x p m
+  | _ => AzFloat.pow2M1PrecRound (expInput x) p m
+
+/-- `Float::power_of_2_of_float[_prec][_round][_ref](x, …)`, `Float::power_of_2(x) = r`, and the
+assignments, against `AzFloat.pow2PrecRound` (through `malachitePow2`). -/
+def checkFloatPowerOf2OfFloat (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "power_of_2_of_float" 0 (fun _ => some ()) (fun x _ => malachitePow2 x)
+    (assocAsMethod line) ["power_of_2", "power_of_2_assign"]
+
+/-- `Float`'s `power_of_2_x_minus_1` family, against `AzFloat.pow2M1PrecRound` (through
+`malachitePow2M1`); as with `ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatPowerOf2XMinus1 : String → Verdict :=
+  checkFloatUnaryWith "power_of_2_x_minus_1" malachitePow2M1
+
+/-- `Float::power_of_2_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.pow2RatPrecRound`. -/
+def checkFloatPowerOf2Rational : String → Verdict :=
+  checkFloatOfRational "power_of_2_rational" AzFloat.pow2RatPrecRound
+
+/-- `Float::power_of_2_x_minus_1_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.pow2M1RatPrecRound`. -/
+def checkFloatPowerOf2XMinus1Rational : String → Verdict :=
+  checkFloatOfRational "power_of_2_x_minus_1_rational" AzFloat.pow2M1RatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound
