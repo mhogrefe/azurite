@@ -42,6 +42,9 @@ theorem log2P1_finite_eq (A : AzFloat → ℕ → Roundable × Roundable)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
+        match log2P1Pow2Fast? (finite s e q m hv) (AzInt.ofInt 1) p mode with
+        | some r => r
+        | none =>
         zivLoopCertified (A (finite s e q m hv)) p mode
           (lnP1Start e p)
           (hA p mode (toVal_finite s e q m hv) hgt
@@ -58,6 +61,11 @@ theorem log2P1_finite_eq (A : AzFloat → ℕ → Roundable × Roundable)
   · rename_i h
     have hirr := irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
       (w := lnP1Start e p) (by have := lnP1Start_ge e p; omega) hpos h
+    split
+    · next r hT =>
+      have := log2P1Pow2Fast?_eq (toVal_finite s e q m hv) (k := AzInt.ofInt 1)
+        (by rw [AzInt.toInt_ofInt]; norm_num) hT
+      rwa [AzInt.toInt_ofInt, Int.cast_one, div_one] at this
     exact zivLoopCertified_eq_threshold p mode _ (Real.logb 2 (1 + finiteVal s e m)) _
       (by have := lnP1Start_ge e p; omega)
       (fun w hw => by

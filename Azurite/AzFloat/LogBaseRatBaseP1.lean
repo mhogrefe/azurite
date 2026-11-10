@@ -33,6 +33,9 @@ def logBaseRatBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fi
     (hgt : -1 < finiteVal s e m) (b : AzRat) (hb : (0 : ℚ) < AzRat.toRat b)
     (hb1 : (AzRat.toRat b : ℝ) ≠ 1) (p : Nat) [NeZero p] (mode : RoundingMode) :
     AzFloat × Ordering :=
+  match (b.checkedLogBase2.bind fun k => log2P1Pow2Fast? (finite s e q m hv) k p mode) with
+  | some r => r
+  | none =>
   match hx : logBaseRatBaseExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
       (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (ratDyadicExp b) (oddPart b.num)
       (oddPart b.den) with

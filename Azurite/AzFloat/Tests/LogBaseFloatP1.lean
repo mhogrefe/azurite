@@ -138,3 +138,16 @@ private def refTiny : AzRat :=
 private def tinyE : AzInt := AzInt.ofInt (-(2 ^ 30 : Int))
 private def tinyX : AzFloat := (F "1" 53) <<< tinyE
 #guard L tinyX (F "10" 53) 53 == logBaseP1PrecRound tinyX 10 53 .Nearest
+
+-- a huge power of two, `x = 2^K` with `K = 2^30 − 98`: `log₂ (1 + x) = K + ε`, `ε ≈ 2^(−K)`;
+-- the side of `K` is decided without `K` bits of working precision
+private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
+#guard L bigX (F "2" 53) 52 == (F "1073741726" 52, .lt)
+#guard L bigX (F "1/2" 53) 52 == (F "-1073741726" 52, .gt)
+#guard L bigX (F "4" 53) 52 .Floor == (F "536870863" 52, .lt)
+
+-- huge integers with a base that is not a power of two
+private def bigY : AzFloat := (F "3" 52) <<< AzInt.ofInt (2 ^ 30)
+#guard L bigX (F "10" 53) 52 == logBaseP1PrecRound bigX 10 52 .Nearest
+#guard (L bigX (F "6" 53) 52).2 == .lt
+#guard (L bigY (F "3/4" 53) 52).2 == .lt

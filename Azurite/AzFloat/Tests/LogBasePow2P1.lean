@@ -102,3 +102,12 @@ private def tinyX : AzFloat := (F "1" 53) <<< tinyE
 -- `log₁₆ (1 + x) ≈ x / (4 ln 2)`
 #guard L tinyX 4 53
   == ((F "3248660424278399/2251799813685248" 53) <<< (tinyE - AzInt.ofInt 2), .lt)
+
+-- a huge power of two, `x = 2^K` with `K = 2^30 − 98`: `log₂ (1 + x) = K + ε`, `ε ≈ 2^(−K)`;
+-- the side of `K` is decided without `K` bits of working precision
+private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
+#guard L bigX 2 52 == (F "536870863" 52, .lt)
+#guard L bigX (-2) 52 == (F "-536870863" 52, .gt)
+#guard L bigX 1 52 .Floor == (F "1073741726" 52, .lt)
+#guard L bigX (-1) 52 .Floor == (F "-4503599216328705/4194304" 52, .lt)
+#guard (L bigX 3 52).2 != .eq

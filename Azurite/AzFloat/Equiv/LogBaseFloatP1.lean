@@ -32,6 +32,18 @@ theorem logBaseFloatP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv
             EReal)) := by
   unfold logBaseFloatP1Finite
   split
+  · next r hT =>
+    split_ifs at hT with hm
+    have h2 := finiteVal_true_of_isPowerOfTwo eb mb hm
+    have hK : (eb - 1).toInt = eb.toInt - 1 := by rw [AzInt.toInt_sub]; rfl
+    have hk : (eb - 1).toInt ≠ 0 := by
+      intro h0
+      apply hb1
+      rw [h2, ← hK, h0, zpow_zero]
+    have := log2P1Pow2Fast?_eq (toVal_finite s e q m hv) hk hT
+    rw [h2, ← hK, log_div_log_two_zpow]
+    exact this
+  split
   · rename_i r hx
     rw [ofAzRatRound_eq_roundVal, logBaseFloatP1_exact_value s e hv hgt eb hvb hb1 r hx]
   · rename_i hx

@@ -81,4 +81,32 @@ def onePlusPow2Exponent? (x : AzFloat) (w : Nat) : Option AzInt :=
   | finite true e _ m _ => if eqIEEE sLo sHi && m.isPowerOfTwo then some (e - 1) else none
   | _ => none
 
+/-- The rounding test for a value `v ∈ (K/k, K/k + 2^(1−K)]` with `k > 0`: `roundingPossible` on
+the exact quotient `K/k` (given by its rounding procedure) and the float
+`⌈⌈K/k⌉ + 2^(1−K)⌉` at `p + 72` bits. -/
+def pow2P1Core (K k : AzInt) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
+  let w := p + zivGuardBits + 8
+  let a := ofAzInt K
+  let b := ofAzInt k
+  let c := (divPrecRound a b w .Ceiling).1
+  let hi := (addPrecRound c (one <<< (AzInt.ofInt 1 - K)) w .Ceiling).1
+  roundingPossible (fun P M => divPrecRound a b P M) (fun P M => setPrecRound hi P M) p mode
+
+/-- The rounding of `(K + ε)/k` for `0 < ε ≤ 2^(1−K)` and `k ≠ 0`, when the test of
+`pow2P1Core` decides it (for `k < 0`: the test on the negated value in the negated mode). -/
+def pow2P1Fast? (K k : AzInt) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
+  if k.sign then pow2P1Core K k p mode
+  else (pow2P1Core K (-k) p (-mode)).map fun r => (-r.1, r.2.swap)
+
+/-- **The power-of-two path of `log₂ (1 + x) / k`**: for `x = 2^K` exactly,
+`log₂ (1 + x) = K + ε` with `0 < ε = log₂ (1 + 2^(−K)) ≤ 2^(1−K)`, so the value is `K/k` plus a
+tiny one-sided perturbation.  When `K/k` is a rounding boundary (always for `k = ±1`) the Ziv
+loop would need about `K` bits to see the side; `pow2P1Fast?` decides it at `p + 72` bits, at a
+cost independent of `K`.  `none` when `x` is not a positive power of two or the test fails. -/
+def log2P1Pow2Fast? (x : AzFloat) (k : AzInt) (p : Nat) (mode : RoundingMode) :
+    Option (AzFloat × Ordering) :=
+  match x with
+  | finite true e _ m _ => if m.isPowerOfTwo then pow2P1Fast? (e - 1) k p mode else none
+  | _ => none
+
 end Azurite.AzFloat

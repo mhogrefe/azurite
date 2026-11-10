@@ -83,3 +83,16 @@ private def tinyX : AzFloat := (F "1" 53) <<< tinyE
   == ((F "3248660424278399/2251799813685248" 53) <<< tinyE, .lt)
 #guard log2P1PrecRoundWith (LnConsts.forPrecision 53) tinyX 53 .Nearest
   == log2P1PrecRound tinyX 53 .Nearest
+
+-- a huge power of two, `x = 2^K` with `K = 2^30 − 98`: `log₂ (1 + x) = K + ε`, `ε ≈ 2^(−K)`;
+-- the side of `K` is decided without `K` bits of working precision
+private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
+#guard log2P1PrecRound bigX 52 .Nearest == (F "1073741726" 52, .lt)
+#guard log2P1PrecRound bigX 52 .Floor == (F "1073741726" 52, .lt)
+#guard log2P1PrecRound bigX 52 .Ceiling == (F "4503599216328705/4194304" 52, .gt)
+#guard log2P1 bigX == F "1073741726" 52
+#guard log2P1PrecRound ((F "1" 53) <<< AzInt.ofInt 70) 53 .Floor == (F "70" 53, .lt)
+#guard log2P1PrecRound ((F "1" 53) <<< AzInt.ofInt 70) 53 .Ceiling
+  == (F "4925812092436481/70368744177664" 53, .gt)
+#guard log2P1PrecRoundWith (LnConsts.forPrecision 53) bigX 52 .Nearest
+  == log2P1PrecRound bigX 52 .Nearest

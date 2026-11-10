@@ -90,4 +90,16 @@ private def p : String := "1" ++ "".pushn '0' 300
 #guard Cl "1000" ("9" ++ "".pushn '9' 299) == some 100
 #guard Cl "1000" ("1" ++ "".pushn '0' 299 ++ "1") == some 101
 
+-- the 2-adic guard of `checkedLogBase`: `m 2^t + 1` with a large `t` is rejected without
+-- computing a power, and genuine powers are unaffected
+#guard AzNat.notPowGuard (N "3") ((N "5") <<< (1000 : Nat) + 1)
+#guard AzNat.checkedLogBase (N "3") ((N "5") <<< (1000 : Nat) + 1) == none
+#guard AzNat.checkedLogBase (N "10") ((N "1") <<< (100000 : Nat) + 1) == none
+#guard !AzNat.notPowGuard (N "3") (N "6561")
+#guard Ck "3" "6561" == some 8
+#guard Ck "17" "6975757441" == some 8
+#guard Ck "65537" "4295098369" == some 2
+private def f64 : AzNat := (N "1") <<< (64 : Nat) + 1
+#guard AzNat.checkedLogBase f64 (f64.pow 3) == some 3
+
 end Azurite

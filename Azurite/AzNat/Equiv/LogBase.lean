@@ -12,6 +12,10 @@ import Azurite.AzNat.Equiv.Compare
 import Azurite.AzNat.Equiv.LogBase2
 import Azurite.AzNat.Equiv.Pow
 import Mathlib.Data.Nat.Log
+import Azurite.AzNat.Equiv.TwoAdicPow
+import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.Equiv.Sub
+import Azurite.AzNat.Equiv.Size
 
 /-!
 # Equivalence: logarithms of naturals in a general base
@@ -97,9 +101,9 @@ theorem ceilingLogBase_eq (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) :
       have hle : n.toNat ≤ b.toNat ^ e := (Nat.clog_le_iff_le_pow (by omega)).mp (by omega)
       exact hne (Nat.le_antisymm hlo hle)
 
-theorem checkedLogBase_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) (e : ℕ) :
-    checkedLogBase b n = some e ↔ n.toNat = b.toNat ^ e := by
-  unfold checkedLogBase
+theorem checkedLogBaseCore_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) (e : ℕ) :
+    checkedLogBaseCore b n = some e ↔ n.toNat = b.toNat ^ e := by
+  unfold checkedLogBaseCore
   rw [floorLogBase_eq b n hb hn, Option.bind_some]
   constructor
   · intro h
@@ -111,6 +115,27 @@ theorem checkedLogBase_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n �
   · intro h
     have hlog : Nat.log b.toNat n.toNat = e := by rw [h, Nat.log_pow (by omega)]
     rw [hlog, ite_eq_left (toNat_injective (by rw [toNat_pow, h]))]
+
+/-- The guard is sound: it fires only when `n` is not a power of `b`. -/
+theorem notPowGuard_spec {b n : AzNat} (hb : 2 ≤ b.toNat) (h : notPowGuard b n = true) (e : ℕ) :
+    n.toNat ≠ b.toNat ^ e := by
+  unfold notPowGuard at h
+  rw [decide_eq_true_eq] at h
+  apply not_eq_pow_of_twoAdic_gt hb
+  rw [size_toNat, size_toNat]
+  by_cases h0 : n - 1 = 0
+  · rw [h0, trailingZeros_zero] at h
+    simp only [Option.getD_none] at h
+    omega
+  · rw [trailingZeros_eq_padicValNat _ h0, Option.getD_some, toNat_sub] at h
+    exact h
+
+theorem checkedLogBase_eq_some_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) (e : ℕ) :
+    checkedLogBase b n = some e ↔ n.toNat = b.toNat ^ e := by
+  unfold checkedLogBase
+  split_ifs with hg
+  · exact ⟨fun h => (by cases h), fun h => absurd h (notPowGuard_spec hb hg e)⟩
+  · exact checkedLogBaseCore_eq_some_iff b n hb hn e
 
 theorem checkedLogBase_eq_none_iff (b n : AzNat) (hb : 2 ≤ b.toNat) (hn : n ≠ 0) :
     checkedLogBase b n = none ↔ ∀ e : ℕ, n.toNat ≠ b.toNat ^ e := by

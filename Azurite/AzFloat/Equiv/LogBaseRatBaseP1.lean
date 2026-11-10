@@ -31,6 +31,17 @@ theorem logBaseRatBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
             EReal)) := by
   unfold logBaseRatBaseP1Finite
   split
+  · next r hT =>
+    obtain ⟨k, hk, hT'⟩ := Option.bind_eq_some_iff.mp hT
+    have hbk := (AzRat.checkedLogBase2_eq_some_iff b k).mp hk
+    have hk0 : k.toInt ≠ 0 := by
+      intro h0
+      apply hb1
+      rw [hbk, h0, zpow_zero]
+    have := log2P1Pow2Fast?_eq (toVal_finite s e q m hv) hk0 hT'
+    rw [hbk, log_div_log_two_zpow]
+    exact this
+  split
   · rename_i r hx
     rw [ofAzRatRound_eq_roundVal, logBaseRatBaseP1_exact_value s e hv hgt b
       (sign_eq_true_of_toRat_pos b hb) (num_ne_zero_of_toRat_pos b hb) hb1 r hx]

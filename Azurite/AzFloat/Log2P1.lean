@@ -47,6 +47,9 @@ def log2P1PrecRoundCore (A : AzFloat → Nat → Roundable × Roundable)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
+        match log2P1Pow2Fast? (finite true e q m hv) (AzInt.ofInt 1) p mode with
+        | some r => r
+        | none =>
         zivLoopCertified (A (finite true e q m hv)) p mode
           (lnP1Start e p)
           (hA p mode (toVal_finite true e q m hv)
@@ -64,6 +67,9 @@ def log2P1PrecRoundCore (A : AzFloat → Nat → Roundable × Roundable)
         with
       | some k => setPrecRound (ofAzInt k) p mode
       | none =>
+        match log2P1Pow2Fast? (finite false e q m hv) (AzInt.ofInt 1) p mode with
+        | some r => r
+        | none =>
         zivLoopCertified (A (finite false e q m hv)) p mode
           (lnP1Start e p)
           (hA p mode (toVal_finite false e q m hv)

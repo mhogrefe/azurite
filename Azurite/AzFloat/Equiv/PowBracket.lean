@@ -16,6 +16,7 @@ import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.SqrtRem
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.Equiv.TwoAdicPow
 import Mathlib.NumberTheory.Multiplicity
 
 /-!
@@ -1011,44 +1012,6 @@ theorem not_mem_floatSet_of_div_odd_coprime (p : ℕ) [NeZero p] {a b : ℕ} (ha
     have hdvd : b ∣ a := ⟨2 ^ d * M', by rw [haeq, ← h1]; ring⟩
     have := Nat.Coprime.eq_one_of_dvd hcop.symm hdvd
     omega
-
-/-- `v₂(m) < size m`. -/
-theorem padicValNat_two_lt_size {m : ℕ} (hm : m ≠ 0) : padicValNat 2 m < m.size := by
-  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-  have h := Nat.le_of_dvd (Nat.pos_of_ne_zero hm) (pow_padicValNat_dvd (p := 2) (n := m))
-  exact (Nat.pow_lt_pow_iff_right (by norm_num)).mp (lt_of_le_of_lt h (Nat.lt_size_self m))
-
-/-- **Lifting the exponent**: `v₂(r^a − 1) + 3 ≤ 2 size r + size a` for an odd `r ≥ 3` and
-`a ≥ 1` (from `v₂(r^(2a) − 1) = v₂(r + 1) + v₂(r − 1) + v₂(2a) − 1` and
-`r^(2a) − 1 = (r^a − 1)(r^a + 1)` with `r^a + 1` even). -/
-theorem padicValNat_two_pow_sub_one_le {r a : ℕ} (hr : Odd r) (hr3 : 3 ≤ r) (ha : 1 ≤ a) :
-    padicValNat 2 (r ^ a - 1) + 3 ≤ 2 * r.size + a.size := by
-  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-  have hr1 : 1 < r := by omega
-  have hra : 1 < r ^ a := Nat.one_lt_pow (by omega) hr1
-  have hra0 : r ^ a - 1 ≠ 0 := by omega
-  have hra1 : r ^ a + 1 ≠ 0 := by omega
-  have hlte := padicValNat.pow_two_sub_pow (x := r) (y := 1) hr1
-    (even_iff_two_dvd.mp (Nat.Odd.sub_odd hr odd_one))
-    (by rw [← even_iff_two_dvd, Nat.not_even_iff_odd]; exact hr) (n := 2 * a) (by omega)
-    (even_two_mul a)
-  rw [one_pow] at hlte
-  have hfac : r ^ (2 * a) - 1 = (r ^ a + 1) * (r ^ a - 1) := by
-    have := Nat.sq_sub_sq (r ^ a) 1
-    rwa [one_pow, ← pow_mul, mul_comm a 2] at this
-  rw [hfac, padicValNat.mul hra1 hra0, padicValNat.mul two_ne_zero (by omega),
-    padicValNat_self] at hlte
-  have h1 : 1 ≤ padicValNat 2 (r ^ a + 1) :=
-    one_le_padicValNat_of_dvd hra1 (even_iff_two_dvd.mp (hr.pow.add_one))
-  have h2 := padicValNat_two_lt_size (show r + 1 ≠ 0 by omega)
-  have h3 := padicValNat_two_lt_size (show r - 1 ≠ 0 by omega)
-  have h4 := padicValNat_two_lt_size (show a ≠ 0 by omega)
-  have h5 : (r + 1).size ≤ r.size + 1 := by
-    rw [Nat.size_le, pow_succ]
-    have := Nat.lt_size_self r
-    omega
-  have h6 : (r - 1).size ≤ r.size := Nat.size_le_size (by omega)
-  omega
 
 /-- `natPowM1Cheap r n p = false` forces `n ≠ 0`. -/
 theorem ne_zero_of_natPowM1Cheap_false {r : AzNat} {n : AzInt} {p : ℕ}

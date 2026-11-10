@@ -103,3 +103,14 @@ private def tinyX : AzFloat := (F "1" 53) <<< tinyE
 -- `log₁₀ (1 + x) ≈ x / ln 10`
 #guard L tinyX 10 53 == ((F "3911776933737095/9007199254740992" 53) <<< tinyE, .lt)
 #guard (L (-tinyX) 10 53).2 == .gt
+
+-- a huge power of two, `x = 2^K` with `K = 2^30 − 98`: `log₂ (1 + x) = K + ε`, `ε ≈ 2^(−K)`;
+-- the side of `K` is decided without `K` bits of working precision
+private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
+#guard L bigX 4 52 .Floor == (F "536870863" 52, .lt)
+#guard L bigX 2 52 == (F "1073741726" 52, .lt)
+#guard (L bigX 8 52).2 == .lt
+
+-- huge integers with a base that is not a power of two: the exactness test rejects them by the
+-- 2-adic guard of `checkedLogBase` instead of computing a power of about `2^30` bits
+#guard (L bigX 10 52).2 == .gt

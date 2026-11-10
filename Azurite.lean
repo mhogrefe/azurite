@@ -641,6 +641,7 @@ import Azurite.AzNat.Equiv.SumProduct
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
+import Azurite.AzNat.Equiv.TwoAdicPow
 import Azurite.AzNat.ExactDivOdd
 import Azurite.AzNat.ExpSplit
 import Azurite.AzNat.Factorial

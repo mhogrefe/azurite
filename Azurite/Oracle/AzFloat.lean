@@ -1122,6 +1122,32 @@ def checkFloatLogBase21PlusX : String → Verdict :=
 def checkFloatLogBase2Rational : String → Verdict :=
   checkFloatOfRational "log_base_2_rational" AzFloat.log2RatPrecRound
 
+/-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
+def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound
+
+/-- `Float`'s `reciprocal_sqrt` family in every shape, against `AzFloat.rsqrtPrecRound`. -/
+def checkFloatReciprocalSqrtAll : String → Verdict :=
+  checkFloatUnaryWith "reciprocal_sqrt" AzFloat.rsqrtPrecRound
+
+/-- `sqrt_unsigned_prec[_round](n, p[, rm]) = (r, o)`, against `AzFloat.sqrtRatPrecRound`. -/
+def checkFloatSqrtUnsigned (line : String) : Verdict := do
+  let (method, args, res) ←
+    match functionCall line "sqrt_unsigned_prec_round", functionCall line "sqrt_unsigned_prec" with
+    | some (args, res), _ => pure ("sqrt_unsigned_prec_round", args, res)
+    | _, some (args, res) => pure ("sqrt_unsigned_prec", args, res)
+    | _, _ => fail "not a sqrt_unsigned line"
+  let (n, p, rm) ← match args with
+    | [n, p, rm] => pure (n, p, some rm)
+    | [n, p] => pure (n, p, none)
+    | _ => fail s!"{method}: unexpected arguments"
+  let n ← expect "n" (parseAzRat n)
+  let p ← expect "precision" (parseNat p)
+  let rm ← match rm with
+    | some rm => expect "rounding mode" (parseRounding rm)
+    | none => pure (.mode .Nearest)
+  let computed ← roundedResult method (AzFloat.sqrtRatPrecRound n p) rm
+  expectFloatPair method computed (← parseFloatPair res)
+
 /-- `checkFloatFusedWith` for three floats. -/
 def checkFloatFused (name : String)
     (f : AzFloat → AzFloat → AzFloat → Nat → RoundingMode → AzFloat × Ordering) :

@@ -41,6 +41,9 @@ def logBasePow2P1Finite (A : AzFloat → AzInt → Nat → Roundable × Roundabl
   match h : onePlusPow2Exponent? (finite s e q m hv) (lnP1Start e p) with
   | some j => ofAzRatRound (AzRat.ofAzInts j k) p mode
   | none =>
+    match log2P1Pow2Fast? (finite s e q m hv) k p mode with
+    | some r => r
+    | none =>
     zivLoopCertified (A (finite s e q m hv) k) p mode
       (lnP1Start e p)
       (hA p mode (toVal_finite s e q m hv) hgt k hk

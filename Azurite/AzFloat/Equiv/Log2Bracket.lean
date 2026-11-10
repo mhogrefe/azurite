@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Log2Bracket
+import Azurite.AzFloat.Equiv.NegRound
 import Azurite.AzNat.Equiv.Gcd
 import Azurite.AzNat.Equiv.Pow2
 import Azurite.AzNat.Equiv.Size
@@ -718,5 +719,121 @@ theorem log2P1ApproxWith_isSome_exists (c : LnConsts) (p : ℕ) [NeZero p] (mode
     (fun w hw => by
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2P1ApproxWith_spec c hw hx hx1 hirr
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
+
+/-! ### The power-of-two path of `log₂ (1 + x) / k` -/
+
+theorem pow2P1Core_eq {K k : AzInt} {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} {v : ℝ} (hk : 0 < k.toInt)
+    (hv1 : (K.toInt : ℝ) / k.toInt < v)
+    (hv2 : v ≤ (K.toInt : ℝ) / k.toInt + (2 : ℝ) ^ (1 - K.toInt))
+    (h : pow2P1Core K k p mode = some r) : r = roundVal p mode (some (v : EReal)) := by
+  unfold pow2P1Core at h
+  dsimp only at h
+  have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
+  have hk' : ((k.toInt : ℤ) : ℝ) ≠ 0 := by exact_mod_cast hk.ne'
+  obtain ⟨c, hc, hc1, -⟩ := divCeiling_abs (toVal_ofAzInt K) (toVal_ofAzInt k) hk'
+    (p + zivGuardBits + 8)
+  have hd : (one <<< (AzInt.ofInt 1 - K)).toVal
+      = some ((1 * (2 : ℝ) ^ (1 - K.toInt) : ℝ) : EReal) := by
+    rw [toVal_shiftLeft_of_toVal toVal_one', AzInt.toInt_sub, AzInt.toInt_ofInt]
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs hc hd (p + zivGuardBits + 8)
+  have hR1 : Rounds (fun P M => divPrecRound (ofAzInt K) (ofAzInt k) P M)
+      ((K.toInt : ℝ) / k.toInt) := by
+    intro P _ M
+    show divPrecRound (ofAzInt K) (ofAzInt k) P M = _
+    rw [divPrecRound_eq_liftVal₂, liftVal₂, toVal_ofAzInt, toVal_ofAzInt, Option.bind_some,
+      Option.bind_some, Spec.div_coe_coe _ _ hk']
+  have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+  rw [fval_of_toVal_coe hhi] at hR2
+  exact roundingPossible_eq' p mode hR1 hR2 hv1.le (by linarith)
+    (Or.inl fun h => absurd h hv1.ne) h
+
+/-- The value form of `pow2P1Fast?`: any `v = (K + ε)/k` with `0 < ε ≤ 2^(1−K)`, `k ≠ 0`. -/
+theorem pow2P1Fast?_eq {K k : AzInt} {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} {ε : ℝ} (hk : k.toInt ≠ 0) (hε0 : 0 < ε)
+    (hε1 : ε ≤ (2 : ℝ) ^ (1 - K.toInt)) (h : pow2P1Fast? K k p mode = some r) :
+    r = roundVal p mode (some ((((K.toInt : ℝ) + ε) / k.toInt : ℝ) : EReal)) := by
+  have htoInt : k.toInt = if k.sign then (k.abs.toNat : ℤ) else -(k.abs.toNat : ℤ) := rfl
+  unfold pow2P1Fast? at h
+  split_ifs at h with hs
+  · have hpos : 0 < k.toInt := by
+      rw [hs] at htoInt
+      simp only [↓reduceIte] at htoInt
+      omega
+    have hk1 : (1 : ℝ) ≤ k.toInt := by exact_mod_cast hpos
+    have hk0 : (0 : ℝ) < k.toInt := by linarith
+    refine pow2P1Core_eq hpos ?_ ?_ h
+    · rw [div_lt_div_iff_of_pos_right hk0]; linarith
+    · rw [add_div]
+      have : ε / k.toInt ≤ ε := div_le_self hε0.le hk1
+      linarith
+  · obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
+    have hneg : k.toInt < 0 := by
+      have hs' : k.sign = false := by simpa using hs
+      rw [hs'] at htoInt
+      simp only [Bool.false_eq_true, ↓reduceIte] at htoInt
+      omega
+    have hpos : 0 < (-k).toInt := by rw [AzInt.toInt_neg]; omega
+    have hk1 : (1 : ℝ) ≤ ((-k).toInt : ℝ) := by exact_mod_cast hpos
+    have hk0 : (0 : ℝ) < ((-k).toInt : ℝ) := by linarith
+    have hval : -(((K.toInt : ℝ) + ε) / k.toInt) = ((K.toInt : ℝ) + ε) / ((-k).toInt : ℝ) := by
+      rw [AzInt.toInt_neg]; push_cast; rw [div_neg]
+    have hr := pow2P1Core_eq (v := -(((K.toInt : ℝ) + ε) / k.toInt)) hpos
+      (by rw [hval, div_lt_div_iff_of_pos_right hk0]; linarith)
+      (by
+        rw [hval, add_div]
+        have : ε / ((-k).toInt : ℝ) ≤ ε := div_le_self hε0.le hk1
+        linarith) hr'
+    rw [hr]
+    have hn := roundVal_neg p mode (-(((K.toInt : ℝ) + ε) / k.toInt))
+    rw [neg_neg] at hn
+    exact hn.symm
+
+/-- `log₂ (1 + 2^n) = n + ε` with `0 < ε ≤ 2^(1−n)`. -/
+theorem logb_two_one_add_zpow (n : ℤ) :
+    ∃ ε : ℝ, Real.logb 2 (1 + (2 : ℝ) ^ n) = n + ε ∧ 0 < ε ∧ ε ≤ (2 : ℝ) ^ (1 - n) := by
+  set y := (2 : ℝ) ^ (-n) with hy
+  have hy0 : 0 < y := by positivity
+  have h2n : (0 : ℝ) < (2 : ℝ) ^ n := by positivity
+  refine ⟨Real.logb 2 (1 + y), ?_, Real.logb_pos one_lt_two (by linarith), ?_⟩
+  · have e : 1 + (2 : ℝ) ^ n = (2 : ℝ) ^ n * (1 + y) := by
+      rw [hy, mul_add, mul_one, ← zpow_add₀ two_ne_zero]; simp; ring
+    rw [e, Real.logb_mul h2n.ne' (by linarith), logb_two_zpow]
+  · have hl2 := Real.log_two_gt_d9
+    have hl : Real.log (1 + y) ≤ y := by
+      have := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < 1 + y); linarith
+    have e : (2 : ℝ) ^ (1 - n) = 2 * y := by
+      rw [hy, sub_eq_add_neg, zpow_add₀ two_ne_zero, zpow_one]
+    rw [e, Real.logb, div_le_iff₀ (by linarith)]
+    nlinarith
+
+/-- The power-of-two path answers with the rounding of `log₂ (1 + x) / k`. -/
+theorem log2P1Pow2Fast?_eq {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    {k : AzInt} {p : ℕ} [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering}
+    (hk : k.toInt ≠ 0) (h : log2P1Pow2Fast? x k p mode = some r) :
+    r = roundVal p mode (some ((Real.logb 2 (1 + xv) / k.toInt : ℝ) : EReal)) := by
+  cases x with
+  | nan => simp [log2P1Pow2Fast?] at h
+  | infinity s => simp [log2P1Pow2Fast?] at h
+  | zero => simp [log2P1Pow2Fast?] at h
+  | finite s e q m hv =>
+    cases s with
+    | false => simp [log2P1Pow2Fast?] at h
+    | true =>
+      simp only [log2P1Pow2Fast?] at h
+      split_ifs at h with hm
+      rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff,
+        finiteVal_true_of_isPowerOfTwo e m hm] at hx
+      have hK : (e - 1).toInt = e.toInt - 1 := by rw [AzInt.toInt_sub]; rfl
+      obtain ⟨ε, hε, hε0, hε1⟩ := logb_two_one_add_zpow (e.toInt - 1)
+      rw [← hx, hε]
+      have := pow2P1Fast?_eq (K := e - 1) hk hε0 (by rw [hK]; exact hε1) h
+      rw [hK] at this
+      push_cast at this ⊢
+      exact this
+
+theorem log_div_log_two_zpow (n : ℤ) (v : ℝ) :
+    Real.log v / Real.log ((2 : ℝ) ^ n) = Real.logb 2 v / n := by
+  rw [Real.log_zpow, Real.logb, div_div, mul_comm]
 
 end Azurite.AzFloat

@@ -5897,6 +5897,43 @@ build a `|e|`-bit denominator), with irrationality from the new
 `irrational_cos_two_pi_mul_rat_of_small` (`0 < r < 1/6` forces `den r > 6`).
 `expM1` already has a tiny bracket with the exact end at the open side.
 
+## Huge powers of two in `log₂ (1 + x)` and the power-of-two-base family (DONE 2026-11-10)
+
+Second report from the Malachite side: `log2P1PrecRound (2^(2^30 − 98)) 52` hangs.  Their
+analysis was right: for `x = 2^K`, `log₂ (1 + x) = K + ε` with `ε = log₂ (1 + 2^(−K))`, and `K`
+is a rounding boundary, so the Ziv loop needs about `K` bits to see the side.  (Only `x = 2^K`
+exactly: any other float within `q` bits has `1 + x` at relative distance `≥ 2^(−q)` from a
+power of two.)  Fix `log2P1Pow2Fast? x k p mode` (`AzFloat/Log2Bracket.lean`): for
+`x = 2^K` (`isPowerOfTwo` on the significand), the value `(K + ε)/k` with
+`0 < ε ≤ 2^(1−K)` (`logb_two_one_add_zpow`) is rounded by one `roundingPossible` test on
+`(K/k, ⌈⌈K/k⌉ + 2^(1−K)⌉_{p+72}]` — the lower end is the EXACT quotient as a `Roundable`
+(`divPrecRound (ofAzInt K) (ofAzInt k)`), at the open side; for `k < 0` the negated value in the
+negated mode.  The correctness lemma needs no irrationality (strict lower end,
+`roundingPossible_eq'` with `Or.inl`).  When `K/k` is a boundary the test passes (the ceiling is
+exact); when it is not, the test may fail and the Ziv loop resolves it at `p + 64` as before.
+Wired into `log2P1` (`k = 1`), `logBasePow2P1`, `logBaseP1` for `b = 2^k`, and — BEFORE their
+exactness tests — `logBaseFloatP1` (`b = 2^(eb−1)`) and `logBaseRatBaseP1`
+(`AzRat.checkedLogBase2 b`).  All at `x = 2^(2^30 − 98)`: 1–3 ms.
+
+**Huge integer `x`, base not a power of two** (user: "Let's implement that shortcut as well",
+DONE 2026-11-10).  The exactness tests ended in `AzNat.checkedLogBase c (x + 1)`, which computes
+powers of `c` of the size of `x + 1` (`≈ 2^30` bits).  The shortcut went into `checkedLogBase`
+itself, so every caller benefits and no driver changed:
+`notPowGuard b n := 2 size b + size (size n) < v₂(n − 1) + 3` (one subtraction and a
+trailing-zero count), sound by `not_eq_pow_of_twoAdic_gt` — if `n = b^e` then
+`v₂(b^e − 1) + 3 ≤ 2 size b + size e` (the lifting-the-exponent lemma
+`padicValNat_two_pow_sub_one_le`, MOVED from `AzFloat/Equiv/PowBracket` to the new
+`AzNat/Equiv/TwoAdicPow.lean`) and `e < size n`; even `b` and `e = 0` have `v₂ = 0`.
+`checkedLogBase := if notPowGuard then none else checkedLogBaseCore`; the two `iff` specs are
+unchanged in statement, so nothing downstream needed re-proving (the plan's worry about the
+`…Exact?_none ⇒ irrational` lemmas did not materialize).  Timings at `x = 2^(2^30 − 98)` and
+`3·2^(2^30)`, 52 bits, in the INTERPRETER: `logBaseP1 x 10`, `logBaseFloatP1 x 3`,
+`logBaseRatBaseP1 x 3`: ≈ 4 s (was: no return in 40 s; the time is the interpreted
+trailing-zero scan over 16 M limbs and the materialization of `x + 1` — compiled code will be far
+faster, UNMEASURED); bases with an even part (`6`, `3/4`, `3/2`, `1/10`): 0.15–0.2 s.  Not
+done: avoiding the `|e|`-bit integer altogether (a guard on `(i, o)` before `onePlusDyadic` /
+`toAzRat?`).
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

@@ -58,6 +58,9 @@ theorem logBasePow2P1Finite_eq (A : AzFloat → AzInt → ℕ → Roundable × R
       (irrational_logb_two_one_add_of_none (toVal_finite s e q m hv)
         (w := lnP1Start e p) (by have := lnP1Start_ge e p; omega) hpos hj)
       (toInt_ne_zero_of_ne_zero hk)
+    split
+    · next r hT =>
+      exact log2P1Pow2Fast?_eq (toVal_finite s e q m hv) (toInt_ne_zero_of_ne_zero hk) hT
     exact zivLoopCertified_eq_threshold p mode _
       (Real.logb 2 (1 + finiteVal s e m) / k.toInt) _ (by have := lnP1Start_ge e p; omega)
       (fun w hw => by

@@ -11,6 +11,8 @@ import Azurite.AzNat.Compare
 import Azurite.AzNat.Pow
 import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Size
+import Azurite.AzNat.Sub
+import Azurite.AzNat.TrailingZeros
 
 /-!
 # Logarithms of naturals in a general base
@@ -63,8 +65,20 @@ def floorLogBase (b n : AzNat) : Option Nat :=
 def ceilingLogBase (b n : AzNat) : Option Nat :=
   (floorLogBase b n).map fun e => if b.pow e = n then e else e + 1
 
+/-- `some e` if `n = b^e`, `none` otherwise (and for `b ≤ 1`), by the floor and one exactness
+test. -/
+def checkedLogBaseCore (b n : AzNat) : Option Nat :=
+  (floorLogBase b n).bind fun e => if b.pow e = n then some e else none
+
+/-- A cheap sufficient test that `n` is not a power of `b`: `v₂(n − 1) + 3 > 2 size b +
+size (size n)`.  (If `n = b^e` then `v₂(b^e − 1) + 3 ≤ 2 size b + size e` by lifting the
+exponent, and `e < size n`.)  It catches `n = m 2^t + 1` with a huge `t`, where computing a
+power of `b` of the size of `n` would be very expensive. -/
+def notPowGuard (b n : AzNat) : Bool :=
+  decide (2 * b.size + n.size.size < (n - 1).trailingZeros.getD 0 + 3)
+
 /-- `some e` if `n = b^e`, `none` otherwise (and for `b ≤ 1`). -/
 def checkedLogBase (b n : AzNat) : Option Nat :=
-  (floorLogBase b n).bind fun e => if b.pow e = n then some e else none
+  if notPowGuard b n then none else checkedLogBaseCore b n
 
 end Azurite.AzNat

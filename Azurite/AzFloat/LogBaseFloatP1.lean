@@ -34,6 +34,10 @@ def logBaseFloatP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fini
     (hgt : -1 < finiteVal s e m) (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)
     (hb1 : finiteVal true eb mb ≠ 1) (p : Nat) [NeZero p] (mode : RoundingMode) :
     AzFloat × Ordering :=
+  match (if mb.isPowerOfTwo then log2P1Pow2Fast? (finite s e q m hv) (eb - 1) p mode
+    else none) with
+  | some r => r
+  | none =>
   match hx : logBaseFloatExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
       (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (dyadicExp eb mb) (oddPart mb) with
   | some r => ofAzRatRound r p mode

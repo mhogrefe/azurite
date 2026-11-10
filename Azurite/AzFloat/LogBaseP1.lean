@@ -46,6 +46,9 @@ def logBaseP1Finite (b : UInt64) (A : AzFloat → Nat → Roundable × Roundable
       with
     | some j => ofAzRatRound (AzRat.ofAzInts j (AzNat.ofNat k).toAzInt) p mode
     | none =>
+      match log2P1Pow2Fast? (finite s e q m hv) (AzNat.ofNat k).toAzInt p mode with
+      | some r => r
+      | none =>
       zivLoopCertified (A (finite s e q m hv)) p mode
         (lnP1Start e p)
         (hA p mode (toVal_finite s e q m hv) hgt hb
