@@ -6015,6 +6015,39 @@ Tests: every driver has guards at `2^(−2^30)` (floats) or `1/(3·2^1000)` (rat
 three modes and both signs; the `−1` variants are cross-checked against the ordinary path at
 `2^(−100)` rescaled; the huge-base powers against `√3`, `∛3` rescaled.
 
+## The Dottie number (DONE 2026-11-10, fuel-free)
+
+User request: "implement the Dottie number, following the patterns established by the other
+constants."  `d = 0.739085…`, the solution of `cos x = x`.  `Transcendental/Dottie.lean`,
+`AzFloat/DottieBracket.lean`, `AzFloat/Dottie.lean`, Equivs, `Tests/Dottie.lean`:
+`dottiePrecRound p mode`, `dottie p`; `dottiePrecRound_eq_liftVal₀` against the real
+`Azurite.dottieNumber` (`exists_cos_eq_self` by the intermediate value theorem on `[0, 1]`,
+`eq_dottie_of_cos_eq` for uniqueness).
+
+* **Irrationality for free**: a rational `d ≠ 0` would make `cos d = d` rational, against
+  `irrational_cos_rat` — so the loop is certified without fuel.
+* **Verification by the residual**: `|n − d| ≤ |n − cos n|` for `n ∈ [0, 1]`
+  (`abs_sub_dottie_le`: `cos` decreases there, so `n − d` and `d − cos n` have the same sign —
+  no derivative needed).  `dottieMvt n W = [n − δ, n + δ]` with `δ ≥ |n − cos n|` from
+  `cosBracket n`; width `≤ 4 |n − d| + 2 cosEps + 40·2^(−W)`.
+* **Candidate (unverified)**: Newton on `x − cos x` with `sin x = √(1 − cos² x)`, from the
+  `Float` seed, precisions `P + 16`, `P = 64, 128, …` while `P < W`, then `W + 16`.
+  FIRST VERSION used Lambert's cubic schedule test (`W ≤ 2P`) and a start of 45: the last
+  step fell short (width `2^(−214)` at `w = 264`, `2^(−757)` at `w = 1064`) — for a QUADRATIC
+  iteration the last step must start from `≥ W/2 + 16` bits, i.e. the test is `W ≤ P` and the
+  entry invariant `a ≥ P/2 + 16` (so `P₀ = 64` for a 53-bit seed).  Now `2^(−w−6)`.
+* **Provable convergence** (needed for the certificate, never run): if the bracket around the
+  candidate is wider than `2^(−w)`, `8W` steps of `x ← ⌊cos x⌋` clamped into `[0, 1]`
+  (`dottieIter`), contracting by `9/10` (`abs_cos_sub_dottie_le`, from
+  `cos x − cos d = −2 sin((x+d)/2) sin((x−d)/2)` and `sin 1 ≤ 9/10` by `Real.sin_bound`),
+  so `(9/10)^(8W) ≤ 2^(−W)`.  Far simpler than Lambert's grid bisection with certified sides:
+  a contraction with an explicit constant needs no sign decisions at all.
+
+All five files compiled on the first build.  Interpreter: the bracket takes 46 ms at 53 bits,
+0.14 s at 264, 1.6 s at 1064 (dominated by `cos`, which is `O(W)` interval steps — UNTIMED
+compiled).  Tests: 1–64 bits in three modes against a 160-digit Newton reference, 300-bit
+decimal, the fallback bracket containing the candidate's, `cos d = d` at 200 bits.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

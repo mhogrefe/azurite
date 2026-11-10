@@ -63,6 +63,8 @@ import Azurite.AzFloat.CosRatBracket
 import Azurite.AzFloat.CosRatPeriod
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
+import Azurite.AzFloat.Dottie
+import Azurite.AzFloat.DottieBracket
 import Azurite.AzFloat.Equiv.Add
 import Azurite.AzFloat.Equiv.AddMul
 import Azurite.AzFloat.Equiv.AddMulRat
@@ -86,6 +88,8 @@ import Azurite.AzFloat.Equiv.CosRatPeriod
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
+import Azurite.AzFloat.Equiv.Dottie
+import Azurite.AzFloat.Equiv.DottieBracket
 import Azurite.AzFloat.Equiv.EulerGamma
 import Azurite.AzFloat.Equiv.Exp
 import Azurite.AzFloat.Equiv.ExpApprox
@@ -2225,6 +2229,7 @@ import Azurite.Rounding.Symmetric
 import Azurite.Sci.Number
 import Azurite.Sci.Options
 import Azurite.Transcendental.Cos
+import Azurite.Transcendental.Dottie
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.LambertW

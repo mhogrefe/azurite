@@ -27,6 +27,7 @@ import Azurite.AzFloat.Tests.CosRat
 import Azurite.AzFloat.Tests.CosRatPeriod
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
+import Azurite.AzFloat.Tests.Dottie
 import Azurite.AzFloat.Tests.EulerGamma
 import Azurite.AzFloat.Tests.Exp
 import Azurite.AzFloat.Tests.ExpConstants
