@@ -64,6 +64,7 @@ import Azurite.AzFloat.LogBaseRatFloat
 import Azurite.AzFloat.LogBaseRatBase
 import Azurite.AzFloat.LogBaseRatBaseP1
 import Azurite.AzFloat.LogBaseRatRat
+import Azurite.AzFloat.Dottie
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -615,7 +616,8 @@ def irrationalConstants : List (String × (Nat → RoundingMode → AzFloat × O
     ("gelfonds_constant", AzFloat.gelfondPrecRound),
     ("ramanujans_constant", AzFloat.ramanujanPrecRound),
     ("gelfond_schneider_constant", AzFloat.gelfondSchneiderPrecRound),
-    ("eulers_constant", AzFloat.eulerGammaPrecRound)]
+    ("eulers_constant", AzFloat.eulerGammaPrecRound), ("cbrt_2", AzFloat.cbrt2PrecRound),
+    ("dottie_number", AzFloat.dottiePrecRound)]
 
 /-- `c_prec_round(p, rm) = (z, o)` or `c_prec(p) = (z, o)` for one of the
 `irrationalConstants` `c`. The constants lie well inside Malachite's exponent range, but the

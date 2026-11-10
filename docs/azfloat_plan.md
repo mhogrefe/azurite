@@ -6084,7 +6084,7 @@ User request: "implement sine for AzFloat.  Take extreme inputs into account."
 Gotchas: `sinBracket_spec` and the rewritten `cosBracket_spec` need
 `set_option maxHeartbeats 800000`; `2lo < 8` for `|s/8| ≤ 1` needs `Real.pi_lt_d2`, not
 `π ≤ 4`; the smallness `E₂ ≤ 1/128` needs `2^(−w−12) ≤ 2^(−20)`, not `≤ 1/4096`.
-Not done: `sinPi`, the rational-argument `sinRatWithPeriod`, `tan`, a combined `sinCos`.
+Not done: `sinPi`/`sinPiRat`, `tan`, a combined `sinCos`.
 
 ## `sin q` for a rational `q` (DONE 2026-11-10, fuel-free)
 
@@ -6135,6 +6135,15 @@ Not done: `sinPi`, the rational-argument `sinRatWithPeriod`, `tan`, a combined `
   `2^(−2^30)°` 4 ms, `2^(−60)/(2^64 − 1)` 44 ms, `(3·2^100000)°` 19 ms.
 * Gotcha: `split_ifs` on the driver also splits the sign factor `if (!s) = true …` in the goal —
   `generalize` it first and `subst` afterwards.
+
+## `sin (2π q / u)` for a rational `q` (DONE 2026-11-10, fuel-free)
+
+`AzFloat/SinRatWithPeriod.lean`, `Equiv/SinRatWithPeriod.lean`, `Tests/SinRatWithPeriod.lean`:
+`sinRatWithPeriodPrecRound (q : AzRat) (u : UInt64) p mode`, `sinRatWithPeriod q u p`,
+`sinRatWithPeriodPrecRound_eq : = roundVal p mode (Spec.sinWithPeriod q u)`.  No new machinery:
+`periodFracRat q u`, the exact values and `sinPeriodApprox (!q.sign)` as for the float variant;
+the tiny path is `sinPeriodTiny? (!q.sign) (num q) (den q · u) 0 (ratExpBound q + 2)` (the
+float tiny bracket with shift `0`).  `q = 0` gives `0` at every precision.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
