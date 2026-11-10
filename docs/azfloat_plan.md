@@ -6084,7 +6084,7 @@ User request: "implement sine for AzFloat.  Take extreme inputs into account."
 Gotchas: `sinBracket_spec` and the rewritten `cosBracket_spec` need
 `set_option maxHeartbeats 800000`; `2lo < 8` for `|s/8| ≤ 1` needs `Real.pi_lt_d2`, not
 `π ≤ 4`; the smallness `E₂ ≤ 1/128` needs `2^(−w−12) ≤ 2^(−20)`, not `≤ 1/4096`.
-Not done: `sinPi`/`sinPiRat`, `tan`, a combined `sinCos`.
+Not done: `tan`, a combined `sinCos`.
 
 ## `sin q` for a rational `q` (DONE 2026-11-10, fuel-free)
 
@@ -6144,6 +6144,14 @@ Not done: `sinPi`/`sinPiRat`, `tan`, a combined `sinCos`.
 `periodFracRat q u`, the exact values and `sinPeriodApprox (!q.sign)` as for the float variant;
 the tiny path is `sinPeriodTiny? (!q.sign) (num q) (den q · u) 0 (ratExpBound q + 2)` (the
 float tiny bracket with shift `0`).  `q = 0` gives `0` at every precision.
+
+## `sin (π x)` (DONE 2026-11-10)
+
+`AzFloat/SinPi.lean`, `Equiv/SinPi.lean`, `Tests/SinPi.lean`: `sinPiPrecRound`/`sinPi` (float)
+and `sinPiRatPrecRound`/`sinPiRat` (`AzRat`) are the period-`2` instances of
+`sinWithPeriodPrecRound` and `sinRatWithPeriodPrecRound`; `Spec.sinPi`, `Spec.sinWithPeriod_two`,
+`sinPiPrecRound_eq_liftVal`, `sinPiRatPrecRound_eq`.  Exact values: `0` at the integers, `±1`
+at the half-integers, `±1/2` at the rational odd sixths.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
