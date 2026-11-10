@@ -10,6 +10,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzNat.Equiv.Gcd.Binary
 import Azurite.AzNat.Equiv.Gcd.HalfBinary
 import Azurite.AzNat.Gcd
+import Azurite.AzNat.Equiv.Div.DivMod
 
 /-!
 ## Correctness of `AzNat.gcd` and `AzNat.coprime`
@@ -20,12 +21,28 @@ Both dispatch targets compute `Nat.gcd` (`toNat_gcdBinary`, `toNat_gcdHalfBinary
 
 namespace Azurite.AzNat
 
-/-- Correctness of `gcd`: it computes `Nat.gcd`. -/
-theorem toNat_gcd (a b : AzNat) : (gcd a b).toNat = Nat.gcd a.toNat b.toNat := by
-  unfold gcd
+theorem toNat_gcdBalanced (a b : AzNat) :
+    (gcdBalanced a b).toNat = Nat.gcd a.toNat b.toNat := by
+  unfold gcdBalanced
   split_ifs
   · exact toNat_gcdBinary a b
   · exact toNat_gcdHalfBinary a b
+
+theorem toNat_gcdUnbalanced (fuel : ℕ) (a b : AzNat) :
+    (gcdUnbalanced fuel a b).toNat = Nat.gcd a.toNat b.toNat := by
+  induction fuel generalizing a b with
+  | zero => exact toNat_gcdBalanced a b
+  | succ f ih =>
+    unfold gcdUnbalanced
+    split_ifs
+    · rw [ih, toNat_mod, Nat.gcd_comm, ← Nat.gcd_rec]
+      exact Nat.gcd_comm _ _
+    · rw [ih, toNat_mod, Nat.gcd_comm, ← Nat.gcd_rec]
+    · exact toNat_gcdBalanced a b
+
+/-- Correctness of `gcd`: it computes `Nat.gcd`. -/
+theorem toNat_gcd (a b : AzNat) : (gcd a b).toNat = Nat.gcd a.toNat b.toNat :=
+  toNat_gcdUnbalanced _ a b
 
 /-- Correctness of `coprime`: agrees with `Nat.Coprime`. -/
 theorem coprime_iff (a b : AzNat) :

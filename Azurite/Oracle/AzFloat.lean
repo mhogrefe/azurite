@@ -65,6 +65,10 @@ import Azurite.AzFloat.LogBaseRatBase
 import Azurite.AzFloat.LogBaseRatBaseP1
 import Azurite.AzFloat.LogBaseRatRat
 import Azurite.AzFloat.Dottie
+import Azurite.AzFloat.Exp
+import Azurite.AzFloat.ExpRat
+import Azurite.AzFloat.ExpM1
+import Azurite.AzFloat.ExpM1Rat
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1282,6 +1286,55 @@ def checkFloatLogBaseRationalBase1PlusX (line : String) : Verdict :=
 def checkFloatLogBaseRationalRationalBase : String → Verdict :=
   checkFloatOfRationalArgsWith "log_base_rational_rational_base" 1 parseRatArg
     AzFloat.logBaseRatRatPrecRound
+
+/-- `x` replaced by an input whose `e^x` (or `e^x - 1`) Malachite rounds identically, for the
+`x` of magnitude so large that Azurite, whose exponent is unbounded, cannot compute `e^x` in
+practice. For `x ≥ 2^30`, `e^x ≥ e^(2^30) > 2^(2^30)`, so both overflow Malachite's range, and
+an overflow depends only on the sign and the rounding mode: `x` becomes `2^30`. For `x ≤ -2^31`,
+`e^x ≤ e^(-2^31) < 2^(-2^31)`, far below half of Malachite's smallest positive value, so `e^x`
+underflows the same way in every mode: `x` becomes `-2^31`. Every other `x` is unchanged. -/
+def expInput (x : AzFloat) : AzFloat :=
+  match x with
+  | .finite true e _ _ _ =>
+    if AzInt.ofInt 31 ≤ e then AzFloat.one <<< (30 : Nat) else x
+  | .finite false e _ _ _ =>
+    if AzInt.ofInt 32 ≤ e then -(AzFloat.one <<< (31 : Nat)) else x
+  | _ => x
+
+/-- `AzFloat.expPrecRound` at `expInput x`; see `expInput`. -/
+def malachiteExp (x : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  AzFloat.expPrecRound (expInput x) p m
+
+/-- `AzFloat.expM1PrecRound` with the same overflow substitution as `expInput`, and, for
+`x ≤ -2^31`, `x` replaced by `-(p + 2)`: then `e^x - 1 = -1 + ε` with `0 < ε < 2^(-p-1)`, which
+rounds the same way in every mode for every such `ε`, since `-1` and `-(1 - 2^-p)` are the
+neighboring `p`-bit values. -/
+def malachiteExpM1 (x : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  match x with
+  | .finite false e _ _ _ =>
+    if AzInt.ofInt 32 ≤ e then
+      AzFloat.expM1PrecRound (exactFromInteger (-(AzNat.ofNat (p + 2)).toAzInt)) p m
+    else AzFloat.expM1PrecRound x p m
+  | _ => AzFloat.expM1PrecRound (expInput x) p m
+
+/-- `Float`'s `exp` family, against `AzFloat.expPrecRound` (through `malachiteExp`), in
+Malachite's exponent range. -/
+def checkFloatExp : String → Verdict := checkFloatUnaryWith "exp" malachiteExp
+
+/-- `Float`'s `exp_x_minus_1` family, against `AzFloat.expM1PrecRound` (through
+`malachiteExpM1`); as with `ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatExpXMinus1 : String → Verdict :=
+  checkFloatUnaryWith "exp_x_minus_1" malachiteExpM1
+
+/-- `Float::exp_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.expRatPrecRound`. -/
+def checkFloatExpRational : String → Verdict :=
+  checkFloatOfRational "exp_rational" AzFloat.expRatPrecRound
+
+/-- `Float::exp_x_minus_1_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.expM1RatPrecRound`. -/
+def checkFloatExpXMinus1Rational : String → Verdict :=
+  checkFloatOfRational "exp_x_minus_1_rational" AzFloat.expM1RatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

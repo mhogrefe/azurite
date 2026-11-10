@@ -53,6 +53,16 @@ private lemma toInt_mkNorm_sign (q : AzRat) (m : AzNat) (hm : q.sign = false →
 private lemma den_real_pos (q : AzRat) : (0 : ℝ) < q.den.toNat := by
   exact_mod_cast den_toNat_pos q
 
+/-- `mulBasePow n b s = n · b^s`. -/
+theorem toNat_mulBasePow (n : AzNat) (b : UInt64) (s : ℕ) :
+    (mulBasePow n b s).toNat = n.toNat * b.toNat ^ s := by
+  unfold mulBasePow
+  dsimp only
+  split_ifs with h
+  · rw [show n <<< (b.toNat.log2 * s) = AzNat.shiftLeft n (b.toNat.log2 * s) from rfl,
+      AzNat.toNat_shiftLeft, pow_mul, h]
+  · rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat]
+
 /-- **`scaledRound` rounds `toRat q · b^scale` to an integer.** -/
 theorem toInt_scaledRound (q : AzRat) (b : UInt64) (hb : 0 < b.toNat) (scale : ℤ)
     (mode : RoundingMode) :
@@ -76,23 +86,23 @@ theorem toInt_scaledRound (q : AzRat) (b : UInt64) (hb : 0 < b.toNat) (scale : �
     rw [toInt_mkNorm_sign q _ (fun hs => by
       intro h0
       have h := congrArg AzNat.toNat h0
-      rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat, AzNat.toNat_zero] at h
+      rw [toNat_mulBasePow, AzNat.toNat_zero] at h
       rcases Nat.mul_eq_zero.mp h with h1 | h1
       · exact hnum0 hs (AzNat.toNat_injective (h1.trans AzNat.toNat_zero.symm))
       · exact absurd h1 (pow_ne_zero _ hb.ne'))]
-    rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat, toRat_real_eq, Int.ofNat_eq_natCast,
+    rw [toNat_mulBasePow, toRat_real_eq, Int.ofNat_eq_natCast,
       zpow_natCast]
     push_cast
     cases q.sign <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> field_simp
   | negSucc s =>
-    have hden_pos : 0 < ((q.den * (AzNat.ofNat b.toNat).pow (s + 1)).toAzInt).abs.toNat := by
-      show 0 < (q.den * (AzNat.ofNat b.toNat).pow (s + 1)).toNat
-      rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat]
+    have hden_pos : 0 < ((mulBasePow q.den b (s + 1)).toAzInt).abs.toNat := by
+      show 0 < (mulBasePow q.den b (s + 1)).toNat
+      rw [toNat_mulBasePow]
       exact Nat.mul_pos (den_toNat_pos q) (pow_pos hb _)
     rw [AzInt.toInt_divRound _ _ mode hden_pos]
     congr 2
-    rw [Azurite.AzNat.toInt_toAzInt, Int.cast_natCast, AzNat.toNat_mul, AzNat.toNat_pow,
-      AzNat.toNat_ofNat, toInt_mkNorm_sign q _ hnum0, toRat_real_eq, zpow_negSucc]
+    rw [Azurite.AzNat.toInt_toAzInt, Int.cast_natCast, toNat_mulBasePow,
+      toInt_mkNorm_sign q _ hnum0, toRat_real_eq, zpow_negSucc]
     push_cast
     cases q.sign <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> field_simp
 
@@ -120,23 +130,23 @@ theorem snd_scaledRound (q : AzRat) (b : UInt64) (hb : 0 < b.toNat) (scale : ℤ
     rw [toInt_mkNorm_sign q _ (fun hs => by
       intro h0
       have h := congrArg AzNat.toNat h0
-      rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat, AzNat.toNat_zero] at h
+      rw [toNat_mulBasePow, AzNat.toNat_zero] at h
       rcases Nat.mul_eq_zero.mp h with h1 | h1
       · exact hnum0 hs (AzNat.toNat_injective (h1.trans AzNat.toNat_zero.symm))
       · exact absurd h1 (pow_ne_zero _ hb.ne'))]
-    rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat, toRat_real_eq, Int.ofNat_eq_natCast,
+    rw [toNat_mulBasePow, toRat_real_eq, Int.ofNat_eq_natCast,
       zpow_natCast]
     push_cast
     cases q.sign <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> field_simp
   | negSucc s =>
-    have hden_pos : 0 < ((q.den * (AzNat.ofNat b.toNat).pow (s + 1)).toAzInt).abs.toNat := by
-      show 0 < (q.den * (AzNat.ofNat b.toNat).pow (s + 1)).toNat
-      rw [AzNat.toNat_mul, AzNat.toNat_pow, AzNat.toNat_ofNat]
+    have hden_pos : 0 < ((mulBasePow q.den b (s + 1)).toAzInt).abs.toNat := by
+      show 0 < (mulBasePow q.den b (s + 1)).toNat
+      rw [toNat_mulBasePow]
       exact Nat.mul_pos (den_toNat_pos q) (pow_pos hb _)
     rw [AzInt.snd_divRound _ _ mode hden_pos]
     congr 1
-    rw [Azurite.AzNat.toInt_toAzInt, Int.cast_natCast, AzNat.toNat_mul, AzNat.toNat_pow,
-      AzNat.toNat_ofNat, toInt_mkNorm_sign q _ hnum0, toRat_real_eq, zpow_negSucc]
+    rw [Azurite.AzNat.toInt_toAzInt, Int.cast_natCast, toNat_mulBasePow,
+      toInt_mkNorm_sign q _ hnum0, toRat_real_eq, zpow_negSucc]
     push_cast
     cases q.sign <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> field_simp
 

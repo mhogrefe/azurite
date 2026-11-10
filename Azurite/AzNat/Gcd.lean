@@ -9,21 +9,48 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzNat.Gcd.Binary
 import Azurite.AzNat.Gcd.HalfBinary
+import Azurite.AzNat.Div
 
 /-!
 ## Greatest common divisor
 
-`AzNat.gcd` dispatches on the operand size: Euclid's algorithm on `UInt64` for single limbs and
-the binary GCD (`Gcd/Binary.lean`) up to `halfBinaryGcdThreshold` bits, the subquadratic
-half-binary GCD (`Gcd/HalfBinary.lean`, MCA §1.6.3) above.  `coprime` is the coprimality test.
+`AzNat.gcd` first balances operands of very different sizes by remainder steps
+(`gcdUnbalanced`), then dispatches on the operand size: Euclid's algorithm on `UInt64` for
+single limbs and the binary GCD (`Gcd/Binary.lean`) up to `halfBinaryGcdThreshold` bits, the
+subquadratic half-binary GCD (`Gcd/HalfBinary.lean`, MCA §1.6.3) above.  `coprime` is the coprimality test.
 -/
 
 namespace Azurite.AzNat
 
-/-- GCD of two `AzNat`s: `gcd 0 b = b`, `gcd a 0 = a`; binary GCD below
-`halfBinaryGcdThreshold` bits, half-binary GCD above. -/
-def gcd (a b : AzNat) : AzNat :=
+/-- The size difference (bits) above which `gcd` first takes a remainder. -/
+def unbalancedGcdGap : Nat := 64
+
+/-- The number of balancing remainder steps `gcd` may take (each needs a size gap of more than
+`unbalancedGcdGap` bits, so more than a few in a row is rare; any value is correct). -/
+def unbalancedGcdSteps : Nat := 8
+
+
+/-- GCD of two `AzNat`s of comparable sizes: binary GCD below `halfBinaryGcdThreshold` bits,
+half-binary GCD above. -/
+def gcdBalanced (a b : AzNat) : AzNat :=
   if max a.size b.size ≤ halfBinaryGcdThreshold then gcdBinary a b else gcdHalfBinary a b
+
+/-- Euclidean steps while the operands are unbalanced: when one operand is more than
+`unbalancedGcdGap` bits longer than the other (nonzero) one, it is replaced by its remainder
+(one division, linear in the longer operand for a short divisor); at most `fuel` such steps,
+then `gcdBalanced`.  Both the binary and the half-binary GCD gain only a bounded number of bits
+per step, so on operands of very different sizes they are quadratic in the *longer* one. -/
+def gcdUnbalanced : Nat → AzNat → AzNat → AzNat
+  | 0, a, b => gcdBalanced a b
+  | fuel + 1, a, b =>
+    if b.size ≠ 0 ∧ b.size + unbalancedGcdGap < a.size then gcdUnbalanced fuel b (a % b)
+    else if a.size ≠ 0 ∧ a.size + unbalancedGcdGap < b.size then gcdUnbalanced fuel a (b % a)
+    else gcdBalanced a b
+
+/-- GCD of two `AzNat`s: `gcd 0 b = b`, `gcd a 0 = a`.  Up to `unbalancedGcdSteps` Euclidean
+steps balance the operands (`gcdUnbalanced`); then the binary GCD below
+`halfBinaryGcdThreshold` bits, the half-binary GCD above. -/
+def gcd (a b : AzNat) : AzNat := gcdUnbalanced unbalancedGcdSteps a b
 
 /-- Coprimality test.  Returns `true` iff `gcd(a, b) = 1`.
     Short-circuits: if both arguments are even, returns `false` without
@@ -69,6 +96,15 @@ where go (k : Nat) (acc : Array UInt64) : Array UInt64 :=
 #guard gcd (n (2^256 * 3 * 7)) (n (2^256 * 5 * 7)) = n (2^256 * 7)
 -- Coprime multi-limb
 #guard AzNat.toString (gcd (n (2^128 + 1)) (n (2^128 - 1))) == "1"
+
+-- Unbalanced operands: balanced by remainder steps first (`gcdUnbalanced`)
+#guard AzNat.toString (gcd (n (2^1000 * 3)) (n 7)) == "1"
+#guard AzNat.toString (gcd (n 7) (n (2^1000 * 21))) == "7"
+#guard AzNat.toString (gcd (n (2^1000 + 1)) (n 0)) == AzNat.toString (n (2^1000 + 1))
+#guard AzNat.toString (gcd (n 0) (n (2^1000 + 1))) == AzNat.toString (n (2^1000 + 1))
+#guard gcd (n (2^3000 * 15 * (2^200 + 1))) (n (9 * (2^200 + 1))) = n (3 * (2^200 + 1))
+#guard gcd (n (3^5000)) (n (3^40 * 2^70)) = n (3^40)
+#guard coprime (n 1) (n (2^100000 * 3)) = true
 
 -- coprime tests
 #guard coprime (n 1) (n 1) = true

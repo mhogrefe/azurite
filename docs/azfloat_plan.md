@@ -6103,10 +6103,39 @@ Not done: `tan`, a combined `sinCos`.
   `negAbsRat q` at the open end; one `roundingPossible` call, no `π`, no series.
 * Totality: `irrational_sin_rat` (every nonzero rational), certified Ziv loop.
 * Timings (interpreter, 53 bits): `1/3` 22 ms, `884279719003555/2^48` (near `π`) 20 ms,
-  `3·2^1000/7` 55 ms.  Tiny `q = 1/(3·2^k)`: 68 ms at `k = 20000`, 0.67 s at `k = 10^5` — all
-  of it in `ofAzRatRound` (`AzRat.scaledRound` forms `2^s` by `pow` and a full `divRound`;
-  ≈ quadratic in the size of the denominator).  A shift-based base-2 path in `ofAzRatRound`
-  would make every rational-argument function linear there (not done).
+  `3·2^1000/7` 55 ms.  Tiny `q = 1/(3·2^k)` (construction included): 37 ms at `k = 10^5`,
+  0.24 s at `k = 10^6` after the fixes below (before: 0.67 s at `k = 10^5`, no answer at
+  `10^6`).
+
+## Rationals with one huge side: `ofAzRatRound` and `AzNat.gcd` (FIXED 2026-11-10)
+
+Two superlinear costs on a rational with a huge denominator (or numerator) and a short other
+side, both outside `AzFloat`:
+
+* `AzRat.scaledRound` formed `b^s` by `AzNat.pow` (`2^s` by squarings: 0.28 s at `s = 10^5`,
+  1.9 s at `4·10^5`).  Now `AzRat.mulBasePow n b s`: `n <<< (k s)` when `b = 2^k`, the product
+  otherwise (`toNat_mulBasePow`).  `ofAzRatRound` and `toSci` in bases `2, 4, 8, 16, 32` gain.
+* `AzNat.gcd` on unbalanced operands: both the binary and the half-binary GCD gain a bounded
+  number of bits per step, so `gcd 1 (3·2^100000)` took 15.6 s — and every `AzRat` constructor
+  that reduces a fraction runs it (this, not the rounding, was most of the cost first blamed on
+  `ofAzRatRound`: the timing included the construction of the test rational).  Now
+  `gcdUnbalanced`: while one operand is more than `unbalancedGcdGap = 64` bits longer than the
+  other (nonzero) one, replace it by its remainder (at most `unbalancedGcdSteps = 8` times, a
+  structural fuel so the definition still evaluates in the kernel), then `gcdBalanced` (the
+  old dispatch).  `toNat_gcdUnbalanced` by `Nat.gcd_rec`.
+
+Timings (interpreter; `d = 3·2^k`; construct the rational and round to 125 bits):
+
+| `k` | `coprime 1 d` | `1/d` | `d/7` |
+|---|---|---|---|
+| `10^5` | 5 ms (was 15.6 s) | 25 ms | 22 ms |
+| `4·10^5` | 19 ms | 73 ms | 85 ms |
+| `1.6·10^6` | 84 ms | 290 ms | 342 ms |
+| `6.4·10^6` | 293 ms | 1.16 s | 1.36 s |
+
+Not changed: `AzNat.pow` itself (the `npow` of the semiring instance, definitionally
+`slidingWindowPow`) still squares its way to `2^s`; a power-of-two base test there would help
+other callers.  Both sides huge and coprime: the half-binary GCD, inherently superlinear.
 
 ## `sin (2π x / u)` (DONE 2026-11-10, fuel-free)
 

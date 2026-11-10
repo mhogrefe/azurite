@@ -53,16 +53,22 @@ def sizeScale (b : UInt64) (q : AzRat) (size : SciSizeOptions) (log : Int) : Opt
   | .scale s => some ((s : Int), (s : Int) + log + 1)
   | .precision p => some ((p : Int) - 1 - log, (p : Int))
 
+/-- `n · b^s`: a shift when the base is a power of two (so the cost is linear in the size of the
+result, with no power formed), a multiplication by `b^s` otherwise. -/
+def mulBasePow (n : AzNat) (b : UInt64) (s : Nat) : AzNat :=
+  let k := b.toNat.log2
+  if 2 ^ k = b.toNat then n <<< (k * s) else n * (AzNat.ofNat b.toNat).pow s
+
 /-- `q · b^scale`, rounded to an integer with `mode` (with the `Ordering` tag of
 `AzInt.divRound`).  Computed as one signed division — `(num · b^scale) / den` for
-`scale ≥ 0`, `num / (den · b^(−scale))` otherwise — so no gcd of huge operands is formed. -/
+`scale ≥ 0`, `num / (den · b^(−scale))` otherwise — so no gcd of huge operands is formed; the
+scaling is `mulBasePow` (a shift for a power-of-two base). -/
 def scaledRound (q : AzRat) (b : UInt64) (scale : Int) (mode : RoundingMode) :
     AzInt × Ordering :=
-  let bN := AzNat.ofNat b.toNat
   match scale with
-  | .ofNat s => AzInt.divRound (AzInt.mkNorm q.sign (q.num * bN.pow s)) q.den.toAzInt mode
+  | .ofNat s => AzInt.divRound (AzInt.mkNorm q.sign (mulBasePow q.num b s)) q.den.toAzInt mode
   | .negSucc s =>
-    AzInt.divRound (AzInt.mkNorm q.sign q.num) (q.den * bN.pow (s + 1)).toAzInt mode
+    AzInt.divRound (AzInt.mkNorm q.sign q.num) (mulBasePow q.den b (s + 1)).toAzInt mode
 
 /-- Stage 1 of `toSci`: the rounded value in positional form, or `none` when the request
 cannot be met. -/
