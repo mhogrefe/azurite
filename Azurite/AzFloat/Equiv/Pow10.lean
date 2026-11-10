@@ -27,7 +27,7 @@ namespace Azurite.AzFloat
 theorem pow10PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
     pow10PrecRound x p mode = liftVal (Spec.powBase 10) x p mode := by
   unfold pow10PrecRound
-  rw [powBasePrecRound_eq_liftVal]
+  rw [powBasePrecRound_eq_liftVal 10 (by decide)]
   rfl
 
 /-- **`10^q` is correctly rounded.** -/
@@ -42,7 +42,7 @@ theorem pow10RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMo
 theorem pow10M1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :
     pow10M1PrecRound x p mode = liftVal (Spec.powBaseM1 10) x p mode := by
   unfold pow10M1PrecRound
-  rw [powBaseM1PrecRound_eq_liftVal]
+  rw [powBaseM1PrecRound_eq_liftVal 10 (by decide)]
   rfl
 
 /-- **`10^q − 1` is correctly rounded.** -/

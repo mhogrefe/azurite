@@ -13,10 +13,12 @@ import Azurite.AzFloat.Equiv.PowBase
 /-!
 # Equivalence: `u^x − 1` for a natural base
 
-* `Spec.powBaseM1 u`: `Spec.powBase u` followed by the subtraction of `1`.
-* `powBaseM1PrecRound_eq_liftVal :
-  powBaseM1PrecRound u x p mode = liftVal (Spec.powBaseM1 u) x p mode`: `u^x − 1` is correctly
-  rounded in every mode, with the exact comparison, and without fuel.
+* `Spec.powBaseM1 u`: `Spec.powBase u` followed by the subtraction of `1`; `Spec.powBaseM1Opt u`
+  the same from `Spec.powBaseOpt u` (`1^NaN − 1 = 0`).
+* `powBaseM1PrecRound_eq :
+  powBaseM1PrecRound u x p mode = roundVal p mode (Spec.powBaseM1Opt u x)`: `u^x − 1` is correctly
+  rounded in every mode, with the exact comparison, and without fuel;
+  `powBaseM1PrecRound_eq_liftVal` (`= liftVal (Spec.powBaseM1 u) x p mode`) for `u ≠ 1`.
 -/
 
 namespace Azurite.AzFloat
@@ -37,18 +39,39 @@ theorem powBaseM1_coe (u : ℕ) (r : ℝ) :
   · rw [Option.map_some, ← EReal.coe_one, ← EReal.coe_sub]
 
 @[simp] theorem powBaseM1_top (u : ℕ) :
-    powBaseM1 u ⊤ = if u = 0 then some ((-1 : ℝ) : EReal) else if u = 1 then none
+    powBaseM1 u ⊤ = if u = 0 then some ((-1 : ℝ) : EReal) else if u = 1 then some 0
       else some ⊤ := by
   unfold powBaseM1
   rw [powBase_top]
   split_ifs <;> simp [← EReal.coe_one, ← EReal.coe_neg]
 
 @[simp] theorem powBaseM1_bot (u : ℕ) :
-    powBaseM1 u ⊥ = if u = 0 then some ⊤ else if u = 1 then none
+    powBaseM1 u ⊥ = if u = 0 then some ⊤ else if u = 1 then some 0
       else some ((-1 : ℝ) : EReal) := by
   unfold powBaseM1
   rw [powBase_bot]
   split_ifs <;> simp [← EReal.coe_one, ← EReal.coe_neg]
+
+/-- `u^a − 1` on `Option EReal` (`none` = `NaN`): `1^NaN − 1 = 0`, otherwise `NaN`. -/
+noncomputable def powBaseM1Opt (u : ℕ) (a : Option EReal) : Option EReal :=
+  (powBaseOpt u a).map fun b => b - 1
+
+@[simp] theorem powBaseM1Opt_none (u : ℕ) :
+    powBaseM1Opt u none = if u = 1 then some 0 else none := by
+  unfold powBaseM1Opt
+  split_ifs with h
+  · simp only [powBaseOpt_none, h, ↓reduceIte, Option.map_some]
+    rw [← EReal.coe_one, ← EReal.coe_sub, sub_self, EReal.coe_zero]
+  · simp [h]
+
+@[simp] theorem powBaseM1Opt_some (u : ℕ) (a : EReal) : powBaseM1Opt u (some a) = powBaseM1 u a :=
+  rfl
+
+theorem powBaseM1Opt_eq_bind {u : ℕ} (hu : u ≠ 1) (a : Option EReal) :
+    powBaseM1Opt u a = a.bind (powBaseM1 u) := by
+  cases a with
+  | none => simp [hu]
+  | some a => rfl
 
 end Spec
 
@@ -60,22 +83,22 @@ theorem negOneRound_eq (p : ℕ) [NeZero p] (mode : RoundingMode) :
     rw [toVal_neg, toVal_one', Option.map_some, EReal.coe_neg]
   rw [ite_eq_right (NeZero.ne p), setPrecRound_eq_roundVal h1]
 
-/-- **`u^x − 1` is correctly rounded.** -/
-theorem powBaseM1PrecRound_eq_liftVal (u : UInt64) (x : AzFloat) (p : ℕ) [NeZero p]
+/-- **`u^x − 1` is correctly rounded** (with `1^x − 1 = 0` for every `x`, even `NaN`). -/
+theorem powBaseM1PrecRound_eq (u : UInt64) (x : AzFloat) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :
-    powBaseM1PrecRound u x p mode = liftVal (Spec.powBaseM1 u.toNat) x p mode := by
-  unfold liftVal
+    powBaseM1PrecRound u x p mode = roundVal p mode (Spec.powBaseM1Opt u.toNat x.toVal) := by
   cases x with
-  | nan => rfl
+  | nan =>
+    by_cases h1 : u.toNat = 1 <;> simp [powBaseM1PrecRound, h1, roundVal_zero]
   | infinity s =>
     cases s <;> by_cases h0 : u.toNat = 0 <;> by_cases h1 : u.toNat = 1 <;>
-      simp [powBaseM1PrecRound, negOneRound_eq, h0, h1]
+      simp [powBaseM1PrecRound, negOneRound_eq, h0, h1, roundVal_zero]
   | zero =>
-    simp only [powBaseM1PrecRound, toVal_zero, Option.bind_some]
+    simp only [powBaseM1PrecRound, toVal_zero, Spec.powBaseM1Opt_some]
     rw [← EReal.coe_zero, Spec.powBaseM1_coe, ite_eq_right (fun h => lt_irrefl _ h.2),
       Real.rpow_zero, sub_self, EReal.coe_zero, roundVal_zero]
   | finite s e q m hv =>
-    simp only [powBaseM1PrecRound, toVal_finite, Option.bind_some, Spec.powBaseM1_coe]
+    simp only [powBaseM1PrecRound, toVal_finite, Spec.powBaseM1Opt_some, Spec.powBaseM1_coe]
     by_cases h0 : u.toNat = 0
     · rw [dite_eq_left h0]
       cases s
@@ -143,5 +166,13 @@ theorem powBaseM1PrecRound_eq_liftVal (u : UInt64) (x : AzFloat) (p : ℕ) [NeZe
                   (by rw [AzNat.toNat_ofNat]; exact u.toBitVec.isLt) hx)
               (by unfold powBaseM1Start at hw; omega)
             exact ⟨lv, hv', hl, hh, hlo.le, hhi.le, fun h => absurd h hlo.ne⟩) _
+
+/-- **`u^x − 1` is correctly rounded**, as a lift of `Spec.powBaseM1 u` (`NaN` propagated), for
+`u ≠ 1`. -/
+theorem powBaseM1PrecRound_eq_liftVal (u : UInt64) (hu : u.toNat ≠ 1) (x : AzFloat) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    powBaseM1PrecRound u x p mode = liftVal (Spec.powBaseM1 u.toNat) x p mode := by
+  rw [powBaseM1PrecRound_eq, Spec.powBaseM1Opt_eq_bind hu]
+  rfl
 
 end Azurite.AzFloat

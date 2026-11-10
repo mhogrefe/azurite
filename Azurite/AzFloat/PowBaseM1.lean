@@ -20,10 +20,11 @@ correctly rounded to precision `p` in `mode`, with the comparison against the ex
 `u^x = r^n`) gives the exact `r^n − 1` by one correctly rounded subtraction, or
 `(1 − r^|n|) / r^|n|` by one division for `n < 0`; otherwise the certified Ziv loop (no fuel)
 runs over `powBaseM1Approx` (the bracket of `x ln u` at the compensated precision, through
-`expM1OfBracket`), total because `u^x − 1` is irrational.  Special values: `NaN` for `NaN` and
-`1^(±∞)`; `0^x − 1 = −1` for `x > 0`, `+∞` for `x < 0`; `u^0 − 1 = 0`; `1^x − 1 = 0`;
+`expM1OfBracket`), total because `u^x − 1` is irrational.  Special values: `1^x − 1 = 0` for every `x`, even
+`NaN` and `±∞` (MPFR's `1^x = 1`); otherwise `NaN` for `NaN`; `0^x − 1 = −1` for `x > 0`, `+∞`
+for `x < 0`; `u^0 − 1 = 0`;
 `u^(+∞) − 1 = +∞`, `u^(−∞) − 1 = −1` for `u ≥ 2`, swapped for `u = 0`.  The specification
-`powBaseM1PrecRound_eq_liftVal` is in `Equiv/PowBaseM1.lean`.
+`powBaseM1PrecRound_eq` is in `Equiv/PowBaseM1.lean`.
 -/
 
 namespace Azurite.AzFloat
@@ -37,10 +38,10 @@ def negOneRound (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
 def powBaseM1PrecRound (u : UInt64) (x : AzFloat) (p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=
   match x with
-  | nan => (nan, .eq)
+  | nan => if u.toNat = 1 then (zero, .eq) else (nan, .eq)
   | infinity s =>
     if u.toNat = 0 then (if s then negOneRound p mode else (infinity true, .eq))
-    else if u.toNat = 1 then (nan, .eq)
+    else if u.toNat = 1 then (zero, .eq)
     else if s then (infinity true, .eq) else negOneRound p mode
   | zero => (zero, .eq)
   | finite s e q m hv =>

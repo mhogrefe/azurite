@@ -2163,6 +2163,8 @@ import Azurite.DLMF.Chapter4.Section9Exp
 import Azurite.DLMF.Chapter4.Section9Log
 import Azurite.DLMF.Chapter4.Section9Markov
 import Azurite.DLMF.Chapter4.Section9PadeExp
+import Azurite.DLMF.Chapter5.Section2
+import Azurite.DLMF.Chapter5.Section3
 import Azurite.ExhaustiveGenerator.AzRanges
 import Azurite.ExhaustiveGenerator.Basic
 import Azurite.ExhaustiveGenerator.BitDistributorSequence

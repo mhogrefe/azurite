@@ -2859,3 +2859,42 @@ Formalized in DLMF's corrected form (erratum V1.0.10 rewrote cases (a)–(c)). "
 | Table 4.16.3 example | `dlmf_4_45_arcsin` | `Real.arcsin_eq_arctan` |
 | 4.45.15–4.45.16 | `dlmf_4_45_15`, **imprecision** `dlmf_4_45_15_cut`, `dlmf_4_45_16` | `Complex.tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
 | §4.45(iii) Newton's rule | `lambertNewton`, `lambertNewtonSeq`, `dlmf_4_45_iii_W0`, `dlmf_4_45_iii_Wm1` (`convexOn_mul_exp`) | `ConvexOn.slope_le_of_hasDerivAt`, `tendsto_atTop_ciInf` |
+
+## Chapter 5: Gamma Function
+
+### §5.2 Definitions (`Azurite/DLMF/Chapter5/Section2.lean`) — COMPLETE
+
+`Γ` is `Complex.Gamma` (junk value `Γ(−n) = 0`), `ψ` is `Complex.digamma = logDeriv Gamma`, `γ` is `Real.eulerMascheroniConstant`, `(a)ₙ` is `(ascPochhammer R n).eval a`, the falling factorial `x(x − 1)⋯(x − n + 1)` is `(descPochhammer R n).eval x`; the poles `0, −1, −2, …` are `gammaPoles` (`isClosed_gammaPoles`, `isPreconnected_compl_gammaPoles`, `not_mem_gammaPoles_of_dist`). "Simple pole" is `meromorphicOrderAt = −1`, "simple zero" is `analyticOrderAt = 1`, "residue `r`" is `(z + n) f(z) → r` on the punctured neighbourhood.
+
+**Lah numbers at `k = 0`:** DLMF's `L(n, k) = C(n − 1, k − 1) n!/k!` needs `C(−1, −1) = 1` and `C(n − 1, −1) = 0` (`n ≥ 1`) for the `k = 0` terms of 5.2.9; `lah` is defined by its recurrence and agrees with the formula for `n, k ≥ 1` (`lah_eq`), with `L(0, 0) = 1`, `L(n + 1, 0) = 0`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.2.1 (`ℜz > 0`) | `dlmf_5_2_1` | `Complex.Gamma_eq_integral` |
+| "When `ℜz ≤ 0`, `Γ(z)` is defined by analytic continuation" | `dlmf_5_2_i_analytic`, `dlmf_5_2_i_continuation` (any function analytic off the poles agreeing with 5.2.1 on `ℜz > 0` is `Γ`) | `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq`, `Set.Countable.isConnected_compl_of_one_lt_rank` |
+| "meromorphic function with no zeros" | `dlmf_5_2_i_meromorphic`, `dlmf_5_2_i_ne_zero` | `Meromorphic.Gamma`, `Complex.Gamma_ne_zero` |
+| "simple poles of residue `(−1)ⁿ/n!` at `z = −n`" | `dlmf_5_2_i_pole`, `dlmf_5_2_i_residue` (`Γ(z) = (z + n)⁻¹ Γ(z + n + 1)/(z)ₙ`, `Gamma_eq_div_pochhammer`, `gammaPoleFactor`) | `meromorphicOrderAt_eq_int_iff`, `Complex.Gamma_add_nat_div_Gamma_eq` |
+| "`1/Γ(z)` is entire, with simple zeros at `z = −n`" | `dlmf_5_2_i_inv_entire`, `dlmf_5_2_i_inv_zero_iff`, `dlmf_5_2_i_inv_simple_zero` | `Complex.differentiable_one_div_Gamma`, `AnalyticAt.analyticOrderAt_eq_natCast` |
+| 5.2.2 | `dlmf_5_2_2` (all `z`, junk values), `dlmf_5_2_2_analytic` | `Complex.digamma_def`, `logDeriv_apply` |
+| "`ψ(z)` is meromorphic with simple poles of residue `−1` at `z = −n`" | `dlmf_5_2_i_digamma_meromorphic`, `dlmf_5_2_i_digamma_pole`, `dlmf_5_2_i_digamma_residue` (`digammaPoleFactor`) | `Complex.meromorphic_digamma`, `Complex.digamma_apply_add_nat` |
+| 5.2.3 | `dlmf_5_2_3` (limit), `dlmf_5_2_3_decimals` (all 20 decimals, = `dlmf_3_12_4`) | `Real.tendsto_harmonic_sub_log` |
+| 5.2.4 | `dlmf_5_2_4_zero`, `dlmf_5_2_4` (any commutative semiring) | `ascPochhammer_succ_eval` |
+| 5.2.5 (`a ≠ 0, −1, −2, …`) | `dlmf_5_2_5` | `Complex.Gamma_add_nat_div_Gamma_eq` |
+| 5.2.6 | `dlmf_5_2_6` (any commutative ring) | `ascPochhammer_eval_neg_eq_descPochhammer`, `descPochhammer_eval_eq_ascPochhammer` |
+| 5.2.7 | `dlmf_5_2_7` (`n ≤ m`), `dlmf_5_2_7_zero` (`n > m`) | `Nat.factorial_mul_descFactorial`, `ascPochhammer_eval_neg_coe_nat_of_lt` |
+| 5.2.8 | `dlmf_5_2_8`, `dlmf_5_2_8_odd` (any field of characteristic zero) | |
+| 5.2.9 | `lah` (recurrence), `lah_eq` (DLMF's closed form, `n, k ≥ 1`; `lah_mul_factorial`), `dlmf_5_2_9`, `dlmf_5_2_9_falling` (any commutative ring) | `descPochhammer_succ_eval` |
+
+### §5.3 Graphics (`Azurite/DLMF/Chapter5/Section3.lean`) — DONE (caption decimals of Figure 5.3.1 deferred to §5.4(iii))
+
+Figure content only, as in §4.3. Mathlib's `Real.exists_isMinOn_Gamma_Ioi` gives a minimizer in `(1, 2)` and leaves uniqueness as a TODO; uniqueness is proved here by the identity theorem (two minimizers ⇒ `Γ` constant on an interval ⇒ constant off the poles, contradicting `Γ(3/2) < 1 = Γ(1)`).
+
+**Deferred:** "`x₀ = 1.46…`" and the lower half of "`Γ(x₀) = 0.88…`" (proved: `1 < x₀ < 3/2`, `Γ(x₀) < 0.89`). Closed forms available (`ψ(1) = −γ`, `ψ(3/2) = 2 − 2 ln 2 − γ`, `ψ(5/4)`, `Γ(3/2) = √π/2`) with log-convexity only give `x₀ ∈ (1.25, 1.5)` and `Γ(x₀) > 0.877`. Plan for §5.4(iii) (15 digits of both): either the concavity of `ψ` and `ψ′(3/2) = π²/2 − 4` (needs the series 5.15.1 for `ψ′`) to bracket the zero of `ψ`, or an AzFloat `Γ`/`ψ` with kernel-evaluated enclosures (as for `γ` in 3.12.4).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| Figure 5.3.1 (`Γ(x)`, `1/Γ(x)`) | `dlmf_5_3_F1_pos`, `dlmf_5_3_F1_sign` (sign `(−1)ⁿ⁺¹` on `(−n − 1, −n)`), `dlmf_5_3_F1_inv_zero` | `Real.Gamma_pos_of_pos`, `Real.Gamma_add_one`, `Real.Gamma_ne_zero` |
+| Figure 5.3.1 (minimum `x₀`, "see §5.4(iii)") | `dlmf_5_3_F1_min` (`1 < x₀ < 3/2`, `Γ(x₀) < 0.89`, `ψ(x₀) = 0`), `dlmf_5_3_F1_min_unique` (`Gamma_eq_of_isMinOn`); `digamma_three_halves`, `digamma_three_halves_re_pos`, `Gamma_three_halves_eq` | `Real.exists_isMinOn_Gamma_Ioi`, `ConvexOn.le_slope_of_hasDerivAt`, `AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq`, `Complex.digamma_one_half`, `Real.Gamma_one_half_eq` |
+| Figure 5.3.2 ("convex on `(0, ∞)`") | `dlmf_5_3_F2` | `Real.convexOn_log_Gamma` |
+| Figure 5.3.3 (`ψ(x)`) | `dlmf_5_3_F3_real`, `dlmf_5_3_F3_mono`, `dlmf_5_3_F3_zero`; `hasDerivAt_Gamma_real` (`Γ′ = Γψ`), `hasDerivAt_log_Gamma_real` | `HasDerivAt.real_of_complex`, `HasDerivAt.comp_ofReal`, `HasDerivAt.ofReal_comp` |
+| Figures 5.3.4–5.3.6 (surfaces) | `dlmf_5_3_F4`, `dlmf_5_3_F5`, `dlmf_5_3_F6` (symmetry under `y ↦ −y`; `digamma_conj`); poles and zeros in §5.2(i) | `Complex.Gamma_conj`, `HasDerivAt.conj_conj` |

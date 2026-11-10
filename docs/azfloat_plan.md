@@ -5117,8 +5117,10 @@ an integer `M` then `M^D = r^N'`, and dividing the exponents by their gcd gives
 (`Nat.exists_eq_pow_of_exponent_coprime_of_pow_eq_pow`), contradicting `maxRootBase_not_pow`;
 hence `r^f` is irrational (`irrational_nrt_of_notint_nrt`) and so is `r^y = r^⌊y⌋ · r^f`.  The
 dyadic `s x` comes from `exists_dyadic_of_finiteVal`.  **Spec** `Spec.powBase u`: `0^a = +∞`
-for `a < 0` (Mathlib's `rpow` has `0^a = 0` there), `0^0 = 1`, `1^a = 1`, `1^(±∞)` undefined,
-`u^(±∞)` by continuity; `powBasePrecRound_eq_liftVal`.  Tests: specials, nine exact rational
+for `a < 0` (Mathlib's `rpow` has `0^a = 0` there), `0^0 = 1`, `1^a = 1`, `1^(±∞) = 1`
+(MPFR, changed 2026-11-10; was undefined), `u^(±∞)` by continuity; `Spec.powBaseOpt` adds
+`1^NaN = 1`; `powBasePrecRound_eq` (`roundVal p mode (Spec.powBaseOpt u x)`), and
+`powBasePrecRound_eq_liftVal` for `u ≠ 1`.  Tests: specials, nine exact rational
 powers (`4^(3/2) = 8`, `16^(−3/4) = 1/8`, `3^(±40)` at 20 bits, …), agreement with `2^x` and
 `√u` (`u = 3`, `2^64 − 1`), eleven irrational powers at 150 bits against 200-digit references
 (`3^(201/2)`, `6^(−201/4)`, `(2^64 − 1)^(1/4)`, …), directed modes.
@@ -5166,7 +5168,8 @@ precisions of `powBase`/`powBaseRat` moved from `128` to `136` (`two_pow_54_mul_
 mulLnEps e eb (w + c)` (`tendsto` through `Filter.tendsto_add_atTop_nat`).  **Exact case**:
 `r^n − 1` by `subPrecRound (ofAzNat (r^n)) one`, or `divPrecRound (ofAzInt (1 − r^|n|))
 (ofAzNat (r^|n|))` for `n < 0`.  Spec `Spec.powBaseM1 u = (Spec.powBase u ·).map (· − 1)`,
-`powBaseM1PrecRound_eq_liftVal`.  Tests: specials, seven exact values, agreement with
+`Spec.powBaseM1Opt` (`1^NaN − 1 = 0`), `powBaseM1PrecRound_eq`, and
+`powBaseM1PrecRound_eq_liftVal` for `u ≠ 1`.  Tests: specials, seven exact values, agreement with
 `pow2M1PrecRound` and with `u^x` at higher precision, eight irrational values at 150 bits
 against 200-digit references, the small arguments `10^(±2^(−30)) − 1`, `10^(1/1024) − 1` and
 the tiny `10^(±2^(−200)) − 1 ≈ ±ln 10 · 2^(−200)` (checked against `tiny × ln10Bracket`),
@@ -6220,3 +6223,16 @@ coefficients, and nonvanishing of `pₙ` (`p₂, …, p_N ≠ 0`, Olver §4).
 First prototype: `Jₙ(x)` for rational `x`, `n = 0, …, M`, with Olver's Example 3 normalization
 `J₀ + 2J₂ + 2J₄ + ⋯ = 1` (the §9 general-normalization case). The recursions are structural pair
 recursions, so the same code can run under `decide +kernel` for DLMF numerics.
+
+## `1^x = 1` for every float exponent (MPFR convention, 2026-11-10)
+
+User request: match MPFR, where `1^y = 1` even for `y = NaN` or `±∞`.  Audit of the functions
+with an `AzFloat` exponent: `powPrecRound` (`x^y`) and `ratPowPrecRound` (`q^y`) already did this
+(`1^NaN = 1`, `(±1)^(±∞) = 1`; `Spec.pow_one_left`).  Changed: `powBasePrecRound` (`u^x`) and
+`powBaseM1PrecRound` (`u^x − 1`) for `u = 1` now give `1` and `0` at `x = NaN, ±∞` (they gave
+`NaN`).  `pow2`, `pow10` and their `M1` variants have bases `≠ 1` and are unchanged.  The
+`p = 0` convention is kept: `1` at precision `0` is `NaN`, `0` is exact.  Specs:
+`Spec.powBase u (±∞) = 1` for `u = 1`; `Spec.powBaseOpt`/`Spec.powBaseM1Opt` on `Option EReal`
+(`NaN` = `none`); the main theorems are now `powBasePrecRound_eq`/`powBaseM1PrecRound_eq`, and the
+`liftVal` forms take `u ≠ 1` (`pow10` passes `by decide`).
+

@@ -44,8 +44,15 @@ private def ninf : AzFloat := infinity false
 #guard E 5 ninf 53 == (zero, .eq)
 #guard E 0 pinf 53 == (zero, .eq)
 #guard E 0 ninf 53 == (infinity true, .eq)
-#guard E 1 pinf 53 == (nan, .eq)
-#guard E 1 ninf 53 == (nan, .eq)
+-- `1^x = 1` for every `x`, even `NaN` and `±∞` (MPFR)
+#guard E 1 pinf 53 == (F "1" 53, .eq)
+#guard E 1 ninf 53 == (F "1" 53, .eq)
+#guard E 1 nan 53 == (F "1" 53, .eq)
+#guard E 1 nan 7 .Floor == (F "1" 7, .eq)
+#guard E 1 nan 0 == (nan, .eq)
+#guard E 1 pinf 0 == (nan, .eq)
+#guard powBase 1 nan == F "1" 1
+#guard powBase 1 ninf == F "1" 1
 #guard E 5 zero 53 == (F "1" 53, .eq)
 #guard E 0 zero 53 == (F "1" 53, .eq)
 #guard E 1 zero 53 == (F "1" 53, .eq)
