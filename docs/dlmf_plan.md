@@ -3001,3 +3001,43 @@ Conditions: Mathlib's junk values (`Γ(−n) = 0`, `ψ(−n) = 0`) make 5.5.3 an
 | 5.7.7 | `dlmf_5_7_7` (limit of partial sums; conditional convergence); `tendsto_of_even_odd_cplx`, `sum_range_two_mul_pair` | |
 | 5.7.8 | `dlmf_5_7_8` | `Complex.hasSum_im` |
 
+### §5.8 Infinite Products (`Azurite/DLMF/Chapter5/Section8.lean`) — COMPLETE (2026-11-10)
+
+Each product is stated as an unconditionally convergent `tprod` (`Multipliable ∧ value`) and, in the helper lemmas, as the limit of its partial products. All come from Euler's sequence `GammaSeq`. Conditions: with Mathlib's junk values (`Γ = 0` at the poles, `x/0 = 0`) 5.8.2 and 5.8.5 hold for every argument; DLMF's "no `bᵢ` a pole" in 5.8.5 is dropped.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.8.1 | `dlmf_5_8_1` (every `z`); `tendsto_inv_GammaSeq` (`1/GammaSeq → 1/Γ` everywhere, poles included) | `Complex.GammaSeq_tendsto_Gamma` |
+| 5.8.2 | `dlmf_5_8_2`; `weierstrassFactor`, `weierstrass_partial_eq` (partial product `= (1/GammaSeq) e^{z(γ − Hₙ + ln n)}`), `tendsto_weierstrass_partial`, `norm_weierstrassFactor_sub_one_le` (`≤ e\|z\|²/(k + 1)²`), `multipliable_weierstrassFactor`, `tprod_eq_of_tendsto_prod_range` | `Real.tendsto_harmonic_sub_log`, `Complex.multipliable_one_add_of_summable`, `Complex.norm_exp_sub_one_sub_id_le` |
+| 5.8.3 | `dlmf_5_8_3` (`x ≠ 0, −1, …`); `partial_5_8_3_eq`, `tendsto_partial_5_8_3`, `summable_5_8_3` | `norm_natCast_cpow_of_pos`, `Real.multipliable_one_add_of_summable` |
+| 5.8.4–5.8.5 | `dlmf_5_8_5` (`a b : Fin m → ℂ`, `∑ aᵢ = ∑ bᵢ`); `ratioFactor`, `ratio_partial_eq`, `tendsto_ratio_partial`, `norm_ratioFactor_sub_one_le` (`≤ (4M² + 2MB)/k²`), `multipliable_ratioFactor`, `norm_prod_one_add_sub_one_sub_sum_le` (`\|∏(1 + uᵢ) − 1 − ∑uᵢ\| ≤ e^T − 1 − T`) | `Finset.norm_prod_one_add_sub_one_le` |
+
+### §5.9(i) Integral Representations: Gamma Function (`Section9.lean`, `Section9Regions.lean`, `Section9Trig.lean`, `Section9Hankel.lean`, `Section9Temme.lean`) — COMPLETE (2026-11-10)
+
+Scope (user): §5.9(i) up to, not including, Binet's formula. The trigonometric integrals converge only conditionally at `∞` and are stated as limits of `∫₀^R`. Hankel's loop is formalized on explicit keyhole contours: rays `arg t = α` and `arg t = −β` from `|t| = δ` to `∞` and the arc of `|t| = δ`, with `t^{−z} = r^{−z} e^{−izφ}` continued along the contour (`hankelF`). DLMF's loop is `α = β = π`, any `δ > 0`; path independence for arbitrary loops is not formalized. In 5.9.7 the point `z = 0` is excluded, where the integral is Dirichlet's `π/2`, the limit of `Γ(z) sin(½πz)`.
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.9.1 | `dlmf_5_9_1`; complex Laplace transform `integral_cpow_mul_cexp_neg` (`∫ t^{a−1} e^{−zt} = Γ(a) z^{−a}`, `ℜz > 0`, by analyticity in `z`: `hasDerivAt_laplace_cpow`, `eqOn_of_eq_on_pos_reals`) | `Complex.integral_cpow_mul_exp_neg_mul_Ioi`, `integral_comp_rpow_Ioi` |
+| 5.9.2 | `dlmf_5_9_2`; `hankelLoop_eq` (all keyholes `α, β ∈ (½π, 3π/2)`), `hankelLoop_eq_of_re_lt_one` (rays are Laplace transforms, `integral_ray_full`; small pieces vs arc by termwise series, `hasSum_integral_cpow_mul_cexp`, `hasSum_hankelArc`), `differentiable_hankelRay` (Mellin), `differentiable_hankelArc` (`differentiable_integral_mul_cexp`) | `mellin_differentiableAt_of_isBigO_rpow_exp`, `Complex.Gamma_mul_Gamma_one_sub`, `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` |
+| 5.9.2_5 | `dlmf_5_9_2_5` (`temmePhi` = DLMF's `Φ`); homotopy form of Cauchy's theorem `integral_homotopy` (Fubini on the rectangle); curve `temmeCurve` = `e^{iθ}/sinc θ` (`csinc = dslope sin 0`), `temmeV` (`= 1 − Φ`, `temmeV_eq`; `temmeV_le_one`, i.e. `Φ ≥ 0`), `integral_temme_sym` (`s′(θ) + s′(−θ) = 2i`), `cexp_mul_cpow_eq_hankelF` (`t = zs` maps the `s`-keyhole to a Hankel keyhole with angles `a ± arg z`), `temme_identity`, tails `norm_integral_hankelRay_tail_le`, `tendsto_temmeRho` | `differentiableOn_dslope`, `DifferentiableOn.deriv`, `integral_integral_swap`, `Real.cos_le_sinc` |
+| 5.9.3 | `dlmf_5_9_3`; `integral_comp_abs_complex` | — |
+| 5.9.4 | `dlmf_5_9_4` (`z ∉ {0, −1, …}`); `upperGammaOne` (Mellin transform, entire), `gammaSeriesTerm`, `differentiableAt_gammaSeries`, `hasSum_integral_exp_tail` | `differentiableOn_tsum_of_summable_norm`, `hasSum_integral_of_summable_integral_norm` |
+| 5.9.5 | `dlmf_5_9_5` (`−n − 1 < ℜz < −n`); `norm_cexp_neg_sub_sum_le` | `Complex.exp_bound`, `integral_Ioi_cpow_of_lt` |
+| 5.9.6 | `dlmf_5_9_6` (`0 < ℜz < 1`, limit of `∫₀^R`); Abelian theorem `tendsto_laplace_of_tendsto_integral`, `exists_tendsto_integral_cpow_mul_cexp` (one integration by parts) | `integral_Ioi_mul_deriv_eq_deriv_mul`, `tendsto_integral_filter_of_dominated_convergence` |
+| 5.9.7 | `dlmf_5_9_7` (`−1 < ℜz < 1`, `z ≠ 0`); `sinAbel`, `mul_sinAbel_eq` (Abel means continued to `ℜz > −1` as Mellin transforms) | `mellin_differentiableAt_of_isBigO_rpow_exp` |
+| 5.9.8, 5.9.9 | `dlmf_5_9_8`, `dlmf_5_9_9` (`n ≥ 2`); `integral_comp_pow_eq` (`u = tⁿ`) | `intervalIntegral.integral_comp_mul_deriv'''` |
+
+### §5.9(i) Binet's Formula (`Section9Binet.lean`, `Section9BinetArctan.lean`, `Section9Barnes.lean`, `Section9Boyd.lean`, `Section9BoydCauchy.lean`, `Section9BoydFormula.lean`) — COMPLETE (2026-11-10)
+
+Mathlib has no complex `Ln Γ`; as in §5.7, 5.9.10–5.9.11 are stated exponentiated (`Γ(z) = exp(…)`, so every value of `Ln Γ(z)` is covered), 5.9.10_2 also with the real logarithm on `(0, ∞)`. 5.9.11 is proved for `z` in the slit plane (`|ph z| < π`) and every `1 < c < 2`; the contour `ℜs = −c` is parametrized `s = −c + iy`, `ds = i dy`. `Γ*` of 5.9.11_1–5.9.11_2 is `scaledGamma` = `Γ(z)/(√(2π) e^{−z} z^{z−½})`, DLMF 5.11.3 (principal powers).
+
+| Equation | Theorem | Mathlib |
+|---|---|---|
+| 5.9.10_2 | `dlmf_5_9_10_2` (`ℜz > 0`), `dlmf_5_9_10_2_real`; `binetPhi` (`\|φ\| ≤ 3` via `one_sub_exp_mul_binetPhi`), `binetJ` (Laplace transform of `φ`, §1.14(iii)), `binetJR_sub` (`J(x) − J(x + 1)` = Stirling's `g`), `binetJR_eq_stirlingMu` (`J = μ` of §5.6), identity theorem (`Section9Binet.lean`) | `integral_integral_swap` |
+| 5.9.10 | `dlmf_5_9_10` (`ℜz > 0`); `hasSum_coth_series_exp`, `integral_sin_div_exp_sub_one`, `arctan_div_eq_integral` (Table 1.14.3), `integral_arctan_eq_binetJ` (Fubini) (`Section9BinetArctan.lean`) | `Complex.arctan`, `integral_integral_swap` |
+| 5.9.10_1 | `dlmf_5_9_10_1` (`ℜz > 0`); `binetLog`, `integral_arctan_eq_integral_log` (integration by parts) (`Section9BinetArctan.lean`) | `integral_Ioi_mul_deriv_eq_deriv_mul` |
+| 5.9.11 | `dlmf_5_9_11` (`z ∈ slitPlane`, `1 < c < 2`); `barnesF` = `ln(1 + z) − z`, `mellin_barnesF` (`π a^{−s}/(s sin πs)`, `−2 < ℜs < −1`), `log_one_add_sub_eq_integral` (Mellin inversion), `hasSum_log_one_add_sub`, `Gamma_add_one_eq_exp` (5.8.2 + ζ series) (`Section9Barnes.lean`) | `mellinInv_mellin_eq`, `riemannZeta` |
+| 5.9.11_1 | `dlmf_5_9_11_1` (`ℜz > 0`); `scaledGamma`, `scaledGamma_eq_exp` (`Γ* = e^{J}`), `norm_scaledGamma_sub_one_le` (Stieltjes-type bound `\|J(z)\| ≤ 1/(6\|z\|)`, `norm_binetJ_le_inv`, from `hasSum_binetPhi`), `exists_bound_scaledGamma_near_zero`, `scaledGamma_mul_scaledGamma_neg` (`Γ*(it)Γ*(−it) = 1/(1 − e^{−2πt})`) (`Section9Boyd.lean`); half-plane Cauchy formula `HalfPlaneDecay`, `integral_line_eq` (rectangles + residues, `T → ∞`), `integral_halfPlane_inside` / `_outside` (`δ → 0`, dominated convergence) (`Section9BoydCauchy.lean`); `halfPlaneDecay_scaledGamma`, `boyd_aux`, `scaledGamma_inv_I` (`Section9BoydFormula.lean`) | `Complex.Gamma_mul_Gamma_one_sub` |
+| 5.9.11_2 | `dlmf_5_9_11_2` (`ℜz > 0`; `boyd_aux` with the roles of `Γ*` and `1/Γ*` swapped) (`Section9BoydFormula.lean`) | — |
+

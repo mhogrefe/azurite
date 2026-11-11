@@ -257,6 +257,56 @@ theorem isInteger_and_odd_iff (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv :
     rw [abs_isOdd_iff, toNat_abs_eq_natAbs, Int.natAbs_odd, this]
     exact hodd
 
+/-- `isOddInteger y` says `y` is an odd integer. -/
+theorem isOddInteger_iff (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :
+    isOddInteger (finite s e q m hv) = true ↔ ∃ n : ℤ, Odd n ∧ finiteVal s e m = n := by
+  have hm0 : m ≠ 0 := ne_zero_of_finiteValid 0 hv
+  obtain ⟨-, hodd⟩ := splitOdd_spec m hm0
+  have hodd0 : (splitOdd m).1 ≠ 0 := by
+    intro h0; rw [h0, AzNat.toNat_zero] at hodd; simp at hodd
+  obtain ⟨N, hN⟩ : ∃ N : ℤ, N = (AzInt.mkNorm s (splitOdd m).1).toInt := ⟨_, rfl⟩
+  have hNodd : Odd N := by
+    have ho : Odd ((splitOdd m).1.toNat : ℤ) := by exact_mod_cast hodd
+    cases s
+    · rw [hN, AzInt.toInt_mkNorm_false _ hodd0]; exact ho.neg
+    · rw [hN, AzInt.toInt_mkNorm_true]; exact ho
+  have hval := finiteVal_eq_oddShift s e hv
+  rw [← hN] at hval
+  obtain ⟨t, ht⟩ : ∃ t : ℤ, t = e.toInt - m.size + (splitOdd m).2 := ⟨_, rfl⟩
+  rw [← ht] at hval
+  have hdec : isOddInteger (finite s e q m hv) = true ↔ t = 0 := by
+    simp only [isOddInteger, decide_eq_true_eq]
+    constructor
+    · intro h
+      have := congrArg AzInt.toInt h
+      rwa [toInt_powExact_t, AzInt.toInt_zero, ← ht] at this
+    · intro h
+      by_contra hX
+      exact toInt_ne_zero_of_ne_zero hX (by rw [toInt_powExact_t, ← ht, h])
+  rw [hdec, hval]
+  constructor
+  · intro h0
+    exact ⟨N, hNodd, by rw [h0, zpow_zero, mul_one]⟩
+  · rintro ⟨n, hn, hyn⟩
+    by_contra h0
+    rcases lt_or_gt_of_ne h0 with hlt | hgt
+    · -- `N = n 2^k`, `k ≥ 1`: `N` even
+      obtain ⟨k, hk⟩ : ∃ k : ℕ, t = -((k + 1 : ℕ) : ℤ) := ⟨(-t - 1).toNat, by omega⟩
+      rw [hk, zpow_neg, zpow_natCast] at hyn
+      have hZ : N = n * 2 ^ (k + 1) := by
+        have : (N : ℝ) = n * 2 ^ (k + 1) := by
+          field_simp at hyn
+          linarith
+        exact_mod_cast this
+      rw [hZ] at hNodd
+      exact Int.not_odd_iff_even.mpr ⟨n * 2 ^ k, by rw [pow_succ]; ring⟩ hNodd
+    · -- `n = N 2^k`, `k ≥ 1`: `n` even
+      obtain ⟨k, hk⟩ : ∃ k : ℕ, t = ((k + 1 : ℕ) : ℤ) := ⟨(t - 1).toNat, by omega⟩
+      rw [hk, zpow_natCast] at hyn
+      have hZ : n = N * 2 ^ (k + 1) := by exact_mod_cast hyn.symm
+      rw [hZ] at hn
+      exact Int.not_odd_iff_even.mpr ⟨N * 2 ^ k, by rw [pow_succ]; ring⟩ hn
+
 /-! ### The integer-power path -/
 
 /-- `powIntOrZiv` is the correctly rounded `x^n`. -/
@@ -266,7 +316,7 @@ theorem powIntOrZiv_eq (sx : Bool) (ex : AzInt) (qx : ℕ) (mx : AzNat) (hvx : F
       = roundVal p mode (some ((finiteVal sx ex mx ^ n.toInt : ℝ) : EReal)) := by
   unfold powIntOrZiv
   split_ifs with hc
-  · rw [powIntPrecRound_eq_liftVal, liftVal, toVal_finite, Option.bind_some, Spec.powInt_coe,
+  · rw [powIntExactPrecRound_eq_liftVal, liftVal, toVal_finite, Option.bind_some, Spec.powInt_coe,
       ite_eq_right (toInt_ne_zero_of_ne_zero hn),
       ite_eq_right (fun h => finiteVal_ne_zero sx ex hvx h.1)]
   · dsimp only
@@ -282,6 +332,60 @@ theorem powIntOrZiv_eq (sx : Bool) (ex : AzInt) (qx : ℕ) (mx : AzNat) (hvx : F
           powApprox_spec _ ex hvx (toVal_ofAzInt n) _ (abs_toInt_lt_two_pow_size n) (w := w)
             (by unfold powStart at hw; omega)
         exact ⟨lv, hv, h1, h2, h3, h4⟩) _
+
+/-- **`x^n` is correctly rounded** (the public `powIntPrecRound`). -/
+theorem powIntPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    powIntPrecRound x n p mode = liftVal (Spec.powInt n.toInt) x p mode := by
+  rw [← powIntExactPrecRound_eq_liftVal]
+  cases x with
+  | finite s e q m hv =>
+    unfold powIntPrecRound
+    dsimp only
+    rw [dite_eq_right (NeZero.ne p)]
+    split_ifs with hn
+    · simp [powIntExactPrecRound, hn, NeZero.ne p]
+    · rw [powIntOrZiv_eq, powIntExactPrecRound_eq_liftVal, liftVal, toVal_finite,
+        Option.bind_some, Spec.powInt_coe, ite_eq_right (toInt_ne_zero_of_ne_zero hn),
+        ite_eq_right (fun h => finiteVal_ne_zero s e hv h.1)]
+  | nan => rfl
+  | infinity _ => rfl
+  | zero => rfl
+
+/-- `negOnePow y` is the rounding of `(−1)^n` for an integer float `y = n`. -/
+theorem negOnePow_eq (sy : Bool) (ey : AzInt) {qy : ℕ} {my : AzNat} (hvy : FiniteValid qy my)
+    {n : ℤ} (hn : finiteVal sy ey my = n) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    negOnePow (finite sy ey qy my hvy) p mode
+      = roundVal p mode (some (((-1 : ℝ) ^ n : ℝ) : EReal)) := by
+  unfold negOnePow
+  by_cases ho : isOddInteger (finite sy ey qy my hvy) = true
+  · obtain ⟨n', hn', hyn⟩ := (isOddInteger_iff sy ey hvy).mp ho
+    have : n' = n := by exact_mod_cast hyn.symm.trans hn
+    subst this
+    rw [ite_eq_left ho, Odd.neg_one_zpow hn', setPrecRound_eq_roundVal (by
+      rw [toVal_neg, toVal_one']; rfl)]
+  · have hev : Even n := by
+      rw [← Int.not_odd_iff_even]
+      exact fun h => ho ((isOddInteger_iff sy ey hvy).mpr ⟨n, h, hn⟩)
+    rw [ite_eq_right ho, Even.neg_one_zpow hev, setPrecRound_one_eq, EReal.coe_one]
+
+/-- `powIntOfFloat` is the correctly rounded `x^n` for the integer float `y = n`. -/
+theorem powIntOfFloat_eq (sx : Bool) (ex : AzInt) {qx : ℕ} {mx : AzNat} (hvx : FiniteValid qx mx)
+    (sy : Bool) (ey : AzInt) {qy : ℕ} {my : AzNat} (hvy : FiniteValid qy my)
+    (hi : isInteger (finite sy ey qy my hvy) = true) (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (hx1 : finiteVal sx ex mx ≠ 1) :
+    powIntOfFloat sx ex qx mx hvx sy ey qy my hvy hi p mode
+      = roundVal p mode (some ((finiteVal sx ex mx ^ (truncToAzInt (finite sy ey qy my hvy)).toInt
+          : ℝ) : EReal)) := by
+  unfold powIntOfFloat
+  split_ifs with hab
+  · have hxm : finiteVal sx ex mx = -1 := by
+      rcases abs_eq zero_le_one |>.mp ((eqIEEE_abs_one_iff sx ex hvx).mp hab) with h | h
+      · exact absurd h hx1
+      · exact h
+    rw [hxm]
+    exact negOnePow_eq sy ey hvy (truncToAzInt_of_isInteger sy ey hvy hi).symm p mode
+  · exact powIntOrZiv_eq sx ex qx mx hvx _ p mode
 
 /-- `natPowOrZiv r n` is the correctly rounded `r^n` for `r ≥ 1`. -/
 theorem natPowOrZiv_eq {r : AzNat} (hr : r ≠ 0) (n : AzInt) (p : ℕ) [NeZero p]
@@ -434,11 +538,10 @@ theorem powPrecRound_eq (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMod
           simp
         · have hpos : 0 < yv := hsy.mp rfl
           simp only [↓reduceIte, hpos]
-          by_cases hodd : (isInteger (finite true ey qy my hvy)
-              && (truncToAzInt (finite true ey qy my hvy)).abs.isOdd) = true
-          · rw [ite_eq_left hodd, ite_eq_left ((isInteger_and_odd_iff true ey hvy).mp hodd)]; simp
+          by_cases hodd : isOddInteger (finite true ey qy my hvy) = true
+          · rw [ite_eq_left hodd, ite_eq_left ((isOddInteger_iff true ey hvy).mp hodd)]; simp
           · rw [ite_eq_right hodd,
-              ite_eq_right (fun h => hodd ((isInteger_and_odd_iff true ey hvy).mpr h))]
+              ite_eq_right (fun h => hodd ((isOddInteger_iff true ey hvy).mpr h))]
             simp
       · simp only [↓reduceIte]
         cases sy
@@ -468,7 +571,8 @@ theorem powPrecRound_eq (x y : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMod
         have hxpos : (0 : EReal) < (xv : EReal) ↔ 0 < xv := by
           rw [← EReal.coe_zero, EReal.coe_lt_coe_iff]
         by_cases hi : isInteger (finite sy ey qy my hvy) = true
-        · rw [dite_eq_left hi, powIntOrZiv_eq]
+        · rw [dite_eq_left hi, powIntOfFloat_eq sx ex hvx sy ey hvy hi p mode
+            (fun h => hx1 (by rw [hxv, h]; rfl))]
           have ht := truncToAzInt_of_isInteger sy ey hvy hi
           rw [← hyv] at ht
           rw [ite_eq_left (Or.inr ⟨_, ht.symm⟩), ← ht, Real.rpow_intCast]

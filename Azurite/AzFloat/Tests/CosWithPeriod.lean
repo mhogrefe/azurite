@@ -102,3 +102,15 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard cosWithPeriodPrecRound tinyX 360 53 .Floor == (belowOne, .lt)
 #guard cosWithPeriodPrecRound (-tinyX) 1 53 .Ceiling == (F "1" 53, .gt)
 #guard cosWithPeriodPrecRound tinyX 18446744073709551615 53 .Floor == (belowOne, .lt)
+
+-- huge arguments: `m 2^E mod u` through `2^E mod u` (`3·2^(2^28) ≡ 6 mod 7`, `≡ 48 mod 360`,
+-- `≡ 0 mod 3`, `≡ 3 mod 2^64 − 1`), never building the `2^28`-bit number
+private def hugeX : AzFloat := (F "3" 53) <<< AzInt.ofInt (2 ^ 28)
+#guard cosWithPeriodPrecRound hugeX 7 53 .Nearest ==
+  cosWithPeriodPrecRound (F "6" 53) 7 53 .Nearest
+#guard cosWithPeriodPrecRound hugeX 360 53 .Floor == cosWithPeriodPrecRound (F "48" 53) 360 53 .Floor
+#guard cosWithPeriodPrecRound (-hugeX) 360 30 .Ceiling ==
+  cosWithPeriodPrecRound (F "48" 53) 360 30 .Ceiling
+#guard cosWithPeriodPrecRound hugeX 3 53 .Nearest == (F "1" 53, .eq)
+#guard cosWithPeriodPrecRound hugeX 18446744073709551615 53 .Nearest ==
+  cosWithPeriodPrecRound (F "3" 53) 18446744073709551615 53 .Nearest

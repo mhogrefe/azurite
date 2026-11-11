@@ -77,6 +77,24 @@ import Azurite.AzFloat.PowBase
 import Azurite.AzFloat.PowBaseRat
 import Azurite.AzFloat.PowBaseM1
 import Azurite.AzFloat.PowBaseM1Rat
+import Azurite.AzFloat.Pow10
+import Azurite.AzFloat.PowInt
+import Azurite.AzFloat.Cbrt
+import Azurite.AzFloat.CbrtRat
+import Azurite.AzFloat.Pow
+import Azurite.AzFloat.PowRat
+import Azurite.AzFloat.RatPow
+import Azurite.AzFloat.RatPowRat
+import Azurite.AzFloat.Cos
+import Azurite.AzFloat.CosRat
+import Azurite.AzFloat.CosPi
+import Azurite.AzFloat.CosWithPeriod
+import Azurite.AzFloat.CosRatWithPeriod
+import Azurite.AzFloat.Sin
+import Azurite.AzFloat.SinRat
+import Azurite.AzFloat.SinPi
+import Azurite.AzFloat.SinWithPeriod
+import Azurite.AzFloat.SinRatWithPeriod
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -1004,16 +1022,16 @@ assignments `x := x; x.{name}[…]_assign[_ref](y[, p][, rm]) = o; x = r` and
 `Nearest`. -/
 def checkFloatAgmWith {α : Type} (name : String) (parseY : String → Option α)
     (defaultPrec : AzFloat → α → Nat) (f : AzFloat → α → Nat → RoundingMode → AzFloat × Ordering)
-    (line : String) : Verdict := do
-  if line.startsWith "agm(" then
-    let some (args, res) := functionCall line "agm" | fail "not an `agm(x, y) = r` line"
+    (plain : String := "agm") (line : String) : Verdict := do
+  if line.startsWith s!"{plain}(" then
+    let some (args, res) := functionCall line plain | fail s!"not a `{plain}(x, y) = r` line"
     let (x, y) ← match args with
       | [x, y] => pure (x, y)
-      | _ => fail "agm takes two arguments"
+      | _ => fail s!"{plain} takes two arguments"
     let x ← expect "x" (parseFloat (stripRef x))
     let y ← expect "y" (parseY (stripRef y))
-    let computed ← roundedResult "agm" (f x.1 y (defaultPrec x.1 y)) (.mode .Nearest)
-    expectFloat "agm" computed.1 (← expect "r" (parseFloat res))
+    let computed ← roundedResult plain (f x.1 y (defaultPrec x.1 y)) (.mode .Nearest)
+    expectFloat plain computed.1 (← expect "r" (parseFloat res))
   else
   let (x, method, args, res, withOrdering) ← if line.startsWith "x := " then
       match line.splitOn "; " with
@@ -1031,7 +1049,7 @@ def checkFloatAgmWith {α : Type} (name : String) (parseY : String → Option α
       let some (args, _) := splitParenthesized call | fail "not a method call"
       pure (x, (call.splitOn "(").headD "", args, rhs, (trim rhs).startsWith "(")
   let base ← if method == name || method.startsWith s!"{name}_" then pure name
-    else if method == "agm_assign" then pure "agm"
+    else if method == s!"{plain}_assign" then pure plain
     else fail s!"not a {name} line"
   let tags := (dropChars method base.length).splitOn "_"
   let hasPrec := tags.contains "prec"
@@ -1411,25 +1429,32 @@ def powInput (x : AzFloat) : AzFloat :=
   | .finite false e _ _ _ => if AzInt.ofInt 32 ≤ e then powSubstitute true 31 else x
   | _ => x
 
-/-- `AzFloat.powBasePrecRound`, at `powInput x` for `u ≥ 2`: `u^(2^30) ≥ 2^(2^30)` overflows and
-`u^(-2^31) ≤ 2^(-2^31)` underflows far below half the smallest positive value, so the
-substitution is exact. -/
-def malachitePowBase (u : UInt64) (x : AzFloat) (p : Nat) (m : RoundingMode) :
-    AzFloat × Ordering :=
-  if u.toNat < 2 then AzFloat.powBasePrecRound u x p m
-  else AzFloat.powBasePrecRound u (powInput x) p m
+/-- `f` at `powInput x`, for `f x p m` a correctly rounded `u^x` with `u ≥ 2`: `u^(2^30) ≥ 2^(2^30)`
+overflows and `u^(-2^31) ≤ 2^(-2^31)` underflows far below half the smallest positive value, so
+the substitution is exact. -/
+def powSubstituted (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering) (x : AzFloat) (p : Nat)
+    (m : RoundingMode) : AzFloat × Ordering :=
+  f (powInput x) p m
 
-/-- `AzFloat.powBaseM1PrecRound` for `u ≥ 2` with the substitutions of `malachiteExpM1`: for
-`x ≤ -2^31`, `u^x - 1 = -1 + ε` with `0 < ε < 2^(-p-1)`, as at `x = -(p + 2)`. -/
-def malachitePowBaseM1 (u : UInt64) (x : AzFloat) (p : Nat) (m : RoundingMode) :
-    AzFloat × Ordering :=
-  if u.toNat < 2 then AzFloat.powBaseM1PrecRound u x p m
-  else match x with
+/-- `f` with the substitutions of `malachiteExpM1`, for `f x p m` a correctly rounded `u^x - 1`
+with `u ≥ 2`: for `x ≤ -2^31`, `u^x - 1 = -1 + ε` with `0 < ε < 2^(-p-1)`, as at `x = -(p + 2)`. -/
+def powM1Substituted (f : AzFloat → Nat → RoundingMode → AzFloat × Ordering) (x : AzFloat)
+    (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  match x with
   | .finite false e _ _ _ =>
-    if AzInt.ofInt 32 ≤ e then
-      AzFloat.powBaseM1PrecRound u (exactFromInteger (-(AzNat.ofNat (p + 2)).toAzInt)) p m
-    else AzFloat.powBaseM1PrecRound u x p m
-  | _ => AzFloat.powBaseM1PrecRound u (powInput x) p m
+    if AzInt.ofInt 32 ≤ e then f (exactFromInteger (-(AzNat.ofNat (p + 2)).toAzInt)) p m
+    else f x p m
+  | _ => f (powInput x) p m
+
+/-- `AzFloat.powBasePrecRound u`, through `powSubstituted` for `u ≥ 2`. -/
+def malachitePowBase (u : UInt64) : AzFloat → Nat → RoundingMode → AzFloat × Ordering :=
+  if u.toNat < 2 then AzFloat.powBasePrecRound u
+  else powSubstituted (AzFloat.powBasePrecRound u)
+
+/-- `AzFloat.powBaseM1PrecRound u`, through `powM1Substituted` for `u ≥ 2`. -/
+def malachitePowBaseM1 (u : UInt64) : AzFloat → Nat → RoundingMode → AzFloat × Ordering :=
+  if u.toNat < 2 then AzFloat.powBaseM1PrecRound u
+  else powM1Substituted (AzFloat.powBaseM1PrecRound u)
 
 /-- `powInput` for a rational exponent `q`: `q ≥ 2^30` becomes `2^30 + 2^-7` (an overflow) and
 `q ≤ -2^31` becomes `-(2^31 + 2^-7)` (an underflow far below half the smallest positive value);
@@ -1442,21 +1467,30 @@ def ratExpInput (q : AzRat) : AzRat :=
   else if q.sign then (if 30 ≤ q.floorLogBase2Abs then sub false 30 else q)
   else if 31 ≤ q.floorLogBase2Abs then sub true 31 else q
 
-/-- `AzFloat.powBaseRatPrecRound` at `ratExpInput q` for `u ≥ 2`; see `malachitePowBase`. -/
-def malachitePowBaseRat (u : UInt64) (q : AzRat) (p : Nat) (m : RoundingMode) :
-    AzFloat × Ordering :=
-  if u.toNat < 2 then AzFloat.powBaseRatPrecRound u q p m
-  else AzFloat.powBaseRatPrecRound u (ratExpInput q) p m
+/-- `f` at `ratExpInput q`, for `f q p m` a correctly rounded `u^q` with `u ≥ 2`; see
+`powSubstituted`. -/
+def powRatSubstituted (f : AzRat → Nat → RoundingMode → AzFloat × Ordering) (q : AzRat) (p : Nat)
+    (m : RoundingMode) : AzFloat × Ordering :=
+  f (ratExpInput q) p m
 
-/-- `AzFloat.powBaseM1RatPrecRound` for `u ≥ 2` with the substitutions of `malachitePowBaseM1`:
-`q ≥ 2^30` becomes `2^30`, and `q ≤ -2^31` becomes `-(p + 2)`. -/
-def malachitePowBaseM1Rat (u : UInt64) (q : AzRat) (p : Nat) (m : RoundingMode) :
-    AzFloat × Ordering :=
-  if u.toNat < 2 || q.num = 0 then AzFloat.powBaseM1RatPrecRound u q p m
+/-- `f` with the substitutions of `powM1Substituted`, for `f q p m` a correctly rounded `u^q - 1`
+with `u ≥ 2`: `q ≥ 2^30` becomes `2^30 + 2^-7`, and `q ≤ -2^31` becomes `-(p + 2)`. -/
+def powM1RatSubstituted (f : AzRat → Nat → RoundingMode → AzFloat × Ordering) (q : AzRat)
+    (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  if q.num = 0 then f q p m
   else if !q.sign && 31 ≤ q.floorLogBase2Abs then
-    AzFloat.powBaseM1RatPrecRound u
-      (AzRat.ofAzInts (-(AzNat.ofNat (p + 2)).toAzInt) (AzNat.ofNat 1).toAzInt) p m
-  else AzFloat.powBaseM1RatPrecRound u (ratExpInput q) p m
+    f (AzRat.ofAzInts (-(AzNat.ofNat (p + 2)).toAzInt) (AzNat.ofNat 1).toAzInt) p m
+  else f (ratExpInput q) p m
+
+/-- `AzFloat.powBaseRatPrecRound u`, through `powRatSubstituted` for `u ≥ 2`. -/
+def malachitePowBaseRat (u : UInt64) : AzRat → Nat → RoundingMode → AzFloat × Ordering :=
+  if u.toNat < 2 then AzFloat.powBaseRatPrecRound u
+  else powRatSubstituted (AzFloat.powBaseRatPrecRound u)
+
+/-- `AzFloat.powBaseM1RatPrecRound u`, through `powM1RatSubstituted` for `u ≥ 2`. -/
+def malachitePowBaseM1Rat (u : UInt64) : AzRat → Nat → RoundingMode → AzFloat × Ordering :=
+  if u.toNat < 2 then AzFloat.powBaseM1RatPrecRound u
+  else powM1RatSubstituted (AzFloat.powBaseM1RatPrecRound u)
 
 /-- `Float::{name}_prec_round(u, y, p, rm) = (r, o)` and `Float::{name}_prec(u, y, p) = (r, o)`
 for a `u64` base `u` and an exponent `y` read by `parseY`, against `f u y p rm`. -/
@@ -1497,25 +1531,259 @@ def checkFloatUnsignedPowUnsigned : String → Verdict :=
   checkFloatUnsignedPowWith "unsigned_pow_unsigned" parseAzRat malachitePowBaseRat
 
 /-- `Float::power_of_10_of_float[_prec][_round][_ref](x, …)`, `Float::power_of_10(x) = r`, and the
-assignments, against `AzFloat.powBasePrecRound 10` (through `malachitePowBase`). -/
+assignments, against `AzFloat.pow10PrecRound` (through `powSubstituted`). -/
 def checkFloatPowerOf10OfFloat (line : String) : Verdict :=
   checkFloatUnaryArgsWith "power_of_10_of_float" 0 (fun _ => some ())
-    (fun x _ => malachitePowBase 10 x) (assocAsMethod line) ["power_of_10", "power_of_10_assign"]
+    (fun x _ => powSubstituted AzFloat.pow10PrecRound x) (assocAsMethod line) ["power_of_10", "power_of_10_assign"]
 
 /-- `Float::power_of_10_rational_prec[_round][_ref](q, p[, rm])`, against
-`AzFloat.powBaseRatPrecRound 10`. -/
+`AzFloat.pow10RatPrecRound` (through `powRatSubstituted`). -/
 def checkFloatPowerOf10Rational : String → Verdict :=
-  checkFloatOfRational "power_of_10_rational" (malachitePowBaseRat 10)
+  checkFloatOfRational "power_of_10_rational" (powRatSubstituted AzFloat.pow10RatPrecRound)
 
-/-- `Float`'s `power_of_10_x_minus_1` family, against `AzFloat.powBaseM1PrecRound 10` (through
-`malachitePowBaseM1`); the sign of a zero result is not compared. -/
+/-- `Float`'s `power_of_10_x_minus_1` family, against `AzFloat.pow10M1PrecRound` (through
+`powM1Substituted`); the sign of a zero result is not compared. -/
 def checkFloatPowerOf10XMinus1 : String → Verdict :=
-  checkFloatUnaryWith "power_of_10_x_minus_1" (malachitePowBaseM1 10)
+  checkFloatUnaryWith "power_of_10_x_minus_1" (powM1Substituted AzFloat.pow10M1PrecRound)
 
 /-- `Float::power_of_10_x_minus_1_rational_prec[_round][_ref](q, p[, rm])`, against
-`AzFloat.powBaseM1RatPrecRound 10`. -/
+`AzFloat.pow10M1RatPrecRound` (through `powM1RatSubstituted`). -/
 def checkFloatPowerOf10XMinus1Rational : String → Verdict :=
-  checkFloatOfRational "power_of_10_x_minus_1_rational" (malachitePowBaseM1Rat 10)
+  checkFloatOfRational "power_of_10_x_minus_1_rational"
+    (powM1RatSubstituted AzFloat.pow10M1RatPrecRound)
+
+/-- The input `powInt` is called at for Malachite's `x^n`. When `n · log₂|x|`, bracketed by
+64-bit directed roundings, is at least `2^30`, `x^n` overflows Malachite's range in every mode, as
+`(±2^(2^30))^1` does; when it is at most `-2^31`, `x^n` underflows far below half the smallest
+positive value, as `(±2^(-2^31))^1` does, the sign being that of `x^n`. Azurite would otherwise
+form the exact power `m^|n|` of the significand, of up to `2^63` times its bits. -/
+def powIntInput (x : AzFloat) (n : AzInt) : AzFloat × AzInt :=
+  match x with
+  | .finite s _ _ _ _ =>
+    if n = 0 then (x, n)
+    else
+      let a := AzFloat.abs x
+      let nf := exactFromInteger n
+      let (l₁, l₂) := ((AzFloat.log2PrecRound a 64 .Floor).1, (AzFloat.log2PrecRound a 64 .Ceiling).1)
+      let (l₁, l₂) := if n.sign then (l₁, l₂) else (l₂, l₁)
+      let lo := (AzFloat.mulPrecRound nf l₁ 64 .Floor).1
+      let hi := (AzFloat.mulPrecRound nf l₂ 64 .Ceiling).1
+      let neg := !s && n.abs.isOdd
+      let sub (e : AzInt) : AzFloat × AzInt :=
+        (if neg then -(AzFloat.powerOf2 e) else AzFloat.powerOf2 e, 1)
+      if AzFloat.ge lo (AzFloat.powerOf2 30) then sub (AzInt.ofInt (2 ^ 30))
+      else if AzFloat.le hi (-(AzFloat.powerOf2 31)) then sub (AzInt.ofInt (-(2 ^ 31)))
+      else (x, n)
+  | _ => (x, n)
+
+/-- `AzFloat.powIntPrecRound` at `powIntInput x n`; `negZero` marks Malachite's `-0.0`, whose
+negative odd powers are `-∞` where Azurite, with no signed zero, gives `+∞`. Malachite follows
+MPFR's `NaN^0 = 1`, where Azurite's `NaN` propagates, so `NaN^0` is computed as `1^0`. -/
+def malachitePowInt (negZero : Bool) (x : AzFloat) (n : AzInt) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  let x := if (x matches .nan) && n = 0 then AzFloat.one else x
+  let (x', n') := powIntInput x n
+  let r := AzFloat.powIntPrecRound x' n' p m
+  if negZero && !n.sign && n.abs.isOdd then (-r.1, r.2) else r
+
+/-- `Float`'s `{name}` family (`pow_integer`, `pow_s`, or `pow_u`, all printed as `pow` without
+tags), against `AzFloat.powIntPrecRound` (through `malachitePowInt`). -/
+def checkFloatPowIntWith (name : String) (line : String) : Verdict :=
+  let negZero := line.startsWith "(-0x0.0)." || line.startsWith "x := -0x0.0;"
+  checkFloatUnaryArgsWith name 1 (fun | [k] => parseAzInt k | _ => none)
+    (malachitePowInt negZero) line ["pow"]
+
+/-- `Float`'s `pow_integer` family, against `AzFloat.powIntPrecRound`. -/
+def checkFloatPowInteger : String → Verdict := checkFloatPowIntWith "pow_integer"
+
+/-- `Float`'s `pow_s` family (an `i64` exponent), against `AzFloat.powIntPrecRound`. -/
+def checkFloatPowS : String → Verdict := checkFloatPowIntWith "pow_s"
+
+/-- `Float`'s `pow_u` family (a `u64` exponent), against `AzFloat.powIntPrecRound`. -/
+def checkFloatPowU : String → Verdict := checkFloatPowIntWith "pow_u"
+
+/-- `Float`'s `cbrt` family, against `AzFloat.cbrtPrecRound`. -/
+def checkFloatCbrt : String → Verdict := checkFloatUnaryWith "cbrt" AzFloat.cbrtPrecRound
+
+/-- `Float::cbrt_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.cbrtRatPrecRound`. -/
+def checkFloatCbrtRational : String → Verdict :=
+  checkFloatOfRational "cbrt_rational" AzFloat.cbrtRatPrecRound
+
+/-- The product of the intervals `[a₁, a₂]` and `[b₁, b₂]`, widened outward at 64 bits. -/
+def intervalMul (a₁ a₂ b₁ b₂ : AzFloat) : AzFloat × AzFloat :=
+  let ps := [(a₁, b₁), (a₁, b₂), (a₂, b₁), (a₂, b₂)]
+  let lows := ps.map fun (a, b) => (AzFloat.mulPrecRound a b 64 .Floor).1
+  let highs := ps.map fun (a, b) => (AzFloat.mulPrecRound a b 64 .Ceiling).1
+  (lows.foldl AzFloat.minOf (lows.headD AzFloat.zero),
+    highs.foldl AzFloat.maxOf (highs.headD AzFloat.zero))
+
+/-- The substitute for a power `b^y` known, by the bracket `[lo, hi]` of `y log₂|b|`, to overflow
+(`lo ≥ 2^30`) or to underflow far below half the smallest positive value (`hi ≤ -2^31`) in every
+mode: `±2^(2^30)` or `±2^(-2^31)` (raised to the power `1`), with the sign `neg` of `b^y`, which
+Malachite rounds identically. -/
+def hugePowSubstitute (neg : Bool) (lo hi : AzFloat) : Option AzFloat :=
+  let sub (e : AzInt) := if neg then -(AzFloat.powerOf2 e) else AzFloat.powerOf2 e
+  if AzFloat.ge lo (AzFloat.powerOf2 30) then some (sub (AzInt.ofInt (2 ^ 30)))
+  else if AzFloat.le hi (-(AzFloat.powerOf2 31)) then some (sub (AzInt.ofInt (-(2 ^ 31))))
+  else none
+
+/-- The 64-bit bracket of `log₂|x|` for a finite nonzero float `x`. -/
+def log2AbsBracket (x : AzFloat) : AzFloat × AzFloat :=
+  let a := AzFloat.abs x
+  ((AzFloat.log2PrecRound a 64 .Floor).1, (AzFloat.log2PrecRound a 64 .Ceiling).1)
+
+/-- The 64-bit bracket of `log₂|q|` for a nonzero rational `q`. -/
+def log2AbsRatBracket (q : AzRat) : AzFloat × AzFloat :=
+  let a := if q.sign then q else -q
+  ((AzFloat.log2RatPrecRound a 64 .Floor).1, (AzFloat.log2RatPrecRound a 64 .Ceiling).1)
+
+/-- The 64-bit bracket of a rational. -/
+def ratBracket (q : AzRat) : AzFloat × AzFloat :=
+  ((AzFloat.ofAzRatRound q 64 .Floor).1, (AzFloat.ofAzRatRound q 64 .Ceiling).1)
+
+/-- Whether a float is an odd integer. -/
+def isOddIntegerFloat (y : AzFloat) : Bool :=
+  match y with
+  | .finite _ e _ m _ =>
+    -- `y = ±m' 2^t` with `m'` the odd part of the significand: odd exactly when `t = 0`
+    e - (AzNat.ofNat m.size).toAzInt + (AzNat.ofNat (m.trailingZeros.getD 0)).toAzInt = 0
+  | _ => false
+
+/-- Whether a rational is an odd integer. -/
+def isOddIntegerRat (q : AzRat) : Bool := decide (q.den = 1) && q.num.isOdd
+
+/-- A finite nonzero `b` with bracket `[l₁, l₂]` of `log₂|b|`, raised to an exponent with bracket
+`[y₁, y₂]`: the overflow or underflow substitute, if the power is certain to be one. -/
+def hugePowOf (neg : Bool) (l : AzFloat × AzFloat) (y : AzFloat × AzFloat) : Option AzFloat :=
+  let (lo, hi) := intervalMul l.1 l.2 y.1 y.2
+  hugePowSubstitute neg lo hi
+
+/-- `AzFloat.powPrecRound` for Malachite's `x^y`, with `hugePowOf` for a finite nonzero `x` and
+`y`; `negZero` marks Malachite's `-0.0`, whose negative odd integer powers are `-∞` where Azurite,
+with no signed zero, gives `+∞`. -/
+def malachitePow (negZero : Bool) (x y : AzFloat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if x.isZero then
+    let r := AzFloat.powPrecRound x y p m
+    if negZero && AzFloat.lt y AzFloat.zero && isOddIntegerFloat y then (-r.1, r.2) else r
+  else if x.isFinite && y.isFinite && !y.isZero && !(AzFloat.lt x AzFloat.zero && !AzFloat.isInteger y)
+  then
+    match hugePowOf (AzFloat.lt x AzFloat.zero && isOddIntegerFloat y) (log2AbsBracket x) (y, y) with
+    | some s => AzFloat.powPrecRound s AzFloat.one p m
+    | none => AzFloat.powPrecRound x y p m
+  else AzFloat.powPrecRound x y p m
+
+/-- `AzFloat.powRatPrecRound` for Malachite's `x^q`, with the substitutions of `malachitePow`. -/
+def malachitePowRat (negZero : Bool) (x : AzFloat) (q : AzRat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if x.isZero then
+    let r := AzFloat.powRatPrecRound x q p m
+    if negZero && !q.sign && isOddIntegerRat q then (-r.1, r.2) else r
+  else if x.isFinite && decide (q.num ≠ 0) && !(AzFloat.lt x AzFloat.zero && decide (q.den ≠ 1)) then
+    match hugePowOf (AzFloat.lt x AzFloat.zero && isOddIntegerRat q) (log2AbsBracket x)
+        (ratBracket q) with
+    | some s => AzFloat.powPrecRound s AzFloat.one p m
+    | none => AzFloat.powRatPrecRound x q p m
+  else AzFloat.powRatPrecRound x q p m
+
+/-- `AzFloat.ratPowPrecRound` for Malachite's `q^y`, with the substitutions of `malachitePow`. -/
+def malachiteRatPow (q : AzRat) (y : AzFloat) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if decide (q.num ≠ 0) && y.isFinite && !y.isZero && !(!q.sign && !AzFloat.isInteger y) then
+    match hugePowOf (!q.sign && isOddIntegerFloat y) (log2AbsRatBracket q) (y, y) with
+    | some s => AzFloat.powPrecRound s AzFloat.one p m
+    | none => AzFloat.ratPowPrecRound q y p m
+  else AzFloat.ratPowPrecRound q y p m
+
+/-- `AzFloat.ratPowRatPrecRound` for Malachite's `q^r`, with the substitutions of `malachitePow`. -/
+def malachiteRatPowRat (q r : AzRat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  if decide (q.num ≠ 0) && decide (r.num ≠ 0) && !(!q.sign && decide (r.den ≠ 1)) then
+    match hugePowOf (!q.sign && isOddIntegerRat r) (log2AbsRatBracket q) (ratBracket r) with
+    | some s => AzFloat.powPrecRound s AzFloat.one p m
+    | none => AzFloat.ratPowRatPrecRound q r p m
+  else AzFloat.ratPowRatPrecRound q r p m
+
+/-- Whether a demo line's receiver (or first argument) is `-0.0`. -/
+def lineNegZero (line : String) : Bool :=
+  ["(", "x := ", "pow("].any fun pre =>
+    line.startsWith s!"{pre}-0x0.0" || line.startsWith s!"{pre}&-0x0.0"
+
+/-- `Float`'s `pow` family (`pow(x, y) = r`, `(x).pow[_prec][_round][…](y, …)`, and the
+assignments), against `AzFloat.powPrecRound` (through `malachitePow`); the precision defaults to
+the larger of the two. -/
+def checkFloatPow (line : String) : Verdict :=
+  checkFloatAgmWith "pow" (fun s => (parseFloat s).map (·.1)) AzFloat.combinedPrecision
+    (malachitePow (lineNegZero line)) (plain := "pow") line
+
+/-- `Float`'s `pow_rational` family and `pow` with a `Rational`, against `AzFloat.powRatPrecRound`
+(through `malachitePowRat`); the precision defaults to `x`'s. -/
+def checkFloatPowRational (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "pow_rational" 1 (fun | [q] => parseAzRat (stripRef q) | _ => none)
+    (malachitePowRat (lineNegZero line)) line ["pow"]
+
+/-- `Float::rational_pow_prec[_round][_ref](q, y, p[, rm])`, against `AzFloat.ratPowPrecRound`
+(through `malachiteRatPow`). -/
+def checkFloatRationalPow : String → Verdict :=
+  checkFloatOfRationalArgsWith "rational_pow" 1
+    (fun | [y] => (parseFloat (stripRef y)).map (·.1) | _ => none) malachiteRatPow
+
+/-- `Float::rational_pow_rational_prec[_round][_ref](q, r, p[, rm])`, against
+`AzFloat.ratPowRatPrecRound` (through `malachiteRatPowRat`). -/
+def checkFloatRationalPowRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "rational_pow_rational" 1
+    (fun | [r] => parseAzRat (stripRef r) | _ => none) malachiteRatPowRat
+
+/-- `Float`'s `cos` family, against `AzFloat.cosPrecRound`. -/
+def checkFloatCos : String → Verdict := checkFloatUnaryWith "cos" AzFloat.cosPrecRound
+
+/-- `Float::cos_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.cosRatPrecRound`. -/
+def checkFloatCosRational : String → Verdict :=
+  checkFloatOfRational "cos_rational" AzFloat.cosRatPrecRound
+
+/-- `Float`'s `cos_with_period` family (`(x).cos_with_period[…](u, …)`), against
+`AzFloat.cosWithPeriodPrecRound`. -/
+def checkFloatCosWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "cos_with_period" 1 parseLogBase
+    (fun x u => AzFloat.cosWithPeriodPrecRound x u)
+
+/-- `Float::cos_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.cosRatWithPeriodPrecRound`. -/
+def checkFloatCosWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "cos_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.cosRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `cos_pi` family, against `AzFloat.cosPiPrecRound`. -/
+def checkFloatCosPi : String → Verdict := checkFloatUnaryWith "cos_pi" AzFloat.cosPiPrecRound
+
+/-- `Float::cos_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.cosPiRatPrecRound`. -/
+def checkFloatCosPiRational : String → Verdict :=
+  checkFloatOfRational "cos_pi_rational" AzFloat.cosPiRatPrecRound
+
+/-- `Float`'s `sin` family, against `AzFloat.sinPrecRound`. -/
+def checkFloatSin : String → Verdict := checkFloatUnaryWith "sin" AzFloat.sinPrecRound
+
+/-- `Float::sin_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.sinRatPrecRound`. -/
+def checkFloatSinRational : String → Verdict :=
+  checkFloatOfRational "sin_rational" AzFloat.sinRatPrecRound
+
+/-- `Float`'s `sin_with_period` family (`(x).sin_with_period[…](u, …)`), against
+`AzFloat.sinWithPeriodPrecRound`. -/
+def checkFloatSinWithPeriod : String → Verdict :=
+  checkFloatUnaryArgsWith "sin_with_period" 1 parseLogBase
+    (fun x u => AzFloat.sinWithPeriodPrecRound x u)
+
+/-- `Float::sin_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.sinRatWithPeriodPrecRound`. -/
+def checkFloatSinWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "sin_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.sinRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `sin_pi` family, against `AzFloat.sinPiPrecRound`. -/
+def checkFloatSinPi : String → Verdict := checkFloatUnaryWith "sin_pi" AzFloat.sinPiPrecRound
+
+/-- `Float::sin_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.sinPiRatPrecRound`. -/
+def checkFloatSinPiRational : String → Verdict :=
+  checkFloatOfRational "sin_pi_rational" AzFloat.sinPiRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

@@ -18,7 +18,7 @@ import Azurite.AzFloat.RoundToInteger
 comparison against the exact value; `pow x y` rounds to nearest at the precision of `x`.
 
 * **Integer exponents** `y = n` (`isInteger`, `truncToAzInt`): the exact dyadic power
-  `x^n = ±m^n 2^(E n)` through `powIntPrecRound` (one rounding) when it is cheap and may be a
+  `x^n = ±m^n 2^(E n)` through `powIntExactPrecRound` (one rounding) when it is cheap and may be a
   float — `|n| (size m' − 1) ≤ p + 1` for the odd part `m'` of the significand
   (`powIntCheap`) — and otherwise Ziv's loop on the bracket `exp (n ln |x|)` (`powApprox`), with
   the sign `(−1)^n` for `x < 0`; the loop is certified because such a power is never a rounding
@@ -47,11 +47,11 @@ theorem abs_toInt_lt_two_pow_size (n : AzInt) :
   rw [AzNat.size_toNat] at this
   exact_mod_cast this
 
-/-- `(±m 2^E)^n` for `n ≠ 0`: `powIntPrecRound` when the exact power is cheap (and possibly a
+/-- `(±m 2^E)^n` for `n ≠ 0`: `powIntExactPrecRound` when the exact power is cheap (and possibly a
 float), Ziv's loop on the bracket of `exp (n ln |x|)`, with the sign `(−1)^n`, otherwise. -/
 def powIntOrZiv (sx : Bool) (ex : AzInt) (qx : Nat) (mx : AzNat) (hvx : FiniteValid qx mx)
     (n : AzInt) (hn : n ≠ 0) (p : Nat) [NeZero p] (mode : RoundingMode) : AzFloat × Ordering :=
-  if hc : powIntCheap mx n p = true then powIntPrecRound (finite sx ex qx mx hvx) n p mode
+  if hc : powIntCheap mx n p = true then powIntExactPrecRound (finite sx ex qx mx hvx) n p mode
   else
     let neg := !sx && n.abs.isOdd
     let en := (AzNat.ofNat n.abs.size).toAzInt
@@ -75,6 +75,33 @@ def natPowOrZiv (r : AzNat) (n : AzInt) (p : Nat) [NeZero p] (mode : RoundingMod
     | finite true ez qz mz hvz => powIntOrZiv true ez qz mz hvz n hn p mode
     | _ => (nan, .eq)
 
+/-- `x^n` for an `AzInt` `n`, rounded to precision `p` with `mode`, and the comparison with the
+exact value (`(nan, .eq)` for `p = 0` unless the value is `0` or an infinity): `powIntOrZiv` for
+a finite `x` and `n ≠ 0` — the exact power when `|n| (size m' − 1) ≤ p + 1`, Ziv's loop on
+`exp (n ln |x|)` otherwise, so that a huge `n` never forms `m^|n|` — and
+`powIntExactPrecRound` for the special values. -/
+def powIntPrecRound (x : AzFloat) (n : AzInt) (p : Nat) (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  match x with
+  | finite s e q m hv =>
+    if hp : p = 0 then (nan, .eq)
+    else if hn : n = 0 then setPrecRound one p mode
+    else
+      haveI : NeZero p := ⟨hp⟩
+      powIntOrZiv s e q m hv n hn p mode
+  | x => powIntExactPrecRound x n p mode
+
+/-- `x^n` rounded to nearest at the precision of `x`. -/
+def powInt (x : AzFloat) (n : AzInt) : AzFloat :=
+  (powIntPrecRound x n (x.precision?.getD 1) .Nearest).1
+
+/-- `y` is an odd integer: `y = ±m' 2^t` with `m'` odd is one exactly when `t = 0`.  Read off the
+exponent and the trailing zeros, so a huge `y` is never converted to an `AzInt`. -/
+def isOddInteger : AzFloat → Bool
+  | finite _ e _ m _ =>
+    decide (e - (AzNat.ofNat m.size).toAzInt + (AzNat.ofNat (splitOdd m).2).toAzInt = 0)
+  | _ => false
+
 /-- `truncToAzInt` of a nonzero integer float is nonzero. -/
 theorem truncToAzInt_ne_zero_of_isInteger (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
     (hv : FiniteValid q m) (hi : isInteger (finite s e q m hv) = true) :
@@ -83,6 +110,21 @@ theorem truncToAzInt_ne_zero_of_isInteger (s : Bool) (e : AzInt) {q : ℕ} {m : 
   have h := truncToAzInt_of_isInteger s e hv hi
   rw [h0, AzInt.toInt_zero, Int.cast_zero] at h
   exact finiteVal_ne_zero s e hv h.symm
+
+/-- `(−1)^y` for an integer float `y`: `±1` by the parity of `y`. -/
+def negOnePow (y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ordering :=
+  setPrecRound (if isOddInteger y then -one else one) p mode
+
+/-- `x^y` for an integer float `y ≠ 0`: `negOnePow` for `|x| = 1` (so a huge `y` is never
+converted to an `AzInt`), `powIntOrZiv` at `truncToAzInt y` otherwise. -/
+def powIntOfFloat (sx : Bool) (ex : AzInt) (qx : Nat) (mx : AzNat) (hvx : FiniteValid qx mx)
+    (sy : Bool) (ey : AzInt) (qy : Nat) (my : AzNat) (hvy : FiniteValid qy my)
+    (hi : isInteger (finite sy ey qy my hvy) = true) (p : Nat) [NeZero p] (mode : RoundingMode) :
+    AzFloat × Ordering :=
+  if eqIEEE (finite sx ex qx mx hvx).abs one then negOnePow (finite sy ey qy my hvy) p mode
+  else
+    powIntOrZiv sx ex qx mx hvx (truncToAzInt (finite sy ey qy my hvy))
+      (truncToAzInt_ne_zero_of_isInteger sy ey hvy hi) p mode
 
 /-- `x^y` rounded to precision `p` with `mode`, and the comparison with the exact value
 (`(nan, .eq)` for `p = 0` unless the value is `0` or an infinity). -/
@@ -107,8 +149,8 @@ def powPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
     | infinity sx =>
       if sx then (if sy then (infinity true, .eq) else (zero, .eq))
       else if sy then
-        (if isInteger (finite sy ey qy my hvy) && (truncToAzInt (finite sy ey qy my hvy)).abs.isOdd
-          then (infinity false, .eq) else (infinity true, .eq))
+        (if isOddInteger (finite sy ey qy my hvy) then (infinity false, .eq)
+          else (infinity true, .eq))
       else (zero, .eq)
     | finite sx ex qx mx hvx =>
       if hp : p = 0 then (nan, .eq)
@@ -116,8 +158,7 @@ def powPrecRound (x y : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
       else
         haveI : NeZero p := ⟨hp⟩
         if hi : isInteger (finite sy ey qy my hvy) = true then
-          powIntOrZiv sx ex qx mx hvx (truncToAzInt (finite sy ey qy my hvy))
-            (truncToAzInt_ne_zero_of_isInteger sy ey hvy hi) p mode
+          powIntOfFloat sx ex qx mx hvx sy ey qy my hvy hi p mode
         else if hsx : sx = false then (nan, .eq)
         else
           match expNearOne? (sy == lt one (finite sx ex qx mx hvx))

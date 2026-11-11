@@ -47,12 +47,11 @@ def ratPowIntOrZiv (neg : Bool) (a b : AzNat) (ha : a ≠ 0) (hb : b ≠ 0)
   if hc : ratPowIntCheap a b n p = true then
     let A := if n.sign then a else b
     let B := if n.sign then b else a
-    let k := n.abs.toNat
     let ac := splitOdd A
     let bc := splitOdd B
-    let numF := ofAzNat (ac.1.pow k) <<<
+    let numF := ofAzNat (powOdd ac.1 n.abs) <<<
       ((AzNat.ofNat ac.2).toAzInt * n.abs.toAzInt - (AzNat.ofNat bc.2).toAzInt * n.abs.toAzInt)
-    divPrecRound (if neg then -numF else numF) (ofAzNat (bc.1.pow k)) p mode
+    divPrecRound (if neg then -numF else numF) (ofAzNat (powOdd bc.1 n.abs)) p mode
   else
     let en := (AzNat.ofNat n.abs.size).toAzInt
     let q := mkPosRat a b hb hcop
@@ -86,6 +85,9 @@ def ratPowPrecRound (q : AzRat) (y : AzFloat) (p : Nat) (mode : RoundingMode) :
       haveI : NeZero p := ⟨hp⟩
       have hcop : Nat.Coprime q.num.toNat q.den.toNat := (AzNat.coprime_iff _ _).mp q.reduced
       if hi : isInteger (finite sy ey qy my hvy) = true then
+        -- `q = −1`: `±1` by the parity of `y`, without converting a huge `y`
+        if q.num = q.den then negOnePow (finite sy ey qy my hvy) p mode
+        else
         ratPowIntOrZiv (!q.sign && (truncToAzInt (finite sy ey qy my hvy)).abs.isOdd) q.num q.den
           hq0 q.den_nz hcop (truncToAzInt (finite sy ey qy my hvy))
           (truncToAzInt_ne_zero_of_isInteger sy ey hvy hi) p mode

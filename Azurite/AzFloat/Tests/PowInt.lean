@@ -7,7 +7,8 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.PowInt
+import Azurite.AzFloat.Pow
+import Azurite.AzFloat.HexString
 import Azurite.AzFloat.Conversion
 import Azurite.AzFloat.ToString
 import Azurite.AzRat.Parse
@@ -18,7 +19,9 @@ import Azurite.AzRat.Parse
 Special values (`x^0 = 1`, the powers of `0` and `±∞`, `NaN`), exact dyadic powers
 (`(3/2)^10 = 59049/1024`, `(−3/2)^3`, `2^100`, `2^(−100)`, `(−1/2)^(−3) = −8`), correctly rounded
 inexact powers (`(3/2)^(−3) = 8/27`, `(−3/2)^(−3) = −8/27`, `x^5` and `x^(−7)` for the
-53-bit `x ≈ 1/3`), the directed modes and the comparison results.
+53-bit `x ≈ 1/3`), the directed modes and the comparison results; huge exponents through Ziv's
+loop (the Malachite oracle's cases, each formerly forming `m^|n|` exactly, over 10 s) and the
+Ziv path against the exact path.
 -/
 
 open Azurite Azurite.AzFloat
@@ -98,3 +101,18 @@ private def thirdPowNeg7 : AzRat :=
 #guard (E (F "-3/2" 53) (-3) 53 .Ceiling).2 == .gt
 #guard partialCompare (E (F "-3/2" 53) (-3) 53 .Floor).1 (E (F "-3/2" 53) (-3) 53 .Ceiling).1
   == some .lt
+
+-- huge exponents: Ziv's loop instead of the exact `m^|n|`
+private def H (s : String) (i : Int) (p : Nat) (m : RoundingMode := .Nearest) : String × Ordering :=
+  let r := E (ofHexString s).get! i p m
+  (toHexString r.1, r.2)
+#guard H "0xd37634d.effc4816e65732919e1337bdf6#131" 1247529 19 == ("0x2.c41c8E+8646702#19", .gt)
+#guard H "-0x2.c68E+15#13" 12805738 31 == ("0x2.0f3ffad0E+196800793#31", .lt)
+#guard H "0x4.000000000000001fc0003ffffffffffffff00007E-10#163" 2096128 163 ==
+  ("0x1.0000000000fde041ffc07de27f83f6a5bebb8f49cE-19913216#163", .gt)
+#guard E (F "3" 2) 100000 10 == powIntExactPrecRound (F "3" 2) (N 100000) 10 .Nearest
+#guard E (F "-3" 2) (-10001) 30 .Floor == powIntExactPrecRound (F "-3" 2) (N (-10001)) 30 .Floor
+#guard E (F "-3" 2) 10001 30 .Ceiling == powIntExactPrecRound (F "-3" 2) (N 10001) 30 .Ceiling
+-- odd part `1`: no powering over the bits of a huge `n`
+#guard E (F "-1" 1) (2 ^ (2 ^ 20) + 1) 10 == (F "-1" 10, .eq)
+#guard E (F "-1/2" 1) (2 ^ 20 + 1) 10 == (F "-1" 10 <<< AzInt.ofInt (-(2 ^ 20 + 1)), .eq)

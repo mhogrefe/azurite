@@ -29,7 +29,8 @@ powers (`4^(1/2) = 2`, `4^(3/2) = 8`, `(9/4)^(3/2) = 27/8`, `(1/4)^(−1/2) = 2`
 (references from an 80-digit evaluation of `exp (y ln x)`), the directed modes, and agreement with
 `pow2` and `powBase`.  The natural-base powers `powBase`, `powBaseRat`, `powBaseM1`,
 `powBaseM1Rat` share the cheapness test, so `3^(10^9)` (and `3^(10^9) − 1`) at 10 bits are
-computed through the bracket in milliseconds instead of forming the exact power.
+computed through the bracket in milliseconds instead of forming the exact power; `(−1)^y` and
+`(−∞)^y` for `y = ±2^(2^30)` and `y = 3 · 2^(2^30)` take the parity from the exponent.
 -/
 
 open Azurite Azurite.AzFloat
@@ -176,3 +177,14 @@ private def bigN : AzInt := AzInt.ofInt (2 ^ 29)
 #guard powPrecRound ((F "3" 53) <<< AzInt.ofInt (-(2 ^ 30 : Int))) (F "1/2" 53) 53 .Floor
   == ((powPrecRound (F "3" 53) (F "1/2" 53) 53 .Floor).1 <<< (-bigN),
     (powPrecRound (F "3" 53) (F "1/2" 53) 53 .Floor).2)
+
+-- `(−1)^y` and `(−∞)^y` for a huge integer `y = ±2^(2^30)`: the parity from the exponent and the
+-- trailing zeros, without converting `y` to an `AzInt`
+private def hugeY (s : Bool) (k : Int) : AzFloat :=
+  (F (if s then "1" else "-1") 1) <<< AzInt.ofInt k
+#guard P (F "-1" 1) (hugeY true (2 ^ 30)) 10 == (F "1" 10, .eq)
+#guard P (F "-1" 1) (hugeY false (2 ^ 30)) 10 .Floor == (F "1" 10, .eq)
+#guard P (F "-1" 1) ((F "3" 2) <<< AzInt.ofInt (2 ^ 30)) 10 == (F "1" 10, .eq)
+#guard P (F "-1" 2) (F "-7" 3) 10 .Ceiling == (F "-1" 10, .eq)
+#guard P (infinity false) (hugeY true (2 ^ 30)) 10 == (infinity true, .eq)
+#guard P (infinity false) (F "7" 3) 10 == (infinity false, .eq)

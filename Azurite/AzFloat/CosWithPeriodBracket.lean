@@ -16,7 +16,8 @@ import Azurite.AzRat.Construct
 
 For `cos (2π x / u)` (`AzFloat/CosWithPeriod.lean`) the argument `x/u = m 2^E / u` is reduced
 exactly: `periodFrac m E u` is the fractional part of `m 2^E / u` as a reduced `AzRat`
-(`(m 2^E mod u) / u` for `E ≥ 0`, `(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`), so that
+(`(m 2^E mod u) / u` for `E ≥ 0`, with `2^E mod u` by square-and-multiply (`powTwoMod`),
+`(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`), so that
 `cos (2π x / u) = cos (2π r)` with `r ∈ [0, 1)`, and the reduced denominator of `r` decides
 whether the value is rational (Niven: exactly for the denominators `1, 2, 3, 4, 6`).
 
@@ -27,9 +28,25 @@ so `cosBracket t 3 w` widened by `2^(6−W)` encloses `cos (2πr)` (Lipschitz).
 
 namespace Azurite.AzFloat
 
-/-- The fractional part of `m 2^E / u` as a reduced rational (`u ≠ 0`). -/
+/-- `2^n mod u` by square-and-multiply over the bits of `n`, every intermediate value below
+`2u²`; `k` is fuel (`n ≤ k` suffices, see `powTwoMod_toNat`). -/
+def powTwoModAux (u : AzNat) : Nat → Nat → AzNat
+  | 0, _ => AzNat.ofNat 1 % u
+  | k + 1, n =>
+    if n = 0 then AzNat.ofNat 1 % u
+    else
+      let h := powTwoModAux u k (n / 2)
+      let s := (h * h) % u
+      if n % 2 = 1 then (s <<< 1) % u else s
+
+/-- `2^n mod u` in `O(log n)` multiplications of numbers below `u`. -/
+def powTwoMod (u : AzNat) (n : Nat) : AzNat := powTwoModAux u n n
+
+/-- The fractional part of `m 2^E / u` as a reduced rational (`u ≠ 0`).  For `E ≥ 0` the
+numerator `m 2^E mod u` is formed as `((m mod u) (2^E mod u)) mod u`, never building `m 2^E`
+(`E` can be about `2^30` for a huge float). -/
 def periodFrac (m : AzNat) (E : AzInt) (u : AzNat) : AzRat :=
-  if E.sign then AzRat.ofAzNats ((m <<< E.abs.toNat) % u) u
+  if E.sign then AzRat.ofAzNats (((m % u) * powTwoMod u E.abs.toNat) % u) u
   else
     let D := u <<< E.abs.toNat
     AzRat.ofAzNats (m % D) D

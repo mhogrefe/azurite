@@ -123,3 +123,15 @@ private def maxLo : AzFloat :=
 #guard sinWithPeriodPrecRound (-tinyX) 360 53 .Floor == (-degHi, .lt)
 #guard sinWithPeriodPrecRound (-tinyX) 360 53 .Ceiling == (-degLo, .gt)
 #guard sinWithPeriodPrecRound tinyX 18446744073709551615 53 .Nearest == (maxLo, .lt)
+
+-- huge arguments: `m 2^E mod u` through `2^E mod u` (`3·2^(2^28) ≡ 6 mod 7`, `≡ 48 mod 360`,
+-- `≡ 0 mod 3`, `≡ 3 mod 2^64 − 1`), never building the `2^28`-bit number
+private def hugeX : AzFloat := (F "3" 53) <<< AzInt.ofInt (2 ^ 28)
+#guard sinWithPeriodPrecRound hugeX 7 53 .Nearest ==
+  sinWithPeriodPrecRound (F "6" 53) 7 53 .Nearest
+#guard sinWithPeriodPrecRound hugeX 360 53 .Floor == sinWithPeriodPrecRound (F "48" 53) 360 53 .Floor
+#guard sinWithPeriodPrecRound (-hugeX) 360 30 .Ceiling ==
+  sinWithPeriodPrecRound (F "-48" 53) 360 30 .Ceiling
+#guard sinWithPeriodPrecRound hugeX 3 53 .Nearest == (zero, .eq)
+#guard sinWithPeriodPrecRound hugeX 18446744073709551615 53 .Nearest ==
+  sinWithPeriodPrecRound (F "3" 53) 18446744073709551615 53 .Nearest

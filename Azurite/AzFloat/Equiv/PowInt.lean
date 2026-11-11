@@ -21,8 +21,10 @@ import Azurite.AzNat.Equiv.Pow
 * `Spec.powInt n`: the extended-real `a^n` (`a^0 = 1`; `0^n = +∞` for `n < 0`; `(±∞)^n = 0` for
   `n < 0`, `+∞` or `±∞` by parity for `n > 0`).
 * `finiteVal_pow`: `(±m 2^E)^k = (±1)^k m^k 2^(E k)`.
-* `powIntPrecRound_eq_liftVal : powIntPrecRound x n p mode = liftVal (Spec.powInt n) x p mode`:
-  `x^n` is correctly rounded in every mode, with the exact comparison.
+* `powIntExactPrecRound_eq_liftVal : powIntExactPrecRound x n p mode
+  = liftVal (Spec.powInt n) x p mode`: `x^n` is correctly rounded in every mode, with the exact
+  comparison.  The same for the public `powIntPrecRound` is `powIntPrecRound_eq_liftVal`
+  (`Equiv/Pow.lean`).
 -/
 
 namespace Azurite.AzFloat
@@ -104,11 +106,20 @@ theorem toNat_eq_shiftRight_trailingZeros_mul (m : AzNat) (hm : m ≠ 0) :
   have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
   exact (Nat.div_mul_cancel pow_padicValNat_dvd).symm
 
+/-- `powOdd` is the power. -/
+theorem powOdd_eq (o k : AzNat) : powOdd o k = o.pow k.toNat := by
+  unfold powOdd
+  split_ifs with h
+  · subst h
+    apply AzNat.toNat_injective
+    rw [AzNat.toNat_pow, AzNat.toNat_ofNat, one_pow]
+  · rfl
+
 /-- **`x^n` is correctly rounded.** -/
-theorem powIntPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p]
+theorem powIntExactPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :
-    powIntPrecRound x n p mode = liftVal (Spec.powInt n.toInt) x p mode := by
-  unfold liftVal powIntPrecRound
+    powIntExactPrecRound x n p mode = liftVal (Spec.powInt n.toInt) x p mode := by
+  unfold liftVal powIntExactPrecRound
   have hsign : n.sign = true ↔ 0 ≤ n.toInt := AzInt.sign_eq_true_iff n
   cases x with
   | nan => rfl
@@ -156,7 +167,7 @@ theorem powIntPrecRound_eq_liftVal (x : AzFloat) (n : AzInt) (p : ℕ) [NeZero p
       rw [ite_eq_right hs, ite_eq_left (c := (0 : ℝ) = 0 ∧ n.toInt < 0) ⟨rfl, hneg⟩]
       simp
   | finite s e q m hv =>
-    simp only [toVal_finite, Option.bind_some, Spec.powInt_coe]
+    simp only [toVal_finite, Option.bind_some, Spec.powInt_coe, powOdd_eq]
     rw [ite_eq_right (NeZero.ne p)]
     by_cases hn0 : n = 0
     · rw [ite_eq_left hn0, hn0, AzInt.toInt_zero, ite_eq_left rfl, setPrecRound_one_eq]

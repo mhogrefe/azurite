@@ -91,6 +91,7 @@ theorem ratPowIntOrZiv_eq (neg : Bool) (a b : AzNat) (ha : a ≠ 0) (hb : b ≠ 
   by_cases hc : ratPowIntCheap a b n p = true
   · rw [dite_eq_left hc]
     dsimp only
+    simp only [powOdd_eq]
     -- the numerator and denominator by the sign of `n`
     obtain ⟨A, B, hA, hB, hval⟩ : ∃ A B : AzNat, A = (if n.sign then a else b) ∧
         B = (if n.sign then b else a) ∧
@@ -304,6 +305,23 @@ theorem ratPowPrecRound_eq (q : AzRat) (y : AzFloat) (p : ℕ) [NeZero p] (mode 
           rw [← hyv] at ht
           rw [ite_eq_left (Or.inr ⟨_, ht.symm⟩), ← ht, Real.rpow_intCast, hqv,
             coe_toRat_zpow_eq_sign_mul]
+          split_ifs with hnd
+          · -- `q = −1`
+            have hs : q.sign = false := by
+              cases h : q.sign
+              · rfl
+              · exact absurd ⟨h, hnd⟩ h1
+            rw [negOnePow_eq sy ey hvy (by rw [← hyv]; exact ht.symm) p mode, hs, hnd,
+              div_self (by exact_mod_cast hden.ne'), one_zpow, mul_one]
+            unfold powSign
+            have hpar : ∀ z : AzInt, z.abs.isOdd = true ↔ Odd z.toInt := fun z => by
+              rw [abs_isOdd_iff, toNat_abs_eq_natAbs, Int.natAbs_odd]
+            by_cases ho : (truncToAzInt (finite sy ey qy my hvy)).abs.isOdd = true
+            · rw [Bool.not_false, Bool.true_and, ite_eq_left ho,
+                Odd.neg_one_zpow ((hpar _).mp ho)]
+            · rw [Bool.not_false, Bool.true_and, ite_eq_right ho,
+                Even.neg_one_zpow (Int.not_odd_iff_even.mp (fun h => ho ((hpar _).mpr h)))]
+          · rfl
         · rw [dite_eq_right hi]
           have hni : ¬ ∃ n : ℤ, yv = n := fun h => hi ((isInteger_finite sy ey hvy).mpr h)
           by_cases hsq : q.sign = false

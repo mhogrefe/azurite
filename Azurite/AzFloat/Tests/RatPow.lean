@@ -22,8 +22,8 @@ against `|q|`, `0^y`, negative bases), the exact powers (`(4/9)^(1/2) = 2/3` rou
 bracket (`3^40`, `(1/3)^40` at 20 bits), the correctly rounded `(2/3)^(5/4)`, `(22/7)^(−7/8)`,
 `(1/3)^(1/3)` (the last within `1/30` ulp of a rounding boundary at 53 bits), `10^(1/2)`
 (references from an 80- and 100-digit evaluation of `exp (y ln q)` at the float exponent),
-`(1/3)^(1/3)` at 200 bits, agreement with `pow` on float bases, and `(2/3)^(10^9)` at 10 bits
-through the bracket.
+`(1/3)^(1/3)` at 200 bits, agreement with `pow` on float bases, `(2/3)^(10^9)` at 10 bits
+through the bracket, and `(−1)^y` for `y = ±2^(2^30)` by the parity read off the exponent.
 -/
 
 open Azurite Azurite.AzFloat
@@ -104,3 +104,8 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard ratPowPrecRound (Q "7/3") (-tinyX) 53 .Floor == (belowOne, .lt)
 #guard ratPowPrecRound (Q "7/3") (-tinyX) 53 .Ceiling == (F "1" 53, .gt)
 #guard ratPowPrecRound (Q "3/7") tinyX 53 .Nearest == (F "1" 53, .gt)
+
+-- `(−1)^y` for a huge integer `y`: the parity from the exponent, without converting `y`
+#guard P "-1" ((F "1" 1) <<< AzInt.ofInt (2 ^ 30)) 10 == (F "1" 10, .eq)
+#guard P "-1" ((F "-1" 1) <<< AzInt.ofInt (2 ^ 30)) 10 == (F "1" 10, .eq)
+#guard P "-1" (F "-7" 3) 10 .Floor == (F "-1" 10, .eq)

@@ -5790,7 +5790,8 @@ Option EReal`; `cosWithPeriodPrecRound_eq`.
 
 **Exact reduction.**  `x = ±m 2^E` (`E = e − size m`), so `x/u = ±m 2^E/u` and
 `periodFrac m E u = frac(m 2^E / u)` is computed as a reduced `AzRat` (`ofAzNats`):
-`((m 2^E) mod u)/u` for `E ≥ 0`, `(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`
+`((m mod u)(2^E mod u) mod u)/u` for `E ≥ 0` (`powTwoMod`, square-and-multiply; since
+2026-11-10, see below), `(m mod u 2^(−E)) / (u 2^(−E))` for `E < 0`
 (`periodFrac_spec`: `m 2^E / u = k + r`, `0 ≤ r < 1`).  `cos (2π x/u) = cos (2π r)` by
 evenness and periodicity.
 
@@ -6236,3 +6237,56 @@ with an `AzFloat` exponent: `powPrecRound` (`x^y`) and `ratPowPrecRound` (`q^y`)
 (`NaN` = `none`); the main theorems are now `powBasePrecRound_eq`/`powBaseM1PrecRound_eq`, and the
 `liftVal` forms take `u ≠ 1` (`pow10` passes `by decide`).
 
+## `powIntPrecRound` for huge `|n|` (FIXED 2026-11-10)
+
+Malachite oracle report: `powIntPrecRound` formed the exact `m^|n|`, about `|n| bits(m)` bits (up
+to `~10⁹`), so in-range powers with a huge exponent took over 10 s each
+(`0xd37634d.effc4816e65732919e1337bdf6#131 ^ 1247529` at 19 bits, `(−0x2.c68E+15#13) ^
+12805738` at 31, `0x4.000000000000001fc0003ffffffffffffff00007E-10#163 ^ 2096128` at 163).
+`powPrecRound` already avoided this for integer float exponents (`powIntOrZiv`); the
+`AzInt`-exponent entry point did not.  Fix: the exact function is now `powIntExactPrecRound`
+(`PowInt.lean`, spec `powIntExactPrecRound_eq_liftVal`), and the public `powIntPrecRound`/`powInt`
+live in `Pow.lean`: the special values through the exact function, a finite `x` and `n ≠ 0`
+through `powIntOrZiv` — the exact power when `|n| (size m' − 1) ≤ p + 1` (`powIntCheap`), else
+the certified Ziv loop on `exp (n ln |x|)` (never a rounding boundary,
+`not_mem_floatSet_of_not_cheap`).  Spec unchanged in form: `powIntPrecRound_eq_liftVal`, now in
+`Equiv/Pow.lean`.  The bracket uses `ln`/`exp` at about `p + size |n| + guard` bits rather than
+MPFR's repeated squaring with directed rounding; the three reported cases take about 20 ms each
+in the interpreter (not benchmarked).  Tests (`Tests/PowInt`): the three cases and the Ziv path
+against `powIntExactPrecRound` (`3^100000` at 10 bits, `(−3)^(±10001)` at 30 bits, directed).
+
+## `(−1)^y` for a huge integer float `y` (FIXED 2026-11-10)
+
+Malachite oracle report: `powPrecRound (−1) y` with `y = 2^(2^30)` (`0x4.0E+268435455#1`, from the
+exhaustive tests) took over 60 s: the integer path converted `y` to a `2^30`-bit `AzInt`
+(`truncToAzInt`) and powered `1` by squaring over all its bits.  Fixes:
+* `isOddInteger y` (`Pow.lean`): `y = ±m' 2^t` with `m'` odd is an odd integer iff `t = e − size m
+  + tz(m) = 0`, read off the exponent and the trailing zeros (`isOddInteger_iff`).  Used by
+  `negOnePow y` (`±1` rounded, `negOnePow_eq`), by `powIntOfFloat` (the integer-`y` branch of
+  `powPrecRound`: `negOnePow` when `|x| = 1`, i.e. `x = −1` there, else `powIntOrZiv` at
+  `truncToAzInt y`; `powIntOfFloat_eq`), by `ratPowPrecRound` for `q = −1`, and for the
+  `(−∞)^y` sign in place of `isInteger y && odd (truncToAzInt y)`.
+* `powOdd o k` (`PowInt.lean`, `powOdd_eq`): `o^k` for the odd part `o` of a significand, `o`
+  itself when `o = 1` without converting `k` to a `Nat`; used by `powIntExactPrecRound` and the
+  exact branch of `ratPowIntOrZiv`, so `powIntPrecRound (−1) n` and `(±2^j)^n` never power
+  over the bits of `n` (`(−1)^(2^(2^20) + 1)` in 9 ms in the interpreter).
+Measured (interpreter, not benchmarked): `(−1)^y`, `(−∞)^y`, `ratPow (−1) y` at `y = 2^(2^30)` in
+0–7 ms.  Inherent and unchanged: `(±2^j)^y` for such `y` has a `2^30`-bit result exponent.
+Tests: `Tests/Pow`, `Tests/RatPow`, `Tests/PowInt`.
+
+## `cos`/`sin` with a period for a huge float `x` (FIXED 2026-11-10)
+
+Reported from the Malachite oracle: `cosWithPeriodPrecRound x u` for `x = m 2^E` with `E ≈ 2^28`
+took ≈ 200 ms per call, all of it in `periodFrac`, which shifted `m` out to `m 2^E` (`2^28` bits)
+before reducing mod the 64-bit `u`.  Now the `E ≥ 0` numerator is `((m mod u)(2^E mod u)) mod u`,
+the same number (so `ofAzNats` gives the same reduced rational and the Niven denominator tests
+are unchanged), with `powTwoMod u n = 2^n mod u` by square-and-multiply over the bits of `n`
+(`powTwoModAux`, structural fuel `n`, recursion depth `log₂ n`; intermediate values below
+`2u²`, i.e. under 129 bits).  `powTwoMod_toNat` and the new `periodFrac_spec` proof
+(`Nat.mul_mod`) are in `Equiv/CosWithPeriodBracket.lean`.  The fix covers `sinWithPeriod`,
+`cosPi`, `sinPi` (all go through `periodFrac`).  The `E < 0` branch is unchanged: a tiny `x`
+is caught by `cosTiny?`/`sinPeriodTiny?` first, so `|E|` stays near the precision there;
+`periodFracRat` only reduces the input's own numerator.  Interpreter smoke timing (not
+benchmarked): `cos` and `sin` of `3·2^(2^28)` with period `u` ∈ {3, 7, 360, 2^64 − 1} together
+26–52 ms per `u`, at 53 bits.  Tests: `Tests/CosWithPeriod.lean`, `Tests/SinWithPeriod.lean`
+(huge `x` against the equivalent small residue).

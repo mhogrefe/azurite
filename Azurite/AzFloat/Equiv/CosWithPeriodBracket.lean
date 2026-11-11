@@ -36,6 +36,26 @@ theorem natCast_div_eq_add_mod_div (X U : ℕ) (hU : 0 < U) :
 theorem toNat_shiftLeft' (a : AzNat) (n : ℕ) : (a <<< n).toNat = a.toNat * 2 ^ n :=
   AzNat.toNat_shiftLeft a n
 
+theorem powTwoModAux_toNat (u : AzNat) (k n : ℕ) (hn : n ≤ k) :
+    (powTwoModAux u k n).toNat = 2 ^ n % u.toNat := by
+  induction k generalizing n with
+  | zero =>
+    obtain rfl : n = 0 := by omega
+    simp [powTwoModAux, AzNat.toNat_mod]
+  | succ k ih =>
+    unfold powTwoModAux
+    split_ifs with h0 h1
+    · subst h0; simp [AzNat.toNat_mod]
+    · simp only [AzNat.toNat_mod, toNat_shiftLeft', AzNat.toNat_mul, ih (n / 2) (by omega)]
+      rw [← Nat.mul_mod, Nat.mod_mul_mod, ← pow_add, ← pow_add]
+      congr 2; omega
+    · simp only [AzNat.toNat_mod, AzNat.toNat_mul, ih (n / 2) (by omega)]
+      rw [← Nat.mul_mod, ← pow_add]
+      congr 2; omega
+
+theorem powTwoMod_toNat (u : AzNat) (n : ℕ) : (powTwoMod u n).toNat = 2 ^ n % u.toNat :=
+  powTwoModAux_toNat u n n le_rfl
+
 /-- `periodFrac m E u` is the fractional part of `m 2^E / u`. -/
 theorem periodFrac_spec (m : AzNat) (E : AzInt) {u : AzNat} (hu : u ≠ 0) :
     ∃ k : ℕ, (m.toNat : ℝ) * (2 : ℝ) ^ E.toInt / u.toNat
@@ -49,7 +69,8 @@ theorem periodFrac_spec (m : AzNat) (E : AzInt) {u : AzNat} (hu : u ≠ 0) :
   unfold periodFrac
   rw [htoInt]
   split_ifs with hs
-  · rw [AzRat.toRat_ofAzNats, AzNat.toNat_mod, toNat_shiftLeft']
+  · rw [AzRat.toRat_ofAzNats, AzNat.toNat_mod, AzNat.toNat_mul, AzNat.toNat_mod,
+      powTwoMod_toNat, ← Nat.mul_mod]
     refine ⟨m.toNat * 2 ^ E.abs.toNat / u.toNat, ?_, by positivity, ?_⟩
     · have h := natCast_div_eq_add_mod_div (m.toNat * 2 ^ E.abs.toNat) u.toNat hUn
       push_cast at h ⊢
