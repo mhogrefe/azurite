@@ -1873,6 +1873,10 @@ import Azurite.DLMF.Chapter1.Section9Series
 import Azurite.DLMF.Chapter1.SetPartitionCount
 import Azurite.DLMF.Chapter2.Section1
 import Azurite.DLMF.Chapter2.Section10
+import Azurite.DLMF.Chapter2.Section10Contour
+import Azurite.DLMF.Chapter2.Section10ContourBounds
+import Azurite.DLMF.Chapter2.Section10ContourLimit
+import Azurite.DLMF.Chapter2.Section10ContourSum
 import Azurite.DLMF.Chapter2.Section10Darboux
 import Azurite.DLMF.Chapter2.Section10Entire
 import Azurite.DLMF.Chapter2.Section10Example
@@ -1890,6 +1894,7 @@ import Azurite.DLMF.Chapter2.Section11Resurgence
 import Azurite.DLMF.Chapter2.Section11Stokes
 import Azurite.DLMF.Chapter2.Section11Terminant
 import Azurite.DLMF.Chapter2.Section11TerminantAsymp
+import Azurite.DLMF.Chapter2.Section11TerminantStirling
 import Azurite.DLMF.Chapter2.Section1BorelRitt
 import Azurite.DLMF.Chapter2.Section1Expansion
 import Azurite.DLMF.Chapter2.Section1Generalized
@@ -1932,6 +1937,7 @@ import Azurite.DLMF.Chapter2.Section4WatsonRotation
 import Azurite.DLMF.Chapter2.Section5
 import Azurite.DLMF.Chapter2.Section5Continuation
 import Azurite.DLMF.Chapter2.Section5Example
+import Azurite.DLMF.Chapter2.Section5ExampleGamma
 import Azurite.DLMF.Chapter2.Section5Expansion
 import Azurite.DLMF.Chapter2.Section5Laplace
 import Azurite.DLMF.Chapter2.Section5LaplaceExample
@@ -2106,6 +2112,7 @@ import Azurite.DLMF.Chapter4.Section13OmegaAux
 import Azurite.DLMF.Chapter4.Section13Real
 import Azurite.DLMF.Chapter4.Section13Series
 import Azurite.DLMF.Chapter4.Section13SeriesD
+import Azurite.DLMF.Chapter4.Section13Stirling
 import Azurite.DLMF.Chapter4.Section13Taylor
 import Azurite.DLMF.Chapter4.Section13Zero
 import Azurite.DLMF.Chapter4.Section14
@@ -2163,6 +2170,16 @@ import Azurite.DLMF.Chapter4.Section9Exp
 import Azurite.DLMF.Chapter4.Section9Log
 import Azurite.DLMF.Chapter4.Section9Markov
 import Azurite.DLMF.Chapter4.Section9PadeExp
+import Azurite.DLMF.Chapter5.Section10
+import Azurite.DLMF.Chapter5.Section10Orth
+import Azurite.DLMF.Chapter5.Section11Gstar
+import Azurite.DLMF.Chapter5.Section11Laplace
+import Azurite.DLMF.Chapter5.Section11LaplaceAsymp
+import Azurite.DLMF.Chapter5.Section11Modulus
+import Azurite.DLMF.Chapter5.Section11Psi
+import Azurite.DLMF.Chapter5.Section11Shift
+import Azurite.DLMF.Chapter5.Section11ShiftCoeff
+import Azurite.DLMF.Chapter5.Section11Stirling
 import Azurite.DLMF.Chapter5.Section2
 import Azurite.DLMF.Chapter5.Section3
 import Azurite.DLMF.Chapter5.Section4
@@ -2172,6 +2189,7 @@ import Azurite.DLMF.Chapter5.Section4Zeros
 import Azurite.DLMF.Chapter5.Section5
 import Azurite.DLMF.Chapter5.Section6
 import Azurite.DLMF.Chapter5.Section6Reciprocal
+import Azurite.DLMF.Chapter5.Section6Stirling
 import Azurite.DLMF.Chapter5.Section7
 import Azurite.DLMF.Chapter5.Section7Log
 import Azurite.DLMF.Chapter5.Section7Recip
@@ -2184,7 +2202,11 @@ import Azurite.DLMF.Chapter5.Section9BinetArctan
 import Azurite.DLMF.Chapter5.Section9Boyd
 import Azurite.DLMF.Chapter5.Section9BoydCauchy
 import Azurite.DLMF.Chapter5.Section9BoydFormula
+import Azurite.DLMF.Chapter5.Section9GammaPrimitive
 import Azurite.DLMF.Chapter5.Section9Hankel
+import Azurite.DLMF.Chapter5.Section9Psi
+import Azurite.DLMF.Chapter5.Section9PsiBarnes
+import Azurite.DLMF.Chapter5.Section9PsiEuler
 import Azurite.DLMF.Chapter5.Section9Regions
 import Azurite.DLMF.Chapter5.Section9Temme
 import Azurite.DLMF.Chapter5.Section9Trig
