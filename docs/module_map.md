@@ -1054,6 +1054,28 @@ Each core data structure has an `Equiv/` subdirectory containing proofs that Azu
 | `DLMF/Chapter5/Section11Laplace` | DLMF 5.11.6: the coefficients `aₖ` (`stirlingA`, recursion `dlmf_5_11_6`); the Watson/Laplace coefficients of `p = τ − 1 − ln τ` on either side of `τ = 1` equal `aₖ` and `(−1)ᵏ aₖ` (`laplaceCoeff_neg_one`, `laplaceCoeff_one`) via a formal power-series identity. |
 | `DLMF/Chapter5/Section11LaplaceAsymp` | DLMF 5.11.5: `gₖ = √2 (½)ₖ a_{2k}` by Laplace's method on Euler's integral (`laplace_left`/`laplace_right`, `Gamma_add_one_eq_laplace`) and uniqueness against 5.11.3 on `(0, ∞)`. |
 | `DLMF/Chapter5/Section11Modulus` | DLMF 5.11.9: `\|Γ(x + iy)\| ∼ √(2π)\|y\|^{x−½}e^{−π\|y\|/2}`, uniformly for bounded `x`, with an explicit `O(1/\|y\|)` error. |
+| `DLMF/Chapter5/Section11Bounds` | DLMF §5.11(ii): remainders of 5.11.1/5.11.2 bounded by the first neglected term with the same sign (real `z`) and by `sec^{2n}`/`sec^{2n+1}(½ ph z)` times it (complex `z`); 5.11.10. |
+| `DLMF/Chapter5/Section11BoydRem` | DLMF 5.11.11 groundwork: Boyd's representation of `R_K(z)` (Nemes (2.1)) from 5.9.11_1, its coefficients = Stirling's `gₖ`, `Γ*(z̄) = conj Γ*(z)`, `\|Γ*(±it)\|`, and `\|R_K\| ≤ (1 + sec(ph z))J_K/(2π\|z\|^K)`. |
+| `DLMF/Chapter5/Section11BoydBound` | DLMF 5.11.11, `sec` branch for all `K ≥ 1`: `J₁ = 1/π`, `∫ t^{K−1}e^{−2πt}/(1−e^{−2πt}) = Γ(K)ζ(K)/(2π)^K`, `J_K ≤ ½(1 + ζ(K))Γ(K)/(2π)^K`. |
+| `DLMF/Chapter5/Section11BoydRotate` | `\|1/Γ*\| ≤ 1` on `ℜv ≥ 0` (Phragmén–Lindelöf), the reflection `Γ*(w)Γ*(−w)(1 − e^{2πiw}) = 1` for `ℑw > 0`, `\|Γ*\|` in the second quadrant, and rotation of ray integrals `∫₀^∞ f = e^{iφ}∫₀^∞ f(re^{iφ})`. |
+| `DLMF/Chapter5/Section11BoydSqrt` | DLMF 5.11.11 `2K^{1/2}` branch estimates: the rotated first integral, `ζ(3) ≤ 5/4`, `ζ(K)(1 + 1/K)^{(K+1)/2} ≤ 1 + ζ(K)` for `K ≥ 3`. |
+| `DLMF/Chapter5/Section6Ratio` | DLMF 5.6.8 `\|Γ(z+a)/Γ(z+b)\| ≤ \|z\|^{a−b}` (Laplace form of the beta integral, ray rotation). |
+| `DLMF/Chapter5/Section11RatioFormal` | Complex formal exponential `cSeriesExp`/`expPS`, `ln(t/(eᵗ − 1))` (`bernLog`), generalized Bernoulli polynomials `B_n^{(ℓ)}(x)` (DLMF 24.16.1, formal), symmetry, integer-order generating function. |
+| `DLMF/Chapter5/Section11RatioExp` | `Γ(z+a)/Γ(z+b) = z^{a−b}exp(R_a − R_b)` and its exponentiated expansion from 5.11.8; `HasPowExpansion.cexp'`. |
+| `DLMF/Chapter5/Section11RatioWatson` | The coefficients of `Γ(z+a)/Γ(z+a+m+1)` via the Beta integral and Watson's lemma; complex binomial `cBinom`. |
+| `DLMF/Chapter5/Section11Ratio` | DLMF §5.11(iii) 5.11.12–5.11.18 (`Gₖ`, `Hₖ` via generalized Bernoulli polynomials). |
+| `DLMF/Chapter5/Section11RatioThree` | DLMF 5.11.19 (inverse factorial expansion of `Γ(z+a)Γ(z+b)/Γ(z+c)`), Chu–Vandermonde for falling factorials over `ℂ`. |
+| `DLMF/Chapter5/Section12` | DLMF §5.12 Euler's beta integral: `dlmfBeta`, 5.12.1–5.12.4 (incl. analytic continuation in `z` on the slit plane), 5.12.7. |
+| `DLMF/Chapter5/Section12Holo` | Holomorphy of parametric integrals from a bound on the integrand alone (Cauchy's estimate); `b ↦ ∫ w e^{bℓ}` with bounded `ℓ`. |
+| `DLMF/Chapter5/Section12Fourier` | DLMF 5.12.8 by Fourier inversion of the gamma density, Fubini and analytic continuation; bounds `\|w + it\| ≍ 1 + \|t\|`. |
+| `DLMF/Chapter5/Section12Trig` | DLMF 5.12.5, 5.12.6, 5.12.9 from 5.12.8 (`t = tan θ`, the line `t = c + iy`). |
+| `DLMF/Chapter5/Section12Loop` | Circles around a branch point (`arc0_eq`, rectangle in log coordinates); DLMF 5.12.10, 5.12.11 loop integrals; `sin(πb)Γ(b) = π/Γ(1 − b)`. |
+| `DLMF/Chapter5/Section12Pochhammer` | DLMF 5.12.12 Pochhammer's double-loop integral, entire in `a` and `b`. |
+| `DLMF/Chapter5/Section13` | DLMF 5.13.1–5.13.2 (Mellin–Barnes pair, Mellin inversion, continuation in `z`); vertical-line decay of `Γ`. |
+| `DLMF/Chapter5/Section13Barnes` | DLMF 5.13.3 Barnes' beta integral via Mellin–Parseval. |
+| `DLMF/Chapter5/Section13Bounds` | Gamma-ratio bounds (Laplace form of the beta integral, shift, reflection); uniform bound on `1/(Γ(a + t)Γ(c − t))`. |
+| `DLMF/Chapter5/Section13Ramanujan` | DLMF 5.13.4 Ramanujan's beta integral (Fourier representation, Fubini + inversion, continuation). |
+| `DLMF/Chapter5/Section11BoydMain` | DLMF 5.11.11 for `K ≥ 3` (`min(sec(ph z), 2K^{1/2})` form, and the `2K^{1/2}` branch up to the imaginary axis). |
 | `DLMF/Chapter5/Section11Shift` | DLMF 5.11.7–5.11.8: `Γ(az + b) ∼ √(2π)e^{−az}(az)^{az+b−½}`; `Ln Γ(z + h)` expansion with Bernoulli-polynomial coefficients; general `HasPowExpansion.subst_comp`, `hasPowExpansion_log_one_add`. |
 | `DLMF/Chapter5/Section11ShiftCoeff` | DLMF 5.11.8 coefficients: Stirling's series composed with `w(1 + hw)^{−1}` plus `(1/w + h − ½) ln(1 + hw) − h` gives `(−1)ᵏ Bₖ(h)/(k(k − 1))`. |
 | `DLMF/Chapter5/Section9Hankel` | DLMF 5.9.2, Hankel's loop integral `1/Γ(z) = (2πi)⁻¹ ∫ e^t t^{−z} dt` on keyhole contours with `t^{−z}` continued along the contour, for every `z`. |

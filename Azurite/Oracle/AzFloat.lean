@@ -52,6 +52,7 @@ import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Log2Rat
 import Azurite.AzFloat.Log2P1
+import Azurite.AzFloat.Log10
 import Azurite.AzFloat.LogBasePow2
 import Azurite.AzFloat.LogBasePow2Rat
 import Azurite.AzFloat.LogBasePow2P1
@@ -1229,6 +1230,20 @@ def checkFloatLogBase21PlusX : String → Verdict :=
 `AzFloat.log2RatPrecRound`. -/
 def checkFloatLogBase2Rational : String → Verdict :=
   checkFloatOfRational "log_base_2_rational" AzFloat.log2RatPrecRound
+
+/-- `Float`'s `log_base_10` family, against `AzFloat.log10PrecRound`. -/
+def checkFloatLogBase10 : String → Verdict :=
+  checkFloatUnaryWith "log_base_10" AzFloat.log10PrecRound
+
+/-- `Float`'s `log_base_10_1_plus_x` family, against `AzFloat.log10P1PrecRound`; as with
+`ln_1_plus_x`, the sign of a zero result is not compared. -/
+def checkFloatLogBase101PlusX : String → Verdict :=
+  checkFloatUnaryWith "log_base_10_1_plus_x" AzFloat.log10P1PrecRound
+
+/-- `Float::log_base_10_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.log10RatPrecRound`. -/
+def checkFloatLogBase10Rational : String → Verdict :=
+  checkFloatOfRational "log_base_10_rational" AzFloat.log10RatPrecRound
 
 /-- `Float`'s `log_base_power_of_2` family, against `AzFloat.logBasePow2PrecRound`. -/
 def checkFloatLogBasePowerOf2 : String → Verdict :=
