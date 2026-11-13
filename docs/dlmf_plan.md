@@ -1011,7 +1011,7 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 2.10.3 | `exS` (`Section10Example.lean`) | |
 | 2.10.4 | `dlmf_2_10_4` (one constant `C` for all `m ≥ 2`, via `exC_succ` and `const_eq_of_tendsto`); `exS_eq`, `exTerm` (`Section10Example.lean`) | `Real.hasDerivAt_mul_log` |
 | 2.10.5 | `jlogR`; `dlmf_2_10_5_bound` (sign `(−1)^m`, `R_m − R_{m+1}` is the term `s = m`, `\|R_m\| ≤` that term, same sign); `periodicBernoulli_sub_sign` ("`B̃_{2m}(x) − B_{2m}` is of constant sign `(−1)^m`", from the Fourier series), `em_tail`, `emRem_sign`, `remainder_bound` (`Section10Tail.lean`, `Section10Example.lean`) | `hasSum_one_div_nat_pow_mul_cos`, `intervalIntegral_tendsto_integral_Ioi` |
-| 2.10.6 | DEFERRED: `C = (γ + ln 2π)/12 − ζ′(2)/(2π²) = 1/12 − ζ′(−1)` (DLMF derives it from 2.10.2; needs `ζ′`, §25.2) | |
+| 2.10.6 | DONE 2026-11-12 with §5.17: `dlmf_2_10_6` in `Chapter5/Section17Zeta.lean` (the constant of 2.10.4 is Glaisher's `C`; via 5.17.7, not via Abel–Plana 2.10.2) | `riemannZeta_one_sub` |
 | 2.10.7 | DEFERRED: `∑_{j<n} j^α ∼ ζ(−α) + …`; the Euler–Maclaurin machinery applies, but identifying the constant with `ζ(−α)` for `α > −1` needs the analytic continuation of the constant in `α` | |
 | 2.10.8 | `dlmf_2_10_8` (constant `γ`: `emConst_inv_eq_gamma` from `Real.tendsto_harmonic_sub_log`), `dlmf_2_10_8_bound` (remainder bounded by the first neglected term, same sign) (`Section10Example.lean`) | `Real.tendsto_harmonic_sub_log`, `harmonic_eq_sum_Icc` |
 | §2.10(i) closing remarks | Not formalized: pointers to Sidi (2004, 2012a, 2012b), Weniger (2007), Elliott (1998) | |
@@ -3144,7 +3144,7 @@ Reusable tools: `hasDerivAt_integral_of_holo` / `differentiableOn_integral_of_ho
 | 5.12.11 | `loop11` (Figure 5.12.2, `δ ∈ (0, 1)`), `dlmf_5_12_11` (`ℜb > 0`, `a ∉ ℤ`), `dlmf_5_12_11_gamma` (`2πie^{iπa}Γ(b)/(Γ(1 − a)Γ(a + b))`, all `a`): exact for `ℜa > 0` via `arc0_eq` and 5.12.3, then entire in `a` | `Complex.Gamma_mul_Gamma_one_sub` |
 | 5.12.12 | `pochhammer` (Figure 5.12.3 collapsed, phases `e^{2πi(a−1)}`, `e^{2πi(b−1)}`), `dlmf_5_12_12` (`a, b ∉ −ℕ`), `dlmf_5_12_12_gamma` (`−4π²e^{πi(a+b)}/(Γ(1 − a)Γ(1 − b)Γ(a + b))`, all `a, b`): clockwise circles `= −A⁻¹`, `−B⁻¹` times counterclockwise (`pochC0m_eq`, `pochC1m_eq`), `arc0_eq` for `ℜa, ℜb > 0`, then entire in `a` and in `b` separately (`differentiable_pochhammer`) | |
 
-### §5.13 Integrals (`Section13.lean`, `Section13Barnes.lean`, `Section13Bounds.lean`, `Section13Ramanujan.lean`) — 5.13.1–5.13.4 DONE 2026-11-12; 5.13.5 OPEN
+### §5.13 Integrals (`Section13.lean`, `Section13Barnes.lean`, `Section13Bounds.lean`, `Section13Ramanujan.lean`) — 5.13.1–5.13.4 DONE 2026-11-12; 5.13.5 DEFERRED to Chapter 16
 
 Reusable tools: vertical-line decay `|Γ(w + it)| ≤ C_ε e^{−(π/2−ε)|t|}` for `ℜw > 0` (`exists_bound_Gamma_line`, from 5.6.9); the Mellin pair `𝓜[Γ(a + b)xᵃ(1 + x)^{−a−b}](s) = Γ(s + a)Γ(b − s)` (`mellin_mellinPair`, from 5.12.3); `integrable_exp_neg_mul_abs`; Gamma-ratio bounds `|Γ(v)/Γ(v + γ)| ≤ |Γ(γ)⁻¹|Γ(ℜγ)(ℜv/2)^{−ℜγ}` (`norm_gamma_ratio_le'`, Laplace form of the beta integral), uniform version with shift (`norm_gamma_ratio_le_uniform`, `Gamma_add_nat_eq_prod`), reflection `1/Γ(z) = Γ(1 − z) sin(πz)/π` (`inv_Gamma_eq_reflect`), and the uniform bound `|1/(Γ(a + t)Γ(c − t))| ≤ M(1 + |t|)^{1−ℜ(a₀+c)+ρ}` on `|a − a₀| ≤ ρ`, `t ∈ ℝ` (`exists_bound_invGammaPair`).
 
@@ -3154,5 +3154,146 @@ Reusable tools: vertical-line decay `|Γ(w + it)| ≤ C_ε e^{−(π/2−ε)|t|}
 | 5.13.2 | `dlmf_5_13_2` (`a > 0`, `0 < b < π`): 5.13.1 with `c = 0`, `b = a`, `z = e^{i(π−2b)}`; `Γ(a − it) = conj Γ(a + it)`, `1 + e^{iθ} = 2cos(θ/2)e^{iθ/2}`, reflection `t ↦ −t` | `Complex.Gamma_conj` |
 | 5.13.3 (Barnes) | `dlmf_5_13_3` (`ℜa, ℜb, ℜc, ℜd > 0`): Mellin–Parseval 1.14.36 (`dlmf_1_14_36`) with the pairs for `(c − 1, a + 1)` at `1 − it` and `(b, d)` at `it`, then 5.12.3 | |
 | 5.13.4 (Ramanujan) | `dlmf_5_13_4` (`ℜ(a + b + c + d) > 3`): `1/(Γ(a + t)Γ(c − t)) = 2^{α}/(2πΓ(α)) 𝓕[cos^{α−1}φ e^{i(c−a)φ}](t/π)` (5.12.5, `invGammaPair_eq_fourier`); for `ℜ(a + c) > 2`, `ℜ(b + d) > 1` Fubini + Fourier inversion + 5.12.5 (`ramanujan_of_re`); holomorphy in `a` from the uniform bound (`differentiableOn_ramanujan`) and exchange of the pairs `(a, c) ↔ (b, d)` | `MeasureTheory.Integrable.fourierInv_fourier_eq`, `integral_integral_swap` |
-| 5.13.5 (de Branges–Wilson) | OPEN. Analysis: Barnes' lemma (5.13.3 on a shifted line) writes `Γ(a₃ ± it)Γ(a₄ ± it) = Γ(a₃ + a₄)(2π)⁻¹∫ Γ(a₃ − δ + iu)Γ(a₄ − δ + iu)Γ(δ − iu ± it) du`; Fubini (absolutely convergent) then reduces 5.13.5 to the three-parameter integral `(4π)⁻¹∫ Γ(a ± it)Γ(b ± it)Γ(c ± it)/Γ(±2it) dt = Γ(a + b)Γ(a + c)Γ(b + c)` followed by 5.13.3. The three-parameter integral does not reduce the same way (the two-parameter analogue diverges); a source proof is needed (e.g. Wilson 1980 / Andrews–Askey–Roy §3.6). | |
+| 5.13.5 (de Branges–Wilson) | DEFERRED to Chapter 16 (user decision 2026-11-12). Route: Wilson, SIAM J. Math. Anal. 11 (1980) §2, eq. (2.3) (`~/azurite-sources/wilson-some-hypergeometric-orthogonal-polynomials.pdf`): bound the integrand by `\|z\|^{2(a+b+c+d)−3}e^{−2π\|ℑz\|}` off neighbourhoods of the poles (reflection + Stirling, uniform in the parameters), close the contour to the right with rectangles for `ℜ(a+b+c+d) < 1`, sum the four residue families `a+k, b+k, c+k, d+k` with the well-poised ₅F₄ sum, use the trigonometric identity `S_a + S_b + S_c + S_d = 2` (not proved in the paper), and remove the condition by analytic continuation. The ₅F₄ sum is Bailey, *Generalized Hypergeometric Series*, §4.4(1) (`~/azurite-sources/bailey-generalized-hypergeometric-series.pdf`), the `m → ∞` limit of Dougall's terminating ₇F₆ sum (§4.3; elementary proof by induction and polynomial interpolation in §5.1; limit not written out there). Do Dougall and the ₅F₄ sum in Chapter 16 (§16.4) on DLMF's ₚFₖ definitions, then 5.13.5. Also needed: a residue theorem for rectangles. The Barnes-lemma reduction of 5.13.5 to the three-parameter integral `(4π)⁻¹∫Γ(a ± it)Γ(b ± it)Γ(c ± it)/Γ(±2it) dt = Γ(a+b)Γ(a+c)Γ(b+c)` does not help on its own (the analogous two-parameter step diverges). | |
 | Compendia (Apelblat, Erdélyi et al., …) | references only | |
+
+### §5.14 Multidimensional Integrals (`Section14.lean`) — COMPLETE 2026-11-12 (5.14.1–5.14.7, full DLMF ranges)
+
+`Vₙ` is `simplexDLMF n` (a subset of `Fin n → ℝ` with the product Lebesgue measure).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.14.1 | `dlmf_5_14_1` (`ℜzₖ > 0`) | `dirichlet_integral` with `w = 1` |
+| 5.14.2 | `dlmf_5_14_2` (`ℜzₖ > 0`, `z (Fin.last n) = z_{n+1}`); `dirichlet_integral` (integrability + value, induction on `n`: peel `t₀ = x` via `volume_preserving_piFinSuccAbove`, rescale by `1 − x` via `Measure.integral_comp_smul` (`dirichletG_cons_smul`), Fubini `integral_prod`, then 5.12.1) | `integrable_prod_iff` |
+| 5.14.3 | `vandermondeDelta` (definition) | |
+| 5.14.4 (Selberg–Aomoto) | DONE 2026-11-12 for `ℜa, ℜb, ℜc > 0`, `0 ≤ m ≤ n` (`dlmf_5_14_4`, `Section14Aomoto.lean`) via Anderson's proof (Forrester–Warnaar §2, `~/azurite-sources/forrester-warnaar-the-importance-of-the-selberg-integral.tex`) + Aomoto's integration by parts. `Section14Dixon.lean`: Dixon–Anderson integral `dixon_anderson`. `Section14Anderson.lean`: `anderson_recursion`, `ordered_selberg`. `Section14Selberg.lean`: cube = `n!` × ordered region, `dlmf_5_14_4_selberg` (m = 0). `Section14Aomoto.lean`: `(a+(N−k)c)A_{k−1} = (a+b+(2N−k−1)c)A_k` (`aomoto_recursion`) by FTC in `t₁` off the points `t₁ = tⱼ` (`integral_eq_of_hasDerivAt_off_countable_of_le`), Fubini, symmetrization under `t₁ ↔ tⱼ`; for `ℜc ≥ 1/2` all integrands are dominated by the Jacobi weight, then continuation in `c` (`differentiableOn_aomotoA`). FULL RANGE DONE 2026-11-12: `dlmf_5_14_4_full` (`Section14Range.lean`) for `ℜc > −min(1/n, ℜa/(n−1), ℜb/(n−1))` (stated division-free: `nℜc > −1`, `(n−1)ℜc > −ℜa`, `(n−1)ℜc > −ℜb`). Convergence (no source found; own argument): Landau's theorem for Laplace transforms of positive measures — with real `a, b` and `L = 2 ln|Δ| ≤ 0`, `F(c) = ∫ e^{cL} w` agrees near `c = 1` with the closed form, holomorphic on the range (Gamma poles all real ≤ the bound, reciprocal Gammas entire), so its Taylor series at 1 converges on the disc reaching the bound; at real `c < 1` its terms `(1−c)ᵏ/k! ∫(−L)ᵏe^{L}w` are nonnegative and Tonelli sums them back to `∫ e^{cL} w` (`integrable_exp_of_taylor`). Then holomorphy of both sides on the (convex) range and continuation from `ℜc > 0` | |
+| 5.14.5 (Laguerre limit) | DONE 2026-11-12 on DLMF's full range, with Aomoto's factor: `dlmf_5_14_5` (`Section14Laguerre.lean`; range division-free: `nℜc > −1`, `(n−1)ℜc > −ℜa`). Limit `b = N + 1 → ∞` of `dlmf_5_14_4_full` after `t = s/N` (`integral_box_eq`); for real parameters the approximants are nonnegative, so **Fatou** gives convergence on the full range (`integrable_laguerre_real`); dominated convergence with `(1 − s/N)^N ≤ e^{−s}`; Gamma ratios via 5.11.12 (`tendsto_Gamma_ratio_nat`) | `Real.one_sub_div_pow_le_exp_neg`, `lintegral_liminf_le` |
+| 5.14.6 (Mehta) | DONE 2026-11-12 on DLMF's full range `ℜc > −1/n`: `dlmf_5_14_6` (`Section14Mehta.lean`). Limit `a = b = L + 1 → ∞` of 5.14.4 after `t = ½ + s/(2√(2L))` (`t(1−t) = (1 − s²/2L)/4`); Fatou + dominated convergence as for 5.14.5 (`(1 − s²/2L)^L ≤ e^{−s²/2}`); constants by Legendre duplication (exact factorization `mehtaT`) + 5.11.12 | `Complex.Gamma_mul_Gamma_add_half` |
+| 5.14.7 (Dyson) | DONE 2026-11-12 on DLMF's full range `ℜb > −1/n`: `dlmf_5_14_7` (`Section14Dyson.lean`). Integer `b`: Good's proof (J. Math. Phys. 11, 1970) of Dyson's constant-term identity, carried out directly on torus integrals (`good_identity`, `Section14Good.lean`); **Carlson's theorem** proven (`carlson`, `Section14Carlson.lean`, via `f/sin(πz)` and Mathlib's Phragmén–Lindelöf) applied to `b ↦ D(b+1) − R(b+1)` (growth: `|D(b)| ≤ (2π)ⁿ4^{Pℜb}`; Stirling bounds `dlmf_5_6_9` + `norm_inv_Gamma_le`, the `e^{∓nπ|ℑb|/2}` cancel, type ½ on `ℜb = 1`); convergence for `ℜb > −1/n` by Landau (`integrable_exp_of_taylor`), continuation | `PhragmenLindelof.eq_zero_on_right_half_plane_of_superexponential_decay`, `Lagrange.sum_basis` |
+
+### §5.15 Polygamma Functions (`Section15.lean`, `Section15Asymp.lean`) — COMPLETE 2026-11-12
+
+`ψ⁽ⁿ⁾` is DLMF's `dⁿψ/dzⁿ`: `polygamma n = iteratedDeriv n digamma`. Basic result `hasSum_polygamma`: `ψ⁽ⁿ⁾(z) = (−1)ⁿ⁺¹ n! ∑_{k≥0} (k + z)^{−n−1}` (`n ≥ 1`, `z ∉ {0, −1, …}`) by termwise differentiation of 5.7.6 (`hasSum_deriv_of_summable_norm` on balls, induction on `n`). Conditions: DLMF's `n, m = 1, 2, …`; 5.15.5–5.15.6 need `z` off the poles (junk values otherwise).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.15.1 | `dlmf_5_15_1` (`z ∉ gammaPoles`; `polygamma_one_eq_deriv`) | `hasSum_deriv_of_summable_norm` |
+| 5.15.2 | `dlmf_5_15_2` | `zeta_eq_tsum_one_div_nat_add_one_cpow` |
+| 5.15.3 | `dlmf_5_15_3` (`hasSum_odd_inv_pow_zeta`: `∑ (2k+1)^{−s} = (1 − 2^{−s})ζ(s)`) | `HasSum.even_add_odd` |
+| 5.15.4 | `dlmf_5_15_4` (induction from `ψ′(½) = π²/2` by 5.15.5) | `riemannZeta_two` |
+| 5.15.5 | `dlmf_5_15_5` (shift of the series) | `hasSum_nat_add_iff'` |
+| 5.15.6 | `dlmf_5_15_6` (`z ∉ ℤ`; `n` derivatives of the reflection formula on the open set `sin πz ≠ 0`) | `digamma_one_sub`, `iteratedDeriv_comp_const_sub`, `Set.EqOn.iteratedDeriv_of_isOpen` |
+| 5.15.7 | `dlmf_5_15_7` (`mz ∉ gammaPoles`; `n` derivatives of 5.5.9 via the local chain rule `iteratedDeriv_comp_mul_eqOn`, `iteratedDeriv_finsetSum`) | `dlmf_5_5_9` |
+| 5.15.8 | `dlmf_5_15_8` (`n = 1` of 5.15.9; `polygammaCoeff_one_one`, `_two`, `_odd`, `_even`) | |
+| 5.15.9 | `dlmf_5_15_9` (`|ph z| ≤ π − δ`; coefficients `polygammaCoeff`, identified by `polygammaCoeff_self`, `polygammaCoeff_succ`, `polygammaCoeff_even`, `polygammaCoeff_odd`, `polygammaCoeff_lt`): `n` derivatives of `ψ = ln z + ∑ dₛz^{−s} + Lₘ` on the slit plane (`polygamma_eq_expansion`), remainder `dⁿLₘ = (−1)ⁿ(m+3)⋯(m+n+2)∫B̃_{m+2}/(z+t)^{m+n+3}` (`iteratedDeriv_polyRem`) | `iter_deriv_zpow`, `integrableOn_div_add_pow` |
+| "Continued fractions for ψ′, ψ″ (Cuyt et al.)" | reference only | |
+
+### §5.16 Sums (`Section16.lean`) — COMPLETE 2026-11-12
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.16.1 | `dlmf_5_16_1`: limit of the partial sums `altTrigammaSum N = ∑_{k=1}^{N} (−1)ᵏψ′(k)` (the series is only conditionally convergent: `not_summable_dlmf_5_16_1`, from `ψ′(k) ≥ 1/k`); pairs `ψ′(2m+2) − ψ′(2m+1) = −1/(2m+1)²` (5.15.5), `∑ 1/(2m+1)² = (3/4)ζ(2)`, `ψ′(N) → 0` | `hasSum_odd_inv_pow_zeta`, `riemannZeta_two`, `Nat.tendsto_div_const_atTop` |
+| 5.16.2 | `dlmf_5_16_2` (index shifted to `k ≥ 0`; second equality from 5.15.2): `T = ∑_{k,m} 1/((k+1)(k+m+2)²)`; `∑ 1/((k+1)(m+1)(k+m+2)) = 2T` by symmetry and `= ∑ H_k/(k+1)² + ζ(3)` by telescoping, `∑ H_k/(k+1)² = T` by regrouping along antidiagonals | `summable_prod_of_nonneg`, `HasSum.prod_fiberwise`, `HasSum.sigma`, `Finset.HasAntidiagonal.sigmaAntidiagonalEquivProd` |
+| References (Jordan, Hansen, Andrews et al., Terras) | reference only | |
+
+### §5.17 Barnes' G-Function (`Section17.lean`, `Section17Log.lean`, `Section17Asymp.lean`, `Section17Zeta.lean`) — COMPLETE 2026-11-12 except the decimals of 5.17.6 (BACKFILL)
+
+`G` is defined by DLMF's product 5.17.3 (`barnesG`, `barnesPre`, `barnesFactor`); `Ln G(z + 1)` on `ℂ ∖ (−∞, −1]` is the factorwise logarithm of the product (`barnesLog`, real on `(−1, ∞)`), `Ln Γ` on the slit plane is `(w − ½) ln w − w + ½ ln(2π) + J(w)` (`lnGamma`, §5.11 Binet `J`). Glaisher's `C` is DLMF's limit (`glaisherSeq`, `glaisherC`), `A = e^C` (`glaisherA`). Conditions: 5.17.1 for `z ≠ 0, −1, …` (Mathlib's junk `Γ(−n) = 0`; at `z = 0` the formula fails with junk values); 5.17.4 for `z ∉ (−∞, −1]`, integral along `[0, z]` (`segInt`).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.17.1 | `dlmf_5_17_1` (partial products `barnes_partial_rec`, Euler's limit `GammaSeq_tendsto_Gamma`, `tendsto_harmonicC_sub_log`, Stirling `tendsto_stirlingRecip`) | `Stirling.tendsto_stirlingSeq_sqrt_pi`, `Complex.tendsto_one_add_div_pow_exp` |
+| 5.17.2 | `dlmf_5_17_2` | `Complex.Gamma_nat_eq_factorial` |
+| 5.17.3 | `dlmf_5_17_3` (definition; unconditional convergence `multipliable_barnesFactor`, `|ℓₖ| ≤ ⅔|z|³/k²` `norm_barnesLogTerm_le`) | `Complex.norm_log_sub_logTaylor_le`, `Complex.multipliable_one_add_of_summable` |
+| 5.17.4 | `dlmf_5_17_4` (`(Ln G)′ = ½ ln 2π − z − ½ + zψ(z + 1)` `hasDerivAt_barnesLog` by termwise differentiation + 5.7.6; `(Ln Γ)′ = ψ`; segment FTC `segInt_eq_sub`) | `hasDerivAt_tsum_of_isPreconnected`, `HasSum.cexp` |
+| 5.17.5 | `dlmf_5_17_5` (`R = Ln G − ¼z² − z Ln Γ(z+1) + (½z(z+1) + 1/12) ln z`, `R′ = ½K₂`, `R + Q/6` constant with `Q = ∫B̃₃/(z+t)²`, `R(n) = −Cₙ`; repeated IBP `bernInt_rec`; coefficients `glaisherCoeff_zero/_even/_odd`) | `stirlingJ_eq_K2`, `stirlingK_rec`, `IsOpen.is_const_of_deriv_eq_zero` |
+| 5.17.6 | `dlmf_5_17_6` (`ln A = C`); decimals `1.28242 71291 00622 63687…` BACKFILL (plan: `glaisherSeq n` with the 2.10.4–2.10.5 remainder bound `dlmf_2_10_5_bound` and AzFloat `ln` enclosures of `1, …, n`) | |
+| 5.17.7 | `dlmf_5_17_7`: limit `tendsto_glaisherSeq` (existence from 5.17.5's argument); `C = 1/12 − ζ′(−1)` (`deriv_zeta_neg_one`: Euler–Maclaurin form `zetaEM n` of `ζ` on `ℜs > −3`, `zeta_em_real` from `em_tail`, holomorphy `hasDerivAt_emInt`, identity theorem `zeta_eqOn_zetaEM`, derivative at `−1` `hasDerivAt_zetaEM_neg_one`); `ζ′(2)` form `zeta_deriv_neg_one_eq` (functional equation differentiated at `s = 2`) | `riemannZeta_one_sub`, `differentiableAt_riemannZeta`, `hasDerivAt_integral_of_dominated_loc_of_deriv_le`, `Complex.digamma_nat_add_one` |
+| Notes (Nemes error bounds, references) | reference only | |
+
+
+### §5.18 `q`-Gamma and Beta Functions (`Section18.lean`, `Section18Gamma.lean`, `Section18Limit.lean`, `Section18Beta.lean`) — COMPLETE 2026-11-13
+
+`a`, `q` complex. `qFactorial` is DLMF's defining product `1 (1 + q) ⋯ (1 + q + ⋯ + q^{n−1})`; 5.18.2's `(1 − q)^{−n}` form needs `q ≠ 1` (at `q = 1` the product is `n!`, `qFactorial_one`). 5.18.3 for `|q| < 1`.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.18.1 | `qPochhammer` (definition), `dlmf_5_18_1`, `qPochhammer_zero`, `qPochhammer_succ` | |
+| 5.18.2 | `qFactorial` (definition), `dlmf_5_18_2` (`q ≠ 1`), `qFactorial_one`, `qFactorial_succ` | `geom_sum_eq`, `Finset.prod_div_distrib` |
+| 5.18.3 | `qPochhammerInf` (definition), `dlmf_5_18_3` (`HasProd` + limit of `(a; q)ₙ`), `multipliable_qPochhammer`, `qPochhammerInf_ne_zero`, `qPochhammerInf_eq_zero_iff` | `Complex.multipliable_one_add_of_summable`, `Complex.cexp_tsum_eq_tprod`, `HasProd.tendsto_prod_nat` |
+| 5.18.4 | `qGamma` (definition, `q` real, `z` complex; Lean's `x/0 = 0` at the poles `q^{z+k} = 1`), `dlmf_5_18_4`; real form `qGamma_ofReal` (`Γ_q(x) = exp(lnGammaQ q x)` for `x > 0`) | `Real.hasProd_of_hasSum_log`, `HasProd.map`, `Complex.ofReal_cpow` |
+| 5.18.5 | `dlmf_5_18_5`, `qGamma_one` | |
+| 5.18.6 | `dlmf_5_18_6` | `geom_sum_eq` |
+| 5.18.7 | `dlmf_5_18_7` (`q^z ≠ 1`), `qPochhammerInf_cpow_succ`; iterated `qGamma_add_nat` (`Section18Limit.lean`) | `tprod_eq_zero_mul'` |
+| "`ln Γ_q(x)` is convex for `x > 0`" | `dlmf_5_18_ii_convex`, `strictConvexOn_lnGammaQ` (termwise `x ↦ −ln(1 − e^{−c(x+k)})`, second derivative `(w/sinh w)²/t²` `qPhi_deriv2_eq`; `strictConvexOn_tsum`) | `strictConvexOn_of_deriv2_pos`, `hasSum_lt` |
+| "the analog of the Bohr–Mollerup theorem holds" | `dlmf_5_18_ii_bohr_mollerup` (via the general convexity squeeze `eq_of_convexOn_of_add_one`: two convex functions with equal increments `λ(x)`, equal at `1`, `λ(n+1) − λ(n) → 0`) | `ConvexOn.secant_mono` |
+| 5.18.8, 5.18.9 | `dlmf_5_18_8`, `dlmf_5_18_9` (order of `ℂ`, both sides real): `ln Γ_r − ln Γ_q` strictly convex (`strictConvexOn_lnGammaQ_sub`, `w/sinh w` decreasing `div_sinh_lt` via strict convexity of `sinh`) and zero at `1`, `2` (`strictConvexOn_one_two`) | `StrictConvexOn.secant_strict_mono`, `Complex.real_lt_real` |
+| 5.18.10 | `dlmf_5_18_10` (all `z`; at `z = −n` both sides `0`): `q = e^{−h}`, `Γ_q(z) = exp ∑ L_k(h)` (`qGamma_exp_neg_eq`), `|L_k(h)| ≤ K/(k+1)²` uniformly (`norm_qLogTerm_le`, from `Ln(1 − w) = −∑ wᵐ/m` and `y²e^{−y} ≤ (1 − e^{−y})²`), `L_k(h) → ℓ_k` (`tendsto_qLogTerm`), `exp ∑ ℓ_k = Γ(z)` (`cexp_tsum_gammaLogTerm`, Euler's limit); Tannery for `ℜz ≥ 1` (`tendsto_qGamma_of_one_le_re`), then 5.18.7 and `(1 − q^w)/(1 − q) → w` | `tendsto_tsum_of_dominated_convergence`, `Complex.hasSum_taylorSeries_neg_log`, `Complex.GammaSeq_tendsto_Gamma`, `hasSum_coe_mul_geometric_of_norm_lt_one` |
+| 5.18.11 | `qBeta` (definition), `dlmf_5_18_11` | |
+| 5.18.12 | `dlmf_5_18_12` (`0 < q < 1`, `ℜa, ℜb > 0`), with Jackson's `q`-integral `jacksonIntegral q c f = c(1 − q) ∑ f(cqⁿ) qⁿ` and integrand `qBetaIntegrand`; convergence `hasSum_dlmf_5_18_12`. Proof: `(tq; q)_∞` split at `t = qⁿ` (`qPochhammerInf_eq_mul`), then the `q`-binomial theorem `hasSum_qBinomial` (`∑ (α; q)ₙ/(q; q)ₙ xⁿ = (αx; q)_∞/(x; q)_∞`, `|x| < 1`, real `0 < q < 1`; functional equation `qBinom_functional`, iteration `qBinom_iterate`, `S(qᴺx) → 1`, uniform coefficient bound `exists_norm_qBinomCoeff_le`) | `Multipliable.prod_mul_tprod_nat_mul'`, `Antitone.le_of_tendsto`, `Complex.norm_cpow_eq_rpow_re_of_pos` |
+
+### §5.19 Methods of Computation (`Section19.lean`, `Section19Sphere.lean`) — COMPLETE 2026-11-13
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.19.1 | `summandA` (definition of `aₖ`; `S` is its sum, `hasSum_summandA`) | |
+| 5.19.2 | `dlmf_5_19_2` | `field_simp` |
+| 5.19.3 | `dlmf_5_19_3` (`∑ aₖ = ψ(½) − 2ψ(⅔) − γ = 3 ln 3 − 2 ln 2 − ⅓π√3`), real form `hasSum_summandA`; `ψ(⅔) = −γ − (3/2) ln 3 + π√3/6` (`digamma_two_thirds`, from 5.4.19 with `p = 2`, `q = 3`) | `dlmf_5_7_6`, `dlmf_5_4_13`, `dlmf_5_4_19` |
+| §5.19(ii) Mellin–Barnes integrals | descriptive, no equations (reference to §2.5; Paris–Kaminski) — nothing to formalize | |
+| 5.19.4 (volume) | `sphereVolume`, `dlmf_5_19_4_volume` (`n ≥ 1`, `r ≥ 0`; open and closed balls of `EuclideanSpace ℝ (Fin n)`) | `EuclideanSpace.volume_ball`, `EuclideanSpace.volume_closedBall` |
+| 5.19.4 (surface area) | `sphereArea`, `dlmf_5_19_4_area` (`S = (n/r)V`), `hasDerivAt_sphereVolume` (`S = dV/dr`), `dlmf_5_19_4_toSphere` (`r = 1`: total mass of `Measure.toSphere`) | `Real.Gamma_add_one`, `Measure.toSphere_apply_univ` |
+
+### §5.20 Physical Applications (`Section20.lean`) — COMPLETE 2026-11-13
+
+Inverse temperature `β = 1/(kT)`; `ln 0 = 0` on the null coincidence set.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 5.20.1 | `coulombLineW` (definition) | |
+| 5.20.2 | `coulombLineDensity` (definition, `C = 1/ψₙ(β)`), `dlmf_5_20_2` (nonnegative, total mass `1`, `β > 0`), `coulombLinePsi_pos` | |
+| 5.20.3 | `coulombLinePsi` (definition), `dlmf_5_20_3` (`β > 0`): `x = t/√β` (`exp_coulombLineW_smul`, a.e. off `Δ = 0`), Mehta 5.14.6 with `c = β/2` (`integral_mehtaReal`) | `Measure.integral_comp_smul`, `dlmf_5_14_6`, `ae_vandermondeDelta_ne_zero`, `vandermondeDelta` / `pairCount` |
+| 5.20.4 | `coulombCircleW` (definition) | |
+| 5.20.5 | `coulombCirclePsi` (definition), `dlmf_5_20_5` (`β ≥ 0`): Dyson 5.14.7 with `b = β/2` (`exp_coulombCircleW`, a.e. off coincident angles) | `dlmf_5_14_7`, `ae_chordR_ne_zero` |
+
+### §5.21 Methods of Computation — reference only (no numbered equations); noted 2026-11-13
+
+DLMF content (paraphrased):
+* `Γ(z)`, right half-plane: start from the asymptotic expansion 5.11.3 at large `ℜz` and recur
+  backwards with `Γ(z) = Γ(z + 1)/z` (5.5.1); alternatively recur forwards from a value given by the
+  Maclaurin series 5.7.3. Left half-plane: continue the backward recurrence, or use the reflection
+  formula 5.5.3.
+* The same scheme serves `ln Γ(z)`, `ψ(z)` and the polygammas (expansions 5.11.1, 5.11.2, 5.15.8;
+  recurrences 5.5.2, 5.15.5; reflections 5.5.4, 5.15.6).
+* Quadrature (§3.5) of Hankel's loop integral 5.9.2 along steepest-descent paths:
+  Schmelzer & Trefethen (2007).
+* References: van der Laan & Temme (1984, Ch. III; survey); Borwein & Zucker (1992; `Γ` at small
+  rational arguments via complete elliptic integrals of the first kind, §19.2); Gabutti & Allasia
+  (2008; `Γ_q`, `B_q`).
+
+Formalized ingredients (for a future proven AzFloat `Γ` / `ln Γ` / `ψ`; see also
+`docs/azfloat_plan.md` §4.5 and Ex. 4.21):
+* Recurrence/reflection: `dlmf_5_5_1`, `dlmf_5_5_3`; real `ln Γ` shift `log_Gamma_add_nat` (§5.6).
+* Exact Stirling remainder on the slit plane: `Gamma_eq_exp_stirlingJ` (`Γ = exp((z − ½) ln z − z
+  + ½ ln 2π + J(z))`), `stirlingJ_eq_sum` (`J = ∑_{j≤m} B_{j+2}/((j + 2)(j + 1)z^{j+1}) −
+  K_{m+2}(z)/(m + 2)`, `K_m = ∫₀^∞ B̃_m(t)/(z + t)^m dt`), `norm_stirlingK_le` (sector bound with an
+  *existential* constant `C ≥ sup |B̃_m|`), `norm_stirlingJ_le` (explicit `1/(8 sin²(δ/2)|z|)`); on
+  `(0, ∞)` `J = μ` (`stirlingJR_eq_stirlingMu`) with `0 < μ(x) < 1/(12x)` (`stirlingMu_bounds`).
+  Error bounds for `Γ*`: 5.11.10–5.11.11 (`dlmf_5_11_10`, `dlmf_5_11_11`, Boyd/Nemes).
+* Maclaurin series of `ln Γ(1 + z)`: `dlmf_5_7_3` (`|z| < 2`), real form `dlmf_5_7_3_real`.
+* Hankel's loop integral: `dlmf_5_9_2` (§5.9(i)).
+* `ψ` expansion with remainder: `dlmf_5_11_2`, polygammas `dlmf_5_15_8`, `dlmf_5_15_9`.
+
+Error bounds (both options, 2026-11-13):
+* (B) "remainder ≤ first neglected term, same sign" for real `x > 0`: already in §5.11(ii) —
+  `dlmf_5_11_ii_real` (ln Γ, 5.11.1), `dlmf_5_11_ii_psi_real` (ψ, 5.11.2); complex `z`:
+  `sec^{2n}(½ ph z)` (resp. `sec^{2n+1}`) times the first neglected term, `dlmf_5_11_ii_complex`,
+  `dlmf_5_11_ii_psi_complex` (`Section11Bounds.lean`). (The first version of this note missed
+  these and listed (B) as a gap.)
+* (A) explicit `sup |B̃_{2n}| ≤ |B_{2n}|` (`abs_periodicBernoulli_two_mul_le`), hence
+  `|K_{2n}(z)| ≤ |B_{2n}|/(sin^{2n}(½δ)(2n − 1)|z|^{2n−1})` (`norm_stirlingK_two_mul_le`) and the
+  remainder after the `B_{2n}` term `≤ |B_{2n}|/(2n(2n − 1) sin^{2n}(½δ)|z|^{2n−1})`
+  (`norm_stirlingJ_sub_sum_le`) (`Section11StirlingK.lean`). Weaker than (B) by one term; kept for
+  sector estimates.
+Remaining for a certified AzFloat `Γ`: the algorithm itself (shift, Bernoulli numbers to `p`
+bits via MCA §4.7.2, Horner in `1/x'²`, product, `exp`) and its rounding analysis.
+

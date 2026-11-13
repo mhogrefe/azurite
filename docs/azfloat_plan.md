@@ -915,6 +915,11 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   Design note: a `logGamma`/`Gamma` implementation = shift by `δ ≈ p ln 2/(2π)` then (4.38) with
   `m ≈ πx'` terms; Bernoulli numbers `B_2..B_{2m}` via §4.7.2; the sign/next-term facts give the
   bracket for correct rounding once (4.38) is available as a theorem (external proof needed).
+  Update 2026-11-13: the remainder bound of (4.38) IS available from DLMF §5.11: exact remainder
+  (`Gamma_eq_exp_stirlingJ`, `stirlingJ_eq_sum`), "first omitted term, same sign" for real `x > 0`
+  (`dlmf_5_11_ii_real`, `Section11Bounds.lean`; complex: `dlmf_5_11_ii_complex` with
+  `sec^{2n}(½ ph z)`), and the explicit `|B̃_{2n}| ≤ |B_{2n}|` sector bounds
+  (`Section11StirlingK.lean`). See the §5.21 note in `docs/dlmf_plan.md`.
   Lean notes: `zetaReal (2 * k)` elaborates with `2 * (k : ℝ)` — convert to `((2 * k : ℕ) : ℝ)` with
   `push_cast; ring` before `Real.rpow_natCast`; `generalize hε : (-1)^(k+1) = ε` and `ε^2 = 1`
   make the sign algebra a plain `calc`; `Summable.le_tsum` (not `le_tsum`); `Real.pi_lt_d2` for

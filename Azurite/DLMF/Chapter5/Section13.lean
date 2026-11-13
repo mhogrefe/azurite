@@ -383,7 +383,7 @@ theorem Gamma_mul_Gamma_conj_line (a t : ℝ) :
 theorem norm_Gamma_line_neg (a t : ℝ) :
     ‖Gamma ((a : ℂ) + ((-t : ℝ) : ℂ) * I)‖ = ‖Gamma ((a : ℂ) + t * I)‖ := by
   have h : (a : ℂ) + ((-t : ℝ) : ℂ) * I = (starRingEnd ℂ) ((a : ℂ) + t * I) := by
-    simp [Complex.ext_iff]
+    simp
   rw [h, Complex.Gamma_conj, Complex.norm_conj]
 
 /-- `1 + e^{iθ} = 2cos(θ/2) e^{iθ/2}`. -/
