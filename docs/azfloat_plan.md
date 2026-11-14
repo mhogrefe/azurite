@@ -6632,7 +6632,40 @@ against the rounded reciprocal of the sine at `p + 300` bits (float, rational, w
 whole degree and every third of a degree), `±2^(−2^30)` (results `±2^(2^30)`), poles with both
 signs, the denominators `4` and `12`, `cscPi` at integers and half-integers.  Pole conventions now
 in the library: `tan` — IEEE `tanPi` (sign of the sine); `sec` — always `+∞`; `csc` — the sign of
-the argument.  Not done: `cot`.
+the argument.
+
+## The cotangent family (DONE 2026-11-14, fuel-free, UNTIMED)
+
+User request "let's do cot", **without a Malachite specification of the special values**: the
+pole convention below is our own choice and should be confirmed.  `AzFloat/CotBracket.lean`,
+`AzFloat/Cot.lean`, Equivs, `Tests/Cot.lean`: `cotPrecRound`/`cot`, `cotRatPrecRound`/`cotRat`,
+`cotWithPeriodPrecRound`/`cotWithPeriod`, `cotRatWithPeriodPrecRound`/`cotRatWithPeriod`,
+`cotPiPrecRound`/`cotPi`, `cotPiRatPrecRound`/`cotPiRat`, each with its correct-rounding theorem.
+
+* **Convention**: `cot = cos / sin` with the zero of the sine carrying the sign of the argument
+  (as for `csc`), so a pole is the infinity with the sign of `x` times the sign of the cosine
+  there.  This is the reciprocal of the signed zeros of IEEE 754 `tanPi` and keeps the function
+  odd: `cotPi 0 = +∞`, `cotPi 1 = −∞`, `cotPi 2 = +∞`, `cotPi (−1) = +∞`.  `cot 0 = +∞`
+  (unsigned zero).  `u = 0` → `NaN`.
+* **Specification** `Spec.cotSigned a θ`, `Spec.cot a = cotSigned a a`, `Spec.cotWithPeriod`,
+  `Spec.cotPi`; after the reduction `Spec.cotCore neg θ`.
+* **Brackets**: `tanOfSinCos` on the *swapped* `sinCosBracket` (one evaluation gives numerator
+  and denominator), likewise rational and with a period; `quotient_isSome_exists` is the generic
+  Ziv certificate of a quotient bracket.
+* **`cotPeriodCore neg r`** by the reduced denominator (Niven for the tangent): `1` →
+  `(infinity (!neg), .eq)`; `2` → `(infinity neg, .eq)`; `4` → `(zero, .eq)`; `8` → `±1`;
+  otherwise the loop.
+* **Tiny arguments** (essential, as for `csc`): `1/a − a < cot a < 1/a`
+  (`cot_bounds_of_small`), tested on `−cot a ∈ [−⌈1/alo⌉, −⌊⌊1/ahi⌋ − ahi⌋]` so that the exact
+  end `−1/|x|` of a power of two is at the open side for both signs (the lesson of the cosecant).
+
+NOT timed.  Tests: special values, `cot 1` to 57 digits (exact-rational reference), sweeps
+against the rounded quotient `cos / sin` of `sinCos*` at `p + 300` bits (float, rational, with
+period, every whole degree and every third of a degree), `±2^(−2^30)`, poles with both signs,
+the denominators `4` and `8`, `cotPi` at integers, half- and quarter-integers.  Pole conventions
+in the library: `tan` — IEEE `tanPi`; `sec` — always `+∞`; `csc` — the sign of the argument;
+`cot` — the sign of the argument times the sign of the cosine.  The six trigonometric functions
+are complete.
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
