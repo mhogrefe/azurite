@@ -6334,6 +6334,62 @@ NOT timed.  Expected from the float table: about half of `sinRat` + `cosRat` (th
 `Tests/CosRat`, agreement with the separate functions over all octants, both signs, several modes,
 precisions up to 2000 bits, a 50-digit denominator, tiny rationals.
 
+## `sinCosWithPeriod`: `sin (2π x / u)` and `cos (2π x / u)` together (DONE 2026-11-13, UNTIMED)
+
+User request: "please implement sinCosWithPeriod next."  `AzFloat/SinCosWithPeriodBracket.lean`,
+`AzFloat/SinCosWithPeriod.lean`, Equivs, `Tests/SinCosWithPeriod.lean`:
+`sinCosWithPeriodPrecRound x u p mode : (AzFloat × Ordering) × (AzFloat × Ordering)`,
+`sinCosWithPeriod x u : AzFloat × AzFloat`; `sinCosWithPeriodPrecRound_eq` (= the pair of
+`sinWithPeriodPrecRound` and `cosWithPeriodPrecRound`, every `p`),
+`sinCosWithPeriodPrecRound_eq_roundVal`, `sinCosWithPeriod_eq`.
+
+* `sinPeriodBracket` and `cosPeriodBracket` already shared the centre `t = ⌊2 ⌊r⌋_W · lo⌋_W` and
+  the slack `2^(6−W)`, so `sinCosPeriodBracket r w` (one `sinCosBracket t 3 w`, both components
+  widened) has them as components by `rfl`; the same for `sinCosPeriodApprox neg`.
+* The joint loop runs when the reduced denominator of `r = periodFrac m E u` is none of
+  `1, 2, 3, 4, 6, 12`: the union of Niven's exceptional denominators for the cosine
+  (`1, 2, 3, 4, 6`) and the sine (`1, 2, 4, 12`).  On those six denominators at least one value
+  is rational and exact, and the pair is delegated to the separate functions (as are `u = 0`,
+  the special values, `p = 0` and tiny arguments) — one of the two then still runs its own loop
+  for `3`, `6`, `12`.
+* **Proof without redoing the reduction**: the equality is shown at the level of the loops —
+  `zivLoopCertified₂_sinCosPeriodApprox`: the joint loop equals the pair of the two separate
+  `zivLoopCertified`s, all three being the roundings of `± sin (2πr)`, `cos (2πr)` — and the
+  separate functions are unfolded to their loop branch by `simp only` with `dite_eq_right` for
+  the tiny tests and the denominators.  The long reduction argument of
+  `sinWithPeriodPrecRound_eq` is not repeated.
+
+NOT timed.  Tests: exact values in degrees, `45°`, `1°` at 200 bits, agreement with the separate
+functions over every whole degree of two turns, both signs, periods `1`, `7`, `360`, `400`,
+`2^64 − 1`, several modes and precisions, tiny and huge (`3·2^(2^20)`) arguments.
+
+## `sinCosRatWithPeriod` (DONE 2026-11-13, UNTIMED)
+
+User request: "Please implement sinCosRatWithPeriod."  `AzFloat/SinCosRatWithPeriod.lean`, Equiv,
+`Tests/SinCosRatWithPeriod.lean`: `sinCosRatWithPeriodPrecRound q u p mode`,
+`sinCosRatWithPeriod q u p`; `sinCosRatWithPeriodPrecRound_eq` (= the pair of
+`sinRatWithPeriodPrecRound` and `cosRatWithPeriodPrecRound`, every `p`), `_eq_roundVal`,
+`sinCosRatWithPeriod_eq`.  No new bracket: the reduction `periodFracRat q u` feeds the
+`sinCosPeriodApprox` of `sinCosWithPeriod`, and the proof is the same two steps
+(`zivLoopCertified₂_sinCosPeriodApprox` + unfolding the separate functions to their loop branch).
+Delegated: `u = 0`, `q = 0`, `p = 0`, tiny `q`, the denominators `1, 2, 3, 4, 6, 12`.  Lean note:
+after `split` on the two tiny tests the goal still has `have`/`let` binders — `dsimp only` before
+`split_ifs`.  NOT timed.  Tests: exact values, `45°`, `1/3°` against the float function at `1`
+with period `1080` (200 bits), agreement with the separate functions over every third of a
+degree of a turn, both signs, several periods, modes, precisions, huge and tiny rationals.
+
+## `sinCosPi`, `sinCosPiRat` (DONE 2026-11-13, UNTIMED)
+
+User request: "Let's do sinCosPi next."  `AzFloat/SinCosPi.lean`, Equiv, `Tests/SinCosPi.lean`:
+`sinCosPiPrecRound x p mode`, `sinCosPi x` (float) and `sinCosPiRatPrecRound q p mode`,
+`sinCosPiRat q p` (`AzRat`), the period-`2` instances of `sinCosWithPeriodPrecRound` and
+`sinCosRatWithPeriodPrecRound`; `sinCosPiPrecRound_eq`, `sinCosPiRatPrecRound_eq` (= the pairs of
+the `sinPi`/`cosPi` functions, every `p`, one-line corollaries), `sinCosPiPrecRound_eq_liftVal`,
+`sinCosPiRatPrecRound_eq_roundVal`, `sinCosPi_eq`, `sinCosPiRat_eq`.  Delegated cases: for a
+float the integers and half-integers (both values exact), for a rational also the thirds and
+sixths.  With this the joint family is complete: `sinCos`, `sinCosRat`, `sinCosWithPeriod`,
+`sinCosRatWithPeriod`, `sinCosPi`, `sinCosPiRat`.  NOT timed.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

@@ -96,7 +96,10 @@ import Azurite.AzFloat.Tests.RoundToInteger
 import Azurite.AzFloat.Tests.Rsqrt
 import Azurite.AzFloat.Tests.Sin
 import Azurite.AzFloat.Tests.SinCos
+import Azurite.AzFloat.Tests.SinCosPi
 import Azurite.AzFloat.Tests.SinCosRat
+import Azurite.AzFloat.Tests.SinCosRatWithPeriod
+import Azurite.AzFloat.Tests.SinCosWithPeriod
 import Azurite.AzFloat.Tests.SinPi
 import Azurite.AzFloat.Tests.SinRat
 import Azurite.AzFloat.Tests.SinRatWithPeriod
