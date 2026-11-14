@@ -6589,6 +6589,51 @@ reciprocal of the cosine at `p + 300` bits, tiny and huge arguments, `secRat` ag
 reciprocal-of-rounded-cosine reference is itself wrong — the 353-bit cosine rounds to exactly
 `1` — so those cases are checked directly.)  Not done: `csc`, `cot`.
 
+## The cosecant family (DONE 2026-11-14, fuel-free, UNTIMED)
+
+User request with Malachite's special values for the cosecant with a period: `u = 0` → `NaN`;
+`x = 0` → `∞`; `x/u` a multiple of `1/2` is a pole and the result is exactly `±∞` **with the
+sign of `x`** ("the sine is a zero carrying that sign, and the cosecant is its reciprocal, which
+keeps the function odd"); reduced denominator `4` → exactly `±1`, `12` → exactly `±2`.
+`AzFloat/CscBracket.lean`, `AzFloat/Csc.lean`, Equivs, `Tests/Csc.lean`: `cscPrecRound`/`csc`,
+`cscRatPrecRound`/`cscRat`, `cscWithPeriodPrecRound`/`cscWithPeriod`,
+`cscRatWithPeriodPrecRound`/`cscRatWithPeriod`, `cscPiPrecRound`/`cscPi`,
+`cscPiRatPrecRound`/`cscPiRat`, each with its correct-rounding theorem.
+
+* **Specification** `Spec.cscSigned a θ` = `1 / sin θ`, and where `sin θ = 0` the infinity `⊥`
+  for `a < 0`, `⊤` otherwise (so `+∞` at `a = 0`: AzFloat's zero is unsigned, Malachite's
+  `f(0, u, p, m) = ∞`).  `Spec.csc a = cscSigned a a`, `Spec.cscWithPeriod a u =
+  cscSigned a (2π a / u)`, `Spec.cscPi a = cscSigned a (π a)`.  After the reduction:
+  `Spec.cscCore neg θ` (`cscSigned_two_pi_div`, `cscSigned_self`).
+* **Brackets**: the reciprocal of a sine bracket by `tanOfSinCos (Encl.exact one, ·)` —
+  `sinBracket` (float), `sinRatBracket` (rational), `sinPeriodBracket` (after `periodFrac`) —
+  with the generic `reciprocalNeg_valid_or_none` / `reciprocalNeg_isSome_exists` (signed version
+  of the secant's lemmas).
+* **`cscPeriodCore neg r`** by the reduced denominator (Niven for the sine): `1, 2` →
+  `(infinity (!neg), .eq)`; `4` → `±1`; `12` → `±2`; otherwise the loop.
+* **Tiny arguments are essential here** (`csc x ≈ 1/x` is huge and the absolute sine bracket
+  would need `|e|` extra bits): `cscTinyCore?` with floats `alo ≤ a ≤ ahi`:
+  `csc a ∈ (1/a, 1/a + a]` (`csc_bounds_of_small`, from `a − a³/6 < sin a < a`), bracket
+  `[⌊1/ahi⌋, ⌈⌈1/alo⌉ + ahi⌉]` at `p + 72` bits, decided when `2|e| ≥ p + 72`.  Float:
+  `alo = ahi = |x|`; rational: floor and ceiling of `|q|`; with a period: `periodTinyArg`
+  (`ylo ≤ 2π m 2^E / u ≤ yhi`, the lower one positive).
+* **Bug found by the first test run** (before the proofs could not see it — it was a
+  performance bug, not a correctness one): the tiny test was first made on the negated, swapped
+  bracket for `x < 0`; for `x = −2^k` the end `−1/|x|` is exact and then sits at the *closed* end
+  of the half-open test of `roundingPossible`, which rejects it, and the function fell through to
+  the Ziv loop with `e = −2^30` (a hang).  Now the test is always made on the positive value in
+  the negated mode and the result negated (as `sinTiny?`/`tanTiny?` do).  Lesson: a tiny path
+  whose bracket has an **exact** end must put that end at the open side for both signs.
+* Special values: `csc NaN = csc (±∞) = NaN`; `csc 0 = +∞` at every precision; `p = 0` → `NaN`
+  for a nonzero argument.
+
+NOT timed.  Tests: special values, `csc 1` to 59 digits (exact-rational reference), sweeps
+against the rounded reciprocal of the sine at `p + 300` bits (float, rational, with period, every
+whole degree and every third of a degree), `±2^(−2^30)` (results `±2^(2^30)`), poles with both
+signs, the denominators `4` and `12`, `cscPi` at integers and half-integers.  Pole conventions now
+in the library: `tan` — IEEE `tanPi` (sign of the sine); `sec` — always `+∞`; `csc` — the sign of
+the argument.  Not done: `cot`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

@@ -61,6 +61,8 @@ import Azurite.AzFloat.CosRatBracket
 import Azurite.AzFloat.CosRatWithPeriod
 import Azurite.AzFloat.CosWithPeriod
 import Azurite.AzFloat.CosWithPeriodBracket
+import Azurite.AzFloat.Csc
+import Azurite.AzFloat.CscBracket
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Dottie
@@ -85,6 +87,8 @@ import Azurite.AzFloat.Equiv.CosRatBracket
 import Azurite.AzFloat.Equiv.CosRatWithPeriod
 import Azurite.AzFloat.Equiv.CosWithPeriod
 import Azurite.AzFloat.Equiv.CosWithPeriodBracket
+import Azurite.AzFloat.Equiv.Csc
+import Azurite.AzFloat.Equiv.CscBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat
