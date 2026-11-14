@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.CosRatBracket
-import Azurite.AzFloat.Equiv.CosBracket
+import Azurite.AzFloat.Equiv.SinCosBracket
 import Azurite.AzFloat.Equiv.PowRatBracket
 import Azurite.AzFloat.Equiv.RatPowRat
 

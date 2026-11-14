@@ -1594,7 +1594,8 @@ into Lean theorem statements (proven where feasible) before anything is implemen
   `2(k+1)ε(1+2ε)^{k+1}`: the text's "error `O(2^{−n})`" needs `ε = O(2^{−n}/lg n)`, i.e. `lg lg n`
   guard bits — the rotation structure keeps the error additive, a 1-norm argument would give
   `(√2)^k`); `pow_lt_two_pow_of_digit` (`p^N < 2^{2^j N}`).  Not formalized: the cost accounting
-  `O(M(n) log² n)`, Brent's theorem, the remarks on `tan`/rotations, and the algorithm (theory first).
+  `O(M(n) log² n)`, Brent's theorem, the remarks on `tan`/rotations.  The algorithm itself is
+  implemented and proven since 2026-11-13: `sinCosPrecRound` (section "`sinCos`" below).
   Design note: the `AzFloat` `sin`/`cos` plan for `|x| < 1/2`: `sinCosDigit` blocks from the significand
   (they are literally bit slices of doubling length), exact binary splitting for each `sin y_j, cos y_j`
   over `AzInt` (certified by the §4.4 series bounds), the rotation recurrence in working precision
@@ -6190,6 +6191,122 @@ and `sinPiRatPrecRound`/`sinPiRat` (`AzRat`) are the period-`2` instances of
 `sinWithPeriodPrecRound` and `sinRatWithPeriodPrecRound`; `Spec.sinPi`, `Spec.sinWithPeriod_two`,
 `sinPiPrecRound_eq_liftVal`, `sinPiRatPrecRound_eq`.  Exact values: `0` at the integers, `±1`
 at the half-integers, `±1/2` at the rational odd sixths.
+
+## `sinCos`: sine and cosine together (DONE 2026-11-13, fuel-free, TIMED)
+
+User request: "there's a way to compute sine and cosine simultaneously that's faster than
+computing them separately.  Brent–Zimmermann discusses this.  Could you implement sinCos, which
+takes an AzFloat and returns two AzFloats and two corresponding Orderings?"
+`AzInt/SinCosSplit.lean`, `AzFloat/ZivPair.lean`, `AzFloat/SinCosBracket.lean`,
+`AzFloat/SinCos.lean`, Equivs, `Tests/SinCos.lean`:
+`sinCosPrecRound x p mode : (AzFloat × Ordering) × (AzFloat × Ordering)`,
+`sinCos x : AzFloat × AzFloat`; `sinCosPrecRound_eq : sinCosPrecRound x p mode =
+(sinPrecRound x p mode, cosPrecRound x p mode)` (every `p`), `sinCosPrecRound_eq_liftVal`.
+
+* **MCA Algorithm 4.4 (SinCos, §4.9.1)** after the reduction of `cosBracket`
+  (`r' = remExact |x| (2 lo)`, true reduction in `[r' − E, r']`):
+  `θ = ⌊r' 2^(T−3)⌋ / 2^T ≤ r'/8 < π/4` with `T = V + 4` fraction bits (`V = w + 12`); the bits
+  of `θ` are cut into blocks of `g, 2g, 4g, …` bits (`sinCosCut T i = min(g (2^i − 1), T)`,
+  `g = sinCosBlockBase = 4`), block `i` being `y_i = d_i / 2^(c_{i+1}) < 2^(−c_i)`; MCA's blocks
+  are the case `g = 1` shifted by one bit (`x < 1/2`).  `sin y_i`, `cos y_i` by binary splitting,
+  then the rotation `S ← sin y · C + cos y · S`, `C ← cos y · C − sin y · S` from the lowest block
+  up in interval arithmetic at `V` bits (all angles in `[0, π/4)`, so every enclosure is
+  nonnegative and `Encl.mul` applies; zero blocks are skipped).  Three double-angle steps take
+  `θ` to `8θ`, and the Lipschitz widening by `E₂ ≥ E + 2^(3−T)` covers the true reduction.
+* **Binary splitting** (`AzInt.altSplit`): both series have the ratio
+  `−y²/((2k+1+o)(2k+2+o))` (`o = 0` cosine, `o = 1` for `sin y / y`); states `(P, B, T)` with
+  `P = (−d²)^n` and `T` signed (`AzInt`), the power of two of the denominator kept as a shift as
+  in `AzNat/ExpSplit`.  The partial sum through index `N` is `1 + T/(B 2^(sN))` and the term of
+  index `N` is `P/(B 2^(sN))`, which bounds the tail (alternating series, `y ≤ 1`).
+* **One division per function and block** (`enclFraction`): numerator and denominator are
+  truncated to `V + 8` bits (floor/ceiling), one floor division gives `q ≤ a/D ≤ q(1 + 2^(−V−5))`,
+  the tail `|P|/D` comes from a 64-bit quotient, and the enclosure is
+  `[q − t, q + q 2^(−V−5) + t]`.  (The first version divided the exact `≈ 3V`-bit integers twice
+  per function.)
+* **Number of terms** (`sinCosTerms c V`): the first `N` with `∑_{n<N} (2c + ⌊lg((2n+1)(2n+2))⌋)
+  ≥ V`, which certifies `y^(2N)/(2N)! ≤ 2^(−V)` for `y ≤ 2^(−c)` (`cosTerm_sinCosTerms_le`);
+  at `V = 129`: 18, 10, 5, 3, 2, 1 terms for the six blocks.
+* **Joint Ziv loop** (`zivLoopCertified₂`, `roundingPossible₂`): one evaluation of the joint
+  bracket per level; the certificate needs a level where *both* roundings are possible, hence
+  `eventually_isSome_of_not_mem_threshold` (rounding possible at every large level) for each
+  value.  Tiny arguments (either `sinTiny?` or `cosTiny?` answers), zero and the special values
+  are delegated to `sinPrecRound`/`cosPrecRound`.
+* **Width** (`sinCosBracket_spec`): `sinCosEpsW V = 85248 (V + 4) 2^(−V) + 4658 · 2^(−V)`; the
+  factor `V` is the crude doubling bound of the rotation recurrence (`2^K ≤ 2T` for `K` blocks);
+  the true growth is a constant (the product of `cos y_i + sin y_i`).  At `w = 117` the computed
+  brackets were 3 to 70 times narrower than those of `sinBracket`/`cosBracket` on the six
+  arguments tried (`1`, `3`, `5`, `1/1024`, `100`, `−1000`).
+
+Lean notes: facts obtained after a `set x := e` are stated with `e`, and `linarith` does not
+identify the two — `generalize e = x at *` (after collecting the facts that need the literal
+`e`) or an opaque `obtain ⟨ε, hε⟩ : ∃ ε, ε = …` instead; `nlinarith` with a long context timed
+out at `whnf` where `linarith` with one explicit product closed the goal; `Nat.cast_div_le`
+needs its implicit arguments named.
+
+**Timings (2026-11-13, `az_float_sin_cos`, quiet machine, ms per call, median of 3 alternating
+passes over distinct arguments near `x`; `Benchmark/AzFloatSinCos.lean`).**
+
+| bits | `x` | `sin` | `cos` | `sin` + `cos` | `sinCos` | ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 5/7 | 0.188 | 0.184 | 0.372 | 0.150 | 2.5 |
+| 53 | 3 | 0.187 | 0.188 | 0.376 | 0.124 | 3.0 |
+| 53 | 1000 | 0.191 | 0.192 | 0.384 | 0.202 | 1.9 |
+| 113 | 5/7 | 0.277 | 0.276 | 0.554 | 0.201 | 2.8 |
+| 200 | 5/7 | 0.422 | 0.418 | 0.841 | 0.267 | 3.2 |
+| 500 | 5/7 | 0.917 | 0.915 | 1.832 | 0.441 | 4.1 |
+| 1000 | 5/7 | 2.998 | 2.967 | 5.966 | 0.860 | 6.9 |
+| 2000 | 5/7 | 10.67 | 10.63 | 21.30 | 1.897 | 11 |
+| 5000 | 5/7 | 88.7 | 87.8 | 176.5 | 7.32 | 24 |
+| 20000 | 5/7 | 2896 | 2937 | 5833 | 73.1 | 80 |
+| 20000 | 3 | 2901 | 2893 | 5794 | 43.6 | 133 |
+
+(`x = 3` is 1.2–1.7 times faster than `5/7` for `sinCos` at every size and `x = 1000` about the
+same as `5/7` except at 53 bits; the row `2000`/`1000` was 3 times slower for all three
+functions, presumably a second Ziv level for one of the two arguments.)  The `sin`, `cos`
+columns are the **old series method**.  `sinCos` is faster than
+a **single** `sin` or `cos` at every precision measured, from 1.0–1.5 times at 53 bits to 40–65
+times at 20000 bits.
+
+**`sin` and `cos` on the same machinery (2026-11-13, user request; NOT re-timed — the machine was
+busy).**  `cosBracket`, `sinBracket`, `cosApprox`, `sinApprox` are now defined in
+`SinCosBracket.lean` as the components of `sinCosBracket` computed alone (`sinCosReduce` +
+`sinCosTailCos`/`sinCosTailSin`, which skip the doublings the other component needs;
+`cosBracket_eq`, `sinBracket_eq` by `rfl`), with `cosBracket_spec`, `sinBracket_spec`,
+`cosEps`, `sinEps` (= `sinCosEps`), `tendsto_*`, `*_le_one`, `*Approx_spec`,
+`*Approx_isSome_exists` under their old names and statements.  Hence `cosPrecRound`,
+`sinPrecRound` and every client of the two brackets — the rational (`cosRat`, `sinRat`),
+with-period, `π x` families and the Dottie number — changed method with no change to their
+files beyond imports, and no proof broke.  The old series brackets (`cosSeries`, `cosTail`, the
+series `cosBracket`/`sinBracket` and their proofs, ≈ 650 lines) were deleted on 2026-11-13 after
+the re-timing below (user request); `CosBracket.lean`/`SinBracket.lean` keep the shared tools
+(`cosWork`, `enclClamp0`, `enclAbs`, `cosDouble`, `cosTiny?`, `sinTiny?`, the `IsEnclW` toolkit).
+
+**Re-timed 2026-11-13 (`az_float_sin_cos`, quiet machine, same protocol; `sin`, `cos` now on the
+new machinery).**
+
+| bits | `x` | `sin` | `cos` | `sin` + `cos` | `sinCos` | ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 5/7 | 0.161 | 0.160 | 0.322 | 0.167 | 1.92 |
+| 53 | 3 | 0.130 | 0.126 | 0.256 | 0.134 | 1.90 |
+| 53 | 1000 | 0.207 | 0.207 | 0.415 | 0.222 | 1.86 |
+| 113 | 5/7 | 0.213 | 0.211 | 0.425 | 0.219 | 1.93 |
+| 200 | 5/7 | 0.285 | 0.282 | 0.568 | 0.292 | 1.94 |
+| 500 | 5/7 | 0.456 | 0.453 | 0.910 | 0.464 | 1.95 |
+| 1000 | 5/7 | 0.896 | 0.884 | 1.780 | 0.905 | 1.96 |
+| 2000 | 5/7 | 2.034 | 1.988 | 4.022 | 2.058 | 1.95 |
+| 5000 | 5/7 | 7.85 | 7.65 | 15.51 | 7.94 | 1.95 |
+| 20000 | 5/7 | 81.9 | 82.1 | 164.1 | 84.8 | 1.93 |
+| 20000 | 3 | 48.3 | 46.9 | 95.2 | 49.0 | 1.94 |
+
+`sin` alone is 1–4 % and `cos` alone 2–6 % below `sinCos` (the skipped doublings), so `sinCos`
+costs half of the two calls at every size.  Against the series method of the first table:
+`sin`/`cos` 1.15 times faster at 53 bits, 1.5 at 200, 2 at 500, 3.3 at 1000, 5 at 2000, 11 at
+5000, 35 at 20000 (60 at `x = 3`).  The `sinCos` column of this run is 5–15 % above the first
+run (run-to-run variation; the `2000`/`1000` outlier of the first run did not recur: 2.2 ms).  Remaining tuning questions:
+`sinCosBlockBase`; a joint splitting of the two series (shared `P`); `cos y_i = √(1 − sin² y_i)`
+for the small blocks.  `tan` (not done) is the natural client.
+Tests: `Tests/SinCos` (reference values of `Tests/Sin` and `Tests/Cos`, agreement with the
+separate functions over all octants, both signs, several modes and precisions up to 2000 bits).
 
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 

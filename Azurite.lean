@@ -185,6 +185,8 @@ import Azurite.AzFloat.Equiv.Sci
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Sin
 import Azurite.AzFloat.Equiv.SinBracket
+import Azurite.AzFloat.Equiv.SinCos
+import Azurite.AzFloat.Equiv.SinCosBracket
 import Azurite.AzFloat.Equiv.SinPi
 import Azurite.AzFloat.Equiv.SinRat
 import Azurite.AzFloat.Equiv.SinRatBracket
@@ -197,6 +199,7 @@ import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
+import Azurite.AzFloat.Equiv.ZivPair
 import Azurite.AzFloat.EulerGamma
 import Azurite.AzFloat.Exp
 import Azurite.AzFloat.ExpApprox
@@ -290,6 +293,8 @@ import Azurite.AzFloat.Sci
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinBracket
+import Azurite.AzFloat.SinCos
+import Azurite.AzFloat.SinCosBracket
 import Azurite.AzFloat.SinPi
 import Azurite.AzFloat.SinRat
 import Azurite.AzFloat.SinRatBracket
@@ -302,6 +307,7 @@ import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.Ziv
+import Azurite.AzFloat.ZivPair
 import Azurite.AzFormula.Atom
 import Azurite.AzFormula.Basic
 import Azurite.AzFormula.DegFormula
@@ -353,6 +359,7 @@ import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzInt.Equiv.ShiftRight
 import Azurite.AzInt.Equiv.ShiftRightRound
 import Azurite.AzInt.Equiv.SignedSplit
+import Azurite.AzInt.Equiv.SinCosSplit
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.SumProduct
@@ -375,6 +382,7 @@ import Azurite.AzInt.ShiftLeft
 import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.ShiftRightRound
 import Azurite.AzInt.SignedSplit
+import Azurite.AzInt.SinCosSplit
 import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
 import Azurite.AzInt.SumProduct

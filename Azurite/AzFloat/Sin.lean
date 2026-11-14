@@ -7,7 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.SinBracket
+import Azurite.AzFloat.Equiv.SinCosBracket
 
 /-!
 ## The sine
@@ -15,9 +15,10 @@ import Azurite.AzFloat.Equiv.SinBracket
 `sinPrecRound x p mode` is `sin x` correctly rounded to precision `p` in `mode`, with the
 comparison against the exact value; `sin x` rounds to nearest at the precision of `x`.
 
-A certified Ziv loop (`zivLoopCertified`, no fuel) on `sinApprox` (`AzFloat/SinBracket.lean`:
-the reduction of `cos`, then `sin |x| = cos (r − π/2)` through the tail of the cosine bracket at
-a shifted centre; the ends negated and swapped for `x < 0`).  The loop terminates because
+A certified Ziv loop (`zivLoopCertified`, no fuel) on `sinApprox`
+(`AzFloat/SinCosBracket.lean`: the reduction of `cos`, the sine and the cosine of the reduced
+argument over 8 by Algorithm 4.4 (SinCos) of *Modern Computer Arithmetic*, and three
+double-angle steps; the ends negated and swapped for `x < 0`).  The loop terminates because
 `sin x` is irrational for every nonzero float `x` (`irrational_sin_rat`).
 
 **Extreme arguments.**  Tiny `x` (`|x| < 2^e`, `e ≤ −(max p q + 72)`) never reach the loop:

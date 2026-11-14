@@ -7,7 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.CosBracket
+import Azurite.AzFloat.Equiv.SinCosBracket
 
 /-!
 ## The cosine
@@ -15,10 +15,12 @@ import Azurite.AzFloat.Equiv.CosBracket
 `cosPrecRound x p mode` is `cos x` correctly rounded to precision `p` in `mode`, with the
 comparison against the exact value; `cos x` rounds to nearest at the precision of `x`.
 
-A certified Ziv loop (`zivLoopCertified`, no fuel) on `cosApprox` (`AzFloat/CosBracket.lean`):
-exact argument reduction by `remExact` against the lower end of a bracket of `2π` (the error
-`2k(π − lo)` is bounded and widened out), the alternating Taylor series of `cos (r/8)` in interval
-arithmetic, and three double-angle steps.  The loop terminates because `cos x` is irrational for
+A certified Ziv loop (`zivLoopCertified`, no fuel) on `cosApprox`
+(`AzFloat/SinCosBracket.lean`): exact argument reduction by `remExact` against the lower end of a
+bracket of `2π` (the error `2k(π − lo)` is bounded and widened out), the sine and the cosine of
+the reduced argument over 8 by Algorithm 4.4 (SinCos) of *Modern Computer Arithmetic* (bit
+blocks, binary splitting, addition formulae), and three double-angle steps of the cosine.
+The loop terminates because `cos x` is irrational for
 every nonzero float `x` (`irrational_cos_rat`, from Hermite–Lindemann), so the exact value is never
 a rounding boundary.
 

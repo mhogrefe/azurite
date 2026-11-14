@@ -12,34 +12,19 @@ import Azurite.AzFloat.Rem
 import Azurite.AzFloat.Ziv
 
 /-!
-## The bracket of `cos x`
+## Shared tools of the brackets of `cos x` and `sin x`
 
-`cosBracket x ex w` encloses `cos x` for a finite float `x` of exponent `ex` at Ziv level `w`,
-working at `W = cosWork ex w = w + 12 + max(ex, 0)` bits:
-
-* **Reduction.**  With `[lo, hi]` the bracket of `π` at `W` bits and `y = 2 lo` (a float, so the
-  remainder is exact), `r' = remExact |x| y = |x| − k y ∈ [0, y)`, `k = ⌊|x|/y⌋`.  The true
-  reduction `r = |x| − 2kπ = r' − 2k(π − lo)` lies in `[r' − E, r']` with
-  `E = ⌈|x| (hi − lo)⌉ ≥ 2k(π − lo)` (`k ≤ |x|/(2 lo)`, `lo ≥ 1`), and `cos x = cos r`.
-* **Series.**  `cosSeries m V` encloses `cos m` for `|m| ≤ 1` by the alternating Taylor series in
-  interval arithmetic (`Encl`), `cosTerms V = V/4 + 2` terms beyond the first, the tail bounded by
-  the last term computed (the terms decrease).  Here `m = s/8` with `s = ⌈r'⌉_V` the remainder
-  rounded to the series precision `V = w + 12`: the reduction precision `W` (which grows with the
-  exponent of `x`) is used only for `π` and the exact remainder.
-* **Doubling.**  `cos (r/8)` is widened by the Lipschitz bound `E/8` (`|cos a − cos b| ≤ |a − b|`)
-  to enclose `cos (r/8)`, then `cos (2θ) = 2 cos² θ − 1` three times (`cosDouble`); the first
-  two inputs are nonnegative (`θ < π/2`), the last goes through `|cos (r/2)|` (`enclAbs`).
-
-`cosApprox` is the pair of `Roundable`s for the Ziv loop (`AzFloat/Cos.lean`).
+`cosWork ex w = w + 12 + max(ex, 0)` (the reduction precision at Ziv level `w` for an argument
+of exponent `ex`), `enclClamp0`, `enclAbs`, the double-angle step `cosDouble`
+(`cos 2θ = 2 cos² θ − 1`), and the tiny-argument path `cosTiny?`.  The bracket `cosBracket` is in
+`AzFloat/SinCosBracket.lean` (MCA Algorithm 4.4; until 2026-11-13 it was an interval Taylor
+series of `cos (r/8)` with `O(w)` terms, defined here).
 -/
 
 namespace Azurite.AzFloat
 
 /-- The working precision of `cos` at Ziv level `w` for an argument of exponent `ex`. -/
 def cosWork (ex : AzInt) (w : Nat) : Nat := w + 12 + (if ex.sign then ex.abs.toNat else 0)
-
-/-- The number of series terms beyond the first at precision `W`. -/
-def cosTerms (W : Nat) : Nat := W / 4 + 2
 
 /-- The enclosure with its lower end clamped at `0` (for a value known to be nonnegative). -/
 def enclClamp0 (a : Encl) : Encl := (clampNonneg a.1, a.2)
@@ -50,48 +35,6 @@ def enclAbs (a : Encl) : Encl := (clampNonneg (maxOf a.1 (-a.2)), maxOf a.2 (-a.
 /-- The double-angle step `2[a]² − 1` for a nonnegative enclosure `a` of `cos θ`. -/
 def cosDouble (W : Nat) (a : Encl) : Encl :=
   Encl.sub W (Encl.mul W (Encl.nat 2) (Encl.mul W a a)) (Encl.exact one)
-
-/-- The series loop: `j` further terms from the current index `i`, the current term `t`
-(enclosing `m^{2i}/(2i)!`), the partial sum `S` and the sign flag `pos` (`i` even: the next term
-is subtracted).  Returns the final partial sum and the last term. -/
-def cosSeriesLoop (W : Nat) (u : Encl) : Nat → Nat → Bool → Encl → Encl → Encl × Encl
-  | 0, _, _, S, t => (S, t)
-  | j + 1, i, pos, S, t =>
-    let t' := Encl.div W (Encl.mul W t u) (Encl.nat ((2 * i + 1) * (2 * i + 2)))
-    let S' := if pos then Encl.sub W S t' else Encl.add W S t'
-    cosSeriesLoop W u j (i + 1) (!pos) S' t'
-
-/-- An enclosure of `cos m` for a float `m` with `|m| ≤ 1`: the Taylor series with `cosTerms W`
-terms beyond the first, widened by the last term (which bounds the tail). -/
-def cosSeries (m : AzFloat) (W : Nat) : Encl :=
-  let am := Encl.exact m.abs
-  let u := Encl.mul W am am
-  let St := cosSeriesLoop W u (cosTerms W) 0 true (Encl.exact one) (Encl.exact one)
-  Encl.widen W St.1 St.2
-
-/-- The tail of the cosine bracket: an enclosure of `cos t` for every `t` within `E` of the
-float `s` (`|s| ≤ 8`, `t/8, t/4 ∈ [−π/2, π/2]`), at the series precision `V`: the Taylor series
-of `cos (s/8)`, the Lipschitz widening by `E/8`, and three double-angle steps. -/
-def cosTail (s E : AzFloat) (V : Nat) : AzFloat × AzFloat :=
-  let C := Encl.widen V (cosSeries (s <<< AzInt.ofInt (-3)) V) (Encl.exact (E <<< AzInt.ofInt (-3)))
-  let C2 := cosDouble V (enclClamp0 C)
-  let C4 := cosDouble V (enclClamp0 C2)
-  cosDouble V (enclAbs C4)
-
-/-- The bracket of `cos x` at Ziv level `w` for a finite `x` of exponent `ex`.  Only the bracket
-of `π` and the exact remainder use the reduction precision `W = cosWork ex w`; the remainder is
-then rounded to the series precision `V = w + 12` (the rounding error joins the slack `E₂`), so
-the cost of the series does not grow with the exponent of `x`. -/
-def cosBracket (x : AzFloat) (ex : AzInt) (w : Nat) : AzFloat × AzFloat :=
-  let W := cosWork ex w
-  let V := w + 12
-  let P := piBracket W
-  let y := P.1 <<< AzInt.ofInt 1
-  let r := remExact x.abs y
-  let E := (mulPrecRound x.abs (subPrecRound P.2 P.1 64 .Ceiling).1 64 .Ceiling).1
-  let s := (setPrecRound r V .Ceiling).1
-  let E₂ := (addPrecRound E (one <<< AzInt.ofInt (4 - (V : Int))) 64 .Ceiling).1
-  cosTail s E₂ V
 
 /-- **The tiny-argument path of `cos`** for an argument below `2^e` in magnitude: when
 `e ≤ −(p + 72)`, `−cos x` lies in `(−1, −1 + 2^(2e)]` (from `cos x ≥ 1 − x²/2`), so it is rounded
@@ -107,10 +50,5 @@ def cosTiny? (e : AzInt) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Or
     (roundingPossible (fun P M => setPrecRound (-one) P M) (fun P M => setPrecRound hi P M) p
       (-mode)).map fun r => (-r.1, r.2.swap)
   else none
-
-/-- `cosBracket` as a pair of `Roundable`s for the Ziv loop. -/
-def cosApprox (x : AzFloat) (ex : AzInt) (w : Nat) : Roundable × Roundable :=
-  let b := cosBracket x ex w
-  (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
 
 end Azurite.AzFloat

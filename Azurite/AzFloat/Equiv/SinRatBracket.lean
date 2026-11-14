@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.SinRatBracket
-import Azurite.AzFloat.Equiv.SinBracket
+import Azurite.AzFloat.Equiv.SinCosBracket
 import Azurite.AzFloat.Equiv.PowRatBracket
 import Azurite.AzFloat.Equiv.RatPowRat
 
@@ -21,14 +21,6 @@ import Azurite.AzFloat.Equiv.RatPowRat
 -/
 
 namespace Azurite.AzFloat
-
-/-- `sinEps ex w ≤ 1` from `w = 64` on. -/
-theorem sinEps_le_one (ex : AzInt) {w : ℕ} (hw : 64 ≤ w) : sinEps ex w ≤ 1 := by
-  have hV : 64 ≤ w + 12 := by omega
-  have h1 := cosSeriesEps_le hV
-  have h3 := half_pow_small hV
-  unfold sinEps sinEpsW
-  linarith
 
 /-- The width of `sinRatBracket q w`. -/
 noncomputable def sinRatEps (q : AzRat) (w : ℕ) : ℝ :=
