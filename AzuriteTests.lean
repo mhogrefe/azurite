@@ -94,6 +94,8 @@ import Azurite.AzFloat.Tests.Recip
 import Azurite.AzFloat.Tests.Rem
 import Azurite.AzFloat.Tests.RoundToInteger
 import Azurite.AzFloat.Tests.Rsqrt
+import Azurite.AzFloat.Tests.Sec
+import Azurite.AzFloat.Tests.SecWithPeriod
 import Azurite.AzFloat.Tests.Sin
 import Azurite.AzFloat.Tests.SinCos
 import Azurite.AzFloat.Tests.SinCosPi

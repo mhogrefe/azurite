@@ -182,6 +182,10 @@ import Azurite.AzFloat.Equiv.RoundToInteger
 import Azurite.AzFloat.Equiv.Rounding
 import Azurite.AzFloat.Equiv.Rsqrt
 import Azurite.AzFloat.Equiv.Sci
+import Azurite.AzFloat.Equiv.Sec
+import Azurite.AzFloat.Equiv.SecBracket
+import Azurite.AzFloat.Equiv.SecWithPeriod
+import Azurite.AzFloat.Equiv.SecWithPeriodBracket
 import Azurite.AzFloat.Equiv.Shift
 import Azurite.AzFloat.Equiv.Sin
 import Azurite.AzFloat.Equiv.SinBracket
@@ -304,6 +308,10 @@ import Azurite.AzFloat.RoundScaled
 import Azurite.AzFloat.RoundToInteger
 import Azurite.AzFloat.Rsqrt
 import Azurite.AzFloat.Sci
+import Azurite.AzFloat.Sec
+import Azurite.AzFloat.SecBracket
+import Azurite.AzFloat.SecWithPeriod
+import Azurite.AzFloat.SecWithPeriodBracket
 import Azurite.AzFloat.Shift
 import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinBracket

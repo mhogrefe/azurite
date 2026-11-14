@@ -6532,6 +6532,63 @@ degree of two turns and every third of a degree against the rounded quotient of 
 half-integers (also `≈ 10²⁰`), quarters.  With this the tangent family matches the sine and
 cosine families.  Not done: `cot`/`sec`/`csc`.
 
+## `sec` for floats (DONE 2026-11-14, fuel-free, UNTIMED)
+
+User request: "Let's implement sec for AzFloat."  `AzFloat/SecBracket.lean`, `AzFloat/Sec.lean`,
+Equivs, `Tests/Sec.lean`: `secPrecRound x p mode`, `sec x`; `Spec.sec` (`1 / cos`);
+`secPrecRound_eq_liftVal`.
+
+* `secBracket x ex w = tanOfSinCos (Encl.exact one, cosBracket x ex w) (w + 12)`: the quotient
+  step of the tangent with the exact numerator `1` and the bracket of the cosine **alone**
+  (`cosBracket`, which skips the sine doublings), so two directed divisions (`1 ≥ 0`: lower end
+  `⌊1/b₂⌋`, upper end `⌈1/b₁⌉`), the sign of the cosine, and the rejected placeholder while the
+  cosine bracket contains `0` all come from `tanOfSinCos_spec` with `δ₁ = 0`.  Even function: no
+  sign handling (`negSwapApprox false`).
+* Certificate: `irrational_sec_of_toVal` (`Irrational.inv` of the cosine), width
+  `secEps c ex w` once `cosEps ex w ≤ c/2`, `zivLoopCertified_eq_or_none`.
+* Tiny arguments (`secTiny?`): `sec x ∈ (1, 1 + 2^(2e)]` from `1 − x²/2 ≤ cos x ≤ 1`, the exact
+  end `1` at the open side — `cosTiny?` without its negation.
+* `sec NaN = sec (±∞) = NaN`, `sec 0 = 1`, `p = 0` gives `NaN`.
+
+NOT timed (expected: `cos` + 2 divisions).  Tests: special values, `sec 1` to 59 digits
+(exact-rational reference), the floats nearest `π/2` (`16331239353195370`, as for `tan`) and
+`π`, a sweep against the rounded reciprocal of `cos` at `p + 300` bits, tiny arguments,
+`2^1000`.  The variants `secRat`, `secWithPeriod`, `secPi` followed (next section).
+
+## `secWithPeriod`, `secRatWithPeriod`, `secRat`, `secPi`, `secPiRat` (DONE 2026-11-14, UNTIMED)
+
+User decision (Malachite's documented behaviour for the secant with a period): `u = 0` → `NaN`;
+`x = 0` → `1`; `x/u` an even multiple of `1/2` → exactly `1`, an odd multiple → exactly `−1`;
+an odd multiple of `1/4` is a pole and the result is **exactly `+∞`** ("the cosine is `+0.0` at
+every such point, and the secant is its reciprocal"); an odd multiple of `1/8` → `±√2`.
+`AzFloat/SecWithPeriodBracket.lean`, `AzFloat/SecWithPeriod.lean`, Equivs,
+`Tests/SecWithPeriod.lean`.
+
+* Specification `Spec.secPole θ` = `1 / cos θ`, `⊤` where `cos θ = 0` (it depends on `cos θ`
+  only: `secPole_congr`, so the reduction is that of the cosine, with no sign — unlike
+  `tanPole`, whose pole sign is that of the sine, IEEE's `tanPi`).  `Spec.secWithPeriod`,
+  `Spec.secPi`.  This matches AzFloat's own `cosWithPeriod`, which returns the unsigned `zero`
+  at those points.
+* `secPeriodCore r` (shared by the float and the rational function) by the reduced denominator
+  of the exact reduction (Niven for the cosine): `1` → `1`, `2` → `−1`, `4` → `(infinity true,
+  .eq)`, `3` → `−2`, `6` → `2` (the last two are exact values the Malachite text does not list
+  but which follow from `cos = ∓1/2`), otherwise the loop on
+  `secPeriodApprox r = tanOfSinCos (Encl.exact one, cosPeriodBracket r w) (w + 12)`.  The odd
+  eighths are ordinary irrational values (`±√2`), computed by the loop.
+* Generic lemmas `reciprocal_valid_or_none`, `reciprocal_isSome_exists` for the reciprocal of any
+  family of cosine brackets with widths tending to zero; `secPeriodApprox_*` and `secRatApprox_*`
+  are instances.
+* Also `secRatPrecRound`/`secRat` (`sec q`, no period: `tanOfSinCos` over `cosRatBracket`,
+  `secTiny?` at `ratExpBound q`; `secRatPrecRound_eq = roundVal p mode (Spec.sec q)`), and the
+  period-`2` instances `secPi`, `secPiRat`.
+
+NOT timed.  Tests: all the listed special cases with both signs and several modes, `√2` to 59
+digits at `45°`, every whole degree of two turns and every third of a degree against the rounded
+reciprocal of the cosine at `p + 300` bits, tiny and huge arguments, `secRat` against the float
+`sec`, `secPi` at integers and half-integers (also `≈ 10²⁰`).  (Test note: for a tiny argument the
+reciprocal-of-rounded-cosine reference is itself wrong — the 353-bit cosine rounds to exactly
+`1` — so those cases are checked directly.)  Not done: `csc`, `cot`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
