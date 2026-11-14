@@ -187,6 +187,8 @@ import Azurite.AzFloat.Equiv.Sin
 import Azurite.AzFloat.Equiv.SinBracket
 import Azurite.AzFloat.Equiv.SinCos
 import Azurite.AzFloat.Equiv.SinCosBracket
+import Azurite.AzFloat.Equiv.SinCosRat
+import Azurite.AzFloat.Equiv.SinCosRatBracket
 import Azurite.AzFloat.Equiv.SinPi
 import Azurite.AzFloat.Equiv.SinRat
 import Azurite.AzFloat.Equiv.SinRatBracket
@@ -295,6 +297,8 @@ import Azurite.AzFloat.Sin
 import Azurite.AzFloat.SinBracket
 import Azurite.AzFloat.SinCos
 import Azurite.AzFloat.SinCosBracket
+import Azurite.AzFloat.SinCosRat
+import Azurite.AzFloat.SinCosRatBracket
 import Azurite.AzFloat.SinPi
 import Azurite.AzFloat.SinRat
 import Azurite.AzFloat.SinRatBracket

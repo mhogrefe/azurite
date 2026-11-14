@@ -15,9 +15,11 @@ import Azurite.AzFloat.PowRatBracket
 
 `cosRatBracket q w` encloses `cos q` for an `AzRat` `q` at Ziv level `w`: with
 `eq = ratExpBound q` (`|q| < 2^(eq − 1)`) and `W = cosWork eq w`, the floats `⌊q⌋_W ≤ q ≤ ⌈q⌉_W`
-are within `2|q| 2^(−W)` of `q`; `cosBracket ⌊q⌋_W eq w` encloses `cos ⌊q⌋_W`, and the Lipschitz
-bound `|cos q − cos ⌊q⌋_W| ≤ ⌈q⌉_W − ⌊q⌋_W ≤ E` (`E` the 64-bit ceiling of the difference)
-widens it to enclose `cos q`.  `cosRatApprox` is the pair of `Roundable`s for the Ziv loop
+are within `2|q| 2^(−W)` of `q`; `cosBracket c eq w` at the one `c` nearer zero (`⌊q⌋_W` for
+`q > 0`, `⌈q⌉_W` for `q < 0`, the centre of `sinRatBracket`, so that `sinCosRatBracket` shares
+it) encloses `cos c`, and the Lipschitz bound `|cos q − cos c| ≤ ⌈q⌉_W − ⌊q⌋_W ≤ E` (`E` the
+64-bit ceiling of the difference) widens it to enclose `cos q`.  `cosRatApprox` is the pair of
+`Roundable`s for the Ziv loop
 (`AzFloat/CosRat.lean`).
 -/
 
@@ -30,7 +32,7 @@ def cosRatBracket (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
   let xlo := (ofAzRatRound q W .Floor).1
   let xhi := (ofAzRatRound q W .Ceiling).1
   let E := (subPrecRound xhi xlo 64 .Ceiling).1
-  Encl.widen W (cosBracket xlo eq w) (Encl.exact E)
+  Encl.widen W (cosBracket (if q.sign then xlo else xhi) eq w) (Encl.exact E)
 
 /-- `cosRatBracket` as a pair of `Roundable`s for the Ziv loop. -/
 def cosRatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=

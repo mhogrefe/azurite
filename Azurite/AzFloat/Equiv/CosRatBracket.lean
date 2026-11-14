@@ -67,8 +67,10 @@ theorem cosRatBracket_spec (q : AzRat) {w : ℕ} (hw : 64 ≤ w) :
     rw [abs_lt] at hq ⊢
     rw [h2e]
     constructor <;> nlinarith [abs_le.mp (le_refl |qv|), neg_abs_le qv, le_abs_self qv]
-  -- the bracket at `⌊q⌋_W`
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := cosBracket_spec hxl hxlabs hw
+  have hxhabs : |xh| < (2 : ℝ) ^ eq.toInt := by
+    rw [abs_lt] at hq ⊢
+    rw [h2e]
+    constructor <;> nlinarith [abs_le.mp (le_refl |qv|), neg_abs_le qv, le_abs_self qv]
   -- the error float
   obtain ⟨Ev, hEv, hEvc⟩ := subCeiling_err hxh hxl 64 (by linarith)
   have h64 : (1 / 2 : ℝ) ^ 64 ≤ 1 / 2 := by norm_num
@@ -79,12 +81,22 @@ theorem cosRatBracket_spec (q : AzRat) {w : ℕ} (hw : 64 ≤ w) :
   have hEvle : Ev ≤ 8 * (2 : ℝ) ^ (eq.toInt - 1) * u := by linarith
   have hE2 : 8 * (2 : ℝ) ^ (eq.toInt - 1) * u = 4 * ((2 : ℝ) ^ eq.toInt * u) := by rw [h2e]; ring
   have hEvs : Ev ≤ 1 / 1024 := by linarith
-  -- Lipschitz
-  have hz : |Real.cos qv - Real.cos xl| ≤ Ev := by
-    refine (Real.abs_cos_sub_cos_le _ _).trans ?_
-    rw [abs_of_nonneg (by linarith)]
-    linarith [hEvc.ge]
-  have hB : IsEnclW (cosBracket (ofAzRatRound q W .Floor).1 eq w) (Real.cos xl) (cosEps eq w) :=
+  -- the centre
+  have hcenter : ∃ cv : ℝ, (if q.sign then (ofAzRatRound q W .Floor).1
+      else (ofAzRatRound q W .Ceiling).1).toVal = some (cv : EReal) ∧
+      |cv| < (2 : ℝ) ^ eq.toInt ∧ |qv - cv| ≤ Ev := by
+    cases q.sign
+    · refine ⟨xh, hxh, hxhabs, ?_⟩
+      rw [abs_of_nonpos (by linarith)]
+      linarith [hEvc.ge]
+    · refine ⟨xl, hxl, hxlabs, ?_⟩
+      rw [abs_of_nonneg (by linarith)]
+      linarith [hEvc.ge]
+  obtain ⟨cv, hc, hcabs, hcd⟩ := hcenter
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := cosBracket_spec hc hcabs hw
+  have hz : |Real.cos qv - Real.cos cv| ≤ Ev := (Real.abs_cos_sub_cos_le _ _).trans hcd
+  have hB : IsEnclW (cosBracket (if q.sign then (ofAzRatRound q W .Floor).1
+      else (ofAzRatRound q W .Ceiling).1) eq w) (Real.cos cv) (cosEps eq w) :=
     ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩
   have hC := hB.widen0 (M := 2) (isEncl0W_exact hEv hEv0) hz
     ((Real.abs_cos_le_one _).trans (by norm_num)) (by linarith) hεle (by norm_num) hW64

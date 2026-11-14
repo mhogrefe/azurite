@@ -6308,6 +6308,32 @@ for the small blocks.  `tan` (not done) is the natural client.
 Tests: `Tests/SinCos` (reference values of `Tests/Sin` and `Tests/Cos`, agreement with the
 separate functions over all octants, both signs, several modes and precisions up to 2000 bits).
 
+## `sinCosRat`: sine and cosine of a rational together (DONE 2026-11-13, fuel-free, UNTIMED)
+
+User request: "Please implement sinCosRat."  `AzFloat/SinCosRatBracket.lean`,
+`AzFloat/SinCosRat.lean`, Equivs, `Tests/SinCosRat.lean`:
+`sinCosRatPrecRound q p mode : (AzFloat × Ordering) × (AzFloat × Ordering)`,
+`sinCosRat q p : AzFloat × AzFloat`; `sinCosRatPrecRound_eq : sinCosRatPrecRound q p mode =
+(sinRatPrecRound q p mode, cosRatPrecRound q p mode)` (every `p`),
+`sinCosRatPrecRound_eq_roundVal`, `sinCosRat_eq`.
+
+* `sinCosRatBracket q w`: one `sinCosBracket c eq w` at the float `c` next to `q` on the side of
+  zero (`⌊q⌋_W` for `q > 0`, `⌈q⌉_W` for `q < 0`; `eq = ratExpBound q`, `W = cosWork eq w`), both
+  components widened by `E ≥ ⌈q⌉_W − ⌊q⌋_W` (Lipschitz).
+* **No new analysis**: `cosRatBracket` was moved from the centre `⌊q⌋_W` to the centre `c` of
+  `sinRatBracket` (its spec re-proved with the centre lemma of the sine), after which the two
+  components of `sinCosRatBracket` *are* `sinRatBracket q w` and `cosRatBracket q w` by `rfl`
+  (through `sinBracket_eq`/`cosBracket_eq`), likewise `sinCosRatApprox` and
+  `sinRatApprox`/`cosRatApprox`; the joint certificate is `exists_isSome₂_of_irrational_threshold`
+  on the two existing specs.
+* Joint loop `zivLoopCertified₂`; `q = 0`, `p = 0` and tiny `q` (either `sinTinyRat?` or
+  `cosTiny?` answers) are delegated to the separate functions.
+
+NOT timed.  Expected from the float table: about half of `sinRat` + `cosRat` (the two
+`ofAzRatRound` conversions are shared as well).  Tests: reference values of `Tests/SinRat` and
+`Tests/CosRat`, agreement with the separate functions over all octants, both signs, several modes,
+precisions up to 2000 bits, a 50-digit denominator, tiny rationals.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
