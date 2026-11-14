@@ -17,10 +17,12 @@ import Azurite.AzFloat.Equiv.SinCosBracket
   `cos 2q = 2/(1 + tan² q) − 1`); `irrational_tan_of_toVal`.
 * `roundingPossible_none_of_neg_one_one`: the dummy bracket `[−1, 1]` is never accepted.
 * `enclDivSignedPos_spec`: the quotient of a signed enclosure by a positive one, with its width.
-* `tanBracket_spec`: `tanBracket x ex w` is the dummy bracket (and then `|cos x| ≤ sinCosEps`) or
-  encloses `tan |x|`, with a width bound for every lower bound `m` of the bracket of `|cos x|`.
-* `tanApprox_valid_or_none`, `tanApprox_spec` (width `tanEps |cos x| ex w` once
-  `sinCosEps ex w ≤ |cos x|/2`), `tendsto_tanEps`, `tanApprox_isSome_exists` (the certificate).
+* `tanOfSinCos_spec`: the quotient step is the dummy bracket (and then `|c| ≤ δ₂`) or encloses
+  `s / c`, with a width bound for every lower bound `m` of the bracket of `|c|`;
+  `tanOfSinCos_width`, `tanOfSinCos_valid_or_none`, `negSwapApprox_of_isEnclW` (shared with the
+  rational tangent).
+* `tanBracket_width` (width `tanEps |cos x| ex w` once `sinCosEps ex w ≤ |cos x|/2`),
+  `tendsto_tanEps`, `tanApprox_valid_or_none`, `tanApprox_isSome_exists` (the certificate).
 * `tanTiny?_eq`: the tiny-argument path.
 -/
 
@@ -201,36 +203,33 @@ theorem eq_zero_of_toVal_eq_zero {x : AzFloat} (h : x.toVal = some ((0 : ℝ) : 
     rw [toVal_finite, Option.some.injEq, EReal.coe_eq_coe_iff] at h
     exact absurd h (finiteVal_ne_zero s e hv)
 
-/-- **`tanBracket`** is the dummy bracket (only when `|cos x| ≤ sinCosEps ex w`) or encloses
-`tan |x|`, with a width bound for every positive lower bound `m` of the bracket of `|cos x|`. -/
-theorem tanBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) {ex : AzInt}
-    (hex : |xv| < (2 : ℝ) ^ ex.toInt) {w : ℕ} (hw : 64 ≤ w) :
-    (tanBracket x ex w = (-one, one) ∧ |Real.cos xv| ≤ sinCosEps ex w) ∨
-      ∃ b1 : ℝ, 0 < b1 ∧ |Real.cos xv| - sinCosEps ex w ≤ b1 ∧ ∀ m : ℝ, 0 < m → m ≤ b1 →
-        IsEnclW (tanBracket x ex w) (Real.tan |xv|)
-          ((sinCosEps ex w + 2 * sinCosEps ex w / m + 8 * (1 / 2 : ℝ) ^ (w + 12)) / m) := by
-  obtain ⟨hS, hC⟩ := sinCosBracket_spec hx hex hw
-  have hδ1 := sinCosEps_le_one ex hw
+/-- **The quotient step**: for enclosures `b = ([s], [c])` with `|s| ≤ 1`, `tanOfSinCos b V` is
+the dummy bracket (only when `|c| ≤ δ₂`) or encloses `s / c`, with a width bound for every
+positive lower bound `m` of the bracket of `|c|`. -/
+theorem tanOfSinCos_spec {b : Encl × Encl} {s c δ₁ δ₂ : ℝ} (hS : IsEnclW b.1 s δ₁)
+    (hC : IsEnclW b.2 c δ₂) (hs : |s| ≤ 1) (hδ1 : δ₁ ≤ 1) {V : ℕ} (hV : 64 ≤ V) :
+    (tanOfSinCos b V = (-one, one) ∧ |c| ≤ δ₂) ∨
+      ∃ b1 : ℝ, 0 < b1 ∧ |c| - δ₂ ≤ b1 ∧ ∀ m : ℝ, 0 < m → m ≤ b1 →
+        IsEnclW (tanOfSinCos b V) (s / c)
+          ((δ₁ + 2 * δ₂ / m + 8 * (1 / 2 : ℝ) ^ V) / m) := by
   obtain ⟨b1, b2, hb1, hb2, hb10, hb1c, hcb2, hbw⟩ := enclAbs_spec hC
   obtain ⟨cl, ch, hcl, hch, hc1, hc2, hc3⟩ := hC
   rcases eq_or_lt_of_le hb10 with h0 | hpos
   · left
-    have hz : (enclAbs (sinCosBracket x ex w).2).1 = zero :=
-      eq_zero_of_toVal_eq_zero (by rw [hb1, ← h0])
+    have hz : (enclAbs b.2).1 = zero := eq_zero_of_toVal_eq_zero (by rw [hb1, ← h0])
     refine ⟨?_, by linarith⟩
-    unfold tanBracket
+    unfold tanOfSinCos
     dsimp only
     rw [hz]
   · right
     refine ⟨b1, hpos, by linarith, fun m hm hmb => ?_⟩
-    have hnz : (enclAbs (sinCosBracket x ex w).2).1 ≠ zero := fun h => by
+    have hnz : (enclAbs b.2).1 ≠ zero := fun h => by
       rw [h, toVal_zero'] at hb1
       have : (0 : ℝ) = b1 := EReal.coe_eq_coe_iff.mp (Option.some.inj hb1)
       linarith
-    have hq := enclDivSignedPos_spec hS hb1 hb2 hm hmb hb1c hcb2 hbw (Real.abs_sin_le_one _) hδ1
-      (W := w + 12) (by omega)
+    have hq := enclDivSignedPos_spec hS hb1 hb2 hm hmb hb1c hcb2 hbw hs hδ1 hV
     -- the sign of the cosine
-    have hnch : (-(sinCosBracket x ex w).2.2).toVal = some ((-ch : ℝ) : EReal) := by
+    have hnch : (-b.2.2).toVal = some ((-ch : ℝ) : EReal) := by
       rw [toVal_neg, hch, Option.map_some, EReal.coe_neg]
     obtain ⟨cv, hcv, -, hcvle, -⟩ := clampNonneg_spec (toVal_maxOf hcl hnch)
     have hcvb : cv = b1 := EReal.coe_eq_coe_iff.mp (Option.some.inj (hcv.symm.trans hb1))
@@ -239,19 +238,15 @@ theorem tanBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERea
       push Not at hcon
       rw [max_eq_right hcon] at hcvle
       linarith
-    have htan : Real.tan |xv| = Real.sin |xv| / Real.cos xv := by
-      rw [Real.tan_eq_sin_div_cos, Real.cos_abs]
-    unfold tanBracket
+    unfold tanOfSinCos
     dsimp only
     split
     · next h => exact absurd h hnz
     split_ifs with hneg
     · have hchn : ch < 0 := (toVal_sign_of_isNegative hch).1 hneg
-      have hcos : Real.cos xv < 0 := lt_of_le_of_lt hc2 hchn
+      have hcos : c < 0 := lt_of_le_of_lt hc2 hchn
       obtain ⟨lo, hi, hlo, hhi, h1, h2, h3⟩ := hq
-      rw [abs_of_neg hcos] at h1 h2
-      have e : Real.sin |xv| / -Real.cos xv = -Real.tan |xv| := by rw [htan, div_neg]
-      rw [e] at h1 h2
+      rw [abs_of_neg hcos, div_neg] at h1 h2
       refine ⟨-hi, -lo, ?_, ?_, by linarith, by linarith, by linarith⟩
       · show (-(enclDivSignedPos _ _ _).2).toVal = _
         rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
@@ -262,9 +257,75 @@ theorem tanBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ERea
         rcases lt_max_iff.mp hmax with h | h
         · exact h
         · linarith
-      have hcos : 0 < Real.cos xv := lt_of_lt_of_le hclp hc1
-      rw [abs_of_pos hcos, ← htan] at hq
+      have hcos : 0 < c := lt_of_lt_of_le hclp hc1
+      rw [abs_of_pos hcos] at hq
       exact hq
+
+/-- The width of the quotient step once `δ₂ ≤ |c| / 2`. -/
+theorem tanOfSinCos_width {b : Encl × Encl} {s c δ₁ δ₂ : ℝ} (hS : IsEnclW b.1 s δ₁)
+    (hC : IsEnclW b.2 c δ₂) (hs : |s| ≤ 1) (hδ1 : δ₁ ≤ 1) {V : ℕ} (hV : 64 ≤ V)
+    (hc0 : 0 < |c|) (hc : δ₂ ≤ |c| / 2) :
+    IsEnclW (tanOfSinCos b V) (s / c)
+      ((δ₁ + 2 * δ₂ / (|c| / 2) + 8 * (1 / 2 : ℝ) ^ V) / (|c| / 2)) := by
+  rcases tanOfSinCos_spec hS hC hs hδ1 hV with ⟨-, h⟩ | ⟨b1, -, hb1, h⟩
+  · linarith
+  · exact h (|c| / 2) (by linarith) (by linarith)
+
+/-- From an enclosure to the `Roundable`s of `negSwapApprox neg`. -/
+theorem negSwapApprox_of_isEnclW (neg : Bool) {b : AzFloat × AzFloat} {v W : ℝ}
+    (h : IsEnclW b v W) :
+    ∃ lv hv : ℝ, Rounds (negSwapApprox neg b).1 lv ∧ Rounds (negSwapApprox neg b).2 hv ∧
+      lv ≤ (if neg then -1 else 1) * v ∧ (if neg then -1 else 1) * v ≤ hv ∧ hv - lv ≤ W := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := h
+  simp only [negSwapApprox]
+  cases neg with
+  | false =>
+    simp only [Bool.false_eq_true, ↓reduceIte, one_mul]
+    have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
+    rw [fval_of_toVal_coe hlo] at hR1
+    have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+    rw [fval_of_toVal_coe hhi] at hR2
+    exact ⟨lo, hi, hR1, hR2, h1, h2, hwid⟩
+  | true =>
+    simp only [↓reduceIte, neg_one_mul]
+    have hnlo : (-b.2).toVal = some ((-hi : ℝ) : EReal) := by
+      rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
+    have hnhi : (-b.1).toVal = some ((-lo : ℝ) : EReal) := by
+      rw [toVal_neg, hlo, Option.map_some, EReal.coe_neg]
+    have hR3 := rounds_setPrecRound (isFinite_of_toVal_coe hnlo)
+    rw [fval_of_toVal_coe hnlo] at hR3
+    have hR4 := rounds_setPrecRound (isFinite_of_toVal_coe hnhi)
+    rw [fval_of_toVal_coe hnhi] at hR4
+    exact ⟨-hi, -lo, hR3, hR4, by linarith, by linarith, by linarith⟩
+
+/-- The dummy bracket is rejected, negated and swapped or not. -/
+theorem roundingPossible_negSwapApprox_dummy (neg : Bool) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    roundingPossible (negSwapApprox neg (-one, one)).1 (negSwapApprox neg (-one, one)).2 p mode
+      = none := by
+  have hnn : (-(-one : AzFloat)).toVal = some ((1 : ℝ) : EReal) := by
+    rw [toVal_neg, toVal_neg_one_float, Option.map_some, ← EReal.coe_neg, neg_neg]
+  simp only [negSwapApprox]
+  cases neg with
+  | false => exact roundingPossible_none_of_neg_one_one toVal_neg_one_float toVal_one' p mode
+  | true => exact roundingPossible_none_of_neg_one_one toVal_neg_one_float hnn p mode
+
+/-- **The quotient step gives a bracket that encloses `± s / c` or is rejected.** -/
+theorem tanOfSinCos_valid_or_none (neg : Bool) {b : Encl × Encl} {s c δ₁ δ₂ : ℝ}
+    (hS : IsEnclW b.1 s δ₁) (hC : IsEnclW b.2 c δ₂) (hs : |s| ≤ 1) (hδ1 : δ₁ ≤ 1) {V : ℕ}
+    (hV : 64 ≤ V) (p : ℕ) [NeZero p] (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (negSwapApprox neg (tanOfSinCos b V)).1 lv ∧
+        Rounds (negSwapApprox neg (tanOfSinCos b V)).2 hv ∧
+        lv ≤ (if neg then -1 else 1) * (s / c) ∧ (if neg then -1 else 1) * (s / c) ≤ hv) ∨
+      roundingPossible (negSwapApprox neg (tanOfSinCos b V)).1
+        (negSwapApprox neg (tanOfSinCos b V)).2 p mode = none := by
+  rcases tanOfSinCos_spec hS hC hs hδ1 hV with ⟨hd, -⟩ | ⟨b1, hb1, -, h⟩
+  · right
+    rw [hd]
+    exact roundingPossible_negSwapApprox_dummy neg p mode
+  · left
+    obtain ⟨lv, hv, hl, hh, h1, h2, -⟩ := negSwapApprox_of_isEnclW neg (h b1 hb1 le_rfl)
+    exact ⟨lv, hv, hl, hh, h1, h2⟩
 
 /-- The width of `tanBracket` once the bracket of `cos x` (width `sinCosEps ex w`) is at most
 half of `c = |cos x|`. -/
@@ -283,42 +344,18 @@ theorem tendsto_tanEps (c : ℝ) (ex : AzInt) :
   simp only [Function.comp, tanEps]
   ring
 
+theorem tan_abs_eq_sin_div_cos (xv : ℝ) : Real.tan |xv| = Real.sin |xv| / Real.cos xv := by
+  rw [Real.tan_eq_sin_div_cos, Real.cos_abs]
+
 /-- **`tanBracket` encloses `tan |x|`** with width at most `tanEps |cos x| ex w`, as soon as
 `sinCosEps ex w ≤ |cos x| / 2`. -/
 theorem tanBracket_width {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) {ex : AzInt}
     (hex : |xv| < (2 : ℝ) ^ ex.toInt) {w : ℕ} (hw : 64 ≤ w) (hc0 : 0 < |Real.cos xv|)
     (hc : sinCosEps ex w ≤ |Real.cos xv| / 2) :
     IsEnclW (tanBracket x ex w) (Real.tan |xv|) (tanEps |Real.cos xv| ex w) := by
-  rcases tanBracket_spec hx hex hw with ⟨-, h⟩ | ⟨b1, -, hb1, h⟩
-  · linarith
-  · exact h (|Real.cos xv| / 2) (by linarith) (by linarith)
-
-/-- From an enclosure by `tanBracket` to the `Roundable`s of `tanApprox neg`. -/
-theorem tanApprox_of_isEnclW (neg : Bool) {x : AzFloat} {ex : AzInt} {w : ℕ} {v W : ℝ}
-    (h : IsEnclW (tanBracket x ex w) v W) :
-    ∃ lv hv : ℝ, Rounds (tanApprox neg x ex w).1 lv ∧ Rounds (tanApprox neg x ex w).2 hv ∧
-      lv ≤ (if neg then -1 else 1) * v ∧ (if neg then -1 else 1) * v ≤ hv ∧ hv - lv ≤ W := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := h
-  simp only [tanApprox]
-  cases neg with
-  | false =>
-    simp only [Bool.false_eq_true, ↓reduceIte, one_mul]
-    have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
-    rw [fval_of_toVal_coe hlo] at hR1
-    have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
-    rw [fval_of_toVal_coe hhi] at hR2
-    exact ⟨lo, hi, hR1, hR2, h1, h2, hwid⟩
-  | true =>
-    simp only [↓reduceIte, neg_one_mul]
-    have hnlo : (-(tanBracket x ex w).2).toVal = some ((-hi : ℝ) : EReal) := by
-      rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
-    have hnhi : (-(tanBracket x ex w).1).toVal = some ((-lo : ℝ) : EReal) := by
-      rw [toVal_neg, hlo, Option.map_some, EReal.coe_neg]
-    have hR3 := rounds_setPrecRound (isFinite_of_toVal_coe hnlo)
-    rw [fval_of_toVal_coe hnlo] at hR3
-    have hR4 := rounds_setPrecRound (isFinite_of_toVal_coe hnhi)
-    rw [fval_of_toVal_coe hnhi] at hR4
-    exact ⟨-hi, -lo, hR3, hR4, by linarith, by linarith, by linarith⟩
+  obtain ⟨hS, hC⟩ := sinCosBracket_spec hx hex hw
+  rw [tan_abs_eq_sin_div_cos]
+  exact tanOfSinCos_width hS hC (Real.abs_sin_le_one _) (sinCosEps_le_one ex hw) (by omega) hc0 hc
 
 /-- At every level `w ≥ 64` the bracket of `tanApprox neg` encloses `± tan |x|` or is rejected
 by `roundingPossible`. -/
@@ -329,17 +366,10 @@ theorem tanApprox_valid_or_none (neg : Bool) {x : AzFloat} {xv : ℝ}
         lv ≤ (if neg then -1 else 1) * Real.tan |xv| ∧
         (if neg then -1 else 1) * Real.tan |xv| ≤ hv) ∨
       roundingPossible (tanApprox neg x ex w).1 (tanApprox neg x ex w).2 p mode = none := by
-  rcases tanBracket_spec hx hex hw with ⟨hd, -⟩ | ⟨b1, hb1, -, h⟩
-  · right
-    have hnn : (-(-one : AzFloat)).toVal = some ((1 : ℝ) : EReal) := by
-      rw [toVal_neg, toVal_neg_one_float, Option.map_some, ← EReal.coe_neg, neg_neg]
-    simp only [tanApprox, hd]
-    cases neg with
-    | false => exact roundingPossible_none_of_neg_one_one toVal_neg_one_float toVal_one' p mode
-    | true => exact roundingPossible_none_of_neg_one_one toVal_neg_one_float hnn p mode
-  · left
-    obtain ⟨lv, hv, hl, hh, h1, h2, -⟩ := tanApprox_of_isEnclW neg (h b1 hb1 le_rfl)
-    exact ⟨lv, hv, hl, hh, h1, h2⟩
+  obtain ⟨hS, hC⟩ := sinCosBracket_spec hx hex hw
+  rw [tan_abs_eq_sin_div_cos]
+  exact tanOfSinCos_valid_or_none neg hS hC (Real.abs_sin_le_one _) (sinCosEps_le_one ex hw)
+    (by omega) p mode
 
 /-- The Ziv certificate for `tan x`, `x` a nonzero finite float of sign `¬ neg`. -/
 theorem tanApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (neg : Bool)
@@ -355,7 +385,7 @@ theorem tanApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (neg 
   refine exists_isSome_of_irrational_threshold p mode (tanApprox neg x ex)
     (v := (if neg then -1 else 1) * Real.tan |xv|) ?_ (tanEps |Real.cos xv| ex)
     (tendsto_tanEps _ ex) (max 64 W₁)
-    (fun w hw => tanApprox_of_isEnclW neg (tanBracket_width hx hex (le_of_max_le_left hw) hc0
+    (fun w hw => negSwapApprox_of_isEnclW neg (tanBracket_width hx hex (le_of_max_le_left hw) hc0
       (hW₁ w (le_of_max_le_right hw)).le)) w₀ hw₀
   rw [← hval]
   exact irrational_tan_of_toVal hx hx0

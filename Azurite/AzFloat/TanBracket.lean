@@ -45,24 +45,31 @@ def enclDivSignedPos (w : Nat) (s b : Encl) : Encl :=
   ((divPrecRound s.1 (if s.1.isNegative then b.1 else b.2) w .Floor).1,
     (divPrecRound s.2 (if s.2.isNegative then b.2 else b.1) w .Ceiling).1)
 
-/-- The bracket of `tan |x|` at Ziv level `w` for a finite `x` of exponent `ex`, or the dummy
-bracket `[−1, 1]` (never accepted by `roundingPossible`) when the bracket of `cos x` contains
-`0`. -/
-def tanBracket (x : AzFloat) (ex : AzInt) (w : Nat) : AzFloat × AzFloat :=
-  let b := sinCosBracket x ex w
+/-- The quotient step of the tangent brackets: from enclosures `b = ([s], [c])` of a sine and a
+cosine to an enclosure of `s / c` at precision `V`, or the dummy bracket `[−1, 1]` (never
+accepted by `roundingPossible`) when `[c]` contains `0`. -/
+def tanOfSinCos (b : Encl × Encl) (V : Nat) : AzFloat × AzFloat :=
   let B := enclAbs b.2
   match B.1 with
   | zero => (-one, one)
   | _ =>
-    let T := enclDivSignedPos (w + 12) b.1 B
+    let T := enclDivSignedPos V b.1 B
     if b.2.2.isNegative then Encl.neg T else T
+
+/-- A bracket as a pair of `Roundable`s, negated and swapped when `neg`. -/
+def negSwapApprox (neg : Bool) (b : AzFloat × AzFloat) : Roundable × Roundable :=
+  if neg then (fun p mode => setPrecRound (-b.2) p mode, fun p mode => setPrecRound (-b.1) p mode)
+  else (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The bracket of `tan |x|` at Ziv level `w` for a finite `x` of exponent `ex`, or the dummy
+bracket `[−1, 1]` when the bracket of `cos x` contains `0`. -/
+def tanBracket (x : AzFloat) (ex : AzInt) (w : Nat) : AzFloat × AzFloat :=
+  tanOfSinCos (sinCosBracket x ex w) (w + 12)
 
 /-- The bracket of `tan x` as a pair of `Roundable`s: that of `tan |x|`, negated and swapped
 when `neg` (`x < 0`). -/
 def tanApprox (neg : Bool) (x : AzFloat) (ex : AzInt) (w : Nat) : Roundable × Roundable :=
-  let b := tanBracket x ex w
-  if neg then (fun p mode => setPrecRound (-b.2) p mode, fun p mode => setPrecRound (-b.1) p mode)
-  else (fun p mode => setPrecRound b.1 p mode, fun p mode => setPrecRound b.2 p mode)
+  negSwapApprox neg (tanBracket x ex w)
 
 /-- **The tiny-argument path of `tan`** for a finite `x` of sign `s`, exponent `e` and precision
 `q` (see the module documentation).  `none` when the argument is not tiny or the test fails. -/

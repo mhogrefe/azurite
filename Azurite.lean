@@ -205,6 +205,12 @@ import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
 import Azurite.AzFloat.Equiv.Tan
 import Azurite.AzFloat.Equiv.TanBracket
+import Azurite.AzFloat.Equiv.TanPi
+import Azurite.AzFloat.Equiv.TanRat
+import Azurite.AzFloat.Equiv.TanRatBracket
+import Azurite.AzFloat.Equiv.TanRatWithPeriod
+import Azurite.AzFloat.Equiv.TanWithPeriod
+import Azurite.AzFloat.Equiv.TanWithPeriodBracket
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Equiv.ZivPair
@@ -321,6 +327,12 @@ import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Sum
 import Azurite.AzFloat.Tan
 import Azurite.AzFloat.TanBracket
+import Azurite.AzFloat.TanPi
+import Azurite.AzFloat.TanRat
+import Azurite.AzFloat.TanRatBracket
+import Azurite.AzFloat.TanRatWithPeriod
+import Azurite.AzFloat.TanWithPeriod
+import Azurite.AzFloat.TanWithPeriodBracket
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.ZivPair
@@ -2370,6 +2382,7 @@ import Azurite.Transcendental.Exp
 import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin
+import Azurite.Transcendental.NivenTan
 import Azurite.Transcendental.Ramanujan
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit

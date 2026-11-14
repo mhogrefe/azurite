@@ -6459,6 +6459,79 @@ float nearest `π/2` (`16331239353195370`, the classical example) and nearest `�
 all octants, signs, modes and precisions against the rounded quotient of `sin` and `cos` at
 `p + 300` bits, tiny arguments (`±2^(−2^30)`), `2^1000`.
 
+## `tanRat`: the tangent of a rational (DONE 2026-11-14, fuel-free, UNTIMED)
+
+User request: "Let's move on to tanRat."  `AzFloat/TanRatBracket.lean`, `AzFloat/TanRat.lean`,
+Equivs, `Tests/TanRat.lean`: `tanRatPrecRound q p mode`, `tanRat q p`;
+`tanRatPrecRound_eq : tanRatPrecRound q p mode = roundVal p mode (Spec.tan q)`.
+
+* **Refactoring of the float tangent first.**  The quotient step was factored out of `tanBracket`
+  as `tanOfSinCos b V` (enclosures of a sine and a cosine in, enclosure of the quotient or the
+  rejected placeholder out) with the generic `tanOfSinCos_spec`, `tanOfSinCos_width`,
+  `tanOfSinCos_valid_or_none`, and the negate-and-swap wrapper as `negSwapApprox` with
+  `negSwapApprox_of_isEnclW`.  `tanBracket x ex w = tanOfSinCos (sinCosBracket x ex w) (w + 12)`;
+  the float theorems are now short corollaries.
+* `tanRatBracket q w = tanOfSinCos (sinCosRatBracket q w) (w + 12)`: `tan` is not Lipschitz, so
+  the rational is not handled by widening a float tangent (as `sinRat`/`cosRat` do) but by
+  dividing the already widened sine and cosine brackets of `sinCosRatBracket` (widths
+  `sinRatEps`, `cosRatEps`).  The certificate is the float one with those widths
+  (`tanRatEps`, threshold from `tendsto_cosRatEps`).
+* Tiny `q` (`tanTinyCore?`, `tanTinyRat?`): `tan |q| ∈ (|q|, |q| + |q|³]` with `|q|` (`AzRat.abs`)
+  given by its rounding procedure — the mirror image of `sinTinyCore?`.
+* `tan 0 = 0`; `p = 0` gives `NaN` for `q ≠ 0`.
+
+NOT timed.  Tests: agreement with the float `tan` at representable arguments, `tan (1/3)` to 59
+digits against an exact-rational Taylor evaluation, `22/7`, `355/113`, `11/7` (next to the pole),
+a sweep against the rounded quotient of `sinCosRat` at `p + 300` bits, a 50-digit denominator,
+`10³⁰`, tiny rationals.  Not done: `tanWithPeriod`, `tanRatWithPeriod`, `tanPi`, `cot`/`sec`/`csc`.
+
+## `tanWithPeriod`, `tanRatWithPeriod`, `tanPi`, `tanPiRat` (DONE 2026-11-14, UNTIMED)
+
+User decision on the poles: "We should follow the behavior of IEEE 754's tanPi."
+`Transcendental/NivenTan.lean`, `AzFloat/TanWithPeriodBracket.lean`, `AzFloat/TanWithPeriod.lean`,
+`AzFloat/TanRatWithPeriod.lean`, `AzFloat/TanPi.lean`, Equivs, three test files:
+`tanWithPeriodPrecRound x u p mode`, `tanWithPeriod x u`; `tanRatWithPeriodPrecRound q u p mode`,
+`tanRatWithPeriod q u p`; `tanPiPrecRound`, `tanPi`, `tanPiRatPrecRound`, `tanPiRat`;
+`tanWithPeriodPrecRound_eq`, `tanRatWithPeriodPrecRound_eq`, `tanPiPrecRound_eq_liftVal`,
+`tanPiRatPrecRound_eq`.
+
+* **Poles.**  IEEE 754-2019 §9.2: `tanPi (n + 1/2)` is `+∞` for an even integer `n` and `−∞` for
+  an odd one (and `tanPi` is odd).  Equivalently: at a pole the result is the infinity with the
+  sign of the sine.  That is the specification `Spec.tanPole θ` (`tan θ` where `cos θ ≠ 0`, else
+  `⊤`/`⊥` by the sign of `sin θ`), with `tanPole_pi_mul_int_add_half` stating IEEE's rule
+  literally; `Spec.tanWithPeriod a u = tanPole (2π a / u)`, `Spec.tanPi a = tanPole (π a)`.  The
+  infinities are returned exactly (`.eq`).  AzFloat has no signed zero, so the zeros of the
+  tangent are the unsigned `0` (IEEE: `±0` by the parity of `n`); no exception flags.
+* **Niven for the tangent** (`irrational_tan_two_pi_mul_rat`): `tan (2πr)` is irrational unless
+  the reduced denominator of `r` is `1, 2` (value `0`), `8` (`±1`) or `4` (pole).  Proof from
+  the cosine: a rational `t = tan (2πr)` makes `cos (4πr) = 2/(1 + t²) − 1` rational, hence in
+  `{−1, −1/2, 0, 1/2, 1}`; `−1` is impossible, `±1/2` force `t² = 3` or `1/3` (`rat_sq_ne_three`
+  from `Nat.Prime.irrational_sqrt`), `0` and `1` put the denominator of `r` among the divisors
+  of `8`.
+* **`tanPeriodCore neg r`** (after the exact reduction to `r ∈ [0, 1)`, shared by the float and
+  the rational function): denominators `1, 2` → `0`; `4` → `infinity (neg != (num = 1))`; `8` →
+  `±1` by the numerator (`1, 5` positive); otherwise `zivLoopCertified` on
+  `tanPeriodApprox neg r = negSwapApprox neg (tanOfSinCos (sinCosPeriodBracket r w) (w + 12))`,
+  correct by `zivLoopCertified_eq_or_none`.  `tanPeriodCore_eq`: it is the rounding of
+  `± tanPole (2πr)`.  The float and rational theorems then only need the reduction
+  `Spec.tanPole_two_pi_div_bool` (oddness and `2π`-periodicity of `tanPole`) and the tiny path.
+* Tiny arguments (`tanPeriodTiny?`): the floats `ylo ≤ y ≤ yhi` of `sinPeriodTinyBracket` and
+  `y < tan y ≤ y + y·2^(2e')`; irrationality from `irrational_tan_two_pi_mul_rat_of_small`
+  (`0 < r < 1/8`).
+* `tanPi`/`tanPiRat`: the period-`2` instances; `Spec.tanWithPeriod_two`.
+
+Lean notes: `split_ifs` also splits the `if neg` of the right-hand side — peel the `dite`s of the
+definition one at a time with `by_cases` + `dite_eq_left/right`; `simp` rewrites `AzNat.ofNat 1`
+to `1` and then no longer matches a hypothesis about `AzNat.ofNat 1` — state the sign
+bookkeeping for an arbitrary decidable `P` (`negIf_top_bot`, `signedPow2_zero_val_bne`).
+
+NOT timed.  Tests: exact values and poles in degrees and turns with both signs, every whole
+degree of two turns and every third of a degree against the rounded quotient of the joint
+`sin`/`cos` at `p + 300` bits, one ulp on either side of `90°`, `tan 1°` to 59 digits (Machin
+`π` + exact-rational Taylor reference), tiny and huge arguments; `tanPi` at integers,
+half-integers (also `≈ 10²⁰`), quarters.  With this the tangent family matches the sine and
+cosine families.  Not done: `cot`/`sec`/`csc`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
