@@ -203,6 +203,8 @@ import Azurite.AzFloat.Equiv.Sqrt
 import Azurite.AzFloat.Equiv.SqrtPiBracket
 import Azurite.AzFloat.Equiv.SqrtRat
 import Azurite.AzFloat.Equiv.Sum
+import Azurite.AzFloat.Equiv.Tan
+import Azurite.AzFloat.Equiv.TanBracket
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Equiv.ZivPair
@@ -317,6 +319,8 @@ import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.SqrtPiBracket
 import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Sum
+import Azurite.AzFloat.Tan
+import Azurite.AzFloat.TanBracket
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.ZivPair

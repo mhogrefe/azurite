@@ -6390,6 +6390,75 @@ float the integers and half-integers (both values exact), for a rational also th
 sixths.  With this the joint family is complete: `sinCos`, `sinCosRat`, `sinCosWithPeriod`,
 `sinCosRatWithPeriod`, `sinCosPi`, `sinCosPiRat`.  NOT timed.
 
+## `tan` for floats (DONE 2026-11-13, fuel-free, TIMED 2026-11-14)
+
+User request: "Please implement tan for AzFloat next!  Look over Brent–Zimmermann and DLMF for
+how to write an efficient implementation.  Maybe it's as simple as calling sinCos and dividing in
+a Ziv loop."  `AzFloat/TanBracket.lean`, `AzFloat/Tan.lean`, Equivs, `Tests/Tan.lean`:
+`tanPrecRound x p mode`, `tan x`; `Spec.tan`; `tanPrecRound_eq_liftVal`.
+
+* **Method: it is that simple.**  MCA has no direct method for `tan`: its Taylor coefficients are
+  the tangent numbers (§4.7.2, no term ratio, so no binary splitting: §4.4), the series has
+  radius `π/2`, and §4.9.1 names `tan` as the client of the simultaneous `sin`/`cos`; the
+  alternative it lists is Newton on `arctan` (§4.2.5/§4.8.5), which needs an `arctan` we do not
+  have and costs several of them.  DLMF §4.19–§4.21 offer nothing cheaper (the Bernoulli-number
+  series 4.19.3, the addition and half-angle formulae; the continued fraction 4.25.1
+  `tan z = z/(1 − z²/(3 − z²/(5 − …)))` converges linearly, `O(w)` terms, like the old series).
+  So `tanBracket` = `sinCosBracket` + one interval division: cost `sin` + 2 divisions
+  (4 in the first version).
+* **Poles.**  A float is never a pole (`cos x` irrational), but at a given working precision the
+  bracket `[cl, ch]` of `cos x` may contain `0`, and then there is no finite enclosure of the
+  quotient.  `tanBracket` returns the placeholder `[−1, 1]` in that case, which
+  `roundingPossible` rejects at every precision (`⌊−1⌋ ≠ ⌊1⌋`,
+  `roundingPossible_none_of_neg_one_one`), and the loop goes on.  New Ziv theorem
+  `zivLoopCertified_eq_or_none` (`Equiv/ZivPair.lean`): the certified loop is correct when every
+  bracket is an enclosure **or is rejected**.  Reusable for any function with poles (`cot`,
+  `sec`, `csc`, `Γ`).
+* **Quotient** (`enclDivSignedPos`): `[sl, sh] / [b₁, b₂]` with `[b₁, b₂] = enclAbs [cl, ch]`,
+  `b₁ > 0`: first version lower end `min(⌊sl/b₁⌋, ⌊sl/b₂⌋)`, upper end
+  `max(⌈sh/b₁⌉, ⌈sh/b₂⌉)` (four divisions, no sign analysis of the sine, which straddles `0`
+  next to a multiple of `π`); since 2026-11-14 two divisions, the divisor of each end chosen by
+  its sign (see the timings); negated when `ch < 0`.  Width `(δ + 2ε/m + 8·2^(−V))/m` for a lower bound `m ≤ b₁` (`enclDivSignedPos_spec`).
+* **Certificate.**  With `c = |cos x| > 0`: once `sinCosEps ex w ≤ c/2` the bracket is not the
+  placeholder and its width is `tanEps c ex w → 0` (`tanBracket_width`, `m = c/2`); the threshold
+  comes from `tendsto_sinCosEps` (it exists, it is not computed).  `irrational_tan_rat` from the
+  cosine: `cos 2q = 2/(1 + tan² q) − 1` (`Real.inv_one_add_tan_sq`).
+* **Tiny arguments** (`tanTiny?`, `e ≤ −(max p q + 72)`): `|x| < tan |x| ≤ |x| + |x|³`
+  (`Real.lt_tan`; `sin a ≤ a`, `cos a ≥ 1 − a²/2`), one `roundingPossible` test with the exact end
+  `|x|` at the open side — the mirror image of `sinTiny?` (there the exact end is the upper one,
+  hence the negation for `x > 0`; here for `x < 0`).
+* Special values: `tan NaN = tan (±∞) = NaN`, `tan 0 = 0`; `p = 0` gives `NaN` for `x ≠ 0`.
+
+**Timings (2026-11-14, `az_float_tan`, quiet machine, ms per call, median of 3 alternating
+passes; `Benchmark/AzFloatTan.lean`).**  `tan4`/`tan2` are fuel-driven replicas of the loop
+(local to the benchmark file, no proofs) with the library quotient (four divisions) and with
+`enclDivSignedPos2` (two divisions, the divisor of each end chosen by the sign of the end); both
+returned the same results as `tanPrecRound` on every argument.
+
+| bits | `x` | `sin` | `tan` | `tan4` | `tan2` | `tan2`/`tan4` |
+|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 5/7 | 0.148 | 0.158 | 0.157 | 0.154 | 97.5 % |
+| 113 | 5/7 | 0.192 | 0.205 | 0.206 | 0.202 | 98.3 % |
+| 200 | 5/7 | 0.260 | 0.279 | 0.280 | 0.299 | 106.6 % |
+| 500 | 5/7 | 0.424 | 0.448 | 0.453 | 0.439 | 96.9 % |
+| 1000 | 5/7 | 0.842 | 0.881 | 0.881 | 0.861 | 97.6 % |
+| 2000 | 5/7 | 1.893 | 1.997 | 1.989 | 1.952 | 98.1 % |
+| 5000 | 5/7 | 7.14 | 7.51 | 7.49 | 7.37 | 98.4 % |
+| 20000 | 5/7 | 72.4 | 76.4 | 76.5 | 74.9 | 97.8 % |
+
+Over the 24 rows (also `x = 3`, `1000`): `tan` is 2–11 % above `sin` (typically 5–6 %), and the
+two-division quotient is at 92.9–106.6 % of the four-division one, median 98 %, below 100 % in 21
+rows: a gain of about 2 %, i.e. it removes roughly a third of the overhead of `tan` over `sin`,
+close to the run-to-run noise of a single row.  **Adopted 2026-11-14** (user decision):
+`enclDivSignedPos` is now the two-division version (`enclDivSignedPos_spec` re-proved by the
+sign cases, same statement); the four-division one survives as `enclDivSignedPos4` in the
+benchmark file, where the columns keep their meaning (`tan` = `tan2` = library; not re-run
+after the switch).  The larger cost near a pole is the extra Ziv levels, not the quotient.
+Not done: `tanRat`, `tanWithPeriod`, `tanPi`, `cot`/`sec`/`csc`.  Tests: special values, `tan 1` to 59 digits, the 53-bit
+float nearest `π/2` (`16331239353195370`, the classical example) and nearest `π`, a sweep over
+all octants, signs, modes and precisions against the rounded quotient of `sin` and `cos` at
+`p + 300` bits, tiny arguments (`±2^(−2^30)`), `2^1000`.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is

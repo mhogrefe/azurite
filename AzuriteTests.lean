@@ -107,6 +107,7 @@ import Azurite.AzFloat.Tests.SinWithPeriod
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum
+import Azurite.AzFloat.Tests.Tan
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzInt.Tests.SignedSplit
 import Azurite.AzNat.Tests.AtanhSplit

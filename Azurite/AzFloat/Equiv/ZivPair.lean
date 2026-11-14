@@ -19,6 +19,8 @@ import Azurite.AzFloat.Equiv.Ziv
   tends to zero, `roundingPossible` answers at **every** sufficiently large level `w₀ · 2^f`
   (the form needed to find a common level for two values), and
   `exists_isSome₂_of_irrational_threshold`: the joint certificate for two irrational values.
+* `zivLoopCertified_eq_or_none`: the single-value loop is correct when every bracket either
+  encloses the value or is rejected by `roundingPossible` (placeholders next to a pole).
 -/
 
 namespace Azurite.AzFloat
@@ -164,5 +166,56 @@ theorem exists_isSome₂_of_irrational_threshold (p : ℕ) [NeZero p] (mode : Ro
     hv₂.ne_zero (not_mem_floatSet_of_irrational p hv₂) ε₂ hε₂ W₀ happrox₂ w₀ hw₀
   exact ⟨max F₁ F₂, roundingPossible₂_isSome (hF₁ _ (le_max_left _ _))
     (hF₂ _ (le_max_right _ _))⟩
+
+/-! ### Brackets that are valid or rejected -/
+
+/-- The certified loop returns the rounding of the exact value when, from `w₀` on, every bracket
+either encloses the value **or is rejected by `roundingPossible`** (a placeholder returned where
+no enclosure is available yet, e.g. next to a pole). -/
+theorem zivLoopCertified_go_eq_or_none (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (w₀ : ℕ)
+    (happrox : ∀ w, w₀ ≤ w → (∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv) ∨ roundingPossible (approx w).1 (approx w).2 p mode = none)
+    (hw₀ : 0 < w₀)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    ∀ (n f : ℕ) (hf : ∀ g < f,
+        (roundingPossible (approx (w₀ * 2 ^ g)).1 (approx (w₀ * 2 ^ g)).2 p mode).isSome = false),
+      Nat.find h - f = n →
+      zivLoopCertified.go approx p mode w₀ h f hf = roundVal p mode (some (v : EReal))
+  | n, f, hf, hn => by
+    have hw : w₀ ≤ w₀ * 2 ^ f := Nat.le_mul_of_pos_right _ (by positivity)
+    rw [zivLoopCertified.go.eq_def]
+    split
+    · rename_i r hr
+      rcases happrox _ hw with ⟨lv, hv, hl, hh, h₁, h₂⟩ | hnone
+      · exact roundingPossible_eq' p mode hl hh h₁ h₂ (Or.inr hvB) hr
+      · rw [hnone] at hr
+        exact absurd hr (by simp)
+    · rename_i hr
+      have hlt : f < Nat.find h := by
+        by_contra hcon
+        push Not at hcon
+        have hspec := Nat.find_spec h
+        rcases Nat.lt_or_eq_of_le hcon with hlt' | heq
+        · rw [hf _ hlt'] at hspec; exact Bool.false_ne_true hspec
+        · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
+      cases n with
+      | zero => omega
+      | succ m =>
+        exact zivLoopCertified_go_eq_or_none p mode approx v hvB w₀ happrox hw₀ h m (f + 1) _
+          (by omega)
+
+/-- **The certified Ziv loop with brackets that are valid or rejected.** -/
+theorem zivLoopCertified_eq_or_none (p : ℕ) [NeZero p] (mode : RoundingMode)
+    (approx : Nat → Roundable × Roundable) (v : ℝ)
+    (hvB : ((v : ℝ) : EReal) ∉ floatSet (p + 1)) (w₀ : ℕ) (hw₀ : 0 < w₀)
+    (happrox : ∀ w, w₀ ≤ w → (∃ lv hv : ℝ, Rounds (approx w).1 lv ∧ Rounds (approx w).2 hv ∧
+      lv ≤ v ∧ v ≤ hv) ∨ roundingPossible (approx w).1 (approx w).2 p mode = none)
+    (h : ∃ f : Nat,
+      (roundingPossible (approx (w₀ * 2 ^ f)).1 (approx (w₀ * 2 ^ f)).2 p mode).isSome = true) :
+    zivLoopCertified approx p mode w₀ h = roundVal p mode (some (v : EReal)) :=
+  zivLoopCertified_go_eq_or_none p mode approx v hvB w₀ happrox hw₀ h _ 0 _ rfl
 
 end Azurite.AzFloat
