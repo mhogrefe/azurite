@@ -15,8 +15,9 @@ import Azurite.AzFloat.Equiv.RatPowRat
 /-!
 # Equivalence: sign, irrationality and the tiny-argument path of `sin x`
 
-`sin_eq_sign_mul_sin_abs`, `irrational_sin_of_toVal`, `sinTiny?_eq`, `finiteVal_neg_iff`,
-`sin_eq_of_neg_iff`.  The bracket itself (`sinBracket_spec`) is in `Equiv/SinCosBracket.lean`.
+`sin_eq_sign_mul_sin_abs`, `irrational_sin_of_toVal`, `sinTiny?_eq_of`, `sinTiny?_eq`,
+`finiteVal_neg_iff`, `sin_eq_of_neg_iff`.  The bracket itself (`sinBracket_spec`) is in
+`Equiv/SinCosBracket.lean`.
 -/
 
 namespace Azurite.AzFloat
@@ -39,11 +40,13 @@ theorem irrational_sin_of_toVal {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (x
   rw [hq]
   exact irrational_sin_rat hq0
 
-/-- The tiny-argument path answers with the rounding of `sin x`. -/
-theorem sinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
-    [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
+/-- The tiny-argument test of `sinTiny?` answers with the rounding of `f x` for every odd `f`
+with `a − a³ ≤ f a < a` for `a > 0` (the sine, the arctangent). -/
+theorem sinTiny?_eq_of {f : ℝ → ℝ} (hodd : ∀ a, f (-a) = -f a) (hfl : ∀ a, 0 < a → f a < a)
+    (hfg : ∀ a, 0 < a → a - a ^ 3 ≤ f a) {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat}
+    (hv : FiniteValid q m) (p : ℕ) [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
     (h : sinTiny? s (finite s e q m hv) e q p mode = some r) :
-    r = roundVal p mode (some ((Real.sin (finiteVal s e m) : ℝ) : EReal)) := by
+    r = roundVal p mode (some ((f (finiteVal s e m) : ℝ) : EReal)) := by
   unfold sinTiny? at h
   dsimp only at h
   set w := max p q + zivGuardBits with hw
@@ -69,8 +72,8 @@ theorem sinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
   rw [fval_of_toVal_coe hnx] at hR1
   have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
   rw [fval_of_toVal_coe hhi] at hR2
-  have hs1 := Real.sin_lt ha0
-  have hs2 := Real.sin_gt_sub_cube ha0
+  have hs1 := hfl a ha0
+  have hs2 := hfg a ha0
   have hcube : a ^ 3 ≤ a * t * t := by
     have h1 : a * a ≤ t * t := mul_le_mul hlt.le hlt.le ha0.le ht0.le
     nlinarith
@@ -83,10 +86,10 @@ theorem sinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
     obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
     have hpos : 0 < xv := hsgn.mp rfl
     have hax : a = xv := abs_of_pos hpos
-    have hr := roundingPossible_eq' p (-mode) (v := -Real.sin a) hR1 hR2 (by linarith)
+    have hr := roundingPossible_eq' p (-mode) (v := -f a) hR1 hR2 (by linarith)
       (by linarith) (Or.inl fun hEq => absurd hEq (by linarith)) hr'
     rw [hr, ← hax]
-    have hneg := roundVal_neg p mode (-Real.sin a)
+    have hneg := roundVal_neg p mode (-f a)
     rw [neg_neg] at hneg
     exact hneg.symm
   | false =>
@@ -97,9 +100,20 @@ theorem sinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
       · exact h'
       · exact absurd (hsgn.mpr h') (by simp)
     have hax : xv = -a := by rw [ha, abs_of_neg hneg, neg_neg]
-    have hr := roundingPossible_eq' p mode (v := -Real.sin a) hR1 hR2 (by linarith)
+    have hr := roundingPossible_eq' p mode (v := -f a) hR1 hR2 (by linarith)
       (by linarith) (Or.inl fun hEq => absurd hEq (by linarith)) h
-    rw [hr, hax, Real.sin_neg]
+    rw [hr, hax, hodd]
+
+/-- The tiny-argument path answers with the rounding of `sin x`. -/
+theorem sinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
+    (h : sinTiny? s (finite s e q m hv) e q p mode = some r) :
+    r = roundVal p mode (some ((Real.sin (finiteVal s e m) : ℝ) : EReal)) :=
+  sinTiny?_eq_of Real.sin_neg (fun _ ha => Real.sin_lt ha)
+    (fun a ha => by
+      have h1 := Real.sin_gt_sub_cube ha
+      have h2 : 0 < a ^ 3 := by positivity
+      linarith) hv p mode h
 
 /-- `!s` is the sign bit of a negative float. -/
 theorem finiteVal_neg_iff (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : FiniteValid q m) :

@@ -185,7 +185,38 @@ Each item: `Azurite.lean` and `AzuriteTests.lean` imports (sorted), `docs/module
   level 1 in all far cases).  Lean notes: `#guard` evaluates compiled code (the interpreter), not kernel
   reduction — a hang in a `#guard` is a runtime problem; the earlier `decide`-needs-structural-recursion
   rule is about kernel evaluation.  Tests include the exponent-`±10⁹` far cases in both directions and a
-  sum `2^-80/3` above/below the one-bit midpoint.  NOT timed (pause rule).  `HAdd`/`HSub` instances (user
+  sum `2^-80/3` above/below the one-bit midpoint.
+**Timings (2026-11-15, `az_float_atan`, ms per call, median of 3 alternating passes;
+`Benchmark/AzFloatAtan.lean`).**  `brkt` = one `atanBracket` at `w = P + 64`; `low` = the levels
+of `atanLoop` below the top one (`|x| < 1` only).
+
+| bits | x | `sin` | `ln` | `atan` | `brkt` | `low` | atan/sin | atan/ln |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 1/1000 | 0.101 | 0.067 | 0.191 | 0.189 | 0.087 | 1.88 | 2.84 |
+| 53 | 5/7 | 0.136 | 0.080 | 0.384 | 0.415 | 0.252 | 2.81 | 4.77 |
+| 53 | 3 | 0.114 | 0.082 | 0.404 | 0.415 | – | 3.53 | 4.88 |
+| 53 | 1000 | 0.212 | 0.093 | 0.264 | 0.234 | – | 1.24 | 2.83 |
+| 200 | 5/7 | 0.257 | 0.146 | 0.594 | 0.592 | 0.372 | 2.30 | 4.06 |
+| 200 | 3 | 0.208 | 0.142 | 0.613 | 0.622 | – | 2.93 | 4.29 |
+| 1000 | 1/1000 | 0.600 | 0.551 | 1.031 | 1.055 | 0.401 | 1.71 | 1.86 |
+| 1000 | 5/7 | 0.786 | 0.542 | 1.308 | 1.346 | 0.664 | 1.66 | 2.41 |
+| 1000 | 3 | 0.613 | 0.579 | 1.417 | 1.426 | – | 2.31 | 2.44 |
+| 1000 | 1000 | 0.855 | 0.601 | 1.040 | 1.023 | – | 1.21 | 1.72 |
+| 5000 | 5/7 | 7.50 | 5.44 | 7.83 | 7.48 | 2.12 | 1.04 | 1.44 |
+| 5000 | 3 | 4.20 | 5.18 | 8.43 | 8.45 | – | 2.00 | 1.62 |
+| 20000 | 1/1000 | 61.0 | 49.2 | 54.6 | 54.0 | 10.1 | 0.89 | 1.11 |
+| 20000 | 5/7 | 72.0 | 50.1 | 63.7 | 64.5 | 12.3 | 0.88 | 1.27 |
+| 20000 | 3 | 46.6 | 56.1 | 82.5 | 83.0 | – | 1.76 | 1.47 |
+| 20000 | 1000 | 75.3 | 49.3 | 70.3 | 71.5 | – | 0.93 | 1.42 |
+
+One bracket suffices everywhere (`atan` = `brkt`).  At large precision `atan` costs about one
+`sin` (0.9–1.05 × for `|x| < 1`) and 1.1–1.5 × `ln`; the lower levels are under 20 % there, and
+`|x| ≥ 1` pays `piBracket` (13 ms at 20000 bits) and two divisions on top.  At small precision
+it is 2–3.5 × `sin` and 3–5 × `ln`, and the lower levels are 45–65 % of a bracket (0.25 of
+0.38 ms at 53 bits for `5/7`): each of the ≈ 4 levels below the top works at
+`K + lg K + 64` bits, so the 64 guard bits and the per-level overhead dominate.  Candidates:
+fewer, cheaper low levels (a `UInt64`/table seed of ≈ 20 bits, smaller guard at the low
+levels), order five, and the skipping of levels for small `t`.  `HAdd`/`HSub` instances (user
   decision): nearest at the float's precision, `1` for a special float (`ratOpPrecision`), consistent with
   `combinedPrecision` and with Malachite, although `zero + 1/3 = 1/4` is a little awkward.
 - 2026-10-05: **`AzFloat × AzRat`, `AzFloat / AzRat`, `AzRat / AzFloat`** (`MulRat.lean`, `DivRat.lean`, Equiv,
@@ -6667,7 +6698,7 @@ in the library: `tan` — IEEE `tanPi`; `sec` — always `+∞`; `csc` — the s
 `cot` — the sign of the argument times the sign of the cosine.  The six trigonometric functions
 are complete.
 
-## Catalan's constant `G` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Catalan's constant `G` (DONE 2026-11-15, fuel-free, TIMED 2026-11-15)
 
 User request ("let's implement Catalan's constant", with OpenAI's 2026 irrationality proof).
 Files: `Transcendental/Catalan.lean` (theory), `Transcendental/CatalanIrrational.lean` (bridge),
@@ -6815,3 +6846,143 @@ is caught by `cosTiny?`/`sinPeriodTiny?` first, so `|E|` stays near the precisio
 benchmarked): `cos` and `sin` of `3·2^(2^28)` with period `u` ∈ {3, 7, 360, 2^64 − 1} together
 26–52 ms per `u`, at 53 bits.  Tests: `Tests/CosWithPeriod.lean`, `Tests/SinWithPeriod.lean`
 (huge `x` against the equivalent small residue).
+
+**Timings (2026-11-15, `az_float_catalan`, ms per call, median of 3 passes;
+`Benchmark/AzFloatCatalan.lean`).**  Pieces of one bracket at `w = P + 64`: `splitS`/`splitA`
+the two binary splittings, `serBr` the two `seriesBracket`s, `sqrt3` the two roundings of `√3`,
+`piBr` = `piBracket`; `pi P` and `eulerGamma P` for reference.
+
+| bits | `G` | `splitS` | `splitA` | `serBr` | `sqrt3` | `piBr` | `pi` | `γ` |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 0.088 | 0.016 | 0.022 | 0.009 | 0.010 | 0.019 | 0.018 | 0.267 |
+| 200 | 0.162 | 0.042 | 0.051 | 0.013 | 0.012 | 0.029 | 0.029 | 0.639 |
+| 1000 | 0.808 | 0.320 | 0.274 | 0.050 | 0.027 | 0.119 | 0.120 | 5.66 |
+| 5000 | 10.77 | 5.59 | 3.45 | 0.348 | 0.158 | 1.13 | 1.13 | 82.1 |
+| 20000 | 117.1 | 65.1 | 36.1 | 2.74 | 1.10 | 12.5 | 12.4 | 777.6 |
+
+One bracket suffices at every size.  `G` costs 5–9 × `π` and is 3–7 × faster than `γ`.  The two
+splittings are 77 % (1000 bits) to 86 % (20000 bits) of the time, `S` (ratios with `(2k+1)²` and
+the central binomial) nearly twice `A` at 20000 bits; at 53 bits the pieces sum to 0.076 of the
+0.088 ms.  Candidates if it ever matters: a faster-converging formula for `G` (fewer, cheaper
+terms), removing common factors in the splitting of `S`.
+
+## Arctangent `atan` (DONE 2026-11-15, fuel-free, TIMED 2026-11-15)
+
+First of the inverse trigonometric functions (user request; `asin`, `acos`, `atan2` to follow on
+the same core).  Own algorithm from first principles — no new series, no new splitting engine:
+the arctangent is obtained from the existing sine/cosine machinery by a **certified Newton-like
+iteration of order three** on `tan y = t`.
+
+* **Step** (`atanStep`): for `0 ≤ t ≤ 1` and a fixed-point `0 ≤ y ≤ arctan t`,
+  `arctan t = y + arctan δ` with `δ = tan (arctan t − y) = (t cos y − sin y)/(cos y + t sin y)`
+  (`arctan_sub_eq_arctan_div`) and `δ − δ³/3 ≤ arctan δ ≤ δ`.  `sin y`, `cos y` are the
+  enclosures of `sinCosFix` (MCA Alg. 4.4); the result `[y + δ_lo − δ_hi³/3, y + δ_hi]` is an
+  enclosure whatever `y` is, and has width `δ³/3 + 2^(−K−40)`.
+* **Levels** (`atanLoop`): level `K` (width `≤ (3/4) 2^(−K)`, `atanLoop_spec`) takes `y` from the
+  lower end of level `⌈K/3⌉` truncated to `⌈K/3⌉ + 3` bits and works at `K + lg K + 64` bits;
+  levels `K ≤ 1` are `[t − t³/3, t]`.  Structural recursion on fuel `K` (kernel-friendly).  The
+  cost is dominated by one `sinCosFix` at the top precision with a third of the argument bits.
+* **Reduction** (`atanBracket`): `|x| < 1` → `K = w + 8 − ex` (relative accuracy); `|x| ≥ 1` →
+  `π/2 − arctan (1/|x|)`, the loop at the floor of the reciprocal, the upper end widened by the
+  width of the reciprocal (`arctan_sub_arctan_le`).  Width `≤ 2^(−w)` (`atanBracket_spec`).
+* **Function** (`atanPrecRound`, `atan`): `zivLoopCertified`, total by `irrational_arctan_rat`
+  (from `irrational_tan_rat`); tiny arguments by `atanTiny?` = the `sinTiny?` test
+  (`sinTiny?_eq_of`, now generic in an odd `f` with `a − a³ ≤ f a < a`); `±∞ ↦ ±π/2` through
+  `piDiv2PrecRound`.  `atanPrecRound_eq_liftVal` (axioms: the three standard ones).
+
+For the wrappers: `atanLoop t K K` takes an exact float `t ∈ [0, 1]`; an inexact argument is
+handled as in the `|x| ≥ 1` branch (lower end + Lipschitz widening).  Plan: `asin x = arctan
+(x/√(1 − x²))` and `acos x = 2 arctan √((1 − x)/(1 + x))` (not `π/2 − asin`), then `atan2`.
+Possible later optimisations: order five (`+ δ⁵/5`), skipping the low levels for small `t`
+(the base already gives `3 |lg t|` bits).  Tests: `Tests/Atan.lean` (independent 1400-bit
+Python reference).
+**Timings (2026-11-15, `az_float_atan`, ms per call, median of 3 alternating passes;
+`Benchmark/AzFloatAtan.lean`).**  `brkt` = one `atanBracket` at `w = P + 64`; `low` = the levels
+of `atanLoop` below the top one (`|x| < 1` only).
+
+| bits | x | `sin` | `ln` | `atan` | `brkt` | `low` | atan/sin | atan/ln |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 1/1000 | 0.101 | 0.067 | 0.191 | 0.189 | 0.087 | 1.88 | 2.84 |
+| 53 | 5/7 | 0.136 | 0.080 | 0.384 | 0.415 | 0.252 | 2.81 | 4.77 |
+| 53 | 3 | 0.114 | 0.082 | 0.404 | 0.415 | – | 3.53 | 4.88 |
+| 53 | 1000 | 0.212 | 0.093 | 0.264 | 0.234 | – | 1.24 | 2.83 |
+| 200 | 5/7 | 0.257 | 0.146 | 0.594 | 0.592 | 0.372 | 2.30 | 4.06 |
+| 200 | 3 | 0.208 | 0.142 | 0.613 | 0.622 | – | 2.93 | 4.29 |
+| 1000 | 1/1000 | 0.600 | 0.551 | 1.031 | 1.055 | 0.401 | 1.71 | 1.86 |
+| 1000 | 5/7 | 0.786 | 0.542 | 1.308 | 1.346 | 0.664 | 1.66 | 2.41 |
+| 1000 | 3 | 0.613 | 0.579 | 1.417 | 1.426 | – | 2.31 | 2.44 |
+| 1000 | 1000 | 0.855 | 0.601 | 1.040 | 1.023 | – | 1.21 | 1.72 |
+| 5000 | 5/7 | 7.50 | 5.44 | 7.83 | 7.48 | 2.12 | 1.04 | 1.44 |
+| 5000 | 3 | 4.20 | 5.18 | 8.43 | 8.45 | – | 2.00 | 1.62 |
+| 20000 | 1/1000 | 61.0 | 49.2 | 54.6 | 54.0 | 10.1 | 0.89 | 1.11 |
+| 20000 | 5/7 | 72.0 | 50.1 | 63.7 | 64.5 | 12.3 | 0.88 | 1.27 |
+| 20000 | 3 | 46.6 | 56.1 | 82.5 | 83.0 | – | 1.76 | 1.47 |
+| 20000 | 1000 | 75.3 | 49.3 | 70.3 | 71.5 | – | 0.93 | 1.42 |
+
+One bracket suffices everywhere (`atan` = `brkt`).  At large precision `atan` costs about one
+`sin` (0.9–1.05 × for `|x| < 1`) and 1.1–1.5 × `ln`; the lower levels are under 20 % there, and
+`|x| ≥ 1` pays `piBracket` (13 ms at 20000 bits) and two divisions on top.  At small precision
+it is 2–3.5 × `sin` and 3–5 × `ln`, and the lower levels are 45–65 % of a bracket (0.25 of
+0.38 ms at 53 bits for `5/7`): each of the ≈ 4 levels below the top works at
+`K + lg K + 64` bits, so the 64 guard bits and the per-level overhead dominate.  Candidates:
+fewer, cheaper low levels (a `UInt64`/table seed of ≈ 20 bits, smaller guard at the low
+levels), order five, and the skipping of levels for small `t`.
+
+**Tuning of 2026-11-15 (small precision; supersedes the description of the step and the levels
+above).**  Two changes, both proven, `atanPrecRound_eq_liftVal` unchanged:
+
+* **Machine-word seed.**  `atanSeedFix` computes `arctan t` in 62-bit fixed point with `UInt64`
+  arithmetic (Euler's series `(t/D) ∑ (2·4·…·2n)/(3·5·…·(2n+1)) z^n`, `D = 1 + t²`,
+  `z = t²/D ≤ 1/2`; `1/D` by one machine division and two Newton steps), minus `256` units:
+  measured `210`–`335` units of `2^(−62)` below `arctan t`.  It is **unverified**:
+  `atanStepAt` returns a flag (the lower end of the enclosure of `t cos y − sin y` is not
+  negative, which certifies `y ≤ arctan t`), `atanSeeded?` measures the width of the result,
+  and the proven recursion is the fallback (reached in practice only when the seed is `0`,
+  `t < 2^(−54)`).  `atanStepAt_spec`, `atanSeeded?_spec`.
+* **Order five.**  The upper end uses `arctan δ ≤ δ − δ³/3 + δ⁵/5`
+  (`arctan_le_sub_cube_add_fifth`): the width of a step is `δ⁵/5 + 2^(−K−40)`, a level takes
+  `y` from level `⌈K/5⌉`, and one step from the seed gives `K ≤ 256`.
+
+So `K ≤ 256` costs one step (53 and 113 bits), `K ≤ 1280` two.  Timings (`az_float_atan`, ms
+per call, same machine and session as the table above):
+
+| bits | x | `sin` | `ln` | `atan` before | `atan` after | gain | after/sin | after/ln |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 53 | 1/1000 | 0.108 | 0.073 | 0.191 | 0.130 | 1.5 | 1.20 | 1.77 |
+| 53 | 5/7 | 0.143 | 0.084 | 0.384 | 0.167 | 2.3 | 1.16 | 1.98 |
+| 53 | 3 | 0.116 | 0.084 | 0.404 | 0.198 | 2.0 | 1.71 | 2.34 |
+| 53 | 1000 | 0.191 | 0.086 | 0.264 | 0.158 | 1.7 | 0.82 | 1.83 |
+| 113 | 5/7 | 0.190 | 0.113 | 0.449 | 0.186 | 2.4 | 0.97 | 1.64 |
+| 113 | 3 | 0.156 | 0.113 | 0.467 | 0.224 | 2.1 | 1.43 | 1.98 |
+| 200 | 5/7 | 0.263 | 0.146 | 0.594 | 0.339 | 1.75 | 1.29 | 2.31 |
+| 500 | 5/7 | 0.421 | 0.282 | 0.866 | 0.515 | 1.7 | 1.22 | 1.82 |
+| 1000 | 5/7 | 0.836 | 0.578 | 1.308 | 0.829 | 1.6 | 0.99 | 1.43 |
+| 1000 | 3 | 0.611 | 0.575 | 1.417 | 0.998 | 1.4 | 1.63 | 1.73 |
+| 5000 | 5/7 | 7.10 | 5.20 | 7.83 | 5.76 | 1.36 | 0.81 | 1.10 |
+| 20000 | 5/7 | 71.9 | 48.9 | 63.7 | 52.8 | 1.21 | 0.73 | 1.07 |
+| 20000 | 3 | 42.5 | 49.0 | 82.5 | 66.1 | 1.25 | 1.55 | 1.34 |
+
+With the first tuning step alone (seed, order three) 53 bits were the same and 113 bits took
+0.33 ms (`5/7`).  Remaining: 200 bits falls just above the one-step range (`K = 272`); `|x| ≥ 1`
+pays `piBracket` and two divisions (0.03–0.06 ms at small precision); the base could serve
+levels `K ≤ 3 |lg t|` for small `t`.
+
+## Arctangent of a rational `atanRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`atanRatPrecRound q p mode`, `atanRat q p` (`AzFloat/AtanRat.lean`), `atanRatPrecRound_eq`
+(`Equiv/AtanRat.lean`): `arctan q` of an `AzRat`, correctly rounded, never through the float
+nearest `q`.
+
+* `atanWiden r_lo r_hi K V`: `atanLoop` at the float `r_lo`, upper end plus `r_hi − r_lo`
+  (`arctan` is `1`-Lipschitz); `atanWiden_spec`: width `≤ (3/4) 2^(−K) + 14·2^(−V)`.
+* `atanRatBracket`: `|q| ≤ 1` (`num ≤ den`) → the widening at `⌊|q|⌋_V`, `⌈|q|⌉_V`,
+  `K = atanWork (ratExpBound q) w` (relative accuracy), `V = K + 64`; `|q| > 1` →
+  `π/2 − arctan (1/|q|)` with the **rational** reciprocal (a swap of numerator and
+  denominator), `K = w + 8`.  Width `≤ 2^(−w)` (`atanRatBracket_spec`).
+* `zivLoopCertified` on `atanRatApprox`, total by `irrational_arctan_rat`; tiny arguments by
+  `atanTinyRat?` = `sinTinyRat?`, whose proof is now generic (`sinTinyCore?_eq_of`,
+  `sinTinyRat?_eq_of`: any odd `f` with `a − a³ ≤ f a < a`).
+
+Tests: `Tests/AtanRat.lean` (1400-bit reference; `1/3` exact against the float nearest `1/3`:
+same 53-bit significand, opposite side).  NOT timed; expected `atan` plus two rational
+roundings.

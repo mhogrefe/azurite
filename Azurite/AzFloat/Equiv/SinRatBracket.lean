@@ -182,12 +182,15 @@ theorem sinRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q
 
 /-! ### Tiny arguments -/
 
-/-- The tiny-argument test answers with the rounding of `± sin a`. -/
-theorem sinTinyCore?_eq {neg : Bool} {nx : Roundable} {nxHi : AzFloat} {e : AzInt} {w p : ℕ}
+/-- The tiny-argument test answers with the rounding of `± f a`, for any `f` with
+`a − a³ ≤ f a < a` for `a > 0` (the sine, the arctangent). -/
+theorem sinTinyCore?_eq_of {f : ℝ → ℝ} (hfl : ∀ a, 0 < a → f a < a)
+    (hfg : ∀ a, 0 < a → a - a ^ 3 ≤ f a) {neg : Bool} {nx : Roundable} {nxHi : AzFloat}
+    {e : AzInt} {w p : ℕ}
     [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering} {a h : ℝ} (hR : Rounds nx (-a))
     (hH : nxHi.toVal = some (h : EReal)) (hh : -a ≤ h) (ha0 : 0 < a)
     (hlt : a < (2 : ℝ) ^ e.toInt) (hT : sinTinyCore? neg nx nxHi e w p mode = some r) :
-    r = roundVal p mode (some (((if neg then -1 else 1) * Real.sin a : ℝ) : EReal)) := by
+    r = roundVal p mode (some (((if neg then -1 else 1) * f a : ℝ) : EReal)) := by
   unfold sinTinyCore? at hT
   dsimp only at hT
   have : NeZero (w + 8) := ⟨by omega⟩
@@ -198,8 +201,8 @@ theorem sinTinyCore?_eq {neg : Bool} {nx : Roundable} {nxHi : AzFloat} {e : AzIn
   obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs hH hd (w + 8)
   have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
   rw [fval_of_toVal_coe hhi] at hR2
-  have hs1 := Real.sin_lt ha0
-  have hs2 := Real.sin_gt_sub_cube ha0
+  have hs1 := hfl a ha0
+  have hs2 := hfg a ha0
   have hcube : a ^ 3 ≤ 1 * t * t * t := by
     have h1 : a * a ≤ t * t := mul_le_mul hlt.le hlt.le ha0.le ht0.le
     have h2 : a * a * a ≤ t * t * t := mul_le_mul h1 hlt.le ha0.le (by positivity)
@@ -208,7 +211,7 @@ theorem sinTinyCore?_eq {neg : Bool} {nx : Roundable} {nxHi : AzFloat} {e : AzIn
   | true =>
     simp only [↓reduceIte] at hT
     split_ifs at hT with hc
-    have hr := roundingPossible_eq' p mode (v := -Real.sin a) hR hR2 (by linarith)
+    have hr := roundingPossible_eq' p mode (v := -f a) hR hR2 (by linarith)
       (by linarith) (Or.inl fun hEq => absurd hEq (by linarith)) hT
     rw [hr]
     simp only [↓reduceIte, neg_one_mul]
@@ -216,13 +219,25 @@ theorem sinTinyCore?_eq {neg : Bool} {nx : Roundable} {nxHi : AzFloat} {e : AzIn
     simp only [Bool.false_eq_true, ↓reduceIte] at hT
     split_ifs at hT with hc
     obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp hT
-    have hr := roundingPossible_eq' p (-mode) (v := -Real.sin a) hR hR2 (by linarith)
+    have hr := roundingPossible_eq' p (-mode) (v := -f a) hR hR2 (by linarith)
       (by linarith) (Or.inl fun hEq => absurd hEq (by linarith)) hr'
     rw [hr]
     simp only [Bool.false_eq_true, ↓reduceIte, one_mul]
-    have hneg := roundVal_neg p mode (-Real.sin a)
+    have hneg := roundVal_neg p mode (-f a)
     rw [neg_neg] at hneg
     exact hneg.symm
+
+/-- The tiny-argument test answers with the rounding of `± sin a`. -/
+theorem sinTinyCore?_eq {neg : Bool} {nx : Roundable} {nxHi : AzFloat} {e : AzInt} {w p : ℕ}
+    [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering} {a h : ℝ} (hR : Rounds nx (-a))
+    (hH : nxHi.toVal = some (h : EReal)) (hh : -a ≤ h) (ha0 : 0 < a)
+    (hlt : a < (2 : ℝ) ^ e.toInt) (hT : sinTinyCore? neg nx nxHi e w p mode = some r) :
+    r = roundVal p mode (some (((if neg then -1 else 1) * Real.sin a : ℝ) : EReal)) :=
+  sinTinyCore?_eq_of (fun _ ha => Real.sin_lt ha)
+    (fun a ha => by
+      have h1 := Real.sin_gt_sub_cube ha
+      have h2 : 0 < a ^ 3 := by positivity
+      linarith) hR hH hh ha0 hlt hT
 
 /-- `negAbsRat q = −|q|`. -/
 theorem toRat_negAbsRat (q : AzRat) (h0 : q.num ≠ 0) :
@@ -242,10 +257,13 @@ theorem toRat_negAbsRat (q : AzRat) (h0 : q.num ≠ 0) :
     push_cast
     rfl
 
-/-- The tiny-argument path of `sin q` answers with the rounding of `sin q`. -/
-theorem sinTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
+/-- The tiny-argument path of `sin q` answers with the rounding of `f q`, for any odd `f` with
+`a − a³ ≤ f a < a` for `a > 0`. -/
+theorem sinTinyRat?_eq_of {f : ℝ → ℝ} (hodd : ∀ a, f (-a) = -f a)
+    (hfl : ∀ a, 0 < a → f a < a) (hfg : ∀ a, 0 < a → a - a ^ 3 ≤ f a) (q : AzRat)
+    (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
     {r : AzFloat × Ordering} (hT : sinTinyRat? q p mode = some r) :
-    r = roundVal p mode (some ((Real.sin (AzRat.toRat q : ℝ) : ℝ) : EReal)) := by
+    r = roundVal p mode (some ((f (AzRat.toRat q : ℝ) : ℝ) : EReal)) := by
   unfold sinTinyRat? at hT
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
@@ -259,8 +277,29 @@ theorem sinTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode
   rw [hneg] at hc1
   have hlt : |((AzRat.toRat q : ℚ) : ℝ)| < (2 : ℝ) ^ (ratExpBound q).toInt :=
     lt_of_lt_of_le (abs_toRat_lt_two_zpow q) (zpow_le_zpow_right₀ (by norm_num) (by omega))
-  have h := sinTinyCore?_eq hR hc hc1 (abs_pos.mpr hq0) hlt hT
-  rw [h, sin_toRat_eq q h0]
-  cases q.sign <;> simp
+  have h := sinTinyCore?_eq_of hfl hfg hR hc hc1 (abs_pos.mpr hq0) hlt hT
+  rw [h]
+  have hs := toRat_sign_iff q h0
+  cases hsg : q.sign
+  · have hlt0 : (AzRat.toRat q : ℝ) < 0 := by
+      rcases lt_or_gt_of_ne hq0 with h | h
+      · exact h
+      · rw [hs.mpr h] at hsg; cases hsg
+    have e : f |(AzRat.toRat q : ℝ)| = -f (AzRat.toRat q : ℝ) := by
+      rw [abs_of_neg hlt0, hodd]
+    rw [e]
+    simp
+  · rw [abs_of_pos (hs.mp hsg)]
+    simp
+
+/-- The tiny-argument path of `sin q` answers with the rounding of `sin q`. -/
+theorem sinTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} (hT : sinTinyRat? q p mode = some r) :
+    r = roundVal p mode (some ((Real.sin (AzRat.toRat q : ℝ) : ℝ) : EReal)) :=
+  sinTinyRat?_eq_of Real.sin_neg (fun _ ha => Real.sin_lt ha)
+    (fun a ha => by
+      have h1 := Real.sin_gt_sub_cube ha
+      have h2 : 0 < a ^ 3 := by positivity
+      linarith) q h0 hT
 
 end Azurite.AzFloat
