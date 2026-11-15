@@ -17,6 +17,7 @@ import Azurite.AzFloat.Tests.AddMulRat
 import Azurite.AzFloat.Tests.AddSubRat
 import Azurite.AzFloat.Tests.Agm
 import Azurite.AzFloat.Tests.Basic
+import Azurite.AzFloat.Tests.Catalan
 import Azurite.AzFloat.Tests.Cbrt
 import Azurite.AzFloat.Tests.CbrtRat
 import Azurite.AzFloat.Tests.Constants
@@ -127,6 +128,7 @@ import Azurite.AzNat.Tests.DivRound
 import Azurite.AzNat.Tests.ExpSplit
 import Azurite.AzNat.Tests.Gcd
 import Azurite.AzNat.Tests.GetBits
+import Azurite.AzNat.Tests.HypSplit
 import Azurite.AzNat.Tests.IsMultipleOfPow2
 import Azurite.AzNat.Tests.JacobiSym
 import Azurite.AzNat.Tests.LogBase

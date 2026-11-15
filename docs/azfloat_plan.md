@@ -6667,6 +6667,50 @@ in the library: `tan` — IEEE `tanPi`; `sec` — always `+∞`; `csc` — the s
 `cot` — the sign of the argument times the sign of the cosine.  The six trigonometric functions
 are complete.
 
+## Catalan's constant `G` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+User request ("let's implement Catalan's constant", with OpenAI's 2026 irrationality proof).
+Files: `Transcendental/Catalan.lean` (theory), `Transcendental/CatalanIrrational.lean` (bridge),
+`CatalanIrrational/` (vendored proof, 489 files), `AzNat/HypSplit.lean` + `Equiv` + `Tests`,
+`AzFloat/CatalanBracket.lean` + `Equiv`, `AzFloat/Catalan.lean` + `Equiv` + `Tests`.
+
+* **Formula.**  The defining series `∑ (−1)^j/(2j+1)²` converges like `1/j`.  Ramanujan's
+  `G = (π/8) ln(2 + √3) + (3/8) ∑ 1/((2k+1)² C(2k,k))` (ratio `→ 1/4`, 2 bits per term) is proved
+  from first principles in `Transcendental/Catalan.lean` (log-tangent integral, triplication of
+  the tangent, Wallis' integrals — see the file header).  Candidates not taken: the
+  Lupaş/Pilehrood–Guillera series (also `≈ 2`–`3` bits per term, purely rational, but their
+  proofs are Wilf–Zeilberger certificates that would have to be found first).
+* **The logarithm as a series.**  `ln(2 + √3) = 2 artanh(1/√3) = 2√3 ∑ 1/((2k+1) 3^{k+1})`, so
+  `G = √3 · π · (A/4) + 3S/8` with two rational series and no call to `ln`: at low precision the
+  second splitting (`≈ 0.67 w` tiny terms) is cheaper than a logarithm, and the bracket is a
+  product of three positive enclosures.  **Revisit when timing**: at very high precision one
+  AGM logarithm (`lnBracketOf` of `2 + √3`, with a widening for the inexact argument) should
+  beat the second splitting.
+* **Engine** (`AzNat/HypSplit.lean`): the `(P, Q, T)` form for `∑ ∏_{j≤k} p(j)/q(j)`, generic
+  in the leaf, merge `(P₁P₂, Q₁Q₂, T₁Q₂ + P₁T₂)`; `p(k) = k(2k−1)`, `q(k) = 2(2k+1)²` for `S`.
+  `A` uses the existing `(T, B, Q)` engine with leaf `(1, 2l+1, 3)`.  The constant factors `3/8`
+  and `1/4` are folded into the exact fractions.
+* **Bracket** (`catalanBracket w`): `N_S = ⌊(w+10)/2⌋ + 1` (`4^N ≥ 2^(w+11)`, tail of `3S/8`
+  `≤ 2^(−w−12)`), `N_A = 2(⌊(w+10)/3⌋ + 1)` (`9^m ≥ 8^m`, tail of `√3πA/4` `≤ 2^(−w−11)`), floats of
+  `w + 16` bits; lower end all rounded down (truncated positive series are lower bounds, no tail
+  term), upper end all rounded up plus `2^(−w−10)`.  `catalanBracket_spec`: enclosure and width
+  `≤ 2^(−w)` (absolute error tracking through the products, `mulFloor_sub_le`/`mulCeil_sub_le`:
+  lower end within `22u + 2^(−w−11) + 2^(−w−12)`, upper within `52u + 2^(−w−10)`, `u = 2^(−w−16)`).
+* **Loop:** `zivLoopCertified` — the certificate is `irrational_catalanConstant`, the theorem of
+  an OpenAI model (September 2026; Lean formalization in <https://github.com/openai/math>,
+  `lean/OAI/NumberTheory/Catalan/`).  A Lake dependency on that repository was not an option
+  (≈ 54 000 files, ≈ 30 patched dependencies, Lean 4.34.1, another Mathlib commit), so the
+  import closure of the theorem is **vendored** in `Azurite/CatalanIrrational/` (489 of the 981
+  upstream Catalan files, 7 `ZetaFive` files, and the 10-file weak PNT that upstream adapted
+  from PrimeNumberTheoremAnd), with attribution headers; it needs only Mathlib, has no `sorry`,
+  no `native_decide`, and passes the 3-axiom check.  It compiled on Lean 4.35.0 after replacing
+  two deprecated lemma names.  Cost: 6.8 MB of source, first build ≈ 40 min at `-j 4`
+  (≈ 150 CPU-minutes; the slowest files are the `Determinants/Fixed*` certificates, up to 200 s).
+* **Tests:** 1, 2, 3, 53, 100 bits in nearest/floor/ceiling against an independent 2000-bit
+  evaluation (Python integers; Ramanujan's formula and Broadhurst's BBP-type formula agree to
+  2057 bits), precision `0`, decimal strings at 53/200/400 bits; the splitting fractions.
+* **Not done:** timings (ask first); the `ln`-based variant for high precision.
+
 ## Future: Olver's algorithm for recurrence-defined families (PLANNED, 2026-11-04)
 
 Candidate method for functions defined by a three-term recurrence whose wanted solution is
