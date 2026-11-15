@@ -6986,3 +6986,42 @@ nearest `q`.
 Tests: `Tests/AtanRat.lean` (1400-bit reference; `1/3` exact against the float nearest `1/3`:
 same 53-bit significand, opposite side).  NOT timed; expected `atan` plus two rational
 roundings.
+
+## Arctangent with a period `atanWithPeriod` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`atanWithPeriodPrecRound x u p mode = arctan (x) u / (2π)` (`u : UInt64`), after the Malachite
+specification supplied by the user (special cases: `NaN`; `±∞ ↦ ±u/4`; `0 ↦ 0`; `u = 0 ↦ 0`;
+`±1 ↦ ±u/8`; no negative zero here).  `atanWithPeriodPrecRound_eq` against
+`Spec.atanWithPeriod`.
+
+* **Exactness**: `arctan (q) U / (2π)` is irrational for rational `q ∉ {0, ±1}`, `U ≠ 0`
+  (`irrational_arctan_rat_mul_div_two_pi`): a rational value `v` gives `q = tan (2πr)`,
+  `r = v/U`, `|r| < 1/4`, and Niven's theorem for the tangent leaves the denominators
+  `1, 2, 4, 8`, of which only `r ∈ {0, ±1/8}` fit.  So `±u/4`, `±u/8` are returned through
+  `setPrecRound` of the exact float (`turnFraction`), `x = ±1` detected by `eqIEEE |x| 1`.
+* **Bracket**: `atanAbsEncl` (the clamped `atanBracket`, or `[|x| − |x| 2^(2e), |x|]` for a tiny
+  argument — the loop never works at a precision growing with `−e`) then `atanPeriodScale`
+  (interval division by `piBracket (w + 64)`, times the exact `u/2`); width `≤ 3U 2^(−w)`.
+  `atanPeriodScale_spec` takes any nonnegative enclosure of an angle `≤ 2`: reusable for the
+  rational variant and for `asin`/`acos` with a period.
+
+Tests: `Tests/AtanWithPeriod.lean` (1400-bit reference; `2^(−2^30)` runs instantly).  NOT
+timed; expected `atan` plus one interval division and `piBracket`.
+
+## `atanRatWithPeriod`, `atanPi`, `atanPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The arctangent family is complete: `atan`, `atanRat`, `atanWithPeriod`, `atanRatWithPeriod`,
+`atanPi`, `atanPiRat`.
+
+* `atanRatWithPeriodPrecRound q u p mode = arctan (q) u / (2π)` for an `AzRat` `q`
+  (`atanRatWithPeriodPrecRound_eq`): `0` at `q = 0` and for `u = 0`, `±u/8` at `q = ±1`
+  (`num = den`, `abs_toRat_eq_one_iff`), otherwise the Ziv loop on `atanRatPeriodApprox` =
+  `atanPeriodApproxOf (!q.sign) (atanRatAbsEncl q w) u (w + 64)`.  `atanRatAbsEncl` is the
+  clamped `atanRatBracket`, or `[⌊|q|⌋ − ⌊|q|⌋ 2^(2e), ⌈|q|⌉]` for a tiny `q`
+  (`e = ratExpBound q`, `2e ≤ −(w + 8)`).  `atanPeriodApproxOf_spec` is the generic statement
+  for any nonnegative enclosure of an angle `≤ 2` of width `2^(−w)`.
+* `atanPiPrecRound x p mode = arctan (x) / π` and `atanPiRatPrecRound q p mode`: the period-`2`
+  instances (`Spec.atanWithPeriod_two`); `atanPiPrecRound_eq_liftVal`, `atanPiRatPrecRound_eq`
+  against `Spec.atanPi` (`±1/2` at `±∞`).
+
+Tests: `Tests/AtanRatWithPeriod.lean`, `Tests/AtanPi.lean` (1400-bit reference).  NOT timed.

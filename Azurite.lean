@@ -49,8 +49,13 @@ import Azurite.AzFloat.AddSubRat
 import Azurite.AzFloat.Agm
 import Azurite.AzFloat.Atan
 import Azurite.AzFloat.AtanBracket
+import Azurite.AzFloat.AtanPi
 import Azurite.AzFloat.AtanRat
 import Azurite.AzFloat.AtanRatBracket
+import Azurite.AzFloat.AtanRatWithPeriod
+import Azurite.AzFloat.AtanRatWithPeriodBracket
+import Azurite.AzFloat.AtanWithPeriod
+import Azurite.AzFloat.AtanWithPeriodBracket
 import Azurite.AzFloat.Basic
 import Azurite.AzFloat.Catalan
 import Azurite.AzFloat.CatalanBracket
@@ -82,8 +87,13 @@ import Azurite.AzFloat.Equiv.AddSubRat
 import Azurite.AzFloat.Equiv.Agm
 import Azurite.AzFloat.Equiv.Atan
 import Azurite.AzFloat.Equiv.AtanBracket
+import Azurite.AzFloat.Equiv.AtanPi
 import Azurite.AzFloat.Equiv.AtanRat
 import Azurite.AzFloat.Equiv.AtanRatBracket
+import Azurite.AzFloat.Equiv.AtanRatWithPeriod
+import Azurite.AzFloat.Equiv.AtanRatWithPeriodBracket
+import Azurite.AzFloat.Equiv.AtanWithPeriod
+import Azurite.AzFloat.Equiv.AtanWithPeriodBracket
 import Azurite.AzFloat.Equiv.Basic
 import Azurite.AzFloat.Equiv.Catalan
 import Azurite.AzFloat.Equiv.CatalanBracket
