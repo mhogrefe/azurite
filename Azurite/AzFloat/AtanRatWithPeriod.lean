@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.AtanWithPeriod
-import Azurite.AzFloat.Equiv.AtanRatWithPeriodBracket
+import Azurite.AzFloat.Atan2RatWithPeriod
 
 /-!
 ## The arctangent of a rational with a period: `arctan (q) u / (2π)`
@@ -20,9 +20,10 @@ nearest.
 
 Special values, as for the float `atanWithPeriodPrecRound`: `q = 0` gives `0`; `u = 0` gives
 `0`; `q = ±1` (`num = den`) give `±u/8`, an eighth of a turn, rounded.  Every other value is
-irrational (`irrational_atanPeriod_toRat`, Niven's theorem for the tangent), which certifies
-the Ziv loop (`zivLoopCertified`, no fuel) on `atanRatPeriodApprox`
-(`AzFloat/AtanRatWithPeriodBracket.lean`).  The argument is never rounded to the target
+irrational and is computed as `atan2 (q, 1) u / (2π)` by `atan2RatWithPeriodPrecRound`
+(`AzFloat/Atan2RatWithPeriod.lean`), which keeps the quarter turn exact: a huge `q` gives a
+value next to the float `±u/4` at no extra cost (a direct evaluation needs a working precision
+of about `lg |q|` bits to separate the two).  The argument is never rounded to the target
 precision, and a tiny `q` costs no more than any other.
 
 The specification `atanRatWithPeriodPrecRound_eq` is in `Equiv/AtanRatWithPeriod.lean`.
@@ -34,16 +35,10 @@ namespace Azurite.AzFloat
 exact value (`(nan, .eq)` for `p = 0` unless the value is `0` or `±u/8`). -/
 def atanRatWithPeriodPrecRound (q : AzRat) (u : UInt64) (p : Nat) (mode : RoundingMode) :
     AzFloat × Ordering :=
-  if h0 : q.num = 0 then (zero, .eq)
-  else if hu : u.toNat = 0 then (zero, .eq)
-  else if h1 : q.num = q.den then setPrecRound (turnFraction q.sign u 3) p mode
-  else if hp : p = 0 then (nan, .eq)
-  else
-    haveI : NeZero p := ⟨hp⟩
-    zivLoopCertified (atanRatPeriodApprox q (AzNat.ofNat u.toNat)) p mode (p + zivGuardBits)
-      (atanRatPeriodApprox_isSome_exists p mode q h0 h1
-        (by rw [AzNat.toNat_ofNat]; exact hu) (p + zivGuardBits)
-        (by unfold zivGuardBits; omega))
+  if q.num = 0 then (zero, .eq)
+  else if u.toNat = 0 then (zero, .eq)
+  else if q.num = q.den then setPrecRound (turnFraction q.sign u 3) p mode
+  else atan2RatWithPeriodPrecRound q 1 u p mode
 
 /-- `arctan (q) u / (2π)` rounded to nearest at precision `p`. -/
 def atanRatWithPeriod (q : AzRat) (u : UInt64) (p : Nat) : AzFloat :=

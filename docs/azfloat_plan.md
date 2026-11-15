@@ -7025,3 +7025,103 @@ The arctangent family is complete: `atan`, `atanRat`, `atanWithPeriod`, `atanRat
   against `Spec.atanPi` (`±1/2` at `±∞`).
 
 Tests: `Tests/AtanRatWithPeriod.lean`, `Tests/AtanPi.lean` (1400-bit reference).  NOT timed.
+
+## `atan2` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`atan2PrecRound y x p mode`, `atan2 y x` (`AzFloat/Atan2.lean`), after the Malachite
+specification supplied by the user, without negative zero (a zero argument behaves as `+0`):
+`atan2 (0, x) = 0` for `x ≥ 0`, `π` for `x < 0`.  `atan2PrecRound_eq_liftVal₂` against
+`Spec.atan2`, which is `Complex.arg (x + iy)` for real arguments and the IEEE table at the
+infinities.
+
+* **Reduction**: `± φ` with the sign of `y`, `φ = atan2 (|y|, x)`; with `A = arctan r`,
+  `r = min/max ∈ (0, 1]`: `φ = A`, `π/2 − A`, `π − A`, `π/2 + A` by octant (`atan2Bracket`,
+  `piShiftEncl`).  Only `φ = A` needs relative accuracy (`atanQuotRel`: level
+  `atanWork (ey − ex + 1) w`, or `[q − q 2^(2e), q']` for a tiny quotient).
+* **Bridge**: `arg_eq_atan2Abs` (from `Complex.tan_arg`, `abs_arg_lt_pi_div_two_iff` and the
+  two `arg_neg_eq_arg_±_pi` lemmas).  **Irrationality**: `tan (arg z) = y/x` is rational and
+  `arg z ≠ 0`, so `irrational_tan_rat` applies (`irrational_arg_of_rat`).
+* **Constants**: `π`, `π/2`, `π/4` from `PiConstants`; `3π/4` is new
+  (`piThreeQuartersPrecRound`, a Ziv loop on `π/2 + π/4`); signs by `signedRound` (negated
+  mode).
+* **GOTCHA (cost a debugging round)**: `roundingPossible l h` decides a value in `(l, h]` by
+  comparing the `(p+1)`-bit floors of the ends.  An enclosure whose **upper** end is exactly a
+  float of the target precision (here `q` itself for a tiny float quotient, `arctan q < q`) is
+  never separated — the certified loop then doubles `w` until the tiny branch is left
+  (`w ≈ 2^31`), i.e. hangs in practice although termination is proven.  Fix: the loop runs on
+  the negative angle `−φ` (exact end below), in the negated mode for `y > 0`, the result
+  negated.  The same orientation trick is in `sinTinyCore?`.  Check this whenever an end of a
+  bracket can be exact.
+
+Tests: `Tests/Atan2.lean` (the whole special table, eight octants, directed modes, extreme
+ratios `2^(±2^30)` in every octant).  NOT timed; expected `atan` plus one division (and
+`piBracket` off the first octant pair).
+
+## `atan2Rat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`atan2RatPrecRound y x p mode`, `atan2Rat y x p` for `AzRat` arguments
+(`atan2RatPrecRound_eq` against `Spec.atan2`, i.e. `Complex.arg (x + iy)`).  `y = 0 ↦ 0`
+(`x ≥ 0`) or `π` (`x < 0`); `x = 0 ↦ ±π/2`.  Otherwise `t = |y|/|x|` is formed as a rational
+and `atan2RatBracket t x.sign w` is `atanRatAbsEncl` of `t` (or of the rational `1/t` when
+`t > 1`) with the `piShiftEncl` of the octant — no float division, relative accuracy and the
+tiny path inherited from `atanRatAbsEncl`.  The loop runs on the negative angle as in `atan2`
+(a dyadic tiny `t` is an exact end).  Irrationality: `irrational_atan2Abs_of_rat`.
+
+Tests: `Tests/Atan2Rat.lean` (eight octants, non-float rationals, agreement with `atan2` and
+`atanRat`, homogeneity, exact tiny quotients `2^(−200)`, `2^(−5000)` with both signs).  NOT
+timed.
+
+## `atan2WithPeriod` (DONE 2026-11-15, fuel-free, UNTIMED) and a fix of `atanWithPeriod`
+
+`atan2WithPeriodPrecRound y x u p mode = atan2 (y, x) u / (2π)` after the Malachite table
+supplied by the user (no negative zero).  `Spec.atan2WithPeriod = Spec.atan2 · u/(2π)`, so the
+table (`±u/8`, `±3u/8`, `±u/4`, `0`, `±u/2`) is a consequence of the one of `atan2`.
+
+* **Rational values**: the axes, the infinities, the diagonals `|y| = |x|` (`eqIEEE` of the
+  absolute values) and `u = 0`; returned as `setPrecRound` of the exact float (`turnFracN`).
+  Everything else is irrational: `irrational_arg_mul_div_two_pi` (a rational fraction `r` of a
+  turn with rational tangent has denominator `1, 2, 4, 8` by Niven; `|r| ≤ 1/2` and the reduced
+  numerators leave the axes, where the tangent is `0` in Lean's convention, and the diagonals).
+* **Bracket**: `ψ = S`, `u/4 − S`, `u/2 − S`, `u/4 + S` by octant, `S = arctan (r) u/(2π)`
+  (`atanPeriodScale` of `atanQuot`/`atanQuotRel`), the quarter and half turns **exact** floats
+  (`turnShift`).  Width `≤ 4U 2^(−w)`.
+* **Values next to a rational one** (the second appearance of the exact-end problem): for a very
+  unequal pair, `ψ` is within `2^(−|ey − ex|)` of the float `u/4` or `u/2`, and at any feasible
+  precision one end of the enclosure *is* that float.  `atan2PeriodOrient` chooses the sign of
+  the value the loop runs on so that this end is the lower one (`c − S`: negative; `c + S`:
+  positive), and the driver negates back in the negated mode.
+
+**`atanWithPeriod` fixed.**  The float `atanWithPeriodPrecRound` of earlier today evaluated
+`arctan (x) / (2π) · u` directly; for a huge `x` the value is within `2^(−e)` of the float
+`±u/4` and the Ziv loop needed `w ≈ e` bits (`2^1000`: fine; `2^(2^30)`: a hang, although every
+proof held).  It now delegates the general case to `atan2WithPeriodPrecRound x 1 u`
+(`arg (1 + ix) = arctan x`), and so does `atanPi`; `atanAbsEncl`, `atanPeriodApprox` and their
+lemmas were deleted.  Tests with `2^(2^30)` added to `Tests/AtanWithPeriod.lean`,
+`Tests/AtanPi.lean`.
+
+**OPEN (same defect, rational variants):** `atanRatWithPeriodPrecRound` and `atanPiRat` still
+evaluate `arctan (q) u / (2π)` directly, so a huge rational `q` costs a working precision of
+about `lg q` bits (correct, only slow).  The fix is the rational counterpart of this section
+(`atan2RatWithPeriod`: `u/4 − arctan (1/q) u/(2π)` with the orientation), then delegation.
+
+Tests: `Tests/Atan2WithPeriod.lean`.  NOT timed.
+
+## `atan2RatWithPeriod`, `atan2Pi`, `atan2PiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The `atan2` family is complete: `atan2`, `atan2Rat`, `atan2WithPeriod`, `atan2RatWithPeriod`,
+`atan2Pi`, `atan2PiRat`.
+
+* `atan2RatWithPeriodPrecRound y x u p mode` (`atan2RatWithPeriodPrecRound_eq` against
+  `Spec.atan2WithPeriod`): the rational values of the float function (`|y| = |x|` detected by
+  `num = den` of the quotient `|y|/|x|`), otherwise the Ziv loop on `atan2RatPeriodApprox` in
+  the orientation `atan2RatPeriodOrient`; bracket = `atanPeriodScale` of `atanRatAbsEncl` of
+  the quotient or its reciprocal, shifted by the exact `u/4`, `u/2`.
+* `atan2PiPrecRound`, `atan2PiRatPrecRound`: the period-`2` instances
+  (`Spec.atan2WithPeriod_two`).
+* **The open item of the previous section is closed**: `atanRatWithPeriodPrecRound` (hence
+  `atanPiRat`) now delegates its general case to `atan2RatWithPeriodPrecRound q 1 u`, so a huge
+  rational `q` costs nothing extra; `atanPeriodApproxOf`, `atanRatPeriodApprox` and their
+  lemmas were deleted.  All four with-period arctangents now go through the `atan2` brackets.
+
+Tests: `Tests/Atan2RatWithPeriod.lean`, `Tests/Atan2Pi.lean`; huge-argument cases added for
+`atanRatWithPeriod` and `atanPiRat`.  NOT timed.

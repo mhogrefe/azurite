@@ -12,12 +12,10 @@ import Azurite.AzFloat.Equiv.AtanRatBracket
 import Azurite.AzFloat.Equiv.AtanWithPeriodBracket
 
 /-!
-# Equivalence: the bracket of `arctan (q) u / (2π)` for a rational `q`
+# Equivalence: the enclosure of `arctan |q|` for a rational `q`
 
-`atanRatAbsEncl_spec` (width at most `2^(−w)`), `atanPeriodApproxOf_spec` (the generic pair of
-`Roundable`s, width at most `3U 2^(−w)`), `abs_toRat_eq_one_iff` (`|q| = 1` iff `num = den`),
-`irrational_atanPeriod_toRat`, `atanRatPeriodApprox_spec`, `atanRatPeriodApprox_isSome_exists`
-(the Ziv certificate).
+`atanRatAbsEncl_spec` (width at most `2^(−w)`), `abs_toRat_eq_one_iff` (`|q| = 1` iff
+`num = den`).
 -/
 
 open Real
@@ -120,101 +118,10 @@ theorem atanRatAbsEncl_spec (q : AzRat) (h0 : q.num ≠ 0) (w : ℕ) :
       · linarith
     exact ⟨cv, hi, hcv, hhi, hcv0, hcvle.trans (max_le h1 hat0), h2, by linarith⟩
 
-/-- The generic pair of `Roundable`s: for a nonnegative enclosure `A` of `0 ≤ θ ≤ 2` of width at
-most `2^(−w)`, `atanPeriodApproxOf neg A u (w + 64)` brackets `± θ U / (2π)` with width at most
-`3U 2^(−w)`. -/
-theorem atanPeriodApproxOf_spec (neg : Bool) {A : Encl} {θ : ℝ} {w : ℕ}
-    (hA : IsEncl0W A θ ((1 / 2 : ℝ) ^ w)) (hθ : θ ≤ 2) (u : AzNat) :
-    ∃ lv hv : ℝ, Rounds (atanPeriodApproxOf neg A u (w + 64)).1 lv ∧
-      Rounds (atanPeriodApproxOf neg A u (w + 64)).2 hv ∧
-      lv ≤ (if neg then -1 else 1) * (θ * u.toNat / (2 * π)) ∧
-      (if neg then -1 else 1) * (θ * u.toNat / (2 * π)) ≤ hv ∧
-      hv - lv ≤ u.toNat * (3 * (1 / 2 : ℝ) ^ w) := by
-  have hw1 : (1 / 2 : ℝ) ^ w ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
-  have hw0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ :=
-    atanPeriodScale_spec hA hθ hw1 u (V := w + 64) (by omega)
-  have hU0 : (0 : ℝ) ≤ u.toNat := by positivity
-  have hwid' : hi - lo ≤ u.toNat * (3 * (1 / 2 : ℝ) ^ w) := by
-    refine hwid.trans (mul_le_mul_of_nonneg_left ?_ hU0)
-    have h64 : (1 / 2 : ℝ) ^ 64 ≤ 1 / 108 := by norm_num
-    rw [pow_add]
-    nlinarith
-  simp only [atanPeriodApproxOf]
-  cases neg with
-  | false =>
-    simp only [Bool.false_eq_true, ↓reduceIte, one_mul]
-    have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hlo)
-    rw [fval_of_toVal_coe hlo] at hR1
-    have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
-    rw [fval_of_toVal_coe hhi] at hR2
-    exact ⟨lo, hi, hR1, hR2, h1, h2, hwid'⟩
-  | true =>
-    simp only [↓reduceIte, neg_one_mul]
-    have hnlo : (-(atanPeriodScale A u (w + 64)).2).toVal = some ((-hi : ℝ) : EReal) := by
-      rw [toVal_neg, hhi, Option.map_some, EReal.coe_neg]
-    have hnhi : (-(atanPeriodScale A u (w + 64)).1).toVal = some ((-lo : ℝ) : EReal) := by
-      rw [toVal_neg, hlo, Option.map_some, EReal.coe_neg]
-    have hR3 := rounds_setPrecRound (isFinite_of_toVal_coe hnlo)
-    rw [fval_of_toVal_coe hnlo] at hR3
-    have hR4 := rounds_setPrecRound (isFinite_of_toVal_coe hnhi)
-    rw [fval_of_toVal_coe hnhi] at hR4
-    exact ⟨-hi, -lo, hR3, hR4, by linarith, by linarith, by linarith⟩
-
 /-- `|q| = 1` iff the numerator and the denominator coincide. -/
 theorem abs_toRat_eq_one_iff (q : AzRat) : |(AzRat.toRat q : ℝ)| = 1 ↔ q.num = q.den := by
   have hden := den_pos_real q
   rw [abs_coe_toRat, div_eq_one_iff_eq hden.ne', Nat.cast_inj]
   exact ⟨fun h => AzNat.toNat_injective h, fun h => by rw [h]⟩
-
-/-- `arctan (q) U / (2π)` is irrational for a rational `q ∉ {0, ±1}` and `U ≠ 0`. -/
-theorem irrational_atanPeriod_toRat (q : AzRat) (h0 : q.num ≠ 0) (h1 : q.num ≠ q.den) {U : ℕ}
-    (hU : U ≠ 0) : Irrational (arctan (AzRat.toRat q : ℝ) * U / (2 * π)) := by
-  have hq0 := coe_toRat_ne_zero_of_num_ne_zero q h0
-  have habs : |(AzRat.toRat q : ℝ)| ≠ 1 := fun h => h1 ((abs_toRat_eq_one_iff q).mp h)
-  refine irrational_arctan_rat_mul_div_two_pi ?_ ?_ ?_ hU
-  · intro h
-    exact hq0 (by rw [h, Rat.cast_zero])
-  · intro h
-    exact habs (by rw [h, Rat.cast_one, abs_one])
-  · intro h
-    exact habs (by rw [h]; norm_num)
-
-/-- `atanRatPeriodApprox` as a pair of `Roundable`s bracketing `arctan (q) u / (2π)`. -/
-theorem atanRatPeriodApprox_spec (q : AzRat) (h0 : q.num ≠ 0) (u : AzNat) (w : ℕ) :
-    ∃ lv hv : ℝ, Rounds (atanRatPeriodApprox q u w).1 lv ∧
-      Rounds (atanRatPeriodApprox q u w).2 hv ∧
-      lv ≤ arctan (AzRat.toRat q : ℝ) * u.toNat / (2 * π) ∧
-      arctan (AzRat.toRat q : ℝ) * u.toNat / (2 * π) ≤ hv ∧
-      hv - lv ≤ u.toNat * (3 * (1 / 2 : ℝ) ^ w) := by
-  have hθ : arctan |(AzRat.toRat q : ℝ)| ≤ 2 := by
-    have := arctan_lt_pi_div_two |(AzRat.toRat q : ℝ)|
-    linarith [pi_lt_four]
-  have h := atanPeriodApproxOf_spec (!q.sign) (atanRatAbsEncl_spec q h0 w) hθ u
-  have hval : arctan (AzRat.toRat q : ℝ) * u.toNat / (2 * π)
-      = (if (!q.sign) = true then -1 else 1)
-        * (arctan |(AzRat.toRat q : ℝ)| * u.toNat / (2 * π)) := by
-    rw [arctan_toRat_eq q h0]
-    cases q.sign with
-    | false =>
-      simp
-      ring
-    | true => simp
-  rw [hval]
-  exact h
-
-/-- The Ziv certificate for `arctan (q) u / (2π)`, `q ∉ {0, ±1}` rational, `u ≠ 0`. -/
-theorem atanRatPeriodApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q : AzRat)
-    (h0 : q.num ≠ 0) (h1 : q.num ≠ q.den) {u : AzNat} (hu : u.toNat ≠ 0) (w₀ : ℕ)
-    (hw₀ : 0 < w₀) :
-    ∃ f : ℕ, (roundingPossible (atanRatPeriodApprox q u (w₀ * 2 ^ f)).1
-      (atanRatPeriodApprox q u (w₀ * 2 ^ f)).2 p mode).isSome = true := by
-  refine exists_isSome_of_irrational_threshold p mode (atanRatPeriodApprox q u)
-    (irrational_atanPeriod_toRat q h0 h1 hu)
-    (fun w => u.toNat * (3 * (1 / 2 : ℝ) ^ w)) ?_ 0
-    (fun w _ => atanRatPeriodApprox_spec q h0 u w) w₀ hw₀
-  have h := ((tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num : (0 : ℝ) ≤ 1 / 2)
-    (by norm_num)).const_mul 3).const_mul (u.toNat : ℝ)
-  simpa using h
 
 end Azurite.AzFloat

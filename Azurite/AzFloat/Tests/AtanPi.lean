@@ -84,3 +84,9 @@ private def PR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
 #guard atanPiRat (Q "1/3") 53 == (PR "1/3" 53).1
 #guard (toString (atanPiRat (Q "1/3") 200)).startsWith
   "0.10241638234956672582459892377525947404886547611308210"
+
+-- a huge argument: within `2^(−2^30)` of `1/2`, at no extra cost
+private def huge : AzFloat := powerOf2 (AzInt.ofInt 1073741824)
+#guard P huge 53 == (F "1/2" 53, .gt)
+#guard P huge 53 .Floor == (F "9007199254740991/18014398509481984" 53, .lt)
+#guard P (-huge) 53 .Ceiling == (F "-9007199254740991/18014398509481984" 53, .gt)

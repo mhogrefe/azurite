@@ -93,3 +93,9 @@ private def tiny : AzFloat := powerOf2 (AzInt.ofInt (-1073741824))
 #guard (W tiny 360 53).1 == (F "1007958012753983/17592186044416" 53) <<< AzInt.ofInt (-1073741824)
 #guard (W tiny 360 53).2 == .gt
 #guard (W (-tiny) 360 53 .Floor).2 == .lt
+-- a huge argument: within `2^(−2^30)` of a quarter turn, at no extra cost
+private def huge : AzFloat := powerOf2 (AzInt.ofInt 1073741824)
+#guard W huge 360 53 == (F "90" 53, .gt)
+#guard W huge 360 53 .Floor == (F "6333186975989759/70368744177664" 53, .lt)
+#guard W (-huge) 360 53 == (F "-90" 53, .lt)
+#guard W (-huge) 7 53 .Ceiling == (F "-7881299347898367/4503599627370496" 53, .gt)

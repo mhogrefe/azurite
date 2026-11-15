@@ -7,8 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
-import Azurite.AzFloat.Equiv.AtanWithPeriodBracket
-import Azurite.AzFloat.Compare
+import Azurite.AzFloat.Atan2WithPeriod
 
 /-!
 ## The arctangent with a period: `arctan (x) u / (2π)`
@@ -27,10 +26,12 @@ Special values:
 * `x = ±1` give `±u/8`, an eighth of a turn, rounded.
 
 These are the only rational values: for a finite `x ∉ {0, ±1}` and `u ≠ 0` the value is
-irrational by Niven's theorem for the tangent (`irrational_arctan_rat_mul_div_two_pi`), which
-certifies the Ziv loop (`zivLoopCertified`, no fuel) on `atanPeriodApprox`
-(`AzFloat/AtanWithPeriodBracket.lean`).  A tiny `x` costs no more than any other: the bracket
-of `arctan |x|` is then `[|x| − |x| 2^(2e), |x|]`.
+irrational by Niven's theorem for the tangent.  It is computed as
+`atan2 (x, 1) u / (2π)` by `atan2WithPeriodPrecRound` (`AzFloat/Atan2WithPeriod.lean`), whose
+enclosures keep the quarter turn exact: a huge `x` gives a value within `2^(−e)` of the float
+`±u/4`, and a direct evaluation of `arctan (x) / (2π)` would need a working precision growing
+with the exponent to separate the two (until 2026-11-15 this function did exactly that).  A
+tiny `x` costs no more than any other either.
 
 The specification `atanWithPeriodPrecRound_eq` is in `Equiv/AtanWithPeriod.lean`.
 -/
@@ -51,26 +52,10 @@ def atanWithPeriodPrecRound (x : AzFloat) (u : UInt64) (p : Nat) (mode : Roundin
   | infinity s => setPrecRound (turnFraction s u 2) p mode
   | zero => (zero, .eq)
   | finite s e q m hv =>
-    if hu : u.toNat = 0 then (zero, .eq)
-    else if h1 : eqIEEE (finite s e q m hv).abs one = true then
+    if u.toNat = 0 then (zero, .eq)
+    else if eqIEEE (finite s e q m hv).abs one = true then
       setPrecRound (turnFraction s u 3) p mode
-    else if hp : p = 0 then (nan, .eq)
-    else
-      haveI : NeZero p := ⟨hp⟩
-      zivLoopCertified (atanPeriodApprox (!s) (finite s e q m hv) e (AzNat.ofNat u.toNat)) p
-        mode (p + zivGuardBits)
-        (atanPeriodApprox_isSome_exists p mode (!s) (toVal_finite s e q m hv)
-          (finiteVal_ne_zero s e hv)
-          (fun h => by
-            have habs : (finite s e q m hv).abs.toVal
-                = some ((|finiteVal s e m| : ℝ) : EReal) := by
-              rw [toVal_abs, toVal_finite, Option.map_some, ← EReal.coe_neg]
-              congr 1
-            exact h1 ((eqIEEE_iff _ _).mpr ⟨_, habs, by rw [h]; exact toVal_one'⟩))
-          (finiteVal_neg_iff s e hv)
-          (abs_finiteVal_bounds s e hv).1 (abs_finiteVal_bounds s e hv).2
-          (by rw [AzNat.toNat_ofNat]; exact hu)
-          (p + zivGuardBits) (by unfold zivGuardBits; omega))
+    else atan2WithPeriodPrecRound (finite s e q m hv) one u p mode
 
 /-- `arctan (x) u / (2π)` rounded to nearest at the precision of `x`. -/
 def atanWithPeriod (x : AzFloat) (u : UInt64) : AzFloat :=

@@ -9,6 +9,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.AzFloat.AtanWithPeriod
 import Azurite.AzFloat.Equiv.Atan
+import Azurite.AzFloat.Equiv.Atan2WithPeriod
 
 /-!
 # Equivalence: `arctan (x) u / (2π)`
@@ -96,10 +97,10 @@ theorem atanWithPeriodPrecRound_eq (x : AzFloat) (u : UInt64) (p : ℕ) [NeZero 
       rw [toVal_abs, toVal_finite, Option.map_some, ← EReal.coe_neg]
       congr 1
     by_cases hu : u.toNat = 0
-    · rw [dite_eq_left hu, hu, Nat.cast_zero, mul_zero, zero_div, EReal.coe_zero, roundVal_zero]
-    · rw [dite_eq_right hu]
+    · rw [ite_eq_left hu, hu, Nat.cast_zero, mul_zero, zero_div, EReal.coe_zero, roundVal_zero]
+    · rw [ite_eq_right hu]
       by_cases h1 : eqIEEE (finite s e q m hv).abs one = true
-      · rw [dite_eq_left h1, setPrecRound_eq_roundVal (toVal_turnFraction s u 3)]
+      · rw [ite_eq_left h1, setPrecRound_eq_roundVal (toVal_turnFraction s u 3)]
         obtain ⟨v, hv1, hv2⟩ := (eqIEEE_iff _ _).mp h1
         rw [habs] at hv1
         rw [toVal_one'] at hv2
@@ -126,20 +127,12 @@ theorem atanWithPeriodPrecRound_eq (x : AzFloat) (u : UInt64) (p : ℕ) [NeZero 
           rw [hx1, Real.arctan_neg, Real.arctan_one]
           field_simp
           norm_num
-      · rw [dite_eq_right h1, dite_eq_right hp]
-        have hx1 : |xv| ≠ 1 := fun h =>
-          h1 ((eqIEEE_iff _ _).mpr ⟨_, habs, by rw [h]; exact toVal_one'⟩)
-        have hval := atanPeriod_eq_of_neg_iff hneg (u.toNat : ℝ)
-        exact zivLoopCertified_eq_threshold' p mode _
-          (Real.arctan xv * u.toNat / (2 * Real.pi))
-          (not_mem_floatSet_of_irrational p
-            (irrational_atanPeriod_of_toVal (toVal_finite s e q m hv) hx0 hx1 hu))
-          _ (by unfold zivGuardBits; omega)
-          (fun w _ => by
-            obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ := atanPeriodApprox_spec (!s)
-              (toVal_finite s e q m hv) hx0 (abs_finiteVal_bounds s e hv).1
-              (abs_finiteVal_bounds s e hv).2 (AzNat.ofNat u.toNat) w
-            rw [AzNat.toNat_ofNat, ← hval] at hlo hhi
-            exact ⟨lv, hv', hl, hh, hlo, hhi⟩) _
+      · rw [ite_eq_right h1, atan2WithPeriodPrecRound_eq]
+        simp only [toVal_finite, toVal_one', Option.bind_some]
+        rw [Spec.atan2WithPeriod_of (Spec.atan2_coe_coe _ _)]
+        have harg : Complex.arg ⟨1, xv⟩ = Real.arctan xv := by
+          have h := arg_of_re_pos (z := (⟨1, xv⟩ : ℂ)) (by norm_num)
+          simpa using h
+        rw [harg]
 
 end Azurite.AzFloat
