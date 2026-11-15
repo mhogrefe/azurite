@@ -168,3 +168,11 @@ The per-equation ledger is `docs/dlmf_plan.md`.
 | 4.38.15 | "`Arcsinh u ± Arcsinh v = Arcsinh(u(1 + v²)^{1/2} ± v(1 + u²)^{1/2})`", "interpreted in the sense that every value of the left-hand side is a value of the right-hand side and vice-versa. All square roots have either possible value" | Only "every value of the left-hand side is a value of the right-hand side" holds (as for 4.24.13). Example: for `u = v = 1` with the roots `(1 + v²)^{1/2} = √2`, `(1 + u²)^{1/2} = −√2`, `w = 0` is a value of `Arcsinh 0`, but not of `Arcsinh 1 + Arcsinh 1`: if `a + b = 0` then `sinh b = −sinh a = −1`. | `dlmf_4_38_15`, `dlmf_4_38_15_converse_fails` (`Chapter4/Section38.lean`) |
 | 4.38.18 | "`Arcsinh u ± Arccosh v = … = Arccosh(v(1 + u²)^{1/2} ± u(v² − 1)^{1/2})`" (same interpretation) | The first equality holds as an equality of sets, the second only as "every value of the left-hand side is a value of the right-hand side" (as for 4.24.16). Example: for `u = −i/2`, `v = ½` with the roots `√3/2` and `−i√3/2`, `w = ½πi` is a value of `Arccosh 0`, but not of `Arcsinh(−i/2) + Arccosh ½`: `cosh(½πi − a) = −i sinh a = −½`. | `dlmf_4_38_18`, `dlmf_4_38_18_arccosh`, `dlmf_4_38_18_arccosh_converse_fails` (`Chapter4/Section38.lean`) |
 | 4.45.15 | "`ln z = ln\|z\| + i ph z`, `−π ≤ ph z ≤ π`" | The principal value has `−π < ph z ≤ π`. Allowing `ph z = −π` gives a second value on the negative real axis: `ln\|z\| − πi` is the limit of `ln` from below there, not the principal value. (Imprecision.) | `dlmf_4_45_15`, `dlmf_4_45_15_cut` (`Chapter4/Section45.lean`) |
+
+## Chapter 6
+
+### Errors
+
+| DLMF | DLMF states | What is true | Lean |
+| --- | --- | --- | --- |
+| 6.16.4 | "`R_n(x) = O(n^{−1})`, `n → ∞`, uniformly for `x ∈ [−π, π]`" (`R_n` of 6.16.3) | Uniform only on `[−a, a]` for each `a < π`. At `x = π`, `S_n(π) = 0`, so `R_n(π) = −½ Si(2nπ) → −π/4`; the factor `1/sin t − 1/t` of 6.16.3 is unbounded at `t = ±π`, which breaks the integration by parts there. | `dlmf_6_16_4` (corrected range), `dlmf_6_16_4_endpoint` (`Chapter6/Section16.lean`) |

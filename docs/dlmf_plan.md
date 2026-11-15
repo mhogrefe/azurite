@@ -854,7 +854,7 @@ cross product `⨯₃`; the Euclidean magnitude is `vnorm` (Lean's norm on `Fin 
 | 2.5.42 | `dlmf_2_5_42` (`I₂(x) = ∑_{p₂<ℜz≤1} res[−x^{−z}Γ(1−z)𝓜h₂(z)] + (2πi)⁻¹ ∫_{ρ} …` with `ρ ∈ (1, 2)` such that `𝓜h₂` has no poles in `1 < ℜz ≤ ρ`), for any continuation `MellinH₂Cont` (`mellinH₂Cont_ne`, `mellinH₂Cont_zero`) (`Section5LaplaceExpansion.lean`) | — |
 | 2.5.43 | `dlmf_2_5_43` (`L = l − δ`; split form: residues of `−ζ^{z−1}Γ(1−z)𝓜h₁` at `1 ≤ n+1 < L`, of `−ζ^{z−1}Γ(1−z)𝓜h₂` at the singularities in `p₂ < ℜz < L`, plus `(2πi)⁻¹∫_{L} ζ^{z−1}Γ(1−z)𝓜h(z)dz`; DLMF's grouping follows by additivity of residues), `dlmf_2_5_43_remainder` (`O(ζ^{L−1})`, `ζ → 0+`) | `integral_const_mul` |
 | 2.5.44 | `dlmf_2_5_44` (`κ = 0`, no `βₙ` a positive integer; for every admissible `L`: `ℒh(ζ) = ∑_{ℜβₙ<L} bₙΓ(1−βₙ)ζ^{βₙ−1} + ∑_{n+1<L} ((−ζ)^n/n!) 𝓜h(n+1) + O(ζ^{L−1})`, `𝓜h = 𝓜h₁ + 𝓜h₂` continued), via `residue_neg_cpow_Gamma_mul` (poles of `Γ(1−z)`: `GammaNum_neg_nat`) and `residue_neg_cpow_Gamma_mul_pole` (poles `βₙ`) (`Section5LaplaceResidues.lean`) | `Finset.sum_image`, `Finset.sum_union` |
-| 2.5.45–2.5.49 (Example) | `oneDivOneAdd` with `laplaceSmallSetup_oneDivOneAdd` (`κ = 0`, `βₛ = s+1`, `bₛ = (−1)^s`, `c = 0`; geometric remainders at `0+` and `+∞`), `dlmf_2_5_45`; `cont_add_cont_eq` (`𝓜h₁ + 𝓜h₂ = π csc(πz)` on `ℂ ∖ ℤ`, identity theorem on the connected complement of `ℤ`, from Table 1.14.5 on `0 < ℜz < 1`); `dlmf_2_5_46` (double-pole residue via `residue_eq_deriv_of_eq_div_sq`, `Gamma_mul_Gamma_one_sub`, `hasDerivAt_GammaNum_neg_nat` = value × `ψ(m+1)` by `logDeriv` of `Γ(w+m+1)/∏(w+j)` and `digamma_apply_add_nat`), `dlmf_2_5_47` (= 2.5.46 at `k = 1` minus 2.5.41's residue, `ψ(1) = −γ`), `dlmf_2_5_48` (for every `K`: `∑_{k≤K} (−ln ζ + ψ(k+1))ζ^k/k! + O(ζ^{K+1/2})`, from `dlmf_2_5_43` with `L = K + 3/2` and the combined residues), `expIntegralE₁` (6.2.2) + `dlmf_2_5_49` (`ℒh(ζ) = e^ζ E₁(ζ)` by `t ↦ t+1`, `u ↦ ζu`). DEFERRED: the verification of 2.5.48 through the series 6.6.3 of `E₁` (Chapter 6) (`Section5LaplaceExample*.lean`) | `Complex.digamma`, `digamma_one`, `digamma_apply_add_nat`, `Set.Countable.isConnected_compl_of_one_lt_rank`, `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq`, `logDeriv_div`, `logDeriv_prod` |
+| 2.5.45–2.5.49 (Example) | `oneDivOneAdd` with `laplaceSmallSetup_oneDivOneAdd` (`κ = 0`, `βₛ = s+1`, `bₛ = (−1)^s`, `c = 0`; geometric remainders at `0+` and `+∞`), `dlmf_2_5_45`; `cont_add_cont_eq` (`𝓜h₁ + 𝓜h₂ = π csc(πz)` on `ℂ ∖ ℤ`, identity theorem on the connected complement of `ℤ`, from Table 1.14.5 on `0 < ℜz < 1`); `dlmf_2_5_46` (double-pole residue via `residue_eq_deriv_of_eq_div_sq`, `Gamma_mul_Gamma_one_sub`, `hasDerivAt_GammaNum_neg_nat` = value × `ψ(m+1)` by `logDeriv` of `Γ(w+m+1)/∏(w+j)` and `digamma_apply_add_nat`), `dlmf_2_5_47` (= 2.5.46 at `k = 1` minus 2.5.41's residue, `ψ(1) = −γ`), `dlmf_2_5_48` (for every `K`: `∑_{k≤K} (−ln ζ + ψ(k+1))ζ^k/k! + O(ζ^{K+1/2})`, from `dlmf_2_5_43` with `L = K + 3/2` and the combined residues), `expIntegralE₁` (6.2.2) + `dlmf_2_5_49` (`ℒh(ζ) = e^ζ E₁(ζ)` by `t ↦ t+1`, `u ↦ ζu`). the verification of 2.5.48 through the series 6.6.3 of `E₁`: DONE 2026-11-14 as `dlmf_2_5_48_series` in `Chapter6/Section6.lean` (the terms of 2.5.48 sum to `ℒh(ζ)`) (`Section5LaplaceExample*.lean`) | `Complex.digamma`, `digamma_one`, `digamma_apply_add_nat`, `Set.Countable.isConnected_compl_of_one_lt_rank`, `AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq`, `logDeriv_div`, `logDeriv_prod` |
 
 ### §2.6 Distributional Methods
 
@@ -3297,3 +3297,384 @@ Error bounds (both options, 2026-11-13):
 Remaining for a certified AzFloat `Γ`: the algorithm itself (shift, Bernoulli numbers to `p`
 bits via MCA §4.7.2, Horner in `1/x'²`, product, `exp`) and its rounding analysis.
 
+## Chapter 6: Exponential, Logarithmic, Sine, and Cosine Integrals
+
+### §6.2(i) Exponential and Logarithmic Integrals (`Azurite/DLMF/Chapter6/Section2.lean`) — COMPLETE 2026-11-14
+
+Principal values: `E₁` is defined by its integral along the horizontal ray from `z` (a valid
+path off the cut; junk value on the cut, where the principal value is two-valued); `Ein` by
+the segment integral from `0`; `Ei` as a Cauchy principal value; `li` is §4.10's (= the principal value, `dlmf_4_10_7`) (`limUnder` over
+`𝓝[>] 0`); `Ei(0)` is a junk value (undefined in the DLMF).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.2.1 | `expIntE₁` (definition), `dlmf_6_2_1` (any contour `c` from `z` to `∞` in `slitPlane`, `ℜc → ∞`, `\|ℑc\| ≤ C ℜc` eventually: `ContourConvergesAtTop`), `dlmf_6_2_1_cut` (boundary values `Ein(x) − ln\|x\| ∓ πi − γ` from above/below, `x < 0`), `dlmf_6_2_1_cut_ne` (two-valued); `expIntE₁_eq_expIntegralE₁` (§2.5's real `E₁`) | `contourIntegral_eq_sub_of_hasDerivAt` (own contour FTC), `tendsto_E1Ein_zero`, `norm_E1Ein_sub_re_le` (`Convex.norm_image_sub_le_of_norm_hasDerivWithin_le`), `tendsto_log_nhdsWithin_im_nonneg_of_re_neg_of_im_zero`, `tendsto_log_nhdsWithin_im_neg_of_re_neg_of_im_zero` |
+| 6.2.2 | `dlmf_6_2_2` (`z ≠ 0`, `\|ph z\| < π`) | `integral_const_mul` |
+| 6.2.3 | `ein` (definition), `ein_eq` (= `BZ.Ein`, the power series of Ex. 4.16), `dlmf_6_2_3_entire`, `dlmf_6_2_3_contour` (any contour, integrand `BZ.EinDeriv`) | `BZ.hasDerivAt_Ein`, `Differentiable.contDiff` |
+| 6.2.4 | `dlmf_6_2_4` (`z ∈ slitPlane`); real case `integral_exp_neg_div_Ioi` (`x > 0`) | `dlmf_5_9_18_3`, `BZ.EinR_eq_integral`, `BZ.hasDerivAt_E1Ein`, `intervalIntegral_tendsto_integral_Ioi` |
+| 6.2.5 | `Ei` (definition), `HasPrincipalValueIic`, `HasPrincipalValueIoi`, `dlmf_6_2_5` (`x > 0`, both forms) | `integral_comp_neg_Iic`, `intervalIntegral.integral_comp_neg`, `BZ.hasDerivAt_EiEin` |
+| 6.2.6 | `dlmf_6_2_6` (`x > 0`) | `integral_exp_neg_div_Ioi`, `expIntE₁_ofReal` |
+| 6.2.7 | `dlmf_6_2_7` (`x > 0`, both signs) | `Ei_eq_EiEin`, `Ei_neg`, `ein_ofReal` |
+| 6.2.8 | `dlmf_6_2_8` (`x > 1`: the principal value (DLMF 1.4.24 `HasPrincipalValue` at `1`) is `Ei(ln x)`, and equals §4.10's `li` by `dlmf_4_10_7`) | `hasDerivAt_EiEin_log`, `tendsto_log_one_sub_div_log_one_add` (`HasDerivAt.tendsto_slope_zero`), `tendsto_EiEin_atBot` |
+| prose | "`Ein` is entire": `dlmf_6_2_3_entire`; "`Ei(x)` undefined at `0` or non-real `x`": `Ei : ℝ → ℝ`, junk at `0`; `E_p(z)` deferred to Chapter 8 | |
+
+### §6.2(ii) Sine and Cosine Integrals (`Azurite/DLMF/Chapter6/Section2Sine.lean`) — COMPLETE 2026-11-14
+
+`Si`, `Cin`, `Shi` and the integral in 6.2.16 are segment integrals from `0`; `si`, `Ci` are
+improper integrals (`limUnder atTop` of `∫_0^R`) along the horizontal ray from `z` (`Ci` the
+principal value, off the cut).  Closed forms in `Ein` give entireness, parity and path
+independence; 6.2.14 follows from 6.2.4 at `±ix` and `|E₁(±ix)| ≤ 1/x` (no Dirichlet integral).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.2.9 | `Si` (definition), `Si_eq` (= `(Ein(iz) − Ein(−iz))/(2i)`), `dlmf_6_2_9_entire`, `dlmf_6_2_9_odd`, `dlmf_6_2_9_contour` (entire integrand `sincC`) | `segment_eq_sub`, `contourIntegral_eq_sub_of_hasDerivAt` |
+| 6.2.10 | `si` (definition), `dlmf_6_2_10` (all `z`: the ray integral converges to `π/2 − Si z`, `si = Si − π/2`), `dlmf_6_2_10_contour` (contours with `ℜ → ∞`, `ℑ` bounded) | `integral_shift_eq_sub`, `tendsto_of_vertical` (mean value bound on a strip), `tendsto_SiF_atTop` |
+| 6.2.11 | `Ci` (definition), `dlmf_6_2_11` (contours in `slitPlane`, `ℜ → ∞`, `ℑ` bounded), `dlmf_6_2_11_cut` (boundary values `−Cin x + ln\|x\| ± πi + γ`) | `hasDerivAt_CiG`, `tendsto_CiG` |
+| 6.2.12 | `Cin` (definition), `Cin_eq` (= `(Ein(iz) + Ein(−iz))/2`), `dlmf_6_2_12_entire`, `dlmf_6_2_12_even`, `dlmf_6_2_12_contour` | `segment_eq_sub` |
+| 6.2.13 | `dlmf_6_2_13` (`z ∈ slitPlane`; also the ray limit) | `integral_cos_div_ray`, `tendsto_CiG` |
+| 6.2.14 | `dlmf_6_2_14` | `ein_I_mul` (6.2.4 at `±ix`, `log_I`, `log_neg_I`), `norm_expIntE₁_le`, `tendsto_expIntE₁_I_mul` |
+| 6.2.15 | `Shi` (definition), `Shi_eq` (= `(Ein(z) − Ein(−z))/2`), `dlmf_6_2_15_entire`, `dlmf_6_2_15_contour` | `segment_eq_sub` |
+| 6.2.16 | `Chi` (definition), `chiInt` (the integral; `= −(Ein(z) + Ein(−z))/2`), `dlmf_6_2_16_entire`, `dlmf_6_2_16_deriv` (`Chi′ = cosh z / z` off the cut) | `segment_eq_sub` |
+| prose | "odd entire" (`Si`), "even entire" (`Cin`): the theorems above; "principal value; compare 6.2.1" (`Ci`): `dlmf_6_2_11_cut` | |
+
+### §6.2(iii) Auxiliary Functions (`Azurite/DLMF/Chapter6/Section2Aux.lean`) — COMPLETE 2026-11-14
+
+`f`, `g` are `auxF`, `auxG` (not only internal to §6.2: the DLMF uses them in §6.4, §6.5 and for
+the large-argument expansions of §6.12(ii)).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.2.17 | `auxF` (definition) | |
+| 6.2.18 | `auxG` (definition) | |
+| 6.2.19 | `dlmf_6_2_19` (every `z`) | `dlmf_6_2_10`, `Complex.sin_sq_add_cos_sq` |
+| 6.2.20 | `dlmf_6_2_20` (every `z`) | `Complex.sin_sq_add_cos_sq` |
+| 6.2.21 | `dlmf_6_2_21` (`z ∈ slitPlane`) | `hasDerivAt_Ci` (`Ci′ = cos z / z`, from 6.2.13 on the open `slitPlane`), `hasDerivAt_si` (`si′ = sin z / z`) |
+
+### §6.3 Graphics (`Azurite/DLMF/Chapter6/Section3.lean`) — DONE 2026-11-14
+
+Figure content only (no numbered equations), as in §4.3 and §5.3.  No decimals are claimed by
+the captions; the positive zero of `Ei` (the Ramanujan–Soldner constant `ln μ = 0.3725…`, §6.13)
+is only located in `(0, 1)` here.
+
+| Figure | Lean | Main tools |
+|---|---|---|
+| 6.3.1 (`E₁(x)`, `Ei(x)`, `0 < x ≤ 2`) | `dlmf_6_3_F1_real`, `dlmf_6_3_F1_E1_pos`, `dlmf_6_3_F1_E1_anti`, `dlmf_6_3_F1_E1_zero`, `dlmf_6_3_F1_E1_convex`, `dlmf_6_3_F1_Ei_mono`, `dlmf_6_3_F1_Ei_zero`, `dlmf_6_3_F1_Ei_top`, `dlmf_6_3_F1_Ei_zero_unique` (unique positive zero, in `(0, 1)`), `dlmf_6_3_F1_Ei_inflection` (concave on `(0, 1]`, convex on `[1, ∞)`), `dlmf_6_3_F1_cross` (unique crossing) | `strictAntiOn_of_deriv_neg`, `StrictMonoOn.strictConvexOn_of_deriv`, `StrictAntiOn.strictConcaveOn_of_deriv`, `intermediate_value_Ioo` |
+| 6.3.2 (`Si(x)`, `Ci(x)`, `0 ≤ x ≤ 15`) | `dlmf_6_3_F2_Si_real`, `dlmf_6_3_F2_Ci_real`, `dlmf_6_3_F2_Si_mono`, `dlmf_6_3_F2_Si_extrema`, `dlmf_6_3_F2_Si_pos_max`, `dlmf_6_3_F2_Si_cross`, `dlmf_6_3_F2_Ci_zero`, `dlmf_6_3_F2_Ci_mono`, `dlmf_6_3_F2_Ci_extrema`, `dlmf_6_3_F2_Ci_zeros`; `alternating_bounds`, `SiR_step`, `CiR_step` | `HasDerivAt.real_of_complex`, `Real.sin_add_nat_mul_pi`, `Real.cos_add_nat_mul_pi`, `intervalIntegral.intervalIntegral_pos_of_pos_on`, `Monotone.ge_of_tendsto`, `dlmf_6_2_14` |
+| 6.3.3 (`\|E₁(x + iy)\|`) | `dlmf_6_3_F3_conj` (symmetry `y ↦ −y`), `dlmf_6_3_F3_log` (`E₁ + ln z → −γ`), `dlmf_6_3_F3` (`\|E₁(z)\|/ln(1/\|z\|) → 1`, `\|E₁(z)\| → ∞`); the cut: `dlmf_6_2_1_cut` | `integral_conj`, `tendsto_norm_nhdsNE_zero`, `abs_arg_le_pi` |
+| "For a graph of `li(x)` see Figure 6.16.2" | pointer only | |
+
+### §6.4 Analytic Continuation (`Azurite/DLMF/Chapter6/Section4.lean`) — COMPLETE 2026-11-14
+
+A point `z e^{iθ}` of the logarithm's Riemann surface is represented by a logarithm `w` of it
+(`z = e^w`, rotation by `θ` adds `iθ`); the general values are entire functions of `w`, equal to
+the principal values on the strip `−π < ℑw < π` (§4.3's `logStrip`) and unique with that property (identity theorem).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.4.1 | `E1Gen`, `E1MV`, `dlmf_6_4_1` (set of values = `E1Gen` over the logarithms; principal on the strip; unique entire continuation) | `eq_of_eq_on_strip` (`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq`), `Complex.log_exp` |
+| "branch points at `z = 0` and `z = ∞`" | `dlmf_6_4_branchPoint_zero` (`IsBranchPoint`, §1.10(vi)), `dlmf_6_4_branchPoint_infty` (`IsBranchPointInfty`: a branch in `\|z\| > R` cut along `(−∞, 0]`, none in `\|z\| > R`) | `isBranch_sqrt_of_E1` (a branch of `E₁` gives `√z = exp((Ein z − E₁ − γ)/2)`), `not_isBranch_sqrt_punctured`, `z ↦ 1/z`, `exterior_slit_eq_image` |
+| 6.4.2 | `dlmf_6_4_2`, `dlmf_6_4_2_principal` | `exp_int_mul_two_pi_mul_I` |
+| 6.4.3 (`\|ph z\| ≤ π`) | `dlmf_6_4_3` (`z ≠ 0`, principal `ln`) | `exp_pi_mul_I`, `exp_neg_pi_mul_I` |
+| "general values of the other functions … in a similar manner" | `CiGen`, `ChiGen`, `fGen`, `gGen`, `dlmf_6_4_general` | `eq_of_eq_on_strip` |
+| 6.4.4 | `dlmf_6_4_4`, `dlmf_6_4_4_principal` | `dlmf_6_2_12_even` |
+| 6.4.5 | `dlmf_6_4_5`, `dlmf_6_4_5_principal` | `chiInt_neg` |
+| 6.4.6, 6.4.7 | `dlmf_6_4_6`, `dlmf_6_4_7`, `dlmf_6_4_6_7_principal` | `si_neg` (`si(−z) = −si z − π`), `Complex.exp_mul_I` |
+| "principal values … real on the positive real axis and two-valued on the negative real axis" | `dlmf_6_4_principal_real` (`E₁`, `Ci`, `Chi`, `f`, `g`), `dlmf_6_4_principal_cut` (`Chi`, `f`, `g`; `E₁`, `Ci` in §6.2) | `tendsto_log_nhdsWithin_im_nonneg_of_re_neg_of_im_zero` |
+
+### §6.5 Further Interrelations (`Azurite/DLMF/Chapter6/Section5.lean`) — COMPLETE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.5.1 (`x > 0`) | `dlmf_6_5_1` (one-sided limits from the upper/lower half-planes) | `dlmf_6_2_1_cut`, `dlmf_6_2_7` |
+| 6.5.2 | `dlmf_6_5_2` (any boundary values `Lp`, `Lm` give `Ei(x) = −(Lp + Lm)/2`) | `tendsto_add_mul_I_nhdsGT`, `tendsto_nhds_unique` |
+| 6.5.3 (`x > 0`) | `dlmf_6_5_3`; `Shi_eq_neg_I_mul_Si` (all `z`) | `dlmf_6_2_4`, `Shi_eq`, `Si_eq` |
+| 6.5.4 (`x > 0`) | `dlmf_6_5_4` | `dlmf_6_2_13`, `log_I_mul` |
+| 6.5.5 (`\|ph z\| < π/2`) | `dlmf_6_5_5` (`ℜz > 0`) | `log_I_mul` (`Complex.log_mul`, `abs_arg_lt_pi_div_two_iff`, `log_I`, `log_neg_I`) |
+| 6.5.6 (`\|ph z\| < π/2`) | `dlmf_6_5_6` | `dlmf_6_2_13`, `Cin_eq` |
+| 6.5.7 (`\|ph z\| < π/2`) | `dlmf_6_5_7` (both signs) | 6.5.5, 6.5.6, `exp_neg_I_mul`, `exp_I_mul` |
+
+### §6.6 Power Series (`Azurite/DLMF/Chapter6/Section6.lean`) — COMPLETE 2026-11-14
+
+Sums over `n ≥ 1` are written over `n ≥ 0` with `n + 1` for `n`.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.6.1 (`x > 0`) | `dlmf_6_6_1` (real `HasSum`) | `dlmf_6_6_4` at `−x`, `dlmf_6_2_7`, `Complex.hasSum_ofReal` |
+| 6.6.2 | `dlmf_6_6_2` (`z ∈ slitPlane`) | `dlmf_6_2_4` |
+| 6.6.3 | `dlmf_6_6_3` (`z ∈ slitPlane`; `HasSum` of `e^{−z} zⁿ ψ(n+1)/n!` to `E₁(z) + ln z`) | `Complex.digamma_nat_add_one`, `BZ.hasSum_exp_mul_Ein` (Ex. 4.19), `NormedSpace.expSeries_div_hasSum_exp` |
+| 6.6.4 | `dlmf_6_6_4` (every `z`) | `BZ.summable_EinTerm`, `ein_eq` |
+| 6.6.5 | `dlmf_6_6_5` (every `z`) | `Function.Injective.hasSum_iff` (even terms of `Ein(iz) − Ein(−iz)` survive), `Even.neg_pow`, `Odd.neg_pow` |
+| 6.6.6 | `dlmf_6_6_6` (`z ∈ slitPlane`) | the odd terms of `Ein(iz) + Ein(−iz)`, `dlmf_6_2_13` |
+| "converge for all finite values of `x` and `\|z\|`" | `dlmf_6_6_summable`; 6.6.4, 6.6.5 unconditional | |
+
+2.5.48's deferred check "via the series 6.6.3 of `E₁`" (§2.5(iii)) is `dlmf_2_5_48_series`: `∑_{k≥0} (−ln ζ + ψ(k+1)) ζᵏ/k! = e^ζ E₁(ζ) = ℒh(ζ)`, `ζ > 0`.
+
+### §6.7(i) Integral Representations: Exponential Integrals (`Azurite/DLMF/Chapter6/Section7.lean`) — COMPLETE 2026-11-14
+
+Conditionally convergent integrals (the second of 6.7.1, and 6.7.4) are improper integrals
+(limits of `∫_x^R`); the others are Lebesgue integrals.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.7.1 (`a, b > 0`) | `dlmf_6_7_1` (Lebesgue; improper along `ab − iat`) | `tendsto_integral_of_lineE1` (`integral_lineE1`: FTC with `hasDerivAt_expIntE₁`), `tendsto_expIntE₁_pos_line`, `tendsto_expIntE₁_vertical_line` (`norm_expIntE₁_le`) |
+| 6.7.2 (`0 ≤ α < 1`, `x > 0`) | `dlmf_6_7_2` | FTC with `Ei((1 − t)x)`, `BZ.hasDerivAt_EiEin`, `Ei_eq_EiEin` |
+| 6.7.3 (`a, x > 0`) | `dlmf_6_7_3` (Lebesgue, dominated by `t^{−2}`) | `tendsto_J` (`∫_x^∞ e^{it}/(t ± ia)`), `tendsto_integral_lin`, `sq_add_sq_eq` (partial fractions), `integrableOn_Ioi_rpow_of_lt` |
+| 6.7.4 (`a, x > 0`) | `dlmf_6_7_4` (improper) | `tendsto_J` |
+| 6.7.5 (`a > 0`, `x ∈ ℝ`) | `dlmf_6_7_5` | `tendsto_integral_exp_neg_div_add` (`∫_x^∞ e^{−t}/(t + c) = e^c E₁(x + c)`), `integral_complex_ofReal` |
+| 6.7.6 (`a > 0`, `x ∈ ℝ`) | `dlmf_6_7_6` | as 6.7.5; `\|t\|/(a² + t²) ≤ 1/(2a)` |
+| 6.7.7 (`a, b ∈ ℝ`) | `dlmf_6_7_7` | `ein_eq_integral_EinDeriv`, `ContinuousLinearMap.intervalIntegral_comp_comm` (`imCLM`), `EinDeriv_mul_eq` |
+| 6.7.8 (`a, b ∈ ℝ`) | `dlmf_6_7_8` (`Ein(a)` as `(ein a).re`; real by `ein_ofReal`) | `reCLM` |
+| "integrals of the type `∫ e^z R(z) dz` … in finite form" (Lebedev 1965) | Not formalized (pointer) | |
+
+### §6.7(ii) Integral Representations: Sine and Cosine Integrals (`Azurite/DLMF/Chapter6/Section7Sine.lean`) — COMPLETE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.7.9 (`z ∈ ℂ`) | `dlmf_6_7_9` | `integral_exp_arc` (`∫_0^{π/2} e^{−z e^{±it}} dt = π/2 ± i(Ein(±iz) − Ein(z))`, FTC with `t ↦ Ein(z e^{±it})`, `EinDeriv_mul_self`), `exp_arc_decomp`, `ein_I_mul_eq` (`Ein(±iz) = Cin z ± i Si z`) |
+| 6.7.10 (`z ∈ ℂ`) | `dlmf_6_7_10` | as 6.7.9 (half difference) |
+| 6.7.11 (`a, b ∈ ℝ`) | `dlmf_6_7_11` (`Cin(b)` as `(Cin b).re`; real by `Cin_ofReal`) | `ein_eq_integral_EinDeriv`, `Cin_eq_integral_cinC`, `reCLM` |
+
+### §6.7(iii) Integral Representations: Auxiliary Functions (`Azurite/DLMF/Chapter6/Section7Aux.lean`) — DONE 2026-11-14 (6.7.15–6.7.16 DEFERRED to Chapter 10)
+
+Key identity: `g(z) ± i f(z) = e^{∓iz} E1Gen(ln z ∓ πi/2)` on the cut plane
+(`auxG_add_I_mul_auxF`, 6.5.7 continued by the identity theorem `eqOn_slitPlane_of_re_pos`).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.7.12 (`\|ph z\| ≤ π`; path off the cut) | `dlmf_6_7_12` (`z ∈ slitPlane`; any contour off the cut with `ℑt → +∞`: `ContourConvergesAtTop` to `E1Gen(ln z − πi/2)`) | `hasDerivAt_E1Gen_log` (antiderivative of `e^{±it}/t`), `contourIntegral_eq_sub_of_hasDerivAt`, `tendsto_expIntE₁_zero` |
+| 6.7.12 at `ph z = π` (`z = x < 0`) | `dlmf_6_7_12_cut`: along the vertical ray `x + is` the improper integral converges to `E1Gen(ln x − πi/2)` (Mathlib's `ln x = ln\|x\| + iπ` is the value from above), and `g(z) + i f(z)` tends to `e^{−ix}` times it as `z → x` from the upper half-plane. `ph z = −π`: `dlmf_6_7_12_cut_neg` (path: arc `\|x\| e^{i(s−π)}`, `0 ≤ s ≤ 3π/2`, then the vertical ray from `i\|x\|`, `tendsto_vertical_ray`; value `E1Gen(ln\|x\| − πi − πi/2) = E1Gen(ln x − πi/2) + 2πi` by 6.4.2; boundary value from below) | `continuousWithinAt_log_of_re_neg_of_im_zero`, `intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le`, `tendsto_E1Gen_log_upper` |
+| 6.7.13 first (`\|ph z\| < π`) | `dlmf_6_7_13_first` (improper) | `tendsto_integral_exp_div_add` (`∫_0^∞ e^{∓it}/(t + z)`), `tendsto_E1Gen_log_horizontal`, `tendsto_integral_lin'` |
+| 6.7.13 second (`ℜz ≥ 0`) | `dlmf_6_7_13_second` (Lebesgue; `z = 0` from `integral_Ioi_inv_one_add_sq`) | `tendsto_integral_laplace` (logarithm `ln z + ln(t ± i)`, `tendsto_integral_of_E1Gen_lift`), `pf_f` |
+| 6.7.14 first (`\|ph z\| < π`) | `dlmf_6_7_14_first` (improper) | as 6.7.13 |
+| 6.7.14 second (`ℜz ≥ 0`, `z ≠ 0`) | `dlmf_6_7_14_second` (improper; Lebesgue for `ℜz > 0`) | `pf_g` |
+| 6.7.15, 6.7.16 (`K₀`) | DEFERRED: needs the modified Bessel function `K₀` (§10.25(ii)) | |
+
+### §6.7(iv) Compendia — references only (no equations); noted 2026-11-14
+
+### §6.8 Inequalities (`Azurite/DLMF/Chapter6/Section8.lean`) — COMPLETE 2026-11-14
+
+`x > 0`; `E₁(x)` is the real `expIntE₁R x` (`= expIntE₁ x`, `dlmf_6_3_F1_real`).  One comparison
+principle proves all six bounds: with `F = eˣE₁(x)`, `F′ = F − 1/x`, a bounded `φ` with defect
+`φ′ − φ + 1/x > 0` (resp. `< 0`) is a strict lower (resp. upper) bound
+(`lt_exp_mul_E1_of_defect_pos`, `exp_mul_E1_lt_of_defect_neg`: `E₁ − e^{−x}φ` is strictly
+monotone with limit `0`).
+
+| Equation | Lean | Defects / tools |
+|---|---|---|
+| 6.8.1 | `dlmf_6_8_1` | `(1/x + 1/(x+2))/2 − ½ ln(1 + 2/x) > 0` (`log_one_add_two_div_lt`: decreases to `0`); `1/(x+1) − ln(1 + 1/x) < 0` (`Real.log_lt_sub_one_of_pos`) |
+| 6.8.2 | `dlmf_6_8_2` | `1/(x(x+1)²)`, `−2/(x(x+2))²` |
+| 6.8.3 | `dlmf_6_8_3` | `4/(x(x²+4x+2)²)`, `−12/(x³+6x²+6x)²` |
+
+### §6.9 Continued Fraction (`Azurite/DLMF/Chapter6/Section9.lean`) — COMPLETE 2026-11-14
+
+Partial numerators `a₁ = e^{−z}`, `a_k = ⌊k/2⌋` (`e1CFa`), denominators `b₀ = 0`, `z` for odd `k`,
+`1` for even `k ≥ 2` (`e1CFb`), in §1.12's conventions.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.9.1 (`\|ph z\| < π`) | `dlmf_6_9_1` (`CfNonzero` for all `n`, and `CfConverges` to `E₁(z)`) | `e1Weight` (`\|x\| e^{−x²}` as a §5.10 `SymWeight`), `e1Weight_mom_even` (`m_{2j} = j!`, `integral_rpow_mul_exp_neg_mul_rpow`, `integral_comp_abs`), `e1T_closed`/`e1Weight_P_lam` (`λ = 1, 1, 2, 2, …`), `e1Weight_G` (`G(i√z) = −i√z eᶻE₁(z)`, `integral_comp_rpow_Ioi`, 6.2.2), `e1CF_canonical` (contraction), `e1CF_nonzero` (value regions), `SymWeight.tendsto_qz_div_pz_of_not_summable`, `Real.summable_one_div_nat_rpow` |
+| Lorentzen and Waadeland (1992, p. 577); Cuyt et al. (2008, pp. 287–290) | references | |
+
+### §6.10(i) Inverse Factorial Series (`Azurite/DLMF/Chapter6/Section10Factorial.lean`) — COMPLETE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.10.1 (`ℜz > 0`) | `dlmf_6_10_1` (partial sums `∑_{k<n} e^{−z} k! c_k/∏_{i≤k}(z+i)` tend to `E₁(z)`) | `e1c_eq_binGamma` (`c_k = ∫₀^∞ e^{−s}(−1)^k C(s,k) ds`, IBP), `hasSum_binq`, `abs_binq_partial_le` (uniform bound `2^{s+1} + 1`), `tendsto_e1Sc`, `betaJ_eq` (Beta integral), `exp_mul_E1_eq_integral`, dominated convergence |
+| 6.10.2 | `dlmf_6_10_2` | unfolding the recursion |
+| 6.10.3 | `e1c` (definition), `dlmf_6_10_3` | |
+| Nielsen (1906a, p. 283) pointer (incomplete gamma, logarithmic integral; "Formula (3) is incorrect") | reference only | |
+
+### §6.10(ii) Expansions in Series of Spherical Bessel Functions — DEFERRED 2026-11-14
+
+6.10.4 (Si), 6.10.5 (Cin), 6.10.6 (Ei), 6.10.7 (`aₙ`) are deferred until Chapter 10 provides `J_ν` and
+`I_ν` (user decision: define `jₙ`, `iₙ⁽¹⁾` from §10.47(ii), `√(π/2z) J_{n+1/2}`, not from the power
+series 10.53). Planned proof of 6.10.4: with `w = z/2`, the recurrences 10.51 give
+`d/dw (w jₙ²) = w(jₙ₋₁jₙ − jₙjₙ₊₁)` (`n ≥ 1`), so `d/dw (w ∑_{n<N} jₙ²) = sin 2w/(2w) − w j_{N−1}j_N`
+and the tail term tends to `0`; 6.10.5–6.10.6 are expected to telescope likewise with the `aₙ` weights.
+
+### §6.11 Relations to Other Functions (`Azurite/DLMF/Chapter6/Section11.lean`) — 6.11.1 DONE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 8.2.2 (definition used) | `incGammaUpper` (principal value along the horizontal ray `z + s`, as `expIntE₁`) | |
+| 6.11.1 | `dlmf_6_11_1` (all `z`) | `Complex.cpow_neg_one` |
+| 6.11.2, 6.11.3 (`U(1, 1, ·)`) | DEFERRED (user decision 2026-11-14): needs Kummer's `U`, defined by 13.2.6 (unique solution of Kummer's equation with `U ~ z^{−a}`, `\|ph z\| ≤ 3π/2 − δ`). Plan: once `U` exists, 6.11.2 by uniqueness (`eᶻE₁` continued by `E1Gen` solves `zw″ + (1 − z)w′ − w = 0`), 6.11.3 from 6.11.2 and `auxG_add_I_mul_auxF` | |
+
+### §6.12(i) Exponential and Logarithmic Integrals (`Azurite/DLMF/Chapter6/Section12.lean`) — COMPLETE 2026-11-14
+
+`e1Asymp n z = e^{−z}/z ∑_{s<n} (−1)^s s!/z^s`, `e1Term n z` the `n`-th term, `eiAsymp n x = eˣ/x ∑_{s<n} s!/x^s`.  Bridge `genExpInt_one_eq_E1Gen` (§2.11(ii) `E_p` at `p = 1` = §6.4 `E1Gen`: equal derivatives `−exp(−eʷ)`, both → 0 as `w → +∞`).
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.12.1 (`\|ph z\| ≤ 3π/2 − δ`, `\|z\| ≥ 1`) | `dlmf_6_12_1` (on the Riemann surface, `z = eʷ`), `dlmf_6_12_1_principal` | `dlmf_2_11_6` at `p = 1`, `ascPochhammer_eval_one` |
+| remainder, `\|ph z\| ≤ π/2` | `dlmf_6_12_1_remainder_right` (`ℜz ≥ 0`: `≤ \|first neglected term\|`) | exact remainder `E1Gen_sub_e1Asymp` (`genExpInt_expansion`), `norm_eiP_succ_le_ray` (from `norm_eiP_le_ray`; horizontal ray) |
+| remainder, `ph z = 0` | `dlmf_6_12_1_remainder_real` (real, sign `(−1)ⁿ`, `≤` first neglected term) | `eiP_eq_ray` with `e = 1`, `integral_complex_ofReal`, `setIntegral_pos_iff_support_of_nonneg_ae` |
+| remainder, `½π ≤ \|ph z\| < π` | `dlmf_6_12_1_remainder_left` (all `ℑz ≠ 0`: `≤ csc\|ph z\| ·` first neglected term) | ray perpendicular to `z` (`e = ∓i`), `abs_im_eq_norm_mul_sin` |
+| Olver (1997b, pp. 109–112); §§2.11(ii)–(iv) re-expansions, `p = 1` | references (§2.11 formalized there) | |
+| 6.12.2 (`x → +∞`) | `dlmf_6_12_2` (`O(eˣ/x^{n+1})` for `x ≥ 1`) | `Ei_eq_E1Gen` (`Ei(x) = −E1Gen(ln x + πi) − πi`, from 6.2.7), `e1Asymp_neg`, `Real.pow_div_factorial_le_exp` |
+| 6.12.2 remainder `≤ (1 + χ(n+1)) ×` next term (`χ` of 9.7.3; Olver 1997b, p. 227) | `dlmf_6_12_2_remainder` (all `x > 0`), `olverChi` (9.7.3). Proof after Olver (1997b), Ch. 6, Ex. 13.5 (on p. 227): one more partial integration, then `(n+1)! ∫ e^{−t}t^{−n−2} dt` from `x e^{πi}` (`Ei_sub_eiAsymp_eq`) on the vertical ray from `−x` as the limit of tilted rays (`norm_eiP_upper_le_tilt`, `norm_eiP_upper_le`, dominated convergence in the tilt angle) | `integral_one_add_sq_rpow_eq_olverChi` (Olver's Lemma 13.1 on a half-line, from `dlmf_5_12_3` with `t = σ²`, `integral_comp_rpow_Ioi`), `eiP_eq_ray`, `tendsto_integral_filter_of_dominated_convergence` |
+| `li(x)` expansion from 6.2.8 and 6.12.2 | `dlmf_6_12_li` (`O(x/(ln x)^{n+1})`, `x ≥ e`) | `dlmf_6_2_8` |
+
+### §6.12(ii) Sine and Cosine Integrals (`Azurite/DLMF/Chapter6/Section12Sine.lean`) — COMPLETE 2026-11-14
+
+The expansions of `Si`, `Ci` are 6.2.19, 6.2.20 (§6.2(iii)) with those of `f`, `g` below.  `fAsymp n z = (1/z) ∑_{m<n} (−1)^m (2m)!/z^{2m}`, `gAsymp n z = (1/z²) ∑_{m<n} (−1)^m (2m+1)!/z^{2m}`; the first neglected terms are `fAsymp (n+1) z − fAsymp n z` (`norm_fAsymp_succ_sub`) and likewise for `g`.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.12.3 (`\|ph z\| ≤ π − δ`) | `dlmf_6_12_3` (`O(\|z\|^{−2n−1})`, `\|z\| ≥ 1`) | `auxGF_asymp` (`dlmf_6_12_1` at `ln z ∓ πi/2`, `auxG_add_I_mul_auxF`, `cexp_mul_e1Asymp`), `e1AsympRot_even` (`term_even`, `term_odd`) |
+| 6.12.4 (`\|ph z\| ≤ π − δ`) | `dlmf_6_12_4` (`O(\|z\|^{−2n−2})`) | `e1AsympRot_odd` (`2n+1` terms of `E₁`) |
+| 6.12.5, 6.12.7 | `dlmf_6_12_7` (`ℜz > 0`) | `auxF_sub_fAsymp_ray` with `ω = 1`, `laplace_ray_expansion` (`geom_inv_sq_add_one`, `integral_cexp_mul_pow` from `integral_cpow_mul_cexp_neg_complex`) |
+| 6.12.6, 6.12.8 | `dlmf_6_12_8` (`ℜz > 0`) | `auxG_sub_gAsymp_ray` |
+| remainders, `\|ph z\| ≤ π/4` | `dlmf_6_12_remainder_right` (`≤` first neglected terms) | rotation to `t = ωτ`, `ω = z̄/\|z\|` (`rayDir`, `rayDir_props`): `tendsto_integral_laplace_ray` (the `E₁` lift `ln z + ln(ωτ ± i)`, `tendsto_integral_of_E1Gen_lift`), `tendsto_laplace_f_g_ray`, `auxF_auxG_ray`; `\|1 + τ²ω²\| ≥ 1` when `cos 2ph z ≥ 0` (`norm_ray_sq_add_one_ge`), `norm_laplace_ray_rem_le` |
+| remainders, `ph z = 0` | `dlmf_6_12_remainder_real` (real, sign `(−1)ⁿ`, `≤` first neglected terms) | `laplace_rem_real_pos` |
+| remainders, `π/4 ≤ \|ph z\| < π/2` | `dlmf_6_12_remainder_left` (`≤ csc(2\|ph z\|) ·` first neglected terms) | `\|1 + τ²ω²\| ≥ \|sin 2ph z\|`, `sin_two_mul_abs_eq` |
+| other phases via 6.4.6, 6.4.7; exponentially-improved via 6.5.5, 6.5.6, §6.12(i) | pointers (those equations formalized in §6.4, §6.5) | |
+
+### §6.13 Zeros (`Azurite/DLMF/Chapter6/Section13.lean`, `Section13Poly.lean`) — DONE 2026-11-14 (numerics and the remainder-sign property deferred)
+
+| Item | Lean | Main tools |
+|---|---|---|
+| `Ei` has one real zero `x₀` | `dlmf_6_13_Ei_zero` (`∃!` among `x ≠ 0`, in `(0, 1)`), `dlmf_6_13_Ei_zero_unique`, `Ei_neg_lt` | §6.3 `dlmf_6_3_F1_Ei_zero_unique`, 6.2.6 |
+| 6.13.1 `x₀ = 0.37250 74107 …` | DEFERRED (numerics; user decision 2026-11-14) | |
+| `Ci`, `si` zeros `c_k`, `s_k`, ascending, `k = 0, 1, 2, …` | `ciZero`, `siZero`, `dlmf_6_13_Ci_zeros`, `dlmf_6_13_si_zeros` (strictly increasing, zeros, every positive zero is one of them) | §6.3 `dlmf_6_3_F2_Ci_zeros`, `dlmf_6_3_F2_Si_cross`, extrema |
+| MacLeod (1996b) 30D values of `c₁`, `c₂` | DEFERRED (numerics) | |
+| 6.13.2 | `dlmf_6_13_2` (`O(α^{−9})` for `k ≥ 32`), `zeroAsymp` | `CiR_eq_psi`, `siR_eq_psi` (one equation `f sin(x − α) = g cos(x − α)`), `zero_location` (zero in `(α, α + 4/α]`, Jordan's inequality), `zero_residual_bound` (`fR_gR_spec` = §6.12(ii) real remainders, `sin_taylor_le`/`cos_taylor_le` from `Complex.exp_bound`, `zero_poly_identity`, compactness bound on the cofactor `zeroPolyR`), `zero_asymp_core` (`Convex.mul_sub_le_image_sub_of_le_deriv`) |
+| remainder of 6.13.2 after `n` terms `≤` the `(n+1)`th term, same sign (MacLeod 2002a, Nemes 2025); next three terms | PENDING: needs the source (Nemes 2025 / MacLeod 2002a) | |
+| Riekstynš (1991, pp. 176–177) | reference | |
+
+### §6.14(i) Laplace Transforms (`Azurite/DLMF/Chapter6/Section14.lean`) — COMPLETE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.14.1 (`ℜa > −1`) | `dlmf_6_14_1` (`a ≠ 0`), `dlmf_6_14_1_zero` (`a = 0`: `∫_0^∞ E₁ = 1`, the limit of `(1/a)ln(1 + a)`) | `integral_Ioi_zero_of_hasDerivAt` (FTC on `(0, ∞)`), `Φ = −(1/a)(e^{−at}E₁(t) − E₁((1 + a)t))`, `tendsto_expIntE₁_mul_add_log` (`dlmf_6_3_F3_log`), `tendsto_mul_of_add_log`, `tendsto_exp_sub_one_mul`, `integrableOn_Ioi_of_log_exp_bound` |
+| 6.14.2 (`ℜa > 0`) | `dlmf_6_14_2` | `Φ = −(1/a)(e^{−at}Ci(t) + ½E₁((a − i)t) + ½E₁((a + i)t))`, `tendsto_Ci_sub_log`, `abs_CiR_siR_le_two`, `Complex.log_mul` |
+| 6.14.3 (`ℜa > 0`) | `dlmf_6_14_3` (`Complex.arctan`) | `Φ = −(1/a)(e^{−at}si(t) + (E₁((a − i)t) − E₁((a + i)t))/(2i))`, `arctan_eq_of_re_pos` (`arctan a = π/2 − (ln(a + i) − ln(a − i))/(2i)`, `Real.strictMonoOn_tan`, `log_exp`) |
+
+### §6.14(ii) Other Integrals (`Azurite/DLMF/Chapter6/Section14Other.lean`) — COMPLETE 2026-11-14
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.14.4 | `dlmf_6_14_4` (from `integral_E1R_sq`) | antiderivative `tE₁² − 2(e^{−t}E₁(t) − E₁(2t))`, `integral_Ioi_zero_of_hasDerivAt_real`, `tendsto_E1R_sub_log`, `tendsto_mul_sq_of_sub_log`, `tendsto_cos_exp_sub_one_mul` |
+| 6.14.5 | `dlmf_6_14_5` (improper `∫_0^R` limits; not Lebesgue-integrable) | `tendsto_integral_cos_CiR` (`sin t Ci − Si(2t)/2`), `tendsto_integral_sin_siR` (`−cos t si + Si(2t)/2`), `intervalIntegrable_of_log_bound` |
+| 6.14.6 | `dlmf_6_14_6` (`integral_CiR_sq`, `integral_siR_sq`) | `t Ci² − 2 sin t Ci + Si(2t)`, `t si² + 2 cos t si − Si(2t)`, `integrableOn_mul_of_log_bounds` (`log_sq_le_rpow`), `abs_le_two_div` |
+| 6.14.7 | `dlmf_6_14_7` (`integral_CiR_siR`) | `t Ci si − sin t si + cos t Ci − Ci(2t)`; `cos t Ci(t) − Ci(2t) → −ln 2` |
+
+### §6.14(iii) Compendia — references only (no equations); noted 2026-11-14
+
+### §6.15 Sums (`Azurite/DLMF/Chapter6/Section15.lean`) — COMPLETE 2026-11-14
+
+Sums `∑_{n=1}^∞` as `HasSum` over `n : ℕ` with `n + 1`.
+
+| Equation | Lean | Main tools |
+|---|---|---|
+| 6.15.1 | `dlmf_6_15_1` | `CiR_nat_mul_pi` (`Ci(πm) = −(−1)^m g(πm)`), `hasSum_gR` (`gR_eq_integral` = 6.7.14, geometric series, `hasSum_integral_of_summable_integral_norm`), `integral_Tg` (`1/(e^x+1) = 1/(e^x−1) − 2/(e^{2x}−1)`, `integral_binB_scaled` via `integral_comp_mul_left_Ioi`), `binB_half`, `binB_one` (`digamma_ofReal_eq_binB` = 5.9.15, `dlmf_5_4_13`) |
+| 6.15.2 | `dlmf_6_15_2` | `siR_nat_mul_pi`, `hasSum_fR` (`fR_eq_integral` = 6.7.13, `Real.hasSum_pow_div_log_of_abs_lt_one`), `integral_Tf` (`ln(1+x) = ln(1−x²) − ln(1−x)`, `integral_binA_scaled`, `integrableOn_binA_scaled`), `binA_one`, `binA_half` (`binA_spec` = 5.9.10_1, `Real.Gamma_one_half_eq`) |
+| 6.15.3 | `dlmf_6_15_3` | `CiR_two_nat_mul_pi`, `hasSum_gR` at `c = 2π`, `binB_two` (`digamma_apply_add_one`) |
+| 6.15.4 | `dlmf_6_15_4` | `siR_two_nat_mul_pi`, `hasSum_fR` at `c = 2π`, `binA_two` |
+| Fempl (1960), Hansen (1975), Harris (2000), Prudnikov et al. (1986b), Slavić (1974) | references | |
+
+### §6.16(i) The Gibbs Phenomenon (`Azurite/DLMF/Chapter6/Section16.lean`) — COMPLETE 2026-11-15 (one erratum)
+
+| Item | Lean | Main tools |
+|---|---|---|
+| 6.16.1 | `dlmf_6_16_1` (partial-sum limits `π/4`, `0`, `−π/4`; conditionally convergent, so via `gibbsS`) | `gibbsS_eq`, `tendsto_SiR`, `tendsto_gibbsR`, `gibbsS_neg` |
+| 6.16.2 | `gibbsS`, `dlmf_6_16_2`, `dlmf_6_16_2_integral` | `sum_cos_odd`, `ae_sin_ne_zero` (zeros of `sin` countable), `SiR_eq_integral`, `integral_sin_div_eq_SiR` (`integral_comp_mul_left`) |
+| 6.16.3 | `gibbsR` (definition) | |
+| 6.16.4 | `dlmf_6_16_4` (uniform on `[−a, a]`, `a < π`) | `abs_gibbsR_le` (`integral_mul_deriv_eq_deriv_mul_of_hasDeriv_right`), `gibbsH_small` (`Real.sin_bound`, `Real.cos_bound`), `gibbsH_bounds` (compactness on `[1, a]`), `gibbsR_neg` |
+| 6.16.4 on `[−π, π]` | ERRATUM: false; `dlmf_6_16_4_endpoint` (`R_n(π) → −π/4`) — see `docs/dlmf_errata.md` | `gibbsS_pi` |
+| overshoot/undershoot prose | `dlmf_6_16_gibbs` (`S_n(π/(2n)) → ½Si(π) > π/4`, `S_n(π/n) → ½Si(2π) < π/4`); decimals `1.1789…`, 18%, 10% DEFERRED (numerics) | `dlmf_6_3_F2_Si_extrema` |
+| non-uniform convergence | `dlmf_6_16_not_uniform` | `Metric.tendstoUniformlyOn_iff` |
+| Figure 6.16.1, Carslaw (1930) | graphic / reference (content covered by the above) | |
+
+### §6.16(ii) Number-Theoretic Significance of li(x) — DEFERRED 2026-11-15
+
+| Item | Status |
+|---|---|
+| 6.16.5 (RH ⇒ `li(x) − π(x) = O(√x ln x)`, von Koch 1901) | DEFERRED (user decision): needs the explicit formula for `ψ(x)` (Perron's formula, contour shifting past the zeros of `ζ`, bounds for `ζ′/ζ`, the zero count `N(T)`), none of which is in Mathlib (it has `RiemannHypothesis`, `ζ`, and Chebyshev's `ψ`, `θ`, but not even PNT). Revisit with Chapters 25/27. The final partial-summation step `ψ → θ → π` is elementary. |
+| Figure 6.16.2 (`li(x)` vs `π(x)`, `x = 10, …, 1000`) | DEFERRED (numerics) |
+| Bays and Hudson (2000) | reference |
+
+### §6.17 Physical Applications — references only (no equations); noted 2026-11-15
+
+### §6.18 Methods of Computation (`Azurite/DLMF/Chapter6/Section18.lean`) — COMPLETE 2026-11-15
+
+| Item | Lean | Main tools |
+|---|---|---|
+| §6.18(i) power series (§6.6), spherical Bessel series (§6.10(ii)), inverse factorial series (§6.10(i)), asymptotics (§6.12), exponential improvement, continuation (§6.4), quadrature (Gauss–Laguerre on 6.2.2, §3.5(v); Gauss–Legendre), continued fraction 6.9.1 | pointers; status of each below | |
+| 6.18.1 | `actonA`, `actonB`, `actonC`; `acton_initial` (`f = B₀`, `g = A₀`, `C₀ = 1/z`, `ℜz > 0`) | `dlmf_6_7_13_second`, `dlmf_6_7_14_second`, `integral_cexp_mul_pow` |
+| 6.18.2 | `dlmf_6_18_2` (`n ≥ 1`, `ℜz > 0`) | `laplace_ibp` (`ℒ(q′) = zℒ(q)`, `integral_Ioi_of_hasDerivAt_of_tendsto`), `lapR_linear` |
+| Miller's algorithm for 6.18.2, start `(1, 0, 0)`, normalized by `C₀ = 1/z` | NOT formalized (no convergence claim in DLMF; a proof needs the dominance structure of the 3-term system) | |
+| §6.18(iii) Newton from 6.13.2 | `dlmf_6_18_iii` (`k ≥ K₀`: `|x_{j+1} − ζ| ≤ 3|x_j − ζ|²`, `x_j → ζ`, for `c_k` and `s_k`) | `newton_sq_estimate` (§3.8), `newton_trig_zero`, `newton_iter_quadratic`, `zero_location`, `dlmf_6_13_2` |
+| §6.18(iv) van der Laan and Temme (1984, Ch. IV) | reference | |
+
+**Computation status for a certified `AzFloat` `E₁`, `Ei`, `li`, `Si`, `Ci`, `f`, `g` (2026-11-15).**
+Formalized ingredients:
+* Real `E₁(x)`: power series 6.6.2 (`dlmf_6_6_2`; alternating, cancellation ≈ `x/ln 2` bits for
+  `E₁ ≈ e^{−x}/x`); asymptotic 6.12.1 with remainder ≤ first neglected term and of its sign for
+  `x > 0` (`dlmf_6_12_1_remainder_real`) — attainable relative accuracy ≈ `e^{−x}`, so usable
+  for `x ≳ p ln 2`.
+* Real `Ei(x)`, `li(x) = Ei(ln x)`: series 6.6.1 (positive terms, no cancellation); asymptotic 6.12.2
+  with Olver's bound `(1 + χ(n+1))` × next term (`dlmf_6_12_2_remainder`; `χ` as a Γ ratio, `olverChi`).
+* Real `Si`, `Ci`: series 6.6.5–6.6.6 (alternating, ≈ `x/ln 2` guard bits); for large `x`
+  `Si = π/2 − f cos − g sin`, `Ci = f sin − g cos` (6.2.19–20) with the `f`, `g` asymptotics and
+  remainders ≤ first neglected terms, same sign (`dlmf_6_12_remainder_real`).
+* Complex `E₁(z)`: series (all `z`), asymptotic 6.12.1 with explicit bounds for `ℜz ≥ 0` and
+  `csc|ph z|` for `ℑz ≠ 0` (`dlmf_6_12_1_remainder_right/left`); O-bounds (existential constant)
+  on `|ph z| ≤ 3π/2 − δ` (`dlmf_6_12_1`); continued fraction 6.9.1 converges on `|ph z| < π`
+  (`dlmf_6_9_1`); inverse factorial series 6.10.1 converges for `ℜz > 0` (`dlmf_6_10_1`).
+* `f`, `g`: Laplace forms (6.7.13–14), Acton's recurrence (6.18.2).
+* Zeros: brackets (§6.3, §6.13), asymptotics 6.13.2 (O-form), Newton convergence for `k ≥ K₀`.
+* AzFloat already has `exp`, `ln`, `sin`/`cos`, `π`, `γ` (Euler's constant), `ln 2`.
+
+Gaps (in rough order of usefulness):
+1. ~~Explicit tail bounds for the power series 6.6.1–6.6.6~~ — DONE 2026-11-15
+   (`Chapter6/Section6Tail.lean`, see the §6.6 tail entry below).
+2. The AzFloat algorithms themselves (real `E₁`, `Ei`, `li`, `Si`, `Ci`): series below `≈ p ln 2`,
+   asymptotics above, interval brackets, Ziv loops, and the bridge to `expIntE₁`, `Ei`, `SiR`, `CiR`.
+3. ~~A computable upper bound for `χ(n)`~~ — DONE 2026-11-15 (`Chapter6/Section12Chi.lean`:
+   `√(πa/2) ≤ χ(a) ≤ √(π(a+1)/2)`, `χ(a) ≤ a + 1`; `dlmf_6_12_2_remainder_sqrt`,
+   `dlmf_6_12_2_remainder_nat`).
+4. ~~Explicit constants in 6.13.2 and `K₀`~~ — DONE 2026-11-15: `|zeroPolyR| ≤ 31627` on
+   `[0, 1/100]` (`abs_zeroPolyR_le`), residual constant `zeroK = 434831`, 6.13.2 with constant
+   `4·434831` for `k ≥ 32` (`dlmf_6_13_2_explicit`), Newton from 6.13.2 for every `k ≥ 32`
+   (`dlmf_6_18_iii_explicit`).  Still open (numerical, AzFloat stage): the 64 small zeros
+   `c₀ … c₃₁`, `s₀ … s₃₁`, whose proven brackets have width `π`.
+5. Complex `E₁` near the negative axis: explicit sector constants, or exponential improvement (§2.11).
+6. Truncation bounds for the continued fraction 6.9.1 / inverse factorial series 6.10.1 (speed only).
+7. Convergence of Miller's algorithm for 6.18.2; spherical Bessel series (needs Chapter 10).
+
+### §6.6 supplement: explicit truncation bounds (`Azurite/DLMF/Chapter6/Section6Tail.lean`) — DONE 2026-11-15
+
+Gap 1 of the §6.18 computation list.  Not DLMF equations; tools for certified evaluation.
+
+| Series | Complex (ratio, `0 ≤ r < 1`) | Real (sharper) |
+|---|---|---|
+| 6.6.4 `Ein` | `norm_ein_sub_partial_le` (`\|z\| ≤ r(n+2)`: tail `≤ \|tₙ\|/(1−r)`) | `ein_real_tail` (`x ≤ n + 2`: `≤ tₙ`, sign `(−1)ⁿ`) |
+| 6.6.2 `E₁` | `norm_expIntE₁_sub_partial_le` | `expIntE₁R_tail` |
+| 6.6.1 `Ei` | — | `Ei_tail` (`x ≤ r(n+2)`: `0 ≤ R ≤ tₙ/(1−r)`) |
+| 6.6.5 `Si` | `norm_Si_sub_partial_le` (`\|z\|² ≤ r(2n+2)(2n+3)`) | `SiR_tail` (`x² ≤ (2n+2)(2n+3)`: `≤ sₙ`, sign `(−1)ⁿ`) |
+| 6.6.6 `Ci` | `norm_Ci_sub_partial_le` (`\|z\|² ≤ r(2n+3)(2n+4)`) | `CiR_tail` (`x² ≤ (2n+3)(2n+4)`: `≤ cₙ`, sign `(−1)^{n+1}`) |
+
+Generic: `norm_tail_le_of_ratio` (`HasSum.norm_le_of_bounded` against a geometric series),
+`alternating_tail` (`Antitone.alternating_series_le_tendsto`, `Antitone.tendsto_le_alternating_series`).
+
+### §6.12(i) supplement: computable bounds for `χ` (`Azurite/DLMF/Chapter6/Section12Chi.lean`) — DONE 2026-11-15
+
+Gap 3 of the §6.18 computation list.
+
+| Result | Lean | Main tools |
+|---|---|---|
+| `√(πa/2) ≤ χ(a) ≤ √(π(a+1)/2)`, `a > 0` | `sqrt_le_olverChi`, `olverChi_le_sqrt` | `Gamma_midpoint_sq_le` (`Γ((s+t)/2)² ≤ Γ(s)Γ(t)`, from `Real.Gamma_mul_add_mul_le_rpow_Gamma_mul_rpow_Gamma`), `Real.Gamma_add_one` |
+| `χ(a) ≤ a + 1`, `a ≥ 1` | `olverChi_le_add_one` | `Real.pi_lt_four` |
+| 6.12.2 remainder `≤ (1 + √(π(n+2)/2))` resp. `(n + 3)` × next term | `dlmf_6_12_2_remainder_sqrt`, `dlmf_6_12_2_remainder_nat` | `dlmf_6_12_2_remainder` |
+
+### §6.13/§6.18 supplement: explicit constants (`Section13Poly.lean`, `Section13.lean`, `Section18.lean`) — DONE 2026-11-15
+
+Gap 4 of the §6.18 computation list.
+
+| Result | Lean | Main tools |
+|---|---|---|
+| `\|zeroPolyR(t)\| ≤ 31627` on `[0, 1/100]` (constant term `−31618.89…`) | `abs_zeroPolyR_le` | Horner form `hornerR` (`zeroPolyR_eq_horner`, by `ring`), `abs_hornerR_le` (triangle inequality against `zeroCoeffsAbs`), `hornerR_mono`, `norm_num` on the 97 coefficients |
+| residual `≤ 434831/α^{10}` (`α ≥ 100`) | `zero_residual_bound_explicit`, `zeroK`, `zeroK_eq` | |
+| 6.13.2 with constant `4·434831` for `k ≥ 32` | `dlmf_6_13_2_explicit`, `zero_asymp_core_explicit` (old `∃` forms kept as corollaries) | |
+| Newton from 6.13.2 converges quadratically for every `k ≥ 32` | `dlmf_6_18_iii_explicit` (`K₀ = 32`; `4·434831/α⁹ ≤ 1/6` since `α ≥ 100`) | |
