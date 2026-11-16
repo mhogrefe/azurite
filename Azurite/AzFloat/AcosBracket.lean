@@ -19,7 +19,9 @@ For `0 < a < 1` the half-angle identity
 
 gives an arctangent argument `t ∈ (0, 1)`; and `arccos (−a) = π − arccos a`.
 
-* `acosQuot a P` encloses `(1 − a)/(1 + a)` and `acosArg a P` encloses `t`, by directed
+* `diffQuot x y P` encloses `(x − y)/(x + y)` and `diffQuotSqrt x y P` its square root for
+  floats `0 < y < x` (shared with the arcsecant); `acosQuot a P`, `acosArg a P` are the
+  instances `x = 1`, `y = a`, by directed
   roundings at `P` bits of the correctly rounded `1 − a` and `1 + a`, their quotient and its
   square root.  All errors are relative, so `t` keeps its relative accuracy for `a` next to
   `1`, where `arccos a ≈ √(2 (1 − a))` is small.  The width is at most `40·2^(−P)`.
@@ -38,19 +40,25 @@ The proofs are in `Equiv/AcosBracket.lean`.
 
 namespace Azurite.AzFloat
 
-/-- An enclosure of `(1 − a)/(1 + a)` for a float `0 < a < 1`, at precision `P`, with relative
-accuracy. -/
-def acosQuot (a : AzFloat) (P : Nat) : Encl :=
-  let dl := (subPrecRound one a P .Floor).1
-  let dh := (subPrecRound one a P .Ceiling).1
-  let el := (addPrecRound one a P .Floor).1
-  let eh := (addPrecRound one a P .Ceiling).1
+/-- An enclosure of `(x − y)/(x + y)` for floats `0 < y < x`, at precision `P`, with relative
+accuracy: from the correctly rounded difference and sum. -/
+def diffQuot (x y : AzFloat) (P : Nat) : Encl :=
+  let dl := (subPrecRound x y P .Floor).1
+  let dh := (subPrecRound x y P .Ceiling).1
+  let el := (addPrecRound x y P .Floor).1
+  let eh := (addPrecRound x y P .Ceiling).1
   ((divPrecRound dl eh P .Floor).1, (divPrecRound dh el P .Ceiling).1)
 
-/-- An enclosure of `√((1 − a)/(1 + a))` for a float `0 < a < 1`, at precision `P`. -/
-def acosArg (a : AzFloat) (P : Nat) : Encl :=
-  let q := acosQuot a P
+/-- An enclosure of `√((x − y)/(x + y))` for floats `0 < y < x`, at precision `P`. -/
+def diffQuotSqrt (x y : AzFloat) (P : Nat) : Encl :=
+  let q := diffQuot x y P
   ((sqrtPrecRound q.1 P .Floor).1, (sqrtPrecRound q.2 P .Ceiling).1)
+
+/-- An enclosure of `(1 − a)/(1 + a)` for a float `0 < a < 1`, at precision `P`. -/
+def acosQuot (a : AzFloat) (P : Nat) : Encl := diffQuot one a P
+
+/-- An enclosure of `√((1 − a)/(1 + a))` for a float `0 < a < 1`, at precision `P`. -/
+def acosArg (a : AzFloat) (P : Nat) : Encl := diffQuotSqrt one a P
 
 /-- The level of the arctangent for `arccos a`, `0 < a < 1`, at Ziv level `w`. -/
 def acosWork (a : AzFloat) (w : Nat) : Nat :=

@@ -7253,3 +7253,51 @@ Tests: `Tests/AcosRat.lean`, `Tests/AcosWithPeriod.lean`, `Tests/AcosRatWithPeri
 
 **Inverse trig arc: open items.**  Nothing is timed except `atan` itself.  `asinDouble_spec`
 duplicates `atanDouble_spec`; `negSwapApprox` (TanBracket) duplicates `enclApprox`.
+
+## Inverse reciprocal trigonometric arc: `asec` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The user wants the inverse reciprocal functions (`asec`, then presumably `acsc`, `acot` and
+their variants): there is no MPFR counterpart, so these matter.  Malachite tables are supplied
+per function.
+
+`asecPrecRound x p mode`, `asec x` (`AzFloat/Asec.lean`), `asecPrecRound_eq_liftVal` against
+`Spec.asec` (`arccos (1/a)`).  Special values after the table: `NaN` for `NaN` and `|x| < 1`
+(including `0`); `π/2` at `±∞`; `0` at `1` (exact); `π` at `−1`.
+
+* **Reduction**: `arcsec a = 2 arctan √((a − 1)/(a + 1))` for `a > 1`
+  (`arccos_inv_eq_two_arctan`), `arcsec (−a) = π − arcsec a`.  **No reciprocal is formed**: a
+  rounded `1/x` would destroy the relative accuracy next to `1`, where the result is
+  `≈ √(2 (x − 1))`.
+* The arccosine file was refactored for this: `diffQuot x y`, `diffQuotSqrt x y` enclose
+  `(x − y)/(x + y)` and its root for floats `0 < y < x`; `acos` is `(1, a)`, `asec` is
+  `(a, 1)`.  `asecBracket` is then word for word `acosBracket`.
+* Irrationality from `irrational_arccos_rat` at the rational `1/x`.
+* No special path for huge `x` (next to the irrational `π/2`; tested at `±2^(2^30)`).
+
+For the variants: `asec (x) u/(2π)` has the rational values of `acos` at `1/x ∈ {1, −1, 1/2,
+−1/2}`, i.e. `x ∈ {1, −1, 2, −2}`, plus `u/4` at `±∞`; a huge `x` is exponentially close to
+`u/4` (use `u/4 ∓ arcsin (1/|x|) u/(2π)` with exact `u/4` and the orientation, as in
+`acosPeriodOf`).
+
+Tests: `Tests/Asec.lean` (reference `arccos (1/x)`; `1 + 2^(−190)` at 200 bits).  NOT timed.
+
+## `asecRat`, `asecWithPeriod`, `asecRatWithPeriod`, `asecPi`, `asecPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The arcsecant family of six is complete.
+
+* **Rationals** (`asecRat`, `asecRatWithPeriod`, in `AsecRat.lean`): the reciprocal of a
+  rational is an exact rational, so these are `acosRat`/`acosRatWithPeriod` at `q⁻¹` for
+  `den ≤ num` (`one_le_abs_toRat_iff`) and `NaN` otherwise — two-line definitions and proofs.
+* **`asecWithPeriod`** (float) after the Malachite table: `NaN` for `|x| < 1` before `u = 0`;
+  `u/4` at `±∞`; `0` at `1` or for `u = 0`; `u/2` at `−1`; `u/6` at `2`, `u/3` at `−2`
+  (`turnRatio`).  Irrational elsewhere (`irrational_arccos_rat_mul_div_two_pi` at `1/x`).
+* **Bracket**: `acosPeriodOf` at `a = 1/|x|`, with `asecBracket false x` for `arccos (1/|x|)`
+  and, for the "small" form (`|x| ≥ 2`), `asecComplement`: `π/2 − arccos (1/|x|)` clamped at
+  `0`, an enclosure of `arcsin (1/|x|)` with **absolute** accuracy only.  That is enough: the
+  small form exists to put the exact float `u/4` into the enclosure, and for a huge `x` the
+  enclosure `u/4 ∓ [0, tiny]` has `u/4` as an end, which the orientation makes the lower one.
+  (No relatively accurate `arcsin (1/x)` — i.e. `acsc` — is needed for this.)
+* **`asecPi`, `asecPiRat`**: period-`2` instances.
+
+Tests: `Tests/AsecRat.lean` (both rational functions), `Tests/AsecWithPeriod.lean`,
+`Tests/AsecPi.lean`; huge arguments `±2^(2^30)` in all three modes.  NOT timed.

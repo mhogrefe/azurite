@@ -16,7 +16,8 @@ import Azurite.Transcendental.Cos
 
 * Real analysis: `arccos_eq_two_arctan` (the half-angle identity), `irrational_arccos_rat`
   (from `irrational_cos_rat`).
-* `acosQuot_spec` and `acosArg_spec` (relative error analysis; width at most `40·2^(−P)`),
+* `diffQuot_spec`, `diffQuotSqrt_spec` (relative error analysis; width at most `40·2^(−P)`)
+  and the instance `acosArg_spec`,
   `atanDouble_spec` (the doubled `atanWiden`, width at most `2^(−w)/128`),
   `acosBracket_spec` (width at most `2^(−w)`), `acosApprox_spec`,
   `acosApprox_isSome_exists` (the Ziv certificate).
@@ -71,15 +72,16 @@ theorem irrational_arccos_rat {q : ℚ} (h1 : -1 ≤ (q : ℝ)) (h2 : (q : ℝ) 
 
 /-! ### The argument -/
 
-/-- **The enclosure of `Q = (1 − a)/(1 + a)`** for a float `0 < a < 1`, with relative accuracy:
+/-- **The enclosure of `Q = (x − y)/(x + y)`** for floats `0 < y < x`, with relative accuracy:
 `0 ≤ lo`, `(1 − 6ε) Q ≤ lo ≤ Q ≤ hi ≤ (1 + 8ε) Q`, `ε = 2^(−P)`. -/
-theorem acosQuot_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)) (h0 : 0 < av)
-    (h1 : av < 1) {P : ℕ} (hP : 8 ≤ P) :
-    ∃ ql qh : ℝ, (acosQuot a P).1.toVal = some (ql : EReal) ∧
-      (acosQuot a P).2.toVal = some (qh : EReal) ∧ 0 ≤ ql ∧
-      (1 - 6 * (1 / 2 : ℝ) ^ P) * ((1 - av) / (1 + av)) ≤ ql ∧ ql ≤ (1 - av) / (1 + av) ∧
-      (1 - av) / (1 + av) ≤ qh ∧ qh ≤ (1 + 8 * (1 / 2 : ℝ) ^ P) * ((1 - av) / (1 + av)) := by
-  unfold acosQuot
+theorem diffQuot_spec {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hy : y.toVal = some (yv : EReal)) (h0 : 0 < yv) (h1 : yv < xv) {P : ℕ} (hP : 8 ≤ P) :
+    ∃ ql qh : ℝ, (diffQuot x y P).1.toVal = some (ql : EReal) ∧
+      (diffQuot x y P).2.toVal = some (qh : EReal) ∧ 0 ≤ ql ∧
+      (1 - 6 * (1 / 2 : ℝ) ^ P) * ((xv - yv) / (xv + yv)) ≤ ql ∧
+      ql ≤ (xv - yv) / (xv + yv) ∧ (xv - yv) / (xv + yv) ≤ qh ∧
+      qh ≤ (1 + 8 * (1 / 2 : ℝ) ^ P) * ((xv - yv) / (xv + yv)) := by
+  unfold diffQuot
   dsimp only
   have : NeZero P := ⟨by omega⟩
   set ε := (1 / 2 : ℝ) ^ P with hε
@@ -90,8 +92,8 @@ theorem acosQuot_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)
     norm_num at this
     linarith
   have hεε : ε * ε ≤ ε / 256 := by nlinarith
-  set D := 1 - av with hD
-  set E := 1 + av with hE
+  set D := xv - yv with hD
+  set E := xv + yv with hE
   have hD0 : 0 < D := by rw [hD]; linarith
   have hE0 : 0 < E := by rw [hE]; linarith
   set Q := D / E with hQ
@@ -100,10 +102,10 @@ theorem acosQuot_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)
   have hQ1 : Q ≤ 1 := by
     rw [hQ, div_le_one hE0, hD, hE]
     linarith
-  obtain ⟨dl, hdl, hdl1, hdl2⟩ := subFloor_abs toVal_one' ha P
-  obtain ⟨dh, hdh, hdh1, hdh2⟩ := subCeiling_abs toVal_one' ha P
-  obtain ⟨el, hel, hel1, hel2⟩ := addFloor_abs toVal_one' ha P
-  obtain ⟨eh, heh, heh1, heh2⟩ := addCeiling_abs toVal_one' ha P
+  obtain ⟨dl, hdl, hdl1, hdl2⟩ := subFloor_abs hx hy P
+  obtain ⟨dh, hdh, hdh1, hdh2⟩ := subCeiling_abs hx hy P
+  obtain ⟨el, hel, hel1, hel2⟩ := addFloor_abs hx hy P
+  obtain ⟨eh, heh, heh1, heh2⟩ := addCeiling_abs hx hy P
   rw [← hD, abs_of_pos hD0, ← hε] at hdl2 hdh2
   rw [← hD] at hdl1 hdh1
   rw [← hE, abs_of_pos hE0, ← hε] at hel2 heh2
@@ -170,18 +172,18 @@ theorem acosQuot_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)
     rw [e5]
     linarith
 
-/-- **The enclosure of `t = √((1 − a)/(1 + a))`** for a float `0 < a < 1`: nonnegative lower
+/-- **The enclosure of `t = √((x − y)/(x + y))`** for floats `0 < y < x`: nonnegative lower
 end, width at most `40·2^(−P)`. -/
-theorem acosArg_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)) (h0 : 0 < av)
-    (h1 : av < 1) {P : ℕ} (hP : 8 ≤ P) :
-    ∃ tl th : ℝ, (acosArg a P).1.toVal = some (tl : EReal) ∧
-      (acosArg a P).2.toVal = some (th : EReal) ∧ 0 ≤ tl ∧
-      tl ≤ √((1 - av) / (1 + av)) ∧ √((1 - av) / (1 + av)) ≤ th ∧
+theorem diffQuotSqrt_spec {x y : AzFloat} {xv yv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hy : y.toVal = some (yv : EReal)) (h0 : 0 < yv) (h1 : yv < xv) {P : ℕ} (hP : 8 ≤ P) :
+    ∃ tl th : ℝ, (diffQuotSqrt x y P).1.toVal = some (tl : EReal) ∧
+      (diffQuotSqrt x y P).2.toVal = some (th : EReal) ∧ 0 ≤ tl ∧
+      tl ≤ √((xv - yv) / (xv + yv)) ∧ √((xv - yv) / (xv + yv)) ≤ th ∧
       th - tl ≤ 40 * (1 / 2 : ℝ) ^ P := by
-  unfold acosArg
+  unfold diffQuotSqrt
   dsimp only
   have : NeZero P := ⟨by omega⟩
-  obtain ⟨ql, qh, hql, hqh, hql0, hql6, hqlQ, hQqh, hqh8⟩ := acosQuot_spec ha h0 h1 hP
+  obtain ⟨ql, qh, hql, hqh, hql0, hql6, hqlQ, hQqh, hqh8⟩ := diffQuot_spec hx hy h0 h1 hP
   set ε := (1 / 2 : ℝ) ^ P with hε
   have hε0 : 0 < ε := by positivity
   have hε1 : ε ≤ 1 / 256 := by
@@ -189,7 +191,7 @@ theorem acosArg_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
     rw [← hε] at this
     norm_num at this
     linarith
-  set Q := (1 - av) / (1 + av) with hQ
+  set Q := (xv - yv) / (xv + yv) with hQ
   have hQ0 : 0 < Q := div_pos (by linarith) (by linarith)
   have hQ1 : Q ≤ 1 := by
     rw [hQ, div_le_one (by linarith)]
@@ -228,6 +230,16 @@ theorem acosArg_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
   have e2 : (1 - 6 * ε) * T = T - 6 * (T * ε) := by ring
   have e3 : (1 + 8 * ε) * T = T + 8 * (T * ε) := by ring
   exact ⟨tl, th, htl, hth, htl0, htl1.trans hslT, hTsh.trans hth1, by linarith⟩
+
+/-- **The enclosure of `t = √((1 − a)/(1 + a))`** for a float `0 < a < 1`: nonnegative lower
+end, width at most `40·2^(−P)`. -/
+theorem acosArg_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal)) (h0 : 0 < av)
+    (h1 : av < 1) {P : ℕ} (hP : 8 ≤ P) :
+    ∃ tl th : ℝ, (acosArg a P).1.toVal = some (tl : EReal) ∧
+      (acosArg a P).2.toVal = some (th : EReal) ∧ 0 ≤ tl ∧
+      tl ≤ √((1 - av) / (1 + av)) ∧ √((1 - av) / (1 + av)) ≤ th ∧
+      th - tl ≤ 40 * (1 / 2 : ℝ) ^ P :=
+  diffQuotSqrt_spec toVal_one' ha h0 h1 hP
 
 /-! ### The bracket -/
 
