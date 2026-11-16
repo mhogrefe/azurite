@@ -19,7 +19,9 @@ import Azurite.AzFloat.LnP1
 `lnP1Start e p` as `lnP1` does.  For finite `x > −1` (so `1 + x > 0`, and
 `1 + x ≠ 1`) and a positive finite base `b ≠ 1`, the odd part and dyadic exponent of `1 + x`
 are computed directly from those of `x` (`onePlusDyadic`) and the common-root test
-`logBaseFloatExact?` decides exactness; otherwise the certified Ziv loop runs on
+`logBaseFloatExact?` decides exactness (`logBaseFloatP1Exact?`, which first runs the cheap
+test `onePlusSkip` so that a huge or tiny `x` never has `1 + x` built in full); otherwise the
+certified Ziv loop runs on
 `logBaseFloatP1Approx`, the `ln (1 + x)` bracket of `lnP1` divided by the clamped `ln b`
 bracket.  The special values are those of `logBaseFloatPrecRound` at `1 + x`: `x = ∞`, `x = 0`
 and `x = −1` delegate to it at `∞`, `1` and `0`; `NaN` for `NaN`, `−∞` and `x < −1`; `b = 1`
@@ -38,14 +40,14 @@ def logBaseFloatP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fini
     else none) with
   | some r => r
   | none =>
-  match hx : logBaseFloatExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
-      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (dyadicExp eb mb) (oddPart mb) with
+  match hx : logBaseFloatP1Exact? s (dyadicExp e m) (oddPart m) (dyadicExp eb mb)
+      (oddPart mb) with
   | some r => ofAzRatRound r p mode
   | none =>
     zivLoopCertified (logBaseFloatP1Approx (finite s e q m hv) (finite true eb qb mb hvb) eb)
       p mode (lnP1Start e p)
       (logBaseFloatP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt eb hvb hb1
-        (irrational_logBaseFloatP1_of_none s e hv hgt eb hvb hb1 hx)
+        (irrational_of_logBaseFloatP1Exact?_none s e hv hgt eb hvb hb1 hx)
         _ (by have := lnP1Start_ge e p; omega))
 
 /-- Finite `x > −1`: dispatch on the base. -/

@@ -120,7 +120,14 @@ theorem powBaseM1PrecRound_eq (u : UInt64) (x : AzFloat) (p : ℕ) [NeZero p]
         rw [Real.rpow_def_of_pos (by exact_mod_cast (by omega : 0 < u.toNat)), mul_comm]
         exact expM1TinyFloat?_eq hv hc hd (by linarith) hc1 hd1
           (abs_mul_log_nat_lt (u := u.toNat) (by omega) u.toBitVec.isLt
-            (abs_finiteVal_bounds s e hv).2) hT
+            (abs_finiteVal_bounds s e hv).2) (eq_some_of_guardedBy hT)
+      split
+      · next r' hT =>
+        have hlog := half_le_log_nat (u := u.toNat) (by omega)
+        rw [Real.rpow_def_of_pos (by exact_mod_cast (by omega : 0 < u.toNat)), mul_comm]
+        exact expM1NearNegOne?_eq
+          (fun hs => mul_neg_of_neg_of_pos (finiteVal_neg_of_not_sign s e hv hs) (by linarith))
+          (half_le_abs_mul (floatAbsFloorN_le (abs_finiteVal_bounds s e hv).1) hlog) hT
       split
       · rename_i r n hx
         obtain ⟨hr, hval⟩ := powBaseExact?_some _ _ hu2 (toVal_finite s e q m hv) hx

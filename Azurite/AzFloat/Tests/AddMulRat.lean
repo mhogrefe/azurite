@@ -7,6 +7,7 @@ Azurite is free software: you can redistribute it and/or modify it under the ter
 License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
+import Azurite.AzFloat.AddMul
 import Azurite.AzFloat.AddMulRat
 import Azurite.AzFloat.Precision
 import Azurite.AzFloat.Shift
@@ -100,3 +101,28 @@ private def eps : Float := 2.0 ^ (-52.0)
 #guard addMulRatFloat64 1.0e308 1.0e308 (Q "10") == inf
 #guard (subMulRatFloat64 1.0 2.0 (Q "1/2")).toBits == 0 -- exact zero is +0.0
 
+
+/-! ## Huge exponents
+
+`y = ±m · 2^k` is kept apart from its exponent, so the cost does not depend on `k`: the fused
+operation commutes with a common shift of `x` and `y`, agrees with the float–float fused
+operation on a dyadic `z`, and a negligible term only decides the comparison. -/
+
+private def hugeK : AzInt := AzInt.ofInt (2 ^ 40)
+private def x0 : AzFloat := F "1/3" 53
+private def y0 : AzFloat := F "5/7" 53
+private def shiftRes (r : AzFloat × Ordering) (k : AzInt) : AzFloat × Ordering := (r.1 <<< k, r.2)
+#guard addMulRatPrecRound (x0 <<< hugeK) (y0 <<< hugeK) (Q "3/11") 53 .Nearest
+  == shiftRes (addMulRatPrecRound x0 y0 (Q "3/11") 53 .Nearest) hugeK
+#guard subMulRatPrecRound (x0 <<< (-hugeK)) (y0 <<< (-hugeK)) (Q "3/11") 53 .Floor
+  == shiftRes (subMulRatPrecRound x0 y0 (Q "3/11") 53 .Floor) (-hugeK)
+#guard addMulRatPrecRound x0 (y0 <<< hugeK) (Q "3/8") 53 .Nearest
+  == addMulPrecRound x0 (y0 <<< hugeK) (F "3/8" 2) 53 .Nearest
+#guard addMulRatPrecRound x0 (y0 <<< (-hugeK)) (Q "-3/8") 53 .Ceiling
+  == addMulPrecRound x0 (y0 <<< (-hugeK)) (F "-3/8" 2) 53 .Ceiling
+-- `x` exactly representable, `y·z` negligible: the result is `x`, the comparison sees the sign
+#guard addMulRatPrecRound (F "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest == (F "1" 53, .lt)
+#guard subMulRatPrecRound (F "1" 53) (y0 <<< (-hugeK)) (Q "3/11") 53 .Nearest == (F "1" 53, .gt)
+-- `x` negligible against a huge `y·z` with exactly representable product
+#guard addMulRatPrecRound (F "1" 53) ((F "11" 53) <<< hugeK) (Q "3/11") 53 .Nearest
+  == ((F "3" 53) <<< hugeK, .lt)

@@ -116,3 +116,8 @@ private def refUp : AzRat :=
 #guard logBaseRatBase (F "8" 10) (Q "4") == F "3/2" 10
 #guard logBaseRatBase (F "7" 53) (Q "3") == ofAzRat ref37 53
 #guard logBaseRatBase (F "2" 53) (Q "10") == logBase (F "2" 53) 10
+
+-- exponents far beyond memory: the work does not depend on the exponent
+#guard (L ((F "3" 53) <<< K (2 ^ 60)) "10/7" 53).2 != .eq
+#guard (L ((F "3" 53) <<< K (-(2 ^ 60))) "12" 53).2 != .eq
+#guard (L ((F "1" 53) <<< K (2 ^ 60)) "5/4" 53).2 != .eq

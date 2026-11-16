@@ -109,3 +109,19 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard P "-1" ((F "1" 1) <<< AzInt.ofInt (2 ^ 30)) 10 == (F "1" 10, .eq)
 #guard P "-1" ((F "-1" 1) <<< AzInt.ofInt (2 ^ 30)) 10 == (F "1" 10, .eq)
 #guard P "-1" (F "-7" 3) 10 .Floor == (F "-1" 10, .eq)
+
+-- huge exponents: the starting precision of Ziv's loop is logarithmic in the exponent of `y`
+-- (`ratPowW₀` is an `lnMulW₀`); references from 700-digit decimal arithmetic
+-- (`q^y = sig · 2^shift` with the 53-bit significand rounded to nearest)
+private def hugeY : AzFloat := (F "3" 53) <<< AzInt.ofInt 200
+private def sh (s : String) : AzInt := AzInt.ofInt (Q s).num.toNat
+#guard P "10/3" hugeY 53 == ((F "8246119072952368" 53)
+  <<< sh "8373588284503795037406635919271801218184159433932621801778476", .lt)
+#guard P "10/3" (-hugeY) 53 == ((F "4919261879246654" 53)
+  <<< (-sh "8373588284503795037406635919271801218184159433932621801778581"), .gt)
+#guard P "7/9" hugeY 53 == ((F "4925387357126637" 53)
+  <<< (-sh "1747882962819869796934539938187438995071985308497036263957224"), .gt)
+#guard (P "10/3" hugeY 53 .Ceiling).2 == .gt && (P "10/3" (-hugeY) 53 .Floor).2 == .lt
+#guard ratPowW₀ (AzInt.ofInt 202) (Q "10/3") == lnMulW₀ 216
+#guard ratPowW₀ (AzInt.ofInt (2 ^ 40)) (Q "10/3") == 356
+#guard ratPowW₀ (AzInt.ofInt (-5)) (Q "10/3") == 102

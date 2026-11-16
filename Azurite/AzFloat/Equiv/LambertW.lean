@@ -322,7 +322,7 @@ theorem lambertW0RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : Roundi
       obtain ⟨c, hc, hc1, -⟩ := ofAzRatRound_ceiling_abs (-q) (p + zivGuardBits + 8)
       rw [hneg] at hc1
       refine lambertW0Tiny?_eq hR hc hc1 (coe_toRat_ne_zero_of_num_ne_zero q h0)
-        (lt_of_lt_of_le (abs_toRat_lt_two_zpow q) ?_) hT
+        (lt_of_lt_of_le (abs_toRat_lt_two_zpow q) ?_) (eq_some_of_guardedBy hT)
       exact zpow_le_zpow_right₀ (by norm_num) (by omega)
     by_cases hs : q.sign = true
     · rw [dite_eq_left hs]

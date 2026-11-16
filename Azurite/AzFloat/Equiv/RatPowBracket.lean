@@ -111,11 +111,12 @@ theorem coe_toRat_eq_div_pos (q : AzRat) (hs : q.sign = true) :
 
 /-- `lnRatMulBracket q y ey w` encloses `y ln q` for a positive `q` and `|y| < 2^ey`, with width
 at most `mulLnEps ey (ratPowE q) w` (`w ≥ 64`). -/
-theorem lnRatMulBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) {y : AzFloat}
+theorem lnRatMulBracket_spec (K : LnConsts) (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0)
+    {y : AzFloat}
     {yv : ℝ} (hy : y.toVal = some (yv : EReal)) (ey : AzInt) (hye : |yv| < (2 : ℝ) ^ ey.toInt)
     (w : ℕ) (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (lnRatMulBracket q y ey w).1.toVal = some (lo : EReal) ∧
-      (lnRatMulBracket q y ey w).2.toVal = some (hi : EReal) ∧
+    ∃ lo hi : ℝ, (lnRatMulBracket K q y ey w).1.toVal = some (lo : EReal) ∧
+      (lnRatMulBracket K q y ey w).2.toVal = some (hi : EReal) ∧
       lo ≤ yv * Real.log (AzRat.toRat q : ℝ) ∧ yv * Real.log (AzRat.toRat q : ℝ) ≤ hi ∧
       hi - lo ≤ mulLnEps ey.toInt (ratPowE q : ℤ) w := by
   -- the working precision and the scale
@@ -155,7 +156,7 @@ theorem lnRatMulBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0)
   obtain ⟨r, hr, hr1, hr2⟩ := ofAzRatRound_floor_abs q W
   rw [abs_of_pos hqv0, ← hu] at hr2
   obtain ⟨c, d, hc, hd, hcL, hLd, hcd⟩ :=
-    lnFloorBracket_spec (by omega : 64 ≤ W) hr hqv0 hr1 (by rw [← hu]; exact hr2)
+    lnFloorBracketWith_spec K (by omega : 64 ≤ W) hr hqv0 hr1 (by rw [← hu]; exact hr2)
   set A := |Real.log (AzRat.toRat q : ℝ)| with hA
   set Ez : ℕ := ⌊2 * A⌋₊ + 2 with hEz
   -- `A ≤ size num + size den` and `Ez ≤ ratPowE q`
@@ -320,12 +321,13 @@ theorem lnRatMulBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0)
     rw [e2] at hT2
     linarith
 
-/-- `ratPowW₀ ey q` as an integer. -/
-theorem ratPowW₀_eq (ey : AzInt) (q : AzRat) :
-    ((ratPowW₀ ey q : ℕ) : ℤ) = 88 + max ey.toInt 0 + |(ratPowE q : ℤ)| := by
-  unfold ratPowW₀
-  rw [Nat.cast_add, Nat.cast_add, expPos_eq_max, abs_of_nonneg (by positivity)]
-  norm_num
+theorem ratPowW₀_ge (ey : AzInt) (q : AzRat) : 88 ≤ ratPowW₀ ey q := lnMulW₀_ge _
+
+/-- From `ratPowW₀ ey q` bits the width bound of `lnRatMulBracket` is below `1/256`. -/
+theorem mulLnEps_le_inv256_of_ratPowW₀ (ey : AzInt) (q : AzRat) {w : ℕ}
+    (hw : ratPowW₀ ey q ≤ w) : mulLnEps ey.toInt (ratPowE q : ℤ) w ≤ 1 / 256 := by
+  refine mulLnEps_le_inv256_of_lnMulW₀ _ _ w _ ?_ hw
+  rw [Nat.cast_add, expPos_eq_max, abs_of_nonneg (by positivity)]
 
 /-- `ratPowBracket q y ey w` encloses `q^y` for `w ≥ ratPowW₀ ey q`. -/
 theorem ratPowBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) {y : AzFloat}
@@ -335,12 +337,13 @@ theorem ratPowBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) {
       (ratPowBracket q y ey w).2.toVal = some (hi : EReal) ∧
       lo ≤ (AzRat.toRat q : ℝ) ^ yv ∧ (AzRat.toRat q : ℝ) ^ yv ≤ hi ∧
       hi - lo ≤ powBaseEps ey.toInt (ratPowE q : ℤ) (yv * Real.log (AzRat.toRat q : ℝ)) w := by
-  have hw64 : 64 ≤ w := by unfold ratPowW₀ at hw; omega
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulBracket_spec q hs h0 hy ey hye w hw64
-  have hwZ : 88 + max ey.toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
-    rw [← ratPowW₀_eq]; exact_mod_cast hw
-  have hw1 : hi - lo ≤ 1 := hwid.trans (mulLnEps_le_one _ _ _ hwZ)
-  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
+  have hw64 : 64 ≤ w := by have := ratPowW₀_ge ey q; omega
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ :=
+    lnRatMulBracket_spec (ratPowLnConsts q (expWork ey w)) q hs h0 hy ey hye w hw64
+  have hw1 : hi - lo ≤ 1 :=
+    hwid.trans ((mulLnEps_le_inv256_of_ratPowW₀ ey q hw).trans (by norm_num))
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracketBy_spec_width
+    (ratPowLnConsts q (expWork ey w)).ln2Supplier hlo hhi h1 h2 hw1 hw64
   have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast toRat_pos_of_sign q hs h0
   rw [rpow_eq_exp_mul_log hqv0]
   refine ⟨a, b, ha, hb, ha1, hb1, ?_⟩

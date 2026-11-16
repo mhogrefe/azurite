@@ -33,16 +33,17 @@ def ratPowRatSlack (r q : AzRat) (W : Nat) : AzFloat :=
 
 /-- The bracket of `r ln q` for rationals `q > 0` and `r`, at working precision `w`: the bracket
 of `⌊r⌋_W ln q` widened by the slack. -/
-def lnRatMulRatBracket (q r : AzRat) (w : Nat) : AzFloat × AzFloat :=
+def lnRatMulRatBracket (K : LnConsts) (q r : AzRat) (w : Nat) : AzFloat × AzFloat :=
   let er := ratExpBound r
   let W := expWork er w
-  let B := lnRatMulBracket q (ofAzRatRound r W .Floor).1 er w
+  let B := lnRatMulBracket K q (ofAzRatRound r W .Floor).1 er w
   let S := ratPowRatSlack r q W
   ((subPrecRound B.1 S W .Floor).1, (addPrecRound B.2 S W .Ceiling).1)
 
 /-- The bracket of `q^r` at working precision `w`. -/
 def ratPowRatBracket (q r : AzRat) (w : Nat) : AzFloat × AzFloat :=
-  expOfBracket (lnRatMulRatBracket q r w) w
+  let K := ratPowLnConsts q (expWork (ratExpBound r) w)
+  expOfBracketBy K.ln2At (lnRatMulRatBracket K q r w) w
 
 /-- `ratPowRatBracket` as a pair of `Roundable`s for the Ziv loop, negated and swapped when
 `neg`. -/

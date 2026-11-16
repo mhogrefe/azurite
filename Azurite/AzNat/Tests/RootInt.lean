@@ -44,4 +44,33 @@ namespace Azurite.AzNat
 #guard isPow (AzNat.parse "1606938044258990275541962092341162602522202993782792835301376").get! 5 = true
 #guard isPow (AzNat.parse "1606938044258990275541962092341162602522202993782792835301376").get! 3 = false
 
+-- a root index at least the bit length: the root is `1` (`0` for `0`), returned without
+-- computing `2^(k − 1)`
+#guard rootInt (ofNat 3) (2 ^ 60) = ofNat 1
+#guard rootInt (ofNat 0) (2 ^ 60) = ofNat 0
+#guard rootInt (ofNat 1) (2 ^ 60) = ofNat 1
+#guard rootInt (ofNat 255) 8 = ofNat 1
+#guard rootInt (ofNat 256) 8 = ofNat 2
+#guard rootInt (ofNat 255) 9 = ofNat 1
+#guard rootInt (ofNat 128) 7 = ofNat 2
+#guard isPow (ofNat 3) (2 ^ 60) = false
+#guard isPow (ofNat 1) (2 ^ 60) = true
+#guard isPow (ofNat 0) (2 ^ 60) = true
+
+-- large index with a large root: the initial guess `2^⌈b/k⌉` is refined by bisection (Newton's
+-- iteration alone needs about `k` steps from there when `k` does not divide the bit length)
+private def big : AzNat := ofNat 1234567890123456789
+#guard rootInt (big.pow 100) 100 = big
+#guard rootInt (big.pow 100 + 1) 100 = big
+#guard rootInt (big.pow 100 - 1) 100 = big - 1
+#guard rootInt (big.pow 37 + big) 37 = big
+#guard rootInt ((big.pow 37).pow 8) 37 = big.pow 8
+#guard isPow (big.pow 257) 257
+#guard !isPow (big.pow 257 + 2) 257
+#guard ∀ k ∈ [8, 9, 15, 16, 17, 31, 64, 100, 127], ∀ c ∈ [2, 3, 5, 255, 256, 65537, 10 ^ 12],
+  rootInt ((ofNat c).pow k) k = ofNat c ∧ rootInt ((ofNat c).pow k - 1) k = ofNat (c - 1)
+    ∧ rootInt ((ofNat c).pow k + 1) k = ofNat c
+#guard ∀ k ∈ [8, 13, 40], ∀ n ∈ [10 ^ 30 + 7, 2 ^ 200 - 1, 2 ^ 200, 3 ^ 150, 7 ^ 77 + 1],
+  (rootInt (ofNat n) k).toNat = rootIntNat n k
+
 end Azurite.AzNat

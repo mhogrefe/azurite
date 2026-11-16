@@ -430,7 +430,8 @@ theorem cotPeriodTiny?_eq {neg : Bool} {m u : AzNat} (hm : 0 < m.toNat) (hu : 0 
         : EReal)) := by
   obtain ⟨lo, hi, hlo, hhi, hlo0, h1, h2⟩ := periodTinyArg_spec hm hu E
     (W := p + zivGuardBits + 8) (by unfold zivGuardBits; omega)
-  exact cotTinyCore?_eq hlo hhi hlo0 h1 h2 hy hirr hT
+  unfold cotPeriodTiny? at hT
+  exact cotTinyCore?_eq hlo hhi hlo0 h1 h2 hy hirr (eq_some_of_guardedBy hT)
 
 /-- The tiny-argument path of `cot x` answers with the rounding of `± cot |x|`. -/
 theorem cotTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
@@ -453,6 +454,7 @@ theorem cotTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode
     r = roundVal p mode (some (((if (!q.sign) = true then -1 else 1)
       * (Real.cos |(AzRat.toRat q : ℝ)| / Real.sin |(AzRat.toRat q : ℝ)|) : ℝ) : EReal)) := by
   unfold cotTinyRat? at hT
+  replace hT := eq_some_of_guardedBy hT
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
   have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by

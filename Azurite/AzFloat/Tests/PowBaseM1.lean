@@ -190,3 +190,36 @@ private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
 #guard powBaseM1PrecRound 10 (-tinyX) 53 .Floor
   == rescale (powBaseM1PrecRound 10 (-x100) 53 .Floor)
 #guard powBaseM1PrecRound 3 tinyX 80 .Ceiling == rescale (powBaseM1PrecRound 3 x100 80 .Ceiling)
+
+-- huge exponents: the starting precision of Ziv's loop is logarithmic in the exponent of `x`
+-- (`lnMulW₀`), only the bracket of `x ln u` works at `p + e` bits; references from 700-digit
+-- decimal arithmetic (`u^x = sig · 2^shift` with the 53-bit significand rounded to nearest)
+private def big10 : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838752")).num.toNat
+  ((F "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
+private def big7Half : AzFloat × Ordering :=
+  let sh : Int := (Q ("1429670743642759167967541555146598396066131518940442486861224786649148"
+    ++ "6205945014501641681117")).num.toNat
+  ((F "5830758831792293" 53) <<< AzInt.ofInt (sh), .gt)
+private def x200 : AzFloat := (F "3" 53) <<< AzInt.ofInt 200
+private def xHalf : AzFloat := ofAzRat ((AzNat.ofNat (5 * 2 ^ 300 + 1)).toAzRat * Q "1/2") 310
+#guard E 10 x200 53 == big10
+#guard E 7 xHalf 53 == big7Half
+#guard E 10 (-x200) 53 == (F "-1" 53, .lt)
+#guard E 10 (-x200) 53 .Ceiling == (F "-9007199254740991/9007199254740992" 53, .gt)
+#guard E 100 ((F "3" 53) <<< AzInt.ofInt 199) 53 == big10
+
+-- a hugely negative exponent: the value is within `2^(−|x|/2)` above `−1`, and one test
+-- (`expM1NearNegOne?`) rounds it at a cost independent of `|x|`
+private def m1Above : AzFloat := F "-9007199254740991/9007199254740992" 53
+private def hugeNegX : AzFloat := (F "-3" 53) <<< AzInt.ofInt (2 ^ 40)
+private def negX : AzFloat := F "-2001/2" 53
+#guard powBaseM1PrecRound 10 hugeNegX 53 .Nearest == (F "-1" 53, .lt)
+#guard powBaseM1PrecRound 10 hugeNegX 53 .Floor == (F "-1" 53, .lt)
+#guard powBaseM1PrecRound 10 hugeNegX 53 .Ceiling == (m1Above, .gt)
+#guard powBaseM1PrecRound 10 negX 53 .Nearest == (F "-1" 53, .lt)
+#guard powBaseM1PrecRound 10 negX 53 .Floor == (F "-1" 53, .lt)
+#guard powBaseM1PrecRound 10 negX 53 .Ceiling == (m1Above, .gt)
+#guard expM1NearNegOne? true 126 53 .Nearest == none
+#guard expM1NearNegOne? true 127 53 .Nearest == some (F "-1" 53, .lt)
+#guard expM1NearNegOne? false 1000 53 .Nearest == none

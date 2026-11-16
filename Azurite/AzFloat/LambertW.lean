@@ -110,9 +110,11 @@ def lambertW0RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat 
   else if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
-    match lambertW0Tiny? (fun P M => ofAzRatRound (-q) P M)
-      (ofAzRatRound (-q) (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) (p + zivGuardBits)
-      p mode with
+    match guardedBy (!(ratExpBound q).sign
+        && decide (p + zivGuardBits + 8 ≤ (ratExpBound q).abs.toNat)) fun _ =>
+        lambertW0Tiny? (fun P M => ofAzRatRound (-q) P M)
+          (ofAzRatRound (-q) (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q)
+          (p + zivGuardBits) p mode with
     | some r => r
     | none =>
     if hs : q.sign = true then

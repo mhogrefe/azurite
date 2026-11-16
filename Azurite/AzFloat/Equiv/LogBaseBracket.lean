@@ -103,9 +103,10 @@ theorem toVal_baseFloat (b : UInt64) : (baseFloat b).toVal = some ((b.toNat : �
 
 /-- The bracket of `ln b`: lower end at least `1/2`, width `lnEps eb w` with `eb` the exponent
 of the base float. -/
-theorem lnBaseBracket_spec {w : ℕ} (hw : 64 ≤ w) (b : UInt64) (hb : 2 ≤ b.toNat) :
-    ∃ c d : ℝ, (lnBaseBracket b w).1.toVal = some (c : EReal) ∧
-      (lnBaseBracket b w).2.toVal = some (d : EReal) ∧
+theorem lnBaseBracketBy_spec {L : AzFloat → AzInt → ℕ → AzFloat × AzFloat} (hL : LnBracketFn L)
+    {w : ℕ} (hw : 64 ≤ w) (b : UInt64) (hb : 2 ≤ b.toNat) :
+    ∃ c d : ℝ, (lnBaseBracketBy L b w).1.toVal = some (c : EReal) ∧
+      (lnBaseBracketBy L b w).2.toVal = some (d : EReal) ∧
       1 / 2 ≤ c ∧ c ≤ Real.log b.toNat ∧ Real.log b.toNat ≤ d ∧
       d - c ≤ lnEps ((baseFloat b).exponent?.getD 0).toInt w := by
   have hval := toVal_baseFloat b
@@ -115,7 +116,7 @@ theorem lnBaseBracket_spec {w : ℕ} (hw : 64 ≤ w) (b : UInt64) (hb : 2 ≤ b.
     have := Real.log_two_gt_d9
     have := Real.log_le_log (by norm_num) h2
     linarith
-  unfold lnBaseBracket
+  unfold lnBaseBracketBy
   simp only []
   rcases hy : baseFloat b with _ | s | _ | ⟨s, e, q, m, hv⟩
   · rw [hy] at hval; simp at hval
@@ -137,12 +138,21 @@ theorem lnBaseBracket_spec {w : ℕ} (hw : 64 ≤ w) (b : UInt64) (hb : 2 ≤ b.
       linarith
     | true =>
       simp only [exponent?, Option.getD_some]
-      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := lnBracket_spec hw e hv
+      obtain ⟨lv, hv', hl, hh, hlo, hhi, hwid⟩ := hL hw e hv
       rw [hval] at hlo hhi
       refine ⟨max lv (1 / 2), hv', toVal_clampHalf _ _ hl, hh, le_max_right _ _,
         max_le hlo hlog, hhi, ?_⟩
       have := le_max_left lv (1 / 2)
       linarith
+
+/-- The bracket of `ln b`: lower end at least `1/2`, width `lnEps eb w` with `eb` the exponent
+of the base float. -/
+theorem lnBaseBracket_spec {w : ℕ} (hw : 64 ≤ w) (b : UInt64) (hb : 2 ≤ b.toNat) :
+    ∃ c d : ℝ, (lnBaseBracket b w).1.toVal = some (c : EReal) ∧
+      (lnBaseBracket b w).2.toVal = some (d : EReal) ∧
+      1 / 2 ≤ c ∧ c ≤ Real.log b.toNat ∧ Real.log b.toNat ≤ d ∧
+      d - c ≤ lnEps ((baseFloat b).exponent?.getD 0).toInt w :=
+  lnBaseBracketBy_spec lnBracketFn_lnBracket hw b hb
 
 /-- The width bound of `logBaseApprox`. -/
 noncomputable def logBaseEps (ex eb : ℤ) (A : ℝ) (w : ℕ) : ℝ :=
@@ -316,6 +326,10 @@ def LnBaseBracketFor (b : UInt64) (w : ℕ) (cd : AzFloat × AzFloat) : Prop :=
 theorem lnBaseBracketFor_lnBaseBracket {w : ℕ} (hw : 64 ≤ w) {b : UInt64} (hb : 2 ≤ b.toNat) :
     LnBaseBracketFor b w (lnBaseBracket b w) :=
   lnBaseBracket_spec hw b hb
+
+theorem lnBaseBracketFor_lnBaseBracketWith (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) {b : UInt64}
+    (hb : 2 ≤ b.toNat) : LnBaseBracketFor b w (lnBaseBracketWith c b w) :=
+  lnBaseBracketBy_spec (lnBracketFn_lnBracketWith c) hw b hb
 
 /-- A bracket fit for a finer precision `W ≥ w` is fit for `w` (`lnEps_antitone`). -/
 theorem LnBaseBracketFor.of_le {b : UInt64} {w W : ℕ} {cd : AzFloat × AzFloat} (hW : w ≤ W)

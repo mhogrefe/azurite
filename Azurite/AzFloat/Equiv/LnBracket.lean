@@ -753,33 +753,14 @@ def PiBracketFor (w : ℕ) (pb : AzFloat × AzFloat) : Prop :=
   ∃ pl ph : ℝ, pb.1.toVal = some (pl : EReal) ∧ pb.2.toVal = some (ph : EReal) ∧
     0 ≤ pl ∧ pl < Real.pi ∧ Real.pi ≤ ph ∧ ph - pl ≤ piEps w
 
-/-- `lb` is a bracket of `ln 2` fit for the working precision `w`: ends with values
-`1/5 ≤ ll ≤ ln 2 ≤ lh` and width at most `8 · 2^(−w)`. -/
-def Ln2BracketFor (w : ℕ) (lb : AzFloat × AzFloat) : Prop :=
-  ∃ ll lh : ℝ, lb.1.toVal = some (ll : EReal) ∧ lb.2.toVal = some (lh : EReal) ∧
-    ll ≤ Real.log 2 ∧ Real.log 2 ≤ lh ∧ lh - ll ≤ 8 * (1 / 2 : ℝ) ^ w ∧ 1 / 5 ≤ ll
-
 theorem piBracketFor_piBracket {w : ℕ} (hw : 64 ≤ w) : PiBracketFor w (piBracket w) :=
   piBracket_spec hw
-
-theorem ln2BracketFor_ln2Bracket {w : ℕ} (hw : 2 ≤ w) : Ln2BracketFor w (ln2Bracket w) := by
-  have : NeZero w := ⟨by omega⟩
-  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := ln2Bracket_spec w
-  exact ⟨ll, lh, h1, h2, h3, h4, h5, h6 hw⟩
 
 /-- A bracket fit for a finer precision `W ≥ w` is fit for `w`. -/
 theorem PiBracketFor.of_le {w W : ℕ} {pb : AzFloat × AzFloat} (hw : 4 ≤ w) (hW : w ≤ W)
     (h : PiBracketFor W pb) : PiBracketFor w pb := by
   obtain ⟨pl, ph, h1, h2, h3, h4, h5, h6⟩ := h
   exact ⟨pl, ph, h1, h2, h3, h4, h5, h6.trans (piEps_antitone hw hW)⟩
-
-/-- A bracket fit for a finer precision `W ≥ w` is fit for `w`. -/
-theorem Ln2BracketFor.of_le {w W : ℕ} {lb : AzFloat × AzFloat} (hW : w ≤ W)
-    (h : Ln2BracketFor W lb) : Ln2BracketFor w lb := by
-  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := h
-  refine ⟨ll, lh, h1, h2, h3, h4, h5.trans ?_, h6⟩
-  exact mul_le_mul_of_nonneg_left (pow_le_pow_of_le_one (by norm_num) (by norm_num) hW)
-    (by norm_num)
 
 /-- The bracket of `ℓ ln 2`: `|ℓ|` times the float bracket of `ln 2`, rounded outward, the signs
 restored by negation when `ℓ < 0`. -/
@@ -2308,6 +2289,10 @@ theorem LnConsts.ln2At_fit (c : LnConsts) {w : ℕ} (hw : 64 ≤ w) : Ln2Bracket
   · rw [c.ln2_eq]
     exact (ln2BracketFor_ln2Bracket (by omega)).of_le hW
   · exact ln2BracketFor_ln2Bracket (by omega)
+
+/-- The constants `c` supply a bracket of `ln 2` for every working precision. -/
+theorem LnConsts.ln2Supplier (c : LnConsts) : Ln2Supplier c.ln2At :=
+  fun _ hW => c.ln2At_fit hW
 
 /-! ### Facts about the exponent for `lnP1PrecRound` -/
 

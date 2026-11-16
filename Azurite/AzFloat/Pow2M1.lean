@@ -17,7 +17,7 @@ import Azurite.AzFloat.Equiv.Pow2Bracket
 comparison against the exact value; `pow2M1 x` rounds to nearest at the precision of `x`.  An
 integer `x` gives the exact `2^n − 1` (one correctly rounded subtraction); otherwise the certified
 Ziv loop (no fuel) runs over `pow2M1Approx`, the bracket of `x ln 2` at the compensated precision
-`w + max(−e, 0)` fed to `expM1OfBracket`, total because `2^x − 1` is irrational for every
+`w + max(−e, 0)` fed to `expM1OfBracketBy`, total because `2^x − 1` is irrational for every
 non-integer float `x`.  Special values: `pow2M1 NaN = NaN`, `pow2M1 (+∞) = +∞`,
 `pow2M1 (−∞) = −1`, `pow2M1 0 = 0` exactly.  The specification `pow2M1PrecRound_eq_liftVal` is
 in `Equiv/Pow2M1.lean`.
@@ -35,17 +35,24 @@ def pow2M1PrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × O
   | zero => (zero, .eq)
   | finite s e q m hv =>
     if hp : p = 0 then (nan, .eq)
-    else if hi : isInteger (finite s e q m hv) = true then
-      subPrecRound (powerOf2 (truncToAzInt (finite s e q m hv))) one p mode
     else
       haveI : NeZero p := ⟨hp⟩
-      match expM1Tiny? s (finite s e q m hv) (finite s e q m hv)
-        (ln2Bracket (p + zivGuardBits + 8)) e p mode with
+      -- before the integer test: a huge negative integer `x` would be materialized by the
+      -- exact path, however negligible `2^x` is
+      match expM1NearNegOne? (!s) (floatAbsFloorN e / 2) p mode with
       | some r => r
       | none =>
-      zivLoopCertified (pow2M1Approx (finite s e q m hv) e) p mode (p + zivGuardBits)
-        (pow2M1Approx_isSome_exists p mode s e hv hi (p + zivGuardBits)
-          (by unfold zivGuardBits; omega))
+      if hi : isInteger (finite s e q m hv) = true then
+        subPrecRound (powerOf2 (truncToAzInt (finite s e q m hv))) one p mode
+      else
+        match guardedBy (expM1TinyCond e p) (fun _ =>
+            expM1Tiny? s (finite s e q m hv) (finite s e q m hv)
+              (ln2Bracket (p + zivGuardBits + 8)) e p mode) with
+        | some r => r
+        | none =>
+        zivLoopCertified (pow2M1Approx (finite s e q m hv) e) p mode (p + zivGuardBits)
+          (pow2M1Approx_isSome_exists p mode s e hv hi (p + zivGuardBits)
+            (by unfold zivGuardBits; omega))
 
 /-- `2^x − 1` rounded to nearest at the precision of `x`. -/
 def pow2M1 (x : AzFloat) : AzFloat := (pow2M1PrecRound x (x.precision?.getD 1) .Nearest).1

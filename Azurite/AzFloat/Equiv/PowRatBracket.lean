@@ -119,10 +119,11 @@ theorem two_zpow_le_two_zpow {a b : ℤ} (h : a ≤ b) : (2 : ℝ) ^ a ≤ (2 : 
 
 /-- `lnMulRatBracket b eb q w` encloses `q ln b` with width at most `powRatEps q eb w`
 (`w ≥ 64`). -/
-theorem lnMulRatBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteValid qb mb)
-    (q : AzRat) (w : ℕ) (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (lnMulRatBracket (finite true eb qb mb hvb) eb q w).1.toVal = some (lo : EReal) ∧
-      (lnMulRatBracket (finite true eb qb mb hvb) eb q w).2.toVal = some (hi : EReal) ∧
+theorem lnMulRatBracket_spec (K : LnConsts) (eb : AzInt) {qb : ℕ} {mb : AzNat}
+    (hvb : FiniteValid qb mb) (q : AzRat) (w : ℕ) (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ,
+      (lnMulRatBracket K (finite true eb qb mb hvb) eb q w).1.toVal = some (lo : EReal) ∧
+      (lnMulRatBracket K (finite true eb qb mb hvb) eb q w).2.toVal = some (hi : EReal) ∧
       lo ≤ (AzRat.toRat q : ℝ) * Real.log (finiteVal true eb mb) ∧
       (AzRat.toRat q : ℝ) * Real.log (finiteVal true eb mb) ≤ hi ∧
       hi - lo ≤ powRatEps q eb w := by
@@ -160,7 +161,7 @@ theorem lnMulRatBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteV
     have := abs_nonneg qv
     nlinarith
   -- the bracket of `y ln b`
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulBracket_spec eb hvb hy eq hye w hw
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulBracket_spec K eb hvb hy eq hye w hw
   -- the slack dominates `|q − y| |ln b|`
   have hlogb := abs_log_finiteVal_le eb hvb
   rw [← hL] at hlogb
@@ -269,10 +270,15 @@ theorem powRatBracket_spec (eb : AzInt) {qb : ℕ} {mb : AzNat} (hvb : FiniteVal
       finiteVal true eb mb ^ (AzRat.toRat q : ℝ) ≤ hi ∧
       hi - lo ≤ expOfBracketEps ((AzRat.toRat q : ℝ) * Real.log (finiteVal true eb mb))
         (powRatEps q eb w) w := by
-  have hw64 : 64 ≤ w := by unfold powRatW₀ powW₀ at hw; omega
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulRatBracket_spec eb hvb q w hw64
+  have hw64 : 64 ≤ w := by
+    have := powW₀_ge (ratExpBound q) eb
+    unfold powRatW₀ at hw
+    omega
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnMulRatBracket_spec
+    (powLnConsts (expWork (ratExpBound q) w + eb.abs.size)) eb hvb q w hw64
   have hw1 : hi - lo ≤ 1 := hwid.trans (powRatEps_le_one q eb hw)
-  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracketBy_spec_width
+    (powLnConsts (expWork (ratExpBound q) w + eb.abs.size)).ln2Supplier hlo hhi h1 h2 hw1 hw64
   rw [rpow_eq_exp_mul_log (finiteVal_true_pos eb hvb)]
   refine ⟨a, b, ha, hb, ha1, hb1, hab.trans ?_⟩
   unfold expOfBracketEps

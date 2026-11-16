@@ -279,6 +279,14 @@ suffices, computed otherwise. -/
 def LnConsts.ln2At (c : LnConsts) (w : Nat) : AzFloat × AzFloat :=
   if w ≤ c.W then c.ln2 else ln2Bracket w
 
+/-- The constants of `ln` for a power whose logarithm is bracketed at `W` bits: the brackets of
+`π` and `ln 2` at `W + 8` bits.  The logarithm takes them at `W` bits and the reduction of the
+exponential takes `ln 2` at up to `W + 8` (the exponent of `x ln u` exceeds that of `x` by at
+most `6` for a 64-bit `u`; the callers with other bases add the bit length of their bound on
+the logarithm to `W`), so `ln 2` is computed once per Ziv step, not twice.  A reduction that
+needs more gets a fresh bracket from `LnConsts.ln2At`. -/
+def powLnConsts (W : Nat) : LnConsts := LnConsts.make (W + 8)
+
 /-- `lnFloorBracket` with the constants `c`. -/
 def lnFloorBracketWith (c : LnConsts) (y : AzFloat) (w : Nat) : AzFloat × AzFloat :=
   lnFloorBracketBy (lnBracketWith c) y w

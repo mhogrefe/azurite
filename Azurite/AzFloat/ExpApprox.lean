@@ -49,9 +49,17 @@ def truncToAzInt (x : AzFloat) : AzInt :=
 /-- The working precision of the reduction for a float of exponent `e`. -/
 def expWork (e : AzInt) (w : Nat) : Nat := w + 16 + (if e.sign then e.abs.toNat else 0)
 
-/-- The integer `k` and a bracket of `r = x − k ln 2` at working precision `W`. -/
-def expReduce (x : AzFloat) (W : Nat) : AzInt × AzFloat × AzFloat :=
-  let L := ln2Bracket W
+/-- The working precision from which a bracket of `y ln b` computed at `expWork ey w` bits has
+width below `1/256`, for `n = max(ey, 0) + |exponent of b|`: `88 + n`, or `110 + 6 size (n + 24)`
+when that is smaller.  The width bound is a polynomial in `w + n` times `2^(−w)`, so the
+threshold is only logarithmic in `n`: a huge exponent `ey` raises the precision of the bracket
+of `y ln b` through `expWork` once, not a second time through the starting precision of Ziv's
+loop (which would also be the precision of the final exponential). -/
+def lnMulW₀ (n : Nat) : Nat := min (88 + n) (110 + 6 * (n + 24).size)
+
+/-- The integer `k` and a bracket of `r = x − k ln 2` at working precision `W`, from a bracket
+`L` of `ln 2` computed at precision `W` or finer. -/
+def expReduceBy (L : AzFloat × AzFloat) (x : AzFloat) (W : Nat) : AzInt × AzFloat × AzFloat :=
   let k := truncToAzInt (divPrecRound x L.1 W .Floor).1
   let ka := ofAzNat k.abs
   let plo := (mulPrecRound ka L.1 W .Floor).1
@@ -60,6 +68,17 @@ def expReduce (x : AzFloat) (W : Nat) : AzInt × AzFloat × AzFloat :=
     (k, (subPrecRound x phi W .Floor).1, (subPrecRound x plo W .Ceiling).1)
   else
     (k, (addPrecRound x plo W .Floor).1, (addPrecRound x phi W .Ceiling).1)
+
+/-- The integer `k` and a bracket of `r = x − k ln 2` at working precision `W`. -/
+def expReduce (x : AzFloat) (W : Nat) : AzInt × AzFloat × AzFloat :=
+  expReduceBy (ln2Bracket W) x W
+
+/-- A supplier of brackets of `ln 2` that reuses a bracket `L` already computed at precision
+`W₀`: `L` for every `W ≤ W₀`, `ln2Bracket W` above.  A power `b^y = exp (y ln b)` computes
+`ln 2` for the logarithm and passes it on to the reduction of the exponential, which needs it at
+(nearly) the same precision. -/
+def ln2Reuse (W₀ : Nat) (L : AzFloat × AzFloat) (W : Nat) : AzFloat × AzFloat :=
+  if W ≤ W₀ then L else ln2Bracket W
 
 /-- The number of bit-burst levels: `2^(expK w) > w + 8`. -/
 def expK (w : Nat) : Nat := (AzNat.ofNat (w + 8)).size
@@ -88,11 +107,17 @@ def expSignedBracket (rl rh : AzFloat) (w : Nat) : AzFloat × AzFloat :=
       ((divPrecRound one S.2 (w + 8) .Floor).1, (divPrecRound one S.1 (w + 8) .Ceiling).1)
   else expSmallBracket rl rh w
 
-/-- The bracket of `exp x` for a finite float `x` of exponent `e`, at working precision `w`. -/
-def expBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
-  let R := expReduce x (expWork e w)
+/-- The bracket of `exp x` for a finite float `x` of exponent `e`, at working precision `w`, from
+a bracket `L` of `ln 2` computed at precision `expWork e w` or finer. -/
+def expBracketBy (L : AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
+  let R := expReduceBy L x (expWork e w)
   let b := expSignedBracket R.2.1 R.2.2 w
   (b.1 <<< R.1, b.2 <<< R.1)
+
+/-- The bracket of `exp x` for a finite float `x` of exponent `e`, at working precision `w`. -/
+def expBracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+  expBracketBy (ln2Bracket (expWork e w)) x e w
 
 /-- `expBracket` as a pair of `Roundable`s for the Ziv loop. -/
 def expApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
@@ -104,6 +129,14 @@ def expApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
 def expBracketAt (x : AzFloat) (w : Nat) : AzFloat × AzFloat :=
   match x with
   | x@(finite _ e _ _ _) => expBracket x e w
+  | zero => (one, one)
+  | _ => (nan, nan)
+
+/-- `expBracketAt` with the brackets of `ln 2` taken from a supplier `F` (`ln2Bracket`, or
+`ln2Reuse W₀ L`). -/
+def expBracketAtBy (F : Nat → AzFloat × AzFloat) (x : AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  match x with
+  | x@(finite _ e _ _ _) => expBracketBy (F (expWork e w)) x e w
   | zero => (one, one)
   | _ => (nan, nan)
 
@@ -126,13 +159,18 @@ def expM1Comp (e : AzInt) : Nat := if e.sign then 0 else e.abs.toNat
 /-- The bracket of `exp x − 1` for a finite float `x` of exponent `e`: when `w ≤ max(−e, 0)`
 (so `|x| < 2^e ≤ 2^(−w)`) the bracket `[x, ⌈x + |x| · 2^e⌉]` from `x ≤ exp x − 1 ≤ x + x²`;
 otherwise `expBracket` at the compensated working precision `w + max(−e, 0)` with `1`
-subtracted outward. -/
-def expM1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+subtracted outward.  The brackets of `ln 2` come from a supplier `F`. -/
+def expM1BracketBy (F : Nat → AzFloat × AzFloat) (x : AzFloat) (e : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
   let c := expM1Comp e
   if w ≤ c then (x, (addPrecRound x (x.abs <<< e) (w + 8) .Ceiling).1)
   else
-    let b := expBracket x e (w + c)
+    let b := expBracketBy (F (expWork e (w + c))) x e (w + c)
     ((subPrecRound b.1 one (w + c + 8) .Floor).1, (subPrecRound b.2 one (w + c + 8) .Ceiling).1)
+
+/-- `expM1BracketBy` with the brackets of `ln 2` computed at the precision of the reduction. -/
+def expM1Bracket (x : AzFloat) (e : AzInt) (w : Nat) : AzFloat × AzFloat :=
+  expM1BracketBy ln2Bracket x e w
 
 /-- `expM1Bracket` as a pair of `Roundable`s for the Ziv loop. -/
 def expM1Approx (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
@@ -157,12 +195,18 @@ def expM1RatApprox (q : AzRat) (w : Nat) : Roundable × Roundable :=
 
 /-- The bracket of `exp v` from a bracket `X` of `v` (of width at most `1`): `expBracketAt` at
 the lower end `lo` gives `[a, b] ∋ exp lo`, and the upper end is widened to `b + ⌈b · 2d⌉` for
-`d = ⌈hi − lo⌉`, since `exp v ≤ exp lo · exp (v − lo) ≤ exp lo · (1 + 2d)`. -/
-def expOfBracket (X : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
-  let b := expBracketAt X.1 w
+`d = ⌈hi − lo⌉`, since `exp v ≤ exp lo · exp (v − lo) ≤ exp lo · (1 + 2d)`.  The brackets of
+`ln 2` come from a supplier `F`. -/
+def expOfBracketBy (F : Nat → AzFloat × AzFloat) (X : AzFloat × AzFloat) (w : Nat) :
+    AzFloat × AzFloat :=
+  let b := expBracketAtBy F X.1 w
   let d := (subPrecRound X.2 X.1 (w + 8) .Ceiling).1
   let corr := (mulPrecRound b.2 (d <<< AzInt.ofInt 1) (w + 8) .Ceiling).1
   (b.1, (addPrecRound b.2 corr (w + 8) .Ceiling).1)
+
+/-- `expOfBracketBy` with the brackets of `ln 2` computed at the precision of the reduction. -/
+def expOfBracket (X : AzFloat × AzFloat) (w : Nat) : AzFloat × AzFloat :=
+  expOfBracketBy ln2Bracket X w
 
 
 /-- **The tiny-exponent path of the exponential family**: the rounding of `exp v` for a real
@@ -186,6 +230,27 @@ def expNearOne? (pos : Bool) (E : AzInt) (p : Nat) (mode : RoundingMode) :
         (fun P M => setPrecRound (addPrecRound (-one) d w .Ceiling).1 P M) p (-mode)).map
         fun r => (-r.1, r.2.swap)
   else none
+
+/-- **The large-negative path of `exp v − 1`**: the rounding of `exp v − 1` for a real `v < 0`
+(`neg`) with `N ≤ |v|`.  Then `exp v − 1 ∈ (−1, −1 + 2^(−N)]`, the mirror image of
+`exp v' ∈ [1 − 2^(−N), 1)` for `v' = ln (1 − exp v)`, `|v'| < 2^(2 − N)`: one test of
+`expNearOne?` at the exponent `2 − min N 2^62` in the negated mode, the result negated.
+Nothing is computed from `v`; a Ziv loop would bracket `exp v` to about `|v|` bits only to
+learn that it is negligible.  `none` when `v > 0`, `N` is not large enough (about `p + 74`)
+or the test fails. -/
+def expM1NearNegOne? (neg : Bool) (N : Nat) (p : Nat) (mode : RoundingMode) :
+    Option (AzFloat × Ordering) :=
+  if neg then
+    (expNearOne? false (AzInt.ofInt (2 - ((min N 4611686018427387904 : Nat) : Int))) p
+      (-mode)).map fun r => (-r.1, r.2.swap)
+  else none
+
+/-- A natural `N ≤ |x|` for a finite float `x` of exponent `e` (`|x| ≥ 2^(e−1)`): `2^(e−1)`
+capped at `2^61` for `e ≥ 1`, and `0` otherwise. -/
+def floatAbsFloorN (e : AzInt) : Nat := if e.sign then 2 ^ (min e.abs.toNat 62) / 2 else 0
+
+/-- A natural `N ≤ |q|` for a rational `q`: `⌊num / den⌋`. -/
+def ratAbsFloorN (q : AzRat) : Nat := (q.num / q.den).toNat
 
 /-- An exponent bound for a rational: `|q| < 2^(size num − size den + 1)`. -/
 def ratTinyExp (q : AzRat) : AzInt :=

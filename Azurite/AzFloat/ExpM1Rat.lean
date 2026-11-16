@@ -31,6 +31,9 @@ def expM1RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × O
   else if h0 : q.num = 0 then (zero, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
+    match expM1NearNegOne? (!q.sign) (ratAbsFloorN q) p mode with
+    | some r => r
+    | none =>
     zivLoopCertified (expM1RatApprox q) p mode (p + zivGuardBits)
       (expM1RatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
         (by unfold zivGuardBits; omega))

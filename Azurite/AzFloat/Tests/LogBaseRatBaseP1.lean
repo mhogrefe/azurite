@@ -136,3 +136,28 @@ private def bigY : AzFloat := (F "3" 52) <<< AzInt.ofInt (2 ^ 30)
 #guard L bigX "10" 52 == logBaseP1PrecRound bigX 10 52 .Nearest
 #guard (L bigX "3/2" 52).2 == .lt
 #guard (L bigY "1/10" 52).2 == .lt
+
+-- exponents far beyond memory (`x = 3·2^(±2^60)`): `onePlusSkip` settles the exactness test
+-- without building `1 + x`
+private def vastX : AzFloat := (F "3" 53) <<< K (2 ^ 60)
+private def weeX : AzFloat := (F "3" 53) <<< K (-(2 ^ 60))
+#guard L vastX "10" 53 == logBaseP1PrecRound vastX 10 53 .Nearest
+#guard L vastX "3" 53 == logBaseP1PrecRound vastX 3 53 .Nearest
+#guard (L vastX "10/3" 53).2 != .eq
+#guard (L vastX "1/3" 53).2 != .eq
+#guard L weeX "10" 53 == logBaseP1PrecRound weeX 10 53 .Nearest
+#guard L (-weeX) "3" 53 == logBaseP1PrecRound (-weeX) 3 53 .Nearest
+#guard (L weeX "10/3" 53).2 != .eq
+#guard (L (-weeX) "1/3" 53).2 != .eq
+#guard (L weeX "3/4" 53).2 != .eq
+-- exact values survive the cheap test: `1 + x = b^(±1)`, `b^(±2)` with `b = 1 + 2^(−64)`
+private def bS : String := "18446744073709551617/18446744073709551616"
+private def x₁ : AzFloat :=
+  F ("1/18446744073709551616") 200
+private def x₂ : AzFloat :=
+  F ("36893488147419103233/340282366920938463463374607431768211456") 200
+#guard L x₁ bS 53 == (F "1" 53, .eq)
+#guard L x₂ bS 53 == (F "2" 53, .eq)
+#guard L x₁ "18446744073709551616/18446744073709551617" 53 == (F "-1" 53, .eq)
+#guard L x₂ "18446744073709551616/18446744073709551617" 53 == (F "-2" 53, .eq)
+#guard (L x₁ "18446744073709551615/18446744073709551616" 53).2 != .eq

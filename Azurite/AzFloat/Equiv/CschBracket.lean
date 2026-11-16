@@ -326,6 +326,7 @@ theorem cschTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mod
     {r : AzFloat × Ordering} (hT : cschTinyRat? q p mode = some r) :
     r = roundVal p mode (some (((Real.sinh (AzRat.toRat q : ℝ))⁻¹ : ℝ) : EReal)) := by
   unfold cschTinyRat? at hT
+  replace hT := eq_some_of_guardedBy hT
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
   have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by

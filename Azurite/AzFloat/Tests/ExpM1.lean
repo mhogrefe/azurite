@@ -129,3 +129,18 @@ private def tinyS : String := "1/16069380442589902755419620923411626025222029937
 #guard (E (lnP1PrecRound (F "3" 53) 200 .Nearest).1 100).1 == F "3" 100
 #guard (E (lnP1PrecRound (F "-1/3" 53) 200 .Nearest).1 100).1
   == (setPrecRound (F "-1/3" 53) 100 .Nearest).1
+
+-- a hugely negative exponent: the value is within `2^(−|x|/2)` above `−1`, and one test
+-- (`expM1NearNegOne?`) rounds it at a cost independent of `|x|`
+private def m1Above : AzFloat := F "-9007199254740991/9007199254740992" 53
+private def hugeNegX : AzFloat := (F "-3" 53) <<< AzInt.ofInt (2 ^ 40)
+private def negX : AzFloat := F "-2001/2" 53
+#guard expM1PrecRound hugeNegX 53 .Nearest == (F "-1" 53, .lt)
+#guard expM1PrecRound hugeNegX 53 .Floor == (F "-1" 53, .lt)
+#guard expM1PrecRound hugeNegX 53 .Ceiling == (m1Above, .gt)
+#guard expM1PrecRound negX 53 .Nearest == (F "-1" 53, .lt)
+#guard expM1PrecRound negX 53 .Floor == (F "-1" 53, .lt)
+#guard expM1PrecRound negX 53 .Ceiling == (m1Above, .gt)
+#guard expM1NearNegOne? true 126 53 .Nearest == none
+#guard expM1NearNegOne? true 127 53 .Nearest == some (F "-1" 53, .lt)
+#guard expM1NearNegOne? false 1000 53 .Nearest == none

@@ -116,3 +116,11 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard ratPowRatPrecRound (Q "7/3") (-tinyQ) 53 .Floor == (belowOne, .lt)
 #guard ratPowRatPrecRound (Q "7/3") (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)
 #guard ratPowRatPrecRound (Q "3/7") tinyQ 53 .Nearest == (F "1" 53, .gt)
+
+-- a huge rational exponent `(7·2^200 + 1)/3`: the starting precision of Ziv's loop is
+-- logarithmic in its size; reference from 700-digit decimal arithmetic
+private def hugeQ : AzRat := (AzNat.ofNat (7 * 2 ^ 200 + 1)).toAzRat * Q "1/3"
+#guard ratPowRatPrecRound (Q "10/3") hugeQ 53 .Nearest == ((F "4985276223697164" 53)
+  <<< AzInt.ofInt (Q "6512790887947396140205161270544734280809901781947594734716582").num.toNat,
+  .gt)
+#guard (ratPowRatPrecRound (Q "10/3") hugeQ 53 .Floor).2 == .lt

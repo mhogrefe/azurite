@@ -144,3 +144,27 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard powBaseRatPrecRound 10 (-tinyQ) 53 .Nearest == (F "1" 53, .gt)
 #guard powBaseRatPrecRound 10 (-tinyQ) 53 .Floor == (belowOne, .lt)
 #guard powBaseRatPrecRound 10 (-tinyQ) 53 .Ceiling == (F "1" 53, .gt)
+
+-- huge exponents: the starting precision of Ziv's loop is logarithmic in the exponent of `x`
+-- (`lnMulW₀`), only the bracket of `x ln u` works at `p + e` bits; references from 700-digit
+-- decimal arithmetic (`u^x = sig · 2^shift` with the 53-bit significand rounded to nearest)
+private def big3 : AzFloat × Ordering :=
+  let sh : Int := (Q ("9549794856605563740070467985241666727522968810983092175470230050049636"
+    ++ "697480851670010552523856060425328708852050992822989")).num.toNat
+  ((F "8158923442829460" 53) <<< AzInt.ofInt (sh), .lt)
+private def big10 : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838752")).num.toNat
+  ((F "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
+private def big10Neg : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838857")).num.toNat
+  ((F "6097604244814858" 53) <<< AzInt.ofInt (-sh), .gt)
+private def qBig : String :=
+  "180757491466083601275914342040210831203079405498045645898146"
+    ++ "15495784533354117888362407517472960964820051322203809232453633/3"
+private def q200 : String :=
+  "482081413277697082662588627702348780756660898134837850590412"
+    ++ "8"
+#guard E 3 qBig 53 == big3
+#guard E 10 q200 53 == big10
+#guard E 10 ("-" ++ q200) 53 == big10Neg
+#guard E 10 q200 53 == powBasePrecRound 10 ((F "3" 53) <<< AzInt.ofInt 200) 53 .Nearest

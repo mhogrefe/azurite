@@ -60,7 +60,15 @@ theorem powBaseM1RatPrecRound_eq (u : UInt64) (q : AzRat) (p : ℕ) [NeZero p]
         rw [Real.rpow_def_of_pos (by exact_mod_cast (by omega : 0 < u.toNat)), mul_comm]
         exact expM1TinyRat?_eq hc hd (by linarith) hc1 hd1
           (abs_mul_log_nat_lt (u := u.toNat) (by omega) u.toBitVec.isLt
-            (abs_toRat_lt_ratTinyExp q)) hT
+            (abs_toRat_lt_ratTinyExp q)) (eq_some_of_guardedBy hT)
+      split
+      · next r' hT =>
+        have hlog := half_le_log_nat (u := u.toNat) (by omega)
+        rw [Real.rpow_def_of_pos (by exact_mod_cast (by omega : 0 < u.toNat)), mul_comm]
+        exact expM1NearNegOne?_eq
+          (fun hs => mul_neg_of_neg_of_pos (toRat_neg_of_sign q (by simpa using hs) hq0)
+            (by linarith))
+          (half_le_abs_mul (ratAbsFloorN_le q) hlog) hT
       split
       · rename_i r n hx
         obtain ⟨hr, hval⟩ := powBaseRatExact?_some q _ hu2 hx

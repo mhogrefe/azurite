@@ -85,6 +85,85 @@ theorem not_eq_pow_of_twoAdic_gt {b n : ℕ} (hb : 2 ≤ b)
     have hes : e.size ≤ (b ^ e).size.size := Nat.size_le_size he2.le
     omega
 
+/-- **Lifting the exponent**, sharp form: `v₂(r^a − 1) + 2 ≤ v₂(r − 1) + v₂(r + 1) + size a`
+for an odd `r ≥ 3` and `a ≥ 1`. -/
+theorem padicValNat_two_pow_sub_one_le_add {r a : ℕ} (hr : Odd r) (hr3 : 3 ≤ r) (ha : 1 ≤ a) :
+    padicValNat 2 (r ^ a - 1) + 2 ≤ padicValNat 2 (r - 1) + padicValNat 2 (r + 1) + a.size := by
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have hr1 : 1 < r := by omega
+  have hra : 1 < r ^ a := Nat.one_lt_pow (by omega) hr1
+  have hra0 : r ^ a - 1 ≠ 0 := by omega
+  have hra1 : r ^ a + 1 ≠ 0 := by omega
+  have hlte := padicValNat.pow_two_sub_pow (x := r) (y := 1) hr1
+    (even_iff_two_dvd.mp (Nat.Odd.sub_odd hr odd_one))
+    (by rw [← even_iff_two_dvd, Nat.not_even_iff_odd]; exact hr) (n := 2 * a) (by omega)
+    (even_two_mul a)
+  rw [one_pow] at hlte
+  have hfac : r ^ (2 * a) - 1 = (r ^ a + 1) * (r ^ a - 1) := by
+    have := Nat.sq_sub_sq (r ^ a) 1
+    rwa [one_pow, ← pow_mul, mul_comm a 2] at this
+  rw [hfac, padicValNat.mul hra1 hra0, padicValNat.mul two_ne_zero (by omega),
+    padicValNat_self] at hlte
+  have h1 : 1 ≤ padicValNat 2 (r ^ a + 1) :=
+    one_le_padicValNat_of_dvd hra1 (even_iff_two_dvd.mp (hr.pow.add_one))
+  have h4 := padicValNat_two_lt_size (show a ≠ 0 by omega)
+  omega
+
+/-- A number `n ≥ 2` is not a power of `c ≥ 2` when some power `m = c^s`, `s ≥ 1`, has
+`v₂(m − 1) + v₂(m + 1) + size (size n) < v₂(n − 1) + 2`: the valuations of `c² − 1` are at
+most those of `m² − 1`.  Unlike `not_eq_pow_of_twoAdic_gt` the bound does not grow with the
+size of the base. -/
+theorem not_eq_pow_of_twoAdic_gt_of_pow {c m n s : ℕ} (hc : 2 ≤ c) (hs : 1 ≤ s)
+    (hm : m = c ^ s) (hn : 2 ≤ n)
+    (h : padicValNat 2 (m - 1) + padicValNat 2 (m + 1) + n.size.size
+      < padicValNat 2 (n - 1) + 2) (e : ℕ) : n ≠ c ^ e := by
+  have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  rintro rfl
+  have hss : 2 ≤ (c ^ e).size.size := by
+    have h1 : 2 ≤ (c ^ e).size := Nat.lt_size.mpr (by simpa using hn)
+    exact Nat.lt_size.mpr (by simpa using h1)
+  rcases Nat.eq_zero_or_pos e with rfl | he
+  · simp at hn
+  rcases Nat.even_or_odd c with hev | hodd
+  · have hodd' : ¬ 2 ∣ c ^ e - 1 := by
+      have h1 : 2 ∣ c ^ e := dvd_pow (even_iff_two_dvd.mp hev) (by omega)
+      have h2 : 1 ≤ c ^ e := Nat.one_le_pow _ _ (by omega)
+      omega
+    rw [padicValNat.eq_zero_of_not_dvd hodd'] at h
+    omega
+  · have hc3 : 3 ≤ c := by
+      rcases hodd with ⟨k, hk⟩
+      omega
+    have hlte := padicValNat_two_pow_sub_one_le_add hodd hc3 he
+    have he2 : e < (c ^ e).size := by
+      rw [Nat.lt_size]
+      exact Nat.pow_le_pow_left hc e
+    have hes : e.size ≤ (c ^ e).size.size := Nat.size_le_size he2.le
+    have hm2 : 2 ≤ m := by
+      rw [hm]
+      calc 2 ≤ c := hc
+        _ = c ^ 1 := (pow_one c).symm
+        _ ≤ c ^ s := Nat.pow_le_pow_right (by omega) hs
+    -- `v₂(c² − 1) ≤ v₂(m² − 1)`
+    have hdvd : (c - 1) * (c + 1) ∣ (m - 1) * (m + 1) := by
+      have h1 : c ^ 2 - 1 ∣ (c ^ 2) ^ s - 1 := Nat.sub_one_dvd_pow_sub_one _ _
+      have e1 : (c - 1) * (c + 1) = c ^ 2 - 1 := by
+        have := Nat.sq_sub_sq c 1
+        rw [one_pow] at this
+        rw [this, mul_comm]
+      have e2 : (m - 1) * (m + 1) = (c ^ 2) ^ s - 1 := by
+        have := Nat.sq_sub_sq m 1
+        rw [one_pow] at this
+        rw [← pow_mul, mul_comm 2 s, pow_mul, ← hm, this, mul_comm]
+      rw [e1, e2]
+      exact h1
+    have hle : padicValNat 2 ((c - 1) * (c + 1)) ≤ padicValNat 2 ((m - 1) * (m + 1)) := by
+      have hne : (m - 1) * (m + 1) ≠ 0 := Nat.mul_ne_zero (by omega) (by omega)
+      rw [← padicValNat_dvd_iff_le hne]
+      exact (pow_padicValNat_dvd (p := 2)).trans hdvd
+    rw [padicValNat.mul (by omega) (by omega), padicValNat.mul (by omega) (by omega)] at hle
+    omega
+
 /-- The 2-adic valuation and the bit length of a power: if `n = b^e` then `v₂(n) = e v₂(b)` and
 `(size b − 1) e < size n ≤ size b · e + 1`.  Hence `n` is not a power of `b ≥ 2` when `b` is odd
 and `n` even, or when `b` is even and `e = v₂(n)/v₂(b)` is not an integer or does not fit the

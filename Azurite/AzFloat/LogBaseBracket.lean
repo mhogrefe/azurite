@@ -41,11 +41,21 @@ def clampHalf (z : AzFloat) : AzFloat :=
 /-- The base as a float. -/
 def baseFloat (b : UInt64) : AzFloat := ofAzNat (AzNat.ofNat b.toNat)
 
-/-- A bracket of `ln b` for `b ≥ 2` at working precision `w`, with lower end at least `1/2`. -/
-def lnBaseBracket (b : UInt64) (w : Nat) : AzFloat × AzFloat :=
+/-- A bracket of `ln b` for `b ≥ 2` at working precision `w`, with lower end at least `1/2`,
+built on a bracket function `L` for `ln` of a positive float (`lnBracket`, or
+`lnBracketWith c`). -/
+def lnBaseBracketBy (L : AzFloat → AzInt → Nat → AzFloat × AzFloat) (b : UInt64) (w : Nat) :
+    AzFloat × AzFloat :=
   let y := baseFloat b
-  let B := lnBracket y (y.exponent?.getD 0) w
+  let B := L y (y.exponent?.getD 0) w
   (clampHalf B.1, B.2)
+
+/-- A bracket of `ln b` for `b ≥ 2` at working precision `w`, with lower end at least `1/2`. -/
+def lnBaseBracket (b : UInt64) (w : Nat) : AzFloat × AzFloat := lnBaseBracketBy lnBracket b w
+
+/-- `lnBaseBracket` with the brackets of `π` and `ln 2` taken from the constants `c`. -/
+def lnBaseBracketWith (c : LnConsts) (b : UInt64) (w : Nat) : AzFloat × AzFloat :=
+  lnBaseBracketBy (lnBracketWith c) b w
 
 /-- The bracket of `log_b x` for a positive finite float `x` of exponent `e` at working
 precision `w`. -/

@@ -46,8 +46,10 @@ def tanTinyCore? (pos : Bool) (ax : Roundable) (axHi : AzFloat) (e : AzInt) (w p
 
 /-- The tiny-argument path of `tan q`. -/
 def tanTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
-  let w := p + zivGuardBits
-  tanTinyCore? q.sign (fun P M => ofAzRatRound q.abs P M)
-    (ofAzRatRound q.abs (w + 8) .Ceiling).1 (ratExpBound q) w p mode
+  guardedBy (!(ratExpBound q).sign
+      && decide (p + zivGuardBits + 8 ≤ (ratExpBound q).abs.toNat)) fun _ =>
+    tanTinyCore? q.sign (fun P M => ofAzRatRound q.abs P M)
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q)
+      (p + zivGuardBits) p mode
 
 end Azurite.AzFloat

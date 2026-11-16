@@ -15,6 +15,7 @@ import Azurite.AzNat.Div
 import Azurite.AzNat.Mul
 import Azurite.AzNat.Pow
 import Azurite.AzNat.ShiftLeft
+import Azurite.AzNat.ShiftRight
 import Azurite.AzNat.Size
 import Mathlib.Data.Nat.Size
 
@@ -90,11 +91,34 @@ def rootInt.loop (m : AzNat) (k : ℕ) : ℕ → AzNat → AzNat
     let u := t / ofNat k
     if u < s then rootInt.loop m k fuel u else s
 
+/-- **Bisection refinement of the initial guess.**  `hi` bounds the root from above
+throughout; each step tests the midpoint of `[lo, hi]` and keeps `hi` an upper bound.  Starting
+from `hi = 2^⌈b/k⌉` (within a factor `2` of the root) Newton's iteration contracts only by
+`1 − 1/k` per step until the relative error drops below about `1/k`, that is for about
+`k ln 2` steps; `log₂ k + 1` bisection steps bring it there directly. -/
+def rootInt.refine (m : AzNat) (k : ℕ) : ℕ → AzNat → AzNat → AzNat
+  | 0, _, hi => hi
+  | n + 1, lo, hi =>
+    let mid := (lo + hi) >>> 1
+    if m < mid.pow k then rootInt.refine m k n lo mid else rootInt.refine m k n mid hi
+
+/-- The starting point of Newton's iteration: `2^⌈b/k⌉`, refined when `k ≥ 8` by `size k`
+bisection steps (at most `⌈b/k⌉`, the bit length of the guess: a tiny root needs none).  When
+`k` divides the bit length `b` the guess `2^(b/k)` is already within a factor `2^(1/k)` of the
+root and is kept. -/
+def rootInt.start (m : AzNat) (k : ℕ) : AzNat :=
+  let hi := rootInt.initialGuess m k
+  if k < 8 ∨ m.size % k = 0 then hi
+  else rootInt.refine m k (min k.size ((m.size + k - 1) / k)) (hi >>> 1) hi
+
 /-- **Integer `k`-th root** `⌊m^(1/k)⌋` (MCA Algorithm 1.14) on `AzNat`;
-`k = 1` returns `m`. -/
+`k = 1` returns `m`.  When `k` is at least the bit length of `m` the root is `1` (or `0` for
+`m = 0`) since `m < 2^k`, and it is returned without iterating: the Newton step would start
+by computing `2^(k − 1)`, a number of `k` bits, however small `m` is. -/
 def rootInt (m : AzNat) (k : ℕ) : AzNat :=
   if k ≤ 1 then m
-  else rootInt.loop m k ((1 : ℕ) <<< ((m.size + k - 1) / k) + 1) (rootInt.initialGuess m k)
+  else if m.size ≤ k then ofNat (if m.size = 0 then 0 else 1)
+  else rootInt.loop m k ((1 : ℕ) <<< ((m.size + k - 1) / k) + 1) (rootInt.start m k)
 
 /-- **Perfect-`k`-th-power test**: `m = y^k` for some `y` iff
 `(⌊m^(1/k)⌋)^k = m`. -/

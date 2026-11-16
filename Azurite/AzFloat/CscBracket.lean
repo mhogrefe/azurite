@@ -83,9 +83,10 @@ def cscTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMode
 
 /-- The tiny-argument path of `csc q` for a rational `q`. -/
 def cscTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
-  let W := p + zivGuardBits + 8
-  cscTinyCore? (!q.sign) (ofAzRatRound q.abs W .Floor).1 (ofAzRatRound q.abs W .Ceiling).1
-    (ratExpBound q) p mode
+  guardedBy (!(ratExpBound q).sign
+      && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
+    cscTinyCore? (!q.sign) (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
 
 /-- Floats `ylo ≤ y ≤ yhi` around `y = 2π m 2^E / u` at precision `W` (the exponent `E` enters
 only through exact shifts). -/
@@ -100,7 +101,8 @@ def periodTinyArg (m u : AzNat) (E : AzInt) (W : Nat) : AzFloat × AzFloat :=
 (`neg`: `x < 0`). -/
 def cscPeriodTiny? (neg : Bool) (m u : AzNat) (E e' : AzInt) (p : Nat) (mode : RoundingMode) :
     Option (AzFloat × Ordering) :=
-  let y := periodTinyArg m u E (p + zivGuardBits + 8)
-  cscTinyCore? neg y.1 y.2 e' p mode
+  guardedBy (!e'.sign && decide (p + zivGuardBits + 8 ≤ 2 * e'.abs.toNat)) fun _ =>
+    cscTinyCore? neg (periodTinyArg m u E (p + zivGuardBits + 8)).1
+      (periodTinyArg m u E (p + zivGuardBits + 8)).2 e' p mode
 
 end Azurite.AzFloat

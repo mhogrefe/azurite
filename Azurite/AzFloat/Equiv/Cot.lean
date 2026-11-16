@@ -288,7 +288,8 @@ theorem cotWithPeriodPrecRound_eq (x : AzFloat) (u : UInt64) (p : ℕ) [NeZero p
       have hax := abs_pos.mpr hx0
       split
       · next r hT =>
-        obtain ⟨hs, he⟩ := cotTinyCore?_cond hT
+        unfold cotPeriodTiny? at hT
+        obtain ⟨hs, he⟩ := cotTinyCore?_cond (eq_some_of_guardedBy hT)
         unfold zivGuardBits at he
         have htoInt : (e + AzInt.ofInt 3).toInt
             = if (e + AzInt.ofInt 3).sign then ((e + AzInt.ofInt 3).abs.toNat : ℤ)
@@ -361,7 +362,8 @@ theorem cotRatWithPeriodPrecRound_eq (q : AzRat) (u : UInt64) (p : ℕ) [NeZero 
   have hneg : (!q.sign) = true ↔ qv < 0 := not_sign_iff_toRat_neg q h0
   split
   · next r hT =>
-    obtain ⟨hs, he⟩ := cotTinyCore?_cond hT
+    unfold cotPeriodTiny? at hT
+    obtain ⟨hs, he⟩ := cotTinyCore?_cond (eq_some_of_guardedBy hT)
     unfold zivGuardBits at he
     set E := ratExpBound q + AzInt.ofInt 2 with hE
     have htoInt : E.toInt = if E.sign then (E.abs.toNat : ℤ) else -(E.abs.toNat : ℤ) := rfl

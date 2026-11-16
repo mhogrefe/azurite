@@ -45,9 +45,9 @@ theorem logBaseFloatP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv
     exact this
   split
   · rename_i r hx
-    rw [ofAzRatRound_eq_roundVal, logBaseFloatP1_exact_value s e hv hgt eb hvb hb1 r hx]
+    rw [ofAzRatRound_eq_roundVal, logBaseFloatP1Exact?_value s e hv hgt eb hvb hb1 r hx]
   · rename_i hx
-    have hirr := irrational_logBaseFloatP1_of_none s e hv hgt eb hvb hb1 hx
+    have hirr := irrational_of_logBaseFloatP1Exact?_none s e hv hgt eb hvb hb1 hx
     exact zivLoopCertified_eq_threshold p mode _ _ _ (by have := lnP1Start_ge e p; omega)
       (fun w hw => by
         obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=

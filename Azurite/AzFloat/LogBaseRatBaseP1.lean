@@ -18,7 +18,8 @@ and a rational base `b`, correctly rounded to precision `p` in `mode`, with the 
 against the exact value; `logBaseRatBaseP1 x b` rounds to nearest at the precision of `x`.  The
 working precision starts at `lnP1Start e p` as `lnP1` does.  For finite `x > −1`
 and `b > 0`, `b ≠ 1`, the odd part and dyadic exponent of `1 + x` (`onePlusDyadic`) feed the
-rational-base exactness test `logBaseRatBaseExact?`; otherwise the certified Ziv loop runs on
+rational-base exactness test `logBaseRatBaseExact?` (`logBaseRatBaseP1Exact?`, with the cheap
+test `onePlusSkip` first for a huge or tiny `x`); otherwise the certified Ziv loop runs on
 `logBaseRatBaseP1Approx`.  Special values: `b = 0` and `b = 1` delegate to
 `logBaseFloatP1PrecRound` with the bases `zero` and `one`; `NaN` for `b < 0`, for `x` `NaN` or
 `−∞` and below `−1`; `log_b ∞ = ±∞` and `log_b (1 − 1) = ∓∞` by the side of `b`;
@@ -36,15 +37,14 @@ def logBaseRatBaseP1Finite (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat} (hv : Fi
   match (b.checkedLogBase2.bind fun k => log2P1Pow2Fast? (finite s e q m hv) k p mode) with
   | some r => r
   | none =>
-  match hx : logBaseRatBaseExact? (onePlusDyadic s (dyadicExp e m) (oddPart m)).2
-      (onePlusDyadic s (dyadicExp e m) (oddPart m)).1 (ratDyadicExp b) (oddPart b.num)
-      (oddPart b.den) with
+  match hx : logBaseRatBaseP1Exact? s (dyadicExp e m) (oddPart m) (ratDyadicExp b)
+      (oddPart b.num) (oddPart b.den) with
   | some r => ofAzRatRound r p mode
   | none =>
     zivLoopCertified (logBaseRatBaseP1Approx (finite s e q m hv) b) p mode
       (lnP1Start e p)
       (logBaseRatBaseP1Approx_isSome_exists p mode (toVal_finite s e q m hv) hgt b hb hb1
-        (irrational_logBaseRatBaseP1_of_none s e hv hgt b (sign_eq_true_of_toRat_pos b hb)
+        (irrational_of_logBaseRatBaseP1Exact?_none s e hv hgt b (sign_eq_true_of_toRat_pos b hb)
           (num_ne_zero_of_toRat_pos b hb) hb1 hx)
         _ (by have := lnP1Start_ge e p; omega))
 

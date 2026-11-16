@@ -111,3 +111,9 @@ private def belowOne : AzFloat := F "9007199254740991/9007199254740992" 53
 #guard powRatPrecRound ((F "3" 53) <<< AzInt.ofInt (3 * 2 ^ 28)) (Q "1/3") 53 .Nearest
   == ((powRatPrecRound (F "3" 53) (Q "1/3") 53 .Nearest).1 <<< AzInt.ofInt (2 ^ 28),
     (powRatPrecRound (F "3" 53) (Q "1/3") 53 .Nearest).2)
+
+-- a huge rational exponent `(7·2^200 + 1)/3`; reference from 700-digit decimal arithmetic
+private def hugeQ : AzRat := (AzNat.ofNat (7 * 2 ^ 200 + 1)).toAzRat * Q "1/3"
+#guard powRatPrecRound (F "10" 53) hugeQ 53 .Nearest == ((F "4828934438682321" 53)
+  <<< AzInt.ofInt (Q "12455642817257013556540030957877841028656341043289085996096797").num.toNat,
+  .lt)

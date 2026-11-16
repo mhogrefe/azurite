@@ -47,16 +47,19 @@ def mulBracketAny (y : AzFloat) (B : AzFloat × AzFloat) (W : Nat) : AzFloat × 
   else ((mulPrecRound y B.1 W .Floor).1, (mulPrecRound y B.2 W .Ceiling).1)
 
 /-- The bracket of `y ln b` for a positive float `b` of exponent `eb` and a float `y` of exponent
-`ey`, at working precision `w`. -/
-def lnMulBracket (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt) (w : Nat) :
-    AzFloat × AzFloat :=
+`ey`, at working precision `w`, with the constants `K` of `ln`. -/
+def lnMulBracket (K : LnConsts) (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt)
+    (w : Nat) : AzFloat × AzFloat :=
   let W := expWork ey w
-  mulBracketAny y (lnBracket b eb W) W
+  mulBracketAny y (lnBracketWith K b eb W) W
 
-/-- The bracket of `b^y` at working precision `w`. -/
+/-- The bracket of `b^y` at working precision `w`.  The constants of `ln` are computed once
+(`powLnConsts`, with `size |eb|` more bits for the exponent of `y ln b`) and shared by the
+logarithm and the reduction of the exponential. -/
 def powBracket (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt) (w : Nat) :
     AzFloat × AzFloat :=
-  expOfBracket (lnMulBracket b eb y ey w) w
+  let K := powLnConsts (expWork ey w + eb.abs.size)
+  expOfBracketBy K.ln2At (lnMulBracket K b eb y ey w) w
 
 /-- `powBracket` as a pair of `Roundable`s for the Ziv loop, negated and swapped when `neg`. -/
 def powApprox (neg : Bool) (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt) (w : Nat) :
@@ -65,13 +68,15 @@ def powApprox (neg : Bool) (b : AzFloat) (eb : AzInt) (y : AzFloat) (ey : AzInt)
   if neg then (fun p mode => setPrecRound (-r.2) p mode, fun p mode => setPrecRound (-r.1) p mode)
   else (fun p mode => setPrecRound r.1 p mode, fun p mode => setPrecRound r.2 p mode)
 
-/-- The precision from which the width bound of `lnMulBracket` is below `1`:
-`max(ey, 0) + min(88 + |eb|, 110 + 6 size(|eb| + 24))` (the bound is a polynomial in `|eb|` times
-`2^(−w)`: the first threshold is the smaller one for ordinary bases, the second is logarithmic in
-`|eb|` and keeps a huge or tiny base from raising the starting precision). -/
+/-- The precision from which the width bound of `lnMulBracket` is below `1`: the smaller of
+`max(ey, 0) + min(88 + |eb|, 110 + 6 size(|eb| + 24))` and `lnMulW₀ (max(ey, 0) + |eb|)` (the
+bound is a polynomial in `|eb|` and `max(ey, 0)` times `2^(−w)`: the linear thresholds are the
+smaller ones for ordinary arguments, the logarithmic ones keep a huge or tiny base, and a huge
+exponent `y`, from raising the starting precision). -/
 def powW₀ (ey eb : AzInt) : Nat :=
-  (if ey.sign then ey.abs.toNat else 0)
-    + min (88 + eb.abs.toNat) (110 + 6 * (eb.abs.toNat + 24).size)
+  min ((if ey.sign then ey.abs.toNat else 0)
+      + min (88 + eb.abs.toNat) (110 + 6 * (eb.abs.toNat + 24).size))
+    (lnMulW₀ ((if ey.sign then ey.abs.toNat else 0) + eb.abs.toNat))
 
 /-- The starting precision of the Ziv loop for `x^y` at precision `p`. -/
 def powStart (ey eb : AzInt) (p : Nat) : Nat := max (p + zivGuardBits) (powW₀ ey eb)

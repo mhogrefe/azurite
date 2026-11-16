@@ -126,4 +126,20 @@ where
       · rw [heq, hr] at hspec; exact Bool.false_ne_true hspec
     omega
 
+/-- An optional answer computed only when the cheap condition `c` holds.  Lean evaluates
+arguments eagerly: a fast path of the shape `f (expensive) cond`, with `f` testing `cond` before
+it looks at its first argument, still computes `expensive` on every call.  The fast paths whose
+arguments cost something (a bracket of `π` or of a logarithm, the conversion of a rational) are
+wrapped as `guardedBy cond fun _ => f (expensive) cond`. -/
+def guardedBy {α : Type} (c : Bool) (f : Unit → Option α) : Option α :=
+  if c then f () else none
+
+/-- A guarded optional answer is an answer of the guarded computation. -/
+theorem eq_some_of_guardedBy {α : Type} {c : Bool} {f : Unit → Option α} {r : α}
+    (h : guardedBy c f = some r) : f () = some r := by
+  unfold guardedBy at h
+  cases c with
+  | true => simpa using h
+  | false => simp at h
+
 end Azurite.AzFloat

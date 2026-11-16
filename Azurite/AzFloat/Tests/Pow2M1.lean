@@ -156,3 +156,28 @@ private def rescale (r : AzFloat × Ordering) : AzFloat × Ordering :=
 #guard pow2M1PrecRound tinyX 53 .Floor == rescale (pow2M1PrecRound x100 53 .Floor)
 #guard pow2M1PrecRound (-tinyX) 53 .Ceiling == rescale (pow2M1PrecRound (-x100) 53 .Ceiling)
 #guard pow2M1PrecRound (-tinyX) 80 .Nearest == rescale (pow2M1PrecRound (-x100) 80 .Nearest)
+
+-- a hugely negative exponent: the value is within `2^(−|x|/2)` above `−1`, and one test
+-- (`expM1NearNegOne?`) rounds it at a cost independent of `|x|`
+private def m1Above : AzFloat := F "-9007199254740991/9007199254740992" 53
+private def hugeNegX : AzFloat :=
+  ofAzRat (-(AzNat.ofNat (2 ^ 2000 + 1)).toAzRat * Q "1/2") 2010
+private def negX : AzFloat := F "-2001/2" 53
+#guard pow2M1PrecRound hugeNegX 53 .Nearest == (F "-1" 53, .lt)
+#guard pow2M1PrecRound hugeNegX 53 .Floor == (F "-1" 53, .lt)
+#guard pow2M1PrecRound hugeNegX 53 .Ceiling == (m1Above, .gt)
+#guard pow2M1PrecRound negX 53 .Nearest == (F "-1" 53, .lt)
+#guard pow2M1PrecRound negX 53 .Floor == (F "-1" 53, .lt)
+#guard pow2M1PrecRound negX 53 .Ceiling == (m1Above, .gt)
+#guard expM1NearNegOne? true 126 53 .Nearest == none
+#guard expM1NearNegOne? true 127 53 .Nearest == some (F "-1" 53, .lt)
+#guard expM1NearNegOne? false 1000 53 .Nearest == none
+
+-- a huge negative integer exponent is rounded before the exact path could materialize it
+private def hugeNegInt : AzFloat := (F "-3" 53) <<< AzInt.ofInt (2 ^ 40)
+#guard pow2M1PrecRound hugeNegInt 53 .Nearest == (F "-1" 53, .lt)
+#guard pow2M1PrecRound hugeNegInt 53 .Ceiling == (m1Above, .gt)
+-- a moderate negative integer still takes the exact path
+#guard pow2M1PrecRound (F "-3" 53) 53 .Nearest == (F "-7/8" 53, .eq)
+#guard pow2M1PrecRound (F "-100" 53) 200 .Nearest
+  == (F "-1267650600228229401496703205375/1267650600228229401496703205376" 200, .eq)

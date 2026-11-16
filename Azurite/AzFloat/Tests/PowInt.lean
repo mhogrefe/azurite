@@ -116,3 +116,15 @@ private def H (s : String) (i : Int) (p : Nat) (m : RoundingMode := .Nearest) : 
 -- odd part `1`: no powering over the bits of a huge `n`
 #guard E (F "-1" 1) (2 ^ (2 ^ 20) + 1) 10 == (F "-1" 10, .eq)
 #guard E (F "-1/2" 1) (2 ^ 20 + 1) 10 == (F "-1" 10 <<< AzInt.ofInt (-(2 ^ 20 + 1)), .eq)
+
+-- a huge exponent through Ziv's loop: the starting precision is logarithmic in the size of `n`
+-- (`powW₀`); reference from 700-digit decimal arithmetic
+private def big10 : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838752")).num.toNat
+  ((F "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
+private def big10Neg : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838857")).num.toNat
+  ((F "6097604244814858" 53) <<< AzInt.ofInt (-sh), .gt)
+#guard E (F "10" 53) (3 * 2 ^ 200) 53 == big10
+#guard E (F "10" 53) (-(3 * 2 ^ 200)) 53 == big10Neg
+#guard E (F "-10" 53) (3 * 2 ^ 200) 53 == big10

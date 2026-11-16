@@ -151,3 +151,57 @@ private def bigY : AzFloat := (F "3" 52) <<< AzInt.ofInt (2 ^ 30)
 #guard L bigX (F "10" 53) 52 == logBaseP1PrecRound bigX 10 52 .Nearest
 #guard (L bigX (F "6" 53) 52).2 == .lt
 #guard (L bigY (F "3/4" 53) 52).2 == .lt
+
+-- exponents far beyond memory (`x = 3·2^(±2^60)`): `onePlusSkip` settles the exactness test
+-- without building `1 + x`; the work does not depend on the exponent
+private def vastX : AzFloat := (F "3" 53) <<< K (2 ^ 60)
+private def weeX : AzFloat := (F "3" 53) <<< K (-(2 ^ 60))
+#guard L vastX (F "10" 53) 53 == logBaseP1PrecRound vastX 10 53 .Nearest
+#guard L vastX (F "3" 53) 53 == logBaseP1PrecRound vastX 3 53 .Nearest
+#guard (L vastX ((F "5" 53) <<< K (2 ^ 57)) 53).2 != .eq
+#guard L weeX (F "10" 53) 53 == logBaseP1PrecRound weeX 10 53 .Nearest
+#guard L weeX (F "3" 53) 53 == logBaseP1PrecRound weeX 3 53 .Nearest
+#guard L (-weeX) (F "10" 53) 53 == logBaseP1PrecRound (-weeX) 10 53 .Nearest
+#guard (L weeX ((F "5" 53) <<< K (-(2 ^ 57))) 53).2 != .eq
+#guard (L (-weeX) (F "3/4" 53) 53).2 != .eq
+-- the cheap test does not hide exact values: `1 + x = b`, `b²`, `b³` with
+-- `b = 1 ± 2^(−64)`, where the residues modulo `2^64` agree
+private def bP : AzFloat := F "18446744073709551617/18446744073709551616" 65
+private def bM : AzFloat := F "18446744073709551615/18446744073709551616" 64
+private def p1 : AzFloat :=
+  F ("1/18446744073709551616") 200
+private def n1 : AzFloat :=
+  F ("-1/18446744073709551616") 200
+private def p2 : AzFloat :=
+  F ("36893488147419103233/340282366920938463463374607431768211456") 200
+private def n2 : AzFloat :=
+  F ("-36893488147419103231/340282366920938463463374607431768211456") 200
+private def n3 : AzFloat :=
+  F ("-1020847100762815390334783590074175979521/62771017353866807638357894232076664161"
+    ++ "02355444464034512896") 200
+private def bp2 : AzFloat :=
+  F ("340282366920938463500268095579187314689/340282366920938463463374607431768211456") 200
+private def bn2 : AzFloat :=
+  F ("340282366920938463426481119284349108225/340282366920938463463374607431768211456") 200
+#guard L p1 bP 53 == (F "1" 53, .eq)
+#guard L n1 bM 53 == (F "1" 53, .eq)
+#guard L p2 bP 53 == (F "2" 53, .eq)
+#guard L n2 bM 53 == (F "2" 53, .eq)
+#guard L p1 bp2 53 == (F "1/2" 53, .eq)
+#guard L n3 bn2 53 == (F "3/2" 53, .eq)
+#guard (L p1 bM 53).2 != .eq
+#guard (L p2 (F "3" 53) 53).2 != .eq
+
+-- the pieces
+#guard upow64 3 0 == 1
+#guard upow64 3 40 == 12157665459056928801
+#guard upow64 3 41 == (3 ^ 41 % 2 ^ 64 : Nat).toUInt64
+#guard upow64 18446744073709551615 (2 ^ 60 + 1) == 18446744073709551615
+#guard onePlusSkip true (K (2 ^ 60)) 3 (K 1) 5
+#guard onePlusSkip true (K (2 ^ 60)) 3 (K 0) 3
+#guard !onePlusSkip true (K 4) 5 (K 0) 3
+#guard onePlusSkip true (K (-(2 ^ 60))) 3 (K 0) 3
+#guard onePlusSkip false (K (-(2 ^ 60))) 3 (K (-2)) 3
+#guard onePlusSkip true (K (-(2 ^ 60))) 3 (K 2) 3
+#guard !onePlusSkip true (K (-64)) 1 (K (-64)) (AzNat.ofNat (2 ^ 64 + 1))
+#guard !onePlusSkip true (K (-10)) 1 (K (-2)) 3

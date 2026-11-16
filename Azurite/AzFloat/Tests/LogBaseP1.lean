@@ -114,3 +114,17 @@ private def bigX : AzFloat := (F "1" 52) <<< AzInt.ofInt (2 ^ 30 - 98)
 -- huge integers with a base that is not a power of two: the exactness test rejects them by the
 -- 2-adic guard of `checkedLogBase` instead of computing a power of about `2^30` bits
 #guard (L bigX 10 52).2 == .gt
+
+-- exponents far beyond memory: `logBaseP1ExactSkip` decides from the exponent and the
+-- significand that `1 + x` is not a power of the base; nothing of that size is built
+private def hugeX : AzFloat := (F "1" 53) <<< AzInt.ofInt (2 ^ 50)
+#guard (L hugeX 10 53).2 != .eq
+#guard (L hugeX 3 53 .Floor).2 == .lt
+#guard (L ((F "3" 53) <<< AzInt.ofInt (2 ^ 50)) 7 53).2 != .eq
+#guard (L ((F "1" 53) <<< AzInt.ofInt (-(2 ^ 50 : Int))) 10 53).2 != .eq
+-- exact cases with an exponent above the precision: `1 + 8 = 3^2`, `1 + 80 = 3^4 = 9^2`
+#guard L (F "8" 1) 3 53 == (F "2" 53, .eq)
+#guard L (F "80" 3) 3 53 == (F "4" 53, .eq)
+#guard L (F "80" 3) 9 53 == (F "2" 53, .eq)
+#guard L (F "80" 3) 27 53 == (F "4/3" 53, .lt)
+#guard (L (F "88" 4) 3 53).2 != .eq

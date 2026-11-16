@@ -7704,3 +7704,231 @@ reference `acoth_ref.py`).  NOT timed.
 its rational version (26 functions), all proven, all UNTIMED.  Possible follow-ups: timings
 (first `sinhCosh` vs `sinh` + `cosh`); a `log1p`-style reduction for the small-argument range
 of `asinh`/`atanh` (now `leadingZeroBits` extra bits); sharing `1/(1 + u)` in `sinhCosh`.
+
+## Performance fixes suggested by stress-testing (2026-11-16)
+
+Suggestions relayed by the user from the Malachite agent's stress tests.
+
+### 1. `logBaseExact?` / `logBaseP1Exact?`: no materialisation (DONE, UNTIMED)
+
+The exactness test of `log_b x` (natural base, not a power of two) and of `log_b (1 + x)`
+converted the float to a rational first (`toAzRat?`): `e` bits for an exponent `e`, so
+`2^(±2^40)` was out of reach although the answer is "irrational" at a glance.  (The earlier
+2-adic guard in `AzNat.checkedLogBase` only avoided computing a *power* of that size.)
+
+* `logBaseExactSkip x c`, `logBaseP1ExactSkip x c` (`AzFloat/LogBaseExact.lean`) decide from
+  the exponent and the significand alone: a non-integer is never a power; an integer
+  `x = core · 2^(e − q)`, `e > q`, has `v₂ = v₂(core) + e − q` and bit length `e`, so
+  `AzNat`'s valuation test (for `x`) and the lifting-the-exponent test (for `1 + x`, whose bit
+  length is also `e` since `x` is even) are evaluated symbolically, with the same pure lemmas
+  `not_eq_pow_of_valuation`, `not_eq_pow_of_twoAdic_gt`.  When they do not exclude a power the
+  exponent is at most about `q log₂ c / log₂ (odd part of c)`, resp. `q + 2 size c + size e`,
+  and the old conversion (`logBaseExactCore?`, `logBaseP1ExactCore?`) is cheap.
+* The four interface theorems (`logBaseExact?_some`, `irrational_of_logBaseExact?_none` and
+  the `P1` pair) keep their statements; consumers are untouched.
+* Tests: `2^(±2^50)`, `3·2^(±2^50)` in `Tests/LogBase.lean`, `Tests/LogBaseP1.lean`, and exact
+  powers with `e > q` (`10^22`, `81·2^4 = 6^4`, `1 + 8 = 3^2`, `1 + 80 = 3^4`).
+* **Same pattern, not fixed**: `onePlusDyadic` (float-base and rational-base `1 + x` variants)
+  builds `o · 2^i + 1` for a huge `i`.
+
+### 2. Float-base and rational-base logarithms: `rootInt` with a huge index (DONE, measured)
+
+Report: slow growth of memory with the exponent (≈ 240 s to 3 GB), conjectured to be a working
+precision growing with the exponent.  **Not the precision**: `lnBracket` already works as
+`ln m + e ln 2` and takes ≈ 5 ms whatever the exponent.  The cost was in the exactness test
+`logBaseFloatExact?`: with `x = o · 2^i`, `b = s · 2^j`, `j ≠ 0`, it asks whether `o` is a
+perfect `a`-th power for `a ≈ |i|`, and `AzNat.rootInt o a` started Newton's iteration from
+`2^⌈size/a⌉ = 2` by computing `2^(a − 1)` — an `a`-bit number for a 2-bit `o`.
+
+* Fix in `AzNat.rootInt`: for `k ≥ size m` the root is `1` (`0` for `m = 0`), returned at
+  once (`toNat_rootInt` re-proved through `eq_of_pow_le_of_lt_pow`).  Every caller benefits
+  (`isPow`, `logBaseFloatExact?` and the rational-base tests built on it, `cbrt`, `powRat`).
+* Interpreter timings of `logBaseFloatExact?` alone, before: 0.13 s (`i = 2^16`), 3.4 s
+  (`2^20`), 8.1 s (`2^21`); after: 0 ms up to `2^60`.  Full `logBaseFloatPrecRound`,
+  `logBaseRatBasePrecRound` at `x = 3·2^(±2^60)`, also with a base `5·2^(2^57)`: ≈ 10 ms.
+* Tests: `AzNat/Tests/RootInt.lean` (index `2^60`), `Tests/LogBaseFloat.lean`,
+  `Tests/LogBaseRatBase.lean` (`2^(±2^60)`, exact cases with huge exponents).
+* The `onePlusDyadic` leftover is item 3.
+
+### 3. Float-base and rational-base `log_b (1 + x)`: `onePlusDyadic` (DONE, measured)
+
+`onePlusDyadic` built `o · 2^i + 1` (huge `x`) or `2^t ± o` (tiny `x`, `t = −i`) in full, an
+`|i|`-bit number, only for the exactness test to reject it.  `onePlusSkip s i o j sb`
+(`AzFloat/LogBaseExact.lean`) is a cheap sufficient test for "`logBaseFloatExact?` answers
+`none`", run first by the new `logBaseFloatP1Exact?` / `logBaseRatBaseP1Exact?`:
+
+* `i ≥ 1`: `1 + x` is an odd integer `> 1`; base exponent `j ≠ 0` ⇒ none; `j = 0` ⇒ the
+  lifting-the-exponent bound `2 size sb + size (size o + i) < i + 3` on the primitive root.
+* `i ≤ −64`, `size o < t`: `1 + x = u / 2^t`, `u = 2^t ± o` odd `≥ 2`.  `j = 0` or `i / j < 0`
+  ⇒ none; otherwise `u` would be `c^a` (`c` the exact `e`-th root of `sb`, `a / e = i / j`), and
+  `c^a mod 2^64` (`upow64`, binary powering in `UInt64`) is compared with `u ≡ ±o`.  Only a
+  residue match falls back to the full construction, so genuine exact values are kept.
+* Proof (`Equiv/LogBaseExact.lean`): `onePlusSkip_spec` (skip ⇒ the old test is `none`),
+  hence `logBaseFloatP1Exact?_eq`, `logBaseRatBaseP1Exact?_eq` (**equal** to the old tests on
+  `onePlusDyadic`), and the four interface theorems restated on the new functions; helpers
+  `toNat_upow64`, `onePlusDyadic_int`, `onePlusDyadic_frac`, `logBaseFloatExact?_int_none`.
+* Interpreter timings at `x = ±3·2^(±2^k)`, `k = 10 … 60`, bases `10`, `3`, `3/4`, `10/3`,
+  `5·2^(±2^(k−3))`: 5–23 ms per call, independent of `k`.
+* Tests: `Tests/LogBaseFloatP1.lean`, `Tests/LogBaseRatBaseP1.lean` (`2^(±2^60)`, exact values
+  `1 + x = b, b², b³` for `b = 1 ± 2^(−64)` passing through the residue comparison, `upow64`,
+  `onePlusSkip`).
+* The case first left open — an odd base about as large as `√x` or larger — is item 4.
+
+### 4. Odd integer bases of many bits (DONE, measured)
+
+Three separate things were wrong when the base `b = sb` is an odd integer of `S` bits.
+
+* **The skip of item 3 was too weak.**  Its bound used `2 size sb`; the sharp lifting-the-exponent
+  statement needs only valuations: `v₂(c^r − 1) + 2 ≤ v₂(c − 1) + v₂(c + 1) + size r`
+  (`padicValNat_two_pow_sub_one_le_add`), and `c² − 1 ∣ sb² − 1` for `sb = c^s`
+  (`not_eq_pow_of_twoAdic_gt_of_pow`, `AzNat/Equiv/TwoAdicPow.lean`).  `onePlusSkip` now tests
+  `v₂(sb − 1) + v₂(sb + 1) + size (size (1 + x)) < i + 2`, independent of the size of `sb`.
+  What remains is `sb ≡ ±1` modulo about `2^i`: then `sb` has at least about `i` bits and
+  `1 + x` is no longer than the inputs.
+* **The search for the primitive root** (`maxRootBaseBounded s s.size`) ran a root test for
+  every exponent up to `S`: 0.44 s at `S = 500`, 6 s at `S = 1500` (interpreter), also in the
+  plain float-base and rational-base logarithms of two odd integers.  Replaced, in
+  `logBaseFloatExact?` (`j = 0`), by `mulDepExps`: the Euclidean algorithm on the exponents of
+  a multiplicative relation — if `y ≤ x` are dependent then `y ∣ x` and `x / y`, `y` are
+  dependent; a whole power `y^e ≤ x` is divided out at once — with `mulDepExps_some`
+  (`x = g^p`, `y = g^q`) and `mulDepExps_isSome` (every relation `x^b = y^a` is found;
+  `dep_step`).  No root at all: 1 ms at `S = 500`, 1–320 ms at `S = 8000`.
+* **`AzNat.rootInt` with a large index and a large root**: from the guess `2^⌈b/k⌉` Newton's
+  iteration contracts by `1 − 1/k` per step until the relative error is below about `1/k` —
+  about `k ln 2` steps when `k ∤ b`.  `rootInt.start` refines the guess by `size k` bisection
+  steps first (`k ≥ 8`, `k ∤ b`; `refine_bound`, `start_bound`; `toNat_rootInt` unchanged).
+  20030-bit `m`: `k = 100` 1.6 s → 0.38 s, `k = 400` 6.4 s → 0.30 s, `k = 1000` 16.5 s →
+  0.35 s; `k ≤ 8` unchanged.
+* Tests: `AzNat/Tests/RootInt.lean`, `Tests/LogBaseFloat.lean` (`mulDepExps`, powers of
+  `3`, `15`, a 17-digit base with 2000-bit floats).
+
+### 5. Natural-base powers `u^x` with a huge exponent (DONE, measured)
+
+Suggestion: decide exactness from the dyadic structure of `x`, and round `r^n` directly instead
+of forming it.  The second half was already so (`natPowOrZiv`, `natPowM1Cheap`).  Measured
+instead: `10^(3·2^1000)` took 360 ms where `exp (3·2^1000)` takes 24 ms, the same with or
+without the exact branch.  Cause: the starting precision of Ziv's loop contained the exponent
+`e` of `x` (`powBaseW₀ = 88 + max(e, 0) + |eb|`, likewise `powW₀`, the `− 1` and the rational
+variants), on top of the `+ e` of `expWork` — the bracket of `x ln u` at `2e` bits and, worse,
+the final exponential at `e` bits instead of `p + 64`.
+
+* `lnMulW₀ n = min (88 + n) (110 + 6 size (n + 24))` (`ExpApprox.lean`): the width bound
+  `mulLnEps` is a polynomial in `w + n` times `2^(−w)`, so the threshold is logarithmic
+  (`mulLnEps_le_inv256_of_size'`, `mulLnEps_le_inv256_of_lnMulW₀`; compensated versions
+  `mulLnEps_comp_le_of_size`, `mulLnEps_comp_le_of_lnMulW₀` for `u^x − 1`).  Used by
+  `powBaseW₀`, `powBaseRatW₀`, `powBaseM1W₀`, `powBaseM1RatW₀` and as a third arm of `powW₀`
+  (the exact branch `r^n` with a huge `n`, `x^y`, `powRat`).  Never larger than before.
+* `powBaseExactSkip`: `x = ±o · 2^i` with `i < −6` cannot have `s x` integer for `s ≤ 63`
+  (`powBaseExactSkip_spec`, `odd_mul_small_ne`), so such an `x` is not converted to a rational.
+* Interpreter timings, 53 bits, `10^x`: `x = 3·2^1000` 360 → 111 ms, `3·2^3000` 2.35 → 0.63 s,
+  `3·2^10000` > 35 s → 5.2 s; `10^x − 1`, the rational forms, `powInt` and `pow` the same
+  (≈ 115 ms at `2^1000`).  What is left is `ln u` at `p + e` bits (≈ 75 %) and `ln 2` there,
+  computed twice (in `ln u` and in the reduction of the exponential) — sharing it would save
+  about 20 %; not done.  `pow2` needed nothing (integer `x` exact, otherwise `p + 64`).
+* The rational-base powers and the shared `ln 2` followed as items 6 and 7.
+* Tests: `Tests/PowBase.lean`, `PowBaseM1.lean`, `PowBaseRat.lean`, `PowBaseM1Rat.lean`,
+  `PowInt.lean` at `x = ±3·2^200`, `(5·2^300 + 1)/2`, `2^1000`, `(7·2^400 + 1)/3` against
+  references from 700-digit decimal arithmetic.
+
+### 6. Rational-base powers: logarithmic starting precision (DONE, measured)
+
+`ratPowW₀ ey q` was `88 + max(ey, 0) + ratPowE q`, linear in the exponent of `y` (and in the bit
+lengths of `q`); `ratPowRatW₀` is built on it.  Now `ratPowW₀ ey q = lnMulW₀ (max(ey, 0) +
+ratPowE q)` (`mulLnEps_le_inv256_of_ratPowW₀`, `ratPowW₀_ge`), never larger than before.
+Interpreter timing, 53 bits, `(10/3)^x` at `x ≈ 7·2^999`: the bracket at the old starting
+precision (1104 bits) 345 ms, at the new one (176 bits) 101 ms; `ratPowRat` the same.  Tests:
+`Tests/RatPow.lean`, `RatPowRat.lean`, `PowRat.lean` at `y = ±3·2^200` and `(7·2^200 + 1)/3`
+against references from 700-digit decimal arithmetic.
+
+### 7. One bracket of `ln 2` per Ziv step in every power (DONE, measured)
+
+Every power `b^y = exp (y ln b)` computed `ln 2` twice at (nearly) the same precision: inside
+the logarithm and again in the reduction of the exponential.  That included the powers of two,
+where the logarithm *is* `ln 2`.
+
+* `ExpApprox.lean`: `expReduceBy L`, `expBracketBy L`, `expBracketAtBy F`, `expOfBracketBy F`,
+  `expM1BracketBy F` (and `expM1OfBracketBy F` in `Pow2Bracket.lean`) take the bracket of `ln 2`
+  (`L`) or a supplier of such brackets by precision (`F`); the old names are the instances at
+  `ln2Bracket`.  `ln2Reuse W₀ L` supplies `L` up to `W₀` bits and a fresh bracket above.
+* `Equiv`: `Ln2BracketFor`, `Ln2Supplier` (moved to `Equiv/Ln2Bracket.lean`); the specs are
+  proven once for a fit bracket or supplier (`expReduceBy_spec`, `expBracketBy_spec`,
+  `expBracketAtBy_spec`, `expOfBracketBy_spec`, `expOfBracketBy_spec_width`,
+  `expM1BracketBy_spec`, `expM1OfBracketBy_spec_of_bounds`), the old ones are corollaries.
+* Powers of two (`pow2Bracket`, `pow2RatBracket`, `pow2M1Bracket`, `pow2M1RatBracket`): one
+  `ln2Bracket W`, passed to the product and, through `ln2Reuse`, to the exponential.
+* Natural base (`powBaseBracket` and its three variants), `x^y` (`powBracket`,
+  `powRatBracket`) and rational base (`ratPowBracket`, `ratPowRatBracket`): one
+  `LnConsts` (`powLnConsts W = LnConsts.make (W + 8)`, plus the bit length of the bound on
+  `|ln b|` for the generic bases) used by the logarithm (`lnBracketWith`, `lnBaseBracketWith`,
+  `lnFloorBracketWith`) and by the exponential (`K.ln2At`).  If the reduction ever needs more
+  bits than the constants hold, `ln2At` computes a fresh bracket: correctness does not depend
+  on the margin.
+* Interpreter timings of one bracket at `x ≈ 7·2^999`, working precision 176 (`ln 2` at 1194
+  bits costs 22 ms): `10^x` 116 → 97 ms, `2^x` 50 → 31 ms, `x^y` 116 → 94 ms.
+
+### 8. `exp v − 1` at a hugely negative `v` (DONE, measured)
+
+`u^x − 1`, `2^x − 1`, `exp x − 1` and their rational forms ran the full bracket — the
+exponential to about `log₂ |x|` extra bits — for a hugely negative argument, only to learn that
+the value is `−1` plus something negligible.
+
+* `expM1NearNegOne? neg N p mode` (`ExpApprox.lean`): for `v < 0` with `N ≤ |v|`,
+  `exp v − 1 = −(1 − exp v)` and `1 − exp v = exp v'` with `v' = ln (1 − exp v)`,
+  `|v'| < 2^(2 − N)` (`log_one_sub_bound`), so the rounding is `expNearOne? false` at the
+  exponent `2 − min N 2^62` in the negated mode, negated (`expM1NearNegOne?_eq`, through
+  `roundVal_neg`).  Fires from `N ≥ p + 74`.  `floatAbsFloorN e ≤ |x|`, `ratAbsFloorN q ≤ |q|`
+  supply `N` (halved for `x ln b`, `ln b ≥ 1/2`).
+* Used by `powBaseM1PrecRound`, `powBaseM1RatPrecRound`, `pow2M1PrecRound` (non-integer `x`),
+  `pow2M1RatPrecRound`, `expM1PrecRound`, `expM1RatPrecRound`.
+* Found on the way: the tiny path `expM1Tiny?` received the bracket of `ln b` at `p + 72` bits
+  (and, for a rational, the two floats around `q`) as arguments, so every ordinary call of the
+  four power functions computed them and threw them away.  The callers now test
+  `expM1TinyCond E p` first (`guardedBy`).  In the interpreter one such bracket of `ln 10` costs about 5 ms
+  where a whole ordinary `10^x − 1` at 53 bits now costs about 12 ms.
+* Interpreter timings at `x = −(7·2^1000 + 1)/2`, 53 bits: `10^x − 1` 98 → 1 ms, `2^x − 1`
+  29 → 0 ms, `exp x − 1` 28 → 0 ms.
+* `pow2M1PrecRound` runs the test before its integer branch: the exact path (`powerOf2` of the
+  integer and one subtraction) materializes `x` as an integer, hopeless at `x = −3·2^(2^40)`.
+  A huge *positive* integer `x` is inherent: the exponent of the result is `x` itself.
+* Tests: the six test files, at a huge and at a moderate (`−2001/2`) negative argument in three
+  rounding modes, and the threshold of `expM1NearNegOne?` (`N = 126` no, `127` yes at 53 bits).
+
+### 9. Audit of the fast paths for eagerly built arguments (DONE, measured)
+
+After item 8: every `…Tiny?`, `…NearOne?`, `…Fast?` helper and call site read for arguments
+that cost something and are built before the helper's condition is tested.  `guardedBy c f`
+and `eq_some_of_guardedBy` now live in `Ziv.lean`.
+
+* `cotPeriodTiny?`, `cscPeriodTiny?`: `periodTinyArg` — a bracket of `π` at `p + 72` bits, a
+  reduced fraction and two conversions — on every call of `cot`/`csc` of `2πx/u` (float and
+  rational).  Guarded.  Interpreter: 1.3 ms of an 11.5 ms ordinary call saved.
+* `cotTinyRat?`, `cscTinyRat?` (also used by `cothRat`), `cschTinyRat?`: two conversions of the
+  rational; `sinTinyRat?`, `tanTinyRat?` (used by `sinRat`, `atanRat`, `asinhRat`, `tanhRat`,
+  `sinCosRat`, `tanRat`, `asinRat`, `sinhRat`, `atanhRat`, `sinhCoshRat`) and the tiny path of
+  `lambertW0RatPrecRound`: one.  Guarded; the saving is below 1 % for an ordinary rational
+  (0.1 ms against 10 ms), it matters only for rationals with huge numerators or denominators.
+* Clean: the float helpers (`sinTiny?`, `tanTiny?`, `cosTiny?`, `secTiny?`, `cscTiny?`,
+  `cotTiny?`, `cschTiny?`, `lnP1Tiny?`, `lambertW0Tiny?` for a float) take only the argument
+  itself; `sinPeriodTiny?`, `tanPeriodTiny?` already tested first; `expNearOne?`,
+  `tanhNearOne?`, `cothNearOne?`, `ratNearOne?`, `log2P1Pow2Fast?` take exponents and small
+  naturals (`tanhRatN`, `ratAbsFloorN` are one integer division).
+
+### 10. `fusedMulRat`: the exponent of `y` kept apart (DONE, measured)
+
+Suggestion: keep `y = m · 2^e` apart from its exponent instead of materializing `y·z` as an
+exact rational.  Measured first: `x + y·z` (`addMulRatPrecRound`, 53 bits) took 28 ms at an
+exponent of `y` of `±10^5` and 0.73 s at `3·10^6` — linear in the exponent, through
+`y.toAzRat?` (a numerator or denominator of `|e|` bits), the reduction of `r · z` and every
+step of the float-plus-rational Ziv loop after it.
+
+* `fusedMulRat`: for `y = ±m · 2^k`, `x ± y·z = (x · 2^(−k) ± (±m)·z) · 2^k`: the
+  float-plus-rational operation on the shifted `x` and the small rational `±m·z`, the result
+  shifted back (both shifts exact, `roundVal_mul_two_zpow`).  Proof: `shift_roundVal_add`,
+  `shift_roundVal_sub` (new hypothesis `hS` of `fusedMulRat_eq`).  Covers `addMulRat`,
+  `subMulRat`, `mulAddMulRat`, `mulSubMulRat` and the `Float` versions.
+* After: 1–2 ms at every exponent tried, up to `−2^40`.
+* The float–float fused operations (`addMul`, `subMul`, `mulAddMul`, `mulSubMul`) do **not**
+  have the pattern: the product is an exact float of `q₁ + q₂` bits and `addPrecRound` never
+  aligns across a huge gap; 0–1 ms at the same exponents, including exact cancellation.
+* Tests (`Tests/AddMulRat.lean`): invariance under a common shift by `±2^40`, agreement with
+  the float–float operation on a dyadic `z`, negligible terms deciding only the comparison.

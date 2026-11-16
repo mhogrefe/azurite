@@ -103,3 +103,23 @@ private def ref374 : AzRat :=
 private def bigX : AzFloat := (F "1" 53) <<< AzInt.ofInt (2 ^ 30)
 #guard L bigX 10 53 == (F "5422874305198591/16777216" 53, .gt)
 #guard L ((F "3" 53) <<< AzInt.ofInt (2 ^ 30)) 6 53 == (F "3484460322160875/8388608" 53, .lt)
+
+-- exponents far beyond memory (`2^(±2^50)`): the exactness test looks at the exponent and the
+-- significand only (`logBaseExactSkip`), no integer or rational of that size is built;
+-- `log₁₀ (2^K) = K log₁₀ 2`, so the result is the one for `2`, shifted
+private def hugeE : Int := 2 ^ 50
+private def sh (r : AzFloat × Ordering) (k : Int) : AzFloat × Ordering := (r.1 <<< K k, r.2)
+private def neg (r : AzFloat × Ordering) : AzFloat × Ordering := (-r.1, r.2.swap)
+#guard L ((F "1" 53) <<< K hugeE) 10 53 == sh (L (F "2" 53) 10 53) 50
+#guard L ((F "1" 53) <<< K hugeE) 10 53 .Floor == sh (L (F "2" 53) 10 53 .Floor) 50
+#guard L ((F "1" 53) <<< K (-hugeE)) 10 53 == neg (sh (L (F "2" 53) 10 53) 50)
+#guard L ((F "1" 53) <<< K (-hugeE)) 6 53 .Floor == neg (sh (L (F "2" 53) 6 53 .Ceiling) 50)
+#guard (L ((F "3" 53) <<< K hugeE) 10 53).2 != .eq
+#guard (L ((F "3" 53) <<< K (-hugeE)) 12 53).2 != .eq
+-- exact powers with an exponent above the precision still come out exact
+#guard L (F "10000000000000000000000" 53) 10 53 == (F "22" 53, .eq)
+#guard L (F "10000000000000000000000" 53) 100 53 == (F "11" 53, .eq)
+#guard L (F "1024" 1) 4 53 == (F "5" 53, .eq)
+#guard L ((F "81" 7) <<< K 4) 6 53 == (F "4" 53, .eq)                 -- 6^4 = 81 · 2^4
+#guard (L ((F "81" 7) <<< K 5) 6 53).2 != .eq
+#guard L ((F "1" 1) <<< K 300) 1024 53 == (F "30" 53, .eq)

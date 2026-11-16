@@ -42,6 +42,12 @@ def expM1Tiny? (pos : Bool) (xlo xhi : AzFloat) (L : AzFloat × AzFloat) (E : Az
       expM1TinyCore (mulPrecRound xlo L.2 w .Floor).1 (mulPrecRound xhi L.1 w .Ceiling).1 E p mode
   else none
 
+/-- The condition under which `expM1Tiny?` may answer: `E ≤ −(p + 72)`.  The callers test it
+before building the arguments of `expM1Tiny?` — the bracket of `ln b` and the floats around a
+rational — which would otherwise be computed, and thrown away, on every ordinary call. -/
+def expM1TinyCond (E : AzInt) (p : Nat) : Bool :=
+  !E.sign && decide (p + zivGuardBits + 8 ≤ E.abs.toNat)
+
 /-- `expM1Tiny?` for a rational `x = q`: the floats `⌊q⌋`, `⌈q⌉` at `p + 72` bits. -/
 def expM1TinyRat? (q : AzRat) (L : AzFloat × AzFloat) (E : AzInt) (p : Nat)
     (mode : RoundingMode) : Option (AzFloat × Ordering) :=

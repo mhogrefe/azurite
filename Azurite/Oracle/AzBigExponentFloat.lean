@@ -375,9 +375,25 @@ def checkBigExponentFloatSinPi : String → Verdict := withBigExponentFloatNames
 def checkBigExponentFloatSinPiRational : String → Verdict :=
   withBigExponentFloatNames checkFloatSinPiRational
 
-def checkBigExponentFloatAddMul : String → Verdict := withBigExponentFloatNames checkFloatAddMul
+/-- `y·z`, formed exactly. -/
+def exactProduct (y z : AzFloat) : AzFloat :=
+  (AzFloat.mulPrecRound y z (exactProductPrecision [y, z]) .Nearest).1
 
-def checkBigExponentFloatSubMul : String → Verdict := withBigExponentFloatNames checkFloatSubMul
+/-- The plain `add_mul` and `sub_mul` are exact: a precision that holds `x ± y·z` exactly. -/
+def exactFusedPrecision (x y z : AzFloat) : Nat := exactSumPrecision [x, exactProduct y z]
+
+/-- The plain `mul_add_mul` and `mul_sub_mul` are exact: a precision that holds `x·y ± z·w`
+exactly. -/
+def exactFusedPrecision₄ (x y z w : AzFloat) : Nat :=
+  exactSumPrecision [exactProduct x y, exactProduct z w]
+
+def checkBigExponentFloatAddMul : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatFusedWith "add_mul" "add_mul"
+    (fun s => (parseFloat s).map (·.1)) exactFusedPrecision AzFloat.addMulPrecRound
+
+def checkBigExponentFloatSubMul : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatFusedWith "sub_mul" "sub_mul"
+    (fun s => (parseFloat s).map (·.1)) exactFusedPrecision AzFloat.subMulPrecRound
 
 def checkBigExponentFloatAddMulRational : String → Verdict :=
   withBigExponentFloatNames checkFloatAddMulRational
@@ -386,10 +402,12 @@ def checkBigExponentFloatSubMulRational : String → Verdict :=
   withBigExponentFloatNames checkFloatSubMulRational
 
 def checkBigExponentFloatMulAddMul : String → Verdict :=
-  withBigExponentFloatNames checkFloatMulAddMul
+  withBigExponentFloatNames <| checkFloatFused4With "mul_add_mul" "mul_add_mul"
+    (fun s => (parseFloat s).map (·.1)) exactFusedPrecision₄ AzFloat.mulAddMulPrecRound
 
 def checkBigExponentFloatMulSubMul : String → Verdict :=
-  withBigExponentFloatNames checkFloatMulSubMul
+  withBigExponentFloatNames <| checkFloatFused4With "mul_sub_mul" "mul_sub_mul"
+    (fun s => (parseFloat s).map (·.1)) exactFusedPrecision₄ AzFloat.mulSubMulPrecRound
 
 def checkBigExponentFloatMulAddMulRational : String → Verdict :=
   withBigExponentFloatNames checkFloatMulAddMulRational

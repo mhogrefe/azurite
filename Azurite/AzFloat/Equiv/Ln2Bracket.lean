@@ -501,4 +501,32 @@ theorem log2EApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (w�
       obtain ⟨lv, hv, hl, hh, hlo, hhi, hwid⟩ := log2EApprox_spec hw
       exact ⟨lv, hv, hl, hh, hlo.le, hhi.le, hwid⟩) w₀ hw₀
 
+/-! ### Brackets fit for a working precision -/
+
+/-- `lb` is a bracket of `ln 2` fit for the working precision `w`: ends with values
+`1/5 ≤ ll ≤ ln 2 ≤ lh` and width at most `8 · 2^(−w)`. -/
+def Ln2BracketFor (w : ℕ) (lb : AzFloat × AzFloat) : Prop :=
+  ∃ ll lh : ℝ, lb.1.toVal = some (ll : EReal) ∧ lb.2.toVal = some (lh : EReal) ∧
+    ll ≤ Real.log 2 ∧ Real.log 2 ≤ lh ∧ lh - ll ≤ 8 * (1 / 2 : ℝ) ^ w ∧ 1 / 5 ≤ ll
+
+theorem ln2BracketFor_ln2Bracket {w : ℕ} (hw : 2 ≤ w) : Ln2BracketFor w (ln2Bracket w) := by
+  have : NeZero w := ⟨by omega⟩
+  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := ln2Bracket_spec w
+  exact ⟨ll, lh, h1, h2, h3, h4, h5, h6 hw⟩
+
+/-- A bracket fit for a finer precision `W ≥ w` is fit for `w`. -/
+theorem Ln2BracketFor.of_le {w W : ℕ} {lb : AzFloat × AzFloat} (hW : w ≤ W)
+    (h : Ln2BracketFor W lb) : Ln2BracketFor w lb := by
+  obtain ⟨ll, lh, h1, h2, h3, h4, h5, h6⟩ := h
+  refine ⟨ll, lh, h1, h2, h3, h4, h5.trans ?_, h6⟩
+  exact mul_le_mul_of_nonneg_left (pow_le_pow_of_le_one (by norm_num) (by norm_num) hW)
+    (by norm_num)
+
+/-- `F` supplies a bracket of `ln 2` fit for every working precision (`ln2Bracket`, or a
+supplier that reuses a bracket computed once at a high precision). -/
+def Ln2Supplier (F : ℕ → AzFloat × AzFloat) : Prop := ∀ W, 64 ≤ W → Ln2BracketFor W (F W)
+
+theorem ln2Supplier_ln2Bracket : Ln2Supplier ln2Bracket :=
+  fun _ hW => ln2BracketFor_ln2Bracket (by omega)
+
 end Azurite.AzFloat

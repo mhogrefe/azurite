@@ -20,19 +20,6 @@ fuel (`Spec.pow` of `Equiv/Pow.lean`).
 
 namespace Azurite.AzFloat
 
-/-- The value of an `AzRat`: `± num / den`. -/
-theorem coe_toRat_eq_sign_mul (q : AzRat) :
-    (AzRat.toRat q : ℝ) = (if q.sign then 1 else -1) * ((q.num.toNat : ℝ) / q.den.toNat) := by
-  rw [AzRat.toRat_cast_eq]
-  cases q.sign <;> simp [div_eq_mul_inv]
-
-/-- `|q| = num / den`. -/
-theorem abs_coe_toRat (q : AzRat) : |(AzRat.toRat q : ℝ)| = (q.num.toNat : ℝ) / q.den.toNat := by
-  rw [coe_toRat_eq_sign_mul, abs_mul]
-  have : (0 : ℝ) ≤ (q.num.toNat : ℝ) / q.den.toNat := by positivity
-  rw [abs_of_nonneg this]
-  cases q.sign <;> simp
-
 theorem den_pos_real (q : AzRat) : (0 : ℝ) < q.den.toNat := by
   exact_mod_cast AzRat.den_toNat_pos q
 

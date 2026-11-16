@@ -62,6 +62,13 @@ theorem pow2M1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Ro
   | finite s e q m hv =>
     simp only [pow2M1PrecRound, toVal_finite, Option.bind_some, Spec.pow2M1_coe]
     rw [dite_eq_right (NeZero.ne p)]
+    split
+    · next r hT =>
+      have hlog := Real.log_two_gt_d9
+      rw [two_rpow_eq_exp]
+      exact expM1NearNegOne?_eq
+        (fun hs => mul_neg_of_neg_of_pos (finiteVal_neg_of_not_sign s e hv hs) (by linarith))
+        (half_le_abs_mul (floatAbsFloorN_le (abs_finiteVal_bounds s e hv).1) (by linarith)) hT
     split_ifs with hi
     · rw [subPrecRound_eq_liftVal₂, liftVal₂, toVal_powerOf2, toVal_one', Option.bind_some,
         Option.bind_some, Spec.sub, ← EReal.coe_neg, Spec.add_coe_coe,
@@ -71,7 +78,7 @@ theorem pow2M1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Ro
         obtain ⟨ll, lh, hLl, hLh, hl0, hl1, hl2⟩ := ln2Bracket_tiny_spec p
         rw [two_rpow_eq_exp]
         exact expM1TinyFloat?_eq hv hLl hLh hl0 hl1 hl2
-          (abs_mul_log_two_lt (abs_finiteVal_bounds s e hv).2) hT
+          (abs_mul_log_two_lt (abs_finiteVal_bounds s e hv).2) (eq_some_of_guardedBy hT)
       exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ finiteVal s e m - 1) _
         (by unfold zivGuardBits; omega)
         (fun w hw => by

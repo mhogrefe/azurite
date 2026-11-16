@@ -86,7 +86,7 @@ def runAzFloatPow (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt
     let ns5 ← timeOne (fun _ => powBasePrecRound 3 y P .Nearest) psize
     let nsL ← timeOne (fun _ => lnBracket x ex W) bsize
     let ns2b ← timeOne (fun _ => ln2Bracket W) bsize
-    let L := lnMulBracket x ex y ey w
+    let L := lnMulBracket (powLnConsts (W + ex.abs.size)) x ex y ey w
     let nsE ← timeOne (fun _ => expBracketAt L.1 w) bsize
     let nsExp ← timeOne (fun _ => expPrecRound y P .Nearest) psize
     let nsLn ← timeOne (fun _ => lnPrecRound x P .Nearest) psize
@@ -132,7 +132,7 @@ def runAzFloatPowWidth (_limit : Nat) (cfg : Std.HashMap String String) (_seed :
       let ey := y.exponent?.getD 0
       for (w, tag) in [(powStart ey ex P, "w"), (P + zivGuardBits, "w'")] do
         let W := expWork ey w
-        let L := lnMulBracket x ex y ey w
+        let L := lnMulBracket (powLnConsts (W + ex.abs.size)) x ex y ey w
         let E := expBracketAt L.1 w
         let B := powBracket x ex y ey w
         let BB := powBaseBracket y ey 3 w

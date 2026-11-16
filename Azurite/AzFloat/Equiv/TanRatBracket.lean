@@ -188,6 +188,7 @@ theorem tanTinyRat?_eq_of {f : ℝ → ℝ} (hodd : ∀ a, f (-a) = -f a)
     (hT : tanTinyRat? q p mode = some r) :
     r = roundVal p mode (some ((f (AzRat.toRat q : ℝ) : ℝ) : EReal)) := by
   unfold tanTinyRat? at hT
+  replace hT := eq_some_of_guardedBy hT
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
   have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by

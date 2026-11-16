@@ -37,8 +37,12 @@ def powBaseM1RatPrecRound (u : UInt64) (q : AzRat) (p : Nat) (mode : RoundingMod
   else if hp : p = 0 then (nan, .eq)
   else
     haveI : NeZero p := ⟨hp⟩
-    match expM1TinyRat? q (lnBaseBracket u (p + zivGuardBits + 8))
-      (nearOneExp (ratTinyExp q) 64) p mode with
+    match guardedBy (expM1TinyCond (nearOneExp (ratTinyExp q) 64) p) (fun _ =>
+        expM1TinyRat? q (lnBaseBracket u (p + zivGuardBits + 8))
+          (nearOneExp (ratTinyExp q) 64) p mode) with
+    | some r => r
+    | none =>
+    match expM1NearNegOne? (!q.sign) (ratAbsFloorN q / 2) p mode with
     | some r => r
     | none =>
     match hx : powBaseRatExact? q (AzNat.ofNat u.toNat) with

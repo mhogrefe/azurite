@@ -82,15 +82,17 @@ def cotTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMode
 
 /-- The tiny-argument path of `cot q` for a rational `q`. -/
 def cotTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
-  let W := p + zivGuardBits + 8
-  cotTinyCore? (!q.sign) (ofAzRatRound q.abs W .Floor).1 (ofAzRatRound q.abs W .Ceiling).1
-    (ratExpBound q) p mode
+  guardedBy (!(ratExpBound q).sign
+      && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
+    cotTinyCore? (!q.sign) (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
 
 /-- The tiny-argument path of `cot (2π x / u)` for `|x| = m 2^E`, `|2πx/u| < 2^e'`
 (`neg`: `x < 0`). -/
 def cotPeriodTiny? (neg : Bool) (m u : AzNat) (E e' : AzInt) (p : Nat) (mode : RoundingMode) :
     Option (AzFloat × Ordering) :=
-  let y := periodTinyArg m u E (p + zivGuardBits + 8)
-  cotTinyCore? neg y.1 y.2 e' p mode
+  guardedBy (!e'.sign && decide (p + zivGuardBits + 8 ≤ 2 * e'.abs.toNat)) fun _ =>
+    cotTinyCore? neg (periodTinyArg m u E (p + zivGuardBits + 8)).1
+      (periodTinyArg m u E (p + zivGuardBits + 8)).2 e' p mode
 
 end Azurite.AzFloat

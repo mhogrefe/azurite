@@ -146,7 +146,9 @@ theorem asinTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mod
   unfold asinTinyRat? at hT
   have hc : (ratExpBound q).sign = false
       ∧ p + zivGuardBits + 8 ≤ (ratExpBound q).abs.toNat := by
-    unfold tanTinyRat? tanTinyCore? at hT
+    unfold tanTinyRat? at hT
+    replace hT := eq_some_of_guardedBy hT
+    unfold tanTinyCore? at hT
     dsimp only at hT
     by_contra hc
     rw [ite_eq_right hc] at hT

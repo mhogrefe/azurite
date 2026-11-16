@@ -43,11 +43,11 @@ theorem logBaseRatBaseP1Finite_eq (s : Bool) (e : AzInt) {q : ℕ} {m : AzNat}
     exact this
   split
   · rename_i r hx
-    rw [ofAzRatRound_eq_roundVal, logBaseRatBaseP1_exact_value s e hv hgt b
+    rw [ofAzRatRound_eq_roundVal, logBaseRatBaseP1Exact?_value s e hv hgt b
       (sign_eq_true_of_toRat_pos b hb) (num_ne_zero_of_toRat_pos b hb) hb1 r hx]
   · rename_i hx
-    have hirr := irrational_logBaseRatBaseP1_of_none s e hv hgt b (sign_eq_true_of_toRat_pos b hb)
-      (num_ne_zero_of_toRat_pos b hb) hb1 hx
+    have hirr := irrational_of_logBaseRatBaseP1Exact?_none s e hv hgt b
+      (sign_eq_true_of_toRat_pos b hb) (num_ne_zero_of_toRat_pos b hb) hb1 hx
     exact zivLoopCertified_eq_threshold p mode _ _ _ (by have := lnP1Start_ge e p; omega)
       (fun w hw => by
         obtain ⟨lv, hv', hl, hh, hlo, hhi, -⟩ :=

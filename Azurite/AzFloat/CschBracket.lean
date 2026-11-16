@@ -72,8 +72,9 @@ def cschTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMod
 
 /-- The tiny-argument path of `csch q` for a rational `q`. -/
 def cschTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
-  let W := p + zivGuardBits + 8
-  cschTinyCore? q.sign (ofAzRatRound q.abs W .Floor).1 (ofAzRatRound q.abs W .Ceiling).1
-    (ratExpBound q) p mode
+  guardedBy (!(ratExpBound q).sign
+      && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
+    cschTinyCore? q.sign (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
 
 end Azurite.AzFloat

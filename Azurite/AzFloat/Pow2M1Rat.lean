@@ -32,7 +32,11 @@ def pow2M1RatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × 
     subPrecRound (powerOf2 (AzInt.mkNorm q.sign q.num)) one p mode
   else
     haveI : NeZero p := ⟨hp⟩
-    match expM1TinyRat? q (ln2Bracket (p + zivGuardBits + 8)) (ratTinyExp q) p mode with
+    match guardedBy (expM1TinyCond (ratTinyExp q) p) (fun _ =>
+        expM1TinyRat? q (ln2Bracket (p + zivGuardBits + 8)) (ratTinyExp q) p mode) with
+    | some r => r
+    | none =>
+    match expM1NearNegOne? (!q.sign) (ratAbsFloorN q / 2) p mode with
     | some r => r
     | none =>
     zivLoopCertified (pow2M1RatApprox q) p mode (p + zivGuardBits)

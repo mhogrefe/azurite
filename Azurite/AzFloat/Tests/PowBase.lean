@@ -193,3 +193,46 @@ private def powBaseExpo (u : UInt64) (n : Int) (p : Nat) : Option Int × Orderin
 #guard powBaseExpo 2 59011072 2 == (some 59011073, .eq)
 #guard powBaseExpo 8 1033216 30 == (some 3099649, .eq)
 #guard powBaseExpo 8 (-371200) 13 == (some (-1113599), .eq)
+
+-- huge exponents: the starting precision of Ziv's loop is logarithmic in the exponent of `x`
+-- (`lnMulW₀`), only the bracket of `x ln u` works at `p + e` bits; references from 700-digit
+-- decimal arithmetic (`u^x = sig · 2^shift` with the 53-bit significand rounded to nearest)
+private def big10 : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838752")).num.toNat
+  ((F "6652583142272300" 53) <<< AzInt.ofInt (sh), .gt)
+private def big10Neg : AzFloat × Ordering :=
+  let sh : Int := (Q ("16014397907901874572694325517271509893986724198514539137838857")).num.toNat
+  ((F "6097604244814858" 53) <<< AzInt.ofInt (-sh), .gt)
+private def big7Half : AzFloat × Ordering :=
+  let sh : Int := (Q ("1429670743642759167967541555146598396066131518940442486861224786649148"
+    ++ "6205945014501641681117")).num.toNat
+  ((F "5830758831792293" 53) <<< AzInt.ofInt (sh), .gt)
+private def big10K : AzFloat × Ordering :=
+  let sh : Int := (Q ("3559474546125688097888749891311268280803030836889066085434085705866357"
+    ++ "9654905565667573402117123831097190952436189486273642075435448175445398"
+    ++ "5284277067328506910520976703894954997864912893728468090593464779075863"
+    ++ "4959954372251970503160189587153683416380628010576355627013788365862628"
+    ++ "8980639316732982265838")).num.toNat
+  ((F "6240855869311329" 53) <<< AzInt.ofInt (sh), .lt)
+private def x200 : AzFloat := (F "3" 53) <<< AzInt.ofInt 200
+private def xHalf : AzFloat := ofAzRat ((AzNat.ofNat (5 * 2 ^ 300 + 1)).toAzRat * Q "1/2") 310
+#guard E 10 x200 53 == big10
+#guard E 10 (-x200) 53 == big10Neg
+#guard E 7 xHalf 53 == big7Half
+#guard E 10 ((F "1" 53) <<< AzInt.ofInt 1000) 53 == big10K
+#guard (E 10 x200 53 .Floor).2 == .lt && (E 10 x200 53 .Ceiling).1 == big10.1
+-- an exact power with a huge exponent: `100^x = 10^(2x)`, `4^x = 2^(2x)`
+#guard E 100 ((F "3" 53) <<< AzInt.ofInt 199) 53 == big10
+#guard E 4 x200 53 == ((setPrecRound (powerOf2 (AzInt.ofInt (3 * 2 ^ 201))) 53 .Nearest).1, .eq)
+
+-- the exactness test reads the dyadic structure: more than six fractional bits are never
+-- converted to a rational (`powBaseExactSkip`), fewer may give an exact power
+#guard powBaseExactSkip (F "1/128" 53) && !powBaseExactSkip (F "1/64" 53)
+#guard powBaseExactSkip ((F "3" 53) <<< AzInt.ofInt (-(2 ^ 60)))
+#guard !powBaseExactSkip x200
+#guard powBaseExact? ((F "3" 53) <<< AzInt.ofInt (-(2 ^ 60))) (AzNat.ofNat 10) == none
+#guard powBaseExact? (F "3/32" 53) (AzNat.ofNat (2 ^ 32)) == some (AzNat.ofNat 2, AzInt.ofInt 3)
+#guard powBaseExact? (F "3/64" 53) (AzNat.ofNat (2 ^ 32)) == none
+#guard powBaseExact? (F "-5/2" 53) (AzNat.ofNat 9) == some (AzNat.ofNat 3, AzInt.ofInt (-5))
+#guard E (4294967296 : UInt64) (F "3/32" 53) 53 == (F "8" 53, .eq)
+#guard lnMulW₀ 4 == 92 && lnMulW₀ 1000 == 176 && lnMulW₀ (2 ^ 40) == 356

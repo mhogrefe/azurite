@@ -42,7 +42,15 @@ theorem pow2M1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingM
       obtain ⟨ll, lh, hLl, hLh, hl0, hl1, hl2⟩ := ln2Bracket_tiny_spec p
       rw [two_rpow_eq_exp]
       exact expM1TinyRat?_eq hLl hLh hl0 hl1 hl2
-        (abs_mul_log_two_lt (abs_toRat_lt_ratTinyExp q)) hT
+        (abs_mul_log_two_lt (abs_toRat_lt_ratTinyExp q)) (eq_some_of_guardedBy hT)
+    split
+    · next r hT =>
+      have hlog := Real.log_two_gt_d9
+      rw [two_rpow_eq_exp]
+      exact expM1NearNegOne?_eq
+        (fun hs => mul_neg_of_neg_of_pos (toRat_neg_of_sign q (by simpa using hs) h0)
+          (by linarith))
+        (half_le_abs_mul (ratAbsFloorN_le q) (by linarith)) hT
     exact zivLoopCertified_eq_threshold p mode _ ((2 : ℝ) ^ (AzRat.toRat q : ℝ) - 1) _
       (by unfold zivGuardBits; omega)
       (fun w hw => by

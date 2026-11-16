@@ -15,12 +15,13 @@ import Azurite.AzNat.ShiftLeft
 ## The bracket of `q^y` for a rational `q > 0` and a float `y`, and the exact powers
 
 `q^y = exp (y ln q)`: `lnRatMulBracket q y ey w` is `y` times the bracket of `ln q` from the float
-`⌊q⌋_W` below `q` (`lnFloorBracket`, the bracket of `ln` of a rational) at `W = expWork ey w`
+`⌊q⌋_W` below `q` (`lnFloorBracketWith`, the bracket of `ln` of a rational) at `W = expWork ey w`
 bits, rounded outward for any signs (`mulBracketAny`), and `ratPowBracket` is `expOfBracket`
 of it; `ratPowApprox neg` gives the ends as `Roundable`s, negated and swapped for a negative
 result.  The width bound is `mulLnEps ey E w` with `E = ratPowE q = 2 (size num + size den) + 2
-≥ ⌊2 |ln q|⌋ + 2`, below `1` from `w ≥ ratPowW₀ ey q = 88 + max(ey, 0) + E` on
-(`Equiv/RatPowBracket.lean`).
+≥ ⌊2 |ln q|⌋ + 2`, below `1` from `w ≥ ratPowW₀ ey q = lnMulW₀ (max(ey, 0) + E)` on
+(`Equiv/RatPowBracket.lean`); the threshold is logarithmic in `ey` and `E`, so a huge exponent
+or base raises the precision of the bracket of `y ln q` only, not of the final exponential.
 
 **Exact powers.**  For `q = a/b` in lowest terms and a non-integer `y = N/2^J` (`N` odd),
 `q^y` is rational iff `a` and `b` are both `2^J`-th powers (`natPow2Root?`: the odd part by
@@ -34,13 +35,21 @@ namespace Azurite.AzFloat
 
 /-- The bracket of `y ln q` for a positive rational `q` and a float `y` of exponent `ey`, at
 working precision `w`: `y` times the bracket of `ln q` from `⌊q⌋_W`. -/
-def lnRatMulBracket (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) : AzFloat × AzFloat :=
+def lnRatMulBracket (K : LnConsts) (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) :
+    AzFloat × AzFloat :=
   let W := expWork ey w
-  mulBracketAny y (lnFloorBracket (ofAzRatRound q W .Floor).1 W) W
+  mulBracketAny y (lnFloorBracketWith K (ofAzRatRound q W .Floor).1 W) W
 
-/-- The bracket of `q^y` at working precision `w`. -/
+/-- The constants of `ln` for a power of the rational `q` whose logarithm is bracketed at `W`
+bits: `powLnConsts` with `size (size num + size den)` more bits for the exponent of `y ln q`. -/
+def ratPowLnConsts (q : AzRat) (W : Nat) : LnConsts :=
+  powLnConsts (W + (q.num.size + q.den.size).size)
+
+/-- The bracket of `q^y` at working precision `w`, the constants of `ln` shared by the logarithm
+and the reduction of the exponential. -/
 def ratPowBracket (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) : AzFloat × AzFloat :=
-  expOfBracket (lnRatMulBracket q y ey w) w
+  let K := ratPowLnConsts q (expWork ey w)
+  expOfBracketBy K.ln2At (lnRatMulBracket K q y ey w) w
 
 /-- `ratPowBracket` as a pair of `Roundable`s for the Ziv loop, negated and swapped when `neg`. -/
 def ratPowApprox (neg : Bool) (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) :
@@ -53,9 +62,10 @@ def ratPowApprox (neg : Bool) (q : AzRat) (y : AzFloat) (ey : AzInt) (w : Nat) :
 def ratPowE (q : AzRat) : Nat := 2 * (q.num.size + q.den.size) + 2
 
 /-- The precision from which the width bound of `lnRatMulBracket` is below `1`:
-`88 + max(ey, 0) + ratPowE q`. -/
+`lnMulW₀ (max(ey, 0) + ratPowE q)`, logarithmic in a huge exponent `ey` and in the bit lengths
+of a huge base. -/
 def ratPowW₀ (ey : AzInt) (q : AzRat) : Nat :=
-  88 + (if ey.sign then ey.abs.toNat else 0) + ratPowE q
+  lnMulW₀ ((if ey.sign then ey.abs.toNat else 0) + ratPowE q)
 
 /-- The starting precision of the Ziv loop for `q^y` at precision `p`. -/
 def ratPowStart (ey : AzInt) (q : AzRat) (p : Nat) : Nat :=

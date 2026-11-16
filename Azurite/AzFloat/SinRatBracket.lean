@@ -56,8 +56,10 @@ def negAbsRat (q : AzRat) : AzRat := if q.sign then -q else q
 
 /-- The tiny-argument path of `sin q`. -/
 def sinTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
-  let w := p + zivGuardBits
-  sinTinyCore? (!q.sign) (fun P M => ofAzRatRound (negAbsRat q) P M)
-    (ofAzRatRound (negAbsRat q) (w + 8) .Ceiling).1 (ratExpBound q) w p mode
+  guardedBy (!(ratExpBound q).sign
+      && decide (p + zivGuardBits + 8 ≤ (ratExpBound q).abs.toNat)) fun _ =>
+    sinTinyCore? (!q.sign) (fun P M => ofAzRatRound (negAbsRat q) P M)
+      (ofAzRatRound (negAbsRat q) (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q)
+      (p + zivGuardBits) p mode
 
 end Azurite.AzFloat

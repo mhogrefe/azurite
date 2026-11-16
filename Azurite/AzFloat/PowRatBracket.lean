@@ -42,16 +42,18 @@ def powRatSlack (q : AzRat) (ex : AzInt) (W : Nat) : AzFloat :=
 
 /-- The bracket of `q ln b` for a positive float `b` of exponent `eb` and a rational `q`, at
 working precision `w`: the bracket of `⌊q⌋_W ln b` widened by the slack. -/
-def lnMulRatBracket (b : AzFloat) (eb : AzInt) (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
+def lnMulRatBracket (K : LnConsts) (b : AzFloat) (eb : AzInt) (q : AzRat) (w : Nat) :
+    AzFloat × AzFloat :=
   let eq := ratExpBound q
   let W := expWork eq w
-  let B := lnMulBracket b eb (ofAzRatRound q W .Floor).1 eq w
+  let B := lnMulBracket K b eb (ofAzRatRound q W .Floor).1 eq w
   let S := powRatSlack q eb W
   ((subPrecRound B.1 S W .Floor).1, (addPrecRound B.2 S W .Ceiling).1)
 
 /-- The bracket of `b^q` at working precision `w`. -/
 def powRatBracket (b : AzFloat) (eb : AzInt) (q : AzRat) (w : Nat) : AzFloat × AzFloat :=
-  expOfBracket (lnMulRatBracket b eb q w) w
+  let K := powLnConsts (expWork (ratExpBound q) w + eb.abs.size)
+  expOfBracketBy K.ln2At (lnMulRatBracket K b eb q w) w
 
 /-- `powRatBracket` as a pair of `Roundable`s for the Ziv loop, negated and swapped when `neg`. -/
 def powRatApprox (neg : Bool) (b : AzFloat) (eb : AzInt) (q : AzRat) (w : Nat) :

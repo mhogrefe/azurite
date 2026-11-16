@@ -49,9 +49,8 @@ theorem tendsto_ratPowRatEps (r q : AzRat) :
 theorem ratPowRatEps_le_one (r q : AzRat) {w : ℕ} (hw : ratPowRatW₀ r q ≤ w) :
     ratPowRatEps r q w ≤ 1 := by
   unfold ratPowRatW₀ at hw
-  have hwZ : 88 + max (ratExpBound r).toInt 0 + |(ratPowE q : ℤ)| ≤ (w : ℤ) := by
-    rw [← ratPowW₀_eq]; exact_mod_cast (show ratPowW₀ (ratExpBound r) q ≤ w by omega)
-  have h1 := mulLnEps_le_inv256 _ _ _ hwZ
+  have h1 := mulLnEps_le_inv256_of_ratPowW₀ (ratExpBound r) q
+    (show ratPowW₀ (ratExpBound r) q ≤ w by omega)
   set Ex := (q.num.size + q.den.size).size with hEx
   have h2 : (2 : ℝ) ^ Ex * (1 / 2 : ℝ) ^ w ≤ 1 / 2 := by
     have : (1 / 2 : ℝ) ^ w ≤ (1 / 2 : ℝ) ^ (Ex + 1) :=
@@ -65,10 +64,10 @@ theorem ratPowRatEps_le_one (r q : AzRat) {w : ℕ} (hw : ratPowRatW₀ r q ≤ 
 
 /-- `lnRatMulRatBracket q r w` encloses `r ln q` for a positive `q`, with width at most
 `ratPowRatEps r q w` (`w ≥ 64`). -/
-theorem lnRatMulRatBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0) (r : AzRat)
-    (w : ℕ) (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (lnRatMulRatBracket q r w).1.toVal = some (lo : EReal) ∧
-      (lnRatMulRatBracket q r w).2.toVal = some (hi : EReal) ∧
+theorem lnRatMulRatBracket_spec (K : LnConsts) (q : AzRat) (hs : q.sign = true)
+    (h0 : q.num ≠ 0) (r : AzRat) (w : ℕ) (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (lnRatMulRatBracket K q r w).1.toVal = some (lo : EReal) ∧
+      (lnRatMulRatBracket K q r w).2.toVal = some (hi : EReal) ∧
       lo ≤ (AzRat.toRat r : ℝ) * Real.log (AzRat.toRat q : ℝ) ∧
       (AzRat.toRat r : ℝ) * Real.log (AzRat.toRat q : ℝ) ≤ hi ∧
       hi - lo ≤ ratPowRatEps r q w := by
@@ -107,7 +106,7 @@ theorem lnRatMulRatBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠
     have := abs_nonneg rv
     nlinarith
   -- the bracket of `y ln q`
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulBracket_spec q hs h0 hy er hye w hw
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulBracket_spec K q hs h0 hy er hye w hw
   -- `|ln q| ≤ Lb < 2^Ex`
   have hnum1 : 1 ≤ q.num.toNat :=
     Nat.one_le_iff_ne_zero.mpr (fun h => h0 (AzNat.toNat_injective (by rw [h, AzNat.toNat_zero])))
@@ -219,10 +218,13 @@ theorem ratPowRatBracket_spec (q : AzRat) (hs : q.sign = true) (h0 : q.num ≠ 0
       (AzRat.toRat q : ℝ) ^ (AzRat.toRat r : ℝ) ≤ hi ∧
       hi - lo ≤ expOfBracketEps ((AzRat.toRat r : ℝ) * Real.log (AzRat.toRat q : ℝ))
         (ratPowRatEps r q w) w := by
-  have hw64 : 64 ≤ w := by unfold ratPowRatW₀ ratPowW₀ at hw; omega
-  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulRatBracket_spec q hs h0 r w hw64
+  have hw64 : 64 ≤ w := by
+    unfold ratPowRatW₀ at hw; have := ratPowW₀_ge (ratExpBound r) q; omega
+  obtain ⟨lo, hi, hlo, hhi, h1, h2, hwid⟩ := lnRatMulRatBracket_spec
+    (ratPowLnConsts q (expWork (ratExpBound r) w)) q hs h0 r w hw64
   have hw1 : hi - lo ≤ 1 := hwid.trans (ratPowRatEps_le_one r q hw)
-  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracket_spec_width hlo hhi h1 h2 hw1 hw64
+  obtain ⟨a, b, ha, hb, ha1, hb1, hab⟩ := expOfBracketBy_spec_width
+    (ratPowLnConsts q (expWork (ratExpBound r) w)).ln2Supplier hlo hhi h1 h2 hw1 hw64
   have hqv0 : (0 : ℝ) < (AzRat.toRat q : ℝ) := by exact_mod_cast toRat_pos_of_sign q hs h0
   rw [rpow_eq_exp_mul_log hqv0]
   refine ⟨a, b, ha, hb, ha1, hb1, hab.trans ?_⟩

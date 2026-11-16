@@ -15,6 +15,7 @@ import Azurite.AzNat.Equiv.Conversion
 import Azurite.AzNat.Equiv.Div.DivMod
 import Azurite.AzNat.Equiv.Pow
 import Azurite.AzNat.Equiv.ShiftLeft
+import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
 import Azurite.AzNat.Equiv.Mul.Dispatch
 import Azurite.AzNat.Equiv.SqrtRem
@@ -231,12 +232,85 @@ private theorem toNat_initialGuess (m : AzNat) (k : ℕ) :
   show (1 : AzNat).toNat * 2 ^ ((m.size + k - 1) / k) = _
   rw [show ((1 : AzNat).toNat = 1) from rfl, Nat.one_mul]
 
+/-- Bisection keeps an upper bound of every root and never raises `hi`. -/
+theorem refine_bound (m : AzNat) (k : ℕ) (hk : 1 ≤ k) :
+    ∀ (n : ℕ) (lo hi : AzNat), lo.toNat ≤ hi.toNat →
+      (∀ y, y ^ k ≤ m.toNat → y ≤ hi.toNat) →
+      (∀ y, y ^ k ≤ m.toNat → y ≤ (rootInt.refine m k n lo hi).toNat) ∧
+        (rootInt.refine m k n lo hi).toNat ≤ hi.toNat := by
+  intro n
+  induction n with
+  | zero =>
+    intro lo hi _ hinv
+    exact ⟨hinv, le_rfl⟩
+  | succ n ih =>
+    intro lo hi hle hinv
+    have hmid : ((lo + hi) >>> 1).toNat = (lo.toNat + hi.toNat) / 2 := by
+      rw [toNat_hShiftRight, toNat_add, Nat.shiftRight_eq_div_pow, pow_one]
+    simp only [rootInt.refine]
+    by_cases hlt : m < ((lo + hi) >>> 1).pow k
+    · rw [ite_eq_left hlt]
+      have hlt' := (lt_iff_toNat_lt _ _).mp hlt
+      rw [toNat_pow, hmid] at hlt'
+      obtain ⟨h1, h2⟩ := ih lo ((lo + hi) >>> 1) (by rw [hmid]; omega) (fun y hy => by
+        rw [hmid]
+        exact le_of_lt ((Nat.pow_lt_pow_iff_left (by omega)).mp (lt_of_le_of_lt hy hlt')))
+      exact ⟨h1, h2.trans (by rw [hmid]; omega)⟩
+    · rw [ite_eq_right hlt]
+      exact ih ((lo + hi) >>> 1) hi (by rw [hmid]; omega) hinv
+
+/-- The starting point bounds every root and is at most `2^⌈b/k⌉`. -/
+theorem start_bound (m : AzNat) (k : ℕ) (hk : 1 ≤ k) :
+    (∀ y, y ^ k ≤ m.toNat → y ≤ (rootInt.start m k).toNat) ∧
+      (rootInt.start m k).toNat ≤ 2 ^ ((m.size + k - 1) / k) := by
+  have hinv : ∀ y, y ^ k ≤ m.toNat → y ≤ (rootInt.initialGuess m k).toNat := fun y hy => by
+    rw [toNat_initialGuess, ← size_toNat]
+    exact initialGuess_bound hk hy
+  unfold rootInt.start
+  dsimp only
+  split_ifs with h8
+  · exact ⟨hinv, (toNat_initialGuess m k).le⟩
+  · obtain ⟨h1, h2⟩ := refine_bound m k hk _ (rootInt.initialGuess m k >>> 1)
+      (rootInt.initialGuess m k) (by
+        rw [toNat_hShiftRight, Nat.shiftRight_eq_div_pow]
+        exact Nat.div_le_self _ _) hinv
+    exact ⟨h1, h2.trans (toNat_initialGuess m k).le⟩
+
 /-- **`rootInt` agrees with the ℕ reference.** -/
 theorem toNat_rootInt (m : AzNat) (k : ℕ) : (rootInt m k).toNat = rootIntNat m.toNat k := by
-  unfold rootInt rootIntNat
-  split_ifs with hk
-  · rfl
-  · rw [toNat_rootInt_loop, toNat_initialGuess, size_toNat, Nat.shiftLeft_eq, Nat.one_mul]
+  unfold rootInt
+  split_ifs with hk hsz h0
+  · unfold rootIntNat
+    rw [ite_eq_left hk]
+  · -- `m = 0`: the root is `0`
+    have hk1 : 1 ≤ k := by omega
+    obtain ⟨h1, h2⟩ := rootIntNat_spec m.toNat k hk1
+    have hm0 : m.toNat = 0 := by
+      rw [← size_toNat] at h0
+      exact Nat.size_eq_zero.mp h0
+    rw [toNat_ofNat]
+    symm
+    exact eq_of_pow_le_of_lt_pow hk1 h1 h2 (by rw [hm0, Nat.zero_pow (by omega)])
+      (by rw [hm0]; simp)
+  · -- `1 ≤ m < 2^k`: the root is `1`
+    have hk1 : 1 ≤ k := by omega
+    obtain ⟨h1, h2⟩ := rootIntNat_spec m.toNat k hk1
+    have hlt : m.toNat < 2 ^ k :=
+      lt_of_lt_of_le (Nat.lt_size_self _)
+        (Nat.pow_le_pow_right (by norm_num) (by rw [size_toNat]; exact hsz))
+    have hm1 : 1 ≤ m.toNat := by
+      rw [← size_toNat] at h0
+      exact Nat.pos_of_ne_zero fun h => h0 (by rw [h]; rfl)
+    rw [toNat_ofNat]
+    symm
+    exact eq_of_pow_le_of_lt_pow hk1 h1 h2 (by rw [Nat.one_pow]; exact hm1) hlt
+  · have hk1 : 1 ≤ k := by omega
+    obtain ⟨h1, h2⟩ := rootIntNat_spec m.toNat k hk1
+    obtain ⟨hb1, hb2⟩ := start_bound m k hk1
+    rw [toNat_rootInt_loop, Nat.shiftLeft_eq, Nat.one_mul]
+    obtain ⟨h3, h4⟩ := rootIntNat.loop_spec m.toNat k hk1 (2 ^ ((m.size + k - 1) / k) + 1)
+      (rootInt.start m k).toNat (by omega) hb1
+    exact eq_of_pow_le_of_lt_pow hk1 h3 h4 h1 h2
 
 /-- **MCA Theorem 1.7 on `AzNat`**: `rootInt m k = ⌊m^(1/k)⌋`. -/
 theorem rootInt_spec (m : AzNat) (k : ℕ) (hk : 1 ≤ k) :

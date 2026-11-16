@@ -20,7 +20,10 @@ correctly rounded to precision `p` in `mode`, with the comparison against the ex
 `u^x = r^n`) gives the exact `r^n − 1` by one correctly rounded subtraction, or
 `(1 − r^|n|) / r^|n|` by one division for `n < 0`; otherwise the certified Ziv loop (no fuel)
 runs over `powBaseM1Approx` (the bracket of `x ln u` at the compensated precision, through
-`expM1OfBracket`), total because `u^x − 1` is irrational.  Special values: `1^x − 1 = 0` for every `x`, even
+`expM1OfBracketBy`), total because `u^x − 1` is irrational.  A hugely negative `x`
+(`|x| ≥ 2 (p + 76)` or so) is rounded by one test, `u^x − 1` being within `2^(−|x|/2)` above
+`−1` (`expM1NearNegOne?`), instead of a bracket at about `log₂ |x|` more bits.  Special
+values: `1^x − 1 = 0` for every `x`, even
 `NaN` and `±∞` (MPFR's `1^x = 1`); otherwise `NaN` for `NaN`; `0^x − 1 = −1` for `x > 0`, `+∞`
 for `x < 0`; `u^0 − 1 = 0`;
 `u^(+∞) − 1 = +∞`, `u^(−∞) − 1 = −1` for `u ≥ 2`, swapped for `u = 0`.  The specification
@@ -50,8 +53,12 @@ def powBaseM1PrecRound (u : UInt64) (x : AzFloat) (p : Nat) (mode : RoundingMode
     else if hp : p = 0 then (nan, .eq)
     else
       haveI : NeZero p := ⟨hp⟩
-      match expM1Tiny? s (finite s e q m hv) (finite s e q m hv)
-        (lnBaseBracket u (p + zivGuardBits + 8)) (nearOneExp e 64) p mode with
+      match guardedBy (expM1TinyCond (nearOneExp e 64) p) (fun _ =>
+          expM1Tiny? s (finite s e q m hv) (finite s e q m hv)
+            (lnBaseBracket u (p + zivGuardBits + 8)) (nearOneExp e 64) p mode) with
+      | some r => r
+      | none =>
+      match expM1NearNegOne? (!s) (floatAbsFloorN e / 2) p mode with
       | some r => r
       | none =>
       match hx : powBaseExact? (finite s e q m hv) (AzNat.ofNat u.toNat) with

@@ -135,3 +135,38 @@ private def refDown : AzRat :=
 #guard logBaseFloat (F "8" 10) (F "4" 53) == F "3/2" 10
 #guard logBaseFloat (F "7" 53) (F "3" 53) == ofAzRat ref37 53
 #guard logBaseFloat (F "2" 53) (F "10" 53) == logBase (F "2" 53) 10
+
+-- exponents far beyond memory (`2^(±2^60)`): the exactness test asks whether the odd part is a
+-- perfect `2^60`-th power, and `AzNat.rootInt` answers without computing `2^(2^60 − 1)`;
+-- the work does not depend on the exponent
+private def sh (r : AzFloat × Ordering) (k : Int) : AzFloat × Ordering := (r.1 <<< K k, r.2)
+private def neg (r : AzFloat × Ordering) : AzFloat × Ordering := (-r.1, r.2.swap)
+#guard L ((F "1" 53) <<< K (2 ^ 60)) (F "10" 53) 53 == sh (L (F "2" 53) (F "10" 53) 53) 60
+#guard L ((F "1" 53) <<< K (-(2 ^ 60))) (F "10" 53) 53
+  == neg (sh (L (F "2" 53) (F "10" 53) 53) 60)
+#guard (L ((F "3" 53) <<< K (2 ^ 60)) (F "10" 53) 53).2 != .eq
+#guard (L ((F "3" 53) <<< K (-(2 ^ 60))) (F "5/4" 53) 53).2 != .eq
+#guard (L ((F "3" 53) <<< K (2 ^ 60)) ((F "5" 53) <<< K (2 ^ 57)) 53).2 != .eq
+-- still exact with huge exponents: `log_{2^(2^57)} 2^(2^60) = 8`,
+-- `log_{3·2^(2^57)} (9·2^(2^58)) = 2`
+#guard L ((F "1" 53) <<< K (2 ^ 60)) ((F "1" 53) <<< K (2 ^ 57)) 53 == (F "8" 53, .eq)
+#guard L ((F "9" 53) <<< K (2 ^ 58)) ((F "3" 53) <<< K (2 ^ 57)) 53 == (F "2" 53, .eq)
+
+-- odd integers of many bits: multiplicative dependence by `mulDepExps` (divisions only, no
+-- search for a primitive root over every exponent up to the bit length)
+private def P (b e : Nat) : AzFloat := ofAzRat (AzNat.ofNat (b ^ e)).toAzRat 2000
+#guard L (P 3 200) (P 3 300) 53 == ofAzRatRound (Q "2/3") 53 .Nearest
+#guard L (P 3 1000) (P 3 1) 53 == (F "1000" 53, .eq)
+#guard L (P 3 1) (P 3 1000) 53 == ofAzRatRound (Q "1/1000") 53 .Nearest
+#guard L (P 15 77) (P 15 121) 53 == ofAzRatRound (Q "7/11") 53 .Nearest
+#guard L (P 12345678901234567 30) (P 12345678901234567 18) 53
+  == ofAzRatRound (Q "5/3") 53 .Nearest
+#guard (L (ofAzRat (AzNat.ofNat (3 ^ 200 + 2)).toAzRat 2000) (P 3 300) 53).2 != .eq
+#guard (L (P 3 200) (P 5 300) 53).2 != .eq
+#guard mulDepExps 100 (AzNat.ofNat (3 ^ 20)) (AzNat.ofNat (3 ^ 12)) == some (5, 3)
+#guard mulDepExps 100 (AzNat.ofNat (3 ^ 12)) (AzNat.ofNat (3 ^ 20)) == some (3, 5)
+#guard mulDepExps 100 (AzNat.ofNat 1) (AzNat.ofNat 7) == some (0, 1)
+#guard mulDepExps 100 (AzNat.ofNat 7) (AzNat.ofNat 7) == some (1, 1)
+#guard mulDepExps 100 (AzNat.ofNat (6 ^ 9)) (AzNat.ofNat (6 ^ 4)) == some (9, 4)
+#guard mulDepExps 100 (AzNat.ofNat (3 ^ 20)) (AzNat.ofNat (9 ^ 6 * 5)) == none
+#guard mulDepExps 100 (AzNat.ofNat 12) (AzNat.ofNat 18) == none

@@ -62,6 +62,10 @@ theorem expM1PrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Rou
   | finite s e q m hv =>
     simp only [expM1PrecRound, toVal_finite, Option.bind_some, Spec.expM1_coe]
     rw [dite_eq_right (NeZero.ne p)]
+    split
+    · next r hT =>
+      exact expM1NearNegOne?_eq (finiteVal_neg_of_not_sign s e hv)
+        (floatAbsFloorN_le (abs_finiteVal_bounds s e hv).1) hT
     exact zivLoopCertified_eq_threshold p mode _ (Real.exp (finiteVal s e m) - 1) _
       (by unfold zivGuardBits; omega)
       (fun w hw => by

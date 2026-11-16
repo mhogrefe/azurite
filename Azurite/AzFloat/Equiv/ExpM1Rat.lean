@@ -29,7 +29,15 @@ theorem expM1RatPrecRound_eq (q : AzRat) (p : ℕ) [NeZero p] (mode : RoundingMo
   split_ifs with hp h0
   · exact absurd hp (NeZero.ne p)
   · rw [(AzRat.toRat_eq_zero_iff q).mpr h0, Real.exp_zero, sub_self, EReal.coe_zero, roundVal_zero]
-  · exact zivLoopCertified_eq_threshold p mode _ (Real.exp (AzRat.toRat q : ℝ) - 1) _
+  · split
+    · next r hT =>
+      have hne : (AzRat.toRat q : ℝ) ≠ 0 := by
+        exact_mod_cast fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
+      exact expM1NearNegOne?_eq
+        (fun hs => lt_of_le_of_ne
+          (not_lt.mp ((toRat_sign_iff q h0).not.mp (by simpa using hs))) hne)
+        (ratAbsFloorN_le q) hT
+    exact zivLoopCertified_eq_threshold p mode _ (Real.exp (AzRat.toRat q : ℝ) - 1) _
       (by unfold zivGuardBits; omega)
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi, -⟩ :=
