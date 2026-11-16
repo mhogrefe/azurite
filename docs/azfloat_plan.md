@@ -7637,3 +7637,22 @@ Tests: `Tests/Atanh.lean`, `Tests/AtanhRat.lean` (generator `scratchpad/gen_atan
 reference `atanh_ref.py`).  NOT timed.  `asinh`, `acosh`, `atanh` done; remaining inverse
 hyperbolic: `asech`, `acsch`, `acoth` (reciprocal arguments: `acosh (1/x)`, `asinh (1/x)`,
 `atanh (1/x)`; with rationals the reciprocal is exact).
+
+## Inverse hyperbolic secant `asech`, `asechRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`asechPrecRound`/`asech` (`AzFloat/Asech.lean`), `asechRatPrecRound`/`asechRat`
+(`AzFloat/AsechRat.lean`); `asechPrecRound_eq_liftVal`, `asechRatPrecRound_eq` against
+`Spec.asech` (`= Spec.acosh (1/a)` for a finite `a ≠ 0`).  Malachite table: `NaN`;
+`±∞ ↦ NaN`; `±0.0 ↦ ∞`; `1 ↦ 0.0`; `x < 0` or `x > 1 ↦ NaN` — as implemented.
+
+* **Float**: `asech x = ln ((1 + √((1 − x)(1 + x)))/x)` (`arcosh_inv_eq_log`), built directly
+  (the reciprocal of a float is not a float): `asechArg`, six operations rounded down, relative
+  `10·2^(−W)`; then `lnFloorBracket`.  Start with `acoshExtra` of `⌊1 − x⌋`.  Tiny `x`:
+  `≈ ln (2/x)`, an ordinary logarithm (tested at `2^(−2^30)`).
+* **Rational**: `acoshRatPrecRound q⁻¹` (exact reciprocal), `+∞` at `0`.
+* Irrationality from `irrational_arcosh_rat` at `1/x`.
+
+Tests: `Tests/Asech.lean`, `Tests/AsechRat.lean` (generator `scratchpad/gen_asech.py`,
+reference `asech_ref.py`).  NOT timed.  Remaining: `acsch` (`asinh (1/x)`; odd; `0 ↦ +∞`
+presumably; tiny `x`: `ln (2/|x|)`; huge `x`: `≈ 1/x`, needs a tiny path like `acot`) and
+`acoth` (`atanh (1/x)`, `|x| > 1`; huge `x`: `≈ 1/x` likewise).

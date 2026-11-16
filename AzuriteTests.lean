@@ -35,6 +35,8 @@ import Azurite.AzFloat.Tests.Asec
 import Azurite.AzFloat.Tests.AsecPi
 import Azurite.AzFloat.Tests.AsecRat
 import Azurite.AzFloat.Tests.AsecWithPeriod
+import Azurite.AzFloat.Tests.Asech
+import Azurite.AzFloat.Tests.AsechRat
 import Azurite.AzFloat.Tests.Asin
 import Azurite.AzFloat.Tests.AsinPi
 import Azurite.AzFloat.Tests.AsinRat
