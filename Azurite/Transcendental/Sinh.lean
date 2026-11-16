@@ -9,16 +9,20 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 
 import Azurite.Transcendental.Exp
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+import Mathlib.Analysis.SpecialFunctions.Arsinh
+import Mathlib.Analysis.SpecialFunctions.Arcosh
 
 /-!
-# Irrationality of `sinh q`, `cosh q` and `tanh q`
+# Irrationality of `sinh q`, `cosh q`, `tanh q`, `arsinh q` and `arcosh q`
 
 `sinh q`, `cosh q` and `tanh q` are irrational for every nonzero rational `q`
 (`irrational_sinh_rat`, `irrational_cosh_rat`, `irrational_tanh_rat`): were `sinh q` or
 `cosh q` a rational `r`, then `y = e^q` would be a root of `y² − 2 r y − 1`, resp.
 `y² − 2 r y + 1`, against the transcendence of `e^q` (`transcendental_exp_rat`, from Hermite's
-theorem); and a rational `tanh q = r` gives the rational `e^(2q) = (1 + r)/(1 − r)`.  This makes
-the rounding loops of the `AzFloat` hyperbolic functions provably terminating.
+theorem); and a rational `tanh q = r` gives the rational `e^(2q) = (1 + r)/(1 − r)`.  Hence
+`arsinh q` is irrational too (`irrational_arsinh_rat`): its hyperbolic sine is the rational `q`;
+and `arcosh q` for a rational `q > 1` (`irrational_arcosh_rat`): its hyperbolic cosine is `q`.
+This makes the rounding loops of the `AzFloat` hyperbolic functions provably terminating.
 -/
 
 open Polynomial
@@ -75,5 +79,27 @@ theorem irrational_tanh_rat {q : ℚ} (hq : q ≠ 0) : Irrational (Real.tanh q) 
   refine ⟨(1 + r) / (1 - r), ?_⟩
   push_cast
   rw [exp_two_mul_eq_tanh, hr]
+
+/-- `arsinh q` is irrational for every nonzero rational `q`. -/
+theorem irrational_arsinh_rat {q : ℚ} (hq : q ≠ 0) : Irrational (Real.arsinh q) := by
+  rintro ⟨r, hr⟩
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [Rat.cast_zero] at hr
+    exact hq (by exact_mod_cast Real.arsinh_eq_zero_iff.mp hr.symm)
+  apply irrational_sinh_rat hr0
+  exact ⟨q, by rw [hr, Real.sinh_arsinh]⟩
+
+/-- `arcosh q` is irrational for every rational `q > 1`. -/
+theorem irrational_arcosh_rat {q : ℚ} (hq : 1 < q) : Irrational (Real.arcosh q) := by
+  have hq' : (1 : ℝ) < q := by exact_mod_cast hq
+  rintro ⟨r, hr⟩
+  have hpos := Real.arcosh_pos hq'
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [← hr, Rat.cast_zero] at hpos
+    exact lt_irrefl _ hpos
+  apply irrational_cosh_rat hr0
+  exact ⟨q, by rw [hr, Real.cosh_arcosh hq'.le]⟩
 
 end Azurite

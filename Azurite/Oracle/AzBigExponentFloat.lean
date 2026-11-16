@@ -29,15 +29,42 @@ open Azurite
 
 local instance (priority := high) : FloatDialect := bigExponentFloatDialect
 
+/-! ### Reading `BigExponentFloat` names
+
+The `BigExponentFloat` demos name some operations differently from the `Float` demos: they always
+prefix an associated function with the type (`BigExponentFloat::pi_prec(p)`, where the `Float` demo
+prints `pi_prec(p)`), and an operation whose name contains the type says `big_exponent_float` where
+the `Float` one says `float` (`agm_big_exponent_float_rational`,
+`log_base_big_exponent_float_base`).
+`withBigExponentFloatNames` runs a `Float` check on a line as printed and, while the check cannot
+read it, on the line with the prefix removed, with the type's name shortened, and with both. A
+disagreement is never retried, and a line no reading accepts is reported as the first reading's
+failure; the printed values (hexadecimal, decimal, or rational) never contain these names. -/
+
+def withoutTypePrefix (line : String) : String :=
+  if line.startsWith "BigExponentFloat::" then dropChars line "BigExponentFloat::".length else line
+
+def withFloatNames (line : String) : String := line.replace "_big_exponent_float" "_float"
+
+def withBigExponentFloatNames (check : String → Verdict) (line : String) : Verdict :=
+  let readings := [withoutTypePrefix line, withFloatNames line,
+    withFloatNames (withoutTypePrefix line)].filter (· != line)
+  match check line with
+  | .error (.unreadable msg) =>
+    match readings.find? (fun l => !(check l matches .error (.unreadable _))) with
+    | some l => check l
+    | none => .error (.unreadable msg)
+  | v => v
+
 /-! ### Arithmetic -/
 
 /-- `x + y = z` (exact), `(x).add_prec(y, p) = (z, o)`, or
 `(x).add_prec_round(y, p, rm) = (z, o)`. -/
-def checkBigExponentFloatAdd : String → Verdict := checkFloatAdd
+def checkBigExponentFloatAdd : String → Verdict := withBigExponentFloatNames checkFloatAdd
 
-def checkBigExponentFloatSub : String → Verdict := checkFloatSub
+def checkBigExponentFloatSub : String → Verdict := withBigExponentFloatNames checkFloatSub
 
-def checkBigExponentFloatMul : String → Verdict := checkFloatMul
+def checkBigExponentFloatMul : String → Verdict := withBigExponentFloatNames checkFloatMul
 
 /-- `(x).div_prec(y, p) = (z, o)` or `(x).div_prec_round(y, p, rm) = (z, o)`. A
 `BigExponentFloat` has no signed zero to give a quotient by zero a sign, so Malachite documents
@@ -55,9 +82,10 @@ def checkBigExponentFloatSquare (line : String) : Verdict := do
     expectFloat "square" (AzFloat.sqrPrecRound x.1 p .Nearest).1 z
   | _ => checkFloatSquare line
 
-def checkBigExponentFloatSqrt : String → Verdict := checkFloatSqrt
+def checkBigExponentFloatSqrt : String → Verdict := withBigExponentFloatNames checkFloatSqrt
 
-def checkBigExponentFloatReciprocalSqrt : String → Verdict := checkFloatReciprocalSqrt
+def checkBigExponentFloatReciprocalSqrt : String → Verdict :=
+  withBigExponentFloatNames checkFloatReciprocalSqrt
 
 /-- `(x).reciprocal_prec[_round](…)`. As for division, Malachite documents `1 / 0` as `NaN`. -/
 def checkBigExponentFloatReciprocal : String → Verdict :=
@@ -65,7 +93,7 @@ def checkBigExponentFloatReciprocal : String → Verdict :=
     if x matches .zero then (.nan, .eq) else AzFloat.recipPrecRound x p m
 
 /-- `-x = z`. -/
-def checkBigExponentFloatNeg : String → Verdict := checkFloatNeg
+def checkBigExponentFloatNeg : String → Verdict := withBigExponentFloatNames checkFloatNeg
 
 /-- `(x).abs() = z`. -/
 def checkBigExponentFloatAbs (line : String) : Verdict := do
@@ -75,9 +103,9 @@ def checkBigExponentFloatAbs (line : String) : Verdict := do
   let z ← expect "z" (parseFloat z)
   expectFloat "abs" (AzFloat.abs x.1) z
 
-def checkBigExponentFloatShl : String → Verdict := checkFloatShl
+def checkBigExponentFloatShl : String → Verdict := withBigExponentFloatNames checkFloatShl
 
-def checkBigExponentFloatShr : String → Verdict := checkFloatShr
+def checkBigExponentFloatShr : String → Verdict := withBigExponentFloatNames checkFloatShr
 
 /-- The precision of an exact sum of the finite elements of `xs`: enough bits to span all their
 significant bits, plus one for each element to absorb carries. -/
@@ -133,212 +161,292 @@ def checkBigExponentFloatProduct : String → Verdict :=
 These `Float` checks read the `BigExponentFloat` demos' lines as they are, under the
 `BigExponentFloat` dialect. -/
 
-def checkBigExponentFloatAddRational : String → Verdict := checkFloatAddRational
+def checkBigExponentFloatAddRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAddRational
 
-def checkBigExponentFloatSubRational : String → Verdict := checkFloatSubRational
+def checkBigExponentFloatSubRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSubRational
 
-def checkBigExponentFloatMulRational : String → Verdict := checkFloatMulRational
+def checkBigExponentFloatMulRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatMulRational
 
-def checkBigExponentFloatDivRational : String → Verdict := checkFloatDivRational
+/-- `x / q`, `q / x`, and their `_prec` and `_prec_round` forms. As for `div`, Malachite documents a
+quotient by zero as `NaN`, whichever operand is the divisor. -/
+def checkBigExponentFloatDivRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatRationalBinary "/" "div_rational"
+    (fun x q p m => if q == 0 then (.nan, .eq) else AzFloat.divRatPrecRound x.1 q p m)
+    (fun q x p m => if x.1 matches .zero then (.nan, .eq) else AzFloat.ratDivPrecRound q x.1 p m)
+    (some "rational_div_float")
 
-def checkBigExponentFloatSqrtRational : String → Verdict := checkFloatSqrtRational
+def checkBigExponentFloatSqrtRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSqrtRational
 
-def checkBigExponentFloatReciprocalSqrtRational : String → Verdict := checkFloatReciprocalSqrtRational
+def checkBigExponentFloatReciprocalSqrtRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatReciprocalSqrtRational
 
-def checkBigExponentFloatAgm : String → Verdict := checkFloatAgm
+def checkBigExponentFloatAgm : String → Verdict := withBigExponentFloatNames checkFloatAgm
 
-def checkBigExponentFloatAgmRational : String → Verdict := checkFloatAgmRational
+def checkBigExponentFloatAgmRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAgmRational
 
-def checkBigExponentFloatAgmFloatRational : String → Verdict := checkFloatAgmFloatRational
+def checkBigExponentFloatAgmFloatRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAgmFloatRational
 
-def checkBigExponentFloatSqrtAll : String → Verdict := checkFloatSqrtAll
+def checkBigExponentFloatSqrtAll : String → Verdict := withBigExponentFloatNames checkFloatSqrtAll
 
-def checkBigExponentFloatReciprocalSqrtAll : String → Verdict := checkFloatReciprocalSqrtAll
+def checkBigExponentFloatReciprocalSqrtAll : String → Verdict :=
+  withBigExponentFloatNames checkFloatReciprocalSqrtAll
 
-def checkBigExponentFloatSqrtUnsigned : String → Verdict := checkFloatSqrtUnsigned
+def checkBigExponentFloatSqrtUnsigned : String → Verdict :=
+  withBigExponentFloatNames checkFloatSqrtUnsigned
 
-def checkBigExponentFloatLn : String → Verdict := checkFloatLn
+def checkBigExponentFloatLn : String → Verdict := withBigExponentFloatNames checkFloatLn
 
-def checkBigExponentFloatLnRational : String → Verdict := checkFloatLnRational
+def checkBigExponentFloatLnRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLnRational
 
-def checkBigExponentFloatLn1PlusX : String → Verdict := checkFloatLn1PlusX
+def checkBigExponentFloatLn1PlusX : String → Verdict := withBigExponentFloatNames checkFloatLn1PlusX
 
-def checkBigExponentFloatLogBase2 : String → Verdict := checkFloatLogBase2
+def checkBigExponentFloatLogBase2 : String → Verdict := withBigExponentFloatNames checkFloatLogBase2
 
-def checkBigExponentFloatLogBase2Rational : String → Verdict := checkFloatLogBase2Rational
+def checkBigExponentFloatLogBase2Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase2Rational
 
-def checkBigExponentFloatLogBase21PlusX : String → Verdict := checkFloatLogBase21PlusX
+def checkBigExponentFloatLogBase21PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase21PlusX
 
-def checkBigExponentFloatLogBase10 : String → Verdict := checkFloatLogBase10
+def checkBigExponentFloatLogBase10 : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase10
 
-def checkBigExponentFloatLogBase10Rational : String → Verdict := checkFloatLogBase10Rational
+def checkBigExponentFloatLogBase10Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase10Rational
 
-def checkBigExponentFloatLogBase101PlusX : String → Verdict := checkFloatLogBase101PlusX
+def checkBigExponentFloatLogBase101PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase101PlusX
 
-def checkBigExponentFloatLogBasePowerOf2 : String → Verdict := checkFloatLogBasePowerOf2
+def checkBigExponentFloatLogBasePowerOf2 : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBasePowerOf2
 
-def checkBigExponentFloatLogBasePowerOf2Rational : String → Verdict := checkFloatLogBasePowerOf2Rational
+def checkBigExponentFloatLogBasePowerOf2Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBasePowerOf2Rational
 
-def checkBigExponentFloatLogBasePowerOf21PlusX : String → Verdict := checkFloatLogBasePowerOf21PlusX
+def checkBigExponentFloatLogBasePowerOf21PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBasePowerOf21PlusX
 
-def checkBigExponentFloatLogBase : String → Verdict := checkFloatLogBase
+def checkBigExponentFloatLogBase : String → Verdict := withBigExponentFloatNames checkFloatLogBase
 
-def checkBigExponentFloatLogBaseRational : String → Verdict := checkFloatLogBaseRational
+def checkBigExponentFloatLogBaseRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseRational
 
-def checkBigExponentFloatLogBase1PlusX : String → Verdict := checkFloatLogBase1PlusX
+def checkBigExponentFloatLogBase1PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBase1PlusX
 
-def checkBigExponentFloatLogBaseFloatBase : String → Verdict := checkFloatLogBaseFloatBase
+def checkBigExponentFloatLogBaseFloatBase : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseFloatBase
 
-def checkBigExponentFloatLogBaseFloatBase1PlusX : String → Verdict := checkFloatLogBaseFloatBase1PlusX
+def checkBigExponentFloatLogBaseFloatBase1PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseFloatBase1PlusX
 
-def checkBigExponentFloatLogBaseRationalFloatBase : String → Verdict := checkFloatLogBaseRationalFloatBase
+def checkBigExponentFloatLogBaseRationalFloatBase : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseRationalFloatBase
 
-def checkBigExponentFloatLogBaseRationalBase : String → Verdict := checkFloatLogBaseRationalBase
+def checkBigExponentFloatLogBaseRationalBase : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseRationalBase
 
-def checkBigExponentFloatLogBaseRationalBase1PlusX : String → Verdict := checkFloatLogBaseRationalBase1PlusX
+def checkBigExponentFloatLogBaseRationalBase1PlusX : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseRationalBase1PlusX
 
-def checkBigExponentFloatLogBaseRationalRationalBase : String → Verdict := checkFloatLogBaseRationalRationalBase
+def checkBigExponentFloatLogBaseRationalRationalBase : String → Verdict :=
+  withBigExponentFloatNames checkFloatLogBaseRationalRationalBase
 
-def checkBigExponentFloatExp : String → Verdict := checkFloatExp
+def checkBigExponentFloatExp : String → Verdict := withBigExponentFloatNames checkFloatExp
 
-def checkBigExponentFloatExpRational : String → Verdict := checkFloatExpRational
+def checkBigExponentFloatExpRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatExpRational
 
-def checkBigExponentFloatExpXMinus1 : String → Verdict := checkFloatExpXMinus1
+def checkBigExponentFloatExpXMinus1 : String → Verdict :=
+  withBigExponentFloatNames checkFloatExpXMinus1
 
-def checkBigExponentFloatExpXMinus1Rational : String → Verdict := checkFloatExpXMinus1Rational
+def checkBigExponentFloatExpXMinus1Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatExpXMinus1Rational
 
-def checkBigExponentFloatPowerOf2OfFloat : String → Verdict := checkFloatPowerOf2OfFloat
+def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf2OfFloat
 
-def checkBigExponentFloatPowerOf2Rational : String → Verdict := checkFloatPowerOf2Rational
+def checkBigExponentFloatPowerOf2Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf2Rational
 
-def checkBigExponentFloatPowerOf2XMinus1 : String → Verdict := checkFloatPowerOf2XMinus1
+def checkBigExponentFloatPowerOf2XMinus1 : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf2XMinus1
 
-def checkBigExponentFloatPowerOf2XMinus1Rational : String → Verdict := checkFloatPowerOf2XMinus1Rational
+def checkBigExponentFloatPowerOf2XMinus1Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf2XMinus1Rational
 
-def checkBigExponentFloatUnsignedPow : String → Verdict := checkFloatUnsignedPow
+def checkBigExponentFloatUnsignedPow : String → Verdict :=
+  withBigExponentFloatNames checkFloatUnsignedPow
 
-def checkBigExponentFloatUnsignedPowRational : String → Verdict := checkFloatUnsignedPowRational
+def checkBigExponentFloatUnsignedPowRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatUnsignedPowRational
 
-def checkBigExponentFloatUnsignedPowUnsigned : String → Verdict := checkFloatUnsignedPowUnsigned
+def checkBigExponentFloatUnsignedPowUnsigned : String → Verdict :=
+  withBigExponentFloatNames checkFloatUnsignedPowUnsigned
 
-def checkBigExponentFloatPowerOf10OfFloat : String → Verdict := checkFloatPowerOf10OfFloat
+def checkBigExponentFloatPowerOf10OfFloat : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf10OfFloat
 
-def checkBigExponentFloatPowerOf10Rational : String → Verdict := checkFloatPowerOf10Rational
+def checkBigExponentFloatPowerOf10Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf10Rational
 
-def checkBigExponentFloatPowerOf10XMinus1 : String → Verdict := checkFloatPowerOf10XMinus1
+def checkBigExponentFloatPowerOf10XMinus1 : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf10XMinus1
 
-def checkBigExponentFloatPowerOf10XMinus1Rational : String → Verdict := checkFloatPowerOf10XMinus1Rational
+def checkBigExponentFloatPowerOf10XMinus1Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowerOf10XMinus1Rational
 
-def checkBigExponentFloatPowInteger : String → Verdict := checkFloatPowInteger
+def checkBigExponentFloatPowInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowInteger
 
-def checkBigExponentFloatPowS : String → Verdict := checkFloatPowS
+def checkBigExponentFloatPowS : String → Verdict := withBigExponentFloatNames checkFloatPowS
 
-def checkBigExponentFloatPowU : String → Verdict := checkFloatPowU
+def checkBigExponentFloatPowU : String → Verdict := withBigExponentFloatNames checkFloatPowU
 
-def checkBigExponentFloatCbrt : String → Verdict := checkFloatCbrt
+def checkBigExponentFloatCbrt : String → Verdict := withBigExponentFloatNames checkFloatCbrt
 
-def checkBigExponentFloatCbrtRational : String → Verdict := checkFloatCbrtRational
+def checkBigExponentFloatCbrtRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatCbrtRational
 
-def checkBigExponentFloatPow : String → Verdict := checkFloatPow
+def checkBigExponentFloatPow : String → Verdict := withBigExponentFloatNames checkFloatPow
 
-def checkBigExponentFloatPowRational : String → Verdict := checkFloatPowRational
+def checkBigExponentFloatPowRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatPowRational
 
-def checkBigExponentFloatRationalPow : String → Verdict := checkFloatRationalPow
+def checkBigExponentFloatRationalPow : String → Verdict :=
+  withBigExponentFloatNames checkFloatRationalPow
 
-def checkBigExponentFloatRationalPowRational : String → Verdict := checkFloatRationalPowRational
+def checkBigExponentFloatRationalPowRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatRationalPowRational
 
-def checkBigExponentFloatCos : String → Verdict := checkFloatCos
+def checkBigExponentFloatCos : String → Verdict := withBigExponentFloatNames checkFloatCos
 
-def checkBigExponentFloatCosRational : String → Verdict := checkFloatCosRational
+def checkBigExponentFloatCosRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatCosRational
 
-def checkBigExponentFloatCosWithPeriod : String → Verdict := checkFloatCosWithPeriod
+def checkBigExponentFloatCosWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatCosWithPeriod
 
-def checkBigExponentFloatCosWithPeriodRational : String → Verdict := checkFloatCosWithPeriodRational
+def checkBigExponentFloatCosWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatCosWithPeriodRational
 
-def checkBigExponentFloatCosPi : String → Verdict := checkFloatCosPi
+def checkBigExponentFloatCosPi : String → Verdict := withBigExponentFloatNames checkFloatCosPi
 
-def checkBigExponentFloatCosPiRational : String → Verdict := checkFloatCosPiRational
+def checkBigExponentFloatCosPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatCosPiRational
 
-def checkBigExponentFloatSin : String → Verdict := checkFloatSin
+def checkBigExponentFloatSin : String → Verdict := withBigExponentFloatNames checkFloatSin
 
-def checkBigExponentFloatSinRational : String → Verdict := checkFloatSinRational
+def checkBigExponentFloatSinRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinRational
 
-def checkBigExponentFloatSinWithPeriod : String → Verdict := checkFloatSinWithPeriod
+def checkBigExponentFloatSinWithPeriod : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinWithPeriod
 
-def checkBigExponentFloatSinWithPeriodRational : String → Verdict := checkFloatSinWithPeriodRational
+def checkBigExponentFloatSinWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinWithPeriodRational
 
-def checkBigExponentFloatSinPi : String → Verdict := checkFloatSinPi
+def checkBigExponentFloatSinPi : String → Verdict := withBigExponentFloatNames checkFloatSinPi
 
-def checkBigExponentFloatSinPiRational : String → Verdict := checkFloatSinPiRational
+def checkBigExponentFloatSinPiRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSinPiRational
 
-def checkBigExponentFloatAddMul : String → Verdict := checkFloatAddMul
+def checkBigExponentFloatAddMul : String → Verdict := withBigExponentFloatNames checkFloatAddMul
 
-def checkBigExponentFloatSubMul : String → Verdict := checkFloatSubMul
+def checkBigExponentFloatSubMul : String → Verdict := withBigExponentFloatNames checkFloatSubMul
 
-def checkBigExponentFloatAddMulRational : String → Verdict := checkFloatAddMulRational
+def checkBigExponentFloatAddMulRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatAddMulRational
 
-def checkBigExponentFloatSubMulRational : String → Verdict := checkFloatSubMulRational
+def checkBigExponentFloatSubMulRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatSubMulRational
 
-def checkBigExponentFloatMulAddMul : String → Verdict := checkFloatMulAddMul
+def checkBigExponentFloatMulAddMul : String → Verdict :=
+  withBigExponentFloatNames checkFloatMulAddMul
 
-def checkBigExponentFloatMulSubMul : String → Verdict := checkFloatMulSubMul
+def checkBigExponentFloatMulSubMul : String → Verdict :=
+  withBigExponentFloatNames checkFloatMulSubMul
 
-def checkBigExponentFloatMulAddMulRational : String → Verdict := checkFloatMulAddMulRational
+def checkBigExponentFloatMulAddMulRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatMulAddMulRational
 
-def checkBigExponentFloatMulSubMulRational : String → Verdict := checkFloatMulSubMulRational
+def checkBigExponentFloatMulSubMulRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatMulSubMulRational
 
-def checkBigExponentFloatRem : String → Verdict := checkFloatRem
+def checkBigExponentFloatRem : String → Verdict := withBigExponentFloatNames checkFloatRem
 
-def checkBigExponentFloatRoundToInteger : String → Verdict := checkFloatRoundToInteger
+def checkBigExponentFloatRoundToInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatRoundToInteger
 
-def checkBigExponentFloatRoundToIntegerThen : String → Verdict := checkFloatRoundToIntegerThen
+def checkBigExponentFloatRoundToIntegerThen : String → Verdict :=
+  withBigExponentFloatNames checkFloatRoundToIntegerThen
 
-def checkBigExponentFloatPowerOf2 : String → Verdict := checkFloatPowerOf2
+def checkBigExponentFloatPowerOf2 : String → Verdict := withBigExponentFloatNames checkFloatPowerOf2
 
-def checkBigExponentFloatIsNan : String → Verdict := checkFloatIsNaN
+def checkBigExponentFloatIsNan : String → Verdict := withBigExponentFloatNames checkFloatIsNaN
 
-def checkBigExponentFloatIsFinite : String → Verdict := checkFloatIsFinite
+def checkBigExponentFloatIsFinite : String → Verdict := withBigExponentFloatNames checkFloatIsFinite
 
-def checkBigExponentFloatIsInfinite : String → Verdict := checkFloatIsInfinite
+def checkBigExponentFloatIsInfinite : String → Verdict :=
+  withBigExponentFloatNames checkFloatIsInfinite
 
-def checkBigExponentFloatIsZero : String → Verdict := checkFloatIsZero
+def checkBigExponentFloatIsZero : String → Verdict := withBigExponentFloatNames checkFloatIsZero
 
-def checkBigExponentFloatIsNormal : String → Verdict := checkFloatIsNormal
+def checkBigExponentFloatIsNormal : String → Verdict := withBigExponentFloatNames checkFloatIsNormal
 
-def checkBigExponentFloatIsInteger : String → Verdict := checkFloatIsInteger
+def checkBigExponentFloatIsInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatIsInteger
 
-def checkBigExponentFloatIsPowerOf2 : String → Verdict := checkFloatIsPowerOf2
+def checkBigExponentFloatIsPowerOf2 : String → Verdict :=
+  withBigExponentFloatNames checkFloatIsPowerOf2
 
-def checkBigExponentFloatSign : String → Verdict := checkFloatSign
+def checkBigExponentFloatSign : String → Verdict := withBigExponentFloatNames checkFloatSign
 
-def checkBigExponentFloatGetExponent : String → Verdict := checkFloatGetExponent
+def checkBigExponentFloatGetExponent : String → Verdict :=
+  withBigExponentFloatNames checkFloatGetExponent
 
-def checkBigExponentFloatGetPrec : String → Verdict := checkFloatGetPrec
+def checkBigExponentFloatGetPrec : String → Verdict := withBigExponentFloatNames checkFloatGetPrec
 
-def checkBigExponentFloatToSignificand : String → Verdict := checkFloatToSignificand
+def checkBigExponentFloatToSignificand : String → Verdict :=
+  withBigExponentFloatNames checkFloatToSignificand
 
-def checkBigExponentFloatConstant : String → Verdict := checkFloatConstant
+def checkBigExponentFloatConstant : String → Verdict := withBigExponentFloatNames checkFloatConstant
 
-def checkBigExponentFloatIrrationalConstant : String → Verdict := checkFloatIrrationalConstant
+def checkBigExponentFloatIrrationalConstant : String → Verdict :=
+  withBigExponentFloatNames checkFloatIrrationalConstant
 
-def checkBigExponentFloatPartialCmp : String → Verdict := checkFloatPartialCmp
+def checkBigExponentFloatPartialCmp : String → Verdict :=
+  withBigExponentFloatNames checkFloatPartialCmp
 
 def checkBigExponentFloatComparablePartialCmp : String → Verdict := checkComparableFloatPartialCmp
 
-def checkBigExponentFloatEq : String → Verdict := checkFloatEq
+def checkBigExponentFloatEq : String → Verdict := withBigExponentFloatNames checkFloatEq
 
 def checkBigExponentFloatComparableEq : String → Verdict := checkComparableFloatEq
 
-def checkBigExponentFloatPartialCmpInteger : String → Verdict := checkFloatPartialCmpInteger
+def checkBigExponentFloatPartialCmpInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatPartialCmpInteger
 
-def checkBigExponentFloatPartialEqInteger : String → Verdict := checkFloatPartialEqInteger
+def checkBigExponentFloatPartialEqInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatPartialEqInteger
 
-def checkBigExponentFloatFromNatural : String → Verdict := checkFloatFromNatural
+def checkBigExponentFloatFromNatural : String → Verdict :=
+  withBigExponentFloatNames checkFloatFromNatural
 
-def checkBigExponentFloatFromInteger : String → Verdict := checkFloatFromIntegerValue
+def checkBigExponentFloatFromInteger : String → Verdict :=
+  withBigExponentFloatNames checkFloatFromIntegerValue
 
-def checkBigExponentFloatFromUnsigned : String → Verdict := checkFloatFromUnsigned
+def checkBigExponentFloatFromUnsigned : String → Verdict :=
+  withBigExponentFloatNames checkFloatFromUnsigned
 
-def checkBigExponentFloatFromRational : String → Verdict := checkFloatFromRational
+def checkBigExponentFloatFromRational : String → Verdict :=
+  withBigExponentFloatNames checkFloatFromRational
 
 end Azurite.Oracle

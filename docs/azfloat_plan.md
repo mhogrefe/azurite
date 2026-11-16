@@ -7565,3 +7565,51 @@ correctly rounded.
 
 Tests: `Tests/SinhCosh.lean`, `Tests/SinhCoshRat.lean` (against the separate functions).
 NOT timed — timing it against `sinh` + `cosh` is the natural first benchmark of this arc.
+
+## Inverse hyperbolic sine `asinh`, `asinhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+Start of the inverse hyperbolic functions.  `asinhPrecRound`/`asinh` (`AzFloat/Asinh.lean`),
+`asinhRatPrecRound`/`asinhRat` (`AzFloat/AsinhRat.lean`); `asinhPrecRound_eq_liftVal`,
+`asinhRatPrecRound_eq` against `Spec.asinh` (`Real.arsinh`).  Malachite table: `NaN`;
+`±∞ ↦ ±∞`; `±0.0 ↦ ±0.0` — as implemented (one zero).
+
+* **Formula**: `asinh a = ln (a + √(a² + 1))`, `a = |x|`: no cancellation inside the logarithm
+  argument `V ≥ 1`.  `asinhArg` rounds the four operations down at `w + 8` bits
+  (`V (1 − 8·2^(−W)) ≤ y ≤ V`, `asinhArg_bounds`), and the existing `lnFloorBracket y w` does
+  the rest (`ln y`, upper end widened for `V/y`): no new logarithm code and no new width
+  analysis (`lnRatEps`).
+* **Small arguments**: the logarithm is accurate absolutely and `asinh a ≈ a`, so the loop
+  starts at `p + 64 + leadingZeroBits e`, like `lnP1`.  **Tiny** ones: `a − a³ ≤ asinh a < a`
+  (`sub_cube_le_arsinh`, `arsinh_lt_self`, from `sinh_tiny_bounds`), so `sinTiny?` /
+  `sinTinyRat?`.  (A `log1p`-style reduction `ln (1 + a + a²/(1 + √(1 + a²)))` would avoid the
+  extra bits in the middle range; not done.)
+* **Irrationality**: `irrational_arsinh_rat`: `sinh (asinh q) = q`.
+* Huge arguments cost one logarithm (`asinh 2^(2^30)` tested against `ln (2x)`).
+
+Tests: `Tests/Asinh.lean`, `Tests/AsinhRat.lean` (generator `scratchpad/gen_asinh.py`;
+reference `asinh_ref.py` with `ln_fp`, `sqrt_fp` for the other inverse functions).  NOT timed.
+Next presumably `acosh` (`ln (x + √(x² − 1))`, `x ≥ 1`; near `1` the value is `≈ √(2(x − 1))`,
+needs `x − 1` exactly and a `log1p` form) and `atanh` (`(1/2) ln ((1 + x)/(1 − x))`, `|x| < 1`).
+
+## Inverse hyperbolic cosine `acosh`, `acoshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`acoshPrecRound`/`acosh` (`AzFloat/Acosh.lean`), `acoshRatPrecRound`/`acoshRat`
+(`AzFloat/AcoshRat.lean`); `acoshPrecRound_eq_liftVal`, `acoshRatPrecRound_eq` against
+`Spec.acosh` (`Real.arcosh`).  Malachite table: `NaN`; `∞ ↦ ∞`; `−∞ ↦ NaN`; `±0.0 ↦ NaN`;
+`1 ↦ 0.0`; `x < 1 ↦ NaN` — as implemented.
+
+* **Formula**: `acosh x = ln (x + √((x − 1)(x + 1)))`.  The product form keeps relative
+  accuracy next to `1`: for a float the rounded-down `x − 1`, `x + 1`; for a rational the
+  roundings of the exact rationals `q − 1`, `q + 1` (so `1 + 2^(−5000)` is fine).  `acoshArg`
+  (three operations rounded down, relative `8·2^(−W)`), then `lnFloorBracket` as for `asinh`;
+  the proofs are the `asinh` ones with one more factor.
+* **Next to 1**: value `≈ √(2 (x − 1))`, logarithm accurate absolutely ⇒ the loop starts with
+  `acoshExtra` = half the leading zero bits of `x − 1` more.  No tiny path is needed: the
+  closeness to a float is bounded by the precision of `x` (`acosh (1 + 2^(−2k−1))` is within a
+  relative `2^(−2k−1)/12` of `2^(−k)`; tested at `k = 25` and, for a rational, `k = 2500`).
+* **Irrationality**: `irrational_arcosh_rat` (`q > 1`): `cosh (acosh q) = q`.
+
+Tests: `Tests/Acosh.lean`, `Tests/AcoshRat.lean` (generator `scratchpad/gen_acosh.py`,
+reference `acosh_ref.py`).  NOT timed.  Next presumably `atanh`
+(`(1/2) ln ((1 + x)/(1 − x))`, `|x| < 1`, `±∞` at `±1`; tiny `x`: `x < atanh x ≤ x + x³`, the
+`tanTiny?` bounds; near `±1` large values, no closeness issue).

@@ -16,6 +16,8 @@ import Azurite.AzFloat.Tests.AcosPi
 import Azurite.AzFloat.Tests.AcosRat
 import Azurite.AzFloat.Tests.AcosRatWithPeriod
 import Azurite.AzFloat.Tests.AcosWithPeriod
+import Azurite.AzFloat.Tests.Acosh
+import Azurite.AzFloat.Tests.AcoshRat
 import Azurite.AzFloat.Tests.Acot
 import Azurite.AzFloat.Tests.AcotPi
 import Azurite.AzFloat.Tests.AcotRat
@@ -38,6 +40,8 @@ import Azurite.AzFloat.Tests.AsinPi
 import Azurite.AzFloat.Tests.AsinRat
 import Azurite.AzFloat.Tests.AsinRatWithPeriod
 import Azurite.AzFloat.Tests.AsinWithPeriod
+import Azurite.AzFloat.Tests.Asinh
+import Azurite.AzFloat.Tests.AsinhRat
 import Azurite.AzFloat.Tests.Atan
 import Azurite.AzFloat.Tests.Atan2
 import Azurite.AzFloat.Tests.Atan2Pi
