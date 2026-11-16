@@ -7351,3 +7351,51 @@ The arccosecant family of six is complete.
 
 Tests: `Tests/AcscRat.lean`, `Tests/AcscWithPeriod.lean`, `Tests/AcscPi.lean`; huge arguments
 `±2^(2^30)`, `±3·2^(2^30)` against the rounded `360/(2π)`, `1/π` mantissas.  NOT timed.
+
+## Arccotangent `acot` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`acotPrecRound x p mode`, `acot x` (`AzFloat/Acot.lean`), `acotPrecRound_eq_liftVal` against
+`Spec.acot`.  After the Malachite table this is the **odd** arccotangent `arctan (1/x)` with
+range `(−π/2, π/2]`, not the continuous branch.  Special values: `NaN`; `0` at `±∞`; `π/2` at
+`0` — `AzFloat` has one zero, so the table's `−0.0 ↦ −π/2` has no counterpart; `±π/4` at `±1`
+from the general path.
+
+* `|x| < 1`: `π/2 − arctan |x|` with `atanLoop` at level `w + 8` (absolute accuracy; a tiny `x`
+  is free).
+* `|x| ≥ 1`: `atanWiden` of the directed quotients `1/|x|` at level `w + 8 + e`, while
+  `2e < w + 16`; beyond, `acotTinyEncl`: `(1/a)(1 − 1/a²) ≤ arctan (1/a) ≤ 1/a`.
+* **Powers of two**: the value is exponentially close to the float `1/x` from **below**, so the
+  exact end of the enclosure is the upper one; the loop therefore runs on `−arccot |x|`
+  (`acotApprox = enclApprox true`), with negated mode and result for `x > 0` (the mirror image
+  of `acsc`).
+* Irrationality from `irrational_arctan_rat` at `1/x`.
+
+(A first attempt to build this on `atan2 (1, x)` was dropped because of probe timeouts that
+looked like a hang of `atan2PrecRound` for a tiny quotient.  That was a **false alarm**: the
+same calls return at once when re-run — `atanQuotRel` has a tiny path and the loop is already
+oriented — and `Tests/Atan2.lean` covers `2^(±2^30)`.  Nothing to fix in `atan2`.)
+
+For the variants: `arccot (x) u/(2π)` is rational at `x = ±1` (`±u/8`), `0` (`u/4`), `±∞`
+(`0`); rational variants are the `atan` functions at `q⁻¹` (and `π/2`, `u/4` at `q = 0`).
+
+Tests: `Tests/Acot.lean` (reference `arctan (1/x)`; huge powers of two in three modes and both
+signs; huge non-powers against the rounded reciprocal; tiny arguments).  NOT timed.
+
+## Arccotangent variants (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The five variants of the odd arccotangent, after the Malachite table for `acot_with_period`
+(`NaN`; `±∞ ↦ ±0.0`; `u = 0 ↦ ±0.0`; `±0.0 ↦ ±u/4`; `±1 ↦ ±u/8`; odd).  With one zero:
+`0 ↦ +u/4` (also `0` for `u = 0`), `±∞ ↦ 0`.
+
+* `acotWithPeriodPrecRound` (`AzFloat/AcotWithPeriod.lean`): a finite `x ≠ 0` is
+  `atan2WithPeriodPrecRound (±1) |x| u`, since `arctan (1/x) = arg (|x| ± i)`.  That function
+  already has everything needed: `u = 0`, the exact eighth turn at `|x| = 1`, the exact quarter
+  turn for a tiny `x` (value within `|x| u` of `±u/4`), relative accuracy for a huge `x`.  No
+  new bracket; `acotWithPeriodPrecRound_eq` against `Spec.acotWithPeriod`.
+* `acotRatPrecRound`, `acotRatWithPeriodPrecRound` (`AzFloat/AcotRat.lean`): the `atan`
+  rational functions at `q⁻¹`; `π/2`, `u/4` at `q = 0`.
+* `acotPi`, `acotPiRat` (`AzFloat/AcotPi.lean`): period `2`.
+
+Tests: `Tests/AcotWithPeriod.lean`, `Tests/AcotRat.lean`, `Tests/AcotPi.lean` (tiny and huge
+arguments down to `2^(−2^30)` and up to `3·2^(2^30)`).  The acot family of six is complete; the
+plain `acot` could equally be `atan2 (±1, |x|)`, but keeps its own bracket.  NOT timed.
