@@ -104,21 +104,6 @@ theorem asinPeriod_half (pos : Bool) (U : ℝ) :
     field_simp
     ring
 
-/-- A float of sign bit `s` with `|x| = c > 0` is `± c`. -/
-theorem eq_signed_of_abs_eq {s : Bool} {xv c : ℝ} (hsgn : s = true ↔ 0 < xv) (hx0 : xv ≠ 0)
-    (habs : |xv| = c) : xv = if s then c else -c := by
-  cases s with
-  | true =>
-    simp only [↓reduceIte]
-    rw [← habs, abs_of_pos (hsgn.mp rfl)]
-  | false =>
-    simp only [Bool.false_eq_true, ↓reduceIte]
-    have hlt : xv < 0 := by
-      rcases lt_or_gt_of_ne hx0 with h | h
-      · exact h
-      · exact absurd (hsgn.mpr h) (by simp)
-    rw [← habs, abs_of_neg hlt, neg_neg]
-
 /-- **`arcsin (x) u / (2π)` is correctly rounded.** -/
 theorem asinWithPeriodPrecRound_eq (x : AzFloat) (u : UInt64) (p : ℕ) [NeZero p]
     (mode : RoundingMode) :

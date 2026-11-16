@@ -7194,3 +7194,62 @@ table for `asinWithPeriod` supplied by the user (no negative zero here).
 
 Tests: `Tests/AsinWithPeriod.lean`, `Tests/AsinRatWithPeriod.lean`, `Tests/AsinPi.lean`.  NOT
 timed.  Next: `acos` and its variants.
+
+## Arccosine `acos` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`acosPrecRound x p mode`, `acos x` (`AzFloat/Acos.lean`), `acosPrecRound_eq_liftVal` against
+`Spec.acos`.  Special values after the Malachite table supplied by the user: `NaN` for `NaN`,
+`±∞`, `|x| > 1`; `acos 1 = 0` exactly; `acos 0 = π/2` and `acos (−1) = π` correctly rounded.
+
+* **Reduction**: `arccos a = 2 arctan √((1 − a)/(1 + a))` for `0 < a < 1`
+  (`arccos_eq_two_arctan`, argument in `(0, 1)`); `arccos (−a) = π − arccos a`
+  (`piShiftEncl`).  As planned at the start of the arc — **not** `π/2 − asin`, which loses all
+  relative accuracy next to `1`, where `arccos a ≈ √(2 (1 − a))` is small.
+* **Argument** (`acosQuot`, `acosArg`): the correctly rounded `1 − a`, `1 + a`, their quotient
+  and its square root, all with relative errors (`(1 − 6ε) Q ≤ q_lo`, `q_hi ≤ (1 + 8ε) Q`, then
+  `(1 − 6ε) T ≤ √q_lo`, `√q_hi ≤ (1 + 8ε) T` because `c ≥ c²` resp. `c ≤ c²`); width `≤ 40ε`.
+* **Level** (`acosWork`): `w + 8` plus half the number of leading zero bits of `1 − a` (from a
+  64-bit rounding) for `x > 0`; `w + 8` for `x < 0`.  Only a heuristic for the proof (which
+  needs `K ≥ w + 8`), it gives the small result its relative accuracy.
+* **Irrationality**: `irrational_arccos_rat` (every rational in `[−1, 1)`, including `0`), from
+  `irrational_cos_rat`.
+* No tiny path: `arccos x` for a tiny `x` is next to the irrational `π/2`; nothing grows with
+  the exponent (tested at `±2^(−2^30)`).
+* `atanDouble_spec` is the generic doubled-`atanWiden` lemma (the arcsine has its own older
+  copy `asinDouble_spec`).
+
+Tests: `Tests/Acos.lean` (independent reference `π/2 − arctan (x/√(1 − x²))`; `1 − 2^(−190)` at
+200 bits, a result of size `2^(−94)`).  NOT timed.
+
+## `acosRat`, `acosWithPeriod`, `acosRatWithPeriod`, `acosPi`, `acosPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The arccosine family of six is complete, and with it the inverse trigonometric arc: 24
+functions (`atan` ×6, `atan2` ×6, `asin` ×6, `acos` ×6).
+
+* **`acosRat`**: `(1 − |q|)/(1 + |q|)` as an exact rational, `√` by the two directed
+  `sqrtRatPrecRound`, `atanDouble_spec`; level `w + 8` plus half the leading zeros of the
+  rational for `q > 0`.
+* **`acosWithPeriod`** after the Malachite table (no negative zero): rational values `u/4`
+  (`x = 0`), `0` (`x = 1` or `u = 0`), `u/2` (`x = −1`), `u/6` (`x = 1/2`), `u/3`
+  (`x = −1/2`) — all through `turnRatio`, the correctly rounded rational `n u / d` (the sixth
+  and the third are rational for every `u`, floats when `u` is a multiple of `3`).  `NaN` for
+  `|x| > 1` before `u = 0`.  Irrational elsewhere:
+  `irrational_arccos_rat_mul_div_two_pi`, one line from `cos_two_pi_mul_rat_mem_of_rat`
+  (Niven for the cosine).
+* **Bracket** (`acosPeriodOf`, generic over thunks so that only one enclosure is computed):
+  `a ≤ 1/2`: `u/4 ∓ S_s` with `S_s = arcsin (a) u/(2π)` (`asinAbsEncl`, tiny path included);
+  `a > 1/2`: `S_c = arccos (a) u/(2π)` (relative accuracy next to `1`) or `u/2 − S_c`.  The
+  choice of the form is free for the proof (`arccos = π/2 − arcsin` always); it is made so
+  that the scaled piece is the small one.  Exact `u/4`, `u/2`; orientation
+  `acosPeriodOrientOf = xpos || !small` (positive only for `u/4 + S_s`); `orient_roundVal`
+  undoes it.  A tiny `x` (value within `2^(−|e|)` of `u/4`) costs nothing extra — tested at
+  `±2^(−2^30)` in all three modes.
+* **`acosRatWithPeriod`**: the rational instance (`ratAbsLeHalf`, `asinRatAbsEncl`,
+  `acosRatBracket false`).  **`acosPi`, `acosPiRat`**: period-`2` instances.
+* `eq_signed_of_abs_eq` moved to `Equiv/AsinBracket.lean` (shared).
+
+Tests: `Tests/AcosRat.lean`, `Tests/AcosWithPeriod.lean`, `Tests/AcosRatWithPeriod.lean`,
+`Tests/AcosPi.lean`.  NOT timed.
+
+**Inverse trig arc: open items.**  Nothing is timed except `atan` itself.  `asinDouble_spec`
+duplicates `atanDouble_spec`; `negSwapApprox` (TanBracket) duplicates `enclApprox`.

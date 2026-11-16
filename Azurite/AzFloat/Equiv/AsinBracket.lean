@@ -527,4 +527,19 @@ theorem asinTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVa
   rw [← asinPatch_eq (by linarith : |finiteVal s e m| ≤ 1 / 2)]
   exact tanTiny?_eq_of asinPatch_neg asinPatch_bounds hv p mode h
 
+/-- A number of sign `s` with `|x| = c > 0` is `± c`. -/
+theorem eq_signed_of_abs_eq {s : Bool} {xv c : ℝ} (hsgn : s = true ↔ 0 < xv) (hx0 : xv ≠ 0)
+    (habs : |xv| = c) : xv = if s then c else -c := by
+  cases s with
+  | true =>
+    simp only [↓reduceIte]
+    rw [← habs, abs_of_pos (hsgn.mp rfl)]
+  | false =>
+    simp only [Bool.false_eq_true, ↓reduceIte]
+    have hlt : xv < 0 := by
+      rcases lt_or_gt_of_ne hx0 with h | h
+      · exact h
+      · exact absurd (hsgn.mpr h) (by simp)
+    rw [← habs, abs_of_neg hlt, neg_neg]
+
 end Azurite.AzFloat
