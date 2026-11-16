@@ -263,6 +263,8 @@ import Azurite.AzFloat.Equiv.ExpRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.GaussConstant
+import Azurite.AzFloat.Equiv.Gd
+import Azurite.AzFloat.Equiv.GdBracket
 import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.HexString
@@ -401,6 +403,9 @@ import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.GaussConstant
+import Azurite.AzFloat.Gd
+import Azurite.AzFloat.GdBracket
+import Azurite.AzFloat.GdRat
 import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.GelfondSchneider
 import Azurite.AzFloat.HexString
@@ -3089,6 +3094,7 @@ import Azurite.Transcendental.Cos
 import Azurite.Transcendental.Dottie
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
+import Azurite.Transcendental.Gudermannian
 import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin

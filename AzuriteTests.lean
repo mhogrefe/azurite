@@ -90,6 +90,8 @@ import Azurite.AzFloat.Tests.ExpRat
 import Azurite.AzFloat.Tests.Float64
 import Azurite.AzFloat.Tests.Float64Emulate
 import Azurite.AzFloat.Tests.GaussConstant
+import Azurite.AzFloat.Tests.Gd
+import Azurite.AzFloat.Tests.GdRat
 import Azurite.AzFloat.Tests.Gelfond
 import Azurite.AzFloat.Tests.GelfondSchneider
 import Azurite.AzFloat.Tests.HexString

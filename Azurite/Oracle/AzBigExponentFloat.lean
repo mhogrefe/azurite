@@ -276,72 +276,156 @@ def checkBigExponentFloatLogBaseRationalBase1PlusX : String → Verdict :=
 def checkBigExponentFloatLogBaseRationalRationalBase : String → Verdict :=
   withBigExponentFloatNames checkFloatLogBaseRationalRationalBase
 
-def checkBigExponentFloatExp : String → Verdict := withBigExponentFloatNames checkFloatExp
+/-! ### Exponentials and powers
+`Float`'s checks replace an input whose result is beyond `Float`'s exponent range by one that
+rounds the same way there; a `BigExponentFloat`'s exponent is unbounded, so these call Azurite at
+the input itself. -/
+
+def checkBigExponentFloatExp : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "exp" AzFloat.expPrecRound
 
 def checkBigExponentFloatExpRational : String → Verdict :=
   withBigExponentFloatNames checkFloatExpRational
 
 def checkBigExponentFloatExpXMinus1 : String → Verdict :=
-  withBigExponentFloatNames checkFloatExpXMinus1
+  withBigExponentFloatNames <| checkFloatUnaryWith "exp_x_minus_1" AzFloat.expM1PrecRound
 
 def checkBigExponentFloatExpXMinus1Rational : String → Verdict :=
   withBigExponentFloatNames checkFloatExpXMinus1Rational
 
 def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf2OfFloat
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "power_of_2_of_float" 0 (fun _ => some ())
+      (fun x _ => AzFloat.pow2PrecRound x) (assocAsMethod line) ["power_of_2", "power_of_2_assign"]
 
 def checkBigExponentFloatPowerOf2Rational : String → Verdict :=
   withBigExponentFloatNames checkFloatPowerOf2Rational
 
 def checkBigExponentFloatPowerOf2XMinus1 : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf2XMinus1
+  withBigExponentFloatNames <| checkFloatUnaryWith "power_of_2_x_minus_1" AzFloat.pow2M1PrecRound
 
 def checkBigExponentFloatPowerOf2XMinus1Rational : String → Verdict :=
   withBigExponentFloatNames checkFloatPowerOf2XMinus1Rational
 
+/-- A negative odd integer? -/
+def isNegativeOddInteger (q : AzRat) : Bool := !q.sign && q.den == AzNat.ofNat 1 && q.num.isOdd
+
+/-- With no negative zero, `0^y` for a negative odd integer `y`, whose one-sided limits are `∞`
+and `-∞`, is `NaN` (documented), where Azurite gives `∞`. -/
+def zeroPowIsNaN {α : Type} (toRat : α → Option AzRat)
+    (f : UInt64 → α → Nat → RoundingMode → AzFloat × Ordering) (u : UInt64) (y : α) (p : Nat)
+    (m : RoundingMode) : AzFloat × Ordering :=
+  if u.toNat == 0 && (toRat y).any isNegativeOddInteger then (.nan, .eq) else f u y p m
+
 def checkBigExponentFloatUnsignedPow : String → Verdict :=
-  withBigExponentFloatNames checkFloatUnsignedPow
+  withBigExponentFloatNames <| checkFloatUnsignedPowWith "unsigned_pow"
+    (fun s => (parseFloat s).map (·.1)) (zeroPowIsNaN AzFloat.toAzRat? AzFloat.powBasePrecRound)
 
 def checkBigExponentFloatUnsignedPowRational : String → Verdict :=
-  withBigExponentFloatNames checkFloatUnsignedPowRational
+  withBigExponentFloatNames <| checkFloatUnsignedPowWith "unsigned_pow_rational" parseAzRat
+    (zeroPowIsNaN some AzFloat.powBaseRatPrecRound)
 
 def checkBigExponentFloatUnsignedPowUnsigned : String → Verdict :=
-  withBigExponentFloatNames checkFloatUnsignedPowUnsigned
+  withBigExponentFloatNames <| checkFloatUnsignedPowWith "unsigned_pow_unsigned" parseAzRat
+    AzFloat.powBaseRatPrecRound
 
 def checkBigExponentFloatPowerOf10OfFloat : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf10OfFloat
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "power_of_10_of_float" 0 (fun _ => some ())
+      (fun x _ => AzFloat.pow10PrecRound x) (assocAsMethod line)
+      ["power_of_10", "power_of_10_assign"]
 
 def checkBigExponentFloatPowerOf10Rational : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf10Rational
+  withBigExponentFloatNames <| checkFloatOfRational "power_of_10_rational" AzFloat.pow10RatPrecRound
 
 def checkBigExponentFloatPowerOf10XMinus1 : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf10XMinus1
+  withBigExponentFloatNames <|
+    checkFloatUnaryWith "power_of_10_x_minus_1" AzFloat.pow10M1PrecRound
 
 def checkBigExponentFloatPowerOf10XMinus1Rational : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowerOf10XMinus1Rational
+  withBigExponentFloatNames <|
+    checkFloatOfRational "power_of_10_x_minus_1_rational" AzFloat.pow10M1RatPrecRound
+
+/-- `x^n` with BEF's special values: `NaN^0 = 1` (Azurite's `NaN` propagates), and `0^n = NaN`
+for a negative odd `n`. -/
+def bigExponentFloatPowInt (x : AzFloat) (n : AzInt) (p : Nat) (m : RoundingMode) :
+    AzFloat × Ordering :=
+  if n = 0 then AzFloat.powIntPrecRound AzFloat.one n p m
+  else if (x matches .zero) && !n.sign && n.abs.isOdd then (.nan, .eq)
+  else AzFloat.powIntPrecRound x n p m
 
 def checkBigExponentFloatPowInteger : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowInteger
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "pow_integer" 1 (fun | [k] => parseAzInt k | _ => none)
+      bigExponentFloatPowInt line ["pow"]
 
-def checkBigExponentFloatPowS : String → Verdict := withBigExponentFloatNames checkFloatPowS
+def checkBigExponentFloatPowS : String → Verdict :=
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "pow_s" 1 (fun | [k] => parseAzInt k | _ => none)
+      bigExponentFloatPowInt line ["pow"]
 
-def checkBigExponentFloatPowU : String → Verdict := withBigExponentFloatNames checkFloatPowU
+def checkBigExponentFloatPowU : String → Verdict :=
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "pow_u" 1 (fun | [k] => parseAzInt k | _ => none)
+      bigExponentFloatPowInt line ["pow"]
 
 def checkBigExponentFloatCbrt : String → Verdict := withBigExponentFloatNames checkFloatCbrt
 
 def checkBigExponentFloatCbrtRational : String → Verdict :=
   withBigExponentFloatNames checkFloatCbrtRational
 
-def checkBigExponentFloatPow : String → Verdict := withBigExponentFloatNames checkFloatPow
+/-- `x^y` with BEF's special values, at Azurite's `x^y` itself (no substitution: the exponent is
+unbounded): `x^0 = 1` even for `NaN`, and `0^y = NaN` for a negative odd integer `y`. -/
+def bigExponentFloatPowWith {α β : Type} (isZero : α → Bool) (toRat : β → Option AzRat)
+    (f : α → β → Nat → RoundingMode → AzFloat × Ordering) (x : α) (y : β) (p : Nat)
+    (m : RoundingMode) : AzFloat × Ordering :=
+  match toRat y with
+  | some q =>
+    if q.num == AzNat.ofNat 0 then AzFloat.setPrecRound AzFloat.one p m
+    else if isZero x && isNegativeOddInteger q then (.nan, .eq)
+    else f x y p m
+  | none => f x y p m
+
+/-- `(x).pow(n) = z` for an unsigned `n`: exact. -/
+def checkBigExponentFloatPowUnsignedExact (line : String) : Verdict := do
+  let (x, args, z) ← expect "an `(x).pow(n) = z` line" (methodCall line "pow")
+  let n ← match args with
+    | [n] => expect "n" (parseAzNat n)
+    | _ => fail "pow takes one argument"
+  let x ← expect "x" (parseFloat x)
+  let z ← expect "z" (parseFloat z)
+  let n := n.toAzInt
+  let p := max 1 (x.1.precision?.getD 1 * n.natAbs.toNat)
+  expectFloat "pow" (bigExponentFloatPowInt x.1 n p .Nearest).1 z
+
+def checkBigExponentFloatPow : String → Verdict :=
+  withBigExponentFloatNames fun line =>
+    match methodCall line "pow" with
+    | some (_, [n], _) =>
+      if (parseAzNat n).isSome then checkBigExponentFloatPowUnsignedExact line
+      else checkFloatAgmWith "pow" (fun s => (parseFloat s).map (·.1)) combined
+        (bigExponentFloatPowWith AzFloat.isZero AzFloat.toAzRat? AzFloat.powPrecRound)
+        (plain := "pow") line
+    | _ => checkFloatAgmWith "pow" (fun s => (parseFloat s).map (·.1)) combined
+        (bigExponentFloatPowWith AzFloat.isZero AzFloat.toAzRat? AzFloat.powPrecRound)
+        (plain := "pow") line
 
 def checkBigExponentFloatPowRational : String → Verdict :=
-  withBigExponentFloatNames checkFloatPowRational
+  withBigExponentFloatNames fun line =>
+    checkFloatUnaryArgsWith "pow_rational" 1 (fun | [q] => parseAzRat (stripRef q) | _ => none)
+      (bigExponentFloatPowWith AzFloat.isZero some AzFloat.powRatPrecRound) line ["pow"]
 
 def checkBigExponentFloatRationalPow : String → Verdict :=
-  withBigExponentFloatNames checkFloatRationalPow
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "rational_pow" 1
+    (fun | [y] => (parseFloat (stripRef y)).map (·.1) | _ => none)
+    (bigExponentFloatPowWith (fun q : AzRat => q.num == AzNat.ofNat 0) AzFloat.toAzRat?
+      AzFloat.ratPowPrecRound)
 
 def checkBigExponentFloatRationalPowRational : String → Verdict :=
-  withBigExponentFloatNames checkFloatRationalPowRational
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "rational_pow_rational" 1
+    (fun | [r] => parseAzRat (stripRef r) | _ => none)
+    (bigExponentFloatPowWith (fun q : AzRat => q.num == AzNat.ofNat 0) some
+      AzFloat.ratPowRatPrecRound)
 
 def checkBigExponentFloatCos : String → Verdict := withBigExponentFloatNames checkFloatCos
 
@@ -415,7 +499,30 @@ def checkBigExponentFloatMulAddMulRational : String → Verdict :=
 def checkBigExponentFloatMulSubMulRational : String → Verdict :=
   withBigExponentFloatNames checkFloatMulSubMulRational
 
-def checkBigExponentFloatRem : String → Verdict := withBigExponentFloatNames checkFloatRem
+/-- A precision that holds `x % y` exactly. For `|x| < |y|` the remainder is `x`; otherwise `x`'s
+exponent is at least `y`'s, the remainder is below `|y|` and a multiple of the lower of the two
+operands' last bits, so the span from that bit to `y`'s exponent, at most the sum of the
+precisions, suffices. -/
+def exactRemPrecision (x y : AzFloat) : Nat :=
+  match x, y with
+  | .finite _ e p _ _, .finite _ e' p' _ _ =>
+    if AzFloat.lt (AzFloat.abs x) (AzFloat.abs y) then p
+    else
+      let low := min (e - (AzNat.ofNat p).toAzInt) (e' - (AzNat.ofNat p').toAzInt)
+      max 1 (e' - low).natAbs.toNat
+  | .finite _ _ p _ _, _ => p
+  | _, _ => 1
+
+/-- `x % y = z`, exact, else `Float`'s `rem_prec[_round]` forms. -/
+def checkBigExponentFloatRem : String → Verdict :=
+  withBigExponentFloatNames fun line =>
+    match binaryOp line "%" with
+    | some (x, y, z) => do
+      let x ← expect "x" (parseFloat x)
+      let y ← expect "y" (parseFloat y)
+      let z ← expect "z" (parseFloat z)
+      expectFloat "%" (AzFloat.remPrecRound x.1 y.1 (exactRemPrecision x.1 y.1) .Nearest).1 z
+    | none => checkFloatRem line
 
 def checkBigExponentFloatRoundToInteger : String → Verdict :=
   withBigExponentFloatNames checkFloatRoundToInteger
@@ -425,32 +532,61 @@ def checkBigExponentFloatRoundToIntegerThen : String → Verdict :=
 
 def checkBigExponentFloatPowerOf2 : String → Verdict := withBigExponentFloatNames checkFloatPowerOf2
 
-def checkBigExponentFloatIsNan : String → Verdict := withBigExponentFloatNames checkFloatIsNaN
+/-- `(x).name() = b`, BEF's form of a predicate. -/
+def checkBigExponentFloatPredicate (name : String) (f : AzFloat → Bool) (line : String) :
+    Verdict := do
+  let (x, args, b) ← expect s!"an `(x).{name}() = b` line" (methodCall line name)
+  if !args.isEmpty then fail s!"{name} takes no arguments"
+  let x ← expect "x" (parseFloat x)
+  let b ← expect "bool" (parseBool b)
+  expectEq name (f x.1) b
 
-def checkBigExponentFloatIsFinite : String → Verdict := withBigExponentFloatNames checkFloatIsFinite
+def checkBigExponentFloatIsNan : String → Verdict :=
+  checkBigExponentFloatPredicate "is_nan" fun x => x.isNaN
+
+def checkBigExponentFloatIsFinite : String → Verdict :=
+  checkBigExponentFloatPredicate "is_finite" fun x => x.isFinite
 
 def checkBigExponentFloatIsInfinite : String → Verdict :=
-  withBigExponentFloatNames checkFloatIsInfinite
+  checkBigExponentFloatPredicate "is_infinite" fun x => x.isInfinite
 
-def checkBigExponentFloatIsZero : String → Verdict := withBigExponentFloatNames checkFloatIsZero
+def checkBigExponentFloatIsZero : String → Verdict :=
+  checkBigExponentFloatPredicate "is_zero" fun x => x.isZero
 
-def checkBigExponentFloatIsNormal : String → Verdict := withBigExponentFloatNames checkFloatIsNormal
+def checkBigExponentFloatIsNormal : String → Verdict :=
+  checkBigExponentFloatPredicate "is_normal" fun x => x.isNormal
 
 def checkBigExponentFloatIsInteger : String → Verdict :=
-  withBigExponentFloatNames checkFloatIsInteger
+  checkBigExponentFloatPredicate "is_integer" fun x => x.isInteger
 
 def checkBigExponentFloatIsPowerOf2 : String → Verdict :=
   withBigExponentFloatNames checkFloatIsPowerOf2
 
-def checkBigExponentFloatSign : String → Verdict := withBigExponentFloatNames checkFloatSign
+/-- `(x).sign() = Less|Equal|Greater`: with no negative zero, zero's sign is `Equal`. -/
+def checkBigExponentFloatSign (line : String) : Verdict := do
+  let (x, args, o) ← expect "an `(x).sign() = o` line" (methodCall line "sign")
+  if !args.isEmpty then fail "sign takes no arguments"
+  let x ← expect "x" (parseFloat x)
+  let o ← expect "ordering" (parseOrdering o)
+  let computed ← match x.1 with
+    | .zero => pure Ordering.eq
+    | .nan => fail "NaN has no sign"
+    | x => pure (if x.isPositive then Ordering.gt else .lt)
+  expectEq "sign" (orderingName computed) (orderingName o)
+
+/-- `(x).name() = Some(n)` or `None`, rewritten as `name(x) = …` for the `Float` check. -/
+def asFunctionLine (name line : String) : String :=
+  match methodCall line name with
+  | some (x, [], r) => s!"{name}({x}) = {r}"
+  | _ => line
 
 def checkBigExponentFloatGetExponent : String → Verdict :=
-  withBigExponentFloatNames checkFloatGetExponent
+  fun line => checkFloatGetExponent (asFunctionLine "get_exponent" line)
 
 def checkBigExponentFloatGetPrec : String → Verdict := withBigExponentFloatNames checkFloatGetPrec
 
 def checkBigExponentFloatToSignificand : String → Verdict :=
-  withBigExponentFloatNames checkFloatToSignificand
+  fun line => checkFloatToSignificand (asFunctionLine "to_significand" line)
 
 def checkBigExponentFloatConstant : String → Verdict := withBigExponentFloatNames checkFloatConstant
 
@@ -466,20 +602,49 @@ def checkBigExponentFloatEq : String → Verdict := withBigExponentFloatNames ch
 
 def checkBigExponentFloatComparableEq : String → Verdict := checkComparableFloatEq
 
-def checkBigExponentFloatPartialCmpInteger : String → Verdict :=
-  withBigExponentFloatNames checkFloatPartialCmpInteger
+/-- A float compared with a natural or an integer, which BEF's demos print in decimal. -/
+def checkBigExponentFloatPartialCmpInteger (line : String) : Verdict := do
+  let (x, y, o) ← floatComparisonLine line
+  let x ← expect "x" (parseFloat x)
+  let y ← expect "y" (parseAzInt y)
+  expectEq "partial_cmp" (partialOrderingName (AzFloat.partialCompare x.1 (AzFloat.ofAzInt y)))
+    (partialOrderingName o)
 
-def checkBigExponentFloatPartialEqInteger : String → Verdict :=
-  withBigExponentFloatNames checkFloatPartialEqInteger
+def checkBigExponentFloatPartialEqInteger (line : String) : Verdict := do
+  let (x, y, e) ← equalityLine line
+  let x ← expect "x" (parseFloat x)
+  let y ← expect "y" (parseAzInt y)
+  expectEq "partial_eq" (AzFloat.eqIEEE x.1 (AzFloat.ofAzInt y)) e
+
+/-- `BigExponentFloat::from(n) = z`, `n` a decimal integer of any type: exact. -/
+def checkBigExponentFloatFromExact (line : String) : Verdict := do
+  let (args, res) ← expect "a `BigExponentFloat::from(n) = z` line" (functionCall line (typed "from"))
+  let n ← match args with
+    | [n] => expect "n" (parseAzInt n)
+    | _ => fail "from takes one argument"
+  let z ← expect "z" (parseFloat res)
+  expectFloat "from" (exactFromInteger n) z
+
+/-- The exact `from` form, else `Float`'s `from_T_prec[_round]` and `try_from` forms. -/
+def checkBigExponentFloatFromIntegerWith (typeName : String) (line : String) : Verdict :=
+  if (functionCall line (typed "from")).isSome then checkBigExponentFloatFromExact line
+  else withBigExponentFloatNames (checkFloatFromInteger typeName) line
 
 def checkBigExponentFloatFromNatural : String → Verdict :=
-  withBigExponentFloatNames checkFloatFromNatural
+  checkBigExponentFloatFromIntegerWith "natural"
 
 def checkBigExponentFloatFromInteger : String → Verdict :=
-  withBigExponentFloatNames checkFloatFromIntegerValue
+  checkBigExponentFloatFromIntegerWith "integer"
 
-def checkBigExponentFloatFromUnsigned : String → Verdict :=
-  withBigExponentFloatNames checkFloatFromUnsigned
+/-- `BigExponentFloat::from(u)`/`const_from_unsigned(u)`, exact, and
+`from_unsigned_prec[_round](u, p[, rm]) = (z, o)`, `u` in decimal. -/
+def checkBigExponentFloatFromUnsigned (line : String) : Verdict :=
+  match functionCall line (typed "const_from_unsigned") with
+  | some (args, res) =>
+    checkBigExponentFloatFromExact s!"{typed "from"}({", ".intercalate args}) = {res}"
+  | none =>
+    if (functionCall line (typed "from")).isSome then checkBigExponentFloatFromExact line
+    else checkFloatFromInteger "unsigned" line
 
 def checkBigExponentFloatFromRational : String → Verdict :=
   withBigExponentFloatNames checkFloatFromRational

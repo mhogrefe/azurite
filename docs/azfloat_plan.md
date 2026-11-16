@@ -7932,3 +7932,64 @@ step of the float-plus-rational Ziv loop after it.
   aligns across a huge gap; 0–1 ms at the same exponents, including exact cancellation.
 * Tests (`Tests/AddMulRat.lean`): invariance under a common shift by `±2^40`, agreement with
   the float–float operation on a dyadic `z`, negligible terms deciding only the comparison.
+
+## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
+
+`gd x = ∫₀ˣ sech t dt` (DLMF 4.23.39), `gdPrecRound`, `gd` (`AzFloat/Gd.lean`); special values
+`gd (±∞) = ±π/2` correctly rounded, `gd 0 = 0`, odd.
+
+**Irrationality** (`Transcendental/Gudermannian.lean`, `irrational_gd_rat`): if `gd x = r`
+then `cos r cosh x = 1`, i.e. `e^{x+ir} + e^{x−ir} + e^{−x+ir} + e^{−x−ir} = 4`.  For rationals
+`x = a/N`, `r = b/N` the four exponents are the roots of `N⁴X⁴ − 2N²(a² − b²)X² + (a² + b²)²`;
+Mathlib's `LindemannWeierstrass.exp_polynomial_approx` gives `nₚ`, `gₚ` with
+`|nₚ e^α − p gₚ(α)| ≤ c^p/(p−1)!`; the polynomial is not monic, but `N^{4p} ∑ gₚ(α)` is an
+integer (power sums of the Gaussian integers `±a ± ib`), so `4 nₚ N^{4p} ≡ 0 (mod p)` for every
+large prime `p`, a contradiction.  So the Ziv loop needs no fuel.
+
+**Algorithm** (`AzFloat/GdBracket.lean`).  Every formula needs one exponential and one
+arctangent (`gd` mixes the two families; no shortcut found).  The work went into the
+arctangent:
+
+* `gd a = 2 arctan (tanh (a/2)) = π/2 − 2 arctan (e^(−a))`: the two arctangent arguments
+  cross at `a = ln (1 + √2)` (both `√2 − 1`), so one of them is always at most `0.42` and small
+  for a small or a large `a`.
+* `atanAlt`: the alternating series `z − z³/3 + z⁵/5 − ⋯` on enclosures.  The partial sums
+  enclose the arctangent whatever the number of terms (`arctan_altSum_bounds`, from
+  `∫₀^z t^(2n)/(1+t²)`), so the loop is correct for every fuel; its result is accepted only if
+  its **measured** width is small enough (`enclNarrow?`), else the general path runs.  No
+  convergence analysis is needed in the proof.
+* General path `gdCore`: `tanhBracket` + `atanWiden` (the certified order-5 iteration on
+  `sinCosFix`).
+* `gdHuge`: `a ≥ N ≥ w + 8` gives `[π/2 − 2^(1−N), π/2]`, nothing but `π`.
+* Thresholds from interpreter timings (`gdBracket` against `gdCore`, one Ziv level): the
+  series costs about as much as the general arctangent at 32–45 terms, at 53, 300 and 1000
+  bits alike; it is tried when `64 (1 − e) ≥ K` (small) or `92 ⌊a⌋ ≥ K` (large).
+
+| `x` | 53 bits: general | 53 bits: bracket | 1000 bits: general | 1000 bits: bracket |
+|---|---|---|---|---|
+| `1/1024` | 19.0 ms | 12.0 ms (series) | 171 ms | 169 ms (general) |
+| `1/3` | 23.2 ms | 18.4 ms (series) | 202 ms | 199 ms (general) |
+| `7/8` | 22.5 ms | 23.6 ms (general) | 206 ms | 202 ms (general) |
+| `3` | 22.3 ms | 14.8 ms (series) | 187 ms | 187 ms (general) |
+| `19` | 22.8 ms | 11.0 ms (series) | 188 ms | 139 ms (series) |
+| `150` | 21.9 ms | 1.8 ms (huge) | 188 ms | 92 ms (series) |
+| `100000` | 23.9 ms | 1.7 ms (huge) | 194 ms | 19.6 ms (huge) |
+
+(Interpreter, everything interpreted; for scale, `tanh` 11–12 ms, `atan` 10 ms, `sin` 6–10 ms,
+`exp` 7 ms, `π` 1.6 ms at 53 bits.)
+
+Not done: the band `1/2 ≤ |x| < 2` at low precision always takes the general path (a series
+there needs about 50 terms; a half-angle reduction of the arctangent argument or a
+point-arithmetic series would be the next step); `gd⁻¹`.
+
+### `gdRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`gdRatPrecRound`, `gdRat` (`AzFloat/GdRat.lean`).  The bracket steps were factored out of the
+float bracket — `gdSmallOf t K`, `gdLargeOf z w`, `gdCoreOf t K` on an enclosure of
+`tanh (a/2)` or `e^(−a)`, with `gdSmallOf_spec`, `gdLargeOf_spec`, `gdCoreOf_spec` — and
+`gdRatBracket q w` runs them on the rational brackets `tanhRatBracket (q/2)` and
+`expRatBracket (−|q|)`, with `⌊|q|⌋` (`ratAbsFloorN`) and `ratExpBound q` in place of the
+float's exponent; `gdHuge` as it is.  Width `gdRatEps q w → 0`, the Ziv certificate from
+`irrational_gd_rat`, tiny arguments by `sinTinyRat?`.  `gdRatPrecRound_eq`
+(`= roundVal p mode (Spec.gd q)`).  Tests against 400-digit references on every path and
+against the float function on dyadic arguments.
