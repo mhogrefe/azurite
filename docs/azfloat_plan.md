@@ -7678,3 +7678,29 @@ reference `acsch_ref.py`).  NOT timed.  Remaining: `acoth` (`atanh (1/x)`, `|x| 
 `(1/2) ln ((x + 1)/(x − 1))`; huge `x`: `≈ 1/x` from **above** (`y < atanh y ≤ y + y³`), so
 the exact end `1/x` is the lower one: no negation, a mirrored tiny enclosure
 `[1/a, (1/a)(1 + 2^(−w−14))]` — `acscTinyEncl` of the acsc family has exactly this shape).
+
+## Inverse hyperbolic cotangent `acoth`, `acothRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`acothPrecRound`/`acoth` (`AzFloat/Acoth.lean`), `acothRatPrecRound`/`acothRat`
+(`AzFloat/AcothRat.lean`); `acothPrecRound_eq_liftVal`, `acothRatPrecRound_eq` against
+`Spec.acoth` (`= Spec.atanh (1/a)` for a finite `a ≠ 0`).  Malachite table: `NaN`;
+`∞ ↦ 0.0`, `−∞ ↦ −0.0`; `±1 ↦ ±∞`; `|x| < 1 ↦ NaN` incl. `±0.0`.  With one zero:
+`±∞ ↦ 0`.
+
+* **Float**: `acoth a = (1/2) ln ((a + 1)/(a − 1))` (`artanh_inv_eq_half_log`):
+  `atanhArg ⌊a + 1⌋ ⌈a − 1⌉`, `atanhOfArg` — the `atanh` pieces, with the generic
+  `quotFloor_bounds`.
+* **Huge arguments**: value `≈ 1/a` from **above** (`y ≤ atanh y ≤ y + y³`, the arcsine's
+  bounds), so `acscTinyEncl` (exact lower end `1/a`) is reused — its spec generalised to
+  `acscTinyEncl_spec_of` — and the loop runs on `acoth |x|` with `orient_roundVal (!s)`, the
+  mirror image of `acsch`.  Start extra `acschExtra`.
+* **Rational**: `atanhRatPrecRound q⁻¹`, `NaN` at `0`.
+
+Tests: `Tests/Acoth.lean`, `Tests/AcothRat.lean` (generator `scratchpad/gen_acoth.py`,
+reference `acoth_ref.py`).  NOT timed.
+
+**The hyperbolic arc is complete**: `sinh`, `cosh`, `tanh`, `sech`, `csch`, `coth`, joint
+`sinhCosh`, and the inverses `asinh`, `acosh`, `atanh`, `asech`, `acsch`, `acoth`, each with
+its rational version (26 functions), all proven, all UNTIMED.  Possible follow-ups: timings
+(first `sinhCosh` vs `sinh` + `cosh`); a `log1p`-style reduction for the small-argument range
+of `asinh`/`atanh` (now `leadingZeroBits` extra bits); sharing `1/(1 + u)` in `sinhCosh`.

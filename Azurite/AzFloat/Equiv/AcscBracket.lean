@@ -237,12 +237,14 @@ theorem acscArg_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
     htl1 htl2 hth1 hth2
   exact ⟨tl, th, htl, hth, htl0, htlT, hTth, by rw [hεP]; linarith⟩
 
-/-- **The enclosure for a huge argument**: for a float `a > 0` with `1/a ≤ 1/2` and
-`1/a² ≤ 2^(−w−14)`, `acscTinyEncl a w` encloses `arcsin (1/a)` with a nonnegative lower end and
-width at most `2^(−w)`. -/
-theorem acscTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
-    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14)) :
-    IsEncl0W (acscTinyEncl a w) (arcsin av⁻¹) ((1 / 2 : ℝ) ^ w) := by
+/-- **The enclosure for a huge argument**: for a float `a > 0` with `y = 1/a ≤ 1/2` and
+`y² ≤ 2^(−w−14)`, `acscTinyEncl a w` encloses every `v` with `y ≤ v ≤ y + y³` (the arcsine and
+the inverse hyperbolic tangent of `y`), with a nonnegative lower end and width at most
+`2^(−w)`. -/
+theorem acscTinyEncl_spec_of {a : AzFloat} {av v : ℝ} (ha : a.toVal = some (av : EReal))
+    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14))
+    (hlt : av⁻¹ ≤ v) (hle : v ≤ av⁻¹ + av⁻¹ ^ 3) :
+    IsEncl0W (acscTinyEncl a w) v ((1 / 2 : ℝ) ^ w) := by
   unfold acscTinyEncl
   dsimp only
   have : NeZero (w + 16) := ⟨by omega⟩
@@ -297,7 +299,6 @@ theorem acscTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : ER
           linarith
   have hprodε : (h0 * cv) * ε ≤ (2 * y) * ε :=
     mul_le_mul_of_nonneg_right (by linarith) hε0.le
-  obtain ⟨hlt, hle⟩ := arcsin_bounds_of_small hy0 hy1
   have hcube : y ^ 3 ≤ y * (4 * ε) := by
     have := mul_le_mul_of_nonneg_left hy2 hy0.le
     calc y ^ 3 = y * y ^ 2 := by ring
@@ -309,6 +310,13 @@ theorem acscTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : ER
   refine ⟨l, u, hl, hu, hl0, by linarith, by linarith, ?_⟩
   rw [hw]
   linarith
+
+/-- The enclosure for a huge argument, for the arcsine. -/
+theorem acscTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
+    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14)) :
+    IsEncl0W (acscTinyEncl a w) (arcsin av⁻¹) ((1 / 2 : ℝ) ^ w) := by
+  obtain ⟨hlt, hle⟩ := arcsin_bounds_of_small (inv_pos.mpr ha0) hy1
+  exact acscTinyEncl_spec_of ha ha0 hy1 hy2 hlt.le hle
 
 /-- **The bracket of `arccsc |x| = arcsin (1/|x|)`** for a finite float with `|x| > 1` and
 `2^en ≤ 2|x|`: nonnegative lower end, width at most `2^(−w)`. -/
