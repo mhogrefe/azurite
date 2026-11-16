@@ -26,6 +26,8 @@ import Azurite.AzFloat.Tests.Acsc
 import Azurite.AzFloat.Tests.AcscPi
 import Azurite.AzFloat.Tests.AcscRat
 import Azurite.AzFloat.Tests.AcscWithPeriod
+import Azurite.AzFloat.Tests.Acsch
+import Azurite.AzFloat.Tests.AcschRat
 import Azurite.AzFloat.Tests.Add
 import Azurite.AzFloat.Tests.AddMul
 import Azurite.AzFloat.Tests.AddMulRat

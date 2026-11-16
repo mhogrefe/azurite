@@ -7656,3 +7656,25 @@ Tests: `Tests/Asech.lean`, `Tests/AsechRat.lean` (generator `scratchpad/gen_asec
 reference `asech_ref.py`).  NOT timed.  Remaining: `acsch` (`asinh (1/x)`; odd; `0 ↦ +∞`
 presumably; tiny `x`: `ln (2/|x|)`; huge `x`: `≈ 1/x`, needs a tiny path like `acot`) and
 `acoth` (`atanh (1/x)`, `|x| > 1`; huge `x`: `≈ 1/x` likewise).
+
+## Inverse hyperbolic cosecant `acsch`, `acschRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`acschPrecRound`/`acsch` (`AzFloat/Acsch.lean`), `acschRatPrecRound`/`acschRat`
+(`AzFloat/AcschRat.lean`); `acschPrecRound_eq_liftVal`, `acschRatPrecRound_eq` against
+`Spec.acsch` (`arsinh (1/a)`).  Malachite table: `NaN`; `∞ ↦ 0.0`, `−∞ ↦ −0.0`; `0.0 ↦ ∞`,
+`−0.0 ↦ −∞`.  With one zero: `±∞ ↦ 0`, `0 ↦ +∞` (as `csch 0`, `csc 0`).
+
+* **Float**: `acsch a = ln ((1 + √(1 + a²))/a)` (`arsinh_inv_eq_log`), `acschArg` (five
+  operations rounded down, relative `8·2^(−W)`), `lnFloorBracket`.
+* **Huge arguments**: value `≈ 1/a`, and for a power of two exponentially close to the float
+  `1/a` from below.  `y − y³ ≤ asinh y ≤ y` are the bounds `acot` uses, so `acotTinyEncl` is
+  reused (its spec generalised to `acotTinyEncl_spec_of`), inside the loop from `2e ≥ w + 16`,
+  and the loop runs on `−acsch |x|` exactly like `acot`.  Start `p + 64 + min e (p + 96)`
+  (`acschExtra`): the cap keeps the working precision independent of a huge exponent.
+* **Rational**: `asinhRatPrecRound q⁻¹` (its `sinTinyRat?` path covers a huge `q`), `+∞` at 0.
+
+Tests: `Tests/Acsch.lean`, `Tests/AcschRat.lean` (generator `scratchpad/gen_acsch.py`,
+reference `acsch_ref.py`).  NOT timed.  Remaining: `acoth` (`atanh (1/x)`, `|x| > 1`;
+`(1/2) ln ((x + 1)/(x − 1))`; huge `x`: `≈ 1/x` from **above** (`y < atanh y ≤ y + y³`), so
+the exact end `1/x` is the lower one: no negation, a mirrored tiny enclosure
+`[1/a, (1/a)(1 + 2^(−w−14))]` — `acscTinyEncl` of the acsc family has exactly this shape).

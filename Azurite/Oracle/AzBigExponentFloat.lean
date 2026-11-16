@@ -156,6 +156,29 @@ def checkBigExponentFloatSum : String → Verdict :=
 def checkBigExponentFloatProduct : String → Verdict :=
   checkBigExponentFloatListFold "product" exactProductPrecision AzFloat.productPrecRound
 
+/-! ### Logarithms with a `BigExponentFloat` base
+
+Malachite documents a base of `1` as giving `NaN` for every argument: `ln 1 = 0`, and a
+`BigExponentFloat` has no signed zero to give the quotient `ln x / ln 1` a sign, so it follows the
+rule for division by zero. Azurite, like `Float`, divides the logarithms as IEEE 754 does. -/
+
+/-- `NaN` for the base `1`, and `f` otherwise. -/
+def baseOneIsNaN {α : Type} (f : α → AzFloat → Nat → RoundingMode → AzFloat × Ordering)
+    (x : α) (b : AzFloat) (p : Nat) (m : RoundingMode) : AzFloat × Ordering :=
+  if sameFloatValue b AzFloat.one then (.nan, .eq) else f x b p m
+
+def checkBigExponentFloatLogBaseFloatBase : String → Verdict :=
+  withBigExponentFloatNames fun line => checkFloatUnaryArgsWith "log_base_float_base" 1
+    parseFloatArg (baseOneIsNaN AzFloat.logBaseFloatPrecRound) line ["log_base"]
+
+def checkBigExponentFloatLogBaseFloatBase1PlusX : String → Verdict :=
+  withBigExponentFloatNames fun line => checkFloatUnaryArgsWith "log_base_float_base_1_plus_x" 1
+    parseFloatArg (baseOneIsNaN AzFloat.logBaseFloatP1PrecRound) line ["log_base_1_plus_x"]
+
+def checkBigExponentFloatLogBaseRationalFloatBase : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "log_base_rational_float_base" 1
+    parseFloatArg (baseOneIsNaN AzFloat.logBaseRatFloatPrecRound)
+
 /-! ### Checks reused unchanged
 
 These `Float` checks read the `BigExponentFloat` demos' lines as they are, under the
@@ -241,14 +264,8 @@ def checkBigExponentFloatLogBaseRational : String → Verdict :=
 def checkBigExponentFloatLogBase1PlusX : String → Verdict :=
   withBigExponentFloatNames checkFloatLogBase1PlusX
 
-def checkBigExponentFloatLogBaseFloatBase : String → Verdict :=
-  withBigExponentFloatNames checkFloatLogBaseFloatBase
 
-def checkBigExponentFloatLogBaseFloatBase1PlusX : String → Verdict :=
-  withBigExponentFloatNames checkFloatLogBaseFloatBase1PlusX
 
-def checkBigExponentFloatLogBaseRationalFloatBase : String → Verdict :=
-  withBigExponentFloatNames checkFloatLogBaseRationalFloatBase
 
 def checkBigExponentFloatLogBaseRationalBase : String → Verdict :=
   withBigExponentFloatNames checkFloatLogBaseRationalBase

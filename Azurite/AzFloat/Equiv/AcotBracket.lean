@@ -24,12 +24,14 @@ open Real
 
 namespace Azurite.AzFloat
 
-/-- **The enclosure for a huge argument**: for a float `a > 0` with `1/a ≤ 1/2` and
-`1/a² ≤ 2^(−w−14)`, `acotTinyEncl a w` encloses `arctan (1/a)` with a nonnegative lower end and
-width at most `2^(−w)`. -/
-theorem acotTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
-    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14)) :
-    IsEncl0W (acotTinyEncl a w) (arctan av⁻¹) ((1 / 2 : ℝ) ^ w) := by
+/-- **The enclosure for a huge argument**: for a float `a > 0` with `y = 1/a ≤ 1/2` and
+`y² ≤ 2^(−w−14)`, `acotTinyEncl a w` encloses every `v` with `y − y³ ≤ v ≤ y` (the arctangent
+and the inverse hyperbolic sine of `y`), with a nonnegative lower end and width at most
+`2^(−w)`. -/
+theorem acotTinyEncl_spec_of {a : AzFloat} {av v : ℝ} (ha : a.toVal = some (av : EReal))
+    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14))
+    (hlow : av⁻¹ - av⁻¹ ^ 3 ≤ v) (hup : v ≤ av⁻¹) :
+    IsEncl0W (acotTinyEncl a w) v ((1 / 2 : ℝ) ^ w) := by
   have : NeZero (w + 16) := ⟨by omega⟩
   set y := av⁻¹ with hy
   have hy0 : 0 < y := inv_pos.mpr ha0
@@ -82,8 +84,6 @@ theorem acotTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : ER
   have hl0' : 0 ≤ l := by
     have : (l0 * cv) * ε ≤ (l0 * cv) * (1 / 65536) := mul_le_mul_of_nonneg_left hε1 hprod0
     linarith
-  have hlow := sub_cube_div_three_le_arctan hy0.le
-  have hup := arctan_le_self hy0.le
   have hcube : y ^ 3 ≤ y * (4 * ε) := by
     have := mul_le_mul_of_nonneg_left hy2 hy0.le
     calc y ^ 3 = y * y ^ 2 := by ring
@@ -96,6 +96,15 @@ theorem acotTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : ER
     rw [hw]
     linarith
   exact ⟨l, u, hl, hu, hl0', by linarith, by linarith, hwid⟩
+
+/-- The enclosure for a huge argument, for the arctangent. -/
+theorem acotTinyEncl_spec {a : AzFloat} {av : ℝ} (ha : a.toVal = some (av : EReal))
+    (ha0 : 0 < av) (hy1 : av⁻¹ ≤ 1 / 2) {w : ℕ} (hy2 : av⁻¹ ^ 2 ≤ (1 / 2 : ℝ) ^ (w + 14)) :
+    IsEncl0W (acotTinyEncl a w) (arctan av⁻¹) ((1 / 2 : ℝ) ^ w) := by
+  have hy0 : 0 < av⁻¹ := inv_pos.mpr ha0
+  have hlow := sub_cube_div_three_le_arctan hy0.le
+  have hy3 : 0 ≤ av⁻¹ ^ 3 := by positivity
+  exact acotTinyEncl_spec_of ha ha0 hy1 hy2 (by linarith) (arctan_le_self hy0.le)
 
 /-- **The bracket of `arccot |x| = arctan (1/|x|)`** for a finite float `x ≠ 0` of exponent
 `e`: nonnegative lower end, width at most `2^(−w)`. -/
