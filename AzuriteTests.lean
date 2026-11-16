@@ -52,6 +52,8 @@ import Azurite.AzFloat.Tests.AtanPi
 import Azurite.AzFloat.Tests.AtanRat
 import Azurite.AzFloat.Tests.AtanRatWithPeriod
 import Azurite.AzFloat.Tests.AtanWithPeriod
+import Azurite.AzFloat.Tests.Atanh
+import Azurite.AzFloat.Tests.AtanhRat
 import Azurite.AzFloat.Tests.Basic
 import Azurite.AzFloat.Tests.Catalan
 import Azurite.AzFloat.Tests.Cbrt

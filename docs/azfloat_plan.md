@@ -7613,3 +7613,27 @@ Tests: `Tests/Acosh.lean`, `Tests/AcoshRat.lean` (generator `scratchpad/gen_acos
 reference `acosh_ref.py`).  NOT timed.  Next presumably `atanh`
 (`(1/2) ln ((1 + x)/(1 − x))`, `|x| < 1`, `±∞` at `±1`; tiny `x`: `x < atanh x ≤ x + x³`, the
 `tanTiny?` bounds; near `±1` large values, no closeness issue).
+
+## Inverse hyperbolic tangent `atanh`, `atanhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`atanhPrecRound`/`atanh` (`AzFloat/Atanh.lean`), `atanhRatPrecRound`/`atanhRat`
+(`AzFloat/AtanhRat.lean`); `atanhPrecRound_eq_liftVal`, `atanhRatPrecRound_eq` against
+`Spec.atanh` (`Real.artanh`).  Malachite table: `NaN`; `±∞ ↦ NaN`; `±0.0 ↦ ±0.0`;
+`±1 ↦ ±∞`; `|x| > 1 ↦ NaN` — as implemented (one zero).
+
+* **Formula**: `atanh a = (1/2) ln ((1 + a)/(1 − a))`, `a = |x|`.  `atanhArg` = the quotient
+  rounded down of `⌊1 + a⌋` and `⌈1 − a⌉` (relative `6·2^(−W)`); for a rational the exact
+  `1 ± |q|` are rounded, so `1 − 2^(−5000)` is fine.  Half of `lnFloorBracket`.
+* **Small arguments**: start `p + 64 + leadingZeroBits e` (as `asinh`).  **Tiny**:
+  `a < atanh a ≤ a + a³` holds on `(0, 1/4]` only (`artanh_tiny_bounds`, from Mathlib's
+  `abs_log_sub_add_sum_range_le` with three terms), while `tanTiny?_eq_of` wants it on
+  `(0, 1]`: it is applied to `atanhTinyFn` (`atanh` on `[−1/4, 1/4]`, `x + x³` outside), which
+  coincides with `atanh` whenever the test answers (`2^e ≤ 1/4`).
+* **Irrationality**: `irrational_artanh_rat`: `tanh (atanh q) = q`.
+* Mathlib has no oddness lemma for `artanh` (`Real.artanh_neg` is about the sign):
+  `artanh_neg'`.
+
+Tests: `Tests/Atanh.lean`, `Tests/AtanhRat.lean` (generator `scratchpad/gen_atanh.py`,
+reference `atanh_ref.py`).  NOT timed.  `asinh`, `acosh`, `atanh` done; remaining inverse
+hyperbolic: `asech`, `acsch`, `acoth` (reciprocal arguments: `acosh (1/x)`, `asinh (1/x)`,
+`atanh (1/x)`; with rationals the reciprocal is exact).

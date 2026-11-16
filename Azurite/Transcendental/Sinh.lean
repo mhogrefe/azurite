@@ -11,6 +11,7 @@ import Azurite.Transcendental.Exp
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.SpecialFunctions.Arsinh
 import Mathlib.Analysis.SpecialFunctions.Arcosh
+import Mathlib.Analysis.SpecialFunctions.Artanh
 
 /-!
 # Irrationality of `sinh q`, `cosh q`, `tanh q`, `arsinh q` and `arcosh q`
@@ -21,7 +22,9 @@ import Mathlib.Analysis.SpecialFunctions.Arcosh
 `y² − 2 r y + 1`, against the transcendence of `e^q` (`transcendental_exp_rat`, from Hermite's
 theorem); and a rational `tanh q = r` gives the rational `e^(2q) = (1 + r)/(1 − r)`.  Hence
 `arsinh q` is irrational too (`irrational_arsinh_rat`): its hyperbolic sine is the rational `q`;
-and `arcosh q` for a rational `q > 1` (`irrational_arcosh_rat`): its hyperbolic cosine is `q`.
+and `arcosh q` for a rational `q > 1` (`irrational_arcosh_rat`): its hyperbolic cosine is `q`;
+and `artanh q` for a rational `0 < |q| < 1` (`irrational_artanh_rat`): its hyperbolic tangent
+is `q`.
 This makes the rounding loops of the `AzFloat` hyperbolic functions provably terminating.
 -/
 
@@ -101,5 +104,20 @@ theorem irrational_arcosh_rat {q : ℚ} (hq : 1 < q) : Irrational (Real.arcosh q
     exact lt_irrefl _ hpos
   apply irrational_cosh_rat hr0
   exact ⟨q, by rw [hr, Real.cosh_arcosh hq'.le]⟩
+
+/-- `artanh q` is irrational for every rational `q` with `0 < |q| < 1`. -/
+theorem irrational_artanh_rat {q : ℚ} (hq0 : q ≠ 0) (hq1 : |(q : ℝ)| < 1) :
+    Irrational (Real.artanh q) := by
+  have hmem : (q : ℝ) ∈ Set.Ioo (-1 : ℝ) 1 := abs_lt.mp hq1
+  rintro ⟨r, hr⟩
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [Rat.cast_zero] at hr
+    rcases Real.artanh_eq_zero_iff.mp hr.symm with h | h | h
+    · linarith [hmem.1]
+    · exact hq0 (by exact_mod_cast h)
+    · linarith [hmem.2]
+  apply irrational_tanh_rat hr0
+  exact ⟨q, by rw [hr, Real.tanh_artanh hmem]⟩
 
 end Azurite
