@@ -319,6 +319,10 @@ import Azurite.AzFloat.Equiv.SinRatBracket
 import Azurite.AzFloat.Equiv.SinRatWithPeriod
 import Azurite.AzFloat.Equiv.SinWithPeriod
 import Azurite.AzFloat.Equiv.SinWithPeriodBracket
+import Azurite.AzFloat.Equiv.Sinh
+import Azurite.AzFloat.Equiv.SinhBracket
+import Azurite.AzFloat.Equiv.SinhRat
+import Azurite.AzFloat.Equiv.SinhRatBracket
 import Azurite.AzFloat.Equiv.Sqrt
 import Azurite.AzFloat.Equiv.SqrtPiBracket
 import Azurite.AzFloat.Equiv.SqrtRat
@@ -445,6 +449,10 @@ import Azurite.AzFloat.SinRatBracket
 import Azurite.AzFloat.SinRatWithPeriod
 import Azurite.AzFloat.SinWithPeriod
 import Azurite.AzFloat.SinWithPeriodBracket
+import Azurite.AzFloat.Sinh
+import Azurite.AzFloat.SinhBracket
+import Azurite.AzFloat.SinhRat
+import Azurite.AzFloat.SinhRatBracket
 import Azurite.AzFloat.Sqrt
 import Azurite.AzFloat.SqrtPiBracket
 import Azurite.AzFloat.SqrtRat
@@ -3026,6 +3034,7 @@ import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.NivenTan
 import Azurite.Transcendental.Ramanujan
+import Azurite.Transcendental.Sinh
 import Azurite.UInt64.AddWithCarry
 import Azurite.UInt64.ClearBit
 import Azurite.UInt64.Digits

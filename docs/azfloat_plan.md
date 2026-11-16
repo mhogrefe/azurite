@@ -7399,3 +7399,33 @@ The five variants of the odd arccotangent, after the Malachite table for `acot_w
 Tests: `Tests/AcotWithPeriod.lean`, `Tests/AcotRat.lean`, `Tests/AcotPi.lean` (tiny and huge
 arguments down to `2^(−2^30)` and up to `3·2^(2^30)`).  The acot family of six is complete; the
 plain `acot` could equally be `atan2 (±1, |x|)`, but keeps its own bracket.  NOT timed.
+
+## Hyperbolic sine `sinh` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+Start of the hyperbolic arc (user request; no special-case table given: `NaN ↦ NaN`,
+`±∞ ↦ ±∞`, `0 ↦ 0`, odd).  `sinhPrecRound x p mode`, `sinh x` (`AzFloat/Sinh.lean`),
+`sinhPrecRound_eq_liftVal` against `Spec.sinh`.
+
+* **Formula**: with `u = exp |x| − 1`, `sinh |x| = (u + u/(1 + u))/2` — positive terms,
+  increasing in `u`, no cancellation for any size of `x`.  `sinhOfExpM1` evaluates it with
+  outward rounding (one division) on `expM1Bracket`, which already has relative accuracy for a
+  small argument.  This step is reusable: `cosh x − 1 = u²/(2(1 + u))`,
+  `tanh |x| = v/(2 + v)` with `v = exp (2|x|) − 1`.
+* **Tiny arguments**: `|x| < sinh |x| ≤ |x| + |x|³` on `(0, 1]` (`sinh_tiny_bounds`, from
+  `Real.exp_bound`), the hypotheses of `tanTiny?_eq_of`, so `tanTiny?` is reused as is.
+* **Irrationality**: `irrational_sinh_rat` (`Transcendental/Sinh.lean`): a rational `sinh q`
+  would make `e^q` quadratic over `ℚ`, against `transcendental_exp_rat`.
+  `isAlgebraic_of_quadratic` serves `cosh` (`y² − 2ry + 1`) the same way.
+* **Huge arguments** cost what `exp` costs; nothing overflows (AzInt exponent).
+
+Tests: `Tests/Sinh.lean` (reference: 6000-bit fixed-point exponential in
+`scratchpad/sinh_ref.py`, which also has `cosh_fp`, `tanh_fp`).  NOT timed.
+
+## `sinhRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`sinhRatPrecRound q p mode`, `sinhRat q p` (`AzFloat/SinhRat.lean`), `sinhRatPrecRound_eq`
+against `Spec.sinh`.  The same step `sinhOfExpM1` on `expM1RatBracket |q|` (relative accuracy
+for a small `q`), `tanTinyRat?` for tiny arguments (via `tanTinyRat?_eq_of`), certificate from
+`irrational_sinh_rat`.  For this the width proof of the float bracket was factored into
+`sinhOfExpM1_width` / `sinhWidth` / `tendsto_sinhWidth`, generic in the enclosure of
+`e^a − 1`.  Tests: `Tests/SinhRat.lean` (reference `scratchpad/sinhrat_ref.py`).  NOT timed.

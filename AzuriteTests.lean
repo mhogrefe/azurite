@@ -141,6 +141,8 @@ import Azurite.AzFloat.Tests.SinPi
 import Azurite.AzFloat.Tests.SinRat
 import Azurite.AzFloat.Tests.SinRatWithPeriod
 import Azurite.AzFloat.Tests.SinWithPeriod
+import Azurite.AzFloat.Tests.Sinh
+import Azurite.AzFloat.Tests.SinhRat
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat
 import Azurite.AzFloat.Tests.Sum
