@@ -7477,3 +7477,23 @@ is then the **upper** end, so run the loop on `−tanh |x|`; `tanh q` irrational
 Tests: `Tests/Tanh.lean`, `Tests/TanhRat.lean` (transition `18 … 40`; generator
 `scratchpad/gen_tanh.py`, reference `tanh_ref.py`).  NOT timed.  `sinh`, `cosh`, `tanh` and
 their rational versions are done.
+
+## Hyperbolic secant `sech` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`sechPrecRound`/`sech` (`AzFloat/Sech.lean`), `sechPrecRound_eq_liftVal` against `Spec.sech`
+(`(cosh a)⁻¹`).  Malachite table: `NaN`; `±∞ ↦ 0.0`; `±0.0 ↦ 1.0` — as implemented.
+
+* **Bracket**: `sechOfCosh`, the outward reciprocal of `coshBracket` (lower end raised to `1`);
+  `sechOfCosh_spec` is generic in the enclosure of `C ≥ 1`, so a rational version only needs
+  `coshRatBracket`.  Relative accuracy is inherited, so a large `x` (`≈ 2 e^(−|x|)`) is fine.
+* **Tiny arguments**: `sech x = exp (−ln cosh x)`, `|ln cosh x| ≤ x²/2`: `expNearOne? false` at
+  `coshTinyExp e` (`sechNearOne?_eq`), the mirror image of `cosh`.
+* **Irrationality**: `(irrational_cosh_rat …).inv`.
+
+Tests: `Tests/Sech.lean` (generator `scratchpad/gen_sech.py`, which now has reusable
+`load`/`split`/`hdr`/`pre`; reference `sech_ref.py`).  NOT timed.
+
+`sechRat` (DONE 2026-11-16, same day, on request): `sechRatPrecRound`/`sechRat`
+(`AzFloat/SechRat.lean`) = `sechOfCosh` on `coshRatBracket`, tiny path at `coshRatTinyExp q`
+(`sechRatTiny_eq`), `sechRatPrecRound_eq` in `Equiv/Sech.lean`.  Tests: `Tests/SechRat.lean`
+(generator `scratchpad/gen_sechrat.py`).  NOT timed.
