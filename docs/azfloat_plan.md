@@ -7497,3 +7497,24 @@ Tests: `Tests/Sech.lean` (generator `scratchpad/gen_sech.py`, which now has reus
 (`AzFloat/SechRat.lean`) = `sechOfCosh` on `coshRatBracket`, tiny path at `coshRatTinyExp q`
 (`sechRatTiny_eq`), `sechRatPrecRound_eq` in `Equiv/Sech.lean`.  Tests: `Tests/SechRat.lean`
 (generator `scratchpad/gen_sechrat.py`).  NOT timed.
+
+## Hyperbolic cosecant `csch`, `cschRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`cschPrecRound`/`csch` (`AzFloat/Csch.lean`), `cschRatPrecRound`/`cschRat`
+(`AzFloat/CschRat.lean`); `cschPrecRound_eq_liftVal`, `cschRatPrecRound_eq` against
+`Spec.csch`.  Malachite table: `NaN`; `∞ ↦ 0.0`, `−∞ ↦ −0.0`; `0.0 ↦ ∞`, `−0.0 ↦ −∞`.  With
+one zero: `±∞ ↦ 0`, `0 ↦ +∞` (as `csc 0`).
+
+* **Bracket**: `cschOfSinh s lb W`, the outward reciprocal of the `sinh` bracket; the lower end
+  is raised to a float lower bound `lb > 0` of `sinh a` (`a` itself for a float, `⌊|q|⌋` for a
+  rational, since `sinh a > a`), which gives positivity without a lemma about the `expm1`
+  bracket.  Width `δ/c² + 4·2^(−w)/c` (`cschWidth`).
+* **Tiny arguments**: `1/a − a ≤ csch a < 1/a` (`csch_bounds_of_small`, from
+  `sinh a ≤ a + a³`).  For a power of two the float `1/a` is the **upper** end, so
+  `cschTinyCore?` tests `−csch a ∈ (−1/a, −1/a + a]` (the mirror image of `cscTinyCore?`,
+  where `csc a > 1/a`).  Condition `2|e| ≥ p + 72`.
+* **Irrationality**: `(irrational_sinh_rat …).inv`.
+
+Tests: `Tests/Csch.lean`, `Tests/CschRat.lean` (generator `scratchpad/gen_csch.py`, reference
+`csch_ref.py`).  NOT timed.  Remaining hyperbolic: `coth` (`= (2 + v)/v`, `v = e^(2|x|) − 1`;
+near `±1` outside for a large `x`, `≈ 1/x + x/3` for a tiny one).

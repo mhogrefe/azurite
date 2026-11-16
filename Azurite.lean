@@ -122,6 +122,9 @@ import Azurite.AzFloat.Cot
 import Azurite.AzFloat.CotBracket
 import Azurite.AzFloat.Csc
 import Azurite.AzFloat.CscBracket
+import Azurite.AzFloat.Csch
+import Azurite.AzFloat.CschBracket
+import Azurite.AzFloat.CschRat
 import Azurite.AzFloat.Div
 import Azurite.AzFloat.DivRat
 import Azurite.AzFloat.Dottie
@@ -206,6 +209,8 @@ import Azurite.AzFloat.Equiv.Cot
 import Azurite.AzFloat.Equiv.CotBracket
 import Azurite.AzFloat.Equiv.Csc
 import Azurite.AzFloat.Equiv.CscBracket
+import Azurite.AzFloat.Equiv.Csch
+import Azurite.AzFloat.Equiv.CschBracket
 import Azurite.AzFloat.Equiv.DirectedRounding
 import Azurite.AzFloat.Equiv.Div
 import Azurite.AzFloat.Equiv.DivRat

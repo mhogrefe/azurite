@@ -62,6 +62,8 @@ import Azurite.AzFloat.Tests.Cosh
 import Azurite.AzFloat.Tests.CoshRat
 import Azurite.AzFloat.Tests.Cot
 import Azurite.AzFloat.Tests.Csc
+import Azurite.AzFloat.Tests.Csch
+import Azurite.AzFloat.Tests.CschRat
 import Azurite.AzFloat.Tests.Div
 import Azurite.AzFloat.Tests.DivRat
 import Azurite.AzFloat.Tests.Dottie
