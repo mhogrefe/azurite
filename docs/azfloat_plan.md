@@ -7125,3 +7125,72 @@ The `atan2` family is complete: `atan2`, `atan2Rat`, `atan2WithPeriod`, `atan2Ra
 
 Tests: `Tests/Atan2RatWithPeriod.lean`, `Tests/Atan2Pi.lean`; huge-argument cases added for
 `atanRatWithPeriod` and `atanPiRat`.  NOT timed.
+
+## Arcsine `asin` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`asinPrecRound x p mode`, `asin x` (`AzFloat/Asin.lean`), `asinPrecRound_eq_liftVal` against
+`Spec.asin`.  Special values as in the Malachite table (supplied by the user after the fact,
+and identical to what was implemented): `NaN` for `NaN`, `±∞` and `|x| > 1`; `±π/2` at `±1`;
+`0` at `0` (no negative zero here).
+
+* **Reduction** (changed from the earlier plan `arctan (x/√(1 − x²))`, which needs a case
+  distinction at `1/√2` between `x/√` and `√/x` that cannot be decided against an inexact
+  square root): the half-angle identity `arcsin a = 2 arctan t`, `t = a/(1 + √(1 − a²))`
+  (`arcsin_eq_two_arctan`), `t ∈ (0, 1)` for every `a ∈ (0, 1)`.  No `π`, no cases.
+* **Argument** (`asinSqrt`, `asinArg`): `1 − a` and `1 + a` correctly rounded (so `1 − a` is
+  relatively accurate next to `1`), product, square root (relative error analysis:
+  `α³ s ≤ s_lo`, `s_hi ≤ β³ s` with `α, β = 1 ∓ 2ε`), then `1 + √` and the quotient (absolute
+  analysis); width `≤ 32·2^(−P)`.  The square-root step must be relative: `√` is not Lipschitz
+  at `0`.
+* **Bracket**: `atanWiden` at level `K = atanWork ex w`, `V = K + 64`, argument at `V + 8`
+  bits, doubled exactly.  Tiny arguments: `asinTiny?` = `tanTiny?`, whose proof is now generic
+  (`tanTiny?_eq_of`); the bounds `a < arcsin a ≤ a + a³` hold for `a ≤ 1/2` only, and the test
+  only passes below `2^(−72)`, so the lemma is applied to a function patched above `1/2`.
+* **Irrationality**: `irrational_arcsin_rat` from `irrational_sin_rat`.
+* Exactness check (the `roundingPossible` gotcha): `arcsin a > a`, so the exact end `a` of the
+  tiny enclosure is the lower one; no orientation trick needed (tested at `±2^(−2^30)`).
+
+Next: `acos` (`acos x = 2 arctan √((1 − x)/(1 + x))`, same building blocks; `acos x` for `x`
+next to `1` is small and needs the relative accuracy of `1 − x`).  Tests: `Tests/Asin.lean`
+(independent reference through `arctan (x/√(1 − x²))`).  NOT timed.
+
+## Arcsine of a rational `asinRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`asinRatPrecRound q p mode`, `asinRat q p` (`asinRatPrecRound_eq` against `Spec.asin`): `0` at
+`0`, `±π/2` at `±1` (`num = den`), `NaN` for `|q| > 1` (`¬ num ≤ den`).
+
+* `asinRatBracket`: the half-angle identity with `1 − q²` an **exact rational**; `√` by the two
+  directed `sqrtRatPrecRound` (correctly rounded, relative error `2ε` — no error analysis of
+  the radicand), `|q|` by its two directed roundings, then `asinArgOf` and the doubled
+  `atanWiden` (`asinDouble_spec`).  The float file was refactored for this: `asinArgOf` +
+  `asinArgOf_spec` (inexact numerator allowed, width `40ε`), `asinDouble_spec`.
+* Tiny arguments: `asinTinyRat?` = `tanTinyRat?`, through the generic `tanTinyCore?_eq_of`,
+  `tanTinyRat?_eq_of` and the patched function `asinPatch` (shared with the float version).
+
+Tests: `Tests/AsinRat.lean` (incl. the rational `1 − 2^(−200)`, `1/(3·2^1000)`, `2^(−5000)`).
+NOT timed.
+
+## `asinWithPeriod`, `asinRatWithPeriod`, `asinPi`, `asinPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The arcsine family of six is complete (`asin`, `asinRat`, and these four).  After the Malachite
+table for `asinWithPeriod` supplied by the user (no negative zero here).
+
+* **Rational values** of `arcsin (x) u / (2π)`: `0` (`x = 0` or `u = 0`), `±u/4` at `±1`
+  (`turnFraction`), `±u/12` at `±1/2`.  The twelfth is a rational for **every** `u` — the
+  table's "when `u` is a multiple of 3" is about being a float — so it is returned as the
+  correctly rounded rational `ofAzRatRound (±u/12)` (`turnTwelfth`), exact when it fits.
+  `NaN` for `|x| > 1` is tested before `u = 0`, as the table asks.
+* **Irrationality** elsewhere: `irrational_arcsin_rat_mul_div_two_pi` (Niven for the sine:
+  denominators `1, 2, 4, 12`; `|r| ≤ 1/4` and the reduced numerators leave `r ∈ {0, ±1/4,
+  ±1/12}`).
+* **Bracket**: `atanPeriodScale` of `asinAbsEncl` / `asinRatAbsEncl` (the arcsine bracket, or
+  the tiny enclosure `[a, a + a 2^(2e)]`).  No exact constant and no orientation are needed:
+  next to `±1` the distance to the quarter turn is `≈ √(2(1 − |x|))`, bounded below through the
+  precision of the argument, and the tiny enclosure is scaled by the irrational `1/π`.
+* The bracket lemmas of `asin`/`asinRat` now export `0 ≤ lo` (needed by `IsEncl0W`).
+* `asinPi`, `asinPiRat`: period-`2` instances (`±1/6` at `±1/2`).
+* `|q| = 1/2` for a rational is detected as `num = den` of `|q| + |q|` (no appeal to
+  reducedness).
+
+Tests: `Tests/AsinWithPeriod.lean`, `Tests/AsinRatWithPeriod.lean`, `Tests/AsinPi.lean`.  NOT
+timed.  Next: `acos` and its variants.

@@ -410,11 +410,14 @@ theorem tan_bounds_of_small {a : ℝ} (ha0 : 0 < a) (ha1 : a ≤ 1) :
     _ ≤ (a + a ^ 3) * (1 - a ^ 2 / 2) := hstep
     _ ≤ (a + a ^ 3) * Real.cos a := mul_le_mul_of_nonneg_left hcos h3
 
-/-- The tiny-argument path answers with the rounding of `tan x`. -/
-theorem tanTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
+/-- The tiny-argument path answers with the rounding of `f x`, for any odd `f` with
+`a < f a ≤ a + a³` for `0 < a ≤ 1` (the tangent, the arcsine). -/
+theorem tanTiny?_eq_of {f : ℝ → ℝ} (hodd : ∀ a, f (-a) = -f a)
+    (hb : ∀ a, 0 < a → a ≤ 1 → a < f a ∧ f a ≤ a + a ^ 3) {s : Bool} {e : AzInt} {q : ℕ}
+    {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
     [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
     (h : tanTiny? s (finite s e q m hv) e q p mode = some r) :
-    r = roundVal p mode (some ((Real.tan (finiteVal s e m) : ℝ) : EReal)) := by
+    r = roundVal p mode (some ((f (finiteVal s e m) : ℝ) : EReal)) := by
   unfold tanTiny? at h
   dsimp only at h
   set w := max p q + zivGuardBits with hw
@@ -449,7 +452,7 @@ theorem tanTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
   have ht1 : t ≤ 1 := by
     rw [ht, htoInt, zpow_neg, zpow_natCast]
     exact inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
-  obtain ⟨hs1, hs2⟩ := tan_bounds_of_small ha0 (hlt.le.trans ht1)
+  obtain ⟨hs1, hs2⟩ := hb a ha0 (hlt.le.trans ht1)
   have hcube : a ^ 3 ≤ a * t * t := by
     have h1 : a * a ≤ t * t := mul_le_mul hlt.le hlt.le ha0.le ht0.le
     nlinarith
@@ -460,7 +463,7 @@ theorem tanTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
     simp only [↓reduceIte] at h
     have hpos : 0 < xv := hsgn.mp rfl
     have hax : a = xv := abs_of_pos hpos
-    have hr := roundingPossible_eq' p mode (v := Real.tan a) hR1 hR2 hs1.le (by linarith)
+    have hr := roundingPossible_eq' p mode (v := f a) hR1 hR2 hs1.le (by linarith)
       (Or.inl fun hEq => absurd hEq hs1.ne) h
     rw [hr, hax]
   | false =>
@@ -471,9 +474,16 @@ theorem tanTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
       · exact h'
       · exact absurd (hsgn.mpr h') (by simp)
     have hax : xv = -a := by rw [ha, abs_of_neg hneg, neg_neg]
-    have hr := roundingPossible_eq' p (-mode) (v := Real.tan a) hR1 hR2 hs1.le (by linarith)
+    have hr := roundingPossible_eq' p (-mode) (v := f a) hR1 hR2 hs1.le (by linarith)
       (Or.inl fun hEq => absurd hEq hs1.ne) hr'
-    rw [hr, hax, Real.tan_neg]
-    exact (roundVal_neg p mode (Real.tan a)).symm
+    rw [hr, hax, hodd]
+    exact (roundVal_neg p mode (f a)).symm
+
+/-- The tiny-argument path answers with the rounding of `tan x`. -/
+theorem tanTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteValid q m) (p : ℕ)
+    [NeZero p] (mode : RoundingMode) {r : AzFloat × Ordering}
+    (h : tanTiny? s (finite s e q m hv) e q p mode = some r) :
+    r = roundVal p mode (some ((Real.tan (finiteVal s e m) : ℝ) : EReal)) :=
+  tanTiny?_eq_of Real.tan_neg (fun _ h0 h1 => tan_bounds_of_small h0 h1) hv p mode h
 
 end Azurite.AzFloat

@@ -16,6 +16,11 @@ import Azurite.AzFloat.Tests.AddMul
 import Azurite.AzFloat.Tests.AddMulRat
 import Azurite.AzFloat.Tests.AddSubRat
 import Azurite.AzFloat.Tests.Agm
+import Azurite.AzFloat.Tests.Asin
+import Azurite.AzFloat.Tests.AsinPi
+import Azurite.AzFloat.Tests.AsinRat
+import Azurite.AzFloat.Tests.AsinRatWithPeriod
+import Azurite.AzFloat.Tests.AsinWithPeriod
 import Azurite.AzFloat.Tests.Atan
 import Azurite.AzFloat.Tests.Atan2
 import Azurite.AzFloat.Tests.Atan2Pi

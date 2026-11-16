@@ -122,12 +122,14 @@ theorem tanRatApprox_isSome_exists (p : ℕ) [NeZero p] (mode : RoundingMode) (q
 
 /-! ### Tiny arguments -/
 
-/-- The tiny-argument test answers with the rounding of `± tan a`. -/
-theorem tanTinyCore?_eq {pos : Bool} {ax : Roundable} {axHi : AzFloat} {e : AzInt} {w p : ℕ}
+/-- The tiny-argument test answers with the rounding of `± f a`, for any `f` with
+`a < f a ≤ a + a³` for `0 < a ≤ 1` (the tangent, the arcsine). -/
+theorem tanTinyCore?_eq_of {f : ℝ → ℝ} (hb : ∀ a, 0 < a → a ≤ 1 → a < f a ∧ f a ≤ a + a ^ 3)
+    {pos : Bool} {ax : Roundable} {axHi : AzFloat} {e : AzInt} {w p : ℕ}
     [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering} {a h : ℝ} (hR : Rounds ax a)
     (hH : axHi.toVal = some (h : EReal)) (hh : a ≤ h) (ha0 : 0 < a)
     (hlt : a < (2 : ℝ) ^ e.toInt) (hT : tanTinyCore? pos ax axHi e w p mode = some r) :
-    r = roundVal p mode (some (((if pos then 1 else -1) * Real.tan a : ℝ) : EReal)) := by
+    r = roundVal p mode (some (((if pos then 1 else -1) * f a : ℝ) : EReal)) := by
   unfold tanTinyCore? at hT
   dsimp only at hT
   have : NeZero (w + 8) := ⟨by omega⟩
@@ -149,7 +151,7 @@ theorem tanTinyCore?_eq {pos : Bool} {ax : Roundable} {axHi : AzFloat} {e : AzIn
   have ht1 : t ≤ 1 := by
     rw [ht, htoInt, zpow_neg, zpow_natCast]
     exact inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
-  obtain ⟨hs1, hs2⟩ := tan_bounds_of_small ha0 (hlt.le.trans ht1)
+  obtain ⟨hs1, hs2⟩ := hb a ha0 (hlt.le.trans ht1)
   have hcube : a ^ 3 ≤ 1 * t * t * t := by
     have h1 : a * a ≤ t * t := mul_le_mul hlt.le hlt.le ha0.le ht0.le
     have h2 : a * a * a ≤ t * t * t := mul_le_mul h1 hlt.le ha0.le (by positivity)
@@ -157,23 +159,34 @@ theorem tanTinyCore?_eq {pos : Bool} {ax : Roundable} {axHi : AzFloat} {e : AzIn
   cases pos with
   | true =>
     simp only [↓reduceIte] at hT
-    have hr := roundingPossible_eq' p mode (v := Real.tan a) hR hR2 hs1.le (by linarith)
+    have hr := roundingPossible_eq' p mode (v := f a) hR hR2 hs1.le (by linarith)
       (Or.inl fun hEq => absurd hEq hs1.ne) hT
     rw [hr]
     simp only [↓reduceIte, one_mul]
   | false =>
     simp only [Bool.false_eq_true, ↓reduceIte] at hT
     obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp hT
-    have hr := roundingPossible_eq' p (-mode) (v := Real.tan a) hR hR2 hs1.le (by linarith)
+    have hr := roundingPossible_eq' p (-mode) (v := f a) hR hR2 hs1.le (by linarith)
       (Or.inl fun hEq => absurd hEq hs1.ne) hr'
     rw [hr]
     simp only [Bool.false_eq_true, ↓reduceIte, neg_one_mul]
-    exact (roundVal_neg p mode (Real.tan a)).symm
+    exact (roundVal_neg p mode (f a)).symm
 
-/-- The tiny-argument path of `tan q` answers with the rounding of `tan q`. -/
-theorem tanTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
-    {r : AzFloat × Ordering} (hT : tanTinyRat? q p mode = some r) :
-    r = roundVal p mode (some ((Real.tan (AzRat.toRat q : ℝ) : ℝ) : EReal)) := by
+/-- The tiny-argument test answers with the rounding of `± tan a`. -/
+theorem tanTinyCore?_eq {pos : Bool} {ax : Roundable} {axHi : AzFloat} {e : AzInt} {w p : ℕ}
+    [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering} {a h : ℝ} (hR : Rounds ax a)
+    (hH : axHi.toVal = some (h : EReal)) (hh : a ≤ h) (ha0 : 0 < a)
+    (hlt : a < (2 : ℝ) ^ e.toInt) (hT : tanTinyCore? pos ax axHi e w p mode = some r) :
+    r = roundVal p mode (some (((if pos then 1 else -1) * Real.tan a : ℝ) : EReal)) :=
+  tanTinyCore?_eq_of (fun _ h0 h1 => tan_bounds_of_small h0 h1) hR hH hh ha0 hlt hT
+
+/-- The tiny-argument path of `tan q` answers with the rounding of `f q`, for any odd `f` with
+`a < f a ≤ a + a³` for `0 < a ≤ 1`. -/
+theorem tanTinyRat?_eq_of {f : ℝ → ℝ} (hodd : ∀ a, f (-a) = -f a)
+    (hb : ∀ a, 0 < a → a ≤ 1 → a < f a ∧ f a ≤ a + a ^ 3) (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ}
+    [NeZero p] {mode : RoundingMode} {r : AzFloat × Ordering}
+    (hT : tanTinyRat? q p mode = some r) :
+    r = roundVal p mode (some ((f (AzRat.toRat q : ℝ) : ℝ) : EReal)) := by
   unfold tanTinyRat? at hT
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
@@ -189,8 +202,25 @@ theorem tanTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode
   rw [habs] at hc1
   have hlt : |((AzRat.toRat q : ℚ) : ℝ)| < (2 : ℝ) ^ (ratExpBound q).toInt :=
     lt_of_lt_of_le (abs_toRat_lt_two_zpow q) (zpow_le_zpow_right₀ (by norm_num) (by omega))
-  have h := tanTinyCore?_eq hR hc hc1 (abs_pos.mpr hq0) hlt hT
-  rw [h, tan_toRat_eq q h0]
-  cases q.sign <;> simp
+  have h := tanTinyCore?_eq_of hb hR hc hc1 (abs_pos.mpr hq0) hlt hT
+  rw [h]
+  have hs := toRat_sign_iff q h0
+  cases hsg : q.sign
+  · have hlt0 : (AzRat.toRat q : ℝ) < 0 := by
+      rcases lt_or_gt_of_ne hq0 with h | h
+      · exact h
+      · rw [hs.mpr h] at hsg; cases hsg
+    have e : f |(AzRat.toRat q : ℝ)| = -f (AzRat.toRat q : ℝ) := by
+      rw [abs_of_neg hlt0, hodd]
+    rw [e]
+    simp
+  · rw [abs_of_pos (hs.mp hsg)]
+    simp
+
+/-- The tiny-argument path of `tan q` answers with the rounding of `tan q`. -/
+theorem tanTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
+    {r : AzFloat × Ordering} (hT : tanTinyRat? q p mode = some r) :
+    r = roundVal p mode (some ((Real.tan (AzRat.toRat q : ℝ) : ℝ) : EReal)) :=
+  tanTinyRat?_eq_of Real.tan_neg (fun _ h0 h1 => tan_bounds_of_small h0 h1) q h0 hT
 
 end Azurite.AzFloat
