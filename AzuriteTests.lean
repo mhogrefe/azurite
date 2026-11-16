@@ -153,6 +153,8 @@ import Azurite.AzFloat.Tests.TanPi
 import Azurite.AzFloat.Tests.TanRat
 import Azurite.AzFloat.Tests.TanRatWithPeriod
 import Azurite.AzFloat.Tests.TanWithPeriod
+import Azurite.AzFloat.Tests.Tanh
+import Azurite.AzFloat.Tests.TanhRat
 import Azurite.AzFloat.Tests.ToString
 import Azurite.AzInt.Tests.SignedSplit
 import Azurite.AzNat.Tests.AtanhSplit

@@ -340,6 +340,8 @@ import Azurite.AzFloat.Equiv.TanRatBracket
 import Azurite.AzFloat.Equiv.TanRatWithPeriod
 import Azurite.AzFloat.Equiv.TanWithPeriod
 import Azurite.AzFloat.Equiv.TanWithPeriodBracket
+import Azurite.AzFloat.Equiv.Tanh
+import Azurite.AzFloat.Equiv.TanhBracket
 import Azurite.AzFloat.Equiv.ToString
 import Azurite.AzFloat.Equiv.Ziv
 import Azurite.AzFloat.Equiv.ZivPair
@@ -470,6 +472,9 @@ import Azurite.AzFloat.TanRatBracket
 import Azurite.AzFloat.TanRatWithPeriod
 import Azurite.AzFloat.TanWithPeriod
 import Azurite.AzFloat.TanWithPeriodBracket
+import Azurite.AzFloat.Tanh
+import Azurite.AzFloat.TanhBracket
+import Azurite.AzFloat.TanhRat
 import Azurite.AzFloat.ToString
 import Azurite.AzFloat.Ziv
 import Azurite.AzFloat.ZivPair

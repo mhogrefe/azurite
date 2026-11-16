@@ -7452,3 +7452,28 @@ generator `scratchpad/gen_cosh.py`, reference `cosh_ref.py`).  NOT timed.  Next 
 `tanh` (`v/(2 + v)`, `v = exp (2|x|) − 1`; value next to `±1` for a large `x` — exact end `1`
 is then the **upper** end, so run the loop on `−tanh |x|`; `tanh q` irrational via
 `y²(1 − r) = 1 + r`).
+
+## Hyperbolic tangent `tanh`, `tanhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`tanhPrecRound`/`tanh` (`AzFloat/Tanh.lean`), `tanhRatPrecRound`/`tanhRat`
+(`AzFloat/TanhRat.lean`); `tanhPrecRound_eq_liftVal`, `tanhRatPrecRound_eq` against `Spec.tanh`
+(`±∞ ↦ ±1` exactly, `0 ↦ 0`, odd; obvious conventions, no table).
+
+* **Formula**: `tanh |x| = v/(2 + v)`, `v = exp (2|x|) − 1`, increasing in `v`;
+  `tanhOfExpM1` on `expM1Bracket (2|x|) (e + 1)` / `expM1RatBracket (2|q|)`, one division per
+  end; `tanhOfExpM1_width` (`tanhWidth E w = E + 12·2^(−w)`) serves both.
+* **Tiny arguments**: `|x| − |x|³ ≤ tanh |x| < |x|` (`sub_cube_le_tanh`, `tanh_lt_self`), the
+  hypotheses of `sinTiny?_eq_of` / `sinTinyRat?_eq_of`: the sine tests are reused as they are.
+* **Large arguments** (`tanhNearOne?`): the value is within `4 e^(−2|x|)` of the float `±1`,
+  inside.  Not planned at first as a loop on `−tanh |x|`: instead `tanh a = exp v`,
+  `v = ln tanh a < 0`, `|v| ≤ 1/tanh a − 1 = 2/(e^(2a) − 1) < 2^(2 − M)` for a natural
+  `1 ≤ M ≤ 2a` (`log_tanh_bound`), so `expNearOne? false` at the exponent `2 − M` rounds it
+  without computing anything (same trick as `cosh`).  `M = min (2^e) 2^62` for a float of
+  exponent `e`, `min ⌊2 num/den⌋ 2^62` for a rational.  It answers from `2^e ≥ p + 74`; below,
+  the loop needs at most a few `p` bits.  So `tanh (2^(2^30))` is free.
+* **Irrationality**: `irrational_tanh_rat`: `e^(2q) = (1 + tanh q)/(1 − tanh q)` and
+  `irrational_exp_rat`.
+
+Tests: `Tests/Tanh.lean`, `Tests/TanhRat.lean` (transition `18 … 40`; generator
+`scratchpad/gen_tanh.py`, reference `tanh_ref.py`).  NOT timed.  `sinh`, `cosh`, `tanh` and
+their rational versions are done.
