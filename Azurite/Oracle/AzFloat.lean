@@ -115,27 +115,119 @@ namespace Azurite.Oracle
 
 open Azurite
 
-/-! ### Reading and comparing floats -/
+/-! ### Dialects: `Float` and `BigExponentFloat` -/
 
-/-- A float as Malachite prints it, with whether it was a negative zero (which reads as `zero`). -/
-def parseFloat (s : String) : Option (AzFloat × Bool) :=
+/-- How a demo writes its floats and how its results are judged. Malachite's `Float` prints
+`0x1.8#2`, with the precision, has a negative zero, and has a bounded exponent, so each result is
+clamped to `Float`'s exponent range and compared together with its precision. Malachite's
+`BigExponentFloat` prints `0x1.8`, without a precision (its precision is the number of significant
+bits), has no negative zero, and has an unbounded exponent, so results are not clamped and are
+compared by value. Each check runs under the dialect of its mode; `Float`'s is the default. -/
+class FloatDialect where
+  /-- A float as the demo prints it, with whether it was a negative zero. -/
+  parse : String → Option (AzFloat × Bool)
+  /-- Whether a computed result agrees with a printed one. -/
+  same : AzFloat → AzFloat → Bool
+  /-- Applies the type's exponent range to a result rounded with the given mode and ordering. -/
+  adjust : AzFloat → Ordering → RoundingMode → AzFloat × Ordering
+  /-- The precision of a plain line, `x op y = z` or `name(x) = z`, with no precision written. -/
+  plainPrecision : AzFloat → AzFloat → Nat
+  /-- The type's name, as the demos print it in associated-function calls, `Float::name(…)`. -/
+  typeName : String
+
+/-- A `Float` as Malachite prints it; `-0x0.0` reads as `zero` with the negative-zero flag. -/
+def parseFloatHex (s : String) : Option (AzFloat × Bool) :=
   let s := trim s
   if s == "-0x0.0" then some (.zero, true) else (AzFloat.ofHexString s).map (·, false)
+
+instance (priority := low) floatDialect : FloatDialect where
+  parse := parseFloatHex
+  same := (· == ·)
+  adjust := clamp
+  plainPrecision := AzFloat.combinedPrecision
+  typeName := "Float"
+
+/-- The number of significant bits of a hexadecimal digit string with no point: the bits from the
+leading one to the trailing one, or `0` for a string of zeros. -/
+def significantHexBits (digits : List Char) : Nat :=
+  let value (c : Char) : Nat :=
+    if '0' ≤ c ∧ c ≤ '9' then c.toNat - '0'.toNat else c.toLower.toNat - 'a'.toNat + 10
+  let ds := (digits.dropWhile (· == '0')).reverse.dropWhile (· == '0') |>.reverse
+  match ds.head?, ds.getLast? with
+  | some first, some last =>
+    let leading := Nat.log2 (value first) + 1
+    let trailing := (List.range 4).find? (fun k => (value last >>> k) % 2 == 1) |>.getD 0
+    4 * (ds.length - 1) + leading - trailing
+  | _, _ => 0
+
+/-- A `BigExponentFloat` as Malachite prints it: `0x1.8`, or `-0x1.8E+100` (an exponent in decimal
+after `E`, counting hexadecimal places), with no precision. It is read at its own precision, its
+number of significant bits, by appending that precision for `AzFloat.ofHexString`. A
+`BigExponentFloat` has no negative zero, so `-0x0.0` and a written precision are rejected. -/
+def parseBigExponentFloatHex (s : String) : Option (AzFloat × Bool) :=
+  let s := trim s
+  if s.contains '#' || s == "-0x0.0" then none
+  else if s == "NaN" || s == "Infinity" || s == "-Infinity" || s == "0x0.0" then
+    (AzFloat.ofHexString s).map (·, false)
+  else
+    let body := if s.startsWith "-" then dropChars s 1 else s
+    if !body.startsWith "0x" then none
+    else
+      let mantissa := ((dropChars body 2).splitOn "E").headD ""
+      let p := significantHexBits (mantissa.toList.filter (· != '.'))
+      if p == 0 then none else (AzFloat.ofHexString s!"{s}#{p}").map (·, false)
+
+/-- Whether two floats have the same value, whatever their precisions: two finite values agree
+when their signs and exponents agree and their left-aligned significands, each shifted by the
+other's width, agree. -/
+def sameFloatValue : AzFloat → AzFloat → Bool
+  | .finite s e p m _, .finite s' e' p' m' _ =>
+    s == s' && e == e' &&
+      m.shiftLeft (AzFloat.alignedBits p') == m'.shiftLeft (AzFloat.alignedBits p)
+  | x, y => x == y
+
+/-- The precision of an exact sum, difference, or product of the finite `x` and `y`: enough bits to
+span both operands' significant bits, or the sum of their precisions, whichever is larger. A
+special operand needs no precision, `1`. -/
+def exactPrecision (x y : AzFloat) : Nat :=
+  match x, y with
+  | .finite _ e p _ _, .finite _ e' p' _ _ =>
+    let low := min (e - (AzNat.ofNat p).toAzInt) (e' - (AzNat.ofNat p').toAzInt)
+    let span := (max e e' - low).natAbs.toNat
+    max (span + 1) (p + p')
+  | .finite _ _ p _ _, _ | _, .finite _ _ p _ _ => p
+  | _, _ => 1
+
+@[reducible] def bigExponentFloatDialect : FloatDialect where
+  parse := parseBigExponentFloatHex
+  same := sameFloatValue
+  adjust := fun r o _ => (r, o)
+  plainPrecision := exactPrecision
+  typeName := "BigExponentFloat"
+
+variable [FloatDialect]
+
+/-- An associated function's name as the dialect's demos print it, `Float::name`. -/
+def typed (name : String) : String := s!"{FloatDialect.typeName}::{name}"
+
+/-- A float as the current dialect prints it, with whether it was a negative zero. -/
+def parseFloat (s : String) : Option (AzFloat × Bool) := FloatDialect.parse s
 
 /-- The hexadecimal rendering, with the sign of a zero restored. -/
 def floatString (x : AzFloat) (negativeZero : Bool) : String :=
   if negativeZero && x matches .zero then "-0x0.0" else AzFloat.toHexString x
 
 /-- The verdict for a computed float against a printed one; zeros agree regardless of sign. -/
-def expectFloat (what : String) (computed : AzFloat) (printed : AzFloat × Bool) : Verdict :=
-  if computed == printed.1 then .ok ()
+def expectFloat (what : String) (computed : AzFloat) (printed : AzFloat × Bool) :
+    Verdict :=
+  if FloatDialect.same computed printed.1 then .ok ()
   else disagree s!"{what}: Azurite computed {AzFloat.toHexString computed}, Malachite printed \
     {floatString printed.1 printed.2}"
 
 /-- The verdict for a computed `(float, ordering)` pair against a printed one. -/
 def expectFloatPair (what : String) (computed : AzFloat × Ordering)
     (printed : (AzFloat × Bool) × Ordering) : Verdict :=
-  if computed.1 == printed.1.1 && computed.2 == printed.2 then .ok ()
+  if FloatDialect.same computed.1 printed.1.1 && computed.2 == printed.2 then .ok ()
   else disagree s!"{what}: Azurite computed ({AzFloat.toHexString computed.1}, \
     {orderingName computed.2}), Malachite printed ({floatString printed.1.1 printed.1.2}, \
     {orderingName printed.2})"
@@ -158,21 +250,22 @@ def parseHexInteger (s : String) : Option AzInt :=
   if s.startsWith "-" then (parseHexNatural (dropChars s 1)).map fun n => AzInt.neg n.toAzInt
   else (parseHexNatural s).map AzNat.toAzInt
 
-/-- The precision Malachite's `+`, `-`, `*`, `/`, and `_round` methods use: the larger of the
-operands' precisions. -/
-def combined (x y : AzFloat) : Nat := AzFloat.combinedPrecision x y
+/-- The precision of a plain line: for a `Float`, the precision Malachite's `+`, `-`, `*`, `/`, and
+`_round` methods use, the larger of the operands' precisions; for a `BigExponentFloat`, whose `+`,
+`-`, and `*` are exact, enough for the exact result. -/
+def combined (x y : AzFloat) : Nat := FloatDialect.plainPrecision x y
 
 /-- Rounds with Azurite in the given `Rounding`, then applies Malachite's exponent range. Under
 `Exact`, Malachite only prints a line when no rounding is needed, so the result of any mode must
 be exact. -/
-def roundedResult (what : String) (f : RoundingMode → AzFloat × Ordering) (rm : Rounding) :
-    Except Failure (AzFloat × Ordering) :=
+def roundedResult (what : String) (f : RoundingMode → AzFloat × Ordering)
+    (rm : Rounding) : Except Failure (AzFloat × Ordering) :=
   match rm with
-  | .mode m => let (r, o) := f m; pure (clamp r o m)
+  | .mode m => let (r, o) := f m; pure (FloatDialect.adjust r o m)
   | .exact =>
     let (r, o) := f .Nearest
     if o != .eq then disagree s!"{what}: Malachite printed an Exact result that rounds"
-    else pure (clamp r o .Nearest)
+    else pure (FloatDialect.adjust r o .Nearest)
 
 /-! ### Arithmetic -/
 
@@ -244,8 +337,8 @@ def parseFloatList (s : String) : Option (List AzFloat) :=
 `Float::name_prec_round(&[x, …], p, rm) = (z, o)`. -/
 def checkFloatListFold (name : String) (f : List AzFloat → Nat → RoundingMode → AzFloat × Ordering)
     (line : String) : Verdict := do
-  match functionCall line s!"Float::{name}_prec_round", functionCall line s!"Float::{name}_round",
-      functionCall line s!"Float::{name}_prec" with
+  match functionCall line (typed s!"{name}_prec_round"), functionCall line (typed s!"{name}_round"),
+      functionCall line (typed s!"{name}_prec") with
   | some ([xs, p, rm], res), _, _ =>
     let xs ← expect "list" (parseFloatList xs)
     let p ← expect "precision" (parseNat p)
@@ -465,7 +558,7 @@ def checkFloatShift (op : String) (left : Bool) (line : String) : Verdict := do
   let s ← expect "shift" (parseInt s)
   let z ← expect "z" (parseFloat z)
   let k := AzInt.ofInt (if left then s else -s)
-  expectFloat op (clampExact (AzFloat.shiftLeft x.1 k) .Nearest) z
+  expectFloat op (FloatDialect.adjust (AzFloat.shiftLeft x.1 k) .eq .Nearest).1 z
 
 def checkFloatShl : String → Verdict := checkFloatShift "<<" true
 
@@ -474,8 +567,8 @@ def checkFloatShr : String → Verdict := checkFloatShift ">>" false
 /-- `Float::power_of_2_prec_round(e, p, rm) = (z, o)`, `Float::power_of_2_prec(e, p) = (z, o)`,
 or `Float::power_of_2(e) = z` (precision 1, `Nearest`): `2^e`, exact, then Malachite's range. -/
 def checkFloatPowerOf2 (line : String) : Verdict := do
-  match functionCall line "Float::power_of_2_prec_round",
-      functionCall line "Float::power_of_2_prec", functionCall line "Float::power_of_2" with
+  match functionCall line (typed "power_of_2_prec_round"),
+      functionCall line (typed "power_of_2_prec"), functionCall line (typed "power_of_2") with
   | some ([e, p, rm], res), _, _ =>
     let e ← expect "exponent" (parseInt e)
     let p ← expect "precision" (parseNat p)
@@ -488,12 +581,14 @@ def checkFloatPowerOf2 (line : String) : Verdict := do
     let e ← expect "exponent" (parseInt e)
     let p ← expect "precision" (parseNat p)
     let printed ← parseFloatPair res
-    let computed := clamp (AzFloat.setPrec (AzFloat.powerOf2 (AzInt.ofInt e)) p) .eq .Nearest
+    let computed := FloatDialect.adjust (AzFloat.setPrec (AzFloat.powerOf2 (AzInt.ofInt e)) p) .eq
+      .Nearest
     expectFloatPair "power_of_2_prec" computed printed
   | _, _, some ([e], res) =>
     let e ← expect "exponent" (parseInt e)
     let z ← expect "z" (parseFloat res)
-    expectFloat "power_of_2" (clampExact (AzFloat.powerOf2 (AzInt.ofInt e)) .Nearest) z
+    expectFloat "power_of_2"
+      (FloatDialect.adjust (AzFloat.powerOf2 (AzInt.ofInt e)) .eq .Nearest).1 z
   | _, _, _ => fail "not a power_of_2 line"
 
 /-- `x := X; x.set_prec_round(p, rm) = o; x = Z` or `x := X; x.set_prec(p) = o; x = Z`. The
@@ -794,8 +889,8 @@ def exactFromInteger (z : AzInt) : AzFloat :=
 decimal) and `T` its type name: exact conversion, or rounding to `p` bits, then Malachite's
 range. -/
 def checkFloatFromInteger (typeName : String) (line : String) : Verdict := do
-  match functionCall line s!"Float::from_{typeName}_prec_round",
-      functionCall line s!"Float::from_{typeName}_prec", functionCall line "Float::try_from" with
+  match functionCall line (typed s!"from_{typeName}_prec_round"),
+      functionCall line (typed s!"from_{typeName}_prec"), functionCall line (typed "try_from") with
   | some ([z, p, rm], res), _, _ =>
     let z ← expect "z" (parseAzInt z)
     let p ← expect "precision" (parseNat p)
@@ -836,7 +931,7 @@ def checkFloatFromIntegerValue : String → Verdict := checkFloatFromInteger "in
 
 /-- `Float::from(0x7b) = Z` for an unsigned machine integer, printed in hexadecimal: exact. -/
 def checkFloatFromUnsigned (line : String) : Verdict := do
-  let (args, res) ← expect "a `Float::from(u) = Z` line" (functionCall line "Float::from")
+  let (args, res) ← expect "a `Float::from(u) = Z` line" (functionCall line (typed "from"))
   let u ← match args with
     | [u] => expect "u" (parseHexNatural u)
     | _ => fail "Float::from takes one argument"
@@ -846,8 +941,8 @@ def checkFloatFromUnsigned (line : String) : Verdict := do
 /-- `Float::from_rational_prec(q, p) = (Z, o)` or `Float::from_rational_prec_round(q, p, rm) =
 (Z, o)`: `ofAzRatRound`, then Malachite's range. -/
 def checkFloatFromRational (line : String) : Verdict := do
-  match functionCall line "Float::from_rational_prec_round",
-      functionCall line "Float::from_rational_prec" with
+  match functionCall line (typed "from_rational_prec_round"),
+      functionCall line (typed "from_rational_prec") with
   | some ([q, p, rm], res), _ =>
     let q ← expect "q" (parseAzRat q)
     let p ← expect "precision" (parseNat p)
@@ -869,8 +964,8 @@ def checkFloatFromRational (line : String) : Verdict := do
 def checkFloatOfRationalArgsWith {α : Type} (name : String) (n : Nat)
     (parseLead : List String → Option α)
     (f : AzRat → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
-  let pr := s!"Float::{name}_prec_round"
-  let pl := s!"Float::{name}_prec"
+  let pr := typed s!"{name}_prec_round"
+  let pl := typed s!"{name}_prec"
   let (method, args, res) ←
     match functionCall line pr, functionCall line s!"{pr}_ref",
         functionCall line pl, functionCall line s!"{pl}_ref" with
@@ -1377,12 +1472,13 @@ def checkFloatExpRational : String → Verdict :=
 def checkFloatExpXMinus1Rational : String → Verdict :=
   checkFloatOfRational "exp_x_minus_1_rational" AzFloat.expM1RatPrecRound
 
-/-- An associated-function line `Float::f(x, a…) = r` rewritten as the method line
-`(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/
+/-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
+line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/
 def assocAsMethod (line : String) : String :=
-  if !line.startsWith "Float::" then line
+  let typePrefix := typed ""
+  if !line.startsWith typePrefix then line
   else
-    let rest := dropChars line 7
+    let rest := dropChars line typePrefix.length
     match splitParenthesized rest with
     | some (args, after) =>
       match splitArgs args with
@@ -1511,8 +1607,8 @@ def malachitePowBaseM1Rat (u : UInt64) : AzRat → Nat → RoundingMode → AzFl
 for a `u64` base `u` and an exponent `y` read by `parseY`, against `f u y p rm`. -/
 def checkFloatUnsignedPowWith {α : Type} (name : String) (parseY : String → Option α)
     (f : UInt64 → α → Nat → RoundingMode → AzFloat × Ordering) (line : String) : Verdict := do
-  let pr := s!"Float::{name}_prec_round"
-  let pl := s!"Float::{name}_prec"
+  let pr := typed s!"{name}_prec_round"
+  let pl := typed s!"{name}_prec"
   let (method, args, res) ← match functionCall line pr, functionCall line pl with
     | some (args, res), _ => pure (pr, args, res)
     | _, some (args, res) => pure (pl, args, res)

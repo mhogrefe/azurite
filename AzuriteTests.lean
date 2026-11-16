@@ -61,6 +61,8 @@ import Azurite.AzFloat.Tests.CosWithPeriod
 import Azurite.AzFloat.Tests.Cosh
 import Azurite.AzFloat.Tests.CoshRat
 import Azurite.AzFloat.Tests.Cot
+import Azurite.AzFloat.Tests.Coth
+import Azurite.AzFloat.Tests.CothRat
 import Azurite.AzFloat.Tests.Csc
 import Azurite.AzFloat.Tests.Csch
 import Azurite.AzFloat.Tests.CschRat
@@ -148,6 +150,8 @@ import Azurite.AzFloat.Tests.SinRat
 import Azurite.AzFloat.Tests.SinRatWithPeriod
 import Azurite.AzFloat.Tests.SinWithPeriod
 import Azurite.AzFloat.Tests.Sinh
+import Azurite.AzFloat.Tests.SinhCosh
+import Azurite.AzFloat.Tests.SinhCoshRat
 import Azurite.AzFloat.Tests.SinhRat
 import Azurite.AzFloat.Tests.Sqrt
 import Azurite.AzFloat.Tests.SqrtRat

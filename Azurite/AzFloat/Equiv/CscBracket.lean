@@ -265,14 +265,15 @@ theorem cscTinyCore?_cond {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ}
   rw [ite_eq_right hc] at h
   cases h
 
-/-- **The tiny-argument test answers with the rounding of `± csc a`.** -/
-theorem cscTinyCore?_eq {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ} [NeZero p]
-    {mode : RoundingMode} {r : AzFloat × Ordering} {a l h : ℝ}
+/-- **The tiny-argument test answers with the rounding of `± v`**, for any irrational `v` with
+`1/a < v ≤ 1/a + a` when `a ≤ 1` (the cosecant, the hyperbolic cotangent). -/
+theorem cscTinyCore?_eq_of {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ} [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {a l h v : ℝ}
     (hl : alo.toVal = some (l : EReal)) (hh : ahi.toVal = some (h : EReal)) (hl0 : 0 < l)
     (hla : l ≤ a) (hah : a ≤ h) (hlt : a < (2 : ℝ) ^ e.toInt)
-    (hirr : Irrational (1 / Real.sin a)) (hT : cscTinyCore? neg alo ahi e p mode = some r) :
-    r = roundVal p mode
-      (some (((if neg then -1 else 1) * (1 / Real.sin a) : ℝ) : EReal)) := by
+    (hb : a ≤ 1 → 1 / a < v ∧ v ≤ 1 / a + a) (hirr : Irrational v)
+    (hT : cscTinyCore? neg alo ahi e p mode = some r) :
+    r = roundVal p mode (some (((if neg then -1 else 1) * v : ℝ) : EReal)) := by
   have hc := cscTinyCore?_cond hT
   have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
   rw [hc.1] at htoInt
@@ -282,7 +283,7 @@ theorem cscTinyCore?_eq {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ} [
     exact inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
   have ha0 : 0 < a := lt_of_lt_of_le hl0 hla
   have hh0 : 0 < h := lt_of_lt_of_le ha0 hah
-  obtain ⟨hb1, hb2⟩ := csc_bounds_of_small ha0 (hlt.le.trans ht1)
+  obtain ⟨hb1, hb2⟩ := hb (hlt.le.trans ht1)
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   unfold cscTinyCore? at hT
   rw [ite_eq_left hc] at hT
@@ -303,10 +304,21 @@ theorem cscTinyCore?_eq {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ} [
   | true =>
     simp only [↓reduceIte, neg_one_mul] at hT ⊢
     obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp hT
-    have hr := roundingPossible_eq' p (-mode) hR1 hR2 (v := 1 / Real.sin a) (by linarith)
+    have hr := roundingPossible_eq' p (-mode) hR1 hR2 (v := v) (by linarith)
       (by linarith) (Or.inr hvB) hr'
     rw [hr]
-    exact (roundVal_neg p mode (1 / Real.sin a)).symm
+    exact (roundVal_neg p mode v).symm
+
+/-- **The tiny-argument test answers with the rounding of `± csc a`.** -/
+theorem cscTinyCore?_eq {neg : Bool} {alo ahi : AzFloat} {e : AzInt} {p : ℕ} [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {a l h : ℝ}
+    (hl : alo.toVal = some (l : EReal)) (hh : ahi.toVal = some (h : EReal)) (hl0 : 0 < l)
+    (hla : l ≤ a) (hah : a ≤ h) (hlt : a < (2 : ℝ) ^ e.toInt)
+    (hirr : Irrational (1 / Real.sin a)) (hT : cscTinyCore? neg alo ahi e p mode = some r) :
+    r = roundVal p mode
+      (some (((if neg then -1 else 1) * (1 / Real.sin a) : ℝ) : EReal)) :=
+  cscTinyCore?_eq_of hl hh hl0 hla hah hlt
+    (fun h1 => csc_bounds_of_small (lt_of_lt_of_le hl0 hla) h1) hirr hT
 
 /-- **The floats of `periodTinyArg` enclose `y = 2π m 2^E / u`**, the lower one positive. -/
 theorem periodTinyArg_spec {m u : AzNat} (hm : 0 < m.toNat) (hu : 0 < u.toNat) (E : AzInt)

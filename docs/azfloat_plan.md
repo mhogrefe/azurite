@@ -7518,3 +7518,50 @@ one zero: `±∞ ↦ 0`, `0 ↦ +∞` (as `csc 0`).
 Tests: `Tests/Csch.lean`, `Tests/CschRat.lean` (generator `scratchpad/gen_csch.py`, reference
 `csch_ref.py`).  NOT timed.  Remaining hyperbolic: `coth` (`= (2 + v)/v`, `v = e^(2|x|) − 1`;
 near `±1` outside for a large `x`, `≈ 1/x + x/3` for a tiny one).
+
+## Hyperbolic cotangent `coth`, `cothRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`cothPrecRound`/`coth` (`AzFloat/Coth.lean`), `cothRatPrecRound`/`cothRat`
+(`AzFloat/CothRat.lean`); `cothPrecRound_eq_liftVal`, `cothRatPrecRound_eq` against
+`Spec.coth`.  Malachite table: `NaN`; `±∞ ↦ ±1.0`; `0.0 ↦ ∞`, `−0.0 ↦ −∞`.  With one zero:
+`0 ↦ +∞`.
+
+* **Formula**: `coth |x| = 1 + 2/v`, `v = exp (2|x|) − 1`, decreasing in `v`, no cancellation;
+  `cothOfExpM1 v lb W` with a float lower bound `lb > 0` of `v` (`2a` for a float since
+  `e^t − 1 ≥ t`, `⌊2|q|⌋` for a rational).  Width `2δ/c² + (4 + 20/c) 2^(−w)` (`cothWidth`).
+* **Tiny arguments**: `1/a < coth a ≤ 1/a + a` (`coth_bounds_of_small`; the upper bound from
+  `e^t ≥ 1 + t + t²/2`), exactly the cosecant's enclosure, so `cscTiny?` / `cscTinyRat?` are
+  reused; `cscTinyCore?_eq` was generalised to `cscTinyCore?_eq_of` (any irrational `v` with
+  those bounds) in `Equiv/CscBracket.lean`.
+* **Large arguments** (`cothNearOne?`): `coth a = exp (−ln tanh a)`, same bound
+  `log_tanh_bound` as `tanh`, `expNearOne? true`.
+* **Irrationality**: `(irrational_tanh_rat …).inv`.
+
+Tests: `Tests/Coth.lean`, `Tests/CothRat.lean` (generator `scratchpad/gen_coth.py`, reference
+`coth_ref.py`).  NOT timed.
+
+**All six hyperbolic functions with their rational versions are done** (`sinh`, `cosh`,
+`tanh`, `sech`, `csch`, `coth`); none is timed.  Not done: inverse hyperbolic functions
+(`asinh`, `acosh`, `atanh`, …), joint `sinhCosh`.
+
+## Joint `sinhCosh`, `sinhCoshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`sinhCoshPrecRound`/`sinhCosh` (`AzFloat/SinhCosh.lean`), `sinhCoshRatPrecRound`/`sinhCoshRat`
+(`AzFloat/SinhCoshRat.lean`), on the pattern of `sinCos`: proven **equal** to the pair of the
+separate functions (`sinhCoshPrecRound_eq`, `sinhCoshRatPrecRound_eq`, for every `p`), hence
+correctly rounded.
+
+* One enclosure `u` of `exp |x| − 1` (`expM1Bracket`, resp. `expM1RatBracket`) serves both:
+  `sinhOfExpM1 u` (so the `sinh` component is `sinhApprox` by `rfl`), and `coshOfExp` on
+  `E = 1 + u` rounded outwards (`expOfExpM1`).  Joint loop `zivLoopCertified₂`, certificate
+  `exists_isSome₂_of_irrational_threshold`.
+* When the tiny-argument test of `sinh` (`tanTiny?`) or of `cosh` (`expNearOne?`) answers, and
+  at `0`, `NaN`, `±∞`, `p = 0`, the separate functions are called.
+* **Expected gain** (not measured): the separate calls evaluate two exponentials
+  (`expM1Bracket` and `expBracket`) plus four divisions; the joint one evaluates one
+  exponential plus four divisions and two additions — about half the cost wherever the
+  exponential dominates.  A further saving (sharing `1/(1 + u)` between the two) was not
+  pursued.
+
+Tests: `Tests/SinhCosh.lean`, `Tests/SinhCoshRat.lean` (against the separate functions).
+NOT timed — timing it against `sinh` + `cosh` is the natural first benchmark of this arc.
