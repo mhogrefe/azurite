@@ -50,6 +50,12 @@ import Azurite.AzFloat.AcosRatBracket
 import Azurite.AzFloat.AcosRatWithPeriod
 import Azurite.AzFloat.AcosWithPeriod
 import Azurite.AzFloat.AcosWithPeriodBracket
+import Azurite.AzFloat.Acsc
+import Azurite.AzFloat.AcscBracket
+import Azurite.AzFloat.AcscPi
+import Azurite.AzFloat.AcscRat
+import Azurite.AzFloat.AcscWithPeriod
+import Azurite.AzFloat.AcscWithPeriodBracket
 import Azurite.AzFloat.Add
 import Azurite.AzFloat.AddMul
 import Azurite.AzFloat.AddMulRat
@@ -120,6 +126,12 @@ import Azurite.AzFloat.Equiv.AcosRatBracket
 import Azurite.AzFloat.Equiv.AcosRatWithPeriod
 import Azurite.AzFloat.Equiv.AcosWithPeriod
 import Azurite.AzFloat.Equiv.AcosWithPeriodBracket
+import Azurite.AzFloat.Equiv.Acsc
+import Azurite.AzFloat.Equiv.AcscBracket
+import Azurite.AzFloat.Equiv.AcscPi
+import Azurite.AzFloat.Equiv.AcscRat
+import Azurite.AzFloat.Equiv.AcscWithPeriod
+import Azurite.AzFloat.Equiv.AcscWithPeriodBracket
 import Azurite.AzFloat.Equiv.Add
 import Azurite.AzFloat.Equiv.AddMul
 import Azurite.AzFloat.Equiv.AddMulRat

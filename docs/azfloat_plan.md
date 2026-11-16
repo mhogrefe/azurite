@@ -7301,3 +7301,53 @@ The arcsecant family of six is complete.
 
 Tests: `Tests/AsecRat.lean` (both rational functions), `Tests/AsecWithPeriod.lean`,
 `Tests/AsecPi.lean`; huge arguments `±2^(2^30)` in all three modes.  NOT timed.
+
+## Arccosecant `acsc` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+`acscPrecRound x p mode`, `acsc x` (`AzFloat/Acsc.lean`), `acscPrecRound_eq_liftVal` against
+`Spec.acsc` (`arcsin (1/a)`).  Special values after the Malachite table: `NaN` for `NaN` and
+`|x| < 1` (including `0`); `0` at `±∞` (no negative zero in `AzFloat`); `±π/2` at `±1`.
+
+* **Reduction**: `arccsc a = 2 arctan (1/(a + √(a² − 1)))` for `a > 1`
+  (`arcsin_inv_eq_two_arctan`), argument in `(0, 1)` for every `a`.  The root is
+  `(a + 1) √((a − 1)/(a + 1))` with `diffQuotSqrt a 1` of the arccosine file; then a sum
+  without cancellation and one division (`acscArg`, relative accuracy).
+* **Relative accuracy for large `x`** (result `≈ 1/x`): the arctangent level is `w + 8 + en`
+  (`en` the exponent) — but only while `2 en < w + 16`.  Beyond that
+  `1/a < arccsc a ≤ (1/a)(1 + 1/a²)` and `1/a² ≤ 2^(−w−14)`, so the enclosure is two directed
+  divisions and a factor (`acscTinyEncl`).  Hence the working precision is at most about
+  `3w/2` for every exponent, and `2^(2^30)` costs nothing.
+* **Powers of two** (`x = 2^k`): the value `2^(−k) (1 + 2^(−2k)/6 + …)` is exponentially close
+  to a float.  The lower end of `acscTinyEncl` is then **exactly** `2^(−k)`; by the exact-end
+  rule the loop must see it as the lower end, so the loop always runs on `arccsc |x|` and
+  `x < 0` negates mode and result (`orient_roundVal`, `acsc_abs_eq`).  This is also exactly
+  the oddness `f(−x, m) = −f(x, −m)` of the table.
+* Irrationality from `irrational_arcsin_rat` at `1/x`.
+* Proof note: the real arithmetic of `acscArg_spec` was split into `acscArg_sum` and
+  `acscArg_quot` (one declaration ran out of heartbeats).
+
+For the variants: `arccsc (x) u/(2π)` is rational at `x ∈ {±1, ±2}` (`±u/4`, `±u/12`) and `0`
+at `±∞`; rational variants are the `asin` functions at `q⁻¹`.
+
+Tests: `Tests/Acsc.lean` (reference `arcsin (1/x)`; huge powers of two in three modes and both
+signs; huge non-powers against the rounded reciprocal).  NOT timed.
+
+## `acscRat`, `acscWithPeriod`, `acscRatWithPeriod`, `acscPi`, `acscPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+
+The arccosecant family of six is complete.
+
+* **Rationals** (`AcscRat.lean`): `asinRat`/`asinRatWithPeriod` at the exact reciprocal `q⁻¹`
+  for `den ≤ num`, `NaN` otherwise.
+* **`acscWithPeriod`** (float) after the Malachite table: `NaN` for `|x| < 1` before `u = 0`;
+  `0` at `±∞` and for `u = 0` (no negative zero); `±u/4` at `±1` (`turnFraction`); `±u/12` at
+  `±2` (`turnTwelfth`, the correctly rounded rational for every `u`).  Irrational elsewhere
+  (`irrational_arcsin_rat_mul_div_two_pi` at `1/x`).
+* **Bracket**: `atanPeriodScale` of `acscBracket` — nothing else.  Unlike `asecWithPeriod`
+  there is no exact constant and no orientation: the only rational value a huge `x`
+  approaches is `0`, and there the value is `u/(2πx)` with relative accuracy (the tiny
+  enclosure of `acscBracket`), an irrational multiple of a float.  The loop runs on the signed
+  value with `enclApprox neg`.
+* **`acscPi`, `acscPiRat`**: period-`2` instances.
+
+Tests: `Tests/AcscRat.lean`, `Tests/AcscWithPeriod.lean`, `Tests/AcscPi.lean`; huge arguments
+`±2^(2^30)`, `±3·2^(2^30)` against the rounded `360/(2π)`, `1/π` mantissas.  NOT timed.
