@@ -58,6 +58,8 @@ import Azurite.AzFloat.Tests.CosPi
 import Azurite.AzFloat.Tests.CosRat
 import Azurite.AzFloat.Tests.CosRatWithPeriod
 import Azurite.AzFloat.Tests.CosWithPeriod
+import Azurite.AzFloat.Tests.Cosh
+import Azurite.AzFloat.Tests.CoshRat
 import Azurite.AzFloat.Tests.Cot
 import Azurite.AzFloat.Tests.Csc
 import Azurite.AzFloat.Tests.Div

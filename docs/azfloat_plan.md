@@ -7429,3 +7429,26 @@ for a small `q`), `tanTinyRat?` for tiny arguments (via `tanTinyRat?_eq_of`), ce
 `irrational_sinh_rat`.  For this the width proof of the float bracket was factored into
 `sinhOfExpM1_width` / `sinhWidth` / `tendsto_sinhWidth`, generic in the enclosure of
 `e^a − 1`.  Tests: `Tests/SinhRat.lean` (reference `scratchpad/sinhrat_ref.py`).  NOT timed.
+
+## Hyperbolic cosine `cosh`, `coshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`coshPrecRound`/`cosh` (`AzFloat/Cosh.lean`), `coshRatPrecRound`/`coshRat`
+(`AzFloat/CoshRat.lean`); `coshPrecRound_eq_liftVal`, `coshRatPrecRound_eq` against `Spec.cosh`
+(`±∞ ↦ +∞`, `cosh 0 = 1` exactly, even; obvious conventions, no table).
+
+* **Formula**: `cosh x = (E + 1/E)/2`, `E = exp |x| ≥ 1`, increasing in `E`; `coshOfExp` on
+  `expBracket |x|` / `expRatBracket |q|` with outward rounding (the lower end raised to `1`
+  first).  One generic width lemma `coshOfExp_width` (`coshWidth`, `tendsto_coshWidth`) serves
+  both.
+* **Tiny arguments**: the value is exponentially close to the float `1`, from above.
+  `1 < cosh x ≤ exp (x²/2)` (Mathlib `cosh_le_exp_half_sq`), so `cosh x = exp v` with
+  `0 < v < 2^(2e−1)` and the existing `expNearOne? true (2e − 1)` with `expNearOne?_eq` applies
+  verbatim (`v = ln cosh x`): no new test, no new rounding proof.
+* **Irrationality**: `irrational_cosh_rat` next to `irrational_sinh_rat`
+  (`y² − 2ry + 1`).
+
+Tests: `Tests/Cosh.lean`, `Tests/CoshRat.lean` (incl. the near-midpoint `cosh 2^(−26)`;
+generator `scratchpad/gen_cosh.py`, reference `cosh_ref.py`).  NOT timed.  Next presumably
+`tanh` (`v/(2 + v)`, `v = exp (2|x|) − 1`; value next to `±1` for a large `x` — exact end `1`
+is then the **upper** end, so run the loop on `−tanh |x|`; `tanh q` irrational via
+`y²(1 − r) = 1 + r`).
