@@ -16,11 +16,11 @@ import Azurite.Benchmark.Common
 # Euler's constant: where the time goes
 
 `az_float_euler_gamma`: for each precision `P` (bits), the time of `eulerGamma P` (nearest, Ziv
-loop from `w = P + 64`) and the pieces of one bracket at `w = P + 64`: the signed binary
-splitting of Sweeney's series (`AzInt.sweeneyNumDen`, column `split`), the float bracket of the
-exact fraction (`seriesBracket`, column `serBr`), the bracket of `ln n` (`lnBracketOf`, column
-`lnBr`), and for reference `pi P` and `ln` of a float at `P` bits.  Milliseconds.  Config: `bits`
-(default `53/200/1000/5000`).
+loop from `w = max (P + 16) 64`) and the pieces of one bracket at that `w`: the truncated
+backward recurrence for Sweeney's series (`AzInt.sweeneyHornerEncl`, column `recur`), the
+bracket of `ln n` (`lnNatBracket`, column `ln n`), and for reference `pi P` and `ln` of a float
+at `P` bits.  Milliseconds.  Config: `bits` (default `53/200/1000/5000`); `tune:1` adds the
+recurrence over several block sizes.
 -/
 
 open Azurite Azurite.AzFloat Azurite.Benchmark
@@ -49,6 +49,7 @@ private def ms (ns : UInt64) : String :=
 
 private def fsize (x : AzFloat) : Nat := x.precision?.getD 0
 
+
 /-- Run the `az_float_euler_gamma` benchmark. -/
 def runAzFloatEulerGamma (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UInt64) :
     IO Unit := do
@@ -56,25 +57,40 @@ def runAzFloatEulerGamma (_limit : Nat) (cfg : Std.HashMap String String) (_seed
     | some s =>
       ((s.splitOn "/").filterMap (fun t : String => t.trimAscii.toString.toNat?)).toArray
     | none => #[53, 200, 1000, 5000]
-  IO.println "[AzFloat-EulerGamma] ms per call (median of 3 passes); pieces at w = P + 64"
-  IO.println (padLeft "bits" 7 ++ padLeft "n" 7 ++ padLeft "N" 8 ++ padLeft "gamma" 10
-    ++ padLeft "split" 10 ++ padLeft "serBr" 10 ++ padLeft "lnBr" 10 ++ padLeft "pi" 10
+  let tune := cfg["tune"]? == some "1"
+  IO.println "[AzFloat-EulerGamma] ms per call (median of 3 passes); pieces at w = max (P+16) 64"
+  IO.println (padLeft "bits" 7 ++ padLeft "n" 7 ++ padLeft "N" 8 ++ padLeft "V" 8
+    ++ padLeft "gamma" 10 ++ padLeft "recur" 10 ++ padLeft "ln n" 10 ++ padLeft "pi" 10
     ++ padLeft "ln 3/2" 10)
   for P in bitsList do
-    let w := P + zivGuardBits
-    let n := eulerGammaN w
-    let N := eulerGammaTerms w
-    let k := eulerGammaBits w
+    let w := max (P + 16) 64
+    let n := eulerGammaArg w
+    let N := eulerGammaTermsOf n
+    let k := eulerGammaBits w n
+    let V := eulerGammaWork w n
     let nsG ← timeOne (fun _ => eulerGamma P) fsize
-    let nsS ← timeOne (fun _ => AzInt.sweeneyNumDen n N) (fun s => s.2.size)
-    let s := AzInt.sweeneyNumDen n N
-    let nsB ← timeOne (fun _ => seriesBracket (s.1.natAbs, s.2) k) (fun b => fsize b.1)
-    let nsL ← timeOne (fun _ => lnBracketOf (ofAzNat (AzNat.ofNat n)) k) (fun b => fsize b.1)
+    let nsS ← timeOne (fun _ => AzInt.sweeneyHornerEncl n N V (eulerGammaBlockBits V))
+      (fun s => s.2.2.size)
+    let nsL ← timeOne (fun _ => lnNatBracket n k) (fun b => fsize b.1)
     let nsP ← timeOne (fun _ => pi P) fsize
     let y := ofAzRat ((AzRat.parse "3/2").get!) P
     let nsLn ← timeOne (fun _ => ln y) fsize
-    IO.println (padLeft s!"{P}" 7 ++ padLeft s!"{n}" 7 ++ padLeft s!"{N}" 8 ++ padLeft (ms nsG) 10
-      ++ padLeft (ms nsS) 10 ++ padLeft (ms nsB) 10 ++ padLeft (ms nsL) 10 ++ padLeft (ms nsP) 10
-      ++ padLeft (ms nsLn) 10)
+    let line := padLeft s!"{P}" 7 ++ padLeft s!"{n}" 7 ++ padLeft s!"{N}" 8
+      ++ padLeft s!"{V}" 8 ++ padLeft (ms nsG) 10 ++ padLeft (ms nsS) 10 ++ padLeft (ms nsL) 10
+      ++ padLeft (ms nsP) 10 ++ padLeft (ms nsLn) 10
+    IO.println line
+    if tune then
+      for n' in [n] do
+        let N' := eulerGammaTermsOf n'
+        let k' := eulerGammaBits w n'
+        let V' := eulerGammaWork w n'
+        let nsL' ← timeOne (fun _ => lnNatBracket n' k') (fun b => fsize b.1)
+        IO.println s!"    n = {n'}: N = {N'}, V = {V'}, ln n {ms nsL'}"
+        for Lb in [0, 128, 256, 512, 1024, 2048, 4096, 8192] do
+          if Lb = 0 ∨ Lb * 8 ≤ V' then
+            let nsH ← timeOne (fun _ => AzInt.sweeneyHornerEncl n' N' V' Lb) (fun s => s.2.2.size)
+            let e := AzInt.sweeneyHornerEncl n' N' V' Lb
+            IO.println (s!"      Lb = {Lb}: {ms nsH}  "
+              ++ s!"(radius {(e.2.1 - e.1).size} of {e.2.2.size} bits)")
 
 end Azurite.Benchmark

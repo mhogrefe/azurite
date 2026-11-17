@@ -105,6 +105,7 @@ import Azurite.AzFloat.Tests.Ln
 import Azurite.AzFloat.Tests.Ln2
 import Azurite.AzFloat.Tests.LnP1
 import Azurite.AzFloat.Tests.LnRat
+import Azurite.AzFloat.Tests.LnSmooth
 import Azurite.AzFloat.Tests.Log10
 import Azurite.AzFloat.Tests.Log2
 import Azurite.AzFloat.Tests.Log2P1
@@ -180,7 +181,7 @@ import Azurite.AzFloat.Tests.TanWithPeriod
 import Azurite.AzFloat.Tests.Tanh
 import Azurite.AzFloat.Tests.TanhRat
 import Azurite.AzFloat.Tests.ToString
-import Azurite.AzInt.Tests.SignedSplit
+import Azurite.AzInt.Tests.SweeneyHorner
 import Azurite.AzNat.Tests.AtanhSplit
 import Azurite.AzNat.Tests.CompareDouble
 import Azurite.AzNat.Tests.Conversion

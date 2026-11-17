@@ -26,8 +26,8 @@ Formalizations of <https://dlmf.nist.gov/3.12>.
   kernel through Ziv's loop with fuel: `e80_data`, `const_eq_zivLoop`).
 * 3.12.4: `γ = 0.57721 56649 01532 86060 …` (`Real.eulerMascheroniConstant`, the limit of
   `H_n − ln n` as in §5.2(ii): `dlmf_3_12_4_def`; all 20 decimals, `dlmf_3_12_4`, from AzFloat's
-  enclosure `eulerGammaBracket 72` — Sweeney's formula with the series summed exactly by signed
-  binary splitting, and `ln n` — evaluated in the kernel: `eulerGamma72_data`; the first five
+  enclosure `eulerGammaBracket 72` — Sweeney's formula with the series enclosed by a truncated
+  backward recurrence, and `ln n` — evaluated in the kernel: `eulerGamma72_data`; the first five
   decimals also follow from the elementary bounds `euler_bounds` of §3.11(ii),
   `dlmf_3_12_4_partial`).
 
@@ -97,11 +97,11 @@ theorem dlmf_3_12_4_partial :
   constructor <;> norm_num at h1 h2 ⊢ <;> linarith
 
 set_option maxRecDepth 100000 in
-/-- The ends of the AzFloat enclosure of `γ` at working precision 72 (floats of 89 bits). -/
+/-- The ends of the AzFloat enclosure of `γ` at working precision 72 (floats of 101 bits). -/
 theorem eulerGamma72_data :
     (valData (eulerGammaBracket 72).1, valData (eulerGammaBracket 72).2) =
-      (some (true, 22329949465135640179520615, 38685626227668133590597632),
-        some (true, 44659898930271280359043995, 77371252455336267181195264)) := by
+      (some (true, 1463415568147129314805086317661, 2535301200456458802993406410752),
+        some (true, 731707784073564657402576713275, 1267650600228229401496703205376)) := by
   decide +kernel
 
 /-- **DLMF 3.12.4**: `γ = 0.57721 56649 01532 86060 …`, all 20 decimals, from the enclosure

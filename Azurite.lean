@@ -282,6 +282,7 @@ import Azurite.AzFloat.Equiv.Ln2Bracket
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.LnP1
 import Azurite.AzFloat.Equiv.LnRat
+import Azurite.AzFloat.Equiv.LnSmooth
 import Azurite.AzFloat.Equiv.Log10
 import Azurite.AzFloat.Equiv.Log2
 import Azurite.AzFloat.Equiv.Log2Bracket
@@ -426,6 +427,7 @@ import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.LnBracket
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.LnRat
+import Azurite.AzFloat.LnSmooth
 import Azurite.AzFloat.Log10
 import Azurite.AzFloat.Log2
 import Azurite.AzFloat.Log2Bracket
@@ -588,11 +590,11 @@ import Azurite.AzInt.Equiv.RingEquiv
 import Azurite.AzInt.Equiv.ShiftLeft
 import Azurite.AzInt.Equiv.ShiftRight
 import Azurite.AzInt.Equiv.ShiftRightRound
-import Azurite.AzInt.Equiv.SignedSplit
 import Azurite.AzInt.Equiv.SinCosSplit
 import Azurite.AzInt.Equiv.Size
 import Azurite.AzInt.Equiv.Sub
 import Azurite.AzInt.Equiv.SumProduct
+import Azurite.AzInt.Equiv.SweeneyHorner
 import Azurite.AzInt.Equiv.TrailingZeros
 import Azurite.AzInt.ExactDiv
 import Azurite.AzInt.ExtendedGcd
@@ -611,11 +613,11 @@ import Azurite.AzInt.Pow2
 import Azurite.AzInt.ShiftLeft
 import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.ShiftRightRound
-import Azurite.AzInt.SignedSplit
 import Azurite.AzInt.SinCosSplit
 import Azurite.AzInt.Size
 import Azurite.AzInt.Sub
 import Azurite.AzInt.SumProduct
+import Azurite.AzInt.SweeneyHorner
 import Azurite.AzInt.ToString
 import Azurite.AzInt.TrailingZeros
 import Azurite.AzMatrix.Bareiss

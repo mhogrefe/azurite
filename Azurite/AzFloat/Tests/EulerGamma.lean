@@ -54,3 +54,34 @@ private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
 #guard toString (eulerGamma 400)
   == "0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470"
     ++ "63291746749514631447249807082481"
+
+-- the working parameters: the argument has no prime factor above `7`
+#guard eulerGammaArg 69 == 54
+#guard eulerGammaArg 129 == 96
+#guard eulerGammaArg 216 == 160
+#guard eulerGammaArg 1016 == 720
+#guard (List.range 3000).all fun w => eulerGammaN w ≤ eulerGammaArg w
+#guard (List.range 3000).all fun w => isSmooth (eulerGammaArg w)
+#guard eulerGammaBlockBits 1023 == 0
+#guard eulerGammaBlockBits 1024 == 256
+#guard eulerGammaBlockBits 40301 == 2518
+#guard eulerGammaBracket 100 == eulerGammaBracketAt 100 (eulerGammaArg 100)
+
+-- brackets at different working precisions overlap and narrow: word blocks only (`w < 500`),
+-- long blocks above
+private def nested (w w' : Nat) : Bool :=
+  let a := eulerGammaBracket w
+  let b := eulerGammaBracket w'
+  le a.1 b.2 && le b.1 a.2 && lt a.1 a.2 && lt b.1 b.2
+private def narrowAt (w : Nat) : Bool :=
+  let a := eulerGammaBracket w
+  le (subPrecRound a.2 a.1 32 .Ceiling).1 (powerOf2 (-(AzNat.ofNat w).toAzInt))
+#guard nested 64 69 && nested 69 129 && nested 129 216 && nested 216 316
+#guard nested 316 337 && nested 337 700 && nested 700 1016 && nested 1016 2100
+#guard [64, 65, 69, 100, 129, 193, 216, 316, 337, 700, 1016, 2100].all narrowAt
+
+-- the long-block path agrees with the word-block path
+#guard (setPrecRound (eulerGamma 2000) 400 .Nearest).1 == eulerGamma 400
+#guard (setPrecRound (eulerGamma 700) 200 .Nearest).1 == eulerGamma 200
+#guard (eulerGammaPrecRound 1000 .Floor).2 == .lt
+#guard (eulerGammaPrecRound 1000 .Ceiling).2 == .gt

@@ -5335,7 +5335,7 @@ yet.  `AzFloat/Interval.lean`: `Encl = AzFloat × AzFloat` with directed-rounded
 about a minute for the whole file.  Not yet: enclosures of signed products/quotients (only
 nonnegative factors and positive divisors), `ln`, roots, special functions.
 
-## Euler's constant `γ` (DONE 2026-11-09, fuel-based)
+## Euler's constant `γ` (DONE 2026-11-09, fuel-based; faster partial sum 2026-11-17)
 
 User request ("implement Euler's gamma constant … a relatively efficient, provable algorithm").
 Files: `Transcendental/EulerGamma.lean` (theory), `AzInt/SignedSplit.lean` + `Equiv` + `Tests`
@@ -5416,6 +5416,98 @@ Files: `Transcendental/EulerGamma.lean` (theory), `AzInt/SignedSplit.lean` + `Eq
   what the exact term sizes allow for Sweeney's series, so further gains need either
   Brent–McMillan (Bessel theory) or a faster splitting kernel (the root-level products are
   megabit-sized at 20000 bits; the `P` component is not needed at the root).
+* **2026-11-17: the partial sum by a truncated backward recurrence (2.1–3.9× overall).**
+  Report (Malachite's checker): `γ` "is just slow", no specific suggestion.  Diagnosis: the
+  exact fraction `T/Q²` of the partial sum has about `N log₂ N` bits — 8000 bits for a 117-bit
+  working precision, over a megabit at 20000 bits — and all of it went through the splitting
+  tree.  Eight ideas were weighed; what was built, after timing prototypes of each:
+  * **The recurrence** (`AzInt/SweeneyHorner.lean`): `Z_N = 0`,
+    `Z_k = (n/(k+1))((−1)^k/(k+1) + Z_{k+1})`, `S = Z₀`; with `Z = ν/δ` a step is the integer
+    matrix `[[n(k+1), ±n], [0, (k+1)²]]`, no division.  (Division by a limb costs about
+    15 ns per limb here against 4–6 ns for a single-limb product, so every division-based
+    variant lost.)  `ν/δ` is homogeneous, so both are cut back to `V = w + 16 + ⌊13n/9⌋ +
+    2⌊lg n⌋` bits by whole limbs after a block; the `13n/9 > n log₂ e` bits are the
+    cancellation of the series.
+  * **Machine-word blocks**: the matrices of consecutive indices are multiplied in machine
+    arithmetic while the entries stay below `2^63` (2–5 terms), then applied with three
+    single-limb products.  The signed entry is a difference of two naturals and the fit test
+    reads bit lengths (`Nat.log2`) before multiplying: Lean's `Int` leaves its scalar
+    representation at 32 bits and a `Nat` product that overflows allocates, and either cost
+    more than the long arithmetic at 53 bits (measured: 226 ns per term, 5 ns after).
+  * **Long blocks** above `V = 1024` bits (`sweeneyHornerLoop₂`): word blocks are first
+    collected into a block of `max 256 (V/16)` bits, because a product by an `m`-limb number
+    costs about 2.4 ns per limb product for large `m` against 6 ns for `m = 1`.  Measured
+    optimum `V/8` to `V/20`; 2.9× at 20000 bits over word blocks alone.
+  * **The error is a radius, not a theorem**: the state `(nm, dn, rn)` stands for every `Z`
+    with `|Z·dn − nm| ≤ rn`; a block multiplies `rn` by its upper left entry, a truncation adds
+    `2 + 2^j ≥ 2 + |Z|` (`j` from bit lengths).  `sweeneyHornerEncl_spec` holds for every
+    `V ≥ 1` and every block size; nothing about the width is proven, and since the loop for
+    `γ` has fuel, nothing needs to be.  Measured: the bracket is `2^(−w−2)` wide at every
+    precision tried up to 10016 bits.
+  * **Guard bits**: the loop starts at `max (p + 16) 64` instead of `p + 64` (the `64` is the
+    threshold of the tail bound).
+  * **`ln n`**: `n = 2^j` when the power of two above `eulerGammaN w` is within `7/5`
+    (`w ≤ 192`) or `9/8` of it, and then `ln n = j ln 2` (`lnNatBracket`, 0.03 ms against
+    0.08 ms at 53 bits).  A larger `n` costs about quadratically in the recurrence, hence the
+    thresholds (measured at eleven precisions).  The floats got `2⌊lg w⌋` more bits: the
+    general `lnBracket` loses a few bits beyond 2048 bits, which showed once the guard
+    bits were cut.
+  * **Tried and not adopted.**  (a) The positive series `γ = e^(−n) ∑ H_k n^k/k! − ln n −
+    E₁(n)` (no cancellation, 0.72× the terms): as a fixed-point loop with divisions it took
+    0.089 / 2.4 / 42 / 627 ms at `w = 117 / 1064 / 5064 / 20064` against 0.083 / 1.3 / 16 /
+    196 ms for the recurrence above; a division-free word-block version would need a 3×3
+    block and comes out at about the same number of limb products (it works at `w` bits
+    instead of `2w`, with nine products per two steps instead of three), plus a new identity
+    to prove.  Not built.  (b) Exact blocks by the splitting tree combined by Horner's rule in
+    floats (the first form of the truncation idea): 240 ms at 20000 bits, dominated by the
+    float products; superseded.  (c) Skipping `P` on the right spine of the tree: moot, there
+    is no tree.  (d) A stored bracket and (e) Brent–McMillan: declined by the user (the
+    latter waits for DLMF Chapter 10).
+  * **Timings** (`az_float_euler_gamma`, ms, same machine and session; `recur` and `ln n`
+    are the pieces of one bracket, `split` the former exact splitting at the new `n`, `N`):
+
+    | bits | `n` | `N` | `V` | before | after | `recur` | `ln n` | `split` | gain |
+    |---|---|---|---|---|---|---|---|---|---|
+    | 24 | 64 | 258 | 184 | 0.21 | 0.095 | 0.055 | 0.030 | 0.136 | 2.2× |
+    | 53 | 64 | 258 | 189 | 0.30 | 0.097 | 0.056 | 0.031 | 0.136 | 3.1× |
+    | 113 | 128 | 480 | 343 | 0.385 | 0.181 | 0.126 | 0.038 | 0.299 | 2.1× |
+    | 200 | 155 | 591 | 469 | 0.69 | 0.331 | 0.167 | 0.142 | 0.402 | 2.1× |
+    | 500 | 365 | 1368 | 1075 | 2.0 | 0.752 | 0.450 | 0.283 | 1.449 | 2.7× |
+    | 1000 | 715 | 2663 | 2082 | 5.65 | 1.845 | 1.233 | 0.556 | 4.638 | 3.1× |
+    | 2000 | 1415 | 5253 | 4095 | 17.6 | 5.21 | 3.62 | 1.54 | 15.9 | 3.4× |
+    | 5000 | 3515 | 13023 | 10131 | 83 | 21.2 | 15.8 | 5.32 | 80.1 | 3.9× |
+    | 20000 | 14015 | 51873 | 40301 | 785 | 247 | 194 | 48.6 | 729 | 3.2× |
+
+    What is left: `ln n` is 20–45 % of the call (a cheap `ln` of `7`-smooth integers from
+    four `atanh` series would let `n` stay near the least one); at 53 bits about 0.6 µs per
+    block of four terms is allocation overhead; at high precision the recurrence is
+    `O(w² log w)` limb products, so the splitting tree would win again somewhere beyond
+    `10^5` bits (not measured).
+  * **The splitting engine is gone** (user, 2026-11-17: with a correctness proof no oracle is
+    needed): `AzInt/SignedSplit.lean`, its `Equiv` and `Tests` were deleted; the two facts the
+    new proof used (`ratio`/`partial` of an index range and their additivity) moved to
+    `AzInt/Equiv/SweeneyHorner.lean` as `sweeneyRatio`, `sweeneyPartial`.  The paragraphs above
+    on the signed splitting describe the 2026-11-09 version.
+  * **`ln n` from four `atanh` series (same day, user request).**  `AzFloat/LnSmooth.lean`:
+    for `n = 2^a 3^b 5^c 7^d`, `ln n` is an integer combination of `atanh(1/x)`,
+    `x = 251, 449, 4801, 8749` (`(x+1)/(x−1)` built from `2, 3, 5, 7`; the exponent matrix has
+    determinant `±1`, inverse rows `(72, 27, −19, 31)`, `(114, 43, −30, 49)`,
+    `(167, 63, −44, 72)`, `(202, 76, −53, 87)`), at 16–26 bits per term — about the cost of
+    `ln 2`.  `eulerGammaArg w = nextSmooth (eulerGammaN w)`: the least such integer, at most
+    about `1 %` above the least admissible argument, replacing the power-of-two rule and its
+    thresholds.  `lnSmoothBracket_spec` proves validity only (`smooth_log_eq` by
+    `linear_combination` from the four values).  `eulerGammaBracket` became
+    `eulerGammaBracketAt w n` at that argument (the proof with the search inlined timed out
+    in `whnf`).  Timings after (ms): 53 bits 0.103 (`recur` 0.044, `ln n` 0.041), 200: 0.256,
+    1000: 1.48 (`ln n` 0.19, was 0.56), 5000: 16.7, 20000: 212 (`ln n` 10.6, was 48.6) — 3×,
+    2.7×, 3.8×, 5×, 3.7× against the 2026-11-09 version.  At 53 bits the four series cost
+    slightly more than `j ln 2` did (0.041 against 0.030 ms) and the smaller `n` gives it back.
+    The recurrence is now 80–94 % of the call above 300 bits.
+  * **Kernel**: `eulerGamma72_data` re-evaluated for the new bracket (`n = 54`, floats of 101
+    bits; both ends moved inward).  Tests: `AzInt/Tests/SweeneyHorner.lean` (small exact
+    sums, overlap and width across loops and block sizes, too few bits),
+    `Tests/EulerGamma.lean` (parameters, `lnNatBracket`, nested and narrow brackets across
+    the path boundaries, 2000 bits against 400).
 * **DLMF 3.12.4 / 4.4.19:** the 20 decimals `0.57721 56649 01532 86060` certified in the kernel
   from the enclosure `eulerGammaBracket 72` (`eulerGamma72_data`, `valData` of both ends, about
   8 minutes of kernel time; `eulerGammaBracket_spec` + `toVal_of_valData`), lifting the former

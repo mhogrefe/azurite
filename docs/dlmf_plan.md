@@ -2083,7 +2083,7 @@ Numerical claims are computed by `AzFloat` (interval evaluation with directed ro
 | 3.12.1 (`π = 3.14159 26535 89793 23846 …`) | `dlmf_3_12_1` (all 20 decimals; AzFloat enclosure `Encl.pi 128`, `pi128_data` by `decide +kernel`) | |
 | 3.12.2 | `dlmf_3_12_2` | `integral_one_div_one_add_sq`, `Real.arctan_one` |
 | 3.12.3 (`e = 2.71828 18284 59045 23536 …`, §4.2(ii)) | `dlmf_3_12_3` (all 20 decimals; `e = exp 1`, AzFloat's correctly rounded `ePrecRound 80` rounded down/up via `const_eq_zivLoop`, `e80_data` by `decide +kernel`) | |
-| 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4` (all 20 decimals, 2026-11-09: AzFloat's enclosure `eulerGammaBracket 72` evaluated in the kernel — `eulerGamma72_data` — through Sweeney's formula with signed binary splitting and `ln n`, `eulerGammaBracket_spec` + `toVal_of_valData`); `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`) kept | `Real.tendsto_harmonic_sub_log`, `Real.eulerMascheroniConstant_eq_neg_integral_log` |
+| 3.12.4 (`γ = 0.57721 56649 01532 86060 …`, §5.2(ii)) | `dlmf_3_12_4_def` (`γ = lim (Hₙ − ln n)`), `dlmf_3_12_4` (all 20 decimals, 2026-11-09: AzFloat's enclosure `eulerGammaBracket 72` evaluated in the kernel — `eulerGamma72_data` — through Sweeney's formula (the series by the truncated backward recurrence of `AzInt/SweeneyHorner` since 2026-11-17) and `ln n`, `eulerGammaBracket_spec` + `toVal_of_valData`); `dlmf_3_12_4_partial` (first five decimals, from `euler_bounds`) kept | `Real.tendsto_harmonic_sub_log`, `Real.eulerMascheroniConstant_eq_neg_integral_log` |
 | Sloane (2003), Finch (2003) | Not formalized (references) | |
 
 ## Chapter 4: Elementary Functions

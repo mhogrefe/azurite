@@ -8,18 +8,21 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.EulerGamma
+import Azurite.AzInt.Equiv.SweeneyHorner
 import Azurite.AzFloat.Equiv.LnBracket
 import Azurite.AzFloat.Equiv.Ln2Bracket
-import Azurite.AzInt.Equiv.SignedSplit
+import Azurite.AzFloat.Equiv.LnSmooth
 
 /-!
 # Equivalence: Euler's constant
 
-`eulerGammaBracket_spec` (a strict enclosure of `γ`: the exact partial sum of Sweeney's series
-from `AzInt.sweeneyNumDen_eq`, bracketed by `seriesBracket_spec_of`; `ln n` from
-`lnBracket_spec`; `E₁(n) ≤ e^(−n)/n ≤ 2^(−w−5)` from `expIntegralE1_le` and the choice of
-`eulerGammaN`; the tail from `abs_tsum_sweeneyTerm_sub_sum_le`), `eulerGammaApprox_spec`, and
-`eulerGammaPrecRound_eq_or`: `eulerGammaPrecRound p mode` is the correctly rounded `γ`
+`eulerGammaBracket_spec` (a strict enclosure of `γ`: the partial sum of Sweeney's series
+enclosed by `AzInt.sweeneyHornerEncl_spec`, its two fractions turned into floats by
+`seriesBracket_spec_of`; `ln n` from `lnNatBracket_spec` — `lnSmoothBracket_spec` for the
+integers with no prime factor above `7`, `lnBracket_spec` otherwise; `E₁(n) ≤ e^(−n)/n ≤ 2^(−w−5)` from
+`expIntegralE1_le` and `eulerGammaN w ≤ n` (`exp_neg_div_le_of_eulerGammaN_le`); the tail from
+`abs_tsum_sweeneyTerm_sub_sum_le_of_le` (`abs_tail_eulerGamma_le`)), `eulerGammaApprox_spec`,
+and `eulerGammaPrecRound_eq_or`: `eulerGammaPrecRound p mode` is the correctly rounded `γ`
 (`liftVal₀ (some γ)`) unless the fuel runs out (`(nan, .eq)`).  A termination certificate would
 need `Irrational γ`, an open problem.
 -/
@@ -48,20 +51,46 @@ theorem toVal_eulerGamma_tail (w : ℕ) :
 theorem one_le_eulerGammaN (w : ℕ) : 1 ≤ eulerGammaN w := by
   unfold eulerGammaN; omega
 
-/-- `e^(−n)/n ≤ 2^(−w−5)` for `n = eulerGammaN w`. -/
-theorem exp_neg_eulerGammaN_div_le (w : ℕ) :
-    Real.exp (-(eulerGammaN w : ℝ)) / (eulerGammaN w : ℝ) ≤ (1 / 2 : ℝ) ^ (w + 5) := by
-  have hn1 : (1 : ℝ) ≤ eulerGammaN w := by exact_mod_cast one_le_eulerGammaN w
-  have hn : (7 : ℝ) * (w + 5) / 10 ≤ eulerGammaN w := by
+/-- The argument is at least the least admissible one. -/
+theorem eulerGammaN_le_arg (w : ℕ) : eulerGammaN w ≤ eulerGammaArg w := le_nextSmooth _
+
+/-- `lnNatBracket n k` encloses `ln n` (`n ≥ 1`, `k ≥ 64`). -/
+theorem lnNatBracket_spec {k : ℕ} (hk : 64 ≤ k) {n : ℕ} (hn : 1 ≤ n) :
+    ∃ lv hv : ℝ, (lnNatBracket n k).1.toVal = some (lv : EReal) ∧
+      (lnNatBracket n k).2.toVal = some (hv : EReal) ∧ lv ≤ Real.log n ∧ Real.log n ≤ hv := by
+  unfold lnNatBracket
+  dsimp only
+  split_ifs with h
+  · obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ :=
+      lnSmoothBracket_spec (smoothExps n).1 (smoothExps n).2.1 (smoothExps n).2.2.1
+        (smoothExps n).2.2.2.1 (k := k) (by omega)
+    have hlog : Real.log (n : ℝ) = (smoothExps n).1 * Real.log 2
+        + (smoothExps n).2.1 * Real.log 3 + (smoothExps n).2.2.1 * Real.log 5
+        + (smoothExps n).2.2.2.1 * Real.log 7 := by
+      have hc : (n : ℝ) = (2 : ℝ) ^ (smoothExps n).1 * 3 ^ (smoothExps n).2.1
+          * 5 ^ (smoothExps n).2.2.1 * 7 ^ (smoothExps n).2.2.2.1 := by exact_mod_cast h
+      rw [hc, Real.log_mul (by positivity) (by positivity),
+        Real.log_mul (by positivity) (by positivity),
+        Real.log_mul (by positivity) (by positivity), Real.log_pow, Real.log_pow, Real.log_pow,
+        Real.log_pow]
+    rw [hlog]
+    exact ⟨lv, hv, hl, hh, hlo, hhi⟩
+  · exact lnBracketOf_spec hk (toVal_ofAzNat_ofNat n) (by exact_mod_cast hn)
+
+/-- `e^(−n)/n ≤ 2^(−w−5)` for `n ≥ eulerGammaN w`. -/
+theorem exp_neg_div_le_of_eulerGammaN_le {w n : ℕ} (h : eulerGammaN w ≤ n) :
+    Real.exp (-(n : ℝ)) / (n : ℝ) ≤ (1 / 2 : ℝ) ^ (w + 5) := by
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast (one_le_eulerGammaN w).trans h
+  have hn : (7 : ℝ) * (w + 5) / 10 ≤ n := by
     have h' : 7 * (w + 5) < (7 * (w + 5) / 10 + 1) * 10 := by omega
-    unfold eulerGammaN
-    have : (7 * (w + 5) : ℝ) ≤ ((7 * (w + 5) / 10 + 1 : ℕ) : ℝ) * 10 := by exact_mod_cast h'.le
+    have h'' : 7 * (w + 5) ≤ n * 10 := by unfold eulerGammaN at h; omega
+    have : (7 * (w + 5) : ℝ) ≤ (n : ℝ) * 10 := by exact_mod_cast h''
     linarith
-  have hlog : (w + 5 : ℝ) * Real.log 2 ≤ eulerGammaN w := by
+  have hlog : (w + 5 : ℝ) * Real.log 2 ≤ n := by
     have := Real.log_two_lt_d9
     have hw0 : (0 : ℝ) ≤ w + 5 := by positivity
     nlinarith
-  calc Real.exp (-(eulerGammaN w : ℝ)) / (eulerGammaN w : ℝ) ≤ Real.exp (-(eulerGammaN w : ℝ)) :=
+  calc Real.exp (-(n : ℝ)) / (n : ℝ) ≤ Real.exp (-(n : ℝ)) :=
         div_le_self (Real.exp_pos _).le hn1
     _ ≤ Real.exp (-((w + 5 : ℝ) * Real.log 2)) := Real.exp_le_exp.mpr (by linarith)
     _ = (1 / 2 : ℝ) ^ (w + 5) := by
@@ -70,44 +99,45 @@ theorem exp_neg_eulerGammaN_div_le (w : ℕ) :
             Real.exp_log two_pos]
         rw [Real.exp_neg, h2, one_div_pow, one_div]
 
-/-- The tail of Sweeney's series after `eulerGammaTerms w` terms is at most `2^(−w−8)`
-(`w ≥ 64`). -/
-theorem abs_tail_eulerGamma_le {w : ℕ} (hw : 64 ≤ w) :
-    |∑' k, sweeneyTerm (eulerGammaN w : ℝ) k
-        - ∑ k ∈ range (eulerGammaTerms w), sweeneyTerm (eulerGammaN w : ℝ) k|
+/-- The tail of Sweeney's series with argument `n ≥ eulerGammaN w` after `eulerGammaTermsOf n`
+terms is at most `2^(−w−8)` (`w ≥ 64`). -/
+theorem abs_tail_eulerGamma_le {w n : ℕ} (hw : 64 ≤ w) (h : eulerGammaN w ≤ n) :
+    |∑' k, sweeneyTerm (n : ℝ) k - ∑ k ∈ range (eulerGammaTermsOf n), sweeneyTerm (n : ℝ) k|
       ≤ (1 / 2 : ℝ) ^ (w + 8) := by
-  have h := abs_tsum_sweeneyTerm_sub_sum_le_of_le (one_le_eulerGammaN w) (q := eulerGammaQ w)
-    (by unfold eulerGammaQ; omega)
-  rw [← eulerGammaTerms] at h
-  refine h.trans ?_
-  have h16 : w + 9 ≤ 16 * eulerGammaQ w := by unfold eulerGammaQ eulerGammaN; omega
-  calc 2 * (1 / 2 : ℝ) ^ (16 * eulerGammaQ w)
-      = (1 / 2 : ℝ) ^ (16 * eulerGammaQ w - 1) := by
-        obtain ⟨m, hm⟩ : ∃ m, 16 * eulerGammaQ w = m + 1 := ⟨16 * eulerGammaQ w - 1, by omega⟩
+  have hn1 : 1 ≤ n := (one_le_eulerGammaN w).trans h
+  have h' := abs_tsum_sweeneyTerm_sub_sum_le_of_le hn1 (q := (n + 9) / 10) (by omega)
+  rw [← eulerGammaTermsOf] at h'
+  refine h'.trans ?_
+  have h16 : w + 9 ≤ 16 * ((n + 9) / 10) := by unfold eulerGammaN at h; omega
+  calc 2 * (1 / 2 : ℝ) ^ (16 * ((n + 9) / 10))
+      = (1 / 2 : ℝ) ^ (16 * ((n + 9) / 10) - 1) := by
+        obtain ⟨m, hm⟩ : ∃ m, 16 * ((n + 9) / 10) = m + 1 := ⟨16 * ((n + 9) / 10) - 1, by omega⟩
         rw [hm, Nat.add_sub_cancel, pow_succ]
         ring
     _ ≤ (1 / 2 : ℝ) ^ (w + 8) :=
         pow_le_pow_of_le_one (by norm_num) (by norm_num) (by omega)
 
-/-- `eulerGammaBracket w` encloses `γ`, strictly from below. -/
-theorem eulerGammaBracket_spec {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lo hi : ℝ, (eulerGammaBracket w).1.toVal = some (lo : EReal) ∧
-      (eulerGammaBracket w).2.toVal = some (hi : EReal) ∧
+/-- `eulerGammaBracketAt w n` encloses `γ`, strictly from below (`n ≥ eulerGammaN w`). -/
+theorem eulerGammaBracketAt_spec {w : ℕ} (hw : 64 ≤ w) {n : ℕ} (hnN : eulerGammaN w ≤ n) :
+    ∃ lo hi : ℝ, (eulerGammaBracketAt w n).1.toVal = some (lo : EReal) ∧
+      (eulerGammaBracketAt w n).2.toVal = some (hi : EReal) ∧
       lo < eulerMascheroniConstant ∧ eulerMascheroniConstant ≤ hi := by
-  set n := eulerGammaN w with hn
-  set N := eulerGammaTerms w with hN
-  set k := eulerGammaBits w with hk
-  have hk64 : 64 ≤ k := by rw [hk]; unfold eulerGammaBits; omega
+  set N := eulerGammaTermsOf n with hN
+  set k := eulerGammaBits w n with hk
+  set V := eulerGammaWork w n with hVdef
+  have hk64 : 64 ≤ k := by rw [hk]; exact le_max_left _ _
+  have hV1 : 1 ≤ V := by rw [hVdef]; unfold eulerGammaWork; omega
   have : NeZero k := ⟨by omega⟩
-  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast one_le_eulerGammaN w
+  have hn1' : 1 ≤ n := (one_le_eulerGammaN w).trans hnN
+  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn1'
   have hn0 : (0 : ℝ) < n := by linarith
   -- the exact value and the partial sum
   set S := ∑ i ∈ range N, sweeneyTerm (n : ℝ) i with hS
   have hγ := eulerMascheroni_eq_sweeney hn1
   have hE0 := expIntegralE1_nonneg hn0
-  have hE1 := (expIntegralE1_le hn0).trans (exp_neg_eulerGammaN_div_le w)
-  have htail := abs_tail_eulerGamma_le hw
-  rw [← hn, ← hN, ← hS] at htail
+  have hE1 := (expIntegralE1_le hn0).trans (exp_neg_div_le_of_eulerGammaN_le hnN)
+  have htail := abs_tail_eulerGamma_le hw hnN
+  rw [← hN, ← hS] at htail
   rw [abs_le] at htail
   have hγhalf := one_half_lt_eulerMascheroniConstant
   have hlogn : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg hn1
@@ -121,48 +151,49 @@ theorem eulerGammaBracket_spec {w : ℕ} (hw : 64 ≤ w) :
       (by omega : 1 ≤ w + 8)
     rwa [pow_one] at this
   have hS0 : 0 ≤ S := by linarith [htail.2]
-  -- the exact fraction
-  have hfrac := AzInt.sweeneyNumDen_eq n N
-  rw [← hS] at hfrac
-  have hden := AzInt.sweeneyNumDen_den_pos n N
-  have hden' : (0 : ℝ) < (AzInt.sweeneyNumDen n N).2.toNat := by exact_mod_cast hden
-  have hT0 : 0 ≤ ((AzInt.sweeneyNumDen n N).1.toInt : ℝ) := by
-    have := div_nonneg_iff.mp (hfrac ▸ hS0)
-    rcases this with ⟨h, -⟩ | ⟨-, h⟩
-    · exact h
-    · linarith
-  have habs : (((AzInt.sweeneyNumDen n N).1.natAbs.toNat : ℕ) : ℝ)
-      = ((AzInt.sweeneyNumDen n N).1.toInt : ℝ) := by
-    rw [AzInt.toNat_natAbs, Nat.cast_natAbs, Int.cast_abs, abs_of_nonneg hT0]
-  have hfrac' : (((AzInt.sweeneyNumDen n N).1.natAbs, (AzInt.sweeneyNumDen n N).2).1.toNat : ℝ)
-      / ((AzInt.sweeneyNumDen n N).1.natAbs, (AzInt.sweeneyNumDen n N).2).2.toNat = S := by
-    simp only
-    rw [habs, hfrac]
-  obtain ⟨sl, sh, hsl, hsh, -, hslS, -, hSsh, -⟩ :=
-    seriesBracket_spec_of hfrac' hden hS0 (k := k) (by omega)
+  -- the enclosure of the partial sum
+  set e := AzInt.sweeneyHornerEncl n N V (eulerGammaBlockBits V) with he
+  obtain ⟨hden, hloS, hShi⟩ := AzInt.sweeneyHornerEncl_spec n N hV1 (eulerGammaBlockBits V) hS0
+  rw [← he] at hden hloS hShi
+  have hden' : (0 : ℝ) < e.2.2.toNat := by exact_mod_cast hden
+  obtain ⟨sl, -, hsl, -, -, hslS, -, -, -⟩ :=
+    seriesBracket_spec_of (s := (e.1, e.2.2)) rfl hden (by positivity) (k := k) (by omega)
+  obtain ⟨-, sh, -, hsh, -, -, -, hSsh, -⟩ :=
+    seriesBracket_spec_of (s := (e.2.1, e.2.2)) rfl hden (by positivity) (k := k) (by omega)
+  have hsl' : (fracFloor e.1 e.2.2 k).toVal = some (sl : EReal) := hsl
+  have hsh' : (fracCeil e.2.1 e.2.2 k).toVal = some (sh : EReal) := hsh
+  have hslS' : sl ≤ S := hslS.trans hloS
+  have hSsh' : S ≤ sh := hShi.trans hSsh
   -- the logarithm
-  obtain ⟨ll, lh, hll, hlh, hllog, hlogh⟩ :=
-    lnBracketOf_spec hk64 (toVal_ofAzNat_ofNat n) (by exact_mod_cast one_le_eulerGammaN w)
+  obtain ⟨ll, lh, hll, hlh, hllog, hlogh⟩ := lnNatBracket_spec hk64 hn1'
   -- the tail float
   have ht := toVal_eulerGamma_tail w
   -- the lower end
-  obtain ⟨r₁, hr₁, hr₁le, -⟩ := subFloor_le hsl hlh k
+  obtain ⟨r₁, hr₁, hr₁le, -⟩ := subFloor_le hsl' hlh k
   obtain ⟨r₂, hr₂, hr₂le, -⟩ := subFloor_le hr₁ ht k
   -- the upper end
-  obtain ⟨r₃, hr₃, hr₃c⟩ := addCeiling_err hsh ht k (by linarith)
+  have hsh0 : 0 ≤ sh := hS0.trans hSsh'
+  obtain ⟨r₃, hr₃, hr₃c⟩ := addCeiling_err hsh' ht k (by linarith)
   have hγle : eulerMascheroniConstant ≤ r₃ - ll := by
     have := hr₃c.ge
     linarith
   obtain ⟨r₄, hr₄, hr₄c⟩ := subCeiling_err hr₃ hll k (by linarith)
   refine ⟨r₂, r₄, ?_, ?_, ?_, ?_⟩
-  · simp only [eulerGammaBracket]
-    rw [← hn, ← hN, ← hk]
+  · simp only [eulerGammaBracketAt]
+    rw [← hk, ← hVdef, ← hN, ← he]
     exact hr₂
-  · simp only [eulerGammaBracket]
-    rw [← hn, ← hN, ← hk]
+  · simp only [eulerGammaBracketAt]
+    rw [← hk, ← hVdef, ← hN, ← he]
     exact hr₄
   · linarith
   · linarith [hr₄c.ge]
+
+/-- `eulerGammaBracket w` encloses `γ`, strictly from below. -/
+theorem eulerGammaBracket_spec {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lo hi : ℝ, (eulerGammaBracket w).1.toVal = some (lo : EReal) ∧
+      (eulerGammaBracket w).2.toVal = some (hi : EReal) ∧
+      lo < eulerMascheroniConstant ∧ eulerMascheroniConstant ≤ hi :=
+  eulerGammaBracketAt_spec hw (eulerGammaN_le_arg w)
 
 theorem eulerGammaApprox_spec {w : ℕ} (hw : 64 ≤ w) :
     ∃ lv hv : ℝ, Rounds (eulerGammaApprox w).1 lv ∧ Rounds (eulerGammaApprox w).2 hv ∧
@@ -182,7 +213,7 @@ theorem eulerGammaPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
       eulerGammaPrecRound p mode = (nan, .eq) := by
   unfold eulerGammaPrecRound liftVal₀
   rw [ite_eq_right (NeZero.ne p)]
-  rcases eq_or_ne (zivLoop eulerGammaApprox p mode (eulerGammaFuel p) (p + zivGuardBits))
+  rcases eq_or_ne (zivLoop eulerGammaApprox p mode (eulerGammaFuel p) (max (p + 16) 64))
     (nan, .eq) with hz | hz
   · right; exact hz
   · left
@@ -190,6 +221,6 @@ theorem eulerGammaPrecRound_eq_or (p : ℕ) [NeZero p] (mode : RoundingMode) :
       (fun w hw => by
         obtain ⟨lv, hv, hl, hh, hlo, hhi⟩ := eulerGammaApprox_spec hw
         exact ⟨lv, hv, hl, hh, hlo.le, hhi, fun h => absurd h hlo.ne⟩)
-      _ _ (by unfold zivGuardBits; omega) hz
+      _ _ (le_max_right _ _) hz
 
 end Azurite.AzFloat

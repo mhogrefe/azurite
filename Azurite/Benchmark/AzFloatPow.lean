@@ -149,7 +149,7 @@ def runAzFloatPowWidth (_limit : Nat) (cfg : Std.HashMap String String) (_seed :
   let W := expWork ey w
   let nsX ← timeOne (fun _ => powBaseExact? y (AzNat.ofNat 3)) (fun r => if r.isSome then 1 else 2)
   let nsL ← timeOne (fun _ => lnBaseBracket 3 W) bsize
-  let nsM ← timeOne (fun _ => lnBaseMulBracket y ey 3 w) bsize
+  let nsM ← timeOne (fun _ => lnBaseMulBracket (lnBaseBracket 3 W) y ey w) bsize
   let nsB ← timeOne (fun _ => powBaseBracket y ey 3 w) bsize
   let nsP ← timeOne (fun _ => powBasePrecRound 3 y 53 .Nearest) psize
   IO.println (s!"powBase 3^(1/3) @53, w = {w}: exact? {ms nsX}  lnBase {ms nsL}  "
