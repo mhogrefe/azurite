@@ -10,6 +10,8 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.LnGamma
+import Azurite.AzFloat.LnAbsGamma
+import Azurite.AzFloat.LnAbsGammaRat
 import Azurite.AzFloat.LnGammaRat
 import Azurite.AzFloat.Exp
 import Azurite.AzFloat.Conversion
@@ -22,7 +24,8 @@ import Azurite.Benchmark.Common
 `az_float_gamma`: for each precision `P` (bits) and each argument `x` (a rational rounded to
 `max P 64` bits), the time of `gammaPrecRound x P` and `reciprocalGammaPrecRound x P` (nearest),
 of `gammaRatPrecRound` at the rational itself, and for reference `lnGammaPrecRound x P` and
-`lnGammaRatPrecRound` at the rational itself (both only for `x > 0`) and `expPrecRound x P`.
+`lnGammaRatPrecRound` at the rational itself (for `x > 0`; for `x < 0` the two columns are
+`lnAbsGammaPrecRound x P` and `lnAbsGammaRatPrecRound`) and `expPrecRound x P`.
 Milliseconds.  Config: `bits` (default `53/200/1000`), `xs` (`;`-separated rationals).
 -/
 
@@ -77,7 +80,10 @@ def runAzFloatGamma (_limit : Nat) (cfg : Std.HashMap String String) (_seed : UI
           let nsL ← timeMed (fun _ => lnGammaPrecRound x P .Nearest) (fun r => fsz r.1)
           let nsQ ← timeMed (fun _ => lnGammaRatPrecRound q P .Nearest) (fun r => fsz r.1)
           pure (msStr nsL, msStr nsQ)
-        else pure ("-", "-")
+        else do
+          let nsL ← timeMed (fun _ => lnAbsGammaPrecRound x P .Nearest) (fun r => fsz r.1.1)
+          let nsQ ← timeMed (fun _ => lnAbsGammaRatPrecRound q P .Nearest) (fun r => fsz r.1.1)
+          pure (msStr nsL, msStr nsQ)
       IO.println (padL s!"{P}" 6 ++ padL (xs'.take 11).toString 12 ++ padL (msStr nsG) 10
         ++ padL (msStr nsR) 10 ++ padL (msStr nsQG) 10 ++ padL sL 10 ++ padL sQ 11
         ++ padL (msStr nsE) 10)

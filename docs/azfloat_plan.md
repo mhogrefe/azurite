@@ -8407,6 +8407,43 @@ Files: `AzFloat/GammaRat.lean`, `Equiv/GammaRat.lean`, `Tests/GammaRat.lean`.
   pass at `p + 32 + 200` bits, the cost of a 285-bit `Γ`).  `q = −1 − 2^(−100)` at 53 bits
   1.6 ms (the loop doubles past the 100 bits lost at the pole; no start hint there).
 
+### 3b. `ln |Γ(x)|` with the sign of `Γ(x)` (DONE 2026-11-17, fuel-based, TIMED)
+
+`lnAbsGammaPrecRound x p mode : (AzFloat × Ordering) × Bool` (`AzFloat/LnAbsGamma.lean`), the
+specification of MPFR's `mpfr_lgamma` (the specification only — the algorithm is the reflection
+formula on the existing enclosures); `lnAbsGamma x` rounds to nearest at the precision of `x`.
+
+* **Special values**: `0` at `1` and `2`; `+∞` at `±∞` and at `0, −1, −2, …`; `NaN` at `NaN`.
+  The sign is `true` (positive) wherever MPFR leaves it undefined, and at `0` (no negative
+  zero).
+* **`x > 0`**: `lnGammaPrecRound`.  **`x < 0`**:
+  `ln |Γ(x)| = ln (π / |sin πx|) − ln Γ(1 − x)` from `gammaSinEncl` (relative accuracy next
+  to the poles and next to `0`), `lnOfEncl` and `lnGammaBracketEncl` at the enclosure of
+  `1 − x`; a Ziv loop with `lnGammaFuel` from `max 64 (p + 32)` bits.  The zeros of
+  `ln |Γ|` between the poles below `−2` are left to the loop.
+* **Sign**: `gammaSign` — for a negative non-integer, the parity of the truncation.
+* **Proofs** (`Equiv/LnAbsGamma.lean`): `Spec.lnAbsGamma`, `lnAbsGammaNegEncl_spec`,
+  `Gamma_pos_iff_trunc_odd`, **`lnAbsGammaPrecRound_eq_or`** (correctly rounded, or `NaN`),
+  **`lnAbsGammaPrecRound_sign`** (`= true ↔ 0 < Γ(x)` at every finite non-pole).
+* **Timings** (`az_float_gamma`, column `lnGamma` at negative arguments, ms): 0.5–0.7 at 53
+  bits, 0.9–1.5 at 200, 10–11 at 1000 — a little below `Γ` at the same argument (no
+  exponential).
+* `lnGammaPrecRound` itself is unchanged (`NaN` for `x < 0`): it is the counterpart of MPFR's
+  `mpfr_lngamma`.  The sign `true` where MPFR leaves it undefined is confirmed by the user.
+
+### 3c. `ln |Γ(q)|` with the sign of `Γ(q)` for an `AzRat` (DONE 2026-11-17, fuel-based, TIMED)
+
+`lnAbsGammaRatPrecRound q p mode : (AzFloat × Ordering) × Bool`, `lnAbsGammaRat q p`,
+`gammaRatSign q` (`AzFloat/LnAbsGammaRat.lean`).  `q > 0`: `lnGammaRatPrecRound`; the poles
+(`num = 0`, or `den = 1` with a negative sign): `+∞`; otherwise the shared reflection step
+`lnAbsGammaReflect` (now also used by the float function) with `gammaRatSinEncl` and the
+bracket of `ln Γ` at the enclosure of the exact rational `1 − q`.  Sign of a negative
+non-integer: `(num / den).isOdd`.  Proofs (`Equiv/LnAbsGammaRat.lean`):
+`lnAbsGammaRatNegEncl_spec`, `Gamma_pos_iff_floor_odd` (from the shared `Gamma_pos_iff_odd`),
+**`lnAbsGammaRatPrecRound_eq_or`**, **`lnAbsGammaRatPrecRound_sign`**.  Timings (column
+`lnGammaRat` of `az_float_gamma` at negative arguments): the same as the float function
+(0.5–0.7 ms at 53 bits, 0.9–1.6 at 200, 4–12 at 1000).
+
 ### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
 
 Reported from the Malachite port.  `seedFloat` rejected only arguments whose `Float`

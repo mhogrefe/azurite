@@ -305,6 +305,18 @@ def checkBigExponentFloatLambertW0Rational : String → Verdict :=
 def checkBigExponentFloatLambertWMinus1Rational : String → Verdict :=
   withBigExponentFloatNames checkFloatLambertWMinus1Rational
 
+def checkBigExponentFloatTreeT0 : String → Verdict :=
+  withBigExponentFloatNames checkFloatTreeT0
+
+def checkBigExponentFloatTreeTMinus1 : String → Verdict :=
+  withBigExponentFloatNames checkFloatTreeTMinus1
+
+def checkBigExponentFloatTreeT0Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatTreeT0Rational
+
+def checkBigExponentFloatTreeTMinus1Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatTreeTMinus1Rational
+
 def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
   withBigExponentFloatNames fun line =>
     checkFloatUnaryArgsWith "power_of_2_of_float" 0 (fun _ => some ())

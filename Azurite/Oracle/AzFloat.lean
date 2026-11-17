@@ -48,6 +48,7 @@ import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Agm
 import Azurite.AzFloat.Ln
 import Azurite.AzFloat.LambertW
+import Azurite.AzFloat.TreeT
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
@@ -1491,6 +1492,25 @@ def checkFloatLambertW0Rational : String → Verdict :=
 `AzFloat.lambertWm1RatPrecRound`. -/
 def checkFloatLambertWMinus1Rational : String → Verdict :=
   checkFloatOfRational "lambert_w_minus_1_rational" AzFloat.lambertWm1RatPrecRound
+
+/-- `Float`'s `tree_t0` family, against `AzFloat.treeT0PrecRound`; the sign of a zero result is not
+compared. -/
+def checkFloatTreeT0 : String → Verdict :=
+  checkFloatUnaryWith "tree_t0" AzFloat.treeT0PrecRound
+
+/-- `Float`'s `tree_t_minus_1` family, against `AzFloat.treeTm1PrecRound`. -/
+def checkFloatTreeTMinus1 : String → Verdict :=
+  checkFloatUnaryWith "tree_t_minus_1" AzFloat.treeTm1PrecRound
+
+/-- `Float::tree_t0_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.treeT0RatPrecRound`. -/
+def checkFloatTreeT0Rational : String → Verdict :=
+  checkFloatOfRational "tree_t0_rational" AzFloat.treeT0RatPrecRound
+
+/-- `Float::tree_t_minus_1_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.treeTm1RatPrecRound`. -/
+def checkFloatTreeTMinus1Rational : String → Verdict :=
+  checkFloatOfRational "tree_t_minus_1_rational" AzFloat.treeTm1RatPrecRound
 
 /-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
 line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/
