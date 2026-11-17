@@ -52,12 +52,11 @@ theorem lnGamma_coe_of_pos {xv : ℝ} (h : 0 < xv) :
 
 end Spec
 
-/-- The bracket as `Roundable`s encloses `ln Γ(x)`, strictly from below. -/
-theorem lnGammaApprox_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hpos : 0 < xv) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
-    ∃ lv hv : ℝ, Rounds (lnGammaApprox x e w).1 lv ∧ Rounds (lnGammaApprox x e w).2 hv ∧
-      lv < Real.log (Real.Gamma xv) ∧ Real.log (Real.Gamma xv) ≤ hv := by
-  obtain ⟨lo, hi, hlo, hhi, h1, h2⟩ := lnGammaBracket_spec hx hpos e hw
+/-- A bracket as `Roundable`s encloses its value, strictly from below. -/
+theorem lnGammaApproxOf_spec {b : Encl} {v : ℝ} (hb : IsEncl b v) (w : ℕ) :
+    ∃ lv hv : ℝ, Rounds (lnGammaApproxOf b w).1 lv ∧ Rounds (lnGammaApproxOf b w).2 hv ∧
+      lv < v ∧ v ≤ hv := by
+  obtain ⟨lo, hi, hlo, hhi, h1, h2⟩ := hb
   have : NeZero (2 * w + 64) := ⟨by omega⟩
   have ht : (powerOf2 (-(AzNat.ofNat (4 * w)).toAzInt)).toVal
       = some (((1 / 2 : ℝ) ^ (4 * w) : ℝ) : EReal) := by
@@ -72,6 +71,13 @@ theorem lnGammaApprox_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : E
   · have hR := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
     rw [fval_of_toVal_coe hhi] at hR
     exact hR
+
+/-- The bracket as `Roundable`s encloses `ln Γ(x)`, strictly from below. -/
+theorem lnGammaApprox_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hpos : 0 < xv) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
+    ∃ lv hv : ℝ, Rounds (lnGammaApprox x e w).1 lv ∧ Rounds (lnGammaApprox x e w).2 hv ∧
+      lv < Real.log (Real.Gamma xv) ∧ Real.log (Real.Gamma xv) ≤ hv :=
+  lnGammaApproxOf_spec (lnGammaBracket_spec hx hpos e hw) w
 
 /-- **`ln Γ` is correctly rounded unless the fuel runs out.** -/
 theorem lnGammaPrecRound_eq_or (x : AzFloat) (p : ℕ) [NeZero p] (mode : RoundingMode) :

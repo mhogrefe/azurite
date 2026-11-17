@@ -8313,3 +8313,26 @@ against 1.1–1.8 ms for neighbours outside the two regimes.
   item 12): 0.61, 0.64, 0.68 ms compiled.
 * Tests (`Tests/LambertW.lean`): the reported argument, `−3·2^(−1074)`, exponents `±2^78`,
   `±2^200`, in the directed modes; `expSize`, `lambertIntBits`.
+
+### 2a. `ln Γ(q)` for an `AzRat` `q > 0` (DONE 2026-11-17, fuel-based, UNTIMED)
+
+Files: `AzFloat/LnGammaRat.lean`, `Equiv/LnGammaRat.lean`, `Tests/LnGammaRat.lean`.
+
+* The float bracket was already evaluated on enclosures, so it is now
+  `lnGammaBracketEncl X e w` for any enclosure `X` of the argument with a positive lower end
+  (`lnGammaBracketEncl_spec`); `lnGammaBracket x e w` is the instance at `Encl.exact x`
+  (definitionally what it was).  The test "`δ = 0` only when `x ≥ 1`" reads the lower end.
+* The rational uses `X` = the roundings of `q` down and up at `w + 32` bits and the exponent
+  of the upper one.  For a dyadic `q` the enclosure is exact, so the result is the float
+  function's (tested in every mode).
+* Zeros: `q = 1`, `q = 2` are detected exactly as `(q − 1).num = 0`, `(q − 1 − 1).num = 0`; the
+  bits lost near them come from the exponents of the exact differences
+  (`lnGammaRatCancelBits`), with no limit from the precision of a float argument.
+* Specification `lnGammaRatPrecRound_eq_or`: the correctly rounded `Spec.lnGamma q`, or
+  `(nan, .eq)` if the fuel runs out.  Not attempted: a fuel-free path for integer `q`
+  (`ln (q − 1)!` is irrational for `q ≥ 3`), which would need the exact factorial and so only
+  pays for small `q`.
+* Tests: special values; dyadic arguments against the float function; `1/3`, `1/4`, `2/3`
+  against decimal brackets; the recurrence `ln Γ(q + 1) − ln Γ(q) = ln q` at 200 bits against
+  `lnRat`; integers against `ln (n − 1)!`; arguments within `10^(−30)` of the zeros; tiny and
+  huge arguments.

@@ -22,7 +22,9 @@ import Azurite.BrentZimmermann.Chapter4.StirlingLogGamma
 # Equivalence: the bracket of `ln Γ`
 
 `lnGammaBracket_spec`: for a positive float `x` and `w ≥ 64`, `lnGammaBracket x e w` encloses
-`ln Γ(x)` — whatever the exponent argument `e`, which only chooses the shift.  The steps:
+`ln Γ(x)` — whatever the exponent argument `e`, which only chooses the shift
+(`lnGammaBracketEncl_spec`: the same from any enclosure of `x` with a positive lower end).
+The steps:
 `risingEncl_spec` (the rising product), `stirlingTermEncl_spec` (a coefficient of Stirling's
 series from a tangent number), `stirlingSumLoop_spec` (the partial sums, closed by the remainder
 bound of `stirlingMu_eq_sum_add` at whatever term the loop stops), `stirlingMuEncl_spec`,
@@ -216,15 +218,16 @@ theorem one_le_of_lnGammaShift_eq_zero {x : AzFloat} {xv : ℝ} (hx : x.toVal = 
   rw [ite_eq_right (fun hle => hcon ((le_eq_true_iff toVal_one' hx).mp hle))] at h2
   omega
 
-/-- **`lnGammaBracket x e w` encloses `ln Γ(x)`** for a positive float `x` (`w ≥ 64`). -/
-theorem lnGammaBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
-    (hpos : 0 < xv) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
-    IsEncl (lnGammaBracket x e w) (Real.log (Real.Gamma xv)) := by
+/-- **`lnGammaBracketEncl X e w` encloses `ln Γ(x)`** for an enclosure `X` of `x` with a
+positive lower end (`w ≥ 64`). -/
+theorem lnGammaBracketEncl_spec {X : Encl} {xv : ℝ} (hX : IsEnclPos X xv) (e : AzInt) {w : ℕ}
+    (hw : 64 ≤ w) : IsEncl (lnGammaBracketEncl X e w) (Real.log (Real.Gamma xv)) := by
   set L := lnGammaShiftExp w with hL
   set V := w + 2 * L + 8 + 2 * w.log2 with hVdef
   have hV : 64 ≤ V := by omega
   have : NeZero V := ⟨by omega⟩
-  have hX := isEnclPos_exact hx hpos
+  obtain ⟨xl, xh, hxl, -, hxl0, hxl1, -⟩ := id hX
+  have hpos : 0 < xv := by linarith
   have hV2 : 2 ≤ V := by omega
   have hM : ∀ E, 1 ≤ lnGammaTerms w E := fun E => by
     unfold lnGammaTerms; exact le_trans (by norm_num) (Nat.le_add_left 3 _)
@@ -232,37 +235,43 @@ theorem lnGammaBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : 
     have := (enclosesPos_nat (n := 2) (by norm_num)).mul hV2 (enclosesPos_pi hV)
     simpa using this
   have hπ : 0 < 2 * Real.pi := by positivity
-  unfold lnGammaBracket
+  unfold lnGammaBracketEncl
   simp only [← hL, ← hVdef]
-  by_cases hδ : lnGammaShift x e L = 0
+  by_cases hδ : lnGammaShift X.1 e L = 0
   · rw [ite_eq_left hδ]
     have := (lnGammaStirlingEncl_spec hV
       (hM (max (L + 1) (if e.sign then e.abs.toNat else 0))) hX
-      (one_le_of_lnGammaShift_eq_zero hx hδ)
+      ((one_le_of_lnGammaShift_eq_zero hxl hδ).trans hxl1)
       (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt))).add (w := V) (lnOfEncl_pos h2π hV).half
     convert this using 1
     ring
   · rw [ite_eq_right hδ]
-    have hδ1 : (1 : ℝ) ≤ (lnGammaShift x e L : ℕ) := by
+    have hδ1 : (1 : ℝ) ≤ (lnGammaShift X.1 e L : ℕ) := by
       exact_mod_cast Nat.one_le_iff_ne_zero.mpr hδ
-    have hY : IsEnclPos (Encl.add V (Encl.exact x) (Encl.nat (lnGammaShift x e L)))
-        (xv + (lnGammaShift x e L : ℕ)) := hX.add hV2 (isEncl0_nat _)
+    have hY : IsEnclPos (Encl.add V X (Encl.nat (lnGammaShift X.1 e L)))
+        (xv + (lnGammaShift X.1 e L : ℕ)) := hX.add hV2 (isEncl0_nat _)
     have hS := lnGammaStirlingEncl_spec hV (hM (max (L + 1) (if e.sign then e.abs.toNat else 0)))
       hY (by linarith) (powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt))
-    have hP := risingEncl_spec hV2 hX (lnGammaShift x e L)
-    have hPpos : 0 < ∏ j ∈ range (lnGammaShift x e L), (xv + j) :=
+    have hP := risingEncl_spec hV2 hX (lnGammaShift X.1 e L)
+    have hPpos : 0 < ∏ j ∈ range (lnGammaShift X.1 e L), (xv + j) :=
       prod_pos fun i _ => by
         have : (0 : ℝ) ≤ i := Nat.cast_nonneg i
         linarith
     have hQ := lnOfEncl_pos (h2π.div hV2 (hP.mul hV2 hP)) hV
     have := hS.add (w := V) hQ.half
     convert this using 1
-    rw [BZ.log_Gamma_eq_log_Gamma_add_sub hpos (lnGammaShift x e L),
+    rw [BZ.log_Gamma_eq_log_Gamma_add_sub hpos (lnGammaShift X.1 e L),
       Real.log_div hπ.ne' (mul_pos hPpos hPpos).ne', Real.log_mul hPpos.ne' hPpos.ne',
       Real.log_prod]
     · ring
     · intro i _
       have : (0 : ℝ) ≤ i := Nat.cast_nonneg i
       exact (by linarith : (0 : ℝ) < xv + i).ne'
+
+/-- **`lnGammaBracket x e w` encloses `ln Γ(x)`** for a positive float `x` (`w ≥ 64`). -/
+theorem lnGammaBracket_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
+    (hpos : 0 < xv) (e : AzInt) {w : ℕ} (hw : 64 ≤ w) :
+    IsEncl (lnGammaBracket x e w) (Real.log (Real.Gamma xv)) :=
+  lnGammaBracketEncl_spec (isEnclPos_exact hx hpos) e hw
 
 end Azurite.AzFloat

@@ -34,12 +34,16 @@ with the comparison against the exact value; `lnGamma x` rounds to nearest at th
 
 namespace Azurite.AzFloat
 
-/-- The bracket of `ln Γ(x)` as a pair of `Roundable`s, the lower end lowered by one unit in
-its last place so that it is strictly below the value. -/
-def lnGammaApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
-  let b := lnGammaBracket x e w
+/-- A bracket as a pair of `Roundable`s, the lower end lowered by `2^(−4w)` so that it is
+strictly below the value. -/
+def lnGammaApproxOf (b : Encl) (w : Nat) : Roundable × Roundable :=
   let lo := (subPrecRound b.1 (powerOf2 (-(AzNat.ofNat (4 * w)).toAzInt)) (2 * w + 64) .Floor).1
   (fun p mode => setPrecRound lo p mode, fun p mode => setPrecRound b.2 p mode)
+
+/-- The bracket of `ln Γ(x)` as a pair of `Roundable`s, the lower end strictly below the
+value. -/
+def lnGammaApprox (x : AzFloat) (e : AzInt) (w : Nat) : Roundable × Roundable :=
+  lnGammaApproxOf (lnGammaBracket x e w) w
 
 /-- The bits lost near the zeros `x = 1` and `x = 2` of `ln Γ`: `k` when `x − 1` or `x − 2` is
 about `2^(−k)` (`q` is the precision of `x`). -/

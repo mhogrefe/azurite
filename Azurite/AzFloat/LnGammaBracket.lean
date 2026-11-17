@@ -22,8 +22,8 @@ Stirling's series (DLMF 5.11.1) with the argument shifted to where it converges 
 (`AzNat.tangentNumbers`), and the remainder `r` between `0` and the first omitted term
 (`stirlingMu_eq_sum_add`, `Transcendental/LogGammaStirling.lean`).
 
-* **The shift** (`lnGammaShift`): `y ≥ 2^L` with `2^L` between a quarter and half of the working precision
-  (`lnGammaShiftExp`).  For `2^(E−1) ≤ x < 2^E`: nothing when `E > L`, `2^L − 2^(E−1)` when
+* **The shift** (`lnGammaShift`): `y ≥ 2^L` with `2^L` between a quarter and half of the
+  working precision (`lnGammaShiftExp`).  For `2^(E−1) ≤ x < 2^E`: nothing when `E > L`, `2^L − 2^(E−1)` when
   `1 ≤ E ≤ L`, `2^L` when `x < 1`.  The rising product is `δ` multiplications of enclosures
   (`risingEncl`), followed by one logarithm.
 * **The series** (`stirlingSumLoop`): the terms are added, on enclosures, until one is below
@@ -36,7 +36,9 @@ Stirling's series (DLMF 5.11.1) with the argument shifted to where it converges 
   product `P` together.
 
 `lnGammaBracket x e w` encloses `ln Γ(x)` for every positive float `x`, whatever `e` and `w ≥ 64`
-are (`Equiv/LnGammaBracket.lean`); the exponent only chooses the shift.  Its width is not
+are (`Equiv/LnGammaBracket.lean`); the exponent only chooses the shift.  It is
+`lnGammaBracketEncl` at the exact enclosure of `x`; the same function on an enclosure of a
+rational serves `AzFloat/LnGammaRat.lean`.  Its width is not
 bounded by a theorem: near the zeros `x = 1` and `x = 2` the terms cancel, and the caller
 (`AzFloat/LnGamma.lean`) adds the bits that are lost there to the working precision.
 -/
@@ -48,8 +50,8 @@ namespace Azurite.AzFloat
 saves in the series). -/
 def lnGammaShiftExp (w : Nat) : Nat := (w / 4).log2 + 1
 
-/-- The shift `δ` for a positive float `x` with `2^(e−1) ≤ x < 2^e`: `x + δ ≥ 2^L`, and `δ = 0`
-only when `x ≥ 1`. -/
+/-- The shift `δ` for a positive float `x` with `2^(e−1) ≤ x < 2^e` (or the lower end `x` of an
+enclosure): `x + δ ≥ 2^L`, and `δ = 0` only when `x ≥ 1`. -/
 def lnGammaShift (x : AzFloat) (e : AzInt) (L : Nat) : Nat :=
   let s :=
     if e.sign then
@@ -123,13 +125,13 @@ def lnGammaStirlingEncl (V M : Nat) (Y : Encl) (tol : AzFloat) : Encl :=
 /-- Half an enclosure (exact). -/
 def Encl.half (a : Encl) : Encl := (a.1 <<< AzInt.ofInt (-1), a.2 <<< AzInt.ofInt (-1))
 
-/-- The bracket of `ln Γ(x)` at Ziv level `w` for a positive finite float `x < 2^e`.  The
-constant and the rising product `P` share one logarithm: `½ ln (2π) − ln P = ½ ln (2π / P²)`. -/
-def lnGammaBracket (x : AzFloat) (e : AzInt) (w : Nat) : Encl :=
+/-- The bracket of `ln Γ(x)` at Ziv level `w` from an enclosure `X` of `x > 0` (positive lower
+end) with `x < 2^e`.  The constant and the rising product `P` share one logarithm:
+`½ ln (2π) − ln P = ½ ln (2π / P²)`. -/
+def lnGammaBracketEncl (X : Encl) (e : AzInt) (w : Nat) : Encl :=
   let L := lnGammaShiftExp w
   let V := w + 2 * L + 8 + 2 * w.log2
-  let δ := lnGammaShift x e L
-  let X := Encl.exact x
+  let δ := lnGammaShift X.1 e L
   let E := max (L + 1) (if e.sign then e.abs.toNat else 0)
   let tol := powerOf2 (-(AzNat.ofNat (w + 16)).toAzInt)
   let twoPi := Encl.mul V (Encl.nat 2) (Encl.pi V)
@@ -139,5 +141,9 @@ def lnGammaBracket (x : AzFloat) (e : AzInt) (w : Nat) : Encl :=
     let P := risingEncl V X δ
     Encl.add V (lnGammaStirlingEncl V (lnGammaTerms w E) (Encl.add V X (Encl.nat δ)) tol)
       (Encl.half (lnOfEncl (Encl.div V twoPi (Encl.mul V P P)) V))
+
+/-- The bracket of `ln Γ(x)` at Ziv level `w` for a positive finite float `x < 2^e`. -/
+def lnGammaBracket (x : AzFloat) (e : AzInt) (w : Nat) : Encl :=
+  lnGammaBracketEncl (Encl.exact x) e w
 
 end Azurite.AzFloat
