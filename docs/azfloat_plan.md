@@ -8041,6 +8041,46 @@ Report: `logBaseFloatP1PrecRound` at `x = 2^(1−2^30)`, `b = 1/2`, 17 bits did 
 * Tests (`Tests/LogBaseFloatP1.lean`, `Tests/LogBaseRatBaseP1.lean`): the reported line, and
   `x = ±3·2^(−2^60)`, `2^(−2^60)` with the bases `1/2`, `1/4`, `2`.
 
+### 12. Lambert `W`: the last Halley step taken too early (DONE 2026-11-17)
+
+Found while testing the tree function: `W₀ (1/3)` took 25–42 s in the interpreter at 100,
+120 and 150 bits, against 25–60 ms at 53, 99, 101 and 200 bits (same for `W₀ (−1/3)`, for
+`W₋₁`, for floats and rationals).  The values were right.  Cause: `halleyRefine` took its last
+step, at the full precision `W`, as soon as `W ≤ 2P`, where `P` is the precision of the next
+doubling step and the iterate has `P/2` bits.  With `P₀ = ⌊W/2^k⌋`, `k = ⌊lg (W/64)⌋`, that
+happens from `W/4` bits exactly when `2^k ∣ W`: every even `W` in `[128, 256)`, every fourth in
+`[256, 512)`, and so on (`W = p + 74` away from the branch point).  A cubic step from `W/4`
+bits gives `3W/4`, the mean-value rounds miss the target width, and `lambertBracket` falls
+back to `3W + 8` bisection steps, each with an exponential.
+
+* `halleyRefine`: the last step is taken once `2W + 32 ≤ 3P`, i.e. `3 (P/2) ≥ W + 16`.
+  Nothing is proven about the candidate, so no proof changed.
+* After: 41, 45, 49 ms at 100, 120, 150 bits; 25 ms–0.27 s from 53 to 950 bits with no
+  outliers among the fourteen precisions tried (interpreter).
+* Tests (`Tests/LambertW.lean`): `W₀` and `W₋₁` at seven such precisions, as a guard against
+  the slow path coming back (they took minutes before).
+
+## The tree function `T` (DONE 2026-11-17, fuel-free)
+
+User request.  `T(x) = −W₀(−x)` (DLMF §4.13: `T e^(−T) = x`, principal branch;
+`Azurite.DLMF.treeT`), `x ≤ e⁻¹`.  Files: `AzFloat/TreeT.lean`, `Equiv/TreeT.lean`,
+`Tests/TreeT.lean`.
+
+* `treeTPrecRound x p mode = (−r.1, r.2.swap)` with `r = lambertW0PrecRound (−x) p (−mode)`;
+  `treeTRatPrecRound` the same on `lambertW0RatPrecRound`; `treeTFloat`, `treeTRat`.  Everything
+  about `W₀` carries over: no fuel, the tiny-argument path, the certified decision at the
+  branch point.  `NaN` above `e⁻¹` and at `+∞`, `T(−∞) = −∞`, `T(0) = 0`.
+* `Spec.treeT a = (Spec.lambertW0 (−a)).map (−·)`; `roundVal_map_neg` (the negation rule of
+  `roundVal_neg` for `NaN` and `±∞` too) gives `treeTPrecRound_eq = liftVal Spec.treeT` and
+  `treeTRatPrecRound_eq` in a few lines; `Spec.treeT_coe_of_le` identifies the value with
+  `Azurite.DLMF.treeT` on the domain.
+* Only the principal branch: the other real branch `−W₋₁(−x)` (`0 < x ≤ e⁻¹`, values `≥ 1`)
+  would be the same wrapper on `lambertWm1PrecRound`; not requested.
+* Tests: special values, the 53-bit floats on either side of `e⁻¹`, six arguments in three
+  modes against an independent 120-digit Newton iteration on `T e^(−T) = x`, 200 bits, the
+  relation with `W₀` in all five modes, tiny (`2^(−2^40)`) and huge arguments, rationals.
+* Cost: that of `W₀` (about 3.5 exponentials).  Not timed separately.
+
 ## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
 
 `gd x = ∫₀ˣ sech t dt` (DLMF 4.23.39), `gdPrecRound`, `gd` (`AzFloat/Gd.lean`); special values

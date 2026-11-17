@@ -153,3 +153,16 @@ private def third200 : AzFloat := (F "1/3" 53) <<< AzInt.ofInt (-200)
 #guard Wm ((F "-1" 53) <<< tinyE) 53 == (F "-3121657469763513/4194304" 53, .lt)
 #guard Wm ((F "-1" 53) <<< AzInt.ofInt (-(2 ^ 62 : Int))) 53
   == (F "-3196577161300663808" 53, .gt)
+
+-- precisions at which the Halley refinement used to take its last step too early (the working
+-- precision `p + 74` divisible by `2^⌊lg ((p + 74)/64)⌋`), sending the bracket to the
+-- bisection fallback (about a thousand times slower; the values were right)
+private def consistent (x : AzFloat) (p : Nat) : Bool :=
+  let f := W0 x p .Floor
+  let c := W0 x p .Ceiling
+  let n := W0 x p
+  f.2 == .lt && c.2 == .gt && le f.1 n.1 && le n.1 c.1 && lt f.1 c.1
+#guard [86, 100, 120, 150, 182, 310, 438].all fun p => consistent (F "1/3" 53) p
+#guard [100, 120, 310].all fun p => consistent (F "-1/3" 53) p
+#guard [100, 120].all fun p =>
+  (Wm (F "-1/3" 53) p .Floor).2 == .lt && (Wm (F "-1/3" 53) p .Ceiling).2 == .gt

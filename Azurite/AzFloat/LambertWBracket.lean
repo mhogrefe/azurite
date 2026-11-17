@@ -288,16 +288,20 @@ def lambertHalleyStep (x w : AzFloat) (P : Nat) : AzFloat :=
   let den := (subPrecRound fp corr P .Nearest).1
   (subPrecRound w (divPrecRound f den P .Nearest).1 P .Nearest).1
 
-/-- Halley steps at precisions `P + loss, 2P + loss, 4P + loss, …` while `2P < W`, then one at
-`W + loss`: a step from an iterate with `a` correct bits gives about `min(3a − c, P' − loss)`
-bits, so doubling keeps every step saturated (the last step, from `P ≥ W/2` bits, reaches `W`)
-and `loss` (about `2 compBits + 16`) absorbs the cancellation in `w eʷ − x` divided by the small
-derivative near the branch point.  Started at `P = W / 2^k ∈ [64, 128)` the steps cost about
-`2` exponentials at precision `W` in total. -/
+/-- Halley steps at precisions `P + loss, 2P + loss, 4P + loss, …`, then one at `W + loss`:
+a step from an iterate with `a` correct bits gives about `min(3a − c, P' − loss)` bits, so
+doubling keeps every step saturated, and `loss` (about `2 compBits + 16`) absorbs the
+cancellation in `w eʷ − x` divided by the small derivative near the branch point.  Before the
+step at `P` the iterate has about `P/2` bits (the seed: about `50`), so the last step is taken
+once `3 (P/2) ≥ W + 16`, i.e. `2W + 32 ≤ 3P`.  (The former test `W ≤ 2P` took it from `W/4`
+bits whenever `2^k ∣ W` for `k = ⌊lg (W/64)⌋` — every even `W` in `[128, 256)`, every fourth
+in `[256, 512)`, … — which leaves the candidate at `3W/4` bits and sends the bracket to the
+bisection fallback, about a thousand times slower.)  Started at `P = W / 2^k ∈ [64, 128)` the
+steps cost about `2` exponentials at precision `W` in total. -/
 def halleyRefine (x w : AzFloat) (P W loss : Nat) : Nat → AzFloat
   | 0 => w
   | fuel + 1 =>
-    if W ≤ 2 * P then lambertHalleyStep x w (W + loss)
+    if 2 * W + 32 ≤ 3 * P then lambertHalleyStep x w (W + loss)
     else halleyRefine x (lambertHalleyStep x w (P + loss)) (2 * P) W loss fuel
 
 /-- Halley's iteration in `Float` from a start value. -/

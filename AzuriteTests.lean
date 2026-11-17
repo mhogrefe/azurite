@@ -181,6 +181,7 @@ import Azurite.AzFloat.Tests.TanWithPeriod
 import Azurite.AzFloat.Tests.Tanh
 import Azurite.AzFloat.Tests.TanhRat
 import Azurite.AzFloat.Tests.ToString
+import Azurite.AzFloat.Tests.TreeT
 import Azurite.AzInt.Tests.SweeneyHorner
 import Azurite.AzNat.Tests.AtanhSplit
 import Azurite.AzNat.Tests.CompareDouble
