@@ -61,9 +61,11 @@ def cotPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orde
       match cotTiny? s (finite s e q m hv) e p mode with
       | some r => r
       | none =>
-        zivLoopCertified (cotApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)
+        zivLoopCertified (cotApprox (!s) (finite s e q m hv) e) p mode
+            (p + zivGuardBits + tinyExtra e)
           (cotApprox_isSome_exists p mode (!s) (toVal_finite s e q m hv)
-            (finiteVal_ne_zero s e hv) (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits)
+            (finiteVal_ne_zero s e hv) (abs_finiteVal_bounds s e hv).2
+                (p + zivGuardBits + tinyExtra e)
             (by unfold zivGuardBits; omega))
 
 /-- `cot x` rounded to nearest at the precision of `x`. -/
@@ -79,8 +81,8 @@ def cotRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     match cotTinyRat? q p mode with
     | some r => r
     | none =>
-      zivLoopCertified (cotRatApprox q) p mode (p + zivGuardBits)
-        (cotRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+      zivLoopCertified (cotRatApprox q) p mode (p + zivGuardBits + ratTinyExtra q)
+        (cotRatApprox_isSome_exists p mode q h0 (p + zivGuardBits + ratTinyExtra q)
           (by unfold zivGuardBits; omega))
 
 /-- `cot q` rounded to nearest at precision `p`. -/
@@ -99,8 +101,9 @@ def cotPeriodCore (neg : Bool) (r : AzRat)
     setPrecRound (signedPow2
       (neg != decide (r.num = AzNat.ofNat 1 ∨ r.num = AzNat.ofNat 5)) 0) p mode
   else
-    zivLoopCertified (cotPeriodApprox neg r) p mode (p + zivGuardBits)
-      (cotPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h8 (p + zivGuardBits)
+    zivLoopCertified (cotPeriodApprox neg r) p mode (p + zivGuardBits + ratTinyExtra r)
+      (cotPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h8
+          (p + zivGuardBits + ratTinyExtra r)
         (by unfold zivGuardBits; omega))
 
 /-- `cot (2π x / u)` rounded to precision `p` with `mode`, and the comparison with the exact

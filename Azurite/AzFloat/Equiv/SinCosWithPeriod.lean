@@ -49,21 +49,31 @@ theorem sinCosWithPeriodPrecRound_eq (x : AzFloat) (u : UInt64) (p : ℕ) (mode 
         have hS : sinWithPeriodPrecRound (finite s e q m hv) u p mode
             = zivLoopCertified (sinPeriodApprox (!s)
                 (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat))) p mode
-              (p + zivGuardBits) (sinPeriodApprox_isSome_exists p mode (!s) _ hr0 hr1 h1 h2 h4
-                h12 (p + zivGuardBits) (by unfold zivGuardBits; omega)) := by
+              (p + zivGuardBits + ratTinyExtra
+                (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)))
+                    (sinPeriodApprox_isSome_exists p mode (!s) _ hr0 hr1 h1 h2 h4
+                h12 (p + zivGuardBits + ratTinyExtra
+                (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)))
+                    (by unfold zivGuardBits; omega)) := by
           simp only [sinWithPeriodPrecRound, dite_eq_right hu, dite_eq_right hp, hsT,
             dite_eq_right h1, dite_eq_right h2, dite_eq_right h4, dite_eq_right h12]
         have hC : cosWithPeriodPrecRound (finite s e q m hv) u p mode
             = zivLoopCertified (cosPeriodApprox
                 (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat))) p mode
-              (p + zivGuardBits) (cosPeriodApprox_isSome_exists p mode _ hr0 hr1 h1 h2 h3 h4
-                h6 (p + zivGuardBits) (by unfold zivGuardBits; omega)) := by
+              (p + zivGuardBits + ratTinyExtra
+                (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)))
+                    (cosPeriodApprox_isSome_exists p mode _ hr0 hr1 h1 h2 h3 h4
+                h6 (p + zivGuardBits + ratTinyExtra
+                (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)))
+                    (by unfold zivGuardBits; omega)) := by
           simp only [cosWithPeriodPrecRound, dite_eq_right hu, dite_eq_right hp, hcT,
             dite_eq_right h1, dite_eq_right h2, dite_eq_right h3, dite_eq_right h4,
             dite_eq_right h6]
         rw [hS, hC]
         exact zivLoopCertified₂_sinCosPeriodApprox p mode (!s) _ hr0 hr1 h1 h2 h3 h4 h6 h12
-          (p + zivGuardBits) (by unfold zivGuardBits; omega) _ _ _
+          (p + zivGuardBits + ratTinyExtra
+                (periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)))
+                    (by unfold zivGuardBits; omega) _ _ _
       · rfl
     · rfl
 

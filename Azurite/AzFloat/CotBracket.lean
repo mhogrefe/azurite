@@ -80,12 +80,14 @@ def cotTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMode
     Option (AzFloat × Ordering) :=
   cotTinyCore? (!s) x.abs x.abs e p mode
 
-/-- The tiny-argument path of `cot q` for a rational `q`. -/
+/-- The tiny-argument path of `cot q` for a rational `q` (`1/|q|` rounded from the rational
+itself). -/
 def cotTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
   guardedBy (!(ratExpBound q).sign
       && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
-    cotTinyCore? (!q.sign) (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
-      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
+    tinyRecipOf? q.sign (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Ceiling).1)
+      (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Floor).1)
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (p + zivGuardBits + 8) p mode
 
 /-- The tiny-argument path of `cot (2π x / u)` for `|x| = m 2^E`, `|2πx/u| < 2^e'`
 (`neg`: `x < 0`). -/

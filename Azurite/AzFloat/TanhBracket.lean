@@ -73,9 +73,12 @@ def tanhNearOne? (pos : Bool) (N : Nat) (p : Nat) (mode : RoundingMode) :
   if pos then expNearOne? false E p mode
   else (expNearOne? false E p (-mode)).map fun r => (-r.1, r.2.swap)
 
-/-- A natural `N ≤ 2|x|` for a finite float `x` of exponent `e` (`|x| ≥ 2^(e−1)`): `2^e`
-capped at `2^62` for `e ≥ 0`, and `0` otherwise. -/
-def tanhFloatN (e : AzInt) : Nat := if e.sign then 2 ^ (min e.abs.toNat 62) else 0
+/-- A natural `N ≤ 2|x|` for a finite float `x` of exponent `e` (`|x| ≥ 2^(e−1)`): `⌊2|x|⌋`
+for `0 ≤ e ≤ 62`, `2^62` above, and `0` for `e < 0`. -/
+def tanhFloatN (x : AzFloat) (e : AzInt) : Nat :=
+  if e.sign then
+    if e.abs.toNat ≤ 62 then (truncToAzInt (x <<< AzInt.ofInt 1)).abs.toNat else 2 ^ 62
+  else 0
 
 /-- A natural `N ≤ 2|q|` for a rational `q`: `⌊2 num / den⌋`. -/
 def tanhRatN (q : AzRat) : Nat := ((q.num + q.num) / q.den).toNat

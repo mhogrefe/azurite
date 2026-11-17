@@ -34,11 +34,11 @@ namespace Azurite.AzFloat
 theorem acosRatDouble_spec (q : AzRat) (h0 : q.num ≠ 0) (h1 : |(AzRat.toRat q : ℝ)| < 1)
     {K w : ℕ} (hKw : w + 8 ≤ K) :
     ∃ lo hi : ℝ,
-      ((atanWiden (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (K + 64 + 8) .Floor).1
-        (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (K + 64 + 8) .Ceiling).1 K (K + 64)).1
+      ((atanWiden (sqrtRatCore (q.den - q.num) (q.den + q.num) (K + 64 + 8) .Floor).1
+        (sqrtRatCore (q.den - q.num) (q.den + q.num) (K + 64 + 8) .Ceiling).1 K (K + 64)).1
           <<< AzInt.ofInt 1).toVal = some (lo : EReal) ∧
-      ((atanWiden (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (K + 64 + 8) .Floor).1
-        (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (K + 64 + 8) .Ceiling).1 K (K + 64)).2
+      ((atanWiden (sqrtRatCore (q.den - q.num) (q.den + q.num) (K + 64 + 8) .Floor).1
+        (sqrtRatCore (q.den - q.num) (q.den + q.num) (K + 64 + 8) .Ceiling).1 K (K + 64)).2
           <<< AzInt.ofInt 1).toVal = some (hi : EReal) ∧
       0 ≤ lo ∧ lo ≤ arccos |(AzRat.toRat q : ℝ)| ∧ arccos |(AzRat.toRat q : ℝ)| ≤ hi ∧ hi ≤ 4 ∧
       hi - lo ≤ (1 / 2 : ℝ) ^ w / 128 := by
@@ -51,10 +51,26 @@ theorem acosRatDouble_spec (q : AzRat) (h0 : q.num ≠ 0) (h1 : |(AzRat.toRat q 
   have : NeZero P := ⟨by omega⟩
   set ε := (1 / 2 : ℝ) ^ P with hε
   have hε0 : 0 < ε := by positivity
-  have hQ : ((AzRat.toRat ((1 - q.abs) / (1 + q.abs)) : ℚ) : ℝ) = (1 - a) / (1 + a) := by
-    rw [AzRat.toRat_div, AzRat.toRat_sub, AzRat.toRat_add, AzRat.toRat_one]
-    push_cast
-    rw [habs]
+  have hdR : (0 : ℝ) < q.den.toNat := by exact_mod_cast AzRat.den_toNat_pos q
+  have haq : a = (q.num.toNat : ℝ) / q.den.toNat := by rw [ha, abs_coe_toRat]
+  have hnd : q.num.toNat < q.den.toNat := by
+    rw [haq, div_lt_one hdR] at h1
+    exact_mod_cast h1
+  have hn0 : q.den - q.num ≠ 0 := by
+    intro h
+    have := congrArg AzNat.toNat h
+    rw [AzNat.toNat_sub] at this
+    simp at this
+    omega
+  have hd0 : q.den + q.num ≠ 0 := by
+    intro h
+    have := congrArg AzNat.toNat h
+    rw [AzNat.toNat_add] at this
+    simp at this
+    omega
+  have hQ : (((q.den - q.num).toNat : ℝ) / (q.den + q.num).toNat) = (1 - a) / (1 + a) := by
+    rw [AzNat.toNat_sub, AzNat.toNat_add, Nat.cast_sub hnd.le, Nat.cast_add, haq]
+    field_simp
   have hQ0 : 0 ≤ (1 - a) / (1 + a) := div_nonneg (by linarith) (by linarith)
   set T := √((1 - a) / (1 + a)) with hT
   have hT0 : 0 ≤ T := sqrt_nonneg _
@@ -65,20 +81,20 @@ theorem acosRatDouble_spec (q : AzRat) (h0 : q.num ≠ 0) (h1 : |(AzRat.toRat q 
   obtain ⟨tl, htl, htl0, htl1, htl2⟩ := roundVal_floor_err P hT0
   obtain ⟨th, hth, hth1, hth2⟩ := roundVal_ceiling_err P hT0
   rw [← hε] at htl2 hth2
-  have htlv : (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) P .Floor).1.toVal
+  have htlv : (sqrtRatCore (q.den - q.num) (q.den + q.num) P .Floor).1.toVal
       = some (tl : EReal) := by
-    rw [sqrtRatPrecRound_eq, hQ, Spec.sqrt_coe _ hQ0]
+    rw [sqrtRatCore_eq _ _ hn0 hd0, hQ]
     exact htl
-  have hthv : (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) P .Ceiling).1.toVal
+  have hthv : (sqrtRatCore (q.den - q.num) (q.den + q.num) P .Ceiling).1.toVal
       = some (th : EReal) := by
-    rw [sqrtRatPrecRound_eq, hQ, Spec.sqrt_coe _ hQ0]
+    rw [sqrtRatCore_eq _ _ hn0 hd0, hQ]
     exact hth
   have hTε : T * ε ≤ 1 * ε := mul_le_mul_of_nonneg_right hT1 hε0.le
   have hid := arccos_eq_two_arctan ha0.le h1.le
   rw [← hT] at hid
   obtain ⟨lo, hi, hlo, hhi, hlo0, hl, hh, hhi4, hw⟩ :=
-    atanDouble_spec (t := ((sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) P .Floor).1,
-      (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) P .Ceiling).1)) hT1 hKw htlv hthv htl0 htl1
+    atanDouble_spec (t := ((sqrtRatCore (q.den - q.num) (q.den + q.num) P .Floor).1,
+      (sqrtRatCore (q.den - q.num) (q.den + q.num) P .Ceiling).1)) hT1 hKw htlv hthv htl0 htl1
       hth1 (by rw [← hε]; linarith)
   rw [← hid] at hl hh
   exact ⟨lo, hi, hlo, hhi, hlo0, hl, hh, hhi4, hw⟩
@@ -92,8 +108,7 @@ theorem acosRatAbsEncl_spec (q : AzRat) (h0 : q.num ≠ 0) (h1 : |(AzRat.toRat q
   simp only [Bool.false_eq_true, ↓reduceIte]
   have hw0 : (0 : ℝ) ≤ (1 / 2 : ℝ) ^ w := by positivity
   obtain ⟨lo, hi, hlo, hhi, hlo0, hl, hh, -, hw⟩ := acosRatDouble_spec q h0 h1
-    (K := w + 8 + (if (ratExpBound ((1 - q.abs) / (1 + q.abs))).sign = true then 0
-      else (ratExpBound ((1 - q.abs) / (1 + q.abs))).abs.toNat / 2)) (w := w) (by omega)
+    (K := w + 8 + ((q.den + q.num).size - ((q.den - q.num).size + 2)) / 2) (w := w) (by omega)
   exact ⟨lo, hi, hlo, hhi, hlo0, hl, hh, by linarith⟩
 
 /-- **The bracket of `arccos q`** for a rational `0 < |q| < 1`: width at most `2^(−w)`. -/
@@ -121,11 +136,11 @@ theorem acosRatBracket_spec (q : AzRat) (h0 : q.num ≠ 0) (h1 : |(AzRat.toRat q
     obtain ⟨al, ah, hal, hah, hal0, hl, hh, hah4, hw⟩ :=
       acosRatDouble_spec q h0 h1 (K := w + 8) (w := w) le_rfl
     obtain ⟨lo, hi, hlo, hhi, hl', hh', hwd⟩ := piShiftEncl_spec false false
-      (A := ((atanWiden (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (w + 8 + 64 + 8) .Floor).1
-        (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (w + 8 + 64 + 8) .Ceiling).1 (w + 8)
+      (A := ((atanWiden (sqrtRatCore (q.den - q.num) (q.den + q.num) (w + 8 + 64 + 8) .Floor).1
+        (sqrtRatCore (q.den - q.num) (q.den + q.num) (w + 8 + 64 + 8) .Ceiling).1 (w + 8)
         (w + 8 + 64)).1 <<< AzInt.ofInt 1,
-        (atanWiden (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (w + 8 + 64 + 8) .Floor).1
-        (sqrtRatPrecRound ((1 - q.abs) / (1 + q.abs)) (w + 8 + 64 + 8) .Ceiling).1 (w + 8)
+        (atanWiden (sqrtRatCore (q.den - q.num) (q.den + q.num) (w + 8 + 64 + 8) .Floor).1
+        (sqrtRatCore (q.den - q.num) (q.den + q.num) (w + 8 + 64 + 8) .Ceiling).1 (w + 8)
         (w + 8 + 64)).2 <<< AzInt.ofInt 1))
       hal hah hal0 hl hh hah4 hw (V := w + 72) (by omega)
     simp only [Bool.false_eq_true, ↓reduceIte] at hl' hh'

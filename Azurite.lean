@@ -264,6 +264,7 @@ import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.Gamma
 import Azurite.AzFloat.Equiv.GammaBracket
+import Azurite.AzFloat.Equiv.GammaRat
 import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.Gd
 import Azurite.AzFloat.Equiv.GdBracket
@@ -414,6 +415,7 @@ import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.GammaBracket
+import Azurite.AzFloat.GammaRat
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdBracket

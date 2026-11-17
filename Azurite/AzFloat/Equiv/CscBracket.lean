@@ -21,7 +21,7 @@ import Azurite.AzFloat.Equiv.SecWithPeriodBracket
 * `reciprocalNeg_valid_or_none`, `reciprocalNeg_isSome_exists`: the signed reciprocal of a
   bracket family; the instances for `cscApprox`, `cscRatApprox`, `cscPeriodApprox`.
 * `csc_bounds_of_small`, `cscTinyCore?_eq`, `periodTinyArg_spec`, `cscTiny?_eq`,
-  `cscTinyRat?_eq`, `cscPeriodTiny?_eq`.
+  `tinyRecipOf?_eq`, `tinyRat_spec`, `cscTinyRat?_eq`, `cscPeriodTiny?_eq`.
 -/
 
 namespace Azurite.AzFloat
@@ -400,29 +400,85 @@ theorem cscTiny?_eq {s : Bool} {e : AzInt} {q : ℕ} {m : AzNat} (hv : FiniteVal
   exact cscTinyCore?_eq habs habs (abs_pos.mpr hx0) le_rfl le_rfl
     (abs_finiteVal_bounds s e hv).2 (irrational_csc_abs_of_toVal hx hx0) h
 
+/-- **`tinyRecipOf?` answers with the rounding of `± v`**, for an irrational `v` between the
+lower float and the sum of the two upper ones. -/
+theorem tinyRecipOf?_eq {neg : Bool} {rlo rhi ahi : AzFloat} {W p : ℕ} [NeZero W] [NeZero p]
+    {mode : RoundingMode} {r : AzFloat × Ordering} {rl rh h v : ℝ}
+    (hrl : rlo.toVal = some (rl : EReal)) (hrh : rhi.toVal = some (rh : EReal))
+    (hh : ahi.toVal = some (h : EReal)) (h1 : rl ≤ v) (h2 : v ≤ rh + h) (hirr : Irrational v)
+    (hT : tinyRecipOf? neg rlo rhi ahi W p mode = some r) :
+    r = roundVal p mode (some (((if neg then -1 else 1) * v : ℝ) : EReal)) := by
+  unfold tinyRecipOf? at hT
+  obtain ⟨hi, hhi, hhi1, -⟩ := addCeiling_abs hrh hh W
+  have hR1 := rounds_setPrecRound (isFinite_of_toVal_coe hrl)
+  rw [fval_of_toVal_coe hrl] at hR1
+  have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hhi)
+  rw [fval_of_toVal_coe hhi] at hR2
+  have hvB := not_mem_floatSet_of_irrational p hirr
+  cases neg with
+  | false =>
+    simp only [Bool.false_eq_true, ↓reduceIte, one_mul] at hT ⊢
+    exact roundingPossible_eq' p mode hR1 hR2 h1 (by linarith) (Or.inr hvB) hT
+  | true =>
+    simp only [↓reduceIte, neg_one_mul] at hT ⊢
+    obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp hT
+    have hr := roundingPossible_eq' p (-mode) hR1 hR2 (v := v) h1 (by linarith)
+      (Or.inr hvB) hr'
+    rw [hr]
+    exact (roundVal_neg p mode v).symm
+
+/-- The condition of a guarded optional answer holds. -/
+theorem cond_of_guardedBy {α : Type} {c : Bool} {f : Unit → Option α} {r : α}
+    (h : guardedBy c f = some r) : c = true := by
+  unfold guardedBy at h
+  cases c with
+  | true => rfl
+  | false => simp at h
+
+/-- The floats of the rational tiny paths: the directed roundings of `1/|q|` and the upper
+rounding of `|q|`, for `|q| ≤ 1` (a negative exponent bound). -/
+theorem tinyRat_spec (q : AzRat) (W : ℕ) [NeZero W] (hs : (ratExpBound q).sign = false) :
+    ∃ rl rh h : ℝ,
+      (ofAzRatRound q.abs⁻¹ W .Floor).1.toVal = some (rl : EReal) ∧
+      (ofAzRatRound q.abs⁻¹ W .Ceiling).1.toVal = some (rh : EReal) ∧
+      (ofAzRatRound q.abs W .Ceiling).1.toVal = some (h : EReal) ∧
+      rl ≤ 1 / |(AzRat.toRat q : ℝ)| ∧ 1 / |(AzRat.toRat q : ℝ)| ≤ rh ∧
+      |(AzRat.toRat q : ℝ)| ≤ h ∧ |(AzRat.toRat q : ℝ)| ≤ 1 := by
+  have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by
+    rw [AzRat.toRat_abs]
+    push_cast
+    rfl
+  have hinv : ((AzRat.toRat q.abs⁻¹ : ℚ) : ℝ) = 1 / |((AzRat.toRat q : ℚ) : ℝ)| := by
+    rw [AzRat.toRat_inv, Rat.cast_inv, habs, one_div]
+  obtain ⟨rl, hrl, hrl1, -⟩ := ofAzRatRound_floor_abs q.abs⁻¹ W
+  obtain ⟨rh, hrh, hrh1, -⟩ := ofAzRatRound_ceiling_abs q.abs⁻¹ W
+  obtain ⟨c, hc, hc1, -⟩ := ofAzRatRound_ceiling_abs q.abs W
+  rw [hinv] at hrl1 hrh1
+  rw [habs] at hc1
+  have htoInt : (ratExpBound q).toInt
+      = if (ratExpBound q).sign then ((ratExpBound q).abs.toNat : ℤ)
+        else -((ratExpBound q).abs.toNat : ℤ) := rfl
+  rw [hs] at htoInt
+  simp only [Bool.false_eq_true, ↓reduceIte] at htoInt
+  have h1 : (2 : ℝ) ^ ((ratExpBound q).toInt - 1) ≤ 1 :=
+    zpow_le_one_of_nonpos₀ (by norm_num) (by omega)
+  exact ⟨rl, rh, c, hrl, hrh, hc, hrl1, hrh1, hc1, (abs_toRat_lt_two_zpow q).le.trans h1⟩
+
 /-- The tiny-argument path of `csc q` answers with the rounding of `± csc |q|`. -/
 theorem cscTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mode : RoundingMode}
     {r : AzFloat × Ordering} (hT : cscTinyRat? q p mode = some r) :
     r = roundVal p mode (some (((if (!q.sign) = true then -1 else 1)
       * (1 / Real.sin |(AzRat.toRat q : ℝ)|) : ℝ) : EReal)) := by
   unfold cscTinyRat? at hT
+  have hcond := cond_of_guardedBy hT
   replace hT := eq_some_of_guardedBy hT
+  simp only [Bool.and_eq_true, Bool.not_eq_true', decide_eq_true_eq] at hcond
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
-  have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by
-    rw [AzRat.toRat_abs]
-    push_cast
-    rfl
-  have ha0 := abs_pos.mpr hq0
-  have hus : (1 / 2 : ℝ) ^ (p + zivGuardBits + 8) ≤ 1 / 10 ^ 18 :=
-    half_pow_small (by unfold zivGuardBits; omega)
-  obtain ⟨l, hl, hl1, hl2⟩ := ofAzRatRound_floor_abs q.abs (p + zivGuardBits + 8)
-  obtain ⟨c, hc, hc1, -⟩ := ofAzRatRound_ceiling_abs q.abs (p + zivGuardBits + 8)
-  rw [habs] at hl1 hl2 hc1
-  rw [abs_abs] at hl2
-  have hl0 : 0 < l := by nlinarith
-  have hlt : |((AzRat.toRat q : ℚ) : ℝ)| < (2 : ℝ) ^ (ratExpBound q).toInt :=
-    lt_of_lt_of_le (abs_toRat_lt_two_zpow q) (zpow_le_zpow_right₀ (by norm_num) (by omega))
-  exact cscTinyCore?_eq hl hc hl0 hl1 hc1 hlt (irrational_csc_abs_toRat q h0) hT
+  obtain ⟨rl, rh, h, hrl, hrh, hh, h1, h2, h3, ha1⟩ :=
+    tinyRat_spec q (p + zivGuardBits + 8) hcond.1
+  obtain ⟨hb1, hb2⟩ := csc_bounds_of_small (abs_pos.mpr hq0) ha1
+  exact tinyRecipOf?_eq hrl hrh hh (by linarith) (by linarith)
+    (irrational_csc_abs_toRat q h0) hT
 
 end Azurite.AzFloat

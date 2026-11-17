@@ -44,10 +44,12 @@ def sinCosPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) :
       haveI : NeZero p := ⟨hp⟩
       match sinTiny? s (finite s e q m hv) e q p mode, cosTiny? e p mode with
       | none, none =>
-        zivLoopCertified₂ (sinCosApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)
+        zivLoopCertified₂ (sinCosApprox (!s) (finite s e q m hv) e) p mode
+            (p + zivGuardBits + tinyExtra e)
           (sinCosApprox_isSome_exists p mode (!s) (toVal_finite s e q m hv)
             (finiteVal_ne_zero s e hv) (finiteVal_neg_iff s e hv)
-            (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits) (by unfold zivGuardBits; omega))
+            (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits + tinyExtra e)
+                (by unfold zivGuardBits; omega))
       | _, _ => (sinPrecRound (finite s e q m hv) p mode, cosPrecRound (finite s e q m hv) p mode)
   | _ => (sinPrecRound x p mode, cosPrecRound x p mode)
 

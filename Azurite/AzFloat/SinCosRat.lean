@@ -40,8 +40,8 @@ def sinCosRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) :
     haveI : NeZero p := ⟨hp⟩
     match sinTinyRat? q p mode, cosTiny? (ratExpBound q) p mode with
     | none, none =>
-      zivLoopCertified₂ (sinCosRatApprox q) p mode (p + zivGuardBits)
-        (sinCosRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+      zivLoopCertified₂ (sinCosRatApprox q) p mode (p + zivGuardBits + ratTinyExtra q)
+        (sinCosRatApprox_isSome_exists p mode q h0 (p + zivGuardBits + ratTinyExtra q)
           (by unfold zivGuardBits; omega))
     | _, _ => (sinRatPrecRound q p mode, cosRatPrecRound q p mode)
 

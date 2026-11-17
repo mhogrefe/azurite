@@ -8,6 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.SinhRatBracket
+import Azurite.AzFloat.CscBracket
 
 /-!
 ## The brackets of `csch x` and `csch q`
@@ -70,11 +71,13 @@ def cschTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMod
     Option (AzFloat × Ordering) :=
   cschTinyCore? s x.abs x.abs e p mode
 
-/-- The tiny-argument path of `csch q` for a rational `q`. -/
+/-- The tiny-argument path of `csch q` for a rational `q` (`1/|q|` rounded from the rational
+itself). -/
 def cschTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
   guardedBy (!(ratExpBound q).sign
       && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
-    cschTinyCore? q.sign (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
-      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
+    tinyRecipOf? q.sign (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Ceiling).1)
+      (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Floor).1)
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (p + zivGuardBits + 8) p mode
 
 end Azurite.AzFloat

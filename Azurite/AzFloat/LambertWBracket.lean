@@ -327,11 +327,16 @@ def halleyFloat (x : Float) : Nat → Float → Float
     halleyFloat x k (w - f / den)
 
 /-- A `Float` seed for the branch (`none` when `Float` cannot represent the problem: an
-overflow, or an argument below the normal range `2^(−1022)`, where the conversion keeps only
-a few bits of `x` — or none — and the seed would have as few). -/
+argument above `2^1000`, or an argument below the normal range `2^(−1022)`, where the
+conversion keeps only a few bits of `x` — or none — and the seed would have as few).  The upper
+cutoff is below the overflow threshold because the products of `halleyFloat` overflow first:
+from about `2^1021` on, `(w + 2) f` is infinite, every step is `0`, and the start value came
+back as a seed with an error of `2^(−6)` (the candidate then missed, and the bisection ran:
+0.2–0.9 s instead of 1 ms). -/
 def seedFloat (branch0 : Bool) (x : AzFloat) : Option AzFloat :=
   let xf := toFloat64 x
-  if !xf.isFinite || xf.abs < 2.2250738585072014e-308 then none
+  if !xf.isFinite || xf.abs < 2.2250738585072014e-308 || xf.abs > 1.0715086071862673e301
+  then none
   else
     let q := 1 + Float.exp 1 * xf
     let s : Float :=

@@ -59,9 +59,11 @@ def cscPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orde
       match cscTiny? s (finite s e q m hv) e p mode with
       | some r => r
       | none =>
-        zivLoopCertified (cscApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)
+        zivLoopCertified (cscApprox (!s) (finite s e q m hv) e) p mode
+            (p + zivGuardBits + tinyExtra e)
           (cscApprox_isSome_exists p mode (!s) (toVal_finite s e q m hv)
-            (finiteVal_ne_zero s e hv) (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits)
+            (finiteVal_ne_zero s e hv) (abs_finiteVal_bounds s e hv).2
+                (p + zivGuardBits + tinyExtra e)
             (by unfold zivGuardBits; omega))
 
 /-- `csc x` rounded to nearest at the precision of `x`. -/
@@ -77,8 +79,8 @@ def cscRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     match cscTinyRat? q p mode with
     | some r => r
     | none =>
-      zivLoopCertified (cscRatApprox q) p mode (p + zivGuardBits)
-        (cscRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+      zivLoopCertified (cscRatApprox q) p mode (p + zivGuardBits + ratTinyExtra q)
+        (cscRatApprox_isSome_exists p mode q h0 (p + zivGuardBits + ratTinyExtra q)
           (by unfold zivGuardBits; omega))
 
 /-- `csc q` rounded to nearest at precision `p`. -/
@@ -98,8 +100,9 @@ def cscPeriodCore (neg : Bool) (r : AzRat)
     setPrecRound (signedPow2
       (neg != decide (r.num = AzNat.ofNat 1 ∨ r.num = AzNat.ofNat 5)) 1) p mode
   else
-    zivLoopCertified (cscPeriodApprox neg r) p mode (p + zivGuardBits)
-      (cscPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h12 (p + zivGuardBits)
+    zivLoopCertified (cscPeriodApprox neg r) p mode (p + zivGuardBits + ratTinyExtra r)
+      (cscPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h12
+          (p + zivGuardBits + ratTinyExtra r)
         (by unfold zivGuardBits; omega))
 
 /-- `csc (2π x / u)` rounded to precision `p` with `mode`, and the comparison with the exact

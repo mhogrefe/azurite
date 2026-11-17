@@ -56,11 +56,12 @@ def sinCosWithPeriodPrecRound (x : AzFloat) (u : UInt64) (p : Nat) (mode : Round
           let r := periodFrac m (e - (AzNat.ofNat m.size).toAzInt) (AzNat.ofNat u.toNat)
           if h : r.den ≠ AzNat.ofNat 1 ∧ r.den ≠ AzNat.ofNat 2 ∧ r.den ≠ AzNat.ofNat 3 ∧
               r.den ≠ AzNat.ofNat 4 ∧ r.den ≠ AzNat.ofNat 6 ∧ r.den ≠ AzNat.ofNat 12 then
-            zivLoopCertified₂ (sinCosPeriodApprox (!s) r) p mode (p + zivGuardBits) (by
+            zivLoopCertified₂ (sinCosPeriodApprox (!s) r) p mode
+                (p + zivGuardBits + ratTinyExtra r) (by
               obtain ⟨_, _, hr0, hr1⟩ :=
                 periodFrac_spec m (e - (AzNat.ofNat m.size).toAzInt) hun
               exact sinCosPeriodApprox_isSome_exists p mode (!s) r hr0 hr1 h.1 h.2.1 h.2.2.1
-                h.2.2.2.1 h.2.2.2.2.1 h.2.2.2.2.2 (p + zivGuardBits)
+                h.2.2.2.1 h.2.2.2.2.1 h.2.2.2.2.2 (p + zivGuardBits + ratTinyExtra r)
                 (by unfold zivGuardBits; omega))
           else
             (sinWithPeriodPrecRound (finite s e q m hv) u p mode,

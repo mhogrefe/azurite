@@ -152,8 +152,36 @@ theorem sin_pi_mul_eq (xv : ℝ) (k : ℤ) :
   congr 1
   ring
 
-/-- `gammaSinEncl` answers with the sign of `sin (π x)` and a positive enclosure of its
-absolute value. -/
+/-- `gammaSinOfFrac` answers with the sign and a positive enclosure of `|sin (π x)|`. -/
+theorem gammaSinOfFrac_spec {σ : Bool} {k : AzInt} {A : Encl} {xv : ℝ}
+    (hA : IsEnclPos A ((if σ then -1 else 1) * (xv - k.toInt))) {W : ℕ}
+    (hW : 64 ≤ W) {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {S : Encl}
+    (h : gammaSinOfFrac σ k A W w = some (neg, S)) :
+    IsEnclPos S ((if neg then -1 else 1) * Real.sin (π * xv)) := by
+  have : NeZero W := ⟨by omega⟩
+  unfold gammaSinOfFrac at h
+  dsimp only at h
+  split_ifs at h with hp
+  rw [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, rfl⟩ := h
+  have hY := hA.mul (by omega : 2 ≤ W) (enclosesPos_pi hW)
+  have hS := (sinOfEncl_spec hY (W := W) (Nat.le_add_right_of_le hw)).pos_of_lt hp
+  convert hS using 1
+  rw [sin_pi_mul_eq xv k.toInt]
+  have hpar : ((-1 : ℝ)) ^ k.toInt = if k.isOdd then -1 else 1 := by
+    by_cases ho : k.isOdd = true
+    · rw [ho, ite_eq_left rfl, ((AzInt.isOdd_iff k).mp ho).neg_one_zpow]
+    · have he : Even k.toInt := Int.not_odd_iff_even.mp fun h' => ho ((AzInt.isOdd_iff k).mpr h')
+      rw [Bool.not_eq_true] at ho
+      rw [ho, ite_eq_right (by simp), he.neg_one_zpow]
+  rw [hpar]
+  cases σ <;> cases hk : k.isOdd <;> simp [mul_comm π]
+  all_goals
+    rw [← Real.sin_neg]
+    congr 1
+    ring
+
+/-- `gammaSinEncl` answers with the sign and a positive enclosure of `|sin (π x)|`. -/
 theorem gammaSinEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal)) {W : ℕ}
     (hW : 64 ≤ W) {w : ℕ} (hw : 64 ≤ w) {neg : Bool} {S : Encl}
     (h : gammaSinEncl x W w = some (neg, S)) :
@@ -165,26 +193,7 @@ theorem gammaSinEncl_spec {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : ER
   split at h
   · exact absurd h (by simp)
   · rename_i σ A hF
-    split_ifs at h with hp
-    rw [Option.some.injEq, Prod.mk.injEq] at h
-    obtain ⟨rfl, rfl⟩ := h
-    have hA := gammaFracEncl_spec hx k hF
-    have hY := hA.mul (by omega : 2 ≤ W) (enclosesPos_pi hW)
-    have hS := (sinOfEncl_spec hY (W := W) (Nat.le_add_right_of_le hw)).pos_of_lt hp
-    convert hS using 1
-    rw [sin_pi_mul_eq xv k.toInt]
-    have hpar : ((-1 : ℝ)) ^ k.toInt = if k.isOdd then -1 else 1 := by
-      by_cases ho : k.isOdd = true
-      · rw [ho, ite_eq_left rfl, ((AzInt.isOdd_iff k).mp ho).neg_one_zpow]
-      · have he : Even k.toInt := Int.not_odd_iff_even.mp fun h' => ho ((AzInt.isOdd_iff k).mpr h')
-        rw [Bool.not_eq_true] at ho
-        rw [ho, ite_eq_right (by simp), he.neg_one_zpow]
-    rw [hpar]
-    cases σ <;> cases hk : k.isOdd <;> simp [mul_comm π]
-    all_goals
-      rw [← Real.sin_neg]
-      congr 1
-      ring
+    exact gammaSinOfFrac_spec (gammaFracEncl_spec hx k hF) hW hw h
 
 /-! ### The core -/
 
@@ -203,6 +212,62 @@ private theorem sign_mul_inv_div (c s g a : ℝ) :
 noncomputable def gammaVal (recip : Bool) (xv : ℝ) : ℝ :=
   if recip then (Real.Gamma xv)⁻¹ else Real.Gamma xv
 
+/-- **The reflection formula on enclosures** (`x < 1` not an integer). -/
+theorem gammaReflect_spec {recip : Bool} {G : Option Encl} {S : Option (Bool × Encl)} {xv : ℝ}
+    (hx1 : xv < 1) {w : ℕ} (hw : 64 ≤ w)
+    (hG : ∀ G', G = some G' → IsEnclPos G' (Real.Gamma (-xv + 1)))
+    (hS : ∀ neg S', S = some (neg, S') →
+      IsEnclPos S' ((if neg then -1 else 1) * Real.sin (π * xv)))
+    {neg : Bool} {b : Encl} (h : gammaReflect recip G S w = some (neg, b)) :
+    IsEnclPos b ((if neg then -1 else 1) * gammaVal recip xv) := by
+  unfold gammaReflect at h
+  split at h
+  · rename_i G' neg' S'
+    rw [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    have hV : 64 ≤ w + 16 := by omega
+    have : NeZero (w + 16) := ⟨by omega⟩
+    have hGe := hG G' rfl
+    have hSe := hS neg' S' rfl
+    have hg0 : 0 < Real.Gamma (-xv + 1) := Real.Gamma_pos_of_pos (by linarith)
+    have hT := hSe.mul (by omega : 2 ≤ w + 16) hGe
+    have hπ := enclosesPos_pi hV
+    have hrefl := Real.Gamma_mul_Gamma_one_sub xv
+    rw [show (1 : ℝ) - xv = -xv + 1 by ring] at hrefl
+    have hsin0 : Real.sin (π * xv) ≠ 0 := by
+      obtain ⟨l, u, -, -, hl0, hl1, -⟩ := hSe
+      intro h0
+      rw [h0, mul_zero] at hl1
+      linarith
+    have hGx : Real.Gamma xv = π / (Real.sin (π * xv) * Real.Gamma (-xv + 1)) := by
+      rw [eq_div_iff (mul_ne_zero hsin0 hg0.ne'), mul_comm (Real.sin _), ← mul_assoc, hrefl]
+      field_simp
+    unfold gammaVal
+    cases recip
+    · simp only [Bool.false_eq_true, ↓reduceIte]
+      have := hπ.div (by omega : 2 ≤ w + 16) hT
+      convert this using 1
+      rw [hGx]
+      exact sign_mul_div (by cases neg' <;> simp) hsin0 hg0.ne'
+    · simp only [↓reduceIte]
+      have := hT.div (by omega : 2 ≤ w + 16) hπ
+      convert this using 1
+      rw [hGx]
+      exact sign_mul_inv_div _ _ _ _
+  · exact absurd h (by simp)
+
+/-- The exponential of an enclosure of `ln Γ(y)`, `y > 0`, encloses `Γ(y)` or `1/Γ(y)`. -/
+theorem gammaExpEncl_lnGamma {recip : Bool} {L b : Encl} {yv : ℝ} (hy : 0 < yv)
+    (hL : IsEncl L (Real.log (Real.Gamma yv))) {w : ℕ} (hw : 64 ≤ w)
+    (h : gammaExpEncl recip L w = some b) : IsEnclPos b (gammaVal recip yv) := by
+  have hb := gammaExpEncl_spec hL hw h
+  have hG := Real.Gamma_pos_of_pos hy
+  convert hb using 1
+  unfold gammaVal
+  cases recip
+  · simp [Real.exp_log hG]
+  · simp [Real.exp_neg, Real.exp_log hG]
+
 /-- **`gammaCore` answers with the sign and a positive enclosure of `|Γ(x)|` or `|1/Γ(x)|`.** -/
 theorem gammaCore_spec {recip : Bool} {x : AzFloat} {xv : ℝ} (hx : x.toVal = some (xv : EReal))
     {e : AzInt} {pos : Bool} (hpos : pos = true → 0 < xv) (hneg : pos = false → xv < 0) {w : ℕ}
@@ -217,61 +282,23 @@ theorem gammaCore_spec {recip : Bool} {x : AzFloat} {xv : ℝ} (hx : x.toVal = s
     rw [Prod.mk.injEq] at hbeq
     obtain ⟨rfl, rfl⟩ := hbeq
     have hL := lnGammaBracket_spec hx hx0 e (w := w + gammaLnBits e) (by omega)
-    have hb := gammaExpEncl_spec hL hw hb'
-    have hG := Real.Gamma_pos_of_pos hx0
-    convert hb using 1
-    unfold gammaVal
-    cases recip
-    · simp [Real.exp_log hG]
-    · simp [Real.exp_neg, Real.exp_log hG]
+    simpa using gammaExpEncl_lnGamma hx0 hL hw hb'
   | false =>
     have hx0 := hneg rfl
     rw [ite_eq_right (by simp)] at h
     dsimp only at h
-    split at h
-    · rename_i G neg' S hG hS
-      rw [Option.some.injEq, Prod.mk.injEq] at h
-      obtain ⟨rfl, rfl⟩ := h
-      set e' : AzInt := (if e.sign then e else 0) + 1
-      have hV : 64 ≤ w + 16 := by omega
-      have : NeZero (w + 16) := ⟨by omega⟩
-      have : NeZero (w + gammaLnBits e' + 32) := ⟨by omega⟩
-      have hnx : (-x).toVal = some ((-xv : ℝ) : EReal) := by
-        rw [toVal_neg, hx, Option.map_some, EReal.coe_neg]
-      have hX₁ : IsEnclPos (Encl.add (w + gammaLnBits e' + 32) (Encl.exact (-x))
-          (Encl.exact one)) (-xv + 1) :=
-        (isEnclPos_exact hnx (by linarith)).add (by omega) enclosesPos_one.encloses0
-      have hL := lnGammaBracketEncl_spec hX₁ e' (w := w + gammaLnBits e') (by omega)
-      have hGe := gammaExpEncl_spec hL hw hG
-      simp only [Bool.false_eq_true, ↓reduceIte] at hGe
-      have hg0 : 0 < Real.Gamma (-xv + 1) := Real.Gamma_pos_of_pos (by linarith)
-      rw [Real.exp_log hg0] at hGe
-      have hSe := gammaSinEncl_spec hx hV hw hS
-      have hT := hSe.mul (by omega : 2 ≤ w + 16) hGe
-      have hπ := enclosesPos_pi hV
-      have hrefl := Real.Gamma_mul_Gamma_one_sub xv
-      rw [show (1 : ℝ) - xv = -xv + 1 by ring] at hrefl
-      have hsin0 : Real.sin (π * xv) ≠ 0 := by
-        obtain ⟨l, u, -, -, hl0, hl1, -⟩ := hSe
-        intro h0
-        rw [h0, mul_zero] at hl1
-        linarith
-      have hGx : Real.Gamma xv = π / (Real.sin (π * xv) * Real.Gamma (-xv + 1)) := by
-        rw [eq_div_iff (mul_ne_zero hsin0 hg0.ne'), mul_comm (Real.sin _), ← mul_assoc, hrefl]
-        field_simp
-      unfold gammaVal
-      cases recip
-      · simp only [Bool.false_eq_true, ↓reduceIte]
-        have := hπ.div (by omega : 2 ≤ w + 16) hT
-        convert this using 1
-        rw [hGx]
-        exact sign_mul_div (by cases neg' <;> simp) hsin0 hg0.ne'
-      · simp only [↓reduceIte]
-        have := hT.div (by omega : 2 ≤ w + 16) hπ
-        convert this using 1
-        rw [hGx]
-        exact sign_mul_inv_div _ _ _ _
-    · exact absurd h (by simp)
+    set e' : AzInt := (if e.sign then e else 0) + 1
+    have : NeZero (w + gammaLnBits e' + 32) := ⟨by omega⟩
+    have hnx : (-x).toVal = some ((-xv : ℝ) : EReal) := by
+      rw [toVal_neg, hx, Option.map_some, EReal.coe_neg]
+    have hX₁ : IsEnclPos (Encl.add (w + gammaLnBits e' + 32) (Encl.exact (-x))
+        (Encl.exact one)) (-xv + 1) :=
+      (isEnclPos_exact hnx (by linarith)).add (by omega) enclosesPos_one.encloses0
+    have hL := lnGammaBracketEncl_spec hX₁ e' (w := w + gammaLnBits e') (by omega)
+    refine gammaReflect_spec (by linarith) hw (fun G' hG => ?_)
+      (fun neg' S' hS => gammaSinEncl_spec hx (by omega) hw hS) h
+    have := gammaExpEncl_lnGamma (recip := false) (by linarith : (0 : ℝ) < -xv + 1) hL hw hG
+    simpa [gammaVal] using this
 
 /-- `gammaStrict` encloses a positive value strictly on both sides. -/
 theorem gammaStrict_spec {b : Encl} {v : ℝ} (hb : IsEnclPos b v) (w : ℕ) :
@@ -287,25 +314,21 @@ theorem gammaStrict_spec {b : Encl} {v : ℝ} (hb : IsEnclPos b v) (w : ℕ) :
   have h4 : 0 < hi * (2 : ℝ) ^ k.toInt := mul_pos (by linarith) hk
   exact ⟨r, s, hr, hs, by linarith, by linarith⟩
 
-/-- **At every level `w ≥ 64` the bracket of `gammaApprox` encloses the value strictly or is
-rejected.** -/
-theorem gammaApprox_valid_or_none (recip : Bool) {x : AzFloat} {xv : ℝ}
-    (hx : x.toVal = some (xv : EReal)) (e : AzInt) {pos : Bool} (hpos : pos = true → 0 < xv)
-    (hneg : pos = false → xv < 0) {w : ℕ} (hw : 64 ≤ w) (p : ℕ) [NeZero p]
-    (mode : RoundingMode) :
-    (∃ lv hv : ℝ, Rounds (gammaApprox recip x e pos w).1 lv ∧
-        Rounds (gammaApprox recip x e pos w).2 hv ∧
-        lv ≤ gammaVal recip xv ∧ gammaVal recip xv ≤ hv ∧
-        (lv = gammaVal recip xv → hv = gammaVal recip xv)) ∨
-      roundingPossible (gammaApprox recip x e pos w).1 (gammaApprox recip x e pos w).2 p mode
-        = none := by
-  unfold gammaApprox
-  cases hc : gammaCore recip x e pos w with
+/-- **The bracket of `gammaApproxOf` encloses the value strictly or is rejected**, when every
+answer of the core is a positive enclosure of the signed value. -/
+theorem gammaApproxOf_valid_or_none {c : Option (Bool × Encl)} {v : ℝ}
+    (hc : ∀ neg b, c = some (neg, b) → IsEnclPos b ((if neg then -1 else 1) * v)) (w p : ℕ)
+    [NeZero p] (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (gammaApproxOf c w).1 lv ∧ Rounds (gammaApproxOf c w).2 hv ∧
+        lv ≤ v ∧ v ≤ hv ∧ (lv = v → hv = v)) ∨
+      roundingPossible (gammaApproxOf c w).1 (gammaApproxOf c w).2 p mode = none := by
+  unfold gammaApproxOf
+  cases hc' : c with
   | none => right; exact roundingPossible_negSwapApprox_dummy false p mode
   | some pr =>
     obtain ⟨neg, b⟩ := pr
     left
-    obtain ⟨l, u, hl, hu, hl1, hu1⟩ := gammaStrict_spec (gammaCore_spec hx hpos hneg hw hc) w
+    obtain ⟨l, u, hl, hu, hl1, hu1⟩ := gammaStrict_spec (hc neg b hc') w
     simp only [negSwapApprox]
     cases neg with
     | false =>
@@ -326,6 +349,20 @@ theorem gammaApprox_valid_or_none (recip : Bool) {x : AzFloat} {xv : ℝ}
       have hR2 := rounds_setPrecRound (isFinite_of_toVal_coe hnl)
       rw [fval_of_toVal_coe hnl] at hR2
       exact ⟨-u, -l, hR1, hR2, by linarith, by linarith, fun h => absurd h (by linarith)⟩
+
+/-- **At every level `w ≥ 64` the bracket of `gammaApprox` encloses the value strictly or is
+rejected.** -/
+theorem gammaApprox_valid_or_none (recip : Bool) {x : AzFloat} {xv : ℝ}
+    (hx : x.toVal = some (xv : EReal)) (e : AzInt) {pos : Bool} (hpos : pos = true → 0 < xv)
+    (hneg : pos = false → xv < 0) {w : ℕ} (hw : 64 ≤ w) (p : ℕ) [NeZero p]
+    (mode : RoundingMode) :
+    (∃ lv hv : ℝ, Rounds (gammaApprox recip x e pos w).1 lv ∧
+        Rounds (gammaApprox recip x e pos w).2 hv ∧
+        lv ≤ gammaVal recip xv ∧ gammaVal recip xv ≤ hv ∧
+        (lv = gammaVal recip xv → hv = gammaVal recip xv)) ∨
+      roundingPossible (gammaApprox recip x e pos w).1 (gammaApprox recip x e pos w).2 p mode
+        = none :=
+  gammaApproxOf_valid_or_none (fun _ _ hc => gammaCore_spec hx hpos hneg hw hc) w p mode
 
 /-! ### Tiny arguments -/
 

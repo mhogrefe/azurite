@@ -32,8 +32,8 @@ def sinRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     match sinTinyRat? q p mode with
     | some r => r
     | none =>
-      zivLoopCertified (sinRatApprox q) p mode (p + zivGuardBits)
-        (sinRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+      zivLoopCertified (sinRatApprox q) p mode (p + zivGuardBits + ratTinyExtra q)
+        (sinRatApprox_isSome_exists p mode q h0 (p + zivGuardBits + ratTinyExtra q)
           (by unfold zivGuardBits; omega))
 
 /-- `sin q` rounded to nearest at precision `p`. -/

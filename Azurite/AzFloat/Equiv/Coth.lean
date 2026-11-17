@@ -74,7 +74,8 @@ theorem cothPrecRound_eq_liftVal (x : AzFloat) (p : ℕ) [NeZero p] (mode : Roun
     · next r hT => exact cothTiny?_eq hv p mode hT
     split
     · next r hT =>
-      rw [cothNearOne?_eq (tanhFloatN_le (abs_finiteVal_bounds s e hv).1) hT,
+      rw [cothNearOne?_eq (tanhFloatN_le (toVal_finite s e q m hv)
+          (abs_finiteVal_bounds s e hv).1) hT,
         coth_sign_eq (finiteVal_sign_iff s e hv) hx0]
     exact zivLoopCertified_eq_threshold' p mode _ _
       (not_mem_floatSet_of_irrational p (irrational_coth_of_toVal (toVal_finite s e q m hv) hx0))

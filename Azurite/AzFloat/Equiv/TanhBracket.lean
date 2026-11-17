@@ -445,9 +445,10 @@ theorem tanhNearOne?_eq {pos : Bool} {N p : ℕ} [NeZero p] {mode : RoundingMode
     obtain ⟨r', hr', rfl⟩ := Option.map_eq_some_iff.mp h
     rw [key hr', roundVal_neg]
 
-/-- `tanhFloatN e ≤ 2|x|` for `|x| ≥ 2^(e−1)`. -/
-theorem tanhFloatN_le {e : AzInt} {xv : ℝ} (hx : (2 : ℝ) ^ (e.toInt - 1) ≤ |xv|) :
-    (tanhFloatN e : ℝ) ≤ 2 * |xv| := by
+/-- `tanhFloatN x e ≤ 2|x|` for `|x| ≥ 2^(e−1)`. -/
+theorem tanhFloatN_le {x : AzFloat} {e : AzInt} {xv : ℝ} (hxv : x.toVal = some (xv : EReal))
+    (hx : (2 : ℝ) ^ (e.toInt - 1) ≤ |xv|) :
+    (tanhFloatN x e : ℝ) ≤ 2 * |xv| := by
   unfold tanhFloatN
   have htoInt : e.toInt = if e.sign then (e.abs.toNat : ℤ) else -(e.abs.toNat : ℤ) := rfl
   cases hs : e.sign with
@@ -456,19 +457,28 @@ theorem tanhFloatN_le {e : AzInt} {xv : ℝ} (hx : (2 : ℝ) ^ (e.toInt - 1) ≤
     positivity
   | true =>
     simp only [↓reduceIte]
-    rw [hs] at htoInt
-    simp only [↓reduceIte] at htoInt
-    have h1 : (2 : ℝ) ^ e.toInt ≤ 2 * |xv| := by
-      have : (2 : ℝ) ^ e.toInt = 2 * (2 : ℝ) ^ (e.toInt - 1) := by
-        rw [zpow_sub₀ (by norm_num), zpow_one]
-        ring
-      rw [this]
+    split_ifs with h62
+    · obtain ⟨-, ht⟩ := truncToAzInt_spec (toVal_shiftLeft_of_toVal hxv (AzInt.ofInt 1))
+      rw [AzInt.toInt_ofInt, zpow_one, abs_mul, abs_two] at ht
+      set t := truncToAzInt (x <<< AzInt.ofInt 1) with htd
+      have habs : (t.abs.toNat : ℝ) = |(t.toInt : ℝ)| := by
+        have h : t.toInt = if t.sign then (t.abs.toNat : ℤ) else -(t.abs.toNat : ℤ) := rfl
+        rw [h]
+        split_ifs <;> simp
+      rw [habs]
       linarith
-    have h2 : ((2 ^ (min e.abs.toNat 62) : ℕ) : ℝ) ≤ (2 : ℝ) ^ e.toInt := by
-      rw [htoInt, zpow_natCast]
-      push_cast
-      exact pow_le_pow_right₀ (by norm_num) (min_le_left _ _)
-    exact h2.trans h1
+    · rw [hs] at htoInt
+      simp only [↓reduceIte] at htoInt
+      have h1 : (2 : ℝ) ^ e.toInt ≤ 2 * |xv| := by
+        have : (2 : ℝ) ^ e.toInt = 2 * (2 : ℝ) ^ (e.toInt - 1) := by
+          rw [zpow_sub₀ (by norm_num), zpow_one]
+          ring
+        rw [this]
+        linarith
+      have h2 : ((2 ^ 62 : ℕ) : ℝ) ≤ (2 : ℝ) ^ e.toInt := by
+        rw [htoInt, zpow_natCast, Nat.cast_pow, Nat.cast_ofNat]
+        exact pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 2) (by omega : 62 ≤ e.abs.toNat)
+      exact h2.trans h1
 
 /-- `tanhRatN q ≤ 2|q|`. -/
 theorem tanhRatN_le (q : AzRat) : (tanhRatN q : ℝ) ≤ 2 * |(AzRat.toRat q : ℝ)| := by

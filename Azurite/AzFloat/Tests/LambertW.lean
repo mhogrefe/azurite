@@ -189,3 +189,13 @@ private def dirOk (f : RoundingMode → AzFloat × Ordering) : Bool :=
 #guard expSize (one <<< AzInt.ofInt (2 ^ 78)) == 79
 #guard lambertIntBits (nat 1000, nat 1001) == 10
 #guard lambertIntBits (F "1/4" 53, F "1/2" 53) == 0
+
+-- the top of the `Float` range (the `Float` seed is not used above `2^1000`): the 53-bit
+-- result is the rounding of the 200-bit one; `W₀ (3·2^1022) ≈ 703.0`
+#guard [990, 1010, 1021, 1022, 1023].all fun k =>
+  let x := (nat 3) <<< AzInt.ofInt k
+  dirOk (fun m => W0 x 53 m) && (W0 x 53).1 == (setPrecRound (W0 x 200).1 53 .Nearest).1
+#guard lt (nat 702) (W0 ((nat 3) <<< AzInt.ofInt 1022) 53).1
+  && lt (W0 ((nat 3) <<< AzInt.ofInt 1022) 53).1 (nat 704)
+#guard (seedFloat true ((nat 3) <<< AzInt.ofInt 1022)).isNone
+#guard (seedFloat true ((nat 3) <<< AzInt.ofInt 990)).isSome

@@ -208,6 +208,16 @@ def sinCosApprox (neg : Bool) (x : AzFloat) (ex : AzInt) (w : Nat) :
     else (fun p mode => setPrecRound b.1.1 p mode, fun p mode => setPrecRound b.1.2 p mode),
     (fun p mode => setPrecRound b.2.1 p mode, fun p mode => setPrecRound b.2.2 p mode))
 
+/-- The bits by which a float of exponent `e` is below `1`.  The brackets of `sin`, `tan`, `csc`
+and `cot` have absolute width `2^(−w)` while the value is about `2^e` (or its reciprocal), so
+the Ziv loops of a small argument that is not tiny enough for the tiny path start that much
+higher instead of failing once. -/
+def tinyExtra (e : AzInt) : Nat := if e.sign then 0 else e.abs.toNat
+
+/-- The bits by which a rational is below `1`, within one: the starting bits of the Ziv loops
+at a small rational, as `tinyExtra`. -/
+def ratTinyExtra (q : AzRat) : Nat := q.den.size - q.num.size
+
 /-- The bracket of `sin x` as a pair of `Roundable`s: that of `sin |x|`, negated and swapped
 when `neg` (`x < 0`). -/
 def sinApprox (neg : Bool) (x : AzFloat) (ex : AzInt) (w : Nat) : Roundable × Roundable :=

@@ -47,10 +47,12 @@ def sinPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Orde
       match sinTiny? s (finite s e q m hv) e q p mode with
       | some r => r
       | none =>
-        zivLoopCertified (sinApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)
+        zivLoopCertified (sinApprox (!s) (finite s e q m hv) e) p mode
+            (p + zivGuardBits + tinyExtra e)
           (sinApprox_isSome_exists p mode (!s) (toVal_finite s e q m hv)
             (finiteVal_ne_zero s e hv) (finiteVal_neg_iff s e hv)
-            (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits) (by unfold zivGuardBits; omega))
+            (abs_finiteVal_bounds s e hv).2 (p + zivGuardBits + tinyExtra e)
+                (by unfold zivGuardBits; omega))
 
 /-- `sin x` rounded to nearest at the precision of `x`. -/
 def sin (x : AzFloat) : AzFloat := (sinPrecRound x (x.precision?.getD 1) .Nearest).1

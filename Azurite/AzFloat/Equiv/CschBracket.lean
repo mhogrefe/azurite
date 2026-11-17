@@ -11,6 +11,7 @@ import Azurite.AzFloat.CschBracket
 import Azurite.AzFloat.Equiv.SinhRatBracket
 import Azurite.AzFloat.Equiv.CoshBracket
 import Azurite.AzFloat.Equiv.TanhBracket
+import Azurite.AzFloat.Equiv.CscBracket
 
 /-!
 # Equivalence: the brackets of `csch x` and `csch q`
@@ -326,7 +327,9 @@ theorem cschTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mod
     {r : AzFloat × Ordering} (hT : cschTinyRat? q p mode = some r) :
     r = roundVal p mode (some (((Real.sinh (AzRat.toRat q : ℝ))⁻¹ : ℝ) : EReal)) := by
   unfold cschTinyRat? at hT
+  have hcond := cond_of_guardedBy hT
   replace hT := eq_some_of_guardedBy hT
+  simp only [Bool.and_eq_true, Bool.not_eq_true', decide_eq_true_eq] at hcond
   have : NeZero (p + zivGuardBits + 8) := ⟨by omega⟩
   have hq0 : (AzRat.toRat q : ℝ) ≠ 0 := fun h => h0 ((AzRat.toRat_eq_zero_iff q).mp h)
   have habs : ((AzRat.toRat q.abs : ℚ) : ℝ) = |((AzRat.toRat q : ℚ) : ℝ)| := by
@@ -334,19 +337,22 @@ theorem cschTinyRat?_eq (q : AzRat) (h0 : q.num ≠ 0) {p : ℕ} [NeZero p] {mod
     push_cast
     rfl
   have ha0 := abs_pos.mpr hq0
-  have hus : (1 / 2 : ℝ) ^ (p + zivGuardBits + 8) ≤ 1 / 10 ^ 18 :=
-    half_pow_small (by unfold zivGuardBits; omega)
-  obtain ⟨l, hl, hl1, hl2⟩ := ofAzRatRound_floor_abs q.abs (p + zivGuardBits + 8)
-  obtain ⟨c, hc, hc1, -⟩ := ofAzRatRound_ceiling_abs q.abs (p + zivGuardBits + 8)
-  rw [habs] at hl1 hl2 hc1
-  rw [abs_abs] at hl2
-  have hl0 : 0 < l := by nlinarith
-  have hlt : |((AzRat.toRat q : ℚ) : ℝ)| < (2 : ℝ) ^ (ratExpBound q).toInt :=
-    lt_of_lt_of_le (abs_toRat_lt_two_zpow q) (zpow_le_zpow_right₀ (by norm_num) (by omega))
+  obtain ⟨rl, rh, h, hrl, hrh, hh, h1, h2, h3, ha1⟩ :=
+    tinyRat_spec q (p + zivGuardBits + 8) hcond.1
+  obtain ⟨hb1, hb2⟩ := csch_bounds_of_small ha0 ha1
   have hirr : Irrational (Real.sinh |((AzRat.toRat q : ℚ) : ℝ)|)⁻¹ := by
     have h := (irrational_sinh_toRat q.abs (fun h => h0 h)).inv
     rwa [habs] at h
-  rw [cschTinyCore?_eq hl hc hl0 hl1 hc1 hlt hirr hT,
-    csch_sign_eq (toRat_sign_iff q h0) hq0]
+  have hnh : (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Ceiling).1).toVal
+      = some ((-rh : ℝ) : EReal) := by
+    rw [toVal_neg, hrh, Option.map_some, EReal.coe_neg]
+  have hnl : (-(ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Floor).1).toVal
+      = some ((-rl : ℝ) : EReal) := by
+    rw [toVal_neg, hrl, Option.map_some, EReal.coe_neg]
+  have hsg : (if q.sign = true then -1 else 1) * -(Real.sinh |((AzRat.toRat q : ℚ) : ℝ)|)⁻¹
+      = (if q.sign = true then 1 else -1) * (Real.sinh |((AzRat.toRat q : ℚ) : ℝ)|)⁻¹ := by
+    split_ifs <;> ring
+  rw [tinyRecipOf?_eq hnh hnl hh (v := -(Real.sinh |((AzRat.toRat q : ℚ) : ℝ)|)⁻¹)
+    (by linarith) (by linarith) hirr.neg hT, hsg, csch_sign_eq (toRat_sign_iff q h0) hq0]
 
 end Azurite.AzFloat

@@ -47,10 +47,10 @@ def cosRatWithPeriodPrecRound (q : AzRat) (u : UInt64) (p : Nat) (mode : Roundin
     else if h3 : r.den = AzNat.ofNat 3 then setPrecRound (-(one <<< AzInt.ofInt (-1))) p mode
     else if h6 : r.den = AzNat.ofNat 6 then setPrecRound (one <<< AzInt.ofInt (-1)) p mode
     else
-      zivLoopCertified (cosPeriodApprox r) p mode (p + zivGuardBits) (by
+      zivLoopCertified (cosPeriodApprox r) p mode (p + zivGuardBits + ratTinyExtra r) (by
         obtain ⟨_, _, hr0, hr1⟩ := periodFracRat_spec q hun
         exact cosPeriodApprox_isSome_exists p mode r hr0 hr1 h1 h2 h3 h4 h6
-          (p + zivGuardBits) (by unfold zivGuardBits; omega))
+          (p + zivGuardBits + ratTinyExtra r) (by unfold zivGuardBits; omega))
 
 /-- `cos (2π q / u)` rounded to nearest at precision `p`. -/
 def cosRatWithPeriod (q : AzRat) (u : UInt64) (p : Nat) : AzFloat :=

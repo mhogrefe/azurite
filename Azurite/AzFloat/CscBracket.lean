@@ -62,6 +62,18 @@ def cscPeriodBracket (r : AzRat) (w : Nat) : AzFloat × AzFloat :=
 def cscPeriodApprox (neg : Bool) (r : AzRat) (w : Nat) : Roundable × Roundable :=
   negSwapApprox neg (cscPeriodBracket r w)
 
+/-- The rounding of `± v` (`neg`: the value is `−v`) for a real `v` with
+`rlo ≤ v ≤ rhi + ahi`, by one test of `roundingPossible` (in the negated mode for `neg`, the
+result negated); `W` is the precision of the sum.  The reciprocal-like functions of a tiny
+argument `a` are such values, with `rlo ≤ ±1/a ≤ rhi` and `a ≤ ahi`: when `rlo` is the exact
+`±1/a`, a float of few bits, it sits at the open side of the half-open test. -/
+def tinyRecipOf? (neg : Bool) (rlo rhi ahi : AzFloat) (W p : Nat) (mode : RoundingMode) :
+    Option (AzFloat × Ordering) :=
+  let hi := (addPrecRound rhi ahi W .Ceiling).1
+  let r := roundingPossible (fun P M => setPrecRound rlo P M) (fun P M => setPrecRound hi P M) p
+    (if neg then -mode else mode)
+  if neg then r.map fun r => (-r.1, r.2.swap) else r
+
 /-- **The tiny-argument test of the cosecant** for `0 < a < 2^e` enclosed by the floats
 `alo ≤ a ≤ ahi` (`neg`: the value is `−csc a`).  `none` when `2|e| < p + 72` or the test
 fails. -/
@@ -81,12 +93,14 @@ def cscTiny? (s : Bool) (x : AzFloat) (e : AzInt) (p : Nat) (mode : RoundingMode
     Option (AzFloat × Ordering) :=
   cscTinyCore? (!s) x.abs x.abs e p mode
 
-/-- The tiny-argument path of `csc q` for a rational `q`. -/
+/-- The tiny-argument path of `csc q` for a rational `q`: `1/|q|` is rounded from the rational
+itself, so that it is exact when it is a float (`q = 1/(3·2^k)`). -/
 def cscTinyRat? (q : AzRat) (p : Nat) (mode : RoundingMode) : Option (AzFloat × Ordering) :=
   guardedBy (!(ratExpBound q).sign
       && decide (p + zivGuardBits + 8 ≤ 2 * (ratExpBound q).abs.toNat)) fun _ =>
-    cscTinyCore? (!q.sign) (ofAzRatRound q.abs (p + zivGuardBits + 8) .Floor).1
-      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (ratExpBound q) p mode
+    tinyRecipOf? (!q.sign) (ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Floor).1
+      (ofAzRatRound q.abs⁻¹ (p + zivGuardBits + 8) .Ceiling).1
+      (ofAzRatRound q.abs (p + zivGuardBits + 8) .Ceiling).1 (p + zivGuardBits + 8) p mode
 
 /-- Floats `ylo ≤ y ≤ yhi` around `y = 2π m 2^E / u` at precision `W` (the exponent `E` enters
 only through exact shifts). -/

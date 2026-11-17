@@ -53,8 +53,9 @@ def tanPeriodCore (neg : Bool) (r : AzRat)
     setPrecRound (signedPow2
       (neg != decide (r.num = AzNat.ofNat 1 ∨ r.num = AzNat.ofNat 5)) 0) p mode
   else
-    zivLoopCertified (tanPeriodApprox neg r) p mode (p + zivGuardBits)
-      (tanPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h8 (p + zivGuardBits)
+    zivLoopCertified (tanPeriodApprox neg r) p mode (p + zivGuardBits + ratTinyExtra r)
+      (tanPeriodApprox_isSome_exists p mode neg r hr.1 hr.2 h1 h2 h4 h8
+          (p + zivGuardBits + ratTinyExtra r)
         (by unfold zivGuardBits; omega))
 
 /-- `tan (2π x / u)` rounded to precision `p` with `mode`, and the comparison with the exact

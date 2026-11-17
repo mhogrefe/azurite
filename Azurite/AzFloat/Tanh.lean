@@ -47,7 +47,7 @@ def tanhPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
       match sinTiny? s (finite s e q m hv) e q p mode with
       | some r => r
       | none =>
-      match tanhNearOne? s (tanhFloatN e) p mode with
+      match tanhNearOne? s (tanhFloatN (finite s e q m hv) e) p mode with
       | some r => r
       | none =>
       zivLoopCertified (tanhApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)

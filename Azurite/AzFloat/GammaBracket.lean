@@ -92,6 +92,14 @@ width is absolute and `sin y ≈ y` (next to a pole of `Γ`). -/
 def sinLostBits (y : AzFloat) : Nat :=
   if (expOf y).sign then 0 else (expOf y).abs.toNat
 
+/-- `(neg, S)` from the sign `σ` of `x − k` (`true`: negative), the integer `k` and a positive
+enclosure `A` of `|x − k|`: `S` a positive enclosure of `|sin (π x)|` and `neg` the sign of
+`sin (π x)` (`true`: negative); `none` when the enclosure of the sine is not positive. -/
+def gammaSinOfFrac (σ : Bool) (k : AzInt) (A : Encl) (W w : Nat) : Option (Bool × Encl) :=
+  let Y := Encl.mul W A (Encl.pi W)
+  let S := sinOfEncl Y W (w + sinLostBits Y.1)
+  if lt zero S.1 then some (σ != k.isOdd, S) else none
+
 /-- `(neg, S)` with `S` a positive enclosure of `|sin (π x)|` and `neg` the sign of
 `sin (π x)` (`true`: negative); `none` when no positive enclosure is found (`x` an integer, or
 too few bits). -/
@@ -99,10 +107,19 @@ def gammaSinEncl (x : AzFloat) (W w : Nat) : Option (Bool × Encl) :=
   let k := gammaNearInt x
   match gammaFracEncl x k W with
   | none => none
-  | some (σ, A) =>
-    let Y := Encl.mul W A (Encl.pi W)
-    let S := sinOfEncl Y W (w + sinLostBits Y.1)
-    if lt zero S.1 then some (σ != k.isOdd, S) else none
+  | some (σ, A) => gammaSinOfFrac σ k A W w
+
+/-- The reflection formula on enclosures: from a positive enclosure `G` of `Γ(1 − x)` and the
+sign and a positive enclosure `S` of `|sin (π x)|`, the sign and a positive enclosure of
+`|Γ(x)| = π / (|sin πx| Γ(1 − x))` (`recip = false`) or of its reciprocal. -/
+def gammaReflect (recip : Bool) (G : Option Encl) (S : Option (Bool × Encl)) (w : Nat) :
+    Option (Bool × Encl) :=
+  match G, S with
+  | some G, some (neg, S) =>
+    let T := Encl.mul (w + 16) S G
+    some (neg, if recip then Encl.div (w + 16) T (Encl.pi (w + 16))
+      else Encl.div (w + 16) (Encl.pi (w + 16)) T)
+  | _, _ => none
 
 /-- `(neg, b)`: the sign of `Γ(x)` and a positive enclosure `b` of `|Γ(x)|` (`recip = false`)
 or `|1/Γ(x)|` (`recip = true`), for a finite `x < 2^e` that is positive (`pos`) or negative and
@@ -115,12 +132,8 @@ def gammaCore (recip : Bool) (x : AzFloat) (e : AzInt) (pos : Bool) (w : Nat) :
     let e' := (if e.sign then e else 0) + 1
     let wL := w + gammaLnBits e'
     let X₁ := Encl.add (wL + 32) (Encl.exact (-x)) (Encl.exact one)
-    match gammaExpEncl false (lnGammaBracketEncl X₁ e' wL) w, gammaSinEncl x (w + 16) w with
-    | some G, some (neg, S) =>
-      let T := Encl.mul (w + 16) S G
-      some (neg, if recip then Encl.div (w + 16) T (Encl.pi (w + 16))
-        else Encl.div (w + 16) (Encl.pi (w + 16)) T)
-    | _, _ => none
+    gammaReflect recip (gammaExpEncl false (lnGammaBracketEncl X₁ e' wL) w)
+      (gammaSinEncl x (w + 16) w) w
 
 /-- A positive enclosure made strict: the lower end lowered and the upper end raised by a
 `2^(−2w)`-th of themselves. -/
@@ -128,13 +141,18 @@ def gammaStrict (b : Encl) (w : Nat) : Encl :=
   ((subPrecRound b.1 (b.1 <<< (-(AzNat.ofNat (2 * w)).toAzInt)) (2 * w + 64) .Floor).1,
     (addPrecRound b.2 (b.2 <<< (-(AzNat.ofNat (2 * w)).toAzInt)) (2 * w + 64) .Ceiling).1)
 
+/-- The bracket of `gammaApprox` from the answer of the core: strict on both sides, or the
+dummy bracket `[−1, 1]` when there is none. -/
+def gammaApproxOf (c : Option (Bool × Encl)) (w : Nat) : Roundable × Roundable :=
+  match c with
+  | none => negSwapApprox false (-one, one)
+  | some (neg, b) => negSwapApprox neg (gammaStrict b w)
+
 /-- The bracket of `Γ(x)` or `1/Γ(x)` as a pair of `Roundable`s, strict on both sides; the
 dummy bracket `[−1, 1]` when `gammaCore` gives nothing. -/
 def gammaApprox (recip : Bool) (x : AzFloat) (e : AzInt) (pos : Bool) (w : Nat) :
     Roundable × Roundable :=
-  match gammaCore recip x e pos w with
-  | none => negSwapApprox false (-one, one)
-  | some (neg, b) => negSwapApprox neg (gammaStrict b w)
+  gammaApproxOf (gammaCore recip x e pos w) w
 
 /-- The fuel of the Ziv loops for `Γ` and `1/Γ`: ten doublings of the working precision. -/
 def gammaFuel : Nat := 10

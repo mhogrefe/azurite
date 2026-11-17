@@ -48,7 +48,7 @@ def cothPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
       match cscTiny? s (finite s e q m hv) e p mode with
       | some r => r
       | none =>
-      match cothNearOne? s (tanhFloatN e) p mode with
+      match cothNearOne? s (tanhFloatN (finite s e q m hv) e) p mode with
       | some r => r
       | none =>
       zivLoopCertified (cothApprox (!s) (finite s e q m hv) e) p mode (p + zivGuardBits)

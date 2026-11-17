@@ -47,21 +47,28 @@ theorem sinCosRatWithPeriodPrecRound_eq (q : AzRat) (u : UInt64) (p : ℕ) (mode
       obtain ⟨_, _, hr0, hr1⟩ := periodFracRat_spec q hun
       have hS : sinRatWithPeriodPrecRound q u p mode
           = zivLoopCertified (sinPeriodApprox (!q.sign) (periodFracRat q (AzNat.ofNat u.toNat)))
-            p mode (p + zivGuardBits) (sinPeriodApprox_isSome_exists p mode (!q.sign) _ hr0 hr1
-              h1 h2 h4 h12 (p + zivGuardBits) (by unfold zivGuardBits; omega)) := by
+            p mode (p + zivGuardBits + ratTinyExtra
+                (periodFracRat q (AzNat.ofNat u.toNat))) (sinPeriodApprox_isSome_exists p mode
+                    (!q.sign) _ hr0 hr1
+              h1 h2 h4 h12 (p + zivGuardBits + ratTinyExtra
+                (periodFracRat q (AzNat.ofNat u.toNat))) (by unfold zivGuardBits; omega)) := by
         simp only [sinRatWithPeriodPrecRound, dite_eq_right hu, dite_eq_right h0,
           dite_eq_right hp, hsT, dite_eq_right h1, dite_eq_right h2, dite_eq_right h4,
           dite_eq_right h12]
       have hC : cosRatWithPeriodPrecRound q u p mode
           = zivLoopCertified (cosPeriodApprox (periodFracRat q (AzNat.ofNat u.toNat)))
-            p mode (p + zivGuardBits) (cosPeriodApprox_isSome_exists p mode _ hr0 hr1 h1 h2 h3
-              h4 h6 (p + zivGuardBits) (by unfold zivGuardBits; omega)) := by
+            p mode (p + zivGuardBits + ratTinyExtra
+                (periodFracRat q (AzNat.ofNat u.toNat)))
+                    (cosPeriodApprox_isSome_exists p mode _ hr0 hr1 h1 h2 h3
+              h4 h6 (p + zivGuardBits + ratTinyExtra
+                (periodFracRat q (AzNat.ofNat u.toNat))) (by unfold zivGuardBits; omega)) := by
         simp only [cosRatWithPeriodPrecRound, dite_eq_right hu, dite_eq_right h0,
           dite_eq_right hp, hcT, dite_eq_right h1, dite_eq_right h2, dite_eq_right h3,
           dite_eq_right h4, dite_eq_right h6]
       rw [hS, hC]
       exact zivLoopCertified₂_sinCosPeriodApprox p mode (!q.sign) _ hr0 hr1 h1 h2 h3 h4 h6 h12
-        (p + zivGuardBits) (by unfold zivGuardBits; omega) _ _ _
+        (p + zivGuardBits + ratTinyExtra
+                (periodFracRat q (AzNat.ofNat u.toNat))) (by unfold zivGuardBits; omega) _ _ _
     · rfl
   · rfl
 

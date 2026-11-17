@@ -113,6 +113,11 @@ def runAzFloatLambertExtreme (_limit : Nat) (_cfg : Std.HashMap String String) (
     let xs := -(one <<< AzInt.ofInt (-(2 ^ k)))
     row s!"Wm1 -2^(-2^{k}) @3" fun _ => lambertWm1PrecRound xs 3 .Nearest
     row s!"Wm1 -2^(-2^{k}) @53" fun _ => lambertWm1PrecRound xs 53 .Nearest
+  -- the top of the `Float` range: the `Float` seed used to stall from about `2^1022` on
+  for k in [990, 1010, 1021, 1022, 1023, 1030] do
+    let xt := sh (nat 3) k
+    for P in [53, 200, 1000] do
+      row s!"W0 3*2^{k} @{P}" fun _ => lambertW0PrecRound xt P .Nearest
   -- precisions where the Halley schedule used to end short
   let third := ofAzRat ((AzRat.parse "1/3").get!) 53
   for P in [53, 99, 100, 120, 150, 310] do

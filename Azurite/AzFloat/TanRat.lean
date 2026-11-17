@@ -33,8 +33,8 @@ def tanRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × Ord
     match tanTinyRat? q p mode with
     | some r => r
     | none =>
-      zivLoopCertified (tanRatApprox q) p mode (p + zivGuardBits)
-        (tanRatApprox_isSome_exists p mode q h0 (p + zivGuardBits)
+      zivLoopCertified (tanRatApprox q) p mode (p + zivGuardBits + ratTinyExtra q)
+        (tanRatApprox_isSome_exists p mode q h0 (p + zivGuardBits + ratTinyExtra q)
           (by unfold zivGuardBits; omega))
 
 /-- `tan q` rounded to nearest at precision `p`. -/

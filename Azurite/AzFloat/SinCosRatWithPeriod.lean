@@ -52,10 +52,11 @@ def sinCosRatWithPeriodPrecRound (q : AzRat) (u : UInt64) (p : Nat) (mode : Roun
       let r := periodFracRat q (AzNat.ofNat u.toNat)
       if h : r.den ≠ AzNat.ofNat 1 ∧ r.den ≠ AzNat.ofNat 2 ∧ r.den ≠ AzNat.ofNat 3 ∧
           r.den ≠ AzNat.ofNat 4 ∧ r.den ≠ AzNat.ofNat 6 ∧ r.den ≠ AzNat.ofNat 12 then
-        zivLoopCertified₂ (sinCosPeriodApprox (!q.sign) r) p mode (p + zivGuardBits) (by
+        zivLoopCertified₂ (sinCosPeriodApprox (!q.sign) r) p mode
+            (p + zivGuardBits + ratTinyExtra r) (by
           obtain ⟨_, _, hr0, hr1⟩ := periodFracRat_spec q hun
           exact sinCosPeriodApprox_isSome_exists p mode (!q.sign) r hr0 hr1 h.1 h.2.1 h.2.2.1
-            h.2.2.2.1 h.2.2.2.2.1 h.2.2.2.2.2 (p + zivGuardBits)
+            h.2.2.2.1 h.2.2.2.2.1 h.2.2.2.2.2 (p + zivGuardBits + ratTinyExtra r)
             (by unfold zivGuardBits; omega))
       else (sinRatWithPeriodPrecRound q u p mode, cosRatWithPeriodPrecRound q u p mode)
     | _, _ => (sinRatWithPeriodPrecRound q u p mode, cosRatWithPeriodPrecRound q u p mode)

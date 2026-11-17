@@ -6431,7 +6431,7 @@ for the small blocks.  `tan` (not done) is the natural client.
 Tests: `Tests/SinCos` (reference values of `Tests/Sin` and `Tests/Cos`, agreement with the
 separate functions over all octants, both signs, several modes and precisions up to 2000 bits).
 
-## `sinCosRat`: sine and cosine of a rational together (DONE 2026-11-13, fuel-free, UNTIMED)
+## `sinCosRat`: sine and cosine of a rational together (DONE 2026-11-13, fuel-free, TIMED 2026-11-17)
 
 User request: "Please implement sinCosRat."  `AzFloat/SinCosRatBracket.lean`,
 `AzFloat/SinCosRat.lean`, Equivs, `Tests/SinCosRat.lean`:
@@ -6457,7 +6457,7 @@ NOT timed.  Expected from the float table: about half of `sinRat` + `cosRat` (th
 `Tests/CosRat`, agreement with the separate functions over all octants, both signs, several modes,
 precisions up to 2000 bits, a 50-digit denominator, tiny rationals.
 
-## `sinCosWithPeriod`: `sin (2π x / u)` and `cos (2π x / u)` together (DONE 2026-11-13, UNTIMED)
+## `sinCosWithPeriod`: `sin (2π x / u)` and `cos (2π x / u)` together (DONE 2026-11-13, TIMED 2026-11-17)
 
 User request: "please implement sinCosWithPeriod next."  `AzFloat/SinCosWithPeriodBracket.lean`,
 `AzFloat/SinCosWithPeriod.lean`, Equivs, `Tests/SinCosWithPeriod.lean`:
@@ -6486,7 +6486,7 @@ NOT timed.  Tests: exact values in degrees, `45°`, `1°` at 200 bits, agreement
 functions over every whole degree of two turns, both signs, periods `1`, `7`, `360`, `400`,
 `2^64 − 1`, several modes and precisions, tiny and huge (`3·2^(2^20)`) arguments.
 
-## `sinCosRatWithPeriod` (DONE 2026-11-13, UNTIMED)
+## `sinCosRatWithPeriod` (DONE 2026-11-13, TIMED 2026-11-17)
 
 User request: "Please implement sinCosRatWithPeriod."  `AzFloat/SinCosRatWithPeriod.lean`, Equiv,
 `Tests/SinCosRatWithPeriod.lean`: `sinCosRatWithPeriodPrecRound q u p mode`,
@@ -6501,7 +6501,7 @@ after `split` on the two tiny tests the goal still has `have`/`let` binders — 
 with period `1080` (200 bits), agreement with the separate functions over every third of a
 degree of a turn, both signs, several periods, modes, precisions, huge and tiny rationals.
 
-## `sinCosPi`, `sinCosPiRat` (DONE 2026-11-13, UNTIMED)
+## `sinCosPi`, `sinCosPiRat` (DONE 2026-11-13, TIMED 2026-11-17)
 
 User request: "Let's do sinCosPi next."  `AzFloat/SinCosPi.lean`, Equiv, `Tests/SinCosPi.lean`:
 `sinCosPiPrecRound x p mode`, `sinCosPi x` (float) and `sinCosPiRatPrecRound q p mode`,
@@ -6582,7 +6582,7 @@ float nearest `π/2` (`16331239353195370`, the classical example) and nearest `�
 all octants, signs, modes and precisions against the rounded quotient of `sin` and `cos` at
 `p + 300` bits, tiny arguments (`±2^(−2^30)`), `2^1000`.
 
-## `tanRat`: the tangent of a rational (DONE 2026-11-14, fuel-free, UNTIMED)
+## `tanRat`: the tangent of a rational (DONE 2026-11-14, fuel-free, TIMED 2026-11-17)
 
 User request: "Let's move on to tanRat."  `AzFloat/TanRatBracket.lean`, `AzFloat/TanRat.lean`,
 Equivs, `Tests/TanRat.lean`: `tanRatPrecRound q p mode`, `tanRat q p`;
@@ -6608,7 +6608,7 @@ digits against an exact-rational Taylor evaluation, `22/7`, `355/113`, `11/7` (n
 a sweep against the rounded quotient of `sinCosRat` at `p + 300` bits, a 50-digit denominator,
 `10³⁰`, tiny rationals.  Not done: `tanWithPeriod`, `tanRatWithPeriod`, `tanPi`, `cot`/`sec`/`csc`.
 
-## `tanWithPeriod`, `tanRatWithPeriod`, `tanPi`, `tanPiRat` (DONE 2026-11-14, UNTIMED)
+## `tanWithPeriod`, `tanRatWithPeriod`, `tanPi`, `tanPiRat` (DONE 2026-11-14, TIMED 2026-11-17)
 
 User decision on the poles: "We should follow the behavior of IEEE 754's tanPi."
 `Transcendental/NivenTan.lean`, `AzFloat/TanWithPeriodBracket.lean`, `AzFloat/TanWithPeriod.lean`,
@@ -6655,7 +6655,7 @@ degree of two turns and every third of a degree against the rounded quotient of 
 half-integers (also `≈ 10²⁰`), quarters.  With this the tangent family matches the sine and
 cosine families.  Not done: `cot`/`sec`/`csc`.
 
-## `sec` for floats (DONE 2026-11-14, fuel-free, UNTIMED)
+## `sec` for floats (DONE 2026-11-14, fuel-free, TIMED 2026-11-17)
 
 User request: "Let's implement sec for AzFloat."  `AzFloat/SecBracket.lean`, `AzFloat/Sec.lean`,
 Equivs, `Tests/Sec.lean`: `secPrecRound x p mode`, `sec x`; `Spec.sec` (`1 / cos`);
@@ -6678,7 +6678,7 @@ NOT timed (expected: `cos` + 2 divisions).  Tests: special values, `sec 1` to 59
 `π`, a sweep against the rounded reciprocal of `cos` at `p + 300` bits, tiny arguments,
 `2^1000`.  The variants `secRat`, `secWithPeriod`, `secPi` followed (next section).
 
-## `secWithPeriod`, `secRatWithPeriod`, `secRat`, `secPi`, `secPiRat` (DONE 2026-11-14, UNTIMED)
+## `secWithPeriod`, `secRatWithPeriod`, `secRat`, `secPi`, `secPiRat` (DONE 2026-11-14, TIMED 2026-11-17)
 
 User decision (Malachite's documented behaviour for the secant with a period): `u = 0` → `NaN`;
 `x = 0` → `1`; `x/u` an even multiple of `1/2` → exactly `1`, an odd multiple → exactly `−1`;
@@ -6712,7 +6712,7 @@ reciprocal of the cosine at `p + 300` bits, tiny and huge arguments, `secRat` ag
 reciprocal-of-rounded-cosine reference is itself wrong — the 353-bit cosine rounds to exactly
 `1` — so those cases are checked directly.)  Not done: `csc`, `cot`.
 
-## The cosecant family (DONE 2026-11-14, fuel-free, UNTIMED)
+## The cosecant family (DONE 2026-11-14, fuel-free, TIMED 2026-11-17)
 
 User request with Malachite's special values for the cosecant with a period: `u = 0` → `NaN`;
 `x = 0` → `∞`; `x/u` a multiple of `1/2` is a pole and the result is exactly `±∞` **with the
@@ -6757,7 +6757,7 @@ signs, the denominators `4` and `12`, `cscPi` at integers and half-integers.  Po
 in the library: `tan` — IEEE `tanPi` (sign of the sine); `sec` — always `+∞`; `csc` — the sign of
 the argument.
 
-## The cotangent family (DONE 2026-11-14, fuel-free, UNTIMED)
+## The cotangent family (DONE 2026-11-14, fuel-free, TIMED 2026-11-17)
 
 User request "let's do cot", **without a Malachite specification of the special values**: the
 pole convention below is our own choice and should be confirmed.  `AzFloat/CotBracket.lean`,
@@ -7059,7 +7059,7 @@ With the first tuning step alone (seed, order three) 53 bits were the same and 1
 pays `piBracket` and two divisions (0.03–0.06 ms at small precision); the base could serve
 levels `K ≤ 3 |lg t|` for small `t`.
 
-## Arctangent of a rational `atanRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arctangent of a rational `atanRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `atanRatPrecRound q p mode`, `atanRat q p` (`AzFloat/AtanRat.lean`), `atanRatPrecRound_eq`
 (`Equiv/AtanRat.lean`): `arctan q` of an `AzRat`, correctly rounded, never through the float
@@ -7079,7 +7079,7 @@ Tests: `Tests/AtanRat.lean` (1400-bit reference; `1/3` exact against the float n
 same 53-bit significand, opposite side).  NOT timed; expected `atan` plus two rational
 roundings.
 
-## Arctangent with a period `atanWithPeriod` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arctangent with a period `atanWithPeriod` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `atanWithPeriodPrecRound x u p mode = arctan (x) u / (2π)` (`u : UInt64`), after the Malachite
 specification supplied by the user (special cases: `NaN`; `±∞ ↦ ±u/4`; `0 ↦ 0`; `u = 0 ↦ 0`;
@@ -7100,7 +7100,7 @@ specification supplied by the user (special cases: `NaN`; `±∞ ↦ ±u/4`; `0 
 Tests: `Tests/AtanWithPeriod.lean` (1400-bit reference; `2^(−2^30)` runs instantly).  NOT
 timed; expected `atan` plus one interval division and `piBracket`.
 
-## `atanRatWithPeriod`, `atanPi`, `atanPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `atanRatWithPeriod`, `atanPi`, `atanPiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The arctangent family is complete: `atan`, `atanRat`, `atanWithPeriod`, `atanRatWithPeriod`,
 `atanPi`, `atanPiRat`.
@@ -7118,7 +7118,7 @@ The arctangent family is complete: `atan`, `atanRat`, `atanWithPeriod`, `atanRat
 
 Tests: `Tests/AtanRatWithPeriod.lean`, `Tests/AtanPi.lean` (1400-bit reference).  NOT timed.
 
-## `atan2` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `atan2` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `atan2PrecRound y x p mode`, `atan2 y x` (`AzFloat/Atan2.lean`), after the Malachite
 specification supplied by the user, without negative zero (a zero argument behaves as `+0`):
@@ -7149,7 +7149,7 @@ Tests: `Tests/Atan2.lean` (the whole special table, eight octants, directed mode
 ratios `2^(±2^30)` in every octant).  NOT timed; expected `atan` plus one division (and
 `piBracket` off the first octant pair).
 
-## `atan2Rat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `atan2Rat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `atan2RatPrecRound y x p mode`, `atan2Rat y x p` for `AzRat` arguments
 (`atan2RatPrecRound_eq` against `Spec.atan2`, i.e. `Complex.arg (x + iy)`).  `y = 0 ↦ 0`
@@ -7163,7 +7163,7 @@ Tests: `Tests/Atan2Rat.lean` (eight octants, non-float rationals, agreement with
 `atanRat`, homogeneity, exact tiny quotients `2^(−200)`, `2^(−5000)` with both signs).  NOT
 timed.
 
-## `atan2WithPeriod` (DONE 2026-11-15, fuel-free, UNTIMED) and a fix of `atanWithPeriod`
+## `atan2WithPeriod` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17) and a fix of `atanWithPeriod`
 
 `atan2WithPeriodPrecRound y x u p mode = atan2 (y, x) u / (2π)` after the Malachite table
 supplied by the user (no negative zero).  `Spec.atan2WithPeriod = Spec.atan2 · u/(2π)`, so the
@@ -7198,7 +7198,7 @@ about `lg q` bits (correct, only slow).  The fix is the rational counterpart of 
 
 Tests: `Tests/Atan2WithPeriod.lean`.  NOT timed.
 
-## `atan2RatWithPeriod`, `atan2Pi`, `atan2PiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `atan2RatWithPeriod`, `atan2Pi`, `atan2PiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The `atan2` family is complete: `atan2`, `atan2Rat`, `atan2WithPeriod`, `atan2RatWithPeriod`,
 `atan2Pi`, `atan2PiRat`.
@@ -7218,7 +7218,7 @@ The `atan2` family is complete: `atan2`, `atan2Rat`, `atan2WithPeriod`, `atan2Ra
 Tests: `Tests/Atan2RatWithPeriod.lean`, `Tests/Atan2Pi.lean`; huge-argument cases added for
 `atanRatWithPeriod` and `atanPiRat`.  NOT timed.
 
-## Arcsine `asin` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arcsine `asin` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `asinPrecRound x p mode`, `asin x` (`AzFloat/Asin.lean`), `asinPrecRound_eq_liftVal` against
 `Spec.asin`.  Special values as in the Malachite table (supplied by the user after the fact,
@@ -7246,7 +7246,7 @@ Next: `acos` (`acos x = 2 arctan √((1 − x)/(1 + x))`, same building blocks; 
 next to `1` is small and needs the relative accuracy of `1 − x`).  Tests: `Tests/Asin.lean`
 (independent reference through `arctan (x/√(1 − x²))`).  NOT timed.
 
-## Arcsine of a rational `asinRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arcsine of a rational `asinRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `asinRatPrecRound q p mode`, `asinRat q p` (`asinRatPrecRound_eq` against `Spec.asin`): `0` at
 `0`, `±π/2` at `±1` (`num = den`), `NaN` for `|q| > 1` (`¬ num ≤ den`).
@@ -7262,7 +7262,7 @@ next to `1` is small and needs the relative accuracy of `1 − x`).  Tests: `Tes
 Tests: `Tests/AsinRat.lean` (incl. the rational `1 − 2^(−200)`, `1/(3·2^1000)`, `2^(−5000)`).
 NOT timed.
 
-## `asinWithPeriod`, `asinRatWithPeriod`, `asinPi`, `asinPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `asinWithPeriod`, `asinRatWithPeriod`, `asinPi`, `asinPiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The arcsine family of six is complete (`asin`, `asinRat`, and these four).  After the Malachite
 table for `asinWithPeriod` supplied by the user (no negative zero here).
@@ -7287,7 +7287,7 @@ table for `asinWithPeriod` supplied by the user (no negative zero here).
 Tests: `Tests/AsinWithPeriod.lean`, `Tests/AsinRatWithPeriod.lean`, `Tests/AsinPi.lean`.  NOT
 timed.  Next: `acos` and its variants.
 
-## Arccosine `acos` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arccosine `acos` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `acosPrecRound x p mode`, `acos x` (`AzFloat/Acos.lean`), `acosPrecRound_eq_liftVal` against
 `Spec.acos`.  Special values after the Malachite table supplied by the user: `NaN` for `NaN`,
@@ -7313,7 +7313,7 @@ timed.  Next: `acos` and its variants.
 Tests: `Tests/Acos.lean` (independent reference `π/2 − arctan (x/√(1 − x²))`; `1 − 2^(−190)` at
 200 bits, a result of size `2^(−94)`).  NOT timed.
 
-## `acosRat`, `acosWithPeriod`, `acosRatWithPeriod`, `acosPi`, `acosPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `acosRat`, `acosWithPeriod`, `acosRatWithPeriod`, `acosPi`, `acosPiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The arccosine family of six is complete, and with it the inverse trigonometric arc: 24
 functions (`atan` ×6, `atan2` ×6, `asin` ×6, `acos` ×6).
@@ -7346,7 +7346,7 @@ Tests: `Tests/AcosRat.lean`, `Tests/AcosWithPeriod.lean`, `Tests/AcosRatWithPeri
 **Inverse trig arc: open items.**  Nothing is timed except `atan` itself.  `asinDouble_spec`
 duplicates `atanDouble_spec`; `negSwapApprox` (TanBracket) duplicates `enclApprox`.
 
-## Inverse reciprocal trigonometric arc: `asec` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Inverse reciprocal trigonometric arc: `asec` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The user wants the inverse reciprocal functions (`asec`, then presumably `acsc`, `acot` and
 their variants): there is no MPFR counterpart, so these matter.  Malachite tables are supplied
@@ -7373,7 +7373,7 @@ For the variants: `asec (x) u/(2π)` has the rational values of `acos` at `1/x �
 
 Tests: `Tests/Asec.lean` (reference `arccos (1/x)`; `1 + 2^(−190)` at 200 bits).  NOT timed.
 
-## `asecRat`, `asecWithPeriod`, `asecRatWithPeriod`, `asecPi`, `asecPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `asecRat`, `asecWithPeriod`, `asecRatWithPeriod`, `asecPi`, `asecPiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The arcsecant family of six is complete.
 
@@ -7394,7 +7394,7 @@ The arcsecant family of six is complete.
 Tests: `Tests/AsecRat.lean` (both rational functions), `Tests/AsecWithPeriod.lean`,
 `Tests/AsecPi.lean`; huge arguments `±2^(2^30)` in all three modes.  NOT timed.
 
-## Arccosecant `acsc` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arccosecant `acsc` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `acscPrecRound x p mode`, `acsc x` (`AzFloat/Acsc.lean`), `acscPrecRound_eq_liftVal` against
 `Spec.acsc` (`arcsin (1/a)`).  Special values after the Malachite table: `NaN` for `NaN` and
@@ -7424,7 +7424,7 @@ at `±∞`; rational variants are the `asin` functions at `q⁻¹`.
 Tests: `Tests/Acsc.lean` (reference `arcsin (1/x)`; huge powers of two in three modes and both
 signs; huge non-powers against the rounded reciprocal).  NOT timed.
 
-## `acscRat`, `acscWithPeriod`, `acscRatWithPeriod`, `acscPi`, `acscPiRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `acscRat`, `acscWithPeriod`, `acscRatWithPeriod`, `acscPi`, `acscPiRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The arccosecant family of six is complete.
 
@@ -7444,7 +7444,7 @@ The arccosecant family of six is complete.
 Tests: `Tests/AcscRat.lean`, `Tests/AcscWithPeriod.lean`, `Tests/AcscPi.lean`; huge arguments
 `±2^(2^30)`, `±3·2^(2^30)` against the rounded `360/(2π)`, `1/π` mantissas.  NOT timed.
 
-## Arccotangent `acot` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arccotangent `acot` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `acotPrecRound x p mode`, `acot x` (`AzFloat/Acot.lean`), `acotPrecRound_eq_liftVal` against
 `Spec.acot`.  After the Malachite table this is the **odd** arccotangent `arctan (1/x)` with
@@ -7473,7 +7473,7 @@ For the variants: `arccot (x) u/(2π)` is rational at `x = ±1` (`±u/8`), `0` (
 Tests: `Tests/Acot.lean` (reference `arctan (1/x)`; huge powers of two in three modes and both
 signs; huge non-powers against the rounded reciprocal; tiny arguments).  NOT timed.
 
-## Arccotangent variants (DONE 2026-11-15, fuel-free, UNTIMED)
+## Arccotangent variants (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 The five variants of the odd arccotangent, after the Malachite table for `acot_with_period`
 (`NaN`; `±∞ ↦ ±0.0`; `u = 0 ↦ ±0.0`; `±0.0 ↦ ±u/4`; `±1 ↦ ±u/8`; odd).  With one zero:
@@ -7492,7 +7492,7 @@ Tests: `Tests/AcotWithPeriod.lean`, `Tests/AcotRat.lean`, `Tests/AcotPi.lean` (t
 arguments down to `2^(−2^30)` and up to `3·2^(2^30)`).  The acot family of six is complete; the
 plain `acot` could equally be `atan2 (±1, |x|)`, but keeps its own bracket.  NOT timed.
 
-## Hyperbolic sine `sinh` (DONE 2026-11-15, fuel-free, UNTIMED)
+## Hyperbolic sine `sinh` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 Start of the hyperbolic arc (user request; no special-case table given: `NaN ↦ NaN`,
 `±∞ ↦ ±∞`, `0 ↦ 0`, odd).  `sinhPrecRound x p mode`, `sinh x` (`AzFloat/Sinh.lean`),
@@ -7513,7 +7513,7 @@ Start of the hyperbolic arc (user request; no special-case table given: `NaN ↦
 Tests: `Tests/Sinh.lean` (reference: 6000-bit fixed-point exponential in
 `scratchpad/sinh_ref.py`, which also has `cosh_fp`, `tanh_fp`).  NOT timed.
 
-## `sinhRat` (DONE 2026-11-15, fuel-free, UNTIMED)
+## `sinhRat` (DONE 2026-11-15, fuel-free, TIMED 2026-11-17)
 
 `sinhRatPrecRound q p mode`, `sinhRat q p` (`AzFloat/SinhRat.lean`), `sinhRatPrecRound_eq`
 against `Spec.sinh`.  The same step `sinhOfExpM1` on `expM1RatBracket |q|` (relative accuracy
@@ -7522,7 +7522,7 @@ for a small `q`), `tanTinyRat?` for tiny arguments (via `tanTinyRat?_eq_of`), ce
 `sinhOfExpM1_width` / `sinhWidth` / `tendsto_sinhWidth`, generic in the enclosure of
 `e^a − 1`.  Tests: `Tests/SinhRat.lean` (reference `scratchpad/sinhrat_ref.py`).  NOT timed.
 
-## Hyperbolic cosine `cosh`, `coshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Hyperbolic cosine `cosh`, `coshRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `coshPrecRound`/`cosh` (`AzFloat/Cosh.lean`), `coshRatPrecRound`/`coshRat`
 (`AzFloat/CoshRat.lean`); `coshPrecRound_eq_liftVal`, `coshRatPrecRound_eq` against `Spec.cosh`
@@ -7545,7 +7545,7 @@ generator `scratchpad/gen_cosh.py`, reference `cosh_ref.py`).  NOT timed.  Next 
 is then the **upper** end, so run the loop on `−tanh |x|`; `tanh q` irrational via
 `y²(1 − r) = 1 + r`).
 
-## Hyperbolic tangent `tanh`, `tanhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Hyperbolic tangent `tanh`, `tanhRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `tanhPrecRound`/`tanh` (`AzFloat/Tanh.lean`), `tanhRatPrecRound`/`tanhRat`
 (`AzFloat/TanhRat.lean`); `tanhPrecRound_eq_liftVal`, `tanhRatPrecRound_eq` against `Spec.tanh`
@@ -7570,7 +7570,7 @@ Tests: `Tests/Tanh.lean`, `Tests/TanhRat.lean` (transition `18 … 40`; generato
 `scratchpad/gen_tanh.py`, reference `tanh_ref.py`).  NOT timed.  `sinh`, `cosh`, `tanh` and
 their rational versions are done.
 
-## Hyperbolic secant `sech` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Hyperbolic secant `sech` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `sechPrecRound`/`sech` (`AzFloat/Sech.lean`), `sechPrecRound_eq_liftVal` against `Spec.sech`
 (`(cosh a)⁻¹`).  Malachite table: `NaN`; `±∞ ↦ 0.0`; `±0.0 ↦ 1.0` — as implemented.
@@ -7590,7 +7590,7 @@ Tests: `Tests/Sech.lean` (generator `scratchpad/gen_sech.py`, which now has reus
 (`sechRatTiny_eq`), `sechRatPrecRound_eq` in `Equiv/Sech.lean`.  Tests: `Tests/SechRat.lean`
 (generator `scratchpad/gen_sechrat.py`).  NOT timed.
 
-## Hyperbolic cosecant `csch`, `cschRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Hyperbolic cosecant `csch`, `cschRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `cschPrecRound`/`csch` (`AzFloat/Csch.lean`), `cschRatPrecRound`/`cschRat`
 (`AzFloat/CschRat.lean`); `cschPrecRound_eq_liftVal`, `cschRatPrecRound_eq` against
@@ -7611,7 +7611,7 @@ Tests: `Tests/Csch.lean`, `Tests/CschRat.lean` (generator `scratchpad/gen_csch.p
 `csch_ref.py`).  NOT timed.  Remaining hyperbolic: `coth` (`= (2 + v)/v`, `v = e^(2|x|) − 1`;
 near `±1` outside for a large `x`, `≈ 1/x + x/3` for a tiny one).
 
-## Hyperbolic cotangent `coth`, `cothRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Hyperbolic cotangent `coth`, `cothRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `cothPrecRound`/`coth` (`AzFloat/Coth.lean`), `cothRatPrecRound`/`cothRat`
 (`AzFloat/CothRat.lean`); `cothPrecRound_eq_liftVal`, `cothRatPrecRound_eq` against
@@ -7636,7 +7636,7 @@ Tests: `Tests/Coth.lean`, `Tests/CothRat.lean` (generator `scratchpad/gen_coth.p
 `tanh`, `sech`, `csch`, `coth`); none is timed.  Not done: inverse hyperbolic functions
 (`asinh`, `acosh`, `atanh`, …), joint `sinhCosh`.
 
-## Joint `sinhCosh`, `sinhCoshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Joint `sinhCosh`, `sinhCoshRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `sinhCoshPrecRound`/`sinhCosh` (`AzFloat/SinhCosh.lean`), `sinhCoshRatPrecRound`/`sinhCoshRat`
 (`AzFloat/SinhCoshRat.lean`), on the pattern of `sinCos`: proven **equal** to the pair of the
@@ -7658,7 +7658,7 @@ correctly rounded.
 Tests: `Tests/SinhCosh.lean`, `Tests/SinhCoshRat.lean` (against the separate functions).
 NOT timed — timing it against `sinh` + `cosh` is the natural first benchmark of this arc.
 
-## Inverse hyperbolic sine `asinh`, `asinhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic sine `asinh`, `asinhRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 Start of the inverse hyperbolic functions.  `asinhPrecRound`/`asinh` (`AzFloat/Asinh.lean`),
 `asinhRatPrecRound`/`asinhRat` (`AzFloat/AsinhRat.lean`); `asinhPrecRound_eq_liftVal`,
@@ -7683,7 +7683,7 @@ reference `asinh_ref.py` with `ln_fp`, `sqrt_fp` for the other inverse functions
 Next presumably `acosh` (`ln (x + √(x² − 1))`, `x ≥ 1`; near `1` the value is `≈ √(2(x − 1))`,
 needs `x − 1` exactly and a `log1p` form) and `atanh` (`(1/2) ln ((1 + x)/(1 − x))`, `|x| < 1`).
 
-## Inverse hyperbolic cosine `acosh`, `acoshRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic cosine `acosh`, `acoshRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `acoshPrecRound`/`acosh` (`AzFloat/Acosh.lean`), `acoshRatPrecRound`/`acoshRat`
 (`AzFloat/AcoshRat.lean`); `acoshPrecRound_eq_liftVal`, `acoshRatPrecRound_eq` against
@@ -7706,7 +7706,7 @@ reference `acosh_ref.py`).  NOT timed.  Next presumably `atanh`
 (`(1/2) ln ((1 + x)/(1 − x))`, `|x| < 1`, `±∞` at `±1`; tiny `x`: `x < atanh x ≤ x + x³`, the
 `tanTiny?` bounds; near `±1` large values, no closeness issue).
 
-## Inverse hyperbolic tangent `atanh`, `atanhRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic tangent `atanh`, `atanhRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `atanhPrecRound`/`atanh` (`AzFloat/Atanh.lean`), `atanhRatPrecRound`/`atanhRat`
 (`AzFloat/AtanhRat.lean`); `atanhPrecRound_eq_liftVal`, `atanhRatPrecRound_eq` against
@@ -7730,7 +7730,7 @@ reference `atanh_ref.py`).  NOT timed.  `asinh`, `acosh`, `atanh` done; remainin
 hyperbolic: `asech`, `acsch`, `acoth` (reciprocal arguments: `acosh (1/x)`, `asinh (1/x)`,
 `atanh (1/x)`; with rationals the reciprocal is exact).
 
-## Inverse hyperbolic secant `asech`, `asechRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic secant `asech`, `asechRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `asechPrecRound`/`asech` (`AzFloat/Asech.lean`), `asechRatPrecRound`/`asechRat`
 (`AzFloat/AsechRat.lean`); `asechPrecRound_eq_liftVal`, `asechRatPrecRound_eq` against
@@ -7749,7 +7749,7 @@ reference `asech_ref.py`).  NOT timed.  Remaining: `acsch` (`asinh (1/x)`; odd; 
 presumably; tiny `x`: `ln (2/|x|)`; huge `x`: `≈ 1/x`, needs a tiny path like `acot`) and
 `acoth` (`atanh (1/x)`, `|x| > 1`; huge `x`: `≈ 1/x` likewise).
 
-## Inverse hyperbolic cosecant `acsch`, `acschRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic cosecant `acsch`, `acschRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `acschPrecRound`/`acsch` (`AzFloat/Acsch.lean`), `acschRatPrecRound`/`acschRat`
 (`AzFloat/AcschRat.lean`); `acschPrecRound_eq_liftVal`, `acschRatPrecRound_eq` against
@@ -7771,7 +7771,7 @@ reference `acsch_ref.py`).  NOT timed.  Remaining: `acoth` (`atanh (1/x)`, `|x| 
 the exact end `1/x` is the lower one: no negation, a mirrored tiny enclosure
 `[1/a, (1/a)(1 + 2^(−w−14))]` — `acscTinyEncl` of the acsc family has exactly this shape).
 
-## Inverse hyperbolic cotangent `acoth`, `acothRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse hyperbolic cotangent `acoth`, `acothRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `acothPrecRound`/`acoth` (`AzFloat/Acoth.lean`), `acothRatPrecRound`/`acothRat`
 (`AzFloat/AcothRat.lean`); `acothPrecRound_eq_liftVal`, `acothRatPrecRound_eq` against
@@ -7793,7 +7793,7 @@ reference `acoth_ref.py`).  NOT timed.
 
 **The hyperbolic arc is complete**: `sinh`, `cosh`, `tanh`, `sech`, `csch`, `coth`, joint
 `sinhCosh`, and the inverses `asinh`, `acosh`, `atanh`, `asech`, `acsch`, `acoth`, each with
-its rational version (26 functions), all proven, all UNTIMED.  Possible follow-ups: timings
+its rational version (26 functions), all proven, timed 2026-11-17 (see "Timings of the elementary families").  Possible follow-ups: timings
 (first `sinhCosh` vs `sinh` + `cosh`); a `log1p`-style reduction for the small-argument range
 of `asinh`/`atanh` (now `leadingZeroBits` extra bits); sharing `1/(1 + u)` in `sinhCosh`.
 
@@ -7801,7 +7801,7 @@ of `asinh`/`atanh` (now `leadingZeroBits` extra bits); sharing `1/(1 + u)` in `s
 
 Suggestions relayed by the user from the Malachite agent's stress tests.
 
-### 1. `logBaseExact?` / `logBaseP1Exact?`: no materialisation (DONE, UNTIMED)
+### 1. `logBaseExact?` / `logBaseP1Exact?`: no materialisation (DONE, TIMED 2026-11-17)
 
 The exactness test of `log_b x` (natural base, not a power of two) and of `log_b (1 + x)`
 converted the float to a rational first (`toAzRat?`): `e` bits for an exponent `e`, so
@@ -8135,7 +8135,7 @@ Not done: the band `1/2 ≤ |x| < 2` at low precision always takes the general p
 there needs about 50 terms; a half-angle reduction of the arctangent argument or a
 point-arithmetic series would be the next step); `gd⁻¹`.
 
-### `gdRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+### `gdRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `gdRatPrecRound`, `gdRat` (`AzFloat/GdRat.lean`).  The bracket steps were factored out of the
 float bracket — `gdSmallOf t K`, `gdLargeOf z w`, `gdCoreOf t K` on an enclosure of
@@ -8147,7 +8147,7 @@ float's exponent; `gdHuge` as it is.  Width `gdRatEps q w → 0`, the Ziv certif
 (`= roundVal p mode (Spec.gd q)`).  Tests against 400-digit references on every path and
 against the float function on dyadic arguments.
 
-## Inverse Gudermannian `gd⁻¹` (DONE 2026-11-16, fuel-free, UNTIMED)
+## Inverse Gudermannian `gd⁻¹` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `gd⁻¹ x = ∫₀ˣ sec t dt = ln ((1 + sin x)/cos x)` on `(−π/2, π/2)` (DLMF 4.23.41–42):
 `gdInvPrecRound`, `gdInv` (`AzFloat/GdInv.lean`, `GdInvBracket.lean`).  `NaN` outside the domain
@@ -8172,7 +8172,7 @@ against the float function on dyadic arguments.
 Not done: no efficiency work beyond the straightforward sine–cosine plus logarithm (the
 starting precision next to `π/2` could be raised from a cheap estimate of `π/2 − |x|`).
 
-### `gdInvRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+### `gdInvRat` (DONE 2026-11-16, fuel-free, TIMED 2026-11-17)
 
 `gdInvRatPrecRound`, `gdInvRat` (`AzFloat/GdInvRat.lean`).  The step of the float bracket was
 factored out — `gdInvOfSinCos b w` on enclosures of a sine and a cosine, with
@@ -8222,7 +8222,7 @@ Malachite's table of special values is needed before step 3.
 * Tests: `B_0 … B_20`, `B_30`, `B_50`, `B_100`, `B_120` against the defining recurrence in
   exact arithmetic, odd indices, the table against single values, the first tangent numbers.
 
-### 2. `ln Γ(x)`, `x > 0` (DONE 2026-11-17, fuel-based, UNTIMED)
+### 2. `ln Γ(x)`, `x > 0` (DONE 2026-11-17, fuel-based, TIMED)
 
 Files: `Transcendental/LogGammaStirling.lean`, `AzFloat/LnGammaBracket.lean`,
 `AzFloat/LnGamma.lean`, `Equiv/LnGammaBracket.lean`, `Equiv/LnGamma.lean`, `Tests/LnGamma.lean`,
@@ -8314,7 +8314,7 @@ against 1.1–1.8 ms for neighbours outside the two regimes.
 * Tests (`Tests/LambertW.lean`): the reported argument, `−3·2^(−1074)`, exponents `±2^78`,
   `±2^200`, in the directed modes; `expSize`, `lambertIntBits`.
 
-### 2a. `ln Γ(q)` for an `AzRat` `q > 0` (DONE 2026-11-17, fuel-based, UNTIMED)
+### 2a. `ln Γ(q)` for an `AzRat` `q > 0` (DONE 2026-11-17, fuel-based, TIMED with `az_float_gamma`: = the float one)
 
 Files: `AzFloat/LnGammaRat.lean`, `Equiv/LnGammaRat.lean`, `Tests/LnGammaRat.lean`.
 
@@ -8378,5 +8378,106 @@ Files: `AzFloat/GammaBracket.lean`, `AzFloat/Gamma.lean`, `Equiv/GammaBracket.le
   `π|x − k|` below `1`): 10.6 and 61 ms, the same as away from the poles.  Arguments next to
   `1` and `2` were already at the base cost (the exponential of an absolutely accurate small
   `ln Γ` is relatively accurate).
-* **Not done**: rational arguments.  `Γ(x)` for `x ≈ 2^k` needs `k + lg k` extra bits of
+* `Γ(x)` for `x ≈ 2^k` needs `k + lg k` extra bits of
   `ln Γ` — inherent, the result has `≈ k 2^k` binary digits before the point.
+
+### 3a. `Γ(q)` and `1/Γ(q)` for an `AzRat` `q` (DONE 2026-11-17, fuel-based, TIMED)
+
+Files: `AzFloat/GammaRat.lean`, `Equiv/GammaRat.lean`, `Tests/GammaRat.lean`.
+
+* **Shared pieces.**  `GammaBracket.lean` was split so that the argument enters only through
+  enclosures: `gammaSinOfFrac` (sine from the sign and an enclosure of `|x − k|`),
+  `gammaReflect` (reflection from the enclosures of `Γ(1 − x)` and of the sine),
+  `gammaApproxOf` (strict bracket or dummy), with `gammaSinOfFrac_spec`, `gammaReflect_spec`,
+  `gammaExpEncl_lnGamma`, `gammaApproxOf_valid_or_none`.  The float functions are unchanged.
+* **Rational side.**  `ln Γ` on `lnGammaRatEncl q` (or of the exact rational `1 − q` for
+  `q < 0`); the sine at `|q − k|`, an exact rational, `k = q.round .Nearest` (any integer is
+  valid).  Integers are `den = 1`.
+* **Tiny arguments.**  The ends of `(−1/q, −1/q + 2)` and `(q, q + q²)` are rationals, rounded
+  outwards at `p + 72` bits.  Unlike for a float, `1/q` can be within `2` of a rounding
+  boundary without being one (`q = 1/(2^200 + 1)`); then the one-test path fails and the value
+  is needed to about `|e|` bits beyond `p`: `gammaRatStart` starts the loop there instead of
+  doubling up to it (which would exhaust the fuel for a large `|e|`).  The proofs use only
+  `|q| ≤ 1/2`, read off two 64-bit roundings (`abs_le_half_of_gammaRatIsTiny`).
+* **Timings (2026-11-17, column `GammaRat` of `az_float_gamma`, ms per call).**  The same as
+  the float function at every argument tried, within noise: `Γ(1/3)` 0.55 / 1.13 / 9.3 / 60 at
+  53 / 200 / 1000 / 2000 bits, `Γ(−1/3)` 0.66 / 1.5 / 10.7 / 67, `Γ(−1000/7)` 0.64 / 1.0 /
+  9.8 / 63, `Γ(10^6/3)` 0.36 / 0.67 / 3.0 / 8.5; integers 0.009.  Tiny arguments at 53 bits:
+  0.006–0.008 by the one-test path; `q = 1/(2^200 + 1)`, where that test fails, 1.4 ms (one
+  pass at `p + 32 + 200` bits, the cost of a 285-bit `Γ`).  `q = −1 − 2^(−100)` at 53 bits
+  1.6 ms (the loop doubles past the 100 bits lost at the pole; no start hint there).
+
+### Perf 14. Lambert `W₀`: the top of the `Float` range (DONE 2026-11-17)
+
+Reported from the Malachite port.  `seedFloat` rejected only arguments whose `Float`
+conversion overflows; but in `halleyFloat` the product `(w + 2) f` overflows earlier, the
+denominator is infinite, every step is `0`, and the start value `ln x − ln (1 + ln x)` came
+back as the seed.  Measured (seed error against the 200-bit result): `2^(−44)` up to
+`2^1021`, `2^(−6)` at `2^1022` and `2^1023` — so the affected range is about
+`[2^1021.5, 2^1024)`, narrower than reported, but there the candidate missed and the bisection
+fallback ran: `W₀ (3·2^1021)` took 224 ms at 53 bits and 854 ms at 200 (0.7 and 1.3 ms just
+below).
+
+* **Fix**: `seedFloat` answers `none` above `2^1000` (the cutoff of the port, which makes the
+  two implementations identical), so `logSeed` serves those arguments: 1.6 ms at 53 bits,
+  2.2 ms at 200.  The price: `logSeed` costs about 0.7 ms more than the `Float` seed, now also
+  on `(2^1000, 2^1021]` where the `Float` seed was still good (0.7 → 1.6 ms at 53 bits).
+  Reordering the step to avoid the overflow would keep the cheap seed there; not done, for
+  the sake of the identity with the port.
+* Rows `W0 3*2^k` in `az_float_lambert_extreme`; tests in `Tests/LambertW.lean`.
+
+## Timings of the elementary families (2026-11-17)
+
+Benchmark `az_float_families` (`Azurite/Benchmark/AzFloatFamilies.lean`): one table per family
+(`family:` one of `hyperbolic`, `inv_hyperbolic`, `gd`, `inv_trig`, `inv_recip_trig`,
+`recip_trig`, `trig_variants`, `misc`), one row per function and argument, ms per call at 53,
+200 and 1000 bits (median of three passes, nearest).  Typical arguments:
+
+| family | @53 | @200 | @1000 | reference |
+|---|---|---|---|---|
+| `sinh` … `coth`, `sinhCosh`, rational versions | 0.14–0.17 | 0.23–0.26 | 0.77–0.87 | `exp` 0.17 / 0.28 / 0.92 |
+| `asinh` … `acoth`, rational versions | 0.09–0.14 | 0.15–0.19 | 0.60–0.66 | `ln` 0.10 / 0.16 / 0.62 |
+| `gd`, `gdRat` | 0.31–0.38 | 0.62 | 1.7 | `atan` + `exp` |
+| `gdInv`, `gdInvRat` | 0.20–0.45 | 0.30–0.58 | 1.0–1.7 | |
+| `asin`, `acos`, `asec`, `acsc`, `acot` and rational versions | 0.19–0.21 | 0.34–0.39 | 0.87–1.0 | `atan` 0.17 / 0.33 / 0.84 |
+| their with-period and `π` versions, `atan` and `atan2` variants | 0.20–0.25 | 0.37–0.43 | 0.97–1.1 | |
+| `sec`, `csc`, `cot` and rational versions | 0.15–0.21 | 0.20–0.30 | 0.70–0.93 | `sin` 0.14 / 0.22 / 0.71 |
+| with-period and `π` versions of all six trigonometric functions | 0.18–0.24 | 0.27–0.35 | 0.89–1.1 | |
+| `sinRat`, `cosRat`, `tanRat`, `sinCosRat` | 0.16–0.21 | 0.24–0.32 | 0.75–0.93 | |
+| tree `T` (both branches, rational versions) | 0.6–1.2 | 1.1–1.7 | 2.8–3.6 | `W₀` 1.2 / 1.5 / 3.5 |
+| Dottie number | 0.57 | 1.35 | 4.0 | |
+| `logBaseExactCore? x 3`, `x = 3^1000` or `3^1000 + 2` | 0.02 | | | skipped inputs: 0.001 |
+
+Every function costs about what its underlying primitive costs; no argument hung.  Exact cases
+(`asinPi (1/2)`, `cotWithPeriod 45 360`, …) and the tiny and near-one fast paths cost 1–15 µs,
+also at `2^(±10000)`.
+
+Slow spots found, and their fixes (2026-11-17, re-timed with the same benchmark):
+
+1. **`tanh` of a float just above the near-one threshold** (`tanh 1000` at 1000 bits: 6.7 ms,
+   8 × the typical call).  `tanhFloatN` bounded `2|x|` from below by `2^e` (here `1024`), so
+   the near-one test failed for `p + guard > 2^e` although `1 − tanh x ≈ 2^(−2885)`, and the
+   loop then needed about `2.9 |x| + p` bits.  Now `tanhFloatN x e = ⌊2|x|⌋` for `e ≤ 62`
+   (`truncToAzInt (x <<< 1)`), as in the rational version: **6.7 ms → 5 µs**.
+2. **Small arguments just outside the tiny test** (`|x| ≈ 2^(−100)`, `p ≥ 200`): `sin`, `tan`,
+   `csc`, `cot`, their rational, joint and with-period versions took about twice the typical
+   call, because the first Ziv level always failed — the brackets have absolute width
+   `2^(−w)` while the value is about `2^e` (or `2^(−e)`), and the value lies within a relative
+   `2^(2e)` of the float `x` (or `1/x`).  The loops now start at
+   `p + 64 + tinyExtra e` (`tinyExtra e = |e|` for `e < 0`; `ratTinyExtra q`
+   `= size den − size num` for a rational or a period fraction; `SinCosBracket.lean`).  The
+   with-period cosines share the starting precision of the sines, since the joint function is
+   proven equal to the pair.  At 1000 bits: `csc`/`cot` **1.6 → 0.6 ms**, `sinRat`/`tanRat`
+   **1.7 → 0.55 ms**, `sinPi`/`tanPi`/`cscPi`/`cotPi` **2.2 → 0.75 ms**.
+3. **Rational `csch`, `coth`, `csc`, `cot` at a tiny argument** (0.4 ms at 53 bits, the float
+   versions 4 µs): the rational tiny paths bracketed `1/|q|` by dividing the two roundings of
+   `|q|`, so for `q = 1/(3·2^100)` the lower end was just below the float `1/q` and the test
+   always failed.  They now round `1/|q|` from the rational `q⁻¹` itself (`tinyRecipOf?`,
+   `CscBracket.lean`), exact when it is a float: **0.4 ms → 4 µs**.
+4. **`asecRat` at `3·2^10000`** (1.0 ms at 53 bits; in fact `acosRat` at any `q` of many bits):
+   0.8 ms went into forming the reduced rational `(1 − a)/(1 + a)` (gcds of 10000-bit
+   numbers).  `acosRatBracket` now passes the unreduced `den − num` and `den + num` to
+   `sqrtRatCore`: **1.0 → 0.22 ms**.
+5. `sinPi`, `cosPi`, `secPi`, … at the float nearest `1/3` or `1/6`: 1.4 ms at 1000 bits against
+   1.0 ms elsewhere — the value is within `2^(−p)` of the rational `±1/2` (or `±2`), so the
+   loop needs one more doubling.  Inherent, not changed.

@@ -52,10 +52,10 @@ def sinRatWithPeriodPrecRound (q : AzRat) (u : UInt64) (p : Nat) (mode : Roundin
       setPrecRound (signedPow2
         (q.sign == decide (r.num = AzNat.ofNat 1 ∨ r.num = AzNat.ofNat 5)) (-1)) p mode
     else
-      zivLoopCertified (sinPeriodApprox (!q.sign) r) p mode (p + zivGuardBits) (by
+      zivLoopCertified (sinPeriodApprox (!q.sign) r) p mode (p + zivGuardBits + ratTinyExtra r) (by
         obtain ⟨_, _, hr0, hr1⟩ := periodFracRat_spec q hun
         exact sinPeriodApprox_isSome_exists p mode (!q.sign) r hr0 hr1 h1 h2 h4 h12
-          (p + zivGuardBits) (by unfold zivGuardBits; omega))
+          (p + zivGuardBits + ratTinyExtra r) (by unfold zivGuardBits; omega))
 
 /-- `sin (2π q / u)` rounded to nearest at precision `p`. -/
 def sinRatWithPeriod (q : AzRat) (u : UInt64) (p : Nat) : AzFloat :=
