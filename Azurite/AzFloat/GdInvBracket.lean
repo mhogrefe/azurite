@@ -8,7 +8,7 @@ License, Version 2.0. See <https://www.apache.org/licenses/LICENSE-2.0>.
 -/
 
 import Azurite.AzFloat.CosRat
-import Azurite.AzFloat.LnBracket
+import Azurite.AzFloat.LnEncl
 import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.SinCosRatBracket
 import Azurite.AzFloat.TanBracket
@@ -54,18 +54,6 @@ namespace Azurite.AzFloat
 def gdInvNum (s : Encl) (V : Nat) : Encl :=
   ((addPrecRound one s.1 V .Floor).1 <<< AzInt.ofInt (-1),
     (addPrecRound one s.2 V .Ceiling).1 <<< AzInt.ofInt (-1))
-
-/-- The logarithm of an enclosure `[lo, hi]` with a positive lower end, at Ziv level `w`:
-`lnBracket` at `lo`, the upper end raised by `⌈(hi − lo)/lo⌉`; the dummy bracket `[−1, 1]` when
-`lo` is not a positive float. -/
-def lnOfEncl (y : Encl) (w : Nat) : Encl :=
-  match y.1 with
-  | finite true e q m hv =>
-    let L := lnBracket (finite true e q m hv) e w
-    let d := (divPrecRound (subPrecRound y.2 (finite true e q m hv) w .Ceiling).1
-      (finite true e q m hv) w .Ceiling).1
-    (L.1, (addPrecRound L.2 d w .Ceiling).1)
-  | _ => (-one, one)
 
 /-- The bracket of `ln ((1 + s)/c)` at Ziv level `w` from enclosures `b = ([s], [c])` of a
 sine in `[0, 1]` and of a positive cosine, or the dummy bracket `[−1, 1]` when `[c]` contains

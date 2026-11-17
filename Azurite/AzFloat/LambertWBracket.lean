@@ -42,8 +42,8 @@ precision decides, and the proof of that is the (erased) termination certificate
   (`x ≥ 3`), `−1 + √(2q/e) ≤ W₀ x ≤ min(0, −1 + √(2q))` (`x < 0`); `W₋₁ x ≤ −1 − √(2q)`,
   `−1 − √(2eq) ≤ W₋₁ x` (`q ≤ 1/4`) or `ln y − ln(−ln y) − 1 ≤ W₋₁ x` (`y = −x`).
 * `lambertBracket branch x qE I₀ hs w`: the bracket at Ziv level `w`, working precision
-  `w + 10 + compBits qE` (the extra bits near the branch point, where the derivative is
-  `≈ √(2q)/e`).
+  `w + 10 + compBits qE + lambertIntBits I₀` (the extra bits near the branch point, where the
+  derivative is `≈ √(2q)/e`, and the integer bits of a huge root).
 -/
 
 namespace Azurite.AzFloat
@@ -147,16 +147,27 @@ def qTight (xAt : Nat → AzFloat × AzFloat) (q : AzFloat × AzFloat) : AzFloat
 def lnBounds (t : AzFloat) (P : Nat) : AzFloat × AzFloat :=
   ((lnPrecRound t P .Floor).1, (lnPrecRound t P .Ceiling).1)
 
+/-- The bit length of the exponent of a float (`0` for `0`, `±∞`, `NaN`): `ln |x|` has about
+that many integer bits. -/
+def expSize (x : AzFloat) : Nat :=
+  match x.exponent? with
+  | some e => e.abs.size
+  | none => 0
+
 /-- A proven enclosure of `W₀ x` for `x > 0` from the enclosure `[x₁, x₂]` of `x` at precision
-`P`: `[x₁/(1+x₁), x₂]` for `x₁ < 3`, `[ln x₁ − ln ln x₂, ln x₂]` for `x₁ ≥ 3`. -/
+`P`: `[x₁/(1+x₁), x₂]` for `x₁ < 3`, `[ln x₁ − ln ln x₂, ln x₂]` for `x₁ ≥ 3`.  The logarithms
+are taken at `P + expSize x` bits, i.e. with `P` bits after the binary point: the lower end is
+within `ln ln x / ln x` of `W₀ x` and has to stay so for an argument like `2^(2^78)`, since the
+mean-value rounds start from the exponential at that end. -/
 def aprioriW0Pos (xAt : Nat → AzFloat × AzFloat) (P : Nat) : AzFloat × AzFloat :=
   let X := xAt P
   if lt X.1 (ofAzNat (AzNat.ofNat 3)) then
     ((divPrecRound X.1 (addPrecRound one X.1 P .Ceiling).1 P .Floor).1, X.2)
   else
-    let l₁ := (lnPrecRound X.1 P .Floor).1
-    let l₂ := (lnPrecRound X.2 P .Ceiling).1
-    ((subPrecRound l₁ (lnPrecRound l₂ P .Ceiling).1 P .Floor).1, l₂)
+    let Pe := P + expSize X.2
+    let l₁ := (lnPrecRound X.1 Pe .Floor).1
+    let l₂ := (lnPrecRound X.2 Pe .Ceiling).1
+    ((subPrecRound l₁ (lnPrecRound l₂ Pe .Ceiling).1 Pe .Floor).1, l₂)
 
 /-- A proven enclosure of `W₀ x` for `−e⁻¹ < x < 0` from an enclosure `[lo, hi]` of `q`:
 `[max(−1, −1 + √(2 lo/e)), min(0, −1 + √(2 hi))]`. -/
@@ -169,7 +180,7 @@ def aprioriW0Neg (qlo qhi : AzFloat) (P : Nat) : AzFloat × AzFloat :=
 /-- A proven enclosure of `W₋₁ x` for `−e⁻¹ < x < 0` from an enclosure `[lo, hi]` of `q` and the
 enclosure `[x₁, x₂]` of `x`: upper end `−1 − √(2 lo)`; lower end `−1 − √(2 e hi)` when
 `hi ≤ 1/4`, else `ln y − ln(−ln y) − 1` (`y = −x`) from `l₁ ≤ ln(−x₂) ≤ ln y`:
-`l₁ − ln(−l₁) − 1`. -/
+`l₁ − ln(−l₁) − 1`, at `P + expSize x` bits (as in `aprioriW0Pos`). -/
 def aprioriWm1 (xAt : Nat → AzFloat × AzFloat) (qlo qhi : AzFloat) (P : Nat) :
     AzFloat × AzFloat :=
   let E := expBracketAt one P
@@ -180,9 +191,10 @@ def aprioriWm1 (xAt : Nat → AzFloat × AzFloat) (qlo qhi : AzFloat) (P : Nat) 
       let t := (sqrtPrecRound (mulPrecRound (E.2 <<< AzInt.ofInt 1) qhi P .Ceiling).1 P .Ceiling).1
       (subPrecRound (-one) t P .Floor).1
     else
-      let L := lnBounds (-(xAt P).2) P
+      let Pe := P + expSize (xAt P).2
+      let L := lnBounds (-(xAt P).2) Pe
       let v := -L.1
-      (subPrecRound (subPrecRound L.1 (lnPrecRound v P .Ceiling).1 P .Floor).1 one P .Floor).1
+      (subPrecRound (subPrecRound L.1 (lnPrecRound v Pe .Ceiling).1 Pe .Floor).1 one Pe .Floor).1
   (a, b)
 
 /-! ### The mean-value round -/
@@ -314,10 +326,12 @@ def halleyFloat (x : Float) : Nat → Float → Float
     let den := E * w1 - (w + 2) * f / (2 * w1)
     halleyFloat x k (w - f / den)
 
-/-- A `Float` seed for the branch (`none` when `Float` cannot represent the problem). -/
+/-- A `Float` seed for the branch (`none` when `Float` cannot represent the problem: an
+overflow, or an argument below the normal range `2^(−1022)`, where the conversion keeps only
+a few bits of `x` — or none — and the seed would have as few). -/
 def seedFloat (branch0 : Bool) (x : AzFloat) : Option AzFloat :=
   let xf := toFloat64 x
-  if !xf.isFinite || xf == 0 then none
+  if !xf.isFinite || xf.abs < 2.2250738585072014e-308 then none
   else
     let q := 1 + Float.exp 1 * xf
     let s : Float :=
@@ -382,12 +396,26 @@ def clampInto (I : AzFloat × AzFloat) (n : AzFloat) : AzFloat :=
   | zero => maxOf I.1 (minOf I.2 zero)
   | _ => I.1
 
+/-- The integer bits of the root: the larger exponent of the ends of the a priori interval,
+when positive.  `W eᵂ` is evaluated at the candidate, and an error of `ε` in `W` is a relative
+error `ε` in `eᵂ`, so the working precision has to cover these bits on top of the `w` wanted
+(for `x = 2^(2^78)`, `W ≈ 2^77.5`). -/
+def lambertIntBits (I₀ : AzFloat × AzFloat) : Nat :=
+  let f := fun (x : AzFloat) => match x.exponent? with
+    | some e => if e.sign then e.abs.toNat else 0
+    | none => 0
+  max (f I₀.1) (f I₀.2)
+
 /-- The unverified candidate for `W` at working precision `W`: a seed (`Float`, the branch-point
 series when `q < 2^(−40)`, `logSeed` outside the `Float` range, or the midpoint of `I₀`)
-refined by Halley's iteration. -/
+refined by Halley's iteration.  The schedule of `halleyRefine` counts the bits after the
+binary point: the integer bits `ib` of the root (included in `W` by `lambertBracket`) are
+carried by every step, since a step at fewer bits than `ib` would round the seed to an
+integer. -/
 def halleyCandidate (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
     (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat) (W : Nat) : AzFloat :=
   let loss := 2 * compBits qE + 16
+  let ib := lambertIntBits I₀
   let x := (xAt (W + loss)).1
   let tiny := match qE with
     | some (lo, _) => lt lo (powerOf2 (AzInt.ofInt (-40)))
@@ -404,8 +432,9 @@ def halleyCandidate (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
         match logSeed branch0 x with
         | some s => s
         | none => (addPrecRound I₀.1 I₀.2 64 .Nearest).1 <<< AzInt.ofInt (-1)
-  let P₀ := W / 2 ^ Nat.log2 (W / 64)
-  let n := halleyRefine x (clampInto I₀ seed) P₀ W loss (W + 2)
+  let Wr := W - ib
+  let P₀ := Wr / 2 ^ Nat.log2 (Wr / 64)
+  let n := halleyRefine x (clampInto I₀ seed) P₀ Wr (loss + ib) (W + 2)
   clampInto I₀ n
 
 /-! ### The bracket at a Ziv level -/
@@ -423,7 +452,7 @@ def lambertBracket (branch0 : Bool) (xAt : Nat → AzFloat × AzFloat)
     (qE : Option (AzFloat × AzFloat)) (I₀ : AzFloat × AzFloat)
     (hs : ∀ M e : AzInt, ∃ k, (sideAt xAt (ofAzInt M <<< e) (64 * 2 ^ k)).isSome = true)
     (w : Nat) : AzFloat × AzFloat :=
-  let W := lambertWork qE w
+  let W := lambertWork qE w + lambertIntBits I₀
   let n := halleyCandidate branch0 xAt qE I₀ W
   let I := mvtRounds branch0 xAt n I₀ W
   if le (subPrecRound I.2 I.1 64 .Ceiling).1 (lambertTarget I₀ w) then I

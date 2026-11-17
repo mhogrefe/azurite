@@ -280,6 +280,9 @@ import Azurite.AzFloat.Equiv.Ln10Bracket
 import Azurite.AzFloat.Equiv.Ln2
 import Azurite.AzFloat.Equiv.Ln2Bracket
 import Azurite.AzFloat.Equiv.LnBracket
+import Azurite.AzFloat.Equiv.LnEncl
+import Azurite.AzFloat.Equiv.LnGamma
+import Azurite.AzFloat.Equiv.LnGammaBracket
 import Azurite.AzFloat.Equiv.LnP1
 import Azurite.AzFloat.Equiv.LnRat
 import Azurite.AzFloat.Equiv.LnSmooth
@@ -426,6 +429,9 @@ import Azurite.AzFloat.Ln10Bracket
 import Azurite.AzFloat.Ln2
 import Azurite.AzFloat.Ln2Bracket
 import Azurite.AzFloat.LnBracket
+import Azurite.AzFloat.LnEncl
+import Azurite.AzFloat.LnGamma
+import Azurite.AzFloat.LnGammaBracket
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnSmooth
@@ -3111,6 +3117,7 @@ import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
 import Azurite.Transcendental.Gudermannian
 import Azurite.Transcendental.LambertW
+import Azurite.Transcendental.LogGammaStirling
 import Azurite.Transcendental.Niven
 import Azurite.Transcendental.NivenSin
 import Azurite.Transcendental.NivenTan

@@ -20,6 +20,9 @@ import Azurite.Benchmark.Common
 `−1/10` and one ulp above the 53-bit float nearest `−e⁻¹` (the branch point), of `W₋₁` at
 `−1/10`, `−2^(−100)` and the same branch-point float, and for reference `exp` and `ln` of a float
 at `P` bits.  Config: `bits` (default `53/200/1000/5000`).
+
+`az_float_lambert_extreme`: arguments in the subnormal range of `Float` (`|x| < 2^(−1022)`),
+arguments with exponents up to `±2^200`, and `W₀ (1/3)` at a few precisions.
 -/
 
 open Azurite Azurite.AzFloat Azurite.Benchmark
@@ -80,5 +83,39 @@ def runAzFloatLambert (_limit : Nat) (cfg : Std.HashMap String String) (_seed : 
     IO.println (padLeft s!"{P}" 6 ++ padLeft (ms t1) 9 ++ padLeft (ms t2) 9 ++ padLeft (ms t3) 9
       ++ padLeft (ms t4) 9 ++ padLeft (ms t5) 9 ++ padLeft (ms t6) 9 ++ padLeft (ms t7) 10
       ++ padLeft (ms t8) 9 ++ padLeft (ms t9) 9 ++ padLeft (ms t10) 9)
+
+/-- Run the `az_float_lambert_extreme` benchmark: arguments in the subnormal range of `Float`
+and arguments with huge exponents, where the candidate used to miss (ms per call). -/
+def runAzFloatLambertExtreme (_limit : Nat) (_cfg : Std.HashMap String String) (_seed : UInt64) :
+    IO Unit := do
+  let nat := fun (n : Nat) => ofAzNat (AzNat.ofNat n)
+  let sh := fun (x : AzFloat) (k : Int) => x <<< AzInt.ofInt k
+  IO.println "[AzFloat-Lambert-extreme] ms per call (median of 3 passes)"
+  let row := fun (name : String) (f : Unit → AzFloat × Ordering) => do
+    let t ← timeOne f psize
+    IO.println (padLeft name 44 ++ padLeft (ms t) 10)
+  -- `−0x6.2dc507e392e14E−268`: the reported subnormal argument
+  let xsub := -(sh (nat 0x62dc507e392e14) (-1124))
+  row "Wm1 -0x6.2dc507e392e14E-268 @93" fun _ => lambertWm1PrecRound xsub 93 .Nearest
+  row "Wm1 same @53" fun _ => lambertWm1PrecRound xsub 53 .Nearest
+  row "Wm1 same @200" fun _ => lambertWm1PrecRound xsub 200 .Nearest
+  row "W0 same @93" fun _ => lambertW0PrecRound xsub 93 .Nearest
+  row "Wm1 -2^-1030 @93" fun _ => lambertWm1PrecRound (-(sh one (-1030))) 93 .Nearest
+  row "Wm1 -3*2^-1074 @53" fun _ => lambertWm1PrecRound (-(sh (nat 3) (-1074))) 53 .Nearest
+  row "Wm1 -2^-1000 @93 (normal range)" fun _ => lambertWm1PrecRound (-(sh one (-1000))) 93 .Nearest
+  row "Wm1 -2^-1100 @93 (below Float)" fun _ => lambertWm1PrecRound (-(sh one (-1100))) 93 .Nearest
+  row "W0 3*2^-1050 @93" fun _ => lambertW0PrecRound (sh (nat 3) (-1050)) 93 .Nearest
+  -- huge exponents: `|W|` has more integer bits than the working precision
+  for k in [60, 70, 78, 100, 200] do
+    let xh := one <<< AzInt.ofInt (2 ^ k)
+    row s!"W0 2^(2^{k}) @3" fun _ => lambertW0PrecRound xh 3 .Nearest
+    row s!"W0 2^(2^{k}) @53" fun _ => lambertW0PrecRound xh 53 .Nearest
+    let xs := -(one <<< AzInt.ofInt (-(2 ^ k)))
+    row s!"Wm1 -2^(-2^{k}) @3" fun _ => lambertWm1PrecRound xs 3 .Nearest
+    row s!"Wm1 -2^(-2^{k}) @53" fun _ => lambertWm1PrecRound xs 53 .Nearest
+  -- precisions where the Halley schedule used to end short
+  let third := ofAzRat ((AzRat.parse "1/3").get!) 53
+  for P in [53, 99, 100, 120, 150, 310] do
+    row s!"W0 1/3 @{P}" fun _ => lambertW0PrecRound third P .Nearest
 
 end Azurite.Benchmark

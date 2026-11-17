@@ -8221,3 +8221,95 @@ Malachite's table of special values is needed before step 3.
   evaluations instead of `m²/2` long steps.
 * Tests: `B_0 … B_20`, `B_30`, `B_50`, `B_100`, `B_120` against the defining recurrence in
   exact arithmetic, odd indices, the table against single values, the first tangent numbers.
+
+### 2. `ln Γ(x)`, `x > 0` (DONE 2026-11-17, fuel-based, UNTIMED)
+
+Files: `Transcendental/LogGammaStirling.lean`, `AzFloat/LnGammaBracket.lean`,
+`AzFloat/LnGamma.lean`, `Equiv/LnGammaBracket.lean`, `Equiv/LnGamma.lean`, `Tests/LnGamma.lean`,
+`Benchmark/AzFloatLnGamma.lean` (`az_float_ln_gamma`); `AzFloat/LnEncl.lean` + `Equiv` (the
+logarithm of an enclosure, moved out of the inverse Gudermannian).
+
+* **Formula**: shift to `y = x + δ ≥ 2^L`, `2^L ∈ (w/2, w]`, then Stirling's series at `y`
+  (DLMF 5.11.1), `ln Γ(x) = ln Γ(y) − ln (x (x+1) ⋯ (x+δ−1))`.  For `2^(E−1) ≤ x < 2^E`:
+  `δ = 0` if `E > L`, `2^L − 2^(E−1)` if `1 ≤ E ≤ L`, `2^L` if `x < 1` — a function of the
+  exponent only, so `y ≥ 1` needs one float comparison (`le one x` when `δ` would be `0`)
+  and no reasoning about floors.
+* **Coefficients from tangent numbers directly**:
+  `B_{2k}/(2k(2k−1)) = (−1)^(k+1) T_k / ((2k−1)(4^(2k) − 2^(2k)))` — a positive integer over a
+  positive integer with the sign explicit, so no rational reduction and only nonnegative
+  enclosure products (`bernoulli_div_eq_stirlingCoeffT`).  `AzRat.bernoulli` is not used.
+* **The remainder is whatever term the loop stops at**: `stirlingMu_eq_sum_add` (from
+  `DLMF.dlmf_5_11_ii_real`) holds for every `n ≥ 1`, so `stirlingSumLoop` adds terms until one
+  is below `2^(−w−16)` or the table ends and uses that term as the bound, on its own side.
+  No statement about convergence, the number of terms or the shift enters the proof:
+  `lnGammaBracket_spec` holds for every exponent argument and every `w ≥ 64`.
+* **Zeros at `1` and `2`**: exact `0`; near them the result is about `|x − 1|`, `|x − 2|`
+  against terms of order `1`, so the loop starts at `p + 32 + lnGammaCancelBits x` (the
+  exponent of the exact differences).
+* **Contract**: `lnGammaPrecRound_eq_or` — correctly rounded (`liftVal Spec.lnGamma`) or
+  `(nan, .eq)` when the ten doublings of fuel run out.  `ln Γ(0) = +∞` (limit from the
+  right), `ln Γ(+∞) = +∞`, `NaN` for `x < 0` (provisional: negative arguments wait for the
+  reflection formula and for Malachite's table of special values).
+* **Tests**: integers against `ln` of the exact factorial in all five modes (3 … 1000, 1 to
+  700 bits); seven dyadic non-integers in three modes at 53 bits and five at 200 bits against an
+  independent 100-digit evaluation; `1 ± 2^(−100)`, `2 ± 2^(−100)`; `2^(±200)`, `2^(−100000)`,
+  `3·2^100000`.  Measured widths in a sanity run: about `2^(−w−19)` at `w = 85`, `200`, `600`
+  (`V` has slack to give back).
+* **Timings and tuning (2026-11-17, `az_float_ln_gamma`, compiled, ms per call).**  First
+  version (`2^L ∈ (w/2, w]`, three logarithms, `V = w + 2L + 32`, table `w/(2(E+3−lg w)) + 4`)
+  against the tuned one:
+
+  | bits | `x` | before | after | `tang` | `prod` | shift | `M` | `ln x` |
+  |---|---|---|---|---|---|---|---|---|
+  | 53 | 3/2 | 0.550 | 0.385 | 0.038 | 0.082 | 31 | 16 | 0.087 |
+  | 53 | 1000 | 0.283 | 0.259 | 0.012 | 0 | 0 | 9 | 0.089 |
+  | 200 | 3/2 | 1.165 | 0.973 | 0.227 | 0.201 | 63 | 38 | 0.144 |
+  | 1000 | 3/2 | 15.4 | 9.24 | 2.41 | 3.57 | 511 | 104 | 0.576 |
+  | 2000 | 3/2 | 57.5 | 59.9 | 38.1 | 7.72 | 511 | 278 | 1.54 |
+  | 4000 | 3/2 | — | 342 | 226 | 42.4 | 1023 | 510 | 3.82 |
+
+  What changed: (a) `2^L ∈ (w/4, w/2]` — an enclosure step of the rising product costs about
+  2.7 µs at 53 bits, more than a term of the series; (b) one logarithm for the constant and
+  the product, `½ ln (2π/P²)`; (c) the table size from a small search for the least `m` with
+  `2(w + 24) ≤ m (4E + 7 − ⌊lg m⁴⌋)` (`lnGammaTermsGo`) — the first estimate was 1.8× too
+  large at 1000 bits, and a too-tight intermediate one made 2000 bits retry at double
+  precision (307 ms): the table size is safe to get wrong but expensive either way;
+  (d) `V = w + 2L + 8 + 2⌊lg w⌋`.  At 53 bits the cost is about four logarithms: two real
+  ones, the product, the series.  From 2000 bits on the tangent table dominates (cubic:
+  step 1's follow-ups apply — a shared table, or `B_{2k}` from `ζ(2k)`).
+* Open: the rising product on integers instead of enclosures when `x` has a short
+  significand; an exact path for small integers (`ln (n−1)!`); the Bernoulli table.
+
+### Perf 13. Lambert `W`: subnormal `Float` range and huge exponents (DONE 2026-11-17)
+
+Report (Malachite, after porting the implementation): (1) `|x| < 2^(−1022)`, mostly `W₋₁`:
+`seedFloat` rounds `x` to a subnormal with few bits, the seed has as few, and the Halley
+schedule ends short — `W₋₁(−0x6.2dc507e392e14E−268)` at 93 bits; (2) `|W| ≥ 2^(working
+precision)`, exponents beyond about `2^70` — `W₀` near exponent `2^78` at 3 bits.  Both end
+in the bisection fallback.  Measured here first (`az_float_lambert_extreme`, compiled):
+312 ms for the first example (850 ms at 200 bits), 40–210 ms for exponents `±2^70 … ±2^200`,
+against 1.1–1.8 ms for neighbours outside the two regimes.
+
+* (1) `seedFloat` returns `none` below the normal range (`|x| < 2^(−1022)`), so `logSeed`
+  takes over, as it already did when the conversion underflowed to `0`.
+* (2) Three places assumed that the bits of the working precision are bits after the point:
+  * `lambertBracket` works at `lambertWork qE w + lambertIntBits I₀` bits (the larger
+    exponent of the a priori interval, when positive): an error `ε` in `W` is a relative
+    error `ε` in `e^W`.
+  * `halleyCandidate` carries those bits in every step of the schedule (`loss + ib`, target
+    `W − ib`): a step at fewer bits than `ib` rounds the seed to an integer.  This alone
+    fixed `2^(2^70)` and nothing above.
+  * `aprioriW0Pos` and `aprioriWm1` take their logarithms at `P + expSize x` bits.  At a
+    fixed 64 bits the lower end of the a priori interval, which is within `ln ln x / ln x` of
+    `W₀ x`, was off by `2^14` for `x = 2^(2^78)`, and the mean-value rounds start from the
+    exponential at that end: a factor `e^(−2^14)` in the derivative bound, no progress.
+  Proofs: `lambertBracket_spec` (the width bound uses `(3/4)^(3P+8)` with the larger `P`),
+  `aprioriW0Pos_spec`, `aprioriWm1_spec` (the rounding lemmas at the new precision); nothing
+  about the candidate is proven, so nothing else moved.
+* After (ms): the reported subnormal argument 2.1 at 93 bits (1.75 at 53, 2.3 at 200);
+  `−3·2^(−1074)` 1.7; exponents `±2^60 … ±2^200` 1.5–2.7 at 3 and 53 bits.  The regular
+  table (`az_float_lambert`) is unchanged or slightly faster: 0.364 / 0.959 / 2.84 for
+  `W₀(1/2)` at 53 / 200 / 1000 bits.  `W₀(1/3)` at 100, 120, 150 bits (the schedule fix of
+  item 12): 0.61, 0.64, 0.68 ms compiled.
+* Tests (`Tests/LambertW.lean`): the reported argument, `−3·2^(−1074)`, exponents `±2^78`,
+  `±2^200`, in the directed modes; `expSize`, `lambertIntBits`.

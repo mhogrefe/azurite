@@ -520,13 +520,14 @@ theorem aprioriW0Pos_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XE
     have hxe : Real.exp 1 ≤ xv := by linarith [Real.exp_one_lt_d9]
     have hl1 : 1 ≤ Real.log xv := by
       rw [← Real.log_exp 1]; exact Real.log_le_log (Real.exp_pos 1) hxe
-    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hx₁ hx₁pos P
-    obtain ⟨l₂, hl₂, hl₂1⟩ := lnCeiling_ge hx₂ (by linarith) P
+    have : NeZero (P + expSize (xAt P).2) := ⟨by omega⟩
+    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hx₁ hx₁pos (P + expSize (xAt P).2)
+    obtain ⟨l₂, hl₂, hl₂1⟩ := lnCeiling_ge hx₂ (by linarith) (P + expSize (xAt P).2)
     have hl₁' : l₁ ≤ Real.log xv := hl₁1.trans (Real.log_le_log hx₁pos hx₁1)
     have hl₂' : Real.log xv ≤ l₂ := (Real.log_le_log hx0 hx₂1).trans hl₂1
     have hl₂pos : 0 < l₂ := by linarith
-    obtain ⟨c, hc, hc1⟩ := lnCeiling_ge hl₂ hl₂pos P
-    obtain ⟨a, ha, ha1, -⟩ := subFloor_le hl₁ hc P
+    obtain ⟨c, hc, hc1⟩ := lnCeiling_ge hl₂ hl₂pos (P + expSize (xAt P).2)
+    obtain ⟨a, ha, ha1, -⟩ := subFloor_le hl₁ hc (P + expSize (xAt P).2)
     refine ⟨a, l₂, ha, hl₂, ?_, (lambertW0_le_log hxe).trans hl₂'⟩
     have hlog : Real.log (Real.log xv) ≤ c :=
       (Real.log_le_log (by linarith) hl₂').trans hc1
@@ -629,15 +630,17 @@ theorem aprioriWm1_spec {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ} (hX : XEnc
       have := Real.log_lt_log (by linarith) (by linarith : -xv < Real.exp (-1))
       rwa [Real.log_exp] at this
     unfold lnBounds
-    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hnx hypos P
+    have : NeZero (P + expSize (xAt P).2) := ⟨by omega⟩
+    obtain ⟨l₁, hl₁, hl₁1⟩ := lnFloor_le hnx hypos (P + expSize (xAt P).2)
     have hl₁1' : l₁ ≤ Real.log (-xv) := hl₁1.trans (Real.log_le_log hypos (by linarith))
-    obtain ⟨l₂, hl₂, -⟩ := lnCeiling_ge hnx hypos P
-    have hv : (-(lnPrecRound (-(xAt P).2) P .Floor).1).toVal = some ((-l₁ : ℝ) : EReal) := by
+    obtain ⟨l₂, hl₂, -⟩ := lnCeiling_ge hnx hypos (P + expSize (xAt P).2)
+    have hv : (-(lnPrecRound (-(xAt P).2) (P + expSize (xAt P).2) .Floor).1).toVal
+        = some ((-l₁ : ℝ) : EReal) := by
       rw [toVal_neg, hl₁, Option.map_some, EReal.coe_neg]
     have hvpos : 0 < -l₁ := by linarith
-    obtain ⟨c', hc', hc'1⟩ := lnCeiling_ge hv hvpos P
-    obtain ⟨a₁, ha₁, ha₁1, -⟩ := subFloor_le hl₁ hc' P
-    obtain ⟨a, ha, ha1, -⟩ := subFloor_le ha₁ toVal_one' P
+    obtain ⟨c', hc', hc'1⟩ := lnCeiling_ge hv hvpos (P + expSize (xAt P).2)
+    obtain ⟨a₁, ha₁, ha₁1, -⟩ := subFloor_le hl₁ hc' (P + expSize (xAt P).2)
+    obtain ⟨a, ha, ha1, -⟩ := subFloor_le ha₁ toVal_one' (P + expSize (xAt P).2)
     refine ⟨a, min (-1) b', ha, toVal_minOf toVal_neg_one hb', ?_, hb⟩
     have hlog : Real.log (-Real.log (-xv)) ≤ c' :=
       (Real.log_le_log (by linarith) (by linarith)).trans hc'1
@@ -1157,10 +1160,10 @@ theorem lambertBracket_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} 
       (lambertBracket branch0 xAt qE I₀ hs w).2.toVal = some (hi : EReal) ∧ lo ≤ W ∧ W ≤ hi ∧
       hi - lo ≤ lambertEps a₀ b₀ qE w := by
   have hab : a₀ ≤ b₀ := haW.trans hWb
-  have hP : 64 ≤ lambertWork qE w := by unfold lambertWork; omega
+  have hP : 64 ≤ lambertWork qE w + lambertIntBits I₀ := by unfold lambertWork; omega
   unfold lambertBracket
   simp only
-  set P := lambertWork qE w with hPdef
+  set P := lambertWork qE w + lambertIntBits I₀ with hPdef
   obtain ⟨nv, hn, han, hnb⟩ := halleyCandidate_spec branch0 xAt qE ha₀ hb₀ hab P
   obtain ⟨a, b, ha, hb, h0a, haW', hWb', hbb0⟩ :=
     mvtRounds_spec branch0 hX hn ha₀ hb₀ hWx haW hWb han hnb hP
@@ -1183,8 +1186,8 @@ theorem lambertBracket_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} 
             mul_le_mul_of_nonneg_left hw₀ (by positivity)
     unfold gridWidth at hwid
     unfold lambertEps
-    rw [← hPdef]
-    exact le_max_of_le_right hwid
+    refine le_max_of_le_right (hwid.trans (mul_le_mul_of_nonneg_right ?_ (by linarith)))
+    exact pow_le_pow_of_le_one (by norm_num) (by norm_num) (by rw [hPdef]; omega)
 
 /-- `lambertApprox` brackets the root by `Roundable`s. -/
 theorem lambertApprox_spec (branch0 : Bool) {xAt : ℕ → AzFloat × AzFloat} {xv : ℝ}

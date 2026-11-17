@@ -35,6 +35,7 @@ import Azurite.Benchmark.AzFloatToString
 import Azurite.Benchmark.AzFloatLn
 import Azurite.Benchmark.AzFloatEulerGamma
 import Azurite.Benchmark.AzRatBernoulli
+import Azurite.Benchmark.AzFloatLnGamma
 import Azurite.Benchmark.AzFloatPow
 import Azurite.Benchmark.AzFloatLambert
 import Azurite.Benchmark.AzFloatSinCos
@@ -71,12 +72,15 @@ def validBenchmarks : List String :=
    "az_nat_sub_mod_pow2_residue", "az_nat_mul_mod_pow2_residue",
    "az_nat_mul_mod_pow2_algorithms", "az_nat_square_mod_pow2_algorithms",
    "az_nat_sub", "az_nat_mul_vs_nat", "az_nat_mul_algorithms",
-   "az_nat_mul_algorithms_toomcook3", "az_nat_div_algorithms", "az_nat_div_cross", "az_nat_div_newton",
+   "az_nat_mul_algorithms_toomcook3", "az_nat_div_algorithms", "az_nat_div_cross",
+   "az_nat_div_newton",
    "az_float_to_string", "az_float_ln", "az_float_ln_series", "az_float_lnp1",
-   "az_float_ln2_breakdown", "az_float_euler_gamma", "az_rat_bernoulli", "az_float_pow",
+   "az_float_ln2_breakdown", "az_float_euler_gamma", "az_rat_bernoulli", "az_float_ln_gamma",
+   "az_float_pow",
    "az_float_pow_width",
    "az_float_pow_first",
-   "az_float_lambert", "az_float_sin_cos", "az_float_tan", "az_float_atan",
+   "az_float_lambert", "az_float_lambert_extreme",
+   "az_float_sin_cos", "az_float_tan", "az_float_atan",
    "az_float_catalan",
    "az_rat_profile", "az_nat_gcd", "az_nat_gcd_breakdown", "az_nat_gcd_word",
    "az_nat_div_mod", "az_nat_div_vs_div_mod",
@@ -151,10 +155,13 @@ def main (args : List String) : IO Unit := do
       | "az_float_ln2_breakdown" => Azurite.Benchmark.runAzFloatLn2Breakdown limit cfg seed
       | "az_float_euler_gamma" => Azurite.Benchmark.runAzFloatEulerGamma limit cfg seed
       | "az_rat_bernoulli" => Azurite.Benchmark.runAzRatBernoulli limit cfg seed
+      | "az_float_ln_gamma" => Azurite.Benchmark.runAzFloatLnGamma limit cfg seed
       | "az_float_pow" => Azurite.Benchmark.runAzFloatPow limit cfg seed
       | "az_float_pow_width" => Azurite.Benchmark.runAzFloatPowWidth limit cfg seed
       | "az_float_pow_first" => Azurite.Benchmark.runAzFloatPowFirst limit cfg seed
       | "az_float_lambert" => Azurite.Benchmark.runAzFloatLambert limit cfg seed
+      | "az_float_lambert_extreme" =>
+        Azurite.Benchmark.runAzFloatLambertExtreme limit cfg seed
       | "az_float_sin_cos" => Azurite.Benchmark.runAzFloatSinCos limit cfg seed
       | "az_float_tan" => Azurite.Benchmark.runAzFloatTan limit cfg seed
       | "az_float_atan" => Azurite.Benchmark.runAzFloatAtan limit cfg seed

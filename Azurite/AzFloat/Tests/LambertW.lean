@@ -166,3 +166,26 @@ private def consistent (x : AzFloat) (p : Nat) : Bool :=
 #guard [100, 120, 310].all fun p => consistent (F "-1/3" 53) p
 #guard [100, 120].all fun p =>
   (Wm (F "-1/3" 53) p .Floor).2 == .lt && (Wm (F "-1/3" 53) p .Ceiling).2 == .gt
+
+-- arguments in the subnormal range of `Float` (the `Float` seed is not used there) and
+-- arguments with huge exponents (`|W| ≈ 2^78`: more integer bits than the working precision
+-- of a 3-bit request); both used to end in the bisection fallback
+private def nat (n : Nat) : AzFloat := ofAzNat (AzNat.ofNat n)
+private def sub268 : AzFloat := -((nat 0x62dc507e392e14) <<< AzInt.ofInt (-1124))
+private def dirOk (f : RoundingMode → AzFloat × Ordering) : Bool :=
+  (f .Floor).2 == .lt && (f .Ceiling).2 == .gt && le (f .Floor).1 (f .Nearest).1
+    && le (f .Nearest).1 (f .Ceiling).1 && lt (f .Floor).1 (f .Ceiling).1
+#guard dirOk fun m => Wm sub268 93 m
+#guard dirOk fun m => Wm sub268 53 m
+#guard lt (Wm sub268 53).1 (nat 0 - nat 746) && lt (nat 0 - nat 749) (Wm sub268 53).1
+#guard dirOk fun m => Wm (-((nat 3) <<< AzInt.ofInt (-1074))) 53 m
+#guard dirOk fun m => W0 (one <<< AzInt.ofInt (2 ^ 78)) 3 m
+#guard dirOk fun m => W0 (one <<< AzInt.ofInt (2 ^ 78)) 53 m
+#guard dirOk fun m => W0 (one <<< AzInt.ofInt (2 ^ 200)) 3 m
+#guard dirOk fun m => Wm (-(one <<< AzInt.ofInt (-(2 ^ 78)))) 3 m
+#guard dirOk fun m => Wm (-(one <<< AzInt.ofInt (-(2 ^ 200)))) 53 m
+-- `W₀ (2^(2^78)) ≈ 2^78 ln 2 − ln (2^78 ln 2)`: between `2^77` and `2^78`
+#guard (W0 (one <<< AzInt.ofInt (2 ^ 78)) 53).1.exponent? == some (AzInt.ofInt 78)
+#guard expSize (one <<< AzInt.ofInt (2 ^ 78)) == 79
+#guard lambertIntBits (nat 1000, nat 1001) == 10
+#guard lambertIntBits (F "1/4" 53, F "1/2" 53) == 0

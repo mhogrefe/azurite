@@ -103,6 +103,7 @@ import Azurite.AzFloat.Tests.Lemniscate
 import Azurite.AzFloat.Tests.Literals
 import Azurite.AzFloat.Tests.Ln
 import Azurite.AzFloat.Tests.Ln2
+import Azurite.AzFloat.Tests.LnGamma
 import Azurite.AzFloat.Tests.LnP1
 import Azurite.AzFloat.Tests.LnRat
 import Azurite.AzFloat.Tests.LnSmooth
