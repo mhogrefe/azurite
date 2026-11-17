@@ -15,7 +15,7 @@ import Azurite.AzInt.ShiftRight
 import Azurite.AzInt.Conversion
 import Azurite.AzNat.ShiftLeft
 import Azurite.AzNat.ShiftRight
-import Azurite.AzNat.Mul
+import Azurite.AzNat.MulNat
 
 /-!
 ## Sweeney's series by a truncated backward recurrence
@@ -48,14 +48,6 @@ is why `V ≈ w + 1.45 n` is needed for `w` good bits.)
 
 The proofs are in `Azurite/AzInt/Equiv/SweeneyHorner.lean`.
 -/
-
-namespace Azurite.AzNat
-
-/-- `x · a` for a natural `a`: a single-limb multiplication when `a < 2^63`. -/
-def mulNat (x : AzNat) (a : Nat) : AzNat :=
-  if a ≤ 9223372036854775807 then mulUInt64 x a.toUInt64 else x * AzNat.ofNat a
-
-end Azurite.AzNat
 
 namespace Azurite.AzInt
 

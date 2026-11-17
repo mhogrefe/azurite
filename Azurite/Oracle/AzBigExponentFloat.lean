@@ -293,6 +293,18 @@ def checkBigExponentFloatExpXMinus1 : String → Verdict :=
 def checkBigExponentFloatExpXMinus1Rational : String → Verdict :=
   withBigExponentFloatNames checkFloatExpXMinus1Rational
 
+def checkBigExponentFloatLambertW0 : String → Verdict :=
+  withBigExponentFloatNames checkFloatLambertW0
+
+def checkBigExponentFloatLambertWMinus1 : String → Verdict :=
+  withBigExponentFloatNames checkFloatLambertWMinus1
+
+def checkBigExponentFloatLambertW0Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLambertW0Rational
+
+def checkBigExponentFloatLambertWMinus1Rational : String → Verdict :=
+  withBigExponentFloatNames checkFloatLambertWMinus1Rational
+
 def checkBigExponentFloatPowerOf2OfFloat : String → Verdict :=
   withBigExponentFloatNames fun line =>
     checkFloatUnaryArgsWith "power_of_2_of_float" 0 (fun _ => some ())

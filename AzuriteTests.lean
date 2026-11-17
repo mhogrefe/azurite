@@ -206,6 +206,7 @@ import Azurite.AzNat.Tests.ShiftRightNearestTernary
 import Azurite.AzNat.Tests.ShiftRightRound
 import Azurite.AzNat.Tests.ToomCook
 import Azurite.AzNat.Tests.TrailingZeros
+import Azurite.AzRat.Tests.Bernoulli
 import Azurite.AzRat.Tests.FromSci
 import Azurite.AzRat.Tests.LogBase
 import Azurite.AzRat.Tests.Pow2

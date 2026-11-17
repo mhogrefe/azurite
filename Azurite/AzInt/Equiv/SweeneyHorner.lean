@@ -17,6 +17,7 @@ import Azurite.AzInt.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.ShiftLeft
 import Azurite.AzNat.Equiv.ShiftRight
 import Azurite.AzNat.Equiv.Size
+import Azurite.AzNat.Equiv.MulNat
 
 /-!
 ## The truncated backward recurrence encloses Sweeney's partial sum
@@ -34,18 +35,6 @@ Proofs for `Azurite/AzInt/SweeneyHorner.lean`.
 * `sweeneyHorner_encl`: the final state stands for the partial sum, for either loop, and
   `sweeneyHornerEncl_spec`: the fractions `a / d ≤ S ≤ c / d`.
 -/
-
-namespace Azurite.AzNat
-
-theorem toNat_mulNat (x : AzNat) (a : ℕ) : (x.mulNat a).toNat = x.toNat * a := by
-  unfold mulNat
-  split_ifs with h
-  · rw [toNat_mulUInt64]
-    congr 1
-    exact UInt64.toNat_ofNat_of_lt' (by unfold UInt64.size; omega)
-  · rw [toNat_mul, toNat_ofNat]
-
-end Azurite.AzNat
 
 namespace Azurite.AzInt
 

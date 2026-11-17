@@ -8183,3 +8183,41 @@ by the sign of `cosRatPrecRound q 1 .Floor` (rounding down keeps a positive numb
 and `cos q` is irrational).  `gdInvRatPrecRound_eq` (`= roundVal p mode (Spec.gdInv q)`).
 Tests against 500-digit references, on both sides of `π/2` (`1570796/10^6`, `1570797/10^6`,
 `355/226`, `11/7`), and against the float function on dyadic arguments.
+
+## DLMF Chapter 5 (gamma function family): numerics, started 2026-11-17
+
+Survey and order agreed with the user (2026-11-17): (1) Bernoulli numbers, (2) `ln Γ(x)`,
+`x > 0` (shift + Stirling with the proven error bound of §5.11(ii)), (3) `Γ` and `1/Γ`
+(exact at integers and half-integers, reflection, poles), (4) `ψ` and then its zeros
+(`psiZero n`, the extrema of `Γ`, DLMF Table 5.4.1 — existence and uniqueness are in
+`DLMF/Chapter5/Section4Zeros.lean`), (5) Beta, `ln` Beta, Pochhammer for a float argument,
+(6) polygamma (zeros between the poles for even order only), (7) the constants `Γ(1/3)`,
+`Γ(1/4)`, (8) Barnes `G`, (9) `q`-gamma.  Derivatives of `Γ` are left out (they are `Γ` times
+polynomials in polygammas); `Γ′` alone may be reconsidered after `ψ`.  Correct rounding will
+mostly need fuel: irrationality at rational arguments is known only in a few cases.
+Malachite's table of special values is needed before step 3.
+
+### 1. Bernoulli numbers (DONE 2026-11-17)
+
+`AzRat/Bernoulli.lean` (`bernoulli n`, `bernoulliEvens m`, `bernoulliOfTangent`),
+`AzNat/TangentNumbers.lean` (`tangentNumbers m`), `AzNat/MulNat.lean` (moved out of
+`AzInt/SweeneyHorner.lean`), with `Equiv` and `Tests`; benchmark `az_rat_bernoulli`.
+
+* **Algorithm**: MCA §4.7.2, Algorithm 4.3 (TangentNumbers) and (4.62) — the model over `ℕ`
+  and both identities were already formalized in `BrentZimmermann/Chapter4/TangentAlgorithm`
+  and `TangentNumbers`, so the work was the array version (`TangentRepr`: the array holds the
+  row of the model) and the reduction to lowest terms.  `toRat_bernoulli` is against Mathlib's
+  `bernoulli` (`B_1 = −1/2`).
+* **Cost** (compiled, ms): `m = 50`: 0.47; 100: 2.3; 200: 15; 400: 116; 800: 936; 1600: 9560 —
+  cubic, as MCA's Exercise 4.39 says, with about 2 µs per inner step at 200 limbs.  Stirling's
+  series at `w` bits needs on the order of `0.1 w` to `0.2 w` of them (an estimate until
+  step 2 fixes the shift), so the table is negligible at 53 bits, comparable to the rest
+  around 1000 bits, and dominant beyond: at 20000 bits it would take minutes.
+* **Follow-up when step 2 shows the need**: (a) a caller-supplied table, as `LnConsts` does
+  for `ln 2`, so that repeated calls share it; (b) each `B_{2k}` from
+  `|B_{2k}| = 2 (2k)! ζ(2k) / (2π)^(2k)` evaluated in floats and rounded to the nearest
+  multiple of `1/D` for a known multiple `D` of the denominator — `BZ.bernoulli_den_dvd`
+  and (4.65) with its bounds on `ζ(2k) − 1` are already proven — which is `O(m)` float
+  evaluations instead of `m²/2` long steps.
+* Tests: `B_0 … B_20`, `B_30`, `B_50`, `B_100`, `B_120` against the defining recurrence in
+  exact arithmetic, odd indices, the table against single values, the first tangent numbers.

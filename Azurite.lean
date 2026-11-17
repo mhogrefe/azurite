@@ -869,6 +869,7 @@ import Azurite.AzNat.Equiv.MulModPow2.Dispatch
 import Azurite.AzNat.Equiv.MulModPow2.Karatsuba
 import Azurite.AzNat.Equiv.MulModPow2.Schoolbook
 import Azurite.AzNat.Equiv.MulModPow2.ToomCook3
+import Azurite.AzNat.Equiv.MulNat
 import Azurite.AzNat.Equiv.MultiFactorial
 import Azurite.AzNat.Equiv.NMinusOneTest
 import Azurite.AzNat.Equiv.NormalizedCompare
@@ -903,6 +904,7 @@ import Azurite.AzNat.Equiv.Sub
 import Azurite.AzNat.Equiv.SubModPow2
 import Azurite.AzNat.Equiv.Subfactorial
 import Azurite.AzNat.Equiv.SumProduct
+import Azurite.AzNat.Equiv.TangentNumbers
 import Azurite.AzNat.Equiv.TestBit
 import Azurite.AzNat.Equiv.ToStringBase
 import Azurite.AzNat.Equiv.TrailingZeros
@@ -948,6 +950,7 @@ import Azurite.AzNat.MulModPow2.Dispatch
 import Azurite.AzNat.MulModPow2.Karatsuba
 import Azurite.AzNat.MulModPow2.Schoolbook
 import Azurite.AzNat.MulModPow2.ToomCook3
+import Azurite.AzNat.MulNat
 import Azurite.AzNat.MultiFactorial
 import Azurite.AzNat.NMinusOneTest
 import Azurite.AzNat.NormalizedCompare
@@ -984,6 +987,7 @@ import Azurite.AzNat.Sub
 import Azurite.AzNat.SubModPow2
 import Azurite.AzNat.Subfactorial
 import Azurite.AzNat.SumProduct
+import Azurite.AzNat.TangentNumbers
 import Azurite.AzNat.TestBit
 import Azurite.AzNat.ToStringBase
 import Azurite.AzNat.TrailingZeros
@@ -1136,6 +1140,7 @@ import Azurite.AzPolynomialQ.Parse
 import Azurite.AzPolynomialQ.ToString
 import Azurite.AzRat.Add
 import Azurite.AzRat.Basic
+import Azurite.AzRat.Bernoulli
 import Azurite.AzRat.Compare
 import Azurite.AzRat.CompareProduct
 import Azurite.AzRat.CompareProducts
@@ -1144,6 +1149,7 @@ import Azurite.AzRat.Conversion
 import Azurite.AzRat.Div
 import Azurite.AzRat.Equiv.Add
 import Azurite.AzRat.Equiv.Basic
+import Azurite.AzRat.Equiv.Bernoulli
 import Azurite.AzRat.Equiv.Compare
 import Azurite.AzRat.Equiv.CompareProduct
 import Azurite.AzRat.Equiv.CompareProducts

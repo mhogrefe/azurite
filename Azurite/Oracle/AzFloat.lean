@@ -47,6 +47,7 @@ import Azurite.AzFloat.Rem
 import Azurite.AzFloat.SqrtRat
 import Azurite.AzFloat.Agm
 import Azurite.AzFloat.Ln
+import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LnRat
 import Azurite.AzFloat.LnP1
 import Azurite.AzFloat.Log2
@@ -1471,6 +1472,25 @@ def checkFloatExpRational : String → Verdict :=
 `AzFloat.expM1RatPrecRound`. -/
 def checkFloatExpXMinus1Rational : String → Verdict :=
   checkFloatOfRational "exp_x_minus_1_rational" AzFloat.expM1RatPrecRound
+
+/-- `Float`'s `lambert_w0` family, against `AzFloat.lambertW0PrecRound`; the sign of a zero result
+is not compared. -/
+def checkFloatLambertW0 : String → Verdict :=
+  checkFloatUnaryWith "lambert_w0" AzFloat.lambertW0PrecRound
+
+/-- `Float`'s `lambert_w_minus_1` family, against `AzFloat.lambertWm1PrecRound`. -/
+def checkFloatLambertWMinus1 : String → Verdict :=
+  checkFloatUnaryWith "lambert_w_minus_1" AzFloat.lambertWm1PrecRound
+
+/-- `Float::lambert_w0_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.lambertW0RatPrecRound`. -/
+def checkFloatLambertW0Rational : String → Verdict :=
+  checkFloatOfRational "lambert_w0_rational" AzFloat.lambertW0RatPrecRound
+
+/-- `Float::lambert_w_minus_1_rational_prec[_round][_ref](q, p[, rm]) = (r, o)`, against
+`AzFloat.lambertWm1RatPrecRound`. -/
+def checkFloatLambertWMinus1Rational : String → Verdict :=
+  checkFloatOfRational "lambert_w_minus_1_rational" AzFloat.lambertWm1RatPrecRound
 
 /-- An associated-function line `T::f(x, a…) = r`, `T` the dialect's type, rewritten as the method
 line `(x).f(a…) = r`, so the method checkers read it; any other line is unchanged. -/
