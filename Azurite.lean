@@ -262,6 +262,8 @@ import Azurite.AzFloat.Equiv.ExpM1Tiny
 import Azurite.AzFloat.Equiv.ExpRat
 import Azurite.AzFloat.Equiv.Float64
 import Azurite.AzFloat.Equiv.Float64Emulate
+import Azurite.AzFloat.Equiv.Gamma
+import Azurite.AzFloat.Equiv.GammaBracket
 import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.Gd
 import Azurite.AzFloat.Equiv.GdBracket
@@ -410,6 +412,8 @@ import Azurite.AzFloat.ExpM1Tiny
 import Azurite.AzFloat.ExpRat
 import Azurite.AzFloat.Float64
 import Azurite.AzFloat.Float64Emulate
+import Azurite.AzFloat.Gamma
+import Azurite.AzFloat.GammaBracket
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdBracket
@@ -3117,6 +3121,7 @@ import Azurite.Transcendental.Cos
 import Azurite.Transcendental.Dottie
 import Azurite.Transcendental.EulerGamma
 import Azurite.Transcendental.Exp
+import Azurite.Transcendental.GammaNearZero
 import Azurite.Transcendental.Gudermannian
 import Azurite.Transcendental.LambertW
 import Azurite.Transcendental.LogGammaStirling

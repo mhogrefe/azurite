@@ -8336,3 +8336,47 @@ Files: `AzFloat/LnGammaRat.lean`, `Equiv/LnGammaRat.lean`, `Tests/LnGammaRat.lea
   against decimal brackets; the recurrence `ln Γ(q + 1) − ln Γ(q) = ln q` at 200 bits against
   `lnRat`; integers against `ln (n − 1)!`; arguments within `10^(−30)` of the zeros; tiny and
   huge arguments.
+
+### 3. `Γ(x)` and `1/Γ(x)` (DONE 2026-11-17, fuel-based, TIMED)
+
+Files: `AzFloat/GammaBracket.lean`, `AzFloat/Gamma.lean`, `Equiv/GammaBracket.lean`,
+`Equiv/Gamma.lean`, `Tests/Gamma.lean`, `Transcendental/GammaNearZero.lean`.
+
+* **Conventions** (own choice, no Malachite table was at hand — to be confirmed):
+  `Γ(0) = +∞` (no negative zero), `Γ(+∞) = +∞`, `NaN` at the negative integers and at `−∞`;
+  `1/Γ` is `0` at `0, −1, −2, …` and at `+∞`, `NaN` at `−∞`.
+* **`x > 0`**: `exp (± ln Γ(x))`, the bracket of `ln Γ` taken at `gammaLnBits e` more bits (the
+  size of `|ln Γ(x)|`).  **`x < 0`**: reflection, `|Γ(x)| = π / (|sin πx| Γ(1 − x))`, the sign
+  that of `sin πx`.  The sine is taken at `π |x − k|` for an integer `k` next to `x`, so it is
+  relatively accurate next to the poles and next to `0`; the correctness of the enclosure does
+  not depend on which integer `k` is.
+* **Valid or rejected.**  The pieces answer `none` when they cannot give a positive enclosure
+  (bracket of `ln Γ` wider than `1`, sine not yet positive); the loop then sees the dummy
+  bracket `[−1, 1]` (`zivLoop_eq_of_ne_nan_or_none`).  No width is proven anywhere.
+* **Exact and near-exact cases.**  Positive integers `n ≤ p + 65` by the exact factorial
+  (beyond, `(n − 1)!` has an odd part of more than `p + 1` bits and the loop decides — tested
+  against the exact factorial up to `n = 1000`).  Tiny `x`: `Γ(x) = 1/x − γ + …` and
+  `1/Γ(x) = x + γx² + …` sit within a relative `|x|` of `1/x` and `x`, so one test of
+  `roundingPossible` from `1/x − 2 < Γ(x) < 1/x` and `x < 1/Γ(x) < x + x²` (proven from
+  convexity of `Γ` and Mathlib's `Γ(3/2) < 1`).  For `x` within `2^(−k)` of a pole see the timings below.
+* **Timings (2026-11-17, `az_float_gamma`, compiled, ms per call; `1/Γ` equals `Γ` within
+  noise).**
+
+  | bits | `Γ(3/2)` | `Γ(2001/2)` | `Γ(−201/2)` | `ln Γ(3/2)` | `exp` |
+  |---|---|---|---|---|---|
+  | 53 | 0.52 | 0.40 | 0.66 | 0.39 | 0.13 |
+  | 200 | 1.12 | 0.73 | 1.22 | 0.92 | 0.21 |
+  | 1000 | 9.5 | 6.2 | 10.6 | 8.8 | 0.70 |
+  | 2000 | 59 | — | 61 | 60 | 1.6 |
+
+  So `Γ(x) ≈ ln Γ(x) + exp` for `x > 0`, and the reflection adds one sine and the divisions
+  (10–25 %); `ln Γ` dominates from 200 bits on.  `ln Γ` at a rational costs what the float
+  one does.  Exact integers (`Γ(150)` at 200 bits) 0.011 ms; tiny arguments 0.005 ms.
+* **Next to a pole** (`x = −1 − 2^(−100)`) the first level used to fail — the sine bracket has
+  an absolute width while `sin π|x − k| ≈ 2^(−100)` — and one doubling cost 5× at 1000 bits and
+  8× at 2000 (54 and 454 ms).  The sine is now taken `sinLostBits` finer (the exponent of
+  `π|x − k|` below `1`): 10.6 and 61 ms, the same as away from the poles.  Arguments next to
+  `1` and `2` were already at the base cost (the exponential of an absolutely accurate small
+  `ln Γ` is relatively accurate).
+* **Not done**: rational arguments.  `Γ(x)` for `x ≈ 2^k` needs `k + lg k` extra bits of
+  `ln Γ` — inherent, the result has `≈ k 2^k` binary digits before the point.

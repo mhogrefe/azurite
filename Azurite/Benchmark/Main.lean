@@ -36,6 +36,7 @@ import Azurite.Benchmark.AzFloatLn
 import Azurite.Benchmark.AzFloatEulerGamma
 import Azurite.Benchmark.AzRatBernoulli
 import Azurite.Benchmark.AzFloatLnGamma
+import Azurite.Benchmark.AzFloatGamma
 import Azurite.Benchmark.AzFloatPow
 import Azurite.Benchmark.AzFloatLambert
 import Azurite.Benchmark.AzFloatSinCos
@@ -76,6 +77,7 @@ def validBenchmarks : List String :=
    "az_nat_div_newton",
    "az_float_to_string", "az_float_ln", "az_float_ln_series", "az_float_lnp1",
    "az_float_ln2_breakdown", "az_float_euler_gamma", "az_rat_bernoulli", "az_float_ln_gamma",
+   "az_float_gamma",
    "az_float_pow",
    "az_float_pow_width",
    "az_float_pow_first",
@@ -156,6 +158,7 @@ def main (args : List String) : IO Unit := do
       | "az_float_euler_gamma" => Azurite.Benchmark.runAzFloatEulerGamma limit cfg seed
       | "az_rat_bernoulli" => Azurite.Benchmark.runAzRatBernoulli limit cfg seed
       | "az_float_ln_gamma" => Azurite.Benchmark.runAzFloatLnGamma limit cfg seed
+      | "az_float_gamma" => Azurite.Benchmark.runAzFloatGamma limit cfg seed
       | "az_float_pow" => Azurite.Benchmark.runAzFloatPow limit cfg seed
       | "az_float_pow_width" => Azurite.Benchmark.runAzFloatPowWidth limit cfg seed
       | "az_float_pow_first" => Azurite.Benchmark.runAzFloatPowFirst limit cfg seed
