@@ -265,6 +265,8 @@ import Azurite.AzFloat.Equiv.Float64Emulate
 import Azurite.AzFloat.Equiv.GaussConstant
 import Azurite.AzFloat.Equiv.Gd
 import Azurite.AzFloat.Equiv.GdBracket
+import Azurite.AzFloat.Equiv.GdInv
+import Azurite.AzFloat.Equiv.GdInvBracket
 import Azurite.AzFloat.Equiv.Gelfond
 import Azurite.AzFloat.Equiv.GelfondSchneider
 import Azurite.AzFloat.Equiv.HexString
@@ -405,6 +407,9 @@ import Azurite.AzFloat.Float64Emulate
 import Azurite.AzFloat.GaussConstant
 import Azurite.AzFloat.Gd
 import Azurite.AzFloat.GdBracket
+import Azurite.AzFloat.GdInv
+import Azurite.AzFloat.GdInvBracket
+import Azurite.AzFloat.GdInvRat
 import Azurite.AzFloat.GdRat
 import Azurite.AzFloat.Gelfond
 import Azurite.AzFloat.GelfondSchneider

@@ -148,6 +148,9 @@ private def weeX : AzFloat := (F "3" 53) <<< K (-(2 ^ 60))
 #guard L weeX "10" 53 == logBaseP1PrecRound weeX 10 53 .Nearest
 #guard L (-weeX) "3" 53 == logBaseP1PrecRound (-weeX) 3 53 .Nearest
 #guard (L weeX "10/3" 53).2 != .eq
+#guard (L weeX "1/2" 53).2 != .eq
+#guard (L (-weeX) "1/4" 53).2 != .eq
+#guard (L ((F "1" 53) <<< K (-(2 ^ 60))) "1/2" 53).2 != .eq
 #guard (L (-weeX) "1/3" 53).2 != .eq
 #guard (L weeX "3/4" 53).2 != .eq
 -- exact values survive the cheap test: `1 + x = b^(±1)`, `b^(±2)` with `b = 1 + 2^(−64)`

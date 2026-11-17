@@ -164,6 +164,15 @@ private def weeX : AzFloat := (F "3" 53) <<< K (-(2 ^ 60))
 #guard L (-weeX) (F "10" 53) 53 == logBaseP1PrecRound (-weeX) 10 53 .Nearest
 #guard (L weeX ((F "5" 53) <<< K (-(2 ^ 57))) 53).2 != .eq
 #guard (L (-weeX) (F "3/4" 53) 53).2 != .eq
+-- a tiny `x` and a power-of-two base below `1` (the exponent quotient is positive, the odd
+-- root of the base is `1`): no exact value, and `1 + x` is not built
+#guard (L weeX (F "1/2" 53) 53).2 != .eq
+#guard (L weeX (F "1/4" 53) 53).2 != .eq
+#guard (L (-weeX) (F "1/2" 53) 53).2 != .eq
+#guard (L ((F "1" 53) <<< K (-(2 ^ 60))) (F "1/2" 53) 53).2 != .eq
+#guard (L ((F "1" 53) <<< K (-(2 ^ 60))) (F "2" 53) 53).2 != .eq
+#guard L ((F "1" 1) <<< K (1 - 2 ^ 30)) (F "1/2" 1) 17 ==
+  ((F "-189096" 17) <<< K (-16 - 2 ^ 30), .gt)
 -- the cheap test does not hide exact values: `1 + x = b`, `b²`, `b³` with
 -- `b = 1 ± 2^(−64)`, where the residues modulo `2^64` agree
 private def bP : AzFloat := F "18446744073709551617/18446744073709551616" 65
@@ -203,5 +212,7 @@ private def bn2 : AzFloat :=
 #guard onePlusSkip true (K (-(2 ^ 60))) 3 (K 0) 3
 #guard onePlusSkip false (K (-(2 ^ 60))) 3 (K (-2)) 3
 #guard onePlusSkip true (K (-(2 ^ 60))) 3 (K 2) 3
+#guard onePlusSkip true (K (-(2 ^ 60))) 1 (K (-1)) 1
+#guard onePlusSkip false (K (-(2 ^ 60))) 3 (K (-2)) 1
 #guard !onePlusSkip true (K (-64)) 1 (K (-64)) (AzNat.ofNat (2 ^ 64 + 1))
 #guard !onePlusSkip true (K (-10)) 1 (K (-2)) 3

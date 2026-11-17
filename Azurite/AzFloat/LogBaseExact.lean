@@ -230,7 +230,8 @@ of `1 + x`, which has about `|i|` bits (`onePlusDyadic`):
 * `i ≤ −64` and `size o < |i|` (a tiny or moderate non-integer `x`): `1 + x = u / 2^t` with
   `t = −i` and `u = 2^t ± o` odd.  With `j = 0`, or with `i / j < 0`, there is nothing to
   find.  Otherwise `u` would be `c^a` for `c` the exact `e`-th root of `sb` (`i / j = a / e` in
-  lowest terms); `c^a` is computed modulo `2^64` and compared with `u ≡ ±o`.
+  lowest terms).  For `c = 1` (a power-of-two base) that is excluded by `u > 1`; otherwise
+  `c^a` is computed modulo `2^64` and compared with `u ≡ ±o`.
 
 Whenever the test is inconclusive the caller falls back to `onePlusDyadic`. -/
 def onePlusSkip (s : Bool) (i : AzInt) (o : AzNat) (j : AzInt) (sb : AzNat) : Bool :=
@@ -247,8 +248,10 @@ def onePlusSkip (s : Bool) (i : AzInt) (o : AzNat) (j : AzInt) (sb : AzNat) : Bo
         ((AzNat.ofNat 0).toAzInt - (AzNat.ofNat t).toAzInt) j
       if r.sign then
         if sb.isPow r.den.toNat then
-          let p := upow64 (sb.rootInt r.den.toNat).toUInt64 r.num.toNat
-          if s then p != o.toUInt64 else p + o.toUInt64 != 0
+          if sb.rootInt r.den.toNat = 1 then true
+          else
+            let p := upow64 (sb.rootInt r.den.toNat).toUInt64 r.num.toNat
+            if s then p != o.toUInt64 else p + o.toUInt64 != 0
         else true
       else true
 

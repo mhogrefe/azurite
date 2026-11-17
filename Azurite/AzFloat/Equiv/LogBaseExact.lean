@@ -2771,6 +2771,10 @@ theorem onePlusSkip_spec (s : Bool) (i : AzInt) (o : AzNat) (j : AzInt) (sb : Az
           rw [AzNat.toNat_pow] at hpow
           set c := sb.rootInt (AzRat.ofAzInts I j).den.toNat with hc
           set a := (AzRat.ofAzInts I j).num.toNat with ha
+          by_cases hc1 : c = 1
+          · rw [hc1, AzNat.toNat_one, one_pow] at hpow
+            exact hU1 (AzNat.toNat_injective (by rw [← hpow]; rfl))
+          rw [ite_eq_right hc1] at h
           have hmod : (upow64 c.toUInt64 a).toNat = U.toNat % 2 ^ 64 := by
             rw [toNat_upow64, toNat_toUInt64_mod, ← Nat.pow_mod, hpow]
           have h2t : 2 ^ t % 2 ^ 64 = 0 := by

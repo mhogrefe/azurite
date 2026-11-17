@@ -7933,6 +7933,22 @@ step of the float-plus-rational Ziv loop after it.
 * Tests (`Tests/AddMulRat.lean`): invariance under a common shift by `±2^40`, agreement with
   the float–float operation on a dyadic `z`, negligible terms deciding only the comparison.
 
+### 11. `log_b (1 + x)`: tiny `x`, power-of-two base below `1` (DONE)
+
+Report: `logBaseFloatP1PrecRound` at `x = 2^(1−2^30)`, `b = 1/2`, 17 bits did not finish in
+300 s (2.6 GB); bases `2`, `4`, `3/4` were fine.  Cause: the exactness test.  For a tiny
+`x = ±o · 2^(−t)` and a base `sb · 2^j`, `onePlusSkip` compares `c^a` (`c` the root of `sb`,
+`a/e = −t/j`) with `1 + x` modulo `2^64`.  With `sb = 1`, `j < 0` and `x = +2^(−t)·o`,
+`o ≡ 1`, the residues agree (`c^a = 1`), the test was inconclusive, and `onePlusDyadic` built
+`2^t + o` in full before `isPow`/`rootInt` ran on it.
+
+* `onePlusSkip`: for `c = 1` the answer is `true` at once: `1 + x = u / 2^t` with `u > 1` odd
+  cannot be `c^a = 1` (`hU1` in `onePlusSkip_spec`).  Covers `logBaseFloatP1` and
+  `logBaseRatBaseP1` (which share the test); `logBasePow2P1` uses the fixed-precision
+  `onePlusPow2Exponent?` and never had the problem.
+* Tests (`Tests/LogBaseFloatP1.lean`, `Tests/LogBaseRatBaseP1.lean`): the reported line, and
+  `x = ±3·2^(−2^60)`, `2^(−2^60)` with the bases `1/2`, `1/4`, `2`.
+
 ## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
 
 `gd x = ∫₀ˣ sech t dt` (DLMF 4.23.39), `gdPrecRound`, `gd` (`AzFloat/Gd.lean`); special values
@@ -7993,3 +8009,40 @@ float's exponent; `gdHuge` as it is.  Width `gdRatEps q w → 0`, the Ziv certif
 `irrational_gd_rat`, tiny arguments by `sinTinyRat?`.  `gdRatPrecRound_eq`
 (`= roundVal p mode (Spec.gd q)`).  Tests against 400-digit references on every path and
 against the float function on dyadic arguments.
+
+## Inverse Gudermannian `gd⁻¹` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`gd⁻¹ x = ∫₀ˣ sec t dt = ln ((1 + sin x)/cos x)` on `(−π/2, π/2)` (DLMF 4.23.41–42):
+`gdInvPrecRound`, `gdInv` (`AzFloat/GdInv.lean`, `GdInvBracket.lean`).  `NaN` outside the domain
+(in particular at `±∞`), `gd⁻¹ 0 = 0`, odd.
+
+* **Bracket**: one joint `sinCosBracket`, the quotient `(1 + sin a)/2 / cos a` by the tangent's
+  `tanOfSinCos` (dummy bracket `[−1, 1]` while the enclosure of `cos a` contains `0`), doubled,
+  then `lnOfEncl`: `lnBracket` at the lower end and the upper end raised by `⌈(hi − lo)/lo⌉`.
+  Proven "valid or rejected" at every level (`gdInvApprox_valid_or_none`, with
+  `zivLoopCertified_eq_or_none` as for `tan`), and with width `gdInvEps → 0` once the cosine is
+  separated from `0` (`gdInvBracket_width`).
+* **Domain**: a `q`-bit float is below `π/2` iff it is at most `π/2` rounded down to `q` bits
+  (`gdInvInDomain_iff`, from `isGreatest_roundFloor` and the irrationality of `π`); no test for
+  `|x| < 1`.
+* **Irrationality**: `irrational_gdInv_rat` from `irrational_gd_rat` and `gd (gd⁻¹ x) = x`.
+* Small arguments: `leadingZeroBits` more starting bits (as `asinh`), tiny ones by `tanTiny?`
+  (`a < gd⁻¹ a ≤ a + a³` for `a ≤ 1/4`, `gdInvPatch`).  Next to `π/2` the loop repeats until
+  the precision exceeds the leading zeros of `π/2 − |x|`.
+* Tests against 500-digit references, including the doubles on either side of `π/2` and a
+  200-bit float next to it; round trips with `gd`.
+
+Not done: no efficiency work beyond the straightforward sine–cosine plus logarithm (the
+starting precision next to `π/2` could be raised from a cheap estimate of `π/2 − |x|`).
+
+### `gdInvRat` (DONE 2026-11-16, fuel-free, UNTIMED)
+
+`gdInvRatPrecRound`, `gdInvRat` (`AzFloat/GdInvRat.lean`).  The step of the float bracket was
+factored out — `gdInvOfSinCos b w` on enclosures of a sine and a cosine, with
+`gdInvOfSinCos_valid_or_dummy`, `gdInvOfSinCos_width` (width `gdInvEpsOf`) — and
+`gdInvRatBracket q w` runs it on `sinCosRatBracket q w`.  Domain (`gdInvRatInDomain_iff`):
+`|q| ≤ 1` inside, `|q| ≥ 2` outside (the test `1 ≤ |q/2|`), in between `cos q > 0`, decided
+by the sign of `cosRatPrecRound q 1 .Floor` (rounding down keeps a positive number nonnegative,
+and `cos q` is irrational).  `gdInvRatPrecRound_eq` (`= roundVal p mode (Spec.gdInv q)`).
+Tests against 500-digit references, on both sides of `π/2` (`1570796/10^6`, `1570797/10^6`,
+`355/226`, `11/7`), and against the float function on dyadic arguments.
