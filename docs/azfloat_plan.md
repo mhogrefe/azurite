@@ -8060,26 +8060,31 @@ back to `3W + 8` bisection steps, each with an exponential.
 * Tests (`Tests/LambertW.lean`): `W₀` and `W₋₁` at seven such precisions, as a guard against
   the slow path coming back (they took minutes before).
 
-## The tree function `T` (DONE 2026-11-17, fuel-free)
+## The tree function `T` (DONE 2026-11-17, fuel-free, both real branches)
 
-User request.  `T(x) = −W₀(−x)` (DLMF §4.13: `T e^(−T) = x`, principal branch;
-`Azurite.DLMF.treeT`), `x ≤ e⁻¹`.  Files: `AzFloat/TreeT.lean`, `Equiv/TreeT.lean`,
-`Tests/TreeT.lean`.
+User request.  `T(x) = −W(−x)` (DLMF §4.13: `T e^(−T) = x`; `Azurite.DLMF.treeT`, `treeTk`).
+Files: `AzFloat/TreeT.lean`, `Equiv/TreeT.lean`, `Tests/TreeT.lean`.
 
-* `treeTPrecRound x p mode = (−r.1, r.2.swap)` with `r = lambertW0PrecRound (−x) p (−mode)`;
-  `treeTRatPrecRound` the same on `lambertW0RatPrecRound`; `treeTFloat`, `treeTRat`.  Everything
-  about `W₀` carries over: no fuel, the tiny-argument path, the certified decision at the
-  branch point.  `NaN` above `e⁻¹` and at `+∞`, `T(−∞) = −∞`, `T(0) = 0`.
-* `Spec.treeT a = (Spec.lambertW0 (−a)).map (−·)`; `roundVal_map_neg` (the negation rule of
-  `roundVal_neg` for `NaN` and `±∞` too) gives `treeTPrecRound_eq = liftVal Spec.treeT` and
-  `treeTRatPrecRound_eq` in a few lines; `Spec.treeT_coe_of_le` identifies the value with
-  `Azurite.DLMF.treeT` on the domain.
-* Only the principal branch: the other real branch `−W₋₁(−x)` (`0 < x ≤ e⁻¹`, values `≥ 1`)
-  would be the same wrapper on `lambertWm1PrecRound`; not requested.
-* Tests: special values, the 53-bit floats on either side of `e⁻¹`, six arguments in three
-  modes against an independent 120-digit Newton iteration on `T e^(−T) = x`, 200 bits, the
-  relation with `W₀` in all five modes, tiny (`2^(−2^40)`) and huge arguments, rationals.
-* Cost: that of `W₀` (about 3.5 exponentials).  Not timed separately.
+* **Names** follow the branches of `W` (user, 2026-11-17; the principal branch was first
+  called `treeT…`): `T₀(x) = −W₀(−x)` for `x ≤ e⁻¹` — `treeT0PrecRound`, `treeT0Float`,
+  `treeT0RatPrecRound`, `treeT0Rat`; `T₋₁(x) = −W₋₁(−x)` for `0 < x ≤ e⁻¹` —
+  `treeTm1PrecRound`, `treeTm1Float`, `treeTm1RatPrecRound`, `treeTm1Rat`.
+* Each is `(−r.1, r.2.swap)` with `r` the corresponding `W` function at `−x` in the mode
+  `−mode`.  Everything about `W` carries over: no fuel, the tiny-argument path of `W₀`, the
+  certified decision at the branch point.
+* Special values.  `T₀`: `NaN` above `e⁻¹` and at `+∞`, `T₀(−∞) = −∞`, `T₀(0) = 0`.  `T₋₁`:
+  `NaN` for `x < 0`, above `e⁻¹` and at `±∞`; `T₋₁(0) = +∞` (the limit from the right, as
+  `W₋₁(0⁻) = −∞`).
+* `Spec.treeT0 a = (Spec.lambertW0 (−a)).map (−·)`, `Spec.treeTm1` likewise;
+  `roundVal_map_neg` (the negation rule of `roundVal_neg` for `NaN` and `±∞` too) gives the
+  four specifications in a few lines each; `Spec.treeT0_coe_of_le` identifies `T₀` with
+  `Azurite.DLMF.treeT` on the domain, `Spec.treeTm1_coe_of_mem` gives `−W₋₁(−x)` on
+  `(0, e⁻¹]`.
+* Tests: special values, the 53-bit floats on either side of `e⁻¹`, arguments in three modes
+  against an independent 120-digit Newton iteration on `T e^(−T) = x` (six for `T₀`, four for
+  `T₋₁`), 200 bits, the relation with `W` in all five modes, tiny (`2^(−2^40)`) and huge
+  arguments, rationals.
+* Cost: that of `W` (about 3.5 exponentials).  Not timed separately.
 
 ## Gudermannian `gd` (DONE 2026-11-16, fuel-free, interpreter-timed)
 

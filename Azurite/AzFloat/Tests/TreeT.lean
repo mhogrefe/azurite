@@ -12,23 +12,23 @@ import Azurite.AzFloat.Conversion
 import Azurite.AzRat.Parse
 
 /-!
-# Tests for the tree function `T(x) = −W₀(−x)`
+# Tests for the tree function: `T₀(x) = −W₀(−x)` and `T₋₁(x) = −W₋₁(−x)`
 
 The special values (`NaN`, `±∞`, `0`, above the branch point `e⁻¹` — including the 53-bit float
 nearest `e⁻¹`, which lies above it —, `p = 0`); `T` at `1/4`, `1/8`, `23/64`, `2^(−10)`, `−1`
 (minus the omega constant) and `−3` in the three modes at 53 bits and to nearest at 200 bits,
 against references from an independent 120-digit Newton iteration on `T e^(−T) = x`; the
 relation with `W₀` in every mode; the rational version on the same arguments and on
-non-dyadic ones; tiny and huge arguments.
+non-dyadic ones; tiny and huge arguments.  The same for `T₋₁` on `(0, e⁻¹)`.
 -/
 
 open Azurite Azurite.AzFloat
 
 private def Q (s : String) : AzRat := (AzRat.parse s).get!
 private def F (s : String) (p : Nat) : AzFloat := ofAzRat (Q s) p
-private def T (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := treeTPrecRound x p m
+private def T (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := treeT0PrecRound x p m
 private def TR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
-  treeTRatPrecRound (Q q) p m
+  treeT0RatPrecRound (Q q) p m
 private def pinf : AzFloat := infinity true
 private def ninf : AzFloat := infinity false
 /-- The 53-bit float nearest `e⁻¹` (above it). -/
@@ -116,6 +116,76 @@ private def viaW (x : AzFloat) (p : Nat) (m : RoundingMode) : Bool :=
 #guard (TR "1/3" 53 .Ceiling).2 == .gt
 #guard le (TR "1/3" 100 .Floor).1 (TR "1/3" 100).1
 #guard lt (T (F "1/3" 53) 100).1 (TR "1/3" 100 .Ceiling).1
-#guard treeTRat (Q "1/4") 53 == (T (F "1/4" 53) 53).1
-#guard treeTFloat (F "1/4" 53) == (T (F "1/4" 53) 53).1
-#guard treeTFloat nan == nan
+#guard treeT0Rat (Q "1/4") 53 == (T (F "1/4" 53) 53).1
+#guard treeT0Float (F "1/4" 53) == (T (F "1/4" 53) 53).1
+#guard treeT0Float nan == nan
+
+/-! ### The branch `T₋₁` -/
+
+private def Tm (x : AzFloat) (p : Nat) (m : RoundingMode := .Nearest) := treeTm1PrecRound x p m
+private def TmR (q : String) (p : Nat) (m : RoundingMode := .Nearest) :=
+  treeTm1RatPrecRound (Q q) p m
+
+-- special values
+#guard Tm nan 53 == (nan, .eq)
+#guard Tm pinf 53 == (nan, .eq)
+#guard Tm ninf 53 == (nan, .eq)
+#guard Tm zero 53 == (pinf, .eq)
+#guard Tm zero 0 == (pinf, .eq)
+#guard Tm (F "1/4" 53) 0 == (nan, .eq)
+#guard Tm (F "-1/4" 53) 53 == (nan, .eq)
+#guard Tm (F "-3" 53) 53 == (nan, .eq)
+#guard Tm (F "1/2" 53) 53 == (nan, .eq)
+#guard Tm nearBranch 53 == (nan, .eq)
+#guard lt one (Tm belowBranch 53).1
+#guard lt (Tm belowBranch 53).1 (F "257/256" 53)
+
+-- 53 bits, three modes
+#guard Tm (F "1/4" 53) 53 == (F "4848783344313553/2251799813685248" 53, .gt)
+#guard Tm (F "1/4" 53) 53 .Floor == (F "303048959019597/140737488355328" 53, .lt)
+#guard Tm (F "1/4" 53) 53 .Ceiling == (F "4848783344313553/2251799813685248" 53, .gt)
+#guard Tm (F "1/8" 53) 53 == (F "3672331608414589/1125899906842624" 53, .lt)
+#guard Tm (F "1/8" 53) 53 .Floor == (F "3672331608414589/1125899906842624" 53, .lt)
+#guard Tm (F "1/8" 53) 53 .Ceiling == (F "7344663216829179/2251799813685248" 53, .gt)
+#guard Tm (F "23/64" 53) 53 == (F "5549097812391523/4503599627370496" 53, .lt)
+#guard Tm (F "23/64" 53) 53 .Ceiling == (F "1387274453097881/1125899906842624" 53, .gt)
+#guard Tm (F "1/1024" 53) 53 == (F "321748405352517/35184372088832" 53, .gt)
+#guard Tm (F "1/1024" 53) 53 .Floor == (F "5147974485640271/562949953421312" 53, .lt)
+
+-- 200 bits
+#guard (Tm (F "1/4" 53) 200).1
+  == F ("432525927537662856011902604319053757720456710040947497833457"
+    ++ "/200867255532373784442745261542645325315275374222849104412672") 200
+#guard (Tm (F "1/1024" 53) 200).1
+  == F ("918429338342403556177845420307463407070447582150909422625657"
+    ++ "/100433627766186892221372630771322662657637687111424552206336") 200
+
+-- the relation with `W₋₁`, every mode; the two branches on either side of `1`
+private def viaWm (x : AzFloat) (p : Nat) (m : RoundingMode) : Bool :=
+  let r := lambertWm1PrecRound (-x) p (-m)
+  Tm x p m == (-r.1, r.2.swap)
+#guard [RoundingMode.Nearest, .Floor, .Ceiling, .Down, .Up].all fun m =>
+  viaWm (F "1/3" 53) 80 m && viaWm (F "1/1000" 53) 80 m
+#guard lt (T (F "1/3" 53) 80).1 one && lt one (Tm (F "1/3" 53) 80).1
+#guard Tm (F "1/5" 53) 100 .Down == Tm (F "1/5" 53) 100 .Floor
+#guard Tm (F "1/5" 53) 100 .Up == Tm (F "1/5" 53) 100 .Ceiling
+-- a tiny argument: `T₋₁(x) ≈ ln (1/x) + ln ln (1/x)`
+#guard lt (F "143" 53) (Tm ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1
+#guard lt (Tm ((F "1" 53) <<< AzInt.ofInt (-200)) 53).1 (F "144" 53)
+
+-- the rational version
+#guard TmR "0" 53 == (pinf, .eq)
+#guard TmR "0" 0 == (pinf, .eq)
+#guard TmR "1/4" 0 == (nan, .eq)
+#guard TmR "-1/4" 53 == (nan, .eq)
+#guard TmR "1/2" 53 == (nan, .eq)
+#guard TmR "3679/10000" 53 == (nan, .eq)
+#guard lt one (TmR "3678/10000" 53).1
+#guard TmR "1/4" 53 == Tm (F "1/4" 53) 53
+#guard TmR "1/4" 53 .Floor == Tm (F "1/4" 53) 53 .Floor
+#guard TmR "1/1024" 200 == Tm (F "1/1024" 53) 200
+#guard (TmR "1/3" 53 .Floor).2 == .lt
+#guard (TmR "1/3" 53 .Ceiling).2 == .gt
+#guard treeTm1Rat (Q "1/4") 53 == (Tm (F "1/4" 53) 53).1
+#guard treeTm1Float (F "1/4" 53) == (Tm (F "1/4" 53) 53).1
+#guard treeTm1Float nan == nan

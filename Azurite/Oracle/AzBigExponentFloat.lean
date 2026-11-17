@@ -583,7 +583,8 @@ def asFunctionLine (name line : String) : String :=
 def checkBigExponentFloatGetExponent : String → Verdict :=
   fun line => checkFloatGetExponent (asFunctionLine "get_exponent" line)
 
-def checkBigExponentFloatGetPrec : String → Verdict := withBigExponentFloatNames checkFloatGetPrec
+def checkBigExponentFloatGetPrec : String → Verdict :=
+  fun line => checkFloatGetPrec (asFunctionLine "get_prec" line)
 
 def checkBigExponentFloatToSignificand : String → Verdict :=
   fun line => checkFloatToSignificand (asFunctionLine "to_significand" line)
