@@ -186,6 +186,14 @@ def reciprocalGammaTiny? (x : AzFloat) (e : AzInt) (q p : Nat) (mode : RoundingM
     roundingPossible (fun P M => setPrecRound x P M) (fun P M => setPrecRound hi P M) p mode
   else none
 
+/-- The largest integer argument whose `Γ` is taken as an exact factorial at precision `p`.
+Any bound of at least `p + 65` is sound for the loop beyond it (the odd part of `(n − 1)!`
+then has more than `p + 1` bits, so the value is no rounding boundary); this one is where
+the factorial stops being cheaper than the loop (measured 2026-11-18: `n!` costs 0.07 ms at
+`n = 1000`, 0.32 ms at 3000, 2.7 ms at 10000, against 0.4 / 0.7 / 4–9 ms for the loop at
+53 / 200 / 1000 bits). -/
+def gammaIntBound (p : Nat) : Nat := 8 * p + 2048
+
 /-- Is `x` a positive integer at most `bound`? -/
 def gammaSmallInt (x : AzFloat) (bound : Nat) : Bool :=
   isInteger x && lt zero x && le x (ofAzNat (AzNat.ofNat bound))

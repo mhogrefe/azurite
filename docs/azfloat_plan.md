@@ -8408,7 +8408,7 @@ Files: `AzFloat/GammaBracket.lean`, `AzFloat/Gamma.lean`, `Equiv/GammaBracket.le
 * **Valid or rejected.**  The pieces answer `none` when they cannot give a positive enclosure
   (bracket of `ln Γ` wider than `1`, sine not yet positive); the loop then sees the dummy
   bracket `[−1, 1]` (`zivLoop_eq_of_ne_nan_or_none`).  No width is proven anywhere.
-* **Exact and near-exact cases.**  Positive integers `n ≤ p + 65` by the exact factorial
+* **Exact and near-exact cases.**  Positive integers `n ≤ p + 65` (since Perf 18: `8p + 2048`) by the exact factorial
   (beyond, `(n − 1)!` has an odd part of more than `p + 1` bits and the loop decides — tested
   against the exact factorial up to `n = 1000`).  Tiny `x`: `Γ(x) = 1/x − γ + …` and
   `1/Γ(x) = x + γx² + …` sit within a relative `|x|` of `1/x` and `x`, so one test of
@@ -8849,6 +8849,115 @@ User request.  `lnAbsBetaPrecRound a b p mode : (AzFloat × Ordering) × Bool`, 
 * Tests: `ln B(1/2, 1/2) = ln π`, `ln B(2, 3) = −ln 12`, `ln B(10¹⁰, 10¹⁰) ≈ −1.386·10¹⁰`
   (where `B` has a ten-digit exponent), the exact case, signs at negative arguments, the
   special values, and agreement with `ln` of `betaPrecRound` at 300 bits.
+
+### 5c. Pochhammer's symbol `(x)ₙ` for a float `x` (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `pochhammerPrecRound x n p mode`, `pochhammer x n` (`AzFloat/Pochhammer.lean`,
+`Equiv/Pochhammer.lean`, `Tests/Pochhammer.lean`), `n : Nat`.
+
+* **Specification**: Mathlib's `(ascPochhammer ℝ n).eval x`, as in `DLMF/Chapter5/Section2`
+  (`Spec.pochhammer n`, `ascPochhammer_eval_eq_prod`).  A polynomial: no poles.  `(x)₀ = 1`
+  for every `x` but `NaN`, the infinities included; for `n ≥ 1`, `(+∞)ₙ = +∞`,
+  `(−∞)ₙ = (−1)ⁿ∞`; **`0` exactly when a factor vanishes** (`pochHasZero`: `x` an integer with
+  `−n < x ≤ 0`).
+* **Exact path** (`pochExact?`), `n ≤ 128` and a short `x = N/D`: `∏ (N + jD) / Dⁿ` by one
+  correctly rounded division of exact floats — `risingInt` again.
+* **The loop** (`pochCore`), at a cost independent of `n`.  With `k = pochSplit x n` negative
+  factors, `(x)ₙ = (−1)^k (1 − x − k)_k (x + k)_{n−k}` — an identity for *every* `k ≤ n`
+  (`prod_add_eq_split`), so nothing has to be proven about `k`: the two rising factorials are
+  taken as `Γ(y + m)/Γ(y)` only if their arguments come out positive, which the pieces test.
+  Each ratio is `exp (St(y+m) − St(y)) · P(y)/P(y+m)` (`lnGammaDiff`, on `stirlingShifted`):
+  the constants `½ ln 2π` cancel, the rising products of the shifts enter as a quotient and
+  not through a logarithm, and one exponential serves both ratios.  No reflection formula
+  and no sine even for negative `x`.
+* **Contract**: `pochhammerPrecRound_eq_or`.  The value is a dyadic rational; where it is a
+  float of the target precision the loop cannot round it, and the exact path takes those
+  cases only up to `n = 128` (beyond, a `p`-bit value would need `x (x+1) ⋯` to lose almost
+  all its bits to powers of two).
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits; `ln Γ(1/3)` 0.39 /
+  1.00 / 9.5): `(1/3)₁₀` 0.009 / 0.014 / 0.10 and `(1/3)₁₀₀` 0.083 / 0.37 / 5.5 (exact; the
+  float `1/3` has `max(p, 64)` bits); `(1/3)₂₀₀` 0.59 / 1.45 / 15.3 and `(1/3)_{10⁶}` 0.62 /
+  1.43 / 11.2 (one ratio: 1.5 `ln Γ`); `(−301/3)₂₀₀`, straddling zero, 1.08 / 2.49 / 28.5
+  (two ratios); `(−901/3)₂₀₀`, all factors negative, 0.51 / 1.16 / 13.8.
+* Tests: the loop against exact factorials — `(1)ₙ = n!` for `n = 200, 1000, 20000`,
+  `(1/2)ₙ = (2n)!/(4ⁿ n!)` for `n = 200, 3000`, `(−250)₂₀₀ = 250!/50!` and `(−250)₂₀₁` — in
+  several modes; `n = 128` / `129` across the bound; the exact zeros; special values.
+* Open: `AzRat` argument; the generalized symbol `Γ(x + y)/Γ(x)` for a non-integer `y`; the
+  falling factorial.
+
+### 5d. Pochhammer's symbol `(q)ₙ` for an `AzRat` `q` (DONE 2026-11-18, fuel-based, TIMED)
+
+User request.  `pochhammerRatPrecRound q n p mode`, `pochhammerRat q n p`
+(`AzFloat/PochhammerRat.lean`, `Equiv/PochhammerRat.lean`, `Tests/PochhammerRat.lean`).
+
+* The loop of 5c was made generic for this: `pochCoreOf X k n bits w` takes the argument as a
+  family of enclosures and the split `k` as a parameter (`pochCoreOf_spec`, for any `k ≤ n`);
+  the float `pochCore` and the rational `pochRatCore` (on `lnGammaRatEncl`, split
+  `pochRatSplit`) are its two instances.  The exact quotient is shared too (`pochIntQuot`,
+  `pochIntQuot_eq`).
+* `(q)₀ = 1`; `0` exactly when `q` is an integer with `−n < q ≤ 0` (`pochRatHasZero`, on the
+  reduced fraction).
+* Exact path (`pochRatExact?`): `n ≤ 128` and numerator and denominator of at most
+  `2p + 1024` bits together — the value is the rational `∏ (N + jD)/Dⁿ`, for any denominator.
+* Contract: `pochhammerRatPrecRound_eq_or` against the same `Spec.pochhammer n`.  The value is
+  rational, so above `n = 128` a value that is exactly a `p`-bit float (or a boundary) would
+  exhaust the fuel; that needs `Dⁿ` to cancel against the numerator, impossible for a reduced
+  non-dyadic `q` (`D` has an odd prime not dividing any `N + jD`), and for dyadic `q` as in 5c.
+  Not proven.
+* Tests: the loop against the product in exact `AzRat` arithmetic (`n = 129 … 400`, all sign
+  patterns, several modes), agreement with the float function on dyadic arguments.
+* Timings (`az_float_families family:misc`, ms at 53 / 200 / 1000 bits): exact path
+  `(1/3)₁₀` 0.005 / 0.005 / 0.004, `(1/3)₁₀₀` 0.024 / 0.024 / 0.027 (independent of `p`, and
+  3–200× below the float function, whose argument `1/3` carries `max(p, 64)` bits); the loop
+  as for floats: `(1/3)₂₀₀` 0.59 / 1.40 / 15.1, `(−301/3)₂₀₀` 1.08 / 2.47 / 28.1,
+  `(1/3)_{10⁶}` 0.63 / 1.41 / 11.2.
+* Open (tuning; done in Perf 18): the bound `n ≤ 128` of the exact path is too cautious for a short `q` —
+  `(1/3)₂₀₀` would cost ≈ 0.06 ms exactly against 0.59 ms in the loop.  A bound on the size of
+  the product (`n · bits`) would move the crossover to where it belongs.
+
+### Timings of the Γ family not taken before (2026-11-18)
+
+`az_float_families family:misc`, ms at 53 / 200 / 1000 bits.
+
+| function | argument | 53 | 200 | 1000 |
+|---|---|---|---|---|
+| `lnGammaRat` | 1/3 | 0.40 | 1.01 | 9.4 |
+| `lnAbsGamma` | 1/3 | 0.39 | 0.99 | 9.2 |
+| `lnAbsGamma` | −7/3 | 0.70 | 1.51 | 11.2 |
+| `lnAbsGamma` | −301/3 | 0.58 | 1.14 | 10.3 |
+| `gamma` | 1/3 | 0.53 | 1.25 | 10.3 |
+| `gamma` | 301/3 | 0.44 | 1.03 | 9.8 |
+| `gamma` | −7/3 | 0.76 | 1.65 | 11.5 |
+| `gamma` | 150 | 0.43 | 0.012 | 0.011 |
+| `lnBeta x 5/2` | 1/3 | 0.91 | 2.24 | 21.7 |
+| `lnBetaRat q 5/2` | 1/3 | 0.90 | 2.26 | 22.5 |
+
+The rational variants agree with the float ones within noise.  **Anomaly**: `Γ(150)` takes
+0.43 ms at 53 bits and 0.012 ms at 200 — the exact factorial path is refused at low precision
+and the loop runs instead.  Fixed in Perf 18.
+
+### Perf 18. Exact paths chosen by cost: `Γ(n)` and `(x)ₙ` (2026-11-18)
+
+Both exact paths were bounded by what termination needs, not by what is cheap.
+
+* **`Γ(n)`, `1/Γ(n)`** (float and rational): the factorial was taken for `n ≤ p + 65` — the
+  least bound that keeps rounding boundaries away from the loop.  Measured: `n!` rounded
+  costs 0.010 ms at `n = 150`, 0.07 at 1000, 0.32 at 3000, 2.7 at 10000, 17.7 at 30000,
+  independent of `p`; the loop 0.39 / 0.7–0.8 / 4–9 ms at 53 / 200 / 1000 bits.  New bound
+  `gammaIntBound p = 8p + 2048`.  `Γ(150)` at 53 bits: 0.43 → 0.015 ms (29×).
+* **`(x)ₙ`**: the exact product was taken for `n ≤ 128`.  Measured cost of `pochIntQuot`:
+  ≈ `10⁻⁶ (n ℓ)²` ms, `ℓ` the limbs of a factor (`1/3`: 0.052 ms at `n = 200`, 0.46 at 800,
+  6.2 at 3200; a 118-bit fraction 0.23 / 2.9 / 45; the float `1/3` at 1000 bits 20 ms at
+  `n = 200`).  New extra test `pochExactCheap B n p`: `n ((B + lg n)/64 + 1) ≤ 2p + 512`,
+  with `B` the bits of numerator and denominator; the old test is kept as an alternative.
+  `pochhammerRat (1/3)₂₀₀`: 0.59 / 1.40 / 15.1 → 0.055 / 0.055 / 0.057 ms (11–260×);
+  `(−301/3)₂₀₀`: 1.08 → 0.054.  Float `(1/3)₂₀₀` (130-bit fraction at 53 bits): 0.59 → 0.26;
+  at 200 bits 1.39 → 1.25; at 1000 bits the loop stays (15.2).
+* No proof depended on either bound.  Tests of the loop moved to larger `n`
+  (`(−1001/2)₁₀₀₀` against double factorials, rational `n = 1000` against exact products).
+* Left: `risingInt` multiplies one factor at a time (quadratic); a balanced product would
+  push the crossover further for long products.
+
 
 ### File layout of the logarithms of `Γ` and `B` (2026-11-18)
 

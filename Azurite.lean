@@ -337,6 +337,8 @@ import Azurite.AzFloat.Equiv.Pi
 import Azurite.AzFloat.Equiv.PiBracket
 import Azurite.AzFloat.Equiv.PiConstants
 import Azurite.AzFloat.Equiv.PiDiv3Bracket
+import Azurite.AzFloat.Equiv.Pochhammer
+import Azurite.AzFloat.Equiv.PochhammerRat
 import Azurite.AzFloat.Equiv.Pow
 import Azurite.AzFloat.Equiv.Pow10
 import Azurite.AzFloat.Equiv.Pow2
@@ -494,6 +496,8 @@ import Azurite.AzFloat.Pi
 import Azurite.AzFloat.PiBracket
 import Azurite.AzFloat.PiConstants
 import Azurite.AzFloat.PiDiv3Bracket
+import Azurite.AzFloat.Pochhammer
+import Azurite.AzFloat.PochhammerRat
 import Azurite.AzFloat.Pow
 import Azurite.AzFloat.Pow10
 import Azurite.AzFloat.Pow2

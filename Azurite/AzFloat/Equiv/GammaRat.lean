@@ -255,7 +255,7 @@ theorem gammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p] (mode : Roundin
     obtain ⟨hneg, hk⟩ := gammaRat_pole h0 hpole
     rw [ite_eq_left hpole, Spec.gamma_coe_of_pole hneg hk, roundVal_none]
   rw [ite_eq_right hpole, ite_eq_right hp, Spec.gamma_coe hx0 (gammaRat_not_pole h0 hpole)]
-  by_cases hsm : gammaRatSmallInt q (p + 65) = true
+  by_cases hsm : gammaRatSmallInt q (gammaIntBound p) = true
   · left
     obtain ⟨n, hn, hval⟩ := gammaRatSmallInt_spec h0 hsm
     rw [ite_eq_left hsm, hn, Nat.add_sub_cancel, hval, Real.Gamma_nat_eq_factorial,
@@ -288,7 +288,7 @@ theorem reciprocalGammaRatPrecRound_eq_or (q : AzRat) (p : ℕ) [NeZero p]
     rw [ite_eq_left hpole, Gamma_eq_zero_of_int_nonpos hneg.le hk, inv_zero, EReal.coe_zero,
       roundVal_zero]
   rw [ite_eq_right hpole, ite_eq_right hp]
-  by_cases hsm : gammaRatSmallInt q (p + 65) = true
+  by_cases hsm : gammaRatSmallInt q (gammaIntBound p) = true
   · left
     obtain ⟨n, hn, hval⟩ := gammaRatSmallInt_spec h0 hsm
     have hf0 : ((n.factorial : ℕ) : ℝ) ≠ 0 := by positivity

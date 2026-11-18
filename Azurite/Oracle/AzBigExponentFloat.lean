@@ -523,7 +523,7 @@ def checkBigExponentFloatTanRational : String → Verdict :=
   withBigExponentFloatNames checkFloatTanRational
 
 /-- Azurite's value of a trigonometric function at a pole is an infinity, as in IEEE 754 (the tangent
-takes the sign of the sine, the secant is `+∞`); a `BigExponentFloat`, with no negative zero to tell
+takes the sign of the sine, the secant is `+∞`, and the cosecant of `0` is `+∞`); a `BigExponentFloat`, with no negative zero to tell
 the two one-sided limits apart, is `NaN` there, as `1/0` is. `AzFloat`'s exponent is unbounded, so
 these functions of a finite argument are infinite only at a pole, and an infinite result is read as
 `NaN`. -/
@@ -568,6 +568,32 @@ def checkBigExponentFloatSecPi : String → Verdict :=
 def checkBigExponentFloatSecPiRational : String → Verdict :=
   withBigExponentFloatNames <| checkFloatOfRational "sec_pi_rational"
     (fun q p m => poleAsNaN (AzFloat.secPiRatPrecRound q p m))
+
+/-- The cosecant has a pole at `0`, where Azurite gives `+∞` and a `BigExponentFloat` `NaN`, so
+every form goes through `poleAsNaN`. -/
+def checkBigExponentFloatCsc : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "csc"
+    (fun x p m => poleAsNaN (AzFloat.cscPrecRound x p m))
+
+def checkBigExponentFloatCscRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "csc_rational"
+    (fun q p m => poleAsNaN (AzFloat.cscRatPrecRound q p m))
+
+def checkBigExponentFloatCscWithPeriod : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryArgsWith "csc_with_period" 1 parseLogBase
+    (fun x u p m => poleAsNaN (AzFloat.cscWithPeriodPrecRound x u p m))
+
+def checkBigExponentFloatCscWithPeriodRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRationalArgsWith "csc_with_period_rational" 1
+    parseLogBase (fun q u p m => poleAsNaN (AzFloat.cscRatWithPeriodPrecRound q u p m))
+
+def checkBigExponentFloatCscPi : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatUnaryWith "csc_pi"
+    (fun x p m => poleAsNaN (AzFloat.cscPiPrecRound x p m))
+
+def checkBigExponentFloatCscPiRational : String → Verdict :=
+  withBigExponentFloatNames <| checkFloatOfRational "csc_pi_rational"
+    (fun q p m => poleAsNaN (AzFloat.cscPiRatPrecRound q p m))
 
 /-- `y·z`, formed exactly. -/
 def exactProduct (y z : AzFloat) : AzFloat :=

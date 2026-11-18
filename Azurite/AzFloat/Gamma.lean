@@ -25,10 +25,11 @@ import Azurite.AzNat.Factorial
 * **Special values of `1/Γ`.**  `1/Γ(+∞) = 0`; `1/Γ(x) = 0` exactly at `x = 0, −1, −2, …` (the
   reciprocal is entire); `NaN` at `−∞`, where it oscillates, and at `NaN`.
 * **Positive integers.**  `Γ(n) = (n − 1)!` is computed exactly and rounded once when
-  `n ≤ p + 65`, so the comparison is `.eq` whenever the factorial fits the precision; so is
-  `1/(n − 1)!`, by one correctly rounded division.  (Beyond that bound the odd part of
-  `(n − 1)!` has more than `p + 1` bits, so the value is not a rounding boundary and the
-  general path decides.)
+  `n ≤ gammaIntBound p = 8p + 2048`, so the comparison is `.eq` whenever the factorial fits
+  the precision; so is `1/(n − 1)!`, by one correctly rounded division.  (Beyond `p + 65` the
+  odd part of `(n − 1)!` has more than `p + 1` bits, so the value is not a rounding boundary
+  and the general path decides; the bound is larger because the factorial is cheaper than
+  the loop up to there.)
 * **Tiny arguments.**  `Γ(x) ≈ 1/x` and `1/Γ(x) ≈ x` are rounded by `gammaTiny?` and
   `reciprocalGammaTiny?` at a cost independent of the exponent.
 * **Everything else.**  Ziv's loop on `gammaApprox` (`AzFloat/GammaBracket.lean`: the
@@ -59,7 +60,7 @@ def gammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) : AzFloat × Or
       match gammaTiny? (finite s e q m hv) e q p mode with
       | some r => r
       | none =>
-        if gammaSmallInt (finite s e q m hv) (p + 65) then
+        if gammaSmallInt (finite s e q m hv) (gammaIntBound p) then
           setPrecRound (ofAzNat (AzNat.factorial
             ((truncToAzInt (finite s e q m hv)).abs.toNat - 1))) p mode
         else
@@ -83,7 +84,7 @@ def reciprocalGammaPrecRound (x : AzFloat) (p : Nat) (mode : RoundingMode) :
       match reciprocalGammaTiny? (finite s e q m hv) e q p mode with
       | some r => r
       | none =>
-        if gammaSmallInt (finite s e q m hv) (p + 65) then
+        if gammaSmallInt (finite s e q m hv) (gammaIntBound p) then
           divPrecRound one (ofAzNat (AzNat.factorial
             ((truncToAzInt (finite s e q m hv)).abs.toNat - 1))) p mode
         else

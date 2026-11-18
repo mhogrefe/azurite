@@ -102,8 +102,14 @@ import Azurite.AzFloat.LambertW
 import Azurite.AzFloat.LogBaseExact
 import Azurite.AzFloat.Beta
 import Azurite.AzFloat.BetaRat
+import Azurite.AzFloat.Pochhammer
+import Azurite.AzFloat.PochhammerRat
 import Azurite.AzFloat.LnBetaRat
 import Azurite.AzFloat.LnGamma
+import Azurite.AzFloat.LnBeta
+import Azurite.AzFloat.LnGammaRat
+import Azurite.AzFloat.GammaRat
+import Azurite.AzFloat.Gamma
 import Azurite.AzFloat.DigammaRat
 import Azurite.AzFloat.PsiZero
 import Azurite.AzFloat.WrightOmega
@@ -349,6 +355,15 @@ private def misc : List Entry :=
    F "wrightOmega" wrightOmegaPrecRound wl, R "wrightOmegaRat" wrightOmegaRatPrecRound wl,
    F "digamma" digammaPrecRound dl, R "digammaRat" digammaRatPrecRound dl,
    F "lnGamma" lnGammaPrecRound [a "1/3", a "150"],
+   R "lnGammaRat" lnGammaRatPrecRound [a "1/3", a "150"],
+   F "lnAbsGamma" (fun x p m => (lnAbsGammaPrecRound x p m).1) [a "1/3", a "-7/3", a "-301/3"],
+   R "lnAbsGammaRat" (fun q p m => (lnAbsGammaRatPrecRound q p m).1)
+     [a "1/3", a "-7/3", a "-301/3"],
+   F "gamma" gammaPrecRound [a "1/3", a "150", a "301/3", a "-7/3", a "-301/3"],
+   R "gammaRat" gammaRatPrecRound [a "1/3", a "150", a "301/3", a "-7/3", a "-301/3"],
+   F "lnBeta x 5/2" (fun x => lnBetaPrecRound x fiveHalves) [a "1/3", a "150"],
+   R "lnBetaRat q 5/2" (fun q => lnBetaRatPrecRound q (AzRat.parse "5/2").get!)
+     [a "1/3", a "150"],
    F "beta x 5/2" (fun x => betaPrecRound x fiveHalves) [a "1/3", a "150", a "-7/3"],
    F "beta x -7/3" (fun x => betaPrecRound x (-sevenThirds)) [a "1/3", a "-1/3"],
    F "lnAbsBeta x 5/2" (fun x p m => (lnAbsBetaPrecRound x fiveHalves p m).1)
@@ -363,6 +378,15 @@ private def misc : List Entry :=
    R "betaRat q 50" (fun q => betaRatPrecRound q (AzRat.parse "50").get!) [a "1/3", a "40"],
    F "beta x 3" (fun x => betaPrecRound x three) [a "1/3", a "-7/3"],
    F "beta x 50" (fun x => betaPrecRound x fifty) [a "1/3", a "40"],
+   F "pochhammer x 10" (fun x => pochhammerPrecRound x 10) [a "1/3", a "-7/3"],
+   F "pochhammer x 100" (fun x => pochhammerPrecRound x 100) [a "1/3", a "-7/3"],
+   F "pochhammer x 200" (fun x => pochhammerPrecRound x 200) [a "1/3", a "-301/3", a "-901/3"],
+   F "pochhammer x 10^6" (fun x => pochhammerPrecRound x 1000000) [a "1/3", a "-7/3"],
+   R "pochhammerRat q 10" (fun q => pochhammerRatPrecRound q 10) [a "1/3", a "-7/3"],
+   R "pochhammerRat q 100" (fun q => pochhammerRatPrecRound q 100) [a "1/3", a "-7/3"],
+   R "pochhammerRat q 200" (fun q => pochhammerRatPrecRound q 200)
+     [a "1/3", a "-301/3", a "-901/3"],
+   R "pochhammerRat q 10^6" (fun q => pochhammerRatPrecRound q 1000000) [a "1/3", a "-7/3"],
    F "psiZero 0" (fun _ => psiZeroPrecRound 0) [a "1"],
    F "psiZero 1" (fun _ => psiZeroPrecRound 1) [a "1"],
    F "psiZero 1000" (fun _ => psiZeroPrecRound 1000) [a "1"],

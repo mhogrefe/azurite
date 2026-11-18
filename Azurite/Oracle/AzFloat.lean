@@ -116,6 +116,7 @@ import Azurite.AzFloat.TanRatWithPeriod
 import Azurite.AzFloat.TanPi
 import Azurite.AzFloat.Sec
 import Azurite.AzFloat.SecWithPeriod
+import Azurite.AzFloat.Csc
 
 /-!
 # Checks for Malachite's `Float` against `AzFloat`
@@ -2177,6 +2178,48 @@ def checkFloatSecPi : String → Verdict := checkFloatUnaryWith "sec_pi" AzFloat
 /-- `Float::sec_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.secPiRatPrecRound`. -/
 def checkFloatSecPiRational : String → Verdict :=
   checkFloatOfRational "sec_pi_rational" AzFloat.secPiRatPrecRound
+
+/-- Whether a unary line's argument is Malachite's `-0.0`, printed by value, by reference, or in an
+assignment. -/
+def negativeZeroArgument (line : String) : Bool :=
+  line.startsWith "(-0x0.0)." || line.startsWith "(&-0x0.0)." || line.startsWith "x := -0x0.0;"
+
+/-- Malachite's cosecant of `-0.0` is `-∞`, the reciprocal of the sine's `-0.0`, where Azurite,
+with no signed zero, gives `+∞`; `negZero` marks such an argument, and negates Azurite's infinity.
+-/
+def malachiteCscPole (negZero : Bool) (r : AzFloat × Ordering) : AzFloat × Ordering :=
+  if negZero && r.1 matches .infinity _ then (-r.1, r.2) else r
+
+/-- `Float`'s `csc` family, against `AzFloat.cscPrecRound` (through `malachiteCscPole`). -/
+def checkFloatCsc (line : String) : Verdict :=
+  checkFloatUnaryWith "csc"
+    (fun x p m => malachiteCscPole (negativeZeroArgument line) (AzFloat.cscPrecRound x p m)) line
+
+/-- `Float::csc_rational_prec[_round][_ref](q, p[, rm])`, against `AzFloat.cscRatPrecRound`. -/
+def checkFloatCscRational : String → Verdict :=
+  checkFloatOfRational "csc_rational" AzFloat.cscRatPrecRound
+
+/-- `Float`'s `csc_with_period` family (`(x).csc_with_period[…](u, …)`), against
+`AzFloat.cscWithPeriodPrecRound` (through `malachiteCscPole`). -/
+def checkFloatCscWithPeriod (line : String) : Verdict :=
+  checkFloatUnaryArgsWith "csc_with_period" 1 parseLogBase
+    (fun x u p m =>
+      malachiteCscPole (negativeZeroArgument line) (AzFloat.cscWithPeriodPrecRound x u p m)) line
+
+/-- `Float::csc_with_period_rational_prec[_round][_ref](q, u, p[, rm])`, against
+`AzFloat.cscRatWithPeriodPrecRound`. -/
+def checkFloatCscWithPeriodRational : String → Verdict :=
+  checkFloatOfRationalArgsWith "csc_with_period_rational" 1 parseLogBase
+    (fun q u => AzFloat.cscRatWithPeriodPrecRound q u)
+
+/-- `Float`'s `csc_pi` family, against `AzFloat.cscPiPrecRound` (through `malachiteCscPole`). -/
+def checkFloatCscPi (line : String) : Verdict :=
+  checkFloatUnaryWith "csc_pi"
+    (fun x p m => malachiteCscPole (negativeZeroArgument line) (AzFloat.cscPiPrecRound x p m)) line
+
+/-- `Float::csc_pi_rational_prec[_round](q, p[, rm])`, against `AzFloat.cscPiRatPrecRound`. -/
+def checkFloatCscPiRational : String → Verdict :=
+  checkFloatOfRational "csc_pi_rational" AzFloat.cscPiRatPrecRound
 
 /-- `Float`'s `sqrt` family in every shape (`_ref`, assign, …), against `AzFloat.sqrtPrecRound`. -/
 def checkFloatSqrtAll : String → Verdict := checkFloatUnaryWith "sqrt" AzFloat.sqrtPrecRound

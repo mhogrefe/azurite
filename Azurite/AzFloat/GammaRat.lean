@@ -26,8 +26,8 @@ value; `gammaRat q p` and `reciprocalGammaRat q p` round to nearest.
 
 * **Special values**, as for the float functions (`AzFloat/Gamma.lean`): `Γ(0) = +∞`, `NaN` at
   the poles `q = −1, −2, …`; `1/Γ(q) = 0` at `q = 0, −1, −2, …`.
-* **Positive integers.**  `Γ(n) = (n − 1)!` exactly, rounded once, when `n ≤ p + 65`; `1/Γ(n)`
-  by one correctly rounded division.
+* **Positive integers.**  `Γ(n) = (n − 1)!` exactly, rounded once, when
+  `n ≤ gammaIntBound p`; `1/Γ(n)` by one correctly rounded division.
 * **Tiny arguments** (`gammaRatTiny?`, `reciprocalGammaRatTiny?`): `−Γ(q)` lies in
   `(−1/q, −1/q + 2)` and `1/Γ(q)` in `(q, q + q²)`; the ends are rationals, rounded outwards,
   and one test of `roundingPossible` settles the rounding.  The test fails when a rounding
@@ -122,7 +122,7 @@ def gammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) : AzFloat × O
   if q.num = 0 then (infinity true, .eq)
   else if q.den = 1 ∧ q.sign = false then (nan, .eq)
   else if p = 0 then (nan, .eq)
-  else if gammaRatSmallInt q (p + 65) then
+  else if gammaRatSmallInt q (gammaIntBound p) then
     setPrecRound (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
   else
     let e := gammaRatExp q
@@ -140,7 +140,7 @@ def reciprocalGammaRatPrecRound (q : AzRat) (p : Nat) (mode : RoundingMode) :
   if q.num = 0 then (zero, .eq)
   else if q.den = 1 ∧ q.sign = false then (zero, .eq)
   else if p = 0 then (nan, .eq)
-  else if gammaRatSmallInt q (p + 65) then
+  else if gammaRatSmallInt q (gammaIntBound p) then
     divPrecRound one (ofAzNat (AzNat.factorial (q.num.toNat - 1))) p mode
   else
     let e := gammaRatExp q
